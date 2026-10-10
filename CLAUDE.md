@@ -27,8 +27,9 @@ move it to `docs/backlog.md` rather than deleting it.
 - **Done (milestone 1): sim core.** `src/sim/`: integer-only 20 Hz sim driven by a command queue,
   replays, state hashes, straight-line MOVE + separation. Debug view `scenes/sim_debug.tscn`.
   `tests/test_sim.gd` plays a 10-minute 200-unit match; tick is ~0.9 ms avg (budget 3 ms).
-- **Now (milestone 2): map + movement.** Flow fields, group arrival, isometric view, camera,
-  box select. See `docs/milestones/m2-map-movement.md`.
+- **Done (milestone 2): map + movement.** Flow fields, move groups, isometric debug view, RTS
+  camera, click/box/double-click selection. 50 units cross open and chokepoint maps, none stuck.
+- **Next (milestone 3): economy.** See `docs/milestones/m3-economy.md` (plan not written yet).
 
 ## Layout
 
@@ -58,10 +59,12 @@ src/
     units.gd         units as parallel packed int arrays, sorted by id
     spatial.gd       per-tile buckets for neighbour queries
     commands.gd      CommandQueue {turn, player, seq, type, args}; 4-tick turns, run at turn + 2
-    sim_map.gd       walkable grid from data/maps
+    sim_map.gd       terrain + walkable grid from data/maps
+    flow.gd          flow fields (integer Dijkstra), nearest walkable cell, line of sight
     replay.gd        record / JSON / rebuild / verify
 scenes/race_lab.*  prompt UI, race cards, two armies milling about
-scenes/sim_debug.* sim drawn with UnitViews; select, right-click move, F5/F9 replays
+  view/            view-side helpers (Nodes allowed): iso.gd projection, map_view.gd tiles, rts_camera.gd
+scenes/sim_debug.* isometric sim view: select (click/box/double-click), right-click move, F3 flow, F5/F9 replays
 tests/           headless checks and dev tools (see Commands)
 ```
 
@@ -74,7 +77,7 @@ godot --headless --path . --script res://tests/run_tests.gd        # must print 
 godot --headless --path . --script res://tests/print_races.gd -- "centaur romans" "flying greeks with wings"
 godot --path . --script res://tests/screenshot.gd -- /tmp/lab.png "prompt A" "prompt B"
 godot --headless --path . --script res://tests/test_sim.gd         # sim determinism + tick time (~45 s)
-godot --path . --script res://tests/sim_screenshot.gd -- /tmp/sim.png ["prompt A" "prompt B"]
+godot --path . --script res://tests/sim_screenshot.gd -- /tmp/sim.png [map_id] ["prompt A" "prompt B"]
 godot --path . res://scenes/sim_debug.tscn                         # run the sim debug view
 godot --headless --path . --script res://tests/gen_cost_curve.gd   # regenerate data/cost_curves.json
 godot --path .                                                     # run the Race Lab

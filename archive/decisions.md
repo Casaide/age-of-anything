@@ -94,3 +94,30 @@ replays, so bundles take over once races are shared as data.
 
 **D-024, 2026-10-10: `tests/test_sim.gd` is a separate, slower suite (~45 s)** that runs the full
 12,000-tick, 200-unit match several times. `run_tests.gd` stays fast. Dominic's call.
+
+**D-025, 2026-10-10: One markdown file per milestone (`docs/milestones/`).** Status, exit
+criterion, scope, plan, checklist, results and changes live there; `mvp-plan.md` §3 keeps the
+overview table and links. Dominic asked for it.
+
+**D-026, 2026-10-10: Go isometric now, not at the art pass.** The sim grid stays square; the view
+projects it to 2:1 diamonds (`src/view/iso.gd`). Camera, picking, box select and tiles get built
+once for the target look. Dominic's call.
+
+**D-027, 2026-10-10: Maps stay JSON; the view generates its TileMapLayer from them.** Mod-safe
+(no scripts), loads headless, easy to hash. Terrain types are data (`data/terrain.json`).
+Supersedes the MVP plan's "bake the sim grid from TileMapLayer custom data". Dominic's call; an
+in-editor painting tool that writes JSON is in the backlog.
+
+**D-028, 2026-10-11: Selection is view-side, in screen space.** Click, box and double-click test
+the units' drawn positions, so what you see is what you select. The sim has no pick/rect query.
+Supersedes the MVP plan's "against the sim's spatial hash".
+
+**D-029, 2026-10-11: Movement = flow field per target cell + waypoint steering + move groups.**
+Fields: integer Dijkstra, 10/14 costs, no corner cutting. Units aim at the furthest clear cell a
+few steps down the field (or straight at the target), re-planning every 8 ticks. Each MOVE is a
+group that settles when a unit bumps an arrived groupmate; settled units shoved well off their
+spot walk back. Units stuck 3 s give up (tests count them).
+
+**D-030, 2026-10-11: At most one flow-field solve per tick, queued in order.** Units whose field
+isn't ready head straight for a tick or two. This makes the set of solved/pending fields sim
+state, so it is hashed. Keeps the solve spike to one (~2.4 ms) per tick.

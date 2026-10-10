@@ -18,3 +18,7 @@ One line per moment worth remembering. Newest at the bottom.
 - **2026-10-10:** Milestone 1, sim core: integer 20 Hz sim, command queue, replays, state hashes.
   A 10-minute 200-unit match hashes identically every time; tick 0.9 ms. Frogs and rats meet by the pond.
   ([image](images/2026-10-10/05-sim-core-frogs-meet-rats.png))
+- **2026-10-10:** Milestones get their own files (`docs/milestones/`).
+- **2026-10-11:** Milestone 2, map + movement: flow fields, move groups, the first isometric view.
+  50 units cross a chokepoint with nobody stuck.
+  ([image](images/2026-10-11/01-isometric-frogs-meet-rats.png))
