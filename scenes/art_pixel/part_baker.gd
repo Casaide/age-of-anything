@@ -108,7 +108,7 @@ func _bake_model(id: String, colours: Dictionary, bake_key: String) -> void:
 		for k in spec.sockets:
 			rig.sockets[k] = to2d.call(spec.sockets[k])
 		if spec.has("anchors"):
-			rig.anchors = spec.anchors.map(func(a): var v: Vector2 = to2d.call(a[0]); return [v.x, v.y, a[1], a[2]])
+			rig.anchors = spec.anchors.map(func(a): var v: Vector2 = to2d.call(a[0]); return [v.x, v.y, a[1], a[2], a[3] if a.size() > 3 else 0])
 		if spec.has("torso_scale"):
 			rig.torso_scale = spec.torso_scale
 		PartShape.rigs[id] = rig

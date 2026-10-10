@@ -95,6 +95,7 @@ godot --headless --path . --script res://tests/gen_cost_curve.gd   # regenerate 
 godot --path . res://scenes/style_sampler.tscn                     # art-direction sampler (keys 1-6, 0)
 godot --path . res://scenes/art_pixel.tscn                         # pixel-art candidate (Z zoom, P palette)
 godot --path . --script res://tests/art_screenshot.gd -- /tmp/art  # capture it at 1x/2x/3x
+godot --path . --script res://tests/unit_lineup.gd -- /tmp/units.png ["prompt A" "prompt B"]   # both rosters as pixel art, 4x
 godot --path . --script res://tests/style_screenshot.gd -- /tmp/styles   # capture the sampler
 godot --path .                                                     # run the Race Lab
 ```

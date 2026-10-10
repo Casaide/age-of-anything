@@ -424,3 +424,113 @@ func _shield_bottlecap(c: Dictionary) -> Dictionary:
 	holder.add_child(centre)
 	holder.add_child(ring(4.2, 4.6, plain(c.team.darkened(0.4)), Vector3(0, 0, 0.9), Vector3(90, 0, 0)))
 	return {"node": n}
+
+
+# ------------------------------------------------------------------ spider (a mount)
+
+func _body_spider(c: Dictionary) -> Dictionary:
+	var n := Node3D.new()
+	var hair := surf("rat_fur", c.skin, 6.0)
+	var front := surf("rat_fur", c.skin2, 5.0)
+	n.add_child(blob(Vector3(11.5, 8.5, 9.5), hair, Vector3(-7, 13, 0), Vector3(0, 0, -8)))      # abdomen
+	n.add_child(blob(Vector3(4.0, 1.2, 4.0), plain(c.cloth), Vector3(-10, 20.5, 0), Vector3(0, 0, -8)))   # marking
+	n.add_child(blob(Vector3(6.5, 4.6, 5.8), front, Vector3(6, 11, 0)))                           # cephalothorax
+	# A saddle with a team-colour cloth for the rider.
+	n.add_child(blob(Vector3(6.5, 1.4, 6.8), plain(c.team), Vector3(-5, 21.2, 0), Vector3(0, 0, -6)))
+	n.add_child(blob(Vector3(4.6, 1.8, 4.4), surf("leather", Color.WHITE, 3.0), Vector3(-5, 22.0, 0), Vector3(0, 0, -6)))
+	var hips := []
+	var xs := [7.5, 4.5, 1.0, -2.5]
+	var phases := [0.0, 0.8, 1.6, 2.4]
+	for k in 4:
+		hips.append([Vector3(xs[k], 10.5, 5.0), phases[k], 1, 1 if k >= 2 else 0])
+		hips.append([Vector3(xs[k] + 0.5, 11.5, -5.0), phases[k] + PI, -1, 1 if k >= 2 else 0])
+	return {"node": n, "sockets": {
+		"head": Vector3(11, 11, 0), "hand_r": Vector3(12, 9, 4), "hand_l": Vector3(9, 9, -4),
+		"torso": Vector3(-7, 13, 0), "back": Vector3(-8, 20, 0), "seat": Vector3(-5, 22.5, 0)},
+		"anchors": hips, "torso_scale": Vector2(1.3, 1.1)}
+
+
+func _head_spider(c: Dictionary) -> Dictionary:
+	var n := Node3D.new()
+	var hair := surf("rat_fur", c.skin2, 4.0)
+	var head_c := Vector3(3, 1, 0)
+	var head_r := Vector3(4.2, 3.6, 4.0)
+	n.add_child(blob(head_r, hair, head_c))
+	# Eight eyes: two big ones in front, six small ones around them.
+	var eyes := [[Vector3(1, 0.45, 0.3), 1.3], [Vector3(1, 0.45, -0.3), 1.3], [Vector3(0.8, 0.8, 0.6), 0.8], [Vector3(0.8, 0.8, -0.6), 0.8],
+		[Vector3(0.6, 1, 0.25), 0.7], [Vector3(0.6, 1, -0.25), 0.7], [Vector3(0.9, 0.2, 0.75), 0.6], [Vector3(0.9, 0.2, -0.75), 0.6]]
+	for e in eyes:
+		n.add_child(decal("rat_eye", e[1] * 2.0, e[1] * 2.0, on_surface(head_c, head_r, e[0], 0.05), e[0], false))
+	for side in [1, -1]:   # fangs
+		n.add_child(rod(Vector3(6.2, -0.5, 1.2 * side), Vector3(7.4, -3.2, 0.8 * side), 0.9, 0.35, plain(Color("#1e1612"))))
+	return {"node": n, "sockets": {"top": Vector3(2, 4.5, 0)}}
+
+
+## A hairy jointed leg: up and out to the knee, then down to a dark tip.
+func _leg_spider(c: Dictionary) -> Dictionary:
+	var n := Node3D.new()
+	var hair := surf("rat_fur", c.skin, 4.0)
+	var knee := Vector3(6, 7, 1.5)
+	var tip := Vector3(11, -10, 2.5)
+	n.add_child(rod(Vector3.ZERO, knee, 1.4, 1.2, hair))
+	n.add_child(rod(knee, knee.lerp(tip, 0.6), 1.2, 0.9, hair))
+	n.add_child(rod(knee.lerp(tip, 0.6), tip, 0.9, 0.5, plain(c.skin.darkened(0.5))))
+	return {"node": n}
+
+
+# ------------------------------------------------------------------ more gear
+
+func _weapon_cheese_hammer(c: Dictionary) -> Dictionary:
+	var n := Node3D.new()
+	n.add_child(rod(Vector3(-1, -3.5, 0), Vector3(3, 10, 0), 0.8, 0.75, surf("wood_grain", Color.WHITE, 6.0)))
+	var wedge := slab([Vector2(-3, 9.5), Vector2(8, 13.5), Vector2(8.5, 7.5), Vector2(-0.5, 5.5)], 4.5, surf("cheese", Color.WHITE, 5.0))
+	n.add_child(wedge)
+	n.add_child(blob(Vector3(1.2, 1.2, 0.6), plain(Color("#b0841a")), Vector3(3.5, 9.5, 2.3)))
+	return {"node": n}
+
+
+func _armour_mail(c: Dictionary) -> Dictionary:
+	var n := Node3D.new()
+	n.add_child(blob(Vector3(8.6, 8.2, 10.4), surf("mail", Color.WHITE, 2.5), Vector3(1.5, 0.5, 0), Vector3(0, 0, -10)))
+	n.add_child(ring(9.0, 10.2, surf("iron", Color.WHITE, 3.0), Vector3(1.5, 6.0, 0), Vector3(0, 0, -10), Vector3(0.95, 1, 1.1)))
+	return {"node": n}
+
+
+func _weapon_sling(c: Dictionary) -> Dictionary:
+	var n := Node3D.new()
+	var cord := surf("leather", c.cloth2, 2.0)
+	n.add_child(rod(Vector3(0, 0, 0), Vector3(4, -6, 0.5), 0.35, 0.35, cord))
+	n.add_child(rod(Vector3(0.5, 0, 0), Vector3(1.6, -7.6, -0.5), 0.35, 0.35, cord))
+	n.add_child(blob(Vector3(1.7, 1.2, 1.4), cord, Vector3(2.4, -7.6, 0)))
+	n.add_child(blob(Vector3(1.4, 1.4, 1.4), surf("iron", Color("#b8b4a8"), 3.0), Vector3(2.4, -6.8, 0)))
+	return {"node": n}
+
+
+func _weapon_crossbow(c: Dictionary) -> Dictionary:
+	var n := Node3D.new()
+	n.add_child(slab([Vector2(-5, -0.8), Vector2(10, 0.6), Vector2(10, 2.4), Vector2(-5, 1.4), Vector2(-6, -1.8)], 1.8, surf("wood_grain", Color.WHITE, 6.0)))
+	var iron := surf("iron", Color.WHITE, 3.0)
+	n.add_child(rod(Vector3(9, 1.5, 0), Vector3(7.5, 2.0, 7.0), 0.55, 0.4, iron))   # the bow arms
+	n.add_child(rod(Vector3(9, 1.5, 0), Vector3(7.5, 2.0, -7.0), 0.55, 0.4, iron))
+	n.add_child(rod(Vector3(7.5, 2.0, 7.0), Vector3(1.0, 1.6, 0), 0.12, 0.12, plain(Color("#e8e0c8")), false))
+	n.add_child(rod(Vector3(7.5, 2.0, -7.0), Vector3(1.0, 1.6, 0), 0.12, 0.12, plain(Color("#e8e0c8")), false))
+	n.add_child(rod(Vector3(1.0, 2.4, 0), Vector3(10.5, 2.6, 0), 0.25, 0.25, plain(Color("#6b4a2a")), false))   # a bolt
+	return {"node": n}
+
+
+## "Saucepan" helmet: an iron dome with a rolled brim (and the handle, of course).
+func _helm_dome(c: Dictionary) -> Dictionary:
+	var n := Node3D.new()
+	var iron := surf("iron", Color.WHITE, 3.0)
+	n.add_child(blob(Vector3(6.4, 4.4, 6.4), iron, Vector3(0, 0.5, 0)))
+	n.add_child(ring(6.2, 7.4, iron, Vector3(0, 0.6, 0)))
+	n.add_child(rod(Vector3(-6.8, 0.8, 0), Vector3(-12.5, 1.8, 0), 0.7, 0.6, surf("wood_grain", Color.WHITE, 4.0)))
+	return {"node": n}
+
+
+func _weapon_blowgun(c: Dictionary) -> Dictionary:
+	var n := Node3D.new()
+	n.add_child(rod(Vector3(-2, 2, 0), Vector3(14, 6, 0), 1.0, 0.9, surf("reed_stalk", Color.WHITE, 5.0), false))
+	n.add_child(ring(0.9, 1.4, surf("leather", Color.WHITE, 3.0), Vector3(0, 2.5, 0), Vector3(0, 0, -76)))
+	n.add_child(blob(Vector3(0.6, 0.6, 0.6), plain(Color("#1a1a1a")), Vector3(14.2, 6.05, 0)))
+	return {"node": n}
