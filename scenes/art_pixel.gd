@@ -41,6 +41,7 @@ const BUILDINGS := [[6, 4, 3, 0], [2, 8, 2, 0], [11, 9, 2, 1]]
 const W := 16
 const H := 14
 const BG := Color("#2b2620")
+const HELP := "High-fidelity pixel art    Z zoom   P palette   F stepped animation   B +200 units   WASD/arrows pan"
 
 var lib
 var box: SubViewportContainer
@@ -53,6 +54,9 @@ var palette_mat: ShaderMaterial
 var shrink := 2
 var stepped := true       # F toggles stepped pixel animation
 var units: Array = []
+var unit_picks: Array = []
+var pending: Array = []   # scene sprites waiting to move into the atlas
+var bench_rng := RandomNumberGenerator.new()
 var prompts: Array = []   # set before adding to the tree, else from the command line, else PROMPTS
 var masks_img: Image      # blurred terrain masks (R water, G swamp, B reed bed)
 var paths_img: Image      # blurred path masks, one channel per style (see paths.gd)
@@ -126,6 +130,8 @@ func _build() -> void:
 				await part_baker.bake(ps.part_id, ps.shapes, ps.colours)
 		probe.free()
 	part_baker.queue_free()
+	PartShape.bake_flat("unit_shadow", UnitView.SHADOW_SHAPES, UnitView.SHADOW_COLOURS, ART_SCALE * UNIT_SCALE)
+	unit_picks = picks
 
 	# Buildings and props: detailed models, matte, baked to pixels with ground shadows.
 	var models := Models.new()
@@ -163,6 +169,18 @@ func _build() -> void:
 			spec = models.tin_can_house(team) if junk else models.stilt_house(team)
 		await _building(baker, spec, b[0], b[1], b[2])
 	baker.queue_free()
+	# One atlas for every unit part and every scene sprite, with one shared material,
+	# so the whole y-sorted layer can batch.
+	var extras := {}
+	for i in pending.size():
+		extras[str(i)] = pending[i].get_meta("img")
+	var regions := PartShape.build_atlas(extras)
+	for i in pending.size():
+		var at := AtlasTexture.new()
+		at.atlas = PartShape.atlas
+		at.region = regions[str(i)]
+		pending[i].texture = at
+		pending[i].material = PartShape.team_material
 
 	for p in picks:
 		var u: Dictionary = races[p[0]].units[p[1]]
@@ -184,7 +202,7 @@ func _build() -> void:
 
 	_palette()
 	cam.position = Iso.to_screen(7500, 6500) * ART_SCALE
-	label.text = "High-fidelity pixel art    Z zoom   P palette on/off   F stepped animation on/off   WASD/arrows pan"
+	label.text = HELP
 	built = true
 
 
@@ -260,13 +278,16 @@ func _wait_for_textures(models) -> void:
 
 
 ## A baked sprite drawn 1:1 in art pixels inside the scaled world.
-func _sprite(b: Dictionary, at: Vector2) -> Sprite2D:
+func _sprite(b: Dictionary, at: Vector2, into_atlas := true) -> Sprite2D:
 	var s := Sprite2D.new()
 	s.texture = b.tex
 	s.centered = false
 	s.offset = -b.points[0]
 	s.scale = Vector2.ONE / ART_SCALE
 	s.position = at
+	if into_atlas:
+		s.set_meta("img", (b.tex as Texture2D).get_image())
+		pending.append(s)
 	return s
 
 
@@ -410,7 +431,7 @@ func _building(baker, spec: Dictionary, cx: int, cy: int, size: int) -> void:
 		_glow(holder, to_local.call(body.points[3 + k]), 9.0, Color(1.0, 0.8, 0.45))
 	if spec.has("banner"):
 		var ban: Dictionary = await baker.bake(spec.banner, [Vector3.ZERO, spec.banner_pivot])
-		var bs := _sprite(ban, centre_px - front)
+		var bs := _sprite(ban, centre_px - front, false)   # has its own wave shader
 		var mat := ShaderMaterial.new()
 		mat.shader = load("res://scenes/style_sampler/hifi/banner.gdshader")
 		bs.material = mat
@@ -553,6 +574,10 @@ func _process(delta: float) -> void:
 	if not built:
 		return
 	time += delta
+	if Engine.get_frames_drawn() % 15 == 0:
+		label.text = "%s\n%d units   %d draw calls   %.1f ms/frame   %d fps   atlas %s" % [HELP, units.size(),
+			RenderingServer.get_rendering_info(RenderingServer.RENDERING_INFO_TOTAL_DRAW_CALLS_IN_FRAME),
+			1000.0 / maxf(Engine.get_frames_per_second(), 1.0), Engine.get_frames_per_second(), "on" if PartShape.use_atlas else "off"]
 	for g in glows:
 		var f := 0.8 + 0.2 * sin(time * 7.0 + g.phase) * sin(time * 2.3 + g.phase * 2.0)
 		g.node.modulate = Color(g.base.r * f, g.base.g * f, g.base.b * f, 1.0)
@@ -568,6 +593,8 @@ func _unhandled_input(event: InputEvent) -> void:
 		match event.keycode:
 			KEY_Z:
 				set_zoom(1 + shrink % 3)
+			KEY_B:
+				spawn_bench(200)
 			KEY_F:
 				stepped = not stepped
 				for v in units:
@@ -575,6 +602,26 @@ func _unhandled_input(event: InputEvent) -> void:
 			KEY_P:
 				if palette_mat:
 					palette_mat.set_shader_parameter("enabled", not palette_mat.get_shader_parameter("enabled"))
+
+
+## Benchmark: add n more units (the scene's unit types, cycled) wandering on open ground.
+func spawn_bench(n: int) -> void:
+	bench_rng.seed = 99 + units.size()
+	for i in n:
+		var p: Array = unit_picks[i % unit_picks.size()]
+		var u: Dictionary = races[p[0]].units[p[1]]
+		var view := UnitView.new()
+		view.style = "baked"
+		view.build(u.recipe, lib, Color(lib.palettes.teams[p[0]]), u.eval.speed)
+		view.scale = Vector2(UNIT_SCALE, UNIT_SCALE)
+		view.pose_steps = 8 if stepped else 0
+		view.art_px = 1.0
+		var t := Vector2(bench_rng.randf_range(1, W - 1), bench_rng.randf_range(1, H - 1))
+		var area := Rect2(Iso.to_screen(t.x * 1000, t.y * 1000) - Vector2(40, 16), Vector2(80, 32))
+		view.position = area.get_center()
+		view.wander_in(area)
+		layer.add_child(view)
+		units.append(view)
 
 
 func set_zoom(z: int) -> void:

@@ -20,12 +20,91 @@ var style := ""
 var pin := false        # paper style: a brass fastener at the joint (legs, heads)
 var part_id := ""
 var front := false      # baked style: draw the part's front layer (a body's near arm)
+var shade := 1.0:       # baked style: extra darkening (the far leg sits in shadow)
+	set(v):
+		shade = v
+		self_modulate.a = v
 
 ## bake_key -> {tex: Texture2D, origin: Vector2 (texture px of the part's 0,0), scale: texture px per part unit}
 static var baked := {}
+## The team colour every part is baked in, swapped for the real team at draw time.
+const TEAM_KEY := Color(1, 0, 1)
+const ATLAS_WIDTH := 2048
+const ATLAS_PAD := 2
+
+static var atlas: Texture2D = null      # all baked parts in one texture (after build_atlas)
+static var use_atlas := true            # benchmark switch
+static var team_material: ShaderMaterial = null
+
 ## part id -> {sockets: {name: Vector2}, anchors: [[x, y, phase, z]], torso_scale: Vector2}
 ## for parts baked from hand-built models: their sockets as seen by the bake camera.
 static var rigs := {}
+
+
+## Colours with the team channel replaced by the bake key: one bake serves every team.
+static func team_neutral(colour_map: Dictionary) -> Dictionary:
+	var c := colour_map.duplicate()
+	c.team = TEAM_KEY
+	return c
+
+
+## Pack every baked part into one atlas texture (shelf packing, padded), so units
+## share a texture and a material and can batch.
+## A flat pixel ellipse for a shape list's first ellipse, baked straight into `baked`
+## (no 3D needed): unit shadows, so they live in the atlas with everything else.
+static func bake_flat(id: String, shape_list: Array, colour_map: Dictionary, art_scale: float) -> void:
+	var key := bake_key(id, shape_list, team_neutral(colour_map))
+	var e: Dictionary = shape_list[0]
+	var c := v2(e.c)
+	var r := v2(e.r) * art_scale
+	var col: Color = colour_map[e.ch]
+	var img := Image.create(ceili(r.x * 2) + 2, ceili(r.y * 2) + 2, false, Image.FORMAT_RGBA8)
+	img.fill(Color(0, 0, 0, 0))
+	for y in img.get_height():
+		for x in img.get_width():
+			var q := (Vector2(x, y) + Vector2(0.5, 0.5) - Vector2(1, 1) - r) / r
+			if q.length_squared() <= 1.0:
+				img.set_pixel(x, y, col)
+	baked[key] = {"img": img, "tex": ImageTexture.create_from_image(img), "origin": Vector2(1, 1) + r - c * art_scale, "scale": art_scale}
+
+
+## extras: name -> Image, packed alongside the parts; returns name -> region.
+static func build_atlas(extras := {}) -> Dictionary:
+	var images := {}
+	for k in baked:
+		images[k] = baked[k].img
+	for k in extras:
+		images["extra:" + k] = extras[k]
+	var keys := images.keys()
+	keys.sort_custom(func(a, b): return images[a].get_height() > images[b].get_height() or (images[a].get_height() == images[b].get_height() and a < b))
+	var x := 0
+	var y := 0
+	var row_h := 0
+	var places := {}
+	for k in keys:
+		var sz: Vector2i = images[k].get_size() + Vector2i.ONE * ATLAS_PAD * 2
+		if x + sz.x > ATLAS_WIDTH:
+			x = 0
+			y += row_h
+			row_h = 0
+		places[k] = Vector2i(x, y)
+		x += sz.x
+		row_h = maxi(row_h, sz.y)
+	var img := Image.create(ATLAS_WIDTH, y + row_h, false, Image.FORMAT_RGBA8)
+	var regions := {}
+	for k in keys:
+		var src: Image = images[k]
+		var at: Vector2i = places[k] + Vector2i.ONE * ATLAS_PAD
+		img.blit_rect(src, Rect2i(Vector2i.ZERO, src.get_size()), at)
+		if baked.has(k):
+			baked[k].region = Rect2(at, src.get_size())
+		else:
+			regions[k.trim_prefix("extra:")] = Rect2(at, src.get_size())
+	atlas = ImageTexture.create_from_image(img)
+	if team_material == null:
+		team_material = ShaderMaterial.new()
+		team_material.shader = load("res://src/team_mask.gdshader")
+	return regions
 
 
 static func front_key(key: String) -> String:
@@ -45,6 +124,11 @@ static func bake_key(id: String, shape_list: Array, colour_map: Dictionary) -> S
 func setup(shape_list: Array, colour_map: Dictionary) -> void:
 	shapes = shape_list
 	colours = colour_map
+	if style == "baked":
+		var team: Color = colours.get("team", Color.WHITE)
+		self_modulate = Color(team.r, team.g, team.b, shade)
+		if team_material:
+			material = team_material
 	queue_redraw()
 
 
@@ -76,13 +160,16 @@ static func closed(pts: PackedVector2Array) -> PackedVector2Array:
 func _draw() -> void:
 	match style:
 		"baked":
-			var key := bake_key(part_id, shapes, colours)
+			var key := bake_key(part_id, shapes, team_neutral(colours))
 			var b = baked.get(front_key(key) if front else key)
 			if b == null:
 				_draw_plain(outline)
 				return
 			draw_set_transform(-b.origin / b.scale, 0.0, Vector2.ONE / b.scale)
-			draw_texture(b.tex, Vector2.ZERO)
+			if use_atlas and atlas and b.has("region"):
+				draw_texture_rect_region(atlas, Rect2(Vector2.ZERO, b.region.size), b.region)
+			else:
+				draw_texture(b.tex, Vector2.ZERO)
 			draw_set_transform(Vector2.ZERO)
 		"storybook":
 			_draw_storybook()

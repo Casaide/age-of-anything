@@ -215,7 +215,7 @@ Dev-time AI is fine for variants. Every part still gets hand-cleaned to the mask
 |---|---|
 | GDScript sim too slow at 200 units | Profile in milestone 1-2 with a stress replay; move hot loops to packed arrays |
 | Desyncs from hidden float/dict-order use | Determinism test from milestone 1, run on every change; cross-OS check before networking |
-| Palette-in-modulate batching trick doesn't batch | Check draw-call monitor in the first art-pass week; fall back to per-race materials or MultiMesh |
+| Palette-in-modulate batching trick doesn't batch | **Retired (2026-10-11):** team colour in self_modulate + one atlas + one material batches; 20 draw calls at 211 units |
 | Flow fields + separation jam in chokepoints | Test chokepoint map in milestone 2 |
 | Generated races unbalanced | Counter tags + cost curve now; price-by-simulation right after MVP |
 | Generated units unreadable | Readability playtests; silhouette rules in the art pass |
