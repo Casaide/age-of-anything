@@ -66,3 +66,31 @@ for fun.
 
 **D-018, 2026-10-10: Dream mod: a space-fleet sci-fi pack.** Shipped content stays our own
 "space federation"; official names and likenesses stay out.
+
+**D-019, 2026-10-10: The sim stores units as parallel packed int arrays, sorted by id.**
+(`src/sim/units.gd`.) A plain index loop is then the deterministic order, there are no per-unit
+objects for GDScript to chase, and hot loops can work on local copies. Neighbours come from a
+per-tile counting-sort grid rebuilt every tick. Claude proposed it; Dominic approved the plan.
+
+**D-020, 2026-10-10: Lockstep turns are 4 ticks (200 ms at 20 Hz); a command stamped turn T runs
+at the start of turn T+2, sorted by (turn, player, seq).** Matches design §9. Each player keeps its
+own seq counter. Debug SPAWN goes through the same queue, so setups are part of every replay.
+
+**D-021, 2026-10-10: The cost curve is a checked-in integer table, not maths at runtime.**
+`data/cost_curves.json` holds per-mille multipliers by points for each curve id
+(`pow1.4_ref12`, `pow1.2_ref12`), written offline by `tests/gen_cost_curve.gd`. Rules files name
+a curve instead of carrying `exponent`/`ref_points`. Dominic chose the table over integer
+log2/exp2 (simpler, auditable, mod-friendly). Replaces the float `pow()` in pricing; all 659
+test-prompt units priced identically before and after, and no race key changed.
+
+**D-022, 2026-10-10: Sim units: speed stat x 5 = milli-tiles per tick (10 = 1 tile/s); radius
+0.3 tiles x scale, 0.42 if mounted, capped at 0.5.** Placeholder feel numbers for milestone 1;
+tune in milestone 2 with real maps.
+
+**D-023, 2026-10-10: Replays rebuild races from prompt + rules + reroll and must reproduce the
+race key; maps are pinned by a content hash.** Small replays (the 10-minute test match is
+~150 KB of JSON with checkpoints). Downside parked in the backlog: generator changes break old
+replays, so bundles take over once races are shared as data.
+
+**D-024, 2026-10-10: `tests/test_sim.gd` is a separate, slower suite (~45 s)** that runs the full
+12,000-tick, 200-unit match several times. `run_tests.gd` stays fast. Dominic's call.

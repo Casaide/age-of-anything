@@ -15,3 +15,6 @@ One line per moment worth remembering. Newest at the bottom.
   ([image](images/2026-10-10/03-bug-giant-cheesehammer-roman.png))
 - **2026-10-10:** Fixed: Heavy centaurs, pegasus lancers, archers added, full classic RTS roster mapped.
   ([image](images/2026-10-10/04-heavy-centaurs-and-pegasus.png))
+- **2026-10-10:** Milestone 1, sim core: integer 20 Hz sim, command queue, replays, state hashes.
+  A 10-minute 200-unit match hashes identically every time; tick 0.9 ms. Frogs and rats meet by the pond.
+  ([image](images/2026-10-10/05-sim-core-frogs-meet-rats.png))

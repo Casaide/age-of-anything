@@ -83,8 +83,8 @@ beyond placeholder SFX, runtime AI.
 - **Banned in the sim:** physics nodes, Area2D, NavigationAgent avoidance, float RNG.
 - **Replays:** a replay is the command log plus seed, race keys and map hash.
 - **State hash:** computed every 30 ticks over the sorted entity arrays.
-- **Pricing:** the floats in `pricing.gd` (`pow`) get replaced with a fixed-point table when the sim
-  lands, so costs are bit-exact everywhere.
+- **Pricing:** cost and train-time curves are fixed-point tables (`data/cost_curves.json`), so costs
+  are bit-exact everywhere. Done in milestone 1.
 
 ### Selection and commands
 
@@ -144,7 +144,7 @@ walkability, terrain type (swamp) and resource nodes from tile custom data into 
 | # | Weeks | Goal | Exit criterion |
 |---|---|---|---|
 | 0 | done | **Race generation:** data contract, generator, pricing, composer, Race Lab, tests | Prompts give stable, readable armies; tests pass |
-| 1 | 1 | **Sim core:** fixed tick, integer maths, command queue, replay record/playback, state hash, determinism test | The same scripted 10-minute replay gives identical hashes |
+| 1 | done | **Sim core:** fixed tick, integer maths, command queue, replay record/playback, state hash, determinism test | The same scripted 10-minute replay gives identical hashes (met: 400/400 checkpoints; 200-unit tick 0.9 ms avg) |
 | 2 | 1 | **Map + movement:** TileMapLayer map, sim grid bake, flow fields, separation, camera pan/zoom, selection, box select, move | 50 units cross the map in groups with no stuck units |
 | 3 | 1 | **Economy:** gather/carry/drop-off, Food/Wood, TC trains workers, Houses/pop, build placement + construction | The opening economy is fun to watch for 3 minutes |
 | 4 | 1 | **Combat:** attack/armour/HP, counter tags, projectiles, deaths, unit card | Blind testers predict counters from silhouettes |
