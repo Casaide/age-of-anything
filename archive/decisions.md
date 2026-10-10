@@ -170,3 +170,13 @@ pipeline.** Detailed 3D models with procedural materials are baked at 4x into mi
 the composer expects. Buildings are mostly static but keep "a little life" through live parts
 animated in 2D (banner, smoke, glow, weathervane). Dominic asked for higher fidelity and living
 buildings; Claude proposed the pipeline-prototype approach.
+
+**D-042, 2026-10-11: The leading art candidate is high-fidelity pixel art that keeps the
+original characters.** Units: each existing 2D part is auto-converted to simple lit 3D, drawn in
+its 2D order, and baked to a pixel sprite. The design stays ours, and every part in `parts.json`
+works with no extra art. Buildings and props: detailed matte 3D baked to pixels with ground
+shadows and live parts. Terrain: one continuous shader, no grid, rounded shorelines. Everything
+goes through one shared palette at art resolution. Supersedes the photoreal leaning of D-041 as the
+preferred direction (the bake pipeline stays). Dominic's direction ("focus more on the pixel art
+approach", "in the classic games you never think the lighting is bad"); Claude's
+implementation. Not final until Dominic picks.

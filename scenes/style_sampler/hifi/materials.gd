@@ -4,6 +4,7 @@ extends RefCounted
 ## each with a matching normal map. Built once and shared.
 
 var cache := {}
+var matte := false   # pixel-art bakes: no gloss, no clearcoat
 
 
 func get_mat(name: String) -> StandardMaterial3D:
@@ -109,4 +110,8 @@ func _make(name: String) -> StandardMaterial3D:
 	m.normal_texture = _tex(n, ramp, Vector2i(512, 512), true, bump)
 	m.uv1_scale = uv
 	m.texture_filter = BaseMaterial3D.TEXTURE_FILTER_LINEAR_WITH_MIPMAPS_ANISOTROPIC
+	if matte:
+		m.roughness = 1.0
+		m.metallic_specular = 0.2
+		m.clearcoat_enabled = false
 	return m

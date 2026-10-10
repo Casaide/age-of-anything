@@ -41,9 +41,28 @@ sprites. The 2D scene is built only from baked sprites. Buildings get life from 
 a banner waving through a shader, chimney smoke, flickering windows and a lantern, and a
 dragonfly weathervane. Frog parts are baked with their pivots and walk with our 2D animation.
 
+### Then: back to pixels, keeping the frogs
+
+Dominic's verdict on the high-fidelity panel: we'd lost something the original and the pixel
+art had. The 3D frog was a *different character*, so the frog people lost their whole feel. The
+physically-based light went "a level too far, into uncanny valley": in the classic games you
+never think about the lighting, because they're pixel games. He asked for high-fidelity *pixel
+art* instead, with the presentation done properly: no grid, round water, the classic genre
+in mind.
+
+So Claude kept the characters exactly and changed only how they're made. Every 2D part becomes
+simple lit 3D automatically (ellipses inflate, polygons get a bevel-ish tilt, lines become
+rods), drawn in the original 2D order, baked at 4x and pixelized with a darker inner outline.
+`UnitView` draws those sprites through a new "baked" `PartShape` style, so sockets, animation
+and mounts didn't change at all. The step 1b buildings came back matte and pixelized with
+baked ground shadows. The ground is one shader driven by blurred terrain masks (rounded
+shorelines, a mud bank, foam, sparkles), and the whole frame goes through one palette with a
+light ordered dither, at 2x nearest.
+
 ## Decisions
 - D-040: the art direction is open again; choose from the sampler.
 - D-041: a sixth direction, high-fidelity pre-rendered, built as a real bake pipeline.
+- D-042: the leading candidate is high-fidelity pixel art that keeps the original characters.
 
 ## Pictures
 ![All five styles, same scene, same scale](../images/2026-10-11/08-style-sampler-all.png)
@@ -54,8 +73,16 @@ dragonfly weathervane. Frog parts are baked with their pivots and walk with our 
 ![Pixel close-up](../images/2026-10-11/13-style-pixel.png)
 ![Six directions, now with high-fidelity pre-rendered](../images/2026-10-11/14-style-sampler-six.png)
 ![High-fidelity pre-rendered close-up: baked thatch, timber, glow, frogs in leaf hats](../images/2026-10-11/15-style-hifi-prerendered.png)
+![High-fidelity pixel art at 2x: the original frogs and rats, a rounded pond, no grid](../images/2026-10-11/16-pixel-hifi-2x.png)
+![The pixel-art map at 1x](../images/2026-10-11/17-pixel-hifi-overview.png)
+![3x close-up, before units were scaled down: frogs as big as the Town Center](../images/2026-10-11/18-pixel-hifi-3x.png)
 
 ## Funny moments and bugs worth remembering
+- **Giant frogs, rats on the roof.** The first pixel bake had frogs nearly as tall as the Town
+  Center walls, and the rat spearmen had wandered onto the stilt hut's thatch. Units now sit at
+  70% scale, baked at that size, with their wander areas on open grass.
+- **Uncanny valley, in a frog game.** Lesson from Dominic: fidelity isn't realism. The classic
+  look is detailed *pixels*, not physically-based light.
 - **The first bake was overexposed.** A key, a fill, a rim light and generous ambient light
   turned the grass mint and the thatch nearly white. The swamp read as speckled stone until it
   became dark, wet and nearly flat. The stilt-hut ladder leaned the wrong way twice (a sign error).

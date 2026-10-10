@@ -11,8 +11,36 @@ const SCALE := 4.0
 const PX_PER_UNIT := 32.0 / 0.70710678
 const SIZE := 1024
 
+const Pixelize := preload("res://scenes/art_pixel/pixelize.gd")
+
 var cam: Camera3D
 var holder: Node3D
+var pixel_factor := 0      # > 0: pixel mode, shrink the render by this much and pixelize it
+var shadow_plane: MeshInstance3D
+
+
+## Pixel mode: bake at `art_scale` art pixels per canvas unit, supersampled by `factor`,
+## with ground shadows baked in (a shadow-catcher plane).
+func set_pixel_mode(art_scale: float, factor: int) -> void:
+	pixel_factor = factor
+	cam.size = SIZE / (PX_PER_UNIT * art_scale * factor)
+	var plane := PlaneMesh.new()
+	plane.size = Vector2(16, 16)
+	shadow_plane = MeshInstance3D.new()
+	shadow_plane.mesh = plane
+	shadow_plane.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+	var m := StandardMaterial3D.new()
+	m.shadow_to_opacity = true
+	m.albedo_color = Color(0, 0, 0, 1)
+	m.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
+	shadow_plane.material_override = m
+	shadow_plane.position.y = 0.003
+	add_child(shadow_plane)
+
+
+func set_ground_shadow(on: bool) -> void:
+	if shadow_plane:
+		shadow_plane.visible = on
 
 
 func _init() -> void:
@@ -76,6 +104,12 @@ func bake(model: Node3D, points: Array) -> Dictionary:
 	holder.remove_child(model)
 	model.queue_free()
 	var used := img.get_used_rect().grow(4).intersection(Rect2i(Vector2i.ZERO, img.get_size()))
+	if pixel_factor > 0:
+		used.position = used.position / pixel_factor * pixel_factor   # keep the pixel grid aligned
+		var crop_p := img.get_region(used)
+		var f := float(pixel_factor)
+		return {"tex": ImageTexture.create_from_image(Pixelize.run(crop_p, pixel_factor)),
+			"points": projected.map(func(p): return (p - Vector2(used.position)) / f)}
 	var crop := img.get_region(used)
 	crop.fix_alpha_edges()
 	crop.generate_mipmaps()
