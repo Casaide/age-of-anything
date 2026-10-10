@@ -89,7 +89,7 @@ over a match), and the milestone builds a minimal clickable panel plus hotkeys, 
 - [x] Multi-source flow fields with cost cutoff
 - [x] Worker gather/deposit loop; construction
 - [x] TRAIN/CANCEL/RALLY, pop cap
-- [ ] View: buildings, resources, carry, smart right-click, panel, placement ghost
+- [x] View: buildings, resources, carry, smart right-click, panel, placement ghost
 - [ ] Tests: 3-minute opening, determinism, map-change determinism, tick time
 - [ ] Archive: pictures along the way (first buildings, first gather loop, bugs, the 1/2/3-minute
   opening), journal, decisions, timeline

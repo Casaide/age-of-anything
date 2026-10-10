@@ -13,6 +13,7 @@ var world: World
 var paused := false
 var speed := 1.0               # playback multiplier for watching replays
 var stop_at := -1              # stop stepping at this tick (end of a replay); -1 runs forever
+var bots: Array = []           # players run by a bot: each thinks (issues commands) before every tick
 var alpha := 0.0
 var tick_usec := 0             # cost of the last tick
 var tick_usec_avg := 0.0
@@ -27,6 +28,8 @@ func _process(delta: float) -> void:
 	var n := 0
 	var cap := MAX_CATCH_UP * maxi(1, int(speed))
 	while _acc >= STEP and n < cap and world.tick != stop_at:
+		for bot in bots:
+			bot.think(world)
 		var t := Time.get_ticks_usec()
 		world.step()
 		tick_usec = Time.get_ticks_usec() - t
