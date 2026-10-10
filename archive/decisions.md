@@ -121,3 +121,40 @@ spot walk back. Units stuck 3 s give up (tests count them).
 **D-030, 2026-10-11: At most one flow-field solve per tick, queued in order.** Units whose field
 isn't ready head straight for a tick or two. This makes the set of solved/pending fields sim
 state, so it is hashed. Keeps the solve spike to one (~2.4 ms) per tick.
+
+**D-031, 2026-10-11: Cut-down reeds become walkable ground.** Paths open up over a match, the
+way they do in the genre. The map is mutable: resources and building footprints change it, and
+every change bumps a version that's part of the state hash. Dominic's call.
+
+**D-032, 2026-10-11: Milestone 3 builds a minimal clickable command panel plus hotkeys**, not
+hotkeys only, so an opening can be played by hand. Styling comes later (and see the backlog's
+race-themed UI). Dominic's call.
+
+**D-033, 2026-10-11: The economy is data.** Resources are terrain fields (`resource`, `amount`,
+`depleted`), buildings live in `data/buildings.json`, and the rules carry an `economy` block.
+Race-wide economy modifiers (`cost_pct`, `train_time_pct`, `house_pop`) come from
+`creatures.json`, so rats are cheap and breed fast with no rat code. They are derived, not part
+of the race key.
+
+**D-034, 2026-10-11: Train time = `rules.cost.train_base` (20 s) on a flatter `pow0.5` curve.**
+Supersedes pricing's fixed 8 s on `pow1.2`, which gave 2-3 s workers. Now a worker takes
+~11-14 s, a spear ~20 s, a large unit ~27 s.
+
+**D-035, 2026-10-11: Flow fields take several sources and an optional cost cutoff; a map change
+drops only the fields it touches; solves share a budget of 1,500 cells per tick.** Short work
+trips ("next to this reed tile", "next to the Town Center") solve in ~0.4 ms. Supersedes D-030's
+"one solve per tick" (a full solve still runs alone).
+
+**D-036, 2026-10-11: Workers sent to a busy resource tile take the quietest tile of that
+resource within 2 tiles.** Without it everyone piled onto one bush and gathering halved.
+
+**D-037, 2026-10-11: AI players live in `src/ai/`, issue commands like a person, and follow the
+sim's determinism rules (the lint covers them).** The economy bot is the first; the debug view's
+F6 lets it play both sides.
+
+**D-038, 2026-10-11: Replays pin the rules (id + content hash) as well as the map.** The
+economy reads the rules, so a changed rules file must be caught. Replay schema `aow.replay/2`.
+
+**D-039, 2026-10-11: The debug view gets army-regeneration hotkeys** (G reroll, Shift+G random
+prompt, Ctrl+G random enemy). The match restarts with the new race, since swapping races mid-match
+would break running orders and replays. Dominic asked for it.

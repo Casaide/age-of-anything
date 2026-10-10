@@ -22,3 +22,6 @@ One line per moment worth remembering. Newest at the bottom.
 - **2026-10-11:** Milestone 2, map + movement: flow fields, move groups, the first isometric view.
   50 units cross a chokepoint with nobody stuck.
   ([image](images/2026-10-11/01-isometric-frogs-meet-rats.png))
+- **2026-10-11:** Milestone 3, economy: frogs gather bugs and cut reeds, houses go up, rats
+  out-breed everyone. Press F6 and the bots play the opening.
+  ([image](images/2026-10-11/07-opening-minute-3.png))
