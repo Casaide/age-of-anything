@@ -25,3 +25,6 @@ One line per moment worth remembering. Newest at the bottom.
 - **2026-10-11:** Milestone 3, economy: frogs gather bugs and cut reeds, houses go up, rats
   out-breed everyone. Press F6 and the bots play the opening.
   ([image](images/2026-10-11/07-opening-minute-3.png))
+- **2026-10-11:** Art pass, step 1: one scene, five styles (storybook, paper, painterly, toy 3D,
+  pixel). The 3D shadows were hiding behind their owners.
+  ([image](images/2026-10-11/08-style-sampler-all.png))

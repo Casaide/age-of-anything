@@ -158,3 +158,8 @@ economy reads the rules, so a changed rules file must be caught. Replay schema `
 **D-039, 2026-10-11: The debug view gets army-regeneration hotkeys** (G reroll, Shift+G random
 prompt, Ctrl+G random enemy). The match restarts with the new race, since swapping races mid-match
 would break running orders and replays. Dominic asked for it.
+
+**D-040, 2026-10-11: The art direction is open again; we choose from a sampler of five.**
+Supersedes D-012's "painterly" as the assumed target (D-012's classic 2D isometric framing
+still stands). The composer's `part_shape.gd` gained a `style` so directions can be compared
+on the real parts and animation. Dominic asked for samples of every direction.
