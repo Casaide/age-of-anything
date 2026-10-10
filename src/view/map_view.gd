@@ -29,12 +29,30 @@ func build(map: SimMap) -> void:
 	tile_set = ts
 	texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
 	clear()
-	for cy in map.height:
-		for cx in map.width:
-			var k: int = map.terrain[cy * map.width + cx]
-			set_cell(Vector2i(cx, cy), 0, Vector2i(k * 2 + ((cx + cy) & 1), 0))
+	for c in map.width * map.height:
+		_paint(map, c)
+	map.changed.clear()
+	map.changed_overflow = false
 	# Line tile centres up with the projection of sim cell centres.
 	position = Iso.to_screen(500, 500) - map_to_local(Vector2i(0, 0))
+
+
+## Repaint the tiles the sim changed since last time (cut reeds become grass).
+func refresh(map: SimMap) -> void:
+	if map.changed_overflow:
+		for c in map.width * map.height:
+			_paint(map, c)
+	else:
+		for c in map.changed:
+			_paint(map, c)
+	map.changed.clear()
+	map.changed_overflow = false
+
+
+func _paint(map: SimMap, c: int) -> void:
+	var cx := c % map.width
+	var cy := c / map.width
+	set_cell(Vector2i(cx, cy), 0, Vector2i(map.terrain[c] * 2 + ((cx + cy) & 1), 0))
 
 
 func _diamond(img: Image, x0: int, colour: Color) -> void:
