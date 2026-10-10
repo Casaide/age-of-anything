@@ -1,6 +1,9 @@
 extends RefCounted
-## A flow field: for every cell, the cost to reach one target cell and the next
-## cell to step to. One solve serves every unit heading for that cell.
+## A flow field: for every cell, the cost to reach a set of source cells (a move
+## target, a reed tile, a building's footprint) and the next cell to step to. One
+## solve serves every unit heading there. Sources may be blocked (a tree, a
+## building): the field leads to the tiles next to them. A cost cutoff limits the
+## solve to the neighbourhood, which is what short gathering trips need.
 ## A field is a pure function of (map, target). Which fields exist at a given
 ## tick is sim state (World queues one solve per tick); the fields' contents never vary.
 ##
@@ -17,12 +20,14 @@ const RING := DIAGONAL + 1
 const TILE := 1000
 const LINE_STEP := 333        # milli-tiles between line-of-sight samples
 
-var target: int
-var dist := PackedInt32Array()   # cost to the target, INF if unreachable
-var next := PackedInt32Array()   # next cell towards the target, -1 at the target or if unreachable
+var sources := PackedInt32Array()
+var max_cost := INF
+var pops := 0                    # cells settled: the work this solve took
+var dist := PackedInt32Array()   # cost to the nearest source, INF if unreachable (or past the cutoff)
+var next := PackedInt32Array()   # next cell towards a source, -1 at a source or if unreachable
 
 
-static func solve(map: SimMap, target_cell: int) -> RefCounted:
+static func solve(map: SimMap, source_cells: PackedInt32Array, cutoff := INF) -> RefCounted:
 	var f = new()
 	var w := map.width
 	var h := map.height
@@ -37,16 +42,20 @@ static func solve(map: SimMap, target_cell: int) -> RefCounted:
 	var ring := []
 	for i in RING:
 		ring.append([])
-	dist[target_cell] = 0
-	ring[0].append(target_cell)
-	var pending := 1
+	var pending := 0
+	for src in source_cells:
+		dist[src] = 0
+		ring[0].append(src)
+		pending += 1
+	var pops := 0
 	var cost := 0
-	while pending > 0:
+	while pending > 0 and cost <= cutoff:
 		var bucket: Array = ring[cost % RING]
 		for c: int in bucket:
 			pending -= 1
 			if dist[c] != cost:
 				continue   # a cheaper route got here first
+			pops += 1
 			var cx := c % w
 			var cy := c / w
 			var up := cy > 0 and walk[c - w] == 1
@@ -80,10 +89,23 @@ static func solve(map: SimMap, target_cell: int) -> RefCounted:
 				dist[n_ - 1] = d; next[n_ - 1] = c; bd.append(n_ - 1); pending += 1
 		bucket.clear()
 		cost += 1
-	f.target = target_cell
+	f.sources = source_cells
+	f.max_cost = cutoff
+	f.pops = pops
 	f.dist = dist
 	f.next = next
 	return f
+
+
+## Does a change at `cell` possibly alter this field? Only if the solve reached it or a neighbour.
+func touches(map: SimMap, cell: int) -> bool:
+	var cx := cell % map.width
+	var cy := cell / map.width
+	for y in range(maxi(cy - 1, 0), mini(cy + 2, map.height)):
+		for x in range(maxi(cx - 1, 0), mini(cx + 2, map.width)):
+			if dist[y * map.width + x] < INF:
+				return true
+	return false
 
 
 ## The walkable cell closest to `cell` (itself if walkable). Ties go to the lower index.
