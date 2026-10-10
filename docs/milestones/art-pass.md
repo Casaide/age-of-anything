@@ -87,7 +87,7 @@ without a model still fall back to the automatic bake.
 - [x] Step 1c: high-fidelity pixel art: auto-3D parts baked to pixels, palette, continuous terrain
 - [x] Step 1d: frog and rat parts modelled with authored textures (body, head, leg, gear)
 - [x] Fix: parts layered by child order (z_index drew units over buildings); baked ground shadows
-- [ ] Step 1d: rat on a spider (spider body, head, legs; cheese hammer, mail), other roster gear
+- [x] Step 1d: rat on a spider (spider body, head, legs; cheese hammer, mail), other roster gear (sling, crossbow, saucepan helmet, blowgun)
 - [ ] Terrain polish (shoreline reeds, stones, flowers, paths), stepped pixel animation,
   rat-culture buildings, a palette of 256 or fewer
 - [ ] Step 1b (maybe later): hero frog in the other directions at production detail
