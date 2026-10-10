@@ -134,6 +134,10 @@ func _build() -> void:
 	add_child(baker)
 	baker.set_pixel_mode(ART_SCALE, SS)
 	await _wait_for_textures(models)
+	for name in ["tin", "brick"]:
+		var mt: StandardMaterial3D = models.mats.get_mat(name)
+		while mt.albedo_texture.get_image() == null or mt.normal_texture.get_image() == null:
+			await get_tree().process_frame
 	var reed_bakes := []
 	for k in 3:
 		reed_bakes.append(await baker.bake(models.reeds(300 + k), [Vector3.ZERO]))
@@ -147,10 +151,17 @@ func _build() -> void:
 				holder.add_child(_sprite(reed_bakes[(x * 3 + y) % 3] if ch == "\"" else bush_bake, Vector2.ZERO))
 				layer.add_child(holder)
 	await _scatter(baker, models)
-	var team0 := Color(lib.palettes.teams[0])
-	await _building(baker, models.town_center(team0), 6, 4, 3)
-	await _building(baker, models.stilt_house(team0), 2, 8, 2)
-	await _building(baker, models.stilt_house(Color(lib.palettes.teams[1])), 11, 9, 2)
+	# Each side builds in its own culture's architecture (families.json "architecture").
+	for b in BUILDINGS:
+		var side: int = b[3]
+		var team := Color(lib.palettes.teams[side])
+		var junk: bool = lib.families[races[side].family].get("architecture", "thatch") == "junk"
+		var spec: Dictionary
+		if b[2] == 3:
+			spec = models.junk_town_center(team) if junk else models.town_center(team)
+		else:
+			spec = models.tin_can_house(team) if junk else models.stilt_house(team)
+		await _building(baker, spec, b[0], b[1], b[2])
 	baker.queue_free()
 
 	for p in picks:
@@ -270,13 +281,16 @@ func _terrain() -> void:
 			img.set_pixel(x, y, Color(1.0 if ch == "~" else 0.0, 1.0 if ch == "," else 0.0, 1.0 if ch == "\"" else 0.0, 0.0))
 	var blurred := _blur(img, 5)
 	masks_img = blurred
-	paths_img = _blur(Paths.mask(W, H, k, _plan_paths()), 2)
+	var planned: Array = Paths.mask(W, H, k, _plan_paths())
+	paths_img = _blur(planned[0], 2)
+	var path_arc: Image = planned[1]
 	var poly := Polygon2D.new()
 	poly.polygon = PackedVector2Array([Iso.to_screen(0, 0), Iso.to_screen(W * 1000, 0), Iso.to_screen(W * 1000, H * 1000), Iso.to_screen(0, H * 1000)])
 	var m := ShaderMaterial.new()
 	m.shader = load("res://scenes/art_pixel/terrain.gdshader")
 	m.set_shader_parameter("masks", ImageTexture.create_from_image(blurred))
 	m.set_shader_parameter("paths", ImageTexture.create_from_image(paths_img))
+	m.set_shader_parameter("path_arc", ImageTexture.create_from_image(path_arc))
 	m.set_shader_parameter("map_size", Vector2(W, H))
 	poly.material = m
 	world.add_child(poly)
@@ -499,6 +513,7 @@ func _palette() -> void:
 		if not uniq.has(key):
 			uniq[key] = true
 			list.append(c)
+	list = _limit(list, 256)
 	var img := Image.create(list.size(), 1, false, Image.FORMAT_RGBA8)
 	for i in list.size():
 		img.set_pixel(i, 0, list[i])
@@ -508,6 +523,28 @@ func _palette() -> void:
 	palette_mat.set_shader_parameter("count", list.size())
 	box.material = palette_mat
 	print("palette: %d colours" % list.size())
+
+
+## At most n colours: repeatedly merge the two nearest (perceptually weighted) into
+## their average. The first five (background, outlines, white) are kept exact.
+static func _limit(list: Array, n: int) -> Array:
+	var cols := list.duplicate()
+	while cols.size() > n:
+		var best := INF
+		var bi := 0
+		var bj := 0
+		for i in range(5, cols.size()):
+			for j in range(i + 1, cols.size()):
+				var a: Color = cols[i]
+				var b: Color = cols[j]
+				var d := 0.3 * (a.r - b.r) ** 2 + 0.59 * (a.g - b.g) ** 2 + 0.11 * (a.b - b.b) ** 2
+				if d < best:
+					best = d
+					bi = i
+					bj = j
+		cols[bi] = (cols[bi] as Color).lerp(cols[bj], 0.5)
+		cols.remove_at(bj)
+	return cols
 
 
 # ------------------------------------------------------------------ frame
