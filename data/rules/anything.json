@@ -41,5 +41,22 @@
   "base": 60,
   "curve": "pow1.4_ref12",
   "train_curve": "pow1.2_ref12"
+ },
+ "economy": {
+  "start": {
+   "food": 200,
+   "wood": 200,
+   "workers": 3,
+   "buildings": [
+    "town_center"
+   ]
+  },
+  "pop_max": 200,
+  "carry": 10,
+  "gather_ticks": {
+   "food": 20,
+   "wood": 24
+  },
+  "queue_max": 5
  }
 }

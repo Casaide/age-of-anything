@@ -30,7 +30,13 @@
   "families": [
    "sewer",
    "forest"
-  ]
+  ],
+  "economy": {
+   "cost_pct": 70,
+   "train_time_pct": 80,
+   "house_pop": 6,
+   "note": "cheap swarm that breeds fast"
+  }
  },
  "human": {
   "noun": "Folk",
