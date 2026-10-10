@@ -13,6 +13,8 @@ const SimMap := preload("res://src/sim/sim_map.gd")
 const World := preload("res://src/sim/world.gd")
 const Replay := preload("res://src/sim/replay.gd")
 const Flow := preload("res://src/sim/flow.gd")
+const Economy := preload("res://src/sim/economy.gd")
+const EcoBot := preload("res://src/ai/eco_bot.gd")
 
 const PROMPTS := ["angry swamp frogs with reed spears", "sewer rats with cheese hammers"]
 const SEED := 20261010
@@ -22,6 +24,8 @@ const ORDERS_EVERY := 10           # turns between each player's orders (2 s)
 const TICK_BUDGET_USEC := 3000
 const CROSS_UNITS := 10            # per roster slot: 50 units, in 5 groups of 10
 const CROSS_LIMIT := 2400          # ticks (2 minutes) to get everyone across
+const OPENING_TICKS := 3600        # the 3-minute opening
+const STALL_TICKS := 100           # a worker idle this long (5 s) has stalled
 
 ## Banned in src/sim/: floats, float maths, engine randomness, wall clocks, Nodes.
 const BANNED := [
@@ -51,6 +55,7 @@ func _init() -> void:
 	_test_flow(map)
 	_test_crossing(races, "flat_test")
 	_test_crossing(races, "choke_test")
+	_test_opening(races)
 
 	var script := _script(map, races)
 	print("script: %d commands over %d ticks" % [script.size(), TICKS])
@@ -218,6 +223,73 @@ func _test_moved(w: World) -> void:
 	check(w.map.version > 0, "the map changed during the match (houses, cut reeds): version %d" % w.map.version)
 
 
+# --- economy --------------------------------------------------------------------
+
+## The milestone 3 check: both sides play a 3-minute opening with the economy bot.
+func _test_opening(races: Array) -> void:
+	var w := World.new(SEED, SimMap.load_id("flat_test"), races, rules_)
+	var bots := [EcoBot.new(0), EcoBot.new(1)]
+	var idle_since := {}     # unit id -> tick it went idle; looked up by key only
+	var stalls := 0
+	var over_cap := 0
+	var t0 := Time.get_ticks_usec()
+	var worst := 0
+	while w.tick < OPENING_TICKS:
+		for bot in bots:
+			bot.think(w)
+		var s := Time.get_ticks_usec()
+		w.step()
+		worst = maxi(worst, Time.get_ticks_usec() - s)
+		for p in races.size():
+			if w.pop[p] > w.pop_cap[p]:
+				over_cap += 1
+		for i in w.units.count():
+			var id := w.units.id[i]
+			if w.units.task[i] == Economy.NONE and w.units.moving[i] == 0:
+				if not idle_since.has(id):
+					idle_since[id] = w.tick
+				elif w.tick - idle_since[id] == STALL_TICKS:
+					stalls += 1
+			else:
+				idle_since.erase(id)
+		if w.tick % 1200 == 0:
+			for p in races.size():
+				print("  opening %d:00  %-18s workers %2d  pop %2d/%2d  houses %d  gathered %4d food %4d wood  bank %4d/%4d" % [
+					w.tick / 1200, w.races[p].name, _count_workers(w, p), w.pop[p], w.pop_cap[p], _count_houses(w, p),
+					w.gathered_food[p], w.gathered_wood[p], w.food[p], w.wood[p]])
+	var gave_up := 0
+	for i in w.units.count():
+		if w.units.stuck[i] >= World.STUCK_LIMIT and w.units.task[i] != Economy.NONE:
+			gave_up += 1
+	check(stalls == 0, "opening: no worker sits idle for 5 s (%d stalls)" % stalls)
+	check(over_cap == 0, "opening: pop never goes over the cap")
+	check(gave_up == 0, "opening: no worker is stuck on a job (%d)" % gave_up)
+	for p in races.size():
+		var total: int = w.gathered_food[p] + w.gathered_wood[p]
+		check(total >= 600 and total <= 3000, "opening: %s gathers a sensible amount in 3 min (%d)" % [w.races[p].name, total])
+		check(_count_houses(w, p) >= 2, "opening: %s builds houses (%d)" % [w.races[p].name, _count_houses(w, p)])
+	check(_count_workers(w, 1) > _count_workers(w, 0), "opening: rats (cheap, quick to train) out-breed frogs (%d vs %d)" % [_count_workers(w, 1), _count_workers(w, 0)])
+	check(w.pop_cap[1] - 5 == 6 * _count_houses(w, 1), "opening: rat houses give 6 pop")
+	print("opening: avg tick %.3f ms, worst %.3f ms" % [(Time.get_ticks_usec() - t0) / 1000.0 / OPENING_TICKS, worst / 1000.0])
+
+
+func _count_workers(w: World, p: int) -> int:
+	var n := 0
+	for i in w.units.count():
+		if w.units.owner[i] == p and w.types[w.units.kind[i]].worker:
+			n += 1
+	return n
+
+
+func _count_houses(w: World, p: int) -> int:
+	var house := Economy.btype_of(w, "house")
+	var n := 0
+	for b in w.buildings.count():
+		if w.buildings.owner[b] == p and w.buildings.kind[b] == house and w.buildings.done[b] == 1:
+			n += 1
+	return n
+
+
 # --- movement -------------------------------------------------------------------
 
 ## The milestone 2 exit criterion: 50 units cross the map in groups, nobody stuck.
@@ -341,17 +413,18 @@ func _test_source_lint() -> void:
 		re.compile(p)
 		res.append(re)
 	var files := 0
-	for f in DirAccess.get_files_at("res://src/sim"):
-		if not f.ends_with(".gd"):
-			continue
-		files += 1
-		var lines := FileAccess.get_file_as_string("res://src/sim/" + f).split("\n")
-		for n in lines.size():
-			var code := lines[n].get_slice("#", 0)
-			for i in res.size():
-				if res[i].search(code):
-					check(false, "src/sim/%s:%d uses banned '%s': %s" % [f, n + 1, BANNED[i], lines[n].strip_edges()])
-	check(files >= 6, "lint saw the sim sources (%d files)" % files)
+	for dir in ["res://src/sim/", "res://src/ai/"]:
+		for f in DirAccess.get_files_at(dir):
+			if not f.ends_with(".gd"):
+				continue
+			files += 1
+			var lines := FileAccess.get_file_as_string(dir + f).split("\n")
+			for n in lines.size():
+				var code := lines[n].get_slice("#", 0)
+				for i in res.size():
+					if res[i].search(code):
+						check(false, "%s%s:%d uses banned '%s': %s" % [dir, f, n + 1, BANNED[i], lines[n].strip_edges()])
+	check(files >= 9, "lint saw the sim and AI sources (%d files)" % files)
 
 
 # --- small pieces ---------------------------------------------------------------

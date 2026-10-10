@@ -13,6 +13,8 @@ enum { NONE, GATHER, RETURN, BUILD }
 const KINDS := ["", "food", "wood"]   # carry_kind index -> resource name
 const REACH := 250                    # milli-tiles between a body's edge and what it works on
 const SEARCH_TILES := 8               # how far a worker looks for more of the same resource
+const SPREAD_TILES := 2               # sent to a busy tile, a worker takes a quieter one this close
+const BUSY_COST := 4000000            # one more gatherer on a tile weighs like 2 tiles of distance
 const GIVE_UP := 60                   # mirrors World.STUCK_LIMIT
 
 
@@ -50,6 +52,8 @@ static func setup(w) -> void:
 	for p in w.races.size():
 		w.food.append(int(start.food))
 		w.wood.append(int(start.wood))
+		w.gathered_food.append(0)
+		w.gathered_wood.append(0)
 		w.pop.append(0)
 		w.pop_cap.append(0)
 	for p in w.races.size():
@@ -175,6 +179,7 @@ static func _own_workers(w, player: int, ids: Array) -> Array:
 
 static func start_gather(w, i: int, cell: int, kind: int) -> void:
 	var u = w.units
+	cell = least_busy(w, cell, kind)
 	if u.carry[i] > 0 and u.carry_kind[i] != kind:
 		u.carry[i] = 0   # dropped: you can't carry reeds and bugs at once
 	u.carry_kind[i] = kind
@@ -272,8 +277,10 @@ static func _return(w, i: int) -> void:
 		var p: int = u.owner[i]
 		if u.carry_kind[i] == 1:
 			w.food[p] += u.carry[i]
+			w.gathered_food[p] += u.carry[i]
 		elif u.carry_kind[i] == 2:
 			w.wood[p] += u.carry[i]
+			w.gathered_wood[p] += u.carry[i]
 		u.carry[i] = 0
 		u.moving[i] = 0
 		if u.home[i] >= 0:
@@ -338,6 +345,32 @@ static func _in_reach(w, i: int, r: Rect2i) -> bool:
 	var dy: int = maxi(maxi(r.position.y - u.y[i], 0), u.y[i] - r.end.y)
 	var reach: int = u.radius[i] + REACH
 	return dx * dx + dy * dy <= reach * reach
+
+
+## The tile of this resource near `cell` (within SPREAD_TILES) with the fewest
+## gatherers, nearer ones first; ties go to the lower cell. Spreads a crowd over a
+## clump of bushes or a reed bed instead of piling everyone onto one tile.
+static func least_busy(w, cell: int, kind: int) -> int:
+	var m = w.map
+	var u = w.units
+	var cx: int = cell % m.width
+	var cy: int = cell / m.width
+	var best := cell
+	var best_score := 1 << 62
+	for yy in range(maxi(cy - SPREAD_TILES, 0), mini(cy + SPREAD_TILES + 1, m.height)):
+		for xx in range(maxi(cx - SPREAD_TILES, 0), mini(cx + SPREAD_TILES + 1, m.width)):
+			var c: int = yy * m.width + xx
+			if m.amount[c] <= 0 or KINDS.find(m.resource_at(c)) != kind:
+				continue
+			var busy := 0
+			for j in u.count():
+				if u.home[j] == c and (u.task[j] == GATHER or u.task[j] == RETURN):
+					busy += 1
+			var score: int = busy * BUSY_COST + Fixed.dist2(cx * 1000, cy * 1000, xx * 1000, yy * 1000)
+			if score < best_score:
+				best_score = score
+				best = c
+	return best
 
 
 ## The nearest cell with this resource within SEARCH_TILES, or -1. Ties go to the lower cell.
