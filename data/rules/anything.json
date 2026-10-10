@@ -39,7 +39,7 @@
  ],
  "cost": {
   "base": 60,
-  "ref_points": 12,
-  "exponent": 1.4
+  "curve": "pow1.4_ref12",
+  "train_curve": "pow1.2_ref12"
  }
 }
