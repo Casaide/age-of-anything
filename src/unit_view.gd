@@ -116,6 +116,7 @@ func _make_rig(lib, body_id: String, head_id: String, colours: Dictionary, paren
 		for a in body.legs.anchors:
 			var leg := _shape()
 			leg.pin = true
+			leg.part_id = body.legs.part
 			leg.setup(leg_part.shapes, colours)
 			leg.position = Vector2(float(a[0]), float(a[1]))
 			leg.z_index = 1 if float(a[3]) > 0.0 else -2
@@ -125,6 +126,7 @@ func _make_rig(lib, body_id: String, head_id: String, colours: Dictionary, paren
 			legs.append({"node": leg, "phase": float(a[2])})
 
 	var body_node := _shape()
+	body_node.part_id = body_id
 	body_node.setup(body.shapes, colours)
 	root.add_child(body_node)
 	breathing.append(body_node)
@@ -133,6 +135,7 @@ func _make_rig(lib, body_id: String, head_id: String, colours: Dictionary, paren
 		var head: Dictionary = lib.part(head_id)
 		var head_node := _shape()
 		head_node.pin = true
+		head_node.part_id = head_id
 		head_node.setup(head.shapes, colours)
 		head_node.position = sockets.head
 		head_node.z_index = 2
@@ -148,6 +151,7 @@ func _attach(lib, rig: Dictionary, slot: String, part_id: String, colours: Dicti
 		return
 	var p: Dictionary = lib.part(part_id)
 	var node := _shape()
+	node.part_id = part_id
 	node.setup(p.shapes, colours)
 	node.position = rig.sockets[socket]
 	node.z_index = Z_FOR_SLOT[slot]
