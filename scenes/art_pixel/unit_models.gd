@@ -146,19 +146,21 @@ func _body_frog(c: Dictionary) -> Dictionary:
 	# A slimmer, upright frog body leaning back on its haunches.
 	n.add_child(blob(Vector3(10.0, 11.5, 9.0), skin, Vector3(-0.5, 14, 0), Vector3(0, 0, 14)))
 	n.add_child(blob(Vector3(6.8, 9.0, 7.0), belly, Vector3(3.6, 12.5, 0.6), Vector3(0, 0, 14)))
-	# Slim arms with round finger pads.
+	# Slim arms with round finger pads; the near arm is a front layer with its own outline.
+	var front := Node3D.new()
 	for side in [1, -1]:
+		var into: Node3D = front if side == 1 else n
 		var sh := Vector3(4, 18.5, 6.8 * side)
 		var elbow := Vector3(6.5, 13.5, 8.6 * side)
 		var hand := Vector3(10.5, 12, 7.5 * side) if side == 1 else Vector3(10, 13, -6.5)
-		n.add_child(rod(sh, elbow, 2.0, 1.6, skin))
-		n.add_child(rod(elbow, hand, 1.6, 1.4, skin))
-		n.add_child(blob(Vector3(1.8, 1.3, 1.8), skin, hand))
+		into.add_child(rod(sh, elbow, 2.0, 1.6, skin))
+		into.add_child(rod(elbow, hand, 1.6, 1.4, skin))
+		into.add_child(blob(Vector3(1.8, 1.3, 1.8), skin, hand))
 		for f in 3:
 			var tip := hand + Vector3(2.4, -0.9, (f - 1) * 1.5)
-			n.add_child(rod(hand, tip, 0.5, 0.45, skin, false))
-			n.add_child(blob(Vector3(0.8, 0.8, 0.8), belly, tip))
-	return {"node": n, "sockets": {
+			into.add_child(rod(hand, tip, 0.5, 0.45, skin, false))
+			into.add_child(blob(Vector3(0.8, 0.8, 0.8), belly, tip))
+	return {"node": n, "front": front, "sockets": {
 		"head": Vector3(3, 23, 0), "hand_r": Vector3(10.5, 12, 7.5), "hand_l": Vector3(10, 13, -6.5),
 		"torso": Vector3(0.5, 14, 0), "back": Vector3(-8, 18, 0)},
 		"anchors": [[Vector3(-3, 7.0, -6.5), 0.0, -1], [Vector3(-3, 7.0, 6.5), PI, 1]],
@@ -323,12 +325,16 @@ func _body_rat(c: Dictionary) -> Dictionary:
 	var pts := [Vector3(-5, 7, 0), Vector3(-11, 4.5, 1.5), Vector3(-16.5, 5.5, 2.5), Vector3(-19.5, 9.5, 3.0), Vector3(-19, 14, 3.0), Vector3(-16.5, 16, 2.5)]
 	for k in range(1, pts.size()):
 		n.add_child(rod(pts[k - 1], pts[k], 1.25 - k * 0.17, 1.25 - (k + 1) * 0.17, pink))
+	var front := Node3D.new()
 	for side in [1, -1]:
+		var into: Node3D = front if side == 1 else n
 		var sh := Vector3(3, 19.5, 5.5 * side)
+		var elbow := Vector3(4, 16.5, 7.0 * side)
 		var hand := Vector3(7.5, 15.5, 5.5 * side) if side == 1 else Vector3(7, 16.5, -5)
-		n.add_child(rod(sh, hand, 1.5, 1.2, fur))
-		n.add_child(blob(Vector3(1.4, 1.1, 1.4), pink, hand))
-	return {"node": n, "sockets": {
+		into.add_child(rod(sh, elbow, 1.6, 1.3, fur))
+		into.add_child(rod(elbow, hand, 1.3, 1.1, fur))
+		into.add_child(blob(Vector3(1.4, 1.1, 1.4), pink, hand))
+	return {"node": n, "front": front, "sockets": {
 		"head": Vector3(2, 25, 0), "hand_r": Vector3(7.5, 15.5, 5.5), "hand_l": Vector3(7, 16.5, -5),
 		"torso": Vector3(0, 15, 0), "back": Vector3(-6, 19, 0)},
 		"anchors": [[Vector3(-1, 6.0, -4.0), 0.0, -1], [Vector3(-1, 6.0, 4.0), PI, 1]],
