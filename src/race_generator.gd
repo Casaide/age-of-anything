@@ -139,6 +139,7 @@ func generate(prompt: String, rules: Dictionary, reroll := 0) -> Dictionary:
 		"family": family,
 		"notes": notes,
 		"units": units,
+		"economy": c.get("economy", {}).duplicate(),   # race-wide modifiers; derived, not in the key
 	}
 	race.key = race_key(race)
 	return race

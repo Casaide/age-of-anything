@@ -1,0 +1,44 @@
+{
+ "schema": "aow.buildings/1",
+ "buildings": {
+  "house": {
+   "name": "House",
+   "size": 2,
+   "hp": 550,
+   "cost": {
+    "food": 0,
+    "wood": 30
+   },
+   "build_time": 25,
+   "pop": 5,
+   "house": true,
+   "drop_off": [],
+   "trains": [],
+   "age": 1,
+   "hotkey": "H",
+   "note": "pop +5 (or the race's house_pop)"
+  },
+  "town_center": {
+   "name": "Town Center",
+   "size": 3,
+   "hp": 2400,
+   "cost": {
+    "food": 0,
+    "wood": 275
+   },
+   "build_time": 150,
+   "pop": 5,
+   "house": false,
+   "drop_off": [
+    "food",
+    "wood"
+   ],
+   "trains": [
+    "worker"
+   ],
+   "age": 1,
+   "hotkey": "C",
+   "note": "every player starts with one"
+  }
+ }
+}
