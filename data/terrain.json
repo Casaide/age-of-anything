@@ -1,0 +1,10 @@
+{
+ "schema": "aow.terrain/1",
+ "terrain": {
+  "grass": {"walkable": true, "colour": "#5b6b38", "colour2": "#55653a", "note": "plain ground"},
+  "swamp": {"walkable": true, "colour": "#3f5a46", "colour2": "#3a5442", "note": "walkable; amphibious races get a speed bonus here (milestone 5)"},
+  "reeds": {"walkable": false, "colour": "#7a8a3a", "colour2": "#6f7f34", "note": "blocks movement; becomes a wood resource in milestone 3"},
+  "rock": {"walkable": false, "colour": "#4a4238", "colour2": "#433b32", "note": "impassable"},
+  "water": {"walkable": false, "colour": "#2f5a6e", "colour2": "#2b5466", "note": "impassable until there are boats (never, probably)"}
+ }
+}

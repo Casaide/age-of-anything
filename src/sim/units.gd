@@ -17,6 +17,10 @@ var tx := PackedInt32Array()       # move target
 var ty := PackedInt32Array()
 var moving := PackedInt32Array()   # 1 while heading for (tx, ty)
 var arrive := PackedInt32Array()   # stop once this close to the target (milli-tiles)
+var wx := PackedInt32Array()       # current waypoint (from the flow field) towards the target
+var wy := PackedInt32Array()
+var group := PackedInt32Array()    # move group: one per MOVE command, 0 if never ordered
+var stuck := PackedInt32Array()    # consecutive ticks a move made no progress
 var speed := PackedInt32Array()    # milli-tiles per tick
 var radius := PackedInt32Array()   # milli-tiles
 var hp := PackedInt32Array()
@@ -39,6 +43,10 @@ func add(uid: int, p_owner: int, p_kind: int, p_x: int, p_y: int, p_speed: int, 
 	ty.append(p_y)
 	moving.append(0)
 	arrive.append(0)
+	wx.append(p_x)
+	wy.append(p_y)
+	group.append(0)
+	stuck.append(0)
 	speed.append(p_speed)
 	radius.append(p_radius)
 	hp.append(p_hp)
@@ -66,6 +74,10 @@ func remove_at(i: int) -> void:
 	ty.remove_at(i)
 	moving.remove_at(i)
 	arrive.remove_at(i)
+	wx.remove_at(i)
+	wy.remove_at(i)
+	group.remove_at(i)
+	stuck.remove_at(i)
 	speed.remove_at(i)
 	radius.remove_at(i)
 	hp.remove_at(i)
