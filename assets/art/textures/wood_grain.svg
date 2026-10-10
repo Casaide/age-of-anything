@@ -1,0 +1,18 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="64" height="256" viewBox="0 0 64 256">
+<defs></defs>
+<rect width="64" height="256" fill="#8a5a2b"/>
+<path d="M2,0 Q-0.5,64.0 2,128.0 T2,256" stroke="#6e4520" stroke-width="1.9" fill="none"/>
+<path d="M7,0 Q8.4,64.0 7,128.0 T7,256" stroke="#6e4520" stroke-width="1.2" fill="none"/>
+<path d="M12,0 Q10.5,64.0 12,128.0 T12,256" stroke="#9a6a38" stroke-width="1.6" fill="none"/>
+<path d="M17,0 Q17.5,64.0 17,128.0 T17,256" stroke="#6e4520" stroke-width="1.1" fill="none"/>
+<path d="M22,0 Q22.8,64.0 22,128.0 T22,256" stroke="#9a6a38" stroke-width="1.0" fill="none"/>
+<path d="M27,0 Q29.7,64.0 27,128.0 T27,256" stroke="#7a4e26" stroke-width="1.8" fill="none"/>
+<path d="M32,0 Q32.0,64.0 32,128.0 T32,256" stroke="#9a6a38" stroke-width="1.5" fill="none"/>
+<path d="M37,0 Q36.2,64.0 37,128.0 T37,256" stroke="#6e4520" stroke-width="1.9" fill="none"/>
+<path d="M42,0 Q41.5,64.0 42,128.0 T42,256" stroke="#9a6a38" stroke-width="1.9" fill="none"/>
+<path d="M47,0 Q47.4,64.0 47,128.0 T47,256" stroke="#6e4520" stroke-width="1.9" fill="none"/>
+<path d="M52,0 Q50.1,64.0 52,128.0 T52,256" stroke="#6e4520" stroke-width="1.1" fill="none"/>
+<path d="M57,0 Q57.1,64.0 57,128.0 T57,256" stroke="#7a4e26" stroke-width="1.0" fill="none"/>
+<path d="M62,0 Q62.4,64.0 62,128.0 T62,256" stroke="#7a4e26" stroke-width="2.0" fill="none"/>
+<ellipse cx="30" cy="120" rx="7" ry="11" fill="#5a3818"/><ellipse cx="30" cy="120" rx="3.5" ry="6" fill="#7a4e26"/>
+</svg>

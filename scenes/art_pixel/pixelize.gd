@@ -17,7 +17,7 @@ static func run(img: Image, factor: int) -> Image:
 			var c := img.get_pixel(x, y)
 			if c.a >= 0.6:
 				out.set_pixel(x, y, Color(c.r, c.g, c.b, 1.0))
-			elif c.a >= 0.12 and c.get_luminance() < 0.12:
+			elif c.a >= 0.05 and c.get_luminance() < 0.12:
 				out.set_pixel(x, y, SHADOW)
 			else:
 				out.set_pixel(x, y, Color(0, 0, 0, 0))

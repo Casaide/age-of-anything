@@ -1,0 +1,10 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="256" height="256" viewBox="0 0 256 256">
+<defs><radialGradient id="lp" cx="0.45" cy="0.4" r="0.7"><stop offset="0" stop-color="#7ac25e"/><stop offset="1" stop-color="#3f8a3a"/></radialGradient></defs>
+
+<path d="M128,128 L110,8 A120,120 0 1 0 146,8 Z" fill="url(#lp)" stroke="#24521f" stroke-width="7"/>
+<path d="M128,128 L238.4,146.9" stroke="#2f6b2c" stroke-width="3"/><path d="M128,128 L225.2,183.6" stroke="#2f6b2c" stroke-width="3"/><path d="M128,128 L200.4,213.5" stroke="#2f6b2c" stroke-width="3"/><path d="M128,128 L166.8,233.1" stroke="#2f6b2c" stroke-width="3"/><path d="M128,128 L128.5,240.0" stroke="#2f6b2c" stroke-width="3"/><path d="M128,128 L90.2,233.4" stroke="#2f6b2c" stroke-width="3"/><path d="M128,128 L56.4,214.1" stroke="#2f6b2c" stroke-width="3"/><path d="M128,128 L31.3,184.4" stroke="#2f6b2c" stroke-width="3"/><path d="M128,128 L17.8,147.9" stroke="#2f6b2c" stroke-width="3"/><path d="M128,128 L17.6,109.1" stroke="#2f6b2c" stroke-width="3"/><path d="M128,128 L30.8,72.4" stroke="#2f6b2c" stroke-width="3"/><path d="M128,128 L55.6,42.5" stroke="#2f6b2c" stroke-width="3"/><path d="M128,128 L89.2,22.9" stroke="#2f6b2c" stroke-width="3"/><path d="M128,128 L199.6,41.9" stroke="#2f6b2c" stroke-width="3"/><path d="M128,128 L224.7,71.6" stroke="#2f6b2c" stroke-width="3"/><path d="M128,128 L238.2,108.1" stroke="#2f6b2c" stroke-width="3"/>
+<circle cx="128" cy="128" r="9" fill="#3a7a32"/>
+<ellipse cx="170" cy="168" rx="12" ry="8" fill="#d8f0e0" opacity="0.8"/>
+<ellipse cx="166" cy="165" rx="4" ry="2.5" fill="#ffffff"/>
+
+</svg>

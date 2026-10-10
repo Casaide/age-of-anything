@@ -64,6 +64,16 @@ games. So:
    reed-bed blends.
 Shown in its own scene, `scenes/art_pixel.tscn`, on a larger map with a pond.
 
+**Step 1d: higher-fidelity units with authored textures (Dominic, 2026-10-11).** Dominic: use
+the designs as reference, not as-is; units shouldn't feel made from a bunch of shapes (they all
+had one leg). Textures must be real texture art, authored by Claude as image assets (no
+downloads), not generated from scratch. So each part id gets a hand-built 3D model in
+`scenes/art_pixel/unit_models.gd` with proper anatomy (two legs, arms, hands), authored SVG
+textures (`assets/art/textures/`) mapped triplanar and tinted by race colours, and authored
+decals for features (eyes, mouths, leaves, lily pads). Models are baked three-quarter, and their
+sockets are projected into 2D (`PartShape.rigs`), so UnitView composes them as before. Parts
+without a model still fall back to the automatic bake.
+
 **Step 2 (after the pick):** shared groundwork: palette/team-mask shader, atlas plus pivots in
 `parts.json`, and the draw-call check at 200 units.
 
@@ -75,6 +85,11 @@ Shown in its own scene, `scenes/art_pixel.tscn`, on a larger map with a pond.
 - [x] Step 1b: high-fidelity pre-rendered: baker, buildings, props, terrain
 - [x] Step 1b: high-fidelity pre-rendered frog worker (baked parts, 2D animation)
 - [x] Step 1c: high-fidelity pixel art: auto-3D parts baked to pixels, palette, continuous terrain
+- [x] Step 1d: frog and rat parts modelled with authored textures (body, head, leg, gear)
+- [x] Fix: parts layered by child order (z_index drew units over buildings); baked ground shadows
+- [ ] Step 1d: rat on a spider (spider body, head, legs; cheese hammer, mail), other roster gear
+- [ ] Terrain polish (shoreline reeds, stones, flowers, paths), stepped pixel animation,
+  rat-culture buildings, a palette of 256 or fewer
 - [ ] Step 1b (maybe later): hero frog in the other directions at production detail
 - [ ] Step 1b: hero rat spearman
 - [ ] Dominic picks a direction
@@ -122,6 +137,17 @@ Shown in its own scene, `scenes/art_pixel.tscn`, on a larger map with a pond.
   - Claude's read: this keeps what the original and the pixel panel had, and reads as a
     classic RTS. Unit *detail* is still capped by today's simple part shapes; richer units
     mean richer parts (more shapes per part in `parts.json`, or hand-made 3D parts per id).
+
+- **Step 1d (2026-10-11):** frogs and rats re-made from the reference with real anatomy (two
+  long folded frog legs with webbed feet and toe pads; rats with snouts, whiskers, ears and
+  tails) and authored textures: frog skin with spots, belly, amber frog eyes, rat fur, bead
+  eyes, bark plates, leather, wicker, acorn scales, reed stalk, bone, bronze, iron, wood grain,
+  leaf, lily pad. Pictures: `archive/images/2026-10-11/19-22`.
+  - Fixed on the way: units drew over buildings in front of them (part `z_index` is global;
+    now parts are ordered by child order), and building ground shadows were missing (the
+    shadow range stopped at the bake camera; the faint shadow-catcher is now a shadow-only
+    second pass). The sun now comes from the screen's upper left, with shadows falling lower right.
+  - The frogs still read a little toad-like in colour: the race rolled `toad_brown` skin.
 
 ## Changes from the original plan
 - The original plan assumed the painterly direction. Direction is open again (2026-10-11):

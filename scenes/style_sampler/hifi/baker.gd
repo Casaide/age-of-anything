@@ -10,6 +10,7 @@ const SCALE := 4.0
 ## which is 0.7071 world units across the screen plane.
 const PX_PER_UNIT := 32.0 / 0.70710678
 const SIZE := 1024
+const PIXEL_SIZE := 2048
 
 const Pixelize := preload("res://scenes/art_pixel/pixelize.gd")
 
@@ -17,30 +18,35 @@ var cam: Camera3D
 var holder: Node3D
 var pixel_factor := 0      # > 0: pixel mode, shrink the render by this much and pixelize it
 var shadow_plane: MeshInstance3D
+var shadow_on := false
+var fill: DirectionalLight3D
+var rim: DirectionalLight3D
+var env: Environment
 
 
 ## Pixel mode: bake at `art_scale` art pixels per canvas unit, supersampled by `factor`,
 ## with ground shadows baked in (a shadow-catcher plane).
 func set_pixel_mode(art_scale: float, factor: int) -> void:
 	pixel_factor = factor
-	cam.size = SIZE / (PX_PER_UNIT * art_scale * factor)
+	size = Vector2i(PIXEL_SIZE, PIXEL_SIZE)   # supersampled pixel bakes need more room
+	cam.size = PIXEL_SIZE / (PX_PER_UNIT * art_scale * factor)
 	var plane := PlaneMesh.new()
 	plane.size = Vector2(16, 16)
 	shadow_plane = MeshInstance3D.new()
 	shadow_plane.mesh = plane
 	shadow_plane.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
 	var m := StandardMaterial3D.new()
-	m.shadow_to_opacity = true
-	m.albedo_color = Color(0, 0, 0, 1)
-	m.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
+	m.albedo_color = Color.WHITE
+	m.roughness = 1.0
 	shadow_plane.material_override = m
 	shadow_plane.position.y = 0.003
+	shadow_plane.visible = false
 	add_child(shadow_plane)
 
 
+## Bake a ground shadow with the next model (pixel mode): a second, shadow-only pass.
 func set_ground_shadow(on: bool) -> void:
-	if shadow_plane:
-		shadow_plane.visible = on
+	shadow_on = on
 
 
 func _init() -> void:
@@ -55,24 +61,25 @@ func _init() -> void:
 	cam.rotation_degrees = Vector3(-30, 45, 0)
 	add_child(cam)
 	var key := DirectionalLight3D.new()
-	key.rotation_degrees = Vector3(-48, 160, 0)   # from the viewer's upper left
+	key.rotation_degrees = Vector3(-48, -72, 0)   # from the screen's upper left: left faces lit, shadows fall lower right
 	key.light_energy = 1.05
 	key.shadow_enabled = true
 	key.shadow_bias = 0.05
+	key.shadow_blur = 0.4
 	key.directional_shadow_mode = DirectionalLight3D.SHADOW_PARALLEL_2_SPLITS
-	key.directional_shadow_max_distance = 30.0
+	key.directional_shadow_max_distance = 120.0   # the bake camera sits 30 units out; shadows must reach past it
 	add_child(key)
-	var fill := DirectionalLight3D.new()
+	fill = DirectionalLight3D.new()
 	fill.rotation_degrees = Vector3(-20, -60, 0)
 	fill.light_energy = 0.25
 	fill.light_color = Color("#b8c8ff")
 	add_child(fill)
-	var rim := DirectionalLight3D.new()
+	rim = DirectionalLight3D.new()
 	rim.rotation_degrees = Vector3(-15, -135, 0)
 	rim.light_energy = 0.3
 	rim.light_color = Color("#fff0d0")
 	add_child(rim)
-	var env := Environment.new()
+	env = Environment.new()
 	env.background_mode = Environment.BG_CLEAR_COLOR
 	env.ambient_light_source = Environment.AMBIENT_SOURCE_COLOR
 	env.ambient_light_color = Color("#c8d0e0")
@@ -89,6 +96,39 @@ func _init() -> void:
 	add_child(holder)
 
 
+## Second pass: the model only casts shadows onto a white ground lit by the sun alone.
+## Where the ground went dark and the model isn't drawn, mark a shadow pixel
+## (dark and half transparent; Pixelize turns it into the flat shadow colour).
+func _add_ground_shadow(img: Image, model: Node3D) -> void:
+	var meshes := model.find_children("*", "MeshInstance3D", true, false)
+	for mi in meshes:
+		mi.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_SHADOWS_ONLY
+	shadow_plane.visible = true
+	fill.visible = false
+	rim.visible = false
+	var ambient := env.ambient_light_energy
+	env.ambient_light_energy = 0.0
+	var ssao := env.ssao_enabled
+	env.ssao_enabled = false
+	render_target_update_mode = SubViewport.UPDATE_ONCE
+	await RenderingServer.frame_post_draw
+	var mask := get_texture().get_image()
+	for mi in meshes:
+		mi.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_ON
+	shadow_plane.visible = false
+	fill.visible = true
+	rim.visible = true
+	env.ambient_light_energy = ambient
+	env.ssao_enabled = ssao
+	var body := img.get_used_rect()
+	var area := body.grow(maxi(body.size.x, body.size.y) / 2).intersection(Rect2i(Vector2i.ZERO, img.get_size()))
+	for y in range(area.position.y, area.end.y):
+		for x in range(area.position.x, area.end.x):
+			var m := mask.get_pixel(x, y)
+			if img.get_pixel(x, y).a < 0.5 and m.a > 0.5 and m.get_luminance() < 0.35:
+				img.set_pixel(x, y, Color(0, 0, 0, 0.5))
+
+
 ## Render `model` (centred on its anchor at the world origin) and return
 ## {"tex": ImageTexture, "points": [Vector2]} where points are the given 3D
 ## points projected into the cropped image (in baked pixels).
@@ -101,6 +141,8 @@ func bake(model: Node3D, points: Array) -> Dictionary:
 	await RenderingServer.frame_post_draw
 	var img := get_texture().get_image()
 	var projected := points.map(func(p): return cam.unproject_position(p))
+	if pixel_factor > 0 and shadow_on:
+		await _add_ground_shadow(img, model)
 	holder.remove_child(model)
 	model.queue_free()
 	var used := img.get_used_rect().grow(4).intersection(Rect2i(Vector2i.ZERO, img.get_size()))
