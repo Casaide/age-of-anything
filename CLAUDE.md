@@ -9,12 +9,14 @@ Godot 4.7 (GDScript), 2D. Solo dev, macOS.
 | Doc | Read it for |
 |---|---|
 | `docs/design.md` | What the game is and why: races, generation, modes, balance, multiplayer, art |
-| `docs/mvp-plan.md` | The 10-minute demo: scope, cut list, architecture, milestones, metrics, risks |
+| `docs/mvp-plan.md` | The 10-minute demo: scope, cut list, architecture, milestone overview, metrics, risks |
+| `docs/milestones/` | One file per milestone: plan, checklist, results, changes. Status lives here |
 | `docs/research.md` | Technical reference and sources (lockstep, Godot 2D, pathing, Holepunch bridge) |
 | `docs/backlog.md` | Everything postponed, in rough priority order |
 | `docs/roster-template.md` | Full building, age and unit-line plan, with MVP/Next/Later status |
 
-Before starting a milestone, read its section in `docs/mvp-plan.md`. If you postpone something,
+Before starting a milestone, read `docs/milestones/<its file>.md` (and the related parts of
+`docs/mvp-plan.md`), write the plan into the milestone file, and keep its checklist current. If you postpone something,
 move it to `docs/backlog.md` rather than deleting it.
 
 ## Status
@@ -24,8 +26,8 @@ move it to `docs/backlog.md` rather than deleting it.
 - **Done (milestone 1): sim core.** `src/sim/`: integer-only 20 Hz sim driven by a command queue,
   replays, state hashes, straight-line MOVE + separation. Debug view `scenes/sim_debug.tscn`.
   `tests/test_sim.gd` plays a 10-minute 200-unit match; tick is ~0.9 ms avg (budget 3 ms).
-- **Next (milestone 2): map + movement.** TileMapLayer bake, flow fields, box select, camera.
-  Then economy, combat, progression, AI. Frogs vs Rats first. See `docs/mvp-plan.md`.
+- **Now (milestone 2): map + movement.** Flow fields, group arrival, isometric view, camera,
+  box select. See `docs/milestones/m2-map-movement.md`.
 
 ## Layout
 
@@ -39,7 +41,8 @@ data/            the data contract; mods are just more of this
   lexicon.json     word -> creature/mount/family/tags/size; out-of-era words + playful notes
   rules/*.json     host rules: era bounds, point budgets per tier, roster template, cost curve ids
   cost_curves.json fixed-point cost curves (per-mille by points), written by tests/gen_cost_curve.gd
-  maps/*.json      sim maps: ASCII walkable grid + start tiles (milestone 2 bakes from TileMapLayer)
+  terrain.json     terrain types: walkable, placeholder colours
+  maps/*.json      maps: ASCII rows + legend into terrain.json, start tiles; the view builds tiles from them
 src/
   rng.gd           xorshift32 + FNV-1a. The only randomness allowed in generation/sim
   data_lib.gd      loads data/, era filtering, stable candidate lists
