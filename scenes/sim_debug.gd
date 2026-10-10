@@ -19,6 +19,13 @@ const Replay := preload("res://src/sim/replay.gd")
 const MAP_IDS := ["flat_test", "choke_test"]
 const SEED := 1
 const DEFAULT_PROMPTS := ["angry swamp frogs with reed spears", "sewer rats with cheese hammers"]
+## Random prompts for Shift/Ctrl+G. Silly is fine; the generator copes with anything.
+const RANDOM_PROMPTS := [
+	"angry swamp frogs with reed spears", "sewer rats with cheese hammers", "centaur romans",
+	"flying greeks with wings", "giant spiders", "tiny vikings", "spooky beetle knights",
+	"pegasus riding spartans", "ww2 americans riding mongolian ponies", "forest rats on ponies",
+	"heavy beetle lancers", "frog knights with iron helmets", "sneaky spider archers",
+]
 const START_ARMY := [["worker", 3], ["spear", 5], ["skirmisher", 4], ["archer", 4], ["large", 2]]
 const REPLAY_PATH := "user://replays/last.json"
 const BODY_LIFT := 10.0      # pixels from a unit's feet up to the middle of its body
@@ -48,6 +55,7 @@ var checked := 0            # world.hashes entries already compared
 var desync := -1
 var show_flow := false
 var prompts: Array = []     # set before adding to the tree, else taken from the command line
+var rerolls: Array = [0, 0]  # per side; G rerolls side 0
 var press_screen := Vector2.INF
 var press_world := Vector2.ZERO
 var boxing := false
@@ -97,8 +105,8 @@ func _ready() -> void:
 func start_live(race_prompts: Array) -> void:
 	map = SimMap.load_id(map_id)
 	var races := []
-	for p in race_prompts:
-		races.append(gen.generate(p, rules))
+	for k in race_prompts.size():
+		races.append(gen.generate(race_prompts[k], rules, rerolls[k]))
 	_attach(World.new(SEED, map, races))
 	playback = {}
 	for p in races.size():
@@ -173,6 +181,22 @@ func _unhandled_input(event: InputEvent) -> void:
 				start_live(world.races.map(func(r): return r.prompt))
 			KEY_R:
 				start_live(world.races.map(func(r): return r.prompt))
+			KEY_G:
+				regen_army(1 if event.ctrl_pressed else 0, event.shift_pressed or event.ctrl_pressed)
+
+
+## Test hotkey: new army for one side and a fresh match. A new random reroll of the
+## same prompt, or (with a modifier) a random prompt. View-side randomness only picks
+## the inputs; the race itself is generated deterministically from them.
+func regen_army(side: int, new_prompt: bool) -> void:
+	var ps: Array = world.races.map(func(r): return r.prompt)
+	if new_prompt:
+		ps[side] = RANDOM_PROMPTS[randi() % RANDOM_PROMPTS.size()]
+		rerolls[side] = 0
+	else:
+		rerolls[side] = randi() % 100000
+	start_live(ps)
+	print("Side %d is now %s (\"%s\", reroll %d)" % [side + 1, world.races[side].name, ps[side], rerolls[side]])
 
 
 func _body(view: Node2D) -> Vector2:
@@ -331,6 +355,7 @@ func _hud_text() -> String:
 		"click / drag box / double-click type (shift adds)   right-click move   1/2 army",
 		"WASD, edges, middle-drag pan   wheel zoom   space pause   [ ] speed",
 		"F3 flow field   F5 save replay   F9 play replay   M next map   R restart",
+		"G reroll your army   shift+G random prompt   ctrl+G random enemy",
 	]
 	if selected.size() == 1:
 		var i := world.units.index_of(selected.keys()[0])
