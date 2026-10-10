@@ -133,15 +133,32 @@ palette/team-mask shader. Sockets, recipes and animation stay the same.
 `archive/` records how the game grows: pictures, decisions, changes of direction, funny bugs.
 It's for future AI sessions (the *why* behind the code) and for fun. See `archive/README.md`.
 
-At the end of any session that changed something meaningful (a milestone step, a new
-mechanic, a direction change, a memorable bug):
-1. **Screenshot it:** `godot --path . --script res://tests/screenshot.gd -- archive/images/<YYYY-MM-DD>/NN-name.png "prompt A" "prompt B"`
-   (or a gameplay capture once there is gameplay). Keep bug screenshots.
+**Take pictures as you go, not just at the end.** Whenever something visible changes, capture it
+straight away into `archive/images/<YYYY-MM-DD>/NN-name.png` (numbered in order within the day).
+That includes:
+- the first render of a new mechanic, view or map
+- each milestone checklist step that changes what you see
+- every memorable bug (bug shots are the best part; save the buggy capture before fixing it)
+- the final state of a milestone
+
+Capture tools: `tests/screenshot.gd` (Race Lab) and `tests/sim_screenshot.gd` (sim view, any map).
+Look at every capture before keeping it. As a rough guide, aim for at least 2-3 pictures per
+milestone.
+
+**Write things down as they happen too.** When a decision, a direction change or a funny bug
+comes up mid-session, note it in the day's journal then, while the details are fresh.
+
+At the end of any session that changed something meaningful (a milestone step, a new mechanic,
+a direction change, a memorable bug), check that all of these are done:
+1. **Pictures:** in `archive/images/<date>/`, as above.
 2. **Journal:** add or extend `archive/journal/<YYYY-MM-DD>-<title>.md` using the template:
    what happened, decisions, direction changes, pictures, funny moments, ideas parked.
 3. **Decisions:** append numbered entries to `archive/decisions.md` (next D-number). Never edit
    old ones; supersede them with a new entry.
 4. **Timeline:** add one line to `archive/timeline.md`.
+5. **Milestone file:** tick its checklist and record results in `docs/milestones/`.
+
+Every milestone checklist ends with an "Archive" item, and a milestone isn't done until it's ticked.
 
 The archive is append-only history. Write in plain words, with dates. Credit who decided what
 (Dominic or Claude). Before making a design call, skim `archive/decisions.md` so you don't

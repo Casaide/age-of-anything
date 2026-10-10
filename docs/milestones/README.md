@@ -22,7 +22,8 @@ along the way. The overview table lives in `../mvp-plan.md` §3; these files hol
 - **Before starting** a milestone: read its file, then write the plan into it (approved by
   Dominic) before writing code.
 - **While working:** tick the checklist, and note any scope moved in or out (with where it went:
-  another milestone or `../backlog.md`).
+  another milestone or `../backlog.md`). Take archive pictures as things become visible (see
+  CLAUDE.md "The archive").
 - **When done:** set the status and date, record the measured exit criterion under Results, and
   update the status column here and in `../mvp-plan.md` §3. The story goes in `archive/journal/`.
 
@@ -37,6 +38,8 @@ along the way. The overview table lives in `../mvp-plan.md` §3; these files hol
 ## Scope
 ## Plan
 ## Checklist
+- [ ] ...
+- [ ] Archive: pictures taken along the way, journal, decisions, timeline
 ## Results
 ## Changes from the original plan
 ## Links
