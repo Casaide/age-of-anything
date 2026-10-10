@@ -5,7 +5,9 @@ extends Node2D
 ##
 ## `style` picks how the same shapes are drawn (the art-direction sampler uses
 ## it): "" is the plain placeholder, "storybook" adds cel shading and ink,
-## "paper" makes rough-cut paper pieces, "soft" drops the outlines (painterly base).
+## "paper" makes rough-cut paper pieces, "soft" drops the outlines (painterly base),
+## "baked" draws a pre-baked sprite for this part and colour set from `baked`
+## (falling back to plain shapes if none was baked).
 
 const INK := Color("#2b1d14")
 const PAPER := Color("#f4ecd8")
@@ -16,6 +18,20 @@ var colours: Dictionary = {}
 var outline := true
 var style := ""
 var pin := false        # paper style: a brass fastener at the joint (legs, heads)
+var part_id := ""
+
+## bake_key -> {tex: Texture2D, origin: Vector2 (texture px of the part's 0,0), scale: texture px per part unit}
+static var baked := {}
+
+
+## Identifies a part as drawn in particular colours (team, skin and cloth are baked in).
+static func bake_key(id: String, shape_list: Array, colour_map: Dictionary) -> String:
+	var chans := {}
+	for s in shape_list:
+		chans[s.ch] = true
+	var names := chans.keys()
+	names.sort()
+	return id + ":" + ",".join(names.map(func(c): return "%s=%s" % [c, colour_map.get(c, Color.MAGENTA).to_html(false)]))
 
 
 func setup(shape_list: Array, colour_map: Dictionary) -> void:
@@ -51,6 +67,14 @@ static func closed(pts: PackedVector2Array) -> PackedVector2Array:
 
 func _draw() -> void:
 	match style:
+		"baked":
+			var b = baked.get(bake_key(part_id, shapes, colours))
+			if b == null:
+				_draw_plain(outline)
+				return
+			draw_set_transform(-b.origin / b.scale, 0.0, Vector2.ONE / b.scale)
+			draw_texture(b.tex, Vector2.ZERO)
+			draw_set_transform(Vector2.ZERO)
 		"storybook":
 			_draw_storybook()
 		"paper":

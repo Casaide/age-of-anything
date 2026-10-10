@@ -47,6 +47,23 @@ detailed 3D models in Godot (procedural wood, thatch, mud, stone textures with n
 mipmaps (level of detail for free) -> the 2D isometric scene, with baked parts posed by our
 procedural animation. Order: buildings, then the frog worker, then the rat.
 
+**Step 1c: high-fidelity pixel art (Dominic, 2026-10-11).** Dominic's verdict on step 1b:
+something from the original and the pixel art was lost. The 3D frog was a different character
+(the frog people lost their feel), and the physically-based lighting went "a level too far,
+into uncanny valley". In the classic games you never think about the lighting; they're pixel
+games. So:
+1. **Keep the original characters exactly:** every 2D part in `parts.json` becomes simple lit
+   3D automatically (ellipse -> ellipsoid, circle -> sphere, polygon -> extruded, line -> rod),
+   drawn in its original 2D order, then baked to a pixel sprite (4x render, downsampled, hard
+   alpha, darker 1-px inner outline). `UnitView` draws the baked sprites, so sockets,
+   animation and mounts are untouched.
+2. **Pixel, not physically-based:** matte materials and one soft light; the scene renders at art
+   resolution through one shared palette (light ordered dithering) and scales up 2x with nearest.
+3. **Terrain like the classic games:** no grid; one continuous ground drawn by a shader from
+   blurred terrain masks, with rounded shorelines, a mud bank, sparkle, and soft swamp and
+   reed-bed blends.
+Shown in its own scene, `scenes/art_pixel.tscn`, on a larger map with a pond.
+
 **Step 2 (after the pick):** shared groundwork: palette/team-mask shader, atlas plus pivots in
 `parts.json`, and the draw-call check at 200 units.
 
@@ -57,7 +74,8 @@ procedural animation. Order: buildings, then the frog worker, then the rat.
 - [x] Archive: sampler pictures, journal, decisions, timeline
 - [x] Step 1b: high-fidelity pre-rendered: baker, buildings, props, terrain
 - [x] Step 1b: high-fidelity pre-rendered frog worker (baked parts, 2D animation)
-- [ ] Step 1b: hero frog in the other directions at production detail (game size + portrait)
+- [x] Step 1c: high-fidelity pixel art: auto-3D parts baked to pixels, palette, continuous terrain
+- [ ] Step 1b (maybe later): hero frog in the other directions at production detail
 - [ ] Step 1b: hero rat spearman
 - [ ] Dominic picks a direction
 - [ ] Groundwork: shader, atlas, draw calls
@@ -88,6 +106,22 @@ procedural animation. Order: buildings, then the frog worker, then the rat.
   - Claude's read: at game size this is the one that reads most like a classic RTS, and the detail
     survives the shrink (thatch, timber, glow, banner, frog silhouettes). Baking a part per
     pivot works; the cost is a 3D modelling pipeline for every part.
+
+- **Step 1c, high-fidelity pixel art (2026-10-11):** `scenes/art_pixel.tscn`.
+  - Every unit part is baked from auto-3D, so the original frogs and rats keep their design
+    (toad-brown frogs in leaf hats, bark armour and lily-pad shields; white rats; the rat on
+    a spider). They're drawn by the normal UnitView through `PartShape`'s "baked" style.
+  - Units sit at 70% of the canvas scale (about a third of a building's height) and are baked
+    at that size, so they stay crisp.
+  - Buildings and props are the step 1b models made matte, baked at 4x and pixelized with
+    ground shadows, keeping their live parts.
+  - The terrain is one shader: no grid, a rounded pond with a mud bank, foam and sparkle, and
+    soft swamp and reed-bed blends.
+  - The whole frame goes through one palette (351 colours for now) with a light ordered
+    dither, at 2x nearest. Pictures: `archive/images/2026-10-11/16-18`.
+  - Claude's read: this keeps what the original and the pixel panel had, and reads as a
+    classic RTS. Unit *detail* is still capped by today's simple part shapes; richer units
+    mean richer parts (more shapes per part in `parts.json`, or hand-made 3D parts per id).
 
 ## Changes from the original plan
 - The original plan assumed the painterly direction. Direction is open again (2026-10-11):
