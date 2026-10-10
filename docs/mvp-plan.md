@@ -141,19 +141,21 @@ walkability, terrain type (swamp) and resource nodes from tile custom data into 
 
 ## 3. Milestones (solo)
 
+Each milestone has its own file in `milestones/` (plan, checklist, results); this table is the overview.
+
 | # | Weeks | Goal | Exit criterion |
 |---|---|---|---|
-| 0 | done | **Race generation:** data contract, generator, pricing, composer, Race Lab, tests | Prompts give stable, readable armies; tests pass |
-| 1 | done | **Sim core:** fixed tick, integer maths, command queue, replay record/playback, state hash, determinism test | The same scripted 10-minute replay gives identical hashes (met: 400/400 checkpoints; 200-unit tick 0.9 ms avg) |
-| 2 | 1 | **Map + movement:** TileMapLayer map, sim grid bake, flow fields, separation, camera pan/zoom, selection, box select, move | 50 units cross the map in groups with no stuck units |
-| 3 | 1 | **Economy:** gather/carry/drop-off, Food/Wood, TC trains workers, Houses/pop, build placement + construction | The opening economy is fun to watch for 3 minutes |
-| 4 | 1 | **Combat:** attack/armour/HP, counter tags, projectiles, deaths, unit card | Blind testers predict counters from silhouettes |
-| 5 | 1 | **Progression:** Barracks, age-up, Sharp Sticks research, tier-2 units, Watchtower, fixed-point cost table | Age-up lands at minutes 4-6 |
-| 6 | 1 | **AI + match flow:** build order, waves, tag-aware counter-picking, race select screen, win/lose | AI beats a passive player and loses to a decent one |
-| 7 | 1 | **Fog + juice:** fog, minimap, SFX, hit flash, death poses, tuning | A full match runs 9-12 minutes |
-| 8 | 1 | **Playtest + balance:** 5-10 people, balance pass, itch.io build | Success metrics below |
-| - | (parallel) | **Art pass:** atlas + palette shader replaces vector shapes; classic 2D isometric RTS look | 200 units at 60 fps; draw calls verified |
-| - | +2-3 | **Networking:** see `backlog.md` | Two machines on different NATs finish a match with no desync |
+| [0](milestones/m0-race-generation.md) | done | **Race generation:** data contract, generator, pricing, composer, Race Lab, tests | Prompts give stable, readable armies; tests pass |
+| [1](milestones/m1-sim-core.md) | done | **Sim core:** fixed tick, integer maths, command queue, replay record/playback, state hash, determinism test | The same scripted 10-minute replay gives identical hashes (met: 400/400 checkpoints; 200-unit tick 0.9 ms avg) |
+| [2](milestones/m2-map-movement.md) | now | **Map + movement:** JSON map + generated isometric TileMapLayer, flow fields, separation, camera pan/zoom, selection, box select, move | 50 units cross the map in groups with no stuck units |
+| [3](milestones/m3-economy.md) | 1 | **Economy:** gather/carry/drop-off, Food/Wood, TC trains workers, Houses/pop, build placement + construction | The opening economy is fun to watch for 3 minutes |
+| [4](milestones/m4-combat.md) | 1 | **Combat:** attack/armour/HP, counter tags, projectiles, deaths, unit card | Blind testers predict counters from silhouettes |
+| [5](milestones/m5-progression.md) | 1 | **Progression:** Barracks, age-up, Sharp Sticks research, tier-2 units, Watchtower, fixed-point cost table | Age-up lands at minutes 4-6 |
+| [6](milestones/m6-ai-match-flow.md) | 1 | **AI + match flow:** build order, waves, tag-aware counter-picking, race select screen, win/lose | AI beats a passive player and loses to a decent one |
+| [7](milestones/m7-fog-juice.md) | 1 | **Fog + juice:** fog, minimap, SFX, hit flash, death poses, tuning | A full match runs 9-12 minutes |
+| [8](milestones/m8-playtest-balance.md) | 1 | **Playtest + balance:** 5-10 people, balance pass, itch.io build | Success metrics below |
+| [-](milestones/art-pass.md) | (parallel) | **Art pass:** atlas + palette shader replaces vector shapes; classic 2D isometric RTS look | 200 units at 60 fps; draw calls verified |
+| [-](milestones/networking.md) | +2-3 | **Networking:** see `backlog.md` | Two machines on different NATs finish a match with no desync |
 
 ---
 
