@@ -119,6 +119,10 @@ still maps the brief onto parts within host rules.
 
 - **Full classic-RTS-style art pass:** atlas of mask textures, palette shader, buildings, terrain.
 - 8 facings if 2 + mirror isn't enough.
+- **UI themed by your race** (Dominic, 2026-10-11): the HUD adapts to the generated race:
+  panel colours and borders from the family/palette, fonts, emblems and little extra bits and
+  bobs (frog lily-pad buttons, rat cheese-rind frames). Data-driven from families.json, like
+  everything else.
 - Raised-looking blocked terrain (rocks, reed beds) instead of flat diamonds; match sprite
   footprints to the sim's collision radii so crowds don't overlap visually.
 - **Faster flow-field solves** if the ~2.4 ms one-tick spike ever shows: spread a solve over
