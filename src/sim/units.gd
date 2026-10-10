@@ -21,6 +21,18 @@ var wx := PackedInt32Array()       # current waypoint (from the flow field) towa
 var wy := PackedInt32Array()
 var group := PackedInt32Array()    # move group: one per MOVE command, 0 if never ordered
 var stuck := PackedInt32Array()    # consecutive ticks a move made no progress
+var fkey := PackedInt32Array()     # flow field key being followed (see World.field_key)
+var reach := PackedInt32Array()    # 0: arrive at the point (tx, ty); 1: arrive next to the rect below
+var rx0 := PackedInt32Array()      # target rect (milli-tiles, inclusive) when reach == 1
+var ry0 := PackedInt32Array()
+var rx1 := PackedInt32Array()
+var ry1 := PackedInt32Array()
+var task := PackedInt32Array()     # Economy.NONE / GATHER / RETURN / BUILD
+var target := PackedInt32Array()   # resource cell (GATHER) or building id (RETURN, BUILD)
+var home := PackedInt32Array()     # resource cell to go back to after a drop-off, or -1
+var carry_kind := PackedInt32Array()   # 0 nothing, 1 food, 2 wood
+var carry := PackedInt32Array()
+var work := PackedInt32Array()     # ticks into the current gather
 var speed := PackedInt32Array()    # milli-tiles per tick
 var radius := PackedInt32Array()   # milli-tiles
 var hp := PackedInt32Array()
@@ -47,6 +59,18 @@ func add(uid: int, p_owner: int, p_kind: int, p_x: int, p_y: int, p_speed: int, 
 	wy.append(p_y)
 	group.append(0)
 	stuck.append(0)
+	fkey.append(-1)
+	reach.append(0)
+	rx0.append(0)
+	ry0.append(0)
+	rx1.append(0)
+	ry1.append(0)
+	task.append(0)
+	target.append(-1)
+	home.append(-1)
+	carry_kind.append(0)
+	carry.append(0)
+	work.append(0)
 	speed.append(p_speed)
 	radius.append(p_radius)
 	hp.append(p_hp)
@@ -78,6 +102,18 @@ func remove_at(i: int) -> void:
 	wy.remove_at(i)
 	group.remove_at(i)
 	stuck.remove_at(i)
+	fkey.remove_at(i)
+	reach.remove_at(i)
+	rx0.remove_at(i)
+	ry0.remove_at(i)
+	rx1.remove_at(i)
+	ry1.remove_at(i)
+	task.remove_at(i)
+	target.remove_at(i)
+	home.remove_at(i)
+	carry_kind.remove_at(i)
+	carry.remove_at(i)
+	work.remove_at(i)
 	speed.remove_at(i)
 	radius.remove_at(i)
 	hp.remove_at(i)

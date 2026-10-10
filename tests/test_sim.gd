@@ -30,6 +30,7 @@ const BANNED := [
 	"\\bTime\\.", "\\bOS\\.", "extends Node", "_physics_process", "Vector2\\b",
 ]
 
+var rules_: Dictionary
 var failures := 0
 var checks := 0
 
@@ -41,7 +42,8 @@ func _init() -> void:
 	var races := []
 	for p in PROMPTS:
 		races.append(gen.generate(p, rules))
-	var map: SimMap = SimMap.load_id("flat_test")
+	var map: SimMap = SimMap.load_id("flat_test")   # for reading only; every World loads its own
+	rules_ = rules
 
 	_test_fixed()
 	_test_command_order()
@@ -91,29 +93,73 @@ func check(ok: bool, what: String) -> void:
 
 ## Every command of the match, stamped in advance. Unit ids are predictable:
 ## spawns run in (player, seq) order, so player 0 gets 1..100 and player 1 101..200.
+## Every command of the match, stamped in advance. Ids are predictable: the
+## setup gives each player a Town Center then its starting workers (player 0
+## first), and the armies spawn in (player, seq) order after that.
 func _script(map: SimMap, races: Array) -> Array:
 	var rng = Rng.new(SEED ^ 0x5C51)
 	var out := []
 	var seq := [0, 0]
+	var start: Dictionary = rules_.economy.start
+	var setup_ids: int = start.buildings.size() + int(start.workers)
 	var per_player: int = PER_SLOT * races[0].units.size()
+	var army_first: int = 1 + races.size() * setup_ids
+	var cmd := func(turn: int, p: int, type: String, args: Dictionary) -> void:
+		out.append({"turn": turn, "player": p, "seq": seq[p], "type": type, "args": args})
+		seq[p] += 1
+	# The economy: two workers on food, one on wood, two more trained, a house.
+	for p in races.size():
+		var tc := 1 + p * setup_ids
+		var food_cell := _nearest_resource(map, map.starts[p], "food")
+		var wood_cell := _nearest_resource(map, map.starts[p], "wood")
+		cmd.call(0, p, Commands.GATHER, {"ids": [tc + 1, tc + 2], "cell": food_cell})
+		cmd.call(0, p, Commands.GATHER, {"ids": [tc + 3], "cell": wood_cell})
+		cmd.call(0, p, Commands.RALLY, {"building": tc, "x": (food_cell % map.width) * 1000 + 500, "y": (food_cell / map.width) * 1000 + 500})
+		cmd.call(0, p, Commands.TRAIN, {"building": tc, "slot": "worker"})
+		cmd.call(0, p, Commands.TRAIN, {"building": tc, "slot": "worker"})
+		var spot := _house_spot(map, map.starts[p])
+		cmd.call(60, p, Commands.BUILD, {"ids": [tc + 3], "building": "house", "cx": spot.x, "cy": spot.y})
+	# The armies arrive at 30 s, then march about.
 	for p in races.size():
 		for u in races[p].units:
-			out.append({"turn": 0, "player": p, "seq": seq[p], "type": Commands.SPAWN,
-				"args": {"slot": u.recipe.slot, "count": PER_SLOT, "x": map.starts[p][0], "y": map.starts[p][1]}})
-			seq[p] += 1
-	for turn in range(ORDERS_EVERY, TICKS / Commands.TICKS_PER_TURN - Commands.DELAY, ORDERS_EVERY):
+			cmd.call(150, p, Commands.SPAWN, {"slot": u.recipe.slot, "count": PER_SLOT, "x": map.starts[p][0], "y": map.starts[p][1]})
+	for turn in range(150 + ORDERS_EVERY, TICKS / Commands.TICKS_PER_TURN - Commands.DELAY, ORDERS_EVERY):
 		for p in races.size():
-			var first := 1 + p * per_player
+			var first := army_first + p * per_player
 			var ids := []
 			var mode := rng.range_int(0, 3)
 			for uid in range(first, first + per_player):
 				if mode == 0 or uid % 4 == mode:   # whole army, or one of three groups
 					ids.append(uid)
 			var target := _walkable_point(map, rng)
-			out.append({"turn": turn, "player": p, "seq": seq[p], "type": Commands.MOVE,
-				"args": {"ids": ids, "x": target[0], "y": target[1]}})
-			seq[p] += 1
+			cmd.call(turn, p, Commands.MOVE, {"ids": ids, "x": target[0], "y": target[1]})
 	return out
+
+
+## The resource cell of a kind nearest a point (ties: lower cell).
+func _nearest_resource(map: SimMap, at: Array, kind: String) -> int:
+	var best := -1
+	var best_d2 := 1 << 62
+	for c in map.resource_cells:
+		if map.resource_at(c) != kind:
+			continue
+		var d2 := Fixed.dist2(at[0], at[1], (c % map.width) * 1000 + 500, (c / map.width) * 1000 + 500)
+		if d2 < best_d2:
+			best_d2 = d2
+			best = c
+	return best
+
+
+## A free 2x2 spot (with a tile of space around it) near a start, spiralling out.
+func _house_spot(map: SimMap, at: Array) -> Vector2i:
+	var cx: int = at[0] / 1000
+	var cy: int = at[1] / 1000
+	for r in range(4, 12):   # the Town Center covers the start +-1
+		for dy in range(-r, r + 1):
+			for dx in range(-r, r + 1):
+				if maxi(absi(dx), absi(dy)) == r and map.can_build(cx + dx - 1, cy + dy - 1, 4):
+					return Vector2i(cx + dx, cy + dy)
+	return Vector2i(-1, -1)
 
 
 func _walkable_point(map: SimMap, rng) -> Array:
@@ -126,7 +172,7 @@ func _walkable_point(map: SimMap, rng) -> Array:
 
 
 func _play(map: SimMap, races: Array, script: Array, shuffle: bool, timing: Dictionary) -> World:
-	var world := World.new(SEED, map, races)
+	var world := World.new(SEED, SimMap.load_id(map.id), races, rules_)
 	var cmds := script.duplicate(true)
 	if shuffle:
 		cmds = Rng.new(99).shuffled(cmds)
@@ -162,7 +208,14 @@ func _test_moved(w: World) -> void:
 	for h in w.hashes:
 		distinct[h[1]] = true
 	check(distinct.size() > w.hashes.size() * 9 / 10, "state keeps changing (%d distinct hashes)" % distinct.size())
-	check(w.units.count() == 2 * 5 * PER_SLOT, "all 200 units spawned")
+	var start: Dictionary = rules_.economy.start
+	check(w.units.count() == 2 * (5 * PER_SLOT + int(start.workers) + 2), "armies, starting workers and 2 trained each (%d units)" % w.units.count())
+	var built := 0
+	for b in w.buildings.count():
+		built += w.buildings.done[b]
+	check(built == 4, "both Town Centers and both houses stand (%d built)" % built)
+	check(w.food[0] > int(start.food) and w.food[1] > int(start.food), "both sides gathered food (%d, %d)" % [w.food[0], w.food[1]])
+	check(w.map.version > 0, "the map changed during the match (houses, cut reeds): version %d" % w.map.version)
 
 
 # --- movement -------------------------------------------------------------------
@@ -170,7 +223,10 @@ func _test_moved(w: World) -> void:
 ## The milestone 2 exit criterion: 50 units cross the map in groups, nobody stuck.
 func _test_crossing(races: Array, map_id: String) -> void:
 	var map: SimMap = SimMap.load_id(map_id)
-	var w := World.new(SEED, map, races)
+	var bare := rules_.duplicate(true)   # movement only: no town centres or starting workers
+	bare.economy.start.buildings = []
+	bare.economy.start.workers = 0
+	var w := World.new(SEED, map, races, bare)
 	var src: Array = map.starts[0]
 	var dst: Array = map.starts[1]
 	for u in races[0].units:
@@ -216,10 +272,10 @@ func _test_crossing(races: Array, map_id: String) -> void:
 func _test_flow(map: SimMap) -> void:
 	var target: int = map.starts[1][1] / 1000 * map.width + map.starts[1][0] / 1000
 	var t0 := Time.get_ticks_usec()
-	var a = Flow.solve(map, target)
+	var a = Flow.solve(map, PackedInt32Array([target]))
 	var us := Time.get_ticks_usec() - t0
-	Flow.solve(map, 5 * map.width + 5)
-	var b = Flow.solve(map, target)
+	Flow.solve(map, PackedInt32Array([5 * map.width + 5]))
+	var b = Flow.solve(map, PackedInt32Array([target]))
 	check(a.dist == b.dist and a.next == b.next, "a flow field doesn't depend on what was solved before")
 	var bad := 0
 	for c in a.dist.size():
@@ -229,7 +285,15 @@ func _test_flow(map: SimMap) -> void:
 		elif reachable and c != target and a.dist[a.next[c]] >= a.dist[c]:
 			bad += 1
 	check(bad == 0, "every walkable cell reaches the target downhill on flat_test (%d bad)" % bad)
-	print("flow field solve, %dx%d: %.2f ms" % [map.width, map.height, us / 1000.0])
+	t0 = Time.get_ticks_usec()
+	var near = Flow.solve(map, PackedInt32Array([target]), 160)
+	var near_us := Time.get_ticks_usec() - t0
+	var far := 0
+	for c in near.dist.size():
+		if near.dist[c] < Flow.INF and a.dist[c] > 160 + Flow.DIAGONAL:
+			far += 1
+	check(far == 0 and near.pops < a.pops / 2, "a near field stops at its cutoff (%d of %d cells)" % [near.pops, a.pops])
+	print("flow field solve, %dx%d: %.2f ms full, %.2f ms within 16 tiles" % [map.width, map.height, us / 1000.0, near_us / 1000.0])
 
 
 # --- replay -------------------------------------------------------------------

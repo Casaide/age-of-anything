@@ -11,6 +11,7 @@ const MAX_POINTS := 96
 const CURVES := {
 	"pow1.4_ref12": {"exponent": 1.4, "ref_points": 12},
 	"pow1.2_ref12": {"exponent": 1.2, "ref_points": 12},
+	"pow0.5_ref12": {"exponent": 0.5, "ref_points": 12},
 }
 
 

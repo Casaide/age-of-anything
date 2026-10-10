@@ -8,8 +8,15 @@ extends RefCounted
 const TICKS_PER_TURN := 4    # 200 ms turns at 20 Hz
 const DELAY := 2             # turns between issuing and running
 
-const MOVE := "move"         # {ids: [unit ids], x, y}       milli-tiles
-const SPAWN := "spawn"       # {slot: roster slot, count, x, y}   debug and match setup
+const MOVE := "move"               # {ids: [unit ids], x, y}  milli-tiles
+const SPAWN := "spawn"             # {slot: roster slot, count, x, y}  debug and test setups
+const GATHER := "gather"           # {ids, cell}  workers gather; others walk there
+const BUILD := "build"             # {ids, building: type id, cx, cy}  place a foundation (top-left cell)
+const HELP_BUILD := "help_build"   # {ids, target: building id}
+const TRAIN := "train"             # {building: id, slot}
+const CANCEL := "cancel"           # {building: id, index}  refunds
+const RALLY := "rally"             # {building: id, x, y}
+const TYPES := [MOVE, SPAWN, GATHER, BUILD, HELP_BUILD, TRAIN, CANCEL, RALLY]
 
 var pending := {}            # run turn -> [commands]; looked up by key, never iterated
 var next_seq := {}           # player -> next seq; looked up by key, never iterated
@@ -71,7 +78,7 @@ static func problem(cmd: Dictionary) -> String:
 	for k in ["turn", "player", "seq"]:
 		if typeof(cmd[k]) != TYPE_INT:
 			return "Command %s must be an int, got %s" % [k, type_string(typeof(cmd[k]))]
-	if not cmd.type in [MOVE, SPAWN]:
+	if not cmd.type in TYPES:
 		return "Unknown command type: %s" % cmd.type
 	for k in cmd.args:
 		var v = cmd.args[k]

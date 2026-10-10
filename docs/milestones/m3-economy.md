@@ -85,10 +85,10 @@ over a match), and the milestone builds a minimal clickable panel plus hotkeys, 
 ## Checklist
 - [x] Plan approved
 - [x] Data: terrain resources, buildings.json, rules economy, race economy modifiers
-- [ ] Sim: players, resource grid, buildings store, map version + field invalidation
-- [ ] Multi-source flow fields with cost cutoff
-- [ ] Worker gather/deposit loop; construction
-- [ ] TRAIN/CANCEL/RALLY, pop cap
+- [x] Sim: players, resource grid, buildings store, map version + field invalidation
+- [x] Multi-source flow fields with cost cutoff
+- [x] Worker gather/deposit loop; construction
+- [x] TRAIN/CANCEL/RALLY, pop cap
 - [ ] View: buildings, resources, carry, smart right-click, panel, placement ghost
 - [ ] Tests: 3-minute opening, determinism, map-change determinism, tick time
 - [ ] Archive: pictures along the way (first buildings, first gather loop, bugs, the 1/2/3-minute
@@ -98,6 +98,10 @@ over a match), and the milestone builds a minimal clickable panel plus hotkeys, 
 (when done)
 
 ## Changes from the original plan
+- Train time moved into data: `rules.cost.train_base` (20 s) on a flatter `pow0.5` curve, so a
+  worker takes ~11-14 s, a spear ~20 s, a large unit ~27 s. Pricing's old fixed 8 s base gave
+  2-3 s workers, which would have flooded the opening.
+- Replays now pin the rules too (`rules` id + content hash), since the economy reads them.
 - Added (Dominic): test hotkeys in the debug view to regenerate an army: G rerolls your army,
   Shift+G gives it a random prompt, Ctrl+G does that for the enemy. The match restarts; the
   replay records the prompt and reroll.

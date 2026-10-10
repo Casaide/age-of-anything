@@ -1,6 +1,7 @@
 extends RefCounted
 ## A replay is the command log plus everything needed to rebuild the start:
-## seed, map id + content hash, and each race as prompt + rules + reroll + key.
+## seed, map id + content hash, the rules (id + content hash), and each race as
+## prompt + rules + reroll + key.
 ## Races are regenerated on load and must reproduce their keys. Checkpoint
 ## hashes ride along so playback can say exactly where it drifted.
 
@@ -9,7 +10,7 @@ const Generator := preload("res://src/race_generator.gd")
 const SimMap := preload("res://src/sim/sim_map.gd")
 const World := preload("res://src/sim/world.gd")
 
-const SCHEMA := "aow.replay/1"
+const SCHEMA := "aow.replay/2"
 
 
 static func record(world: World) -> Dictionary:
@@ -21,11 +22,18 @@ static func record(world: World) -> Dictionary:
 		"seed": world.seed_value,
 		"map": world.map.id,
 		"map_hash": world.map.map_hash,
+		"rules": world.rules.id,
+		"rules_hash": rules_hash(world.rules),
 		"races": races,
 		"ticks": world.tick,
 		"commands": world.history.duplicate(true),
 		"checkpoints": world.hashes.duplicate(true),
 	}
+
+
+## Content hash of a rules dict (sorted-key JSON), so a changed rules file is caught.
+static func rules_hash(rules: Dictionary) -> String:
+	return JSON.stringify(rules, "", true).sha256_text().substr(0, 16)
 
 
 static func to_json(rep: Dictionary) -> String:
@@ -74,7 +82,9 @@ static func build_world(rep: Dictionary, lib: DataLib) -> World:
 		races.append(race)
 	var map: SimMap = SimMap.load_id(rep.map)
 	assert(map.map_hash == rep.map_hash, "Map %s has changed since the replay was recorded" % rep.map)
-	var world := World.new(rep.seed, map, races)
+	var rules = DataLib.load_json("res://data/rules/%s.json" % rep.rules)
+	assert(rules_hash(rules) == rep.rules_hash, "Rules %s have changed since the replay was recorded" % rep.rules)
+	var world := World.new(rep.seed, map, races, rules)
 	for cmd in rep.commands:
 		world.commands.add(cmd)
 	return world
