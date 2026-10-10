@@ -22,9 +22,11 @@ move it to `docs/backlog.md` rather than deleting it.
 
 - **Done (milestone 0): race generation.** Prompt -> race -> composed, animated units in the Race Lab
   (`scenes/race_lab.tscn`, the main scene). Placeholder art is vector shapes in `data/parts.json`.
-- **Next (milestone 1): UI + gameplay MVP.** Deterministic fixed-tick sim, selection/commands,
-  economy (Food/Wood), buildings, one age-up, combat with counter tags, scripted AI, 10-minute match.
-  Start with Frogs vs Rats. See `docs/mvp-plan.md`.
+- **Done (milestone 1): sim core.** `src/sim/`: integer-only 20 Hz sim driven by a command queue,
+  replays, state hashes, straight-line MOVE + separation. Debug view `scenes/sim_debug.tscn`.
+  `tests/test_sim.gd` plays a 10-minute 200-unit match; tick is ~0.9 ms avg (budget 3 ms).
+- **Next (milestone 2): map + movement.** TileMapLayer bake, flow fields, box select, camera.
+  Then economy, combat, progression, AI. Frogs vs Rats first. See `docs/mvp-plan.md`.
 
 ## Layout
 
@@ -36,7 +38,9 @@ data/            the data contract; mods are just more of this
   families.json    cultures/styles: cloth colours, mounts, name parts
   palettes.json    skin palettes, fixed material colours, team colours
   lexicon.json     word -> creature/mount/family/tags/size; out-of-era words + playful notes
-  rules/*.json     host rules: era bounds, point budgets per tier, roster template, cost curve
+  rules/*.json     host rules: era bounds, point budgets per tier, roster template, cost curve ids
+  cost_curves.json fixed-point cost curves (per-mille by points), written by tests/gen_cost_curve.gd
+  maps/*.json      sim maps: ASCII walkable grid + start tiles (milestone 2 bakes from TileMapLayer)
 src/
   rng.gd           xorshift32 + FNV-1a. The only randomness allowed in generation/sim
   data_lib.gd      loads data/, era filtering, stable candidate lists
@@ -44,7 +48,17 @@ src/
   pricing.gd       recipe -> stats, tags, cost, train time, pop
   unit_view.gd     composer + procedural animation (recipe -> Node2D on sockets)
   part_shape.gd    draws one placeholder part from its shapes
+  sim_clock.gd     the only Node in the sim path: steps a World at 20 Hz from _process
+  sim/             the simulation: RefCounted, integers only, no Nodes (lint-checked by test_sim)
+    fixed.gd         isqrt, sin/cos table, hash mixing
+    world.gd         tick loop: commands -> move -> separate -> hash every 30 ticks
+    units.gd         units as parallel packed int arrays, sorted by id
+    spatial.gd       per-tile buckets for neighbour queries
+    commands.gd      CommandQueue {turn, player, seq, type, args}; 4-tick turns, run at turn + 2
+    sim_map.gd       walkable grid from data/maps
+    replay.gd        record / JSON / rebuild / verify
 scenes/race_lab.*  prompt UI, race cards, two armies milling about
+scenes/sim_debug.* sim drawn with UnitViews; select, right-click move, F5/F9 replays
 tests/           headless checks and dev tools (see Commands)
 ```
 
@@ -56,10 +70,18 @@ Godot on this Mac: `/Applications/Godot.app/Contents/MacOS/Godot` (alias it as `
 godot --headless --path . --script res://tests/run_tests.gd        # must print "0 failed"
 godot --headless --path . --script res://tests/print_races.gd -- "centaur romans" "flying greeks with wings"
 godot --path . --script res://tests/screenshot.gd -- /tmp/lab.png "prompt A" "prompt B"
+godot --headless --path . --script res://tests/test_sim.gd         # sim determinism + tick time (~45 s)
+godot --path . --script res://tests/sim_screenshot.gd -- /tmp/sim.png ["prompt A" "prompt B"]
+godot --path . res://scenes/sim_debug.tscn                         # run the sim debug view
+godot --headless --path . --script res://tests/gen_cost_curve.gd   # regenerate data/cost_curves.json
 godot --path .                                                     # run the Race Lab
 ```
 
-Run the tests after every change to `data/` or `src/`. Look at a screenshot after visual changes.
+A GDScript parse error in a `--script` run leaves Godot hanging instead of exiting; put a
+timeout on headless runs.
+
+Run the tests after every change to `data/` or `src/`, and `test_sim.gd` after every change to
+`src/sim/` or pricing. Look at a screenshot after visual changes.
 
 ## Rules that matter
 

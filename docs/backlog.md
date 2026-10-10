@@ -34,6 +34,10 @@ into active work, move it into `mvp-plan.md` (or a new plan) with an exit criter
 - **Remixes** reference a parent manifest and swap parts, giving a family tree of creations.
 - Peers fetch manifests and blobs before the match; lockstep then runs on identical data.
 - **Share cards:** "I asked for X, got this", with the prompt, a picture and the key.
+- **Replays that outlive the generator:** replays (milestone 1) store each race as prompt + rules +
+  reroll + key and regenerate it on load, so any generator or data change breaks old replays
+  (loudly: the key check fails). Once races are bundles, store the race key and load the recipes
+  from the bundle instead; also stamp replays with a sim build hash.
 
 ## 3. Balance tooling
 
