@@ -102,7 +102,8 @@ still maps the brief onto parts within host rules.
 - **Races:** Beetles/Tortoises (armoured, defensive) and Crows (scouts, raiders).
 - **Economy and buildings:** gold and stone, farms, walls and gates, markets.
 - **Ages and tech:** more ages, full tech trees, formations, garrisons.
-- **Maps:** random map scripts, more maps.
+- **Maps:** random map scripts, more maps, and a small in-editor painting tool that writes the
+  map JSON (maps are JSON since milestone 2; the TileMapLayer is generated from them).
 - **Modes:** teams and diplomacy.
 - **Host modes:**
   - Host curates: race list chosen by the host.
@@ -118,6 +119,10 @@ still maps the brief onto parts within host rules.
 
 - **Full classic-RTS-style art pass:** atlas of mask textures, palette shader, buildings, terrain.
 - 8 facings if 2 + mirror isn't enough.
+- Raised-looking blocked terrain (rocks, reed beds) instead of flat diamonds; match sprite
+  footprints to the sim's collision radii so crowds don't overlap visually.
+- **Faster flow-field solves** if the ~2.4 ms one-tick spike ever shows: spread a solve over
+  ticks, or move the solver to a GDExtension.
 - **Animation:** baked atlases for far zoom and portraits; procedural hit flash and death poses.
 - **Audio:** unit barks in silly voices, music.
 - **Tutorial and campaign:** a scenario editor (the classic RTS longevity lever), then a campaign.

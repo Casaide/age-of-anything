@@ -1,6 +1,6 @@
 # Milestone 2: Map + movement
 
-**Status:** in progress (started 2026-10-10)
+**Status:** done (2026-10-11)
 **Exit criterion:** 50 units cross the map in groups with no stuck units. Also from the risk
 table: flow fields + separation don't jam at a chokepoint. Tick stays at or under 3 ms with 200
 units.
@@ -46,18 +46,40 @@ Map with terrain, flow-field pathfinding, separation, camera pan/zoom, selection
 
 ## Checklist
 - [x] Terrain data + maps v2 (`data/terrain.json`, `flat_test`, `choke_test`)
-- [ ] Flow fields
-- [ ] Waypoint steering, group arrival, wall push-out
-- [ ] Crossing + chokepoint tests, tick time
-- [ ] Isometric view: tiles, projection, y-sort
-- [ ] Camera
-- [ ] Selection: click, box, double-click
-- [ ] Flow-field debug overlay
-- [ ] Archive: screenshot, journal, decisions, timeline
+- [x] Flow fields
+- [x] Waypoint steering, group arrival, wall push-out
+- [x] Crossing + chokepoint tests, tick time
+- [x] Isometric view: tiles, projection, y-sort
+- [x] Camera
+- [x] Selection: click, box, double-click
+- [x] Flow-field debug overlay
+- [x] Archive: screenshots, journal, decisions, timeline
 
 ## Results
-(when done)
+- **Exit criterion met.** 50 units in 5 groups cross `flat_test` corner to corner (settled at
+  72 s) and `choke_test` through the 2-tile gap (54 s). Nobody gives up stuck, everyone ends near
+  their own target, and all stay settled 10 s later.
+- Determinism still holds: 400/400 checkpoints across runs, reversed dicts and shuffled commands.
+- **Flow field solve:** ~2.4 ms on 64x64 (GDScript). At most one solve per tick.
+- **Tick time, 200 units, 10-minute scripted match:** avg 1.38 ms, p50 1.27, p99 3.86, max ~11 ms.
+  The average is well inside 3 ms; the p99 is ticks that also solve a field (the script orders
+  a new random target every 2 s per player, far more often than a person would). The crossing
+  runs (50 units) peak at 2.8 ms.
+- View input checked by driving real mouse events: box select catches the whole army,
+  right-click lands on the clicked milli-tile, double-click picks the type, zoom keeps the
+  cursor point fixed.
+
+## Not done / left for later
+- Field solves still spike a tick by ~2.4 ms. If it matters: an incremental solve spread over
+  ticks, or a GDExtension solver (backlog).
+- Terrain is flat colour diamonds; rocks and reeds don't look raised yet (art pass).
+- Sprites are wider than their 0.3-tile collision radius, so crowds overlap visually.
 
 ## Changes from the original plan
 - Maps: JSON + generated TileMapLayer instead of baking a painted TileMapLayer (see above).
-- Box select moved from a sim spatial query to a view-side screen-space test.
+- Box select moved from a sim spatial query to a view-side screen-space test; `World.pick` went too.
+- One flow-field solve per tick from a queue (units head straight until theirs is ready). This
+  makes "which fields exist" sim state, so it's hashed.
+- Added "return to spot": a settled unit shoved well off its target by passing groups walks back.
+  Found because the chokepoint test failed: later groups bulldozed the first one 4-5 tiles past
+  its target.

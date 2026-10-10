@@ -7,7 +7,7 @@ along the way. The overview table lives in `../mvp-plan.md` §3; these files hol
 |---|---|---|
 | 0 | [Race generation](m0-race-generation.md) | done 2026-10-10 |
 | 1 | [Sim core](m1-sim-core.md) | done 2026-10-10 |
-| 2 | [Map + movement](m2-map-movement.md) | in progress |
+| 2 | [Map + movement](m2-map-movement.md) | done 2026-10-11 |
 | 3 | [Economy](m3-economy.md) | planned |
 | 4 | [Combat](m4-combat.md) | planned |
 | 5 | [Progression](m5-progression.md) | planned |
