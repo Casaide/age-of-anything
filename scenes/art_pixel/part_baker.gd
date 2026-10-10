@@ -7,6 +7,10 @@ extends SubViewport
 
 const PartShape := preload("res://src/part_shape.gd")
 const Pixelize := preload("res://scenes/art_pixel/pixelize.gd")
+const UnitModels := preload("res://scenes/art_pixel/unit_models.gd")
+
+const AZIMUTH := 35.0    # hand-built models are seen three-quarter: from the near side, a bit in front
+const ELEVATION := 30.0  # and from above, like the map
 
 const SS := 4            # supersampling
 const LAYER := 50.0      # depth between shapes, so later shapes sit in front
@@ -14,7 +18,9 @@ const MARGIN := 3.0      # part units of room around the shapes
 
 var art_scale := 1.5     # art pixels per part unit
 var cam: Camera3D
+var key: DirectionalLight3D
 var holder: Node3D
+var models := UnitModels.new()
 
 
 func _init() -> void:
@@ -26,7 +32,7 @@ func _init() -> void:
 	cam.projection = Camera3D.PROJECTION_ORTHOGONAL
 	cam.far = 5000.0
 	add_child(cam)
-	var key := DirectionalLight3D.new()
+	key = DirectionalLight3D.new()
 	key.basis = Basis.looking_at(Vector3(0.55, -0.7, -1.0).normalized(), Vector3.UP)
 	key.light_energy = 1.05
 	add_child(key)
@@ -48,6 +54,11 @@ func bake(id: String, shapes: Array, colours: Dictionary) -> void:
 	var key := PartShape.bake_key(id, shapes, colours)
 	if PartShape.baked.has(key):
 		return
+	if models.has(id):
+		await _bake_model(id, colours, key)
+		return
+	cam.basis = Basis.IDENTITY
+	self.key.basis = Basis.looking_at(Vector3(0.55, -0.7, -1.0).normalized(), Vector3.UP)
 	var bounds := _bounds(shapes).grow(MARGIN)
 	var px := art_scale * SS
 	size = Vector2i(ceili(bounds.size.x * px), ceili(bounds.size.y * px))
@@ -67,6 +78,62 @@ func bake(id: String, shapes: Array, colours: Dictionary) -> void:
 	var origin := Vector2(-bounds.position.x, -bounds.position.y) * art_scale
 	var pix := Pixelize.run(img, SS)
 	PartShape.baked[key] = {"tex": ImageTexture.create_from_image(pix), "origin": origin, "scale": art_scale}
+
+
+## A hand-built model, seen three-quarter; its sockets come along, projected into 2D part units.
+func _bake_model(id: String, colours: Dictionary, bake_key: String) -> void:
+	var spec: Dictionary = models.build(id, colours)
+	var model: Node3D = spec.node
+	holder.add_child(model)
+	var box := _aabb(model)
+	var r := box.size.length() * 0.5 + 2.0
+	var px := art_scale * SS
+	size = Vector2i.ONE * ceili(2.0 * r * px)
+	cam.keep_aspect = Camera3D.KEEP_HEIGHT
+	cam.size = 2.0 * r
+	var az := deg_to_rad(AZIMUTH)
+	var el := deg_to_rad(ELEVATION)
+	var view := Vector3(sin(az) * cos(el), sin(el), cos(az) * cos(el))
+	cam.basis = Basis.looking_at(-view, Vector3.UP)
+	cam.position = box.get_center() + view * 1000.0
+	# Light from the viewer's upper left, a little in front.
+	key.basis = Basis.looking_at(cam.basis * Vector3(0.55, -0.75, -1.0).normalized(), Vector3.UP)
+	render_target_update_mode = SubViewport.UPDATE_ONCE
+	await RenderingServer.frame_post_draw
+	var img := get_texture().get_image()
+	var origin := cam.unproject_position(Vector3.ZERO)
+	var to2d := func(p: Vector3) -> Vector2: return (cam.unproject_position(p) - origin) / px
+	if spec.has("sockets"):
+		var rig := {"sockets": {}}
+		for k in spec.sockets:
+			rig.sockets[k] = to2d.call(spec.sockets[k])
+		if spec.has("anchors"):
+			rig.anchors = spec.anchors.map(func(a): var v: Vector2 = to2d.call(a[0]); return [v.x, v.y, a[1], a[2]])
+		if spec.has("torso_scale"):
+			rig.torso_scale = spec.torso_scale
+		PartShape.rigs[id] = rig
+	holder.remove_child(model)
+	model.queue_free()
+	var used := img.get_used_rect().grow(SS * 2).intersection(Rect2i(Vector2i.ZERO, img.get_size()))
+	used.position = used.position / SS * SS
+	var pix := Pixelize.run(img.get_region(used), SS)
+	PartShape.baked[bake_key] = {"tex": ImageTexture.create_from_image(pix),
+		"origin": (origin - Vector2(used.position)) / SS, "scale": art_scale}
+
+
+static func _aabb(n: Node3D) -> AABB:
+	var box := AABB()
+	var first := true
+	for mi in n.find_children("*", "MeshInstance3D", true, false):
+		var t := Transform3D()
+		var p: Node = mi
+		while p != n:
+			t = (p as Node3D).transform * t
+			p = p.get_parent()
+		var b: AABB = t * mi.get_aabb()
+		box = b if first else box.merge(b)
+		first = false
+	return box
 
 
 static func _bounds(shapes: Array) -> Rect2:

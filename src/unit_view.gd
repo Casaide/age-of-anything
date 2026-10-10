@@ -60,7 +60,7 @@ func build(r: Dictionary, lib, team: Color, speed := 10) -> void:
 		for slot in m.parts:
 			_attach(lib, mount_rig, slot, m.parts[slot], mount_colours)
 		var seat := Node2D.new()
-		seat.z_index = 2
+		seat.set_meta("z", 2)
 		if m.fused:
 			seat.position = Vector2(9, -12)
 		else:
@@ -80,7 +80,24 @@ func build(r: Dictionary, lib, team: Color, speed := 10) -> void:
 		flying = true
 
 	shadow.scale = Vector2(unit_scale, unit_scale) * (0.8 if flying else 1.0)
+	if style == "baked":
+		# A firmer pixel shadow in the buildings' shadow colour, falling the way their light does.
+		shadow.setup([{"t": "ellipse", "c": [3, 1], "r": [15, 4.5], "ch": "shadow"}], {"shadow": Color(0.06, 0.05, 0.03, 0.42)})
+	_sort_layers(self)
 	_face(facing)
+
+
+## Parts are layered by child order (their "z" meta), not z_index: z_index is global,
+## so a part with z above 0 would draw over every y-sorted building and unit.
+func _sort_layers(n: Node) -> void:
+	var kids := n.get_children()
+	var order := []
+	for i in kids.size():
+		order.append([int(kids[i].get_meta("z", 0)), i, kids[i]])
+	order.sort_custom(func(a, b): return a[0] < b[0] or (a[0] == b[0] and a[1] < b[1]))
+	for i in order.size():
+		n.move_child(order[i][2], i)
+		_sort_layers(order[i][2])
 
 
 func _shape() -> PartShape:
@@ -107,21 +124,27 @@ func _make_rig(lib, body_id: String, head_id: String, colours: Dictionary, paren
 	var body: Dictionary = lib.part(body_id)
 	var root := Node2D.new()
 	parent.add_child(root)
+	# Baked parts from hand-built models bring their own sockets (projected by the bake camera).
+	var rig: Dictionary = PartShape.rigs.get(body_id, {}) if style == "baked" else {}
 	var sockets := {}
 	for k in body.sockets:
 		sockets[k] = PartShape.v2(body.sockets[k])
+	if rig.has("sockets"):
+		sockets = rig.sockets.duplicate()
 
 	if with_legs and body.has("legs"):
 		var leg_part: Dictionary = lib.part(body.legs.part)
-		for a in body.legs.anchors:
+		for a in rig.get("anchors", body.legs.anchors):
 			var leg := _shape()
 			leg.pin = true
 			leg.part_id = body.legs.part
 			leg.setup(leg_part.shapes, colours)
 			leg.position = Vector2(float(a[0]), float(a[1]))
-			leg.z_index = 1 if float(a[3]) > 0.0 else -2
+			leg.set_meta("z", 1 if float(a[3]) > 0.0 else -2)
 			if a.size() > 4 and int(a[4]) == 1:
 				leg.scale.x = -1.0
+			if rig.has("anchors") and float(a[3]) < 0.0:
+				leg.modulate = Color(0.78, 0.78, 0.78)   # the far leg sits in shadow
 			root.add_child(leg)
 			legs.append({"node": leg, "phase": float(a[2])})
 
@@ -138,11 +161,13 @@ func _make_rig(lib, body_id: String, head_id: String, colours: Dictionary, paren
 		head_node.part_id = head_id
 		head_node.setup(head.shapes, colours)
 		head_node.position = sockets.head
-		head_node.z_index = 2
+		head_node.set_meta("z", 2)
 		root.add_child(head_node)
-		sockets["top"] = sockets.head + PartShape.v2(head.sockets.top)
+		var head_rig: Dictionary = PartShape.rigs.get(head_id, {}) if style == "baked" else {}
+		sockets["top"] = sockets.head + (head_rig.sockets.top if head_rig.has("sockets") else PartShape.v2(head.sockets.top))
 
-	return {"root": root, "sockets": sockets, "torso_scale": PartShape.v2(body.get("torso_scale", [1, 1]))}
+	var torso_scale: Vector2 = rig.get("torso_scale", PartShape.v2(body.get("torso_scale", [1, 1])))
+	return {"root": root, "sockets": sockets, "torso_scale": torso_scale}
 
 
 func _attach(lib, rig: Dictionary, slot: String, part_id: String, colours: Dictionary) -> void:
@@ -154,7 +179,7 @@ func _attach(lib, rig: Dictionary, slot: String, part_id: String, colours: Dicti
 	node.part_id = part_id
 	node.setup(p.shapes, colours)
 	node.position = rig.sockets[socket]
-	node.z_index = Z_FOR_SLOT[slot]
+	node.set_meta("z", Z_FOR_SLOT[slot])
 	if slot == "torso":
 		node.scale = rig.torso_scale
 	rig.root.add_child(node)

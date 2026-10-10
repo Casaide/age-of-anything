@@ -17,7 +17,7 @@ const Models := preload("res://scenes/style_sampler/hifi/models.gd")
 
 const ART_SCALE := 1.5     # art pixels per canvas unit (a tile is 96 x 48 art pixels)
 const SS := 4
-const UNIT_SCALE := 0.7    # units at about a third of a building's height, as the genre does it
+const UNIT_SCALE := 0.85   # units at about a third of a building's height, as the genre does it
 const PROMPTS := ["angry swamp frogs with reed spears", "sewer rats with cheese hammers"]
 const ROWS := [
 	"\"\"\"\".............",
