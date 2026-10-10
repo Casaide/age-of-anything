@@ -12,6 +12,7 @@ const Commands := preload("res://src/sim/commands.gd")
 const SimMap := preload("res://src/sim/sim_map.gd")
 const World := preload("res://src/sim/world.gd")
 const Replay := preload("res://src/sim/replay.gd")
+const Flow := preload("res://src/sim/flow.gd")
 
 const PROMPTS := ["angry swamp frogs with reed spears", "sewer rats with cheese hammers"]
 const SEED := 20261010
@@ -19,6 +20,8 @@ const TICKS := 12000               # 10 minutes at 20 Hz
 const PER_SLOT := 20               # x 5 roster slots x 2 players = 200 units
 const ORDERS_EVERY := 10           # turns between each player's orders (2 s)
 const TICK_BUDGET_USEC := 3000
+const CROSS_UNITS := 10            # per roster slot: 50 units, in 5 groups of 10
+const CROSS_LIMIT := 2400          # ticks (2 minutes) to get everyone across
 
 ## Banned in src/sim/: floats, float maths, engine randomness, wall clocks, Nodes.
 const BANNED := [
@@ -43,6 +46,9 @@ func _init() -> void:
 	_test_fixed()
 	_test_command_order()
 	_test_source_lint()
+	_test_flow(map)
+	_test_crossing(races, "flat_test")
+	_test_crossing(races, "choke_test")
 
 	var script := _script(map, races)
 	print("script: %d commands over %d ticks" % [script.size(), TICKS])
@@ -157,6 +163,73 @@ func _test_moved(w: World) -> void:
 		distinct[h[1]] = true
 	check(distinct.size() > w.hashes.size() * 9 / 10, "state keeps changing (%d distinct hashes)" % distinct.size())
 	check(w.units.count() == 2 * 5 * PER_SLOT, "all 200 units spawned")
+
+
+# --- movement -------------------------------------------------------------------
+
+## The milestone 2 exit criterion: 50 units cross the map in groups, nobody stuck.
+func _test_crossing(races: Array, map_id: String) -> void:
+	var map: SimMap = SimMap.load_id(map_id)
+	var w := World.new(SEED, map, races)
+	var src: Array = map.starts[0]
+	var dst: Array = map.starts[1]
+	for u in races[0].units:
+		w.issue(0, Commands.SPAWN, {"slot": u.recipe.slot, "count": CROSS_UNITS, "x": src[0], "y": src[1]})
+	while w.units.count() == 0:
+		w.step()
+	var ids := Array(w.units.id)
+	var groups := ids.size() / CROSS_UNITS
+	for g in groups:
+		w.issue(0, Commands.MOVE, {"ids": ids.slice(g * CROSS_UNITS, (g + 1) * CROSS_UNITS),
+			"x": dst[0] + (g - groups / 2) * 1500, "y": dst[1] + ((g % 2) * 2 - 1) * 1000})
+	w.step()
+	var settled := -1
+	var worst := 0
+	var t0 := Time.get_ticks_usec()
+	var ticks := 0
+	while w.tick < CROSS_LIMIT and settled < 0:
+		var s := Time.get_ticks_usec()
+		w.step()
+		ticks += 1
+		worst = maxi(worst, Time.get_ticks_usec() - s)
+		if w.tick % 20 == 0 and w.tick > 40 and not 1 in w.units.moving:
+			settled = w.tick
+	for t in 200:
+		w.step()
+	check(not 1 in w.units.moving, "%s: still settled 10 s later (no endless jostling)" % map_id)
+	var gave_up := 0
+	var far := 0
+	for i in w.units.count():
+		if w.units.stuck[i] >= World.STUCK_LIMIT:
+			gave_up += 1
+		var near := w.units.arrive[i] * World.SETTLE_FACTOR + 1000
+		if Fixed.dist2(w.units.x[i], w.units.y[i], w.units.tx[i], w.units.ty[i]) > near * near:
+			far += 1
+			print("  far: #%d at %d,%d target %d,%d arrive %d group %d stuck %d" % [w.units.id[i], w.units.x[i], w.units.y[i], w.units.tx[i], w.units.ty[i], w.units.arrive[i], w.units.group[i], w.units.stuck[i]])
+	check(settled > 0, "%s: all %d units settle within %d ticks" % [map_id, ids.size(), CROSS_LIMIT])
+	check(gave_up == 0, "%s: nobody gives up stuck (%d did)" % [map_id, gave_up])
+	check(far == 0, "%s: everyone ends near their own target (%d far)" % [map_id, far])
+	print("%s crossing: %d units settled at tick %d (%.1f s), avg tick %.3f ms, worst %.3f ms" % [
+		map_id, ids.size(), settled, settled / 20.0, (Time.get_ticks_usec() - t0) / 1000.0 / ticks, worst / 1000.0])
+
+
+func _test_flow(map: SimMap) -> void:
+	var target: int = map.starts[1][1] / 1000 * map.width + map.starts[1][0] / 1000
+	var t0 := Time.get_ticks_usec()
+	var a = Flow.solve(map, target)
+	var us := Time.get_ticks_usec() - t0
+	Flow.solve(map, 5 * map.width + 5)
+	var b = Flow.solve(map, target)
+	check(a.dist == b.dist and a.next == b.next, "a flow field doesn't depend on what was solved before")
+	var bad := 0
+	for c in a.dist.size():
+		var reachable: bool = a.dist[c] < Flow.INF
+		if (map.walk[c] == 1) != reachable:
+			bad += 1
+		elif reachable and c != target and a.dist[a.next[c]] >= a.dist[c]:
+			bad += 1
+	check(bad == 0, "every walkable cell reaches the target downhill on flat_test (%d bad)" % bad)
+	print("flow field solve, %dx%d: %.2f ms" % [map.width, map.height, us / 1000.0])
 
 
 # --- replay -------------------------------------------------------------------
