@@ -1,0 +1,43 @@
+{
+ "id": "bronze",
+ "name": "Bronze Age only",
+ "era": [
+  "bronze"
+ ],
+ "budget": {
+  "1": 16,
+  "2": 26
+ },
+ "roster": [
+  {
+   "slot": "worker",
+   "role": "worker",
+   "tier": 1
+  },
+  {
+   "slot": "spear",
+   "role": "spear",
+   "tier": 1
+  },
+  {
+   "slot": "skirmisher",
+   "role": "skirmisher",
+   "tier": 1
+  },
+  {
+   "slot": "archer",
+   "role": "archer",
+   "tier": 1
+  },
+  {
+   "slot": "large",
+   "role": "large",
+   "tier": 2
+  }
+ ],
+ "cost": {
+  "base": 60,
+  "ref_points": 12,
+  "exponent": 1.4
+ }
+}

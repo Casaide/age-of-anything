@@ -1,0 +1,180 @@
+{
+ "swamp": {
+  "cloth": [
+   "#5b6b2f",
+   "#3d4a1f"
+  ],
+  "mounts": [
+   "beetle"
+  ],
+  "adjective": "Bog",
+  "prefixes": [
+   "Bog",
+   "Mire",
+   "Reed",
+   "Murk"
+  ],
+  "suffixes": [
+   "born",
+   "kin",
+   "folk",
+   " Croakers"
+  ]
+ },
+ "sewer": {
+  "cloth": [
+   "#6b5a4a",
+   "#4a3e33"
+  ],
+  "mounts": [
+   "beetle",
+   "spider"
+  ],
+  "adjective": "Gutter",
+  "prefixes": [
+   "Gutter",
+   "Drain",
+   "Rot",
+   "Scurry"
+  ],
+  "suffixes": [
+   " Horde",
+   " Clan",
+   " Pack",
+   "kin"
+  ]
+ },
+ "forest": {
+  "cloth": [
+   "#3f6b3a",
+   "#2d4a29"
+  ],
+  "mounts": [
+   "beetle",
+   "pony"
+  ],
+  "adjective": "Moss",
+  "prefixes": [
+   "Oak",
+   "Moss",
+   "Bramble",
+   "Thorn"
+  ],
+  "suffixes": [
+   " Wardens",
+   "kin",
+   "folk",
+   " Guard"
+  ]
+ },
+ "imperial": {
+  "cloth": [
+   "#9b2f2f",
+   "#5a1f1f"
+  ],
+  "mounts": [
+   "pony"
+  ],
+  "adjective": "Imperial",
+  "prefixes": [
+   "Aurelian",
+   "Maximian",
+   "Severan",
+   "Imperial"
+  ],
+  "suffixes": [
+   " Legion",
+   " Cohort",
+   " Senate",
+   " Guard"
+  ]
+ },
+ "hellenic": {
+  "cloth": [
+   "#3a5fa0",
+   "#e8e4d8"
+  ],
+  "mounts": [
+   "pony"
+  ],
+  "adjective": "Hellenic",
+  "prefixes": [
+   "Thessalian",
+   "Myrmidon",
+   "Argive",
+   "Delphic"
+  ],
+  "suffixes": [
+   " League",
+   " Host",
+   " Phalanx",
+   " Polis"
+  ]
+ },
+ "royal": {
+  "cloth": [
+   "#5a3f8f",
+   "#f2c94c"
+  ],
+  "mounts": [
+   "pony"
+  ],
+  "adjective": "Royal",
+  "prefixes": [
+   "Crown",
+   "Lion",
+   "Gilded",
+   "High"
+  ],
+  "suffixes": [
+   " Guard",
+   " Court",
+   " Realm",
+   " Order"
+  ]
+ },
+ "steppe": {
+  "cloth": [
+   "#c8a165",
+   "#8a6a3c"
+  ],
+  "mounts": [
+   "pony"
+  ],
+  "adjective": "Steppe",
+  "prefixes": [
+   "Khan",
+   "Wind",
+   "Dust",
+   "Steppe"
+  ],
+  "suffixes": [
+   " Riders",
+   " Horde",
+   " Tribe",
+   " Clan"
+  ]
+ },
+ "spooky": {
+  "cloth": [
+   "#3a2a4a",
+   "#1a1a22"
+  ],
+  "mounts": [
+   "spider"
+  ],
+  "adjective": "Gloom",
+  "prefixes": [
+   "Gloom",
+   "Web",
+   "Hollow",
+   "Night"
+  ],
+  "suffixes": [
+   "crawlers",
+   " Brood",
+   "kin",
+   "weavers"
+  ]
+ }
+}
