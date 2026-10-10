@@ -82,7 +82,9 @@ static func evaluate(recipe: Dictionary, lib, rules: Dictionary) -> Dictionary:
 		tags["tiny"] = true
 
 	var c: Dictionary = rules.cost
+	var econ: Dictionary = lib.creatures[recipe.creature].get("economy", {})
 	var total: int = (int(c.base) * lib.curve(c.curve, points) + 500) / 1000
+	total = total * int(econ.get("cost_pct", 100)) / 100
 	var mix_total := maxi(1, mix.food + mix.wood)
 	var food := _round5(total * mix.food / mix_total)
 	var wood := _round5(total - food)
@@ -99,7 +101,7 @@ static func evaluate(recipe: Dictionary, lib, rules: Dictionary) -> Dictionary:
 		"tags": tag_list,
 		"points": points,
 		"cost": {"food": food, "wood": wood},
-		"train_time": maxi(4, (8 * lib.curve(c.train_curve, points) + 500) / 1000),
+		"train_time": maxi(3, (8 * lib.curve(c.train_curve, points) * int(econ.get("train_time_pct", 100)) / 100 + 500) / 1000),
 		"pop": 2 if tags.has("large") else 1,
 	}
 

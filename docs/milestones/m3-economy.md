@@ -1,6 +1,6 @@
 # Milestone 3: Economy
 
-**Status:** planned (plan proposed 2026-10-11, waiting for Dominic's OK)
+**Status:** in progress (plan approved by Dominic 2026-10-11)
 **Exit criterion:** the opening economy is fun to watch for 3 minutes. That's Dominic's call
 by eye. The tests back it with numbers: a scripted 3-minute opening gathers in a sensible
 range, nobody stalls, and it's deterministic.
@@ -14,6 +14,9 @@ Not in this milestone: Barracks, Stable, Watchtower, age-up (milestone 5), comba
 drop-off camps (Next), hunting (Next: needs animals that move).
 
 ## Plan
+
+**Decided with Dominic before starting:** cut-down reeds become walkable ground (paths open up
+over a match), and the milestone builds a minimal clickable panel plus hotkeys, not hotkeys only.
 
 ### Data first
 - `data/terrain.json`: resource terrain gets `resource`, `amount` and `depleted` fields.
@@ -80,8 +83,8 @@ drop-off camps (Next), hunting (Next: needs animals that move).
 - **Archive:** a screenshot at 1, 2 and 3 minutes of the opening.
 
 ## Checklist
-- [ ] Plan approved
-- [ ] Data: terrain resources, buildings.json, rules economy, race economy modifiers
+- [x] Plan approved
+- [x] Data: terrain resources, buildings.json, rules economy, race economy modifiers
 - [ ] Sim: players, resource grid, buildings store, map version + field invalidation
 - [ ] Multi-source flow fields with cost cutoff
 - [ ] Worker gather/deposit loop; construction
@@ -95,4 +98,6 @@ drop-off camps (Next), hunting (Next: needs animals that move).
 (when done)
 
 ## Changes from the original plan
-(as they happen)
+- Added (Dominic): test hotkeys in the debug view to regenerate an army: G rerolls your army,
+  Shift+G gives it a random prompt, Ctrl+G does that for the enemy. The match restarts; the
+  replay records the prompt and reroll.
