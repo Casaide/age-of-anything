@@ -163,3 +163,10 @@ would break running orders and replays. Dominic asked for it.
 Supersedes D-012's "painterly" as the assumed target (D-012's classic 2D isometric framing
 still stands). The composer's `part_shape.gd` gained a `style` so directions can be compared
 on the real parts and animation. Dominic asked for samples of every direction.
+
+**D-041, 2026-10-11: Add a sixth direction, high-fidelity pre-rendered, built as a real bake
+pipeline.** Detailed 3D models with procedural materials are baked at 4x into mipmapped sprites
+(mipmaps = level of detail). Units are baked per part with their pivots and animated in 2D, as
+the composer expects. Buildings are mostly static but keep "a little life" through live parts
+animated in 2D (banner, smoke, glow, weathervane). Dominic asked for higher fidelity and living
+buildings; Claude proposed the pipeline-prototype approach.

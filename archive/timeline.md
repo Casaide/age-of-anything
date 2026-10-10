@@ -28,3 +28,6 @@ One line per moment worth remembering. Newest at the bottom.
 - **2026-10-11:** Art pass, step 1: one scene, five styles (storybook, paper, painterly, toy 3D,
   pixel). The 3D shadows were hiding behind their owners.
   ([image](images/2026-10-11/08-style-sampler-all.png))
+- **2026-10-11:** "You're testing rendering, not art direction." A sixth style, high-fidelity
+  pre-rendered: detailed 3D baked to sprites, with waving banners and smoking chimneys.
+  ([image](images/2026-10-11/15-style-hifi-prerendered.png))

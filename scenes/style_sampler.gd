@@ -7,6 +7,7 @@ const DataLib := preload("res://src/data_lib.gd")
 const Generator := preload("res://src/race_generator.gd")
 const Diorama2D := preload("res://scenes/style_sampler/diorama_2d.gd")
 const Diorama3D := preload("res://scenes/style_sampler/diorama_3d.gd")
+const DioramaHifi := preload("res://scenes/style_sampler/hifi/diorama_hifi.gd")
 
 const BG := Color("#2b2620")
 const CARD := Color("#3a332b")
@@ -27,6 +28,8 @@ const STYLES := [
 		"note": "Actually rendered: primitives, light, shadow, plastic. In production each part is rendered once and baked into the 2D atlas. Needs a Blender pipeline; materials swap for free."},
 	{"key": "pixel", "title": "5  Pixel art",
 		"note": "Rendered at 1/3 size, fewer colours. Readable and nostalgic, but watch the rotating parts shimmer: it fights our procedural animation."},
+	{"key": "hifi", "title": "6  Pre-rendered, high fidelity",
+		"note": "Detailed 3D models (procedural wood, thatch, mud, stone) baked at 4x into sprites with mipmaps; frog parts baked separately and animated in 2D. Buildings stay alive: banner, smoke, glowing windows, weathervane."},
 ]
 
 var grid: GridContainer
@@ -61,7 +64,14 @@ func _ready() -> void:
 		grid.add_child(cell)
 		var box: SubViewportContainer = cell.get_meta("box")
 		var vp: SubViewport = box.get_child(0)
-		if st.key == "toy":
+		if st.key == "hifi":
+			var dh := DioramaHifi.new()
+			vp.add_child(dh)
+			dh.build(lib)
+			var cam_h := Camera2D.new()
+			vp.add_child(cam_h)
+			cell.set_meta("cam", cam_h)
+		elif st.key == "toy":
 			vp.own_world_3d = true
 			var d3 := Diorama3D.new()
 			vp.add_child(d3)
@@ -85,7 +95,8 @@ func _ready() -> void:
 				box.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
 				box.material = _shader("posterize")
 		cell.set_meta("shrink", 3.0 if st.key == "pixel" else 1.0)
-	grid.add_child(_notes())
+	if STYLES.size() < 6:
+		grid.add_child(_notes())
 
 
 func _shader(name: String) -> ShaderMaterial:

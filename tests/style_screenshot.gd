@@ -9,7 +9,7 @@ func _initialize() -> void:
 	var s = load("res://scenes/style_sampler.tscn").instantiate()
 	root.add_child(s)
 	s.set_process_unhandled_input(false)
-	for f in 90:
+	for f in 400:   # the high-fidelity panel bakes its sprites first
 		await process_frame
 	root.get_texture().get_image().save_png(out + "/all.png")
 	for i in s.STYLES.size():
