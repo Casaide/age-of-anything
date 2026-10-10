@@ -67,6 +67,8 @@ var next_id := 1               # shared by units and buildings
 var next_group := 1
 var food := PackedInt32Array() # per player
 var wood := PackedInt32Array()
+var gathered_food := PackedInt32Array()   # per player, everything ever dropped off
+var gathered_wood := PackedInt32Array()
 var pop := PackedInt32Array()     # derived each tick (Economy.update_pop)
 var pop_cap := PackedInt32Array()
 var fields := {}               # field key -> Flow; looked up by key, never iterated
@@ -551,6 +553,8 @@ func state_hash() -> int:
 	for p in races.size():
 		h = Fixed.mix(h, food[p])
 		h = Fixed.mix(h, wood[p])
+		h = Fixed.mix(h, gathered_food[p])
+		h = Fixed.mix(h, gathered_wood[p])
 	# Which fields are solved or pending changes how units steer, so it's state too.
 	for key in field_order:
 		h = Fixed.mix(h, key)
