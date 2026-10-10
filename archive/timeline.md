@@ -40,3 +40,6 @@ One line per moment worth remembering. Newest at the bottom.
 - **2026-10-11:** Cultures pave their own way: frog boardwalks, rat cobbles, Roman roads,
   all generated. Arms get outlines; a rat rides a spider.
   ([image](images/2026-10-11/26-roman-roads.png))
+- **2026-10-11:** Rats move into tin cans and a scrap-built Town Center; boardwalk boards finally
+  lie across the walk; one 256-colour palette for the whole frame.
+  ([image](images/2026-10-11/29-rat-junk-town-and-fixed-boardwalk.png))

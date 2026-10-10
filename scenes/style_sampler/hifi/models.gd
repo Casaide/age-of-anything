@@ -424,3 +424,107 @@ func shore_reeds(seed_value: int) -> Node3D:
 		if k % 2 == 0:
 			s.add_child(cyl(0.028, 0.028, 0.1, tip, Vector3(0, h / 2 - 0.04, 0), Vector3.ZERO, 8))
 	return n
+
+
+# ------------------------------------------------------------------ sewer-rat ("junk") buildings
+
+## A rat Town Center built from scrap: brick footing, mismatched plank walls patched
+## with tin, a corrugated tin roof, a stove-pipe chimney, a sewer grate, a cheese
+## wheel; a team rag flag as the live banner.
+func junk_town_center(team: Color) -> Dictionary:
+	rng.seed = 66
+	var body := Node3D.new()
+	var brick := mats.get_mat("brick")
+	var wood := mats.get_mat("wood")
+	var tin := mats.get_mat("tin")
+	var iron := Materials.flat(Color("#4a4a48"), 0.5, 0.6)
+	body.add_child(box(Vector3(2.8, 0.25, 2.8), brick, Vector3(0, 0.12, 0)))
+	var base := 0.25
+	var w := 2.1
+	var h := 1.05
+	# Walls: planks of different shades and lengths, then tin patches over the gaps.
+	for side in [-1, 1]:
+		for k in 7:
+			var t := -w / 2 + 0.15 + k * 0.3
+			var hh := h + rng.randf_range(-0.12, 0.08)
+			var tint := Materials.flat(Color("#6e4a2c").lerp(Color("#8a7050"), rng.randf()), 0.9)
+			body.add_child(box(Vector3(0.28, hh, 0.08), tint, Vector3(t, base + hh / 2, side * w / 2), Vector3(0, 0, rng.randf_range(-3, 3))))
+			body.add_child(box(Vector3(0.08, hh, 0.28), tint, Vector3(side * w / 2, base + hh / 2, t), Vector3(rng.randf_range(-3, 3), 0, 0)))
+	body.add_child(box(Vector3(w - 0.1, h, w - 0.1), wood, Vector3(0, base + h / 2, 0)))
+	for p in [[Vector3(0.5, base + 0.4, w / 2 + 0.06), Vector3(0.6, 0.5, 0.02), Vector3(0, 0, 8)], [Vector3(w / 2 + 0.06, base + 0.65, -0.4), Vector3(0.02, 0.55, 0.7), Vector3(-6, 0, 0)]]:
+		body.add_child(box(p[1], tin, p[0], p[2]))
+	# Door and windows.
+	body.add_child(box(Vector3(0.45, 0.7, 0.05), Materials.flat(Color("#2a1e16"), 0.9), Vector3(-0.35, base + 0.35, w / 2 + 0.08)))
+	var lights := []
+	for z in [-0.55, 0.35]:
+		body.add_child(box(Vector3(0.04, 0.26, 0.3), glow(Color("#ffcf6a"), 1.4), Vector3(w / 2 + 0.07, base + 0.7, z)))
+		lights.append(Vector3(w / 2 + 0.1, base + 0.7, z))
+	# Corrugated tin gable roof with an overhang, and a ridge cap.
+	var roof_y := base + h
+	for side in [-1, 1]:
+		var panel := box(Vector3(2.7, 0.05, 1.6), tin, Vector3(0, roof_y + 0.42, side * 0.68), Vector3(side * 32, 0, 0))
+		panel.rotation_degrees = Vector3(side * 32, 0, 0)
+		body.add_child(panel)
+	body.add_child(box(Vector3(2.75, 0.08, 0.16), iron, Vector3(0, roof_y + 0.86, 0)))
+	for side in [-1, 1]:   # gable ends
+		var gable := slab_tri(Vector2(-1.1, 0), Vector2(1.1, 0), Vector2(0, 0.85), 0.06, wood)
+		gable.position = Vector3(side * 1.05, roof_y, 0)
+		gable.rotation_degrees = Vector3(0, 90, 0)
+		body.add_child(gable)
+	# Stove-pipe chimney with an elbow.
+	var pipe := Vector3(0.6, roof_y + 0.6, -0.55)
+	body.add_child(cyl(0.11, 0.11, 0.9, iron, pipe))
+	body.add_child(cyl(0.11, 0.11, 0.35, iron, pipe + Vector3(0.12, 0.5, 0), Vector3(0, 0, -50)))
+	body.add_child(cyl(0.15, 0.13, 0.1, iron, pipe + Vector3(0.28, 0.62, 0), Vector3(0, 0, -50)))
+	# A sewer grate in the forecourt, a cheese wheel with a wedge out, barrels.
+	body.add_child(box(Vector3(0.6, 0.03, 0.4), Materials.flat(Color("#1e1c1a"), 0.6), Vector3(0.6, 0.27, 1.15)))
+	for k in 5:
+		body.add_child(box(Vector3(0.04, 0.05, 0.4), iron, Vector3(0.38 + k * 0.11, 0.29, 1.15)))
+	var cheese := Materials.flat(Color("#f2c94c"), 0.7)
+	body.add_child(cyl(0.3, 0.3, 0.2, cheese, Vector3(-1.0, 0.36, 1.05), Vector3.ZERO, 20))
+	body.add_child(cyl(0.3, 0.3, 0.02, Materials.flat(Color("#c99a1e"), 0.8), Vector3(-1.0, 0.47, 1.05), Vector3.ZERO, 20))
+	barrel(Vector3(1.15, base, 0.95), body)
+	crate(Vector3(1.2, base, -1.0), body, 35)
+	var pole_at := Vector3(-1.2, 0.25, -1.1)
+	body.add_child(cyl(0.03, 0.035, 1.9, wood, pole_at + Vector3(0, 0.95, 0), Vector3.ZERO, 8))
+	var banner := Node3D.new()
+	var flag_top := pole_at + Vector3(0.03, 1.8, 0)
+	banner.add_child(box(Vector3(0.55, 0.55, 0.02), cloth(team.darkened(0.15)), flag_top + Vector3(0.3, -0.28, 0), Vector3(0, 0, -4)))
+	banner.add_child(box(Vector3(0.2, 0.2, 0.025), cloth(Color("#e8dcc0")), flag_top + Vector3(0.18, -0.4, 0.01)))   # a patch
+	var vane := Node3D.new()
+	vane.add_child(cyl(0.01, 0.01, 0.3, iron, Vector3(0, roof_y + 1.05, 0), Vector3.ZERO, 6))
+	vane.add_child(ball(0.07, Materials.flat(Color("#f2c94c"), 0.6), Vector3(0, roof_y + 1.22, 0)))
+	return {"body": body, "anchor": Vector3.ZERO, "banner": banner, "banner_pivot": flag_top,
+		"vane": vane, "vane_pivot": Vector3(0, roof_y + 0.9, 0), "smoke": pipe + Vector3(0.32, 0.68, 0), "lights": lights,
+		"lantern": Vector3(0.05, base + 0.8, w / 2 + 0.15)}
+
+
+## A rat house: an upturned tin can with a door cut into it, its lid propped on top
+## with a stone, and a little pipe chimney.
+func tin_can_house(team: Color) -> Dictionary:
+	var body := Node3D.new()
+	var tin := mats.get_mat("tin")
+	body.add_child(cyl(0.7, 0.7, 1.05, tin, Vector3(0, 0.53, 0), Vector3.ZERO, 28))
+	for y in [0.12, 0.5, 0.92]:
+		body.add_child(ring(0.69, 0.75, Materials.flat(Color("#9a9c96"), 0.5, 0.5), Vector3(0, y, 0)))
+	body.add_child(box(Vector3(0.36, 0.55, 0.05), Materials.flat(Color("#1e1612"), 0.9), Vector3(0.1, 0.3, 0.69), Vector3(0, 8, 0)))
+	body.add_child(box(Vector3(0.36, 0.55, 0.03), tin, Vector3(0.38, 0.3, 0.78), Vector3(0, -40, 0)))   # the cut flap
+	body.add_child(cyl(0.78, 0.78, 0.06, tin, Vector3(0.08, 1.12, 0.02), Vector3(6, 0, -5), 28))      # the lid
+	body.add_child(ball(0.16, mats.get_mat("stone"), Vector3(-0.15, 1.24, -0.1), Vector3(1.2, 0.8, 1)))
+	body.add_child(cyl(0.06, 0.06, 0.35, Materials.flat(Color("#4a4a48"), 0.5, 0.6), Vector3(0.35, 1.3, -0.3), Vector3.ZERO, 8))
+	body.add_child(box(Vector3(0.25, 0.04, 0.12), cloth(team), Vector3(-0.5, 0.75, 0.48), Vector3(0, 40, 10)))   # a team rag
+	return {"body": body, "anchor": Vector3.ZERO, "smoke": Vector3(0.35, 1.5, -0.3), "lights": [],
+		"lantern": Vector3(0.4, 0.75, 0.75), "team": team}
+
+
+func slab_tri(a: Vector2, b: Vector2, c: Vector2, thick: float, m: Material) -> MeshInstance3D:
+	var st := SurfaceTool.new()
+	st.begin(Mesh.PRIMITIVE_TRIANGLES)
+	for face in [1.0, -1.0]:
+		for p in ([a, b, c] if face > 0 else [a, c, b]):
+			st.set_normal(Vector3(0, 0, face))
+			st.add_vertex(Vector3(p.x, p.y, thick * 0.5 * face))
+	var mi := MeshInstance3D.new()
+	mi.mesh = st.commit()
+	mi.material_override = m
+	return mi

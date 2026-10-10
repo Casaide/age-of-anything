@@ -91,12 +91,26 @@ Two notes came in while the terrain was being polished:
   building to its other buildings, resources and the shore. The shader draws trails,
   boardwalks, cobbles and roads with kerbs.
 
+Steps 3 and 4 followed. **Stepped animation**: 8 walk poses, a one-pixel breathing bob instead
+of stretched sprites, and whole-pixel positions (F toggles it). **Rat architecture**: families
+now name their architecture, so sewer rats build a scrap Town Center (plank walls patched with
+tin, a corrugated roof, a stove-pipe chimney, a cheese wheel, a sewer grate) and tin-can houses
+with the lid propped on top. **Palette**: down to 256 colours by merging the nearest pairs.
+
+Dominic caught the boardwalk twice. First "rotated wrong way?": planks used one fixed
+diagonal, so on some paths they ran along the walk. Then "quite bugged there": shared
+stretches were drawn twice, with different distances along the path, so the boards broke up.
+Now boards are bands of arc length (always across the walk, even round bends), each stretch
+belongs to one path, and where two cultures' paths meet, the locally stronger surface wins and
+leaves a ragged seam.
+
 ## Decisions
 - D-040: the art direction is open again; choose from the sampler.
 - D-041: a sixth direction, high-fidelity pre-rendered, built as a real bake pipeline.
 - D-042: the leading candidate is high-fidelity pixel art that keeps the original characters.
 - D-043: units are hand-modelled per part id with authored textures; parts layer by child order.
 - D-044: paths are generated and styled by the race's culture (families.json).
+- D-045: buildings follow the race's culture too (families.json `architecture`).
 
 ## Pictures
 ![All five styles, same scene, same scale](../images/2026-10-11/08-style-sampler-all.png)
@@ -117,6 +131,9 @@ Two notes came in while the terrain was being polished:
 ![Near arms as their own outlined layer](../images/2026-10-11/24-lineup-arms-as-own-layer.png)
 ![Generated paths: frog boardwalks, rat cobbles, plus stones, flowers and shore reeds](../images/2026-10-11/25-culture-paths-boardwalk-and-cobbles.png)
 ![Centaur Romans get paved roads (the centaurs are still unmodelled)](../images/2026-10-11/26-roman-roads.png)
+![Bug: boardwalk stretches drawn twice, boards breaking up](../images/2026-10-11/27-bug-boardwalk-drawn-twice.png)
+![256-colour palette, frogs vs rats](../images/2026-10-11/28-palette-256-frogs-vs-rats.png)
+![Rat junk town; the boardwalk fixed and meeting the cobbles](../images/2026-10-11/29-rat-junk-town-and-fixed-boardwalk.png)
 
 ## Funny moments and bugs worth remembering
 - **The frog on the roof.** Units are built from parts layered with `z_index`, and z_index is

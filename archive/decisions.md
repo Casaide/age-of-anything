@@ -197,3 +197,8 @@ with kerbs; swamp: plank boardwalks; sewer and royal: cobbles; others: dirt trai
 generator (`scenes/art_pixel/paths.gd`) routes each side's paths from its main building to its
 other buildings, nearest resources and the shore, with merging trunks and smoothed bends.
 Cosmetic, deterministic. Dominic's idea ("Romans should get nice roads"); Claude's design.
+
+**D-045, 2026-10-11: Buildings follow the race's culture, like paths.** `families.json` gives
+each family an `architecture` (sewer: "junk", others "thatch" for now). The view picks building
+models by it: sewer rats build a scrap Town Center and tin-can houses. More architectures come
+with more cultures. Claude's design, continuing Dominic's "part of the race" idea from paths.

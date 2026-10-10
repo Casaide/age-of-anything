@@ -2,7 +2,9 @@ extends RefCounted
 ## Generates each player's paths, styled by their culture (families.json "paths"):
 ## from the main building's door to its other buildings, the nearest resources
 ## and the shoreline. A* on a half-tile grid that avoids blocked ground; cells
-## already on a path are cheap, so routes merge into trunk roads. Then smoothed.
+## already on a path are cheap, so routes merge into trunk roads. A route that
+## reaches an existing path stops drawing and joins it (the first road keeps
+## its style, and no stretch is drawn twice). Then smoothed.
 ## Cosmetic (view side), but deterministic: same map and buildings, same paths.
 
 const STYLES := ["trail", "boardwalk", "cobble", "road"]   # mask channels R, G, B, A
@@ -20,19 +22,37 @@ static func plan(w: int, h: int, blocked: Callable, owners: Array) -> Array:
 	used.resize(gw * gh)
 	var out := []
 	for o in owners:
+		var mine := STYLES.find(o.style) + 1
 		for target in o.targets:
 			if o.hub.distance_to(target) > REACH:
 				continue
 			var cells := _route(gw, gh, blocked, used, o.hub, target)
-			if cells.size() < 2:
-				continue
+			# Draw only the new stretches: any existing path (ours or another culture's)
+			# ends a run, keeping one cell of overlap so the two meet. That way every
+			# stretch belongs to exactly one path, and its boards or stones line up.
+			var run := PackedInt32Array()
 			for c in cells:
-				used[c] = 1
-			var pts := PackedVector2Array()
+				if used[c] != 0:
+					if run.size() > 0:
+						run.append(c)
+						_emit(out, o, run, gw)
+					run = PackedInt32Array()
+					continue
+				run.append(c)
+			_emit(out, o, run, gw)
 			for c in cells:
-				pts.append((Vector2(c % gw, c / gw) + Vector2(0.5, 0.5)) / SUB)
-			out.append({"style": o.style, "width": o.width, "points": _smooth(_smooth(pts))})
+				if used[c] == 0:
+					used[c] = mine
 	return out
+
+
+static func _emit(out: Array, o: Dictionary, run: PackedInt32Array, gw: int) -> void:
+	if run.size() < 2:
+		return
+	var pts := PackedVector2Array()
+	for c in run:
+		pts.append((Vector2(c % gw, c / gw) + Vector2(0.5, 0.5)) / SUB)
+	out.append({"style": o.style, "width": o.width, "points": _smooth(_smooth(pts))})
 
 
 static func _route(gw: int, gh: int, blocked: Callable, used: PackedByteArray, from: Vector2, to: Vector2) -> PackedInt32Array:
@@ -61,7 +81,7 @@ static func _route(gw: int, gh: int, blocked: Callable, used: PackedByteArray, f
 			if nc != goal and blocked.call(p):
 				continue
 			var step := 1.414 if d.x != 0 and d.y != 0 else 1.0
-			var nd: float = dist[cur] + step * (0.35 if used[nc] == 1 else 1.0)
+			var nd: float = dist[cur] + step * (0.35 if used[nc] != 0 else 1.0)
 			if not dist.has(nc) or nd < dist[nc]:
 				dist[nc] = nd
 				prev[nc] = cur
@@ -97,24 +117,41 @@ static func _smooth(pts: PackedVector2Array) -> PackedVector2Array:
 	return out
 
 
-## Rasterize planned paths into an RGBA mask (one channel per style), k samples per tile.
-static func mask(w: int, h: int, k: int, planned: Array) -> Image:
+## Rasterize planned paths: an RGBA mask (one channel per style) at k samples per
+## tile, and an arc-length image (distance along the nearest path, at `fine`
+## samples per tile) so boards can be laid across the walk, even round bends.
+## Returns [mask, arc_length]. Each segment only touches pixels near it.
+static func mask(w: int, h: int, k: int, planned: Array, fine := 16) -> Array:
 	var img := Image.create(w * k, h * k, false, Image.FORMAT_RGBA8)
 	img.fill(Color(0, 0, 0, 0))
+	var arc := Image.create(w * fine, h * fine, false, Image.FORMAT_RF)
+	var best := PackedFloat32Array()
+	best.resize(w * fine * h * fine)
+	best.fill(INF)
 	for p in planned:
 		var ch := STYLES.find(p.style)
 		var pts: PackedVector2Array = p.points
 		var r: float = p.width
-		for y in h * k:
-			for x in w * k:
-				var q := (Vector2(x, y) + Vector2(0.5, 0.5)) / k
-				var near := false
-				for i in range(1, pts.size()):
-					if Geometry2D.get_closest_point_to_segment(q, pts[i - 1], pts[i]).distance_to(q) < r:
-						near = true
-						break
-				if near:
-					var c := img.get_pixel(x, y)
-					c[ch] = 1.0
-					img.set_pixel(x, y, c)
-	return img
+		var along := 0.0
+		for i in range(1, pts.size()):
+			var a := pts[i - 1]
+			var b := pts[i]
+			var box := Rect2(a, Vector2.ZERO).expand(b).grow(r + 0.3)
+			for y in range(maxi(int(box.position.y * k), 0), mini(int(box.end.y * k) + 1, h * k)):
+				for x in range(maxi(int(box.position.x * k), 0), mini(int(box.end.x * k) + 1, w * k)):
+					var q := (Vector2(x, y) + Vector2(0.5, 0.5)) / k
+					if Geometry2D.get_closest_point_to_segment(q, a, b).distance_to(q) < r:
+						var c := img.get_pixel(x, y)
+						c[ch] = 1.0
+						img.set_pixel(x, y, c)
+			for y in range(maxi(int(box.position.y * fine), 0), mini(int(box.end.y * fine) + 1, h * fine)):
+				for x in range(maxi(int(box.position.x * fine), 0), mini(int(box.end.x * fine) + 1, w * fine)):
+					var q := (Vector2(x, y) + Vector2(0.5, 0.5)) / fine
+					var on := Geometry2D.get_closest_point_to_segment(q, a, b)
+					var d := on.distance_to(q)
+					var idx := y * w * fine + x
+					if d < r + 0.3 and d < best[idx]:
+						best[idx] = d
+						arc.set_pixel(x, y, Color(along + on.distance_to(a), 0, 0))
+			along += a.distance_to(b)
+	return [img, arc]
