@@ -77,7 +77,7 @@ Run the tests after every change to `data/` or `src/`. Look at a screenshot afte
 for a content case, the data contract is probably missing a field; add the field.
 
 **Balance through cost.** Every part has `points`; unit cost grows superlinearly
-(`rules.cost.exponent`). Counter tags (spear > large/mounted > ranged > infantry) make even absurd
+(`rules.cost.curve`, a fixed-point table in `data/cost_curves.json`). Counter tags (spear > large/mounted > ranged > infantry) make even absurd
 units beatable. Don't special-case silly units.
 
 **Generator behaviour to keep:**

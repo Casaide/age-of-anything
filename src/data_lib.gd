@@ -9,6 +9,7 @@ var families := {}    # id -> family dict
 var palettes := {}    # skins, materials, teams
 var lexicon := {}     # word -> entry
 var stopwords := {}   # word -> true
+var curves := {}      # cost curve id -> PackedInt32Array of per-mille multipliers by points
 
 
 static func load_json(path: String):
@@ -27,11 +28,22 @@ func _init(root := "res://data") -> void:
 	lexicon = lex.words
 	for w in lex.stopwords:
 		stopwords[w] = true
+	var cc: Dictionary = load_json(root + "/cost_curves.json")
+	for id in cc:
+		curves[id] = PackedInt32Array(cc[id].permille)
 
 
 func part(id: String) -> Dictionary:
 	assert(parts.has(id), "Unknown part: %s" % id)
 	return parts[id]
+
+
+## Per-mille multiplier of a fixed-point cost curve at the given points.
+func curve(id: String, points: int) -> int:
+	assert(curves.has(id), "Unknown cost curve: %s" % id)
+	var table: PackedInt32Array = curves[id]
+	assert(points >= 0 and points < table.size(), "Points %d off the end of curve %s" % [points, id])
+	return table[points]
 
 
 static func era_ok(p: Dictionary, eras: Array) -> bool:
