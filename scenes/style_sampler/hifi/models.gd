@@ -1,0 +1,372 @@
+extends RefCounted
+## Detailed 3D models for the high-fidelity pre-render, built from primitives
+## with procedural materials. 1 world unit = 1 tile; y is up; sim x = world x,
+## sim y = world z. Each builder returns the static body plus the "live" bits
+## (animated in 2D after baking) and the points the 2D side needs.
+
+const Materials := preload("res://scenes/style_sampler/hifi/materials.gd")
+
+var mats := Materials.new()
+var rng := RandomNumberGenerator.new()
+
+
+func _mi(mesh: Mesh, mat: Material, pos := Vector3.ZERO, rot := Vector3.ZERO, scl := Vector3.ONE) -> MeshInstance3D:
+	var m := MeshInstance3D.new()
+	m.mesh = mesh
+	m.material_override = mat
+	m.position = pos
+	m.rotation_degrees = rot
+	m.scale = scl
+	return m
+
+
+func box(size: Vector3, mat: Material, pos := Vector3.ZERO, rot := Vector3.ZERO) -> MeshInstance3D:
+	var b := BoxMesh.new()
+	b.size = size
+	return _mi(b, mat, pos, rot)
+
+
+func cyl(r_top: float, r_bot: float, h: float, mat: Material, pos := Vector3.ZERO, rot := Vector3.ZERO, seg := 16) -> MeshInstance3D:
+	var c := CylinderMesh.new()
+	c.top_radius = r_top
+	c.bottom_radius = r_bot
+	c.height = h
+	c.radial_segments = seg
+	return _mi(c, mat, pos, rot)
+
+
+func ball(r: float, mat: Material, pos := Vector3.ZERO, scl := Vector3.ONE, rot := Vector3.ZERO) -> MeshInstance3D:
+	var s := SphereMesh.new()
+	s.radius = r
+	s.height = r * 2.0
+	s.radial_segments = 32
+	s.rings = 16
+	return _mi(s, mat, pos, rot, scl)
+
+
+func ring(inner: float, outer: float, mat: Material, pos := Vector3.ZERO, rot := Vector3.ZERO, scl := Vector3.ONE) -> MeshInstance3D:
+	var t := TorusMesh.new()
+	t.inner_radius = inner
+	t.outer_radius = outer
+	t.rings = 32
+	t.ring_segments = 12
+	return _mi(t, mat, pos, rot, scl)
+
+
+func cloth(team: Color) -> StandardMaterial3D:
+	var m := Materials.flat(team, 0.85)
+	m.cull_mode = BaseMaterial3D.CULL_DISABLED
+	return m
+
+
+func glow(c: Color, energy := 2.5) -> StandardMaterial3D:
+	var m := Materials.flat(c, 0.5)
+	m.emission_enabled = true
+	m.emission = c
+	m.emission_energy_multiplier = energy
+	return m
+
+
+# ------------------------------------------------------------------ props
+
+func barrel(at: Vector3, parent: Node3D) -> void:
+	var wood := mats.get_mat("wood")
+	var band := Materials.flat(Color("#3a3430"), 0.4, 0.7)
+	parent.add_child(cyl(0.13, 0.13, 0.34, wood, at + Vector3(0, 0.17, 0)))
+	parent.add_child(ball(0.15, wood, at + Vector3(0, 0.17, 0), Vector3(1, 1.15, 1)))
+	for y in [0.06, 0.28]:
+		parent.add_child(ring(0.14, 0.16, band, at + Vector3(0, y, 0)))
+	parent.add_child(cyl(0.12, 0.12, 0.02, wood, at + Vector3(0, 0.35, 0)))
+
+
+func crate(at: Vector3, parent: Node3D, turn := 0.0) -> void:
+	var wood := mats.get_mat("wood")
+	var c := Node3D.new()
+	c.position = at
+	c.rotation_degrees.y = turn
+	parent.add_child(c)
+	c.add_child(box(Vector3(0.3, 0.26, 0.3), wood, Vector3(0, 0.13, 0)))
+	var dark := Materials.flat(Color("#4a2f1c"), 0.9)
+	for z in [-0.151, 0.151]:
+		c.add_child(box(Vector3(0.31, 0.04, 0.01), dark, Vector3(0, 0.22, z)))
+		c.add_child(box(Vector3(0.31, 0.04, 0.01), dark, Vector3(0, 0.04, z)))
+		c.add_child(box(Vector3(0.36, 0.035, 0.01), dark, Vector3(0, 0.13, z), Vector3(0, 0, 38)))
+
+
+func woodpile(at: Vector3, parent: Node3D) -> void:
+	var wood := mats.get_mat("wood")
+	var ends := Materials.flat(Color("#c8a06a"), 0.9)
+	var rows := [[0.06, [-0.15, 0.0, 0.15]], [0.17, [-0.075, 0.075]], [0.28, [0.0]]]
+	for r in rows:
+		for z in r[1]:
+			parent.add_child(cyl(0.065, 0.065, 0.55, wood, at + Vector3(0, r[0], z), Vector3(0, 0, 90), 10))
+			parent.add_child(cyl(0.06, 0.06, 0.01, ends, at + Vector3(0.276, r[0], z), Vector3(0, 0, 90), 10))
+
+
+# ------------------------------------------------------------------ buildings
+
+## A frog-culture Town Center: stone footing, timber frame on mud daub, stepped
+## reed thatch, a chimney, barrels, a crate and a woodpile; a team banner and a
+## dragonfly weathervane as live parts.
+func town_center(team: Color) -> Dictionary:
+	rng.seed = 42
+	var body := Node3D.new()
+	var stone := mats.get_mat("stone")
+	var wood := mats.get_mat("wood")
+	var mud := mats.get_mat("mud")
+	var thatch := mats.get_mat("thatch")
+	# Footing: a slab with a rim of uneven stones.
+	body.add_child(box(Vector3(2.8, 0.22, 2.8), stone, Vector3(0, 0.11, 0)))
+	for side in 4:
+		for k in 9:
+			var t := -1.3 + k * 0.325
+			var p := Vector3(t, 0.13, 1.38) if side == 0 else Vector3(1.38, 0.13, t) if side == 1 else Vector3(t, 0.13, -1.38) if side == 2 else Vector3(-1.38, 0.13, t)
+			var s := Vector3(rng.randf_range(0.26, 0.32), rng.randf_range(0.2, 0.28), rng.randf_range(0.18, 0.24))
+			if side % 2 == 1:
+				s = Vector3(s.z, s.y, s.x)
+			body.add_child(box(s, stone, p, Vector3(0, rng.randf_range(-8, 8), 0)))
+	# Hall: daub walls inside a timber frame.
+	var w := 2.1
+	var h := 1.15
+	var base := 0.22
+	body.add_child(box(Vector3(w, h, w), mud, Vector3(0, base + h / 2, 0)))
+	for x in [-1, 0, 1]:
+		for z in [-1, 0, 1]:
+			if (x == 0 and z == 0) or (absi(x) + absi(z) == 1 and false):
+				continue
+			if absi(x) == 1 or absi(z) == 1:
+				if x == 0 or z == 0 or (absi(x) == 1 and absi(z) == 1):
+					body.add_child(box(Vector3(0.12, h + 0.04, 0.12), wood, Vector3(x * w / 2, base + h / 2, z * w / 2)))
+	for y in [base + 0.05, base + h * 0.55, base + h - 0.04]:
+		for side in [-1, 1]:
+			body.add_child(box(Vector3(w + 0.1, 0.09, 0.1), wood, Vector3(0, y, side * w / 2)))
+			body.add_child(box(Vector3(0.1, 0.09, w + 0.1), wood, Vector3(side * w / 2, y, 0)))
+	# Diagonal braces on the two faces we see.
+	for d in [-1, 1]:
+		body.add_child(box(Vector3(0.08, 0.62, 0.06), wood, Vector3(d * 0.52, base + h * 0.28, w / 2 + 0.02), Vector3(0, 0, d * 38)))
+		body.add_child(box(Vector3(0.06, 0.62, 0.08), wood, Vector3(w / 2 + 0.02, base + h * 0.28, d * 0.52), Vector3(d * 38, 0, 0)))
+	# Door with frame and lintel, facing +z.
+	var door_wood := Materials.flat(Color("#3e2616"), 0.8)
+	body.add_child(box(Vector3(0.46, 0.7, 0.05), door_wood, Vector3(-0.15, base + 0.35, w / 2 + 0.03)))
+	body.add_child(cyl(0.23, 0.23, 0.05, door_wood, Vector3(-0.15, base + 0.7, w / 2 + 0.03), Vector3(90, 0, 0)))
+	for x in [-0.42, 0.12]:
+		body.add_child(box(Vector3(0.07, 0.95, 0.08), wood, Vector3(x, base + 0.47, w / 2 + 0.05)))
+	body.add_child(box(Vector3(0.65, 0.09, 0.1), wood, Vector3(-0.15, base + 0.97, w / 2 + 0.05)))
+	body.add_child(box(Vector3(0.05, 0.05, 0.02), Materials.flat(Color("#b89a5a"), 0.3, 0.8), Vector3(0.0, base + 0.36, w / 2 + 0.065)))
+	# Windows with shutters on the +x face (they glow; the glow pulses in 2D).
+	var lights := []
+	for z in [-0.5, 0.45]:
+		body.add_child(box(Vector3(0.04, 0.3, 0.3), glow(Color("#ffcf6a"), 1.6), Vector3(w / 2 + 0.01, base + 0.78, z)))
+		body.add_child(box(Vector3(0.05, 0.34, 0.06), wood, Vector3(w / 2 + 0.04, base + 0.78, z + 0.18)))
+		body.add_child(box(Vector3(0.05, 0.34, 0.06), wood, Vector3(w / 2 + 0.04, base + 0.78, z - 0.18)))
+		body.add_child(box(Vector3(0.05, 0.05, 0.42), wood, Vector3(w / 2 + 0.04, base + 0.96, z)))
+		body.add_child(box(Vector3(0.12, 0.32, 0.03), door_wood, Vector3(w / 2 + 0.1, base + 0.78, z + 0.24), Vector3(0, -55, 0)))
+		lights.append(Vector3(w / 2 + 0.05, base + 0.78, z))
+	# Stepped reed thatch (two layers for a thick eave) and a ridge cap.
+	var roof_y := base + h
+	body.add_child(cyl(0.0, 1.95, 1.35, thatch, Vector3(0, roof_y + 0.6, 0), Vector3(0, 45, 0), 4))
+	body.add_child(cyl(0.0, 1.62, 1.15, thatch, Vector3(0, roof_y + 0.92, 0), Vector3(0, 45, 0), 4))
+	body.add_child(cyl(0.0, 0.32, 0.32, Materials.flat(Color("#5a4220"), 0.9), Vector3(0, roof_y + 1.42, 0), Vector3(0, 45, 0), 4))
+	# Chimney through the back of the roof.
+	var chim := Vector3(-0.55, roof_y + 1.0, -0.55)
+	body.add_child(box(Vector3(0.3, 1.0, 0.3), stone, chim))
+	body.add_child(box(Vector3(0.36, 0.08, 0.36), stone, chim + Vector3(0, 0.5, 0)))
+	# Props by the door.
+	barrel(Vector3(0.75, base, 1.25), body)
+	barrel(Vector3(1.05, base, 1.05), body)
+	crate(Vector3(-0.85, base, 1.2), body, 20)
+	woodpile(Vector3(1.25, base, -0.35), body)
+	# Banner pole at the front corner; the banner itself is a live part.
+	var pole_at := Vector3(-1.25, 0.22, 1.25)
+	body.add_child(cyl(0.035, 0.04, 2.2, wood, pole_at + Vector3(0, 1.1, 0), Vector3.ZERO, 8))
+	body.add_child(ball(0.06, Materials.flat(Color("#b89a5a"), 0.3, 0.8), pole_at + Vector3(0, 2.22, 0)))
+	var banner := Node3D.new()
+	var flag_top := pole_at + Vector3(0.04, 2.1, 0)
+	banner.add_child(box(Vector3(0.62, 0.85, 0.02), cloth(team), flag_top + Vector3(0.33, -0.42, 0)))
+	banner.add_child(box(Vector3(0.64, 0.06, 0.03), wood, flag_top + Vector3(0.33, 0.0, 0)))
+	banner.add_child(ball(0.13, cloth(team.lightened(0.6)), flag_top + Vector3(0.33, -0.4, 0.015), Vector3(1, 1, 0.1)))
+	# Dragonfly weathervane on the ridge; spins in 2D.
+	var vane := Node3D.new()
+	var apex := Vector3(0, roof_y + 1.58, 0)
+	var metal := Materials.flat(Color("#5e6a66"), 0.35, 0.8)
+	vane.add_child(cyl(0.012, 0.012, 0.4, metal, apex + Vector3(0, 0.2, 0), Vector3.ZERO, 6))
+	vane.add_child(cyl(0.025, 0.025, 0.4, metal, apex + Vector3(0, 0.38, 0), Vector3(0, 0, 90), 6))
+	for s in [-1, 1]:
+		vane.add_child(ball(0.12, Materials.flat(Color("#7fb6c8"), 0.2, 0.3), apex + Vector3(0.05, 0.4, s * 0.1), Vector3(0.5, 0.06, 1.0)))
+	return {"body": body, "anchor": Vector3.ZERO, "banner": banner, "banner_pivot": flag_top,
+		"vane": vane, "vane_pivot": apex, "smoke": chim + Vector3(0, 0.55, 0), "lights": lights,
+		"lantern": Vector3(0.18, base + 0.75, w / 2 + 0.15)}
+
+
+## A frog stilt hut: round daub walls on a plank deck over log stilts, a cone of
+## thatch, a ladder and a little smoke pipe; a lantern by the door.
+func stilt_house(team: Color) -> Dictionary:
+	rng.seed = 7
+	var body := Node3D.new()
+	var wood := mats.get_mat("wood")
+	var mud := mats.get_mat("mud")
+	var thatch := mats.get_mat("thatch")
+	for x in [-0.6, 0.6]:
+		for z in [-0.6, 0.6]:
+			body.add_child(cyl(0.06, 0.07, 0.45, wood, Vector3(x, 0.22, z), Vector3(rng.randf_range(-4, 4), 0, rng.randf_range(-4, 4)), 10))
+	for k in 7:
+		body.add_child(box(Vector3(1.55, 0.06, 0.21), wood, Vector3(0, 0.47, -0.66 + k * 0.22), Vector3(0, rng.randf_range(-2, 2), 0)))
+	body.add_child(cyl(0.6, 0.62, 0.72, mud, Vector3(0, 0.86, 0), Vector3.ZERO, 24))
+	for y in [0.55, 1.18]:
+		body.add_child(ring(0.6, 0.66, wood, Vector3(0, y, 0)))
+	for k in 6:
+		var a := TAU * k / 6.0
+		body.add_child(box(Vector3(0.07, 0.72, 0.07), wood, Vector3(cos(a) * 0.62, 0.86, sin(a) * 0.62)))
+	body.add_child(box(Vector3(0.32, 0.5, 0.05), Materials.flat(Color("#3e2616"), 0.8), Vector3(0.05, 0.75, 0.6), Vector3(0, 8, 0)))
+	body.add_child(cyl(0.0, 0.95, 0.85, thatch, Vector3(0, 1.62, 0), Vector3.ZERO, 24))
+	body.add_child(cyl(0.0, 0.8, 0.5, thatch, Vector3(0, 1.95, 0), Vector3(0, 17, 0), 24))
+	body.add_child(cyl(0.05, 0.05, 0.25, Materials.flat(Color("#3a3430"), 0.4, 0.7), Vector3(0.35, 1.95, -0.2), Vector3.ZERO, 8))
+	# Ladder down the front, from the ground up to the deck edge.
+	var foot := Vector3(0, 0.0, 1.12)
+	var top := Vector3(0, 0.5, 0.8)
+	var along := top - foot
+	var tilt := rad_to_deg(atan2(along.z, along.y))
+	for x in [-0.12, 0.22]:
+		body.add_child(box(Vector3(0.04, along.length(), 0.04), wood, foot.lerp(top, 0.5) + Vector3(x, 0, 0), Vector3(tilt, 0, 0)))
+	for k in 4:
+		body.add_child(box(Vector3(0.36, 0.03, 0.03), wood, foot.lerp(top, (k + 1) / 5.0) + Vector3(0.05, 0, 0)))
+	return {"body": body, "anchor": Vector3.ZERO, "smoke": Vector3(0.35, 2.1, -0.2), "lights": [],
+		"lantern": Vector3(0.32, 0.95, 0.66), "team": team}
+
+
+# ------------------------------------------------------------------ ground
+
+func grass_tile(seed_value: int) -> Node3D:
+	rng.seed = seed_value
+	var n := Node3D.new()
+	n.add_child(box(Vector3(1.0, 0.1, 1.0), mats.get_mat("grass"), Vector3(0, -0.05, 0)))
+	var blade := Materials.flat(Color("#5e8434"), 0.9)
+	var blade2 := Materials.flat(Color("#86a64a"), 0.9)
+	for k in 22:
+		var p := Vector3(rng.randf_range(-0.45, 0.45), 0, rng.randf_range(-0.45, 0.45))
+		for b in 3:
+			var h := rng.randf_range(0.05, 0.1)
+			n.add_child(box(Vector3(0.012, h, 0.012), blade if b % 2 == 0 else blade2, p + Vector3(b * 0.012, h / 2, 0), Vector3(rng.randf_range(-20, 20), 0, rng.randf_range(-20, 20))))
+	return n
+
+
+func swamp_tile(seed_value: int) -> Node3D:
+	rng.seed = seed_value
+	var n := Node3D.new()
+	n.add_child(box(Vector3(1.0, 0.08, 1.0), mats.get_mat("swamp"), Vector3(0, -0.06, 0)))
+	var pad := Materials.flat(Color("#4e7a34"), 0.5)
+	for k in 2:
+		var p := Vector3(rng.randf_range(-0.3, 0.3), -0.015, rng.randf_range(-0.3, 0.3))
+		n.add_child(cyl(0.11, 0.11, 0.01, pad, p, Vector3.ZERO, 16))
+	return n
+
+
+func reeds(seed_value: int) -> Node3D:
+	rng.seed = seed_value
+	var n := Node3D.new()
+	var stalk := Materials.flat(Color("#9aa846"), 0.8)
+	var stalk2 := Materials.flat(Color("#7e8e3a"), 0.8)
+	var tip := Materials.flat(Color("#6b4a2a"), 0.9)
+	for k in 18:
+		var h := rng.randf_range(0.55, 0.95)
+		var p := Vector3(rng.randf_range(-0.42, 0.42), h / 2, rng.randf_range(-0.42, 0.42))
+		var r := Vector3(rng.randf_range(-9, 9), 0, rng.randf_range(-9, 9))
+		var s := cyl(0.012, 0.018, h, stalk if k % 3 else stalk2, p, r, 6)
+		n.add_child(s)
+		if k % 2 == 0:
+			var t := cyl(0.03, 0.03, 0.13, tip, Vector3(0, h / 2 - 0.05, 0), Vector3.ZERO, 8)
+			s.add_child(t)
+		var leaf := box(Vector3(0.05, h * 0.55, 0.01), stalk2, p + Vector3(0.03, -h * 0.15, 0), r + Vector3(0, rng.randf_range(0, 180), rng.randf_range(10, 25)))
+		n.add_child(leaf)
+	return n
+
+
+func bug_bush(seed_value: int) -> Node3D:
+	rng.seed = seed_value
+	var n := Node3D.new()
+	var leaf := mats.get_mat("grass")
+	for k in 7:
+		var r := rng.randf_range(0.17, 0.26)
+		n.add_child(ball(r, leaf, Vector3(rng.randf_range(-0.22, 0.22), r * 0.9 + rng.randf_range(0, 0.15), rng.randf_range(-0.22, 0.22))))
+	var bug := Materials.flat(Color("#e0607f"), 0.2)
+	var spot := Materials.flat(Color("#1e1414"), 0.3)
+	for k in 9:
+		var a := rng.randf() * TAU
+		var p := Vector3(cos(a) * 0.3, rng.randf_range(0.18, 0.5), sin(a) * 0.3)
+		n.add_child(ball(0.035, bug, p, Vector3(1, 0.7, 1)))
+		n.add_child(ball(0.012, spot, p + Vector3(0.02, 0.02, 0.02)))
+	return n
+
+
+# ------------------------------------------------------------------ the frog
+
+## A frog worker, facing +x, in parts that rotate about pivots in 2D:
+## far leg, far arm, body, head, near leg, near arm with its basket.
+func frog_worker(team: Color) -> Dictionary:
+	var skin := mats.get_mat("frog")
+	var cream := Materials.flat(Color("#e6e2b0"), 0.45)
+	var dark := Materials.flat(Color("#1a1612"), 0.08)
+	var white := Materials.flat(Color("#f4f0e0"), 0.2)
+	var pink := Materials.flat(Color("#e89a8a"), 0.6)
+	var leaf := Materials.flat(Color("#4e8a3a"), 0.55)
+	var parts := {}
+	var pivots := {}
+
+	var body := Node3D.new()
+	body.add_child(ball(0.3, skin, Vector3(0, 0.36, 0), Vector3(1.0, 0.95, 0.88)))
+	body.add_child(ball(0.24, cream, Vector3(0.12, 0.32, 0), Vector3(0.62, 0.95, 0.85)))
+	body.add_child(ring(0.17, 0.25, cloth(team), Vector3(0.04, 0.58, 0), Vector3(0, 0, -12), Vector3(1.05, 0.8, 1.05)))
+	body.add_child(box(Vector3(0.09, 0.26, 0.03), cloth(team), Vector3(-0.2, 0.46, 0.08), Vector3(10, 0, -20)))
+	parts.body = body
+	pivots.body = Vector3(0, 0.1, 0)
+
+	var head := Node3D.new()
+	head.add_child(ball(0.26, skin, Vector3(0.1, 0.72, 0), Vector3(1.18, 0.74, 1.12)))
+	head.add_child(ring(0.27, 0.285, dark, Vector3(0.12, 0.68, 0), Vector3(0, 0, -6), Vector3(1.12, 1, 1.07)))
+	for s in [-1, 1]:
+		var e := Vector3(0.2, 0.88, s * 0.14)
+		head.add_child(ball(0.095, skin, e))
+		head.add_child(ball(0.075, white, e + Vector3(0.04, 0.01, s * 0.01)))
+		head.add_child(ball(0.042, dark, e + Vector3(0.09, 0.015, s * 0.02)))
+		head.add_child(ball(0.1, skin, e + Vector3(-0.01, 0.045, 0), Vector3(1.0, 0.45, 1.0)))   # sleepy lid
+		head.add_child(ball(0.05, pink, Vector3(0.28, 0.66, s * 0.2), Vector3(1, 0.6, 1)))      # cheek
+	head.add_child(ball(0.24, leaf, Vector3(-0.06, 0.95, 0), Vector3(1.35, 0.1, 1.0), Vector3(0, 20, 14)))
+	head.add_child(box(Vector3(0.36, 0.01, 0.015), Materials.flat(Color("#7ab84a"), 0.5), Vector3(-0.06, 0.975, 0), Vector3(0, 20, 14)))
+	head.add_child(cyl(0.01, 0.012, 0.12, Materials.flat(Color("#6b4a2a"), 0.8), Vector3(-0.3, 1.0, -0.08), Vector3(0, 0, 60), 6))
+	parts.head = head
+	pivots.head = Vector3(0.05, 0.58, 0)
+
+	for side in ["far", "near"]:
+		var z := -0.2 if side == "far" else 0.2
+		var leg := Node3D.new()
+		leg.add_child(ball(0.17, skin, Vector3(-0.04, 0.2, z * 1.1), Vector3(1.3, 0.85, 0.75)))
+		leg.add_child(ball(0.1, skin, Vector3(0.12, 0.08, z * 1.2), Vector3(1.4, 0.5, 0.7)))
+		var foot := Vector3(0.24, 0.03, z * 1.25)
+		leg.add_child(ball(0.1, skin, foot, Vector3(1.6, 0.35, 1.1)))
+		for t in 3:
+			leg.add_child(ball(0.035, skin, foot + Vector3(0.14, 0.0, (t - 1) * 0.06)))
+		parts["leg_" + side] = leg
+		pivots["leg_" + side] = Vector3(-0.04, 0.28, z)
+
+	for side in ["far", "near"]:
+		var z := -0.24 if side == "far" else 0.24
+		var arm := Node3D.new()
+		var cap := CapsuleMesh.new()
+		cap.radius = 0.055
+		cap.height = 0.3
+		arm.add_child(_mi(cap, skin, Vector3(0.18, 0.4, z), Vector3(0, 0, 40)))
+		var hand := Vector3(0.28, 0.28, z)
+		arm.add_child(ball(0.06, skin, hand))
+		for t in 3:
+			arm.add_child(ball(0.025, skin, hand + Vector3(0.05, -0.02, (t - 1) * 0.035)))
+		if side == "near":
+			var basket := hand + Vector3(0.05, -0.16, 0.06)
+			arm.add_child(cyl(0.15, 0.12, 0.18, mats.get_mat("weave"), basket, Vector3.ZERO, 20))
+			arm.add_child(ring(0.14, 0.17, Materials.flat(Color("#6e5226"), 0.8), basket + Vector3(0, 0.09, 0)))
+			arm.add_child(ring(0.13, 0.15, Materials.flat(Color("#6e5226"), 0.8), basket + Vector3(0, 0.02, 0), Vector3(90, 0, 0), Vector3(1, 1, 1.2)))
+			for b in 5:
+				arm.add_child(ball(0.035, Materials.flat(Color("#e0607f"), 0.2), basket + Vector3(-0.06 + b * 0.03, 0.1, (b % 2) * 0.05 - 0.02), Vector3(1, 0.7, 1)))
+		parts["arm_" + side] = arm
+		pivots["arm_" + side] = Vector3(0.1, 0.48, z)
+	return {"parts": parts, "pivots": pivots,
+		"order": ["leg_far", "arm_far", "body", "head", "leg_near", "arm_near"]}
