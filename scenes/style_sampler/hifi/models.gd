@@ -184,7 +184,7 @@ func town_center(team: Color) -> Dictionary:
 	var flag_top := pole_at + Vector3(0.04, 2.1, 0)
 	banner.add_child(box(Vector3(0.62, 0.85, 0.02), cloth(team), flag_top + Vector3(0.33, -0.42, 0)))
 	banner.add_child(box(Vector3(0.64, 0.06, 0.03), wood, flag_top + Vector3(0.33, 0.0, 0)))
-	banner.add_child(ball(0.13, cloth(team.lightened(0.6)), flag_top + Vector3(0.33, -0.4, 0.015), Vector3(1, 1, 0.1)))
+	banner.add_child(ball(0.13, cloth(Color("#e8e4d8")), flag_top + Vector3(0.33, -0.4, 0.015), Vector3(1, 1, 0.1)))
 	# Dragonfly weathervane on the ridge; spins in 2D.
 	var vane := Node3D.new()
 	var apex := Vector3(0, roof_y + 1.58, 0)
@@ -230,6 +230,10 @@ func stilt_house(team: Color) -> Dictionary:
 		body.add_child(box(Vector3(0.04, along.length(), 0.04), wood, foot.lerp(top, 0.5) + Vector3(x, 0, 0), Vector3(tilt, 0, 0)))
 	for k in 4:
 		body.add_child(box(Vector3(0.36, 0.03, 0.03), wood, foot.lerp(top, (k + 1) / 5.0) + Vector3(0.05, 0, 0)))
+	# A team pennant on the roof tip, so every building shows its owner.
+	body.add_child(cyl(0.015, 0.015, 0.5, wood, Vector3(0, 2.4, 0), Vector3.ZERO, 6))
+	body.add_child(slab_tri(Vector2(0, 0), Vector2(0, -0.22), Vector2(0.42, -0.11), 0.02, cloth(team)))
+	body.get_child(body.get_child_count() - 1).position = Vector3(0.015, 2.62, 0)
 	return {"body": body, "anchor": Vector3.ZERO, "smoke": Vector3(0.35, 2.1, -0.2), "lights": [],
 		"lantern": Vector3(0.32, 0.95, 0.66), "team": team}
 
