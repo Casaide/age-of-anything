@@ -1,0 +1,125 @@
+{
+ "frog": {
+  "noun": "Frog",
+  "plural": "Frogs",
+  "body": "body.frog",
+  "head": "head.frog",
+  "playable": true,
+  "skins": [
+   "frog_green",
+   "frog_blue",
+   "toad_brown",
+   "poison_red"
+  ],
+  "families": [
+   "swamp",
+   "forest"
+  ]
+ },
+ "rat": {
+  "noun": "Rat",
+  "plural": "Rats",
+  "body": "body.rat",
+  "head": "head.rat",
+  "playable": true,
+  "skins": [
+   "rat_grey",
+   "rat_brown",
+   "rat_white"
+  ],
+  "families": [
+   "sewer",
+   "forest"
+  ]
+ },
+ "human": {
+  "noun": "Folk",
+  "plural": "Folk",
+  "body": "body.human",
+  "head": "head.human",
+  "playable": true,
+  "skins": [
+   "human_light",
+   "human_tan",
+   "human_dark"
+  ],
+  "families": [
+   "imperial",
+   "hellenic",
+   "royal",
+   "steppe",
+   "forest"
+  ],
+  "giant_ok": false
+ },
+ "spider": {
+  "noun": "Spider",
+  "plural": "Spiders",
+  "body": "body.spider",
+  "head": "head.spider",
+  "playable": true,
+  "mount": true,
+  "skins": [
+   "spider_black",
+   "spider_tarantula",
+   "spider_green"
+  ],
+  "families": [
+   "spooky",
+   "forest"
+  ]
+ },
+ "beetle": {
+  "noun": "Beetle",
+  "plural": "Beetles",
+  "body": "body.beetle",
+  "head": "head.beetle",
+  "playable": true,
+  "mount": true,
+  "skins": [
+   "beetle_stag",
+   "beetle_jade"
+  ],
+  "families": [
+   "forest",
+   "swamp"
+  ]
+ },
+ "pony": {
+  "noun": "Pony",
+  "plural": "Ponies",
+  "body": "body.pony",
+  "head": "head.pony",
+  "playable": false,
+  "mount": true,
+  "skins": [
+   "pony_bay",
+   "pony_grey",
+   "pony_dun",
+   "pony_white"
+  ],
+  "families": [
+   "steppe",
+   "royal"
+  ]
+ },
+ "centaur": {
+  "noun": "Centaur",
+  "plural": "Centaurs",
+  "body": "body.human",
+  "head": "head.human",
+  "playable": true,
+  "fused_mount": "pony",
+  "skins": [
+   "human_light",
+   "human_tan",
+   "human_dark"
+  ],
+  "families": [
+   "hellenic",
+   "forest",
+   "steppe"
+  ],
+  "giant_ok": false
+ }
+}
