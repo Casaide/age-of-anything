@@ -59,10 +59,25 @@ baked ground shadows. The ground is one shader driven by blurred terrain masks (
 shorelines, a mud bank, foam, sparkles), and the whole frame goes through one palette with a
 light ordered dither, at 2x nearest.
 
+### Then: real units, with real textures
+
+Dominic: "I don't mean keep the designs exactly, use them as reference". He wanted more detail;
+units shouldn't feel made from a bunch of shapes (and they all had one leg). Then: "shapes will
+need some actual textures", and he chose to have Claude author every texture rather than
+download any. So Claude drew a texture set as SVG files: frog skin (spots, a few warts), belly,
+an amber frog eye with a horizontal pupil, a smug mouth, leaf, lily pad, bark plates, stitched
+leather, wicker, acorn scales, reed stalk, bone, rat fur, a bead eye, hammered bronze, worn iron
+and wood grain. Each part id now has a hand-built 3D model (two legs, arms, hands, gear) that
+uses them. The models' sockets are projected into 2D, so UnitView composes and animates them
+like any other parts.
+
+Dominic also spotted a frog standing on a hut roof and asked for the shadows to be fixed.
+
 ## Decisions
 - D-040: the art direction is open again; choose from the sampler.
 - D-041: a sixth direction, high-fidelity pre-rendered, built as a real bake pipeline.
 - D-042: the leading candidate is high-fidelity pixel art that keeps the original characters.
+- D-043: units are hand-modelled per part id with authored textures; parts layer by child order.
 
 ## Pictures
 ![All five styles, same scene, same scale](../images/2026-10-11/08-style-sampler-all.png)
@@ -76,8 +91,22 @@ light ordered dither, at 2x nearest.
 ![High-fidelity pixel art at 2x: the original frogs and rats, a rounded pond, no grid](../images/2026-10-11/16-pixel-hifi-2x.png)
 ![The pixel-art map at 1x](../images/2026-10-11/17-pixel-hifi-overview.png)
 ![3x close-up, before units were scaled down: frogs as big as the Town Center](../images/2026-10-11/18-pixel-hifi-3x.png)
+![Bug (Dominic's screenshot): a frog standing on the hut's roof](../images/2026-10-11/19-bug-frog-on-the-roof.png)
+![The modelled, textured frog and rat rosters](../images/2026-10-11/20-modelled-units-lineup.png)
+![Pixel scene with modelled units, shadows and correct overlap](../images/2026-10-11/21-pixel-modelled-units-2x.png)
 
 ## Funny moments and bugs worth remembering
+- **The frog on the roof.** Units are built from parts layered with `z_index`, and z_index is
+  global in Godot. So any frog's head or spear outranked every building's y-sort, and a frog
+  behind a hut appeared to stand on its thatch. Parts are now ordered by child order.
+- **Shadows that stopped at the camera.** Buildings had no ground shadow because the shadow
+  range (30) ended exactly where the bake camera sat (30 units out). Once that was fixed, the
+  shadows were still too faint to survive pixelizing, so they're now baked in their own pass.
+- **"Frogs look a little more like toads."** They were squat, warty and toad-brown. Now they
+  have smoother spotted skin, an upright body, long folded legs, toe pads and bigger, higher eyes.
+  The brown is the race's roll, so it stays.
+- **The faces were inside the heads.** The first eye and mouth decals sat just under the skin and
+  never showed. They now snap to the ellipsoid's surface.
 - **Giant frogs, rats on the roof.** The first pixel bake had frogs nearly as tall as the Town
   Center walls, and the rat spearmen had wandered onto the stilt hut's thatch. Units now sit at
   70% scale, baked at that size, with their wander areas on open grass.

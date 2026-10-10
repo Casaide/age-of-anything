@@ -22,6 +22,9 @@ var part_id := ""
 
 ## bake_key -> {tex: Texture2D, origin: Vector2 (texture px of the part's 0,0), scale: texture px per part unit}
 static var baked := {}
+## part id -> {sockets: {name: Vector2}, anchors: [[x, y, phase, z]], torso_scale: Vector2}
+## for parts baked from hand-built models: their sockets as seen by the bake camera.
+static var rigs := {}
 
 
 ## Identifies a part as drawn in particular colours (team, skin and cloth are baked in).

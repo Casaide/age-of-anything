@@ -34,3 +34,6 @@ One line per moment worth remembering. Newest at the bottom.
 - **2026-10-11:** Back to pixels: the original frogs and rats, baked from auto-3D parts into
   pixel sprites, beside a round pond with no grid in sight.
   ([image](images/2026-10-11/16-pixel-hifi-2x.png))
+- **2026-10-11:** Frogs get two legs, toe pads and amber eyes; rats get whiskers and bottle-cap
+  shields: hand-modelled parts with hand-drawn textures. A frog stops standing on a hut roof.
+  ([image](images/2026-10-11/21-pixel-modelled-units-2x.png))

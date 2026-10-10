@@ -180,3 +180,13 @@ goes through one shared palette at art resolution. Supersedes the photoreal lean
 preferred direction (the bake pipeline stays). Dominic's direction ("focus more on the pixel art
 approach", "in the classic games you never think the lighting is bad"); Claude's
 implementation. Not final until Dominic picks.
+
+**D-043, 2026-10-11: Units are hand-modelled per part id with authored textures; the 2D
+designs are reference, not a constraint.** Each part id can have a 3D model with real anatomy
+(`scenes/art_pixel/unit_models.gd`), textured with SVG texture art Claude authors in
+`assets/art/textures/` (no downloaded or procedural textures). Models are baked three-quarter,
+and their sockets are projected into 2D (`PartShape.rigs`), so recipes, composition and
+animation are unchanged; parts without a model fall back to the automatic bake. Parts are
+layered by child order instead of `z_index` (which is global and broke y-sorting). Building
+ground shadows are baked in a shadow-only pass, with light from the screen's upper left.
+Dominic's direction (reference not exact; real textures, authored by Claude); Claude's design.
