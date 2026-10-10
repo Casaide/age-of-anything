@@ -74,6 +74,7 @@ src/
 scenes/race_lab.*  prompt UI, race cards, two armies milling about
   view/            view side (Nodes allowed): iso.gd projection, map_view.gd tiles, rts_camera.gd,
                    building_view.gd, resource_view.gd, command_panel.gd
+scenes/style_sampler.* + style_sampler/  the same scene in five art directions (art pass, step 1)
 scenes/sim_debug.* the playable debug match: select, smart right-click, panel (Q/H/C), Tab side, F6 autoplay,
                    F3 flow, F5/F9 replays, G regen army
 tests/           headless checks and dev tools (see Commands)
@@ -91,6 +92,8 @@ godot --headless --path . --script res://tests/test_sim.gd         # sim determi
 godot --path . --script res://tests/sim_screenshot.gd -- /tmp/sim.png [map_id] [armies|opening:<tick>] ["prompt A" "prompt B"]
 godot --path . res://scenes/sim_debug.tscn                         # run the sim debug view
 godot --headless --path . --script res://tests/gen_cost_curve.gd   # regenerate data/cost_curves.json
+godot --path . res://scenes/style_sampler.tscn                     # art-direction sampler (keys 1-5, 0)
+godot --path . --script res://tests/style_screenshot.gd -- /tmp/styles   # capture the sampler
 godot --path .                                                     # run the Race Lab
 ```
 
