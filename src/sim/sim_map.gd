@@ -1,8 +1,12 @@
 extends RefCounted
-## The sim's view of a map: a terrain grid, what's walkable, and start positions.
+## The sim's map: terrain per cell, what's walkable, resources left, start positions.
 ## Positions in the sim are milli-tiles; tile (tx, ty) covers [tx*1000, tx*1000+999].
 ## Maps are data (data/maps/*.json, ASCII rows + a legend into data/terrain.json);
 ## the view builds its TileMapLayer from the same file.
+##
+## The map changes during a match: resources run out (the tile becomes its
+## `depleted` terrain) and buildings occupy tiles. Every change bumps `version`
+## and is listed in `fresh` (for the World) and `changed` (for the view).
 
 const Rng := preload("res://src/rng.gd")
 
@@ -12,11 +16,22 @@ const SCHEMA := "aow.map/2"
 var id: String
 var width: int
 var height: int
-var terrain_ids: Array = []      # sorted terrain ids; terrain[] holds indexes into this
-var terrain := PackedByteArray() # index ty * width + tx
-var walk := PackedByteArray()    # 1 walkable, 0 blocked
-var starts: Array = []           # [[x, y]] in milli-tiles, tile centres
-var map_hash: int
+var terrain_ids: Array = []        # sorted terrain ids; terrain[] holds indexes into this
+var terrain_walk: Array = []       # terrain index -> bool
+var terrain_resource: Array = []   # terrain index -> "food" / "wood" / ""
+var terrain_amount: Array = []     # terrain index -> starting amount per tile
+var terrain_depleted: Array = []   # terrain index -> terrain index it turns into, or -1
+var terrain := PackedByteArray()   # index ty * width + tx
+var walk := PackedByteArray()      # 1 walkable, 0 blocked (terrain or a building)
+var occupied := PackedInt32Array() # building id standing on the cell, or 0
+var amount := PackedInt32Array()   # resource left on the cell
+var resource_cells := PackedInt32Array()   # every cell that started with a resource, ascending
+var starts: Array = []             # [[x, y]] in milli-tiles, tile centres
+var map_hash: int                  # content hash of the file, for replays
+var version := 0
+var fresh := PackedInt32Array()    # cells changed this tick (the World reads and clears it)
+var changed := PackedInt32Array()  # cells changed since the view last looked (view clears it)
+var changed_overflow := false      # too many to list: the view should redraw everything
 
 
 static func load_terrain() -> Dictionary:
@@ -36,6 +51,15 @@ static func load_id(map_id: String) -> RefCounted:
 	m.height = int(d.height)
 	m.terrain_ids = types.keys()
 	m.terrain_ids.sort()
+	for t in m.terrain_ids:
+		var td: Dictionary = types[t]
+		m.terrain_walk.append(bool(td.walkable))
+		m.terrain_resource.append(td.get("resource", ""))
+		m.terrain_amount.append(int(td.get("amount", 0)))
+	for t in m.terrain_ids:
+		var dep: String = types[t].get("depleted", "")
+		assert(dep == "" or types.has(dep), "Terrain %s depletes into unknown %s" % [t, dep])
+		m.terrain_depleted.append(m.terrain_ids.find(dep) if dep != "" else -1)
 	var index := {}   # legend char -> terrain index
 	var legend_keys: Array = d.legend.keys()
 	legend_keys.sort()
@@ -46,16 +70,23 @@ static func load_id(map_id: String) -> RefCounted:
 		index[ch] = m.terrain_ids.find(t)
 		legend_text += "%s=%s;%d;" % [ch, t, 1 if types[t].walkable else 0]
 	assert(d.rows.size() == m.height, "Map %s has %d rows, expected %d" % [map_id, d.rows.size(), m.height])
-	m.terrain.resize(m.width * m.height)
-	m.walk.resize(m.width * m.height)
+	var n: int = m.width * m.height
+	m.terrain.resize(n)
+	m.walk.resize(n)
+	m.occupied.resize(n)
+	m.amount.resize(n)
 	for y in m.height:
 		var row: String = d.rows[y]
 		assert(row.length() == m.width, "Map %s row %d is %d wide" % [map_id, y, row.length()])
 		for x in m.width:
 			assert(index.has(row[x]), "Map %s: '%s' at %d,%d isn't in the legend" % [map_id, row[x], x, y])
 			var k: int = index[row[x]]
-			m.terrain[y * m.width + x] = k
-			m.walk[y * m.width + x] = 1 if types[m.terrain_ids[k]].walkable else 0
+			var c: int = y * m.width + x
+			m.terrain[c] = k
+			m.walk[c] = 1 if m.terrain_walk[k] else 0
+			m.amount[c] = m.terrain_amount[k]
+			if m.terrain_amount[k] > 0:
+				m.resource_cells.append(c)
 	for s in d.starts:
 		m.starts.append([int(s[0]) * TILE + TILE / 2, int(s[1]) * TILE + TILE / 2])
 		assert(m.walkable(m.starts[-1][0], m.starts[-1][1]), "Map %s: start on blocked ground" % map_id)
@@ -78,5 +109,55 @@ func cell_walkable(cx: int, cy: int) -> bool:
 	return cx >= 0 and cy >= 0 and cx < width and cy < height and walk[cy * width + cx] == 1
 
 
+func cell_of(x: int, y: int) -> int:
+	return clampi(y / TILE, 0, height - 1) * width + clampi(x / TILE, 0, width - 1)
+
+
 func terrain_at(cell: int) -> String:
 	return terrain_ids[terrain[cell]]
+
+
+## "food", "wood" or "" for a cell that has (or had) none left.
+func resource_at(cell: int) -> String:
+	if amount[cell] <= 0:
+		return ""
+	return terrain_resource[terrain[cell]]
+
+
+## Take one unit of resource. When the last one goes, the tile turns into its depleted terrain.
+func take(cell: int) -> void:
+	assert(amount[cell] > 0, "Nothing left to take at cell %d" % cell)
+	amount[cell] -= 1
+	if amount[cell] == 0:
+		var dep: int = terrain_depleted[terrain[cell]]
+		if dep >= 0:
+			terrain[cell] = dep
+		_refresh(cell)
+
+
+## Mark a building's footprint (id) or clear it (0).
+func occupy(cells: PackedInt32Array, building_id: int) -> void:
+	for c in cells:
+		occupied[c] = building_id
+		_refresh(c)
+
+
+func can_build(cx: int, cy: int, size: int) -> bool:
+	for y in range(cy, cy + size):
+		for x in range(cx, cx + size):
+			if x < 0 or y < 0 or x >= width or y >= height:
+				return false
+			var c := y * width + x
+			if not terrain_walk[terrain[c]] or occupied[c] != 0:
+				return false
+	return true
+
+
+func _refresh(cell: int) -> void:
+	walk[cell] = 1 if terrain_walk[terrain[cell]] and occupied[cell] == 0 else 0
+	version += 1
+	fresh.append(cell)
+	if changed.size() < 4096:
+		changed.append(cell)
+	else:
+		changed_overflow = true

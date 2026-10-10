@@ -1,21 +1,26 @@
 extends RefCounted
 ## The simulation. Pure data, integer maths, fixed 20 Hz ticks, driven only by
 ## the command stream. Views read it; nothing outside writes to it except
-## through commands. Same seed + map + races + commands = same state hashes.
+## through commands. Same seed + map + races + rules + commands = same hashes.
 ##
-## One tick: run this turn's commands -> move -> separate -> (every 30) hash.
-## Movement: each unit steers at a waypoint taken from the flow field of its
-## target cell, re-planned every few ticks; groups settle when they bump a
-## groupmate that has already arrived. At most one new flow field is solved per
-## tick (queued in order); until a unit's field is ready it heads straight on.
+## One tick: commands -> training -> worker jobs -> map changes drop stale
+## flow fields -> solve queued fields (budgeted) -> move -> separate -> hash.
+##
+## Movement: a unit either heads for a point (MOVE: groups settle when they bump
+## an arrived groupmate) or for "next to a rect" (a reed tile, a building). It
+## steers at a waypoint taken from a flow field, re-planned every few ticks.
+## Fields are solved from a queue within a per-tick budget; until a unit's
+## field is ready it heads straight on. The economy lives in economy.gd.
 
 const Fixed := preload("res://src/sim/fixed.gd")
 const Rng := preload("res://src/rng.gd")
 const Commands := preload("res://src/sim/commands.gd")
 const Units := preload("res://src/sim/units.gd")
+const Buildings := preload("res://src/sim/buildings.gd")
 const Spatial := preload("res://src/sim/spatial.gd")
 const SimMap := preload("res://src/sim/sim_map.gd")
 const Flow := preload("res://src/sim/flow.gd")
+const Economy := preload("res://src/sim/economy.gd")
 
 const TICK_HZ := 20
 const HASH_EVERY := 30
@@ -33,41 +38,78 @@ const DIRECT_COST := 160       # field cost under which we try a straight line t
 const SETTLE_FACTOR := 4       # bumping a stopped groupmate within arrive * this counts as arrived
 const STUCK_LIMIT := 60        # ticks without progress before a unit gives up (3 s)
 const RETURN_SLACK := 1000     # shoved this far beyond its settle radius, a stopped unit walks back
-const FIELD_CACHE := 16        # flow fields kept (oldest dropped first)
+const FIELD_CACHE := 24        # flow fields kept (oldest dropped first)
+const SOLVE_BUDGET := 1500     # flow-field cells settled per tick: one full solve, or a few near ones
+const NEAR_CUTOFF := 160       # cost cutoff for "near" fields (16 tiles): short work trips
+
+# Field keys: target * 4 + kind. Cell targets are cells; building targets are ids.
+const FIELD_CELL := 0          # full field towards a cell (MOVE, or a far resource)
+const FIELD_CELL_NEAR := 1
+const FIELD_BUILDING_NEAR := 2
+const FIELD_BUILDING := 3
 
 var seed_value: int
 var tick := 0
 var rng: Rng
 var map: SimMap
 var races: Array               # race dicts, one per player
-var types: Array = []          # unit types: {player, slot, name, recipe, speed, radius, hp}
+var rules: Dictionary          # host rules, as loaded
+var econ: Dictionary           # rules.economy with numbers as ints
+var types: Array = []          # unit types, per player per roster slot (see _make_type)
+var btypes: Array = []         # building types (see Economy.load_btypes)
 var units: Units = Units.new()
+var buildings: Buildings = Buildings.new()
 var spatial: Spatial
 var commands: Commands = Commands.new()
-var history: Array = []          # every command that ran, in run order
+var history: Array = []        # every command that ran, in run order
 var hashes: Array = []         # [[tick, hash]] every HASH_EVERY ticks
-var next_id := 1
+var next_id := 1               # shared by units and buildings
 var next_group := 1
-var fields := {}               # target cell -> Flow; looked up by key, never iterated
-var field_order: Array = []    # cached target cells, oldest first, for eviction
-var field_queue: Array = []    # target cells waiting for a solve, in request order
+var food := PackedInt32Array() # per player
+var wood := PackedInt32Array()
+var pop := PackedInt32Array()     # derived each tick (Economy.update_pop)
+var pop_cap := PackedInt32Array()
+var fields := {}               # field key -> Flow; looked up by key, never iterated
+var field_order: Array = []    # cached field keys, oldest first (eviction, invalidation)
+var field_queue: Array = []    # field keys waiting for a solve, in request order
 
 
-func _init(p_seed: int, p_map: SimMap, p_races: Array) -> void:
+func _init(p_seed: int, p_map: SimMap, p_races: Array, p_rules: Dictionary) -> void:
+	assert(p_map.version == 0, "A World needs a freshly loaded map (maps change during a match)")
 	seed_value = p_seed
 	rng = Rng.new(p_seed)
 	map = p_map
 	races = p_races
+	rules = p_rules
+	econ = _ints(rules.economy)
 	spatial = Spatial.new(map.width, map.height)
+	btypes = Economy.load_btypes()
 	for p in races.size():
 		for u in races[p].units:
 			types.append(_make_type(p, u))
+	Economy.setup(self)
+	map.fresh.clear()
+
+
+static func _ints(v):
+	match typeof(v):
+		TYPE_FLOAT:
+			assert(v == floorf(v), "Rules hold a fraction: %s" % v)
+			return int(v)
+		TYPE_ARRAY:
+			return v.map(_ints)
+		TYPE_DICTIONARY:
+			var out := {}
+			for k in v:
+				out[k] = _ints(v[k])
+			return out
+	return v
 
 
 func _make_type(player: int, u: Dictionary) -> Dictionary:
 	var r: Dictionary = u.recipe
 	var e: Dictionary = u.eval
-	for k in ["speed", "hp"]:
+	for k in ["speed", "hp", "pop", "train_time"]:
 		assert(typeof(e[k]) == TYPE_INT, "Unit stat %s must be an int" % k)
 	var radius: int = BASE_RADIUS * int(r.scale) / 100
 	if r.has("mount"):
@@ -75,6 +117,8 @@ func _make_type(player: int, u: Dictionary) -> Dictionary:
 	return {
 		"player": player, "slot": r.slot, "name": r.get("name", r.slot), "recipe": r,
 		"speed": int(e.speed) * SPEED_SCALE, "radius": mini(radius, MAX_RADIUS), "hp": int(e.hp),
+		"pop": int(e.pop), "food": int(e.cost.food), "wood": int(e.cost.wood),
+		"train_ticks": int(e.train_time) * TICK_HZ, "worker": "worker" in e.tags,
 	}
 
 
@@ -96,13 +140,15 @@ func issue(player: int, type: String, args: Dictionary) -> Dictionary:
 
 
 func step() -> void:
+	units.save_prev()
 	if tick % Commands.TICKS_PER_TURN == 0:
 		for cmd in commands.take(turn()):
 			_run(cmd)
 			history.append(cmd)
-	units.save_prev()
-	if not field_queue.is_empty():
-		_solve(field_queue.pop_front())
+	Economy.train(self)
+	Economy.work(self)
+	_sync_map()
+	_solve_queued()
 	_move()
 	spatial.build(units.x, units.y)
 	_separate()
@@ -122,26 +168,10 @@ func _run(cmd: Dictionary) -> void:
 					slots.append(i)
 			if slots.is_empty():
 				return
-			var x: int = clampi(a.x, 0, map.width * SimMap.TILE - 1)
-			var y: int = clampi(a.y, 0, map.height * SimMap.TILE - 1)
-			var cell := (y / SimMap.TILE) * map.width + x / SimMap.TILE
-			if map.walk[cell] == 0:
-				cell = Flow.nearest_walkable(map, cell)
-				var c := Flow.centre(map, cell)
-				x = c.x
-				y = c.y
-			field_for(cell)   # queues the solve
 			var arrive := ARRIVE_STEP * Fixed.isqrt(slots.size()) - ARRIVE_BASE
 			for i in slots:
-				units.tx[i] = x
-				units.ty[i] = y
-				units.moving[i] = 1
-				units.arrive[i] = arrive
-				units.group[i] = next_group
-				units.stuck[i] = 0
-				var w := _plan(units.x[i], units.y[i], x, y)
-				units.wx[i] = w.x if w.x >= 0 else units.x[i]
-				units.wy[i] = w.y if w.x >= 0 else units.y[i]
+				Economy.clear_task(self, i)
+				order_move(i, a.x, a.y, arrive, next_group)
 			next_group += 1
 		Commands.SPAWN:
 			var k := type_of(cmd.player, a.slot)
@@ -151,11 +181,78 @@ func _run(cmd: Dictionary) -> void:
 				var x: int = a.x + rng.range_int(-SPAWN_JITTER, SPAWN_JITTER)
 				var y: int = a.y + rng.range_int(-SPAWN_JITTER, SPAWN_JITTER)
 				if not map.walkable(x, y):
-					x = a.x
-					y = a.y
+					var c := Flow.centre(map, Flow.nearest_walkable(map, map.cell_of(x, y)))
+					x = c.x
+					y = c.y
 				units.add(next_id, cmd.player, k, x, y, t.speed, t.radius, t.hp)
 				next_id += 1
+		Commands.GATHER:
+			Economy.cmd_gather(self, cmd.player, a)
+		Commands.BUILD:
+			Economy.cmd_build(self, cmd.player, a)
+		Commands.HELP_BUILD:
+			Economy.cmd_help_build(self, cmd.player, a)
+		Commands.TRAIN:
+			Economy.cmd_train(self, cmd.player, a)
+		Commands.CANCEL:
+			Economy.cmd_cancel(self, cmd.player, a)
+		Commands.RALLY:
+			Economy.cmd_rally(self, cmd.player, a)
 
+
+# ------------------------------------------------------------------ orders
+
+## Head for a point (snapped to walkable ground) and stop within `arrive`.
+func order_move(i: int, x: int, y: int, arrive: int, group: int) -> void:
+	x = clampi(x, 0, map.width * SimMap.TILE - 1)
+	y = clampi(y, 0, map.height * SimMap.TILE - 1)
+	var cell := map.cell_of(x, y)
+	if map.walk[cell] == 0:
+		cell = Flow.nearest_walkable(map, cell)
+		var c := Flow.centre(map, cell)
+		x = c.x
+		y = c.y
+	units.tx[i] = x
+	units.ty[i] = y
+	units.reach[i] = 0
+	units.fkey[i] = cell_field(cell, false)
+	units.arrive[i] = arrive
+	units.group[i] = group
+	_start(i)
+
+
+## Head for "next to" a rect of milli-tiles (inclusive), following field `key`.
+func order_reach(i: int, r: Rect2i, key: int) -> void:
+	units.tx[i] = r.position.x + r.size.x / 2
+	units.ty[i] = r.position.y + r.size.y / 2
+	units.reach[i] = 1
+	units.rx0[i] = r.position.x
+	units.ry0[i] = r.position.y
+	units.rx1[i] = r.end.x
+	units.ry1[i] = r.end.y
+	units.fkey[i] = key
+	units.arrive[i] = 0
+	units.group[i] = 0
+	_start(i)
+
+
+func _start(i: int) -> void:
+	units.moving[i] = 1
+	units.stuck[i] = 0
+	var w := _plan(i, units.x[i], units.y[i])
+	units.wx[i] = w.x if w.x >= 0 else units.x[i]
+	units.wy[i] = w.y if w.x >= 0 else units.y[i]
+
+
+func cell_field(cell: int, near: bool) -> int:
+	return cell * 4 + (FIELD_CELL_NEAR if near else FIELD_CELL)
+
+
+func building_field(bid: int, near: bool) -> int:
+	return bid * 4 + (FIELD_BUILDING_NEAR if near else FIELD_BUILDING)
+
+
+# ------------------------------------------------------------------ movement
 
 func _move() -> void:
 	var xs := units.x
@@ -170,6 +267,12 @@ func _move() -> void:
 	var sp := units.speed
 	var ids := units.id
 	var grp := units.group
+	var rch := units.reach
+	var rs := units.radius
+	var rx0 := units.rx0
+	var ry0 := units.ry0
+	var rx1 := units.rx1
+	var ry1 := units.ry1
 	for i in xs.size():
 		if mv[i] == 0:
 			# Shoved well off its spot by passing units? Walk back (checked on re-plan ticks).
@@ -181,21 +284,35 @@ func _move() -> void:
 			mv[i] = 1
 		var x := xs[i]
 		var y := ys[i]
-		var dx := txs[i] - x
-		var dy := tys[i] - y
-		if dx * dx + dy * dy <= ar[i] * ar[i]:
-			mv[i] = 0
-			continue
+		if rch[i] == 1:
+			var ex := maxi(maxi(rx0[i] - x, 0), x - rx1[i])
+			var ey := maxi(maxi(ry0[i] - y, 0), y - ry1[i])
+			var reach := rs[i] + Economy.REACH
+			if ex * ex + ey * ey <= reach * reach:
+				mv[i] = 0
+				continue
+		else:
+			var gx := txs[i] - x
+			var gy := tys[i] - y
+			if gx * gx + gy * gy <= ar[i] * ar[i]:
+				mv[i] = 0
+				continue
 		var s := sp[i]
 		if (tick + ids[i]) % REPLAN_EVERY == 0 or Fixed.dist2(x, y, wxs[i], wys[i]) <= s * s:
-			var w := _plan(x, y, txs[i], tys[i])
-			if w.x < 0:
+			var w := _plan(i, x, y)
+			if w.x == -2:
+				# Past a near field's edge: switch to the full field, straight on meanwhile.
+				var key := units.fkey[i]
+				units.fkey[i] = key - key % 4 + (FIELD_CELL if key % 4 == FIELD_CELL_NEAR else FIELD_BUILDING)
+				w = Vector2i(txs[i], tys[i])
+			elif w.x < 0:
 				mv[i] = 0   # unreachable from here
+				st[i] = STUCK_LIMIT
 				continue
 			wxs[i] = w.x
 			wys[i] = w.y
-		dx = wxs[i] - x
-		dy = wys[i] - y
+		var dx := wxs[i] - x
+		var dy := wys[i] - y
 		var d := Fixed.isqrt(dx * dx + dy * dy)
 		var nx := x
 		var ny := y
@@ -216,7 +333,7 @@ func _move() -> void:
 			if st[i] >= STUCK_LIMIT:
 				mv[i] = 0   # give up; the tests count these
 			else:
-				var w := _plan(x, y, txs[i], tys[i])
+				var w := _plan(i, x, y)
 				wxs[i] = w.x if w.x >= 0 else x
 				wys[i] = w.y if w.x >= 0 else y
 			continue
@@ -231,57 +348,107 @@ func _move() -> void:
 	units.wy = wys
 
 
-## The next waypoint from (x, y) towards target (tx, ty): the target itself if
-## the way is clear, else the furthest clear cell a few steps down the flow field.
-## (-1, -1) if the target can't be reached from here.
-func _plan(x: int, y: int, tx: int, ty: int) -> Vector2i:
-	var goal := (ty / SimMap.TILE) * map.width + tx / SimMap.TILE
-	var f = field_for(goal)
+## Unit i's next waypoint from (x, y). Point moves aim at the target if the way
+## is clear; reach moves aim at the nearest point of their rect once beside it;
+## otherwise the furthest clear cell a few steps down the flow field.
+## (-1, -1): unreachable. (-2, -2): outside a near field's cutoff (use the full field).
+func _plan(i: int, x: int, y: int) -> Vector2i:
+	var tx := units.tx[i]
+	var ty := units.ty[i]
+	var f = field_for(units.fkey[i])
 	if f == null:
 		return Vector2i(tx, ty)   # field not solved yet: head straight for now
-	var cell := (y / SimMap.TILE) * map.width + x / SimMap.TILE
+	var cell := map.cell_of(x, y)
 	var cost: int = f.dist[cell]
 	if cost >= Flow.INF:
+		var kind := units.fkey[i] % 4
+		if kind == FIELD_CELL_NEAR or kind == FIELD_BUILDING_NEAR:
+			return Vector2i(-2, -2)
 		return Vector2i(-1, -1)
-	if cell == goal or (cost <= DIRECT_COST and Flow.clear_line(map, x, y, tx, ty)):
+	if units.reach[i] == 1:
+		if cost <= Flow.DIAGONAL:
+			return Vector2i(clampi(x, units.rx0[i], units.rx1[i]), clampi(y, units.ry0[i], units.ry1[i]))
+	elif cost == 0 or (cost <= DIRECT_COST and Flow.clear_line(map, x, y, tx, ty)):
 		return Vector2i(tx, ty)
 	var best := cell
 	var k: int = f.next[cell]
 	for step in LOOKAHEAD:
 		if k < 0:
 			break
+		if f.dist[k] == 0:
+			if units.reach[i] == 0:
+				return Vector2i(tx, ty)   # the next cell is the target's
+			break
 		var c := Flow.centre(map, k)
 		if not Flow.clear_line(map, x, y, c.x, c.y):
 			break
 		best = k
-		if k == goal:
-			break
 		k = f.next[k]
 	return Flow.centre(map, best)
 
 
-## The flow field towards a cell, or null (and queued) if it isn't solved yet.
-func field_for(cell: int) -> RefCounted:
-	if fields.has(cell):
-		return fields[cell]
-	if not cell in field_queue:
-		field_queue.append(cell)
+# ------------------------------------------------------------------ flow fields
+
+## The flow field for a key, or null (and queued) if it isn't solved yet.
+func field_for(key: int) -> RefCounted:
+	if fields.has(key):
+		return fields[key]
+	if not key in field_queue:
+		field_queue.append(key)
 	return null
 
 
-func _solve(cell: int) -> void:
-	if fields.has(cell):
-		return
-	fields[cell] = Flow.solve(map, cell)
-	field_order.append(cell)
-	if field_order.size() > FIELD_CACHE:
-		fields.erase(field_order.pop_front())
+func _solve_queued() -> void:
+	var spent := 0
+	while not field_queue.is_empty() and (spent == 0 or spent < SOLVE_BUDGET):
+		var key: int = field_queue.pop_front()
+		if fields.has(key):
+			continue
+		var target := key / 4
+		var kind := key % 4
+		var sources := PackedInt32Array()
+		if kind == FIELD_CELL or kind == FIELD_CELL_NEAR:
+			sources.append(target)
+		else:
+			var b := buildings.index_of(target)
+			if b >= 0:
+				sources = buildings.footprint(b, map.width)
+		var near := kind == FIELD_CELL_NEAR or kind == FIELD_BUILDING_NEAR
+		var f = Flow.solve(map, sources, NEAR_CUTOFF if near else Flow.INF)
+		spent += maxi(f.pops, 1)
+		fields[key] = f
+		field_order.append(key)
+		if field_order.size() > FIELD_CACHE:
+			fields.erase(field_order.pop_front())
 
+
+## The map changed this tick (a building placed, a resource used up): drop every
+## cached field the change could affect. Units re-request what they need.
+func _sync_map() -> void:
+	if map.fresh.is_empty():
+		return
+	var keep := []
+	for key in field_order:
+		var stale := false
+		for c in map.fresh:
+			if fields[key].touches(map, c):
+				stale = true
+				break
+		if stale:
+			fields.erase(key)
+		else:
+			keep.append(key)
+	field_order = keep
+	map.fresh.clear()
+
+
+# ------------------------------------------------------------------ separation
 
 ## Push overlapping pairs apart. Reads positions from before any pushes this
 ## tick, so the result doesn't depend on which unit of a pair comes first.
-## A moving unit touching a stopped groupmate near the target settles too, and
-## units get pushed out of blocked neighbour tiles.
+## A moving unit touching a stopped groupmate near the target settles too;
+## bodies are kept off blocked neighbour tiles, and a unit caught inside a new
+## building's footprint steps out to the nearest open tile.
 func _separate() -> void:
 	var n := units.count()
 	var xs := units.x
@@ -348,6 +515,11 @@ func _separate() -> void:
 	for i in n:
 		if settle[i] == 1:
 			mv[i] = 0
+		if not map.walkable(xs[i], ys[i]):
+			var c := Flow.centre(map, Flow.nearest_walkable(map, map.cell_of(xs[i], ys[i])))
+			xs[i] = c.x
+			ys[i] = c.y
+			continue
 		if pushx[i] != 0 and map.walkable(xs[i] + pushx[i], ys[i]):
 			xs[i] += pushx[i]
 		if pushy[i] != 0 and map.walkable(xs[i], ys[i] + pushy[i]):
@@ -369,31 +541,35 @@ func _separate() -> void:
 	units.moving = mv
 
 
+# ------------------------------------------------------------------ hash
+
 ## Hash of everything that matters, in id order.
 func state_hash() -> int:
 	var h := Fixed.FNV_START
-	for v in [tick, rng.state, next_id, next_group, units.count()]:
+	for v in [tick, rng.state, next_id, next_group, units.count(), buildings.count(), map.version]:
 		h = Fixed.mix(h, v)
+	for p in races.size():
+		h = Fixed.mix(h, food[p])
+		h = Fixed.mix(h, wood[p])
 	# Which fields are solved or pending changes how units steer, so it's state too.
-	for c in field_order:
-		h = Fixed.mix(h, c)
+	for key in field_order:
+		h = Fixed.mix(h, key)
 	h = Fixed.mix(h, -1)
-	for c in field_queue:
-		h = Fixed.mix(h, c)
+	for key in field_queue:
+		h = Fixed.mix(h, key)
+	for c in map.resource_cells:
+		h = Fixed.mix(h, map.amount[c])
 	var u := units
 	for i in u.count():
-		h = Fixed.mix(h, u.id[i])
-		h = Fixed.mix(h, u.owner[i])
-		h = Fixed.mix(h, u.kind[i])
-		h = Fixed.mix(h, u.x[i])
-		h = Fixed.mix(h, u.y[i])
-		h = Fixed.mix(h, u.tx[i])
-		h = Fixed.mix(h, u.ty[i])
-		h = Fixed.mix(h, u.moving[i])
-		h = Fixed.mix(h, u.arrive[i])
-		h = Fixed.mix(h, u.wx[i])
-		h = Fixed.mix(h, u.wy[i])
-		h = Fixed.mix(h, u.group[i])
-		h = Fixed.mix(h, u.stuck[i])
-		h = Fixed.mix(h, u.hp[i])
+		for v in [u.id[i], u.owner[i], u.kind[i], u.x[i], u.y[i], u.tx[i], u.ty[i], u.moving[i],
+				u.arrive[i], u.wx[i], u.wy[i], u.group[i], u.stuck[i], u.hp[i], u.fkey[i], u.reach[i],
+				u.task[i], u.target[i], u.home[i], u.carry_kind[i], u.carry[i], u.work[i]]:
+			h = Fixed.mix(h, v)
+	var b := buildings
+	for i in b.count():
+		for v in [b.id[i], b.owner[i], b.kind[i], b.cx[i], b.cy[i], b.hp[i], b.progress[i], b.done[i],
+				b.train[i], b.rally_x[i], b.rally_y[i], b.queue[i].size()]:
+			h = Fixed.mix(h, v)
+		for k in b.queue[i]:
+			h = Fixed.mix(h, k)
 	return h
