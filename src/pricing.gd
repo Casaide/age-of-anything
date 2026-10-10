@@ -3,9 +3,9 @@ extends RefCounted
 ## points, and cost grows superlinearly with points, so a 10ft spider is
 ## possible but expensive. Later this gets a "price by simulated fights" pass.
 ##
-## Integer maths only, except the cost curve's pow(). Stats are derived on each
-## peer and never part of the race key, so the sim milestone can swap pow() for
-## a fixed-point table without changing anyone's races.
+## Integer maths only. The superlinear cost curve is a fixed-point table
+## (data/cost_curves.json, made by tests/gen_cost_curve.gd), so costs are
+## bit-exact on every machine. Stats are never part of the race key.
 
 const GIANT_POINTS := 6
 const DEFAULT_MIX := {"food": 50, "wood": 50}
@@ -82,8 +82,7 @@ static func evaluate(recipe: Dictionary, lib, rules: Dictionary) -> Dictionary:
 		tags["tiny"] = true
 
 	var c: Dictionary = rules.cost
-	var ratio := float(points) / float(c.ref_points)
-	var total := int(round(float(c.base) * pow(ratio, float(c.exponent))))
+	var total: int = (int(c.base) * lib.curve(c.curve, points) + 500) / 1000
 	var mix_total := maxi(1, mix.food + mix.wood)
 	var food := _round5(total * mix.food / mix_total)
 	var wood := _round5(total - food)
@@ -100,7 +99,7 @@ static func evaluate(recipe: Dictionary, lib, rules: Dictionary) -> Dictionary:
 		"tags": tag_list,
 		"points": points,
 		"cost": {"food": food, "wood": wood},
-		"train_time": maxi(4, int(round(8.0 * pow(ratio, 1.2)))),
+		"train_time": maxi(4, (8 * lib.curve(c.train_curve, points) + 500) / 1000),
 		"pop": 2 if tags.has("large") else 1,
 	}
 
