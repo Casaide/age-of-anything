@@ -51,6 +51,7 @@ func _init() -> void:
 
 ## Bake one part in one colour set (skipped if it's already baked).
 func bake(id: String, shapes: Array, colours: Dictionary) -> void:
+	colours = PartShape.team_neutral(colours)   # bake in the team key; the shader recolours per team
 	var key := PartShape.bake_key(id, shapes, colours)
 	if PartShape.baked.has(key):
 		return
@@ -77,7 +78,7 @@ func bake(id: String, shapes: Array, colours: Dictionary) -> void:
 	model.queue_free()
 	var origin := Vector2(-bounds.position.x, -bounds.position.y) * art_scale
 	var pix := Pixelize.run(img, SS)
-	PartShape.baked[key] = {"tex": ImageTexture.create_from_image(pix), "origin": origin, "scale": art_scale}
+	PartShape.baked[key] = {"img": pix, "tex": ImageTexture.create_from_image(pix), "origin": origin, "scale": art_scale}
 
 
 ## A hand-built model, seen three-quarter; its sockets come along, projected into 2D part units.
@@ -139,10 +140,10 @@ func _bake_model(id: String, colours: Dictionary, bake_key: String) -> void:
 	if front_img:
 		# Stored as its own sprite: UnitView layers it above torso armour.
 		var top := Pixelize.run(front_img.get_region(used), SS)
-		PartShape.baked[PartShape.front_key(bake_key)] = {"tex": ImageTexture.create_from_image(top),
+		PartShape.baked[PartShape.front_key(bake_key)] = {"img": top, "tex": ImageTexture.create_from_image(top),
 			"origin": (origin - Vector2(used.position)) / SS, "scale": art_scale}
 		PartShape.rigs[id]["front"] = true
-	PartShape.baked[bake_key] = {"tex": ImageTexture.create_from_image(pix),
+	PartShape.baked[bake_key] = {"img": pix, "tex": ImageTexture.create_from_image(pix),
 		"origin": (origin - Vector2(used.position)) / SS, "scale": art_scale}
 
 

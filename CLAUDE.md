@@ -55,7 +55,8 @@ src/
   race_generator.gd  prompt -> brief -> race (recipes) ; race_key()
   pricing.gd       recipe -> stats, tags, cost, train time, pop
   unit_view.gd     composer + procedural animation (recipe -> Node2D on sockets)
-  part_shape.gd    draws one placeholder part from its shapes
+  part_shape.gd    draws one part: placeholder shapes, a style, or its baked sprite from the atlas
+  team_mask.gdshader  recolours the baked team key per unit (team colour arrives in self_modulate)
   sim_clock.gd     the only Node in the sim path: steps a World at 20 Hz from _process
   sim/             the simulation: RefCounted, integers only, no Nodes (lint-checked by test_sim)
     fixed.gd         isqrt, sin/cos table, hash mixing
@@ -74,7 +75,9 @@ scenes/race_lab.*  prompt UI, race cards, two armies milling about
   view/            view side (Nodes allowed): iso.gd projection, map_view.gd tiles, rts_camera.gd,
                    building_view.gd, resource_view.gd, command_panel.gd
 scenes/style_sampler.* + style_sampler/  the same scene in six art directions (art pass, step 1)
-scenes/art_pixel.* + art_pixel/          the pixel-art candidate: baked parts, palette, shader terrain
+scenes/art_pixel.* + art_pixel/          the pixel-art candidate: baked parts, palette, shader terrain,
+                   unit_models.gd (hand-built parts), part_baker.gd, paths.gd (culture paths), pixelize.gd
+assets/art/textures/  texture art authored by Claude (SVG), mapped onto unit models
 scenes/sim_debug.* the playable debug match: select, smart right-click, panel (Q/H/C), Tab side, F6 autoplay,
                    F3 flow, F5/F9 replays, G regen army
 tests/           headless checks and dev tools (see Commands)
@@ -96,6 +99,7 @@ godot --path . res://scenes/style_sampler.tscn                     # art-directi
 godot --path . res://scenes/art_pixel.tscn                         # pixel-art candidate (Z zoom, P palette)
 godot --path . --script res://tests/art_screenshot.gd -- /tmp/art  # capture it at 1x/2x/3x
 godot --path . --script res://tests/art_crop.gd -- /tmp/c.png 6.5 9 ["prompt A" "prompt B"]   # 3x close-up at a tile
+godot --path . --script res://tests/art_bench.gd                    # draw calls + frame time, 200+ units
 godot --path . --script res://tests/unit_lineup.gd -- /tmp/units.png ["prompt A" "prompt B"]   # both rosters as pixel art, 4x
 godot --path . --script res://tests/style_screenshot.gd -- /tmp/styles   # capture the sampler
 godot --path .                                                     # run the Race Lab

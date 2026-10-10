@@ -23,6 +23,10 @@ var style := ""           # how parts are drawn (see part_shape.gd); set before 
 var pose_steps := 0       # > 0: stepped pixel-art animation with this many poses per walk cycle
 var art_px := 0.0         # stepped mode: art pixels per global unit, for snapping to whole pixels
 const STEP_FPS := 8.0
+## The baked-style shadow: a firmer pixel shadow in the buildings' shadow colour, falling
+## the way their light does (baked into the atlas as part "unit_shadow").
+const SHADOW_SHAPES := [{"t": "ellipse", "c": [3, 1], "r": [15, 4.5], "ch": "shadow"}]
+const SHADOW_COLOURS := {"shadow": Color(0.06, 0.05, 0.03, 0.42)}
 var facing := 1.0
 
 # animation + wander state (cosmetic only, so a local RNG is fine here)
@@ -84,8 +88,9 @@ func build(r: Dictionary, lib, team: Color, speed := 10) -> void:
 
 	shadow.scale = Vector2(unit_scale, unit_scale) * (0.8 if flying else 1.0)
 	if style == "baked":
-		# A firmer pixel shadow in the buildings' shadow colour, falling the way their light does.
-		shadow.setup([{"t": "ellipse", "c": [3, 1], "r": [15, 4.5], "ch": "shadow"}], {"shadow": Color(0.06, 0.05, 0.03, 0.42)})
+		shadow.style = "baked"
+		shadow.part_id = "unit_shadow"
+		shadow.setup(SHADOW_SHAPES, SHADOW_COLOURS)
 	_sort_layers(self)
 	_face(facing)
 
@@ -147,7 +152,7 @@ func _make_rig(lib, body_id: String, head_id: String, colours: Dictionary, paren
 			if a.size() > 4 and int(a[4]) == 1:
 				leg.scale.x = -1.0
 			if rig.has("anchors") and float(a[3]) < 0.0:
-				leg.modulate = Color(0.78, 0.78, 0.78)   # the far leg sits in shadow
+				leg.shade = 0.78   # the far leg sits in shadow
 			root.add_child(leg)
 			legs.append({"node": leg, "phase": float(a[2])})
 

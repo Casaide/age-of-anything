@@ -38,6 +38,7 @@ func _initialize() -> void:
 	bg.size = Vector2(1600, 900) / ZOOM
 	vp.add_child(bg)
 	await process_frame
+	var bakes := []
 	for side in 2:
 		var race: Dictionary = gen.generate(prompts[side], rules)
 		var team := Color(lib.palettes.teams[side])
@@ -49,6 +50,14 @@ func _initialize() -> void:
 				if ps is PartShape and ps.part_id != "":
 					await baker.bake(ps.part_id, ps.shapes, ps.colours)
 			probe.free()
+			bakes.append([u, team, k, side])
+	PartShape.bake_flat("unit_shadow", UnitView.SHADOW_SHAPES, UnitView.SHADOW_COLOURS, ART)
+	PartShape.build_atlas()
+	for e in bakes:
+			var u: Dictionary = e[0]
+			var team: Color = e[1]
+			var k: int = e[2]
+			var side: int = e[3]
 			var v := UnitView.new()
 			v.style = "baked"
 			v.build(u.recipe, lib, team, u.eval.speed)
