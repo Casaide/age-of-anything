@@ -20,6 +20,9 @@ var weapon_rest := Vector2.ZERO
 var flying := false
 var unit_scale := 1.0
 var style := ""           # how parts are drawn (see part_shape.gd); set before build()
+var pose_steps := 0       # > 0: stepped pixel-art animation with this many poses per walk cycle
+var art_px := 0.0         # stepped mode: art pixels per global unit, for snapping to whole pixels
+const STEP_FPS := 8.0
 var facing := 1.0
 
 # animation + wander state (cosmetic only, so a local RNG is fine here)
@@ -221,30 +224,51 @@ func _process(delta: float) -> void:
 	if area.has_area():
 		_wander(delta)
 
+	# Stepped (pixel-art) mode: a few poses per cycle and whole pixels, not smooth motion.
+	var stepped := pose_steps > 0
+	var t := floorf(time * STEP_FPS) / STEP_FPS if stepped else time
 	var stride := 1.0 if walking else 0.0
 	if walking:
 		phase += delta * speed_px * 0.25
+	var ph := phase
+	if stepped:
+		var step := TAU / pose_steps
+		ph = floorf(phase / step) * step
 	for leg in legs:
-		leg.node.rotation = sin(phase + leg.phase) * 0.5 * stride
+		leg.node.rotation = sin(ph + leg.phase) * 0.5 * stride
 
 	var hover := 0.0
 	if flying:
-		hover = -9.0 + sin(time * 3.0) * 2.0
-	bob.position.y = hover - absf(sin(phase)) * 1.5 * stride
+		hover = -9.0 + sin(t * 3.0) * 2.0
+	bob.position.y = hover - absf(sin(ph)) * 1.5 * stride
 
-	var breath := 1.0 + sin(time * 2.4) * 0.03
-	for b in breathing:
-		b.scale.y = breath
+	if stepped:
+		# Breathe by a pixel, not by stretching the sprite (stretched pixels shimmer).
+		bob.position.y -= (1.0 / maxf(art_px, 1.0)) if fmod(t, 1.6) < 0.8 and stride == 0.0 else 0.0
+	else:
+		var breath := 1.0 + sin(time * 2.4) * 0.03
+		for b in breathing:
+			b.scale.y = breath
 
 	if weapon:
 		if attack_t > 0.0:
 			attack_t -= delta
-			var k := sin((1.0 - maxf(attack_t, 0.0) / 0.35) * PI)
+			var a := 1.0 - maxf(attack_t, 0.0) / 0.35
+			if stepped:
+				a = floorf(a * 5.0) / 5.0
+			var k := sin(a * PI)
 			weapon.position = weapon_rest + Vector2(6.0 * k, -2.0 * k)
 			weapon.rotation = -0.4 * k
 		else:
 			weapon.position = weapon_rest
 			weapon.rotation = 0.0
+
+	if stepped and art_px > 0.0:
+		# Sit on whole art pixels: offset the drawing so its global position snaps.
+		var g := global_position
+		var px := 1.0 / art_px
+		var snapped := Vector2(roundf(g.x / px) * px, roundf(g.y / px) * px)
+		visual.position = (snapped - g) / maxf(global_transform.get_scale().x, 0.0001)
 
 
 func _wander(delta: float) -> void:

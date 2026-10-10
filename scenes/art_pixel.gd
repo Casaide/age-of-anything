@@ -51,6 +51,8 @@ var cam: Camera2D
 var label: Label
 var palette_mat: ShaderMaterial
 var shrink := 2
+var stepped := true       # F toggles stepped pixel animation
+var units: Array = []
 var prompts: Array = []   # set before adding to the tree, else from the command line, else PROMPTS
 var masks_img: Image      # blurred terrain masks (R water, G swamp, B reed bed)
 var paths_img: Image      # blurred path masks, one channel per style (see paths.gd)
@@ -158,6 +160,9 @@ func _build() -> void:
 			view.style = "baked"
 			view.build(u.recipe, lib, Color(lib.palettes.teams[p[0]]), u.eval.speed)
 			view.scale = Vector2(UNIT_SCALE, UNIT_SCALE)
+			view.pose_steps = 8 if stepped else 0
+			view.art_px = 1.0
+			units.append(view)
 			var c: Vector2 = p[3]
 			var r: float = p[4]
 			var area := Rect2(Iso.to_screen(c.x * 1000, c.y * 1000) - Vector2(r * 40, r * 16), Vector2(r * 80, r * 32))
@@ -168,7 +173,7 @@ func _build() -> void:
 
 	_palette()
 	cam.position = Iso.to_screen(7500, 6500) * ART_SCALE
-	label.text = "High-fidelity pixel art    Z zoom   P palette on/off   WASD/arrows pan"
+	label.text = "High-fidelity pixel art    Z zoom   P palette on/off   F stepped animation on/off   WASD/arrows pan"
 	built = true
 
 
@@ -526,6 +531,10 @@ func _unhandled_input(event: InputEvent) -> void:
 		match event.keycode:
 			KEY_Z:
 				set_zoom(1 + shrink % 3)
+			KEY_F:
+				stepped = not stepped
+				for v in units:
+					v.pose_steps = 8 if stepped else 0
 			KEY_P:
 				if palette_mat:
 					palette_mat.set_shader_parameter("enabled", not palette_mat.get_shader_parameter("enabled"))
