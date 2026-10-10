@@ -90,6 +90,17 @@ func _make(name: String) -> StandardMaterial3D:
 			m.roughness = 0.35
 			m.clearcoat_enabled = true
 			m.clearcoat = 0.5
+		"tin":    # corrugated sheet: tight ridges, a little rust
+			n = _noise(FastNoiseLite.TYPE_SIMPLEX, 0.03, 29, 2)
+			ramp = [[0.0, "#7a5a40"], [0.2, "#8a8a84"], [0.6, "#a8aaa4"], [1.0, "#c4c6c0"]]
+			uv = Vector3(14, 1, 1)
+			m.roughness = 0.6
+		"brick":
+			n = _noise(FastNoiseLite.TYPE_CELLULAR, 0.06, 31)
+			n.cellular_return_type = FastNoiseLite.RETURN_DISTANCE2_DIV
+			ramp = [[0.0, "#3a2a22"], [0.4, "#6a3e2e"], [0.8, "#80503a"], [1.0, "#94604a"]]
+			uv = Vector3(3, 1.5, 1)
+			m.roughness = 0.95
 		"weave":  # basket
 			n = _noise(FastNoiseLite.TYPE_CELLULAR, 0.08, 23, 1)
 			ramp = [[0.0, "#6e5226"], [0.5, "#a6844a"], [1.0, "#c8a462"]]

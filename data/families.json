@@ -23,7 +23,8 @@
   "paths": {
    "style": "boardwalk",
    "width": 0.34
-  }
+  },
+  "architecture": "thatch"
  },
  "sewer": {
   "cloth": [
@@ -50,7 +51,8 @@
   "paths": {
    "style": "cobble",
    "width": 0.42
-  }
+  },
+  "architecture": "junk"
  },
  "forest": {
   "cloth": [
@@ -77,7 +79,8 @@
   "paths": {
    "style": "trail",
    "width": 0.36
-  }
+  },
+  "architecture": "thatch"
  },
  "imperial": {
   "cloth": [
@@ -103,7 +106,8 @@
   "paths": {
    "style": "road",
    "width": 0.5
-  }
+  },
+  "architecture": "thatch"
  },
  "hellenic": {
   "cloth": [
@@ -129,7 +133,8 @@
   "paths": {
    "style": "road",
    "width": 0.46
-  }
+  },
+  "architecture": "thatch"
  },
  "royal": {
   "cloth": [
@@ -155,7 +160,8 @@
   "paths": {
    "style": "cobble",
    "width": 0.44
-  }
+  },
+  "architecture": "thatch"
  },
  "steppe": {
   "cloth": [
@@ -181,7 +187,8 @@
   "paths": {
    "style": "trail",
    "width": 0.4
-  }
+  },
+  "architecture": "thatch"
  },
  "spooky": {
   "cloth": [
@@ -207,6 +214,7 @@
   "paths": {
    "style": "trail",
    "width": 0.32
-  }
+  },
+  "architecture": "thatch"
  }
 }

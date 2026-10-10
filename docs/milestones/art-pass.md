@@ -91,7 +91,12 @@ without a model still fall back to the automatic bake.
 - [x] Near arms as their own outlined layer, above torso armour (Dominic: arms were hard to see)
 - [x] Terrain polish: stones, wildflowers, grass tufts, shoreline reeds; generated culture paths
   (families.json `paths`: Romans paved roads, swamp boardwalks, sewer cobbles, trails)
-- [ ] Stepped pixel animation, rat-culture buildings, a palette of 256 or fewer
+- [x] Stepped pixel animation (F toggles it in the scene)
+- [x] Rat-culture ("junk") buildings: scrap Town Center, tin-can house; families.json `architecture`
+- [x] Paths: boards across the walk (arc length), each stretch drawn once, ragged seams where
+  cultures meet (Dominic: "rotated wrong way?", "handle merging different types of roads")
+- [x] One palette of 256 colours (nearest pairs merged)
+- [ ] Groundwork: palette/team-mask recolouring, atlas, draw calls at 200 units
 - [ ] Models for the other creatures (humans, centaurs, ponies, beetles) and gear: still the
   automatic fallback
 - [ ] Step 1b (maybe later): hero frog in the other directions at production detail
