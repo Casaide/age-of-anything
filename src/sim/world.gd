@@ -397,15 +397,3 @@ func state_hash() -> int:
 		h = Fixed.mix(h, u.stuck[i])
 		h = Fixed.mix(h, u.hp[i])
 	return h
-
-
-## Id of the unit nearest (x, y) within r milli-tiles, or 0. Read-only, for views.
-func pick(x: int, y: int, r: int) -> int:
-	var best := 0
-	var best_d2 := r * r
-	for i in units.count():
-		var d2 := Fixed.dist2(x, y, units.x[i], units.y[i])
-		if d2 < best_d2:
-			best_d2 = d2
-			best = units.id[i]
-	return best
