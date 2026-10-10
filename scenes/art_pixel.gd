@@ -162,12 +162,14 @@ func _build() -> void:
 		var side: int = b[3]
 		var team := Color(lib.palettes.teams[side])
 		var junk: bool = lib.families[races[side].family].get("architecture", "thatch") == "junk"
+		# Baked in the team key, coloured per side by the team shader (like units).
+		var key := PartShape.TEAM_KEY
 		var spec: Dictionary
 		if b[2] == 3:
-			spec = models.junk_town_center(team) if junk else models.town_center(team)
+			spec = models.junk_town_center(key) if junk else models.town_center(key)
 		else:
-			spec = models.tin_can_house(team) if junk else models.stilt_house(team)
-		await _building(baker, spec, b[0], b[1], b[2])
+			spec = models.tin_can_house(key) if junk else models.stilt_house(key)
+		await _building(baker, spec, b[0], b[1], b[2], team)
 	baker.queue_free()
 	# One atlas for every unit part and every scene sprite, with one shared material,
 	# so the whole y-sorted layer can batch.
@@ -412,7 +414,8 @@ static func _blur(img: Image, passes: int) -> Image:
 
 # ------------------------------------------------------------------ buildings
 
-func _building(baker, spec: Dictionary, cx: int, cy: int, size: int) -> void:
+func _building(baker, spec: Dictionary, cx: int, cy: int, size: int, team: Color) -> void:
+	var tint := Color(team.r, team.g, team.b, 1.0)   # team colour for the shader, as on units
 	var centre_px := Iso.to_screen((cx + size * 0.5) * 1000, (cy + size * 0.5) * 1000)
 	var front := Iso.to_screen((cx + size) * 1000, (cy + size) * 1000)
 	var holder := Node2D.new()
@@ -423,7 +426,9 @@ func _building(baker, spec: Dictionary, cx: int, cy: int, size: int) -> void:
 	baker.set_ground_shadow(true)
 	var body: Dictionary = await baker.bake(spec.body, pts)
 	baker.set_ground_shadow(false)
-	holder.add_child(_sprite(body, centre_px - front))
+	var body_sprite := _sprite(body, centre_px - front)
+	body_sprite.self_modulate = tint
+	holder.add_child(body_sprite)
 	var to_local := func(p: Vector2) -> Vector2: return centre_px - front + (p - body.points[0]) / ART_SCALE
 	_smoke(holder, to_local.call(body.points[1]))
 	_glow(holder, to_local.call(body.points[2]), 14.0, Color(1.0, 0.75, 0.35))
@@ -432,6 +437,7 @@ func _building(baker, spec: Dictionary, cx: int, cy: int, size: int) -> void:
 	if spec.has("banner"):
 		var ban: Dictionary = await baker.bake(spec.banner, [Vector3.ZERO, spec.banner_pivot])
 		var bs := _sprite(ban, centre_px - front, false)   # has its own wave shader
+		bs.self_modulate = tint
 		var mat := ShaderMaterial.new()
 		mat.shader = load("res://scenes/style_sampler/hifi/banner.gdshader")
 		bs.material = mat
@@ -440,6 +446,7 @@ func _building(baker, spec: Dictionary, cx: int, cy: int, size: int) -> void:
 		var pivot := Node2D.new()
 		pivot.position = centre_px - front + (vane.points[1] - vane.points[0]) / ART_SCALE
 		var vs := _sprite(vane, Vector2.ZERO)
+		vs.self_modulate = tint
 		vs.offset = -vane.points[1]
 		pivot.add_child(vs)
 		holder.add_child(pivot)
