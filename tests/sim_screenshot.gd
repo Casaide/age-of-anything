@@ -19,6 +19,8 @@ func _initialize() -> void:
 	root.add_child(view)
 	await process_frame
 	view.camera.edge_scroll = false
+	view.set_process_unhandled_input(false)          # a real mouse in the window mustn't change the shot
+	view.camera.set_process_unhandled_input(false)
 	while view.world.units.count() == 0:   # spawns run two turns after they're issued
 		await process_frame
 	var meet: Vector2 = MEET[map_id] * 1000.0
