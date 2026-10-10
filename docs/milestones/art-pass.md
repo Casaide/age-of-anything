@@ -88,8 +88,12 @@ without a model still fall back to the automatic bake.
 - [x] Step 1d: frog and rat parts modelled with authored textures (body, head, leg, gear)
 - [x] Fix: parts layered by child order (z_index drew units over buildings); baked ground shadows
 - [x] Step 1d: rat on a spider (spider body, head, legs; cheese hammer, mail), other roster gear (sling, crossbow, saucepan helmet, blowgun)
-- [ ] Terrain polish (shoreline reeds, stones, flowers, paths), stepped pixel animation,
-  rat-culture buildings, a palette of 256 or fewer
+- [x] Near arms as their own outlined layer, above torso armour (Dominic: arms were hard to see)
+- [x] Terrain polish: stones, wildflowers, grass tufts, shoreline reeds; generated culture paths
+  (families.json `paths`: Romans paved roads, swamp boardwalks, sewer cobbles, trails)
+- [ ] Stepped pixel animation, rat-culture buildings, a palette of 256 or fewer
+- [ ] Models for the other creatures (humans, centaurs, ponies, beetles) and gear: still the
+  automatic fallback
 - [ ] Step 1b (maybe later): hero frog in the other directions at production detail
 - [ ] Step 1b: hero rat spearman
 - [ ] Dominic picks a direction

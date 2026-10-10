@@ -19,12 +19,17 @@ var outline := true
 var style := ""
 var pin := false        # paper style: a brass fastener at the joint (legs, heads)
 var part_id := ""
+var front := false      # baked style: draw the part's front layer (a body's near arm)
 
 ## bake_key -> {tex: Texture2D, origin: Vector2 (texture px of the part's 0,0), scale: texture px per part unit}
 static var baked := {}
 ## part id -> {sockets: {name: Vector2}, anchors: [[x, y, phase, z]], torso_scale: Vector2}
 ## for parts baked from hand-built models: their sockets as seen by the bake camera.
 static var rigs := {}
+
+
+static func front_key(key: String) -> String:
+	return key + "#front"
 
 
 ## Identifies a part as drawn in particular colours (team, skin and cloth are baked in).
@@ -71,7 +76,8 @@ static func closed(pts: PackedVector2Array) -> PackedVector2Array:
 func _draw() -> void:
 	match style:
 		"baked":
-			var b = baked.get(bake_key(part_id, shapes, colours))
+			var key := bake_key(part_id, shapes, colours)
+			var b = baked.get(front_key(key) if front else key)
 			if b == null:
 				_draw_plain(outline)
 				return

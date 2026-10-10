@@ -19,7 +19,11 @@
    "kin",
    "folk",
    " Croakers"
-  ]
+  ],
+  "paths": {
+   "style": "boardwalk",
+   "width": 0.34
+  }
  },
  "sewer": {
   "cloth": [
@@ -42,7 +46,11 @@
    " Clan",
    " Pack",
    "kin"
-  ]
+  ],
+  "paths": {
+   "style": "cobble",
+   "width": 0.42
+  }
  },
  "forest": {
   "cloth": [
@@ -65,7 +73,11 @@
    "kin",
    "folk",
    " Guard"
-  ]
+  ],
+  "paths": {
+   "style": "trail",
+   "width": 0.36
+  }
  },
  "imperial": {
   "cloth": [
@@ -87,7 +99,11 @@
    " Cohort",
    " Senate",
    " Guard"
-  ]
+  ],
+  "paths": {
+   "style": "road",
+   "width": 0.5
+  }
  },
  "hellenic": {
   "cloth": [
@@ -109,7 +125,11 @@
    " Host",
    " Phalanx",
    " Polis"
-  ]
+  ],
+  "paths": {
+   "style": "road",
+   "width": 0.46
+  }
  },
  "royal": {
   "cloth": [
@@ -131,7 +151,11 @@
    " Court",
    " Realm",
    " Order"
-  ]
+  ],
+  "paths": {
+   "style": "cobble",
+   "width": 0.44
+  }
  },
  "steppe": {
   "cloth": [
@@ -153,7 +177,11 @@
    " Horde",
    " Tribe",
    " Clan"
-  ]
+  ],
+  "paths": {
+   "style": "trail",
+   "width": 0.4
+  }
  },
  "spooky": {
   "cloth": [
@@ -175,6 +203,10 @@
    " Brood",
    "kin",
    "weavers"
-  ]
+  ],
+  "paths": {
+   "style": "trail",
+   "width": 0.32
+  }
  }
 }

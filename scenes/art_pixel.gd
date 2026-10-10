@@ -14,6 +14,7 @@ const Iso := preload("res://src/view/iso.gd")
 const PartBaker := preload("res://scenes/art_pixel/part_baker.gd")
 const Baker := preload("res://scenes/style_sampler/hifi/baker.gd")
 const Models := preload("res://scenes/style_sampler/hifi/models.gd")
+const Paths := preload("res://scenes/art_pixel/paths.gd")
 
 const ART_SCALE := 1.5     # art pixels per canvas unit (a tile is 96 x 48 art pixels)
 const SS := 4
@@ -35,6 +36,8 @@ const ROWS := [
 	",,,,,...........",
 	",,,,,...........",
 ]
+## Buildings in the scene: top-left cell, size, owner (side).
+const BUILDINGS := [[6, 4, 3, 0], [2, 8, 2, 0], [11, 9, 2, 1]]
 const W := 16
 const H := 14
 const BG := Color("#2b2620")
@@ -48,6 +51,10 @@ var cam: Camera2D
 var label: Label
 var palette_mat: ShaderMaterial
 var shrink := 2
+var prompts: Array = []   # set before adding to the tree, else from the command line, else PROMPTS
+var masks_img: Image      # blurred terrain masks (R water, G swamp, B reed bed)
+var paths_img: Image      # blurred path masks, one channel per style (see paths.gd)
+var races: Array = []
 var glows: Array = []
 var vanes: Array = []
 var time := 0.0
@@ -89,7 +96,10 @@ func _ready() -> void:
 func _build() -> void:
 	var gen = Generator.new(lib)
 	var rules = DataLib.load_json("res://data/rules/default.json")
-	var races := [gen.generate(PROMPTS[0], rules), gen.generate(PROMPTS[1], rules)]
+	if prompts.is_empty():
+		var args := OS.get_cmdline_user_args()
+		prompts = [args[0], args[1]] if args.size() > 1 and not args[0].ends_with(".png") and not args[0].begins_with("/") else PROMPTS.duplicate()
+	races = [gen.generate(prompts[0], rules), gen.generate(prompts[1], rules)]
 
 	_terrain()
 	layer = Node2D.new()
@@ -134,6 +144,7 @@ func _build() -> void:
 				holder.position = Iso.to_screen(x * 1000 + 500, y * 1000 + 500)
 				holder.add_child(_sprite(reed_bakes[(x * 3 + y) % 3] if ch == "\"" else bush_bake, Vector2.ZERO))
 				layer.add_child(holder)
+	await _scatter(baker, models)
 	var team0 := Color(lib.palettes.teams[0])
 	await _building(baker, models.town_center(team0), 6, 4, 3)
 	await _building(baker, models.stilt_house(team0), 2, 8, 2)
@@ -159,6 +170,64 @@ func _build() -> void:
 	cam.position = Iso.to_screen(7500, 6500) * ART_SCALE
 	label.text = "High-fidelity pixel art    Z zoom   P palette on/off   WASD/arrows pan"
 	built = true
+
+
+## Little things that make ground feel lived in: stones, wildflowers, grass tufts,
+## and reeds along the shoreline. Placed by a seeded scatter (cosmetic only),
+## away from buildings, paths, water and resource tiles.
+func _scatter(baker, models) -> void:
+	var kinds := {"stones": [], "flowers": [], "tuft": [], "shore": []}
+	for k in 4:
+		kinds.stones.append(await baker.bake(models.stones(500 + k), [Vector3.ZERO]))
+		kinds.tuft.append(await baker.bake(models.tuft(600 + k), [Vector3.ZERO]))
+		kinds.shore.append(await baker.bake(models.shore_reeds(700 + k), [Vector3.ZERO]))
+	for k in 6:
+		kinds.flowers.append(await baker.bake(models.flowers(800 + k), [Vector3.ZERO]))
+	var rng := RandomNumberGenerator.new()
+	rng.seed = 2026
+	var want := {"stones": 26, "flowers": 46, "tuft": 70}
+	for kind in ["stones", "flowers", "tuft"]:
+		var placed := 0
+		var tries := 0
+		while placed < want[kind] and tries < 4000:
+			tries += 1
+			var t := Vector2(rng.randf_range(0.3, W - 0.3), rng.randf_range(0.3, H - 0.3))
+			var ch := _at(int(t.x), int(t.y))
+			var m := _mask(t)
+			if ch != "." or m.r > 0.3 or _on_path(t) or _near_building(t):
+				continue
+			_doodad(kinds[kind][rng.randi() % kinds[kind].size()], t)
+			placed += 1
+	var shore := 0
+	for i in 3000:
+		var t := Vector2(rng.randf_range(0.3, W - 0.3), rng.randf_range(0.3, H - 0.3))
+		var m := _mask(t)
+		if m.r > 0.4 and m.r < 0.5 and not _near_building(t):
+			_doodad(kinds.shore[rng.randi() % kinds.shore.size()], t)
+			shore += 1
+			if shore >= 22:
+				break
+
+
+func _on_path(t: Vector2) -> bool:
+	var k := paths_img.get_width() / W
+	var c := paths_img.get_pixel(clampi(int(t.x * k), 0, paths_img.get_width() - 1), clampi(int(t.y * k), 0, paths_img.get_height() - 1))
+	return maxf(maxf(c.r, c.g), maxf(c.b, c.a)) > 0.25
+
+
+func _near_building(t: Vector2) -> bool:
+	for y in range(int(t.y) - 1, int(t.y) + 2):
+		for x in range(int(t.x) - 1, int(t.x) + 2):
+			if x >= 0 and y >= 0 and x < W and y < H and _at(x, y) in ["T", "h", "b", "\""]:
+				return true
+	return false
+
+
+func _doodad(b: Dictionary, t: Vector2) -> void:
+	var holder := Node2D.new()
+	holder.position = Iso.to_screen(t.x * 1000, t.y * 1000)
+	holder.add_child(_sprite(b, Vector2.ZERO))
+	layer.add_child(holder)
 
 
 func _at(x: int, y: int) -> String:
@@ -193,16 +262,94 @@ func _terrain() -> void:
 	for y in H * k:
 		for x in W * k:
 			var ch := _at(x / k, y / k)
-			img.set_pixel(x, y, Color(1.0 if ch == "~" else 0.0, 1.0 if ch == "," else 0.0, 1.0 if ch == "\"" else 0.0, 1.0))
+			img.set_pixel(x, y, Color(1.0 if ch == "~" else 0.0, 1.0 if ch == "," else 0.0, 1.0 if ch == "\"" else 0.0, 0.0))
 	var blurred := _blur(img, 5)
+	masks_img = blurred
+	paths_img = _blur(Paths.mask(W, H, k, _plan_paths()), 2)
 	var poly := Polygon2D.new()
 	poly.polygon = PackedVector2Array([Iso.to_screen(0, 0), Iso.to_screen(W * 1000, 0), Iso.to_screen(W * 1000, H * 1000), Iso.to_screen(0, H * 1000)])
 	var m := ShaderMaterial.new()
 	m.shader = load("res://scenes/art_pixel/terrain.gdshader")
 	m.set_shader_parameter("masks", ImageTexture.create_from_image(blurred))
+	m.set_shader_parameter("paths", ImageTexture.create_from_image(paths_img))
 	m.set_shader_parameter("map_size", Vector2(W, H))
 	poly.material = m
 	world.add_child(poly)
+
+
+## Each side's paths in its culture's style: from its main building's door to its
+## other buildings, the nearest bug-bush and reed clusters and the shoreline.
+func _plan_paths() -> Array:
+	var owners := []
+	for side in races.size():
+		var mine := BUILDINGS.filter(func(b): return b[3] == side)
+		if mine.is_empty():
+			continue
+		mine.sort_custom(func(a, b): return a[2] > b[2])   # the biggest is the hub
+		var style: Dictionary = lib.families[races[side].family].get("paths", {"style": "trail", "width": 0.36})
+		var hub := _door(mine[0])
+		var targets := []
+		for b in mine.slice(1):
+			targets.append(_door(b))
+		for kind in ["b", "\""]:
+			var t := _nearest_cluster_edge(kind, hub)
+			if t.x >= 0:
+				targets.append(t)
+		var shore := _nearest_shore(hub)
+		if shore.x >= 0:
+			targets.append(shore)
+		owners.append({"style": style.style, "width": float(style.width), "hub": hub, "targets": targets})
+	return Paths.plan(W, H, _blocked, owners)
+
+
+## The spot in front of a building's door (doors face +y, the viewer's lower left).
+func _door(b: Array) -> Vector2:
+	return Vector2(b[0] + b[2] * 0.5, b[1] + b[2] + 0.45)
+
+
+func _blocked(t: Vector2) -> bool:
+	if t.x < 0.2 or t.y < 0.2 or t.x > W - 0.2 or t.y > H - 0.2:
+		return true
+	if _at(int(t.x), int(t.y)) in ["T", "h", "b", "\"", "~"]:
+		return true
+	return _mask(t).r > 0.3
+
+
+## The free tile beside a cluster of this resource that's nearest the hub.
+func _nearest_cluster_edge(kind: String, hub: Vector2) -> Vector2:
+	var best := Vector2(-1, -1)
+	var best_d := INF
+	for y in H:
+		for x in W:
+			if _at(x, y) != kind:
+				continue
+			for d in [Vector2i(1, 0), Vector2i(-1, 0), Vector2i(0, 1), Vector2i(0, -1)]:
+				var t := Vector2(x + d.x, y + d.y) + Vector2(0.5, 0.5)
+				if not _blocked(t) and t.distance_to(hub) < best_d:
+					best_d = t.distance_to(hub)
+					best = t
+	return best
+
+
+func _nearest_shore(hub: Vector2) -> Vector2:
+	var best := Vector2(-1, -1)
+	var best_d := INF
+	for y in H * 2:
+		for x in W * 2:
+			var t := Vector2(x + 0.5, y + 0.5) / 2.0
+			var r := _mask(t).r
+			if r > 0.12 and r < 0.28 and not _blocked(t) and t.distance_to(hub) < best_d:
+				best_d = t.distance_to(hub)
+				best = t
+	return best
+
+
+## A blurred mask channel (0..1) at a point in tile coordinates.
+func _mask(t: Vector2) -> Color:
+	var k := masks_img.get_width() / W
+	var x := clampi(int(t.x * k), 0, masks_img.get_width() - 1)
+	var y := clampi(int(t.y * k), 0, masks_img.get_height() - 1)
+	return masks_img.get_pixel(x, y)
 
 
 ## Box blur, a few passes, edge-clamped: soft masks make round shorelines.

@@ -93,7 +93,7 @@ func _sort_layers(n: Node) -> void:
 	var kids := n.get_children()
 	var order := []
 	for i in kids.size():
-		order.append([int(kids[i].get_meta("z", 0)), i, kids[i]])
+		order.append([float(kids[i].get_meta("z", 0)), i, kids[i]])
 	order.sort_custom(func(a, b): return a[0] < b[0] or (a[0] == b[0] and a[1] < b[1]))
 	for i in order.size():
 		n.move_child(order[i][2], i)
@@ -153,6 +153,14 @@ func _make_rig(lib, body_id: String, head_id: String, colours: Dictionary, paren
 	body_node.setup(body.shapes, colours)
 	root.add_child(body_node)
 	breathing.append(body_node)
+	if rig.get("front", false):
+		# The body's near arm, drawn above torso armour and below what the hands hold.
+		var arm := _shape()
+		arm.part_id = body_id
+		arm.front = true
+		arm.setup(body.shapes, colours)
+		arm.set_meta("z", 1.5)
+		root.add_child(arm)
 
 	if head_id != "":
 		var head: Dictionary = lib.part(head_id)

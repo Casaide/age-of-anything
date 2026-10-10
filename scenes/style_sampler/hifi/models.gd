@@ -370,3 +370,57 @@ func frog_worker(team: Color) -> Dictionary:
 		pivots["arm_" + side] = Vector3(0.1, 0.48, z)
 	return {"parts": parts, "pivots": pivots,
 		"order": ["leg_far", "arm_far", "body", "head", "leg_near", "arm_near"]}
+
+
+# ------------------------------------------------------------------ doodads
+
+func stones(seed_value: int) -> Node3D:
+	rng.seed = seed_value
+	var n := Node3D.new()
+	var stone := mats.get_mat("stone")
+	for k in rng.randi_range(2, 4):
+		var r := rng.randf_range(0.06, 0.13)
+		var s := ball(r, stone, Vector3(rng.randf_range(-0.15, 0.15), r * 0.55, rng.randf_range(-0.15, 0.15)), Vector3(1.3, 0.7, 1.0), Vector3(0, rng.randf_range(0, 180), 0))
+		n.add_child(s)
+	return n
+
+
+func flowers(seed_value: int) -> Node3D:
+	rng.seed = seed_value
+	var n := Node3D.new()
+	var stem := Materials.flat(Color("#4e7a2c"), 1.0)
+	var petals: Color = [Color("#f4f0e0"), Color("#f2c94c"), Color("#e07a9a"), Color("#a08ae0")][rng.randi_range(0, 3)]
+	for k in rng.randi_range(3, 6):
+		var p := Vector3(rng.randf_range(-0.18, 0.18), 0, rng.randf_range(-0.18, 0.18))
+		var h := rng.randf_range(0.08, 0.15)
+		n.add_child(cyl(0.006, 0.008, h, stem, p + Vector3(0, h / 2, 0), Vector3.ZERO, 5))
+		n.add_child(ball(0.03, Materials.flat(petals, 1.0), p + Vector3(0, h, 0), Vector3(1, 0.5, 1)))
+		n.add_child(ball(0.012, Materials.flat(Color("#e0a020"), 1.0), p + Vector3(0, h + 0.01, 0)))
+	return n
+
+
+func tuft(seed_value: int) -> Node3D:
+	rng.seed = seed_value
+	var n := Node3D.new()
+	for k in 9:
+		var h := rng.randf_range(0.1, 0.2)
+		var col := Materials.flat([Color("#4e6e28"), Color("#628634"), Color("#7a9840")][k % 3], 1.0)
+		n.add_child(box(Vector3(0.018, h, 0.018), col, Vector3(rng.randf_range(-0.06, 0.06), h / 2, rng.randf_range(-0.06, 0.06)),
+			Vector3(rng.randf_range(-25, 25), 0, rng.randf_range(-25, 25))))
+	return n
+
+
+## A few reeds at the water's edge (smaller than a reed bed tile).
+func shore_reeds(seed_value: int) -> Node3D:
+	rng.seed = seed_value
+	var n := Node3D.new()
+	var stalk := Materials.flat(Color("#8a9a40"), 1.0)
+	var tip := Materials.flat(Color("#6b4a2a"), 1.0)
+	for k in rng.randi_range(4, 7):
+		var h := rng.randf_range(0.35, 0.6)
+		var s := cyl(0.012, 0.016, h, stalk, Vector3(rng.randf_range(-0.15, 0.15), h / 2, rng.randf_range(-0.15, 0.15)),
+			Vector3(rng.randf_range(-12, 12), 0, rng.randf_range(-12, 12)), 6)
+		n.add_child(s)
+		if k % 2 == 0:
+			s.add_child(cyl(0.028, 0.028, 0.1, tip, Vector3(0, h / 2 - 0.04, 0), Vector3.ZERO, 8))
+	return n
