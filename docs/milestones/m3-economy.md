@@ -1,6 +1,6 @@
 # Milestone 3: Economy
 
-**Status:** in progress (plan approved by Dominic 2026-10-11)
+**Status:** built (2026-10-11); waiting on the exit check, which is Dominic watching an opening (F6 in the debug view)
 **Exit criterion:** the opening economy is fun to watch for 3 minutes. That's Dominic's call
 by eye. The tests back it with numbers: a scripted 3-minute opening gathers in a sensible
 range, nobody stalls, and it's deterministic.
@@ -90,12 +90,35 @@ over a match), and the milestone builds a minimal clickable panel plus hotkeys, 
 - [x] Worker gather/deposit loop; construction
 - [x] TRAIN/CANCEL/RALLY, pop cap
 - [x] View: buildings, resources, carry, smart right-click, panel, placement ghost
-- [ ] Tests: 3-minute opening, determinism, map-change determinism, tick time
-- [ ] Archive: pictures along the way (first buildings, first gather loop, bugs, the 1/2/3-minute
+- [x] Tests: 3-minute opening, determinism, map-change determinism, tick time
+- [x] Archive: pictures along the way (first buildings, first gather loop, bugs, the 1/2/3-minute
   opening), journal, decisions, timeline
 
 ## Results
-(when done)
+- **3-minute opening, frogs vs rats, both played by the economy bot** (the same numbers headless
+  and in the view):
+
+  | | Workers | Houses | Pop | Gathered food / wood | Bank |
+  |---|---|---|---|---|---|
+  | Frogs | 15 | 3 | 15/20 | 520 / 280 | 510 / 250 |
+  | Rats | 23 | 4 (6 pop each) | 23/29 | 780 / 360 | 870 / 440 |
+
+  No worker idles for 5 s, nobody goes over the pop cap, nobody is stuck on a job.
+- Determinism holds with the economy inside the 10-minute match (400/400 checkpoints, including
+  reversed dicts and shuffled commands); the map changes (houses, cut reeds) are part of it.
+- **Tick time:** opening avg 0.22 ms (worst 1.5); 210-unit 10-minute match avg 1.54 ms, p99 4.3 ms.
+  A near field solves in ~0.4 ms against ~2.3 ms for a full one.
+- **UI checked with real input events:** click a building, Q and the Train button queue workers
+  (cost charged), the queue's x refunds, H plus a click places a house and the builders go, a
+  right-click on a bush sets a worker gathering, and a right-click with the TC selected sets
+  the rally point.
+
+## Not done / left for later
+- **Balance:** workers are cheap (frogs 25, rats 5 food), so banks pile up; the TC is the
+  bottleneck. Revisit with the age-up (milestone 5) and the playtest (8).
+- Hunting and drop-off camps (Next).
+- The placeholder buildings are plain blocks; the panel is plain. Art pass, and race-themed UI
+  (backlog).
 
 ## Changes from the original plan
 - Train time moved into data: `rules.cost.train_base` (20 s) on a flatter `pow0.5` curve, so a

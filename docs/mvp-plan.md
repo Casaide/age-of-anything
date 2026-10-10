@@ -149,7 +149,7 @@ Each milestone has its own file in `milestones/` (plan, checklist, results); thi
 | [0](milestones/m0-race-generation.md) | done | **Race generation:** data contract, generator, pricing, composer, Race Lab, tests | Prompts give stable, readable armies; tests pass |
 | [1](milestones/m1-sim-core.md) | done | **Sim core:** fixed tick, integer maths, command queue, replay record/playback, state hash, determinism test | The same scripted 10-minute replay gives identical hashes (met: 400/400 checkpoints; 200-unit tick 0.9 ms avg) |
 | [2](milestones/m2-map-movement.md) | done | **Map + movement:** JSON map + generated isometric TileMapLayer, flow fields, separation, camera pan/zoom, selection, box select, move | 50 units cross the map in groups with no stuck units (met: open map and chokepoint) |
-| [3](milestones/m3-economy.md) | 1 | **Economy:** gather/carry/drop-off, Food/Wood, TC trains workers, Houses/pop, build placement + construction | The opening economy is fun to watch for 3 minutes |
+| [3](milestones/m3-economy.md) | built | **Economy:** gather/carry/drop-off, Food/Wood, TC trains workers, Houses/pop, build placement + construction | The opening economy is fun to watch for 3 minutes |
 | [4](milestones/m4-combat.md) | 1 | **Combat:** attack/armour/HP, counter tags, projectiles, deaths, unit card | Blind testers predict counters from silhouettes |
 | [5](milestones/m5-progression.md) | 1 | **Progression:** Barracks, age-up, Sharp Sticks research, tier-2 units, Watchtower, fixed-point cost table | Age-up lands at minutes 4-6 |
 | [6](milestones/m6-ai-match-flow.md) | 1 | **AI + match flow:** build order, waves, tag-aware counter-picking, race select screen, win/lose | AI beats a passive player and loses to a decent one |

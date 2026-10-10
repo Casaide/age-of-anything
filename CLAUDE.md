@@ -28,7 +28,11 @@ move it to `docs/backlog.md` rather than deleting it.
   `tests/test_sim.gd` plays a 10-minute 200-unit match; tick is ~0.9 ms avg (budget 3 ms).
 - **Done (milestone 2): map + movement.** Flow fields, move groups, isometric debug view, RTS
   camera, click/box/double-click selection. 50 units cross open and chokepoint maps, none stuck.
-- **Next (milestone 3): economy.** See `docs/milestones/m3-economy.md` (plan not written yet).
+- **Built (milestone 3): economy.** Food from bug bushes, wood from reeds (cut reeds become
+  ground), Town Center + Houses, training, construction, pop cap, rat economy from data, an
+  economy bot (`src/ai/eco_bot.gd`), the command panel. Exit check: Dominic watches an opening
+  (F6 in the debug view). See `docs/milestones/m3-economy.md`.
+- **Next (milestone 4): combat.** See `docs/milestones/m4-combat.md`.
 
 ## Layout
 
@@ -40,9 +44,10 @@ data/            the data contract; mods are just more of this
   families.json    cultures/styles: cloth colours, mounts, name parts
   palettes.json    skin palettes, fixed material colours, team colours
   lexicon.json     word -> creature/mount/family/tags/size; out-of-era words + playful notes
-  rules/*.json     host rules: era bounds, point budgets per tier, roster template, cost curve ids
+  rules/*.json     host rules: era bounds, point budgets, roster template, cost/train curves, economy
   cost_curves.json fixed-point cost curves (per-mille by points), written by tests/gen_cost_curve.gd
-  terrain.json     terrain types: walkable, placeholder colours
+  terrain.json     terrain types: walkable, colours, resource + amount + what it turns into when used up
+  buildings.json   building types: footprint, hp, cost, build time, pop, drop-off, what it trains
   maps/*.json      maps: ASCII rows + legend into terrain.json, start tiles; the view builds tiles from them
 src/
   rng.gd           xorshift32 + FNV-1a. The only randomness allowed in generation/sim
@@ -58,12 +63,18 @@ src/
     units.gd         units as parallel packed int arrays, sorted by id
     spatial.gd       per-tile buckets for neighbour queries
     commands.gd      CommandQueue {turn, player, seq, type, args}; 4-tick turns, run at turn + 2
-    sim_map.gd       terrain + walkable grid from data/maps
-    flow.gd          flow fields (integer Dijkstra), nearest walkable cell, line of sight
+    sim_map.gd       terrain, walkable grid, resources left, building occupancy (the map changes)
+    flow.gd          flow fields (multi-source integer Dijkstra, optional cutoff), line of sight
+    buildings.gd     buildings as parallel arrays sorted by id (ids shared with units)
+    economy.gd       setup, worker jobs (gather/carry/drop off/build), training, pop, economy commands
+  ai/              players that issue commands like a person (deterministic, lint-checked)
+    eco_bot.gd       plays an opening: trains workers, 60/40 food/wood, houses, idle workers
     replay.gd        record / JSON / rebuild / verify
 scenes/race_lab.*  prompt UI, race cards, two armies milling about
-  view/            view-side helpers (Nodes allowed): iso.gd projection, map_view.gd tiles, rts_camera.gd
-scenes/sim_debug.* isometric sim view: select (click/box/double-click), right-click move, F3 flow, F5/F9 replays
+  view/            view side (Nodes allowed): iso.gd projection, map_view.gd tiles, rts_camera.gd,
+                   building_view.gd, resource_view.gd, command_panel.gd
+scenes/sim_debug.* the playable debug match: select, smart right-click, panel (Q/H/C), Tab side, F6 autoplay,
+                   F3 flow, F5/F9 replays, G regen army
 tests/           headless checks and dev tools (see Commands)
 ```
 
@@ -76,7 +87,7 @@ godot --headless --path . --script res://tests/run_tests.gd        # must print 
 godot --headless --path . --script res://tests/print_races.gd -- "centaur romans" "flying greeks with wings"
 godot --path . --script res://tests/screenshot.gd -- /tmp/lab.png "prompt A" "prompt B"
 godot --headless --path . --script res://tests/test_sim.gd         # sim determinism + tick time (~45 s)
-godot --path . --script res://tests/sim_screenshot.gd -- /tmp/sim.png [map_id] ["prompt A" "prompt B"]
+godot --path . --script res://tests/sim_screenshot.gd -- /tmp/sim.png [map_id] [armies|opening:<tick>] ["prompt A" "prompt B"]
 godot --path . res://scenes/sim_debug.tscn                         # run the sim debug view
 godot --headless --path . --script res://tests/gen_cost_curve.gd   # regenerate data/cost_curves.json
 godot --path .                                                     # run the Race Lab
