@@ -37,3 +37,6 @@ One line per moment worth remembering. Newest at the bottom.
 - **2026-10-11:** Frogs get two legs, toe pads and amber eyes; rats get whiskers and bottle-cap
   shields: hand-modelled parts with hand-drawn textures. A frog stops standing on a hut roof.
   ([image](images/2026-10-11/21-pixel-modelled-units-2x.png))
+- **2026-10-11:** Cultures pave their own way: frog boardwalks, rat cobbles, Roman roads,
+  all generated. Arms get outlines; a rat rides a spider.
+  ([image](images/2026-10-11/26-roman-roads.png))

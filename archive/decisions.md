@@ -190,3 +190,10 @@ animation are unchanged; parts without a model fall back to the automatic bake. 
 layered by child order instead of `z_index` (which is global and broke y-sorting). Building
 ground shadows are baked in a shadow-only pass, with light from the screen's upper left.
 Dominic's direction (reference not exact; real textures, authored by Claude); Claude's design.
+
+**D-044, 2026-10-11: Paths are generated, and their style is part of the race's culture.**
+`families.json` gives each family a path style and width (imperial and hellenic: paved roads
+with kerbs; swamp: plank boardwalks; sewer and royal: cobbles; others: dirt trails). A view-side
+generator (`scenes/art_pixel/paths.gd`) routes each side's paths from its main building to its
+other buildings, nearest resources and the shore, with merging trunks and smoothed bends.
+Cosmetic, deterministic. Dominic's idea ("Romans should get nice roads"); Claude's design.

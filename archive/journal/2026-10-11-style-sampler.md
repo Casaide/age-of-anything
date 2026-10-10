@@ -73,11 +73,30 @@ like any other parts.
 
 Dominic also spotted a frog standing on a hut roof and asked for the shadows to be fixed.
 
+### Then: the plan's next steps, plus two notes from Dominic
+
+Dominic asked for a full art-asset review after the next milestone (it's in the combat
+milestone file) and to carry on with the next steps. The rat on a spider got modelled (a hairy
+eight-legged mount, a team saddle cloth, fangs) along with the rest of the roster gear,
+including a saucepan helmet with its handle. A new `tests/unit_lineup.gd` shows both rosters
+at 4x for review.
+
+Two notes came in while the terrain was being polished:
+- **"Hard to see arms."** The near arm was part of the body sprite, the same colour as the
+  torso, and armour drew over it. It's now its own baked layer with its own outline, drawn
+  above the torso armour and below what the hands hold.
+- **"Paths should be auto generated, and part of the race. Romans should get nice roads."**
+  So `families.json` now carries a path style. A generator routes each side's paths (A* where
+  existing paths are cheap, so branches merge into trunks; Chaikin smoothing) from the main
+  building to its other buildings, resources and the shore. The shader draws trails,
+  boardwalks, cobbles and roads with kerbs.
+
 ## Decisions
 - D-040: the art direction is open again; choose from the sampler.
 - D-041: a sixth direction, high-fidelity pre-rendered, built as a real bake pipeline.
 - D-042: the leading candidate is high-fidelity pixel art that keeps the original characters.
 - D-043: units are hand-modelled per part id with authored textures; parts layer by child order.
+- D-044: paths are generated and styled by the race's culture (families.json).
 
 ## Pictures
 ![All five styles, same scene, same scale](../images/2026-10-11/08-style-sampler-all.png)
@@ -94,6 +113,10 @@ Dominic also spotted a frog standing on a hut roof and asked for the shadows to 
 ![Bug (Dominic's screenshot): a frog standing on the hut's roof](../images/2026-10-11/19-bug-frog-on-the-roof.png)
 ![The modelled, textured frog and rat rosters](../images/2026-10-11/20-modelled-units-lineup.png)
 ![Pixel scene with modelled units, shadows and correct overlap](../images/2026-10-11/21-pixel-modelled-units-2x.png)
+![The rosters with the rat on a spider](../images/2026-10-11/23-lineup-with-spider-rider.png)
+![Near arms as their own outlined layer](../images/2026-10-11/24-lineup-arms-as-own-layer.png)
+![Generated paths: frog boardwalks, rat cobbles, plus stones, flowers and shore reeds](../images/2026-10-11/25-culture-paths-boardwalk-and-cobbles.png)
+![Centaur Romans get paved roads (the centaurs are still unmodelled)](../images/2026-10-11/26-roman-roads.png)
 
 ## Funny moments and bugs worth remembering
 - **The frog on the roof.** Units are built from parts layered with `z_index`, and z_index is

@@ -84,8 +84,13 @@ func bake(id: String, shapes: Array, colours: Dictionary) -> void:
 func _bake_model(id: String, colours: Dictionary, bake_key: String) -> void:
 	var spec: Dictionary = models.build(id, colours)
 	var model: Node3D = spec.node
+	var front: Node3D = spec.get("front")
 	holder.add_child(model)
 	var box := _aabb(model)
+	if front:
+		holder.add_child(front)
+		box = box.merge(_aabb(front))
+		holder.remove_child(front)
 	var r := box.size.length() * 0.5 + 2.0
 	var px := art_scale * SS
 	size = Vector2i.ONE * ceili(2.0 * r * px)
@@ -101,6 +106,17 @@ func _bake_model(id: String, colours: Dictionary, bake_key: String) -> void:
 	render_target_update_mode = SubViewport.UPDATE_ONCE
 	await RenderingServer.frame_post_draw
 	var img := get_texture().get_image()
+	var front_img: Image = null
+	if front:
+		# The near arm is its own layer, so it gets its own outline over the body.
+		model.visible = false
+		holder.add_child(front)
+		render_target_update_mode = SubViewport.UPDATE_ONCE
+		await RenderingServer.frame_post_draw
+		front_img = get_texture().get_image()
+		holder.remove_child(front)
+		front.queue_free()
+		model.visible = true
 	var origin := cam.unproject_position(Vector3.ZERO)
 	var to2d := func(p: Vector3) -> Vector2: return (cam.unproject_position(p) - origin) / px
 	if spec.has("sockets"):
@@ -114,9 +130,18 @@ func _bake_model(id: String, colours: Dictionary, bake_key: String) -> void:
 		PartShape.rigs[id] = rig
 	holder.remove_child(model)
 	model.queue_free()
-	var used := img.get_used_rect().grow(SS * 2).intersection(Rect2i(Vector2i.ZERO, img.get_size()))
+	var used := img.get_used_rect()
+	if front_img:
+		used = used.merge(front_img.get_used_rect())
+	used = used.grow(SS * 2).intersection(Rect2i(Vector2i.ZERO, img.get_size()))
 	used.position = used.position / SS * SS
 	var pix := Pixelize.run(img.get_region(used), SS)
+	if front_img:
+		# Stored as its own sprite: UnitView layers it above torso armour.
+		var top := Pixelize.run(front_img.get_region(used), SS)
+		PartShape.baked[PartShape.front_key(bake_key)] = {"tex": ImageTexture.create_from_image(top),
+			"origin": (origin - Vector2(used.position)) / SS, "scale": art_scale}
+		PartShape.rigs[id]["front"] = true
 	PartShape.baked[bake_key] = {"tex": ImageTexture.create_from_image(pix),
 		"origin": (origin - Vector2(used.position)) / SS, "scale": art_scale}
 
