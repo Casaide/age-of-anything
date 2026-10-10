@@ -1,0 +1,3757 @@
+[
+ {
+  "id": "body.frog",
+  "slot": "body",
+  "noun": "Frog",
+  "points": 3,
+  "tags": [
+   "amphibious",
+   "infantry"
+  ],
+  "stats": {
+   "hp": 30,
+   "speed": 11,
+   "armour": 0
+  },
+  "shapes": [
+   {
+    "t": "ellipse",
+    "c": [
+     0,
+     -14
+    ],
+    "r": [
+     13,
+     10
+    ],
+    "ch": "skin"
+   },
+   {
+    "t": "ellipse",
+    "c": [
+     3,
+     -12
+    ],
+    "r": [
+     8,
+     6
+    ],
+    "ch": "skin2"
+   }
+  ],
+  "sockets": {
+   "head": [
+    6,
+    -22
+   ],
+   "hand_r": [
+    10,
+    -14
+   ],
+   "hand_l": [
+    -3,
+    -16
+   ],
+   "torso": [
+    0,
+    -14
+   ],
+   "back": [
+    -9,
+    -18
+   ]
+  },
+  "torso_scale": [
+   1.4,
+   1.2
+  ],
+  "legs": {
+   "part": "leg.frog",
+   "anchors": [
+    [
+     -7,
+     -6,
+     0,
+     -1
+    ],
+    [
+     5,
+     -6,
+     3.14,
+     1
+    ]
+   ]
+  }
+ },
+ {
+  "id": "body.rat",
+  "slot": "body",
+  "noun": "Rat",
+  "points": 2,
+  "tags": [
+   "infantry",
+   "swarm"
+  ],
+  "stats": {
+   "hp": 22,
+   "speed": 13,
+   "armour": 0
+  },
+  "shapes": [
+   {
+    "t": "line",
+    "p": [
+     [
+      -6,
+      -6
+     ],
+     [
+      -14,
+      -4
+     ],
+     [
+      -19,
+      -9
+     ],
+     [
+      -18,
+      -14
+     ]
+    ],
+    "w": 2,
+    "ch": "skin2"
+   },
+   {
+    "t": "ellipse",
+    "c": [
+     0,
+     -15
+    ],
+    "r": [
+     8,
+     11
+    ],
+    "ch": "skin"
+   },
+   {
+    "t": "ellipse",
+    "c": [
+     2,
+     -13
+    ],
+    "r": [
+     5,
+     7
+    ],
+    "ch": "skin2"
+   }
+  ],
+  "sockets": {
+   "head": [
+    2,
+    -25
+   ],
+   "hand_r": [
+    7,
+    -16
+   ],
+   "hand_l": [
+    -4,
+    -17
+   ],
+   "torso": [
+    0,
+    -15
+   ],
+   "back": [
+    -6,
+    -19
+   ]
+  },
+  "torso_scale": [
+   1.0,
+   1.3
+  ],
+  "legs": {
+   "part": "leg.rat",
+   "anchors": [
+    [
+     -4,
+     -5,
+     0,
+     -1
+    ],
+    [
+     3,
+     -5,
+     3.14,
+     1
+    ]
+   ]
+  }
+ },
+ {
+  "id": "body.human",
+  "slot": "body",
+  "noun": "Folk",
+  "points": 3,
+  "tags": [
+   "infantry"
+  ],
+  "stats": {
+   "hp": 28,
+   "speed": 10,
+   "armour": 0
+  },
+  "shapes": [
+   {
+    "t": "poly",
+    "p": [
+     [
+      -6,
+      -26
+     ],
+     [
+      6,
+      -26
+     ],
+     [
+      7,
+      -8
+     ],
+     [
+      -7,
+      -8
+     ]
+    ],
+    "ch": "cloth"
+   }
+  ],
+  "sockets": {
+   "head": [
+    0,
+    -26
+   ],
+   "hand_r": [
+    7,
+    -20
+   ],
+   "hand_l": [
+    -6,
+    -20
+   ],
+   "torso": [
+    0,
+    -17
+   ],
+   "back": [
+    -6,
+    -22
+   ]
+  },
+  "torso_scale": [
+   0.95,
+   1.25
+  ],
+  "legs": {
+   "part": "leg.human",
+   "anchors": [
+    [
+     -3,
+     -8,
+     0,
+     -1
+    ],
+    [
+     3,
+     -8,
+     3.14,
+     1
+    ]
+   ]
+  }
+ },
+ {
+  "id": "body.spider",
+  "slot": "body",
+  "noun": "Spider",
+  "points": 4,
+  "tags": [
+   "arachnid",
+   "venom",
+   "climber"
+  ],
+  "stats": {
+   "hp": 26,
+   "speed": 12,
+   "armour": 1
+  },
+  "shapes": [
+   {
+    "t": "ellipse",
+    "c": [
+     -7,
+     -13
+    ],
+    "r": [
+     11,
+     9
+    ],
+    "ch": "skin"
+   },
+   {
+    "t": "circle",
+    "c": [
+     -8,
+     -16
+    ],
+    "r": 3,
+    "ch": "cloth"
+   },
+   {
+    "t": "ellipse",
+    "c": [
+     6,
+     -11
+    ],
+    "r": [
+     6,
+     5
+    ],
+    "ch": "skin2"
+   }
+  ],
+  "sockets": {
+   "head": [
+    11,
+    -12
+   ],
+   "hand_r": [
+    12,
+    -9
+   ],
+   "hand_l": [
+    9,
+    -9
+   ],
+   "torso": [
+    -7,
+    -13
+   ],
+   "back": [
+    -8,
+    -20
+   ],
+   "seat": [
+    -5,
+    -21
+   ]
+  },
+  "torso_scale": [
+   1.4,
+   1.1
+  ],
+  "legs": {
+   "part": "leg.spider",
+   "anchors": [
+    [
+     7,
+     -10,
+     0.0,
+     1,
+     0
+    ],
+    [
+     8,
+     -11,
+     3.14,
+     -1,
+     0
+    ],
+    [
+     4,
+     -10,
+     0.8,
+     1,
+     0
+    ],
+    [
+     5,
+     -11,
+     3.9400000000000004,
+     -1,
+     0
+    ],
+    [
+     0,
+     -10,
+     1.6,
+     1,
+     1
+    ],
+    [
+     1,
+     -11,
+     4.74,
+     -1,
+     1
+    ],
+    [
+     -4,
+     -10,
+     2.4000000000000004,
+     1,
+     1
+    ],
+    [
+     -3,
+     -11,
+     5.540000000000001,
+     -1,
+     1
+    ]
+   ]
+  }
+ },
+ {
+  "id": "body.beetle",
+  "slot": "body",
+  "noun": "Beetle",
+  "points": 7,
+  "tags": [
+   "insect",
+   "armoured",
+   "mount"
+  ],
+  "stats": {
+   "hp": 50,
+   "speed": 10,
+   "armour": 3
+  },
+  "shapes": [
+   {
+    "t": "ellipse",
+    "c": [
+     0,
+     -13
+    ],
+    "r": [
+     17,
+     9
+    ],
+    "ch": "skin"
+   },
+   {
+    "t": "ellipse",
+    "c": [
+     -2,
+     -16
+    ],
+    "r": [
+     12,
+     5
+    ],
+    "ch": "skin2"
+   },
+   {
+    "t": "line",
+    "p": [
+     [
+      -14,
+      -14
+     ],
+     [
+      12,
+      -16
+     ]
+    ],
+    "w": 1,
+    "ch": "skin"
+   }
+  ],
+  "sockets": {
+   "head": [
+    16,
+    -12
+   ],
+   "hand_r": [
+    15,
+    -10
+   ],
+   "hand_l": [
+    13,
+    -10
+   ],
+   "torso": [
+    0,
+    -13
+   ],
+   "back": [
+    -8,
+    -18
+   ],
+   "seat": [
+    -2,
+    -20
+   ]
+  },
+  "torso_scale": [
+   2.0,
+   1.2
+  ],
+  "legs": {
+   "part": "leg.insect",
+   "anchors": [
+    [
+     10,
+     -7,
+     0,
+     1,
+     0
+    ],
+    [
+     2,
+     -7,
+     2.1,
+     1,
+     0
+    ],
+    [
+     -7,
+     -7,
+     4.2,
+     1,
+     1
+    ],
+    [
+     11,
+     -8,
+     3.14,
+     -1,
+     0
+    ],
+    [
+     3,
+     -8,
+     5.2,
+     -1,
+     0
+    ],
+    [
+     -6,
+     -8,
+     1.0,
+     -1,
+     1
+    ]
+   ]
+  }
+ },
+ {
+  "id": "body.pony",
+  "slot": "body",
+  "noun": "Pony",
+  "points": 6,
+  "tags": [
+   "beast",
+   "mount",
+   "fast"
+  ],
+  "stats": {
+   "hp": 45,
+   "speed": 16,
+   "armour": 0
+  },
+  "shapes": [
+   {
+    "t": "line",
+    "p": [
+     [
+      -13,
+      -20
+     ],
+     [
+      -18,
+      -12
+     ]
+    ],
+    "w": 3,
+    "ch": "skin2"
+   },
+   {
+    "t": "ellipse",
+    "c": [
+     0,
+     -19
+    ],
+    "r": [
+     14,
+     7
+    ],
+    "ch": "skin"
+   },
+   {
+    "t": "poly",
+    "p": [
+     [
+      7,
+      -22
+     ],
+     [
+      13,
+      -33
+     ],
+     [
+      18,
+      -30
+     ],
+     [
+      13,
+      -18
+     ]
+    ],
+    "ch": "skin"
+   },
+   {
+    "t": "line",
+    "p": [
+     [
+      8,
+      -24
+     ],
+     [
+      13,
+      -34
+     ]
+    ],
+    "w": 2,
+    "ch": "skin2"
+   }
+  ],
+  "sockets": {
+   "head": [
+    16,
+    -32
+   ],
+   "hand_r": [
+    10,
+    -18
+   ],
+   "hand_l": [
+    8,
+    -18
+   ],
+   "torso": [
+    0,
+    -19
+   ],
+   "back": [
+    -8,
+    -22
+   ],
+   "seat": [
+    -1,
+    -25
+   ]
+  },
+  "torso_scale": [
+   1.8,
+   1.0
+  ],
+  "legs": {
+   "part": "leg.hoof",
+   "anchors": [
+    [
+     9,
+     -13,
+     0,
+     1,
+     0
+    ],
+    [
+     -9,
+     -13,
+     3.14,
+     1,
+     0
+    ],
+    [
+     7,
+     -13,
+     3.14,
+     -1,
+     0
+    ],
+    [
+     -11,
+     -13,
+     0,
+     -1,
+     0
+    ]
+   ]
+  }
+ },
+ {
+  "id": "leg.frog",
+  "slot": "leg",
+  "shapes": [
+   {
+    "t": "poly",
+    "p": [
+     [
+      -2,
+      -1
+     ],
+     [
+      3,
+      -1
+     ],
+     [
+      4,
+      4
+     ],
+     [
+      8,
+      6
+     ],
+     [
+      8,
+      7
+     ],
+     [
+      -3,
+      7
+     ],
+     [
+      -1,
+      4
+     ]
+    ],
+    "ch": "skin"
+   }
+  ],
+  "tags": [],
+  "stats": {},
+  "points": 0
+ },
+ {
+  "id": "leg.rat",
+  "slot": "leg",
+  "shapes": [
+   {
+    "t": "poly",
+    "p": [
+     [
+      -1.5,
+      0
+     ],
+     [
+      1.5,
+      0
+     ],
+     [
+      1.5,
+      5
+     ],
+     [
+      4,
+      5
+     ],
+     [
+      4,
+      6.5
+     ],
+     [
+      -1.5,
+      6.5
+     ]
+    ],
+    "ch": "skin2"
+   }
+  ],
+  "tags": [],
+  "stats": {},
+  "points": 0
+ },
+ {
+  "id": "leg.human",
+  "slot": "leg",
+  "shapes": [
+   {
+    "t": "poly",
+    "p": [
+     [
+      -2,
+      0
+     ],
+     [
+      2,
+      0
+     ],
+     [
+      2,
+      7
+     ],
+     [
+      -2,
+      7
+     ]
+    ],
+    "ch": "cloth2"
+   },
+   {
+    "t": "poly",
+    "p": [
+     [
+      -2,
+      7
+     ],
+     [
+      4,
+      7
+     ],
+     [
+      4,
+      8.5
+     ],
+     [
+      -2,
+      8.5
+     ]
+    ],
+    "ch": "eye"
+   }
+  ],
+  "tags": [],
+  "stats": {},
+  "points": 0
+ },
+ {
+  "id": "leg.spider",
+  "slot": "leg",
+  "shapes": [
+   {
+    "t": "line",
+    "p": [
+     [
+      0,
+      0
+     ],
+     [
+      6,
+      -7
+     ],
+     [
+      11,
+      10
+     ]
+    ],
+    "w": 1.6,
+    "ch": "skin"
+   }
+  ],
+  "tags": [],
+  "stats": {},
+  "points": 0
+ },
+ {
+  "id": "leg.insect",
+  "slot": "leg",
+  "shapes": [
+   {
+    "t": "line",
+    "p": [
+     [
+      0,
+      0
+     ],
+     [
+      4,
+      3
+     ],
+     [
+      6,
+      7
+     ]
+    ],
+    "w": 1.8,
+    "ch": "eye"
+   }
+  ],
+  "tags": [],
+  "stats": {},
+  "points": 0
+ },
+ {
+  "id": "leg.hoof",
+  "slot": "leg",
+  "shapes": [
+   {
+    "t": "poly",
+    "p": [
+     [
+      -1.5,
+      0
+     ],
+     [
+      1.5,
+      0
+     ],
+     [
+      1.5,
+      11
+     ],
+     [
+      -1.5,
+      11
+     ]
+    ],
+    "ch": "skin"
+   },
+   {
+    "t": "poly",
+    "p": [
+     [
+      -2,
+      11
+     ],
+     [
+      2,
+      11
+     ],
+     [
+      2,
+      13
+     ],
+     [
+      -2,
+      13
+     ]
+    ],
+    "ch": "eye"
+   }
+  ],
+  "tags": [],
+  "stats": {},
+  "points": 0
+ },
+ {
+  "id": "head.frog",
+  "slot": "head",
+  "sockets": {
+   "top": [
+    0,
+    -11
+   ]
+  },
+  "shapes": [
+   {
+    "t": "ellipse",
+    "c": [
+     0,
+     -4
+    ],
+    "r": [
+     10,
+     6
+    ],
+    "ch": "skin"
+   },
+   {
+    "t": "circle",
+    "c": [
+     -4,
+     -9
+    ],
+    "r": 3.5,
+    "ch": "skin"
+   },
+   {
+    "t": "circle",
+    "c": [
+     4,
+     -9
+    ],
+    "r": 3.5,
+    "ch": "skin"
+   },
+   {
+    "t": "circle",
+    "c": [
+     -3.5,
+     -9.5
+    ],
+    "r": 1.6,
+    "ch": "eye"
+   },
+   {
+    "t": "circle",
+    "c": [
+     4.5,
+     -9.5
+    ],
+    "r": 1.6,
+    "ch": "eye"
+   },
+   {
+    "t": "line",
+    "p": [
+     [
+      -5,
+      -2
+     ],
+     [
+      7,
+      -2
+     ]
+    ],
+    "w": 0.8,
+    "ch": "eye"
+   }
+  ],
+  "tags": [],
+  "stats": {},
+  "points": 0
+ },
+ {
+  "id": "head.rat",
+  "slot": "head",
+  "sockets": {
+   "top": [
+    -1,
+    -9
+   ]
+  },
+  "shapes": [
+   {
+    "t": "circle",
+    "c": [
+     -3,
+     -9
+    ],
+    "r": 3.5,
+    "ch": "skin2"
+   },
+   {
+    "t": "poly",
+    "p": [
+     [
+      -6,
+      -2
+     ],
+     [
+      -4,
+      -9
+     ],
+     [
+      4,
+      -8
+     ],
+     [
+      11,
+      -3
+     ],
+     [
+      5,
+      0
+     ]
+    ],
+    "ch": "skin"
+   },
+   {
+    "t": "circle",
+    "c": [
+     3,
+     -5
+    ],
+    "r": 1.3,
+    "ch": "eye"
+   },
+   {
+    "t": "circle",
+    "c": [
+     11,
+     -3
+    ],
+    "r": 1.4,
+    "ch": "eye"
+   }
+  ],
+  "tags": [],
+  "stats": {},
+  "points": 0
+ },
+ {
+  "id": "head.human",
+  "slot": "head",
+  "sockets": {
+   "top": [
+    0,
+    -9
+   ]
+  },
+  "shapes": [
+   {
+    "t": "circle",
+    "c": [
+     0,
+     -5
+    ],
+    "r": 5,
+    "ch": "skin"
+   },
+   {
+    "t": "circle",
+    "c": [
+     2.5,
+     -6
+    ],
+    "r": 0.9,
+    "ch": "eye"
+   }
+  ],
+  "tags": [],
+  "stats": {},
+  "points": 0
+ },
+ {
+  "id": "head.spider",
+  "slot": "head",
+  "sockets": {
+   "top": [
+    2,
+    -4
+   ]
+  },
+  "shapes": [
+   {
+    "t": "ellipse",
+    "c": [
+     3,
+     -1
+    ],
+    "r": [
+     4,
+     3.5
+    ],
+    "ch": "skin2"
+   },
+   {
+    "t": "circle",
+    "c": [
+     5,
+     -3
+    ],
+    "r": 1,
+    "ch": "eye"
+   },
+   {
+    "t": "circle",
+    "c": [
+     3,
+     -3.5
+    ],
+    "r": 1,
+    "ch": "eye"
+   },
+   {
+    "t": "circle",
+    "c": [
+     6,
+     -1
+    ],
+    "r": 0.8,
+    "ch": "eye"
+   },
+   {
+    "t": "line",
+    "p": [
+     [
+      6,
+      1
+     ],
+     [
+      7,
+      4
+     ]
+    ],
+    "w": 1,
+    "ch": "eye"
+   }
+  ],
+  "tags": [],
+  "stats": {},
+  "points": 0
+ },
+ {
+  "id": "head.beetle",
+  "slot": "head",
+  "sockets": {
+   "top": [
+    2,
+    -4
+   ]
+  },
+  "shapes": [
+   {
+    "t": "line",
+    "p": [
+     [
+      6,
+      -2
+     ],
+     [
+      11,
+      -8
+     ],
+     [
+      13,
+      -12
+     ]
+    ],
+    "w": 2.5,
+    "ch": "skin2"
+   },
+   {
+    "t": "ellipse",
+    "c": [
+     3,
+     0
+    ],
+    "r": [
+     5,
+     4
+    ],
+    "ch": "skin"
+   },
+   {
+    "t": "circle",
+    "c": [
+     5,
+     -1
+    ],
+    "r": 1,
+    "ch": "eye"
+   }
+  ],
+  "tags": [],
+  "stats": {},
+  "points": 0
+ },
+ {
+  "id": "head.pony",
+  "slot": "head",
+  "sockets": {
+   "top": [
+    1,
+    -4
+   ]
+  },
+  "shapes": [
+   {
+    "t": "poly",
+    "p": [
+     [
+      0,
+      -4
+     ],
+     [
+      1,
+      -8
+     ],
+     [
+      2,
+      -4
+     ]
+    ],
+    "ch": "skin2"
+   },
+   {
+    "t": "ellipse",
+    "c": [
+     3,
+     -1
+    ],
+    "r": [
+     6,
+     3.5
+    ],
+    "ch": "skin"
+   },
+   {
+    "t": "circle",
+    "c": [
+     3,
+     -2
+    ],
+    "r": 0.9,
+    "ch": "eye"
+   }
+  ],
+  "tags": [],
+  "stats": {},
+  "points": 0
+ },
+ {
+  "id": "weapon.spear.reed",
+  "slot": "hand_r",
+  "noun": "Reedspear",
+  "shapes": [
+   {
+    "t": "line",
+    "p": [
+     [
+      -6,
+      4
+     ],
+     [
+      16,
+      -9
+     ]
+    ],
+    "w": 1.5,
+    "ch": "reed"
+   },
+   {
+    "t": "poly",
+    "p": [
+     [
+      15,
+      -10
+     ],
+     [
+      21,
+      -13
+     ],
+     [
+      17,
+      -7
+     ]
+    ],
+    "ch": "bone"
+   }
+  ],
+  "tags": [
+   "spear",
+   "melee",
+   "reach",
+   "swamp",
+   "primitive",
+   "reed"
+  ],
+  "stats": {
+   "attack": 4,
+   "bonus": {
+    "large": 6
+   }
+  },
+  "points": 3,
+  "cost_mix": {
+   "food": 40,
+   "wood": 60
+  }
+ },
+ {
+  "id": "weapon.spear.bronze",
+  "slot": "hand_r",
+  "noun": "Spearbearer",
+  "shapes": [
+   {
+    "t": "line",
+    "p": [
+     [
+      -6,
+      4
+     ],
+     [
+      16,
+      -9
+     ]
+    ],
+    "w": 1.5,
+    "ch": "wood"
+   },
+   {
+    "t": "poly",
+    "p": [
+     [
+      15,
+      -10
+     ],
+     [
+      21,
+      -13
+     ],
+     [
+      17,
+      -7
+     ]
+    ],
+    "ch": "bronze"
+   }
+  ],
+  "tags": [
+   "spear",
+   "melee",
+   "reach",
+   "imperial",
+   "royal",
+   "steppe"
+  ],
+  "stats": {
+   "attack": 5,
+   "bonus": {
+    "large": 7
+   }
+  },
+  "points": 4,
+  "era": [
+   "bronze",
+   "medieval"
+  ],
+  "cost_mix": {
+   "food": 40,
+   "wood": 60
+  }
+ },
+ {
+  "id": "weapon.pike.iron",
+  "slot": "hand_r",
+  "noun": "Pike",
+  "shapes": [
+   {
+    "t": "line",
+    "p": [
+     [
+      -8,
+      5
+     ],
+     [
+      22,
+      -13
+     ]
+    ],
+    "w": 1.5,
+    "ch": "wood"
+   },
+   {
+    "t": "poly",
+    "p": [
+     [
+      21,
+      -14
+     ],
+     [
+      28,
+      -17
+     ],
+     [
+      23,
+      -11
+     ]
+    ],
+    "ch": "iron"
+   }
+  ],
+  "tags": [
+   "spear",
+   "melee",
+   "reach",
+   "heavy",
+   "royal"
+  ],
+  "stats": {
+   "attack": 6,
+   "bonus": {
+    "large": 9
+   },
+   "speed": -1
+  },
+  "points": 6,
+  "era": [
+   "medieval",
+   "gunpowder"
+  ],
+  "two_handed": true,
+  "cost_mix": {
+   "food": 40,
+   "wood": 60
+  }
+ },
+ {
+  "id": "weapon.club.bone",
+  "slot": "hand_r",
+  "noun": "Clubber",
+  "shapes": [
+   {
+    "t": "line",
+    "p": [
+     [
+      -2,
+      2
+     ],
+     [
+      6,
+      -9
+     ]
+    ],
+    "w": 3,
+    "ch": "bone"
+   },
+   {
+    "t": "circle",
+    "c": [
+     6,
+     -10
+    ],
+    "r": 3,
+    "ch": "bone"
+   }
+  ],
+  "tags": [
+   "melee",
+   "blunt",
+   "primitive"
+  ],
+  "stats": {
+   "attack": 6
+  },
+  "points": 3,
+  "cost_mix": {
+   "food": 40,
+   "wood": 60
+  }
+ },
+ {
+  "id": "weapon.sword.bronze",
+  "slot": "hand_r",
+  "noun": "Swordsman",
+  "shapes": [
+   {
+    "t": "line",
+    "p": [
+     [
+      0,
+      0
+     ],
+     [
+      3,
+      -14
+     ]
+    ],
+    "w": 2.5,
+    "ch": "bronze"
+   },
+   {
+    "t": "line",
+    "p": [
+     [
+      -3,
+      -1
+     ],
+     [
+      3,
+      1
+     ]
+    ],
+    "w": 1.5,
+    "ch": "wood"
+   }
+  ],
+  "tags": [
+   "melee",
+   "blade",
+   "imperial",
+   "hellenic"
+  ],
+  "stats": {
+   "attack": 7
+  },
+  "points": 5,
+  "era": [
+   "bronze"
+  ],
+  "cost_mix": {
+   "food": 40,
+   "wood": 60
+  }
+ },
+ {
+  "id": "weapon.sword.iron",
+  "slot": "hand_r",
+  "noun": "Swordsman",
+  "shapes": [
+   {
+    "t": "line",
+    "p": [
+     [
+      0,
+      0
+     ],
+     [
+      3,
+      -15
+     ]
+    ],
+    "w": 2.5,
+    "ch": "iron"
+   },
+   {
+    "t": "line",
+    "p": [
+     [
+      -3,
+      -1
+     ],
+     [
+      3,
+      1
+     ]
+    ],
+    "w": 1.5,
+    "ch": "wood"
+   }
+  ],
+  "tags": [
+   "melee",
+   "blade",
+   "knight",
+   "royal"
+  ],
+  "stats": {
+   "attack": 8
+  },
+  "points": 6,
+  "era": [
+   "medieval",
+   "gunpowder"
+  ],
+  "cost_mix": {
+   "food": 40,
+   "wood": 60
+  }
+ },
+ {
+  "id": "weapon.cheese_hammer",
+  "slot": "hand_r",
+  "noun": "Cheesehammer",
+  "shapes": [
+   {
+    "t": "line",
+    "p": [
+     [
+      -1,
+      3
+     ],
+     [
+      3,
+      -10
+     ]
+    ],
+    "w": 1.5,
+    "ch": "wood"
+   },
+   {
+    "t": "poly",
+    "p": [
+     [
+      -2,
+      -10
+     ],
+     [
+      7,
+      -13
+     ],
+     [
+      8,
+      -8
+     ],
+     [
+      0,
+      -6
+     ]
+    ],
+    "ch": "cheese"
+   },
+   {
+    "t": "circle",
+    "c": [
+     3,
+     -9
+    ],
+    "r": 0.8,
+    "ch": "cheese2"
+   },
+   {
+    "t": "circle",
+    "c": [
+     5,
+     -11
+    ],
+    "r": 0.6,
+    "ch": "cheese2"
+   }
+  ],
+  "tags": [
+   "melee",
+   "blunt",
+   "cheese",
+   "silly",
+   "heavy",
+   "charge",
+   "rat",
+   "sewer"
+  ],
+  "stats": {
+   "attack": 9,
+   "speed": -1
+  },
+  "points": 6,
+  "two_handed": true,
+  "cost_mix": {
+   "food": 80,
+   "wood": 20
+  }
+ },
+ {
+  "id": "weapon.lance",
+  "slot": "hand_r",
+  "noun": "Lancer",
+  "shapes": [
+   {
+    "t": "line",
+    "p": [
+     [
+      -10,
+      2
+     ],
+     [
+      26,
+      -4
+     ]
+    ],
+    "w": 2,
+    "ch": "wood"
+   },
+   {
+    "t": "poly",
+    "p": [
+     [
+      25,
+      -5
+     ],
+     [
+      32,
+      -4
+     ],
+     [
+      25,
+      -2
+     ]
+    ],
+    "ch": "iron"
+   }
+  ],
+  "tags": [
+   "lance",
+   "melee",
+   "charge",
+   "reach",
+   "knight"
+  ],
+  "stats": {
+   "attack": 8,
+   "bonus": {
+    "ranged": 6
+   }
+  },
+  "points": 5,
+  "era": [
+   "medieval",
+   "gunpowder"
+  ],
+  "cost_mix": {
+   "food": 40,
+   "wood": 60
+  }
+ },
+ {
+  "id": "weapon.sling",
+  "slot": "hand_r",
+  "noun": "Slinger",
+  "shapes": [
+   {
+    "t": "line",
+    "p": [
+     [
+      0,
+      0
+     ],
+     [
+      4,
+      6
+     ],
+     [
+      2,
+      8
+     ]
+    ],
+    "w": 1,
+    "ch": "cloth2"
+   },
+   {
+    "t": "circle",
+    "c": [
+     2,
+     8
+    ],
+    "r": 1.5,
+    "ch": "stone"
+   }
+  ],
+  "tags": [
+   "ranged",
+   "sling",
+   "primitive",
+   "skirmish"
+  ],
+  "stats": {
+   "attack": 3,
+   "range": 5,
+   "bonus": {
+    "infantry": 2,
+    "archer": 4
+   }
+  },
+  "points": 3,
+  "cost_mix": {
+   "food": 40,
+   "wood": 60
+  }
+ },
+ {
+  "id": "weapon.blowgun",
+  "slot": "hand_r",
+  "noun": "Blowgunner",
+  "shapes": [
+   {
+    "t": "line",
+    "p": [
+     [
+      -2,
+      -2
+     ],
+     [
+      14,
+      -6
+     ]
+    ],
+    "w": 2,
+    "ch": "reed"
+   },
+   {
+    "t": "circle",
+    "c": [
+     14,
+     -6
+    ],
+    "r": 0.8,
+    "ch": "eye"
+   }
+  ],
+  "tags": [
+   "ranged",
+   "poison",
+   "swamp",
+   "sneaky",
+   "reed",
+   "skirmish"
+  ],
+  "stats": {
+   "attack": 3,
+   "range": 5,
+   "bonus": {
+    "infantry": 3,
+    "archer": 4
+   }
+  },
+  "points": 3,
+  "two_handed": true,
+  "cost_mix": {
+   "food": 40,
+   "wood": 60
+  }
+ },
+ {
+  "id": "weapon.bow.short",
+  "slot": "hand_r",
+  "noun": "Archer",
+  "shapes": [
+   {
+    "t": "line",
+    "p": [
+     [
+      2,
+      -10
+     ],
+     [
+      5,
+      -5
+     ],
+     [
+      6,
+      0
+     ],
+     [
+      5,
+      5
+     ],
+     [
+      2,
+      10
+     ]
+    ],
+    "w": 1.5,
+    "ch": "wood"
+   },
+   {
+    "t": "line",
+    "p": [
+     [
+      2,
+      -10
+     ],
+     [
+      2,
+      10
+     ]
+    ],
+    "w": 0.6,
+    "ch": "bone"
+   }
+  ],
+  "tags": [
+   "ranged",
+   "bow",
+   "greek",
+   "steppe",
+   "archer"
+  ],
+  "stats": {
+   "attack": 4,
+   "range": 6,
+   "bonus": {
+    "infantry": 2
+   }
+  },
+  "points": 4,
+  "two_handed": true,
+  "cost_mix": {
+   "food": 40,
+   "wood": 60
+  }
+ },
+ {
+  "id": "weapon.crossbow",
+  "slot": "hand_r",
+  "noun": "Crossbow",
+  "shapes": [
+   {
+    "t": "line",
+    "p": [
+     [
+      -4,
+      0
+     ],
+     [
+      10,
+      -2
+     ]
+    ],
+    "w": 2.5,
+    "ch": "wood"
+   },
+   {
+    "t": "line",
+    "p": [
+     [
+      8,
+      -8
+     ],
+     [
+      10,
+      -2
+     ],
+     [
+      8,
+      4
+     ]
+    ],
+    "w": 1.5,
+    "ch": "iron"
+   }
+  ],
+  "tags": [
+   "ranged",
+   "bow",
+   "heavy",
+   "archer"
+  ],
+  "stats": {
+   "attack": 6,
+   "range": 6,
+   "speed": -1,
+   "bonus": {
+    "infantry": 2
+   }
+  },
+  "points": 6,
+  "era": [
+   "medieval",
+   "gunpowder"
+  ],
+  "two_handed": true,
+  "cost_mix": {
+   "food": 40,
+   "wood": 60
+  }
+ },
+ {
+  "id": "weapon.musket",
+  "slot": "hand_r",
+  "noun": "Musketeer",
+  "shapes": [
+   {
+    "t": "line",
+    "p": [
+     [
+      -4,
+      1
+     ],
+     [
+      14,
+      -3
+     ]
+    ],
+    "w": 2.5,
+    "ch": "wood"
+   },
+   {
+    "t": "line",
+    "p": [
+     [
+      6,
+      -2
+     ],
+     [
+      19,
+      -5
+     ]
+    ],
+    "w": 1.5,
+    "ch": "iron"
+   }
+  ],
+  "tags": [
+   "ranged",
+   "gun",
+   "heavy"
+  ],
+  "stats": {
+   "attack": 9,
+   "range": 7,
+   "speed": -1
+  },
+  "points": 8,
+  "era": [
+   "gunpowder"
+  ],
+  "two_handed": true,
+  "cost_mix": {
+   "food": 40,
+   "wood": 60
+  }
+ },
+ {
+  "id": "tool.basket",
+  "slot": "hand_r",
+  "noun": "Gatherer",
+  "shapes": [
+   {
+    "t": "poly",
+    "p": [
+     [
+      -3,
+      0
+     ],
+     [
+      3,
+      0
+     ],
+     [
+      4,
+      -6
+     ],
+     [
+      -4,
+      -6
+     ]
+    ],
+    "ch": "reed"
+   },
+   {
+    "t": "line",
+    "p": [
+     [
+      -4,
+      -6
+     ],
+     [
+      4,
+      -6
+     ]
+    ],
+    "w": 1,
+    "ch": "wood"
+   }
+  ],
+  "tags": [
+   "worker",
+   "gather",
+   "swamp",
+   "reed"
+  ],
+  "stats": {
+   "attack": 1
+  },
+  "points": 1,
+  "cost_mix": {
+   "food": 100,
+   "wood": 0
+  }
+ },
+ {
+  "id": "tool.sack",
+  "slot": "hand_r",
+  "noun": "Scavenger",
+  "shapes": [
+   {
+    "t": "ellipse",
+    "c": [
+     0,
+     2
+    ],
+    "r": [
+     4,
+     5
+    ],
+    "ch": "cloth2"
+   },
+   {
+    "t": "line",
+    "p": [
+     [
+      -1,
+      -3
+     ],
+     [
+      1,
+      -3
+     ]
+    ],
+    "w": 1,
+    "ch": "wood"
+   }
+  ],
+  "tags": [
+   "worker",
+   "gather",
+   "sneaky"
+  ],
+  "stats": {
+   "attack": 1
+  },
+  "points": 1,
+  "cost_mix": {
+   "food": 100,
+   "wood": 0
+  }
+ },
+ {
+  "id": "tool.axe",
+  "slot": "hand_r",
+  "noun": "Woodcutter",
+  "shapes": [
+   {
+    "t": "line",
+    "p": [
+     [
+      -1,
+      3
+     ],
+     [
+      3,
+      -9
+     ]
+    ],
+    "w": 1.5,
+    "ch": "wood"
+   },
+   {
+    "t": "poly",
+    "p": [
+     [
+      2,
+      -9
+     ],
+     [
+      7,
+      -10
+     ],
+     [
+      6,
+      -5
+     ],
+     [
+      3,
+      -6
+     ]
+    ],
+    "ch": "bronze"
+   }
+  ],
+  "tags": [
+   "worker",
+   "chop",
+   "forest"
+  ],
+  "stats": {
+   "attack": 2
+  },
+  "points": 1,
+  "cost_mix": {
+   "food": 100,
+   "wood": 0
+  }
+ },
+ {
+  "id": "shield.lilypad",
+  "slot": "hand_l",
+  "tags": [
+   "shield",
+   "swamp",
+   "silly"
+  ],
+  "stats": {
+   "armour": 2
+  },
+  "points": 2,
+  "shapes": [
+   {
+    "t": "ellipse",
+    "c": [
+     2,
+     0
+    ],
+    "r": [
+     3,
+     7
+    ],
+    "ch": "lily"
+   },
+   {
+    "t": "line",
+    "p": [
+     [
+      2,
+      -6
+     ],
+     [
+      2,
+      0
+     ]
+    ],
+    "w": 0.8,
+    "ch": "lily2"
+   }
+  ]
+ },
+ {
+  "id": "shield.bottlecap",
+  "slot": "hand_l",
+  "tags": [
+   "shield",
+   "silly",
+   "sewer",
+   "metal"
+  ],
+  "stats": {
+   "armour": 2
+  },
+  "points": 2,
+  "shapes": [
+   {
+    "t": "circle",
+    "c": [
+     2,
+     0
+    ],
+    "r": 6,
+    "ch": "iron"
+   },
+   {
+    "t": "circle",
+    "c": [
+     2,
+     0
+    ],
+    "r": 4,
+    "ch": "team"
+   }
+  ]
+ },
+ {
+  "id": "shield.round",
+  "slot": "hand_l",
+  "tags": [
+   "shield",
+   "wood",
+   "steppe",
+   "viking"
+  ],
+  "stats": {
+   "armour": 2
+  },
+  "points": 2,
+  "shapes": [
+   {
+    "t": "circle",
+    "c": [
+     2,
+     0
+    ],
+    "r": 6,
+    "ch": "wood"
+   },
+   {
+    "t": "circle",
+    "c": [
+     2,
+     0
+    ],
+    "r": 3,
+    "ch": "team"
+   }
+  ]
+ },
+ {
+  "id": "shield.kite",
+  "slot": "hand_l",
+  "tags": [
+   "shield",
+   "heavy",
+   "knight"
+  ],
+  "stats": {
+   "armour": 3,
+   "speed": -1
+  },
+  "points": 3,
+  "era": [
+   "medieval",
+   "gunpowder"
+  ],
+  "shapes": [
+   {
+    "t": "poly",
+    "p": [
+     [
+      0,
+      -8
+     ],
+     [
+      6,
+      -6
+     ],
+     [
+      5,
+      4
+     ],
+     [
+      1,
+      9
+     ],
+     [
+      -3,
+      4
+     ],
+     [
+      -3,
+      -6
+     ]
+    ],
+    "ch": "team"
+   },
+   {
+    "t": "line",
+    "p": [
+     [
+      1,
+      -7
+     ],
+     [
+      1,
+      7
+     ]
+    ],
+    "w": 1,
+    "ch": "iron"
+   }
+  ]
+ },
+ {
+  "id": "helm.acorn",
+  "slot": "head_gear",
+  "tags": [
+   "helmet",
+   "silly",
+   "forest",
+   "swamp"
+  ],
+  "stats": {
+   "armour": 1
+  },
+  "points": 1,
+  "shapes": [
+   {
+    "t": "ellipse",
+    "c": [
+     0,
+     -1
+    ],
+    "r": [
+     6,
+     3.5
+    ],
+    "ch": "acorn"
+   },
+   {
+    "t": "line",
+    "p": [
+     [
+      0,
+      -4
+     ],
+     [
+      0,
+      -6
+     ]
+    ],
+    "w": 1,
+    "ch": "wood"
+   }
+  ]
+ },
+ {
+  "id": "helm.bronze",
+  "slot": "head_gear",
+  "tags": [
+   "helmet",
+   "crest"
+  ],
+  "stats": {
+   "armour": 2
+  },
+  "points": 2,
+  "era": [
+   "bronze"
+  ],
+  "shapes": [
+   {
+    "t": "line",
+    "p": [
+     [
+      -4,
+      -6
+     ],
+     [
+      0,
+      -9
+     ],
+     [
+      4,
+      -6
+     ]
+    ],
+    "w": 2,
+    "ch": "team"
+   },
+   {
+    "t": "poly",
+    "p": [
+     [
+      -6,
+      1
+     ],
+     [
+      -5,
+      -4
+     ],
+     [
+      0,
+      -6
+     ],
+     [
+      5,
+      -4
+     ],
+     [
+      6,
+      1
+     ]
+    ],
+    "ch": "bronze"
+   }
+  ]
+ },
+ {
+  "id": "helm.iron",
+  "slot": "head_gear",
+  "tags": [
+   "helmet",
+   "heavy",
+   "knight"
+  ],
+  "stats": {
+   "armour": 3
+  },
+  "points": 3,
+  "era": [
+   "medieval",
+   "gunpowder"
+  ],
+  "shapes": [
+   {
+    "t": "poly",
+    "p": [
+     [
+      -6,
+      2
+     ],
+     [
+      -5,
+      -4
+     ],
+     [
+      0,
+      -7
+     ],
+     [
+      5,
+      -4
+     ],
+     [
+      6,
+      2
+     ]
+    ],
+    "ch": "iron"
+   },
+   {
+    "t": "line",
+    "p": [
+     [
+      3,
+      0
+     ],
+     [
+      3,
+      4
+     ]
+    ],
+    "w": 1.2,
+    "ch": "iron"
+   }
+  ]
+ },
+ {
+  "id": "helm.dome",
+  "slot": "head_gear",
+  "tags": [
+   "helmet",
+   "dome",
+   "saucepan"
+  ],
+  "stats": {
+   "armour": 2
+  },
+  "points": 2,
+  "era": [
+   "medieval",
+   "gunpowder"
+  ],
+  "shapes": [
+   {
+    "t": "ellipse",
+    "c": [
+     0,
+     -2
+    ],
+    "r": [
+     6,
+     4
+    ],
+    "ch": "iron"
+   },
+   {
+    "t": "line",
+    "p": [
+     [
+      -7,
+      1
+     ],
+     [
+      7,
+      1
+     ]
+    ],
+    "w": 1.5,
+    "ch": "iron"
+   }
+  ]
+ },
+ {
+  "id": "helm.horned",
+  "slot": "head_gear",
+  "tags": [
+   "helmet",
+   "horns",
+   "viking"
+  ],
+  "stats": {
+   "armour": 2
+  },
+  "points": 2,
+  "shapes": [
+   {
+    "t": "line",
+    "p": [
+     [
+      -5,
+      -2
+     ],
+     [
+      -8,
+      -6
+     ],
+     [
+      -8,
+      -9
+     ]
+    ],
+    "w": 1.5,
+    "ch": "bone"
+   },
+   {
+    "t": "line",
+    "p": [
+     [
+      5,
+      -2
+     ],
+     [
+      8,
+      -6
+     ],
+     [
+      8,
+      -9
+     ]
+    ],
+    "w": 1.5,
+    "ch": "bone"
+   },
+   {
+    "t": "poly",
+    "p": [
+     [
+      -6,
+      1
+     ],
+     [
+      -5,
+      -4
+     ],
+     [
+      0,
+      -6
+     ],
+     [
+      5,
+      -4
+     ],
+     [
+      6,
+      1
+     ]
+    ],
+    "ch": "iron"
+   }
+  ]
+ },
+ {
+  "id": "hat.leaf",
+  "slot": "head_gear",
+  "tags": [
+   "hat",
+   "swamp",
+   "forest",
+   "silly"
+  ],
+  "stats": {},
+  "points": 1,
+  "shapes": [
+   {
+    "t": "poly",
+    "p": [
+     [
+      -5,
+      0
+     ],
+     [
+      0,
+      -7
+     ],
+     [
+      6,
+      -1
+     ]
+    ],
+    "ch": "leaf"
+   }
+  ]
+ },
+ {
+  "id": "armour.leather",
+  "slot": "torso",
+  "tags": [
+   "armour",
+   "light"
+  ],
+  "stats": {
+   "armour": 1
+  },
+  "points": 1,
+  "shapes": [
+   {
+    "t": "ellipse",
+    "c": [
+     0,
+     0
+    ],
+    "r": [
+     6,
+     6
+    ],
+    "ch": "leather"
+   }
+  ]
+ },
+ {
+  "id": "armour.bronze",
+  "slot": "torso",
+  "tags": [
+   "armour",
+   "heavy"
+  ],
+  "stats": {
+   "armour": 3,
+   "speed": -1
+  },
+  "points": 3,
+  "era": [
+   "bronze"
+  ],
+  "shapes": [
+   {
+    "t": "ellipse",
+    "c": [
+     0,
+     0
+    ],
+    "r": [
+     6,
+     6
+    ],
+    "ch": "bronze"
+   },
+   {
+    "t": "line",
+    "p": [
+     [
+      -4,
+      -1
+     ],
+     [
+      4,
+      -1
+     ]
+    ],
+    "w": 0.8,
+    "ch": "bronze2"
+   }
+  ]
+ },
+ {
+  "id": "armour.mail",
+  "slot": "torso",
+  "tags": [
+   "armour",
+   "heavy",
+   "knight"
+  ],
+  "stats": {
+   "armour": 3,
+   "speed": -1
+  },
+  "points": 3,
+  "era": [
+   "medieval",
+   "gunpowder"
+  ],
+  "shapes": [
+   {
+    "t": "ellipse",
+    "c": [
+     0,
+     0
+    ],
+    "r": [
+     6,
+     6
+    ],
+    "ch": "iron"
+   },
+   {
+    "t": "line",
+    "p": [
+     [
+      -4,
+      -2
+     ],
+     [
+      4,
+      -2
+     ]
+    ],
+    "w": 0.6,
+    "ch": "iron2"
+   },
+   {
+    "t": "line",
+    "p": [
+     [
+      -4,
+      1
+     ],
+     [
+      4,
+      1
+     ]
+    ],
+    "w": 0.6,
+    "ch": "iron2"
+   }
+  ]
+ },
+ {
+  "id": "armour.bark",
+  "slot": "torso",
+  "tags": [
+   "armour",
+   "forest",
+   "swamp",
+   "silly"
+  ],
+  "stats": {
+   "armour": 2
+  },
+  "points": 2,
+  "shapes": [
+   {
+    "t": "ellipse",
+    "c": [
+     0,
+     0
+    ],
+    "r": [
+     6,
+     6
+    ],
+    "ch": "wood"
+   },
+   {
+    "t": "line",
+    "p": [
+     [
+      -3,
+      -4
+     ],
+     [
+      -2,
+      4
+     ]
+    ],
+    "w": 0.8,
+    "ch": "leather"
+   },
+   {
+    "t": "line",
+    "p": [
+     [
+      2,
+      -4
+     ],
+     [
+      3,
+      4
+     ]
+    ],
+    "w": 0.8,
+    "ch": "leather"
+   }
+  ]
+ },
+ {
+  "id": "cape.leaf",
+  "slot": "back",
+  "tags": [
+   "cape",
+   "swamp",
+   "forest",
+   "sneaky"
+  ],
+  "stats": {
+   "armour": 1
+  },
+  "points": 1,
+  "shapes": [
+   {
+    "t": "poly",
+    "p": [
+     [
+      0,
+      0
+     ],
+     [
+      3,
+      1
+     ],
+     [
+      -2,
+      13
+     ],
+     [
+      -9,
+      11
+     ]
+    ],
+    "ch": "leaf"
+   }
+  ]
+ },
+ {
+  "id": "cape.cloth",
+  "slot": "back",
+  "tags": [
+   "cape",
+   "royal"
+  ],
+  "stats": {},
+  "points": 1,
+  "shapes": [
+   {
+    "t": "poly",
+    "p": [
+     [
+      0,
+      0
+     ],
+     [
+      3,
+      1
+     ],
+     [
+      -2,
+      13
+     ],
+     [
+      -9,
+      11
+     ]
+    ],
+    "ch": "team"
+   }
+  ]
+ },
+ {
+  "id": "banner.team",
+  "slot": "back",
+  "tags": [
+   "banner",
+   "morale",
+   "knight"
+  ],
+  "stats": {
+   "attack": 1
+  },
+  "points": 2,
+  "shapes": [
+   {
+    "t": "line",
+    "p": [
+     [
+      0,
+      4
+     ],
+     [
+      0,
+      -22
+     ]
+    ],
+    "w": 1,
+    "ch": "wood"
+   },
+   {
+    "t": "poly",
+    "p": [
+     [
+      0,
+      -22
+     ],
+     [
+      10,
+      -19
+     ],
+     [
+      0,
+      -16
+     ]
+    ],
+    "ch": "team"
+   }
+  ]
+ },
+ {
+  "id": "quiver",
+  "slot": "back",
+  "tags": [
+   "quiver",
+   "bow"
+  ],
+  "stats": {
+   "range": 1
+  },
+  "points": 1,
+  "requires_role": "archer",
+  "shapes": [
+   {
+    "t": "poly",
+    "p": [
+     [
+      -2,
+      -8
+     ],
+     [
+      2,
+      -8
+     ],
+     [
+      2,
+      4
+     ],
+     [
+      -2,
+      4
+     ]
+    ],
+    "ch": "leather"
+   },
+   {
+    "t": "line",
+    "p": [
+     [
+      -1,
+      -8
+     ],
+     [
+      -2,
+      -11
+     ]
+    ],
+    "w": 0.8,
+    "ch": "wood"
+   },
+   {
+    "t": "line",
+    "p": [
+     [
+      1,
+      -8
+     ],
+     [
+      1,
+      -11
+     ]
+    ],
+    "w": 0.8,
+    "ch": "wood"
+   }
+  ]
+ },
+ {
+  "id": "weapon.gladius",
+  "slot": "hand_r",
+  "noun": "Legionary",
+  "shapes": [
+   {
+    "t": "line",
+    "p": [
+     [
+      0,
+      0
+     ],
+     [
+      2,
+      -11
+     ]
+    ],
+    "w": 2.5,
+    "ch": "iron"
+   },
+   {
+    "t": "line",
+    "p": [
+     [
+      -3,
+      -1
+     ],
+     [
+      3,
+      0
+     ]
+    ],
+    "w": 1.5,
+    "ch": "bronze"
+   }
+  ],
+  "tags": [
+   "melee",
+   "blade",
+   "roman"
+  ],
+  "stats": {
+   "attack": 7
+  },
+  "points": 5,
+  "era": [
+   "bronze",
+   "medieval"
+  ],
+  "cost_mix": {
+   "food": 40,
+   "wood": 60
+  }
+ },
+ {
+  "id": "weapon.dory",
+  "slot": "hand_r",
+  "noun": "Hoplite",
+  "shapes": [
+   {
+    "t": "line",
+    "p": [
+     [
+      -8,
+      5
+     ],
+     [
+      20,
+      -11
+     ]
+    ],
+    "w": 1.5,
+    "ch": "wood"
+   },
+   {
+    "t": "poly",
+    "p": [
+     [
+      19,
+      -12
+     ],
+     [
+      25,
+      -15
+     ],
+     [
+      21,
+      -9
+     ]
+    ],
+    "ch": "bronze"
+   }
+  ],
+  "tags": [
+   "spear",
+   "melee",
+   "reach",
+   "greek",
+   "phalanx"
+  ],
+  "stats": {
+   "attack": 5,
+   "bonus": {
+    "large": 8
+   }
+  },
+  "points": 5,
+  "era": [
+   "bronze",
+   "medieval"
+  ],
+  "cost_mix": {
+   "food": 40,
+   "wood": 60
+  }
+ },
+ {
+  "id": "weapon.pilum",
+  "slot": "hand_r",
+  "noun": "Pilum-thrower",
+  "shapes": [
+   {
+    "t": "line",
+    "p": [
+     [
+      -4,
+      3
+     ],
+     [
+      12,
+      -8
+     ]
+    ],
+    "w": 1.2,
+    "ch": "wood"
+   },
+   {
+    "t": "line",
+    "p": [
+     [
+      12,
+      -8
+     ],
+     [
+      17,
+      -11
+     ]
+    ],
+    "w": 1,
+    "ch": "iron"
+   }
+  ],
+  "tags": [
+   "ranged",
+   "javelin",
+   "roman",
+   "skirmish"
+  ],
+  "stats": {
+   "attack": 5,
+   "range": 4,
+   "bonus": {
+    "infantry": 2,
+    "archer": 4
+   }
+  },
+  "points": 4,
+  "era": [
+   "bronze",
+   "medieval"
+  ],
+  "cost_mix": {
+   "food": 40,
+   "wood": 60
+  }
+ },
+ {
+  "id": "shield.scutum",
+  "slot": "hand_l",
+  "tags": [
+   "shield",
+   "heavy",
+   "roman"
+  ],
+  "stats": {
+   "armour": 4,
+   "speed": -1
+  },
+  "points": 3,
+  "era": [
+   "bronze",
+   "medieval"
+  ],
+  "shapes": [
+   {
+    "t": "poly",
+    "p": [
+     [
+      -2,
+      -9
+     ],
+     [
+      5,
+      -9
+     ],
+     [
+      5,
+      8
+     ],
+     [
+      -2,
+      8
+     ]
+    ],
+    "ch": "team"
+   },
+   {
+    "t": "circle",
+    "c": [
+     1.5,
+     -0.5
+    ],
+    "r": 1.5,
+    "ch": "bronze"
+   }
+  ]
+ },
+ {
+  "id": "shield.hoplon",
+  "slot": "hand_l",
+  "tags": [
+   "shield",
+   "heavy",
+   "greek",
+   "phalanx"
+  ],
+  "stats": {
+   "armour": 3
+  },
+  "points": 3,
+  "era": [
+   "bronze",
+   "medieval"
+  ],
+  "shapes": [
+   {
+    "t": "circle",
+    "c": [
+     2,
+     0
+    ],
+    "r": 7,
+    "ch": "bronze"
+   },
+   {
+    "t": "circle",
+    "c": [
+     2,
+     0
+    ],
+    "r": 4.5,
+    "ch": "team"
+   }
+  ]
+ },
+ {
+  "id": "helm.galea",
+  "slot": "head_gear",
+  "tags": [
+   "helmet",
+   "crest",
+   "roman"
+  ],
+  "stats": {
+   "armour": 2
+  },
+  "points": 2,
+  "era": [
+   "bronze",
+   "medieval"
+  ],
+  "shapes": [
+   {
+    "t": "line",
+    "p": [
+     [
+      -5,
+      -6
+     ],
+     [
+      0,
+      -10
+     ],
+     [
+      5,
+      -6
+     ]
+    ],
+    "w": 2.5,
+    "ch": "crimson"
+   },
+   {
+    "t": "poly",
+    "p": [
+     [
+      -6,
+      2
+     ],
+     [
+      -5,
+      -4
+     ],
+     [
+      0,
+      -6
+     ],
+     [
+      5,
+      -4
+     ],
+     [
+      6,
+      2
+     ]
+    ],
+    "ch": "iron"
+   }
+  ]
+ },
+ {
+  "id": "helm.corinthian",
+  "slot": "head_gear",
+  "tags": [
+   "helmet",
+   "crest",
+   "greek"
+  ],
+  "stats": {
+   "armour": 2
+  },
+  "points": 2,
+  "era": [
+   "bronze",
+   "medieval"
+  ],
+  "shapes": [
+   {
+    "t": "line",
+    "p": [
+     [
+      -5,
+      -5
+     ],
+     [
+      0,
+      -10
+     ],
+     [
+      5,
+      -5
+     ]
+    ],
+    "w": 2.5,
+    "ch": "team"
+   },
+   {
+    "t": "poly",
+    "p": [
+     [
+      -6,
+      3
+     ],
+     [
+      -5,
+      -4
+     ],
+     [
+      0,
+      -6
+     ],
+     [
+      5,
+      -4
+     ],
+     [
+      6,
+      3
+     ],
+     [
+      2,
+      3
+     ],
+     [
+      2,
+      -1
+     ]
+    ],
+    "ch": "bronze"
+   }
+  ]
+ },
+ {
+  "id": "armour.lorica",
+  "slot": "torso",
+  "tags": [
+   "armour",
+   "heavy",
+   "roman"
+  ],
+  "stats": {
+   "armour": 3,
+   "speed": -1
+  },
+  "points": 3,
+  "era": [
+   "bronze",
+   "medieval"
+  ],
+  "shapes": [
+   {
+    "t": "ellipse",
+    "c": [
+     0,
+     0
+    ],
+    "r": [
+     6,
+     6
+    ],
+    "ch": "iron"
+   },
+   {
+    "t": "line",
+    "p": [
+     [
+      -5,
+      -3
+     ],
+     [
+      5,
+      -3
+     ]
+    ],
+    "w": 0.8,
+    "ch": "iron2"
+   },
+   {
+    "t": "line",
+    "p": [
+     [
+      -5,
+      0
+     ],
+     [
+      5,
+      0
+     ]
+    ],
+    "w": 0.8,
+    "ch": "iron2"
+   },
+   {
+    "t": "line",
+    "p": [
+     [
+      -5,
+      3
+     ],
+     [
+      5,
+      3
+     ]
+    ],
+    "w": 0.8,
+    "ch": "iron2"
+   }
+  ]
+ },
+ {
+  "id": "wings.feather",
+  "slot": "back",
+  "tags": [
+   "wings",
+   "flying",
+   "angelic",
+   "greek",
+   "hellenic",
+   "royal"
+  ],
+  "stats": {
+   "speed": 3,
+   "hp": -4
+  },
+  "points": 4,
+  "shapes": [
+   {
+    "t": "poly",
+    "p": [
+     [
+      2,
+      2
+     ],
+     [
+      -2,
+      -12
+     ],
+     [
+      -8,
+      -24
+     ],
+     [
+      -16,
+      -30
+     ],
+     [
+      -14,
+      -20
+     ],
+     [
+      -22,
+      -24
+     ],
+     [
+      -18,
+      -14
+     ],
+     [
+      -26,
+      -14
+     ],
+     [
+      -16,
+      -6
+     ],
+     [
+      -22,
+      -2
+     ],
+     [
+      -10,
+      0
+     ]
+    ],
+    "ch": "white"
+   },
+   {
+    "t": "line",
+    "p": [
+     [
+      -2,
+      -10
+     ],
+     [
+      -12,
+      -22
+     ]
+    ],
+    "w": 0.8,
+    "ch": "bone"
+   },
+   {
+    "t": "line",
+    "p": [
+     [
+      -4,
+      -4
+     ],
+     [
+      -18,
+      -12
+     ]
+    ],
+    "w": 0.8,
+    "ch": "bone"
+   }
+  ],
+  "only_if": [
+   "wings",
+   "flying"
+  ]
+ },
+ {
+  "id": "wings.bat",
+  "slot": "back",
+  "tags": [
+   "wings",
+   "flying",
+   "spooky",
+   "sewer"
+  ],
+  "stats": {
+   "speed": 3,
+   "hp": -4
+  },
+  "points": 4,
+  "shapes": [
+   {
+    "t": "poly",
+    "p": [
+     [
+      2,
+      2
+     ],
+     [
+      -2,
+      -12
+     ],
+     [
+      -10,
+      -24
+     ],
+     [
+      -14,
+      -16
+     ],
+     [
+      -22,
+      -20
+     ],
+     [
+      -20,
+      -10
+     ],
+     [
+      -28,
+      -8
+     ],
+     [
+      -16,
+      -2
+     ],
+     [
+      -10,
+      0
+     ]
+    ],
+    "ch": "eye"
+   }
+  ],
+  "only_if": [
+   "wings",
+   "flying"
+  ]
+ }
+]

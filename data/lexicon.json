@@ -1,0 +1,1381 @@
+{
+ "stopwords": [
+  "a",
+  "an",
+  "the",
+  "and",
+  "with",
+  "of",
+  "on",
+  "in",
+  "to",
+  "from",
+  "for",
+  "their",
+  "its",
+  "very",
+  "some",
+  "lots",
+  "lot",
+  "who",
+  "that",
+  "are",
+  "is",
+  "many",
+  "army",
+  "horde",
+  "tribe",
+  "clan",
+  "empire",
+  "nation",
+  "civ",
+  "civilisation",
+  "civilization",
+  "race"
+ ],
+ "words": {
+  "frog": {
+   "creature": "frog"
+  },
+  "frogs": {
+   "creature": "frog"
+  },
+  "toad": {
+   "creature": "frog"
+  },
+  "toads": {
+   "creature": "frog"
+  },
+  "froggy": {
+   "creature": "frog"
+  },
+  "amphibian": {
+   "creature": "frog"
+  },
+  "rat": {
+   "creature": "rat"
+  },
+  "rats": {
+   "creature": "rat"
+  },
+  "mouse": {
+   "creature": "rat"
+  },
+  "mice": {
+   "creature": "rat"
+  },
+  "rodent": {
+   "creature": "rat"
+  },
+  "rodents": {
+   "creature": "rat"
+  },
+  "vermin": {
+   "creature": "rat"
+  },
+  "human": {
+   "creature": "human"
+  },
+  "humans": {
+   "creature": "human"
+  },
+  "people": {
+   "creature": "human"
+  },
+  "folk": {
+   "creature": "human"
+  },
+  "men": {
+   "creature": "human"
+  },
+  "man": {
+   "creature": "human"
+  },
+  "soldier": {
+   "creature": "human"
+  },
+  "soldiers": {
+   "creature": "human"
+  },
+  "warrior": {
+   "creature": "human"
+  },
+  "warriors": {
+   "creature": "human"
+  },
+  "american": {
+   "creature": "human",
+   "tags": {
+    "dome": 2
+   }
+  },
+  "americans": {
+   "creature": "human",
+   "tags": {
+    "dome": 2
+   }
+  },
+  "spider": {
+   "creature": "spider"
+  },
+  "spiders": {
+   "creature": "spider"
+  },
+  "arachnid": {
+   "creature": "spider"
+  },
+  "tarantula": {
+   "creature": "spider"
+  },
+  "tarantulas": {
+   "creature": "spider"
+  },
+  "beetle": {
+   "creature": "beetle"
+  },
+  "beetles": {
+   "creature": "beetle"
+  },
+  "bug": {
+   "creature": "beetle"
+  },
+  "bugs": {
+   "creature": "beetle"
+  },
+  "insect": {
+   "creature": "beetle"
+  },
+  "insects": {
+   "creature": "beetle"
+  },
+  "ant": {
+   "creature": "beetle"
+  },
+  "ants": {
+   "creature": "beetle"
+  },
+  "centaur": {
+   "creature": "centaur"
+  },
+  "centaurs": {
+   "creature": "centaur"
+  },
+  "pony": {
+   "mount": "pony",
+   "tags": {
+    "mounted": 1
+   }
+  },
+  "ponies": {
+   "mount": "pony",
+   "tags": {
+    "mounted": 1
+   }
+  },
+  "horse": {
+   "mount": "pony",
+   "tags": {
+    "mounted": 1
+   }
+  },
+  "horses": {
+   "mount": "pony",
+   "tags": {
+    "mounted": 1
+   }
+  },
+  "steed": {
+   "mount": "pony",
+   "tags": {
+    "mounted": 1
+   }
+  },
+  "steeds": {
+   "mount": "pony",
+   "tags": {
+    "mounted": 1
+   }
+  },
+  "pegasus": {
+   "mount": "pony",
+   "mount_wings": "wings.feather",
+   "tags": {
+    "mounted": 2,
+    "flying": 2
+   }
+  },
+  "pegasi": {
+   "mount": "pony",
+   "mount_wings": "wings.feather",
+   "tags": {
+    "mounted": 2,
+    "flying": 2
+   }
+  },
+  "riding": {
+   "tags": {
+    "mounted": 2
+   }
+  },
+  "rider": {
+   "tags": {
+    "mounted": 2
+   }
+  },
+  "riders": {
+   "tags": {
+    "mounted": 2
+   }
+  },
+  "ride": {
+   "tags": {
+    "mounted": 2
+   }
+  },
+  "cavalry": {
+   "tags": {
+    "mounted": 2
+   }
+  },
+  "mounted": {
+   "tags": {
+    "mounted": 2
+   }
+  },
+  "swamp": {
+   "family": "swamp",
+   "tags": {
+    "swamp": 3
+   }
+  },
+  "bog": {
+   "family": "swamp",
+   "tags": {
+    "swamp": 3
+   }
+  },
+  "marsh": {
+   "family": "swamp",
+   "tags": {
+    "swamp": 3
+   }
+  },
+  "mire": {
+   "family": "swamp",
+   "tags": {
+    "swamp": 3
+   }
+  },
+  "boggy": {
+   "family": "swamp",
+   "tags": {
+    "swamp": 3
+   }
+  },
+  "swampy": {
+   "family": "swamp",
+   "tags": {
+    "swamp": 3
+   }
+  },
+  "sewer": {
+   "family": "sewer",
+   "tags": {
+    "sewer": 3
+   }
+  },
+  "sewers": {
+   "family": "sewer",
+   "tags": {
+    "sewer": 3
+   }
+  },
+  "gutter": {
+   "family": "sewer",
+   "tags": {
+    "sewer": 3
+   }
+  },
+  "drain": {
+   "family": "sewer",
+   "tags": {
+    "sewer": 3
+   }
+  },
+  "drains": {
+   "family": "sewer",
+   "tags": {
+    "sewer": 3
+   }
+  },
+  "forest": {
+   "family": "forest",
+   "tags": {
+    "forest": 3
+   }
+  },
+  "woods": {
+   "family": "forest",
+   "tags": {
+    "forest": 3
+   }
+  },
+  "woodland": {
+   "family": "forest",
+   "tags": {
+    "forest": 3
+   }
+  },
+  "jungle": {
+   "family": "forest",
+   "tags": {
+    "forest": 3
+   }
+  },
+  "roman": {
+   "family": "imperial",
+   "tags": {
+    "roman": 4,
+    "shield": 1
+   },
+   "default_creature": "human"
+  },
+  "romans": {
+   "family": "imperial",
+   "tags": {
+    "roman": 4,
+    "shield": 1
+   },
+   "default_creature": "human"
+  },
+  "rome": {
+   "family": "imperial",
+   "tags": {
+    "roman": 4,
+    "shield": 1
+   },
+   "default_creature": "human"
+  },
+  "legion": {
+   "family": "imperial",
+   "tags": {
+    "roman": 4,
+    "shield": 1
+   },
+   "default_creature": "human"
+  },
+  "legionary": {
+   "family": "imperial",
+   "tags": {
+    "roman": 4,
+    "shield": 1
+   },
+   "default_creature": "human"
+  },
+  "legionaries": {
+   "family": "imperial",
+   "tags": {
+    "roman": 4,
+    "shield": 1
+   },
+   "default_creature": "human"
+  },
+  "greek": {
+   "family": "hellenic",
+   "tags": {
+    "greek": 4,
+    "phalanx": 2
+   },
+   "default_creature": "human"
+  },
+  "greeks": {
+   "family": "hellenic",
+   "tags": {
+    "greek": 4,
+    "phalanx": 2
+   },
+   "default_creature": "human"
+  },
+  "greece": {
+   "family": "hellenic",
+   "tags": {
+    "greek": 4,
+    "phalanx": 2
+   },
+   "default_creature": "human"
+  },
+  "spartan": {
+   "family": "hellenic",
+   "tags": {
+    "greek": 4,
+    "phalanx": 2
+   },
+   "default_creature": "human"
+  },
+  "spartans": {
+   "family": "hellenic",
+   "tags": {
+    "greek": 4,
+    "phalanx": 2
+   },
+   "default_creature": "human"
+  },
+  "hellenic": {
+   "family": "hellenic",
+   "tags": {
+    "greek": 4,
+    "phalanx": 2
+   },
+   "default_creature": "human"
+  },
+  "athenian": {
+   "family": "hellenic",
+   "tags": {
+    "greek": 4,
+    "phalanx": 2
+   },
+   "default_creature": "human"
+  },
+  "athenians": {
+   "family": "hellenic",
+   "tags": {
+    "greek": 4,
+    "phalanx": 2
+   },
+   "default_creature": "human"
+  },
+  "mongol": {
+   "family": "steppe",
+   "tags": {
+    "bow": 3,
+    "mounted": 2
+   },
+   "mount": "pony",
+   "default_creature": "human"
+  },
+  "mongols": {
+   "family": "steppe",
+   "tags": {
+    "bow": 3,
+    "mounted": 2
+   },
+   "mount": "pony",
+   "default_creature": "human"
+  },
+  "mongolian": {
+   "family": "steppe",
+   "tags": {
+    "bow": 3,
+    "mounted": 2
+   },
+   "mount": "pony",
+   "default_creature": "human"
+  },
+  "khan": {
+   "family": "steppe",
+   "tags": {
+    "bow": 3,
+    "mounted": 2
+   },
+   "mount": "pony",
+   "default_creature": "human"
+  },
+  "steppe": {
+   "family": "steppe",
+   "tags": {
+    "bow": 3,
+    "mounted": 2
+   },
+   "mount": "pony",
+   "default_creature": "human"
+  },
+  "royal": {
+   "family": "royal",
+   "tags": {
+    "royal": 3
+   },
+   "default_creature": "human"
+  },
+  "king": {
+   "family": "royal",
+   "tags": {
+    "royal": 3
+   },
+   "default_creature": "human"
+  },
+  "kings": {
+   "family": "royal",
+   "tags": {
+    "royal": 3
+   },
+   "default_creature": "human"
+  },
+  "queen": {
+   "family": "royal",
+   "tags": {
+    "royal": 3
+   },
+   "default_creature": "human"
+  },
+  "noble": {
+   "family": "royal",
+   "tags": {
+    "royal": 3
+   },
+   "default_creature": "human"
+  },
+  "nobles": {
+   "family": "royal",
+   "tags": {
+    "royal": 3
+   },
+   "default_creature": "human"
+  },
+  "spooky": {
+   "family": "spooky",
+   "tags": {
+    "spooky": 3
+   }
+  },
+  "creepy": {
+   "family": "spooky",
+   "tags": {
+    "spooky": 3
+   }
+  },
+  "haunted": {
+   "family": "spooky",
+   "tags": {
+    "spooky": 3
+   }
+  },
+  "gloomy": {
+   "family": "spooky",
+   "tags": {
+    "spooky": 3
+   }
+  },
+  "goth": {
+   "family": "spooky",
+   "tags": {
+    "spooky": 3
+   }
+  },
+  "viking": {
+   "tags": {
+    "viking": 4,
+    "horns": 3,
+    "shield": 1
+   },
+   "default_creature": "human"
+  },
+  "vikings": {
+   "tags": {
+    "viking": 4,
+    "horns": 3,
+    "shield": 1
+   },
+   "default_creature": "human"
+  },
+  "norse": {
+   "tags": {
+    "viking": 4,
+    "horns": 3,
+    "shield": 1
+   },
+   "default_creature": "human"
+  },
+  "knight": {
+   "tags": {
+    "knight": 4,
+    "heavy": 2,
+    "armour": 2,
+    "charge": 2
+   },
+   "default_creature": "human"
+  },
+  "knights": {
+   "tags": {
+    "knight": 4,
+    "heavy": 2,
+    "armour": 2,
+    "charge": 2
+   },
+   "default_creature": "human"
+  },
+  "paladin": {
+   "tags": {
+    "knight": 4,
+    "heavy": 2,
+    "armour": 2,
+    "charge": 2
+   },
+   "default_creature": "human"
+  },
+  "spear": {
+   "tags": {
+    "spear": 3,
+    "lance": 2,
+    "reach": 1
+   }
+  },
+  "spears": {
+   "tags": {
+    "spear": 3,
+    "lance": 2,
+    "reach": 1
+   }
+  },
+  "spearman": {
+   "tags": {
+    "spear": 3,
+    "lance": 2,
+    "reach": 1
+   }
+  },
+  "spearmen": {
+   "tags": {
+    "spear": 3,
+    "lance": 2,
+    "reach": 1
+   }
+  },
+  "pike": {
+   "tags": {
+    "spear": 3,
+    "lance": 2,
+    "reach": 1
+   }
+  },
+  "pikes": {
+   "tags": {
+    "spear": 3,
+    "lance": 2,
+    "reach": 1
+   }
+  },
+  "pikemen": {
+   "tags": {
+    "spear": 3,
+    "lance": 2,
+    "reach": 1
+   }
+  },
+  "lance": {
+   "tags": {
+    "spear": 3,
+    "lance": 2,
+    "reach": 1
+   }
+  },
+  "lances": {
+   "tags": {
+    "spear": 3,
+    "lance": 2,
+    "reach": 1
+   }
+  },
+  "archer": {
+   "tags": {
+    "bow": 4,
+    "quiver": 2
+   }
+  },
+  "archers": {
+   "tags": {
+    "bow": 4,
+    "quiver": 2
+   }
+  },
+  "bow": {
+   "tags": {
+    "bow": 4,
+    "quiver": 2
+   }
+  },
+  "bows": {
+   "tags": {
+    "bow": 4,
+    "quiver": 2
+   }
+  },
+  "bowman": {
+   "tags": {
+    "bow": 4,
+    "quiver": 2
+   }
+  },
+  "bowmen": {
+   "tags": {
+    "bow": 4,
+    "quiver": 2
+   }
+  },
+  "arrow": {
+   "tags": {
+    "bow": 4,
+    "quiver": 2
+   }
+  },
+  "arrows": {
+   "tags": {
+    "bow": 4,
+    "quiver": 2
+   }
+  },
+  "sling": {
+   "tags": {
+    "sling": 4
+   }
+  },
+  "slings": {
+   "tags": {
+    "sling": 4
+   }
+  },
+  "slinger": {
+   "tags": {
+    "sling": 4
+   }
+  },
+  "slingers": {
+   "tags": {
+    "sling": 4
+   }
+  },
+  "blowgun": {
+   "tags": {
+    "poison": 4
+   }
+  },
+  "blowguns": {
+   "tags": {
+    "poison": 4
+   }
+  },
+  "dart": {
+   "tags": {
+    "poison": 4
+   }
+  },
+  "darts": {
+   "tags": {
+    "poison": 4
+   }
+  },
+  "javelin": {
+   "tags": {
+    "javelin": 4
+   }
+  },
+  "javelins": {
+   "tags": {
+    "javelin": 4
+   }
+  },
+  "pilum": {
+   "tags": {
+    "javelin": 4
+   }
+  },
+  "sword": {
+   "tags": {
+    "blade": 4
+   }
+  },
+  "swords": {
+   "tags": {
+    "blade": 4
+   }
+  },
+  "swordsman": {
+   "tags": {
+    "blade": 4
+   }
+  },
+  "blade": {
+   "tags": {
+    "blade": 4
+   }
+  },
+  "blades": {
+   "tags": {
+    "blade": 4
+   }
+  },
+  "club": {
+   "tags": {
+    "blunt": 4
+   }
+  },
+  "clubs": {
+   "tags": {
+    "blunt": 4
+   }
+  },
+  "hammer": {
+   "tags": {
+    "blunt": 4
+   }
+  },
+  "hammers": {
+   "tags": {
+    "blunt": 4
+   }
+  },
+  "mace": {
+   "tags": {
+    "blunt": 4
+   }
+  },
+  "shield": {
+   "tags": {
+    "shield": 4
+   }
+  },
+  "shields": {
+   "tags": {
+    "shield": 4
+   }
+  },
+  "helmet": {
+   "tags": {
+    "helmet": 3,
+    "hat": 2
+   }
+  },
+  "helmets": {
+   "tags": {
+    "helmet": 3,
+    "hat": 2
+   }
+  },
+  "helm": {
+   "tags": {
+    "helmet": 3,
+    "hat": 2
+   }
+  },
+  "hat": {
+   "tags": {
+    "helmet": 3,
+    "hat": 2
+   }
+  },
+  "hats": {
+   "tags": {
+    "helmet": 3,
+    "hat": 2
+   }
+  },
+  "armour": {
+   "tags": {
+    "armour": 3,
+    "heavy": 2
+   }
+  },
+  "armor": {
+   "tags": {
+    "armour": 3,
+    "heavy": 2
+   }
+  },
+  "armoured": {
+   "tags": {
+    "armour": 3,
+    "heavy": 2
+   }
+  },
+  "armored": {
+   "tags": {
+    "armour": 3,
+    "heavy": 2
+   }
+  },
+  "heavy": {
+   "tags": {
+    "armour": 3,
+    "heavy": 2
+   }
+  },
+  "tough": {
+   "tags": {
+    "armour": 3,
+    "heavy": 2
+   }
+  },
+  "cape": {
+   "tags": {
+    "cape": 3
+   }
+  },
+  "capes": {
+   "tags": {
+    "cape": 3
+   }
+  },
+  "cloak": {
+   "tags": {
+    "cape": 3
+   }
+  },
+  "cloaks": {
+   "tags": {
+    "cape": 3
+   }
+  },
+  "banner": {
+   "tags": {
+    "banner": 3
+   }
+  },
+  "banners": {
+   "tags": {
+    "banner": 3
+   }
+  },
+  "flag": {
+   "tags": {
+    "banner": 3
+   }
+  },
+  "flags": {
+   "tags": {
+    "banner": 3
+   }
+  },
+  "wing": {
+   "tags": {
+    "wings": 4,
+    "flying": 3
+   }
+  },
+  "wings": {
+   "tags": {
+    "wings": 4,
+    "flying": 3
+   }
+  },
+  "winged": {
+   "tags": {
+    "wings": 4,
+    "flying": 3
+   }
+  },
+  "flying": {
+   "tags": {
+    "wings": 4,
+    "flying": 3
+   }
+  },
+  "flyer": {
+   "tags": {
+    "wings": 4,
+    "flying": 3
+   }
+  },
+  "flyers": {
+   "tags": {
+    "wings": 4,
+    "flying": 3
+   }
+  },
+  "angel": {
+   "tags": {
+    "wings": 4,
+    "flying": 3
+   }
+  },
+  "angels": {
+   "tags": {
+    "wings": 4,
+    "flying": 3
+   }
+  },
+  "cheese": {
+   "tags": {
+    "cheese": 5
+   }
+  },
+  "cheesy": {
+   "tags": {
+    "cheese": 5
+   }
+  },
+  "poison": {
+   "tags": {
+    "poison": 3,
+    "venom": 2
+   }
+  },
+  "poisonous": {
+   "tags": {
+    "poison": 3,
+    "venom": 2
+   }
+  },
+  "venom": {
+   "tags": {
+    "poison": 3,
+    "venom": 2
+   }
+  },
+  "venomous": {
+   "tags": {
+    "poison": 3,
+    "venom": 2
+   }
+  },
+  "toxic": {
+   "tags": {
+    "poison": 3,
+    "venom": 2
+   }
+  },
+  "sneaky": {
+   "tags": {
+    "sneaky": 3
+   }
+  },
+  "stealthy": {
+   "tags": {
+    "sneaky": 3
+   }
+  },
+  "ninja": {
+   "tags": {
+    "sneaky": 3
+   }
+  },
+  "ninjas": {
+   "tags": {
+    "sneaky": 3
+   }
+  },
+  "primitive": {
+   "tags": {
+    "primitive": 4
+   }
+  },
+  "caveman": {
+   "tags": {
+    "primitive": 4
+   }
+  },
+  "cavemen": {
+   "tags": {
+    "primitive": 4
+   }
+  },
+  "stone": {
+   "tags": {
+    "primitive": 4
+   }
+  },
+  "silly": {
+   "tags": {
+    "silly": 4
+   }
+  },
+  "daft": {
+   "tags": {
+    "silly": 4
+   }
+  },
+  "goofy": {
+   "tags": {
+    "silly": 4
+   }
+  },
+  "funny": {
+   "tags": {
+    "silly": 4
+   }
+  },
+  "bronze": {
+   "tags": {
+    "bronze": 2
+   }
+  },
+  "iron": {
+   "tags": {
+    "iron": 2,
+    "heavy": 1
+   }
+  },
+  "steel": {
+   "tags": {
+    "iron": 2,
+    "heavy": 1
+   }
+  },
+  "giant": {
+   "size": "giant"
+  },
+  "giants": {
+   "size": "giant"
+  },
+  "huge": {
+   "size": "giant"
+  },
+  "big": {
+   "size": "giant"
+  },
+  "massive": {
+   "size": "giant"
+  },
+  "enormous": {
+   "size": "giant"
+  },
+  "tiny": {
+   "size": "tiny"
+  },
+  "small": {
+   "size": "tiny"
+  },
+  "little": {
+   "size": "tiny"
+  },
+  "wee": {
+   "size": "tiny"
+  },
+  "gun": {
+   "era": "gunpowder",
+   "tags": {
+    "gun": 5
+   },
+   "substitute": {
+    "sling": 3
+   },
+   "note": "No guns in this era. Issued slings and a stern look."
+  },
+  "guns": {
+   "era": "gunpowder",
+   "tags": {
+    "gun": 5
+   },
+   "substitute": {
+    "sling": 3
+   },
+   "note": "No guns in this era. Issued slings and a stern look."
+  },
+  "musket": {
+   "era": "gunpowder",
+   "tags": {
+    "gun": 5
+   },
+   "substitute": {
+    "sling": 3
+   },
+   "note": "No guns in this era. Issued slings and a stern look."
+  },
+  "muskets": {
+   "era": "gunpowder",
+   "tags": {
+    "gun": 5
+   },
+   "substitute": {
+    "sling": 3
+   },
+   "note": "No guns in this era. Issued slings and a stern look."
+  },
+  "rifle": {
+   "era": "gunpowder",
+   "tags": {
+    "gun": 5
+   },
+   "substitute": {
+    "sling": 3
+   },
+   "note": "No guns in this era. Issued slings and a stern look."
+  },
+  "rifles": {
+   "era": "gunpowder",
+   "tags": {
+    "gun": 5
+   },
+   "substitute": {
+    "sling": 3
+   },
+   "note": "No guns in this era. Issued slings and a stern look."
+  },
+  "ww2": {
+   "era": "gunpowder",
+   "tags": {
+    "dome": 3
+   },
+   "substitute": {
+    "dome": 3,
+    "helmet": 2
+   },
+   "note": "No world wars yet. Issued saucepans for helmets."
+  },
+  "ww1": {
+   "era": "gunpowder",
+   "tags": {
+    "dome": 3
+   },
+   "substitute": {
+    "dome": 3,
+    "helmet": 2
+   },
+   "note": "No world wars yet. Issued saucepans for helmets."
+  },
+  "wwii": {
+   "era": "gunpowder",
+   "tags": {
+    "dome": 3
+   },
+   "substitute": {
+    "dome": 3,
+    "helmet": 2
+   },
+   "note": "No world wars yet. Issued saucepans for helmets."
+  },
+  "modern": {
+   "era": "gunpowder",
+   "tags": {
+    "dome": 3
+   },
+   "substitute": {
+    "dome": 3,
+    "helmet": 2
+   },
+   "note": "No world wars yet. Issued saucepans for helmets."
+  },
+  "tank": {
+   "era": "gunpowder",
+   "tags": {
+    "dome": 3
+   },
+   "substitute": {
+    "dome": 3,
+    "helmet": 2
+   },
+   "note": "No world wars yet. Issued saucepans for helmets."
+  },
+  "tanks": {
+   "era": "gunpowder",
+   "tags": {
+    "dome": 3
+   },
+   "substitute": {
+    "dome": 3,
+    "helmet": 2
+   },
+   "note": "No world wars yet. Issued saucepans for helmets."
+  },
+  "laser": {
+   "era": "scifi",
+   "tags": {},
+   "substitute": {
+    "silly": 2
+   },
+   "note": "Space tech isn't in this era. Try the sci-fi pack, one day."
+  },
+  "lasers": {
+   "era": "scifi",
+   "tags": {},
+   "substitute": {
+    "silly": 2
+   },
+   "note": "Space tech isn't in this era. Try the sci-fi pack, one day."
+  },
+  "phaser": {
+   "era": "scifi",
+   "tags": {},
+   "substitute": {
+    "silly": 2
+   },
+   "note": "Space tech isn't in this era. Try the sci-fi pack, one day."
+  },
+  "phasers": {
+   "era": "scifi",
+   "tags": {},
+   "substitute": {
+    "silly": 2
+   },
+   "note": "Space tech isn't in this era. Try the sci-fi pack, one day."
+  },
+  "space": {
+   "era": "scifi",
+   "tags": {},
+   "substitute": {
+    "silly": 2
+   },
+   "note": "Space tech isn't in this era. Try the sci-fi pack, one day."
+  },
+  "starship": {
+   "era": "scifi",
+   "tags": {},
+   "substitute": {
+    "silly": 2
+   },
+   "note": "Space tech isn't in this era. Try the sci-fi pack, one day."
+  },
+  "robot": {
+   "era": "scifi",
+   "tags": {},
+   "substitute": {
+    "silly": 2
+   },
+   "note": "Space tech isn't in this era. Try the sci-fi pack, one day."
+  },
+  "robots": {
+   "era": "scifi",
+   "tags": {},
+   "substitute": {
+    "silly": 2
+   },
+   "note": "Space tech isn't in this era. Try the sci-fi pack, one day."
+  },
+  "reed": {
+   "tags": {
+    "reed": 3,
+    "swamp": 1
+   }
+  },
+  "reeds": {
+   "tags": {
+    "reed": 3,
+    "swamp": 1
+   }
+  },
+  "angry": {
+   "tags": {
+    "heavy": 1,
+    "charge": 1
+   }
+  },
+  "fierce": {
+   "tags": {
+    "heavy": 1,
+    "charge": 1
+   }
+  },
+  "savage": {
+   "tags": {
+    "heavy": 1,
+    "charge": 1
+   }
+  },
+  "furious": {
+   "tags": {
+    "heavy": 1,
+    "charge": 1
+   }
+  },
+  "brave": {
+   "tags": {
+    "heavy": 1,
+    "charge": 1
+   }
+  },
+  "mighty": {
+   "tags": {
+    "heavy": 1,
+    "charge": 1
+   }
+  }
+ }
+}
