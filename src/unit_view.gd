@@ -19,6 +19,7 @@ var weapon: Node2D
 var weapon_rest := Vector2.ZERO
 var flying := false
 var unit_scale := 1.0
+var style := ""           # how parts are drawn (see part_shape.gd); set before build()
 var facing := 1.0
 
 # animation + wander state (cosmetic only, so a local RNG is fine here)
@@ -40,7 +41,7 @@ func build(r: Dictionary, lib, team: Color, speed := 10) -> void:
 	unit_scale = float(r.scale) / 100.0
 	speed_px = float(speed) * 3.0
 
-	var shadow := PartShape.new()
+	var shadow := PartShape.new()   # a plain soft shadow in every style
 	shadow.outline = false
 	shadow.setup([{"t": "ellipse", "c": [0, 0], "r": [13, 3.5], "ch": "shadow"}], {"shadow": Color(0, 0, 0, 0.28)})
 	add_child(shadow)
@@ -82,6 +83,12 @@ func build(r: Dictionary, lib, team: Color, speed := 10) -> void:
 	_face(facing)
 
 
+func _shape() -> PartShape:
+	var s := PartShape.new()
+	s.style = style
+	return s
+
+
 static func colours_for(lib, skin: String, family: String, team: Color) -> Dictionary:
 	var c := {}
 	for k in lib.palettes.materials:
@@ -107,7 +114,8 @@ func _make_rig(lib, body_id: String, head_id: String, colours: Dictionary, paren
 	if with_legs and body.has("legs"):
 		var leg_part: Dictionary = lib.part(body.legs.part)
 		for a in body.legs.anchors:
-			var leg := PartShape.new()
+			var leg := _shape()
+			leg.pin = true
 			leg.setup(leg_part.shapes, colours)
 			leg.position = Vector2(float(a[0]), float(a[1]))
 			leg.z_index = 1 if float(a[3]) > 0.0 else -2
@@ -116,14 +124,15 @@ func _make_rig(lib, body_id: String, head_id: String, colours: Dictionary, paren
 			root.add_child(leg)
 			legs.append({"node": leg, "phase": float(a[2])})
 
-	var body_node := PartShape.new()
+	var body_node := _shape()
 	body_node.setup(body.shapes, colours)
 	root.add_child(body_node)
 	breathing.append(body_node)
 
 	if head_id != "":
 		var head: Dictionary = lib.part(head_id)
-		var head_node := PartShape.new()
+		var head_node := _shape()
+		head_node.pin = true
 		head_node.setup(head.shapes, colours)
 		head_node.position = sockets.head
 		head_node.z_index = 2
@@ -138,7 +147,7 @@ func _attach(lib, rig: Dictionary, slot: String, part_id: String, colours: Dicti
 	if not rig.sockets.has(socket):
 		return
 	var p: Dictionary = lib.part(part_id)
-	var node := PartShape.new()
+	var node := _shape()
 	node.setup(p.shapes, colours)
 	node.position = rig.sockets[socket]
 	node.z_index = Z_FOR_SLOT[slot]
