@@ -43,3 +43,5 @@ One line per moment worth remembering. Newest at the bottom.
 - **2026-10-11:** Rats move into tin cans and a scrap-built Town Center; boardwalk boards finally
   lie across the walk; one 256-colour palette for the whole frame.
   ([image](images/2026-10-11/29-rat-junk-town-and-fixed-boardwalk.png))
+- **2026-10-11:** Groundwork: one atlas, one material, team colour from a shader. 211 units in
+  20 draw calls. ([image](images/2026-10-11/30-one-atlas-19-draw-calls.png))

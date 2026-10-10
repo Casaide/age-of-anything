@@ -104,6 +104,12 @@ Now boards are bands of arc length (always across the walk, even round bends), e
 belongs to one path, and where two cultures' paths meet, the locally stronger surface wins and
 leaves a ragged seam.
 
+Step 5 was the groundwork. Parts are baked once with a magenta team key; a shared shader
+swaps key pixels for the team colour, which arrives in `self_modulate` (the far leg's shade
+rides in its alpha). Every unit part, the unit shadows and every scene sprite (buildings, props,
+doodads) go into one atlas with one material. Result: **20 draw calls for the whole frame at 211
+units**, against 2,137 without the atlas. The batching risk in the MVP plan is retired.
+
 ## Decisions
 - D-040: the art direction is open again; choose from the sampler.
 - D-041: a sixth direction, high-fidelity pre-rendered, built as a real bake pipeline.
@@ -111,6 +117,7 @@ leaves a ragged seam.
 - D-043: units are hand-modelled per part id with authored textures; parts layer by child order.
 - D-044: paths are generated and styled by the race's culture (families.json).
 - D-045: buildings follow the race's culture too (families.json `architecture`).
+- D-046: one atlas, one shared material, team colour via a baked key and self_modulate.
 
 ## Pictures
 ![All five styles, same scene, same scale](../images/2026-10-11/08-style-sampler-all.png)
@@ -134,6 +141,8 @@ leaves a ragged seam.
 ![Bug: boardwalk stretches drawn twice, boards breaking up](../images/2026-10-11/27-bug-boardwalk-drawn-twice.png)
 ![256-colour palette, frogs vs rats](../images/2026-10-11/28-palette-256-frogs-vs-rats.png)
 ![Rat junk town; the boardwalk fixed and meeting the cobbles](../images/2026-10-11/29-rat-junk-town-and-fixed-boardwalk.png)
+![One atlas, one material: 19 draw calls](../images/2026-10-11/30-one-atlas-19-draw-calls.png)
+![Team colours from the shader: one bake serves every team](../images/2026-10-11/31-team-colour-from-the-shader.png)
 
 ## Funny moments and bugs worth remembering
 - **The frog on the roof.** Units are built from parts layered with `z_index`, and z_index is

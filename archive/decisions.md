@@ -202,3 +202,11 @@ Cosmetic, deterministic. Dominic's idea ("Romans should get nice roads"); Claude
 each family an `architecture` (sewer: "junk", others "thatch" for now). The view picks building
 models by it: sewer rats build a scrap Town Center and tin-can houses. More architectures come
 with more cultures. Claude's design, continuing Dominic's "part of the race" idea from paths.
+
+**D-046, 2026-10-11: Baked art shares one atlas and one material; team colour comes from a
+baked key.** Unit parts are baked with a magenta team key and recoloured by
+`src/team_mask.gdshader`, with the team colour in `self_modulate` (and the far leg's shade in
+its alpha), so one bake serves every team. All baked unit parts, unit shadows and scene sprites
+are packed into one atlas (`PartShape.build_atlas`). Measured: 20 draw calls at 211 units vs
+2,137 without. Retires the MVP plan's batching risk. Claude's implementation of the plan's
+"params in modulate" idea.

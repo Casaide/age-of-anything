@@ -96,13 +96,15 @@ without a model still fall back to the automatic bake.
 - [x] Paths: boards across the walk (arc length), each stretch drawn once, ragged seams where
   cultures meet (Dominic: "rotated wrong way?", "handle merging different types of roads")
 - [x] One palette of 256 colours (nearest pairs merged)
-- [ ] Groundwork: palette/team-mask recolouring, atlas, draw calls at 200 units
+- [x] Groundwork: team-key bakes + team shader (colour via self_modulate), one atlas for unit
+  parts, unit shadows and scene sprites, one shared material: 20 draw calls at 211 units
+  (2,137 without the atlas). `tests/art_bench.gd`; B adds 200 units in the scene.
 - [ ] Models for the other creatures (humans, centaurs, ponies, beetles) and gear: still the
   automatic fallback
 - [ ] Step 1b (maybe later): hero frog in the other directions at production detail
 - [ ] Step 1b: hero rat spearman
 - [ ] Dominic picks a direction
-- [ ] Groundwork: shader, atlas, draw calls
+- [x] Groundwork: shader, atlas, draw calls
 - [ ] Vertical slice
 
 ## Results
