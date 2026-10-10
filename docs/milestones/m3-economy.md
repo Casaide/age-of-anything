@@ -101,6 +101,10 @@ over a match), and the milestone builds a minimal clickable panel plus hotkeys, 
 - Train time moved into data: `rules.cost.train_base` (20 s) on a flatter `pow0.5` curve, so a
   worker takes ~11-14 s, a spear ~20 s, a large unit ~27 s. Pricing's old fixed 8 s base gave
   2-3 s workers, which would have flooded the opening.
+- Gatherers sent to a busy tile take the quietest tile of the same resource within 2 tiles
+  (`Economy.least_busy`). Without it everyone piled onto one bush and gathering halved.
+- The economy bot (`src/ai/eco_bot.gd`) arrived early, as a test driver and an autoplay key in
+  the debug view. It's the seed of the milestone 6 AI.
 - Replays now pin the rules too (`rules` id + content hash), since the economy reads them.
 - Added (Dominic): test hotkeys in the debug view to regenerate an army: G rerolls your army,
   Shift+G gives it a random prompt, Ctrl+G does that for the enemy. The match restarts; the
