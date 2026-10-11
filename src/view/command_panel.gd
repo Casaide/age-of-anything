@@ -25,6 +25,7 @@ const QUEUE_FIRST := 72
 const QUEUE_SLOT := 36
 const QUEUE_COLUMNS := 7
 
+var res_icons := {}   # a resource's short letter -> its icon, so costs under buttons read "10 [food icon]"
 var _portrait: TextureRect
 var _title: Label
 var _info: Label
@@ -56,7 +57,9 @@ func _ready() -> void:
 	_portrait.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
 	_portrait.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
 	_portrait.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
-	row.add_child(_framed(_portrait, Vector2(PORTRAIT, PORTRAIT)))
+	var frame := _framed(_portrait, Vector2(PORTRAIT, PORTRAIT))
+	frame.size_flags_vertical = Control.SIZE_SHRINK_BEGIN   # stays square when the buttons make the row tall
+	row.add_child(frame)
 
 	var who := VBoxContainer.new()
 	who.custom_minimum_size = Vector2(330, 0)
@@ -213,11 +216,32 @@ func _button(b: Dictionary) -> Button:
 	if b.get("key", "") != "":
 		button.add_child(_corner(b.key, Vector2(4, 1), GOLD))
 	if b.get("cost", "") != "":
-		var cost := _corner(b.cost, Vector2(0, BUTTON - 16), Color.WHITE if b.enabled else Color("#e07060"))
-		cost.size = Vector2(BUTTON, 14)
-		cost.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-		button.add_child(cost)
+		button.add_child(_cost_row(b.cost, Color.WHITE if b.enabled else Color("#e07060")))
 	return button
+
+
+## "10F 20W" as numbers with resource icons, centred along the button's foot.
+func _cost_row(text: String, colour: Color) -> Control:
+	var row := HBoxContainer.new()
+	row.add_theme_constant_override("separation", 1)
+	row.alignment = BoxContainer.ALIGNMENT_CENTER
+	row.position = Vector2(0, BUTTON - 17)
+	row.size = Vector2(BUTTON, 14)
+	row.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	for word in text.split(" "):
+		var short := word.right(1)
+		if not res_icons.has(short) or not word.left(-1).is_valid_int():
+			row.add_child(_corner(word, Vector2.ZERO, colour))
+			continue
+		row.add_child(_corner(word.left(-1), Vector2.ZERO, colour))
+		var ic := TextureRect.new()
+		ic.texture = res_icons[short]
+		ic.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+		ic.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
+		ic.custom_minimum_size = Vector2(14, 14)
+		ic.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		row.add_child(ic)
+	return row
 
 
 func _queue_slot(q: Dictionary, first: bool) -> Control:
