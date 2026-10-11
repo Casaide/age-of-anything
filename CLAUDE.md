@@ -73,8 +73,9 @@ src/
     eco_bot.gd       plays an opening: trains workers, 60/40 food/wood, houses, idle workers
     replay.gd        record / JSON / rebuild / verify
 scenes/race_lab.*  prompt UI, race cards, two armies milling about
-  view/            view side (Nodes allowed): iso.gd projection, map_view.gd tiles, rts_camera.gd,
-                   building_view.gd, resource_view.gd, command_panel.gd
+  view/            view side (Nodes allowed): iso.gd projection, rts_camera.gd, command_panel.gd
+    art/             the pixel-art views: art_kit.gd (bakes units, buildings, props into one atlas),
+                     terrain_view.gd (shader ground + paths + doodads from a SimMap), building_art.gd
 scenes/style_sampler.* + style_sampler/  the same scene in six art directions (art pass, step 1)
 scenes/art_pixel.* + art_pixel/          the pixel-art candidate: baked parts, palette, shader terrain,
                    unit_models.gd (hand-built parts), part_baker.gd, paths.gd (culture paths), pixelize.gd

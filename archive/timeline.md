@@ -54,3 +54,6 @@ One line per moment worth remembering. Newest at the bottom.
 - **2026-10-11:** An independent art review; every unit now shows its team, building materials
   are authored, houses grow and fly pennants.
   ([image](images/2026-10-11/45-authored-building-textures-and-house-pennants.png))
+- **2026-10-11:** Vertical slice: the playable debug match runs in the pixel art, with culture
+  buildings, paths and props built from the sim's map.
+  ([image](images/2026-10-11/48-vertical-slice-centaurs-vs-steppe-riders.png))

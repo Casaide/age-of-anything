@@ -239,3 +239,12 @@ joins the signature tags: they only appear for swamp and forest peoples (or when
 Optional slots now drop off-theme candidates instead of just scoring them down, because a
 worker's only cheap helmet was the acorn, so Roman scavengers wore acorns (spotted by Dominic).
 Race keys for affected prompts change.
+
+**D-051, 2026-10-11: The game view uses the pixel art; the placeholder views are deleted.**
+`src/view/art/` holds the art kit (bakes units, buildings and props per match into the one atlas),
+the terrain view (shader ground from a SimMap, rock in the mask's alpha, culture paths, seeded
+doodads) and the building view. sim_debug bakes before a match starts, zooms in whole art pixels
+(0.5x to 3x), and offers the palette as a screen pass (P, off by default: it's costly at full
+resolution). Dominic asked why sim_debug still showed the old art; Claude moved the slice ahead
+of the combat visuals. The 2D shapes in parts.json stay: they're the data contract, sockets and
+the fallback for parts with no model.

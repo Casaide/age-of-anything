@@ -115,7 +115,8 @@ without a model still fall back to the automatic bake.
 - [ ] Step 1b: hero rat spearman
 - [ ] Dominic picks a direction
 - [x] Groundwork: shader, atlas, draw calls
-- [ ] Vertical slice
+- [x] Vertical slice: the debug match (sim_debug) runs in the pixel art via `src/view/art/`
+  (art kit, terrain view, building view); old placeholder views deleted
 
 ## Results
 - **Step 1 done (2026-10-11):** `scenes/style_sampler.tscn` shows all five, at the same in-game

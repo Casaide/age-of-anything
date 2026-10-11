@@ -17,6 +17,7 @@ const Baker := preload("res://scenes/style_sampler/hifi/baker.gd")
 const Models := preload("res://scenes/style_sampler/hifi/models.gd")
 const Paths := preload("res://scenes/art_pixel/paths.gd")
 const PropModels := preload("res://scenes/art_pixel/prop_models.gd")
+const ArtKit := preload("res://src/view/art/art_kit.gd")
 
 const ART_SCALE := 1.5     # art pixels per canvas unit (a tile is 96 x 48 art pixels)
 const SS := 4
@@ -526,74 +527,13 @@ func _dot(size: int) -> GradientTexture2D:
 
 # ------------------------------------------------------------------ palette
 
-## One palette for the whole frame: the terrain ramps, the building materials, and
-## four shades of every skin, cloth, material and team colour in the data.
 func _palette() -> void:
-	var cols: Array = [BG, Color("#24180f"), Color("#0f0c08"), Color("#f4f0e0"), Color("#ffffff")]
-	for hex in ["#3d5c24", "#4d6e2b", "#5c8033", "#6e8f3d", "#85a14a", "#30471c",
-			"#4f4f26", "#5c5e2e", "#6b6b36", "#78753d",
-			"#263d33", "#2e4a38", "#38543b", "#455c38", "#4d7a38",
-			"#54452b", "#614f30", "#6e5c38", "#7a6942", "#3d3324",
-			"#386b70", "#2b5560", "#1f4659", "#1a3852", "#8cb3a8", "#d9f2eb",
-			"#4a2f1c", "#6e4a2c", "#8a6038", "#a67a48", "#c8a06a",
-			"#6b5326", "#a8883e", "#c9a652", "#e0c070",
-			"#6a5236", "#8c7048", "#b0915e",
-			"#4a4842", "#5c5a52", "#86827a", "#a29e94", "#c0bcb0",
-			"#3e2616", "#ffcf6a", "#f2d78a", "#ffe9b0", "#c8c8c0", "#a0a09a", "#7fb6c8", "#e0607f"]:
-		cols.append(Color(hex))
-	var bases: Array = []
-	for k in lib.palettes.skins:
-		for c in lib.palettes.skins[k]:
-			bases.append(Color(c))
-	for k in lib.palettes.materials:
-		bases.append(Color(lib.palettes.materials[k]))
-	for k in lib.families:
-		for c in lib.families[k].cloth:
-			bases.append(Color(c))
-	for c in lib.palettes.teams:
-		bases.append(Color(c))
-	for c in bases:
-		for shade in [c.darkened(0.5), c.darkened(0.25), c, c.lightened(0.25)]:
-			cols.append(shade)
-	var uniq := {}
-	var list := []
-	for c in cols:
-		var key: String = c.to_html(false)
-		if not uniq.has(key):
-			uniq[key] = true
-			list.append(c)
-	list = _limit(list, 256)
-	var img := Image.create(list.size(), 1, false, Image.FORMAT_RGBA8)
-	for i in list.size():
-		img.set_pixel(i, 0, list[i])
+	var img: Image = ArtKit.palette(lib)
 	palette_mat = ShaderMaterial.new()
 	palette_mat.shader = load("res://scenes/art_pixel/palette.gdshader")
 	palette_mat.set_shader_parameter("palette", ImageTexture.create_from_image(img))
-	palette_mat.set_shader_parameter("count", list.size())
+	palette_mat.set_shader_parameter("count", img.get_width())
 	box.material = palette_mat
-	print("palette: %d colours" % list.size())
-
-
-## At most n colours: repeatedly merge the two nearest (perceptually weighted) into
-## their average. The first five (background, outlines, white) are kept exact.
-static func _limit(list: Array, n: int) -> Array:
-	var cols := list.duplicate()
-	while cols.size() > n:
-		var best := INF
-		var bi := 0
-		var bj := 0
-		for i in range(5, cols.size()):
-			for j in range(i + 1, cols.size()):
-				var a: Color = cols[i]
-				var b: Color = cols[j]
-				var d := 0.3 * (a.r - b.r) ** 2 + 0.59 * (a.g - b.g) ** 2 + 0.11 * (a.b - b.b) ** 2
-				if d < best:
-					best = d
-					bi = i
-					bj = j
-		cols[bi] = (cols[bi] as Color).lerp(cols[bj], 0.5)
-		cols.remove_at(bj)
-	return cols
 
 
 # ------------------------------------------------------------------ frame

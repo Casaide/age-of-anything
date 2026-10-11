@@ -158,6 +158,15 @@ colours (red-tunic Romans on the blue team). Fixes made straight away:
 - Field stones sit lower and darker; flowers have real heads; bugs on bushes are bigger.
 The rest went to the backlog (section 9).
 
+Then the vertical slice. Dominic asked why the debug match still used the old placeholder art.
+The answer: the new art only lived in its candidate scene. Now the game view uses it. A new art
+kit bakes both races' units, each culture's buildings and the props when a match starts (a few
+seconds). The ground is the terrain shader, built from the sim's map, with rock outcrops added,
+and culture paths re-planned whenever a building is finished. Resources are reed clumps and bug
+bushes that vanish when used up. Buildings under construction brighten as they're built. The
+camera zooms in whole art pixels, and the palette pass is a toggle (P). The old tile, building
+and resource views are deleted.
+
 ## Decisions
 - D-040: the art direction is open again; choose from the sampler.
 - D-041: a sixth direction, high-fidelity pre-rendered, built as a real bake pipeline.
@@ -169,6 +178,8 @@ The rest went to the backlog (section 9).
 - D-047: landscape props and building materials use authored textures too; contact shadows are drawn.
 - D-048: every part is modelled; fused mounts have their own body; stone and tent architecture.
 - D-049: team colour on every unit (kerchief, team tunics); all building materials authored.
+- D-050: woodland kit is signature gear; optional gear never goes off theme.
+- D-051: the game view uses the pixel art (vertical slice); the placeholder views are gone.
 
 ## Pictures
 ![All five styles, same scene, same scale](../images/2026-10-11/08-style-sampler-all.png)
@@ -197,6 +208,9 @@ The rest went to the backlog (section 9).
 ![Landscape pass: rolling grass, bushes, thatch courses, pond](../images/2026-10-11/32-landscape-pass-2x.png)
 ![Pond close-up: depth bands, wavelets, lilies, cattail reeds](../images/2026-10-11/33-landscape-pond-and-reeds.png)
 ![Bug bushes and the new thatch, contact shadow under the Town Center](../images/2026-10-11/34-landscape-bushes-and-thatch.png)
+![Bug bushes as leafy clumps (Dominic: "quite out of place still")](../images/2026-10-11/46-bug-bushes-leafy-clumps.png)
+![Vertical slice: a frog opening in the real game view](../images/2026-10-11/47-vertical-slice-frog-opening-in-the-game.png)
+![Vertical slice: centaur Romans vs steppe riders, rock outcrop, swamp and lake](../images/2026-10-11/48-vertical-slice-centaurs-vs-steppe-riders.png)
 ![Before: humans and centaurs still the automatic fallback](../images/2026-10-11/35-before-humans-centaurs-still-placeholder.png)
 ![Modelled centaur Romans and Greeks (first pass)](../images/2026-10-11/36-modelled-centaur-romans-and-greeks.png)
 ![Modelled beetles and royal knights](../images/2026-10-11/37-modelled-beetles-and-knights.png)

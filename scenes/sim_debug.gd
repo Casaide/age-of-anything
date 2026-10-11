@@ -12,10 +12,11 @@ const Generator := preload("res://src/race_generator.gd")
 const UnitView := preload("res://src/unit_view.gd")
 const SimClock := preload("res://src/sim_clock.gd")
 const Iso := preload("res://src/view/iso.gd")
-const MapView := preload("res://src/view/map_view.gd")
+const ArtKit := preload("res://src/view/art/art_kit.gd")
+const TerrainView := preload("res://src/view/art/terrain_view.gd")
+const BuildingArt := preload("res://src/view/art/building_art.gd")
+const Paths := preload("res://scenes/art_pixel/paths.gd")
 const RtsCamera := preload("res://src/view/rts_camera.gd")
-const BuildingView := preload("res://src/view/building_view.gd")
-const ResourceView := preload("res://src/view/resource_view.gd")
 const CommandPanel := preload("res://src/view/command_panel.gd")
 const Commands := preload("res://src/sim/commands.gd")
 const SimMap := preload("res://src/sim/sim_map.gd")
@@ -53,7 +54,13 @@ var map: SimMap
 var world: World
 var clock: SimClock
 var camera: RtsCamera
-var tiles: MapView
+var kit: ArtKit             # bakes the pixel art for the races in play
+var ground_holder: Node2D   # the terrain (rebuilt per map)
+var ground: TerrainView
+var doodads := {}           # cell -> [nodes]: cosmetic props, cleared where buildings go up
+var baking := false
+var built_count := -1       # finished buildings when the paths were last planned
+var palette: ColorRect      # optional whole-frame palette pass (P)
 var marks: Node2D           # under units: selection rings, move lines, flow arrows
 var layer: Node2D           # units, buildings and resource props, y-sorted
 var overlay: Node2D         # over everything: selection box, placement ghost, carried loads
@@ -61,8 +68,8 @@ var hud: Label
 var bar: Label
 var panel: CommandPanel
 var views := {}             # unit id -> UnitView (view side only; never feeds the sim)
-var bviews := {}            # building id -> BuildingView
-var rviews := {}            # resource cell -> ResourceView
+var bviews := {}            # building id -> BuildingArt
+var rviews := {}            # resource cell -> its prop (reed clump, bug bush)
 var selected := {}          # unit id -> true
 var selected_building := 0  # building id, or 0
 var active := 0             # the side you're commanding
@@ -88,8 +95,11 @@ func _ready() -> void:
 
 	clock = SimClock.new()
 	add_child(clock)
-	tiles = MapView.new()
-	add_child(tiles)
+	kit = ArtKit.new()
+	kit.lib = lib
+	add_child(kit)
+	ground_holder = Node2D.new()
+	add_child(ground_holder)
 	marks = Node2D.new()
 	marks.draw.connect(_draw_marks)
 	add_child(marks)
@@ -100,10 +110,29 @@ func _ready() -> void:
 	overlay.draw.connect(_draw_overlay)
 	add_child(overlay)
 	camera = RtsCamera.new()
-	camera.zoom = Vector2(1.6, 1.6)
+	# Zoom in whole art pixels (the art is baked at ArtKit.ART_SCALE per canvas unit).
+	camera.steps = [ArtKit.ART_SCALE * 0.5, ArtKit.ART_SCALE, ArtKit.ART_SCALE * 2.0, ArtKit.ART_SCALE * 3.0]
+	camera.zoom = Vector2.ONE * ArtKit.ART_SCALE * 2.0
+	camera.zoomed.connect(_on_zoom)
 	add_child(camera)
 
+	var post := CanvasLayer.new()
+	post.layer = 1
+	add_child(post)
+	palette = ColorRect.new()
+	palette.set_anchors_preset(Control.PRESET_FULL_RECT)
+	palette.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	var pm := ShaderMaterial.new()
+	pm.shader = load("res://src/view/art/palette_screen.gdshader")
+	var pal: Image = ArtKit.palette(lib)
+	pm.set_shader_parameter("palette", ImageTexture.create_from_image(pal))
+	pm.set_shader_parameter("count", pal.get_width())
+	palette.material = pm
+	palette.visible = false
+	post.add_child(palette)
+
 	var ui := CanvasLayer.new()
+	ui.layer = 2
 	add_child(ui)
 	hud = _label(12, Vector2(12, 44))
 	ui.add_child(hud)
@@ -137,10 +166,13 @@ func _label(size: int, pos: Vector2) -> Label:
 # ------------------------------------------------------------------ modes
 
 func start_live(race_prompts: Array) -> void:
+	if baking:
+		return
 	map = SimMap.load_id(map_id)
 	var races := []
 	for k in race_prompts.size():
 		races.append(gen.generate(race_prompts[k], rules, rerolls[k]))
+	await _bake(races)
 	_attach(World.new(SEED, map, races, rules))
 	playback = {}
 	if army:
@@ -152,10 +184,23 @@ func start_live(race_prompts: Array) -> void:
 
 
 func start_replay(rep: Dictionary) -> void:
+	if baking:
+		return
 	map_id = rep.map
-	_attach(Replay.build_world(rep, lib), rep.ticks)
+	var w: World = Replay.build_world(rep, lib)
+	await _bake(w.races)
+	_attach(w, rep.ticks)
 	playback = rep
 	clock.bots = []
+
+
+## Bake the art for these races (only what isn't baked yet), showing a note meanwhile.
+func _bake(races: Array) -> void:
+	baking = true
+	clock.paused = true
+	bar.text = "Baking the art..."
+	await kit.prepare(races, races.map(func(r): return Color(lib.palettes.teams[races.find(r)])))
+	baking = false
 
 
 func _attach(w: World, end_tick := -1) -> void:
@@ -163,6 +208,11 @@ func _attach(w: World, end_tick := -1) -> void:
 		for k in d:
 			d[k].queue_free()
 		d.clear()
+	for c in doodads:
+		for n in doodads[c]:
+			n.queue_free()
+	doodads.clear()
+	built_count = -1
 	selected.clear()
 	selected_building = 0
 	placing = ""
@@ -173,13 +223,100 @@ func _attach(w: World, end_tick := -1) -> void:
 	desync = -1
 	clock.reset(w, end_tick)
 	clock.paused = false
-	tiles.build(map)
+	if ground:
+		ground.queue_free()
+	ground = TerrainView.new()
+	ground_holder.add_child(ground)
+	ground.build(map)
+	ground.set_art_px(camera.zoom.x / ArtKit.ART_SCALE)
 	camera.bounds = Iso.map_rect(map.width, map.height)
 	for c in map.resource_cells:
-		var r := ResourceView.new()
-		r.setup(c % map.width, c / map.width, map.terrain_resource[map.terrain[c]], map.amount[c])
-		layer.add_child(r)
-		rviews[c] = r
+		var kind := "bush" if map.terrain_resource[map.terrain[c]] == "food" else "reeds"
+		var holder := Node2D.new()
+		holder.position = Iso.to_screen((c % map.width) * 1000 + 500, (c / map.width) * 1000 + 500)
+		holder.add_child(kit.doodad(kind, c * 7 + c / map.width))
+		layer.add_child(holder)
+		rviews[c] = holder
+	_refresh_paths()
+	for n in ground.scatter(kit, layer, _keep_clear):
+		var t := Iso.to_milli(n.position)
+		var c := map.cell_of(t.x, t.y)
+		if not doodads.has(c):
+			doodads[c] = []
+		doodads[c].append(n)
+
+
+## Doodads stay off resources, start areas and anything built.
+func _keep_clear(t: Vector2) -> bool:
+	for y in range(int(t.y) - 1, int(t.y) + 2):
+		for x in range(int(t.x) - 1, int(t.x) + 2):
+			if x < 0 or y < 0 or x >= map.width or y >= map.height:
+				continue
+			var c := y * map.width + x
+			if map.amount[c] > 0 or map.occupied[c] != 0:
+				return true
+	for s in map.starts:
+		if t.distance_to(Vector2(s[0], s[1]) / 1000.0) < 4.0:
+			return true
+	return false
+
+
+## Each side's paths in its culture's style: from its Town Center's door to its other
+## finished buildings and the nearest bug bushes, reeds and shore. Re-planned when a
+## building is finished.
+func _refresh_paths() -> void:
+	var bs := world.buildings
+	var owners := []
+	for p in world.races.size():
+		var mine := []
+		for b in bs.count():
+			if bs.owner[b] == p and bs.done[b] == 1:
+				mine.append(b)
+		if mine.is_empty():
+			continue
+		mine.sort_custom(func(a, b): return bs.size[a] > bs.size[b] or (bs.size[a] == bs.size[b] and bs.id[a] < bs.id[b]))
+		var style: Dictionary = lib.families[world.races[p].family].get("paths", {"style": "trail", "width": 0.36})
+		var hub := _door(mine[0])
+		var targets := []
+		for b in mine.slice(1):
+			targets.append(_door(b))
+		for kind in ["food", "wood"]:
+			var t := _nearest_resource_edge(kind, hub)
+			if t.x >= 0:
+				targets.append(t)
+		owners.append({"style": style.style, "width": float(style.width), "hub": hub, "targets": targets})
+	ground.set_paths(owners)
+
+
+## The spot in front of a building's door (doors face +y, the viewer's lower left).
+func _door(b: int) -> Vector2:
+	var bs := world.buildings
+	return Vector2(bs.cx[b] + bs.size[b] * 0.5, bs.cy[b] + bs.size[b] + 0.45)
+
+
+## The free tile beside a resource of this kind that's nearest the hub (within reach).
+func _nearest_resource_edge(kind: String, hub: Vector2) -> Vector2:
+	var best := Vector2(-1, -1)
+	var best_d := Paths.REACH
+	for c in map.resource_cells:
+		if map.amount[c] <= 0 or map.terrain_resource[map.terrain[c]] != kind:
+			continue
+		var x := c % map.width
+		var y := c / map.width
+		if Vector2(x, y).distance_to(hub) > best_d + 2.0:
+			continue
+		for d in [Vector2i(1, 0), Vector2i(-1, 0), Vector2i(0, 1), Vector2i(0, -1)]:
+			var t := Vector2(x + d.x, y + d.y) + Vector2(0.5, 0.5)
+			if not ground.blocked(t) and t.distance_to(hub) < best_d:
+				best_d = t.distance_to(hub)
+				best = t
+	return best
+
+
+func _on_zoom() -> void:
+	if ground:
+		ground.set_art_px(camera.zoom.x / ArtKit.ART_SCALE)
+	palette.material.set_shader_parameter("art_px", camera.zoom.x / ArtKit.ART_SCALE)
 
 
 func _set_autoplay(on: bool) -> void:
@@ -190,6 +327,8 @@ func _set_autoplay(on: bool) -> void:
 # ------------------------------------------------------------------ input
 
 func _unhandled_input(event: InputEvent) -> void:
+	if baking or world == null:
+		return
 	if event is InputEventMouseButton and event.button_index == MOUSE_BUTTON_LEFT:
 		if placing != "":
 			if event.pressed:
@@ -238,6 +377,8 @@ func _unhandled_input(event: InputEvent) -> void:
 				clock.speed = maxf(clock.speed / 2.0, 0.25)
 			KEY_F3:
 				show_flow = not show_flow
+			KEY_P:
+				palette.visible = not palette.visible
 			KEY_F5:
 				Replay.save(Replay.record(world), REPLAY_PATH)
 				print("Saved replay: ", ProjectSettings.globalize_path(REPLAY_PATH))
@@ -450,10 +591,11 @@ func place_at(pos: Vector2, keep := false) -> void:
 # ------------------------------------------------------------------ frame
 
 func _process(delta: float) -> void:
+	if baking or world == null:
+		return
 	_sync_views()
 	_sync_buildings()
 	_sync_resources()
-	tiles.refresh(map)
 	_check_replay()
 	for f in flags:
 		f.t -= delta
@@ -495,15 +637,34 @@ func _sync_buildings() -> void:
 	var bs := world.buildings
 	for b in bs.count():
 		var id := bs.id[b]
-		var view: BuildingView = bviews.get(id)
+		var view: BuildingArt = bviews.get(id)
 		if view == null:
 			var t: Dictionary = world.btypes[bs.kind[b]]
-			view = BuildingView.new()
-			view.setup(bs.cx[b], bs.cy[b], bs.size[b], Color(lib.palettes.teams[bs.owner[b]]), t.id == "town_center")
+			var arch: String = lib.families[world.races[bs.owner[b]].family].get("architecture", "thatch")
+			view = BuildingArt.new()
+			view.setup(kit, "%s:%s" % [arch, t.id], bs.cx[b], bs.cy[b], bs.size[b], Color(lib.palettes.teams[bs.owner[b]]))
 			layer.add_child(view)
 			bviews[id] = view
+			_clear_doodads(bs.cx[b], bs.cy[b], bs.size[b])
 		var t: Dictionary = world.btypes[bs.kind[b]]
 		view.set_state(bs.done[b] == 1, float(bs.progress[b]) / float(t.build_ticks))
+	var built := 0
+	for b in bs.count():
+		built += bs.done[b]
+	if built != built_count:
+		built_count = built
+		_refresh_paths()
+
+
+## Doodads under (and right around) a new building go.
+func _clear_doodads(cx: int, cy: int, size: int) -> void:
+	for y in range(cy - 1, cy + size + 1):
+		for x in range(cx - 1, cx + size + 1):
+			var c := y * map.width + x
+			if x >= 0 and y >= 0 and x < map.width and y < map.height and doodads.has(c):
+				for n in doodads[c]:
+					n.queue_free()
+				doodads.erase(c)
 
 
 func _sync_resources() -> void:
@@ -511,14 +672,16 @@ func _sync_resources() -> void:
 		if map.amount[c] <= 0:
 			rviews[c].queue_free()
 			rviews.erase(c)
-		else:
-			rviews[c].set_left(map.amount[c])
 
 
 func _make_view(kind: int, owner: int) -> UnitView:
 	var t: Dictionary = world.types[kind]
 	var view := UnitView.new()
+	view.style = "baked"
 	view.build(t.recipe, lib, Color(lib.palettes.teams[owner]), t.speed / World.SPEED_SCALE)
+	view.scale = Vector2.ONE * ArtKit.UNIT_SCALE
+	view.pose_steps = 8
+	view.art_px = ArtKit.ART_SCALE
 	layer.add_child(view)
 	return view
 
@@ -636,6 +799,8 @@ func _update_panel() -> void:
 # ------------------------------------------------------------------ drawing
 
 func _draw_marks() -> void:
+	if world == null:
+		return
 	if show_flow:
 		_draw_flow()
 	var u := world.units
@@ -679,6 +844,8 @@ func _draw_flow() -> void:
 
 
 func _draw_overlay() -> void:
+	if world == null:
+		return
 	var b := world.buildings.index_of(selected_building)
 	if b >= 0:
 		var bs := world.buildings
