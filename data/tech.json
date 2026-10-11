@@ -56,7 +56,7 @@
   {
    "id": "sharp_sticks",
    "name": "Sharp Sticks",
-   "desc": "Spear points whittled sharper.",
+   "desc": "Every point, edge and club whittled sharper: the first step of the melee track.",
    "cost": {
     "food": 100,
     "wood": 50
@@ -66,12 +66,12 @@
    "age": 2,
    "effects": [
     {
-     "tag": "spear",
+     "tag": "melee",
      "stat": "attack",
      "add": 1
     }
    ],
-   "note": "+1 attack for spears"
+   "note": "+1 attack for every melee unit (was spears only; Claude, 2026-10-11)"
   },
   {
    "id": "frog_leap",
