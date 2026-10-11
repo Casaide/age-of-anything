@@ -41,6 +41,7 @@ var map_index := 0
 var map_name: Label
 var map_pic: TextureRect
 var map_note: Label
+var level_pick: OptionButton
 
 
 func _ready() -> void:
@@ -243,6 +244,17 @@ func _side_panel(i: int, who: String, prompt: String) -> Control:
 	col.add_child(stage)
 	var status := _label("", 13, DIM)
 	col.add_child(status)
+	if i == 1:   # the AI's banner: how hard it plays
+		var lrow := HBoxContainer.new()
+		lrow.add_theme_constant_override("separation", 8)
+		lrow.add_child(_label("Plays", 15, DIM))
+		level_pick = OptionButton.new()
+		level_pick.add_item("Easy: attacks late and small")
+		level_pick.add_item("Normal")
+		level_pick.selected = 0
+		level_pick.focus_mode = Control.FOCUS_NONE
+		lrow.add_child(level_pick)
+		col.add_child(lrow)
 	# The prompt, a reroll, presets.
 	var prow := HBoxContainer.new()
 	prow.add_theme_constant_override("separation", 8)
@@ -379,6 +391,7 @@ func _play() -> void:
 	view.rerolls = [sides[0].reroll, sides[1].reroll]
 	view.map_id = MAPS[map_index]
 	view.vs_ai = true
+	view.ai_level = ["easy", "normal"][level_pick.selected]
 	get_tree().root.add_child(view)
 	get_tree().current_scene = view
 	queue_free()
