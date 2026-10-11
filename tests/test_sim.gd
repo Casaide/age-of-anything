@@ -400,6 +400,79 @@ func _test_movement_classes() -> void:
 
 # --- farms and placement -------------------------------------------------------
 
+## One farmer per farm (data: the farm's "workers"): a second worker sent to a worked farm
+## takes a free farm nearby (else other food, else waits by it); a farm its farmer leaves is
+## picked up again, by a new order or by a worker waiting there.
+func _test_one_farmer(races: Array) -> void:
+	var w := World.new(SEED, SimMap.load_id("flat_test"), races, rules_)
+	w.stock[1][0] = 1000
+	var s: Array = w.map.starts[0]
+	var tc := -1
+	for b in w.buildings.count():
+		if w.buildings.owner[b] == 0:
+			tc = b
+	for n in 3:
+		Economy.spawn_at(w, tc, w.type_of(0, "worker"))
+	var ids := []
+	for i in w.units.count():
+		if w.units.owner[i] == 0:
+			ids.append(w.units.id[i])
+	var field: int = w.map.terrain_ids.find("field")
+	var a: int = (s[1] / 1000 + 2) * w.map.width + s[0] / 1000 + 3
+	var b2 := -1   # a second farm beside it (3-5 tiles over, wherever there's room)
+	var fk: int = Economy.btype_of(w, "farm")
+	for d in [3, 4, 5, -3, -4, -5]:
+		for c in [a + d, a + d * w.map.width]:
+			if b2 < 0 and Economy.can_place(w, 0, fk, c % w.map.width, c / w.map.width):
+				b2 = c
+	check(b2 >= 0 and Economy.can_place(w, 0, fk, a % w.map.width, a / w.map.width), "one farmer: room for two farms")
+	w.issue(0, Commands.BUILD, {"ids": [ids[0]], "building": "farm", "cx": a % w.map.width, "cy": a / w.map.width})
+	while w.tick < 1600 and w.map.terrain[a] != field:
+		w.step()
+	w.issue(0, Commands.BUILD, {"ids": [ids[1]], "building": "farm", "cx": b2 % w.map.width, "cy": b2 / w.map.width})
+	while w.tick < 3200 and w.map.terrain[b2] != field:
+		w.step()
+	check(w.map.terrain[a] == field and w.map.terrain[b2] == field, "one farmer: both farms are sown")
+	var on := func(id: int, farm: int) -> bool:
+		var i := w.units.index_of(id)
+		var h: int = w.units.home[i]
+		return w.units.task[i] in [Economy.GATHER, Economy.RETURN] and h >= 0 and w.map.pool[h] == farm
+	check(on.call(ids[0], a) and on.call(ids[1], b2), "one farmer: each farm's builder farms it")
+	check(Economy.taken(w, a) and Economy.taken(w, a + 1), "one farmer: a worked farm is taken (any of its tiles)")
+	# A third worker sent to the first farm doesn't join its farmer.
+	w.issue(0, Commands.GATHER, {"ids": [ids[2]], "cell": a + 1})
+	for t in 20:
+		w.step()
+	var i2 := w.units.index_of(ids[2])
+	check(not on.call(ids[2], a) and not on.call(ids[2], b2) and w.units.task[i2] == Economy.GATHER,
+		"one farmer: a second worker sent to a worked farm goes elsewhere (home %d)" % w.units.home[i2])
+	# The second farmer walks off: the next worker sent to the first farm takes the freed one.
+	w.issue(0, Commands.MOVE, {"ids": [ids[1]], "x": s[0] - 3000, "y": s[1]})
+	w.issue(0, Commands.GATHER, {"ids": [ids[3]], "cell": a})
+	for t in 20:
+		w.step()
+	check(on.call(ids[3], b2), "one farmer: a farm its farmer left is picked up by the next worker sent near it")
+	check(on.call(ids[0], a), "one farmer: the first farm keeps its farmer")
+	# With no free farm and no other food about, a worker waits by a full farm and takes it
+	# once its farmer goes.
+	var food: int = Economy.kind_of(w, "food")
+	for c in w.map.resource_cells:
+		if w.map.pool[c] < 0 and Economy.kind_of(w, w.map.resource_at(c)) == food:
+			w.map.amount[c] = 0
+	var i4 := w.units.index_of(ids[4])
+	w.units.task[i4] = Economy.GATHER
+	w.units.carry_kind[i4] = Economy.kind_of(w, "food")
+	w.units.target[i4] = a
+	w.units.home[i4] = -1
+	for t in 40:
+		w.step()
+	check(not on.call(ids[4], a), "one farmer: a worker waiting by a worked farm doesn't join its farmer")
+	w.issue(0, Commands.MOVE, {"ids": [ids[0]], "x": s[0] - 3000, "y": s[1] + 2000})
+	for t in 40:
+		w.step()
+	check(on.call(ids[4], a), "one farmer: a worker waiting by a farm takes it when its farmer leaves")
+
+
 ## A farm becomes a crop field its builder harvests; amphibians may farm the shallows
 ## (a rice paddy); other races can't build on water.
 func _test_farms(races: Array) -> void:
@@ -443,6 +516,7 @@ func _test_farms(races: Array) -> void:
 		w.step()
 	check(w.map.terrain[cells[0]] == field and w.map.left_at(cells[0]) > 0, "farm: reseeding brings the crops back")
 	check(w.stock[1][0] < wood_before, "farm: reseeding costs wood (%d -> %d)" % [wood_before, w.stock[1][0]])
+	_test_one_farmer(races)
 	# Water: find a 2x2 of shallows.
 	var sh: int = w.map.terrain_ids.find("shallows")
 	var spot := Vector2i(-1, -1)

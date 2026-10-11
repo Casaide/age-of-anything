@@ -23,6 +23,7 @@
    "barracks": 0.8
   }
  },
+ "_workers_doc": "\"workers\": how many workers may work a building's ground at once (Dominic: one farmer per farm, as in the genre); others sent to it go to a farm nobody works, else other food nearby, else wait by it. Left out: no limit",
  "_scale_doc": "a culture's own size for a building type (Dominic: the rats' house and barracks, smaller, D-090)",
  "variants": {
   "house": 4
@@ -127,6 +128,7 @@
    },
    "note": "when built, its ground becomes crops (a rice paddy in water, for amphibians): one farm, one pool of food; worked out it lies fallow, and a worker can reseed it for wood",
    "food": 400,
+   "workers": 1,
    "reseed": {
     "food": 0,
     "wood": 40

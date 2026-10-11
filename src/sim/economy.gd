@@ -16,6 +16,7 @@ const SPREAD_TILES := 2               # sent to a busy tile, a worker takes a qu
 const BUSY_COST := 4000000            # one more gatherer on a tile weighs like 2 tiles of distance
 const GIVE_UP := 60                   # mirrors World.STUCK_LIMIT
 const NEXT_BUILD_TILES := 8            # a builder done with nothing queued goes on to your foundations this close
+const WAIT_TICKS := 20                 # a worker waiting by a full farm looks again this often
 
 
 ## Resource ids in their fixed order. A unit's carry_kind is a resource's index + 1 (0: nothing).
@@ -52,7 +53,7 @@ static func load_btypes(resources: Array) -> Array:
 			"id": id, "name": b.name, "desc": b.get("desc", ""), "hotkey": b.get("hotkey", ""), "size": int(b.size), "length": int(b.get("length", b.size)), "hp": int(b.hp),
 			"cost": cost_vector(resources, b.cost), "drop": PackedByteArray(resources.map(func(r): return 1 if r in b.drop_off else 0)),
 			"water": bool(b.get("water", false)), "becomes": b.get("becomes", {}).duplicate(),
-			"food": int(b.get("food", 0)), "reseed": cost_vector(resources, b.get("reseed", {})),
+			"food": int(b.get("food", 0)), "workers": int(b.get("workers", 0)), "reseed": cost_vector(resources, b.get("reseed", {})),
 			"build_ticks": int(b.build_time) * 20, "pop": int(b.pop), "house": bool(b.house),
 			"trains": b.trains.duplicate(), "age": int(b.age), "armour": b.get("armour", {}).duplicate(),
 			"attack": b.get("attack", {}).duplicate(), "gate": bool(b.get("gate", false)),
@@ -299,17 +300,54 @@ static func _own_workers(w, player: int, ids: Array) -> Array:
 
 # ------------------------------------------------------------------ tasks
 
+## Send worker i to gather `kind` at `cell`. A farm already worked by as many as it takes
+## sends it to a free farm nearby, else other food nearby; with neither it walks to the farm
+## and waits there (task GATHER, home -1) until one frees up.
 static func start_gather(w, i: int, cell: int, kind: int) -> void:
 	var u = w.units
-	cell = least_busy(w, cell, kind)
+	var c := _pick(w, i, cell, kind)
 	if u.carry[i] > 0 and u.carry_kind[i] != kind:
 		u.carry[i] = 0   # dropped: you can't carry reeds and bugs at once
 	u.carry_kind[i] = kind
 	u.task[i] = GATHER
-	u.target[i] = cell
-	u.home[i] = cell
+	u.target[i] = c if c >= 0 else cell
+	u.home[i] = c
 	u.work[i] = 0
-	_approach_cell(w, i, cell)
+	_approach_cell(w, i, u.target[i])
+
+
+## Where worker i gathers when sent to `cell`: the least busy tile there; if that's a full
+## farm, the nearest farm with room, else the nearest other tile of the resource; -1 if none.
+static func _pick(w, i: int, cell: int, kind: int) -> int:
+	var c := least_busy(w, cell, kind, -1, i)
+	var to_farm: bool = w.map.pool[cell] >= 0
+	if not taken(w, c, i) and (not to_farm or w.map.pool[c] >= 0):
+		return c
+	var x: int = (cell % w.map.width) * SimMap.TILE + SimMap.TILE / 2
+	var y: int = (cell / w.map.width) * SimMap.TILE + SimMap.TILE / 2
+	var farm := nearest_resource(w, x, y, kind, i, true)
+	if farm >= 0:
+		return farm
+	return c if not taken(w, c, i) else nearest_resource(w, x, y, kind, i)
+
+
+## Is this cell's ground (a farm's pool) worked by as many workers as it takes, not counting
+## unit i? A worker works the pool its `home` is on while it gathers or carries from it, so
+## one who leaves, dies or is sent elsewhere frees its place. Plain resource tiles never fill.
+static func taken(w, cell: int, i := -1) -> bool:
+	var m = w.map
+	if cell < 0 or m.pool[cell] < 0:
+		return false
+	var b: int = w.buildings.index_of(m.occupied[cell])
+	var limit: int = w.btypes[w.buildings.kind[b]].workers if b >= 0 else 0
+	if limit <= 0:
+		return false
+	var u = w.units
+	var n := 0
+	for j in u.count():
+		if j != i and u.home[j] >= 0 and m.pool[u.home[j]] == m.pool[cell] and (u.task[j] == GATHER or u.task[j] == RETURN):
+			n += 1
+	return n >= limit
 
 
 static func start_build(w, i: int, bid: int) -> void:
@@ -353,7 +391,7 @@ static func _gather(w, i: int, carry_max: int) -> void:
 	var cell: int = u.target[i]
 	var kind: int = u.carry_kind[i]
 	if kind_of(w, w.map.resource_at(cell)) != kind:
-		var more := nearest_resource(w, u.x[i], u.y[i], kind)
+		var more := nearest_resource(w, u.x[i], u.y[i], kind, i)
 		if more >= 0:
 			u.target[i] = more
 			u.home[i] = more
@@ -364,6 +402,9 @@ static func _gather(w, i: int, carry_max: int) -> void:
 			_to_drop_off(w, i)
 		else:
 			clear_task(w, i)
+		return
+	if u.home[i] < 0:
+		_wait(w, i, cell, kind)
 		return
 	if _in_reach(w, i, _cell_rect(w, cell)):
 		u.moving[i] = 0
@@ -377,8 +418,8 @@ static func _gather(w, i: int, carry_max: int) -> void:
 		if u.stuck[i] >= GIVE_UP:
 			# Can't get there (a crowd planted round the bush, or no way through): another
 			# tile of the clump, the least busy, and only give up when there is none.
-			var other := least_busy(w, cell, kind, cell)
-			if other != cell:
+			var other := least_busy(w, cell, kind, cell, i)
+			if other != cell and not taken(w, other, i):
 				u.target[i] = other
 				u.home[i] = other
 				_approach_cell(w, i, other)
@@ -386,6 +427,23 @@ static func _gather(w, i: int, carry_max: int) -> void:
 				clear_task(w, i)
 		else:
 			_approach_cell(w, i, cell)
+
+
+## Waiting by a full farm: every WAIT_TICKS, look again (this farm, a free one nearby, other
+## food) and go to work as soon as there's room.
+static func _wait(w, i: int, cell: int, kind: int) -> void:
+	var u = w.units
+	if u.moving[i] == 0:
+		u.stuck[i] = 0
+	u.work[i] += 1
+	if u.work[i] < WAIT_TICKS:
+		return
+	u.work[i] = 0
+	var c := _pick(w, i, cell, kind)
+	if c >= 0:
+		u.target[i] = c
+		u.home[i] = c
+		_approach_cell(w, i, c)
 
 
 static func _to_drop_off(w, i: int) -> void:
@@ -496,7 +554,7 @@ static func _gather_after_camp(w, b: int) -> void:
 		var best_kind := 0
 		var best_d2 := 1 << 62
 		for kind in kinds:   # the nearest of any of them (a mining camp: stone or gold)
-			var c := nearest_resource(w, u.x[j], u.y[j], kind)
+			var c := nearest_resource(w, u.x[j], u.y[j], kind, j)
 			if c < 0:
 				continue
 			var d2 := Fixed.dist2(u.x[j], u.y[j], (c % w.map.width) * SimMap.TILE + 500, (c / w.map.width) * SimMap.TILE + 500)
@@ -586,8 +644,9 @@ static func _in_reach(w, i: int, r: Rect2i) -> bool:
 
 ## The tile of this resource near `cell` (within SPREAD_TILES) with the fewest
 ## gatherers, nearer ones first; ties go to the lower cell. Spreads a crowd over a
-## clump of bushes or a reed bed instead of piling everyone onto one tile.
-static func least_busy(w, cell: int, kind: int, except := -1) -> int:
+## clump of bushes or a reed bed instead of piling everyone onto one tile. A farm full
+## without unit i is passed over.
+static func least_busy(w, cell: int, kind: int, except := -1, i := -1) -> int:
 	var m = w.map
 	var u = w.units
 	var cx: int = cell % m.width
@@ -597,7 +656,7 @@ static func least_busy(w, cell: int, kind: int, except := -1) -> int:
 	for yy in range(maxi(cy - SPREAD_TILES, 0), mini(cy + SPREAD_TILES + 1, m.height)):
 		for xx in range(maxi(cx - SPREAD_TILES, 0), mini(cx + SPREAD_TILES + 1, m.width)):
 			var c: int = yy * m.width + xx
-			if c == except or m.amount[c] <= 0 or kind_of(w, m.resource_at(c)) != kind:
+			if c == except or m.amount[c] <= 0 or kind_of(w, m.resource_at(c)) != kind or taken(w, c, i):
 				continue
 			var busy := 0
 			for j in u.count():
@@ -611,7 +670,8 @@ static func least_busy(w, cell: int, kind: int, except := -1) -> int:
 
 
 ## The nearest cell with this resource within SEARCH_TILES, or -1. Ties go to the lower cell.
-static func nearest_resource(w, x: int, y: int, kind: int) -> int:
+## With a worker i, farms full without it are passed over; `farms` keeps to farms.
+static func nearest_resource(w, x: int, y: int, kind: int, i := -1, farms := false) -> int:
 	var m = w.map
 	var cx: int = x / SimMap.TILE
 	var cy: int = y / SimMap.TILE
@@ -620,7 +680,8 @@ static func nearest_resource(w, x: int, y: int, kind: int) -> int:
 	for yy in range(maxi(cy - SEARCH_TILES, 0), mini(cy + SEARCH_TILES + 1, m.height)):
 		for xx in range(maxi(cx - SEARCH_TILES, 0), mini(cx + SEARCH_TILES + 1, m.width)):
 			var c: int = yy * m.width + xx
-			if m.amount[c] <= 0 or kind_of(w, m.resource_at(c)) != kind:
+			if m.amount[c] <= 0 or kind_of(w, m.resource_at(c)) != kind or (farms and m.pool[c] < 0) \
+					or (i >= 0 and taken(w, c, i)):
 				continue
 			var d2 := Fixed.dist2(x, y, xx * SimMap.TILE + 500, yy * SimMap.TILE + 500)
 			if d2 < best_d2:
