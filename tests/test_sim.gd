@@ -467,7 +467,11 @@ func _test_tech(races: Array) -> void:
 			full = full and w.units.hp[i] == w.types[k].hp
 	check(full, "tech: existing spearmen take the new kit at full health (%d hp)" % w.types[k].hp)
 	var atk: int = int(w.types[k].eval.attack)
-	w.issue(0, Commands.RESEARCH, {"building": tc, "id": "sharp_sticks"})
+	var bk := Economy.btype_of(w, "barracks")
+	var bi: int = Economy.place(w, 0, bk, s[0] / 1000 + 4, s[1] / 1000 - 6)
+	w.buildings.done[bi] = 1
+	w.buildings.hp[bi] = w.btypes[bk].hp
+	w.issue(0, Commands.RESEARCH, {"building": w.buildings.id[bi], "id": "sharp_sticks"})
 	while w.tick < 4000 and w.researched[0][Tech.research_index(w, "sharp_sticks")] == 0:
 		w.step()
 	check(int(w.types[k].eval.attack) == atk + 1, "tech: Sharp Sticks gives spears +1 attack (%d -> %d)" % [atk, w.types[k].eval.attack])
@@ -475,6 +479,32 @@ func _test_tech(races: Array) -> void:
 	while w.tick < 7000 and w.ages[0] < 3:
 		w.step()
 	check(w.ages[0] == 3 and int(w.types[k].eval.attack) == int(line[2].eval.attack) + 1, "tech: research still counts after the next age-up")
+	# Age gates and towers, on a fresh world.
+	var g := World.new(SEED, SimMap.load_id("flat_test"), races, rules_)
+	for r in g.resources.size():
+		g.stock[r][1] = 5000
+	var gs: Array = g.map.starts[1]
+	var w1 := -1
+	for i in g.units.count():
+		if g.units.owner[i] == 1:
+			w1 = g.units.id[i]
+	var before := g.buildings.count()
+	g.issue(1, Commands.BUILD, {"ids": [w1], "building": "stable", "cx": gs[0] / 1000 - 6, "cy": gs[1] / 1000 - 6})
+	for t in 12:
+		g.step()
+	check(g.buildings.count() == before, "gates: no Stable before age 2")
+	var tk := Economy.btype_of(g, "watchtower")
+	var ti: int = Economy.place(g, 1, tk, gs[0] / 1000 - 4, gs[1] / 1000)
+	g.buildings.done[ti] = 1
+	g.buildings.hp[ti] = g.btypes[tk].hp
+	g.issue(0, Commands.SPAWN, {"slot": "archer", "count": 1, "x": gs[0] - 6500, "y": gs[1]})
+	var shots := 0
+	for t in 400:
+		g.step()
+		for e in g.events:
+			if e.type == "hit" and e.by == g.buildings.id[g.buildings.index_of(g.buildings.id[ti])]:
+				shots += 1
+	check(shots > 0, "towers: a watchtower shoots an enemy in range (%d shots)" % shots)
 
 
 # --- order queues ---------------------------------------------------------------
