@@ -322,6 +322,9 @@ func _run(cmd: Dictionary) -> void:
 		Commands.HELP_BUILD:
 			_clear_combat(cmd.player, a.ids)
 			Economy.cmd_help_build(self, cmd.player, a)
+		Commands.DROP_OFF:
+			_clear_combat(cmd.player, a.ids)
+			Economy.cmd_drop_off(self, cmd.player, a)
 		Commands.ATTACK:
 			Combat.cmd_attack(self, cmd.player, a)
 		Commands.ATTACK_MOVE:
