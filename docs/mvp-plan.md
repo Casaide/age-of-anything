@@ -156,6 +156,7 @@ Each milestone has its own file in `milestones/` (plan, checklist, results); thi
 | [7](milestones/m7-fog-juice.md) | 1 | **Fog + juice:** fog, minimap, SFX, hit flash, death poses, tuning | A full match runs 9-12 minutes |
 | [8](milestones/m8-playtest-balance.md) | 1 | **Playtest + balance:** 5-10 people, balance pass, itch.io build | Success metrics below |
 | [-](milestones/art-pass.md) | (parallel) | **Art pass:** atlas + palette shader replaces vector shapes; classic 2D isometric RTS look | 200 units at 60 fps; draw calls verified |
+| [-](milestones/art-ui-track.md) | (parallel) | **Art and UI track:** stages A1-A5, one alongside each of milestones 4-8 (props, UI, icons, cursors, animation, new buildings, menus, juice) | Each stage done before its milestone closes |
 | [-](milestones/networking.md) | +2-3 | **Networking:** see `backlog.md` | Two machines on different NATs finish a match with no desync |
 
 ---
