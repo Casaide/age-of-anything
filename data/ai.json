@@ -87,8 +87,10 @@
    "wave_max": 5
   },
   "normal": {
-   "delay": 0,
-   "army_pct": 100
+   "delay": 120,
+   "army_pct": 100,
+   "max_army": 20,
+   "wave_max": 8
   }
  }
 }

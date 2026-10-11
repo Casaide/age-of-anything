@@ -568,3 +568,8 @@ their minimum size, but a wave sent the whole army and the bot never stopped tra
 `data/ai.json` can now cap the soldiers kept (`max_army`, Easy 10 population) and the soldiers
 per wave (`wave_max`, Easy 5); a capped level's home guard stays home. Against a passive player
 Easy's first kill is at about 10:47. The lobby says what each level does. Normal is unchanged.
+
+**D-104, 2026-10-11: Normal is gentler; the lobby just says Easy and Normal.** Dominic: the
+lobby shouldn't explain the levels, and Normal should be gentler. Normal's first wave comes at
+6:00 instead of 4:00, it sends at most 8 soldiers a wave and keeps at most 20 population of
+soldiers. It still beats a passive player (about 12:00); bot matches run 10:37-11:19.
