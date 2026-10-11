@@ -107,6 +107,54 @@ Naval craft are bodies too: lily-pad rafts for frogs, bottle boats for rats.
 |---|---|---|---|
 | Trade cart | `trader` | Needs gold and multi-market trade | Later |
 
+## Variety: every army must look varied (Dominic, 2026-10-11)
+
+"If a whole army ends up looking the same, the game will be terrible." Today a race is one
+creature in different gear, plus a pony, beetle or spider as the mount. Planned sources of
+variety, from biggest to smallest. Planning only: nothing here is built yet.
+
+1. **Creature variants per line.** A creature family supplies different bodies for different
+   roles, instead of only riding something. The data contract gains `variants` on a creature
+   (line -> body/head/size/tags).
+2. **Mounts that suit the family.** Each creature family has its own mounts (`rides` on the
+   creature), not just the culture's ponies. Small creatures ride small beasts.
+3. **Gear tiers by age** (milestone 6, D-057): light kit at age 1, bronze and mail, then iron and
+   plate, within the culture.
+4. **Unit-line upgrades:** spearman -> pikeman, a new silhouette per tier step.
+5. **Culture kit:** helmets, shields, banners, capes and architecture.
+6. **The blacksmith:** small visual tells only.
+
+### Draft plan per creature type
+Lines across: worker, spear, swordsman/infantry, skirmisher, archer, scout, heavy/large, war
+beast, siege, unique. "Variant" means a different body. "Rides" means a mount.
+
+| Family | Variants (by line) | Rides | Gaps today |
+|---|---|---|---|
+| Frogs | tree frog (worker, scout), common frog (infantry, spear), dart frog (skirmisher: poison), bullfrog (heavy), giant toad (war beast) | newts or salamanders (scout), beetles (heavy) | only one frog body; no newt |
+| Rats | mouse (worker, scout), rat (line infantry), sewer brute (heavy), giant rat or capybara (war beast) | spiders (as now), cats as a joke war beast? | no mouse or brute body |
+| Spiders | house spider (worker), jumping spider (skirmisher, scout: leaps), wolf spider (infantry), **tarantula (heavy)**, trapdoor spider (sapper/ambush) | no mounts: the variants are the cavalry | one spider body; no tarantula |
+| Beetles | dung beetle (worker: rolls food), ladybird (skirmisher), stag beetle (spear: mandibles), rhino or Hercules beetle (heavy, war beast) | **snails (slow, tanky), giant worms or caterpillars** | one beetle body; no snail, worm |
+| Folk (humans) | by culture (legionary, hoplite, viking...) | ponies, camels (desert), elephants (Mauryan India, Carthage), chariots | no camel, elephant, chariot |
+| Centaurs | foal (scout), centaur (line), armoured centaur (heavy) | fused (no mounts) | one body |
+| Ponies | (mount only) | - | - |
+| Future animals (backlog §8 roster) | bears (maul), beavers (dams), elephants, tigers, pandas, crocodiles, capybaras, kangaroos | per family | everything |
+
+### Gaps this shows
+- **Bodies:** the biggest gap. Most families need two to four variants, and each needs a model
+  (unit_models.gd) and data.
+- **Mount types:**
+  - for small creatures: snail, worm, newt;
+  - for cultures: camel, elephant, chariot.
+- **Roles with no parts:** siege (every family needs its own take: a beetle-drawn ram, a frog
+  catapult on a lily pad), mystics, scouts' light gear.
+- **Data contract:** `variants` and `rides` on creatures; the generator picks a variant per line
+  before gear. The race key covers it.
+
+### Future packs (not the starter roster)
+- **Fantasy pack:** wizards, dragons, enchanted gear (backlog §8).
+- **Forest folk / sky pack:** people riding big birds, tree people, flying mounts. Another answer
+  to "flying races" besides wings.
+
 ## Buildings
 
 | Building | Function | Status |
