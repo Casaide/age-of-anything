@@ -14,6 +14,7 @@ const Fixed := preload("res://src/sim/fixed.gd")
 const SimMap := preload("res://src/sim/sim_map.gd")
 const Economy := preload("res://src/sim/economy.gd")
 const Flow := preload("res://src/sim/flow.gd")
+const Animals := preload("res://src/sim/animals.gd")
 
 enum { NONE, ORDERED, AUTO, ATTACK_MOVE }   # units.stance
 
@@ -141,11 +142,11 @@ static func cmd_attack_move(w, player: int, a: Dictionary) -> void:
 	w.next_group += 1
 
 
-## An enemy unit or building of `player`?
+## An enemy unit or building of `player`, or an animal to hunt (wild, or its own sheep)?
 static func _is_target(w, id: int, player: int) -> bool:
 	var i: int = w.units.index_of(id)
 	if i >= 0:
-		return w.is_enemy(w.units.owner[i], player)
+		return w.is_enemy(w.units.owner[i], player) or (w.units.owner[i] == player and w.types[w.units.kind[i]].has("animal"))
 	var b: int = w.buildings.index_of(id)
 	return b >= 0 and w.is_enemy(w.buildings.owner[b], player)
 
@@ -255,7 +256,7 @@ static func _towers(w, hurt: PackedInt32Array, hurt_by: PackedInt32Array) -> voi
 		var best := -1
 		var best_d: int = (bt.reach + s / 2) * (bt.reach + s / 2) + 1
 		for j in u.count():
-			if not w.is_enemy(u.owner[j], bs.owner[b]):
+			if not w.is_foe(u.owner[j], bs.owner[b]):
 				continue
 			var d := Fixed.dist2(mx, my, u.x[j], u.y[j])
 			if d < best_d:
@@ -321,6 +322,8 @@ static func _nearest_foe(w, i: int, sight: int, buildings_too: bool, engaged: Pa
 	var u = w.units
 	var sp = w.spatial
 	var me: int = u.owner[i]
+	if me == w.gaia:
+		return 0   # animals don't go looking for a fight
 	var best := 0
 	var best_d := 1 << 40
 	var r := sight / SimMap.TILE + 1
@@ -331,7 +334,7 @@ static func _nearest_foe(w, i: int, sight: int, buildings_too: bool, engaged: Pa
 			var cell: int = yy * sp.width + xx
 			for k in range(sp.start[cell], sp.start[cell + 1]):
 				var j: int = sp.items[k]
-				if not w.is_enemy(u.owner[j], me):
+				if not w.is_foe(u.owner[j], me):
 					continue
 				var d2 := Fixed.dist2(u.x[i], u.y[i], u.x[j], u.y[j])
 				if d2 > sight * sight:
@@ -366,13 +369,17 @@ static func _apply(w, hurt: PackedInt32Array, hurt_by: PackedInt32Array, bhurt: 
 			continue
 		u.hp[j] -= hurt[j]
 		var t: Dictionary = w.types[u.kind[j]]
-		if u.foe[j] == 0 and u.stance[j] == NONE and u.task[j] == Economy.NONE and not t.worker:
+		if u.owner[j] == w.gaia:
+			Animals.hurt(w, j, hurt_by[j])   # a deer bolts
+		if u.foe[j] == 0 and u.stance[j] == NONE and u.task[j] == Economy.NONE and not t.worker and not t.get("harmless", false):
 			u.foe[j] = hurt_by[j]
 			u.stance[j] = AUTO
 	for j in range(hurt.size() - 1, -1, -1):
 		if u.hp[j] <= 0:
 			w.events.append({"type": "die", "id": u.id[j], "x": u.x[j], "y": u.y[j], "owner": u.owner[j], "kind": u.kind[j], "building": false})
 			w.lost[u.owner[j]] += 1
+			if w.types[u.kind[j]].has("animal"):
+				Animals.died(w, j)   # a carcass to gather, and the hunters gather it
 			u.remove_at(j)
 	var bs = w.buildings
 	for b in range(bhurt.size() - 1, -1, -1):

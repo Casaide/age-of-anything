@@ -238,3 +238,13 @@ like a chest and the front pair as arms, holding the weapon (no more mount bodie
 gear). A creature can keep a separate `mount_body` for when it's ridden, so beetle mounts stay
 horizontal. Beetle infantry are lighter now (body 5 points, was the 12-point mount body);
 counters went to 83%.
+
+### Animals
+Sheep graze by each start, a boar a little further out, and deer herds roam the open map. Sheep
+go to whoever reaches them first and can be led home; right-click one with workers and they
+slaughter it and gather the meat. Deer bolt a few tiles when hurt, boar turn and fight. A kill
+leaves a carcass (cuts of meat on the hide, getting smaller) that's food until it's gone.
+Nobody owns a wild animal: the sim gives them a "gaia" owner on its own team, and a few places
+that assumed every unit has a player needed guards (deaths, population, auto-targeting, the AI's
+threat count). The replay test caught that a test's changed rules didn't match the file; replays
+now carry their rules. Bots don't hunt or herd yet.

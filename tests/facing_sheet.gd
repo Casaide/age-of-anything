@@ -1,7 +1,7 @@
 extends SceneTree
 ## Every unit of a race in its 8 baked facings, one row per unit, at a zoom (the tool for
 ## checking facings). Run (needs a display):
-##   godot --path . --script res://tests/facing_sheet.gd -- out.png "prompt" [zoom]
+##   godot --path . --script res://tests/facing_sheet.gd -- out.png "prompt" [zoom]   ("animals": the animals)
 
 const DataLib := preload("res://src/data_lib.gd")
 const Generator := preload("res://src/race_generator.gd")
@@ -16,7 +16,7 @@ func _initialize() -> void:
 	var args := OS.get_cmdline_user_args()
 	var lib = DataLib.new()
 	var gen = Generator.new(lib)
-	var race: Dictionary = gen.generate(args[1], DataLib.load_json("res://data/rules/default.json"))
+	var race: Dictionary = ArtKit.animal_race() if args[1] == "animals" else gen.generate(args[1], DataLib.load_json("res://data/rules/default.json"))
 	var zoom := float(args[2]) if args.size() > 2 else 3.0
 	var kit := ArtKit.new()
 	kit.lib = lib

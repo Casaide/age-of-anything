@@ -28,7 +28,7 @@ const HOUSE := {"thatch": "stilt_house", "junk": "tin_can_house", "stone": "vill
 const MATERIALS := ["wood", "thatch", "mud", "stone", "tin", "brick", "plaster", "terracotta", "terracotta_dark", "felt", "weave"]
 ## Prop and doodad kinds and how many variants of each (each a different shape, size
 ## and turn; picked per tile so neighbours differ).
-const DOODADS := {"reeds": 6, "bush": 6, "rock": 6, "quarry": 4, "gold": 4, "stones": 6, "tuft": 6, "flowers": 6, "shore": 4, "lily": 4, "crops": 4, "paddy": 4}
+const DOODADS := {"reeds": 6, "bush": 6, "rock": 6, "quarry": 4, "gold": 4, "carcass": 3, "stones": 6, "tuft": 6, "flowers": 6, "shore": 4, "lily": 4, "crops": 4, "paddy": 4}
 ## Resources show how much is left: reeds, bug bushes and quarry stone each have this many stages
 ## (0 whole ... 3 nearly gone: stubble for reeds, a bare brown bush).
 const STAGES := 4
@@ -49,7 +49,7 @@ var _building_icons := {}   # "arch:type" -> AtlasTexture
 ## Prints how long each part took (bake time at match start is a budget we watch).
 func prepare(races: Array, teams: Array) -> void:
 	var t0 := Time.get_ticks_msec()
-	await bake_units(races, teams)
+	await bake_units(races + [animal_race()], teams + [ANIMAL_TEAM])
 	var t1 := Time.get_ticks_msec()
 	await bake_props()
 	var t2 := Time.get_ticks_msec()
@@ -130,6 +130,19 @@ func building_icon(arch: String, type: String) -> Texture2D:
 		at.region = regions[buildings[key].body]
 		_building_icons[key] = at
 	return at
+
+
+## The animals (data/animals.json) as one more "race" to bake: their recipes, never a player's.
+const ANIMAL_TEAM := Color("#8a7a5a")   # nobody's: a wild animal shows no team
+
+static func animal_race() -> Dictionary:
+	var d = JSON.parse_string(FileAccess.get_file_as_string("res://data/animals.json"))
+	var units := []
+	var ids: Array = d.animals.keys()
+	ids.sort()
+	for id in ids:
+		units.append({"recipe": d.animals[id].recipe, "eval": {"speed": int(d.animals[id].speed)}})
+	return {"units": units}
 
 
 ## Only the units (the Race Lab bakes per generated race), then the atlas.
@@ -229,6 +242,9 @@ func _bake_doodads(baker, models) -> void:
 		for st in STAGES:
 			shadowed[staged("quarry", v, st)] = props.quarry(1300 + v, st)
 			shadowed[staged("gold", v, st)] = props.quarry(1300 + v, st, "gold")   # the same deposits, gold showing
+	for v in DOODADS.carcass:
+		for st in STAGES:
+			shadowed[staged("carcass", v, st)] = props.carcass(1400 + v, st)
 	shadowed["rally_flag"] = models.rally_flag(Color(PartShape.TEAM_KEY))
 	var flat := {}
 	for v in DOODADS.stones:
@@ -262,7 +278,7 @@ func _bake_set(baker, todo: Dictionary) -> void:
 ## Whole until first used, then visibly started at once, then further down, then gone:
 ## reeds thin and leave stubble, bug bushes lose berries and colour, quarry stone loses blocks.
 static func resource_stage(kind: String, left: int, full: int) -> int:
-	if not kind in ["reeds", "bush", "quarry", "gold"]:
+	if not kind in ["reeds", "bush", "quarry", "gold", "carcass"]:
 		return 0   # only reeds, bug bushes and quarry stone have used-up stages
 	if left <= 0:
 		return STAGES - 1

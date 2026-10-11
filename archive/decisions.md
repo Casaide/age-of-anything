@@ -448,3 +448,12 @@ brings its sockets, how near each socket is to the camera (so a cape draws over 
 away and the far hand's shield goes behind) and which way the model faces on screen. A unit takes
 the facing that best fits the way it moves, works or attacks, and only switches when another fits
 clearly better. Parts with no model keep their one view and still mirror. Claude.
+
+**D-088, 2026-10-11: Animals belong to "gaia" until claimed or killed.** Wild animals are owned by
+a world slot one past the last player, on a team of its own: anyone can hunt them, but idle
+soldiers and towers don't attack them on their own (`is_foe` vs `is_enemy`). Sheep go to the
+first player whose unit comes within a few tiles; a dead animal leaves a carcass (a food terrain
+that turns back to grass) and the workers who killed it gather it. Animals are data
+(data/animals.json) and a host rule (`animals`, on by default). Replays now carry their rules,
+and rules hash the same whether numbers come back as ints or floats. Dominic asked for animals
+(to hunt, and to herd like sheep); the design is Claude's.

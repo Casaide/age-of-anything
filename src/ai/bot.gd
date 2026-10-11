@@ -176,7 +176,7 @@ func _train(w, workers: Array) -> void:
 func _enemy_tags(w) -> Dictionary:
 	var tags := {}
 	for i in w.units.count():
-		if not w.is_enemy(player, w.units.owner[i]) or not Fog.visible(w, player, w.units.x[i], w.units.y[i]):
+		if not w.is_foe(player, w.units.owner[i]) or not Fog.visible(w, player, w.units.x[i], w.units.y[i]):
 			continue
 		var t: Dictionary = w.types[w.units.kind[i]]
 		if t.worker:
@@ -208,7 +208,7 @@ func _defend(w, army: Array, hx: int, hy: int) -> void:
 	var intruder := -1
 	var best_d2 := r * r
 	for i in w.units.count():
-		if not w.is_enemy(player, w.units.owner[i]) or not Fog.visible(w, player, w.units.x[i], w.units.y[i]):
+		if not w.is_foe(player, w.units.owner[i]) or not Fog.visible(w, player, w.units.x[i], w.units.y[i]):
 			continue
 		var d2 := Fixed.dist2(hx, hy, w.units.x[i], w.units.y[i])
 		if d2 < best_d2:
@@ -281,7 +281,7 @@ func _defenders(w, b: int) -> int:
 	var r := int(cfg.military.defend_tiles) * 1000
 	var n := 0
 	for i in w.units.count():
-		if w.is_enemy(player, w.units.owner[i]) and not w.types[w.units.kind[i]].worker \
+		if w.is_foe(player, w.units.owner[i]) and not w.types[w.units.kind[i]].worker \
 				and Fog.visible(w, player, w.units.x[i], w.units.y[i]) and Fixed.dist2(x, y, w.units.x[i], w.units.y[i]) < r * r:
 			n += 1
 	return n
