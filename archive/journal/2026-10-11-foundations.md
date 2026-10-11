@@ -43,6 +43,10 @@ Milestone 7 (progression) followed straight on:
   counter-picked soldiers, defence, waves at 5 and 8 minutes. It beats a passive player in 10-14
   minutes; frogs vs rats bot-on-bot goes to the rats at 14:22. Losing your Town Centers or
   pressing F10 ends the match. A match setup screen with live race previews is the new front door.
+- **Milestone 9, fog and juice.** Fog of war (the AI plays by it too), a diamond minimap,
+  synthesised placeholder sounds. The 9-12 minute check caught two AI bugs: armies razing every
+  house before the Town Center, and frogs hacking at a Town Center while a lone centaur cut them
+  down one by one. Median bot match now 10:50.
 - **Wings.** Feather wings had thirty small feathers and baked to a white slab; now eight big
   ones. A pegasus's wings sat so high they looked like the rider's; they now lie folded along
   the horse's back.
@@ -68,6 +72,8 @@ D-070 (restrictions as layers with a host switch), D-072 (unit textures: big mar
 ![A beetle mound town](../images/2026-10-11/96-beetle-mound-town.png)
 ![The match setup screen](../images/2026-10-11/100-match-setup-screen.png)
 ![The AI's rats raid an undefended frog town at 7:00](../images/2026-10-11/101-ai-rats-raid-the-frog-town.png)
+![Fog of war's soft edge](../images/2026-10-11/102-fog-of-war-edge.png)
+![The minimap, mostly unexplored](../images/2026-10-11/103-minimap-with-fog.png)
 
 ## Funny moments
 - The first unit lines gave every soldier a banner at age 2, replacing their capes. A whole

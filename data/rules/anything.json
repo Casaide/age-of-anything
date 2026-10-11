@@ -93,5 +93,13 @@
  },
  "ages": 3,
  "full_tech_tree": true,
- "no_restrictions": false
+ "no_restrictions": false,
+ "fog": {
+  "every": 4,
+  "unit": 6,
+  "worker": 4,
+  "building": 4,
+  "tower": 8,
+  "note": "sight radii in tiles; the fog grid updates every `every` ticks (5 Hz)"
+ }
 }

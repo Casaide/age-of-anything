@@ -37,6 +37,16 @@ func _init() -> void:
 	check(a.hashes == b.hashes and a.winner == b.winner, "bot vs bot is deterministic")
 	check(a.winner >= 0, "bot vs bot ends with a winner (%d at %s)" % [a.winner, _clock(a.tick)])
 
+	# Milestone 9 exit check: whole matches run 9-12 minutes (median over a few pairings).
+	var centaurs: Dictionary = gen.generate("centaur romans", rules)
+	var lengths := [a.tick]
+	for pair in [[centaurs, frogs], [rats, centaurs]]:
+		var r := _play(rules, pair, [Bot.new(0), Bot.new(1)], "bot %s vs bot %s" % [pair[0].name, pair[1].name])
+		check(r.winner >= 0, "%s vs %s ends with a winner" % [pair[0].name, pair[1].name])
+		lengths.append(r.tick)
+	lengths.sort()
+	check(lengths[1] >= 9 * 1200 and lengths[1] <= 12 * 1200, "bot matches run 9-12 minutes (median %s; %s)" % [_clock(lengths[1]), lengths.map(_clock)])
+
 	var w := World.new(SEED, SimMap.load_id("flat_test"), [frogs, rats], rules)
 	w.issue(1, Commands.SURRENDER, {})
 	for k in 40:

@@ -21,6 +21,10 @@ const Tech := preload("res://src/sim/tech.gd")
 const RtsCamera := preload("res://src/view/rts_camera.gd")
 const CommandPanel := preload("res://src/view/command_panel.gd")
 const UnitCard := preload("res://src/view/unit_card.gd")
+const FogView := preload("res://src/view/fog_view.gd")
+const Minimap := preload("res://src/view/minimap.gd")
+const Sfx := preload("res://src/view/sfx.gd")
+const Fog := preload("res://src/sim/fog.gd")
 const Cursors := preload("res://src/view/art/cursors.gd")
 const Commands := preload("res://src/sim/commands.gd")
 const SimMap := preload("res://src/sim/sim_map.gd")
@@ -90,6 +94,10 @@ var autoplay := false
 var army := false           # also spawn a test army per side (F7 toggles and restarts)
 var vs_ai := false          # side 2 is played by the AI (set by the match setup screen)
 var banner: Label           # victory / defeat
+var fog_view: FogView
+var minimap: Minimap
+var sfx: Sfx
+var reveal := false         # V: see everything (debug)
 var prompts: Array = []     # set before adding to the tree, else taken from the command line
 var rerolls: Array = [0, 0] # per side; G rerolls side 0
 var press_screen := Vector2.INF
@@ -117,6 +125,10 @@ func _ready() -> void:
 	add_child(layer)
 	fx = CombatFx.new()
 	add_child(fx)
+	fog_view = FogView.new()
+	add_child(fog_view)
+	sfx = Sfx.new()
+	add_child(sfx)
 	overlay = Node2D.new()
 	overlay.draw.connect(_draw_overlay)
 	add_child(overlay)
@@ -163,6 +175,14 @@ func _ready() -> void:
 	banner.grow_vertical = Control.GROW_DIRECTION_BOTH
 	banner.visible = false
 	ui.add_child(banner)
+	minimap = Minimap.new()
+	minimap.anchor_left = 1.0
+	minimap.anchor_right = 1.0
+	minimap.anchor_top = 1.0
+	minimap.anchor_bottom = 1.0
+	minimap.offset_left = -Minimap.SIZE - 24
+	minimap.offset_top = -Minimap.SIZE * 0.5 - 24
+	ui.add_child(minimap)
 	cursors = Cursors.new(DisplayServer.screen_get_scale())
 
 	if prompts.is_empty():
@@ -222,6 +242,11 @@ func _bake(races: Array) -> void:
 	baking = false
 
 
+func _on_screen(p: Vector2) -> bool:
+	var half := get_viewport_rect().size / camera.zoom * 0.5
+	return Rect2(camera.get_screen_center_position() - half, half * 2.0).has_point(p)
+
+
 func _first_of_team(team: int) -> int:
 	for p in world.teams.size():
 		if world.teams[p] == team:
@@ -231,6 +256,7 @@ func _first_of_team(team: int) -> int:
 
 func _attach(w: World, end_tick := -1) -> void:
 	banner.visible = false
+	minimap.setup(w, lib.palettes.teams.map(func(c): return Color(c)), DataLib.load_json("res://data/terrain.json").terrain, camera)
 	for d in [views, bviews, rviews]:
 		for k in d:
 			d[k].queue_free()
@@ -425,6 +451,8 @@ func _unhandled_input(event: InputEvent) -> void:
 				print("Saved replay: ", ProjectSettings.globalize_path(REPLAY_PATH))
 			KEY_F6:
 				_set_autoplay(not autoplay)
+			KEY_V:
+				reveal = not reveal
 			KEY_F10:
 				if world.winner < 0:
 					world.issue(active, Commands.SURRENDER, {})
@@ -629,8 +657,13 @@ func _play_events() -> void:
 			var target: Node2D = views.get(e.to)
 			if target != null:
 				fx.flash(target, lands)
+			if _on_screen(to) and a.visible:
+				sfx.play("shoot" if e.ranged else "hit", -4.0 if e.ranged else 0.0)
+		elif e.type == "age" and e.player == active:
+			sfx.play("age")
 		elif e.type == "won":
 			var mine: bool = world.teams[active] == e.team
+			sfx.play("won" if mine else "lost")
 			banner.text = ("Victory!" if mine else "Defeat") + "\n" + ("%s win" % world.races[_first_of_team(e.team)].name)
 			banner.add_theme_color_override("font_color", Color("#f2c94c") if mine else Color("#e07060"))
 			banner.visible = true
@@ -639,6 +672,8 @@ func _play_events() -> void:
 			if v != null:
 				views.erase(e.id)
 				selected.erase(e.id)
+				if v.visible and _on_screen(v.position):
+					sfx.play("die", -3.0)
 				fx.kill(v)
 		elif e.type == "die":
 			var bv: Node2D = bviews.get(e.id)
@@ -719,6 +754,7 @@ func _process(delta: float) -> void:
 	_sync_views()
 	_sync_buildings()
 	_sync_resources()
+	_sync_fog()
 	_check_replay()
 	for f in flags:
 		f.t -= delta
@@ -802,6 +838,24 @@ func _work_point(i: int) -> Vector2:
 	var b := world.buildings.index_of(u.target[i])
 	var bs := world.buildings
 	return Iso.to_screen((bs.cx[b] * 2 + bs.size[b]) * 500, (bs.cy[b] * 2 + bs.size[b]) * 500)
+
+
+## Fog of war for the side you command: the overlay, enemy units only where you see now,
+## enemy buildings once you've explored where they stand.
+func _sync_fog() -> void:
+	fog_view.visible = not reveal
+	fog_view.refresh(world, active)
+	minimap.player = active
+	var u := world.units
+	for i in u.count():
+		var v: Node2D = views.get(u.id[i])
+		if v != null:
+			v.visible = reveal or not world.is_enemy(active, u.owner[i]) or Fog.visible(world, active, u.x[i], u.y[i])
+	var bs := world.buildings
+	for b in bs.count():
+		var bv: Node2D = bviews.get(bs.id[b])
+		if bv != null:
+			bv.visible = reveal or not world.is_enemy(active, bs.owner[b]) or Fog.explored(world, active, bs.cx[b], bs.cy[b])
 
 
 func _sync_buildings() -> void:
@@ -979,7 +1033,7 @@ func _hud_text() -> String:
 			clock.speed, "   PAUSED" if clock.paused else ""],
 		"click / drag / double-click select   right-click: move, gather, help build, rally   Tab: switch side",
 		"Q train worker   H house   C town center   WASD/edges/middle-drag pan   wheel zoom   space pause   [ ] speed",
-		"F3 flow   F5 save replay   F9 play replay   F6 autoplay   F10 surrender   F7 test armies   M map   R restart   G/shift+G/ctrl+G regen army",
+		"F3 flow   F5 save replay   F9 play replay   F6 autoplay   F10 surrender   V reveal fog   F7 test armies   M map   R restart   G/shift+G/ctrl+G regen army",
 	]
 	var cell := _cell_at(get_global_mouse_position())
 	if map.resource_at(cell) != "":
@@ -1171,7 +1225,7 @@ func _draw_overlay() -> void:
 		if u.hp[i] >= full and not selected.has(id):
 			continue
 		var view: Node2D = views.get(id)
-		if view == null:
+		if view == null or not view.visible:
 			continue
 		var at := view.position - Vector2(bar_w * 0.5, BODY_LIFT * 2.6)
 		var k := clampf(float(u.hp[i]) / float(full), 0.0, 1.0)

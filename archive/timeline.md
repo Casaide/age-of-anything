@@ -72,3 +72,5 @@ One line per moment worth remembering. Newest at the bottom.
   head gear), waiting on Dominic's picks.
 - **2026-10-11:** Milestone 8 built: an AI that builds, counter-picks and attacks in waves; a
   match setup screen; victory and defeat. ([image](images/2026-10-11/101-ai-rats-raid-the-frog-town.png))
+- **2026-10-11:** Milestone 9 done: fog of war, minimap, placeholder sounds; bot matches run
+  about 11 minutes. ([image](images/2026-10-11/102-fog-of-war-edge.png))
