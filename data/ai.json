@@ -78,19 +78,20 @@
  },
  "_doc_mix": "economy.mix: per age, the share of workers on each resource (the bot sends idle and new workers to whatever is furthest below its share)",
  "levels": {
-  "_doc": "difficulty: each level's changes to the military plan. delay: seconds added to every wave's time; army_pct: the share of each wave's minimum army; max_workers; max_army: soldiers it keeps (population) at most; wave_max: soldiers it sends in one wave at most (the rest stay home)",
+  "_doc": "difficulty, as in the genre: easier bots build up more and fight less, but grow all game (no caps, up to the population limit). delay: seconds added to every wave's time; army_pct: the share of each wave's minimum army; army_ratio: soldiers kept (population) as a percent of its workers per age (50: half its workers in age 1, as many in age 2, one and a half in age 3; absent: no limit); wave_pct: the share of its army each wave sends (the rest defend); build_up: research gathering and line upgrades before soldiers. (Dominic: not caps; less focus on fighting, more building up.)",
   "easy": {
    "delay": 300,
    "army_pct": 50,
-   "max_workers": 22,
-   "max_army": 10,
-   "wave_max": 5
+   "army_ratio": 35,
+   "wave_pct": 40,
+   "build_up": 1
   },
   "normal": {
    "delay": 120,
    "army_pct": 100,
-   "max_army": 20,
-   "wave_max": 8
+   "army_ratio": 70,
+   "wave_pct": 70,
+   "build_up": 1
   },
   "hard": {
    "delay": 0,

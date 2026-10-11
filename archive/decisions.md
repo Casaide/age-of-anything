@@ -573,3 +573,14 @@ Easy's first kill is at about 10:47. The lobby says what each level does. Normal
 lobby shouldn't explain the levels, and Normal should be gentler. Normal's first wave comes at
 6:00 instead of 4:00, it sends at most 8 soldiers a wave and keeps at most 20 population of
 soldiers. It still beats a passive player (about 12:00); bot matches run 10:37-11:19.
+
+**D-105, 2026-10-11: Levels differ in how the bot plays, not in caps (supersedes the caps of
+D-103 and D-104).** Dominic: a capped army bores a human in a long game (40-minute games to the
+last age are normal in the genre), and easier bots in the genre focus less on fighting and build
+up more. No level caps the army now; every bot can grow to the population limit (200 per player,
+the genre's usual). Data in `data/ai.json` levels: `army_ratio` keeps soldiers in proportion to
+workers and grows with each age (Easy 35% per age, Normal 70%, Hard no limit); `wave_pct` sends
+part of the army each wave and the rest defend (Easy 40%, Normal 70%, Hard all); `build_up` has
+Easy and Normal research gathering and line upgrades before soldiers; first waves at 9:00 (Easy),
+6:00 (Normal), 4:00 (Hard: the rushy one, Dominic agreed). Easy has about 24 population of
+soldiers in its first ten minutes; Hard beats Normal.
