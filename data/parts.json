@@ -2090,7 +2090,6 @@
   "tags": [
    "ranged",
    "bow",
-   "greek",
    "steppe",
    "archer"
   ],
@@ -2153,7 +2152,10 @@
    "ranged",
    "bow",
    "heavy",
-   "archer"
+   "archer",
+   "crossbow",
+   "royal",
+   "sewer"
   ],
   "stats": {
    "attack": 6,

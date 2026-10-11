@@ -31,6 +31,21 @@
    "colour2": "#433b32",
    "note": "impassable"
   },
+  "rubble": {
+   "walkable": true,
+   "colour": "#6e6a5e",
+   "colour2": "#666256",
+   "note": "walkable ground where stone was mined"
+  },
+  "stone": {
+   "walkable": false,
+   "colour": "#8a8478",
+   "colour2": "#7e786c",
+   "resource": "stone",
+   "amount": 350,
+   "depleted": "rubble",
+   "note": "a stone deposit: 350 stone per tile; becomes rubble when mined out"
+  },
   "swamp": {
    "walkable": true,
    "colour": "#3f5a46",
