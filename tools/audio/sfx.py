@@ -129,16 +129,18 @@ def building_fall(rng):
 # ----------------------------------------------------------------------------- work
 
 def chop(rng):
-    """An axe into reed or timber. Nearly all crack: a hard bright bite, the wood's short
-    'tok' (partials up around 500-2000 Hz, gone in a tenth of a second), fibres splitting,
-    and only a hint of weight underneath. (The first version rang a 180 Hz body for 200 ms
-    and sounded like a drum: Dominic.)"""
-    bite = add(_burst(rng, 0.012, _j(rng, 2800, 4200), 0.8, 320.0, 1.3), _burst(rng, 0.02, _j(rng, 900, 1400), 1.0, 220.0, 0.8))
-    tok = modal(seconds(0.09), [(_j(rng, 480, 560), 110.0, 0.5), (_j(rng, 1050, 1250), 140.0, 0.45), (_j(rng, 1800, 2100), 170.0, 0.3)], rng, 0.0)
-    n = seconds(0.07)
-    split = mul(bandpass(noise(n, rng), _j(rng, 1800, 3200), 0.7), [decay(n, 55.0, 0.001)[i] * (0.6 + 0.4 * (rng.random() > 0.5)) for i in range(n)])
-    weight = _thump(rng, 0.05, 160.0, 110.0, 90.0, 0.3)
-    return add(bite, tok, delay_start(gain(split, 0.5), 0.008), weight)
+    """An axe into reed or timber. Nearly all crack: a hard bright bite, a noisy wood crack
+    (noise through a wood-ish band, not a tone), a damped 'tok' at wood-block ratios that is
+    gone in 30 ms, fibres splitting, and only a hint of weight underneath. (Dominic: the first
+    version was a drum; the second, with three pure ringing partials, "two pipes hitting".)"""
+    bite = _burst(rng, 0.01, _j(rng, 1800, 2600), 0.6, 380.0, 1.2)
+    crack = _burst(rng, 0.045, _j(rng, 650, 1000), 1.1, 120.0, 1.1)
+    f = _j(rng, 380, 460)
+    tok = modal(seconds(0.05), [(f, 150.0, 0.5), (f * _j(rng, 2.2, 2.4), 200.0, 0.3), (f * _j(rng, 3.4, 3.8), 260.0, 0.15)], rng, 0.0)
+    n = seconds(0.08)
+    split = mul(bandpass(noise(n, rng), _j(rng, 1200, 2600), 0.7), [decay(n, 50.0, 0.001)[i] * (0.6 + 0.4 * (rng.random() > 0.5)) for i in range(n)])
+    weight = _thump(rng, 0.05, 150.0, 105.0, 90.0, 0.25)
+    return add(bite, crack, tok, delay_start(gain(split, 0.5), 0.01), weight)
 
 
 def mine(rng):
