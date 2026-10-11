@@ -18,7 +18,9 @@ const CANCEL := "cancel"           # {building: id, index}  refunds
 const RALLY := "rally"             # {building: id, x, y}
 const ATTACK := "attack"           # {ids, target: unit or building id}
 const ATTACK_MOVE := "attack_move" # {ids, x, y}  walk there, fighting whatever comes into sight
-const TYPES := [MOVE, SPAWN, GATHER, BUILD, HELP_BUILD, TRAIN, CANCEL, RALLY, ATTACK, ATTACK_MOVE]
+const AGE_UP := "age_up"           # {building}  advance to the next age (tech.json)
+const RESEARCH := "research"       # {building, id}
+const TYPES := [MOVE, SPAWN, GATHER, BUILD, HELP_BUILD, TRAIN, CANCEL, RALLY, ATTACK, ATTACK_MOVE, AGE_UP, RESEARCH]
 ## Unit orders that can be queued: with args.queue = 1, a busy unit keeps the order for
 ## when it's done (shift-queuing); without it, the order replaces the unit's queue.
 const QUEUEABLE := [MOVE, GATHER, BUILD, HELP_BUILD, ATTACK, ATTACK_MOVE]

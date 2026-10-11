@@ -29,13 +29,14 @@ const CROWDED := 2
 static func setup(w) -> void:
 	var names := {}
 	for t in w.types:
-		var e: Dictionary = t.eval
-		for k in e.armour:
-			names[k] = true
-		for k in e.bonus:
-			names[k] = true
-		for k in e.tags:
-			names[k] = true
+		for l in t.line:   # every age's kit, so an age-up never meets a new class
+			var e: Dictionary = l.eval
+			for k in e.armour:
+				names[k] = true
+			for k in e.bonus:
+				names[k] = true
+			for k in e.tags:
+				names[k] = true
 	for b in w.btypes:
 		for k in b.armour:
 			names[k] = true
@@ -44,8 +45,22 @@ static func setup(w) -> void:
 	var rest := names.keys()
 	rest.sort()
 	w.classes = BASE + rest
-	var c: Dictionary = w.combat
 	for t in w.types:
+		type_vectors(w, t)
+	for b in w.btypes:
+		b.arm = _vector(w, b.armour)
+		var cls := PackedByteArray()
+		cls.resize(w.classes.size())
+		cls[0] = 1
+		cls[1] = 1
+		cls[2] = 1
+		b.cls = cls
+
+
+## A unit type's attack and armour vectors, classes, reach and reload, from its eval.
+static func type_vectors(w, t: Dictionary) -> void:
+	var c: Dictionary = w.combat
+	if true:
 		var e: Dictionary = t.eval
 		var atk := _vector(w, {e.damage: int(e.attack)})
 		var bonus := _vector(w, e.bonus)
@@ -64,14 +79,6 @@ static func setup(w) -> void:
 		t.reach = int(e["range"]) * SimMap.TILE if ranged else int(c.melee_reach)
 		t.reload = int(c.ranged_reload) if ranged else int(c.melee_reload)
 		t.ranged = ranged
-	for b in w.btypes:
-		b.arm = _vector(w, b.armour)
-		var cls := PackedByteArray()
-		cls.resize(w.classes.size())
-		cls[0] = 1
-		cls[1] = 1
-		cls[2] = 1
-		b.cls = cls
 
 
 static func _vector(w, d: Dictionary) -> PackedInt32Array:
