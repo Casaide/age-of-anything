@@ -1,8 +1,8 @@
 {
  "schema": "aow.buildings/1",
  "menu": {
-  "civilian": ["house", "farm", "lumber_camp", "mill", "mining_camp", "market", "town_center"],
-  "military": ["barracks", "archery_range", "stable", "armoury", "watchtower", "palisade", "palisade_gate", "wall", "stone_gate"]
+  "civilian": ["house", "farm", "lumber_camp", "mill", "mining_camp", "market", "armoury", "town_center"],
+  "military": ["barracks", "archery_range", "stable", "watchtower", "palisade", "palisade_gate", "wall", "stone_gate"]
  },
  "_menu_doc": "a worker's two build pages (Dominic: civilian and military apart), each in the order its buttons appear (building hotkeys work from either page; hotkeys are avoided where they clash with WASD panning and the debug keys)",
  "tree": ["town_center", "house", "farm", "mill", "lumber_camp", "mining_camp", "barracks", "outpost", "palisade", "palisade_gate",

@@ -114,13 +114,13 @@ Ages are when it opens. Effects use the forms `tech.json` already has (`tag/stat
 | Town Center | Pack Frames | 3 | workers +10% speed, +5 carry | planned |
 | Town Center | Lookouts | 2 | buildings +3 sight | planned |
 | Town Center | Night Lanterns | 3 | buildings +3 sight | planned |
-| Mill | Bigger Baskets | 1 | food +15% | built |
-| Mill | Ploughs | 2 | food +15% | built |
+| Mill | Bigger Baskets | 2 | food +15% | built |
+| Mill | Ploughs | 3 | food +15% | built |
 | Mill | Fallow Fields | 3 | farms +50% food | planned |
 | Mill | Water Wheels | 4 | food +15% | planned |
-| Lumber Camp | Stone Axes, Saws | 1, 2 | wood +15% each | built |
-| Lumber Camp | Felling Wedges | 3 | wood +15% | planned |
-| Mining Camp | Iron Picks | 1 | stone, gold +15% | built |
+| Lumber Camp | Stone Axes, Saws | 2, 3 | wood +15% each | built |
+| Lumber Camp | Felling Wedges | 4 | wood +15% | planned |
+| Mining Camp | Iron Picks | 2 | stone, gold +15% | built |
 | Mining Camp | Ore Carts | 3 | stone, gold +15% | planned |
 | Mining Camp | Deep Shafts | 4 | stone, gold +15% | planned |
 | Armoury | Melee: Sharp Sticks, Bronze Edges, Iron Edges | 2, 3, 4 | melee +1 attack each | Sharp Sticks built (spears only: becomes all melee) |
@@ -295,6 +295,7 @@ Fixed first, as they came in; each ticked when done.
 - [x] Watchtowers shot, unseen: the view now draws their arrows; attack 5 -> 10 pierce
 - [x] Unit stances: aggressive, defensive, stand ground, no attack
 - [x] House variants only turn or mirror where the door stays in view
+- [x] Gathering research opened in age 1 (Dominic: "mill lets me upgrade food in the 1st age"): each camp's track now starts in age 2, then 3 and 4
 
 ## Checklist
 - [x] Plan approved by Dominic (2026-10-11: four ages, split, lacks, Wonder in)

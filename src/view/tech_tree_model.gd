@@ -52,9 +52,14 @@ static func build(race: Dictionary, rules: Dictionary, lib) -> Dictionary:
 			# From the age the line can first be trained: its slot's age, or its building's if later
 			# (the ranged lines are generated from age 1 but the Archery Range opens in age 2).
 			var from := maxi(int(sd.tier), int(b.age))
+			var prev_recipe = null
 			for age in range(from, int(sd.get("last_age", last_age)) + 1):
 				var step: Dictionary = _step(unit, age)
 				var planned: bool = line_planned or step.is_empty() or _age_planned(ages, age)
+				if not planned and step.recipe == prev_recipe:
+					continue   # the same unit as the age before: no node (Dominic: "if unit doesn't change, shouldn't show every age")
+				if not planned:
+					prev_recipe = step.recipe
 				var name: String = sd.get("name", String(sd.slot).capitalize())
 				if not step.is_empty():
 					name = step.recipe.get("name", name)

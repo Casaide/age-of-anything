@@ -390,6 +390,12 @@ func _cost_row(text: String, colour: Color) -> Control:
 		ic.custom_minimum_size = Vector2(15, 15)
 		ic.mouse_filter = Control.MOUSE_FILTER_IGNORE
 		row.add_child(ic)
+	var w := row.get_combined_minimum_size().x
+	if w > BUTTON - 4:   # three costs (an age-up) spilled past the button's edges: shrink the row to fit
+		var k := (BUTTON - 4) / w
+		row.scale = Vector2(k, k)
+		row.size.x = BUTTON / k
+		row.position = Vector2(0, BUTTON - 4 - 15 * k)
 	return row
 
 
