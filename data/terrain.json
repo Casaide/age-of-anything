@@ -118,6 +118,15 @@
    "reseed": "paddy",
    "cleared": "shallows",
    "note": "a worked-out paddy: muddy water, waiting to be reseeded"
+  },
+  "carcass": {
+   "walkable": true,
+   "colour": "#6a5a3a",
+   "colour2": "#5e4e30",
+   "resource": "food",
+   "amount": 100,
+   "depleted": "grass",
+   "note": "where an animal fell: food to gather (its amount is set from the animal); grass again when it's gone"
   }
  }
 }

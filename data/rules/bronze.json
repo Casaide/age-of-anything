@@ -42,6 +42,7 @@
   "train_curve": "pow0.5_ref12",
   "train_base": 20
  },
+ "animals": true,
  "economy": {
   "start": {
    "food": 200,

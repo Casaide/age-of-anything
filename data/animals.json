@@ -1,0 +1,105 @@
+{
+ "schema": "aow.animals/1",
+ "_doc": "Animals: wild ones to hunt and tame ones to herd. Nobody owns them at first (the sim's 'gaia' owner). behaviour: flee (bolts a few tiles when hurt), fight (turns on whoever hurts it), herd (belongs to the first player whose unit comes within claim_tiles; can be led and slaughtered). A dead animal leaves a carcass: food to gather where it fell.",
+ "claim_tiles": 4,
+ "animals": {
+  "deer": {
+   "name": "Deer",
+   "hp": 20,
+   "speed": 15,
+   "attack": 0,
+   "armour": {
+    "melee": 0,
+    "pierce": 1
+   },
+   "food": 140,
+   "behaviour": "flee",
+   "flee_tiles": 3,
+   "recipe": {
+    "slot": "deer",
+    "name": "Deer",
+    "body": "body.deer",
+    "head": "head.deer",
+    "parts": {},
+    "scale": 100,
+    "skin": "deer",
+    "family": "forest",
+    "creature": "deer",
+    "tier": 1
+   }
+  },
+  "boar": {
+   "name": "Boar",
+   "hp": 70,
+   "speed": 12,
+   "attack": 5,
+   "armour": {
+    "melee": 1,
+    "pierce": 1
+   },
+   "food": 320,
+   "behaviour": "fight",
+   "recipe": {
+    "slot": "boar",
+    "name": "Boar",
+    "body": "body.boar",
+    "head": "head.boar",
+    "parts": {},
+    "scale": 100,
+    "skin": "boar",
+    "family": "forest",
+    "creature": "boar",
+    "tier": 1
+   }
+  },
+  "sheep": {
+   "name": "Sheep",
+   "hp": 8,
+   "speed": 7,
+   "attack": 0,
+   "armour": {
+    "melee": 0,
+    "pierce": 0
+   },
+   "food": 100,
+   "behaviour": "herd",
+   "recipe": {
+    "slot": "sheep",
+    "name": "Sheep",
+    "body": "body.sheep",
+    "head": "head.sheep",
+    "parts": {},
+    "scale": 100,
+    "skin": "sheep",
+    "family": "forest",
+    "creature": "sheep",
+    "tier": 1
+   }
+  }
+ },
+ "spawn": {
+  "_doc": "per player start: count at a ring of min..max tiles; then wild herds over the open map, away from starts",
+  "near_start": [
+   {
+    "kind": "sheep",
+    "count": 4,
+    "min": 4,
+    "max": 7
+   },
+   {
+    "kind": "boar",
+    "count": 1,
+    "min": 8,
+    "max": 11
+   }
+  ],
+  "wild": [
+   {
+    "kind": "deer",
+    "herds": 3,
+    "size": 3,
+    "away": 14
+   }
+  ]
+ }
+}

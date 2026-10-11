@@ -939,6 +939,114 @@ func _leg_capybara(c: Dictionary) -> Dictionary:
 	return {"node": n}
 
 
+# ------------------------------------------------------------------ animals (milestone 11)
+# Wild and herded animals: deer to hunt (they bolt), boar (they fight back), sheep to herd.
+# skin = coat, skin2 = the darker parts (muzzle, hooves, a deer's white tail).
+
+func _four_legs(front: float, back: float, y: float, z: float) -> Array:
+	return [[Vector3(front, y, z), 0.0, 1, 0], [Vector3(back, y, z), PI, 1, 0],
+		[Vector3(front - 1.0, y, -z), PI, -1, 0], [Vector3(back - 1.0, y, -z), 0.0, -1, 0]]
+
+
+func _body_deer(c: Dictionary) -> Dictionary:
+	var n := Node3D.new()
+	var coat := surf("hide", c.skin, 5.0)
+	n.add_child(blob(Vector3(9.0, 5.2, 4.4), coat, Vector3(0, 17, 0)))
+	n.add_child(blob(Vector3(4.5, 2.4, 3.6), surf("hide", c.skin.lightened(0.35), 4.0), Vector3(1, 13.6, 0)))   # pale belly
+	n.add_child(rod(Vector3(6.5, 18.5, 0), Vector3(10.5, 25, 0), 2.4, 1.7, coat))   # the neck, up
+	n.add_child(blob(Vector3(1.6, 1.9, 1.2), plain(Color("#f2ece0")), Vector3(-9.0, 18.6, 0)))   # a white tail
+	return {"node": n, "sockets": {"head": Vector3(10.8, 25.5, 0), "torso": Vector3(0, 17, 0), "back": Vector3(-5, 21, 0)},
+		"anchors": _four_legs(6.0, -6.5, 13.5, 2.6), "carry": "harness"}
+
+
+func _head_deer(c: Dictionary) -> Dictionary:
+	var n := Node3D.new()
+	var coat := surf("hide", c.skin, 5.0)
+	n.add_child(blob(Vector3(2.4, 2.1, 1.9), coat, Vector3(0.6, 0.5, 0)))
+	n.add_child(rod(Vector3(1.5, 0.3, 0), Vector3(5.2, -1.6, 0), 1.5, 0.8, coat))   # the long face
+	n.add_child(blob(Vector3(0.7, 0.6, 0.7), plain(INK), Vector3(5.3, -1.6, 0)))
+	var antler := plain(Color("#d8c8a4"))
+	for side in [1, -1]:
+		n.add_child(blob(Vector3(0.5, 1.3, 0.7), coat, Vector3(-0.6, 2.4, 1.6 * side), Vector3(0, 0, -20)))   # ears
+		n.add_child(blob(Vector3(0.45, 0.45, 0.4), plain(INK), Vector3(2.0, 1.2, 1.5 * side)))
+		var base := Vector3(0.2, 2.2, 0.8 * side)
+		var tip := base + Vector3(-1.0, 5.5, 2.2 * side)
+		n.add_child(rod(base, tip, 0.35, 0.18, antler))
+		n.add_child(rod(base.lerp(tip, 0.45), base.lerp(tip, 0.45) + Vector3(1.8, 1.6, 0.4 * side), 0.25, 0.12, antler))
+		n.add_child(rod(base.lerp(tip, 0.75), base.lerp(tip, 0.75) + Vector3(1.5, 1.4, 0.2 * side), 0.22, 0.1, antler))
+	return {"node": n, "sockets": {"top": Vector3(0, 2.5, 0)}}
+
+
+func _leg_deer(c: Dictionary) -> Dictionary:
+	var n := Node3D.new()
+	var coat := surf("hide", c.skin, 4.0)
+	n.add_child(rod(Vector3.ZERO, Vector3(0.3, -7.0, 0), 1.2, 0.6, coat))
+	n.add_child(rod(Vector3(0.3, -7.0, 0), Vector3(0.6, -13.0, 0), 0.55, 0.45, coat))
+	n.add_child(blob(Vector3(0.7, 0.6, 0.6), plain(c.skin2), Vector3(0.8, -13.3, 0)))
+	return {"node": n}
+
+
+func _body_boar(c: Dictionary) -> Dictionary:
+	var n := Node3D.new()
+	var hide := surf("hide", c.skin, 5.0)
+	n.add_child(blob(Vector3(9.5, 6.4, 5.6), hide, Vector3(0, 11, 0)))
+	n.add_child(blob(Vector3(5.5, 5.0, 4.6), hide, Vector3(5.5, 12.5, 0)))   # the heavy shoulders
+	var bristle := plain(c.skin2)
+	for k in 8:   # a crest of bristles down the back
+		var x := 7.0 - k * 1.9
+		n.add_child(rod(Vector3(x, 16.5 - absf(x - 3.0) * 0.18, 0), Vector3(x - 0.9, 19.0 - absf(x - 3.0) * 0.2, 0), 0.5, 0.15, bristle, false))
+	n.add_child(rod(Vector3(-9, 12, 0), Vector3(-11, 9, 0), 0.4, 0.2, hide))   # the tail
+	return {"node": n, "sockets": {"head": Vector3(10.5, 11.5, 0), "torso": Vector3(0, 11, 0), "back": Vector3(-4, 16, 0)},
+		"anchors": _four_legs(5.5, -6.0, 7.5, 3.4), "carry": "harness"}
+
+
+func _head_boar(c: Dictionary) -> Dictionary:
+	var n := Node3D.new()
+	var hide := surf("hide", c.skin, 5.0)
+	n.add_child(rod(Vector3(-0.5, 0.5, 0), Vector3(5.5, -1.5, 0), 3.0, 1.6, hide))   # the long head, low
+	n.add_child(blob(Vector3(0.9, 1.4, 1.5), plain(Color("#b08070")), Vector3(5.9, -1.6, 0)))   # the snout disc
+	var tusk := plain(Color("#f2ead6"))
+	for side in [1, -1]:
+		n.add_child(rod(Vector3(4.6, -2.4, 1.2 * side), Vector3(5.2, -0.4, 2.0 * side), 0.35, 0.12, tusk))
+		n.add_child(blob(Vector3(0.4, 0.4, 0.4), plain(INK), Vector3(2.6, 1.0, 1.9 * side)))
+		n.add_child(blob(Vector3(0.6, 1.2, 0.5), hide, Vector3(0.4, 2.6, 1.8 * side), Vector3(0, 0, -25)))
+	return {"node": n, "sockets": {"top": Vector3(0, 2.5, 0)}}
+
+
+func _leg_boar(c: Dictionary) -> Dictionary:
+	var n := Node3D.new()
+	n.add_child(rod(Vector3.ZERO, Vector3(0.3, -6.6, 0), 1.6, 0.9, surf("hide", c.skin, 4.0)))
+	n.add_child(blob(Vector3(0.9, 0.6, 0.8), plain(c.skin2), Vector3(0.5, -7.0, 0)))
+	return {"node": n}
+
+
+func _body_sheep(c: Dictionary) -> Dictionary:
+	var n := Node3D.new()
+	var wool := surf("felt", c.skin, 3.0)
+	for p in [Vector3(0, 11, 0), Vector3(4, 11.5, 1.5), Vector3(4, 11.5, -1.5), Vector3(-4, 11, 1.8), Vector3(-4, 11, -1.8),
+			Vector3(0, 13.5, 1.6), Vector3(0, 13.5, -1.6), Vector3(-1.5, 14.5, 0), Vector3(3, 14, 0)]:
+		n.add_child(blob(Vector3(3.8, 3.4, 3.4), wool, p))   # lumps of fleece
+	return {"node": n, "sockets": {"head": Vector3(7.5, 12.5, 0), "torso": Vector3(0, 11, 0), "back": Vector3(-3, 14, 0)},
+		"anchors": _four_legs(4.0, -4.0, 7.5, 2.4), "carry": "harness"}
+
+
+func _head_sheep(c: Dictionary) -> Dictionary:
+	var n := Node3D.new()
+	var face := surf("hide", c.skin2, 4.0)
+	n.add_child(blob(Vector3(1.9, 1.9, 1.7), surf("felt", c.skin, 3.0), Vector3(0, 1.0, 0)))   # a woolly topknot
+	n.add_child(rod(Vector3(0.6, 0.2, 0), Vector3(3.6, -1.6, 0), 1.4, 0.9, face))
+	for side in [1, -1]:
+		n.add_child(blob(Vector3(1.2, 0.45, 0.6), face, Vector3(0.4, 0.4, 1.8 * side), Vector3(0, 0, -15)))   # floppy ears
+		n.add_child(blob(Vector3(0.35, 0.35, 0.35), plain(INK), Vector3(1.8, 0.4, 1.0 * side)))
+	return {"node": n, "sockets": {"top": Vector3(0, 2, 0)}}
+
+
+func _leg_sheep(c: Dictionary) -> Dictionary:
+	var n := Node3D.new()
+	n.add_child(rod(Vector3.ZERO, Vector3(0.2, -7.2, 0), 0.75, 0.55, surf("hide", c.skin2, 4.0)))
+	return {"node": n}
+
+
 # ------------------------------------------------------------------ beetle soldier (rearing, BG1)
 # Dominic's pick: wing cases low behind on four legs, the pronotum up like a chest, the front
 # pair as arms that hold the weapon. Stag beetles rear like this to fight. Ridden beetles keep
