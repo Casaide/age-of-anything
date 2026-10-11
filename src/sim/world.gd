@@ -364,7 +364,9 @@ func _next_orders() -> void:
 			var b := buildings.index_of(bid)
 			if b >= 0 and buildings.owner[b] == p and buildings.done[b] == 0:
 				o = {"type": Commands.HELP_BUILD, "args": {"ids": o.args.ids, "target": bid}}
-		_run({"turn": turn(), "player": p, "seq": -1, "type": o.type, "args": o.args})
+		var args: Dictionary = o.args.duplicate()
+		args.queue = 1   # run now (the unit's free) without wiping the rest of its queue
+		_run({"turn": turn(), "player": p, "seq": -1, "type": o.type, "args": args})
 
 
 func _clear_combat(player: int, ids: Array) -> void:

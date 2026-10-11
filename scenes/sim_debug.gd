@@ -94,6 +94,7 @@ var selected_building := 0  # building id, or 0
 var selected_resource := -1 # a resource cell clicked to see what's left, or -1
 var active := 0             # the side you're commanding
 var placing := ""           # building type being placed, or ""
+var wall_from := Vector2i(-1, -1)   # where a wall drag started (a cell), while placing walls
 var flags: Array = []       # [{pos, t}] recent move targets
 var rally_flag: Sprite2D    # the selected building's rally point (a baked prop), or null
 var playback := {}          # the replay being played, or empty when live
@@ -417,6 +418,13 @@ func _unhandled_input(event: InputEvent) -> void:
 	if baking or world == null:
 		return
 	if event is InputEventMouseButton and event.button_index == MOUSE_BUTTON_LEFT:
+		if placing == "wall":   # walls are dragged: press at one end, release at the other
+			if event.pressed:
+				wall_from = _ghost_cell(get_global_mouse_position())
+			elif wall_from.x >= 0:
+				place_wall(wall_from, _ghost_cell(get_global_mouse_position()), event.shift_pressed)
+				wall_from = Vector2i(-1, -1)
+			return
 		if placing != "":
 			if event.pressed:
 				place_at(get_global_mouse_position(), event.shift_pressed)
@@ -815,6 +823,31 @@ func place_at(pos: Vector2, keep := false) -> void:
 	world.issue(active, Commands.BUILD, {"ids": workers, "building": placing, "cx": c.x, "cy": c.y, "queue": 1 if keep else 0})
 	if not keep:
 		placing = ""
+
+
+## A line of wall from one cell to another (straight or diagonal, the cells a line through
+## them crosses), one foundation per cell; the workers build them in order.
+func place_wall(a: Vector2i, b: Vector2i, keep := false) -> void:
+	var workers := _selected_workers()
+	if workers.is_empty():
+		placing = ""
+		return
+	var cells := wall_cells(a, b)
+	for k in cells.size():
+		world.issue(active, Commands.BUILD, {"ids": workers, "building": "wall", "cx": cells[k].x, "cy": cells[k].y,
+			"queue": 1 if keep or k > 0 else 0})
+	if not keep:
+		placing = ""
+
+
+static func wall_cells(a: Vector2i, b: Vector2i) -> Array:
+	var out := []
+	var n := maxi(absi(b.x - a.x), absi(b.y - a.y))
+	for k in n + 1:
+		var c := Vector2i(a.x + roundi(float(b.x - a.x) * k / maxi(n, 1)), a.y + roundi(float(b.y - a.y) * k / maxi(n, 1)))
+		if out.is_empty() or out[-1] != c:
+			out.append(c)
+	return out
 
 
 # ------------------------------------------------------------------ frame
@@ -1537,12 +1570,14 @@ func _draw_overlay() -> void:
 		var c := _ghost_cell(get_global_mouse_position())
 		var size: int = world.btypes[Economy.btype_of(world, placing)].size
 		var bt: Dictionary = world.btypes[Economy.btype_of(world, placing)]
-		var ok := map.can_build(c.x, c.y, size, Economy.builder_class(world, active), bt.water)
-		var x0 := c.x * 1000
-		var y0 := c.y * 1000
-		var s := size * 1000
-		overlay.draw_colored_polygon(PackedVector2Array([Iso.to_screen(x0, y0), Iso.to_screen(x0 + s, y0),
-			Iso.to_screen(x0 + s, y0 + s), Iso.to_screen(x0, y0 + s)]), GOOD if ok else BAD)
+		var ghosts := wall_cells(wall_from, c) if placing == "wall" and wall_from.x >= 0 else [c]
+		for g in ghosts:
+			var ok := map.can_build(g.x, g.y, size, Economy.builder_class(world, active), bt.water)
+			var x0: int = g.x * 1000
+			var y0: int = g.y * 1000
+			var s := size * 1000
+			overlay.draw_colored_polygon(PackedVector2Array([Iso.to_screen(x0, y0), Iso.to_screen(x0 + s, y0),
+				Iso.to_screen(x0 + s, y0 + s), Iso.to_screen(x0, y0 + s)]), GOOD if ok else BAD)
 	if boxing:
 		var r := Rect2(press_world, Vector2.ZERO).expand(get_global_mouse_position())
 		overlay.draw_rect(r, Color(RING, 0.12))
