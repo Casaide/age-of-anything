@@ -126,6 +126,19 @@ grass, the roof thatch was fuzz, and the bug bushes looked "like something clash
 - Contact shadows: every baked building and prop now gets a short dark band under its lowest
   pixels, plus an ambient-occlusion pass, so it sits on the ground.
 
+Then every remaining race got real art. Humans, ponies, beetles and all the metal-age gear were
+still the automatic fallback, flat blocks next to the modelled frogs and rats. Now they have
+hand-built models with new authored textures (cloth, skin, hide, mane, chitin, a human eye, a
+horsehair plume, feather and bat wings): people in belted tunics with faces and hair, ponies
+with manes and tails, horned beetles on six legs, swords, pole arms, bows, four kinds of shield,
+crested helmets, cuirasses, capes, banners and quivers. Centaurs had a horse neck behind the
+rider's torso; a fused mount now uses its own neckless body (`fused_body` on the pony).
+
+Buildings now follow the culture too. Imperial, hellenic and royal peoples build in stone: a
+columned hall on a stepped podium with a team frieze, a pediment shield and a fire bowl, and
+limewashed villas with tile roofs, team shutters and a cypress. Steppe peoples live in felt
+tents. Swamp and forest folk keep thatch; rats keep their junk.
+
 ## Decisions
 - D-040: the art direction is open again; choose from the sampler.
 - D-041: a sixth direction, high-fidelity pre-rendered, built as a real bake pipeline.
@@ -135,6 +148,7 @@ grass, the roof thatch was fuzz, and the bug bushes looked "like something clash
 - D-045: buildings follow the race's culture too (families.json `architecture`).
 - D-046: one atlas, one shared material, team colour via a baked key and self_modulate.
 - D-047: landscape props and building materials use authored textures too; contact shadows are drawn.
+- D-048: every part is modelled; fused mounts have their own body; stone and tent architecture.
 
 ## Pictures
 ![All five styles, same scene, same scale](../images/2026-10-11/08-style-sampler-all.png)
@@ -163,6 +177,13 @@ grass, the roof thatch was fuzz, and the bug bushes looked "like something clash
 ![Landscape pass: rolling grass, bushes, thatch courses, pond](../images/2026-10-11/32-landscape-pass-2x.png)
 ![Pond close-up: depth bands, wavelets, lilies, cattail reeds](../images/2026-10-11/33-landscape-pond-and-reeds.png)
 ![Bug bushes and the new thatch, contact shadow under the Town Center](../images/2026-10-11/34-landscape-bushes-and-thatch.png)
+![Before: humans and centaurs still the automatic fallback](../images/2026-10-11/35-before-humans-centaurs-still-placeholder.png)
+![Modelled centaur Romans and Greeks (first pass)](../images/2026-10-11/36-modelled-centaur-romans-and-greeks.png)
+![Modelled beetles and royal knights](../images/2026-10-11/37-modelled-beetles-and-knights.png)
+![Feather and bat wings](../images/2026-10-11/38-feather-and-bat-wings.png)
+![Centaurs vs beetles in the scene](../images/2026-10-11/39-centaurs-vs-beetles-in-the-scene.png)
+![Stone culture: a columned hall and villas](../images/2026-10-11/40-stone-culture-temple-hall-and-villas.png)
+![Steppe felt tents across the road from a Roman villa](../images/2026-10-11/41-steppe-felt-tents-vs-roman-villa.png)
 
 ## Funny moments and bugs worth remembering
 - **The frog on the roof.** Units are built from parts layered with `z_index`, and z_index is
@@ -195,6 +216,13 @@ grass, the roof thatch was fuzz, and the bug bushes looked "like something clash
   from the projection: a tile diagonal is 32 px, and in 3D that's sqrt(2) * sin(30 degrees) units.
 - **The lettuce bushes.** Ninety-five flat leaf cards at random angles made each bug bush look
   like a salad with interference. Three lumps of foliage texture look more like a bush.
+- **The centaur's spare neck.** The 2D centaur had always drawn the pony's neck, hidden behind
+  the rider. Once modelled, the neck stuck out behind the human torso like a second head.
+- **Everyone stands on one leg.** The first modelled humans had both legs lined up exactly
+  behind each other from the camera's angle, so every person read as a "1". Staggering them
+  front and back gave them two again.
+- **Horse-tail tassels as barcode.** Dark tassels hanging over the steppe pennant turned into
+  stripes once the banner wave shader moved them. They're gone.
 
 ## Ideas parked
 - Mixes: storybook units on painterly ground; toy-rendered parts with ink outlines; paper ground

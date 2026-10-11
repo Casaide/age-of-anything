@@ -217,3 +217,11 @@ authored SVG textures (as D-043 did for units), replacing stretched noise. Every
 and prop gets a short hand-drawn-style dark band under its lowest pixels, plus an
 ambient-occlusion pass, because lit contact shadow alone didn't survive pixelizing. Asked for by
 Dominic ("lack of shadow at points like this"); approach by Claude.
+
+**D-048, 2026-10-11: Every part is modelled; fused mounts have their own body; architecture
+grows to stone and tent.** No unit part relies on the automatic fallback any more. A fused mount
+(the centaur's horse half) uses the mount creature's `fused_body` (`body.pony_fused`, the pony
+without its neck), and the rider stands at that body's seat; this only changes the view, not
+recipes or race keys. `families.json` `architecture` gains "stone" (imperial, hellenic, royal)
+and "tent" (steppe). Claude's call, following Dominic's "finish the art before moving on" and his
+earlier "Romans should get nice roads".
