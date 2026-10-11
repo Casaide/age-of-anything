@@ -122,19 +122,19 @@ func _spec(models, arch: String, type: String, model := "") -> Dictionary:
 
 ## A building's model at its size and turn: houses a little smaller than halls, a culture's
 ## own scale for a type (data: buildings.json "scale", e.g. the rats' house and barracks), and
-## a variant's quarter turn and nudge in size (data: "variants"), so a street of houses varies.
+## a variant's turn or mirror and nudge in size (data: "variants"), so a street of houses varies.
 func _placed(models, arch: String, type: String, model: String, suffix: String) -> Dictionary:
 	var spec: Dictionary = _spec(models, arch, type, model)
 	var d: Dictionary = DataLib.load_json("res://data/buildings.json")
 	var s: float = (HOUSE_SCALE if type == "house" else 1.0) * float(d.get("scale", {}).get(arch, {}).get(type, 1.0))
-	var turn := 0.0
+	var look := Basis.IDENTITY
 	var v := int(suffix.get_slice("#", 1)) if "#" in suffix else 0
 	if v > 0:
-		turn = 90.0 * v
+		look = _variant_look(spec, "%s:%s" % [arch, type], v)
 		s *= [1.0, 0.94, 1.05, 0.9][v % 4]
-	if s == 1.0 and turn == 0.0:
+	if s == 1.0 and look == Basis.IDENTITY:
 		return spec
-	var basis := Basis(Vector3.UP, deg_to_rad(turn)).scaled(Vector3.ONE * s)
+	var basis := look.scaled(Vector3.ONE * s)
 	for key in ["body", "banner", "vane"]:
 		if spec.has(key):
 			var holder := Node3D.new()
@@ -146,6 +146,33 @@ func _placed(models, arch: String, type: String, model: String, suffix: String) 
 			spec[key] = basis * spec[key]
 	spec.lights = spec.get("lights", []).map(func(p): return basis * p)
 	return spec
+
+
+## The bake camera looks from +x +z (baker.gd: yaw 45), so a face whose outward direction
+## leans this way is one of the two walls we see.
+const SEEN := Vector3(1, 0, 1)
+
+
+## The turn (and maybe mirror) of a building's variant v: only ones that keep the door the model
+## declares (spec "door", its outward direction) on a seen wall, those that also keep its
+## "window" in view first, so no variant shows only blank walls (Dominic: "sometimes we see
+## nothing"). Mirrored across the x = z diagonal, a building swaps its two seen walls.
+func _variant_look(spec: Dictionary, name: String, v: int) -> Basis:
+	assert(spec.has("door"), "%s has variants but its model declares no door" % name)
+	var door: Vector3 = spec.door
+	var window: Vector3 = spec.get("window", door)
+	assert(door.dot(SEEN) > 0.0, "%s: its door faces away from the camera unturned" % name)
+	var mirror := Basis(Vector3(0, 0, 1), Vector3.UP, Vector3(1, 0, 0))
+	var both := []
+	var door_only := []
+	for flip in [Basis.IDENTITY, mirror]:
+		for q in 4:
+			var b: Basis = Basis(Vector3.UP, q * PI / 2.0) * flip
+			if b == Basis.IDENTITY or (b * door).dot(SEEN) <= 0.0:
+				continue
+			(both if (b * window).dot(SEEN) > 0.0 else door_only).append(b)
+	var looks: Array = [Basis.IDENTITY] + both + door_only
+	return looks[v % looks.size()]
 
 
 ## The look of a building for a player in an age: its latest age look that's baked (data:
