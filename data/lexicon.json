@@ -1392,26 +1392,26 @@
     "crossbow": 4,
     "archer": 1
    }
+  },
+  "hoplite": {
+   "family": "hellenic",
+   "tags": {
+    "greek": 4,
+    "phalanx": 3,
+    "spear": 2,
+    "shield": 2
+   },
+   "default_creature": "human"
+  },
+  "hoplites": {
+   "family": "hellenic",
+   "tags": {
+    "greek": 4,
+    "phalanx": 3,
+    "spear": 2,
+    "shield": 2
+   },
+   "default_creature": "human"
   }
- },
- "hoplite": {
-  "family": "hellenic",
-  "tags": {
-   "greek": 4,
-   "phalanx": 3,
-   "spear": 2,
-   "shield": 2
-  },
-  "default_creature": "human"
- },
- "hoplites": {
-  "family": "hellenic",
-  "tags": {
-   "greek": 4,
-   "phalanx": 3,
-   "spear": 2,
-   "shield": 2
-  },
-  "default_creature": "human"
  }
 }
