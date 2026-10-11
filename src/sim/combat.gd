@@ -134,9 +134,9 @@ static func cmd_attack_move(w, player: int, a: Dictionary) -> void:
 static func _is_target(w, id: int, player: int) -> bool:
 	var i: int = w.units.index_of(id)
 	if i >= 0:
-		return w.units.owner[i] != player
+		return w.is_enemy(w.units.owner[i], player)
 	var b: int = w.buildings.index_of(id)
-	return b >= 0 and w.buildings.owner[b] != player
+	return b >= 0 and w.is_enemy(w.buildings.owner[b], player)
 
 
 # ------------------------------------------------------------------ tick
@@ -285,7 +285,7 @@ static func _nearest_foe(w, i: int, sight: int, buildings_too: bool, engaged: Pa
 			var cell: int = yy * sp.width + xx
 			for k in range(sp.start[cell], sp.start[cell + 1]):
 				var j: int = sp.items[k]
-				if u.owner[j] == me:
+				if not w.is_enemy(u.owner[j], me):
 					continue
 				var d2 := Fixed.dist2(u.x[i], u.y[i], u.x[j], u.y[j])
 				if d2 > sight * sight:
@@ -299,7 +299,7 @@ static func _nearest_foe(w, i: int, sight: int, buildings_too: bool, engaged: Pa
 	best_d = sight * sight + 1
 	var bs = w.buildings
 	for b in bs.count():
-		if bs.owner[b] == me:
+		if not w.is_enemy(bs.owner[b], me):
 			continue
 		var s: int = bs.size[b] * SimMap.TILE
 		var mx: int = bs.cx[b] * SimMap.TILE + s / 2
