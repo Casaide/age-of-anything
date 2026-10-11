@@ -84,6 +84,12 @@ func set_state(p_done: bool, p_progress: float) -> void:
 	queue_redraw()
 
 
+## Where a shooting building's shots leave from (canvas): a little below the top of its art.
+func loose_at() -> Vector2:
+	var r := body.get_rect()
+	return position + body.position + Vector2(0, (r.position.y + r.size.y * 0.2) * body.scale.y)
+
+
 func _process(delta: float) -> void:
 	time += delta
 	for g in glows:
