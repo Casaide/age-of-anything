@@ -1069,8 +1069,8 @@ func _leg_boar(c: Dictionary) -> Dictionary:
 
 func _body_sheep(c: Dictionary) -> Dictionary:
 	var n := Node3D.new()
-	var wool := surf("felt", c.skin, 2.0)
-	var shade := surf("felt", c.skin.darkened(0.22), 2.0)   # curls in shadow, so the fleece has texture
+	var wool := plain(c.skin)
+	var shade := plain(c.skin.darkened(0.22))   # curls in shadow, so the fleece has texture
 	# One smooth oval of fleece, deep and round, with soft curls on its surface (not a heap of
 	# lumps), sitting low on short dark legs; a small tail tuft.
 	n.add_child(blob(Vector3(7.5, 5.0, 4.6), wool, Vector3(-0.5, 10.5, 0)))
@@ -1090,7 +1090,7 @@ func _body_sheep(c: Dictionary) -> Dictionary:
 func _head_sheep(c: Dictionary) -> Dictionary:
 	var n := Node3D.new()
 	var face := surf("hide", c.skin2, 4.0)
-	n.add_child(blob(Vector3(1.8, 1.4, 1.6), surf("felt", c.skin, 2.0), Vector3(-0.4, 1.2, 0)))   # the poll of wool
+	n.add_child(blob(Vector3(1.8, 1.4, 1.6), plain(c.skin), Vector3(-0.4, 1.2, 0)))   # the poll of wool
 	n.add_child(blob(Vector3(2.6, 1.7, 1.5), face, Vector3(1.6, -0.6, 0), Vector3(0, 0, -25)))   # the long dark face, nose down
 	for side in [1, -1]:
 		n.add_child(blob(Vector3(1.5, 0.4, 0.7), face, Vector3(0.0, 0.4, 1.9 * side), Vector3(0, 25 * side, -10)))   # ears out sideways
