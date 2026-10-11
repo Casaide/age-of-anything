@@ -147,3 +147,11 @@ Also: clicking an enemy unit switched your side, so your fog showed what they co
 debug view lets you command both sides). Against the AI you now stay yourself: enemy units and
 buildings can be inspected, not ordered; Tab and box-select only take your own. The attack cursor
 no longer lights up over buildings you haven't found. And the AI beat Dominic.
+
+### The rally flag, three tries
+The rally flag existed but was a 16-pixel line drawn off to the side: nobody found it. A bigger
+drawn flag with a ring at its foot came out as a golf hole again (a white disc from an old marker
+under it). Dominic: "the flag is 2D and super cheap looking". Now it's a baked prop like the
+buildings: a staff in a little cairn, a brass finial, a team-colour cloth in one gentle wave, shown
+only while its building is selected. A parse error I'd made in the cursor code would have stopped
+the game loading; run_tests now loads every scene and view script so that can't slip through.

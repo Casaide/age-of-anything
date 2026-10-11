@@ -217,6 +217,7 @@ func _bake_doodads(baker, models) -> void:
 			shadowed[staged("bush", v, st)] = props.bug_bush(400 + v, st)
 	for v in DOODADS.rock:
 		shadowed["rock%d" % v] = props.boulders(1000 + v)
+	shadowed["rally_flag"] = models.rally_flag(Color(PartShape.TEAM_KEY))
 	var flat := {}
 	for v in DOODADS.stones:
 		flat["stones%d" % v] = props.field_stones(500 + v)

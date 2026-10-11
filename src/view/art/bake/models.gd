@@ -1106,3 +1106,28 @@ func junk_town_center_small(team: Color) -> Dictionary:
 	for part in [spec.banner, spec.vane]:
 		part.scale = Vector3(k, 1.0, k)
 	return spec
+
+
+## The rally point's flag: a staff planted in a little cairn of stones, a cloth in the team colour
+## in a gentle wave, a brass finial. About a unit and a half tall, so it's found at a glance.
+func rally_flag(team: Color) -> Node3D:
+	rng.seed = 77
+	var n := Node3D.new()
+	var wood := mats.get_mat("wood")
+	var stone := mats.get_mat("stone")
+	for k in 5:   # the cairn
+		var a := k * TAU / 5.0
+		n.add_child(ball(0.06 + rng.randf() * 0.02, stone, Vector3(cos(a) * 0.07, 0.03, sin(a) * 0.07), Vector3(1.2, 0.8, 1.0)))
+	n.add_child(ball(0.05, stone, Vector3(0.0, 0.08, 0.0), Vector3(1.2, 0.8, 1.0)))
+	n.add_child(cyl(0.016, 0.02, 0.8, wood, Vector3(0, 0.4, 0), Vector3.ZERO, 8))
+	n.add_child(ball(0.03, Materials.flat(Color("#c89a40"), 0.3, 0.8), Vector3(0, 0.82, 0)))
+	n.add_child(cyl(0.008, 0.008, 0.36, wood, Vector3(0.18, 0.76, 0), Vector3(0, 0, 90), 6))   # the cross-bar the cloth hangs from
+	var strips := 12
+	for k in strips:   # the cloth as one gentle wave, growing towards the free end and sagging a touch
+		var f := float(k) / strips
+		var x := 0.02 + f * 0.34
+		var z := sin(f * 7.0) * 0.025 * (0.3 + f)
+		var slope := cos(f * 7.0) * 7.0 * 0.025 * (0.3 + f) / 0.34
+		n.add_child(box(Vector3(0.034, 0.27 - f * 0.03, 0.01), cloth(team), Vector3(x, 0.625 - f * 0.012, z), Vector3(0, -rad_to_deg(atan(slope)), 0)))
+	return n
+

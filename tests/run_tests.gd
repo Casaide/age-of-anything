@@ -36,9 +36,20 @@ func _init() -> void:
 	_test_bounds(lib, gen, rules)
 	_test_prompts(gen, rules)
 	_test_composer(lib, gen, rules.default)
+	_test_scripts_parse()
 
 	print("\n%d checks, %d failed" % [checks, failures])
 	quit(1 if failures > 0 else 0)
+
+
+## Every game and view script loads (a parse error in a scene script otherwise only shows when
+## the game is run).
+func _test_scripts_parse() -> void:
+	for dir in ["res://scenes/", "res://src/view/", "res://src/view/art/", "res://src/ai/", "res://src/sim/"]:
+		for f in DirAccess.get_files_at(dir):
+			if f.ends_with(".gd"):
+				var script: Script = load(dir + f)
+				check(script != null and script.can_instantiate(), "script parses: " + dir + f)
 
 
 func check(ok: bool, what: String) -> void:
