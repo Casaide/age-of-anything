@@ -48,7 +48,25 @@ func _tex(noise: FastNoiseLite, ramp: Array, size := Vector2i(512, 512), normal 
 	return t
 
 
+## Authored thatch: courses of straw running down the slope (u around the roof,
+## v down it, as a cone's UVs run), so the roof has structure instead of fuzz.
+func _thatch() -> StandardMaterial3D:
+	var m := StandardMaterial3D.new()
+	var img := Image.new()
+	img.load_svg_from_string(FileAccess.get_file_as_string("res://assets/art/textures/thatch.svg"), 1.0)
+	img.generate_mipmaps()
+	m.albedo_texture = ImageTexture.create_from_image(img)
+	m.uv1_scale = Vector3(9, 2.5, 1)
+	m.albedo_color = Color(0.86, 0.82, 0.76)
+	m.roughness = 1.0
+	m.metallic_specular = 0.15
+	m.texture_filter = BaseMaterial3D.TEXTURE_FILTER_LINEAR_WITH_MIPMAPS_ANISOTROPIC
+	return m
+
+
 func _make(name: String) -> StandardMaterial3D:
+	if name == "thatch":
+		return _thatch()
 	var m := StandardMaterial3D.new()
 	var n: FastNoiseLite
 	var ramp: Array
