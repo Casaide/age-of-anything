@@ -67,11 +67,11 @@ func think(w) -> void:
 	for i in idle:
 		var kind := _short_of(w, n, w.units.x[i], w.units.y[i])
 		if kind > 0:
-			w.issue(player, Commands.GATHER, {"ids": [w.units.id[i]], "cell": _nearest_resource(w, w.units.x[i], w.units.y[i], kind)})
+			w.issue(player, Commands.GATHER, {"ids": [w.units.id[i]], "cell": _nearest_resource(w, w.units.x[i], w.units.y[i], kind, true)})
 			n[kind - 1] += 1
 	# New workers go where we're short.
 	var rally_kind := _short_of(w, n, bs.cx[tc] * 1000 + 1500, bs.cy[tc] * 1000 + 1500)
-	var rally := _nearest_resource(w, bs.cx[tc] * 1000 + 1500, bs.cy[tc] * 1000 + 1500, rally_kind) if rally_kind > 0 else -1
+	var rally := _nearest_resource(w, bs.cx[tc] * 1000 + 1500, bs.cy[tc] * 1000 + 1500, rally_kind, true) if rally_kind > 0 else -1
 	if rally >= 0 and w.map.cell_of(bs.rally_x[tc], bs.rally_y[tc]) != rally:
 		w.issue(player, Commands.RALLY, {"building": bs.id[tc], "x": (rally % w.map.width) * 1000 + 500, "y": (rally / w.map.width) * 1000 + 500})
 	# Meat first (the orders below then leave these hunters be), and no foundation left alone.
@@ -249,7 +249,9 @@ func _nearest_food_workers(w, workers: Array, x: int, y: int, count: int) -> Arr
 
 
 ## Farms: as the wild food near home runs out, a farm for each food worker it no longer
-## feeds; worked-out farms reseeded (the idle hands then pick them up as the nearest food).
+## feeds (one farmer per farm); worked-out farms reseeded (the idle hands then pick them up
+## as the nearest food). A food worker waiting by a full farm builds the next one, so it
+## becomes that farm's farmer.
 func _farms(w, tc: int, workers: Array, n: PackedInt32Array) -> void:
 	var bs = w.buildings
 	var food: int = Economy.kind_of(w, "food")
@@ -277,7 +279,13 @@ func _farms(w, tc: int, workers: Array, n: PackedInt32Array) -> void:
 			wild += int(t.food)
 	if farms >= n[food - 1] - wild / WILD_PER_WORKER or w.stock[food - 1][player] >= FARM_BELOW or _building_underway(w) or not w.can_afford(player, ft.cost):
 		return
-	var builder := _pick_builder(w, workers)
+	var builder := -1
+	for i in workers:
+		if w.units.task[i] == Economy.GATHER and w.units.home[i] < 0 and w.units.carry_kind[i] == food and not _ordered.has(w.units.id[i]):
+			builder = i   # waiting for a farm: it builds its own
+			break
+	if builder < 0:
+		builder = _pick_builder(w, workers)
 	var spot := _house_spot(w, bs.cx[tc] + 1, bs.cy[tc] + 1, ft.size)
 	if builder >= 0 and spot.x >= 0:
 		w.issue(player, Commands.BUILD, {"ids": [w.units.id[builder]], "building": "farm", "cx": spot.x, "cy": spot.y})
@@ -334,12 +342,13 @@ func _pick_builder(w, workers: Array) -> int:
 	return free[0] if not free.is_empty() else -1
 
 
-## Nearest cell with that resource left, anywhere on the map (ties: lower cell).
-func _nearest_resource(w, x: int, y: int, kind: int) -> int:
+## Nearest cell with that resource left, anywhere on the map (ties: lower cell). `free`
+## passes over farms already worked by as many as they take.
+func _nearest_resource(w, x: int, y: int, kind: int, free := false) -> int:
 	var best := -1
 	var best_d2 := 1 << 62
 	for c in w.map.resource_cells:
-		if w.map.amount[c] <= 0 or Economy.kind_of(w, w.map.resource_at(c)) != kind:
+		if w.map.amount[c] <= 0 or Economy.kind_of(w, w.map.resource_at(c)) != kind or (free and Economy.taken(w, c)):
 			continue
 		var d2 := Fixed.dist2(x, y, (c % w.map.width) * 1000 + 500, (c / w.map.width) * 1000 + 500)
 		if d2 < best_d2:
