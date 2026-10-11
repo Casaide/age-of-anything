@@ -253,8 +253,8 @@ func _side_panel(i: int, who: String, prompt: String) -> Control:
 		lrow.add_theme_constant_override("separation", 8)
 		lrow.add_child(_label("Plays", 15, DIM))
 		level_pick = OptionButton.new()
-		level_pick.add_item("Easy: a few soldiers, from about 9 minutes")
-		level_pick.add_item("Normal: raids from 4 minutes, all-out attacks")
+		level_pick.add_item("Easy")
+		level_pick.add_item("Normal")
 		level_pick.selected = 0
 		level_pick.focus_mode = Control.FOCUS_NONE
 		lrow.add_child(level_pick)
