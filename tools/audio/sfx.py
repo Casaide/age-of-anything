@@ -74,35 +74,33 @@ def arrow_land(rng):
 
 # ----------------------------------------------------------------------------- shots
 
-def _loose(rng, f, g=1.0):
-    """A bowstring let go: a damped slap, a 'thup', dead within 40 ms (a ringing pluck was
-    "very twangy": Dominic)."""
-    slap = lowpass(I.pluck(f, 0.06, rng, 1.0, 0.3, 0.86), 700.0)
-    return gain(add(slap, _burst(rng, 0.012, _j(rng, 900, 1400), 0.8, 300.0, 0.4)), g)
-
-
 def _whoosh(rng, dur, f0, f1, g=1.0):
     n = seconds(dur)
     centre = lambda t: f0 + (f1 - f0) * (t / dur)
     return gain(mul(bandpass(noise(n, rng), centre, 1.6), env(n, dur * 0.35, dur * 0.5, 0.0)), g)
 
 
+def _flight(rng, dur, f0, f1, air=1.0, whistle=0.45):
+    """An arrow in the air going away from you: a band of air noise falling in pitch as it
+    leaves, a thin fletching whistle inside it, loud at once and gone by the end."""
+    n = seconds(dur)
+    fall = lambda t: f0 + (f1 - f0) * (t / dur) ** 0.8
+    shape = [min(1.0, i / seconds(0.012)) * math.exp(-4.5 * i / n) * (1.0 - (i / n) ** 3) for i in range(n)]
+    out = gain(mul(bandpass(noise(n, rng), fall, 1.1), shape), air * 1.3)
+    thin = gain(mul(bandpass(noise(n, rng), lambda t: fall(t) * 1.25, 7.0, 2.5), shape), whistle)
+    return add(out, thin)
+
+
 def shoot_arrow(rng):
-    """The loose, then the fletching: a hiss rising as it goes, with a 60 Hz flutter."""
-    n = seconds(0.17)
-    f0 = _j(rng, 1400, 1800)
-    whoosh = mul(bandpass(noise(n, rng), lambda t, f0=f0: f0 + 2200.0 * (t / 0.17), 1.2), env(n, 0.02, 0.1, 0.0))
-    flutter = [0.75 + 0.25 * math.sin(math.tau * 60.0 * i / RATE) for i in range(n)]
-    return add(_loose(rng, _j(rng, 110, 140), 1.0), delay_start(gain(mul(whoosh, flutter), 1.1), 0.01))
+    """Mostly the flight; the loose is a soft tap (Dominic: "focus on the arrow in air")."""
+    tap = gain(lowpass(_burst(rng, 0.01, 1000.0, 0.8, 350.0, 1.0), 1500.0), 0.35)
+    return add(tap, delay_start(_flight(rng, 0.27, _j(rng, 3000, 3600), _j(rng, 1500, 1800)), 0.006))
 
 
 def shoot_bolt(rng):
-    """A heavy bow: a mechanical clack, a lower loose, a thicker whoosh."""
-    clack = _burst(rng, 0.02, _j(rng, 1200, 1800), 1.0, 180.0, 0.9)
-    n = seconds(0.21)
-    f0 = _j(rng, 900, 1200)
-    whoosh = mul(bandpass(noise(n, rng), lambda t, f0=f0: f0 + 1400.0 * (t / 0.21), 1.0), env(n, 0.02, 0.12, 0.0))
-    return add(clack, delay_start(_loose(rng, _j(rng, 70, 90), 1.2), 0.008), delay_start(gain(whoosh, 1.1), 0.02))
+    """A heavy bow: a clack, then a lower, thicker flight."""
+    clack = _burst(rng, 0.015, _j(rng, 1200, 1800), 1.0, 220.0, 0.6)
+    return add(clack, delay_start(_flight(rng, 0.3, _j(rng, 2200, 2600), _j(rng, 1100, 1300), 1.2, 0.35), 0.012))
 
 
 def shoot_javelin(rng):
