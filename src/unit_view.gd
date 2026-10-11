@@ -20,6 +20,7 @@ var breathing: Array = []
 var weapon: Node2D
 var weapon_rest := Vector2.ZERO
 var weapon_rot := 0.0     # at rest: couched forward on a harness, else upright
+var _hold_suffix := ""    # "@hold" on the body being built (its arm posed for its weapon)
 var harnessed := false    # no arms: gear rides on a harness, work is done with the whole body
 const COUCH := Vector2(1.0, -0.3)   # a couched weapon points forward, a little up
 var head_node: Node2D     # the unit's own head (the rider's, when mounted)
@@ -87,12 +88,12 @@ func build(r: Dictionary, lib, team: Color, speed := 10) -> void:
 			seat.position = mount_rig.sockets.get("seat", Vector2(0, -20)) + Vector2(0, 6)
 			seat.scale = Vector2(0.8, 0.8)
 		bob.add_child(seat)
-		var rider := _make_rig(lib, r.body, r.head, colours, seat, false)
+		var rider := _make_rig(lib, r.body, r.head, colours, seat, false, r.parts.get("hand_r", ""))
 		for slot in r.parts:
 			_attach(lib, rider, slot, r.parts[slot], colours)
 		flying = m.parts.has("back") and "flying" in lib.part(m.parts.back).tags
 	else:
-		var rig := _make_rig(lib, r.body, r.head, colours, bob, true)
+		var rig := _make_rig(lib, r.body, r.head, colours, bob, true, r.parts.get("hand_r", ""))
 		for slot in r.parts:
 			_attach(lib, rig, slot, r.parts[slot], colours)
 	var rides_unwinged: bool = r.has("mount") and not r.mount.fused
@@ -137,12 +138,32 @@ static func colours_for(lib, skin: String, family: String, team: Color) -> Dicti
 	return c
 
 
-func _make_rig(lib, body_id: String, head_id: String, colours: Dictionary, parent: Node2D, with_legs: bool) -> Dictionary:
+## How a weapon is held, from its tags: the body is baked with its near arm in that
+## pose (unit_models.arm_pose). Spears, swords, lances and tools are held low.
+static func hold_for(tags: Array) -> String:
+	if "javelin" in tags:
+		return "throw"
+	if "poison" in tags and "ranged" in tags:
+		return "mouth"
+	if "sling" in tags:
+		return "overhead"
+	if "gun" in tags or ("bow" in tags and "heavy" in tags):
+		return "aim"
+	if "bow" in tags:
+		return "draw"
+	if "spear" in tags and "heavy" in tags:
+		return "shoulder"
+	return "low"
+
+
+func _make_rig(lib, body_id: String, head_id: String, colours: Dictionary, parent: Node2D, with_legs: bool, hand_r := "") -> Dictionary:
+	var hold := hold_for(lib.part(hand_r).tags) if hand_r != "" else "low"
+	_hold_suffix = "" if hold == "low" else "@" + hold
 	var body: Dictionary = lib.part(body_id)
 	var root := Node2D.new()
 	parent.add_child(root)
 	# Baked parts from hand-built models bring their own sockets (projected by the bake camera).
-	var rig: Dictionary = PartShape.rigs.get(body_id, {})
+	var rig: Dictionary = PartShape.rigs.get(body_id + _hold_suffix, {})
 	var sockets := {}
 	for k in body.sockets:
 		sockets[k] = PartShape.v2(body.sockets[k])
@@ -165,14 +186,14 @@ func _make_rig(lib, body_id: String, head_id: String, colours: Dictionary, paren
 			legs.append({"node": leg, "phase": float(a[2])})
 
 	var body_node := _shape()
-	body_node.part_id = body_id
+	body_node.part_id = body_id + _hold_suffix
 	body_node.setup(body.shapes, colours)
 	root.add_child(body_node)
 	breathing.append(body_node)
 	if rig.get("front", false):
 		# The body's near arm, drawn above torso armour and below what the hands hold.
 		var arm := _shape()
-		arm.part_id = body_id
+		arm.part_id = body_id + _hold_suffix
 		arm.front = true
 		arm.setup(body.shapes, colours)
 		arm.set_meta("z", 1.5)
