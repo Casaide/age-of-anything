@@ -591,3 +591,11 @@ func _concept_beetle_upright(c: Dictionary) -> Dictionary:
 	n.add_child(blob(Vector3(1.2, 3.6, 4.4), plain(c.team), Vector3(-3.6, 12, 0)))
 	return {"node": n, "sockets": {"head": Vector3(2.5, 23.5, 0), "hand_r": Vector3(5, 15, 5), "hand_l": Vector3(5, 15, -5),
 		"torso": Vector3(1, 15, 0), "back": Vector3(-4, 15, 0)}, "anchors": [], "torso_scale": Vector2(0.5, 0.7)}
+
+
+## H2: the human head modelled in Blender (tools/blender/human_head.py) instead of from primitives.
+func _concept_head_blender(c: Dictionary) -> Dictionary:
+	var n := glb("head_human", {"skin": surf("skin", c.skin, 6.0), "hair": surf("mane", c.skin2.darkened(0.45), 3.0),
+		"eye": plain(Color("#1a1210"))})
+	return {"node": n, "sockets": {"top": Vector3(0.3, 11.0, 0)}}
+
