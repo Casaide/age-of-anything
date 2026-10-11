@@ -110,6 +110,8 @@ func build(r: Dictionary, lib, team: Color, speed := 10) -> void:
 			seat.position = mount_rig.sockets.get("seat", Vector2(0, -20)) + Vector2(0, 6)
 			seat.scale = Vector2(0.8, 0.8)
 		bob.add_child(seat)
+		# Every rider shows its near leg down the mount's flank, held still (people had none: Dominic).
+		_clinging = not m.fused
 		var rider := _make_rig(lib, r.body, r.head, colours, seat, _clinging, r.parts.get("hand_r", ""))
 		_clinging = false
 		for slot in r.parts:
