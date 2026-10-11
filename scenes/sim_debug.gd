@@ -88,6 +88,7 @@ var selected_building := 0  # building id, or 0
 var active := 0             # the side you're commanding
 var placing := ""           # building type being placed, or ""
 var flags: Array = []       # [{pos, t}] recent move targets
+var rally_flag: Sprite2D    # the selected building's rally point (a baked prop), or null
 var playback := {}          # the replay being played, or empty when live
 var checked := 0            # world.hashes entries already compared
 var desync := -1
@@ -283,6 +284,9 @@ func _attach(w: World, end_tick := -1) -> void:
 		for n in doodads[c]:
 			n.queue_free()
 	doodads.clear()
+	if rally_flag != null:
+		rally_flag.queue_free()
+		rally_flag = null
 	fx.clear()
 	built_count = -1
 	selected.clear()
@@ -799,6 +803,7 @@ func _process(delta: float) -> void:
 	_sync_views()
 	_sync_buildings()
 	_sync_resources()
+	_sync_rally()
 	_sync_fog()
 	_check_replay()
 	for f in flags:
@@ -810,6 +815,21 @@ func _process(delta: float) -> void:
 	hud.text = _hud_text()
 	_update_panel()
 	_update_cursor()
+
+
+## The selected building's rally point, as a baked flag standing in the world (only while
+## that building is selected, and only your own).
+func _sync_rally() -> void:
+	var b := world.buildings.index_of(selected_building)
+	var show := b >= 0 and world.buildings.owner[b] == active and world.buildings.rally_x[b] >= 0
+	if show and rally_flag == null:
+		rally_flag = kit.sprite("rally_flag")
+		layer.add_child(rally_flag)
+	if rally_flag != null:
+		rally_flag.visible = show
+		if show:
+			rally_flag.position = Iso.to_screen(world.buildings.rally_x[b], world.buildings.rally_y[b])
+			rally_flag.self_modulate = Color(lib.palettes.teams[world.buildings.owner[b]])
 
 
 func _sync_views() -> void:
@@ -1208,7 +1228,7 @@ func _update_cursor() -> void:
 		return
 	var cell := _cell_at(pos)
 	var bid: int = map.occupied[cell]
-	var enemy := bid != 0 and world.is_enemy(active, world.buildings.owner[world.buildings.index_of(bid)]) \
+	var enemy: bool = bid != 0 and world.is_enemy(active, world.buildings.owner[world.buildings.index_of(bid)]) \
 		and bviews.has(bid) and bviews[bid].visible   # not over buildings you haven't found
 	var under := unit_at(pos)
 	if under != 0 and world.is_enemy(active, world.units.owner[world.units.index_of(under)]):
@@ -1243,17 +1263,6 @@ func _draw_marks() -> void:
 		if u.moving[i] == 1:
 			marks.draw_line(view.position, Iso.to_screen(u.wx[i], u.wy[i]), Color(RING, 0.35), 1.0 / camera.zoom.x)
 			marks.draw_line(Iso.to_screen(u.wx[i], u.wy[i]), Iso.to_screen(u.tx[i], u.ty[i]), Color(RING, 0.12), 1.0 / camera.zoom.x)
-	# The selected building's rally point, as a flag (only while the building is selected).
-	var sb := world.buildings.index_of(selected_building)
-	if sb >= 0 and world.buildings.rally_x[sb] >= 0:
-		var at := Iso.to_screen(world.buildings.rally_x[sb], world.buildings.rally_y[sb])
-		var team := Color(lib.palettes.teams[world.buildings.owner[sb]])
-		var w := 1.0 / camera.zoom.x
-		marks.draw_line(at, at + Vector2(0, -16), Color("#4a3020"), 1.5 * w)
-		marks.draw_colored_polygon(PackedVector2Array([at + Vector2(0, -16), at + Vector2(8, -13), at + Vector2(0, -10)]), team)
-		marks.draw_set_transform(at, 0.0, Vector2(1.0, 0.5))
-		marks.draw_arc(Vector2.ZERO, 4.0, 0.0, TAU, 12, Color(team, 0.8), w)
-		marks.draw_set_transform(Vector2.ZERO)
 	for f in flags:
 		marks.draw_set_transform(f.pos, 0.0, Vector2(1.0, 0.5))
 		marks.draw_circle(Vector2.ZERO, 10.0 * f.t, Color(RING, f.t))
@@ -1311,8 +1320,7 @@ func _draw_overlay() -> void:
 		overlay.draw_polyline(pts, RING, 2.0 / camera.zoom.x)
 		if bs.rally_x[b] >= 0:
 			var rp := Iso.to_screen(bs.rally_x[b], bs.rally_y[b])
-			overlay.draw_line(Iso.to_screen(x0 + s / 2, y0 + s / 2), rp, Color(RING, 0.4), 1.0 / camera.zoom.x)
-			overlay.draw_circle(rp, 4.0, RING)
+			overlay.draw_line(Iso.to_screen(x0 + s / 2, y0 + s / 2), rp, Color(RING, 0.4), 1.0 / camera.zoom.x)   # the flag itself is in the marks
 	if placing != "":
 		var c := _ghost_cell(get_global_mouse_position())
 		var size: int = world.btypes[Economy.btype_of(world, placing)].size
