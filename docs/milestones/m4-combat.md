@@ -140,7 +140,15 @@ hit-flash polish and SFX (9), Blacksmith upgrades and research (7 / Next), forma
 - [ ] View: unit card (recipe, stats, tags, strong/weak line)
 - [x] Exit check tool: `scenes/counter_quiz.tscn`: 12 equal-cost pairs in the pixel art, no labels,
   answered with 1/2 and scored against real headless fights (saved to user://counter_quiz.json)
-- [ ] Exit check: Dominic (and anyone he hands it to) plays the quiz; target 75% right
+- [ ] Exit check, reshaped after Dominic's first runs scored 50% (2026-10-11).
+  - Why: he judged by apparent quality (metal beats wood, a crossbow looks stronger than a
+    blowgun). That's true per unit, but each pair is equal cost, and neither the counts nor the
+    counter roles come through in the picture.
+  - New check, part 1 (silhouettes): name the role from the picture (spear, ranged,
+    skirmisher, mounted).
+  - New check, part 2 (counters): predict the winner with the unit card shown. Target 75%.
+  - Also: early units should look light (milestone 6: gear tiers by age), and skirmishers should
+    read as arrow-proof (a shield).
 - [ ] Unit card in the panel (recipe, stats incl. melee/pierce armour, tags, "strong vs / weak vs"),
   after the art track's panel rework is merged
 - [ ] Archive: pictures along the way, journal, decisions, timeline
