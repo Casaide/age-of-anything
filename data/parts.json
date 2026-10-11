@@ -2172,7 +2172,7 @@
    },
    "damage": "pierce"
   },
-  "points": 2,
+  "points": 3,
   "two_handed": true,
   "cost_mix": {
    "food": 40,
