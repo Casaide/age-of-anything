@@ -12,29 +12,37 @@ def _contour(f0, f1, dur, curve=1.0):
     return lambda t: f0 + (f1 - f0) * min(1.0, t / dur) ** curve
 
 
-def throat(rng, dur, pitch, table, breath=0.08, width=0.35, rasp=0.0, attack=0.02, release=0.06):
-    """A voice: a glottal pulse (pitch a function of time) through formant resonances."""
+def throat(rng, dur, pitch, table, breath=0.08, width=0.35, rasp=0.0, attack=0.02, release=0.06, aspirate=0.0, dark=0.0):
+    """A voice: a glottal pulse (pitch a function of time) through formant resonances.
+    aspirate: seconds of breath before the voice comes in (an 'h'); dark: a low-pass in Hz."""
     n = seconds(dur)
     src = pulse_train(n, pitch, width)
     if rasp > 0.0:   # a rough edge: the pulse amplitude flickers (a croak, a growl)
         src = mul(src, [1.0 - rasp * (0.5 + 0.5 * math.sin(TAU * 27.0 * i / RATE)) for i in range(n)])
+    if aspirate > 0.0:
+        a = seconds(aspirate)
+        src = [((i / a) if i < a else 1.0) * x for i, x in enumerate(src)]
+        src = add(src, [((1.0 - i / a) * 0.9 if i < a else 0.0) * y for i, y in enumerate(noise(n, rng))])
     src = add(src, gain(highpass(noise(n, rng), 1500.0), breath))
     out = formants(src, table)
+    if dark > 0.0:
+        out = lowpass(out, dark)
     return mul(out, env(n, attack, dur * 0.3, 0.8, release))
 
 
-# vowel formants (F1, F2, F3) for the humans and the centaurs
-VOWELS = {"a": [(700, 7, 1.0), (1200, 9, 0.5), (2600, 10, 0.2)], "u": [(330, 7, 1.0), (800, 9, 0.35), (2300, 10, 0.1)],
-          "o": [(470, 7, 1.0), (900, 9, 0.4), (2400, 10, 0.12)], "e": [(500, 7, 0.9), (1800, 9, 0.5), (2500, 10, 0.25)],
-          "i": [(300, 7, 0.8), (2200, 9, 0.5), (2900, 10, 0.3)]}
+# vowel formants (F1, F2, F3) for the humans and the centaurs; narrow enough to tell apart
+VOWELS = {"a": [(750, 10, 1.0), (1250, 12, 0.6), (2600, 12, 0.25)], "u": [(350, 10, 1.0), (850, 12, 0.3), (2300, 12, 0.1)],
+          "o": [(500, 10, 1.0), (950, 12, 0.45), (2500, 12, 0.15)], "e": [(550, 10, 0.9), (1850, 12, 0.6), (2550, 12, 0.3)],
+          "i": [(320, 10, 0.8), (2250, 12, 0.6), (2950, 12, 0.35)]}
 
 
 def _word(rng, syllables, base, stop=True):
-    """Syllables [(vowel, dur, pitch_from, pitch_to), ...] in one breath, cut by a stop."""
+    """Syllables [(vowel, dur, pitch_from, pitch_to), ...] in one breath, cut by a stop. A
+    shout, not a murmur: a breathy 'h' onset, a brighter pulse, pitch up around 170 Hz."""
     out = []
     at = 0.0
-    for vowel, dur, p0, p1 in syllables:
-        v = throat(rng, dur, _contour(base * p0, base * p1, dur), VOWELS[vowel], 0.06, 0.4, 0.0, 0.015, 0.05)
+    for k, (vowel, dur, p0, p1) in enumerate(syllables):
+        v = throat(rng, dur, _contour(base * p0, base * p1, dur), VOWELS[vowel], 0.05, 0.26, 0.0, 0.012, 0.05, 0.035 if k == 0 else 0.0)
         mix_into(out, v, seconds(at))
         at += dur * 0.9
     if stop:   # a lips-closed stop at the end
@@ -42,22 +50,22 @@ def _word(rng, syllables, base, stop=True):
     return out
 
 
-def human(rng, kind, base=118.0):
+def human(rng, kind, base=172.0):
     j = rng.uniform(0.94, 1.06)
     if kind == "select":
-        return _word(rng, [("e", 0.16, 1.1, 0.95)], base * j)                 # "eh?"
+        return _word(rng, [("e", 0.18, 0.95, 1.15)], base * j)                 # "eh?" (rising: a question)
     if kind == "ack":
         return rng.choice([
-            lambda: _word(rng, [("u", 0.14, 1.0, 0.85)], base * j),           # "hup"
-            lambda: _word(rng, [("a", 0.12, 1.15, 1.0), ("o", 0.2, 1.0, 0.8)], base * j),   # "ha-ho"
-            lambda: _word(rng, [("o", 0.26, 1.05, 0.9)], base * j, False),    # "oh"
+            lambda: _word(rng, [("u", 0.14, 1.1, 0.9)], base * j),            # "hup"
+            lambda: _word(rng, [("a", 0.12, 1.2, 1.05), ("o", 0.2, 1.0, 0.8)], base * j),   # "ha-ho"
+            lambda: _word(rng, [("i", 0.07, 1.1, 1.15), ("a", 0.2, 1.15, 0.9)], base * j, False),   # "yah"
         ])()
-    return _word(rng, [("a", 0.45, 1.2, 0.6)], base * j, False)               # a falling cry
+    return _word(rng, [("a", 0.45, 1.25, 0.6)], base * j, False)              # a falling cry
 
 
 def centaur(rng, kind):
     """A human voice, deeper, with a hoof stamping under the order."""
-    v = human(rng, kind, 92.0)
+    v = human(rng, kind, 135.0)
     if kind == "ack":
         stamp = add(mul(sine(seconds(0.12), lambda t: 70.0 + 60.0 * math.exp(-t * 30.0)), decay(seconds(0.12), 35.0)),
                     gain(mul(lowpass(noise(seconds(0.06), rng), 600.0), decay(seconds(0.06), 80.0)), 0.5))
@@ -67,16 +75,16 @@ def centaur(rng, kind):
 
 def frog(rng, kind):
     """A croak: a low raspy pulse, lips-closed formants; the cry is a long falling 'wraak'."""
-    table = [(380, 6, 1.0), (1100, 8, 0.3), (2100, 10, 0.08)]
+    table = [(340, 6, 1.0), (1000, 8, 0.3), (2100, 10, 0.06)]
     if kind == "select":
-        return throat(rng, 0.14, _contour(130.0, 100.0, 0.14), table, 0.03, 0.25, 0.8, 0.01, 0.04)
+        return throat(rng, 0.14, _contour(95.0, 72.0, 0.14), table, 0.03, 0.3, 0.8, 0.01, 0.04, 0.0, 1800.0)
     if kind == "ack":
         n = rng.choice([1, 2])
         out = []
         for k in range(n):
-            mix_into(out, throat(rng, 0.17, _contour(110.0 * rng.uniform(0.9, 1.1), 85.0, 0.17), table, 0.03, 0.25, 0.9, 0.01, 0.05), seconds(k * 0.2))
+            mix_into(out, throat(rng, 0.17, _contour(82.0 * rng.uniform(0.9, 1.1), 62.0, 0.17), table, 0.03, 0.3, 0.9, 0.01, 0.05, 0.0, 1800.0), seconds(k * 0.2))
         return out
-    return throat(rng, 0.5, _contour(150.0, 70.0, 0.5, 0.6), table, 0.05, 0.3, 0.7, 0.01, 0.1)
+    return throat(rng, 0.5, _contour(110.0, 50.0, 0.5, 0.6), table, 0.05, 0.3, 0.7, 0.01, 0.1, 0.0, 1800.0)
 
 
 def rat(rng, kind):
