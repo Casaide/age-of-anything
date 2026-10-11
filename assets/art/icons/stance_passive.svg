@@ -1,0 +1,14 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="64" height="64" viewBox="0 0 64 64">
+<!-- No attack: a sword sheathed in its scabbard, lying level, on a grey disc. -->
+<defs><linearGradient id="gold" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#ffe9a8"/><stop offset="0.5" stop-color="#d4a640"/><stop offset="1" stop-color="#8a6018"/></linearGradient>
+<linearGradient id="leather" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#a0683a"/><stop offset="0.5" stop-color="#7a4a22"/><stop offset="1" stop-color="#4e2e14"/></linearGradient></defs>
+<circle cx="32" cy="32" r="27" fill="#6a6660" stroke="#1c120a" stroke-width="2.5"/>
+<circle cx="32" cy="32" r="22" fill="none" stroke="#c0b8a8" stroke-width="2" opacity="0.6"/>
+<g transform="rotate(-30 32 32)">
+<path d="M27,28 L52,28 Q56,32 52,36 L27,36 Z" fill="url(#leather)" stroke="#1c120a" stroke-width="1.8" stroke-linejoin="round"/>
+<path d="M44,28 L44,36 M48,28 L48,36" stroke="#d4a640" stroke-width="1.6"/>
+<rect x="23" y="22" width="4" height="20" rx="2" fill="url(#gold)" stroke="#1c120a" stroke-width="1.6"/>
+<rect x="13" y="30" width="10" height="4" fill="#8a2a22" stroke="#1c120a" stroke-width="1.4"/>
+<circle cx="11.5" cy="32" r="2.6" fill="url(#gold)" stroke="#1c120a" stroke-width="1.2"/>
+</g>
+</svg>
