@@ -1,6 +1,6 @@
 # Milestone 7: Progression
 
-**Status:** in progress (2026-10-11)
+**Status:** done (2026-10-11)
 **Exit criterion:** Age-up lands at minutes 4-6.
 
 ## Scope
@@ -54,3 +54,29 @@ its unit lines.
 6. **Restriction layers** (D-070) in the tech data's shape: researches and lines can be filtered
    by culture/creature, and a host switch lifts it. Data shape only; content in milestone 10's
    balance pass.
+
+## Checklist
+- [x] Barracks, Stable, Watchtower in data; buildings and training age-gated
+- [x] Towers shoot (combat code); Sharp Sticks at the Barracks
+- [x] Art: the three buildings in every architecture, with build stages and portraits
+- [x] Panel: trains whatever a building trains; the build menu follows the age
+- [x] The bot builds a Barracks, saves and ages up
+- [x] Restriction layers in the data's shape: research `only` (creatures/cultures), host rules
+  `full_tech_tree` and `no_restrictions`
+- [x] Archive
+
+## Results
+- **Exit criterion met:** with the economy bot playing, frogs reach age 2 at 5:21 and rats at
+  4:21 (`tests/test_sim.gd`).
+- **Pacing:** the genre's tool, not special cases. An age-up needs a building of the current age
+  (a Barracks for age 2, a Stable for age 3), and age 2 costs 500 food and 200 wood and takes
+  90 s. The rats' cheap, quick workers keep them a minute ahead, which is their identity.
+- **Tests:** age gates, a Watchtower shooting, Sharp Sticks surviving an age-up, the frogs-only
+  research and the host switches.
+- **Pictures:** 57 (a rat junk town: Barracks with a training yard, Stable, stilt Watchtower) and
+  58 (a Roman stone Watchtower).
+- **Left for later (backlog / balance):**
+  - more research;
+  - a Blacksmith and its small visual tells (D-057);
+  - the bot using the Stable and ageing to 3 (milestone 8);
+  - tier-2 and tier-3 woodland kit.

@@ -35,6 +35,7 @@ const GIANT_SCALE := 150
 const TINY_SCALE := 80
 
 var lib
+var _no_restrictions := false   # host rule no_restrictions: theme guards off
 var _affinity: Array = []   # creature + family of the race being generated
 
 
@@ -117,6 +118,7 @@ func generate(prompt: String, rules: Dictionary, reroll := 0) -> Dictionary:
 
 	var family: String = brief.families[0] if brief.families.size() > 0 else rng.pick(c.families)
 	_affinity = [creature, family]
+	_no_restrictions = bool(rules.get("no_restrictions", false))
 	var tags: Dictionary = brief.tags.duplicate()
 	tags[family] = tags.get(family, 0) + 2
 	tags[creature] = tags.get(creature, 0) + 2
@@ -320,6 +322,8 @@ func _best(cands: Array, tags: Dictionary, bias: Dictionary, rng) -> Dictionary:
 
 ## Signature gear nobody asked for, and that isn't this race's own thing.
 func _off_theme(p: Dictionary, tags: Dictionary) -> bool:
+	if _no_restrictions:
+		return false   # the host lifted the culture layer (D-070): anyone may have anything
 	if p.tags.any(func(t): return t in _affinity):
 		return false
 	return p.tags.any(func(t): return t in SIGNATURE_TAGS and int(tags.get(t, 0)) == 0)
