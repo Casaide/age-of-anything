@@ -1170,10 +1170,16 @@ func _quiver(c: Dictionary) -> Dictionary:
 	return {"node": n}
 
 
-## Wings at the back: the near one fanned towards the viewer, the far one peeking out above.
+## Wings at the back: the near one fanned towards the viewer, the far one raised
+## steeper behind it. Both are rooted at the shoulders and sweep back and up (the
+## texture's root is its lower right, its tip the upper left). The far one used to sit
+## with its root over the head, so it read as pointing forward.
 func _wings(texture: String, tint: Color) -> Dictionary:
 	var n := Node3D.new()
-	n.add_child(decal(texture, 24, 24, Vector3(-5.5, 15.5, -3.0), Vector3(0.5, 0.2, 1), true, Vector3(-0.35, 1, 0), tint.darkened(0.3)))
+	var x := Vector3(1, -0.3, -0.3).normalized()   # the far wing's picture axes: right...
+	var y := Vector3(0.3, 1, 0).normalized()       # ...and up, so its tip goes back and steeply up
+	var root := Vector3(0.5, 3.0, -4.0)
+	n.add_child(decal(texture, 24, 24, root - x * 9.0 + y * 8.2, x.cross(y), true, y, tint.darkened(0.3)))
 	n.add_child(decal(texture, 26, 26, Vector3(-10.7, 8.8, 2.0), Vector3(-0.15, 0.15, 1), true, Vector3.UP, tint))
 	return {"node": n}
 
