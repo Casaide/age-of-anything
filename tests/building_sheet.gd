@@ -5,9 +5,11 @@ extends SceneTree
 ## Run (needs a display):
 ##   godot --path . --script res://tests/building_sheet.gd -- out.png <zoom> model [model ...]
 ## e.g. ... -- /tmp/b.png 2 stone_town_center junk_town_center concept_junk_tc_low
+## Props too: prop.<function>.<seed>[.<stage>], e.g. prop.quarry.1300.0 prop.boulders.1000
 
 const ArtKit := preload("res://src/view/art/art_kit.gd")
 const PartShape := preload("res://src/part_shape.gd")
+const PropModels := preload("res://scenes/art_pixel/prop_models.gd")
 
 const W := 1600
 const H := 900
@@ -27,7 +29,13 @@ func _initialize() -> void:
 	var team := Color(PartShape.TEAM_KEY)
 	var shots := []
 	for n in names:
-		var spec: Dictionary = models.call(n, team)
+		var spec: Dictionary
+		if n.begins_with("prop."):   # a prop: prop.<function>.<seed>[.<stage>]
+			var bits: PackedStringArray = String(n).split(".")
+			var pargs: Array = Array(bits.slice(2)).map(func(x): return int(x))
+			spec = {"body": PropModels.new().callv(bits[1], pargs)}
+		else:
+			spec = models.call(n, team)
 		if n.contains("house"):
 			spec.body.scale = Vector3.ONE * ArtKit.HOUSE_SCALE
 		baker.set_ground_shadow(true)
