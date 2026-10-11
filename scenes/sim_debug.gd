@@ -20,6 +20,7 @@ const CombatFx := preload("res://src/view/combat_fx.gd")
 const Tech := preload("res://src/sim/tech.gd")
 const RtsCamera := preload("res://src/view/rts_camera.gd")
 const CommandPanel := preload("res://src/view/command_panel.gd")
+const TopBar := preload("res://src/view/top_bar.gd")
 const UnitCard := preload("res://src/view/unit_card.gd")
 const FogView := preload("res://src/view/fog_view.gd")
 const Minimap := preload("res://src/view/minimap.gd")
@@ -78,7 +79,9 @@ var marks: Node2D           # under units: selection rings, move lines, flow arr
 var layer: Node2D           # units, buildings and resource props, y-sorted
 var overlay: Node2D         # over everything: selection box, placement ghost, carried loads
 var hud: Label
-var bar: Label
+var bar: Label              # the debug line of both sides' stock (not against the AI)
+var top_bar: TopBar
+var show_debug := true      # the debug lines (F1); off by default against the AI
 var panel: CommandPanel
 var cursors: Cursors
 var views := {}             # unit id -> UnitView (view side only; never feeds the sim)
@@ -170,6 +173,8 @@ func _ready() -> void:
 	ui.add_child(hud)
 	bar = _label(17, Vector2(12, 10))
 	ui.add_child(bar)
+	top_bar = TopBar.new()
+	ui.add_child(top_bar)
 	panel = CommandPanel.new()
 	panel.anchor_top = 1.0
 	panel.anchor_bottom = 1.0
@@ -468,6 +473,8 @@ func _unhandled_input(event: InputEvent) -> void:
 				clock.speed = minf(clock.speed * 2.0, 16.0)
 			KEY_BRACKETLEFT:
 				clock.speed = maxf(clock.speed / 2.0, 0.25)
+			KEY_F1:
+				show_debug = not show_debug
 			KEY_F3:
 				show_flow = not show_flow
 			KEY_P:
@@ -828,8 +835,12 @@ func _process(delta: float) -> void:
 	flags = flags.filter(func(f): return f.t > 0.0)
 	marks.queue_redraw()
 	overlay.queue_redraw()
-	bar.text = _bar_text()
-	hud.text = _hud_text()
+	_update_top_bar()
+	hud.visible = show_debug
+	bar.visible = show_debug and not vs_ai   # the debug bar shows the other side's stock
+	if show_debug:
+		bar.text = _bar_text()
+		hud.text = _hud_text()
 	_update_panel()
 	_update_cursor()
 
@@ -1229,6 +1240,19 @@ func _cost_text(cost: PackedInt32Array) -> String:
 	return " ".join(parts) if not parts.is_empty() else "free"
 
 
+func _update_top_bar() -> void:
+	if top_bar.get_child_count() == 0:
+		top_bar.setup(world.resources)
+		show_debug = not vs_ai
+	top_bar.position = Vector2(0, 0) if not show_debug or vs_ai else Vector2(0, 150)
+	var stock := {}
+	for r in world.resources.size():
+		stock[world.resources[r]] = world.stock[r][active]
+	var age: Dictionary = world.tech.ages.filter(func(a): return int(a.age) == world.ages[active]).front() if world.ages[active] > 1 else {}
+	top_bar.show_state(stock, world.pop[active], world.pop_cap[active],
+		"%s, %s" % [world.races[active].name, age.get("name", "the First Age")], world.tick / World.TICK_HZ)
+
+
 func _bar_text() -> String:
 	var p := active
 	var s := "P%d  %s   Age %d     %s    Pop %d/%d" % [p + 1, world.races[p].name, world.ages[p], _stock_text(p, false), world.pop[p], world.pop_cap[p]]
@@ -1255,7 +1279,7 @@ func _hud_text() -> String:
 			clock.speed, "   PAUSED" if clock.paused else ""],
 		"click / drag / double-click select   right-click: move, gather, help build, rally   Tab: switch side",
 		"Q train worker   H house   C town center   WASD/edges/middle-drag pan   wheel zoom   space pause   [ ] speed",
-		"F3 flow   F5 save replay   F9 play replay   F6 autoplay   F10 surrender   V reveal fog   F7 test armies   M map   R restart   G/shift+G/ctrl+G regen army",
+		"F1 hide this   F3 flow   F5 save replay   F9 play replay   F6 autoplay   F10 surrender   V reveal fog   F7 test armies   M map   R restart   G/shift+G/ctrl+G regen army",
 	]
 	var cell := _cell_at(get_global_mouse_position())
 	if map.resource_at(cell) != "":
