@@ -259,8 +259,7 @@ static func cmd_cancel(w, player: int, a: Dictionary) -> void:
 	var n: int = a.index
 	if n < 0 or n >= q.size():
 		return
-	var t: Dictionary = w.types[q[n]]
-	w.refund(player, t.cost)
+	w.refund(player, w.queued_cost(player, q[n]))   # a unit, or research / the age-up (Tech.entry)
 	q.remove_at(n)
 	if n == 0:
 		w.buildings.train[b] = 0
@@ -668,8 +667,8 @@ static func train(w) -> void:
 	var bs = w.buildings
 	for b in bs.count():
 		var q: Array = bs.queue[b]
-		if bs.done[b] == 0 or q.is_empty() or bs.research[b] != -1:
-			continue   # unbuilt, nothing queued, or busy ageing up / researching
+		if bs.done[b] == 0 or q.is_empty() or q[0] < 0:
+			continue   # unbuilt, nothing queued, or ageing up / researching (Tech.tick)
 		var p: int = bs.owner[b]
 		var t: Dictionary = w.types[q[0]]
 		if bs.train[b] == 0 and w.pop[p] + t.pop > w.pop_cap[p]:
