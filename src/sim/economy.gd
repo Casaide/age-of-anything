@@ -49,6 +49,7 @@ static func load_btypes(resources: Array) -> Array:
 		out.append({
 			"id": id, "name": b.name, "size": int(b.size), "hp": int(b.hp),
 			"cost": cost_vector(resources, b.cost), "drop": PackedByteArray(resources.map(func(r): return 1 if r in b.drop_off else 0)),
+			"water": bool(b.get("water", false)), "becomes": b.get("becomes", {}).duplicate(),
 			"build_ticks": int(b.build_time) * 20, "pop": int(b.pop), "house": bool(b.house),
 			"trains": b.trains.duplicate(), "age": int(b.age), "armour": b.get("armour", {}).duplicate(),
 		})
@@ -133,7 +134,7 @@ static func cmd_build(w, player: int, a: Dictionary) -> void:
 	var builders := _own_workers(w, player, a.ids)
 	if builders.is_empty() or not w.can_afford(player, t.cost):
 		return
-	if not w.map.can_build(a.cx, a.cy, t.size):
+	if not w.map.can_build(a.cx, a.cy, t.size, builder_class(w, player), t.water):
 		return
 	w.pay(player, t.cost)
 	var b := place(w, player, k, a.cx, a.cy)
@@ -330,11 +331,33 @@ static func _build(w, i: int) -> void:
 		if bs.progress[b] >= t.build_ticks:
 			bs.done[b] = 1
 			bs.hp[b] = t.hp
+			if not t.becomes.is_empty():
+				_become_ground(w, b, i)
 	elif u.moving[i] == 0:
 		if u.stuck[i] >= GIVE_UP:
 			clear_task(w, i)
 		else:
 			_approach_building(w, i, b)
+
+
+## The movement class a player's builders have (their worker's), for where they may build.
+static func builder_class(w, player: int) -> int:
+	var k: int = w.type_of(player, "worker")
+	return w.types[k].mclass if k >= 0 else 0
+
+
+## A finished farm turns its ground into crops (a field on land, a paddy in water) and
+## goes; the builder who finished it starts the harvest.
+static func _become_ground(w, b: int, i: int) -> void:
+	var bs = w.buildings
+	var t: Dictionary = w.btypes[bs.kind[b]]
+	var cells: PackedInt32Array = bs.footprint(b, w.map.width)
+	w.map.occupy(cells, 0)
+	for c in cells:
+		var land: bool = w.map.terrain_walk[w.map.terrain[c]]
+		w.map.set_terrain(c, w.map.terrain_ids.find(t.becomes.land if land else t.becomes.water))
+	bs.remove_at(b)
+	start_gather(w, i, cells[0], kind_of(w, "food"))
 
 
 static func _approach_cell(w, i: int, cell: int) -> void:

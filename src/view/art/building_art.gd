@@ -40,8 +40,10 @@ func setup(kit, name: String, cx: int, cy: int, size: int, p_team: Color) -> voi
 		add_child(st)
 		stages.append(st)
 	bar_at = at + Vector2(0, 6)
-	live.append(_smoke(at + info.smoke))
-	_glow(at + info.lantern, 14.0, Color(1.0, 0.75, 0.35))
+	if info.has("smoke"):
+		live.append(_smoke(at + info.smoke))
+	if info.has("lantern"):
+		_glow(at + info.lantern, 14.0, Color(1.0, 0.75, 0.35))
 	for p in info.lights:
 		_glow(at + p, 9.0, Color(1.0, 0.8, 0.45))
 	if info.has("banner"):

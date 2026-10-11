@@ -163,15 +163,32 @@ func occupy(cells: PackedInt32Array, building_id: int) -> void:
 		_refresh(c)
 
 
-func can_build(cx: int, cy: int, size: int) -> bool:
+## Can a building of this size go here? On ground anyone could build on, or, if the
+## building allows water (`water_ok`) and the builders' movement class `mc` can wade it,
+## in the shallows (amphibians build on the water).
+func can_build(cx: int, cy: int, size: int, mc := 0, water_ok := false) -> bool:
 	for y in range(cy, cy + size):
 		for x in range(cx, cx + size):
 			if x < 0 or y < 0 or x >= width or y >= height:
 				return false
 			var c := y * width + x
-			if not terrain_walk[terrain[c]] or occupied[c] != 0:
+			if occupied[c] != 0 or amount[c] > 0:
+				return false
+			var t: int = terrain[c]
+			if not terrain_walk[t] and not (water_ok and mc != FLYING and terrain_move[t] & (1 << mc)):
 				return false
 	return true
+
+
+## Change a cell's terrain (a farm becoming a field): its amount and walkability follow.
+func set_terrain(cell: int, k: int) -> void:
+	terrain[cell] = k
+	amount[cell] = terrain_amount[k]
+	if amount[cell] > 0:
+		var at := resource_cells.bsearch(cell)
+		if at >= resource_cells.size() or resource_cells[at] != cell:
+			resource_cells.insert(at, cell)
+	_refresh(cell)
 
 
 func _refresh(cell: int) -> void:
