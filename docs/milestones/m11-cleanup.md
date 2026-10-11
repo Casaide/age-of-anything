@@ -30,9 +30,31 @@
 - (AI playtest: the AI beat Dominic)
 - We need gold too: the mineable rock easy to tell apart for stone and gold, but mostly a shared base
 
+## Picked up from the art direction work (Claude, 2026-10-11, after Dominic: "other races we forgot")
+Decided or picked earlier (see `../concepts/direction.md`, D-080 to D-086) but not yet built:
+- **8 baked facings for every unit** (Dominic: yes). Units still have one three-quarter view,
+  mirrored, so walking straight up or down reads as crab-walking. Needs sockets and draw order per
+  facing, up/down gaits, facing choice with hysteresis.
+- **Rats:** the capybara as the large unit (picked, RB1); their buildings by age (RB3: house cut
+  down, barracks and the rest in junk, the age-3 pride step with oil-drum columns copying Rome).
+- **Beetles:** the rearing posture (picked, BG1) built into play; then roles, gear by age, a large
+  unit, and their own `pellet` architecture (split from `mound`).
+- **Spiders:** the same posture round (a rearing jumping spider), then a `silk` architecture.
+- **Humans:** Blender is installed; model human parts with `bpy` scripts towards Dominic's
+  reference (pre-rendered classic cavalry), baked by Godot as now. Then the human rounds R1-R6 and
+  each culture's gear by age (the table in direction.md).
+- **Cultures:** Egypt, Han China and Aztec as data (Dominic: all three), horned helmets only on a
+  silly ask.
+- **Centaurs and ponies:** their own passes.
+- **Buildings change with each age** (`arch:type:age`), each culture's story from its psychology.
+- **Bears and beavers** (future races): ignore humans, build their own impressive halls.
+- **Team colour:** one consistent region per unit (placement options still to show).
+- Frogs: the bullfrog kept for another unit or an upgrade.
+- Check: winged mounts' wings at about double size (Dominic's earlier note).
+
 ## Plan (2026-10-11, Claude)
 
-Seven phases, smallest and most-felt first. Each phase ends with pictures in the archive and the
+Nine phases, smallest and most-felt first. Each phase ends with pictures in the archive and the
 tests green. Anything cut moves to `../backlog.md`.
 
 1. **Controls and feedback.** Fix: selecting an enemy unit must not switch your fog to theirs.
@@ -58,10 +80,13 @@ tests green. Anything cut moves to `../backlog.md`.
    the shoreline; blocking rocks and mineable stone made clearly different.
 6. **Lobby.** A designed match setup: menu, pick your side (presets or a prompt), a live preview
    of the race, the AI's side, map, start. Production quality, not a debug form.
-7. **Animals.** Huntable animals (fight back or flee, give a lot of food) and herdable ones (a
+7. **Races.** The list above, race by race through the concept loop (options, Dominic picks,
+   build): 8 facings first (it changes every unit), then rats, beetles, humans in Blender,
+   spiders, centaurs and ponies, the three new cultures, buildings by age.
+8. **Animals.** Huntable animals (fight back or flee, give a lot of food) and herdable ones (a
    sheep-like kind you take ownership of by finding it and lead home to gather), as data in
    `data/` with their own art.
-8. **Exit check.** A deep review of UI, UX and art by Fable (a Fable agent works through the game
+9. **Exit check.** A deep review of UI, UX and art by Fable (a Fable agent works through the game
    in screenshots and the code), findings fixed, then Dominic's look.
 
 ## Checklist
@@ -82,7 +107,8 @@ tests green. Anything cut moves to `../backlog.md`.
 - [ ] 4. Buildings: barracks split, armoury, camps, market, walls
 - [ ] 5. Art consistency: rocks, farms, water, stone vs blocking rocks
 - [ ] 6. Lobby
-- [ ] 7. Animals: hunt and herd
-- [ ] 8. Fable review, fixes
+- [ ] 7. Races: 8 facings, capybara, rat buildings by age, rearing beetles, humans in Blender, spiders, centaurs, ponies, Egypt/Han/Aztec, buildings by age
+- [ ] 8. Animals: hunt and herd
+- [ ] 9. Fable review, fixes
 - [ ] Archive: pictures, journal, decisions, timeline
 
