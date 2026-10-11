@@ -562,27 +562,31 @@ func _shield_bottlecap(c: Dictionary) -> Dictionary:
 
 # ------------------------------------------------------------------ spider (a mount)
 
+## Reared up (SG1, Dominic's pick): the abdomen low behind, the front body raised, the front
+## pair of legs used as arms to hold the weapon and shield, six legs to walk on. A saddle cloth
+## on the abdomen for a rider when it's ridden.
 func _body_spider(c: Dictionary) -> Dictionary:
 	var n := Node3D.new()
 	var hair := surf("rat_fur", c.skin, 6.0)
 	var front := surf("rat_fur", c.skin2, 5.0)
-	n.add_child(blob(Vector3(11.5, 8.5, 9.5), hair, Vector3(-7, 13, 0), Vector3(0, 0, -8)))      # abdomen
-	n.add_child(blob(Vector3(4.0, 1.2, 4.0), plain(c.cloth), Vector3(-10, 20.5, 0), Vector3(0, 0, -8)))   # marking
-	n.add_child(blob(Vector3(6.5, 4.6, 5.8), front, Vector3(6, 11, 0)))                           # cephalothorax
-	# A saddle with a team-colour cloth for the rider.
-	n.add_child(blob(Vector3(6.5, 1.4, 6.8), plain(c.team), Vector3(-5, 21.2, 0), Vector3(0, 0, -6)))
+	n.add_child(blob(Vector3(7.5, 6.0, 6.5), hair, Vector3(-7.5, 9.5, 0), Vector3(0, 0, 10)))      # abdomen, low
+	n.add_child(blob(Vector3(5.0, 1.0, 5.4), plain(c.team), Vector3(-8.0, 15.2, 0), Vector3(0, 0, 10)))   # team saddle cloth on its back
+	n.add_child(blob(Vector3(4.2, 6.0, 4.6), front, Vector3(1.5, 14.5, 0), Vector3(0, 0, -30)))   # the front body, reared up
+	var limb := surf("rat_fur", c.skin, 4.0)
+	var hand_r := Vector3(6.5, 13.5, 5.2)
+	var hand_l := Vector3(6.5, 13.5, -5.2)
+	for side in [1, -1]:   # the front legs, used as arms
+		var elbow := Vector3(5.5, 16.5, 6.0 * side)
+		n.add_child(rod(Vector3(2.5, 18.0, 3.5 * side), elbow, 1.0, 0.85, limb))
+		n.add_child(rod(elbow, hand_r if side == 1 else hand_l, 0.85, 0.6, limb))
 	var hips := []
-	var xs := [7.5, 4.5, 1.0, -2.5]
-	var phases := [0.0, 0.8, 1.6, 2.4]
-	for k in 4:
-		hips.append([Vector3(xs[k], 10.5, 5.0), phases[k], 1, 1 if k >= 2 else 0])
-		hips.append([Vector3(xs[k] + 0.5, 11.5, -5.0), phases[k] + PI, -1, 1 if k >= 2 else 0])
-	harness(n, Vector3(-1.5, 12.5, 0), 6.0, 7.0, Vector3(0, 12, 7.0), Vector3(-1, 12, -7.0))
-	return {"node": n, "sockets": {
-		"head": Vector3(11, 11, 0), "hand_r": Vector3(0, 12, 7.6), "hand_l": Vector3(-1, 12, -7.6),
-		"torso": Vector3(6, 12.5, 0), "back": Vector3(-8, 20, 0), "seat": Vector3(-5, 22.5, 0),
-		"wings": Vector3(5, 16, 0)},
-		"anchors": hips, "torso_scale": Vector2(0.6, 0.55), "carry": "harness"}
+	var xs := [0.5, -2.5, -5.5]
+	for k in 3:
+		hips.append([Vector3(xs[k], 9.5, 3.5), k * 1.0, 1, 1 if k >= 1 else 0])
+		hips.append([Vector3(xs[k], 9.5, -3.5), k * 1.0 + PI, -1, 1 if k >= 1 else 0])
+	return {"node": n, "sockets": {"head": Vector3(3.5, 20.0, 0), "hand_r": hand_r, "hand_l": hand_l,
+		"torso": Vector3(1.5, 14.5, 0), "back": Vector3(-7, 14, 0), "seat": Vector3(-8.0, 16.5, 0), "wings": Vector3(-1.0, 17.0, 0)},
+		"anchors": hips, "torso_scale": Vector2(0.5, 0.6)}
 
 
 func _head_spider(c: Dictionary) -> Dictionary:
@@ -598,7 +602,7 @@ func _head_spider(c: Dictionary) -> Dictionary:
 		n.add_child(decal("rat_eye", e[1] * 2.0, e[1] * 2.0, on_surface(head_c, head_r, e[0], 0.05), e[0], false))
 	for side in [1, -1]:   # fangs
 		n.add_child(rod(Vector3(6.2, -0.5, 1.2 * side), Vector3(7.4, -3.2, 0.8 * side), 0.9, 0.35, plain(Color("#1e1612"))))
-	return {"node": n, "sockets": {"top": Vector3(2, 4.5, 0)}}
+	return {"node": n, "sockets": {"top": Vector3(2, 4.0, 0)}, "gear_scale": 0.62}   # caps sized to the small head (one covered it whole)
 
 
 ## A hairy jointed leg: up and out to the knee, then down to a dark tip.
@@ -1771,3 +1775,227 @@ func glb(name: String, mats: Dictionary) -> Node3D:
 				m.set_surface_override_material(k, mats[key])
 	return n
 
+
+# ------------------------------------------------------------------ the Nile, Han and Aztec kits (GC1, Dominic's pick)
+# Head gear for ages 1-3 and a signature weapon and shield per culture, so each reads as itself
+# from the first age (they wore the shared kit). Fitted to the Blender human head (crown at y 0,
+# about 5 across). Head gear by age; shields from age 1; the Han halberd arms the spear
+# line, the sword and the club the Heavy unit (Dominic).
+
+const LINEN := Color("#ece4d0")
+
+
+## Nile age 1: a linen head bag (khat), gathered behind.
+func _helm_nile_khat(c: Dictionary) -> Dictionary:
+	var n := Node3D.new()
+	var linen := surf("cloth", LINEN, 3.0)
+	n.add_child(dome(Vector3(5.1, 3.6, 5.0), linen, Vector3(-0.2, -3.0, 0)))
+	n.add_child(blob(Vector3(2.2, 2.6, 2.4), linen, Vector3(-4.6, -3.6, 0), Vector3(0, 0, 25)))   # the gathered tail
+	n.add_child(ring(4.9, 5.3, surf("cloth", Color("#c8b890"), 2.0), Vector3(0.1, -3.0, 0)))
+	return {"node": n}
+
+
+## Nile age 2: a striped headcloth (team and linen), lappets falling in front of the shoulders.
+func _helm_nile_headcloth(c: Dictionary) -> Dictionary:
+	var n := Node3D.new()
+	var linen := surf("cloth", LINEN, 3.0)
+	var team := plain(c.team)
+	n.add_child(dome(Vector3(5.3, 3.8, 5.2), linen, Vector3(-0.2, -3.0, 0)))
+	for k in 4:   # stripes round the crown, on the cloth's surface
+		var y := 0.4 + k * 0.85
+		var r := 5.25 * sqrt(1.0 - pow(y / 3.8, 2.0))
+		n.add_child(ring(r - 0.3, r + 0.15, team, Vector3(-0.2, -3.0 + y, 0), Vector3.ZERO, Vector3(1.0, 1.0, 0.98)))
+	for side in [1, -1]:   # the lappets
+		n.add_child(blob(Vector3(1.6, 4.6, 1.1), linen, Vector3(0.6, -6.6, 4.6 * side), Vector3(15 * side, 0, 0)))
+		n.add_child(blob(Vector3(1.65, 0.6, 1.15), team, Vector3(0.6, -7.6, 4.7 * side), Vector3(15 * side, 0, 0)))
+	n.add_child(blob(Vector3(2.4, 4.0, 3.6), linen, Vector3(-4.4, -5.2, 0)))   # the cloth behind
+	return {"node": n}
+
+
+## Nile age 3: a bronze helmet with a forward ridge and cheek guards over a linen cap.
+func _helm_nile_bronze(c: Dictionary) -> Dictionary:
+	var n := Node3D.new()
+	var bronze := surf("bronze", Color(0.95, 0.88, 0.66), 2.0)
+	n.add_child(dome(Vector3(5.2, 4.4, 5.1), bronze, Vector3(-0.2, -3.0, 0)))
+	n.add_child(rod(Vector3(-4.2, -1.0, 0), Vector3(3.6, 1.0, 0), 0.6, 0.4, bronze))   # the ridge
+	for side in [1, -1]:
+		n.add_child(blob(Vector3(1.8, 2.6, 0.5), bronze, Vector3(1.6, -4.6, 4.6 * side)))
+	n.add_child(blob(Vector3(2.0, 2.4, 3.6), surf("cloth", LINEN, 3.0), Vector3(-4.2, -4.6, 0)))
+	n.add_child(ring(5.0, 5.5, plain(c.team), Vector3(-0.2, -3.0, 0)))
+	return {"node": n}
+
+
+## Nile weapon: the sickle sword (khopesh).
+func _weapon_khopesh(c: Dictionary) -> Dictionary:
+	var bronze := surf("bronze", Color(1.15, 1.05, 0.8), 3.0)
+	var pts := [Vector2(0, -0.8), Vector2(5.5, -0.8), Vector2(8.5, -2.8), Vector2(12.5, -3.0), Vector2(15.0, -0.8),
+		Vector2(15.2, 2.2), Vector2(13.6, 3.6), Vector2(13.0, 1.4), Vector2(11.6, -0.4), Vector2(9.0, -0.2), Vector2(5.5, 0.9), Vector2(0, 0.9)]   # a deep hook
+	return {"node": _sword(pts, Vector3(3, 14, 0), bronze, bronze)}
+
+
+## Nile shield: tall, round-topped, cowhide (pale with brown patches) on a team rim.
+func _shield_cowhide(c: Dictionary) -> Dictionary:
+	var n := Node3D.new()
+	var h := facing(n, Vector3(3.0, 0.0, 1.5), SHIELD_FACE)
+	var outline := [Vector2(-4, -8), Vector2(4, -8), Vector2(4, 4)]
+	for k in 9:
+		var a := PI * k / 8.0
+		outline.append(Vector2(cos(a) * 4.0, 4.0 + sin(a) * 4.2))
+	outline.append(Vector2(-4, 4))
+	h.add_child(slab(outline, 0.9, plain(Color("#e8cc98"))))   # tan hide (pale went grey in shade)
+	var spot := plain(Color("#9a5a32"))   # a few broad red-brown patches (small dark spots read as holes)
+	for p in [Vector2(-1.4, 3.0), Vector2(1.6, -3.4)]:
+		h.add_child(blob(Vector3(2.2, 2.6, 0.3), spot, Vector3(p.x, p.y, 0.45)))
+	for k in outline.size():
+		var a: Vector2 = outline[k]
+		var b: Vector2 = outline[(k + 1) % outline.size()]
+		h.add_child(rod(Vector3(a.x, a.y, 0.3), Vector3(b.x, b.y, 0.3), 0.4, 0.4, plain(c.team)))
+	return {"node": n}
+
+
+## Han age 1: the hair in a topknot, tied with a team band.
+func _helm_han_topknot(c: Dictionary) -> Dictionary:
+	var n := Node3D.new()
+	var hair := surf("mane", Color("#3a2e26"), 3.0)
+	n.add_child(dome(Vector3(4.9, 2.8, 4.8), hair, Vector3(-0.3, -2.6, 0)))
+	n.add_child(blob(Vector3(1.7, 1.9, 1.7), hair, Vector3(-0.8, 1.0, 0)))   # the knot
+	n.add_child(ring(1.3, 1.9, plain(c.team), Vector3(-0.8, 0.0, 0)))
+	return {"node": n}
+
+
+## Han age 2: a soft black cap with two tails hanging behind.
+func _helm_han_cap(c: Dictionary) -> Dictionary:
+	var n := Node3D.new()
+	var black := plain(Color("#16141a"))
+	n.add_child(dome(Vector3(5.1, 3.4, 5.0), black, Vector3(-0.2, -2.8, 0)))
+	n.add_child(blob(Vector3(2.6, 3.0, 2.6), black, Vector3(-1.2, 1.4, 0)))   # the tall crown over the knot
+	for side in [1, -1]:   # stiff tails out to the sides behind: nothing else has this silhouette
+		n.add_child(rod(Vector3(-3.6, -0.4, 1.2 * side), Vector3(-4.6, 0.2, 7.0 * side), 0.45, 0.35, black))
+	n.add_child(ring(4.8, 5.2, plain(c.team), Vector3(-0.2, -2.8, 0)))
+	return {"node": n}
+
+
+## Han age 3: an iron lamellar helmet, a red tassel on top, a flared neck guard.
+func _helm_han_lamellar(c: Dictionary) -> Dictionary:
+	var n := Node3D.new()
+	var iron := surf("iron", Color.WHITE, 2.0)
+	iron = surf("iron", Color(0.62, 0.62, 0.66), 2.0)
+	n.add_child(cone(1.2, 5.2, 4.6, iron, Vector3(-0.2, -0.8, 0)))   # a tall, pointed bowl
+	for k in 12:   # the lames: vertical bands
+		var a := TAU * k / 12.0
+		n.add_child(rod(Vector3(cos(a) * 5.25 - 0.2, -3.0, sin(a) * 5.25), Vector3(cos(a) * 1.4 - 0.2, 1.4, sin(a) * 1.4), 0.22, 0.15, plain(Color("#3a3a40"))))
+	for k in 5:   # the neck guard: lames hanging behind and at the sides only
+		var a := PI * 0.55 + PI * 0.9 * k / 4.0
+		n.add_child(blob(Vector3(1.6, 2.4, 0.4), iron, Vector3(cos(a) * 5.0 - 0.6, -4.8, sin(a) * 5.0), Vector3(0, -rad_to_deg(a), 0)))
+	n.add_child(rod(Vector3(-0.2, 1.4, 0), Vector3(-0.2, 3.0, 0), 0.3, 0.3, iron))
+	n.add_child(blob(Vector3(1.4, 2.0, 1.4), plain(Color("#c8302a")), Vector3(-0.6, 3.6, 0)))   # the red tassel
+	return {"node": n}
+
+
+## Han weapon: the halberd (ji), a spear with a crescent side blade.
+func _weapon_ji(c: Dictionary) -> Dictionary:
+	var n: Node3D = _weapon_spear_wood(c).node
+	var a := Vector3(-4, -8, 0)
+	var b := Vector3(6, 19, 0)
+	var d := (b - a).normalized()
+	var iron := surf("iron", Color.WHITE, 3.0)
+	n.add_child(rod(b, b + d * 4.6, 0.9, 0.1, iron, false))   # the iron point over the wood
+	n.add_child(blade([Vector2(0, -0.6), Vector2(3.8, -1.4), Vector2(5.0, 0.6), Vector2(3.6, 0.4), Vector2(0, 0.6)], 0.5, iron,
+		b - d * 1.2, atan2(d.y, d.x) + PI * 0.5))
+	n.add_child(blob(Vector3(0.9, 1.2, 0.9), plain(c.team), b - d * 2.6))   # a team tassel
+	return {"node": n}
+
+
+func _weapon_ji_bronze(c: Dictionary) -> Dictionary:
+	return _weapon_ji(c)
+
+
+func _weapon_ji_iron(c: Dictionary) -> Dictionary:
+	return _weapon_ji(c)
+
+
+## Han shield: a lacquered rectangle with a pointed top, red with a black border.
+func _shield_lacquer(c: Dictionary) -> Dictionary:
+	var n := Node3D.new()
+	var h := facing(n, Vector3(3.0, 0.0, 1.5), SHIELD_FACE)
+	var outline := [Vector2(-3.8, -7.5), Vector2(3.8, -7.5), Vector2(3.8, 5.5), Vector2(0, 8.0), Vector2(-3.8, 5.5)]
+	h.add_child(slab(outline, 0.9, plain(Color("#c8402a"))))   # bright lacquer red (the leather texture baked it near black)
+	for k in outline.size():
+		var a: Vector2 = outline[k]
+		var b: Vector2 = outline[(k + 1) % outline.size()]
+		h.add_child(rod(Vector3(a.x, a.y, 0.35), Vector3(b.x, b.y, 0.35), 0.45, 0.45, plain(Color("#1a1612"))))
+	h.add_child(blob(Vector3(1.6, 1.6, 0.5), plain(c.team), Vector3(0, 0.5, 0.5)))
+	return {"node": n}
+
+
+## Aztec age 1: a headband with one feather upright behind.
+func _helm_aztec_band(c: Dictionary) -> Dictionary:
+	var n := Node3D.new()
+	n.add_child(dome(Vector3(4.9, 2.8, 4.8), surf("mane", Color("#2a2420"), 3.0), Vector3(-0.3, -2.6, 0)))   # a bowl of black hair
+	n.add_child(ring(4.5, 5.0, plain(c.team), Vector3(-0.3, -2.6, 0)))   # the band on its edge (alone, a ring floated like a halo)
+	n.add_child(blob(Vector3(0.6, 3.6, 1.0), plain(Color("#2a9a6a")), Vector3(-4.0, 0.0, 0), Vector3(0, 0, 12)))   # a green feather
+	return {"node": n}
+
+
+## Aztec age 2: a quilted cotton cap with a crest of feathers.
+func _helm_aztec_quilted(c: Dictionary) -> Dictionary:
+	var n := Node3D.new()
+	var cotton := surf("cloth", Color("#f0ead8"), 3.0)
+	n.add_child(dome(Vector3(5.2, 3.6, 5.1), cotton, Vector3(-0.2, -3.0, 0)))
+	for k in 3:   # quilting
+		n.add_child(ring(4.9 - k * 1.2, 5.15 - k * 1.2, surf("cloth", Color("#c8bea4"), 2.0), Vector3(-0.2, -2.4 + k * 1.1, 0)))
+	var greens := [Color("#2a9a6a"), Color("#e8c040"), Color("#2a9a6a"), Color("#c83a2a"), Color("#2a9a6a")]
+	for k in 5:
+		var z := -2.0 + k * 1.0
+		n.add_child(blob(Vector3(0.5, 3.0, 0.7), plain(greens[k]), Vector3(-3.2, 1.6, z), Vector3(z * 6.0, 0, 20)))
+	n.add_child(ring(4.9, 5.4, plain(c.team), Vector3(-0.2, -3.0, 0)))
+	return {"node": n}
+
+
+## Aztec age 3: an eagle helmet: brown feathered dome, the yellow beak over the brow, a white crest.
+func _helm_aztec_eagle(c: Dictionary) -> Dictionary:
+	var n := Node3D.new()
+	var feathers := surf("cloth", Color("#6a4a2a"), 3.0)
+	n.add_child(dome(Vector3(5.4, 4.6, 5.3), feathers, Vector3(-0.4, -3.2, 0)))
+	var beak := plain(Color("#e8b030"))
+	n.add_child(cone(0.4, 2.4, 4.6, beak, Vector3(4.8, -1.0, 0), Vector3(0, 0, -100)))   # upper beak, over the face
+	for side in [1, -1]:
+		n.add_child(blob(Vector3(0.7, 0.7, 0.4), plain(INK), Vector3(3.0, 0.4, 2.6 * side)))   # the eagle's eyes
+		n.add_child(blob(Vector3(1.0, 2.6, 0.6), feathers, Vector3(1.2, -4.8, 4.8 * side)))   # cheek feathers
+	for k in 4:
+		n.add_child(blob(Vector3(0.6, 3.2, 0.8), plain(Color("#f4f0e4")), Vector3(-3.6 + k * 0.2, 1.4, -1.5 + k * 1.0), Vector3(0, 0, 30)))
+	n.add_child(ring(5.2, 5.6, plain(c.team), Vector3(-0.4, -3.2, 0)))
+	return {"node": n}
+
+
+## Aztec weapon: the obsidian-edged wooden club (macuahuitl).
+func _weapon_macuahuitl(c: Dictionary) -> Dictionary:
+	var n := Node3D.new()
+	var tip := Vector3(3, 14, 0)
+	var d := tip.normalized()
+	var ang := atan2(d.y, d.x)
+	n.add_child(blade([Vector2(0, -1.0), Vector2(12.5, -1.7), Vector2(14.0, 0), Vector2(12.5, 1.7), Vector2(0, 1.0)], 0.8,
+		surf("wood_grain", Color("#c89a60"), 3.0), Vector3.ZERO, ang))
+	var glass := surf("iron", Color("#3a3640"), 1.5)
+	var across := Vector3(-d.y, d.x, 0)
+	for k in 6:   # the obsidian teeth along both edges
+		var at := d * (3.0 + k * 1.8)
+		var w := 1.1 + k * 0.1
+		for side in [1, -1]:
+			n.add_child(blob(Vector3(0.55, 0.7, 0.3), glass, at + across * side * (w + 0.5)))
+	n.add_child(rod(Vector3.ZERO, -d * 3.0, 0.6, 0.6, surf("leather", Color.WHITE, 2.0), false))
+	return {"node": n}
+
+
+## Aztec shield: a round team-coloured shield with a white ring and a fringe of feathers below.
+func _shield_chimalli(c: Dictionary) -> Dictionary:
+	var n := Node3D.new()
+	var h := facing(n, Vector3(3.0, 0.5, 1.5), SHIELD_FACE)
+	h.add_child(disc(5.6, 0.8, plain(c.team), 0))
+	h.add_child(ring(2.6, 3.4, plain(Color("#f4f0e4")), Vector3(0, 0, 0.45), Vector3(90, 0, 0)))
+	h.add_child(disc(1.2, 0.3, plain(Color("#e8c040")), 0.5))
+	var cols := [Color("#2a9a6a"), Color("#e8c040"), Color("#c83a2a")]
+	for k in 9:   # the hanging feathers
+		var x := -4.0 + k * 1.0
+		h.add_child(blob(Vector3(0.45, 2.0, 0.3), plain(cols[k % 3]), Vector3(x, -6.0 - absf(x) * -0.25, 0.1)))
+	return {"node": n}
