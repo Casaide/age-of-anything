@@ -1626,10 +1626,22 @@ func _research_tip(r: Dictionary) -> String:
 			var a: Dictionary = steps[0].eval
 			var b: Dictionary = steps[1].eval
 			lines.append("[color=%s]Becomes: %s[/color]" % [TIP_GOOD, steps[1].recipe.get("name", "")])
-			lines.append("[color=%s]Attack %d -> %d, armour %d/%d -> %d/%d[/color]" % [TIP_DIM, int(a.attack), int(b.attack),
-				int(a.armour.get("melee", 0)), int(a.armour.get("pierce", 0)), int(b.armour.get("melee", 0)), int(b.armour.get("pierce", 0))])
+			lines.append("[color=%s]%s[/color]" % [TIP_GOOD, "\n".join(_step_changes(a, b))])
 		return _tip(_research_name(r), r.cost, lines, needs)
 	return _tip(r.name, r.cost, [r.desc, "[color=%s]%s[/color]" % [TIP_GOOD, _effect_text(r.effects)]], needs)
+
+
+## What a line step changes, stat by stat ("Attack 4 -> 5"); attack, armour and hit points
+## always show, so even a step that looks the same reads as an upgrade.
+func _step_changes(a: Dictionary, b: Dictionary) -> Array:
+	var out := ["Attack %d -> %d" % [int(a.attack), int(b.attack)],
+		"Armour %d/%d -> %d/%d" % [int(a.armour.get("melee", 0)), int(a.armour.get("pierce", 0)), int(b.armour.get("melee", 0)), int(b.armour.get("pierce", 0))],
+		"Hit points %d -> %d" % [int(a.hp), int(b.hp)]]
+	if int(a["range"]) != int(b["range"]):
+		out.append("Range %d -> %d" % [int(a["range"]), int(b["range"])])
+	if int(a.speed) != int(b.speed):
+		out.append("Speed %d -> %d" % [int(a.speed), int(b.speed)])
+	return out
 
 
 ## A line upgrade's [step it leaves, step it gives] for this player, or [] if the line has none.

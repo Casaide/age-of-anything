@@ -1936,6 +1936,7 @@
  },
  {
   "id": "weapon.spear.bronze",
+  "epithet": "Bronze",
   "slot": "hand_r",
   "noun": "Spearbearer",
   "shapes": [
@@ -2000,6 +2001,7 @@
  },
  {
   "id": "weapon.pike.iron",
+  "epithet": "Iron",
   "slot": "hand_r",
   "noun": "Pike",
   "shapes": [
@@ -2113,6 +2115,7 @@
  },
  {
   "id": "weapon.sword.bronze",
+  "epithet": "Bronze",
   "slot": "hand_r",
   "noun": "Swordsman",
   "shapes": [
@@ -2168,6 +2171,7 @@
  },
  {
   "id": "weapon.sword.iron",
+  "epithet": "Iron",
   "slot": "hand_r",
   "noun": "Swordsman",
   "shapes": [
@@ -3647,6 +3651,7 @@
  },
  {
   "id": "armour.bottlecap",
+  "epithet": "Bottlecap-clad",
   "slot": "torso",
   "tags": [
    "armour",
@@ -3681,6 +3686,7 @@
  },
  {
   "id": "armour.sardine",
+  "epithet": "Sardine-plated",
   "slot": "torso",
   "tags": [
    "armour",
@@ -3885,6 +3891,7 @@
  },
  {
   "id": "armour.leather",
+  "epithet": "Leather-clad",
   "slot": "torso",
   "tags": [
    "armour",
@@ -3915,6 +3922,7 @@
  },
  {
   "id": "armour.bronze",
+  "epithet": "Bronze-clad",
   "slot": "torso",
   "tags": [
    "armour",
@@ -3964,6 +3972,7 @@
  },
  {
   "id": "armour.mail",
+  "epithet": "Mailed",
   "slot": "torso",
   "tags": [
    "armour",
@@ -4031,6 +4040,7 @@
  },
  {
   "id": "armour.bark",
+  "epithet": "Bark-clad",
   "slot": "torso",
   "tags": [
    "armour",
@@ -4715,6 +4725,7 @@
  },
  {
   "id": "armour.lorica",
+  "epithet": "Plated",
   "slot": "torso",
   "tags": [
    "armour",
@@ -6326,6 +6337,7 @@
    }
   ],
   "id": "weapon.ji.bronze",
+  "epithet": "Bronze",
   "noun": "Halberdier",
   "tags": [
    "spear",
@@ -6387,6 +6399,7 @@
    }
   ],
   "id": "weapon.ji.iron",
+  "epithet": "Iron",
   "noun": "Halberdier",
   "tags": [
    "spear",
