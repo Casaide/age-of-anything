@@ -144,7 +144,8 @@ units beatable. Don't special-case silly units.
 - Out-of-era asks get a substitute plus a funny note (WW2 -> saucepan helmets). Bad
   interpretations are part of the fun; keep notes honest and playful.
 - Signature gear (roman, greek, viking, cheese) is only favoured when asked for (or by the race's
-  family/creature, e.g. rats like cheese). Wings only appear when asked; ridden units put wings on the mount.
+  family/creature, e.g. rats like cheese). Wings only appear when asked. A winged race doesn't ride unless asked to
+  (then rider and mount both have wings); "pegasus" gives only the mount wings.
 - Roster: worker, spear, skirmisher (non-bow ranged, beats archers), archer (bows), large.
 - Large units: a mount if available; giants only for creatures where that reads well
   (`giant_ok`); otherwise "Heavy" armoured elites. Centaurs are already mounted, so they go Heavy.
