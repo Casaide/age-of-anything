@@ -17,6 +17,7 @@ const Economy := preload("res://src/sim/economy.gd")
 const EcoBot := preload("res://src/ai/eco_bot.gd")
 const Combat := preload("res://src/sim/combat.gd")
 const Tech := preload("res://src/sim/tech.gd")
+const Fog := preload("res://src/sim/fog.gd")
 
 const PROMPTS := ["angry swamp frogs with reed spears", "sewer rats with cheese hammers"]
 const SEED := 20261010
@@ -72,6 +73,7 @@ func _init() -> void:
 	_test_queue(races)
 	_test_movement_classes()
 	_test_farms(races)
+	_test_fog_memory(races)
 	_test_tech(races)
 	_test_market(races)
 	_test_build_queue(races)
@@ -464,6 +466,71 @@ func _test_farms(races: Array) -> void:
 	for t in 1200:
 		w.step()
 	check(w.stock[2][0] > stone_before, "stone: a worker mines the deposit (%d -> %d)" % [stone_before, w.stock[2][0]])
+
+
+## Fog memory: an enemy farm sown in the dark stays grass to you; once seen it's a field, and
+## when you look away it stays as you last saw it (worked out, or torn down) until you look again.
+func _test_fog_memory(races: Array) -> void:
+	var w := World.new(SEED, SimMap.load_id("flat_test"), races, rules_)
+	w.stock[1][1] = 1000
+	var s: Array = w.map.starts[1]
+	var worker := -1
+	var scout := -1
+	for i in w.units.count():
+		if worker < 0 and w.units.owner[i] == 1:
+			worker = w.units.id[i]
+		if scout < 0 and w.units.owner[i] == 0:
+			scout = w.units.id[i]
+	var cx: int = s[0] / 1000 - 5
+	var cy: int = s[1] / 1000 + 2
+	var c: int = cy * w.map.width + cx
+	var grass: int = w.map.terrain[c]
+	w.issue(1, Commands.BUILD, {"ids": [worker], "building": "farm", "cx": cx, "cy": cy})
+	var field: int = w.map.terrain_ids.find("field")
+	while w.tick < 1600 and w.map.terrain[c] != field:
+		w.step()
+	var farm_id: int = w.map.occupied[c]
+	check(w.map.terrain[c] == field, "fog memory: player 1's farm became a field")
+	check(w.fog[0][c] == Fog.UNSEEN and w.fog_ground[0][c] == grass, "fog memory: player 0 hasn't seen it, so it's grass to them")
+	check(not w.fog_seen[0].has(farm_id), "fog memory: nor does player 0 know the farm")
+	check(w.fog_ground[1][c] == field and w.fog_left[1][c] > 0, "fog memory: its owner sees its crops")
+	var home: Array = _at(w, scout)
+	var si := w.units.index_of(scout)
+	w.units.x[si] = cx * 1000 - 2000   # player 0's worker looks in
+	w.units.y[si] = cy * 1000
+	for t in 8:
+		w.step()
+	check(w.fog_ground[0][c] == field and w.fog_left[0][c] == w.map.left_at(c), "fog memory: seen, it's a field with its crops")
+	check(w.fog_seen[0].has(farm_id), "fog memory: seen, player 0 knows the farm")
+	si = w.units.index_of(scout)
+	w.units.x[si] = home[0]   # and goes home
+	w.units.y[si] = home[1]
+	w.units.px[si] = home[0]
+	w.units.py[si] = home[1]
+	w.units.moving[si] = 0
+	for t in 8:
+		w.step()
+	check(w.fog[0][c] == Fog.EXPLORED, "fog memory: away again, the farm is under explored fog")
+	var seen_left: int = w.fog_left[0][c]
+	w.map.amount[c] = 1   # nearly worked out
+	while w.tick < 6000 and w.map.left_at(c) > 0:
+		w.step()
+	var fallow: int = w.map.terrain_ids.find("fallow")
+	check(w.map.terrain[c] == fallow, "fog memory: the farm is worked out")
+	check(w.fog_ground[0][c] == field and w.fog_left[0][c] == seen_left, "fog memory: player 0 still remembers it full of crops")
+	var b := w.buildings.index_of(farm_id)   # torn down out of sight
+	Economy.clear_farm(w, b)
+	w.map.occupy(w.buildings.footprint(b, w.map.width), 0)
+	w.buildings.remove_at(b)
+	for t in 8:
+		w.step()
+	check(w.fog_seen[0].has(farm_id) and w.fog_ground[0][c] == field, "fog memory: gone out of sight, player 0 still remembers the farm")
+	si = w.units.index_of(scout)
+	w.units.x[si] = cx * 1000 - 2000
+	w.units.y[si] = cy * 1000
+	for t in 8:
+		w.step()
+	check(not w.fog_seen[0].has(farm_id) and w.fog_ground[0][c] == grass, "fog memory: seen again, it's gone and the ground is grass")
 
 
 # --- ages and research ----------------------------------------------------------
