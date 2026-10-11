@@ -4,7 +4,7 @@
 **Exit criterion:** Deep review of UI, UX and art by Fable
 
 - Missing flag showing on the ground when we set waypoint (only visible while the building selected)
-- SFX
+- SFX - i see hitting and killing makes sound. But without units chopping wood, moving, being built, farm expired - it's all very very quiet
 - Finish UI
 - Click resources to see how much they have left
 - Immediatly clear when a resource has started being used - i.e. not 100%. Then further points where it degrades until gone
