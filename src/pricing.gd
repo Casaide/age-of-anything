@@ -50,7 +50,7 @@ static func evaluate(recipe: Dictionary, lib, rules: Dictionary) -> Dictionary:
 		_add_mix(mix, p, DEFAULT_MIX)
 
 	if recipe.has("mount"):
-		var mount_body: Dictionary = lib.part(lib.creatures[recipe.mount.creature].body)
+		var mount_body: Dictionary = lib.part(lib.creatures[recipe.mount.creature].get("mount_body", lib.creatures[recipe.mount.creature].body))
 		var ms: Dictionary = mount_body.stats
 		hp += int(ms.get("hp", 0))
 		_add_classes(armour, ms.get("armour", {}))

@@ -120,7 +120,7 @@ tests green. Anything cut moves to `../backlog.md`.
       presets, roster with costs, the generator's notes), a map card drawn from the map's data,
       Start; in battle Esc pauses with resume / surrender / back to the menu, and the menu comes
       up when a match ends. Maps got player names (Reed Meadow, The Pass)
-- [ ] 7. Races: ~~8 facings~~ (done 2026-10-11, D-087), ~~capybara~~ (done), rat buildings by age, rearing beetles, humans in Blender, spiders, centaurs, ponies, Egypt/Han/Aztec, buildings by age
+- [ ] 7. Races: ~~8 facings~~ (done 2026-10-11, D-087), ~~capybara~~ (done), rat buildings by age, ~~rearing beetles~~ (done), humans in Blender, spiders, centaurs, ponies, Egypt/Han/Aztec, buildings by age
 - [ ] 8. Animals: hunt and herd
 - [ ] 9. Fable review, fixes
 - [ ] Archive: pictures, journal, decisions, timeline
