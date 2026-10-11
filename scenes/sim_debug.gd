@@ -105,6 +105,7 @@ var autoplay := false
 var army := false           # also spawn a test army per side (F7 toggles and restarts)
 var vs_ai := false          # side 2 is played by the AI (set by the match setup screen)
 var banner: Label           # victory / defeat
+var pause_menu: Control     # Esc against the AI: resume, surrender, back to the menu
 var fog_view: FogView
 var flat: Node2D             # ground-level art (farms, crops), drawn under the y-sorted layer
 var minimap: Minimap
@@ -470,7 +471,10 @@ func _unhandled_input(event: InputEvent) -> void:
 				if selected_building != 0:
 					world.issue(active, Commands.AGE_UP, {"building": selected_building})
 			KEY_ESCAPE:
-				placing = ""
+				if placing != "":
+					placing = ""
+				elif vs_ai:
+					_toggle_pause_menu()
 			KEY_BRACKETRIGHT:
 				clock.speed = minf(clock.speed * 2.0, 16.0)
 			KEY_BRACKETLEFT:
@@ -741,6 +745,8 @@ func _play_events() -> void:
 			banner.text = ("Victory!" if mine else "Defeat") + "\n" + ("%s win" % world.races[_first_of_team(e.team)].name)
 			banner.add_theme_color_override("font_color", Color("#f2c94c") if mine else Color("#e07060"))
 			banner.visible = true
+			if vs_ai:
+				_show_pause_menu(true)   # the match is over: back to the lobby from here
 		elif e.type == "die" and not e.building:
 			var v: Node2D = views.get(e.id)
 			if v != null:
@@ -786,6 +792,62 @@ func move_selected_to(pos: Vector2) -> void:
 		if not groups[p].is_empty():
 			world.issue(p, Commands.MOVE, {"ids": groups[p], "x": m.x, "y": m.y})
 	flags.append({"pos": pos, "t": 1.0})
+
+
+## Esc against the AI: the game pauses under a small menu.
+func _toggle_pause_menu() -> void:
+	_show_pause_menu(pause_menu == null or not pause_menu.visible)
+
+
+func _show_pause_menu(on: bool) -> void:
+	if pause_menu == null:
+		pause_menu = _make_pause_menu()
+		banner.get_parent().add_child(pause_menu)
+	var over: bool = world.winner >= 0
+	pause_menu.visible = on
+	pause_menu.get_node("box/resume").visible = not over
+	pause_menu.get_node("box/surrender").visible = not over
+	pause_menu.get_node("box/title").text = "Match over" if over else "Paused"
+	clock.paused = on and not over
+
+
+func _make_pause_menu() -> Control:
+	var shade := ColorRect.new()
+	shade.color = Color(0, 0, 0, 0.45)
+	shade.set_anchors_preset(Control.PRESET_FULL_RECT)
+	var box := VBoxContainer.new()
+	box.name = "box"
+	box.add_theme_constant_override("separation", 12)
+	box.custom_minimum_size = Vector2(320, 0)
+	box.position = get_viewport_rect().size * 0.5 - Vector2(160, -50)   # below the victory banner
+	shade.add_child(box)
+	var title := Label.new()
+	title.name = "title"
+	title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	title.add_theme_font_size_override("font_size", 30)
+	title.add_theme_color_override("font_color", Color("#f2c94c"))
+	box.add_child(title)
+	for item in [["resume", "Resume", func(): _show_pause_menu(false)],
+			["surrender", "Surrender", func(): world.issue(active, Commands.SURRENDER, {}); _show_pause_menu(false)],
+			["menu", "Back to the menu", func(): get_tree().paused = false; get_tree().change_scene_to_file("res://scenes/match_setup.tscn")]]:
+		var b := Button.new()
+		b.name = item[0]
+		b.text = item[1]
+		b.focus_mode = Control.FOCUS_NONE
+		b.custom_minimum_size = Vector2(320, 52)
+		b.add_theme_font_size_override("font_size", 20)
+		var st := StyleBoxFlat.new()
+		st.bg_color = Color("#2e2820")
+		st.border_color = Color("#6a5a40")
+		st.set_border_width_all(2)
+		st.set_corner_radius_all(4)
+		b.add_theme_stylebox_override("normal", st)
+		var hv: StyleBoxFlat = st.duplicate()
+		hv.border_color = Color("#f2c94c")
+		b.add_theme_stylebox_override("hover", hv)
+		b.pressed.connect(item[2])
+		box.add_child(b)
+	return shade
 
 
 ## Train one (five with shift held, as far as the queue has room).
@@ -1451,7 +1513,7 @@ func _update_panel() -> void:
 			"info": UnitCard.text(et, _foe_types(eo))})
 		return
 	panel.show_content({"title": "%s (P%d)" % [world.races[active].name, active + 1], "team": team, "portrait": null,
-		"info": "Select units or a building.  Tab switches side.  F6: let the bots play.", "buttons": [], "queue": null})
+		"info": "Select units or a building." if vs_ai else "Select units or a building.  Tab switches side.  F6: let the bots play.", "buttons": [], "queue": null})
 
 
 func _arch(player: int) -> String:
