@@ -8,6 +8,7 @@ extends Node2D
 var shapes: Array = []
 var colours: Dictionary = {}
 var part_id := ""
+var facing := 0         # which of the 8 baked facings to draw (0: the classic three-quarter view)
 var front := false      # draw the part's front layer (a body's near arm)
 var shade := 1.0:       # extra darkening (the far leg sits in shadow)
 	set(v):
@@ -100,6 +101,11 @@ static func front_key(key: String) -> String:
 	return key + "#front"
 
 
+## Bakes and rigs of facing k (k = 0 has no suffix: the three-quarter view everything started with).
+static func facing_suffix(k: int) -> String:
+	return "" if k == 0 else "#f%d" % k
+
+
 ## Identifies a part as drawn in particular colours (team, skin and cloth are baked in).
 static func bake_key(id: String, shape_list: Array, colour_map: Dictionary) -> String:
 	var chans := {}
@@ -133,6 +139,8 @@ static func points(list: Array) -> PackedVector2Array:
 
 func _draw() -> void:
 	var key := bake_key(part_id, shapes, team_neutral(colours))
+	if facing != 0 and baked.has(key + facing_suffix(facing)):
+		key += facing_suffix(facing)   # parts without facings (flat shapes) keep their one view
 	var b = baked.get(front_key(key) if front else key)
 	if b == null:
 		_draw_missing(key)

@@ -217,3 +217,10 @@ notes. In the middle are the map (drawn from its data as a small isometric diamo
 battle, Esc pauses under a small menu, which also comes up when the match ends, so you can get
 back. The first render had every label one letter wide (wrapping labels in a row) and the team
 strip filling the whole panel.
+
+### Eight facings
+Units walked straight up or down the screen sideways, crab-like: one three-quarter view, mirrored.
+Now every modelled part bakes in eight directions (bakes go from about 0.4 s to about 3 s for two
+rosters), with its sockets and their depth per facing, and units pick the facing that fits their
+movement with a little hysteresis. Rats and centaurs look right from the front, the back and the
+sides on the first try. tests/facing_sheet.gd shows a race's roster in all eight.

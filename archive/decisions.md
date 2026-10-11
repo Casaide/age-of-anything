@@ -441,3 +441,10 @@ generator's rolls, and the Greeks rolled a bare 20-cost archer: 30 of them beat 
 and counters fell to 73% (floor 75%). At 3 points counters are back at 82%. Supersedes the bow
 price in D-082 (the skirmisher bonus stays). The generator's sensitivity to new parts is a
 reminder that balance needs price-by-simulation (backlog). Claude.
+
+**D-087, 2026-10-11: Units have 8 baked facings, none mirrored.** As Dominic asked earlier (8 baked
+facings, all directions). Every modelled part bakes at 8 camera angles 45 degrees apart; each bake
+brings its sockets, how near each socket is to the camera (so a cape draws over the body walking
+away and the far hand's shield goes behind) and which way the model faces on screen. A unit takes
+the facing that best fits the way it moves, works or attacks, and only switches when another fits
+clearly better. Parts with no model keep their one view and still mirror. Claude.

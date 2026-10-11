@@ -11,6 +11,8 @@ const UnitModels := preload("res://scenes/art_pixel/unit_models.gd")
 
 const AZIMUTH := 35.0    # hand-built models are seen three-quarter: from the near side, a bit in front
 var azimuth := AZIMUTH   # per bake: other facings (90 = facing the camera, -90 = walking away)
+var facings := 8         # hand-built models bake this many facings, 45 degrees apart (tests: 1)
+const FACING_STEP := 45.0
 var elevation := ELEVATION   # camera height in degrees (tests: a steeper look from above)
 var outlined := true     # the units' dark edge (tests: without it)
 const ELEVATION := 30.0  # and from above, like the map
@@ -77,7 +79,11 @@ func bake(id: String, shapes: Array, colours: Dictionary) -> void:
 	if PartShape.baked.has(key):
 		return
 	if models.has(id):
-		await _bake_model(id, colours, key)
+		var base := azimuth
+		for k in facings:   # all eight directions, none mirrored (Dominic: 8 baked facings)
+			azimuth = base + FACING_STEP * k
+			await _bake_model(id, colours, key + PartShape.facing_suffix(k), k)
+		azimuth = base
 		return
 	cam.basis = Basis.IDENTITY
 	self.key.basis = Basis.looking_at(Vector3(0.55, -0.7, -1.0).normalized(), Vector3.UP)
@@ -102,7 +108,8 @@ func bake(id: String, shapes: Array, colours: Dictionary) -> void:
 
 
 ## A hand-built model, seen three-quarter; its sockets come along, projected into 2D part units.
-func _bake_model(id: String, colours: Dictionary, bake_key: String) -> void:
+func _bake_model(id: String, colours: Dictionary, bake_key: String, k := 0) -> void:
+	var rig_id := id + PartShape.facing_suffix(k)
 	var spec: Dictionary = models.build(id, colours)
 	var model: Node3D = spec.node
 	var front: Node3D = spec.get("front")
@@ -138,19 +145,24 @@ func _bake_model(id: String, colours: Dictionary, bake_key: String) -> void:
 		model.visible = true
 	var origin := cam.unproject_position(Vector3.ZERO)
 	var to2d := func(p: Vector3) -> Vector2: return (cam.unproject_position(p) - origin) / px
+	var flat := Vector3(view.x, 0.0, view.z).normalized()   # towards the camera, along the ground
 	if spec.has("sockets"):
-		var rig := {"sockets": {}}
-		for k in spec.sockets:
-			rig.sockets[k] = to2d.call(spec.sockets[k])
-		if spec.has("anchors"):
-			rig.anchors = spec.anchors.map(func(a): var v: Vector2 = to2d.call(a[0]); return [v.x, v.y, a[1], a[2], a[3] if a.size() > 3 else 0])
+		var rig := {"sockets": {}, "depth": {}}
+		for s in spec.sockets:
+			rig.sockets[s] = to2d.call(spec.sockets[s])
+			rig.depth[s] = spec.sockets[s].dot(flat)   # > 0: nearer the camera than the body's middle
+		# Which way the model's front (+x) points on screen in this facing, to pick facings by.
+		rig.dir = (cam.unproject_position(Vector3(20, 0, 0)) - origin).normalized()
+		if spec.has("anchors"):   # a leg on the camera's side of the body is the near leg
+			rig.anchors = spec.anchors.map(func(a): var v: Vector2 = to2d.call(a[0]); return [v.x, v.y, a[1],
+				a[2] if k == 0 else (1 if a[0].dot(flat) > 0.0 else -1), a[3] if a.size() > 3 else 0])
 		if spec.has("torso_scale"):
 			rig.torso_scale = spec.torso_scale
 		if spec.has("gear_scale"):
 			rig.gear_scale = spec.gear_scale
 		if spec.has("carry"):
 			rig.carry = spec.carry
-		PartShape.rigs[id] = rig
+		PartShape.rigs[rig_id] = rig
 	holder.remove_child(model)
 	model.queue_free()
 	var used := img.get_used_rect()
@@ -164,7 +176,7 @@ func _bake_model(id: String, colours: Dictionary, bake_key: String) -> void:
 		var top := Pixelize.run(front_img.get_region(used), SS, outlined, bands)
 		PartShape.baked[PartShape.front_key(bake_key)] = {"img": top, "tex": ImageTexture.create_from_image(top),
 			"origin": (origin - Vector2(used.position)) / SS, "scale": art_scale}
-		PartShape.rigs[id]["front"] = true
+		PartShape.rigs[rig_id]["front"] = true
 	PartShape.baked[bake_key] = {"img": pix, "tex": ImageTexture.create_from_image(pix),
 		"origin": (origin - Vector2(used.position)) / SS, "scale": art_scale}
 	# Where the drawn part reaches furthest from its grip (part units): a weapon's tip,
@@ -175,9 +187,9 @@ func _bake_model(id: String, colours: Dictionary, bake_key: String) -> void:
 		for x in pix.get_width():
 			if pix.get_pixel(x, y).a > 0.9 and (Vector2(x, y) - o).length() > tip.length():
 				tip = Vector2(x, y) - o
-	if not PartShape.rigs.has(id):
-		PartShape.rigs[id] = {}
-	PartShape.rigs[id]["tip"] = tip / art_scale
+	if not PartShape.rigs.has(rig_id):
+		PartShape.rigs[rig_id] = {}
+	PartShape.rigs[rig_id]["tip"] = tip / art_scale
 
 
 static func _aabb(n: Node3D) -> AABB:
