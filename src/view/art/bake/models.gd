@@ -1445,33 +1445,143 @@ func _market(arch: String, team: Color) -> Dictionary:
 	return {"body": body, "anchor": Vector3.ZERO, "lights": [], "team": team, "lantern": Vector3(0, 0.6, 0)}
 
 
-## Wall: one tile of it. Stakes for the wooden cultures, a block wall for stone and earth.
+# ------------------------------------------------------------------ walls and gates
+# One tile each. Walls are a cross through the tile's middle, so neighbours join up whichever
+# way a line runs; gates are built along x (sim x) and baked a quarter turn for lines along z.
+
+## What a culture builds its stone wall of: dressed stone, brick and scrap for the junk-rats,
+## rammed earth and stones for reed and mound.
+const WALL_STONE := {"stone": "stone", "thatch": "stone", "tent": "stone", "junk": "brick", "reed": "mud", "mound": "mud"}
+
+
+## Stone Wall: a block wall with crenellations, in the culture's stone.
 func _wall(arch: String, team: Color) -> Dictionary:
 	var body := Node3D.new()
-	var k: Dictionary = KIT[arch]
-	var solid := arch in ["stone", "mound"]
-	if solid:
-		var m: Material = mats.get_mat("stone" if arch == "stone" else "mud")
-		body.add_child(box(Vector3(0.98, 0.72, 0.98), m, Vector3(0, 0.36, 0)))
-		for x in [-1, 1]:   # crenellations
-			for z in [-1, 1]:
-				body.add_child(box(Vector3(0.3, 0.16, 0.3), m, Vector3(x * 0.3, 0.8, z * 0.3)))
-	else:
-		rng.seed = 91
-		var wood := mats.get_mat("wood")
-		# A cross of stakes through the tile's middle, so neighbouring tiles join up into one fence
-		# whichever way the line runs.
-		var spots := [Vector3.ZERO]
-		for t in [-0.4, -0.2, 0.2, 0.4]:
-			spots.append(Vector3(t, 0, 0))
-			spots.append(Vector3(0, 0, t))
-		for p0 in spots:
-			var h := rng.randf_range(0.72, 0.86)
-			var p: Vector3 = p0 + Vector3(0, h / 2, 0)
-			body.add_child(cyl(0.08, 0.09, h, wood, p, Vector3(rng.randf_range(-3, 3), 0, rng.randf_range(-3, 3)), 8))
-			body.add_child(cyl(0.0, 0.08, 0.13, wood, p + Vector3(0, h / 2 + 0.065, 0), Vector3.ZERO, 8))
-		for along in [Vector3(1, 0, 0), Vector3(0, 0, 1)]:   # two lashed rails each way
-			for y in [0.25, 0.55]:
-				body.add_child(box(Vector3(0.98, 0.04, 0.04) if along.x > 0 else Vector3(0.04, 0.04, 0.98), wood, Vector3(0, y, 0)))
+	var m: Material = mats.get_mat(WALL_STONE[arch])
+	body.add_child(box(Vector3(0.98, 0.72, 0.98), m, Vector3(0, 0.36, 0)))
+	for x in [-1, 1]:   # crenellations
+		for z in [-1, 1]:
+			body.add_child(box(Vector3(0.3, 0.16, 0.3), m, Vector3(x * 0.3, 0.8, z * 0.3)))
+	if arch == "junk":   # tin patches nailed over the brick
+		body.add_child(box(Vector3(0.36, 0.26, 0.02), mats.get_mat("tin"), Vector3(-0.15, 0.4, 0.5), Vector3(0, 0, 6)))
+		body.add_child(box(Vector3(0.02, 0.22, 0.3), mats.get_mat("tin"), Vector3(0.5, 0.3, 0.1), Vector3(-5, 0, 0)))
+	elif arch in ["reed", "mound"]:   # field stones pressed into the earth
+		rng.seed = 93
+		for k in 7:
+			var side := 1 if k % 2 == 0 else -1
+			var p := Vector3(rng.randf_range(-0.38, 0.38), rng.randf_range(0.12, 0.6), 0.49 * side) if k < 4 else Vector3(0.49 * side, rng.randf_range(0.12, 0.6), rng.randf_range(-0.38, 0.38))
+			body.add_child(ball(0.07, mats.get_mat("stone"), p, Vector3(1.2, 0.8, 0.6) if k < 4 else Vector3(0.6, 0.8, 1.2)))
 	return {"body": body, "anchor": Vector3.ZERO, "lights": [], "team": team}
+
+
+## Palisade Wall: sharpened stakes in a cross, two lashed rails each way, and the culture's touch:
+## a stone footing, tin sheets, reed bindings, felt and rope, or an earth bank.
+func _palisade(arch: String, team: Color) -> Dictionary:
+	var body := Node3D.new()
+	rng.seed = 91
+	var wood := mats.get_mat("wood")
+	var spots := [Vector3.ZERO]
+	for t in [-0.4, -0.2, 0.2, 0.4]:
+		spots.append(Vector3(t, 0, 0))
+		spots.append(Vector3(0, 0, t))
+	for p0 in spots:
+		_stake(body, p0, rng.randf_range(0.72, 0.86), wood)
+	for along in [Vector3(1, 0, 0), Vector3(0, 0, 1)]:
+		for y in [0.25, 0.55]:
+			body.add_child(box(Vector3(0.98, 0.04, 0.04) if along.x > 0 else Vector3(0.04, 0.04, 0.98), wood, Vector3(0, y, 0)))
+	_palisade_dress(body, arch, spots)
+	return {"body": body, "anchor": Vector3.ZERO, "lights": [], "team": team}
+
+
+## One sharpened stake, leaning a touch.
+func _stake(body: Node3D, at: Vector3, h: float, wood: Material, r := 0.08) -> void:
+	var p := at + Vector3(0, h / 2, 0)
+	body.add_child(cyl(r, r + 0.01, h, wood, p, Vector3(rng.randf_range(-3, 3), 0, rng.randf_range(-3, 3)), 8))
+	body.add_child(cyl(0.0, r, 0.13, wood, p + Vector3(0, h / 2 + 0.065, 0), Vector3.ZERO, 8))
+
+
+## A culture's touch on a stake fence (spots: where its stakes stand).
+func _palisade_dress(body: Node3D, arch: String, spots: Array) -> void:
+	match arch:
+		"stone":   # a dry-stone footing the stakes are set in
+			for along in [Vector3(0.98, 0.14, 0.26), Vector3(0.26, 0.14, 0.98)]:
+				body.add_child(box(along, mats.get_mat("stone"), Vector3(0, 0.07, 0)))
+		"junk":   # tin sheets and a hubcap nailed on where the stakes ran short
+			body.add_child(box(Vector3(0.34, 0.24, 0.02), mats.get_mat("tin"), Vector3(-0.28, 0.42, 0.1), Vector3(0, 0, 8)))
+			body.add_child(box(Vector3(0.02, 0.22, 0.3), mats.get_mat("tin"), Vector3(0.1, 0.36, 0.3), Vector3(-6, 0, 0)))
+			body.add_child(cyl(0.09, 0.09, 0.02, Materials.flat(Color("#9aa0a6"), 0.4, 0.7), Vector3(0.3, 0.5, 0.1), Vector3(90, 0, 0), 14))
+		"reed":   # every stake bound with reed at two heights
+			for p in spots:
+				for y in [0.3, 0.6]:
+					body.add_child(cyl(0.1, 0.1, 0.06, mats.get_mat("thatch"), p + Vector3(0, y, 0), Vector3.ZERO, 8))
+		"tent":   # a felt strip along the top rail, rope lashings
+			for along in [Vector3(0.9, 0.08, 0.03), Vector3(0.03, 0.08, 0.9)]:
+				body.add_child(box(along, mats.get_mat("felt"), Vector3(0, 0.6, 0)))
+		"mound":   # an earth bank heaped against the foot
+			for along in [Vector3(0.98, 0.2, 0.34), Vector3(0.34, 0.2, 0.98)]:
+				body.add_child(box(along, mats.get_mat("mud"), Vector3(0, 0.08, 0)))
+
+
+## Palisade Gate (closed in "body", open in "open"): two tall gate posts under a lintel with a
+## team cloth, and two leaves of stakes that swing back.
+func _palisade_gate(arch: String, team: Color) -> Dictionary:
+	return {"body": _stake_gate(arch, team, false), "open": _stake_gate(arch, team, true), "anchor": Vector3.ZERO, "lights": [], "team": team}
+
+
+func _stake_gate(arch: String, team: Color, open: bool) -> Node3D:
+	var body := Node3D.new()
+	rng.seed = 95
+	var wood := mats.get_mat("wood")
+	for x in [-0.43, 0.43]:   # the gate posts, taller and thicker than the fence
+		_stake(body, Vector3(x, 0, 0), 1.0, wood, 0.1)
+		_stake(body, Vector3(x, 0, -0.18), 0.8, wood)   # a brace behind each
+	body.add_child(box(Vector3(1.0, 0.08, 0.1), wood, Vector3(0, 0.98, 0)))   # the lintel
+	body.add_child(box(Vector3(0.26, 0.2, 0.02), cloth(team), Vector3(0, 0.84, 0.06)))   # a team cloth under it
+	for side in [-1, 1]:
+		var leaf := Node3D.new()   # hinged on its post; it swings back (away from the viewer) when open
+		leaf.position = Vector3(side * 0.37, 0, 0)
+		leaf.rotation_degrees = Vector3(0, 90 * -side if open else 0, 0)
+		body.add_child(leaf)
+		for k in 3:
+			var x: float = -side * (0.06 + k * 0.12)
+			leaf.add_child(cyl(0.05, 0.055, 0.72, wood, Vector3(x, 0.38, 0), Vector3.ZERO, 6))
+			leaf.add_child(cyl(0.0, 0.05, 0.1, wood, Vector3(x, 0.79, 0), Vector3.ZERO, 6))
+		for y in [0.22, 0.56]:
+			leaf.add_child(box(Vector3(0.36, 0.05, 0.03), wood, Vector3(-side * 0.18, y, 0.05)))
+	if arch == "reed":   # the reed bindings show on the posts too
+		for x in [-0.43, 0.43]:
+			for y in [0.3, 0.6, 0.85]:
+				body.add_child(cyl(0.125, 0.125, 0.06, mats.get_mat("thatch"), Vector3(x, y, 0), Vector3.ZERO, 8))
+	return body
+
+
+## Stone Gate (closed and open): two crenellated pillars in the culture's stone under an
+## arch-stone lintel with the team banner, and iron-banded double doors.
+func _stone_gate(arch: String, team: Color) -> Dictionary:
+	return {"body": _gatehouse(arch, team, false), "open": _gatehouse(arch, team, true), "anchor": Vector3.ZERO, "lights": [], "team": team}
+
+
+func _gatehouse(arch: String, team: Color, open: bool) -> Node3D:
+	var body := Node3D.new()
+	var m: Material = mats.get_mat(WALL_STONE[arch])
+	var wood := mats.get_mat("wood")
+	var iron := Materials.flat(Color("#4a4c50"), 0.5, 0.7)
+	for x in [-0.39, 0.39]:
+		body.add_child(box(Vector3(0.22, 0.98, 0.98), m, Vector3(x, 0.49, 0)))   # a pillar, as deep as the wall
+		for z in [-0.3, 0.3]:
+			body.add_child(box(Vector3(0.2, 0.16, 0.26), m, Vector3(x, 1.06, z)))
+	body.add_child(box(Vector3(0.6, 0.22, 0.98), m, Vector3(0, 0.87, 0)))   # the lintel over the way through
+	body.add_child(box(Vector3(0.3, 0.16, 0.02), cloth(team), Vector3(0, 0.88, 0.5)))   # the banner on the lintel, over the doors
+	body.add_child(box(Vector3(0.56, 0.02, 0.98), Materials.flat(Color("#2a2420"), 1.0), Vector3(0, 0.01, 0)))   # the dark threshold
+	for side in [-1, 1]:
+		var leaf := Node3D.new()
+		leaf.position = Vector3(side * 0.28, 0, 0.44)   # in the front of the arch; they swing in
+		leaf.rotation_degrees = Vector3(0, 90 * -side if open else 0, 0)
+		body.add_child(leaf)
+		leaf.add_child(box(Vector3(0.28, 0.72, 0.06), wood, Vector3(-side * 0.14, 0.38, 0)))
+		for y in [0.18, 0.58]:
+			leaf.add_child(box(Vector3(0.28, 0.04, 0.02), iron, Vector3(-side * 0.14, y, 0.04)))
+		leaf.add_child(ball(0.025, iron, Vector3(-side * 0.24, 0.38, 0.045)))   # the ring pull
+	return body
+
 
