@@ -41,6 +41,7 @@ var cooldown := PackedInt32Array() # ticks until the next blow
 var stance := PackedInt32Array()   # Combat.NONE / ORDERED / AUTO / ATTACK_MOVE
 var amx := PackedInt32Array()      # attack-move destination (milli-tiles)
 var amy := PackedInt32Array()
+var mclass := PackedInt32Array()   # movement class (SimMap.CLASSES)
 var orders: Array = []             # per unit: queued orders [{type, args}] (shift-queued), oldest first
 
 
@@ -86,6 +87,7 @@ func add(uid: int, p_owner: int, p_kind: int, p_x: int, p_y: int, p_speed: int, 
 	amx.append(0)
 	amy.append(0)
 	orders.append([])
+	mclass.append(0)
 	return id.size() - 1
 
 
@@ -135,6 +137,7 @@ func remove_at(i: int) -> void:
 	amx.remove_at(i)
 	amy.remove_at(i)
 	orders.remove_at(i)
+	mclass.remove_at(i)
 
 
 func save_prev() -> void:

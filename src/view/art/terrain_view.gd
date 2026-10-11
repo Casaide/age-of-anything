@@ -8,7 +8,8 @@ const Iso := preload("res://src/view/iso.gd")
 const Paths := preload("res://scenes/art_pixel/paths.gd")
 
 const K := 4   # mask samples per tile
-const CHANNEL := {"water": 0, "swamp": 1, "reeds": 2, "rock": 3}
+const CHANNEL := {"water": 0, "swamp": 1, "reeds": 2, "rock": 3, "shallows": 0}
+const WEIGHT := {"shallows": 0.62}   # shallows draw as the water's edge band
 
 var map
 var masks_img: Image
@@ -26,7 +27,7 @@ func build(p_map) -> void:
 		for x in w * K:
 			var name: String = map.terrain_ids[map.terrain[(y / K) * w + x / K]]
 			if CHANNEL.has(name):
-				raw[(y * w * K + x) * 4 + CHANNEL[name]] = 1.0
+				raw[(y * w * K + x) * 4 + CHANNEL[name]] = WEIGHT.get(name, 1.0)
 	masks_img = _to_image(_blur(raw, w * K, h * K, 5), w * K, h * K)
 	paths_img = Image.create(w * K, h * K, false, Image.FORMAT_RGBA8)
 	var poly := Polygon2D.new()

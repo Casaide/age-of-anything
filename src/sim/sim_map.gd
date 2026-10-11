@@ -17,12 +17,19 @@ var id: String
 var width: int
 var height: int
 var terrain_ids: Array = []        # sorted terrain ids; terrain[] holds indexes into this
-var terrain_walk: Array = []       # terrain index -> bool
+## Movement classes: each has its own walkability (flyers cross water, rock and buildings;
+## amphibians wade shallows). Terrains list the classes that cross them (`move`).
+const CLASSES := ["ground", "amphibious", "flying"]
+const FLYING := 2
+
+var terrain_walk: Array = []       # terrain index -> bool (ground: where you can build)
+var terrain_move: Array = []       # terrain index -> bitmask of the classes that can cross it
 var terrain_resource: Array = []   # terrain index -> "food" / "wood" / ""
 var terrain_amount: Array = []     # terrain index -> starting amount per tile
 var terrain_depleted: Array = []   # terrain index -> terrain index it turns into, or -1
 var terrain := PackedByteArray()   # index ty * width + tx
-var walk := PackedByteArray()      # 1 walkable, 0 blocked (terrain or a building)
+var walk := PackedByteArray()      # ground: 1 walkable, 0 blocked (terrain or a building)
+var walks: Array = []              # per movement class, the same grid (walks[0] matches walk)
 var occupied := PackedInt32Array() # building id standing on the cell, or 0
 var amount := PackedInt32Array()   # resource left on the cell
 var resource_cells := PackedInt32Array()   # every cell that started with a resource, ascending
@@ -54,6 +61,12 @@ static func load_id(map_id: String) -> RefCounted:
 	for t in m.terrain_ids:
 		var td: Dictionary = types[t]
 		m.terrain_walk.append(bool(td.walkable))
+		var move: Array = td.get("move", CLASSES if bool(td.walkable) else ["flying"])
+		var mask := 0
+		for c in move:
+			assert(c in CLASSES, "Terrain %s: unknown movement class %s" % [t, c])
+			mask |= 1 << CLASSES.find(c)
+		m.terrain_move.append(mask)
 		m.terrain_resource.append(td.get("resource", ""))
 		m.terrain_amount.append(int(td.get("amount", 0)))
 	for t in m.terrain_ids:
@@ -68,11 +81,15 @@ static func load_id(map_id: String) -> RefCounted:
 		var t: String = d.legend[ch]
 		assert(types.has(t), "Map %s: unknown terrain %s" % [map_id, t])
 		index[ch] = m.terrain_ids.find(t)
-		legend_text += "%s=%s;%d;" % [ch, t, 1 if types[t].walkable else 0]
+		legend_text += "%s=%s;%d;%s;" % [ch, t, 1 if types[t].walkable else 0, ",".join(types[t].get("move", []))]
 	assert(d.rows.size() == m.height, "Map %s has %d rows, expected %d" % [map_id, d.rows.size(), m.height])
 	var n: int = m.width * m.height
 	m.terrain.resize(n)
 	m.walk.resize(n)
+	for k in CLASSES.size():
+		var g := PackedByteArray()
+		g.resize(n)
+		m.walks.append(g)
 	m.occupied.resize(n)
 	m.amount.resize(n)
 	for y in m.height:
@@ -84,6 +101,9 @@ static func load_id(map_id: String) -> RefCounted:
 			var c: int = y * m.width + x
 			m.terrain[c] = k
 			m.walk[c] = 1 if m.terrain_walk[k] else 0
+			for mc in CLASSES.size():
+				m.walks[mc][c] = 1 if m.terrain_move[k] & (1 << mc) else 0
+			m.walks[0][c] = m.walk[c]
 			m.amount[c] = m.terrain_amount[k]
 			if m.terrain_amount[k] > 0:
 				m.resource_cells.append(c)
@@ -95,18 +115,19 @@ static func load_id(map_id: String) -> RefCounted:
 	return m
 
 
-func walkable(x: int, y: int) -> bool:
+## Can a unit of movement class `k` stand at (x, y) milli-tiles?
+func walkable(x: int, y: int, k := 0) -> bool:
 	if x < 0 or y < 0:
 		return false
 	var tx := x / TILE
 	var ty := y / TILE
 	if tx >= width or ty >= height:
 		return false
-	return walk[ty * width + tx] == 1
+	return walks[k][ty * width + tx] == 1
 
 
-func cell_walkable(cx: int, cy: int) -> bool:
-	return cx >= 0 and cy >= 0 and cx < width and cy < height and walk[cy * width + cx] == 1
+func cell_walkable(cx: int, cy: int, k := 0) -> bool:
+	return cx >= 0 and cy >= 0 and cx < width and cy < height and walks[k][cy * width + cx] == 1
 
 
 func cell_of(x: int, y: int) -> int:
@@ -155,6 +176,11 @@ func can_build(cx: int, cy: int, size: int) -> bool:
 
 func _refresh(cell: int) -> void:
 	walk[cell] = 1 if terrain_walk[terrain[cell]] and occupied[cell] == 0 else 0
+	var mask: int = terrain_move[terrain[cell]]
+	for k in CLASSES.size():
+		# Buildings block everyone but flyers.
+		walks[k][cell] = 1 if mask & (1 << k) and (k == FLYING or occupied[cell] == 0) else 0
+	walks[0][cell] = walk[cell]
 	version += 1
 	fresh.append(cell)
 	if changed.size() < 4096:

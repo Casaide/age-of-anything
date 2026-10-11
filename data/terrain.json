@@ -37,6 +37,16 @@
    "colour2": "#666256",
    "note": "walkable ground where stone was mined"
   },
+  "shallows": {
+   "walkable": false,
+   "move": [
+    "amphibious",
+    "flying"
+   ],
+   "colour": "#3f7a7e",
+   "colour2": "#3a7276",
+   "note": "shallow water: amphibians wade it (and may build on it, milestone 6), flyers cross it, others go round"
+  },
   "stone": {
    "walkable": false,
    "colour": "#8a8478",
