@@ -1238,7 +1238,13 @@ func _bname(id: String) -> String:
 
 
 func _effect_text(effects: Array) -> String:
-	return ", ".join(effects.map(func(e): return "%+d %s for %s units" % [int(e.add), e.stat, e.tag]))
+	return ", ".join(effects.map(_one_effect))
+
+
+func _one_effect(e: Dictionary) -> String:
+	if e.has("tag"):
+		return "%+d %s for %s units" % [int(e.add), e.stat, e.tag]
+	return "%s gathered %d%% faster" % [String(e.gather).capitalize(), int(e.pct)]
 
 
 ## Research this player's race can do (the tech tree's culture layer, D-070).
@@ -1253,7 +1259,7 @@ func _unit_tip(wt: Dictionary) -> String:
 	lines.append("Gathers food, wood, stone and gold, and builds." if wt.worker else UnitCard.text(wt, _foe_types(active)))
 	var ups := []
 	for r in _my_research():
-		if r.effects.any(func(e): return e.tag in wt.eval.tags):
+		if r.effects.any(func(e): return e.has("tag") and e.tag in wt.eval.tags):
 			ups.append("%s at the %s (%s)" % [r.name, _bname(r.building), _effect_text(r.effects)])
 	if not ups.is_empty():
 		lines.append("[color=%s]Upgrades: %s[/color]" % [TIP_DIM, "; ".join(ups)])
