@@ -125,3 +125,68 @@ Fix the six controls-and-feedback items at the top of the list below and this pa
 8. Age-up tooltip: "Unlocks" only what's new; fix the result/menu overlap; drop "(P1)".
 9. Buildings by structure: the four look-alike types per culture, and a landmark frog Town Center.
 10. Lobby: Enter regenerates instead of starting; presets tidied; "hoplite" in the lexicon.
+
+## Second pass (2026-10-11)
+
+Reviewed commits 7cdf749..eabbe21 against the first pass: the diffs of `scenes/sim_debug.gd`,
+`src/view/{top_bar,minimap,command_panel}.gd`, `scenes/match_setup.gd`, `data/tech.json`, `data/ai.json`,
+plus fresh captures (worker build menu, 1:00, 6:00 and 10:00 against the AI, the Town Center tooltip, the
+lobby with centaur romans vs greek hoplites, reed and stone building sheets, animals, cursors).
+
+### Verdict: met
+
+The match now behaves like one a playtester can sit down to. At 6:00 the raid shows as "Under attack!
+(Space to look)" top-centre with a pulsing red ring on the minimap; the debug keys are inert in an AI match
+unless F1 is on; soldiers have Attack-move (R) and Stop (X) buttons with tooltips, and 1-9 groups work;
+the top bar carries an idle-worker counter that lights orange; the build menu has a function glyph on
+every button; three opening tips sit above the panel; the lobby has Easy (default) and Normal, presets in a
+dropdown, Enter rerolls, and "Hellenic Humans" instead of "Folk". The art rule "structure, not stickers"
+is now met for the four look-alike buildings in both cultures I checked, and the frog Town Center is a
+landmark. What remains is polish, none of it a blocker for a first demo.
+
+### Resolved (first-pass numbering)
+
+- UX 1 alert, 2 debug keys, 3 attack-move/stop/groups, 4 idle button, 5 hints, 7 Enter in the lobby,
+  8 Easy/Normal, 9 pick cursor, 10 surrender confirm.
+- UI 1 glyphs on build buttons, 2 minimap (300 wide, framed, dark-earth unexplored, 2 px camera box),
+  3 result as the menu title, 4 no "(P1)" (enemy things read "Scurry Clan Town Center"), 5 "Mud Age",
+  9 lobby presets, "Humans", `hoplite` known.
+- Art 1 buildings by structure (reed: elliptical open archery shed with a target lane, armoury with a
+  chimney stack, racks-only mill, mining pit; stone: the same four, clearly different from the house),
+  2 two-tier frog Town Center and smaller houses, 3 neutral market awnings, 5 thicker selection marks.
+- UI 6/UX 6 partly: the age-up tooltip now lists the Market, Stable, Watchtower, the new mounted unit and one
+  renamed line ("Spearbearer Frog"); the already-owned lines are gone.
+
+### Still open (none blocking)
+
+1. **Age-up tooltip wording:** a renamed line still appears under "Unlocks" (Reedspear -> Spearbearer
+   Frog). Say "Becomes: Spearbearer Frog" for renames and keep "Unlocks" for new things.
+2. **Mixed selections:** with workers and soldiers selected together, X lays walls (the wall hotkey wins)
+   and R does nothing, because `_play_key` checks `_selected_workers().is_empty()`. Let R and X act on the
+   soldiers in a mixed group, and give the wall another key (or only take X for walls when no soldier is
+   selected).
+3. **Costs under buttons** are still "15F 10W" in 11 px (first pass UI 7); resource icons would read faster.
+4. **Worker portrait** still fills a quarter of its frame (UI 8).
+5. **Lobby banners** keep an empty lower half; a portrait row for the roster would use it (UI 9, second half).
+6. **Cursors:** the icon cursors still have no pointer tip (Art 6); the new pick is good.
+7. **Boar** (Art 7): a little bigger, still a dark lump in most facings; a pale snout and tusks would fix it.
+8. **Swamp pools** (Art 4) unchanged.
+9. **Blocking rock vs mineable stone** (Art 8) unchanged; the hover name helps, the chipped face would help more.
+
+### New in this pass
+
+- **The armoury's chimney stack is grey cut stone in every culture** (reed sheet: a stone tower on a reed
+  hut). A frog culture would make it from clay or stacked mud; the rat one from a drainpipe. Per-culture
+  material, same silhouette.
+- **The mill is identical in reed and stone** (a wooden rack). Fine for the frog culture; the stone one
+  wants a stone base or tiled roof so it belongs to its town.
+- **Alert shown while the fight is on screen?** My 10:00 capture shows "Under attack!" with the rats in
+  view at the Town Center. `_maybe_alert` suppresses on-screen hits, so this was probably a hit on a house
+  off-screen right; worth a quick check that the on-screen test uses the target, not the attacker.
+- **The tooltip card can cover the tip strip** (Town Center tooltip capture): both live just above the
+  panel. Put the tip strip at the top of the screen under the bar, where the alert also lives, and stagger
+  the two (tip at y 44, alert at y 80).
+- **Easy is the default** and its label "Easy: attacks late and small" is clear. Good call for a first demo;
+  say so on the match-end menu ("Beaten on Easy? Try Normal") so testers know the step up exists.
+- **Minimap frame vs panel:** the framed diamond floats with 36 px of margin and the panel's rectangle
+  sits 12 px off the edge; align both to the same bottom margin.

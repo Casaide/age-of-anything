@@ -1135,7 +1135,7 @@ func concept_rat_house_reel(team: Color) -> Dictionary:
 
 ## Age 3, the pride step: the town hall gets a porch on oil-drum columns and a pediment cut
 ## from a cracked dinner plate, copying the Romans' temples; broken crockery paves the front.
-func concept_junk_tc_pride(team: Color) -> Dictionary:
+func junk_town_center_pride(team: Color) -> Dictionary:
 	var spec := junk_town_center_small(team)
 	var root: Node3D = spec.body
 	var paint := [Color("#8a3a2a"), Color("#3a5a7a"), Color("#8a3a2a"), Color("#6a6a5a")]

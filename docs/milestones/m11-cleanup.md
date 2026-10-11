@@ -120,13 +120,14 @@ tests green. Anything cut moves to `../backlog.md`.
       presets, roster with costs, the generator's notes), a map card drawn from the map's data,
       Start; in battle Esc pauses with resume / surrender / back to the menu, and the menu comes
       up when a match ends. Maps got player names (Reed Meadow, The Pass)
-- [ ] 7. Races: ~~8 facings~~ (done 2026-10-11, D-087), ~~capybara~~ (done), rat buildings by age, ~~rearing beetles~~ (done), humans in Blender, spiders, centaurs, ponies, Egypt/Han/Aztec, buildings by age
+- [ ] 7. Races: ~~8 facings~~ (done 2026-10-11, D-087), ~~capybara~~ (done), rat buildings by age (~~age-3 Town Center~~ done, D-089; houses and barracks wait on picks), ~~rearing beetles~~ (done), humans in Blender, spiders, centaurs, ponies, Egypt/Han/Aztec, buildings by age
 - [x] 8. Animals (2026-10-11, D-088): deer (bolt), boar (fight back), sheep (claimed by whoever
       reaches them, led, slaughtered); carcasses are food; data/animals.json and a host rule.
       Not yet: the bot hunting or herding, stealing sheep, wolves
 - [x] 9a. Fable review (2026-10-11): `docs/reviews/m11/fable-review.md`. Verdict "not yet": the match's
       controls and feedback fail a first playtest; art and lobby pass
-- [ ] 9b. Fable fixes, top 10: under-attack alert; debug keys gated in AI matches; attack-move and
+- [x] 9b. Fable fixes, top 10 (2026-10-11): all ten done; second pass: exit criterion MET
+      (`fable-review.md`, "Second pass"); its nine open items and six new notes are small polish: under-attack alert; debug keys gated in AI matches; attack-move and
       stop buttons, control groups (WASD stays: Dominic's; attack-move R, stop X); distinct build
       icons; idle-worker button; minimap bigger and framed; opening hints and Easy/Normal AI; age
       tooltip, result/menu overlap, no "(P1)"; buildings by structure; lobby Enter, presets, hoplite
