@@ -54,9 +54,10 @@ func _initialize() -> void:
 		cols.append(spec)
 		for slot in spec:
 			var id: String = spec[slot]
-			if id == "none" or lib.parts.has(id) or slot in ["skin", "scale", "torso", "hand_l", "hand_r", "back", "headpng"]:
+			if id == "none" or lib.parts.has(id) or slot in ["skin", "scale", "headpng"]:
 				continue
-			var borrow: String = {"body": base.recipe.body, "head": base.recipe.head, "legs": "leg.human"}.get(slot, "helm.cap")
+			var borrow: String = {"body": base.recipe.body, "head": base.recipe.head, "legs": "leg.human",
+				"torso": "armour.leather", "hand_l": "shield.round", "hand_r": "weapon.spear.wood", "back": "cape.cloth"}.get(slot, "helm.cap")
 			var p: Dictionary = lib.part(borrow).duplicate(true)
 			p.id = id
 			if slot == "body" and spec.has("legs"):
