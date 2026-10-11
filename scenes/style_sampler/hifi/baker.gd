@@ -19,6 +19,7 @@ var holder: Node3D
 var pixel_factor := 0      # > 0: pixel mode, shrink the render by this much and pixelize it
 var shadow_plane: MeshInstance3D
 var shadow_on := false
+var sun: DirectionalLight3D
 var fill: DirectionalLight3D
 var rim: DirectionalLight3D
 var env: Environment
@@ -61,6 +62,7 @@ func _init() -> void:
 	cam.rotation_degrees = Vector3(-30, 45, 0)
 	add_child(cam)
 	var key := DirectionalLight3D.new()
+	sun = key
 	key.rotation_degrees = Vector3(-48, -72, 0)   # from the screen's upper left: left faces lit, shadows fall lower right
 	key.light_energy = 1.05
 	key.shadow_enabled = true
@@ -113,6 +115,23 @@ func _add_ground_shadow(img: Image, model: Node3D) -> void:
 	render_target_update_mode = SubViewport.UPDATE_ONCE
 	await RenderingServer.frame_post_draw
 	var mask := get_texture().get_image()
+	# Third pass: contact shadow. No sun, flat ambient light and strong ambient
+	# occlusion, so the ground darkens where walls, steps and props meet it.
+	sun.visible = false
+	env.ambient_light_energy = 1.0
+	env.ambient_light_color = Color.WHITE
+	env.ssao_enabled = true
+	var ssao_r := env.ssao_radius
+	var ssao_i := env.ssao_intensity
+	env.ssao_radius = 0.45
+	env.ssao_intensity = 6.0
+	render_target_update_mode = SubViewport.UPDATE_ONCE
+	await RenderingServer.frame_post_draw
+	var occl := get_texture().get_image()
+	sun.visible = true
+	env.ssao_radius = ssao_r
+	env.ssao_intensity = ssao_i
+	env.ambient_light_color = Color("#c8d0e0")
 	for mi in meshes:
 		mi.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_ON
 	shadow_plane.visible = false
@@ -120,13 +139,29 @@ func _add_ground_shadow(img: Image, model: Node3D) -> void:
 	rim.visible = true
 	env.ambient_light_energy = ambient
 	env.ssao_enabled = ssao
+	# The classic hand-drawn contact shadow: a short dark band of ground right below
+	# the building's lowest pixels in every column, so it sits on the ground.
+	var band := 3 * pixel_factor
+	var bottom := PackedInt32Array()
+	bottom.resize(img.get_width())
+	bottom.fill(-1)
+	for x in img.get_width():
+		for y in range(img.get_height() - 1, -1, -1):
+			if img.get_pixel(x, y).a >= 0.5:
+				bottom[x] = y
+				break
 	var body := img.get_used_rect()
 	var area := body.grow(maxi(body.size.x, body.size.y) / 2).intersection(Rect2i(Vector2i.ZERO, img.get_size()))
 	for y in range(area.position.y, area.end.y):
 		for x in range(area.position.x, area.end.x):
+			if img.get_pixel(x, y).a >= 0.5:
+				continue
 			var m := mask.get_pixel(x, y)
-			if img.get_pixel(x, y).a < 0.5 and m.a > 0.5 and m.get_luminance() < 0.35:
-				img.set_pixel(x, y, Color(0, 0, 0, 0.5))
+			var o := occl.get_pixel(x, y)
+			if m.a > 0.5 and m.get_luminance() < 0.35:
+				img.set_pixel(x, y, Color(0, 0, 0, 0.5))      # sun shadow
+			elif (o.a > 0.5 and o.get_luminance() < 0.8) or (bottom[x] >= 0 and y > bottom[x] and y <= bottom[x] + band):
+				img.set_pixel(x, y, Color(0, 0, 0, 0.25))     # contact shadow
 
 
 ## Render `model` (centred on its anchor at the world origin) and return

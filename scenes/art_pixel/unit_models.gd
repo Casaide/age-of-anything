@@ -56,11 +56,12 @@ func plain(c: Color) -> StandardMaterial3D:
 
 
 ## A decal: an authored picture with crisp alpha on a quad.
-func decal(name: String, w: float, h: float, pos: Vector3, facing: Vector3, lit := true, up := Vector3.UP) -> MeshInstance3D:
+func decal(name: String, w: float, h: float, pos: Vector3, facing: Vector3, lit := true, up := Vector3.UP, tint := Color.WHITE) -> MeshInstance3D:
 	var q := QuadMesh.new()
 	q.size = Vector2(w, h)
 	var m := StandardMaterial3D.new()
 	m.albedo_texture = tex(name)
+	m.albedo_color = tint
 	m.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA_SCISSOR
 	m.alpha_scissor_threshold = 0.5
 	m.cull_mode = BaseMaterial3D.CULL_DISABLED

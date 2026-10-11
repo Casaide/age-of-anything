@@ -92,7 +92,7 @@ func _wait_for_textures() -> void:
 	for name in ["wood", "thatch", "mud", "stone", "grass", "swamp", "frog", "weave"]:
 		var m: StandardMaterial3D = models.mats.get_mat(name)
 		for t in [m.albedo_texture, m.normal_texture]:
-			while t.get_image() == null:
+			while t != null and t.get_image() == null:
 				await get_tree().process_frame
 
 

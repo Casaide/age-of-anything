@@ -15,6 +15,7 @@ const PartBaker := preload("res://scenes/art_pixel/part_baker.gd")
 const Baker := preload("res://scenes/style_sampler/hifi/baker.gd")
 const Models := preload("res://scenes/style_sampler/hifi/models.gd")
 const Paths := preload("res://scenes/art_pixel/paths.gd")
+const PropModels := preload("res://scenes/art_pixel/prop_models.gd")
 
 const ART_SCALE := 1.5     # art pixels per canvas unit (a tile is 96 x 48 art pixels)
 const SS := 4
@@ -140,21 +141,22 @@ func _build() -> void:
 	add_child(baker)
 	baker.set_pixel_mode(ART_SCALE, SS)
 	await _wait_for_textures(models)
-	for name in ["tin", "brick"]:
-		var mt: StandardMaterial3D = models.mats.get_mat(name)
-		while mt.albedo_texture.get_image() == null or mt.normal_texture.get_image() == null:
-			await get_tree().process_frame
+	var props := PropModels.new()
+	baker.set_ground_shadow(true)
 	var reed_bakes := []
+	for k in 4:
+		reed_bakes.append(await baker.bake(props.reed_clump(300 + k), [Vector3.ZERO]))
+	var bush_bakes := []
 	for k in 3:
-		reed_bakes.append(await baker.bake(models.reeds(300 + k), [Vector3.ZERO]))
-	var bush_bake := await baker.bake(models.bug_bush(400), [Vector3.ZERO])
+		bush_bakes.append(await baker.bake(props.bug_bush(400 + k), [Vector3.ZERO]))
+	baker.set_ground_shadow(false)
 	for y in H:
 		for x in W:
 			var ch := _at(x, y)
 			if ch == "\"" or ch == "b":
 				var holder := Node2D.new()
 				holder.position = Iso.to_screen(x * 1000 + 500, y * 1000 + 500)
-				holder.add_child(_sprite(reed_bakes[(x * 3 + y) % 3] if ch == "\"" else bush_bake, Vector2.ZERO))
+				holder.add_child(_sprite(reed_bakes[(x * 3 + y) % 4] if ch == "\"" else bush_bakes[(x + y * 2) % 3], Vector2.ZERO))
 				layer.add_child(holder)
 	await _scatter(baker, models)
 	# Each side builds in its own culture's architecture (families.json "architecture").
@@ -212,11 +214,13 @@ func _build() -> void:
 ## and reeds along the shoreline. Placed by a seeded scatter (cosmetic only),
 ## away from buildings, paths, water and resource tiles.
 func _scatter(baker, models) -> void:
-	var kinds := {"stones": [], "flowers": [], "tuft": [], "shore": []}
+	var props := PropModels.new()
+	var kinds := {"stones": [], "flowers": [], "tuft": [], "shore": [], "lily": []}
 	for k in 4:
 		kinds.stones.append(await baker.bake(models.stones(500 + k), [Vector3.ZERO]))
 		kinds.tuft.append(await baker.bake(models.tuft(600 + k), [Vector3.ZERO]))
-		kinds.shore.append(await baker.bake(models.shore_reeds(700 + k), [Vector3.ZERO]))
+		kinds.shore.append(await baker.bake(props.reed_clump(700 + k, 0.55), [Vector3.ZERO]))
+		kinds.lily.append(await baker.bake(props.lily_pads(900 + k), [Vector3.ZERO]))
 	for k in 6:
 		kinds.flowers.append(await baker.bake(models.flowers(800 + k), [Vector3.ZERO]))
 	var rng := RandomNumberGenerator.new()
@@ -234,6 +238,14 @@ func _scatter(baker, models) -> void:
 				continue
 			_doodad(kinds[kind][rng.randi() % kinds[kind].size()], t)
 			placed += 1
+	var lilies := 0
+	for i in 3000:
+		var t := Vector2(rng.randf_range(0.3, W - 0.3), rng.randf_range(0.3, H - 0.3))
+		if _mask(t).r > 0.68:
+			_doodad(kinds.lily[rng.randi() % kinds.lily.size()], t)
+			lilies += 1
+			if lilies >= 7:
+				break
 	var shore := 0
 	for i in 3000:
 		var t := Vector2(rng.randf_range(0.3, W - 0.3), rng.randf_range(0.3, H - 0.3))
@@ -272,10 +284,10 @@ func _at(x: int, y: int) -> String:
 
 
 func _wait_for_textures(models) -> void:
-	for name in ["wood", "thatch", "mud", "stone", "grass"]:
+	for name in ["wood", "thatch", "mud", "stone", "grass", "tin", "brick"]:
 		var m: StandardMaterial3D = models.mats.get_mat(name)
 		for t in [m.albedo_texture, m.normal_texture]:
-			while t.get_image() == null:
+			while t != null and t.get_image() == null:   # noise textures build in a thread
 				await get_tree().process_frame
 
 

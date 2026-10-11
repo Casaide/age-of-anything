@@ -4,6 +4,7 @@ extends RefCounted
 ## and a selective inner outline: edge pixels take a darker shade of themselves.
 
 const SHADOW := Color(0.06, 0.05, 0.03, 0.42)
+const CONTACT := Color(0.06, 0.05, 0.03, 0.24)   # ambient occlusion where things meet the ground
 
 
 static func run(img: Image, factor: int) -> Image:
@@ -17,8 +18,10 @@ static func run(img: Image, factor: int) -> Image:
 			var c := img.get_pixel(x, y)
 			if c.a >= 0.6:
 				out.set_pixel(x, y, Color(c.r, c.g, c.b, 1.0))
-			elif c.a >= 0.05 and c.get_luminance() < 0.12:
+			elif c.a >= 0.33 and c.get_luminance() < 0.12:
 				out.set_pixel(x, y, SHADOW)
+			elif c.a >= 0.05 and c.get_luminance() < 0.12:
+				out.set_pixel(x, y, CONTACT)
 			else:
 				out.set_pixel(x, y, Color(0, 0, 0, 0))
 	var edged := out.duplicate()
