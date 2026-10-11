@@ -308,17 +308,21 @@ func flowers(seed_value: int) -> Node3D:
 ## A rat Town Center built from scrap: brick footing, mismatched plank walls patched
 ## with tin, a corrugated tin roof, a stove-pipe chimney, a sewer grate, a cheese
 ## wheel; a team rag flag as the live banner.
-func junk_town_center(team: Color) -> Dictionary:
+## h: wall height; pitch: roof slope; berm: earth and scrap banked against the walls, so the
+## hall sits low and grows out of the ground (the scale rule lets a culture sit lower, D-080).
+func junk_town_center(team: Color, h := 1.05, pitch := 32.0, berm := false) -> Dictionary:
 	rng.seed = 66
 	var body := Node3D.new()
 	var brick := mats.get_mat("brick")
 	var wood := mats.get_mat("wood")
 	var tin := mats.get_mat("tin")
 	var iron := Materials.flat(Color("#4a4a48"), 0.5, 0.6)
-	body.add_child(box(Vector3(2.8, 0.25, 2.8), brick, Vector3(0, 0.12, 0)))
 	var base := 0.25
+	if berm:
+		base = 0.02   # no plinth: the hall stands on the ground and the bank grows up its walls
+	else:
+		body.add_child(box(Vector3(2.8, 0.25, 2.8), brick, Vector3(0, 0.12, 0)))
 	var w := 2.1
-	var h := 1.05
 	# Walls: planks of different shades and lengths, then tin patches over the gaps.
 	for side in [-1, 1]:
 		for k in 7:
@@ -338,18 +342,18 @@ func junk_town_center(team: Color) -> Dictionary:
 		lights.append(Vector3(w / 2 + 0.1, base + 0.7, z))
 	# Corrugated tin gable roof with an overhang, and a ridge cap.
 	var roof_y := base + h
+	var ridge := tan(deg_to_rad(pitch)) * 1.375   # 0.86 at the original 32 degrees
 	for side in [-1, 1]:
-		var panel := box(Vector3(2.7, 0.05, 1.6), tin, Vector3(0, roof_y + 0.42, side * 0.68), Vector3(side * 32, 0, 0))
-		panel.rotation_degrees = Vector3(side * 32, 0, 0)
+		var panel := box(Vector3(2.7, 0.05, 1.6), tin, Vector3(0, roof_y + ridge * 0.5, side * 0.68), Vector3(side * pitch, 0, 0))
 		body.add_child(panel)
-	body.add_child(box(Vector3(2.75, 0.08, 0.16), iron, Vector3(0, roof_y + 0.86, 0)))
+	body.add_child(box(Vector3(2.75, 0.08, 0.16), iron, Vector3(0, roof_y + ridge, 0)))
 	for side in [-1, 1]:   # gable ends
-		var gable := slab_tri(Vector2(-1.1, 0), Vector2(1.1, 0), Vector2(0, 0.85), 0.06, wood)
+		var gable := slab_tri(Vector2(-1.1, 0), Vector2(1.1, 0), Vector2(0, ridge), 0.06, wood)
 		gable.position = Vector3(side * 1.05, roof_y, 0)
 		gable.rotation_degrees = Vector3(0, 90, 0)
 		body.add_child(gable)
 	# Stove-pipe chimney with an elbow.
-	var pipe := Vector3(0.6, roof_y + 0.6, -0.55)
+	var pipe := Vector3(0.6, roof_y + ridge * 0.7, -0.55)
 	body.add_child(cyl(0.11, 0.11, 0.9, iron, pipe))
 	body.add_child(cyl(0.11, 0.11, 0.35, iron, pipe + Vector3(0.12, 0.5, 0), Vector3(0, 0, -50)))
 	body.add_child(cyl(0.15, 0.13, 0.1, iron, pipe + Vector3(0.28, 0.62, 0), Vector3(0, 0, -50)))
@@ -362,6 +366,15 @@ func junk_town_center(team: Color) -> Dictionary:
 	body.add_child(cyl(0.3, 0.3, 0.02, Materials.flat(Color("#c99a1e"), 0.8), Vector3(-1.0, 0.47, 1.05), Vector3.ZERO, 20))
 	barrel(Vector3(1.15, base, 0.95), body)
 	crate(Vector3(1.2, base, -1.0), body, 35)
+	if berm:   # a grassy earth bank up the walls, scrap half-buried in it: the hall sits in the ground
+		var earth := mats.get_mat("mud")
+		var turf := Materials.flat(Color("#5e7a34"), 0.95)
+		# A square-sided cylinder's radius runs to its corners: half-widths x sqrt(2).
+		body.add_child(cyl(1.13 * 1.414, 1.55 * 1.414, 0.45, earth, Vector3(0, 0.225, 0), Vector3(0, 45, 0), 4))   # the bank
+		body.add_child(cyl(1.12 * 1.414, 1.3 * 1.414, 0.12, turf, Vector3(0, 0.41, 0), Vector3(0, 45, 0), 4))      # turf on top
+		for k in 3:   # pipes and a tin sheet poking out of the bank
+			body.add_child(cyl(0.11, 0.11, 0.5, iron, Vector3(-1.3 + k * 0.55, 0.18, -1.3), Vector3(70, k * 25, 0)))
+		body.add_child(box(Vector3(0.5, 0.03, 0.4), tin, Vector3(1.3, 0.3, 0.4), Vector3(20, 30, 10)))
 	var pole_at := Vector3(-1.2, 0.25, -1.1)
 	body.add_child(cyl(0.03, 0.035, 1.9, wood, pole_at + Vector3(0, 0.95, 0), Vector3.ZERO, 8))
 	var banner := Node3D.new()
@@ -369,10 +382,10 @@ func junk_town_center(team: Color) -> Dictionary:
 	banner.add_child(box(Vector3(0.55, 0.55, 0.02), cloth(team.darkened(0.15)), flag_top + Vector3(0.3, -0.28, 0), Vector3(0, 0, -4)))
 	banner.add_child(box(Vector3(0.2, 0.2, 0.025), cloth(Color("#e8dcc0")), flag_top + Vector3(0.18, -0.4, 0.01)))   # a patch
 	var vane := Node3D.new()
-	vane.add_child(cyl(0.01, 0.01, 0.3, iron, Vector3(0, roof_y + 1.05, 0), Vector3.ZERO, 6))
-	vane.add_child(ball(0.07, Materials.flat(Color("#f2c94c"), 0.6), Vector3(0, roof_y + 1.22, 0)))
+	vane.add_child(cyl(0.01, 0.01, 0.3, iron, Vector3(0, roof_y + ridge + 0.19, 0), Vector3.ZERO, 6))
+	vane.add_child(ball(0.07, Materials.flat(Color("#f2c94c"), 0.6), Vector3(0, roof_y + ridge + 0.36, 0)))
 	return {"body": body, "anchor": Vector3.ZERO, "banner": banner, "banner_pivot": flag_top,
-		"vane": vane, "vane_pivot": Vector3(0, roof_y + 0.9, 0), "smoke": pipe + Vector3(0.32, 0.68, 0), "lights": lights,
+		"vane": vane, "vane_pivot": Vector3(0, roof_y + ridge + 0.04, 0), "smoke": pipe + Vector3(0.32, 0.68, 0), "lights": lights,
 		"lantern": Vector3(0.05, base + 0.8, w / 2 + 0.15)}
 
 
@@ -1063,3 +1076,14 @@ func mound_town_center(team: Color) -> Dictionary:
 	banner.get_child(banner.get_child_count() - 1).position = flag_top
 	return {"body": body, "anchor": Vector3.ZERO, "banner": banner, "banner_pivot": flag_top,
 		"smoke": Vector3(-0.2, 1.35, -0.2), "lights": [], "lantern": Vector3(0.2, 0.4, 0.95)}
+
+
+# ------------------------------------------------------------------ concept options (building sheets)
+# Variations shown by tests/building_sheet.gd for Dominic to pick from; not used in play until picked.
+
+func concept_junk_tc_low(team: Color) -> Dictionary:
+	return junk_town_center(team, 0.72, 24.0, false)
+
+
+func concept_junk_tc_berm(team: Color) -> Dictionary:
+	return junk_town_center(team, 0.72, 24.0, true)
