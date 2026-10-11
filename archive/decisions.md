@@ -248,3 +248,11 @@ doodads) and the building view. sim_debug bakes before a match starts, zooms in 
 resolution). Dominic asked why sim_debug still showed the old art; Claude moved the slice ahead
 of the combat visuals. The 2D shapes in parts.json stay: they're the data contract, sockets and
 the fallback for parts with no model.
+
+**D-052, 2026-10-11: Direction for later: asymmetric race mechanics and a starter roster led
+by animals and bronze/iron age cultures, non-European first.** Dominic: small but key mechanics
+per race type (amphibians build on and swim in shallow water, Roman pilum throws, viking shield
+walls), to be explored in a later milestone, and a launch roster of animals (bears and beavers
+under consideration) and bronze/iron age cultures (vikings, Romans, Egyptians, Greeks and a few
+more), with non-European animals and cultures an absolute priority. Recorded in the backlog §8
+and the design doc §8; nothing built yet.

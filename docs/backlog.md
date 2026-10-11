@@ -99,6 +99,49 @@ still maps the brief onto parts within host rules.
 
 ## 8. Game content
 
+- **Asymmetric gameplay: small but key signature mechanics per race type (Dominic,
+  2026-10-11).** Explore in a later milestone. One or two mechanics each, driven by tags in the
+  data (a creature's or culture's tags unlock an ability), never special-cased in code. Examples:
+  - **Amphibians (frogs, crocodiles):** build on swamp and shallow water, and swim across
+    shallow water.
+  - **Roman infantry:** throw a pilum volley before closing to melee.
+  - **Vikings:** form a shield wall (stop, high pierce armour, slow).
+  - Candidates to weigh up:
+    - Beavers dam water into new ground or swamp.
+    - Bears hibernate to heal, or maul (splash).
+    - Elephants trample.
+    - Egyptians farm the flood plain.
+    - Greeks form a phalanx (reach plus a frontal armour bonus).
+    - Steppe riders shoot on the move.
+    - Rats burrow.
+  - Needs: an ability slot in the data contract, sim support for terrain changes (dams, building
+    on water), and a check that each ability has a counter.
+
+- **Starter roster: what to launch with (Dominic, 2026-10-11).** Pick the races people will be
+  most excited about. **Non-European animals and cultures are an absolute priority**, not an
+  afterthought. Two pillars:
+  - **Animals:** a wide spread to show off asymmetric play and the art. Bears and beavers are
+    on the table if their gameplay earns it ("bears vs Romans is epic"). Starting ideas, not yet
+    chosen:
+    - Africa: elephants, hippos, meerkats.
+    - Asia: pandas, tigers, macaques, red pandas.
+    - Australia: kangaroos, wombats.
+    - The Americas: capybaras, llamas, armadillos.
+    - Crocodiles, camels.
+    - Frogs and rats, which we have.
+  - **Bronze and iron age cultures:** vikings, Romans, Egyptians, Greeks, plus a few that stand
+    out, chosen with the same non-European priority. Candidates:
+    - Han Chinese (crossbows, terracotta);
+    - Persians (immortals, chariots);
+    - Kush/Nubia (famed archers);
+    - Mauryan India (war elephants);
+    - Carthage;
+    - Celts and Scythians;
+    - the Yayoi or Kofun era in Japan;
+    - Mesoamerican cultures (obsidian weapons, an era stretch worth a playful note).
+  - Before choosing, research what players are excited about and check every culture is drawn
+    respectfully (signature kit, names and architecture), not as a costume.
+
 - **Races:** Beetles/Tortoises (armoured, defensive) and Crows (scouts, raiders).
 - **Economy and buildings:** gold and stone, farms, walls and gates, markets.
 - **Ages and tech:** more ages, full tech trees, formations, garrisons.
