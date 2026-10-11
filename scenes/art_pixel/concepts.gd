@@ -593,3 +593,47 @@ func _box(size: Vector3, m: Material, pos: Vector3, rot := Vector3.ZERO) -> Mesh
 ## No head (bodies that carry their own).
 func _concept_empty(c: Dictionary) -> Dictionary:
 	return {"node": Node3D.new(), "sockets": {"top": Vector3.ZERO}}
+
+
+# ------------------------------------------------------------------ BG1: bug posture
+# Beetles today are mount bodies used as infantry. Options for how a beetle soldier stands.
+
+func _insect_leg(n: Node3D, m: Material, hip: Vector3, knee: Vector3, foot: Vector3) -> void:
+	n.add_child(rod(hip, knee, 1.1, 0.9, m))
+	n.add_child(rod(knee, foot, 0.8, 0.5, m))
+
+
+## (a) Rearing taur: wing cases low behind on four legs, the pronotum up like a chest, the front
+## pair as arms. Stag beetles rear like this to fight.
+func _concept_beetle_rear(c: Dictionary) -> Dictionary:
+	var n := Node3D.new()
+	var shell := surf("chitin", c.skin, 5.0)
+	var plate := surf("chitin", c.skin2, 4.0)
+	var leg := surf("chitin", c.skin.darkened(0.45), 3.0)
+	for side in [1, -1]:   # the wing cases, low and behind
+		n.add_child(blob(Vector3(8.0, 4.6, 3.4), shell, Vector3(-4.5, 8.5, 2.3 * side), Vector3(0, 0, 12)))
+		_insect_leg(n, leg, Vector3(-1, 7, 3 * side), Vector3(1, 6, 7 * side), Vector3(2.5, 0, 7.5 * side))
+		_insect_leg(n, leg, Vector3(-6, 7, 3 * side), Vector3(-8, 6, 7 * side), Vector3(-10, 0, 7 * side))
+	n.add_child(blob(Vector3(4.2, 7.0, 5.4), plate, Vector3(2.5, 15, 0), Vector3(0, 0, -18)))   # pronotum, up like a chest
+	n.add_child(blob(Vector3(4.0, 1.0, 5.6), plain(c.team), Vector3(-4.5, 13.2, 0), Vector3(0, 0, 12)))   # a team band across the wing cases
+	for side in [1, -1]:   # the front pair as arms
+		n.add_child(rod(Vector3(3.5, 17, 4 * side), Vector3(6.5, 13, 6 * side), 0.9, 0.7, leg))
+	return {"node": n, "sockets": {"head": Vector3(4, 21.5, 0), "hand_r": Vector3(6.5, 13, 6), "hand_l": Vector3(6.5, 13, -6),
+		"torso": Vector3(2.5, 15, 0), "back": Vector3(-6, 13, 0)}, "anchors": [], "torso_scale": Vector2(0.55, 0.65)}
+
+
+## (b) Upright bug knight: the whole beetle stood on its back pair of legs, like a person.
+func _concept_beetle_upright(c: Dictionary) -> Dictionary:
+	var n := Node3D.new()
+	var shell := surf("chitin", c.skin, 5.0)
+	var plate := surf("chitin", c.skin2, 4.0)
+	var leg := surf("chitin", c.skin.darkened(0.45), 3.0)
+	for side in [1, -1]:
+		n.add_child(blob(Vector3(3.6, 8.0, 3.0), shell, Vector3(-1.6, 13, 2.0 * side), Vector3(0, 0, 8)))   # wing cases as a back
+		_insect_leg(n, leg, Vector3(0, 6, 2.5 * side), Vector3(2.5, 3.5, 3 * side), Vector3(0.5, 0, 3.2 * side))
+		n.add_child(rod(Vector3(0.5, 12, 3.6 * side), Vector3(2.5, 9, 5.5 * side), 0.8, 0.6, leg))   # middle pair, folded
+		n.add_child(rod(Vector3(1.5, 19, 3.6 * side), Vector3(5, 15, 5 * side), 0.9, 0.7, leg))    # front pair, arms
+	n.add_child(blob(Vector3(3.4, 4.4, 4.2), plate, Vector3(1.2, 19, 0)))   # pronotum, the chest
+	n.add_child(blob(Vector3(1.2, 3.6, 4.4), plain(c.team), Vector3(-3.6, 12, 0)))
+	return {"node": n, "sockets": {"head": Vector3(2.5, 23.5, 0), "hand_r": Vector3(5, 15, 5), "hand_l": Vector3(5, 15, -5),
+		"torso": Vector3(1, 15, 0), "back": Vector3(-4, 15, 0)}, "anchors": [], "torso_scale": Vector2(0.5, 0.7)}
