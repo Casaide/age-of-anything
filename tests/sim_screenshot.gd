@@ -96,27 +96,44 @@ func _farm(view) -> void:
 	view.camera.look_at_point(Iso.to_screen(cx * 1000 + 1000, cy * 1000 + 1000))
 
 
-## Side 0's workers lay a wall line by the Town Center (as a drag would) and build it.
+## Side 0's workers lay a palisade line by the Town Center with a palisade gate in it, and a
+## stone wall with a stone gate (as drags would), and build them; then a worker walks out
+## through the palisade gate (it shows open) and the shot is taken as it passes.
 func _walls(view) -> void:
 	var w = view.world
 	var s: Array = w.map.starts[0]
 	w.stock[w.resources.find("stone")][0] = 500
+	w.stock[w.resources.find("wood")][0] = 500
 	w.ages[0] = 2   # stone walls come with age 2
 	for i in w.units.count():
 		if w.units.owner[i] == 0:
 			view.selected[w.units.id[i]] = true
-	view.placing = "wall"
 	var a := Vector2i(s[0] / 1000 + 3, s[1] / 1000 - 3)
-	view.place_wall(a, a + Vector2i(0, 6))
-	view.place_wall(a + Vector2i(1, 6), a + Vector2i(5, 6), true)
+	for line in [["palisade", a, a + Vector2i(0, 6)], ["palisade_gate", a + Vector2i(0, 3), a + Vector2i(0, 3)],
+			["wall", a + Vector2i(1, 6), a + Vector2i(5, 6)], ["stone_gate", a + Vector2i(3, 6), a + Vector2i(3, 6)]]:
+		view.placing = line[0]
+		view.place_wall(line[1], line[2], line[0] != "palisade")
+	view.placing = ""
 	view.clock.speed = 8.0
-	for f in 900:
+	for f in 1200:
 		await process_frame
 	view.clock.speed = 1.0
 	view.selected.clear()
+	var walker: int = -1   # a builder (they end up outside the palisade), sent home through its gate
+	var west := 1 << 30
+	for i in w.units.count():
+		if w.units.owner[i] == 0 and w.types[w.units.kind[i]].worker and w.units.x[i] < west:
+			west = w.units.x[i]
+			walker = w.units.id[i]
+	w.issue(0, "move", {"ids": [walker], "x": (a.x - 2) * 1000 + 500, "y": (a.y + 3) * 1000 + 500})
 	view.camera.zoom = Vector2(2.0, 2.0)
 	view._on_zoom()
 	view.camera.look_at_point(Iso.to_screen(a.x * 1000 + 2000, a.y * 1000 + 4000))
+	for f in 1200:
+		var i: int = w.units.index_of(walker)
+		if i >= 0 and absi(w.units.x[i] - (a.x * 1000 + 500)) < 400 and absi(w.units.y[i] - ((a.y + 3) * 1000 + 500)) < 600:
+			break
+		await process_frame
 
 
 ## The Town Center selected (or a worker: "tip:1" its build pages, "tip:2" the military page),
