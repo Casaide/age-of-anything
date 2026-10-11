@@ -26,7 +26,7 @@ func _initialize() -> void:
 	view.prompts = [args[3], args[4]] if args.size() > 4 else view.DEFAULT_PROMPTS.duplicate()
 	view.map_id = map_id
 	view.vs_ai = vs_ai
-	view.army = scene == "armies" or scene == "card" or scene.begins_with("battle") or scene.begins_with("ageup")
+	view.army = scene == "armies" or scene == "card" or scene.begins_with("battle") or scene.begins_with("ageup") or scene == "orders_army"
 	root.add_child(view)
 	while view.world == null or view.baking:   # the art bakes first
 		await process_frame
@@ -47,6 +47,10 @@ func _initialize() -> void:
 		await _farm(view)
 	elif scene.begins_with("enemyfarm"):
 		await _enemy_farm(view, scene.ends_with(":seen"))
+	elif scene == "orders":
+		await _orders(view)
+	elif scene == "orders_army":
+		await _orders_army(view, map_id)
 	elif scene.begins_with("look"):   # look:<tile x>:<tile y>[:zoom]: the map there, fog lifted
 		view.reveal = true
 		var z := float(scene.get_slice(":", 3)) if scene.get_slice_count(":") > 3 else 3.0
@@ -155,6 +159,78 @@ func _teleport(w, id: int, x: int, y: int) -> void:
 	w.units.px[i] = x
 	w.units.py[i] = y
 	w.units.moving[i] = 0
+
+## Queued orders, seen (Dominic): a worker builds a house, then is shift-told to walk out, lay a
+## second house and go cutting reeds; a second worker stands by. Both selected, mid-build.
+func _orders(view) -> void:
+	var w = view.world
+	var s: Array = w.map.starts[0]
+	w.stock[w.resources.find("wood")][0] = 500
+	var ids := []
+	for i in w.units.count():
+		if w.units.owner[i] == 0 and w.types[w.units.kind[i]].worker and ids.size() < 2:
+			ids.append(w.units.id[i])
+	var cx: int = s[0] / 1000 + 3
+	var cy: int = s[1] / 1000 - 3
+	w.issue(0, "build", {"ids": [ids[0]], "building": "house", "cx": cx, "cy": cy})
+	w.issue(0, "move", {"ids": [ids[0]], "x": (cx + 5) * 1000 + 500, "y": (cy + 1) * 1000 + 500, "queue": 1})
+	var Economy = load("res://src/sim/economy.gd")
+	var hk: int = Economy.btype_of(w, "house")
+	var h2 := Vector2i(cx + 6, cy + 3)
+	while not Economy.can_place(w, 0, hk, h2.x, h2.y):
+		h2 += Vector2i(0, 1)
+	w.issue(0, "build", {"ids": [ids[0]], "building": "house", "cx": h2.x, "cy": h2.y, "queue": 1})
+	var wood := -1
+	var best := 1 << 30
+	for c in w.map.resource_cells:
+		if w.map.resource_at(c) == "wood":
+			var d: int = absi((c % w.map.width) - h2.x - 6) + absi((c / w.map.width) - h2.y + 5)
+			if d < best:
+				best = d
+				wood = c
+	w.issue(0, "gather", {"ids": [ids[0]], "cell": wood, "queue": 1})
+	view.clock.speed = 4.0
+	while w.tick < 160:   # the foundations down, the builder at work
+		await process_frame
+	view.clock.speed = 1.0
+	for id in ids:
+		view.selected[id] = true
+	for f in 30:
+		await process_frame
+	view.reveal = true   # the reeds it goes to after are past what it sees yet
+	view.camera.zoom = Vector2(3.0, 3.0)
+	view._on_zoom()
+	view.camera.look_at_point(Iso.to_screen((cx + 5) * 1000, (cy + 2) * 1000))
+
+
+## Queued orders for soldiers: side 0's army attack-moves to the meeting point, then is
+## shift-told to fall back and attack-move round the flank; selected on the way.
+func _orders_army(view, map_id: String) -> void:
+	while view.world.tick < 24:   # every spawn has run
+		await process_frame
+	var w = view.world
+	var meet: Vector2 = MEET[map_id] * 1000.0
+	var ids := []
+	for i in w.units.count():
+		if w.units.owner[i] == 0 and not w.types[w.units.kind[i]].worker and not w.types[w.units.kind[i]].has("animal"):
+			ids.append(w.units.id[i])
+	w.issue(0, "attack_move", {"ids": ids, "x": int(meet.x), "y": int(meet.y)})
+	w.issue(0, "move", {"ids": ids, "x": int(meet.x) - 4000, "y": int(meet.y) + 2000, "queue": 1})
+	w.issue(0, "attack_move", {"ids": ids, "x": int(meet.x) + 1000, "y": int(meet.y) + 5000, "queue": 1})
+	view.clock.speed = 4.0
+	while w.tick < 300:
+		await process_frame
+	view.clock.speed = 1.0
+	for id in ids:
+		view.selected[id] = true
+	var c := Vector2.ZERO
+	for id in ids:
+		var i: int = w.units.index_of(id)
+		c += Vector2(w.units.x[i], w.units.y[i]) / ids.size()
+	view.reveal = true
+	view.camera.zoom = Vector2(2.0, 2.0)
+	view._on_zoom()
+	view.camera.look_at_point(Iso.to_screen((c.x + meet.x) * 0.5, (c.y + meet.y) * 0.5 + 1500))
 
 
 ## Side 0's workers lay a palisade line by the Town Center with a palisade gate in it, and a
