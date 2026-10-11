@@ -150,6 +150,15 @@ func _script(map: SimMap, races: Array) -> Array:
 	for p in races.size():
 		for u in races[p].units:
 			cmd.call(150, p, Commands.SPAWN, {"slot": u.recipe.slot, "count": PER_SLOT, "x": map.starts[p][0], "y": map.starts[p][1]})
+	# A quarter of each army on each stance, so replays and hashes cover them.
+	for p in races.size():
+		var first := army_first + p * per_player
+		for k in range(1, 4):
+			var ids := []
+			for uid in range(first, first + per_player):
+				if uid % 4 == k:
+					ids.append(uid)
+			cmd.call(151, p, Commands.STANCE, {"ids": ids, "stance": Combat.POSTURES[k]})
 	for turn in range(150 + ORDERS_EVERY, TICKS / Commands.TICKS_PER_TURN - Commands.DELAY, ORDERS_EVERY):
 		for p in races.size():
 			var first := army_first + p * per_player
@@ -781,6 +790,7 @@ func _test_combat(gen) -> void:
 	_test_spread(gen)
 	_test_teams(gen)
 	_test_siege(gen)
+	_test_stances(gen)
 	var wins := 0
 	var fights := 0
 	var t0 := Time.get_ticks_msec()
@@ -901,6 +911,111 @@ func _test_siege(gen) -> void:
 				hits += 1
 	check(w.buildings.index_of(tc) < 0, "a dozen large units knock down a Town Center (%d hits by tick %d)" % [hits, w.tick])
 	check(cells.size() > 0 and Array(cells).all(func(c): return w.map.occupied[c] == 0), "its footprint is free again")
+
+
+## One unit of `slot` for player p at (x, y) with a stance; returns its id once it exists.
+func _lone(w: World, p: int, slot: String, x: int, y: int, stance: String) -> int:
+	var before := w.next_id
+	w.issue(p, Commands.SPAWN, {"slot": slot, "count": 1, "x": x, "y": y})
+	while w.next_id == before:
+		w.step()
+	w.issue(p, Commands.STANCE, {"ids": [before], "stance": stance})
+	for t in Commands.TICKS_PER_TURN * (Commands.DELAY + 1):
+		w.step()
+	return before
+
+
+## Where unit `id` is now.
+func _at(w: World, id: int) -> Array:
+	var i := w.units.index_of(id)
+	return [w.units.x[i], w.units.y[i]]
+
+
+## Steps a world, tracking how far unit `id` strays from `from` (default: where it is
+## now) and the hits each side lands.
+func _watch(w: World, ticks: int, id: int, from := []) -> Dictionary:
+	var r := {"far": 0, "hits": [0, 0]}
+	if from.is_empty():
+		from = _at(w, id)
+	var x: int = from[0]
+	var y: int = from[1]
+	for t in ticks:
+		w.step()
+		var i := w.units.index_of(id)
+		if i >= 0:
+			r.far = maxi(r.far, Fixed.isqrt(Fixed.dist2(w.units.x[i], w.units.y[i], x, y)))
+		for e in w.events:
+			if e.type == "hit":
+				var by := w.units.index_of(e.by)
+				if by >= 0:
+					r.hits[w.units.owner[by]] += 1
+	return r
+
+
+## The four stances. Foes that should not fight back are passive, so each check sees one side's choice.
+func _test_stances(gen) -> void:
+	var race: Dictionary = gen.generate(PROMPTS[0], rules_)
+	var c: Dictionary = rules_.combat
+	var y := 20500
+	# Aggressive (the default): chases a foe across most of its sight, and the passive foe never hits back.
+	var w := _bare_world([race, race])
+	var me := _lone(w, 0, "spear", 15000, y, "aggressive")
+	_lone(w, 1, "spear", 20000, y, "passive")
+	var r := _watch(w, 600, me)
+	check(r.far > 1500 and r.hits[0] > 0, "aggressive: chases a foe 5 tiles off and hits it (went %d, %d hits)" % [r.far, r.hits[0]])
+	check(r.hits[1] == 0, "passive: never hits back, even while being hit (%d hits)" % r.hits[1])
+	# Defensive: ignores a foe 5 tiles off; goes for one that comes near, chases it no
+	# further than the leash, then walks back to where it stood.
+	w = _bare_world([race, race])
+	me = _lone(w, 0, "spear", 15000, y, "defensive")
+	var far := _lone(w, 1, "spear", 20000, y, "passive")
+	var stood := _at(w, me)
+	r = _watch(w, 200, me)
+	check(r.far < 300 and r.hits[0] == 0, "defensive: ignores a foe 5 tiles off (went %d)" % r.far)
+	w.issue(1, Commands.MOVE, {"ids": [far], "x": 16500, "y": y})
+	r = _watch(w, 100, me)
+	check(r.hits[0] > 0, "defensive: goes for a foe that comes near (%d hits)" % r.hits[0])
+	w.issue(1, Commands.MOVE, {"ids": [far], "x": 40000, "y": y})
+	r = _watch(w, 600, me, stood)
+	var i := w.units.index_of(me)
+	var home := Fixed.isqrt(Fixed.dist2(w.units.x[i], w.units.y[i], stood[0], stood[1]))
+	check(r.far > 2000 and r.far < int(c.leash) + 1500, "defensive: chases a fleeing foe to the leash (went %d, leash %d)" % [r.far, int(c.leash)])
+	check(home < 700 and w.units.foe[i] == 0 and w.units.moving[i] == 0, "defensive: then walks back to where it stood (%d off)" % home)
+	# Stand ground, melee: never walks to a foe 2 tiles off, but fights one that comes to it.
+	w = _bare_world([race, race])
+	me = _lone(w, 0, "spear", 15000, y, "stand")
+	_lone(w, 1, "spear", 17000, y, "passive")
+	r = _watch(w, 300, me)
+	check(r.far < 300 and r.hits[0] == 0, "stand ground: doesn't walk to a foe 2 tiles off (went %d, %d hits)" % [r.far, r.hits[0]])
+	_lone(w, 1, "spear", 16000, y, "aggressive")
+	r = _watch(w, 400, me)
+	check(r.hits[0] > 0 and r.far < 700, "stand ground: fights a foe that comes to it, where it stands (went %d, %d hits)" % [r.far, r.hits[0]])
+	# Stand ground, ranged: shoots what is in reach, never steps closer to what isn't.
+	w = _bare_world([race, race])
+	var reach: int = w.types[w.type_of(0, "archer")].reach
+	me = _lone(w, 0, "archer", 15000, y, "stand")
+	_lone(w, 1, "spear", 15000 + reach + 2500, y, "passive")
+	r = _watch(w, 300, me)
+	check(r.far < 300 and r.hits[0] == 0, "stand ground: an archer doesn't step towards a foe out of reach (went %d)" % r.far)
+	_lone(w, 1, "spear", 15000 + reach - 500, y, "passive")
+	r = _watch(w, 300, me)
+	check(r.far < 300 and r.hits[0] > 0, "stand ground: an archer shoots a foe in reach without moving (%d hits)" % r.hits[0])
+	# Passive: takes blows without answering; an explicit attack order still works.
+	w = _bare_world([race, race])
+	me = _lone(w, 0, "spear", 15000, y, "passive")
+	var foe := _lone(w, 1, "spear", 15800, y, "aggressive")
+	r = _watch(w, 80, me)
+	check(r.hits[1] > 0 and r.hits[0] == 0, "passive: takes %d hits and answers none" % r.hits[1])
+	w.issue(0, Commands.ATTACK, {"ids": [me], "target": foe})
+	r = _watch(w, 100, me)
+	check(r.hits[0] > 0, "passive: an ordered attack still fights (%d hits)" % r.hits[0])
+	# Stand ground with an ordered target walks to it: orders beat stances.
+	w = _bare_world([race, race])
+	me = _lone(w, 0, "spear", 15000, y, "stand")
+	foe = _lone(w, 1, "spear", 19000, y, "passive")
+	w.issue(0, Commands.ATTACK, {"ids": [me], "target": foe})
+	r = _watch(w, 400, me)
+	check(r.far > 1500 and r.hits[0] > 0, "stand ground: an ordered attack walks to the target (went %d, %d hits)" % [r.far, r.hits[0]])
 
 
 ## Equal-cost fight between two of a race's roster slots. `flip` swaps which side
