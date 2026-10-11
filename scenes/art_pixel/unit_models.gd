@@ -20,6 +20,17 @@ func has(id: String) -> bool:
 	return has_method("_" + id.get_slice("~", 0).get_slice("@", 0).replace(".", "_"))
 
 
+## Body armour modelled for one body in that body's space (tools/blender/human_armour.py:
+## armour_<kind>_<creature>.glb), or {} to fit the generic model at bake time.
+func fitted(armour_id: String, body_id: String, colours: Dictionary) -> Dictionary:
+	var kind := armour_id.trim_prefix("armour.")
+	var name := "armour_%s_%s" % [kind, body_id.trim_prefix("body.")]
+	if not FileAccess.file_exists("res://assets/models/%s.glb" % name):
+		return {}
+	var main := surf(kind, Color.WHITE, 4.0) if kind != "leather" else surf("leather", Color.WHITE, 5.0)
+	return {"node": glb(name, {kind: main, "trim": surf("leather", Color("#5a3a20"), 3.0)})}
+
+
 ## {node: Node3D, sockets: {name: Vector3}, anchors: [[Vector3 hip, phase, z]]}
 func build(id: String, colours: Dictionary) -> Dictionary:
 	hold = id.get_slice("@", 1) if "@" in id and not "~" in id else "low"
@@ -809,6 +820,10 @@ func _leg_human(c: Dictionary) -> Dictionary:
 	var n := Node3D.new()
 	var cloth := surf("cloth", c.cloth2, 5.0)
 	var boot := surf("leather", Color("#6a4a30"), 3.0)
+	# Modelled in Blender (tools/blender/human_leg.py): a shaped thigh, knee and calf, a cuffed boot.
+	if FileAccess.file_exists("res://assets/models/leg_human.glb"):
+		n.add_child(glb("leg_human", {"cloth": cloth, "leather": boot}))
+		return {"node": n}
 	n.add_child(rod(Vector3(0, 0, 0), Vector3(0.7, -5.4, 0), 2.0, 1.6, cloth))
 	n.add_child(rod(Vector3(0.7, -5.4, 0), Vector3(0.1, -9.4, 0), 1.5, 1.3, cloth))
 	n.add_child(cone(1.35, 1.5, 1.8, boot, Vector3(0.2, -9.4, 0)))
