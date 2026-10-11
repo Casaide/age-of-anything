@@ -25,9 +25,11 @@ func _initialize() -> void:
 	var prompt: String = args[3]
 	var ids: Array = args.slice(4)
 	var azimuth := PartBaker.AZIMUTH
-	if ids.size() > 0 and String(ids[0]).begins_with("az="):   # a facing: az=90 towards the camera, az=-90 away
-		azimuth = float(String(ids[0]).trim_prefix("az="))
+	var settings := {}   # leading az=, el=, outline=, bands= arguments set up the bake
+	while ids.size() > 0 and String(ids[0]).get_slice("=", 0) in ["az", "el", "outline", "bands"]:
+		settings[String(ids[0]).get_slice("=", 0)] = float(String(ids[0]).get_slice("=", 1))
 		ids = ids.slice(1)
+	azimuth = settings.get("az", azimuth)
 	var lib = DataLib.new()
 	var gen = Generator.new(lib)
 	var race: Dictionary = gen.generate(prompt, DataLib.load_json("res://data/rules/default.json"))
@@ -64,7 +66,9 @@ func _initialize() -> void:
 	baker.art_scale = art
 	baker.models = Concepts.new()
 	baker.azimuth = azimuth
-	baker.bands = 4   # as in the game (ArtKit.UNIT_BANDS)
+	baker.bands = int(settings.get("bands", 4))   # as in the game by default (ArtKit.UNIT_BANDS)
+	baker.elevation = settings.get("el", PartBaker.ELEVATION)
+	baker.outlined = settings.get("outline", 1.0) > 0.5
 	root.add_child(baker)
 	var box := SubViewportContainer.new()
 	box.stretch = true

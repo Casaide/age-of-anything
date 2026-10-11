@@ -11,6 +11,8 @@ const UnitModels := preload("res://scenes/art_pixel/unit_models.gd")
 
 const AZIMUTH := 35.0    # hand-built models are seen three-quarter: from the near side, a bit in front
 var azimuth := AZIMUTH   # per bake: other facings (90 = facing the camera, -90 = walking away)
+var elevation := ELEVATION   # camera height in degrees (tests: a steeper look from above)
+var outlined := true     # the units' dark edge (tests: without it)
 const ELEVATION := 30.0  # and from above, like the map
 
 const SS := 4            # supersampling
@@ -116,7 +118,7 @@ func _bake_model(id: String, colours: Dictionary, bake_key: String) -> void:
 	cam.keep_aspect = Camera3D.KEEP_HEIGHT
 	cam.size = 2.0 * r
 	var az := deg_to_rad(azimuth)
-	var el := deg_to_rad(ELEVATION)
+	var el := deg_to_rad(elevation)
 	var view := Vector3(sin(az) * cos(el), sin(el), cos(az) * cos(el))
 	cam.basis = Basis.looking_at(-view, Vector3.UP)
 	cam.position = box.get_center() + view * 150.0   # close enough for the shadow range
@@ -156,10 +158,10 @@ func _bake_model(id: String, colours: Dictionary, bake_key: String) -> void:
 		used = used.merge(front_img.get_used_rect())
 	used = used.grow(SS * 2).intersection(Rect2i(Vector2i.ZERO, img.get_size()))
 	used.position = used.position / SS * SS
-	var pix := Pixelize.run(img.get_region(used), SS, true, bands)
+	var pix := Pixelize.run(img.get_region(used), SS, outlined, bands)
 	if front_img:
 		# Stored as its own sprite: UnitView layers it above torso armour.
-		var top := Pixelize.run(front_img.get_region(used), SS, true, bands)
+		var top := Pixelize.run(front_img.get_region(used), SS, outlined, bands)
 		PartShape.baked[PartShape.front_key(bake_key)] = {"img": top, "tex": ImageTexture.create_from_image(top),
 			"origin": (origin - Vector2(used.position)) / SS, "scale": art_scale}
 		PartShape.rigs[id]["front"] = true
