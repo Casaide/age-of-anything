@@ -546,9 +546,9 @@ func smart_order(pos: Vector2) -> void:
 			continue
 		if attack_move:
 			world.issue(p, Commands.ATTACK_MOVE, {"ids": ids, "x": m.x, "y": m.y, "queue": q})
-		elif foe != 0 and world.units.owner[world.units.index_of(foe)] != p:
+		elif foe != 0 and world.is_enemy(world.units.owner[world.units.index_of(foe)], p):
 			world.issue(p, Commands.ATTACK, {"ids": ids, "target": foe, "queue": q})
-		elif bid != 0 and world.buildings.owner[world.buildings.index_of(bid)] != p:
+		elif bid != 0 and world.is_enemy(world.buildings.owner[world.buildings.index_of(bid)], p):
 			world.issue(p, Commands.ATTACK, {"ids": ids, "target": bid, "queue": q})
 		elif map.resource_at(cell) != "":
 			world.issue(p, Commands.GATHER, {"ids": ids, "cell": cell, "queue": q})
