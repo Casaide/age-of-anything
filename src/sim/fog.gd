@@ -53,8 +53,7 @@ static func _update(w) -> void:
 			if w.teams[bs.owner[b]] == w.teams[p]:
 				var t: Dictionary = w.btypes[bs.kind[b]]
 				var r: int = cfg.tower if t.get("attack", {}).size() > 0 else cfg.building
-				var half: int = bs.size[b] / 2
-				_stamp(w, g, bs.cx[b] + half, bs.cy[b] + half, r + half)
+				_stamp(w, g, bs.cx[b] + bs.sx[b] / 2, bs.cy[b] + bs.sy[b] / 2, r + maxi(bs.sx[b], bs.sy[b]) / 2)
 		w.fog[p] = g
 
 
