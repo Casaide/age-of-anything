@@ -184,7 +184,7 @@ still maps the brief onto parts within host rules.
   - Sci-fi "space federation" pack. A space-fleet sci-fi mod is Dominic's personal dream; keep
     official names and likenesses out of shipped content.
 
-### Gates (moved from milestone 11, 2026-10-11)
+### Gates (moved from milestone 11, 2026-10-11; moved into milestone 12 phase 4, 2026-10-11)
 
 Walls block everyone today; leave a gap. A gate lets its own team through and nobody else, which
 needs passability per team: SimMap's walk grids per movement class *and* team, flow fields keyed by

@@ -584,3 +584,15 @@ part of the army each wave and the rest defend (Easy 40%, Normal 70%, Hard all);
 Easy and Normal research gathering and line upgrades before soldiers; first waves at 9:00 (Easy),
 6:00 (Normal), 4:00 (Hard: the rushy one, Dominic agreed). Easy has about 24 population of
 soldiers in its first ten minutes; Hard beats Normal.
+
+**D-106, 2026-10-11: The full land tech tree is planned as data, in two milestones.** Dominic
+asked for a tech tree page showing what a race can do and its bonuses, with the whole planned tree
+on it (no icons for what isn't made), and for a complete land tree with every building, walls,
+the castle and towers; no ships or flying craft yet. The tree is in `docs/milestones/m12-tech-tree.md`.
+Planned items live in `data/` with `"status": "planned"`: the page draws them as blank frames,
+the sim and menus skip them. Dominic's calls: four ages (age 4 "Shiny Age" for now); the work
+splits into milestone 12 (page, race bonuses, age 4, research, walls and gates, towers, garrison,
+Castle, University, Wonder) and milestone 13 (the new unit lines, siege, mystics, war beasts);
+races lack a few items each, lifted by the host's Full tech tree; the Wonder is in. Race bonuses
+become one data field on creatures and cultures, and stat bonuses are applied before pricing so
+units pay for them. Names of everything are ours. Plan by Claude.
