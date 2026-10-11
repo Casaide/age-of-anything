@@ -16,6 +16,7 @@ Godot 4.7 (GDScript), 2D. Solo dev, macOS.
 | `docs/roster-template.md` | Full building, age and unit-line plan, with MVP/Next/Later status |
 | `docs/market-context.md` | Why this game, why now (industry, genres, engines) |
 | `docs/rendering.md` | How the art is made: models (code and Blender), 8-facing bakes, worn armour, buildings, checking tools |
+| `docs/audio.md` | How the sound is made: the offline synth (`tools/audio/`), effects, creature voices, the theme in stems by age |
 
 Before starting a milestone, read `docs/milestones/<its file>.md` (and the related parts of
 `docs/mvp-plan.md`), write the plan into the milestone file, and keep its checklist current. If you postpone something,
@@ -58,6 +59,10 @@ move it to `docs/backlog.md` rather than deleting it.
 - **Closed (milestone 10): playtest and balance.** `tests/balance.gd` (equal-cost round robin),
   balance pass 1, `docs/playtest.md`, a match log. Testers, the export build, the Linux check and
   price-by-simulation moved to the backlog.
+- **Built (audio, 2026-10-11): sound from the ground up.** Our own offline synth (`tools/audio/`, Python) renders
+  every effect, creature voice and the theme's stems into `assets/audio/`; `src/view/audio.gd` plays them on
+  buses, with takes, creature voices on select/ack/die, and the theme growing by age plus a battle layer.
+  Nobody has listened yet: Dominic to listen. See `docs/audio.md`.
 - **Done (milestone 11): cleanup.** UI, UX and art polish from Dominic's list, the lobby (`scenes/match_setup.tscn`),
   animals, gold and new buildings, 8 facings, Blender-modelled humans, reared spiders, the Nile/Han/Aztec kits; the
   Fable review met the exit criterion. See `docs/milestones/m11-cleanup.md`.
@@ -75,6 +80,7 @@ data/            the data contract; mods are just more of this
   rules/*.json     host rules: era bounds, point budgets, roster template, cost/train curves, economy
   cost_curves.json fixed-point cost curves (per-mille by points), written by tests/gen_cost_curve.gd
   terrain.json     terrain types: walkable, colours, resource + amount + what it turns into when used up
+  audio.json       buses, every sound's takes / bus / gap / voices, the music mixes by age
   buildings.json   building types: footprint, hp, cost, build time, pop, drop-off, what it trains
   maps/*.json      maps: ASCII rows + legend into terrain.json, start tiles; the view builds tiles from them
 src/
@@ -100,17 +106,20 @@ src/
     eco_bot.gd       plays an opening: trains workers, 60/40 food/wood, houses, idle workers
     replay.gd        record / JSON / rebuild / verify
 scenes/race_lab.*  prompt UI, race cards, two armies milling about in the baked art (bakes per generate)
-  view/            view side (Nodes allowed): iso.gd projection, rts_camera.gd, command_panel.gd
+  view/            view side (Nodes allowed): iso.gd projection, rts_camera.gd, command_panel.gd,
+                   audio.gd (the one audio node: effects, creature voices, the theme's stems)
     art/             the pixel-art views: art_kit.gd (bakes units, buildings, props into one atlas),
                      terrain_view.gd (shader ground + paths + doodads from a SimMap), building_art.gd
       bake/            the 3D bake pipeline for buildings and props: baker.gd, models.gd, materials.gd
 scenes/art_pixel.* + art_pixel/          the pixel-art candidate: baked parts, palette, shader terrain,
                    unit_models.gd (hand-built parts), part_baker.gd, paths.gd (culture paths), pixelize.gd
 assets/art/textures/  texture art authored by Claude (SVG), mapped onto unit models
+assets/audio/    every sound and music stem, rendered by tools/audio/render.py (see docs/audio.md)
 scenes/sim_debug.* the playable debug match: select, smart right-click, panel (Q/H/C), Tab side, F6 autoplay,
                    F3 flow, F5/F9 replays, G regen army
 tests/           headless checks and dev tools (see Commands)
 tools/blender/   bpy scripts that model parts (blender -b --python ...); output .glb in assets/models/
+tools/audio/     the sound synth (pure Python): synth, instruments, sfx and voice recipes, the theme; render.py
 ```
 
 ## Commands
@@ -134,6 +143,8 @@ godot --path . --script res://tests/art_screenshot.gd -- /tmp/art  # capture it 
 godot --path . --script res://tests/art_crop.gd -- /tmp/c.png 6.5 9 ["prompt A" "prompt B"]   # 3x close-up at a tile
 godot --path . --script res://tests/art_bench.gd                    # draw calls + frame time, 200+ units
 godot --path . --script res://tests/unit_lineup.gd -- /tmp/units.png ["prompt A" "prompt B"]   # both rosters as pixel art, 4x
+python3 tools/audio/render.py [sfx|voices|music|<name>...]       # re-render the sounds into assets/audio (~15 s)
+python3 tools/audio/check.py assets/audio/sfx/chop_*.wav          # length, peak, RMS, pitch guess; afplay to listen
 godot --path .                                                     # run the game (match setup; Race Lab from there)
 ```
 
@@ -141,7 +152,8 @@ A GDScript parse error in a `--script` run leaves Godot hanging instead of exiti
 timeout on headless runs.
 
 Run the tests after every change to `data/` or `src/`, and `test_sim.gd` after every change to
-`src/sim/` or pricing. Look at a screenshot after visual changes.
+`src/sim/` or pricing. Look at a screenshot after visual changes. After a change to `tools/audio/`,
+re-render and commit the files in `assets/audio/` with it (the game plays files, not recipes).
 
 ## Rules that matter
 
