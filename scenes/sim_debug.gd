@@ -790,7 +790,7 @@ func _update_panel() -> void:
 		var owner := bs.owner[b]
 		var t: Dictionary = world.btypes[bs.kind[b]]
 		var mine := owner == active
-		var c := {"title": "%s (P%d)" % [t.name, owner + 1], "team": team, "hp": [bs.hp[b], t.hp],
+		var c := {"title": "%s (P%d)" % [t.name, owner + 1], "team": Color(lib.palettes.teams[owner]), "hp": [bs.hp[b], t.hp],
 			"portrait": kit.building_icon(_arch(owner), t.id), "buttons": [], "queue": null, "info": ""}
 		if bs.done[b] == 0:
 			c.info = "Being built: %d%%" % (100 * bs.progress[b] / t.build_ticks)
