@@ -2,8 +2,29 @@
  "schema": "aow.resources/1",
  "note": "Resources in a fixed order (stock arrays, costs and carried loads are indexed by it). Add new ones at the end.",
  "resources": [
-  {"id": "food", "name": "Food", "short": "F", "colour": "#d65a7a"},
-  {"id": "wood", "name": "Wood", "short": "W", "colour": "#a07a4a"},
-  {"id": "stone", "name": "Stone", "short": "S", "colour": "#9a9a90"}
+  {
+   "id": "food",
+   "name": "Food",
+   "short": "F",
+   "colour": "#d65a7a"
+  },
+  {
+   "id": "wood",
+   "name": "Wood",
+   "short": "W",
+   "colour": "#a07a4a"
+  },
+  {
+   "id": "stone",
+   "name": "Stone",
+   "short": "S",
+   "colour": "#9a9a90"
+  },
+  {
+   "id": "gold",
+   "name": "Gold",
+   "short": "G",
+   "colour": "#e8c040"
+  }
  ]
 }

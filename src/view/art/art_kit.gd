@@ -27,7 +27,7 @@ const HOUSE := {"thatch": "stilt_house", "junk": "tin_can_house", "stone": "vill
 const MATERIALS := ["wood", "thatch", "mud", "stone", "tin", "brick", "plaster", "terracotta", "terracotta_dark", "felt", "weave"]
 ## Prop and doodad kinds and how many variants of each (each a different shape, size
 ## and turn; picked per tile so neighbours differ).
-const DOODADS := {"reeds": 6, "bush": 6, "rock": 6, "quarry": 4, "stones": 6, "tuft": 6, "flowers": 6, "shore": 4, "lily": 4, "crops": 4, "paddy": 4}
+const DOODADS := {"reeds": 6, "bush": 6, "rock": 6, "quarry": 4, "gold": 4, "stones": 6, "tuft": 6, "flowers": 6, "shore": 4, "lily": 4, "crops": 4, "paddy": 4}
 ## Resources show how much is left: reeds, bug bushes and quarry stone each have this many stages
 ## (0 whole ... 3 nearly gone: stubble for reeds, a bare brown bush).
 const STAGES := 4
@@ -220,6 +220,7 @@ func _bake_doodads(baker, models) -> void:
 	for v in DOODADS.quarry:
 		for st in STAGES:
 			shadowed[staged("quarry", v, st)] = props.quarry(1300 + v, st)
+			shadowed[staged("gold", v, st)] = props.quarry(1300 + v, st, "gold")   # the same deposits, gold showing
 	shadowed["rally_flag"] = models.rally_flag(Color(PartShape.TEAM_KEY))
 	var flat := {}
 	for v in DOODADS.stones:
@@ -253,7 +254,7 @@ func _bake_set(baker, todo: Dictionary) -> void:
 ## Whole until first used, then visibly started at once, then further down, then gone:
 ## reeds thin and leave stubble, bug bushes lose berries and colour, quarry stone loses blocks.
 static func resource_stage(kind: String, left: int, full: int) -> int:
-	if not kind in ["reeds", "bush", "quarry"]:
+	if not kind in ["reeds", "bush", "quarry", "gold"]:
 		return 0   # only reeds, bug bushes and quarry stone have used-up stages
 	if left <= 0:
 		return STAGES - 1
