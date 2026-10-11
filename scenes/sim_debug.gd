@@ -1663,7 +1663,7 @@ func _update_panel() -> void:
 				var afford: bool = world.can_afford(active, t.cost)
 				var bid: String = id
 				c.buttons.append({"icon": kit.building_icon(_arch(active), id), "text": "Build %s (%s)" % [t.name, _cost_text(t.cost)],
-					"tip": _building_tip(t),
+					"tip": _building_tip(t), "glyph": Icons.texture("glyph/" + id),   # what it's for, the same in every culture
 					"key": t.hotkey, "cost": _cost_text(t.cost), "enabled": afford, "action": func(): start_placing(bid)})
 		if placing != "":
 			c.info = "Placing: left-click to build, shift keeps placing, right-click/Esc cancels"

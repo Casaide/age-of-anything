@@ -200,6 +200,16 @@ func _button(b: Dictionary) -> Button:
 		button.add_child(pic)
 	else:
 		button.text = b.text
+	if b.get("glyph") != null:   # a small function badge (bow, anvil, logs...): tells look-alike buildings apart
+		var g := TextureRect.new()
+		g.texture = b.glyph
+		g.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+		g.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
+		g.size = Vector2(24, 24)
+		g.position = Vector2(BUTTON - 26, 2)
+		g.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		g.modulate.a = 1.0 if b.enabled else 0.5
+		button.add_child(g)
 	if b.get("key", "") != "":
 		button.add_child(_corner(b.key, Vector2(4, 1), GOLD))
 	if b.get("cost", "") != "":
