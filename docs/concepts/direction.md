@@ -132,6 +132,34 @@ Each round has 3-5 options, shown close up and at game scale, in three facings, 
 - **R5:** tunic cuts, armour types, legs, and the single team-colour region.
 - **R6:** whole rosters of two cultures, in 8 facings, in a crowd in the game view.
 
+## Mixed races and many eras (Dominic: look at the mixed-race and multi-era classics)
+Two more studies, of a mythology RTS (humans next to myth creatures) and a many-epoch RTS:
+- **One body language for every creature.** Humans, creatures and animal-headed humans share one
+  light, texture density and chunky heroic build (big hands, broad shoulders). Creature-headed
+  human bodies are exactly our parts model. So the style spec above is the *shared* spec;
+  creature heads are variants of it.
+- **A scale ladder:**
+  - Workers and infantry of *every* creature share one height (about 40 px), so armies read
+    as equals.
+  - Large units (mounts, Heavy elites) are about 1.4-1.8x that height; giants about 2-2.5x.
+  - An elite is about 1.1x with a unique crest.
+  - Size encodes the counter class (spear > large).
+- **The look changes only per age, never per research.** One clear, whole-kit step per age. The
+  material ladder runs cloth, hide and wood (age 1), bronze (age 2), iron and a crest (age 3). Later
+  era packs carry on up it (steel and dyed uniforms, then khaki, then alloy), with a big silhouette
+  break only where the era truly changes (gunpowder, sci-fi). Too many small steps blur together.
+- **Culture at every age.** A custom-civ system that reused the same unit models made custom civs
+  look the same. That's the trap to avoid. Each family gets a culture palette (cloth, accent,
+  metal tint, shield paint), a shield shape and a head-gear line, so even age-1 units differ;
+  palette and shield read first at distance, head gear second. Team colour stays one region.
+- **Concept rounds change:**
+  - R1 shows each option in a mixed lineup: rat, frog and beetle at infantry height, plus a
+    centaur or giant for the scale ladder.
+  - R3 shows one full unit line, age 1 to 2 to 3, at game scale.
+  - R5 adds 3-4 culture palettes per culture.
+  - R0 also judges whether the human sits with the frog and rat.
+  - A later R7 builds the material ladder for era packs.
+
 ## Questions for Dominic
 1. Is a 1.5-3 day pipeline bake-off (R0) worth doing first?
 2. 8 facings, all baked, none mirrored?

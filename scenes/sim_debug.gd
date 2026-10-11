@@ -97,6 +97,7 @@ var banner: Label           # victory / defeat
 var fog_view: FogView
 var minimap: Minimap
 var sfx: Sfx
+var age_ups: Array = []      # [player, age, seconds] this match (for the playtest log)
 var reveal := false         # V: see everything (debug)
 var prompts: Array = []     # set before adding to the tree, else taken from the command line
 var rerolls: Array = [0, 0] # per side; G rerolls side 0
@@ -242,6 +243,17 @@ func _bake(races: Array) -> void:
 	baking = false
 
 
+## Playtest log: one JSON line per finished match in user://matches.jsonl (races, who won,
+## how long it ran, when each side reached each age), for the milestone 10 metrics.
+func _log_match(team: int) -> void:
+	var f := FileAccess.open("user://matches.jsonl", FileAccess.READ_WRITE if FileAccess.file_exists("user://matches.jsonl") else FileAccess.WRITE)
+	f.seek_end()
+	f.store_line(JSON.stringify({"time": Time.get_datetime_string_from_system(), "map": map.id, "vs_ai": vs_ai,
+		"races": world.races.map(func(r): return r.name), "prompts": prompts, "winner_team": team, "you": active,
+		"seconds": world.tick / 20, "ages": world.ages, "age_ups": age_ups, "lost": world.lost}))
+	print("Match logged: ", ProjectSettings.globalize_path("user://matches.jsonl"))
+
+
 func _on_screen(p: Vector2) -> bool:
 	var half := get_viewport_rect().size / camera.zoom * 0.5
 	return Rect2(camera.get_screen_center_position() - half, half * 2.0).has_point(p)
@@ -256,6 +268,7 @@ func _first_of_team(team: int) -> int:
 
 func _attach(w: World, end_tick := -1) -> void:
 	banner.visible = false
+	age_ups = []
 	minimap.setup(w, lib.palettes.teams.map(func(c): return Color(c)), DataLib.load_json("res://data/terrain.json").terrain, camera)
 	for d in [views, bviews, rviews]:
 		for k in d:
@@ -659,11 +672,14 @@ func _play_events() -> void:
 				fx.flash(target, lands)
 			if _on_screen(to) and a.visible:
 				sfx.play("shoot" if e.ranged else "hit", -4.0 if e.ranged else 0.0)
-		elif e.type == "age" and e.player == active:
-			sfx.play("age")
+		elif e.type == "age":
+			age_ups.append([e.player, e.age, world.tick / 20])
+			if e.player == active:
+				sfx.play("age")
 		elif e.type == "won":
 			var mine: bool = world.teams[active] == e.team
 			sfx.play("won" if mine else "lost")
+			_log_match(e.team)
 			banner.text = ("Victory!" if mine else "Defeat") + "\n" + ("%s win" % world.races[_first_of_team(e.team)].name)
 			banner.add_theme_color_override("font_color", Color("#f2c94c") if mine else Color("#e07060"))
 			banner.visible = true

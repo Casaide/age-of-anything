@@ -53,7 +53,8 @@ move it to `docs/backlog.md` rather than deleting it.
   gets built for units until Dominic approves a direction.
 - **Done (milestone 9): fog and juice.** Fog of war (`src/sim/fog.gd`, `src/view/fog_view.gd`),
   minimap, synthesised placeholder sounds; bot matches run about 11 minutes.
-- **Next:** 10 playtest. The art track (A2-A5) runs alongside.
+- **Prepared (milestone 10): playtest and balance.** `tests/balance.gd` (equal-cost round robin),
+  balance pass 1, `docs/playtest.md`, a match log. Waiting on Dominic: testers, an export build.
 
 ## Layout
 
@@ -114,7 +115,8 @@ godot --headless --path . --script res://tests/run_tests.gd        # must print 
 godot --headless --path . --script res://tests/print_races.gd -- "centaur romans" "flying greeks with wings"
 godot --path . --script res://tests/screenshot.gd -- /tmp/lab.png "prompt A" "prompt B"
 godot --headless --path . --script res://tests/test_sim.gd         # sim determinism + tick time (~45 s)
-godot --headless --path . --script res://tests/test_ai.gd          # the AI beats a passive player; bot vs bot (~1-2 min)
+godot --headless --path . --script res://tests/test_ai.gd          # the AI beats a passive player; bot vs bot (~2 min)
+godot --headless --path . --script res://tests/balance.gd -- 2     # equal-cost round robin in age 2: win rates, outliers
 godot --path . res://scenes/match_setup.tscn                       # pick races and play vs the AI (the main scene)
 godot --path . --script res://tests/sim_screenshot.gd -- /tmp/sim.png [map_id] [armies|opening:<tick>] ["prompt A" "prompt B"]
 godot --path . res://scenes/sim_debug.tscn                         # run the sim debug view

@@ -284,7 +284,7 @@
   "id": "body.spider",
   "slot": "body",
   "noun": "Spider",
-  "points": 4,
+  "points": 6,
   "tags": [
    "arachnid",
    "venom",
@@ -432,7 +432,7 @@
   "id": "body.beetle",
   "slot": "body",
   "noun": "Beetle",
-  "points": 7,
+  "points": 12,
   "tags": [
    "insect",
    "armoured",
@@ -443,7 +443,7 @@
    "speed": 10,
    "armour": {
     "melee": 2,
-    "pierce": 4
+    "pierce": 3
    },
    "bonus": {
     "ranged": 2
@@ -572,7 +572,7 @@
   "id": "body.pony",
   "slot": "body",
   "noun": "Pony",
-  "points": 6,
+  "points": 9,
   "tags": [
    "beast",
    "mount",
@@ -723,7 +723,7 @@
   "id": "body.pony_fused",
   "slot": "body",
   "noun": "Pony",
-  "points": 6,
+  "points": 9,
   "tags": [
    "beast",
    "mount",
@@ -2165,14 +2165,14 @@
    "archer"
   ],
   "stats": {
-   "attack": 4,
+   "attack": 6,
    "range": 6,
    "bonus": {
     "infantry": 2
    },
    "damage": "pierce"
   },
-  "points": 4,
+  "points": 3,
   "two_handed": true,
   "cost_mix": {
    "food": 40,
