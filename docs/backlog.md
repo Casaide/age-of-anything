@@ -184,6 +184,13 @@ still maps the brief onto parts within host rules.
   - Sci-fi "space federation" pack. A space-fleet sci-fi mod is Dominic's personal dream; keep
     official names and likenesses out of shipped content.
 
+### Gates (moved from milestone 11, 2026-10-11)
+
+Walls block everyone today; leave a gap. A gate lets its own team through and nobody else, which
+needs passability per team: SimMap's walk grids per movement class *and* team, flow fields keyed by
+both, and every walkability check (movement, separation, placement) asking with the unit's team.
+Also: the bot doesn't use walls or the market yet.
+
 ### Race-specific resources (Dominic, 2026-10-11, a future thought)
 
 Some races need a special resource that others don't (cheese for rats, say, or silk for spiders).
