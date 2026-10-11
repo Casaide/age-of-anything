@@ -1,0 +1,11 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="64" height="64" viewBox="0 0 64 64">
+<!-- Stand ground: a spear planted upright in a mound of earth, on an olive disc. -->
+<defs><linearGradient id="steel" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#f4f6f8"/><stop offset="0.45" stop-color="#b9c0c6"/><stop offset="1" stop-color="#6e767e"/></linearGradient>
+<linearGradient id="wood" x1="0" y1="0" x2="1" y2="0"><stop offset="0" stop-color="#c08850"/><stop offset="0.5" stop-color="#8a5a2e"/><stop offset="1" stop-color="#5e3a1a"/></linearGradient></defs>
+<circle cx="32" cy="32" r="27" fill="#5e6a32" stroke="#1c120a" stroke-width="2.5"/>
+<circle cx="32" cy="32" r="22" fill="none" stroke="#b8c080" stroke-width="2" opacity="0.6"/>
+<rect x="30" y="20" width="4" height="26" fill="url(#wood)" stroke="#1c120a" stroke-width="1.5"/>
+<path d="M32,7 L37,20 L32,23 L27,20 Z" fill="url(#steel)" stroke="#1c120a" stroke-width="1.8" stroke-linejoin="round"/>
+<path d="M14,52 Q20,42 32,42 Q44,42 50,52 Z" fill="#7a5a34" stroke="#1c120a" stroke-width="1.8" stroke-linejoin="round"/>
+<path d="M22,47 L26,46 M37,46 L41,47" stroke="#4a3418" stroke-width="1.6" stroke-linecap="round"/>
+</svg>

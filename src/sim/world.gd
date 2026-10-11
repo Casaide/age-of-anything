@@ -342,6 +342,8 @@ func _run(cmd: Dictionary) -> void:
 			Economy.cmd_rally(self, cmd.player, a)
 		Commands.TRADE:
 			Market.cmd_trade(self, cmd.player, a)
+		Commands.STANCE:
+			Combat.cmd_stance(self, cmd.player, a)
 		Commands.STOP:
 			for uid in a.ids:
 				var i := units.index_of(uid)
@@ -816,7 +818,7 @@ func state_hash() -> int:
 		for v in [u.id[i], u.owner[i], u.kind[i], u.x[i], u.y[i], u.tx[i], u.ty[i], u.moving[i],
 				u.arrive[i], u.wx[i], u.wy[i], u.group[i], u.stuck[i], u.hp[i], u.fkey[i], u.reach[i],
 				u.task[i], u.target[i], u.home[i], u.carry_kind[i], u.carry[i], u.work[i],
-				u.foe[i], u.cooldown[i], u.stance[i], u.amx[i], u.amy[i], u.orders[i].size(), u.mclass[i]]:
+				u.foe[i], u.cooldown[i], u.stance[i], u.posture[i], u.gx[i], u.gy[i], u.amx[i], u.amy[i], u.orders[i].size(), u.mclass[i]]:
 			h = Fixed.mix(h, v)
 		for o in u.orders[i]:
 			h = Fixed.mix(h, Rng.hash_string(JSON.stringify(o, "", true)))
