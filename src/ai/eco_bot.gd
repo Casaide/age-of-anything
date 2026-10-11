@@ -3,7 +3,7 @@ extends RefCounted
 ## them about 60/40 food/wood, puts idle workers back to work and builds houses
 ## before pop runs out. It only reads sim state and issues commands through the
 ## queue, like a person would, so it's deterministic. This is the seed of the
-## milestone 6 AI.
+## milestone 8 AI.
 
 const Economy := preload("res://src/sim/economy.gd")
 const Commands := preload("res://src/sim/commands.gd")

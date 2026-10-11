@@ -35,7 +35,7 @@
    "walkable": true,
    "colour": "#3f5a46",
    "colour2": "#3a5442",
-   "note": "walkable; amphibious races get a speed bonus here (milestone 5)"
+   "note": "walkable; amphibious races get a speed bonus here (milestone 6, movement classes)"
   },
   "water": {
    "walkable": false,

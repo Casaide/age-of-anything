@@ -1,4 +1,4 @@
-# Milestone 7: Fog + juice
+# Milestone 9: Fog + juice
 
 **Status:** planned
 **Exit criterion:** A full match runs 9-12 minutes.

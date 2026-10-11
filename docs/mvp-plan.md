@@ -151,12 +151,14 @@ Each milestone has its own file in `milestones/` (plan, checklist, results); thi
 | [2](milestones/m2-map-movement.md) | done | **Map + movement:** JSON map + generated isometric TileMapLayer, flow fields, separation, camera pan/zoom, selection, box select, move | 50 units cross the map in groups with no stuck units (met: open map and chokepoint) |
 | [3](milestones/m3-economy.md) | built | **Economy:** gather/carry/drop-off, Food/Wood, TC trains workers, Houses/pop, build placement + construction | The opening economy is fun to watch for 3 minutes |
 | [4](milestones/m4-combat.md) | 1 | **Combat:** attack/armour/HP, counter tags, projectiles, deaths, unit card | Blind testers predict counters from silhouettes |
-| [5](milestones/m5-progression.md) | 1 | **Progression:** Barracks, age-up, Sharp Sticks research, tier-2 units, Watchtower, fixed-point cost table | Age-up lands at minutes 4-6 |
-| [6](milestones/m6-ai-match-flow.md) | 1 | **AI + match flow:** build order, waves, tag-aware counter-picking, race select screen, win/lose | AI beats a passive player and loses to a decent one |
-| [7](milestones/m7-fog-juice.md) | 1 | **Fog + juice:** fog, minimap, SFX, hit flash, death poses, tuning | A full match runs 9-12 minutes |
-| [8](milestones/m8-playtest-balance.md) | 1 | **Playtest + balance:** 5-10 people, balance pass, itch.io build | Success metrics below |
+| [5](milestones/m5-art-rework.md) | 1 | **Art rework:** realistic props and terrain, prop variety, resource and build stages, gear for armless creatures, UI pass (queue, generated icons, cursors), animation pass, the old art gone from every scene | Dominic signs off the look in the game view and the Race Lab |
+| [6](milestones/m6-foundations.md) | 1 | **Foundations:** resources from data (stone from rock outcrops), movement classes (ground, amphibious, flying), placement rules per race and building, teams, data-driven ages and tech, per-race farms | Stone is mined, flyers cross water, frogs farm the swamp, all from data; the tests prove it |
+| [7](milestones/m7-progression.md) | 1 | **Progression:** Barracks, age-up, Sharp Sticks research, tier-2 units, Watchtower, fixed-point cost table | Age-up lands at minutes 4-6 |
+| [8](milestones/m8-ai-match-flow.md) | 1 | **AI + match flow:** build order, waves, tag-aware counter-picking, race select screen, win/lose | AI beats a passive player and loses to a decent one |
+| [9](milestones/m9-fog-juice.md) | 1 | **Fog + juice:** fog, minimap, SFX, hit flash, death poses, tuning | A full match runs 9-12 minutes |
+| [10](milestones/m10-playtest-balance.md) | 1 | **Playtest + balance:** 5-10 people, balance pass, itch.io build | Success metrics below |
 | [-](milestones/art-pass.md) | (parallel) | **Art pass:** atlas + palette shader replaces vector shapes; classic 2D isometric RTS look | 200 units at 60 fps; draw calls verified |
-| [-](milestones/art-ui-track.md) | (parallel) | **Art and UI track:** stages A1-A5, one alongside each of milestones 4-8 (props, UI, icons, cursors, animation, new buildings, menus, juice) | Each stage done before its milestone closes |
+| [-](milestones/art-ui-track.md) | (parallel) | **Art and UI track:** stage A1 is milestone 5; A2-A5 run alongside milestones 7-10 (props, UI, icons, cursors, animation, new buildings, menus, juice) | Each stage done before its milestone closes |
 | [-](milestones/networking.md) | +2-3 | **Networking:** see `backlog.md` | Two machines on different NATs finish a match with no desync |
 
 ---

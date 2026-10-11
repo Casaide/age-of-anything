@@ -14,7 +14,7 @@ Rules for every stage:
   only in a demo scene.
 - Pictures go in the archive as you go.
 
-## A1, with milestone 4 (combat)
+## A1 = milestone 5 (art rework)
 - [x] Realistic static props: bug bushes, rocks; no outline on props
 - [ ] Variety: more baked variants of each static prop (bushes, rocks, reeds, doodads), picked per
   tile, so neighbours differ
@@ -30,22 +30,22 @@ Rules for every stage:
 - Combat visuals are built with milestone 4 itself, not in this track: attack lunge, projectiles,
   hit flash, death poses, unit card.
 
-## A2, with milestone 5 (progression)
+## A2, with milestone 7 (progression)
 - Barracks, Stable and Watchtower for every architecture (thatch, junk, stone, tent).
 - Age-up shown on buildings: an upgraded look for age 2.
 - Research and age-up buttons with generated icons; a building panel with icons.
 
-## A3, with milestone 6 (AI and match flow)
+## A3, with milestone 8 (AI and match flow)
 - Race select screen and main menu. The UI picks up the race's culture (colours, frames, small
   ornaments), as noted in the backlog.
 - Race cards with portraits; win and lose screens.
 
-## A4, with milestone 7 (fog and juice)
+## A4, with milestone 9 (fog and juice)
 - The fog of war look; minimap art.
 - Juice: dust when walking, impact sparks, falling arrows, polished hit flash and death poses.
 - Trees and forests if wood moves beyond reeds; placeholder sound effects.
 
-## A5, with milestone 8 (playtest)
+## A5, with milestone 10 (playtest)
 - The full art review with Dominic (noted in `m4-combat.md`), then fixes.
 - Spooky and forest architecture.
 - The rest of `backlog.md` §9 (art review leftovers).

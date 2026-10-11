@@ -1,4 +1,4 @@
-# Milestone 8: Playtest + balance
+# Milestone 10: Playtest + balance
 
 **Status:** planned
 **Exit criterion:** The success metrics in `../mvp-plan.md` §4.
