@@ -13,6 +13,7 @@ const ArtKit := preload("res://src/view/art/art_kit.gd")
 const UnitView := preload("res://src/unit_view.gd")
 const Icons := preload("res://src/view/art/icons.gd")
 const Audio := preload("res://src/view/audio.gd")
+const UiScale := preload("res://src/view/ui_scale.gd")
 
 const PRESETS := ["angry swamp frogs with reed spears", "sewer rats with cheese hammers", "centaur romans",
 	"greek hoplites", "spooky beetle knights", "steppe horse archers", "forest spiders"]
@@ -46,6 +47,9 @@ var level_pick: OptionButton
 
 
 func _ready() -> void:
+	UiScale.fit_window(get_window())   # big enough to read on a Retina screen (src/view/ui_scale.gd)
+	get_window().size_changed.connect(_rescale)
+	_rescale()
 	set_anchors_preset(Control.PRESET_FULL_RECT)
 	lib = DataLib.new()
 	gen = Generator.new(lib)
@@ -71,6 +75,11 @@ func _ready() -> void:
 	var audio := Audio.of(get_tree())
 	audio.ambience(false)
 	audio.music("lobby")
+
+
+## The lobby is all UI: the whole window scales to the screen's density.
+func _rescale() -> void:
+	get_window().content_scale_factor = UiScale.factor(get_window(), UiScale.MENU_NEEDS)
 
 
 func _process(_delta: float) -> void:
