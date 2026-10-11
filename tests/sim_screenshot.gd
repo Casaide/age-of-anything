@@ -46,6 +46,8 @@ func _initialize() -> void:
 		view.camera.zoom = Vector2(z, z)
 		view._on_zoom()
 		view.camera.look_at_point(Iso.to_screen(int(scene.get_slice(":", 1)) * 1000, int(scene.get_slice(":", 2)) * 1000))
+	elif scene == "pause":
+		view._toggle_pause_menu()
 	elif scene == "walls":
 		await _walls(view)
 	elif scene.begins_with("tip"):

@@ -57,7 +57,7 @@ move it to `docs/backlog.md` rather than deleting it.
 - **Closed (milestone 10): playtest and balance.** `tests/balance.gd` (equal-cost round robin),
   balance pass 1, `docs/playtest.md`, a match log. Testers, the export build, the Linux check and
   price-by-simulation moved to the backlog.
-- **In progress (milestone 11): cleanup.** UI, UX and art polish from Dominic's list; exit check is a
+- **In progress (milestone 11): cleanup.** UI, UX and art polish from Dominic's list, the lobby (`scenes/match_setup.tscn`), races; exit check is a
   deep review of UI, UX and art. See `docs/milestones/m11-cleanup.md`.
 
 ## Layout

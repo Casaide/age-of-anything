@@ -115,7 +115,11 @@ tests green. Anything cut moves to `../backlog.md`.
       and white dots); boulders with lichen, cracks, pebbles and tufts, and outcrops varied (big
       stones inside, small at the edge, no grid); farms as dense leafy rows; mineable stone and
       gold distinct from blocking rock
-- [ ] 6. Lobby
+- [x] 6. Lobby (2026-10-11): a title menu (battle the AI, Race Lab, quit); the battle setup with a
+      banner per side (race name, the army baked and idling on grass, prompt with reroll and
+      presets, roster with costs, the generator's notes), a map card drawn from the map's data,
+      Start; in battle Esc pauses with resume / surrender / back to the menu, and the menu comes
+      up when a match ends. Maps got player names (Reed Meadow, The Pass)
 - [ ] 7. Races: 8 facings, capybara, rat buildings by age, rearing beetles, humans in Blender, spiders, centaurs, ponies, Egypt/Han/Aztec, buildings by age
 - [ ] 8. Animals: hunt and herd
 - [ ] 9. Fable review, fixes
