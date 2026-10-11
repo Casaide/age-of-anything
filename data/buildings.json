@@ -24,6 +24,17 @@
   }
  },
  "_age_looks_doc": "per architecture and building type, the model it takes from an age on, e.g. {\"junk\": {\"town_center\": {\"3\": \"concept_junk_tc_pride\"}}}: a culture's buildings grow with the ages. Empty until Dominic picks (concept rounds RB3 and on)",
+ "scale": {
+  "junk": {
+   "house": 0.72,
+   "barracks": 0.8
+  }
+ },
+ "_scale_doc": "a culture's own size for a building type (Dominic: the rats' house and barracks, smaller, D-090)",
+ "variants": {
+  "house": 4
+ },
+ "_variants_doc": "how many looks a type bakes (turned a quarter round, nudged in size); each building picks one, like rocks",
  "buildings": {
   "archery_range": {
    "name": "Archery Range",

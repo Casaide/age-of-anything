@@ -463,3 +463,10 @@ RB3 "pride" concept: at the top age the rats' hall gains a porch of stacked oil 
 cut from a cracked dinner plate and a forecourt of broken crockery, copying the Romans (the
 psychology rule). Buildings can now change look per age as data (`age_looks` in buildings.json);
 this is the first. The rest of RB3 (houses, barracks) still waits on his picks.
+
+**D-090, 2026-10-11: The rats keep their tin-can house and junk barracks, smaller; houses come in
+variants.** Dominic preferred the originals to the RB3 options, "just need down scaling", and
+found cans and sardine tins as whole buildings push the scale too far into the unreal. A culture
+can now size a building type in data (`scale` in buildings.json: the rats' house 0.72, barracks
+0.8), and houses bake in four variants (a quarter turn each, nudged in size) that each building
+picks from by where it stands, like the rocks. The RB3 town-centre pride step stays (D-089).
