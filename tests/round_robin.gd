@@ -74,7 +74,7 @@ static func fight(rules: Dictionary, age: int, a: Array, b: Array) -> int:
 		var n := maxi(1, (BUDGET + cost / 2) / cost)
 		value.append(cost)
 		w.issue(p, Commands.SPAWN, {"slot": slot, "count": n, "x": FROM[p][0], "y": FROM[p][1]})
-	while w.units.count() == 0:
+	while _left(w).has(0):   # animals are units too: wait for both armies
 		w.step()
 	for p in 2:
 		var ids := []
@@ -85,9 +85,7 @@ static func fight(rules: Dictionary, age: int, a: Array, b: Array) -> int:
 	var left := [0, 0]
 	while w.tick < LIMIT:
 		w.step()
-		left = [0, 0]
-		for i in w.units.count():
-			left[w.units.owner[i]] += 1
+		left = _left(w)
 		if left[0] == 0 or left[1] == 0:
 			break
 	var va: int = left[0] * value[0]
@@ -114,3 +112,12 @@ static func recipe_at(race: Dictionary, slot: String, age: int) -> Dictionary:
 		if int(l.age) <= age:
 			step = l
 	return step
+
+
+## Soldiers left per player (animals don't count, even a sheep a side has claimed).
+static func _left(w) -> Array:
+	var left := [0, 0]
+	for i in w.units.count():
+		if w.units.owner[i] < 2 and not w.types[w.units.kind[i]].has("animal"):
+			left[w.units.owner[i]] += 1
+	return left

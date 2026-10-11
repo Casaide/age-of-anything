@@ -5,6 +5,7 @@ extends SceneTree
 ## Scenes: "armies" (both test armies march at each other; the default) or
 ## "opening:<tick>" (both sides autoplay their economy; shot at that tick, over player 1's base),
 ## or "battle:<tick>" (both test armies attack-move at each other; shot mid-fight at that tick).
+## "tower" (side 1's town with enemy spears by its Watchtower; shot with arrows in the air).
 ## "look:<x>:<y>[:zoom]" frames a tile with the fog lifted (for art checks).
 ## Prefix any scene with "ai-" to see it as in a match against the AI.
 
@@ -34,6 +35,8 @@ func _initialize() -> void:
 	view.camera.set_process_unhandled_input(false)
 	if scene.begins_with("opening"):
 		await _opening(view, int(scene.get_slice(":", 1)))
+	elif scene == "tower":
+		await _tower(view)
 	elif scene.begins_with("town"):
 		await _town(view, int(scene.get_slice(":", 1)))
 	elif scene.begins_with("ageup"):
@@ -303,6 +306,23 @@ func _town(view, side: int) -> void:
 	view.camera.zoom = Vector2(3.0, 3.0)
 	view._on_zoom()
 	view.camera.look_at_point(Iso.to_screen(s[0] + 1000, s[1] + 1500))
+
+
+## Side 1's town, and a few of side 0's spears by its Watchtower: shot once the tower's
+## arrows are in the air.
+func _tower(view) -> void:
+	await _town(view, 1)
+	var w = view.world
+	var s: Array = w.map.starts[1]
+	view.reveal = true
+	w.issue(0, load("res://src/sim/commands.gd").SPAWN, {"slot": "spear", "count": 4, "x": s[0] + 7000, "y": s[1] + 6000})
+	for f in 600:
+		await process_frame
+		if view.fx.shots.size() > 0:
+			break
+	for f in 4:
+		await process_frame
+	view.camera.look_at_point(Iso.to_screen(s[0] + 4500, s[1] + 4500))
 
 
 func _opening(view, at_tick: int) -> void:
