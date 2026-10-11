@@ -197,6 +197,16 @@ How a culture's buildings grow through the ages comes from how its people feel a
 halls, with scrap and weeds round its base (`junk_town_center_small`, now in play). Human
 buildings always read biggest; creature buildings sit lower and smaller on the same footprint.
 
+## Race by race (Dominic, 2026-10-11: "we can go through each race one by one")
+Each race gets its own pass through the loop (brief, options, pick, build): body, head and gear
+by age, its large unit, its buildings by age, its psychology. Known items:
+- **Frogs:** done first. The crouched leaper is in play and hops (creature `gait: hop`); the
+  bullfrog is kept for another unit or an upgrade.
+- **Rats:** the large unit is today's rat scaled up. It should be its own design: a different
+  rodent, or a different build (Dominic). Their town centre is in (smaller, plinthless);
+  the rest of their buildings follow, with oil-drum columns by the top age.
+- **Humans, beetles, spiders, centaurs, ponies:** to do, in the order Dominic picks.
+
 ## Questions for Dominic (original)
 1. Is a 1.5-3 day pipeline bake-off (R0) worth doing first?
 2. 8 facings, all baked, none mirrored?
