@@ -1074,6 +1074,144 @@ func concept_junk_tc_berm(team: Color) -> Dictionary:
 	return junk_town_center(team, 0.72, 24.0, true)
 
 
+# ---- RB3: the rats' buildings by age (concepts for Dominic to pick; not in play)
+
+func _drum(body: Node3D, at: Vector3, r: float, h: float, paint: Color) -> void:
+	var m := Materials.flat(paint, 0.7, 0.3)
+	body.add_child(cyl(r, r, h, m, at + Vector3(0, h / 2, 0), Vector3.ZERO, 18))
+	for y in [0.15, 0.5, 0.85]:
+		body.add_child(ring(r - 0.01, r + 0.025, Materials.flat(paint.darkened(0.35), 0.6, 0.4), at + Vector3(0, h * y, 0)))
+	body.add_child(cyl(r * 0.98, r * 0.98, 0.02, Materials.flat(paint.darkened(0.2), 0.6, 0.3), at + Vector3(0, h + 0.01, 0), Vector3.ZERO, 18))
+
+
+## House A: a can on its side, half sunk, the door in its open end.
+func concept_rat_house_can_side(team: Color) -> Dictionary:
+	var body := Node3D.new()
+	var tin := mats.get_mat("tin")
+	body.add_child(cyl(0.5, 0.5, 1.1, tin, Vector3(0, 0.3, 0), Vector3(90, 30, 0), 24))
+	for k in 3:
+		body.add_child(ring(0.49, 0.54, Materials.flat(Color("#9a9c96"), 0.5, 0.5), Vector3(0, 0.3, 0) + Vector3(sin(deg_to_rad(30)), 0, cos(deg_to_rad(30))) * (-0.35 + k * 0.35), Vector3(90, 30, 0)))
+	var end := Vector3(sin(deg_to_rad(30)), 0, cos(deg_to_rad(30))) * 0.56 + Vector3(0, 0.3, 0)
+	body.add_child(cyl(0.32, 0.32, 0.04, Materials.flat(Color("#1e1612"), 0.9), end, Vector3(90, 30, 0), 18))   # the doorway
+	body.add_child(box(Vector3(0.5, 0.04, 0.3), cloth(team), end + Vector3(0.1, -0.2, 0.15), Vector3(0, 30, 0)))   # a team mat
+	body.add_child(cyl(0.05, 0.05, 0.35, Materials.flat(Color("#4a4a48"), 0.5, 0.6), Vector3(-0.2, 0.85, -0.2), Vector3.ZERO, 8))
+	_grass_tufts(body, Vector3(0, 0, 0), 0.6, 8)
+	return {"body": body, "anchor": Vector3.ZERO, "smoke": Vector3(-0.2, 1.05, -0.2), "lights": [], "lantern": Vector3(0.3, 0.4, 0.5), "team": team}
+
+
+## House B: two small cans stacked, a ladder up to the top one.
+func concept_rat_house_stack(team: Color) -> Dictionary:
+	var body := Node3D.new()
+	var tin := mats.get_mat("tin")
+	body.add_child(cyl(0.48, 0.48, 0.62, tin, Vector3(0, 0.31, 0), Vector3.ZERO, 24))
+	body.add_child(cyl(0.38, 0.38, 0.5, Materials.flat(Color("#b8a080"), 0.6, 0.5), Vector3(0.05, 0.87, -0.03), Vector3(0, 0, 3), 24))   # a smaller, rustier can on top
+	body.add_child(box(Vector3(0.3, 0.42, 0.05), Materials.flat(Color("#1e1612"), 0.9), Vector3(0.1, 0.22, 0.47), Vector3(0, 10, 0)))
+	var wood := mats.get_mat("wood")
+	for x in [-0.08, 0.08]:
+		body.add_child(beam(Vector3(0.45 + x, 0, 0.3), Vector3(0.3 + x, 0.9, 0.28), 0.015, wood, 4))
+	for k in 4:
+		body.add_child(box(Vector3(0.2, 0.02, 0.02), wood, Vector3(0.43 - k * 0.04, 0.2 + k * 0.2, 0.3)))
+	body.add_child(box(Vector3(0.22, 0.08, 0.02), cloth(team), Vector3(-0.2, 0.95, 0.35)))
+	return {"body": body, "anchor": Vector3.ZERO, "smoke": Vector3(0, 1.2, 0), "lights": [], "lantern": Vector3(0.3, 0.5, 0.5), "team": team}
+
+
+## House C: a cotton reel turned into a round house, thread still wound round it.
+func concept_rat_house_reel(team: Color) -> Dictionary:
+	var body := Node3D.new()
+	var wood := Materials.flat(Color("#c89a60"), 0.8)
+	body.add_child(cyl(0.62, 0.62, 0.1, wood, Vector3(0, 0.05, 0), Vector3.ZERO, 24))
+	body.add_child(cyl(0.62, 0.62, 0.1, wood, Vector3(0, 0.95, 0), Vector3.ZERO, 24))
+	body.add_child(cyl(0.48, 0.48, 0.8, Materials.flat(Color("#d8d0c0"), 0.9), Vector3(0, 0.5, 0), Vector3.ZERO, 24))   # the wound thread
+	for y in range(6):
+		body.add_child(ring(0.47, 0.5, Materials.flat(Color("#c0b8a8"), 0.9), Vector3(0, 0.17 + y * 0.13, 0)))
+	body.add_child(box(Vector3(0.28, 0.45, 0.05), Materials.flat(Color("#1e1612"), 0.9), Vector3(0, 0.33, 0.48)))
+	body.add_child(box(Vector3(0.34, 0.06, 0.04), cloth(team), Vector3(0, 0.6, 0.5)))
+	body.add_child(cyl(0.12, 0.12, 0.06, Materials.flat(Color("#2a1e14"), 0.9), Vector3(0, 1.02, 0), Vector3.ZERO, 12))   # the spindle hole
+	return {"body": body, "anchor": Vector3.ZERO, "smoke": Vector3(0, 1.1, 0), "lights": [], "lantern": Vector3(0.3, 0.45, 0.5), "team": team}
+
+
+## Age 3, the pride step: the town hall gets a porch on oil-drum columns and a pediment cut
+## from a cracked dinner plate, copying the Romans' temples; broken crockery paves the front.
+func concept_junk_tc_pride(team: Color) -> Dictionary:
+	var spec := junk_town_center_small(team)
+	var root: Node3D = spec.body
+	var paint := [Color("#8a3a2a"), Color("#3a5a7a"), Color("#8a3a2a"), Color("#6a6a5a")]
+	for k in 4:   # four columns, each two drums stacked
+		var at := Vector3(-0.75 + k * 0.5, 0, 1.05)
+		_drum(root, at, 0.13, 0.38, paint[k])
+		_drum(root, at + Vector3(0, 0.38, 0), 0.13, 0.38, paint[(k + 1) % 4])
+	root.add_child(box(Vector3(1.85, 0.07, 0.4), mats.get_mat("wood"), Vector3(0, 0.8, 1.05)))   # the beam across them
+	var plate := slab_tri(Vector2(-0.95, 0), Vector2(0.95, 0), Vector2(0, 0.42), 0.04, Materials.flat(Color("#f0ece0"), 0.4))
+	plate.position = Vector3(0, 0.84, 1.15)
+	root.add_child(plate)
+	root.add_child(box(Vector3(0.02, 0.36, 0.05), Materials.flat(Color("#5a5048"), 0.8), Vector3(0.18, 0.98, 1.18), Vector3(0, 0, 25)))   # the crack
+	root.add_child(ring(0.12, 0.15, Materials.flat(Color("#4a6aa0"), 0.5), Vector3(0, 1.0, 1.19), Vector3(90, 0, 0)))   # the plate's blue rim pattern
+	rng.seed = 71
+	for k in 14:   # the crockery forecourt
+		var p := Vector3(rng.randf_range(-0.9, 0.9), 0.015, rng.randf_range(1.3, 1.6))
+		root.add_child(box(Vector3(rng.randf_range(0.12, 0.22), 0.02, rng.randf_range(0.1, 0.18)), Materials.flat(Color("#e8e4d8") if k % 3 else Color("#7a9ac0"), 0.4), p, Vector3(0, rng.randf_range(0, 90), 0)))
+	return spec
+
+
+## Barracks A: a sardine tin as the hall, its lid rolled back on the key as the roof's curl.
+func concept_rat_barracks_sardine(team: Color) -> Dictionary:
+	var body := Node3D.new()
+	var tin := Materials.flat(Color("#c8ccd0"), 0.35, 0.8)
+	var gold := Materials.flat(Color("#c8a040"), 0.5, 0.5)
+	body.add_child(box(Vector3(2.2, 0.62, 1.3), tin, Vector3(0, 0.31, -0.4)))
+	body.add_child(box(Vector3(2.24, 0.12, 1.34), gold, Vector3(0, 0.3, -0.4)))   # the printed label band
+	body.add_child(cyl(0.2, 0.2, 1.3, tin, Vector3(-1.1, 0.82, -0.4), Vector3(90, 0, 0), 18))   # the lid rolled up at one end
+	body.add_child(box(Vector3(1.5, 0.04, 1.3), tin, Vector3(-0.35, 0.95, -0.4), Vector3(0, 0, -14)))   # the lid peeled back over it
+	body.add_child(box(Vector3(0.12, 0.3, 0.3), Materials.flat(Color("#6a6c66"), 0.4, 0.7), Vector3(-1.3, 0.82, -0.4)))   # the key
+	body.add_child(box(Vector3(0.5, 0.48, 0.05), cloth(team), Vector3(0.4, 0.26, 0.27)))   # the door curtain
+	for k in 5:
+		body.add_child(cyl(0.025, 0.03, 0.26, mats.get_mat("wood"), Vector3(-1.0 + k * 0.5, 0.13, 1.1), Vector3.ZERO, 6))
+	body.add_child(box(Vector3(2.1, 0.03, 0.03), mats.get_mat("wood"), Vector3(0, 0.22, 1.1)))
+	body.add_child(cyl(0.18, 0.18, 0.06, mats.get_mat("thatch"), Vector3(0.7, 0.32, 0.7), Vector3(80, 0, 0), 18))   # a cork target
+	return {"body": body, "anchor": Vector3.ZERO, "lights": [], "lantern": Vector3(0.4, 0.55, 0.3), "team": team}
+
+
+## Barracks B: a fort of stacked crates round a yard, a mousetrap as the drill frame.
+func concept_rat_barracks_crates(team: Color) -> Dictionary:
+	var root := Node3D.new()
+	var body := Node3D.new()
+	body.scale = Vector3.ONE * 1.6   # crates big enough to read as a fort's walls
+	root.add_child(body)
+	rng.seed = 72
+	for k in 4:   # the back wall, two crates high, and the side walls
+		crate(Vector3(-0.6 + k * 0.4, 0, -0.55), body, rng.randf_range(-6, 6))
+		crate(Vector3(-0.6 + k * 0.4, 0.3, -0.55), body, rng.randf_range(-8, 8))
+	for k in 2:
+		crate(Vector3(-0.68, 0, -0.15 + k * 0.4), body, rng.randf_range(-6, 6))
+		crate(Vector3(0.68, 0, -0.15 + k * 0.4), body, rng.randf_range(-6, 6))
+	var wood := mats.get_mat("wood")
+	body.add_child(box(Vector3(0.7, 0.04, 0.4), wood, Vector3(0, 0.03, 0.3)))   # the mousetrap's base
+	body.add_child(beam(Vector3(-0.3, 0.06, 0.3), Vector3(0.3, 0.06, 0.3), 0.02, Materials.flat(Color("#8a8c88"), 0.4, 0.7), 6))
+	body.add_child(beam(Vector3(-0.3, 0.06, 0.3), Vector3(-0.25, 0.4, 0.2), 0.015, Materials.flat(Color("#8a8c88"), 0.4, 0.7), 6))   # its bar, sprung up
+	body.add_child(box(Vector3(0.36, 0.2, 0.03), cloth(team), Vector3(-0.2, 0.5, -0.38)))   # a team rag hung on the wall
+	return {"body": root, "anchor": Vector3.ZERO, "lights": [], "lantern": Vector3(0, 0.9, -0.6), "team": team}
+
+
+## Barracks C: a drainpipe half sunk in the ground as a tunnel hall, a plank front with a door.
+func concept_rat_barracks_drain(team: Color) -> Dictionary:
+	var body := Node3D.new()
+	var clay := Materials.flat(Color("#9a5a3a"), 0.85)
+	body.add_child(cyl(0.7, 0.7, 2.2, clay, Vector3(0, 0.2, -0.3), Vector3(0, 0, 90), 24))
+	for x in [-0.9, 0.0, 0.9]:
+		body.add_child(ring(0.69, 0.76, Materials.flat(Color("#7a4228"), 0.9), Vector3(x, 0.2, -0.3), Vector3(0, 0, 90)))
+	body.add_child(cyl(0.6, 0.6, 0.04, Materials.flat(Color("#1e1612"), 0.9), Vector3(1.11, 0.25, -0.3), Vector3(0, 0, 90), 20))   # its dark mouth
+	var wood := mats.get_mat("wood")
+	for k in 5:
+		body.add_child(box(Vector3(0.05, 0.6, 0.24), wood, Vector3(1.13, 0.3, -0.75 + k * 0.22)))   # planks across the mouth
+	body.add_child(box(Vector3(0.06, 0.4, 0.3), Materials.flat(Color("#2a1e14"), 0.9), Vector3(1.16, 0.2, -0.3)))
+	body.add_child(box(Vector3(0.04, 0.12, 0.34), cloth(team), Vector3(1.18, 0.47, -0.3)))
+	var earth := mats.get_mat("mud")
+	for side in [-1, 1]:   # earth banked up along both sides: the pipe sits sunk in the ground
+		body.add_child(ball(1.0, earth, Vector3(0, 0.0, -0.3 + side * 0.62), Vector3(1.15, 0.32, 0.38)))
+	_grass_tufts(body, Vector3(0, 0.25, -0.3), 1.0, 10)
+	return {"body": body, "anchor": Vector3.ZERO, "lights": [], "lantern": Vector3(1.2, 0.5, 0.1), "team": team}
+
+
 ## The rat Town Centre in play (Dominic's pick, 2026-10-11): the no-plinth hall, smaller than
 ## the human halls in width, depth and height, with scrap and weeds low round its base so it
 ## sinks into the ground (D-081).
