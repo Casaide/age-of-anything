@@ -319,6 +319,27 @@ func quarry(seed_value: int, stage := 0, ore := "stone") -> Node3D:
 				var local := Vector3(cos(a) * 0.68, h, sin(a) * 0.68)
 				nug.position = mi.position + (mi.basis * local)
 				n.add_child(nug)
+	if not gold and stage < 3:   # worked, not wild (Fable): a freshly split pale face on the big rock, cut blocks stacked in front
+		var big: Array = rocks[0]
+		var br: float = big[1] * (1.0 - 0.25 * stage)
+		var face := MeshInstance3D.new()
+		var fm := BoxMesh.new()
+		fm.size = Vector3(0.02, br * 0.9, br * 1.1)
+		face.mesh = fm
+		face.material_override = um.surf("rock", Color(1.0, 0.97, 0.9), 0.4)
+		face.position = big[0] + Vector3(br * 0.55, br * 0.75, br * 0.45)
+		face.rotation_degrees = Vector3(0, 30, -50)   # tipped up to the light, facing the viewer
+		n.add_child(face)
+		var blocks := [Vector3(0.36, 0.05, 0.3), Vector3(0.48, 0.05, 0.2), Vector3(0.42, 0.14, 0.26)]
+		for b in 3 - stage:
+			var blk := MeshInstance3D.new()
+			var bm := BoxMesh.new()
+			bm.size = Vector3(0.13, 0.09, 0.09)
+			blk.mesh = bm
+			blk.material_override = um.surf("rock", tints[b % tints.size()], 0.6)
+			blk.position = blocks[b]
+			blk.rotation_degrees = Vector3(0, 20 + b * 25, 0)
+			n.add_child(blk)
 	for k in 9 - stage:   # chips and rubble
 		var a := rng.randf() * TAU
 		var d := rng.randf_range(0.15, 0.48)
