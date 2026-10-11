@@ -33,6 +33,7 @@ const UiScale := preload("res://src/view/ui_scale.gd")
 const Audio := preload("res://src/view/audio.gd")
 const Fog := preload("res://src/sim/fog.gd")
 const Cursors := preload("res://src/view/art/cursors.gd")
+const OrderMarks := preload("res://src/view/order_marks.gd")
 const Icons := preload("res://src/view/art/icons.gd")
 const Commands := preload("res://src/sim/commands.gd")
 const SimMap := preload("res://src/sim/sim_map.gd")
@@ -126,6 +127,7 @@ var placing := ""           # building type being placed, or ""
 var wall_from := Vector2i(-1, -1)   # where a wall drag started (a cell), while placing walls
 var flags: Array = []       # [{pos, t}] recent move targets
 var rally_flag: Sprite2D    # the selected building's rally point (a baked prop), or null
+var order_marks: OrderMarks # selected units' orders, now and shift-queued, as routes of waypoints
 var playback := {}          # the replay being played, or empty when live
 var checked := 0            # world.hashes entries already compared
 var desync := -1
@@ -366,6 +368,9 @@ func _attach(w: World, end_tick := -1) -> void:
 	if rally_flag != null:
 		rally_flag.queue_free()
 		rally_flag = null
+	if order_marks != null:
+		order_marks.clear()
+	order_marks = OrderMarks.new(self)
 	fx.clear()
 	built_shown = null
 	res_cells.clear()
@@ -977,6 +982,8 @@ func smart_order(pos: Vector2) -> void:
 		else:
 			world.issue(p, Commands.MOVE, {"ids": ids, "x": m.x, "y": m.y, "queue": q})
 	flags.append({"pos": pos, "t": 1.0})
+	if q == 1:
+		order_marks.flash(groups[active])   # the route shows a while, so you see where it went in the queue
 	if not groups[active].is_empty():
 		_say("ack")   # the order's been heard
 
@@ -1273,6 +1280,8 @@ func place_at(pos: Vector2, keep := false) -> void:
 		return
 	# Shift both keeps placing and queues: shift-place two houses and a worker builds both in turn.
 	world.issue(active, Commands.BUILD, {"ids": workers, "building": placing, "cx": c.x, "cy": c.y, "queue": 1 if keep else 0})
+	if keep:
+		order_marks.flash(workers)
 	if not keep:
 		placing = ""
 
@@ -1294,6 +1303,7 @@ func place_wall(a: Vector2i, b: Vector2i, keep := false) -> void:
 	for k in cells.size():
 		world.issue(active, Commands.BUILD, {"ids": workers, "building": placing, "cx": cells[k].x, "cy": cells[k].y,
 			"queue": 1 if keep or k > 0 else 0})
+	order_marks.flash(workers)
 	if not keep:
 		placing = ""
 
@@ -1320,6 +1330,7 @@ func _process(delta: float) -> void:
 	_sync_buildings()
 	_sync_resources()
 	_sync_rally()
+	order_marks.update()
 	_sync_fog()
 	_check_replay()
 	for f in flags:
@@ -2219,9 +2230,7 @@ func _draw_marks() -> void:
 		marks.draw_arc(Vector2.ZERO, u.radius[i] * Iso.RADIUS_PX, 0.0, TAU, 24, Color(0, 0, 0, 0.6), 3.5 / camera.zoom.x)   # a dark edge...
 		marks.draw_arc(Vector2.ZERO, u.radius[i] * Iso.RADIUS_PX, 0.0, TAU, 24, RING, 2.0 / camera.zoom.x)   # ...under a bright ring (Fable: 1.5 px was too thin)
 		marks.draw_set_transform(Vector2.ZERO)
-		if u.moving[i] == 1:
-			marks.draw_line(view.position, Iso.to_screen(u.wx[i], u.wy[i]), Color(RING, 0.35), 1.0 / camera.zoom.x)
-			marks.draw_line(Iso.to_screen(u.wx[i], u.wy[i]), Iso.to_screen(u.tx[i], u.ty[i]), Color(RING, 0.12), 1.0 / camera.zoom.x)
+	order_marks.draw(marks)   # what they're doing and what's queued, as routes
 	for f in flags:
 		marks.draw_set_transform(f.pos, 0.0, Vector2(1.0, 0.5))
 		marks.draw_circle(Vector2.ZERO, 10.0 * f.t, Color(RING, f.t))
