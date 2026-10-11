@@ -67,6 +67,7 @@ func _initialize() -> void:
 	baker.art_scale = art
 	baker.models = Concepts.new()
 	baker.azimuth = azimuth
+	baker.facings = 1   # concepts are judged in the classic view
 	baker.bands = int(settings.get("bands", 4))   # as in the game by default (ArtKit.UNIT_BANDS)
 	baker.elevation = settings.get("el", PartBaker.ELEVATION)
 	baker.outlined = settings.get("outline", 1.0) > 0.5

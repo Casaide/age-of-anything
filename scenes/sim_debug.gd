@@ -718,7 +718,7 @@ func _play_events() -> void:
 			var to := _event_target_pos(e.to)
 			if a == null or to == Vector2.INF:
 				continue
-			a.face(to.x - a.position.x)
+			a.face_vec(to - a.position)
 			var lands := 0.0
 			if e.ranged:
 				var i := world.units.index_of(e.by)
@@ -991,12 +991,12 @@ func _sync_views() -> void:
 		view.job = _job(i)
 		if world.types[u.kind[i]].worker:
 			view.set_tool(lib, _tool_for(i))
-		if absi(dx - dy) > 4:
-			view.face(dx - dy)   # screen x direction
+		if absi(dx) + absi(dy) > 4:
+			view.face_vec(Iso.to_screen(dx, dy))   # the way it walks, on screen (8 facings)
 		elif view.job != "":
 			var at := _work_point(i)   # face what it's working on
 			if absf(at.x - view.position.x) > 1.0:
-				view.face(at.x - view.position.x)
+				view.face_vec(at - view.position)
 	for id in views.keys():
 		if not alive.has(id):
 			views[id].queue_free()

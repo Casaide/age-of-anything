@@ -47,6 +47,11 @@ const STEP_FPS := 8.0
 const SHADOW_SHAPES := [{"t": "ellipse", "c": [3, 1], "r": [15, 4.5], "ch": "shadow"}]
 const SHADOW_COLOURS := {"shadow": Color(0.06, 0.05, 0.03, 0.42)}
 var facing := 1.0
+var facing_k := 0         # which of the 8 baked facings it's drawn in (0: the classic three-quarter view)
+var _facing_body := ""    # the rig its facings are picked by (its body, or its mount's)
+var _built := []          # build()'s arguments, to rebuild in another facing
+const FACINGS := 8
+const FACING_HOLD := 0.12 # a new facing must fit this much better to take over (no flicker)
 
 # animation + wander state (cosmetic only, so a local RNG is fine here)
 var noise := RandomNumberGenerator.new()
@@ -61,6 +66,7 @@ var pause := 0.0
 
 
 func build(r: Dictionary, lib, team: Color, speed := 10) -> void:
+	_built = [r, lib, team, speed]
 	recipe = r
 	noise.seed = Rng.hash_string(JSON.stringify(r, "", true))
 	time = noise.randf() * 10.0
@@ -85,6 +91,7 @@ func build(r: Dictionary, lib, team: Color, speed := 10) -> void:
 		# A fused mount (a centaur's horse half) has its own body, without a neck.
 		var mount_body: String = mc.get("fused_body", mc.body) if m.fused else mc.body
 		var mount_rig := _make_rig(lib, mount_body, "" if m.fused else mc.head, mount_colours, bob, true)
+		_facing_body = mount_body
 		for slot in m.parts:
 			_attach(lib, mount_rig, slot, m.parts[slot], mount_colours)
 		var seat := Node2D.new()
@@ -108,6 +115,7 @@ func build(r: Dictionary, lib, team: Color, speed := 10) -> void:
 		flying = m.parts.has("back") and "flying" in lib.part(m.parts.back).tags
 	else:
 		var rig := _make_rig(lib, r.body, r.head, colours, bob, true, r.parts.get("hand_r", ""))
+		_facing_body = r.body + _hold_suffix
 		for slot in r.parts:
 			_attach(lib, rig, slot, r.parts[slot], colours)
 	var rides_unwinged: bool = r.has("mount") and not r.mount.fused
@@ -181,7 +189,8 @@ func _make_rig(lib, body_id: String, head_id: String, colours: Dictionary, paren
 	var root := Node2D.new()
 	parent.add_child(root)
 	# Baked parts from hand-built models bring their own sockets (projected by the bake camera).
-	var rig: Dictionary = PartShape.rigs.get(body_id + _hold_suffix, {})
+	var rig: Dictionary = PartShape.rigs.get(body_id + _hold_suffix + PartShape.facing_suffix(facing_k),
+		PartShape.rigs.get(body_id + _hold_suffix, {}))
 	var sockets := {}
 	for k in body.sockets:
 		sockets[k] = PartShape.v2(body.sockets[k])
@@ -195,6 +204,7 @@ func _make_rig(lib, body_id: String, head_id: String, colours: Dictionary, paren
 				continue   # a riding creature's far legs are hidden behind its mount
 			var leg := _shape()
 			leg.part_id = body.legs.part
+			leg.facing = facing_k
 			leg.setup(leg_part.shapes, colours)
 			leg.position = Vector2(float(a[0]), float(a[1]))
 			leg.set_meta("z", 1 if float(a[3]) > 0.0 else -2)
@@ -207,6 +217,7 @@ func _make_rig(lib, body_id: String, head_id: String, colours: Dictionary, paren
 
 	var body_node := _shape()
 	body_node.part_id = body_id + _hold_suffix
+	body_node.facing = facing_k
 	body_node.setup(body.shapes, colours)
 	root.add_child(body_node)
 	breathing.append(body_node)
@@ -214,9 +225,11 @@ func _make_rig(lib, body_id: String, head_id: String, colours: Dictionary, paren
 		# The body's near arm, drawn above torso armour and below what the hands hold.
 		var arm := _shape()
 		arm.part_id = body_id + _hold_suffix
+		arm.facing = facing_k
 		arm.front = true
 		arm.setup(body.shapes, colours)
-		arm.set_meta("z", 1.5)
+		# Over the body, unless this facing turns that side away (then behind it).
+		arm.set_meta("z", 1.5 if facing_k == 0 or float(rig.get("depth", {}).get("hand_r", 1.0)) >= -0.5 else -1.0)
 		root.add_child(arm)
 
 	var gear_scale := 1.0
@@ -224,17 +237,19 @@ func _make_rig(lib, body_id: String, head_id: String, colours: Dictionary, paren
 		var head: Dictionary = lib.part(head_id)
 		var head_node := _shape()
 		head_node.part_id = head_id
+		head_node.facing = facing_k
 		head_node.setup(head.shapes, colours)
 		head_node.position = sockets.head
 		head_node.set_meta("z", 2)
 		root.add_child(head_node)
 		self.head_node = head_node
-		var head_rig: Dictionary = PartShape.rigs.get(head_id, {})
+		var head_rig: Dictionary = PartShape.rigs.get(head_id + PartShape.facing_suffix(facing_k), PartShape.rigs.get(head_id, {}))
 		sockets["top"] = sockets.head + (head_rig.sockets.top if head_rig.has("sockets") else PartShape.v2(head.sockets.top))
 		gear_scale = float(head_rig.get("gear_scale", 1.0))
 
 	var torso_scale: Vector2 = rig.get("torso_scale", PartShape.v2(body.get("torso_scale", [1, 1])))
-	return {"root": root, "sockets": sockets, "torso_scale": torso_scale, "carry": rig.get("carry", ""), "gear_scale": gear_scale}
+	return {"root": root, "sockets": sockets, "torso_scale": torso_scale, "carry": rig.get("carry", ""), "gear_scale": gear_scale,
+		"depth": rig.get("depth", {})}
 
 
 func _attach(lib, rig: Dictionary, slot: String, part_id: String, colours: Dictionary) -> void:
@@ -249,6 +264,7 @@ func _attach(lib, rig: Dictionary, slot: String, part_id: String, colours: Dicti
 		return
 	var node := _shape()
 	node.part_id = part_id
+	node.facing = facing_k
 	node.setup(p.shapes, colours)
 	node.position = rig.sockets[socket]
 	if withers:
@@ -257,7 +273,13 @@ func _attach(lib, rig: Dictionary, slot: String, part_id: String, colours: Dicti
 		node.scale = Vector2.ONE * WITHERS_SCALE
 		node.set_meta("rest", WITHERS_TILT)
 		node.set_meta("rest_scale", WITHERS_SCALE)
-	node.set_meta("z", 0.5 if withers else Z_FOR_SLOT[slot])
+	var z: float = 0.5 if withers else Z_FOR_SLOT[slot]
+	if facing_k != 0 and slot in ["hand_l", "hand_r", "back"] and rig.depth.has(socket):
+		# In the other facings what's on the camera's side draws over the body, the rest under:
+		# a cape shows when it walks away, the far hand's shield goes behind.
+		var near: bool = float(rig.depth[socket]) >= -0.5
+		z = (1.6 if slot == "back" else absf(z)) if near else (-3.0 if slot == "back" else -absf(z))
+	node.set_meta("z", z)
 	if slot == "torso":
 		node.scale = rig.torso_scale
 	elif slot == "head_gear":
@@ -279,12 +301,63 @@ func _attach(lib, rig: Dictionary, slot: String, part_id: String, colours: Dicti
 
 
 func _face(dir: float) -> void:
-	facing = dir
+	facing = dir if facing_k == 0 else 1.0   # baked facings are never mirrored
 	visual.scale = Vector2(unit_scale * facing, unit_scale)
 
 
+## Face left or right on screen (a little towards the camera, like the classic view).
 func face(dir: float) -> void:
-	_face(1.0 if dir >= 0.0 else -1.0)
+	face_vec(Vector2(1.0 if dir >= 0.0 else -1.0, 0.35))
+
+
+## Face a direction on screen: the baked facing that fits it best, kept until another fits
+## clearly better. A body with no facings baked mirrors left and right instead.
+func face_vec(v: Vector2) -> void:
+	if v == Vector2.ZERO:
+		return
+	var rigs: Dictionary = PartShape.rigs
+	if _built.is_empty() or not rigs.has(_facing_body + PartShape.facing_suffix(1)):
+		_face(1.0 if v.x >= 0.0 else -1.0)
+		return
+	var want := v.normalized()
+	var best := facing_k
+	var best_fit := -2.0
+	var now_fit := -2.0
+	for k in FACINGS:
+		var rig: Dictionary = rigs.get(_facing_body + PartShape.facing_suffix(k), {})
+		if not rig.has("dir"):
+			continue
+		var fit: float = rig.dir.dot(want)
+		if k == facing_k:
+			now_fit = fit
+		if fit > best_fit:
+			best_fit = fit
+			best = k
+	if best != facing_k and best_fit > now_fit + FACING_HOLD:
+		facing_k = best
+		_rebuild()
+
+
+## Rebuild in the current facing, keeping where it is in its animations.
+func _rebuild() -> void:
+	var keep_time := time
+	var keep_phase := phase
+	var tool: String = weapon.part_id if weapon != null else ""
+	for c in get_children():
+		remove_child(c)
+		c.queue_free()
+	legs = []
+	breathing = []
+	weapon = null
+	head_node = null
+	back_node = null
+	flying = false
+	facing = 1.0
+	build(_built[0], _built[1], _built[2], _built[3])
+	time = keep_time
+	phase = keep_phase
+	if tool != "" and weapon != null and tool != weapon.part_id:
+		set_tool(_built[1], tool)
 
 
 ## Swap what the hand holds (a worker's tool for the job, or the load it carries home),
