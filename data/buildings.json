@@ -3,6 +3,7 @@
  "buildings": {
   "barracks": {
    "name": "Barracks",
+   "desc": "Trains your foot soldiers: spearmen, skirmishers and archers. Weapon research is done here.",
    "size": 3,
    "hp": 1200,
    "cost": {
@@ -28,6 +29,7 @@
   },
   "farm": {
    "name": "Farm",
+   "desc": "A field of food that workers tend without walking far. When it's worked out it lies fallow; reseed it for wood.",
    "size": 2,
    "hp": 300,
    "cost": {
@@ -59,6 +61,7 @@
   },
   "house": {
    "name": "House",
+   "desc": "Room for more of your people. Every unit needs space; without houses, training stops.",
    "size": 2,
    "hp": 550,
    "cost": {
@@ -81,6 +84,7 @@
   },
   "stable": {
    "name": "Stable",
+   "desc": "Trains your large unit: a rider, a giant or a heavy, whatever your race fields.",
    "size": 3,
    "hp": 1200,
    "cost": {
@@ -104,6 +108,7 @@
   },
   "town_center": {
    "name": "Town Center",
+   "desc": "The heart of your town: trains workers, takes in every resource, and is where you age up. Lose it and you lose.",
    "size": 3,
    "hp": 1600,
    "cost": {
@@ -116,7 +121,8 @@
    "drop_off": [
     "food",
     "wood",
-    "stone"
+    "stone",
+    "gold"
    ],
    "trains": [
     "worker"
@@ -131,6 +137,7 @@
   },
   "watchtower": {
    "name": "Watchtower",
+   "desc": "A lookout that shoots the nearest enemy in range and sees far into the fog.",
    "size": 1,
    "hp": 700,
    "cost": {

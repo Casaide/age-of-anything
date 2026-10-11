@@ -26,6 +26,7 @@ const Minimap := preload("res://src/view/minimap.gd")
 const Sfx := preload("res://src/view/sfx.gd")
 const Fog := preload("res://src/sim/fog.gd")
 const Cursors := preload("res://src/view/art/cursors.gd")
+const Icons := preload("res://src/view/art/icons.gd")
 const Commands := preload("res://src/sim/commands.gd")
 const SimMap := preload("res://src/sim/sim_map.gd")
 const World := preload("res://src/sim/world.gd")
@@ -1061,13 +1062,127 @@ func _tech_buttons(c: Dictionary, b: int) -> void:
 		var why := Tech.why_not(world, active, b, "")
 		if why != "not here":
 			c.buttons.append({"text": "Age up: %s (%s)" % [age.name, _cost_text(age.cost)], "key": "U", "cost": _cost_text(age.cost),
+				"icon": Icons.texture("age_up"), "tip": _age_tip(age),
 				"enabled": why == "", "action": func(): world.issue(active, Commands.AGE_UP, {"building": bid})})
 	for r in world.tech.research:
 		var why := Tech.why_not(world, active, b, r.id)
 		if why == "" or why == "can't afford it":
 			var rid: String = r.id
 			c.buttons.append({"text": "%s (%s)" % [r.name, _cost_text(r.cost)], "key": "", "cost": _cost_text(r.cost),
+				"icon": Icons.texture(r.id), "tip": _research_tip(r),
 				"enabled": why == "", "action": func(): world.issue(active, Commands.RESEARCH, {"building": bid, "id": rid})})
+
+
+# ------------------------------------------------------------------ tooltips
+# What each button is, costs, needs and unlocks, as BBCode for the panel's tooltip cards.
+
+const TIP_NEED := "#e88a70"
+const TIP_GOOD := "#a8d880"
+const TIP_DIM := "#b8ad94"
+
+
+func _tip(title: String, cost: PackedInt32Array, lines: Array, needs: Array = [], unlocks: Array = []) -> String:
+	var out := "[b]%s[/b]" % title
+	var parts := []
+	for r in cost.size():
+		if cost[r] > 0:
+			var short_of: bool = world.stock[r][active] < cost[r]   # what you can't pay yet shows red
+			var tint: String = TIP_NEED if short_of else "#" + Color(lib.resource_info[r].colour).lightened(0.3).to_html(false)
+			parts.append("[color=%s]%d %s[/color]" % [tint, cost[r], lib.resource_info[r].name])
+	if not parts.is_empty():
+		out += "\n" + "    ".join(parts)
+	for l in lines:
+		if l != "":
+			out += "\n" + l
+	for n in needs:
+		out += "\n[color=%s]Needs %s[/color]" % [TIP_NEED, n]
+	if not unlocks.is_empty():
+		out += "\n[color=%s]Unlocks: %s[/color]" % [TIP_GOOD, ", ".join(unlocks)]
+	return out
+
+
+func _bname(id: String) -> String:
+	return world.btypes[Economy.btype_of(world, id)].name
+
+
+func _effect_text(effects: Array) -> String:
+	return ", ".join(effects.map(func(e): return "%+d %s for %s units" % [int(e.add), e.stat, e.tag]))
+
+
+## Research this player's race can do (the tech tree's culture layer, D-070).
+func _my_research() -> Array:
+	var race: Dictionary = world.races[active]
+	return world.tech.research.filter(func(r): return r.only.is_empty() or bool(world.rules.get("full_tech_tree", false)) \
+		or race.creature in r.only or race.family in r.only)
+
+
+func _unit_tip(wt: Dictionary) -> String:
+	var lines := []
+	lines.append("Gathers food, wood, stone and gold, and builds." if wt.worker else UnitCard.text(wt, _foe_types(active)))
+	var ups := []
+	for r in _my_research():
+		if r.effects.any(func(e): return e.tag in wt.eval.tags):
+			ups.append("%s at the %s (%s)" % [r.name, _bname(r.building), _effect_text(r.effects)])
+	if not ups.is_empty():
+		lines.append("[color=%s]Upgrades: %s[/color]" % [TIP_DIM, "; ".join(ups)])
+	for step in wt.line:
+		if int(step.age) > world.ages[active] and int(step.age) > int(wt.line[0].age):
+			lines.append("[color=%s]Age %d: becomes %s[/color]" % [TIP_DIM, int(step.age), step.recipe.get("name", wt.name)])
+	var needs := [] if world.ages[active] >= int(wt.line[0].age) else ["age %d" % int(wt.line[0].age)]
+	return _tip(wt.name, wt.cost, lines, needs)
+
+
+func _building_tip(t: Dictionary) -> String:
+	var lines := [t.desc]
+	var trains := []
+	for slot in t.trains:
+		var tk := world.type_of(active, slot)
+		if tk >= 0:
+			trains.append(world.types[tk].name)
+	if not trains.is_empty():
+		lines.append("Trains: " + ", ".join(trains))
+	var research := _my_research().filter(func(r): return r.building == t.id).map(func(r): return r.name)
+	if not research.is_empty():
+		lines.append("Research: " + ", ".join(research))
+	if t.house or int(t.pop) > 0:
+		lines.append("Houses %d" % int(t.pop))
+	var takes := []
+	for r in t.drop.size():
+		if t.drop[r] == 1:
+			takes.append(lib.resource_info[r].name.to_lower())
+	if not takes.is_empty():
+		lines.append("Takes in: " + ", ".join(takes))
+	var for_ages: Array = world.tech.ages.filter(func(a): return t.id in a.requires).map(func(a): return a.name)
+	if not for_ages.is_empty():
+		lines.append("[color=%s]Needed to reach the %s[/color]" % [TIP_GOOD, " and the ".join(for_ages)])
+	var needs := [] if world.ages[active] >= int(t.age) else ["age %d" % int(t.age)]
+	return _tip(t.name, t.cost, lines, needs)
+
+
+func _age_tip(age: Dictionary) -> String:
+	var lines := [age.desc, "[color=%s]Takes %d s at the %s[/color]" % [TIP_DIM, age.ticks / 20, _bname(age.building)]]
+	var needs := []
+	for need in age.requires:
+		if not Tech.has_building(world, active, need):
+			needs.append("a " + _bname(need))
+	var unlocks := []
+	for bt in world.btypes:
+		if int(bt.age) == int(age.age):
+			unlocks.append(bt.name)
+	for t in world.types:
+		if t.player == active:
+			for k in t.line.size():
+				var step: Dictionary = t.line[k]
+				var named: String = step.recipe.get("name", t.name)
+				# New units, and ones that become something else (the rest just get better gear).
+				if int(step.age) == int(age.age) and (k == 0 or named != t.line[k - 1].recipe.get("name", t.name)):
+					unlocks.append(named)
+	return _tip("Age up: " + age.name, age.cost, lines, needs, unlocks)
+
+
+func _research_tip(r: Dictionary) -> String:
+	var needs := [] if world.ages[active] >= int(r.age) else ["age %d" % int(r.age)]
+	return _tip(r.name, r.cost, [r.desc, "[color=%s]%s[/color]" % [TIP_GOOD, _effect_text(r.effects)]], needs)
 
 
 func _make_view(kind: int, owner: int) -> UnitView:
@@ -1190,8 +1305,8 @@ func _update_panel() -> void:
 					var afford: bool = world.can_afford(active, wt.cost)
 					var tslot: String = slot
 					c.buttons.append({"icon": kit.icons.get("%d:%s" % [active, slot]),
-						"text": (("Train %s (%s)" % [wt.name, _cost_text(wt.cost)]) if ok_age else "%s: needs age %d" % [wt.name, wt.line[0].age])
-							+ ("" if wt.worker else "\n" + UnitCard.text(wt, _foe_types(active))),
+						"text": (("Train %s (%s)" % [wt.name, _cost_text(wt.cost)]) if ok_age else "%s: needs age %d" % [wt.name, wt.line[0].age]),
+						"tip": _unit_tip(wt),
 						"key": "Q" if slot == "worker" else "", "cost": _cost_text(wt.cost), "enabled": ok_age and afford and q.size() < int(world.econ.queue_max),
 						"action": func(): _train(selected_building, tslot)})
 				_tech_buttons(c, b)
@@ -1228,6 +1343,7 @@ func _update_panel() -> void:
 				var afford: bool = world.can_afford(active, t.cost)
 				var bid: String = id
 				c.buttons.append({"icon": kit.building_icon(_arch(active), id), "text": "Build %s (%s)" % [t.name, _cost_text(t.cost)],
+					"tip": _building_tip(t),
 					"key": {"house": "H", "farm": "F", "barracks": "B", "town_center": "C"}.get(id, ""), "cost": _cost_text(t.cost), "enabled": afford, "action": func(): start_placing(bid)})
 		if placing != "":
 			c.info = "Placing: left-click to build, shift keeps placing, right-click/Esc cancels"

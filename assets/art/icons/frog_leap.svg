@@ -1,0 +1,15 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="64" height="64" viewBox="0 0 64 64">
+<!-- Strong Legs: a frog's long hind leg mid-kick, with motion lines. -->
+<defs>
+<linearGradient id="steel" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#f4f6f8"/><stop offset="0.45" stop-color="#b9c0c6"/><stop offset="1" stop-color="#6e767e"/></linearGradient>
+<linearGradient id="wood" x1="0" y1="0" x2="1" y2="0"><stop offset="0" stop-color="#c08850"/><stop offset="0.5" stop-color="#8a5a2e"/><stop offset="1" stop-color="#5e3a1a"/></linearGradient>
+<linearGradient id="gold" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#ffe9a8"/><stop offset="0.5" stop-color="#d4a640"/><stop offset="1" stop-color="#8a6018"/></linearGradient>
+<linearGradient id="cloth" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#e0503c"/><stop offset="1" stop-color="#8a2a20"/></linearGradient>
+<radialGradient id="glow" cx="0.5" cy="0.45" r="0.6"><stop offset="0" stop-color="#fff2c0" stop-opacity="0.9"/><stop offset="1" stop-color="#fff2c0" stop-opacity="0"/></radialGradient>
+</defs>
+<path d="M8,20 L18,22 M6,30 L16,30 M8,40 L18,38" stroke="#e8e0c8" stroke-width="2.4" stroke-linecap="round"/>
+<path d="M22,18 Q40,10 46,24 Q52,36 40,40 L54,50 Q58,54 54,58 L36,48 Q24,42 22,30 Z" fill="#6aa83c" stroke="#1c120a" stroke-width="2" stroke-linejoin="round"/>
+<path d="M28,20 Q40,15 43,25" fill="none" stroke="#b8e080" stroke-width="2"/>
+<path d="M54,50 L60,48 M55,54 L61,56 M52,57 L55,62" stroke="#1c120a" stroke-width="4" stroke-linecap="round"/>
+<path d="M54,50 L60,48 M55,54 L61,56 M52,57 L55,62" stroke="#6aa83c" stroke-width="2" stroke-linecap="round"/>
+</svg>
