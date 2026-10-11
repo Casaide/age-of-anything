@@ -128,6 +128,21 @@ still maps the brief onto parts within host rules.
 - **Faster flow-field solves** if the ~2.4 ms one-tick spike ever shows: spread a solve over
   ticks, or move the solver to a GDExtension.
 - **Animation:** baked atlases for far zoom and portraits; procedural hit flash and death poses.
+- **From the independent art review (2026-10-11), not yet done** (captures in the journal):
+  - Redraw `rat_fur`, `hide`, `mane`, `cloth` with fewer, larger marks (they dither at 1x);
+    give `thatch` clumped, angled straw (it aliases into a barcode).
+  - A test that every baked unit shows at least N team-key pixels; a hue-distance test keeping
+    skins (`frog_blue`, `poison_red`) and culture cloth away from the team colours.
+  - Armour per body: a declared armour shape and socket (rats in bronze read as a peanut).
+  - Mirrored bakes (or more facings) so left-facing units are lit from the same side as buildings.
+  - Mounts get a wing socket ahead of the seat (wings on a ridden spider land on the rider);
+    a data flag forbidding creature-on-mount combinations the art can't show (beetle on a pony).
+  - Swamp detail (puddles, mud, sedge); reeds and paths kept out of building footprints, paths
+    ending at doors; boardwalk posts and edge shadow, planks kept square at turns; road slabs
+    jittered and worn; water reflection gradient and ripples by the shore.
+  - Spooky and forest architecture (they share the swamp stilt hut).
+  - Small things: the junk Town Center's hard dirt slab, the log pile off the plinth, reeds past
+    the map edge, unit shadows offset like building shadows, a lighter vignette.
 - **Audio:** unit barks in silly voices, music.
 - **Tutorial and campaign:** a scenario editor (the classic RTS longevity lever), then a campaign.
 

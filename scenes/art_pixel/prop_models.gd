@@ -58,7 +58,7 @@ func bug_bush(seed_value: int) -> Node3D:
 	for k in 6:
 		var d := Vector3(rng.randf_range(-0.8, 0.8), 1.0, rng.randf_range(-0.3, 1)).normalized()
 		var l: Array = lumps[k % lumps.size()]
-		n.add_child(um.decal("ladybird", 0.1, 0.1, UnitModels.on_surface(l[0], l[1], d, 0.012), d, false, Vector3(rng.randf_range(-1, 1), 0, 1).normalized()))
+		n.add_child(um.decal("ladybird", 0.15, 0.15, UnitModels.on_surface(l[0], l[1], d, 0.012), d, false, Vector3(rng.randf_range(-1, 1), 0, 1).normalized()))
 	return n
 
 
