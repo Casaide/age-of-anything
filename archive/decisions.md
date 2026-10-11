@@ -550,3 +550,14 @@ at once (paid), so you see the plan, and the workers come to it in turn. Builder
 owner's nearest Town Center. Double-click selects only your kind of unit with the same owner
 that you can see. The age-up button shows only at the building that does it (a missing
 requirement made every building offer it). Claude.
+
+**D-103, 2026-10-11: Sound is rendered files from our own synth; the creatures talk; the theme
+grows by age.** Dominic asked for the effects reworked "from ground up" and for music. The
+placeholder GDScript synth is gone. `tools/audio/` (pure Python, deterministic, no dependencies
+and nothing downloaded) renders every effect (two to four takes, physical: wood, stone, hide,
+reed, bronze), eight creature voices (select, ack, die) and one theme as six seamless stems
+into `assets/audio/`, which the game plays through buses (`src/view/audio.gd`,
+`data/audio.json`). The stems are mixed by age (lute and drum from age 1, flute and drone from
+2, horns from 3) with a battle layer while your units fight on screen. Stings share the
+music's instruments and key. Nobody has listened yet; Dominic's ears decide what changes.
+Claude.

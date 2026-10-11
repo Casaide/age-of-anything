@@ -228,7 +228,9 @@ gets from it (units, ages, upkeep), and how the AI values a resource it doesn't 
   - Spooky and forest architecture (they share the swamp stilt hut).
   - Small things: the junk Town Center's hard dirt slab, the log pile off the plinth, reeds past
     the map edge, unit shadows offset like building shadows, a lighter vignette.
-- **Audio:** unit barks in silly voices, music.
+- **Audio** (the ground-up set is in, 2026-10-11, `docs/audio.md`): a second theme or mode for
+  long matches; night / swamp / sewer ambience by map or architecture; voices by size and
+  culture (a giant croaks lower, a Roman says a word); a "can't" bark; volume sliders.
 - **Tutorial and campaign:** a scenario editor (the classic RTS longevity lever), then a campaign.
 - More creature architecture (2026-10-11): spiders' silk tents strung between stalks (they share
   the bugs' mounds for now); timber lodges for beavers and bears once they exist.
