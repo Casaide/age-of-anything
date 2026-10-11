@@ -1335,8 +1335,19 @@ func _armoury(arch: String, team: Color) -> Dictionary:
 	_roof(hall, arch, Vector3(0, base + 0.55, 0), 1.2, 1.1)
 	hall.add_child(box(Vector3(0.34, 0.42, 0.04), cloth(team), Vector3(-0.3, base + 0.21, 0.57)))
 	var stone := mats.get_mat("stone")
-	body.add_child(box(Vector3(0.36, 1.5, 0.36), stone, Vector3(0.55, 0.75, -0.55)))   # the chimney stack: the silhouette
-	body.add_child(box(Vector3(0.42, 0.08, 0.42), stone, Vector3(0.55, 1.5, -0.55)))
+	# The chimney stack is the silhouette, in the culture's own stuff: stone and brick for the
+	# builders, a clay pipe for reed and mound, a stove pipe for the junk-rats, felt-wrapped poles
+	# for tents.
+	var stack_mat: Material = {"reed": mats.get_mat("mud"), "mound": mats.get_mat("mud"), "junk": Materials.flat(Color("#4a4a48"), 0.5, 0.6),
+		"tent": mats.get_mat("felt"), "thatch": mats.get_mat("brick")}.get(arch, stone)
+	if arch == "junk":
+		body.add_child(cyl(0.14, 0.14, 1.5, stack_mat, Vector3(0.55, 0.75, -0.55), Vector3.ZERO, 12))
+		body.add_child(cyl(0.18, 0.16, 0.12, stack_mat, Vector3(0.55, 1.5, -0.55), Vector3.ZERO, 12))
+	elif arch in ["reed", "mound"]:
+		body.add_child(cyl(0.16, 0.24, 1.5, stack_mat, Vector3(0.55, 0.75, -0.55), Vector3.ZERO, 12))   # a tapering clay flue
+	else:
+		body.add_child(box(Vector3(0.36, 1.5, 0.36), stack_mat, Vector3(0.55, 0.75, -0.55)))
+		body.add_child(box(Vector3(0.42, 0.08, 0.42), stack_mat, Vector3(0.55, 1.5, -0.55)))
 	body.add_child(box(Vector3(0.44, 0.34, 0.4), stone, Vector3(0.6, 0.17, 0.25)))   # the forge
 	body.add_child(box(Vector3(0.3, 0.04, 0.26), glow(Color("#ff8a30"), 2.2), Vector3(0.6, 0.35, 0.25)))
 	body.add_child(box(Vector3(0.22, 0.1, 0.1), iron, Vector3(0.1, 0.26, 0.62)))   # the anvil on its stump
