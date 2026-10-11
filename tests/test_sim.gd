@@ -732,14 +732,31 @@ func _test_tech(races: Array) -> void:
 	var ti: int = Economy.place(g, 1, tk, gs[0] / 1000 - 4, gs[1] / 1000)
 	g.buildings.done[ti] = 1
 	g.buildings.hp[ti] = g.btypes[tk].hp
-	g.issue(0, Commands.SPAWN, {"slot": "archer", "count": 1, "x": gs[0] - 6500, "y": gs[1]})
+	var tid: int = g.buildings.id[ti]
+	# A lone enemy spear five tiles off (in range, not attacking anything): the tower hurts it.
+	var ids_before := {}
+	for i in g.units.count():
+		ids_before[g.units.id[i]] = true
+	g.issue(0, Commands.SPAWN, {"slot": "spear", "count": 1, "x": gs[0] - 8500, "y": gs[1] + 500})
+	for t in 16:
+		g.step()
+	var foe := 0
+	for i in g.units.count():
+		if not ids_before.has(g.units.id[i]):
+			foe = g.units.id[i]
+	check(foe != 0, "towers: the target spawned")
+	var hp0: int = g.units.hp[g.units.index_of(foe)]
 	var shots := 0
-	for t in 400:
+	var dealt := 0
+	for t in 120:
 		g.step()
 		for e in g.events:
-			if e.type == "hit" and e.by == g.buildings.id[g.buildings.index_of(g.buildings.id[ti])]:
+			if e.type == "hit" and e.by == tid and e.to == foe:
 				shots += 1
-	check(shots > 0, "towers: a watchtower shoots an enemy in range (%d shots)" % shots)
+				dealt += int(e.damage)
+	var fi: int = g.units.index_of(foe)
+	var hp1: int = g.units.hp[fi] if fi >= 0 else 0
+	check(shots >= 2 and dealt > 0 and hp1 <= hp0 - dealt, "towers: a finished watchtower damages an enemy unit in range (%d shots, %d damage, hp %d -> %d)" % [shots, dealt, hp0, hp1])
 
 
 # --- order queues ---------------------------------------------------------------
