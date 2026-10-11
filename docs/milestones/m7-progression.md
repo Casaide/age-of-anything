@@ -24,6 +24,10 @@ age-up at the TC ("Muck Age -> Stick Age", ~400F/200W, 60 s), one research ("Sha
 - **View:** the art kit pre-bakes each race's upgrade parts at match start, or bakes them on
   demand, so an upgrade never stalls a frame.
 - "Sharp Sticks" (+1 attack to spears) can be the first instance: a better spearhead part.
+- **Restrictions in layers** (design.md §6): era (host rules), culture and theme, and the race's
+  tech tree, plus a "Full tech tree / No restrictions" host option that lifts culture and tech
+  limits (frog musketeers with "Anything goes"). Plan the tech tree data so each layer is a
+  filter that can be switched off.
 
 ## Plan
 (write before starting; see the template in `README.md`)
