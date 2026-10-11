@@ -131,7 +131,11 @@ func bake_units(races: Array, teams: Array) -> void:
 	pb.art_scale = ART_SCALE * UNIT_SCALE   # baked at the size they're drawn: crisp pixels
 	add_child(pb)
 	for side in races.size():
-		for u in races[side].units:
+		var steps := []
+		for u in races[side].units:   # every age of every unit line: ageing up never waits on a bake
+			for l in u.get("line", [{"recipe": u.recipe, "eval": u.eval}]):
+				steps.append(l)
+		for u in steps:
 			var probe := UnitView.new()
 			probe.build(u.recipe, lib, teams[side], u.eval.speed)
 			for ps in probe.find_children("*", "Node2D", true, false):

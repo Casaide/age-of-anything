@@ -481,8 +481,8 @@ static func train(w) -> void:
 	var bs = w.buildings
 	for b in bs.count():
 		var q: Array = bs.queue[b]
-		if bs.done[b] == 0 or q.is_empty():
-			continue
+		if bs.done[b] == 0 or q.is_empty() or bs.research[b] != -1:
+			continue   # unbuilt, nothing queued, or busy ageing up / researching
 		var p: int = bs.owner[b]
 		var t: Dictionary = w.types[q[0]]
 		if bs.train[b] == 0 and w.pop[p] + t.pop > w.pop_cap[p]:

@@ -17,6 +17,7 @@ const TerrainView := preload("res://src/view/art/terrain_view.gd")
 const BuildingArt := preload("res://src/view/art/building_art.gd")
 const Paths := preload("res://scenes/art_pixel/paths.gd")
 const CombatFx := preload("res://src/view/combat_fx.gd")
+const Tech := preload("res://src/sim/tech.gd")
 const RtsCamera := preload("res://src/view/rts_camera.gd")
 const CommandPanel := preload("res://src/view/command_panel.gd")
 const Cursors := preload("res://src/view/art/cursors.gd")
@@ -379,6 +380,9 @@ func _unhandled_input(event: InputEvent) -> void:
 				start_placing("house")
 			KEY_F:
 				start_placing("farm")
+			KEY_U:
+				if selected_building != 0:
+					world.issue(active, Commands.AGE_UP, {"building": selected_building})
 			KEY_C:
 				start_placing("town_center")
 			KEY_ESCAPE:
@@ -698,8 +702,12 @@ func _sync_views() -> void:
 		var id := u.id[i]
 		alive[id] = true
 		var view: UnitView = views.get(id)
+		if view != null and view.get_meta("version", 0) != int(world.types[u.kind[i]].get("version", 0)):
+			view.queue_free()   # its type moved on (an age-up): new kit, new look
+			view = null
 		if view == null:
 			view = _make_view(u.kind[i], u.owner[i])
+			view.set_meta("version", int(world.types[u.kind[i]].get("version", 0)))
 			views[id] = view
 		var dx := u.x[i] - u.px[i]
 		var dy := u.y[i] - u.py[i]
@@ -839,6 +847,31 @@ func _sync_resources() -> void:
 				rviews.erase(c)
 
 
+## Age-up and research buttons for a building (from data/tech.json), and what it's doing.
+func _tech_buttons(c: Dictionary, b: int) -> void:
+	var bs := world.buildings
+	var bid: int = bs.id[b]
+	if bs.research[b] != -1:
+		var r: int = bs.research[b]
+		var item: Dictionary = Tech.next_age(world, active) if r == Tech.AGE_UP else world.tech.research[r]
+		var label: String = ("Ageing up to the %s" % item.name) if r == Tech.AGE_UP else "Researching %s" % item.name
+		c.info = label
+		c.progress = float(bs.research_t[b]) / float(item.ticks)
+		return
+	var age: Dictionary = Tech.next_age(world, active)
+	if not age.is_empty():
+		var why := Tech.why_not(world, active, b, "")
+		if why != "not here":
+			c.buttons.append({"text": "Age up: %s (%s)" % [age.name, _cost_text(age.cost)], "key": "U", "cost": _cost_text(age.cost),
+				"enabled": why == "", "action": func(): world.issue(active, Commands.AGE_UP, {"building": bid})})
+	for r in world.tech.research:
+		var why := Tech.why_not(world, active, b, r.id)
+		if why == "" or why == "can't afford it":
+			var rid: String = r.id
+			c.buttons.append({"text": "%s (%s)" % [r.name, _cost_text(r.cost)], "key": "", "cost": _cost_text(r.cost),
+				"enabled": why == "", "action": func(): world.issue(active, Commands.RESEARCH, {"building": bid, "id": rid})})
+
+
 func _make_view(kind: int, owner: int) -> UnitView:
 	var t: Dictionary = world.types[kind]
 	var view := UnitView.new()
@@ -885,7 +918,7 @@ func _cost_text(cost: PackedInt32Array) -> String:
 
 func _bar_text() -> String:
 	var p := active
-	var s := "P%d  %s     %s    Pop %d/%d" % [p + 1, world.races[p].name, _stock_text(p, false), world.pop[p], world.pop_cap[p]]
+	var s := "P%d  %s   Age %d     %s    Pop %d/%d" % [p + 1, world.races[p].name, world.ages[p], _stock_text(p, false), world.pop[p], world.pop_cap[p]]
 	var o := 1 - p
 	s += "        (P%d %s: %s %d/%d)" % [o + 1, world.races[o].name, _stock_text(o, true), world.pop[o], world.pop_cap[o]]
 	if autoplay:
@@ -950,6 +983,7 @@ func _update_panel() -> void:
 				c.buttons.append({"icon": kit.icons.get("%d:worker" % active), "text": "Train %s (%s)" % [wt.name, _cost_text(wt.cost)],
 					"key": "Q", "cost": _cost_text(wt.cost), "enabled": afford and q.size() < int(world.econ.queue_max),
 					"action": train_worker})
+				_tech_buttons(c, b)
 				c.info += ("\n" if c.info != "" else "") + "Right-click: rally point"
 		panel.show_content(c)
 		return
