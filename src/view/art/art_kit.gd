@@ -263,7 +263,7 @@ func bake_buildings(races: Array) -> void:
 	var h: Array = await _hifi()
 	for arch in archs:
 		var d: Dictionary = DataLib.load_json("res://data/buildings.json")
-		for type in d.menu:
+		for type in d.menu.civilian + d.menu.military:
 			await _bake_building(h[0], h[1], arch, type)
 			var looks: Dictionary = d.get("age_looks", {}).get(arch, {}).get(type, {})
 			for age in looks:   # the same building, grown with the ages (a culture's story, D-081)

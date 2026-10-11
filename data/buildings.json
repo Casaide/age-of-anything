@@ -1,21 +1,10 @@
 {
  "schema": "aow.buildings/1",
- "menu": [
-  "house",
-  "farm",
-  "lumber_camp",
-  "mill",
-  "mining_camp",
-  "barracks",
-  "archery_range",
-  "stable",
-  "armoury",
-  "market",
-  "watchtower",
-  "wall",
-  "town_center"
- ],
- "_menu_doc": "the order buildings appear in a worker's build menu (hotkeys are avoided where they clash with WASD panning and the debug keys)",
+ "menu": {
+  "civilian": ["house", "farm", "lumber_camp", "mill", "mining_camp", "market", "town_center"],
+  "military": ["barracks", "archery_range", "stable", "armoury", "watchtower", "wall"]
+ },
+ "_menu_doc": "a worker's two build pages (Dominic: civilian and military apart), each in the order its buttons appear (building hotkeys work from either page; hotkeys are avoided where they clash with WASD panning and the debug keys)",
  "age_looks": {
   "junk": {
    "town_center": {
@@ -311,7 +300,7 @@
    }
   },
   "wall": {
-   "name": "Wall",
+   "name": "Stone Wall",
    "desc": "A stone wall, one tile at a time: drag to lay a line. Stops anyone who can't fly.",
    "size": 1,
    "hp": 1500,
@@ -325,7 +314,7 @@
    "house": false,
    "drop_off": [],
    "trains": [],
-   "age": 1,
+   "age": 2,
    "hotkey": "X",
    "armour": {
     "melee": 6,
