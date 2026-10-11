@@ -33,6 +33,8 @@ func _initialize() -> void:
 		await _town(view, int(scene.get_slice(":", 1)))
 	elif scene.begins_with("ageup"):
 		await _ageup(view, int(scene.get_slice(":", 1)))
+	elif scene == "farm":
+		await _farm(view)
 	elif scene == "card":
 		await _card(view)
 	elif scene.begins_with("battle"):
@@ -44,6 +46,35 @@ func _initialize() -> void:
 	root.get_texture().get_image().save_png(out)
 	print("saved ", out, " at tick ", view.world.tick)
 	quit()
+
+
+## Side 0 builds a farm by the Town Center and works it; the Town Center is selected with a
+## rally point, so its flag shows.
+func _farm(view) -> void:
+	var w = view.world
+	var s: Array = w.map.starts[0]
+	var ids := []
+	for i in w.units.count():
+		if w.units.owner[i] == 0 and ids.size() < 2:
+			ids.append(w.units.id[i])
+	var cx: int = s[0] / 1000 + 3
+	var cy: int = s[1] / 1000 + 2
+	w.stock[1][0] = 500
+	w.issue(0, "build", {"ids": ids, "building": "farm", "cx": cx, "cy": cy})
+	view.clock.speed = 8.0
+	var field: int = w.map.terrain_ids.find("field")
+	while w.map.terrain[cy * w.map.width + cx] != field:
+		await process_frame
+	for f in 120:
+		await process_frame
+	view.clock.speed = 1.0
+	view.selected_building = w.buildings.id[0]
+	w.issue(0, "rally", {"building": w.buildings.id[0], "x": s[0] - 3000, "y": s[1] + 1000})
+	for f in 30:
+		await process_frame
+	view.camera.zoom = Vector2(3.0, 3.0)
+	view._on_zoom()
+	view.camera.look_at_point(Iso.to_screen(cx * 1000 + 1000, cy * 1000 + 1000))
 
 
 ## One of side 0's spearmen selected, so the panel shows its unit card.

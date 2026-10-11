@@ -303,6 +303,8 @@ func _run(cmd: Dictionary) -> void:
 			Tech.cmd_research(self, cmd.player, a)
 		Commands.SURRENDER:
 			Match.cmd_surrender(self, cmd.player)
+		Commands.RESEED:
+			Economy.cmd_reseed(self, cmd.player, a)
 		Commands.TRAIN:
 			Economy.cmd_train(self, cmd.player, a)
 		Commands.CANCEL:

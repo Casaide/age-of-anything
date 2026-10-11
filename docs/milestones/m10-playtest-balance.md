@@ -45,4 +45,7 @@
 - **Pacing:** bot vs bot now runs 13-18 minutes (median ~14) with the AI keeping a small guard
   while it saves for an age; it was 10:50 before workers got one price. Testers decide whether
   that's long; the levers are data (`data/ai.json` waves, `data/buildings.json` Town Center hp).
+- **Centaurs vs frogs runs long** (~22 minutes in bot play): expensive centaur workers and
+  soldiers make small armies. Balance item; the AI test allows 30 minutes (it guards against
+  stalemates, not pacing).
 - Performance: 17 draw calls with 200+ units; sim tick ~1 ms (budget 3 ms).
