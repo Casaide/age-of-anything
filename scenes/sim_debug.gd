@@ -138,6 +138,7 @@ var fog_view: FogView
 var flat: Node2D             # ground-level art (farms, crops), drawn under the y-sorted layer
 var minimap: Minimap
 var hud_root: Control     # every HUD control lives in here, scaled to the screen's density
+var pages_root: Control   # full-screen pages (the tech tree) over the HUD, scaled the same way
 var audio: Node           # the game's one audio node (src/view/audio.gd)
 var battle_until := 0.0   # seconds of match time until the music's battle layer fades out
 var age_ups: Array = []      # [player, age, seconds] this match (for the playtest log)
@@ -243,8 +244,12 @@ func _ready() -> void:
 	var pages := CanvasLayer.new()   # over the HUD (and the hints that appear later)
 	pages.layer = 3
 	add_child(pages)
+	pages_root = Control.new()   # scaled like the HUD (_fit_hud)
+	pages_root.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	pages.add_child(pages_root)
 	tech_tree = load("res://scenes/tech_tree.tscn").instantiate()
-	pages.add_child(tech_tree)
+	pages_root.add_child(tech_tree)
+	_fit_hud()
 	cursors = Cursors.new(DisplayServer.screen_get_scale())
 
 	if prompts.is_empty():
@@ -264,6 +269,10 @@ func _fit_hud() -> void:
 	var t := Theme.new()   # plain tooltips (queue slots, the idle button) take the HUD's theme
 	t.set_font_size("font_size", "TooltipLabel", roundi(14 * f))
 	hud_root.theme = t
+	if pages_root != null:
+		pages_root.scale = hud_root.scale
+		pages_root.size = hud_root.size
+		pages_root.theme = t
 
 
 func _label(size: int, pos: Vector2) -> Label:
