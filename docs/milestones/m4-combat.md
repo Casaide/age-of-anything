@@ -164,6 +164,13 @@ hit-flash polish and SFX (7), Blacksmith upgrades and research (5 / Next), forma
   - giant frog and rat brutes lose to massed archers (concentration: 1-2 big units vs a crowd);
   - rat slingers lose to archers;
   - centaur and beetle archers lose to spearmen (their "spear" units are large and armoured).
+- **After tuning to the genre's norms (2026-10-11):**
+  - Skirmisher kit +2 pierce armour; mounts more pierce armour (pony 3, beetle 4, spider 2);
+    giants +3 pierce.
+  - The matrix skips relations that don't apply (centaur and beetle spearmen aren't infantry).
+  - 41 of 46 applicable fights (89%) go to the counter.
+  - Still losing: rat brutes vs massed archers, a rat spear mirror, centaur archers vs centaur
+    spearmen.
 - **Speed:** a 200-unit pitched battle costs about 1.1 ms a tick (combat 0.35, separation 0.46).
   The scripted 10-minute match averages 1.5 ms (budget 3 ms). Single-tick spikes reach 5-12 ms;
   watch them.
