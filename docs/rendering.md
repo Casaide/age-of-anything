@@ -49,6 +49,9 @@ map; the code says the details.
   the camera sees), and `age_looks` (a building's
   model from an age on, e.g. the rats' oil-drum town hall at age 3).
   Live parts (banner, vane, smoke, lights) are drawn over the bake.
+  Walls and gates are one tile each. A gate's model returns its closed `body` and an `open`
+  one, both baked; it also bakes a quarter turn (`^z`) for wall lines running along sim y, and
+  the view picks the turn from its neighbours and shows it open while a friendly unit is at it.
 - **Props** (`scenes/art_pixel/prop_models.gd`): bushes, reeds, boulders, quarry stone and
   gold, carcasses, crops, the rally flag; resources bake in used-up stages.
 - **Terrain** (`scenes/art_pixel/terrain.gdshader`): one shader paints the ground from blurred

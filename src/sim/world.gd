@@ -49,11 +49,13 @@ const FIELD_CACHE := 24        # flow fields kept (oldest dropped first)
 const SOLVE_BUDGET := 1500     # flow-field cells settled per tick: one full solve, or a few near ones
 const NEAR_CUTOFF := 160       # cost cutoff for "near" fields (16 tiles): short work trips
 
-# Field keys: target * 4 + kind. Cell targets are cells; building targets are ids.
+# Field keys: (target * 4 + kind) * LANES + lane. Cell targets are cells; building targets are ids.
+# A lane is a movement class, and the team for maps with gates (SimMap lanes).
 const FIELD_CELL := 0          # full field towards a cell (MOVE, or a far resource)
 const FIELD_CELL_NEAR := 1
 const FIELD_BUILDING_NEAR := 2
 const FIELD_BUILDING := 3
+const LANES := 32              # lane slots in a field key: 3 classes x (everyone + up to 9 teams with gates)
 
 var seed_value: int
 var tick := 0
@@ -89,6 +91,7 @@ var gathered: Array = []       # per resource, per player: everything ever dropp
 var pop := PackedInt32Array()     # derived each tick (Economy.update_pop)
 var lost := PackedInt32Array()    # per player: units killed so far
 var teams := PackedInt32Array()   # per player: team id (players on one team are allies)
+var lane_base := PackedInt32Array()   # per player (and gaia): first lane of its team's walk grids (refresh_lanes)
 var pop_cap := PackedInt32Array()
 var defeated := PackedInt32Array()       # per player: the tick + 1 they were knocked out, or 0 (match.gd)
 var started_with_town := PackedByteArray()
@@ -112,6 +115,7 @@ func _init(p_seed: int, p_map: SimMap, p_races: Array, p_rules: Dictionary, p_te
 		teams.append(int(p_teams[p]) if p < p_teams.size() else p)
 	gaia = p_races.size()
 	teams.append(-1)   # gaia: everyone's quarry, nobody's ally
+	refresh_lanes()
 	econ = _ints(rules.economy)
 	combat = _ints(rules.combat)
 	var ts: Dictionary = rules.get("movement", {}).get("terrain_speed", {})
@@ -172,6 +176,19 @@ func _make_type(player: int, u: Dictionary) -> Dictionary:
 		"mclass": _movement_class(e.tags),
 		"line": u.get("line", [{"age": int(r.tier), "recipe": r, "eval": e}]),   # the unit through the ages (age-ups re-price from it)
 	}
+
+
+## Each player's walk grids: its team's own once the team has a gate (SimMap.occupy makes them).
+func refresh_lanes() -> void:
+	lane_base.resize(teams.size())
+	for p in teams.size():
+		lane_base[p] = map.lane_group(teams[p]) * SimMap.CLASSES.size()
+	assert(map.walks.size() <= LANES, "Too many teams with gates for the field keys")
+
+
+## The walk grid unit i moves on (its movement class, in its team's lane).
+func lane(i: int) -> int:
+	return lane_base[units.owner[i]] + units.mclass[i]
 
 
 ## Should these two fight on their own (enemies, and neither is an animal nobody owns)?
@@ -306,8 +323,9 @@ func _run(cmd: Dictionary) -> void:
 			for n in a.count:
 				var x: int = a.x + rng.range_int(-SPAWN_JITTER, SPAWN_JITTER)
 				var y: int = a.y + rng.range_int(-SPAWN_JITTER, SPAWN_JITTER)
-				if not map.walkable(x, y, t.mclass):
-					var c := Flow.centre(map, Flow.nearest_walkable(map, map.cell_of(x, y), t.mclass))
+				var ln: int = lane_base[cmd.player] + t.mclass
+				if not map.walkable(x, y, ln):
+					var c := Flow.centre(map, Flow.nearest_walkable(map, map.cell_of(x, y), ln))
 					x = c.x
 					y = c.y
 				var slot := units.add(next_id, cmd.player, k, x, y, t.speed, t.radius, t.hp)
@@ -400,7 +418,7 @@ func _next_orders() -> void:
 		if o.type == Commands.BUILD:
 			var bid: int = map.occupied[o.args.cy * map.width + o.args.cx]
 			var b := buildings.index_of(bid)
-			if b >= 0 and buildings.owner[b] == p and buildings.done[b] == 0:
+			if b >= 0 and buildings.owner[b] == p and buildings.done[b] == 0 and btypes[buildings.kind[b]].id == o.args.building:
 				o = {"type": Commands.HELP_BUILD, "args": {"ids": o.args.ids, "target": bid}}
 		var args: Dictionary = o.args.duplicate()
 		args.queue = 1   # run now (the unit's free) without wiping the rest of its queue
@@ -419,16 +437,16 @@ func order_move(i: int, x: int, y: int, arrive: int, group: int) -> void:
 	x = clampi(x, 0, map.width * SimMap.TILE - 1)
 	y = clampi(y, 0, map.height * SimMap.TILE - 1)
 	var cell := map.cell_of(x, y)
-	var mc := units.mclass[i]
-	if map.walks[mc][cell] == 0:
-		cell = Flow.nearest_walkable(map, cell, mc)
+	var ln := lane(i)
+	if map.walks[ln][cell] == 0:
+		cell = Flow.nearest_walkable(map, cell, ln)
 		var c := Flow.centre(map, cell)
 		x = c.x
 		y = c.y
 	units.tx[i] = x
 	units.ty[i] = y
 	units.reach[i] = 0
-	units.fkey[i] = cell_field(cell, false, mc)
+	units.fkey[i] = cell_field(cell, false, ln)
 	units.arrive[i] = arrive
 	units.group[i] = group
 	_start(i)
@@ -468,13 +486,13 @@ func _start(i: int) -> void:
 	units.wy[i] = w.y if w.x >= 0 else units.y[i]
 
 
-## Field keys: ((target * 4 + kind) * 4 + movement class). One field per class.
-func cell_field(cell: int, near: bool, mc := 0) -> int:
-	return (cell * 4 + (FIELD_CELL_NEAR if near else FIELD_CELL)) * 4 + mc
+## Field keys: ((target * 4 + kind) * LANES + lane). One field per lane (lane(i) for a unit).
+func cell_field(cell: int, near: bool, ln := 0) -> int:
+	return (cell * 4 + (FIELD_CELL_NEAR if near else FIELD_CELL)) * LANES + ln
 
 
-func building_field(bid: int, near: bool, mc := 0) -> int:
-	return (bid * 4 + (FIELD_BUILDING_NEAR if near else FIELD_BUILDING)) * 4 + mc
+func building_field(bid: int, near: bool, ln := 0) -> int:
+	return (bid * 4 + (FIELD_BUILDING_NEAR if near else FIELD_BUILDING)) * LANES + ln
 
 
 # ------------------------------------------------------------------ movement
@@ -498,6 +516,7 @@ func _move() -> void:
 	var ry0 := units.ry0
 	var rx1 := units.rx1
 	var ry1 := units.ry1
+	var owners := units.owner
 	for i in xs.size():
 		if mv[i] == 0:
 			# Shoved well off its spot by passing units? Walk back (checked on re-plan ticks).
@@ -523,8 +542,8 @@ func _move() -> void:
 				mv[i] = 0
 				continue
 		var s := sp[i]
-		var mc := units.mclass[i]
-		var pct: int = move_pct[mc][map.terrain[map.cell_of(x, y)]]
+		var mc := lane_base[owners[i]] + units.mclass[i]   # the walk grid (lane); speed goes by class
+		var pct: int = move_pct[units.mclass[i]][map.terrain[map.cell_of(x, y)]]
 		if pct != 100:
 			s = s * pct / 100   # amphibians are quicker in the swamp (rules.movement.terrain_speed)
 		if (tick + ids[i]) % REPLAN_EVERY == 0 or Fixed.dist2(x, y, wxs[i], wys[i]) <= s * s:
@@ -532,9 +551,9 @@ func _move() -> void:
 			if w.x == -2:
 				# Past a near field's edge: switch to the full field, straight on meanwhile.
 				var key := units.fkey[i]
-				var base := key / 4
+				var base := key / LANES
 				base = base - base % 4 + (FIELD_CELL if base % 4 == FIELD_CELL_NEAR else FIELD_BUILDING)
-				units.fkey[i] = base * 4 + key % 4
+				units.fkey[i] = base * LANES + key % LANES
 				w = Vector2i(txs[i], tys[i])
 			elif w.x < 0:
 				mv[i] = 0   # unreachable from here
@@ -594,14 +613,14 @@ func _plan(i: int, x: int, y: int) -> Vector2i:
 	var cell := map.cell_of(x, y)
 	var cost: int = f.dist[cell]
 	if cost >= Flow.INF:
-		var kind := (units.fkey[i] / 4) % 4
+		var kind := (units.fkey[i] / LANES) % 4
 		if kind == FIELD_CELL_NEAR or kind == FIELD_BUILDING_NEAR:
 			return Vector2i(-2, -2)
 		return Vector2i(-1, -1)
 	if units.reach[i] == 1:
 		if cost <= Flow.DIAGONAL:
 			return Vector2i(clampi(x, units.rx0[i], units.rx1[i]), clampi(y, units.ry0[i], units.ry1[i]))
-	elif cost == 0 or (cost <= DIRECT_COST and Flow.clear_line(map, x, y, tx, ty, units.mclass[i])):
+	elif cost == 0 or (cost <= DIRECT_COST and Flow.clear_line(map, x, y, tx, ty, lane(i))):
 		return Vector2i(tx, ty)
 	var best := cell
 	var k: int = f.next[cell]
@@ -613,7 +632,7 @@ func _plan(i: int, x: int, y: int) -> Vector2i:
 				return Vector2i(tx, ty)   # the next cell is the target's
 			break
 		var c := Flow.centre(map, k)
-		if not Flow.clear_line(map, x, y, c.x, c.y, units.mclass[i]):
+		if not Flow.clear_line(map, x, y, c.x, c.y, lane(i)):
 			break
 		best = k
 		k = f.next[k]
@@ -637,9 +656,9 @@ func _solve_queued() -> void:
 		var key: int = field_queue.pop_front()
 		if fields.has(key):
 			continue
-		var mc := key % 4
-		var target := key / 16
-		var kind := (key / 4) % 4
+		var mc := key % LANES
+		var target := key / (LANES * 4)
+		var kind := (key / LANES) % 4
 		var sources := PackedInt32Array()
 		if kind == FIELD_CELL or kind == FIELD_CELL_NEAR:
 			sources.append(target)
@@ -762,7 +781,7 @@ func _separate() -> void:
 	for i in n:
 		if settle[i] == 1:
 			mv[i] = 0
-		var mc := units.mclass[i]
+		var mc := lane(i)
 		if not map.walkable(xs[i], ys[i], mc):
 			var c := Flow.centre(map, Flow.nearest_walkable(map, map.cell_of(xs[i], ys[i]), mc))
 			xs[i] = c.x

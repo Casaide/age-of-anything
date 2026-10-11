@@ -75,6 +75,7 @@ func _init() -> void:
 	_test_tech(races)
 	_test_market(races)
 	_test_build_queue(races)
+	_test_gates(races)
 	_test_camp_gather(races)
 	_test_drop_off(races)
 	_test_animals(races)
@@ -683,6 +684,108 @@ func _test_drop_off(races: Array) -> void:
 		if w.units.owner[i] == 0 and w.types[w.units.kind[i]].worker and w.units.id[i] > uid and new_i < 0 and w.units.task[i] == Economy.GATHER:
 			new_i = i
 	check(new_i >= 0 and w.units.carry_kind[new_i] == food, "rally: a worker trained to a bush rally gathers food")
+
+## A finished building of type `id` for player p at a cell.
+func _put(w: World, p: int, id: String, cx: int, cy: int) -> int:
+	var k := Economy.btype_of(w, id)
+	var b := Economy.place(w, p, k, cx, cy)
+	w.buildings.done[b] = 1
+	w.buildings.hp[b] = w.btypes[k].hp
+	return w.buildings.id[b]
+
+
+## A closed square of palisade on flat_test (tiles 12..20 by 18..26) with player 0's gate in
+## its east side at (20, 22). Inside is 13..19 by 19..25. Returns [world, gate id].
+func _gate_world(races: Array, teams := []) -> Array:
+	var bare := rules_.duplicate(true)
+	bare.economy.start.buildings = []
+	bare.economy.start.workers = 0
+	var w := World.new(SEED, SimMap.load_id("flat_test"), races, bare, teams)
+	for k in range(12, 21):
+		for c in [Vector2i(k, 18), Vector2i(k, 26), Vector2i(12, k + 6), Vector2i(20, k + 6)]:
+			if w.map.occupied[c.y * w.map.width + c.x] == 0 and c != Vector2i(20, 22):
+				_put(w, 0, "palisade", c.x, c.y)
+	check(w.map.walks.size() == 3, "gates: without a gate the map keeps one walk grid per movement class (%d)" % w.map.walks.size())
+	var gate := _put(w, 0, "palisade_gate", 20, 22)
+	return [w, gate]
+
+
+func _inside(w: World, uid: int) -> bool:
+	var i := w.units.index_of(uid)
+	return i >= 0 and w.units.x[i] < 20000 and w.units.x[i] >= 13000 and w.units.y[i] >= 19000 and w.units.y[i] < 26000
+
+
+## Spawn one unit of a slot for player p inside the square; its id once it's there.
+func _spawn_in(w: World, p: int, slot: String) -> int:
+	var before := w.next_id
+	w.issue(p, Commands.SPAWN, {"slot": slot, "count": 1, "x": 16500, "y": 22500})
+	while w.next_id == before:
+		w.step()
+	return before
+
+
+## Gates (milestone 12): a gate lets its own team through and nobody else; knocked down, it
+## opens the way for everyone; dropped on a wall tile, it takes that tile's place.
+func _test_gates(races: Array) -> void:
+	var g := _gate_world(races)
+	var w: World = g[0]
+	var gate: int = g[1]
+	var gc: int = 22 * w.map.width + 20
+	check(w.map.walks.size() == 6, "gates: the gate's team gets walk grids of its own (%d)" % w.map.walks.size())
+	check(w.map.walks[w.lane_base[0]][gc] == 1 and w.map.walks[w.lane_base[1]][gc] == 0, "gates: open to its owner, shut to the enemy")
+	var mine := _spawn_in(w, 0, "worker")
+	var theirs := _spawn_in(w, 1, "worker")
+	for uid in [mine, theirs]:
+		w.issue(w.units.owner[w.units.index_of(uid)], Commands.MOVE, {"ids": [uid], "x": 25500, "y": 22500})
+	for t in 600:
+		w.step()
+	var i := w.units.index_of(mine)
+	check(Fixed.dist2(w.units.x[i], w.units.y[i], 25500, 22500) < 1000 * 1000, "gates: a friendly unit walks out through its gate (%d, %d)" % [w.units.x[i], w.units.y[i]])
+	check(_inside(w, theirs), "gates: an enemy shut in the square stays in")
+	w.issue(0, Commands.MOVE, {"ids": [mine], "x": 16500, "y": 21500})
+	for t in 600:
+		w.step()
+	check(_inside(w, mine), "gates: ... and back in again")
+
+	# Allies share the gate; the enemy knocks it down, and then the way is open to it.
+	g = _gate_world([races[0], races[1], races[0]], [0, 0, 1])
+	w = g[0]
+	gate = g[1]
+	var ally := _spawn_in(w, 1, "worker")
+	w.issue(1, Commands.MOVE, {"ids": [ally], "x": 25500, "y": 22500})
+	var foe := _spawn_in(w, 2, "spear")
+	w.issue(2, Commands.MOVE, {"ids": [foe], "x": 25500, "y": 22500})
+	for t in 600:
+		w.step()
+	check(not _inside(w, ally), "gates: an ally walks through too")
+	check(_inside(w, foe), "gates: the enemy spearman can't")
+	w.issue(2, Commands.ATTACK, {"ids": [foe], "target": gate})
+	while w.tick < 8000 and w.buildings.index_of(gate) >= 0:
+		w.step()
+	check(w.buildings.index_of(gate) < 0, "gates: the enemy knocks the gate down (tick %d)" % w.tick)
+	check(w.map.walks[w.lane_base[2]][gc] == 1, "gates: its tile is open to everyone again")
+	w.issue(2, Commands.MOVE, {"ids": [foe], "x": 25500, "y": 22500})
+	for t in 600:
+		w.step()
+	i = w.units.index_of(foe)
+	check(i >= 0 and Fixed.dist2(w.units.x[i], w.units.y[i], 25500, 22500) < 1000 * 1000, "gates: ... and walks out where it stood")
+
+	# A gate dropped on a wall tile replaces it; the wrong wall or someone else's won't do.
+	g = _gate_world(races)
+	w = g[0]
+	var builder := _spawn_in(w, 0, "worker")
+	w.stock[w.resources.find("wood")][0] = 500
+	var wall_id: int = w.map.occupied[18 * w.map.width + 16]
+	var k := Economy.btype_of(w, "palisade_gate")
+	check(Economy.can_place(w, 0, k, 16, 18) and not Economy.can_place(w, 1, k, 16, 18), "gates: a gate goes on your own wall, not on a rival's")
+	check(not Economy.can_place(w, 0, Economy.btype_of(w, "stone_gate"), 16, 18), "gates: a stone gate doesn't go on a palisade")
+	w.issue(0, Commands.BUILD, {"ids": [builder], "building": "palisade_gate", "cx": 16, "cy": 18})
+	for t in 600:
+		w.step()
+	var nb: int = w.map.occupied[18 * w.map.width + 16]
+	var b := w.buildings.index_of(nb)
+	check(w.buildings.index_of(wall_id) < 0 and b >= 0 and w.btypes[w.buildings.kind[b]].id == "palisade_gate" and w.buildings.done[b] == 1,
+		"gates: dropped on a palisade tile, a gate takes its place and is built")
 
 
 ## A worker who finishes a lumber camp goes and gathers wood (Dominic).
