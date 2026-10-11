@@ -120,11 +120,12 @@ void fragment() {
 		// standing puddles that catch the sky on their far edge.
 		float bog = vnoise(t * 1.6 + 5.0) * 0.6 + vnoise(t * 4.5 + 9.0) * 0.4;
 		col = ramp4(vec3(0.20, 0.24, 0.13), vec3(0.25, 0.30, 0.15), vec3(0.30, 0.35, 0.17), vec3(0.36, 0.40, 0.19), grain);
-		if (bog < 0.36) col = ramp4(vec3(0.19, 0.15, 0.10), vec3(0.24, 0.19, 0.12), vec3(0.28, 0.23, 0.15), vec3(0.33, 0.27, 0.18), grain);   // mud
-		float pool = bog + (vnoise(t * 9.0) - 0.5) * 0.08;
-		if (pool > 0.66) {
-			col = mix(vec3(0.10, 0.17, 0.17), vec3(0.14, 0.23, 0.24), grain);   // standing water
-			if (pool < 0.69) col = vec3(0.16, 0.14, 0.09);                      // its muddy lip
+		if (bog < 0.36) col = ramp4(vec3(0.26, 0.21, 0.14), vec3(0.31, 0.25, 0.16), vec3(0.36, 0.29, 0.19), vec3(0.41, 0.34, 0.22), grain);   // mud, warm and light (dark read as oil)
+		// A few broad pools, not many small ones (Fable: they read as oil puddles).
+		float pool = vnoise(t * 0.55 + 13.0) * 0.75 + vnoise(t * 2.0 + 3.0) * 0.2 + (vnoise(t * 9.0) - 0.5) * 0.05;
+		if (pool > 0.6) {
+			col = mix(vec3(0.20, 0.31, 0.28), vec3(0.26, 0.38, 0.35), floor(clamp(grain + bay * 0.3, 0.0, 0.999) * 3.0) / 2.0);   // greenish standing water, like the pond's
+			if (pool < 0.615) col = vec3(0.30, 0.25, 0.16);                     // its muddy lip
 			else if (vnoise(t * 2.0 + vec2(0.0, 0.6)) - vnoise(t * 2.0) > 0.06) col = mix(col, vec3(0.42, 0.55, 0.56), 0.45);   // sky in it
 			if (hash(cell + 17.0) > 0.97) col = vec3(0.45, 0.58, 0.2);          // duckweed
 		} else {
