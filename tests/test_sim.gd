@@ -438,6 +438,11 @@ func _test_one_farmer(races: Array) -> void:
 		var h: int = w.units.home[i]
 		return w.units.task[i] in [Economy.GATHER, Economy.RETURN] and h >= 0 and w.map.pool[h] == farm
 	check(on.call(ids[0], a) and on.call(ids[1], b2), "one farmer: each farm's builder farms it")
+	var rival := -1
+	for i in w.units.count():
+		if rival < 0 and w.units.owner[i] == 1 and w.types[w.units.kind[i]].worker:
+			rival = i
+	check(Economy.taken(w, a, rival), "farms: a rival's worker can't work your farm")
 	check(Economy.taken(w, a) and Economy.taken(w, a + 1), "one farmer: a worked farm is taken (any of its tiles)")
 	# A third worker sent to the first farm doesn't join its farmer.
 	w.issue(0, Commands.GATHER, {"ids": [ids[2]], "cell": a + 1})
