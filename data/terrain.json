@@ -11,13 +11,13 @@
    "note": "bug bushes: near-infinite food (instead of farms)"
   },
   "field": {
-   "walkable": false,
+   "walkable": true,
    "colour": "#8a7a3a",
    "colour2": "#7e6f34",
    "resource": "food",
-   "amount": 175,
-   "depleted": "grass",
-   "note": "a farm's crops: 175 food per tile; worked out, it goes back to grass"
+   "depleted": "fallow",
+   "note": "a farm's crops: the farm's food is pooled over its tiles (one farm, one amount); worked out it lies fallow until reseeded",
+   "cleared": "grass"
   },
   "grass": {
    "walkable": true,
@@ -28,14 +28,15 @@
   "paddy": {
    "walkable": false,
    "move": [
+    "amphibious",
     "flying"
    ],
    "colour": "#5a8a5a",
    "colour2": "#527e52",
    "resource": "food",
-   "amount": 175,
-   "depleted": "shallows",
-   "note": "an amphibian farm in the shallows: rice in the water; worked out, it's shallows again"
+   "depleted": "fallow_paddy",
+   "note": "an amphibian farm in the shallows: rice in the water; pooled like a field; worked out it lies fallow until reseeded",
+   "cleared": "shallows"
   },
   "reeds": {
    "walkable": false,
@@ -88,6 +89,26 @@
    "colour": "#2f5a6e",
    "colour2": "#2b5466",
    "note": "impassable until there are boats (never, probably)"
+  },
+  "fallow": {
+   "walkable": true,
+   "colour": "#6a5a3a",
+   "colour2": "#62533a",
+   "reseed": "field",
+   "cleared": "grass",
+   "note": "a worked-out farm: bare furrows, waiting to be reseeded"
+  },
+  "fallow_paddy": {
+   "walkable": false,
+   "move": [
+    "amphibious",
+    "flying"
+   ],
+   "colour": "#4f6e5a",
+   "colour2": "#486652",
+   "reseed": "paddy",
+   "cleared": "shallows",
+   "note": "a worked-out paddy: muddy water, waiting to be reseeded"
   }
  }
 }
