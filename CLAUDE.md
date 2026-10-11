@@ -33,9 +33,9 @@ move it to `docs/backlog.md` rather than deleting it.
   ground), Town Center + Houses, training, construction, pop cap, rat economy from data, an
   economy bot (`src/ai/eco_bot.gd`), the command panel. Dominic watched an opening: "all looks
   good". See `docs/milestones/m3-economy.md`.
-- **Built (milestone 4): combat.** Armour classes, attack-move that spreads into duels,
+- **Done (milestone 4): combat.** Armour classes, attack-move that spreads into duels,
   projectiles, deaths, hit flash, the unit card, the two-part counter quiz
-  (`scenes/counter_quiz.tscn`). Waiting on Dominic's quiz run. See `docs/milestones/m4-combat.md`.
+  (`scenes/counter_quiz.tscn`); Dominic called the stats fine. See `docs/milestones/m4-combat.md`.
 - **Built (milestone 5): art rework.** Realistic props and buildings in six architectures (reed
   for frogs and mound for bugs come from the creature), textured units, posed gear, portraits and
   cursors. Waiting on Dominic's look sign-off. See `docs/milestones/m5-art-rework.md`.
