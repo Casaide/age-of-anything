@@ -3,7 +3,7 @@ extends SceneTree
 ## equal cost (same budget each side, both attack-moving, in the sim), in a given age. A unit's
 ## value is its win rate; the metric is that none is more than 20% off the mean. Prints a table,
 ## outliers first, so pricing can be tuned in data. Deterministic.
-## Run: godot --headless --path . --script res://tests/balance.gd [-- age]   (a few minutes)
+## Run: godot --headless --path . --script res://tests/balance.gd [-- age [combat_rule=value ...]]
 
 const DataLib := preload("res://src/data_lib.gd")
 const Generator := preload("res://src/race_generator.gd")
@@ -20,6 +20,9 @@ func _init() -> void:
 	var lib = DataLib.new()
 	var gen = Generator.new(lib)
 	var rules = DataLib.load_json("res://data/rules/default.json")
+	for arg in args.slice(1):   # rule overrides to try, e.g. kite_gap=1500
+		rules.combat[arg.get_slice("=", 0)] = int(arg.get_slice("=", 1))
+		print("trying combat.%s = %s" % [arg.get_slice("=", 0), arg.get_slice("=", 1)])
 	var races := PROMPTS.map(func(p): return gen.generate(p, rules))
 	var t0 := Time.get_ticks_msec()
 	var rr: Dictionary = RoundRobin.run(races, rules, age)
