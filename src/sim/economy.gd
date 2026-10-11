@@ -47,7 +47,7 @@ static func load_btypes(resources: Array) -> Array:
 	for id in ids:
 		var b: Dictionary = d.buildings[id]
 		out.append({
-			"id": id, "name": b.name, "desc": b.get("desc", ""), "size": int(b.size), "hp": int(b.hp),
+			"id": id, "name": b.name, "desc": b.get("desc", ""), "hotkey": b.get("hotkey", ""), "size": int(b.size), "hp": int(b.hp),
 			"cost": cost_vector(resources, b.cost), "drop": PackedByteArray(resources.map(func(r): return 1 if r in b.drop_off else 0)),
 			"water": bool(b.get("water", false)), "becomes": b.get("becomes", {}).duplicate(),
 			"food": int(b.get("food", 0)), "reseed": cost_vector(resources, b.get("reseed", {})),
@@ -271,7 +271,7 @@ static func _gather(w, i: int, carry_max: int) -> void:
 	if _in_reach(w, i, _cell_rect(w, cell)):
 		u.moving[i] = 0
 		u.work[i] += 1
-		if u.work[i] >= int(w.econ.gather_ticks[w.resources[kind - 1]]):
+		if u.work[i] >= w.gather_ticks[u.owner[i]][kind - 1]:
 			u.work[i] = 0
 			w.map.take(cell)
 			u.carry[i] += 1

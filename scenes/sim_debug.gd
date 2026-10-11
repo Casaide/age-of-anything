@@ -81,6 +81,7 @@ var overlay: Node2D         # over everything: selection box, placement ghost, c
 var hud: Label
 var bar: Label              # the debug line of both sides' stock (not against the AI)
 var top_bar: TopBar
+var build_menu: Array = DataLib.load_json("res://data/buildings.json").menu   # a worker's buttons, in order
 var show_debug := true      # the debug lines (F1); off by default against the AI
 var panel: CommandPanel
 var cursors: Cursors
@@ -456,17 +457,9 @@ func _unhandled_input(event: InputEvent) -> void:
 				_clear_selection()
 			KEY_Q:
 				train_worker()
-			KEY_H:
-				start_placing("house")
-			KEY_F:
-				start_placing("farm")
-			KEY_B:
-				start_placing("barracks")
 			KEY_U:
 				if selected_building != 0:
 					world.issue(active, Commands.AGE_UP, {"building": selected_building})
-			KEY_C:
-				start_placing("town_center")
 			KEY_ESCAPE:
 				placing = ""
 			KEY_BRACKETRIGHT:
@@ -495,6 +488,11 @@ func _unhandled_input(event: InputEvent) -> void:
 			KEY_F9:
 				if FileAccess.file_exists(REPLAY_PATH):
 					start_replay(Replay.load_file(REPLAY_PATH))
+			_:
+				var key := OS.get_keycode_string(event.keycode)
+				for bt in world.btypes:   # a building's hotkey (data/buildings.json), with workers selected
+					if bt.hotkey == key and world.ages[active] >= int(bt.age):
+						start_placing(bt.id)
 			KEY_M:
 				map_id = MAP_IDS[(MAP_IDS.find(map_id) + 1) % MAP_IDS.size()]
 				start_live(world.races.map(func(r): return r.prompt))
@@ -1360,7 +1358,7 @@ func _update_panel() -> void:
 			kinds.sort()
 			c.tray = kinds.map(func(k): return {"icon": kit.icons.get("%d:%s" % [world.types[k].player, world.types[k].slot]), "count": counts[k]})
 		if not _selected_workers().is_empty():
-			for id in ["house", "farm", "barracks", "stable", "watchtower", "town_center"]:
+			for id in build_menu:
 				var t: Dictionary = world.btypes[Economy.btype_of(world, id)]
 				if world.ages[active] < t.age:
 					continue
@@ -1368,7 +1366,7 @@ func _update_panel() -> void:
 				var bid: String = id
 				c.buttons.append({"icon": kit.building_icon(_arch(active), id), "text": "Build %s (%s)" % [t.name, _cost_text(t.cost)],
 					"tip": _building_tip(t),
-					"key": {"house": "H", "farm": "F", "barracks": "B", "town_center": "C"}.get(id, ""), "cost": _cost_text(t.cost), "enabled": afford, "action": func(): start_placing(bid)})
+					"key": t.hotkey, "cost": _cost_text(t.cost), "enabled": afford, "action": func(): start_placing(bid)})
 		if placing != "":
 			c.info = "Placing: left-click to build, shift keeps placing, right-click/Esc cancels"
 		panel.show_content(c)

@@ -22,8 +22,8 @@
    "desc": "The top of every unit line.",
    "cost": {
     "food": 800,
-    "wood": 400,
-    "stone": 200
+    "wood": 200,
+    "gold": 200
    },
    "time": 90,
    "building": "town_center",
@@ -42,7 +42,7 @@
     "wood": 50
    },
    "time": 30,
-   "building": "barracks",
+   "building": "armoury",
    "age": 1,
    "effects": [
     {
@@ -75,6 +75,141 @@
     }
    ],
    "note": "frogs only (a tech-tree layer, D-070): +2 speed for amphibians; lifted by the host's full_tech_tree rule"
+  },
+  {
+   "id": "fletching",
+   "name": "Fletching",
+   "desc": "Straighter arrows fly further.",
+   "cost": {
+    "food": 100,
+    "wood": 50
+   },
+   "time": 30,
+   "building": "armoury",
+   "age": 2,
+   "effects": [
+    {
+     "tag": "bow",
+     "stat": "range",
+     "add": 1
+    }
+   ]
+  },
+  {
+   "id": "hardened_tips",
+   "name": "Hardened Tips",
+   "desc": "Fire-hardened points for every missile.",
+   "cost": {
+    "food": 150,
+    "wood": 0,
+    "gold": 50
+   },
+   "time": 35,
+   "building": "armoury",
+   "age": 2,
+   "effects": [
+    {
+     "tag": "ranged",
+     "stat": "attack",
+     "add": 1
+    }
+   ]
+  },
+  {
+   "id": "stone_axes",
+   "name": "Stone Axes",
+   "desc": "Sharper axes: wood comes in faster.",
+   "cost": {
+    "food": 75,
+    "wood": 25
+   },
+   "time": 25,
+   "building": "lumber_camp",
+   "age": 1,
+   "effects": [
+    {
+     "gather": "wood",
+     "pct": 15
+    }
+   ]
+  },
+  {
+   "id": "saws",
+   "name": "Saws",
+   "desc": "Saws for the big stems: wood faster still.",
+   "cost": {
+    "food": 150,
+    "wood": 75,
+    "gold": 25
+   },
+   "time": 40,
+   "building": "lumber_camp",
+   "age": 2,
+   "effects": [
+    {
+     "gather": "wood",
+     "pct": 15
+    }
+   ]
+  },
+  {
+   "id": "baskets",
+   "name": "Bigger Baskets",
+   "desc": "Picking goes quicker with a bigger basket.",
+   "cost": {
+    "food": 50,
+    "wood": 50
+   },
+   "time": 20,
+   "building": "mill",
+   "age": 1,
+   "effects": [
+    {
+     "gather": "food",
+     "pct": 15
+    }
+   ]
+  },
+  {
+   "id": "ploughs",
+   "name": "Ploughs",
+   "desc": "Farms and bushes give food faster.",
+   "cost": {
+    "food": 125,
+    "wood": 75,
+    "gold": 25
+   },
+   "time": 40,
+   "building": "mill",
+   "age": 2,
+   "effects": [
+    {
+     "gather": "food",
+     "pct": 15
+    }
+   ]
+  },
+  {
+   "id": "picks",
+   "name": "Iron Picks",
+   "desc": "Stone and gold come out of the rock faster.",
+   "cost": {
+    "food": 100,
+    "wood": 75
+   },
+   "time": 30,
+   "building": "mining_camp",
+   "age": 1,
+   "effects": [
+    {
+     "gather": "stone",
+     "pct": 15
+    },
+    {
+     "gather": "gold",
+     "pct": 15
+    }
+   ]
   }
  ]
 }

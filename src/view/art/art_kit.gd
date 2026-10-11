@@ -11,6 +11,7 @@ const PartBaker := preload("res://scenes/art_pixel/part_baker.gd")
 const Baker := preload("res://src/view/art/bake/baker.gd")
 const Models := preload("res://src/view/art/bake/models.gd")
 const PropModels := preload("res://scenes/art_pixel/prop_models.gd")
+const DataLib := preload("res://src/data_lib.gd")
 
 const ART_SCALE := 1.5     # art pixels per canvas unit (a tile is 96 x 48 art pixels)
 const UNIT_SCALE := 0.85   # units at about a third of a building's height
@@ -110,6 +111,13 @@ static func _model(arch: String, type: String) -> String:
 	return "%s_%s" % [type, arch]   # barracks_thatch, stable_stone, watchtower_tent...
 
 
+## A building's model spec (town centres, houses and farms by name, the rest by type and culture).
+func _spec(models, arch: String, type: String) -> Dictionary:
+	if type in ["town_center", "house", "farm"]:
+		return models.call(_model(arch, type), PartShape.TEAM_KEY)
+	return models.building(type, arch, PartShape.TEAM_KEY)
+
+
 ## A building's picture for a button: its finished bake, from the atlas.
 ## Cached: the command panel rebuilds its buttons when its content changes, and a new texture
 ## every frame made it rebuild every frame, so clicks never landed.
@@ -200,7 +208,7 @@ func bake_buildings(races: Array) -> void:
 	archs.sort()
 	var h: Array = await _hifi()
 	for arch in archs:
-		for type in ["town_center", "house", "farm", "barracks", "stable", "watchtower"]:
+		for type in DataLib.load_json("res://data/buildings.json").menu:
 			await _bake_building(h[0], h[1], arch, type)
 	h[0].queue_free()
 
@@ -280,7 +288,7 @@ func _bake_building(baker, models, arch: String, type: String) -> void:
 	var name := "%s:%s" % [arch, type]
 	if buildings.has(name):
 		return
-	var spec: Dictionary = models.call(_model(arch, type), PartShape.TEAM_KEY)
+	var spec: Dictionary = _spec(models, arch, type)
 	if type == "house":
 		spec.body.scale = Vector3.ONE * HOUSE_SCALE
 		if spec.has("smoke"):
@@ -312,7 +320,7 @@ func _bake_building(baker, models, arch: String, type: String) -> void:
 	info.stages = []
 	baker.set_ground_shadow(true)
 	for st in BUILD_STAGES.size():
-		var part: Dictionary = models.call(_model(arch, type), PartShape.TEAM_KEY)
+		var part: Dictionary = _spec(models, arch, type)
 		if type == "house":
 			part.body.scale = Vector3.ONE * HOUSE_SCALE
 		_hold_back(part.body, st, models)

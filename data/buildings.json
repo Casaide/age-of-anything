@@ -1,9 +1,72 @@
 {
  "schema": "aow.buildings/1",
+ "menu": [
+  "house",
+  "farm",
+  "lumber_camp",
+  "mill",
+  "mining_camp",
+  "barracks",
+  "archery_range",
+  "stable",
+  "armoury",
+  "market",
+  "watchtower",
+  "wall",
+  "town_center"
+ ],
+ "_menu_doc": "the order buildings appear in a worker's build menu (hotkeys are avoided where they clash with WASD panning and the debug keys)",
  "buildings": {
+  "archery_range": {
+   "name": "Archery Range",
+   "desc": "Trains your ranged soldiers: skirmishers, who hunt archers, and archers.",
+   "size": 3,
+   "hp": 1100,
+   "cost": {
+    "food": 0,
+    "wood": 175
+   },
+   "build_time": 45,
+   "pop": 0,
+   "house": false,
+   "drop_off": [],
+   "trains": [
+    "skirmisher",
+    "archer"
+   ],
+   "age": 1,
+   "hotkey": "E",
+   "armour": {
+    "melee": 1,
+    "pierce": 7
+   },
+   "note": "the ranged lines"
+  },
+  "armoury": {
+   "name": "Armoury",
+   "desc": "Where weapons and armour are improved: sharper points, better bows, tougher kit.",
+   "size": 2,
+   "hp": 900,
+   "cost": {
+    "food": 0,
+    "wood": 150
+   },
+   "build_time": 40,
+   "pop": 0,
+   "house": false,
+   "drop_off": [],
+   "trains": [],
+   "age": 1,
+   "hotkey": "Y",
+   "armour": {
+    "melee": 1,
+    "pierce": 6
+   },
+   "note": "weapon and armour research (Sharp Sticks moved here, Dominic)"
+  },
   "barracks": {
    "name": "Barracks",
-   "desc": "Trains your foot soldiers: spearmen, skirmishers and archers. Weapon research is done here.",
+   "desc": "Trains your spearmen, the line that holds against riders and big beasts.",
    "size": 3,
    "hp": 1200,
    "cost": {
@@ -15,9 +78,7 @@
    "house": false,
    "drop_off": [],
    "trains": [
-    "spear",
-    "skirmisher",
-    "archer"
+    "spear"
    ],
    "age": 1,
    "hotkey": "B",
@@ -25,7 +86,7 @@
     "melee": 1,
     "pierce": 7
    },
-   "note": "infantry and ranged; Sharp Sticks"
+   "note": "infantry (the spear line); the Archery Range and Stable train the rest"
   },
   "farm": {
    "name": "Farm",
@@ -82,6 +143,101 @@
    },
    "water": true
   },
+  "lumber_camp": {
+   "name": "Lumber Camp",
+   "desc": "A place to drop wood close to where it's cut. Woodcutting research is done here.",
+   "size": 2,
+   "hp": 600,
+   "cost": {
+    "food": 0,
+    "wood": 100
+   },
+   "build_time": 25,
+   "pop": 0,
+   "house": false,
+   "drop_off": [
+    "wood"
+   ],
+   "trains": [],
+   "age": 1,
+   "hotkey": "L",
+   "armour": {
+    "melee": 1,
+    "pierce": 5
+   },
+   "note": "wood drop-off"
+  },
+  "market": {
+   "name": "Market",
+   "desc": "Buy and sell food, wood and stone for gold. Prices move with what everyone trades.",
+   "size": 3,
+   "hp": 1300,
+   "cost": {
+    "food": 0,
+    "wood": 175
+   },
+   "build_time": 50,
+   "pop": 0,
+   "house": false,
+   "drop_off": [],
+   "trains": [],
+   "age": 2,
+   "hotkey": "J",
+   "armour": {
+    "melee": 1,
+    "pierce": 7
+   },
+   "note": "trade: buy/sell with gold, shared prices"
+  },
+  "mill": {
+   "name": "Mill",
+   "desc": "A place to drop food near bushes and farms. Foraging and farming research is done here.",
+   "size": 2,
+   "hp": 600,
+   "cost": {
+    "food": 0,
+    "wood": 100
+   },
+   "build_time": 25,
+   "pop": 0,
+   "house": false,
+   "drop_off": [
+    "food"
+   ],
+   "trains": [],
+   "age": 1,
+   "hotkey": "K",
+   "armour": {
+    "melee": 1,
+    "pierce": 5
+   },
+   "note": "food drop-off"
+  },
+  "mining_camp": {
+   "name": "Mining Camp",
+   "desc": "A place to drop stone and gold close to the deposits. Mining research is done here.",
+   "size": 2,
+   "hp": 600,
+   "cost": {
+    "food": 0,
+    "wood": 100
+   },
+   "build_time": 25,
+   "pop": 0,
+   "house": false,
+   "drop_off": [
+    "stone",
+    "gold"
+   ],
+   "trains": [],
+   "age": 1,
+   "hotkey": "N",
+   "armour": {
+    "melee": 1,
+    "pierce": 5
+   },
+   "note": "stone and gold drop-off"
+  },
   "stable": {
    "name": "Stable",
    "desc": "Trains your large unit: a rider, a giant or a heavy, whatever your race fields.",
@@ -99,7 +255,7 @@
     "large"
    ],
    "age": 2,
-   "hotkey": "S",
+   "hotkey": "Z",
    "armour": {
     "melee": 1,
     "pierce": 7
@@ -135,6 +291,29 @@
     "pierce": 8
    }
   },
+  "wall": {
+   "name": "Wall",
+   "desc": "A stone wall, one tile at a time: drag to lay a line. Stops anyone who can't fly.",
+   "size": 1,
+   "hp": 1500,
+   "cost": {
+    "food": 0,
+    "wood": 0,
+    "stone": 5
+   },
+   "build_time": 6,
+   "pop": 0,
+   "house": false,
+   "drop_off": [],
+   "trains": [],
+   "age": 1,
+   "hotkey": "X",
+   "armour": {
+    "melee": 6,
+    "pierce": 10
+   },
+   "note": "dragged in lines; flyers go over"
+  },
   "watchtower": {
    "name": "Watchtower",
    "desc": "A lookout that shoots the nearest enemy in range and sees far into the fog.",
@@ -151,7 +330,7 @@
    "drop_off": [],
    "trains": [],
    "age": 2,
-   "hotkey": "W",
+   "hotkey": "T",
    "armour": {
     "melee": 2,
     "pierce": 8
