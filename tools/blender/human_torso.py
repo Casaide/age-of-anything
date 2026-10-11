@@ -61,7 +61,7 @@ def lathe(name, material, profile, segs=40, squash=lambda z, a: (1.0, 1.0)):
 
 # The chest and waist: wide at the shoulders, deep at the chest, narrow at the belt; a little
 # flatter front-to-back than side-to-side (x is front-back, y is side-to-side).
-chest = lathe("chest", TEAM, [(14.6, 3.6), (15.4, 4.1), (17.0, 4.5), (19.0, 4.9), (21.0, 5.2), (22.6, 5.0), (23.6, 3.9), (24.2, 2.2)],
+chest = lathe("chest", TEAM, [(14.6, 3.6), (15.4, 4.1), (17.0, 4.5), (19.0, 4.8), (21.0, 4.95), (22.6, 4.6), (23.6, 3.6), (24.2, 2.2)],
               squash=lambda z, a: (0.82 + 0.06 * smoothstep(17, 21, z) * max(0.0, math.cos(a)), 1.08))
 # The skirt: from the belt, flaring, its hem in folds.
 def skirt_squash(z, a):

@@ -599,3 +599,50 @@ func _concept_head_blender(c: Dictionary) -> Dictionary:
 		"eye": plain(Color("#1a1210"))})
 	return {"node": n, "sockets": {"top": Vector3(0.3, 11.0, 0)}}
 
+
+
+# ------------------------------------------------------------------ SG1: how a spider soldier stands
+# Like the beetles (BG1): spider infantry today are mount bodies with gear hung on.
+
+## (a) Rearing: the abdomen low behind, the front body tilted up like a chest, six legs down,
+## the front pair as arms.
+func _concept_spider_rear(c: Dictionary) -> Dictionary:
+	var n := Node3D.new()
+	var hair := surf("rat_fur", c.skin, 6.0)
+	var front := surf("rat_fur", c.skin2, 5.0)
+	n.add_child(blob(Vector3(7.5, 6.0, 6.5), hair, Vector3(-7.5, 9.5, 0), Vector3(0, 0, 10)))      # abdomen, low
+	n.add_child(blob(Vector3(3.0, 0.8, 3.2), plain(c.team), Vector3(-9.0, 15.0, 0), Vector3(0, 0, 10)))   # team marking on its back
+	n.add_child(blob(Vector3(4.2, 6.0, 4.6), front, Vector3(1.5, 14.5, 0), Vector3(0, 0, -30)))   # the front body, reared up
+	var limb := surf("rat_fur", c.skin, 4.0)
+	var hand_r := Vector3(6.5, 13.5, 5.2)
+	n.add_child(rod(Vector3(2.5, 18.0, 3.5), Vector3(5.5, 16.5, 6.0), 1.0, 0.85, limb))
+	n.add_child(rod(Vector3(5.5, 16.5, 6.0), hand_r, 0.85, 0.6, limb))
+	n.add_child(rod(Vector3(2.5, 18.0, -3.5), Vector3(5.5, 16.5, -6.0), 1.0, 0.85, limb))
+	n.add_child(rod(Vector3(5.5, 16.5, -6.0), Vector3(6.5, 13.5, -5.2), 0.85, 0.6, limb))
+	var hips := []
+	var xs := [0.5, -2.5, -5.5]
+	for k in 3:
+		hips.append([Vector3(xs[k], 9.5, 3.5), k * 1.0, 1, 1 if k >= 1 else 0])
+		hips.append([Vector3(xs[k], 9.5, -3.5), k * 1.0 + PI, -1, 1 if k >= 1 else 0])
+	return {"node": n, "sockets": {"head": Vector3(3.5, 20.0, 0), "hand_r": hand_r, "hand_l": Vector3(6.5, 13.5, -5.2),
+		"torso": Vector3(1.5, 14.5, 0), "back": Vector3(-7, 14, 0)}, "anchors": hips, "torso_scale": Vector2(0.5, 0.6)}
+
+
+## (b) Jumping spider: compact and fuzzy, a big square front body with huge front eyes, sitting
+## up on its haunches, short thick legs.
+func _concept_spider_jumper(c: Dictionary) -> Dictionary:
+	var n := Node3D.new()
+	var hair := surf("rat_fur", c.skin, 4.0)
+	var front := surf("rat_fur", c.skin2, 4.0)
+	n.add_child(blob(Vector3(5.0, 4.4, 4.6), hair, Vector3(-5.0, 9.0, 0), Vector3(0, 0, 20)))     # small round abdomen
+	n.add_child(blob(Vector3(5.0, 5.2, 5.0), front, Vector3(1.0, 13.0, 0), Vector3(0, 0, -20)))  # boxy front body
+	n.add_child(blob(Vector3(5.0, 1.0, 5.0), plain(c.team), Vector3(-5.0, 13.2, 0), Vector3(0, 0, 20)))   # team band
+	var limb := surf("rat_fur", c.skin, 3.0)
+	n.add_child(rod(Vector3(3.5, 15.0, 3.5), Vector3(6.5, 12.0, 5.0), 1.3, 1.0, limb))   # thick front legs as arms
+	n.add_child(rod(Vector3(3.5, 15.0, -3.5), Vector3(6.5, 12.0, -5.0), 1.3, 1.0, limb))
+	var hips := []
+	for k in 3:
+		hips.append([Vector3(-1.0 - k * 2.0, 9.0, 3.6), k * 1.0, 1, 1 if k >= 1 else 0])
+		hips.append([Vector3(-1.0 - k * 2.0, 9.0, -3.6), k * 1.0 + PI, -1, 1 if k >= 1 else 0])
+	return {"node": n, "sockets": {"head": Vector3(3.0, 17.5, 0), "hand_r": Vector3(6.5, 12.0, 5.0), "hand_l": Vector3(6.5, 12.0, -5.0),
+		"torso": Vector3(1.0, 13.0, 0), "back": Vector3(-5, 13, 0)}, "anchors": hips, "torso_scale": Vector2(0.5, 0.55)}
