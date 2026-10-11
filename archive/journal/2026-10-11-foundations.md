@@ -306,3 +306,17 @@ Dominic: "look at the arm" (a back view with the arm drawn across the man's back
 over the tunic). The arm was the concept sheet's layering, not the game's facings; the thigh was
 real: bodies can now keep their legs under the clothes (`legs_under`). "Neck is too long": the head
 sits a unit lower.
+
+### Shoulders, spider hats and the last review polish
+Dominic: "Human shoulders a little bit too big." The shoulder caps moved in and shrank, and the
+Blender chest narrowed at the top. Then "What's on the spiders head?": the spider posture sheet
+(SG1) had kept the spear unit's leaf hat on every column; Claude hadn't looked closely. Re-rendered
+bare-headed. The white square at the spiders' feet was a concept-sheet bug: the preview decided
+"worn armour" from a bake that didn't exist yet, so it baked the wrong key.
+Then the Fable second pass's open polish, one by one: the age-up card says "Becomes: Reedspear
+Frog -> Spearbearer Frog" for renames; tips moved under the top bar (tooltip cards had covered
+them) with the alert below; the minimap sits on the panel's margin; a win on Easy suggests Normal;
+costs under buttons are numbers with resource icons; the portrait frame stays square; the boar got
+a pink snout, thick tusks and a warmer brown; stone and thatch mills stand on a stone plinth under
+their own roof; tool cursors carry a small pointer whose tip is the hotspot; swamp pools are a few
+broad greenish ones (they had read as oil); mineable stone shows a fresh split and cut blocks.
