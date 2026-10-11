@@ -21,7 +21,11 @@ func setup(kit, name: String, cx: int, cy: int, size: int, p_team: Color) -> voi
 	team = p_team
 	var info: Dictionary = kit.buildings[name]
 	var centre := Iso.to_screen((cx + size * 0.5) * 1000, (cy + size * 0.5) * 1000)
-	position = Iso.to_screen((cx + size) * 1000, (cy + size) * 1000)   # y-sorts by its front corner
+	# Y-sorts by its footprint's centre, not its front corner: a unit beside either lower
+	# face is lower on screen than the centre and draws in front; beside an upper face
+	# it's higher and goes behind. (Sorting by the front corner hid units standing beside
+	# the lower faces.) Art spilling past the footprint doesn't move the sort point.
+	position = centre
 	var at := centre - position
 	body = kit.sprite(info.body)
 	body.position = at
