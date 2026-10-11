@@ -900,7 +900,7 @@ func _job(i: int) -> String:
 	# Standing at its job counts, not the work counter: it resets to 0 after every load unit,
 	# which snapped the animation back to idle for a frame (Dominic: "restarting at weird points").
 	if u.task[i] == Economy.GATHER:
-		return {"food": "forage", "wood": "chop", "stone": "mine"}.get(world.resources[u.carry_kind[i] - 1], "forage")
+		return {"food": "forage", "wood": "chop", "stone": "mine", "gold": "mine"}.get(world.resources[u.carry_kind[i] - 1], "forage")
 	if u.task[i] == Economy.BUILD:
 		return "build"
 	return ""
@@ -912,9 +912,9 @@ func _tool_for(i: int) -> String:
 	var u := world.units
 	var res: String = world.resources[u.carry_kind[i] - 1] if u.carry_kind[i] > 0 else ""
 	if u.task[i] == Economy.RETURN and u.carry[i] > 0:
-		return {"food": "tool.basket", "wood": "load.reeds", "stone": "load.stone"}.get(res, "tool.basket")
+		return {"food": "tool.basket", "wood": "load.reeds", "stone": "load.stone", "gold": "load.gold"}.get(res, "tool.basket")
 	if u.task[i] == Economy.GATHER:
-		return {"food": "tool.basket", "wood": "tool.axe", "stone": "tool.pick"}.get(res, "tool.basket")
+		return {"food": "tool.basket", "wood": "tool.axe", "stone": "tool.pick", "gold": "tool.pick"}.get(res, "tool.basket")
 	if u.task[i] == Economy.BUILD:
 		return "tool.hammer"
 	return world.types[u.kind[i]].recipe.parts.get("hand_r", "tool.basket")
@@ -993,7 +993,7 @@ func _clear_doodads(cx: int, cy: int, size: int) -> void:
 ## Resource props show what's left in stages; a used-up bush fades away, used-up reeds
 ## leave stubble for a while first.
 ## The prop for a resource cell (bug bush, reed clump, stone outcrop, a farm's crops or paddy).
-const RESOURCE_PROP := {"bugbush": "bush", "reeds": "reeds", "stone": "quarry", "field": "crops", "paddy": "paddy"}
+const RESOURCE_PROP := {"bugbush": "bush", "reeds": "reeds", "stone": "quarry", "gold": "gold", "field": "crops", "paddy": "paddy"}
 
 
 func _add_resource_view(c: int, pick: int) -> void:
@@ -1025,7 +1025,7 @@ func _sync_resources() -> void:
 			h.add_child(kit.doodad(r.kind, r.pick, stage))
 		if map.left_at(c) <= 0:
 			r.gone += dt
-			var linger := 6.0 if r.kind in ["reeds", "quarry"] else 0.0   # stubble and rubble stay a while
+			var linger := 6.0 if r.kind in ["reeds", "quarry", "gold"] else 0.0   # stubble and rubble stay a while
 			h.modulate.a = clampf(1.0 - (r.gone - linger) / 1.5, 0.0, 1.0)
 			if h.modulate.a <= 0.0:
 				h.queue_free()
@@ -1226,7 +1226,7 @@ func _update_panel() -> void:
 			selected_resource = -1
 		else:
 			var tname: String = map.terrain_ids[map.terrain[selected_resource]]
-			var what: String = {"bugbush": "Bug bush", "reeds": "Reeds", "stone": "Stone"}.get(tname, tname.capitalize())
+			var what: String = {"bugbush": "Bug bush", "reeds": "Reeds", "stone": "Stone", "gold": "Gold"}.get(tname, tname.capitalize())
 			panel.show_content({"title": what, "team": Color("#8a7a5a"), "buttons": [], "queue": null, "portrait": null,
 				"hp": [left, rviews[selected_resource].get_meta("res").full] if rviews.has(selected_resource) else [],
 				"info": "%d %s left" % [left, map.resource_at(selected_resource)]})

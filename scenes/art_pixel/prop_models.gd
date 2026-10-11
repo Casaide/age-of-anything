@@ -231,11 +231,21 @@ func boulders(seed_value: int) -> Node3D:
 ## Stone you can mine, unlike the grey boulders that only block: pale, warm sandstone split
 ## along flat faces (worked stone, not cubes: rough everywhere a split didn't go), with
 ## pieces and chips around. `stage` 0-3 is how far it's been mined: fewer, smaller rocks,
-## then chips.
-func quarry(seed_value: int, stage := 0) -> Node3D:
+## then chips. `ore` "gold" is the same deposit (the shared base: one shape for every mine)
+## in darker rock with gold nuggets and veins showing, so the two read apart at a glance.
+func quarry(seed_value: int, stage := 0, ore := "stone") -> Node3D:
 	rng.seed = seed_value
 	var n := Node3D.new()
+	var gold := ore == "gold"
 	var tints := [Color(0.98, 0.88, 0.7), Color(0.9, 0.79, 0.62), Color(1.0, 0.93, 0.8), Color(0.86, 0.75, 0.6)]
+	if gold:
+		tints = [Color(0.62, 0.56, 0.5), Color(0.55, 0.5, 0.46), Color(0.68, 0.62, 0.55), Color(0.5, 0.46, 0.42)]
+	var metal := StandardMaterial3D.new()
+	metal.albedo_color = Color("#f2c440")
+	metal.metallic = 0.85
+	metal.roughness = 0.25
+	metal.emission_enabled = true
+	metal.emission = Color("#7a5a10")
 	var keep: float = [1.0, 0.65, 0.35, 0.0][stage]
 	var rocks := []
 	for k in rng.randi_range(5, 7):   # every random draw first, so each stage is the same heap, cut down
@@ -255,13 +265,27 @@ func quarry(seed_value: int, stage := 0) -> Node3D:
 		mi.rotation_degrees = Vector3(0, rk[2], 0)
 		mi.position = rk[0] + Vector3(0, r * 0.3, 0)
 		n.add_child(mi)
+		if gold:   # nuggets set into the rock, poking out of it; a vein of them across the big one
+			var count := 11 if k == 0 else 3
+			for g in count:
+				var a := (float(g) / count) * PI * 1.4 - 0.2 if k == 0 else rng.randf() * TAU
+				var h := 0.1 + 0.3 * absf(sin(g * 1.7)) if k == 0 else rng.randf_range(0.05, 0.35)
+				var gr := r * (0.17 if k == 0 else rng.randf_range(0.18, 0.24))
+				var nug := MeshInstance3D.new()
+				nug.mesh = stone_mesh(seed_value * 7 + k * 5 + g)
+				nug.material_override = metal
+				nug.scale = Vector3(gr * 1.3, gr * 0.8, gr)
+				# Just inside the rock's own (scaled, turned) outline, so it sits in the surface.
+				var local := Vector3(cos(a) * 0.68, h, sin(a) * 0.68)
+				nug.position = mi.position + (mi.basis * local)
+				n.add_child(nug)
 	for k in 9 - stage:   # chips and rubble
 		var a := rng.randf() * TAU
 		var d := rng.randf_range(0.15, 0.48)
 		var r := rng.randf_range(0.025, 0.05)
 		var chip := MeshInstance3D.new()
 		chip.mesh = stone_mesh(seed_value * 17 + k, true)
-		chip.material_override = um.surf("rock", tints[k % tints.size()], 0.6)
+		chip.material_override = metal if gold and k % 3 == 0 else um.surf("rock", tints[k % tints.size()], 0.6)
 		chip.scale = Vector3(r * 1.3, r * 0.8, r)
 		chip.position = Vector3(cos(a) * d, r * 0.3, sin(a) * d)
 		n.add_child(chip)

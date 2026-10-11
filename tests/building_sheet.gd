@@ -32,7 +32,7 @@ func _initialize() -> void:
 		var spec: Dictionary
 		if n.begins_with("prop."):   # a prop: prop.<function>.<seed>[.<stage>]
 			var bits: PackedStringArray = String(n).split(".")
-			var pargs: Array = Array(bits.slice(2)).map(func(x): return int(x))
+			var pargs: Array = Array(bits.slice(2)).map(func(x): return int(x) if x.is_valid_int() else x)
 			spec = {"body": PropModels.new().callv(bits[1], pargs)}
 		else:
 			spec = models.call(n, team)

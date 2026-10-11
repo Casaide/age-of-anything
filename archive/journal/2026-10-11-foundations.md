@@ -163,3 +163,11 @@ The first quarry stone was squared blocks; Dominic: "really weird perfect cubes"
 sandstone split along a flat face or two (the same noisy stones as the boulders, sheared), warm and
 pale against the grey boulders, and it shrinks to chips as it's mined. building_sheet.gd can show
 props now (prop.quarry.1300.2).
+
+### Gold
+Dominic: "we need gold too, so the rock should be easy to tell for both, but mostly a shared base".
+Gold is now a resource (data/resources.json), a deposit terrain, two deposits by each start on both
+test maps, and the same quarry prop in darker rock with gold showing. The first try had the nuggets
+floating off the rock and a straight bar for a vein (Dominic: "buggy and floating"); now they're set
+just inside the rock's own outline. Nothing costs gold yet: that comes with the buildings phase.
+Dominic also floated race-specific resources others can hold or trade (in the backlog).

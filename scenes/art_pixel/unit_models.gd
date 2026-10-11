@@ -1381,6 +1381,16 @@ func _load_stone(c: Dictionary) -> Dictionary:
 	return {"node": n}
 
 
+## Gold ore carried home: a lump of the deposit's dark rock with the gold showing in it.
+func _load_gold(c: Dictionary) -> Dictionary:
+	var n := Node3D.new()
+	n.add_child(blob(Vector3(2.6, 1.9, 2.1), surf("rock", Color(0.6, 0.55, 0.5), 3.0), Vector3(1.5, 1.0, 0)))
+	var gold := plain(Color("#f2c440"))
+	for p in [Vector3(2.8, 2.2, 1.0), Vector3(0.6, 2.4, -0.6), Vector3(2.0, 0.6, 1.8), Vector3(3.6, 1.2, -0.8)]:
+		n.add_child(blob(Vector3(0.75, 0.6, 0.7), gold, p))
+	return {"node": n}
+
+
 # ------------------------------------------------------------------ first-age kit for everyone
 
 ## A fire-hardened wooden spear: a plain shaft, the point charred dark.

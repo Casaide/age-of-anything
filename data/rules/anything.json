@@ -49,6 +49,7 @@
    "food": 200,
    "wood": 200,
    "stone": 0,
+   "gold": 0,
    "workers": 3,
    "buildings": [
     "town_center"
@@ -59,7 +60,8 @@
   "gather_ticks": {
    "food": 20,
    "wood": 24,
-   "stone": 30
+   "stone": 30,
+   "gold": 34
   },
   "queue_max": 15
  },
