@@ -855,6 +855,8 @@ func smart_order(pos: Vector2) -> void:
 		var b := world.buildings.index_of(selected_building)
 		if b >= 0 and world.buildings.owner[b] == active:
 			world.issue(active, Commands.RALLY, {"building": selected_building, "x": m.x, "y": m.y})
+			if map.resource_at(cell) != "":   # the sim puts it in the middle of the resource's tile
+				pos = Iso.to_screen((cell % map.width) * SimMap.TILE + SimMap.TILE / 2, (cell / map.width) * SimMap.TILE + SimMap.TILE / 2)
 			flags.append({"pos": pos, "t": 1.0})
 			audio.play("ui_click", -4.0)
 		return
@@ -879,6 +881,8 @@ func smart_order(pos: Vector2) -> void:
 			world.issue(p, Commands.GATHER, {"ids": ids, "cell": cell, "queue": q})
 		elif bid != 0 and _is_foundation_of(bid, p):
 			world.issue(p, Commands.HELP_BUILD, {"ids": ids, "target": bid, "queue": q})
+		elif bid != 0 and _drop_off_kind(bid, p, ids) != "":
+			world.issue(p, Commands.DROP_OFF, {"ids": ids, "building": bid, "queue": q})   # take what they carry in
 		elif bid != 0 and map.pool[cell] >= 0 and world.buildings.owner[world.buildings.index_of(bid)] == p:
 			world.issue(p, Commands.RESEED, {"ids": ids, "building": bid})   # a fallow farm of ours
 		else:
@@ -1002,6 +1006,20 @@ func _event_target_pos(id: int) -> Vector2:
 		var bs := world.buildings
 		return Iso.to_screen((bs.cx[b] + bs.size[b] * 0.5) * 1000, (bs.cy[b] + bs.size[b] * 0.5) * 1000) - Vector2(0, 20)
 	return Vector2.INF
+
+
+## What the first of these units carrying something building `bid` (p's, finished) takes in
+## carries ("food", "wood", ...), or "" if none does.
+func _drop_off_kind(bid: int, p: int, ids: Array) -> String:
+	var b := world.buildings.index_of(bid)
+	if b < 0 or world.buildings.owner[b] != p or world.buildings.done[b] == 0:
+		return ""
+	var t: Dictionary = world.btypes[world.buildings.kind[b]]
+	for id in ids:
+		var i := world.units.index_of(id)
+		if i >= 0 and Economy.can_drop(world, i, t):
+			return world.resources[world.units.carry_kind[i] - 1]
+	return ""
 
 
 func _is_foundation_of(bid: int, p: int) -> bool:
@@ -1745,7 +1763,7 @@ func _hud_text() -> String:
 		"sim tick %.2f ms avg, %.2f ms max   %d fps   speed x%s%s" % [
 			clock.tick_usec_avg / 1000.0, clock.tick_usec_max / 1000.0, Engine.get_frames_per_second(),
 			clock.speed, "   PAUSED" if clock.paused else ""],
-		"click / drag / double-click select   right-click: move, gather, help build, rally   Tab: switch side",
+		"click / drag / double-click select   right-click: move, gather, help build, drop off, rally   Tab: switch side",
 		"Q train worker   H house   C town center   WASD/edges/middle-drag pan   wheel zoom   space pause   [ ] speed",
 		"F1 hide this   F3 flow   F5 save replay   F9 play replay   F6 autoplay   F10 surrender   V reveal fog   F7 test armies   M map   R restart   G/shift+G/ctrl+G regen army",
 	]
@@ -1919,6 +1937,10 @@ func _update_cursor() -> void:
 		cursors.use({"food": "forage", "wood": "chop", "stone": "mine", "gold": "mine"}.get(map.resource_at(cell), "chop"))
 	elif workers and bid != 0 and _is_foundation_of(bid, active):
 		cursors.use("build")
+	elif workers and bid != 0 and _drop_off_kind(bid, active, _selected_workers()) != "":
+		# taking it in: the carried resource's tool (there's no drop-off cursor art yet)
+		var kind := _drop_off_kind(bid, active, _selected_workers())
+		cursors.use({"food": "forage", "wood": "chop", "stone": "mine", "gold": "mine"}.get(kind, "move"))
 	else:
 		cursors.use("move")
 
