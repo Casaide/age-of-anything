@@ -19,6 +19,9 @@ var legs: Array = []      # [{node, phase}]
 var breathing: Array = []
 var weapon: Node2D
 var weapon_rest := Vector2.ZERO
+var weapon_rot := 0.0     # at rest: couched forward on a harness, else upright
+var harnessed := false    # no arms: gear rides on a harness, work is done with the whole body
+const COUCH := Vector2(1.0, -0.3)   # a couched weapon points forward, a little up
 var head_node: Node2D     # the unit's own head (the rider's, when mounted)
 var back_node: Node2D     # what's on its back (wings flap)
 var job := ""             # "", "forage", "chop" or "build": set by the view each frame
@@ -188,7 +191,7 @@ func _make_rig(lib, body_id: String, head_id: String, colours: Dictionary, paren
 		sockets["top"] = sockets.head + (head_rig.sockets.top if head_rig.has("sockets") else PartShape.v2(head.sockets.top))
 
 	var torso_scale: Vector2 = rig.get("torso_scale", PartShape.v2(body.get("torso_scale", [1, 1])))
-	return {"root": root, "sockets": sockets, "torso_scale": torso_scale}
+	return {"root": root, "sockets": sockets, "torso_scale": torso_scale, "carry": rig.get("carry", "")}
 
 
 func _attach(lib, rig: Dictionary, slot: String, part_id: String, colours: Dictionary) -> void:
@@ -204,9 +207,17 @@ func _attach(lib, rig: Dictionary, slot: String, part_id: String, colours: Dicti
 	if slot == "torso":
 		node.scale = rig.torso_scale
 	rig.root.add_child(node)
+	if rig.carry == "harness" and slot == "hand_r":
+		# No arms: the weapon lies couched in its holder, pointing forward (a tool just leans).
+		var tip: Vector2 = PartShape.rigs.get(part_id, {}).get("tip", Vector2.ZERO)
+		node.rotation = 0.25 if part_id.begins_with("tool.") or tip == Vector2.ZERO else COUCH.angle() - tip.angle()
+	if rig.carry == "harness" and slot == "hand_l":
+		node.scale = Vector2(0.7, 0.85)   # the shield lies flat against the flank
 	if slot == "hand_r":
 		weapon = node
 		weapon_rest = node.position
+		weapon_rot = node.rotation
+		harnessed = rig.carry == "harness"
 	if slot == "back":
 		back_node = node
 
@@ -272,7 +283,7 @@ func _process(delta: float) -> void:
 
 	if weapon:
 		weapon.position = weapon_rest
-		weapon.rotation = 0.0
+		weapon.rotation = weapon_rot
 	if attack_t > 0.0:
 		attack_t -= delta
 		var a := 1.0 - maxf(attack_t, 0.0) / 0.35
@@ -281,7 +292,7 @@ func _process(delta: float) -> void:
 		var k := sin(a * PI)
 		if weapon:
 			weapon.position = weapon_rest + Vector2(6.0 * k, -2.0 * k)
-			weapon.rotation = -0.4 * k
+			weapon.rotation = weapon_rot - 0.4 * k
 	elif job != "" and not walking:
 		_work(t, stepped)
 	elif not walking:
@@ -346,8 +357,13 @@ func _work(t: float, stepped: bool) -> void:
 			crouch = 0.5 if job == "build" else 0.0
 			if weapon:
 				weapon.position = weapon_rest + Vector2(-1.5, -3.0) * clampf(-swing / up, 0.0, 1.0)
+	if harnessed:   # no arms: the whole body digs, rocks or butts at the work
+		lean = lean * 0.6 + absf(swing) * 0.06
+		swing = 0.0
+		if weapon:
+			weapon.position = weapon_rest
 	if weapon:
-		weapon.rotation = swing
+		weapon.rotation = weapon_rot + swing
 	bob.rotation += lean
 	bob.position.y += crouch
 
@@ -365,7 +381,7 @@ func _idle(delta: float) -> void:
 				if head_node:
 					head_node.rotation = -0.18
 			"lift":
-				if weapon:
+				if weapon and not harnessed:
 					weapon.rotation = -0.3
 					weapon.position = weapon_rest + Vector2(0, -1.5)
 			"settle":
