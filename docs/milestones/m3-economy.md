@@ -10,7 +10,7 @@ Gather -> carry -> return to the Town Center. **Food** (bug bushes, near-infinit
 and **Wood** (reeds). The Town Center trains workers; Houses give pop (+5; Rats +6); build
 placement and construction.
 
-Not in this milestone: Barracks, Stable, Watchtower, age-up (milestone 5), combat (4), AI (6),
+Not in this milestone: Barracks, Stable, Watchtower, age-up (milestone 7), combat (4), AI (8),
 drop-off camps (Next), hunting (Next: needs animals that move).
 
 ## Plan
@@ -115,7 +115,7 @@ over a match), and the milestone builds a minimal clickable panel plus hotkeys, 
 
 ## Not done / left for later
 - **Balance:** workers are cheap (frogs 25, rats 5 food), so banks pile up; the TC is the
-  bottleneck. Revisit with the age-up (milestone 5) and the playtest (8).
+  bottleneck. Revisit with the age-up (milestone 7) and the playtest (10).
 - Hunting and drop-off camps (Next).
 - The placeholder buildings are plain blocks; the panel is plain. Art pass, and race-themed UI
   (backlog).
@@ -127,7 +127,7 @@ over a match), and the milestone builds a minimal clickable panel plus hotkeys, 
 - Gatherers sent to a busy tile take the quietest tile of the same resource within 2 tiles
   (`Economy.least_busy`). Without it everyone piled onto one bush and gathering halved.
 - The economy bot (`src/ai/eco_bot.gd`) arrived early, as a test driver and an autoplay key in
-  the debug view. It's the seed of the milestone 6 AI.
+  the debug view. It's the seed of the milestone 8 AI.
 - Replays now pin the rules too (`rules` id + content hash), since the economy reads them.
 - Added (Dominic): test hotkeys in the debug view to regenerate an army: G rerolls your army,
   Shift+G gives it a random prompt, Ctrl+G does that for the enemy. The match restarts; the

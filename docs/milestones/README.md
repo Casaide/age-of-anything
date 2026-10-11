@@ -9,13 +9,15 @@ along the way. The overview table lives in `../mvp-plan.md` §3; these files hol
 | 1 | [Sim core](m1-sim-core.md) | done 2026-10-10 |
 | 2 | [Map + movement](m2-map-movement.md) | done 2026-10-11 |
 | 3 | [Economy](m3-economy.md) | built; exit check: Dominic watches an opening |
-| 4 | [Combat](m4-combat.md) | in progress (data done; sim next) |
-| 5 | [Progression](m5-progression.md) | planned |
-| 6 | [AI + match flow](m6-ai-match-flow.md) | planned |
-| 7 | [Fog + juice](m7-fog-juice.md) | planned |
-| 8 | [Playtest + balance](m8-playtest-balance.md) | planned |
+| 4 | [Combat](m4-combat.md) | sim, view and quiz built; waiting on the quiz run and the unit card |
+| 5 | [Art rework](m5-art-rework.md) | in progress (separate agent; the art and UI track's stage A1) |
+| 6 | [Foundations](m6-foundations.md) | planned (next, alongside milestone 5) |
+| 7 | [Progression](m7-progression.md) | planned |
+| 8 | [AI + match flow](m8-ai-match-flow.md) | planned |
+| 9 | [Fog + juice](m9-fog-juice.md) | planned |
+| 10 | [Playtest + balance](m10-playtest-balance.md) | planned |
 | - | [Art pass](art-pass.md) | direction chosen, vertical slice done |
-| - | [Art and UI track](art-ui-track.md) | A1 in progress (with milestone 4) |
+| - | [Art and UI track](art-ui-track.md) | A1 = milestone 5; later stages run alongside milestones 7-10 |
 | - | [Networking](networking.md) | planned (after the demo) |
 
 ## How to use these

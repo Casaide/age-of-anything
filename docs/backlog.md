@@ -43,7 +43,7 @@ into active work, move it into `mvp-plan.md` (or a new plan) with an exit criter
 
 - **Price by simulation:** headless fights of each unit vs reference units (Frogs, Rats) at equal
   cost; win rate sets cost. Run it on generation and when parts change.
-- Replace `pow()` in pricing with a fixed-point table (do this in MVP milestone 5).
+- Replace `pow()` in pricing with a fixed-point table (done in milestone 1).
 - Counter-tag matrix as data (`data/counters.json`).
 
 ## 4. Generator and content
