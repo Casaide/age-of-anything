@@ -208,8 +208,22 @@ func _ageup(view, to_age: int) -> void:
 		for p in 2:
 			w.stock[r][p] = 99999
 	view.clock.speed = 16.0
+	var Economy = load("res://src/sim/economy.gd")
+	var Tech = load("res://src/sim/tech.gd")
 	for age in range(2, to_age + 1):
 		for p in 2:
+			var s: Array = w.map.starts[p]
+			for need in Tech.next_age(w, p).requires:   # what this age asks for, put up finished
+				if not Tech.has_building(w, p, need):
+					var k: int = Economy.btype_of(w, need)
+					for tries in 30:
+						var cx: int = s[0] / 1000 - 8 + (tries % 6) * 3
+						var cy: int = s[1] / 1000 + 5 + (tries / 6) * 3
+						if w.map.can_build(cx, cy, w.btypes[k].size):
+							var b: int = Economy.place(w, p, k, cx, cy)
+							w.buildings.done[b] = 1
+							w.buildings.hp[b] = w.btypes[k].hp
+							break
 			w.issue(p, "age_up", {"building": w.buildings.id[p]})
 		while w.ages[0] < age:
 			await process_frame
