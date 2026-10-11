@@ -45,6 +45,8 @@ func _initialize() -> void:
 		await _ageing(view)
 	elif scene == "farm":
 		await _farm(view)
+	elif scene.begins_with("enemyfarm"):
+		await _enemy_farm(view, scene.ends_with(":seen"))
 	elif scene.begins_with("look"):   # look:<tile x>:<tile y>[:zoom]: the map there, fog lifted
 		view.reveal = true
 		var z := float(scene.get_slice(":", 3)) if scene.get_slice_count(":") > 3 else 3.0
@@ -97,6 +99,62 @@ func _farm(view) -> void:
 	view.camera.zoom = Vector2(3.0, 3.0)
 	view._on_zoom()
 	view.camera.look_at_point(Iso.to_screen(cx * 1000 + 1000, cy * 1000 + 1000))
+
+
+## Side 1 sows a farm west of its Town Center, in side 0's dark; the shot (as side 0) is over it.
+## ":seen": side 0's worker looks at the farm and goes home; then, out of its sight, the farm is
+## worked out and side 1 puts up a house beside it (side 0 should still see the crops, no house).
+func _enemy_farm(view, seen: bool) -> void:
+	var w = view.world
+	var s: Array = w.map.starts[1]
+	var worker := -1
+	var scout := -1
+	for i in w.units.count():
+		if worker < 0 and w.units.owner[i] == 1:
+			worker = w.units.id[i]
+		if scout < 0 and w.units.owner[i] == 0:
+			scout = w.units.id[i]
+	var cx: int = s[0] / 1000 - 5
+	var cy: int = s[1] / 1000 + 2
+	var c: int = cy * w.map.width + cx
+	w.stock[1][1] = 1000
+	w.issue(1, "build", {"ids": [worker], "building": "farm", "cx": cx, "cy": cy})
+	view.clock.speed = 8.0
+	var field: int = w.map.terrain_ids.find("field")
+	while w.map.terrain[c] != field:
+		await process_frame
+	view.clock.speed = 1.0
+	if seen:
+		var i: int = w.units.index_of(scout)
+		var home := Vector2i(w.units.x[i], w.units.y[i])
+		_teleport(w, scout, cx * 1000 - 2000, cy * 1000 + 500)
+		for f in 30:
+			await process_frame
+		_teleport(w, scout, home.x, home.y)
+		for f in 30:
+			await process_frame
+		w.map.amount[c] = 1   # worked out in a moment
+		var Economy = load("res://src/sim/economy.gd")
+		var b: int = Economy.place(w, 1, Economy.btype_of(w, "house"), cx - 3, cy)
+		w.buildings.done[b] = 1
+		view.clock.speed = 4.0
+		while w.map.left_at(c) > 0:
+			await process_frame
+		view.clock.speed = 1.0
+		for f in 30:
+			await process_frame
+	view.camera.zoom = Vector2(2.0, 2.0)
+	view._on_zoom()
+	view.camera.look_at_point(Iso.to_screen(cx * 1000, cy * 1000 + 1000))
+
+
+func _teleport(w, id: int, x: int, y: int) -> void:
+	var i: int = w.units.index_of(id)
+	w.units.x[i] = x
+	w.units.y[i] = y
+	w.units.px[i] = x
+	w.units.py[i] = y
+	w.units.moving[i] = 0
 
 
 ## Side 0's workers lay a palisade line by the Town Center with a palisade gate in it, and a
