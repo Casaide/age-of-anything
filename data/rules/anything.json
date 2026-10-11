@@ -15,29 +15,173 @@
   {
    "slot": "worker",
    "role": "worker",
-   "tier": 1
+   "tier": 1,
+   "name": "Worker",
+   "building": "town_center",
+   "desc": "Gathers food, wood, stone and gold, and builds"
   },
   {
    "slot": "spear",
    "role": "spear",
-   "tier": 1
+   "tier": 1,
+   "name": "Spear",
+   "building": "barracks",
+   "desc": "Beats mounted units and beasts; weak to ranged and infantry"
   },
   {
    "slot": "skirmisher",
    "role": "skirmisher",
-   "tier": 1
+   "tier": 1,
+   "name": "Skirmisher",
+   "building": "archery_range",
+   "desc": "Beats archers; weak to infantry and mounted"
   },
   {
    "slot": "archer",
    "role": "archer",
-   "tier": 1
+   "tier": 1,
+   "name": "Archer",
+   "building": "archery_range",
+   "desc": "Beats infantry; weak to skirmishers and mounted"
   },
   {
    "slot": "large",
    "role": "large",
-   "tier": 2
+   "tier": 2,
+   "name": "Heavy",
+   "building": "stable",
+   "desc": "Beats ranged; weak to spears"
+  },
+  {
+   "slot": "infantry",
+   "role": "infantry",
+   "tier": 1,
+   "name": "Swordsman",
+   "building": "barracks",
+   "desc": "Beats buildings, spears and skirmishers; weak to archers",
+   "status": "planned"
+  },
+  {
+   "slot": "raider",
+   "role": "raider",
+   "tier": 3,
+   "name": "Raider",
+   "building": "barracks",
+   "desc": "Beats siege, archers and mystics; weak to infantry",
+   "status": "planned"
+  },
+  {
+   "slot": "mounted_archer",
+   "role": "mounted_archer",
+   "tier": 3,
+   "name": "Mounted Archer",
+   "building": "archery_range",
+   "desc": "Beats infantry, hits and runs; weak to skirmishers",
+   "status": "planned"
+  },
+  {
+   "slot": "scout",
+   "role": "scout",
+   "tier": 2,
+   "name": "Scout",
+   "building": "stable",
+   "desc": "Beats siege, archers and mystics, raids; weak to spears",
+   "status": "planned"
+  },
+  {
+   "slot": "war_beast",
+   "role": "war_beast",
+   "tier": 3,
+   "name": "War Beast",
+   "building": "stable",
+   "desc": "Beats buildings and infantry; weak to spears and mystics",
+   "status": "planned"
+  },
+  {
+   "slot": "ram",
+   "role": "ram",
+   "tier": 3,
+   "name": "Ram",
+   "building": "siege_workshop",
+   "desc": "Beats buildings; weak to melee",
+   "status": "planned"
+  },
+  {
+   "slot": "catapult",
+   "role": "catapult",
+   "tier": 3,
+   "name": "Catapult",
+   "building": "siege_workshop",
+   "desc": "Beats massed units (splash); weak to mounted",
+   "status": "planned"
+  },
+  {
+   "slot": "bolt_thrower",
+   "role": "bolt_thrower",
+   "tier": 3,
+   "name": "Bolt Thrower",
+   "building": "siege_workshop",
+   "desc": "Beats lines of infantry; weak to mounted",
+   "status": "planned"
+  },
+  {
+   "slot": "siege_tower",
+   "role": "siege_tower",
+   "tier": 4,
+   "name": "Siege Tower",
+   "building": "siege_workshop",
+   "desc": "Carries units over walls",
+   "status": "planned"
+  },
+  {
+   "slot": "unique",
+   "role": "unique",
+   "tier": 3,
+   "name": "Unique Unit",
+   "building": "castle",
+   "desc": "The race's signature, from the prompt (a bigger budget); elite in age 4",
+   "status": "planned"
+  },
+  {
+   "slot": "sapper",
+   "role": "sapper",
+   "tier": 3,
+   "name": "Sapper",
+   "building": "castle",
+   "desc": "Blows up buildings and walls",
+   "status": "planned",
+   "last_age": 3
+  },
+  {
+   "slot": "great_sling",
+   "role": "great_sling",
+   "tier": 4,
+   "name": "Great Sling",
+   "building": "castle",
+   "desc": "Hits buildings from far away; packs and unpacks",
+   "status": "planned"
+  },
+  {
+   "slot": "mystic",
+   "role": "mystic",
+   "tier": 3,
+   "name": "Mystic",
+   "building": "temple",
+   "desc": "Heals; wins large units and beasts over; weak to scouts and raiders",
+   "status": "planned"
+  },
+  {
+   "slot": "trader",
+   "role": "trader",
+   "tier": 2,
+   "name": "Trade Cart",
+   "building": "market",
+   "desc": "Brings gold by the distance between your markets",
+   "status": "planned",
+   "last_age": 2
   }
  ],
+ "_roster_doc": "each slot is a unit line: its first age (`tier`), the building that trains it, its name on the tech tree page, and `last_age` when it stops before the last age. Slots with \"status\": \"planned\" are only on the page: the generator skips them (milestone 12)",
  "cost": {
   "base": 60,
   "curve": "pow1.4_ref12",

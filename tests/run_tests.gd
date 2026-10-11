@@ -5,6 +5,9 @@ extends SceneTree
 const DataLib := preload("res://src/data_lib.gd")
 const Generator := preload("res://src/race_generator.gd")
 const UnitView := preload("res://src/unit_view.gd")
+const TreeModel := preload("res://src/view/tech_tree_model.gd")
+const Economy := preload("res://src/sim/economy.gd")
+const Tech := preload("res://src/sim/tech.gd")
 
 const PROMPTS := [
 	"angry swamp frogs with reed spears",
@@ -37,6 +40,7 @@ func _init() -> void:
 	_test_prompts(gen, rules)
 	_test_composer(lib, gen, rules.default)
 	_test_audio(lib)
+	_test_tech_tree(lib, gen, rules)
 	_test_scripts_parse()
 
 	print("\n%d checks, %d failed" % [checks, failures])
@@ -86,6 +90,90 @@ func check(ok: bool, what: String) -> void:
 		print("FAIL: ", what)
 
 
+## The tech tree page (milestone 12): every node comes from data (buildings.json, tech.json, the
+## rules' roster), every item of the data is on the page, every planned item is named in the
+## milestone file, and the game's loaders leave planned items out.
+func _test_tech_tree(lib, gen, rules: Dictionary) -> void:
+	var bdata: Dictionary = DataLib.load_json("res://data/buildings.json")
+	var tdata: Dictionary = DataLib.load_json("res://data/tech.json")
+	var plan := FileAccess.get_file_as_string("res://docs/milestones/m12-tech-tree.md")
+	var research := {}
+	for r in tdata.research:
+		research[r.id] = r
+	for rid in rules:
+		var r: Dictionary = rules[rid]
+		for race in [{}, gen.generate("angry swamp frogs with reed spears", r), gen.generate("sewer rats with cheese hammers", r)]:
+			var m: Dictionary = TreeModel.build(race, r, lib)
+			var seen := {}
+			for n in m.nodes:
+				check(not seen.has(n.key), "tree: one node per item (%s)" % n.key)
+				seen[n.key] = true
+				check(n.status in ["built", "planned"], "tree: %s has a status" % n.key)
+				check(n.age >= int(bdata.buildings[n.building].age), "tree: %s opens no earlier than its building" % n.key)
+				check(n.age >= 1 and n.age <= m.ages.size(), "tree: %s sits in an age row" % n.key)
+				match n.kind:
+					"building":
+						check(bdata.buildings.has(n.id) and bdata.buildings[n.id].name == n.name, "tree: building %s from buildings.json" % n.id)
+						check(n.status == bdata.buildings[n.id].get("status", "built"), "tree: building %s status from data" % n.id)
+					"research":
+						check(research.has(n.id) and research[n.id].building == n.building and int(research[n.id].age) == n.age,
+							"tree: research %s from tech.json" % n.id)
+						check(n.status == research[n.id].get("status", "built"), "tree: research %s status from data" % n.id)
+					"unit":
+						var sd: Array = r.roster.filter(func(s): return s.slot == n.slot)
+						check(sd.size() == 1 and sd[0].building == n.building and n.age >= int(sd[0].tier), "tree: line step %s from the roster" % n.key)
+						if not race.is_empty() and n.status == "built":
+							var u: Array = race.units.filter(func(x): return x.recipe.slot == n.slot)
+							check(u.size() == 1 and u[0].line.any(func(l): return int(l.age) == n.age and l.recipe.name == n.name),
+								"tree: %s shows the race's own unit for that age (%s)" % [n.key, n.name])
+					_:
+						check(false, "tree: unknown node kind %s" % n.kind)
+			for id in bdata.buildings:
+				check(seen.has("b:" + id), "tree: building %s is on the page" % id)
+			for id in research:
+				check(seen.has("r:" + id), "tree: research %s is on the page" % id)
+			for sd in r.roster:
+				check(bdata.buildings.has(sd.get("building", "")), "roster %s names a building (%s)" % [sd.slot, rid])
+				var first := maxi(int(sd.tier), int(bdata.buildings[sd.building].age))   # trained once its building stands
+				check(seen.has("u:%s@%d" % [sd.slot, first]), "tree: line %s is on the page (%s)" % [sd.slot, rid])
+				if sd.get("status", "") != "planned":
+					check(sd.slot in bdata.buildings[sd.building].trains, "roster %s: its building trains it (%s)" % [sd.slot, rid])
+			if not race.is_empty():
+				check(not m.race.moves.is_empty(), "tree: the race panel says how %s moves" % race.name)
+	# Planned items are in the plan (by name), and nothing in the game loads them.
+	var planned := []
+	for id in bdata.buildings:
+		if bdata.buildings[id].get("status", "") == "planned":
+			planned.append(bdata.buildings[id].name)
+	for r in tdata.research:
+		if r.get("status", "") == "planned" and not r.building == "castle":
+			planned.append(r.name)
+	for a in tdata.ages:
+		if a.get("status", "") == "planned":
+			planned.append(a.name)
+	for sd in rules.default.roster:
+		if sd.get("status", "") == "planned":
+			planned.append("`%s`" % sd.slot)
+	for name in planned:
+		check(plan.contains(name), "planned item %s is in docs/milestones/m12-tech-tree.md" % name)
+	var resources := ["food", "wood", "stone", "gold"]
+	var btypes: Array = Economy.load_btypes(resources)
+	check(btypes.all(func(b): return bdata.buildings[b.id].get("status", "") != "planned"), "the sim's building types skip planned ones")
+	check(btypes.size() == bdata.buildings.keys().filter(func(id): return bdata.buildings[id].get("status", "") != "planned").size(),
+		"the sim loads every built building")
+	var tech: Dictionary = Tech.load_tech(resources, btypes)
+	check(tech.ages.all(func(a): return int(a.age) <= 3) and tech.ages.size() == 3, "the sim's ages skip the planned fourth")
+	for r in tech.research:
+		check(r.has("line") or research[r.id].get("status", "") != "planned", "the sim's research skips planned %s" % r.id)
+	for menu in bdata.menu.values():
+		for id in menu:
+			check(bdata.buildings[id].get("status", "") != "planned", "build menus hold no planned building (%s)" % id)
+	for rid in rules:
+		var race: Dictionary = gen.generate("centaur romans", rules[rid])
+		check(race.units.all(func(u): return rules[rid].roster.any(func(s): return s.slot == u.recipe.slot and s.get("status", "") != "planned")),
+			"the generator skips planned roster slots (%s)" % rid)
+
+
 func _test_data(lib) -> void:
 	for id in lib.parts:
 		var p: Dictionary = lib.parts[id]
@@ -128,7 +216,7 @@ func _test_bounds(lib, gen, rules: Dictionary) -> void:
 		for prompt in PROMPTS:
 			for reroll in 6:
 				var race: Dictionary = gen.generate(prompt, r, reroll)
-				check(race.units.size() == r.roster.size(), "roster size %s/%s" % [rid, prompt])
+				check(race.units.size() == r.roster.filter(func(sd): return sd.get("status", "") != "planned").size(), "roster size %s/%s" % [rid, prompt])
 				for u in race.units:
 					var rec: Dictionary = u.recipe
 					for slot in rec.parts:

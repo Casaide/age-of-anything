@@ -6,6 +6,10 @@ extends Node2D
 ##
 ## You command one side at a time (Tab switches). F6 hands both sides to the
 ## economy bot, which is the easiest way to watch an opening.
+##
+## F2 (or the top bar's Tech tree button) opens your race's tech tree page (scenes/tech_tree.tscn)
+## over the match; Esc closes it. The sim keeps running underneath. (Not T: that is the
+## Watchtower's hotkey while workers are selected.)
 
 const DataLib := preload("res://src/data_lib.gd")
 const Generator := preload("res://src/race_generator.gd")
@@ -102,6 +106,7 @@ var overlay: Node2D         # over everything: selection box, placement ghost, c
 var hud: Label
 var bar: Label              # the debug line of both sides' stock (not against the AI)
 var top_bar: TopBar
+var tech_tree: Control      # the tech tree page (F2), over the match while open
 var build_menu: Dictionary = DataLib.load_json("res://data/buildings.json").menu   # a worker's two build pages: civilian, military
 var build_page := ""        # the page a worker's panel shows: "" (pick a page), "civilian" or "military"
 var _build_page_for := ""   # the selection it was opened for; a new selection starts at the top
@@ -235,6 +240,11 @@ func _ready() -> void:
 	minimap.offset_left = -Minimap.SIZE - 24   # its frame (12 right, 8 below) then the panel's 12 px margin
 	minimap.offset_top = -Minimap.SIZE * 0.5 - 20
 	ui.add_child(minimap)
+	var pages := CanvasLayer.new()   # over the HUD (and the hints that appear later)
+	pages.layer = 3
+	add_child(pages)
+	tech_tree = load("res://scenes/tech_tree.tscn").instantiate()
+	pages.add_child(tech_tree)
 	cursors = Cursors.new(DisplayServer.screen_get_scale())
 
 	if prompts.is_empty():
@@ -510,6 +520,10 @@ func _unhandled_input(event: InputEvent) -> void:
 	elif event is InputEventMouseMotion and press_screen != Vector2.INF:
 		boxing = boxing or event.position.distance_to(press_screen) > DRAG_START_PX
 	elif event is InputEventKey and event.pressed and not event.echo:
+		if tech_tree.visible:   # the page is up: only its own keys (Esc closes it, see tech_tree.gd)
+			if event.keycode == KEY_F2:
+				tech_tree.close()
+			return
 		if not _play_key(event) and (not vs_ai or show_debug):
 			_debug_key(event)
 
@@ -548,6 +562,9 @@ func _play_key(event: InputEventKey) -> bool:
 			return true
 		KEY_F1:
 			show_debug = not show_debug
+			return true
+		KEY_F2:
+			toggle_tech_tree()
 			return true
 	if _selected_workers().size() < _selected_by_owner()[active].size():   # any soldiers in the selection
 		if k == KEY_R:   # soldiers: attack-move (then click where)
@@ -1799,9 +1816,18 @@ func _cost_text(cost: PackedInt32Array) -> String:
 	return " ".join(parts) if not parts.is_empty() else "free"
 
 
+## Your race's tech tree page, over the match (the sim keeps running).
+func toggle_tech_tree() -> void:
+	if tech_tree.visible:
+		tech_tree.close()
+		return
+	tech_tree.open(world.races[active], world.rules, lib, kit, active, Color(lib.palettes.teams[active]), world, active)
+
+
 func _update_top_bar() -> void:
 	if top_bar.get_child_count() == 0:
 		top_bar.setup(world.resources)
+		top_bar.tree_pressed.connect(toggle_tech_tree)
 		for info in lib.resource_info:
 			panel.res_icons[info.short] = Icons.texture("res_" + info.id)
 		top_bar.idle_pressed.connect(_next_idle_worker)
