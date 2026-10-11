@@ -1046,6 +1046,52 @@ func _test_queue(races: Array) -> void:
 		w.step()
 	i = w.units.index_of(worker)
 	check(w.units.orders[i].is_empty(), "queue: a plain order empties the queue")
+	_test_queue_after_build(races, "house")
+	_test_queue_after_build(races, "farm")
+
+
+## Dominic: build, then shift-told to go somewhere else. The builder finishes the building,
+## then walks to the queued point: not on to another foundation nearby, and a farm's builder
+## doesn't stay to work the field.
+func _test_queue_after_build(races: Array, kind: String) -> void:
+	var w := World.new(SEED, SimMap.load_id("flat_test"), races, rules_)
+	w.stock[w.resources.find("wood")][0] = 1000
+	var ws := []
+	for i in w.units.count():
+		if w.units.owner[i] == 0 and w.types[w.units.kind[i]].worker:
+			ws.append(w.units.id[i])
+	var s: Array = w.map.starts[0]
+	var bk := Economy.btype_of(w, kind)
+	var hk := Economy.btype_of(w, "house")
+	var spots := []   # where it goes, and a house foundation nearby that nobody builds
+	for dy in range(-6, 7):
+		for dx in range(3, 9):
+			var c := Vector2i(s[0] / 1000 + dx, s[1] / 1000 + dy)
+			if spots.is_empty() and Economy.can_place(w, 0, bk, c.x, c.y):
+				spots.append(c)
+			elif spots.size() == 1 and absi(spots[0].y - c.y) >= 4 and Economy.can_place(w, 0, hk, c.x, c.y):
+				spots.append(c)
+	assert(spots.size() == 2)
+	w.issue(0, Commands.BUILD, {"ids": [ws[0]], "building": kind, "cx": spots[0].x, "cy": spots[0].y})
+	w.issue(0, Commands.BUILD, {"ids": [ws[1]], "building": "house", "cx": spots[1].x, "cy": spots[1].y})
+	var to := Vector2i(s[0] - 5000, s[1] + 3000)
+	w.issue(0, Commands.MOVE, {"ids": [ws[0]], "x": to.x, "y": to.y, "queue": 1})
+	for t in 16:
+		w.step()
+	w.issue(0, Commands.STOP, {"ids": [ws[1]]})   # the second house stays a foundation
+	var built := -1
+	var i := -1
+	while w.tick < 4000:
+		w.step()
+		i = w.units.index_of(ws[0])
+		var b: int = w.map.occupied[spots[0].y * w.map.width + spots[0].x]
+		if built < 0 and b != 0 and w.buildings.done[w.buildings.index_of(b)] == 1:
+			built = w.tick
+		if built >= 0 and w.units.moving[i] == 0 and w.units.task[i] == Economy.NONE:
+			break
+	var d := Fixed.isqrt(Fixed.dist2(w.units.x[i], w.units.y[i], to.x, to.y))
+	check(built > 0 and d < 1500 and w.units.task[i] == Economy.NONE,
+		"queue: build a %s, then shift-move: built it (tick %d), then walked to the point (%d milli-tiles off, task %d)" % [kind, built, d, w.units.task[i]])
 
 
 # --- combat ---------------------------------------------------------------------
