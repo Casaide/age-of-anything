@@ -43,6 +43,11 @@ into active work, move it into `mvp-plan.md` (or a new plan) with an exit criter
 
 - **Price by simulation:** headless fights of each unit vs reference units (Frogs, Rats) at equal
   cost; win rate sets cost. Run it on generation and when parts change.
+  `tests/balance.gd` (milestone 10) is the measuring half: an equal-cost round robin. The next step
+  is a tuner that nudges part points until no unit is more than 20% off the mean (11 of 20 were
+  after hand-tuning).
+- Archers without micro lose to spearmen that close the gap: consider simple kiting for ranged
+  units on attack-move, or a range/accuracy rule, before pricing them down further.
 - Replace `pow()` in pricing with a fixed-point table (done in milestone 1).
 - Counter-tag matrix as data (`data/counters.json`).
 

@@ -74,3 +74,5 @@ One line per moment worth remembering. Newest at the bottom.
   match setup screen; victory and defeat. ([image](images/2026-10-11/101-ai-rats-raid-the-frog-town.png))
 - **2026-10-11:** Milestone 9 done: fog of war, minimap, placeholder sounds; bot matches run
   about 11 minutes. ([image](images/2026-10-11/102-fog-of-war-edge.png))
+- **2026-10-11:** Milestone 10 prepared: balance tool and pass 1 (counters 91%), workers at one
+  price, playtest kit; waiting on testers.

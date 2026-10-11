@@ -375,3 +375,14 @@ The bot's build order, wave timings and sizes live in `data/ai.json`; what it tr
 reading the enemy army's tags against its own bonus classes, so it adapts to any generated race
 without special cases. A player is out when their Town Centers are gone or they surrender.
 The match setup screen became the main scene (the Race Lab is a button on it). Claude's calls.
+
+**D-076, 2026-10-11: Workers have one price.** A worker's value is what it gathers, and every
+body gathers at the same rate, so workers cost `rules.cost.worker` (30) whatever their body,
+still scaled by a creature's economy (rats stay cheap). Pricing by points made a centaur worker
+cost 75 and crippled centaur starts. Bigger bodies still make sturdier workers. Claude's call;
+Dominic may overrule.
+
+**D-077, 2026-10-11: Pacing is a tester metric; bot matches are a guide.** The AI keeps a small
+guard while saving for an age, which lengthens bot-vs-bot matches (median ~14 minutes). Claude
+had removed it to hit a 9-12 minute bot median, then put it back after Dominic asked what was
+wrong with it: the AI should play sensibly, and the bot median is reported, not enforced.

@@ -129,7 +129,11 @@ func _age_three(w, tc: int, workers: Array) -> void:
 func _train(w, workers: Array) -> void:
 	var reserve := PackedInt32Array()
 	reserve.resize(w.resources.size())
-	if w.ages[player] == 1 and workers.size() >= int(cfg.economy.age_workers):
+	var guard := 0   # keep a small guard even while saving for an age, like a sensible player
+	for i in w.units.count():
+		if w.units.owner[i] == player and not w.types[w.units.kind[i]].worker:
+			guard += int(w.types[w.units.kind[i]].pop)
+	if w.ages[player] == 1 and workers.size() >= int(cfg.economy.age_workers) and guard >= int(cfg.military.guard):
 		var next: Dictionary = Tech.next_age(w, player)
 		if not next.is_empty():
 			reserve = next.cost   # saving for the age: soldiers only from what's over
@@ -220,7 +224,10 @@ func _waves(w, army: Array, hx: int, hy: int) -> void:
 		return
 	var waves: Array = m.waves
 	var need: int = int(waves[wave].min_army) if wave < waves.size() else int(m.repeat_min_army)
-	if w.tick >= next_wave_tick and army.size() >= need:
+	var strength := 0   # army size in population, so big units count for what they cost
+	for i in army:
+		strength += int(w.types[w.units.kind[i]].pop)
+	if w.tick >= next_wave_tick and strength >= need:
 		w.issue(player, Commands.ATTACK_MOVE, {"ids": army.map(func(i): return w.units.id[i]), "x": target.x, "y": target.y})
 		assault = true
 		wave += 1
@@ -247,24 +254,30 @@ func _waves(w, army: Array, hx: int, hy: int) -> void:
 	# With the field clear, go for the Town Center itself (that ends the match) rather than
 	# chewing through every house on the way.
 	var tc_id := _known_enemy_town(w, hx, hy)
-	if tc_id > 0 and not _defended(w, w.buildings.index_of(tc_id)):
-		w.issue(player, Commands.ATTACK, {"ids": ids, "target": tc_id})
-	else:
+	if tc_id <= 0:
 		w.issue(player, Commands.ATTACK_MOVE, {"ids": ids, "x": target.x, "y": target.y})
+		return
+	# Enough to fight the defenders (two each) attack-move; the rest go straight for the Town Center.
+	var fighters := mini(ids.size(), 2 * _defenders(w, w.buildings.index_of(tc_id)))
+	if fighters > 0:
+		w.issue(player, Commands.ATTACK_MOVE, {"ids": ids.slice(0, fighters), "x": target.x, "y": target.y})
+	if fighters < ids.size():
+		w.issue(player, Commands.ATTACK, {"ids": ids.slice(fighters), "target": tc_id})
 
 
-## Are enemy soldiers we can see near this building? (Then fight them first: a unit told to
-## hit a building doesn't hit back.)
-func _defended(w, b: int) -> bool:
+## How many enemy soldiers we can see near this building (they need fighting: a unit told to
+## hit a building doesn't hit back).
+func _defenders(w, b: int) -> int:
 	var bs = w.buildings
 	var x: int = bs.cx[b] * 1000 + bs.size[b] * 500
 	var y: int = bs.cy[b] * 1000 + bs.size[b] * 500
 	var r := int(cfg.military.defend_tiles) * 1000
+	var n := 0
 	for i in w.units.count():
 		if w.is_enemy(player, w.units.owner[i]) and not w.types[w.units.kind[i]].worker \
 				and Fog.visible(w, player, w.units.x[i], w.units.y[i]) and Fixed.dist2(x, y, w.units.x[i], w.units.y[i]) < r * r:
-			return true
-	return false
+			n += 1
+	return n
 
 
 ## The id of the nearest enemy Town Center we've seen, or 0.
