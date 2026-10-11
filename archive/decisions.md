@@ -399,3 +399,10 @@ it, and a worked-out farm can be restarted. A finished farm keeps its building; 
 one pool of food (`SimMap.make_pool`, 400 food). Worked out, it lies fallow; a worker reseeds it
 for 40 wood (`RESEED`, right-click). Razed, its ground returns to grass or shallows. The view
 draws it flat under the units, with crops on every tile. Dominic's call; built by Claude.
+
+**D-080, 2026-10-11: The look follows the design review; buildings share envelopes and may sit
+lower.** Dominic approved the review's five rules (played straight; structure, not stickers;
+silhouette first at 8 px; one body language and one scale ladder; each age one whole step) and
+its process (brief, 3-5 options at game scale, his pick, build). Building scale: one footprint and
+one height envelope per type for every culture; a culture may sit shorter and melded into its
+terrain, never taller or bulkier. Rules by Dominic and Claude, scale refinement by Dominic.

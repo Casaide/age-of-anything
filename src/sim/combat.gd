@@ -214,6 +214,8 @@ static func tick(w) -> void:
 			_lost(w, i)
 			continue
 		var gap := _gap(w, i, j, b)
+		if gap <= t.reach and _kite(w, i, j, t, gap):
+			continue
 		if gap <= t.reach:
 			u.moving[i] = 0
 			if u.cooldown[i] == 0:
@@ -235,6 +237,31 @@ static func tick(w) -> void:
 			_chase(w, i, j, b)
 	_towers(w, hurt, hurt_by)
 	_apply(w, hurt, hurt_by, bhurt)
+
+
+## Ranged units keep their distance (rules.combat.kite_gap, milli-tiles; 0 = off): having just
+## fired, with a melee foe closer than the gap, step straight back (onto walkable ground) and
+## shoot again from there. Returns true while stepping back.
+static func _kite(w, i: int, j: int, t: Dictionary, gap: int) -> bool:
+	var kite: int = int(w.combat.get("kite_gap", 0))
+	if kite <= 0 or not t.ranged or j < 0 or w.types[w.units.kind[j]].ranged or gap >= kite:
+		return false
+	var u = w.units
+	if u.moving[i] != 0:
+		# Already stepping back (heading somewhere farther from the foe than here): carry on.
+		return Fixed.dist2(u.tx[i], u.ty[i], u.x[j], u.y[j]) > Fixed.dist2(u.x[i], u.y[i], u.x[j], u.y[j])
+	if u.cooldown[i] == 0:
+		return false   # shoot first
+	var dx: int = u.x[i] - u.x[j]
+	var dy: int = u.y[i] - u.y[j]
+	var len: int = maxi(1, Fixed.isqrt(dx * dx + dy * dy))
+	var step: int = int(w.combat.get("kite_step", 2 * SimMap.TILE))
+	var tx: int = clampi(u.x[i] + dx * step / len, 0, w.map.width * SimMap.TILE - 1)
+	var ty: int = clampi(u.y[i] + dy * step / len, 0, w.map.height * SimMap.TILE - 1)
+	if not w.map.walkable(tx, ty, u.mclass[i]):
+		return false   # cornered: stand and shoot
+	w.order_direct(i, tx, ty)
+	return true
 
 
 ## Finished buildings that attack (watchtowers) shoot the nearest enemy unit in reach.

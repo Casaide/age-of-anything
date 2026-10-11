@@ -45,6 +45,11 @@
 - **Pacing:** bot vs bot now runs 13-18 minutes (median ~14) with the AI keeping a small guard
   while it saves for an age; it was 10:50 before workers got one price. Testers decide whether
   that's long; the levers are data (`data/ai.json` waves, `data/buildings.json` Town Center hp).
+- **Archers keeping their distance** (`rules.combat.kite_gap`, off by default; built to test,
+  not adopted): ranged units that just fired step back from a closing melee foe. Measured with
+  `tests/balance.gd -- 2 kite_gap=N`: 1.5 tiles left the table at 10 outliers, 2.5 tiles made it
+  12. Spearmen move as fast as archers, so stepping back costs shots. Archers' weakness needs a
+  different lever (range, speed, or the roster's counter design); a call for Dominic.
 - **Centaurs vs frogs runs long** (~22 minutes in bot play): expensive centaur workers and
   soldiers make small armies. Balance item; the AI test allows 30 minutes (it guards against
   stalemates, not pacing).
