@@ -2,7 +2,9 @@ extends RefCounted
 ## Detailed 3D models for the high-fidelity pre-render, built from primitives
 ## with procedural materials. 1 world unit = 1 tile; y is up; sim x = world x,
 ## sim y = world z. Each builder returns the static body plus the "live" bits
-## (animated in 2D after baking) and the points the 2D side needs.
+## (animated in 2D after baking) and the points the 2D side needs. A building that bakes
+## variants (buildings.json "variants") says which way its door faces ("door", outward, and an
+## optional "window"), so a variant is only turned or mirrored where they stay in view.
 
 const Materials := preload("res://src/view/art/bake/materials.gd")
 
@@ -242,7 +244,7 @@ func stilt_house(team: Color) -> Dictionary:
 	for k in 4:
 		body.add_child(box(Vector3(0.36, 0.03, 0.03), wood, foot.lerp(top, (k + 1) / 5.0) + Vector3(0.05, 0, 0)))
 	return {"body": body, "anchor": Vector3.ZERO, "smoke": Vector3(0.35, 2.1, -0.2), "lights": [],
-		"lantern": Vector3(0.32, 0.95, 0.66), "team": team}
+		"lantern": Vector3(0.32, 0.95, 0.66), "team": team, "door": Vector3(0, 0, 1)}
 
 
 # ------------------------------------------------------------------ ground
@@ -400,7 +402,7 @@ func tin_can_house(team: Color) -> Dictionary:
 	body.add_child(cyl(0.06, 0.06, 0.35, Materials.flat(Color("#4a4a48"), 0.5, 0.6), Vector3(0.35, 1.3, -0.3), Vector3.ZERO, 8))
 	body.add_child(box(Vector3(0.25, 0.04, 0.12), cloth(team), Vector3(-0.5, 0.75, 0.48), Vector3(0, 40, 10)))   # a team rag
 	return {"body": body, "anchor": Vector3.ZERO, "smoke": Vector3(0.35, 1.5, -0.3), "lights": [],
-		"lantern": Vector3(0.4, 0.75, 0.75), "team": team}
+		"lantern": Vector3(0.4, 0.75, 0.75), "team": team, "door": Vector3(0, 0, 1)}
 
 
 func slab_tri(a: Vector2, b: Vector2, c: Vector2, thick: float, m: Material) -> MeshInstance3D:
@@ -556,7 +558,7 @@ func villa_house(team: Color) -> Dictionary:
 	body.add_child(ball(0.17, cypress, Vector3(-0.72, 0.75, 0.4), Vector3(1, 3.4, 1)))
 	body.add_child(cyl(0.05, 0.05, 0.3, stone, Vector3(0.3, 0.12 + h + rise + 0.05, -0.2), Vector3.ZERO, 8))   # chimney
 	return {"body": body, "anchor": Vector3.ZERO, "smoke": Vector3(0.3, 0.12 + h + rise + 0.25, -0.2), "lights": [],
-		"lantern": Vector3(-0.22, 0.12 + 0.62, front + 0.1), "team": team}
+		"lantern": Vector3(-0.22, 0.12 + 0.62, front + 0.1), "team": team, "door": Vector3(0, 0, 1), "window": Vector3(1, 0, 0)}
 
 
 # ------------------------------------------------------------------ tent culture (steppe)
@@ -623,7 +625,7 @@ func tent_house(team: Color) -> Dictionary:
 	var top := _yurt(body, Vector3.ZERO, 0.62, 0.48, team)
 	woodpile(Vector3(0.7, 0, -0.3), body)
 	return {"body": body, "anchor": Vector3.ZERO, "smoke": Vector3(0, top + 0.1, 0), "lights": [],
-		"lantern": Vector3(0, 0.35, 0.7), "team": team}
+		"lantern": Vector3(0, 0.35, 0.7), "team": team, "door": Vector3(0, 0, 1)}
 
 
 ## A farm going in: a tilled plot inside a post-and-rail fence, seed sacks and a hoe by
@@ -957,7 +959,7 @@ func reed_house(team: Color) -> Dictionary:
 	for k in 3:
 		body.add_child(box(Vector3(0.28, 0.025, 0.025), wood, Vector3(0, 0.0, 1.05).lerp(Vector3(0, deck, 0.72), (k + 1) / 4.0)))
 	body.add_child(beam(Vector3(0.6, deck, 0.4), Vector3(0.95, deck + 0.9, -0.1), 0.012, wood, 4))
-	return {"body": body, "anchor": Vector3.ZERO, "lights": [], "lantern": Vector3(0.3, deck + 0.2, 0.65), "team": team}
+	return {"body": body, "anchor": Vector3.ZERO, "lights": [], "lantern": Vector3(0.3, deck + 0.2, 0.65), "team": team, "door": Vector3(0, 0, 1)}
 
 
 func reed_town_center(team: Color) -> Dictionary:
@@ -1029,7 +1031,7 @@ func mound_house(team: Color) -> Dictionary:
 	_burrow_door(body, Vector3(0.05, 0.2, 0.66), 0.17, 0.0, team)
 	_husk(body, Vector3(0.75, 0, -0.35), 0.24, -30.0)
 	_grass_tufts(body, Vector3(0, 0.62, 0), 0.25, 5)
-	return {"body": body, "anchor": Vector3.ZERO, "lights": [], "lantern": Vector3(0.25, 0.35, 0.62), "team": team}
+	return {"body": body, "anchor": Vector3.ZERO, "lights": [], "lantern": Vector3(0.25, 0.35, 0.62), "team": team, "door": Vector3(0, 0, 1)}
 
 
 func mound_town_center(team: Color) -> Dictionary:

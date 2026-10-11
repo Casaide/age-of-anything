@@ -44,7 +44,9 @@ map; the code says the details.
   `ArtKit._bake_building`): one builder per type dressed in each architecture's kit (walls,
   frame, roof, base: `KIT`). Baked once per culture, plus four construction stages. Data
   shapes them further (`data/buildings.json`): `scale` per culture and type, `variants` (houses
-  bake turned and resized four ways, each building picks one), and `age_looks` (a building's
+  bake four looks, turned or mirrored and resized, each building picks one; the model declares
+  its `door` (and `window`) direction and a variant only uses turns that keep the door on a wall
+  the camera sees), and `age_looks` (a building's
   model from an age on, e.g. the rats' oil-drum town hall at age 3).
   Live parts (banner, vane, smoke, lights) are drawn over the bake.
 - **Props** (`scenes/art_pixel/prop_models.gd`): bushes, reeds, boulders, quarry stone and
@@ -79,6 +81,7 @@ shapes at once). Close up and at game size:
 godot --path . --script res://tests/facing_sheet.gd -- out.png "prompt" [zoom]          # a roster in all 8 facings ("animals" too)
 godot --path . --script res://tests/concept_sheet.gd -- out.png 14 1 "prompt" [az=215] "gear=..." ...   # one unit, close, options side by side
 godot --path . --script res://tests/building_sheet.gd -- out.png 2 type:arch prop.quarry.1300.0 ...
+godot --path . --script res://tests/building_variants.gd -- out.png 1.5   # every variant of every culture
 godot --path . --script res://tests/sim_screenshot.gd -- out.png flat_test ai-look:x:y:zoom   # the map as played
 ```
 
