@@ -569,6 +569,266 @@
   }
  },
  {
+  "id": "body.capybara",
+  "slot": "body",
+  "noun": "Capybara",
+  "points": 10,
+  "tags": [
+   "beast",
+   "mount",
+   "rodent",
+   "sewer"
+  ],
+  "stats": {
+   "hp": 55,
+   "speed": 13,
+   "armour": {
+    "melee": 1,
+    "pierce": 2
+   },
+   "bonus": {
+    "ranged": 2
+   }
+  },
+  "shapes": [
+   {
+    "t": "line",
+    "p": [
+     [
+      -13,
+      -20
+     ],
+     [
+      -18,
+      -12
+     ]
+    ],
+    "w": 3,
+    "ch": "skin2"
+   },
+   {
+    "t": "ellipse",
+    "c": [
+     0,
+     -19
+    ],
+    "r": [
+     14,
+     7
+    ],
+    "ch": "skin"
+   },
+   {
+    "t": "poly",
+    "p": [
+     [
+      7,
+      -22
+     ],
+     [
+      13,
+      -33
+     ],
+     [
+      18,
+      -30
+     ],
+     [
+      13,
+      -18
+     ]
+    ],
+    "ch": "skin"
+   },
+   {
+    "t": "line",
+    "p": [
+     [
+      8,
+      -24
+     ],
+     [
+      13,
+      -34
+     ]
+    ],
+    "w": 2,
+    "ch": "skin2"
+   }
+  ],
+  "sockets": {
+   "head": [
+    16,
+    -32
+   ],
+   "hand_r": [
+    10,
+    -18
+   ],
+   "hand_l": [
+    8,
+    -18
+   ],
+   "torso": [
+    0,
+    -19
+   ],
+   "back": [
+    -8,
+    -22
+   ],
+   "seat": [
+    -1,
+    -25
+   ]
+  },
+  "torso_scale": [
+   1.8,
+   1.0
+  ],
+  "legs": {
+   "part": "leg.capybara",
+   "anchors": [
+    [
+     8,
+     -7,
+     0,
+     1,
+     0
+    ],
+    [
+     -8,
+     -7,
+     3.14,
+     1,
+     0
+    ],
+    [
+     7,
+     -7,
+     3.14,
+     -1,
+     0
+    ],
+    [
+     -9,
+     -7,
+     0,
+     -1,
+     0
+    ]
+   ]
+  },
+  "note": "the rats' big cousin (Dominic's pick, RB1): slower than a pony, tougher"
+ },
+ {
+  "id": "head.capybara",
+  "slot": "head",
+  "sockets": {
+   "top": [
+    1,
+    -4
+   ]
+  },
+  "shapes": [
+   {
+    "t": "poly",
+    "p": [
+     [
+      0,
+      -4
+     ],
+     [
+      1,
+      -8
+     ],
+     [
+      2,
+      -4
+     ]
+    ],
+    "ch": "skin2"
+   },
+   {
+    "t": "ellipse",
+    "c": [
+     3,
+     -1
+    ],
+    "r": [
+     6,
+     3.5
+    ],
+    "ch": "skin"
+   },
+   {
+    "t": "circle",
+    "c": [
+     3,
+     -2
+    ],
+    "r": 0.9,
+    "ch": "eye"
+   }
+  ],
+  "tags": [],
+  "stats": {},
+  "points": 0
+ },
+ {
+  "id": "leg.capybara",
+  "slot": "leg",
+  "shapes": [
+   {
+    "t": "poly",
+    "p": [
+     [
+      -1.5,
+      0
+     ],
+     [
+      1.5,
+      0
+     ],
+     [
+      1.5,
+      11
+     ],
+     [
+      -1.5,
+      11
+     ]
+    ],
+    "ch": "skin"
+   },
+   {
+    "t": "poly",
+    "p": [
+     [
+      -2,
+      11
+     ],
+     [
+      2,
+      11
+     ],
+     [
+      2,
+      13
+     ],
+     [
+      -2,
+      13
+     ]
+    ],
+    "ch": "eye"
+   }
+  ],
+  "tags": [],
+  "stats": {},
+  "points": 0
+ },
+ {
   "id": "body.pony",
   "slot": "body",
   "noun": "Pony",
