@@ -672,9 +672,7 @@ func _roof(body: Node3D, arch: String, at: Vector3, w: float, d: float) -> float
 	if k.get("dome", false):   # a rounded roof: woven reed, or packed earth
 		var rise := d * 0.5
 		body.add_child(dome(1.0, mats.get_mat(k.roof), at - Vector3(0, 0.05, 0), Vector3(w / 2 + 0.18, rise, d / 2 + 0.18)))
-		if arch == "reed":
-			_lily_cap(body, at + Vector3(0, rise - 0.06, 0), 0.32)
-		return rise
+		return rise   # (no lily pad: only the frog Town Center keeps one, as its landmark; Fable)
 	if k.roof == "tiles":
 		var holder := Node3D.new()
 		holder.rotation_degrees = Vector3(0, 90, 0)   # tile_roof runs its ridge along z
@@ -857,8 +855,7 @@ func _tower(arch: String, team: Color) -> Dictionary:
 	var roof_mat: Material = mats.get_mat("terracotta" if k.roof == "tiles" else k.roof)
 	if k.get("dome", false):
 		body.add_child(dome(0.5, roof_mat, Vector3(0, top + 0.5, 0), Vector3(1, 0.7, 1)))
-		if arch == "reed":
-			_lily_cap(body, Vector3(0, top + 0.82, 0), 0.22)
+		pass
 	else:
 		body.add_child(cyl(0.0, 0.62, 0.38, roof_mat, Vector3(0, top + 0.68, 0), Vector3(0, 45, 0), 4))
 	body.add_child(box(Vector3(0.22, 0.12, 0.02), cloth(team), Vector3(0.1, top + 0.18, 0.47)))   # a team rag on the rail: the owner, quietly
@@ -918,7 +915,7 @@ func _lily_cap(body: Node3D, at: Vector3, r: float) -> void:
 
 
 ## A woven dome on a short wall, with a mud band, a dark door and a lily cap. Returns its top.
-func _reed_dome(body: Node3D, at: Vector3, r: float, team: Color, door_turn := 0.0) -> float:
+func _reed_dome(body: Node3D, at: Vector3, r: float, team: Color, door_turn := 0.0, cap := false) -> float:
 	var weave := mats.get_mat("weave")
 	var wall_h := r * 0.35
 	body.add_child(cyl(r, r * 1.04, wall_h, weave, at + Vector3(0, wall_h / 2, 0), Vector3.ZERO, 28))
@@ -929,7 +926,8 @@ func _reed_dome(body: Node3D, at: Vector3, r: float, team: Color, door_turn := 0
 	body.add_child(box(Vector3(r * 0.42, wall_h + r * 0.25, 0.05), Materials.flat(Color("#2a1e14"), 0.9), door, Vector3(0, door_turn, 0)))
 	body.add_child(box(Vector3(r * 0.5, 0.06, 0.08), cloth(team), door + Vector3(0, wall_h * 0.5 + r * 0.14, 0), Vector3(0, door_turn, 0)))
 	var top := at.y + wall_h + r * 0.95
-	_lily_cap(body, Vector3(at.x, top - 0.04, at.z), r * 0.45)
+	if cap:
+		_lily_cap(body, Vector3(at.x, top - 0.04, at.z), r * 0.45)
 	return top
 
 
@@ -967,6 +965,11 @@ func reed_town_center(team: Color) -> Dictionary:
 	var body := Node3D.new()
 	var deck := _stilt_deck(body, Vector3.ZERO, 2.5, 2.5)
 	var top := _reed_dome(body, Vector3(-0.25, deck, -0.25), 0.92, team)
+	# A second, smaller woven dome stacked on the first: the village's tallest roof, its landmark.
+	body.add_child(cyl(0.34, 0.4, 0.22, mats.get_mat("weave"), Vector3(-0.25, top - 0.05, -0.25), Vector3.ZERO, 20))
+	body.add_child(dome(0.4, mats.get_mat("thatch"), Vector3(-0.25, top + 0.05, -0.25), Vector3(1.0, 1.1, 1.0)))
+	_lily_cap(body, Vector3(-0.25, top + 0.45, -0.25), 0.2)
+	top += 0.5
 	_reed_dome(body, Vector3(0.8, deck, 0.75), 0.36, team, 40.0)
 	_reed_fence(body, Vector3(0, deck, 0), 1.2)
 	# Steps down at the front, and a stack of caught fish on a rack.
@@ -1302,49 +1305,44 @@ func _log_stack(body: Node3D, at: Vector3, rows: int) -> void:
 			body.add_child(cyl(0.06, 0.06, 0.01, cut, p + Vector3(0.315, 0, 0), Vector3(0, 0, 90), 10))
 
 
-## Archery Range: a narrow hall at the back, a row of straw targets on stands, a rack of bows.
+## Archery Range: an open long shed (posts and a roof, no walls) behind a lane of targets.
 func _archery_range(arch: String, team: Color) -> Dictionary:
 	var body := Node3D.new()
 	var wood := mats.get_mat("wood")
-	var hall := Node3D.new()
-	hall.position = Vector3(-0.2, 0, -0.75)
-	body.add_child(hall)
-	var base := _hall(hall, arch, 2.2, 1.0, 0.75)
-	var rise := _roof(hall, arch, Vector3(0, base + 0.75, 0), 2.2, 1.0)
-	hall.add_child(box(Vector3(0.45, 0.56, 0.04), cloth(team), Vector3(0.4, base + 0.28, 0.52)))
-	for k in 3:   # the targets, on A-frame stands, down the range
-		var at := Vector3(-0.85 + k * 0.85, 0, 0.75 + (k % 2) * 0.12)
+	var rise := _lean_to(body, arch, Vector3(0, 0, -0.85), 2.5, 0.8, 0.62)
+	body.add_child(box(Vector3(0.36, 0.22, 0.03), cloth(team), Vector3(-0.9, 0.5, -0.45)))   # a team rag on a post
+	for k in 3:   # bows racked under the shed
+		body.add_child(beam(Vector3(0.6 + k * 0.14, 0.02, -1.05), Vector3(0.65 + k * 0.14, 0.55, -1.12), 0.012, wood, 4))
+	for k in 3:   # the targets, down a lane of trodden earth
+		var at := Vector3(-0.85 + k * 0.85, 0, 0.85)
 		body.add_child(beam(at + Vector3(-0.12, 0, -0.08), at + Vector3(0, 0.42, 0), 0.02, wood, 6))
 		body.add_child(beam(at + Vector3(0.12, 0, -0.08), at + Vector3(0, 0.42, 0), 0.02, wood, 6))
 		body.add_child(cyl(0.2, 0.2, 0.08, mats.get_mat("thatch"), at + Vector3(0, 0.42, 0.04), Vector3(80, 0, 0), 20))
 		body.add_child(ring(0.05, 0.09, cloth(Color("#c03030")), at + Vector3(0, 0.42, 0.09), Vector3(80, 0, 0)))
-	for k in 3:   # bows leaning on the hall
-		var x := 0.9 + k * 0.12
-		body.add_child(beam(Vector3(x, 0.02, -0.18), Vector3(x + 0.05, 0.62, -0.24), 0.012, wood, 4))
-	return {"body": body, "anchor": Vector3.ZERO, "lantern": Vector3(0.4, base + 0.65, -0.2), "lights": [], "team": team,
-		"smoke": Vector3(-0.8, base + 0.75 + rise, -0.75)}
+	body.add_child(box(Vector3(2.6, 0.015, 0.5), mats.get_mat("mud"), Vector3(0, 0.008, 0.2)))   # the shooting lane
+	return {"body": body, "anchor": Vector3.ZERO, "lantern": Vector3(0, 0.5, -0.5), "lights": [], "team": team}
 
 
-## Armoury: a small hall with a forge glowing in an open side, an anvil, a rack of blades.
+## Armoury: a squat smithy under a tall chimney stack, the forge glowing in an open side.
 func _armoury(arch: String, team: Color) -> Dictionary:
 	var body := Node3D.new()
 	var wood := mats.get_mat("wood")
 	var iron := Materials.flat(Color("#4a4c50"), 0.5, 0.7)
 	var hall := Node3D.new()
-	hall.position = Vector3(-0.15, 0, -0.25)
+	hall.position = Vector3(-0.25, 0, -0.2)
 	body.add_child(hall)
-	var base := _hall(hall, arch, 1.3, 1.0, 0.75)
-	var rise := _roof(hall, arch, Vector3(0, base + 0.75, 0), 1.3, 1.0)
-	hall.add_child(box(Vector3(0.36, 0.5, 0.04), cloth(team), Vector3(-0.3, base + 0.25, 0.52)))
-	body.add_child(box(Vector3(0.36, 0.3, 0.3), mats.get_mat("stone"), Vector3(0.65, 0.15, 0.3)))   # the forge
-	body.add_child(box(Vector3(0.26, 0.04, 0.2), glow(Color("#ff8a30"), 2.2), Vector3(0.65, 0.31, 0.3)))
-	body.add_child(box(Vector3(0.22, 0.1, 0.1), iron, Vector3(0.2, 0.26, 0.62)))   # the anvil on its stump
-	body.add_child(cyl(0.08, 0.09, 0.2, wood, Vector3(0.2, 0.1, 0.62), Vector3.ZERO, 10))
-	for k in 4:   # blades on a rack
-		body.add_child(box(Vector3(0.03, 0.42, 0.06), iron, Vector3(-0.75 + k * 0.1, 0.3, 0.45), Vector3(0, 0, -6)))
-	body.add_child(box(Vector3(0.48, 0.04, 0.05), wood, Vector3(-0.6, 0.42, 0.42)))
-	return {"body": body, "anchor": Vector3.ZERO, "lantern": Vector3(-0.3, base + 0.6, 0.35), "lights": [Vector3(0.65, 0.35, 0.3)],
-		"team": team, "smoke": Vector3(0.65, 0.5, 0.3)}
+	var base := _hall(hall, arch, 1.2, 1.1, 0.55)   # low and squat
+	_roof(hall, arch, Vector3(0, base + 0.55, 0), 1.2, 1.1)
+	hall.add_child(box(Vector3(0.34, 0.42, 0.04), cloth(team), Vector3(-0.3, base + 0.21, 0.57)))
+	var stone := mats.get_mat("stone")
+	body.add_child(box(Vector3(0.36, 1.5, 0.36), stone, Vector3(0.55, 0.75, -0.55)))   # the chimney stack: the silhouette
+	body.add_child(box(Vector3(0.42, 0.08, 0.42), stone, Vector3(0.55, 1.5, -0.55)))
+	body.add_child(box(Vector3(0.44, 0.34, 0.4), stone, Vector3(0.6, 0.17, 0.25)))   # the forge
+	body.add_child(box(Vector3(0.3, 0.04, 0.26), glow(Color("#ff8a30"), 2.2), Vector3(0.6, 0.35, 0.25)))
+	body.add_child(box(Vector3(0.22, 0.1, 0.1), iron, Vector3(0.1, 0.26, 0.62)))   # the anvil on its stump
+	body.add_child(cyl(0.08, 0.09, 0.2, wood, Vector3(0.1, 0.1, 0.62), Vector3.ZERO, 10))
+	return {"body": body, "anchor": Vector3.ZERO, "lantern": Vector3(-0.3, base + 0.45, 0.45), "lights": [Vector3(0.6, 0.38, 0.25)],
+		"team": team, "smoke": Vector3(0.55, 1.6, -0.55)}
 
 
 ## Lumber Camp: an open shed over a stack of logs, a chopping block with an axe in it.
@@ -1360,41 +1358,47 @@ func _lumber_camp(arch: String, team: Color) -> Dictionary:
 	return {"body": body, "anchor": Vector3.ZERO, "lights": [], "team": team}
 
 
-## Mill: a small store with baskets and sacks at the door and a millstone on its edge.
+## Mill: a raised platform of drying racks hung with produce, sacks and a basket of berries.
 func _mill(arch: String, team: Color) -> Dictionary:
 	var body := Node3D.new()
-	var hall := Node3D.new()
-	hall.position = Vector3(-0.15, 0, -0.25)
-	body.add_child(hall)
-	var base := _hall(hall, arch, 1.2, 0.95, 0.7)
-	_roof(hall, arch, Vector3(0, base + 0.7, 0), 1.2, 0.95)
-	hall.add_child(box(Vector3(0.34, 0.48, 0.04), cloth(team), Vector3(0.2, base + 0.24, 0.5)))
+	var wood := mats.get_mat("wood")
+	var k: Dictionary = KIT[arch]
+	for x in [-0.6, 0.6]:   # the platform on short posts
+		for z in [-0.6, 0.3]:
+			body.add_child(box(Vector3(0.08, 0.3, 0.08), mats.get_mat(k.frame), Vector3(x, 0.15, z)))
+	body.add_child(box(Vector3(1.4, 0.06, 1.1), wood, Vector3(0, 0.33, -0.15)))
+	for z in [-0.5, -0.1, 0.3]:   # the racks: rails with bundles hanging to dry
+		for x in [-0.55, 0.55]:
+			body.add_child(box(Vector3(0.05, 0.6, 0.05), wood, Vector3(x, 0.66, z)))
+		body.add_child(box(Vector3(1.2, 0.04, 0.04), wood, Vector3(0, 0.95, z)))
+		for n in 5:
+			body.add_child(ball(0.05, Materials.flat([Color("#c8302a"), Color("#d8b44a"), Color("#7a9a3a")][(n + int(z * 10)) % 3], 0.8),
+				Vector3(-0.45 + n * 0.22, 0.85, z), Vector3(0.8, 1.6, 0.8)))
+	body.add_child(box(Vector3(0.36, 0.12, 0.03), cloth(team), Vector3(0, 0.98, 0.32)))   # a team cloth over a rail
 	var sack := Materials.flat(Color("#c8b48a"), 1.0)
-	for p in [Vector3(-0.55, 0.12, 0.45), Vector3(-0.35, 0.12, 0.55), Vector3(-0.45, 0.3, 0.5)]:
+	for p in [Vector3(-0.55, 0.12, 0.6), Vector3(-0.3, 0.12, 0.68), Vector3(-0.42, 0.3, 0.64)]:
 		body.add_child(ball(0.13, sack, p, Vector3(1.0, 1.15, 0.9)))
-	body.add_child(cyl(0.12, 0.1, 0.16, mats.get_mat("weave"), Vector3(0.1, 0.08, 0.6), Vector3.ZERO, 14))   # a basket of berries
-	for k in 5:
-		body.add_child(ball(0.035, Materials.flat(Color("#c8302a"), 0.6), Vector3(0.06 + (k % 3) * 0.04, 0.17, 0.57 + (k / 3) * 0.05)))
-	body.add_child(cyl(0.24, 0.24, 0.08, mats.get_mat("stone"), Vector3(0.65, 0.24, 0.2), Vector3(0, 30, 82), 20))   # the millstone
-	return {"body": body, "anchor": Vector3.ZERO, "lights": [], "team": team, "lantern": Vector3(0.2, base + 0.6, 0.3)}
+	body.add_child(cyl(0.13, 0.1, 0.16, mats.get_mat("weave"), Vector3(0.45, 0.08, 0.6), Vector3.ZERO, 14))
+	return {"body": body, "anchor": Vector3.ZERO, "lights": [], "team": team, "lantern": Vector3(0, 0.5, 0.4)}
 
 
-## Mining Camp: an open shed, a cart heaped with pale stone and gold-flecked rock, picks.
+## Mining Camp: a lean-to over a dug pit (a ladder down into it), a cart of stone and gold.
 func _mining_camp(arch: String, team: Color) -> Dictionary:
 	var body := Node3D.new()
 	var wood := mats.get_mat("wood")
-	_lean_to(body, arch, Vector3(-0.15, 0, -0.25), 1.2, 0.85, 0.6)
-	body.add_child(box(Vector3(0.6, 0.18, 0.36), wood, Vector3(0.35, 0.22, 0.45)))   # the cart
-	for x in [0.12, 0.58]:
-		body.add_child(cyl(0.12, 0.12, 0.04, wood, Vector3(x, 0.12, 0.65), Vector3(90, 0, 0), 12))
+	_lean_to(body, arch, Vector3(-0.4, 0, -0.4), 1.0, 0.8, 0.58)
+	body.add_child(cyl(0.38, 0.32, 0.04, Materials.flat(Color("#1a1410"), 1.0), Vector3(0.35, 0.02, 0.15), Vector3.ZERO, 16))   # the pit, dark
+	body.add_child(ring(0.38, 0.5, mats.get_mat("mud"), Vector3(0.35, 0.03, 0.15)))   # its spoil heap rim
+	for x in [-0.06, 0.06]:
+		body.add_child(beam(Vector3(0.35 + x, -0.1, 0.15), Vector3(0.35 + x, 0.42, -0.05), 0.012, wood, 4))   # the ladder out
+	body.add_child(box(Vector3(0.5, 0.15, 0.3), wood, Vector3(-0.35, 0.2, 0.6)))   # the cart
+	for x in [-0.55, -0.15]:
+		body.add_child(cyl(0.1, 0.1, 0.04, wood, Vector3(x, 0.1, 0.77), Vector3(90, 0, 0), 12))
 	var stone := Materials.flat(Color("#e6d4b0"), 0.9)
 	var gold := Materials.flat(Color("#f2c440"), 0.3, 0.8)
-	for k in 6:
-		body.add_child(ball(0.07, stone if k % 3 != 0 else gold, Vector3(0.18 + (k % 3) * 0.16, 0.36 + (k / 3) * 0.05, 0.4 + (k % 2) * 0.08), Vector3(1.2, 0.8, 1.0)))
-	for k in 2:   # picks against the shed
-		body.add_child(beam(Vector3(-0.75 + k * 0.15, 0.02, 0.25), Vector3(-0.7 + k * 0.15, 0.5, 0.18), 0.015, wood, 4))
-		body.add_child(box(Vector3(0.24, 0.03, 0.03), Materials.flat(Color("#6a6e72"), 0.5, 0.6), Vector3(-0.7 + k * 0.15, 0.5, 0.18)))
-	body.add_child(box(Vector3(0.3, 0.12, 0.02), cloth(team), Vector3(-0.15, 0.4, 0.19)))
+	for n in 5:
+		body.add_child(ball(0.06, stone if n % 3 != 0 else gold, Vector3(-0.5 + (n % 3) * 0.13, 0.32 + (n / 3) * 0.05, 0.56 + (n % 2) * 0.07), Vector3(1.2, 0.8, 1.0)))
+	body.add_child(box(Vector3(0.3, 0.12, 0.02), cloth(team), Vector3(-0.4, 0.38, -0.01)))
 	return {"body": body, "anchor": Vector3.ZERO, "lights": [], "team": team}
 
 
