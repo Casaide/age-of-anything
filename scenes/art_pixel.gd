@@ -163,14 +163,12 @@ func _build() -> void:
 	for b in BUILDINGS:
 		var side: int = b[3]
 		var team := Color(lib.palettes.teams[side])
-		var junk: bool = lib.families[races[side].family].get("architecture", "thatch") == "junk"
+		var arch: String = lib.families[races[side].family].get("architecture", "thatch")
 		# Baked in the team key, coloured per side by the team shader (like units).
 		var key := PartShape.TEAM_KEY
-		var spec: Dictionary
-		if b[2] == 3:
-			spec = models.junk_town_center(key) if junk else models.town_center(key)
-		else:
-			spec = models.tin_can_house(key) if junk else models.stilt_house(key)
+		var town := {"thatch": "town_center", "junk": "junk_town_center", "stone": "stone_town_center", "tent": "tent_town_center"}
+		var house := {"thatch": "stilt_house", "junk": "tin_can_house", "stone": "villa_house", "tent": "tent_house"}
+		var spec: Dictionary = models.call(town[arch] if b[2] == 3 else house[arch], key)
 		await _building(baker, spec, b[0], b[1], b[2], team)
 	baker.queue_free()
 	# One atlas for every unit part and every scene sprite, with one shared material,
@@ -284,7 +282,7 @@ func _at(x: int, y: int) -> String:
 
 
 func _wait_for_textures(models) -> void:
-	for name in ["wood", "thatch", "mud", "stone", "grass", "tin", "brick"]:
+	for name in ["wood", "thatch", "mud", "stone", "grass", "tin", "brick", "plaster", "terracotta", "terracotta_dark", "felt", "weave"]:
 		var m: StandardMaterial3D = models.mats.get_mat(name)
 		for t in [m.albedo_texture, m.normal_texture]:
 			while t != null and t.get_image() == null:   # noise textures build in a thread

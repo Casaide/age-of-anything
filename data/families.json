@@ -107,7 +107,7 @@
    "style": "road",
    "width": 0.5
   },
-  "architecture": "thatch"
+  "architecture": "stone"
  },
  "hellenic": {
   "cloth": [
@@ -134,7 +134,7 @@
    "style": "road",
    "width": 0.46
   },
-  "architecture": "thatch"
+  "architecture": "stone"
  },
  "royal": {
   "cloth": [
@@ -161,7 +161,7 @@
    "style": "cobble",
    "width": 0.44
   },
-  "architecture": "thatch"
+  "architecture": "stone"
  },
  "steppe": {
   "cloth": [
@@ -188,7 +188,7 @@
    "style": "trail",
    "width": 0.4
   },
-  "architecture": "thatch"
+  "architecture": "tent"
  },
  "spooky": {
   "cloth": [
