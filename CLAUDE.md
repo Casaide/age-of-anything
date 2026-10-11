@@ -23,7 +23,7 @@ move it to `docs/backlog.md` rather than deleting it.
 ## Status
 
 - **Done (milestone 0): race generation.** Prompt -> race -> composed, animated units in the Race Lab
-  (`scenes/race_lab.tscn`, the main scene). The 2D shapes in `data/parts.json` are the data contract
+  (`scenes/race_lab.tscn`). The 2D shapes in `data/parts.json` are the data contract
   and socket reference; game scenes draw only the baked pixel art.
 - **Done (milestone 1): sim core.** `src/sim/`: integer-only 20 Hz sim driven by a command queue,
   replays, state hashes, straight-line MOVE + separation. Debug view `scenes/sim_debug.tscn`.
@@ -45,7 +45,13 @@ move it to `docs/backlog.md` rather than deleting it.
   ages, ages and research as data (`data/tech.json`, `src/sim/tech.gd`). See `docs/milestones/m6-foundations.md`.
 - **Done (milestone 7): progression**: Barracks, Stable, Watchtower per culture, age gates,
   age-ups needing a building, the bot ageing up at 4-6 minutes.
-- **Next:** 8 AI and match flow, 9 fog and juice, 10 playtest. The art track (A2-A5) runs alongside.
+- **Built (milestone 8): AI and match flow.** `src/ai/bot.gd` (data in `data/ai.json`): build
+  order, counter-picked soldiers, defence, attack waves; `src/sim/match.gd`: defeat, surrender,
+  winner. The match setup screen (`scenes/match_setup.tscn`) is now the main scene. Waiting on
+  Dominic's playtest.
+- **Art direction under research:** unit art goes concept-first (`docs/concepts/`); nothing new
+  gets built for units until Dominic approves a direction.
+- **Next:** 9 fog and juice, 10 playtest. The art track (A2-A5) runs alongside.
 
 ## Layout
 
@@ -106,6 +112,8 @@ godot --headless --path . --script res://tests/run_tests.gd        # must print 
 godot --headless --path . --script res://tests/print_races.gd -- "centaur romans" "flying greeks with wings"
 godot --path . --script res://tests/screenshot.gd -- /tmp/lab.png "prompt A" "prompt B"
 godot --headless --path . --script res://tests/test_sim.gd         # sim determinism + tick time (~45 s)
+godot --headless --path . --script res://tests/test_ai.gd          # the AI beats a passive player; bot vs bot (~1-2 min)
+godot --path . res://scenes/match_setup.tscn                       # pick races and play vs the AI (the main scene)
 godot --path . --script res://tests/sim_screenshot.gd -- /tmp/sim.png [map_id] [armies|opening:<tick>] ["prompt A" "prompt B"]
 godot --path . res://scenes/sim_debug.tscn                         # run the sim debug view
 godot --path . res://scenes/counter_quiz.tscn                      # blind counter quiz (milestone 4 exit check)
@@ -115,7 +123,7 @@ godot --path . --script res://tests/art_screenshot.gd -- /tmp/art  # capture it 
 godot --path . --script res://tests/art_crop.gd -- /tmp/c.png 6.5 9 ["prompt A" "prompt B"]   # 3x close-up at a tile
 godot --path . --script res://tests/art_bench.gd                    # draw calls + frame time, 200+ units
 godot --path . --script res://tests/unit_lineup.gd -- /tmp/units.png ["prompt A" "prompt B"]   # both rosters as pixel art, 4x
-godot --path .                                                     # run the Race Lab
+godot --path .                                                     # run the game (match setup; Race Lab from there)
 ```
 
 A GDScript parse error in a `--script` run leaves Godot hanging instead of exiting; put a

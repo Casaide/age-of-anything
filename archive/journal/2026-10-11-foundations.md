@@ -39,6 +39,10 @@ Milestone 7 (progression) followed straight on:
   The game-scale sheet made the real problem obvious: five Viking heads, nearly identical at
   8 pixels. Questions for Dominic in `docs/concepts/README.md`. Pegasus wings went to double
   size at his request.
+- **Milestone 8, AI and match flow.** A full AI on top of the economy bot: build order from data,
+  counter-picked soldiers, defence, waves at 5 and 8 minutes. It beats a passive player in 10-14
+  minutes; frogs vs rats bot-on-bot goes to the rats at 14:22. Losing your Town Centers or
+  pressing F10 ends the match. A match setup screen with live race previews is the new front door.
 - **Wings.** Feather wings had thirty small feathers and baked to a white slab; now eight big
   ones. A pegasus's wings sat so high they looked like the rider's; they now lie folded along
   the horse's back.
@@ -46,7 +50,7 @@ Milestone 7 (progression) followed straight on:
 ## Decisions
 D-056 (milestones 5 and 6 inserted), D-057 (gear by age, small blacksmith tells), D-058 (bows for
 everyone, crossbows royal and rat kit, shift-queues), D-059 (winged races fly instead of riding),
-D-070 (restrictions as layers with a host switch), D-072 (unit textures: big marks, world space), D-073 (creature architecture), D-074 (concept-first unit art).
+D-070 (restrictions as layers with a host switch), D-072 (unit textures: big marks, world space), D-073 (creature architecture), D-074 (concept-first unit art), D-075 (the AI and the match setup).
 
 ## Pictures
 ![Centaur Romans at age 1: light kit](../images/2026-10-11/55-centaur-romans-age-1-light-kit.png)
@@ -62,6 +66,8 @@ D-070 (restrictions as layers with a host switch), D-072 (unit textures: big mar
 ![Six architectures with build stages: reed and mound added](../images/2026-10-11/94-six-architectures-reed-and-mound-added.png)
 ![A frog reed town](../images/2026-10-11/95-frog-reed-town.png)
 ![A beetle mound town](../images/2026-10-11/96-beetle-mound-town.png)
+![The match setup screen](../images/2026-10-11/100-match-setup-screen.png)
+![The AI's rats raid an undefended frog town at 7:00](../images/2026-10-11/101-ai-rats-raid-the-frog-town.png)
 
 ## Funny moments
 - The first unit lines gave every soldier a banner at age 2, replacing their capes. A whole

@@ -13,7 +13,7 @@ along the way. The overview table lives in `../mvp-plan.md` §3; these files hol
 | 5 | [Art rework](m5-art-rework.md) | built; waiting on Dominic's look sign-off |
 | 6 | [Foundations](m6-foundations.md) | done 2026-10-11 |
 | 7 | [Progression](m7-progression.md) | done 2026-10-11 |
-| 8 | [AI + match flow](m8-ai-match-flow.md) | planned |
+| 8 | [AI + match flow](m8-ai-match-flow.md) | built; waiting on Dominic's playtest |
 | 9 | [Fog + juice](m9-fog-juice.md) | planned |
 | 10 | [Playtest + balance](m10-playtest-balance.md) | planned |
 | - | [Art pass](art-pass.md) | direction chosen, vertical slice done |

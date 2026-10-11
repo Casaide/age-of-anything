@@ -27,7 +27,7 @@ const SimMap := preload("res://src/sim/sim_map.gd")
 const World := preload("res://src/sim/world.gd")
 const Economy := preload("res://src/sim/economy.gd")
 const Replay := preload("res://src/sim/replay.gd")
-const EcoBot := preload("res://src/ai/eco_bot.gd")
+const Bot := preload("res://src/ai/bot.gd")
 
 const MAP_IDS := ["flat_test", "choke_test"]
 const SEED := 1
@@ -88,6 +88,8 @@ var desync := -1
 var show_flow := false
 var autoplay := false
 var army := false           # also spawn a test army per side (F7 toggles and restarts)
+var vs_ai := false          # side 2 is played by the AI (set by the match setup screen)
+var banner: Label           # victory / defeat
 var prompts: Array = []     # set before adding to the tree, else taken from the command line
 var rerolls: Array = [0, 0] # per side; G rerolls side 0
 var press_screen := Vector2.INF
@@ -154,6 +156,13 @@ func _ready() -> void:
 	panel.offset_left = 12
 	panel.offset_bottom = -12
 	ui.add_child(panel)
+	banner = _label(64, Vector2.ZERO)
+	banner.set_anchors_preset(Control.PRESET_CENTER)
+	banner.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	banner.grow_horizontal = Control.GROW_DIRECTION_BOTH
+	banner.grow_vertical = Control.GROW_DIRECTION_BOTH
+	banner.visible = false
+	ui.add_child(banner)
 	cursors = Cursors.new(DisplayServer.screen_get_scale())
 
 	if prompts.is_empty():
@@ -213,7 +222,15 @@ func _bake(races: Array) -> void:
 	baking = false
 
 
+func _first_of_team(team: int) -> int:
+	for p in world.teams.size():
+		if world.teams[p] == team:
+			return p
+	return 0
+
+
 func _attach(w: World, end_tick := -1) -> void:
+	banner.visible = false
 	for d in [views, bviews, rviews]:
 		for k in d:
 			d[k].queue_free()
@@ -329,7 +346,12 @@ func _on_zoom() -> void:
 
 func _set_autoplay(on: bool) -> void:
 	autoplay = on
-	clock.bots = [EcoBot.new(0), EcoBot.new(1)] if on and playback.is_empty() else []
+	if not playback.is_empty():
+		clock.bots = []
+	elif on:
+		clock.bots = [Bot.new(0), Bot.new(1)]   # watch two AIs play
+	else:
+		clock.bots = [Bot.new(1)] if vs_ai else []
 
 
 # ------------------------------------------------------------------ input
@@ -403,6 +425,9 @@ func _unhandled_input(event: InputEvent) -> void:
 				print("Saved replay: ", ProjectSettings.globalize_path(REPLAY_PATH))
 			KEY_F6:
 				_set_autoplay(not autoplay)
+			KEY_F10:
+				if world.winner < 0:
+					world.issue(active, Commands.SURRENDER, {})
 			KEY_F7:
 				army = not army
 				start_live(world.races.map(func(r): return r.prompt))
@@ -604,6 +629,11 @@ func _play_events() -> void:
 			var target: Node2D = views.get(e.to)
 			if target != null:
 				fx.flash(target, lands)
+		elif e.type == "won":
+			var mine: bool = world.teams[active] == e.team
+			banner.text = ("Victory!" if mine else "Defeat") + "\n" + ("%s win" % world.races[_first_of_team(e.team)].name)
+			banner.add_theme_color_override("font_color", Color("#f2c94c") if mine else Color("#e07060"))
+			banner.visible = true
 		elif e.type == "die" and not e.building:
 			var v: Node2D = views.get(e.id)
 			if v != null:
@@ -949,7 +979,7 @@ func _hud_text() -> String:
 			clock.speed, "   PAUSED" if clock.paused else ""],
 		"click / drag / double-click select   right-click: move, gather, help build, rally   Tab: switch side",
 		"Q train worker   H house   C town center   WASD/edges/middle-drag pan   wheel zoom   space pause   [ ] speed",
-		"F3 flow   F5 save replay   F9 play replay   F6 autoplay   F7 test armies   M map   R restart   G/shift+G/ctrl+G regen army",
+		"F3 flow   F5 save replay   F9 play replay   F6 autoplay   F10 surrender   F7 test armies   M map   R restart   G/shift+G/ctrl+G regen army",
 	]
 	var cell := _cell_at(get_global_mouse_position())
 	if map.resource_at(cell) != "":

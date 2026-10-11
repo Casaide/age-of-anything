@@ -369,3 +369,9 @@ picks, and only then is the pick built. This replaces slowly iterating on the fi
 Dominic's call ("really need design input here, not iterations"). Round 1 (age-1 head gear)
 showed that at game scale head gear gets about 3 pixels, so culture identity has to come from
 big shapes; head size is the first question.
+
+**D-075, 2026-10-11: The AI is data plus counter-reading, and the match setup is the front door.**
+The bot's build order, wave timings and sizes live in `data/ai.json`; what it trains is picked by
+reading the enemy army's tags against its own bonus classes, so it adapts to any generated race
+without special cases. A player is out when their Town Centers are gone or they surrender.
+The match setup screen became the main scene (the Race Lab is a button on it). Claude's calls.

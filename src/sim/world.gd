@@ -24,6 +24,7 @@ const Flow := preload("res://src/sim/flow.gd")
 const Economy := preload("res://src/sim/economy.gd")
 const Combat := preload("res://src/sim/combat.gd")
 const Tech := preload("res://src/sim/tech.gd")
+const Match := preload("res://src/sim/match.gd")
 
 const TICK_HZ := 20
 const HASH_EVERY := 30
@@ -82,6 +83,9 @@ var pop := PackedInt32Array()     # derived each tick (Economy.update_pop)
 var lost := PackedInt32Array()    # per player: units killed so far
 var teams := PackedInt32Array()   # per player: team id (players on one team are allies)
 var pop_cap := PackedInt32Array()
+var defeated := PackedInt32Array()       # per player: the tick + 1 they were knocked out, or 0 (match.gd)
+var started_with_town := PackedByteArray()
+var winner := -1               # the winning team, once only one is left
 var fields := {}               # field key -> Flow; looked up by key, never iterated
 var field_order: Array = []    # cached field keys, oldest first (eviction, invalidation)
 var field_queue: Array = []    # field keys waiting for a solve, in request order
@@ -115,6 +119,7 @@ func _init(p_seed: int, p_map: SimMap, p_races: Array, p_rules: Dictionary, p_te
 	Combat.setup(self)
 	Tech.setup(self)
 	Economy.setup(self)
+	Match.setup(self)
 	map.fresh.clear()
 
 
@@ -227,6 +232,7 @@ func step() -> void:
 	Economy.work(self)
 	spatial.build(units.x, units.y)
 	Combat.tick(self)
+	Match.tick(self)
 	_next_orders()
 	_sync_map()
 	_solve_queued()
@@ -290,6 +296,8 @@ func _run(cmd: Dictionary) -> void:
 			Tech.cmd_age_up(self, cmd.player, a)
 		Commands.RESEARCH:
 			Tech.cmd_research(self, cmd.player, a)
+		Commands.SURRENDER:
+			Match.cmd_surrender(self, cmd.player)
 		Commands.TRAIN:
 			Economy.cmd_train(self, cmd.player, a)
 		Commands.CANCEL:
@@ -720,7 +728,7 @@ func _separate() -> void:
 ## Hash of everything that matters, in id order.
 func state_hash() -> int:
 	var h := Fixed.FNV_START
-	for v in [tick, rng.state, next_id, next_group, units.count(), buildings.count(), map.version]:
+	for v in [tick, rng.state, next_id, next_group, units.count(), buildings.count(), map.version, winner]:
 		h = Fixed.mix(h, v)
 	for p in races.size():
 		for r in resources.size():
@@ -729,6 +737,7 @@ func state_hash() -> int:
 		h = Fixed.mix(h, lost[p])
 		h = Fixed.mix(h, teams[p])
 		h = Fixed.mix(h, ages[p])
+		h = Fixed.mix(h, defeated[p])
 		for v in researched[p]:
 			h = Fixed.mix(h, v)
 	# Which fields are solved or pending changes how units steer, so it's state too.

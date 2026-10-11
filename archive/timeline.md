@@ -70,3 +70,5 @@ One line per moment worth remembering. Newest at the bottom.
   creature. ([image](images/2026-10-11/96-beetle-mound-town.png))
 - **2026-10-11:** Unit art goes concept-first: a concept sheet tool and the first round (age-1
   head gear), waiting on Dominic's picks.
+- **2026-10-11:** Milestone 8 built: an AI that builds, counter-picks and attacks in waves; a
+  match setup screen; victory and defeat. ([image](images/2026-10-11/101-ai-rats-raid-the-frog-town.png))
