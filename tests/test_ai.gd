@@ -50,6 +50,8 @@ func _init() -> void:
 	print("\nbot match lengths %s, median %s (target for players: 9-12 minutes)" % [lengths.map(_clock), _clock(lengths[1])])
 
 	_test_easy(rules, rats, frogs)
+	var hard := _play(rules, [rats, frogs], [Bot.new(0, {}, "hard"), Bot.new(1)], "hard bot %s vs normal bot %s" % [rats.name, frogs.name])
+	check(hard.winner == 0, "hard beats normal (winner %d at %s)" % [hard.winner, _clock(hard.tick)])
 
 	var w := World.new(SEED, SimMap.load_id("flat_test"), [frogs, rats], rules)
 	w.issue(1, Commands.SURRENDER, {})

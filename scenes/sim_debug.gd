@@ -114,7 +114,7 @@ var desync := -1
 var show_flow := false
 var autoplay := false
 var army := false           # also spawn a test army per side (F7 toggles and restarts)
-var ai_level := "normal"    # easy or normal (data/ai.json levels; picked in the lobby)
+var ai_level := "normal"    # easy, normal or hard (data/ai.json levels; picked in the lobby)
 var vs_ai := false          # side 2 is played by the AI (set by the match setup screen)
 var banner: Label           # victory / defeat
 var pause_menu: Control     # Esc against the AI: resume, surrender, back to the menu
@@ -1035,8 +1035,8 @@ func _show_pause_menu(on: bool) -> void:
 		result = "Victory" if world.teams[active] == world.winner else "Defeat"
 		banner.visible = false   # the result is the menu's title (it collided with the menu)
 	var title := ("%s: %s win" % [result, world.races[_first_of_team(world.winner)].name]) if over else "Paused"
-	if over and result == "Victory" and vs_ai and ai_level == "easy":
-		title += "\nBeat Easy? Try Normal next."   # so testers know the step up exists
+	if over and result == "Victory" and vs_ai and ai_level != "hard":
+		title += "\nBeat %s? Try %s next." % [ai_level.capitalize(), "Normal" if ai_level == "easy" else "Hard"]   # so testers know the step up exists
 	pause_menu.get_node("box/title").text = title
 	clock.paused = on and not over
 

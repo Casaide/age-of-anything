@@ -255,6 +255,7 @@ func _side_panel(i: int, who: String, prompt: String) -> Control:
 		level_pick = OptionButton.new()
 		level_pick.add_item("Easy")
 		level_pick.add_item("Normal")
+		level_pick.add_item("Hard")
 		level_pick.selected = 0
 		level_pick.focus_mode = Control.FOCUS_NONE
 		lrow.add_child(level_pick)
@@ -431,7 +432,7 @@ func _play() -> void:
 	view.rerolls = [sides[0].reroll, sides[1].reroll]
 	view.map_id = MAPS[map_index]
 	view.vs_ai = true
-	view.ai_level = ["easy", "normal"][level_pick.selected]
+	view.ai_level = ["easy", "normal", "hard"][level_pick.selected]
 	get_tree().root.add_child(view)
 	get_tree().current_scene = view
 	queue_free()
