@@ -22,10 +22,14 @@ const ROLE_BIAS := {
 }
 ## Signature gear (a culture's kit, cheese hammers...) is only favoured when the prompt,
 ## family or creature asks for it. No cheese hammers for Romans unless someone says cheese.
-const SIGNATURE_TAGS := ["roman", "greek", "viking", "cheese", "woodland", "knight", "bat", "crossbow"]   # woodland: acorn caps, leaves, bark (swamp/forest); knight: iron helm, kite, mail (royal); bat wings (spooky/sewer); crossbows (royal, sewer rats)
+const SIGNATURE_TAGS := ["roman", "greek", "viking", "cheese", "woodland", "knight", "bat", "crossbow", "junk"]   # woodland: acorn caps, leaves, bark (swamp/forest); knight: iron helm, kite, mail (royal); bat wings (spooky/sewer); crossbows (royal, sewer rats); junk: bottle caps, saucepans (sewer)
 ## Extra wants for "Heavy" large units (armoured elites instead of giants).
 const HEAVY_BOOST := {"heavy": 3, "armour": 3, "helmet": 2, "shield": 1}   # no "knight": knight kit is the royal culture's signature
 const OPTIONAL_SLOTS := ["hand_l", "head_gear", "torso", "back"]
+## What kind of thing a part is: an upgrade keeps the kind (a cape stays a cape, a
+## spear stays a spear), so a unit line stays recognisably the same unit.
+const KIND_TAGS := ["spear", "lance", "blade", "blunt", "bow", "sling", "javelin", "poison", "gun", "worker",
+	"shield", "helmet", "hat", "armour", "cape", "banner", "wings", "quiver"]
 const WORKER_SLOTS := ["head_gear", "back"]
 const GIANT_SCALE := 150
 const TINY_SCALE := 80
@@ -124,10 +128,21 @@ func generate(prompt: String, rules: Dictionary, reroll := 0) -> Dictionary:
 		"rng": rng, "rules": rules, "brief": brief, "tags": tags,
 		"creature": creature, "family": family, "skin": rng.pick(c.skins),
 	}
+	# Each roster slot is a unit line through the ages (D-057): first the unit at the age
+	# its slot opens, in that age's kit; then, in a second pass (so the first recipes don't
+	# depend on the later ones), the same unit upgraded for every later age.
 	var units := []
 	for slot_def in rules.roster:
+		ctx.age = int(slot_def.tier)
 		var recipe := _make_unit(slot_def, ctx)
-		units.append({"recipe": recipe, "eval": Pricing.evaluate(recipe, lib, rules)})
+		var first := {"age": ctx.age, "recipe": recipe, "eval": Pricing.evaluate(recipe, lib, rules)}
+		units.append({"recipe": recipe, "eval": first.eval, "line": [first]})
+	for k in units.size():
+		var slot_def: Dictionary = rules.roster[k]
+		for age in range(int(slot_def.tier) + 1, int(rules.get("ages", 1)) + 1):
+			ctx.age = age
+			var up := _upgrade(units[k].line[-1].recipe, slot_def, ctx)
+			units[k].line.append({"age": age, "recipe": up, "eval": Pricing.evaluate(up, lib, rules)})
 
 	var race := {
 		"schema": "aow.race/1",
@@ -149,7 +164,7 @@ func generate(prompt: String, rules: Dictionary, reroll := 0) -> Dictionary:
 static func race_key(race: Dictionary) -> String:
 	var shareable := {
 		"schema": race.schema, "name": race.name, "creature": race.creature, "family": race.family,
-		"recipes": race.units.map(func(u): return u.recipe),
+		"recipes": race.units.map(func(u): return u.line.map(func(l): return l.recipe) if u.has("line") else [u.recipe]),
 	}
 	return JSON.stringify(shareable, "", true).sha256_text()
 
@@ -169,7 +184,7 @@ func _make_unit(slot_def: Dictionary, ctx: Dictionary) -> Dictionary:
 	var brief: Dictionary = ctx.brief
 	var role: String = slot_def.role
 	var tier := int(slot_def.tier)
-	var budget := int(rules.budget[str(tier)])
+	var budget := int(rules.budget[str(maxi(tier, int(ctx.get("age", tier))))])
 	var c: Dictionary = lib.creatures[ctx.creature]
 	var body: Dictionary = lib.part(c.body)
 
@@ -217,7 +232,7 @@ func _make_unit(slot_def: Dictionary, ctx: Dictionary) -> Dictionary:
 	# Primary weapon or tool (required)
 	var need: String = ROLE_NEEDS[role]
 	var excluded: Array = ROLE_EXCLUDES.get(role, [])
-	var options: Array = lib.candidates("hand_r", rules.era).filter(func(p): return need in p.tags and not p.tags.any(func(t): return t in excluded))
+	var options: Array = _cands("hand_r", ctx).filter(func(p): return need in p.tags and not p.tags.any(func(t): return t in excluded))
 	var affordable := options.filter(func(p): return spent + int(p.points) <= budget)
 	if affordable.is_empty():
 		affordable = [_cheapest(options)]
@@ -235,7 +250,7 @@ func _make_unit(slot_def: Dictionary, ctx: Dictionary) -> Dictionary:
 	# asked to ride keeps its own wings too: rider and mount both fly.
 	var ridden: bool = recipe.has("mount") and not recipe.mount.fused
 	if ridden and not recipe.mount.parts.has("back"):
-		var wings: Array = lib.candidates("back", rules.era).filter(func(p): return "wings" in p.tags and _allowed(p, role, unit_tags))
+		var wings: Array = _cands("back", ctx).filter(func(p): return "wings" in p.tags and _allowed(p, role, unit_tags))
 		if not wings.is_empty():
 			var w: Dictionary = _best(wings, unit_tags, {}, rng)
 			if spent + int(w.points) <= budget:
@@ -249,7 +264,7 @@ func _make_unit(slot_def: Dictionary, ctx: Dictionary) -> Dictionary:
 	for slot in rng.shuffled(slots):
 		if slot == "hand_l" and primary.get("two_handed", false):
 			continue
-		var cands: Array = lib.candidates(slot, rules.era).filter(func(p): return _allowed(p, role, unit_tags))
+		var cands: Array = _cands(slot, ctx).filter(func(p): return _allowed(p, role, unit_tags))
 		if ridden and not _winged(unit_tags):
 			cands = cands.filter(func(p): return not ("wings" in p.tags))
 		if role == "worker":
@@ -348,6 +363,84 @@ func _mount_points(m: Dictionary) -> int:
 	var pts := int(lib.part(lib.creatures[m.creature].body).points)
 	for slot in m.parts:
 		pts += int(lib.part(m.parts[slot]).points)
+	return pts
+
+
+## Parts for a slot allowed by the era and by the age being built (parts' `tier`).
+func _cands(slot: String, ctx: Dictionary) -> Array:
+	var age := int(ctx.get("age", 99))
+	return lib.candidates(slot, ctx.rules.era).filter(func(p): return int(p.get("tier", 1)) <= age)
+
+
+## The same unit one age on: each part may give way to a better one of the new age, in
+## the same slot and role, within the culture (no off-theme kit), preferring one that
+## shares its tags (reed spear -> bronze spear -> iron pike) so the unit stays itself;
+## then empty gear slots fill while the age's budget lasts.
+func _upgrade(prev: Dictionary, slot_def: Dictionary, ctx: Dictionary) -> Dictionary:
+	var rng = ctx.rng
+	var rules: Dictionary = ctx.rules
+	var age: int = ctx.age
+	var r: Dictionary = prev.duplicate(true)
+	r.age = age
+	var role: String = slot_def.role
+	var budget := int(rules.budget[str(age)])
+	var unit_tags: Dictionary = ctx.tags.duplicate()
+	if r.get("elite", "") == "heavy":
+		for t in HEAVY_BOOST:
+			unit_tags[t] = int(unit_tags.get(t, 0)) + HEAVY_BOOST[t]
+	var spent := _recipe_points(r)
+	var ridden: bool = r.has("mount") and not r.mount.fused
+	var slots: Array = r.parts.keys()
+	slots.sort()
+	if role == "worker":
+		slots = slots.filter(func(s): return s == "head_gear")   # workers only get a better hat
+	for slot in slots:
+		var cur: Dictionary = lib.part(r.parts[slot])
+		var kinds: Array = cur.tags.filter(func(t): return t in KIND_TAGS)
+		var cands: Array = _cands(slot, ctx).filter(func(p): return int(p.get("tier", 1)) > int(cur.get("tier", 1)) \
+			and _allowed(p, role, unit_tags) and not _off_theme(p, unit_tags) \
+			and (p.tags.any(func(t): return t in kinds) or _want(p, ctx.brief.tags) > 0))   # same kind, or asked for (rats with guns)
+		if slot == "hand_r":
+			var need: String = ROLE_NEEDS[role]
+			var excluded: Array = ROLE_EXCLUDES.get(role, [])
+			cands = cands.filter(func(p): return need in p.tags and not p.tags.any(func(t): return t in excluded))
+		if cands.is_empty():
+			continue
+		var keep := {}
+		for t in cur.tags:
+			keep[t] = 2
+		var best: Dictionary = _best(cands, unit_tags, keep, rng)
+		if spent - int(cur.points) + int(best.points) <= budget:
+			spent += int(best.points) - int(cur.points)
+			r.parts[slot] = best.id
+	var open_slots: Array = ([] if role == "worker" else OPTIONAL_SLOTS).filter(func(s): return not r.parts.has(s))
+	for slot in open_slots:
+		if slot == "hand_l" and lib.part(r.parts.hand_r).get("two_handed", false):
+			continue
+		var cands: Array = _cands(slot, ctx).filter(func(p): return _allowed(p, role, unit_tags) and not _off_theme(p, unit_tags))
+		if ridden or role == "worker":
+			cands = cands.filter(func(p): return not ("wings" in p.tags))
+		if role == "worker":
+			cands = cands.filter(func(p): return int(p.points) <= 1)
+		if cands.is_empty():
+			continue
+		var best: Dictionary = _best(cands, unit_tags, {}, rng)
+		if spent + int(best.points) <= budget:
+			spent += int(best.points)
+			r.parts[slot] = best.id
+	r.name = _unit_name(r, lib.part(r.parts.hand_r), lib.creatures[r.creature])
+	return r
+
+
+## Points a recipe spends (body, head, mount and parts), as the budget counts them.
+func _recipe_points(r: Dictionary) -> int:
+	var pts := int(lib.part(r.body).points)
+	for slot in r.parts:
+		pts += int(lib.part(r.parts[slot]).points)
+	if r.has("mount"):
+		pts += _mount_points(r.mount)
+	if int(r.scale) >= GIANT_SCALE:
+		pts += Pricing.GIANT_POINTS
 	return pts
 
 

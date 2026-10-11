@@ -106,6 +106,15 @@ func _test_bounds(lib, gen, rules: Dictionary) -> void:
 
 func _test_prompts(gen, rules: Dictionary) -> void:
 	var d: Dictionary = rules.default
+	# Unit lines: a unit starts in its age's kit and upgrades within its kind and culture.
+	for prompt in ["centaur romans", "angry swamp frogs", "royal knights", "sewer rats"]:
+		for u in gen.generate(prompt, d).units:
+			var ages: Array = u.line.map(func(l): return l.age)
+			check(ages[0] == int(u.recipe.tier) and ages[-1] == int(d.ages), "%s: %s line runs from age %d to %d (%s)" % [prompt, u.recipe.slot, u.recipe.tier, d.ages, ages])
+			for l in u.line:
+				for id in l.recipe.parts.values():
+					check(int(gen.lib.part(id).get("tier", 1)) <= l.age, "%s: %s at age %d holds no later kit (%s)" % [prompt, u.recipe.slot, l.age, id])
+			check(u.line[0].recipe == u.recipe, "%s: the line starts with the unit's recipe" % prompt)
 	# Another culture's signature kit never turns up uninvited (no acorns or knight's
 	# helmets on Romans, no bat wings on Greeks), and a culture keeps its own.
 	var foreign := {"centaur romans": ["knight", "woodland", "bat", "greek", "viking", "cheese"],
@@ -114,9 +123,11 @@ func _test_prompts(gen, rules: Dictionary) -> void:
 	for prompt in foreign:
 		for reroll in 6:
 			for u in gen.generate(prompt, d, reroll).units:
-				var ids: Array = u.recipe.parts.values()
-				if u.recipe.has("mount"):
-					ids.append_array(u.recipe.mount.parts.values())
+				var ids: Array = []
+				for l in u.line:
+					ids.append_array(l.recipe.parts.values())
+					if l.recipe.has("mount"):
+						ids.append_array(l.recipe.mount.parts.values())
 				for id in ids:
 					var bad: Array = gen.lib.part(id).tags.filter(func(t): return t in foreign[prompt])
 					check(bad.is_empty(), "%s (reroll %d): %s has foreign kit %s" % [prompt, reroll, id, bad])
@@ -150,7 +161,7 @@ func _test_prompts(gen, rules: Dictionary) -> void:
 	var gibberish: Dictionary = gen.generate("blorp zang wibble", d)
 	check(gibberish.notes.size() >= 2, "gibberish gets volunteer + ignored notes")
 	var guns: Dictionary = gen.generate("rats with guns", rules.anything)
-	check(_unit(guns, "skirmisher").recipe.parts.hand_r == "weapon.musket", "anything-goes rats get muskets")
+	check(_unit(guns, "skirmisher").line[-1].recipe.parts.hand_r == "weapon.musket", "anything-goes rats with guns get muskets once their age comes (%s)" % _unit(guns, "skirmisher").line[-1].recipe.parts.hand_r)
 	var no_guns: Dictionary = gen.generate("rats with guns", d)
 	check(_unit(no_guns, "skirmisher").recipe.parts.hand_r != "weapon.musket", "default rules block muskets")
 

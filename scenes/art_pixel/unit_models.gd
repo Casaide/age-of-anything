@@ -1312,3 +1312,27 @@ func _load_stone(c: Dictionary) -> Dictionary:
 	mi.rotation = Vector3(0.15, 0.4, 0.1)
 	n.add_child(mi)
 	return {"node": n}
+
+
+# ------------------------------------------------------------------ first-age kit for everyone
+
+## A fire-hardened wooden spear: a plain shaft, the point charred dark.
+func _weapon_spear_wood(c: Dictionary) -> Dictionary:
+	var n := Node3D.new()
+	var a := Vector3(-4, -8, 0)
+	var b := Vector3(6, 19, 0)
+	n.add_child(rod(a, b, 0.95, 0.85, surf("wood_grain", Color.WHITE, 6.0), false))
+	var d := (b - a).normalized()
+	n.add_child(rod(b, b + d * 4.0, 0.85, 0.1, surf("wood_grain", Color("#3a2a1e"), 3.0), false))
+	n.add_child(ring(0.7, 1.15, surf("leather", Color.WHITE, 3.0), a + d * 9.0, Vector3(0, 0, rad_to_deg(atan2(d.y, d.x)) - 90)))
+	return {"node": n}
+
+
+## A padded leather cap with a rolled brim.
+func _helm_cap(c: Dictionary) -> Dictionary:
+	var n := Node3D.new()
+	var leather := surf("leather", Color(0.9, 0.82, 0.72), 3.0)
+	n.add_child(dome(Vector3(4.9, 3.6, 4.7), leather, Vector3(0, -3.0, 0)))
+	n.add_child(ring(4.6, 5.3, surf("leather", Color(0.7, 0.6, 0.5), 2.0), Vector3(0, -3.0, 0)))
+	n.add_child(blob(Vector3(0.6, 0.6, 0.6), leather, Vector3(0, 0.7, 0)))
+	return {"node": n}
