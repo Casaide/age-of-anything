@@ -18,6 +18,7 @@ var outlined := true     # the units' dark edge (tests: without it)
 const ELEVATION := 30.0  # and from above, like the map
 
 const SS := 4            # supersampling
+const HOLDOUT := Color(0, 1, 0)   # a wearer's body while its armour bakes: cut out of the result
 const LAYER := 50.0      # depth between shapes, so later shapes sit in front
 const MARGIN := 3.0      # part units of room around the shapes
 
@@ -113,8 +114,30 @@ func _bake_model(id: String, colours: Dictionary, bake_key: String, k := 0) -> v
 	var spec: Dictionary = models.build(id, colours)
 	var model: Node3D = spec.node
 	var front: Node3D = spec.get("front")
+	var wearer: Node3D = null
+	if "~" in id:
+		# Body armour baked on its wearer: put on at the body's torso, scaled and tilted to it,
+		# with the body there as a flat key colour that's cut out afterwards. So the armour
+		# wraps the body, and the parts the body hides stay hidden, in every facing.
+		var body: Dictionary = models.build(id.get_slice("~", 1), colours)
+		wearer = body.node
+		var ts: Vector2 = body.get("torso_scale", Vector2.ONE)
+		model.position = body.sockets.torso
+		model.scale = body.get("torso_fit", Vector3(ts.x, ts.y, ts.x))
+		model.rotation_degrees.z = float(body.get("torso_tilt", 0.0))
+		var key_mat := StandardMaterial3D.new()
+		key_mat.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
+		key_mat.albedo_color = HOLDOUT
+		for mi in wearer.find_children("*", "MeshInstance3D", true, false):
+			(mi as MeshInstance3D).material_override = key_mat
+		if body.get("front"):
+			body.front.queue_free()
+		holder.add_child(wearer)
+		spec.erase("sockets")
 	holder.add_child(model)
 	var box := _aabb(model)
+	if wearer:
+		box = box.merge(_aabb(wearer))
 	if front:
 		holder.add_child(front)
 		box = box.merge(_aabb(front))
@@ -133,6 +156,10 @@ func _bake_model(id: String, colours: Dictionary, bake_key: String, k := 0) -> v
 	key.basis = Basis.looking_at(cam.basis * Vector3(0.55, -0.75, -1.0).normalized(), Vector3.UP)
 	await _render()
 	var img := get_texture().get_image()
+	if wearer:
+		_cut_holdout(img)
+		holder.remove_child(wearer)
+		wearer.queue_free()
 	var front_img: Image = null
 	if front:
 		# The near arm is its own layer, so it gets its own outline over the body.
@@ -316,6 +343,15 @@ func _shape3d(s: Dictionary, colours: Dictionary, i: int) -> Node3D:
 ## Render this viewport once, on the next frame. (Drawing on demand with force_draw
 ## came back empty, so bakes wait on frames: a window the OS hides or throttles bakes
 ## far slower.)
+## Make the holdout colour (and the edge pixels mostly made of it) transparent.
+static func _cut_holdout(img: Image) -> void:
+	for y in img.get_height():
+		for x in img.get_width():
+			var c := img.get_pixel(x, y)
+			if c.a > 0.0 and c.g > 0.55 and c.g > c.r * 1.8 and c.g > c.b * 1.8:
+				img.set_pixel(x, y, Color(0, 0, 0, 0))
+
+
 func _render() -> void:
 	render_target_update_mode = SubViewport.UPDATE_ONCE
 	await RenderingServer.frame_post_draw

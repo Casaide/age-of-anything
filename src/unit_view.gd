@@ -7,6 +7,8 @@ extends Node2D
 ## the view wanders around on its own.
 
 const PartShape := preload("res://src/part_shape.gd")
+const UnitModels := preload("res://scenes/art_pixel/unit_models.gd")
+static var UnitModelsCheck = UnitModels.new()   # which parts have hand-built models
 const Rng := preload("res://src/rng.gd")
 
 const SOCKET_FOR_SLOT := {"hand_r": "hand_r", "hand_l": "hand_l", "head_gear": "top", "torso": "torso", "back": "back"}
@@ -249,7 +251,7 @@ func _make_rig(lib, body_id: String, head_id: String, colours: Dictionary, paren
 
 	var torso_scale: Vector2 = rig.get("torso_scale", PartShape.v2(body.get("torso_scale", [1, 1])))
 	return {"root": root, "sockets": sockets, "torso_scale": torso_scale, "carry": rig.get("carry", ""), "gear_scale": gear_scale,
-		"depth": rig.get("depth", {})}
+		"depth": rig.get("depth", {}), "body": body_id, "modelled": rig.has("sockets")}
 
 
 func _attach(lib, rig: Dictionary, slot: String, part_id: String, colours: Dictionary) -> void:
@@ -265,8 +267,11 @@ func _attach(lib, rig: Dictionary, slot: String, part_id: String, colours: Dicti
 	var node := _shape()
 	node.part_id = part_id
 	node.facing = facing_k
+	var worn: bool = slot == "torso" and rig.modelled and UnitModelsCheck.has(part_id)
+	if worn:
+		node.part_id = part_id + "~" + rig.body   # baked on this body: drawn from the body's origin
 	node.setup(p.shapes, colours)
-	node.position = rig.sockets[socket]
+	node.position = Vector2.ZERO if worn else rig.sockets[socket]
 	if withers:
 		node.position += WITHERS_DROP   # the wings' shoulders sit high, for a person's back
 		node.rotation = WITHERS_TILT
@@ -280,7 +285,7 @@ func _attach(lib, rig: Dictionary, slot: String, part_id: String, colours: Dicti
 		var near: bool = float(rig.depth[socket]) >= -0.5
 		z = (1.6 if slot == "back" else absf(z)) if near else (-3.0 if slot == "back" else -absf(z))
 	node.set_meta("z", z)
-	if slot == "torso":
+	if slot == "torso" and not worn:
 		node.scale = rig.torso_scale
 	elif slot == "head_gear":
 		node.scale = Vector2.ONE * rig.gear_scale   # head gear sized to the head that wears it
