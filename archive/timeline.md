@@ -68,3 +68,5 @@ One line per moment worth remembering. Newest at the bottom.
   ([image](images/2026-10-11/89-unit-textures-frogs-and-beetles.png))
 - **2026-10-11:** Frogs build reed domes on stilts, bugs dig earth mounds: architecture by
   creature. ([image](images/2026-10-11/96-beetle-mound-town.png))
+- **2026-10-11:** Unit art goes concept-first: a concept sheet tool and the first round (age-1
+  head gear), waiting on Dominic's picks.

@@ -33,6 +33,12 @@ Milestone 7 (progression) followed straight on:
 - **Creature architecture.** Frogs now weave reed domes on stilt decks with lily-pad caps;
   beetles and spiders dig earth mounds with round doors, a hollowed log and seed-husk sheds,
   and their watchtower is a termite spire. A creature's architecture overrides its culture's.
+- **Concept-first art (Dominic).** "Things are improving but we seem to be iterating on the
+  original designs." Every culture's age-1 units wore the same brown cap. Instead of tweaking it,
+  Claude built a concept sheet tool and drew variations for Roman, Viking and Greek head gear.
+  The game-scale sheet made the real problem obvious: five Viking heads, nearly identical at
+  8 pixels. Questions for Dominic in `docs/concepts/README.md`. Pegasus wings went to double
+  size at his request.
 - **Wings.** Feather wings had thirty small feathers and baked to a white slab; now eight big
   ones. A pegasus's wings sat so high they looked like the rider's; they now lie folded along
   the horse's back.
@@ -40,7 +46,7 @@ Milestone 7 (progression) followed straight on:
 ## Decisions
 D-056 (milestones 5 and 6 inserted), D-057 (gear by age, small blacksmith tells), D-058 (bows for
 everyone, crossbows royal and rat kit, shift-queues), D-059 (winged races fly instead of riding),
-D-070 (restrictions as layers with a host switch), D-072 (unit textures: big marks, world space), D-073 (creature architecture).
+D-070 (restrictions as layers with a host switch), D-072 (unit textures: big marks, world space), D-073 (creature architecture), D-074 (concept-first unit art).
 
 ## Pictures
 ![Centaur Romans at age 1: light kit](../images/2026-10-11/55-centaur-romans-age-1-light-kit.png)

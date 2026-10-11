@@ -362,3 +362,10 @@ primitives. Dominic asked for "real textures" on units; the approach is Claude's
 `creatures.json` may name an `architecture`; otherwise the family's applies. Frogs build reed
 domes on stilts, beetles and spiders dig earth mounds; humans and others keep their culture's
 look. Dominic's idea (amphibians and bugs shouldn't live in timber houses); built by Claude.
+
+**D-074, 2026-10-11: Unit art is designed concept-first.** Several distinct variations are
+rendered close up and at game scale (`tests/concept_sheet.gd`, `docs/concepts/`), Dominic
+picks, and only then is the pick built. This replaces slowly iterating on the first design.
+Dominic's call ("really need design input here, not iterations"). Round 1 (age-1 head gear)
+showed that at game scale head gear gets about 3 pixels, so culture identity has to come from
+big shapes; head size is the first question.
