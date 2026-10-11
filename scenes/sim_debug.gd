@@ -677,7 +677,6 @@ func _sync_resources() -> void:
 func _make_view(kind: int, owner: int) -> UnitView:
 	var t: Dictionary = world.types[kind]
 	var view := UnitView.new()
-	view.style = "baked"
 	view.build(t.recipe, lib, Color(lib.palettes.teams[owner]), t.speed / World.SPEED_SCALE)
 	view.scale = Vector2.ONE * ArtKit.UNIT_SCALE
 	view.pose_steps = 8

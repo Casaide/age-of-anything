@@ -59,7 +59,6 @@ func _initialize() -> void:
 			var k: int = e[2]
 			var side: int = e[3]
 			var v := UnitView.new()
-			v.style = "baked"
 			v.build(u.recipe, lib, team, u.eval.speed)
 			v.scale = Vector2(ART, ART)
 			v.position = Vector2(40 + k * 75, 95 + side * 105)
