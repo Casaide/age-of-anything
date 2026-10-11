@@ -302,8 +302,10 @@ func _ageing(view) -> void:
 			tc = b
 	print("ageing: ", Tech.why_not(w, 0, tc, ""))
 	w.issue(0, "age_up", {"building": w.buildings.id[tc]})
+	for n in 2:   # workers queued behind it: one queue, units and research in the order clicked
+		w.issue(0, "train", {"building": w.buildings.id[tc], "slot": "worker"})
 	view.clock.speed = 16.0
-	while w.buildings.research_t[tc] < Tech.next_age(w, 0).ticks / 3:
+	while Tech.head(w, tc) != Tech.AGE_UP or w.buildings.train[tc] * 3 < Tech.head_ticks(w, tc):
 		await process_frame
 	view.clock.speed = 1.0
 	view.clock.paused = true

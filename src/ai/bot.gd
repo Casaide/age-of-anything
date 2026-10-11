@@ -156,8 +156,8 @@ func _age_three(w, tc: int, workers: Array) -> void:
 ## A building-up bot also researches gathering, and spends on it first (cost in stock is enough).
 func _upgrade_lines(w) -> void:
 	for b in w.buildings.count():
-		if w.buildings.owner[b] != player:
-			continue
+		if w.buildings.owner[b] != player or w.buildings.queue[b].any(func(e): return e < 0):
+			continue   # one research at a time per building, as before queues held research
 		for r in w.tech.research:
 			var eco: bool = r.effects.any(func(fx): return fx.has("gather"))
 			if not (r.has("line") or (build_up and eco)) or Tech.why_not(w, player, b, r.id) != "":
@@ -187,7 +187,7 @@ func _train(w, workers: Array) -> void:
 			reserve = next.cost   # saving for the age: soldiers only from what's over
 	var foes := _enemy_tags(w)
 	for b in w.buildings.count():
-		if w.buildings.owner[b] != player or w.buildings.done[b] == 0 or w.buildings.research[b] != -1:
+		if w.buildings.owner[b] != player or w.buildings.done[b] == 0 or Tech.head(w, b) != -1:
 			continue
 		var bt: Dictionary = w.btypes[w.buildings.kind[b]]
 		if bt.trains.is_empty() or "worker" in bt.trains or w.buildings.queue[b].size() >= int(cfg.military.queue):
