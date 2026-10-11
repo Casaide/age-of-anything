@@ -57,9 +57,11 @@ for v in bm.verts:
     q.x -= front * 0.6
     # Jaw: narrower and forward under the face; the chin juts.
     low = smoothstep(-0.1, -0.8, z)
-    q.y *= 1.0 - low * 0.32
-    q.x += low * front * 0.5
-    q += Vector((1.0, 0, 0)) * bump(p, Vector((0.75, 0, -0.62)), 0.35) * 0.55   # chin
+    # (Gently: a sharp narrowing under a jutting chin faced the ground, and its shadow band read
+    # as stubble on every face: Dominic.)
+    q.y *= 1.0 - low * 0.16
+    q.x += low * front * 0.3
+    q += Vector((1.0, 0, 0)) * bump(p, Vector((0.75, 0, -0.55)), 0.35) * 0.3   # chin
     # Brow ridge across the forehead, eye sockets under it.
     q.x += bump(p, Vector((0.85, 0, 0.32)), 0.55) * 0.45
     for s in (-1, 1):
