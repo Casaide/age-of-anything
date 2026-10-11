@@ -123,6 +123,13 @@ func _draw() -> void:
 		draw_arc(_to_mini(p.at.x, p.at.y), 4.0 + 10.0 * (1.0 - k), 0.0, TAU, 20, Color(1.0, 0.25, 0.2, k), 2.0)
 
 
+## Only the diamond takes the mouse (Dominic: the corners of its box caught clicks meant for the
+## map); a click in a corner goes through to the game view.
+func _has_point(point: Vector2) -> bool:
+	var d := absf(point.x - SIZE * 0.5) / (SIZE * 0.5) + absf(point.y - SIZE * 0.25) / (SIZE * 0.25)
+	return d <= 1.0
+
+
 func _gui_input(event: InputEvent) -> void:
 	var press: bool = event is InputEventMouseButton and event.pressed and event.button_index == MOUSE_BUTTON_LEFT
 	var drag: bool = event is InputEventMouseMotion and (event.button_mask & MOUSE_BUTTON_MASK_LEFT) != 0

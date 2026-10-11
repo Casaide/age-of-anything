@@ -213,6 +213,19 @@ func show_content(c: Dictionary) -> void:
 		_queue_rest.tooltip_text = "%d of %d" % [queue.size(), int(c.queue_max)]
 
 
+## Keep clear of something to the right (the minimap) by `right_edge` (HUD x): while the panel
+## reaches past it, its button groups wrap into fewer columns, one step per frame, down to 2.
+func keep_left_of(right_edge: float) -> void:
+	if get_rect().end.x <= right_edge:
+		return
+	for g in _actions.get_children():
+		if g is VBoxContainer:
+			var grid: GridContainer = g.get_child(1)
+			if grid.columns > 2:
+				grid.columns -= 1
+				return
+
+
 ## Every action button, in panel order (for tests and captures).
 func action_buttons() -> Array:
 	var out := []

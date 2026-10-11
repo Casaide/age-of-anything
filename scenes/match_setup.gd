@@ -18,7 +18,7 @@ const UiScale := preload("res://src/view/ui_scale.gd")
 
 const PRESETS := ["angry swamp frogs with reed spears", "sewer rats with cheese hammers", "centaur romans",
 	"greek hoplites", "spooky beetle knights", "steppe horse archers", "forest spiders"]
-const MAPS := ["flat_test"]   # choke_test is a movement test map (sim_debug M key), not a battlefield: no food or wood on it
+const MAPS := ["flat_test", "choke_test"]
 
 const BG := Color("#1c1712")
 const PANEL := Color("#2a231b")
@@ -79,7 +79,16 @@ func _ready() -> void:
 	audio.music("lobby")
 
 
-## The lobby is all UI: the whole window scales to the screen's density.
+## Cmd/Ctrl + minus / plus: the UI a step smaller or larger (saved).
+func _unhandled_key_input(event: InputEvent) -> void:
+	var d := UiScale.key_step(event)
+	if d != 0:
+		UiScale.step(d)
+		_rescale()
+		get_viewport().set_input_as_handled()
+
+
+## The lobby is all UI: the whole window scales to the screen's density and the player's UI size.
 func _rescale() -> void:
 	get_window().content_scale_factor = UiScale.factor(get_window(), UiScale.MENU_NEEDS)
 
