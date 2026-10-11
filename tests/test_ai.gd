@@ -49,6 +49,8 @@ func _init() -> void:
 	# enforced. It was 10:50 before workers got one price, about 12 minutes after.
 	print("\nbot match lengths %s, median %s (target for players: 9-12 minutes)" % [lengths.map(_clock), _clock(lengths[1])])
 
+	_test_easy(rules, rats, frogs)
+
 	var w := World.new(SEED, SimMap.load_id("flat_test"), [frogs, rats], rules)
 	w.issue(1, Commands.SURRENDER, {})
 	for k in 40:
@@ -87,6 +89,30 @@ func _play(rules: Dictionary, races: Array, bots: Array, title: String, quiet :=
 	if not quiet:
 		print("winner: team %d at %s" % [w.winner, _clock(w.tick)])
 	return {"winner": w.winner, "tick": w.tick, "hashes": w.hashes}
+
+
+## Easy against a passive player: a small army (its cap and a training queue's worth), and the
+## first loss no earlier than its first wave (Dominic: Easy wiped him out in age 2).
+func _test_easy(rules: Dictionary, a: Dictionary, b: Dictionary) -> void:
+	var w := World.new(SEED, SimMap.load_id("flat_test"), [a, b], rules)
+	var bot := Bot.new(0, {}, "easy")
+	var passive := EcoBot.new(1)
+	var most := 0
+	var first_loss := -1
+	while w.tick < 20 * 60 * 14 and w.winner < 0:
+		bot.think(w)
+		passive.think(w)
+		w.step()
+		var army := 0
+		for i in w.units.count():
+			if w.units.owner[i] == 0 and not w.types[w.units.kind[i]].worker:
+				army += int(w.types[w.units.kind[i]].pop)
+		most = maxi(most, army)
+		if first_loss < 0 and w.lost[1] > 0:
+			first_loss = w.tick
+	print("\n== easy: most soldiers %d (pop), first loss %s" % [most, _clock(first_loss) if first_loss >= 0 else "none"])
+	check(most <= bot.max_army + 4, "easy keeps a small army (%d pop, cap %d)" % [most, bot.max_army])
+	check(first_loss < 0 or first_loss >= 20 * 60 * 8, "easy doesn't strike before 8 minutes (%s)" % _clock(first_loss))
 
 
 func _clock(tick: int) -> String:

@@ -31,6 +31,10 @@ var _next_build := 0
 
 ## config: data/ai.json as ints (see load_config), or {} to load it. level: a key of
 ## its "levels" (easy, normal): later, smaller attack waves and a smaller economy.
+var max_army := 0   # the level's cap on soldiers kept, in population (0: none)
+var wave_max := 0   # the level's cap on soldiers sent per wave (0: the whole army)
+
+
 func _init(p_player: int, config := {}, level := "normal") -> void:
 	player = p_player
 	cfg = config if not config.is_empty() else load_config()
@@ -42,6 +46,8 @@ func _init(p_player: int, config := {}, level := "normal") -> void:
 			w.min_army = maxi(1, int(w.min_army) * int(l.get("army_pct", 100)) / 100)
 		cfg.military.repeat_min_army = maxi(1, int(cfg.military.repeat_min_army) * int(l.get("army_pct", 100)) / 100)
 		cfg.economy.max_workers = int(l.get("max_workers", cfg.economy.max_workers))
+		max_army = int(l.get("max_army", 0))
+		wave_max = int(l.get("wave_max", 0))
 	eco = EcoBot.new(p_player)
 	eco.MIX = {}
 	for age in cfg.economy.mix:
@@ -167,6 +173,8 @@ func _train(w, workers: Array) -> void:
 	for i in w.units.count():
 		if w.units.owner[i] == player and not w.types[w.units.kind[i]].worker:
 			guard += int(w.types[w.units.kind[i]].pop)
+	if max_army > 0 and guard >= max_army:
+		return   # an easier bot keeps a smaller army (Dominic: Easy wiped him out in age 2)
 	if w.ages[player] == 1 and workers.size() >= int(cfg.economy.age_workers) and guard >= int(cfg.military.guard):
 		var next: Dictionary = Tech.next_age(w, player)
 		if not next.is_empty():
@@ -262,7 +270,8 @@ func _waves(w, army: Array, hx: int, hy: int) -> void:
 	for i in army:
 		strength += int(w.types[w.units.kind[i]].pop)
 	if w.tick >= next_wave_tick and strength >= need:
-		w.issue(player, Commands.ATTACK_MOVE, {"ids": army.map(func(i): return w.units.id[i]), "x": target.x, "y": target.y})
+		var sent: Array = army if wave_max <= 0 else army.slice(0, wave_max)   # an easier bot sends a few, keeps the rest home
+		w.issue(player, Commands.ATTACK_MOVE, {"ids": sent.map(func(i): return w.units.id[i]), "x": target.x, "y": target.y})
 		assault = true
 		wave += 1
 		next_wave_tick = int(waves[wave].at) * 20 if wave < waves.size() else w.tick + int(m.repeat_every) * 20
@@ -276,7 +285,7 @@ func _waves(w, army: Array, hx: int, hy: int) -> void:
 	# Reinforcements: once we're attacking, fresh soldiers idling at home go forward in groups.
 	var home := army.filter(func(i): return w.units.foe[i] == 0 and w.units.moving[i] == 0 \
 			and Fixed.dist2(hx, hy, w.units.x[i], w.units.y[i]) <= 4 * home_r * home_r)
-	if home.size() >= REINFORCE:
+	if home.size() >= REINFORCE and wave_max <= 0:   # (a capped wave's home guard stays home)
 		ids.append_array(home.map(func(i): return w.units.id[i]))
 	for i in army:
 		var on_building: bool = w.units.foe[i] != 0 and w.buildings.index_of(w.units.foe[i]) >= 0

@@ -561,3 +561,10 @@ into `assets/audio/`, which the game plays through buses (`src/view/audio.gd`,
 2, horns from 3) with a battle layer while your units fight on screen. Stings share the
 music's instruments and key. Nobody has listened yet; Dominic's ears decide what changes.
 Claude.
+
+**D-103, 2026-10-11: Easy keeps a small army and sends a few at a time.** Dominic: the AI came
+straight at him and wiped him out as he reached age 2. Easy only delayed its waves and halved
+their minimum size, but a wave sent the whole army and the bot never stopped training. Levels in
+`data/ai.json` can now cap the soldiers kept (`max_army`, Easy 10 population) and the soldiers
+per wave (`wave_max`, Easy 5); a capped level's home guard stays home. Against a passive player
+Easy's first kill is at about 10:47. The lobby says what each level does. Normal is unchanged.
