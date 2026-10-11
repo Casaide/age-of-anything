@@ -281,14 +281,17 @@ func _side_panel(i: int, who: String, prompt: String) -> Control:
 	pick.add_theme_font_size_override("font_size", 15)
 	pick.item_selected.connect(func(k): if k > 0: field.text = PRESETS[k - 1]; sides[i].reroll = 0; _regenerate(i); pick.select(0))
 	col.add_child(pick)
-	var roster := RichTextLabel.new()
+	var units := VBoxContainer.new()   # one row per unit: its portrait, name and cost (the banner's lower half was empty: Fable)
+	units.add_theme_constant_override("separation", 4)
+	col.add_child(units)
+	var roster := RichTextLabel.new()   # the generator's notes
 	roster.bbcode_enabled = true
 	roster.fit_content = true
 	roster.scroll_active = false
 	roster.add_theme_font_size_override("normal_font_size", 15)
 	roster.add_theme_color_override("default_color", TEXT)
 	col.add_child(roster)
-	sides.append({"field": field, "reroll": 0, "race": {}, "name": name, "line": line, "roster": roster,
+	sides.append({"field": field, "reroll": 0, "race": {}, "name": name, "line": line, "roster": roster, "units": units,
 		"stage": stage, "vp": vp, "layer": layer, "status": status, "dirty_at": 0.0, "team": team})
 	return card
 
@@ -302,13 +305,15 @@ func _regenerate(i: int) -> void:
 	s.name.text = race.name
 	s.line.text = "%s, %s" % [lib.creatures[race.creature].plural, String(race.family).capitalize()]
 	var lines := []
+	for n in s.units.get_children():
+		n.queue_free()
 	for u in race.units:
 		var cost := []
 		for r in u.eval.cost:
 			if int(u.eval.cost[r]) > 0:
 				cost.append("%d%s" % [int(u.eval.cost[r]), String(r).substr(0, 1).to_upper()])
 		var age := "" if int(u.recipe.tier) <= 1 else "  [color=#%s]from age %d[/color]" % [DIM.to_html(false), int(u.recipe.tier)]
-		lines.append("[b]%s[/b]   [color=#%s]%s[/color]%s" % [u.recipe.name, DIM.to_html(false), " ".join(cost), age])
+		s.units.add_child(_unit_row("[b]%s[/b]   [color=#%s]%s[/color]%s" % [u.recipe.name, DIM.to_html(false), " ".join(cost), age]))
 	for n in race.notes:
 		lines.append("[i][color=#%s]%s[/color][/i]" % [BRONZE.lightened(0.2).to_html(false), n])
 	s.roster.text = "\n".join(lines)
@@ -326,6 +331,7 @@ func _bake(i: int) -> void:
 			races.append(s.race)
 			teams.append(s.team)
 	await kit.prepare_units(races, teams)
+	await kit.bake_icons(races, teams)
 	baking = false
 	for k in sides.size():   # the atlas was rebuilt: every stage redraws from it
 		_muster(k)
@@ -352,6 +358,36 @@ func _muster(i: int) -> void:
 		view.face(1.0 if i == 0 else -1.0)   # both armies face the middle
 		s.layer.add_child(view)
 	s.status.text = "%d units, every one priced by its parts" % n
+	var side := 0   # the portraits: kit.icons is keyed by the side's place among the races baked
+	for k in i:
+		if not sides[k].race.is_empty():
+			side += 1
+	for k in mini(n, s.units.get_child_count()):
+		var pic: TextureRect = s.units.get_child(k).get_child(0)
+		pic.texture = kit.icons.get("%d:%s" % [side, units[k].recipe.slot])
+
+
+## A roster row: a framed portrait (filled in once the army is baked) and the unit's line.
+func _unit_row(text: String) -> HBoxContainer:
+	var row := HBoxContainer.new()
+	row.add_theme_constant_override("separation", 10)
+	var pic := TextureRect.new()
+	pic.custom_minimum_size = Vector2(54, 54)
+	pic.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+	pic.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
+	pic.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
+	row.add_child(pic)
+	var t := RichTextLabel.new()
+	t.bbcode_enabled = true
+	t.fit_content = true
+	t.scroll_active = false
+	t.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	t.size_flags_vertical = Control.SIZE_SHRINK_CENTER
+	t.add_theme_font_size_override("normal_font_size", 15)
+	t.add_theme_color_override("default_color", TEXT)
+	t.text = text
+	row.add_child(t)
+	return row
 
 
 func _set_map(k: int) -> void:
