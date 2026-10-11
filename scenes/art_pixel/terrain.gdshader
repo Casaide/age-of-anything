@@ -155,7 +155,7 @@ void fragment() {
 		float row = floor(world.y / 4.0);
 		float seg = floor((world.x + TIME * 3.0 + row * 13.0) / 5.0);
 		float life = sin(TIME * 1.6 + hash(vec2(seg, row)) * 6.283);
-		bool dash = hash(vec2(seg, row + 0.5)) > 0.83 && life > 0.2;
+		bool dash = hash(vec2(seg, row + 0.5)) > 0.89 && life > 0.2;
 		float fy = fract(world.y / 4.0);
 		if (dash && fy < 0.25) col = mix(col, vec3(0.62, 0.80, 0.84), 0.55 * (1.0 - depth * 0.3));
 		else if (dash && fy < 0.5) col *= 0.86;

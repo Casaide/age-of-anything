@@ -6,6 +6,7 @@ extends Control
 ## resolution, scaled up with nearest. Keys: Z zoom (1x/2x/3x), P palette on/off,
 ## arrows/WASD pan.
 
+const HOUSE_SCALE := 1.3   # houses read about 2.5x a footman, as in the genre
 const DataLib := preload("res://src/data_lib.gd")
 const Generator := preload("res://src/race_generator.gd")
 const UnitView := preload("res://src/unit_view.gd")
@@ -169,6 +170,8 @@ func _build() -> void:
 		var town := {"thatch": "town_center", "junk": "junk_town_center", "stone": "stone_town_center", "tent": "tent_town_center"}
 		var house := {"thatch": "stilt_house", "junk": "tin_can_house", "stone": "villa_house", "tent": "tent_house"}
 		var spec: Dictionary = models.call(town[arch] if b[2] == 3 else house[arch], key)
+		if b[2] != 3:
+			_grow(spec, HOUSE_SCALE)
 		await _building(baker, spec, b[0], b[1], b[2], team)
 	baker.queue_free()
 	# One atlas for every unit part and every scene sprite, with one shared material,
@@ -274,6 +277,14 @@ func _doodad(b: Dictionary, t: Vector2) -> void:
 	holder.position = Iso.to_screen(t.x * 1000, t.y * 1000)
 	holder.add_child(_sprite(b, Vector2.ZERO))
 	layer.add_child(holder)
+
+
+## Scale a building model and its live points (houses are built small; units need them bigger).
+func _grow(spec: Dictionary, k: float) -> void:
+	spec.body.scale = Vector3.ONE * k
+	spec.smoke *= k
+	spec.lantern *= k
+	spec.lights = spec.lights.map(func(p): return p * k)
 
 
 func _at(x: int, y: int) -> String:

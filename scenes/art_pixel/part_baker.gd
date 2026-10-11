@@ -34,13 +34,14 @@ func _init() -> void:
 	add_child(cam)
 	key = DirectionalLight3D.new()
 	key.basis = Basis.looking_at(Vector3(0.55, -0.7, -1.0).normalized(), Vector3.UP)
-	key.light_energy = 1.05
+	key.light_energy = 1.2
+	key.light_color = Color("#fff4e0")   # warm sun, cool shade: the same light as the building bakes
 	add_child(key)
 	var env := Environment.new()
 	env.background_mode = Environment.BG_CLEAR_COLOR
 	env.ambient_light_source = Environment.AMBIENT_SOURCE_COLOR
-	env.ambient_light_color = Color.WHITE
-	env.ambient_light_energy = 0.55
+	env.ambient_light_color = Color("#c8d0e0")
+	env.ambient_light_energy = 0.4
 	env.tonemap_mode = Environment.TONE_MAPPER_LINEAR
 	var we := WorldEnvironment.new()
 	we.environment = env
