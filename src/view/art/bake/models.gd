@@ -310,7 +310,7 @@ func flowers(seed_value: int) -> Node3D:
 ## wheel; a team rag flag as the live banner.
 ## h: wall height; pitch: roof slope; berm: earth and scrap banked against the walls, so the
 ## hall sits low and grows out of the ground (the scale rule lets a culture sit lower, D-080).
-func junk_town_center(team: Color, h := 1.05, pitch := 32.0, berm := false) -> Dictionary:
+func junk_town_center(team: Color, h := 1.05, pitch := 32.0, berm := false, plinth := true) -> Dictionary:
 	rng.seed = 66
 	var body := Node3D.new()
 	var brick := mats.get_mat("brick")
@@ -318,8 +318,8 @@ func junk_town_center(team: Color, h := 1.05, pitch := 32.0, berm := false) -> D
 	var tin := mats.get_mat("tin")
 	var iron := Materials.flat(Color("#4a4a48"), 0.5, 0.6)
 	var base := 0.25
-	if berm:
-		base = 0.02   # no plinth: the hall stands on the ground and the bank grows up its walls
+	if berm or not plinth:
+		base = 0.02   # no plinth: the hall stands on the ground
 	else:
 		body.add_child(box(Vector3(2.8, 0.25, 2.8), brick, Vector3(0, 0.12, 0)))
 	var w := 2.1
@@ -1081,9 +1081,47 @@ func mound_town_center(team: Color) -> Dictionary:
 # ------------------------------------------------------------------ concept options (building sheets)
 # Variations shown by tests/building_sheet.gd for Dominic to pick from; not used in play until picked.
 
+func concept_junk_tc_small(team: Color) -> Dictionary:
+	return junk_town_center_small(team)
+
+
 func concept_junk_tc_low(team: Color) -> Dictionary:
 	return junk_town_center(team, 0.72, 24.0, false)
 
 
 func concept_junk_tc_berm(team: Color) -> Dictionary:
 	return junk_town_center(team, 0.72, 24.0, true)
+
+
+## The rat Town Centre in play (Dominic's pick, 2026-10-11): the no-plinth hall, smaller than
+## the human halls in width, depth and height, with scrap and weeds low round its base so it
+## sinks into the ground (D-081).
+func junk_town_center_small(team: Color) -> Dictionary:
+	var spec := junk_town_center(team, 0.7, 26.0, false, false)
+	var k := 0.78
+	var hall: Node3D = spec.body
+	hall.scale = Vector3(k, 1.0, k)
+	var root := Node3D.new()
+	root.add_child(hall)
+	rng.seed = 67
+	var earth := mats.get_mat("mud")
+	var weeds := Materials.flat(Color("#5e7a34"), 0.95)
+	var tin := mats.get_mat("tin")
+	for i in 22:   # rubble, weeds and scrap round the base, low: the ground creeping up
+		var ang := TAU * i / 22.0 + rng.randf_range(-0.12, 0.12)
+		var r := rng.randf_range(0.95, 1.25)
+		var at := Vector3(cos(ang) * r, 0.0, sin(ang) * r)
+		match i % 3:
+			0:
+				root.add_child(ball(rng.randf_range(0.14, 0.24), earth, at, Vector3(1.4, 0.5, 1.2)))
+			1:
+				root.add_child(cyl(0.0, 0.07, rng.randf_range(0.18, 0.3), weeds, at + Vector3(0, 0.1, 0), Vector3(rng.randf_range(-15, 15), 0, rng.randf_range(-15, 15)), 5))
+			2:
+				root.add_child(box(Vector3(rng.randf_range(0.15, 0.3), 0.02, rng.randf_range(0.1, 0.2)), tin, at + Vector3(0, 0.03, 0), Vector3(rng.randf_range(-12, 12), rng.randf_range(0, 90), 0)))
+	spec.body = root
+	for key in ["banner_pivot", "vane_pivot", "smoke", "lantern"]:
+		spec[key] = Vector3(spec[key].x * k, spec[key].y, spec[key].z * k)
+	spec.lights = spec.lights.map(func(p): return Vector3(p.x * k, p.y, p.z * k))
+	for part in [spec.banner, spec.vane]:
+		part.scale = Vector3(k, 1.0, k)
+	return spec

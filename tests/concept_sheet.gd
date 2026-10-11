@@ -52,7 +52,7 @@ func _initialize() -> void:
 		cols.append(spec)
 		for slot in spec:
 			var id: String = spec[slot]
-			if id == "none" or lib.parts.has(id):
+			if id == "none" or lib.parts.has(id) or slot in ["skin", "scale", "torso", "hand_l", "hand_r", "back"]:
 				continue
 			var borrow: String = {"body": base.recipe.body, "head": base.recipe.head, "legs": "leg.human"}.get(slot, "helm.cap")
 			var p: Dictionary = lib.part(borrow).duplicate(true)
@@ -94,6 +94,16 @@ func _initialize() -> void:
 			r.parts.erase("head_gear")
 		elif spec.has("gear"):
 			r.parts.head_gear = spec.gear
+		for key in spec:   # other swaps: skin=frog_green, scale=130, torso=none, hand_l=none ...
+			if key == "skin":
+				r.skin = spec.skin
+			elif key == "scale":
+				r.scale = int(spec.scale)
+			elif key in ["torso", "hand_l", "hand_r", "back"]:
+				if spec[key] == "none":
+					r.parts.erase(key)
+				else:
+					r.parts[key] = spec[key]
 		recipes.append(r)
 		if r.has("png"):
 			continue

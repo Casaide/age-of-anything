@@ -406,3 +406,17 @@ silhouette first at 8 px; one body language and one scale ladder; each age one w
 its process (brief, 3-5 options at game scale, his pick, build). Building scale: one footprint and
 one height envelope per type for every culture; a culture may sit shorter and melded into its
 terrain, never taller or bulkier. Rules by Dominic and Claude, scale refinement by Dominic.
+
+**D-081, 2026-10-11: Human buildings read biggest; creature cultures' ages follow their
+psychology.** Refines D-080. Same footprint for all, but human buildings always look the
+biggest; creature buildings sit smaller and lower, blended into the ground (the rat Town Centre
+is now the smaller, plinthless hall Dominic picked). Each culture's age story comes from how its
+people feel: rats, frogs and bugs are proud and, by the top age, earnestly emulate the humans
+(rats' oil-drum columns copying the Romans); bears and beavers ignore humans and build their own
+impressive late-game halls. Dominic's direction.
+
+**D-082, 2026-10-11: Archers are a balance problem, not a behaviour one.** Archers don't keep
+their distance on their own in the genre (Dominic). The distance rule tried in milestone 10 is
+removed. Fix by price and counters: bows cost 2 points, skirmishers' bonus against archers
+rises to 6. Cost-sanity outliers 10 -> 8 of 20; counters still 82%. Claude, after Dominic's
+question.

@@ -19,7 +19,7 @@ const HOUSE_SCALE := 1.3
 ## Parts a worker swaps in by job (see UnitView.set_tool and sim_debug's _tool_for).
 const JOB_PARTS := ["tool.axe", "tool.basket", "tool.hammer", "tool.pick", "load.reeds", "load.stone"]
 const ICON_CELL := 160     # screen pixels per unit when rendering portraits   # houses read about 2.5x a footman
-const TOWN := {"thatch": "town_center", "junk": "junk_town_center", "stone": "stone_town_center", "tent": "tent_town_center",
+const TOWN := {"thatch": "town_center", "junk": "junk_town_center_small", "stone": "stone_town_center", "tent": "tent_town_center",
 	"reed": "reed_town_center", "mound": "mound_town_center"}
 const HOUSE := {"thatch": "stilt_house", "junk": "tin_can_house", "stone": "villa_house", "tent": "tent_house",
 	"reed": "reed_house", "mound": "mound_house"}

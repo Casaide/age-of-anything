@@ -183,6 +183,20 @@ less intense and more natural. Same footprint as everyone; lower and part of the
 pointed at a classic RTS's swamp faction, whose town centre is no smaller than the empire's,
 just lower and grown into the land.)
 
+## Psychology and comedy lead (Dominic, 2026-10-11)
+How a culture's buildings grow through the ages comes from how its people feel about the world:
+- **Small creatures (rats, frogs, bugs) are proud.** By the top age their buildings show they
+  think they've made it, level with the humans: still an oversized shed, but trying hard. Rats
+  add columns made from stacked oil drums, emulating the Romans; the comedy is in the earnest
+  imitation.
+- **Bears and beavers don't care about humans.** They don't emulate anyone; their late-age
+  buildings are their own thing, and genuinely impressive (dams, great lodges).
+- So each culture's age story is written from its psychology first, then its materials.
+
+**Rat Town Centre picked** (Dominic, 2026-10-11): the no-plinth hall made smaller than the human
+halls, with scrap and weeds round its base (`junk_town_center_small`, now in play). Human
+buildings always read biggest; creature buildings sit lower and smaller on the same footprint.
+
 ## Questions for Dominic (original)
 1. Is a 1.5-3 day pipeline bake-off (R0) worth doing first?
 2. 8 facings, all baked, none mirrored?
