@@ -26,6 +26,7 @@ var harnessed := false    # no arms: gear rides on a harness, work is done with 
 const COUCH := Vector2(1.0, -0.3)   # a couched weapon points forward, a little up
 const WITHERS_DROP := Vector2(2.0, 5.0)    # part units: wings on a mount start at its shoulders...
 const WITHERS_TILT := -0.5                 # ...and lie back along it, folded, clear of the rider
+const WITHERS_SCALE := 2.0                 # a horse's wings are a horse's size (Dominic)
 var head_node: Node2D     # the unit's own head (the rider's, when mounted)
 var back_node: Node2D     # what's on its back (wings flap)
 var job := ""             # "", "forage", "chop" or "build": set by the view each frame
@@ -244,7 +245,9 @@ func _attach(lib, rig: Dictionary, slot: String, part_id: String, colours: Dicti
 	if withers:
 		node.position += WITHERS_DROP   # the wings' shoulders sit high, for a person's back
 		node.rotation = WITHERS_TILT
+		node.scale = Vector2.ONE * WITHERS_SCALE
 		node.set_meta("rest", WITHERS_TILT)
+		node.set_meta("rest_scale", WITHERS_SCALE)
 	node.set_meta("z", 0.5 if withers else Z_FOR_SLOT[slot])
 	if slot == "torso":
 		node.scale = rig.torso_scale
@@ -326,7 +329,8 @@ func _process(delta: float) -> void:
 		# Flap: quick down-strokes, the wings' tips sweeping through a few pixels.
 		var f := sin(t * (11.0 if walking else 7.0))
 		back_node.rotation = back_node.get_meta("rest", 0.0) - 0.12 * f
-		back_node.scale.y = 1.0 + 0.1 * f
+		var rs: float = back_node.get_meta("rest_scale", 1.0)
+		back_node.scale = Vector2(rs, rs * (1.0 + 0.1 * f))
 
 	if stepped:
 		# Breathe by a pixel, not by stretching the sprite (stretched pixels shimmer).
