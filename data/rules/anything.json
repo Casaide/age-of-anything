@@ -91,5 +91,7 @@
    }
   }
  },
- "ages": 3
+ "ages": 3,
+ "full_tech_tree": true,
+ "no_restrictions": false
 }

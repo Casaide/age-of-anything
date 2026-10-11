@@ -49,6 +49,28 @@
     }
    ],
    "note": "+1 attack for spears"
+  },
+  {
+   "id": "frog_leap",
+   "name": "Strong Legs",
+   "cost": {
+    "food": 150,
+    "wood": 0
+   },
+   "time": 40,
+   "building": "barracks",
+   "age": 2,
+   "only": [
+    "frog"
+   ],
+   "effects": [
+    {
+     "tag": "amphibious",
+     "stat": "speed",
+     "add": 2
+    }
+   ],
+   "note": "frogs only (a tech-tree layer, D-070): +2 speed for amphibians; lifted by the host's full_tech_tree rule"
   }
  ]
 }

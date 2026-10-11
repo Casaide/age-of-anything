@@ -502,6 +502,17 @@ func _test_tech(races: Array) -> void:
 	while w.tick < 7000 and w.ages[0] < 3:
 		w.step()
 	check(w.ages[0] == 3 and int(w.types[k].eval.attack) == int(line[2].eval.attack) + 1, "tech: research still counts after the next age-up")
+	# Tech-tree layer: Strong Legs is frogs only (player 0 here is frogs, player 1 rats).
+	var bk1 := Economy.btype_of(w, "barracks")
+	var rb: int = Economy.place(w, 1, bk1, w.map.starts[1][0] / 1000 + 4, w.map.starts[1][1] / 1000 - 6)
+	w.buildings.done[rb] = 1
+	w.ages[1] = 2
+	for r in w.resources.size():
+		w.stock[r][1] = 5000
+	check(Tech.why_not(w, 1, rb, "frog_leap") == "not in this race's tech tree", "tech tree: rats can't research the frogs' Strong Legs")
+	w.rules = w.rules.duplicate(true)
+	w.rules.full_tech_tree = true
+	check(Tech.why_not(w, 1, rb, "frog_leap") == "", "tech tree: the host's full tech tree lifts it")
 	# Age gates and towers, on a fresh world.
 	var g := World.new(SEED, SimMap.load_id("flat_test"), races, rules_)
 	for r in g.resources.size():
