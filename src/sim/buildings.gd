@@ -12,13 +12,11 @@ var size := PackedInt32Array()        # footprint is size x size cells
 var hp := PackedInt32Array()
 var progress := PackedInt32Array()    # builder-ticks put in so far
 var done := PackedInt32Array()        # 1 once built
-var train := PackedInt32Array()       # ticks into the unit at the head of the queue
+var train := PackedInt32Array()       # ticks into the unit or tech at the head of the queue
 var rally_x := PackedInt32Array()     # milli-tiles, or -1 for none
 var rally_y := PackedInt32Array()
-var research := PackedInt32Array()   # what it's researching: an index into tech.research, Tech.AGE_UP, or -1
-var research_t := PackedInt32Array() # ticks into it
 var cooldown := PackedInt32Array()   # towers: ticks until the next shot
-var queue: Array = []                 # per building: Array of unit type indexes, head first
+var queue: Array = []                 # per building, head first: unit type indexes (>= 0) and techs (Tech.entry)
 
 
 func count() -> int:
@@ -40,8 +38,6 @@ func add(bid: int, p_owner: int, p_kind: int, p_cx: int, p_cy: int, p_size: int,
 	rally_x.append(-1)
 	rally_y.append(-1)
 	queue.append([])
-	research.append(-1)
-	research_t.append(0)
 	cooldown.append(0)
 	return id.size() - 1
 
@@ -68,8 +64,6 @@ func remove_at(i: int) -> void:
 	rally_x.remove_at(i)
 	rally_y.remove_at(i)
 	queue.remove_at(i)
-	research.remove_at(i)
-	research_t.remove_at(i)
 	cooldown.remove_at(i)
 
 

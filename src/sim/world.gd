@@ -223,6 +223,11 @@ func refund(player: int, cost: PackedInt32Array) -> void:
 		stock[r][player] += cost[r]
 
 
+## What a building's queue entry cost: a unit type, or research / the age-up (Tech.entry).
+func queued_cost(player: int, e: int) -> PackedInt32Array:
+	return Tech.entry_cost(self, player, e)
+
+
 ## Replace a unit type's recipe and stats (an age-up or research; see tech.gd). Its
 ## version goes up, so views rebuild the unit's look.
 func set_type(k: int, recipe: Dictionary, e: Dictionary) -> void:
@@ -910,7 +915,7 @@ func state_hash() -> int:
 	var b := buildings
 	for i in b.count():
 		for v in [b.id[i], b.owner[i], b.kind[i], b.cx[i], b.cy[i], b.hp[i], b.progress[i], b.done[i],
-				b.train[i], b.rally_x[i], b.rally_y[i], b.queue[i].size(), b.research[i], b.research_t[i], b.cooldown[i]]:
+				b.train[i], b.rally_x[i], b.rally_y[i], b.queue[i].size(), b.cooldown[i]]:
 			h = Fixed.mix(h, v)
 		for k in b.queue[i]:
 			h = Fixed.mix(h, k)

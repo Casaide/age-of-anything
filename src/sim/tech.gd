@@ -7,12 +7,15 @@ extends RefCounted
 ## researched at the building that trains it, in that age or later (workers just follow the
 ## age); the player's units follow, keeping their share of health. Research adds to stats of
 ## units with a tag, re-applied whenever a type changes. A building does one thing at a
-## time: while it ages up or researches, its training waits.
+## time, from one queue, the genre's way: trained units, research and the age-up wait in it in
+## the order clicked, each paid when queued (a cancel refunds it). A research queued anywhere
+## can't be queued again, nor a second age-up.
 
 const Economy := preload("res://src/sim/economy.gd")
 const Combat := preload("res://src/sim/combat.gd")
 
-const AGE_UP := -2   # buildings.research: researching this means ageing up
+const AGE_UP := -2     # a queue entry (and tech index) meaning: age up
+const RESEARCH := -3   # queue entry for research r is RESEARCH - r; unit types are >= 0
 
 
 static func load_tech(resources: Array, btypes: Array) -> Dictionary:
@@ -74,13 +77,55 @@ static func research_index(w, id: String) -> int:
 	return -1
 
 
-## Why this building can't start that (age-up: id ""), or "" if it can.
+## The queue entry for a tech (a research index or AGE_UP).
+static func entry(t: int) -> int:
+	return AGE_UP if t == AGE_UP else RESEARCH - t
+
+
+## The tech a queue entry holds (a research index or AGE_UP), or -1 for a unit.
+static func tech_of(e: int) -> int:
+	if e >= 0:
+		return -1
+	return AGE_UP if e == AGE_UP else RESEARCH - e
+
+
+## The tech at the head of building b's queue (being worked on), or -1.
+static func head(w, b: int) -> int:
+	var q: Array = w.buildings.queue[b]
+	return -1 if q.is_empty() else tech_of(q[0])
+
+
+## Is that tech (a research index or AGE_UP) in any of this player's queues?
+static func queued(w, player: int, t: int) -> bool:
+	var bs = w.buildings
+	for k in bs.count():
+		if bs.owner[k] == player and entry(t) in bs.queue[k]:
+			return true
+	return false
+
+
+## The age or research entry a tech stands for, for this player.
+static func item_of(w, player: int, t: int) -> Dictionary:
+	return next_age(w, player) if t == AGE_UP else w.tech.research[t]
+
+
+## What a queue entry cost (a cancel refunds it).
+static func entry_cost(w, player: int, e: int) -> PackedInt32Array:
+	return w.types[e].cost if e >= 0 else item_of(w, player, tech_of(e)).cost
+
+
+## How long building b's head-of-queue tech takes, in ticks (its train[b] counts up to it), or 0
+## with no tech at the head.
+static func head_ticks(w, b: int) -> int:
+	var t := head(w, b)
+	return 0 if t == -1 else maxi(1, int(item_of(w, w.buildings.owner[b], t).ticks))
+
+
+## Why this building can't queue that (age-up: id ""), or "" if it can.
 static func why_not(w, player: int, b: int, id: String) -> String:
 	var bs = w.buildings
 	if b < 0 or bs.owner[b] != player or bs.done[b] == 0:
 		return "not yours or not built"
-	if bs.research[b] != -1:
-		return "busy"
 	var bt: String = w.btypes[bs.kind[b]].id
 	var item: Dictionary
 	if id == "":
@@ -89,9 +134,8 @@ static func why_not(w, player: int, b: int, id: String) -> String:
 			return "already at the last age"
 		if item.building != bt:
 			return "not here"   # first: a missing requirement made every building offer the age-up
-		for k in bs.count():
-			if bs.owner[k] == player and bs.research[k] == AGE_UP:
-				return "already ageing up"
+		if queued(w, player, AGE_UP):
+			return "already ageing up"
 		for need in item.requires:   # the genre's pacing: an age-up needs a building of this age first
 			if not has_building(w, player, need):
 				return "needs a %s" % need
@@ -114,11 +158,12 @@ static func why_not(w, player: int, b: int, id: String) -> String:
 		if not item.only.is_empty() and not bool(w.rules.get("full_tech_tree", false)) \
 				and not (race.creature in item.only or race.family in item.only):
 			return "not in this race's tech tree"
-		for k in bs.count():
-			if bs.owner[k] == player and bs.research[k] == r:
-				return "already being researched"
+		if queued(w, player, r):
+			return "already being researched"
 	if item.building != bt:
 		return "not here"
+	if bs.queue[b].size() >= int(w.econ.queue_max):
+		return "queue full"
 	if not w.can_afford(player, item.cost):
 		return "can't afford it"
 	return ""
@@ -150,8 +195,7 @@ static func cmd_age_up(w, player: int, a: Dictionary) -> void:
 	if why_not(w, player, b, "") != "":
 		return
 	w.pay(player, next_age(w, player).cost)
-	w.buildings.research[b] = AGE_UP
-	w.buildings.research_t[b] = 0
+	w.buildings.queue[b].append(AGE_UP)
 
 
 static func cmd_research(w, player: int, a: Dictionary) -> void:
@@ -160,24 +204,25 @@ static func cmd_research(w, player: int, a: Dictionary) -> void:
 		return
 	var r := research_index(w, a.id)
 	w.pay(player, w.tech.research[r].cost)
-	w.buildings.research[b] = r
-	w.buildings.research_t[b] = 0
+	w.buildings.queue[b].append(entry(r))
 
 
-## One tick of every age-up and research in progress.
+## One tick of every age-up and research at the head of a queue (units: Economy.train).
 static func tick(w) -> void:
 	var bs = w.buildings
 	for b in bs.count():
-		var r: int = bs.research[b]
+		if bs.done[b] == 0:
+			continue
+		var r := head(w, b)
 		if r == -1:
 			continue
 		var p: int = bs.owner[b]
-		var item: Dictionary = next_age(w, p) if r == AGE_UP else w.tech.research[r]
-		bs.research_t[b] += 1
-		if bs.research_t[b] < item.ticks:
+		var item: Dictionary = item_of(w, p, r)
+		bs.train[b] += 1
+		if bs.train[b] < item.ticks:
 			continue
-		bs.research[b] = -1
-		bs.research_t[b] = 0
+		bs.queue[b].pop_front()
+		bs.train[b] = 0
 		if r == AGE_UP:
 			w.ages[p] += 1
 		else:

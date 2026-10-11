@@ -100,7 +100,7 @@ func think(w) -> void:
 		_next_train = w.tick + TRAIN_COOLDOWN
 	# A house before we're stuck.
 	var house: int = Economy.btype_of(w, "house")
-	var queued_pop: int = bs.queue[tc].size() * t.pop
+	var queued_pop: int = bs.queue[tc].filter(func(e): return e >= 0).size() * t.pop   # units, not the age-up
 	if w.tick >= _next_house and w.pop_cap[player] < int(w.econ.pop_max) \
 			and w.pop[player] + queued_pop + HOUSE_HEADROOM >= w.pop_cap[player] \
 			and w.can_afford(player, w.btypes[house].cost) \

@@ -1623,25 +1623,17 @@ func _sync_resources() -> void:
 				rviews.erase(c)
 
 
+## The icon for a tech (a research index or Tech.AGE_UP): a line upgrade shows its unit.
+func _tech_icon(player: int, t: int, item: Dictionary) -> Texture2D:
+	if t == Tech.AGE_UP:
+		return Icons.texture("age_up")
+	return kit.icons.get("%d:%s" % [player, item.line]) if item.has("line") else Icons.texture(item.id)
+
+
 ## Age-up and research buttons for a building (from data/tech.json), and what it's doing.
 func _tech_buttons(c: Dictionary, b: int) -> void:
 	var bs := world.buildings
 	var bid: int = bs.id[b]
-	if bs.research[b] != -1:
-		var r: int = bs.research[b]
-		var item: Dictionary = Tech.next_age(world, active) if r == Tech.AGE_UP else world.tech.research[r]
-		var label: String = ("Ageing up to the %s" % item.name) if r == Tech.AGE_UP else "Researching %s" % _research_name(item)
-		c.info = label
-		c.progress = float(bs.research_t[b]) / float(item.ticks)
-		# In the big first slot, ahead of the training it holds up (Dominic: an age-up didn't show).
-		var icon: Texture2D = Icons.texture("age_up") if r == Tech.AGE_UP else \
-			(kit.icons.get("%d:%s" % [active, item.line]) if item.has("line") else Icons.texture(item.id))
-		if c.get("queue") == null:
-			c.queue = []
-			c.queue_max = int(world.econ.queue_max)
-		c.queue.push_front({"icon": icon, "name": label, "action": func(): pass})
-		c.queue_title = "Ageing up" if r == Tech.AGE_UP else "Researching"
-		return
 	var age: Dictionary = Tech.next_age(world, active)
 	if not age.is_empty():
 		var why := Tech.why_not(world, active, b, "")
@@ -1651,7 +1643,7 @@ func _tech_buttons(c: Dictionary, b: int) -> void:
 				"enabled": why == "", "action": func(): world.issue(active, Commands.AGE_UP, {"building": bid})})
 	for r in world.tech.research:
 		var why := Tech.why_not(world, active, b, r.id)
-		if why == "" or why == "can't afford it":
+		if why == "" or why == "can't afford it" or why == "queue full":
 			var rid: String = r.id
 			var icon: Texture2D = kit.icons.get("%d:%s" % [active, r.line]) if r.has("line") else Icons.texture(r.id)   # a line upgrade shows its unit
 			c.buttons.append({"text": "%s (%s)" % [_research_name(r), _cost_text(r.cost)], "key": "", "cost": _cost_text(r.cost),
@@ -1914,11 +1906,10 @@ func _update_top_bar() -> void:
 	top_bar.show_state(stock, world.pop[active], world.pop_cap[active], world.races[active].name, world.tick / World.TICK_HZ)
 	var next := ""
 	var frac := 0.0
-	for b in world.buildings.count():   # an age-up under way, wherever it is
-		if world.buildings.owner[b] == active and world.buildings.research[b] == Tech.AGE_UP:
-			var na: Dictionary = Tech.next_age(world, active)
-			next = na.get("name", "")
-			frac = float(world.buildings.research_t[b]) / float(maxi(1, int(na.get("ticks", 1))))
+	for b in world.buildings.count():   # an age-up queued or under way, wherever it is
+		if world.buildings.owner[b] == active and Tech.entry(Tech.AGE_UP) in world.buildings.queue[b]:
+			next = Tech.next_age(world, active).get("name", "")
+			frac = float(world.buildings.train[b]) / float(Tech.head_ticks(world, b)) if Tech.head(world, b) == Tech.AGE_UP else 0.0   # 0 while it waits its turn
 	top_bar.show_age(world.ages[active], age.get("name", "Age %d" % world.ages[active]), next, frac)
 
 
@@ -1977,12 +1968,28 @@ func _update_panel() -> void:
 			var q: Array = bs.queue[b]
 			c.queue = []
 			c.queue_max = int(world.econ.queue_max)
-			for n in q.size():
-				var qt: Dictionary = world.types[q[n]]
+			for n in q.size():   # units, research and the age-up in one order; click one to cancel it (refunded)
 				var idx := n
-				c.queue.append({"icon": kit.icons.get("%d:%s" % [qt.player, qt.slot]), "name": qt.name,
+				var slot_icon: Texture2D
+				var slot_name: String
+				var tt := Tech.tech_of(q[n])
+				if tt == -1:
+					var qt: Dictionary = world.types[q[n]]
+					slot_icon = kit.icons.get("%d:%s" % [qt.player, qt.slot])
+					slot_name = qt.name
+				else:
+					var it: Dictionary = Tech.item_of(world, owner, tt)
+					slot_icon = _tech_icon(owner, tt, it)
+					slot_name = ("Age up to the %s" % it.name) if tt == Tech.AGE_UP else _research_name(it)
+				c.queue.append({"icon": slot_icon, "name": slot_name,
 					"action": func(): if mine: world.issue(active, Commands.CANCEL, {"building": selected_building, "index": idx})})
-			if not q.is_empty():
+			var ht := Tech.head(world, b) if not q.is_empty() else -1
+			if ht != -1:
+				var item: Dictionary = Tech.item_of(world, owner, ht)
+				c.progress = float(bs.train[b]) / float(Tech.head_ticks(world, b))
+				c.info = ("Ageing up to the %s" % item.name) if ht == Tech.AGE_UP else "Researching %s" % _research_name(item)
+				c.queue_title = "Ageing up" if ht == Tech.AGE_UP else "Researching"
+			elif not q.is_empty():
 				var head: Dictionary = world.types[q[0]]
 				c.progress = float(bs.train[b]) / float(head.train_ticks)
 				c.info = "Training %s" % head.name
