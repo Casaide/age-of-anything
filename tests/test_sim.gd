@@ -350,6 +350,7 @@ func _test_combat(gen) -> void:
 	_test_damage()
 	_test_idle_fight(gen)
 	_test_spread(gen)
+	_test_teams(gen)
 	_test_siege(gen)
 	var wins := 0
 	var fights := 0
@@ -426,6 +427,26 @@ func _test_spread(gen) -> void:
 				foes[w.units.foe[i]] = true
 		most = maxi(most, foes.size())
 	check(most >= 7, "attack-move spreads: up to %d different foes fought at once by 10 spearmen" % most)
+
+
+## Two teams of two: allies stand side by side in peace; the teams fight each other.
+func _test_teams(gen) -> void:
+	var race: Dictionary = gen.generate(PROMPTS[0], rules_)
+	var bare := rules_.duplicate(true)
+	bare.economy.start.buildings = []
+	bare.economy.start.workers = 0
+	var w := World.new(SEED, SimMap.load_id("flat_test"), [race, race, race, race], bare, [0, 0, 1, 1])
+	check(not w.is_enemy(0, 1) and w.is_enemy(1, 2) and not w.is_enemy(2, 3), "teams: 0+1 vs 2+3")
+	w.issue(0, Commands.SPAWN, {"slot": "spear", "count": 4, "x": 14000, "y": 20500})
+	w.issue(1, Commands.SPAWN, {"slot": "spear", "count": 4, "x": 14500, "y": 21000})
+	for t in 600:
+		w.step()
+	check(w.lost[0] + w.lost[1] == 0, "teams: allies side by side never fight")
+	w.issue(2, Commands.SPAWN, {"slot": "spear", "count": 4, "x": 17500, "y": 20500})
+	w.issue(3, Commands.SPAWN, {"slot": "spear", "count": 4, "x": 18000, "y": 21000})
+	for t in 1500:
+		w.step()
+	check(w.lost[0] + w.lost[1] + w.lost[2] + w.lost[3] > 0, "teams: the two teams fight (%s lost)" % w.lost)
 
 
 ## Units can knock down a Town Center; its ground opens up again.

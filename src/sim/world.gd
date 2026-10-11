@@ -75,19 +75,23 @@ var stock: Array = []          # per resource: PackedInt32Array per player
 var gathered: Array = []       # per resource, per player: everything ever dropped off
 var pop := PackedInt32Array()     # derived each tick (Economy.update_pop)
 var lost := PackedInt32Array()    # per player: units killed so far
+var teams := PackedInt32Array()   # per player: team id (players on one team are allies)
 var pop_cap := PackedInt32Array()
 var fields := {}               # field key -> Flow; looked up by key, never iterated
 var field_order: Array = []    # cached field keys, oldest first (eviction, invalidation)
 var field_queue: Array = []    # field keys waiting for a solve, in request order
 
 
-func _init(p_seed: int, p_map: SimMap, p_races: Array, p_rules: Dictionary) -> void:
+## p_teams: a team id per player; empty means everyone for themselves (team = player).
+func _init(p_seed: int, p_map: SimMap, p_races: Array, p_rules: Dictionary, p_teams := []) -> void:
 	assert(p_map.version == 0, "A World needs a freshly loaded map (maps change during a match)")
 	seed_value = p_seed
 	rng = Rng.new(p_seed)
 	map = p_map
 	races = p_races
 	rules = p_rules
+	for p in p_races.size():
+		teams.append(int(p_teams[p]) if p < p_teams.size() else p)
 	econ = _ints(rules.economy)
 	combat = _ints(rules.combat)
 	spatial = Spatial.new(map.width, map.height)
@@ -130,6 +134,11 @@ func _make_type(player: int, u: Dictionary) -> Dictionary:
 		"pop": int(e.pop), "cost": Economy.cost_vector(resources, e.cost),
 		"train_ticks": int(e.train_time) * TICK_HZ, "worker": "worker" in e.tags, "eval": e,
 	}
+
+
+## Are these two players enemies (on different teams)?
+func is_enemy(a: int, b: int) -> bool:
+	return teams[a] != teams[b]
 
 
 ## Can the player pay this cost vector (indexed like `resources`)?
@@ -663,6 +672,7 @@ func state_hash() -> int:
 			h = Fixed.mix(h, stock[r][p])
 			h = Fixed.mix(h, gathered[r][p])
 		h = Fixed.mix(h, lost[p])
+		h = Fixed.mix(h, teams[p])
 	# Which fields are solved or pending changes how units steer, so it's state too.
 	for key in field_order:
 		h = Fixed.mix(h, key)

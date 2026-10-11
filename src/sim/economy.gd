@@ -80,6 +80,8 @@ static func setup(w) -> void:
 		w.pop_cap.append(0)
 		w.lost.append(0)
 	for p in w.races.size():
+		if start.buildings.is_empty() and int(start.workers) == 0:
+			continue   # nothing to put down (tests and sandboxes; maps may have fewer starts than players)
 		var s: Array = w.map.starts[p]
 		for bid in start.buildings:
 			var k := btype_of(w, bid)

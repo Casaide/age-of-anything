@@ -20,6 +20,7 @@ static func record(world: World) -> Dictionary:
 	return {
 		"schema": SCHEMA,
 		"seed": world.seed_value,
+		"teams": Array(world.teams),
 		"map": world.map.id,
 		"map_hash": world.map.map_hash,
 		"rules": world.rules.id,
@@ -84,7 +85,7 @@ static func build_world(rep: Dictionary, lib: DataLib) -> World:
 	assert(map.map_hash == rep.map_hash, "Map %s has changed since the replay was recorded" % rep.map)
 	var rules = DataLib.load_json("res://data/rules/%s.json" % rep.rules)
 	assert(rules_hash(rules) == rep.rules_hash, "Rules %s have changed since the replay was recorded" % rep.rules)
-	var world := World.new(rep.seed, map, races, rules)
+	var world := World.new(rep.seed, map, races, rules, rep.get("teams", []))
 	for cmd in rep.commands:
 		world.commands.add(cmd)
 	return world
