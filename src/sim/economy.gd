@@ -129,19 +129,27 @@ static func cmd_gather(w, player: int, a: Dictionary) -> void:
 
 
 static func cmd_build(w, player: int, a: Dictionary) -> void:
+	var bid := lay_foundation(w, player, a)
+	if bid == 0:
+		return
+	for i in _own_workers(w, player, a.ids):
+		start_build(w, i, bid)
+
+
+## Pay for and place a BUILD's foundation; its id, or 0 when it can't be built there (or by
+## these units, or yet). A shift-queued build lays its foundation at once (World._run), so you
+## see what's planned and the workers come to it in turn, as in the genre.
+static func lay_foundation(w, player: int, a: Dictionary) -> int:
 	var k := btype_of(w, a.building)
 	if k < 0:
-		return
+		return 0
 	var t: Dictionary = w.btypes[k]
-	var builders := _own_workers(w, player, a.ids)
-	if builders.is_empty() or not w.can_afford(player, t.cost) or w.ages[player] < t.age:
-		return
+	if _own_workers(w, player, a.ids).is_empty() or not w.can_afford(player, t.cost) or w.ages[player] < t.age:
+		return 0
 	if not w.map.can_build(a.cx, a.cy, t.size, builder_class(w, player), t.water):
-		return
+		return 0
 	w.pay(player, t.cost)
-	var b := place(w, player, k, a.cx, a.cy)
-	for i in builders:
-		start_build(w, i, w.buildings.id[b])
+	return w.buildings.id[place(w, player, k, a.cx, a.cy)]
 
 
 static func cmd_help_build(w, player: int, a: Dictionary) -> void:
@@ -337,11 +345,46 @@ static func _build(w, i: int) -> void:
 			bs.hp[b] = t.hp
 			if not t.becomes.is_empty():
 				_become_ground(w, b, i)
+			else:
+				_gather_after_camp(w, b)
 	elif u.moving[i] == 0:
 		if u.stuck[i] >= GIVE_UP:
 			clear_task(w, i)
 		else:
 			_approach_building(w, i, b)
+
+
+## A finished camp (a building taking in some resources, not all, like a mill or lumber
+## camp): its builders with nothing queued go and gather the nearest of what it takes in
+## (Dominic). The Town Center takes everything, so building one sends nobody anywhere.
+static func _gather_after_camp(w, b: int) -> void:
+	var bs = w.buildings
+	var t: Dictionary = w.btypes[bs.kind[b]]
+	var kinds := []
+	for r in t.drop.size():
+		if t.drop[r] == 1:
+			kinds.append(r + 1)
+	if kinds.is_empty() or kinds.size() == t.drop.size():
+		return
+	var u = w.units
+	var bid: int = bs.id[b]
+	for j in u.count():
+		if u.task[j] != BUILD or u.target[j] != bid or not u.orders[j].is_empty():
+			continue
+		var best := -1
+		var best_kind := 0
+		var best_d2 := 1 << 62
+		for kind in kinds:   # the nearest of any of them (a mining camp: stone or gold)
+			var c := nearest_resource(w, u.x[j], u.y[j], kind)
+			if c < 0:
+				continue
+			var d2 := Fixed.dist2(u.x[j], u.y[j], (c % w.map.width) * SimMap.TILE + 500, (c / w.map.width) * SimMap.TILE + 500)
+			if d2 < best_d2:
+				best_d2 = d2
+				best = c
+				best_kind = kind
+		if best >= 0:
+			start_gather(w, j, best, best_kind)
 
 
 ## The movement class a player's builders have (their worker's), for where they may build.

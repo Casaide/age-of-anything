@@ -272,6 +272,14 @@ func step() -> void:
 
 func _run(cmd: Dictionary) -> void:
 	var a: Dictionary = cmd.args
+	if cmd.type == Commands.BUILD and int(a.get("queue", 0)) == 1:
+		# Shift-placed: the foundation goes down now; building it joins each unit's queue.
+		var bid := Economy.lay_foundation(self, cmd.player, a)
+		if bid == 0:
+			return
+		cmd = {"turn": cmd.turn, "player": cmd.player, "seq": cmd.seq, "type": Commands.HELP_BUILD,
+			"args": {"ids": a.ids, "target": bid, "queue": 1}}
+		a = cmd.args
 	if cmd.type in Commands.QUEUEABLE:
 		a = _queue_or_clear(cmd)
 		if a.ids.is_empty():
