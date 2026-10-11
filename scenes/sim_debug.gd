@@ -538,6 +538,7 @@ func select_at(pos: Vector2, add := false) -> void:
 			selected.erase(best)
 		else:
 			selected[best] = true
+			sfx.play("select", -12.0)
 		_take_side(world.units.owner[world.units.index_of(best)])
 		return
 	for probe in [pos, pos + Vector2(0, 14)]:   # clicking a wall or roof hits the footprint below
@@ -545,6 +546,7 @@ func select_at(pos: Vector2, add := false) -> void:
 		if bid != 0:
 			selected.clear()
 			selected_building = bid
+			sfx.play("select", -12.0)
 			_take_side(world.buildings.owner[world.buildings.index_of(bid)])
 			return
 	var cell := _cell_at(pos)
@@ -631,6 +633,7 @@ func smart_order(pos: Vector2) -> void:
 		if b >= 0 and world.buildings.owner[b] == active:
 			world.issue(active, Commands.RALLY, {"building": selected_building, "x": m.x, "y": m.y})
 			flags.append({"pos": pos, "t": 1.0})
+			sfx.play("ack", -8.0)
 		return
 	var groups := _selected_by_owner()
 	var bid: int = map.occupied[cell]
@@ -655,6 +658,8 @@ func smart_order(pos: Vector2) -> void:
 		else:
 			world.issue(p, Commands.MOVE, {"ids": ids, "x": m.x, "y": m.y, "queue": q})
 	flags.append({"pos": pos, "t": 1.0})
+	if not groups[active].is_empty():
+		sfx.play("ack", -6.0)   # the order's been heard
 
 
 ## The unit whose body is nearest the point (within the click radius), or 0.
@@ -866,6 +871,8 @@ func _sync_views() -> void:
 			view.queue_free()   # its type moved on (an age-up): new kit, new look
 			view = null
 		if view == null:
+			if not views.has(id) and u.owner[i] == active and world.tick > 40:
+				sfx.play("trained", -8.0)   # a new unit of yours (not one restyled by an age-up)
 			view = _make_view(u.kind[i], u.owner[i])
 			view.set_meta("version", int(world.types[u.kind[i]].get("version", 0)))
 			views[id] = view
@@ -968,6 +975,10 @@ func _sync_buildings() -> void:
 			bviews[id] = view
 			_clear_doodads(bs.cx[b], bs.cy[b], bs.size[b])
 		var t: Dictionary = world.btypes[bs.kind[b]]
+		if bs.done[b] == 1 and not view.get_meta("done", false):
+			if view.has_meta("done") and bs.owner[b] == active:
+				sfx.play("built", -6.0)   # finished while you watched (not the ones there from the start)
+		view.set_meta("done", bs.done[b] == 1)
 		view.set_state(bs.done[b] == 1, float(bs.progress[b]) / float(t.build_ticks))
 		if bs.done[b] == 1 and not t.becomes.is_empty() and view.get_parent() == layer:
 			view.reparent(flat)   # a sown farm is walked across: it lies under the units
@@ -1024,6 +1035,8 @@ func _sync_resources() -> void:
 			h.get_child(0).queue_free()
 			h.add_child(kit.doodad(r.kind, r.pick, stage))
 		if map.left_at(c) <= 0:
+			if r.gone == 0.0 and map.pool[c] >= 0:
+				_sfx_at("farm_done", h.position, -6.0)   # a farm's used up
 			r.gone += dt
 			var linger := 6.0 if r.kind in ["reeds", "quarry", "gold"] else 0.0   # stubble and rubble stay a while
 			h.modulate.a = clampf(1.0 - (r.gone - linger) / 1.5, 0.0, 1.0)
