@@ -29,10 +29,19 @@ var assault := false        # a wave has gone out: units away from home keep pus
 var _next_build := 0
 
 
-## config: data/ai.json as ints (see load_config), or {} to load it.
-func _init(p_player: int, config := {}) -> void:
+## config: data/ai.json as ints (see load_config), or {} to load it. level: a key of
+## its "levels" (easy, normal): later, smaller attack waves and a smaller economy.
+func _init(p_player: int, config := {}, level := "normal") -> void:
 	player = p_player
 	cfg = config if not config.is_empty() else load_config()
+	if cfg.has("levels") and cfg.levels.has(level):
+		var l: Dictionary = cfg.levels[level]
+		cfg = cfg.duplicate(true)
+		for w in cfg.military.waves:
+			w.at = int(w.at) + int(l.get("delay", 0))
+			w.min_army = maxi(1, int(w.min_army) * int(l.get("army_pct", 100)) / 100)
+		cfg.military.repeat_min_army = maxi(1, int(cfg.military.repeat_min_army) * int(l.get("army_pct", 100)) / 100)
+		cfg.economy.max_workers = int(l.get("max_workers", cfg.economy.max_workers))
 	eco = EcoBot.new(p_player)
 	eco.MIX = {}
 	for age in cfg.economy.mix:
