@@ -165,7 +165,7 @@ static func _to_town_center(w, i: int) -> void:
 	var half: int = bs.size[best] * SimMap.TILE / 2
 	var cx: int = bs.cx[best] * SimMap.TILE + half
 	var cy: int = bs.cy[best] * SimMap.TILE + half
-	var k: int = u.id[i] % 8   # one of eight spots just outside the footprint
+	var k: int = (u.id[i] + w.tick / (3 * 20)) % 8   # one of eight spots just outside the footprint; another every 3 s if it can't get there
 	var dirs := [[1, 0], [1, 1], [0, 1], [-1, 1], [-1, 0], [-1, -1], [0, -1], [1, -1]]
 	var reach: int = half + SimMap.TILE * 3 / 2
 	w.order_move(i, cx + dirs[k][0] * reach, cy + dirs[k][1] * reach, 300, 0)

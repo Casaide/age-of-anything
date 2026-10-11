@@ -606,3 +606,15 @@ Bug bushes hold 150 food, not 2,000, so farms matter early (Dominic: bushes last
 the bot builds a farm for each food worker the wild food near home can't feed, only while its food
 stock is low, reseeds worked-out farms, and moves gatherers off any stock over 1,000; its age-1
 mix is 50/50. Bots still age up at about 5-6 minutes; bot matches 11-14 minutes. Claude.
+
+**D-104, 2026-10-11: Stuck means no net progress, and the choke map leaves the lobby.** A move
+counted as stuck only when a step moved nothing, before the separation pushes; a unit shoved
+straight back every tick (a sheep wedged by a planted builder, a gatherer jostling at a full
+bush) was never stuck and never gave up, re-planned or re-picked, so it jittered for ever.
+Progress is now measured every two seconds along the flow field (a cell's cost per check) or
+as the crow flies on the last cell; no progress twice is a give-up (six times for a group at a
+gap). Around it: a line-of-sight check as wide as the body for waypoints, bodies eased off
+blocked ground at a capped rate instead of teleported, flow fields that lead to a blocked
+source's corners, a crowded-off gatherer taking the clump's least busy other tile, claimed
+sheep rotating their spot. `choke_test` has no food or wood (a movement test map), so it left
+the lobby; it stays in sim_debug. Measured by `tests/path_audit.gd`. Dominic asked, Claude.

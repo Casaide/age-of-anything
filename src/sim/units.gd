@@ -20,7 +20,8 @@ var arrive := PackedInt32Array()   # stop once this close to the target (milli-t
 var wx := PackedInt32Array()       # current waypoint (from the flow field) towards the target
 var wy := PackedInt32Array()
 var group := PackedInt32Array()    # move group: one per MOVE command, 0 if never ordered
-var stuck := PackedInt32Array()    # consecutive ticks a move made no progress
+var stuck := PackedInt32Array()    # ticks a move has made no progress (net of pushes; see World._move)
+var prog := PackedInt32Array()     # how far from its target it was at the last progress check (-1: none yet)
 var fkey := PackedInt32Array()     # flow field key being followed (see World.field_key)
 var reach := PackedInt32Array()    # 0: arrive at the point (tx, ty); 1: arrive next to the rect below
 var rx0 := PackedInt32Array()      # target rect (milli-tiles, inclusive) when reach == 1
@@ -69,6 +70,7 @@ func add(uid: int, p_owner: int, p_kind: int, p_x: int, p_y: int, p_speed: int, 
 	wy.append(p_y)
 	group.append(0)
 	stuck.append(0)
+	prog.append(-1)
 	fkey.append(-1)
 	reach.append(0)
 	rx0.append(0)
@@ -122,6 +124,7 @@ func remove_at(i: int) -> void:
 	wy.remove_at(i)
 	group.remove_at(i)
 	stuck.remove_at(i)
+	prog.remove_at(i)
 	fkey.remove_at(i)
 	reach.remove_at(i)
 	rx0.remove_at(i)

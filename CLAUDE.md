@@ -133,6 +133,7 @@ godot --path . --script res://tests/screenshot.gd -- /tmp/lab.png "prompt A" "pr
 godot --headless --path . --script res://tests/test_sim.gd         # sim determinism + tick time (~45 s)
 godot --headless --path . --script res://tests/test_ai.gd          # the AI beats a passive player; bot vs bot (~2 min)
 godot --headless --path . --script res://tests/balance.gd -- 2     # equal-cost round robin in age 2: win rates, outliers
+godot --headless --path . --script res://tests/path_audit.gd -- 8  # pathing diagnostic: give-ups, snaps, jitter, treading, with examples
 godot --path . res://scenes/match_setup.tscn                       # pick races and play vs the AI (the main scene)
 godot --path . --script res://tests/sim_screenshot.gd -- /tmp/sim.png [map_id] [armies|opening:<tick>] ["prompt A" "prompt B"]
 godot --path . res://scenes/sim_debug.tscn                         # run the sim debug view

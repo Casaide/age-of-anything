@@ -228,6 +228,14 @@ gets from it (units, ages, upkeep), and how the AI values a resource it doesn't 
   - Spooky and forest architecture (they share the swamp stilt hut).
   - Small things: the junk Town Center's hard dirt slab, the log pile off the plinth, reeds past
     the map edge, unit shadows offset like building shadows, a lighter vignette.
+- **Pathing** (2026-10-11, after D-104): flow fields don't know about units, so a worker whose
+  bush is ringed by planted workers gives up after 4 s and takes another tile (or goes idle);
+  the bot then often sends it straight back. Next steps: the bot caps gatherers per tile; a
+  gatherer waits its turn when the clump has no other tile; unit-aware steering (a local
+  avoidance step) for queues at gaps. `tests/path_audit.gd` measures it (flat map, 8 minutes:
+  snaps 2, jitter 62, treading 473, give-ups 113 after the fixes; 164 / 233 / 839 / 1 before).
+- The choke map (`choke_test`) is a movement test map with no food or wood; it left the lobby
+  (D-104). A real second battlefield is wanted.
 - **Audio** (the ground-up set is in, 2026-10-11, `docs/audio.md`): a second theme or mode for
   long matches; night / swamp / sewer ambience by map or architecture; voices by size and
   culture (a giant croaks lower, a Roman says a word); a "can't" bark; volume sliders.

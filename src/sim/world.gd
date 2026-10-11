@@ -44,6 +44,8 @@ const LOOKAHEAD := 6           # field cells to look down for the furthest clear
 const DIRECT_COST := 160       # field cost under which we try a straight line to the target
 const SETTLE_FACTOR := 4       # bumping a stopped groupmate within arrive * this counts as arrived
 const STUCK_LIMIT := 60        # ticks without progress before a unit gives up (3 s)
+const PROGRESS_EVERY := 40     # ticks between net-progress checks (staggered by unit id)
+const CORRECT_MAX := 150       # milli-tiles a tick a body is eased off blocked ground (no teleports)
 const RETURN_SLACK := 1000     # shoved this far beyond its settle radius, a stopped unit walks back
 const FIELD_CACHE := 24        # flow fields kept (oldest dropped first)
 const SOLVE_BUDGET := 1500     # flow-field cells settled per tick: one full solve, or a few near ones
@@ -51,6 +53,7 @@ const NEAR_CUTOFF := 160       # cost cutoff for "near" fields (16 tiles): short
 
 # Field keys: (target * 4 + kind) * LANES + lane. Cell targets are cells; building targets are ids.
 # A lane is a movement class, and the team for maps with gates (SimMap lanes).
+const STRAIGHT_PER_CHECK := 10 # field cost a moving unit must shed per progress check (one cell)
 const FIELD_CELL := 0          # full field towards a cell (MOVE, or a far resource)
 const FIELD_CELL_NEAR := 1
 const FIELD_BUILDING_NEAR := 2
@@ -481,6 +484,7 @@ func order_reach(i: int, r: Rect2i, key: int) -> void:
 func _start(i: int) -> void:
 	units.moving[i] = 1
 	units.stuck[i] = 0
+	units.prog[i] = -1
 	var w := _plan(i, units.x[i], units.y[i])
 	units.wx[i] = w.x if w.x >= 0 else units.x[i]
 	units.wy[i] = w.y if w.x >= 0 else units.y[i]
@@ -534,18 +538,41 @@ func _move() -> void:
 			var reach := rs[i] + Economy.REACH
 			if ex * ex + ey * ey <= reach * reach:
 				mv[i] = 0
+				st[i] = 0   # there: a stale count would read as a give-up
 				continue
 		else:
 			var gx := txs[i] - x
 			var gy := tys[i] - y
 			if gx * gx + gy * gy <= ar[i] * ar[i]:
 				mv[i] = 0
+				st[i] = 0
 				continue
 		var s := sp[i]
 		var mc := lane_base[owners[i]] + units.mclass[i]   # the walk grid (lane); speed goes by class
 		var pct: int = move_pct[units.mclass[i]][map.terrain[map.cell_of(x, y)]]
 		if pct != 100:
 			s = s * pct / 100   # amphibians are quicker in the swamp (rules.movement.terrain_speed)
+		if (tick + ids[i]) % PROGRESS_EVERY == 0 and units.foe[i] == 0:
+			# Net progress, after the pushes: a unit that walks into a planted worker or a wall
+			# and is shoved straight back moves every tick but gets nowhere. Measured along the
+			# field (its cost falls by a cell per cell walked, detours included), else as the
+			# crow flies. No ground gained in two seconds counts as half a give-up.
+			var p := _progress(i, x, y)
+			if units.prog[i] >= 0 and p.x > units.prog[i] - p.y:
+				# A group queued at a gap waits its turn (patient); a worker crowded off its
+				# bush, or a sheep wedged by a builder, is better off trying elsewhere soon.
+				st[i] += STUCK_LIMIT / (6 if grp[i] > 0 and rch[i] == 0 else 2)
+				if st[i] >= STUCK_LIMIT:
+					# Can't get there: close enough to a point counts as there; otherwise give up
+					# (a gatherer crowded off its bush takes another tile; see Economy._gather).
+					var near := ar[i] * SETTLE_FACTOR + RETURN_SLACK
+					if rch[i] == 0 and Fixed.dist2(x, y, txs[i], tys[i]) <= near * near:
+						st[i] = 0
+					mv[i] = 0
+					continue
+			else:
+				st[i] = 0   # ground gained: not stuck (a step that merely moved no longer clears it)
+			units.prog[i] = p.x
 		if (tick + ids[i]) % REPLAN_EVERY == 0 or Fixed.dist2(x, y, wxs[i], wys[i]) <= s * s:
 			var w := _plan(i, x, y)
 			if w.x == -2:
@@ -587,7 +614,6 @@ func _move() -> void:
 				wxs[i] = w.x if w.x >= 0 else x
 				wys[i] = w.y if w.x >= 0 else y
 			continue
-		st[i] = 0
 		xs[i] = nx
 		ys[i] = ny
 	units.x = xs
@@ -620,11 +646,12 @@ func _plan(i: int, x: int, y: int) -> Vector2i:
 	if units.reach[i] == 1:
 		if cost <= Flow.DIAGONAL:
 			return Vector2i(clampi(x, units.rx0[i], units.rx1[i]), clampi(y, units.ry0[i], units.ry1[i]))
-	elif cost == 0 or (cost <= DIRECT_COST and Flow.clear_line(map, x, y, tx, ty, lane(i))):
+	elif cost == 0 or (cost <= DIRECT_COST and units.stuck[i] < STUCK_LIMIT / 2 and Flow.clear_path(map, x, y, tx, ty, units.radius[i], lane(i))):
 		return Vector2i(tx, ty)
 	var best := cell
 	var k: int = f.next[cell]
-	for step in LOOKAHEAD:
+	# Half-way to giving up, follow the field a cell at a time (the retry): no shortcuts.
+	for step in (1 if units.stuck[i] >= STUCK_LIMIT / 2 else LOOKAHEAD):
 		if k < 0:
 			break
 		if f.dist[k] == 0:
@@ -632,11 +659,23 @@ func _plan(i: int, x: int, y: int) -> Vector2i:
 				return Vector2i(tx, ty)   # the next cell is the target's
 			break
 		var c := Flow.centre(map, k)
-		if not Flow.clear_line(map, x, y, c.x, c.y, lane(i)):
+		if not Flow.clear_path(map, x, y, c.x, c.y, units.radius[i], lane(i)):
 			break
 		best = k
 		k = f.next[k]
 	return Flow.centre(map, best)
+
+
+## How far unit i still has to go, and how much nearer it should be by the next check: its
+## field's cost at (x, y) while it follows a solved field (falls a cell per cell walked, detours
+## included) and a cell's worth; on the last cell, or with no field, the distance to its target
+## as the crow flies and a quarter of what it can walk in the time.
+func _progress(i: int, x: int, y: int) -> Vector2i:
+	if units.fkey[i] >= 0 and fields.has(units.fkey[i]):
+		var d: int = fields[units.fkey[i]].dist[map.cell_of(x, y)]
+		if d < Flow.INF and d > Flow.DIAGONAL:
+			return Vector2i(d, STRAIGHT_PER_CHECK)
+	return Vector2i(Fixed.isqrt(Fixed.dist2(x, y, units.tx[i], units.ty[i])), units.speed[i] * PROGRESS_EVERY / 4)
 
 
 # ------------------------------------------------------------------ flow fields
@@ -783,29 +822,53 @@ func _separate() -> void:
 			mv[i] = 0
 		var mc := lane(i)
 		if not map.walkable(xs[i], ys[i], mc):
-			var c := Flow.centre(map, Flow.nearest_walkable(map, map.cell_of(xs[i], ys[i]), mc))
-			xs[i] = c.x
-			ys[i] = c.y
+			# Its centre is on blocked ground (a foundation laid on it, or a spawn): step out
+			# to the nearest open neighbour's edge, the least move that makes it walkable;
+			# with no open neighbour (deep in a footprint) the nearest open cell, outright.
+			var p := _step_out(xs[i], ys[i], mc)
+			xs[i] = p.x
+			ys[i] = p.y
 			continue
 		if pushx[i] != 0 and map.walkable(xs[i] + pushx[i], ys[i], mc):
 			xs[i] += pushx[i]
 		if pushy[i] != 0 and map.walkable(xs[i], ys[i] + pushy[i], mc):
 			ys[i] += pushy[i]
-		# Keep the body (not just the centre) off blocked neighbour tiles.
+		# Keep the body (not just the centre) off blocked neighbour tiles, easing it off by at
+		# most CORRECT_MAX a tick: a shove into a wall slides back out, never pops a tile.
 		var cx := xs[i] / t
 		var cy := ys[i] / t
 		var r := rs[i]
 		if xs[i] - cx * t < r and not map.cell_walkable(cx - 1, cy, mc):
-			xs[i] = cx * t + r
+			xs[i] = mini(cx * t + r, xs[i] + CORRECT_MAX)
 		elif (cx + 1) * t - xs[i] < r and not map.cell_walkable(cx + 1, cy, mc):
-			xs[i] = (cx + 1) * t - r
+			xs[i] = maxi((cx + 1) * t - r, xs[i] - CORRECT_MAX)
 		if ys[i] - cy * t < r and not map.cell_walkable(cx, cy - 1, mc):
-			ys[i] = cy * t + r
+			ys[i] = mini(cy * t + r, ys[i] + CORRECT_MAX)
 		elif (cy + 1) * t - ys[i] < r and not map.cell_walkable(cx, cy + 1, mc):
-			ys[i] = (cy + 1) * t - r
+			ys[i] = maxi((cy + 1) * t - r, ys[i] - CORRECT_MAX)
 	units.x = xs
 	units.y = ys
 	units.moving = mv
+
+
+## The nearest walkable point for a centre on blocked ground: just inside the closest open
+## orthogonal neighbour, else the nearest open cell's centre.
+func _step_out(x: int, y: int, mc: int) -> Vector2i:
+	var t := SimMap.TILE
+	var cx := x / t
+	var cy := y / t
+	var best := Vector2i(-1, -1)
+	var best_d := 1 << 30
+	for n in [[cx - 1, cy, cx * t - 1, y], [cx + 1, cy, (cx + 1) * t, y], [cx, cy - 1, x, cy * t - 1], [cx, cy + 1, x, (cy + 1) * t]]:
+		if not map.cell_walkable(n[0], n[1], mc):
+			continue
+		var d := absi(n[2] - x) + absi(n[3] - y)
+		if d < best_d:
+			best_d = d
+			best = Vector2i(n[2], n[3])
+	if best.x >= 0:
+		return best
+	return Flow.centre(map, Flow.nearest_walkable(map, cy * map.width + cx, mc))
 
 
 # ------------------------------------------------------------------ hash
@@ -838,7 +901,7 @@ func state_hash() -> int:
 	var u := units
 	for i in u.count():
 		for v in [u.id[i], u.owner[i], u.kind[i], u.x[i], u.y[i], u.tx[i], u.ty[i], u.moving[i],
-				u.arrive[i], u.wx[i], u.wy[i], u.group[i], u.stuck[i], u.hp[i], u.fkey[i], u.reach[i],
+				u.arrive[i], u.wx[i], u.wy[i], u.group[i], u.stuck[i], u.prog[i], u.hp[i], u.fkey[i], u.reach[i],
 				u.task[i], u.target[i], u.home[i], u.carry_kind[i], u.carry[i], u.work[i],
 				u.foe[i], u.cooldown[i], u.stance[i], u.posture[i], u.gx[i], u.gy[i], u.amx[i], u.amy[i], u.orders[i].size(), u.mclass[i]]:
 			h = Fixed.mix(h, v)
