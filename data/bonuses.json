@@ -1,0 +1,27 @@
+{
+ "schema": "aow.bonuses/1",
+ "note": "How the tech tree page states a race's bonuses in words, from what the data already holds: the creature's `economy` (applied by pricing.gd and economy.gd) and the movement class its units get (rules.movement). {n} is how far a percentage is from 100, {v} the value, {base} the usual value. Milestone 12 phase 2 replaces this with `bonuses` on creatures and cultures.",
+ "economy": {
+  "cost_pct": {
+   "less": "Units cost {n}% less",
+   "more": "Units cost {n}% more"
+  },
+  "train_time_pct": {
+   "less": "Units train {n}% faster",
+   "more": "Units take {n}% longer to train"
+  },
+  "carry_pct": {
+   "more": "Workers carry {n}% more each trip",
+   "less": "Workers carry {n}% less each trip"
+  },
+  "house_pop": {
+   "more": "Houses hold {v} (others {base})",
+   "less": "Houses hold only {v} (others {base})"
+  }
+ },
+ "movement": {
+  "ground": "Walks on land",
+  "amphibious": "Amphibious: wades through swamp and shallows (faster in the swamp) and farms rice paddies in the water",
+  "flying": "Flying: over water, cliffs and walls"
+ }
+}
