@@ -1,0 +1,12 @@
+{
+ "schema": "aow.tech/1",
+ "note": "Ages and researches. An age-up moves the player's units to the next step of their unit lines (new kit, re-priced). Research effects add to stats of units with a tag (the blacksmith kind, a small visual tell only, D-057). Milestone 7 fills in the content and the buildings.",
+ "ages": [
+  {"age": 2, "name": "Stick Age", "cost": {"food": 400, "wood": 200}, "time": 60, "building": "town_center"},
+  {"age": 3, "name": "Stone Age", "cost": {"food": 800, "wood": 400, "stone": 200}, "time": 90, "building": "town_center"}
+ ],
+ "research": [
+  {"id": "sharp_sticks", "name": "Sharp Sticks", "cost": {"food": 100, "wood": 50}, "time": 30, "building": "town_center", "age": 1,
+   "effects": [{"tag": "spear", "stat": "attack", "add": 1}], "note": "+1 attack for spears"}
+ ]
+}

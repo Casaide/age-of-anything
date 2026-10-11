@@ -15,6 +15,8 @@ var done := PackedInt32Array()        # 1 once built
 var train := PackedInt32Array()       # ticks into the unit at the head of the queue
 var rally_x := PackedInt32Array()     # milli-tiles, or -1 for none
 var rally_y := PackedInt32Array()
+var research := PackedInt32Array()   # what it's researching: an index into tech.research, Tech.AGE_UP, or -1
+var research_t := PackedInt32Array() # ticks into it
 var queue: Array = []                 # per building: Array of unit type indexes, head first
 
 
@@ -37,6 +39,8 @@ func add(bid: int, p_owner: int, p_kind: int, p_cx: int, p_cy: int, p_size: int,
 	rally_x.append(-1)
 	rally_y.append(-1)
 	queue.append([])
+	research.append(-1)
+	research_t.append(0)
 	return id.size() - 1
 
 
@@ -62,6 +66,8 @@ func remove_at(i: int) -> void:
 	rally_x.remove_at(i)
 	rally_y.remove_at(i)
 	queue.remove_at(i)
+	research.remove_at(i)
+	research_t.remove_at(i)
 
 
 ## The cells under building slot i, row by row.

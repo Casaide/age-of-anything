@@ -23,6 +23,7 @@ const SimMap := preload("res://src/sim/sim_map.gd")
 const Flow := preload("res://src/sim/flow.gd")
 const Economy := preload("res://src/sim/economy.gd")
 const Combat := preload("res://src/sim/combat.gd")
+const Tech := preload("res://src/sim/tech.gd")
 
 const TICK_HZ := 20
 const HASH_EVERY := 30
@@ -59,6 +60,9 @@ var rules: Dictionary          # host rules, as loaded
 var econ: Dictionary           # rules.economy with numbers as ints
 var combat: Dictionary         # rules.combat with numbers as ints
 var classes: Array = []        # armour/attack class names (see Combat.setup)
+var tech: Dictionary          # ages and research (data/tech.json, see tech.gd)
+var ages := PackedInt32Array()     # per player: the age it's in (1 at the start)
+var researched: Array = []         # per player: PackedByteArray over tech.research
 var move_pct: Array = []       # per movement class, per terrain index: speed percent (rules.movement)
 var events: Array = []         # this tick's hits and deaths, for views (not state, not hashed)
 var types: Array = []          # unit types, per player per roster slot (see _make_type)
@@ -103,11 +107,13 @@ func _init(p_seed: int, p_map: SimMap, p_races: Array, p_rules: Dictionary, p_te
 		move_pct.append(row)
 	spatial = Spatial.new(map.width, map.height)
 	resources = Economy.load_resources()
+	tech = Tech.load_tech(resources)
 	btypes = Economy.load_btypes(resources)
 	for p in races.size():
 		for u in races[p].units:
 			types.append(_make_type(p, u))
 	Combat.setup(self)
+	Tech.setup(self)
 	Economy.setup(self)
 	map.fresh.clear()
 
@@ -168,6 +174,22 @@ func refund(player: int, cost: PackedInt32Array) -> void:
 		stock[r][player] += cost[r]
 
 
+## Replace a unit type's recipe and stats (an age-up or research; see tech.gd). Its
+## version goes up, so views rebuild the unit's look.
+func set_type(k: int, recipe: Dictionary, e: Dictionary) -> void:
+	var t: Dictionary = types[k]
+	t.recipe = recipe
+	t.eval = e
+	t.name = recipe.get("name", recipe.slot)
+	t.speed = int(e.speed) * SPEED_SCALE
+	t.hp = int(e.hp)
+	t.pop = int(e.pop)
+	t.cost = Economy.cost_vector(resources, e.cost)
+	t.train_ticks = int(e.train_time) * TICK_HZ
+	t.version = int(t.get("version", 0)) + 1
+	Combat.type_vectors(self, t)
+
+
 ## A unit's movement class from its tags (rules.movement.classes: tag -> class, first match wins).
 func _movement_class(tags: Array) -> int:
 	for entry in rules.get("movement", {}).get("classes", []):
@@ -201,6 +223,7 @@ func step() -> void:
 			_run(cmd)
 			history.append(cmd)
 	Economy.train(self)
+	Tech.tick(self)
 	Economy.work(self)
 	spatial.build(units.x, units.y)
 	Combat.tick(self)
@@ -263,6 +286,10 @@ func _run(cmd: Dictionary) -> void:
 			Combat.cmd_attack(self, cmd.player, a)
 		Commands.ATTACK_MOVE:
 			Combat.cmd_attack_move(self, cmd.player, a)
+		Commands.AGE_UP:
+			Tech.cmd_age_up(self, cmd.player, a)
+		Commands.RESEARCH:
+			Tech.cmd_research(self, cmd.player, a)
 		Commands.TRAIN:
 			Economy.cmd_train(self, cmd.player, a)
 		Commands.CANCEL:
@@ -701,6 +728,9 @@ func state_hash() -> int:
 			h = Fixed.mix(h, gathered[r][p])
 		h = Fixed.mix(h, lost[p])
 		h = Fixed.mix(h, teams[p])
+		h = Fixed.mix(h, ages[p])
+		for v in researched[p]:
+			h = Fixed.mix(h, v)
 	# Which fields are solved or pending changes how units steer, so it's state too.
 	for key in field_order:
 		h = Fixed.mix(h, key)
@@ -721,7 +751,7 @@ func state_hash() -> int:
 	var b := buildings
 	for i in b.count():
 		for v in [b.id[i], b.owner[i], b.kind[i], b.cx[i], b.cy[i], b.hp[i], b.progress[i], b.done[i],
-				b.train[i], b.rally_x[i], b.rally_y[i], b.queue[i].size()]:
+				b.train[i], b.rally_x[i], b.rally_y[i], b.queue[i].size(), b.research[i], b.research_t[i]]:
 			h = Fixed.mix(h, v)
 		for k in b.queue[i]:
 			h = Fixed.mix(h, k)

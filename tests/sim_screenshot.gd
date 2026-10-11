@@ -20,7 +20,7 @@ func _initialize() -> void:
 	var view = load("res://scenes/sim_debug.tscn").instantiate()
 	view.prompts = [args[3], args[4]] if args.size() > 4 else view.DEFAULT_PROMPTS.duplicate()
 	view.map_id = map_id
-	view.army = scene == "armies" or scene.begins_with("battle")
+	view.army = scene == "armies" or scene.begins_with("battle") or scene.begins_with("ageup")
 	root.add_child(view)
 	while view.world == null or view.baking:   # the art bakes first
 		await process_frame
@@ -29,6 +29,8 @@ func _initialize() -> void:
 	view.camera.set_process_unhandled_input(false)
 	if scene.begins_with("opening"):
 		await _opening(view, int(scene.get_slice(":", 1)))
+	elif scene.begins_with("ageup"):
+		await _ageup(view, int(scene.get_slice(":", 1)))
 	elif scene.begins_with("battle"):
 		await _battle(view, map_id, int(scene.get_slice(":", 1)))
 	else:
@@ -86,6 +88,30 @@ func _battle(view, map_id: String, at_tick: int) -> void:
 	if w.units.count() > 0:
 		c /= w.units.count()
 		view.camera.look_at_point(Iso.to_screen(c.x, c.y))
+
+
+## Both sides' armies stand by their Town Centers; both age up (twice, up to `to_age`);
+## the shot is player 1's army in its new kit.
+func _ageup(view, to_age: int) -> void:
+	var w = view.world
+	while w.units.count() <= 6:
+		await process_frame
+	for r in w.resources.size():
+		for p in 2:
+			w.stock[r][p] = 99999
+	view.clock.speed = 16.0
+	for age in range(2, to_age + 1):
+		for p in 2:
+			w.issue(p, "age_up", {"building": w.buildings.id[p]})
+		while w.ages[0] < age:
+			await process_frame
+	view.clock.speed = 1.0
+	for f in 30:
+		await process_frame
+	var s: Array = w.map.starts[0]
+	view.camera.zoom = Vector2(3.0, 3.0)
+	view._on_zoom()
+	view.camera.look_at_point(Iso.to_screen(s[0] + 1500, s[1] + 3500))
 
 
 func _opening(view, at_tick: int) -> void:

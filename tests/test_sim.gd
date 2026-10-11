@@ -16,6 +16,7 @@ const Flow := preload("res://src/sim/flow.gd")
 const Economy := preload("res://src/sim/economy.gd")
 const EcoBot := preload("res://src/ai/eco_bot.gd")
 const Combat := preload("res://src/sim/combat.gd")
+const Tech := preload("res://src/sim/tech.gd")
 
 const PROMPTS := ["angry swamp frogs with reed spears", "sewer rats with cheese hammers"]
 const SEED := 20261010
@@ -69,6 +70,7 @@ func _init() -> void:
 	_test_queue(races)
 	_test_movement_classes()
 	_test_farms(races)
+	_test_tech(races)
 	_test_combat(gen)
 
 	var script := _script(map, races)
@@ -413,6 +415,54 @@ func _test_farms(races: Array) -> void:
 	check(w.map.can_build(spot.x, spot.y, 2, Economy.builder_class(w, 0), true), "farm: frogs (amphibious) may farm the shallows")
 	check(not w.map.can_build(spot.x, spot.y, 2, Economy.builder_class(w, 1), true), "farm: rats may not build on water")
 	check(not w.map.can_build(spot.x, spot.y, 2, Economy.builder_class(w, 0), false), "farm: a building that doesn't allow water can't go there")
+
+
+# --- ages and research ----------------------------------------------------------
+
+## Ageing up moves a player's units along their lines; research adds to stats by tag.
+func _test_tech(races: Array) -> void:
+	var w := World.new(SEED, SimMap.load_id("flat_test"), races, rules_)
+	for r in w.resources.size():
+		w.stock[r][0] = 5000
+	var tc: int = w.buildings.id[0]
+	var s: Array = w.map.starts[0]
+	w.issue(0, Commands.SPAWN, {"slot": "spear", "count": 2, "x": s[0] + 3000, "y": s[1]})
+	var k: int = w.type_of(0, "spear")
+	var age1: Dictionary = w.types[k].recipe
+	var food: int = w.stock[0][0]
+	w.issue(0, Commands.AGE_UP, {"building": tc})
+	w.issue(0, Commands.TRAIN, {"building": tc, "slot": "worker"})
+	for t in 40:
+		w.step()
+	check(w.stock[0][0] < food, "tech: ageing up is paid for")
+	check(w.buildings.research[0] == Tech.AGE_UP, "tech: the Town Center is ageing up")
+	var units_then := w.units.count()
+	var aged := -1
+	while w.tick < 2000:
+		w.step()
+		for e in w.events:
+			if e.type == "age" and e.player == 0:
+				aged = w.tick
+		if aged > 0:
+			break
+	check(aged > 0 and w.ages[0] == 2, "tech: player 0 reaches age 2 (tick %d)" % aged)
+	check(w.units.count() == units_then, "tech: no worker trained while the Town Center was ageing up")
+	var line: Array = w.types[k].line
+	check(w.types[k].recipe == line[1].recipe and w.types[k].recipe != age1, "tech: spears move to their age-2 recipe (%s)" % [w.types[k].recipe.parts.values()])
+	var full := true
+	for i in w.units.count():
+		if w.units.kind[i] == k:
+			full = full and w.units.hp[i] == w.types[k].hp
+	check(full, "tech: existing spearmen take the new kit at full health (%d hp)" % w.types[k].hp)
+	var atk: int = int(w.types[k].eval.attack)
+	w.issue(0, Commands.RESEARCH, {"building": tc, "id": "sharp_sticks"})
+	while w.tick < 4000 and w.researched[0][Tech.research_index(w, "sharp_sticks")] == 0:
+		w.step()
+	check(int(w.types[k].eval.attack) == atk + 1, "tech: Sharp Sticks gives spears +1 attack (%d -> %d)" % [atk, w.types[k].eval.attack])
+	w.issue(0, Commands.AGE_UP, {"building": tc})
+	while w.tick < 7000 and w.ages[0] < 3:
+		w.step()
+	check(w.ages[0] == 3 and int(w.types[k].eval.attack) == int(line[2].eval.attack) + 1, "tech: research still counts after the next age-up")
 
 
 # --- order queues ---------------------------------------------------------------
