@@ -89,3 +89,4 @@ One line per moment worth remembering. Newest at the bottom.
 - **2026-10-11:** Sound from the ground up (D-103): our own offline synth renders every effect, creature voices and the theme "Whatever" in stems by age, with a battle layer; `docs/audio.md`.
 - **2026-10-11:** Milestone 12 planned: the full land tech tree as data and a tech tree page (D-106); build menu in civilian and military pages, stone walls to age 2, sheep stolen not killed, small bushes and a farming bot (D-107).
 - **2026-10-11:** Pathing pass (D-104): stuck is net progress; no teleports; body-wide line checks; the choke map out of the lobby; `tests/path_audit.gd`.
+- **2026-10-12:** Animation review (work invisible, cardboard deaths, weapon-twitch attacks) and concept sheets: workers' baked arm poses, the centaur kneel, head-digging for armless creatures. Dominic's pick pending.

@@ -388,6 +388,66 @@ func flourish() -> void:
 	attack_t = 0.35
 
 
+## Swap the body for the same body in another hold ("reach", "raise", "low": a bake posed
+## with its near arm there), moving what the hand holds to the new hand. Only if that bake
+## exists; the game never asks for one it hasn't baked. (Animation concepts, 2026-10-12.)
+func set_hold(hold: String) -> void:
+	if recipe.has("mount") and recipe.mount.get("fused", false) == false:
+		return
+	var body_id: String = recipe.body
+	var id := body_id + ("" if hold == "low" else "@" + hold)
+	var rig: Dictionary = PartShape.rigs.get(id + PartShape.facing_suffix(facing_k), PartShape.rigs.get(id, {}))
+	if rig.is_empty() and hold != "low":
+		return
+	for ps in find_children("*", "Node2D", true, false):
+		if ps is PartShape and (ps.part_id == body_id or ps.part_id.begins_with(body_id + "@")) and ps.part_id == _body_part_id():
+			ps.part_id = id
+			ps.setup(ps.shapes, ps.colours)
+	_body_hold = id
+	if weapon != null and rig.has("sockets") and rig.sockets.has("hand_r"):
+		weapon.position = rig.sockets.hand_r
+		weapon_rest = weapon.position
+		weapon.rotation = weapon_rot
+	elif weapon != null and hold == "low":
+		weapon.position = weapon_rest
+
+
+var _body_hold := ""
+
+
+func _body_part_id() -> String:
+	return _body_hold if _body_hold != "" else recipe.body + _hold_suffix
+
+
+## A pose on top of the animation, for concept sheets: kneel (0..1: the front legs fold and
+## the chest dips), pitch (radians, nose down is positive), drop (part units down), head
+## (radians), tool (radians, added to the hand's rotation).
+var concept := {}
+
+
+func _apply_concept() -> void:
+	if concept.is_empty():
+		return
+	var kneel: float = concept.get("kneel", 0.0)
+	if kneel > 0.0 and legs.size() >= 4:
+		var xs := legs.map(func(l): return l.node.position.x)
+		xs.sort()
+		var mid: float = (xs[1] + xs[2]) * 0.5
+		for leg in legs:
+			if leg.node.position.x > mid:   # the front pair folds under the chest: short, knee forward
+				leg.node.scale.y = 1.0 - 0.55 * kneel
+				leg.node.rotation = 0.35 * kneel
+		bob.rotation += 0.26 * kneel   # the chest dips (about the feet, so the hind end stays up)
+		bob.position.y += 2.5 * kneel
+	bob.rotation += float(concept.get("pitch", 0.0))
+	bob.position.y += float(concept.get("drop", 0.0))
+	if head_node != null and concept.has("head"):
+		head_node.rotation = float(concept.head)
+	if weapon != null and concept.has("tool"):
+		weapon.rotation = weapon_rot + float(concept.tool)
+		weapon.position = weapon_rest + Vector2(concept.get("tool_dx", 0.0), concept.get("tool_dy", 0.0))
+
+
 ## Let the unit mill about inside a rectangle (Race Lab only).
 func wander_in(rect: Rect2) -> void:
 	area = rect
@@ -454,6 +514,7 @@ func _process(delta: float) -> void:
 		_work(t, stepped)
 	elif not walking:
 		_idle(delta)
+	_apply_concept()
 	if stepped and art_px > 0.0:
 		# Sit on whole art pixels: offset the drawing so its global position snaps.
 		var g := global_position
