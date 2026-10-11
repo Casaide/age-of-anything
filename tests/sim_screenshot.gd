@@ -69,7 +69,7 @@ func _farm(view) -> void:
 		await process_frame
 	view.clock.speed = 1.0
 	view.selected_building = w.buildings.id[0]
-	w.issue(0, "rally", {"building": w.buildings.id[0], "x": s[0] - 3000, "y": s[1] + 1000})
+	w.issue(0, "rally", {"building": w.buildings.id[0], "x": s[0] + 1000, "y": s[1] + 4000})
 	for f in 30:
 		await process_frame
 	view.camera.zoom = Vector2(3.0, 3.0)
