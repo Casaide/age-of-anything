@@ -65,6 +65,7 @@ var classes: Array = []        # armour/attack class names (see Combat.setup)
 var tech: Dictionary          # ages and research (data/tech.json, see tech.gd)
 var ages := PackedInt32Array()     # per player: the age it's in (1 at the start)
 var researched: Array = []         # per player: PackedByteArray over tech.research
+var gather_ticks: Array = []       # per player: ticks per unit of each resource gathered (research cuts them)
 var move_pct: Array = []       # per movement class, per terrain index: speed percent (rules.movement)
 var events: Array = []         # this tick's hits and deaths, for views (not state, not hashed)
 var types: Array = []          # unit types, per player per roster slot (see _make_type)

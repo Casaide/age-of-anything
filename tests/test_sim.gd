@@ -477,9 +477,10 @@ func _test_tech(races: Array) -> void:
 	w.issue(0, Commands.SPAWN, {"slot": "spear", "count": 2, "x": s[0] + 3000, "y": s[1]})
 	var k: int = w.type_of(0, "spear")
 	var age1: Dictionary = w.types[k].recipe
-	for need in ["barracks", "stable"]:   # what each age-up asks for, already standing
+	var offsets := {"barracks": Vector2i(4, -6), "stable": Vector2i(-7, -6), "armoury": Vector2i(4, 3)}
+	for need in ["barracks", "stable", "armoury"]:   # what each age-up asks for, and the armoury, already standing
 		var nk := Economy.btype_of(w, need)
-		var ni: int = Economy.place(w, 0, nk, s[0] / 1000 + (4 if need == "barracks" else -7), s[1] / 1000 - 6)
+		var ni: int = Economy.place(w, 0, nk, s[0] / 1000 + offsets[need].x, s[1] / 1000 + offsets[need].y)
 		w.buildings.done[ni] = 1
 		w.buildings.hp[ni] = w.btypes[nk].hp
 	var food: int = w.stock[0][0]
@@ -510,8 +511,8 @@ func _test_tech(races: Array) -> void:
 	var atk: int = int(w.types[k].eval.attack)
 	var bi: int = -1
 	for b2 in w.buildings.count():
-		if w.buildings.owner[b2] == 0 and w.btypes[w.buildings.kind[b2]].id == "barracks":
-			bi = b2
+		if w.buildings.owner[b2] == 0 and w.btypes[w.buildings.kind[b2]].id == "armoury":
+			bi = b2   # Sharp Sticks is researched at the Armoury (milestone 11)
 	w.issue(0, Commands.RESEARCH, {"building": w.buildings.id[bi], "id": "sharp_sticks"})
 	while w.tick < 4000 and w.researched[0][Tech.research_index(w, "sharp_sticks")] == 0:
 		w.step()

@@ -1,6 +1,6 @@
 extends RefCounted
 ## A scripted economy player: keeps the Town Center training workers, splits
-## them about 60/40 food/wood, puts idle workers back to work and builds houses
+## them between resources by a mix per age (60/40 food/wood to start; gold and stone later), puts idle workers back to work and builds houses
 ## before pop runs out. It only reads sim state and issues commands through the
 ## queue, like a person would, so it's deterministic. This is the seed of the
 ## milestone 8 AI.
@@ -11,7 +11,7 @@ const Fixed := preload("res://src/sim/fixed.gd")
 const Tech := preload("res://src/sim/tech.gd")
 
 const THINK_EVERY := 20        # ticks (1 s)
-var FOOD_PCT := 60            # these three come from data/ai.json when a full bot runs this
+var MIX := {1: {"food": 60, "wood": 40}}   # age -> share of workers per resource (data/ai.json when a full bot runs this)
 var MAX_WORKERS := 30
 const TRAIN_COOLDOWN := 20     # ticks between train orders (commands land two turns later)
 const HOUSE_COOLDOWN := 200
@@ -34,8 +34,8 @@ func think(w) -> void:
 	if tc < 0:
 		return
 	var workers := []
-	var food_n := 0
-	var wood_n := 0
+	var n := PackedInt32Array()   # workers on each resource (by resource index)
+	n.resize(w.resources.size())
 	var idle := []
 	for i in w.units.count():
 		if w.units.owner[i] != player or not w.types[w.units.kind[i]].worker:
@@ -43,29 +43,21 @@ func think(w) -> void:
 		workers.append(i)
 		match w.units.task[i]:
 			Economy.GATHER, Economy.RETURN:
-				if w.units.carry_kind[i] == 1:
-					food_n += 1
-				else:
-					wood_n += 1
+				if w.units.carry_kind[i] > 0:
+					n[w.units.carry_kind[i] - 1] += 1
 			Economy.NONE:
 				if w.units.moving[i] == 0:
 					idle.append(i)
-	var want_food := food_n * 100 < (food_n + wood_n + 1) * FOOD_PCT
-	# Idle hands: back to work on whatever we're short of.
-	for i in idle:
-		var kind := 1 if want_food else 2
-		var cell := _nearest_resource(w, w.units.x[i], w.units.y[i], kind)
-		if cell >= 0:
-			w.issue(player, Commands.GATHER, {"ids": [w.units.id[i]], "cell": cell})
-			if kind == 1:
-				food_n += 1
-			else:
-				wood_n += 1
-			want_food = food_n * 100 < (food_n + wood_n + 1) * FOOD_PCT
-	# New workers go where we're short.
 	var bs = w.buildings
-	var rally_kind := 1 if want_food else 2
-	var rally := _nearest_resource(w, bs.cx[tc] * 1000 + 1500, bs.cy[tc] * 1000 + 1500, rally_kind)
+	# Idle hands: back to work on whatever we're shortest of.
+	for i in idle:
+		var kind := _short_of(w, n, w.units.x[i], w.units.y[i])
+		if kind > 0:
+			w.issue(player, Commands.GATHER, {"ids": [w.units.id[i]], "cell": _nearest_resource(w, w.units.x[i], w.units.y[i], kind)})
+			n[kind - 1] += 1
+	# New workers go where we're short.
+	var rally_kind := _short_of(w, n, bs.cx[tc] * 1000 + 1500, bs.cy[tc] * 1000 + 1500)
+	var rally := _nearest_resource(w, bs.cx[tc] * 1000 + 1500, bs.cy[tc] * 1000 + 1500, rally_kind) if rally_kind > 0 else -1
 	if rally >= 0 and w.map.cell_of(bs.rally_x[tc], bs.rally_y[tc]) != rally:
 		w.issue(player, Commands.RALLY, {"building": bs.id[tc], "x": (rally % w.map.width) * 1000 + 500, "y": (rally / w.map.width) * 1000 + 500})
 	# Age up: with enough workers, save up and click it.
@@ -99,6 +91,31 @@ func think(w) -> void:
 		if builder >= 0 and spot.x >= 0:
 			w.issue(player, Commands.BUILD, {"ids": [w.units.id[builder]], "building": "house", "cx": spot.x, "cy": spot.y})
 			_next_house = w.tick + HOUSE_COOLDOWN
+
+
+## The resource (1-based kind) furthest below its share in this age's mix that has some left
+## on the map, or 0. Ties go to the earlier resource.
+func _short_of(w, n: PackedInt32Array, x: int, y: int) -> int:
+	var mix: Dictionary = MIX[1]
+	var keys := MIX.keys()
+	keys.sort()
+	for age in keys:
+		if int(age) <= w.ages[player]:
+			mix = MIX[age]
+	var total := 1
+	for v in n:
+		total += v
+	var best := 0
+	var best_gap := -(1 << 30)
+	for r in w.resources.size():
+		var pct: int = int(mix.get(w.resources[r], 0))
+		if pct <= 0:
+			continue
+		var gap := pct * total - n[r] * 100
+		if gap > best_gap and _nearest_resource(w, x, y, r + 1) >= 0:
+			best_gap = gap
+			best = r + 1
+	return best
 
 
 func _town_center(w) -> int:
