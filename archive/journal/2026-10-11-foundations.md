@@ -114,3 +114,8 @@ D-070 (restrictions as layers with a host switch), D-072 (unit textures: big mar
 - Tier-2 and tier-3 woodland kit (turtle-shell shields, thorn spears, chitin armour): frogs reach
   for bronze and iron today.
 - Creature variants per line (roster-template.md).
+
+### RB1: large rat options
+Four large rodents modelled as concepts (capybara cavalry, porcupine, naked mole-rat, sewer
+brute). Capybara and porcupine read straight away; the mole-rat came out as a pink pig and the
+brute's snout looks like a trunk (both noted, not fixed: Dominic picks first). Claude's pick: capybara.

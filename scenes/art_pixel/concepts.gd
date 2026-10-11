@@ -490,6 +490,95 @@ func _concept_rat_can_scutum(c: Dictionary) -> Dictionary:
 	return {"node": n}
 
 
+
+# ------------------------------------------------------------------ RB1: the rats' large unit
+# Options for a large rodent that isn't just a bigger rat (Dominic). Low and wide or spiky, so
+# the silhouette says "big" without only being taller.
+
+func _rodent_legs(n: Node3D, m: Material, hips: Array, r: float, h: float) -> void:
+	for hp in hips:
+		n.add_child(rod(hp, hp + Vector3(0.5, -h, 0), r, r * 0.8, m))
+		n.add_child(blob(Vector3(r * 1.5, r * 0.6, r * 1.1), m, hp + Vector3(1.2, -h, 0)))
+
+
+## Capybara "big cousin" cavalry: a barrel body, a blunt square head, tiny ears, a tea-towel saddle.
+func _concept_capybara_body(c: Dictionary) -> Dictionary:
+	var n := Node3D.new()
+	var fur := surf("rat_fur", Color("#9a6a40"), 5.0)
+	n.add_child(blob(Vector3(13.0, 8.0, 8.5), fur, Vector3(0, 12, 0)))
+	_rodent_legs(n, fur, [Vector3(8, 6, 5), Vector3(8, 6, -5), Vector3(-8, 6, 5.5), Vector3(-8, 6, -5.5)], 2.4, 5.0)
+	var head := Node3D.new()
+	head.position = Vector3(13, 15, 0)
+	n.add_child(head)
+	head.add_child(_box(Vector3(9.0, 6.0, 6.0), fur, Vector3(3.5, 0, 0), Vector3(0, 0, -12)))   # the blunt square head
+	head.add_child(_box(Vector3(2.0, 3.6, 4.8), surf("rat_fur", Color("#5a3e26"), 4.0), Vector3(7.8, -1.2, 0), Vector3(0, 0, -12)))   # its flat nose
+	for side in [1, -1]:
+		head.add_child(blob(Vector3(0.9, 1.0, 0.7), fur, Vector3(-0.2, 3.4, 2.6 * side)))   # tiny ears
+		head.add_child(blob(Vector3(0.45, 0.45, 0.45), plain(INK), Vector3(3.4, 1.8, 2.9 * side)))
+	n.add_child(_box(Vector3(9.0, 1.0, 12.0), plain(Color("#e8e0d0")), Vector3(-1, 20.2, 0)))   # tea-towel saddle
+	n.add_child(_box(Vector3(9.2, 1.1, 2.4), plain(c.team), Vector3(-1, 20.3, 0)))              # its team stripe
+	return {"node": n, "sockets": {"head": Vector3(13, 22, 0), "hand_r": Vector3(6, 18, 6), "hand_l": Vector3(6, 18, -6),
+		"torso": Vector3(0, 12, 0), "back": Vector3(-8, 18, 0)}, "anchors": [], "torso_scale": Vector2(1.4, 0.9)}
+
+
+## Porcupine pin-fortress: low, with a fan of quills that breaks the outline from every side.
+func _concept_porcupine_body(c: Dictionary) -> Dictionary:
+	var n := Node3D.new()
+	var fur := surf("rat_fur", Color("#4a3a2e"), 5.0)
+	var quill := plain(Color("#e8e0c8"))
+	var dark := plain(Color("#2a2420"))
+	n.add_child(blob(Vector3(11.0, 7.5, 8.0), fur, Vector3(0, 10, 0)))
+	_rodent_legs(n, fur, [Vector3(6, 5, 4.5), Vector3(6, 5, -4.5), Vector3(-6, 5, 4.5), Vector3(-6, 5, -4.5)], 1.8, 4.0)
+	var k := 0
+	for a in range(-150, 151, 15):   # quills over the back, fanning out
+		for row in 3:
+			var ang := deg_to_rad(a)
+			var base := Vector3(-2.0 + row * 3.5, 14 + cos(ang) * 2.0, sin(ang) * 6.0)
+			var tip := base + Vector3(-5.0 - row, 6.0 + cos(ang) * 4.0, sin(ang) * 6.0)
+			n.add_child(rod(base, tip, 0.45, 0.12, quill if (k + row) % 3 != 0 else dark, false))
+		k += 1
+	n.add_child(blob(Vector3(4.0, 3.4, 3.4), fur, Vector3(10.5, 9.0, 0)))   # a small blunt head, low and forward
+	n.add_child(blob(Vector3(0.6, 0.6, 0.6), plain(Color("#3a2a24")), Vector3(14.2, 8.4, 0)))
+	for side in [1, -1]:
+		n.add_child(blob(Vector3(0.45, 0.45, 0.45), plain(INK), Vector3(12.4, 10.0, 1.9 * side)))
+	return {"node": n, "sockets": {"head": Vector3(10, 13, 0), "hand_r": Vector3(9, 8, 5), "hand_l": Vector3(9, 8, -5),
+		"torso": Vector3(0, 10, 0), "back": Vector3(-6, 16, 0)}, "anchors": [], "torso_scale": Vector2(1.2, 0.8)}
+
+
+## Naked mole-rat rammer: pink, wrinkled, low and long, big cream incisors, no ears.
+func _concept_molerat_body(c: Dictionary) -> Dictionary:
+	var n := Node3D.new()
+	var skin := surf("frog_skin", Color("#e8a8a0"), 4.0)
+	n.add_child(blob(Vector3(14.0, 6.5, 6.8), skin, Vector3(0, 8, 0)))
+	for k in 6:   # wrinkles
+		n.add_child(ring(5.8 - absf(k - 2.5) * 0.5, 6.8 - absf(k - 2.5) * 0.5, surf("frog_skin", Color("#c88880"), 4.0), Vector3(-9 + k * 3.6, 8, 0), Vector3(0, 0, 90)))
+	_rodent_legs(n, skin, [Vector3(8, 4, 4.5), Vector3(8, 4, -4.5), Vector3(-8, 4, 4.5), Vector3(-8, 4, -4.5)], 1.6, 3.0)
+	n.add_child(blob(Vector3(5.0, 4.2, 4.6), skin, Vector3(14, 8.5, 0)))   # the head
+	for side in [1, -1]:
+		n.add_child(_box(Vector3(1.0, 3.0, 1.0), plain(Color("#f4ead0")), Vector3(18.6, 6.2, 0.7 * side), Vector3(0, 0, -15)))   # incisors
+		n.add_child(blob(Vector3(0.3, 0.3, 0.3), plain(INK), Vector3(16.2, 10.4, 2.4 * side)))   # tiny eyes
+	return {"node": n, "sockets": {"head": Vector3(14, 12, 0), "hand_r": Vector3(10, 8, 5), "hand_l": Vector3(10, 8, -5),
+		"torso": Vector3(0, 8, 0), "back": Vector3(-6, 14, 0)}, "anchors": [], "torso_scale": Vector2(1.4, 0.7)}
+
+
+## Sewer brute: the same rat, a different build: hunched over huge forearms, knuckles on the ground.
+func _concept_brute_body(c: Dictionary) -> Dictionary:
+	var n := Node3D.new()
+	var fur := surf("rat_fur", c.skin, 6.0)
+	var pink := surf("frog_belly", c.skin2, 5.0)
+	n.add_child(blob(Vector3(9.0, 9.0, 8.5), fur, Vector3(-1, 15, 0), Vector3(0, 0, 40)))   # a hunched hump of a back
+	n.add_child(blob(Vector3(5.0, 6.0, 5.6), pink, Vector3(3.5, 12, 0), Vector3(0, 0, 40)))
+	for side in [1, -1]:   # huge forearms down to the knuckles
+		n.add_child(rod(Vector3(4, 19, 6.5 * side), Vector3(9, 9, 7.5 * side), 3.4, 3.0, fur))
+		n.add_child(rod(Vector3(9, 9, 7.5 * side), Vector3(10, 1.5, 7 * side), 3.0, 2.6, fur))
+		n.add_child(blob(Vector3(2.8, 2.0, 2.6), pink, Vector3(10.5, 1.2, 7 * side)))
+	n.add_child(_box(Vector3(6, 3, 0.8), plain(c.team), Vector3(-1, 21, 0), Vector3(0, 0, 40)))   # a team rag over the hump
+	for side in [1, -1]:
+		n.add_child(rod(Vector3(-4, 8, 3.5 * side), Vector3(-3.5, 1, 4 * side), 2.2, 1.6, fur))
+		n.add_child(blob(Vector3(2.6, 0.8, 1.6), pink, Vector3(-2.2, 0.6, 4 * side)))
+	return {"node": n, "sockets": {"head": Vector3(8, 18, 0), "hand_r": Vector3(10, 4, 7.5), "hand_l": Vector3(10, 4, -7.5),
+		"torso": Vector3(0, 14, 0), "back": Vector3(-6, 20, 0)}, "anchors": [], "torso_scale": Vector2(1.2, 1.0)}
+
 func _box(size: Vector3, m: Material, pos: Vector3, rot := Vector3.ZERO) -> MeshInstance3D:
 	var b := BoxMesh.new()
 	b.size = size
@@ -499,3 +588,8 @@ func _box(size: Vector3, m: Material, pos: Vector3, rot := Vector3.ZERO) -> Mesh
 	mi.position = pos
 	mi.rotation_degrees = rot
 	return mi
+
+
+## No head (bodies that carry their own).
+func _concept_empty(c: Dictionary) -> Dictionary:
+	return {"node": Node3D.new(), "sockets": {"top": Vector3.ZERO}}
