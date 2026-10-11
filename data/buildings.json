@@ -8,7 +8,7 @@
  "tree": ["town_center", "house", "farm", "mill", "lumber_camp", "mining_camp", "barracks", "outpost", "palisade", "palisade_gate",
   "archery_range", "stable", "armoury", "market", "watchtower", "wall", "stone_gate", "siege_workshop", "university", "temple", "castle", "wonder"],
  "_tree_doc": "the tech tree page's columns, left to right (scenes/tech_tree.gd); a building missing here goes after these, by age. Buildings with \"status\": \"planned\" are drawn on the page as blank frames and skipped by the sim, the build menus and the art bakes (milestone 12)",
- "_walls_doc": "\"line\": placed by dragging a line of tiles (walls, gates); \"gate\": blocks like a wall but its owner's team walks through it; \"replaces\": building types of your own it may be dropped on, taking their place (a gate into a wall line)",
+ "_walls_doc": "\"line\": placed by dragging a line of tiles (walls); \"gate\": blocks like a wall but its owner's team walks through it; \"length\": a gate's footprint is length x size, turned to run along sim x or sim y (chosen at placement, from the wall under it); \"replaces\": building types of your own it may be dropped on, taking their place (a gate into a wall line)",
  "age_looks": {
   "junk": {
    "town_center": {
@@ -381,7 +381,7 @@
   },
   "palisade_gate": {
    "name": "Palisade Gate",
-   "desc": "A stake gate: drop it on your palisade (or open ground). It opens for your side and stays shut to everyone else.",
+   "desc": "A stake gate three tiles long: drop it on your palisade and it follows the line (on open ground, R turns it). It opens for your side and stays shut to everyone else.",
    "size": 1,
    "hp": 400,
    "cost": {
@@ -400,15 +400,15 @@
     "pierce": 6
    },
    "note": "opens for its owner's team",
-   "line": true,
    "gate": true,
+   "length": 3,
    "replaces": [
     "palisade"
    ]
   },
   "stone_gate": {
    "name": "Stone Gate",
-   "desc": "A stone gatehouse: drop it on your stone wall (or open ground). It opens for your side and stays shut to everyone else.",
+   "desc": "A stone gatehouse three tiles long: drop it on your stone wall and it follows the line (on open ground, R turns it). It opens for your side and stays shut to everyone else.",
    "size": 1,
    "hp": 1800,
    "cost": {
@@ -428,8 +428,8 @@
     "pierce": 10
    },
    "note": "opens for its owner's team",
-   "line": true,
    "gate": true,
+   "length": 3,
    "replaces": [
     "wall"
    ]

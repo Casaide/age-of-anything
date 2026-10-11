@@ -48,7 +48,7 @@ static func load_btypes(resources: Array) -> Array:
 	for id in ids:
 		var b: Dictionary = d.buildings[id]
 		out.append({
-			"id": id, "name": b.name, "desc": b.get("desc", ""), "hotkey": b.get("hotkey", ""), "size": int(b.size), "hp": int(b.hp),
+			"id": id, "name": b.name, "desc": b.get("desc", ""), "hotkey": b.get("hotkey", ""), "size": int(b.size), "length": int(b.get("length", b.size)), "hp": int(b.hp),
 			"cost": cost_vector(resources, b.cost), "drop": PackedByteArray(resources.map(func(r): return 1 if r in b.drop_off else 0)),
 			"water": bool(b.get("water", false)), "becomes": b.get("becomes", {}).duplicate(),
 			"food": int(b.get("food", 0)), "reseed": cost_vector(resources, b.get("reseed", {})),
@@ -58,6 +58,12 @@ static func load_btypes(resources: Array) -> Array:
 			"line": bool(b.get("line", false)), "replaces": b.get("replaces", []).duplicate(),
 		})
 	return out
+
+
+## A building type's footprint in cells (x, y): size x size, but a gate is `length` long along
+## its wall line, which runs along sim x (along 0) or sim y (along 1).
+static func dims(t: Dictionary, along := 0) -> Vector2i:
+	return Vector2i(t.length, t.size) if along == 0 else Vector2i(t.size, t.length)
 
 
 static func btype_of(w, id: String) -> int:
@@ -106,10 +112,11 @@ static func setup(w) -> void:
 	update_pop(w)
 
 
-## Put a building (unbuilt) on the map and return its slot.
-static func place(w, player: int, k: int, cx: int, cy: int) -> int:
+## Put a building (unbuilt) on the map and return its slot (`along`: which way a gate runs, see dims).
+static func place(w, player: int, k: int, cx: int, cy: int, along := 0) -> int:
 	var t: Dictionary = w.btypes[k]
-	var i: int = w.buildings.add(w.next_id, player, k, cx, cy, t.size, 1)
+	var d := dims(t, along)
+	var i: int = w.buildings.add(w.next_id, player, k, cx, cy, d.x, d.y, 1)
 	w.next_id += 1
 	w.map.occupy(w.buildings.footprint(i, w.map.width), w.buildings.id[i], w.teams[player] if t.gate else -1)
 	if t.gate:
@@ -150,22 +157,24 @@ static func lay_foundation(w, player: int, a: Dictionary) -> int:
 	var t: Dictionary = w.btypes[k]
 	if _own_workers(w, player, a.ids).is_empty() or not w.can_afford(player, t.cost) or w.ages[player] < t.age:
 		return 0
-	if not can_place(w, player, k, a.cx, a.cy):
+	var along := int(a.get("along", 0))
+	if not can_place(w, player, k, a.cx, a.cy, along):
 		return 0
 	w.pay(player, t.cost)
-	for c in _footprint(w, a.cx, a.cy, t.size):
+	for c in _footprint(w, a.cx, a.cy, dims(t, along)):
 		if _replaceable(w, player, t, c):
 			demolish(w, w.buildings.index_of(w.map.occupied[c]))   # a gate dropped into a wall takes its place
-	return w.buildings.id[place(w, player, k, a.cx, a.cy)]
+	return w.buildings.id[place(w, player, k, a.cx, a.cy, along)]
 
 
 ## Can this player put a building of type k here? On open ground as usual, or (a gate) over
 ## its own wall tiles of the types it `replaces`.
-static func can_place(w, player: int, k: int, cx: int, cy: int) -> bool:
+static func can_place(w, player: int, k: int, cx: int, cy: int, along := 0) -> bool:
 	var t: Dictionary = w.btypes[k]
 	var mc := builder_class(w, player)
-	for y in range(cy, cy + t.size):
-		for x in range(cx, cx + t.size):
+	var d := dims(t, along)
+	for y in range(cy, cy + d.y):
+		for x in range(cx, cx + d.x):
 			var ok: bool = w.map.can_build(x, y, 1, mc, t.water)
 			if not ok and not (x >= 0 and y >= 0 and x < w.map.width and y < w.map.height and _replaceable(w, player, t, y * w.map.width + x)):
 				return false
@@ -181,10 +190,10 @@ static func _replaceable(w, player: int, t: Dictionary, c: int) -> bool:
 	return b >= 0 and w.buildings.owner[b] == player and w.btypes[w.buildings.kind[b]].id in t.replaces
 
 
-static func _footprint(w, cx: int, cy: int, size: int) -> PackedInt32Array:
+static func _footprint(w, cx: int, cy: int, d: Vector2i) -> PackedInt32Array:
 	var out := PackedInt32Array()
-	for y in range(cy, cy + size):
-		for x in range(cx, cx + size):
+	for y in range(cy, cy + d.y):
+		for x in range(cx, cx + d.x):
 			out.append(y * w.map.width + x)
 	return out
 
@@ -538,8 +547,7 @@ static func _cell_rect(w, cell: int) -> Rect2i:
 
 static func _building_rect(w, b: int) -> Rect2i:
 	var bs = w.buildings
-	var s: int = bs.size[b] * SimMap.TILE
-	return Rect2i(bs.cx[b] * SimMap.TILE, bs.cy[b] * SimMap.TILE, s - 1, s - 1)
+	return Rect2i(bs.cx[b] * SimMap.TILE, bs.cy[b] * SimMap.TILE, bs.sx[b] * SimMap.TILE - 1, bs.sy[b] * SimMap.TILE - 1)
 
 
 ## Is unit i's body within REACH of the rect?
@@ -608,8 +616,7 @@ static func nearest_drop_off(w, i: int) -> int:
 		var t: Dictionary = w.btypes[bs.kind[b]]
 		if u.carry_kind[i] <= 0 or t.drop[u.carry_kind[i] - 1] == 0:
 			continue
-		var half: int = bs.size[b] * SimMap.TILE / 2
-		var d2 := Fixed.dist2(u.x[i], u.y[i], bs.cx[b] * SimMap.TILE + half, bs.cy[b] * SimMap.TILE + half)
+		var d2 := Fixed.dist2(u.x[i], u.y[i], bs.cx[b] * SimMap.TILE + bs.sx[b] * SimMap.TILE / 2, bs.cy[b] * SimMap.TILE + bs.sy[b] * SimMap.TILE / 2)
 		if d2 < best_d2:
 			best_d2 = d2
 			best = b
@@ -679,14 +686,15 @@ static func spawn_at(w, b: int, k: int) -> int:
 	var m = w.map
 	var cx: int = bs.cx[b]
 	var cy: int = bs.cy[b]
-	var s: int = bs.size[b]
-	var gx: int = bs.rally_x[b] if bs.rally_x[b] >= 0 else (cx + s) * SimMap.TILE
-	var gy: int = bs.rally_y[b] if bs.rally_x[b] >= 0 else (cy + s) * SimMap.TILE
+	var sx: int = bs.sx[b]
+	var sy: int = bs.sy[b]
+	var gx: int = bs.rally_x[b] if bs.rally_x[b] >= 0 else (cx + sx) * SimMap.TILE
+	var gy: int = bs.rally_y[b] if bs.rally_x[b] >= 0 else (cy + sy) * SimMap.TILE
 	var best := -1
 	var best_d2 := 1 << 62
-	for y in range(cy - 1, cy + s + 1):
-		for x in range(cx - 1, cx + s + 1):
-			var edge: bool = x == cx - 1 or x == cx + s or y == cy - 1 or y == cy + s
+	for y in range(cy - 1, cy + sy + 1):
+		for x in range(cx - 1, cx + sx + 1):
+			var edge: bool = x == cx - 1 or x == cx + sx or y == cy - 1 or y == cy + sy
 			if not edge or not m.cell_walkable(x, y, w.lane_base[bs.owner[b]] + w.types[k].mclass):
 				continue
 			var d2 := Fixed.dist2(gx, gy, x * SimMap.TILE + 500, y * SimMap.TILE + 500)

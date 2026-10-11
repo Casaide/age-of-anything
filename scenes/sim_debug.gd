@@ -19,6 +19,7 @@ const Iso := preload("res://src/view/iso.gd")
 const ArtKit := preload("res://src/view/art/art_kit.gd")
 const TerrainView := preload("res://src/view/art/terrain_view.gd")
 const BuildingArt := preload("res://src/view/art/building_art.gd")
+const Models := preload("res://src/view/art/bake/models.gd")
 const Paths := preload("res://scenes/art_pixel/paths.gd")
 const CombatFx := preload("res://src/view/combat_fx.gd")
 const Tech := preload("res://src/sim/tech.gd")
@@ -122,6 +123,7 @@ var selected_resource := -1 # a resource cell clicked to see what's left, or -1
 var active := 0             # the side you're commanding
 var placing := ""           # building type being placed, or ""
 var wall_from := Vector2i(-1, -1)   # where a wall drag started (a cell), while placing walls
+var gate_along := 0                  # which way a gate goes on open ground (0: along sim x, 1: along y; R turns it)
 var flags: Array = []       # [{pos, t}] recent move targets
 var rally_flag: Sprite2D    # the selected building's rally point (a baked prop), or null
 var playback := {}          # the replay being played, or empty when live
@@ -421,11 +423,11 @@ func _refresh_paths() -> void:
 	for p in world.races.size():
 		var mine := []
 		for b in bs.count():
-			if bs.owner[b] == p and bs.done[b] == 1:
+			if bs.owner[b] == p and bs.done[b] == 1 and not _wall_like(b):   # no path to every wall tile
 				mine.append(b)
 		if mine.is_empty():
 			continue
-		mine.sort_custom(func(a, b): return bs.size[a] > bs.size[b] or (bs.size[a] == bs.size[b] and bs.id[a] < bs.id[b]))
+		mine.sort_custom(func(a, b): return bs.sx[a] * bs.sy[a] > bs.sx[b] * bs.sy[b] or (bs.sx[a] * bs.sy[a] == bs.sx[b] * bs.sy[b] and bs.id[a] < bs.id[b]))
 		var style: Dictionary = lib.families[world.races[p].family].get("paths", {"style": "trail", "width": 0.36})
 		var hub := _door(mine[0])
 		var targets := []
@@ -442,7 +444,7 @@ func _refresh_paths() -> void:
 ## The spot in front of a building's door (doors face +y, the viewer's lower left).
 func _door(b: int) -> Vector2:
 	var bs := world.buildings
-	return Vector2(bs.cx[b] + bs.size[b] * 0.5, bs.cy[b] + bs.size[b] + 0.45)
+	return Vector2(bs.cx[b] + bs.sx[b] * 0.5, bs.cy[b] + bs.sy[b] + 0.45)
 
 
 ## The free tile beside a resource of this kind that's nearest the hub (within reach).
@@ -581,6 +583,9 @@ func _play_key(event: InputEventKey) -> bool:
 		KEY_F2:
 			toggle_tech_tree()
 			return true
+	if k == KEY_R and placing != "" and world.btypes[Economy.btype_of(world, placing)].gate:
+		gate_along = 1 - gate_along   # turn the gate (on a wall it follows the wall anyway)
+		return true
 	if _selected_workers().size() < _selected_by_owner()[active].size():   # any soldiers in the selection
 		if k == KEY_R:   # soldiers: attack-move (then click where)
 			arming_attack = true
@@ -1081,7 +1086,7 @@ func _play_events() -> void:
 				if selected_building == e.id:
 					selected_building = 0
 				var t: Dictionary = world.btypes[e.kind]
-				fx.collapse(bv, Iso.to_screen(e.x, e.y), int(t.size))
+				fx.collapse(bv, Iso.to_screen(e.x, e.y), int(t.length))
 				if bv.visible and _on_screen(bv.position):
 					audio.play("building_fall", -2.0)
 
@@ -1107,7 +1112,7 @@ func _event_target_pos(id: int) -> Vector2:
 	var b := world.buildings.index_of(id)
 	if b >= 0:
 		var bs := world.buildings
-		return Iso.to_screen((bs.cx[b] + bs.size[b] * 0.5) * 1000, (bs.cy[b] + bs.size[b] * 0.5) * 1000) - Vector2(0, 20)
+		return Iso.to_screen((bs.cx[b] + bs.sx[b] * 0.5) * 1000, (bs.cy[b] + bs.sy[b] * 0.5) * 1000) - Vector2(0, 20)
 	return Vector2.INF
 
 
@@ -1251,11 +1256,40 @@ func start_placing(building: String) -> void:
 		placing = building
 
 
-## Top-left cell of the footprint the ghost shows at a canvas point.
+## Top-left cell of the footprint the ghost shows at a canvas point (centred on the cursor).
 func _ghost_cell(pos: Vector2) -> Vector2i:
 	var m := Iso.to_milli(pos)
-	var size: int = world.btypes[Economy.btype_of(world, placing)].size
-	return Vector2i(m.x / 1000 - (size - 1) / 2, m.y / 1000 - (size - 1) / 2)
+	var d := Economy.dims(world.btypes[Economy.btype_of(world, placing)], _ghost_along(pos))
+	return Vector2i(floori(m.x / 1000.0) - (d.x - 1) / 2, floori(m.y / 1000.0) - (d.y - 1) / 2)
+
+
+## Which way a gate being placed runs: along the wall under the cursor (walls or gates beside
+## it along sim x, or else along sim y), else the way R last turned it. 0 for other buildings.
+func _ghost_along(pos: Vector2) -> int:
+	var t: Dictionary = world.btypes[Economy.btype_of(world, placing)]
+	if not t.gate:
+		return 0
+	var m := Iso.to_milli(pos)
+	var c := Vector2i(floori(m.x / 1000.0), floori(m.y / 1000.0))
+	var along_x := _walled(c + Vector2i(-1, 0)) or _walled(c + Vector2i(1, 0))
+	var along_y := _walled(c + Vector2i(0, -1)) or _walled(c + Vector2i(0, 1))
+	if along_x != along_y:
+		return 0 if along_x else 1
+	return gate_along
+
+
+## Does a wall or gate stand on this cell?
+func _walled(c: Vector2i) -> bool:
+	if c.x < 0 or c.y < 0 or c.x >= map.width or c.y >= map.height:
+		return false
+	var b := world.buildings.index_of(map.occupied[c.y * map.width + c.x])
+	return b >= 0 and _wall_like(b)
+
+
+## Is building slot b part of a wall line (a wall tile or a gate)?
+func _wall_like(b: int) -> bool:
+	var t: Dictionary = world.btypes[world.buildings.kind[b]]
+	return t.line or t.gate
 
 
 func place_at(pos: Vector2, keep := false) -> void:
@@ -1265,7 +1299,10 @@ func place_at(pos: Vector2, keep := false) -> void:
 		placing = ""
 		return
 	# Shift both keeps placing and queues: shift-place two houses and a worker builds both in turn.
-	world.issue(active, Commands.BUILD, {"ids": workers, "building": placing, "cx": c.x, "cy": c.y, "queue": 1 if keep else 0})
+	var a := {"ids": workers, "building": placing, "cx": c.x, "cy": c.y, "queue": 1 if keep else 0}
+	if world.btypes[Economy.btype_of(world, placing)].gate:
+		a.along = _ghost_along(pos)
+	world.issue(active, Commands.BUILD, a)
 	if not keep:
 		placing = ""
 
@@ -1470,7 +1507,7 @@ func _work_point(i: int) -> Vector2:
 		return Iso.to_screen((c % map.width) * 1000 + 500, (c / map.width) * 1000 + 500)
 	var b := world.buildings.index_of(u.target[i])
 	var bs := world.buildings
-	return Iso.to_screen((bs.cx[b] * 2 + bs.size[b]) * 500, (bs.cy[b] * 2 + bs.size[b]) * 500)
+	return Iso.to_screen((bs.cx[b] * 2 + bs.sx[b]) * 500, (bs.cy[b] * 2 + bs.sy[b]) * 500)
 
 
 ## Fog of war for the side you command: the overlay, enemy units only where you see now,
@@ -1491,36 +1528,27 @@ func _sync_fog() -> void:
 			bv.visible = reveal or not world.is_enemy(active, bs.owner[b]) or Fog.explored(world, active, bs.cx[b], bs.cy[b])
 
 
-## Does the wall a gate stands in run along sim y (walls or gates above or below it, none beside)?
-func _runs_along_y(b: int) -> bool:
+## Which neighbours a finished wall tile's arms reach (bit k: Models.LINKS[k]): finished walls
+## and gates beside it, and corner to corner where no wall beside both closes the corner
+## already (an L turns at its corner tile rather than cutting across it).
+func _links(b: int) -> int:
 	var bs := world.buildings
-	var beside := func(dx: int, dy: int) -> bool:
-		var x: int = bs.cx[b] + dx
-		var y: int = bs.cy[b] + dy
+	var on := func(d: Vector2i) -> bool:
+		var x: int = bs.cx[b] + d.x
+		var y: int = bs.cy[b] + d.y
 		if x < 0 or y < 0 or x >= map.width or y >= map.height:
 			return false
 		var o := bs.index_of(map.occupied[y * map.width + x])
-		return o >= 0 and world.btypes[bs.kind[o]].line
-	return not (beside.call(-1, 0) or beside.call(1, 0)) and (beside.call(0, -1) or beside.call(0, 1))
-
-
-## Is a unit of the gate's side (not an enemy of its owner) at or next to it? Then it shows open.
-func _friend_at(b: int) -> bool:
-	var bs := world.buildings
-	var u := world.units
-	var sp = world.spatial
-	for y in range(maxi(bs.cy[b] - 1, 0), mini(bs.cy[b] + 2, sp.height)):
-		for x in range(maxi(bs.cx[b] - 1, 0), mini(bs.cx[b] + 2, sp.width)):
-			var c: int = y * sp.width + x
-			for k in range(sp.start[c], sp.start[c + 1]):
-				var j: int = sp.items[k]
-				if j >= u.count() or u.owner[j] == world.gaia or world.is_enemy(u.owner[j], bs.owner[b]):
-					continue
-				var dx: int = u.x[j] - (bs.cx[b] * 1000 + 500)
-				var dy: int = u.y[j] - (bs.cy[b] * 1000 + 500)
-				if dx * dx + dy * dy < 1300 * 1300:
-					return true
-	return false
+		return o >= 0 and o != b and bs.done[o] == 1 and _wall_like(o)
+	var out := 0
+	for k in Models.LINKS.size():
+		var d: Vector2i = Models.LINKS[k]
+		if not on.call(d):
+			continue
+		if d.x != 0 and d.y != 0 and (on.call(Vector2i(d.x, 0)) or on.call(Vector2i(0, d.y))):
+			continue
+		out |= 1 << k
+	return out
 
 
 func _sync_buildings() -> void:
@@ -1533,31 +1561,31 @@ func _sync_buildings() -> void:
 	for b in bs.count():
 		var id := bs.id[b]
 		var view: BuildingArt = bviews.get(id)
-		var look := kit.building_key(lib.architecture(world.races[bs.owner[b]]), world.btypes[bs.kind[b]].id, world.ages[bs.owner[b]],
+		var t: Dictionary = world.btypes[bs.kind[b]]
+		var look := kit.building_key(lib.architecture(world.races[bs.owner[b]]), t.id, world.ages[bs.owner[b]],
 			(id * 7 + bs.cx[b] * 3 + bs.cy[b]) % 4)   # which house variant: steady per building, varied along a street
-		if world.btypes[bs.kind[b]].gate and _runs_along_y(b) and kit.buildings.has(look + ArtKit.ALONG_Z):
-			look += ArtKit.ALONG_Z   # a gate turns to face the way its wall runs
+		if t.gate and bs.sy[b] > bs.sx[b] and kit.buildings.has(look + ArtKit.ALONG_Z):
+			look += ArtKit.ALONG_Z   # a gate laid along sim y is baked turned that way
 		if view != null and view.get_meta("look", look) != look:
 			view.queue_free()   # its owner aged up and this building grew with them
 			bviews.erase(id)
 			view = null
 		if view == null:
-			var t: Dictionary = world.btypes[bs.kind[b]]
-			var arch: String = lib.architecture(world.races[bs.owner[b]])
 			view = BuildingArt.new()
-			view.setup(kit, look, bs.cx[b], bs.cy[b], bs.size[b], Color(lib.palettes.teams[bs.owner[b]]))
+			view.setup(kit, look, bs.cx[b], bs.cy[b], bs.sx[b], bs.sy[b], Color(lib.palettes.teams[bs.owner[b]]))
 			view.set_meta("look", look)
 			layer.add_child(view)
 			bviews[id] = view
-			_clear_doodads(bs.cx[b], bs.cy[b], bs.size[b])
-		var t: Dictionary = world.btypes[bs.kind[b]]
+			_clear_doodads(bs.cx[b], bs.cy[b], bs.sx[b], bs.sy[b])
 		if bs.done[b] == 1 and not view.get_meta("done", false):
 			if view.has_meta("done") and bs.owner[b] == active:
 				audio.play("built", -4.0)   # finished while you watched (not the ones there from the start)
 		view.set_meta("done", bs.done[b] == 1)
 		view.set_state(bs.done[b] == 1, float(bs.progress[b]) / float(t.build_ticks))
+		if t.line:
+			view.set_links(_links(b) if bs.done[b] == 1 else 0)
 		if t.gate:
-			view.set_open(_friend_at(b))
+			view.set_open(BuildingArt.gate_open(world, b))
 		if bs.done[b] == 1 and not t.becomes.is_empty() and view.get_parent() == layer:
 			view.reparent(flat)   # a sown farm is walked across: it lies under the units
 	var built := 0
@@ -1569,9 +1597,9 @@ func _sync_buildings() -> void:
 
 
 ## Doodads under (and right around) a new building go.
-func _clear_doodads(cx: int, cy: int, size: int) -> void:
-	for y in range(cy - 1, cy + size + 1):
-		for x in range(cx - 1, cx + size + 1):
+func _clear_doodads(cx: int, cy: int, sx: int, sy: int) -> void:
+	for y in range(cy - 1, cy + sy + 1):
+		for x in range(cx - 1, cx + sx + 1):
 			var c := y * map.width + x
 			if x >= 0 and y >= 0 and x < map.width and y < map.height and doodads.has(c):
 				for n in doodads[c]:
@@ -2204,27 +2232,30 @@ func _draw_overlay() -> void:
 	var b := world.buildings.index_of(selected_building)
 	if b >= 0:
 		var bs := world.buildings
-		var s := bs.size[b] * 1000
+		var sx := bs.sx[b] * 1000
+		var sy := bs.sy[b] * 1000
 		var x0 := bs.cx[b] * 1000
 		var y0 := bs.cy[b] * 1000
-		var pts := PackedVector2Array([Iso.to_screen(x0, y0), Iso.to_screen(x0 + s, y0), Iso.to_screen(x0 + s, y0 + s),
-			Iso.to_screen(x0, y0 + s), Iso.to_screen(x0, y0)])
+		var pts := PackedVector2Array([Iso.to_screen(x0, y0), Iso.to_screen(x0 + sx, y0), Iso.to_screen(x0 + sx, y0 + sy),
+			Iso.to_screen(x0, y0 + sy), Iso.to_screen(x0, y0)])
 		overlay.draw_polyline(pts, Color(0, 0, 0, 0.6), 4.0 / camera.zoom.x)
 		overlay.draw_polyline(pts, RING, 2.0 / camera.zoom.x)
 		if bs.rally_x[b] >= 0:
 			var rp := Iso.to_screen(bs.rally_x[b], bs.rally_y[b])
-			overlay.draw_line(Iso.to_screen(x0 + s / 2, y0 + s / 2), rp, Color(RING, 0.4), 1.0 / camera.zoom.x)   # the flag itself is in the marks
+			overlay.draw_line(Iso.to_screen(x0 + sx / 2, y0 + sy / 2), rp, Color(RING, 0.4), 1.0 / camera.zoom.x)   # the flag itself is in the marks
 	if placing != "":
 		var c := _ghost_cell(get_global_mouse_position())
-		var size: int = world.btypes[Economy.btype_of(world, placing)].size
+		var along := _ghost_along(get_global_mouse_position())
+		var d := Economy.dims(world.btypes[Economy.btype_of(world, placing)], along)
 		var ghosts := wall_cells(wall_from, c) if _line(placing) and wall_from.x >= 0 else [c]
 		for g in ghosts:
-			var ok := Economy.can_place(world, active, Economy.btype_of(world, placing), g.x, g.y)
+			var ok := Economy.can_place(world, active, Economy.btype_of(world, placing), g.x, g.y, along)
 			var x0: int = g.x * 1000
 			var y0: int = g.y * 1000
-			var s := size * 1000
-			overlay.draw_colored_polygon(PackedVector2Array([Iso.to_screen(x0, y0), Iso.to_screen(x0 + s, y0),
-				Iso.to_screen(x0 + s, y0 + s), Iso.to_screen(x0, y0 + s)]), GOOD if ok else BAD)
+			var sx := d.x * 1000
+			var sy := d.y * 1000
+			overlay.draw_colored_polygon(PackedVector2Array([Iso.to_screen(x0, y0), Iso.to_screen(x0 + sx, y0),
+				Iso.to_screen(x0 + sx, y0 + sy), Iso.to_screen(x0, y0 + sy)]), GOOD if ok else BAD)
 	if boxing:
 		var r := Rect2(press_world, Vector2.ZERO).expand(get_global_mouse_position())
 		overlay.draw_rect(r, Color(RING, 0.12))

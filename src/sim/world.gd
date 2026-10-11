@@ -596,8 +596,9 @@ func _move() -> void:
 		if d > 0:
 			nx = x + dx * mini(s, d) / d
 			ny = y + dy * mini(s, d) / d
-		if map.walkable(nx, ny, mc):
-			pass
+		if map.walkable(nx, ny, mc) and (nx / SimMap.TILE == x / SimMap.TILE or ny / SimMap.TILE == y / SimMap.TILE
+				or (map.walkable(nx, y, mc) and map.walkable(x, ny, mc))):
+			pass   # a step into a diagonal neighbour cell needs both cells beside it open: no slipping between two corners
 		elif map.walkable(nx, y, mc):
 			ny = y
 		elif map.walkable(x, ny, mc):

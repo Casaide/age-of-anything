@@ -318,8 +318,8 @@ func _waves(w, army: Array, hx: int, hy: int) -> void:
 ## hit a building doesn't hit back).
 func _defenders(w, b: int) -> int:
 	var bs = w.buildings
-	var x: int = bs.cx[b] * 1000 + bs.size[b] * 500
-	var y: int = bs.cy[b] * 1000 + bs.size[b] * 500
+	var x: int = bs.cx[b] * 1000 + bs.sx[b] * 500
+	var y: int = bs.cy[b] * 1000 + bs.sy[b] * 500
 	var r := int(cfg.military.defend_tiles) * 1000
 	var n := 0
 	for i in w.units.count():
@@ -356,8 +356,8 @@ func _enemy_target(w, hx: int, hy: int) -> Vector2i:
 		var bs = w.buildings
 		if not w.is_enemy(player, bs.owner[b]) or not Fog.explored(w, player, bs.cx[b], bs.cy[b]):
 			continue
-		var x: int = bs.cx[b] * 1000 + bs.size[b] * 500
-		var y: int = bs.cy[b] * 1000 + bs.size[b] * 500
+		var x: int = bs.cx[b] * 1000 + bs.sx[b] * 500
+		var y: int = bs.cy[b] * 1000 + bs.sy[b] * 500
 		var is_tc: bool = bs.kind[b] == tc_kind
 		var d2 := Fixed.dist2(hx, hy, x, y)
 		if (is_tc and not best_tc) or (is_tc == best_tc and d2 < best_d2):

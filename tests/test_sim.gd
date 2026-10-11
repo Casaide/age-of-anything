@@ -17,6 +17,7 @@ const Economy := preload("res://src/sim/economy.gd")
 const EcoBot := preload("res://src/ai/eco_bot.gd")
 const Combat := preload("res://src/sim/combat.gd")
 const Tech := preload("res://src/sim/tech.gd")
+const BuildingArt := preload("res://src/view/art/building_art.gd")
 
 const PROMPTS := ["angry swamp frogs with reed spears", "sewer rats with cheese hammers"]
 const SEED := 20261010
@@ -76,6 +77,7 @@ func _init() -> void:
 	_test_market(races)
 	_test_build_queue(races)
 	_test_gates(races)
+	_test_diagonal_wall(races)
 	_test_camp_gather(races)
 	_test_drop_off(races)
 	_test_animals(races)
@@ -686,16 +688,16 @@ func _test_drop_off(races: Array) -> void:
 	check(new_i >= 0 and w.units.carry_kind[new_i] == food, "rally: a worker trained to a bush rally gathers food")
 
 ## A finished building of type `id` for player p at a cell.
-func _put(w: World, p: int, id: String, cx: int, cy: int) -> int:
+func _put(w: World, p: int, id: String, cx: int, cy: int, along := 0) -> int:
 	var k := Economy.btype_of(w, id)
-	var b := Economy.place(w, p, k, cx, cy)
+	var b := Economy.place(w, p, k, cx, cy, along)
 	w.buildings.done[b] = 1
 	w.buildings.hp[b] = w.btypes[k].hp
 	return w.buildings.id[b]
 
 
 ## A closed square of palisade on flat_test (tiles 12..20 by 18..26) with player 0's gate in
-## its east side at (20, 22). Inside is 13..19 by 19..25. Returns [world, gate id].
+## its east side, three tiles along y at (20, 21..23). Inside is 13..19 by 19..25. Returns [world, gate id].
 func _gate_world(races: Array, teams := []) -> Array:
 	var bare := rules_.duplicate(true)
 	bare.economy.start.buildings = []
@@ -703,10 +705,12 @@ func _gate_world(races: Array, teams := []) -> Array:
 	var w := World.new(SEED, SimMap.load_id("flat_test"), races, bare, teams)
 	for k in range(12, 21):
 		for c in [Vector2i(k, 18), Vector2i(k, 26), Vector2i(12, k + 6), Vector2i(20, k + 6)]:
-			if w.map.occupied[c.y * w.map.width + c.x] == 0 and c != Vector2i(20, 22):
+			if w.map.occupied[c.y * w.map.width + c.x] == 0 and not (c.x == 20 and c.y >= 21 and c.y <= 23):
 				_put(w, 0, "palisade", c.x, c.y)
 	check(w.map.walks.size() == 3, "gates: without a gate the map keeps one walk grid per movement class (%d)" % w.map.walks.size())
-	var gate := _put(w, 0, "palisade_gate", 20, 22)
+	var gate := _put(w, 0, "palisade_gate", 20, 21, 1)
+	var gb := w.buildings.index_of(gate)
+	check(w.buildings.sx[gb] == 1 and w.buildings.sy[gb] == 3, "gates: a gate along y is 1 x 3 tiles (%d x %d)" % [w.buildings.sx[gb], w.buildings.sy[gb]])
 	return [w, gate]
 
 
@@ -775,17 +779,86 @@ func _test_gates(races: Array) -> void:
 	w = g[0]
 	var builder := _spawn_in(w, 0, "worker")
 	w.stock[w.resources.find("wood")][0] = 500
-	var wall_id: int = w.map.occupied[18 * w.map.width + 16]
+	var wall_ids := []
+	for x in range(15, 18):
+		wall_ids.append(w.map.occupied[18 * w.map.width + x])
 	var k := Economy.btype_of(w, "palisade_gate")
-	check(Economy.can_place(w, 0, k, 16, 18) and not Economy.can_place(w, 1, k, 16, 18), "gates: a gate goes on your own wall, not on a rival's")
-	check(not Economy.can_place(w, 0, Economy.btype_of(w, "stone_gate"), 16, 18), "gates: a stone gate doesn't go on a palisade")
-	w.issue(0, Commands.BUILD, {"ids": [builder], "building": "palisade_gate", "cx": 16, "cy": 18})
-	for t in 600:
+	check(Economy.can_place(w, 0, k, 15, 18) and not Economy.can_place(w, 1, k, 15, 18), "gates: a gate goes on your own wall, not on a rival's")
+	check(not Economy.can_place(w, 0, Economy.btype_of(w, "stone_gate"), 15, 18), "gates: a stone gate doesn't go on a palisade")
+	w.issue(0, Commands.BUILD, {"ids": [builder], "building": "palisade_gate", "cx": 15, "cy": 18})
+	for t in 900:
 		w.step()
 	var nb: int = w.map.occupied[18 * w.map.width + 16]
 	var b := w.buildings.index_of(nb)
-	check(w.buildings.index_of(wall_id) < 0 and b >= 0 and w.btypes[w.buildings.kind[b]].id == "palisade_gate" and w.buildings.done[b] == 1,
-		"gates: dropped on a palisade tile, a gate takes its place and is built")
+	var gone := wall_ids.all(func(id): return w.buildings.index_of(id) < 0)
+	check(gone and b >= 0 and w.btypes[w.buildings.kind[b]].id == "palisade_gate" and w.buildings.done[b] == 1
+		and w.map.occupied[18 * w.map.width + 15] == nb and w.map.occupied[18 * w.map.width + 17] == nb,
+		"gates: dropped on a palisade line, a gate takes the place of the three tiles under it and is built")
+
+	# The gate's open look (the view) is for its own side only: an enemy beside it never opens it.
+	g = _gate_world(races)
+	w = g[0]
+	gate = g[1]
+	var gb := w.buildings.index_of(gate)
+	check(not BuildingArt.gate_open(w, gb), "gate look: shut with nobody there")
+	var foe2 := _spawn_at(w, 1, "spear", 21500, 22500)
+	check(not BuildingArt.gate_open(w, gb), "gate look: an enemy beside it doesn't open it")
+	var friend := _spawn_at(w, 0, "worker", 19500, 22500)
+	check(not BuildingArt.gate_open(w, gb), "gate look: ... nor does a friend at it while the enemy stands there")
+	w.units.remove_at(w.units.index_of(foe2))
+	check(BuildingArt.gate_open(w, gb), "gate look: the friend alone opens it")
+	check(friend > 0, "gate look: spawned")
+
+
+## One unit of a slot for player p at (x, y) milli-tiles; its id once it's there.
+func _spawn_at(w: World, p: int, slot: String, x: int, y: int) -> int:
+	var before := w.next_id
+	w.issue(p, Commands.SPAWN, {"slot": slot, "count": 1, "x": x, "y": y})
+	while w.next_id == before:
+		w.step()
+	return before
+
+
+## A wall drawn diagonally (tiles touching only at their corners) still holds (Dominic: walls
+## must read and work as walls whichever way they run). A diamond of palisade round (16, 24),
+## every tile corner to corner with the next; a crowd inside is sent out past it and must
+## stay in: the fields find no way out, and nobody slips between two corners on the move.
+func _test_diagonal_wall(races: Array) -> void:
+	var bare := rules_.duplicate(true)
+	bare.economy.start.buildings = []
+	bare.economy.start.workers = 0
+	var w := World.new(SEED, SimMap.load_id("flat_test"), races, bare)
+	var r := 6
+	for k in 4 * r:
+		var q := k % r
+		var c: Vector2i = [Vector2i(16 + q, 18 + q), Vector2i(22 - q, 24 + q), Vector2i(16 - q, 30 - q), Vector2i(10 + q, 24 - q)][k / r]
+		_put(w, 1, "palisade", c.x, c.y)
+	var inside := func(i: int) -> bool:
+		return absi(w.units.x[i] / 1000 - 16) + absi(w.units.y[i] / 1000 - 24) < r
+	var f = Flow.solve(w.map, PackedInt32Array([24 * w.map.width + 16]))
+	check(f.dist[24 * w.map.width + 26] >= Flow.INF, "diagonal wall: no flow field reaches out of the diamond")
+	var ids := []
+	for n in 12:
+		ids.append(_spawn_at(w, 0, ["spear", "worker", "large"][n % 3], 15000 + (n % 4) * 700, 23000 + (n / 4) * 700))
+	for corner in [Vector2i(16500, 15500), Vector2i(25500, 24500), Vector2i(16500, 33500), Vector2i(6500, 24500)]:
+		w.issue(0, Commands.MOVE, {"ids": ids, "x": corner.x, "y": corner.y})
+		for t in 400:
+			w.step()
+	var out := 0
+	for id in ids:
+		var i := w.units.index_of(id)
+		if i < 0 or not inside.call(i):
+			out += 1
+	check(out == 0, "diagonal wall: a crowd pushed at every side of a corner-to-corner wall stays in (%d got out)" % out)
+	# The movement rule on its own: a unit right at the corner between two wall tiles, stepping
+	# diagonally through the gap point, is stopped (no field to help it).
+	var i := w.units.index_of(ids[0])
+	w.units.x[i] = 21960   # in tile (21, 24), inside, by the point where wall tiles (21, 23) and (22, 24) touch
+	w.units.y[i] = 24040
+	w.order_direct(i, 22600, 23400)   # straight through that point (22000, 24000) into tile (22, 23), outside
+	for t in 40:
+		w.step()
+	check(inside.call(w.units.index_of(ids[0])), "diagonal wall: a unit steered straight at the corner gap doesn't slip through")
 
 
 ## A worker who finishes a lumber camp goes and gathers wood (Dominic).
@@ -996,7 +1069,7 @@ func _test_queue(races: Array) -> void:
 		i = w.units.index_of(worker)
 		if house_done < 0:
 			for b in w.buildings.count():
-				if w.buildings.owner[b] == 0 and w.buildings.done[b] == 1 and w.buildings.size[b] == 2:
+				if w.buildings.owner[b] == 0 and w.buildings.done[b] == 1 and w.buildings.sx[b] == 2:
 					house_done = w.tick
 		elif w.units.task[i] == Economy.GATHER or w.units.task[i] == Economy.RETURN:
 			break
