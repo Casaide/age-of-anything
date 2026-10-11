@@ -1,6 +1,6 @@
 # Art and UI track (runs alongside the milestones)
 
-**Status:** A1 in progress (2026-10-11)
+**Status:** A1 built (2026-10-11), waiting on Dominic's look sign-off
 **Why this file:** the art pass (`art-pass.md`) chose the direction and shipped the vertical
 slice, but what art and UI each milestone needs wasn't laid out (Dominic, 2026-10-11). This track
 says what's expected and when. Each stage runs in parallel with its milestone, often by a
@@ -33,9 +33,11 @@ Rules for every stage:
 - [x] Stages: reeds thin out as they're cut (stubble at the end), bug bushes lose berries and
   colour in 3-4 stages, buildings under construction go foundation, frame, walls, roof (per
   architecture; `tests/art_buildings.gd`)
-- [ ] Realism pass: roads and paths (worn edges, irregular stones, dirt joints, blending), houses
+- [x] Realism pass: roads and paths (worn edges, irregular stones, dirt joints, blending), houses
   and town centres up to the bushes' level, terrain (natural grass variation, a less flat swamp,
-  water, contact shading with props)
+  water, contact shading with props). Roads became worn irregular slabs and rutted trails, the
+  swamp got mud pools, houses got textured walls (images 80-86); the water's sky bands were
+  later taken back out at Dominic's request.
 - [x] UI pass 1:
   - a bigger build/train queue;
   - unit icons and portraits generated from the baked units (each race's real sprites), used in
