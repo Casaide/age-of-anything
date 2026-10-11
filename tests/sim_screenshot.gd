@@ -3,7 +3,8 @@ extends SceneTree
 ## Run (needs a display):
 ##   godot --path . --script res://tests/sim_screenshot.gd -- out.png [map_id] [scene] ["prompt A" "prompt B"]
 ## Scenes: "armies" (both test armies march at each other; the default) or
-## "opening:<tick>" (both sides autoplay their economy; shot at that tick, over player 1's base).
+## "opening:<tick>" (both sides autoplay their economy; shot at that tick, over player 1's base),
+## or "battle:<tick>" (both test armies attack-move at each other; shot mid-fight at that tick).
 
 const Iso := preload("res://src/view/iso.gd")
 
@@ -19,7 +20,7 @@ func _initialize() -> void:
 	var view = load("res://scenes/sim_debug.tscn").instantiate()
 	view.prompts = [args[3], args[4]] if args.size() > 4 else view.DEFAULT_PROMPTS.duplicate()
 	view.map_id = map_id
-	view.army = scene == "armies"
+	view.army = scene == "armies" or scene.begins_with("battle")
 	root.add_child(view)
 	while view.world == null or view.baking:   # the art bakes first
 		await process_frame
@@ -28,6 +29,8 @@ func _initialize() -> void:
 	view.camera.set_process_unhandled_input(false)
 	if scene.begins_with("opening"):
 		await _opening(view, int(scene.get_slice(":", 1)))
+	elif scene.begins_with("battle"):
+		await _battle(view, map_id, int(scene.get_slice(":", 1)))
 	else:
 		await _armies(view, map_id)
 	for f in 20:
@@ -54,6 +57,35 @@ func _armies(view, map_id: String) -> void:
 	view.camera.zoom = Vector2(3.0, 3.0)
 	view._on_zoom()
 	view.camera.look_at_point(Iso.to_screen(meet.x, meet.y))
+
+
+func _battle(view, map_id: String, at_tick: int) -> void:
+	while view.world.units.count() <= 6:
+		await process_frame
+	var meet: Vector2 = MEET[map_id] * 1000.0
+	var w = view.world
+	for p in 2:
+		var ids := []
+		for i in w.units.count():
+			if w.units.owner[i] == p and not w.types[w.units.kind[i]].worker:
+				ids.append(w.units.id[i])
+		w.issue(p, "attack_move", {"ids": ids, "x": int(meet.x), "y": int(meet.y)})
+	view.clock.speed = 8.0
+	while w.tick < at_tick - 20:
+		await process_frame
+	view.clock.speed = 1.0
+	while w.tick < at_tick:
+		await process_frame
+	view.camera.zoom = Vector2(3.0, 3.0)
+	view._on_zoom()
+	view.camera.look_at_point(Iso.to_screen(meet.x, meet.y))
+	# Look where the fighting is: the middle of the units still alive.
+	var c := Vector2.ZERO
+	for i in w.units.count():
+		c += Vector2(w.units.x[i], w.units.y[i])
+	if w.units.count() > 0:
+		c /= w.units.count()
+		view.camera.look_at_point(Iso.to_screen(c.x, c.y))
 
 
 func _opening(view, at_tick: int) -> void:

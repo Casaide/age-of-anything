@@ -18,6 +18,11 @@ const Flow := preload("res://src/sim/flow.gd")
 enum { NONE, ORDERED, AUTO, ATTACK_MOVE }   # units.stance
 
 const BASE := ["melee", "pierce", "building"]   # the first classes, always at these indexes
+## Spreading out: a foe already fought by others looks this much further away per
+## attacker (milli-tiles), so a 10-vs-10 clash becomes ten duels, not a pile-on.
+const SPREAD := 1500
+## A unit whose foe has more than this many attackers looks for a free foe close by.
+const CROWDED := 2
 
 
 ## Build the class table and give every unit and building type its combat vectors.
@@ -149,6 +154,15 @@ static func tick(w) -> void:
 	hurt_by.resize(n)
 	var bhurt := PackedInt32Array()
 	bhurt.resize(bs.count())
+	# How many attackers each unit already has (by slot), kept up to date as foes are
+	# picked this tick, so picks spread over the enemy line.
+	var engaged := PackedInt32Array()
+	engaged.resize(n)
+	for i in n:
+		if u.foe[i] != 0:
+			var j: int = u.index_of(u.foe[i])
+			if j >= 0:
+				engaged[j] += 1
 	# Cooldowns tick down in one pass on a local copy (writing a packed array through
 	# the object copies it every time; see units.gd).
 	var cd: PackedInt32Array = u.cooldown
@@ -160,12 +174,25 @@ static func tick(w) -> void:
 		var t: Dictionary = w.types[u.kind[i]]
 		var stance: int = u.stance[i]
 		# Look for a fight: idle soldiers (not workers) and attack-movers, on their own beat.
-		if u.foe[i] == 0 and (w.tick + u.id[i]) % int(c.acquire_every) == 0:
+		# Units fighting on their own (not an explicit target) also leave a crowded foe
+		# for a free one nearby, so winners go and help where the fight is still on.
+		if (w.tick + u.id[i]) % int(c.acquire_every) == 0:
 			var idle: bool = stance == NONE and u.moving[i] == 0 and u.task[i] == Economy.NONE and not t.worker
-			if idle or stance == ATTACK_MOVE:
-				var f := _nearest_foe(w, i, int(c.sight), stance == ATTACK_MOVE)
-				if f != 0:
+			var free: bool = stance == AUTO or stance == ATTACK_MOVE
+			var crowded := false
+			if u.foe[i] != 0 and free:
+				var cur: int = u.index_of(u.foe[i])
+				crowded = cur >= 0 and engaged[cur] > CROWDED
+			if (u.foe[i] == 0 and (idle or stance == ATTACK_MOVE)) or crowded:
+				var f := _nearest_foe(w, i, int(c.sight), stance == ATTACK_MOVE, engaged)
+				if f != 0 and f != u.foe[i]:
+					var old: int = u.index_of(u.foe[i]) if u.foe[i] != 0 else -1
+					if old >= 0:
+						engaged[old] -= 1
 					u.foe[i] = f
+					var nj: int = u.index_of(f)
+					if nj >= 0:
+						engaged[nj] += 1
 					if idle:
 						u.stance[i] = AUTO
 		if u.foe[i] == 0:
@@ -241,14 +268,15 @@ static func _lost(w, i: int) -> void:
 		u.moving[i] = 0
 
 
-## The nearest enemy unit within `sight` (centre to centre), lowest id on ties; then,
-## for attack-movers, the nearest enemy building. Returns an id or 0.
-static func _nearest_foe(w, i: int, sight: int, buildings_too: bool) -> int:
+## The best enemy unit within `sight` (centre to centre): nearest, counting each of
+## its current attackers as SPREAD further away, lowest id on ties; then, for
+## attack-movers, the nearest enemy building. Returns an id or 0.
+static func _nearest_foe(w, i: int, sight: int, buildings_too: bool, engaged: PackedInt32Array) -> int:
 	var u = w.units
 	var sp = w.spatial
 	var me: int = u.owner[i]
 	var best := 0
-	var best_d := sight * sight + 1
+	var best_d := 1 << 40
 	var r := sight / SimMap.TILE + 1
 	var cx: int = u.x[i] / SimMap.TILE
 	var cy: int = u.y[i] / SimMap.TILE
@@ -259,12 +287,16 @@ static func _nearest_foe(w, i: int, sight: int, buildings_too: bool) -> int:
 				var j: int = sp.items[k]
 				if u.owner[j] == me:
 					continue
-				var d := Fixed.dist2(u.x[i], u.y[i], u.x[j], u.y[j])
+				var d2 := Fixed.dist2(u.x[i], u.y[i], u.x[j], u.y[j])
+				if d2 > sight * sight:
+					continue
+				var d := Fixed.isqrt(d2) + engaged[j] * SPREAD
 				if d < best_d or (d == best_d and u.id[j] < best):
 					best_d = d
 					best = u.id[j]
 	if best != 0 or not buildings_too:
 		return best
+	best_d = sight * sight + 1
 	var bs = w.buildings
 	for b in bs.count():
 		if bs.owner[b] == me:

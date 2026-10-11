@@ -16,6 +16,7 @@ const ArtKit := preload("res://src/view/art/art_kit.gd")
 const TerrainView := preload("res://src/view/art/terrain_view.gd")
 const BuildingArt := preload("res://src/view/art/building_art.gd")
 const Paths := preload("res://scenes/art_pixel/paths.gd")
+const CombatFx := preload("res://src/view/combat_fx.gd")
 const RtsCamera := preload("res://src/view/rts_camera.gd")
 const CommandPanel := preload("res://src/view/command_panel.gd")
 const Commands := preload("res://src/sim/commands.gd")
@@ -61,6 +62,8 @@ var doodads := {}           # cell -> [nodes]: cosmetic props, cleared where bui
 var baking := false
 var built_count := -1       # finished buildings when the paths were last planned
 var palette: ColorRect      # optional whole-frame palette pass (P)
+var attack_move := false    # the order being given is an attack-move
+var fx: CombatFx            # projectiles, sparks, deaths (from the sim's events)
 var marks: Node2D           # under units: selection rings, move lines, flow arrows
 var layer: Node2D           # units, buildings and resource props, y-sorted
 var overlay: Node2D         # over everything: selection box, placement ghost, carried loads
@@ -106,6 +109,8 @@ func _ready() -> void:
 	layer = Node2D.new()
 	layer.y_sort_enabled = true
 	add_child(layer)
+	fx = CombatFx.new()
+	add_child(fx)
 	overlay = Node2D.new()
 	overlay.draw.connect(_draw_overlay)
 	add_child(overlay)
@@ -212,6 +217,7 @@ func _attach(w: World, end_tick := -1) -> void:
 		for n in doodads[c]:
 			n.queue_free()
 	doodads.clear()
+	fx.clear()
 	built_count = -1
 	selected.clear()
 	selected_building = 0
@@ -351,7 +357,9 @@ func _unhandled_input(event: InputEvent) -> void:
 		if placing != "":
 			placing = ""
 		else:
+			attack_move = event.ctrl_pressed   # Ctrl + right-click: attack-move (A is camera pan)
 			smart_order(get_global_mouse_position())
+			attack_move = false
 	elif event is InputEventMouseMotion and press_screen != Vector2.INF:
 		boxing = boxing or event.position.distance_to(press_screen) > DRAG_START_PX
 	elif event is InputEventKey and event.pressed and not event.echo:
@@ -528,17 +536,84 @@ func smart_order(pos: Vector2) -> void:
 		return
 	var groups := _selected_by_owner()
 	var bid: int = map.occupied[cell]
+	var foe := unit_at(pos)
 	for p in groups.size():
 		var ids: Array = groups[p]
 		if ids.is_empty():
 			continue
-		if map.resource_at(cell) != "":
+		if attack_move:
+			world.issue(p, Commands.ATTACK_MOVE, {"ids": ids, "x": m.x, "y": m.y})
+		elif foe != 0 and world.units.owner[world.units.index_of(foe)] != p:
+			world.issue(p, Commands.ATTACK, {"ids": ids, "target": foe})
+		elif bid != 0 and world.buildings.owner[world.buildings.index_of(bid)] != p:
+			world.issue(p, Commands.ATTACK, {"ids": ids, "target": bid})
+		elif map.resource_at(cell) != "":
 			world.issue(p, Commands.GATHER, {"ids": ids, "cell": cell})
 		elif bid != 0 and _is_foundation_of(bid, p):
 			world.issue(p, Commands.HELP_BUILD, {"ids": ids, "target": bid})
 		else:
 			world.issue(p, Commands.MOVE, {"ids": ids, "x": m.x, "y": m.y})
 	flags.append({"pos": pos, "t": 1.0})
+
+
+## The unit whose body is nearest the point (within the click radius), or 0.
+func unit_at(pos: Vector2) -> int:
+	var best := 0
+	var best_d := PICK_PX / camera.zoom.x
+	for id in views:
+		var d := _body(views[id]).distance_to(pos)
+		if d < best_d or (d == best_d and id < best):
+			best_d = d
+			best = id
+	return best
+
+
+## Play the sim's hits and deaths as effects: attackers lunge at their target,
+## ranged ones loose a shot, the struck spark; the dead topple (their view leaves
+## the live set, so the usual sync won't just delete it); fallen buildings raise dust.
+func _play_events() -> void:
+	for e in clock.take_events():
+		if e.type == "hit":
+			var a: Node2D = views.get(e.by)
+			var to := _event_target_pos(e.to)
+			if a == null or to == Vector2.INF:
+				continue
+			a.face(to.x - a.position.x)
+			if e.ranged:
+				var i := world.units.index_of(e.by)
+				var kind := "arrow"
+				if i >= 0:
+					kind = CombatFx.shot_kind(world.types[world.units.kind[i]].eval.tags)
+				fx.shoot(_body(a) - Vector2(0, 2), to, kind)
+			else:
+				a.flourish()
+				fx.spark(to, e.damage >= 8)
+		elif e.type == "die" and not e.building:
+			var v: Node2D = views.get(e.id)
+			if v != null:
+				views.erase(e.id)
+				selected.erase(e.id)
+				fx.kill(v)
+		elif e.type == "die":
+			var bv: Node2D = bviews.get(e.id)
+			if bv != null:
+				bviews.erase(e.id)
+				if selected_building == e.id:
+					selected_building = 0
+				var t: Dictionary = world.btypes[e.kind]
+				fx.collapse(bv, Iso.to_screen(e.x, e.y), int(t.size))
+
+
+## Where a shot or blow lands on a unit (its body) or a building (its middle).
+func _event_target_pos(id: int) -> Vector2:
+	var v: Node2D = views.get(id)
+	if v != null:
+		return _body(v)
+	var b := world.buildings.index_of(id)
+	if b >= 0:
+		var bs := world.buildings
+		return Iso.to_screen((bs.cx[b] + bs.size[b] * 0.5) * 1000, (bs.cy[b] + bs.size[b] * 0.5) * 1000) - Vector2(0, 20)
+	return Vector2.INF
 
 
 func _is_foundation_of(bid: int, p: int) -> bool:
@@ -593,6 +668,7 @@ func place_at(pos: Vector2, keep := false) -> void:
 func _process(delta: float) -> void:
 	if baking or world == null:
 		return
+	_play_events()
 	_sync_views()
 	_sync_buildings()
 	_sync_resources()
@@ -846,6 +922,21 @@ func _draw_flow() -> void:
 func _draw_overlay() -> void:
 	if world == null:
 		return
+	var u := world.units
+	# Health bars over anyone hurt (and anyone selected).
+	var bar_w := 12.0
+	for i in u.count():
+		var id := u.id[i]
+		var full: int = world.types[u.kind[i]].hp
+		if u.hp[i] >= full and not selected.has(id):
+			continue
+		var view: Node2D = views.get(id)
+		if view == null:
+			continue
+		var at := view.position - Vector2(bar_w * 0.5, BODY_LIFT * 2.6)
+		var k := clampf(float(u.hp[i]) / float(full), 0.0, 1.0)
+		overlay.draw_rect(Rect2(at, Vector2(bar_w, 2)), Color(0, 0, 0, 0.6))
+		overlay.draw_rect(Rect2(at, Vector2(bar_w * k, 2)), Color(1.0 - k, 0.3 + 0.6 * k, 0.15).lerp(Color.WHITE, 0.1))
 	var b := world.buildings.index_of(selected_building)
 	if b >= 0:
 		var bs := world.buildings
@@ -860,7 +951,6 @@ func _draw_overlay() -> void:
 			overlay.draw_line(Iso.to_screen(x0 + s / 2, y0 + s / 2), rp, Color(RING, 0.4), 1.0 / camera.zoom.x)
 			overlay.draw_circle(rp, 4.0, RING)
 	# What each worker carries, above its head.
-	var u := world.units
 	for i in u.count():
 		if u.carry[i] > 0 and views.has(u.id[i]):
 			var p: Vector2 = views[u.id[i]].position + Vector2(7, -24)
