@@ -46,7 +46,9 @@ const RANDOM_PROMPTS := [
 const START_ARMY := [["worker", 3], ["spear", 5], ["skirmisher", 4], ["archer", 4], ["large", 2]]
 const REPLAY_PATH := "user://replays/last.json"
 const BODY_LIFT := 10.0      # pixels from a unit's feet up to the middle of its body
-const PICK_PX := 16.0        # click radius in screen pixels
+const PICK_PX := 16.0        # click slack in screen pixels
+const FIGURE_H := 26.0       # canvas units: a unit's figure from feet to head (large units 1.6x)
+const FIGURE_W := 14.0
 const DRAG_START_PX := 6.0   # screen pixels before a left press becomes a box
 const RING := Color("#f2e9c9")
 const FLOW := Color("#f2c94c")
@@ -518,13 +520,7 @@ func _cell_at(pos: Vector2) -> int:
 func select_at(pos: Vector2, add := false) -> void:
 	if not add:
 		_clear_selection()
-	var best := 0
-	var best_d := PICK_PX / camera.zoom.x
-	for id in views:
-		var d := _body(views[id]).distance_to(pos)
-		if d < best_d or (d == best_d and id < best):
-			best_d = d
-			best = id
+	var best := unit_at(pos)
 	if best != 0:
 		selected_building = 0
 		if add and selected.has(best):
@@ -635,11 +631,26 @@ func smart_order(pos: Vector2) -> void:
 
 
 ## The unit whose body is nearest the point (within the click radius), or 0.
+## A click anywhere on a unit's figure counts (feet to head, a little slack for small units),
+## not just near its middle; where figures overlap, the nearest body wins.
 func unit_at(pos: Vector2) -> int:
 	var best := 0
-	var best_d := PICK_PX / camera.zoom.x
+	var best_d := INF
+	var slack := PICK_PX * 0.5 / camera.zoom.x
 	for id in views:
-		var d := _body(views[id]).distance_to(pos)
+		var v: Node2D = views[id]
+		if not v.visible:
+			continue   # hidden in the fog
+		var i := world.units.index_of(id)
+		if i < 0:
+			continue
+		var t: Dictionary = world.types[world.units.kind[i]]
+		var tall: float = FIGURE_H * (1.6 if int(t.pop) > 1 else 1.0) + (9.0 if t.mclass == SimMap.FLYING else 0.0)
+		var half_w: float = FIGURE_W * (1.6 if int(t.pop) > 1 else 1.0) * 0.5
+		var r := Rect2(v.position.x - half_w - slack, v.position.y - tall - slack, (half_w + slack) * 2.0, tall + slack * 2.0 + 3.0)
+		if not r.has_point(pos):
+			continue
+		var d := _body(v).distance_to(pos)
 		if d < best_d or (d == best_d and id < best):
 			best_d = d
 			best = id
@@ -1166,11 +1177,9 @@ func _update_cursor() -> void:
 	var cell := _cell_at(pos)
 	var bid: int = map.occupied[cell]
 	var enemy := bid != 0 and world.buildings.owner[world.buildings.index_of(bid)] != active
-	for id in views:
-		var i := world.units.index_of(id)
-		if i >= 0 and world.units.owner[i] != active and _body(views[id]).distance_to(pos) < PICK_PX / camera.zoom.x:
-			enemy = true
-			break
+	var under := unit_at(pos)
+	if under != 0 and world.is_enemy(active, world.units.owner[world.units.index_of(under)]):
+		enemy = true
 	var workers := not _selected_workers().is_empty()
 	if enemy:
 		cursors.use("attack")
