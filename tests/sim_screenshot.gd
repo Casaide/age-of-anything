@@ -20,7 +20,7 @@ func _initialize() -> void:
 	var view = load("res://scenes/sim_debug.tscn").instantiate()
 	view.prompts = [args[3], args[4]] if args.size() > 4 else view.DEFAULT_PROMPTS.duplicate()
 	view.map_id = map_id
-	view.army = scene == "armies" or scene.begins_with("battle") or scene.begins_with("ageup")
+	view.army = scene == "armies" or scene == "card" or scene.begins_with("battle") or scene.begins_with("ageup")
 	root.add_child(view)
 	while view.world == null or view.baking:   # the art bakes first
 		await process_frame
@@ -33,6 +33,8 @@ func _initialize() -> void:
 		await _town(view, int(scene.get_slice(":", 1)))
 	elif scene.begins_with("ageup"):
 		await _ageup(view, int(scene.get_slice(":", 1)))
+	elif scene == "card":
+		await _card(view)
 	elif scene.begins_with("battle"):
 		await _battle(view, map_id, int(scene.get_slice(":", 1)))
 	else:
@@ -42,6 +44,20 @@ func _initialize() -> void:
 	root.get_texture().get_image().save_png(out)
 	print("saved ", out, " at tick ", view.world.tick)
 	quit()
+
+
+## One of side 0's spearmen selected, so the panel shows its unit card.
+func _card(view) -> void:
+	while view.world.units.count() <= 6:
+		await process_frame
+	var u = view.world.units
+	for i in u.count():
+		if u.owner[i] == 0 and view.world.types[u.kind[i]].slot == "spear":
+			view.selected[u.id[i]] = true
+			view.camera.look_at_point(Iso.to_screen(u.x[i], u.y[i]))
+			break
+	view.camera.zoom = Vector2(2.0, 2.0)
+	view._on_zoom()
 
 
 func _armies(view, map_id: String) -> void:
