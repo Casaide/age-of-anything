@@ -131,9 +131,12 @@ hit-flash polish and SFX (7), Blacksmith upgrades and research (5 / Next), forma
 - [x] Sim: unit combat stats, ATTACK / ATTACK_MOVE, targeting, chase, hitscan damage, death, events
 - [x] Sim: attacking and destroying buildings
 - [x] Tests: damage maths, behaviour, battle determinism, counter matrix, 200-unit battle tick
-- [ ] View: attack orders (right-click, A + right-click), F7 battle setup
-- [ ] View: lunge and facing, cosmetic projectiles, hit flash, HP bars
-- [ ] View: silly death poses
+- [x] Attack-move spreads out (Dominic): targets weigh how many allies already fight them, and
+  units leave a crowded foe for a free one, so 10 vs 10 becomes ten duels, and winners go and help
+- [x] View: attack orders (right-click an enemy; Ctrl + right-click attack-moves, since A pans), F7 test armies
+- [x] View: lunge and facing, cosmetic projectiles (arrows, bolts, javelins, stones, darts), impact
+  sparks, health bars (a white hit flash needs the team shader: art track)
+- [x] View: deaths: the body topples about its feet, darkens where it lies, goes in a puff of dust
 - [ ] View: unit card (recipe, stats, tags, strong/weak line)
 - [ ] Exit check: `tests/counter_quiz.gd`, Dominic plays it
 - [ ] Archive: pictures along the way, journal, decisions, timeline

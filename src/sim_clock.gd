@@ -15,6 +15,7 @@ var speed := 1.0               # playback multiplier for watching replays
 var stop_at := -1              # stop stepping at this tick (end of a replay); -1 runs forever
 var bots: Array = []           # players run by a bot: each thinks (issues commands) before every tick
 var alpha := 0.0
+var events: Array = []         # the world's events from every tick since the view last took them
 var tick_usec := 0             # cost of the last tick
 var tick_usec_avg := 0.0
 var tick_usec_max := 0
@@ -32,6 +33,7 @@ func _process(delta: float) -> void:
 			bot.think(world)
 		var t := Time.get_ticks_usec()
 		world.step()
+		events.append_array(world.events)
 		tick_usec = Time.get_ticks_usec() - t
 		tick_usec_avg = lerpf(tick_usec_avg, tick_usec, 0.05)
 		tick_usec_max = maxi(tick_usec_max, tick_usec)
@@ -42,10 +44,18 @@ func _process(delta: float) -> void:
 	alpha = clampf(_acc / STEP, 0.0, 1.0)
 
 
+## Hand over the buffered events (the view plays them as effects).
+func take_events() -> Array:
+	var out := events
+	events = []
+	return out
+
+
 func reset(w: World, end_tick := -1) -> void:
 	world = w
 	stop_at = end_tick
 	_acc = 0.0
 	alpha = 0.0
+	events.clear()
 	tick_usec_avg = 0.0
 	tick_usec_max = 0
