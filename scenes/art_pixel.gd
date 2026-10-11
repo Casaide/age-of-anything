@@ -13,8 +13,8 @@ const UnitView := preload("res://src/unit_view.gd")
 const PartShape := preload("res://src/part_shape.gd")
 const Iso := preload("res://src/view/iso.gd")
 const PartBaker := preload("res://scenes/art_pixel/part_baker.gd")
-const Baker := preload("res://scenes/style_sampler/hifi/baker.gd")
-const Models := preload("res://scenes/style_sampler/hifi/models.gd")
+const Baker := preload("res://src/view/art/bake/baker.gd")
+const Models := preload("res://src/view/art/bake/models.gd")
 const Paths := preload("res://scenes/art_pixel/paths.gd")
 const PropModels := preload("res://scenes/art_pixel/prop_models.gd")
 const ArtKit := preload("res://src/view/art/art_kit.gd")
@@ -192,7 +192,6 @@ func _build() -> void:
 		var u: Dictionary = races[p[0]].units[p[1]]
 		for n in p[2]:
 			var view := UnitView.new()
-			view.style = "baked"
 			view.build(u.recipe, lib, Color(lib.palettes.teams[p[0]]), u.eval.speed)
 			view.scale = Vector2(UNIT_SCALE, UNIT_SCALE)
 			view.pose_steps = 8 if stepped else 0
@@ -219,8 +218,8 @@ func _scatter(baker, models) -> void:
 	var props := PropModels.new()
 	var kinds := {"stones": [], "flowers": [], "tuft": [], "shore": [], "lily": []}
 	for k in 4:
-		kinds.stones.append(await baker.bake(models.stones(500 + k), [Vector3.ZERO]))
-		kinds.tuft.append(await baker.bake(models.tuft(600 + k), [Vector3.ZERO]))
+		kinds.stones.append(await baker.bake(props.field_stones(500 + k), [Vector3.ZERO]))
+		kinds.tuft.append(await baker.bake(props.grass_tuft(600 + k), [Vector3.ZERO]))
 		kinds.shore.append(await baker.bake(props.reed_clump(700 + k, 0.55), [Vector3.ZERO]))
 		kinds.lily.append(await baker.bake(props.lily_pads(900 + k), [Vector3.ZERO]))
 	for k in 6:
@@ -461,7 +460,7 @@ func _building(baker, spec: Dictionary, cx: int, cy: int, size: int, team: Color
 		var bs := _sprite(ban, centre_px - front, false)   # has its own wave shader
 		bs.self_modulate = tint
 		var mat := ShaderMaterial.new()
-		mat.shader = load("res://scenes/style_sampler/hifi/banner.gdshader")
+		mat.shader = load("res://src/view/art/bake/banner.gdshader")
 		bs.material = mat
 		holder.add_child(bs)
 		var vane: Dictionary = await baker.bake(spec.vane, [Vector3.ZERO, spec.vane_pivot])
@@ -579,7 +578,6 @@ func spawn_bench(n: int) -> void:
 		var p: Array = unit_picks[i % unit_picks.size()]
 		var u: Dictionary = races[p[0]].units[p[1]]
 		var view := UnitView.new()
-		view.style = "baked"
 		view.build(u.recipe, lib, Color(lib.palettes.teams[p[0]]), u.eval.speed)
 		view.scale = Vector2(UNIT_SCALE, UNIT_SCALE)
 		view.pose_steps = 8 if stepped else 0

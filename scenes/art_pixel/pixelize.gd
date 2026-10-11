@@ -2,43 +2,61 @@ extends RefCounted
 ## Turns a supersampled render into a pixel-art sprite: shrink by `factor`, hard
 ## alpha (soft dark ground shadows become one flat translucent shadow colour),
 ## and a selective inner outline: edge pixels take a darker shade of themselves
-## (units and buildings; realistic props go without).
+## (units and buildings; realistic props go without). Works on raw bytes: it runs
+## for every bake at match start.
 
 const SHADOW := Color(0.06, 0.05, 0.03, 0.42)
 const CONTACT := Color(0.06, 0.05, 0.03, 0.24)   # ambient occlusion where things meet the ground
+const EDGE_INK := Color("#24180f")
 
 
 static func run(img: Image, factor: int, outline := true) -> Image:
-	img.fix_alpha_edges()
+	img.convert(Image.FORMAT_RGBA8)
+	img.premultiply_alpha()   # shrink with premultiplied alpha, so edges don't darken (and it's cheap)
 	var w := maxi(1, img.get_width() / factor)
 	var h := maxi(1, img.get_height() / factor)
 	img.resize(w, h, Image.INTERPOLATE_CUBIC)
-	var out := Image.create(w, h, false, Image.FORMAT_RGBA8)
-	for y in h:
-		for x in w:
-			var c := img.get_pixel(x, y)
-			if c.a >= 0.6:
-				out.set_pixel(x, y, Color(c.r, c.g, c.b, 1.0))
-			elif c.a >= 0.33 and c.get_luminance() < 0.12:
-				out.set_pixel(x, y, SHADOW)
-			elif c.a >= 0.05 and c.get_luminance() < 0.12:
-				out.set_pixel(x, y, CONTACT)
-			else:
-				out.set_pixel(x, y, Color(0, 0, 0, 0))
-	if not outline:
-		return out
-	var edged := out.duplicate()
-	for y in h:
-		for x in w:
-			var c := out.get_pixel(x, y)
-			if c.a < 1.0:
-				continue
-			var edge := false
-			for d: Vector2i in [Vector2i(1, 0), Vector2i(-1, 0), Vector2i(0, 1), Vector2i(0, -1)]:
-				var q := Vector2i(x, y) + d
-				if q.x < 0 or q.y < 0 or q.x >= w or q.y >= h or out.get_pixelv(q).a < 1.0:
-					edge = true
-					break
-			if edge:
-				edged.set_pixel(x, y, c.darkened(0.55).lerp(Color("#24180f"), 0.25))
-	return edged
+	var src := img.get_data()
+	var out := PackedByteArray()
+	out.resize(w * h * 4)
+	var shadow := [SHADOW.r8, SHADOW.g8, SHADOW.b8, SHADOW.a8]
+	var contact := [CONTACT.r8, CONTACT.g8, CONTACT.b8, CONTACT.a8]
+	for i in range(0, w * h * 4, 4):
+		var a := src[i + 3]
+		if a >= 153:   # 0.6
+			out[i] = mini(255, src[i] * 255 / a)
+			out[i + 1] = mini(255, src[i + 1] * 255 / a)
+			out[i + 2] = mini(255, src[i + 2] * 255 / a)
+			out[i + 3] = 255
+			continue
+		if a == 0:
+			continue
+		var lum := (src[i] * 0.2126 + src[i + 1] * 0.7152 + src[i + 2] * 0.0722) / float(a)
+		var c: Array = []
+		if a >= 84 and lum < 0.12:      # 0.33
+			c = shadow
+		elif a >= 13 and lum < 0.12:    # 0.05
+			c = contact
+		else:
+			continue
+		out[i] = c[0]
+		out[i + 1] = c[1]
+		out[i + 2] = c[2]
+		out[i + 3] = c[3]
+	if outline:
+		var edged := out.duplicate()
+		var ink := EDGE_INK
+		for y in h:
+			for x in w:
+				var i := (y * w + x) * 4
+				if out[i + 3] != 255:
+					continue
+				var edge := x == 0 or y == 0 or x == w - 1 or y == h - 1 \
+					or out[i - 1] != 255 or out[i + 7] != 255 or out[i - w * 4 + 3] != 255 or out[i + w * 4 + 3] != 255
+				if edge:
+					var c := Color8(out[i], out[i + 1], out[i + 2]).darkened(0.55).lerp(ink, 0.25)
+					edged[i] = c.r8
+					edged[i + 1] = c.g8
+					edged[i + 2] = c.b8
+		out = edged
+	return Image.create_from_data(w, h, false, Image.FORMAT_RGBA8, out)

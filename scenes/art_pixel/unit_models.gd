@@ -11,15 +11,43 @@ extends RefCounted
 const TEX_DIR := "res://assets/art/textures/"
 
 var tex_cache := {}
+var hold := "low"   # the body being built: how its near hand holds the weapon (see arm_pose)
 
 
+## Part ids may carry a hold after "@" (a body posed for its weapon: "body.frog@throw").
 func has(id: String) -> bool:
-	return has_method("_" + id.replace(".", "_"))
+	return has_method("_" + id.get_slice("@", 0).replace(".", "_"))
 
 
 ## {node: Node3D, sockets: {name: Vector3}, anchors: [[Vector3 hip, phase, z]]}
 func build(id: String, colours: Dictionary) -> Dictionary:
-	return call("_" + id.replace(".", "_"), colours)
+	hold = id.get_slice("@", 1) if "@" in id else "low"
+	return call("_" + id.get_slice("@", 0).replace(".", "_"), colours)
+
+
+## The near arm's elbow and hand for the body's hold, from its shoulder, its resting
+## elbow and hand, and its head socket. The weapon is built around its grip at the
+## hand, so the hand always holds it:
+## low (spears, swords, tools), throw (a javelin raised over the shoulder), mouth (a
+## blowgun at the lips), overhead (a sling whirled above), draw (a bow at arm's length),
+## shoulder (a pike), aim (a crossbow or musket held forward).
+func arm_pose(sh: Vector3, elbow: Vector3, hand: Vector3, head: Vector3) -> Array:
+	var z := sh.z
+	match hold:
+		"throw":
+			return [sh + Vector3(1.0, 3.5, 1.8), sh + Vector3(-2.5, 9.0, 0.8)]
+		"mouth":
+			var at := Vector3(head.x + 6.0, head.y + 1.0, z * 0.45)
+			return [Vector3(sh.x + 4.5, sh.y - 3.5, z + 1.2), at]
+		"overhead":
+			return [sh + Vector3(1.5, 4.5, 1.2), sh + Vector3(0.5, 9.0, 0.0)]
+		"draw":
+			return [sh + Vector3(4.5, -0.4, 1.0), sh + Vector3(9.5, -0.5, 0.8)]
+		"shoulder":
+			return [sh + Vector3(2.0, -4.5, 1.8), sh + Vector3(3.5, -2.0, 1.4)]
+		"aim":
+			return [sh + Vector3(3.0, -3.0, 1.4), sh + Vector3(7.5, -1.0, 0.6)]
+	return [elbow, hand]
 
 
 # ------------------------------------------------------------------ materials
@@ -158,12 +186,18 @@ func _body_frog(c: Dictionary) -> Dictionary:
 	n.add_child(blob(Vector3(10.0, 11.5, 9.0), skin, Vector3(-0.5, 14, 0), Vector3(0, 0, 14)))
 	n.add_child(blob(Vector3(6.8, 9.0, 7.0), belly, Vector3(3.6, 12.5, 0.6), Vector3(0, 0, 14)))
 	# Slim arms with round finger pads; the near arm is a front layer with its own outline.
+	var near_hand := Vector3.ZERO
 	var front := Node3D.new()
 	for side in [1, -1]:
 		var into: Node3D = front if side == 1 else n
 		var sh := Vector3(4, 18.5, 6.8 * side)
 		var elbow := Vector3(6.5, 13.5, 8.6 * side)
 		var hand := Vector3(10.5, 12, 7.5 * side) if side == 1 else Vector3(10, 13, -6.5)
+		if side == 1:
+			var pose := arm_pose(sh, elbow, hand, Vector3(3, 23, 0))
+			elbow = pose[0]
+			hand = pose[1]
+			near_hand = hand
 		into.add_child(rod(sh, elbow, 2.0, 1.6, skin))
 		into.add_child(rod(elbow, hand, 1.6, 1.4, skin))
 		into.add_child(blob(Vector3(1.8, 1.3, 1.8), skin, hand))
@@ -173,7 +207,7 @@ func _body_frog(c: Dictionary) -> Dictionary:
 			into.add_child(blob(Vector3(0.8, 0.8, 0.8), belly, tip))
 	kerchief(front, c, Vector3(2.4, 22.0, 0), 5.0, 14)
 	return {"node": n, "front": front, "sockets": {
-		"head": Vector3(3, 23, 0), "hand_r": Vector3(10.5, 12, 7.5), "hand_l": Vector3(10, 13, -6.5),
+		"head": Vector3(3, 23, 0), "hand_r": near_hand, "hand_l": Vector3(10, 13, -6.5),
 		"torso": Vector3(0.5, 14, 0), "back": Vector3(-8, 18, 0)},
 		"anchors": [[Vector3(-3, 7.0, -6.5), 0.0, -1], [Vector3(-3, 7.0, 6.5), PI, 1]],
 		"torso_scale": Vector2.ONE}
@@ -338,18 +372,24 @@ func _body_rat(c: Dictionary) -> Dictionary:
 	var pts := [Vector3(-5, 7, 0), Vector3(-11, 4.5, 1.5), Vector3(-16.5, 5.5, 2.5), Vector3(-19.5, 9.5, 3.0), Vector3(-19, 14, 3.0), Vector3(-16.5, 16, 2.5)]
 	for k in range(1, pts.size()):
 		n.add_child(rod(pts[k - 1], pts[k], 1.25 - k * 0.17, 1.25 - (k + 1) * 0.17, pink))
+	var near_hand := Vector3.ZERO
 	var front := Node3D.new()
 	for side in [1, -1]:
 		var into: Node3D = front if side == 1 else n
 		var sh := Vector3(3, 19.5, 5.5 * side)
 		var elbow := Vector3(4, 16.5, 7.0 * side)
 		var hand := Vector3(7.5, 15.5, 5.5 * side) if side == 1 else Vector3(7, 16.5, -5)
+		if side == 1:
+			var pose := arm_pose(sh, elbow, hand, Vector3(2, 25, 0))
+			elbow = pose[0]
+			hand = pose[1]
+			near_hand = hand
 		into.add_child(rod(sh, elbow, 1.9, 1.7, fur))
 		into.add_child(rod(elbow, hand, 1.7, 1.5, fur))
 		into.add_child(blob(Vector3(1.7, 1.4, 1.7), pink, hand))
 	kerchief(front, c, Vector3(1.5, 22.5, 0), 4.2, 8)
 	return {"node": n, "front": front, "sockets": {
-		"head": Vector3(2, 25, 0), "hand_r": Vector3(7.5, 15.5, 5.5), "hand_l": Vector3(7, 16.5, -5),
+		"head": Vector3(2, 25, 0), "hand_r": near_hand, "hand_l": Vector3(7, 16.5, -5),
 		"torso": Vector3(0, 15, 0), "back": Vector3(-6, 19, 0)},
 		"anchors": [[Vector3(-1, 6.0, -4.0), 0.0, -1], [Vector3(-1, 6.0, 4.0), PI, 1]],
 		"torso_scale": Vector2(0.85, 1.15)}
@@ -463,10 +503,12 @@ func _body_spider(c: Dictionary) -> Dictionary:
 	for k in 4:
 		hips.append([Vector3(xs[k], 10.5, 5.0), phases[k], 1, 1 if k >= 2 else 0])
 		hips.append([Vector3(xs[k] + 0.5, 11.5, -5.0), phases[k] + PI, -1, 1 if k >= 2 else 0])
+	harness(n, Vector3(-1.5, 12.5, 0), 6.0, 7.0, Vector3(0, 12, 7.0), Vector3(-1, 12, -7.0))
 	return {"node": n, "sockets": {
-		"head": Vector3(11, 11, 0), "hand_r": Vector3(3, 15, 7), "hand_l": Vector3(1, 15, -7),
-		"torso": Vector3(6, 12.5, 0), "back": Vector3(-8, 20, 0), "seat": Vector3(-5, 22.5, 0)},
-		"anchors": hips, "torso_scale": Vector2(0.6, 0.55)}
+		"head": Vector3(11, 11, 0), "hand_r": Vector3(0, 12, 7.6), "hand_l": Vector3(-1, 12, -7.6),
+		"torso": Vector3(6, 12.5, 0), "back": Vector3(-8, 20, 0), "seat": Vector3(-5, 22.5, 0),
+		"wings": Vector3(5, 16, 0)},
+		"anchors": hips, "torso_scale": Vector2(0.6, 0.55), "carry": "harness"}
 
 
 func _head_spider(c: Dictionary) -> Dictionary:
@@ -518,11 +560,11 @@ func _armour_mail(c: Dictionary) -> Dictionary:
 func _weapon_sling(c: Dictionary) -> Dictionary:
 	var n := Node3D.new()
 	var cord := surf("leather", c.cloth2, 2.0)
-	# Whirled overhead: two cords up from the hand to the pouch and its stone.
-	n.add_child(rod(Vector3(0, 0, 0), Vector3(-3, 15, 0.6), 0.4, 0.4, cord))
-	n.add_child(rod(Vector3(0.5, 0, 0), Vector3(-0.6, 15.5, -0.6), 0.4, 0.4, cord))
-	n.add_child(blob(Vector3(1.9, 1.3, 1.5), cord, Vector3(-1.8, 16, 0)))
-	n.add_child(blob(Vector3(1.5, 1.5, 1.5), surf("iron", Color("#b8b4a8"), 3.0), Vector3(-1.8, 16.9, 0)))
+	# Whirled from the raised hand: two cords out to the pouch and its stone, swinging behind.
+	n.add_child(rod(Vector3(0, 0, 0), Vector3(-6.5, 3.5, 0.6), 0.4, 0.4, cord))
+	n.add_child(rod(Vector3(0.5, 0, 0), Vector3(-6.0, 4.5, -0.6), 0.4, 0.4, cord))
+	n.add_child(blob(Vector3(1.9, 1.3, 1.5), cord, Vector3(-6.6, 4.3, 0)))
+	n.add_child(blob(Vector3(1.5, 1.5, 1.5), surf("iron", Color("#b8b4a8"), 3.0), Vector3(-7.0, 5.0, 0)))
 	return {"node": n}
 
 
@@ -550,11 +592,10 @@ func _helm_dome(c: Dictionary) -> Dictionary:
 
 func _weapon_blowgun(c: Dictionary) -> Dictionary:
 	var n := Node3D.new()
-	# Raised to the mouth: from the hand up past the face, pointing ahead.
-	n.add_child(rod(Vector3(-4, 9, 0), Vector3(14, 13, 0), 1.0, 0.9, surf("reed_stalk", Color.WHITE, 5.0), false))
-	n.add_child(rod(Vector3(0, 0, 0), Vector3(1, 9.5, 0), 0.7, 0.7, surf("leather", Color.WHITE, 3.0), false))   # the grip strap
-	n.add_child(ring(0.9, 1.4, surf("leather", Color.WHITE, 3.0), Vector3(1, 9.9, 0), Vector3(0, 0, -77)))
-	n.add_child(blob(Vector3(0.6, 0.6, 0.6), plain(Color("#1a1a1a")), Vector3(14.2, 13.05, 0)))
+	# Held at the lips (the hand is at the mouth end), pointing ahead and a little up.
+	n.add_child(rod(Vector3(-2.5, -0.6, 0), Vector3(15, 2.6, 0), 1.0, 0.9, surf("reed_stalk", Color.WHITE, 5.0), false))
+	n.add_child(ring(0.9, 1.4, surf("leather", Color.WHITE, 3.0), Vector3(0.6, 0, 0), Vector3(0, 0, -77)))   # the grip wrap
+	n.add_child(blob(Vector3(0.6, 0.6, 0.6), plain(Color("#1a1a1a")), Vector3(15.2, 2.65, 0)))
 	return {"node": n}
 
 
@@ -635,19 +676,25 @@ func _body_human(c: Dictionary) -> Dictionary:
 	n.add_child(ring(4.2, 5.1, belt, Vector3(0, 15.0, 0)))
 	n.add_child(blob(Vector3(1.0, 1.0, 0.5), surf("bronze", Color.WHITE, 2.0), Vector3(4.9, 15.0, 0.6)))
 	n.add_child(rod(Vector3(0.3, 23.5, 0), Vector3(0.6, 27, 0), 1.8, 1.7, skin))
+	var near_hand := Vector3.ZERO
 	var front := Node3D.new()
 	for side in [1, -1]:
 		var into: Node3D = front if side == 1 else n
 		var sh := Vector3(0.3, 23.2, 5.0 * side)
 		var elbow := Vector3(1.4, 18.4, 6.4 * side)
 		var hand := Vector3(6.0, 16.2, 5.6) if side == 1 else Vector3(5.5, 17.2, -4.8)
+		if side == 1:
+			var pose := arm_pose(sh, elbow, hand, Vector3(0.6, 27, 0))
+			elbow = pose[0]
+			hand = pose[1]
+			near_hand = hand
 		into.add_child(blob(Vector3(2.5, 2.4, 2.5), cloth, sh))
 		into.add_child(rod(sh, elbow, 1.8, 1.55, cloth))
 		into.add_child(rod(elbow, hand, 1.35, 1.15, skin))
 		into.add_child(blob(Vector3(1.5, 1.6, 1.3), skin, hand))
 	kerchief(front, c, Vector3(0.5, 24.6, 0), 2.6)
 	return {"node": n, "front": front, "sockets": {
-		"head": Vector3(0.6, 27, 0), "hand_r": Vector3(6.0, 16.2, 5.6), "hand_l": Vector3(5.5, 17.2, -4.8),
+		"head": Vector3(0.6, 27, 0), "hand_r": near_hand, "hand_l": Vector3(5.5, 17.2, -4.8),
 		"torso": Vector3(0.3, 17.8, 0), "back": Vector3(-4.2, 22, 0)},
 		"anchors": [[Vector3(-2.3, 11.0, -2.4), 0.0, -1], [Vector3(2.0, 11.0, 2.4), PI, 1]],
 		"torso_scale": Vector2(0.66, 0.82)}
@@ -700,6 +747,19 @@ func _pony_barrel(n: Node3D, c: Dictionary) -> void:
 		n.add_child(rod(tail[k - 1], tail[k], r[k - 1], r[k], mane))
 
 
+## Bodies with no arms carry their gear on a harness: a leather girth strap round the
+## body, a holder sleeve on the near flank where the weapon is couched (UnitView lays
+## it forward, like a lance in its rest), and a strap pad on the far flank for a shield.
+## `ry`, `rz`: the girth's radii (up and across) around `centre`.
+func harness(n: Node3D, centre: Vector3, ry: float, rz: float, hand_r: Vector3, hand_l: Vector3) -> void:
+	var leather := surf("leather", Color.WHITE, 3.0)
+	var dark := surf("leather", Color(0.55, 0.42, 0.32), 2.0)
+	n.add_child(ring(0.86, 1.0, leather, centre, Vector3(0, 0, 90), Vector3(ry, 1.6, rz)))   # the girth, across the back and belly
+	n.add_child(rod(hand_r + Vector3(-1.6, -0.6, 0.6), hand_r + Vector3(1.6, 0.6, 0.6), 1.15, 1.15, dark))   # the holder
+	n.add_child(blob(Vector3(0.7, 0.7, 0.5), surf("bronze", Color.WHITE, 2.0), hand_r + Vector3(0, 0, 1.6)))   # its buckle
+	n.add_child(blob(Vector3(2.2, 2.6, 0.8), dark, hand_l))   # the shield pad
+
+
 func _pony_anchors() -> Array:
 	var y := 14.0 + PONY_LIFT
 	return [[Vector3(8.5, y, 4.0), 0.0, 1, 0], [Vector3(-9.5, y, 4.0), PI, 1, 0],
@@ -715,10 +775,12 @@ func _body_pony(c: Dictionary) -> Dictionary:
 	var hide := surf("hide", c.skin, 6.0)
 	lift.add_child(rod(Vector3(8.5, 22, 0), Vector3(14.6, 31.5, 0), 4.4, 3.1, hide))   # neck, arched up
 	lift.add_child(rod(Vector3(6.4, 24.0, 0), Vector3(12.4, 33.4, 0), 2.1, 1.7, surf("mane", c.skin2.darkened(0.35), 3.0)))
+	harness(lift, Vector3(4, 19, 0), 7.0, 6.3, Vector3(3, 18, 6.4), Vector3(3, 18, -6.4))
 	return {"node": n, "sockets": _lifted({
-		"head": Vector3(15.0, 32.5, 0), "hand_r": Vector3(10, 18, 4), "hand_l": Vector3(8, 18, -4),
-		"torso": Vector3(0, 19, 0), "back": Vector3(-8, 24, 0), "seat": Vector3(-1, 25.8, 0)}),
-		"anchors": _pony_anchors(), "torso_scale": Vector2(1.3, 1.0)}
+		"head": Vector3(15.0, 32.5, 0), "hand_r": Vector3(3, 18, 6.9), "hand_l": Vector3(3, 18, -6.9),
+		"torso": Vector3(0, 19, 0), "back": Vector3(-8, 24, 0), "seat": Vector3(-1, 25.8, 0),
+		"wings": Vector3(7.5, 25.5, 0)}),
+		"anchors": _pony_anchors(), "torso_scale": Vector2(1.3, 1.0), "carry": "harness"}
 
 
 func _lifted(sockets: Dictionary) -> Dictionary:
@@ -789,10 +851,12 @@ func _body_beetle(c: Dictionary) -> Dictionary:
 	n.add_child(blob(Vector3(5.0, 1.2, 6.6), plain(c.team), Vector3(-1.5, 20.0, 0), Vector3(0, 0, -6)))
 	var hips := [[Vector3(10, 9.5, 6.0), 0.0, 1, 0], [Vector3(2, 9.5, 6.5), 2.1, 1, 0], [Vector3(-7, 9.5, 6.0), 4.2, 1, 1],
 		[Vector3(11, 10, -6.0), 3.14, -1, 0], [Vector3(3, 10, -6.5), 5.2, -1, 0], [Vector3(-6, 10, -6.0), 1.0, -1, 1]]
+	harness(n, Vector3(4, 13.5, 0), 7.2, 8.0, Vector3(4, 13.5, 8.0), Vector3(3, 13.5, -8.0))
 	return {"node": n, "sockets": {
-		"head": Vector3(16, 12.5, 0), "hand_r": Vector3(5, 15, 8), "hand_l": Vector3(3, 15, -8),
-		"torso": Vector3(11, 14, 0), "back": Vector3(-8, 19, 0), "seat": Vector3(-1.5, 21.5, 0)},
-		"anchors": hips, "torso_scale": Vector2(0.65, 0.6)}
+		"head": Vector3(16, 12.5, 0), "hand_r": Vector3(4, 13.5, 8.6), "hand_l": Vector3(3, 13.5, -8.6),
+		"torso": Vector3(11, 14, 0), "back": Vector3(-8, 19, 0), "seat": Vector3(-1.5, 21.5, 0),
+		"wings": Vector3(6, 19.5, 0)},
+		"anchors": hips, "torso_scale": Vector2(0.65, 0.6), "carry": "harness"}
 
 
 func _head_beetle(c: Dictionary) -> Dictionary:
@@ -852,8 +916,8 @@ func _weapon_dory(c: Dictionary) -> Dictionary:
 func _weapon_pilum(c: Dictionary) -> Dictionary:
 	var n := Node3D.new()
 	var iron := surf("iron", Color.WHITE, 3.0)
-	var a := Vector3(-9, 8, 0)      # raised over the shoulder, ready to throw
-	var b := Vector3(6, 13, 0)
+	var a := Vector3(-7, -4.5, 0)   # gripped at its balance: raised over the shoulder, ready to throw
+	var b := Vector3(6, 3.5, 0)
 	n.add_child(rod(a, b, 0.8, 0.8, surf("wood_grain", Color.WHITE, 6.0), false))
 	var d := (b - a).normalized()
 	var tip := b + d * 6.0
@@ -918,12 +982,17 @@ func _weapon_gladius(c: Dictionary) -> Dictionary:
 func _weapon_bow_short(c: Dictionary) -> Dictionary:
 	var n := Node3D.new()
 	var wood := surf("wood_grain", Color("#c09060"), 4.0)
+	# Held out at its leather grip (the origin), the string drawn back towards the face.
+	var g := Vector3(5.7, 0, 0)
 	var pts := [Vector3(3.4, -11.4, 0), Vector3(2, -10, 0), Vector3(5, -5, 0), Vector3(6, 0, 0), Vector3(5, 5, 0), Vector3(2, 10, 0), Vector3(3.4, 11.4, 0)]
 	for k in range(1, pts.size()):
 		var r := 0.85 if k in [3, 4] else 0.6
-		n.add_child(rod(pts[k - 1], pts[k], r, r, wood))
-	n.add_child(rod(Vector3(2, -10, 0), Vector3(2, 10, 0), 0.14, 0.14, plain(Color("#e8e0c8")), false))
-	n.add_child(cone(1.05, 1.05, 2.4, surf("leather", Color.WHITE, 2.0), Vector3(5.7, 0, 0), Vector3(0, 0, 8)))
+		n.add_child(rod(pts[k - 1] - g, pts[k] - g, r, r, wood))
+	var nock := Vector3(-3.5, 0, 0) - g
+	n.add_child(rod(Vector3(2, -10, 0) - g, nock, 0.14, 0.14, plain(Color("#e8e0c8")), false))
+	n.add_child(rod(nock, Vector3(2, 10, 0) - g, 0.14, 0.14, plain(Color("#e8e0c8")), false))
+	n.add_child(rod(nock, Vector3(9, 0, 0) - g, 0.3, 0.3, surf("wood_grain", Color.WHITE, 2.0), false))   # the arrow
+	n.add_child(cone(1.05, 1.05, 2.4, surf("leather", Color.WHITE, 2.0), Vector3.ZERO, Vector3(0, 0, 8)))
 	return {"node": n}
 
 
@@ -1170,10 +1239,16 @@ func _quiver(c: Dictionary) -> Dictionary:
 	return {"node": n}
 
 
-## Wings at the back: the near one fanned towards the viewer, the far one peeking out above.
+## Wings at the back: the near one fanned towards the viewer, the far one raised
+## steeper behind it. Both are rooted at the shoulders and sweep back and up (the
+## texture's root is its lower right, its tip the upper left). The far one used to sit
+## with its root over the head, so it read as pointing forward.
 func _wings(texture: String, tint: Color) -> Dictionary:
 	var n := Node3D.new()
-	n.add_child(decal(texture, 24, 24, Vector3(-5.5, 15.5, -3.0), Vector3(0.5, 0.2, 1), true, Vector3(-0.35, 1, 0), tint.darkened(0.3)))
+	var x := Vector3(1, -0.3, -0.3).normalized()   # the far wing's picture axes: right...
+	var y := Vector3(0.3, 1, 0).normalized()       # ...and up, so its tip goes back and steeply up
+	var root := Vector3(0.5, 3.0, -4.0)
+	n.add_child(decal(texture, 24, 24, root - x * 9.0 + y * 8.2, x.cross(y), true, y, tint.darkened(0.3)))
 	n.add_child(decal(texture, 26, 26, Vector3(-10.7, 8.8, 2.0), Vector3(-0.15, 0.15, 1), true, Vector3.UP, tint))
 	return {"node": n}
 

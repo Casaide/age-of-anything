@@ -2,14 +2,21 @@ extends Control
 ## Race Lab: type a prompt per side, generate a race, see its army mill about.
 ## Proves the data contract, generator, pricing and composer before any
 ## gameplay exists. The UI is built in code to keep the scene file trivial.
+## Units are drawn in the game's baked pixel art, on the game's ground with its
+## doodads: each generated race is baked by the art kit (cached), so what you see
+## here is what the match shows.
 
 const DataLib := preload("res://src/data_lib.gd")
 const Generator := preload("res://src/race_generator.gd")
 const UnitView := preload("res://src/unit_view.gd")
+const ArtKit := preload("res://src/view/art/art_kit.gd")
+const TerrainView := preload("res://src/view/art/terrain_view.gd")
+const Iso := preload("res://src/view/iso.gd")
 
 const RULE_IDS := ["default", "bronze", "anything"]
 const DEFAULT_PROMPTS := ["angry swamp frogs with reed spears", "sewer rats with cheese hammers"]
-const WORLD_ZOOM := 2.0
+const WORLD_ZOOM := ArtKit.ART_SCALE * 2.0   # two screen pixels per art pixel
+const GROUND_TILES := 30   # the ground is a square tile map big enough to fill the field
 const LINEUP_Y := 78.0
 const COPIES := {"worker": 2, "spear": 2, "skirmisher": 2, "archer": 2, "large": 1}
 const BG := Color("#2b2620")
@@ -17,6 +24,7 @@ const PANEL := Color("#3a332b")
 const TEXT_DIM := "#b8ad94"
 const TEXT_FAINT := "#8a8070"
 const NOTE := "#f2c94c"
+const HELP := "Enter or Generate: new race · Reroll: same prompt, new roll · Save: writes the race JSON"
 
 var lib
 var gen
@@ -25,6 +33,12 @@ var rules_pick: OptionButton
 var status: Label
 var field: Control
 var world: Node2D
+var layer: Node2D          # units and doodads, y-sorted
+var kit: ArtKit
+var kit_busy := false
+var ground: TerrainView
+var ground_at := Vector2.ZERO   # where the ground's map sits in world units
+var doodads: Array = []
 var labels: Control
 var sides: Array = []
 
@@ -35,6 +49,9 @@ func _ready() -> void:
 	for id in RULE_IDS:
 		rules_list.append(DataLib.load_json("res://data/rules/%s.json" % id))
 	_build_ui()
+	kit = ArtKit.new()
+	kit.lib = lib
+	add_child(kit)
 	field.resized.connect(_respawn_all)
 	_generate.call_deferred(0, false)
 	_generate.call_deferred(1, false)
@@ -52,9 +69,31 @@ func _generate(i: int, reroll: bool) -> void:
 	var prompt: String = side.prompt.text.strip_edges()
 	if prompt == "":
 		prompt = "?"
-	side.race = gen.generate(prompt, _rules(), side.reroll)
-	side.card.text = _card_text(side.race)
-	_respawn(i)
+	var race: Dictionary = gen.generate(prompt, _rules(), side.reroll)
+	side.race = race
+	side.card.text = _card_text(race)
+	await _bake(i, race)
+
+
+## Bake a race's units (the kit skips anything already baked), one bake at a time.
+func _bake(i: int, race: Dictionary) -> void:
+	while kit_busy:
+		await get_tree().process_frame
+	if sides[i].race != race:   # replaced while it waited
+		return
+	kit_busy = true
+	status.text = "Baking %s..." % race.name
+	var t0 := Time.get_ticks_msec()
+	if ground == null:
+		await kit.bake_props()
+	await kit.prepare_units([race], [Color(lib.palettes.teams[i])])
+	if ground == null:
+		_build_ground()
+	sides[i].baked = race.key
+	status.text = "Baked %s in %d ms.   %s" % [race.name, Time.get_ticks_msec() - t0, HELP]
+	kit_busy = false
+	# The atlas was rebuilt and the old one freed: everything drawn from it is redrawn.
+	_respawn_all()
 
 
 func _regenerate_all(_index := 0) -> void:
@@ -75,6 +114,8 @@ func _save(i: int) -> void:
 # ------------------------------------------------------------------ armies
 
 func _respawn_all() -> void:
+	if ground:
+		_place_ground()
 	for i in sides.size():
 		if not sides[i].race.is_empty():
 			_respawn(i)
@@ -85,7 +126,7 @@ func _respawn(i: int) -> void:
 	for n in side.nodes:
 		n.queue_free()
 	side.nodes.clear()
-	if side.race.is_empty() or field.size.x < 10.0:
+	if side.race.is_empty() or side.baked != side.race.key or field.size.x < 10.0:
 		return
 
 	var team := Color(lib.palettes.teams[i])
@@ -126,16 +167,45 @@ func _respawn(i: int) -> void:
 func _spawn(u: Dictionary, team: Color, pos: Vector2, face: float) -> Node2D:
 	var view := UnitView.new()
 	view.build(u.recipe, lib, team, u.eval.speed)
+	view.scale = Vector2.ONE * ArtKit.UNIT_SCALE   # as in the match
+	view.pose_steps = 8
+	view.art_px = ArtKit.ART_SCALE / WORLD_ZOOM   # art pixels per screen pixel
 	view.position = pos
 	view.face(face)
-	world.add_child(view)
+	layer.add_child(view)
 	return view
 
 
-func _process(_delta: float) -> void:
-	# Painter's order: lower on screen draws on top.
-	for child in world.get_children():
-		child.z_index = int(child.position.y)
+# ------------------------------------------------------------------ ground
+
+## The match's ground (grass from the terrain shader) with seeded doodads.
+func _build_ground() -> void:
+	var n := GROUND_TILES
+	var map := {"id": "race_lab", "width": n, "height": n, "terrain_ids": ["grass"],
+		"terrain": PackedByteArray(), "walk": PackedByteArray()}
+	map.terrain.resize(n * n)
+	map.walk.resize(n * n)
+	map.walk.fill(1)
+	ground = TerrainView.new()
+	ground.build(map)
+	ground.set_art_px(WORLD_ZOOM / ArtKit.ART_SCALE)
+	world.add_child(ground)
+	world.move_child(ground, 0)
+	_place_ground()
+
+
+## Centre the ground's diamond on the field and re-scatter its doodads around the lineup.
+func _place_ground() -> void:
+	var view := field.size / WORLD_ZOOM
+	ground_at = view * 0.5 - Iso.to_screen(GROUND_TILES * 500, GROUND_TILES * 500)
+	ground.position = ground_at
+	for d in doodads:
+		d.queue_free()
+	doodads = ground.scatter(kit, layer, func(t: Vector2) -> bool:
+		var p := Iso.to_screen(t.x * 1000, t.y * 1000) + ground_at
+		return p.x < 4 or p.y < LINEUP_Y + 24 or p.x > view.x - 4 or p.y > view.y - 4)
+	for d in doodads:
+		d.position += ground_at
 
 
 # ------------------------------------------------------------------ race card
@@ -196,11 +266,11 @@ func _build_ui() -> void:
 	root.add_child(body)
 	status = Label.new()
 	status.add_theme_color_override("font_color", Color(TEXT_FAINT))
-	status.text = "Enter or Generate: new race · Reroll: same prompt, new roll · Save: writes the race JSON"
+	status.text = HELP
 	root.add_child(status)
 
 	for i in 2:
-		sides.append({"prompt": null, "card": null, "race": {}, "reroll": 0, "nodes": []})
+		sides.append({"prompt": null, "card": null, "race": {}, "reroll": 0, "nodes": [], "baked": ""})
 
 	_prompt_row(top, 0)
 	var vs := Label.new()
@@ -221,21 +291,26 @@ func _build_ui() -> void:
 	field.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	field.clip_contents = true
 	body.add_child(field)
-	var grass := ColorRect.new()
-	grass.color = Color("#6f8f4a")
+	var grass := ColorRect.new()   # under the ground while it bakes
+	grass.color = Color("#56782e")
 	grass.set_anchors_preset(Control.PRESET_FULL_RECT)
 	field.add_child(grass)
+	world = Node2D.new()
+	world.scale = Vector2(WORLD_ZOOM, WORLD_ZOOM)
+	world.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
+	field.add_child(world)
+	layer = Node2D.new()
+	layer.y_sort_enabled = true
+	world.add_child(layer)
 	var divider := ColorRect.new()
-	divider.color = Color("#5c7a3c")
+	divider.color = Color(0.1, 0.08, 0.05, 0.35)
 	divider.anchor_left = 0.5
 	divider.anchor_right = 0.5
 	divider.anchor_bottom = 1.0
-	divider.offset_left = -2
-	divider.offset_right = 2
+	divider.offset_left = -1
+	divider.offset_right = 1
+	divider.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	field.add_child(divider)
-	world = Node2D.new()
-	world.scale = Vector2(WORLD_ZOOM, WORLD_ZOOM)
-	field.add_child(world)
 	labels = Control.new()
 	labels.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	field.add_child(labels)

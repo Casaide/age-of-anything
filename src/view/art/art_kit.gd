@@ -8,28 +8,113 @@ extends Node
 const PartShape := preload("res://src/part_shape.gd")
 const UnitView := preload("res://src/unit_view.gd")
 const PartBaker := preload("res://scenes/art_pixel/part_baker.gd")
-const Baker := preload("res://scenes/style_sampler/hifi/baker.gd")
-const Models := preload("res://scenes/style_sampler/hifi/models.gd")
+const Baker := preload("res://src/view/art/bake/baker.gd")
+const Models := preload("res://src/view/art/bake/models.gd")
 const PropModels := preload("res://scenes/art_pixel/prop_models.gd")
 
 const ART_SCALE := 1.5     # art pixels per canvas unit (a tile is 96 x 48 art pixels)
 const UNIT_SCALE := 0.85   # units at about a third of a building's height
 const SS := 4              # supersampling for the building and prop bakes
-const HOUSE_SCALE := 1.3   # houses read about 2.5x a footman
+const HOUSE_SCALE := 1.3
+const ICON_CELL := 160     # screen pixels per unit when rendering portraits   # houses read about 2.5x a footman
 const TOWN := {"thatch": "town_center", "junk": "junk_town_center", "stone": "stone_town_center", "tent": "tent_town_center"}
 const HOUSE := {"thatch": "stilt_house", "junk": "tin_can_house", "stone": "villa_house", "tent": "tent_house"}
 const MATERIALS := ["wood", "thatch", "mud", "stone", "tin", "brick", "plaster", "terracotta", "terracotta_dark", "felt", "weave"]
-## Doodad kinds and how many bakes of each.
-const DOODADS := {"reeds": 4, "bush": 3, "rock": 3, "stones": 4, "tuft": 4, "flowers": 6, "shore": 4, "lily": 4}
+## Prop and doodad kinds and how many variants of each (each a different shape, size
+## and turn; picked per tile so neighbours differ).
+const DOODADS := {"reeds": 6, "bush": 6, "rock": 6, "stones": 6, "tuft": 6, "flowers": 6, "shore": 4, "lily": 4}
+## Resources show how much is left: reeds and bug bushes each have this many stages
+## (0 whole ... 3 nearly gone: stubble for reeds, a bare brown bush).
+const STAGES := 4
+## A building under construction shows four stages: foundations; the scaffold with what
+## stands low; the walls; the roof going on. Each keeps the parts whose top (first two)
+## or middle (last two) is below this fraction of the building's height.
+const BUILD_STAGES := [0.15, 0.4, 0.45, 0.72]
 
 var lib
 var bakes := {}       # name -> {img: Image, origin: Vector2 (baked px of the anchor)}
 var regions := {}     # name -> Rect2 in the atlas
-var buildings := {}   # "arch:type" -> {body, smoke, lantern, lights, banner, vane, vane_at} (canvas units from the centre)
+var buildings := {}   # "arch:type" -> {body, smoke, lantern, lights, banner, vane, vane_at, stages} (canvas units from the centre)
+var icons := {}       # "side:slot" -> Texture2D: a portrait of that unit, rendered from its baked art
 
 
 ## Bake what these races need (anything already baked is kept), then rebuild the atlas.
+## Prints how long each part took (bake time at match start is a budget we watch).
 func prepare(races: Array, teams: Array) -> void:
+	var t0 := Time.get_ticks_msec()
+	await bake_units(races, teams)
+	var t1 := Time.get_ticks_msec()
+	await bake_props()
+	var t2 := Time.get_ticks_msec()
+	await bake_buildings(races)
+	var t3 := Time.get_ticks_msec()
+	rebuild_atlas()
+	var t4 := Time.get_ticks_msec()
+	await bake_icons(races, teams)
+	print("Art kit: units %d ms, props %d ms, buildings %d ms, atlas %d ms, icons %d ms" % [t1 - t0, t2 - t1, t3 - t2, t4 - t3, Time.get_ticks_msec() - t4])
+
+
+## A portrait of every unit of these races, for the command panel: each unit's own
+## UnitView (its baked parts, in its team colour) rendered in one SubViewport at two
+## screen pixels per art pixel, cropped square. Needs the atlas built.
+func bake_icons(races: Array, teams: Array) -> void:
+	var list := []
+	for side in races.size():
+		for u in races[side].units:
+			list.append([side, u])
+	var cols := 6
+	var vp := SubViewport.new()
+	vp.transparent_bg = true
+	vp.size = Vector2i(cols, ceili(list.size() / float(cols))) * ICON_CELL
+	vp.canvas_item_default_texture_filter = Viewport.DEFAULT_CANVAS_ITEM_TEXTURE_FILTER_NEAREST
+	vp.render_target_update_mode = SubViewport.UPDATE_DISABLED
+	add_child(vp)
+	var zoom := ART_SCALE * 2.0
+	for k in list.size():
+		var u: Dictionary = list[k][1]
+		var view := UnitView.new()
+		view.build(u.recipe, lib, teams[list[k][0]], u.eval.speed)
+		view.scale = Vector2.ONE * UNIT_SCALE * zoom
+		view.position = Vector2(k % cols + 0.5, k / cols + 0.8) * ICON_CELL
+		view.set_process(false)       # a still pose
+		view.get_child(0).visible = false   # no ground shadow
+		vp.add_child(view)
+	vp.render_target_update_mode = SubViewport.UPDATE_ONCE
+	await RenderingServer.frame_post_draw
+	var img := vp.get_texture().get_image()
+	for k in list.size():
+		var cell := img.get_region(Rect2i(Vector2i(k % cols, k / cols) * ICON_CELL, Vector2i.ONE * ICON_CELL))
+		var used := cell.get_used_rect()
+		var side := maxi(used.size.x, used.size.y) + 4
+		var sq := Image.create(side, side, false, Image.FORMAT_RGBA8)
+		sq.blit_rect(cell, used, Vector2i((side - used.size.x) / 2, side - used.size.y - 2))
+		icons["%d:%s" % [list[k][0], list[k][1].recipe.slot]] = ImageTexture.create_from_image(sq)
+	vp.queue_free()
+
+
+## A building's picture for a button: its finished bake, from the atlas.
+func building_icon(arch: String, type: String) -> Texture2D:
+	var at := AtlasTexture.new()
+	at.atlas = PartShape.atlas
+	at.region = regions[buildings["%s:%s" % [arch, type]].body]
+	return at
+
+
+## Only the units (the Race Lab bakes per generated race), then the atlas.
+func prepare_units(races: Array, teams: Array) -> void:
+	await bake_units(races, teams)
+	rebuild_atlas()
+
+
+func rebuild_atlas() -> void:
+	var extras := {}
+	for name in bakes:
+		extras[name] = bakes[name].img
+	regions = PartShape.build_atlas(extras)
+
+
+## Every part of every unit of these races, in each side's team key (skips what's baked).
+func bake_units(races: Array, teams: Array) -> void:
 	var pb := PartBaker.new()
 	pb.art_scale = ART_SCALE * UNIT_SCALE   # baked at the size they're drawn: crisp pixels
 	add_child(pb)
@@ -44,55 +129,99 @@ func prepare(races: Array, teams: Array) -> void:
 	pb.queue_free()
 	PartShape.bake_flat("unit_shadow", UnitView.SHADOW_SHAPES, UnitView.SHADOW_COLOURS, ART_SCALE * UNIT_SCALE)
 
+
+func _hifi() -> Array:
 	var models := Models.new()
 	models.mats.matte = true
 	var baker := Baker.new()
 	add_child(baker)
 	baker.set_pixel_mode(ART_SCALE, SS)
+	baker.outline = false   # props and buildings are drawn realistically, without the units' outline
 	for name in MATERIALS:
 		var m: StandardMaterial3D = models.mats.get_mat(name)
 		for t in [m.albedo_texture, m.normal_texture]:
 			while t != null and t.get_image() == null:   # noise textures build in a thread
 				await get_tree().process_frame
-	await _bake_doodads(baker, models)
+	return [baker, models]
+
+
+## Resource props and ground doodads (once per run).
+func bake_props() -> void:
+	if bakes.has("reeds0"):
+		return
+	var h: Array = await _hifi()
+	await _bake_doodads(h[0], h[1])
+	h[0].queue_free()
+
+
+## Each culture's buildings for these races (skips what's baked).
+func bake_buildings(races: Array) -> void:
 	var archs := []
 	for r in races:
 		var a: String = lib.families[r.family].get("architecture", "thatch")
-		if not a in archs:
+		if not a in archs and not buildings.has(a + ":house"):
 			archs.append(a)
+	if archs.is_empty():
+		return
 	archs.sort()
+	var h: Array = await _hifi()
 	for arch in archs:
 		for type in ["town_center", "house"]:
-			await _bake_building(baker, models, arch, type)
-	baker.queue_free()
-
-	var extras := {}
-	for name in bakes:
-		extras[name] = bakes[name].img
-	regions = PartShape.build_atlas(extras)
+			await _bake_building(h[0], h[1], arch, type)
+	h[0].queue_free()
 
 
+## Every variant (and cut-down stage) of every prop, several to a render.
 func _bake_doodads(baker, models) -> void:
-	if bakes.has("reeds0"):
-		return
 	var props := PropModels.new()
-	baker.outline = false   # static props are drawn realistically, without the units' outline
+	var shadowed := {}      # name -> model
+	for v in DOODADS.reeds:
+		for st in STAGES:
+			shadowed[staged("reeds", v, st)] = props.reed_clump(300 + v, 1.0, st)
+	for v in DOODADS.bush:
+		for st in STAGES:
+			shadowed[staged("bush", v, st)] = props.bug_bush(400 + v, st)
+	for v in DOODADS.rock:
+		shadowed["rock%d" % v] = props.boulders(1000 + v)
+	var flat := {}
+	for v in DOODADS.stones:
+		flat["stones%d" % v] = props.field_stones(500 + v)
+	for v in DOODADS.tuft:
+		flat["tuft%d" % v] = props.grass_tuft(600 + v)
+	for v in DOODADS.flowers:
+		flat["flowers%d" % v] = models.flowers(800 + v)
+	for v in DOODADS.shore:
+		flat["shore%d" % v] = props.reed_clump(700 + v, 0.55)
+	for v in DOODADS.lily:
+		flat["lily%d" % v] = props.lily_pads(900 + v)
 	baker.set_ground_shadow(true)
-	for k in DOODADS.reeds:
-		await _bake(baker, "reeds%d" % k, props.reed_clump(300 + k))
-	for k in DOODADS.bush:
-		await _bake(baker, "bush%d" % k, props.bug_bush(400 + k))
-	for k in DOODADS.rock:
-		await _bake(baker, "rock%d" % k, props.boulders(1000 + k))
+	await _bake_set(baker, shadowed)
 	baker.set_ground_shadow(false)
-	for k in DOODADS.stones:
-		await _bake(baker, "stones%d" % k, models.stones(500 + k))
-		await _bake(baker, "tuft%d" % k, models.tuft(600 + k))
-		await _bake(baker, "shore%d" % k, props.reed_clump(700 + k, 0.55))
-		await _bake(baker, "lily%d" % k, props.lily_pads(900 + k))
-	for k in DOODADS.flowers:
-		await _bake(baker, "flowers%d" % k, models.flowers(800 + k))
-	baker.outline = true
+	await _bake_set(baker, flat)
+
+
+func _bake_set(baker, todo: Dictionary) -> void:
+	var names := todo.keys()
+	var out: Array = await baker.bake_many(names.map(func(k): return todo[k]))
+	for i in names.size():
+		bakes[names[i]] = {"img": (out[i].tex as Texture2D).get_image(), "origin": out[i].points[0]}
+
+
+## How used-up a resource looks: its stage from what's left of what it started with.
+## Reeds thin out, then are mostly cut, and leave stubble when used up; bug bushes
+## lose berries and colour in four steps.
+static func resource_stage(kind: String, left: int, full: int) -> int:
+	if left <= 0:
+		return STAGES - 1
+	var f := float(left) / float(full)
+	if kind == "reeds":
+		return 0 if f > 0.7 else (1 if f > 0.35 else 2)
+	return 0 if f > 0.75 else (1 if f > 0.5 else (2 if f > 0.25 else 3))
+
+
+## The bake name of a prop variant at a stage (stage 0 is the plain name).
+static func staged(kind: String, variant: int, stage: int) -> String:
+	return "%s%d" % [kind, variant] if stage == 0 else "%s%d.%d" % [kind, variant, stage]
 
 
 func _bake(baker, name: String, model: Node3D) -> void:
@@ -127,7 +256,72 @@ func _bake_building(baker, models, arch: String, type: String) -> void:
 		bakes[name + ":vane"] = {"img": (vane.tex as Texture2D).get_image(), "origin": vane.points[1]}
 		info.vane = name + ":vane"
 		info.vane_at = (vane.points[1] - vane.points[0]) / ART_SCALE
+	info.stages = []
+	baker.set_ground_shadow(true)
+	for st in BUILD_STAGES.size():
+		var part: Dictionary = models.call(TOWN[arch] if type == "town_center" else HOUSE[arch], PartShape.TEAM_KEY)
+		if type != "town_center":
+			part.body.scale = Vector3.ONE * HOUSE_SCALE
+		_hold_back(part.body, st, models)
+		for live in ["banner", "vane"]:   # the live parts only go up when it's finished
+			if part.has(live):
+				part[live].free()
+		var sb: Dictionary = await baker.bake(part.body, [Vector3.ZERO])
+		var sname := "%s:stage%d" % [name, st]
+		bakes[sname] = {"img": (sb.tex as Texture2D).get_image(), "origin": sb.points[0]}
+		info.stages.append(sname)
+	baker.set_ground_shadow(false)
 	buildings[name] = info
+
+
+## A building under construction, from its own model with parts held back (see
+## BUILD_STAGES), and a scaffold of poles and rails around the footprint up to just
+## above what's built. Works on any architecture: foundations come first, walls rise,
+## the roof goes on last.
+func _hold_back(body: Node3D, stage: int, models) -> void:
+	var cut: float = BUILD_STAGES[stage]
+	var boxes := {}
+	var all := AABB()
+	var first := true
+	for mi in body.find_children("*", "MeshInstance3D", true, false):
+		var t := Transform3D()
+		var p: Node = mi
+		while p != body:
+			t = (p as Node3D).transform * t
+			p = p.get_parent()
+		var b: AABB = t * (mi as MeshInstance3D).get_aabb()
+		boxes[mi] = b
+		all = b if first else all.merge(b)
+		first = false
+	var h := all.size.y
+	var top := 0.0
+	for mi in boxes:
+		var b: AABB = boxes[mi]
+		var at := (b.end.y if stage < 2 else b.get_center().y) - all.position.y
+		if at > cut * h:
+			mi.visible = false
+		else:
+			top = maxf(top, b.end.y)
+	# The scaffold: poles at the corners and along the sides of the footprint, rails between.
+	var wood: StandardMaterial3D = models.mats.get_mat("wood")
+	var lo := Vector3(all.position.x - 0.04, 0.0, all.position.z - 0.04)
+	var hi := Vector3(all.end.x + 0.04, 0.0, all.end.z + 0.04)
+	var pole_h := maxf(top + 0.08, 0.22)
+	var posts := []
+	for fx in [0.0, 0.5, 1.0]:
+		for fz in [0.0, 0.5, 1.0]:
+			if fx == 0.5 and fz == 0.5:
+				continue
+			posts.append(Vector3(lerpf(lo.x, hi.x, fx), 0.0, lerpf(lo.z, hi.z, fz)))
+	for q in posts:
+		body.add_child(models.beam(q, q + Vector3(0, pole_h, 0), 0.016, wood))
+	var ring := [posts[0], posts[1], posts[2], posts[4], posts[7], posts[6], posts[5], posts[3]]   # around the edge
+	var levels := [pole_h * 0.5, pole_h - 0.03] if pole_h > 0.3 else [pole_h - 0.03]
+	for y in levels:
+		for k in ring.size():
+			var a: Vector3 = ring[k]
+			var c: Vector3 = ring[(k + 1) % ring.size()]
+			body.add_child(models.beam(a + Vector3(0, y, 0), c + Vector3(0, y, 0), 0.011, wood))
 
 
 ## A sprite of a bake, anchored on its origin, drawn 1:1 in art pixels; team colour
@@ -146,9 +340,9 @@ func sprite(name: String) -> Sprite2D:
 	return s
 
 
-## A doodad sprite of a kind, varied by a cosmetic pick.
-func doodad(kind: String, pick: int) -> Sprite2D:
-	return sprite("%s%d" % [kind, posmod(pick, DOODADS[kind])])
+## A doodad sprite of a kind, varied by a cosmetic pick (and for resources, a stage).
+func doodad(kind: String, pick: int, stage := 0) -> Sprite2D:
+	return sprite(staged(kind, posmod(pick, DOODADS[kind]), stage))
 
 
 ## One palette for the whole frame: the terrain ramps, the building materials, and

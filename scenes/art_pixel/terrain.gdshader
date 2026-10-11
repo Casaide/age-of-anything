@@ -26,6 +26,36 @@ float height(vec2 t) {
 	return vnoise(t * 0.35) * 0.55 + vnoise(t * 0.8 + 3.0) * 0.3 + vnoise(t * 1.9 + 7.0) * 0.15;
 }
 
+// Irregular stones: the nearest jittered cell to p. Returns (edge distance d2 - d1,
+// the cell's hash, 0) and gives the cell id and p's offset from the stone's centre.
+vec3 stones(vec2 p, float jitter, out vec2 id, out vec2 off) {
+	vec2 ip = floor(p);
+	float d1 = 9.0;
+	float d2 = 9.0;
+	id = ip;
+	off = vec2(0.0);
+	for (int j = -1; j <= 1; j++) {
+		for (int i = -1; i <= 1; i++) {
+			vec2 o = ip + vec2(float(i), float(j));
+			vec2 q = o + 0.5 + (vec2(hash(o), hash(o + 3.1)) - 0.5) * jitter;
+			float d = length(p - q);
+			if (d < d1) { d2 = d1; d1 = d; id = o; off = p - q; } else if (d < d2) { d2 = d; }
+		}
+	}
+	return vec3(d2 - d1, hash(id + 9.0), 0.0);
+}
+
+// A stone's face lit from the upper left like everything else: a bright rim on the
+// side towards the light, a shaded rim away from it (a bevel, in two bands).
+vec3 bevel(vec3 col, vec2 off, float edge, float width) {
+	float rim = 1.0 - smoothstep(0.0, width, edge);
+	float facing = dot(normalize(off + vec2(1e-4)), normalize(vec2(-0.6, -0.8)));
+	if (rim > 0.35) {
+		col *= facing > 0.2 ? 1.16 : (facing < -0.2 ? 0.74 : 1.0);
+	}
+	return col;
+}
+
 vec3 ramp4(vec3 a, vec3 b, vec3 c, vec3 d, float v) {
 	float q = floor(clamp(v, 0.0, 0.999) * 4.0);
 	return q < 1.0 ? a : q < 2.0 ? b : q < 3.0 ? c : d;
@@ -72,14 +102,35 @@ void fragment() {
 	if (h > 0.965) col = col * 1.25 + vec3(0.04, 0.05, 0.0);
 	else if (h < 0.03) col *= 0.7;
 	if (vnoise(t * 3.1 + 40.0) > 0.78 && hash(cell + 21.0) > 0.4) col = mix(col, vec3(0.28, 0.48, 0.20), 0.6);   // clover
+	// Natural variation: broad drifts of warmer and cooler green, darker clumps of
+	// thicker grass with lit tips, and worn patches where soil shows through.
+	float drift = vnoise(t * 0.17 + 61.0);
+	col *= mix(vec3(1.06, 1.02, 0.84), vec3(0.9, 1.0, 1.06), drift);
+	float clump = vnoise(t * 4.3 + 7.0) * 0.7 + vnoise(t * 11.0) * 0.3;
+	if (clump > 0.66) col *= (hash(cell + 31.0) > 0.7 ? 1.12 : 0.8);
+	float worn = vnoise(t * 0.7 + 33.0) * 0.8 + vnoise(t * 5.0 + 3.0) * 0.2;
+	if (worn > 0.7 && hash(cell + 41.0) > 0.45) col = mix(col, vec3(0.42, 0.34, 0.22), 0.55 + 0.2 * hash(cell + 43.0));
 
 	// Reed beds: damp ground, a little darker and more olive, fading out with no edge.
 	float reed = clamp(m.b * 1.3 + (n - 0.5) * 0.5, 0.0, 1.0);
 	col = mix(col, col * vec3(0.8, 0.86, 0.72), floor(reed * 3.0) / 3.0 * 0.8);
 	float swamp = m.g + (n - 0.5) * 0.4;
 	if (swamp > 0.5) {
-		col = ramp4(vec3(0.15, 0.24, 0.20), vec3(0.18, 0.29, 0.22), vec3(0.22, 0.33, 0.23), vec3(0.27, 0.36, 0.22), grain);
-		if (hash(cell + 7.0) > 0.975) col = vec3(0.30, 0.48, 0.22);   // a little lily pad
+		// Boggy ground: dark peaty mud and olive moss, sedge tufts, algae scum, and
+		// standing puddles that catch the sky on their far edge.
+		float bog = vnoise(t * 1.6 + 5.0) * 0.6 + vnoise(t * 4.5 + 9.0) * 0.4;
+		col = ramp4(vec3(0.20, 0.24, 0.13), vec3(0.25, 0.30, 0.15), vec3(0.30, 0.35, 0.17), vec3(0.36, 0.40, 0.19), grain);
+		if (bog < 0.36) col = ramp4(vec3(0.19, 0.15, 0.10), vec3(0.24, 0.19, 0.12), vec3(0.28, 0.23, 0.15), vec3(0.33, 0.27, 0.18), grain);   // mud
+		float pool = bog + (vnoise(t * 9.0) - 0.5) * 0.08;
+		if (pool > 0.66) {
+			col = mix(vec3(0.10, 0.17, 0.17), vec3(0.14, 0.23, 0.24), grain);   // standing water
+			if (pool < 0.69) col = vec3(0.16, 0.14, 0.09);                      // its muddy lip
+			else if (vnoise(t * 2.0 + vec2(0.0, 0.6)) - vnoise(t * 2.0) > 0.06) col = mix(col, vec3(0.42, 0.55, 0.56), 0.45);   // sky in it
+			if (hash(cell + 17.0) > 0.97) col = vec3(0.45, 0.58, 0.2);          // duckweed
+		} else {
+			if (hash(cell + 7.0) > 0.93 && fract(t.y * 22.0) < 0.6) col = (hash(cell + 8.0) > 0.5) ? vec3(0.42, 0.50, 0.20) : vec3(0.14, 0.20, 0.10);   // sedge
+			if (vnoise(t * 6.0 + 77.0) > 0.74) col = mix(col, vec3(0.44, 0.52, 0.18), 0.5);   // algae scum
+		}
 	} else if (swamp > 0.44) {
 		col = mix(col, vec3(0.20, 0.27, 0.16), 0.6);
 	}
@@ -105,6 +156,9 @@ void fragment() {
 		if (top == st_trail) {
 			// Trail: packed earth with pebbles.
 			col = ramp4(vec3(0.38, 0.30, 0.19), vec3(0.44, 0.35, 0.22), vec3(0.50, 0.40, 0.26), vec3(0.55, 0.45, 0.30), grain);
+			float across = pth.r;   // high in the middle of the trail, falling off to its edges
+			if (abs(across - 0.8) < 0.04) col *= 0.78;                                 // two worn ruts
+			else if (across > 0.9 && vnoise(t * 7.0) > 0.55) col = mix(col, vec3(0.30, 0.40, 0.17), 0.7);   // grass down the middle
 			if (hash(cell + 3.0) > 0.95) col = vec3(0.62, 0.58, 0.50);
 			else if (hash(cell + 5.0) < 0.04) col = vec3(0.30, 0.24, 0.15);
 		} else if (top == st_board + jag) {
@@ -112,38 +166,43 @@ void fragment() {
 			float u = texture(path_arc, t / map_size).r * 3.4;
 			float plank = floor(u);
 			col = mix(vec3(0.42, 0.29, 0.16), vec3(0.56, 0.40, 0.23), hash(vec2(plank, 7.0)));
+			col *= 0.88 + 0.24 * vnoise(vec2(plank * 5.0, (t.x - t.y) * 9.0));      // grain along the plank
+			if (hash(vec2(plank, 3.0)) > 0.86) col = mix(col, vec3(0.46, 0.44, 0.38), 0.45);   // a weathered grey board
 			if (fract(u) < 0.13) col = vec3(0.20, 0.13, 0.07);
-			if (st_board < 0.6) col = vec3(0.30, 0.20, 0.11);
+			if (st_board < 0.6) {
+				col = vec3(0.30, 0.20, 0.11);                                         // the edge beam
+				if (mod(plank, 5.0) < 1.0) col = (fract(u) < 0.5) ? vec3(0.44, 0.31, 0.18) : vec3(0.17, 0.11, 0.06);   // a post top
+			}
 			if (hash(cell + plank) > 0.985) col = vec3(0.70, 0.66, 0.58);
 		} else if (top == st_cob - jag) {
 			// Cobbles: rounded stones with dark grout, a touch grimy.
-			vec2 p = t * 7.0;
-			vec2 ip = floor(p);
-			float d1 = 9.0;
-			float d2 = 9.0;
-			vec2 id = vec2(0.0);
-			for (int j = -1; j <= 1; j++) {
-				for (int i = -1; i <= 1; i++) {
-					vec2 o = ip + vec2(float(i), float(j));
-					vec2 q = o + vec2(hash(o), hash(o + 3.1)) * 0.8 + 0.1;
-					float d = length(p - q);
-					if (d < d1) { d2 = d1; d1 = d; id = o; } else if (d < d2) { d2 = d; }
-				}
-			}
-			float s = hash(id + 9.0);
-			col = mix(vec3(0.40, 0.39, 0.34), vec3(0.58, 0.56, 0.50), s);
-			if (d2 - d1 < 0.16) col = vec3(0.22, 0.21, 0.17);
+			vec2 id;
+			vec2 off;
+			vec3 v = stones(t * 7.0, 0.85, id, off);
+			col = mix(vec3(0.38, 0.37, 0.32), vec3(0.58, 0.55, 0.48), v.y);
+			col *= mix(vec3(1.0), vec3(1.06, 0.98, 0.9), hash(id + 2.0));          // warmer and cooler stones
+			col = bevel(col, off, v.x, 0.3);
+			if (v.x < 0.15) col = (hash(cell + 19.0) > 0.8) ? vec3(0.24, 0.30, 0.14) : vec3(0.25, 0.20, 0.14);   // dirt and moss in the joints
+			if (st_cob < 0.58 && v.y > 0.6) col = mix(col, vec3(0.32, 0.27, 0.18), 0.7);   // stones lost from the worn edge
 		} else {
 			// Road: dressed slabs in staggered courses, kerbstones along the edges.
-			vec2 p = t * vec2(3.0, 4.0);
-			p.x += mod(floor(p.y), 2.0) * 0.5;
-			vec2 f = fract(p);
-			col = mix(vec3(0.62, 0.59, 0.52), vec3(0.74, 0.71, 0.63), hash(floor(p)));
-			if (f.x < 0.06 || f.y < 0.08) col = vec3(0.36, 0.34, 0.30);
-			if (st_road < 0.6) col = (fract(t.x * 5.0 + t.y * 5.0) < 0.12) ? vec3(0.30, 0.29, 0.26) : vec3(0.50, 0.48, 0.43);
+			// Big dressed slabs, irregular and worn: no two the same size or shade, each
+			// bevelled to the light, dirt in the joints, stains, and broken edges.
+			vec2 id;
+			vec2 off;
+			vec3 v = stones(t * vec2(3.2, 3.6), 0.55, id, off);
+			col = mix(vec3(0.58, 0.55, 0.48), vec3(0.74, 0.71, 0.62), v.y);
+			col *= 0.92 + 0.12 * vnoise(t * 14.0 + id);                               // weathering on the face
+			if (vnoise(t * 2.2 + id * 3.0) > 0.72) col *= vec3(0.86, 0.84, 0.76);      // a stain
+			col = bevel(col, off, v.x, 0.22);
+			if (v.x < 0.07) col = vec3(0.30, 0.26, 0.19);                              // dirt joint
+			if (st_road < 0.62 && hash(id + 5.0) > 0.55) col = mix(vec3(0.34, 0.30, 0.21), col, 0.25);   // a slab missing at the edge
+			else if (st_road < 0.56) col = vec3(0.46, 0.44, 0.39);                     // the kerb
 		}
 	} else if (top > 0.43) {
 		col = mix(col, vec3(0.30, 0.26, 0.18), 0.45);   // worn verge
+		if (top == st_board + jag) col = mix(col, vec3(0.10, 0.08, 0.05), 0.45);   // the boardwalk's shadow on the ground
+		else if (hash(cell + 51.0) > 0.7) col = mix(col, vec3(0.30, 0.42, 0.18), 0.6);   // grass creeping in
 	}
 	// The ground (everything that isn't water) takes the rolling light.
 	float water = m.r + (n - 0.5) * 0.3;
@@ -161,6 +220,11 @@ void fragment() {
 		col = dq < 1.0 ? vec3(0.34, 0.52, 0.44) : dq < 2.0 ? vec3(0.22, 0.45, 0.48) : dq < 3.0 ? vec3(0.15, 0.36, 0.45)
 			: dq < 4.0 ? vec3(0.11, 0.27, 0.39) : vec3(0.08, 0.19, 0.31);
 		if (depth < 0.22 && hash(cell + 11.0) > 0.78) col = mix(col, vec3(0.56, 0.52, 0.36), 0.35);   // pebbles in the shallows
+		// The sky in the water: long soft bands of lighter blue that drift slowly, and a
+		// dark band in the bank's shadow along the shore.
+		float sky = vnoise(vec2(world.x / 90.0 + TIME * 0.02, world.y / 9.0));
+		if (sky > 0.62 && depth > 0.25) col = mix(col, vec3(0.36, 0.56, 0.66), 0.3);
+		if (depth < 0.12 && depth > 0.03) col *= 0.82;
 		// Wavelets: short broken dashes (screen space, iso-flat) that drift and flicker,
 		// each with a darker trough just below it.
 		float row = floor(world.y / 4.0);
