@@ -96,6 +96,7 @@ godot --path . --script res://tests/screenshot.gd -- /tmp/lab.png "prompt A" "pr
 godot --headless --path . --script res://tests/test_sim.gd         # sim determinism + tick time (~45 s)
 godot --path . --script res://tests/sim_screenshot.gd -- /tmp/sim.png [map_id] [armies|opening:<tick>] ["prompt A" "prompt B"]
 godot --path . res://scenes/sim_debug.tscn                         # run the sim debug view
+godot --path . res://scenes/counter_quiz.tscn                      # blind counter quiz (milestone 4 exit check)
 godot --headless --path . --script res://tests/gen_cost_curve.gd   # regenerate data/cost_curves.json
 godot --path . res://scenes/style_sampler.tscn                     # art-direction sampler (keys 1-6, 0)
 godot --path . res://scenes/art_pixel.tscn                         # pixel-art candidate (Z zoom, P palette)
