@@ -27,12 +27,12 @@ var dist := PackedInt32Array()   # cost to the nearest source, INF if unreachabl
 var next := PackedInt32Array()   # next cell towards a source, -1 at a source or if unreachable
 
 
-static func solve(map: SimMap, source_cells: PackedInt32Array, cutoff := INF) -> RefCounted:
+static func solve(map: SimMap, source_cells: PackedInt32Array, cutoff := INF, k := 0) -> RefCounted:
 	var f = new()
 	var w := map.width
 	var h := map.height
 	var n := w * h
-	var walk := map.walk
+	var walk: PackedByteArray = map.walks[k]
 	var dist := PackedInt32Array()
 	var next := PackedInt32Array()
 	dist.resize(n)
@@ -109,8 +109,8 @@ func touches(map: SimMap, cell: int) -> bool:
 
 
 ## The walkable cell closest to `cell` (itself if walkable). Ties go to the lower index.
-static func nearest_walkable(map: SimMap, cell: int) -> int:
-	if map.walk[cell] == 1:
+static func nearest_walkable(map: SimMap, cell: int, k := 0) -> int:
+	if map.walks[k][cell] == 1:
 		return cell
 	var cx := cell % map.width
 	var cy := cell / map.width
@@ -119,7 +119,7 @@ static func nearest_walkable(map: SimMap, cell: int) -> int:
 		var best_d2 := INF
 		for y in range(cy - r, cy + r + 1):
 			for x in range(cx - r, cx + r + 1):
-				if maxi(absi(x - cx), absi(y - cy)) != r or not map.cell_walkable(x, y):
+				if maxi(absi(x - cx), absi(y - cy)) != r or not map.cell_walkable(x, y, k):
 					continue
 				var d2 := (x - cx) * (x - cx) + (y - cy) * (y - cy)
 				if d2 < best_d2:
@@ -132,12 +132,12 @@ static func nearest_walkable(map: SimMap, cell: int) -> int:
 
 
 ## True if a straight walk from a to b (milli-tiles) stays on walkable ground.
-static func clear_line(map: SimMap, ax: int, ay: int, bx: int, by: int) -> bool:
+static func clear_line(map: SimMap, ax: int, ay: int, bx: int, by: int, k := 0) -> bool:
 	var dx := bx - ax
 	var dy := by - ay
 	var steps := maxi(absi(dx), absi(dy)) / LINE_STEP + 1
 	for i in range(1, steps + 1):
-		if not map.walkable(ax + dx * i / steps, ay + dy * i / steps):
+		if not map.walkable(ax + dx * i / steps, ay + dy * i / steps, k):
 			return false
 	return true
 

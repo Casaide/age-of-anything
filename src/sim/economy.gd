@@ -338,11 +338,11 @@ static func _build(w, i: int) -> void:
 
 
 static func _approach_cell(w, i: int, cell: int) -> void:
-	w.order_reach(i, _cell_rect(w, cell), w.cell_field(cell, true))
+	w.order_reach(i, _cell_rect(w, cell), w.cell_field(cell, true, w.units.mclass[i]))
 
 
 static func _approach_building(w, i: int, b: int) -> void:
-	w.order_reach(i, _building_rect(w, b), w.building_field(w.buildings.id[b], true))
+	w.order_reach(i, _building_rect(w, b), w.building_field(w.buildings.id[b], true, w.units.mclass[i]))
 
 
 static func _cell_rect(w, cell: int) -> Rect2i:
@@ -501,7 +501,7 @@ static func spawn_at(w, b: int, k: int) -> int:
 	for y in range(cy - 1, cy + s + 1):
 		for x in range(cx - 1, cx + s + 1):
 			var edge: bool = x == cx - 1 or x == cx + s or y == cy - 1 or y == cy + s
-			if not edge or not m.cell_walkable(x, y):
+			if not edge or not m.cell_walkable(x, y, w.types[k].mclass):
 				continue
 			var d2 := Fixed.dist2(gx, gy, x * SimMap.TILE + 500, y * SimMap.TILE + 500)
 			if d2 < best_d2:
@@ -511,5 +511,6 @@ static func spawn_at(w, b: int, k: int) -> int:
 	var t: Dictionary = w.types[k]
 	var i: int = w.units.add(w.next_id, bs.owner[b], k, (best % m.width) * SimMap.TILE + 500,
 		(best / m.width) * SimMap.TILE + 500, t.speed, t.radius, t.hp)
+	w.units.mclass[i] = t.mclass
 	w.next_id += 1
 	return i

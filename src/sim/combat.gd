@@ -247,12 +247,12 @@ static func _chase(w, i: int, j: int, b: int) -> void:
 	var u = w.units
 	if j >= 0:
 		if u.moving[i] == 0 or (w.tick + u.id[i]) % w.REPLAN_EVERY == 0:
-			if Flow.clear_line(w.map, u.x[i], u.y[i], u.x[j], u.y[j]):
+			if Flow.clear_line(w.map, u.x[i], u.y[i], u.x[j], u.y[j], u.mclass[i]):
 				w.order_direct(i, u.x[j], u.y[j])
 			else:
 				w.order_move(i, u.x[j], u.y[j], 0, 0)
 	else:
-		var key: int = w.building_field(w.buildings.id[b], false)
+		var key: int = w.building_field(w.buildings.id[b], false, u.mclass[i])
 		if u.moving[i] == 0 or u.fkey[i] != key:
 			w.order_reach(i, Economy._building_rect(w, b), key)
 
