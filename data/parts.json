@@ -11,7 +11,10 @@
   "stats": {
    "hp": 30,
    "speed": 11,
-   "armour": 0
+   "armour": {
+    "melee": 0,
+    "pierce": 0
+   }
   },
   "shapes": [
    {
@@ -95,7 +98,10 @@
   "stats": {
    "hp": 22,
    "speed": 13,
-   "armour": 0
+   "armour": {
+    "melee": 0,
+    "pierce": 0
+   }
   },
   "shapes": [
    {
@@ -201,7 +207,10 @@
   "stats": {
    "hp": 28,
    "speed": 10,
-   "armour": 0
+   "armour": {
+    "melee": 0,
+    "pierce": 0
+   }
   },
   "shapes": [
    {
@@ -284,7 +293,13 @@
   "stats": {
    "hp": 26,
    "speed": 12,
-   "armour": 1
+   "armour": {
+    "melee": 1,
+    "pierce": 0
+   },
+   "bonus": {
+    "ranged": 2
+   }
   },
   "shapes": [
    {
@@ -426,7 +441,13 @@
   "stats": {
    "hp": 50,
    "speed": 10,
-   "armour": 3
+   "armour": {
+    "melee": 2,
+    "pierce": 3
+   },
+   "bonus": {
+    "ranged": 2
+   }
   },
   "shapes": [
    {
@@ -560,7 +581,13 @@
   "stats": {
    "hp": 45,
    "speed": 16,
-   "armour": 0
+   "armour": {
+    "melee": 0,
+    "pierce": 1
+   },
+   "bonus": {
+    "ranged": 3
+   }
   },
   "shapes": [
    {
@@ -705,7 +732,13 @@
   "stats": {
    "hp": 45,
    "speed": 16,
-   "armour": 0
+   "armour": {
+    "melee": 0,
+    "pierce": 1
+   },
+   "bonus": {
+    "ranged": 3
+   }
   },
   "shapes": [
    {
@@ -1623,7 +1656,10 @@
    "primitive"
   ],
   "stats": {
-   "attack": 6
+   "attack": 6,
+   "bonus": {
+    "building": 4
+   }
   },
   "points": 3,
   "cost_mix": {
@@ -1813,7 +1849,10 @@
   ],
   "stats": {
    "attack": 9,
-   "speed": -1
+   "speed": -1,
+   "bonus": {
+    "building": 6
+   }
   },
   "points": 6,
   "two_handed": true,
@@ -1930,7 +1969,8 @@
    "bonus": {
     "infantry": 2,
     "archer": 4
-   }
+   },
+   "damage": "pierce"
   },
   "points": 3,
   "cost_mix": {
@@ -1982,7 +2022,8 @@
    "bonus": {
     "infantry": 3,
     "archer": 4
-   }
+   },
+   "damage": "pierce"
   },
   "points": 3,
   "two_handed": true,
@@ -2051,7 +2092,8 @@
    "range": 6,
    "bonus": {
     "infantry": 2
-   }
+   },
+   "damage": "pierce"
   },
   "points": 4,
   "two_handed": true,
@@ -2112,7 +2154,8 @@
    "speed": -1,
    "bonus": {
     "infantry": 2
-   }
+   },
+   "damage": "pierce"
   },
   "points": 6,
   "era": [
@@ -2169,7 +2212,8 @@
   "stats": {
    "attack": 9,
    "range": 7,
-   "speed": -1
+   "speed": -1,
+   "damage": "pierce"
   },
   "points": 8,
   "era": [
@@ -2353,7 +2397,10 @@
    "woodland"
   ],
   "stats": {
-   "armour": 2
+   "armour": {
+    "melee": 0,
+    "pierce": 2
+   }
   },
   "points": 2,
   "shapes": [
@@ -2396,7 +2443,10 @@
    "metal"
   ],
   "stats": {
-   "armour": 2
+   "armour": {
+    "melee": 1,
+    "pierce": 1
+   }
   },
   "points": 2,
   "shapes": [
@@ -2430,7 +2480,10 @@
    "viking"
   ],
   "stats": {
-   "armour": 2
+   "armour": {
+    "melee": 1,
+    "pierce": 2
+   }
   },
   "points": 2,
   "shapes": [
@@ -2463,7 +2516,10 @@
    "knight"
   ],
   "stats": {
-   "armour": 3,
+   "armour": {
+    "melee": 1,
+    "pierce": 3
+   },
    "speed": -1
   },
   "points": 3,
@@ -2530,7 +2586,10 @@
    "woodland"
   ],
   "stats": {
-   "armour": 1
+   "armour": {
+    "melee": 0,
+    "pierce": 1
+   }
   },
   "points": 1,
   "shapes": [
@@ -2571,7 +2630,10 @@
    "crest"
   ],
   "stats": {
-   "armour": 2
+   "armour": {
+    "melee": 1,
+    "pierce": 1
+   }
   },
   "points": 2,
   "era": [
@@ -2634,7 +2696,10 @@
    "knight"
   ],
   "stats": {
-   "armour": 3
+   "armour": {
+    "melee": 2,
+    "pierce": 1
+   }
   },
   "points": 3,
   "era": [
@@ -2694,7 +2759,10 @@
    "saucepan"
   ],
   "stats": {
-   "armour": 2
+   "armour": {
+    "melee": 1,
+    "pierce": 1
+   }
   },
   "points": 2,
   "era": [
@@ -2740,7 +2808,10 @@
    "viking"
   ],
   "stats": {
-   "armour": 2
+   "armour": {
+    "melee": 1,
+    "pierce": 1
+   }
   },
   "points": 2,
   "shapes": [
@@ -2851,7 +2922,10 @@
    "light"
   ],
   "stats": {
-   "armour": 1
+   "armour": {
+    "melee": 1,
+    "pierce": 0
+   }
   },
   "points": 1,
   "shapes": [
@@ -2877,7 +2951,10 @@
    "heavy"
   ],
   "stats": {
-   "armour": 3,
+   "armour": {
+    "melee": 2,
+    "pierce": 1
+   },
    "speed": -1
   },
   "points": 3,
@@ -2923,7 +3000,10 @@
    "knight"
   ],
   "stats": {
-   "armour": 3,
+   "armour": {
+    "melee": 1,
+    "pierce": 2
+   },
    "speed": -1
   },
   "points": 3,
@@ -2987,7 +3067,10 @@
    "woodland"
   ],
   "stats": {
-   "armour": 2
+   "armour": {
+    "melee": 1,
+    "pierce": 1
+   }
   },
   "points": 2,
   "shapes": [
@@ -3046,7 +3129,10 @@
    "woodland"
   ],
   "stats": {
-   "armour": 1
+   "armour": {
+    "melee": 0,
+    "pierce": 1
+   }
   },
   "points": 1,
   "shapes": [
@@ -3387,7 +3473,8 @@
    "bonus": {
     "infantry": 2,
     "archer": 4
-   }
+   },
+   "damage": "pierce"
   },
   "points": 4,
   "era": [
@@ -3408,7 +3495,10 @@
    "roman"
   ],
   "stats": {
-   "armour": 4,
+   "armour": {
+    "melee": 1,
+    "pierce": 4
+   },
    "speed": -1
   },
   "points": 3,
@@ -3460,7 +3550,10 @@
    "phalanx"
   ],
   "stats": {
-   "armour": 3
+   "armour": {
+    "melee": 2,
+    "pierce": 2
+   }
   },
   "points": 3,
   "era": [
@@ -3497,7 +3590,10 @@
    "roman"
   ],
   "stats": {
-   "armour": 2
+   "armour": {
+    "melee": 1,
+    "pierce": 1
+   }
   },
   "points": 2,
   "era": [
@@ -3561,7 +3657,10 @@
    "greek"
   ],
   "stats": {
-   "armour": 2
+   "armour": {
+    "melee": 1,
+    "pierce": 1
+   }
   },
   "points": 2,
   "era": [
@@ -3633,7 +3732,10 @@
    "roman"
   ],
   "stats": {
-   "armour": 3,
+   "armour": {
+    "melee": 2,
+    "pierce": 1
+   },
    "speed": -1
   },
   "points": 3,

@@ -36,29 +36,41 @@ func reed_clump(seed_value: int, size := 1.0) -> Node3D:
 	return n
 
 
-## A bug bush: a few lumpy foliage masses (authored leaf texture), some edge
-## leaves breaking the silhouette, and red bugs crawling on top.
+## A bug bush: a cluster of small leafy clumps, dark and olive underneath and lit on
+## top, with leaf cards fringing the outline (so it isn't a smooth cushion) and clusters
+## of red bugs on the sunny side. Size varies with the seed.
 func bug_bush(seed_value: int) -> Node3D:
 	rng.seed = seed_value
 	var n := Node3D.new()
-	var foliage := um.surf("foliage", Color(1, 1, 1), 0.35)
-	var lumps := [[Vector3(0, 0.24, 0), Vector3(0.3, 0.24, 0.3)]]
-	for k in 5:
-		var a := TAU * k / 5.0 + rng.randf_range(-0.4, 0.4)
-		var r := rng.randf_range(0.14, 0.2)
-		lumps.append([Vector3(cos(a) * 0.2, rng.randf_range(0.14, 0.3), sin(a) * 0.2), Vector3(r, r * 0.85, r)])
-	for l in lumps:
-		n.add_child(um.blob(l[1], foliage, l[0]))
-	var tints := [Color(1, 1, 1), Color(0.8, 0.92, 0.72), Color(0.9, 1.0, 0.8)]
-	for k in 22:
-		var l: Array = lumps[1 + k % 5]
-		var d := Vector3(rng.randf_range(-1, 1), rng.randf_range(-0.1, 0.8), rng.randf_range(-1, 1)).normalized()
-		var pos := UnitModels.on_surface(l[0], l[1], d, -0.01)
-		n.add_child(um.decal("leaf", 0.11, 0.15, pos + d * 0.05, (d + Vector3.UP * 0.6).normalized(), true, d, tints[k % tints.size()]))
-	for k in 6:
-		var d := Vector3(rng.randf_range(-0.8, 0.8), 1.0, rng.randf_range(-0.3, 1)).normalized()
-		var l: Array = lumps[k % lumps.size()]
-		n.add_child(um.decal("ladybird", 0.15, 0.15, UnitModels.on_surface(l[0], l[1], d, 0.012), d, false, Vector3(rng.randf_range(-1, 1), 0, 1).normalized()))
+	var size := rng.randf_range(0.8, 1.15)
+	var clumps := []
+	for k in 11:
+		var a := rng.randf() * TAU
+		var d := rng.randf_range(0.0, 0.26) * size
+		var h := rng.randf_range(0.1, 0.36) * size
+		var r := rng.randf_range(0.1, 0.16) * size
+		clumps.append([Vector3(cos(a) * d, h, sin(a) * d), Vector3(r, r * 0.85, r)])
+	clumps.sort_custom(func(x, y): return x[0].y < y[0].y)
+	for k in clumps.size():
+		var c: Array = clumps[k]
+		# Low clumps sit in shade, high ones catch the light: the bush gets a real volume.
+		var lift: float = clampf(c[0].y / (0.36 * size), 0.0, 1.0)
+		var tint := Color(0.52, 0.6, 0.42).lerp(Color(0.86, 0.92, 0.66), lift)
+		n.add_child(um.blob(c[1], um.surf("foliage", tint, 0.3), c[0]))
+	# Leaves fringing the outline: pushed out from the clumps, pointing outward.
+	var leaf_tints := [Color(0.7, 0.8, 0.55), Color(0.85, 0.9, 0.62), Color(0.6, 0.7, 0.5)]
+	for k in 34:
+		var c: Array = clumps[rng.randi() % clumps.size()]
+		var d := Vector3(rng.randf_range(-1, 1), rng.randf_range(-0.2, 1.0), rng.randf_range(-1, 1)).normalized()
+		var at := UnitModels.on_surface(c[0], c[1], d, 0.02)
+		n.add_child(um.decal("leaf", 0.09 * size, 0.12 * size, at, (d + Vector3.UP * 0.4).normalized(), true, d, leaf_tints[k % 3]))
+	# Bugs in little groups on the lit top, facing the sun.
+	for g in 3:
+		var c: Array = clumps[clumps.size() - 1 - g * 2]
+		var base_d := Vector3(rng.randf_range(-0.6, 0.6), 1.0, rng.randf_range(0.0, 0.9)).normalized()
+		for k in 3:
+			var d := (base_d + Vector3(rng.randf_range(-0.35, 0.35), 0, rng.randf_range(-0.35, 0.35))).normalized()
+			n.add_child(um.decal("ladybird", 0.14 * size, 0.14 * size, UnitModels.on_surface(c[0], c[1], d, 0.015), d, false, Vector3(rng.randf_range(-1, 1), 0, 1).normalized()))
 	return n
 
 

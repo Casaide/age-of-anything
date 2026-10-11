@@ -156,7 +156,7 @@ func _card_text(race: Dictionary) -> String:
 		var e: Dictionary = u.eval
 		t += "[b]%s[/b]  [color=%s](%s, tier %d)[/color]\n" % [_esc(r.name), TEXT_DIM, r.role, r.tier]
 		t += "   %d food  %d wood · %ds · pop %d · %d pts\n" % [e.cost.food, e.cost.wood, e.train_time, e.pop, e.points]
-		t += "   HP %d  ATK %d  ARM %d  RNG %d  SPD %d\n" % [e.hp, e.attack, e.armour, e["range"], e.speed]
+		t += "   HP %d  ATK %d %s  ARM %d/%d  RNG %d  SPD %d\n" % [e.hp, e.attack, e.damage, e.armour.melee, e.armour.pierce, e["range"], e.speed]
 		if not e.bonus.is_empty():
 			var keys: Array = e.bonus.keys()
 			keys.sort()

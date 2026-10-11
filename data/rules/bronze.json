@@ -57,5 +57,14 @@
    "wood": 24
   },
   "queue_max": 5
+ },
+ "combat": {
+  "min_damage": 1,
+  "melee_reload": 20,
+  "ranged_reload": 30,
+  "melee_reach": 150,
+  "sight": 6000,
+  "acquire_every": 10,
+  "note": "ticks at 20 Hz; distances in milli-tiles. Damage = max(min_damage, sum over attack classes the target has of max(0, attack - armour))."
  }
 }
