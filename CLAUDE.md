@@ -36,13 +36,15 @@ move it to `docs/backlog.md` rather than deleting it.
 - **Built (milestone 4): combat.** Armour classes, attack-move that spreads into duels,
   projectiles, deaths, the counter quiz (`scenes/counter_quiz.tscn`). Waiting on Dominic's quiz
   run and the unit card. See `docs/milestones/m4-combat.md`.
-- **In progress (milestone 5): art rework**, run by a separate agent (`docs/milestones/m5-art-rework.md`).
+- **Built (milestone 5): art rework.** Realistic props and buildings in six architectures (reed
+  for frogs and mound for bugs come from the creature), textured units, posed gear, portraits and
+  cursors. Waiting on Dominic's look sign-off. See `docs/milestones/m5-art-rework.md`.
 - **Done (milestone 6): foundations**: resources from data (stone), movement classes (ground,
   amphibious, flying), placement rules, teams, farms, shift-queued orders, unit lines through the
   ages, ages and research as data (`data/tech.json`, `src/sim/tech.gd`). See `docs/milestones/m6-foundations.md`.
 - **Done (milestone 7): progression**: Barracks, Stable, Watchtower per culture, age gates,
   age-ups needing a building, the bot ageing up at 4-6 minutes.
-- **Next:** 8 AI and match flow, 9 fog and juice, 10 playtest. Milestone 5 (art) continues alongside.
+- **Next:** 8 AI and match flow, 9 fog and juice, 10 playtest. The art track (A2-A5) runs alongside.
 
 ## Layout
 
