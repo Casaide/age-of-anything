@@ -16,7 +16,11 @@
    "trains": [],
    "age": 1,
    "hotkey": "H",
-   "note": "pop +5 (or the race's house_pop)"
+   "note": "pop +5 (or the race's house_pop)",
+   "armour": {
+    "melee": 1,
+    "pierce": 6
+   }
   },
   "town_center": {
    "name": "Town Center",
@@ -38,7 +42,11 @@
    ],
    "age": 1,
    "hotkey": "C",
-   "note": "every player starts with one"
+   "note": "every player starts with one",
+   "armour": {
+    "melee": 2,
+    "pierce": 8
+   }
   }
  }
 }

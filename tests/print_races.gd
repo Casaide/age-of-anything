@@ -20,5 +20,5 @@ func _init() -> void:
 			print("   note: ", n)
 		for u in race.units:
 			var e: Dictionary = u.eval
-			print("   %-38s %3dF %3dW  hp %3d atk %2d arm %2d rng %d spd %2d  %s" % [u.recipe.name, e.cost.food, e.cost.wood, e.hp, e.attack, e.armour, e["range"], e.speed, u.recipe.parts.values()])
+			print("   %-38s %3dF %3dW  hp %3d atk %2d arm %d/%d rng %d spd %2d  %s" % [u.recipe.name, e.cost.food, e.cost.wood, e.hp, e.attack, e.armour.melee, e.armour.pierce, e["range"], e.speed, u.recipe.parts.values()])
 	quit()

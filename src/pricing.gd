@@ -19,11 +19,14 @@ static func evaluate(recipe: Dictionary, lib, rules: Dictionary) -> Dictionary:
 		gear.append(lib.part(recipe.parts[slot]))
 
 	var hp := int(body.stats.get("hp", 0))
-	var armour := int(body.stats.get("armour", 0))
+	var armour := {"melee": 0, "pierce": 0}   # armour per class (see rules.combat)
+	_add_classes(armour, body.stats.get("armour", {}))
 	var speed := int(body.stats.get("speed", 10))
 	var attack := 0
 	var reach := 1
 	var bonus := {}
+	_add_classes(bonus, body.stats.get("bonus", {}))
+	var damage := "melee"
 	var tags := {}
 	var points := int(body.points)
 	var mix := {"food": 0, "wood": 0}
@@ -34,12 +37,13 @@ static func evaluate(recipe: Dictionary, lib, rules: Dictionary) -> Dictionary:
 	for p in gear:
 		var s: Dictionary = p.stats
 		hp += int(s.get("hp", 0))
-		armour += int(s.get("armour", 0))
+		_add_classes(armour, s.get("armour", {}))
 		speed += int(s.get("speed", 0))
 		attack += int(s.get("attack", 0))
 		reach = maxi(reach, int(s.get("range", 1)))
-		for k in s.get("bonus", {}):
-			bonus[k] = int(bonus.get(k, 0)) + int(s.bonus[k])
+		if s.has("damage"):
+			damage = s.damage
+		_add_classes(bonus, s.get("bonus", {}))
 		for t in p.tags:
 			tags[t] = true
 		points += int(p.points)
@@ -49,7 +53,8 @@ static func evaluate(recipe: Dictionary, lib, rules: Dictionary) -> Dictionary:
 		var mount_body: Dictionary = lib.part(lib.creatures[recipe.mount.creature].body)
 		var ms: Dictionary = mount_body.stats
 		hp += int(ms.get("hp", 0))
-		armour += int(ms.get("armour", 0))
+		_add_classes(armour, ms.get("armour", {}))
+		_add_classes(bonus, ms.get("bonus", {}))
 		speed += int(ms.get("speed", 10)) - int(body.stats.get("speed", 10))
 		points += int(mount_body.points)
 		_add_mix(mix, mount_body, MOUNT_MIX)
@@ -94,6 +99,7 @@ static func evaluate(recipe: Dictionary, lib, rules: Dictionary) -> Dictionary:
 	return {
 		"hp": maxi(1, hp),
 		"attack": maxi(1, attack),
+		"damage": damage,
 		"armour": armour,
 		"range": reach,
 		"speed": maxi(4, speed),
@@ -104,6 +110,12 @@ static func evaluate(recipe: Dictionary, lib, rules: Dictionary) -> Dictionary:
 		"train_time": maxi(3, (int(c.train_base) * lib.curve(c.train_curve, points) * int(econ.get("train_time_pct", 100)) / 100 + 500) / 1000),
 		"pop": 2 if tags.has("large") else 1,
 	}
+
+
+## Sum per-class numbers (armour or bonus), e.g. {"melee": 1, "pierce": 2, "large": 3}.
+static func _add_classes(into: Dictionary, add: Dictionary) -> void:
+	for k in add:
+		into[k] = int(into.get(k, 0)) + int(add[k])
 
 
 static func _add_mix(mix: Dictionary, p: Dictionary, fallback: Dictionary) -> void:
