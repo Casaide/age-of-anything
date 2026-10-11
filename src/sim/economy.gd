@@ -332,13 +332,15 @@ static func _pick(w, i: int, cell: int, kind: int) -> int:
 
 
 ## Is this cell's ground (a farm's pool) worked by as many workers as it takes, not counting
-## unit i? A worker works the pool its `home` is on while it gathers or carries from it, so
+## unit i, or not unit i's own farm? A worker works the pool its `home` is on while it gathers or carries from it, so
 ## one who leaves, dies or is sent elsewhere frees its place. Plain resource tiles never fill.
 static func taken(w, cell: int, i := -1) -> bool:
 	var m = w.map
 	if cell < 0 or m.pool[cell] < 0:
 		return false
 	var b: int = w.buildings.index_of(m.occupied[cell])
+	if b >= 0 and i >= 0 and w.buildings.owner[b] != w.units.owner[i]:
+		return true   # someone else's farm: never yours to work
 	var limit: int = w.btypes[w.buildings.kind[b]].workers if b >= 0 else 0
 	if limit <= 0:
 		return false
