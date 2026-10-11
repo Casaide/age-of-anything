@@ -27,11 +27,16 @@ def _j(rng, lo, hi):
 # ----------------------------------------------------------------------------- blows
 
 def hit_blade(rng):
-    """Edge on shield or hide: a metal scrape with a ring, over a thump."""
-    scrape = _burst(rng, 0.09, _j(rng, 3200, 4800), 2.5, 45.0, 0.9)
-    ring = modal(seconds(0.25), [(_j(rng, 2300, 2700), 22.0, 0.3), (_j(rng, 3600, 4100), 30.0, 0.15)], rng, 0.0)
-    thump = _thump(rng, 0.12, 180.0, 90.0, 40.0, 0.8)
-    return add(scrape, ring, thump)
+    """Edge on shield, armour or hide: a steel clang (two close partials beating, damped fast,
+    well below the stone's ring), a scrape sliding down, and a meaty thud. (The first version
+    rang at the pick-on-stone's pitches and sounded like mining: Dominic.)"""
+    f = _j(rng, 1050, 1350)
+    clang = modal(seconds(0.14), [(f, 45.0, 0.6), (f * 1.013, 50.0, 0.5), (f * 1.9, 70.0, 0.25)], rng, 0.0)
+    n = seconds(0.11)
+    f0 = _j(rng, 5200, 6500)
+    scrape = gain(mul(bandpass(noise(n, rng), lambda t, f0=f0: f0 - 3200.0 * (t / 0.11), 2.2), env(n, 0.004, 0.06, 0.15, 0.04)), 0.9)
+    thud = add(_thump(rng, 0.12, 170.0, 85.0, 40.0, 0.9), _burst(rng, 0.06, _j(rng, 350, 500), 0.8, 70.0, 0.6))
+    return add(scrape, delay_start(clang, 0.006), delay_start(thud, 0.01))
 
 
 def hit_blunt(rng):
