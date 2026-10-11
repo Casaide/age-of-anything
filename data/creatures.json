@@ -15,7 +15,8 @@
    "swamp",
    "forest"
   ],
-  "architecture": "reed"
+  "architecture": "reed",
+  "gait": "hop"
  },
  "rat": {
   "noun": "Rat",
