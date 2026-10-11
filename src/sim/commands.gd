@@ -22,7 +22,8 @@ const AGE_UP := "age_up"           # {building}  advance to the next age (tech.j
 const RESEARCH := "research"       # {building, id}
 const SURRENDER := "surrender"     # {}  the player concedes (match.gd)
 const RESEED := "reseed"           # {ids, building}  replant a worked-out farm (costs wood); the workers farm it
-const TYPES := [MOVE, SPAWN, GATHER, BUILD, HELP_BUILD, TRAIN, CANCEL, RALLY, ATTACK, ATTACK_MOVE, AGE_UP, RESEARCH, SURRENDER, RESEED]
+const TRADE := "trade"             # {building: a market, resource: id, buy: 1 or 0}  a lot of goods for gold (market.gd)
+const TYPES := [MOVE, SPAWN, GATHER, BUILD, HELP_BUILD, TRAIN, CANCEL, RALLY, ATTACK, ATTACK_MOVE, AGE_UP, RESEARCH, SURRENDER, RESEED, TRADE]
 ## Unit orders that can be queued: with args.queue = 1, a busy unit keeps the order for
 ## when it's done (shift-queuing); without it, the order replaces the unit's queue.
 const QUEUEABLE := [MOVE, GATHER, BUILD, HELP_BUILD, ATTACK, ATTACK_MOVE]

@@ -24,6 +24,7 @@ const Flow := preload("res://src/sim/flow.gd")
 const Economy := preload("res://src/sim/economy.gd")
 const Combat := preload("res://src/sim/combat.gd")
 const Tech := preload("res://src/sim/tech.gd")
+const Market := preload("res://src/sim/market.gd")
 const Match := preload("res://src/sim/match.gd")
 const Fog := preload("res://src/sim/fog.gd")
 
@@ -65,6 +66,7 @@ var classes: Array = []        # armour/attack class names (see Combat.setup)
 var tech: Dictionary          # ages and research (data/tech.json, see tech.gd)
 var ages := PackedInt32Array()     # per player: the age it's in (1 at the start)
 var researched: Array = []         # per player: PackedByteArray over tech.research
+var market_price := PackedInt32Array()   # gold per lot of each resource, shared by everyone (market.gd)
 var gather_ticks: Array = []       # per player: ticks per unit of each resource gathered (research cuts them)
 var move_pct: Array = []       # per movement class, per terrain index: speed percent (rules.movement)
 var events: Array = []         # this tick's hits and deaths, for views (not state, not hashed)
@@ -122,6 +124,7 @@ func _init(p_seed: int, p_map: SimMap, p_races: Array, p_rules: Dictionary, p_te
 			types.append(_make_type(p, u))
 	Combat.setup(self)
 	Tech.setup(self)
+	Market.setup(self)
 	Economy.setup(self)
 	Match.setup(self)
 	Fog.setup(self)
@@ -312,6 +315,8 @@ func _run(cmd: Dictionary) -> void:
 			Economy.cmd_cancel(self, cmd.player, a)
 		Commands.RALLY:
 			Economy.cmd_rally(self, cmd.player, a)
+		Commands.TRADE:
+			Market.cmd_trade(self, cmd.player, a)
 
 
 # ------------------------------------------------------------------ orders
@@ -761,6 +766,8 @@ func state_hash() -> int:
 		h = Fixed.mix(h, defeated[p])
 		for v in researched[p]:
 			h = Fixed.mix(h, v)
+	for v in market_price:
+		h = Fixed.mix(h, v)
 	# Which fields are solved or pending changes how units steer, so it's state too.
 	for key in field_order:
 		h = Fixed.mix(h, key)

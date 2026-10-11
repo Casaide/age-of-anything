@@ -72,6 +72,7 @@ func _init() -> void:
 	_test_movement_classes()
 	_test_farms(races)
 	_test_tech(races)
+	_test_market(races)
 	_test_combat(gen)
 
 	var script := _script(map, races)
@@ -466,6 +467,41 @@ func _test_age_timing(races: Array) -> void:
 	for p in 2:
 		print("  age 2: %-18s at %d:%02d (tick %d)" % [w.races[p].name, at[p] / 1200, at[p] % 1200 / 20, at[p]])
 		check(at[p] >= 4800 and at[p] <= 7200, "age-up at minutes 4-6: %s at tick %d" % [w.races[p].name, at[p]])
+
+## The market: buying costs gold and raises the price, selling pays less and lowers it, and
+## nobody trades without a finished market of their own.
+func _test_market(races: Array) -> void:
+	var w := World.new(SEED, SimMap.load_id("flat_test"), races, rules_)
+	var g: int = w.resources.find("gold")
+	var f: int = w.resources.find("food")
+	w.stock[g][0] = 1000
+	var s: Array = w.map.starts[0]
+	var mk := Economy.btype_of(w, "market")
+	var m: int = Economy.place(w, 0, mk, s[0] / 1000 + 4, s[1] / 1000 + 3)
+	w.issue(0, Commands.TRADE, {"building": w.buildings.id[m], "resource": "food", "buy": 1})
+	for t in 20:
+		w.step()
+	check(w.stock[g][0] == 1000, "market: no trade at an unfinished market")
+	w.buildings.done[m] = 1
+	var food: int = w.stock[f][0]
+	var price: int = w.market_price[f]
+	w.issue(0, Commands.TRADE, {"building": w.buildings.id[m], "resource": "food", "buy": 1})
+	for t in 20:
+		w.step()
+	check(w.stock[f][0] == food + 100 and w.stock[g][0] == 1000 - price, "market: buying 100 food costs %d gold" % price)
+	check(w.market_price[f] > price, "market: buying raises the price (%d -> %d)" % [price, w.market_price[f]])
+	var gold: int = w.stock[g][0]
+	var pay: int = w.market_price[f] * 75 / 100
+	w.issue(0, Commands.TRADE, {"building": w.buildings.id[m], "resource": "food", "buy": 0})
+	for t in 20:
+		w.step()
+	check(w.stock[g][0] == gold + pay and w.market_price[f] == price, "market: selling pays %d and brings the price back" % pay)
+	w.issue(1, Commands.TRADE, {"building": w.buildings.id[m], "resource": "food", "buy": 1})
+	var g1: int = w.stock[g][1]
+	for t in 20:
+		w.step()
+	check(w.stock[g][1] == g1, "market: nobody trades at someone else's market")
+
 
 ## Ageing up moves a player's units along their lines; research adds to stats by tag.
 func _test_tech(races: Array) -> void:
