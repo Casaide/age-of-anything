@@ -175,6 +175,11 @@ as era packs.
 
 Each leans on a different part of the counter system so matchups play differently.
 
+**Later:** each race type gets one or two small signature mechanics (asymmetric play:
+amphibians build on and swim in shallow water, Romans throw pilum volleys, vikings form shield
+walls). The starter roster leads with animals and bronze/iron age cultures, with non-European
+picks as a priority. See `backlog.md` §8.
+
 **Theme guards:** signature gear (a culture's kit, cheese hammers) only appears when the prompt,
 family or creature asks for it. Humans and centaurs don't become giants unless asked; their large
 unit is mounted or "Heavy". Wings on a ridden unit go on the mount (pegasus).
