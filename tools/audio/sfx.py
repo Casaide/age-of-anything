@@ -129,11 +129,16 @@ def building_fall(rng):
 # ----------------------------------------------------------------------------- work
 
 def chop(rng):
-    """An axe into reed or timber: a bite, the wood's body, a chip flying."""
-    bite = _burst(rng, 0.03, _j(rng, 1900, 2600), 1.3, 150.0, 1.0)
-    wood = modal(seconds(0.2), [(_j(rng, 170, 210), 30.0, 0.9), (_j(rng, 390, 450), 45.0, 0.4), (_j(rng, 740, 820), 70.0, 0.2)], rng, 0.0)
-    chip = delay_start(_burst(rng, 0.04, _j(rng, 3000, 4500), 2.0, 140.0, 0.3), 0.03)
-    return add(bite, wood, chip)
+    """An axe into reed or timber. Nearly all crack: a hard bright bite, the wood's short
+    'tok' (partials up around 500-2000 Hz, gone in a tenth of a second), fibres splitting,
+    and only a hint of weight underneath. (The first version rang a 180 Hz body for 200 ms
+    and sounded like a drum: Dominic.)"""
+    bite = add(_burst(rng, 0.012, _j(rng, 2800, 4200), 0.8, 320.0, 1.3), _burst(rng, 0.02, _j(rng, 900, 1400), 1.0, 220.0, 0.8))
+    tok = modal(seconds(0.09), [(_j(rng, 480, 560), 110.0, 0.5), (_j(rng, 1050, 1250), 140.0, 0.45), (_j(rng, 1800, 2100), 170.0, 0.3)], rng, 0.0)
+    n = seconds(0.07)
+    split = mul(bandpass(noise(n, rng), _j(rng, 1800, 3200), 0.7), [decay(n, 55.0, 0.001)[i] * (0.6 + 0.4 * (rng.random() > 0.5)) for i in range(n)])
+    weight = _thump(rng, 0.05, 160.0, 110.0, 90.0, 0.3)
+    return add(bite, tok, delay_start(gain(split, 0.5), 0.008), weight)
 
 
 def mine(rng):
@@ -145,11 +150,11 @@ def mine(rng):
 
 
 def build(rng):
-    """A mallet on a frame: a wooden knock with a bounce."""
-    knock = add(_burst(rng, 0.02, _j(rng, 1000, 1500), 1.0, 200.0, 0.8),
-                modal(seconds(0.16), [(_j(rng, 290, 330), 35.0, 0.9), (_j(rng, 640, 720), 55.0, 0.4)], rng, 0.0),
-                _thump(rng, 0.1, 160.0, 90.0, 50.0, 0.6))
-    bounce = gain(knock, 0.35)
+    """A mallet on a frame: a wooden knock, short and dry, with a bounce."""
+    knock = add(_burst(rng, 0.015, _j(rng, 1100, 1600), 1.0, 260.0, 0.9),
+                modal(seconds(0.1), [(_j(rng, 330, 370), 110.0, 0.45), (_j(rng, 680, 760), 110.0, 0.5), (_j(rng, 1300, 1450), 150.0, 0.3)], rng, 0.0),
+                _thump(rng, 0.05, 170.0, 110.0, 90.0, 0.2))
+    bounce = gain(knock, 0.3)
     return add(knock, delay_start(bounce, _j(rng, 0.07, 0.09)))
 
 
