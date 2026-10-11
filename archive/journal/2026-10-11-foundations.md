@@ -278,3 +278,8 @@ target lane, a squat smithy under a chimney stack, a drying-rack mill, a mining 
 only on the frog Town Center, which got a second dome as the village landmark; houses smaller; the
 lobby's fourteen preset chips became one dropdown per side. "hoplite" had gone into the lexicon at
 the wrong level, so "greek hoplites" still said "No idea what 'hoplites' means"; fixed.
+
+### "I love the pride barrels!"
+Dominic's reaction to the RB3 sheet. The rats' Town Center now becomes the oil-drum colonnade
+when they reach age 3, through the new per-age building looks. The second Fable pass found the
+milestone's exit criterion met, with a short list of non-blocking items left open.

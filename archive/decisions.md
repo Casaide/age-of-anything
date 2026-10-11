@@ -457,3 +457,9 @@ that turns back to grass) and the workers who killed it gather it. Animals are d
 (data/animals.json) and a host rule (`animals`, on by default). Replays now carry their rules,
 and rules hash the same whether numbers come back as ints or floats. Dominic asked for animals
 (to hunt, and to herd like sheep); the design is Claude's.
+
+**D-089, 2026-10-11: The rats' Town Center grows oil-drum columns at age 3.** Dominic loved the
+RB3 "pride" concept: at the top age the rats' hall gains a porch of stacked oil drums, a pediment
+cut from a cracked dinner plate and a forecourt of broken crockery, copying the Romans (the
+psychology rule). Buildings can now change look per age as data (`age_looks` in buildings.json);
+this is the first. The rest of RB3 (houses, barracks) still waits on his picks.
