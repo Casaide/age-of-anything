@@ -75,6 +75,7 @@ func _init() -> void:
 	_test_tech(races)
 	_test_market(races)
 	_test_build_queue(races)
+	_test_camp_gather(races)
 	_test_animals(races)
 	_test_combat(gen)
 
@@ -533,6 +534,13 @@ func _test_build_queue(races: Array) -> void:
 	var s: Array = w.map.starts[0]
 	for k in 7:
 		w.issue(0, Commands.BUILD, {"ids": ids, "building": "wall", "cx": s[0] / 1000 + 3, "cy": s[1] / 1000 - 3 + k, "queue": 1 if k > 0 else 0})
+	for t in 16:   # past the command delay: every queued foundation is down already, so you see the plan
+		w.step()
+	var laid := 0
+	for b in w.buildings.count():
+		if w.btypes[w.buildings.kind[b]].id == "wall":
+			laid += 1
+	check(laid == 7, "shift-queued builds: all 7 foundations are laid at once (%d)" % laid)
 	for t in 3000:
 		w.step()
 	var done := 0
@@ -540,6 +548,33 @@ func _test_build_queue(races: Array) -> void:
 		if w.btypes[w.buildings.kind[b]].id == "wall":
 			done += w.buildings.done[b]
 	check(done == 7, "shift-queued builds: all 7 walls of a line go up (%d)" % done)
+
+
+## A worker who finishes a lumber camp goes and gathers wood (Dominic).
+func _test_camp_gather(races: Array) -> void:
+	var w := World.new(SEED, SimMap.load_id("flat_test"), races, rules_)
+	var wi := -1
+	for i in w.units.count():
+		if wi < 0 and w.units.owner[i] == 0 and w.types[w.units.kind[i]].worker:
+			wi = i
+	var wood := Economy.kind_of(w, "wood")
+	var c := Economy.nearest_resource(w, w.units.x[wi], w.units.y[wi], wood)
+	var k := Economy.btype_of(w, "lumber_camp")
+	var spot := -1
+	for r in range(2, 6):
+		for dy in range(-r, r + 1):
+			for dx in range(-r, r + 1):
+				var x: int = c % w.map.width + dx
+				var y: int = c / w.map.width + dy
+				if spot < 0 and w.map.can_build(x, y, w.btypes[k].size, Economy.builder_class(w, 0), w.btypes[k].water):
+					spot = y * w.map.width + x
+	w.issue(0, Commands.BUILD, {"ids": [w.units.id[wi]], "building": "lumber_camp", "cx": spot % w.map.width, "cy": spot / w.map.width})
+	for t in 1500:
+		w.step()
+	wi = w.units.index_of(w.units.id[wi])
+	check(w.units.task[wi] == Economy.GATHER or w.units.task[wi] == Economy.RETURN, "camps: the builder of a lumber camp goes to gather (task %d)" % w.units.task[wi])
+	check(w.units.carry_kind[wi] == wood or w.units.task[wi] == Economy.GATHER and w.map.resource_at(w.units.target[wi]) == "wood",
+		"camps: ... wood, what the camp takes in")
 
 
 ## The market: buying costs gold and raises the price, selling pays less and lowers it, and
