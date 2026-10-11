@@ -103,8 +103,12 @@ without a model still fall back to the automatic bake.
   reeds look bad"): rolling height and richer grass, proper water (depth, shallows, foam,
   wavelets, lilies), reed clumps with ribbon leaves and cattails, leafy bug bushes, thatch
   courses, contact shadows under buildings and props
-- [ ] Models for the other creatures (humans, centaurs, ponies, beetles) and gear: still the
-  automatic fallback
+- [x] Models for the other creatures (humans, centaurs, ponies, beetles) and all gear, with new
+  authored textures; centaurs use a neckless fused body (`creatures.json` `fused_body`)
+- [x] Architecture per culture: stone (imperial, hellenic, royal) and felt tents (steppe), as
+  well as thatch and junk
+- [ ] Independent review of all the art (every race, texture, building and the landscape) by a
+  separate agent, then fix what it finds
 - [ ] Step 1b (maybe later): hero frog in the other directions at production detail
 - [ ] Step 1b: hero rat spearman
 - [ ] Dominic picks a direction
@@ -167,6 +171,10 @@ without a model still fall back to the automatic bake.
 - **Step 1e, landscape (2026-10-11):** see the checklist. New authored textures: `reed_leaf`,
   `ladybird`, `water_lily`, `foliage`, `thatch`. Props live in `scenes/art_pixel/prop_models.gd`.
   Pictures: `archive/images/2026-10-11/32-34`.
+- **All races and cultures (2026-10-11):** every one of the 63 parts has a hand-built model. New
+  textures: `cloth`, `skin`, `hide`, `mane`, `chitin`, `human_eye`, `plume`, `wing_feather`,
+  `wing_bat`. Stone and tent buildings in `scenes/style_sampler/hifi/models.gd`. Pictures:
+  `archive/images/2026-10-11/35-41`.
 
 ## Changes from the original plan
 - The original plan assumed the painterly direction. Direction is open again (2026-10-11):

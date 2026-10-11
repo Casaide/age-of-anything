@@ -532,3 +532,213 @@ func slab_tri(a: Vector2, b: Vector2, c: Vector2, thick: float, m: Material) -> 
 	mi.mesh = st.commit()
 	mi.material_override = m
 	return mi
+
+
+# ------------------------------------------------------------------ stone culture (imperial, hellenic, royal)
+
+## A cylinder from a to b.
+func beam(a: Vector3, b: Vector3, r: float, mat: Material, seg := 8) -> MeshInstance3D:
+	var mi := cyl(r, r, a.distance_to(b), mat, (a + b) * 0.5, Vector3.ZERO, seg)
+	mi.basis = Basis(Quaternion(Vector3.UP, (b - a).normalized()))
+	return mi
+
+
+## A terracotta gable roof, ridge along z: two tiled slopes with rows of rounded cover
+## tiles running down them, a ridge line, and the gable triangles at both ends.
+func tile_roof(parent: Node3D, centre: Vector3, half_span: float, length: float, pitch_deg: float, front_gable: Material, back_gable: Material) -> float:
+	var tile := mats.get_mat("terracotta")
+	var pitch := deg_to_rad(pitch_deg)
+	var rise := half_span * tan(pitch)
+	var slope := half_span / cos(pitch)
+	for side in [-1, 1]:
+		parent.add_child(box(Vector3(slope + 0.06, 0.05, length), mats.get_mat("terracotta_dark"), centre + Vector3(side * half_span / 2, rise / 2, 0), Vector3(0, 0, -side * pitch_deg)))
+		var z := -length / 2 + 0.07
+		while z < length / 2 - 0.04:
+			var top := centre + Vector3(0, rise + 0.03, z)
+			var eave := centre + Vector3(side * (half_span + 0.03), 0.0, z)
+			parent.add_child(beam(top, eave, 0.05, tile))
+			z += 0.17
+	parent.add_child(beam(centre + Vector3(0, rise + 0.05, -length / 2 - 0.02), centre + Vector3(0, rise + 0.05, length / 2 + 0.02), 0.06, tile))
+	for end in [[1, front_gable], [-1, back_gable]]:
+		var g := slab_tri(Vector2(-half_span, 0), Vector2(half_span, 0), Vector2(0, rise), 0.08, end[1])
+		g.position = centre + Vector3(0, 0, end[0] * (length / 2 - 0.05))
+		parent.add_child(g)
+	return rise
+
+
+## A stone-culture Town Center: a stepped podium, a limewashed hall with a team-colour
+## frieze, a columned porch under a pediment, a terracotta roof and a fire bowl.
+func stone_town_center(team: Color) -> Dictionary:
+	var body := Node3D.new()
+	var stone := mats.get_mat("stone")
+	var plaster := mats.get_mat("plaster")
+	var marble := Materials.flat(Color("#e6e0d2"), 0.75)
+	var bronze := Materials.flat(Color("#b07a36"), 0.4, 0.7)
+	body.add_child(box(Vector3(2.9, 0.14, 2.9), stone, Vector3(0, 0.07, 0)))
+	body.add_child(box(Vector3(2.6, 0.14, 2.6), stone, Vector3(0, 0.21, 0)))
+	var base := 0.28
+	var w := 1.9
+	var d := 1.55
+	var h := 1.0
+	var hall_z := -0.35
+	body.add_child(box(Vector3(w + 0.06, 0.14, d + 0.06), stone, Vector3(0, base + 0.07, hall_z)))
+	body.add_child(box(Vector3(w, h, d), plaster, Vector3(0, base + h / 2, hall_z)))
+	body.add_child(box(Vector3(w + 0.03, 0.12, d + 0.03), cloth(team), Vector3(0, base + h - 0.16, hall_z)))   # frieze
+	body.add_child(box(Vector3(w + 0.08, 0.07, d + 0.08), marble, Vector3(0, base + h - 0.035, hall_z)))
+	# Windows high on the +x wall, with marble sills; they glow at night.
+	var lights := []
+	for z in [-0.75, 0.05]:
+		body.add_child(box(Vector3(0.04, 0.32, 0.22), glow(Color("#ffcf6a"), 1.4), Vector3(w / 2 + 0.01, base + 0.55, hall_z + z + 0.35)))
+		body.add_child(box(Vector3(0.08, 0.05, 0.3), marble, Vector3(w / 2 + 0.03, base + 0.37, hall_z + z + 0.35)))
+		lights.append(Vector3(w / 2 + 0.04, base + 0.55, hall_z + z + 0.35))
+	# Bronze-studded double door in the front wall.
+	var front_wall := hall_z + d / 2
+	body.add_child(box(Vector3(0.5, 0.74, 0.04), Materials.flat(Color("#4a2a18"), 0.8), Vector3(0, base + 0.37, front_wall + 0.02)))
+	body.add_child(box(Vector3(0.6, 0.08, 0.06), marble, Vector3(0, base + 0.78, front_wall + 0.03)))
+	for k in 6:
+		body.add_child(ball(0.022, bronze, Vector3(-0.15 + (k % 3) * 0.15, base + 0.25 + (k / 3) * 0.3, front_wall + 0.045)))
+	# The porch: four columns with bases and capitals, under an entablature.
+	var porch_z := front_wall + 0.5
+	for k in 4:
+		var x := -0.78 + k * 0.52
+		body.add_child(cyl(0.075, 0.09, h - 0.12, marble, Vector3(x, base + h / 2, porch_z), Vector3.ZERO, 14))
+		body.add_child(box(Vector3(0.22, 0.06, 0.22), marble, Vector3(x, base + 0.03, porch_z)))
+		body.add_child(box(Vector3(0.24, 0.07, 0.24), marble, Vector3(x, base + h - 0.035, porch_z)))
+	body.add_child(box(Vector3(w + 0.12, 0.14, porch_z - front_wall + 0.2), marble, Vector3(0, base + h + 0.07, (porch_z + front_wall) / 2)))
+	# The roof over hall and porch; a team shield in the pediment.
+	var roof_c := Vector3(0, base + h + 0.14, (hall_z - d / 2 - 0.12 + porch_z + 0.16) / 2)
+	var length := (porch_z + 0.16) - (hall_z - d / 2 - 0.12)
+	var rise := tile_roof(body, roof_c, w / 2 + 0.14, length, 24.0, marble, plaster)
+	body.add_child(ball(0.13, cloth(team), roof_c + Vector3(0, rise * 0.4, length / 2 - 0.0), Vector3(1, 1, 0.3)))
+	body.add_child(ring(0.12, 0.16, bronze, roof_c + Vector3(0, rise * 0.4, length / 2 + 0.01), Vector3(90, 0, 0)))
+	for x in [-w / 2 - 0.1, 0.0, w / 2 + 0.1]:   # little finials on the pediment
+		body.add_child(ball(0.06, marble, roof_c + Vector3(x, (rise + 0.08) if x == 0.0 else 0.06, length / 2)))
+	# A fire bowl on a tripod by the steps (it smokes and glows).
+	var bowl := Vector3(1.05, base, 1.05)
+	for k in 3:
+		var a := TAU * k / 3.0
+		body.add_child(beam(bowl + Vector3(cos(a) * 0.12, 0, sin(a) * 0.12), bowl + Vector3(0, 0.42, 0), 0.015, bronze))
+	body.add_child(cyl(0.16, 0.08, 0.1, bronze, bowl + Vector3(0, 0.46, 0), Vector3.ZERO, 16))
+	body.add_child(cyl(0.13, 0.13, 0.02, glow(Color("#ff9a3a"), 2.0), bowl + Vector3(0, 0.51, 0), Vector3.ZERO, 16))
+	# Amphorae on the podium.
+	for p in [Vector3(-1.05, base, 0.95), Vector3(-0.9, base, 1.12)]:
+		var clay := mats.get_mat("terracotta")
+		body.add_child(ball(0.1, clay, p + Vector3(0, 0.14, 0), Vector3(1, 1.4, 1)))
+		body.add_child(cyl(0.035, 0.045, 0.1, clay, p + Vector3(0, 0.31, 0), Vector3.ZERO, 10))
+	# A banner on a tall pole at the corner, and a bronze vane on the ridge (live parts).
+	var wood := mats.get_mat("wood")
+	var pole_at := Vector3(-1.25, base, 1.25)
+	body.add_child(cyl(0.035, 0.04, 2.1, wood, pole_at + Vector3(0, 1.05, 0), Vector3.ZERO, 8))
+	body.add_child(ball(0.07, bronze, pole_at + Vector3(0, 2.13, 0)))
+	var banner := Node3D.new()
+	var flag_top := pole_at + Vector3(0.04, 2.0, 0)
+	banner.add_child(box(Vector3(0.66, 0.06, 0.03), wood, flag_top + Vector3(0.33, 0, 0)))
+	banner.add_child(box(Vector3(0.6, 0.8, 0.02), cloth(team), flag_top + Vector3(0.33, -0.42, 0)))
+	banner.add_child(ring(0.1, 0.15, cloth(Color("#f2c94c")), flag_top + Vector3(0.33, -0.38, 0.015), Vector3(90, 0, 0)))
+	var vane := Node3D.new()
+	var apex := roof_c + Vector3(0, rise + 0.08, -length / 2 + 0.25)
+	vane.add_child(cyl(0.012, 0.012, 0.35, bronze, apex + Vector3(0, 0.17, 0), Vector3.ZERO, 6))
+	vane.add_child(box(Vector3(0.36, 0.02, 0.02), bronze, apex + Vector3(0, 0.33, 0)))
+	vane.add_child(slab_tri(Vector2(0.1, 0), Vector2(0.24, 0.06), Vector2(0.24, -0.06), 0.02, bronze))
+	vane.get_child(vane.get_child_count() - 1).position = apex + Vector3(0, 0.33, 0)
+	return {"body": body, "anchor": Vector3.ZERO, "banner": banner, "banner_pivot": flag_top,
+		"vane": vane, "vane_pivot": apex, "smoke": bowl + Vector3(0, 0.6, 0), "lights": lights,
+		"lantern": bowl + Vector3(0, 0.52, 0)}
+
+
+## A stone-culture house: limewashed walls on a stone plinth, a tile roof, team-colour
+## shutters, an amphora by the door and a cypress.
+func villa_house(team: Color) -> Dictionary:
+	var body := Node3D.new()
+	var stone := mats.get_mat("stone")
+	var plaster := mats.get_mat("plaster")
+	var w := 1.15
+	var d := 1.0
+	var h := 0.72
+	body.add_child(box(Vector3(w + 0.14, 0.12, d + 0.14), stone, Vector3(0, 0.06, 0)))
+	body.add_child(box(Vector3(w, h, d), plaster, Vector3(0, 0.12 + h / 2, 0)))
+	body.add_child(box(Vector3(w + 0.02, 0.1, d + 0.02), stone, Vector3(0, 0.17, 0)))
+	var front := d / 2
+	body.add_child(box(Vector3(0.28, 0.48, 0.04), Materials.flat(Color("#4a2a18"), 0.8), Vector3(-0.22, 0.12 + 0.24, front + 0.02)))
+	body.add_child(box(Vector3(0.36, 0.06, 0.06), stone, Vector3(-0.22, 0.12 + 0.5, front + 0.03)))
+	# A window on the +x wall with team-colour shutters thrown open.
+	body.add_child(box(Vector3(0.04, 0.2, 0.18), glow(Color("#ffcf6a"), 1.2), Vector3(w / 2 + 0.01, 0.12 + 0.42, 0.05)))
+	for s in [-1, 1]:
+		body.add_child(box(Vector3(0.1, 0.22, 0.02), cloth(team), Vector3(w / 2 + 0.06, 0.12 + 0.42, 0.05 + s * 0.15), Vector3(0, s * 60, 0)))
+	var rise := tile_roof(body, Vector3(0, 0.12 + h, 0), w / 2 + 0.1, d + 0.16, 26.0, plaster, plaster)
+	var clay := mats.get_mat("terracotta")
+	body.add_child(ball(0.08, clay, Vector3(0.2, 0.12 + 0.1, front + 0.14), Vector3(1, 1.4, 1)))
+	body.add_child(cyl(0.03, 0.035, 0.08, clay, Vector3(0.2, 0.12 + 0.24, front + 0.14), Vector3.ZERO, 10))
+	var cypress := Materials.flat(Color("#2e4a26"), 0.95)
+	body.add_child(cyl(0.03, 0.04, 0.3, mats.get_mat("wood"), Vector3(-0.72, 0.15, 0.4), Vector3.ZERO, 6))
+	body.add_child(ball(0.17, cypress, Vector3(-0.72, 0.75, 0.4), Vector3(1, 3.4, 1)))
+	body.add_child(cyl(0.05, 0.05, 0.3, stone, Vector3(0.3, 0.12 + h + rise + 0.05, -0.2), Vector3.ZERO, 8))   # chimney
+	return {"body": body, "anchor": Vector3.ZERO, "smoke": Vector3(0.3, 0.12 + h + rise + 0.25, -0.2), "lights": [],
+		"lantern": Vector3(-0.22, 0.12 + 0.62, front + 0.1), "team": team}
+
+
+# ------------------------------------------------------------------ tent culture (steppe)
+
+## A felt tent: a round lattice wall, a conical roof with a smoke crown, rope bands
+## and a team-colour door flap.
+func _yurt(parent: Node3D, at: Vector3, r: float, wall_h: float, team: Color) -> float:
+	var felt := mats.get_mat("felt")
+	var rope := Materials.flat(Color("#8a6a3c"), 0.9)
+	parent.add_child(cyl(r, r, wall_h, felt, at + Vector3(0, wall_h / 2, 0), Vector3.ZERO, 28))
+	for y in [0.3, 0.7]:
+		parent.add_child(ring(r - 0.01, r + 0.03, rope, at + Vector3(0, wall_h * y, 0)))
+	var roof_h := r * 0.55
+	parent.add_child(cyl(r * 0.18, r + 0.06, roof_h, felt, at + Vector3(0, wall_h + roof_h / 2, 0), Vector3.ZERO, 28))
+	parent.add_child(cyl(r * 0.2, r * 0.2, 0.06, mats.get_mat("wood"), at + Vector3(0, wall_h + roof_h + 0.02, 0), Vector3.ZERO, 16))
+	for k in 8:   # roof ropes
+		var a := TAU * k / 8.0
+		parent.add_child(beam(at + Vector3(cos(a) * r * 0.2, wall_h + roof_h, sin(a) * r * 0.2), at + Vector3(cos(a) * (r + 0.05), wall_h, sin(a) * (r + 0.05)), 0.012, rope, 4))
+	var door := at + Vector3(0, 0, r)
+	parent.add_child(box(Vector3(0.3, wall_h * 0.8, 0.03), cloth(team), door + Vector3(0, wall_h * 0.4, 0.01)))
+	parent.add_child(box(Vector3(0.36, 0.05, 0.05), mats.get_mat("wood"), door + Vector3(0, wall_h * 0.82, 0.02)))
+	return wall_h + roof_h
+
+
+## A tent-culture Town Center: a great felt tent with a smaller one beside it, a cart,
+## a hitching rail and a pennant standard.
+func tent_town_center(team: Color) -> Dictionary:
+	var body := Node3D.new()
+	var wood := mats.get_mat("wood")
+	var top := _yurt(body, Vector3(-0.15, 0.0, -0.15), 1.05, 0.75, team)
+	_yurt(body, Vector3(0.95, 0.0, 0.75), 0.42, 0.42, team)
+	# A cart with two big wheels.
+	var cart := Vector3(-0.95, 0.06, 0.95)
+	body.add_child(box(Vector3(0.55, 0.06, 0.35), wood, cart + Vector3(0, 0.26, 0)))
+	for z in [-0.2, 0.2]:
+		body.add_child(ring(0.13, 0.17, wood, cart + Vector3(0, 0.17, z), Vector3(90, 0, 0)))
+	body.add_child(beam(cart + Vector3(0.27, 0.26, 0), cart + Vector3(0.7, 0.06, 0.05), 0.02, wood))
+	for k in 3:
+		body.add_child(ball(0.08, mats.get_mat("weave"), cart + Vector3(-0.15 + k * 0.15, 0.36, 0)))
+	# A hitching rail.
+	for x in [0.2, 0.9]:
+		body.add_child(cyl(0.025, 0.025, 0.3, wood, Vector3(x, 0.21, 1.3), Vector3.ZERO, 6))
+	body.add_child(beam(Vector3(0.2, 0.33, 1.3), Vector3(0.9, 0.33, 1.3), 0.02, wood))
+	# The standard: a pole with a team pennant (a live banner), and a vane on the crown.
+	var pole_at := Vector3(-1.2, 0.06, -0.9)
+	body.add_child(cyl(0.03, 0.035, 2.0, wood, pole_at + Vector3(0, 1.0, 0), Vector3.ZERO, 8))
+	var banner := Node3D.new()
+	var flag_top := pole_at + Vector3(0.03, 1.9, 0)
+	banner.add_child(box(Vector3(0.5, 0.05, 0.03), wood, flag_top + Vector3(0.25, 0, 0)))
+	banner.add_child(slab_tri(Vector2(0, 0), Vector2(0.62, -0.22), Vector2(0, -0.5), 0.02, cloth(team)))
+	banner.get_child(banner.get_child_count() - 1).position = flag_top
+	var vane := Node3D.new()
+	var apex := Vector3(-0.15, top + 0.04, -0.15)
+	vane.add_child(cyl(0.012, 0.012, 0.3, wood, apex + Vector3(0, 0.15, 0), Vector3.ZERO, 6))
+	vane.add_child(box(Vector3(0.3, 0.02, 0.02), Materials.flat(Color("#b07a36"), 0.4, 0.7), apex + Vector3(0, 0.28, 0)))
+	return {"body": body, "anchor": Vector3.ZERO, "banner": banner, "banner_pivot": flag_top,
+		"vane": vane, "vane_pivot": apex, "smoke": apex + Vector3(0, 0.1, 0), "lights": [],
+		"lantern": Vector3(-0.15, 0.5, 0.95)}
+
+
+## A tent-culture house: one felt tent and a woodpile.
+func tent_house(team: Color) -> Dictionary:
+	var body := Node3D.new()
+	var top := _yurt(body, Vector3.ZERO, 0.62, 0.48, team)
+	woodpile(Vector3(0.7, 0, -0.3), body)
+	return {"body": body, "anchor": Vector3.ZERO, "smoke": Vector3(0, top + 0.1, 0), "lights": [],
+		"lantern": Vector3(0, 0.35, 0.7), "team": team}

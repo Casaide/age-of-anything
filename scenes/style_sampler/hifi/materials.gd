@@ -119,6 +119,22 @@ func _make(name: String) -> StandardMaterial3D:
 			ramp = [[0.0, "#3a2a22"], [0.4, "#6a3e2e"], [0.8, "#80503a"], [1.0, "#94604a"]]
 			uv = Vector3(3, 1.5, 1)
 			m.roughness = 0.95
+		"plaster":  # limewashed walls, a little weathered
+			n = _noise(FastNoiseLite.TYPE_SIMPLEX, 0.02, 37, 5)
+			ramp = [[0.0, "#b8ac94"], [0.45, "#d8ccb2"], [0.8, "#e8dec8"], [1.0, "#f2ead8"]]
+			m.roughness = 0.95
+		"terracotta":   # fired clay roof tiles
+			n = _noise(FastNoiseLite.TYPE_SIMPLEX, 0.05, 41, 3)
+			ramp = [[0.0, "#7a3420"], [0.5, "#a4492a"], [0.85, "#c0623a"], [1.0, "#cc7448"]]
+			m.roughness = 0.9
+		"terracotta_dark":   # the tile bed between the cover rows
+			n = _noise(FastNoiseLite.TYPE_SIMPLEX, 0.05, 43, 3)
+			ramp = [[0.0, "#4a1e14"], [0.6, "#6a2c1a"], [1.0, "#7e3a22"]]
+			m.roughness = 0.9
+		"felt":   # pressed wool, off-white with darker patches
+			n = _noise(FastNoiseLite.TYPE_SIMPLEX, 0.025, 47, 4)
+			ramp = [[0.0, "#9a8a70"], [0.45, "#c8b898"], [0.8, "#ddd0b4"], [1.0, "#e8dcc4"]]
+			m.roughness = 1.0
 		"weave":  # basket
 			n = _noise(FastNoiseLite.TYPE_CELLULAR, 0.08, 23, 1)
 			ramp = [[0.0, "#6e5226"], [0.5, "#a6844a"], [1.0, "#c8a462"]]
@@ -134,8 +150,8 @@ func _make(name: String) -> StandardMaterial3D:
 			bump = 4.0
 		"swamp":
 			bump = 1.0
-		"grass":
-			bump = 4.0
+		"grass", "plaster":
+			bump = 3.0
 	m.normal_texture = _tex(n, ramp, Vector2i(512, 512), true, bump)
 	m.uv1_scale = uv
 	m.texture_filter = BaseMaterial3D.TEXTURE_FILTER_LINEAR_WITH_MIPMAPS_ANISOTROPIC
