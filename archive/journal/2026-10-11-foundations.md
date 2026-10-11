@@ -231,3 +231,10 @@ a blunt square head, a tea-towel saddle with the team's stripe), so "sewer rats 
 hammers" field a Cheesehammer Rat on a Capybara. A creature can now name its own mounts in data
 (`mounts` in creatures.json), ridden before its family's. The first build called a box() helper the
 unit models don't have; the script-parse test didn't look in scenes/art_pixel/ and now does.
+
+### Beetles rear up
+Dominic's BG1 pick is in play: beetle soldiers stand on their back four legs with the pronotum up
+like a chest and the front pair as arms, holding the weapon (no more mount bodies with floating
+gear). A creature can keep a separate `mount_body` for when it's ridden, so beetle mounts stay
+horizontal. Beetle infantry are lighter now (body 5 points, was the 12-point mount body);
+counters went to 83%.
