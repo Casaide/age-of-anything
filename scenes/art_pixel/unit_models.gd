@@ -898,6 +898,47 @@ func _leg_hoof(c: Dictionary) -> Dictionary:
 	return {"node": n}
 
 
+# ------------------------------------------------------------------ capybara (the rats' mount, RB1)
+# The rats' "big cousin" (Dominic's pick): a barrel of a body on short legs, a blunt square
+# head with tiny ears, a tea towel for a saddle with the team's stripe across it.
+
+func _body_capybara(c: Dictionary) -> Dictionary:
+	var n := Node3D.new()
+	var fur := surf("rat_fur", c.skin, 5.0)
+	n.add_child(blob(Vector3(13.0, 8.0, 8.5), fur, Vector3(0, 13, 0)))
+	n.add_child(blob(Vector3(6.0, 4.0, 6.4), surf("rat_fur", c.skin.lightened(0.12), 4.0), Vector3(3, 9.5, 0)))   # a paler belly
+	n.add_child(blob(Vector3(4.6, 5.0, 4.8), fur, Vector3(-11.0, 13.5, 0)))   # the round rump
+	n.add_child(_box(Vector3(9.0, 0.9, 13.0), plain(Color("#e8e0d0")), Vector3(-1, 20.9, 0)))   # the tea-towel saddle
+	n.add_child(_box(Vector3(9.2, 1.0, 2.4), plain(c.team), Vector3(-1, 21.0, 0)))              # its team stripe
+	for side in [1, -1]:
+		n.add_child(_box(Vector3(9.0, 4.0, 0.5), plain(Color("#e8e0d0")), Vector3(-1, 18.6, 6.6 * side), Vector3(10 * side, 0, 0)))   # hanging down the flanks
+	return {"node": n, "sockets": {
+		"head": Vector3(12.5, 17.5, 0), "hand_r": Vector3(4, 16, 7.6), "hand_l": Vector3(3, 16, -7.6),
+		"torso": Vector3(0, 14, 0), "back": Vector3(-8, 20, 0), "seat": Vector3(-1, 22.5, 0), "wings": Vector3(6, 20, 0)},
+		"anchors": [[Vector3(8.0, 7.5, 5.0), 0.0, 1, 0], [Vector3(-8.0, 7.5, 5.2), PI, 1, 0],
+			[Vector3(7.0, 7.5, -5.0), PI, -1, 0], [Vector3(-9.0, 7.5, -5.2), 0.0, -1, 0]],
+		"torso_scale": Vector2(1.4, 0.9), "carry": "harness"}
+
+
+func _head_capybara(c: Dictionary) -> Dictionary:
+	var n := Node3D.new()
+	var fur := surf("rat_fur", c.skin, 5.0)
+	n.add_child(_box(Vector3(8.5, 6.0, 6.0), fur, Vector3(3.5, 0, 0), Vector3(0, 0, -14)))   # the blunt square head
+	n.add_child(_box(Vector3(2.0, 3.6, 5.0), surf("rat_fur", c.skin.darkened(0.4), 4.0), Vector3(7.6, -1.4, 0), Vector3(0, 0, -14)))   # its flat nose
+	for side in [1, -1]:
+		n.add_child(blob(Vector3(0.9, 1.0, 0.7), fur, Vector3(-0.4, 3.4, 2.5 * side)))   # tiny ears
+		n.add_child(blob(Vector3(0.5, 0.5, 0.45), plain(INK), Vector3(3.4, 1.8, 3.0 * side)))
+	return {"node": n, "sockets": {"top": Vector3(1, 3.2, 0)}}
+
+
+func _leg_capybara(c: Dictionary) -> Dictionary:
+	var n := Node3D.new()
+	var fur := surf("rat_fur", c.skin, 5.0)
+	n.add_child(rod(Vector3.ZERO, Vector3(0.4, -6.4, 0), 2.4, 1.9, fur))
+	n.add_child(blob(Vector3(2.4, 0.9, 1.8), surf("rat_fur", c.skin.darkened(0.45), 3.0), Vector3(1.0, -7.0, 0)))   # a broad dark foot
+	return {"node": n}
+
+
 # ------------------------------------------------------------------ beetle (a mount)
 
 func _body_beetle(c: Dictionary) -> Dictionary:

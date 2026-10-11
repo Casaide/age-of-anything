@@ -344,6 +344,9 @@ func _choose_mount(ctx: Dictionary, always := false) -> String:
 			return m
 	if _winged(ctx.tags):
 		return ""   # a winged race flies; it rides only when asked to (Dominic, D-059)
+	var own: Array = lib.creatures[ctx.creature].get("mounts", [])   # the creature's own (rats ride capybaras)
+	if not own.is_empty() and (always or ctx.rng.chance(85)):
+		return ctx.rng.pick(own)
 	var family_mounts: Array = lib.families[ctx.family].mounts.filter(func(m): return m != ctx.creature)
 	if family_mounts.is_empty() or not (always or ctx.rng.chance(65)):
 		return ""
