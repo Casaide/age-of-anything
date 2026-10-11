@@ -2102,7 +2102,7 @@
     "pierce": 2
    }
   },
-  "points": 3,
+  "points": 4,
   "two_handed": true,
   "cost_mix": {
    "food": 40,
@@ -2238,7 +2238,7 @@
    },
    "damage": "pierce"
   },
-  "points": 6,
+  "points": 4,
   "era": [
    "medieval",
    "gunpowder"
@@ -2735,7 +2735,7 @@
     "pierce": 1
    }
   },
-  "points": 2,
+  "points": 3,
   "shapes": [
    {
     "t": "circle",
@@ -3092,7 +3092,7 @@
     "pierce": 1
    }
   },
-  "points": 2,
+  "points": 6,
   "era": [
    "medieval",
    "gunpowder"
@@ -3755,7 +3755,7 @@
     "large": 8
    }
   },
-  "points": 5,
+  "points": 7,
   "era": [
    "bronze",
    "medieval"
@@ -3821,7 +3821,7 @@
     "pierce": 2
    }
   },
-  "points": 4,
+  "points": 3,
   "era": [
    "bronze",
    "medieval"

@@ -160,7 +160,19 @@ Two more studies, of a mythology RTS (humans next to myth creatures) and a many-
   - R0 also judges whether the human sits with the frog and rat.
   - A later R7 builds the material ladder for era packs.
 
-## Questions for Dominic
+## Dominic's answers (2026-10-11)
+- Run the 3D vs pixel test: **yes**.
+- 8 baked facings, all directions: **yes**.
+- Horned helmets: **not by default**.
+- Non-European cultures: **all three** (Egypt, Han China, Aztec).
+- Workers' costs vary with the body (centaurs faster, carry more, tougher, dearer).
+- He wants deeper research with linked examples, and concepts before anything is committed. The
+  buildings must show their culture in their structure, not a token on a generic shape (the lily
+  pad on a frog hut). Pixel drawing may give more freedom than 3D primitives. A design agent is on it:
+  `docs/concepts/research/`.
+- Rat buildings look bigger than Roman ones on the same footprint: a building scale rule is needed.
+
+## Questions for Dominic (original)
 1. Is a 1.5-3 day pipeline bake-off (R0) worth doing first?
 2. 8 facings, all baked, none mirrored?
 3. Horns only on a silly ask?

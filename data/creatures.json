@@ -130,6 +130,10 @@
    "forest",
    "steppe"
   ],
-  "giant_ok": false
+  "giant_ok": false,
+  "economy": {
+   "carry_pct": 160,
+   "note": "a horse's back: carries much more each trip (and is faster and tougher), so its workers cost more"
+  }
  }
 }
