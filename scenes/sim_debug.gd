@@ -18,6 +18,7 @@ const BuildingArt := preload("res://src/view/art/building_art.gd")
 const Paths := preload("res://scenes/art_pixel/paths.gd")
 const CombatFx := preload("res://src/view/combat_fx.gd")
 const Tech := preload("res://src/sim/tech.gd")
+const Market := preload("res://src/sim/market.gd")
 const RtsCamera := preload("res://src/view/rts_camera.gd")
 const CommandPanel := preload("res://src/view/command_panel.gd")
 const TopBar := preload("res://src/view/top_bar.gd")
@@ -1082,6 +1083,29 @@ func _tech_buttons(c: Dictionary, b: int) -> void:
 				"enabled": why == "", "action": func(): world.issue(active, Commands.RESEARCH, {"building": bid, "id": rid})})
 
 
+## Buy and sell buttons for each good at a market, priced live.
+func _market_buttons(c: Dictionary, b: int) -> void:
+	var bid: int = world.buildings.id[b]
+	for r in world.resources.size():
+		var res: String = world.resources[r]
+		if res == "gold":
+			continue
+		for buy in [true, false]:
+			var price := Market.quote(world, r, buy)
+			var why := Market.why_not(world, active, b, r, buy)
+			var name: String = lib.resource_info[r].name
+			var verb := "Buy" if buy else "Sell"
+			var rr: String = res
+			var flag := 1 if buy else 0
+			c.buttons.append({"icon": Icons.texture("res_" + res), "key": "+" if buy else "-",
+				"cost": "%dG" % price, "enabled": why == "",
+				"text": "%s %d %s for %d gold" % [verb, Market.LOT, name.to_lower(), price],
+				"tip": "[b]%s %d %s[/b]\n%s %d gold.\n[color=%s]Each trade moves the price: buying pushes it up, selling down. Prices are the same for everyone.[/color]%s" % [
+					verb, Market.LOT, name.to_lower(), "Costs" if buy else "Pays", price, TIP_DIM,
+					("" if why == "" else "\n[color=%s]%s[/color]" % [TIP_NEED, why.capitalize()])],
+				"action": func(): world.issue(active, Commands.TRADE, {"building": bid, "resource": rr, "buy": flag})})
+
+
 # ------------------------------------------------------------------ tooltips
 # What each button is, costs, needs and unlocks, as BBCode for the panel's tooltip cards.
 
@@ -1332,6 +1356,8 @@ func _update_panel() -> void:
 						"key": "Q" if slot == "worker" else "", "cost": _cost_text(wt.cost), "enabled": ok_age and afford and q.size() < int(world.econ.queue_max),
 						"action": func(): _train(selected_building, tslot)})
 				_tech_buttons(c, b)
+				if t.id == "market" and bs.done[b] == 1:
+					_market_buttons(c, b)
 				c.info += ("\n" if c.info != "" else "") + "Right-click: rally point"
 		panel.show_content(c)
 		return
