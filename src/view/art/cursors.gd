@@ -6,8 +6,8 @@ extends RefCounted
 
 const DIR := "res://assets/art/cursors/"
 ## name -> hotspot, in the 32 x 32 art
-const HOTSPOT := {"pointer": Vector2(3, 2), "move": Vector2(3, 2), "forage": Vector2(16, 16),
-	"chop": Vector2(3, 4), "build": Vector2(3, 7), "rally": Vector2(6, 29), "attack": Vector2(3, 3)}
+const HOTSPOT := {"pointer": Vector2(3, 2), "move": Vector2(3, 2), "forage": Vector2(16, 18),
+	"chop": Vector2(6, 13), "build": Vector2(7, 8), "rally": Vector2(7, 29), "attack": Vector2(3, 3)}
 
 var images := {}
 var current := ""
