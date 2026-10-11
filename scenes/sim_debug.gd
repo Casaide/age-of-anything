@@ -628,15 +628,42 @@ func _sync_views() -> void:
 		var dy := u.y[i] - u.py[i]
 		view.position = Iso.to_screen(u.px[i] + dx * a, u.py[i] + dy * a)
 		view.walking = dx != 0 or dy != 0
+		view.job = _job(i)
 		if absi(dx - dy) > 4:
 			view.face(dx - dy)   # screen x direction
-		elif u.work[i] > 0 and u.task[i] == Economy.GATHER and u.work[i] % 10 == 1:
-			view.flourish()      # chop chop
+		elif view.job != "":
+			var at := _work_point(i)   # face what it's working on
+			if absf(at.x - view.position.x) > 1.0:
+				view.face(at.x - view.position.x)
 	for id in views.keys():
 		if not alive.has(id):
 			views[id].queue_free()
 			views.erase(id)
 			selected.erase(id)
+
+
+## The work animation for a unit standing at its job: forage (bug bushes), chop
+## (reeds) or build; "" otherwise. Read from the sim, never written back.
+func _job(i: int) -> String:
+	var u := world.units
+	if u.moving[i] != 0:
+		return ""
+	if u.task[i] == Economy.GATHER and u.work[i] > 0:
+		return "forage" if u.carry_kind[i] == 1 else "chop"
+	if u.task[i] == Economy.BUILD:
+		return "build"
+	return ""
+
+
+## Where a working unit's job is, on the canvas: its resource cell or building's centre.
+func _work_point(i: int) -> Vector2:
+	var u := world.units
+	if u.task[i] == Economy.GATHER:
+		var c: int = u.target[i]
+		return Iso.to_screen((c % map.width) * 1000 + 500, (c / map.width) * 1000 + 500)
+	var b := world.buildings.index_of(u.target[i])
+	var bs := world.buildings
+	return Iso.to_screen((bs.cx[b] * 2 + bs.size[b]) * 500, (bs.cy[b] * 2 + bs.size[b]) * 500)
 
 
 func _sync_buildings() -> void:
