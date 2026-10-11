@@ -106,6 +106,20 @@ func _test_bounds(lib, gen, rules: Dictionary) -> void:
 
 func _test_prompts(gen, rules: Dictionary) -> void:
 	var d: Dictionary = rules.default
+	# Another culture's signature kit never turns up uninvited (no acorns or knight's
+	# helmets on Romans, no bat wings on Greeks), and a culture keeps its own.
+	var foreign := {"centaur romans": ["knight", "woodland", "bat", "greek", "viking", "cheese"],
+		"winged romans": ["knight", "woodland", "bat", "greek"], "flying greeks with wings": ["knight", "woodland", "bat", "roman"],
+		"greek hoplites": ["knight", "woodland", "roman"], "royal knights": ["woodland", "roman", "greek", "bat"]}
+	for prompt in foreign:
+		for reroll in 6:
+			for u in gen.generate(prompt, d, reroll).units:
+				var ids: Array = u.recipe.parts.values()
+				if u.recipe.has("mount"):
+					ids.append_array(u.recipe.mount.parts.values())
+				for id in ids:
+					var bad: Array = gen.lib.part(id).tags.filter(func(t): return t in foreign[prompt])
+					check(bad.is_empty(), "%s (reroll %d): %s has foreign kit %s" % [prompt, reroll, id, bad])
 	check(gen.generate("swamp frogs", d).creature == "frog", "frogs are frogs")
 	check(gen.generate("sewer rats", d).creature == "rat", "rats are rats")
 	var centaurs: Dictionary = gen.generate("centaur romans", d)

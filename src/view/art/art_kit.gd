@@ -76,6 +76,7 @@ func _bake_doodads(baker, models) -> void:
 	if bakes.has("reeds0"):
 		return
 	var props := PropModels.new()
+	baker.outline = false   # static props are drawn realistically, without the units' outline
 	baker.set_ground_shadow(true)
 	for k in DOODADS.reeds:
 		await _bake(baker, "reeds%d" % k, props.reed_clump(300 + k))
@@ -91,6 +92,7 @@ func _bake_doodads(baker, models) -> void:
 		await _bake(baker, "lily%d" % k, props.lily_pads(900 + k))
 	for k in DOODADS.flowers:
 		await _bake(baker, "flowers%d" % k, models.flowers(800 + k))
+	baker.outline = true
 
 
 func _bake(baker, name: String, model: Node3D) -> void:
