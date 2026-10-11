@@ -1,0 +1,19 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="64" height="64" viewBox="0 0 64 64">
+<!-- Sharp Sticks: three sticks whittled to points, bound with twine, shavings at the foot. -->
+<defs>
+<linearGradient id="steel" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#f4f6f8"/><stop offset="0.45" stop-color="#b9c0c6"/><stop offset="1" stop-color="#6e767e"/></linearGradient>
+<linearGradient id="wood" x1="0" y1="0" x2="1" y2="0"><stop offset="0" stop-color="#c08850"/><stop offset="0.5" stop-color="#8a5a2e"/><stop offset="1" stop-color="#5e3a1a"/></linearGradient>
+<linearGradient id="gold" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#ffe9a8"/><stop offset="0.5" stop-color="#d4a640"/><stop offset="1" stop-color="#8a6018"/></linearGradient>
+<linearGradient id="cloth" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#e0503c"/><stop offset="1" stop-color="#8a2a20"/></linearGradient>
+<radialGradient id="glow" cx="0.5" cy="0.45" r="0.6"><stop offset="0" stop-color="#fff2c0" stop-opacity="0.9"/><stop offset="1" stop-color="#fff2c0" stop-opacity="0"/></radialGradient>
+</defs>
+<g stroke="#1c120a" stroke-width="1.8" stroke-linejoin="round">
+<path d="M16,58 L22,16 L26,8 L28,17 L22,58 Z" fill="url(#wood)"/>
+<path d="M29,58 L31,12 L34,3 L37,12 L35,58 Z" fill="url(#wood)"/>
+<path d="M42,58 L38,17 L40,8 L45,16 L48,58 Z" fill="url(#wood)"/>
+</g>
+<path d="M26,8 L27.4,15 M34,3 L35.6,11 M40,8 L42,14" stroke="#f0d8a8" stroke-width="1.4"/>
+<path d="M18,40 Q32,46 46,40" fill="none" stroke="#1c120a" stroke-width="5"/>
+<path d="M18,40 Q32,46 46,40" fill="none" stroke="#d8c08a" stroke-width="2.6"/>
+<path d="M10,58 Q14,52 18,58 M44,58 Q50,53 54,58" fill="#e8c890" stroke="#1c120a" stroke-width="1.2"/>
+</svg>

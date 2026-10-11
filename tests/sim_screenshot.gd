@@ -35,6 +35,8 @@ func _initialize() -> void:
 		await _ageup(view, int(scene.get_slice(":", 1)))
 	elif scene == "farm":
 		await _farm(view)
+	elif scene.begins_with("tip"):
+		await _tip(view, int(scene.get_slice(":", 1)))
 	elif scene == "card":
 		await _card(view)
 	elif scene.begins_with("battle"):
@@ -75,6 +77,26 @@ func _farm(view) -> void:
 	view.camera.zoom = Vector2(3.0, 3.0)
 	view._on_zoom()
 	view.camera.look_at_point(Iso.to_screen(cx * 1000 + 1000, cy * 1000 + 1000))
+
+
+## The Town Center selected (or a worker, for "tip:1"), with the tooltip card of the panel's
+## last button shown where a hover would put it.
+func _tip(view, which: int) -> void:
+	var w = view.world
+	if which == 1:
+		for i in w.units.count():
+			if w.units.owner[i] == 0:
+				view.selected[w.units.id[i]] = true
+				break
+	else:
+		view.selected_building = w.buildings.id[0]
+	for f in 10:
+		await process_frame
+	var buttons: Array = view.panel._buttons.get_children()
+	var b = buttons[buttons.size() - 1 if which != 1 else 3]
+	var card: Control = b._make_custom_tooltip(b.tooltip_text)
+	view.panel.get_parent().add_child(card)
+	card.position = b.global_position + Vector2(0, -260)
 
 
 ## One of side 0's spearmen selected, so the panel shows its unit card.

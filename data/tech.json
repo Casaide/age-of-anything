@@ -5,6 +5,7 @@
   {
    "age": 2,
    "name": "Stick Age",
+   "desc": "Stronger gear for every unit line, the Stable and the Watchtower.",
    "cost": {
     "food": 500,
     "wood": 200
@@ -18,6 +19,7 @@
   {
    "age": 3,
    "name": "Stone Age",
+   "desc": "The top of every unit line.",
    "cost": {
     "food": 800,
     "wood": 400,
@@ -34,6 +36,7 @@
   {
    "id": "sharp_sticks",
    "name": "Sharp Sticks",
+   "desc": "Spear points whittled sharper.",
    "cost": {
     "food": 100,
     "wood": 50
@@ -53,6 +56,7 @@
   {
    "id": "frog_leap",
    "name": "Strong Legs",
+   "desc": "Strong back legs: amphibious units move faster.",
    "cost": {
     "food": 150,
     "wood": 0

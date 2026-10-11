@@ -19,11 +19,11 @@ static func load_tech(resources: Array) -> Dictionary:
 	assert(d != null, "Bad or missing data/tech.json")
 	var ages := []
 	for a in d.ages:
-		ages.append({"age": int(a.age), "name": a.name, "cost": Economy.cost_vector(resources, a.cost),
+		ages.append({"age": int(a.age), "name": a.name, "desc": a.get("desc", ""), "cost": Economy.cost_vector(resources, a.cost),
 			"ticks": int(a.time) * 20, "building": a.building, "requires": a.get("requires", []).duplicate()})
 	var research := []
 	for r in d.research:
-		research.append({"id": r.id, "name": r.name, "cost": Economy.cost_vector(resources, r.cost),
+		research.append({"id": r.id, "name": r.name, "desc": r.get("desc", ""), "cost": Economy.cost_vector(resources, r.cost),
 			"ticks": int(r.time) * 20, "building": r.building, "age": int(r.age), "effects": r.effects.duplicate(true),
 			"only": r.get("only", []).duplicate()})
 	return {"ages": ages, "research": research}
