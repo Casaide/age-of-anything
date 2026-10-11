@@ -3,8 +3,9 @@ extends RefCounted
 ## the command stream. Views read it; nothing outside writes to it except
 ## through commands. Same seed + map + races + rules + commands = same hashes.
 ##
-## One tick: commands -> training -> worker jobs -> map changes drop stale
-## flow fields -> solve queued fields (budgeted) -> move -> separate -> hash.
+## One tick: commands -> training -> worker jobs -> combat (targets, chasing, hits,
+## deaths) -> map changes drop stale flow fields -> solve queued fields (budgeted)
+## -> move -> separate -> hash. Combat lives in combat.gd.
 ##
 ## Movement: a unit either heads for a point (MOVE: groups settle when they bump
 ## an arrived groupmate) or for "next to a rect" (a reed tile, a building). It
@@ -21,6 +22,7 @@ const Spatial := preload("res://src/sim/spatial.gd")
 const SimMap := preload("res://src/sim/sim_map.gd")
 const Flow := preload("res://src/sim/flow.gd")
 const Economy := preload("res://src/sim/economy.gd")
+const Combat := preload("res://src/sim/combat.gd")
 
 const TICK_HZ := 20
 const HASH_EVERY := 30
@@ -55,6 +57,9 @@ var map: SimMap
 var races: Array               # race dicts, one per player
 var rules: Dictionary          # host rules, as loaded
 var econ: Dictionary           # rules.economy with numbers as ints
+var combat: Dictionary         # rules.combat with numbers as ints
+var classes: Array = []        # armour/attack class names (see Combat.setup)
+var events: Array = []         # this tick's hits and deaths, for views (not state, not hashed)
 var types: Array = []          # unit types, per player per roster slot (see _make_type)
 var btypes: Array = []         # building types (see Economy.load_btypes)
 var units: Units = Units.new()
@@ -70,6 +75,7 @@ var wood := PackedInt32Array()
 var gathered_food := PackedInt32Array()   # per player, everything ever dropped off
 var gathered_wood := PackedInt32Array()
 var pop := PackedInt32Array()     # derived each tick (Economy.update_pop)
+var lost := PackedInt32Array()    # per player: units killed so far
 var pop_cap := PackedInt32Array()
 var fields := {}               # field key -> Flow; looked up by key, never iterated
 var field_order: Array = []    # cached field keys, oldest first (eviction, invalidation)
@@ -84,11 +90,13 @@ func _init(p_seed: int, p_map: SimMap, p_races: Array, p_rules: Dictionary) -> v
 	races = p_races
 	rules = p_rules
 	econ = _ints(rules.economy)
+	combat = _ints(rules.combat)
 	spatial = Spatial.new(map.width, map.height)
 	btypes = Economy.load_btypes()
 	for p in races.size():
 		for u in races[p].units:
 			types.append(_make_type(p, u))
+	Combat.setup(self)
 	Economy.setup(self)
 	map.fresh.clear()
 
@@ -120,7 +128,7 @@ func _make_type(player: int, u: Dictionary) -> Dictionary:
 		"player": player, "slot": r.slot, "name": r.get("name", r.slot), "recipe": r,
 		"speed": int(e.speed) * SPEED_SCALE, "radius": mini(radius, MAX_RADIUS), "hp": int(e.hp),
 		"pop": int(e.pop), "food": int(e.cost.food), "wood": int(e.cost.wood),
-		"train_ticks": int(e.train_time) * TICK_HZ, "worker": "worker" in e.tags,
+		"train_ticks": int(e.train_time) * TICK_HZ, "worker": "worker" in e.tags, "eval": e,
 	}
 
 
@@ -143,12 +151,15 @@ func issue(player: int, type: String, args: Dictionary) -> Dictionary:
 
 func step() -> void:
 	units.save_prev()
+	events.clear()
 	if tick % Commands.TICKS_PER_TURN == 0:
 		for cmd in commands.take(turn()):
 			_run(cmd)
 			history.append(cmd)
 	Economy.train(self)
 	Economy.work(self)
+	spatial.build(units.x, units.y)
+	Combat.tick(self)
 	_sync_map()
 	_solve_queued()
 	_move()
@@ -173,6 +184,7 @@ func _run(cmd: Dictionary) -> void:
 			var arrive := ARRIVE_STEP * Fixed.isqrt(slots.size()) - ARRIVE_BASE
 			for i in slots:
 				Economy.clear_task(self, i)
+				Combat.clear(self, i)
 				order_move(i, a.x, a.y, arrive, next_group)
 			next_group += 1
 		Commands.SPAWN:
@@ -189,11 +201,18 @@ func _run(cmd: Dictionary) -> void:
 				units.add(next_id, cmd.player, k, x, y, t.speed, t.radius, t.hp)
 				next_id += 1
 		Commands.GATHER:
+			_clear_combat(cmd.player, a.ids)
 			Economy.cmd_gather(self, cmd.player, a)
 		Commands.BUILD:
+			_clear_combat(cmd.player, a.ids)
 			Economy.cmd_build(self, cmd.player, a)
 		Commands.HELP_BUILD:
+			_clear_combat(cmd.player, a.ids)
 			Economy.cmd_help_build(self, cmd.player, a)
+		Commands.ATTACK:
+			Combat.cmd_attack(self, cmd.player, a)
+		Commands.ATTACK_MOVE:
+			Combat.cmd_attack_move(self, cmd.player, a)
 		Commands.TRAIN:
 			Economy.cmd_train(self, cmd.player, a)
 		Commands.CANCEL:
@@ -203,6 +222,13 @@ func _run(cmd: Dictionary) -> void:
 
 
 # ------------------------------------------------------------------ orders
+
+func _clear_combat(player: int, ids: Array) -> void:
+	for uid in ids:
+		var i := units.index_of(uid)
+		if i >= 0 and units.owner[i] == player:
+			Combat.clear(self, i)
+
 
 ## Head for a point (snapped to walkable ground) and stop within `arrive`.
 func order_move(i: int, x: int, y: int, arrive: int, group: int) -> void:
@@ -220,6 +246,17 @@ func order_move(i: int, x: int, y: int, arrive: int, group: int) -> void:
 	units.fkey[i] = cell_field(cell, false)
 	units.arrive[i] = arrive
 	units.group[i] = group
+	_start(i)
+
+
+## Head straight for a point with no flow field (the way there is known to be clear).
+func order_direct(i: int, x: int, y: int) -> void:
+	units.tx[i] = x
+	units.ty[i] = y
+	units.reach[i] = 0
+	units.fkey[i] = -1
+	units.arrive[i] = 0
+	units.group[i] = 0
 	_start(i)
 
 
@@ -357,6 +394,8 @@ func _move() -> void:
 func _plan(i: int, x: int, y: int) -> Vector2i:
 	var tx := units.tx[i]
 	var ty := units.ty[i]
+	if units.fkey[i] < 0:
+		return Vector2i(tx, ty)   # steering straight at the target (a chase in the open)
 	var f = field_for(units.fkey[i])
 	if f == null:
 		return Vector2i(tx, ty)   # field not solved yet: head straight for now
@@ -555,6 +594,7 @@ func state_hash() -> int:
 		h = Fixed.mix(h, wood[p])
 		h = Fixed.mix(h, gathered_food[p])
 		h = Fixed.mix(h, gathered_wood[p])
+		h = Fixed.mix(h, lost[p])
 	# Which fields are solved or pending changes how units steer, so it's state too.
 	for key in field_order:
 		h = Fixed.mix(h, key)
@@ -567,7 +607,8 @@ func state_hash() -> int:
 	for i in u.count():
 		for v in [u.id[i], u.owner[i], u.kind[i], u.x[i], u.y[i], u.tx[i], u.ty[i], u.moving[i],
 				u.arrive[i], u.wx[i], u.wy[i], u.group[i], u.stuck[i], u.hp[i], u.fkey[i], u.reach[i],
-				u.task[i], u.target[i], u.home[i], u.carry_kind[i], u.carry[i], u.work[i]]:
+				u.task[i], u.target[i], u.home[i], u.carry_kind[i], u.carry[i], u.work[i],
+				u.foe[i], u.cooldown[i], u.stance[i], u.amx[i], u.amy[i]]:
 			h = Fixed.mix(h, v)
 	var b := buildings
 	for i in b.count():

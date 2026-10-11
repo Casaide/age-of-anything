@@ -1,0 +1,309 @@
+extends RefCounted
+## The combat half of the sim: armour classes, targets, chasing, hitscan damage and
+## deaths. Static functions over the World `w`, like economy.gd. Integers only,
+## ascending ids, no Nodes.
+##
+## Damage uses armour classes (the genre's model): an attack has a base type (melee or
+## pierce) plus bonus classes; a target has armour per class and belongs to melee,
+## pierce, `building` (if it is one) and every one of its tags. Damage =
+## max(min_damage, sum over the attack's classes the target belongs to of
+## max(0, attack - armour)). Hits within a tick land together, so ids don't decide
+## who strikes first.
+
+const Fixed := preload("res://src/sim/fixed.gd")
+const SimMap := preload("res://src/sim/sim_map.gd")
+const Economy := preload("res://src/sim/economy.gd")
+const Flow := preload("res://src/sim/flow.gd")
+
+enum { NONE, ORDERED, AUTO, ATTACK_MOVE }   # units.stance
+
+const BASE := ["melee", "pierce", "building"]   # the first classes, always at these indexes
+
+
+## Build the class table and give every unit and building type its combat vectors.
+static func setup(w) -> void:
+	var names := {}
+	for t in w.types:
+		var e: Dictionary = t.eval
+		for k in e.armour:
+			names[k] = true
+		for k in e.bonus:
+			names[k] = true
+		for k in e.tags:
+			names[k] = true
+	for b in w.btypes:
+		for k in b.armour:
+			names[k] = true
+	for k in BASE:
+		names.erase(k)
+	var rest := names.keys()
+	rest.sort()
+	w.classes = BASE + rest
+	var c: Dictionary = w.combat
+	for t in w.types:
+		var e: Dictionary = t.eval
+		var atk := _vector(w, {e.damage: int(e.attack)})
+		var bonus := _vector(w, e.bonus)
+		for k in atk.size():
+			atk[k] += bonus[k]
+		t.atk = atk
+		t.arm = _vector(w, e.armour)
+		var cls := PackedByteArray()
+		cls.resize(w.classes.size())
+		cls[0] = 1
+		cls[1] = 1
+		for k in e.tags:
+			cls[w.classes.find(k)] = 1
+		t.cls = cls
+		var ranged: bool = int(e["range"]) > 1
+		t.reach = int(e["range"]) * SimMap.TILE if ranged else int(c.melee_reach)
+		t.reload = int(c.ranged_reload) if ranged else int(c.melee_reload)
+		t.ranged = ranged
+	for b in w.btypes:
+		b.arm = _vector(w, b.armour)
+		var cls := PackedByteArray()
+		cls.resize(w.classes.size())
+		cls[0] = 1
+		cls[1] = 1
+		cls[2] = 1
+		b.cls = cls
+
+
+static func _vector(w, d: Dictionary) -> PackedInt32Array:
+	var v := PackedInt32Array()
+	v.resize(w.classes.size())
+	for k in d:
+		v[w.classes.find(k)] = int(d[k])
+	return v
+
+
+## The damage formula, on class vectors.
+static func damage(atk: PackedInt32Array, arm: PackedInt32Array, cls: PackedByteArray, min_damage: int) -> int:
+	var d := 0
+	for k in atk.size():
+		if atk[k] > 0 and cls[k] == 1:
+			d += maxi(0, atk[k] - arm[k])
+	return maxi(min_damage, d)
+
+
+# ------------------------------------------------------------------ orders
+
+## Forget any combat order (a new move, gather or build order does this).
+static func clear(w, i: int) -> void:
+	w.units.foe[i] = 0
+	w.units.stance[i] = NONE
+
+
+static func cmd_attack(w, player: int, a: Dictionary) -> void:
+	if not _is_target(w, a.target, player):
+		return
+	for uid in a.ids:
+		var i: int = w.units.index_of(uid)
+		if i >= 0 and w.units.owner[i] == player:
+			Economy.clear_task(w, i)
+			w.units.foe[i] = a.target
+			w.units.stance[i] = ORDERED
+			w.units.moving[i] = 0
+
+
+static func cmd_attack_move(w, player: int, a: Dictionary) -> void:
+	var slots := []
+	for uid in a.ids:
+		var i: int = w.units.index_of(uid)
+		if i >= 0 and w.units.owner[i] == player:
+			slots.append(i)
+	if slots.is_empty():
+		return
+	var arrive: int = w.ARRIVE_STEP * Fixed.isqrt(slots.size()) - w.ARRIVE_BASE
+	for i in slots:
+		Economy.clear_task(w, i)
+		w.units.foe[i] = 0
+		w.units.stance[i] = ATTACK_MOVE
+		w.units.amx[i] = a.x
+		w.units.amy[i] = a.y
+		w.order_move(i, a.x, a.y, arrive, w.next_group)
+	w.next_group += 1
+
+
+## An enemy unit or building of `player`?
+static func _is_target(w, id: int, player: int) -> bool:
+	var i: int = w.units.index_of(id)
+	if i >= 0:
+		return w.units.owner[i] != player
+	var b: int = w.buildings.index_of(id)
+	return b >= 0 and w.buildings.owner[b] != player
+
+
+# ------------------------------------------------------------------ tick
+
+## One tick of fighting. Runs after worker jobs and before movement; w.spatial must
+## have been built from the current positions.
+static func tick(w) -> void:
+	var u = w.units
+	var bs = w.buildings
+	var c: Dictionary = w.combat
+	var n: int = u.count()
+	var hurt := PackedInt32Array()
+	hurt.resize(n)
+	var hurt_by := PackedInt32Array()
+	hurt_by.resize(n)
+	var bhurt := PackedInt32Array()
+	bhurt.resize(bs.count())
+	# Cooldowns tick down in one pass on a local copy (writing a packed array through
+	# the object copies it every time; see units.gd).
+	var cd: PackedInt32Array = u.cooldown
+	for i in n:
+		if cd[i] > 0:
+			cd[i] -= 1
+	u.cooldown = cd
+	for i in n:
+		var t: Dictionary = w.types[u.kind[i]]
+		var stance: int = u.stance[i]
+		# Look for a fight: idle soldiers (not workers) and attack-movers, on their own beat.
+		if u.foe[i] == 0 and (w.tick + u.id[i]) % int(c.acquire_every) == 0:
+			var idle: bool = stance == NONE and u.moving[i] == 0 and u.task[i] == Economy.NONE and not t.worker
+			if idle or stance == ATTACK_MOVE:
+				var f := _nearest_foe(w, i, int(c.sight), stance == ATTACK_MOVE)
+				if f != 0:
+					u.foe[i] = f
+					if idle:
+						u.stance[i] = AUTO
+		if u.foe[i] == 0:
+			continue
+		var j: int = u.index_of(u.foe[i])
+		var b: int = -1 if j >= 0 else bs.index_of(u.foe[i])
+		if j < 0 and b < 0:
+			_lost(w, i)
+			continue
+		var gap := _gap(w, i, j, b)
+		if gap <= t.reach:
+			u.moving[i] = 0
+			if u.cooldown[i] == 0:
+				u.cooldown[i] = t.reload
+				if j >= 0:
+					var tt: Dictionary = w.types[u.kind[j]]
+					var d := damage(t.atk, tt.arm, tt.cls, int(c.min_damage))
+					hurt[j] += d
+					hurt_by[j] = u.id[i]
+					w.events.append({"type": "hit", "by": u.id[i], "to": u.id[j], "damage": d, "ranged": t.ranged})
+				else:
+					var bt: Dictionary = w.btypes[bs.kind[b]]
+					var d := damage(t.atk, bt.arm, bt.cls, int(c.min_damage))
+					bhurt[b] += d
+					w.events.append({"type": "hit", "by": u.id[i], "to": bs.id[b], "damage": d, "ranged": t.ranged})
+		elif u.stance[i] == AUTO and gap > int(c.sight) + 2 * SimMap.TILE:
+			_lost(w, i)   # it got away
+		else:
+			_chase(w, i, j, b)
+	_apply(w, hurt, hurt_by, bhurt)
+
+
+## The edge-to-edge gap from unit i to unit j or building b, in milli-tiles.
+static func _gap(w, i: int, j: int, b: int) -> int:
+	var u = w.units
+	if j >= 0:
+		var d := Fixed.isqrt(Fixed.dist2(u.x[i], u.y[i], u.x[j], u.y[j]))
+		return d - u.radius[i] - u.radius[j]
+	var bs = w.buildings
+	var s: int = bs.size[b] * SimMap.TILE
+	var x0: int = bs.cx[b] * SimMap.TILE
+	var y0: int = bs.cy[b] * SimMap.TILE
+	var dx: int = maxi(maxi(x0 - u.x[i], 0), u.x[i] - (x0 + s))
+	var dy: int = maxi(maxi(y0 - u.y[i], 0), u.y[i] - (y0 + s))
+	return Fixed.isqrt(dx * dx + dy * dy) - u.radius[i]
+
+
+## Close in: re-aim at a moving target on re-plan beats (straight at it when the way
+## is clear, which is most fights; a flow field to its tile otherwise), or head for a
+## building once.
+static func _chase(w, i: int, j: int, b: int) -> void:
+	var u = w.units
+	if j >= 0:
+		if u.moving[i] == 0 or (w.tick + u.id[i]) % w.REPLAN_EVERY == 0:
+			if Flow.clear_line(w.map, u.x[i], u.y[i], u.x[j], u.y[j]):
+				w.order_direct(i, u.x[j], u.y[j])
+			else:
+				w.order_move(i, u.x[j], u.y[j], 0, 0)
+	else:
+		var key: int = w.building_field(w.buildings.id[b], false)
+		if u.moving[i] == 0 or u.fkey[i] != key:
+			w.order_reach(i, Economy._building_rect(w, b), key)
+
+
+## The target is gone (or out of reach for good): attack-movers carry on, others stop.
+static func _lost(w, i: int) -> void:
+	var u = w.units
+	u.foe[i] = 0
+	if u.stance[i] == ATTACK_MOVE:
+		w.order_move(i, u.amx[i], u.amy[i], w.ARRIVE_STEP - w.ARRIVE_BASE, 0)
+	else:
+		u.stance[i] = NONE
+		u.moving[i] = 0
+
+
+## The nearest enemy unit within `sight` (centre to centre), lowest id on ties; then,
+## for attack-movers, the nearest enemy building. Returns an id or 0.
+static func _nearest_foe(w, i: int, sight: int, buildings_too: bool) -> int:
+	var u = w.units
+	var sp = w.spatial
+	var me: int = u.owner[i]
+	var best := 0
+	var best_d := sight * sight + 1
+	var r := sight / SimMap.TILE + 1
+	var cx: int = u.x[i] / SimMap.TILE
+	var cy: int = u.y[i] / SimMap.TILE
+	for yy in range(maxi(cy - r, 0), mini(cy + r + 1, sp.height)):
+		for xx in range(maxi(cx - r, 0), mini(cx + r + 1, sp.width)):
+			var cell: int = yy * sp.width + xx
+			for k in range(sp.start[cell], sp.start[cell + 1]):
+				var j: int = sp.items[k]
+				if u.owner[j] == me:
+					continue
+				var d := Fixed.dist2(u.x[i], u.y[i], u.x[j], u.y[j])
+				if d < best_d or (d == best_d and u.id[j] < best):
+					best_d = d
+					best = u.id[j]
+	if best != 0 or not buildings_too:
+		return best
+	var bs = w.buildings
+	for b in bs.count():
+		if bs.owner[b] == me:
+			continue
+		var s: int = bs.size[b] * SimMap.TILE
+		var mx: int = bs.cx[b] * SimMap.TILE + s / 2
+		var my: int = bs.cy[b] * SimMap.TILE + s / 2
+		var d := Fixed.dist2(u.x[i], u.y[i], mx, my)
+		if d < best_d:
+			best_d = d
+			best = bs.id[b]
+	return best
+
+
+## Land this tick's hits together, then remove the dead (units by descending slot,
+## so slots stay valid while removing). Units hit while idle turn on the attacker.
+static func _apply(w, hurt: PackedInt32Array, hurt_by: PackedInt32Array, bhurt: PackedInt32Array) -> void:
+	var u = w.units
+	for j in hurt.size():
+		if hurt[j] == 0:
+			continue
+		u.hp[j] -= hurt[j]
+		var t: Dictionary = w.types[u.kind[j]]
+		if u.foe[j] == 0 and u.stance[j] == NONE and u.task[j] == Economy.NONE and not t.worker:
+			u.foe[j] = hurt_by[j]
+			u.stance[j] = AUTO
+	for j in range(hurt.size() - 1, -1, -1):
+		if u.hp[j] <= 0:
+			w.events.append({"type": "die", "id": u.id[j], "x": u.x[j], "y": u.y[j], "owner": u.owner[j], "kind": u.kind[j], "building": false})
+			w.lost[u.owner[j]] += 1
+			u.remove_at(j)
+	var bs = w.buildings
+	for b in range(bhurt.size() - 1, -1, -1):
+		if bhurt[b] == 0:
+			continue
+		bs.hp[b] -= bhurt[b]
+		if bs.hp[b] <= 0:
+			var s: int = bs.size[b] * SimMap.TILE
+			w.events.append({"type": "die", "id": bs.id[b], "x": bs.cx[b] * SimMap.TILE + s / 2, "y": bs.cy[b] * SimMap.TILE + s / 2,
+				"owner": bs.owner[b], "kind": bs.kind[b], "building": true})
+			w.map.occupy(bs.footprint(b, w.map.width), 0)
+			bs.remove_at(b)

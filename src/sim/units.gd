@@ -36,6 +36,11 @@ var work := PackedInt32Array()     # ticks into the current gather
 var speed := PackedInt32Array()    # milli-tiles per tick
 var radius := PackedInt32Array()   # milli-tiles
 var hp := PackedInt32Array()
+var foe := PackedInt32Array()      # unit or building id being fought, or 0
+var cooldown := PackedInt32Array() # ticks until the next blow
+var stance := PackedInt32Array()   # Combat.NONE / ORDERED / AUTO / ATTACK_MOVE
+var amx := PackedInt32Array()      # attack-move destination (milli-tiles)
+var amy := PackedInt32Array()
 
 
 func count() -> int:
@@ -74,6 +79,11 @@ func add(uid: int, p_owner: int, p_kind: int, p_x: int, p_y: int, p_speed: int, 
 	speed.append(p_speed)
 	radius.append(p_radius)
 	hp.append(p_hp)
+	foe.append(0)
+	cooldown.append(0)
+	stance.append(0)
+	amx.append(0)
+	amy.append(0)
 	return id.size() - 1
 
 
@@ -117,6 +127,11 @@ func remove_at(i: int) -> void:
 	speed.remove_at(i)
 	radius.remove_at(i)
 	hp.remove_at(i)
+	foe.remove_at(i)
+	cooldown.remove_at(i)
+	stance.remove_at(i)
+	amx.remove_at(i)
+	amy.remove_at(i)
 
 
 func save_prev() -> void:
