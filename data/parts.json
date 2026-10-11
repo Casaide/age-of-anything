@@ -2397,6 +2397,201 @@
   }
  },
  {
+  "slot": "hand_r",
+  "points": 0,
+  "era": [
+   "bronze",
+   "medieval",
+   "gunpowder"
+  ],
+  "stats": {},
+  "note": "a job tool or carried load: shown while working or carrying (view only; never generated into a recipe)",
+  "id": "tool.hammer",
+  "tags": [
+   "tool",
+   "job"
+  ],
+  "shapes": [
+   {
+    "t": "line",
+    "p": [
+     [
+      0,
+      0
+     ],
+     [
+      2,
+      -9
+     ]
+    ],
+    "w": 1.5,
+    "ch": "wood"
+   },
+   {
+    "t": "poly",
+    "p": [
+     [
+      -1,
+      -9
+     ],
+     [
+      5,
+      -10
+     ],
+     [
+      5,
+      -7
+     ],
+     [
+      -1,
+      -6
+     ]
+    ],
+    "ch": "iron"
+   }
+  ]
+ },
+ {
+  "slot": "hand_r",
+  "points": 0,
+  "era": [
+   "bronze",
+   "medieval",
+   "gunpowder"
+  ],
+  "stats": {},
+  "note": "a job tool or carried load: shown while working or carrying (view only; never generated into a recipe)",
+  "id": "tool.pick",
+  "tags": [
+   "tool",
+   "job"
+  ],
+  "shapes": [
+   {
+    "t": "line",
+    "p": [
+     [
+      0,
+      0
+     ],
+     [
+      2,
+      -10
+     ]
+    ],
+    "w": 1.5,
+    "ch": "wood"
+   },
+   {
+    "t": "line",
+    "p": [
+     [
+      -3,
+      -8
+     ],
+     [
+      2,
+      -11
+     ],
+     [
+      7,
+      -8
+     ]
+    ],
+    "w": 1.5,
+    "ch": "iron"
+   }
+  ]
+ },
+ {
+  "slot": "hand_r",
+  "points": 0,
+  "era": [
+   "bronze",
+   "medieval",
+   "gunpowder"
+  ],
+  "stats": {},
+  "note": "a job tool or carried load: shown while working or carrying (view only; never generated into a recipe)",
+  "id": "load.reeds",
+  "tags": [
+   "load",
+   "job"
+  ],
+  "shapes": [
+   {
+    "t": "line",
+    "p": [
+     [
+      -6,
+      -4
+     ],
+     [
+      8,
+      -8
+     ]
+    ],
+    "w": 3,
+    "ch": "reed"
+   },
+   {
+    "t": "line",
+    "p": [
+     [
+      -5,
+      -6
+     ],
+     [
+      9,
+      -9
+     ]
+    ],
+    "w": 2,
+    "ch": "reed"
+   }
+  ]
+ },
+ {
+  "slot": "hand_r",
+  "points": 0,
+  "era": [
+   "bronze",
+   "medieval",
+   "gunpowder"
+  ],
+  "stats": {},
+  "note": "a job tool or carried load: shown while working or carrying (view only; never generated into a recipe)",
+  "id": "load.stone",
+  "tags": [
+   "load",
+   "job"
+  ],
+  "shapes": [
+   {
+    "t": "poly",
+    "p": [
+     [
+      -3,
+      -1
+     ],
+     [
+      4,
+      -2
+     ],
+     [
+      5,
+      3
+     ],
+     [
+      -2,
+      4
+     ]
+    ],
+    "ch": "stone"
+   }
+  ]
+ },
+ {
   "id": "shield.lilypad",
   "slot": "hand_l",
   "tags": [

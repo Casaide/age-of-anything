@@ -46,6 +46,22 @@ Rules for every stage:
 - Combat visuals are built with milestone 4 itself, not in this track: attack lunge, projectiles,
   hit flash, death poses, unit card.
 
+### A1 additions after the agent stopped (2026-10-11, Claude continues)
+The art agent hit the account's weekly usage limit (it resets 2026-10-13). Its work is merged;
+Claude carries on with A1. Feedback since:
+- [x] Workers swap tools for the job (axe, basket, hammer, pick) and carry their load home in
+  their hands (a reed bundle, a full basket, a stone block); no carry icons
+- [x] Cursors two-thirds the size; no rally-flag cursor (right-click on the ground sets the
+  rally point, as the genre does)
+- [x] Water: the drifting "sky" bands removed (Dominic: "water looks worse"); the depth bands
+  are back
+- [x] Roof: the clumped-bundle thatch looked stretched; the course-style thatch is back
+- [ ] Architecture per creature, not just per culture (Dominic): timber and thatch houses suit
+  beavers and bears (forest folk); amphibians want their own (reed-woven domes on stilts over
+  water, mud and lily roofs); bugs want their own (earth mounds, hollow logs and seed husks,
+  silk tents for spiders). Data: creatures can name an `architecture` that overrides the family's.
+- [ ] Mount wings at the withers: the agent's last change, not yet checked in a lineup
+
 ## A2, with milestone 7 (progression)
 - Barracks, Stable and Watchtower for every architecture (thatch, junk, stone, tent).
 - Age-up shown on buildings: an upgraded look for age 2.

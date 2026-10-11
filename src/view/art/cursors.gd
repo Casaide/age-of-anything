@@ -14,8 +14,11 @@ var current := ""
 var scale := 1.0
 
 
+const SIZE := 0.65   # the art is 32 px; drawn at about 21 px a screen point (Dominic: "massive")
+
+
 func _init(p_scale := 1.0) -> void:
-	scale = p_scale
+	scale = p_scale * SIZE
 	for name in HOTSPOT:
 		var img := Image.new()
 		img.load_svg_from_string(FileAccess.get_file_as_string(DIR + name + ".svg"), scale)
