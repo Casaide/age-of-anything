@@ -47,6 +47,8 @@ into active work, move it into `mvp-plan.md` (or a new plan) with an exit criter
   is a tuner that nudges part points until no unit is more than 20% off the mean (11 of 20 were
   after hand-tuning). `tests/tune_points.gd` is that tuner, one step at a time; it needs the
   counter matrix as a constraint (unconstrained, it made bows nearly free and counters fell to 67%).
+- Price-by-simulation is needed for the last cost-sanity outliers: part prices add up regardless
+  of combination, but a big body is worth more under a spear than behind a bow (milestone 10).
 - Archers without micro lose to spearmen that close the gap: consider simple kiting for ranged
   units on attack-move, or a range/accuracy rule, before pricing them down further.
 - Replace `pow()` in pricing with a fixed-point table (done in milestone 1).

@@ -50,6 +50,13 @@
   `tests/balance.gd -- 2 kite_gap=N`: 1.5 tiles left the table at 10 outliers, 2.5 tiles made it
   12. Spearmen move as fast as archers, so stepping back costs shots. Archers' weakness needs a
   different lever (range, speed, or the roster's counter design); a call for Dominic.
+- **Why 8 units stay out (2026-10-11):** big-bodied spear units are too strong (spear beetle 94%,
+  spear centaur 78%, hoplite on a pony 63%) and every archer too weak (26-36%, big bodies
+  included). A body is worth far more under a melee weapon than behind a bow, but pricing adds a
+  part's points whatever it's combined with, so no set of part prices fixes both. The
+  counter-constrained tuner plateaus at 8. The fix is price-by-simulation per generated unit (in
+  CLAUDE.md "Later" and the backlog), which prices each combination by its fights. Until then
+  this metric stays open.
 - **Centaurs vs frogs runs long** (~22 minutes in bot play): expensive centaur workers and
   soldiers make small armies. Balance item; the AI test allows 30 minutes (it guards against
   stalemates, not pacing).
