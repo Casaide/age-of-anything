@@ -36,6 +36,7 @@ func _init() -> void:
 	_test_bounds(lib, gen, rules)
 	_test_prompts(gen, rules)
 	_test_composer(lib, gen, rules.default)
+	_test_audio(lib)
 	_test_scripts_parse()
 
 	print("\n%d checks, %d failed" % [checks, failures])
@@ -50,6 +51,32 @@ func _test_scripts_parse() -> void:
 			if f.ends_with(".gd"):
 				var script: Script = load(dir + f)
 				check(script != null and script.can_instantiate(), "script parses: " + dir + f)
+
+
+## Every sound data/audio.json names has its takes on disk and loads; every creature's voice
+## has its files; every music stem is there (all rendered by tools/audio/render.py).
+func _test_audio(lib) -> void:
+	var cfg = DataLib.load_json("res://data/audio.json")
+	for n in cfg.sounds:
+		var s: Dictionary = cfg.sounds[n]
+		check(s.bus in cfg.buses, "sound %s is on a known bus" % n)
+		for k in int(s.takes):
+			var path := "res://assets/audio/sfx/%s_%d.wav" % [n, k + 1]
+			var w := AudioStreamWAV.load_from_file(path) if FileAccess.file_exists(path) else null
+			check(w != null and w.get_length() > 0.01, "sound take loads: " + path)
+	for id in lib.creatures:
+		var voice: String = lib.creatures[id].voice
+		for kind in cfg.voices.kinds:
+			for k in int(cfg.voices.kinds[kind]):
+				var path := "res://assets/audio/voice/%s_%s_%d.wav" % [voice, kind, k + 1]
+				check(FileAccess.file_exists(path), "creature %s has its voice: %s" % [id, path])
+	for stem in cfg.music.stems:
+		var path := "res://assets/audio/music/theme_%s.ogg" % stem
+		var o := AudioStreamOggVorbis.load_from_file(path) if FileAccess.file_exists(path) else null
+		check(o != null and o.get_length() > 60.0, "music stem loads: " + path)
+	for mix in cfg.music.mixes:
+		for stem in cfg.music.mixes[mix]:
+			check(stem in cfg.music.stems, "mix %s uses a known stem: %s" % [mix, stem])
 
 
 func check(ok: bool, what: String) -> void:

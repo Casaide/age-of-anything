@@ -1,5 +1,6 @@
 {
  "frog": {
+  "voice": "frog",
   "noun": "Frog",
   "plural": "Frogs",
   "body": "body.frog",
@@ -19,6 +20,7 @@
   "gait": "hop"
  },
  "rat": {
+  "voice": "rat",
   "noun": "Rat",
   "plural": "Rats",
   "body": "body.rat",
@@ -45,6 +47,7 @@
   "_mounts_doc": "the creature's own mounts, ridden before the family's (Dominic picked the capybara as the rats' large unit, RB1)"
  },
  "human": {
+  "voice": "human",
   "noun": "Folk",
   "plural": "Humans",
   "body": "body.human",
@@ -65,6 +68,7 @@
   "giant_ok": false
  },
  "spider": {
+  "voice": "spider",
   "noun": "Spider",
   "plural": "Spiders",
   "body": "body.spider",
@@ -83,6 +87,7 @@
   "architecture": "mound"
  },
  "beetle": {
+  "voice": "beetle",
   "noun": "Beetle",
   "plural": "Beetles",
   "body": "body.beetle_rear",
@@ -102,6 +107,7 @@
   "_mount_body_doc": "beetle soldiers rear up (BG1); ridden beetles keep the horizontal body"
  },
  "pony": {
+  "voice": "pony",
   "noun": "Pony",
   "plural": "Ponies",
   "body": "body.pony",
@@ -121,6 +127,7 @@
   ]
  },
  "centaur": {
+  "voice": "centaur",
   "noun": "Centaur",
   "plural": "Centaurs",
   "body": "body.human",
@@ -144,6 +151,7 @@
   }
  },
  "capybara": {
+  "voice": "capybara",
   "noun": "Capybara",
   "plural": "Capybaras",
   "body": "body.capybara",

@@ -133,6 +133,34 @@ static func tick(w) -> void:
 				best = o
 		if best >= 0:
 			u.owner[i] = best
+			_to_town_center(w, i)
+
+
+## A newly claimed sheep walks to its new owner's nearest Town Center and waits beside it, so
+## it's killed where the food is wanted (Dominic). Spread round the centre by id.
+static func _to_town_center(w, i: int) -> void:
+	var bs = w.buildings
+	var u = w.units
+	var best := -1
+	var best_d := 1 << 62
+	for b in bs.count():
+		if bs.owner[b] != u.owner[i] or bs.done[b] == 0 or w.btypes[bs.kind[b]].id != "town_center":
+			continue
+		var bx: int = bs.cx[b] * SimMap.TILE + bs.size[b] * SimMap.TILE / 2
+		var by: int = bs.cy[b] * SimMap.TILE + bs.size[b] * SimMap.TILE / 2
+		var d: int = absi(bx - u.x[i]) + absi(by - u.y[i])
+		if d < best_d:
+			best_d = d
+			best = b
+	if best < 0:
+		return
+	var half: int = bs.size[best] * SimMap.TILE / 2
+	var cx: int = bs.cx[best] * SimMap.TILE + half
+	var cy: int = bs.cy[best] * SimMap.TILE + half
+	var k: int = u.id[i] % 8   # one of eight spots just outside the footprint
+	var dirs := [[1, 0], [1, 1], [0, 1], [-1, 1], [-1, 0], [-1, -1], [0, -1], [1, -1]]
+	var reach: int = half + SimMap.TILE * 3 / 2
+	w.order_move(i, cx + dirs[k][0] * reach, cy + dirs[k][1] * reach, 300, 0)
 
 
 ## Hurt this tick by `by` (a unit id): a deer bolts away from it.

@@ -13,6 +13,7 @@ extends PanelContainer
 ## health, progress and the info line update every frame.
 
 const PartShape := preload("res://src/part_shape.gd")
+const Audio := preload("res://src/view/audio.gd")
 
 const BG := Color("#2e2820")
 const SLOT := Color("#1e1a14")
@@ -35,6 +36,7 @@ var _buttons: GridContainer
 var _queue_box: VBoxContainer
 var _queue_rest: GridContainer   # the queue after the first: small slots, only the filled ones
 var _queue: HBoxContainer
+var _queue_label: Label   # "Training", or what the building is doing instead (ageing up, research)
 var _queue_bar: ProgressBar
 var _signature := ""
 var _team := Color.WHITE
@@ -91,6 +93,7 @@ func _ready() -> void:
 	_queue_box.add_theme_constant_override("separation", 4)
 	row.add_child(_queue_box)
 	var ql := Label.new()
+	_queue_label = ql
 	ql.text = "Training"
 	ql.add_theme_font_size_override("font_size", 13)
 	ql.add_theme_color_override("font_color", TEXT_DIM)
@@ -125,6 +128,7 @@ func show_content(c: Dictionary) -> void:
 	var queue = c.get("queue")
 	_queue_box.visible = queue != null
 	_queue_bar.value = c.get("progress", 0.0)
+	_queue_label.text = c.get("queue_title", "Training")
 	_queue_bar.modulate.a = 1.0 if queue != null and not queue.is_empty() else 0.25
 	var sig := "%s|%s|%s|%s|%s|%s" % [c.title, c.team, c.portrait, c.get("tray", []).map(func(t): return "%s%d" % [t.icon, t.count]),
 		c.buttons.map(func(b): return "%s:%s" % [b.text, b.enabled]), queue.map(func(q): return str(q.icon)) if queue != null else "-"]
@@ -182,6 +186,7 @@ func _button(b: Dictionary) -> Button:
 	button.disabled = not b.enabled
 	button.tooltip_text = b.get("tip", b.text)
 	button.pressed.connect(b.action)
+	button.pressed.connect(func(): Audio.of(get_tree()).play("ui_click"))
 	button.add_theme_stylebox_override("normal", _slot_style(SLOT, EDGE))
 	button.add_theme_stylebox_override("hover", _slot_style(SLOT.lightened(0.12), GOLD))
 	button.add_theme_stylebox_override("pressed", _slot_style(SLOT.darkened(0.2), GOLD))
@@ -256,6 +261,7 @@ func _queue_slot(q: Dictionary, first: bool) -> Control:
 	b.focus_mode = Control.FOCUS_NONE
 	b.tooltip_text = "%s (click to cancel)" % q.name
 	b.pressed.connect(q.action)
+	b.pressed.connect(func(): Audio.of(get_tree()).play("ui_click", -4.0))
 	b.add_theme_stylebox_override("normal", _slot_style(SLOT, GOLD if first else EDGE))
 	b.add_theme_stylebox_override("hover", _slot_style(Color("#3a1a14"), Color("#e07060")))
 	b.add_theme_stylebox_override("pressed", _slot_style(Color("#3a1a14"), Color("#e07060")))

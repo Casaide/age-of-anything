@@ -14,7 +14,7 @@
   {
    "age": 2,
    "name": "Stick Age",
-   "desc": "Stronger gear for every unit line, the Stable and the Watchtower.",
+   "desc": "New buildings (Archery Range, Stable, Armoury, Market, Watchtower) and each unit line's next upgrade.",
    "cost": {
     "food": 500,
     "wood": 200
@@ -28,7 +28,7 @@
   {
    "age": 3,
    "name": "Stone Age",
-   "desc": "The top of every unit line.",
+   "desc": "Each unit line's top upgrade.",
    "cost": {
     "food": 800,
     "wood": 200,
@@ -52,7 +52,7 @@
    },
    "time": 30,
    "building": "armoury",
-   "age": 1,
+   "age": 2,
    "effects": [
     {
      "tag": "spear",
@@ -220,5 +220,22 @@
     }
    ]
   }
- ]
+ ],
+ "line_upgrades": {
+  "_note": "Each trained unit line moves to its next age's kit only when this is researched at the building that trains it (Dominic: per unit, not with the age).",
+  "2": {
+   "cost": {
+    "food": 150,
+    "wood": 100
+   },
+   "time": 30
+  },
+  "3": {
+   "cost": {
+    "food": 250,
+    "gold": 150
+   },
+   "time": 45
+  }
+ }
 }

@@ -25,7 +25,7 @@ const TopBar := preload("res://src/view/top_bar.gd")
 const UnitCard := preload("res://src/view/unit_card.gd")
 const FogView := preload("res://src/view/fog_view.gd")
 const Minimap := preload("res://src/view/minimap.gd")
-const Sfx := preload("res://src/view/sfx.gd")
+const Audio := preload("res://src/view/audio.gd")
 const Fog := preload("res://src/sim/fog.gd")
 const Cursors := preload("res://src/view/art/cursors.gd")
 const Icons := preload("res://src/view/art/icons.gd")
@@ -121,7 +121,8 @@ var pause_menu: Control     # Esc against the AI: resume, surrender, back to the
 var fog_view: FogView
 var flat: Node2D             # ground-level art (farms, crops), drawn under the y-sorted layer
 var minimap: Minimap
-var sfx: Sfx
+var audio: Node           # the game's one audio node (src/view/audio.gd)
+var battle_until := 0.0   # seconds of match time until the music's battle layer fades out
 var age_ups: Array = []      # [player, age, seconds] this match (for the playtest log)
 var reveal := false         # V: see everything (debug)
 var prompts: Array = []     # set before adding to the tree, else taken from the command line
@@ -155,8 +156,7 @@ func _ready() -> void:
 	add_child(fx)
 	fog_view = FogView.new()
 	add_child(fog_view)
-	sfx = Sfx.new()
-	add_child(sfx)
+	audio = Audio.of(get_tree())
 	overlay = Node2D.new()
 	overlay.draw.connect(_draw_overlay)
 	add_child(overlay)
@@ -244,6 +244,8 @@ func start_live(race_prompts: Array) -> void:
 	await _bake(races)
 	_attach(World.new(SEED, map, races, rules))
 	playback = {}
+	audio.music_age(world.ages[active])
+	audio.ambience(true)
 	if army:
 		for p in races.size():
 			for entry in START_ARMY:
@@ -334,6 +336,7 @@ func _attach(w: World, end_tick := -1) -> void:
 		_add_resource_view(c, picks[c])
 	map.changed.clear()
 	_refresh_paths()
+	ground.finish_paths()   # doodads keep off the paths, so they must be there first
 	for n in ground.scatter(kit, layer, _keep_clear):
 		var t := Iso.to_milli(n.position)
 		var c := map.cell_of(t.x, t.y)
@@ -616,7 +619,7 @@ func _update_hint() -> void:
 			done = done or world.tick > 20 * 240
 	if done:
 		hint_step += 1
-		sfx.play("select", -8.0)
+		audio.play("ui_tip")
 	hint.visible = hint_step < HINTS.size()
 	if hint.visible:
 		hint.text = "Tip %d of 3:  %s" % [hint_step + 1, HINTS[hint_step]]
@@ -637,7 +640,8 @@ func _maybe_alert(e: Dictionary, to: Vector2) -> void:
 	if now < alert_next or _on_screen(to):   # only for fights you can't see (an off-screen house counts)
 		return
 	alert_next = now + 15.0
-	sfx.play("alarm")
+	audio.play("alarm")
+	battle_until = now + 8.0
 	var m := Iso.to_milli(to)
 	minimap.ping(Vector2(m.x / 1000.0, m.y / 1000.0))
 	if alert_label == null:
@@ -682,7 +686,7 @@ func stop_selected() -> void:
 	var mine: Array = _selected_by_owner()[active]
 	if not mine.is_empty():
 		world.issue(active, Commands.STOP, {"ids": mine})
-		sfx.play("ack", -6.0)
+		_say("ack")
 
 
 ## "." cycles through idle workers: selects the next one and centres on it.
@@ -749,7 +753,7 @@ func select_at(pos: Vector2, add := false) -> void:
 			selected.erase(best)
 		else:
 			selected[best] = true
-			sfx.play("select", -12.0)
+			_say("select", world.units.owner[world.units.index_of(best)])
 		_take_side(world.units.owner[world.units.index_of(best)])
 		return
 	for probe in [pos, pos + Vector2(0, 14)]:   # clicking a wall or roof hits the footprint below
@@ -757,7 +761,7 @@ func select_at(pos: Vector2, add := false) -> void:
 		if bid != 0:
 			selected.clear()
 			selected_building = bid
-			sfx.play("select", -12.0)
+			audio.play("ui_click", -4.0)
 			_take_side(world.buildings.owner[world.buildings.index_of(bid)])
 			return
 	var cell := _cell_at(pos)
@@ -773,7 +777,7 @@ func select_box(a: Vector2, b: Vector2, add := false) -> void:
 	for id in views:
 		if vs_ai and world.units.owner[world.units.index_of(id)] != active:
 			continue   # against the AI a box takes only your own units
-		if r.has_point(_body(views[id])):
+		if views[id].visible and r.has_point(_body(views[id])):   # not what the fog hides
 			selected[id] = true
 
 
@@ -784,13 +788,17 @@ func select_same_type_on_screen(pos: Vector2, add := false) -> void:
 		return
 	var i := world.units.index_of(selected.keys()[0])
 	var kind := world.units.kind[i]
+	var owner := world.units.owner[i]
 	if not add:
 		selected.clear()
 	var screen := Rect2(camera.get_screen_center_position() - get_viewport_rect().size * 0.5 / camera.zoom,
 		get_viewport_rect().size / camera.zoom)
 	for j in world.units.count():
 		var id := world.units.id[j]
-		if world.units.kind[j] == kind and views.has(id) and screen.has_point(views[id].position):
+		# The same kind with the same owner, that you can see (unowned sheep under the fog stayed
+		# selectable: Dominic).
+		if world.units.kind[j] == kind and world.units.owner[j] == owner and views.has(id) and views[id].visible \
+				and screen.has_point(views[id].position):
 			selected[id] = true
 
 
@@ -844,7 +852,7 @@ func smart_order(pos: Vector2) -> void:
 		if b >= 0 and world.buildings.owner[b] == active:
 			world.issue(active, Commands.RALLY, {"building": selected_building, "x": m.x, "y": m.y})
 			flags.append({"pos": pos, "t": 1.0})
-			sfx.play("ack", -8.0)
+			audio.play("ui_click", -4.0)
 		return
 	var groups := _selected_by_owner()
 	var bid: int = map.occupied[cell]
@@ -873,7 +881,7 @@ func smart_order(pos: Vector2) -> void:
 			world.issue(p, Commands.MOVE, {"ids": ids, "x": m.x, "y": m.y, "queue": q})
 	flags.append({"pos": pos, "t": 1.0})
 	if not groups[active].is_empty():
-		sfx.play("ack", -6.0)   # the order's been heard
+		_say("ack")   # the order's been heard
 
 
 ## The unit whose body is nearest the point (within the click radius), or 0.
@@ -930,14 +938,29 @@ func _play_events() -> void:
 			if target != null:
 				fx.flash(target, lands)
 			if _on_screen(to) and a.visible:
-				sfx.play("shoot" if e.ranged else "hit", -4.0 if e.ranged else 0.0)
+				var i := world.units.index_of(e.by)
+				var tags: Array = world.types[world.units.kind[i]].eval.tags if i >= 0 else []
+				if e.ranged:
+					audio.play("shoot_" + CombatFx.shot_kind(tags), -4.0)
+					audio.play_in("arrow_land", lands, -8.0)
+				else:
+					audio.play(_blow_sound(tags))
+				var side_a := world.units.owner[i] if i >= 0 else -1
+				if side_a == active or _owner_of(e.to) == active:
+					battle_until = world.tick / float(World.TICK_HZ) + 8.0
 		elif e.type == "age":
 			age_ups.append([e.player, e.age, world.tick / 20])
 			if e.player == active:
-				sfx.play("age")
+				audio.play("age")
+				audio.music_age(e.age)
+		elif e.type == "research":
+			if e.player == active:
+				audio.play("research", -4.0)
 		elif e.type == "won":
 			var mine: bool = world.teams[active] == e.team
-			sfx.play("won" if mine else "lost")
+			audio.play("won" if mine else "lost")
+			audio.music("off")
+			audio.ambience(false)
 			_log_match(e.team)
 			banner.text = ("Victory!" if mine else "Defeat") + "\n" + ("%s win" % world.races[_first_of_team(e.team)].name)
 			banner.add_theme_color_override("font_color", Color("#f2c94c") if mine else Color("#e07060"))
@@ -950,7 +973,8 @@ func _play_events() -> void:
 				views.erase(e.id)
 				selected.erase(e.id)
 				if v.visible and _on_screen(v.position):
-					sfx.play("die", -3.0)
+					audio.play("fall", -3.0)
+					_say("die", e.owner, -2.0)
 				fx.kill(v)
 		elif e.type == "die":
 			var bv: Node2D = bviews.get(e.id)
@@ -960,6 +984,8 @@ func _play_events() -> void:
 					selected_building = 0
 				var t: Dictionary = world.btypes[e.kind]
 				fx.collapse(bv, Iso.to_screen(e.x, e.y), int(t.size))
+				if bv.visible and _on_screen(bv.position):
+					audio.play("building_fall", -2.0)
 
 
 ## Where a shot or blow lands on a unit (its body) or a building (its middle).
@@ -1043,6 +1069,7 @@ func _make_pause_menu() -> Control:
 	title.add_theme_color_override("font_color", Color("#f2c94c"))
 	box.add_child(title)
 	for item in [["resume", "Resume", func(): _show_pause_menu(false)],
+			["music", "Music: on", func(): _toggle_music()],
 			["surrender", "Surrender", func(): _confirm_surrender()],
 			["menu", "Back to the menu", func(): get_tree().paused = false; get_tree().change_scene_to_file("res://scenes/match_setup.tscn")]]:
 		var b := Button.new()
@@ -1133,6 +1160,7 @@ func _process(delta: float) -> void:
 	if baking or world == null:
 		return
 	_play_events()
+	audio.battle(world.tick / float(World.TICK_HZ) < battle_until)
 	_sync_views()
 	_sync_buildings()
 	_sync_resources()
@@ -1180,7 +1208,41 @@ func _sfx_at(kind: String, at: Vector2, volume_db := 0.0) -> void:
 	var d := maxf(absf(off.x), absf(off.y))
 	if d > 1.15:
 		return
-	sfx.play(kind, volume_db - 8.0 * d)
+	audio.play(kind, volume_db - 8.0 * d)
+
+
+## A creature's voice for the player's units (its race's creature): "select", "ack", "die".
+## Only your own side talks; animals and the enemy keep quiet.
+func _say(kind: String, owner := -1, volume_db := 0.0) -> void:
+	if owner < 0:
+		owner = active
+	if owner != active or owner == world.gaia:
+		return
+	audio.say(lib.creatures[world.races[owner].creature].voice, kind, volume_db)
+
+
+## Which blow a melee attacker lands, from its weapon's tags.
+static func _blow_sound(tags: Array) -> String:
+	if "blade" in tags:
+		return "hit_blade"
+	if "blunt" in tags:
+		return "hit_blunt"
+	return "hit_pierce"
+
+
+func _owner_of(id: int) -> int:
+	var i := world.units.index_of(id)
+	if i >= 0:
+		return world.units.owner[i]
+	var b := world.buildings.index_of(id)
+	return world.buildings.owner[b] if b >= 0 else -1
+
+
+func _toggle_music() -> void:
+	var on: bool = audio.toggle_music()
+	var b: Button = pause_menu.get_node_or_null("box/music") if pause_menu != null else null
+	if b != null:
+		b.text = "Music: on" if on else "Music: off"
 
 
 func _sync_views() -> void:
@@ -1196,7 +1258,7 @@ func _sync_views() -> void:
 			view = null
 		if view == null:
 			if not views.has(id) and u.owner[i] == active and world.tick > 40:
-				sfx.play("trained", -8.0)   # a new unit of yours (not one restyled by an age-up)
+				audio.play("trained", -6.0)   # a new unit of yours (not one restyled by an age-up)
 			view = _make_view(u.kind[i], u.owner[i])
 			view.set_meta("version", int(world.types[u.kind[i]].get("version", 0)))
 			view.set_meta("owner", u.owner[i])
@@ -1309,7 +1371,7 @@ func _sync_buildings() -> void:
 		var t: Dictionary = world.btypes[bs.kind[b]]
 		if bs.done[b] == 1 and not view.get_meta("done", false):
 			if view.has_meta("done") and bs.owner[b] == active:
-				sfx.play("built", -6.0)   # finished while you watched (not the ones there from the start)
+				audio.play("built", -4.0)   # finished while you watched (not the ones there from the start)
 		view.set_meta("done", bs.done[b] == 1)
 		view.set_state(bs.done[b] == 1, float(bs.progress[b]) / float(t.build_ticks))
 		if bs.done[b] == 1 and not t.becomes.is_empty() and view.get_parent() == layer:
@@ -1384,9 +1446,17 @@ func _tech_buttons(c: Dictionary, b: int) -> void:
 	if bs.research[b] != -1:
 		var r: int = bs.research[b]
 		var item: Dictionary = Tech.next_age(world, active) if r == Tech.AGE_UP else world.tech.research[r]
-		var label: String = ("Ageing up to the %s" % item.name) if r == Tech.AGE_UP else "Researching %s" % item.name
+		var label: String = ("Ageing up to the %s" % item.name) if r == Tech.AGE_UP else "Researching %s" % _research_name(item)
 		c.info = label
 		c.progress = float(bs.research_t[b]) / float(item.ticks)
+		# In the big first slot, ahead of the training it holds up (Dominic: an age-up didn't show).
+		var icon: Texture2D = Icons.texture("age_up") if r == Tech.AGE_UP else \
+			(kit.icons.get("%d:%s" % [active, item.line]) if item.has("line") else Icons.texture(item.id))
+		if c.get("queue") == null:
+			c.queue = []
+			c.queue_max = int(world.econ.queue_max)
+		c.queue.push_front({"icon": icon, "name": label, "action": func(): pass})
+		c.queue_title = "Ageing up" if r == Tech.AGE_UP else "Researching"
 		return
 	var age: Dictionary = Tech.next_age(world, active)
 	if not age.is_empty():
@@ -1399,8 +1469,9 @@ func _tech_buttons(c: Dictionary, b: int) -> void:
 		var why := Tech.why_not(world, active, b, r.id)
 		if why == "" or why == "can't afford it":
 			var rid: String = r.id
-			c.buttons.append({"text": "%s (%s)" % [r.name, _cost_text(r.cost)], "key": "", "cost": _cost_text(r.cost),
-				"icon": Icons.texture(r.id), "tip": _research_tip(r),
+			var icon: Texture2D = kit.icons.get("%d:%s" % [active, r.line]) if r.has("line") else Icons.texture(r.id)   # a line upgrade shows its unit
+			c.buttons.append({"text": "%s (%s)" % [_research_name(r), _cost_text(r.cost)], "key": "", "cost": _cost_text(r.cost),
+				"icon": icon, "tip": _research_tip(r),
 				"enabled": why == "", "action": func(): world.issue(active, Commands.RESEARCH, {"building": bid, "id": rid})})
 
 
@@ -1526,7 +1597,6 @@ func _age_tip(age: Dictionary) -> String:
 		if not Tech.has_building(world, active, need):
 			needs.append("a " + _bname(need))
 	var unlocks := []
-	var becomes := []
 	for bt in world.btypes:
 		if int(bt.age) == int(age.age):
 			unlocks.append(bt.name)
@@ -1539,19 +1609,42 @@ func _age_tip(age: Dictionary) -> String:
 				if int(step.age) != int(age.age):
 					continue
 				if k == 0:
-					unlocks.append(named)
-				else:
-					var was: String = t.line[k - 1].recipe.get("name", t.name)
-					if named != was:
-						becomes.append("%s -> %s" % [was, named])
-	if not becomes.is_empty():
-		lines.append("[color=%s]Becomes: %s[/color]" % [TIP_GOOD, ", ".join(becomes)])
+					unlocks.append(named)   # (later steps come with each line's upgrade, not the age)
 	return _tip("Age up: " + age.name, age.cost, lines, needs, unlocks)
 
 
 func _research_tip(r: Dictionary) -> String:
 	var needs := [] if world.ages[active] >= int(r.age) else ["age %d" % int(r.age)]
+	if r.has("line"):   # a line upgrade: what the line becomes, and how it changes
+		var steps := _line_steps(r)
+		var lines := [r.desc]
+		if not steps.is_empty():
+			var a: Dictionary = steps[0].eval
+			var b: Dictionary = steps[1].eval
+			lines.append("[color=%s]Becomes: %s[/color]" % [TIP_GOOD, steps[1].recipe.get("name", "")])
+			lines.append("[color=%s]Attack %d -> %d, armour %d/%d -> %d/%d[/color]" % [TIP_DIM, int(a.attack), int(b.attack),
+				int(a.armour.get("melee", 0)), int(a.armour.get("pierce", 0)), int(b.armour.get("melee", 0)), int(b.armour.get("pierce", 0))])
+		return _tip(_research_name(r), r.cost, lines, needs)
 	return _tip(r.name, r.cost, [r.desc, "[color=%s]%s[/color]" % [TIP_GOOD, _effect_text(r.effects)]], needs)
+
+
+## A line upgrade's [step it leaves, step it gives] for this player, or [] if the line has none.
+func _line_steps(r: Dictionary) -> Array:
+	var k := world.type_of(active, r.line)
+	if k < 0:
+		return []
+	var line: Array = world.types[k].line
+	for l in range(1, line.size()):
+		if int(line[l].age) == int(r.line_age):
+			return [line[l - 1], line[l]]
+	return []
+
+
+func _research_name(r: Dictionary) -> String:
+	if not r.has("line"):
+		return r.name
+	var steps := _line_steps(r)
+	return ("Upgrade to %s" % steps[1].recipe.get("name", r.name)) if not steps.is_empty() else r.name
 
 
 func _make_view(kind: int, owner: int) -> UnitView:
@@ -1613,8 +1706,15 @@ func _update_top_bar() -> void:
 	var ages: Array = world.tech.ages.filter(func(a): return int(a.age) == world.ages[active])
 	var age: Dictionary = ages[0] if not ages.is_empty() else {}
 	top_bar.show_idle(_idle_workers().size())
-	top_bar.show_state(stock, world.pop[active], world.pop_cap[active],
-		"%s, %s" % [world.races[active].name, age.get("name", "Age %d" % world.ages[active])], world.tick / World.TICK_HZ)
+	top_bar.show_state(stock, world.pop[active], world.pop_cap[active], world.races[active].name, world.tick / World.TICK_HZ)
+	var next := ""
+	var frac := 0.0
+	for b in world.buildings.count():   # an age-up under way, wherever it is
+		if world.buildings.owner[b] == active and world.buildings.research[b] == Tech.AGE_UP:
+			var na: Dictionary = Tech.next_age(world, active)
+			next = na.get("name", "")
+			frac = float(world.buildings.research_t[b]) / float(maxi(1, int(na.get("ticks", 1))))
+	top_bar.show_age(world.ages[active], age.get("name", "Age %d" % world.ages[active]), next, frac)
 
 
 func _bar_text() -> String:
