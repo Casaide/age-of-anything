@@ -273,14 +273,14 @@ func _side_panel(i: int, who: String, prompt: String) -> Control:
 	dice.pressed.connect(func(): sides[i].reroll += 1; _regenerate(i))
 	prow.add_child(dice)
 	col.add_child(prow)
-	var chips := HFlowContainer.new()
-	chips.add_theme_constant_override("h_separation", 6)
-	chips.add_theme_constant_override("v_separation", 6)
+	var pick := OptionButton.new()   # presets in one menu, not a wall of chips (Fable)
+	pick.add_item("Try one of these...")
 	for p in PRESETS:
-		var chip := _button(p, 13, false)
-		chip.pressed.connect(func(): field.text = p; sides[i].reroll = 0; _regenerate(i))
-		chips.add_child(chip)
-	col.add_child(chips)
+		pick.add_item(p)
+	pick.focus_mode = Control.FOCUS_NONE
+	pick.add_theme_font_size_override("font_size", 15)
+	pick.item_selected.connect(func(k): if k > 0: field.text = PRESETS[k - 1]; sides[i].reroll = 0; _regenerate(i); pick.select(0))
+	col.add_child(pick)
 	var roster := RichTextLabel.new()
 	roster.bbcode_enabled = true
 	roster.fit_content = true
