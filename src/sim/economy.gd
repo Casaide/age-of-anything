@@ -516,7 +516,10 @@ static func _become_ground(w, b: int, i: int) -> void:
 	var cells: PackedInt32Array = bs.footprint(b, w.map.width)
 	var land: bool = w.map.terrain_walk[w.map.terrain[cells[0]]]   # grass under it, or shallows
 	w.map.make_pool(cells, w.map.terrain_ids.find(t.becomes.land if land else t.becomes.water), t.food)
-	start_gather(w, i, cells[0], kind_of(w, "food"))
+	if w.units.orders[i].is_empty():
+		start_gather(w, i, cells[0], kind_of(w, "food"))
+	else:
+		clear_task(w, i)   # told what to do after (shift): that comes first, not farming forever
 
 
 ## Reseed a worked-out farm: pay, crops again, the workers start the harvest.
