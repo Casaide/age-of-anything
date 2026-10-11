@@ -159,3 +159,7 @@ Rest of phase 1: shift-click trains five, the queue holds fifteen (the one in tr
 rest small), WASD pans faster, a resource clicked shows what's left, and bushes, reeds and stone
 look started from the first bite. Mineable stone got its own prop, pale squared sandstone blocks,
 so it no longer looks like the grey boulders that just block.
+The first quarry stone was squared blocks; Dominic: "really weird perfect cubes". Now it's rough
+sandstone split along a flat face or two (the same noisy stones as the boulders, sheared), warm and
+pale against the grey boulders, and it shrinks to chips as it's mined. building_sheet.gd can show
+props now (prop.quarry.1300.2).
