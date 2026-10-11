@@ -31,6 +31,7 @@ func _ready() -> void:
 	streams.trained = _notes([659.0, 880.0], 0.09)
 	streams.built = _notes([440.0, 554.0, 659.0, 880.0], 0.1)
 	streams.farm_done = _notes([392.0, 311.0], 0.16)
+	streams.alarm = _horn([196.0, 196.0, 147.0], 0.22)
 	for k in VOICES:
 		var p := AudioStreamPlayer.new()
 		p.volume_db = -10.0
@@ -74,6 +75,20 @@ static func _noise(dur: float, cutoff: float, decay: float) -> AudioStreamWAV:
 	for i in n:
 		y += a * (randf_range(-1.0, 1.0) - y)
 		out[i] = y * exp(-decay * float(i) / RATE) * 1.6
+	return _wav(out)
+
+
+## A horn call: notes with a reedy edge (odd harmonics), swelling in and fading.
+static func _horn(freqs: Array, each: float) -> AudioStreamWAV:
+	var per := int(each * RATE)
+	var out := PackedFloat32Array()
+	out.resize(per * freqs.size())
+	for k in freqs.size():
+		for i in per:
+			var t := float(i) / RATE
+			var env := minf(1.0, t * 30.0) * (1.0 - float(i) / per * 0.5)
+			var f: float = freqs[k]
+			out[k * per + i] = (sin(TAU * f * t) * 0.5 + sin(TAU * f * 3.0 * t) * 0.18 + sin(TAU * f * 5.0 * t) * 0.07) * env * 0.9
 	return _wav(out)
 
 

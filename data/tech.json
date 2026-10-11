@@ -3,6 +3,15 @@
  "note": "Ages and researches. An age-up moves the player's units to the next step of their unit lines (new kit, re-priced). Research effects add to stats of units with a tag (the blacksmith kind, a small visual tell only, D-057). Milestone 7 fills in the content and the buildings.",
  "ages": [
   {
+   "age": 1,
+   "name": "Mud Age",
+   "desc": "Where everyone starts.",
+   "cost": {},
+   "time": 0,
+   "building": "town_center",
+   "requires": []
+  },
+  {
    "age": 2,
    "name": "Stick Age",
    "desc": "Stronger gear for every unit line, the Stable and the Watchtower.",

@@ -1405,7 +1405,7 @@ func _market(arch: String, team: Color) -> Dictionary:
 	var wood := mats.get_mat("wood")
 	if k.base != "":
 		body.add_child(box(Vector3(2.7, 0.06, 2.7), mats.get_mat(k.base), Vector3(0, 0.03, 0)))
-	var awnings := [Color("#c8a040"), Color("#7a9a5a"), team]
+	var awnings := [Color("#c8a040"), Color("#7a9a5a"), Color("#e8dcc0")]   # cream, ochre, olive: not the team (Fable)
 	var spots := [[Vector3(-0.8, 0, -0.8), 0.0], [Vector3(0.85, 0, -0.75), -90.0], [Vector3(-0.8, 0, 0.75), 90.0]]
 	for i in 3:
 		var st := Node3D.new()
