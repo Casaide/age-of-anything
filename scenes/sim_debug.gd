@@ -97,6 +97,7 @@ var army := false           # also spawn a test army per side (F7 toggles and re
 var vs_ai := false          # side 2 is played by the AI (set by the match setup screen)
 var banner: Label           # victory / defeat
 var fog_view: FogView
+var flat: Node2D             # ground-level art (farms, crops), drawn under the y-sorted layer
 var minimap: Minimap
 var sfx: Sfx
 var age_ups: Array = []      # [player, age, seconds] this match (for the playtest log)
@@ -120,6 +121,8 @@ func _ready() -> void:
 	add_child(kit)
 	ground_holder = Node2D.new()
 	add_child(ground_holder)
+	flat = Node2D.new()   # flat on the ground, under every unit: finished farms and their crops
+	add_child(flat)
 	marks = Node2D.new()
 	marks.draw.connect(_draw_marks)
 	add_child(marks)
@@ -625,6 +628,8 @@ func smart_order(pos: Vector2) -> void:
 			world.issue(p, Commands.GATHER, {"ids": ids, "cell": cell, "queue": q})
 		elif bid != 0 and _is_foundation_of(bid, p):
 			world.issue(p, Commands.HELP_BUILD, {"ids": ids, "target": bid, "queue": q})
+		elif bid != 0 and map.pool[cell] >= 0 and world.buildings.owner[world.buildings.index_of(bid)] == p:
+			world.issue(p, Commands.RESEED, {"ids": ids, "building": bid})   # a fallow farm of ours
 		else:
 			world.issue(p, Commands.MOVE, {"ids": ids, "x": m.x, "y": m.y, "queue": q})
 	flags.append({"pos": pos, "t": 1.0})
@@ -835,7 +840,9 @@ func _job(i: int) -> String:
 	var u := world.units
 	if u.moving[i] != 0:
 		return ""
-	if u.task[i] == Economy.GATHER and u.work[i] > 0:
+	# Standing at its job counts, not the work counter: it resets to 0 after every load unit,
+	# which snapped the animation back to idle for a frame (Dominic: "restarting at weird points").
+	if u.task[i] == Economy.GATHER:
 		return {"food": "forage", "wood": "chop", "stone": "mine"}.get(world.resources[u.carry_kind[i] - 1], "forage")
 	if u.task[i] == Economy.BUILD:
 		return "build"
@@ -905,6 +912,8 @@ func _sync_buildings() -> void:
 			_clear_doodads(bs.cx[b], bs.cy[b], bs.size[b])
 		var t: Dictionary = world.btypes[bs.kind[b]]
 		view.set_state(bs.done[b] == 1, float(bs.progress[b]) / float(t.build_ticks))
+		if bs.done[b] == 1 and not t.becomes.is_empty() and view.get_parent() == layer:
+			view.reparent(flat)   # a sown farm is walked across: it lies under the units
 	var built := 0
 	for b in bs.count():
 		built += bs.done[b]
@@ -935,8 +944,9 @@ func _add_resource_view(c: int, pick: int) -> void:
 	var holder := Node2D.new()
 	holder.position = Iso.to_screen((c % map.width) * 1000 + 500, (c / map.width) * 1000 + 500)
 	holder.add_child(kit.doodad(kind, pick))
-	holder.set_meta("res", {"kind": kind, "pick": pick, "stage": 0, "full": map.amount[c], "gone": 0.0})
-	layer.add_child(holder)
+	holder.set_meta("res", {"kind": kind, "pick": pick, "stage": 0, "full": map.left_at(c), "gone": 0.0})
+	# A farm's crops share its pool (every tile shows them) and lie flat under the farmers.
+	(flat if map.pool[c] >= 0 else layer).add_child(holder)
 	rviews[c] = holder
 
 
@@ -944,19 +954,19 @@ func _sync_resources() -> void:
 	var dt := get_process_delta_time()
 	# New resources (a farm's field) appear where the map changed.
 	for c in map.changed:
-		if map.amount[c] > 0 and not rviews.has(c):
+		if map.left_at(c) > 0 and not rviews.has(c):
 			_add_resource_view(c, c * 7 + c / map.width)
 	map.changed.clear()
 	map.changed_overflow = false
 	for c in rviews.keys():
 		var h: Node2D = rviews[c]
 		var r: Dictionary = h.get_meta("res")
-		var stage := ArtKit.resource_stage(r.kind, map.amount[c], r.full)
+		var stage := ArtKit.resource_stage(r.kind, map.left_at(c), r.full)
 		if stage != r.stage:
 			r.stage = stage
 			h.get_child(0).queue_free()
 			h.add_child(kit.doodad(r.kind, r.pick, stage))
-		if map.amount[c] <= 0:
+		if map.left_at(c) <= 0:
 			r.gone += dt
 			var linger := 6.0 if r.kind == "reeds" else 0.0
 			h.modulate.a = clampf(1.0 - (r.gone - linger) / 1.5, 0.0, 1.0)
@@ -1210,6 +1220,17 @@ func _draw_marks() -> void:
 		if u.moving[i] == 1:
 			marks.draw_line(view.position, Iso.to_screen(u.wx[i], u.wy[i]), Color(RING, 0.35), 1.0 / camera.zoom.x)
 			marks.draw_line(Iso.to_screen(u.wx[i], u.wy[i]), Iso.to_screen(u.tx[i], u.ty[i]), Color(RING, 0.12), 1.0 / camera.zoom.x)
+	# The selected building's rally point, as a flag (only while the building is selected).
+	var sb := world.buildings.index_of(selected_building)
+	if sb >= 0 and world.buildings.rally_x[sb] >= 0:
+		var at := Iso.to_screen(world.buildings.rally_x[sb], world.buildings.rally_y[sb])
+		var team := Color(lib.palettes.teams[world.buildings.owner[sb]])
+		var w := 1.0 / camera.zoom.x
+		marks.draw_line(at, at + Vector2(0, -16), Color("#4a3020"), 1.5 * w)
+		marks.draw_colored_polygon(PackedVector2Array([at + Vector2(0, -16), at + Vector2(8, -13), at + Vector2(0, -10)]), team)
+		marks.draw_set_transform(at, 0.0, Vector2(1.0, 0.5))
+		marks.draw_arc(Vector2.ZERO, 4.0, 0.0, TAU, 12, Color(team, 0.8), w)
+		marks.draw_set_transform(Vector2.ZERO)
 	for f in flags:
 		marks.draw_set_transform(f.pos, 0.0, Vector2(1.0, 0.5))
 		marks.draw_circle(Vector2.ZERO, 10.0 * f.t, Color(RING, f.t))

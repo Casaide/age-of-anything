@@ -21,7 +21,8 @@ const ATTACK_MOVE := "attack_move" # {ids, x, y}  walk there, fighting whatever 
 const AGE_UP := "age_up"           # {building}  advance to the next age (tech.json)
 const RESEARCH := "research"       # {building, id}
 const SURRENDER := "surrender"     # {}  the player concedes (match.gd)
-const TYPES := [MOVE, SPAWN, GATHER, BUILD, HELP_BUILD, TRAIN, CANCEL, RALLY, ATTACK, ATTACK_MOVE, AGE_UP, RESEARCH, SURRENDER]
+const RESEED := "reseed"           # {ids, building}  replant a worked-out farm (costs wood); the workers farm it
+const TYPES := [MOVE, SPAWN, GATHER, BUILD, HELP_BUILD, TRAIN, CANCEL, RALLY, ATTACK, ATTACK_MOVE, AGE_UP, RESEARCH, SURRENDER, RESEED]
 ## Unit orders that can be queued: with args.queue = 1, a busy unit keeps the order for
 ## when it's done (shift-queuing); without it, the order replaces the unit's queue.
 const QUEUEABLE := [MOVE, GATHER, BUILD, HELP_BUILD, ATTACK, ATTACK_MOVE]

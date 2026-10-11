@@ -27,11 +27,15 @@ var terrain_move: Array = []       # terrain index -> bitmask of the classes tha
 var terrain_resource: Array = []   # terrain index -> "food" / "wood" / ""
 var terrain_amount: Array = []     # terrain index -> starting amount per tile
 var terrain_depleted: Array = []   # terrain index -> terrain index it turns into, or -1
+var terrain_reseed: Array = []     # terrain index -> what reseeding turns it back into (fallow -> field), or -1
+var terrain_cleared: Array = []    # terrain index -> what it becomes when its farm is torn down, or -1
 var terrain := PackedByteArray()   # index ty * width + tx
 var walk := PackedByteArray()      # ground: 1 walkable, 0 blocked (terrain or a building)
 var walks: Array = []              # per movement class, the same grid (walks[0] matches walk)
 var occupied := PackedInt32Array() # building id standing on the cell, or 0
-var amount := PackedInt32Array()   # resource left on the cell
+var amount := PackedInt32Array()   # resource left on the cell (for a pooled cell: on its anchor)
+var pool := PackedInt32Array()     # pooled cells (a farm's): the anchor cell holding the shared amount, or -1
+var walk_over := PackedByteArray() # 1 where a building may be walked across (farms)
 var resource_cells := PackedInt32Array()   # every cell that started with a resource, ascending
 var starts: Array = []             # [[x, y]] in milli-tiles, tile centres
 var map_hash: int                  # content hash of the file, for replays
@@ -73,6 +77,10 @@ static func load_id(map_id: String) -> RefCounted:
 		var dep: String = types[t].get("depleted", "")
 		assert(dep == "" or types.has(dep), "Terrain %s depletes into unknown %s" % [t, dep])
 		m.terrain_depleted.append(m.terrain_ids.find(dep) if dep != "" else -1)
+		for field in ["reseed", "cleared"]:
+			var to: String = types[t].get(field, "")
+			assert(to == "" or types.has(to), "Terrain %s: unknown %s terrain %s" % [t, field, to])
+			m.get("terrain_" + field).append(m.terrain_ids.find(to) if to != "" else -1)
 	var index := {}   # legend char -> terrain index
 	var legend_keys: Array = d.legend.keys()
 	legend_keys.sort()
@@ -92,6 +100,9 @@ static func load_id(map_id: String) -> RefCounted:
 		m.walks.append(g)
 	m.occupied.resize(n)
 	m.amount.resize(n)
+	m.pool.resize(n)
+	m.pool.fill(-1)
+	m.walk_over.resize(n)
 	for y in m.height:
 		var row: String = d.rows[y]
 		assert(row.length() == m.width, "Map %s row %d is %d wide" % [map_id, y, row.length()])
@@ -140,20 +151,68 @@ func terrain_at(cell: int) -> String:
 
 ## "food", "wood" or "" for a cell that has (or had) none left.
 func resource_at(cell: int) -> String:
-	if amount[cell] <= 0:
+	if amount[_anchor(cell)] <= 0:
 		return ""
 	return terrain_resource[terrain[cell]]
 
 
+func _anchor(cell: int) -> int:
+	return pool[cell] if pool[cell] >= 0 else cell
+
+
+## How much is left at a cell (a pooled cell answers for its whole pool).
+func left_at(cell: int) -> int:
+	return amount[_anchor(cell)]
+
+
 ## Take one unit of resource. When the last one goes, the tile turns into its depleted terrain.
 func take(cell: int) -> void:
-	assert(amount[cell] > 0, "Nothing left to take at cell %d" % cell)
-	amount[cell] -= 1
-	if amount[cell] == 0:
-		var dep: int = terrain_depleted[terrain[cell]]
+	var a := _anchor(cell)
+	assert(amount[a] > 0, "Nothing left to take at cell %d" % cell)
+	amount[a] -= 1
+	if amount[a] > 0:
+		return
+	var cells := PackedInt32Array([cell]) if pool[cell] < 0 else pool_cells(a)
+	for c in cells:
+		var dep: int = terrain_depleted[terrain[c]]
 		if dep >= 0:
-			terrain[cell] = dep
-		_refresh(cell)
+			terrain[c] = dep
+		_refresh(c)
+
+
+## Pool some cells into one resource (a farm: one thing, one amount), held on the first cell.
+## Their terrain becomes `k`; the anchor joins resource_cells, the rest point at it.
+func make_pool(cells: PackedInt32Array, k: int, total: int) -> void:
+	var a: int = cells[0]
+	for c in cells:
+		terrain[c] = k
+		amount[c] = 0
+		pool[c] = a
+		walk_over[c] = 1   # a farm: walk straight across it
+		_refresh(c)
+	amount[a] = total
+	var at := resource_cells.bsearch(a)
+	if at >= resource_cells.size() or resource_cells[at] != a:
+		resource_cells.insert(at, a)
+
+
+## Every cell pooled on this anchor, ascending.
+func pool_cells(a: int) -> PackedInt32Array:
+	var out := PackedInt32Array()
+	for c in pool.size():
+		if pool[c] == a:
+			out.append(c)
+	return out
+
+
+## Unpool cells and turn them into terrain `k` (a farm torn down).
+func clear_pool(cells: PackedInt32Array, k: int) -> void:
+	for c in cells:
+		pool[c] = -1
+		amount[c] = 0
+		walk_over[c] = 0
+		terrain[c] = k
+		_refresh(c)
 
 
 ## Mark a building's footprint (id) or clear it (0).
@@ -192,11 +251,12 @@ func set_terrain(cell: int, k: int) -> void:
 
 
 func _refresh(cell: int) -> void:
-	walk[cell] = 1 if terrain_walk[terrain[cell]] and occupied[cell] == 0 else 0
+	var clear: bool = occupied[cell] == 0 or walk_over[cell] == 1   # buildings block, farms don't
+	walk[cell] = 1 if terrain_walk[terrain[cell]] and clear else 0
 	var mask: int = terrain_move[terrain[cell]]
 	for k in CLASSES.size():
 		# Buildings block everyone but flyers.
-		walks[k][cell] = 1 if mask & (1 << k) and (k == FLYING or occupied[cell] == 0) else 0
+		walks[k][cell] = 1 if mask & (1 << k) and (k == FLYING or clear) else 0
 	walks[0][cell] = walk[cell]
 	version += 1
 	fresh.append(cell)

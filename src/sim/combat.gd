@@ -383,5 +383,6 @@ static func _apply(w, hurt: PackedInt32Array, hurt_by: PackedInt32Array, bhurt: 
 			var s: int = bs.size[b] * SimMap.TILE
 			w.events.append({"type": "die", "id": bs.id[b], "x": bs.cx[b] * SimMap.TILE + s / 2, "y": bs.cy[b] * SimMap.TILE + s / 2,
 				"owner": bs.owner[b], "kind": bs.kind[b], "building": true})
+			Economy.clear_farm(w, b)
 			w.map.occupy(bs.footprint(b, w.map.width), 0)
 			bs.remove_at(b)

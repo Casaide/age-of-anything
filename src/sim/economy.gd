@@ -50,6 +50,7 @@ static func load_btypes(resources: Array) -> Array:
 			"id": id, "name": b.name, "size": int(b.size), "hp": int(b.hp),
 			"cost": cost_vector(resources, b.cost), "drop": PackedByteArray(resources.map(func(r): return 1 if r in b.drop_off else 0)),
 			"water": bool(b.get("water", false)), "becomes": b.get("becomes", {}).duplicate(),
+			"food": int(b.get("food", 0)), "reseed": cost_vector(resources, b.get("reseed", {})),
 			"build_ticks": int(b.build_time) * 20, "pop": int(b.pop), "house": bool(b.house),
 			"trains": b.trains.duplicate(), "age": int(b.age), "armour": b.get("armour", {}).duplicate(),
 			"attack": b.get("attack", {}).duplicate(),
@@ -349,18 +350,43 @@ static func builder_class(w, player: int) -> int:
 	return w.types[k].mclass if k >= 0 else 0
 
 
-## A finished farm turns its ground into crops (a field on land, a paddy in water) and
-## goes; the builder who finished it starts the harvest.
+## A finished farm turns its ground into crops (a field on land, a paddy in water): one farm,
+## one pool of food over its tiles. The farm stays (it can be reseeded when it runs out);
+## the builder who finished it starts the harvest.
 static func _become_ground(w, b: int, i: int) -> void:
 	var bs = w.buildings
 	var t: Dictionary = w.btypes[bs.kind[b]]
 	var cells: PackedInt32Array = bs.footprint(b, w.map.width)
-	w.map.occupy(cells, 0)
-	for c in cells:
-		var land: bool = w.map.terrain_walk[w.map.terrain[c]]
-		w.map.set_terrain(c, w.map.terrain_ids.find(t.becomes.land if land else t.becomes.water))
-	bs.remove_at(b)
+	var land: bool = w.map.terrain_walk[w.map.terrain[cells[0]]]   # grass under it, or shallows
+	w.map.make_pool(cells, w.map.terrain_ids.find(t.becomes.land if land else t.becomes.water), t.food)
 	start_gather(w, i, cells[0], kind_of(w, "food"))
+
+
+## Reseed a worked-out farm: pay, crops again, the workers start the harvest.
+static func cmd_reseed(w, player: int, a: Dictionary) -> void:
+	var b: int = w.buildings.index_of(int(a.building))
+	if b < 0 or w.buildings.owner[b] != player or w.buildings.done[b] == 0:
+		return
+	var t: Dictionary = w.btypes[w.buildings.kind[b]]
+	var cells: PackedInt32Array = w.buildings.footprint(b, w.map.width)
+	var to: int = w.map.terrain_reseed[w.map.terrain[cells[0]]]
+	if t.becomes.is_empty() or w.map.left_at(cells[0]) > 0 or to < 0 or not w.can_afford(player, t.reseed):
+		return
+	w.pay(player, t.reseed)
+	w.map.make_pool(cells, to, t.food)
+	for i in _own_workers(w, player, a.ids):
+		start_gather(w, i, cells[0], kind_of(w, "food"))
+
+
+## A farm torn down leaves plain ground (or water) behind.
+static func clear_farm(w, b: int) -> void:
+	var t: Dictionary = w.btypes[w.buildings.kind[b]]
+	if t.becomes.is_empty() or w.buildings.done[b] == 0:
+		return
+	var cells: PackedInt32Array = w.buildings.footprint(b, w.map.width)
+	var to: int = w.map.terrain_cleared[w.map.terrain[cells[0]]]
+	if to >= 0:
+		w.map.clear_pool(cells, to)
 
 
 static func _approach_cell(w, i: int, cell: int) -> void:

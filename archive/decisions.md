@@ -392,3 +392,10 @@ Supersedes D-076.** Dominic: a centaur should move faster, carry more and be har
 than a human, and cost more for it. Worker cost is points-priced again; a creature's economy
 can now set `carry_pct` (centaurs carry 160% a trip), alongside the existing cost and
 training modifiers. Dominic's call.
+
+**D-079, 2026-10-11: Farms are one thing, walkable, and reseeded.** Dominic: farms should work
+like the genre's later classics: one farm (not four tiles that each run out), units walk across
+it, and a worked-out farm can be restarted. A finished farm keeps its building; its tiles share
+one pool of food (`SimMap.make_pool`, 400 food). Worked out, it lies fallow; a worker reseeds it
+for 40 wood (`RESEED`, right-click). Razed, its ground returns to grass or shallows. The view
+draws it flat under the units, with crops on every tile. Dominic's call; built by Claude.

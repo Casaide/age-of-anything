@@ -76,3 +76,5 @@ One line per moment worth remembering. Newest at the bottom.
   about 11 minutes. ([image](images/2026-10-11/102-fog-of-war-edge.png))
 - **2026-10-11:** Milestone 10 prepared: balance tool and pass 1 (counters 91%), workers at one
   price, playtest kit; waiting on testers.
+- **2026-10-11:** Playtest fixes: clickable train buttons, whole-figure unit picking, smooth
+  foraging; farms are one walkable, reseedable thing; rally flags.

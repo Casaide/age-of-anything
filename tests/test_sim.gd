@@ -402,6 +402,24 @@ func _test_farms(races: Array) -> void:
 	var i := w.units.index_of(worker)
 	check(w.units.carry_kind[i] == 1 and w.units.task[i] in [Economy.GATHER, Economy.RETURN], "farm: its builder farms it")
 	check(w.stock[0][0] > food_before, "farm: food comes in from the field (%d -> %d)" % [food_before, w.stock[0][0]])
+	# One farm, one pool: its four tiles share one amount, units walk across it, and worked out
+	# it lies fallow until a worker reseeds it (for wood).
+	var cells: Array = [cy * w.map.width + cx, cy * w.map.width + cx + 1, (cy + 1) * w.map.width + cx, (cy + 1) * w.map.width + cx + 1]
+	check(cells.all(func(c): return w.map.left_at(c) == w.map.left_at(cells[0])), "farm: its tiles share one pool of food (%d)" % w.map.left_at(cells[0]))
+	check(cells.all(func(c): return w.map.walk[c] == 1), "farm: units can walk across it")
+	var farm_id: int = w.map.occupied[cells[0]]
+	check(farm_id != 0, "farm: the farm stays standing after it's sown")
+	w.map.amount[cells[0]] = 1   # nearly worked out
+	while w.tick < 6000 and w.map.left_at(cells[0]) > 0:
+		w.step()
+	var fallow: int = w.map.terrain_ids.find("fallow")
+	check(w.map.terrain[cells[0]] == fallow and w.map.occupied[cells[0]] == farm_id, "farm: worked out, it lies fallow (and is still a farm)")
+	var wood_before: int = w.stock[1][0]
+	w.issue(0, Commands.RESEED, {"ids": [worker], "building": farm_id})
+	for t in 12:
+		w.step()
+	check(w.map.terrain[cells[0]] == field and w.map.left_at(cells[0]) > 0, "farm: reseeding brings the crops back")
+	check(w.stock[1][0] < wood_before, "farm: reseeding costs wood (%d -> %d)" % [wood_before, w.stock[1][0]])
 	# Water: find a 2x2 of shallows.
 	var sh: int = w.map.terrain_ids.find("shallows")
 	var spot := Vector2i(-1, -1)

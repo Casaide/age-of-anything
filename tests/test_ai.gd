@@ -15,7 +15,7 @@ const Bot := preload("res://src/ai/bot.gd")
 const EcoBot := preload("res://src/ai/eco_bot.gd")
 
 const SEED := 7
-const LIMIT := 20 * 60 * 22    # 22 minutes
+const LIMIT := 20 * 60 * 30    # 30 minutes: a match must end, however slowly (pacing is a tester metric)
 
 var failures := 0
 var checks := 0

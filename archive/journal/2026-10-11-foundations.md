@@ -57,6 +57,12 @@ Milestone 7 (progression) followed straight on:
 - **A price tuner.** It nudged part points until the win-rate table was flat (11 outliers to 6),
   by making bows nearly free, at which point archers beat their own counters. Bows went back.
   Lesson: no price fixes archers that can't keep their distance.
+- **Dominic playing.** Train buttons didn't work by clicking (the panel rebuilt itself every frame
+  because a building's portrait was a new texture each time, so clicks never landed); units could
+  only be clicked by their feet (now their whole figure); foraging restarted mid-motion (the
+  animation was tied to a counter that resets every unit of food). Farms became one walkable,
+  reseedable thing (D-079), a selected building shows its rally flag, and centaur workers cost
+  more again but carry 160% (D-078).
 - **Wings.** Feather wings had thirty small feathers and baked to a white slab; now eight big
   ones. A pegasus's wings sat so high they looked like the rider's; they now lie folded along
   the horse's back.
@@ -64,7 +70,7 @@ Milestone 7 (progression) followed straight on:
 ## Decisions
 D-056 (milestones 5 and 6 inserted), D-057 (gear by age, small blacksmith tells), D-058 (bows for
 everyone, crossbows royal and rat kit, shift-queues), D-059 (winged races fly instead of riding),
-D-070 (restrictions as layers with a host switch), D-072 (unit textures: big marks, world space), D-073 (creature architecture), D-074 (concept-first unit art), D-075 (the AI and the match setup), D-076 (workers have one price), D-077 (pacing is a tester metric), D-078 (worker costs vary; centaurs carry more).
+D-070 (restrictions as layers with a host switch), D-072 (unit textures: big marks, world space), D-073 (creature architecture), D-074 (concept-first unit art), D-075 (the AI and the match setup), D-076 (workers have one price), D-077 (pacing is a tester metric), D-078 (worker costs vary; centaurs carry more), D-079 (one walkable, reseedable farm).
 
 ## Pictures
 ![Centaur Romans at age 1: light kit](../images/2026-10-11/55-centaur-romans-age-1-light-kit.png)

@@ -50,7 +50,12 @@
     "melee": 0,
     "pierce": 4
    },
-   "note": "when built, its ground becomes a crop field (a rice paddy in water, for amphibians): renewable-ish food beyond the bug bushes"
+   "note": "when built, its ground becomes crops (a rice paddy in water, for amphibians): one farm, one pool of food; worked out it lies fallow, and a worker can reseed it for wood",
+   "food": 400,
+   "reseed": {
+    "food": 0,
+    "wood": 40
+   }
   },
   "house": {
    "name": "House",
