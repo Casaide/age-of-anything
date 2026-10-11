@@ -144,9 +144,17 @@ static func clear_line(map: SimMap, ax: int, ay: int, bx: int, by: int, k := 0) 
 	var dx := bx - ax
 	var dy := by - ay
 	var steps := maxi(absi(dx), absi(dy)) / LINE_STEP + 1
+	var px := ax
+	var py := ay
 	for i in range(1, steps + 1):
-		if not map.walkable(ax + dx * i / steps, ay + dy * i / steps, k):
+		var x := ax + dx * i / steps
+		var y := ay + dy * i / steps
+		if not map.walkable(x, y, k):
 			return false
+		if x / TILE != px / TILE and y / TILE != py / TILE and not (map.walkable(x, py, k) and map.walkable(px, y, k)):
+			return false   # no slipping between two corners (see clear_path)
+		px = x
+		py = y
 	return true
 
 
@@ -163,6 +171,8 @@ static func clear_path(map: SimMap, ax: int, ay: int, bx: int, by: int, r: int, 
 	var w := map.width
 	var h := map.height
 	var steps := maxi(absi(dx), absi(dy)) / LINE_STEP + 1
+	var px := ax
+	var py := ay
 	for i in range(1, steps + 1):
 		var x := ax + dx * i / steps
 		var y := ay + dy * i / steps
@@ -170,6 +180,12 @@ static func clear_path(map: SimMap, ax: int, ay: int, bx: int, by: int, r: int, 
 		# other step saved 0.2 ms a tick at 143 units and doubled the jitter: not worth it.)
 		if _blocked(walk, w, h, x, y) or _blocked(walk, w, h, x + ox, y + oy) or _blocked(walk, w, h, x - ox, y - oy):
 			return false
+		# Into a diagonal neighbour cell: both cells beside the corner must be open (as World._move
+		# steps), else the line slips between two blocks touching at a corner (a diagonal wall).
+		if x / TILE != px / TILE and y / TILE != py / TILE and (_blocked(walk, w, h, x, py) or _blocked(walk, w, h, px, y)):
+			return false
+		px = x
+		py = y
 	return true
 
 

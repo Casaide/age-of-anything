@@ -59,8 +59,8 @@ func _initialize() -> void:
 		view.camera.look_at_point(Iso.to_screen(int(scene.get_slice(":", 1)) * 1000, int(scene.get_slice(":", 2)) * 1000))
 	elif scene == "pause":
 		view._toggle_pause_menu()
-	elif scene == "walls":
-		await _walls(view)
+	elif scene.begins_with("walls"):
+		await _walls(view, scene == "walls:far")
 	elif scene.begins_with("tip"):
 		await _tip(view, int(scene.get_slice(":", 1)))
 	elif scene == "card":
@@ -160,6 +160,7 @@ func _teleport(w, id: int, x: int, y: int) -> void:
 	w.units.py[i] = y
 	w.units.moving[i] = 0
 
+
 ## Queued orders, seen (Dominic): a worker builds a house, then is shift-told to walk out, lay a
 ## second house and go cutting reeds; a second worker stands by. Both selected, mid-build.
 func _orders(view) -> void:
@@ -233,42 +234,50 @@ func _orders_army(view, map_id: String) -> void:
 	view.camera.look_at_point(Iso.to_screen((c.x + meet.x) * 0.5, (c.y + meet.y) * 0.5 + 1500))
 
 
-## Side 0's workers lay a palisade line by the Town Center with a palisade gate in it, and a
-## stone wall with a stone gate (as drags would), and build them; then a worker walks out
-## through the palisade gate (it shows open) and the shot is taken as it passes.
-func _walls(view) -> void:
+## Side 0's walls east of its Town Center, every way a line runs, put up finished: a palisade
+## along sim y with a three-tile palisade gate in it, a stone wall along sim x with a stone gate,
+## a palisade on each diagonal (down the screen and across it) and a stone wall that bends from
+## straight to diagonal. Workers are laid as drags would (place_wall), the gates as clicks
+## (BUILD with `along`). Then a worker walks out through the palisade gate (it shows open) and
+## an enemy spearman stands at the stone gate (it stays shut); the shot is taken as the worker passes.
+## "walls:far" frames them all at zoom 1.3 instead of 2.
+func _walls(view, far := false) -> void:
 	var w = view.world
-	var s: Array = w.map.starts[0]
-	w.stock[w.resources.find("stone")][0] = 500
-	w.stock[w.resources.find("wood")][0] = 500
+	var Economy = load("res://src/sim/economy.gd")
+	view.reveal = true   # the far walls and the enemy at the gate are past side 0's sight
 	w.ages[0] = 2   # stone walls come with age 2
-	for i in w.units.count():
-		if w.units.owner[i] == 0:
-			view.selected[w.units.id[i]] = true
-	var a := Vector2i(s[0] / 1000 + 3, s[1] / 1000 - 3)
-	for line in [["palisade", a, a + Vector2i(0, 6)], ["palisade_gate", a + Vector2i(0, 3), a + Vector2i(0, 3)],
-			["wall", a + Vector2i(1, 6), a + Vector2i(5, 6)], ["stone_gate", a + Vector2i(3, 6), a + Vector2i(3, 6)]]:
-		view.placing = line[0]
-		view.place_wall(line[1], line[2], line[0] != "palisade")
-	view.placing = ""
-	view.clock.speed = 8.0
-	for f in 1200:
+	var lines := [["palisade", Vector2i(16, 8), Vector2i(16, 18)], ["wall", Vector2i(17, 19), Vector2i(25, 19)],
+		["palisade", Vector2i(22, 9), Vector2i(27, 14)], ["palisade", Vector2i(18, 24), Vector2i(23, 19)],
+		["wall", Vector2i(26, 19), Vector2i(29, 19)], ["wall", Vector2i(30, 20), Vector2i(33, 23)]]
+	for line in lines:
+		var k: int = Economy.btype_of(w, line[0])
+		for c in view.wall_cells(line[1], line[2]):
+			if w.map.occupied[c.y * w.map.width + c.x] == 0 and w.map.can_build(c.x, c.y, 1):
+				var b: int = Economy.place(w, 0, k, c.x, c.y)
+				w.buildings.done[b] = 1
+				w.buildings.hp[b] = w.btypes[k].hp
+	for gate in [["palisade_gate", 16, 12, 1], ["stone_gate", 20, 19, 0]]:
+		var k: int = Economy.btype_of(w, gate[0])
+		for c in Economy._footprint(w, gate[1], gate[2], Economy.dims(w.btypes[k], gate[3])):
+			if w.map.occupied[c] != 0:
+				Economy.demolish(w, w.buildings.index_of(w.map.occupied[c]))
+		var b: int = Economy.place(w, 0, k, gate[1], gate[2], gate[3])
+		w.buildings.done[b] = 1
+		w.buildings.hp[b] = w.btypes[k].hp
+	w.issue(1, "spawn", {"slot": "spear", "count": 1, "x": 21500, "y": 20600})   # at the stone gate, outside
+	for f in 30:
 		await process_frame
-	view.clock.speed = 1.0
-	view.selected.clear()
-	var walker: int = -1   # a builder (they end up outside the palisade), sent home through its gate
-	var west := 1 << 30
+	var walker: int = -1   # one of the workers by the Town Center, sent out through the palisade gate
 	for i in w.units.count():
-		if w.units.owner[i] == 0 and w.types[w.units.kind[i]].worker and w.units.x[i] < west:
-			west = w.units.x[i]
+		if walker < 0 and w.units.owner[i] == 0 and w.types[w.units.kind[i]].worker:
 			walker = w.units.id[i]
-	w.issue(0, "move", {"ids": [walker], "x": (a.x - 2) * 1000 + 500, "y": (a.y + 3) * 1000 + 500})
-	view.camera.zoom = Vector2(2.0, 2.0)
+	w.issue(0, "move", {"ids": [walker], "x": 19500, "y": 13500})
+	view.camera.zoom = Vector2(1.3, 1.3) if far else Vector2(2.0, 2.0)
 	view._on_zoom()
-	view.camera.look_at_point(Iso.to_screen(a.x * 1000 + 2000, a.y * 1000 + 4000))
+	view.camera.look_at_point(Iso.to_screen(23000, 16000) if far else Iso.to_screen(19000, 15000))
 	for f in 1200:
 		var i: int = w.units.index_of(walker)
-		if i >= 0 and absi(w.units.x[i] - (a.x * 1000 + 500)) < 400 and absi(w.units.y[i] - ((a.y + 3) * 1000 + 500)) < 600:
+		if i >= 0 and w.units.x[i] > 16000 and w.units.x[i] < 16800:
 			break
 		await process_frame
 
