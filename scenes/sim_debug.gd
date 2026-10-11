@@ -83,6 +83,9 @@ var idle_cursor := -1
 var alert_at := Vector2.INF  # where we were last attacked (canvas), for Space
 var alert_next := 0.0        # seconds of match time before the next alarm may sound
 var alert_label: Label
+var hint: Label             # the opening hints (against the AI), one at a time
+var hint_step := 0
+var start_units := 0
 var fx: CombatFx            # projectiles, sparks, deaths (from the sim's events)
 var marks: Node2D           # under units: selection rings, move lines, flow arrows
 var layer: Node2D           # units, buildings and resource props, y-sorted
@@ -111,6 +114,7 @@ var desync := -1
 var show_flow := false
 var autoplay := false
 var army := false           # also spawn a test army per side (F7 toggles and restarts)
+var ai_level := "normal"    # easy or normal (data/ai.json levels; picked in the lobby)
 var vs_ai := false          # side 2 is played by the AI (set by the match setup screen)
 var banner: Label           # victory / defeat
 var pause_menu: Control     # Esc against the AI: resume, surrender, back to the menu
@@ -418,7 +422,7 @@ func _set_autoplay(on: bool) -> void:
 	elif on:
 		clock.bots = [Bot.new(0), Bot.new(1)]   # watch two AIs play
 	else:
-		clock.bots = [Bot.new(1)] if vs_ai else []
+		clock.bots = [Bot.new(1, {}, ai_level)] if vs_ai else []
 
 
 # ------------------------------------------------------------------ input
@@ -561,6 +565,62 @@ func _debug_key(event: InputEventKey) -> void:
 			start_live(world.races.map(func(r): return r.prompt))
 		KEY_G:
 			regen_army(1 if event.ctrl_pressed else 0, event.shift_pressed or event.ctrl_pressed)
+
+
+## Three one-time hints for the first minutes against the AI; each clears itself when done.
+const HINTS := [
+	"Click your Town Center, then press Q (or its button) to train a worker.",
+	"Select a worker and right-click a bush, reeds or stone to gather.",
+	"Build a House (select a worker, press H) before your population fills up: every unit needs room.",
+]
+
+func _update_hint() -> void:
+	if not vs_ai or hint_step >= HINTS.size():
+		if hint != null:
+			hint.visible = false
+		return
+	if hint == null:
+		hint = _label(17, Vector2(24, 0))
+		hint.add_theme_color_override("font_color", Color("#f2e6c8"))
+		var st := StyleBoxFlat.new()
+		st.bg_color = Color("#2e2820", 0.92)
+		st.border_color = Color("#f2c94c")
+		st.set_border_width_all(1)
+		st.set_corner_radius_all(4)
+		st.set_content_margin_all(10)
+		hint.add_theme_stylebox_override("normal", st)
+		hint.anchor_top = 1.0
+		hint.anchor_bottom = 1.0
+		banner.get_parent().add_child(hint)
+		var u := world.units
+		for i in u.count():
+			if u.owner[i] == active:
+				start_units += 1
+	var done := false
+	match hint_step:
+		0:
+			var n := 0
+			for i in world.units.count():
+				if world.units.owner[i] == active:
+					n += 1
+			done = n > start_units
+		1:
+			for i in world.units.count():
+				if world.units.owner[i] == active and world.units.task[i] == Economy.GATHER:
+					done = true
+		2:
+			for b in world.buildings.count():
+				if world.buildings.owner[b] == active and world.btypes[world.buildings.kind[b]].house and world.btypes[world.buildings.kind[b]].id != "town_center":
+					done = true
+			done = done or world.tick > 20 * 240
+	if done:
+		hint_step += 1
+		sfx.play("select", -8.0)
+	hint.visible = hint_step < HINTS.size()
+	if hint.visible:
+		hint.text = "Tip %d of 3:  %s" % [hint_step + 1, HINTS[hint_step]]
+		hint.offset_bottom = -panel.size.y - 24   # just above the command panel, its own height
+		hint.offset_top = hint.offset_bottom - 44
 
 
 ## Under attack: the first enemy blow on one of ours out of view sounds a horn, pings the
@@ -1083,6 +1143,7 @@ func _process(delta: float) -> void:
 	marks.queue_redraw()
 	overlay.queue_redraw()
 	_update_top_bar()
+	_update_hint()
 	if alert_label != null and alert_label.visible and Time.get_ticks_msec() > int(alert_label.get_meta("until", 0)):
 		alert_label.visible = false
 	hud.visible = show_debug
