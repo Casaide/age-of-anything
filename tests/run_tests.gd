@@ -45,7 +45,7 @@ func _init() -> void:
 ## Every game and view script loads (a parse error in a scene script otherwise only shows when
 ## the game is run).
 func _test_scripts_parse() -> void:
-	for dir in ["res://scenes/", "res://src/view/", "res://src/view/art/", "res://src/ai/", "res://src/sim/"]:
+	for dir in ["res://scenes/", "res://scenes/art_pixel/", "res://src/view/", "res://src/view/art/bake/", "res://src/view/art/", "res://src/ai/", "res://src/sim/"]:
 		for f in DirAccess.get_files_at(dir):
 			if f.ends_with(".gd"):
 				var script: Script = load(dir + f)

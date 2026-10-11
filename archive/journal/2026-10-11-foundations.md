@@ -224,3 +224,10 @@ Now every modelled part bakes in eight directions (bakes go from about 0.4 s to 
 rosters), with its sockets and their depth per facing, and units pick the facing that fits their
 movement with a little hysteresis. Rats and centaurs look right from the front, the back and the
 sides on the first try. tests/facing_sheet.gd shows a race's roster in all eight.
+
+### Rats ride capybaras
+Dominic's pick for the rats' large unit is in: a capybara mount (a barrel of a body on short legs,
+a blunt square head, a tea-towel saddle with the team's stripe), so "sewer rats with cheese
+hammers" field a Cheesehammer Rat on a Capybara. A creature can now name its own mounts in data
+(`mounts` in creatures.json), ridden before its family's. The first build called a box() helper the
+unit models don't have; the script-parse test didn't look in scenes/art_pixel/ and now does.

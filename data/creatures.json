@@ -38,7 +38,11 @@
    "train_time_pct": 80,
    "house_pop": 6,
    "note": "cheap swarm that breeds fast"
-  }
+  },
+  "mounts": [
+   "capybara"
+  ],
+  "_mounts_doc": "the creature's own mounts, ridden before the family's (Dominic picked the capybara as the rats' large unit, RB1)"
  },
  "human": {
   "noun": "Folk",
@@ -136,5 +140,19 @@
    "carry_pct": 160,
    "note": "a horse's back: carries much more each trip (and is faster and tougher), so its workers cost more"
   }
+ },
+ "capybara": {
+  "noun": "Capybara",
+  "plural": "Capybaras",
+  "body": "body.capybara",
+  "head": "head.capybara",
+  "playable": false,
+  "mount": true,
+  "skins": [
+   "capybara"
+  ],
+  "families": [
+   "sewer"
+  ]
  }
 }

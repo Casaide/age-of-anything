@@ -75,6 +75,10 @@
   "pony_white": [
    "#f0ece0",
    "#c8c0b0"
+  ],
+  "capybara": [
+   "#9a6a40",
+   "#6a4a2c"
   ]
  },
  "materials": {
