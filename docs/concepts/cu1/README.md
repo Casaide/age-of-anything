@@ -12,3 +12,6 @@ Dominic: "the new frogs are looking better too". Next: pick a direction; tone th
 (it's neon here); then gear that never covers the eyes, and the age line.
 `frogs-skins.png` shows A in the four frog skins (the far leg stays green: a caching bug in the
 sheet tool, not the design).
+
+**Picked (Dominic):** A, the crouched leaper, is the frog. C, the bullfrog, is "good for a
+different unit or upgrade". Frogs should hop instead of walk.
