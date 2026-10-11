@@ -94,7 +94,7 @@ func think(w) -> void:
 			continue
 		if w.types[w.units.kind[i]].worker:
 			workers.append(i)
-		else:
+		elif not w.types[w.units.kind[i]].has("animal"):   # our sheep aren't soldiers
 			army.append(i)
 	_build_order(w, tc, workers)
 	_age_three(w, tc, workers)
@@ -220,7 +220,7 @@ func _enemy_tags(w) -> Dictionary:
 		if not w.is_foe(player, w.units.owner[i]) or not Fog.visible(w, player, w.units.x[i], w.units.y[i]):
 			continue
 		var t: Dictionary = w.types[w.units.kind[i]]
-		if t.worker:
+		if t.worker or t.has("animal"):
 			continue
 		for tag in t.eval.tags:
 			tags[tag] = tags.get(tag, 0) + 1
@@ -249,8 +249,8 @@ func _defend(w, army: Array, hx: int, hy: int) -> void:
 	var intruder := -1
 	var best_d2 := r * r
 	for i in w.units.count():
-		if not w.is_foe(player, w.units.owner[i]) or not Fog.visible(w, player, w.units.x[i], w.units.y[i]):
-			continue
+		if not w.is_foe(player, w.units.owner[i]) or w.types[w.units.kind[i]].has("animal") or not Fog.visible(w, player, w.units.x[i], w.units.y[i]):
+			continue   # (a rival's sheep wandering by is no intruder)
 		var d2 := Fixed.dist2(hx, hy, w.units.x[i], w.units.y[i])
 		if d2 < best_d2:
 			best_d2 = d2
@@ -323,7 +323,7 @@ func _defenders(w, b: int) -> int:
 	var r := int(cfg.military.defend_tiles) * 1000
 	var n := 0
 	for i in w.units.count():
-		if w.is_foe(player, w.units.owner[i]) and not w.types[w.units.kind[i]].worker \
+		if w.is_foe(player, w.units.owner[i]) and not w.types[w.units.kind[i]].worker and not w.types[w.units.kind[i]].has("animal") \
 				and Fog.visible(w, player, w.units.x[i], w.units.y[i]) and Fixed.dist2(x, y, w.units.x[i], w.units.y[i]) < r * r:
 			n += 1
 	return n

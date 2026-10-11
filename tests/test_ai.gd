@@ -67,10 +67,14 @@ func _play(rules: Dictionary, races: Array, bots: Array, title: String, quiet :=
 	var w := World.new(SEED, SimMap.load_id("flat_test"), races, rules)
 	if not quiet:
 		print("\n== ", title)
+	var aged := [-1, -1]   # when each side reached age 2 (the bots aim for 4-6 minutes)
 	while w.tick < LIMIT and w.winner < 0:
 		for bot in bots:
 			bot.think(w)
 		w.step()
+		for p in 2:
+			if aged[p] < 0 and w.ages[p] >= 2:
+				aged[p] = w.tick
 		if w.tick % 1200 == 0 and not quiet:
 			var line := _clock(w.tick)
 			for p in races.size():
@@ -80,7 +84,7 @@ func _play(rules: Dictionary, races: Array, bots: Array, title: String, quiet :=
 					if w.units.owner[i] == p:
 						if w.types[w.units.kind[i]].worker:
 							workers += 1
-						else:
+						elif not w.types[w.units.kind[i]].has("animal"):
 							army += 1
 				var blds := 0
 				for k in w.buildings.count():
@@ -89,7 +93,7 @@ func _play(rules: Dictionary, races: Array, bots: Array, title: String, quiet :=
 				line += "   P%d age %d, %d workers, %d soldiers, %d buildings, %d lost" % [p, w.ages[p], workers, army, blds, w.lost[p]]
 			print(line)
 	if not quiet:
-		print("winner: team %d at %s" % [w.winner, _clock(w.tick)])
+		print("winner: team %d at %s; age 2 at %s" % [w.winner, _clock(w.tick), aged.map(func(t): return _clock(t) if t >= 0 else "-")])
 	return {"winner": w.winner, "tick": w.tick, "hashes": w.hashes}
 
 
@@ -111,8 +115,12 @@ func _test_easy(rules: Dictionary, a: Dictionary, b: Dictionary) -> void:
 				army += int(w.types[w.units.kind[i]].pop)
 		if w.tick <= 20 * 60 * 10:   # the first ten minutes, where Easy used to overrun a player reaching age 2
 			most = maxi(most, army)
-		if first_loss < 0 and w.lost[1] > 0:
-			first_loss = w.tick
+		for e in w.events:   # a loss to the bot (one of its units close by), not to a boar the passive side hunted
+			if first_loss < 0 and e.type == "die" and e.owner == 1 and not e.building:
+				for i in w.units.count():
+					if w.units.owner[i] == 0 and absi(w.units.x[i] - e.x) + absi(w.units.y[i] - e.y) < 8000:
+						first_loss = w.tick
+						break
 	print("\n== easy: most soldiers in the first 10 minutes %d (pop), first loss %s" % [most, _clock(first_loss) if first_loss >= 0 else "none"])
 	check(most <= 25, "easy keeps a modest army for the first ten minutes (%d pop)" % most)
 	check(first_loss < 0 or first_loss >= 20 * 60 * 8, "easy doesn't strike before 8 minutes (%s)" % _clock(first_loss))
