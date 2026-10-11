@@ -1,7 +1,7 @@
 extends SceneTree
 ## Every unit of a race in its 8 baked facings, one row per unit, at a zoom (the tool for
 ## checking facings). Run (needs a display):
-##   godot --path . --script res://tests/facing_sheet.gd -- out.png "prompt" [zoom]   ("animals": the animals)
+##   godot --path . --script res://tests/facing_sheet.gd -- out.png "prompt" [zoom] [unit index]   ("animals": the animals)
 
 const DataLib := preload("res://src/data_lib.gd")
 const Generator := preload("res://src/race_generator.gd")
@@ -32,6 +32,8 @@ func _initialize() -> void:
 	world.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
 	root.add_child(world)
 	var units: Array = race.units
+	if args.size() > 3:   # one unit only (its index in the roster), to see the facings close up
+		units = [units[int(args[3])]]
 	for row in units.size():
 		for k in 8:
 			var v := UnitView.new()

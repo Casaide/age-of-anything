@@ -302,3 +302,7 @@ smaller gear scale. Horses' necks were too thin, so their faces read as rat snou
 shorter blunter muzzle. Figures on two legs cast a narrower shadow. Dominic, fairly: "you're not
 checking the picture". Every change now gets a close look front and back before it goes to him.
 The pipeline is written up in docs/rendering.md.
+Dominic: "look at the arm" (a back view with the arm drawn across the man's back, and his thigh
+over the tunic). The arm was the concept sheet's layering, not the game's facings; the thigh was
+real: bodies can now keep their legs under the clothes (`legs_under`). "Neck is too long": the head
+sits a unit lower.
