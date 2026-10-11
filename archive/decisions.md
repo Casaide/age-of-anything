@@ -321,6 +321,20 @@ wings on the person and the mount, or no mounts. Now:
 - The mount wing socket moves to the withers (art track).
 Supersedes the part of the generator rules that put wings on the mount only.
 
+**D-060, 2026-10-11: Game scenes draw only the baked art; a missing bake is loud; the style
+sampler is retired.** `PartShape` draws only baked sprites (supersedes the fallback to plain
+shapes in D-042/D-043): a part drawn without a bake warns once and shows a magenta marker. The
+Race Lab bakes each race through the art kit and uses the game's ground. The 2D shapes in
+`parts.json` stay as the data contract and socket reference, never drawn. The style sampler
+(D-040, D-041) is deleted; its pictures stay in the archive, and the bake pipeline it held moved
+to `src/view/art/bake/`. Dominic's call ("so weird I'm seeing it in the race lab"; "ignore the
+sampler, it's history"); Claude's implementation.
+
+**D-061, 2026-10-11: Buildings y-sort by their footprint's centre.** Not their front corner,
+which hid units standing beside a building's lower faces. Art that spills past the footprint
+(a podium) doesn't move the sort point. Found by Dominic (a centaur beside the Roman Town
+Center showed only its legs); fix by Claude.
+
 **D-070, 2026-10-11: Restrictions are layers, and each is a host switch.** (D-060 to D-069 are
 reserved for the art agent's milestone 5 entries.) Dominic: frogs with muskets are too much fun
 to forbid outright. The layers:
@@ -330,3 +344,4 @@ to forbid outright. The layers:
 - a "Full tech tree / No restrictions" host option, as the genre has, that lifts the culture and
   tech limits.
 Tech tree data is to be planned so each layer is a filter that can be turned off (milestone 7).
+||||||| 6948828

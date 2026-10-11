@@ -23,7 +23,8 @@ move it to `docs/backlog.md` rather than deleting it.
 ## Status
 
 - **Done (milestone 0): race generation.** Prompt -> race -> composed, animated units in the Race Lab
-  (`scenes/race_lab.tscn`, the main scene). Placeholder art is vector shapes in `data/parts.json`.
+  (`scenes/race_lab.tscn`, the main scene). The 2D shapes in `data/parts.json` are the data contract
+  and socket reference; game scenes draw only the baked pixel art.
 - **Done (milestone 1): sim core.** `src/sim/`: integer-only 20 Hz sim driven by a command queue,
   replays, state hashes, straight-line MOVE + separation. Debug view `scenes/sim_debug.tscn`.
   `tests/test_sim.gd` plays a 10-minute 200-unit match; tick is ~0.9 ms avg (budget 3 ms).
@@ -62,7 +63,7 @@ src/
   race_generator.gd  prompt -> brief -> race (recipes) ; race_key()
   pricing.gd       recipe -> stats, tags, cost, train time, pop
   unit_view.gd     composer + procedural animation (recipe -> Node2D on sockets)
-  part_shape.gd    draws one part: placeholder shapes, a style, or its baked sprite from the atlas
+  part_shape.gd    draws one part's baked sprite from the atlas (a missing bake shows magenta)
   team_mask.gdshader  recolours the baked team key per unit (team colour arrives in self_modulate)
   sim_clock.gd     the only Node in the sim path: steps a World at 20 Hz from _process
   sim/             the simulation: RefCounted, integers only, no Nodes (lint-checked by test_sim)
@@ -78,11 +79,11 @@ src/
   ai/              players that issue commands like a person (deterministic, lint-checked)
     eco_bot.gd       plays an opening: trains workers, 60/40 food/wood, houses, idle workers
     replay.gd        record / JSON / rebuild / verify
-scenes/race_lab.*  prompt UI, race cards, two armies milling about
+scenes/race_lab.*  prompt UI, race cards, two armies milling about in the baked art (bakes per generate)
   view/            view side (Nodes allowed): iso.gd projection, rts_camera.gd, command_panel.gd
     art/             the pixel-art views: art_kit.gd (bakes units, buildings, props into one atlas),
                      terrain_view.gd (shader ground + paths + doodads from a SimMap), building_art.gd
-scenes/style_sampler.* + style_sampler/  the same scene in six art directions (art pass, step 1)
+      bake/            the 3D bake pipeline for buildings and props: baker.gd, models.gd, materials.gd
 scenes/art_pixel.* + art_pixel/          the pixel-art candidate: baked parts, palette, shader terrain,
                    unit_models.gd (hand-built parts), part_baker.gd, paths.gd (culture paths), pixelize.gd
 assets/art/textures/  texture art authored by Claude (SVG), mapped onto unit models
@@ -104,13 +105,11 @@ godot --path . --script res://tests/sim_screenshot.gd -- /tmp/sim.png [map_id] [
 godot --path . res://scenes/sim_debug.tscn                         # run the sim debug view
 godot --path . res://scenes/counter_quiz.tscn                      # blind counter quiz (milestone 4 exit check)
 godot --headless --path . --script res://tests/gen_cost_curve.gd   # regenerate data/cost_curves.json
-godot --path . res://scenes/style_sampler.tscn                     # art-direction sampler (keys 1-6, 0)
 godot --path . res://scenes/art_pixel.tscn                         # pixel-art candidate (Z zoom, P palette)
 godot --path . --script res://tests/art_screenshot.gd -- /tmp/art  # capture it at 1x/2x/3x
 godot --path . --script res://tests/art_crop.gd -- /tmp/c.png 6.5 9 ["prompt A" "prompt B"]   # 3x close-up at a tile
 godot --path . --script res://tests/art_bench.gd                    # draw calls + frame time, 200+ units
 godot --path . --script res://tests/unit_lineup.gd -- /tmp/units.png ["prompt A" "prompt B"]   # both rosters as pixel art, 4x
-godot --path . --script res://tests/style_screenshot.gd -- /tmp/styles   # capture the sampler
 godot --path .                                                     # run the Race Lab
 ```
 
@@ -157,8 +156,9 @@ units beatable. Don't special-case silly units.
 
 Target the look of a **classic 2D isometric RTS**: small units, 3/4 view, painterly sprites, readable
 silhouettes, team colour on a consistent region. It should feel like the game you know, gone mad.
-Current shapes are placeholders. The art pass swaps `part_shape.gd` for atlas sprites with a shared
-palette/team-mask shader. Sockets, recipes and animation stay the same.
+Units are hand-modelled 3D parts baked to pixel sprites in one atlas, recoloured by a team-mask
+shader; props and buildings are realistic bakes. Sockets, recipes and animation stay the same. The
+old vector styles and the art-direction sampler are gone (their pictures are in the archive).
 
 ## The archive (keep it up to date)
 
