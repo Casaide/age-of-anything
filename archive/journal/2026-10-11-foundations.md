@@ -136,3 +136,14 @@ Dominic picked the capybara, rearing beetles, the rat kit ladder and Blender. Th
 data (`helm.thimble`, `helm.tin_cap`, `helm.spoon`, `armour.bottlecap`, `armour.sardine`,
 `shield.can_scutum`), so sewer rats climb it age by age with no code. The can scutum first came out
 edge-on (a thin blue stripe beside the rat); it now uses the shields' facing like the human scutum.
+
+### Milestone 11 begins: golf, and a fog leak
+Dominic: the frog huts "look like golf": every roof had a bright lily pad green, a pink flower like
+a ball and a team pennant on a pole. He'd said sides don't need all this extra stuff. Pennants are
+gone from every house, farm, barracks, stable and tower (the town centre keeps its one banner);
+the lily pad is smaller, darker and slipped to one side; the flower is gone. Each building keeps
+one quiet team mark (door curtain, band, a rag on the tower rail).
+Also: clicking an enemy unit switched your side, so your fog showed what they could see (the
+debug view lets you command both sides). Against the AI you now stay yourself: enemy units and
+buildings can be inspected, not ordered; Tab and box-select only take your own. The attack cursor
+no longer lights up over buildings you haven't found. And the AI beat Dominic.

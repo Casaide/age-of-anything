@@ -431,3 +431,7 @@ ladder as shown (RB2: thimble, tin skullcap, spoon helmet with a toothbrush cres
 jerkin at age 2, sardine-tin cuirass at age 3; can scutum), the capybara as the rats' large unit
 (RB1), rearing beetles (BG1), and Blender for modelling human parts (installed). The saucepan
 helmet loses its junk/sewer tags, so rats no longer wear it; it stays the WW2 substitute.
+
+**D-085, 2026-10-11: Team colour on buildings is quiet.** No pennants on every building: one
+subtle team mark each (door curtain, trim, a rag), and only the town centre flies a banner.
+Dominic ("looks like golf ... should be more subtle"). Units keep their team region.
