@@ -19,8 +19,8 @@
 ## Checklist
 - [x] Plan
 - [x] Balance tool (`tests/balance.gd`)
-- [x] Balance pass 1 (data): beetle, pony, spider and bow prices; workers one price; Town Center
-- [ ] Cost sanity: 11 of 20 units still more than 20% off the mean (see Results)
+- [x] Balance pass 1 (data): beetle, pony, spider and bow prices; Town Center; a price tuner (`tests/tune_points.gd`)
+- [ ] Cost sanity: 10 of 20 units still more than 20% off the mean; the rest is archers, a mechanics fix (see Results)
 - [x] Playtest kit and match log
 - [ ] Export build (**waiting on Dominic**: export templates, itch account)
 - [ ] 5-10 testers; metrics from `../mvp-plan.md` §4 (**waiting on Dominic**)
@@ -35,8 +35,13 @@
   (each unit plays 19 fights, so one fight is ~5%). The planned fix is price-by-simulation
   (backlog): let the tool adjust part points until the table is flat. Archers stay weakest: with
   no kiting, spearmen close the gap.
-- **Workers cost the same for every body** (`rules.cost.worker`, still scaled by a creature's
-  economy): a centaur worker cost 75 against a frog's 25 and crippled the centaurs' start.
+- **Workers** (D-078, Dominic): costs vary with the body; a creature's economy pays it back
+  (centaurs carry 160% a trip). A flat worker price (D-076) was tried and reverted.
+- **Price tuner** (`tests/tune_points.gd`): nudges part points until the round robin is flat;
+  it took the table from 11 to 6 outliers but broke counters (67%) by making bows nearly free.
+  With bows restored: 10 outliers, counters 91%. Next: give the tuner the counter check as a
+  constraint, and let archers keep their distance (with no kiting, spearmen always close the
+  gap, so no price makes archers both beat infantry and lose to their counters).
 - **Pacing:** bot vs bot now runs 13-18 minutes (median ~14) with the AI keeping a small guard
   while it saves for an age; it was 10:50 before workers got one price. Testers decide whether
   that's long; the levers are data (`data/ai.json` waves, `data/buildings.json` Town Center hp).

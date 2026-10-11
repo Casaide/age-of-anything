@@ -234,11 +234,13 @@ static func clear_task(w, i: int) -> void:
 ## One tick of every worker's job. Runs before movement, so it sees start-of-tick positions.
 static func work(w) -> void:
 	var u = w.units
-	var carry_max: int = w.econ.carry
+	var carry_max := PackedInt32Array()   # per player: a creature's economy can carry more (centaurs) or less
+	for p in w.races.size():
+		carry_max.append(int(w.econ.carry) * int(w.races[p].economy.get("carry_pct", 100)) / 100)
 	for i in u.count():
 		match u.task[i]:
 			GATHER:
-				_gather(w, i, carry_max)
+				_gather(w, i, carry_max[u.owner[i]])
 			RETURN:
 				_return(w, i)
 			BUILD:
