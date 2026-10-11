@@ -127,10 +127,10 @@ hit-flash polish and SFX (7), Blacksmith upgrades and research (5 / Next), forma
 
 ## Checklist
 - [x] Plan approved (with armour classes)
-- [ ] Data: armour classes on parts and buildings, damage types, `combat` rules block, mount-body bonuses (+ pricing reads them)
-- [ ] Sim: unit combat stats, ATTACK / ATTACK_MOVE, targeting, chase, hitscan damage, death, events
-- [ ] Sim: attacking and destroying buildings
-- [ ] Tests: damage maths, behaviour, battle determinism, counter matrix, 200-unit battle tick
+- [x] Data: armour classes on parts and buildings, damage types, `combat` rules block, mount-body bonuses (+ pricing reads them)
+- [x] Sim: unit combat stats, ATTACK / ATTACK_MOVE, targeting, chase, hitscan damage, death, events
+- [x] Sim: attacking and destroying buildings
+- [x] Tests: damage maths, behaviour, battle determinism, counter matrix, 200-unit battle tick
 - [ ] View: attack orders (right-click, A + right-click), F7 battle setup
 - [ ] View: lunge and facing, cosmetic projectiles, hit flash, HP bars
 - [ ] View: silly death poses
@@ -142,3 +142,21 @@ hit-flash polish and SFX (7), Blacksmith upgrades and research (5 / Next), forma
 - **Full review of the art assets (Dominic, 2026-10-11):** every unit part, building, prop,
   texture and the terrain, judged in the pixel-art candidate before the art direction is locked.
   (An independent agent review was also run at the end of the art round, before this milestone.)
+
+## Results
+- **Combat sim (2026-10-11):** `src/sim/combat.gd`.
+  - A class table (melee, pierce, building, then every tag/bonus/armour name) with int attack and
+    armour vectors per unit and building type.
+  - Targeting (idle soldiers and attack-movers, every 10 ticks, nearest then lowest id).
+  - Chasing: straight at the target when the line is clear, a flow field otherwise.
+  - Simultaneous hits; deaths removed in descending slot order.
+  - Buildings can be destroyed and free their footprint.
+  - `world.events` (hits, deaths) for the view; `world.lost` per player.
+- **Counter matrix:** 38 of 48 equal-cost fights (79%) go to the counter (target 75%). Misses, to
+  tune with data later:
+  - giant frog and rat brutes lose to massed archers (concentration: 1-2 big units vs a crowd);
+  - rat slingers lose to archers;
+  - centaur and beetle archers lose to spearmen (their "spear" units are large and armoured).
+- **Speed:** a 200-unit pitched battle costs about 1.1 ms a tick (combat 0.35, separation 0.46).
+  The scripted 10-minute match averages 1.5 ms (budget 3 ms). Single-tick spikes reach 5-12 ms;
+  watch them.

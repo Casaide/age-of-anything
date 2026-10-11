@@ -15,6 +15,7 @@ const Replay := preload("res://src/sim/replay.gd")
 const Flow := preload("res://src/sim/flow.gd")
 const Economy := preload("res://src/sim/economy.gd")
 const EcoBot := preload("res://src/ai/eco_bot.gd")
+const Combat := preload("res://src/sim/combat.gd")
 
 const PROMPTS := ["angry swamp frogs with reed spears", "sewer rats with cheese hammers"]
 const SEED := 20261010
@@ -26,6 +27,13 @@ const CROSS_UNITS := 10            # per roster slot: 50 units, in 5 groups of 1
 const CROSS_LIMIT := 2400          # ticks (2 minutes) to get everyone across
 const OPENING_TICKS := 3600        # the 3-minute opening
 const STALL_TICKS := 100           # a worker idle this long (5 s) has stalled
+## Counter fights: [counter, countered] roster slots, fought at equal cost by the same race.
+const COUNTERS := [["spear", "large"], ["large", "archer"], ["archer", "spear"], ["skirmisher", "archer"]]
+const COUNTER_PROMPTS := ["angry swamp frogs with reed spears", "sewer rats with cheese hammers", "centaur romans",
+	"greek hoplites", "royal knights", "viking beetle riders"]
+const FIGHT_BUDGET := 600          # food + wood per side
+const FIGHT_LIMIT := 3000          # ticks (2.5 minutes)
+const FIGHT_FROM := [[11000, 20500], [21000, 20500]]   # open ground on flat_test, 10 tiles apart
 
 ## Banned in src/sim/: floats, float maths, engine randomness, wall clocks, Nodes.
 const BANNED := [
@@ -56,6 +64,7 @@ func _init() -> void:
 	_test_crossing(races, "flat_test")
 	_test_crossing(races, "choke_test")
 	_test_opening(races)
+	_test_combat(gen)
 
 	var script := _script(map, races)
 	print("script: %d commands over %d ticks" % [script.size(), TICKS])
@@ -214,7 +223,9 @@ func _test_moved(w: World) -> void:
 		distinct[h[1]] = true
 	check(distinct.size() > w.hashes.size() * 9 / 10, "state keeps changing (%d distinct hashes)" % distinct.size())
 	var start: Dictionary = rules_.economy.start
-	check(w.units.count() == 2 * (5 * PER_SLOT + int(start.workers) + 2), "armies, starting workers and 2 trained each (%d units)" % w.units.count())
+	var lost: int = w.lost[0] + w.lost[1]
+	check(w.units.count() + lost == 2 * (5 * PER_SLOT + int(start.workers) + 2), "armies, starting workers and 2 trained each, alive or lost (%d alive, %d lost)" % [w.units.count(), lost])
+	check(lost > 0, "the armies fought (%d lost)" % lost)
 	var built := 0
 	for b in w.buildings.count():
 		built += w.buildings.done[b]
@@ -288,6 +299,129 @@ func _count_houses(w: World, p: int) -> int:
 		if w.buildings.owner[b] == p and w.buildings.kind[b] == house and w.buildings.done[b] == 1:
 			n += 1
 	return n
+
+
+# --- combat ---------------------------------------------------------------------
+
+func _test_combat(gen) -> void:
+	_test_damage()
+	_test_idle_fight(gen)
+	_test_siege(gen)
+	var wins := 0
+	var fights := 0
+	var t0 := Time.get_ticks_msec()
+	for prompt in COUNTER_PROMPTS:
+		var race: Dictionary = gen.generate(prompt, rules_)
+		for pair in COUNTERS:
+			for flip in 2:
+				var r := _fight(race, pair[0], pair[1], flip)
+				fights += 1
+				if r.won:
+					wins += 1
+				else:
+					print("  counter lost: %s %s vs %s (side %d): %s" % [race.name, pair[0], pair[1], flip, r.note])
+	print("counters: %d of %d equal-cost fights won by the counter (%d%%), %.1f s" % [wins, fights, wins * 100 / fights, (Time.get_ticks_msec() - t0) / 1000.0])
+	check(wins * 100 >= fights * 75, "counters win at least 75%% of equal-cost fights (%d/%d)" % [wins, fights])
+
+
+## The formula: base type, bonuses only against targets with the tag, class armour, the minimum.
+func _test_damage() -> void:
+	# classes: melee, pierce, building, large
+	var atk := PackedInt32Array([5, 0, 0, 7])    # a spear: 5 melee, +7 vs large
+	var arm := PackedInt32Array([2, 4, 0, 0])
+	var plain := PackedByteArray([1, 1, 0, 0])
+	var large := PackedByteArray([1, 1, 0, 1])
+	check(Combat.damage(atk, arm, plain, 1) == 3, "melee 5 - armour 2 = 3")
+	check(Combat.damage(atk, arm, large, 1) == 10, "the large bonus only lands on large targets (3 + 7)")
+	check(Combat.damage(atk, PackedInt32Array([2, 4, 0, 3]), large, 1) == 7, "class armour blunts a bonus (3 + 7 - 3)")
+	check(Combat.damage(PackedInt32Array([0, 4, 0, 0]), PackedInt32Array([0, 9, 0, 0]), plain, 1) == 1, "never less than the minimum")
+	check(Combat.damage(PackedInt32Array([0, 6, 0, 0]), PackedInt32Array([9, 0, 0, 0]), plain, 1) == 6, "pierce ignores melee armour")
+
+
+func _bare_world(races: Array) -> World:
+	var bare := rules_.duplicate(true)
+	bare.economy.start.buildings = []
+	bare.economy.start.workers = 0
+	return World.new(SEED, SimMap.load_id("flat_test"), races, bare)
+
+
+## Idle soldiers near enemies fight without being told to.
+func _test_idle_fight(gen) -> void:
+	var race: Dictionary = gen.generate(PROMPTS[0], rules_)
+	var w := _bare_world([race, race])
+	w.issue(0, Commands.SPAWN, {"slot": "spear", "count": 5, "x": 15000, "y": 20500})
+	w.issue(1, Commands.SPAWN, {"slot": "spear", "count": 5, "x": 18000, "y": 20500})
+	for t in 1200:
+		w.step()
+	check(w.lost[0] + w.lost[1] > 0, "idle spearmen 3 tiles apart fight on their own (%d lost)" % (w.lost[0] + w.lost[1]))
+
+
+## Units can knock down a Town Center; its ground opens up again.
+func _test_siege(gen) -> void:
+	var race: Dictionary = gen.generate(PROMPTS[0], rules_)
+	var w := World.new(SEED, SimMap.load_id("flat_test"), [race, race], rules_)
+	var tc: int = w.buildings.id[1]
+	var cells := w.buildings.footprint(1, w.map.width)
+	var s: Array = w.map.starts[1]
+	w.issue(0, Commands.SPAWN, {"slot": "large", "count": 12, "x": s[0] - 4000, "y": s[1]})
+	while w.units.count() < 2 * int(rules_.economy.start.workers) + 12:
+		w.step()
+	var mine := []
+	for i in w.units.count():
+		if w.units.owner[i] == 0 and not w.types[w.units.kind[i]].worker:
+			mine.append(w.units.id[i])
+	w.issue(0, Commands.ATTACK, {"ids": mine, "target": tc})
+	var hits := 0
+	while w.tick < 6000 and w.buildings.index_of(tc) >= 0:
+		w.step()
+		for e in w.events:
+			if e.type == "hit" and e.to == tc:
+				hits += 1
+	check(w.buildings.index_of(tc) < 0, "a dozen large units knock down a Town Center (%d hits by tick %d)" % [hits, w.tick])
+	check(cells.size() > 0 and Array(cells).all(func(c): return w.map.occupied[c] == 0), "its footprint is free again")
+
+
+## Equal-cost fight between two of a race's roster slots. `flip` swaps which side
+## of the map the counter starts on (it's always the same race on both sides).
+## Both sides attack-move at each other; the side with more value left wins.
+func _fight(race: Dictionary, a_slot: String, b_slot: String, flip: int) -> Dictionary:
+	var w := _bare_world([race, race])
+	var slots := [a_slot, b_slot]
+	var value := [0, 0]
+	for side in 2:
+		var p := side ^ flip
+		var e: Dictionary = _unit(race, slots[side]).eval
+		var cost: int = int(e.cost.food) + int(e.cost.wood)
+		value[side] = cost
+		var n := maxi(1, (FIGHT_BUDGET + cost / 2) / cost)
+		w.issue(p, Commands.SPAWN, {"slot": slots[side], "count": n, "x": FIGHT_FROM[p][0], "y": FIGHT_FROM[p][1]})
+	while w.units.count() == 0:
+		w.step()
+	for p in 2:
+		var ids := []
+		for i in w.units.count():
+			if w.units.owner[i] == p:
+				ids.append(w.units.id[i])
+		w.issue(p, Commands.ATTACK_MOVE, {"ids": ids, "x": FIGHT_FROM[1 - p][0], "y": FIGHT_FROM[1 - p][1]})
+	var left := [0, 0]
+	while w.tick < FIGHT_LIMIT:
+		w.step()
+		left = [0, 0]
+		for i in w.units.count():
+			left[w.units.owner[i]] += 1
+		if left[0] == 0 or left[1] == 0:
+			break
+	var a_left: int = left[flip] * value[0]
+	var b_left: int = left[1 - flip] * value[1]
+	return {"won": a_left > b_left, "note": "%d %s worth %d left vs %d %s worth %d, tick %d" % [left[flip], a_slot, a_left, left[1 - flip], b_slot, b_left, w.tick]}
+
+
+func _unit(race: Dictionary, slot: String) -> Dictionary:
+	for u in race.units:
+		if u.recipe.slot == slot:
+			return u
+	assert(false, "%s has no %s" % [race.name, slot])
+	return {}
 
 
 # --- movement -------------------------------------------------------------------

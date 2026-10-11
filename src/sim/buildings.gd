@@ -47,6 +47,23 @@ func index_of(bid: int) -> int:
 	return -1
 
 
+func remove_at(i: int) -> void:
+	# Field by field: packed arrays put in an Array literal would be copies.
+	id.remove_at(i)
+	owner.remove_at(i)
+	kind.remove_at(i)
+	cx.remove_at(i)
+	cy.remove_at(i)
+	size.remove_at(i)
+	hp.remove_at(i)
+	progress.remove_at(i)
+	done.remove_at(i)
+	train.remove_at(i)
+	rally_x.remove_at(i)
+	rally_y.remove_at(i)
+	queue.remove_at(i)
+
+
 ## The cells under building slot i, row by row.
 func footprint(i: int, map_width: int) -> PackedInt32Array:
 	var out := PackedInt32Array()
