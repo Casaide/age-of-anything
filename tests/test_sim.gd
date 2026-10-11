@@ -27,8 +27,10 @@ const CROSS_UNITS := 10            # per roster slot: 50 units, in 5 groups of 1
 const CROSS_LIMIT := 2400          # ticks (2 minutes) to get everyone across
 const OPENING_TICKS := 3600        # the 3-minute opening
 const STALL_TICKS := 100           # a worker idle this long (5 s) has stalled
-## Counter fights: [counter, countered] roster slots, fought at equal cost by the same race.
-const COUNTERS := [["spear", "large"], ["large", "archer"], ["archer", "spear"], ["skirmisher", "archer"]]
+## Counter fights: [counter, countered, the tag the countered unit needs for this to be
+## the counter], fought at equal cost by the same race. Where the countered unit lacks the
+## tag (centaur spearmen are large, not infantry), the relation doesn't apply: skipped.
+const COUNTERS := [["spear", "large", "large"], ["large", "archer", "ranged"], ["archer", "spear", "infantry"], ["skirmisher", "archer", "archer"]]
 const COUNTER_PROMPTS := ["angry swamp frogs with reed spears", "sewer rats with cheese hammers", "centaur romans",
 	"greek hoplites", "royal knights", "viking beetle riders"]
 const FIGHT_BUDGET := 600          # food + wood per side
@@ -314,6 +316,9 @@ func _test_combat(gen) -> void:
 	for prompt in COUNTER_PROMPTS:
 		var race: Dictionary = gen.generate(prompt, rules_)
 		for pair in COUNTERS:
+			if not pair[2] in _unit(race, pair[1]).eval.tags:
+				print("  n/a: %s %s vs %s (the %s isn't %s)" % [race.name, pair[0], pair[1], pair[1], pair[2]])
+				continue
 			for flip in 2:
 				var r := _fight(race, pair[0], pair[1], flip)
 				fights += 1

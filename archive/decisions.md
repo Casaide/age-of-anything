@@ -274,3 +274,12 @@ a foe few allies are already fighting; a unit leaves a crowded foe for a free on
 battles a set of duels that winners reinforce. The direction: combat a step more organised and
 exciting than the genre's usual, short of the big-battle games, still easy and fun, and ready
 for formations later (formations themselves stay cut for now).
+
+**D-055, 2026-10-11: Combat stats follow the genre; upgrades swap parts, so units change look.**
+Armour is two visible numbers (melee, pierce) plus hidden per-class armour, with flat
+subtraction, the genre's standard (confirmed with Dominic after comparing how the genre's games
+do it). Counters come from bonuses and from pierce armour on cavalry and skirmishers, and the
+unit card shows "strong vs / weak vs" in plain words. Dominic: unlike the genre, upgrades should
+change the unit's look. An upgrade swaps parts in the recipe (leather -> mail -> plate), the
+stats follow from the parts, and existing art is reused. Planned for milestone 5 (see its design
+notes).

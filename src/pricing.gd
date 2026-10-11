@@ -76,6 +76,7 @@ static func evaluate(recipe: Dictionary, lib, rules: Dictionary) -> Dictionary:
 	if scale >= 140:
 		hp *= 2
 		attack += 3
+		armour.pierce = int(armour.pierce) + 3   # big hides shrug off arrows (the genre's war elephants)
 		speed -= 2
 		points += GIANT_POINTS
 		tags["large"] = true

@@ -295,7 +295,7 @@
    "speed": 12,
    "armour": {
     "melee": 1,
-    "pierce": 0
+    "pierce": 2
    },
    "bonus": {
     "ranged": 2
@@ -443,7 +443,7 @@
    "speed": 10,
    "armour": {
     "melee": 2,
-    "pierce": 3
+    "pierce": 4
    },
    "bonus": {
     "ranged": 2
@@ -583,7 +583,7 @@
    "speed": 16,
    "armour": {
     "melee": 0,
-    "pierce": 1
+    "pierce": 3
    },
    "bonus": {
     "ranged": 3
@@ -734,7 +734,7 @@
    "speed": 16,
    "armour": {
     "melee": 0,
-    "pierce": 1
+    "pierce": 3
    },
    "bonus": {
     "ranged": 3
@@ -1969,7 +1969,11 @@
     "infantry": 2,
     "archer": 4
    },
-   "damage": "pierce"
+   "damage": "pierce",
+   "armour": {
+    "melee": 0,
+    "pierce": 2
+   }
   },
   "points": 3,
   "cost_mix": {
@@ -2022,7 +2026,11 @@
     "infantry": 3,
     "archer": 4
    },
-   "damage": "pierce"
+   "damage": "pierce",
+   "armour": {
+    "melee": 0,
+    "pierce": 2
+   }
   },
   "points": 3,
   "two_handed": true,
@@ -3475,7 +3483,11 @@
     "infantry": 2,
     "archer": 4
    },
-   "damage": "pierce"
+   "damage": "pierce",
+   "armour": {
+    "melee": 0,
+    "pierce": 2
+   }
   },
   "points": 4,
   "era": [
