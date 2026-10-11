@@ -104,7 +104,13 @@ tests green. Anything cut moves to `../backlog.md`.
       trains/research, upgrades and where, later-age names, needs in red, unlocks in green;
       descriptions are data); icons for age-ups, research, resources and population; a top bar
       with your stock; against the AI the debug lines are hidden (F1) and the AI's stock isn't shown
-- [ ] 4. Buildings: barracks split, armoury, camps, market, walls
+- [x] 4. Buildings and gold (2026-10-11): gold (resource, deposits, art, age 3 costs it); Barracks
+      (spear) + Archery Range (skirmisher, archer) + Stable; Armoury (Sharp Sticks, Fletching,
+      Hardened Tips); lumber camp, mill, mining camp with gathering research; Market (trade for
+      gold, shared moving prices); walls dragged in lines; every model in all six cultures; build
+      menu and hotkeys from data; the bot gathers by a mix per age and builds camps by their
+      resource. Fixed the shift-queue bug (popping an order wiped the queue). Gates moved to the
+      backlog (they need passability per team)
 - [ ] 5. Art consistency: rocks, farms, water, stone vs blocking rocks
 - [ ] 6. Lobby
 - [ ] 7. Races: 8 facings, capybara, rat buildings by age, rearing beetles, humans in Blender, spiders, centaurs, ponies, Egypt/Han/Aztec, buildings by age
