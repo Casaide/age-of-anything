@@ -31,6 +31,8 @@ const WITHERS_SCALE := 2.0                 # a horse's wings are a horse's size 
 var head_node: Node2D     # the unit's own head (the rider's, when mounted)
 var back_node: Node2D     # what's on its back (wings flap)
 var job := ""             # "", "forage", "chop" or "build": set by the view each frame
+var struck := false       # this frame the tool landed (or a pick was made): the view plays its sound
+var _work_p := 0.0        # where in the work cycle it was last frame
 var gait := {}            # walk cycle for the body: swing, cadence, bob, rock
 var idle_kind := ""
 var idle_left := 0.0
@@ -311,6 +313,7 @@ func wander_in(rect: Rect2) -> void:
 
 func _process(delta: float) -> void:
 	time += delta
+	struck = false
 	if area.has_area():
 		_wander(delta)
 
@@ -421,6 +424,9 @@ func _work(t: float, stepped: bool) -> void:
 	var p := fmod(t / period + noise.seed % 7 * 0.13, 1.0)
 	if stepped:
 		p = floorf(p * 6.0) / 6.0
+	var land := 0.5 if job == "forage" else 0.72   # the pick, or the blow landing
+	struck = (_work_p < land and p >= land) or (p < _work_p and (_work_p < land or p >= land))
+	_work_p = p
 	var swing := 0.0   # tool rotation: negative raises it back
 	var lean := 0.0    # body lean: positive leans forward
 	var crouch := 0.0
