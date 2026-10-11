@@ -18,6 +18,7 @@ const BuildingArt := preload("res://src/view/art/building_art.gd")
 const Paths := preload("res://scenes/art_pixel/paths.gd")
 const RtsCamera := preload("res://src/view/rts_camera.gd")
 const CommandPanel := preload("res://src/view/command_panel.gd")
+const Cursors := preload("res://src/view/art/cursors.gd")
 const Commands := preload("res://src/sim/commands.gd")
 const SimMap := preload("res://src/sim/sim_map.gd")
 const World := preload("res://src/sim/world.gd")
@@ -67,6 +68,7 @@ var overlay: Node2D         # over everything: selection box, placement ghost, c
 var hud: Label
 var bar: Label
 var panel: CommandPanel
+var cursors: Cursors
 var views := {}             # unit id -> UnitView (view side only; never feeds the sim)
 var bviews := {}            # building id -> BuildingArt
 var rviews := {}            # resource cell -> its prop (reed clump, bug bush)
@@ -145,6 +147,7 @@ func _ready() -> void:
 	panel.offset_left = 12
 	panel.offset_bottom = -12
 	ui.add_child(panel)
+	cursors = Cursors.new(DisplayServer.screen_get_scale())
 
 	if prompts.is_empty():
 		var args := OS.get_cmdline_user_args()
@@ -607,6 +610,7 @@ func _process(delta: float) -> void:
 	bar.text = _bar_text()
 	hud.text = _hud_text()
 	_update_panel()
+	_update_cursor()
 
 
 func _sync_views() -> void:
@@ -755,60 +759,107 @@ func _update_panel() -> void:
 	var team := Color(lib.palettes.teams[active])
 	var b := world.buildings.index_of(selected_building)
 	if b >= 0:
-		var t: Dictionary = world.btypes[world.buildings.kind[b]]
-		var mine := world.buildings.owner[b] == active
-		var info := "HP %d/%d" % [world.buildings.hp[b], t.hp]
-		var buttons := []
-		if world.buildings.done[b] == 0:
-			info += "   being built: %d%%" % (100 * world.buildings.progress[b] / t.build_ticks)
-		else:
-			var q: Array = world.buildings.queue[b]
-			if not q.is_empty():
-				var head: Dictionary = world.types[q[0]]
-				info += "   training %s %d%%" % [head.name, 100 * world.buildings.train[b] / head.train_ticks]
-				if world.buildings.train[b] == 0 and world.pop[active] + head.pop > world.pop_cap[active]:
-					info += " (needs a house)"
-			if mine and "worker" in t.trains:
-				var k := world.type_of(active, "worker")
-				var wt: Dictionary = world.types[k]
-				var afford: bool = world.food[active] >= wt.food and world.wood[active] >= wt.wood
-				buttons.append({"text": "Train %s [Q]  %dF %dW" % [wt.name, wt.food, wt.wood],
-					"enabled": afford and q.size() < int(world.econ.queue_max), "action": train_worker})
+		var bs := world.buildings
+		var owner := bs.owner[b]
+		var t: Dictionary = world.btypes[bs.kind[b]]
+		var mine := owner == active
+		var c := {"title": "%s (P%d)" % [t.name, owner + 1], "team": team, "hp": [bs.hp[b], t.hp],
+			"portrait": kit.building_icon(_arch(owner), t.id), "buttons": [], "queue": null, "info": ""}
+		if bs.done[b] == 0:
+			c.info = "Being built: %d%%" % (100 * bs.progress[b] / t.build_ticks)
+		elif "worker" in t.trains:
+			var q: Array = bs.queue[b]
+			c.queue = []
+			c.queue_max = int(world.econ.queue_max)
 			for n in q.size():
 				var qt: Dictionary = world.types[q[n]]
 				var idx := n
-				buttons.append({"text": "x %s" % qt.name, "enabled": mine,
-					"action": func(): world.issue(active, Commands.CANCEL, {"building": selected_building, "index": idx})})
+				c.queue.append({"icon": kit.icons.get("%d:%s" % [qt.player, qt.slot]), "name": qt.name,
+					"action": func(): if mine: world.issue(active, Commands.CANCEL, {"building": selected_building, "index": idx})})
+			if not q.is_empty():
+				var head: Dictionary = world.types[q[0]]
+				c.progress = float(bs.train[b]) / float(head.train_ticks)
+				c.info = "Training %s" % head.name
+				if bs.train[b] == 0 and world.pop[owner] + head.pop > world.pop_cap[owner]:
+					c.info += " (needs a house)"
 			if mine:
-				info += "   right-click: rally point"
-		panel.show_content("%s (P%d)" % [t.name, world.buildings.owner[b] + 1], info, team, buttons)
+				var wt: Dictionary = world.types[world.type_of(active, "worker")]
+				var afford: bool = world.food[active] >= wt.food and world.wood[active] >= wt.wood
+				c.buttons.append({"icon": kit.icons.get("%d:worker" % active), "text": "Train %s (%d food, %d wood)" % [wt.name, wt.food, wt.wood],
+					"key": "Q", "cost": "%dF %dW" % [wt.food, wt.wood], "enabled": afford and q.size() < int(world.econ.queue_max),
+					"action": train_worker})
+				c.info += ("\n" if c.info != "" else "") + "Right-click: rally point"
+		panel.show_content(c)
 		return
 	var mine: Array = _selected_by_owner()[active]
 	if not mine.is_empty():
-		var workers := _selected_workers()
-		var buttons := []
-		if not workers.is_empty():
+		var u := world.units
+		var first := u.index_of(mine[0])
+		var ft: Dictionary = world.types[u.kind[first]]
+		var c := {"title": ft.name if mine.size() == 1 else "%d selected" % mine.size(), "team": team, "buttons": [], "queue": null,
+			"portrait": kit.icons.get("%d:%s" % [ft.player, ft.slot]), "hp": [u.hp[first], ft.hp] if mine.size() == 1 else []}
+		if mine.size() == 1:
+			c.info = ["Idle", "Gathering", "Carrying back", "Building"][u.task[first]]
+			if u.carry[first] > 0:
+				c.info += " (%d %s)" % [u.carry[first], Economy.KINDS[u.carry_kind[first]]]
+		else:
+			c.info = ""
+			var counts := {}
+			for id in mine:
+				var k := u.kind[u.index_of(id)]
+				counts[k] = counts.get(k, 0) + 1
+			var kinds := counts.keys()
+			kinds.sort()
+			c.tray = kinds.map(func(k): return {"icon": kit.icons.get("%d:%s" % [world.types[k].player, world.types[k].slot]), "count": counts[k]})
+		if not _selected_workers().is_empty():
 			for id in ["house", "town_center"]:
 				var t: Dictionary = world.btypes[Economy.btype_of(world, id)]
-				var key := "H" if id == "house" else "C"
 				var afford: bool = world.food[active] >= t.food and world.wood[active] >= t.wood
 				var bid: String = id
-				buttons.append({"text": "Build %s [%s]  %dW" % [t.name, key, t.wood], "enabled": afford,
-					"action": func(): start_placing(bid)})
-		var info := "%d workers" % workers.size()
-		if mine.size() == 1:
-			var i := world.units.index_of(mine[0])
-			var t: Dictionary = world.types[world.units.kind[i]]
-			info = "%s   hp %d   %s" % [t.name, world.units.hp[i], ["idle", "gathering", "carrying back", "building"][world.units.task[i]]]
-			if world.units.carry[i] > 0:
-				info += " (%d %s)" % [world.units.carry[i], Economy.KINDS[world.units.carry_kind[i]]]
-		var title := "%d selected" % mine.size() if mine.size() > 1 else "Unit #%d" % mine[0]
+				c.buttons.append({"icon": kit.building_icon(_arch(active), id), "text": "Build %s (%d wood)" % [t.name, t.wood],
+					"key": "H" if id == "house" else "C", "cost": "%dW" % t.wood, "enabled": afford, "action": func(): start_placing(bid)})
 		if placing != "":
-			info += "   placing: left-click to build, shift keeps placing, right-click/Esc cancels"
-		panel.show_content(title, info, team, buttons)
+			c.info = "Placing: left-click to build, shift keeps placing, right-click/Esc cancels"
+		panel.show_content(c)
 		return
-	panel.show_content("%s (P%d)" % [world.races[active].name, active + 1],
-		"Select units or a building.  Tab switches side.  F6: let the bots play.", team, [])
+	panel.show_content({"title": "%s (P%d)" % [world.races[active].name, active + 1], "team": team, "portrait": null,
+		"info": "Select units or a building.  Tab switches side.  F6: let the bots play.", "buttons": [], "queue": null})
+
+
+func _arch(player: int) -> String:
+	return lib.families[world.races[player].family].get("architecture", "thatch")
+
+
+## The cursor shows what a right-click would do for the selection.
+func _update_cursor() -> void:
+	if baking or world == null or placing != "" or get_viewport().gui_get_hovered_control() != null:
+		cursors.use("pointer")
+		return
+	var pos := get_global_mouse_position()
+	var b := world.buildings.index_of(selected_building)
+	if b >= 0:
+		cursors.use("rally" if world.buildings.owner[b] == active and playback.is_empty() else "pointer")
+		return
+	if _selected_by_owner()[active].is_empty():
+		cursors.use("pointer")
+		return
+	var cell := _cell_at(pos)
+	var bid: int = map.occupied[cell]
+	var enemy := bid != 0 and world.buildings.owner[world.buildings.index_of(bid)] != active
+	for id in views:
+		var i := world.units.index_of(id)
+		if i >= 0 and world.units.owner[i] != active and _body(views[id]).distance_to(pos) < PICK_PX / camera.zoom.x:
+			enemy = true
+			break
+	var workers := not _selected_workers().is_empty()
+	if enemy:
+		cursors.use("attack")
+	elif workers and map.resource_at(cell) != "":
+		cursors.use("forage" if map.resource_at(cell) == "food" else "chop")
+	elif workers and bid != 0 and _is_foundation_of(bid, active):
+		cursors.use("build")
+	else:
+		cursors.use("move")
 
 
 # ------------------------------------------------------------------ drawing

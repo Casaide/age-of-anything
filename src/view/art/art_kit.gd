@@ -15,7 +15,8 @@ const PropModels := preload("res://scenes/art_pixel/prop_models.gd")
 const ART_SCALE := 1.5     # art pixels per canvas unit (a tile is 96 x 48 art pixels)
 const UNIT_SCALE := 0.85   # units at about a third of a building's height
 const SS := 4              # supersampling for the building and prop bakes
-const HOUSE_SCALE := 1.3   # houses read about 2.5x a footman
+const HOUSE_SCALE := 1.3
+const ICON_CELL := 160     # screen pixels per unit when rendering portraits   # houses read about 2.5x a footman
 const TOWN := {"thatch": "town_center", "junk": "junk_town_center", "stone": "stone_town_center", "tent": "tent_town_center"}
 const HOUSE := {"thatch": "stilt_house", "junk": "tin_can_house", "stone": "villa_house", "tent": "tent_house"}
 const MATERIALS := ["wood", "thatch", "mud", "stone", "tin", "brick", "plaster", "terracotta", "terracotta_dark", "felt", "weave"]
@@ -33,7 +34,8 @@ const BUILD_STAGES := [0.15, 0.4, 0.45, 0.72]
 var lib
 var bakes := {}       # name -> {img: Image, origin: Vector2 (baked px of the anchor)}
 var regions := {}     # name -> Rect2 in the atlas
-var buildings := {}   # "arch:type" -> {body, smoke, lantern, lights, banner, vane, vane_at} (canvas units from the centre)
+var buildings := {}   # "arch:type" -> {body, smoke, lantern, lights, banner, vane, vane_at, stages} (canvas units from the centre)
+var icons := {}       # "side:slot" -> Texture2D: a portrait of that unit, rendered from its baked art
 
 
 ## Bake what these races need (anything already baked is kept), then rebuild the atlas.
@@ -47,7 +49,55 @@ func prepare(races: Array, teams: Array) -> void:
 	await bake_buildings(races)
 	var t3 := Time.get_ticks_msec()
 	rebuild_atlas()
-	print("Art kit: units %d ms, props %d ms, buildings %d ms, atlas %d ms" % [t1 - t0, t2 - t1, t3 - t2, Time.get_ticks_msec() - t3])
+	var t4 := Time.get_ticks_msec()
+	await bake_icons(races, teams)
+	print("Art kit: units %d ms, props %d ms, buildings %d ms, atlas %d ms, icons %d ms" % [t1 - t0, t2 - t1, t3 - t2, t4 - t3, Time.get_ticks_msec() - t4])
+
+
+## A portrait of every unit of these races, for the command panel: each unit's own
+## UnitView (its baked parts, in its team colour) rendered in one SubViewport at two
+## screen pixels per art pixel, cropped square. Needs the atlas built.
+func bake_icons(races: Array, teams: Array) -> void:
+	var list := []
+	for side in races.size():
+		for u in races[side].units:
+			list.append([side, u])
+	var cols := 6
+	var vp := SubViewport.new()
+	vp.transparent_bg = true
+	vp.size = Vector2i(cols, ceili(list.size() / float(cols))) * ICON_CELL
+	vp.canvas_item_default_texture_filter = Viewport.DEFAULT_CANVAS_ITEM_TEXTURE_FILTER_NEAREST
+	vp.render_target_update_mode = SubViewport.UPDATE_DISABLED
+	add_child(vp)
+	var zoom := ART_SCALE * 2.0
+	for k in list.size():
+		var u: Dictionary = list[k][1]
+		var view := UnitView.new()
+		view.build(u.recipe, lib, teams[list[k][0]], u.eval.speed)
+		view.scale = Vector2.ONE * UNIT_SCALE * zoom
+		view.position = Vector2(k % cols + 0.5, k / cols + 0.8) * ICON_CELL
+		view.set_process(false)       # a still pose
+		view.get_child(0).visible = false   # no ground shadow
+		vp.add_child(view)
+	vp.render_target_update_mode = SubViewport.UPDATE_ONCE
+	await RenderingServer.frame_post_draw
+	var img := vp.get_texture().get_image()
+	for k in list.size():
+		var cell := img.get_region(Rect2i(Vector2i(k % cols, k / cols) * ICON_CELL, Vector2i.ONE * ICON_CELL))
+		var used := cell.get_used_rect()
+		var side := maxi(used.size.x, used.size.y) + 4
+		var sq := Image.create(side, side, false, Image.FORMAT_RGBA8)
+		sq.blit_rect(cell, used, Vector2i((side - used.size.x) / 2, side - used.size.y - 2))
+		icons["%d:%s" % [list[k][0], list[k][1].recipe.slot]] = ImageTexture.create_from_image(sq)
+	vp.queue_free()
+
+
+## A building's picture for a button: its finished bake, from the atlas.
+func building_icon(arch: String, type: String) -> Texture2D:
+	var at := AtlasTexture.new()
+	at.atlas = PartShape.atlas
+	at.region = regions[buildings["%s:%s" % [arch, type]].body]
+	return at
 
 
 ## Only the units (the Race Lab bakes per generated race), then the atlas.
@@ -213,6 +263,9 @@ func _bake_building(baker, models, arch: String, type: String) -> void:
 		if type != "town_center":
 			part.body.scale = Vector3.ONE * HOUSE_SCALE
 		_hold_back(part.body, st, models)
+		for live in ["banner", "vane"]:   # the live parts only go up when it's finished
+			if part.has(live):
+				part[live].free()
 		var sb: Dictionary = await baker.bake(part.body, [Vector3.ZERO])
 		var sname := "%s:stage%d" % [name, st]
 		bakes[sname] = {"img": (sb.tex as Texture2D).get_image(), "origin": sb.points[0]}
