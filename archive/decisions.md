@@ -435,3 +435,9 @@ helmet loses its junk/sewer tags, so rats no longer wear it; it stays the WW2 su
 **D-085, 2026-10-11: Team colour on buildings is quiet.** No pennants on every building: one
 subtle team mark each (door curtain, trim, a rag), and only the town centre flies a banner.
 Dominic ("looks like golf ... should be more subtle"). Units keep their team region.
+
+**D-086, 2026-10-11: Short bows cost 3 points (was 2).** Adding the rat kit reshuffled the
+generator's rolls, and the Greeks rolled a bare 20-cost archer: 30 of them beat equal-cost slingers
+and counters fell to 73% (floor 75%). At 3 points counters are back at 82%. Supersedes the bow
+price in D-082 (the skirmisher bonus stays). The generator's sensitivity to new parts is a
+reminder that balance needs price-by-simulation (backlog). Claude.

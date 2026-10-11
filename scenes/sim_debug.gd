@@ -843,6 +843,17 @@ func _sync_rally() -> void:
 			rally_flag.self_modulate = Color(lib.palettes.teams[world.buildings.owner[b]])
 
 
+## A sound from a place on the map: quieter the further it is from the middle of the screen,
+## and not at all off screen.
+func _sfx_at(kind: String, at: Vector2, volume_db := 0.0) -> void:
+	var half := get_viewport_rect().size * 0.5 / camera.zoom
+	var off := (at - camera.get_screen_center_position()) / half
+	var d := maxf(absf(off.x), absf(off.y))
+	if d > 1.15:
+		return
+	sfx.play(kind, volume_db - 8.0 * d)
+
+
 func _sync_views() -> void:
 	var u := world.units
 	var a := clock.alpha
@@ -862,6 +873,8 @@ func _sync_views() -> void:
 		var dy := u.y[i] - u.py[i]
 		view.position = Iso.to_screen(u.px[i] + dx * a, u.py[i] + dy * a)
 		view.walking = dx != 0 or dy != 0
+		if view.struck and view.job != "" and u.owner[i] == active:
+			_sfx_at(view.job, view.position, -8.0)   # the blow you see lands: chop, clink, knock, rustle
 		view.job = _job(i)
 		if world.types[u.kind[i]].worker:
 			view.set_tool(lib, _tool_for(i))
