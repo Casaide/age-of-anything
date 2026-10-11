@@ -31,6 +31,9 @@ func build(id: String, colours: Dictionary) -> Dictionary:
 ## low (spears, swords, tools), throw (a javelin raised over the shoulder), mouth (a
 ## blowgun at the lips), overhead (a sling whirled above), draw (a bow at arm's length),
 ## shoulder (a pike), aim (a crossbow or musket held forward).
+const INK := Color("#2a1a12")
+
+
 func arm_pose(sh: Vector3, elbow: Vector3, hand: Vector3, head: Vector3) -> Array:
 	var z := sh.z
 	match hold:
@@ -179,82 +182,138 @@ func kerchief(into: Node3D, c: Dictionary, neck: Vector3, r: float, lean := 0.0)
 
 # ------------------------------------------------------------------ frog
 
+## Frog helpers (the crouched leaper, picked by Dominic 2026-10-11).
+## The frog's skin, wetter and more saturated than today's: poison-dart colours.
+const FROG_SCALE := 1.25   # the crouched frog is built small; infantry of every creature stand one height
+
+
+## Scale a built part about its origin, with its sockets and anchors (front layer too).
+func _scaled(spec: Dictionary, k: float) -> Dictionary:
+	for key in ["node", "front"]:
+		if spec.get(key) != null:
+			var wrap := Node3D.new()
+			wrap.scale = Vector3.ONE * k
+			wrap.add_child(spec[key])
+			spec[key] = wrap
+	if spec.has("sockets"):
+		for name in spec.sockets:
+			spec.sockets[name] *= k
+	if spec.has("anchors"):
+		spec.anchors = spec.anchors.map(func(a): return [a[0] * k] + a.slice(1))
+	return spec
+
+
+func _vivid(c: Color) -> Color:
+	return Color.from_hsv(c.h, minf(1.0, c.s * 1.25 + 0.05), minf(1.0, c.v * 1.08 + 0.02))
+
+
+func _frog_mats(c: Dictionary) -> Array:
+	var skin := surf("frog_skin", _vivid(c.skin), 7.0)
+	skin.roughness = 0.35   # wet
+	skin.metallic_specular = 0.6
+	var belly := surf("frog_belly", c.skin2.lightened(0.25), 6.0)
+	return [skin, belly]
+
+
+## Fingers: three long digits ending in round pads, spread from a hand.
+
+
+func _frog_hand(into: Node3D, hand: Vector3, dir: Vector3, skin: Material, pad: Material) -> void:
+	into.add_child(blob(Vector3(1.2, 0.9, 1.2), skin, hand))
+	for f in 3:
+		var tip := hand + dir * 2.6 + Vector3(0, 0, (f - 1) * 1.3)
+		into.add_child(rod(hand, tip, 0.42, 0.38, skin, false))
+		into.add_child(blob(Vector3(0.75, 0.6, 0.75), pad, tip))
+
+
+## Eye domes on top of the head, each with an eye decal looking out and a little forward.
+
+
+func _frog_eyes(n: Node3D, at: Vector3, spread: float, r: float, skin: Material) -> void:
+	for side in [1, -1]:
+		var dome := at + Vector3(0, 0, spread * side)
+		n.add_child(blob(Vector3(r, r * 1.05, r), skin, dome))
+		var look := Vector3(0.6, 0.35, 0.75 * side)
+		n.add_child(decal("frog_eye", r * 1.45, r * 1.45, on_surface(dome, Vector3(r, r * 1.05, r), look, 0.1), look, false))
+
+
+# --- A: the crouched leaper. Back sloping up from the rump to the head, front arms braced on the
+# ground, hind legs folded high beside the body, ready to spring.
+
+
 func _body_frog(c: Dictionary) -> Dictionary:
+	return _scaled(_body_frog_built(c), FROG_SCALE)
+
+
+func _body_frog_built(c: Dictionary) -> Dictionary:
 	var n := Node3D.new()
-	var skin := surf("frog_skin", c.skin, 10.0)
-	var belly := surf("frog_belly", c.skin2, 8.0)
-	# A slimmer, upright frog body leaning back on its haunches.
-	n.add_child(blob(Vector3(10.0, 11.5, 9.0), skin, Vector3(-0.5, 14, 0), Vector3(0, 0, 14)))
-	n.add_child(blob(Vector3(6.8, 9.0, 7.0), belly, Vector3(3.6, 12.5, 0.6), Vector3(0, 0, 14)))
-	# Slim arms with round finger pads; the near arm is a front layer with its own outline.
-	var near_hand := Vector3.ZERO
+	var m := _frog_mats(c)
+	n.add_child(blob(Vector3(8.2, 5.6, 6.6), m[0], Vector3(-0.5, 9.5, 0), Vector3(0, 0, 32)))
+	n.add_child(blob(Vector3(6.0, 3.8, 5.0), m[1], Vector3(1.6, 8.0, 0), Vector3(0, 0, 32)))
 	var front := Node3D.new()
+	var near_hand := Vector3.ZERO
 	for side in [1, -1]:
 		var into: Node3D = front if side == 1 else n
-		var sh := Vector3(4, 18.5, 6.8 * side)
-		var elbow := Vector3(6.5, 13.5, 8.6 * side)
-		var hand := Vector3(10.5, 12, 7.5 * side) if side == 1 else Vector3(10, 13, -6.5)
+		var sh := Vector3(4.2, 11.0, 4.6 * side)
+		var elbow := Vector3(6.0, 6.5, 5.6 * side)
+		var hand := Vector3(8.0, 1.2, 5.4 * side)
 		if side == 1:
-			var pose := arm_pose(sh, elbow, hand, Vector3(3, 23, 0))
+			var pose := arm_pose(sh, elbow, Vector3(8.5, 8.5, 5.4), Vector3(7.0, 14.0, 0))
 			elbow = pose[0]
 			hand = pose[1]
 			near_hand = hand
-		into.add_child(rod(sh, elbow, 2.0, 1.6, skin))
-		into.add_child(rod(elbow, hand, 1.6, 1.4, skin))
-		into.add_child(blob(Vector3(1.8, 1.3, 1.8), skin, hand))
-		for f in 3:
-			var tip := hand + Vector3(2.4, -0.9, (f - 1) * 1.5)
-			into.add_child(rod(hand, tip, 0.5, 0.45, skin, false))
-			into.add_child(blob(Vector3(0.8, 0.8, 0.8), belly, tip))
-	kerchief(front, c, Vector3(2.4, 22.0, 0), 5.0, 14)
+		into.add_child(rod(sh, elbow, 1.5, 1.3, m[0]))
+		into.add_child(rod(elbow, hand, 1.3, 1.1, m[0]))
+		_frog_hand(into, hand, Vector3(1, -0.15, 0) if side == -1 else Vector3(0.8, 0.5, 0), m[0], m[1])
+	kerchief(front, c, Vector3(5.0, 12.2, 0), 3.2, 40)
 	return {"node": n, "front": front, "sockets": {
-		"head": Vector3(3, 23, 0), "hand_r": near_hand, "hand_l": Vector3(10, 13, -6.5),
-		"torso": Vector3(0.5, 14, 0), "back": Vector3(-8, 18, 0)},
-		"anchors": [[Vector3(-3, 7.0, -6.5), 0.0, -1], [Vector3(-3, 7.0, 6.5), PI, 1]],
-		"torso_scale": Vector2.ONE}
+		"head": Vector3(7.0, 14.0, 0), "hand_r": near_hand, "hand_l": Vector3(8.0, 1.2, -5.4),
+		"torso": Vector3(1.0, 10.0, 0), "back": Vector3(-4.5, 13.0, 0)},
+		"anchors": [[Vector3(-4.5, 6.0, -5.2), 0.0, -1], [Vector3(-4.5, 6.0, 5.2), PI, 1]],
+		"torso_scale": Vector2(0.75, 0.6)}
 
+
+## A long hind leg folded up beside the body: thigh forward and up, shin back down, a long foot.
 
 func _head_frog(c: Dictionary) -> Dictionary:
+	return _scaled(_head_frog_built(c), FROG_SCALE)
+
+
+func _head_frog_built(c: Dictionary) -> Dictionary:
 	var n := Node3D.new()
-	var skin := surf("frog_skin", c.skin, 10.0)
-	var chin := surf("frog_belly", c.skin2, 8.0)
-	var head_c := Vector3(3, 4.5, 0)
-	var head_r := Vector3(10.0, 5.8, 9.0)
-	n.add_child(blob(head_r, skin, head_c))
-	n.add_child(blob(Vector3(8.6, 3.0, 7.6), chin, Vector3(4, 2.2, 0)))
-	# Big eyes set high and wide: the frog's signature.
-	for side in [1, -1]:
-		# The far eye sits a little higher, so it breaks the head's outline and both eyes read.
-		var dome := Vector3(4.5, 10.6 + (1.4 if side == -1 else 0.0), 5.4 * side)
-		var dome_r := Vector3(4.8, 4.6, 4.8)
-		n.add_child(blob(dome_r, skin, dome))
-		var look := Vector3(0.55, 0.3, 0.8 * side)
-		n.add_child(decal("frog_eye", 6.6, 6.6, on_surface(dome, dome_r, look, 0.15), look, false))
-		n.add_child(blob(Vector3(0.55, 0.4, 0.55), plain(Color("#1a120a")), on_surface(head_c, head_r, Vector3(1, 0.35, 0.18 * side), 0.0)))
-	var mouth_dir := Vector3(0.8, -0.1, 0.6)
-	n.add_child(decal("frog_mouth", 12.5, 3.0, on_surface(head_c, head_r, mouth_dir, 0.2), mouth_dir))
-	return {"node": n, "sockets": {"top": Vector3(1, 12.5, 0)}}
+	var m := _frog_mats(c)
+	n.add_child(blob(Vector3(5.8, 3.0, 5.4), m[0], Vector3(2.4, 2.4, 0)))
+	n.add_child(blob(Vector3(4.6, 1.6, 4.4), m[1], Vector3(2.8, 0.9, 0)))           # the throat
+	n.add_child(rod(Vector3(7.6, 1.9, -3.6), Vector3(7.9, 1.9, 0), 0.32, 0.32, plain(INK)))   # the mouth line, round the front
+	n.add_child(rod(Vector3(7.9, 1.9, 0), Vector3(7.6, 1.9, 3.6), 0.32, 0.32, plain(INK)))
+	_frog_eyes(n, Vector3(3.2, 5.2, 0), 3.0, 2.2, m[0])
+	# The top sits behind the eyes, and gear is sized to this small head: it never covers them.
+	return {"node": n, "sockets": {"top": Vector3(-0.6, 5.0, 0)}, "gear_scale": 0.62}
 
 
-## A long, folded hind leg: thigh forward, shin back, a big webbed foot with toe pads.
+# --- B: the slim tree frog. Upright but lean, long limbs, big toe pads, eyes bulging at the sides.
+
 func _leg_frog(c: Dictionary) -> Dictionary:
+	return _scaled(_leg_frog_built(c), FROG_SCALE)
+
+
+func _leg_frog_built(c: Dictionary) -> Dictionary:
 	var n := Node3D.new()
-	var skin := surf("frog_skin", c.skin, 10.0)
-	var pad := surf("frog_belly", c.skin2, 6.0)
-	var hip := Vector3(0, 0, 0)
-	var knee := Vector3(7.5, -2.5, 0.8)
-	var ankle := Vector3(0.5, -5.8, 0.6)
-	n.add_child(blob(Vector3(5.5, 3.0, 3.0), skin, (hip + knee) * 0.5, Vector3(0, 0, -18)))
-	n.add_child(rod(knee, ankle, 1.9, 1.4, skin))
-	var heel := ankle + Vector3(0.5, -0.8, 0)
-	n.add_child(blob(Vector3(4.2, 0.9, 2.6), skin, heel + Vector3(3.2, -0.2, 0)))
-	n.add_child(blob(Vector3(3.6, 0.35, 3.6), surf("frog_belly", c.skin.lerp(c.skin2, 0.4), 6.0), heel + Vector3(5.2, -0.6, 0)))   # the web
+	var m := _frog_mats(c)
+	var knee := Vector3(5.5, 3.8, 1.6)
+	var ankle := Vector3(-2.0, -3.2, 1.2)
+	n.add_child(rod(Vector3.ZERO, knee, 2.6, 1.8, m[0]))
+	n.add_child(rod(knee, ankle, 1.7, 1.1, m[0]))
+	var heel := ankle + Vector3(0, -2.4, 0)
+	n.add_child(rod(ankle, heel, 1.1, 0.9, m[0]))
 	for t in 4:
-		var toe := heel + Vector3(8.6, -0.6, (t - 1.5) * 1.9)
-		n.add_child(rod(heel + Vector3(2.5, -0.3, (t - 1.5) * 0.6), toe, 0.5, 0.45, skin, false))
-		n.add_child(blob(Vector3(0.95, 0.75, 0.95), pad, toe))
+		var toe := heel + Vector3(6.5, -0.4, (t - 1.5) * 1.6)
+		n.add_child(rod(heel, toe, 0.5, 0.42, m[0], false))
+		n.add_child(blob(Vector3(0.8, 0.55, 0.8), m[1], toe))
 	return {"node": n}
 
+
+## A wide, flat head: eyes high on top, a long mouth line, a pale throat.
 
 func _tool_basket(c: Dictionary) -> Dictionary:
 	var n := Node3D.new()

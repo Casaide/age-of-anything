@@ -157,7 +157,6 @@ func _concept_greek_petasos(c: Dictionary) -> Dictionary:
 # nose forward, brow ledge, dark eye row, no white) and its cranium comes from hair or head gear.
 # Untextured skin. Nothing here is used in play.
 
-const INK := Color("#2a1a12")
 
 
 func _concept_body_chunky(c: Dictionary) -> Dictionary:
@@ -265,97 +264,19 @@ func _concept_galea_heavy(c: Dictionary) -> Dictionary:
 # a wide mouth line and throat, long folded hind legs, gripping fingers with pads, wet saturated
 # skin. Three directions: A a crouched leaper, B a slim tree frog, C a bullfrog warrior.
 
-## The frog's skin, wetter and more saturated than today's: poison-dart colours.
-func _vivid(c: Color) -> Color:
-	return Color.from_hsv(c.h, minf(1.0, c.s * 1.6 + 0.15), minf(1.0, c.v * 1.2 + 0.05))
 
 
-func _frog_mats(c: Dictionary) -> Array:
-	var skin := surf("frog_skin", _vivid(c.skin), 7.0)
-	skin.roughness = 0.35   # wet
-	skin.metallic_specular = 0.6
-	var belly := surf("frog_belly", c.skin2.lightened(0.25), 6.0)
-	return [skin, belly]
 
 
-## Fingers: three long digits ending in round pads, spread from a hand.
-func _frog_hand(into: Node3D, hand: Vector3, dir: Vector3, skin: Material, pad: Material) -> void:
-	into.add_child(blob(Vector3(1.2, 0.9, 1.2), skin, hand))
-	for f in 3:
-		var tip := hand + dir * 2.6 + Vector3(0, 0, (f - 1) * 1.3)
-		into.add_child(rod(hand, tip, 0.42, 0.38, skin, false))
-		into.add_child(blob(Vector3(0.75, 0.6, 0.75), pad, tip))
-
-
-## Eye domes on top of the head, each with an eye decal looking out and a little forward.
-func _frog_eyes(n: Node3D, at: Vector3, spread: float, r: float, skin: Material) -> void:
-	for side in [1, -1]:
-		var dome := at + Vector3(0, 0, spread * side)
-		n.add_child(blob(Vector3(r, r * 1.05, r), skin, dome))
-		var look := Vector3(0.6, 0.35, 0.75 * side)
-		n.add_child(decal("frog_eye", r * 1.45, r * 1.45, on_surface(dome, Vector3(r, r * 1.05, r), look, 0.1), look, false))
-
-
-# --- A: the crouched leaper. Back sloping up from the rump to the head, front arms braced on the
-# ground, hind legs folded high beside the body, ready to spring.
 func _concept_frog_a_body(c: Dictionary) -> Dictionary:
-	var n := Node3D.new()
-	var m := _frog_mats(c)
-	n.add_child(blob(Vector3(8.2, 5.6, 6.6), m[0], Vector3(-0.5, 9.5, 0), Vector3(0, 0, 32)))
-	n.add_child(blob(Vector3(6.0, 3.8, 5.0), m[1], Vector3(1.6, 8.0, 0), Vector3(0, 0, 32)))
-	var front := Node3D.new()
-	var near_hand := Vector3.ZERO
-	for side in [1, -1]:
-		var into: Node3D = front if side == 1 else n
-		var sh := Vector3(4.2, 11.0, 4.6 * side)
-		var elbow := Vector3(6.0, 6.5, 5.6 * side)
-		var hand := Vector3(8.0, 1.2, 5.4 * side)
-		if side == 1:
-			var pose := arm_pose(sh, elbow, Vector3(8.5, 8.5, 5.4), Vector3(7.0, 14.0, 0))
-			elbow = pose[0]
-			hand = pose[1]
-			near_hand = hand
-		into.add_child(rod(sh, elbow, 1.5, 1.3, m[0]))
-		into.add_child(rod(elbow, hand, 1.3, 1.1, m[0]))
-		_frog_hand(into, hand, Vector3(1, -0.15, 0) if side == -1 else Vector3(0.8, 0.5, 0), m[0], m[1])
-	kerchief(front, c, Vector3(5.0, 12.2, 0), 3.2, 40)
-	return {"node": n, "front": front, "sockets": {
-		"head": Vector3(7.0, 14.0, 0), "hand_r": near_hand, "hand_l": Vector3(8.0, 1.2, -5.4),
-		"torso": Vector3(1.0, 10.0, 0), "back": Vector3(-4.5, 13.0, 0)},
-		"anchors": [[Vector3(-4.5, 6.0, -5.2), 0.0, -1], [Vector3(-4.5, 6.0, 5.2), PI, 1]],
-		"torso_scale": Vector2(0.75, 0.6)}
+	return _body_frog(c)
 
-
-## A long hind leg folded up beside the body: thigh forward and up, shin back down, a long foot.
 func _concept_frog_a_leg(c: Dictionary) -> Dictionary:
-	var n := Node3D.new()
-	var m := _frog_mats(c)
-	var knee := Vector3(5.5, 3.8, 1.6)
-	var ankle := Vector3(-2.0, -3.2, 1.2)
-	n.add_child(rod(Vector3.ZERO, knee, 2.6, 1.8, m[0]))
-	n.add_child(rod(knee, ankle, 1.7, 1.1, m[0]))
-	var heel := ankle + Vector3(0, -2.4, 0)
-	n.add_child(rod(ankle, heel, 1.1, 0.9, m[0]))
-	for t in 4:
-		var toe := heel + Vector3(6.5, -0.4, (t - 1.5) * 1.6)
-		n.add_child(rod(heel, toe, 0.5, 0.42, m[0], false))
-		n.add_child(blob(Vector3(0.8, 0.55, 0.8), m[1], toe))
-	return {"node": n}
+	return _leg_frog(c)
 
-
-## A wide, flat head: eyes high on top, a long mouth line, a pale throat.
 func _concept_frog_a_head(c: Dictionary) -> Dictionary:
-	var n := Node3D.new()
-	var m := _frog_mats(c)
-	n.add_child(blob(Vector3(5.8, 3.0, 5.4), m[0], Vector3(2.4, 2.4, 0)))
-	n.add_child(blob(Vector3(4.6, 1.6, 4.4), m[1], Vector3(2.8, 0.9, 0)))           # the throat
-	n.add_child(rod(Vector3(7.6, 1.9, -3.6), Vector3(7.9, 1.9, 0), 0.32, 0.32, plain(INK)))   # the mouth line, round the front
-	n.add_child(rod(Vector3(7.9, 1.9, 0), Vector3(7.6, 1.9, 3.6), 0.32, 0.32, plain(INK)))
-	_frog_eyes(n, Vector3(3.2, 5.2, 0), 3.0, 2.2, m[0])
-	return {"node": n, "sockets": {"top": Vector3(0.0, 5.4, 0)}}   # behind the eyes: gear never covers them
+	return _head_frog(c)
 
-
-# --- B: the slim tree frog. Upright but lean, long limbs, big toe pads, eyes bulging at the sides.
 func _concept_frog_b_body(c: Dictionary) -> Dictionary:
 	var n := Node3D.new()
 	var m := _frog_mats(c)
