@@ -32,7 +32,7 @@ static func load_btypes() -> Array:
 			"food": int(b.cost.food), "wood": int(b.cost.wood),
 			"build_ticks": int(b.build_time) * 20, "pop": int(b.pop), "house": bool(b.house),
 			"drop_food": "food" in b.drop_off, "drop_wood": "wood" in b.drop_off,
-			"trains": b.trains.duplicate(), "age": int(b.age),
+			"trains": b.trains.duplicate(), "age": int(b.age), "armour": b.get("armour", {}).duplicate(),
 		})
 	return out
 
@@ -56,6 +56,7 @@ static func setup(w) -> void:
 		w.gathered_wood.append(0)
 		w.pop.append(0)
 		w.pop_cap.append(0)
+		w.lost.append(0)
 	for p in w.races.size():
 		var s: Array = w.map.starts[p]
 		for bid in start.buildings:

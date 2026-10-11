@@ -16,7 +16,9 @@ const HELP_BUILD := "help_build"   # {ids, target: building id}
 const TRAIN := "train"             # {building: id, slot}
 const CANCEL := "cancel"           # {building: id, index}  refunds
 const RALLY := "rally"             # {building: id, x, y}
-const TYPES := [MOVE, SPAWN, GATHER, BUILD, HELP_BUILD, TRAIN, CANCEL, RALLY]
+const ATTACK := "attack"           # {ids, target: unit or building id}
+const ATTACK_MOVE := "attack_move" # {ids, x, y}  walk there, fighting whatever comes into sight
+const TYPES := [MOVE, SPAWN, GATHER, BUILD, HELP_BUILD, TRAIN, CANCEL, RALLY, ATTACK, ATTACK_MOVE]
 
 var pending := {}            # run turn -> [commands]; looked up by key, never iterated
 var next_seq := {}           # player -> next seq; looked up by key, never iterated
