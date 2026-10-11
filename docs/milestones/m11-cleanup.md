@@ -28,6 +28,7 @@
 - Animals: ones to hunt, and ones to herd and gather (like sheep)
 - Bug: clicking an enemy unit switches my fog of war to show what they see
 - (AI playtest: the AI beat Dominic)
+- We need gold too: the mineable rock easy to tell apart for stone and gold, but mostly a shared base
 
 ## Plan (2026-10-11, Claude)
 
@@ -47,7 +48,8 @@ tests green. Anything cut moves to `../backlog.md`.
    upgrades a unit can get and in which building, and what's missing ("needs a Barracks", "needs
    age 2"). Icons for age-ups and every research. A layout and polish pass on the panel, bar and
    unit card.
-4. **Buildings.** Data first (`data/buildings.json`, `data/tech.json`): the Barracks splits into
+4. **Buildings and gold.** Gold is in (a resource, deposits by each start, a shared rock base with
+   stone); what costs it comes here: the age-3 step, elite units, the market. Data first (`data/buildings.json`, `data/tech.json`): the Barracks splits into
    Barracks (spear, skirmisher), Archery Range (archer) and Stable (large); an Armoury holds the
    weapon and armour research (sharp sticks move there); drop-off camps (wood, food, stone) with
    gathering research; a Market (buy and sell resources); Walls with a gate. The bot learns them

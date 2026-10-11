@@ -19,6 +19,15 @@
    "note": "a farm's crops: the farm's food is pooled over its tiles (one farm, one amount); worked out it lies fallow until reseeded",
    "cleared": "grass"
   },
+  "gold": {
+   "walkable": false,
+   "colour": "#7a7060",
+   "colour2": "#6e6656",
+   "resource": "gold",
+   "amount": 800,
+   "depleted": "rubble",
+   "note": "a gold deposit: the same rock as stone with gold showing; 800 gold per tile; rubble when mined out"
+  },
   "grass": {
    "walkable": true,
    "colour": "#5b6b38",
