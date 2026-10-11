@@ -111,7 +111,10 @@ tests green. Anything cut moves to `../backlog.md`.
       menu and hotkeys from data; the bot gathers by a mix per age and builds camps by their
       resource. Fixed the shift-queue bug (popping an order wiped the queue). Gates moved to the
       backlog (they need passability per team)
-- [ ] 5. Art consistency: rocks, farms, water, stone vs blocking rocks
+- [x] 5. Art consistency (2026-10-11): water painted (smooth depth, sky, ripples; no banded blue
+      and white dots); boulders with lichen, cracks, pebbles and tufts, and outcrops varied (big
+      stones inside, small at the edge, no grid); farms as dense leafy rows; mineable stone and
+      gold distinct from blocking rock
 - [ ] 6. Lobby
 - [ ] 7. Races: 8 facings, capybara, rat buildings by age, rearing beetles, humans in Blender, spiders, centaurs, ponies, Egypt/Han/Aztec, buildings by age
 - [ ] 8. Animals: hunt and herd
