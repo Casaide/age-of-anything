@@ -68,6 +68,11 @@ Milestone 7 (progression) followed straight on:
   Workers at their job now overlap freely, and passers-by give way.
 - **Frogs picked:** the crouched leaper (A); the bullfrog (C) kept for another unit or an
   upgrade. "If frogs hop instead of walk it'll be pretty cool."
+- **Milestone 4 closed (Dominic's call).** Quiz: roles 4/8, counters 8/12. His misses were
+  readability bugs: an invisible bow, frog spears that looked like blowguns, a saucepan handle
+  that read as a stray line, leather belts floating off the body as hoops. All fixed.
+- **Humans round 1 rejected:** "suuuper buggy heads, why the cape on their back?" The new 3D
+  heads merged into beak-like masks under the helmets, and the race cloak stuck out as a slab.
 - **Wings.** Feather wings had thirty small feathers and baked to a white slab; now eight big
   ones. A pegasus's wings sat so high they looked like the rider's; they now lie folded along
   the horse's back.
