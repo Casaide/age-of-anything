@@ -528,9 +528,9 @@ func _refresh() -> void:
 				continue
 			bar.visible = false
 			for b in world.buildings.count():
-				if world.buildings.owner[b] == player and world.buildings.research[b] == Tech.AGE_UP and a.age == world.ages[player] + 1:
+				if world.buildings.owner[b] == player and Tech.entry(Tech.AGE_UP) in world.buildings.queue[b] and a.age == world.ages[player] + 1:
 					bar.visible = true
-					bar.value = float(world.buildings.research_t[b]) / float(maxi(1, int(Tech.next_age(world, player).get("ticks", 1))))
+					bar.value = float(world.buildings.train[b]) / float(Tech.head_ticks(world, b)) if Tech.head(world, b) == Tech.AGE_UP else 0.0   # 0 while it waits its turn
 	_canvas.queue_redraw()
 	_rail_inner.queue_redraw()
 
@@ -555,8 +555,8 @@ func _state(n: Dictionary) -> Array:
 				if world.researched[player][r] == 1:
 					return ["done", 0.0]
 				for b in bs.count():
-					if bs.owner[b] == player and bs.research[b] == r:
-						return ["progress", float(bs.research_t[b]) / float(maxi(1, world.tech.research[r].ticks))]
+					if bs.owner[b] == player and Tech.entry(r) in bs.queue[b]:
+						return ["progress", float(world.buildings.train[b]) / float(Tech.head_ticks(world, b)) if Tech.head(world, b) == r else 0.0]
 		"unit":
 			if n.first or n.slot == "worker":   # a line's first step: the age and a building to train it; workers follow the age
 				if age >= n.age and (n.slot == "worker" or Tech.has_building(world, player, n.building)):
@@ -567,8 +567,8 @@ func _state(n: Dictionary) -> Array:
 					if world.researched[player][r] == 1:
 						return ["done", 0.0]
 					for b in bs.count():
-						if bs.owner[b] == player and bs.research[b] == r:
-							return ["progress", float(bs.research_t[b]) / float(maxi(1, world.tech.research[r].ticks))]
+						if bs.owner[b] == player and Tech.entry(r) in bs.queue[b]:
+							return ["progress", float(world.buildings.train[b]) / float(Tech.head_ticks(world, b)) if Tech.head(world, b) == r else 0.0]
 	return ["open", 0.0] if age >= int(n.age) else ["locked", 0.0]
 
 
