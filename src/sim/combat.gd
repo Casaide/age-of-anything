@@ -453,9 +453,10 @@ static func _apply(w, hurt: PackedInt32Array, hurt_by: PackedInt32Array, bhurt: 
 	for j in range(hurt.size() - 1, -1, -1):
 		if u.hp[j] <= 0:
 			w.events.append({"type": "die", "id": u.id[j], "x": u.x[j], "y": u.y[j], "owner": u.owner[j], "kind": u.kind[j], "building": false})
-			w.lost[u.owner[j]] += 1
 			if w.types[u.kind[j]].has("animal"):
-				Animals.died(w, j)   # a carcass to gather, and the hunters gather it
+				Animals.died(w, j)   # a carcass to gather, and the hunters gather it (food, not a unit lost)
+			else:
+				w.lost[u.owner[j]] += 1
 			u.remove_at(j)
 	var bs = w.buildings
 	for b in range(bhurt.size() - 1, -1, -1):
