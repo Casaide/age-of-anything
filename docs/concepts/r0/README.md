@@ -18,8 +18,10 @@ shape) and an age-3 galea, in three facings, close up and at game scale. Sheets:
   placed. It looks like a classic hand-drawn sprite, which sits differently next to the painterly
   baked buildings. Every new part costs a drawing per facing (8 facings = 5 drawn + 3 mirrored,
   or 8 drawn), and gear has to be drawn per head shape (human, rat, frog...).
-- **Caveats:** B's figure came out ~20% smaller than the 3D ones, has no ground shadow, and uses
-  a lighter skin; A/A+ use the dark skin of this race. Fix before judging side by side.
+- **Fairness fixes (second run):** B is now taller, stands on the same ground shadow, and uses the
+  race's dark skin (`b_*_dark.png`); the light-skin versions are kept for close-ups.
+- Facing the camera, A+ holds up better than at three-quarter: the helmets read. B stays crisp
+  in all three views.
 
 ## Not built yet
 - **C, the hybrid** (A+ bodies with pixel-drawn heads and head gear per facing).
