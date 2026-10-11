@@ -271,3 +271,10 @@ mining, surrender asks twice, the result is the end menu's title, Enter in the l
 "hoplite" in the lexicon, market awnings not in team colours. Found on the way: the building
 hotkey catch-all sat before M, R and G in the key match, so those had been dead.
 Dominic kept WASD (he asked for it faster), so attack-move is R and stop X, not A and S.
+More review fixes: build buttons carry a function glyph so look-alike buildings can be told apart;
+three one-time opening hints against the AI; an Easy/Normal choice for the AI (Easy attacks five
+minutes later with half the army); buildings by structure, not props (an open archery shed over a
+target lane, a squat smithy under a chimney stack, a drying-rack mill, a mining pit), the lily pad
+only on the frog Town Center, which got a second dome as the village landmark; houses smaller; the
+lobby's fourteen preset chips became one dropdown per side. "hoplite" had gone into the lexicon at
+the wrong level, so "greek hoplites" still said "No idea what 'hoplites' means"; fixed.
