@@ -1386,6 +1386,9 @@ func _mill(arch: String, team: Color) -> Dictionary:
 			body.add_child(ball(0.05, Materials.flat([Color("#c8302a"), Color("#d8b44a"), Color("#7a9a3a")][(n + int(z * 10)) % 3], 0.8),
 				Vector3(-0.45 + n * 0.22, 0.85, z), Vector3(0.8, 1.6, 0.8)))
 	body.add_child(box(Vector3(0.36, 0.12, 0.03), cloth(team), Vector3(0, 0.98, 0.32)))   # a team cloth over a rail
+	if arch in ["stone", "thatch"]:   # builders' towns: on a stone plinth under their own roof, so it belongs (Fable)
+		body.add_child(box(Vector3(1.5, 0.3, 1.2), mats.get_mat("stone"), Vector3(0, 0.15, -0.15)))
+		_roof(body, arch, Vector3(0, 1.0, -0.15), 1.4, 1.1)
 	var sack := Materials.flat(Color("#c8b48a"), 1.0)
 	for p in [Vector3(-0.55, 0.12, 0.6), Vector3(-0.3, 0.12, 0.68), Vector3(-0.42, 0.3, 0.64)]:
 		body.add_child(ball(0.13, sack, p, Vector3(1.0, 1.15, 0.9)))
