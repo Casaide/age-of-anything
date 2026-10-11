@@ -345,7 +345,7 @@
    },
    "attack": {
     "damage": "pierce",
-    "attack": 5,
+    "attack": 10,
     "range": 7,
     "reload": 40
    },
