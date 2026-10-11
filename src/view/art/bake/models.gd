@@ -1301,13 +1301,19 @@ func _wall(arch: String, team: Color) -> Dictionary:
 	else:
 		rng.seed = 91
 		var wood := mats.get_mat("wood")
-		for i in 4:
-			for j in 4:
-				if i == 0 or j == 0 or i == 3 or j == 3:
-					var h := rng.randf_range(0.7, 0.85)
-					var p := Vector3(-0.38 + i * 0.253, h / 2, -0.38 + j * 0.253)
-					body.add_child(cyl(0.07, 0.08, h, wood, p, Vector3(rng.randf_range(-3, 3), 0, rng.randf_range(-3, 3)), 8))
-					body.add_child(cyl(0.0, 0.07, 0.12, wood, p + Vector3(0, h / 2 + 0.06, 0), Vector3.ZERO, 8))
-		body.add_child(box(Vector3(0.96, 0.4, 0.96), mats.get_mat(k.wall), Vector3(0, 0.2, 0)))   # packed fill between
+		# A cross of stakes through the tile's middle, so neighbouring tiles join up into one fence
+		# whichever way the line runs.
+		var spots := [Vector3.ZERO]
+		for t in [-0.4, -0.2, 0.2, 0.4]:
+			spots.append(Vector3(t, 0, 0))
+			spots.append(Vector3(0, 0, t))
+		for p0 in spots:
+			var h := rng.randf_range(0.72, 0.86)
+			var p: Vector3 = p0 + Vector3(0, h / 2, 0)
+			body.add_child(cyl(0.08, 0.09, h, wood, p, Vector3(rng.randf_range(-3, 3), 0, rng.randf_range(-3, 3)), 8))
+			body.add_child(cyl(0.0, 0.08, 0.13, wood, p + Vector3(0, h / 2 + 0.065, 0), Vector3.ZERO, 8))
+		for along in [Vector3(1, 0, 0), Vector3(0, 0, 1)]:   # two lashed rails each way
+			for y in [0.25, 0.55]:
+				body.add_child(box(Vector3(0.98, 0.04, 0.04) if along.x > 0 else Vector3(0.04, 0.04, 0.98), wood, Vector3(0, y, 0)))
 	return {"body": body, "anchor": Vector3.ZERO, "lights": [], "team": team}
 

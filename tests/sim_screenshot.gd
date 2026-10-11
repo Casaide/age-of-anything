@@ -39,6 +39,8 @@ func _initialize() -> void:
 		await _ageup(view, int(scene.get_slice(":", 1)))
 	elif scene == "farm":
 		await _farm(view)
+	elif scene == "walls":
+		await _walls(view)
 	elif scene.begins_with("tip"):
 		await _tip(view, int(scene.get_slice(":", 1)))
 	elif scene == "card":
@@ -81,6 +83,28 @@ func _farm(view) -> void:
 	view.camera.zoom = Vector2(3.0, 3.0)
 	view._on_zoom()
 	view.camera.look_at_point(Iso.to_screen(cx * 1000 + 1000, cy * 1000 + 1000))
+
+
+## Side 0's workers lay a wall line by the Town Center (as a drag would) and build it.
+func _walls(view) -> void:
+	var w = view.world
+	var s: Array = w.map.starts[0]
+	w.stock[w.resources.find("stone")][0] = 500
+	for i in w.units.count():
+		if w.units.owner[i] == 0:
+			view.selected[w.units.id[i]] = true
+	view.placing = "wall"
+	var a := Vector2i(s[0] / 1000 + 3, s[1] / 1000 - 3)
+	view.place_wall(a, a + Vector2i(0, 6))
+	view.place_wall(a + Vector2i(1, 6), a + Vector2i(5, 6), true)
+	view.clock.speed = 8.0
+	for f in 900:
+		await process_frame
+	view.clock.speed = 1.0
+	view.selected.clear()
+	view.camera.zoom = Vector2(2.0, 2.0)
+	view._on_zoom()
+	view.camera.look_at_point(Iso.to_screen(a.x * 1000 + 2000, a.y * 1000 + 4000))
 
 
 ## The Town Center selected (or a worker, for "tip:1"), with the tooltip card of the panel's

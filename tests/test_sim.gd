@@ -73,6 +73,7 @@ func _init() -> void:
 	_test_farms(races)
 	_test_tech(races)
 	_test_market(races)
+	_test_build_queue(races)
 	_test_combat(gen)
 
 	var script := _script(map, races)
@@ -467,6 +468,27 @@ func _test_age_timing(races: Array) -> void:
 	for p in 2:
 		print("  age 2: %-18s at %d:%02d (tick %d)" % [w.races[p].name, at[p] / 1200, at[p] % 1200 / 20, at[p]])
 		check(at[p] >= 4800 and at[p] <= 7200, "age-up at minutes 4-6: %s at tick %d" % [w.races[p].name, at[p]])
+
+## A long shift-queue of builds (a dragged wall) all goes up: taking the next order from a
+## unit's queue must not wipe the rest of it (it did: only two of seven walls were built).
+func _test_build_queue(races: Array) -> void:
+	var w := World.new(SEED, SimMap.load_id("flat_test"), races, rules_)
+	w.stock[w.resources.find("stone")][0] = 500
+	var ids := []
+	for i in w.units.count():
+		if w.units.owner[i] == 0:
+			ids.append(w.units.id[i])
+	var s: Array = w.map.starts[0]
+	for k in 7:
+		w.issue(0, Commands.BUILD, {"ids": ids, "building": "wall", "cx": s[0] / 1000 + 3, "cy": s[1] / 1000 - 3 + k, "queue": 1 if k > 0 else 0})
+	for t in 3000:
+		w.step()
+	var done := 0
+	for b in w.buildings.count():
+		if w.btypes[w.buildings.kind[b]].id == "wall":
+			done += w.buildings.done[b]
+	check(done == 7, "shift-queued builds: all 7 walls of a line go up (%d)" % done)
+
 
 ## The market: buying costs gold and raises the price, selling pays less and lowers it, and
 ## nobody trades without a finished market of their own.

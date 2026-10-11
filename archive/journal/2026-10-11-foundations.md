@@ -187,3 +187,16 @@ researches, the upgrades a unit can get and where, what it becomes in later ages
 ("Needs a Barracks" in red) and what it unlocks. Age-ups and research got icons (SVG in
 assets/art/icons/: a standard rising from a laurel, a scroll, three sharpened sticks, a frog's
 kicking leg). The town centre takes in gold too now (the gold change missed it).
+
+### Buildings, a market, walls, and a queue bug
+The Barracks now trains the spear line only; a new Archery Range trains skirmishers and archers;
+an Armoury holds weapon research (Sharp Sticks moved there, Fletching, Hardened Tips); lumber and
+mining camps and a mill take in goods near where they're gathered and research faster gathering
+(a new research effect: gather speed per player); a Market trades goods for gold in lots of 100 at
+prices everyone shares, which move with each trade; walls are laid by dragging a line. Every new
+building has a model in all six cultures from one builder per type dressed in the culture's kit.
+Age 3 now costs gold, so the bot gathers by a mix per age (data/ai.json) and puts its camps by the
+resource. The bots age up later now (about 7-8 minutes, was 4-6), as they build camps first.
+Laying a seven-tile wall built only two tiles: taking the next order from a unit's shift-queue ran
+it as a plain order, which wipes the rest of the queue. Shift-queued houses had always stopped at
+two. Fixed, with a test.
