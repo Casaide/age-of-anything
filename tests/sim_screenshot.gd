@@ -29,6 +29,8 @@ func _initialize() -> void:
 	view.camera.set_process_unhandled_input(false)
 	if scene.begins_with("opening"):
 		await _opening(view, int(scene.get_slice(":", 1)))
+	elif scene.begins_with("town"):
+		await _town(view, int(scene.get_slice(":", 1)))
 	elif scene.begins_with("ageup"):
 		await _ageup(view, int(scene.get_slice(":", 1)))
 	elif scene.begins_with("battle"):
@@ -112,6 +114,27 @@ func _ageup(view, to_age: int) -> void:
 	view.camera.zoom = Vector2(3.0, 3.0)
 	view._on_zoom()
 	view.camera.look_at_point(Iso.to_screen(s[0] + 1500, s[1] + 3500))
+
+
+## A finished town for player `side`: Barracks, Stable, Watchtower and a house round
+## the Town Center (placed straight into the world: a picture, not a match).
+func _town(view, side: int) -> void:
+	var w = view.world
+	var Economy = load("res://src/sim/economy.gd")
+	var s: Array = w.map.starts[side]
+	var cx: int = s[0] / 1000
+	var cy: int = s[1] / 1000
+	for spec in [["barracks", cx + 3, cy - 1], ["stable", cx - 1, cy + 3], ["watchtower", cx + 3, cy + 3], ["house", cx - 4, cy - 1]]:
+		var k: int = Economy.btype_of(w, spec[0])
+		if w.map.can_build(spec[1], spec[2], w.btypes[k].size):
+			var i: int = Economy.place(w, side, k, spec[1], spec[2])
+			w.buildings.done[i] = 1
+			w.buildings.hp[i] = w.btypes[k].hp
+	for f in 40:
+		await process_frame
+	view.camera.zoom = Vector2(3.0, 3.0)
+	view._on_zoom()
+	view.camera.look_at_point(Iso.to_screen(s[0] + 1000, s[1] + 1500))
 
 
 func _opening(view, at_tick: int) -> void:

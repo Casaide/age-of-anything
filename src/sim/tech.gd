@@ -20,7 +20,7 @@ static func load_tech(resources: Array) -> Dictionary:
 	var ages := []
 	for a in d.ages:
 		ages.append({"age": int(a.age), "name": a.name, "cost": Economy.cost_vector(resources, a.cost),
-			"ticks": int(a.time) * 20, "building": a.building})
+			"ticks": int(a.time) * 20, "building": a.building, "requires": a.get("requires", []).duplicate()})
 	var research := []
 	for r in d.research:
 		research.append({"id": r.id, "name": r.name, "cost": Economy.cost_vector(resources, r.cost),
@@ -67,6 +67,9 @@ static func why_not(w, player: int, b: int, id: String) -> String:
 		for k in bs.count():
 			if bs.owner[k] == player and bs.research[k] == AGE_UP:
 				return "already ageing up"
+		for need in item.requires:   # the genre's pacing: an age-up needs a building of this age first
+			if not has_building(w, player, need):
+				return "needs a %s" % need
 	else:
 		var r := research_index(w, id)
 		if r < 0:
@@ -84,6 +87,14 @@ static func why_not(w, player: int, b: int, id: String) -> String:
 	if not w.can_afford(player, item.cost):
 		return "can't afford it"
 	return ""
+
+
+static func has_building(w, player: int, id: String) -> bool:
+	var bs = w.buildings
+	for k in bs.count():
+		if bs.owner[k] == player and bs.done[k] == 1 and w.btypes[bs.kind[k]].id == id:
+			return true
+	return false
 
 
 static func cmd_age_up(w, player: int, a: Dictionary) -> void:

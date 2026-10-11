@@ -8,6 +8,7 @@ extends RefCounted
 const Economy := preload("res://src/sim/economy.gd")
 const Commands := preload("res://src/sim/commands.gd")
 const Fixed := preload("res://src/sim/fixed.gd")
+const Tech := preload("res://src/sim/tech.gd")
 
 const THINK_EVERY := 20        # ticks (1 s)
 const FOOD_PCT := 60
@@ -15,6 +16,7 @@ const MAX_WORKERS := 30
 const TRAIN_COOLDOWN := 20     # ticks between train orders (commands land two turns later)
 const HOUSE_COOLDOWN := 200
 const HOUSE_HEADROOM := 2      # build a house when free pop drops to this
+const AGE_WORKERS := 16        # with this many workers, stop training and save for the next age
 
 var player: int
 var _next_train := 0
@@ -66,10 +68,22 @@ func think(w) -> void:
 	var rally := _nearest_resource(w, bs.cx[tc] * 1000 + 1500, bs.cy[tc] * 1000 + 1500, rally_kind)
 	if rally >= 0 and w.map.cell_of(bs.rally_x[tc], bs.rally_y[tc]) != rally:
 		w.issue(player, Commands.RALLY, {"building": bs.id[tc], "x": (rally % w.map.width) * 1000 + 500, "y": (rally / w.map.width) * 1000 + 500})
+	# Age up: with enough workers, save up and click it.
+	var saving: bool = w.ages[player] == 1 and workers.size() >= AGE_WORKERS
+	if saving and not Tech.has_building(w, player, "barracks") and not _building_underway(w):
+		var bk: int = Economy.btype_of(w, "barracks")
+		if w.can_afford(player, w.btypes[bk].cost):
+			var spot := _house_spot(w, bs.cx[tc] + 1, bs.cy[tc] + 1, w.btypes[bk].size)
+			var builders := workers.slice(0, 3).map(func(i): return w.units.id[i])
+			if spot.x >= 0:
+				w.issue(player, Commands.BUILD, {"ids": builders, "building": "barracks", "cx": spot.x, "cy": spot.y})
+				_next_house = w.tick + HOUSE_COOLDOWN
+	if saving and Tech.why_not(w, player, tc, "") == "":
+		w.issue(player, Commands.AGE_UP, {"building": bs.id[tc]})
 	# Keep the Town Center busy.
 	var worker_type: int = w.type_of(player, "worker")
 	var t: Dictionary = w.types[worker_type]
-	if w.tick >= _next_train and bs.queue[tc].size() < 2 and workers.size() + bs.queue[tc].size() < MAX_WORKERS \
+	if not saving and w.tick >= _next_train and bs.queue[tc].size() < 2 and workers.size() + bs.queue[tc].size() < MAX_WORKERS \
 			and w.can_afford(player, t.cost):
 		w.issue(player, Commands.TRAIN, {"building": bs.id[tc], "slot": "worker"})
 		_next_train = w.tick + TRAIN_COOLDOWN

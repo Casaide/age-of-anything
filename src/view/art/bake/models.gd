@@ -641,3 +641,202 @@ func farm_plot(team: Color) -> Dictionary:
 		body.add_child(ball(0.09, Materials.flat(Color("#b8a074"), 1.0), Vector3(0.55 + k * 0.17, 0.11, 1.08), Vector3(1, 1.2, 1)))
 	_pennant(body, Vector3(-half, 0.3, half), team)
 	return {"body": body, "anchor": Vector3.ZERO, "lights": [], "team": team}
+
+
+# ------------------------------------------------------------------ military buildings, per culture
+# One shape each (a training hall, a stable, a lookout tower), built in each architecture's
+# own materials and roof: mud and thatch, scrap tin and brick, limewash and tile, felt and poles.
+
+const KIT := {
+	"thatch": {"wall": "mud", "frame": "wood", "roof": "thatch", "base": "stone"},
+	"junk": {"wall": "tin", "frame": "wood", "roof": "tin", "base": "brick"},
+	"stone": {"wall": "plaster", "frame": "stone", "roof": "tiles", "base": "stone"},
+	"tent": {"wall": "felt", "frame": "wood", "roof": "felt", "base": ""},
+}
+
+
+## A roof over a w x d box, ridge along x, in the architecture's way: thick thatch,
+## corrugated tin, terracotta tiles or a felt ridge tent. Returns the ridge height.
+func _roof(body: Node3D, arch: String, at: Vector3, w: float, d: float) -> float:
+	var k: Dictionary = KIT[arch]
+	if k.roof == "tiles":
+		var holder := Node3D.new()
+		holder.rotation_degrees = Vector3(0, 90, 0)   # tile_roof runs its ridge along z
+		holder.position = at
+		body.add_child(holder)
+		return tile_roof(holder, Vector3.ZERO, d / 2 + 0.12, w + 0.2, 26.0, mats.get_mat("plaster"), mats.get_mat("plaster"))
+	var mat: Material = mats.get_mat(k.roof)
+	var rise := d * (0.42 if k.roof == "thatch" else 0.3)
+	var slope := Vector2(d / 2 + 0.15, rise).length()
+	var ang := rad_to_deg(atan2(rise, d / 2 + 0.15))
+	var thick := 0.16 if k.roof == "thatch" else 0.05
+	for side in [-1, 1]:
+		body.add_child(box(Vector3(w + 0.3, thick, slope), mat, at + Vector3(0, rise / 2, side * (d / 4 + 0.07)), Vector3(side * ang, 0, 0)))
+	for side in [-1, 1]:   # gable ends
+		var g := slab_tri(Vector2(-d / 2, 0), Vector2(d / 2, 0), Vector2(0, rise), 0.06, mats.get_mat(k.wall))
+		g.position = at + Vector3(side * w / 2, 0, 0)
+		g.rotation_degrees = Vector3(0, 90, 0)
+		body.add_child(g)
+	body.add_child(box(Vector3(w + 0.34, 0.08, 0.1), mats.get_mat("wood"), at + Vector3(0, rise + 0.02, 0)))
+	return rise
+
+
+## A hall's walls on a plinth, with the culture's frame at the corners.
+func _hall(body: Node3D, arch: String, w: float, d: float, h: float) -> float:
+	var k: Dictionary = KIT[arch]
+	var base := 0.0
+	if k.base != "":
+		body.add_child(box(Vector3(w + 0.3, 0.16, d + 0.3), mats.get_mat(k.base), Vector3(0, 0.08, 0)))
+		base = 0.16
+	body.add_child(box(Vector3(w, h, d), mats.get_mat(k.wall), Vector3(0, base + h / 2, 0)))
+	for x in [-1, 1]:
+		for z in [-1, 1]:
+			body.add_child(box(Vector3(0.12, h + 0.04, 0.12), mats.get_mat(k.frame), Vector3(x * w / 2, base + h / 2, z * d / 2)))
+	return base
+
+
+func barracks_thatch(team: Color) -> Dictionary:
+	return _barracks("thatch", team)
+
+
+func barracks_junk(team: Color) -> Dictionary:
+	return _barracks("junk", team)
+
+
+func barracks_stone(team: Color) -> Dictionary:
+	return _barracks("stone", team)
+
+
+func barracks_tent(team: Color) -> Dictionary:
+	return _barracks("tent", team)
+
+
+## A training hall: a long hall with a team-colour door curtain, a fenced yard in front
+## with a straw target, a practice dummy and a weapon rack.
+func _barracks(arch: String, team: Color) -> Dictionary:
+	var body := Node3D.new()
+	var wood := mats.get_mat("wood")
+	var w := 2.3
+	var d := 1.3
+	var h := 0.85
+	var hall := Node3D.new()
+	hall.position = Vector3(0, 0, -0.55)
+	body.add_child(hall)
+	var base := _hall(hall, arch, w, d, h)
+	var rise := _roof(hall, arch, Vector3(0, base + h, 0), w, d)
+	hall.add_child(box(Vector3(0.5, 0.62, 0.04), cloth(team), Vector3(-0.3, base + 0.31, d / 2 + 0.02)))
+	var lights := []
+	body.add_child(box(Vector3(0.04, 0.22, 0.32), glow(Color("#ffcf6a"), 1.3), Vector3(w / 2 + 0.01, base + 0.55, -0.55)))
+	lights.append(Vector3(w / 2 + 0.03, base + 0.55, -0.55))
+	# The yard: a low fence, a straw target, a dummy, a rack of spears.
+	for k in 6:
+		var x := -1.25 + k * 0.5
+		body.add_child(cyl(0.025, 0.03, 0.26, wood, Vector3(x, 0.13, 1.3), Vector3.ZERO, 6))
+	body.add_child(box(Vector3(2.55, 0.03, 0.03), wood, Vector3(0, 0.22, 1.3)))
+	body.add_child(cyl(0.2, 0.2, 0.07, mats.get_mat("thatch"), Vector3(0.75, 0.38, 0.75), Vector3(80, 0, 0), 20))   # the target
+	body.add_child(ring(0.06, 0.1, cloth(Color("#c03030")), Vector3(0.75, 0.38, 0.79), Vector3(80, 0, 0)))
+	body.add_child(cyl(0.025, 0.025, 0.42, wood, Vector3(0.75, 0.21, 0.72), Vector3(-10, 0, 0), 6))
+	body.add_child(cyl(0.03, 0.03, 0.5, wood, Vector3(-0.6, 0.25, 0.75), Vector3.ZERO, 6))          # the dummy
+	body.add_child(ball(0.12, mats.get_mat("felt"), Vector3(-0.6, 0.48, 0.75), Vector3(1, 1.4, 1)))
+	body.add_child(ball(0.07, mats.get_mat("felt"), Vector3(-0.6, 0.66, 0.75)))
+	body.add_child(box(Vector3(0.46, 0.03, 0.03), wood, Vector3(-0.6, 0.5, 0.75)))
+	for k in 4:   # the rack
+		body.add_child(beam(Vector3(-1.1 + k * 0.08, 0.05, 0.25), Vector3(-1.04 + k * 0.08, 0.72, 0.18), 0.012, wood))
+	body.add_child(box(Vector3(0.36, 0.03, 0.05), wood, Vector3(-0.98, 0.5, 0.22)))
+	_pennant(body, Vector3(1.05, base + h + rise - 0.1, -0.55), team)
+	return {"body": body, "anchor": Vector3.ZERO, "smoke": Vector3(0.6, base + h + rise, -0.75), "lantern": Vector3(-0.3, base + 0.72, 0.2),
+		"lights": lights, "team": team}
+
+
+func stable_thatch(team: Color) -> Dictionary:
+	return _stable("thatch", team)
+
+
+func stable_junk(team: Color) -> Dictionary:
+	return _stable("junk", team)
+
+
+func stable_stone(team: Color) -> Dictionary:
+	return _stable("stone", team)
+
+
+func stable_tent(team: Color) -> Dictionary:
+	return _stable("tent", team)
+
+
+## A stable: an open-fronted barn with stalls, hay bales, a trough and a team blanket
+## over the rail.
+func _stable(arch: String, team: Color) -> Dictionary:
+	var body := Node3D.new()
+	var k: Dictionary = KIT[arch]
+	var wood := mats.get_mat("wood")
+	var w := 2.4
+	var d := 1.6
+	var h := 0.8
+	var base := 0.0
+	if k.base != "":
+		body.add_child(box(Vector3(w + 0.3, 0.12, d + 0.3), mats.get_mat(k.base), Vector3(0, 0.06, -0.3)))
+		base = 0.12
+	body.add_child(box(Vector3(w, h, 0.08), mats.get_mat(k.wall), Vector3(0, base + h / 2, -0.3 - d / 2)))   # back wall
+	for side in [-1, 1]:
+		body.add_child(box(Vector3(0.08, h, d), mats.get_mat(k.wall), Vector3(side * w / 2, base + h / 2, -0.3)))
+	for x in [-1.2, -0.4, 0.4, 1.2]:   # posts and stall boards
+		body.add_child(box(Vector3(0.1, h, 0.1), mats.get_mat(k.frame), Vector3(x, base + h / 2, -0.3 + d / 2)))
+		if absf(x) < 1.0:
+			body.add_child(box(Vector3(0.05, h * 0.6, d * 0.8), wood, Vector3(x, base + h * 0.3, -0.35)))
+	body.add_child(box(Vector3(w, 0.06, 0.06), wood, Vector3(0, base + h * 0.55, -0.3 + d / 2)))   # the rail
+	body.add_child(box(Vector3(0.5, 0.18, 0.03), cloth(team), Vector3(0.0, base + h * 0.45, -0.3 + d / 2 + 0.04)))   # a blanket over it
+	var rise := _roof(body, arch, Vector3(0, base + h, -0.3), w, d)
+	var hay := Materials.flat(Color("#d6b45a"), 1.0)
+	for p in [Vector3(-0.9, 0.12, 0.85), Vector3(-0.55, 0.12, 0.95), Vector3(-0.75, 0.32, 0.9)]:
+		body.add_child(box(Vector3(0.32, 0.2, 0.22), hay, p + Vector3(0, base, 0)))
+	body.add_child(box(Vector3(0.6, 0.14, 0.18), wood, Vector3(0.8, base + 0.07, 0.75)))   # trough
+	body.add_child(box(Vector3(0.54, 0.02, 0.12), Materials.flat(Color("#4e7a86"), 0.4), Vector3(0.8, base + 0.13, 0.75)))
+	_pennant(body, Vector3(w / 2 - 0.05, base + h + 0.05, -0.3 - d / 2 + 0.1), team)
+	return {"body": body, "anchor": Vector3.ZERO, "lantern": Vector3(0.0, base + h * 0.75, 0.55), "lights": [], "team": team}
+
+
+func watchtower_thatch(team: Color) -> Dictionary:
+	return _tower("thatch", team)
+
+
+func watchtower_junk(team: Color) -> Dictionary:
+	return _tower("junk", team)
+
+
+func watchtower_stone(team: Color) -> Dictionary:
+	return _tower("stone", team)
+
+
+func watchtower_tent(team: Color) -> Dictionary:
+	return _tower("tent", team)
+
+
+## A lookout tower on a one-tile footing: a solid base (or four poles, for tents and junk),
+## a railed platform, a little roof, a team flag; a lantern up top.
+func _tower(arch: String, team: Color) -> Dictionary:
+	var body := Node3D.new()
+	var k: Dictionary = KIT[arch]
+	var wood := mats.get_mat("wood")
+	var top := 1.7
+	if arch == "stone" or arch == "thatch":
+		body.add_child(box(Vector3(0.62, top, 0.62), mats.get_mat("stone" if arch == "stone" else k.wall), Vector3(0, top / 2, 0)))
+		for z in [-0.31, 0.31]:
+			body.add_child(box(Vector3(0.08, top, 0.08), mats.get_mat(k.frame), Vector3(0.31, top / 2, z)))
+	else:
+		for x in [-0.28, 0.28]:
+			for z in [-0.28, 0.28]:
+				body.add_child(beam(Vector3(x * 1.15, 0, z * 1.15), Vector3(x, top, z), 0.04, wood))
+		body.add_child(beam(Vector3(-0.3, 0.5, 0.3), Vector3(0.3, 1.2, 0.3), 0.025, wood))   # cross braces
+		body.add_child(beam(Vector3(0.3, 0.5, -0.3), Vector3(0.3, 1.2, 0.3), 0.025, wood))
+	body.add_child(box(Vector3(0.86, 0.08, 0.86), wood, Vector3(0, top, 0)))   # the platform
+	for side in 4:
+		var p := Vector3(0, top + 0.16, 0.42) if side == 0 else Vector3(0.42, top + 0.16, 0) if side == 1 else Vector3(0, top + 0.16, -0.42) if side == 2 else Vector3(-0.42, top + 0.16, 0)
+		body.add_child(box(Vector3(0.86 if side % 2 == 0 else 0.04, 0.04, 0.04 if side % 2 == 0 else 0.86), wood, p))
+	for x in [-0.4, 0.4]:
+		for z in [-0.4, 0.4]:
+			body.add_child(cyl(0.025, 0.025, 0.5, wood, Vector3(x, top + 0.25, z), Vector3.ZERO, 6))
+	var roof_mat: Material = mats.get_mat("terracotta" if k.roof == "tiles" else k.roof)
+	body.add_child(cyl(0.0, 0.62, 0.38, roof_mat, Vector3(0, top + 0.68, 0), Vector3(0, 45, 0), 4))
+	_pennant(body, Vector3(0, top + 0.86, 0), team)
+	return {"body": body, "anchor": Vector3.ZERO, "lantern": Vector3(0.3, top + 0.3, 0.3), "lights": [], "team": team}

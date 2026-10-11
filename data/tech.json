@@ -6,11 +6,14 @@
    "age": 2,
    "name": "Stick Age",
    "cost": {
-    "food": 400,
+    "food": 500,
     "wood": 200
    },
-   "time": 60,
-   "building": "town_center"
+   "time": 90,
+   "building": "town_center",
+   "requires": [
+    "barracks"
+   ]
   },
   {
    "age": 3,
@@ -21,7 +24,10 @@
     "stone": 200
    },
    "time": 90,
-   "building": "town_center"
+   "building": "town_center",
+   "requires": [
+    "stable"
+   ]
   }
  ],
  "research": [

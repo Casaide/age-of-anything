@@ -380,6 +380,8 @@ func _unhandled_input(event: InputEvent) -> void:
 				start_placing("house")
 			KEY_F:
 				start_placing("farm")
+			KEY_B:
+				start_placing("barracks")
 			KEY_U:
 				if selected_building != 0:
 					world.issue(active, Commands.AGE_UP, {"building": selected_building})
@@ -962,7 +964,7 @@ func _update_panel() -> void:
 			"portrait": kit.building_icon(_arch(owner), t.id), "buttons": [], "queue": null, "info": ""}
 		if bs.done[b] == 0:
 			c.info = "Being built: %d%%" % (100 * bs.progress[b] / t.build_ticks)
-		elif "worker" in t.trains:
+		elif not t.trains.is_empty() or not world.tech.research.filter(func(r): return r.building == t.id).is_empty():
 			var q: Array = bs.queue[b]
 			c.queue = []
 			c.queue_max = int(world.econ.queue_max)
@@ -978,11 +980,18 @@ func _update_panel() -> void:
 				if bs.train[b] == 0 and world.pop[owner] + head.pop > world.pop_cap[owner]:
 					c.info += " (needs a house)"
 			if mine:
-				var wt: Dictionary = world.types[world.type_of(active, "worker")]
-				var afford: bool = world.can_afford(active, wt.cost)
-				c.buttons.append({"icon": kit.icons.get("%d:worker" % active), "text": "Train %s (%s)" % [wt.name, _cost_text(wt.cost)],
-					"key": "Q", "cost": _cost_text(wt.cost), "enabled": afford and q.size() < int(world.econ.queue_max),
-					"action": train_worker})
+				for slot in t.trains:
+					var tk := world.type_of(active, slot)
+					if tk < 0:
+						continue
+					var wt: Dictionary = world.types[tk]
+					var ok_age: bool = world.ages[active] >= int(wt.line[0].age)
+					var afford: bool = world.can_afford(active, wt.cost)
+					var tslot: String = slot
+					c.buttons.append({"icon": kit.icons.get("%d:%s" % [active, slot]),
+						"text": ("Train %s (%s)" % [wt.name, _cost_text(wt.cost)]) if ok_age else "%s: needs age %d" % [wt.name, wt.line[0].age],
+						"key": "Q" if slot == "worker" else "", "cost": _cost_text(wt.cost), "enabled": ok_age and afford and q.size() < int(world.econ.queue_max),
+						"action": func(): world.issue(active, Commands.TRAIN, {"building": selected_building, "slot": tslot})})
 				_tech_buttons(c, b)
 				c.info += ("\n" if c.info != "" else "") + "Right-click: rally point"
 		panel.show_content(c)
@@ -1008,12 +1017,14 @@ func _update_panel() -> void:
 			kinds.sort()
 			c.tray = kinds.map(func(k): return {"icon": kit.icons.get("%d:%s" % [world.types[k].player, world.types[k].slot]), "count": counts[k]})
 		if not _selected_workers().is_empty():
-			for id in ["house", "farm", "town_center"]:
+			for id in ["house", "farm", "barracks", "stable", "watchtower", "town_center"]:
 				var t: Dictionary = world.btypes[Economy.btype_of(world, id)]
+				if world.ages[active] < t.age:
+					continue
 				var afford: bool = world.can_afford(active, t.cost)
 				var bid: String = id
 				c.buttons.append({"icon": kit.building_icon(_arch(active), id), "text": "Build %s (%s)" % [t.name, _cost_text(t.cost)],
-					"key": {"house": "H", "farm": "F", "town_center": "C"}[id], "cost": _cost_text(t.cost), "enabled": afford, "action": func(): start_placing(bid)})
+					"key": {"house": "H", "farm": "F", "barracks": "B", "town_center": "C"}.get(id, ""), "cost": _cost_text(t.cost), "enabled": afford, "action": func(): start_placing(bid)})
 		if placing != "":
 			c.info = "Placing: left-click to build, shift keeps placing, right-click/Esc cancels"
 		panel.show_content(c)
