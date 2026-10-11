@@ -433,62 +433,25 @@ func _concept_head_small(c: Dictionary) -> Dictionary:
 # Junk, never human bronze; head gear sits on the crown between the ears, which always show.
 # Age 1 rags and string, age 2 tin and bottle caps, age 3 cutlery steel copying the Romans.
 
+# (now in the game as unit_models' junk kit; kept as aliases so the RB2 sheet still renders)
 func _concept_rat_thimble(c: Dictionary) -> Dictionary:
-	var n := Node3D.new()
-	var brass := surf("bronze", Color(1.1, 1.0, 0.75), 1.2)
-	n.add_child(cone(1.7, 2.2, 3.0, brass, Vector3(0.6, -0.4, 0), Vector3(0, 0, -12)))
-	n.add_child(blob(Vector3(1.7, 0.6, 1.7), brass, Vector3(0.9, 1.1, 0)))
-	n.add_child(ring(2.1, 2.5, brass, Vector3(0.4, -1.8, 0), Vector3(0, 0, -12)))
-	return {"node": n}
+	return _helm_thimble(c)
 
 
 func _concept_rat_tin_cap(c: Dictionary) -> Dictionary:
-	var n := Node3D.new()
-	var tin := surf("iron", Color(0.95, 0.95, 1.0), 2.0)
-	n.add_child(dome(Vector3(4.0, 2.6, 2.5), tin, Vector3(0.6, -1.6, 0)))   # narrow: the ears stay out
-	n.add_child(ring(0.97, 1.08, plain(Color("#6a6c66")), Vector3(0.6, -1.5, 0), Vector3.ZERO, Vector3(4.0, 1.0, 2.5)))
-	n.add_child(blob(Vector3(0.7, 0.5, 0.7), tin, Vector3(0.6, 1.1, 0)))   # a rivet knob
-	return {"node": n}
+	return _helm_tin_cap(c)
 
 
-## Age 3 pride: a spoon's bowl as the helmet, its handle down the neck as a guard, and a
-## toothbrush along the top as the crest (copying the Romans' crested helmet).
 func _concept_rat_spoon_helm(c: Dictionary) -> Dictionary:
-	var n := Node3D.new()
-	var steel := surf("iron", Color.WHITE, 2.0)
-	n.add_child(dome(Vector3(4.4, 2.8, 2.6), steel, Vector3(0.8, -1.6, 0)))
-	n.add_child(rod(Vector3(-3.2, -1.4, 0), Vector3(-6.2, -5.2, 0), 0.55, 0.45, steel))   # the handle as a neck guard
-	n.add_child(rod(Vector3(-1.6, 1.5, 0), Vector3(3.6, 1.5, 0), 0.35, 0.35, plain(Color("#e8e0d0"))))   # toothbrush handle
-	n.add_child(_box(Vector3(4.0, 1.6, 0.9), plain(c.crimson), Vector3(0.6, 2.6, 0)))   # bristles, in the crest's red
-	return {"node": n}
+	return _helm_spoon(c)
 
 
-## Sardine-tin bands as a segmented cuirass (age 3), fitted to the lean rat.
 func _concept_rat_sardine_armour(c: Dictionary) -> Dictionary:
-	var n := Node3D.new()
-	var tin := surf("iron", Color(0.95, 0.97, 1.0), 2.0)
-	var label := plain(Color("#c8a040"))
-	var tilt := Node3D.new()   # follow the rat's forward hunch; torso armour is built ~1.6x and scaled down by the body
-	tilt.rotation_degrees = Vector3(0, 0, 15)
-	tilt.scale = Vector3.ONE * 1.45
-	n.add_child(tilt)
-	for k in 4:
-		var y := 4.0 - k * 2.4
-		tilt.add_child(cone(6.6 - k * 0.35, 6.9 - k * 0.35, 2.0, tin if k % 2 == 0 else label, Vector3(0.6, y, 0), Vector3.ZERO, 20))
-	tilt.add_child(_box(Vector3(1.2, 0.5, 3.2), plain(Color("#6a6c66")), Vector3(7.0, 4.6, 0), Vector3(0, 0, -20)))   # the key, rolled
-	return {"node": n}
+	return _armour_sardine(c)
 
 
-## A shield cut from a can: a curved tall rectangle (copying the Roman scutum), a bottle-cap boss.
 func _concept_rat_can_scutum(c: Dictionary) -> Dictionary:
-	var n := Node3D.new()
-	var tin := surf("iron", Color(0.95, 0.95, 1.0), 2.0)
-	for k in 5:
-		var a := deg_to_rad(-30 + k * 15)
-		n.add_child(_box(Vector3(0.4, 11.0, 2.2), tin if k != 2 else plain(c.team), Vector3(sin(a) * 4.0, 0, cos(a) * 4.0 - 4.0), Vector3(0, rad_to_deg(a), 0)))
-	n.add_child(cone(1.2, 1.4, 0.6, surf("bronze", Color.WHITE, 1.0), Vector3(0.6, 0, 0), Vector3(0, 0, 90), 14))
-	return {"node": n}
-
+	return _shield_can_scutum(c)
 
 
 # ------------------------------------------------------------------ RB1: the rats' large unit
@@ -579,15 +542,6 @@ func _concept_brute_body(c: Dictionary) -> Dictionary:
 	return {"node": n, "sockets": {"head": Vector3(8, 18, 0), "hand_r": Vector3(10, 4, 7.5), "hand_l": Vector3(10, 4, -7.5),
 		"torso": Vector3(0, 14, 0), "back": Vector3(-6, 20, 0)}, "anchors": [], "torso_scale": Vector2(1.2, 1.0)}
 
-func _box(size: Vector3, m: Material, pos: Vector3, rot := Vector3.ZERO) -> MeshInstance3D:
-	var b := BoxMesh.new()
-	b.size = size
-	var mi := MeshInstance3D.new()
-	mi.mesh = b
-	mi.material_override = m
-	mi.position = pos
-	mi.rotation_degrees = rot
-	return mi
 
 
 ## No head (bodies that carry their own).

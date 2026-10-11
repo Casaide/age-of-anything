@@ -425,3 +425,9 @@ question.
 hunched rat on the paint-over hybrid pipeline, with the scarf and armour fitted to it. Body armour
 is modelled for wide bodies, so each body places and squeezes it (`torso` socket and
 `torso_scale`); the rat's sits on the chest now.
+
+**D-084, 2026-10-11: Picks for the rats, beetles and humans.** Dominic picked: the rat kit
+ladder as shown (RB2: thimble, tin skullcap, spoon helmet with a toothbrush crest; bottle-cap
+jerkin at age 2, sardine-tin cuirass at age 3; can scutum), the capybara as the rats' large unit
+(RB1), rearing beetles (BG1), and Blender for modelling human parts (installed). The saucepan
+helmet loses its junk/sewer tags, so rats no longer wear it; it stays the WW2 substitute.

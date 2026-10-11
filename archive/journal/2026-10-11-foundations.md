@@ -130,3 +130,9 @@ Dominic confirmed the slim rat is the approach. The leather jerkin still hung lo
 forward like a brown egg over the belly (armour is modelled for frog-wide bodies); the rat's torso
 socket moved up to the chest and the armour squeezed to fit (torso_scale 0.58 x 0.74). Now it reads
 as a chest jerkin under the scarf, with the pink belly showing below.
+
+### Picks, and the rat kit in the game
+Dominic picked the capybara, rearing beetles, the rat kit ladder and Blender. The junk kit is now
+data (`helm.thimble`, `helm.tin_cap`, `helm.spoon`, `armour.bottlecap`, `armour.sardine`,
+`shield.can_scutum`), so sewer rats climb it age by age with no code. The can scutum first came out
+edge-on (a thin blue stripe beside the rat); it now uses the shields' facing like the human scutum.
