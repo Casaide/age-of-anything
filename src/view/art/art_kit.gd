@@ -17,7 +17,7 @@ const ART_SCALE := 1.5     # art pixels per canvas unit (a tile is 96 x 48 art p
 const UNIT_SCALE := 0.85   # units at about a third of a building's height
 const UNIT_BANDS := 4      # value bands in unit shading (Pixelize.run; the paint-over hybrid)
 const SS := 4              # supersampling for the building and prop bakes
-const HOUSE_SCALE := 1.3
+const HOUSE_SCALE := 1.1   # houses read smaller than the halls (Fable; Dominic: rat house too big)
 ## Parts a worker swaps in by job (see UnitView.set_tool and sim_debug's _tool_for).
 const JOB_PARTS := ["tool.axe", "tool.basket", "tool.hammer", "tool.pick", "load.reeds", "load.stone"]
 const ICON_CELL := 160     # screen pixels per unit when rendering portraits   # houses read about 2.5x a footman
