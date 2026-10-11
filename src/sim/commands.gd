@@ -24,7 +24,8 @@ const SURRENDER := "surrender"     # {}  the player concedes (match.gd)
 const RESEED := "reseed"           # {ids, building}  replant a worked-out farm (costs wood); the workers farm it
 const TRADE := "trade"             # {building: a market, resource: id, buy: 1 or 0}  a lot of goods for gold (market.gd)
 const STOP := "stop"               # {ids}  drop everything: no move, no job, no fight, no queued orders
-const TYPES := [MOVE, SPAWN, GATHER, BUILD, HELP_BUILD, TRAIN, CANCEL, RALLY, ATTACK, ATTACK_MOVE, AGE_UP, RESEARCH, SURRENDER, RESEED, TRADE, STOP]
+const STANCE := "stance"           # {ids, stance: "aggressive" / "defensive" / "stand" / "passive"}  (combat.gd POSTURES)
+const TYPES := [MOVE, SPAWN, GATHER, BUILD, HELP_BUILD, TRAIN, CANCEL, RALLY, ATTACK, ATTACK_MOVE, AGE_UP, RESEARCH, SURRENDER, RESEED, TRADE, STOP, STANCE]
 ## Unit orders that can be queued: with args.queue = 1, a busy unit keeps the order for
 ## when it's done (shift-queuing); without it, the order replaces the unit's queue.
 const QUEUEABLE := [MOVE, GATHER, BUILD, HELP_BUILD, ATTACK, ATTACK_MOVE]
