@@ -27,16 +27,22 @@ def _j(rng, lo, hi):
 # ----------------------------------------------------------------------------- blows
 
 def hit_blade(rng):
-    """Edge on shield, armour or hide: a steel clang (two close partials beating, damped fast,
-    well below the stone's ring), a scrape sliding down, and a meaty thud. (The first version
-    rang at the pick-on-stone's pitches and sounded like mining: Dominic.)"""
-    f = _j(rng, 1050, 1350)
-    clang = modal(seconds(0.14), [(f, 45.0, 0.6), (f * 1.013, 50.0, 0.5), (f * 1.9, 70.0, 0.25)], rng, 0.0)
-    n = seconds(0.11)
-    f0 = _j(rng, 5200, 6500)
-    scrape = gain(mul(bandpass(noise(n, rng), lambda t, f0=f0: f0 - 3200.0 * (t / 0.11), 2.2), env(n, 0.004, 0.06, 0.15, 0.04)), 0.9)
-    thud = add(_thump(rng, 0.12, 170.0, 85.0, 40.0, 0.9), _burst(rng, 0.06, _j(rng, 350, 500), 0.8, 70.0, 0.6))
-    return add(scrape, delay_start(clang, 0.006), delay_start(thud, 0.01))
+    """Metal on metal: a sharp click, a bright steel ring (inharmonic partials in close
+    detuned pairs, so it shimmers, ringing a third of a second), a high 'shing' sweeping down,
+    and barely any weight. Steel rings longer and higher than the pick's stone and has the
+    sizzle; stone is short and gritty. (Dominic: v1 was mining, v2 with a thud was worse.)"""
+    f = _j(rng, 2500, 3100)
+    pairs = []
+    for k, (ratio, dec, amp) in enumerate([(1.0, 11.0, 0.5), (1.47, 14.0, 0.4), (2.09, 18.0, 0.3), (2.71, 24.0, 0.2), (3.4, 30.0, 0.12)]):
+        pairs.append((f * ratio, dec, amp))
+        pairs.append((f * ratio * _j(rng, 1.004, 1.009), dec * 1.1, amp * 0.8))
+    ring = modal(seconds(0.38), pairs, rng, 0.0)
+    click = _burst(rng, 0.006, _j(rng, 5000, 7000), 0.5, 600.0, 1.4)
+    n = seconds(0.13)
+    f0 = _j(rng, 8500, 10500)
+    shing = gain(mul(bandpass(noise(n, rng), lambda t, f0=f0: f0 - 4500.0 * (t / 0.13), 3.5), env(n, 0.003, 0.07, 0.2, 0.05)), 1.2)
+    touch = _thump(rng, 0.04, 260.0, 180.0, 120.0, 0.15)
+    return add(click, ring, delay_start(shing, 0.004), touch)
 
 
 def hit_blunt(rng):
@@ -299,7 +305,7 @@ def meadow(rng):
 
 # name -> (recipe, takes, peak dB). Stings and ambience are one take.
 TABLE = {
-    "hit_blade": (hit_blade, 4, -2.0), "hit_blunt": (hit_blunt, 4, -2.0), "hit_pierce": (hit_pierce, 4, -2.0),
+    "hit_blade": (hit_blade, 4, -4.0), "hit_blunt": (hit_blunt, 4, -2.0), "hit_pierce": (hit_pierce, 4, -2.0),
     "arrow_land": (arrow_land, 3, -4.0),
     "shoot_arrow": (shoot_arrow, 3, -3.0), "shoot_bolt": (shoot_bolt, 2, -2.0), "shoot_javelin": (shoot_javelin, 2, -3.0),
     "shoot_stone": (shoot_stone, 2, -3.0), "shoot_dart": (shoot_dart, 2, -6.0), "shoot_ball": (shoot_ball, 2, -1.0),
