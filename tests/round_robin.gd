@@ -1,7 +1,8 @@
 extends RefCounted
 ## Equal-cost round robin (used by tests/balance.gd and tests/tune_points.gd): every soldier of
 ## the given races fights every other at the same budget in one age, in the sim. Returns
-## {units: [[race, slot, label]], rates: [win %], mean}. Deterministic.
+## {units: [[race, slot, label]], rates: [win %], mean, counters: % of same-race counter fights
+## the counter won}. Deterministic.
 
 const SimMap := preload("res://src/sim/sim_map.gd")
 const World := preload("res://src/sim/world.gd")
@@ -12,6 +13,8 @@ const SLOTS := ["spear", "skirmisher", "archer", "large"]
 const BUDGET := 600
 const LIMIT := 3000
 const FROM := [[11000, 20500], [21000, 20500]]
+## Within one race, who should beat whom at equal cost (the genre's counters).
+const COUNTERS := [["spear", "large"], ["large", "archer"], ["skirmisher", "archer"], ["archer", "spear"]]
 
 
 static func run(races: Array, rules: Dictionary, age: int) -> Dictionary:
@@ -25,9 +28,18 @@ static func run(races: Array, rules: Dictionary, age: int) -> Dictionary:
 	wins.fill(0)
 	played.resize(units.size())
 	played.fill(0)
+	var counter_won := 0
+	var counter_fights := 0
 	for a in units.size():
 		for b in range(a + 1, units.size()):
 			var r := fight(rules, age, units[a], units[b])
+			if units[a][0] == units[b][0]:
+				for pair in COUNTERS:
+					if [units[a][1], units[b][1]] == pair or [units[b][1], units[a][1]] == pair:
+						counter_fights += 1
+						var a_is_counter: bool = units[a][1] == pair[0]
+						if (r > 0 and a_is_counter) or (r < 0 and not a_is_counter):
+							counter_won += 1
 			if r == 0:
 				continue
 			played[a] += 1
@@ -39,7 +51,8 @@ static func run(races: Array, rules: Dictionary, age: int) -> Dictionary:
 	for k in units.size():
 		rates.append(wins[k] * 100 / maxi(1, played[k]))
 		total += rates[k]
-	return {"units": units, "rates": rates, "mean": total / maxi(1, units.size())}
+	return {"units": units, "rates": rates, "mean": total / maxi(1, units.size()),
+		"counters": counter_won * 100 / maxi(1, counter_fights)}
 
 
 ## +1 if a wins, -1 if b wins, 0 for a draw (by value left standing).

@@ -63,6 +63,11 @@ Milestone 7 (progression) followed straight on:
   animation was tied to a counter that resets every unit of food). Farms became one walkable,
   reseedable thing (D-079), a selected building shows its rally flag, and centaur workers cost
   more again but carry 160% (D-078).
+- **Milestone 3 closed:** Dominic watched a bot opening: "all looks good". He spotted two
+  workers at one berry bush trading places for ever: spacing pushed the working one out of reach.
+  Workers at their job now overlap freely, and passers-by give way.
+- **Frogs picked:** the crouched leaper (A); the bullfrog (C) kept for another unit or an
+  upgrade. "If frogs hop instead of walk it'll be pretty cool."
 - **Wings.** Feather wings had thirty small feathers and baked to a white slab; now eight big
   ones. A pegasus's wings sat so high they looked like the rider's; they now lie folded along
   the horse's back.

@@ -8,7 +8,7 @@ along the way. The overview table lives in `../mvp-plan.md` §3; these files hol
 | 0 | [Race generation](m0-race-generation.md) | done 2026-10-10 |
 | 1 | [Sim core](m1-sim-core.md) | done 2026-10-10 |
 | 2 | [Map + movement](m2-map-movement.md) | done 2026-10-11 |
-| 3 | [Economy](m3-economy.md) | built; exit check: Dominic watches an opening |
+| 3 | [Economy](m3-economy.md) | done 2026-10-11 |
 | 4 | [Combat](m4-combat.md) | sim, view and quiz built; waiting on the quiz run and the unit card |
 | 5 | [Art rework](m5-art-rework.md) | built; waiting on Dominic's look sign-off |
 | 6 | [Foundations](m6-foundations.md) | done 2026-10-11 |
