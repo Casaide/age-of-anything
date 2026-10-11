@@ -93,7 +93,9 @@ var overlay: Node2D         # over everything: selection box, placement ghost, c
 var hud: Label
 var bar: Label              # the debug line of both sides' stock (not against the AI)
 var top_bar: TopBar
-var build_menu: Array = DataLib.load_json("res://data/buildings.json").menu   # a worker's buttons, in order
+var build_menu: Dictionary = DataLib.load_json("res://data/buildings.json").menu   # a worker's two build pages: civilian, military
+var build_page := ""        # the page a worker's panel shows: "" (pick a page), "civilian" or "military"
+var _build_page_for := ""   # the selection it was opened for; a new selection starts at the top
 var show_debug := true      # the debug lines (F1); off by default against the AI
 var panel: CommandPanel
 var cursors: Cursors
@@ -492,6 +494,8 @@ func _play_key(event: InputEventKey) -> bool:
 			if arming_attack or placing != "":
 				arming_attack = false
 				placing = ""
+			elif build_page != "" and not _selected_workers().is_empty():
+				build_page = ""
 			elif vs_ai:
 				_toggle_pause_menu()
 			return true
@@ -1831,15 +1835,28 @@ func _update_panel() -> void:
 			c.buttons.append({"icon": Icons.texture("stop"), "text": "Stop", "key": "X", "cost": "", "enabled": true,
 				"tip": "[b]Stop[/b]\nDrop every order: they stand where they are.", "action": stop_selected})
 		if not _selected_workers().is_empty():
-			for id in build_menu:
-				var t: Dictionary = world.btypes[Economy.btype_of(world, id)]
-				if world.ages[active] < t.age:
-					continue
-				var afford: bool = world.can_afford(active, t.cost)
-				var bid: String = id
-				c.buttons.append({"icon": kit.building_icon(_arch(active), id), "text": "Build %s (%s)" % [t.name, _cost_text(t.cost)],
-					"tip": _building_tip(t), "glyph": Icons.texture("glyph/" + id),   # what it's for, the same in every culture
-					"key": t.hotkey, "cost": _cost_text(t.cost), "enabled": afford, "action": func(): start_placing(bid)})
+			if str(mine) != _build_page_for:
+				_build_page_for = str(mine)
+				build_page = ""
+			if build_page == "":
+				for page in [["civilian", "Civilian", "house", "Houses, farms, camps, the market and Town Centers."],
+						["military", "Military", "barracks", "Barracks, ranges, stables, the armoury, towers and walls."]]:
+					var pid: String = page[0]
+					c.buttons.append({"icon": kit.building_icon(_arch(active), page[2]), "text": "Build: %s" % page[1], "key": "", "cost": page[1], "enabled": true,
+						"glyph": Icons.texture("glyph/" + page[2]),
+						"tip": "[b]%s buildings[/b]\n%s" % [page[1], page[3]], "action": func(): build_page = pid})
+			else:
+				for id in build_menu[build_page]:
+					var t: Dictionary = world.btypes[Economy.btype_of(world, id)]
+					if world.ages[active] < t.age:
+						continue
+					var afford: bool = world.can_afford(active, t.cost)
+					var bid: String = id
+					c.buttons.append({"icon": kit.building_icon(_arch(active), id), "text": "Build %s (%s)" % [t.name, _cost_text(t.cost)],
+						"tip": _building_tip(t), "glyph": Icons.texture("glyph/" + id),   # what it's for, the same in every culture
+						"key": t.hotkey, "cost": _cost_text(t.cost), "enabled": afford, "action": func(): start_placing(bid)})
+				c.buttons.append({"icon": Icons.texture("back"), "text": "Back", "key": "Esc", "cost": "", "enabled": true,
+					"tip": "[b]Back[/b]\nTo the civilian and military pages.", "action": func(): build_page = ""})
 		if placing != "":
 			c.info = "Placing: left-click to build, shift keeps placing, right-click/Esc cancels"
 		panel.show_content(c)

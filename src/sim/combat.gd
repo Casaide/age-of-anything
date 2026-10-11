@@ -334,8 +334,8 @@ static func _nearest_foe(w, i: int, sight: int, buildings_too: bool, engaged: Pa
 			var cell: int = yy * sp.width + xx
 			for k in range(sp.start[cell], sp.start[cell + 1]):
 				var j: int = sp.items[k]
-				if not w.is_foe(u.owner[j], me):
-					continue
+				if not w.is_foe(u.owner[j], me) or w.types[u.kind[j]].has("animal"):
+					continue   # a rival's sheep is stolen by walking up to it, not killed (Dominic)
 				var d2 := Fixed.dist2(u.x[i], u.y[i], u.x[j], u.y[j])
 				if d2 > sight * sight:
 					continue

@@ -101,6 +101,7 @@ func _walls(view) -> void:
 	var w = view.world
 	var s: Array = w.map.starts[0]
 	w.stock[w.resources.find("stone")][0] = 500
+	w.ages[0] = 2   # stone walls come with age 2
 	for i in w.units.count():
 		if w.units.owner[i] == 0:
 			view.selected[w.units.id[i]] = true
@@ -118,11 +119,11 @@ func _walls(view) -> void:
 	view.camera.look_at_point(Iso.to_screen(a.x * 1000 + 2000, a.y * 1000 + 4000))
 
 
-## The Town Center selected (or a worker, for "tip:1"), with the tooltip card of the panel's
-## last button shown where a hover would put it.
+## The Town Center selected (or a worker: "tip:1" its build pages, "tip:2" the military page),
+## with the tooltip card of the panel's last button (a worker's first) shown where a hover would put it.
 func _tip(view, which: int) -> void:
 	var w = view.world
-	if which == 1:
+	if which >= 1:
 		for i in w.units.count():
 			if w.units.owner[i] == 0:
 				view.selected[w.units.id[i]] = true
@@ -131,8 +132,12 @@ func _tip(view, which: int) -> void:
 		view.selected_building = w.buildings.id[0]
 	for f in 10:
 		await process_frame
+	if which == 2:
+		view.build_page = "military"
+		for f in 10:
+			await process_frame
 	var buttons: Array = view.panel._buttons.get_children()
-	var b = buttons[buttons.size() - 1 if which != 1 else 3]
+	var b = buttons[buttons.size() - 1 if which == 0 else 0]
 	var card: Control = b._make_custom_tooltip(b.tooltip_text)
 	view.panel.get_parent().add_child(card)
 	card.position = b.global_position + Vector2(0, -260)

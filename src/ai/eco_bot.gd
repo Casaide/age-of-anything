@@ -16,6 +16,10 @@ var MAX_WORKERS := 30
 const TRAIN_COOLDOWN := 20     # ticks between train orders (commands land two turns later)
 const HOUSE_COOLDOWN := 200
 const HOUSE_HEADROOM := 2      # build a house when free pop drops to this
+const FARM_RADIUS := 10        # tiles from the Town Center that count as home for wild food
+const WILD_PER_WORKER := 150   # wild food near home that keeps one food worker off the farms
+const FARM_BELOW := 400        # new farms only while the food stock is below this
+const PLENTY := 1000           # a stock this big takes no new gatherers while another resource is wanted
 var AGE_WORKERS := 16          # with this many workers, stop training and save for the next age
 
 var player: int
@@ -91,6 +95,37 @@ func think(w) -> void:
 		if builder >= 0 and spot.x >= 0:
 			w.issue(player, Commands.BUILD, {"ids": [w.units.id[builder]], "building": "house", "cx": spot.x, "cy": spot.y})
 			_next_house = w.tick + HOUSE_COOLDOWN
+	_farms(w, tc, workers, n)
+
+
+## Farms: as the wild food near home runs out, a farm for each food worker it no longer
+## feeds; worked-out farms reseeded (the idle hands then pick them up as the nearest food).
+func _farms(w, tc: int, workers: Array, n: PackedInt32Array) -> void:
+	var bs = w.buildings
+	var food: int = Economy.kind_of(w, "food")
+	var fk: int = Economy.btype_of(w, "farm")
+	var ft: Dictionary = w.btypes[fk]
+	var farms := 0
+	for b in bs.count():
+		if bs.owner[b] != player or bs.kind[b] != fk:
+			continue
+		farms += 1
+		if bs.done[b] == 1 and w.map.left_at(bs.cy[b] * w.map.width + bs.cx[b]) <= 0 and w.can_afford(player, ft.reseed):
+			w.issue(player, Commands.RESEED, {"ids": [], "building": bs.id[b]})
+	var hx: int = bs.cx[tc] * 1000 + 1500
+	var hy: int = bs.cy[tc] * 1000 + 1500
+	var wild := 0
+	for c in w.map.resource_cells:
+		if w.map.pool[c] >= 0 or w.map.amount[c] <= 0 or Economy.kind_of(w, w.map.resource_at(c)) != food:
+			continue
+		if Fixed.dist2(hx, hy, (c % w.map.width) * 1000 + 500, (c / w.map.width) * 1000 + 500) <= FARM_RADIUS * FARM_RADIUS * 1000000:
+			wild += w.map.amount[c]
+	if farms >= n[food - 1] - wild / WILD_PER_WORKER or w.stock[food - 1][player] >= FARM_BELOW or _building_underway(w) or not w.can_afford(player, ft.cost):
+		return
+	var builder := _pick_builder(w, workers)
+	var spot := _house_spot(w, bs.cx[tc] + 1, bs.cy[tc] + 1, ft.size)
+	if builder >= 0 and spot.x >= 0:
+		w.issue(player, Commands.BUILD, {"ids": [w.units.id[builder]], "building": "farm", "cx": spot.x, "cy": spot.y})
 
 
 ## The resource (1-based kind) furthest below its share in this age's mix that has some left
@@ -112,6 +147,8 @@ func _short_of(w, n: PackedInt32Array, x: int, y: int) -> int:
 		if pct <= 0:
 			continue
 		var gap := pct * total - n[r] * 100
+		if w.stock[r][player] >= PLENTY:
+			gap -= 1 << 20   # piling up: the others first
 		if gap > best_gap and _nearest_resource(w, x, y, r + 1) >= 0:
 			best_gap = gap
 			best = r + 1
