@@ -256,3 +256,13 @@ walls), to be explored in a later milestone, and a launch roster of animals (bea
 under consideration) and bronze/iron age cultures (vikings, Romans, Egyptians, Greeks and a few
 more), with non-European animals and cultures an absolute priority. Recorded in the backlog §8
 and the design doc §8; nothing built yet.
+
+**D-053, 2026-10-11: Static props are drawn realistically; knight kit and bat wings are
+signature gear.** Dominic: "for static items I prefer more realism" (with the genre's berry bushes
+and stone piles as reference). Units stay stylised and outlined for readability; props
+(bushes, rocks, doodads) are baked realistically, without the units' outline: bushes as dense
+small-leaf shrubs with berries, rocks as noise-broken faceted stones. Separately, centaur Romans
+wore the knight's iron helmet and winged Romans got bat wings: knight kit (iron helmet, kite
+shield, mail) is now the royal culture's signature, bat wings the spooky/sewer one's, feather
+wings are generic, and heavy units no longer "want" knight kit. A test checks that no culture
+gets another's signature kit.

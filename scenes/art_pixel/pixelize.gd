@@ -1,13 +1,14 @@
 extends RefCounted
 ## Turns a supersampled render into a pixel-art sprite: shrink by `factor`, hard
 ## alpha (soft dark ground shadows become one flat translucent shadow colour),
-## and a selective inner outline: edge pixels take a darker shade of themselves.
+## and a selective inner outline: edge pixels take a darker shade of themselves
+## (units and buildings; realistic props go without).
 
 const SHADOW := Color(0.06, 0.05, 0.03, 0.42)
 const CONTACT := Color(0.06, 0.05, 0.03, 0.24)   # ambient occlusion where things meet the ground
 
 
-static func run(img: Image, factor: int) -> Image:
+static func run(img: Image, factor: int, outline := true) -> Image:
 	img.fix_alpha_edges()
 	var w := maxi(1, img.get_width() / factor)
 	var h := maxi(1, img.get_height() / factor)
@@ -24,6 +25,8 @@ static func run(img: Image, factor: int) -> Image:
 				out.set_pixel(x, y, CONTACT)
 			else:
 				out.set_pixel(x, y, Color(0, 0, 0, 0))
+	if not outline:
+		return out
 	var edged := out.duplicate()
 	for y in h:
 		for x in w:
