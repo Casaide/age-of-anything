@@ -14,16 +14,31 @@ race the genre's full kit of identity, layered so absurd prompts still combine.
 
 ## How a race gets its identity
 
-A race = **creature + culture** (+ the prompt's words). Each layer adds a little; the two combine.
+A race's bonuses are **mixed** from every layer it belongs to (Dominic, 2026-10-12: "bugs +
+beetles, or humans + Aztecs"): a broad **group** (bugs, amphibians, rodents, folk), the
+**creature** inside it, and the **culture**. So a beetle race gets one from bugs, one from beetles
+and one from its culture; Aztec humans get one from folk, one from humans and one from Aztec.
+Every race ends up with the same number of bonuses whatever it's made of, so an absurd mix stays
+as strong as a plain one.
 
-| Layer | From the creature | From the culture | From the prompt |
-|---|---|---|---|
-| Bonuses (always on) | 2 | 1 | - |
-| Own research (Castle) | 1 (age 3) | 1 (age 4) | - |
-| Lacks (tech tree gaps) | 1-2 | 1-2 | - |
-| Signature mechanic | 1 | 1 (a lighter one) | - |
-| Unique unit (Castle, milestone 13) | body | gear | signature words |
-| Look (have) | body, voice | architecture, gear, paths | wings, mounts |
+| Layer | Example | Bonuses | Own research (Castle) | Lacks | Mechanic |
+|---|---|---|---|---|---|
+| Group | bugs (beetles, spiders), amphibians (frogs), rodents (rats, capybaras), folk (humans, centaurs) | 1 | - | - | - |
+| Creature | beetles | 1 | 1 (age 3) | 1-2 | 1 |
+| Culture | Aztec, Imperial, Swamp... | 1 | 1 (age 4) | 1-2 | 1 (lighter) |
+| Prompt | "cheese hammers", wings | - | - | - | the unique unit's signature (milestone 13) |
+
+- **Groups** are data: `creatures.json` gains `"group": "bugs"`, and a new `data/groups.json`
+  holds each group's bonus (bugs: workers carry more? cheap houses; amphibians: farms in water;
+  rodents: houses hold more; folk: research faster). A creature with no group gets a second
+  creature bonus instead, so the count stays even.
+- **Combos:** a few creature + culture pairs that belong together (Aztec + jaguar-like creatures,
+  Han + pandas once those exist) may get a small extra flavour **note** and a name twist, but not
+  an extra bonus: the count stays even. Off-beat mixes (spooky beetles, Roman frogs) are the fun
+  and stay legal.
+- **Duplicates stack only once:** if group and creature both give the same kind of bonus (two
+  "+1 pierce armour"), the second is swapped for its listed alternative, so no race doubles up.
+- The tech tree page lists each bonus with where it came from ("Bugs", "Beetles", "Aztec").
 
 Rules (unchanged from the project's): data first, no special cases in code; a mechanic is an
 **ability kind** in the sim with parameters in data, so any creature or culture (or a mod) can use
@@ -33,7 +48,8 @@ rule lifts `lacks` and `only`.
 
 ## Data contract
 
-On `creatures.json` and `families.json` entries:
+On `data/groups.json`, `creatures.json` and `families.json` entries (bonuses carry an `alt` for
+when a race already has that kind):
 
 ```json
 "bonuses":  [{"text": "Hard shells: every unit +1 pierce armour", "effects": [{"tag": "all", "stat": "armour.pierce", "add": 1}]}],
@@ -64,11 +80,14 @@ Effects reuse milestone 12's effect kinds. Ability kinds are a small vocabulary 
 
 Each row is an offer; the design round below shows 2-3 options each, Dominic picks.
 
-| Who | Bonuses | Own research | Lacks | Mechanic |
+Groups (one bonus each): **bugs** (houses cost less: they dig in), **amphibians** (farms in water,
+have), **rodents** (houses +1 pop, have), **folk** (research 15% faster).
+
+| Who | Bonus | Own research | Lacks | Mechanic |
 |---|---|---|---|---|
-| Frogs | amphibious (have); farms in water (have) | Strong Legs (have) | heavy armour tracks | `leap` (infantry) |
-| Rats | cheap, quick, houses +1 (have) | Gnawing Teeth (+attack vs buildings) | Citadel Tower, stone gate | `swarm` + `scavenge` |
-| Humans | research 15% faster | Clever Hands (build 25% faster) | nothing (the generalists) | none of their own: their culture's |
+| Frogs | amphibious movement (have) | Strong Legs (have) | heavy armour tracks | `leap` (infantry) |
+| Rats | units cheaper and quicker to train (have) | Gnawing Teeth (+attack vs buildings) | Citadel Tower, stone gate | `swarm` + `scavenge` |
+| Humans | workers build 15% faster | Clever Hands (build 25% faster) | nothing (the generalists) | none of their own: their culture's |
 | Spiders | walls cost half | Sticky Silk (ranged hits slow) | mounted lines | `web` |
 | Beetles | +1 pierce armour (shells) | Shell Polish (+1 melee armour) | Quick Draw, mounted archer | `shell` |
 | Centaurs | carry 160% (have), faster | Gallop (mounted +15% speed) | walls (they roam) | `fire_on_move` |
@@ -85,7 +104,7 @@ Each row is an offer; the design round below shows 2-3 options each, Dominic pic
 1. **Design round** (concept-first, D-080, but for rules): a page per creature and culture with
    2-3 options for bonus, research, lacks and mechanic, each with its counter and a one-line "how
    it feels"; Dominic picks. Written as `docs/concepts/race-identity.md`. Can run now.
-2. **Data contract and bonuses.** `bonuses`, `research`, `lacks` fields; today's scattered bonuses
+2. **Data contract and bonuses.** Groups (`data/groups.json`, `group` on creatures), the `bonuses` (with `alt`), `research`, `lacks` fields, mixed per race; today's scattered bonuses
    moved in (creature economy, movement, Strong Legs); stat bonuses applied before pricing; the
    effect kinds from milestone 12; the tech tree page reads them (replacing `data/bonuses.json`).
 3. **Own research.** Each creature's and culture's Castle research, live in the Castle's two slots.
