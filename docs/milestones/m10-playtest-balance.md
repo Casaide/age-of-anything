@@ -20,7 +20,7 @@
 - [x] Plan
 - [x] Balance tool (`tests/balance.gd`)
 - [x] Balance pass 1 (data): beetle, pony, spider and bow prices; Town Center; a price tuner (`tests/tune_points.gd`)
-- [ ] Cost sanity: 10 of 20 units still more than 20% off the mean; the rest is archers, a mechanics fix (see Results)
+- [ ] Cost sanity: 8 of 20 units still more than 20% off the mean (bows 2 points, skirmishers +6 vs archers; D-082)
 - [x] Playtest kit and match log
 - [ ] Export build (**waiting on Dominic**: export templates, itch account)
 - [ ] 5-10 testers; metrics from `../mvp-plan.md` §4 (**waiting on Dominic**)
@@ -45,8 +45,8 @@
 - **Pacing:** bot vs bot now runs 13-18 minutes (median ~14) with the AI keeping a small guard
   while it saves for an age; it was 10:50 before workers got one price. Testers decide whether
   that's long; the levers are data (`data/ai.json` waves, `data/buildings.json` Town Center hp).
-- **Archers keeping their distance** (`rules.combat.kite_gap`, off by default; built to test,
-  not adopted): ranged units that just fired step back from a closing melee foe. Measured with
+- **Archers keeping their distance** (tried, then removed: D-082; archers don't kite on their own
+  in the genre, so it's balance): ranged units that just fired step back from a closing melee foe. Measured with
   `tests/balance.gd -- 2 kite_gap=N`: 1.5 tiles left the table at 10 outliers, 2.5 tiles made it
   12. Spearmen move as fast as archers, so stepping back costs shots. Archers' weakness needs a
   different lever (range, speed, or the roster's counter design); a call for Dominic.
