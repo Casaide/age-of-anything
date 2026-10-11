@@ -85,6 +85,7 @@ var bviews := {}            # building id -> BuildingArt
 var rviews := {}            # resource cell -> its prop (reed clump, bug bush)
 var selected := {}          # unit id -> true
 var selected_building := 0  # building id, or 0
+var selected_resource := -1 # a resource cell clicked to see what's left, or -1
 var active := 0             # the side you're commanding
 var placing := ""           # building type being placed, or ""
 var flags: Array = []       # [{pos, t}] recent move targets
@@ -512,6 +513,7 @@ func regen_army(side: int, new_prompt: bool) -> void:
 func _clear_selection() -> void:
 	selected.clear()
 	selected_building = 0
+	selected_resource = -1
 	placing = ""
 
 
@@ -545,6 +547,9 @@ func select_at(pos: Vector2, add := false) -> void:
 			selected_building = bid
 			_take_side(world.buildings.owner[world.buildings.index_of(bid)])
 			return
+	var cell := _cell_at(pos)
+	if map.resource_at(cell) != "" and map.pool[cell] < 0:   # a bush, reeds or stone: show what's left
+		selected_resource = cell
 
 
 ## Box: every unit whose body is inside the dragged rectangle (canvas coords; no rotation).
@@ -763,11 +768,17 @@ func move_selected_to(pos: Vector2) -> void:
 	flags.append({"pos": pos, "t": 1.0})
 
 
+## Train one (five with shift held, as far as the queue has room).
+func _train(building: int, slot: String) -> void:
+	for k in (5 if Input.is_key_pressed(KEY_SHIFT) else 1):
+		world.issue(active, Commands.TRAIN, {"building": building, "slot": slot})
+
+
 func train_worker() -> void:
 	var b := world.buildings.index_of(selected_building)
 	if b < 0 or world.buildings.owner[b] != active or not playback.is_empty():
 		return
-	world.issue(active, Commands.TRAIN, {"building": selected_building, "slot": "worker"})
+	_train(selected_building, "worker")
 
 
 func start_placing(building: String) -> void:
@@ -969,7 +980,7 @@ func _clear_doodads(cx: int, cy: int, size: int) -> void:
 ## Resource props show what's left in stages; a used-up bush fades away, used-up reeds
 ## leave stubble for a while first.
 ## The prop for a resource cell (bug bush, reed clump, stone outcrop, a farm's crops or paddy).
-const RESOURCE_PROP := {"bugbush": "bush", "reeds": "reeds", "stone": "rock", "field": "crops", "paddy": "paddy"}
+const RESOURCE_PROP := {"bugbush": "bush", "reeds": "reeds", "stone": "quarry", "field": "crops", "paddy": "paddy"}
 
 
 func _add_resource_view(c: int, pick: int) -> void:
@@ -1001,7 +1012,7 @@ func _sync_resources() -> void:
 			h.add_child(kit.doodad(r.kind, r.pick, stage))
 		if map.left_at(c) <= 0:
 			r.gone += dt
-			var linger := 6.0 if r.kind == "reeds" else 0.0
+			var linger := 6.0 if r.kind in ["reeds", "quarry"] else 0.0   # stubble and rubble stay a while
 			h.modulate.a = clampf(1.0 - (r.gone - linger) / 1.5, 0.0, 1.0)
 			if h.modulate.a <= 0.0:
 				h.queue_free()
@@ -1156,7 +1167,7 @@ func _update_panel() -> void:
 						"text": (("Train %s (%s)" % [wt.name, _cost_text(wt.cost)]) if ok_age else "%s: needs age %d" % [wt.name, wt.line[0].age])
 							+ ("" if wt.worker else "\n" + UnitCard.text(wt, _foe_types(active))),
 						"key": "Q" if slot == "worker" else "", "cost": _cost_text(wt.cost), "enabled": ok_age and afford and q.size() < int(world.econ.queue_max),
-						"action": func(): world.issue(active, Commands.TRAIN, {"building": selected_building, "slot": tslot})})
+						"action": func(): _train(selected_building, tslot)})
 				_tech_buttons(c, b)
 				c.info += ("\n" if c.info != "" else "") + "Right-click: rally point"
 		panel.show_content(c)
@@ -1196,6 +1207,17 @@ func _update_panel() -> void:
 			c.info = "Placing: left-click to build, shift keeps placing, right-click/Esc cancels"
 		panel.show_content(c)
 		return
+	if selected_resource >= 0:
+		var left := map.left_at(selected_resource)
+		if left <= 0:
+			selected_resource = -1
+		else:
+			var tname: String = map.terrain_ids[map.terrain[selected_resource]]
+			var what: String = {"bugbush": "Bug bush", "reeds": "Reeds", "stone": "Stone"}.get(tname, tname.capitalize())
+			panel.show_content({"title": what, "team": Color("#8a7a5a"), "buttons": [], "queue": null, "portrait": null,
+				"hp": [left, rviews[selected_resource].get_meta("res").full] if rviews.has(selected_resource) else [],
+				"info": "%d %s left" % [left, map.resource_at(selected_resource)]})
+			return
 	var seen := selected.keys().filter(func(id): return world.units.index_of(id) >= 0)
 	if not seen.is_empty():   # the other side's unit, inspected (against the AI): its card, no orders
 		var i := world.units.index_of(seen[0])

@@ -225,6 +225,55 @@ func boulders(seed_value: int) -> Node3D:
 	return n
 
 
+## Stone you can mine, unlike the grey boulders that only block: a heap of pale, squared
+## sandstone blocks (already part-quarried), with a few broken pieces and chips around.
+## `stage` 0-3 is how far it's been mined: fewer and lower blocks, chips left at the end.
+func quarry(seed_value: int, stage := 0) -> Node3D:
+	rng.seed = seed_value
+	var n := Node3D.new()
+	var tints := [Color(0.95, 0.86, 0.7), Color(0.88, 0.78, 0.62), Color(1.0, 0.92, 0.78), Color(0.84, 0.74, 0.6)]
+	var keep: float = [1.0, 0.7, 0.4, 0.0][stage]
+	var blocks := []
+	for k in rng.randi_range(7, 9):   # every random draw first, so each stage is the same heap, cut down
+		var a := rng.randf() * TAU
+		var d := 0.0 if k == 0 else rng.randf_range(0.12, 0.38)
+		var sz := Vector3(rng.randf_range(0.14, 0.24), rng.randf_range(0.1, 0.18), rng.randf_range(0.12, 0.2)) * (1.5 if k == 0 else 1.0)
+		blocks.append([Vector3(cos(a) * d, 0, sin(a) * d), sz, rng.randf_range(0, 90), rng.randf_range(-8, 8), rng.randf() < keep or k == 0 and stage < 3])
+	for k in blocks.size():
+		var bl: Array = blocks[k]
+		if not bl[4]:
+			continue
+		var mi := MeshInstance3D.new()
+		var bm := BoxMesh.new()
+		bm.size = bl[1]
+		mi.mesh = bm
+		mi.material_override = um.surf("rock", tints[k % tints.size()], 0.5)
+		mi.rotation_degrees = Vector3(bl[3], bl[2], bl[3] * 0.5)
+		mi.position = bl[0] + Vector3(0, bl[1].y * 0.5, 0)
+		n.add_child(mi)
+		if k == 0:   # a second course on the big block, so the heap stands
+			var top := MeshInstance3D.new()
+			var tm := BoxMesh.new()
+			tm.size = bl[1] * Vector3(0.6, 0.8, 0.7)
+			top.mesh = tm
+			top.material_override = um.surf("rock", tints[2], 0.5)
+			top.rotation_degrees = Vector3(0, bl[2] + 20, 0)
+			top.position = bl[0] + Vector3(0.02, bl[1].y + tm.size.y * 0.5, 0.01)
+			if stage < 2:
+				n.add_child(top)
+	for k in 10 - stage * 2:   # chips and rubble
+		var a := rng.randf() * TAU
+		var d := rng.randf_range(0.15, 0.48)
+		var r := rng.randf_range(0.025, 0.05)
+		var chip := MeshInstance3D.new()
+		chip.mesh = stone_mesh(seed_value * 17 + k)
+		chip.material_override = um.surf("rock", tints[k % tints.size()], 0.6)
+		chip.scale = Vector3(r * 1.3, r * 0.7, r)
+		chip.position = Vector3(cos(a) * d, r * 0.3, sin(a) * d)
+		n.add_child(chip)
+	return n
+
+
 ## A farm's field, one tile: tilled earth in furrows with rows of crops (green
 ## stalks with golden ears), the realistic static style.
 func crops(seed_value: int) -> Node3D:

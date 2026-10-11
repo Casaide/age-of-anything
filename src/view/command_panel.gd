@@ -4,8 +4,9 @@ extends PanelContainer
 ##   bar and what it's doing; for a group, a tray of small portraits with counts;
 ## - what it can do: square buttons with the unit's or building's picture, a hotkey
 ##   and the cost;
-## - for a building, its training queue: big slots with the units' pictures, the first
-##   with a progress bar; click a slot to cancel it.
+## - for a building, its training queue: the unit being trained in a big slot with a progress
+##   bar, the rest in small slots after it; click a slot to cancel it. Shift-click a train
+##   button to queue five.
 ## Rebuilt only when its content changes, so buttons don't flicker or lose clicks;
 ## health, progress and the info line update every frame.
 
@@ -19,7 +20,8 @@ const GOLD := Color("#f2c94c")
 const PORTRAIT := 96
 const BUTTON := 64
 const QUEUE_FIRST := 72
-const QUEUE_SLOT := 52
+const QUEUE_SLOT := 36
+const QUEUE_COLUMNS := 7
 
 var _portrait: TextureRect
 var _title: Label
@@ -28,6 +30,7 @@ var _hp: ProgressBar
 var _tray: HFlowContainer
 var _buttons: GridContainer
 var _queue_box: VBoxContainer
+var _queue_rest: GridContainer   # the queue after the first: small slots, only the filled ones
 var _queue: HBoxContainer
 var _queue_bar: ProgressBar
 var _signature := ""
@@ -91,6 +94,11 @@ func _ready() -> void:
 	_queue.alignment = BoxContainer.ALIGNMENT_BEGIN
 	_queue.add_theme_constant_override("separation", 5)
 	_queue_box.add_child(_queue)
+	_queue_rest = GridContainer.new()
+	_queue_rest.columns = QUEUE_COLUMNS
+	_queue_rest.add_theme_constant_override("h_separation", 3)
+	_queue_rest.add_theme_constant_override("v_separation", 3)
+	_queue.add_child(_queue_rest)
 	_queue_bar = _bar(GOLD, 8)
 	_queue_bar.custom_minimum_size.x = QUEUE_FIRST
 	_queue_box.add_child(_queue_bar)
@@ -121,16 +129,21 @@ func show_content(c: Dictionary) -> void:
 	_portrait.texture = c.portrait
 	_tint(_portrait)
 	_portrait.get_parent().visible = c.portrait != null
-	for n in [_tray, _buttons, _queue]:
+	for n in [_tray, _buttons, _queue, _queue_rest]:
 		for k in n.get_children():
-			k.queue_free()
+			if k != _queue_rest:
+				k.queue_free()
 	for t in c.get("tray", []):
 		_tray.add_child(_tray_icon(t.icon, t.count))
 	for b in c.buttons:
 		_buttons.add_child(_button(b))
 	if queue != null:
-		for k in int(c.queue_max):
-			_queue.add_child(_queue_slot(queue[k] if k < queue.size() else {}, k == 0))
+		var first := _queue_slot(queue[0] if not queue.is_empty() else {}, true)
+		_queue.add_child(first)
+		_queue.move_child(first, 0)
+		for k in range(1, queue.size()):
+			_queue_rest.add_child(_queue_slot(queue[k], false))
+		_queue_rest.tooltip_text = "%d of %d" % [queue.size(), int(c.queue_max)]
 
 
 func _button(b: Dictionary) -> Button:
