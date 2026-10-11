@@ -216,5 +216,84 @@
    "width": 0.32
   },
   "architecture": "thatch"
+ },
+ "nile": {
+  "cloth": [
+   "#e8e0c8",
+   "#2a5a9a"
+  ],
+  "mounts": [
+   "pony"
+  ],
+  "adjective": "Nile",
+  "prefixes": [
+   "Theban",
+   "Memphite",
+   "Sunlit",
+   "Delta"
+  ],
+  "suffixes": [
+   " Kingdom",
+   " Dynasty",
+   " Host",
+   " Court"
+  ],
+  "paths": {
+   "style": "road",
+   "width": 0.44
+  },
+  "architecture": "stone"
+ },
+ "han": {
+  "cloth": [
+   "#9a2a24",
+   "#2a2422"
+  ],
+  "mounts": [
+   "pony"
+  ],
+  "adjective": "Han",
+  "prefixes": [
+   "Jade",
+   "Yellow River",
+   "Celestial",
+   "Iron"
+  ],
+  "suffixes": [
+   " Dynasty",
+   " Army",
+   " Commandery",
+   " Guard"
+  ],
+  "paths": {
+   "style": "road",
+   "width": 0.46
+  },
+  "architecture": "stone"
+ },
+ "aztec": {
+  "cloth": [
+   "#e0a020",
+   "#2a7a6a"
+  ],
+  "mounts": [],
+  "adjective": "Mexica",
+  "prefixes": [
+   "Eagle",
+   "Jaguar",
+   "Obsidian",
+   "Flower"
+  ],
+  "suffixes": [
+   " Altepetl",
+   " Host",
+   " Warriors",
+   " Lords"
+  ],
+  "paths": {
+   "style": "cobble",
+   "width": 0.42
+  },
+  "architecture": "stone"
  }
 }
