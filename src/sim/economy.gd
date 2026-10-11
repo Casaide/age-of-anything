@@ -52,6 +52,7 @@ static func load_btypes(resources: Array) -> Array:
 			"water": bool(b.get("water", false)), "becomes": b.get("becomes", {}).duplicate(),
 			"build_ticks": int(b.build_time) * 20, "pop": int(b.pop), "house": bool(b.house),
 			"trains": b.trains.duplicate(), "age": int(b.age), "armour": b.get("armour", {}).duplicate(),
+			"attack": b.get("attack", {}).duplicate(),
 		})
 	return out
 
@@ -132,7 +133,7 @@ static func cmd_build(w, player: int, a: Dictionary) -> void:
 		return
 	var t: Dictionary = w.btypes[k]
 	var builders := _own_workers(w, player, a.ids)
-	if builders.is_empty() or not w.can_afford(player, t.cost):
+	if builders.is_empty() or not w.can_afford(player, t.cost) or w.ages[player] < t.age:
 		return
 	if not w.map.can_build(a.cx, a.cy, t.size, builder_class(w, player), t.water):
 		return
@@ -160,7 +161,7 @@ static func cmd_train(w, player: int, a: Dictionary) -> void:
 	if k < 0 or w.buildings.queue[b].size() >= int(w.econ.queue_max):
 		return
 	var t: Dictionary = w.types[k]
-	if not w.can_afford(player, t.cost):
+	if not w.can_afford(player, t.cost) or w.ages[player] < int(t.line[0].age):
 		return
 	w.pay(player, t.cost)
 	w.buildings.queue[b].append(k)

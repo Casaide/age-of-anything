@@ -1,6 +1,6 @@
 # Milestone 7: Progression
 
-**Status:** planned
+**Status:** in progress (2026-10-11)
 **Exit criterion:** Age-up lands at minutes 4-6.
 
 ## Scope
@@ -30,4 +30,27 @@ age-up at the TC ("Muck Age -> Stick Age", ~400F/200W, 60 s), one research ("Sha
   filter that can be switched off.
 
 ## Plan
-(write before starting; see the template in `README.md`)
+Builds on milestone 6's ages and research system (`data/tech.json`, `src/sim/tech.gd`) and
+its unit lines.
+1. **Buildings (data):**
+   - Barracks (age 1; trains spear, skirmisher, archer; hosts Sharp Sticks).
+   - Stable (age 2; trains the large unit).
+   - Watchtower (age 2; 1x1; shoots at enemies in range).
+   - Each type has an `age`; building and training are age-gated (a unit's line says when its
+     slot opens).
+2. **Sim:**
+   - Age checks in BUILD and TRAIN.
+   - Buildings that attack (Watchtower: pierce arrows, range 7), using the combat code.
+   - Sharp Sticks moves to the Barracks.
+3. **Art:** Barracks, Stable and Watchtower for every architecture (thatch, junk, stone, tent),
+   built like the existing buildings, with build stages and portraits.
+4. **View:**
+   - The panel trains whatever the selected building trains (with portraits).
+   - Workers' build menu lists every building their age allows; hotkeys.
+5. **The bot ages up:**
+   - The economy bot builds a Barracks, saves for the age-up and clicks it.
+   - Exit check: in the headless opening the bot reaches age 2 at minute 4-6 for frogs and rats
+     (tuning costs and the bot, not special cases).
+6. **Restriction layers** (D-070) in the tech data's shape: researches and lines can be filtered
+   by culture/creature, and a host switch lifts it. Data shape only; content in milestone 10's
+   balance pass.

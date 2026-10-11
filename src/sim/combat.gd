@@ -49,6 +49,10 @@ static func setup(w) -> void:
 		type_vectors(w, t)
 	for b in w.btypes:
 		b.arm = _vector(w, b.armour)
+		if not b.attack.is_empty():   # towers shoot
+			b.atk = _vector(w, {b.attack.damage: int(b.attack.attack)})
+			b.reach = int(b.attack.range) * SimMap.TILE
+			b.reload = int(b.attack.reload)
 		var cls := PackedByteArray()
 		cls.resize(w.classes.size())
 		cls[0] = 1
@@ -229,7 +233,42 @@ static func tick(w) -> void:
 			_lost(w, i)   # it got away
 		else:
 			_chase(w, i, j, b)
+	_towers(w, hurt, hurt_by)
 	_apply(w, hurt, hurt_by, bhurt)
+
+
+## Finished buildings that attack (watchtowers) shoot the nearest enemy unit in reach.
+static func _towers(w, hurt: PackedInt32Array, hurt_by: PackedInt32Array) -> void:
+	var bs = w.buildings
+	var u = w.units
+	var c: Dictionary = w.combat
+	for b in bs.count():
+		var bt: Dictionary = w.btypes[bs.kind[b]]
+		if bt.attack.is_empty() or bs.done[b] == 0:
+			continue
+		if bs.cooldown[b] > 0:
+			bs.cooldown[b] -= 1
+			continue
+		var s: int = bs.size[b] * SimMap.TILE
+		var mx: int = bs.cx[b] * SimMap.TILE + s / 2
+		var my: int = bs.cy[b] * SimMap.TILE + s / 2
+		var best := -1
+		var best_d: int = (bt.reach + s / 2) * (bt.reach + s / 2) + 1
+		for j in u.count():
+			if not w.is_enemy(u.owner[j], bs.owner[b]):
+				continue
+			var d := Fixed.dist2(mx, my, u.x[j], u.y[j])
+			if d < best_d:
+				best_d = d
+				best = j
+		if best < 0:
+			continue
+		var tt: Dictionary = w.types[u.kind[best]]
+		var dmg := damage(bt.atk, tt.arm, tt.cls, int(c.min_damage))
+		hurt[best] += dmg
+		hurt_by[best] = bs.id[b]
+		bs.cooldown[b] = bt.reload
+		w.events.append({"type": "hit", "by": bs.id[b], "to": u.id[best], "damage": dmg, "ranged": true})
 
 
 ## The edge-to-edge gap from unit i to unit j or building b, in milli-tiles.

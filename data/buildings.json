@@ -1,6 +1,31 @@
 {
  "schema": "aow.buildings/1",
  "buildings": {
+  "barracks": {
+   "name": "Barracks",
+   "size": 3,
+   "hp": 1200,
+   "cost": {
+    "food": 0,
+    "wood": 150
+   },
+   "build_time": 50,
+   "pop": 0,
+   "house": false,
+   "drop_off": [],
+   "trains": [
+    "spear",
+    "skirmisher",
+    "archer"
+   ],
+   "age": 1,
+   "hotkey": "B",
+   "armour": {
+    "melee": 1,
+    "pierce": 7
+   },
+   "note": "infantry and ranged; Sharp Sticks"
+  },
   "farm": {
    "name": "Farm",
    "size": 2,
@@ -49,6 +74,29 @@
    },
    "water": true
   },
+  "stable": {
+   "name": "Stable",
+   "size": 3,
+   "hp": 1200,
+   "cost": {
+    "food": 0,
+    "wood": 175
+   },
+   "build_time": 50,
+   "pop": 0,
+   "house": false,
+   "drop_off": [],
+   "trains": [
+    "large"
+   ],
+   "age": 2,
+   "hotkey": "S",
+   "armour": {
+    "melee": 1,
+    "pierce": 7
+   },
+   "note": "the large unit (mounts, giants or heavies)"
+  },
   "town_center": {
    "name": "Town Center",
    "size": 3,
@@ -75,6 +123,34 @@
     "melee": 2,
     "pierce": 8
    }
+  },
+  "watchtower": {
+   "name": "Watchtower",
+   "size": 1,
+   "hp": 700,
+   "cost": {
+    "food": 0,
+    "wood": 50,
+    "stone": 100
+   },
+   "build_time": 60,
+   "pop": 0,
+   "house": false,
+   "drop_off": [],
+   "trains": [],
+   "age": 2,
+   "hotkey": "W",
+   "armour": {
+    "melee": 2,
+    "pierce": 8
+   },
+   "attack": {
+    "damage": "pierce",
+    "attack": 5,
+    "range": 7,
+    "reload": 40
+   },
+   "note": "shoots the nearest enemy in range"
   }
  }
 }
