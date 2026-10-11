@@ -1200,66 +1200,78 @@
   "ww2": {
    "era": "gunpowder",
    "tags": {
-    "dome": 3
+    "dome": 3,
+    "saucepan": 3
    },
    "substitute": {
     "dome": 3,
-    "helmet": 2
+    "helmet": 2,
+    "saucepan": 3
    },
    "note": "No world wars yet. Issued saucepans for helmets."
   },
   "ww1": {
    "era": "gunpowder",
    "tags": {
-    "dome": 3
+    "dome": 3,
+    "saucepan": 3
    },
    "substitute": {
     "dome": 3,
-    "helmet": 2
+    "helmet": 2,
+    "saucepan": 3
    },
    "note": "No world wars yet. Issued saucepans for helmets."
   },
   "wwii": {
    "era": "gunpowder",
    "tags": {
-    "dome": 3
+    "dome": 3,
+    "saucepan": 3
    },
    "substitute": {
     "dome": 3,
-    "helmet": 2
+    "helmet": 2,
+    "saucepan": 3
    },
    "note": "No world wars yet. Issued saucepans for helmets."
   },
   "modern": {
    "era": "gunpowder",
    "tags": {
-    "dome": 3
+    "dome": 3,
+    "saucepan": 3
    },
    "substitute": {
     "dome": 3,
-    "helmet": 2
+    "helmet": 2,
+    "saucepan": 3
    },
    "note": "No world wars yet. Issued saucepans for helmets."
   },
   "tank": {
    "era": "gunpowder",
    "tags": {
-    "dome": 3
+    "dome": 3,
+    "saucepan": 3
    },
    "substitute": {
     "dome": 3,
-    "helmet": 2
+    "helmet": 2,
+    "saucepan": 3
    },
    "note": "No world wars yet. Issued saucepans for helmets."
   },
   "tanks": {
    "era": "gunpowder",
    "tags": {
-    "dome": 3
+    "dome": 3,
+    "saucepan": 3
    },
    "substitute": {
     "dome": 3,
-    "helmet": 2
+    "helmet": 2,
+    "saucepan": 3
    },
    "note": "No world wars yet. Issued saucepans for helmets."
   },
@@ -1410,6 +1422,90 @@
     "phalanx": 3,
     "spear": 2,
     "shield": 2
+   },
+   "default_creature": "human"
+  },
+  "egypt": {
+   "family": "nile",
+   "tags": {
+    "egyptian": 4
+   },
+   "default_creature": "human"
+  },
+  "egyptian": {
+   "family": "nile",
+   "tags": {
+    "egyptian": 4
+   },
+   "default_creature": "human"
+  },
+  "egyptians": {
+   "family": "nile",
+   "tags": {
+    "egyptian": 4
+   },
+   "default_creature": "human"
+  },
+  "pharaoh": {
+   "family": "nile",
+   "tags": {
+    "egyptian": 4
+   },
+   "default_creature": "human"
+  },
+  "pharaohs": {
+   "family": "nile",
+   "tags": {
+    "egyptian": 4
+   },
+   "default_creature": "human"
+  },
+  "nile": {
+   "family": "nile",
+   "tags": {
+    "egyptian": 4
+   },
+   "default_creature": "human"
+  },
+  "han": {
+   "family": "han",
+   "tags": {
+    "chinese": 4
+   },
+   "default_creature": "human"
+  },
+  "china": {
+   "family": "han",
+   "tags": {
+    "chinese": 4
+   },
+   "default_creature": "human"
+  },
+  "chinese": {
+   "family": "han",
+   "tags": {
+    "chinese": 4
+   },
+   "default_creature": "human"
+  },
+  "aztec": {
+   "family": "aztec",
+   "tags": {
+    "aztec": 4
+   },
+   "default_creature": "human"
+  },
+  "aztecs": {
+   "family": "aztec",
+   "tags": {
+    "aztec": 4
+   },
+   "default_creature": "human"
+  },
+  "mexica": {
+   "family": "aztec",
+   "tags": {
+    "aztec": 4
    },
    "default_creature": "human"
   }

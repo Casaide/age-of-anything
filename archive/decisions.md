@@ -470,3 +470,10 @@ found cans and sardine tins as whole buildings push the scale too far into the u
 can now size a building type in data (`scale` in buildings.json: the rats' house 0.72, barracks
 0.8), and houses bake in four variants (a quarter turn each, nudged in size) that each building
 picks from by where it stands, like the rocks. The RB3 town-centre pride step stays (D-089).
+
+**D-091, 2026-10-11: Egypt, Han China and the Aztecs are cultures (data), the saucepan is only
+for war words.** As Dominic asked ("all three"): families nile, han and aztec with their own
+cloth, name parts and paths; words egypt/egyptian(s)/pharaoh/nile, han/china/chinese,
+aztec(s)/mexica. The Aztecs have no mounts, so their large unit goes Heavy. They wear the shared
+kit until their gear-by-age concept round. The saucepan helmet became a signature item, worn only
+when a war word asks for it (it had leaked to everyone once it stopped being rat junk). Claude.
