@@ -7,6 +7,8 @@ extends Node2D
 const Iso := preload("res://src/view/iso.gd")
 
 var body: Sprite2D
+var open_body: Sprite2D   # a gate's open look (null for other buildings)
+var open := false
 var live: Array = []      # nodes that only run once the building is done
 var glows: Array = []
 var vane: Node2D
@@ -32,6 +34,12 @@ func setup(kit, name: String, cx: int, cy: int, size: int, p_team: Color) -> voi
 	body.position = at
 	body.self_modulate = Color(team.r, team.g, team.b, 1.0)
 	add_child(body)
+	if info.has("open"):
+		open_body = kit.sprite(info.open)
+		open_body.position = at
+		open_body.self_modulate = body.self_modulate
+		open_body.visible = false
+		add_child(open_body)
 	for stage_name in info.stages:
 		var st: Sprite2D = kit.sprite(stage_name)
 		st.position = at
@@ -74,7 +82,9 @@ func set_state(p_done: bool, p_progress: float) -> void:
 	done = p_done
 	progress = p_progress
 	var shown := -1 if done else mini(int(progress * stages.size()), stages.size() - 1)
-	body.visible = done
+	body.visible = done and not (open and open_body != null)
+	if open_body:
+		open_body.visible = done and open
 	for k in stages.size():
 		stages[k].visible = k == shown
 	for n in live:
@@ -88,6 +98,15 @@ func set_state(p_done: bool, p_progress: float) -> void:
 func loose_at() -> Vector2:
 	var r := body.get_rect()
 	return position + body.position + Vector2(0, (r.position.y + r.size.y * 0.2) * body.scale.y)
+
+## A gate opens while a friendly unit is at it and shuts behind it (view only: the sim lets
+## its team through either way).
+func set_open(p_open: bool) -> void:
+	if p_open == open or open_body == null:
+		return
+	open = p_open
+	body.visible = done and not open
+	open_body.visible = done and open
 
 
 func _process(delta: float) -> void:

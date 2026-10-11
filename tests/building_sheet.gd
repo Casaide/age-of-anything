@@ -5,6 +5,7 @@ extends SceneTree
 ## Run (needs a display):
 ##   godot --path . --script res://tests/building_sheet.gd -- out.png <zoom> model [model ...]
 ## e.g. ... -- /tmp/b.png 2 stone_town_center junk_town_center concept_junk_tc_low
+## A gate's open look: palisade_gate:stone:open
 ## Props too: prop.<function>.<seed>[.<stage>], e.g. prop.quarry.1300.0 prop.boulders.1000
 
 const ArtKit := preload("res://src/view/art/art_kit.gd")
@@ -34,8 +35,10 @@ func _initialize() -> void:
 			var bits: PackedStringArray = String(n).split(".")
 			var pargs: Array = Array(bits.slice(2)).map(func(x): return int(x) if x.is_valid_int() else x)
 			spec = {"body": PropModels.new().callv(bits[1], pargs)}
-		elif n.contains(":"):   # type:arch, e.g. market:stone
+		elif n.contains(":"):   # type:arch, e.g. market:stone; type:arch:open for a gate's open look
 			spec = models.building(n.get_slice(":", 0), n.get_slice(":", 1), team)
+			if n.get_slice_count(":") > 2 and n.get_slice(":", 2) == "open":
+				spec.body = spec.open
 		else:
 			spec = models.call(n, team)
 		if n.contains("house"):

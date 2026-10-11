@@ -493,7 +493,7 @@ func _unhandled_input(event: InputEvent) -> void:
 				attack_move = false
 				arming_attack = false
 			return
-		if placing == "wall":   # walls are dragged: press at one end, release at the other
+		if placing != "" and _line(placing):   # walls and gates are dragged: press at one end, release at the other
 			if event.pressed:
 				wall_from = _ghost_cell(get_global_mouse_position())
 			elif wall_from.x >= 0:
@@ -1250,8 +1250,14 @@ func place_at(pos: Vector2, keep := false) -> void:
 		placing = ""
 
 
-## A line of wall from one cell to another (straight or diagonal, the cells a line through
-## them crosses), one foundation per cell; the workers build them in order.
+## Is this building type laid in lines by dragging (walls and gates: data "line")?
+func _line(building: String) -> bool:
+	return world.btypes[Economy.btype_of(world, building)].line
+
+
+## A line of what's being placed (a wall or gate) from one cell to another (straight or
+## diagonal, the cells a line through them crosses), one foundation per cell; the workers build
+## them in order. Gates dragged along a wall take the place of its tiles.
 func place_wall(a: Vector2i, b: Vector2i, keep := false) -> void:
 	var workers := _selected_workers()
 	if workers.is_empty():
@@ -1259,7 +1265,7 @@ func place_wall(a: Vector2i, b: Vector2i, keep := false) -> void:
 		return
 	var cells := wall_cells(a, b)
 	for k in cells.size():
-		world.issue(active, Commands.BUILD, {"ids": workers, "building": "wall", "cx": cells[k].x, "cy": cells[k].y,
+		world.issue(active, Commands.BUILD, {"ids": workers, "building": placing, "cx": cells[k].x, "cy": cells[k].y,
 			"queue": 1 if keep or k > 0 else 0})
 	if not keep:
 		placing = ""
@@ -1464,6 +1470,38 @@ func _sync_fog() -> void:
 			bv.visible = reveal or not world.is_enemy(active, bs.owner[b]) or Fog.explored(world, active, bs.cx[b], bs.cy[b])
 
 
+## Does the wall a gate stands in run along sim y (walls or gates above or below it, none beside)?
+func _runs_along_y(b: int) -> bool:
+	var bs := world.buildings
+	var beside := func(dx: int, dy: int) -> bool:
+		var x: int = bs.cx[b] + dx
+		var y: int = bs.cy[b] + dy
+		if x < 0 or y < 0 or x >= map.width or y >= map.height:
+			return false
+		var o := bs.index_of(map.occupied[y * map.width + x])
+		return o >= 0 and world.btypes[bs.kind[o]].line
+	return not (beside.call(-1, 0) or beside.call(1, 0)) and (beside.call(0, -1) or beside.call(0, 1))
+
+
+## Is a unit of the gate's side (not an enemy of its owner) at or next to it? Then it shows open.
+func _friend_at(b: int) -> bool:
+	var bs := world.buildings
+	var u := world.units
+	var sp = world.spatial
+	for y in range(maxi(bs.cy[b] - 1, 0), mini(bs.cy[b] + 2, sp.height)):
+		for x in range(maxi(bs.cx[b] - 1, 0), mini(bs.cx[b] + 2, sp.width)):
+			var c: int = y * sp.width + x
+			for k in range(sp.start[c], sp.start[c + 1]):
+				var j: int = sp.items[k]
+				if j >= u.count() or u.owner[j] == world.gaia or world.is_enemy(u.owner[j], bs.owner[b]):
+					continue
+				var dx: int = u.x[j] - (bs.cx[b] * 1000 + 500)
+				var dy: int = u.y[j] - (bs.cy[b] * 1000 + 500)
+				if dx * dx + dy * dy < 1300 * 1300:
+					return true
+	return false
+
+
 func _sync_buildings() -> void:
 	var bs := world.buildings
 	# Buildings that are gone without falling (a farm becomes its field) just leave.
@@ -1476,6 +1514,8 @@ func _sync_buildings() -> void:
 		var view: BuildingArt = bviews.get(id)
 		var look := kit.building_key(lib.architecture(world.races[bs.owner[b]]), world.btypes[bs.kind[b]].id, world.ages[bs.owner[b]],
 			(id * 7 + bs.cx[b] * 3 + bs.cy[b]) % 4)   # which house variant: steady per building, varied along a street
+		if world.btypes[bs.kind[b]].gate and _runs_along_y(b) and kit.buildings.has(look + ArtKit.ALONG_Z):
+			look += ArtKit.ALONG_Z   # a gate turns to face the way its wall runs
 		if view != null and view.get_meta("look", look) != look:
 			view.queue_free()   # its owner aged up and this building grew with them
 			bviews.erase(id)
@@ -1495,6 +1535,8 @@ func _sync_buildings() -> void:
 				audio.play("built", -4.0)   # finished while you watched (not the ones there from the start)
 		view.set_meta("done", bs.done[b] == 1)
 		view.set_state(bs.done[b] == 1, float(bs.progress[b]) / float(t.build_ticks))
+		if t.gate:
+			view.set_open(_friend_at(b))
 		if bs.done[b] == 1 and not t.becomes.is_empty() and view.get_parent() == layer:
 			view.reparent(flat)   # a sown farm is walked across: it lies under the units
 	var built := 0
@@ -2154,10 +2196,9 @@ func _draw_overlay() -> void:
 	if placing != "":
 		var c := _ghost_cell(get_global_mouse_position())
 		var size: int = world.btypes[Economy.btype_of(world, placing)].size
-		var bt: Dictionary = world.btypes[Economy.btype_of(world, placing)]
-		var ghosts := wall_cells(wall_from, c) if placing == "wall" and wall_from.x >= 0 else [c]
+		var ghosts := wall_cells(wall_from, c) if _line(placing) and wall_from.x >= 0 else [c]
 		for g in ghosts:
-			var ok := map.can_build(g.x, g.y, size, Economy.builder_class(world, active), bt.water)
+			var ok := Economy.can_place(world, active, Economy.btype_of(world, placing), g.x, g.y)
 			var x0: int = g.x * 1000
 			var y0: int = g.y * 1000
 			var s := size * 1000
