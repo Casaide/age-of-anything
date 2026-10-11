@@ -48,7 +48,46 @@ Not in this milestone:
 - extra facings (4 or 8 directions): that's art-track work.
 
 ## Plan
-(write before starting, and get Dominic's OK)
+Dominic asked to go straight on from milestone 4 into this one (2026-10-11). Order: 1, 4, 2,
+3, 6, 5. Each step ends with green tests and a commit.
+
+1. **Resources:**
+   - `data/resources.json` (ordered: food, wood, stone; name, short label, colour);
+     `DataLib.resources`.
+   - World: `stock[r][player]` and `gathered[r][player]` instead of food/wood arrays.
+   - Types carry a cost vector; `can_afford`, `pay` and `refund` helpers.
+   - `carry_kind` is resource index + 1; buildings' drop-off is a list of resource indexes.
+   - Pricing splits cost over every resource in the parts' `cost_mix` (food and wood numbers
+     unchanged).
+   - Terrain `stone` (a gatherable deposit, becomes `rubble` ground when used up); deposits near
+     each start on both test maps. The map border and obstacles stay `rock`.
+   - The view shows stone deposits with the art kit's rock props, and the bar lists every
+     resource.
+   - Rules: start stocks and gather times per resource.
+2. **Teams:**
+   - `races[p].team` (rules or setup), `World.is_enemy(a, b)`, used by combat and anything that
+     compares owners.
+   - A 2v2 test.
+3. **Movement classes:**
+   - `ground`, `amphibious`, `flying` from unit tags (data: a tag -> class table in rules).
+   - A walkability grid per class: flying ignores water and rock; amphibious walks swamp and
+     shallow water (a new `shallows` terrain).
+   - Flow fields keyed by class; separation and blocked-tile pushes per class.
+   - Swamp speed for amphibians from data.
+4. **Placement:**
+   - Buildings list the terrains they may stand on.
+   - Race tags can widen that (amphibians: swamp, shallows).
+   - `can_build` takes the owner.
+5. **Farms:**
+   - A `farm` building that, when built, makes its footprint a food field with an amount.
+   - The farm's terrain/look per culture: a field, or a swamp paddy for amphibians, which can
+     put it on swamp.
+   - Bug bushes stay the start food. The art track gets the look.
+6. **Ages and tech as data:**
+   - `data/tech.json`: ages and researches, with costs, time, building, requirements.
+   - Effects: swap a part for another (by slot or tag) or add to a stat.
+   - Commands RESEARCH and AGE_UP; types re-priced from the new recipes; existing units updated.
+   - One test research. Milestone 7 fills in the content.
 
 ## Checklist
 - [ ] Plan approved

@@ -10,6 +10,8 @@ var palettes := {}    # skins, materials, teams
 var lexicon := {}     # word -> entry
 var stopwords := {}   # word -> true
 var curves := {}      # cost curve id -> PackedInt32Array of per-mille multipliers by points
+var resources: Array = []   # resource ids in their fixed order (data/resources.json)
+var resource_info: Array = []   # the same order: {id, name, short, colour}
 
 
 static func load_json(path: String):
@@ -28,6 +30,9 @@ func _init(root := "res://data") -> void:
 	lexicon = lex.words
 	for w in lex.stopwords:
 		stopwords[w] = true
+	for r in load_json(root + "/resources.json").resources:
+		resources.append(r.id)
+		resource_info.append(r)
 	var cc: Dictionary = load_json(root + "/cost_curves.json")
 	for id in cc:
 		curves[id] = PackedInt32Array(cc[id].permille)
