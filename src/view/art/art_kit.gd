@@ -16,6 +16,8 @@ const ART_SCALE := 1.5     # art pixels per canvas unit (a tile is 96 x 48 art p
 const UNIT_SCALE := 0.85   # units at about a third of a building's height
 const SS := 4              # supersampling for the building and prop bakes
 const HOUSE_SCALE := 1.3
+## Parts a worker swaps in by job (see UnitView.set_tool and sim_debug's _tool_for).
+const JOB_PARTS := ["tool.axe", "tool.basket", "tool.hammer", "tool.pick", "load.reeds", "load.stone"]
 const ICON_CELL := 160     # screen pixels per unit when rendering portraits   # houses read about 2.5x a footman
 const TOWN := {"thatch": "town_center", "junk": "junk_town_center", "stone": "stone_town_center", "tent": "tent_town_center"}
 const HOUSE := {"thatch": "stilt_house", "junk": "tin_can_house", "stone": "villa_house", "tent": "tent_house"}
@@ -126,6 +128,11 @@ func bake_units(races: Array, teams: Array) -> void:
 				if ps is PartShape and ps.part_id != "":
 					await pb.bake(ps.part_id, ps.shapes, ps.colours)
 			probe.free()
+			if u.recipe.slot == "worker":
+				# Workers change tools for the job and carry their load home in their hands.
+				var colours := UnitView.colours_for(lib, u.recipe.skin, u.recipe.family, teams[side])
+				for id in JOB_PARTS:
+					await pb.bake(id, lib.part(id).shapes, colours)
 	pb.queue_free()
 	PartShape.bake_flat("unit_shadow", UnitView.SHADOW_SHAPES, UnitView.SHADOW_COLOURS, ART_SCALE * UNIT_SCALE)
 

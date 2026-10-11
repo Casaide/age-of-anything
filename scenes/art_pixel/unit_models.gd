@@ -1259,3 +1259,56 @@ func _wings_feather(c: Dictionary) -> Dictionary:
 
 func _wings_bat(c: Dictionary) -> Dictionary:
 	return _wings("wing_bat", Color.WHITE)
+
+
+# ------------------------------------------------------------------ job tools and carried loads
+# Shown on workers by the view: the tool for the job at hand, and what they carry home.
+
+func _tool_hammer(c: Dictionary) -> Dictionary:
+	var n := Node3D.new()
+	n.add_child(rod(Vector3(-1, -3.5, 0), Vector3(2.5, 8.5, 0), 0.7, 0.65, surf("wood_grain", Color.WHITE, 6.0)))
+	var head := MeshInstance3D.new()
+	var bm := BoxMesh.new()
+	bm.size = Vector3(4.6, 2.2, 2.2)
+	head.mesh = bm
+	head.material_override = surf("iron", Color.WHITE, 3.0)
+	head.position = Vector3(2.8, 9.2, 0)
+	head.rotation.z = -0.28
+	n.add_child(head)
+	return {"node": n}
+
+
+func _tool_pick(c: Dictionary) -> Dictionary:
+	var n := Node3D.new()
+	n.add_child(rod(Vector3(-1, -3.5, 0), Vector3(2.5, 9.5, 0), 0.7, 0.65, surf("wood_grain", Color.WHITE, 6.0)))
+	var iron := surf("iron", Color.WHITE, 3.0)
+	n.add_child(rod(Vector3(2.6, 9.6, 0), Vector3(-2.2, 7.4, 0), 0.75, 0.3, iron))   # the point
+	n.add_child(rod(Vector3(2.6, 9.6, 0), Vector3(7.4, 8.4, 0), 0.75, 0.35, iron))   # the blade
+	return {"node": n}
+
+
+## A bundle of cut reeds over the shoulder, tied in the middle.
+func _load_reeds(c: Dictionary) -> Dictionary:
+	var n := Node3D.new()
+	var reed := surf("reed_stalk", Color.WHITE, 5.0)
+	for k in 7:
+		var off := Vector3(0, (k % 3) * 0.7, (k - 3) * 0.55)
+		n.add_child(rod(Vector3(-7, 3.5, 0) + off, Vector3(8, 9.5, 0) + off, 0.55, 0.45, reed, false))
+	n.add_child(ring(1.6, 2.2, surf("leather", Color.WHITE, 2.0), Vector3(0.5, 6.8, 0), Vector3(0, 0, 68)))
+	for k in 3:
+		n.add_child(decal("reed_leaf", 0.9, 4.0, Vector3(8.5, 10.5 + k * 0.4, (k - 1) * 0.8), Vector3(0.2, 0.3, 1), true, Vector3(1, 0.4, 0)))
+	return {"node": n}
+
+
+## A rough block of stone held at the chest.
+func _load_stone(c: Dictionary) -> Dictionary:
+	var n := Node3D.new()
+	var mi := MeshInstance3D.new()
+	var bm := BoxMesh.new()
+	bm.size = Vector3(5.0, 3.6, 4.0)
+	mi.mesh = bm
+	mi.material_override = surf("rock", Color(0.8, 0.78, 0.72), 3.0)
+	mi.position = Vector3(1.5, 1.0, 0)
+	mi.rotation = Vector3(0.15, 0.4, 0.1)
+	n.add_child(mi)
+	return {"node": n}
