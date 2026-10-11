@@ -5724,5 +5724,692 @@
   "tags": [],
   "stats": {},
   "points": 0
+ },
+ {
+  "slot": "head_gear",
+  "shapes": [
+   {
+    "t": "ellipse",
+    "c": [
+     0,
+     -1
+    ],
+    "r": [
+     5.5,
+     3
+    ],
+    "ch": "leather"
+   }
+  ],
+  "id": "helm.nile_khat",
+  "tags": [
+   "helmet",
+   "nile",
+   "light"
+  ],
+  "stats": {
+   "armour": {
+    "melee": 0,
+    "pierce": 1
+   }
+  },
+  "points": 1,
+  "tier": 1,
+  "note": "a linen head bag, gathered behind"
+ },
+ {
+  "slot": "head_gear",
+  "shapes": [
+   {
+    "t": "ellipse",
+    "c": [
+     0,
+     -1
+    ],
+    "r": [
+     5.5,
+     3
+    ],
+    "ch": "leather"
+   }
+  ],
+  "id": "helm.nile_headcloth",
+  "tags": [
+   "helmet",
+   "nile"
+  ],
+  "stats": {
+   "armour": {
+    "melee": 1,
+    "pierce": 1
+   }
+  },
+  "points": 2,
+  "tier": 2,
+  "note": "a striped headcloth, lappets on the shoulders"
+ },
+ {
+  "slot": "head_gear",
+  "shapes": [
+   {
+    "t": "ellipse",
+    "c": [
+     0,
+     -1
+    ],
+    "r": [
+     5.5,
+     3
+    ],
+    "ch": "leather"
+   }
+  ],
+  "id": "helm.nile_bronze",
+  "tags": [
+   "helmet",
+   "nile"
+  ],
+  "stats": {
+   "armour": {
+    "melee": 2,
+    "pierce": 1
+   }
+  },
+  "points": 3,
+  "tier": 3,
+  "note": "a bronze helmet, a ridge and cheek guards"
+ },
+ {
+  "slot": "head_gear",
+  "shapes": [
+   {
+    "t": "ellipse",
+    "c": [
+     0,
+     -1
+    ],
+    "r": [
+     5.5,
+     3
+    ],
+    "ch": "leather"
+   }
+  ],
+  "id": "helm.han_topknot",
+  "tags": [
+   "helmet",
+   "han",
+   "light"
+  ],
+  "stats": {
+   "armour": {
+    "melee": 0,
+    "pierce": 1
+   }
+  },
+  "points": 1,
+  "tier": 1,
+  "note": "the hair in a topknot with a band"
+ },
+ {
+  "slot": "head_gear",
+  "shapes": [
+   {
+    "t": "ellipse",
+    "c": [
+     0,
+     -1
+    ],
+    "r": [
+     5.5,
+     3
+    ],
+    "ch": "leather"
+   }
+  ],
+  "id": "helm.han_cap",
+  "tags": [
+   "helmet",
+   "han"
+  ],
+  "stats": {
+   "armour": {
+    "melee": 1,
+    "pierce": 1
+   }
+  },
+  "points": 2,
+  "tier": 2,
+  "note": "a stiff black cap with two tails"
+ },
+ {
+  "slot": "head_gear",
+  "shapes": [
+   {
+    "t": "ellipse",
+    "c": [
+     0,
+     -1
+    ],
+    "r": [
+     5.5,
+     3
+    ],
+    "ch": "leather"
+   }
+  ],
+  "id": "helm.han_lamellar",
+  "tags": [
+   "helmet",
+   "han"
+  ],
+  "stats": {
+   "armour": {
+    "melee": 2,
+    "pierce": 1
+   }
+  },
+  "points": 3,
+  "tier": 3,
+  "note": "a pointed lamellar helmet with a red tassel"
+ },
+ {
+  "slot": "head_gear",
+  "shapes": [
+   {
+    "t": "ellipse",
+    "c": [
+     0,
+     -1
+    ],
+    "r": [
+     5.5,
+     3
+    ],
+    "ch": "leather"
+   }
+  ],
+  "id": "helm.aztec_band",
+  "tags": [
+   "helmet",
+   "aztec",
+   "light"
+  ],
+  "stats": {
+   "armour": {
+    "melee": 0,
+    "pierce": 1
+   }
+  },
+  "points": 1,
+  "tier": 1,
+  "note": "a headband and one feather"
+ },
+ {
+  "slot": "head_gear",
+  "shapes": [
+   {
+    "t": "ellipse",
+    "c": [
+     0,
+     -1
+    ],
+    "r": [
+     5.5,
+     3
+    ],
+    "ch": "leather"
+   }
+  ],
+  "id": "helm.aztec_quilted",
+  "tags": [
+   "helmet",
+   "aztec"
+  ],
+  "stats": {
+   "armour": {
+    "melee": 1,
+    "pierce": 1
+   }
+  },
+  "points": 2,
+  "tier": 2,
+  "note": "a quilted cotton cap with a feather crest"
+ },
+ {
+  "slot": "head_gear",
+  "shapes": [
+   {
+    "t": "ellipse",
+    "c": [
+     0,
+     -1
+    ],
+    "r": [
+     5.5,
+     3
+    ],
+    "ch": "leather"
+   }
+  ],
+  "id": "helm.aztec_eagle",
+  "tags": [
+   "helmet",
+   "aztec",
+   "crest"
+  ],
+  "stats": {
+   "armour": {
+    "melee": 2,
+    "pierce": 1
+   }
+  },
+  "points": 3,
+  "tier": 3,
+  "note": "an eagle helmet, the beak over the brow"
+ },
+ {
+  "slot": "hand_l",
+  "shapes": [
+   {
+    "t": "circle",
+    "c": [
+     2,
+     0
+    ],
+    "r": 6,
+    "ch": "wood"
+   },
+   {
+    "t": "circle",
+    "c": [
+     2,
+     0
+    ],
+    "r": 3,
+    "ch": "team"
+   }
+  ],
+  "id": "shield.cowhide",
+  "tags": [
+   "shield",
+   "nile"
+  ],
+  "stats": {
+   "armour": {
+    "melee": 1,
+    "pierce": 2
+   }
+  },
+  "points": 2,
+  "tier": 1,
+  "note": "tall, round-topped, cowhide on a team rim"
+ },
+ {
+  "slot": "hand_l",
+  "shapes": [
+   {
+    "t": "circle",
+    "c": [
+     2,
+     0
+    ],
+    "r": 6,
+    "ch": "wood"
+   },
+   {
+    "t": "circle",
+    "c": [
+     2,
+     0
+    ],
+    "r": 3,
+    "ch": "team"
+   }
+  ],
+  "id": "shield.lacquer",
+  "tags": [
+   "shield",
+   "han"
+  ],
+  "stats": {
+   "armour": {
+    "melee": 1,
+    "pierce": 2
+   }
+  },
+  "points": 2,
+  "tier": 1,
+  "note": "lacquered red with a black border, a pointed top"
+ },
+ {
+  "slot": "hand_l",
+  "shapes": [
+   {
+    "t": "circle",
+    "c": [
+     2,
+     0
+    ],
+    "r": 6,
+    "ch": "wood"
+   },
+   {
+    "t": "circle",
+    "c": [
+     2,
+     0
+    ],
+    "r": 3,
+    "ch": "team"
+   }
+  ],
+  "id": "shield.chimalli",
+  "tags": [
+   "shield",
+   "aztec"
+  ],
+  "stats": {
+   "armour": {
+    "melee": 1,
+    "pierce": 2
+   }
+  },
+  "points": 2,
+  "tier": 1,
+  "note": "round, team-coloured, a fringe of feathers"
+ },
+ {
+  "slot": "hand_r",
+  "shapes": [
+   {
+    "t": "line",
+    "p": [
+     [
+      -6,
+      4
+     ],
+     [
+      16,
+      -9
+     ]
+    ],
+    "w": 1.5,
+    "ch": "wood"
+   },
+   {
+    "t": "poly",
+    "p": [
+     [
+      15,
+      -10
+     ],
+     [
+      19,
+      -12
+     ],
+     [
+      17,
+      -8
+     ]
+    ],
+    "ch": "wood"
+   }
+  ],
+  "id": "weapon.ji",
+  "noun": "Halberdier",
+  "tags": [
+   "spear",
+   "melee",
+   "reach",
+   "han"
+  ],
+  "stats": {
+   "attack": 4,
+   "bonus": {
+    "large": 6
+   }
+  },
+  "points": 3,
+  "cost_mix": {
+   "food": 40,
+   "wood": 60
+  },
+  "tier": 1,
+  "note": "a halberd: a spear with a crescent side blade",
+  "favour": 5,
+  "requires_role": "spear"
+ },
+ {
+  "slot": "hand_r",
+  "shapes": [
+   {
+    "t": "line",
+    "p": [
+     [
+      0,
+      0
+     ],
+     [
+      2,
+      -11
+     ]
+    ],
+    "w": 2.5,
+    "ch": "iron"
+   },
+   {
+    "t": "line",
+    "p": [
+     [
+      -3,
+      -1
+     ],
+     [
+      3,
+      0
+     ]
+    ],
+    "w": 1.5,
+    "ch": "bronze"
+   }
+  ],
+  "id": "weapon.khopesh",
+  "noun": "Khopesh Warrior",
+  "tags": [
+   "melee",
+   "blade",
+   "nile"
+  ],
+  "stats": {
+   "attack": 7
+  },
+  "points": 5,
+  "cost_mix": {
+   "food": 40,
+   "wood": 60
+  },
+  "tier": 2,
+  "requires_role": "large",
+  "note": "the sickle sword",
+  "favour": 5
+ },
+ {
+  "slot": "hand_r",
+  "shapes": [
+   {
+    "t": "line",
+    "p": [
+     [
+      0,
+      0
+     ],
+     [
+      2,
+      -11
+     ]
+    ],
+    "w": 2.5,
+    "ch": "iron"
+   },
+   {
+    "t": "line",
+    "p": [
+     [
+      -3,
+      -1
+     ],
+     [
+      3,
+      0
+     ]
+    ],
+    "w": 1.5,
+    "ch": "bronze"
+   }
+  ],
+  "id": "weapon.macuahuitl",
+  "noun": "Club Warrior",
+  "tags": [
+   "melee",
+   "blade",
+   "aztec"
+  ],
+  "stats": {
+   "attack": 7
+  },
+  "points": 5,
+  "cost_mix": {
+   "food": 40,
+   "wood": 60
+  },
+  "tier": 2,
+  "requires_role": "large",
+  "note": "a wooden club edged with obsidian",
+  "favour": 5
+ },
+ {
+  "slot": "hand_r",
+  "shapes": [
+   {
+    "t": "line",
+    "p": [
+     [
+      -6,
+      4
+     ],
+     [
+      16,
+      -9
+     ]
+    ],
+    "w": 1.5,
+    "ch": "wood"
+   },
+   {
+    "t": "poly",
+    "p": [
+     [
+      15,
+      -10
+     ],
+     [
+      19,
+      -12
+     ],
+     [
+      17,
+      -8
+     ]
+    ],
+    "ch": "wood"
+   }
+  ],
+  "id": "weapon.ji.bronze",
+  "noun": "Halberdier",
+  "tags": [
+   "spear",
+   "melee",
+   "reach",
+   "han"
+  ],
+  "stats": {
+   "attack": 5,
+   "bonus": {
+    "large": 7
+   }
+  },
+  "points": 4,
+  "cost_mix": {
+   "food": 40,
+   "wood": 60
+  },
+  "tier": 2,
+  "note": "a halberd with a bronze head",
+  "favour": 5,
+  "requires_role": "spear"
+ },
+ {
+  "slot": "hand_r",
+  "shapes": [
+   {
+    "t": "line",
+    "p": [
+     [
+      -6,
+      4
+     ],
+     [
+      16,
+      -9
+     ]
+    ],
+    "w": 1.5,
+    "ch": "wood"
+   },
+   {
+    "t": "poly",
+    "p": [
+     [
+      15,
+      -10
+     ],
+     [
+      19,
+      -12
+     ],
+     [
+      17,
+      -8
+     ]
+    ],
+    "ch": "wood"
+   }
+  ],
+  "id": "weapon.ji.iron",
+  "noun": "Halberdier",
+  "tags": [
+   "spear",
+   "melee",
+   "reach",
+   "han",
+   "heavy"
+  ],
+  "stats": {
+   "attack": 6,
+   "bonus": {
+    "large": 9
+   },
+   "speed": -1
+  },
+  "points": 6,
+  "cost_mix": {
+   "food": 40,
+   "wood": 60
+  },
+  "tier": 3,
+  "note": "an iron halberd, longer in the shaft",
+  "favour": 5,
+  "requires_role": "spear"
  }
 ]

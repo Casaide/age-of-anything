@@ -1,6 +1,6 @@
 # Milestone 11: Cleanup
 
-**Status:** in progress (started 2026-10-11)
+**Status:** done (2026-10-11): every item ticked, the Fable second pass met the exit criterion
 **Exit criterion:** Deep review of UI, UX and art by Fable
 
 ## Dominic's list (2026-10-11)
@@ -120,7 +120,7 @@ tests green. Anything cut moves to `../backlog.md`.
       presets, roster with costs, the generator's notes), a map card drawn from the map's data,
       Start; in battle Esc pauses with resume / surrender / back to the menu, and the menu comes
       up when a match ends. Maps got player names (Reed Meadow, The Pass)
-- [ ] 7. Races: ~~8 facings~~ (done 2026-10-11, D-087), ~~capybara~~ (done), ~~rat buildings by age~~ (age-3 Town Center D-089; house and barracks smaller, houses varied D-090), ~~rearing beetles~~ (done), ~~humans in Blender~~ (head, torso, legs, and leather and bronze armour fitted to the torso, 2026-10-11; arms stay built in code because the game poses them for each weapon), spiders (SG1 posture sheet, waiting on Dominic's pick), ~~centaurs~~ (the horse chest rises into the waist, 2026-10-11), ~~ponies~~ (thighs inside the barrel, riders show their legs), ~~Egypt/Han/Aztec~~ (as data, D-091; gear by age: GC1 concept sheets, waiting on Dominic's picks), ~~buildings by age~~ (engine, D-089)
+- [x] 7. Races (2026-10-11): ~~8 facings~~ (done 2026-10-11, D-087), ~~capybara~~ (done), ~~rat buildings by age~~ (age-3 Town Center D-089; house and barracks smaller, houses varied D-090), ~~rearing beetles~~ (done), ~~humans in Blender~~ (head, torso, legs, and leather and bronze armour fitted to the torso, 2026-10-11; arms stay built in code because the game poses them for each weapon), ~~spiders~~ (reared, Dominic's SG1 pick, D-099), ~~centaurs~~ (the horse chest rises into the waist, 2026-10-11), ~~ponies~~ (thighs inside the barrel, riders show their legs), ~~Egypt/Han/Aztec~~ (as data, D-091; gear by age from GC1 as drawn, culture gear from age 1, D-098), ~~buildings by age~~ (engine, D-089)
 - [x] 8. Animals (2026-10-11, D-088): deer (bolt), boar (fight back), sheep (claimed by whoever
       reaches them, led, slaughtered); carcasses are food; data/animals.json and a host rule.
       Not yet: the bot hunting or herding, stealing sheep, wolves
@@ -137,5 +137,5 @@ tests green. Anything cut moves to `../backlog.md`.
       blocks; armoury chimneys per culture; stone/thatch mill on a plinth under a roof; tips under
       the top bar, alert below; minimap on the panel margin; "Beat Easy? Try Normal"; the lobby roster
       as rows with each unit's portrait
-- [ ] Archive: pictures, journal, decisions, timeline
+- [x] Archive: pictures, journal, decisions, timeline (2026-10-11; images up to 182, D-092 to D-099)
 
