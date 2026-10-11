@@ -22,7 +22,7 @@ In:
 - **The full land tree as data:** every building, line and research below, built or planned.
   Planned items sit in `data/` with `"status": "planned"`: the page draws them (blank frame, no
   icon), the sim and the build menus skip them. Building an item means removing that flag.
-- **Race bonuses as data:** each creature and culture states its bonuses and its own research.
+- ~~Race bonuses as data~~: moved to milestone 14 (race identity) with the rest of what makes races differ.
 - **A fourth age**, the walls and gates, the towers, the Castle, University, Temple, Siege
   Workshop, the Market's trade carts, garrisoning, and the new unit lines.
 
@@ -161,7 +161,7 @@ Ages are when it opens. Effects use the forms `tech.json` already has (`tag/stat
 | Temple | Patient Faith | 4 | mystics recover faster | planned |
 | Temple | Deep Faith | 4 | mystics convert siege and buildings | planned |
 
-### Race bonuses
+### Race bonuses (moved to milestone 14, `m14-race-identity.md`)
 
 Today a race's bonuses are scattered: creature `economy` (rats cheap and quick, centaurs carry
 more), movement classes (amphibious, flying), and `only` research (Strong Legs). The page needs
@@ -230,26 +230,34 @@ Each phase ends with tests green and pictures in the archive. New art is concept
 
 ### Milestone 12 (this file)
 
-1. **Data and the page.** The full tree into `data/` (`status: planned`), age 4 in `tech.json`
-   (planned), roster slots with building and age, the loaders skipping planned items, then the
-   tech tree page in the lobby and the match. Pictures of the page with frogs and rats.
-2. **Race bonuses.** The `bonuses` / `research` / `lacks` fields, today's scattered bonuses
-   moved into them, applied before pricing; Dominic picks from the drafts above. A few `lacks`
-   per creature or culture (Dominic: yes), lifted by Full tech tree.
-3. **Age 4 and the research that needs no new systems.** The age itself, age-4 kit tiers and line
-   steps, economy and worker research, the armoury tracks, barracks, range and stable research.
-4. **Walls, gates and towers.** Palisade (age 1, wood), stone wall to age 2, gates (passable for
-   their own team: flow fields per team where gates exist), Outpost, Watchtower upgrades,
-   garrisoning (Town Center, towers, Castle: each unit inside adds an arrow; the TC's call to
-   arms), more Town Centers from age 3.
-5. **University and Castle.** Building research, tower upgrades; the Castle building, its
-   arrows, War Drums, and the race research slots.
-6. **The other buildings, standing:** Siege Workshop and Temple built and placeable in every
-   architecture, so milestone 13 only adds what they train.
-7. **Wonder** (Dominic: in): one model per architecture; build it and hold it for a time to win.
-8. **The AI:** `data/ai.json` learns the new buildings, research, walls, towers and age 4; a
-   bot-vs-bot to age 4.
-9. **Exit check:** no blank buildings or research on the page; Dominic plays to age 4.
+Replanned 2026-10-12 after phase 1 and Dominic's playtest fixes. Race bonuses moved to milestone 14.
+
+1. ~~Data and the page~~ (done).
+2. **Age 4 and the research that needs no new systems.** The Shiny Age (needs a Castle, or two of
+   University / Temple / Siege Workshop); an age-4 kit tier in every culture (concept round for the
+   look) and each line's fourth step; the effect kinds the research needs (`cost_pct`, `train_pct`,
+   `research_pct`, `build_pct`, `carry_add`, `sight_add`, `building_hp_pct`, `reload_pct`,
+   `farm_food_pct`, `trade_fee`), each with a test; then all the plain research: Town Center (Thick
+   Skins, Big Pockets, Pack Frames, Lookouts, Night Lanterns), camps (Fallow Fields, Water Wheels,
+   Felling Wedges, Ore Carts, Deep Shafts), the armoury's six tracks (melee, ranged, range, infantry,
+   ranged and mount armour), Marching Drums, Quick Draw, Hoof Wraps, Good Hay, the market's three.
+   An icon per research (SVG, the house style), so no scroll fallbacks remain.
+3. **Towers and garrison.** ~~Walls and gates~~ (done). Outpost (sight only); Watchtower upgrades
+   to Bastion and Citadel Tower (`tower_upgrade`: a type replaced in place); garrisoning (Town
+   Center, towers, Castle: units go inside, heal slowly, each adds an arrow; ungarrison; the Town
+   Center's call to arms for workers); more Town Centers from age 3.
+4. **University.** The building (every architecture, concept-first) and its research: Stonecutting,
+   Deep Foundations, Lifting Frames, Bastion, Citadel Tower, Slit Windows, Thick Walls, Siege Wrights.
+5. **Castle.** The building (big, shoots, garrisons; concept round per architecture), War Drums,
+   and the two race research slots (filled by milestone 14; a placeholder "own research" until then).
+6. **Siege Workshop and Temple, standing.** Built and placeable in every architecture, with their
+   research where it needs no units (Temple's lore waits for mystics in 13).
+7. **Wonder.** One per architecture (the culture's showpiece; concept round); build it and hold it
+   for N minutes to win, with a countdown everyone sees; the bot attacks a Wonder.
+8. **AI.** `data/ai.json` learns age 4, the new research (gathering first, then armoury tracks by its
+   army), towers and garrisoning when attacked, a University, a Castle; walls stay optional.
+9. **Exit check.** No blank buildings or research on the page; bot-vs-bot reaches age 4 using every
+   building; Dominic plays to age 4.
 
 ### Milestone 13 (`m13-unit-lines.md`)
 
@@ -276,25 +284,25 @@ Fixed first, as they came in; each ticked when done.
 - [x] Stone walls in age 1 were a slip: the stone wall is age 2 now; the wooden palisade (age 1) comes in phase 4
 - [x] Soldiers auto-attacked enemy sheep: they ignore animals now; an unguarded rival sheep is stolen by walking up to it
 - [x] Bushes lasted far too long (2,000 food each): 150 now, so farms come early; the bot builds farms as wild food near home runs out (only while food is short) and reseeds them; age-1 gatherer mix 50/50
-- [ ] Gates for walls (phase 4; palisade gate and stone gate)
-- [ ] The UI is too small on a MacBook (a UI scale)
-- [ ] Command panel: a stronger split between training and build options; buttons too small; health bar far too big
-- [ ] A rally point clicked on a tree, rock or other resource centres on it
-- [ ] Centaurs struggle to fight (pathfinding?); spiders very hard for them to kill: check
-- [ ] A line upgrade reads "Spearbearer Centaur" to "Spearbearer Centaur": the name must change, or the card show what changes
-- [ ] The bot should hunt (and herd sheep)
-- [ ] Right-click a drop-off building to drop off what a worker carries
-- [ ] Watchtowers don't seem to shoot
-- [ ] Unit stances: aggressive, defensive, stand ground (and no-attack)
-- [ ] (For another session) building variants turned so no door or window shows
+- [x] Gates for walls: palisade (age 1), palisade gate, stone gate; gates open for their own team (passability per team)
+- [x] The UI is too small on a MacBook: the HUD and lobby scale with the screen's density (`src/view/ui_scale.gd`)
+- [x] Command panel: captioned groups (Train, Research, Age up, Orders, Stance, Build), 80 px buttons, the queue in its own well, a slim health bar with its number
+- [x] A rally point set on a resource sits in the middle of its tile
+- [x] Centaurs: not pathing; every centaur is large and mounted, so every spear counters it, and spider pierce armour stops centaur missiles. Kept (the genre's counters); centaur ranged units are the cost-sanity backlog item (price by simulation)
+- [x] Line steps are named for what got better (new weapon, else the gear's epithet, else the culture's rank word); a step with no new kit isn't sold; the tooltip shows stats before and after
+- [x] The bot claims and slaughters sheep, hunts deer, and takes on boar with a party
+- [x] Right-click a drop-off building to drop off, then back to the patch
+- [x] Watchtowers shot, unseen: the view now draws their arrows; attack 5 -> 10 pierce
+- [x] Unit stances: aggressive, defensive, stand ground, no attack
+- [x] House variants only turn or mirror where the door stays in view
 
 ## Checklist
 - [x] Plan approved by Dominic (2026-10-11: four ages, split, lacks, Wonder in)
 - [x] 1. Data and the tech tree page (2026-10-11: the tree in `data/` with `"status": "planned"`, loaders skip it, `scenes/tech_tree.tscn` from the lobby banners and in a match on F2 or the top bar's button; T stays the Watchtower's hotkey; checked in `tests/run_tests.gd`, captures with `tests/tech_tree_screenshot.gd`)
-- [ ] 2. Race bonuses
-- [ ] 3. Age 4 and simple research
-- [ ] 4. Walls, gates, towers, garrison
-- [ ] 5. University and Castle
+- [ ] 2. Age 4, effect kinds, plain research, research icons
+- [ ] 3. Towers and garrison (walls and gates done 2026-10-11)
+- [ ] 4. University
+- [ ] 5. Castle
 - [ ] 6. Siege Workshop and Temple standing
 - [ ] 7. Wonder
 - [ ] 8. AI
