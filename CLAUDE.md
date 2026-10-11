@@ -37,9 +37,10 @@ move it to `docs/backlog.md` rather than deleting it.
   projectiles, deaths, the counter quiz (`scenes/counter_quiz.tscn`). Waiting on Dominic's quiz
   run and the unit card. See `docs/milestones/m4-combat.md`.
 - **In progress (milestone 5): art rework**, run by a separate agent (`docs/milestones/m5-art-rework.md`).
-- **Next (milestone 6): foundations**: resources from data, movement classes, placement rules,
-  teams, ages and tech as data, farms (`docs/milestones/m6-foundations.md`). Then 7 progression,
-  8 AI and match flow, 9 fog and juice, 10 playtest.
+- **Done (milestone 6): foundations**: resources from data (stone), movement classes (ground,
+  amphibious, flying), placement rules, teams, farms, shift-queued orders, unit lines through the
+  ages, ages and research as data (`data/tech.json`, `src/sim/tech.gd`). See `docs/milestones/m6-foundations.md`.
+- **Next:** 7 progression, 8 AI and match flow, 9 fog and juice, 10 playtest.
 
 ## Layout
 
