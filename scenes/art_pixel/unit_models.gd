@@ -761,13 +761,13 @@ func _body_human(c: Dictionary) -> Dictionary:
 		into.add_child(rod(sh, elbow, 1.8, 1.55, cloth))
 		into.add_child(rod(elbow, hand, 1.35, 1.15, skin))
 		into.add_child(blob(Vector3(1.5, 1.6, 1.3), skin, hand))
-	kerchief(front, c, Vector3(0.5, 24.6, 0), 2.6)
+	# (No scarf: the tunic is already the team colour, and a scarf ring hid the neck: Dominic.)
 	return {"node": n, "front": front, "sockets": {
-		"head": Vector3(0.6, 27, 0), "hand_r": near_hand, "hand_l": Vector3(5.5, 17.2, -4.8),
+		"head": Vector3(0.6, 26.6, 0), "hand_r": near_hand, "hand_l": Vector3(5.5, 17.2, -4.8),
 		"torso": Vector3(0.3, 17.8, 0), "back": Vector3(-4.2, 22, 0)},
 		"anchors": [[Vector3(-2.3, 11.0, -2.4), 0.0, -1], [Vector3(2.0, 11.0, 2.4), PI, 1]],
 		"torso_scale": Vector2(0.66, 0.82),
-		"torso_fit": Vector3(0.56, 0.78, 0.58)}   # worn armour (built ~1.6x) just over the chest, not an egg round it
+		"torso_fit": Vector3(0.47, 0.8, 0.56)}   # worn armour (built ~1.6x) just over the (Blender) chest, not an egg round it
 
 
 func _head_human(c: Dictionary) -> Dictionary:
@@ -775,7 +775,8 @@ func _head_human(c: Dictionary) -> Dictionary:
 	# cheekbones, chin) rather than primitives; the primitive head is kept below as the fallback.
 	if FileAccess.file_exists("res://assets/models/head_human.glb"):
 		return {"node": glb("head_human", {"skin": surf("skin", c.skin, 6.0), "hair": surf("mane", c.skin2.darkened(0.45), 3.0),
-			"eye": plain(Color("#1a1210"))}), "sockets": {"top": Vector3(0.3, 11.0, 0)}}
+			"eye": plain(Color("#1a1210"))}), "sockets": {"top": Vector3(0.3, 10.3, 0)},
+			"gear_scale": 0.86}   # a narrower skull than the old egg: caps and helmets sit on it, not flat on top
 	return _head_human_primitive(c)
 
 
@@ -852,7 +853,7 @@ func _body_pony(c: Dictionary) -> Dictionary:
 	n.add_child(lift)
 	_pony_barrel(lift, c)
 	var hide := surf("hide", c.skin, 6.0)
-	lift.add_child(rod(Vector3(8.5, 22, 0), Vector3(14.6, 31.5, 0), 4.4, 3.1, hide))   # neck, arched up
+	lift.add_child(rod(Vector3(8.0, 21.5, 0), Vector3(14.4, 31.5, 0), 5.4, 4.0, hide))   # neck, arched up: deep, so the head doesn't read as a snout (Dominic)
 	lift.add_child(rod(Vector3(6.4, 24.0, 0), Vector3(12.4, 33.4, 0), 2.1, 1.7, surf("mane", c.skin2.darkened(0.35), 3.0)))
 	harness(lift, Vector3(4, 19, 0), 7.0, 6.3, Vector3(3, 18, 6.4), Vector3(3, 18, -6.4))
 	return {"node": n, "sockets": _lifted({
@@ -888,17 +889,17 @@ func _head_pony(c: Dictionary) -> Dictionary:
 	root.add_child(n)
 	var hide := surf("hide", c.skin, 5.0)
 	var a := Vector3(0.5, 0.5, 0)
-	var b := Vector3(7.5, -3.5, 0)
-	n.add_child(rod(a, b, 2.9, 1.9, hide))
-	n.add_child(blob(Vector3(3.0, 3.0, 2.4), hide, Vector3(1.6, -0.4, 0)))   # cheek
-	n.add_child(blob(Vector3(2.2, 1.9, 1.9), surf("hide", c.skin.darkened(0.15), 4.0), Vector3(7.6, -3.6, 0)))
+	var b := Vector3(6.6, -4.0, 0)   # a shorter, deeper face
+	n.add_child(rod(a, b, 3.3, 2.6, hide))
+	n.add_child(blob(Vector3(3.6, 3.4, 2.8), hide, Vector3(1.6, -0.6, 0)))   # cheek, broad
+	n.add_child(blob(Vector3(2.6, 2.3, 2.2), surf("hide", c.skin.darkened(0.15), 4.0), Vector3(6.8, -4.1, 0)))   # the muzzle
 	for side in [1, -1]:
-		n.add_child(blob(Vector3(0.5, 0.45, 0.4), plain(Color("#1a1210")), Vector3(9.4, -3.3, 0.9 * side)))
+		n.add_child(blob(Vector3(0.5, 0.45, 0.4), plain(Color("#1a1210")), Vector3(8.6, -3.8, 1.1 * side)))
 		n.add_child(decal("rat_eye", 1.7, 1.7, Vector3(2.3, 0.9, 2.45 * side), Vector3(0.3, 0.3, side), false))
 		n.add_child(cone(0.0, 0.85, 2.8, hide, Vector3(-0.2, 2.8, 1.2 * side), Vector3(-12 * side, 0, 8)))
 	n.add_child(blob(Vector3(1.3, 1.7, 1.4), surf("mane", c.skin2, 3.0), Vector3(1.4, 1.8, 0)))   # forelock
 	var ang := rad_to_deg(atan2(b.y - a.y, b.x - a.x)) - 90.0
-	n.add_child(ring(1.9, 2.4, surf("leather", Color.WHITE, 3.0), Vector3(6.0, -2.7, 0), Vector3(0, 0, ang)))
+	n.add_child(ring(2.5, 3.0, surf("leather", Color.WHITE, 3.0), Vector3(5.4, -3.2, 0), Vector3(0, 0, ang)))
 	n.add_child(ring(2.5, 3.0, plain(c.team), Vector3(1.4, 0.4, 0), Vector3(0, 0, ang)))   # browband
 	return {"node": root, "sockets": {"top": Vector3(0.5, 2.6, 0) * 1.25}}
 

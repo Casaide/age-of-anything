@@ -124,7 +124,8 @@ func build(r: Dictionary, lib, team: Color, speed := 10) -> void:
 	if not rides_unwinged and r.parts.has("back") and "flying" in lib.part(r.parts.back).tags:
 		flying = true
 
-	shadow.scale = Vector2(unit_scale, unit_scale) * (0.8 if flying else 1.0)
+	# A figure on two legs casts a narrower shadow than a mount or a many-legged beast.
+	shadow.scale = Vector2(unit_scale, unit_scale) * (0.8 if flying else 1.0) * (1.0 if r.has("mount") or legs.size() > 2 else 0.65)
 	gait = _gait(legs.size(), flying)
 	# A creature can move its own way (data: creatures.json "gait"): frogs hop. A rider's
 	# mount decides, so a frog on a beetle scuttles.
