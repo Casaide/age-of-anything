@@ -200,3 +200,11 @@ resource. The bots age up later now (about 7-8 minutes, was 4-6), as they build 
 Laying a seven-tile wall built only two tiles: taking the next order from a unit's shift-queue ran
 it as a plain order, which wipes the rest of the queue. Shift-queued houses had always stopped at
 two. Fixed, with a test.
+
+### Art consistency
+Water was a dithered blue blob with white dots; now it's painted: a smooth fall from olive
+shallows to deep green-blue, broad colour patches, the sky in long slow streaks, small ripple
+glints, softer foam (the shore was already liked and stayed). Boulders got lichen, cracks,
+pebbles and grass at their foot, and outcrops stopped being a grid of equal stones (bigger inside,
+smaller at the edge, nudged). A first try left gaps inside an outcrop: blocked ground that looked
+walkable, so every rock tile keeps a stone. Farms are dense leafy rows now, not sticks on a board.
