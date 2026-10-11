@@ -18,6 +18,7 @@ const LAYER := 50.0      # depth between shapes, so later shapes sit in front
 const MARGIN := 3.0      # part units of room around the shapes
 
 var art_scale := 1.5     # art pixels per part unit
+var bands := 0           # > 0: painted value bands (the paint-over hybrid; see Pixelize.run)
 var cam: Camera3D
 var key: DirectionalLight3D
 var holder: Node3D
@@ -155,10 +156,10 @@ func _bake_model(id: String, colours: Dictionary, bake_key: String) -> void:
 		used = used.merge(front_img.get_used_rect())
 	used = used.grow(SS * 2).intersection(Rect2i(Vector2i.ZERO, img.get_size()))
 	used.position = used.position / SS * SS
-	var pix := Pixelize.run(img.get_region(used), SS)
+	var pix := Pixelize.run(img.get_region(used), SS, true, bands)
 	if front_img:
 		# Stored as its own sprite: UnitView layers it above torso armour.
-		var top := Pixelize.run(front_img.get_region(used), SS)
+		var top := Pixelize.run(front_img.get_region(used), SS, true, bands)
 		PartShape.baked[PartShape.front_key(bake_key)] = {"img": top, "tex": ImageTexture.create_from_image(top),
 			"origin": (origin - Vector2(used.position)) / SS, "scale": art_scale}
 		PartShape.rigs[id]["front"] = true

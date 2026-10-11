@@ -23,6 +23,7 @@ func _initialize() -> void:
 	var rules = DataLib.load_json("res://data/rules/default.json")
 	var baker := PartBaker.new()
 	baker.art_scale = ART
+	baker.bands = int(OS.get_environment("BANDS")) if OS.get_environment("BANDS") != "" else 4   # as in the game (ArtKit.UNIT_BANDS)
 	root.add_child(baker)
 	var box := SubViewportContainer.new()
 	box.stretch = true

@@ -10,7 +10,9 @@ const CONTACT := Color(0.06, 0.05, 0.03, 0.24)   # ambient occlusion where thing
 const EDGE_INK := Color("#24180f")
 
 
-static func run(img: Image, factor: int, outline := true) -> Image:
+## bands > 0: the paint-over look for units: each opaque pixel's brightness snaps to one of
+## `bands` steps (hue and saturation kept), so shading reads as painted bands, not a gradient.
+static func run(img: Image, factor: int, outline := true, bands := 0) -> Image:
 	img.convert(Image.FORMAT_RGBA8)
 	img.premultiply_alpha()   # shrink with premultiplied alpha, so edges don't darken (and it's cheap)
 	var w := maxi(1, img.get_width() / factor)
@@ -43,6 +45,16 @@ static func run(img: Image, factor: int, outline := true) -> Image:
 		out[i + 1] = c[1]
 		out[i + 2] = c[2]
 		out[i + 3] = c[3]
+	if bands > 0:
+		for i in range(0, w * h * 4, 4):
+			if out[i + 3] != 255:
+				continue
+			var c := Color8(out[i], out[i + 1], out[i + 2])
+			var v := clampf(roundf(c.v * bands) / bands, 0.08, 1.0)
+			var q := Color.from_hsv(c.h, c.s, v)
+			out[i] = q.r8
+			out[i + 1] = q.g8
+			out[i + 2] = q.b8
 	if outline:
 		var edged := out.duplicate()
 		var ink := EDGE_INK

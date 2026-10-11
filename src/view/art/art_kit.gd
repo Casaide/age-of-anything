@@ -14,6 +14,7 @@ const PropModels := preload("res://scenes/art_pixel/prop_models.gd")
 
 const ART_SCALE := 1.5     # art pixels per canvas unit (a tile is 96 x 48 art pixels)
 const UNIT_SCALE := 0.85   # units at about a third of a building's height
+const UNIT_BANDS := 4      # value bands in unit shading (Pixelize.run; the paint-over hybrid)
 const SS := 4              # supersampling for the building and prop bakes
 const HOUSE_SCALE := 1.3
 ## Parts a worker swaps in by job (see UnitView.set_tool and sim_debug's _tool_for).
@@ -140,6 +141,7 @@ func rebuild_atlas() -> void:
 func bake_units(races: Array, teams: Array) -> void:
 	var pb := PartBaker.new()
 	pb.art_scale = ART_SCALE * UNIT_SCALE   # baked at the size they're drawn: crisp pixels
+	pb.bands = UNIT_BANDS   # the paint-over look: painted value bands, not plastic gradients
 	add_child(pb)
 	for side in races.size():
 		var steps := []

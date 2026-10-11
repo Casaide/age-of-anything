@@ -64,6 +64,7 @@ func _initialize() -> void:
 	baker.art_scale = art
 	baker.models = Concepts.new()
 	baker.azimuth = azimuth
+	baker.bands = 4   # as in the game (ArtKit.UNIT_BANDS)
 	root.add_child(baker)
 	var box := SubViewportContainer.new()
 	box.stretch = true
