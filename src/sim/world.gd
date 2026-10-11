@@ -70,10 +70,9 @@ var history: Array = []        # every command that ran, in run order
 var hashes: Array = []         # [[tick, hash]] every HASH_EVERY ticks
 var next_id := 1               # shared by units and buildings
 var next_group := 1
-var food := PackedInt32Array() # per player
-var wood := PackedInt32Array()
-var gathered_food := PackedInt32Array()   # per player, everything ever dropped off
-var gathered_wood := PackedInt32Array()
+var resources: Array = []      # resource ids in their fixed order (data/resources.json)
+var stock: Array = []          # per resource: PackedInt32Array per player
+var gathered: Array = []       # per resource, per player: everything ever dropped off
 var pop := PackedInt32Array()     # derived each tick (Economy.update_pop)
 var lost := PackedInt32Array()    # per player: units killed so far
 var pop_cap := PackedInt32Array()
@@ -92,7 +91,8 @@ func _init(p_seed: int, p_map: SimMap, p_races: Array, p_rules: Dictionary) -> v
 	econ = _ints(rules.economy)
 	combat = _ints(rules.combat)
 	spatial = Spatial.new(map.width, map.height)
-	btypes = Economy.load_btypes()
+	resources = Economy.load_resources()
+	btypes = Economy.load_btypes(resources)
 	for p in races.size():
 		for u in races[p].units:
 			types.append(_make_type(p, u))
@@ -127,9 +127,27 @@ func _make_type(player: int, u: Dictionary) -> Dictionary:
 	return {
 		"player": player, "slot": r.slot, "name": r.get("name", r.slot), "recipe": r,
 		"speed": int(e.speed) * SPEED_SCALE, "radius": mini(radius, MAX_RADIUS), "hp": int(e.hp),
-		"pop": int(e.pop), "food": int(e.cost.food), "wood": int(e.cost.wood),
+		"pop": int(e.pop), "cost": Economy.cost_vector(resources, e.cost),
 		"train_ticks": int(e.train_time) * TICK_HZ, "worker": "worker" in e.tags, "eval": e,
 	}
+
+
+## Can the player pay this cost vector (indexed like `resources`)?
+func can_afford(player: int, cost: PackedInt32Array) -> bool:
+	for r in cost.size():
+		if stock[r][player] < cost[r]:
+			return false
+	return true
+
+
+func pay(player: int, cost: PackedInt32Array) -> void:
+	for r in cost.size():
+		stock[r][player] -= cost[r]
+
+
+func refund(player: int, cost: PackedInt32Array) -> void:
+	for r in cost.size():
+		stock[r][player] += cost[r]
 
 
 ## Unit type index for a player's roster slot, or -1.
@@ -590,10 +608,9 @@ func state_hash() -> int:
 	for v in [tick, rng.state, next_id, next_group, units.count(), buildings.count(), map.version]:
 		h = Fixed.mix(h, v)
 	for p in races.size():
-		h = Fixed.mix(h, food[p])
-		h = Fixed.mix(h, wood[p])
-		h = Fixed.mix(h, gathered_food[p])
-		h = Fixed.mix(h, gathered_wood[p])
+		for r in resources.size():
+			h = Fixed.mix(h, stock[r][p])
+			h = Fixed.mix(h, gathered[r][p])
 		h = Fixed.mix(h, lost[p])
 	# Which fields are solved or pending changes how units steer, so it's state too.
 	for key in field_order:

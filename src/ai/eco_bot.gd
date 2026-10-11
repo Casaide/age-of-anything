@@ -70,7 +70,7 @@ func think(w) -> void:
 	var worker_type: int = w.type_of(player, "worker")
 	var t: Dictionary = w.types[worker_type]
 	if w.tick >= _next_train and bs.queue[tc].size() < 2 and workers.size() + bs.queue[tc].size() < MAX_WORKERS \
-			and w.food[player] >= t.food and w.wood[player] >= t.wood:
+			and w.can_afford(player, t.cost):
 		w.issue(player, Commands.TRAIN, {"building": bs.id[tc], "slot": "worker"})
 		_next_train = w.tick + TRAIN_COOLDOWN
 	# A house before we're stuck.
@@ -78,7 +78,7 @@ func think(w) -> void:
 	var queued_pop: int = bs.queue[tc].size() * t.pop
 	if w.tick >= _next_house and w.pop_cap[player] < int(w.econ.pop_max) \
 			and w.pop[player] + queued_pop + HOUSE_HEADROOM >= w.pop_cap[player] \
-			and w.wood[player] >= w.btypes[house].wood and w.food[player] >= w.btypes[house].food \
+			and w.can_afford(player, w.btypes[house].cost) \
 			and not _building_underway(w):
 		var builder := _pick_builder(w, workers)
 		var spot := _house_spot(w, bs.cx[tc] + 1, bs.cy[tc] + 1, w.btypes[house].size)
@@ -115,7 +115,7 @@ func _nearest_resource(w, x: int, y: int, kind: int) -> int:
 	var best := -1
 	var best_d2 := 1 << 62
 	for c in w.map.resource_cells:
-		if w.map.amount[c] <= 0 or Economy.KINDS.find(w.map.resource_at(c)) != kind:
+		if w.map.amount[c] <= 0 or Economy.kind_of(w, w.map.resource_at(c)) != kind:
 			continue
 		var d2 := Fixed.dist2(x, y, (c % w.map.width) * 1000 + 500, (c / w.map.width) * 1000 + 500)
 		if d2 < best_d2:

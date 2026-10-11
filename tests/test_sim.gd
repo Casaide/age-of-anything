@@ -232,7 +232,7 @@ func _test_moved(w: World) -> void:
 	for b in w.buildings.count():
 		built += w.buildings.done[b]
 	check(built == 4, "both Town Centers and both houses stand (%d built)" % built)
-	check(w.food[0] > int(start.food) and w.food[1] > int(start.food), "both sides gathered food (%d, %d)" % [w.food[0], w.food[1]])
+	check(w.stock[0][0] > int(start.food) and w.stock[0][1] > int(start.food), "both sides gathered food (%d, %d)" % [w.stock[0][0], w.stock[0][1]])
 	check(w.map.version > 0, "the map changed during the match (houses, cut reeds): version %d" % w.map.version)
 
 
@@ -269,7 +269,7 @@ func _test_opening(races: Array) -> void:
 			for p in races.size():
 				print("  opening %d:00  %-18s workers %2d  pop %2d/%2d  houses %d  gathered %4d food %4d wood  bank %4d/%4d" % [
 					w.tick / 1200, w.races[p].name, _count_workers(w, p), w.pop[p], w.pop_cap[p], _count_houses(w, p),
-					w.gathered_food[p], w.gathered_wood[p], w.food[p], w.wood[p]])
+					w.gathered[0][p], w.gathered[1][p], w.stock[0][p], w.stock[1][p]])
 	var gave_up := 0
 	for i in w.units.count():
 		if w.units.stuck[i] >= World.STUCK_LIMIT and w.units.task[i] != Economy.NONE:
@@ -278,7 +278,7 @@ func _test_opening(races: Array) -> void:
 	check(over_cap == 0, "opening: pop never goes over the cap")
 	check(gave_up == 0, "opening: no worker is stuck on a job (%d)" % gave_up)
 	for p in races.size():
-		var total: int = w.gathered_food[p] + w.gathered_wood[p]
+		var total: int = w.gathered[0][p] + w.gathered[1][p]
 		check(total >= 600 and total <= 3000, "opening: %s gathers a sensible amount in 3 min (%d)" % [w.races[p].name, total])
 		check(_count_houses(w, p) >= 2, "opening: %s builds houses (%d)" % [w.races[p].name, _count_houses(w, p)])
 	check(_count_workers(w, 1) > _count_workers(w, 0), "opening: rats (cheap, quick to train) out-breed frogs (%d vs %d)" % [_count_workers(w, 1), _count_workers(w, 0)])
