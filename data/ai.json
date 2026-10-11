@@ -78,11 +78,13 @@
  },
  "_doc_mix": "economy.mix: per age, the share of workers on each resource (the bot sends idle and new workers to whatever is furthest below its share)",
  "levels": {
-  "_doc": "difficulty: each level's changes to the military plan. delay: seconds added to every wave's time; army_pct: the share of each wave's minimum army; guard_pct the same for the home guard",
+  "_doc": "difficulty: each level's changes to the military plan. delay: seconds added to every wave's time; army_pct: the share of each wave's minimum army; max_workers; max_army: soldiers it keeps (population) at most; wave_max: soldiers it sends in one wave at most (the rest stay home)",
   "easy": {
    "delay": 300,
    "army_pct": 50,
-   "max_workers": 22
+   "max_workers": 22,
+   "max_army": 10,
+   "wave_max": 5
   },
   "normal": {
    "delay": 0,
