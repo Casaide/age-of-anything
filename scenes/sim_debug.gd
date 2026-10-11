@@ -43,7 +43,6 @@ const PICK_PX := 16.0        # click radius in screen pixels
 const DRAG_START_PX := 6.0   # screen pixels before a left press becomes a box
 const RING := Color("#f2e9c9")
 const FLOW := Color("#f2c94c")
-const CARRY := {1: Color("#d65a7a"), 2: Color("#a07a4a")}
 const GOOD := Color(0.4, 1.0, 0.4, 0.35)
 const BAD := Color(1.0, 0.3, 0.3, 0.35)
 
@@ -777,12 +776,29 @@ func _check_replay() -> void:
 
 # ------------------------------------------------------------------ text
 
+## A player's stock of every resource, e.g. "Food 200   Wood 200   Stone 0" (or short: "200F 200W 0S").
+func _stock_text(p: int, short: bool) -> String:
+	var parts := []
+	for r in world.resources.size():
+		var label: String = lib.resource_info[r].short if short else lib.resource_info[r].name
+		parts.append(("%d%s" if short else "%s %d") % ([world.stock[r][p], label] if short else [label, world.stock[r][p]]))
+	return " ".join(parts) if short else "    ".join(parts)
+
+
+## A cost vector as text, e.g. "30W" or "15F 10W" (resources it doesn't use are left out).
+func _cost_text(cost: PackedInt32Array) -> String:
+	var parts := []
+	for r in cost.size():
+		if cost[r] > 0:
+			parts.append("%d%s" % [cost[r], lib.resource_info[r].short])
+	return " ".join(parts) if not parts.is_empty() else "free"
+
+
 func _bar_text() -> String:
 	var p := active
-	var s := "P%d  %s     Food %d    Wood %d    Pop %d/%d" % [
-		p + 1, world.races[p].name, world.food[p], world.wood[p], world.pop[p], world.pop_cap[p]]
+	var s := "P%d  %s     %s    Pop %d/%d" % [p + 1, world.races[p].name, _stock_text(p, false), world.pop[p], world.pop_cap[p]]
 	var o := 1 - p
-	s += "        (P%d %s: %dF %dW %d/%d)" % [o + 1, world.races[o].name, world.food[o], world.wood[o], world.pop[o], world.pop_cap[o]]
+	s += "        (P%d %s: %s %d/%d)" % [o + 1, world.races[o].name, _stock_text(o, true), world.pop[o], world.pop_cap[o]]
 	if autoplay:
 		s += "    AUTOPLAY"
 	return s
@@ -832,8 +848,8 @@ func _update_panel() -> void:
 			if mine and "worker" in t.trains:
 				var k := world.type_of(active, "worker")
 				var wt: Dictionary = world.types[k]
-				var afford: bool = world.food[active] >= wt.food and world.wood[active] >= wt.wood
-				buttons.append({"text": "Train %s [Q]  %dF %dW" % [wt.name, wt.food, wt.wood],
+				var afford: bool = world.can_afford(active, wt.cost)
+				buttons.append({"text": "Train %s [Q]  %s" % [wt.name, _cost_text(wt.cost)],
 					"enabled": afford and q.size() < int(world.econ.queue_max), "action": train_worker})
 			for n in q.size():
 				var qt: Dictionary = world.types[q[n]]
@@ -852,9 +868,9 @@ func _update_panel() -> void:
 			for id in ["house", "town_center"]:
 				var t: Dictionary = world.btypes[Economy.btype_of(world, id)]
 				var key := "H" if id == "house" else "C"
-				var afford: bool = world.food[active] >= t.food and world.wood[active] >= t.wood
+				var afford: bool = world.can_afford(active, t.cost)
 				var bid: String = id
-				buttons.append({"text": "Build %s [%s]  %dW" % [t.name, key, t.wood], "enabled": afford,
+				buttons.append({"text": "Build %s [%s]  %s" % [t.name, key, _cost_text(t.cost)], "enabled": afford,
 					"action": func(): start_placing(bid)})
 		var info := "%d workers" % workers.size()
 		if mine.size() == 1:
@@ -862,7 +878,7 @@ func _update_panel() -> void:
 			var t: Dictionary = world.types[world.units.kind[i]]
 			info = "%s   hp %d   %s" % [t.name, world.units.hp[i], ["idle", "gathering", "carrying back", "building"][world.units.task[i]]]
 			if world.units.carry[i] > 0:
-				info += " (%d %s)" % [world.units.carry[i], Economy.KINDS[world.units.carry_kind[i]]]
+				info += " (%d %s)" % [world.units.carry[i], world.resources[world.units.carry_kind[i] - 1]]
 		var title := "%d selected" % mine.size() if mine.size() > 1 else "Unit #%d" % mine[0]
 		if placing != "":
 			info += "   placing: left-click to build, shift keeps placing, right-click/Esc cancels"
@@ -954,7 +970,7 @@ func _draw_overlay() -> void:
 	for i in u.count():
 		if u.carry[i] > 0 and views.has(u.id[i]):
 			var p: Vector2 = views[u.id[i]].position + Vector2(7, -24)
-			overlay.draw_circle(p, 2.0 + u.carry[i] * 0.25, CARRY[u.carry_kind[i]])
+			overlay.draw_circle(p, 2.0 + u.carry[i] * 0.25, Color(lib.resource_info[u.carry_kind[i] - 1].colour))
 	if placing != "":
 		var c := _ghost_cell(get_global_mouse_position())
 		var size: int = world.btypes[Economy.btype_of(world, placing)].size

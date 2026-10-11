@@ -29,7 +29,7 @@ static func evaluate(recipe: Dictionary, lib, rules: Dictionary) -> Dictionary:
 	var damage := "melee"
 	var tags := {}
 	var points := int(body.points)
-	var mix := {"food": 0, "wood": 0}
+	var mix := {}
 	_add_mix(mix, body, DEFAULT_MIX)
 	for t in body.tags:
 		tags[t] = true
@@ -91,9 +91,21 @@ static func evaluate(recipe: Dictionary, lib, rules: Dictionary) -> Dictionary:
 	var econ: Dictionary = lib.creatures[recipe.creature].get("economy", {})
 	var total: int = (int(c.base) * lib.curve(c.curve, points) + 500) / 1000
 	total = total * int(econ.get("cost_pct", 100)) / 100
-	var mix_total := maxi(1, mix.food + mix.wood)
-	var food := _round5(total * mix.food / mix_total)
-	var wood := _round5(total - food)
+	# Split the total over the resources in the mix, in the fixed resource order; the last
+	# one used takes the remainder (so food/wood splits come out as they always did).
+	var mix_total := 0
+	for k in mix:
+		mix_total += int(mix[k])
+	mix_total = maxi(1, mix_total)
+	var used: Array = lib.resources.filter(func(r): return int(mix.get(r, 0)) > 0)
+	var cost := {}
+	var left := total
+	for r in lib.resources:
+		cost[r] = 0
+	for n in used.size():
+		var r: String = used[n]
+		cost[r] = _round5(left) if n == used.size() - 1 else _round5(total * int(mix[r]) / mix_total)
+		left -= cost[r]
 
 	var tag_list := tags.keys()
 	tag_list.sort()
@@ -107,7 +119,7 @@ static func evaluate(recipe: Dictionary, lib, rules: Dictionary) -> Dictionary:
 		"bonus": bonus,
 		"tags": tag_list,
 		"points": points,
-		"cost": {"food": food, "wood": wood},
+		"cost": cost,
 		"train_time": maxi(3, (int(c.train_base) * lib.curve(c.train_curve, points) * int(econ.get("train_time_pct", 100)) / 100 + 500) / 1000),
 		"pop": 2 if tags.has("large") else 1,
 	}
@@ -122,8 +134,8 @@ static func _add_classes(into: Dictionary, add: Dictionary) -> void:
 static func _add_mix(mix: Dictionary, p: Dictionary, fallback: Dictionary) -> void:
 	var m: Dictionary = p.get("cost_mix", fallback)
 	var pts := int(p.points)
-	mix.food += int(m.food) * pts
-	mix.wood += int(m.wood) * pts
+	for k in m:
+		mix[k] = int(mix.get(k, 0)) + int(m[k]) * pts
 
 
 static func _round5(n: int) -> int:

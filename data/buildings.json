@@ -35,7 +35,8 @@
    "house": false,
    "drop_off": [
     "food",
-    "wood"
+    "wood",
+    "stone"
    ],
    "trains": [
     "worker"

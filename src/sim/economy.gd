@@ -10,7 +10,6 @@ const Fixed := preload("res://src/sim/fixed.gd")
 
 enum { NONE, GATHER, RETURN, BUILD }
 
-const KINDS := ["", "food", "wood"]   # carry_kind index -> resource name
 const REACH := 250                    # milli-tiles between a body's edge and what it works on
 const SEARCH_TILES := 8               # how far a worker looks for more of the same resource
 const SPREAD_TILES := 2               # sent to a busy tile, a worker takes a quieter one this close
@@ -18,8 +17,28 @@ const BUSY_COST := 4000000            # one more gatherer on a tile weighs like 
 const GIVE_UP := 60                   # mirrors World.STUCK_LIMIT
 
 
+## Resource ids in their fixed order. A unit's carry_kind is a resource's index + 1 (0: nothing).
+static func load_resources() -> Array:
+	var d = JSON.parse_string(FileAccess.get_file_as_string("res://data/resources.json"))
+	assert(d != null, "Bad or missing data/resources.json")
+	return d.resources.map(func(r): return r.id)
+
+
+## carry_kind for a resource id (0 if it isn't one).
+static func kind_of(w, resource: String) -> int:
+	return w.resources.find(resource) + 1
+
+
+## A cost dict ({"food": 30, ...}) as an int vector in resource order.
+static func cost_vector(resources: Array, cost: Dictionary) -> PackedInt32Array:
+	var v := PackedInt32Array()
+	for r in resources:
+		v.append(int(cost.get(r, 0)))
+	return v
+
+
 ## Building types from data/buildings.json, sorted by id, numbers as ints.
-static func load_btypes() -> Array:
+static func load_btypes(resources: Array) -> Array:
 	var d = JSON.parse_string(FileAccess.get_file_as_string("res://data/buildings.json"))
 	assert(d != null, "Bad or missing data/buildings.json")
 	var ids: Array = d.buildings.keys()
@@ -29,9 +48,8 @@ static func load_btypes() -> Array:
 		var b: Dictionary = d.buildings[id]
 		out.append({
 			"id": id, "name": b.name, "size": int(b.size), "hp": int(b.hp),
-			"food": int(b.cost.food), "wood": int(b.cost.wood),
+			"cost": cost_vector(resources, b.cost), "drop": PackedByteArray(resources.map(func(r): return 1 if r in b.drop_off else 0)),
 			"build_ticks": int(b.build_time) * 20, "pop": int(b.pop), "house": bool(b.house),
-			"drop_food": "food" in b.drop_off, "drop_wood": "wood" in b.drop_off,
 			"trains": b.trains.duplicate(), "age": int(b.age), "armour": b.get("armour", {}).duplicate(),
 		})
 	return out
@@ -49,11 +67,15 @@ static func btype_of(w, id: String) -> int:
 ## Starting resources, a finished Town Center on each start, and the starting workers.
 static func setup(w) -> void:
 	var start: Dictionary = w.econ.start
+	for r in w.resources:
+		var s := PackedInt32Array()
+		var g := PackedInt32Array()
+		for p in w.races.size():
+			s.append(int(start.get(r, 0)))
+			g.append(0)
+		w.stock.append(s)
+		w.gathered.append(g)
 	for p in w.races.size():
-		w.food.append(int(start.food))
-		w.wood.append(int(start.wood))
-		w.gathered_food.append(0)
-		w.gathered_wood.append(0)
 		w.pop.append(0)
 		w.pop_cap.append(0)
 		w.lost.append(0)
@@ -90,7 +112,7 @@ static func place(w, player: int, k: int, cx: int, cy: int) -> int:
 
 static func cmd_gather(w, player: int, a: Dictionary) -> void:
 	var cell: int = a.cell
-	var kind := KINDS.find(w.map.resource_at(cell))
+	var kind := kind_of(w, w.map.resource_at(cell))
 	for uid in a.ids:
 		var i: int = w.units.index_of(uid)
 		if i < 0 or w.units.owner[i] != player:
@@ -107,12 +129,11 @@ static func cmd_build(w, player: int, a: Dictionary) -> void:
 		return
 	var t: Dictionary = w.btypes[k]
 	var builders := _own_workers(w, player, a.ids)
-	if builders.is_empty() or w.food[player] < t.food or w.wood[player] < t.wood:
+	if builders.is_empty() or not w.can_afford(player, t.cost):
 		return
 	if not w.map.can_build(a.cx, a.cy, t.size):
 		return
-	w.food[player] -= t.food
-	w.wood[player] -= t.wood
+	w.pay(player, t.cost)
 	var b := place(w, player, k, a.cx, a.cy)
 	for i in builders:
 		start_build(w, i, w.buildings.id[b])
@@ -136,10 +157,9 @@ static func cmd_train(w, player: int, a: Dictionary) -> void:
 	if k < 0 or w.buildings.queue[b].size() >= int(w.econ.queue_max):
 		return
 	var t: Dictionary = w.types[k]
-	if w.food[player] < t.food or w.wood[player] < t.wood:
+	if not w.can_afford(player, t.cost):
 		return
-	w.food[player] -= t.food
-	w.wood[player] -= t.wood
+	w.pay(player, t.cost)
 	w.buildings.queue[b].append(k)
 
 
@@ -152,8 +172,7 @@ static func cmd_cancel(w, player: int, a: Dictionary) -> void:
 	if n < 0 or n >= q.size():
 		return
 	var t: Dictionary = w.types[q[n]]
-	w.food[player] += t.food
-	w.wood[player] += t.wood
+	w.refund(player, t.cost)
 	q.remove_at(n)
 	if n == 0:
 		w.buildings.train[b] = 0
@@ -229,7 +248,7 @@ static func _gather(w, i: int, carry_max: int) -> void:
 		return
 	var cell: int = u.target[i]
 	var kind: int = u.carry_kind[i]
-	if KINDS.find(w.map.resource_at(cell)) != kind:
+	if kind_of(w, w.map.resource_at(cell)) != kind:
 		var more := nearest_resource(w, u.x[i], u.y[i], kind)
 		if more >= 0:
 			u.target[i] = more
@@ -245,7 +264,7 @@ static func _gather(w, i: int, carry_max: int) -> void:
 	if _in_reach(w, i, _cell_rect(w, cell)):
 		u.moving[i] = 0
 		u.work[i] += 1
-		if u.work[i] >= int(w.econ.gather_ticks[KINDS[kind]]):
+		if u.work[i] >= int(w.econ.gather_ticks[w.resources[kind - 1]]):
 			u.work[i] = 0
 			w.map.take(cell)
 			u.carry[i] += 1
@@ -276,12 +295,9 @@ static func _return(w, i: int) -> void:
 		return
 	if _in_reach(w, i, _building_rect(w, b)):
 		var p: int = u.owner[i]
-		if u.carry_kind[i] == 1:
-			w.food[p] += u.carry[i]
-			w.gathered_food[p] += u.carry[i]
-		elif u.carry_kind[i] == 2:
-			w.wood[p] += u.carry[i]
-			w.gathered_wood[p] += u.carry[i]
+		if u.carry_kind[i] > 0:
+			w.stock[u.carry_kind[i] - 1][p] += u.carry[i]
+			w.gathered[u.carry_kind[i] - 1][p] += u.carry[i]
 		u.carry[i] = 0
 		u.moving[i] = 0
 		if u.home[i] >= 0:
@@ -361,7 +377,7 @@ static func least_busy(w, cell: int, kind: int) -> int:
 	for yy in range(maxi(cy - SPREAD_TILES, 0), mini(cy + SPREAD_TILES + 1, m.height)):
 		for xx in range(maxi(cx - SPREAD_TILES, 0), mini(cx + SPREAD_TILES + 1, m.width)):
 			var c: int = yy * m.width + xx
-			if m.amount[c] <= 0 or KINDS.find(m.resource_at(c)) != kind:
+			if m.amount[c] <= 0 or kind_of(w, m.resource_at(c)) != kind:
 				continue
 			var busy := 0
 			for j in u.count():
@@ -384,7 +400,7 @@ static func nearest_resource(w, x: int, y: int, kind: int) -> int:
 	for yy in range(maxi(cy - SEARCH_TILES, 0), mini(cy + SEARCH_TILES + 1, m.height)):
 		for xx in range(maxi(cx - SEARCH_TILES, 0), mini(cx + SEARCH_TILES + 1, m.width)):
 			var c: int = yy * m.width + xx
-			if m.amount[c] <= 0 or KINDS.find(m.resource_at(c)) != kind:
+			if m.amount[c] <= 0 or kind_of(w, m.resource_at(c)) != kind:
 				continue
 			var d2 := Fixed.dist2(x, y, xx * SimMap.TILE + 500, yy * SimMap.TILE + 500)
 			if d2 < best_d2:
@@ -403,7 +419,7 @@ static func nearest_drop_off(w, i: int) -> int:
 		if bs.owner[b] != u.owner[i] or bs.done[b] == 0:
 			continue
 		var t: Dictionary = w.btypes[bs.kind[b]]
-		if not ((u.carry_kind[i] == 1 and t.drop_food) or (u.carry_kind[i] == 2 and t.drop_wood)):
+		if u.carry_kind[i] <= 0 or t.drop[u.carry_kind[i] - 1] == 0:
 			continue
 		var half: int = bs.size[b] * SimMap.TILE / 2
 		var d2 := Fixed.dist2(u.x[i], u.y[i], bs.cx[b] * SimMap.TILE + half, bs.cy[b] * SimMap.TILE + half)
@@ -461,7 +477,7 @@ static func _go_to_rally(w, b: int, i: int) -> void:
 	if bs.rally_x[b] < 0:
 		return
 	var cell: int = w.map.cell_of(bs.rally_x[b], bs.rally_y[b])
-	var kind := KINDS.find(w.map.resource_at(cell))
+	var kind := kind_of(w, w.map.resource_at(cell))
 	if kind > 0 and w.types[w.units.kind[i]].worker:
 		start_gather(w, i, cell, kind)
 	else:
