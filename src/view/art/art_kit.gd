@@ -101,7 +101,9 @@ func _model(arch: String, type: String) -> String:
 			return TOWN[arch]
 		"house":
 			return HOUSE[arch]
-	return "farm_plot"
+		"farm":
+			return "farm_plot"
+	return "%s_%s" % [type, arch]   # barracks_thatch, stable_stone, watchtower_tent...
 
 
 ## A building's picture for a button: its finished bake, from the atlas.
@@ -187,7 +189,7 @@ func bake_buildings(races: Array) -> void:
 	archs.sort()
 	var h: Array = await _hifi()
 	for arch in archs:
-		for type in ["town_center", "house", "farm"]:
+		for type in ["town_center", "house", "farm", "barracks", "stable", "watchtower"]:
 			await _bake_building(h[0], h[1], arch, type)
 	h[0].queue_free()
 

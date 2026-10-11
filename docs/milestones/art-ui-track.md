@@ -61,6 +61,9 @@ Claude carries on with A1. Feedback since:
   water, mud and lily roofs); bugs want their own (earth mounds, hollow logs and seed husks,
   silk tents for spiders). Data: creatures can name an `architecture` that overrides the family's.
 - [ ] Mount wings at the withers: the agent's last change, not yet checked in a lineup
+- [ ] Units: real textures to match the buildings and props (Dominic: "the buildings and static
+  stuff look better than the units"). Skin, fur, chitin, cloth, leather and metal get richer
+  authored textures; units keep their outline for readability.
 
 ## A2, with milestone 7 (progression)
 - Barracks, Stable and Watchtower for every architecture (thatch, junk, stone, tent).

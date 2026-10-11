@@ -67,6 +67,7 @@ func _init() -> void:
 	_test_crossing(races, "flat_test")
 	_test_crossing(races, "choke_test")
 	_test_opening(races)
+	_test_age_timing(races)
 	_test_queue(races)
 	_test_movement_classes()
 	_test_farms(races)
@@ -431,6 +432,23 @@ func _test_farms(races: Array) -> void:
 
 # --- ages and research ----------------------------------------------------------
 
+## Milestone 7's exit criterion: with the economy bot playing, the age-up lands at
+## minutes 4-6 (ticks 4800-7200) for both frogs and rats.
+func _test_age_timing(races: Array) -> void:
+	var w := World.new(SEED, SimMap.load_id("flat_test"), races, rules_)
+	var bots := [EcoBot.new(0), EcoBot.new(1)]
+	var at := [-1, -1]
+	while w.tick < 9600 and (at[0] < 0 or at[1] < 0):
+		for bot in bots:
+			bot.think(w)
+		w.step()
+		for p in 2:
+			if at[p] < 0 and w.ages[p] >= 2:
+				at[p] = w.tick
+	for p in 2:
+		print("  age 2: %-18s at %d:%02d (tick %d)" % [w.races[p].name, at[p] / 1200, at[p] % 1200 / 20, at[p]])
+		check(at[p] >= 4800 and at[p] <= 7200, "age-up at minutes 4-6: %s at tick %d" % [w.races[p].name, at[p]])
+
 ## Ageing up moves a player's units along their lines; research adds to stats by tag.
 func _test_tech(races: Array) -> void:
 	var w := World.new(SEED, SimMap.load_id("flat_test"), races, rules_)
@@ -441,6 +459,11 @@ func _test_tech(races: Array) -> void:
 	w.issue(0, Commands.SPAWN, {"slot": "spear", "count": 2, "x": s[0] + 3000, "y": s[1]})
 	var k: int = w.type_of(0, "spear")
 	var age1: Dictionary = w.types[k].recipe
+	for need in ["barracks", "stable"]:   # what each age-up asks for, already standing
+		var nk := Economy.btype_of(w, need)
+		var ni: int = Economy.place(w, 0, nk, s[0] / 1000 + (4 if need == "barracks" else -7), s[1] / 1000 - 6)
+		w.buildings.done[ni] = 1
+		w.buildings.hp[ni] = w.btypes[nk].hp
 	var food: int = w.stock[0][0]
 	w.issue(0, Commands.AGE_UP, {"building": tc})
 	w.issue(0, Commands.TRAIN, {"building": tc, "slot": "worker"})
@@ -467,10 +490,10 @@ func _test_tech(races: Array) -> void:
 			full = full and w.units.hp[i] == w.types[k].hp
 	check(full, "tech: existing spearmen take the new kit at full health (%d hp)" % w.types[k].hp)
 	var atk: int = int(w.types[k].eval.attack)
-	var bk := Economy.btype_of(w, "barracks")
-	var bi: int = Economy.place(w, 0, bk, s[0] / 1000 + 4, s[1] / 1000 - 6)
-	w.buildings.done[bi] = 1
-	w.buildings.hp[bi] = w.btypes[bk].hp
+	var bi: int = -1
+	for b2 in w.buildings.count():
+		if w.buildings.owner[b2] == 0 and w.btypes[w.buildings.kind[b2]].id == "barracks":
+			bi = b2
 	w.issue(0, Commands.RESEARCH, {"building": w.buildings.id[bi], "id": "sharp_sticks"})
 	while w.tick < 4000 and w.researched[0][Tech.research_index(w, "sharp_sticks")] == 0:
 		w.step()
