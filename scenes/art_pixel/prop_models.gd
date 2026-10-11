@@ -85,3 +85,19 @@ func lily_pads(seed_value: int) -> Node3D:
 		if k % 2 == 0:
 			n.add_child(um.decal("water_lily", s * 0.55, s * 0.55, p + Vector3(0.02, 0.03, 0.02), Vector3(0.15, 1, 0.25).normalized(), false))
 	return n
+
+
+## A rock outcrop for impassable rock: a few weathered boulders, half sunk, with
+## lichen on the sunny tops.
+func boulders(seed_value: int) -> Node3D:
+	rng.seed = seed_value
+	var n := Node3D.new()
+	var greys := [Color("#6e6a5e"), Color("#7c776a"), Color("#615d52"), Color("#88826f")]
+	for k in rng.randi_range(4, 6):
+		var r := rng.randf_range(0.14, 0.3)
+		var at := Vector3(rng.randf_range(-0.3, 0.3), r * 0.35, rng.randf_range(-0.3, 0.3))
+		var rock := um.blob(Vector3(r * 1.2, r * 0.85, r), um.plain(greys[k % greys.size()]), at, Vector3(rng.randf_range(-10, 10), rng.randf_range(0, 180), rng.randf_range(-10, 10)))
+		n.add_child(rock)
+		if k % 2 == 0:
+			n.add_child(um.blob(Vector3(r * 0.5, r * 0.12, r * 0.45), um.plain(Color("#8a9a52")), at + Vector3(-r * 0.2, r * 0.75, r * 0.1)))
+	return n

@@ -21,7 +21,8 @@ func _initialize() -> void:
 	view.map_id = map_id
 	view.army = scene == "armies"
 	root.add_child(view)
-	await process_frame
+	while view.world == null or view.baking:   # the art bakes first
+		await process_frame
 	view.camera.edge_scroll = false
 	view.set_process_unhandled_input(false)          # a real mouse in the window mustn't change the shot
 	view.camera.set_process_unhandled_input(false)
@@ -50,7 +51,8 @@ func _armies(view, map_id: String) -> void:
 	view.clock.speed = 1.0
 	view.select_army(0)
 	view.show_flow = true
-	view.camera.zoom = Vector2(1.5, 1.5)
+	view.camera.zoom = Vector2(3.0, 3.0)
+	view._on_zoom()
 	view.camera.look_at_point(Iso.to_screen(meet.x, meet.y))
 
 
@@ -64,5 +66,6 @@ func _opening(view, at_tick: int) -> void:
 		await process_frame
 	view.selected_building = view.world.buildings.id[0]
 	var s: Array = view.map.starts[0]
-	view.camera.zoom = Vector2(1.7, 1.7)
+	view.camera.zoom = Vector2(3.0, 3.0)
+	view._on_zoom()
 	view.camera.look_at_point(Iso.to_screen(s[0] - 1500, s[1] + 2500))

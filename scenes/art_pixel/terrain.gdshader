@@ -1,5 +1,5 @@
 // Continuous pixel-art ground for a tile map: no grid. Terrain comes from blurred
-// masks (R water, G swamp, B reed-bed ground) perturbed by noise, so borders are
+// masks (R water, G swamp, B reed-bed ground, A rock) perturbed by noise, so borders are
 // round and organic. Water gets a mud bank, a wet edge, depth and sparkles.
 shader_type canvas_item;
 
@@ -7,6 +7,7 @@ uniform sampler2D masks : filter_linear, repeat_disable;
 uniform sampler2D paths : filter_linear, repeat_disable;   // R trail, G boardwalk, B cobble, A road
 uniform sampler2D path_arc : filter_linear, repeat_disable;   // R: distance along the nearest path (tiles)
 uniform vec2 map_size;          // tiles
+uniform float art_px = 1.0;     // screen pixels per art pixel (the dither works on art pixels)
 varying vec2 world;             // canvas units at scale 1 (64 x 32 per tile)
 
 float hash(vec2 p) { return fract(sin(dot(p, vec2(127.1, 311.7))) * 43758.5453); }
@@ -47,7 +48,8 @@ void fragment() {
 	vec2 cell = floor(t * 22.0);              // pixel-cluster grid in tile space
 
 	// Ordered dither for pixel-art banding (art pixels: this canvas is at art resolution).
-	float bay = BAYER[(int(FRAGCOORD.y) % 4) * 4 + (int(FRAGCOORD.x) % 4)] / 16.0 - 0.5;
+	ivec2 ap = ivec2(FRAGCOORD.xy / art_px);
+	float bay = BAYER[(ap.y % 4) * 4 + (ap.x % 4)] / 16.0 - 0.5;
 
 	// Rolling ground, lit by the sun from the screen's upper left (-x in tiles),
 	// in five dithered light bands rather than a smooth gradient.
@@ -80,6 +82,15 @@ void fragment() {
 		if (hash(cell + 7.0) > 0.975) col = vec3(0.30, 0.48, 0.22);   // a little lily pad
 	} else if (swamp > 0.44) {
 		col = mix(col, vec3(0.20, 0.27, 0.16), 0.6);
+	}
+
+	// Rock: stony, rubbly ground under the outcrops, with a scree edge.
+	float rock = m.a + (n - 0.5) * 0.35;
+	if (rock > 0.5) {
+		col = ramp4(vec3(0.27, 0.25, 0.21), vec3(0.33, 0.31, 0.26), vec3(0.40, 0.37, 0.31), vec3(0.46, 0.43, 0.36), grain);
+		if (hash(cell + 13.0) > 0.88) col *= 0.72;
+	} else if (rock > 0.42) {
+		col = mix(col, vec3(0.32, 0.29, 0.22), 0.5);
 	}
 
 	vec4 pth = texture(paths, t / map_size);

@@ -8,7 +8,10 @@ const ZOOM_MIN := 0.4
 const ZOOM_MAX := 4.0
 const ZOOM_STEP := 1.1
 
+signal zoomed
+
 var bounds := Rect2()        # canvas rect the camera centre stays inside
+var steps: Array = []        # fixed zoom levels (whole art pixels); empty = free zoom
 var edge_scroll := true
 var _dragging := false
 
@@ -48,9 +51,15 @@ func _unhandled_input(event: InputEvent) -> void:
 func zoom_at(factor: float, point: Vector2) -> void:
 	var old := zoom.x
 	var z := clampf(old * factor, ZOOM_MIN, ZOOM_MAX)
+	if not steps.is_empty():
+		var i := steps.find(old)
+		if i < 0:
+			i = 0
+		z = steps[clampi(i + (1 if factor > 1.0 else -1), 0, steps.size() - 1)]
 	zoom = Vector2(z, z)
 	position = point - (point - position) * old / z
 	_clamp()
+	zoomed.emit()
 
 
 func look_at_point(p: Vector2) -> void:
