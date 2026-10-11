@@ -350,3 +350,10 @@ Tech tree data is to be planned so each layer is a filter that can be turned off
 lever: a Barracks before age 2, a Stable before age 3. Age 2 costs 500 food and 200 wood and
 takes 90 s, tuned so the economy bot ages up at minutes 4-6 for both frogs and rats (the
 milestone 7 exit criterion), with no per-race special case. Claude's call.
+
+**D-072, 2026-10-11: Unit textures are generated, big-marked and mapped in world space.** Unit
+parts are tiny when drawn (a texture tile covers 10-20 art pixels), so their surface textures
+carry a few large, high-contrast marks (toad blotches, fur tufts, cloth folds, shell plates)
+rather than fine detail, written by a script (`tests/gen_unit_textures.py`) so they can be
+re-tuned together. They map in world space, because the models are built from scaled
+primitives. Dominic asked for "real textures" on units; the approach is Claude's call.

@@ -34,14 +34,30 @@ func _init() -> void:
 	add_child(cam)
 	key = DirectionalLight3D.new()
 	key.basis = Basis.looking_at(Vector3(0.55, -0.7, -1.0).normalized(), Vector3.UP)
-	key.light_energy = 1.2
+	key.light_energy = 1.7
 	key.light_color = Color("#fff4e0")   # warm sun, cool shade: the same light as the building bakes
+	# Real form, like the buildings: the part shadows itself (an arm on the chest, a helmet's
+	# brim on the face) and ambient occlusion darkens its creases.
+	key.shadow_enabled = true
+	key.shadow_bias = 0.03
+	key.shadow_blur = 0.6
+	key.directional_shadow_mode = DirectionalLight3D.SHADOW_ORTHOGONAL
+	key.directional_shadow_max_distance = 400.0
 	add_child(key)
+	var fill := DirectionalLight3D.new()   # a little cool light from the other side, so shade isn't flat
+	fill.basis = Basis.looking_at(Vector3(-0.6, -0.3, 0.7).normalized(), Vector3.UP)
+	fill.light_energy = 0.3
+	fill.light_color = Color("#b8c8ff")
+	add_child(fill)
 	var env := Environment.new()
 	env.background_mode = Environment.BG_CLEAR_COLOR
 	env.ambient_light_source = Environment.AMBIENT_SOURCE_COLOR
 	env.ambient_light_color = Color("#c8d0e0")
-	env.ambient_light_energy = 0.4
+	env.ambient_light_energy = 0.28
+	env.ssao_enabled = true
+	env.ssao_radius = 1.2
+	env.ssao_intensity = 2.5
+	env.ssao_power = 1.4
 	env.tonemap_mode = Environment.TONE_MAPPER_LINEAR
 	var we := WorldEnvironment.new()
 	we.environment = env
@@ -101,7 +117,7 @@ func _bake_model(id: String, colours: Dictionary, bake_key: String) -> void:
 	var el := deg_to_rad(ELEVATION)
 	var view := Vector3(sin(az) * cos(el), sin(el), cos(az) * cos(el))
 	cam.basis = Basis.looking_at(-view, Vector3.UP)
-	cam.position = box.get_center() + view * 1000.0
+	cam.position = box.get_center() + view * 150.0   # close enough for the shadow range
 	# Light from the viewer's upper left, a little in front.
 	key.basis = Basis.looking_at(cam.basis * Vector3(0.55, -0.75, -1.0).normalized(), Vector3.UP)
 	await _render()
