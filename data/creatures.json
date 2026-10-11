@@ -95,6 +95,7 @@
   "noun": "Pony",
   "plural": "Ponies",
   "body": "body.pony",
+  "fused_body": "body.pony_fused",
   "head": "head.pony",
   "playable": false,
   "mount": true,

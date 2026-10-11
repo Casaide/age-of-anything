@@ -63,13 +63,15 @@ func build(r: Dictionary, lib, team: Color, speed := 10) -> void:
 		var m: Dictionary = r.mount
 		var mc: Dictionary = lib.creatures[m.creature]
 		var mount_colours := colours_for(lib, m.skin, r.family, team)
-		var mount_rig := _make_rig(lib, mc.body, "" if m.fused else mc.head, mount_colours, bob, true)
+		# A fused mount (a centaur's horse half) has its own body, without a neck.
+		var mount_body: String = mc.get("fused_body", mc.body) if m.fused else mc.body
+		var mount_rig := _make_rig(lib, mount_body, "" if m.fused else mc.head, mount_colours, bob, true)
 		for slot in m.parts:
 			_attach(lib, mount_rig, slot, m.parts[slot], mount_colours)
 		var seat := Node2D.new()
 		seat.set_meta("z", 2)
 		if m.fused:
-			seat.position = Vector2(9, -12)
+			seat.position = mount_rig.sockets.seat
 		else:
 			seat.position = mount_rig.sockets.get("seat", Vector2(0, -20)) + Vector2(0, 6)
 			seat.scale = Vector2(0.8, 0.8)
