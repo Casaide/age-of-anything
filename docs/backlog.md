@@ -195,6 +195,8 @@ still maps the brief onto parts within host rules.
     the map edge, unit shadows offset like building shadows, a lighter vignette.
 - **Audio:** unit barks in silly voices, music.
 - **Tutorial and campaign:** a scenario editor (the classic RTS longevity lever), then a campaign.
+- More creature architecture (2026-10-11): spiders' silk tents strung between stalks (they share
+  the bugs' mounds for now); timber lodges for beavers and bears once they exist.
 
 ## 10. Platform
 

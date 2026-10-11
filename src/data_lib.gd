@@ -79,3 +79,9 @@ func creature_ids(flag := "") -> Array:
 	if flag == "":
 		return ids
 	return ids.filter(func(id): return creatures[id].get(flag, false))
+
+
+## How a race builds: the creature's own architecture if it has one (frogs weave reed domes,
+## bugs dig mounds), else its culture's.
+func architecture(race: Dictionary) -> String:
+	return creatures[race.creature].get("architecture", families[race.family].get("architecture", "thatch"))

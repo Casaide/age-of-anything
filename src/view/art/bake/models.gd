@@ -44,6 +44,17 @@ func ball(r: float, mat: Material, pos := Vector3.ZERO, scl := Vector3.ONE, rot 
 	return _mi(s, mat, pos, rot, scl)
 
 
+## The top half of a sphere, sitting on pos.
+func dome(r: float, mat: Material, pos := Vector3.ZERO, scl := Vector3.ONE) -> MeshInstance3D:
+	var s := SphereMesh.new()
+	s.radius = r
+	s.height = r
+	s.is_hemisphere = true
+	s.radial_segments = 32
+	s.rings = 10
+	return _mi(s, mat, pos, Vector3.ZERO, scl)
+
+
 func ring(inner: float, outer: float, mat: Material, pos := Vector3.ZERO, rot := Vector3.ZERO, scl := Vector3.ONE) -> MeshInstance3D:
 	var t := TorusMesh.new()
 	t.inner_radius = inner
@@ -652,6 +663,8 @@ const KIT := {
 	"junk": {"wall": "tin", "frame": "wood", "roof": "tin", "base": "brick"},
 	"stone": {"wall": "plaster", "frame": "stone", "roof": "tiles", "base": "stone"},
 	"tent": {"wall": "felt", "frame": "wood", "roof": "felt", "base": ""},
+	"reed": {"wall": "weave", "frame": "wood", "roof": "thatch", "base": "", "dome": true, "stilts": true},
+	"mound": {"wall": "mud", "frame": "wood", "roof": "mud", "base": "", "dome": true},
 }
 
 
@@ -659,6 +672,12 @@ const KIT := {
 ## corrugated tin, terracotta tiles or a felt ridge tent. Returns the ridge height.
 func _roof(body: Node3D, arch: String, at: Vector3, w: float, d: float) -> float:
 	var k: Dictionary = KIT[arch]
+	if k.get("dome", false):   # a rounded roof: woven reed, or packed earth
+		var rise := d * 0.5
+		body.add_child(dome(1.0, mats.get_mat(k.roof), at - Vector3(0, 0.05, 0), Vector3(w / 2 + 0.18, rise, d / 2 + 0.18)))
+		if arch == "reed":
+			_lily_cap(body, at + Vector3(0, rise - 0.06, 0), 0.32)
+		return rise
 	if k.roof == "tiles":
 		var holder := Node3D.new()
 		holder.rotation_degrees = Vector3(0, 90, 0)   # tile_roof runs its ridge along z
@@ -688,6 +707,8 @@ func _hall(body: Node3D, arch: String, w: float, d: float, h: float) -> float:
 	if k.base != "":
 		body.add_child(box(Vector3(w + 0.3, 0.16, d + 0.3), mats.get_mat(k.base), Vector3(0, 0.08, 0)))
 		base = 0.16
+	if k.get("stilts", false):
+		base = _stilt_deck(body, Vector3.ZERO, w + 0.3, d + 0.3)
 	body.add_child(box(Vector3(w, h, d), mats.get_mat(k.wall), Vector3(0, base + h / 2, 0)))
 	for x in [-1, 1]:
 		for z in [-1, 1]:
@@ -819,7 +840,9 @@ func _tower(arch: String, team: Color) -> Dictionary:
 	var k: Dictionary = KIT[arch]
 	var wood := mats.get_mat("wood")
 	var top := 1.7
-	if arch == "stone" or arch == "thatch":
+	if arch == "mound":   # a termite spire
+		body.add_child(cyl(0.12, 0.42, top, mats.get_mat("mud"), Vector3(0, top / 2, 0), Vector3.ZERO, 12))
+	elif arch == "stone" or arch == "thatch":
 		body.add_child(box(Vector3(0.62, top, 0.62), mats.get_mat("stone" if arch == "stone" else k.wall), Vector3(0, top / 2, 0)))
 		for z in [-0.31, 0.31]:
 			body.add_child(box(Vector3(0.08, top, 0.08), mats.get_mat(k.frame), Vector3(0.31, top / 2, z)))
@@ -837,6 +860,206 @@ func _tower(arch: String, team: Color) -> Dictionary:
 		for z in [-0.4, 0.4]:
 			body.add_child(cyl(0.025, 0.025, 0.5, wood, Vector3(x, top + 0.25, z), Vector3.ZERO, 6))
 	var roof_mat: Material = mats.get_mat("terracotta" if k.roof == "tiles" else k.roof)
-	body.add_child(cyl(0.0, 0.62, 0.38, roof_mat, Vector3(0, top + 0.68, 0), Vector3(0, 45, 0), 4))
+	if k.get("dome", false):
+		body.add_child(dome(0.5, roof_mat, Vector3(0, top + 0.5, 0), Vector3(1, 0.7, 1)))
+		if arch == "reed":
+			_lily_cap(body, Vector3(0, top + 0.82, 0), 0.22)
+	else:
+		body.add_child(cyl(0.0, 0.62, 0.38, roof_mat, Vector3(0, top + 0.68, 0), Vector3(0, 45, 0), 4))
 	_pennant(body, Vector3(0, top + 0.86, 0), team)
 	return {"body": body, "anchor": Vector3.ZERO, "lantern": Vector3(0.3, top + 0.3, 0.3), "lights": [], "team": team}
+
+
+func barracks_reed(team: Color) -> Dictionary:
+	return _barracks("reed", team)
+
+
+func barracks_mound(team: Color) -> Dictionary:
+	return _barracks("mound", team)
+
+
+func stable_reed(team: Color) -> Dictionary:
+	return _stable("reed", team)
+
+
+func stable_mound(team: Color) -> Dictionary:
+	return _stable("mound", team)
+
+
+func watchtower_reed(team: Color) -> Dictionary:
+	return _tower("reed", team)
+
+
+func watchtower_mound(team: Color) -> Dictionary:
+	return _tower("mound", team)
+
+
+# ------------------------------------------------------------------ amphibians: reed domes on stilts
+# Frogs weave reed domes and raise them on stilts over the wet, capped with a lily pad.
+
+## A plank deck on log stilts, w x d, at `at`. Returns the deck's top height.
+func _stilt_deck(body: Node3D, at: Vector3, w: float, d: float) -> float:
+	var wood := mats.get_mat("wood")
+	var h := 0.4
+	var nx := maxi(2, int(w / 0.7) + 1)
+	var nz := maxi(2, int(d / 0.7) + 1)
+	for i in nx:
+		for j in nz:
+			var p := at + Vector3(-w / 2 + 0.08 + i * (w - 0.16) / (nx - 1), h / 2, -d / 2 + 0.08 + j * (d - 0.16) / (nz - 1))
+			body.add_child(cyl(0.05, 0.06, h, wood, p, Vector3(rng.randf_range(-4, 4), 0, rng.randf_range(-4, 4)), 8))
+	var planks := int(d / 0.2)
+	for k in planks:
+		body.add_child(box(Vector3(w, 0.06, d / planks - 0.015), wood, at + Vector3(0, h + 0.03, -d / 2 + (k + 0.5) * d / planks), Vector3(0, rng.randf_range(-1.5, 1.5), 0)))
+	return h + 0.06
+
+
+## A lily pad laid over a roof's crown, notched, with a flower.
+func _lily_cap(body: Node3D, at: Vector3, r: float) -> void:
+	var pad := cyl(r, r, 0.03, Materials.flat(Color("#4f8a3a"), 0.7), at, Vector3(0, 30, 0), 20)
+	body.add_child(pad)
+	body.add_child(box(Vector3(r, 0.04, 0.05), Materials.flat(Color("#3a6a2a"), 0.8), at + Vector3(r * 0.5, 0.01, 0), Vector3(0, 30, 0)))   # the notch's vein
+	body.add_child(ball(r * 0.22, Materials.flat(Color("#f0a0c8"), 0.6), at + Vector3(-r * 0.3, r * 0.15, r * 0.2), Vector3(1, 0.7, 1)))
+
+
+## A woven dome on a short wall, with a mud band, a dark door and a lily cap. Returns its top.
+func _reed_dome(body: Node3D, at: Vector3, r: float, team: Color, door_turn := 0.0) -> float:
+	var weave := mats.get_mat("weave")
+	var wall_h := r * 0.35
+	body.add_child(cyl(r, r * 1.04, wall_h, weave, at + Vector3(0, wall_h / 2, 0), Vector3.ZERO, 28))
+	body.add_child(ring(r - 0.02, r + 0.05, mats.get_mat("mud"), at + Vector3(0, 0.04, 0)))
+	body.add_child(dome(r, mats.get_mat("thatch"), at + Vector3(0, wall_h - 0.02, 0), Vector3(1.04, 0.95, 1.04)))
+	var a := deg_to_rad(door_turn)
+	var door := at + Vector3(sin(a) * r, wall_h * 0.5 + 0.02, cos(a) * r)
+	body.add_child(box(Vector3(r * 0.42, wall_h + r * 0.25, 0.05), Materials.flat(Color("#2a1e14"), 0.9), door, Vector3(0, door_turn, 0)))
+	body.add_child(box(Vector3(r * 0.5, 0.06, 0.08), cloth(team), door + Vector3(0, wall_h * 0.5 + r * 0.14, 0), Vector3(0, door_turn, 0)))
+	var top := at.y + wall_h + r * 0.95
+	_lily_cap(body, Vector3(at.x, top - 0.04, at.z), r * 0.45)
+	return top
+
+
+## Reed bundles standing round a deck's edge, tied in the middle: the frogs' fence.
+func _reed_fence(body: Node3D, at: Vector3, half: float, gap_side := 0) -> void:
+	var reed := mats.get_mat("thatch")
+	var tie := mats.get_mat("wood")
+	for side in 4:
+		if side == gap_side:
+			continue
+		for k in 6:
+			var t := -half + (k + 0.5) * half * 2.0 / 6.0
+			var p := Vector3(t, 0, half) if side == 0 else Vector3(half, 0, t) if side == 1 else Vector3(t, 0, -half) if side == 2 else Vector3(-half, 0, t)
+			body.add_child(cyl(0.035, 0.05, 0.36, reed, at + p + Vector3(0, 0.18, 0), Vector3(rng.randf_range(-6, 6), 0, rng.randf_range(-6, 6)), 8))
+			body.add_child(ring(0.04, 0.06, tie, at + p + Vector3(0, 0.2, 0)))
+
+
+func reed_house(team: Color) -> Dictionary:
+	rng.seed = 11
+	var body := Node3D.new()
+	var deck := _stilt_deck(body, Vector3.ZERO, 1.5, 1.5)
+	var top := _reed_dome(body, Vector3(0, deck, 0), 0.58, team)
+	# A reed ladder down to the water, and a fishing pole leaning on the dome.
+	var wood := mats.get_mat("wood")
+	for x in [-0.12, 0.12]:
+		body.add_child(beam(Vector3(x, 0.0, 1.05), Vector3(x, deck, 0.72), 0.02, wood, 6))
+	for k in 3:
+		body.add_child(box(Vector3(0.28, 0.025, 0.025), wood, Vector3(0, 0.0, 1.05).lerp(Vector3(0, deck, 0.72), (k + 1) / 4.0)))
+	body.add_child(beam(Vector3(0.6, deck, 0.4), Vector3(0.95, deck + 0.9, -0.1), 0.012, wood, 4))
+	_pennant(body, Vector3(0.12, top - 0.02, 0.0), team)
+	return {"body": body, "anchor": Vector3.ZERO, "lights": [], "lantern": Vector3(0.3, deck + 0.2, 0.65), "team": team}
+
+
+func reed_town_center(team: Color) -> Dictionary:
+	rng.seed = 12
+	var body := Node3D.new()
+	var deck := _stilt_deck(body, Vector3.ZERO, 2.5, 2.5)
+	var top := _reed_dome(body, Vector3(-0.25, deck, -0.25), 0.92, team)
+	_reed_dome(body, Vector3(0.8, deck, 0.75), 0.36, team, 40.0)
+	_reed_fence(body, Vector3(0, deck, 0), 1.2)
+	# Steps down at the front, and a stack of caught fish on a rack.
+	var wood := mats.get_mat("wood")
+	for k in 3:
+		body.add_child(box(Vector3(0.5, 0.05, 0.16), wood, Vector3(-0.2, deck * (k + 0.5) / 3.0, 1.55 - k * 0.14)))
+	body.add_child(beam(Vector3(-1.0, deck, 0.8), Vector3(-1.0, deck + 0.45, 0.8), 0.02, wood, 6))
+	body.add_child(beam(Vector3(-0.6, deck, 0.8), Vector3(-0.6, deck + 0.45, 0.8), 0.02, wood, 6))
+	body.add_child(beam(Vector3(-1.0, deck + 0.42, 0.8), Vector3(-0.6, deck + 0.42, 0.8), 0.015, wood, 4))
+	for k in 3:
+		body.add_child(ball(0.05, Materials.flat(Color("#8aa0a8"), 0.4, 0.3), Vector3(-0.92 + k * 0.12, deck + 0.32, 0.8), Vector3(0.6, 1.8, 0.6)))
+	# The standard: a tall reed pole with a team banner.
+	var pole_at := Vector3(1.0, deck, -0.95)
+	body.add_child(cyl(0.03, 0.035, 1.6, wood, pole_at + Vector3(0, 0.8, 0), Vector3.ZERO, 8))
+	var banner := Node3D.new()
+	var flag_top := pole_at + Vector3(0.03, 1.5, 0)
+	banner.add_child(box(Vector3(0.5, 0.05, 0.03), wood, flag_top + Vector3(0.25, 0, 0)))
+	banner.add_child(slab_tri(Vector2(0, 0), Vector2(0.62, -0.22), Vector2(0, -0.5), 0.02, cloth(team)))
+	banner.get_child(banner.get_child_count() - 1).position = flag_top
+	return {"body": body, "anchor": Vector3.ZERO, "banner": banner, "banner_pivot": flag_top,
+		"smoke": Vector3(-0.25, top, -0.25), "lights": [], "lantern": Vector3(-0.25, deck + 0.4, 0.75)}
+
+
+# ------------------------------------------------------------------ bugs: earth mounds, logs, husks
+# Bugs dig in: packed-earth mounds with round doors, a hollowed log, seed husks for sheds.
+
+## A round dark doorway in a mound, facing out along `turn` degrees.
+func _burrow_door(body: Node3D, at: Vector3, r: float, turn := 0.0, team := Color.BLACK) -> void:
+	var a := deg_to_rad(turn)
+	body.add_child(cyl(r, r, 0.06, Materials.flat(Color("#1e140c"), 1.0), at, Vector3(90, turn, 0), 16))
+	body.add_child(ring(r, r + 0.05, mats.get_mat("wood"), at + Vector3(sin(a), 0, cos(a)) * 0.01, Vector3(90, turn, 0)))
+	if team != Color.BLACK:   # a team cloth hung over the doorway
+		body.add_child(box(Vector3(r * 2.4, r * 0.7, 0.04), cloth(team), at + Vector3(sin(a), 0, cos(a)) * 0.04 + Vector3(0, r * 1.05, 0), Vector3(-12, turn, 0)))
+
+
+## A seed husk propped up as a shed: a big ribbed shell, open side out.
+func _husk(body: Node3D, at: Vector3, r: float, turn := 0.0) -> void:
+	var shell := Materials.flat(Color("#b08a52"), 0.8)
+	body.add_child(ball(r, shell, at + Vector3(0, r * 0.9, 0), Vector3(1.0, 1.5, 0.8), Vector3(0, turn, 18)))
+	for k in 3:
+		body.add_child(ring(r * (0.55 + 0.15 * k), r * (0.6 + 0.15 * k), Materials.flat(Color("#8a6a3a"), 0.9), at + Vector3(0, r * 0.9, 0), Vector3(0, turn, 18 + 90), Vector3(1.0, 1.0, 1.5)))
+
+
+func _grass_tufts(body: Node3D, at: Vector3, spread: float, n: int) -> void:
+	var grass := Materials.flat(Color("#5e8a34"), 0.9)
+	for k in n:
+		var p := at + Vector3(rng.randf_range(-spread, spread), 0, rng.randf_range(-spread, spread))
+		body.add_child(cyl(0.0, 0.05, 0.22, grass, p + Vector3(0, 0.1, 0), Vector3(rng.randf_range(-12, 12), 0, rng.randf_range(-12, 12)), 5))
+
+
+func mound_house(team: Color) -> Dictionary:
+	rng.seed = 21
+	var body := Node3D.new()
+	var mud := mats.get_mat("mud")
+	body.add_child(dome(0.72, mud, Vector3.ZERO, Vector3(1.0, 0.95, 1.0)))
+	body.add_child(dome(0.3, mud, Vector3(0.0, 0.62, 0.0), Vector3(1.0, 0.9, 1.0)))   # the crown, a second lump
+	_burrow_door(body, Vector3(0.05, 0.2, 0.66), 0.17, 0.0, team)
+	_husk(body, Vector3(0.75, 0, -0.35), 0.24, -30.0)
+	_grass_tufts(body, Vector3(0, 0.62, 0), 0.25, 5)
+	_pennant(body, Vector3(-0.05, 0.9, 0.0), team)
+	return {"body": body, "anchor": Vector3.ZERO, "lights": [], "lantern": Vector3(0.25, 0.35, 0.62), "team": team}
+
+
+func mound_town_center(team: Color) -> Dictionary:
+	rng.seed = 22
+	var body := Node3D.new()
+	var mud := mats.get_mat("mud")
+	var wood := mats.get_mat("wood")
+	body.add_child(dome(1.15, mud, Vector3(-0.2, 0, -0.2), Vector3(1.0, 0.85, 1.0)))
+	body.add_child(dome(0.55, mud, Vector3(-0.2, 0.85, -0.2), Vector3(1.0, 0.9, 1.0)))
+	body.add_child(dome(0.6, mud, Vector3(0.95, 0, 0.55), Vector3(1.0, 0.8, 1.0)))
+	_burrow_door(body, Vector3(-0.1, 0.26, 0.86), 0.24, 0.0, team)
+	_burrow_door(body, Vector3(0.75, 0.2, 0.56), 0.14, 60.0, team)
+	_burrow_door(body, Vector3(-0.85, 0.55, 0.45), 0.1, -40.0)
+	# A hollowed log along the side, its dark ends showing, and a husk shed.
+	var log_at := Vector3(-1.0, 0.24, 1.05)
+	body.add_child(cyl(0.24, 0.24, 1.2, wood, log_at, Vector3(0, -20, 90), 16))
+	for end in [-1, 1]:
+		var e: Vector3 = log_at + Vector3(cos(deg_to_rad(20)), 0, sin(deg_to_rad(20))) * 0.6 * end
+		body.add_child(cyl(0.18, 0.18, 0.02, Materials.flat(Color("#2a1c10"), 1.0), e + Vector3(cos(deg_to_rad(20)), 0, sin(deg_to_rad(20))) * 0.01 * end, Vector3(0, -20, 90), 14))
+	_husk(body, Vector3(1.2, 0, -0.75), 0.32, -50.0)
+	_grass_tufts(body, Vector3(-0.2, 1.2, -0.2), 0.3, 7)
+	var pole_at := Vector3(0.6, 0.0, -1.2)
+	body.add_child(cyl(0.03, 0.035, 2.0, wood, pole_at + Vector3(0, 1.0, 0), Vector3.ZERO, 8))
+	var banner := Node3D.new()
+	var flag_top := pole_at + Vector3(0.03, 1.9, 0)
+	banner.add_child(box(Vector3(0.5, 0.05, 0.03), wood, flag_top + Vector3(0.25, 0, 0)))
+	banner.add_child(slab_tri(Vector2(0, 0), Vector2(0.62, -0.22), Vector2(0, -0.5), 0.02, cloth(team)))
+	banner.get_child(banner.get_child_count() - 1).position = flag_top
+	return {"body": body, "anchor": Vector3.ZERO, "banner": banner, "banner_pivot": flag_top,
+		"smoke": Vector3(-0.2, 1.35, -0.2), "lights": [], "lantern": Vector3(0.2, 0.4, 0.95)}

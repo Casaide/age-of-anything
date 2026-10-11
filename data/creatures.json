@@ -14,7 +14,8 @@
   "families": [
    "swamp",
    "forest"
-  ]
+  ],
+  "architecture": "reed"
  },
  "rat": {
   "noun": "Rat",
@@ -73,7 +74,8 @@
   "families": [
    "spooky",
    "forest"
-  ]
+  ],
+  "architecture": "mound"
  },
  "beetle": {
   "noun": "Beetle",
@@ -89,7 +91,8 @@
   "families": [
    "forest",
    "swamp"
-  ]
+  ],
+  "architecture": "mound"
  },
  "pony": {
   "noun": "Pony",

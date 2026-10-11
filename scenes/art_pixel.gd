@@ -165,7 +165,7 @@ func _build() -> void:
 	for b in BUILDINGS:
 		var side: int = b[3]
 		var team := Color(lib.palettes.teams[side])
-		var arch: String = lib.families[races[side].family].get("architecture", "thatch")
+		var arch: String = lib.architecture(races[side])
 		# Baked in the team key, coloured per side by the team shader (like units).
 		var key := PartShape.TEAM_KEY
 		var town := {"thatch": "town_center", "junk": "junk_town_center", "stone": "stone_town_center", "tent": "tent_town_center"}

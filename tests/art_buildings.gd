@@ -9,7 +9,10 @@ const ArtKit := preload("res://src/view/art/art_kit.gd")
 const TerrainView := preload("res://src/view/art/terrain_view.gd")
 const Iso := preload("res://src/view/iso.gd")
 
-const FAMILIES := ["swamp", "sewer", "imperial", "steppe"]   # thatch, junk, stone, tent
+# One race per architecture: thatch, junk, stone, tent, reed (frogs), mound (bugs).
+const RACES := [{"creature": "human", "family": "forest"}, {"creature": "rat", "family": "sewer"},
+	{"creature": "human", "family": "imperial"}, {"creature": "human", "family": "steppe"},
+	{"creature": "frog", "family": "swamp"}, {"creature": "beetle", "family": "forest"}]
 
 
 func _initialize() -> void:
@@ -22,7 +25,7 @@ func _initialize() -> void:
 	root.add_child(kit)
 	await process_frame
 	var t0 := Time.get_ticks_msec()
-	await kit.bake_buildings(FAMILIES.map(func(f): return {"family": f}))
+	await kit.bake_buildings(RACES)
 	kit.rebuild_atlas()
 	print("buildings baked in %d ms" % (Time.get_ticks_msec() - t0))
 	var world := Node2D.new()
@@ -40,15 +43,15 @@ func _initialize() -> void:
 	world.add_child(ground)
 	var team := Color(lib.palettes.teams[0])
 	var row := 0
-	for f in FAMILIES:
-		var arch: String = lib.families[f].get("architecture", "thatch")
+	for r in RACES:
+		var arch: String = lib.architecture(r)
 		for type in ["town_center", "house"]:
 			var info: Dictionary = kit.buildings["%s:%s" % [arch, type]]
 			var names: Array = info.stages + [info.body]
 			for k in names.size():
 				var s: Sprite2D = kit.sprite(names[k])
 				s.self_modulate = Color(team.r, team.g, team.b, 1.0)
-				s.position = Vector2(80 + k * 150 + (0 if type == "town_center" else 800), 90 + row * 110) / zoom
+				s.position = Vector2(80 + k * 150 + (0 if type == "town_center" else 800), 80 + row * 135) / zoom
 				world.add_child(s)
 		row += 1
 	for f in 10:

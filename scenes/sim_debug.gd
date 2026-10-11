@@ -781,7 +781,7 @@ func _sync_buildings() -> void:
 		var view: BuildingArt = bviews.get(id)
 		if view == null:
 			var t: Dictionary = world.btypes[bs.kind[b]]
-			var arch: String = lib.families[world.races[bs.owner[b]].family].get("architecture", "thatch")
+			var arch: String = lib.architecture(world.races[bs.owner[b]])
 			view = BuildingArt.new()
 			view.setup(kit, "%s:%s" % [arch, t.id], bs.cx[b], bs.cy[b], bs.size[b], Color(lib.palettes.teams[bs.owner[b]]))
 			layer.add_child(view)
@@ -1034,7 +1034,7 @@ func _update_panel() -> void:
 
 
 func _arch(player: int) -> String:
-	return lib.families[world.races[player].family].get("architecture", "thatch")
+	return lib.architecture(world.races[player])
 
 
 ## The cursor shows what a right-click would do for the selection.
