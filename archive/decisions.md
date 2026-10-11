@@ -345,3 +345,8 @@ to forbid outright. The layers:
   tech limits.
 Tech tree data is to be planned so each layer is a filter that can be turned off (milestone 7).
 ||||||| 6948828
+
+**D-071, 2026-10-11: Age-ups need a building of the current age.** That's the genre's pacing
+lever: a Barracks before age 2, a Stable before age 3. Age 2 costs 500 food and 200 wood and
+takes 90 s, tuned so the economy bot ages up at minutes 4-6 for both frogs and rats (the
+milestone 7 exit criterion), with no per-race special case. Claude's call.

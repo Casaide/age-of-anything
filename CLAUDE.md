@@ -41,7 +41,9 @@ move it to `docs/backlog.md` rather than deleting it.
 - **Done (milestone 6): foundations**: resources from data (stone), movement classes (ground,
   amphibious, flying), placement rules, teams, farms, shift-queued orders, unit lines through the
   ages, ages and research as data (`data/tech.json`, `src/sim/tech.gd`). See `docs/milestones/m6-foundations.md`.
-- **Next:** 7 progression, 8 AI and match flow, 9 fog and juice, 10 playtest.
+- **Done (milestone 7): progression**: Barracks, Stable, Watchtower per culture, age gates,
+  age-ups needing a building, the bot ageing up at 4-6 minutes.
+- **Next:** 8 AI and match flow, 9 fog and juice, 10 playtest. Milestone 5 (art) continues alongside.
 
 ## Layout
 

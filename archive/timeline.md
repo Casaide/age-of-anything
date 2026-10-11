@@ -62,3 +62,5 @@ One line per moment worth remembering. Newest at the bottom.
 - **2026-10-11:** Milestone 6, foundations: resources from data (stone), flyers and amphibians,
   teams, farms and paddies, shift-queues, and unit lines that change kit as you age up.
   ([image](images/2026-10-11/56-centaur-romans-age-3-galea-scutum-lorica.png))
+- **2026-10-11:** Milestone 7, progression: Barracks, Stables and Watchtowers in every culture's
+  style; the bot ages up at 4-6 minutes. ([image](images/2026-10-11/57-rat-town-barracks-stable-watchtower.png))

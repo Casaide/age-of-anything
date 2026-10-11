@@ -19,6 +19,13 @@ In order:
 - **Ages and research as data.** An age-up moves the player's units along their lines, and the
   game view shows the change.
 
+Milestone 7 (progression) followed straight on:
+- **Buildings:** the Barracks, Stable and Watchtower, each in four cultures' materials and roofs.
+- **Gates:** buildings and units unlock with the age.
+- **Watchtowers** shoot.
+- **The bot** builds a Barracks, saves and ages up. Frogs reach age 2 at 5:21, rats at 4:21;
+  without a building requirement, the rats' cheap workers got them there at 3:06.
+
 ## Decisions
 D-056 (milestones 5 and 6 inserted), D-057 (gear by age, small blacksmith tells), D-058 (bows for
 everyone, crossbows royal and rat kit, shift-queues), D-059 (winged races fly instead of riding),
@@ -27,6 +34,8 @@ D-070 (restrictions as layers with a host switch).
 ## Pictures
 ![Centaur Romans at age 1: light kit](../images/2026-10-11/55-centaur-romans-age-1-light-kit.png)
 ![The same army at age 3: galea, scutum, lorica](../images/2026-10-11/56-centaur-romans-age-3-galea-scutum-lorica.png)
+![A rat junk town: Barracks with a training yard, Stable, stilt Watchtower](../images/2026-10-11/57-rat-town-barracks-stable-watchtower.png)
+![A Roman stone Watchtower](../images/2026-10-11/58-roman-stone-watchtower.png)
 
 ## Funny moments
 - The first unit lines gave every soldier a banner at age 2, replacing their capes. A whole

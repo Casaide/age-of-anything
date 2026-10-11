@@ -158,6 +158,15 @@ func _test_prompts(gen, rules: Dictionary) -> void:
 				for u in r.units:
 					check(u.recipe.parts.hand_r != "weapon.cheese_hammer", "no cheese hammers for %s unless asked" % prompt)
 					check(u.recipe.scale < Generator.GIANT_SCALE, "no giant %s unless asked" % prompt)
+	var open := d.duplicate(true)
+	open.no_restrictions = true
+	var foreign_ok := false
+	for reroll in 12:
+		for u in gen.generate("centaur romans", open, reroll).units:
+			for l in u.line:
+				for id in l.recipe.parts.values():
+					foreign_ok = foreign_ok or gen.lib.part(id).tags.any(func(t): return t in ["woodland", "knight", "junk", "bat"])
+	check(foreign_ok, "no_restrictions lets other cultures' kit through")
 	var gibberish: Dictionary = gen.generate("blorp zang wibble", d)
 	check(gibberish.notes.size() >= 2, "gibberish gets volunteer + ignored notes")
 	var guns: Dictionary = gen.generate("rats with guns", rules.anything)

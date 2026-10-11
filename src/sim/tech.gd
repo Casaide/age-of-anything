@@ -24,7 +24,8 @@ static func load_tech(resources: Array) -> Dictionary:
 	var research := []
 	for r in d.research:
 		research.append({"id": r.id, "name": r.name, "cost": Economy.cost_vector(resources, r.cost),
-			"ticks": int(r.time) * 20, "building": r.building, "age": int(r.age), "effects": r.effects.duplicate(true)})
+			"ticks": int(r.time) * 20, "building": r.building, "age": int(r.age), "effects": r.effects.duplicate(true),
+			"only": r.get("only", []).duplicate()})
 	return {"ages": ages, "research": research}
 
 
@@ -79,6 +80,12 @@ static func why_not(w, player: int, b: int, id: String) -> String:
 			return "already researched"
 		if w.ages[player] < item.age:
 			return "needs a later age"
+		# The tech-tree layer (D-070): some research belongs to some creatures or cultures,
+		# unless the host's rules give everyone the full tech tree.
+		var race: Dictionary = w.races[player]
+		if not item.only.is_empty() and not bool(w.rules.get("full_tech_tree", false)) \
+				and not (race.creature in item.only or race.family in item.only):
+			return "not in this race's tech tree"
 		for k in bs.count():
 			if bs.owner[k] == player and bs.research[k] == r:
 				return "already being researched"
