@@ -87,7 +87,7 @@ func _process(delta: float) -> void:
 	shots = shots.filter(func(s): return s.t < s.dur)
 	for f in flashes:
 		f.t += delta
-		var n: Node2D = f.node
+		var n = f.node   # untyped: a freed view can't be assigned to a typed Node2D
 		if not is_instance_valid(n) or ghosts.any(func(g): return g.node == n):
 			f.t = FLASH_TIME   # gone or dying: the death owns its look now
 		elif f.t >= 0.0:

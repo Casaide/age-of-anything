@@ -358,6 +358,7 @@ static func _gather(w, i: int, carry_max: int) -> void:
 		return
 	if _in_reach(w, i, _cell_rect(w, cell)):
 		u.moving[i] = 0
+		u.stuck[i] = 0   # at its job (pushed there by the crowd, maybe): a stale count isn't a give-up
 		u.work[i] += 1
 		if u.work[i] >= w.gather_ticks[u.owner[i]][kind - 1]:
 			u.work[i] = 0
@@ -365,7 +366,15 @@ static func _gather(w, i: int, carry_max: int) -> void:
 			u.carry[i] += 1
 	elif u.moving[i] == 0:
 		if u.stuck[i] >= GIVE_UP:
-			clear_task(w, i)   # can't get there
+			# Can't get there (a crowd planted round the bush, or no way through): another
+			# tile of the clump, the least busy, and only give up when there is none.
+			var other := least_busy(w, cell, kind, cell)
+			if other != cell:
+				u.target[i] = other
+				u.home[i] = other
+				_approach_cell(w, i, other)
+			else:
+				clear_task(w, i)
 		else:
 			_approach_cell(w, i, cell)
 
@@ -417,6 +426,7 @@ static func _build(w, i: int) -> void:
 		return
 	if _in_reach(w, i, _building_rect(w, b)):
 		u.moving[i] = 0
+		u.stuck[i] = 0
 		var t: Dictionary = w.btypes[bs.kind[b]]
 		bs.progress[b] += 1
 		bs.hp[b] = maxi(1, t.hp * bs.progress[b] / t.build_ticks)
@@ -544,7 +554,7 @@ static func _in_reach(w, i: int, r: Rect2i) -> bool:
 ## The tile of this resource near `cell` (within SPREAD_TILES) with the fewest
 ## gatherers, nearer ones first; ties go to the lower cell. Spreads a crowd over a
 ## clump of bushes or a reed bed instead of piling everyone onto one tile.
-static func least_busy(w, cell: int, kind: int) -> int:
+static func least_busy(w, cell: int, kind: int, except := -1) -> int:
 	var m = w.map
 	var u = w.units
 	var cx: int = cell % m.width
@@ -554,7 +564,7 @@ static func least_busy(w, cell: int, kind: int) -> int:
 	for yy in range(maxi(cy - SPREAD_TILES, 0), mini(cy + SPREAD_TILES + 1, m.height)):
 		for xx in range(maxi(cx - SPREAD_TILES, 0), mini(cx + SPREAD_TILES + 1, m.width)):
 			var c: int = yy * m.width + xx
-			if m.amount[c] <= 0 or kind_of(w, m.resource_at(c)) != kind:
+			if c == except or m.amount[c] <= 0 or kind_of(w, m.resource_at(c)) != kind:
 				continue
 			var busy := 0
 			for j in u.count():
