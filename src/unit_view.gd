@@ -1,6 +1,8 @@
 extends Node2D
 ## A composed unit: recipe -> node tree of parts on sockets, plus cheap
-## procedural animation (walk cycle, bob, breathing, hover, attack lunge).
+## procedural animation: a walk cycle that suits the body (two legs, four, six or
+## eight; flyers hover and flap), work per job (forage, chop, build), idle fidgets,
+## breathing and the attack lunge. Cosmetic only: nothing here feeds the sim.
 ## Purely visual. The sim (next milestone) will own positions; for the Race Lab
 ## the view wanders around on its own.
 
@@ -17,6 +19,13 @@ var legs: Array = []      # [{node, phase}]
 var breathing: Array = []
 var weapon: Node2D
 var weapon_rest := Vector2.ZERO
+var head_node: Node2D     # the unit's own head (the rider's, when mounted)
+var back_node: Node2D     # what's on its back (wings flap)
+var job := ""             # "", "forage", "chop" or "build": set by the view each frame
+var gait := {}            # walk cycle for the body: swing, cadence, bob, rock
+var idle_kind := ""
+var idle_left := 0.0
+var idle_wait := 2.0
 var flying := false
 var unit_scale := 1.0
 var pose_steps := 0       # > 0: stepped pixel-art animation with this many poses per walk cycle
@@ -88,6 +97,8 @@ func build(r: Dictionary, lib, team: Color, speed := 10) -> void:
 		flying = true
 
 	shadow.scale = Vector2(unit_scale, unit_scale) * (0.8 if flying else 1.0)
+	gait = _gait(legs.size(), flying)
+	idle_wait = noise.randf_range(1.0, 5.0)
 	_sort_layers(self)
 	_face(facing)
 
@@ -172,6 +183,7 @@ func _make_rig(lib, body_id: String, head_id: String, colours: Dictionary, paren
 		head_node.position = sockets.head
 		head_node.set_meta("z", 2)
 		root.add_child(head_node)
+		self.head_node = head_node
 		var head_rig: Dictionary = PartShape.rigs.get(head_id, {})
 		sockets["top"] = sockets.head + (head_rig.sockets.top if head_rig.has("sockets") else PartShape.v2(head.sockets.top))
 
@@ -195,6 +207,8 @@ func _attach(lib, rig: Dictionary, slot: String, part_id: String, colours: Dicti
 	if slot == "hand_r":
 		weapon = node
 		weapon_rest = node.position
+	if slot == "back":
+		back_node = node
 
 
 func _face(dir: float) -> void:
@@ -227,46 +241,141 @@ func _process(delta: float) -> void:
 	var t := floorf(time * STEP_FPS) / STEP_FPS if stepped else time
 	var stride := 1.0 if walking else 0.0
 	if walking:
-		phase += delta * speed_px * 0.25
+		phase += delta * speed_px * 0.25 * gait.cadence
 	var ph := phase
 	if stepped:
 		var step := TAU / pose_steps
 		ph = floorf(phase / step) * step
 	for leg in legs:
-		leg.node.rotation = sin(ph + leg.phase) * 0.5 * stride
+		leg.node.rotation = sin(ph + leg.phase) * gait.swing * stride
 
 	var hover := 0.0
 	if flying:
 		hover = -9.0 + sin(t * 3.0) * 2.0
-	bob.position.y = hover - absf(sin(ph)) * 1.5 * stride
+	bob.position.y = hover - absf(sin(ph)) * gait.bob * stride
+	bob.rotation = sin(ph * gait.rock_rate) * gait.rock * stride
+	if head_node:
+		head_node.rotation = 0.0
+	if back_node and flying:
+		# Flap: quick down-strokes, the wings' tips sweeping through a few pixels.
+		var f := sin(t * (11.0 if walking else 7.0))
+		back_node.rotation = -0.12 * f
+		back_node.scale.y = 1.0 + 0.1 * f
 
 	if stepped:
 		# Breathe by a pixel, not by stretching the sprite (stretched pixels shimmer).
-		bob.position.y -= (1.0 / maxf(art_px, 1.0)) if fmod(t, 1.6) < 0.8 and stride == 0.0 else 0.0
+		bob.position.y -= (1.0 / maxf(art_px, 1.0)) if fmod(t, 1.6) < 0.8 and stride == 0.0 and job == "" else 0.0
 	else:
 		var breath := 1.0 + sin(time * 2.4) * 0.03
 		for b in breathing:
 			b.scale.y = breath
 
 	if weapon:
-		if attack_t > 0.0:
-			attack_t -= delta
-			var a := 1.0 - maxf(attack_t, 0.0) / 0.35
-			if stepped:
-				a = floorf(a * 5.0) / 5.0
-			var k := sin(a * PI)
+		weapon.position = weapon_rest
+		weapon.rotation = 0.0
+	if attack_t > 0.0:
+		attack_t -= delta
+		var a := 1.0 - maxf(attack_t, 0.0) / 0.35
+		if stepped:
+			a = floorf(a * 5.0) / 5.0
+		var k := sin(a * PI)
+		if weapon:
 			weapon.position = weapon_rest + Vector2(6.0 * k, -2.0 * k)
 			weapon.rotation = -0.4 * k
-		else:
-			weapon.position = weapon_rest
-			weapon.rotation = 0.0
-
+	elif job != "" and not walking:
+		_work(t, stepped)
+	elif not walking:
+		_idle(delta)
 	if stepped and art_px > 0.0:
 		# Sit on whole art pixels: offset the drawing so its global position snaps.
 		var g := global_position
 		var px := 1.0 / art_px
 		var snapped := Vector2(roundf(g.x / px) * px, roundf(g.y / px) * px)
 		visual.position = (snapped - g) / maxf(global_transform.get_scale().x, 0.0001)
+
+
+## How a body walks, by its number of legs: bipeds stride long and bob twice a
+## cycle; four legs swing less and rock fore and aft; six and eight legs scuttle with
+## short, quick steps and hardly bob; flyers let their legs dangle.
+static func _gait(n: int, flies: bool) -> Dictionary:
+	if flies:
+		return {"swing": 0.12, "cadence": 0.8, "bob": 0.0, "rock": 0.04, "rock_rate": 1.0}
+	if n >= 8:
+		return {"swing": 0.26, "cadence": 1.9, "bob": 0.25, "rock": 0.0, "rock_rate": 2.0}
+	if n >= 6:
+		return {"swing": 0.32, "cadence": 1.6, "bob": 0.3, "rock": 0.015, "rock_rate": 2.0}
+	if n >= 4:
+		return {"swing": 0.42, "cadence": 1.0, "bob": 0.9, "rock": 0.035, "rock_rate": 1.0}
+	return {"swing": 0.5, "cadence": 1.0, "bob": 1.5, "rock": 0.0, "rock_rate": 1.0}
+
+
+## Work, per job, with the tool in the right hand (it turns about the hand):
+## forage: stoop and reach in, pick, lift; chop: wind the axe back over the shoulder,
+## strike down hard, recover; build: short quick hammer blows.
+func _work(t: float, stepped: bool) -> void:
+	var period: float = {"forage": 1.1, "chop": 0.9, "build": 0.5}[job]
+	var p := fmod(t / period + noise.seed % 7 * 0.13, 1.0)
+	if stepped:
+		p = floorf(p * 6.0) / 6.0
+	var swing := 0.0   # tool rotation: negative raises it back
+	var lean := 0.0    # body lean: positive leans forward
+	var crouch := 0.0
+	match job:
+		"forage":
+			var k := sin(p * TAU) * 0.5 + 0.5
+			lean = 0.1 + 0.08 * k
+			crouch = 1.5 * k
+			swing = 0.35 * k
+			if weapon:
+				weapon.position = weapon_rest + Vector2(3.0, 4.0) * k
+		"chop", "build":
+			var up := 2.0 if job == "chop" else 1.2
+			var wind := 0.6
+			var hit := 0.75
+			if p < wind:
+				swing = -up * (p / wind)
+				lean = -0.04 * (p / wind)
+			elif p < hit:
+				var q := (p - wind) / (hit - wind)
+				swing = lerpf(-up, 0.45, q)
+				lean = lerpf(-0.04, 0.1, q)
+			else:
+				var q := (p - hit) / (1.0 - hit)
+				swing = lerpf(0.45, 0.0, q)
+				lean = lerpf(0.1, 0.0, q)
+			crouch = 0.5 if job == "build" else 0.0
+			if weapon:
+				weapon.position = weapon_rest + Vector2(-1.5, -3.0) * clampf(-swing / up, 0.0, 1.0)
+	if weapon:
+		weapon.rotation = swing
+	bob.rotation += lean
+	bob.position.y += crouch
+
+
+## Now and then, standing still, a unit fidgets: shifts its weight, looks up and
+## about, lifts what it holds, or settles back. Each picks its own moments.
+func _idle(delta: float) -> void:
+	if idle_left > 0.0:
+		idle_left -= delta
+		match idle_kind:
+			"shift":
+				bob.position.y += 1.0 / maxf(art_px, 1.0)
+				bob.rotation += 0.03
+			"look":
+				if head_node:
+					head_node.rotation = -0.18
+			"lift":
+				if weapon:
+					weapon.rotation = -0.3
+					weapon.position = weapon_rest + Vector2(0, -1.5)
+			"settle":
+				bob.rotation -= 0.04
+		return
+	idle_wait -= delta
+	if idle_wait <= 0.0:
+		idle_kind = ["shift", "look", "lift", "settle"][noise.randi() % 4]
+		idle_left = noise.randf_range(0.5, 1.2)
+		idle_wait = noise.randf_range(2.5, 7.0)
 
 
 func _wander(delta: float) -> void:
