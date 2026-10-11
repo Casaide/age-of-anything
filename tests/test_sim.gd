@@ -647,7 +647,15 @@ func _test_tech(races: Array) -> void:
 	check(aged > 0 and w.ages[0] == 2, "tech: player 0 reaches age 2 (tick %d)" % aged)
 	check(w.units.count() == units_then, "tech: no worker trained while the Town Center was ageing up")
 	var line: Array = w.types[k].line
-	check(w.types[k].recipe == line[1].recipe and w.types[k].recipe != age1, "tech: spears move to their age-2 recipe (%s)" % [w.types[k].recipe.parts.values()])
+	check(w.types[k].recipe == age1, "tech: the age-up alone doesn't change the spears (D-100)")
+	var barracks := -1
+	for b2 in w.buildings.count():
+		if w.buildings.owner[b2] == 0 and w.btypes[w.buildings.kind[b2]].id == "barracks":
+			barracks = b2
+	w.issue(0, Commands.RESEARCH, {"building": w.buildings.id[barracks], "id": "line.spear.2"})
+	while w.tick < 3500 and w.researched[0][Tech.research_index(w, "line.spear.2")] == 0:
+		w.step()
+	check(w.types[k].recipe == line[1].recipe and w.types[k].recipe != age1, "tech: the spear line's upgrade moves spears to their age-2 recipe (%s)" % [w.types[k].recipe.parts.values()])
 	var full := true
 	for i in w.units.count():
 		if w.units.kind[i] == k:
@@ -664,6 +672,9 @@ func _test_tech(races: Array) -> void:
 	check(int(w.types[k].eval.attack) == atk + 1, "tech: Sharp Sticks gives spears +1 attack (%d -> %d)" % [atk, w.types[k].eval.attack])
 	w.issue(0, Commands.AGE_UP, {"building": tc})
 	while w.tick < 7000 and w.ages[0] < 3:
+		w.step()
+	w.issue(0, Commands.RESEARCH, {"building": w.buildings.id[barracks], "id": "line.spear.3"})
+	while w.tick < 9000 and w.researched[0][Tech.research_index(w, "line.spear.3")] == 0:
 		w.step()
 	check(w.ages[0] == 3 and int(w.types[k].eval.attack) == int(line[2].eval.attack) + 1, "tech: research still counts after the next age-up")
 	# Tech-tree layer: Strong Legs is frogs only (player 0 here is frogs, player 1 rats).

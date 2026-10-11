@@ -123,7 +123,7 @@ func _bake_model(id: String, colours: Dictionary, bake_key: String, k := 0) -> v
 		wearer = body.node
 		var fitted: Dictionary = models.fitted(id.get_slice("~", 0), id.get_slice("~", 1), colours) if models.has_method("fitted") else {}
 		if not fitted.is_empty():   # modelled for this body, in its own space: nothing to fit
-			model.free()
+			model.queue_free()
 			model = fitted.node
 		else:
 			var ts: Vector2 = body.get("torso_scale", Vector2.ONE)

@@ -122,8 +122,8 @@ func _init(p_seed: int, p_map: SimMap, p_races: Array, p_rules: Dictionary, p_te
 		move_pct.append(row)
 	spatial = Spatial.new(map.width, map.height)
 	resources = Economy.load_resources()
-	tech = Tech.load_tech(resources)
 	btypes = Economy.load_btypes(resources)
+	tech = Tech.load_tech(resources, btypes)
 	for p in races.size():
 		for u in races[p].units:
 			types.append(_make_type(p, u))

@@ -48,23 +48,61 @@ func set_art_px(px: float) -> void:
 
 
 ## owners: [{style, width, hub: Vector2, targets: [Vector2]}] in tile coordinates.
+## Plan and paint the paths. On a worker thread, from a snapshot of the walkable grid, so a
+## finished building doesn't stall the frame (it did: Dominic saw a hitch every time); the
+## textures swap in when it's done. A request while one runs is kept and run after it.
+var _paths_task := -1
+var _paths_next = null     # owners waiting for their turn
+var _paths_out := []       # [paths image, arc image] from the worker
+
+
 func set_paths(owners: Array) -> void:
-	var planned: Array = Paths.plan(map.width, map.height, blocked, owners)
-	var m: Array = Paths.mask(map.width, map.height, K, planned)
+	if _paths_task >= 0:
+		_paths_next = owners
+		return
+	var walk: PackedByteArray = map.walk.duplicate()
+	var w: int = map.width
+	var h: int = map.height
+	_paths_task = WorkerThreadPool.add_task(func(): _paths_job(owners, walk, w, h))
+
+
+func _paths_job(owners: Array, walk: PackedByteArray, w: int, h: int) -> void:
+	var blocked_at := func(t: Vector2) -> bool:
+		if t.x < 0.2 or t.y < 0.2 or t.x > w - 0.2 or t.y > h - 0.2:
+			return true
+		if walk[int(t.y) * w + int(t.x)] == 0:
+			return true
+		return mask(t).r > 0.3
+	var planned: Array = Paths.plan(w, h, blocked_at, owners)
+	var m: Array = Paths.mask(w, h, K, planned)
 	var img: Image = m[0]
-	var raw := PackedFloat32Array()
-	raw.resize(img.get_width() * img.get_height() * 4)
-	for y in img.get_height():
-		for x in img.get_width():
-			var c := img.get_pixel(x, y)
-			var i := (y * img.get_width() + x) * 4
-			raw[i] = c.r
-			raw[i + 1] = c.g
-			raw[i + 2] = c.b
-			raw[i + 3] = c.a
-	paths_img = _to_image(_blur(raw, img.get_width(), img.get_height(), 2), img.get_width(), img.get_height())
+	img.convert(Image.FORMAT_RGBAF)
+	var raw: PackedFloat32Array = img.get_data().to_float32_array()
+	_paths_out = [_to_image(_blur(raw, img.get_width(), img.get_height(), 2), img.get_width(), img.get_height()), m[1]]
+
+
+## Wait for the paths being planned (at setup, where doodads must keep off them).
+func finish_paths() -> void:
+	if _paths_task >= 0:
+		WorkerThreadPool.wait_for_task_completion(_paths_task)
+		_apply_paths()
+
+
+func _process(_delta: float) -> void:
+	if _paths_task >= 0 and WorkerThreadPool.is_task_completed(_paths_task):
+		WorkerThreadPool.wait_for_task_completion(_paths_task)
+		_apply_paths()
+
+
+func _apply_paths() -> void:
+	_paths_task = -1
+	paths_img = _paths_out[0]
 	mat.set_shader_parameter("paths", ImageTexture.create_from_image(paths_img))
-	mat.set_shader_parameter("path_arc", ImageTexture.create_from_image(m[1]))
+	mat.set_shader_parameter("path_arc", ImageTexture.create_from_image(_paths_out[1]))
+	if _paths_next != null:
+		var next: Array = _paths_next
+		_paths_next = null
+		set_paths(next)
 
 
 ## Where paths can't go: off the map, blocked cells (terrain or buildings), near water.
