@@ -160,6 +160,8 @@ still maps the brief onto parts within host rules.
       gear, castles and towers.
     - It needs ability support (the asymmetric-mechanics note above) and magic damage as an armour
       class, both of which the combat model already allows for.
+  - **Forest folk / sky pack (Dominic, 2026-10-11):** people riding big birds, tree people,
+    flying mounts. Could join the fantasy pack or be its own.
   - Sci-fi "space federation" pack. A space-fleet sci-fi mod is Dominic's personal dream; keep
     official names and likenesses out of shipped content.
 
