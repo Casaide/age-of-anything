@@ -5,6 +5,9 @@
   "military": ["barracks", "archery_range", "stable", "armoury", "watchtower", "wall"]
  },
  "_menu_doc": "a worker's two build pages (Dominic: civilian and military apart), each in the order its buttons appear (building hotkeys work from either page; hotkeys are avoided where they clash with WASD panning and the debug keys)",
+ "tree": ["town_center", "house", "farm", "mill", "lumber_camp", "mining_camp", "barracks", "outpost", "palisade", "palisade_gate",
+  "archery_range", "stable", "armoury", "market", "watchtower", "wall", "stone_gate", "siege_workshop", "university", "temple", "castle", "wonder"],
+ "_tree_doc": "the tech tree page's columns, left to right (scenes/tech_tree.gd); a building missing here goes after these, by age. Buildings with \"status\": \"planned\" are drawn on the page as blank frames and skipped by the sim, the build menus and the art bakes (milestone 12)",
  "age_looks": {
   "junk": {
    "town_center": {
@@ -350,6 +353,60 @@
     "reload": 40
    },
    "note": "shoots the nearest enemy in range"
+  },
+  "outpost": {
+   "status": "planned",
+   "name": "Outpost",
+   "desc": "A cheap lookout post: it sees far but doesn't shoot.",
+   "age": 1
+  },
+  "palisade": {
+   "status": "planned",
+   "name": "Palisade Wall",
+   "desc": "A wooden wall, quick and cheap: drag to lay a line.",
+   "age": 1
+  },
+  "palisade_gate": {
+   "status": "planned",
+   "name": "Palisade Gate",
+   "desc": "A gate in a palisade: it opens for its own side and stays shut to the rest.",
+   "age": 1
+  },
+  "stone_gate": {
+   "status": "planned",
+   "name": "Stone Gate",
+   "desc": "A gate in a stone wall: it opens for its own side and stays shut to the rest.",
+   "age": 2
+  },
+  "siege_workshop": {
+   "status": "planned",
+   "name": "Siege Workshop",
+   "desc": "Builds siege engines: rams, catapults, bolt throwers and siege towers.",
+   "age": 3
+  },
+  "university": {
+   "status": "planned",
+   "name": "University",
+   "desc": "Research for buildings, towers and siege: stronger walls, taller towers, longer reach.",
+   "age": 3
+  },
+  "temple": {
+   "status": "planned",
+   "name": "Temple",
+   "desc": "Trains mystics, who heal and win enemies over, and researches their lore.",
+   "age": 3
+  },
+  "castle": {
+   "status": "planned",
+   "name": "Castle",
+   "desc": "A fortress that shoots and shelters: trains the race's own unique unit, sappers and the great sling, and holds its own research.",
+   "age": 3
+  },
+  "wonder": {
+   "status": "planned",
+   "name": "Wonder",
+   "desc": "A great work of your people. Build it and keep it standing long enough, and you win.",
+   "age": 4
   }
  }
 }
