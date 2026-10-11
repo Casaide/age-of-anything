@@ -20,7 +20,8 @@ var breathing: Array = []
 var weapon: Node2D
 var weapon_rest := Vector2.ZERO
 var weapon_rot := 0.0     # at rest: couched forward on a harness, else upright
-var _hold_suffix := ""    # "@hold" on the body being built (its arm posed for its weapon)
+var _hold_suffix := ""
+var _clinging := false    # building a riding creature: legs that hug the mount    # "@hold" on the body being built (its arm posed for its weapon)
 var harnessed := false    # no arms: gear rides on a harness, work is done with the whole body
 const COUCH := Vector2(1.0, -0.3)   # a couched weapon points forward, a little up
 var head_node: Node2D     # the unit's own head (the rider's, when mounted)
@@ -82,13 +83,20 @@ func build(r: Dictionary, lib, team: Color, speed := 10) -> void:
 			_attach(lib, mount_rig, slot, m.parts[slot], mount_colours)
 		var seat := Node2D.new()
 		seat.set_meta("z", 2)
+		# A creature with no arms (a spider, a beetle) rides low and small, its belly in
+		# the saddle and its near legs hugging the mount's flank; people sit up.
+		_clinging = not m.fused and PartShape.rigs.get(r.body, {}).get("carry", "") == "harness"
 		if m.fused:
 			seat.position = mount_rig.sockets.seat
+		elif _clinging:
+			seat.position = mount_rig.sockets.get("seat", Vector2(0, -20)) + Vector2(-1, 9)
+			seat.scale = Vector2(0.6, 0.6)
 		else:
 			seat.position = mount_rig.sockets.get("seat", Vector2(0, -20)) + Vector2(0, 6)
 			seat.scale = Vector2(0.8, 0.8)
 		bob.add_child(seat)
-		var rider := _make_rig(lib, r.body, r.head, colours, seat, false, r.parts.get("hand_r", ""))
+		var rider := _make_rig(lib, r.body, r.head, colours, seat, _clinging, r.parts.get("hand_r", ""))
+		_clinging = false
 		for slot in r.parts:
 			_attach(lib, rider, slot, r.parts[slot], colours)
 		flying = m.parts.has("back") and "flying" in lib.part(m.parts.back).tags
@@ -173,6 +181,8 @@ func _make_rig(lib, body_id: String, head_id: String, colours: Dictionary, paren
 	if with_legs and body.has("legs"):
 		var leg_part: Dictionary = lib.part(body.legs.part)
 		for a in rig.get("anchors", body.legs.anchors):
+			if _clinging and float(a[3]) < 0.0:
+				continue   # a riding creature's far legs are hidden behind its mount
 			var leg := _shape()
 			leg.part_id = body.legs.part
 			leg.setup(leg_part.shapes, colours)
@@ -183,7 +193,7 @@ func _make_rig(lib, body_id: String, head_id: String, colours: Dictionary, paren
 			if rig.has("anchors") and float(a[3]) < 0.0:
 				leg.shade = 0.78   # the far leg sits in shadow
 			root.add_child(leg)
-			legs.append({"node": leg, "phase": float(a[2])})
+			legs.append({"node": leg, "phase": float(a[2]), "cling": _clinging})
 
 	var body_node := _shape()
 	body_node.part_id = body_id + _hold_suffix
@@ -279,7 +289,7 @@ func _process(delta: float) -> void:
 		var step := TAU / pose_steps
 		ph = floorf(phase / step) * step
 	for leg in legs:
-		leg.node.rotation = sin(ph + leg.phase) * gait.swing * stride
+		leg.node.rotation = 0.35 if leg.cling else sin(ph + leg.phase) * gait.swing * stride
 
 	var hover := 0.0
 	if flying:
