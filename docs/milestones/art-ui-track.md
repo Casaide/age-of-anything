@@ -23,22 +23,25 @@ Rules for every stage:
 - [x] Race Lab and other scenes use the current art: game scenes draw only the baked art (no
   placeholder vector shapes; a missing bake shows magenta); the Race Lab bakes per generate on the
   game's ground; the old style sampler is removed (its pictures are in the archive)
-- [ ] Gear on armless creatures (beetles, spiders, ponies): harness or saddle mounts, shields on
-  the flank, couched spears, or gripped in jaws. Nothing hovers
-- [ ] Creature-on-mount combinations (a spider on a pony, a beetle on a pony) seated and posed
-  properly, or a proposed data flag that rules out the ones that can't read well
+- [x] Gear on armless creatures (beetles, spiders, ponies): harness or saddle mounts, shields on
+  the flank, couched spears, or gripped in jaws. Nothing hovers (a harness with a holder)
+- [x] Creature-on-mount combinations (a spider on a pony, a beetle on a pony) seated and posed
+  properly, or a proposed data flag that rules out the ones that can't read well (they ride low,
+  legs hugging the mount; a flag is proposed in case Dominic still dislikes them)
+- [x] Arms posed for the weapon they hold (low, throw, mouth, overhead, draw, shoulder, aim), so
+  no weapon floats (Dominic's floating pilum)
 - [x] Stages: reeds thin out as they're cut (stubble at the end), bug bushes lose berries and
   colour in 3-4 stages, buildings under construction go foundation, frame, walls, roof (per
   architecture; `tests/art_buildings.gd`)
 - [ ] Realism pass: roads and paths (worn edges, irregular stones, dirt joints, blending), houses
   and town centres up to the bushes' level, terrain (natural grass variation, a less flat swamp,
   water, contact shading with props)
-- [ ] UI pass 1:
+- [x] UI pass 1:
   - a bigger build/train queue;
   - unit icons and portraits generated from the baked units (each race's real sprites), used in
     the train buttons, the queue and the selection panel;
   - cursors per action (move, gather/forage, chop, build, attack, rally), from authored art.
-- [ ] Animation pass 1: work animations per job (forage, chop, build), walk cycles that suit
+- [x] Animation pass 1: work animations per job (forage, chop, build), walk cycles that suit
   each creature (two legs, four legs, six or eight legs, flying), idle variety
 - Combat visuals are built with milestone 4 itself, not in this track: attack lunge, projectiles,
   hit flash, death poses, unit card.
