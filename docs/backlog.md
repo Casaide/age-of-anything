@@ -184,6 +184,15 @@ still maps the brief onto parts within host rules.
   - Sci-fi "space federation" pack. A space-fleet sci-fi mod is Dominic's personal dream; keep
     official names and likenesses out of shipped content.
 
+### Race-specific resources (Dominic, 2026-10-11, a future thought)
+
+Some races need a special resource that others don't (cheese for rats, say, or silk for spiders).
+The races that don't need it can still hold the ground it's on, to deny it or to trade it: a
+reason to fight over the map, and a reason to trade. Data first: a resource that a creature or
+family declares it needs (`data/resources.json` plus a field on the creature), deposits on the
+map like gold, and the market (milestone 11) buying and selling it. Open questions: what a race
+gets from it (units, ages, upkeep), and how the AI values a resource it doesn't use.
+
 ## 9. Art and presentation
 
 - **Full classic-RTS-style art pass:** atlas of mask textures, palette shader, buildings, terrain.
