@@ -1,6 +1,6 @@
 // Continuous pixel-art ground for a tile map: no grid. Terrain comes from blurred
 // masks (R water, G swamp, B reed-bed ground, A rock) perturbed by noise, so borders are
-// round and organic. Water gets a mud bank, a wet edge, depth and sparkles.
+// round and organic. Water gets a mud bank, a wet edge, a painted depth fall, sky and ripples.
 shader_type canvas_item;
 
 uniform sampler2D masks : filter_linear, repeat_disable;
@@ -214,25 +214,28 @@ void fragment() {
 		col = mix(vec3(0.30, 0.25, 0.17), vec3(0.24, 0.20, 0.14), step(0.0, bay));                // wet edge
 	}
 	if (water > 0.5) {
-		// Depth in five dithered bands, from sandy shallows to deep blue.
+		// Painted water (Dominic: the old banded blue with white dots read cartoony): a smooth
+		// fall from olive shallows to deep green-blue, broad soft patches of colour, the sky
+		// caught in long slow streaks, and fine ripple glints rather than dashes.
 		float depth = smoothstep(0.5, 1.0, m.r + (n - 0.5) * 0.12);
-		float dq = floor(clamp(depth + bay * 0.2, 0.0, 0.999) * 5.0);
-		col = dq < 1.0 ? vec3(0.34, 0.52, 0.44) : dq < 2.0 ? vec3(0.22, 0.45, 0.48) : dq < 3.0 ? vec3(0.15, 0.36, 0.45)
-			: dq < 4.0 ? vec3(0.11, 0.27, 0.39) : vec3(0.08, 0.19, 0.31);
-		if (depth < 0.22 && hash(cell + 11.0) > 0.78) col = mix(col, vec3(0.56, 0.52, 0.36), 0.35);   // pebbles in the shallows
-		// Wavelets: short broken dashes (screen space, iso-flat) that drift and flicker,
-		// each with a darker trough just below it.
-		float row = floor(world.y / 4.0);
-		float seg = floor((world.x + TIME * 3.0 + row * 13.0) / 5.0);
-		float life = sin(TIME * 1.6 + hash(vec2(seg, row)) * 6.283);
-		bool dash = hash(vec2(seg, row + 0.5)) > 0.89 && life > 0.2;
-		float fy = fract(world.y / 4.0);
-		if (dash && fy < 0.25) col = mix(col, vec3(0.62, 0.80, 0.84), 0.55 * (1.0 - depth * 0.3));
-		else if (dash && fy < 0.5) col *= 0.86;
-		// Foam at the shore, breathing in and out.
-		float foam = 0.53 + 0.015 * sin(TIME * 1.3 + n * 9.0);
-		if (water < foam && hash(cell + floor(TIME * 2.0)) > 0.3) col = vec3(0.72, 0.86, 0.84);
-		if (hash(cell + floor(TIME * 1.5)) > 0.995) col = vec3(0.9, 0.97, 0.95);   // a glint
+		float dd = clamp(depth + bay * 0.05, 0.0, 1.0);
+		vec3 shallow = vec3(0.33, 0.45, 0.36);
+		vec3 mid = vec3(0.17, 0.34, 0.37);
+		vec3 deep = vec3(0.09, 0.21, 0.28);
+		col = dd < 0.45 ? mix(shallow, mid, dd / 0.45) : mix(mid, deep, (dd - 0.45) / 0.55);
+		col *= 0.94 + 0.12 * vnoise(t * 0.9 + 12.0);                                   // broad soft patches
+		if (depth < 0.22) col = mix(col, vec3(0.46, 0.43, 0.30), (0.22 - depth) * 1.6 * vnoise(t * 5.0 + 4.0));   // sandy bed showing in the shallows
+		vec2 sp = vec2(world.x * 0.018, world.y * 0.16);                                // screen-flat, stretched sideways
+		float sky = vnoise(sp + vec2(TIME * 0.03, 0.0)) * 0.6 + vnoise(sp * 2.3 + vec2(-TIME * 0.05, 3.0)) * 0.4;
+		col = mix(col, vec3(0.50, 0.64, 0.66), smoothstep(0.58, 0.82, sky) * 0.35 * (0.4 + depth * 0.6));   // the sky in it
+		float rip = vnoise(vec2(world.x * 0.09 + TIME * 0.4, world.y * 0.6 + TIME * 0.15));
+		float rip2 = vnoise(vec2(world.x * 0.07 - TIME * 0.3, world.y * 0.55 + 5.0));
+		if (rip > 0.8 && rip2 > 0.55) col = mix(col, vec3(0.70, 0.82, 0.82), 0.35);   // a ripple catching the light
+		else if (rip > 0.74 && rip2 > 0.55) col *= 0.92;                               // its shadow side
+		// Under the bank the water is darker; foam laps at the edge, breathing slowly.
+		col *= mix(0.86, 1.0, smoothstep(0.5, 0.6, water));
+		float foam = 0.53 + 0.012 * sin(TIME * 1.1 + n * 9.0);
+		if (water < foam) col = mix(col, vec3(0.70, 0.80, 0.76), 0.6 * step(0.35, vnoise(t * 14.0 + TIME * 0.3)));
 	}
 	// The map's edge fades into darkness, like unexplored ground.
 	float edge = min(min(t.x, t.y), min(map_size.x - t.x, map_size.y - t.y));
