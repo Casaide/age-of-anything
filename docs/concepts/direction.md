@@ -172,6 +172,17 @@ Two more studies, of a mythology RTS (humans next to myth creatures) and a many-
   `docs/concepts/research/`.
 - Rat buildings look bigger than Roman ones on the same footprint: a building scale rule is needed.
 
+## Design review approved (Dominic, 2026-10-11)
+The review "Gone mad, played straight" (five rules: played straight; structure, not stickers;
+silhouette first at 8 px; one body language and one scale ladder; each age one whole step):
+"on the art side that all makes sense".
+
+**Scale, refined by Dominic:** a culture's buildings are never bigger than the envelope for their
+type, but may sit *shorter and more melded into the terrain* than others, so they come across as
+less intense and more natural. Same footprint as everyone; lower and part of the ground. (He
+pointed at a classic RTS's swamp faction, whose town centre is no smaller than the empire's,
+just lower and grown into the land.)
+
 ## Questions for Dominic (original)
 1. Is a 1.5-3 day pipeline bake-off (R0) worth doing first?
 2. 8 facings, all baked, none mirrored?
