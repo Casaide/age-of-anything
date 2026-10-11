@@ -1703,3 +1703,30 @@ func _armour_bottlecap(c: Dictionary) -> Dictionary:
 			n.add_child(disc)
 	return spec
 
+
+# ------------------------------------------------------------------ models from Blender
+# Parts modelled by script in Blender (tools/blender/*.py, exported .glb) load at bake time;
+# their materials are swapped by name for ours, so palettes and team colours still apply.
+
+static var _glb_cache := {}
+
+
+## A .glb from assets/models as a fresh Node3D, each material named in `mats` replaced.
+func glb(name: String, mats: Dictionary) -> Node3D:
+	var path := "res://assets/models/%s.glb" % name
+	if not _glb_cache.has(name):
+		var doc := GLTFDocument.new()
+		var state := GLTFState.new()
+		var err := doc.append_from_file(path, state)
+		assert(err == OK, "Can't load %s" % path)
+		_glb_cache[name] = doc.generate_scene(state)
+	var n: Node3D = _glb_cache[name].duplicate()
+	for mi in n.find_children("*", "MeshInstance3D", true, false):
+		var m: MeshInstance3D = mi
+		for k in m.mesh.get_surface_count():
+			var src := m.mesh.surface_get_material(k)
+			var key := src.resource_name if src != null else ""
+			if mats.has(key):
+				m.set_surface_override_material(k, mats[key])
+	return n
+
