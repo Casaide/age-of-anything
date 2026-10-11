@@ -128,7 +128,7 @@ func generate(prompt: String, rules: Dictionary, reroll := 0) -> Dictionary:
 
 	var ctx := {
 		"rng": rng, "rules": rules, "brief": brief, "tags": tags,
-		"creature": creature, "family": family, "skin": rng.pick(c.skins),
+		"creature": creature, "family": family, "skin": rng.pick(_skins(c, family)),
 	}
 	# Each roster slot is a unit line through the ages (D-057): first the unit at the age
 	# its slot opens, in that age's kit; then, in a second pass (so the first recipes don't
@@ -356,6 +356,14 @@ func _choose_mount(ctx: Dictionary, always := false) -> String:
 ## Did the prompt ask for a winged (flying) race?
 func _winged(tags: Dictionary) -> bool:
 	return int(tags.get("wings", 0)) > 0
+
+
+## The creature's skins, narrowed to the ones its culture prefers when it names some
+## (families.json "skins": Aztec and Nile people tan or dark, Han light or tan).
+func _skins(c: Dictionary, family: String) -> Array:
+	var prefer: Array = lib.families[family].get("skins", [])
+	var both: Array = c.skins.filter(func(s): return s in prefer)
+	return both if not both.is_empty() else c.skins
 
 
 func _mount_for(creature: String, fused: bool, rng, brief: Dictionary) -> Dictionary:
