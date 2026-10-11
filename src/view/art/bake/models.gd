@@ -615,3 +615,29 @@ func _pennant(parent: Node3D, at: Vector3, team: Color) -> void:
 	var flag := slab_tri(Vector2(0, 0), Vector2(0, -0.26), Vector2(0.5, -0.13), 0.02, cloth(team))
 	flag.position = at + Vector3(0.015, 0.54, 0)
 	parent.add_child(flag)
+
+
+## A farm going in: a tilled plot inside a post-and-rail fence, seed sacks and a hoe by
+## the gate, a team pennant on the corner post. The same for every culture (a finished
+## farm becomes its field: crops on land, a rice paddy in water).
+func farm_plot(team: Color) -> Dictionary:
+	var body := Node3D.new()
+	var wood := mats.get_mat("wood")
+	body.add_child(box(Vector3(1.8, 0.05, 1.8), mats.get_mat("mud"), Vector3(0, 0.025, 0)))
+	for k in 6:   # furrows
+		body.add_child(box(Vector3(1.6, 0.04, 0.07), Materials.flat(Color("#4e3820"), 1.0), Vector3(0, 0.06, -0.72 + k * 0.29)))
+	var half := 0.92
+	for side in 4:
+		for k in 5:
+			var t := -half + k * half * 0.5
+			var p := Vector3(t, 0.0, half) if side == 0 else Vector3(half, 0.0, t) if side == 1 else Vector3(t, 0.0, -half) if side == 2 else Vector3(-half, 0.0, t)
+			if side == 0 and k == 2:
+				continue   # the gate
+			body.add_child(cyl(0.03, 0.035, 0.32, wood, p + Vector3(0, 0.16, 0), Vector3.ZERO, 6))
+		var a := Vector3(-half, 0.24, half) if side == 0 else Vector3(half, 0.24, half) if side == 1 else Vector3(half, 0.24, -half) if side == 2 else Vector3(-half, 0.24, -half)
+		var b := Vector3(half, 0.24, half) if side == 0 else Vector3(half, 0.24, -half) if side == 1 else Vector3(-half, 0.24, -half) if side == 2 else Vector3(-half, 0.24, half)
+		body.add_child(box(Vector3(a.distance_to(b), 0.035, 0.035), wood, (a + b) * 0.5, Vector3(0, -rad_to_deg(atan2(b.z - a.z, b.x - a.x)), 0)))
+	for k in 2:
+		body.add_child(ball(0.09, Materials.flat(Color("#b8a074"), 1.0), Vector3(0.55 + k * 0.17, 0.11, 1.08), Vector3(1, 1.2, 1)))
+	_pennant(body, Vector3(-half, 0.3, half), team)
+	return {"body": body, "anchor": Vector3.ZERO, "lights": [], "team": team}

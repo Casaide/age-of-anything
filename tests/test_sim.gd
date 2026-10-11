@@ -68,6 +68,7 @@ func _init() -> void:
 	_test_opening(races)
 	_test_queue(races)
 	_test_movement_classes()
+	_test_farms(races)
 	_test_combat(gen)
 
 	var script := _script(map, races)
@@ -362,6 +363,49 @@ func _test_movement_classes() -> void:
 	var ri := w.units.index_of(rat)
 	check(w.map.terrain[w.map.cell_of(w.units.x[fi], w.units.y[fi])] == shallows, "the frog wades into the shallows")
 	check(w.map.terrain[w.map.cell_of(w.units.x[ri], w.units.y[ri])] != shallows, "the rat stops at the water's edge")
+
+
+# --- farms and placement -------------------------------------------------------
+
+## A farm becomes a crop field its builder harvests; amphibians may farm the shallows
+## (a rice paddy); other races can't build on water.
+func _test_farms(races: Array) -> void:
+	var w := World.new(SEED, SimMap.load_id("flat_test"), races, rules_)
+	w.stock[1][0] = 1000
+	w.stock[1][1] = 1000
+	var s: Array = w.map.starts[0]
+	var worker := -1
+	for i in w.units.count():
+		if w.units.owner[i] == 0:
+			worker = w.units.id[i]
+			break
+	var cx: int = s[0] / 1000 + 3
+	var cy: int = s[1] / 1000 + 2
+	w.issue(0, Commands.BUILD, {"ids": [worker], "building": "farm", "cx": cx, "cy": cy})
+	var field: int = w.map.terrain_ids.find("field")
+	while w.tick < 1600 and w.map.terrain[cy * w.map.width + cx] != field:
+		w.step()
+	check(w.map.terrain[cy * w.map.width + cx] == field, "farm: the frogs' farm became a field")
+	var food_before: int = w.stock[0][0]
+	for t in 1200:
+		w.step()
+	var i := w.units.index_of(worker)
+	check(w.units.carry_kind[i] == 1 and w.units.task[i] in [Economy.GATHER, Economy.RETURN], "farm: its builder farms it")
+	check(w.stock[0][0] > food_before, "farm: food comes in from the field (%d -> %d)" % [food_before, w.stock[0][0]])
+	# Water: find a 2x2 of shallows.
+	var sh: int = w.map.terrain_ids.find("shallows")
+	var spot := Vector2i(-1, -1)
+	for y in w.map.height - 1:
+		for x in w.map.width - 1:
+			var ok := true
+			for c in [y * w.map.width + x, y * w.map.width + x + 1, (y + 1) * w.map.width + x, (y + 1) * w.map.width + x + 1]:
+				ok = ok and w.map.terrain[c] == sh
+			if ok and spot.x < 0:
+				spot = Vector2i(x, y)
+	check(spot.x >= 0, "farm: the test map has a 2x2 of shallows")
+	check(w.map.can_build(spot.x, spot.y, 2, Economy.builder_class(w, 0), true), "farm: frogs (amphibious) may farm the shallows")
+	check(not w.map.can_build(spot.x, spot.y, 2, Economy.builder_class(w, 1), true), "farm: rats may not build on water")
+	check(not w.map.can_build(spot.x, spot.y, 2, Economy.builder_class(w, 0), false), "farm: a building that doesn't allow water can't go there")
 
 
 # --- order queues ---------------------------------------------------------------
