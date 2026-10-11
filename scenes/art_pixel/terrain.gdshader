@@ -220,11 +220,6 @@ void fragment() {
 		col = dq < 1.0 ? vec3(0.34, 0.52, 0.44) : dq < 2.0 ? vec3(0.22, 0.45, 0.48) : dq < 3.0 ? vec3(0.15, 0.36, 0.45)
 			: dq < 4.0 ? vec3(0.11, 0.27, 0.39) : vec3(0.08, 0.19, 0.31);
 		if (depth < 0.22 && hash(cell + 11.0) > 0.78) col = mix(col, vec3(0.56, 0.52, 0.36), 0.35);   // pebbles in the shallows
-		// The sky in the water: long soft bands of lighter blue that drift slowly, and a
-		// dark band in the bank's shadow along the shore.
-		float sky = vnoise(vec2(world.x / 90.0 + TIME * 0.02, world.y / 9.0));
-		if (sky > 0.62 && depth > 0.25) col = mix(col, vec3(0.36, 0.56, 0.66), 0.3);
-		if (depth < 0.12 && depth > 0.03) col *= 0.82;
 		// Wavelets: short broken dashes (screen space, iso-flat) that drift and flicker,
 		// each with a darker trough just below it.
 		float row = floor(world.y / 4.0);

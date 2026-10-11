@@ -709,6 +709,8 @@ func _sync_views() -> void:
 		view.position = Iso.to_screen(u.px[i] + dx * a, u.py[i] + dy * a)
 		view.walking = dx != 0 or dy != 0
 		view.job = _job(i)
+		if world.types[u.kind[i]].worker:
+			view.set_tool(lib, _tool_for(i))
 		if absi(dx - dy) > 4:
 			view.face(dx - dy)   # screen x direction
 		elif view.job != "":
@@ -729,10 +731,24 @@ func _job(i: int) -> String:
 	if u.moving[i] != 0:
 		return ""
 	if u.task[i] == Economy.GATHER and u.work[i] > 0:
-		return "forage" if u.carry_kind[i] == 1 else "chop"
+		return {"food": "forage", "wood": "chop", "stone": "mine"}.get(world.resources[u.carry_kind[i] - 1], "forage")
 	if u.task[i] == Economy.BUILD:
 		return "build"
 	return ""
+
+
+## What a worker holds: the tool for its job, the load it carries home, else its own tool.
+## (No carry icons: you see the reeds on its shoulder or the stone in its arms.)
+func _tool_for(i: int) -> String:
+	var u := world.units
+	var res: String = world.resources[u.carry_kind[i] - 1] if u.carry_kind[i] > 0 else ""
+	if u.task[i] == Economy.RETURN and u.carry[i] > 0:
+		return {"food": "tool.basket", "wood": "load.reeds", "stone": "load.stone"}.get(res, "tool.basket")
+	if u.task[i] == Economy.GATHER:
+		return {"food": "tool.basket", "wood": "tool.axe", "stone": "tool.pick"}.get(res, "tool.basket")
+	if u.task[i] == Economy.BUILD:
+		return "tool.hammer"
+	return world.types[u.kind[i]].recipe.parts.get("hand_r", "tool.basket")
 
 
 ## Where a working unit's job is, on the canvas: its resource cell or building's centre.
@@ -962,7 +978,7 @@ func _update_cursor() -> void:
 	var pos := get_global_mouse_position()
 	var b := world.buildings.index_of(selected_building)
 	if b >= 0:
-		cursors.use("rally" if world.buildings.owner[b] == active and playback.is_empty() else "pointer")
+		cursors.use("pointer")   # right-click sets the rally point; the genre doesn't need a special cursor for it
 		return
 	if _selected_by_owner()[active].is_empty():
 		cursors.use("pointer")
@@ -979,7 +995,7 @@ func _update_cursor() -> void:
 	if enemy:
 		cursors.use("attack")
 	elif workers and map.resource_at(cell) != "":
-		cursors.use("forage" if map.resource_at(cell) == "food" else "chop")
+		cursors.use({"food": "forage", "wood": "chop"}.get(map.resource_at(cell), "chop"))
 	elif workers and bid != 0 and _is_foundation_of(bid, active):
 		cursors.use("build")
 	else:
@@ -1064,11 +1080,6 @@ func _draw_overlay() -> void:
 			var rp := Iso.to_screen(bs.rally_x[b], bs.rally_y[b])
 			overlay.draw_line(Iso.to_screen(x0 + s / 2, y0 + s / 2), rp, Color(RING, 0.4), 1.0 / camera.zoom.x)
 			overlay.draw_circle(rp, 4.0, RING)
-	# What each worker carries, above its head.
-	for i in u.count():
-		if u.carry[i] > 0 and views.has(u.id[i]):
-			var p: Vector2 = views[u.id[i]].position + Vector2(7, -24)
-			overlay.draw_circle(p, 2.0 + u.carry[i] * 0.25, Color(lib.resource_info[u.carry_kind[i] - 1].colour))
 	if placing != "":
 		var c := _ghost_cell(get_global_mouse_position())
 		var size: int = world.btypes[Economy.btype_of(world, placing)].size

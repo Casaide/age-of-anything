@@ -267,6 +267,19 @@ func face(dir: float) -> void:
 	_face(1.0 if dir >= 0.0 else -1.0)
 
 
+## Swap what the hand holds (a worker's tool for the job, or the load it carries home),
+## if that part is baked. Same arm pose: job tools are all held low.
+func set_tool(lib, part_id: String) -> void:
+	if weapon == null or harnessed or weapon.part_id == part_id:
+		return
+	var p: Dictionary = lib.part(part_id)
+	var key := PartShape.bake_key(part_id, p.shapes, PartShape.team_neutral(weapon.colours))
+	if not PartShape.baked.has(key):
+		return
+	weapon.part_id = part_id
+	weapon.setup(p.shapes, weapon.colours)
+
+
 func flourish() -> void:
 	attack_t = 0.35
 
@@ -360,7 +373,7 @@ static func _gait(n: int, flies: bool) -> Dictionary:
 ## forage: stoop and reach in, pick, lift; chop: wind the axe back over the shoulder,
 ## strike down hard, recover; build: short quick hammer blows.
 func _work(t: float, stepped: bool) -> void:
-	var period: float = {"forage": 1.1, "chop": 0.9, "build": 0.5}[job]
+	var period: float = {"forage": 1.1, "chop": 0.9, "mine": 1.0, "build": 0.5}[job]
 	var p := fmod(t / period + noise.seed % 7 * 0.13, 1.0)
 	if stepped:
 		p = floorf(p * 6.0) / 6.0
@@ -375,8 +388,8 @@ func _work(t: float, stepped: bool) -> void:
 			swing = 0.35 * k
 			if weapon:
 				weapon.position = weapon_rest + Vector2(3.0, 4.0) * k
-		"chop", "build":
-			var up := 2.0 if job == "chop" else 1.2
+		"chop", "mine", "build":
+			var up := 1.2 if job == "build" else 2.0
 			var wind := 0.6
 			var hit := 0.75
 			if p < wind:
