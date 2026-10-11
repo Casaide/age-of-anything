@@ -266,3 +266,17 @@ wore the knight's iron helmet and winged Romans got bat wings: knight kit (iron 
 shield, mail) is now the royal culture's signature, bat wings the spooky/sewer one's, feather
 wings are generic, and heavy units no longer "want" knight kit. A test checks that no culture
 gets another's signature kit.
+
+**D-060, 2026-10-11: Game scenes draw only the baked art; a missing bake is loud; the style
+sampler is retired.** `PartShape` draws only baked sprites (supersedes the fallback to plain
+shapes in D-042/D-043): a part drawn without a bake warns once and shows a magenta marker. The
+Race Lab bakes each race through the art kit and uses the game's ground. The 2D shapes in
+`parts.json` stay as the data contract and socket reference, never drawn. The style sampler
+(D-040, D-041) is deleted; its pictures stay in the archive, and the bake pipeline it held moved
+to `src/view/art/bake/`. Dominic's call ("so weird I'm seeing it in the race lab"; "ignore the
+sampler, it's history"); Claude's implementation.
+
+**D-061, 2026-10-11: Buildings y-sort by their footprint's centre.** Not their front corner,
+which hid units standing beside a building's lower faces. Art that spills past the footprint
+(a podium) doesn't move the sort point. Found by Dominic (a centaur beside the Roman Town
+Center showed only its legs); fix by Claude.
