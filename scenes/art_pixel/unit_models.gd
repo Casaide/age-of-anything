@@ -749,16 +749,16 @@ func _body_human(c: Dictionary) -> Dictionary:
 	var front := Node3D.new()
 	for side in [1, -1]:
 		var into: Node3D = front if side == 1 else n
-		var sh := Vector3(0.3, 23.2, 5.0 * side)
-		var elbow := Vector3(1.4, 18.4, 6.4 * side)
+		var sh := Vector3(0.3, 22.9, 4.4 * side)   # shoulders in a little (Dominic: too big)
+		var elbow := Vector3(1.4, 18.4, 5.8 * side)
 		var hand := Vector3(6.0, 16.2, 5.6) if side == 1 else Vector3(5.5, 17.2, -4.8)
 		if side == 1:
 			var pose := arm_pose(sh, elbow, hand, Vector3(0.6, 27, 0))
 			elbow = pose[0]
 			hand = pose[1]
 			near_hand = hand
-		into.add_child(blob(Vector3(2.5, 2.4, 2.5), cloth, sh))
-		into.add_child(rod(sh, elbow, 1.8, 1.55, cloth))
+		into.add_child(blob(Vector3(2.1, 2.1, 2.1), cloth, sh))
+		into.add_child(rod(sh, elbow, 1.6, 1.45, cloth))
 		into.add_child(rod(elbow, hand, 1.35, 1.15, skin))
 		into.add_child(blob(Vector3(1.5, 1.6, 1.3), skin, hand))
 	# (No scarf: the tunic is already the team colour, and a scarf ring hid the neck: Dominic.)

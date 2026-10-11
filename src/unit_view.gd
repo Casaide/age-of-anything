@@ -271,7 +271,7 @@ func _attach(lib, rig: Dictionary, slot: String, part_id: String, colours: Dicti
 	var node := _shape()
 	node.part_id = part_id
 	node.facing = facing_k
-	var worn: bool = slot == "torso" and rig.modelled and UnitModelsCheck.has(part_id)
+	var worn: bool = slot == "torso" and UnitModelsCheck.has(rig.body) and UnitModelsCheck.has(part_id)   # (the body's model, not its bake: the first preview comes before any bake)
 	if worn:
 		node.part_id = part_id + "~" + rig.body   # baked on this body: drawn from the body's origin
 	node.setup(p.shapes, colours)
