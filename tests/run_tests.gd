@@ -153,6 +153,16 @@ func _test_prompts(gen, rules: Dictionary) -> void:
 				for id in l.recipe.parts.values():
 					check(int(gen.lib.part(id).get("tier", 1)) <= l.age, "%s: %s at age %d holds no later kit (%s)" % [prompt, u.recipe.slot, l.age, id])
 			check(u.line[0].recipe == u.recipe, "%s: the line starts with the unit's recipe" % prompt)
+	# An upgrade never reads "X -> X": new kit gets a new name, no new kit keeps it (and isn't sold).
+	for prompt in ["centaur romans", "centaur greeks", "angry swamp frogs", "royal knights", "sewer rats with cheese hammers", "aztec warriors", "han archers", "nile spiders"]:
+		for reroll in 4:
+			for u in gen.generate(prompt, d, reroll).units:
+				if u.recipe.role == "worker":
+					continue
+				var names: Array = u.line.map(func(l): return l.recipe.name)
+				for s in range(1, u.line.size()):
+					var same_kit: bool = u.line[s].recipe.parts == u.line[s - 1].recipe.parts
+					check(same_kit == (u.line[s].recipe.name in names.slice(0, s)), "%s (reroll %d): %s line step %d has its own name only when its kit is new (%s)" % [prompt, reroll, u.recipe.slot, s, names])
 	# Another culture's signature kit never turns up uninvited (no acorns or knight's
 	# helmets on Romans, no bat wings on Greeks), and a culture keeps its own.
 	var foreign := {"centaur romans": ["knight", "woodland", "bat", "greek", "viking", "cheese"],

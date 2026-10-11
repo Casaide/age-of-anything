@@ -24,7 +24,11 @@
    "style": "boardwalk",
    "width": 0.34
   },
-  "architecture": "thatch"
+  "architecture": "thatch",
+  "ranks": [
+   "Seasoned",
+   "Elder"
+  ]
  },
  "sewer": {
   "cloth": [
@@ -52,7 +56,11 @@
    "style": "cobble",
    "width": 0.42
   },
-  "architecture": "junk"
+  "architecture": "junk",
+  "ranks": [
+   "Scarred",
+   "Grizzled"
+  ]
  },
  "forest": {
   "cloth": [
@@ -80,7 +88,11 @@
    "style": "trail",
    "width": 0.36
   },
-  "architecture": "thatch"
+  "architecture": "thatch",
+  "ranks": [
+   "Hardy",
+   "Elder"
+  ]
  },
  "imperial": {
   "cloth": [
@@ -107,7 +119,11 @@
    "style": "road",
    "width": 0.5
   },
-  "architecture": "stone"
+  "architecture": "stone",
+  "ranks": [
+   "Veteran",
+   "Praetorian"
+  ]
  },
  "hellenic": {
   "cloth": [
@@ -134,7 +150,11 @@
    "style": "road",
    "width": 0.46
   },
-  "architecture": "stone"
+  "architecture": "stone",
+  "ranks": [
+   "Veteran",
+   "Champion"
+  ]
  },
  "royal": {
   "cloth": [
@@ -161,7 +181,11 @@
    "style": "cobble",
    "width": 0.44
   },
-  "architecture": "stone"
+  "architecture": "stone",
+  "ranks": [
+   "Sworn",
+   "Elite"
+  ]
  },
  "steppe": {
   "cloth": [
@@ -188,7 +212,11 @@
    "style": "trail",
    "width": 0.4
   },
-  "architecture": "tent"
+  "architecture": "tent",
+  "ranks": [
+   "Blooded",
+   "Elite"
+  ]
  },
  "spooky": {
   "cloth": [
@@ -215,7 +243,11 @@
    "style": "trail",
    "width": 0.32
   },
-  "architecture": "thatch"
+  "architecture": "thatch",
+  "ranks": [
+   "Restless",
+   "Dread"
+  ]
  },
  "nile": {
   "skins": ["human_tan", "human_dark"],
@@ -243,7 +275,11 @@
    "style": "road",
    "width": 0.44
   },
-  "architecture": "stone"
+  "architecture": "stone",
+  "ranks": [
+   "Veteran",
+   "Royal"
+  ]
  },
  "han": {
   "skins": ["human_light", "human_tan"],
@@ -271,7 +307,11 @@
    "style": "road",
    "width": 0.46
   },
-  "architecture": "stone"
+  "architecture": "stone",
+  "ranks": [
+   "Veteran",
+   "Elite"
+  ]
  },
  "aztec": {
   "skins": ["human_tan", "human_dark"],
@@ -297,6 +337,10 @@
    "style": "cobble",
    "width": 0.42
   },
-  "architecture": "stone"
+  "architecture": "stone",
+  "ranks": [
+   "Seasoned",
+   "Elite"
+  ]
  }
 }
