@@ -212,6 +212,7 @@ func _make_rig(lib, body_id: String, head_id: String, colours: Dictionary, paren
 		arm.set_meta("z", 1.5)
 		root.add_child(arm)
 
+	var gear_scale := 1.0
 	if head_id != "":
 		var head: Dictionary = lib.part(head_id)
 		var head_node := _shape()
@@ -223,9 +224,10 @@ func _make_rig(lib, body_id: String, head_id: String, colours: Dictionary, paren
 		self.head_node = head_node
 		var head_rig: Dictionary = PartShape.rigs.get(head_id, {})
 		sockets["top"] = sockets.head + (head_rig.sockets.top if head_rig.has("sockets") else PartShape.v2(head.sockets.top))
+		gear_scale = float(head_rig.get("gear_scale", 1.0))
 
 	var torso_scale: Vector2 = rig.get("torso_scale", PartShape.v2(body.get("torso_scale", [1, 1])))
-	return {"root": root, "sockets": sockets, "torso_scale": torso_scale, "carry": rig.get("carry", "")}
+	return {"root": root, "sockets": sockets, "torso_scale": torso_scale, "carry": rig.get("carry", ""), "gear_scale": gear_scale}
 
 
 func _attach(lib, rig: Dictionary, slot: String, part_id: String, colours: Dictionary) -> void:
@@ -251,6 +253,8 @@ func _attach(lib, rig: Dictionary, slot: String, part_id: String, colours: Dicti
 	node.set_meta("z", 0.5 if withers else Z_FOR_SLOT[slot])
 	if slot == "torso":
 		node.scale = rig.torso_scale
+	elif slot == "head_gear":
+		node.scale = Vector2.ONE * rig.gear_scale   # head gear sized to the head that wears it
 	rig.root.add_child(node)
 	if rig.carry == "harness" and slot == "hand_r":
 		# No arms: the weapon lies couched in its holder, pointing forward (a tool just leans).
