@@ -98,7 +98,7 @@ func bake_icons(races: Array, teams: Array) -> void:
 
 
 ## The model function for a building type in an architecture (farms are the same everywhere).
-func _model(arch: String, type: String) -> String:
+static func _model(arch: String, type: String) -> String:
 	match type:
 		"town_center":
 			return TOWN[arch]
