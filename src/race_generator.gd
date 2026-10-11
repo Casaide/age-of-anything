@@ -22,7 +22,7 @@ const ROLE_BIAS := {
 }
 ## Signature gear (a culture's kit, cheese hammers...) is only favoured when the prompt,
 ## family or creature asks for it. No cheese hammers for Romans unless someone says cheese.
-const SIGNATURE_TAGS := ["roman", "greek", "viking", "cheese", "woodland", "knight", "bat", "crossbow", "junk", "saucepan"]   # woodland: acorn caps, leaves, bark (swamp/forest); knight: iron helm, kite, mail (royal); bat wings (spooky/sewer); crossbows (royal, sewer rats); junk: bottle caps (sewer); saucepan: only when asked (ww2)
+const SIGNATURE_TAGS := ["roman", "greek", "viking", "cheese", "woodland", "knight", "bat", "crossbow", "junk", "saucepan", "nile", "han", "aztec"]   # woodland: acorn caps, leaves, bark (swamp/forest); knight: iron helm, kite, mail (royal); bat wings (spooky/sewer); crossbows (royal, sewer rats); junk: bottle caps (sewer); saucepan: only when asked (ww2)
 ## Extra wants for "Heavy" large units (armoured elites instead of giants).
 const HEAVY_BOOST := {"heavy": 3, "armour": 3, "helmet": 2, "shield": 1}   # no "knight": knight kit is the royal culture's signature
 const OPTIONAL_SLOTS := ["hand_l", "head_gear", "torso", "back"]
@@ -234,7 +234,7 @@ func _make_unit(slot_def: Dictionary, ctx: Dictionary) -> Dictionary:
 	# Primary weapon or tool (required)
 	var need: String = ROLE_NEEDS[role]
 	var excluded: Array = ROLE_EXCLUDES.get(role, [])
-	var options: Array = _cands("hand_r", ctx).filter(func(p): return need in p.tags and not p.tags.any(func(t): return t in excluded))
+	var options: Array = _cands("hand_r", ctx).filter(func(p): return need in p.tags and not p.tags.any(func(t): return t in excluded) and _allowed(p, role, ctx.tags))
 	var affordable := options.filter(func(p): return spent + int(p.points) <= budget)
 	if affordable.is_empty():
 		affordable = [_cheapest(options)]
@@ -313,6 +313,8 @@ func _best(cands: Array, tags: Dictionary, bias: Dictionary, rng) -> Dictionary:
 			s += 10 * int(tags.get(t, 0)) + 10 * int(bias.get(t, 0))
 		if _off_theme(p, tags):
 			s -= 100
+		if p.has("favour") and p.tags.any(func(t): return t in _affinity):
+			s += 10 * int(p.favour)   # a culture's own weapon, wanted over the role's usual pick (parts.json "favour")
 		s += rng.range_int(0, 7)
 		if s > best_score:
 			best_score = s

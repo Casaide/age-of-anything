@@ -348,3 +348,13 @@ body in its own space: the bake asks for `armour_<kind>_<body>.glb` before fitti
 model. The human gets a leather jerkin (shoulder doublers, laces) and a bronze cuirass (pectorals,
 rim, flared hem) built on the torso's own profile, so they hug the chest in every facing. Arms
 stay built in code: the game poses them for each weapon. Claude.
+
+### Picks: reared spiders and the three new kits
+Dominic picked the reared spider and the GC1 gear as drawn, and turned the weapons question
+round: why age 3, when age 1 is more varied? Agreed, with one catch he chose the answer to: the
+spear line must stay a spear for the counters, so the Han halberd arms it from age 1 and the
+sword and club go to the large unit. Head gear by age and the shields come from age 1. Two
+shields needed a second look at game size: the Han lacquer baked near black, and the cowhide's
+dark spots read as holes in a grey slab. The spider's acorn cap was the size of its head.
+![Han roster](../images/2026-10-11/180-han-roster.png)
+![Reared spiders](../images/2026-10-11/178-spiders-reared-8-facings.png)

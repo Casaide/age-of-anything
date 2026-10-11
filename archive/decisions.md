@@ -515,3 +515,17 @@ bar (tooltip cards covered them); the portrait frame stays square; the lobby ros
 unit with its portrait; tool cursors carry a pointer tip as their hotspot; swamp pools are few and
 broad; mineable stone shows a split face and cut blocks; builders' mills stand on a plinth under
 their roof; the boar has a pink snout. Claude.
+
+**D-098, 2026-10-11: The Nile, Han and Aztec kits go in as drawn (GC1), culture gear from age 1.**
+Dominic picked "all as drawn" and asked why the culture weapons should wait for age 3: age 1 is
+more varied. Every Nile, Han and Aztec unit wears its culture's head gear by age and carries its
+culture's shield from age 1. The Han halberd (a spear, so the spear line keeps its counter) arms
+the spear line at every age (wood, bronze, iron). The sickle sword and the obsidian club aren't
+spears, so they arm the large unit when it opens (Dominic's choice over adding a sword slot).
+New data: parts carry a `favour` that pulls a culture's own weapon over the role's usual pick, and
+the primary pick now respects `requires_role`; nile, han and aztec are signature tags. Claude.
+
+**D-099, 2026-10-11: Spiders rear up (SG1).** Dominic's pick: the abdomen low behind, the front
+body raised, the front legs used as arms holding the gear, six legs to walk on. Ridden spiders
+keep a saddle cloth on the abdomen. Head gear on spiders is scaled to the small head (an acorn cap
+had covered it whole: "What's on the spiders head?"). Claude.
