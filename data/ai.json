@@ -33,12 +33,19 @@
   },
   {
    "building": "archery_range",
-   "workers": 13
+   "workers": 18,
+   "age": 2
   },
   {
    "building": "stable",
    "age": 2,
    "workers": 18
+  },
+  {
+   "building": "mining_camp",
+   "age": 2,
+   "near": "gold",
+   "workers": 20
   },
   {
    "building": "barracks",
@@ -49,12 +56,6 @@
    "building": "stable",
    "age": 2,
    "workers": 27
-  },
-  {
-   "building": "mining_camp",
-   "age": 2,
-   "near": "gold",
-   "workers": 20
   }
  ],
  "military": {

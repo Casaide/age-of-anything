@@ -53,7 +53,7 @@
     "skirmisher",
     "archer"
    ],
-   "age": 1,
+   "age": 2,
    "hotkey": "E",
    "armour": {
     "melee": 1,
@@ -75,7 +75,7 @@
    "house": false,
    "drop_off": [],
    "trains": [],
-   "age": 1,
+   "age": 2,
    "hotkey": "Y",
    "armour": {
     "melee": 1,

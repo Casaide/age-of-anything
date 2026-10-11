@@ -90,6 +90,7 @@ func think(w) -> void:
 			army.append(i)
 	_build_order(w, tc, workers)
 	_age_three(w, tc, workers)
+	_upgrade_lines(w)
 	_train(w, workers)
 	var home_x: int = w.buildings.cx[tc] * 1000 + 1500
 	var home_y: int = w.buildings.cy[tc] * 1000 + 1500
@@ -141,6 +142,23 @@ func _age_three(w, tc: int, workers: Array) -> void:
 
 
 # ------------------------------------------------------------------ soldiers
+
+## Line upgrades, as a player would: each building upgrades the lines it trains once the
+## age allows and there's enough to spare for a few soldiers too (twice the cost in stock).
+func _upgrade_lines(w) -> void:
+	for b in w.buildings.count():
+		if w.buildings.owner[b] != player:
+			continue
+		for r in w.tech.research:
+			if not r.has("line") or Tech.why_not(w, player, b, r.id) != "":
+				continue
+			var spare := true
+			for k in r.cost.size():
+				if w.stock[k][player] < r.cost[k] * 2:
+					spare = false
+			if spare:
+				w.issue(player, Commands.RESEARCH, {"building": w.buildings.id[b], "id": r.id})
+				break
 
 func _train(w, workers: Array) -> void:
 	var reserve := PackedInt32Array()

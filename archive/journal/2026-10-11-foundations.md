@@ -358,3 +358,16 @@ shields needed a second look at game size: the Han lacquer baked near black, and
 dark spots read as holes in a grey slab. The spider's acorn cap was the size of its head.
 ![Han roster](../images/2026-10-11/180-han-roster.png)
 ![Reared spiders](../images/2026-10-11/178-spiders-reared-8-facings.png)
+
+### Dominic plays: a stream of notes
+A run of notes from a match, fixed one after another: shift-queued buildings now show their
+foundations; camp builders go to work at their camp; claimed sheep walk home to the Town Center;
+the double-click no longer grabs unowned sheep under the fog; the archery range and armoury wait
+for age 2; unit lines upgrade one by one at their building (the age-up used to do them all,
+D-100); the age gets its own badge in the top bar with the age-up's progress, and the Town
+Center's panel shows the age-up in its queue slot; the age-up button had appeared at every
+building (a lumber camp offering "Age up: Stone Age"). The hitch when a building finished was the
+paths: every finished building replanned and blurred the whole path mask on the main thread; it
+runs on a worker thread now. Bakes: about 15 s per match load on an M4 Max (units 4.8 s, props
+1.8 s, buildings 8.4 s), in every build, not only dev.
+![The age badge, ageing up](../images/2026-10-11/183-age-badge-and-ageing-up.png)

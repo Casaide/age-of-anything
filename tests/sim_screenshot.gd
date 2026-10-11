@@ -38,6 +38,8 @@ func _initialize() -> void:
 		await _town(view, int(scene.get_slice(":", 1)))
 	elif scene.begins_with("ageup"):
 		await _ageup(view, int(scene.get_slice(":", 1)))
+	elif scene == "ageing":
+		await _ageing(view)
 	elif scene == "farm":
 		await _farm(view)
 	elif scene.begins_with("look"):   # look:<tile x>:<tile y>[:zoom]: the map there, fog lifted
@@ -227,6 +229,11 @@ func _ageup(view, to_age: int) -> void:
 			w.issue(p, "age_up", {"building": w.buildings.id[p]})
 		while w.ages[0] < age:
 			await process_frame
+		for p in 2:   # and every line's upgrade for this age (line kit no longer comes with the age)
+			for r in w.tech.research.size():
+				if w.tech.research[r].get("line_age", 0) == age:
+					w.researched[p][r] = 1
+			Tech.retype(w, p)
 	view.clock.speed = 1.0
 	for f in 30:
 		await process_frame
@@ -234,6 +241,42 @@ func _ageup(view, to_age: int) -> void:
 	view.camera.zoom = Vector2(3.0, 3.0)
 	view._on_zoom()
 	view.camera.look_at_point(Iso.to_screen(s[0] + 1500, s[1] + 3500))
+
+
+## Side 0 a third of the way through its age-up, its Town Center selected (the top bar's
+## age badge and the panel's queue show it).
+func _ageing(view) -> void:
+	var w = view.world
+	while w.units.count() <= 6:
+		await process_frame
+	for r in w.resources.size():
+		w.stock[r][0] = 99999
+	var Economy = load("res://src/sim/economy.gd")
+	var Tech = load("res://src/sim/tech.gd")
+	var s: Array = w.map.starts[0]
+	for need in Tech.next_age(w, 0).requires:
+		var k: int = Economy.btype_of(w, need)
+		for tries in 30:
+			var cx: int = s[0] / 1000 - 8 + (tries % 6) * 3
+			var cy: int = s[1] / 1000 + 5 + (tries / 6) * 3
+			if w.map.can_build(cx, cy, w.btypes[k].size):
+				var b: int = Economy.place(w, 0, k, cx, cy)
+				w.buildings.done[b] = 1
+				w.buildings.hp[b] = w.btypes[k].hp
+				break
+	var tc := -1
+	for b in w.buildings.count():
+		if tc < 0 and w.buildings.owner[b] == 0 and w.btypes[w.buildings.kind[b]].id == "town_center":
+			tc = b
+	print("ageing: ", Tech.why_not(w, 0, tc, ""))
+	w.issue(0, "age_up", {"building": w.buildings.id[tc]})
+	view.clock.speed = 16.0
+	while w.buildings.research_t[tc] < Tech.next_age(w, 0).ticks / 3:
+		await process_frame
+	view.clock.speed = 1.0
+	view.clock.paused = true
+	view.selected_building = w.buildings.id[tc]
+	view.camera.look_at_point(Iso.to_screen(s[0] + 1500, s[1] + 1500))
 
 
 ## A finished town for player `side`: Barracks, Stable, Watchtower and a house round

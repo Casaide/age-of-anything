@@ -529,3 +529,24 @@ the primary pick now respects `requires_role`; nile, han and aztec are signature
 body raised, the front legs used as arms holding the gear, six legs to walk on. Ridden spiders
 keep a saddle cloth on the abdomen. Head gear on spiders is scaled to the small head (an acorn cap
 had covered it whole: "What's on the spiders head?"). Claude.
+
+**D-100, 2026-10-11: Unit lines upgrade one at a time, researched where they train.** Dominic:
+"upgrading a unit should be upgrade per unit - not a one off". An age-up no longer moves every
+line to its next kit. Each trained line (not workers) has a line upgrade per later age
+(`line.<slot>.<age>`, made from `tech.json` line_upgrades and the buildings' `trains`), done at
+the building that trains it once you're in that age: age 2 costs 150 food and 100 wood, age 3
+250 food and 150 gold. Workers still follow the age. The bot buys an upgrade when it has twice
+its cost in stock. Supersedes the age half of D-057 (gear still goes up with the ages, now by
+upgrade). Claude, on Dominic's call.
+
+**D-101, 2026-10-11: The archery range and armoury open in age 2.** Dominic: they could be
+built in the first age, which is wrong for the genre. Age 1 has the barracks, houses, camps,
+farms and walls; the archery range, armoury, stable, market and watchtower come with age 2
+(Sharp Sticks moved with the armoury). The bot builds its range in age 2.
+
+**D-102, 2026-10-11: Small rules from Dominic's play.** A shift-queued build lays its foundation
+at once (paid), so you see the plan, and the workers come to it in turn. Builders of a camp
+(mill, lumber camp, mining camp) go and gather what it takes in. A claimed sheep walks to its
+owner's nearest Town Center. Double-click selects only your kind of unit with the same owner
+that you can see. The age-up button shows only at the building that does it (a missing
+requirement made every building offer it). Claude.

@@ -2,9 +2,10 @@ extends RefCounted
 ## Ages and research, from data/tech.json. Static functions over the World `w`, like
 ## economy.gd. Integers only, no Nodes.
 ##
-## An age-up moves the player's unit types to the next step of their unit lines (each
-## line was written by the generator through the ages: new kit, re-priced), and the
-## player's units follow, keeping their share of health. Research adds to stats of
+## A unit line (written by the generator through the ages: new kit, re-priced) moves to an
+## age's step when its line upgrade ("line.<slot>.<age>", data: tech.json line_upgrades) is
+## researched at the building that trains it, in that age or later (workers just follow the
+## age); the player's units follow, keeping their share of health. Research adds to stats of
 ## units with a tag, re-applied whenever a type changes. A building does one thing at a
 ## time: while it ages up or researches, its training waits.
 
@@ -14,7 +15,7 @@ const Combat := preload("res://src/sim/combat.gd")
 const AGE_UP := -2   # buildings.research: researching this means ageing up
 
 
-static func load_tech(resources: Array) -> Dictionary:
+static func load_tech(resources: Array, btypes: Array) -> Dictionary:
 	var d = JSON.parse_string(FileAccess.get_file_as_string("res://data/tech.json"))
 	assert(d != null, "Bad or missing data/tech.json")
 	var ages := []
@@ -26,6 +27,20 @@ static func load_tech(resources: Array) -> Dictionary:
 		research.append({"id": r.id, "name": r.name, "desc": r.get("desc", ""), "cost": Economy.cost_vector(resources, r.cost),
 			"ticks": int(r.time) * 20, "building": r.building, "age": int(r.age), "effects": r.effects.duplicate(true),
 			"only": r.get("only", []).duplicate()})
+	# Line upgrades: one per trained line (not workers) per later age, where the line trains.
+	var ups: Dictionary = d.get("line_upgrades", {})
+	for bt in btypes:
+		for slot in bt.trains:
+			if slot == "worker":
+				continue
+			for age in [2, 3]:
+				var up: Dictionary = ups.get(str(age), {})
+				if up.is_empty():
+					continue
+				research.append({"id": "line.%s.%d" % [slot, age], "name": "%s upgrade" % String(slot).capitalize(),
+					"desc": "This line's age %d kit for every one of them, and the ones you train." % age,
+					"cost": Economy.cost_vector(resources, up.cost), "ticks": int(up.time) * 20, "building": bt.id,
+					"age": age, "effects": [], "only": [], "line": slot, "line_age": age})
 	return {"ages": ages, "research": research}
 
 
@@ -67,6 +82,8 @@ static func why_not(w, player: int, b: int, id: String) -> String:
 		item = next_age(w, player)
 		if item.is_empty():
 			return "already at the last age"
+		if item.building != bt:
+			return "not here"   # first: a missing requirement made every building offer the age-up
 		for k in bs.count():
 			if bs.owner[k] == player and bs.research[k] == AGE_UP:
 				return "already ageing up"
@@ -78,8 +95,12 @@ static func why_not(w, player: int, b: int, id: String) -> String:
 		if r < 0:
 			return "unknown research"
 		item = w.tech.research[r]
+		if item.building != bt:
+			return "not here"
 		if w.researched[player][r] == 1:
 			return "already researched"
+		if item.has("line") and not _line_has(w, player, item.line, item.line_age):
+			return "nothing to upgrade"   # the line has no step at that age (it starts there, or later)
 		if w.ages[player] < item.age:
 			return "needs a later age"
 		# The tech-tree layer (D-070): some research belongs to some creatures or cultures,
@@ -96,6 +117,18 @@ static func why_not(w, player: int, b: int, id: String) -> String:
 	if not w.can_afford(player, item.cost):
 		return "can't afford it"
 	return ""
+
+
+## Does this player's line have a step after its first at that age?
+static func _line_has(w, player: int, slot: String, age: int) -> bool:
+	var k: int = w.type_of(player, slot)
+	if k < 0:
+		return false
+	var line: Array = w.types[k].line
+	for l in line.size():
+		if l > 0 and int(line[l].age) == age:
+			return true
+	return false
 
 
 static func has_building(w, player: int, id: String) -> bool:
@@ -163,6 +196,11 @@ static func refresh_gather(w, player: int) -> void:
 	w.gather_ticks[player] = out
 
 
+static func _upgraded(w, player: int, slot: String, age: int) -> bool:
+	var r := research_index(w, "line.%s.%d" % [slot, age])
+	return r >= 0 and w.researched[player][r] == 1
+
+
 ## Bring every one of a player's unit types up to date: the line step for its age, then
 ## every research it has. Its units follow (health keeps its share of the maximum).
 static func retype(w, player: int) -> void:
@@ -172,7 +210,7 @@ static func retype(w, player: int) -> void:
 			continue
 		var step: Dictionary = t.line[0]
 		for l in t.line:
-			if l.age <= w.ages[player]:
+			if l.age <= w.ages[player] and (l.age == t.line[0].age or t.worker or _upgraded(w, player, t.slot, l.age)):
 				step = l
 		var old_hp: int = t.hp
 		var e: Dictionary = step.eval.duplicate(true)

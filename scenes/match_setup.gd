@@ -12,6 +12,7 @@ const Generator := preload("res://src/race_generator.gd")
 const ArtKit := preload("res://src/view/art/art_kit.gd")
 const UnitView := preload("res://src/unit_view.gd")
 const Icons := preload("res://src/view/art/icons.gd")
+const Audio := preload("res://src/view/audio.gd")
 
 const PRESETS := ["angry swamp frogs with reed spears", "sewer rats with cheese hammers", "centaur romans",
 	"greek hoplites", "spooky beetle knights", "steppe horse archers", "forest spiders"]
@@ -67,6 +68,9 @@ func _ready() -> void:
 	setup = _setup()
 	setup.visible = false
 	add_child(setup)
+	var audio := Audio.of(get_tree())
+	audio.ambience(false)
+	audio.music("lobby")
 
 
 func _process(_delta: float) -> void:
@@ -488,6 +492,7 @@ func _button(text: String, size: int, primary: bool) -> Button:
 	b.add_theme_stylebox_override("pressed", _box(fill.darkened(0.2), GOLD, 2))
 	b.add_theme_color_override("font_color", GOLD.lightened(0.3) if primary else TEXT)
 	b.add_theme_color_override("font_hover_color", Color.WHITE)
+	b.pressed.connect(func(): Audio.of(get_tree()).play("ui_click"))
 	return b
 
 

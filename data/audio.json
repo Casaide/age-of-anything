@@ -1,0 +1,48 @@
+{
+  "_doc": "The game's sounds: every name here has assets/audio/sfx/<name>_<take>.wav takes (made by tools/audio/render.py, listed in tools/audio/sfx.py); gap_ms is the least time between two plays of one sound; voices is how many may sound at once. Creature voices are assets/audio/voice/<voice>_<kind>_<take>.wav, with <voice> from creatures.json. Music stems are assets/audio/music/theme_<stem>.ogg, one loop each, mixed by age (dB per stem; missing = silent).",
+  "buses": {"Music": -8.0, "Sfx": -4.0, "Voice": -4.0, "Ui": -8.0, "Ambience": -14.0},
+  "sounds": {
+    "hit_blade": {"takes": 4, "bus": "Sfx", "gap_ms": 60, "voices": 3},
+    "hit_blunt": {"takes": 4, "bus": "Sfx", "gap_ms": 60, "voices": 3},
+    "hit_pierce": {"takes": 4, "bus": "Sfx", "gap_ms": 60, "voices": 3},
+    "arrow_land": {"takes": 3, "bus": "Sfx", "gap_ms": 50, "voices": 3},
+    "shoot_arrow": {"takes": 3, "bus": "Sfx", "gap_ms": 70, "voices": 3},
+    "shoot_bolt": {"takes": 2, "bus": "Sfx", "gap_ms": 70, "voices": 2},
+    "shoot_javelin": {"takes": 2, "bus": "Sfx", "gap_ms": 70, "voices": 2},
+    "shoot_stone": {"takes": 2, "bus": "Sfx", "gap_ms": 70, "voices": 2},
+    "shoot_dart": {"takes": 2, "bus": "Sfx", "gap_ms": 70, "voices": 2},
+    "shoot_ball": {"takes": 2, "bus": "Sfx", "gap_ms": 90, "voices": 2},
+    "fall": {"takes": 3, "bus": "Sfx", "gap_ms": 80, "voices": 2},
+    "building_fall": {"takes": 2, "bus": "Sfx", "gap_ms": 400, "voices": 2},
+    "chop": {"takes": 4, "bus": "Sfx", "gap_ms": 90, "voices": 2},
+    "mine": {"takes": 4, "bus": "Sfx", "gap_ms": 90, "voices": 2},
+    "build": {"takes": 4, "bus": "Sfx", "gap_ms": 90, "voices": 2},
+    "forage": {"takes": 4, "bus": "Sfx", "gap_ms": 120, "voices": 2},
+    "farm_done": {"takes": 2, "bus": "Sfx", "gap_ms": 500, "voices": 1},
+    "ui_click": {"takes": 3, "bus": "Ui", "gap_ms": 30, "voices": 2},
+    "ui_tip": {"takes": 1, "bus": "Ui", "gap_ms": 300, "voices": 1},
+    "ui_nope": {"takes": 1, "bus": "Ui", "gap_ms": 300, "voices": 1},
+    "trained": {"takes": 1, "bus": "Ui", "gap_ms": 400, "voices": 1},
+    "built": {"takes": 1, "bus": "Ui", "gap_ms": 400, "voices": 1},
+    "research": {"takes": 1, "bus": "Ui", "gap_ms": 400, "voices": 1},
+    "age": {"takes": 1, "bus": "Ui", "gap_ms": 1000, "voices": 1},
+    "won": {"takes": 1, "bus": "Ui", "gap_ms": 1000, "voices": 1},
+    "lost": {"takes": 1, "bus": "Ui", "gap_ms": 1000, "voices": 1},
+    "alarm": {"takes": 1, "bus": "Ui", "gap_ms": 1000, "voices": 1},
+    "meadow": {"takes": 1, "bus": "Ambience", "gap_ms": 0, "voices": 1}
+  },
+  "voices": {"kinds": {"select": 2, "ack": 3, "die": 2}, "gap_ms": 400, "die_gap_ms": 700},
+  "music": {
+    "stems": ["pluck", "drums", "flute", "drone", "horns", "battle"],
+    "fade_s": 2.5,
+    "mixes": {
+      "lobby": {"pluck": 0.0, "drums": -7.0},
+      "age1": {"pluck": 0.0, "drums": -3.0},
+      "age2": {"pluck": 0.0, "drums": -2.0, "flute": -3.0, "drone": -5.0},
+      "age3": {"pluck": 0.0, "drums": -1.0, "flute": -2.0, "drone": -4.0, "horns": -4.0},
+      "age4": {"pluck": 0.0, "drums": 0.0, "flute": -1.0, "drone": -3.0, "horns": -2.0},
+      "off": {}
+    },
+    "battle_db": -2.0
+  }
+}
