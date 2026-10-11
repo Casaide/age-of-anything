@@ -925,6 +925,10 @@ func _play_events() -> void:
 			var to := _event_target_pos(e.to)
 			if to != Vector2.INF:
 				_maybe_alert(e, to)
+			var tower: BuildingArt = bviews.get(e.by)
+			if tower != null and to != Vector2.INF:
+				_tower_shot(e, tower, to)   # a watchtower looses: shooters aren't always units
+				continue
 			if a == null or to == Vector2.INF:
 				continue
 			a.face_vec(to - a.position)
@@ -993,6 +997,19 @@ func _play_events() -> void:
 
 
 ## Where a shot or blow lands on a unit (its body) or a building (its middle).
+## A watchtower's shot: an arrow from near its top, the target flashing when it lands.
+func _tower_shot(e: Dictionary, tower: BuildingArt, to: Vector2) -> void:
+	var lands := fx.shoot(tower.loose_at(), to, "arrow")
+	var target: Node2D = views.get(e.to)
+	if target != null:
+		fx.flash(target, lands)
+	if _on_screen(to) and tower.visible:
+		audio.play("shoot_arrow", -4.0)
+		audio.play_in("arrow_land", lands, -8.0)
+		if _owner_of(e.by) == active or _owner_of(e.to) == active:
+			battle_until = world.tick / float(World.TICK_HZ) + 8.0
+
+
 func _event_target_pos(id: int) -> Vector2:
 	var v: Node2D = views.get(id)
 	if v != null:
