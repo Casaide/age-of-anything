@@ -62,6 +62,10 @@ func arm_pose(sh: Vector3, elbow: Vector3, hand: Vector3, head: Vector3) -> Arra
 			return [sh + Vector3(2.0, -4.5, 1.8), sh + Vector3(3.5, -2.0, 1.4)]
 		"aim":
 			return [sh + Vector3(3.0, -3.0, 1.4), sh + Vector3(7.5, -1.0, 0.6)]
+		"reach":   # work poses (animation concepts, 2026-10-12): the hand out and down to the work...
+			return [sh + Vector3(3.5, -3.0, 1.3), sh + Vector3(6.5, -6.5, 1.0)]
+		"raise":   # ...and wound up high behind the shoulder, the tool about to come down
+			return [sh + Vector3(-1.0, 3.5, 1.6), sh + Vector3(-2.5, 8.0, 1.1)]
 	return [elbow, hand]
 
 
