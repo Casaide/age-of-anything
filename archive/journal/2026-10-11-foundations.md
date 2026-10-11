@@ -257,3 +257,17 @@ torso, fitted a little larger than the body (torso_fit) and tilted with its lean
 with the body itself rendered as a flat green key and cut out, so whatever the body hides stays
 hidden in every facing. Also: the sheep "look really bad"; they're one oval of curly fleece with
 a black face now, bigger.
+
+### The Fable review, and the first fixes
+The milestone's exit check, a deep UI/UX/art review by a Fable agent (docs/reviews/m11/fable-review.md),
+said "not yet": art and lobby pass, but a new player gets no warning of a raid, can't tell build
+buttons apart, has no attack-move button or control groups, and debug keys (restart, reveal fog,
+swap map) were live in a real match. First fixes: an under-attack alert (a horn, a minimap ping,
+"Under attack!" and Space to look), debug keys only outside AI matches or with F1, control
+groups (Ctrl+number, number, double tap to look), attack-move (R) and stop (X) buttons for
+soldiers, an idle-worker button (".") in the top bar, a bigger framed minimap with readable fog,
+no "(P1)" in names, an age-1 name in data (Mud Age), thicker selection marks, a pick cursor for
+mining, surrender asks twice, the result is the end menu's title, Enter in the lobby rerolls,
+"hoplite" in the lexicon, market awnings not in team colours. Found on the way: the building
+hotkey catch-all sat before M, R and G in the key match, so those had been dead.
+Dominic kept WASD (he asked for it faster), so attack-move is R and stop X, not A and S.

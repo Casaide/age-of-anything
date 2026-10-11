@@ -75,6 +75,14 @@ var built_count := -1       # finished buildings when the paths were last planne
 var palette: ColorRect      # optional whole-frame palette pass (P)
 var attack_move := false    # the order being given is an attack-move
 var queueing := false       # the order being given is shift-queued
+var arming_attack := false  # R was pressed: the next left click attack-moves there
+var groups := {}            # control group number -> [unit ids]
+var last_group := -1
+var last_group_at := 0
+var idle_cursor := -1
+var alert_at := Vector2.INF  # where we were last attacked (canvas), for Space
+var alert_next := 0.0        # seconds of match time before the next alarm may sound
+var alert_label: Label
 var fx: CombatFx            # projectiles, sparks, deaths (from the sim's events)
 var marks: Node2D           # under units: selection rings, move lines, flow arrows
 var layer: Node2D           # units, buildings and resource props, y-sorted
@@ -198,8 +206,8 @@ func _ready() -> void:
 	minimap.anchor_right = 1.0
 	minimap.anchor_top = 1.0
 	minimap.anchor_bottom = 1.0
-	minimap.offset_left = -Minimap.SIZE - 24
-	minimap.offset_top = -Minimap.SIZE * 0.5 - 24
+	minimap.offset_left = -Minimap.SIZE - 36   # room for its frame
+	minimap.offset_top = -Minimap.SIZE * 0.5 - 36
 	ui.add_child(minimap)
 	cursors = Cursors.new(DisplayServer.screen_get_scale())
 
@@ -419,6 +427,13 @@ func _unhandled_input(event: InputEvent) -> void:
 	if baking or world == null:
 		return
 	if event is InputEventMouseButton and event.button_index == MOUSE_BUTTON_LEFT:
+		if arming_attack:   # R then click: attack-move there
+			if event.pressed:
+				attack_move = true
+				smart_order(get_global_mouse_position())
+				attack_move = false
+				arming_attack = false
+			return
 		if placing == "wall":   # walls are dragged: press at one end, release at the other
 			if event.pressed:
 				wall_from = _ghost_cell(get_global_mouse_position())
@@ -455,64 +470,182 @@ func _unhandled_input(event: InputEvent) -> void:
 	elif event is InputEventMouseMotion and press_screen != Vector2.INF:
 		boxing = boxing or event.position.distance_to(press_screen) > DRAG_START_PX
 	elif event is InputEventKey and event.pressed and not event.echo:
-		match event.keycode:
-			KEY_SPACE:
+		if not _play_key(event) and (not vs_ai or show_debug):
+			_debug_key(event)
+
+
+## The keys a player uses. True when the key was one of them.
+func _play_key(event: InputEventKey) -> bool:
+	var k := event.keycode
+	if k >= KEY_1 and k <= KEY_9:
+		_control_group(k - KEY_0, event.ctrl_pressed or event.meta_pressed)
+		return true
+	match k:
+		KEY_ESCAPE:
+			if arming_attack or placing != "":
+				arming_attack = false
+				placing = ""
+			elif vs_ai:
+				_toggle_pause_menu()
+			return true
+		KEY_SPACE:
+			if vs_ai:
+				_jump_to_alert()
+			else:
 				clock.paused = not clock.paused
-			KEY_1, KEY_2:
-				select_army(event.keycode - KEY_1, event.shift_pressed)
-			KEY_TAB:
-				if vs_ai:
-					return
+			return true
+		KEY_Q:
+			train_worker()
+			return true
+		KEY_U:
+			if selected_building != 0:
+				world.issue(active, Commands.AGE_UP, {"building": selected_building})
+			return true
+		KEY_PERIOD:
+			_next_idle_worker()
+			return true
+		KEY_F1:
+			show_debug = not show_debug
+			return true
+	if _selected_workers().is_empty() and not _selected_by_owner()[active].is_empty():
+		if k == KEY_R:   # soldiers: attack-move (then click where)
+			arming_attack = true
+			return true
+		if k == KEY_X:
+			stop_selected()
+			return true
+	if not _selected_workers().is_empty():
+		var key := OS.get_keycode_string(k)
+		for bt in world.btypes:   # a building's hotkey (data/buildings.json), with workers selected
+			if bt.hotkey == key and world.ages[active] >= int(bt.age):
+				start_placing(bt.id)
+				return true
+	return false
+
+
+## Testing keys: off in a match against the AI unless F1 is on.
+func _debug_key(event: InputEventKey) -> void:
+	match event.keycode:
+		KEY_TAB:
+			if not vs_ai:
 				active = 1 - active
 				_clear_selection()
-			KEY_Q:
-				train_worker()
-			KEY_U:
-				if selected_building != 0:
-					world.issue(active, Commands.AGE_UP, {"building": selected_building})
-			KEY_ESCAPE:
-				if placing != "":
-					placing = ""
-				elif vs_ai:
-					_toggle_pause_menu()
-			KEY_BRACKETRIGHT:
-				clock.speed = minf(clock.speed * 2.0, 16.0)
-			KEY_BRACKETLEFT:
-				clock.speed = maxf(clock.speed / 2.0, 0.25)
-			KEY_F1:
-				show_debug = not show_debug
-			KEY_F3:
-				show_flow = not show_flow
-			KEY_P:
-				palette.visible = not palette.visible
-			KEY_F5:
-				Replay.save(Replay.record(world), REPLAY_PATH)
-				print("Saved replay: ", ProjectSettings.globalize_path(REPLAY_PATH))
-			KEY_F6:
-				_set_autoplay(not autoplay)
-			KEY_V:
-				reveal = not reveal
-			KEY_F10:
-				if world.winner < 0:
-					world.issue(active, Commands.SURRENDER, {})
-			KEY_F7:
-				army = not army
-				start_live(world.races.map(func(r): return r.prompt))
-			KEY_F9:
-				if FileAccess.file_exists(REPLAY_PATH):
-					start_replay(Replay.load_file(REPLAY_PATH))
-			_:
-				var key := OS.get_keycode_string(event.keycode)
-				for bt in world.btypes:   # a building's hotkey (data/buildings.json), with workers selected
-					if bt.hotkey == key and world.ages[active] >= int(bt.age):
-						start_placing(bt.id)
-			KEY_M:
-				map_id = MAP_IDS[(MAP_IDS.find(map_id) + 1) % MAP_IDS.size()]
-				start_live(world.races.map(func(r): return r.prompt))
-			KEY_R:
-				start_live(world.races.map(func(r): return r.prompt))
-			KEY_G:
-				regen_army(1 if event.ctrl_pressed else 0, event.shift_pressed or event.ctrl_pressed)
+		KEY_BRACKETRIGHT:
+			clock.speed = minf(clock.speed * 2.0, 16.0)
+		KEY_BRACKETLEFT:
+			clock.speed = maxf(clock.speed / 2.0, 0.25)
+		KEY_F3:
+			show_flow = not show_flow
+		KEY_P:
+			palette.visible = not palette.visible
+		KEY_F5:
+			Replay.save(Replay.record(world), REPLAY_PATH)
+			print("Saved replay: ", ProjectSettings.globalize_path(REPLAY_PATH))
+		KEY_F6:
+			_set_autoplay(not autoplay)
+		KEY_V:
+			reveal = not reveal
+		KEY_F10:
+			if world.winner < 0:
+				world.issue(active, Commands.SURRENDER, {})
+		KEY_F7:
+			army = not army
+			start_live(world.races.map(func(r): return r.prompt))
+		KEY_F9:
+			if FileAccess.file_exists(REPLAY_PATH):
+				start_replay(Replay.load_file(REPLAY_PATH))
+		KEY_M:
+			map_id = MAP_IDS[(MAP_IDS.find(map_id) + 1) % MAP_IDS.size()]
+			start_live(world.races.map(func(r): return r.prompt))
+		KEY_R:
+			start_live(world.races.map(func(r): return r.prompt))
+		KEY_G:
+			regen_army(1 if event.ctrl_pressed else 0, event.shift_pressed or event.ctrl_pressed)
+
+
+## Under attack: the first enemy blow on one of ours out of view sounds a horn, pings the
+## minimap and shows "Under attack!" at the top; Space takes the camera there. At most
+## one alarm every 15 seconds.
+func _maybe_alert(e: Dictionary, to: Vector2) -> void:
+	var ti := world.units.index_of(e.to)
+	var tb := world.buildings.index_of(e.to)
+	var owner: int = world.units.owner[ti] if ti >= 0 else (world.buildings.owner[tb] if tb >= 0 else -1)
+	var by := world.units.index_of(e.by)
+	if owner != active or (by >= 0 and world.units.owner[by] == world.gaia):
+		return
+	alert_at = to
+	var now := world.tick / float(World.TICK_HZ)
+	if now < alert_next or _on_screen(to):
+		return
+	alert_next = now + 15.0
+	sfx.play("alarm")
+	var m := Iso.to_milli(to)
+	minimap.ping(Vector2(m.x / 1000.0, m.y / 1000.0))
+	if alert_label == null:
+		alert_label = _label(26, Vector2.ZERO)
+		alert_label.add_theme_color_override("font_color", Color("#ff8a70"))
+		alert_label.set_anchors_preset(Control.PRESET_CENTER_TOP)
+		alert_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+		alert_label.grow_horizontal = Control.GROW_DIRECTION_BOTH
+		alert_label.position.y = 56
+		banner.get_parent().add_child(alert_label)
+	alert_label.text = "Under attack!  (Space to look)"
+	alert_label.visible = true
+	alert_label.set_meta("until", Time.get_ticks_msec() + 3000)
+
+
+func _jump_to_alert() -> void:
+	if alert_at != Vector2.INF:
+		camera.look_at_point(alert_at)
+
+
+## Ctrl+number keeps the selected units as a group; the number brings them back, and
+## pressed twice quickly, the camera goes to them.
+func _control_group(n: int, store: bool) -> void:
+	if store:
+		groups[n] = _selected_by_owner()[active].duplicate()
+		return
+	var ids: Array = groups.get(n, []).filter(func(id): return world.units.index_of(id) >= 0)
+	if ids.is_empty():
+		return
+	_clear_selection()
+	for id in ids:
+		selected[id] = true
+	var now := Time.get_ticks_msec()
+	if last_group == n and now - last_group_at < 400:
+		if views.has(ids[0]):
+			camera.look_at_point(views[ids[0]].position)
+	last_group = n
+	last_group_at = now
+
+
+func stop_selected() -> void:
+	var mine: Array = _selected_by_owner()[active]
+	if not mine.is_empty():
+		world.issue(active, Commands.STOP, {"ids": mine})
+		sfx.play("ack", -6.0)
+
+
+## "." cycles through idle workers: selects the next one and centres on it.
+func _next_idle_worker() -> void:
+	var idle := _idle_workers()
+	if idle.is_empty():
+		return
+	idle_cursor = (idle_cursor + 1) % idle.size()
+	var id: int = idle[idle_cursor]
+	_clear_selection()
+	selected[id] = true
+	if views.has(id):
+		camera.look_at_point(views[id].position)
+
+
+func _idle_workers() -> Array:
+	var out := []
+	var u := world.units
+	for i in u.count():
+		if u.owner[i] == active and world.types[u.kind[i]].worker and u.task[i] == Economy.NONE and u.moving[i] == 0 and u.orders[i].is_empty():
+			out.append(u.id[i])
+	return out
 
 
 ## Test hotkey: new army for one side and a fresh match. A new random reroll of the
@@ -719,6 +852,8 @@ func _play_events() -> void:
 		if e.type == "hit":
 			var a: Node2D = views.get(e.by)
 			var to := _event_target_pos(e.to)
+			if to != Vector2.INF:
+				_maybe_alert(e, to)
 			if a == null or to == Vector2.INF:
 				continue
 			a.face_vec(to - a.position)
@@ -810,8 +945,23 @@ func _show_pause_menu(on: bool) -> void:
 	pause_menu.visible = on
 	pause_menu.get_node("box/resume").visible = not over
 	pause_menu.get_node("box/surrender").visible = not over
-	pause_menu.get_node("box/title").text = "Match over" if over else "Paused"
+	var result := ""
+	if over:
+		result = "Victory" if world.teams[active] == world.winner else "Defeat"
+		banner.visible = false   # the result is the menu's title (it collided with the menu)
+	pause_menu.get_node("box/title").text = ("%s: %s win" % [result, world.races[_first_of_team(world.winner)].name]) if over else "Paused"
 	clock.paused = on and not over
+
+
+## Surrender asks once more: the first click turns the button into "Click again to give up".
+func _confirm_surrender() -> void:
+	var b: Button = pause_menu.get_node("box/surrender")
+	if b.text == "Surrender":
+		b.text = "Click again to give up"
+		return
+	b.text = "Surrender"
+	world.issue(active, Commands.SURRENDER, {})
+	_show_pause_menu(false)
 
 
 func _make_pause_menu() -> Control:
@@ -831,7 +981,7 @@ func _make_pause_menu() -> Control:
 	title.add_theme_color_override("font_color", Color("#f2c94c"))
 	box.add_child(title)
 	for item in [["resume", "Resume", func(): _show_pause_menu(false)],
-			["surrender", "Surrender", func(): world.issue(active, Commands.SURRENDER, {}); _show_pause_menu(false)],
+			["surrender", "Surrender", func(): _confirm_surrender()],
 			["menu", "Back to the menu", func(): get_tree().paused = false; get_tree().change_scene_to_file("res://scenes/match_setup.tscn")]]:
 		var b := Button.new()
 		b.name = item[0]
@@ -933,6 +1083,8 @@ func _process(delta: float) -> void:
 	marks.queue_redraw()
 	overlay.queue_redraw()
 	_update_top_bar()
+	if alert_label != null and alert_label.visible and Time.get_ticks_msec() > int(alert_label.get_meta("until", 0)):
+		alert_label.visible = false
 	hud.visible = show_debug
 	bar.visible = show_debug and not vs_ai   # the debug bar shows the other side's stock
 	if show_debug:
@@ -1377,14 +1529,17 @@ func _cost_text(cost: PackedInt32Array) -> String:
 func _update_top_bar() -> void:
 	if top_bar.get_child_count() == 0:
 		top_bar.setup(world.resources)
+		top_bar.idle_pressed.connect(_next_idle_worker)
 		show_debug = not vs_ai
 	top_bar.position = Vector2(0, 0) if not show_debug or vs_ai else Vector2(0, 150)
 	var stock := {}
 	for r in world.resources.size():
 		stock[world.resources[r]] = world.stock[r][active]
-	var age: Dictionary = world.tech.ages.filter(func(a): return int(a.age) == world.ages[active]).front() if world.ages[active] > 1 else {}
+	var ages: Array = world.tech.ages.filter(func(a): return int(a.age) == world.ages[active])
+	var age: Dictionary = ages[0] if not ages.is_empty() else {}
+	top_bar.show_idle(_idle_workers().size())
 	top_bar.show_state(stock, world.pop[active], world.pop_cap[active],
-		"%s, %s" % [world.races[active].name, age.get("name", "the First Age")], world.tick / World.TICK_HZ)
+		"%s, %s" % [world.races[active].name, age.get("name", "Age %d" % world.ages[active])], world.tick / World.TICK_HZ)
 
 
 func _bar_text() -> String:
@@ -1434,7 +1589,7 @@ func _update_panel() -> void:
 		var owner := bs.owner[b]
 		var t: Dictionary = world.btypes[bs.kind[b]]
 		var mine := owner == active
-		var c := {"title": "%s (P%d)" % [t.name, owner + 1], "team": Color(lib.palettes.teams[owner]), "hp": [bs.hp[b], t.hp],
+		var c := {"title": t.name if owner == active else "%s %s" % [world.races[owner].name, t.name], "team": Color(lib.palettes.teams[owner]), "hp": [bs.hp[b], t.hp],
 			"portrait": kit.building_icon(_arch(owner), t.id), "buttons": [], "queue": null, "info": ""}
 		if bs.done[b] == 0:
 			c.info = "Being built: %d%%" % (100 * bs.progress[b] / t.build_ticks)
@@ -1495,6 +1650,11 @@ func _update_panel() -> void:
 			var kinds := counts.keys()
 			kinds.sort()
 			c.tray = kinds.map(func(k): return {"icon": kit.icons.get("%d:%s" % [world.types[k].player, world.types[k].slot]), "count": counts[k]})
+		if _selected_workers().size() < mine.size():   # soldiers: attack-move and stop
+			c.buttons.append({"icon": Icons.texture("attack_move"), "text": "Attack-move", "key": "R", "cost": "", "enabled": true,
+				"tip": "[b]Attack-move[/b]\nThen click where: they walk there and fight whatever they meet on the way.", "action": func(): arming_attack = true})
+			c.buttons.append({"icon": Icons.texture("stop"), "text": "Stop", "key": "X", "cost": "", "enabled": true,
+				"tip": "[b]Stop[/b]\nDrop every order: they stand where they are.", "action": stop_selected})
 		if not _selected_workers().is_empty():
 			for id in build_menu:
 				var t: Dictionary = world.btypes[Economy.btype_of(world, id)]
@@ -1525,11 +1685,11 @@ func _update_panel() -> void:
 		var i := world.units.index_of(seen[0])
 		var et: Dictionary = world.types[world.units.kind[i]]
 		var eo := world.units.owner[i]
-		panel.show_content({"title": "%s (P%d)" % [et.name, eo + 1], "team": Color(lib.palettes.teams[eo]), "buttons": [], "queue": null,
+		panel.show_content({"title": et.name if eo == world.gaia else "%s, %s" % [et.name, world.races[eo].name], "team": Color(lib.palettes.teams[eo]) if eo != world.gaia else ArtKit.ANIMAL_TEAM, "buttons": [], "queue": null,
 			"portrait": kit.icons.get("%d:%s" % [et.player, et.slot]), "hp": [world.units.hp[i], et.hp],
 			"info": UnitCard.text(et, _foe_types(eo))})
 		return
-	panel.show_content({"title": "%s (P%d)" % [world.races[active].name, active + 1], "team": team, "portrait": null,
+	panel.show_content({"title": world.races[active].name, "team": team, "portrait": null,
 		"info": "Select units or a building." if vs_ai else "Select units or a building.  Tab switches side.  F6: let the bots play.", "buttons": [], "queue": null})
 
 
@@ -1541,6 +1701,9 @@ func _arch(player: int) -> String:
 func _update_cursor() -> void:
 	if baking or world == null or placing != "" or get_viewport().gui_get_hovered_control() != null:
 		cursors.use("pointer")
+		return
+	if arming_attack:
+		cursors.use("attack")
 		return
 	var pos := get_global_mouse_position()
 	var b := world.buildings.index_of(selected_building)
@@ -1561,7 +1724,7 @@ func _update_cursor() -> void:
 	if enemy:
 		cursors.use("attack")
 	elif workers and map.resource_at(cell) != "":
-		cursors.use({"food": "forage", "wood": "chop"}.get(map.resource_at(cell), "chop"))
+		cursors.use({"food": "forage", "wood": "chop", "stone": "mine", "gold": "mine"}.get(map.resource_at(cell), "chop"))
 	elif workers and bid != 0 and _is_foundation_of(bid, active):
 		cursors.use("build")
 	else:
@@ -1582,7 +1745,8 @@ func _draw_marks() -> void:
 		if i < 0 or view == null:
 			continue
 		marks.draw_set_transform(view.position, 0.0, Vector2(1.0, 0.5))
-		marks.draw_arc(Vector2.ZERO, u.radius[i] * Iso.RADIUS_PX, 0.0, TAU, 24, RING, 1.5 / camera.zoom.x)
+		marks.draw_arc(Vector2.ZERO, u.radius[i] * Iso.RADIUS_PX, 0.0, TAU, 24, Color(0, 0, 0, 0.6), 3.5 / camera.zoom.x)   # a dark edge...
+		marks.draw_arc(Vector2.ZERO, u.radius[i] * Iso.RADIUS_PX, 0.0, TAU, 24, RING, 2.0 / camera.zoom.x)   # ...under a bright ring (Fable: 1.5 px was too thin)
 		marks.draw_set_transform(Vector2.ZERO)
 		if u.moving[i] == 1:
 			marks.draw_line(view.position, Iso.to_screen(u.wx[i], u.wy[i]), Color(RING, 0.35), 1.0 / camera.zoom.x)
@@ -1641,6 +1805,7 @@ func _draw_overlay() -> void:
 		var y0 := bs.cy[b] * 1000
 		var pts := PackedVector2Array([Iso.to_screen(x0, y0), Iso.to_screen(x0 + s, y0), Iso.to_screen(x0 + s, y0 + s),
 			Iso.to_screen(x0, y0 + s), Iso.to_screen(x0, y0)])
+		overlay.draw_polyline(pts, Color(0, 0, 0, 0.6), 4.0 / camera.zoom.x)
 		overlay.draw_polyline(pts, RING, 2.0 / camera.zoom.x)
 		if bs.rally_x[b] >= 0:
 			var rp := Iso.to_screen(bs.rally_x[b], bs.rally_y[b])
