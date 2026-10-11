@@ -439,6 +439,8 @@ func _unhandled_input(event: InputEvent) -> void:
 			KEY_1, KEY_2:
 				select_army(event.keycode - KEY_1, event.shift_pressed)
 			KEY_TAB:
+				if vs_ai:
+					return
 				active = 1 - active
 				_clear_selection()
 			KEY_Q:
@@ -530,14 +532,14 @@ func select_at(pos: Vector2, add := false) -> void:
 			selected.erase(best)
 		else:
 			selected[best] = true
-		active = world.units.owner[world.units.index_of(best)]
+		_take_side(world.units.owner[world.units.index_of(best)])
 		return
 	for probe in [pos, pos + Vector2(0, 14)]:   # clicking a wall or roof hits the footprint below
 		var bid: int = map.occupied[_cell_at(probe)]
 		if bid != 0:
 			selected.clear()
 			selected_building = bid
-			active = world.buildings.owner[world.buildings.index_of(bid)]
+			_take_side(world.buildings.owner[world.buildings.index_of(bid)])
 			return
 
 
@@ -547,6 +549,8 @@ func select_box(a: Vector2, b: Vector2, add := false) -> void:
 		_clear_selection()
 	var r := Rect2(a, Vector2.ZERO).expand(b)
 	for id in views:
+		if vs_ai and world.units.owner[world.units.index_of(id)] != active:
+			continue   # against the AI a box takes only your own units
 		if r.has_point(_body(views[id])):
 			selected[id] = true
 
@@ -569,6 +573,8 @@ func select_same_type_on_screen(pos: Vector2, add := false) -> void:
 
 
 func select_army(player: int, add := false) -> void:
+	if vs_ai and player != active:
+		return
 	if not add:
 		_clear_selection()
 	active = player
@@ -584,9 +590,16 @@ func _selected_by_owner() -> Array:
 	var out := [[], []]
 	for id in ids:
 		var i := world.units.index_of(id)
-		if i >= 0:
+		if i >= 0 and (not vs_ai or world.units.owner[i] == active):   # the AI's units can be inspected, not ordered
 			out[world.units.owner[i]].append(id)
 	return out
+
+
+## Selecting something makes its side the one you command (and see), except against the AI:
+## there you stay yourself and can only look at the other side's units and buildings.
+func _take_side(owner: int) -> void:
+	if not vs_ai:
+		active = owner
 
 
 func _selected_workers() -> Array:
@@ -622,7 +635,7 @@ func smart_order(pos: Vector2) -> void:
 			world.issue(p, Commands.ATTACK_MOVE, {"ids": ids, "x": m.x, "y": m.y, "queue": q})
 		elif foe != 0 and world.is_enemy(world.units.owner[world.units.index_of(foe)], p):
 			world.issue(p, Commands.ATTACK, {"ids": ids, "target": foe, "queue": q})
-		elif bid != 0 and world.is_enemy(world.buildings.owner[world.buildings.index_of(bid)], p):
+		elif bid != 0 and world.is_enemy(world.buildings.owner[world.buildings.index_of(bid)], p) and bviews.has(bid) and bviews[bid].visible:
 			world.issue(p, Commands.ATTACK, {"ids": ids, "target": bid, "queue": q})
 		elif map.resource_at(cell) != "":
 			world.issue(p, Commands.GATHER, {"ids": ids, "cell": cell, "queue": q})
@@ -1163,6 +1176,15 @@ func _update_panel() -> void:
 			c.info = "Placing: left-click to build, shift keeps placing, right-click/Esc cancels"
 		panel.show_content(c)
 		return
+	var seen := selected.keys().filter(func(id): return world.units.index_of(id) >= 0)
+	if not seen.is_empty():   # the other side's unit, inspected (against the AI): its card, no orders
+		var i := world.units.index_of(seen[0])
+		var et: Dictionary = world.types[world.units.kind[i]]
+		var eo := world.units.owner[i]
+		panel.show_content({"title": "%s (P%d)" % [et.name, eo + 1], "team": Color(lib.palettes.teams[eo]), "buttons": [], "queue": null,
+			"portrait": kit.icons.get("%d:%s" % [et.player, et.slot]), "hp": [world.units.hp[i], et.hp],
+			"info": UnitCard.text(et, _foe_types(eo))})
+		return
 	panel.show_content({"title": "%s (P%d)" % [world.races[active].name, active + 1], "team": team, "portrait": null,
 		"info": "Select units or a building.  Tab switches side.  F6: let the bots play.", "buttons": [], "queue": null})
 
@@ -1186,7 +1208,8 @@ func _update_cursor() -> void:
 		return
 	var cell := _cell_at(pos)
 	var bid: int = map.occupied[cell]
-	var enemy := bid != 0 and world.buildings.owner[world.buildings.index_of(bid)] != active
+	var enemy := bid != 0 and world.is_enemy(active, world.buildings.owner[world.buildings.index_of(bid)]) \
+		and bviews.has(bid) and bviews[bid].visible   # not over buildings you haven't found
 	var under := unit_at(pos)
 	if under != 0 and world.is_enemy(active, world.units.owner[world.units.index_of(under)]):
 		enemy = true
