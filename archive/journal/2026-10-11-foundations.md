@@ -329,3 +329,14 @@ bowl of hair), the Han age-1 and age-2 looked the same (the cap is now black wit
 the Han helmet read as a pith helmet (now a pointed lamellar bowl with neck lames behind), the
 Nile stripes were buried inside the cloth, the cowhide went grey in shade, and the sickle sword
 read as wood. Waiting on Dominic's picks.
+
+### "The Aztecs are white with stubble?" and "riders' legs missing?"
+Both fair. Skins came only from the creature, so any human culture could be any skin: families
+can now prefer skins in data (Aztec and Nile tan or dark, Han light or tan). The stubble was on
+every human: the bake's painted bands are fixed brightness steps, and the jaw's shade fell a
+whole step below the cheek, a dark band from ear to chin. Not hair, not the neck, not the cast
+shadow, not ambient occlusion (each ruled out with a test render); the face's skin now carries
+half its light itself, so its shading stays within a band. Riders had no legs at all (only
+clinging riders like spiders had them); every rider now shows its near leg down the flank.
+On the way: the centaur's horse chest rises into the man's waist, horse thighs start inside the
+body, and the human jerkin sits on the chest (from the front it bulged out of the belly).
