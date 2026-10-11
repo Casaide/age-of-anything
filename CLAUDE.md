@@ -35,8 +35,8 @@ move it to `docs/backlog.md` rather than deleting it.
   economy bot (`src/ai/eco_bot.gd`), the command panel. Exit check: Dominic watches an opening
   (F6 in the debug view). See `docs/milestones/m3-economy.md`.
 - **Built (milestone 4): combat.** Armour classes, attack-move that spreads into duels,
-  projectiles, deaths, the counter quiz (`scenes/counter_quiz.tscn`). Waiting on Dominic's quiz
-  run and the unit card. See `docs/milestones/m4-combat.md`.
+  projectiles, deaths, hit flash, the unit card, the two-part counter quiz
+  (`scenes/counter_quiz.tscn`). Waiting on Dominic's quiz run. See `docs/milestones/m4-combat.md`.
 - **Built (milestone 5): art rework.** Realistic props and buildings in six architectures (reed
   for frogs and mound for bugs come from the creature), textured units, posed gear, portraits and
   cursors. Waiting on Dominic's look sign-off. See `docs/milestones/m5-art-rework.md`.
@@ -52,7 +52,8 @@ move it to `docs/backlog.md` rather than deleting it.
 - **Art direction under research:** unit art goes concept-first; the proposal is in `docs/concepts/direction.md`. Nothing new
   gets built for units until Dominic approves a direction.
 - **Done (milestone 9): fog and juice.** Fog of war (`src/sim/fog.gd`, `src/view/fog_view.gd`),
-  minimap, synthesised placeholder sounds; bot matches run about 11 minutes.
+  minimap, synthesised placeholder sounds. Bot matches ran ~11 minutes; ~14 since workers' costs
+  vary again (D-078). Pacing is a tester metric (D-077).
 - **Prepared (milestone 10): playtest and balance.** `tests/balance.gd` (equal-cost round robin),
   balance pass 1, `docs/playtest.md`, a match log. Waiting on Dominic: testers, an export build.
 
