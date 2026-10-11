@@ -135,13 +135,14 @@ func generate(prompt: String, rules: Dictionary, reroll := 0) -> Dictionary:
 	# its slot opens, in that age's kit; then, in a second pass (so the first recipes don't
 	# depend on the later ones), the same unit upgraded for every later age.
 	var units := []
-	for slot_def in rules.roster:
+	var slots: Array = rules.roster.filter(func(sd): return sd.get("status", "") != "planned")   # planned lines: tech tree page only
+	for slot_def in slots:
 		ctx.age = int(slot_def.tier)
 		var recipe := _make_unit(slot_def, ctx)
 		var first := {"age": ctx.age, "recipe": recipe, "eval": Pricing.evaluate(recipe, lib, rules)}
 		units.append({"recipe": recipe, "eval": first.eval, "line": [first]})
 	for k in units.size():
-		var slot_def: Dictionary = rules.roster[k]
+		var slot_def: Dictionary = slots[k]
 		for age in range(int(slot_def.tier) + 1, int(rules.get("ages", 1)) + 1):
 			ctx.age = age
 			var up := _upgrade(units[k].line[-1].recipe, slot_def, ctx)

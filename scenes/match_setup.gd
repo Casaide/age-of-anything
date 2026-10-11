@@ -5,6 +5,7 @@ extends Control
 ## presets, the roster with costs and the generator's notes; a map card in the middle drawn from
 ## the map's data; and Start. The match runs in the game view with the AI on side 2, and comes
 ## back here when it ends. Styled like the in-game command panel (warm dark wood, bronze, gold).
+## Each banner's "Tech tree" button opens that race's tech tree page (scenes/tech_tree.tscn).
 ## Run: godot --path . res://scenes/match_setup.tscn
 
 const DataLib := preload("res://src/data_lib.gd")
@@ -44,6 +45,7 @@ var map_name: Label
 var map_pic: TextureRect
 var map_note: Label
 var level_pick: OptionButton
+var tree_page: Control          # the tech tree page, over everything while open
 
 
 func _ready() -> void:
@@ -227,7 +229,13 @@ func _side_panel(i: int, who: String, prompt: String) -> Control:
 	card.add_child(col)
 	var top := HBoxContainer.new()
 	var whol := _label(who.to_upper(), 14, team.lightened(0.3))
+	whol.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	whol.size_flags_vertical = Control.SIZE_SHRINK_CENTER
 	top.add_child(whol)
+	var tree_b := _button("Tech tree", 15, false)
+	tree_b.tooltip_text = "Everything this race can build, train and research, and its bonuses"
+	tree_b.pressed.connect(func(): _open_tree(i))
+	top.add_child(tree_b)
 	col.add_child(top)
 	var name := _label("", 32, TEXT)
 	col.add_child(name)
@@ -402,6 +410,36 @@ func _unit_row(text: String) -> HBoxContainer:
 	t.text = text
 	row.add_child(t)
 	return row
+
+
+## The tech tree page for a side's race: its army and every age of its lines baked first (the
+## portraits), and its culture's buildings (the lobby doesn't bake them otherwise).
+func _open_tree(i: int) -> void:
+	var s: Dictionary = sides[i]
+	if s.race.is_empty():
+		return
+	while baking:
+		await get_tree().process_frame
+	if s.dirty_at > 0.0:
+		s.dirty_at = 0.0
+		await _bake(i)
+	var arch: String = lib.architecture(s.race)
+	if not kit.buildings.has(arch + ":house"):
+		baking = true
+		s.status.text = "Raising the buildings..."
+		await kit.bake_buildings([s.race])
+		kit.rebuild_atlas()
+		baking = false
+		for k in sides.size():   # the atlas was rebuilt: every stage redraws from it
+			_muster(k)
+	if tree_page == null:
+		tree_page = load("res://scenes/tech_tree.tscn").instantiate()
+		add_child(tree_page)
+	var side := 0   # the race's place among the races baked (kit.icons keys), as in _muster
+	for k in i:
+		if not sides[k].race.is_empty():
+			side += 1
+	tree_page.open(s.race, rules, lib, kit, side, s.team)
 
 
 func _set_map(k: int) -> void:

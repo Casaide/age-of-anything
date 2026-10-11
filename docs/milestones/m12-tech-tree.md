@@ -290,7 +290,7 @@ Fixed first, as they came in; each ticked when done.
 
 ## Checklist
 - [x] Plan approved by Dominic (2026-10-11: four ages, split, lacks, Wonder in)
-- [ ] 1. Data and the tech tree page
+- [x] 1. Data and the tech tree page (2026-10-11: the tree in `data/` with `"status": "planned"`, loaders skip it, `scenes/tech_tree.tscn` from the lobby banners and in a match on F2 or the top bar's button; T stays the Watchtower's hotkey; checked in `tests/run_tests.gd`, captures with `tests/tech_tree_screenshot.gd`)
 - [ ] 2. Race bonuses
 - [ ] 3. Age 4 and simple research
 - [ ] 4. Walls, gates, towers, garrison

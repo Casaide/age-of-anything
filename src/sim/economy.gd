@@ -37,11 +37,12 @@ static func cost_vector(resources: Array, cost: Dictionary) -> PackedInt32Array:
 	return v
 
 
-## Building types from data/buildings.json, sorted by id, numbers as ints.
+## Building types from data/buildings.json, sorted by id, numbers as ints. Planned buildings
+## ("status": "planned": only on the tech tree page so far) are left out.
 static func load_btypes(resources: Array) -> Array:
 	var d = JSON.parse_string(FileAccess.get_file_as_string("res://data/buildings.json"))
 	assert(d != null, "Bad or missing data/buildings.json")
-	var ids: Array = d.buildings.keys()
+	var ids: Array = d.buildings.keys().filter(func(id): return d.buildings[id].get("status", "") != "planned")
 	ids.sort()
 	var out := []
 	for id in ids:

@@ -63,12 +63,15 @@ func prepare(races: Array, teams: Array) -> void:
 
 ## A portrait of every unit of these races, for the command panel: each unit's own
 ## UnitView (its baked parts, in its team colour) rendered in one SubViewport at two
-## screen pixels per art pixel, cropped square. Needs the atlas built.
+## screen pixels per art pixel, cropped square. Needs the atlas built. Keys: "side:slot" (the
+## line's first step) and "side:slot@age" for every step (the tech tree page shows each).
 func bake_icons(races: Array, teams: Array) -> void:
-	var list := []
+	var list := []   # [side, unit or line step, key]
 	for side in races.size():
 		for u in races[side].units:
-			list.append([side, u])
+			list.append([side, u, "%d:%s" % [side, u.recipe.slot]])
+			for l in u.get("line", []):
+				list.append([side, l, "%d:%s@%d" % [side, u.recipe.slot, int(l.age)]])
 	var cols := 6
 	var vp := SubViewport.new()
 	vp.transparent_bg = true
@@ -95,7 +98,7 @@ func bake_icons(races: Array, teams: Array) -> void:
 		var side := maxi(used.size.x, used.size.y) + 4
 		var sq := Image.create(side, side, false, Image.FORMAT_RGBA8)
 		sq.blit_rect(cell, used, Vector2i((side - used.size.x) / 2, side - used.size.y - 2))
-		icons["%d:%s" % [list[k][0], list[k][1].recipe.slot]] = ImageTexture.create_from_image(sq)
+		icons[list[k][2]] = ImageTexture.create_from_image(sq)
 	vp.queue_free()
 
 
