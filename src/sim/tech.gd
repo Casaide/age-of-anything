@@ -35,6 +35,8 @@ static func setup(w) -> void:
 		var done := PackedByteArray()
 		done.resize(w.tech.research.size())
 		w.researched.append(done)
+		w.gather_ticks.append(PackedInt32Array())
+		refresh_gather(w, p)
 
 
 ## The next age's entry for a player, or {} at the last age.
@@ -142,7 +144,23 @@ static func tick(w) -> void:
 		else:
 			w.researched[p][r] = 1
 		retype(w, p)
+		refresh_gather(w, p)
 		w.events.append({"type": "age" if r == AGE_UP else "research", "player": p, "age": w.ages[p], "id": "" if r == AGE_UP else item.id})
+
+
+## A player's gathering speed per resource: the rules' ticks per unit, cut by every
+## gathering research it has ({"gather": "wood", "pct": 15} gathers wood 15% faster).
+static func refresh_gather(w, player: int) -> void:
+	var out := PackedInt32Array()
+	for res in w.resources:
+		var pct := 0
+		for r in w.tech.research.size():
+			if w.researched[player][r] == 1:
+				for fx in w.tech.research[r].effects:
+					if fx.get("gather", "") == res:
+						pct += int(fx.pct)
+		out.append(maxi(1, int(w.econ.gather_ticks[res]) * (100 - pct) / 100))
+	w.gather_ticks[player] = out
 
 
 ## Bring every one of a player's unit types up to date: the line step for its age, then
@@ -162,7 +180,7 @@ static func retype(w, player: int) -> void:
 			if w.researched[player][r] == 0:
 				continue
 			for fx in w.tech.research[r].effects:
-				if fx.tag in e.tags:
+				if fx.has("tag") and fx.tag in e.tags:
 					e[fx.stat] = int(e[fx.stat]) + int(fx.add)
 		w.set_type(k, step.recipe, e)
 		var u = w.units

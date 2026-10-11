@@ -1,14 +1,39 @@
 {
  "_doc": "The AI opponent (src/ai/bot.gd): an economy, a build order, attack waves and counter-picks. Times in seconds; army sizes in population (large units count 2).",
  "economy": {
-  "food_pct": 60,
+  "mix": {
+   "1": {
+    "food": 60,
+    "wood": 40
+   },
+   "2": {
+    "food": 50,
+    "wood": 35,
+    "gold": 15
+   },
+   "3": {
+    "food": 45,
+    "wood": 30,
+    "gold": 20,
+    "stone": 5
+   }
+  },
   "max_workers": 30,
   "age_workers": 16
  },
  "build_order": [
   {
+   "building": "lumber_camp",
+   "workers": 9,
+   "near": "wood"
+  },
+  {
    "building": "barracks",
    "workers": 11
+  },
+  {
+   "building": "archery_range",
+   "workers": 13
   },
   {
    "building": "stable",
@@ -24,6 +49,12 @@
    "building": "stable",
    "age": 2,
    "workers": 27
+  },
+  {
+   "building": "mining_camp",
+   "age": 2,
+   "near": "gold",
+   "workers": 20
   }
  ],
  "military": {
@@ -43,5 +74,6 @@
   "repeat_every": 75,
   "repeat_min_army": 8,
   "guard": 4
- }
+ },
+ "_doc_mix": "economy.mix: per age, the share of workers on each resource (the bot sends idle and new workers to whatever is furthest below its share)"
 }

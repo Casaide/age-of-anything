@@ -34,7 +34,9 @@ func _init(p_player: int, config := {}) -> void:
 	player = p_player
 	cfg = config if not config.is_empty() else load_config()
 	eco = EcoBot.new(p_player)
-	eco.FOOD_PCT = int(cfg.economy.food_pct)
+	eco.MIX = {}
+	for age in cfg.economy.mix:
+		eco.MIX[int(age)] = cfg.economy.mix[age]
 	eco.MAX_WORKERS = int(cfg.economy.max_workers)
 	eco.AGE_WORKERS = int(cfg.economy.age_workers)
 	next_wave_tick = int(cfg.military.waves[0].at) * 20
@@ -107,7 +109,12 @@ func _build_order(w, tc: int, workers: Array) -> void:
 		var k: int = Economy.btype_of(w, id)
 		if not w.can_afford(player, w.btypes[k].cost):
 			return
-		var spot: Vector2i = eco._house_spot(w, w.buildings.cx[tc] + 1, w.buildings.cy[tc] + 1, w.btypes[k].size)
+		var at := Vector2i(w.buildings.cx[tc] + 1, w.buildings.cy[tc] + 1)
+		if step.has("near"):   # a drop-off camp goes by the nearest patch of its resource
+			var cell: int = eco._nearest_resource(w, at.x * 1000, at.y * 1000, w.resources.find(step.near) + 1)
+			if cell >= 0:
+				at = Vector2i(cell % w.map.width, cell / w.map.width)
+		var spot: Vector2i = eco._house_spot(w, at.x, at.y, w.btypes[k].size)
 		if spot.x < 0:
 			return
 		var builders := workers.slice(0, 2).map(func(i): return w.units.id[i])

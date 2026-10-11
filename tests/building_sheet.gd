@@ -34,6 +34,8 @@ func _initialize() -> void:
 			var bits: PackedStringArray = String(n).split(".")
 			var pargs: Array = Array(bits.slice(2)).map(func(x): return int(x) if x.is_valid_int() else x)
 			spec = {"body": PropModels.new().callv(bits[1], pargs)}
+		elif n.contains(":"):   # type:arch, e.g. market:stone
+			spec = models.building(n.get_slice(":", 0), n.get_slice(":", 1), team)
 		else:
 			spec = models.call(n, team)
 		if n.contains("house"):
