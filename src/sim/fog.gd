@@ -8,7 +8,7 @@ extends RefCounted
 ## ground per cell (`fog_ground`, a terrain index, and `fog_left`, what was left there) starts as
 ## the map as made and follows the truth only where the player sees now, so a farm sown in the
 ## dark stays grass to them until they look; and the enemy buildings they've seen (`fog_seen`,
-## id -> [kind, owner, cx, cy, size, done, progress, age]), kept as last seen until they see the
+## id -> [kind, owner, cx, cy, sx, done, progress, age, sy]), kept as last seen until they see the
 ## spot empty. Only cells that held a resource or ever changed (`fog_watch`) are compared.
 
 const UNSEEN := 0
@@ -58,11 +58,11 @@ static func explored(w, player: int, cx: int, cy: int) -> bool:
 	return w.fog[player][cy * w.map.width + cx] != UNSEEN
 
 
-## Does this player see any tile of the cx, cy, size square right now?
-static func sees_area(w, player: int, cx: int, cy: int, size: int) -> bool:
+## Does this player see any tile of the cx, cy, sx by sy footprint right now?
+static func sees_area(w, player: int, cx: int, cy: int, sx: int, sy: int) -> bool:
 	var g: PackedByteArray = w.fog[player]
-	for y in range(cy, cy + size):
-		for x in range(cx, cx + size):
+	for y in range(cy, cy + sy):
+		for x in range(cx, cx + sx):
 			if g[y * w.map.width + x] == VISIBLE:
 				return true
 	return false
@@ -84,8 +84,7 @@ static func _update(w) -> void:
 			if w.teams[bs.owner[b]] == w.teams[p]:
 				var t: Dictionary = w.btypes[bs.kind[b]]
 				var r: int = cfg.tower if t.get("attack", {}).size() > 0 else cfg.building
-				var half: int = bs.size[b] / 2
-				_stamp(w, g, bs.cx[b] + half, bs.cy[b] + half, r + half)
+				_stamp(w, g, bs.cx[b] + bs.sx[b] / 2, bs.cy[b] + bs.sy[b] / 2, r + maxi(bs.sx[b], bs.sy[b]) / 2)
 		w.fog[p] = g
 		_remember(w, p)
 
@@ -106,12 +105,12 @@ static func _remember(w, p: int) -> void:
 	var seen: Dictionary = w.fog_seen[p]
 	var bs = w.buildings
 	for b in bs.count():
-		if w.teams[bs.owner[b]] != w.teams[p] and sees_area(w, p, bs.cx[b], bs.cy[b], bs.size[b]):
-			seen[bs.id[b]] = PackedInt32Array([bs.kind[b], bs.owner[b], bs.cx[b], bs.cy[b], bs.size[b], bs.done[b], bs.progress[b], w.ages[bs.owner[b]]])
+		if w.teams[bs.owner[b]] != w.teams[p] and sees_area(w, p, bs.cx[b], bs.cy[b], bs.sx[b], bs.sy[b]):
+			seen[bs.id[b]] = PackedInt32Array([bs.kind[b], bs.owner[b], bs.cx[b], bs.cy[b], bs.sx[b], bs.done[b], bs.progress[b], w.ages[bs.owner[b]], bs.sy[b]])
 	var gone := []
 	for id in seen:
 		var s: PackedInt32Array = seen[id]
-		if bs.index_of(id) < 0 and sees_area(w, p, s[2], s[3], s[4]):
+		if bs.index_of(id) < 0 and sees_area(w, p, s[2], s[3], s[4], s[8]):
 			gone.append(id)
 	for id in gone:
 		seen.erase(id)
