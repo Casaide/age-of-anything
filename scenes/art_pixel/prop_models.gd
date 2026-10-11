@@ -1,7 +1,9 @@
 extends RefCounted
-## Landscape props for the pixel bake, in world units (1 = a tile): reed clumps,
-## bug bushes and lily pads, built from authored texture cards (assets/art/textures/)
-## on simple 3D bodies, like the unit parts.
+## Landscape props for the pixel bake, in world units (1 = a tile): reed beds, bug
+## bushes, rock outcrops, field stones, grass tufts and lily pads, built from authored
+## texture cards (assets/art/textures/) on simple 3D bodies, drawn realistically.
+## Seeded (a cosmetic RandomNumberGenerator is fine view-side): every seed is a
+## different shape, size and turn.
 
 const UnitModels := preload("res://scenes/art_pixel/unit_models.gd")
 
@@ -9,66 +11,153 @@ var um := UnitModels.new()
 var rng := RandomNumberGenerator.new()
 
 
-## A clump of reeds: a dark wet base, arching ribbon leaves of mixed greens and
-## heights, and a few stems topped with velvet cattails. `size` scales the clump.
-func reed_clump(seed_value: int, size := 1.0) -> Node3D:
+## A reed bed on one tile, built like the bug bushes: a few hundred authored blade
+## cards, dark and dense low down, lit towards the tips, in several sub-clumps so the
+## outline is ragged; some blades dried tan, some bent over, and velvet cattails at
+## varied heights. No base disc: short dark blades hide where the stems meet the mud.
+## `size` scales it (shore reeds are small); `stage` 0-3 is how far it has been cut:
+## 0 whole, 1 thinned with cut stalks showing, 2 mostly cut, 3 stubble.
+func reed_clump(seed_value: int, size := 1.0, stage := 0) -> Node3D:
 	rng.seed = seed_value
 	var n := Node3D.new()
-	var tints := [Color(1, 1, 1), Color(0.82, 0.95, 0.78), Color(1.08, 1.02, 0.82), Color(0.9, 0.9, 0.7)]
-	for k in int(30 * size):
-		var base := Vector3(rng.randf_range(-0.34, 0.34), 0, rng.randf_range(-0.34, 0.34)) * size
-		var h := rng.randf_range(0.45, 0.95) * size
+	var keep: float = [1.0, 0.55, 0.22, 0.0][stage]
+	var clumps := []
+	for k in rng.randi_range(5, 7):   # spread over the whole tile: a bed, not a bunch
+		var at := Vector3(rng.randf_range(-0.36, 0.36), 0, rng.randf_range(-0.36, 0.36)) * size
+		clumps.append([at, rng.randf_range(0.1, 0.18) * size, rng.randf_range(0.7, 1.1)])
+	var cut := um.plain(Color("#a38a52"))
+	var cut_top := um.plain(Color("#d8c48a"))
+	var blades := int(190 * size)
+	for k in blades:
+		var c: Array = clumps[k % clumps.size()]
+		var a := rng.randf() * TAU
+		var r := sqrt(rng.randf()) * float(c[1])
+		var base: Vector3 = c[0] + Vector3(cos(a) * r, 0, sin(a) * r)
+		var h := rng.randf_range(0.3, 1.0) * float(c[2]) * size
+		var low := rng.randf() < 0.3   # the short dark understorey
+		if low:
+			h *= 0.35
 		var yaw := rng.randf() * TAU
-		var lean := rng.randf_range(0.1, 0.55)
 		var out := Vector3(cos(yaw), 0, sin(yaw))
+		var lean := rng.randf_range(0.04, 0.35) + (0.6 if rng.randf() < 0.08 else 0.0)   # now and then one bent over
+		var dry := rng.randf() < 0.14
+		var face_turn := rng.randf_range(-1.0, 1.0)
+		var shade := rng.randf()
+		var width := rng.randf_range(0.035, 0.055)
+		var cut_roll := rng.randf()
+		var sh := rng.randf_range(0.04, 0.12) * size
+		# Every random draw comes first, so a cut stage keeps the same blades as the whole bed.
+		var stays := rng.randf() < keep or low and stage < 3
+		if not stays:
+			if cut_roll < 0.55 and not low:   # a cut stalk
+				n.add_child(um.rod(base, base + Vector3(0, sh, 0), 0.012 * size, 0.011 * size, cut, false))
+				n.add_child(um.blob(Vector3(0.012, 0.004, 0.012) * size, cut_top, base + Vector3(0, sh, 0)))
+			continue
 		var up := (Vector3.UP + out * lean).normalized()
-		var facing := out.cross(up).normalized()
-		n.add_child(um.decal("reed_leaf", 0.075 * size, h, base + up * h * 0.5, facing, true, up, tints[k % tints.size()]))
-	var stem := um.plain(Color("#7e8e3a"))
-	var velvet := um.plain(Color("#5e3a1e"))
-	for k in int(6 * size):
-		var base := Vector3(rng.randf_range(-0.22, 0.22), 0, rng.randf_range(-0.22, 0.22)) * size
-		var h := rng.randf_range(0.75, 1.1) * size
-		var top := base + Vector3(rng.randf_range(-0.06, 0.06), h, rng.randf_range(-0.06, 0.06))
-		n.add_child(um.rod(base, top, 0.014, 0.011, stem, false))
-		n.add_child(um.blob(Vector3(0.034, 0.1, 0.034), velvet, top - Vector3(0, 0.07, 0)))
-		n.add_child(um.rod(top + Vector3(0, 0.02, 0), top + Vector3(0, 0.12, 0), 0.006, 0.004, stem, false))
+		# Face the blade mostly towards the viewer (edge-on cards vanish), turned a little.
+		var facing := Vector3(0.6 + face_turn * 0.5, 0.0, 1.0).normalized()
+		facing = (facing - up * facing.dot(up)).normalized()
+		var lit := clampf(h / (1.05 * size), 0.0, 1.0)
+		var tint := Color(0.38, 0.46, 0.3).lerp(Color(1.0, 1.0, 0.86), lit * 0.8 + shade * 0.2)
+		if dry:
+			tint = Color(1.25, 1.05, 0.6).lerp(Color(1.4, 1.25, 0.8), lit)
+		n.add_child(um.decal("reed_leaf", width * size, h, base + up * h * 0.5, facing, true, up, tint))
+	var stem := um.plain(Color("#7a8a3a"))
+	var velvet := um.plain(Color("#5a361c"))
+	for k in int(rng.randi_range(4, 8) * size):
+		var c: Array = clumps[rng.randi() % clumps.size()]
+		var base: Vector3 = c[0] + Vector3(rng.randf_range(-0.08, 0.08), 0, rng.randf_range(-0.08, 0.08)) * size
+		var h := rng.randf_range(0.6, 1.15) * float(c[2]) * size
+		var top := base + Vector3(rng.randf_range(-0.09, 0.09), h, rng.randf_range(-0.09, 0.09)) * Vector3(size, 1, size)
+		if rng.randf() >= keep:
+			continue
+		n.add_child(um.rod(base, top, 0.011, 0.009, stem, false))
+		var head := rng.randf_range(0.07, 0.12)
+		n.add_child(um.blob(Vector3(0.026, head, 0.026), velvet, top - Vector3(0, head * 0.9, 0)))
+		n.add_child(um.rod(top, top + Vector3(0, 0.08, 0), 0.005, 0.003, stem, false))
 	return n
 
 
 ## A bug bush, drawn realistically like the genre's static props: a dense shrub of
 ## a few hundred small leaves over irregular lobes, dark inside and lit on top, its
 ## outline broken by single leaves, dotted all over with small red berries.
-## Size varies with the seed.
-func bug_bush(seed_value: int) -> Node3D:
+## Size and shape vary with the seed. `stage` 0-3 is how far it has been picked: each
+## stage has fewer berries and a sparser, browner bush.
+func bug_bush(seed_value: int, stage := 0) -> Node3D:
 	rng.seed = seed_value
 	var n := Node3D.new()
-	var size := rng.randf_range(0.85, 1.15)
+	var size := rng.randf_range(0.8, 1.2)
+	var squash := rng.randf_range(0.8, 1.15)   # some low and wide, some tall
 	var lobes := []
-	for k in 6:
+	for k in rng.randi_range(4, 7):
 		var a := rng.randf() * TAU
-		var d := rng.randf_range(0.0, 0.2) * size
-		var r := rng.randf_range(0.14, 0.2) * size
-		lobes.append([Vector3(cos(a) * d, rng.randf_range(0.14, 0.3) * size, sin(a) * d), Vector3(r, r * 0.8, r)])
+		var d := rng.randf_range(0.0, 0.22) * size
+		var r := rng.randf_range(0.13, 0.21) * size
+		lobes.append([Vector3(cos(a) * d, rng.randf_range(0.14, 0.3) * size * squash, sin(a) * d), Vector3(r, r * 0.8 * squash, r)])
 	for l in lobes:   # a dark core, so you never see through the leaves
-		n.add_child(um.blob(l[1] * 0.8, um.plain(Color("#1c2c12")), l[0]))
+		n.add_child(um.blob(l[1] * 0.8, um.plain(Color("#1c2c12").lerp(Color("#3a2c16"), stage / 3.0)), l[0]))
 	var top := 0.0
 	for l in lobes:
 		top = maxf(top, l[0].y + l[1].y)
+	var leaves: float = [1.0, 0.85, 0.7, 0.55][stage]
+	var brown: float = [0.0, 0.18, 0.36, 0.55][stage]
 	for k in 340:
 		var l: Array = lobes[k % lobes.size()]
 		var d := Vector3(rng.randf_range(-1, 1), rng.randf_range(-0.3, 1.0), rng.randf_range(-1, 1)).normalized()
 		var depth := rng.randf_range(-0.05, 0.015)
+		var face := (d + Vector3(rng.randf_range(-0.5, 0.5), rng.randf_range(0.0, 0.6), rng.randf_range(-0.5, 0.5))).normalized()
+		var wither := rng.randf()
+		if rng.randf() > leaves:
+			continue
 		var at := UnitModels.on_surface(l[0], l[1], d, depth)
 		var lit := clampf(at.y / top, 0.0, 1.0) * 0.7 + (depth + 0.05) / 0.065 * 0.3
 		var tint := Color(0.42, 0.5, 0.36).lerp(Color(0.95, 1.0, 0.78), lit)
-		var face := (d + Vector3(rng.randf_range(-0.5, 0.5), rng.randf_range(0.0, 0.6), rng.randf_range(-0.5, 0.5))).normalized()
+		if wither < brown:
+			tint = tint * Color(1.35, 0.95, 0.55)   # a dry, browning leaf
 		n.add_child(um.decal("leaf", 0.06 * size, 0.08 * size, at, face, true, d, tint))
 	var berry := um.plain(Color("#c8221a"))
+	var berries: float = [1.0, 0.5, 0.2, 0.0][stage]
 	for k in 46:
 		var l: Array = lobes[rng.randi() % lobes.size()]
 		var d := Vector3(rng.randf_range(-1, 1), rng.randf_range(-0.1, 1.0), rng.randf_range(-1, 1)).normalized()
+		if rng.randf() > berries:
+			continue
 		n.add_child(um.blob(Vector3.ONE * 0.024 * size, berry, UnitModels.on_surface(l[0], l[1], d, 0.012)))
+	return n
+
+
+## A tuft of grass: twenty-odd authored blades, dark at the root and lit at the tips.
+func grass_tuft(seed_value: int) -> Node3D:
+	rng.seed = seed_value
+	var n := Node3D.new()
+	var size := rng.randf_range(0.7, 1.3)
+	for k in rng.randi_range(22, 32):
+		var a := rng.randf() * TAU
+		var r := sqrt(rng.randf()) * 0.08 * size
+		var base := Vector3(cos(a) * r, 0, sin(a) * r)
+		var h := rng.randf_range(0.1, 0.26) * size
+		var out := Vector3(cos(a), 0, sin(a))
+		var up := (Vector3.UP + out * rng.randf_range(0.1, 0.7)).normalized()
+		var facing := Vector3(rng.randf_range(-0.4, 0.8), 0, 1).normalized()
+		facing = (facing - up * facing.dot(up)).normalized()
+		var tint := Color(0.5, 0.62, 0.36).lerp(Color(1.0, 1.0, 0.82), rng.randf() * 0.6 + h / (0.2 * size) * 0.4)
+		n.add_child(um.decal("reed_leaf", 0.034, h, base + up * h * 0.5, facing, true, up, tint))
+	return n
+
+
+## A few field stones, broken and faceted like the rock outcrops, half sunk in the grass.
+func field_stones(seed_value: int) -> Node3D:
+	rng.seed = seed_value
+	var n := Node3D.new()
+	for k in rng.randi_range(2, 4):
+		var r := rng.randf_range(0.05, 0.12)
+		var mi := MeshInstance3D.new()
+		mi.mesh = stone_mesh(seed_value * 17 + k)
+		mi.material_override = um.surf("rock", Color(0.74, 0.74, 0.66).lerp(Color(0.6, 0.62, 0.55), rng.randf()), 0.5)
+		mi.scale = Vector3(r * rng.randf_range(1.0, 1.5), r * rng.randf_range(0.5, 0.8), r)
+		mi.rotation_degrees = Vector3(rng.randf_range(-10, 10), rng.randf_range(0, 180), rng.randf_range(-10, 10))
+		mi.position = Vector3(rng.randf_range(-0.16, 0.16), r * 0.2, rng.randf_range(-0.16, 0.16))
+		n.add_child(mi)
 	return n
 
 
