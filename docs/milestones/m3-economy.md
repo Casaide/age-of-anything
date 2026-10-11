@@ -1,6 +1,6 @@
 # Milestone 3: Economy
 
-**Status:** built (2026-10-11); waiting on the exit check, which is Dominic watching an opening (F6 in the debug view)
+**Status:** done (2026-10-11): Dominic watched an opening ("all looks good")
 **Exit criterion:** the opening economy is fun to watch for 3 minutes. That's Dominic's call
 by eye. The tests back it with numbers: a scripted 3-minute opening gathers in a sensible
 range, nobody stalls, and it's deterministic.

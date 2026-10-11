@@ -30,10 +30,10 @@ move it to `docs/backlog.md` rather than deleting it.
   `tests/test_sim.gd` plays a 10-minute 200-unit match; tick is ~0.9 ms avg (budget 3 ms).
 - **Done (milestone 2): map + movement.** Flow fields, move groups, isometric debug view, RTS
   camera, click/box/double-click selection. 50 units cross open and chokepoint maps, none stuck.
-- **Built (milestone 3): economy.** Food from bug bushes, wood from reeds (cut reeds become
+- **Done (milestone 3): economy.** Food from bug bushes, wood from reeds (cut reeds become
   ground), Town Center + Houses, training, construction, pop cap, rat economy from data, an
-  economy bot (`src/ai/eco_bot.gd`), the command panel. Exit check: Dominic watches an opening
-  (F6 in the debug view). See `docs/milestones/m3-economy.md`.
+  economy bot (`src/ai/eco_bot.gd`), the command panel. Dominic watched an opening: "all looks
+  good". See `docs/milestones/m3-economy.md`.
 - **Built (milestone 4): combat.** Armour classes, attack-move that spreads into duels,
   projectiles, deaths, hit flash, the unit card, the two-part counter quiz
   (`scenes/counter_quiz.tscn`). Waiting on Dominic's quiz run. See `docs/milestones/m4-combat.md`.

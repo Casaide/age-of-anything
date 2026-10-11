@@ -14,6 +14,7 @@ const RoundRobin := preload("res://tests/round_robin.gd")
 const PROMPTS := ["angry swamp frogs with reed spears", "sewer rats with cheese hammers", "centaur romans",
 	"greek hoplites", "spooky beetle knights"]
 const TOLERANCE := 20
+const MIN_COUNTERS := 75   # a step may not make counters win less often than this
 
 
 func _init() -> void:
@@ -27,6 +28,8 @@ func _init() -> void:
 	var start := {}       # part id -> its points before tuning
 	var last_move := {}   # part id -> +1 / -1, so a part isn't bounced straight back
 	var best := {"off": 1 << 30, "points": {}}
+	var banned := {}      # "part+1" / "part-1": moves that broke the counters
+	var pick_last := ""
 	for step in steps + 1:
 		var rr: Dictionary = RoundRobin.run(races, rules, age)
 		var off := 0
@@ -39,7 +42,15 @@ func _init() -> void:
 			for id in _parts(lib, RoundRobin.recipe_at(rr.units[k][0], rr.units[k][1], age).recipe):
 				dev_sum[id] = dev_sum.get(id, 0) + dev
 				dev_n[id] = dev_n.get(id, 0) + 1
-		print("step %d: %d of %d units more than %d%% off the mean" % [step, off, rr.units.size(), TOLERANCE])
+		print("step %d: %d of %d units more than %d%% off the mean, counters %d%%" % [step, off, rr.units.size(), TOLERANCE, rr.counters])
+		if rr.counters < MIN_COUNTERS and pick_last != "":
+			# That step broke the counters: undo it and never move that part that way again.
+			lib.parts[pick_last].points = int(lib.parts[pick_last].points) - last_move[pick_last]
+			banned[pick_last + str(last_move[pick_last])] = true
+			print("  undone: counters fell below %d%%" % MIN_COUNTERS)
+			_reprice(lib, races, rules)
+			pick_last = ""
+			continue
 		if off < best.off:
 			best = {"off": off, "points": _snapshot(lib, start)}
 		if off == 0 or step == steps:
@@ -55,7 +66,7 @@ func _init() -> void:
 				continue
 			var d: int = dev_sum[id] / dev_n[id]
 			var dir := 1 if d > 0 else -1
-			if last_move.get(id, 0) == -dir or (dir < 0 and int(lib.parts[id].points) <= 1):
+			if last_move.get(id, 0) == -dir or (dir < 0 and int(lib.parts[id].points) <= 1) or banned.has(id + str(dir)):
 				continue
 			if absi(d) > absi(pick_dev):
 				pick = id
@@ -67,6 +78,7 @@ func _init() -> void:
 			start[pick] = int(lib.parts[pick].points)
 		lib.parts[pick].points = int(lib.parts[pick].points) + dir
 		last_move[pick] = dir
+		pick_last = pick
 		print("  %s: %+d%% on average, points %d -> %d" % [pick, pick_dev, int(lib.parts[pick].points) - dir, int(lib.parts[pick].points)])
 		_reprice(lib, races, rules)
 	print("\nBest: %d units off. Changes for data/parts.json:" % best.off)

@@ -659,6 +659,15 @@ func _separate() -> void:
 	var pushy := PackedInt32Array()
 	pushx.resize(n)
 	pushy.resize(n)
+	# Workers standing at their job (gathering or building) are planted: two planted workers may
+	# overlap (otherwise they shove each other out of reach and trade places for ever), and a
+	# planted one isn't moved by anyone; the other unit gives way.
+	var planted := PackedByteArray()
+	planted.resize(n)
+	var tasks := units.task
+	for i in n:
+		if mv[i] == 0 and (tasks[i] == Economy.GATHER or tasks[i] == Economy.BUILD):
+			planted[i] = 1
 	for i in n:
 		var cx := cells[i] % w
 		var cy := cells[i] / w
@@ -692,13 +701,17 @@ func _separate() -> void:
 					else:
 						ux = dx * Fixed.ONE / d
 						uy = dy * Fixed.ONE / d
+					if planted[i] == 1 and planted[j] == 1:
+						continue
 					var push := (rr - d) / SEPARATION_DIV + 1
 					var px := ux * push / Fixed.ONE
 					var py := uy * push / Fixed.ONE
-					pushx[i] -= px
-					pushy[i] -= py
-					pushx[j] += px
-					pushy[j] += py
+					if planted[i] == 0:
+						pushx[i] -= px * (2 if planted[j] == 1 else 1)
+						pushy[i] -= py * (2 if planted[j] == 1 else 1)
+					if planted[j] == 0:
+						pushx[j] += px * (2 if planted[i] == 1 else 1)
+						pushy[j] += py * (2 if planted[i] == 1 else 1)
 	var t := SimMap.TILE
 	for i in n:
 		if settle[i] == 1:
