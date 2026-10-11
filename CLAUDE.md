@@ -15,6 +15,7 @@ Godot 4.7 (GDScript), 2D. Solo dev, macOS.
 | `docs/backlog.md` | Everything postponed, in rough priority order |
 | `docs/roster-template.md` | Full building, age and unit-line plan, with MVP/Next/Later status |
 | `docs/market-context.md` | Why this game, why now (industry, genres, engines) |
+| `docs/rendering.md` | How the art is made: models (code and Blender), 8-facing bakes, worn armour, buildings, checking tools |
 
 Before starting a milestone, read `docs/milestones/<its file>.md` (and the related parts of
 `docs/mvp-plan.md`), write the plan into the milestone file, and keep its checklist current. If you postpone something,
@@ -108,6 +109,7 @@ assets/art/textures/  texture art authored by Claude (SVG), mapped onto unit mod
 scenes/sim_debug.* the playable debug match: select, smart right-click, panel (Q/H/C), Tab side, F6 autoplay,
                    F3 flow, F5/F9 replays, G regen army
 tests/           headless checks and dev tools (see Commands)
+tools/blender/   bpy scripts that model parts (blender -b --python ...); output .glb in assets/models/
 ```
 
 ## Commands
@@ -177,9 +179,11 @@ units beatable. Don't special-case silly units.
 
 Target the look of a **classic 2D isometric RTS**: small units, 3/4 view, painterly sprites, readable
 silhouettes, team colour on a consistent region. It should feel like the game you know, gone mad.
-Units are hand-modelled 3D parts baked to pixel sprites in one atlas, recoloured by a team-mask
-shader; props and buildings are realistic bakes. Sockets, recipes and animation stay the same. The
-old vector styles and the art-direction sampler are gone (their pictures are in the archive).
+Units are 3D parts (built in code, or scripted in Blender: `tools/blender/`, `.glb` in
+`assets/models/`) baked to pixel sprites in **8 facings** in one atlas, recoloured by a team-mask
+shader; worn armour bakes on its wearer; props and buildings are realistic bakes. The full pipeline
+is in `docs/rendering.md`. New art goes concept-first (options, Dominic picks, then build; D-080),
+and every change gets looked at close up before it's shown.
 
 ## The archive (keep it up to date)
 

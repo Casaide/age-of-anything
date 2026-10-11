@@ -30,7 +30,7 @@ const OPTIONAL_SLOTS := ["hand_l", "head_gear", "torso", "back"]
 ## spear stays a spear), so a unit line stays recognisably the same unit.
 const KIND_TAGS := ["spear", "lance", "blade", "blunt", "bow", "sling", "javelin", "poison", "gun", "worker",
 	"shield", "helmet", "hat", "armour", "cape", "banner", "wings", "quiver"]
-const WORKER_SLOTS := ["head_gear", "back"]
+const WORKER_SLOTS := ["head_gear"]   # workers wear a hat at most: no capes on builders (Dominic)
 const GIANT_SCALE := 150
 const TINY_SCALE := 80
 
@@ -407,6 +407,8 @@ func _upgrade(prev: Dictionary, slot_def: Dictionary, ctx: Dictionary) -> Dictio
 		var cands: Array = _cands(slot, ctx).filter(func(p): return int(p.get("tier", 1)) > int(cur.get("tier", 1)) \
 			and _allowed(p, role, unit_tags) and not _off_theme(p, unit_tags) \
 			and (p.tags.any(func(t): return t in kinds) or _want(p, ctx.brief.tags) > 0))   # same kind, or asked for (rats with guns)
+		if role == "worker":   # a worker's hat gets better, but never a war helmet (no crests, horns, heavy)
+			cands = cands.filter(func(p): return int(p.points) <= 2 and not p.tags.any(func(t): return t in ["crest", "horns", "heavy"]))
 		if slot == "hand_r":
 			var need: String = ROLE_NEEDS[role]
 			var excluded: Array = ROLE_EXCLUDES.get(role, [])

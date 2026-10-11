@@ -4133,7 +4133,8 @@
     "ch": "leaf"
    }
   ],
-  "tier": 1
+  "tier": 2,
+  "note": "from age 2: a soldier's mark of rank, not everyday wear (Dominic: too many capes)"
  },
  {
   "id": "cape.cloth",
@@ -4168,7 +4169,8 @@
     "ch": "team"
    }
   ],
-  "tier": 1
+  "tier": 2,
+  "note": "from age 2: a soldier's mark of rank, not everyday wear (Dominic: too many capes)"
  },
  {
   "id": "banner.team",

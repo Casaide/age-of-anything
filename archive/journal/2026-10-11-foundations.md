@@ -291,3 +291,14 @@ the part baker loads with our own materials swapped in. Close up it reads as a f
 one was an egg with painted eyes; it's now the human head. The human body also got its armour fit,
 so the leather jerkin hugs the chest instead of wrapping the man in a brown egg. Next for humans:
 the body itself from Blender.
+
+### Capes, necks, horses, shadows
+Dominic: builders in capes are weird (and there were capes everywhere). Workers now only ever wear
+a hat (and never a war helmet), and capes are an age-2 mark of rank. "Human heads floating?": the
+human kept the rats' team scarf, a big blue ring round the neck that hid it front and back; humans
+lose the scarf (their tunic is the team colour) and the Blender neck runs up into the head. The
+leather cap sat as a flat disc on the narrower Blender head: the head now sets a lower crown and a
+smaller gear scale. Horses' necks were too thin, so their faces read as rat snouts: deeper neck,
+shorter blunter muzzle. Figures on two legs cast a narrower shadow. Dominic, fairly: "you're not
+checking the picture". Every change now gets a close look front and back before it goes to him.
+The pipeline is written up in docs/rendering.md.
