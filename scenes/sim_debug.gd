@@ -1289,7 +1289,8 @@ func _sync_buildings() -> void:
 	for b in bs.count():
 		var id := bs.id[b]
 		var view: BuildingArt = bviews.get(id)
-		var look := kit.building_key(lib.architecture(world.races[bs.owner[b]]), world.btypes[bs.kind[b]].id, world.ages[bs.owner[b]])
+		var look := kit.building_key(lib.architecture(world.races[bs.owner[b]]), world.btypes[bs.kind[b]].id, world.ages[bs.owner[b]],
+			(id * 7 + bs.cx[b] * 3 + bs.cy[b]) % 4)   # which house variant: steady per building, varied along a street
 		if view != null and view.get_meta("look", look) != look:
 			view.queue_free()   # its owner aged up and this building grew with them
 			bviews.erase(id)

@@ -120,14 +120,43 @@ func _spec(models, arch: String, type: String, model := "") -> Dictionary:
 	return models.building(type, arch, PartShape.TEAM_KEY)
 
 
+## A building's model at its size and turn: houses a little smaller than halls, a culture's
+## own scale for a type (data: buildings.json "scale", e.g. the rats' house and barracks), and
+## a variant's quarter turn and nudge in size (data: "variants"), so a street of houses varies.
+func _placed(models, arch: String, type: String, model: String, suffix: String) -> Dictionary:
+	var spec: Dictionary = _spec(models, arch, type, model)
+	var d: Dictionary = DataLib.load_json("res://data/buildings.json")
+	var s: float = (HOUSE_SCALE if type == "house" else 1.0) * float(d.get("scale", {}).get(arch, {}).get(type, 1.0))
+	var turn := 0.0
+	var v := int(suffix.get_slice("#", 1)) if "#" in suffix else 0
+	if v > 0:
+		turn = 90.0 * v
+		s *= [1.0, 0.94, 1.05, 0.9][v % 4]
+	if s == 1.0 and turn == 0.0:
+		return spec
+	var basis := Basis(Vector3.UP, deg_to_rad(turn)).scaled(Vector3.ONE * s)
+	for key in ["body", "banner", "vane"]:
+		if spec.has(key):
+			var holder := Node3D.new()
+			holder.add_child(spec[key])
+			holder.transform.basis = basis
+			spec[key] = holder
+	for key in ["smoke", "lantern", "banner_pivot", "vane_pivot"]:
+		if spec.has(key):
+			spec[key] = basis * spec[key]
+	spec.lights = spec.get("lights", []).map(func(p): return basis * p)
+	return spec
+
+
 ## The look of a building for a player in an age: its latest age look that's baked (data:
 ## buildings.json "age_looks"), else the one it starts with.
-func building_key(arch: String, type: String, age: int) -> String:
+func building_key(arch: String, type: String, age: int, pick := 0) -> String:
 	for a in range(age, 1, -1):
 		var key := "%s:%s@%d" % [arch, type, a]
 		if buildings.has(key):
 			return key
-	return "%s:%s" % [arch, type]
+	var variant := "%s:%s#%d" % [arch, type, pick]   # a variant (houses), if this building drew one
+	return variant if pick > 0 and buildings.has(variant) else "%s:%s" % [arch, type]
 
 
 ## A building's picture for a button: its finished bake, from the atlas.
@@ -239,6 +268,8 @@ func bake_buildings(races: Array) -> void:
 			var looks: Dictionary = d.get("age_looks", {}).get(arch, {}).get(type, {})
 			for age in looks:   # the same building, grown with the ages (a culture's story, D-081)
 				await _bake_building(h[0], h[1], arch, type, looks[age], "@" + str(age))
+			for v in range(1, int(d.get("variants", {}).get(type, 1))):   # a few of each house, turned and sized apart
+				await _bake_building(h[0], h[1], arch, type, "", "#" + str(v))
 	h[0].queue_free()
 
 
@@ -320,13 +351,7 @@ func _bake_building(baker, models, arch: String, type: String, model := "", suff
 	var name := "%s:%s%s" % [arch, type, suffix]
 	if buildings.has(name):
 		return
-	var spec: Dictionary = _spec(models, arch, type, model)
-	if type == "house":
-		spec.body.scale = Vector3.ONE * HOUSE_SCALE
-		if spec.has("smoke"):
-			spec.smoke *= HOUSE_SCALE
-		spec.lantern *= HOUSE_SCALE
-		spec.lights = spec.lights.map(func(p): return p * HOUSE_SCALE)
+	var spec: Dictionary = _placed(models, arch, type, model, suffix)
 	var pts: Array = [Vector3.ZERO, spec.get("smoke", Vector3.ZERO), spec.get("lantern", Vector3.ZERO)]
 	pts.append_array(spec.lights)
 	baker.set_ground_shadow(true)
@@ -352,9 +377,7 @@ func _bake_building(baker, models, arch: String, type: String, model := "", suff
 	info.stages = []
 	baker.set_ground_shadow(true)
 	for st in BUILD_STAGES.size():
-		var part: Dictionary = _spec(models, arch, type, model)
-		if type == "house":
-			part.body.scale = Vector3.ONE * HOUSE_SCALE
+		var part: Dictionary = _placed(models, arch, type, model, suffix)
 		_hold_back(part.body, st, models)
 		for live in ["banner", "vane"]:   # the live parts only go up when it's finished
 			if part.has(live):

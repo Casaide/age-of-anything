@@ -18,3 +18,7 @@ too big, and nothing changes with the ages. Rats are proud: by the top age they 
 Claude's picks: houses can-on-side (age 1) growing into the stack (age 2) and the reel (age 3);
 the drainpipe barracks (it sits low in the ground, D-081); the pride town centre for age 3.
 Buildings changing with the ages needs engine work (`arch:type:age`), which follows the pick.
+
+**Dominic's picks (2026-10-11):** the age-3 "pride" town centre, yes ("I love the pride barrels!",
+in play, D-089). Houses and barracks: keep today's tin-can house and junk barracks, smaller (D-090);
+whole cans and sardine tins as buildings push the scale too far.
