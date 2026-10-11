@@ -44,17 +44,20 @@ move it to `docs/backlog.md` rather than deleting it.
   ages, ages and research as data (`data/tech.json`, `src/sim/tech.gd`). See `docs/milestones/m6-foundations.md`.
 - **Done (milestone 7): progression**: Barracks, Stable, Watchtower per culture, age gates,
   age-ups needing a building, the bot ageing up at 4-6 minutes.
-- **Built (milestone 8): AI and match flow.** `src/ai/bot.gd` (data in `data/ai.json`): build
+- **Closed (milestone 8): AI and match flow.** `src/ai/bot.gd` (data in `data/ai.json`): build
   order, counter-picked soldiers, defence, attack waves; `src/sim/match.gd`: defeat, surrender,
-  winner. The match setup screen (`scenes/match_setup.tscn`) is now the main scene. Waiting on
-  Dominic's playtest.
+  winner. The match setup screen (`scenes/match_setup.tscn`) is the main scene. Dominic closed it
+  "for now"; his playtest moved to the backlog.
 - **Art direction under research:** unit art goes concept-first; the proposal is in `docs/concepts/direction.md`. Nothing new
   gets built for units until Dominic approves a direction.
 - **Done (milestone 9): fog and juice.** Fog of war (`src/sim/fog.gd`, `src/view/fog_view.gd`),
   minimap, synthesised placeholder sounds. Bot matches ran ~11 minutes; ~14 since workers' costs
   vary again (D-078). Pacing is a tester metric (D-077).
-- **Prepared (milestone 10): playtest and balance.** `tests/balance.gd` (equal-cost round robin),
-  balance pass 1, `docs/playtest.md`, a match log. Waiting on Dominic: testers, an export build.
+- **Closed (milestone 10): playtest and balance.** `tests/balance.gd` (equal-cost round robin),
+  balance pass 1, `docs/playtest.md`, a match log. Testers, the export build, the Linux check and
+  price-by-simulation moved to the backlog.
+- **In progress (milestone 11): cleanup.** UI, UX and art polish from Dominic's list; exit check is a
+  deep review of UI, UX and art. See `docs/milestones/m11-cleanup.md`.
 
 ## Layout
 

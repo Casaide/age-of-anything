@@ -157,6 +157,7 @@ Each milestone has its own file in `milestones/` (plan, checklist, results); thi
 | [8](milestones/m8-ai-match-flow.md) | 1 | **AI + match flow:** build order, waves, tag-aware counter-picking, race select screen, win/lose | AI beats a passive player and loses to a decent one |
 | [9](milestones/m9-fog-juice.md) | 1 | **Fog + juice:** fog, minimap, SFX, hit flash, death poses, tuning | A full match runs 9-12 minutes |
 | [10](milestones/m10-playtest-balance.md) | 1 | **Playtest + balance:** 5-10 people, balance pass, itch.io build | Success metrics below |
+| [11](milestones/m11-cleanup.md) | 1-2 | **Cleanup:** UI, UX, SFX and art polish from playing; a real lobby; more buildings | Deep review of UI, UX and art |
 | [-](milestones/art-pass.md) | (parallel) | **Art pass:** atlas + palette shader replaces vector shapes; classic 2D isometric RTS look | 200 units at 60 fps; draw calls verified |
 | [-](milestones/art-ui-track.md) | (parallel) | **Art and UI track:** stage A1 is milestone 5; A2-A5 run alongside milestones 7-10 (props, UI, icons, cursors, animation, new buildings, menus, juice) | Each stage done before its milestone closes |
 | [-](milestones/networking.md) | +2-3 | **Networking:** see `backlog.md` | Two machines on different NATs finish a match with no desync |

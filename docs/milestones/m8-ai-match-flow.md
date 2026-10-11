@@ -1,6 +1,6 @@
 # Milestone 8: AI + match flow
 
-**Status:** built (2026-10-11); waiting on Dominic's playtest for the "loses to a decent player" half
+**Status:** closed (2026-10-11), Dominic: "close 8 and 10 for now". The AI beats a passive player (tested); the "loses to a decent player" playtest moves to `../backlog.md`
 **Exit criterion:** AI beats a passive player and loses to a decent one.
 
 ## Scope
@@ -34,7 +34,7 @@ surrender).
 - [x] Tests: beats a passive player, bot vs bot deterministic, surrender
 - [x] View: vs-AI mode, F10 surrender, victory/defeat banner
 - [x] Race select screen
-- [ ] Exit check: Dominic plays a match and wins as a decent player (**waiting on Dominic**)
+- [ ] Exit check: Dominic plays a match and wins as a decent player (moved to the backlog when Dominic closed the milestone)
 - [x] Archive: pictures, journal, decisions, timeline
 
 ## Results
