@@ -47,7 +47,7 @@ static func load_btypes(resources: Array) -> Array:
 	for id in ids:
 		var b: Dictionary = d.buildings[id]
 		out.append({
-			"id": id, "name": b.name, "size": int(b.size), "hp": int(b.hp),
+			"id": id, "name": b.name, "desc": b.get("desc", ""), "size": int(b.size), "hp": int(b.hp),
 			"cost": cost_vector(resources, b.cost), "drop": PackedByteArray(resources.map(func(r): return 1 if r in b.drop_off else 0)),
 			"water": bool(b.get("water", false)), "becomes": b.get("becomes", {}).duplicate(),
 			"food": int(b.get("food", 0)), "reseed": cost_vector(resources, b.get("reseed", {})),

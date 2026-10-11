@@ -7,6 +7,8 @@ extends PanelContainer
 ## - for a building, its training queue: the unit being trained in a big slot with a progress
 ##   bar, the rest in small slots after it; click a slot to cancel it. Shift-click a train
 ##   button to queue five.
+## Buttons explain themselves on hover: a tooltip card (title, cost, what it does, what it
+## needs in red, what it unlocks), from the button's `tip` (BBCode) or else its text.
 ## Rebuilt only when its content changes, so buttons don't flicker or lose clicks;
 ## health, progress and the info line update every frame.
 
@@ -146,12 +148,36 @@ func show_content(c: Dictionary) -> void:
 		_queue_rest.tooltip_text = "%d of %d" % [queue.size(), int(c.queue_max)]
 
 
+## A button whose tooltip is a styled card instead of the plain grey box.
+class TipButton extends Button:
+	func _make_custom_tooltip(for_text: String) -> Object:
+		var card := PanelContainer.new()
+		var style := StyleBoxFlat.new()
+		style.bg_color = Color("#1e1a14", 0.97)
+		style.border_color = Color("#a08858")
+		style.set_border_width_all(2)
+		style.set_corner_radius_all(4)
+		style.set_content_margin_all(10)
+		card.add_theme_stylebox_override("panel", style)
+		var text := RichTextLabel.new()
+		text.bbcode_enabled = true
+		text.fit_content = true
+		text.scroll_active = false
+		text.custom_minimum_size.x = 300
+		text.add_theme_font_size_override("normal_font_size", 14)
+		text.add_theme_font_size_override("bold_font_size", 17)
+		text.add_theme_color_override("default_color", Color("#e8dcc0"))
+		text.text = for_text
+		card.add_child(text)
+		return card
+
+
 func _button(b: Dictionary) -> Button:
-	var button := Button.new()
+	var button := TipButton.new()
 	button.custom_minimum_size = Vector2(BUTTON, BUTTON)
 	button.focus_mode = Control.FOCUS_NONE
 	button.disabled = not b.enabled
-	button.tooltip_text = b.text
+	button.tooltip_text = b.get("tip", b.text)
 	button.pressed.connect(b.action)
 	button.add_theme_stylebox_override("normal", _slot_style(SLOT, EDGE))
 	button.add_theme_stylebox_override("hover", _slot_style(SLOT.lightened(0.12), GOLD))

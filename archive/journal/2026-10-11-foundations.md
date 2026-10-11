@@ -179,3 +179,11 @@ clink, a hammer knock, a rustle when picking), only your own and quieter away fr
 the screen. Orders get a small two-note acknowledgement, selecting clicks, a unit trained and a
 building finished each have a little chime, and a farm running out sighs downward. All still
 synthesised at start-up; tests/sfx_export.gd writes them to WAV to listen to.
+
+### Buttons that explain themselves
+Every button now has a tooltip card: title, cost (red for what you can't pay yet), a line of what
+it is (descriptions are data: `desc` in buildings.json and tech.json), what it trains or
+researches, the upgrades a unit can get and where, what it becomes in later ages, what's missing
+("Needs a Barracks" in red) and what it unlocks. Age-ups and research got icons (SVG in
+assets/art/icons/: a standard rising from a laurel, a scroll, three sharpened sticks, a frog's
+kicking leg). The town centre takes in gold too now (the gold change missed it).
