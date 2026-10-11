@@ -80,3 +80,5 @@ One line per moment worth remembering. Newest at the bottom.
   foraging; farms are one walkable, reseedable thing; rally flags.
 - **2026-10-11:** The slim rat confirmed (D-083); its armour refitted to the chest. Concept rounds
   RB1 (large rat) and BG1 (beetle posture) waiting on picks.
+- **2026-10-11:** Rat junk kit in the game (D-084). Dominic closed milestones 8 and 10 "for now"
+  (their open items moved to the backlog) and added milestone 11, cleanup.

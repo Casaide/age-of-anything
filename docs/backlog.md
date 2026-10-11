@@ -3,6 +3,16 @@
 Everything discussed and deliberately postponed, roughly in priority order. When something moves
 into active work, move it into `mvp-plan.md` (or a new plan) with an exit criterion.
 
+## 0. Left open when milestones 8 and 10 closed (2026-10-11, Dominic: "close 8 and 10 for now")
+
+- **AI playtest:** Dominic plays a match against the AI and wins as a decent player (milestone 8's
+  second half; the AI already beats a passive player in `tests/test_ai.gd`).
+- **Testers:** 5-10 testers with `playtest.md`; the metrics in `mvp-plan.md` §4.
+- **Export build:** needs the Godot export templates (about 1 GB) and an itch account.
+- **Determinism across macOS and Linux:** run `tests/test_sim.gd` in a Linux container and compare hashes.
+- **Cost sanity:** 8 of 20 units still more than 20% off the mean at equal cost; big bodies are worth
+  more with spears than with bows. Needs per-unit price-by-simulation (see "Later" in CLAUDE.md).
+
 ## 1. Networking (next after the demo)
 
 1. **Two-sim test:** two sim instances in one process, fed the same commands with artificial

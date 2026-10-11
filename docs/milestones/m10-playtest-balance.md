@@ -1,6 +1,6 @@
 # Milestone 10: Playtest + balance
 
-**Status:** prepared (2026-10-11); waiting on Dominic: testers, an export build, sign-offs
+**Status:** closed (2026-10-11), Dominic: "close 8 and 10 for now". Balance tooling, pass 1 and the playtest kit are done; the open items below move to `../backlog.md`
 **Exit criterion:** The success metrics in `../mvp-plan.md` §4.
 
 ## Scope
@@ -20,11 +20,11 @@
 - [x] Plan
 - [x] Balance tool (`tests/balance.gd`)
 - [x] Balance pass 1 (data): beetle, pony, spider and bow prices; Town Center; a price tuner (`tests/tune_points.gd`)
-- [ ] Cost sanity: 8 of 20 units still more than 20% off the mean (bows 2 points, skirmishers +6 vs archers; D-082)
+- [ ] Cost sanity: 8 of 20 units still more than 20% off the mean (bows 2 points, skirmishers +6 vs archers; D-082) (moved to the backlog)
 - [x] Playtest kit and match log
-- [ ] Export build (**waiting on Dominic**: export templates, itch account)
-- [ ] 5-10 testers; metrics from `../mvp-plan.md` §4 (**waiting on Dominic**)
-- [ ] Determinism across macOS and Linux (needs a Linux machine)
+- [ ] Export build (**waiting on Dominic**: export templates, itch account) (moved to the backlog)
+- [ ] 5-10 testers; metrics from `../mvp-plan.md` §4 (**waiting on Dominic**) (moved to the backlog)
+- [ ] Determinism across macOS and Linux (needs a Linux machine) (moved to the backlog)
 - [x] Archive
 
 ## Results (balance pass 1, 2026-10-11)
