@@ -100,8 +100,8 @@ func _draw() -> void:
 		var o: int = bs.owner[b]
 		if world.is_enemy(player, o) and not Fog.explored(world, player, bs.cx[b], bs.cy[b]):
 			continue
-		var c := _to_mini(bs.cx[b] + bs.size[b] * 0.5, bs.cy[b] + bs.size[b] * 0.5)
-		var r: float = maxf(3.0, bs.size[b] * s * 0.45)
+		var c := _to_mini(bs.cx[b] + bs.sx[b] * 0.5, bs.cy[b] + bs.sy[b] * 0.5)
+		var r: float = maxf(3.0, maxi(bs.sx[b], bs.sy[b]) * s * 0.45)
 		draw_rect(Rect2(c - Vector2(r, r * 0.6), Vector2(r * 2, r * 1.2)), teams[o])
 	var u = world.units
 	for i in u.count():

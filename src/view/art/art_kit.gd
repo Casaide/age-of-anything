@@ -44,6 +44,7 @@ var regions := {}     # name -> Rect2 in the atlas
 var buildings := {}   # "arch:type" -> {body, smoke, lantern, lights, banner, vane, vane_at, stages} (canvas units from the centre)
 var icons := {}       # "side:slot" -> Texture2D: a portrait of that unit, rendered from its baked art
 var _building_icons := {}   # "arch:type" -> AtlasTexture
+var _wall_looks := {}       # "arch:type|links" -> {tex, origin}: a wall tile with its arms (wall_look)
 
 
 ## Bake what these races need (anything already baked is kept), then rebuild the atlas.
@@ -201,9 +202,64 @@ func building_icon(arch: String, type: String) -> Texture2D:
 	if at == null or at.atlas != PartShape.atlas:
 		at = AtlasTexture.new()
 		at.atlas = PartShape.atlas
-		at.region = regions[buildings[key].body]
+		at.region = regions[buildings[key].get("icon", buildings[key].body)]
 		_building_icons[key] = at
 	return at
+
+
+## A wall tile's look with arms to the neighbours in `links` (bit k: Models.LINKS[k]), made
+## from the baked post and arms on first use and kept: {tex, origin}. Arms going up the screen
+## lie under the post, those coming down over it; every piece's ground shadow goes down first,
+## the darkest wins where they overlap (so they never double up), and no shadow covers the wall.
+func wall_look(name: String, links: int) -> Dictionary:
+	var key := "%s|%d" % [name, links]
+	if _wall_looks.has(key):
+		return _wall_looks[key]
+	var info: Dictionary = buildings[name]
+	var under := []
+	var over := []
+	for k in Models.LINKS.size():
+		if links & (1 << k):
+			var d: Vector2i = Models.LINKS[k]
+			(under if d.x + d.y <= 0 else over).append(info.arms[k])
+	var pieces: Array = under + [info.body] + over
+	var lo := Vector2i(1 << 20, 1 << 20)
+	var hi := -lo
+	for p in pieces:
+		var o: Vector2i = Vector2i((bakes[p].origin as Vector2).round())
+		var sz: Vector2i = (bakes[p].img as Image).get_size()
+		lo = Vector2i(mini(lo.x, -o.x), mini(lo.y, -o.y))
+		hi = Vector2i(maxi(hi.x, sz.x - o.x), maxi(hi.y, sz.y - o.y))
+	var w := hi.x - lo.x
+	var h := hi.y - lo.y
+	var out := PackedByteArray()
+	out.resize(w * h * 4)
+	for pass_art in [false, true]:
+		for p in pieces:
+			var img: Image = bakes[p].img
+			if img.get_format() != Image.FORMAT_RGBA8:
+				img = img.duplicate()
+				img.convert(Image.FORMAT_RGBA8)
+			var src := img.get_data()
+			var iw := img.get_width()
+			var at: Vector2i = -Vector2i((bakes[p].origin as Vector2).round()) - lo
+			for y in img.get_height():
+				var row := ((at.y + y) * w + at.x) * 4
+				for x in iw:
+					var s := (y * iw + x) * 4
+					var a := src[s + 3]
+					if a == 0 or (a == 255) != pass_art:
+						continue
+					var o := row + x * 4
+					if not pass_art and out[o + 3] >= a:
+						continue   # a shadow already as dark (or darker) here
+					out[o] = src[s]
+					out[o + 1] = src[s + 1]
+					out[o + 2] = src[s + 2]
+					out[o + 3] = a
+	var look := {"tex": ImageTexture.create_from_image(Image.create_from_data(w, h, false, Image.FORMAT_RGBA8, out)), "origin": Vector2(-lo)}
+	_wall_looks[key] = look
+	return look
 
 
 ## The animals (data/animals.json) as one more "race" to bake: their recipes, never a player's.
@@ -404,10 +460,22 @@ func _bake_building(baker, models, arch: String, type: String, model := "", suff
 	if spec.has("banner"):
 		var ban: Dictionary = await baker.bake(spec.banner, [Vector3.ZERO])
 		info.banner = {"tex": ban.tex, "origin": ban.points[0]}   # its own wave shader, so outside the atlas
-	if spec.has("open"):   # a gate: its open look, shown while a friend goes through
+	if spec.has("open"):   # a gate: its open look, shown while a friend goes through (shadowed like the shut one)
+		baker.set_ground_shadow(true)
 		var op: Dictionary = await baker.bake(spec.open, [Vector3.ZERO])
+		baker.set_ground_shadow(false)
 		bakes[name + ":open"] = {"img": (op.tex as Texture2D).get_image(), "origin": op.points[0]}
 		info.open = name + ":open"
+	if spec.has("arms"):   # a wall: an arm towards each of the eight neighbours (Models.LINKS), and a run for its picture
+		baker.set_ground_shadow(true)
+		info.arms = []
+		var out: Array = await baker.bake_many(spec.arms + [spec.icon])   # all nine in one render: small, and a render is most of a bake
+		for k in spec.arms.size():
+			bakes["%s:arm%d" % [name, k]] = {"img": (out[k].tex as Texture2D).get_image(), "origin": out[k].points[0]}
+			info.arms.append("%s:arm%d" % [name, k])
+		bakes[name + ":icon"] = {"img": (out[-1].tex as Texture2D).get_image(), "origin": out[-1].points[0]}
+		info.icon = name + ":icon"
+		baker.set_ground_shadow(false)
 	if spec.has("vane"):
 		var vane: Dictionary = await baker.bake(spec.vane, [Vector3.ZERO, spec.vane_pivot])
 		bakes[name + ":vane"] = {"img": (vane.tex as Texture2D).get_image(), "origin": vane.points[1]}
@@ -421,6 +489,8 @@ func _bake_building(baker, models, arch: String, type: String, model := "", suff
 		for live in ["banner", "vane", "open"]:   # the live parts only go up when it's finished
 			if part.has(live):
 				part[live].free()
+		for n in part.get("arms", []) + ([part.icon] if part.has("icon") else []):   # a wall goes up post first
+			n.free()
 		var sb: Dictionary = await baker.bake(part.body, [Vector3.ZERO])
 		var sname := "%s:stage%d" % [name, st]
 		bakes[sname] = {"img": (sb.tex as Texture2D).get_image(), "origin": sb.points[0]}

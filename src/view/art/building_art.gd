@@ -18,12 +18,18 @@ var progress := 1.0
 var done := true
 var time := 0.0
 var bar_at := Vector2.ZERO
+var links := 0            # a wall tile: which neighbours its arms reach (bit k: Models.LINKS[k])
+var _kit
+var _name := ""
 
 
-func setup(kit, name: String, cx: int, cy: int, size: int, p_team: Color) -> void:
+## A building of sx x sy tiles (a gate is longer than deep) with its top-left on cell (cx, cy).
+func setup(kit, name: String, cx: int, cy: int, sx: int, sy: int, p_team: Color) -> void:
 	team = p_team
+	_kit = kit
+	_name = name
 	var info: Dictionary = kit.buildings[name]
-	var centre := Iso.to_screen((cx + size * 0.5) * 1000, (cy + size * 0.5) * 1000)
+	var centre := Iso.to_screen((cx + sx * 0.5) * 1000, (cy + sy * 0.5) * 1000)
 	# Y-sorts by its footprint's centre, not its front corner: a unit beside either lower
 	# face is lower on screen than the centre and draws in front; beside an upper face
 	# it's higher and goes behind. (Sorting by the front corner hid units standing beside
@@ -98,6 +104,46 @@ func set_state(p_done: bool, p_progress: float) -> void:
 func loose_at() -> Vector2:
 	var r := body.get_rect()
 	return position + body.position + Vector2(0, (r.position.y + r.size.y * 0.2) * body.scale.y)
+
+## A wall tile joins up with its wall neighbours: its post with an arm out to each one in
+## `p_links` (bit k: Models.LINKS[k]), the kit's composed look for that set. Others ignore it.
+func set_links(p_links: int) -> void:
+	if p_links == links or not _kit.buildings[_name].has("arms"):
+		return
+	links = p_links
+	var look: Dictionary = _kit.wall_look(_name, links)
+	body.texture = look.tex
+	body.offset = -look.origin
+
+
+## Should gate b show open? While one of its owner's team (not an animal, not an enemy) is at it,
+## and no enemy is near: an enemy at the gate never opens it, nor sees it open (the sim keeps it
+## shut to them whatever it shows: SimMap lanes).
+static func gate_open(world, b: int) -> bool:
+	var bs = world.buildings
+	var u = world.units
+	var x0: int = bs.cx[b] * 1000
+	var y0: int = bs.cy[b] * 1000
+	var x1: int = x0 + bs.sx[b] * 1000
+	var y1: int = y0 + bs.sy[b] * 1000
+	var friend := false
+	for j in u.count():
+		if u.owner[j] == world.gaia:
+			continue
+		var dx: int = maxi(maxi(x0 - u.x[j], 0), u.x[j] - x1)
+		var dy: int = maxi(maxi(y0 - u.y[j], 0), u.y[j] - y1)
+		var d2 := dx * dx + dy * dy
+		if world.is_enemy(u.owner[j], bs.owner[b]):
+			if d2 < GATE_ENEMY_NEAR * GATE_ENEMY_NEAR:
+				return false
+		elif d2 < GATE_FRIEND_AT * GATE_FRIEND_AT:
+			friend = true
+	return friend
+
+
+const GATE_FRIEND_AT := 800    # milli-tiles from the gate's footprint: a friend this close opens it
+const GATE_ENEMY_NEAR := 1500  # an enemy this close keeps it shut
+
 
 ## A gate opens while a friendly unit is at it and shuts behind it (view only: the sim lets
 ## its team through either way).

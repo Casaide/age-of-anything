@@ -322,9 +322,9 @@ static func _towers(w, hurt: PackedInt32Array, hurt_by: PackedInt32Array) -> voi
 		if bs.cooldown[b] > 0:
 			bs.cooldown[b] -= 1
 			continue
-		var s: int = bs.size[b] * SimMap.TILE
-		var mx: int = bs.cx[b] * SimMap.TILE + s / 2
-		var my: int = bs.cy[b] * SimMap.TILE + s / 2
+		var s: int = maxi(bs.sx[b], bs.sy[b]) * SimMap.TILE
+		var mx: int = bs.cx[b] * SimMap.TILE + bs.sx[b] * SimMap.TILE / 2
+		var my: int = bs.cy[b] * SimMap.TILE + bs.sy[b] * SimMap.TILE / 2
 		var best := -1
 		var best_d: int = (bt.reach + s / 2) * (bt.reach + s / 2) + 1
 		for j in u.count():
@@ -351,11 +351,10 @@ static func _gap(w, i: int, j: int, b: int) -> int:
 		var d := Fixed.isqrt(Fixed.dist2(u.x[i], u.y[i], u.x[j], u.y[j]))
 		return d - u.radius[i] - u.radius[j]
 	var bs = w.buildings
-	var s: int = bs.size[b] * SimMap.TILE
 	var x0: int = bs.cx[b] * SimMap.TILE
 	var y0: int = bs.cy[b] * SimMap.TILE
-	var dx: int = maxi(maxi(x0 - u.x[i], 0), u.x[i] - (x0 + s))
-	var dy: int = maxi(maxi(y0 - u.y[i], 0), u.y[i] - (y0 + s))
+	var dx: int = maxi(maxi(x0 - u.x[i], 0), u.x[i] - (x0 + bs.sx[b] * SimMap.TILE))
+	var dy: int = maxi(maxi(y0 - u.y[i], 0), u.y[i] - (y0 + bs.sy[b] * SimMap.TILE))
 	return Fixed.isqrt(dx * dx + dy * dy) - u.radius[i]
 
 
@@ -425,9 +424,8 @@ static func _nearest_foe(w, i: int, sight: int, buildings_too: bool, engaged: Pa
 	for b in bs.count():
 		if not w.is_enemy(bs.owner[b], me):
 			continue
-		var s: int = bs.size[b] * SimMap.TILE
-		var mx: int = bs.cx[b] * SimMap.TILE + s / 2
-		var my: int = bs.cy[b] * SimMap.TILE + s / 2
+		var mx: int = bs.cx[b] * SimMap.TILE + bs.sx[b] * SimMap.TILE / 2
+		var my: int = bs.cy[b] * SimMap.TILE + bs.sy[b] * SimMap.TILE / 2
 		var d := Fixed.dist2(u.x[i], u.y[i], mx, my)
 		if d < best_d:
 			best_d = d
@@ -464,8 +462,7 @@ static func _apply(w, hurt: PackedInt32Array, hurt_by: PackedInt32Array, bhurt: 
 			continue
 		bs.hp[b] -= bhurt[b]
 		if bs.hp[b] <= 0:
-			var s: int = bs.size[b] * SimMap.TILE
-			w.events.append({"type": "die", "id": bs.id[b], "x": bs.cx[b] * SimMap.TILE + s / 2, "y": bs.cy[b] * SimMap.TILE + s / 2,
+			w.events.append({"type": "die", "id": bs.id[b], "x": bs.cx[b] * SimMap.TILE + bs.sx[b] * SimMap.TILE / 2, "y": bs.cy[b] * SimMap.TILE + bs.sy[b] * SimMap.TILE / 2,
 				"owner": bs.owner[b], "kind": bs.kind[b], "building": true})
 			Economy.clear_farm(w, b)
 			w.map.occupy(bs.footprint(b, w.map.width), 0)

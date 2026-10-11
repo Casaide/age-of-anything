@@ -27,7 +27,7 @@ func _initialize() -> void:
 	var bs = w.buildings
 	var cx: float = bs.cx[0]
 	var cy: float = bs.cy[0]
-	var s: float = bs.size[0]
+	var s: float = bs.sx[0]
 	# Outside each face's middle, then outside each corner (tiles).
 	var spots := [Vector2(cx + s + 0.5, cy + s * 0.5), Vector2(cx + s * 0.5, cy + s + 0.5),
 		Vector2(cx - 0.5, cy + s * 0.5), Vector2(cx + s * 0.5, cy - 0.5),
