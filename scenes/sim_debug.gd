@@ -84,7 +84,7 @@ var ground_holder: Node2D   # the terrain (rebuilt per map)
 var ground: TerrainView
 var doodads := {}           # cell -> [nodes]: cosmetic props, cleared where buildings go up
 var baking := false
-var built_count := -1       # finished buildings when the paths were last planned
+var built_shown = null      # the finished buildings shown (ids, who looks) when the paths were last planned
 var palette: ColorRect      # optional whole-frame palette pass (P)
 var attack_move := false    # the order being given is an attack-move
 var queueing := false       # the order being given is shift-queued
@@ -116,6 +116,8 @@ var cursors: Cursors
 var views := {}             # unit id -> UnitView (view side only; never feeds the sim)
 var bviews := {}            # building id -> BuildingArt
 var rviews := {}            # resource cell -> its prop (reed clump, bug bush)
+var res_cells := {}         # cell -> its prop variant: every cell that held a resource or changed (props come and go here)
+var ghosts := {}            # building id -> BuildingArt: enemy buildings gone out of sight, shown as last seen
 var selected := {}          # unit id -> true
 var selected_building := 0  # building id, or 0
 var selected_resource := -1 # a resource cell clicked to see what's left, or -1
@@ -353,7 +355,7 @@ func _attach(w: World, end_tick := -1) -> void:
 	banner.visible = false
 	age_ups = []
 	minimap.setup(w, lib.palettes.teams.map(func(c): return Color(c)), DataLib.load_json("res://data/terrain.json").terrain, camera)
-	for d in [views, bviews, rviews]:
+	for d in [views, bviews, rviews, ghosts]:
 		for k in d:
 			d[k].queue_free()
 		d.clear()
@@ -365,7 +367,8 @@ func _attach(w: World, end_tick := -1) -> void:
 		rally_flag.queue_free()
 		rally_flag = null
 	fx.clear()
-	built_count = -1
+	built_shown = null
+	res_cells.clear()
 	selected.clear()
 	selected_building = 0
 	placing = ""
@@ -385,8 +388,8 @@ func _attach(w: World, end_tick := -1) -> void:
 	camera.bounds = Iso.map_rect(map.width, map.height)
 	var picks := TerrainView.variant_picks(map.resource_cells, map.width, ArtKit.DOODADS.bush, hash(map.id))
 	for c in map.resource_cells:
-		_add_resource_view(c, picks[c])
-	map.changed.clear()
+		res_cells[c] = picks[c]
+	_sync_resources()
 	_refresh_paths()
 	ground.finish_paths()   # doodads keep off the paths, so they must be there first
 	for n in ground.scatter(kit, layer, _keep_clear):
@@ -414,14 +417,14 @@ func _keep_clear(t: Vector2) -> bool:
 
 ## Each side's paths in its culture's style: from its Town Center's door to its other
 ## finished buildings and the nearest bug bushes, reeds and shore. Re-planned when a
-## building is finished.
+## building is finished. An enemy's only run between the buildings you've seen.
 func _refresh_paths() -> void:
 	var bs := world.buildings
 	var owners := []
 	for p in world.races.size():
 		var mine := []
 		for b in bs.count():
-			if bs.owner[b] == p and bs.done[b] == 1:
+			if bs.owner[b] == p and _shown_done(b):
 				mine.append(b)
 		if mine.is_empty():
 			continue
@@ -1080,6 +1083,10 @@ func _play_events() -> void:
 				bviews.erase(e.id)
 				if selected_building == e.id:
 					selected_building = 0
+				var mem = null if reveal else world.fog_seen[active].get(e.id)
+				if mem != null and not Fog.sees_area(world, active, mem[2], mem[3], mem[4]):
+					ghosts[e.id] = bv   # it fell where you can't see: you still see it standing
+					continue
 				var t: Dictionary = world.btypes[e.kind]
 				fx.collapse(bv, Iso.to_screen(e.x, e.y), int(t.size))
 				if bv.visible and _on_screen(bv.position):
@@ -1474,11 +1481,12 @@ func _work_point(i: int) -> Vector2:
 
 
 ## Fog of war for the side you command: the overlay, enemy units only where you see now,
-## enemy buildings once you've explored where they stand.
+## enemy buildings as you last saw them (fog.gd remembers them), and none you never saw.
 func _sync_fog() -> void:
 	fog_view.visible = not reveal
 	fog_view.refresh(world, active)
 	minimap.player = active
+	minimap.reveal = reveal
 	var u := world.units
 	for i in u.count():
 		var v: Node2D = views.get(u.id[i])
@@ -1488,7 +1496,30 @@ func _sync_fog() -> void:
 	for b in bs.count():
 		var bv: Node2D = bviews.get(bs.id[b])
 		if bv != null:
-			bv.visible = reveal or not world.is_enemy(active, bs.owner[b]) or Fog.explored(world, active, bs.cx[b], bs.cy[b])
+			bv.visible = _memory(b) != null or reveal or not world.is_enemy(active, bs.owner[b])
+	for id in ghosts.keys():   # an enemy building gone where you couldn't see: there until you look
+		if reveal or not world.fog_seen[active].has(id):
+			ghosts[id].queue_free()
+			ghosts.erase(id)
+
+
+## How the side you command last saw an enemy building ([kind, owner, cx, cy, size, done,
+## progress, age], fog.gd), or null: for your own and allies' (and with the fog lifted) the
+## truth is shown instead; an enemy building never seen isn't shown at all.
+func _memory(b: int):
+	var bs := world.buildings
+	if reveal or not world.is_enemy(active, bs.owner[b]):
+		return null
+	return world.fog_seen[active].get(bs.id[b])
+
+
+## Is this building shown finished (to the side you command)? An enemy's only if you've seen it so.
+func _shown_done(b: int) -> bool:
+	var bs := world.buildings
+	if reveal or not world.is_enemy(active, bs.owner[b]):
+		return bs.done[b] == 1
+	var m = world.fog_seen[active].get(bs.id[b])
+	return m != null and m[5] == 1
 
 
 ## Does the wall a gate stands in run along sim y (walls or gates above or below it, none beside)?
@@ -1525,15 +1556,20 @@ func _friend_at(b: int) -> bool:
 
 func _sync_buildings() -> void:
 	var bs := world.buildings
-	# Buildings that are gone without falling (a farm becomes its field) just leave.
+	# Buildings that are gone without falling just leave (an enemy's you can't see stays as you saw it).
 	for id in bviews.keys():
 		if bs.index_of(id) < 0:
-			bviews[id].queue_free()
+			var mem = null if reveal else world.fog_seen[active].get(id)
+			if mem != null and not Fog.sees_area(world, active, mem[2], mem[3], mem[4]):
+				ghosts[id] = bviews[id]
+			else:
+				bviews[id].queue_free()
 			bviews.erase(id)
 	for b in bs.count():
 		var id := bs.id[b]
 		var view: BuildingArt = bviews.get(id)
-		var look := kit.building_key(lib.architecture(world.races[bs.owner[b]]), world.btypes[bs.kind[b]].id, world.ages[bs.owner[b]],
+		var mem = _memory(b)   # an enemy's: as you last saw it (its owner's age then, how far built)
+		var look := kit.building_key(lib.architecture(world.races[bs.owner[b]]), world.btypes[bs.kind[b]].id, mem[7] if mem != null else world.ages[bs.owner[b]],
 			(id * 7 + bs.cx[b] * 3 + bs.cy[b]) % 4)   # which house variant: steady per building, varied along a street
 		if world.btypes[bs.kind[b]].gate and _runs_along_y(b) and kit.buildings.has(look + ArtKit.ALONG_Z):
 			look += ArtKit.ALONG_Z   # a gate turns to face the way its wall runs
@@ -1555,16 +1591,20 @@ func _sync_buildings() -> void:
 			if view.has_meta("done") and bs.owner[b] == active:
 				audio.play("built", -4.0)   # finished while you watched (not the ones there from the start)
 		view.set_meta("done", bs.done[b] == 1)
-		view.set_state(bs.done[b] == 1, float(bs.progress[b]) / float(t.build_ticks))
+		if mem != null:
+			view.set_state(mem[5] == 1, float(mem[6]) / float(t.build_ticks))
+		else:
+			view.set_state(bs.done[b] == 1, float(bs.progress[b]) / float(t.build_ticks))
 		if t.gate:
 			view.set_open(_friend_at(b))
-		if bs.done[b] == 1 and not t.becomes.is_empty() and view.get_parent() == layer:
+		if _shown_done(b) and not t.becomes.is_empty() and view.get_parent() == layer:
 			view.reparent(flat)   # a sown farm is walked across: it lies under the units
-	var built := 0
+	var built := PackedInt32Array([active, int(reveal)])
 	for b in bs.count():
-		built += bs.done[b]
-	if built != built_count:
-		built_count = built
+		if _shown_done(b):
+			built.append(bs.id[b])
+	if built != built_shown:
+		built_shown = built
 		_refresh_paths()
 
 
@@ -1585,34 +1625,52 @@ func _clear_doodads(cx: int, cy: int, size: int) -> void:
 const RESOURCE_PROP := {"bugbush": "bush", "reeds": "reeds", "stone": "quarry", "gold": "gold", "carcass": "carcass", "field": "crops", "paddy": "paddy"}
 
 
-func _add_resource_view(c: int, pick: int) -> void:
-	var kind: String = RESOURCE_PROP[map.terrain_ids[map.terrain[c]]]
+func _add_resource_view(c: int, kind: String, left: int) -> void:
+	var pick: int = res_cells[c]
+	var full := maxi(left, map.terrain_amount[map.terrain[c]])   # first seen half used: staged as such
+	var b := world.buildings.index_of(map.occupied[c])
+	if map.pool[c] >= 0 and b >= 0:
+		full = maxi(full, int(world.btypes[world.buildings.kind[b]].get("food", 0)))   # a farm's crops: out of its whole harvest
 	var holder := Node2D.new()
 	holder.position = Iso.to_screen((c % map.width) * 1000 + 500, (c / map.width) * 1000 + 500)
-	holder.add_child(kit.doodad(kind, pick))
-	holder.set_meta("res", {"kind": kind, "pick": pick, "stage": 0, "full": map.left_at(c), "gone": 0.0})
+	holder.add_child(kit.doodad(kind, pick, ArtKit.resource_stage(kind, left, full)))
+	holder.set_meta("res", {"kind": kind, "pick": pick, "stage": ArtKit.resource_stage(kind, left, full), "full": full, "gone": 0.0})
 	# A farm's crops share its pool (every tile shows them) and lie flat under the farmers.
 	(flat if map.pool[c] >= 0 else layer).add_child(holder)
 	rviews[c] = holder
 
 
+## Props show the ground as the side you command last saw it (fog.gd remembers it): an enemy's
+## farm sown in the dark isn't there for you until you look, and one you looked at stays as you
+## saw it under the fog. Cells that change (a farm's field, a carcass) join the watched cells.
 func _sync_resources() -> void:
 	var dt := get_process_delta_time()
-	# New resources (a farm's field) appear where the map changed.
 	for c in map.changed:
-		if map.left_at(c) > 0 and not rviews.has(c):
-			_add_resource_view(c, c * 7 + c / map.width)
+		if not res_cells.has(c):
+			res_cells[c] = c * 7 + c / map.width
 	map.changed.clear()
 	map.changed_overflow = false
-	for c in rviews.keys():
-		var h: Node2D = rviews[c]
+	var ground: PackedByteArray = world.fog_ground[active]
+	var seen_left: PackedInt32Array = world.fog_left[active]
+	for c in res_cells:
+		var left: int = map.left_at(c) if reveal else seen_left[c]
+		var kind: String = RESOURCE_PROP.get(map.terrain_ids[map.terrain[c] if reveal else ground[c]], "")
+		var h: Node2D = rviews.get(c)
+		if h != null and left > 0 and (h.get_meta("res").gone > 0.0 or h.get_meta("res").kind != kind):
+			h.queue_free()   # sown again, or what you see there changed (the fog lifted)
+			rviews.erase(c)
+			h = null
+		if h == null:
+			if left > 0 and kind != "":
+				_add_resource_view(c, kind, left)
+			continue
 		var r: Dictionary = h.get_meta("res")
-		var stage := ArtKit.resource_stage(r.kind, map.left_at(c), r.full)
+		var stage := ArtKit.resource_stage(r.kind, left, r.full)
 		if stage != r.stage:
 			r.stage = stage
 			h.get_child(0).queue_free()
 			h.add_child(kit.doodad(r.kind, r.pick, stage))
-		if map.left_at(c) <= 0:
+		if left <= 0:
 			if r.gone == 0.0 and map.pool[c] >= 0:
 				_sfx_at("farm_done", h.position, -6.0)   # a farm's used up
 			r.gone += dt

@@ -1,7 +1,9 @@
 extends Control
 ## The minimap: the map as a diamond (like the game view), terrain coloured from
 ## data/terrain.json, dimmed by your fog, with buildings as squares and units as dots in team
-## colours (enemies only where you can see them), and the camera's view as a frame.
+## colours (enemies only where you can see them), and the camera's view as a frame. The ground
+## and enemy buildings are as you last saw them (fog.gd remembers them): nothing of an enemy's
+## shows where you haven't looked.
 ## Click or drag on it to move the camera. View side only.
 
 const Iso := preload("res://src/view/iso.gd")
@@ -14,6 +16,7 @@ const EVERY := 0.2    # seconds between redraws of the terrain picture
 
 var world
 var player := 0
+var reveal := false   # the fog lifted (debug): the truth everywhere
 var teams: Array = []           # team colour per player
 var terrain_colours: Array = [] # per terrain index
 var camera
@@ -58,13 +61,14 @@ func _process(delta: float) -> void:
 func _paint() -> void:
 	var m = world.map
 	var g: PackedByteArray = world.fog[player]
+	var ground: PackedByteArray = m.terrain if reveal else world.fog_ground[player]
 	if _img == null:
 		_img = Image.create(m.width, m.height, false, Image.FORMAT_RGB8)
 	for y in m.height:
 		for x in m.width:
 			var c: int = y * m.width + x
-			var col: Color = terrain_colours[m.terrain[c]]
-			match g[c]:
+			var col: Color = terrain_colours[ground[c]]
+			match -1 if reveal else g[c]:
 				Fog.UNSEEN:
 					col = Color("#1a1510")   # dark earth, not a black hole
 				Fog.EXPLORED:
@@ -98,15 +102,18 @@ func _draw() -> void:
 	var bs = world.buildings
 	for b in bs.count():
 		var o: int = bs.owner[b]
-		if world.is_enemy(player, o) and not Fog.explored(world, player, bs.cx[b], bs.cy[b]):
-			continue
-		var c := _to_mini(bs.cx[b] + bs.size[b] * 0.5, bs.cy[b] + bs.size[b] * 0.5)
-		var r: float = maxf(3.0, bs.size[b] * s * 0.45)
-		draw_rect(Rect2(c - Vector2(r, r * 0.6), Vector2(r * 2, r * 1.2)), teams[o])
+		if reveal or not world.is_enemy(player, o):
+			_building(bs.cx[b], bs.cy[b], bs.size[b], teams[o])
+	if not reveal:
+		var seen: Dictionary = world.fog_seen[player]
+		for id in seen:   # enemies' as last seen (some may be gone since)
+			var k: PackedInt32Array = seen[id]
+			if world.is_enemy(player, k[1]):
+				_building(k[2], k[3], k[4], teams[k[1]])
 	var u = world.units
 	for i in u.count():
 		var o: int = u.owner[i]
-		if world.is_enemy(player, o) and not Fog.visible(world, player, u.x[i], u.y[i]):
+		if not reveal and world.is_enemy(player, o) and not Fog.visible(world, player, u.x[i], u.y[i]):
 			continue
 		var dot: Color = Color("#d8d0b8") if o >= teams.size() or o == world.gaia else teams[o].lightened(0.2)   # animals: pale
 		draw_rect(Rect2(_to_mini(u.x[i] / 1000.0, u.y[i] / 1000.0) - Vector2.ONE, Vector2(2, 2)), dot)
@@ -121,6 +128,13 @@ func _draw() -> void:
 	for p in pings:   # under attack here: a red ring that pulses
 		var k: float = fmod(p.t, 1.0)
 		draw_arc(_to_mini(p.at.x, p.at.y), 4.0 + 10.0 * (1.0 - k), 0.0, TAU, 20, Color(1.0, 0.25, 0.2, k), 2.0)
+
+
+func _building(cx: int, cy: int, size: int, colour: Color) -> void:
+	var s: float = SIZE / world.map.width
+	var c := _to_mini(cx + size * 0.5, cy + size * 0.5)
+	var r: float = maxf(3.0, size * s * 0.45)
+	draw_rect(Rect2(c - Vector2(r, r * 0.6), Vector2(r * 2, r * 1.2)), colour)
 
 
 ## Only the diamond takes the mouse (Dominic: the corners of its box caught clicks meant for the
