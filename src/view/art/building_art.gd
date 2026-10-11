@@ -1,8 +1,8 @@
 extends Node2D
 ## A building in the pixel-art style, from the art kit's bakes: the body in the team
 ## colour, chimney smoke, flickering lights, a waving banner and a turning vane.
-## While it's being built it shows as a dark shape that brightens with progress,
-## with a progress bar; the live parts start once it's done.
+## While it's being built it shows its construction stages (foundations, scaffold,
+## walls, roof) with a progress bar; the live parts start once it's done.
 
 const Iso := preload("res://src/view/iso.gd")
 
@@ -10,6 +10,7 @@ var body: Sprite2D
 var live: Array = []      # nodes that only run once the building is done
 var glows: Array = []
 var vane: Node2D
+var stages: Array = []    # construction stage sprites, shown while it's being built
 var team := Color.WHITE
 var progress := 1.0
 var done := true
@@ -21,12 +22,23 @@ func setup(kit, name: String, cx: int, cy: int, size: int, p_team: Color) -> voi
 	team = p_team
 	var info: Dictionary = kit.buildings[name]
 	var centre := Iso.to_screen((cx + size * 0.5) * 1000, (cy + size * 0.5) * 1000)
-	position = Iso.to_screen((cx + size) * 1000, (cy + size) * 1000)   # y-sorts by its front corner
+	# Y-sorts by its footprint's centre, not its front corner: a unit beside either lower
+	# face is lower on screen than the centre and draws in front; beside an upper face
+	# it's higher and goes behind. (Sorting by the front corner hid units standing beside
+	# the lower faces.) Art spilling past the footprint doesn't move the sort point.
+	position = centre
 	var at := centre - position
 	body = kit.sprite(info.body)
 	body.position = at
 	body.self_modulate = Color(team.r, team.g, team.b, 1.0)
 	add_child(body)
+	for stage_name in info.stages:
+		var st: Sprite2D = kit.sprite(stage_name)
+		st.position = at
+		st.self_modulate = body.self_modulate
+		st.visible = false
+		add_child(st)
+		stages.append(st)
 	bar_at = at + Vector2(0, 6)
 	live.append(_smoke(at + info.smoke))
 	_glow(at + info.lantern, 14.0, Color(1.0, 0.75, 0.35))
@@ -41,7 +53,7 @@ func setup(kit, name: String, cx: int, cy: int, size: int, p_team: Color) -> voi
 		bs.position = at
 		bs.self_modulate = Color(team.r, team.g, team.b, 1.0)
 		var m := ShaderMaterial.new()
-		m.shader = load("res://scenes/style_sampler/hifi/banner.gdshader")
+		m.shader = load("res://src/view/art/bake/banner.gdshader")
 		bs.material = m
 		add_child(bs)
 		live.append(bs)
@@ -58,7 +70,10 @@ func set_state(p_done: bool, p_progress: float) -> void:
 		return
 	done = p_done
 	progress = p_progress
-	body.self_modulate.a = 1.0 if done else 0.35 + 0.45 * progress
+	var shown := -1 if done else mini(int(progress * stages.size()), stages.size() - 1)
+	body.visible = done
+	for k in stages.size():
+		stages[k].visible = k == shown
 	for n in live:
 		n.visible = done
 	for g in glows:

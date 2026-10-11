@@ -72,8 +72,7 @@ func bake(id: String, shapes: Array, colours: Dictionary) -> void:
 	for i in shapes.size():
 		model.add_child(_shape3d(shapes[i], colours, i))
 	holder.add_child(model)
-	render_target_update_mode = SubViewport.UPDATE_ONCE
-	await RenderingServer.frame_post_draw
+	await _render()
 	var img := get_texture().get_image()
 	holder.remove_child(model)
 	model.queue_free()
@@ -105,16 +104,14 @@ func _bake_model(id: String, colours: Dictionary, bake_key: String) -> void:
 	cam.position = box.get_center() + view * 1000.0
 	# Light from the viewer's upper left, a little in front.
 	key.basis = Basis.looking_at(cam.basis * Vector3(0.55, -0.75, -1.0).normalized(), Vector3.UP)
-	render_target_update_mode = SubViewport.UPDATE_ONCE
-	await RenderingServer.frame_post_draw
+	await _render()
 	var img := get_texture().get_image()
 	var front_img: Image = null
 	if front:
 		# The near arm is its own layer, so it gets its own outline over the body.
 		model.visible = false
 		holder.add_child(front)
-		render_target_update_mode = SubViewport.UPDATE_ONCE
-		await RenderingServer.frame_post_draw
+		await _render()
 		front_img = get_texture().get_image()
 		holder.remove_child(front)
 		front.queue_free()
@@ -129,6 +126,8 @@ func _bake_model(id: String, colours: Dictionary, bake_key: String) -> void:
 			rig.anchors = spec.anchors.map(func(a): var v: Vector2 = to2d.call(a[0]); return [v.x, v.y, a[1], a[2], a[3] if a.size() > 3 else 0])
 		if spec.has("torso_scale"):
 			rig.torso_scale = spec.torso_scale
+		if spec.has("carry"):
+			rig.carry = spec.carry
 		PartShape.rigs[id] = rig
 	holder.remove_child(model)
 	model.queue_free()
@@ -146,6 +145,17 @@ func _bake_model(id: String, colours: Dictionary, bake_key: String) -> void:
 		PartShape.rigs[id]["front"] = true
 	PartShape.baked[bake_key] = {"img": pix, "tex": ImageTexture.create_from_image(pix),
 		"origin": (origin - Vector2(used.position)) / SS, "scale": art_scale}
+	# Where the drawn part reaches furthest from its grip (part units): a weapon's tip,
+	# so a body with no arms can lay it couched whatever way it was modelled.
+	var o: Vector2 = PartShape.baked[bake_key].origin
+	var tip := Vector2.ZERO
+	for y in pix.get_height():
+		for x in pix.get_width():
+			if pix.get_pixel(x, y).a > 0.9 and (Vector2(x, y) - o).length() > tip.length():
+				tip = Vector2(x, y) - o
+	if not PartShape.rigs.has(id):
+		PartShape.rigs[id] = {}
+	PartShape.rigs[id]["tip"] = tip / art_scale
 
 
 static func _aabb(n: Node3D) -> AABB:
@@ -267,3 +277,11 @@ func _shape3d(s: Dictionary, colours: Dictionary, i: int) -> Node3D:
 				n.add_child(cap)
 			return n
 	return Node3D.new()
+
+
+## Render this viewport once, on the next frame. (Drawing on demand with force_draw
+## came back empty, so bakes wait on frames: a window the OS hides or throttles bakes
+## far slower.)
+func _render() -> void:
+	render_target_update_mode = SubViewport.UPDATE_ONCE
+	await RenderingServer.frame_post_draw
