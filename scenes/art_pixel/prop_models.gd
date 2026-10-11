@@ -332,6 +332,30 @@ func quarry(seed_value: int, stage := 0, ore := "stone") -> Node3D:
 	return n
 
 
+## Where a hunted or slaughtered animal fell: cuts of meat on the hide, a few bones.
+## `stage` 0-3: less and less left.
+func carcass(seed_value: int, stage := 0) -> Node3D:
+	rng.seed = seed_value
+	var n := Node3D.new()
+	var hide := um.plain(Color("#6a4a30"))
+	var meat := um.plain(Color("#b04a3a"))
+	var fat := um.plain(Color("#e8c8b0"))
+	var bone := um.plain(Color("#f0e8d8"))
+	n.add_child(um.blob(Vector3(0.34 - stage * 0.06, 0.03, 0.24 - stage * 0.04), hide, Vector3(0, 0.02, 0), Vector3(0, rng.randf_range(0, 90), 0)))
+	var cuts: int = [4, 3, 2, 0][stage]
+	for k in 4:
+		var a := rng.randf() * TAU
+		var p := Vector3(cos(a) * 0.12, 0.06, sin(a) * 0.1)
+		if k < cuts:
+			n.add_child(um.blob(Vector3(0.07, 0.045, 0.05), meat, p, Vector3(0, rng.randf_range(0, 180), 0)))
+			n.add_child(um.blob(Vector3(0.05, 0.02, 0.035), fat, p + Vector3(0.01, 0.035, 0)))
+	for k in 2 + stage:
+		var a := rng.randf() * TAU
+		var p := Vector3(cos(a) * 0.2, 0.03, sin(a) * 0.15)
+		n.add_child(um.rod(p, p + Vector3(rng.randf_range(-0.1, 0.1), 0.01, rng.randf_range(-0.08, 0.08)), 0.015, 0.012, bone))
+	return n
+
+
 ## A farm's field, one tile: tilled earth in furrows with rows of crops (green
 ## stalks with golden ears), the realistic static style.
 func crops(seed_value: int) -> Node3D:

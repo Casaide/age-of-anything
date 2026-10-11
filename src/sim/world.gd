@@ -25,6 +25,7 @@ const Economy := preload("res://src/sim/economy.gd")
 const Combat := preload("res://src/sim/combat.gd")
 const Tech := preload("res://src/sim/tech.gd")
 const Market := preload("res://src/sim/market.gd")
+const Animals := preload("res://src/sim/animals.gd")
 const Match := preload("res://src/sim/match.gd")
 const Fog := preload("res://src/sim/fog.gd")
 
@@ -79,6 +80,8 @@ var commands: Commands = Commands.new()
 var history: Array = []        # every command that ran, in run order
 var hashes: Array = []         # [[tick, hash]] every HASH_EVERY ticks
 var next_id := 1               # shared by units and buildings
+var gaia := -1                # the owner of wild animals: one past the last player, on a team of its own
+var claim_tiles := 4          # how close a player's unit must come to claim a herd animal (animals.json)
 var next_group := 1
 var resources: Array = []      # resource ids in their fixed order (data/resources.json)
 var stock: Array = []          # per resource: PackedInt32Array per player
@@ -107,6 +110,8 @@ func _init(p_seed: int, p_map: SimMap, p_races: Array, p_rules: Dictionary, p_te
 	rules = p_rules
 	for p in p_races.size():
 		teams.append(int(p_teams[p]) if p < p_teams.size() else p)
+	gaia = p_races.size()
+	teams.append(-1)   # gaia: everyone's quarry, nobody's ally
 	econ = _ints(rules.economy)
 	combat = _ints(rules.combat)
 	var ts: Dictionary = rules.get("movement", {}).get("terrain_speed", {})
@@ -122,10 +127,15 @@ func _init(p_seed: int, p_map: SimMap, p_races: Array, p_rules: Dictionary, p_te
 	for p in races.size():
 		for u in races[p].units:
 			types.append(_make_type(p, u))
+	var animals: Dictionary = Animals.load_data()
+	Animals.add_types(self, animals)
 	Combat.setup(self)
 	Tech.setup(self)
 	Market.setup(self)
 	Economy.setup(self)
+	lost.append(0)   # gaia's
+	if bool(rules.get("animals", false)):   # a host rule (on by default); some tests turn it off
+		Animals.place(self, animals.spawn)
 	Match.setup(self)
 	Fog.setup(self)
 	map.fresh.clear()
@@ -162,6 +172,12 @@ func _make_type(player: int, u: Dictionary) -> Dictionary:
 		"mclass": _movement_class(e.tags),
 		"line": u.get("line", [{"age": int(r.tier), "recipe": r, "eval": e}]),   # the unit through the ages (age-ups re-price from it)
 	}
+
+
+## Should these two fight on their own (enemies, and neither is an animal nobody owns)?
+## Attacking an animal is something you choose (hunting), not something soldiers do idly.
+func is_foe(a: int, b: int) -> bool:
+	return a != gaia and b != gaia and is_enemy(a, b)
 
 
 ## Are these two players enemies (on different teams)?
@@ -238,6 +254,7 @@ func step() -> void:
 	Economy.train(self)
 	Tech.tick(self)
 	Economy.work(self)
+	Animals.tick(self)
 	spatial.build(units.x, units.y)
 	Combat.tick(self)
 	Match.tick(self)

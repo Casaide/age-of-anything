@@ -25,6 +25,7 @@ static func record(world: World) -> Dictionary:
 		"map_hash": world.map.map_hash,
 		"rules": world.rules.id,
 		"rules_hash": rules_hash(world.rules),
+		"rules_data": world.rules,   # the rules as played (a host may have changed some), so the replay needs no file
 		"races": races,
 		"ticks": world.tick,
 		"commands": world.history.duplicate(true),
@@ -34,7 +35,23 @@ static func record(world: World) -> Dictionary:
 
 ## Content hash of a rules dict (sorted-key JSON), so a changed rules file is caught.
 static func rules_hash(rules: Dictionary) -> String:
-	return JSON.stringify(rules, "", true).sha256_text().substr(0, 16)
+	return JSON.stringify(_whole(rules), "", true).sha256_text().substr(0, 16)
+
+
+## Whole-number floats as ints (a replay's JSON brings numbers back as ints; a rules file's
+## come as floats), so the same rules hash the same either way.
+static func _whole(v):
+	match typeof(v):
+		TYPE_FLOAT:
+			return int(v) if v == floorf(v) else v
+		TYPE_ARRAY:
+			return v.map(_whole)
+		TYPE_DICTIONARY:
+			var out := {}
+			for k in v:
+				out[k] = _whole(v[k])
+			return out
+	return v
 
 
 static func to_json(rep: Dictionary) -> String:
@@ -83,7 +100,7 @@ static func build_world(rep: Dictionary, lib: DataLib) -> World:
 		races.append(race)
 	var map: SimMap = SimMap.load_id(rep.map)
 	assert(map.map_hash == rep.map_hash, "Map %s has changed since the replay was recorded" % rep.map)
-	var rules = DataLib.load_json("res://data/rules/%s.json" % rep.rules)
+	var rules = rep.rules_data if rep.has("rules_data") else DataLib.load_json("res://data/rules/%s.json" % rep.rules)
 	assert(rules_hash(rules) == rep.rules_hash, "Rules %s have changed since the replay was recorded" % rep.rules)
 	var world := World.new(rep.seed, map, races, rules, rep.get("teams", []))
 	for cmd in rep.commands:

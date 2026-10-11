@@ -665,7 +665,10 @@ func smart_order(pos: Vector2) -> void:
 		if attack_move:
 			world.issue(p, Commands.ATTACK_MOVE, {"ids": ids, "x": m.x, "y": m.y, "queue": q})
 		elif foe != 0 and world.is_enemy(world.units.owner[world.units.index_of(foe)], p):
-			world.issue(p, Commands.ATTACK, {"ids": ids, "target": foe, "queue": q})
+			world.issue(p, Commands.ATTACK, {"ids": ids, "target": foe, "queue": q})   # an enemy, or an animal to hunt
+		elif foe != 0 and world.units.owner[world.units.index_of(foe)] == p and world.types[world.units.kind[world.units.index_of(foe)]].has("animal") \
+				and not _selected_workers().is_empty():
+			world.issue(p, Commands.ATTACK, {"ids": ids, "target": foe, "queue": q})   # slaughter one of our sheep for its food
 		elif bid != 0 and world.is_enemy(world.buildings.owner[world.buildings.index_of(bid)], p) and bviews.has(bid) and bviews[bid].visible:
 			world.issue(p, Commands.ATTACK, {"ids": ids, "target": bid, "queue": q})
 		elif map.resource_at(cell) != "":
@@ -973,14 +976,15 @@ func _sync_views() -> void:
 		var id := u.id[i]
 		alive[id] = true
 		var view: UnitView = views.get(id)
-		if view != null and view.get_meta("version", 0) != int(world.types[u.kind[i]].get("version", 0)):
-			view.queue_free()   # its type moved on (an age-up): new kit, new look
+		if view != null and (view.get_meta("version", 0) != int(world.types[u.kind[i]].get("version", 0)) or view.get_meta("owner", -1) != u.owner[i]):
+			view.queue_free()   # its type moved on (an age-up), or it changed hands (a claimed sheep)
 			view = null
 		if view == null:
 			if not views.has(id) and u.owner[i] == active and world.tick > 40:
 				sfx.play("trained", -8.0)   # a new unit of yours (not one restyled by an age-up)
 			view = _make_view(u.kind[i], u.owner[i])
 			view.set_meta("version", int(world.types[u.kind[i]].get("version", 0)))
+			view.set_meta("owner", u.owner[i])
 			views[id] = view
 		var dx := u.x[i] - u.px[i]
 		var dy := u.y[i] - u.py[i]
@@ -1110,7 +1114,7 @@ func _clear_doodads(cx: int, cy: int, size: int) -> void:
 ## Resource props show what's left in stages; a used-up bush fades away, used-up reeds
 ## leave stubble for a while first.
 ## The prop for a resource cell (bug bush, reed clump, stone outcrop, a farm's crops or paddy).
-const RESOURCE_PROP := {"bugbush": "bush", "reeds": "reeds", "stone": "quarry", "gold": "gold", "field": "crops", "paddy": "paddy"}
+const RESOURCE_PROP := {"bugbush": "bush", "reeds": "reeds", "stone": "quarry", "gold": "gold", "carcass": "carcass", "field": "crops", "paddy": "paddy"}
 
 
 func _add_resource_view(c: int, pick: int) -> void:
@@ -1144,7 +1148,7 @@ func _sync_resources() -> void:
 			if r.gone == 0.0 and map.pool[c] >= 0:
 				_sfx_at("farm_done", h.position, -6.0)   # a farm's used up
 			r.gone += dt
-			var linger := 6.0 if r.kind in ["reeds", "quarry", "gold"] else 0.0   # stubble and rubble stay a while
+			var linger := 6.0 if r.kind in ["reeds", "quarry", "gold", "carcass"] else 0.0   # stubble and rubble stay a while
 			h.modulate.a = clampf(1.0 - (r.gone - linger) / 1.5, 0.0, 1.0)
 			if h.modulate.a <= 0.0:
 				h.queue_free()
@@ -1316,7 +1320,8 @@ func _research_tip(r: Dictionary) -> String:
 func _make_view(kind: int, owner: int) -> UnitView:
 	var t: Dictionary = world.types[kind]
 	var view := UnitView.new()
-	view.build(t.recipe, lib, Color(lib.palettes.teams[owner]), t.speed / World.SPEED_SCALE)
+	var team := ArtKit.ANIMAL_TEAM if owner == world.gaia else Color(lib.palettes.teams[owner])
+	view.build(t.recipe, lib, team, t.speed / World.SPEED_SCALE)
 	view.scale = Vector2.ONE * ArtKit.UNIT_SCALE
 	view.pose_steps = 8
 	view.art_px = ArtKit.ART_SCALE
@@ -1498,7 +1503,7 @@ func _update_panel() -> void:
 			selected_resource = -1
 		else:
 			var tname: String = map.terrain_ids[map.terrain[selected_resource]]
-			var what: String = {"bugbush": "Bug bush", "reeds": "Reeds", "stone": "Stone", "gold": "Gold"}.get(tname, tname.capitalize())
+			var what: String = {"bugbush": "Bug bush", "reeds": "Reeds", "stone": "Stone", "gold": "Gold", "carcass": "Carcass"}.get(tname, tname.capitalize())
 			panel.show_content({"title": what, "team": Color("#8a7a5a"), "buttons": [], "queue": null, "portrait": null,
 				"hp": [left, rviews[selected_resource].get_meta("res").full] if rviews.has(selected_resource) else [],
 				"info": "%d %s left" % [left, map.resource_at(selected_resource)]})

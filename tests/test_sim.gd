@@ -54,6 +54,7 @@ func _init() -> void:
 	var lib = DataLib.new()
 	var gen = Generator.new(lib)
 	var rules = DataLib.load_json("res://data/rules/default.json")
+	rules.animals = false   # these tests count and move every unit; animals have their own test
 	var races := []
 	for p in PROMPTS:
 		races.append(gen.generate(p, rules))
@@ -74,6 +75,7 @@ func _init() -> void:
 	_test_tech(races)
 	_test_market(races)
 	_test_build_queue(races)
+	_test_animals(races)
 	_test_combat(gen)
 
 	var script := _script(map, races)
@@ -468,6 +470,56 @@ func _test_age_timing(races: Array) -> void:
 	for p in 2:
 		print("  age 2: %-18s at %d:%02d (tick %d)" % [w.races[p].name, at[p] / 1200, at[p] % 1200 / 20, at[p]])
 		check(at[p] >= 4800 and at[p] <= 7200, "age-up at minutes 4-6: %s at tick %d" % [w.races[p].name, at[p]])
+
+## Animals: placed by each start and in the wild, nobody's at first; sheep go to the player
+## who comes near; a deer runs when hurt; a killed animal leaves food the hunters gather.
+func _test_animals(races: Array) -> void:
+	var rules := rules_.duplicate(true)
+	rules.animals = true
+	var w := World.new(SEED, SimMap.load_id("flat_test"), races, rules)
+	var count := {}
+	for i in w.units.count():
+		if w.units.owner[i] == w.gaia:
+			var id: String = w.types[w.units.kind[i]].animal
+			count[id] = count.get(id, 0) + 1
+	check(count.get("sheep", 0) == 8 and count.get("boar", 0) == 2 and count.get("deer", 0) >= 6,
+		"animals: 4 sheep and a boar per start, deer herds out in the wild (%s)" % count)
+	var w2 := World.new(SEED, SimMap.load_id("flat_test"), races, rules)
+	check(w2.state_hash() == w.state_hash(), "animals: the same seed puts them in the same places")
+	# A worker walks to a sheep: it becomes ours.
+	var sheep := -1
+	var worker := -1
+	for i in w.units.count():
+		if sheep < 0 and w.units.owner[i] == w.gaia and w.types[w.units.kind[i]].animal == "sheep":
+			sheep = w.units.id[i]
+		if worker < 0 and w.units.owner[i] == 0 and w.types[w.units.kind[i]].worker:
+			worker = w.units.id[i]
+	var si := w.units.index_of(sheep)
+	w.issue(0, Commands.MOVE, {"ids": [worker], "x": w.units.x[si], "y": w.units.y[si]})
+	for t in 600:
+		w.step()
+	si = w.units.index_of(sheep)
+	check(si >= 0 and w.units.owner[si] == 0, "animals: a sheep goes to the player who reaches it")
+	# Slaughter it: its food lies on the ground and the worker gathers it.
+	w.issue(0, Commands.ATTACK, {"ids": [worker], "target": sheep})
+	var carcass := -1
+	for t in 1200:
+		w.step()
+		if w.units.index_of(sheep) < 0:
+			break
+	for c in w.map.resource_cells:
+		if w.map.terrain_ids[w.map.terrain[c]] == "carcass" and w.map.amount[c] > 0:
+			carcass = c
+	var wi := w.units.index_of(worker)
+	check(w.units.index_of(sheep) < 0 and carcass >= 0, "animals: a slaughtered sheep leaves its carcass")
+	check(wi >= 0 and w.units.task[wi] == Economy.GATHER, "animals: the worker gathers the carcass")
+	# A deer bolts when hurt; idle soldiers don't hunt on their own.
+	var deer := -1
+	for i in w.units.count():
+		if deer < 0 and w.units.owner[i] == w.gaia and w.types[w.units.kind[i]].animal == "deer":
+			deer = i
+	check(not w.is_foe(0, w.units.owner[deer]) and w.is_enemy(0, w.units.owner[deer]), "animals: hunted by choice, not fought by idle soldiers")
+
 
 ## A long shift-queue of builds (a dragged wall) all goes up: taking the next order from a
 ## unit's queue must not wipe the rest of it (it did: only two of seven walls were built).

@@ -491,7 +491,8 @@ static func update_pop(w) -> void:
 		w.pop[p] = 0
 		w.pop_cap[p] = 0
 	for i in w.units.count():
-		w.pop[w.units.owner[i]] += w.types[w.units.kind[i]].pop
+		if w.units.owner[i] != w.gaia:
+			w.pop[w.units.owner[i]] += w.types[w.units.kind[i]].pop
 	for b in w.buildings.count():
 		if w.buildings.done[b] == 1:
 			var p: int = w.buildings.owner[b]
