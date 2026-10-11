@@ -241,10 +241,6 @@ func stilt_house(team: Color) -> Dictionary:
 		body.add_child(box(Vector3(0.04, along.length(), 0.04), wood, foot.lerp(top, 0.5) + Vector3(x, 0, 0), Vector3(tilt, 0, 0)))
 	for k in 4:
 		body.add_child(box(Vector3(0.36, 0.03, 0.03), wood, foot.lerp(top, (k + 1) / 5.0) + Vector3(0.05, 0, 0)))
-	# A team pennant on the roof tip, so every building shows its owner.
-	body.add_child(cyl(0.015, 0.015, 0.5, wood, Vector3(0, 2.4, 0), Vector3.ZERO, 6))
-	body.add_child(slab_tri(Vector2(0, 0), Vector2(0, -0.22), Vector2(0.42, -0.11), 0.02, cloth(team)))
-	body.get_child(body.get_child_count() - 1).position = Vector3(0.015, 2.62, 0)
 	return {"body": body, "anchor": Vector3.ZERO, "smoke": Vector3(0.35, 2.1, -0.2), "lights": [],
 		"lantern": Vector3(0.32, 0.95, 0.66), "team": team}
 
@@ -403,7 +399,6 @@ func tin_can_house(team: Color) -> Dictionary:
 	body.add_child(ball(0.16, mats.get_mat("stone"), Vector3(-0.15, 1.24, -0.1), Vector3(1.2, 0.8, 1)))
 	body.add_child(cyl(0.06, 0.06, 0.35, Materials.flat(Color("#4a4a48"), 0.5, 0.6), Vector3(0.35, 1.3, -0.3), Vector3.ZERO, 8))
 	body.add_child(box(Vector3(0.25, 0.04, 0.12), cloth(team), Vector3(-0.5, 0.75, 0.48), Vector3(0, 40, 10)))   # a team rag
-	_pennant(body, Vector3(-0.3, 1.15, 0.3), team)
 	return {"body": body, "anchor": Vector3.ZERO, "smoke": Vector3(0.35, 1.5, -0.3), "lights": [],
 		"lantern": Vector3(0.4, 0.75, 0.75), "team": team}
 
@@ -560,7 +555,6 @@ func villa_house(team: Color) -> Dictionary:
 	body.add_child(cyl(0.03, 0.04, 0.3, mats.get_mat("wood"), Vector3(-0.72, 0.15, 0.4), Vector3.ZERO, 6))
 	body.add_child(ball(0.17, cypress, Vector3(-0.72, 0.75, 0.4), Vector3(1, 3.4, 1)))
 	body.add_child(cyl(0.05, 0.05, 0.3, stone, Vector3(0.3, 0.12 + h + rise + 0.05, -0.2), Vector3.ZERO, 8))   # chimney
-	_pennant(body, Vector3(-0.1, 0.12 + h + rise, front + 0.05), team)
 	return {"body": body, "anchor": Vector3.ZERO, "smoke": Vector3(0.3, 0.12 + h + rise + 0.25, -0.2), "lights": [],
 		"lantern": Vector3(-0.22, 0.12 + 0.62, front + 0.1), "team": team}
 
@@ -628,17 +622,8 @@ func tent_house(team: Color) -> Dictionary:
 	var body := Node3D.new()
 	var top := _yurt(body, Vector3.ZERO, 0.62, 0.48, team)
 	woodpile(Vector3(0.7, 0, -0.3), body)
-	_pennant(body, Vector3(0, top, 0), team)
 	return {"body": body, "anchor": Vector3.ZERO, "smoke": Vector3(0, top + 0.1, 0), "lights": [],
 		"lantern": Vector3(0, 0.35, 0.7), "team": team}
-
-
-## A team pennant on a short pole, so every house shows its owner from afar.
-func _pennant(parent: Node3D, at: Vector3, team: Color) -> void:
-	parent.add_child(cyl(0.015, 0.015, 0.55, mats.get_mat("wood"), at + Vector3(0, 0.27, 0), Vector3.ZERO, 6))
-	var flag := slab_tri(Vector2(0, 0), Vector2(0, -0.26), Vector2(0.5, -0.13), 0.02, cloth(team))
-	flag.position = at + Vector3(0.015, 0.54, 0)
-	parent.add_child(flag)
 
 
 ## A farm going in: a tilled plot inside a post-and-rail fence, seed sacks and a hoe by
@@ -663,7 +648,6 @@ func farm_plot(team: Color) -> Dictionary:
 		body.add_child(box(Vector3(a.distance_to(b), 0.035, 0.035), wood, (a + b) * 0.5, Vector3(0, -rad_to_deg(atan2(b.z - a.z, b.x - a.x)), 0)))
 	for k in 2:
 		body.add_child(ball(0.09, Materials.flat(Color("#b8a074"), 1.0), Vector3(0.55 + k * 0.17, 0.11, 1.08), Vector3(1, 1.2, 1)))
-	_pennant(body, Vector3(-half, 0.3, half), team)
 	return {"body": body, "anchor": Vector3.ZERO, "lights": [], "team": team}
 
 
@@ -777,7 +761,6 @@ func _barracks(arch: String, team: Color) -> Dictionary:
 	for k in 4:   # the rack
 		body.add_child(beam(Vector3(-1.1 + k * 0.08, 0.05, 0.25), Vector3(-1.04 + k * 0.08, 0.72, 0.18), 0.012, wood))
 	body.add_child(box(Vector3(0.36, 0.03, 0.05), wood, Vector3(-0.98, 0.5, 0.22)))
-	_pennant(body, Vector3(1.05, base + h + rise - 0.1, -0.55), team)
 	return {"body": body, "anchor": Vector3.ZERO, "smoke": Vector3(0.6, base + h + rise, -0.75), "lantern": Vector3(-0.3, base + 0.72, 0.2),
 		"lights": lights, "team": team}
 
@@ -826,7 +809,6 @@ func _stable(arch: String, team: Color) -> Dictionary:
 		body.add_child(box(Vector3(0.32, 0.2, 0.22), hay, p + Vector3(0, base, 0)))
 	body.add_child(box(Vector3(0.6, 0.14, 0.18), wood, Vector3(0.8, base + 0.07, 0.75)))   # trough
 	body.add_child(box(Vector3(0.54, 0.02, 0.12), Materials.flat(Color("#4e7a86"), 0.4), Vector3(0.8, base + 0.13, 0.75)))
-	_pennant(body, Vector3(w / 2 - 0.05, base + h + 0.05, -0.3 - d / 2 + 0.1), team)
 	return {"body": body, "anchor": Vector3.ZERO, "lantern": Vector3(0.0, base + h * 0.75, 0.55), "lights": [], "team": team}
 
 
@@ -879,7 +861,7 @@ func _tower(arch: String, team: Color) -> Dictionary:
 			_lily_cap(body, Vector3(0, top + 0.82, 0), 0.22)
 	else:
 		body.add_child(cyl(0.0, 0.62, 0.38, roof_mat, Vector3(0, top + 0.68, 0), Vector3(0, 45, 0), 4))
-	_pennant(body, Vector3(0, top + 0.86, 0), team)
+	body.add_child(box(Vector3(0.22, 0.12, 0.02), cloth(team), Vector3(0.1, top + 0.18, 0.47)))   # a team rag on the rail: the owner, quietly
 	return {"body": body, "anchor": Vector3.ZERO, "lantern": Vector3(0.3, top + 0.3, 0.3), "lights": [], "team": team}
 
 
@@ -926,12 +908,13 @@ func _stilt_deck(body: Node3D, at: Vector3, w: float, d: float) -> float:
 	return h + 0.06
 
 
-## A lily pad laid over a roof's crown, notched, with a flower.
+## A lily pad laid over a roof's crown, notched (no flower: on a green pad it read as a golf ball).
 func _lily_cap(body: Node3D, at: Vector3, r: float) -> void:
-	var pad := cyl(r, r, 0.03, Materials.flat(Color("#4f8a3a"), 0.7), at, Vector3(0, 30, 0), 20)
-	body.add_child(pad)
-	body.add_child(box(Vector3(r, 0.04, 0.05), Materials.flat(Color("#3a6a2a"), 0.8), at + Vector3(r * 0.5, 0.01, 0), Vector3(0, 30, 0)))   # the notch's vein
-	body.add_child(ball(r * 0.22, Materials.flat(Color("#f0a0c8"), 0.6), at + Vector3(-r * 0.3, r * 0.15, r * 0.2), Vector3(1, 0.7, 1)))
+	# Smaller, darker and slipped to one side, draped on the thatch rather than a flat lid.
+	var c := at + Vector3(-r * 0.25, -0.03, r * 0.15)
+	var rr := r * 0.75
+	body.add_child(cyl(rr, rr, 0.025, Materials.flat(Color("#3d6a2c"), 0.8), c, Vector3(10, 30, -8), 20))
+	body.add_child(box(Vector3(rr, 0.035, 0.04), Materials.flat(Color("#2e5222"), 0.85), c + Vector3(rr * 0.5, 0.015, 0), Vector3(10, 30, -8)))   # the notch's vein
 
 
 ## A woven dome on a short wall, with a mud band, a dark door and a lily cap. Returns its top.
@@ -976,7 +959,6 @@ func reed_house(team: Color) -> Dictionary:
 	for k in 3:
 		body.add_child(box(Vector3(0.28, 0.025, 0.025), wood, Vector3(0, 0.0, 1.05).lerp(Vector3(0, deck, 0.72), (k + 1) / 4.0)))
 	body.add_child(beam(Vector3(0.6, deck, 0.4), Vector3(0.95, deck + 0.9, -0.1), 0.012, wood, 4))
-	_pennant(body, Vector3(0.12, top - 0.02, 0.0), team)
 	return {"body": body, "anchor": Vector3.ZERO, "lights": [], "lantern": Vector3(0.3, deck + 0.2, 0.65), "team": team}
 
 
@@ -1044,7 +1026,6 @@ func mound_house(team: Color) -> Dictionary:
 	_burrow_door(body, Vector3(0.05, 0.2, 0.66), 0.17, 0.0, team)
 	_husk(body, Vector3(0.75, 0, -0.35), 0.24, -30.0)
 	_grass_tufts(body, Vector3(0, 0.62, 0), 0.25, 5)
-	_pennant(body, Vector3(-0.05, 0.9, 0.0), team)
 	return {"body": body, "anchor": Vector3.ZERO, "lights": [], "lantern": Vector3(0.25, 0.35, 0.62), "team": team}
 
 
