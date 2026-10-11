@@ -26,6 +26,9 @@ PAL = {
 }
 
 
+SKINS = {"light": ("e8b486", "c98a5c", "93603a"), "dark": ("9a6440", "7a4a2a", "5a3420")}
+
+
 def png(path, rows, scale=1):
     h = len(rows) * scale
     w = len(rows[0]) * scale
@@ -68,6 +71,7 @@ BODY_SE = [
     "...ooottttoooo..",
     "..otutttttttTto.",
     ".otuutttttttTTso",
+    ".otuutttttttTTso",
     ".otuttttttttTTsdo",
     ".otttttttttTTTodo",
     "..ottttttttTTo.so",
@@ -76,6 +80,9 @@ BODY_SE = [
     ".otuttttttttTTTo",
     ".otttttttttTTTTo",
     ".orrrrrrrrrrrrro",
+    "..osdo....osdo..",
+    "..osdo....osdo..",
+    "..osdo....osdo..",
     "..osdo....osdo..",
     "..osdo....osdo..",
     "..osdo....osdo..",
@@ -173,6 +180,7 @@ BODY_S = [
     "..ottuttttttTTo..",
     ".osottttttttTTsdo",
     ".osottttttttTTsdo",
+    ".osottttttttTTsdo",
     ".osottttttttTTodo",
     ".oso.oottttTo.odo",
     ".ollo.obbbbbo.olo",
@@ -180,6 +188,9 @@ BODY_S = [
     "....otutttttTTo..",
     "....otttttttTTo..",
     "....orrrrrrrrro..",
+    ".....osdo.osdo...",
+    ".....osdo.osdo...",
+    ".....osdo.osdo...",
     ".....osdo.osdo...",
     ".....osdo.osdo...",
     ".....osdo.osdo...",
@@ -236,6 +247,7 @@ BODY_N = [
     "..oTtttttttttTo..",
     ".odoTtttttttTToso",
     ".odoTtttttttTToso",
+    ".odoTtttttttTToso",
     ".odoTTtttttTTToso",
     ".odo.oTtttttTo.so",
     ".odo.obbbbbbbo.so",
@@ -243,6 +255,9 @@ BODY_N = [
     "....oTtttttttTo..",
     "....oTTtttttTTo..",
     "....orrrrrrrrro..",
+    ".....odso.odso...",
+    ".....odso.odso...",
+    ".....odso.odso...",
     ".....odso.odso...",
     ".....odso.odso...",
     ".....odso.odso...",
@@ -292,7 +307,7 @@ GALEA_N = [
 
 
 def figure(facing, gear):
-    cv = canvas(30, 44)
+    cv = canvas(30, 48)
     if facing == "se":
         stamp(cv, SHIELD_SE, 4, 20)
         stamp(cv, BODY_SE, 7, 22)
@@ -319,9 +334,12 @@ def figure(facing, gear):
 
 if __name__ == "__main__":
     os.makedirs(OUT, exist_ok=True)
-    for facing in ["s", "se", "n"]:
-        for gear in ["hair", "cap", "galea"]:
-            r = figure(facing, gear)
-            png(os.path.join(OUT, "b_%s_%s.png" % (gear, facing)), r, 1)
-            png(os.path.join(OUT, "b_%s_%s_x6.png" % (gear, facing)), r, 6)
+    for skin in ["light", "dark"]:
+        PAL["l"], PAL["s"], PAL["d"] = SKINS[skin]
+        suffix = "" if skin == "light" else "_dark"
+        for facing in ["s", "se", "n"]:
+            for gear in ["hair", "cap", "galea"]:
+                r = figure(facing, gear)
+                png(os.path.join(OUT, "b_%s_%s%s.png" % (gear, facing, suffix)), r, 1)
+                png(os.path.join(OUT, "b_%s_%s%s_x6.png" % (gear, facing, suffix)), r, 6)
     print("wrote", OUT)

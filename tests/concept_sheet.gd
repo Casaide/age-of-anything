@@ -113,6 +113,14 @@ func _initialize() -> void:
 			sp.offset = Vector2(-sp.texture.get_width() * 0.5, -sp.texture.get_height() + 2)   # feet on the line
 			sp.position = Vector2((k + 0.5) * W / recipes.size(), H * 0.6) / zoom
 			sp.scale = Vector2.ONE * art / 1.275   # drawn at game scale
+			var shadow := Polygon2D.new()   # the same flat ground shadow the baked units stand on
+			var pts := PackedVector2Array()
+			for k2 in 24:
+				pts.append(Vector2(cos(TAU * k2 / 24.0) * 12.0, sin(TAU * k2 / 24.0) * 4.5) * art / 1.275)
+			shadow.polygon = pts
+			shadow.color = Color(0, 0, 0, 0.35)
+			shadow.position = sp.position
+			vp.add_child(shadow)
 			vp.add_child(sp)
 			var pl := Label.new()
 			pl.text = String(ids[k]).get_file().get_basename()
