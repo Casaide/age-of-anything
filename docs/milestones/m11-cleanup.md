@@ -15,3 +15,6 @@
 - Upgrades in wrong place - sharp sticks should be in "armoury" we dont have it yet, but better to add it than have things in wrong place. Also missing icons. Equally we're mixing barracks, ranged and cavalary into one. Was fine for early testing, but now it means lack progression
 - Hovering over enemies i cant see and havent discovered still shows "Attack cursor"
 - Time for a real test scene - Where we see menu, choose our side, see preview of it, and start a battle. Fully designed production grade lobby - with AI battle
+- Shift click should build 5 of same unit
+- Flesh out buildings - resource drop off buildings with resource gathering upgrades, walls, towers, market, lets expand the mvp here a bit more
+- WASD for map movement is a bit too slow
