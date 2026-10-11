@@ -50,7 +50,9 @@ move it to `docs/backlog.md` rather than deleting it.
   Dominic's playtest.
 - **Art direction under research:** unit art goes concept-first (`docs/concepts/`); nothing new
   gets built for units until Dominic approves a direction.
-- **Next:** 9 fog and juice, 10 playtest. The art track (A2-A5) runs alongside.
+- **Done (milestone 9): fog and juice.** Fog of war (`src/sim/fog.gd`, `src/view/fog_view.gd`),
+  minimap, synthesised placeholder sounds; bot matches run about 11 minutes.
+- **Next:** 10 playtest. The art track (A2-A5) runs alongside.
 
 ## Layout
 
