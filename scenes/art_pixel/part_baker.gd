@@ -121,10 +121,15 @@ func _bake_model(id: String, colours: Dictionary, bake_key: String, k := 0) -> v
 		# wraps the body, and the parts the body hides stay hidden, in every facing.
 		var body: Dictionary = models.build(id.get_slice("~", 1), colours)
 		wearer = body.node
-		var ts: Vector2 = body.get("torso_scale", Vector2.ONE)
-		model.position = body.sockets.torso
-		model.scale = body.get("torso_fit", Vector3(ts.x, ts.y, ts.x))
-		model.rotation_degrees.z = float(body.get("torso_tilt", 0.0))
+		var fitted: Dictionary = models.fitted(id.get_slice("~", 0), id.get_slice("~", 1), colours) if models.has_method("fitted") else {}
+		if not fitted.is_empty():   # modelled for this body, in its own space: nothing to fit
+			model.free()
+			model = fitted.node
+		else:
+			var ts: Vector2 = body.get("torso_scale", Vector2.ONE)
+			model.position = body.sockets.torso
+			model.scale = body.get("torso_fit", Vector3(ts.x, ts.y, ts.x))
+			model.rotation_degrees.z = float(body.get("torso_tilt", 0.0))
 		var key_mat := StandardMaterial3D.new()
 		key_mat.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
 		key_mat.albedo_color = HOLDOUT
