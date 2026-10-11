@@ -71,7 +71,10 @@ tests green. Anything cut moves to `../backlog.md`.
       5; queue of 15 (current big, the rest small); WASD 1500 px/s; click a bush, reeds or stone to
       see what's left; resources look started from the first bite, then step down; mineable stone
       is its own prop (pale squared blocks) apart from grey blocking boulders
-- [ ] 2. Sound
+- [x] 2. Sound (2026-10-11, placeholder synths, Dominic to listen): chop, clink (mining), hammer
+      knock, picking rustle, timed to the blow landing in each worker's animation and quieter away
+      from the middle of the screen; order acknowledged, select click, unit trained, building
+      finished, farm used up. `tests/sfx_export.gd` writes them all to WAV
 - [ ] 3. UI: tooltips, icons, polish
 - [ ] 4. Buildings: barracks split, armoury, camps, market, walls
 - [ ] 5. Art consistency: rocks, farms, water, stone vs blocking rocks
