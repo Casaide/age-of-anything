@@ -305,3 +305,9 @@ upgrades change numbers, with at most a subtle, consistent tell (Claude's sugges
 to keep silhouettes readable and bakes few. The counter quiz is reshaped: name roles from
 silhouettes, then predict counters with the unit card (Dominic scored 50% judging by gear
 quality; the equal-cost counts and roles didn't come through). Planned in milestone 6.
+
+**D-058, 2026-10-11: Bows for everyone; crossbows are royal and rat kit; shift-queued orders.**
+Dominic noticed every archer had a crossbow and nobody a bow. The short bow carried the `greek`
+signature tag, so it was off theme for everyone else. Now the bow is generic, and the crossbow
+is signature kit for the royal culture and the rats (or anyone who asks; "crossbow" is in the
+lexicon). Separately, orders can be shift-queued per unit (milestone 6, at Dominic's request).

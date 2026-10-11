@@ -155,6 +155,11 @@ still maps the brief onto parts within host rules.
   - Gunpowder: frog musketeers, the "Renaissance pack".
   - Industrial/modern: vehicles.
   - Air units.
+  - **Fantasy pack (Dominic, 2026-10-11): a stretch goal alongside WW2 and sci-fi.**
+    - Wizards and casters (a new ranged class with spells), dragons and other big beasts, enchanted
+      gear, castles and towers.
+    - It needs ability support (the asymmetric-mechanics note above) and magic damage as an armour
+      class, both of which the combat model already allows for.
   - Sci-fi "space federation" pack. A space-fleet sci-fi mod is Dominic's personal dream; keep
     official names and likenesses out of shipped content.
 

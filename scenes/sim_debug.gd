@@ -62,6 +62,7 @@ var baking := false
 var built_count := -1       # finished buildings when the paths were last planned
 var palette: ColorRect      # optional whole-frame palette pass (P)
 var attack_move := false    # the order being given is an attack-move
+var queueing := false       # the order being given is shift-queued
 var fx: CombatFx            # projectiles, sparks, deaths (from the sim's events)
 var marks: Node2D           # under units: selection rings, move lines, flow arrows
 var layer: Node2D           # units, buildings and resource props, y-sorted
@@ -236,7 +237,7 @@ func _attach(w: World, end_tick := -1) -> void:
 	ground.set_art_px(camera.zoom.x / ArtKit.ART_SCALE)
 	camera.bounds = Iso.map_rect(map.width, map.height)
 	for c in map.resource_cells:
-		var kind := "bush" if map.terrain_resource[map.terrain[c]] == "food" else "reeds"
+		var kind: String = {"food": "bush", "wood": "reeds", "stone": "rock"}[map.terrain_resource[map.terrain[c]]]
 		var holder := Node2D.new()
 		holder.position = Iso.to_screen((c % map.width) * 1000 + 500, (c / map.width) * 1000 + 500)
 		holder.add_child(kit.doodad(kind, c * 7 + c / map.width))
@@ -357,8 +358,10 @@ func _unhandled_input(event: InputEvent) -> void:
 			placing = ""
 		else:
 			attack_move = event.ctrl_pressed   # Ctrl + right-click: attack-move (A is camera pan)
+			queueing = event.shift_pressed     # Shift: add to each unit's order queue
 			smart_order(get_global_mouse_position())
 			attack_move = false
+			queueing = false
 	elif event is InputEventMouseMotion and press_screen != Vector2.INF:
 		boxing = boxing or event.position.distance_to(press_screen) > DRAG_START_PX
 	elif event is InputEventKey and event.pressed and not event.echo:
@@ -536,22 +539,23 @@ func smart_order(pos: Vector2) -> void:
 	var groups := _selected_by_owner()
 	var bid: int = map.occupied[cell]
 	var foe := unit_at(pos)
+	var q := 1 if queueing else 0
 	for p in groups.size():
 		var ids: Array = groups[p]
 		if ids.is_empty():
 			continue
 		if attack_move:
-			world.issue(p, Commands.ATTACK_MOVE, {"ids": ids, "x": m.x, "y": m.y})
+			world.issue(p, Commands.ATTACK_MOVE, {"ids": ids, "x": m.x, "y": m.y, "queue": q})
 		elif foe != 0 and world.units.owner[world.units.index_of(foe)] != p:
-			world.issue(p, Commands.ATTACK, {"ids": ids, "target": foe})
+			world.issue(p, Commands.ATTACK, {"ids": ids, "target": foe, "queue": q})
 		elif bid != 0 and world.buildings.owner[world.buildings.index_of(bid)] != p:
-			world.issue(p, Commands.ATTACK, {"ids": ids, "target": bid})
+			world.issue(p, Commands.ATTACK, {"ids": ids, "target": bid, "queue": q})
 		elif map.resource_at(cell) != "":
-			world.issue(p, Commands.GATHER, {"ids": ids, "cell": cell})
+			world.issue(p, Commands.GATHER, {"ids": ids, "cell": cell, "queue": q})
 		elif bid != 0 and _is_foundation_of(bid, p):
-			world.issue(p, Commands.HELP_BUILD, {"ids": ids, "target": bid})
+			world.issue(p, Commands.HELP_BUILD, {"ids": ids, "target": bid, "queue": q})
 		else:
-			world.issue(p, Commands.MOVE, {"ids": ids, "x": m.x, "y": m.y})
+			world.issue(p, Commands.MOVE, {"ids": ids, "x": m.x, "y": m.y, "queue": q})
 	flags.append({"pos": pos, "t": 1.0})
 
 
@@ -657,7 +661,8 @@ func place_at(pos: Vector2, keep := false) -> void:
 	if workers.is_empty():
 		placing = ""
 		return
-	world.issue(active, Commands.BUILD, {"ids": workers, "building": placing, "cx": c.x, "cy": c.y})
+	# Shift both keeps placing and queues: shift-place two houses and a worker builds both in turn.
+	world.issue(active, Commands.BUILD, {"ids": workers, "building": placing, "cx": c.x, "cy": c.y, "queue": 1 if keep else 0})
 	if not keep:
 		placing = ""
 

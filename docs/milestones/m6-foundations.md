@@ -47,7 +47,12 @@ mostly data. See decision D-056.
    - Unit-line upgrades (spearman -> pikeman) are the other big visual step.
    - Blacksmith upgrades change numbers, with at most a small, consistent visual tell (a metal rim,
      studs, a brighter blade), to keep silhouettes readable and bake counts down.
-7. **Farms per race.**
+7. **Order queues and selection (Dominic, 2026-10-11):**
+   - Shift-queued orders: a worker builds, then goes foraging. Shift + right-click and
+     shift-placing queue; plain orders clear the queue.
+   - Double-click selects every unit of that type on screen. It's been there since milestone 2;
+     check it still works in the new view.
+8. **Farms per race.**
    - A farm building that makes a food tile: a plain field for most, a swamp paddy for amphibians
      (placement from item 3).
    - Bug bushes stay the starting food.

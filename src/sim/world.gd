@@ -178,6 +178,7 @@ func step() -> void:
 	Economy.work(self)
 	spatial.build(units.x, units.y)
 	Combat.tick(self)
+	_next_orders()
 	_sync_map()
 	_solve_queued()
 	_move()
@@ -190,6 +191,10 @@ func step() -> void:
 
 func _run(cmd: Dictionary) -> void:
 	var a: Dictionary = cmd.args
+	if cmd.type in Commands.QUEUEABLE:
+		a = _queue_or_clear(cmd)
+		if a.ids.is_empty():
+			return
 	match cmd.type:
 		Commands.MOVE:
 			var slots := []
@@ -240,6 +245,52 @@ func _run(cmd: Dictionary) -> void:
 
 
 # ------------------------------------------------------------------ orders
+
+## Shift-queuing. A queued order goes into each busy unit's own queue and runs now
+## for idle ones; a plain order empties the queues of the units it's for. Returns the
+## args for the units that act now.
+func _queue_or_clear(cmd: Dictionary) -> Dictionary:
+	var a: Dictionary = cmd.args
+	var queued: bool = int(a.get("queue", 0)) == 1
+	var now := []
+	for uid in a.ids:
+		var i := units.index_of(uid)
+		if i < 0 or units.owner[i] != cmd.player:
+			continue
+		if queued and busy(i):
+			var one := a.duplicate()
+			one.ids = [uid]
+			one.erase("queue")
+			units.orders[i].append({"type": cmd.type, "args": one})
+		else:
+			if not queued:
+				units.orders[i].clear()
+			now.append(uid)
+	var out := a.duplicate()
+	out.ids = now
+	return out
+
+
+## Doing something: a job, a move, or a fight.
+func busy(i: int) -> bool:
+	return units.task[i] != Economy.NONE or units.moving[i] == 1 or units.foe[i] != 0
+
+
+## Units that have finished what they were doing take their next queued order.
+## A queued BUILD whose foundation another unit already laid becomes "help build".
+func _next_orders() -> void:
+	for i in units.count():
+		if units.orders[i].is_empty() or busy(i):
+			continue
+		var o: Dictionary = units.orders[i].pop_front()
+		var p: int = units.owner[i]
+		if o.type == Commands.BUILD:
+			var bid: int = map.occupied[o.args.cy * map.width + o.args.cx]
+			var b := buildings.index_of(bid)
+			if b >= 0 and buildings.owner[b] == p and buildings.done[b] == 0:
+				o = {"type": Commands.HELP_BUILD, "args": {"ids": o.args.ids, "target": bid}}
+		_run({"turn": turn(), "player": p, "seq": -1, "type": o.type, "args": o.args})
+
 
 func _clear_combat(player: int, ids: Array) -> void:
 	for uid in ids:
@@ -625,8 +676,10 @@ func state_hash() -> int:
 		for v in [u.id[i], u.owner[i], u.kind[i], u.x[i], u.y[i], u.tx[i], u.ty[i], u.moving[i],
 				u.arrive[i], u.wx[i], u.wy[i], u.group[i], u.stuck[i], u.hp[i], u.fkey[i], u.reach[i],
 				u.task[i], u.target[i], u.home[i], u.carry_kind[i], u.carry[i], u.work[i],
-				u.foe[i], u.cooldown[i], u.stance[i], u.amx[i], u.amy[i]]:
+				u.foe[i], u.cooldown[i], u.stance[i], u.amx[i], u.amy[i], u.orders[i].size()]:
 			h = Fixed.mix(h, v)
+		for o in u.orders[i]:
+			h = Fixed.mix(h, Rng.hash_string(JSON.stringify(o, "", true)))
 	var b := buildings
 	for i in b.count():
 		for v in [b.id[i], b.owner[i], b.kind[i], b.cx[i], b.cy[i], b.hp[i], b.progress[i], b.done[i],
