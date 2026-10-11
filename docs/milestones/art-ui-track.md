@@ -19,7 +19,17 @@ Rules for every stage:
 - [ ] Variety: more baked variants of each static prop (bushes, rocks, reeds, doodads), picked per
   tile, so neighbours differ
 - [ ] Reeds in the realistic prop style
-- [ ] Fix: winged units' far wing points forward over the head (Dominic's screenshot)
+- [x] Fix: winged units' far wing points forward over the head (Dominic's screenshot)
+- [x] Race Lab and other scenes use the current art: game scenes draw only the baked art (no
+  placeholder vector shapes; a missing bake shows magenta); the Race Lab bakes per generate on the
+  game's ground; the old style sampler is removed (its pictures are in the archive)
+- [ ] Gear on armless creatures (beetles, spiders, ponies): harness or saddle mounts, shields on
+  the flank, couched spears, or gripped in jaws. Nothing hovers
+- [ ] Creature-on-mount combinations (a spider on a pony, a beetle on a pony) seated and posed
+  properly, or a proposed data flag that rules out the ones that can't read well
+- [ ] Stages: reeds thin out as they're cut (stubble at the end), bug bushes lose berries and
+  colour in 3-4 stages, buildings under construction go foundation, frame, walls, roof (per
+  architecture)
 - [ ] UI pass 1:
   - a bigger build/train queue;
   - unit icons and portraits generated from the baked units (each race's real sprites), used in

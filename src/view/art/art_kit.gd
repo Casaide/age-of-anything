@@ -8,8 +8,8 @@ extends Node
 const PartShape := preload("res://src/part_shape.gd")
 const UnitView := preload("res://src/unit_view.gd")
 const PartBaker := preload("res://scenes/art_pixel/part_baker.gd")
-const Baker := preload("res://scenes/style_sampler/hifi/baker.gd")
-const Models := preload("res://scenes/style_sampler/hifi/models.gd")
+const Baker := preload("res://src/view/art/bake/baker.gd")
+const Models := preload("res://src/view/art/bake/models.gd")
 const PropModels := preload("res://scenes/art_pixel/prop_models.gd")
 
 const ART_SCALE := 1.5     # art pixels per canvas unit (a tile is 96 x 48 art pixels)
@@ -29,7 +29,34 @@ var buildings := {}   # "arch:type" -> {body, smoke, lantern, lights, banner, va
 
 
 ## Bake what these races need (anything already baked is kept), then rebuild the atlas.
+## Prints how long each part took (bake time at match start is a budget we watch).
 func prepare(races: Array, teams: Array) -> void:
+	var t0 := Time.get_ticks_msec()
+	await bake_units(races, teams)
+	var t1 := Time.get_ticks_msec()
+	await bake_props()
+	var t2 := Time.get_ticks_msec()
+	await bake_buildings(races)
+	var t3 := Time.get_ticks_msec()
+	rebuild_atlas()
+	print("Art kit: units %d ms, props %d ms, buildings %d ms, atlas %d ms" % [t1 - t0, t2 - t1, t3 - t2, Time.get_ticks_msec() - t3])
+
+
+## Only the units (the Race Lab bakes per generated race), then the atlas.
+func prepare_units(races: Array, teams: Array) -> void:
+	await bake_units(races, teams)
+	rebuild_atlas()
+
+
+func rebuild_atlas() -> void:
+	var extras := {}
+	for name in bakes:
+		extras[name] = bakes[name].img
+	regions = PartShape.build_atlas(extras)
+
+
+## Every part of every unit of these races, in each side's team key (skips what's baked).
+func bake_units(races: Array, teams: Array) -> void:
 	var pb := PartBaker.new()
 	pb.art_scale = ART_SCALE * UNIT_SCALE   # baked at the size they're drawn: crisp pixels
 	add_child(pb)
@@ -44,6 +71,8 @@ func prepare(races: Array, teams: Array) -> void:
 	pb.queue_free()
 	PartShape.bake_flat("unit_shadow", UnitView.SHADOW_SHAPES, UnitView.SHADOW_COLOURS, ART_SCALE * UNIT_SCALE)
 
+
+func _hifi() -> Array:
 	var models := Models.new()
 	models.mats.matte = true
 	var baker := Baker.new()
@@ -54,27 +83,36 @@ func prepare(races: Array, teams: Array) -> void:
 		for t in [m.albedo_texture, m.normal_texture]:
 			while t != null and t.get_image() == null:   # noise textures build in a thread
 				await get_tree().process_frame
-	await _bake_doodads(baker, models)
+	return [baker, models]
+
+
+## Resource props and ground doodads (once per run).
+func bake_props() -> void:
+	if bakes.has("reeds0"):
+		return
+	var h: Array = await _hifi()
+	await _bake_doodads(h[0], h[1])
+	h[0].queue_free()
+
+
+## Each culture's buildings for these races (skips what's baked).
+func bake_buildings(races: Array) -> void:
 	var archs := []
 	for r in races:
 		var a: String = lib.families[r.family].get("architecture", "thatch")
-		if not a in archs:
+		if not a in archs and not buildings.has(a + ":house"):
 			archs.append(a)
+	if archs.is_empty():
+		return
 	archs.sort()
+	var h: Array = await _hifi()
 	for arch in archs:
 		for type in ["town_center", "house"]:
-			await _bake_building(baker, models, arch, type)
-	baker.queue_free()
-
-	var extras := {}
-	for name in bakes:
-		extras[name] = bakes[name].img
-	regions = PartShape.build_atlas(extras)
+			await _bake_building(h[0], h[1], arch, type)
+	h[0].queue_free()
 
 
 func _bake_doodads(baker, models) -> void:
-	if bakes.has("reeds0"):
-		return
 	var props := PropModels.new()
 	baker.outline = false   # static props are drawn realistically, without the units' outline
 	baker.set_ground_shadow(true)

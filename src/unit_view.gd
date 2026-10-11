@@ -19,11 +19,10 @@ var weapon: Node2D
 var weapon_rest := Vector2.ZERO
 var flying := false
 var unit_scale := 1.0
-var style := ""           # how parts are drawn (see part_shape.gd); set before build()
 var pose_steps := 0       # > 0: stepped pixel-art animation with this many poses per walk cycle
 var art_px := 0.0         # stepped mode: art pixels per global unit, for snapping to whole pixels
 const STEP_FPS := 8.0
-## The baked-style shadow: a firmer pixel shadow in the buildings' shadow colour, falling
+## The shadow: a firmer pixel shadow in the buildings' shadow colour, falling
 ## the way their light does (baked into the atlas as part "unit_shadow").
 const SHADOW_SHAPES := [{"t": "ellipse", "c": [3, 1], "r": [15, 4.5], "ch": "shadow"}]
 const SHADOW_COLOURS := {"shadow": Color(0.06, 0.05, 0.03, 0.42)}
@@ -48,9 +47,9 @@ func build(r: Dictionary, lib, team: Color, speed := 10) -> void:
 	unit_scale = float(r.scale) / 100.0
 	speed_px = float(speed) * 3.0
 
-	var shadow := PartShape.new()   # a plain soft shadow in every style
-	shadow.outline = false
-	shadow.setup([{"t": "ellipse", "c": [0, 0], "r": [13, 3.5], "ch": "shadow"}], {"shadow": Color(0, 0, 0, 0.28)})
+	var shadow := PartShape.new()
+	shadow.part_id = "unit_shadow"
+	shadow.setup(SHADOW_SHAPES, SHADOW_COLOURS)
 	add_child(shadow)
 
 	visual = Node2D.new()
@@ -89,10 +88,6 @@ func build(r: Dictionary, lib, team: Color, speed := 10) -> void:
 		flying = true
 
 	shadow.scale = Vector2(unit_scale, unit_scale) * (0.8 if flying else 1.0)
-	if style == "baked":
-		shadow.style = "baked"
-		shadow.part_id = "unit_shadow"
-		shadow.setup(SHADOW_SHAPES, SHADOW_COLOURS)
 	_sort_layers(self)
 	_face(facing)
 
@@ -111,9 +106,7 @@ func _sort_layers(n: Node) -> void:
 
 
 func _shape() -> PartShape:
-	var s := PartShape.new()
-	s.style = style
-	return s
+	return PartShape.new()
 
 
 static func colours_for(lib, skin: String, family: String, team: Color) -> Dictionary:
@@ -135,7 +128,7 @@ func _make_rig(lib, body_id: String, head_id: String, colours: Dictionary, paren
 	var root := Node2D.new()
 	parent.add_child(root)
 	# Baked parts from hand-built models bring their own sockets (projected by the bake camera).
-	var rig: Dictionary = PartShape.rigs.get(body_id, {}) if style == "baked" else {}
+	var rig: Dictionary = PartShape.rigs.get(body_id, {})
 	var sockets := {}
 	for k in body.sockets:
 		sockets[k] = PartShape.v2(body.sockets[k])
@@ -146,7 +139,6 @@ func _make_rig(lib, body_id: String, head_id: String, colours: Dictionary, paren
 		var leg_part: Dictionary = lib.part(body.legs.part)
 		for a in rig.get("anchors", body.legs.anchors):
 			var leg := _shape()
-			leg.pin = true
 			leg.part_id = body.legs.part
 			leg.setup(leg_part.shapes, colours)
 			leg.position = Vector2(float(a[0]), float(a[1]))
@@ -175,13 +167,12 @@ func _make_rig(lib, body_id: String, head_id: String, colours: Dictionary, paren
 	if head_id != "":
 		var head: Dictionary = lib.part(head_id)
 		var head_node := _shape()
-		head_node.pin = true
 		head_node.part_id = head_id
 		head_node.setup(head.shapes, colours)
 		head_node.position = sockets.head
 		head_node.set_meta("z", 2)
 		root.add_child(head_node)
-		var head_rig: Dictionary = PartShape.rigs.get(head_id, {}) if style == "baked" else {}
+		var head_rig: Dictionary = PartShape.rigs.get(head_id, {})
 		sockets["top"] = sockets.head + (head_rig.sockets.top if head_rig.has("sockets") else PartShape.v2(head.sockets.top))
 
 	var torso_scale: Vector2 = rig.get("torso_scale", PartShape.v2(body.get("torso_scale", [1, 1])))
