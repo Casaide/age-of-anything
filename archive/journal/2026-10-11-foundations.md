@@ -283,3 +283,11 @@ the wrong level, so "greek hoplites" still said "No idea what 'hoplites' means";
 Dominic's reaction to the RB3 sheet. The rats' Town Center now becomes the oil-drum colonnade
 when they reach age 3, through the new per-age building looks. The second Fable pass found the
 milestone's exit criterion met, with a short list of non-blocking items left open.
+
+### Humans: the first Blender part
+With Blender installed (Dominic's yes), a bpy script sculpts a human head by functions of position
+(brow ridge, eye sockets, cheekbones, nose, jaw and chin, ears, a hair cap) and exports a .glb that
+the part baker loads with our own materials swapped in. Close up it reads as a face where the old
+one was an egg with painted eyes; it's now the human head. The human body also got its armour fit,
+so the leather jerkin hugs the chest instead of wrapping the man in a brown egg. Next for humans:
+the body itself from Blender.
