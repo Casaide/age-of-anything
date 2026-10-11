@@ -68,5 +68,24 @@
   "sight": 6000,
   "acquire_every": 10,
   "note": "ticks at 20 Hz; distances in milli-tiles. Damage = max(min_damage, sum over attack classes the target has of max(0, attack - armour))."
+ },
+ "movement": {
+  "note": "Movement classes (sim_map.gd CLASSES): a unit takes the first class whose tag it has, else ground. Terrains list which classes cross them (terrain.json move).",
+  "classes": [
+   {
+    "tag": "flying",
+    "class": "flying"
+   },
+   {
+    "tag": "amphibious",
+    "class": "amphibious"
+   }
+  ],
+  "terrain_speed": {
+   "amphibious": {
+    "swamp": 125,
+    "shallows": 90
+   }
+  }
  }
 }

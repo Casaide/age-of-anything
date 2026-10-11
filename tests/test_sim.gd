@@ -67,6 +67,7 @@ func _init() -> void:
 	_test_crossing(races, "choke_test")
 	_test_opening(races)
 	_test_queue(races)
+	_test_movement_classes()
 	_test_combat(gen)
 
 	var script := _script(map, races)
@@ -302,6 +303,65 @@ func _count_houses(w: World, p: int) -> int:
 		if w.buildings.owner[b] == p and w.buildings.kind[b] == house and w.buildings.done[b] == 1:
 			n += 1
 	return n
+
+
+# --- movement classes -------------------------------------------------------------
+
+## Flyers cross the lake straight; walkers go round; amphibians wade the shallows.
+func _test_movement_classes() -> void:
+	var lib = DataLib.new()
+	var gen = Generator.new(lib)
+	var flyers: Dictionary = gen.generate("flying greeks with wings", rules_)
+	var rats: Dictionary = gen.generate(PROMPTS[1], rules_)
+	var frogs: Dictionary = gen.generate(PROMPTS[0], rules_)
+	var bare := rules_.duplicate(true)
+	bare.economy.start.buildings = []
+	bare.economy.start.workers = 0
+	var w := World.new(SEED, SimMap.load_id("flat_test"), [flyers, rats, frogs], bare, [0, 0, 0])
+	var from := [25500, 32500]
+	var to := [39500, 32500]
+	w.issue(0, Commands.SPAWN, {"slot": "spear", "count": 1, "x": from[0], "y": from[1]})
+	w.issue(1, Commands.SPAWN, {"slot": "spear", "count": 1, "x": from[0], "y": from[1] + 600})
+	while w.units.count() < 2:
+		w.step()
+	check(w.units.mclass[0] == 2 and w.units.mclass[1] == 0, "winged hoplites fly, rats walk (%d, %d)" % [w.units.mclass[0], w.units.mclass[1]])
+	w.issue(0, Commands.MOVE, {"ids": [w.units.id[0]], "x": to[0], "y": to[1]})
+	w.issue(1, Commands.MOVE, {"ids": [w.units.id[1]], "x": to[0], "y": to[1] + 600})
+	var arrived := [-1, -1]
+	var over_water := false
+	var water: int = w.map.terrain_ids.find("water")
+	var t0 := w.tick
+	while w.tick < t0 + 2400 and (arrived[0] < 0 or arrived[1] < 0):
+		w.step()
+		for i in 2:
+			if arrived[i] < 0 and w.units.moving[i] == 0 and w.tick > t0 + 20:
+				arrived[i] = w.tick - t0
+		if w.map.terrain[w.map.cell_of(w.units.x[0], w.units.y[0])] == water:
+			over_water = true
+	check(over_water, "the flyer crossed over open water")
+	check(arrived[0] > 0 and arrived[1] > arrived[0] * 13 / 10, "the flyer goes straight, the walker goes round (%d vs %d ticks)" % [arrived[0], arrived[1]])
+	# Amphibians wade the shallows; walkers stop at the edge.
+	var shallows: int = w.map.terrain_ids.find("shallows")
+	var cell := -1
+	for c in w.map.width * w.map.height:
+		if w.map.terrain[c] == shallows:
+			cell = c
+			break
+	var at := [(cell % w.map.width) * 1000 + 500, (cell / w.map.width) * 1000 + 500]
+	w.issue(2, Commands.SPAWN, {"slot": "spear", "count": 1, "x": from[0], "y": from[1]})
+	while w.units.count() < 3:
+		w.step()
+	var frog := w.units.id[2]
+	var rat := w.units.id[1]
+	check(w.units.mclass[2] == 1, "frogs are amphibious")
+	w.issue(2, Commands.MOVE, {"ids": [frog], "x": at[0], "y": at[1]})
+	w.issue(1, Commands.MOVE, {"ids": [rat], "x": at[0], "y": at[1]})
+	for t in 1600:
+		w.step()
+	var fi := w.units.index_of(frog)
+	var ri := w.units.index_of(rat)
+	check(w.map.terrain[w.map.cell_of(w.units.x[fi], w.units.y[fi])] == shallows, "the frog wades into the shallows")
+	check(w.map.terrain[w.map.cell_of(w.units.x[ri], w.units.y[ri])] != shallows, "the rat stops at the water's edge")
 
 
 # --- order queues ---------------------------------------------------------------
