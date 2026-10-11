@@ -135,12 +135,13 @@ hit-flash polish and SFX (9), Blacksmith upgrades and research (7 / Next), forma
   units leave a crowded foe for a free one, so 10 vs 10 becomes ten duels, and winners go and help
 - [x] View: attack orders (right-click an enemy; Ctrl + right-click attack-moves, since A pans), F7 test armies
 - [x] View: lunge and facing, cosmetic projectiles (arrows, bolts, javelins, stones, darts), impact
-  sparks, health bars (a white hit flash needs the team shader: art track)
+  sparks, health bars, a white hit flash when the blow or shot lands
 - [x] View: deaths: the body topples about its feet, darkens where it lies, goes in a puff of dust
-- [ ] View: unit card (recipe, stats, tags, strong/weak line)
+- [x] View: unit card (stats, melee/pierce armour, bonuses, strong/weak vs the enemy's real roster): `src/view/unit_card.gd`, in the panel and the train buttons' tooltips
 - [x] Exit check tool: `scenes/counter_quiz.tscn`: 12 equal-cost pairs in the pixel art, no labels,
   answered with 1/2 and scored against real headless fights (saved to user://counter_quiz.json)
-- [ ] Exit check, reshaped after Dominic's first runs scored 50% (2026-10-11).
+- [ ] Exit check, reshaped after Dominic's first runs scored 50% (2026-10-11). The quiz is rebuilt
+  in two parts (8 roles from silhouettes, 12 counters with unit cards); **waiting on Dominic's run**.
   - Why: he judged by apparent quality (metal beats wood, a crossbow looks stronger than a
     blowgun). That's true per unit, but each pair is equal cost, and neither the counts nor the
     counter roles come through in the picture.
@@ -149,8 +150,7 @@ hit-flash polish and SFX (9), Blacksmith upgrades and research (7 / Next), forma
   - New check, part 2 (counters): predict the winner with the unit card shown. Target 75%.
   - Also: early units should look light (milestone 6: gear tiers by age), and skirmishers should
     read as arrow-proof (a shield).
-- [ ] Unit card in the panel (recipe, stats incl. melee/pierce armour, tags, "strong vs / weak vs"),
-  after the art track's panel rework is merged
+- [x] Unit card in the panel (done with the item above)
 - [ ] Archive: pictures along the way, journal, decisions, timeline
 
 ## After this milestone

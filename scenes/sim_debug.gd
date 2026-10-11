@@ -20,6 +20,7 @@ const CombatFx := preload("res://src/view/combat_fx.gd")
 const Tech := preload("res://src/sim/tech.gd")
 const RtsCamera := preload("res://src/view/rts_camera.gd")
 const CommandPanel := preload("res://src/view/command_panel.gd")
+const UnitCard := preload("res://src/view/unit_card.gd")
 const Cursors := preload("res://src/view/art/cursors.gd")
 const Commands := preload("res://src/sim/commands.gd")
 const SimMap := preload("res://src/sim/sim_map.gd")
@@ -590,15 +591,19 @@ func _play_events() -> void:
 			if a == null or to == Vector2.INF:
 				continue
 			a.face(to.x - a.position.x)
+			var lands := 0.0
 			if e.ranged:
 				var i := world.units.index_of(e.by)
 				var kind := "arrow"
 				if i >= 0:
 					kind = CombatFx.shot_kind(world.types[world.units.kind[i]].eval.tags)
-				fx.shoot(_body(a) - Vector2(0, 2), to, kind)
+				lands = fx.shoot(_body(a) - Vector2(0, 2), to, kind)
 			else:
 				a.flourish()
 				fx.spark(to, e.damage >= 8)
+			var target: Node2D = views.get(e.to)
+			if target != null:
+				fx.flash(target, lands)
 		elif e.type == "die" and not e.building:
 			var v: Node2D = views.get(e.id)
 			if v != null:
@@ -952,6 +957,11 @@ func _hud_text() -> String:
 	return "\n".join(lines)
 
 
+## The unit types of every player this one fights (for the unit card's strong/weak lines).
+func _foe_types(player: int) -> Array:
+	return world.types.filter(func(t): return world.is_enemy(player, t.player) and not t.worker)
+
+
 func _update_panel() -> void:
 	var team := Color(lib.palettes.teams[active])
 	var b := world.buildings.index_of(selected_building)
@@ -989,7 +999,8 @@ func _update_panel() -> void:
 					var afford: bool = world.can_afford(active, wt.cost)
 					var tslot: String = slot
 					c.buttons.append({"icon": kit.icons.get("%d:%s" % [active, slot]),
-						"text": ("Train %s (%s)" % [wt.name, _cost_text(wt.cost)]) if ok_age else "%s: needs age %d" % [wt.name, wt.line[0].age],
+						"text": (("Train %s (%s)" % [wt.name, _cost_text(wt.cost)]) if ok_age else "%s: needs age %d" % [wt.name, wt.line[0].age])
+							+ ("" if wt.worker else "\n" + UnitCard.text(wt, _foe_types(active))),
 						"key": "Q" if slot == "worker" else "", "cost": _cost_text(wt.cost), "enabled": ok_age and afford and q.size() < int(world.econ.queue_max),
 						"action": func(): world.issue(active, Commands.TRAIN, {"building": selected_building, "slot": tslot})})
 				_tech_buttons(c, b)
@@ -1003,10 +1014,12 @@ func _update_panel() -> void:
 		var ft: Dictionary = world.types[u.kind[first]]
 		var c := {"title": ft.name if mine.size() == 1 else "%d selected" % mine.size(), "team": team, "buttons": [], "queue": null,
 			"portrait": kit.icons.get("%d:%s" % [ft.player, ft.slot]), "hp": [u.hp[first], ft.hp] if mine.size() == 1 else []}
-		if mine.size() == 1:
+		if mine.size() == 1 and ft.worker:
 			c.info = ["Idle", "Gathering", "Carrying back", "Building"][u.task[first]]
 			if u.carry[first] > 0:
 				c.info += " (%d %s)" % [u.carry[first], world.resources[u.carry_kind[first] - 1]]
+		elif mine.size() == 1:
+			c.info = UnitCard.text(ft, _foe_types(active))
 		else:
 			c.info = ""
 			var counts := {}
