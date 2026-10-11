@@ -91,6 +91,10 @@
    "army_pct": 100,
    "max_army": 20,
    "wave_max": 8
+  },
+  "hard": {
+   "delay": 0,
+   "army_pct": 100
   }
  }
 }
