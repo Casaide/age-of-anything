@@ -1267,12 +1267,13 @@ func _armour_lorica(c: Dictionary) -> Dictionary:
 
 func _cape_cloth(c: Dictionary) -> Dictionary:
 	var n := Node3D.new()
-	# Two panels hanging from the shoulders, so it reads as a cape and not a flag.
+	# Two panels hanging close down the back from the shoulders: a cape, not a flag (wide panels
+	# fanned out behind and read as a board stuck to the unit).
 	var cloth := surf("cloth", c.team, 4.0)
 	for side in [1, -1]:
-		var panel := slab([Vector2(2, 1), Vector2(3.5, -1), Vector2(-1.5, -15.5), Vector2(-6.5, -16), Vector2(-9, -12.5), Vector2(-2, 0.5)], 0.7, cloth)
-		panel.position = Vector3(0, 0, 2.6 * side)
-		panel.rotation_degrees = Vector3(0, -20 * side, 0)
+		var panel := slab([Vector2(2, 1), Vector2(3, -1), Vector2(0.5, -14), Vector2(-2.5, -14.5), Vector2(-4, -10.5), Vector2(-1.5, 0.5)], 0.6, cloth)
+		panel.position = Vector3(0, 0, 3.0 * side)
+		panel.rotation_degrees = Vector3(0, -10 * side, 0)
 		n.add_child(panel)
 	n.add_child(blob(Vector3(1.0, 1.0, 0.6), surf("bronze", Color.WHITE, 2.0), Vector3(1.5, 0, 1.2)))   # clasp
 	return {"node": n}
