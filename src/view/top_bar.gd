@@ -10,7 +10,10 @@ const EDGE := Color("#6a5a40")
 const TEXT := Color("#f0e6cc")
 const FULL := Color("#e88a70")
 
+signal idle_pressed
+
 var _values := {}    # key -> Label
+var _idle: Button
 var _title: Label
 var _clock: Label
 
@@ -50,10 +53,31 @@ func setup(resource_ids: Array) -> void:
 	_title.add_theme_font_size_override("font_size", 16)
 	_title.add_theme_color_override("font_color", Color("#d8c89a"))
 	row.add_child(_title)
+	_idle = Button.new()   # idle workers: how many, and a click cycles through them (".")
+	_idle.icon = Icons.texture("idle")
+	_idle.expand_icon = true
+	_idle.custom_minimum_size = Vector2(70, 30)
+	_idle.focus_mode = Control.FOCUS_NONE
+	_idle.tooltip_text = "Idle workers: click (or press .) to go to the next one"
+	_idle.add_theme_font_size_override("font_size", 16)
+	var st := StyleBoxFlat.new()
+	st.bg_color = Color("#3a2e20")
+	st.border_color = EDGE
+	st.set_border_width_all(1)
+	st.set_corner_radius_all(3)
+	_idle.add_theme_stylebox_override("normal", st)
+	_idle.pressed.connect(func(): idle_pressed.emit())
+	row.add_child(_idle)
 	_clock = Label.new()
 	_clock.add_theme_font_size_override("font_size", 16)
 	_clock.add_theme_color_override("font_color", Color("#b8ad94"))
 	row.add_child(_clock)
+
+
+func show_idle(n: int) -> void:
+	_idle.text = str(n)
+	_idle.modulate = Color(1, 1, 1, 1.0 if n > 0 else 0.45)
+	_idle.add_theme_color_override("font_color", Color("#ffb070") if n > 0 else TEXT)
 
 
 ## stock: {resource id: amount}; pop, cap; title e.g. "Bog Frogs, Stick Age"; secs of match time.

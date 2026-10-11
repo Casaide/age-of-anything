@@ -334,6 +334,14 @@ func _run(cmd: Dictionary) -> void:
 			Economy.cmd_rally(self, cmd.player, a)
 		Commands.TRADE:
 			Market.cmd_trade(self, cmd.player, a)
+		Commands.STOP:
+			for uid in a.ids:
+				var i := units.index_of(uid)
+				if i >= 0 and units.owner[i] == cmd.player:
+					Economy.clear_task(self, i)
+					Combat.clear(self, i)
+					units.orders[i].clear()
+					units.moving[i] = 0
 
 
 # ------------------------------------------------------------------ orders

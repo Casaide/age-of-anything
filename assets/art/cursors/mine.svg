@@ -1,0 +1,12 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 32 32">
+<!-- Mine: a pickaxe, its curved iron head across the top (the hotspot is the point on the left). -->
+<defs>
+<linearGradient id="steel" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#f4f6f8"/><stop offset="0.45" stop-color="#b9c0c6"/><stop offset="1" stop-color="#6e767e"/></linearGradient>
+<linearGradient id="wood" x1="0" y1="0" x2="1" y2="0"><stop offset="0" stop-color="#c08850"/><stop offset="0.5" stop-color="#8a5a2e"/><stop offset="1" stop-color="#5e3a1a"/></linearGradient>
+</defs>
+<g transform="translate(16,10) rotate(-45)">
+<rect x="-1.6" y="0" width="3.2" height="21" rx="1.5" fill="url(#wood)" stroke="#1c120a" stroke-width="1.4"/>
+<path d="M-13,1 Q-6,-5 0,-4 Q6,-5 13,1 Q6,-1.5 0,-0.5 Q-6,-1.5 -13,1 Z" fill="url(#steel)" stroke="#1c120a" stroke-width="1.4" stroke-linejoin="round"/>
+<rect x="-2.6" y="-4.5" width="5.2" height="5" rx="1" fill="#5a5e62" stroke="#1c120a" stroke-width="1.2"/>
+</g>
+</svg>

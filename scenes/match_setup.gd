@@ -254,7 +254,7 @@ func _side_panel(i: int, who: String, prompt: String) -> Control:
 	field.add_theme_stylebox_override("normal", _box(Color("#16120d"), EDGE, 1))
 	field.add_theme_stylebox_override("focus", _box(Color("#16120d"), GOLD, 1))
 	field.text_changed.connect(func(_t): sides[i].reroll = 0; _regenerate(i))
-	field.text_submitted.connect(func(_t): _play())
+	field.text_submitted.connect(func(_t): _regenerate(i))   # Enter shows the race; only Start starts (Fable)
 	prow.add_child(field)
 	var dice := _button("Reroll", 16, false)
 	dice.tooltip_text = "Same words, another roll of the dice"
