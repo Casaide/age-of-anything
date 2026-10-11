@@ -311,3 +311,12 @@ Dominic noticed every archer had a crossbow and nobody a bow. The short bow carr
 signature tag, so it was off theme for everyone else. Now the bow is generic, and the crossbow
 is signature kit for the royal culture and the rats (or anyone who asks; "crossbow" is in the
 lexicon). Separately, orders can be shift-queued per unit (milestone 6, at Dominic's request).
+
+**D-059, 2026-10-11: Winged races fly instead of riding.** Dominic: a flying race should have
+wings on the person and the mount, or no mounts. Now:
+- A race that asked for wings doesn't ride: its large unit is a giant or a heavy elite (like
+  centaurs going heavy).
+- Asked for mounts too ("winged knights on ponies"), rider and mount both get wings.
+- "Pegasus" words give only the mount wings (they no longer make the whole race want to fly).
+- The mount wing socket moves to the withers (art track).
+Supersedes the part of the generator rules that put wings on the mount only.

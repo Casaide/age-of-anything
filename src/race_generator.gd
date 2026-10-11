@@ -231,7 +231,8 @@ func _make_unit(slot_def: Dictionary, ctx: Dictionary) -> Dictionary:
 	spent += int(primary.points)
 
 	# Wings on a ridden unit go on the mount (a pegasus), never on the rider alone,
-	# otherwise the rider hovers and drags a grounded mount along.
+	# otherwise the rider hovers and drags a grounded mount along. A winged race that was
+	# asked to ride keeps its own wings too: rider and mount both fly.
 	var ridden: bool = recipe.has("mount") and not recipe.mount.fused
 	if ridden and not recipe.mount.parts.has("back"):
 		var wings: Array = lib.candidates("back", rules.era).filter(func(p): return "wings" in p.tags and _allowed(p, role, unit_tags))
@@ -249,7 +250,7 @@ func _make_unit(slot_def: Dictionary, ctx: Dictionary) -> Dictionary:
 		if slot == "hand_l" and primary.get("two_handed", false):
 			continue
 		var cands: Array = lib.candidates(slot, rules.era).filter(func(p): return _allowed(p, role, unit_tags))
-		if ridden:
+		if ridden and not _winged(unit_tags):
 			cands = cands.filter(func(p): return not ("wings" in p.tags))
 		if role == "worker":
 			cands = cands.filter(func(p): return int(p.points) <= 1)
@@ -322,10 +323,17 @@ func _choose_mount(ctx: Dictionary, always := false) -> String:
 	for m in brief.mounts:
 		if m != ctx.creature:
 			return m
+	if _winged(ctx.tags):
+		return ""   # a winged race flies; it rides only when asked to (Dominic, D-059)
 	var family_mounts: Array = lib.families[ctx.family].mounts.filter(func(m): return m != ctx.creature)
 	if family_mounts.is_empty() or not (always or ctx.rng.chance(65)):
 		return ""
 	return ctx.rng.pick(family_mounts)
+
+
+## Did the prompt ask for a winged (flying) race?
+func _winged(tags: Dictionary) -> bool:
+	return int(tags.get("wings", 0)) > 0
 
 
 func _mount_for(creature: String, fused: bool, rng, brief: Dictionary) -> Dictionary:
