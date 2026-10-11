@@ -483,6 +483,12 @@ func _set_autoplay(on: bool) -> void:
 # ------------------------------------------------------------------ input
 
 func _unhandled_input(event: InputEvent) -> void:
+	var d := UiScale.key_step(event)   # Cmd/Ctrl + minus / plus: the UI a step smaller or larger (saved)
+	if d != 0:
+		UiScale.step(d)
+		_fit_hud()
+		get_viewport().set_input_as_handled()
+		return
 	if baking or world == null:
 		return
 	if event is InputEventMouseButton and event.button_index == MOUSE_BUTTON_LEFT:
@@ -1136,6 +1142,19 @@ func move_selected_to(pos: Vector2) -> void:
 	flags.append({"pos": pos, "t": 1.0})
 
 
+## The pause menu's UI size button: a step larger, and from the largest back to the smallest.
+func _ui_size_cycle() -> void:
+	if UiScale.size_pct() >= UiScale.SIZE_MAX:
+		while UiScale.size_pct() > UiScale.SIZE_MIN:
+			UiScale.step(-1)
+	else:
+		UiScale.step(1)
+	_fit_hud()
+	var b: Button = pause_menu.get_node_or_null("box/ui")
+	if b != null:
+		b.text = "UI size: %d%%  (larger)" % UiScale.size_pct()
+
+
 ## Esc against the AI: the game pauses under a small menu.
 func _toggle_pause_menu() -> void:
 	_show_pause_menu(pause_menu == null or not pause_menu.visible)
@@ -1191,6 +1210,7 @@ func _make_pause_menu() -> Control:
 	box.add_child(title)
 	for item in [["resume", "Resume", func(): _show_pause_menu(false)],
 			["music", "Music: on", func(): _toggle_music()],
+			["ui", "UI size: %d%%  (larger)" % UiScale.size_pct(), func(): _ui_size_cycle()],
 			["surrender", "Surrender", func(): _confirm_surrender()],
 			["menu", "Back to the menu", func(): get_tree().paused = false; get_tree().change_scene_to_file("res://scenes/match_setup.tscn")]]:
 		var b := Button.new()
@@ -1287,6 +1307,7 @@ func _process(delta: float) -> void:
 	if baking or world == null:
 		return
 	_play_events()
+	panel.keep_left_of(minimap.position.x - 24)   # wide panels (soldiers with stances) wrap rather than run under the minimap
 	audio.battle(world.tick / float(World.TICK_HZ) < battle_until)
 	_sync_views()
 	_sync_buildings()
