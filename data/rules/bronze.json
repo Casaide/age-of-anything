@@ -40,7 +40,8 @@
   "base": 60,
   "curve": "pow1.4_ref12",
   "train_curve": "pow0.5_ref12",
-  "train_base": 20
+  "train_base": 20,
+  "worker": 30
  },
  "economy": {
   "start": {

@@ -90,6 +90,8 @@ static func evaluate(recipe: Dictionary, lib, rules: Dictionary) -> Dictionary:
 	var c: Dictionary = rules.cost
 	var econ: Dictionary = lib.creatures[recipe.creature].get("economy", {})
 	var total: int = (int(c.base) * lib.curve(c.curve, points) + 500) / 1000
+	if tags.has("worker") and c.has("worker"):
+		total = int(c.worker)   # workers earn the same whatever their body: one price (the creature's economy still applies)
 	total = total * int(econ.get("cost_pct", 100)) / 100
 	# Split the total over the resources in the mix, in the fixed resource order; the last
 	# one used takes the remainder (so food/wood splits come out as they always did).

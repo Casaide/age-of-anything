@@ -100,7 +100,7 @@
   "town_center": {
    "name": "Town Center",
    "size": 3,
-   "hp": 2400,
+   "hp": 1600,
    "cost": {
     "food": 0,
     "wood": 275
@@ -120,7 +120,7 @@
    "hotkey": "C",
    "note": "every player starts with one",
    "armour": {
-    "melee": 2,
+    "melee": 1,
     "pierce": 8
    }
   },
