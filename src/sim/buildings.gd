@@ -8,7 +8,8 @@ var owner := PackedInt32Array()
 var kind := PackedInt32Array()        # index into World.btypes
 var cx := PackedInt32Array()          # top-left cell
 var cy := PackedInt32Array()
-var size := PackedInt32Array()        # footprint is size x size cells
+var sx := PackedInt32Array()          # footprint: sx cells along x by sy along y (square but for gates)
+var sy := PackedInt32Array()
 var hp := PackedInt32Array()
 var progress := PackedInt32Array()    # builder-ticks put in so far
 var done := PackedInt32Array()        # 1 once built
@@ -23,14 +24,15 @@ func count() -> int:
 	return id.size()
 
 
-func add(bid: int, p_owner: int, p_kind: int, p_cx: int, p_cy: int, p_size: int, p_hp: int) -> int:
+func add(bid: int, p_owner: int, p_kind: int, p_cx: int, p_cy: int, p_sx: int, p_sy: int, p_hp: int) -> int:
 	assert(id.is_empty() or bid > id[id.size() - 1], "Building ids must grow")
 	id.append(bid)
 	owner.append(p_owner)
 	kind.append(p_kind)
 	cx.append(p_cx)
 	cy.append(p_cy)
-	size.append(p_size)
+	sx.append(p_sx)
+	sy.append(p_sy)
 	hp.append(p_hp)
 	progress.append(0)
 	done.append(0)
@@ -56,7 +58,8 @@ func remove_at(i: int) -> void:
 	kind.remove_at(i)
 	cx.remove_at(i)
 	cy.remove_at(i)
-	size.remove_at(i)
+	sx.remove_at(i)
+	sy.remove_at(i)
 	hp.remove_at(i)
 	progress.remove_at(i)
 	done.remove_at(i)
@@ -70,7 +73,7 @@ func remove_at(i: int) -> void:
 ## The cells under building slot i, row by row.
 func footprint(i: int, map_width: int) -> PackedInt32Array:
 	var out := PackedInt32Array()
-	for y in range(cy[i], cy[i] + size[i]):
-		for x in range(cx[i], cx[i] + size[i]):
+	for y in range(cy[i], cy[i] + sy[i]):
+		for x in range(cx[i], cx[i] + sx[i]):
 			out.append(y * map_width + x)
 	return out

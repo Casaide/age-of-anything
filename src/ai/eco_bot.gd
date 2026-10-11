@@ -124,8 +124,8 @@ func _finish_foundations(w, workers: Array) -> void:
 		var bid: int = bs.id[b]
 		if workers.any(func(i): return u.task[i] == Economy.BUILD and u.target[i] == bid):
 			continue
-		var x: int = bs.cx[b] * 1000 + bs.size[b] * 500
-		var y: int = bs.cy[b] * 1000 + bs.size[b] * 500
+		var x: int = bs.cx[b] * 1000 + bs.sx[b] * 500
+		var y: int = bs.cy[b] * 1000 + bs.sy[b] * 500
 		var best := -1
 		var best_d2 := 1 << 62
 		for i in workers:

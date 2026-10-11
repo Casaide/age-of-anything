@@ -156,7 +156,7 @@ func _anchor(s: Dictionary) -> Variant:
 				return null
 			s.cx = w.buildings.cx[b]
 			s.cy = w.buildings.cy[b]
-			s.size = w.buildings.size[b]
+			s.size = maxi(w.buildings.sx[b], w.buildings.sy[b])   # a gate's long side
 		else:
 			var v: Node2D = d.views.get(s.id)
 			if v == null or not v.visible:

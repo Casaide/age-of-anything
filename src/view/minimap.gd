@@ -103,13 +103,13 @@ func _draw() -> void:
 	for b in bs.count():
 		var o: int = bs.owner[b]
 		if reveal or not world.is_enemy(player, o):
-			_building(bs.cx[b], bs.cy[b], bs.size[b], teams[o])
+			_building(bs.cx[b], bs.cy[b], bs.sx[b], bs.sy[b], teams[o])
 	if not reveal:
 		var seen: Dictionary = world.fog_seen[player]
 		for id in seen:   # enemies' as last seen (some may be gone since)
 			var k: PackedInt32Array = seen[id]
 			if world.is_enemy(player, k[1]):
-				_building(k[2], k[3], k[4], teams[k[1]])
+				_building(k[2], k[3], k[4], k[8], teams[k[1]])
 	var u = world.units
 	for i in u.count():
 		var o: int = u.owner[i]
@@ -130,10 +130,10 @@ func _draw() -> void:
 		draw_arc(_to_mini(p.at.x, p.at.y), 4.0 + 10.0 * (1.0 - k), 0.0, TAU, 20, Color(1.0, 0.25, 0.2, k), 2.0)
 
 
-func _building(cx: int, cy: int, size: int, colour: Color) -> void:
+func _building(cx: int, cy: int, sx: int, sy: int, colour: Color) -> void:
 	var s: float = SIZE / world.map.width
-	var c := _to_mini(cx + size * 0.5, cy + size * 0.5)
-	var r: float = maxf(3.0, size * s * 0.45)
+	var c := _to_mini(cx + sx * 0.5, cy + sy * 0.5)
+	var r: float = maxf(3.0, maxi(sx, sy) * s * 0.45)
 	draw_rect(Rect2(c - Vector2(r, r * 0.6), Vector2(r * 2, r * 1.2)), colour)
 
 

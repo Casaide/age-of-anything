@@ -154,15 +154,15 @@ static func _to_town_center(w, i: int) -> void:
 	for b in bs.count():
 		if bs.owner[b] != u.owner[i] or bs.done[b] == 0 or w.btypes[bs.kind[b]].id != "town_center":
 			continue
-		var bx: int = bs.cx[b] * SimMap.TILE + bs.size[b] * SimMap.TILE / 2
-		var by: int = bs.cy[b] * SimMap.TILE + bs.size[b] * SimMap.TILE / 2
+		var bx: int = bs.cx[b] * SimMap.TILE + bs.sx[b] * SimMap.TILE / 2
+		var by: int = bs.cy[b] * SimMap.TILE + bs.sy[b] * SimMap.TILE / 2
 		var d: int = absi(bx - u.x[i]) + absi(by - u.y[i])
 		if d < best_d:
 			best_d = d
 			best = b
 	if best < 0:
 		return
-	var half: int = bs.size[best] * SimMap.TILE / 2
+	var half: int = bs.sx[best] * SimMap.TILE / 2   # town centres are square
 	var cx: int = bs.cx[best] * SimMap.TILE + half
 	var cy: int = bs.cy[best] * SimMap.TILE + half
 	var k: int = (u.id[i] + w.tick / (3 * 20)) % 8   # one of eight spots just outside the footprint; another every 3 s if it can't get there
