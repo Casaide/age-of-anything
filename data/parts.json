@@ -2035,7 +2035,7 @@
    "range": 5,
    "bonus": {
     "infantry": 2,
-    "archer": 4
+    "archer": 6
    },
    "damage": "pierce",
    "armour": {
@@ -2094,7 +2094,7 @@
    "range": 5,
    "bonus": {
     "infantry": 3,
-    "archer": 4
+    "archer": 6
    },
    "damage": "pierce",
    "armour": {
@@ -2172,7 +2172,7 @@
    },
    "damage": "pierce"
   },
-  "points": 3,
+  "points": 2,
   "two_handed": true,
   "cost_mix": {
    "food": 40,

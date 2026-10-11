@@ -1,4 +1,4 @@
-# BC0: building scale (2026-10-11), waiting on Dominic's pick
+# BC0: building scale (2026-10-11): picked
 
 Rule (D-080): one footprint and one height envelope per building type for every culture; a
 culture may sit lower and melded into its terrain, never taller or bulkier.
@@ -19,3 +19,7 @@ and columns. So the fix is lower and settled, not smaller.
 
 If Dominic picks one, the same treatment goes to the rat house, barracks and stable, then to the
 other creature cultures (frogs and bugs) as part of their town-centre rounds.
+
+**Picked (Dominic):** the plinthless hall, made smaller than the Roman one in width, depth and
+height, with scrap and weeds round its base (`rat-town-centre-small.png`): "that's great". Now in
+play as `junk_town_center_small`. Human buildings always read biggest (D-081).
