@@ -60,7 +60,10 @@ Claude carries on with A1. Feedback since:
   beavers and bears (forest folk); amphibians want their own (reed-woven domes on stilts over
   water, mud and lily roofs); bugs want their own (earth mounds, hollow logs and seed husks,
   silk tents for spiders). Data: creatures can name an `architecture` that overrides the family's.
-- [ ] Mount wings at the withers: the agent's last change, not yet checked in a lineup
+- [x] Mount wings at the withers: checked in a lineup. They sat so high they read as the
+  rider's; now they drop to the mount's shoulders and lie back along it, folded (flapping in
+  flight). Feather wings redrawn with eight big feathers instead of thirty small ones (they baked
+  to a white slab), at 80% size. Look still up to Dominic.
 - [x] Units: real textures to match the buildings and props (Dominic: "the buildings and static
   stuff look better than the units"). The real bug: unit materials mapped textures in each mesh's
   local space, and bodies are scaled unit spheres, so a whole horse got a sliver of texture and
