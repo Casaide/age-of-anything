@@ -27,8 +27,8 @@ const HOUSE := {"thatch": "stilt_house", "junk": "tin_can_house", "stone": "vill
 const MATERIALS := ["wood", "thatch", "mud", "stone", "tin", "brick", "plaster", "terracotta", "terracotta_dark", "felt", "weave"]
 ## Prop and doodad kinds and how many variants of each (each a different shape, size
 ## and turn; picked per tile so neighbours differ).
-const DOODADS := {"reeds": 6, "bush": 6, "rock": 6, "stones": 6, "tuft": 6, "flowers": 6, "shore": 4, "lily": 4, "crops": 4, "paddy": 4}
-## Resources show how much is left: reeds and bug bushes each have this many stages
+const DOODADS := {"reeds": 6, "bush": 6, "rock": 6, "quarry": 4, "stones": 6, "tuft": 6, "flowers": 6, "shore": 4, "lily": 4, "crops": 4, "paddy": 4}
+## Resources show how much is left: reeds, bug bushes and quarry stone each have this many stages
 ## (0 whole ... 3 nearly gone: stubble for reeds, a bare brown bush).
 const STAGES := 4
 ## A building under construction shows four stages: foundations; the scaffold with what
@@ -217,6 +217,9 @@ func _bake_doodads(baker, models) -> void:
 			shadowed[staged("bush", v, st)] = props.bug_bush(400 + v, st)
 	for v in DOODADS.rock:
 		shadowed["rock%d" % v] = props.boulders(1000 + v)
+	for v in DOODADS.quarry:
+		for st in STAGES:
+			shadowed[staged("quarry", v, st)] = props.quarry(1300 + v, st)
 	shadowed["rally_flag"] = models.rally_flag(Color(PartShape.TEAM_KEY))
 	var flat := {}
 	for v in DOODADS.stones:
@@ -247,17 +250,19 @@ func _bake_set(baker, todo: Dictionary) -> void:
 
 
 ## How used-up a resource looks: its stage from what's left of what it started with.
-## Reeds thin out, then are mostly cut, and leave stubble when used up; bug bushes
-## lose berries and colour in four steps.
+## Whole until first used, then visibly started at once, then further down, then gone:
+## reeds thin and leave stubble, bug bushes lose berries and colour, quarry stone loses blocks.
 static func resource_stage(kind: String, left: int, full: int) -> int:
-	if kind != "reeds" and kind != "bush":
-		return 0   # only reeds and bug bushes have used-up stages
+	if not kind in ["reeds", "bush", "quarry"]:
+		return 0   # only reeds, bug bushes and quarry stone have used-up stages
 	if left <= 0:
 		return STAGES - 1
+	if left >= full:
+		return 0   # whole until the first bite; started shows straight away (Dominic)
 	var f := float(left) / float(full)
-	if kind == "reeds":
-		return 0 if f > 0.7 else (1 if f > 0.35 else 2)
-	return 0 if f > 0.75 else (1 if f > 0.5 else (2 if f > 0.25 else 3))
+	if kind == "bush":
+		return 1 if f > 0.5 else 2
+	return 1 if f > 0.45 else 2
 
 
 ## The bake name of a prop variant at a stage (stage 0 is the plain name).

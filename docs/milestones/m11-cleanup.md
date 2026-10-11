@@ -63,7 +63,12 @@ tests green. Anything cut moves to `../backlog.md`.
    in screenshots and the code), findings fixed, then Dominic's look.
 
 ## Checklist
-- [ ] 1. Controls and feedback
+- [x] 1. Controls and feedback (2026-10-11): fog leak fixed (against the AI you can't take its side;
+      enemy units show their card); quiet team marks (no pennants, D-085); cursors redrawn (a real
+      axe); the rally flag a baked prop; no attack cursor over unfound buildings; shift-click trains
+      5; queue of 15 (current big, the rest small); WASD 1500 px/s; click a bush, reeds or stone to
+      see what's left; resources look started from the first bite, then step down; mineable stone
+      is its own prop (pale squared blocks) apart from grey blocking boulders
 - [ ] 2. Sound
 - [ ] 3. UI: tooltips, icons, polish
 - [ ] 4. Buildings: barracks split, armoury, camps, market, walls

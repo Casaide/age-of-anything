@@ -2,7 +2,7 @@ extends Camera2D
 ## RTS camera: WASD/arrows and screen-edge pan, middle-drag pan, wheel zoom
 ## towards the cursor, kept over the map.
 
-const PAN_SPEED := 900.0     # screen pixels a second
+const PAN_SPEED := 1500.0    # screen pixels a second (Dominic: 900 was too slow)
 const EDGE_PX := 8.0
 const ZOOM_MIN := 0.4
 const ZOOM_MAX := 4.0
