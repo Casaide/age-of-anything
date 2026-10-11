@@ -511,7 +511,7 @@ func _play_key(event: InputEventKey) -> bool:
 		KEY_F1:
 			show_debug = not show_debug
 			return true
-	if _selected_workers().is_empty() and not _selected_by_owner()[active].is_empty():
+	if _selected_workers().size() < _selected_by_owner()[active].size():   # any soldiers in the selection
 		if k == KEY_R:   # soldiers: attack-move (then click where)
 			arming_attack = true
 			return true
@@ -635,7 +635,7 @@ func _maybe_alert(e: Dictionary, to: Vector2) -> void:
 		return
 	alert_at = to
 	var now := world.tick / float(World.TICK_HZ)
-	if now < alert_next or _on_screen(to):
+	if now < alert_next or _on_screen(to):   # only for fights you can't see (an off-screen house counts)
 		return
 	alert_next = now + 15.0
 	sfx.play("alarm")
