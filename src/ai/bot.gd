@@ -13,10 +13,12 @@ const Economy := preload("res://src/sim/economy.gd")
 const Commands := preload("res://src/sim/commands.gd")
 const Fixed := preload("res://src/sim/fixed.gd")
 const Tech := preload("res://src/sim/tech.gd")
+const Fog := preload("res://src/sim/fog.gd")
 
 const THINK_EVERY := 20     # ticks (1 s), offset from EcoBot's think by half a second
 const BUILD_COOLDOWN := 200
 const AGE3_WORKERS := 24
+const REINFORCE := 4         # soldiers idle at home that go forward as a group during an attack
 
 var player: int
 var eco
@@ -159,11 +161,11 @@ func _train(w, workers: Array) -> void:
 			w.issue(player, Commands.TRAIN, {"building": w.buildings.id[b], "slot": best})
 
 
-## How many enemy units carry each tag (their army, not workers).
+## How many enemy units we can see carry each tag (their army, not workers).
 func _enemy_tags(w) -> Dictionary:
 	var tags := {}
 	for i in w.units.count():
-		if not w.is_enemy(player, w.units.owner[i]):
+		if not w.is_enemy(player, w.units.owner[i]) or not Fog.visible(w, player, w.units.x[i], w.units.y[i]):
 			continue
 		var t: Dictionary = w.types[w.units.kind[i]]
 		if t.worker:
@@ -195,7 +197,7 @@ func _defend(w, army: Array, hx: int, hy: int) -> void:
 	var intruder := -1
 	var best_d2 := r * r
 	for i in w.units.count():
-		if not w.is_enemy(player, w.units.owner[i]):
+		if not w.is_enemy(player, w.units.owner[i]) or not Fog.visible(w, player, w.units.x[i], w.units.y[i]):
 			continue
 		var d2 := Fixed.dist2(hx, hy, w.units.x[i], w.units.y[i])
 		if d2 < best_d2:
@@ -226,26 +228,72 @@ func _waves(w, army: Array, hx: int, hy: int) -> void:
 		return
 	if not assault or w.tick % (int(m.regroup_every) * 20) != THINK_EVERY / 2:
 		return
-	# Soldiers out in the field with nothing left to fight push on to the next target.
+	# Soldiers out in the field with no enemy soldier to fight (idle, or hacking at a house)
+	# push on to the next target.
 	var home_r := int(m.defend_tiles) * 1000
 	var ids := []
+	# Reinforcements: once we're attacking, fresh soldiers idling at home go forward in groups.
+	var home := army.filter(func(i): return w.units.foe[i] == 0 and w.units.moving[i] == 0 \
+			and Fixed.dist2(hx, hy, w.units.x[i], w.units.y[i]) <= 4 * home_r * home_r)
+	if home.size() >= REINFORCE:
+		ids.append_array(home.map(func(i): return w.units.id[i]))
 	for i in army:
-		if w.units.foe[i] == 0 and w.units.moving[i] == 0 and Fixed.dist2(hx, hy, w.units.x[i], w.units.y[i]) > 4 * home_r * home_r:
+		var on_building: bool = w.units.foe[i] != 0 and w.buildings.index_of(w.units.foe[i]) >= 0
+		var free: bool = (w.units.foe[i] == 0 and w.units.moving[i] == 0) or on_building
+		if free and Fixed.dist2(hx, hy, w.units.x[i], w.units.y[i]) > 4 * home_r * home_r:
 			ids.append(w.units.id[i])
-	if not ids.is_empty():
+	if ids.is_empty():
+		return
+	# With the field clear, go for the Town Center itself (that ends the match) rather than
+	# chewing through every house on the way.
+	var tc_id := _known_enemy_town(w, hx, hy)
+	if tc_id > 0 and not _defended(w, w.buildings.index_of(tc_id)):
+		w.issue(player, Commands.ATTACK, {"ids": ids, "target": tc_id})
+	else:
 		w.issue(player, Commands.ATTACK_MOVE, {"ids": ids, "x": target.x, "y": target.y})
 
 
-## Where to attack: the nearest enemy Town Center, else the nearest enemy building (milli-tiles).
+## Are enemy soldiers we can see near this building? (Then fight them first: a unit told to
+## hit a building doesn't hit back.)
+func _defended(w, b: int) -> bool:
+	var bs = w.buildings
+	var x: int = bs.cx[b] * 1000 + bs.size[b] * 500
+	var y: int = bs.cy[b] * 1000 + bs.size[b] * 500
+	var r := int(cfg.military.defend_tiles) * 1000
+	for i in w.units.count():
+		if w.is_enemy(player, w.units.owner[i]) and not w.types[w.units.kind[i]].worker \
+				and Fog.visible(w, player, w.units.x[i], w.units.y[i]) and Fixed.dist2(x, y, w.units.x[i], w.units.y[i]) < r * r:
+			return true
+	return false
+
+
+## The id of the nearest enemy Town Center we've seen, or 0.
+func _known_enemy_town(w, hx: int, hy: int) -> int:
+	var tc_kind: int = Economy.btype_of(w, "town_center")
+	var bs = w.buildings
+	var best := 0
+	var best_d2 := 1 << 62
+	for b in bs.count():
+		if bs.kind[b] != tc_kind or not w.is_enemy(player, bs.owner[b]) or not Fog.explored(w, player, bs.cx[b], bs.cy[b]):
+			continue
+		var d2 := Fixed.dist2(hx, hy, bs.cx[b] * 1000, bs.cy[b] * 1000)
+		if d2 < best_d2:
+			best_d2 = d2
+			best = bs.id[b]
+	return best
+
+
+## Where to attack: the nearest enemy Town Center we've seen, else the nearest enemy building
+## we've seen, else an enemy's starting spot (every player knows where the others start).
 func _enemy_target(w, hx: int, hy: int) -> Vector2i:
 	var tc_kind: int = Economy.btype_of(w, "town_center")
 	var best := Vector2i(-1, -1)
 	var best_d2 := 1 << 62
 	var best_tc := false
 	for b in w.buildings.count():
-		if not w.is_enemy(player, w.buildings.owner[b]):
-			continue
 		var bs = w.buildings
+		if not w.is_enemy(player, bs.owner[b]) or not Fog.explored(w, player, bs.cx[b], bs.cy[b]):
+			continue
 		var x: int = bs.cx[b] * 1000 + bs.size[b] * 500
 		var y: int = bs.cy[b] * 1000 + bs.size[b] * 500
 		var is_tc: bool = bs.kind[b] == tc_kind
@@ -254,4 +302,8 @@ func _enemy_target(w, hx: int, hy: int) -> Vector2i:
 			best = Vector2i(x, y)
 			best_d2 = d2
 			best_tc = is_tc
+	if best.x < 0:
+		for p in w.races.size():
+			if w.is_enemy(player, p) and w.defeated[p] == 0 and p < w.map.starts.size():
+				return Vector2i(int(w.map.starts[p][0]), int(w.map.starts[p][1]))
 	return best

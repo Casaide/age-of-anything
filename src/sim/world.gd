@@ -25,6 +25,7 @@ const Economy := preload("res://src/sim/economy.gd")
 const Combat := preload("res://src/sim/combat.gd")
 const Tech := preload("res://src/sim/tech.gd")
 const Match := preload("res://src/sim/match.gd")
+const Fog := preload("res://src/sim/fog.gd")
 
 const TICK_HZ := 20
 const HASH_EVERY := 30
@@ -86,6 +87,8 @@ var pop_cap := PackedInt32Array()
 var defeated := PackedInt32Array()       # per player: the tick + 1 they were knocked out, or 0 (match.gd)
 var started_with_town := PackedByteArray()
 var winner := -1               # the winning team, once only one is left
+var fog: Array = []            # per player: PackedByteArray per cell (fog.gd); derived, not hashed
+var fog_cfg: Dictionary
 var fields := {}               # field key -> Flow; looked up by key, never iterated
 var field_order: Array = []    # cached field keys, oldest first (eviction, invalidation)
 var field_queue: Array = []    # field keys waiting for a solve, in request order
@@ -120,6 +123,7 @@ func _init(p_seed: int, p_map: SimMap, p_races: Array, p_rules: Dictionary, p_te
 	Tech.setup(self)
 	Economy.setup(self)
 	Match.setup(self)
+	Fog.setup(self)
 	map.fresh.clear()
 
 
@@ -233,6 +237,7 @@ func step() -> void:
 	spatial.build(units.x, units.y)
 	Combat.tick(self)
 	Match.tick(self)
+	Fog.tick(self)
 	_next_orders()
 	_sync_map()
 	_solve_queued()

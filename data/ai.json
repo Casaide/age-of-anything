@@ -6,19 +6,36 @@
   "age_workers": 16
  },
  "build_order": [
-  {"building": "barracks", "workers": 11},
-  {"building": "stable", "age": 2, "workers": 18},
-  {"building": "barracks", "age": 2, "workers": 22}
+  {
+   "building": "barracks",
+   "workers": 11
+  },
+  {
+   "building": "stable",
+   "age": 2,
+   "workers": 18
+  },
+  {
+   "building": "barracks",
+   "age": 2,
+   "workers": 22
+  }
  ],
  "military": {
   "queue": 2,
   "defend_tiles": 10,
   "regroup_every": 5,
   "waves": [
-   {"at": 300, "min_army": 5},
-   {"at": 480, "min_army": 9}
+   {
+    "at": 270,
+    "min_army": 6
+   },
+   {
+    "at": 420,
+    "min_army": 10
+   }
   ],
-  "repeat_every": 120,
-  "repeat_min_army": 9
+  "repeat_every": 75,
+  "repeat_min_army": 8
  }
 }

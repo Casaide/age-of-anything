@@ -168,9 +168,7 @@ func _build() -> void:
 		var arch: String = lib.architecture(races[side])
 		# Baked in the team key, coloured per side by the team shader (like units).
 		var key := PartShape.TEAM_KEY
-		var town := {"thatch": "town_center", "junk": "junk_town_center", "stone": "stone_town_center", "tent": "tent_town_center"}
-		var house := {"thatch": "stilt_house", "junk": "tin_can_house", "stone": "villa_house", "tent": "tent_house"}
-		var spec: Dictionary = models.call(town[arch] if b[2] == 3 else house[arch], key)
+		var spec: Dictionary = models.call(ArtKit.TOWN[arch] if b[2] == 3 else ArtKit.HOUSE[arch], key)
 		if b[2] != 3:
 			_grow(spec, HOUSE_SCALE)
 		await _building(baker, spec, b[0], b[1], b[2], team)
@@ -282,7 +280,8 @@ func _doodad(b: Dictionary, t: Vector2) -> void:
 ## Scale a building model and its live points (houses are built small; units need them bigger).
 func _grow(spec: Dictionary, k: float) -> void:
 	spec.body.scale = Vector3.ONE * k
-	spec.smoke *= k
+	if spec.has("smoke"):
+		spec.smoke *= k
 	spec.lantern *= k
 	spec.lights = spec.lights.map(func(p): return p * k)
 
@@ -442,7 +441,7 @@ func _building(baker, spec: Dictionary, cx: int, cy: int, size: int, team: Color
 	var holder := Node2D.new()
 	holder.position = front
 	layer.add_child(holder)
-	var pts: Array = [Vector3.ZERO, spec.smoke, spec.lantern]
+	var pts: Array = [Vector3.ZERO, spec.get("smoke", Vector3.ZERO), spec.lantern]
 	pts.append_array(spec.lights)
 	baker.set_ground_shadow(true)
 	var body: Dictionary = await baker.bake(spec.body, pts)
@@ -451,7 +450,8 @@ func _building(baker, spec: Dictionary, cx: int, cy: int, size: int, team: Color
 	body_sprite.self_modulate = tint
 	holder.add_child(body_sprite)
 	var to_local := func(p: Vector2) -> Vector2: return centre_px - front + (p - body.points[0]) / ART_SCALE
-	_smoke(holder, to_local.call(body.points[1]))
+	if spec.has("smoke"):
+		_smoke(holder, to_local.call(body.points[1]))
 	_glow(holder, to_local.call(body.points[2]), 14.0, Color(1.0, 0.75, 0.35))
 	for k in spec.lights.size():
 		_glow(holder, to_local.call(body.points[3 + k]), 9.0, Color(1.0, 0.8, 0.45))
@@ -463,6 +463,7 @@ func _building(baker, spec: Dictionary, cx: int, cy: int, size: int, team: Color
 		mat.shader = load("res://src/view/art/bake/banner.gdshader")
 		bs.material = mat
 		holder.add_child(bs)
+	if spec.has("vane"):
 		var vane: Dictionary = await baker.bake(spec.vane, [Vector3.ZERO, spec.vane_pivot])
 		var pivot := Node2D.new()
 		pivot.position = centre_px - front + (vane.points[1] - vane.points[0]) / ART_SCALE
