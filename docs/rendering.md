@@ -12,7 +12,9 @@ map; the code says the details.
    - Some are **modelled in Blender by script**: `tools/blender/*.py` (run headless, see below)
      export `.glb` files to `assets/models/`, which `unit_models.glb(name, materials)` loads at
      bake time. Their materials are named (`skin`, `hair`, `team`, `cloth`...) and swapped for
-     ours, so skin palettes and team colours still work. Today: the human head and torso.
+     ours, so skin palettes and team colours still work. Today: the human head, torso and leg, and
+     body armour fitted to the human torso (`armour_<kind>_<body>.glb`: `unit_models.fitted()` hands
+     it to the worn-armour bake, which then skips `torso_fit`).
    - A model returns its node plus, for bodies, `sockets` (3D points where the head, hands,
      torso armour, back and seat go), leg `anchors`, and fitting data: `torso_scale` (2D,
      legacy), `torso_fit` (3D scale for worn armour), `torso_tilt`, `gear_scale` (on heads).
@@ -60,6 +62,8 @@ models from code so they're reviewable and repeatable:
 ```sh
 blender -b --python tools/blender/human_head.py -- assets/models/head_human.glb
 blender -b --python tools/blender/human_torso.py -- assets/models/torso_human.glb
+blender -b --python tools/blender/human_leg.py -- assets/models/leg_human.glb
+blender -b --python tools/blender/human_armour.py -- assets/models/ leather      # and bronze
 ```
 
 Model in the game's part units, facing +X, up +Z (glTF export turns it into Godot's +X forward,

@@ -83,3 +83,4 @@ One line per moment worth remembering. Newest at the bottom.
 - **2026-10-11:** Rat junk kit in the game (D-084). Dominic closed milestones 8 and 10 "for now"
   (their open items moved to the backlog) and added milestone 11, cleanup.
 - **2026-10-11:** Human shoulders narrower; SG1 spider postures sent for a pick; the Fable second pass's open polish done (cost icons, tips, Becomes, boar, mills, cursors, swamp, quarry).
+- **2026-10-11:** Faces lose the stubble band; culture skins; riders' legs; centaur chest; Blender human leg and fitted leather and bronze armour; GC1 gear concepts for Nile, Han, Aztec.

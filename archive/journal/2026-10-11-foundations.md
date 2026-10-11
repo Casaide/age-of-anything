@@ -340,3 +340,11 @@ half its light itself, so its shading stays within a band. Riders had no legs at
 clinging riders like spiders had them); every rider now shows its near leg down the flank.
 On the way: the centaur's horse chest rises into the man's waist, horse thighs start inside the
 body, and the human jerkin sits on the chest (from the front it bulged out of the belly).
+
+### Humans: legs and armour from Blender
+The human leg is now a Blender model (thigh, knee, calf, a cuffed boot and a flat-soled foot) on
+the old leg's hip, knee and ankle, so the walk is unchanged. Body armour can now be modelled for a
+body in its own space: the bake asks for `armour_<kind>_<body>.glb` before fitting the generic
+model. The human gets a leather jerkin (shoulder doublers, laces) and a bronze cuirass (pectorals,
+rim, flared hem) built on the torso's own profile, so they hug the chest in every facing. Arms
+stay built in code: the game poses them for each weapon. Claude.
