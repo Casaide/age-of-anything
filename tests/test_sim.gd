@@ -75,6 +75,7 @@ func _init() -> void:
 	_test_farms(races)
 	_test_fog_memory(races)
 	_test_tech(races)
+	_test_research_queue(races)
 	_test_market(races)
 	_test_build_queue(races)
 	_test_builder_moves_on(races)
@@ -954,6 +955,74 @@ func _test_market(races: Array) -> void:
 	check(w.stock[g][1] == g1, "market: nobody trades at someone else's market")
 
 
+## Research and the age-up queue with units, the genre's way: in the order clicked, paid when
+## queued, refunded on cancel, never queued twice.
+func _test_research_queue(races: Array) -> void:
+	var w := World.new(SEED, SimMap.load_id("flat_test"), races, rules_)
+	for r in w.resources.size():
+		w.stock[r][0] = 5000
+	w.ages[0] = 2   # player 0 is frogs: Strong Legs is theirs
+	var s: Array = w.map.starts[0]
+	var bk := Economy.btype_of(w, "barracks")
+	var b: int = Economy.place(w, 0, bk, s[0] / 1000 + 4, s[1] / 1000 - 6)
+	w.buildings.done[b] = 1
+	w.buildings.hp[b] = w.btypes[bk].hp
+	var sk := Economy.btype_of(w, "stable")   # what the age-3 age-up asks for
+	var si: int = Economy.place(w, 0, sk, s[0] / 1000 - 7, s[1] / 1000 - 6)
+	w.buildings.done[si] = 1
+	w.buildings.hp[si] = w.btypes[sk].hp
+	var bid: int = w.buildings.id[b]
+	var up := Tech.research_index(w, "line.spear.2")
+	var leap := Tech.research_index(w, "frog_leap")
+	var k: int = w.type_of(0, "spear")
+	var food: int = w.stock[0][0]
+	w.issue(0, Commands.RESEARCH, {"building": bid, "id": "line.spear.2"})
+	w.issue(0, Commands.RESEARCH, {"building": bid, "id": "frog_leap"})
+	w.issue(0, Commands.TRAIN, {"building": bid, "slot": "spear"})
+	w.issue(0, Commands.RESEARCH, {"building": bid, "id": "frog_leap"})   # a second click: refused
+	for t in 12:
+		w.step()
+	b = w.buildings.index_of(bid)
+	check(w.buildings.queue[b] == [Tech.entry(up), Tech.entry(leap), k], "research queue: two research then a spear, in the order clicked (%s)" % [w.buildings.queue[b]])
+	var paid: int = int(w.tech.research[up].cost[0]) + int(w.tech.research[leap].cost[0]) + int(w.types[k].cost[0])
+	check(w.stock[0][0] == food - paid, "research queue: each paid when queued (food %d -> %d, %d)" % [food, w.stock[0][0], paid])
+	check(Tech.why_not(w, 0, b, "frog_leap") == "already being researched", "research queue: a queued research can't be queued again")
+	# The age-up queues too; a second one is refused; cancelling refunds it.
+	var tc: int = w.buildings.id[0]
+	var before := w.stock.map(func(row): return row[0])
+	w.issue(0, Commands.AGE_UP, {"building": tc})
+	w.issue(0, Commands.AGE_UP, {"building": tc})
+	for t in 12:
+		w.step()
+	check(w.buildings.queue[0].count(Tech.entry(Tech.AGE_UP)) == 1 and Tech.why_not(w, 0, 0, "") == "already ageing up", "research queue: one age-up queued, the second refused")
+	w.issue(0, Commands.CANCEL, {"building": tc, "index": w.buildings.queue[0].find(Tech.entry(Tech.AGE_UP))})
+	for t in 12:
+		w.step()
+	check(w.stock.map(func(row): return row[0]) == before and not Tech.queued(w, 0, Tech.AGE_UP), "research queue: cancelling the age-up refunds it")
+	w.issue(0, Commands.CANCEL, {"building": bid, "index": 1})   # frog_leap, and then queue it again
+	for t in 12:
+		w.step()
+	check(w.stock[0][0] == food - paid + int(w.tech.research[leap].cost[0]) and w.buildings.queue[w.buildings.index_of(bid)] == [Tech.entry(up), k],
+		"research queue: cancelling a queued research refunds it")
+	w.issue(0, Commands.RESEARCH, {"building": bid, "id": "frog_leap"})
+	for t in 12:
+		w.step()
+	# Run it: the spear line's upgrade, then the spear, then Strong Legs (queued last now).
+	var done := {}
+	var spears := func(): return range(w.units.count()).filter(func(i): return w.units.kind[i] == k).size()
+	var n0: int = spears.call()
+	while w.tick < 4000 and done.size() < 3:
+		w.step()
+		for e in w.events:
+			if e.type == "research" and e.player == 0 and not done.has(e.id):
+				done[e.id] = w.tick
+		if not done.has("spear") and spears.call() > n0:
+			done["spear"] = w.tick
+	check(done.size() == 3 and done["line.spear.2"] < done["spear"] and done["spear"] < done["frog_leap"],
+		"research queue: they finish in queue order (%s)" % [done])
+	check(done.get("spear", 0) - done.get("line.spear.2", 0) >= w.types[k].train_ticks, "research queue: the spear waited for the research ahead of it")
+
+
 ## Ageing up moves a player's units along their lines; research adds to stats by tag.
 func _test_tech(races: Array) -> void:
 	var w := World.new(SEED, SimMap.load_id("flat_test"), races, rules_)
@@ -964,8 +1033,8 @@ func _test_tech(races: Array) -> void:
 	w.issue(0, Commands.SPAWN, {"slot": "spear", "count": 2, "x": s[0] + 3000, "y": s[1]})
 	var k: int = w.type_of(0, "spear")
 	var age1: Dictionary = w.types[k].recipe
-	var offsets := {"barracks": Vector2i(4, -6), "stable": Vector2i(-7, -6), "armoury": Vector2i(4, 3)}
-	for need in ["barracks", "stable", "armoury"]:   # what each age-up asks for, and the armoury, already standing
+	var offsets := {"barracks": Vector2i(4, -6), "stable": Vector2i(-7, -6), "armoury": Vector2i(4, 3), "house": Vector2i(-6, 3)}
+	for need in ["barracks", "stable", "armoury", "house"]:   # what each age-up asks for, the armoury, and room for the worker, already standing
 		var nk := Economy.btype_of(w, need)
 		var ni: int = Economy.place(w, 0, nk, s[0] / 1000 + offsets[need].x, s[1] / 1000 + offsets[need].y)
 		w.buildings.done[ni] = 1
@@ -976,7 +1045,7 @@ func _test_tech(races: Array) -> void:
 	for t in 40:
 		w.step()
 	check(w.stock[0][0] < food, "tech: ageing up is paid for")
-	check(w.buildings.research[0] == Tech.AGE_UP, "tech: the Town Center is ageing up")
+	check(Tech.head(w, 0) == Tech.AGE_UP, "tech: the Town Center is ageing up")
 	var units_then := w.units.count()
 	var aged := -1
 	while w.tick < 2000:
@@ -988,6 +1057,9 @@ func _test_tech(races: Array) -> void:
 			break
 	check(aged > 0 and w.ages[0] == 2, "tech: player 0 reaches age 2 (tick %d)" % aged)
 	check(w.units.count() == units_then, "tech: no worker trained while the Town Center was ageing up")
+	for t in w.types[w.type_of(0, "worker")].train_ticks + 8:
+		w.step()
+	check(w.units.count() == units_then + 1, "tech: the worker queued behind the age-up trains once it's done")
 	var line: Array = w.types[k].line
 	check(w.types[k].recipe == age1, "tech: the age-up alone doesn't change the spears (D-100)")
 	var barracks := -1
