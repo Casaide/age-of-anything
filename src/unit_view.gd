@@ -24,6 +24,7 @@ var _hold_suffix := ""
 var _clinging := false    # building a riding creature: legs that hug the mount    # "@hold" on the body being built (its arm posed for its weapon)
 var harnessed := false    # no arms: gear rides on a harness, work is done with the whole body
 const COUCH := Vector2(1.0, -0.3)   # a couched weapon points forward, a little up
+const HOP_HEIGHT := 7.0   # part units: how high a hopper leaves the ground
 const WITHERS_DROP := Vector2(2.0, 5.0)    # part units: wings on a mount start at its shoulders...
 const WITHERS_TILT := -0.5                 # ...and lie back along it, folded, clear of the rider
 const WITHERS_SCALE := 2.0                 # a horse's wings are a horse's size (Dominic)
@@ -113,6 +114,10 @@ func build(r: Dictionary, lib, team: Color, speed := 10) -> void:
 
 	shadow.scale = Vector2(unit_scale, unit_scale) * (0.8 if flying else 1.0)
 	gait = _gait(legs.size(), flying)
+	# A creature can move its own way (data: creatures.json "gait"): frogs hop. A rider's
+	# mount decides, so a frog on a beetle scuttles.
+	if not r.has("mount") and not flying and lib.creatures.get(r.get("creature", ""), {}).get("gait", "") == "hop":
+		gait = {"hop": true, "swing": 0.0, "cadence": 0.55, "bob": 0.0, "rock": 0.0, "rock_rate": 1.0}
 	idle_wait = noise.randf_range(1.0, 5.0)
 	_sort_layers(self)
 	_face(facing)
@@ -319,14 +324,16 @@ func _process(delta: float) -> void:
 	if stepped:
 		var step := TAU / pose_steps
 		ph = floorf(phase / step) * step
-	for leg in legs:
-		leg.node.rotation = 0.35 if leg.cling else sin(ph + leg.phase) * gait.swing * stride
-
-	var hover := 0.0
-	if flying:
-		hover = -9.0 + sin(t * 3.0) * 2.0
-	bob.position.y = hover - absf(sin(ph)) * gait.bob * stride
-	bob.rotation = sin(ph * gait.rock_rate) * gait.rock * stride
+	if gait.get("hop", false):
+		_hop(ph, stride)
+	else:
+		for leg in legs:
+			leg.node.rotation = 0.35 if leg.cling else sin(ph + leg.phase) * gait.swing * stride
+		var hover := 0.0
+		if flying:
+			hover = -9.0 + sin(t * 3.0) * 2.0
+		bob.position.y = hover - absf(sin(ph)) * gait.bob * stride
+		bob.rotation = sin(ph * gait.rock_rate) * gait.rock * stride
 	if head_node:
 		head_node.rotation = 0.0
 	if back_node and flying:
@@ -366,6 +373,29 @@ func _process(delta: float) -> void:
 		var px := 1.0 / art_px
 		var snapped := Vector2(roundf(g.x / px) * px, roundf(g.y / px) * px)
 		visual.position = (snapped - g) / maxf(global_transform.get_scale().x, 0.0001)
+
+
+## A hop per cycle: push off (legs kick back), an arc through the air with the nose up then
+## down, and a little squash on landing; at rest, sitting still.
+func _hop(ph: float, stride: float) -> void:
+	var p := fposmod(ph / TAU, 1.0)
+	var air := 0.6   # the share of the cycle spent in the air
+	var lift := 0.0
+	var kick := 0.0
+	var tilt := 0.0
+	var squash := 0.0
+	if stride > 0.0:
+		if p < air:
+			var q := p / air
+			lift = sin(q * PI) * HOP_HEIGHT
+			kick = -0.7 * sin(minf(q * 2.0, 1.0) * PI * 0.5) * (1.0 - q)   # legs flung back, then tucked
+			tilt = -0.18 * cos(q * PI)   # nose up on the way up, down on the way in
+		else:
+			squash = sin((p - air) / (1.0 - air) * PI) * 1.2
+	for leg in legs:
+		leg.node.rotation = kick
+	bob.position.y = -lift + squash
+	bob.rotation = tilt
 
 
 ## How a body walks, by its number of legs: bipeds stride long and bob twice a
