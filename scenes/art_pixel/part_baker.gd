@@ -72,8 +72,7 @@ func bake(id: String, shapes: Array, colours: Dictionary) -> void:
 	for i in shapes.size():
 		model.add_child(_shape3d(shapes[i], colours, i))
 	holder.add_child(model)
-	render_target_update_mode = SubViewport.UPDATE_ONCE
-	await RenderingServer.frame_post_draw
+	await _render()
 	var img := get_texture().get_image()
 	holder.remove_child(model)
 	model.queue_free()
@@ -105,16 +104,14 @@ func _bake_model(id: String, colours: Dictionary, bake_key: String) -> void:
 	cam.position = box.get_center() + view * 1000.0
 	# Light from the viewer's upper left, a little in front.
 	key.basis = Basis.looking_at(cam.basis * Vector3(0.55, -0.75, -1.0).normalized(), Vector3.UP)
-	render_target_update_mode = SubViewport.UPDATE_ONCE
-	await RenderingServer.frame_post_draw
+	await _render()
 	var img := get_texture().get_image()
 	var front_img: Image = null
 	if front:
 		# The near arm is its own layer, so it gets its own outline over the body.
 		model.visible = false
 		holder.add_child(front)
-		render_target_update_mode = SubViewport.UPDATE_ONCE
-		await RenderingServer.frame_post_draw
+		await _render()
 		front_img = get_texture().get_image()
 		holder.remove_child(front)
 		front.queue_free()
@@ -267,3 +264,11 @@ func _shape3d(s: Dictionary, colours: Dictionary, i: int) -> Node3D:
 				n.add_child(cap)
 			return n
 	return Node3D.new()
+
+
+## Render this viewport once, on the next frame. (Drawing on demand with force_draw
+## came back empty, so bakes wait on frames: a window the OS hides or throttles bakes
+## far slower.)
+func _render() -> void:
+	render_target_update_mode = SubViewport.UPDATE_ONCE
+	await RenderingServer.frame_post_draw

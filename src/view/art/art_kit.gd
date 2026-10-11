@@ -25,6 +25,10 @@ const DOODADS := {"reeds": 6, "bush": 6, "rock": 6, "stones": 6, "tuft": 6, "flo
 ## Resources show how much is left: reeds and bug bushes each have this many stages
 ## (0 whole ... 3 nearly gone: stubble for reeds, a bare brown bush).
 const STAGES := 4
+## A building under construction shows four stages: foundations; the scaffold with what
+## stands low; the walls; the roof going on. Each keeps the parts whose top (first two)
+## or middle (last two) is below this fraction of the building's height.
+const BUILD_STAGES := [0.15, 0.4, 0.45, 0.72]
 
 var lib
 var bakes := {}       # name -> {img: Image, origin: Vector2 (baked px of the anchor)}
@@ -82,6 +86,7 @@ func _hifi() -> Array:
 	var baker := Baker.new()
 	add_child(baker)
 	baker.set_pixel_mode(ART_SCALE, SS)
+	baker.outline = false   # props and buildings are drawn realistically, without the units' outline
 	for name in MATERIALS:
 		var m: StandardMaterial3D = models.mats.get_mat(name)
 		for t in [m.albedo_texture, m.normal_texture]:
@@ -119,7 +124,6 @@ func bake_buildings(races: Array) -> void:
 ## Every variant (and cut-down stage) of every prop, several to a render.
 func _bake_doodads(baker, models) -> void:
 	var props := PropModels.new()
-	baker.outline = false   # static props are drawn realistically, without the units' outline
 	var shadowed := {}      # name -> model
 	for v in DOODADS.reeds:
 		for st in STAGES:
@@ -144,7 +148,6 @@ func _bake_doodads(baker, models) -> void:
 	await _bake_set(baker, shadowed)
 	baker.set_ground_shadow(false)
 	await _bake_set(baker, flat)
-	baker.outline = true
 
 
 func _bake_set(baker, todo: Dictionary) -> void:
@@ -203,7 +206,69 @@ func _bake_building(baker, models, arch: String, type: String) -> void:
 		bakes[name + ":vane"] = {"img": (vane.tex as Texture2D).get_image(), "origin": vane.points[1]}
 		info.vane = name + ":vane"
 		info.vane_at = (vane.points[1] - vane.points[0]) / ART_SCALE
+	info.stages = []
+	baker.set_ground_shadow(true)
+	for st in BUILD_STAGES.size():
+		var part: Dictionary = models.call(TOWN[arch] if type == "town_center" else HOUSE[arch], PartShape.TEAM_KEY)
+		if type != "town_center":
+			part.body.scale = Vector3.ONE * HOUSE_SCALE
+		_hold_back(part.body, st, models)
+		var sb: Dictionary = await baker.bake(part.body, [Vector3.ZERO])
+		var sname := "%s:stage%d" % [name, st]
+		bakes[sname] = {"img": (sb.tex as Texture2D).get_image(), "origin": sb.points[0]}
+		info.stages.append(sname)
+	baker.set_ground_shadow(false)
 	buildings[name] = info
+
+
+## A building under construction, from its own model with parts held back (see
+## BUILD_STAGES), and a scaffold of poles and rails around the footprint up to just
+## above what's built. Works on any architecture: foundations come first, walls rise,
+## the roof goes on last.
+func _hold_back(body: Node3D, stage: int, models) -> void:
+	var cut: float = BUILD_STAGES[stage]
+	var boxes := {}
+	var all := AABB()
+	var first := true
+	for mi in body.find_children("*", "MeshInstance3D", true, false):
+		var t := Transform3D()
+		var p: Node = mi
+		while p != body:
+			t = (p as Node3D).transform * t
+			p = p.get_parent()
+		var b: AABB = t * (mi as MeshInstance3D).get_aabb()
+		boxes[mi] = b
+		all = b if first else all.merge(b)
+		first = false
+	var h := all.size.y
+	var top := 0.0
+	for mi in boxes:
+		var b: AABB = boxes[mi]
+		var at := (b.end.y if stage < 2 else b.get_center().y) - all.position.y
+		if at > cut * h:
+			mi.visible = false
+		else:
+			top = maxf(top, b.end.y)
+	# The scaffold: poles at the corners and along the sides of the footprint, rails between.
+	var wood: StandardMaterial3D = models.mats.get_mat("wood")
+	var lo := Vector3(all.position.x - 0.04, 0.0, all.position.z - 0.04)
+	var hi := Vector3(all.end.x + 0.04, 0.0, all.end.z + 0.04)
+	var pole_h := maxf(top + 0.08, 0.22)
+	var posts := []
+	for fx in [0.0, 0.5, 1.0]:
+		for fz in [0.0, 0.5, 1.0]:
+			if fx == 0.5 and fz == 0.5:
+				continue
+			posts.append(Vector3(lerpf(lo.x, hi.x, fx), 0.0, lerpf(lo.z, hi.z, fz)))
+	for q in posts:
+		body.add_child(models.beam(q, q + Vector3(0, pole_h, 0), 0.016, wood))
+	var ring := [posts[0], posts[1], posts[2], posts[4], posts[7], posts[6], posts[5], posts[3]]   # around the edge
+	var levels := [pole_h * 0.5, pole_h - 0.03] if pole_h > 0.3 else [pole_h - 0.03]
+	for y in levels:
+		for k in ring.size():
+			var a: Vector3 = ring[k]
+			var c: Vector3 = ring[(k + 1) % ring.size()]
+			body.add_child(models.beam(a + Vector3(0, y, 0), c + Vector3(0, y, 0), 0.011, wood))
 
 
 ## A sprite of a bake, anchored on its origin, drawn 1:1 in art pixels; team colour

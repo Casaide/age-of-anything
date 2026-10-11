@@ -1,8 +1,8 @@
 extends Node2D
 ## A building in the pixel-art style, from the art kit's bakes: the body in the team
 ## colour, chimney smoke, flickering lights, a waving banner and a turning vane.
-## While it's being built it shows as a dark shape that brightens with progress,
-## with a progress bar; the live parts start once it's done.
+## While it's being built it shows its construction stages (foundations, scaffold,
+## walls, roof) with a progress bar; the live parts start once it's done.
 
 const Iso := preload("res://src/view/iso.gd")
 
@@ -10,6 +10,7 @@ var body: Sprite2D
 var live: Array = []      # nodes that only run once the building is done
 var glows: Array = []
 var vane: Node2D
+var stages: Array = []    # construction stage sprites, shown while it's being built
 var team := Color.WHITE
 var progress := 1.0
 var done := true
@@ -31,6 +32,13 @@ func setup(kit, name: String, cx: int, cy: int, size: int, p_team: Color) -> voi
 	body.position = at
 	body.self_modulate = Color(team.r, team.g, team.b, 1.0)
 	add_child(body)
+	for stage_name in info.stages:
+		var st: Sprite2D = kit.sprite(stage_name)
+		st.position = at
+		st.self_modulate = body.self_modulate
+		st.visible = false
+		add_child(st)
+		stages.append(st)
 	bar_at = at + Vector2(0, 6)
 	live.append(_smoke(at + info.smoke))
 	_glow(at + info.lantern, 14.0, Color(1.0, 0.75, 0.35))
@@ -62,7 +70,10 @@ func set_state(p_done: bool, p_progress: float) -> void:
 		return
 	done = p_done
 	progress = p_progress
-	body.self_modulate.a = 1.0 if done else 0.35 + 0.45 * progress
+	var shown := -1 if done else mini(int(progress * stages.size()), stages.size() - 1)
+	body.visible = done
+	for k in stages.size():
+		stages[k].visible = k == shown
 	for n in live:
 		n.visible = done
 	for g in glows:

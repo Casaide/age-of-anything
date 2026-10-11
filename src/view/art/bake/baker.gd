@@ -113,8 +113,7 @@ func _shadow_passes(model: Node3D) -> Array:
 	env.ambient_light_energy = 0.0
 	var ssao := env.ssao_enabled
 	env.ssao_enabled = false
-	render_target_update_mode = SubViewport.UPDATE_ONCE
-	await RenderingServer.frame_post_draw
+	await _render()
 	var mask := get_texture().get_image()
 	sun.visible = false
 	env.ambient_light_energy = 1.0
@@ -124,8 +123,7 @@ func _shadow_passes(model: Node3D) -> Array:
 	var ssao_i := env.ssao_intensity
 	env.ssao_radius = 0.45
 	env.ssao_intensity = 6.0
-	render_target_update_mode = SubViewport.UPDATE_ONCE
-	await RenderingServer.frame_post_draw
+	await _render()
 	var occl := get_texture().get_image()
 	sun.visible = true
 	env.ssao_radius = ssao_r
@@ -234,10 +232,8 @@ func bake_many(models: Array, cols := 3) -> Array:
 
 ## Render what's in the holder: [image, then the shadow passes if they're on].
 func _shoot() -> Array:
-	render_target_update_mode = SubViewport.UPDATE_ONCE
-	await RenderingServer.frame_post_draw
-	render_target_update_mode = SubViewport.UPDATE_ONCE
-	await RenderingServer.frame_post_draw
+	await _render()
+	await _render()
 	var shots := [get_texture().get_image()]
 	if pixel_factor > 0 and shadow_on:
 		shots.append_array(await _shadow_passes(holder))
@@ -252,8 +248,9 @@ func _cut(shots: Array, area: Rect2i, projected: Array) -> Dictionary:
 	used.position += area.position
 	used = used.grow(4).intersection(area)
 	if pixel_factor > 0:
-		if shots.size() > 1:   # room for the shadows around the model
-			used = used.grow(maxi(used.size.x, used.size.y) / 2).intersection(area)
+		if shots.size() > 1:   # room for the shadows: they fall to the lower right
+			var g := maxi(used.size.x, used.size.y) / 2
+			used = used.grow_individual(g / 8, g / 8, g, g / 2).intersection(area)
 		used.position = used.position / pixel_factor * pixel_factor   # keep the pixel grid aligned
 		var f := float(pixel_factor)
 		var art := Pixelize.run(img.get_region(used), pixel_factor, outline)
@@ -268,3 +265,11 @@ func _cut(shots: Array, area: Rect2i, projected: Array) -> Dictionary:
 	crop.generate_mipmaps()
 	return {"tex": ImageTexture.create_from_image(crop),
 		"points": projected.map(func(p): return p - Vector2(used.position))}
+
+
+## Render this viewport once, on the next frame. (Drawing on demand with force_draw
+## came back empty, so bakes wait on frames: a window the OS hides or throttles bakes
+## far slower.)
+func _render() -> void:
+	render_target_update_mode = SubViewport.UPDATE_ONCE
+	await RenderingServer.frame_post_draw
