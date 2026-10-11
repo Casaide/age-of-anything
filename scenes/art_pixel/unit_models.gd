@@ -14,15 +14,16 @@ var tex_cache := {}
 var hold := "low"   # the body being built: how its near hand holds the weapon (see arm_pose)
 
 
-## Part ids may carry a hold after "@" (a body posed for its weapon: "body.frog@throw").
+## Part ids may carry a hold after "@" (a body posed for its weapon: "body.frog@throw"), and
+## body armour its wearer after "~" ("armour.leather~body.rat": baked on that body).
 func has(id: String) -> bool:
-	return has_method("_" + id.get_slice("@", 0).replace(".", "_"))
+	return has_method("_" + id.get_slice("~", 0).get_slice("@", 0).replace(".", "_"))
 
 
 ## {node: Node3D, sockets: {name: Vector3}, anchors: [[Vector3 hip, phase, z]]}
 func build(id: String, colours: Dictionary) -> Dictionary:
-	hold = id.get_slice("@", 1) if "@" in id else "low"
-	return call("_" + id.get_slice("@", 0).replace(".", "_"), colours)
+	hold = id.get_slice("@", 1) if "@" in id and not "~" in id else "low"
+	return call("_" + id.get_slice("~", 0).get_slice("@", 0).replace(".", "_"), colours)
 
 
 ## The near arm's elbow and hand for the body's hold, from its shoulder, its resting
@@ -453,7 +454,8 @@ func _body_rat(c: Dictionary) -> Dictionary:
 		"head": Vector3(4, 24.5, 0), "hand_r": near_hand, "hand_l": Vector3(7.5, 16.5, -4.2),
 		"torso": Vector3(2.2, 17.5, 0), "back": Vector3(-4.5, 19, 0)},
 		"anchors": [[Vector3(-0.5, 6.0, -3.2), 0.0, -1], [Vector3(-0.5, 6.0, 3.2), PI, 1]],
-		"torso_scale": Vector2(0.58, 0.74)}
+		"torso_scale": Vector2(0.58, 0.74), "torso_tilt": 15.0,   # armour leans with the hunch
+		"torso_fit": Vector3(0.7, 0.76, 0.6)}   # armour (built ~1.6x) a little bigger than the body all round, so it wraps it
 
 
 func _head_rat(c: Dictionary) -> Dictionary:
@@ -1643,8 +1645,7 @@ func _armour_sardine(c: Dictionary) -> Dictionary:
 	var tin := surf("iron", Color(0.95, 0.97, 1.0), 2.0)
 	var label := plain(Color("#c8a040"))
 	var tilt := Node3D.new()   # follow the rat's forward hunch; torso armour is built ~1.6x and scaled down by the body
-	tilt.rotation_degrees = Vector3(0, 0, 15)
-	tilt.scale = Vector3.ONE * 1.45
+	tilt.scale = Vector3.ONE * 1.45   # the wearer's lean comes from its body now (torso_tilt)
 	n.add_child(tilt)
 	for k in 4:
 		var y := 4.0 - k * 2.4

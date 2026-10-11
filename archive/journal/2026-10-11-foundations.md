@@ -248,3 +248,12 @@ Nobody owns a wild animal: the sim gives them a "gaia" owner on its own team, an
 that assumed every unit has a player needed guards (deaths, population, auto-targeting, the AI's
 threat count). The replay test caught that a test's changed rules didn't match the file; replays
 now carry their rules. Bots don't hunt or herd yet.
+
+### Armour that stays on
+Dominic: "the brown circle armour thing seems to be all over the place as it rotates". With eight
+facings the leather jerkin, baked on its own and pinned to a 2D point, slid round the rat and
+showed as a brown shell on its back. Body armour now bakes on its wearer: put on at the body's 3D
+torso, fitted a little larger than the body (torso_fit) and tilted with its lean (torso_tilt),
+with the body itself rendered as a flat green key and cut out, so whatever the body hides stays
+hidden in every facing. Also: the sheep "look really bad"; they're one oval of curly fleece with
+a black face now, bigger.
