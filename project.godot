@@ -6,7 +6,7 @@ config_version=5
 
 config/name="Age of Whatever"
 config/description="A classic-style RTS where your civ is whatever you can describe."
-run/main_scene="res://scenes/race_lab.tscn"
+run/main_scene="res://scenes/match_setup.tscn"
 config/features=PackedStringArray("4.7")
 
 [display]
