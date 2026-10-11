@@ -524,7 +524,9 @@ func _move() -> void:
 	for i in xs.size():
 		if mv[i] == 0:
 			# Shoved well off its spot by passing units? Walk back (checked on re-plan ticks).
-			if grp[i] == 0 or st[i] >= STUCK_LIMIT or (tick + ids[i]) % REPLAN_EVERY != 0:
+			# Not while fighting: a stopped shooter's tx is still its (attack-)move's end, and
+			# walking "back" there a step every re-plan crept it towards the foe (Dominic's crossbows).
+			if grp[i] == 0 or units.foe[i] != 0 or st[i] >= STUCK_LIMIT or (tick + ids[i]) % REPLAN_EVERY != 0:
 				continue
 			var back := ar[i] * SETTLE_FACTOR + RETURN_SLACK
 			if Fixed.dist2(xs[i], ys[i], txs[i], tys[i]) <= back * back:
