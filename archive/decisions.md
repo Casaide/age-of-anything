@@ -596,3 +596,13 @@ Castle, University, Wonder) and milestone 13 (the new unit lines, siege, mystics
 races lack a few items each, lifted by the host's Full tech tree; the Wonder is in. Race bonuses
 become one data field on creatures and cultures, and stat bonuses are applied before pricing so
 units pay for them. Names of everything are ours. Plan by Claude.
+
+**D-107, 2026-10-11: Fixes from Dominic's play while planning milestone 12.** The worker's build
+menu has two pages, civilian and military (Dominic). The stone wall opens in age 2 (it had slipped
+into age 1; supersedes that part of D-101); a wooden palisade will hold age 1. Soldiers no longer
+pick animals as targets on their own, and a rival's sheep changes hands when your unit is near it
+and none of its owner's are, as in the genre (Dominic: "we auto attack and kill enemy sheep").
+Bug bushes hold 150 food, not 2,000, so farms matter early (Dominic: bushes last far too long);
+the bot builds a farm for each food worker the wild food near home can't feed, only while its food
+stock is low, reseeds worked-out farms, and moves gatherers off any stock over 1,000; its age-1
+mix is 50/50. Bots still age up at about 5-6 minutes; bot matches 11-14 minutes. Claude.

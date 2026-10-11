@@ -520,6 +520,22 @@ func _test_animals(races: Array) -> void:
 		if deer < 0 and w.units.owner[i] == w.gaia and w.types[w.units.kind[i]].animal == "deer":
 			deer = i
 	check(not w.is_foe(0, w.units.owner[deer]) and w.is_enemy(0, w.units.owner[deer]), "animals: hunted by choice, not fought by idle soldiers")
+	# A rival's sheep, unguarded, is stolen by walking up to it (not killed).
+	var w3 := World.new(SEED, SimMap.load_id("flat_test"), races, rules)
+	var s3 := -1
+	var wk3 := -1
+	for i in w3.units.count():
+		if s3 < 0 and w3.units.owner[i] == w3.gaia and w3.types[w3.units.kind[i]].animal == "sheep":
+			s3 = w3.units.id[i]
+		if wk3 < 0 and w3.units.owner[i] == 0 and w3.types[w3.units.kind[i]].worker:
+			wk3 = w3.units.id[i]
+	var i3 := w3.units.index_of(s3)
+	w3.units.owner[i3] = 1
+	w3.issue(0, Commands.MOVE, {"ids": [wk3], "x": w3.units.x[i3], "y": w3.units.y[i3]})
+	for t in 600:
+		w3.step()
+	i3 = w3.units.index_of(s3)
+	check(i3 >= 0 and w3.units.owner[i3] == 0, "animals: an unguarded rival sheep is stolen by walking up to it")
 
 
 ## A long shift-queue of builds (a dragged wall) all goes up: taking the next order from a
@@ -527,6 +543,7 @@ func _test_animals(races: Array) -> void:
 func _test_build_queue(races: Array) -> void:
 	var w := World.new(SEED, SimMap.load_id("flat_test"), races, rules_)
 	w.stock[w.resources.find("stone")][0] = 500
+	w.ages[0] = 2   # stone walls come with age 2
 	var ids := []
 	for i in w.units.count():
 		if w.units.owner[i] == 0:

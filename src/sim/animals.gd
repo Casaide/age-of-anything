@@ -108,19 +108,21 @@ static func _add(w, k: int, c: int) -> void:
 	w.next_id += 1
 
 
-## Each tick: an unowned herd animal goes to the first player (in order) with a unit within
-## claim range. (Owned sheep stay owned; the genre lets a rival steal them by getting closer
-## while yours aren't near; not yet.)
+## Each tick: a herd animal goes to the first player (in order) with a unit within claim
+## range while none of its owner's units are (unowned sheep: the nearest player's). So a rival
+## steals your sheep by walking up while yours aren't near, as in the genre.
 static func tick(w) -> void:
 	if w.tick % CLAIM_EVERY != 0:
 		return
 	var u = w.units
 	var reach: int = w.claim_tiles * SimMap.TILE
 	for i in u.count():
-		if u.owner[i] != w.gaia or w.types[u.kind[i]].get("behaviour", "") != "herd":
+		if w.types[u.kind[i]].get("behaviour", "") != "herd":
 			continue
+		var owner: int = u.owner[i]
 		var best := -1
 		var best_d := reach * reach + 1
+		var guarded := false
 		for j in u.count():
 			var o: int = u.owner[j]
 			if o == w.gaia or w.types[u.kind[j]].has("animal"):
@@ -128,11 +130,17 @@ static func tick(w) -> void:
 			var dx: int = u.x[j] - u.x[i]
 			var dy: int = u.y[j] - u.y[i]
 			var d := dx * dx + dy * dy
+			if d > reach * reach:
+				continue
+			if o == owner:
+				guarded = true
+				break
 			if d < best_d or (d == best_d and o < best):
 				best_d = d
 				best = o
-		if best >= 0:
+		if best >= 0 and not guarded:
 			u.owner[i] = best
+			u.foe[i] = 0
 			_to_town_center(w, i)
 
 

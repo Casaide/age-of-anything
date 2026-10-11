@@ -6,7 +6,7 @@
    "colour": "#8a5a6a",
    "colour2": "#7e5262",
    "resource": "food",
-   "amount": 2000,
+   "amount": 150,
    "depleted": "grass",
    "note": "bug bushes: near-infinite food (instead of farms)"
   },

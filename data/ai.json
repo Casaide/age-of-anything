@@ -3,8 +3,8 @@
  "economy": {
   "mix": {
    "1": {
-    "food": 60,
-    "wood": 40
+    "food": 50,
+    "wood": 50
    },
    "2": {
     "food": 50,

@@ -268,6 +268,26 @@ beasts; balance round robin at ages 3 and 4.
 Still open: the bonus drafts (phase 2), and whether Sharp Sticks (spears only) becomes the first
 step of an all-melee track.
 
+## Dominic's playtest notes (2026-10-11, while planning)
+
+Fixed first, as they came in; each ticked when done.
+
+- [x] Build menu split into Civilian and Military pages (Esc or Back returns)
+- [x] Stone walls in age 1 were a slip: the stone wall is age 2 now; the wooden palisade (age 1) comes in phase 4
+- [x] Soldiers auto-attacked enemy sheep: they ignore animals now; an unguarded rival sheep is stolen by walking up to it
+- [x] Bushes lasted far too long (2,000 food each): 150 now, so farms come early; the bot builds farms as wild food near home runs out (only while food is short) and reseeds them; age-1 gatherer mix 50/50
+- [ ] Gates for walls (phase 4; palisade gate and stone gate)
+- [ ] The UI is too small on a MacBook (a UI scale)
+- [ ] Command panel: a stronger split between training and build options; buttons too small; health bar far too big
+- [ ] A rally point clicked on a tree, rock or other resource centres on it
+- [ ] Centaurs struggle to fight (pathfinding?); spiders very hard for them to kill: check
+- [ ] A line upgrade reads "Spearbearer Centaur" to "Spearbearer Centaur": the name must change, or the card show what changes
+- [ ] The bot should hunt (and herd sheep)
+- [ ] Right-click a drop-off building to drop off what a worker carries
+- [ ] Watchtowers don't seem to shoot
+- [ ] Unit stances: aggressive, defensive, stand ground (and no-attack)
+- [ ] (For another session) building variants turned so no door or window shows
+
 ## Checklist
 - [x] Plan approved by Dominic (2026-10-11: four ages, split, lacks, Wonder in)
 - [ ] 1. Data and the tech tree page
