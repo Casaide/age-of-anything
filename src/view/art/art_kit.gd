@@ -24,7 +24,7 @@ const HOUSE := {"thatch": "stilt_house", "junk": "tin_can_house", "stone": "vill
 const MATERIALS := ["wood", "thatch", "mud", "stone", "tin", "brick", "plaster", "terracotta", "terracotta_dark", "felt", "weave"]
 ## Prop and doodad kinds and how many variants of each (each a different shape, size
 ## and turn; picked per tile so neighbours differ).
-const DOODADS := {"reeds": 6, "bush": 6, "rock": 6, "stones": 6, "tuft": 6, "flowers": 6, "shore": 4, "lily": 4}
+const DOODADS := {"reeds": 6, "bush": 6, "rock": 6, "stones": 6, "tuft": 6, "flowers": 6, "shore": 4, "lily": 4, "crops": 4, "paddy": 4}
 ## Resources show how much is left: reeds and bug bushes each have this many stages
 ## (0 whole ... 3 nearly gone: stubble for reeds, a bare brown bush).
 const STAGES := 4
@@ -92,6 +92,16 @@ func bake_icons(races: Array, teams: Array) -> void:
 		sq.blit_rect(cell, used, Vector2i((side - used.size.x) / 2, side - used.size.y - 2))
 		icons["%d:%s" % [list[k][0], list[k][1].recipe.slot]] = ImageTexture.create_from_image(sq)
 	vp.queue_free()
+
+
+## The model function for a building type in an architecture (farms are the same everywhere).
+func _model(arch: String, type: String) -> String:
+	match type:
+		"town_center":
+			return TOWN[arch]
+		"house":
+			return HOUSE[arch]
+	return "farm_plot"
 
 
 ## A building's picture for a button: its finished bake, from the atlas.
@@ -173,7 +183,7 @@ func bake_buildings(races: Array) -> void:
 	archs.sort()
 	var h: Array = await _hifi()
 	for arch in archs:
-		for type in ["town_center", "house"]:
+		for type in ["town_center", "house", "farm"]:
 			await _bake_building(h[0], h[1], arch, type)
 	h[0].queue_free()
 
@@ -201,6 +211,10 @@ func _bake_doodads(baker, models) -> void:
 		flat["shore%d" % v] = props.reed_clump(700 + v, 0.55)
 	for v in DOODADS.lily:
 		flat["lily%d" % v] = props.lily_pads(900 + v)
+	for v in DOODADS.crops:
+		flat["crops%d" % v] = props.crops(1100 + v)
+	for v in DOODADS.paddy:
+		flat["paddy%d" % v] = props.paddy(1200 + v)
 	baker.set_ground_shadow(true)
 	await _bake_set(baker, shadowed)
 	baker.set_ground_shadow(false)
@@ -218,6 +232,8 @@ func _bake_set(baker, todo: Dictionary) -> void:
 ## Reeds thin out, then are mostly cut, and leave stubble when used up; bug bushes
 ## lose berries and colour in four steps.
 static func resource_stage(kind: String, left: int, full: int) -> int:
+	if kind != "reeds" and kind != "bush":
+		return 0   # only reeds and bug bushes have used-up stages
 	if left <= 0:
 		return STAGES - 1
 	var f := float(left) / float(full)
@@ -240,20 +256,24 @@ func _bake_building(baker, models, arch: String, type: String) -> void:
 	var name := "%s:%s" % [arch, type]
 	if buildings.has(name):
 		return
-	var spec: Dictionary = models.call(TOWN[arch] if type == "town_center" else HOUSE[arch], PartShape.TEAM_KEY)
-	if type != "town_center":
+	var spec: Dictionary = models.call(_model(arch, type), PartShape.TEAM_KEY)
+	if type == "house":
 		spec.body.scale = Vector3.ONE * HOUSE_SCALE
 		spec.smoke *= HOUSE_SCALE
 		spec.lantern *= HOUSE_SCALE
 		spec.lights = spec.lights.map(func(p): return p * HOUSE_SCALE)
-	var pts: Array = [Vector3.ZERO, spec.smoke, spec.lantern]
+	var pts: Array = [Vector3.ZERO, spec.get("smoke", Vector3.ZERO), spec.get("lantern", Vector3.ZERO)]
 	pts.append_array(spec.lights)
 	baker.set_ground_shadow(true)
 	var body: Dictionary = await baker.bake(spec.body, pts)
 	baker.set_ground_shadow(false)
 	bakes[name] = {"img": (body.tex as Texture2D).get_image(), "origin": body.points[0]}
 	var local := func(p: Vector2) -> Vector2: return (p - body.points[0]) / ART_SCALE
-	var info := {"body": name, "smoke": local.call(body.points[1]), "lantern": local.call(body.points[2]), "lights": []}
+	var info := {"body": name, "lights": []}
+	if spec.has("smoke"):
+		info.smoke = local.call(body.points[1])
+	if spec.has("lantern"):
+		info.lantern = local.call(body.points[2])
 	for k in spec.lights.size():
 		info.lights.append(local.call(body.points[3 + k]))
 	if spec.has("banner"):
@@ -266,8 +286,8 @@ func _bake_building(baker, models, arch: String, type: String) -> void:
 	info.stages = []
 	baker.set_ground_shadow(true)
 	for st in BUILD_STAGES.size():
-		var part: Dictionary = models.call(TOWN[arch] if type == "town_center" else HOUSE[arch], PartShape.TEAM_KEY)
-		if type != "town_center":
+		var part: Dictionary = models.call(_model(arch, type), PartShape.TEAM_KEY)
+		if type == "house":
 			part.body.scale = Vector3.ONE * HOUSE_SCALE
 		_hold_back(part.body, st, models)
 		for live in ["banner", "vane"]:   # the live parts only go up when it's finished

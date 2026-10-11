@@ -223,3 +223,53 @@ func boulders(seed_value: int) -> Node3D:
 		mi.position = st[0] + Vector3(0, r * 0.35, 0)   # half sunk into the ground
 		n.add_child(mi)
 	return n
+
+
+## A farm's field, one tile: tilled earth in furrows with rows of crops (green
+## stalks with golden ears), the realistic static style.
+func crops(seed_value: int) -> Node3D:
+	rng.seed = seed_value
+	var n := Node3D.new()
+	var soil := MeshInstance3D.new()
+	var bm := BoxMesh.new()
+	bm.size = Vector3(0.98, 0.04, 0.98)
+	soil.mesh = bm
+	soil.material_override = um.plain(Color("#6a4e30"))
+	soil.position = Vector3(0, 0.02, 0)
+	n.add_child(soil)
+	var stalk := um.plain(Color("#6e8a34"))
+	var ear := um.plain(Color("#d6b24a"))
+	for row in 5:
+		var z := -0.38 + row * 0.19
+		n.add_child(um.blob(Vector3(0.48, 0.02, 0.05), um.plain(Color("#4e3820")), Vector3(0, 0.045, z + 0.09)))   # the furrow
+		for k in 7:
+			var x := -0.42 + k * 0.14 + rng.randf_range(-0.03, 0.03)
+			var h := rng.randf_range(0.12, 0.2)
+			var base := Vector3(x, 0.04, z + rng.randf_range(-0.02, 0.02))
+			var tip := base + Vector3(rng.randf_range(-0.02, 0.02), h, rng.randf_range(-0.02, 0.02))
+			n.add_child(um.rod(base, tip, 0.012, 0.008, stalk, false))
+			n.add_child(um.blob(Vector3(0.016, 0.04, 0.016), ear, tip))
+	return n
+
+
+## An amphibian farm in the shallows, one tile: still water with rows of rice shoots.
+func paddy(seed_value: int) -> Node3D:
+	rng.seed = seed_value
+	var n := Node3D.new()
+	var water := MeshInstance3D.new()
+	var bm := BoxMesh.new()
+	bm.size = Vector3(0.98, 0.02, 0.98)
+	water.mesh = bm
+	water.material_override = um.plain(Color("#3e6e6a"))
+	water.position = Vector3(0, 0.01, 0)
+	n.add_child(water)
+	for side in [-1, 1]:   # low mud banks along two edges
+		n.add_child(um.blob(Vector3(0.5, 0.03, 0.04), um.plain(Color("#5a4630")), Vector3(0, 0.02, side * 0.47)))
+	var shoot := um.plain(Color("#7aa83e"))
+	for row in 5:
+		for k in 6:
+			var base := Vector3(-0.4 + k * 0.16 + rng.randf_range(-0.03, 0.03), 0.02, -0.38 + row * 0.19)
+			for blade in 3:
+				var tip := base + Vector3(rng.randf_range(-0.04, 0.04), rng.randf_range(0.1, 0.16), rng.randf_range(-0.04, 0.04))
+				n.add_child(um.rod(base, tip, 0.008, 0.004, shoot, false))
+	return n

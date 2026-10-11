@@ -241,13 +241,8 @@ func _attach(w: World, end_tick := -1) -> void:
 	camera.bounds = Iso.map_rect(map.width, map.height)
 	var picks := TerrainView.variant_picks(map.resource_cells, map.width, ArtKit.DOODADS.bush, hash(map.id))
 	for c in map.resource_cells:
-		var kind: String = {"food": "bush", "wood": "reeds", "stone": "rock"}[map.terrain_resource[map.terrain[c]]]
-		var holder := Node2D.new()
-		holder.position = Iso.to_screen((c % map.width) * 1000 + 500, (c / map.width) * 1000 + 500)
-		holder.add_child(kit.doodad(kind, picks[c]))
-		holder.set_meta("res", {"kind": kind, "pick": picks[c], "stage": 0, "full": map.amount[c], "gone": 0.0})
-		layer.add_child(holder)
-		rviews[c] = holder
+		_add_resource_view(c, picks[c])
+	map.changed.clear()
 	_refresh_paths()
 	for n in ground.scatter(kit, layer, _keep_clear):
 		var t := Iso.to_milli(n.position)
@@ -382,6 +377,8 @@ func _unhandled_input(event: InputEvent) -> void:
 				train_worker()
 			KEY_H:
 				start_placing("house")
+			KEY_F:
+				start_placing("farm")
 			KEY_C:
 				start_placing("town_center")
 			KEY_ESCAPE:
@@ -764,6 +761,11 @@ func _work_point(i: int) -> Vector2:
 
 func _sync_buildings() -> void:
 	var bs := world.buildings
+	# Buildings that are gone without falling (a farm becomes its field) just leave.
+	for id in bviews.keys():
+		if bs.index_of(id) < 0:
+			bviews[id].queue_free()
+			bviews.erase(id)
 	for b in bs.count():
 		var id := bs.id[b]
 		var view: BuildingArt = bviews.get(id)
@@ -798,8 +800,28 @@ func _clear_doodads(cx: int, cy: int, size: int) -> void:
 
 ## Resource props show what's left in stages; a used-up bush fades away, used-up reeds
 ## leave stubble for a while first.
+## The prop for a resource cell (bug bush, reed clump, stone outcrop, a farm's crops or paddy).
+const RESOURCE_PROP := {"bugbush": "bush", "reeds": "reeds", "stone": "rock", "field": "crops", "paddy": "paddy"}
+
+
+func _add_resource_view(c: int, pick: int) -> void:
+	var kind: String = RESOURCE_PROP[map.terrain_ids[map.terrain[c]]]
+	var holder := Node2D.new()
+	holder.position = Iso.to_screen((c % map.width) * 1000 + 500, (c / map.width) * 1000 + 500)
+	holder.add_child(kit.doodad(kind, pick))
+	holder.set_meta("res", {"kind": kind, "pick": pick, "stage": 0, "full": map.amount[c], "gone": 0.0})
+	layer.add_child(holder)
+	rviews[c] = holder
+
+
 func _sync_resources() -> void:
 	var dt := get_process_delta_time()
+	# New resources (a farm's field) appear where the map changed.
+	for c in map.changed:
+		if map.amount[c] > 0 and not rviews.has(c):
+			_add_resource_view(c, c * 7 + c / map.width)
+	map.changed.clear()
+	map.changed_overflow = false
 	for c in rviews.keys():
 		var h: Node2D = rviews[c]
 		var r: Dictionary = h.get_meta("res")
@@ -952,12 +974,12 @@ func _update_panel() -> void:
 			kinds.sort()
 			c.tray = kinds.map(func(k): return {"icon": kit.icons.get("%d:%s" % [world.types[k].player, world.types[k].slot]), "count": counts[k]})
 		if not _selected_workers().is_empty():
-			for id in ["house", "town_center"]:
+			for id in ["house", "farm", "town_center"]:
 				var t: Dictionary = world.btypes[Economy.btype_of(world, id)]
 				var afford: bool = world.can_afford(active, t.cost)
 				var bid: String = id
 				c.buttons.append({"icon": kit.building_icon(_arch(active), id), "text": "Build %s (%s)" % [t.name, _cost_text(t.cost)],
-					"key": "H" if id == "house" else "C", "cost": _cost_text(t.cost), "enabled": afford, "action": func(): start_placing(bid)})
+					"key": {"house": "H", "farm": "F", "town_center": "C"}[id], "cost": _cost_text(t.cost), "enabled": afford, "action": func(): start_placing(bid)})
 		if placing != "":
 			c.info = "Placing: left-click to build, shift keeps placing, right-click/Esc cancels"
 		panel.show_content(c)
@@ -1083,7 +1105,8 @@ func _draw_overlay() -> void:
 	if placing != "":
 		var c := _ghost_cell(get_global_mouse_position())
 		var size: int = world.btypes[Economy.btype_of(world, placing)].size
-		var ok := map.can_build(c.x, c.y, size)
+		var bt: Dictionary = world.btypes[Economy.btype_of(world, placing)]
+		var ok := map.can_build(c.x, c.y, size, Economy.builder_class(world, active), bt.water)
 		var x0 := c.x * 1000
 		var y0 := c.y * 1000
 		var s := size * 1000

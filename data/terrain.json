@@ -10,11 +10,32 @@
    "depleted": "grass",
    "note": "bug bushes: near-infinite food (instead of farms)"
   },
+  "field": {
+   "walkable": false,
+   "colour": "#8a7a3a",
+   "colour2": "#7e6f34",
+   "resource": "food",
+   "amount": 175,
+   "depleted": "grass",
+   "note": "a farm's crops: 175 food per tile; worked out, it goes back to grass"
+  },
   "grass": {
    "walkable": true,
    "colour": "#5b6b38",
    "colour2": "#55653a",
    "note": "plain ground"
+  },
+  "paddy": {
+   "walkable": false,
+   "move": [
+    "flying"
+   ],
+   "colour": "#5a8a5a",
+   "colour2": "#527e52",
+   "resource": "food",
+   "amount": 175,
+   "depleted": "shallows",
+   "note": "an amphibian farm in the shallows: rice in the water; worked out, it's shallows again"
   },
   "reeds": {
    "walkable": false,

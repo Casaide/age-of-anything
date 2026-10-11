@@ -1,6 +1,32 @@
 {
  "schema": "aow.buildings/1",
  "buildings": {
+  "farm": {
+   "name": "Farm",
+   "size": 2,
+   "hp": 300,
+   "cost": {
+    "food": 0,
+    "wood": 60
+   },
+   "build_time": 15,
+   "pop": 0,
+   "house": false,
+   "drop_off": [],
+   "trains": [],
+   "age": 1,
+   "hotkey": "F",
+   "water": true,
+   "becomes": {
+    "land": "field",
+    "water": "paddy"
+   },
+   "armour": {
+    "melee": 0,
+    "pierce": 4
+   },
+   "note": "when built, its ground becomes a crop field (a rice paddy in water, for amphibians): renewable-ish food beyond the bug bushes"
+  },
   "house": {
    "name": "House",
    "size": 2,
@@ -20,7 +46,8 @@
    "armour": {
     "melee": 1,
     "pierce": 6
-   }
+   },
+   "water": true
   },
   "town_center": {
    "name": "Town Center",
