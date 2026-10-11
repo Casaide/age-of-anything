@@ -17,16 +17,40 @@ var scale := 1.0
 const SIZE := 0.65   # the art is 32 px; drawn at about 21 px a screen point (Dominic: "massive")
 
 
+## Tool cursors get a small pointer at their top left, its tip the hotspot, so you can
+## aim them (an axe or basket alone has no point; Fable).
+const TIPPED := ["forage", "chop", "mine", "build"]
+const TIP_SIZE := 0.5   # the pointer, at half size
+const TOOL_AT := Vector2(7, 7)   # where the tool sits after the pointer
+
+var hotspots := {}
+
+
 func _init(p_scale := 1.0) -> void:
 	scale = p_scale * SIZE
 	for name in HOTSPOT:
-		var img := Image.new()
-		img.load_svg_from_string(FileAccess.get_file_as_string(DIR + name + ".svg"), scale)
+		var img := _svg(name, scale)
+		hotspots[name] = HOTSPOT[name] * scale
+		if name in TIPPED:
+			var tip := _svg("pointer", scale * TIP_SIZE)
+			var at := Vector2i((TOOL_AT * scale).round())
+			var both := Image.create(img.get_width() + at.x, img.get_height() + at.y, false, Image.FORMAT_RGBA8)
+			both.blit_rect(img, Rect2i(Vector2i.ZERO, img.get_size()), at)
+			both.blend_rect(tip, Rect2i(Vector2i.ZERO, tip.get_size()), Vector2i.ZERO)
+			img = both
+			hotspots[name] = HOTSPOT.pointer * scale * TIP_SIZE
 		images[name] = img
+
+
+func _svg(name: String, s: float) -> Image:
+	var img := Image.new()
+	img.load_svg_from_string(FileAccess.get_file_as_string(DIR + name + ".svg"), s)
+	img.convert(Image.FORMAT_RGBA8)
+	return img
 
 
 func use(name: String) -> void:
 	if name == current:
 		return
 	current = name
-	Input.set_custom_mouse_cursor(images[name], Input.CURSOR_ARROW, HOTSPOT[name] * scale)
+	Input.set_custom_mouse_cursor(images[name], Input.CURSOR_ARROW, hotspots[name])
