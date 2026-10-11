@@ -124,3 +124,9 @@ brute's snout looks like a trunk (both noted, not fixed: Dominic picks first). C
 Three ways for a beetle soldier to stand. The rearing taur (four legs down, pronotum up, front pair
 as arms) reads as a soldier and still as a beetle; fully upright looks like a costume; a small
 horizontal beetle still looks like cavalry. Claude's pick: rearing. Waiting on Dominic.
+
+### Slim rat confirmed, armour refit
+Dominic confirmed the slim rat is the approach. The leather jerkin still hung low and bulged
+forward like a brown egg over the belly (armour is modelled for frog-wide bodies); the rat's torso
+socket moved up to the chest and the armour squeezed to fit (torso_scale 0.58 x 0.74). Now it reads
+as a chest jerkin under the scarf, with the pink belly showing below.

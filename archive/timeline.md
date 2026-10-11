@@ -78,3 +78,5 @@ One line per moment worth remembering. Newest at the bottom.
   price, playtest kit; waiting on testers.
 - **2026-10-11:** Playtest fixes: clickable train buttons, whole-figure unit picking, smooth
   foraging; farms are one walkable, reseedable thing; rally flags.
+- **2026-10-11:** The slim rat confirmed (D-083); its armour refitted to the chest. Concept rounds
+  RB1 (large rat) and BG1 (beetle posture) waiting on picks.

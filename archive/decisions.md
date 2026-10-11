@@ -420,3 +420,8 @@ their distance on their own in the genre (Dominic). The distance rule tried in m
 removed. Fix by price and counters: bows cost 2 points, skirmishers' bonus against archers
 rises to 6. Cost-sanity outliers 10 -> 8 of 20; counters still 82%. Claude, after Dominic's
 question.
+
+**D-083, 2026-10-11: The slim rat is the rat.** Dominic confirmed the approach: the lean,
+hunched rat on the paint-over hybrid pipeline, with the scarf and armour fitted to it. Body armour
+is modelled for wide bodies, so each body places and squeezes it (`torso` socket and
+`torso_scale`); the rat's sits on the chest now.

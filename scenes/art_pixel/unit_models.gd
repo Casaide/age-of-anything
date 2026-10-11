@@ -451,9 +451,9 @@ func _body_rat(c: Dictionary) -> Dictionary:
 	kerchief(front, c, Vector3(3.2, 22.2, 0), 3.0, 15)   # a small scarf at the neck (a big one read as a bib)
 	return {"node": n, "front": front, "sockets": {
 		"head": Vector3(4, 24.5, 0), "hand_r": near_hand, "hand_l": Vector3(7.5, 16.5, -4.2),
-		"torso": Vector3(1.2, 15.5, 0), "back": Vector3(-4.5, 19, 0)},
+		"torso": Vector3(2.2, 17.5, 0), "back": Vector3(-4.5, 19, 0)},
 		"anchors": [[Vector3(-0.5, 6.0, -3.2), 0.0, -1], [Vector3(-0.5, 6.0, 3.2), PI, 1]],
-		"torso_scale": Vector2(0.62, 1.0)}
+		"torso_scale": Vector2(0.58, 0.74)}
 
 
 func _head_rat(c: Dictionary) -> Dictionary:
