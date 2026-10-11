@@ -22,7 +22,7 @@ const ROLE_BIAS := {
 }
 ## Signature gear (a culture's kit, cheese hammers...) is only favoured when the prompt,
 ## family or creature asks for it. No cheese hammers for Romans unless someone says cheese.
-const SIGNATURE_TAGS := ["roman", "greek", "viking", "cheese", "woodland", "knight", "bat"]   # woodland: acorn caps, leaves, bark (swamp/forest); knight: iron helm, kite, mail (royal); bat wings (spooky/sewer)
+const SIGNATURE_TAGS := ["roman", "greek", "viking", "cheese", "woodland", "knight", "bat", "crossbow"]   # woodland: acorn caps, leaves, bark (swamp/forest); knight: iron helm, kite, mail (royal); bat wings (spooky/sewer); crossbows (royal, sewer rats)
 ## Extra wants for "Heavy" large units (armoured elites instead of giants).
 const HEAVY_BOOST := {"heavy": 3, "armour": 3, "helmet": 2, "shield": 1}   # no "knight": knight kit is the royal culture's signature
 const OPTIONAL_SLOTS := ["hand_l", "head_gear", "torso", "back"]

@@ -66,6 +66,7 @@ func _init() -> void:
 	_test_crossing(races, "flat_test")
 	_test_crossing(races, "choke_test")
 	_test_opening(races)
+	_test_queue(races)
 	_test_combat(gen)
 
 	var script := _script(map, races)
@@ -301,6 +302,46 @@ func _count_houses(w: World, p: int) -> int:
 		if w.buildings.owner[b] == p and w.buildings.kind[b] == house and w.buildings.done[b] == 1:
 			n += 1
 	return n
+
+
+# --- order queues ---------------------------------------------------------------
+
+## Shift-queuing: a worker builds a house, then goes foraging, from one queued order.
+func _test_queue(races: Array) -> void:
+	var map: SimMap = SimMap.load_id("flat_test")
+	var w := World.new(SEED, map, races, rules_)
+	var worker := -1
+	for i in w.units.count():
+		if w.units.owner[i] == 0:
+			worker = w.units.id[i]
+			break
+	var s: Array = map.starts[0]
+	var food_cell := _nearest_resource(map, s, "food")
+	w.issue(0, Commands.BUILD, {"ids": [worker], "building": "house", "cx": s[0] / 1000 + 3, "cy": s[1] / 1000 - 1})
+	w.issue(0, Commands.GATHER, {"ids": [worker], "cell": food_cell, "queue": 1})
+	for t in 12:   # orders run two turns (8 ticks) after they're issued
+		w.step()
+	var i := w.units.index_of(worker)
+	check(w.units.task[i] == Economy.BUILD and w.units.orders[i].size() == 1, "queue: the worker builds first, the gather order waits")
+	var house_done := -1
+	while w.tick < 2400:
+		w.step()
+		i = w.units.index_of(worker)
+		if house_done < 0:
+			for b in w.buildings.count():
+				if w.buildings.owner[b] == 0 and w.buildings.done[b] == 1 and w.buildings.size[b] == 2:
+					house_done = w.tick
+		elif w.units.task[i] == Economy.GATHER or w.units.task[i] == Economy.RETURN:
+			break
+	check(house_done > 0, "queue: the house got built (tick %d)" % house_done)
+	check(w.units.task[i] in [Economy.GATHER, Economy.RETURN] and w.units.orders[i].is_empty(), "queue: then the worker went foraging, queue empty")
+	w.issue(0, Commands.MOVE, {"ids": [worker], "x": s[0], "y": s[1]})
+	w.issue(0, Commands.GATHER, {"ids": [worker], "cell": food_cell, "queue": 1})
+	w.issue(0, Commands.MOVE, {"ids": [worker], "x": s[0] + 2000, "y": s[1]})
+	for t in 12:
+		w.step()
+	i = w.units.index_of(worker)
+	check(w.units.orders[i].is_empty(), "queue: a plain order empties the queue")
 
 
 # --- combat ---------------------------------------------------------------------

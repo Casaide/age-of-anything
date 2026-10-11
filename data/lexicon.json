@@ -1376,6 +1376,24 @@
     "heavy": 1,
     "charge": 1
    }
+  },
+  "crossbow": {
+   "tags": {
+    "crossbow": 4,
+    "archer": 1
+   }
+  },
+  "crossbows": {
+   "tags": {
+    "crossbow": 4,
+    "archer": 1
+   }
+  },
+  "crossbowmen": {
+   "tags": {
+    "crossbow": 4,
+    "archer": 1
+   }
   }
  }
 }

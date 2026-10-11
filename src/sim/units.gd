@@ -41,6 +41,7 @@ var cooldown := PackedInt32Array() # ticks until the next blow
 var stance := PackedInt32Array()   # Combat.NONE / ORDERED / AUTO / ATTACK_MOVE
 var amx := PackedInt32Array()      # attack-move destination (milli-tiles)
 var amy := PackedInt32Array()
+var orders: Array = []             # per unit: queued orders [{type, args}] (shift-queued), oldest first
 
 
 func count() -> int:
@@ -84,6 +85,7 @@ func add(uid: int, p_owner: int, p_kind: int, p_x: int, p_y: int, p_speed: int, 
 	stance.append(0)
 	amx.append(0)
 	amy.append(0)
+	orders.append([])
 	return id.size() - 1
 
 
@@ -132,6 +134,7 @@ func remove_at(i: int) -> void:
 	stance.remove_at(i)
 	amx.remove_at(i)
 	amy.remove_at(i)
+	orders.remove_at(i)
 
 
 func save_prev() -> void:
