@@ -49,7 +49,7 @@ move it to `docs/backlog.md` rather than deleting it.
   order, counter-picked soldiers, defence, attack waves; `src/sim/match.gd`: defeat, surrender,
   winner. The match setup screen (`scenes/match_setup.tscn`) is now the main scene. Waiting on
   Dominic's playtest.
-- **Art direction under research:** unit art goes concept-first (`docs/concepts/`); nothing new
+- **Art direction under research:** unit art goes concept-first; the proposal is in `docs/concepts/direction.md`. Nothing new
   gets built for units until Dominic approves a direction.
 - **Done (milestone 9): fog and juice.** Fog of war (`src/sim/fog.gd`, `src/view/fog_view.gd`),
   minimap, synthesised placeholder sounds; bot matches run about 11 minutes.
