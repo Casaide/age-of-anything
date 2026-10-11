@@ -171,3 +171,11 @@ test maps, and the same quarry prop in darker rock with gold showing. The first 
 floating off the rock and a straight bar for a vein (Dominic: "buggy and floating"); now they're set
 just inside the rock's own outline. Nothing costs gold yet: that comes with the buildings phase.
 Dominic also floated race-specific resources others can hold or trade (in the backlog).
+
+### Sound for the quiet parts
+Dominic: hitting and dying make sound, but chopping, moving, building and farms running out were
+silent. Workers now make a sound when their blow lands in the animation (a woody chop, a stone
+clink, a hammer knock, a rustle when picking), only your own and quieter away from the middle of
+the screen. Orders get a small two-note acknowledgement, selecting clicks, a unit trained and a
+building finished each have a little chime, and a farm running out sighs downward. All still
+synthesised at start-up; tests/sfx_export.gd writes them to WAV to listen to.
