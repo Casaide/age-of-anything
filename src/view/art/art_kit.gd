@@ -328,6 +328,7 @@ func _bake_doodads(baker, models) -> void:
 		for st in STAGES:
 			shadowed[staged("carcass", v, st)] = props.carcass(1400 + v, st)
 	shadowed["rally_flag"] = models.rally_flag(Color(PartShape.TEAM_KEY))
+	shadowed["waypoint_flag"] = models.waypoint_flag(Color(PartShape.TEAM_KEY))
 	var flat := {}
 	for v in DOODADS.stones:
 		flat["stones%d" % v] = props.field_stones(500 + v)

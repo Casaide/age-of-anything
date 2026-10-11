@@ -1275,6 +1275,35 @@ func rally_flag(team: Color) -> Node3D:
 	return n
 
 
+## A unit's waypoint (its queued orders): the rally flag's little sibling. A short stake knocked
+## into a tuft of earth, a swallow-tailed pennant in the team colour, a brass cap. About half a
+## unit tall, so a line of them reads as a route without crowding the units walking it.
+func waypoint_flag(team: Color) -> Node3D:
+	rng.seed = 78
+	var n := Node3D.new()
+	var wood := mats.get_mat("wood")
+	var stone := mats.get_mat("stone")
+	n.add_child(ball(0.06, Materials.flat(Color("#5a4630"), 0.95), Vector3(0, 0.0, 0), Vector3(1.3, 0.35, 1.1)))   # the kicked-up earth
+	for k in 3:   # a few stones wedging it
+		var a := k * TAU / 3.0 + 0.4
+		n.add_child(ball(0.028 + rng.randf() * 0.01, stone, Vector3(cos(a) * 0.05, 0.02, sin(a) * 0.05), Vector3(1.2, 0.8, 1.0)))
+	n.add_child(cyl(0.012, 0.016, 0.44, wood, Vector3(0, 0.22, 0), Vector3.ZERO, 8))
+	n.add_child(ball(0.022, Materials.flat(Color("#c89a40"), 0.3, 0.8), Vector3(0, 0.455, 0)))
+	var strips := 8
+	for k in strips:   # the pennant: tapering to a swallow tail, with a little wave
+		var f := float(k) / strips
+		var x := 0.016 + f * 0.2
+		var z := sin(f * 6.0) * 0.015 * (0.3 + f)
+		var h := 0.13 * (1.0 - f * 0.55)
+		var y := 0.375 - f * 0.01
+		if k >= strips - 2:   # the notch of the tail: two points, not a block
+			n.add_child(box(Vector3(0.026, h * 0.38, 0.008), cloth(team), Vector3(x, y + h * 0.31, z)))
+			n.add_child(box(Vector3(0.026, h * 0.38, 0.008), cloth(team), Vector3(x, y - h * 0.31, z)))
+		else:
+			n.add_child(box(Vector3(0.026, h, 0.008), cloth(team), Vector3(x, y, z)))
+	return n
+
+
 # ------------------------------------------------------------------ milestone 11 buildings
 # One builder per type, dressed in each architecture's kit (KIT: walls, frame, roof, base).
 
