@@ -12,7 +12,7 @@ const EDGE_INK := Color("#24180f")
 
 static func run(img: Image, factor: int, outline := true) -> Image:
 	img.convert(Image.FORMAT_RGBA8)
-	img.fix_alpha_edges()
+	img.premultiply_alpha()   # shrink with premultiplied alpha, so edges don't darken (and it's cheap)
 	var w := maxi(1, img.get_width() / factor)
 	var h := maxi(1, img.get_height() / factor)
 	img.resize(w, h, Image.INTERPOLATE_CUBIC)
@@ -24,12 +24,14 @@ static func run(img: Image, factor: int, outline := true) -> Image:
 	for i in range(0, w * h * 4, 4):
 		var a := src[i + 3]
 		if a >= 153:   # 0.6
-			out[i] = src[i]
-			out[i + 1] = src[i + 1]
-			out[i + 2] = src[i + 2]
+			out[i] = mini(255, src[i] * 255 / a)
+			out[i + 1] = mini(255, src[i + 1] * 255 / a)
+			out[i + 2] = mini(255, src[i + 2] * 255 / a)
 			out[i + 3] = 255
 			continue
-		var lum := (src[i] * 0.2126 + src[i + 1] * 0.7152 + src[i + 2] * 0.0722) / 255.0
+		if a == 0:
+			continue
+		var lum := (src[i] * 0.2126 + src[i + 1] * 0.7152 + src[i + 2] * 0.0722) / float(a)
 		var c: Array = []
 		if a >= 84 and lum < 0.12:      # 0.33
 			c = shadow
