@@ -764,10 +764,10 @@ func _body_human(c: Dictionary) -> Dictionary:
 	# (No scarf: the tunic is already the team colour, and a scarf ring hid the neck: Dominic.)
 	return {"node": n, "front": front, "sockets": {
 		"head": Vector3(0.6, 25.6, 0), "hand_r": near_hand, "hand_l": Vector3(5.5, 17.2, -4.8),   # head low: a short neck (Dominic)
-		"torso": Vector3(0.3, 17.8, 0), "back": Vector3(-4.2, 22, 0)},
+		"torso": Vector3(0.0, 19.4, 0), "back": Vector3(-4.2, 22, 0)},   # the chest's middle (lower, the jerkin bulged out of the belly from the front)
 		"anchors": [[Vector3(-2.3, 11.0, -2.4), 0.0, -1], [Vector3(2.0, 11.0, 2.4), PI, 1]],
 		"torso_scale": Vector2(0.66, 0.82),
-		"torso_fit": Vector3(0.47, 0.8, 0.56),   # worn armour (built ~1.6x) just over the (Blender) chest, not an egg round it
+		"torso_fit": Vector3(0.43, 0.74, 0.52),   # worn armour (built ~1.6x) just over the (Blender) chest, not an egg round it
 		"legs_under": true}   # the tunic's skirt hangs over the thighs
 
 
@@ -775,7 +775,12 @@ func _head_human(c: Dictionary) -> Dictionary:
 	# Modelled in Blender (tools/blender/human_head.py): a face with structure (brow, nose,
 	# cheekbones, chin) rather than primitives; the primitive head is kept below as the fallback.
 	if FileAccess.file_exists("res://assets/models/head_human.glb"):
-		return {"node": glb("head_human", {"skin": surf("skin", c.skin, 6.0), "hair": surf("mane", c.skin2.darkened(0.45), 3.0),
+		# Softer shading on the face: half its light is its own, so the jaw's shade stays within a
+		# band of the cheek (with full shading it dropped a band and read as stubble: Dominic).
+		var face := surf("skin", c.skin * 0.4, 6.0)
+		face.emission_enabled = true
+		face.emission = c.skin * 0.82
+		return {"node": glb("head_human", {"skin": face, "hair": surf("mane", c.skin2.darkened(0.45), 3.0),
 			"eye": plain(Color("#1a1210"))}), "sockets": {"top": Vector3(0.3, 10.3, 0)},
 			"gear_scale": 0.86}   # a narrower skull than the old egg: caps and helmets sit on it, not flat on top
 	return _head_human_primitive(c)
@@ -870,16 +875,20 @@ func _lifted(sockets: Dictionary) -> Dictionary:
 	return sockets
 
 
-## A centaur's horse half: no neck; the rider's torso stands where it would be.
+## A centaur's horse half: no neck; the horse's chest rises at the front into the human waist
+## (the tunic's hem covers the join), so the man grows out of the horse, not sits on its back.
 func _body_pony_fused(c: Dictionary) -> Dictionary:
 	var n := Node3D.new()
 	var lift := Node3D.new()
 	lift.position.y = PONY_LIFT
 	n.add_child(lift)
 	_pony_barrel(lift, c)
+	var hide := surf("hide", c.skin, 6.0)
+	lift.add_child(blob(Vector3(5.4, 7.4, 5.4), hide, Vector3(9.0, 24.0, 0), Vector3(0, 0, -12)))   # the risen chest
+	lift.add_child(blob(Vector3(4.4, 3.0, 4.6), hide, Vector3(10.5, 28.6, 0)))   # into the waist, under the hem
 	return {"node": n, "sockets": _lifted({
 		"head": Vector3(14.6, 31.5, 0), "hand_r": Vector3(10, 18, 4), "hand_l": Vector3(8, 18, -4),
-		"torso": Vector3(0, 19, 0), "back": Vector3(-8, 24, 0), "seat": Vector3(7.5, 15.5, 0)}),
+		"torso": Vector3(0, 19, 0), "back": Vector3(-8, 24, 0), "seat": Vector3(10.0, 16.5, 0)}),
 		"anchors": _pony_anchors(), "torso_scale": Vector2(1.3, 1.0)}
 
 
@@ -908,8 +917,8 @@ func _head_pony(c: Dictionary) -> Dictionary:
 func _leg_hoof(c: Dictionary) -> Dictionary:
 	var n := Node3D.new()
 	var hide := surf("hide", c.skin, 5.0)
-	n.add_child(blob(Vector3(2.6, 4.2, 2.4), hide, Vector3(0, -2.8, 0)))
-	n.add_child(rod(Vector3(0, -5.5, 0), Vector3(0.2, -13.6, 0), 1.15, 0.95, hide))
+	n.add_child(blob(Vector3(3.0, 5.8, 2.6), hide, Vector3(0, -1.6, 0)))   # the thigh, starting up inside the barrel (not an egg under it)
+	n.add_child(rod(Vector3(0, -6.0, 0), Vector3(0.2, -13.6, 0), 1.3, 0.95, hide))
 	n.add_child(blob(Vector3(1.3, 1.2, 1.2), hide, Vector3(0.3, -13.8, 0)))
 	n.add_child(rod(Vector3(0.3, -13.8, 0), Vector3(0.8, -14.8, 0), 1.0, 1.0, hide))
 	n.add_child(cone(1.1, 1.6, 1.4, plain(Color("#2a2420")), Vector3(1.0, -15.4, 0)))

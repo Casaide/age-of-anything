@@ -218,6 +218,7 @@
   "architecture": "thatch"
  },
  "nile": {
+  "skins": ["human_tan", "human_dark"],
   "cloth": [
    "#e8e0c8",
    "#2a5a9a"
@@ -245,6 +246,7 @@
   "architecture": "stone"
  },
  "han": {
+  "skins": ["human_light", "human_tan"],
   "cloth": [
    "#9a2a24",
    "#2a2422"
@@ -272,6 +274,7 @@
   "architecture": "stone"
  },
  "aztec": {
+  "skins": ["human_tan", "human_dark"],
   "cloth": [
    "#e0a020",
    "#2a7a6a"
