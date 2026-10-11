@@ -1,6 +1,6 @@
 extends Node2D
 ## Combat effects for the game view, played from the sim's events: projectiles
-## (cosmetic: the damage already landed in the sim), impact sparks, and units dying
+## (cosmetic: the damage already landed in the sim), impact sparks, a white hit flash, and units dying
 ## (the body topples over about its feet, darkens where it lies, then goes in a puff
 ## of dust; the ground shadow stays flat and fades). Buildings that fall leave a dust cloud. View
 ## side only; nothing here feeds back into the sim.
@@ -16,11 +16,14 @@ const SHOTS := {
 	"ball": {"speed": 900.0, "arc": 0.02, "len": 0.0, "w": 1.8, "col": Color("#303030")},
 }
 const DIE_TIME := 2.2
+const FLASH_TIME := 0.12
+const FLASH := 1.8     # extra brightness at the flash's peak (the baked art reads modulate alpha as shade)
 
 var shots: Array = []    # {from, to, t, dur, kind}
 var sparks: Array = []   # {pos, t, col}
 var ghosts: Array = []   # {node, t, tip}
 var dusts: Array = []    # {pos, t, size}
+var flashes: Array = []  # {node, t} (t < 0: the shot is still flying)
 
 
 ## The shot a weapon's tags call for.
@@ -38,9 +41,17 @@ static func shot_kind(tags: Array) -> String:
 	return "arrow"
 
 
-func shoot(from: Vector2, to: Vector2, kind: String) -> void:
+## A shot flies; returns how long it takes to land.
+func shoot(from: Vector2, to: Vector2, kind: String) -> float:
 	var s: Dictionary = SHOTS[kind]
-	shots.append({"from": from, "to": to, "t": 0.0, "dur": maxf(0.08, from.distance_to(to) / s.speed), "kind": kind})
+	var dur := maxf(0.08, from.distance_to(to) / s.speed)
+	shots.append({"from": from, "to": to, "t": 0.0, "dur": dur, "kind": kind})
+	return dur
+
+
+## A unit is hit: it flashes white for a moment, after `delay` (a shot's flight).
+func flash(view: Node2D, delay := 0.0) -> void:
+	flashes.append({"node": view, "t": -delay})
 
 
 func spark(at: Vector2, heavy := false) -> void:
@@ -65,6 +76,7 @@ func clear() -> void:
 		g.node.queue_free()
 	ghosts.clear()
 	shots.clear()
+	flashes.clear()
 	sparks.clear()
 	dusts.clear()
 
@@ -73,6 +85,14 @@ func _process(delta: float) -> void:
 	for s in shots:
 		s.t += delta
 	shots = shots.filter(func(s): return s.t < s.dur)
+	for f in flashes:
+		f.t += delta
+		var n: Node2D = f.node
+		if not is_instance_valid(n) or ghosts.any(func(g): return g.node == n):
+			f.t = FLASH_TIME   # gone or dying: the death owns its look now
+		elif f.t >= 0.0:
+			n.visual.modulate.a = 1.0 + FLASH * maxf(0.0, 1.0 - f.t / FLASH_TIME)
+	flashes = flashes.filter(func(f): return f.t < FLASH_TIME)
 	for s in sparks:
 		s.t += delta
 	sparks = sparks.filter(func(s): return s.t < 0.25)

@@ -54,7 +54,7 @@ func _ready() -> void:
 	row.add_child(_framed(_portrait, Vector2(PORTRAIT, PORTRAIT)))
 
 	var who := VBoxContainer.new()
-	who.custom_minimum_size = Vector2(250, 0)
+	who.custom_minimum_size = Vector2(330, 0)
 	who.add_theme_constant_override("separation", 4)
 	row.add_child(who)
 	_title = Label.new()
@@ -66,7 +66,7 @@ func _ready() -> void:
 	_info.add_theme_font_size_override("font_size", 13)
 	_info.add_theme_color_override("font_color", TEXT_DIM)
 	_info.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-	_info.custom_minimum_size = Vector2(250, 0)
+	_info.custom_minimum_size = Vector2(330, 0)   # room for the unit card
 	who.add_child(_info)
 	_tray = HFlowContainer.new()
 	_tray.add_theme_constant_override("h_separation", 3)
