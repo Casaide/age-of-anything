@@ -52,6 +52,11 @@ Milestone 7 (progression) followed straight on:
   workers got one price (a centaur worker had cost three frogs), and counters went to 91%. Chasing
   a bot-match length, Claude dropped the AI's guard and then put it back when Dominic asked what
   was wrong with it. Nothing was. A playtest kit and match log are ready for testers.
+- **Workers' prices vary again (Dominic).** "A centaur should move faster and carry more than a
+  human, so more expensive to balance out." The flat price came out; centaurs carry 160% a trip.
+- **A price tuner.** It nudged part points until the win-rate table was flat (11 outliers to 6),
+  by making bows nearly free, at which point archers beat their own counters. Bows went back.
+  Lesson: no price fixes archers that can't keep their distance.
 - **Wings.** Feather wings had thirty small feathers and baked to a white slab; now eight big
   ones. A pegasus's wings sat so high they looked like the rider's; they now lie folded along
   the horse's back.
@@ -59,7 +64,7 @@ Milestone 7 (progression) followed straight on:
 ## Decisions
 D-056 (milestones 5 and 6 inserted), D-057 (gear by age, small blacksmith tells), D-058 (bows for
 everyone, crossbows royal and rat kit, shift-queues), D-059 (winged races fly instead of riding),
-D-070 (restrictions as layers with a host switch), D-072 (unit textures: big marks, world space), D-073 (creature architecture), D-074 (concept-first unit art), D-075 (the AI and the match setup), D-076 (workers have one price), D-077 (pacing is a tester metric).
+D-070 (restrictions as layers with a host switch), D-072 (unit textures: big marks, world space), D-073 (creature architecture), D-074 (concept-first unit art), D-075 (the AI and the match setup), D-076 (workers have one price), D-077 (pacing is a tester metric), D-078 (worker costs vary; centaurs carry more).
 
 ## Pictures
 ![Centaur Romans at age 1: light kit](../images/2026-10-11/55-centaur-romans-age-1-light-kit.png)

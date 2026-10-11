@@ -45,7 +45,8 @@ into active work, move it into `mvp-plan.md` (or a new plan) with an exit criter
   cost; win rate sets cost. Run it on generation and when parts change.
   `tests/balance.gd` (milestone 10) is the measuring half: an equal-cost round robin. The next step
   is a tuner that nudges part points until no unit is more than 20% off the mean (11 of 20 were
-  after hand-tuning).
+  after hand-tuning). `tests/tune_points.gd` is that tuner, one step at a time; it needs the
+  counter matrix as a constraint (unconstrained, it made bows nearly free and counters fell to 67%).
 - Archers without micro lose to spearmen that close the gap: consider simple kiting for ranged
   units on attack-move, or a range/accuracy rule, before pricing them down further.
 - Replace `pow()` in pricing with a fixed-point table (done in milestone 1).

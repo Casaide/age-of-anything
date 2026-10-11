@@ -1,0 +1,103 @@
+extends RefCounted
+## Equal-cost round robin (used by tests/balance.gd and tests/tune_points.gd): every soldier of
+## the given races fights every other at the same budget in one age, in the sim. Returns
+## {units: [[race, slot, label]], rates: [win %], mean}. Deterministic.
+
+const SimMap := preload("res://src/sim/sim_map.gd")
+const World := preload("res://src/sim/world.gd")
+const Commands := preload("res://src/sim/commands.gd")
+const Tech := preload("res://src/sim/tech.gd")
+
+const SLOTS := ["spear", "skirmisher", "archer", "large"]
+const BUDGET := 600
+const LIMIT := 3000
+const FROM := [[11000, 20500], [21000, 20500]]
+
+
+static func run(races: Array, rules: Dictionary, age: int) -> Dictionary:
+	var units := []
+	for r in races:
+		for slot in SLOTS:
+			units.append([r, slot, "%s (%s)" % [name_of(r, slot), r.name]])
+	var wins := []
+	var played := []
+	wins.resize(units.size())
+	wins.fill(0)
+	played.resize(units.size())
+	played.fill(0)
+	for a in units.size():
+		for b in range(a + 1, units.size()):
+			var r := fight(rules, age, units[a], units[b])
+			if r == 0:
+				continue
+			played[a] += 1
+			played[b] += 1
+			wins[a] += 1 if r > 0 else 0
+			wins[b] += 1 if r < 0 else 0
+	var rates := []
+	var total := 0
+	for k in units.size():
+		rates.append(wins[k] * 100 / maxi(1, played[k]))
+		total += rates[k]
+	return {"units": units, "rates": rates, "mean": total / maxi(1, units.size())}
+
+
+## +1 if a wins, -1 if b wins, 0 for a draw (by value left standing).
+static func fight(rules: Dictionary, age: int, a: Array, b: Array) -> int:
+	var bare: Dictionary = rules.duplicate(true)
+	bare.economy.start.buildings = []
+	bare.economy.start.workers = 0
+	var w := World.new(1, SimMap.load_id("flat_test"), [a[0], b[0]], bare)
+	for p in 2:
+		w.ages[p] = age
+		Tech.retype(w, p)
+	var value := []
+	for p in 2:
+		var slot: String = [a, b][p][1]
+		var t: Dictionary = w.types[w.type_of(p, slot)]
+		var cost := 0
+		for c in t.cost:
+			cost += c
+		var n := maxi(1, (BUDGET + cost / 2) / cost)
+		value.append(cost)
+		w.issue(p, Commands.SPAWN, {"slot": slot, "count": n, "x": FROM[p][0], "y": FROM[p][1]})
+	while w.units.count() == 0:
+		w.step()
+	for p in 2:
+		var ids := []
+		for i in w.units.count():
+			if w.units.owner[i] == p:
+				ids.append(w.units.id[i])
+		w.issue(p, Commands.ATTACK_MOVE, {"ids": ids, "x": FROM[1 - p][0], "y": FROM[1 - p][1]})
+	var left := [0, 0]
+	while w.tick < LIMIT:
+		w.step()
+		left = [0, 0]
+		for i in w.units.count():
+			left[w.units.owner[i]] += 1
+		if left[0] == 0 or left[1] == 0:
+			break
+	var va: int = left[0] * value[0]
+	var vb: int = left[1] * value[1]
+	return 1 if va > vb else -1 if vb > va else 0
+
+
+static func name_of(race: Dictionary, slot: String) -> String:
+	return unit_of(race, slot).recipe.name
+
+
+static func unit_of(race: Dictionary, slot: String) -> Dictionary:
+	for u in race.units:
+		if u.recipe.slot == slot:
+			return u
+	return race.units[0]
+
+
+## The recipe a unit fields in this age (the last step of its line at or before it).
+static func recipe_at(race: Dictionary, slot: String, age: int) -> Dictionary:
+	var u := unit_of(race, slot)
+	var step: Dictionary = u.line[0]
+	for l in u.line:
+		if int(l.age) <= age:
+			step = l
+	return step
