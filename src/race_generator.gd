@@ -22,7 +22,7 @@ const ROLE_BIAS := {
 }
 ## Signature gear (a culture's kit, cheese hammers...) is only favoured when the prompt,
 ## family or creature asks for it. No cheese hammers for Romans unless someone says cheese.
-const SIGNATURE_TAGS := ["roman", "greek", "viking", "cheese"]
+const SIGNATURE_TAGS := ["roman", "greek", "viking", "cheese", "woodland"]   # woodland: acorn caps, leaves, bark (swamp and forest folk)
 ## Extra wants for "Heavy" large units (armoured elites instead of giants).
 const HEAVY_BOOST := {"heavy": 3, "armour": 3, "knight": 2, "helmet": 1, "shield": 1}
 const OPTIONAL_SLOTS := ["hand_l", "head_gear", "torso", "back"]
@@ -253,6 +253,8 @@ func _make_unit(slot_def: Dictionary, ctx: Dictionary) -> Dictionary:
 			cands = cands.filter(func(p): return not ("wings" in p.tags))
 		if role == "worker":
 			cands = cands.filter(func(p): return int(p.points) <= 1)
+		# Optional gear can stay empty, so it never goes off theme (no acorn caps on Romans).
+		cands = cands.filter(func(p): return not _off_theme(p, unit_tags))
 		if cands.is_empty():
 			continue
 		var best: Dictionary = _best(cands, unit_tags, ROLE_BIAS[role], rng)

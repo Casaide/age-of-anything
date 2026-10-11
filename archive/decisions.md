@@ -232,3 +232,10 @@ frog, rat and human wears a team-colour kerchief drawn above armour, and human t
 team colour, with culture shown in sleeves, trim and trousers (supersedes the tunic colours in
 D-048's people). Building materials use authored SVG textures, like units (extends D-047).
 Items not fixed yet are in the backlog, section 9.
+
+**D-050, 2026-10-11: Woodland kit is signature gear, and optional gear never goes off theme.**
+Acorn caps, leaf hats and capes, bark armour and lily-pad shields carry a `woodland` tag, which
+joins the signature tags: they only appear for swamp and forest peoples (or when asked for).
+Optional slots now drop off-theme candidates instead of just scoring them down, because a
+worker's only cheap helmet was the acorn, so Roman scavengers wore acorns (spotted by Dominic).
+Race keys for affected prompts change.
