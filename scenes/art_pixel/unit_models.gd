@@ -1022,10 +1022,11 @@ func _head_boar(c: Dictionary) -> Dictionary:
 	var n := Node3D.new()
 	var hide := surf("hide", c.skin, 5.0)
 	n.add_child(rod(Vector3(-0.5, 0.5, 0), Vector3(5.5, -1.5, 0), 3.0, 1.6, hide))   # the long head, low
-	n.add_child(blob(Vector3(0.9, 1.4, 1.5), plain(Color("#b08070")), Vector3(5.9, -1.6, 0)))   # the snout disc
-	var tusk := plain(Color("#f2ead6"))
+	n.add_child(rod(Vector3(3.0, -1.2, 0), Vector3(5.6, -2.0, 0), 1.9, 1.5, plain(Color("#9a6e58"))))   # a paler muzzle
+	n.add_child(blob(Vector3(1.0, 1.9, 2.0), plain(Color("#e0a898")), Vector3(6.1, -1.9, 0)))   # the big pink snout disc (reads in every facing)
+	var tusk := plain(Color("#f8f2e2"))
 	for side in [1, -1]:
-		n.add_child(rod(Vector3(4.6, -2.4, 1.2 * side), Vector3(5.2, -0.4, 2.0 * side), 0.35, 0.12, tusk))
+		n.add_child(rod(Vector3(4.4, -2.6, 1.5 * side), Vector3(5.6, 0.4, 2.6 * side), 0.6, 0.2, tusk))   # thick, curving up and out
 		n.add_child(blob(Vector3(0.4, 0.4, 0.4), plain(INK), Vector3(2.6, 1.0, 1.9 * side)))
 		n.add_child(blob(Vector3(0.6, 1.2, 0.5), hide, Vector3(0.4, 2.6, 1.8 * side), Vector3(0, 0, -25)))
 	return {"node": n, "sockets": {"top": Vector3(0, 2.5, 0)}}
