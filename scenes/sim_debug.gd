@@ -210,8 +210,8 @@ func _ready() -> void:
 	minimap.anchor_right = 1.0
 	minimap.anchor_top = 1.0
 	minimap.anchor_bottom = 1.0
-	minimap.offset_left = -Minimap.SIZE - 36   # room for its frame
-	minimap.offset_top = -Minimap.SIZE * 0.5 - 36
+	minimap.offset_left = -Minimap.SIZE - 24   # its frame (12 right, 8 below) then the panel's 12 px margin
+	minimap.offset_top = -Minimap.SIZE * 0.5 - 20
 	ui.add_child(minimap)
 	cursors = Cursors.new(DisplayServer.screen_get_scale())
 
@@ -589,8 +589,9 @@ func _update_hint() -> void:
 		st.set_corner_radius_all(4)
 		st.set_content_margin_all(10)
 		hint.add_theme_stylebox_override("normal", st)
-		hint.anchor_top = 1.0
-		hint.anchor_bottom = 1.0
+		hint.set_anchors_preset(Control.PRESET_CENTER_TOP)   # under the top bar: tooltip cards live above the panel
+		hint.grow_horizontal = Control.GROW_DIRECTION_BOTH
+		hint.position.y = 44
 		banner.get_parent().add_child(hint)
 		var u := world.units
 		for i in u.count():
@@ -619,8 +620,6 @@ func _update_hint() -> void:
 	hint.visible = hint_step < HINTS.size()
 	if hint.visible:
 		hint.text = "Tip %d of 3:  %s" % [hint_step + 1, HINTS[hint_step]]
-		hint.offset_bottom = -panel.size.y - 24   # just above the command panel, its own height
-		hint.offset_top = hint.offset_bottom - 44
 
 
 ## Under attack: the first enemy blow on one of ours out of view sounds a horn, pings the
@@ -647,7 +646,7 @@ func _maybe_alert(e: Dictionary, to: Vector2) -> void:
 		alert_label.set_anchors_preset(Control.PRESET_CENTER_TOP)
 		alert_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 		alert_label.grow_horizontal = Control.GROW_DIRECTION_BOTH
-		alert_label.position.y = 56
+		alert_label.position.y = 100   # below the tip strip
 		banner.get_parent().add_child(alert_label)
 	alert_label.text = "Under attack!  (Space to look)"
 	alert_label.visible = true
@@ -1009,7 +1008,10 @@ func _show_pause_menu(on: bool) -> void:
 	if over:
 		result = "Victory" if world.teams[active] == world.winner else "Defeat"
 		banner.visible = false   # the result is the menu's title (it collided with the menu)
-	pause_menu.get_node("box/title").text = ("%s: %s win" % [result, world.races[_first_of_team(world.winner)].name]) if over else "Paused"
+	var title := ("%s: %s win" % [result, world.races[_first_of_team(world.winner)].name]) if over else "Paused"
+	if over and result == "Victory" and vs_ai and ai_level == "easy":
+		title += "\nBeat Easy? Try Normal next."   # so testers know the step up exists
+	pause_menu.get_node("box/title").text = title
 	clock.paused = on and not over
 
 
@@ -1524,6 +1526,7 @@ func _age_tip(age: Dictionary) -> String:
 		if not Tech.has_building(world, active, need):
 			needs.append("a " + _bname(need))
 	var unlocks := []
+	var becomes := []
 	for bt in world.btypes:
 		if int(bt.age) == int(age.age):
 			unlocks.append(bt.name)
@@ -1532,9 +1535,17 @@ func _age_tip(age: Dictionary) -> String:
 			for k in t.line.size():
 				var step: Dictionary = t.line[k]
 				var named: String = step.recipe.get("name", t.name)
-				# New units, and ones that become something else (the rest just get better gear).
-				if int(step.age) == int(age.age) and (k == 0 or named != t.line[k - 1].recipe.get("name", t.name)):
+				# New units unlock; renamed ones become something else (the rest just get better gear).
+				if int(step.age) != int(age.age):
+					continue
+				if k == 0:
 					unlocks.append(named)
+				else:
+					var was: String = t.line[k - 1].recipe.get("name", t.name)
+					if named != was:
+						becomes.append("%s -> %s" % [was, named])
+	if not becomes.is_empty():
+		lines.append("[color=%s]Becomes: %s[/color]" % [TIP_GOOD, ", ".join(becomes)])
 	return _tip("Age up: " + age.name, age.cost, lines, needs, unlocks)
 
 
