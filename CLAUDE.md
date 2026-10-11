@@ -33,7 +33,13 @@ move it to `docs/backlog.md` rather than deleting it.
   ground), Town Center + Houses, training, construction, pop cap, rat economy from data, an
   economy bot (`src/ai/eco_bot.gd`), the command panel. Exit check: Dominic watches an opening
   (F6 in the debug view). See `docs/milestones/m3-economy.md`.
-- **Next (milestone 4): combat.** See `docs/milestones/m4-combat.md`.
+- **Built (milestone 4): combat.** Armour classes, attack-move that spreads into duels,
+  projectiles, deaths, the counter quiz (`scenes/counter_quiz.tscn`). Waiting on Dominic's quiz
+  run and the unit card. See `docs/milestones/m4-combat.md`.
+- **In progress (milestone 5): art rework**, run by a separate agent (`docs/milestones/m5-art-rework.md`).
+- **Next (milestone 6): foundations**: resources from data, movement classes, placement rules,
+  teams, ages and tech as data, farms (`docs/milestones/m6-foundations.md`). Then 7 progression,
+  8 AI and match flow, 9 fog and juice, 10 playtest.
 
 ## Layout
 

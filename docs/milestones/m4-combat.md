@@ -7,8 +7,8 @@
 Melee/ranged attack, armour, HP, counter-tag bonuses, sim-side hitscan + cosmetic projectile,
 death animation, and the unit card (recipe, derived stats, tags).
 
-Not in this milestone: the AI's attack waves and counter-picking (milestone 6), fog (7),
-hit-flash polish and SFX (7), Blacksmith upgrades and research (5 / Next), formations, siege.
+Not in this milestone: the AI's attack waves and counter-picking (milestone 8), fog (9),
+hit-flash polish and SFX (9), Blacksmith upgrades and research (7 / Next), formations, siege.
 
 ## Plan
 

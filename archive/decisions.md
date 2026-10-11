@@ -283,3 +283,15 @@ unit card shows "strong vs / weak vs" in plain words. Dominic: unlike the genre,
 change the unit's look. An upgrade swaps parts in the recipe (leather -> mail -> plate), the
 stats follow from the parts, and existing art is reused. Planned for milestone 5 (see its design
 notes).
+
+**D-056, 2026-10-11: New milestones 5 (art rework) and 6 (foundations); the rest move back.**
+Dominic: the current art round becomes milestone 5. A new milestone 6 pulls forward the
+architecture that gets harder to retrofit:
+- resources from data (stone from rock outcrops);
+- movement classes (ground, amphibious, flying);
+- placement rules per race and building;
+- teams;
+- data-driven ages and tech;
+- per-race farms.
+Progression, AI and match flow, fog and juice, and the playtest become milestones 7-10. Claude
+finishes milestone 4, then starts milestone 6 while the art agent finishes milestone 5.

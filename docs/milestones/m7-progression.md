@@ -1,4 +1,4 @@
-# Milestone 5: Progression
+# Milestone 7: Progression
 
 **Status:** planned
 **Exit criterion:** Age-up lands at minutes 4-6.

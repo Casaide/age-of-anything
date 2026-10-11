@@ -1,4 +1,4 @@
-# Milestone 6: AI + match flow
+# Milestone 8: AI + match flow
 
 **Status:** planned
 **Exit criterion:** AI beats a passive player and loses to a decent one.
