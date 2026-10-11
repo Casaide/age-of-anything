@@ -1057,6 +1057,7 @@ func _test_combat(gen) -> void:
 	_test_teams(gen)
 	_test_siege(gen)
 	_test_stances(gen)
+	_test_ranged_holds(gen)
 	var wins := 0
 	var fights := 0
 	var t0 := Time.get_ticks_msec()
@@ -1282,6 +1283,64 @@ func _test_stances(gen) -> void:
 	w.issue(0, Commands.ATTACK, {"ids": [me], "target": foe})
 	r = _watch(w, 400, me)
 	check(r.far > 1500 and r.hits[0] > 0, "stand ground: an ordered attack walks to the target (went %d, %d hits)" % [r.far, r.hits[0]])
+
+
+## Shooters stand still while their target is in reach (Dominic: "my crossbows are slowly
+## moving forward on each shot"); one out of reach walks just into reach and stops.
+func _test_ranged_holds(gen) -> void:
+	var race: Dictionary = gen.generate("sewer rats with crossbows", rules_)
+	var y := 20500
+	var w := _bare_world([race, race])
+	var k := w.type_of(0, "archer")
+	var reach: int = w.types[k].reach
+	var shots := 20 * int(w.types[k].reload)
+	# Ordered, in reach: 20 shots without a step.
+	var me := _lone(w, 0, "archer", 15000, y, "aggressive")
+	var foe := _lone(w, 1, "large", 15000 + reach - 1000, y, "passive")
+	w.units.hp[w.units.index_of(foe)] = 1 << 24
+	w.issue(0, Commands.ATTACK, {"ids": [me], "target": foe})
+	var r := _watch(w, shots, me)
+	check(r.far == 0 and r.hits[0] >= 19, "an archer in reach doesn't move over 20 shots (went %d, %d hits)" % [r.far, r.hits[0]])
+	# Ordered, out of reach: walks just into reach, then stands.
+	w = _bare_world([race, race])
+	me = _lone(w, 0, "archer", 15000, y, "aggressive")
+	foe = _lone(w, 1, "large", 15000 + reach + 3000, y, "passive")
+	w.units.hp[w.units.index_of(foe)] = 1 << 24
+	w.issue(0, Commands.ATTACK, {"ids": [me], "target": foe})
+	_watch(w, 200, me)
+	var i := w.units.index_of(me)
+	var gap := Combat._gap(w, i, w.units.index_of(foe), -1)
+	r = _watch(w, shots, me)
+	check(gap <= reach and gap > reach - 2 * w.units.speed[i] and r.far == 0 and r.hits[0] >= 19,
+		"an archer out of reach walks just into it and stands (gap %d of reach %d, then went %d, %d hits)" % [gap, reach, r.far, r.hits[0]])
+	# Attack-move, a line of shooters: the walk-back to the move's end no longer drags them on.
+	w = _bare_world([race, race])
+	foe = _lone(w, 1, "large", 24000, y, "passive")
+	w.units.hp[w.units.index_of(foe)] = 1 << 24
+	w.issue(0, Commands.SPAWN, {"slot": "archer", "count": 8, "x": 14000, "y": y})
+	while w.units.count() < 9:
+		w.step()
+	var mine := []
+	for j in w.units.count():
+		if w.units.owner[j] == 0:
+			mine.append(w.units.id[j])
+	w.issue(0, Commands.ATTACK_MOVE, {"ids": mine, "x": 40000, "y": y})
+	for t in 400:
+		w.step()
+	var at := {}
+	for id in mine:
+		at[id] = _at(w, id)
+	var hits := 0
+	for t in shots:
+		w.step()
+		for e in w.events:
+			if e.type == "hit" and mine.has(e.by):
+				hits += 1
+	var crept := 0
+	for id in mine:
+		var now := _at(w, id)
+		crept = maxi(crept, Fixed.isqrt(Fixed.dist2(now[0], now[1], at[id][0], at[id][1])))
+	check(crept < 100 and hits >= 8 * 19, "8 attack-moving archers hold their line over 20 shots (most moved %d, %d hits)" % [crept, hits])
 
 
 ## Equal-cost fight between two of a race's roster slots. `flip` swaps which side
