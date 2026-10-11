@@ -126,6 +126,8 @@ func _bake_model(id: String, colours: Dictionary, bake_key: String) -> void:
 			rig.anchors = spec.anchors.map(func(a): var v: Vector2 = to2d.call(a[0]); return [v.x, v.y, a[1], a[2], a[3] if a.size() > 3 else 0])
 		if spec.has("torso_scale"):
 			rig.torso_scale = spec.torso_scale
+		if spec.has("carry"):
+			rig.carry = spec.carry
 		PartShape.rigs[id] = rig
 	holder.remove_child(model)
 	model.queue_free()
@@ -143,6 +145,17 @@ func _bake_model(id: String, colours: Dictionary, bake_key: String) -> void:
 		PartShape.rigs[id]["front"] = true
 	PartShape.baked[bake_key] = {"img": pix, "tex": ImageTexture.create_from_image(pix),
 		"origin": (origin - Vector2(used.position)) / SS, "scale": art_scale}
+	# Where the drawn part reaches furthest from its grip (part units): a weapon's tip,
+	# so a body with no arms can lay it couched whatever way it was modelled.
+	var o: Vector2 = PartShape.baked[bake_key].origin
+	var tip := Vector2.ZERO
+	for y in pix.get_height():
+		for x in pix.get_width():
+			if pix.get_pixel(x, y).a > 0.9 and (Vector2(x, y) - o).length() > tip.length():
+				tip = Vector2(x, y) - o
+	if not PartShape.rigs.has(id):
+		PartShape.rigs[id] = {}
+	PartShape.rigs[id]["tip"] = tip / art_scale
 
 
 static func _aabb(n: Node3D) -> AABB:

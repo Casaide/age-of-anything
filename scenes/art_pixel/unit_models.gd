@@ -463,10 +463,11 @@ func _body_spider(c: Dictionary) -> Dictionary:
 	for k in 4:
 		hips.append([Vector3(xs[k], 10.5, 5.0), phases[k], 1, 1 if k >= 2 else 0])
 		hips.append([Vector3(xs[k] + 0.5, 11.5, -5.0), phases[k] + PI, -1, 1 if k >= 2 else 0])
+	harness(n, Vector3(-1.5, 12.5, 0), 6.0, 7.0, Vector3(0, 12, 7.0), Vector3(-1, 12, -7.0))
 	return {"node": n, "sockets": {
-		"head": Vector3(11, 11, 0), "hand_r": Vector3(3, 15, 7), "hand_l": Vector3(1, 15, -7),
+		"head": Vector3(11, 11, 0), "hand_r": Vector3(0, 12, 7.6), "hand_l": Vector3(-1, 12, -7.6),
 		"torso": Vector3(6, 12.5, 0), "back": Vector3(-8, 20, 0), "seat": Vector3(-5, 22.5, 0)},
-		"anchors": hips, "torso_scale": Vector2(0.6, 0.55)}
+		"anchors": hips, "torso_scale": Vector2(0.6, 0.55), "carry": "harness"}
 
 
 func _head_spider(c: Dictionary) -> Dictionary:
@@ -700,6 +701,19 @@ func _pony_barrel(n: Node3D, c: Dictionary) -> void:
 		n.add_child(rod(tail[k - 1], tail[k], r[k - 1], r[k], mane))
 
 
+## Bodies with no arms carry their gear on a harness: a leather girth strap round the
+## body, a holder sleeve on the near flank where the weapon is couched (UnitView lays
+## it forward, like a lance in its rest), and a strap pad on the far flank for a shield.
+## `ry`, `rz`: the girth's radii (up and across) around `centre`.
+func harness(n: Node3D, centre: Vector3, ry: float, rz: float, hand_r: Vector3, hand_l: Vector3) -> void:
+	var leather := surf("leather", Color.WHITE, 3.0)
+	var dark := surf("leather", Color(0.55, 0.42, 0.32), 2.0)
+	n.add_child(ring(0.86, 1.0, leather, centre, Vector3(0, 0, 90), Vector3(ry, 1.6, rz)))   # the girth, across the back and belly
+	n.add_child(rod(hand_r + Vector3(-1.6, -0.6, 0.6), hand_r + Vector3(1.6, 0.6, 0.6), 1.15, 1.15, dark))   # the holder
+	n.add_child(blob(Vector3(0.7, 0.7, 0.5), surf("bronze", Color.WHITE, 2.0), hand_r + Vector3(0, 0, 1.6)))   # its buckle
+	n.add_child(blob(Vector3(2.2, 2.6, 0.8), dark, hand_l))   # the shield pad
+
+
 func _pony_anchors() -> Array:
 	var y := 14.0 + PONY_LIFT
 	return [[Vector3(8.5, y, 4.0), 0.0, 1, 0], [Vector3(-9.5, y, 4.0), PI, 1, 0],
@@ -715,10 +729,11 @@ func _body_pony(c: Dictionary) -> Dictionary:
 	var hide := surf("hide", c.skin, 6.0)
 	lift.add_child(rod(Vector3(8.5, 22, 0), Vector3(14.6, 31.5, 0), 4.4, 3.1, hide))   # neck, arched up
 	lift.add_child(rod(Vector3(6.4, 24.0, 0), Vector3(12.4, 33.4, 0), 2.1, 1.7, surf("mane", c.skin2.darkened(0.35), 3.0)))
+	harness(lift, Vector3(4, 19, 0), 7.0, 6.3, Vector3(3, 18, 6.4), Vector3(3, 18, -6.4))
 	return {"node": n, "sockets": _lifted({
-		"head": Vector3(15.0, 32.5, 0), "hand_r": Vector3(10, 18, 4), "hand_l": Vector3(8, 18, -4),
+		"head": Vector3(15.0, 32.5, 0), "hand_r": Vector3(3, 18, 6.9), "hand_l": Vector3(3, 18, -6.9),
 		"torso": Vector3(0, 19, 0), "back": Vector3(-8, 24, 0), "seat": Vector3(-1, 25.8, 0)}),
-		"anchors": _pony_anchors(), "torso_scale": Vector2(1.3, 1.0)}
+		"anchors": _pony_anchors(), "torso_scale": Vector2(1.3, 1.0), "carry": "harness"}
 
 
 func _lifted(sockets: Dictionary) -> Dictionary:
@@ -789,10 +804,11 @@ func _body_beetle(c: Dictionary) -> Dictionary:
 	n.add_child(blob(Vector3(5.0, 1.2, 6.6), plain(c.team), Vector3(-1.5, 20.0, 0), Vector3(0, 0, -6)))
 	var hips := [[Vector3(10, 9.5, 6.0), 0.0, 1, 0], [Vector3(2, 9.5, 6.5), 2.1, 1, 0], [Vector3(-7, 9.5, 6.0), 4.2, 1, 1],
 		[Vector3(11, 10, -6.0), 3.14, -1, 0], [Vector3(3, 10, -6.5), 5.2, -1, 0], [Vector3(-6, 10, -6.0), 1.0, -1, 1]]
+	harness(n, Vector3(4, 13.5, 0), 7.2, 8.0, Vector3(4, 13.5, 8.0), Vector3(3, 13.5, -8.0))
 	return {"node": n, "sockets": {
-		"head": Vector3(16, 12.5, 0), "hand_r": Vector3(5, 15, 8), "hand_l": Vector3(3, 15, -8),
+		"head": Vector3(16, 12.5, 0), "hand_r": Vector3(4, 13.5, 8.6), "hand_l": Vector3(3, 13.5, -8.6),
 		"torso": Vector3(11, 14, 0), "back": Vector3(-8, 19, 0), "seat": Vector3(-1.5, 21.5, 0)},
-		"anchors": hips, "torso_scale": Vector2(0.65, 0.6)}
+		"anchors": hips, "torso_scale": Vector2(0.65, 0.6), "carry": "harness"}
 
 
 func _head_beetle(c: Dictionary) -> Dictionary:
