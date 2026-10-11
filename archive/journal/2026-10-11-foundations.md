@@ -119,3 +119,8 @@ D-070 (restrictions as layers with a host switch), D-072 (unit textures: big mar
 Four large rodents modelled as concepts (capybara cavalry, porcupine, naked mole-rat, sewer
 brute). Capybara and porcupine read straight away; the mole-rat came out as a pink pig and the
 brute's snout looks like a trunk (both noted, not fixed: Dominic picks first). Claude's pick: capybara.
+
+### BG1: beetle posture
+Three ways for a beetle soldier to stand. The rearing taur (four legs down, pronotum up, front pair
+as arms) reads as a soldier and still as a beetle; fully upright looks like a costume; a small
+horizontal beetle still looks like cavalry. Claude's pick: rearing. Waiting on Dominic.
