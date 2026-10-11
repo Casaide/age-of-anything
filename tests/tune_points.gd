@@ -95,7 +95,7 @@ func _parts(lib, recipe: Dictionary) -> Array:
 	var ids := [recipe.body, recipe.head]
 	ids.append_array(recipe.parts.values())
 	if recipe.has("mount"):
-		ids.append(lib.creatures[recipe.mount.creature].body)
+		ids.append(lib.creatures[recipe.mount.creature].get("mount_body", lib.creatures[recipe.mount.creature].body))
 	return ids
 
 

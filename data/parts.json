@@ -429,6 +429,126 @@
   }
  },
  {
+  "id": "body.beetle_rear",
+  "slot": "body",
+  "noun": "Beetle",
+  "points": 5,
+  "tags": [
+   "insect",
+   "armoured",
+   "infantry"
+  ],
+  "stats": {
+   "hp": 34,
+   "speed": 10,
+   "armour": {
+    "melee": 1,
+    "pierce": 2
+   }
+  },
+  "shapes": [
+   {
+    "t": "ellipse",
+    "c": [
+     0,
+     -13
+    ],
+    "r": [
+     17,
+     9
+    ],
+    "ch": "skin"
+   },
+   {
+    "t": "ellipse",
+    "c": [
+     -2,
+     -16
+    ],
+    "r": [
+     12,
+     5
+    ],
+    "ch": "skin2"
+   },
+   {
+    "t": "line",
+    "p": [
+     [
+      -14,
+      -14
+     ],
+     [
+      12,
+      -16
+     ]
+    ],
+    "w": 1,
+    "ch": "skin"
+   }
+  ],
+  "sockets": {
+   "head": [
+    16,
+    -12
+   ],
+   "hand_r": [
+    15,
+    -10
+   ],
+   "hand_l": [
+    13,
+    -10
+   ],
+   "torso": [
+    0,
+    -13
+   ],
+   "back": [
+    -8,
+    -18
+   ],
+   "seat": [
+    -2,
+    -20
+   ]
+  },
+  "legs": {
+   "part": "leg.insect",
+   "anchors": [
+    [
+     1,
+     -7,
+     0,
+     1,
+     0
+    ],
+    [
+     -6,
+     -7,
+     3.14,
+     1,
+     1
+    ],
+    [
+     1,
+     -7,
+     3.14,
+     -1,
+     0
+    ],
+    [
+     -6,
+     -7,
+     0,
+     -1,
+     1
+    ]
+   ]
+  },
+  "note": "a beetle soldier rearing up: four legs down, the front pair as arms (Dominic's pick, BG1)"
+ },
+ {
   "id": "body.beetle",
   "slot": "body",
   "noun": "Beetle",

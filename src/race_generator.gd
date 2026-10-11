@@ -367,7 +367,7 @@ func _mount_for(creature: String, fused: bool, rng, brief: Dictionary) -> Dictio
 
 
 func _mount_points(m: Dictionary) -> int:
-	var pts := int(lib.part(lib.creatures[m.creature].body).points)
+	var pts := int(lib.part(lib.creatures[m.creature].get("mount_body", lib.creatures[m.creature].body)).points)
 	for slot in m.parts:
 		pts += int(lib.part(m.parts[slot]).points)
 	return pts

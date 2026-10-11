@@ -939,6 +939,34 @@ func _leg_capybara(c: Dictionary) -> Dictionary:
 	return {"node": n}
 
 
+# ------------------------------------------------------------------ beetle soldier (rearing, BG1)
+# Dominic's pick: wing cases low behind on four legs, the pronotum up like a chest, the front
+# pair as arms that hold the weapon. Stag beetles rear like this to fight. Ridden beetles keep
+# the horizontal mount body below.
+
+func _body_beetle_rear(c: Dictionary) -> Dictionary:
+	var n := Node3D.new()
+	var shell := surf("chitin", c.skin, 5.0)
+	var plate := surf("chitin", c.skin2, 4.0)
+	var limb := surf("chitin", c.skin.darkened(0.45), 3.0)
+	for side in [1, -1]:   # the wing cases, low and behind, meeting at a seam
+		n.add_child(blob(Vector3(8.0, 4.6, 3.4), shell, Vector3(-4.5, 9.5, 2.3 * side), Vector3(0, 0, 12)))
+	n.add_child(rod(Vector3(-11.5, 8.0, 0), Vector3(1.5, 12.5, 0), 0.35, 0.35, plain(c.skin.darkened(0.6)), false))
+	n.add_child(blob(Vector3(4.2, 7.0, 5.4), plate, Vector3(2.5, 16, 0), Vector3(0, 0, -18)))   # pronotum, up like a chest
+	n.add_child(blob(Vector3(4.0, 1.0, 5.6), plain(c.team), Vector3(-4.5, 14.0, 0), Vector3(0, 0, 12)))   # a team band across the wing cases
+	var front := Node3D.new()
+	var hand_r := Vector3(7.5, 13.5, 5.6)
+	var pose := arm_pose(Vector3(3.5, 18, 4), Vector3(6, 15.5, 6), hand_r, Vector3(4, 22.5, 0))
+	front.add_child(rod(Vector3(3.5, 18, 4), pose[0], 0.95, 0.8, limb))
+	front.add_child(rod(pose[0], pose[1], 0.8, 0.6, limb))
+	n.add_child(rod(Vector3(3.5, 18, -4), Vector3(6.5, 14.5, -6), 0.95, 0.75, limb))   # the far arm
+	return {"node": n, "front": front, "sockets": {"head": Vector3(4, 22.5, 0), "hand_r": pose[1], "hand_l": Vector3(6.5, 14.5, -6),
+		"torso": Vector3(2.5, 16, 0), "back": Vector3(-6, 14, 0)},
+		"anchors": [[Vector3(0.5, 8.0, 3.2), 0.0, 1, 0], [Vector3(-6.0, 8.0, 3.2), PI, 1, 1],
+			[Vector3(0.5, 8.0, -3.2), PI, -1, 0], [Vector3(-6.0, 8.0, -3.2), 0.0, -1, 1]],
+		"torso_scale": Vector2(0.55, 0.65)}
+
+
 # ------------------------------------------------------------------ beetle (a mount)
 
 func _body_beetle(c: Dictionary) -> Dictionary:

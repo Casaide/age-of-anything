@@ -85,7 +85,8 @@
  "beetle": {
   "noun": "Beetle",
   "plural": "Beetles",
-  "body": "body.beetle",
+  "body": "body.beetle_rear",
+  "mount_body": "body.beetle",
   "head": "head.beetle",
   "playable": true,
   "mount": true,
@@ -97,7 +98,8 @@
    "forest",
    "swamp"
   ],
-  "architecture": "mound"
+  "architecture": "mound",
+  "_mount_body_doc": "beetle soldiers rear up (BG1); ridden beetles keep the horizontal body"
  },
  "pony": {
   "noun": "Pony",
