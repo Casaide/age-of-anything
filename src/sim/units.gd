@@ -38,7 +38,10 @@ var radius := PackedInt32Array()   # milli-tiles
 var hp := PackedInt32Array()
 var foe := PackedInt32Array()      # unit or building id being fought, or 0
 var cooldown := PackedInt32Array() # ticks until the next blow
-var stance := PackedInt32Array()   # Combat.NONE / ORDERED / AUTO / ATTACK_MOVE
+var stance := PackedInt32Array()   # what it is doing: Combat.NONE / ORDERED / AUTO / ATTACK_MOVE / RETURN
+var posture := PackedInt32Array()  # the player-set stance: Combat.AGGRESSIVE / DEFENSIVE / STAND / PASSIVE
+var gx := PackedInt32Array()       # where it stood when it last went for a foe on its own (defensive units walk back)
+var gy := PackedInt32Array()
 var amx := PackedInt32Array()      # attack-move destination (milli-tiles)
 var amy := PackedInt32Array()
 var mclass := PackedInt32Array()   # movement class (SimMap.CLASSES)
@@ -84,6 +87,9 @@ func add(uid: int, p_owner: int, p_kind: int, p_x: int, p_y: int, p_speed: int, 
 	foe.append(0)
 	cooldown.append(0)
 	stance.append(0)
+	posture.append(0)
+	gx.append(p_x)
+	gy.append(p_y)
 	amx.append(0)
 	amy.append(0)
 	orders.append([])
@@ -134,6 +140,9 @@ func remove_at(i: int) -> void:
 	foe.remove_at(i)
 	cooldown.remove_at(i)
 	stance.remove_at(i)
+	posture.remove_at(i)
+	gx.remove_at(i)
+	gy.remove_at(i)
 	amx.remove_at(i)
 	amy.remove_at(i)
 	orders.remove_at(i)

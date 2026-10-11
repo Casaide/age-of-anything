@@ -16,7 +16,18 @@ const Economy := preload("res://src/sim/economy.gd")
 const Flow := preload("res://src/sim/flow.gd")
 const Animals := preload("res://src/sim/animals.gd")
 
-enum { NONE, ORDERED, AUTO, ATTACK_MOVE }   # units.stance
+## units.stance, what a unit is doing: nothing, an ordered target, a fight it found
+## itself, an attack-move, or walking back to where it stood (defensive units).
+enum { NONE, ORDERED, AUTO, ATTACK_MOVE, RETURN }
+## units.posture, the player's stance (the genre's four), set by Commands.STANCE. It only
+## changes what a unit does on its own; ordered attacks and attack-moves work under all.
+##   AGGRESSIVE: goes for anything in sight and keeps chasing (the default).
+##   DEFENSIVE:  goes for foes that come near (rules defend_sight), chases no further
+##               than rules leash from where it stood, then walks back.
+##   STAND:      never moves to fight: hits only what is already in its reach.
+##   PASSIVE:    never fights on its own, not even back.
+enum { AGGRESSIVE, DEFENSIVE, STAND, PASSIVE }
+const POSTURES := ["aggressive", "defensive", "stand", "passive"]   # Commands.STANCE args.stance, by index
 
 const BASE := ["melee", "pierce", "building"]   # the first classes, always at these indexes
 ## Spreading out: a foe already fought by others looks this much further away per
@@ -142,6 +153,56 @@ static func cmd_attack_move(w, player: int, a: Dictionary) -> void:
 	w.next_group += 1
 
 
+## Set the stance of a player's units. A unit fighting on its own that the new stance
+## wouldn't let it start (passive, or out of reach for stand ground) lets go now.
+static func cmd_stance(w, player: int, a: Dictionary) -> void:
+	var p := POSTURES.find(a.stance)
+	assert(p >= 0, "Unknown stance %s" % a.stance)
+	var u = w.units
+	for uid in a.ids:
+		var i: int = u.index_of(uid)
+		if i < 0 or u.owner[i] != player:
+			continue
+		u.posture[i] = p
+		if u.stance[i] == AUTO and p == PASSIVE:
+			u.foe[i] = 0
+			u.stance[i] = NONE
+			u.moving[i] = 0
+
+
+## Starting a fight on its own: remember where it stood, for defensive units to walk back to.
+static func _engage(w, i: int, foe: int) -> void:
+	var u = w.units
+	if u.stance[i] != RETURN:
+		u.gx[i] = u.x[i]
+		u.gy[i] = u.y[i]
+	u.foe[i] = foe
+	u.stance[i] = AUTO
+
+
+## How far a unit with this stance looks for a fight on its own (centre to centre).
+static func _look(w, i: int, t: Dictionary) -> int:
+	var c: Dictionary = w.combat
+	match w.units.posture[i]:
+		DEFENSIVE:
+			return maxi(int(c.defend_sight), t.reach + w.units.radius[i] + SimMap.TILE / 2)
+		STAND:
+			return t.reach + w.units.radius[i] + SimMap.TILE / 2
+	return int(c.sight)
+
+
+## Done with a fight it found itself: a defensive unit walks back to where it stood.
+static func _go_back(w, i: int) -> void:
+	var u = w.units
+	u.foe[i] = 0
+	if Fixed.dist2(u.x[i], u.y[i], u.gx[i], u.gy[i]) > SimMap.TILE * SimMap.TILE / 4:
+		u.stance[i] = RETURN
+		w.order_move(i, u.gx[i], u.gy[i], 0, 0)
+	else:
+		u.stance[i] = NONE
+		u.moving[i] = 0
+
+
 ## An enemy unit or building of `player`, or an animal to hunt (wild, or its own sheep)?
 static func _is_target(w, id: int, player: int) -> bool:
 	var i: int = w.units.index_of(id)
@@ -184,19 +245,24 @@ static func tick(w) -> void:
 	u.cooldown = cd
 	for i in n:
 		var t: Dictionary = w.types[u.kind[i]]
+		if u.stance[i] == RETURN and u.moving[i] == 0:
+			u.stance[i] = NONE   # back where it stood
 		var stance: int = u.stance[i]
-		# Look for a fight: idle soldiers (not workers) and attack-movers, on their own beat.
+		var posture: int = u.posture[i]
+		# Look for a fight: idle soldiers (not workers, not passive) and attack-movers, on their own beat.
 		# Units fighting on their own (not an explicit target) also leave a crowded foe
 		# for a free one nearby, so winners go and help where the fight is still on.
 		if (w.tick + u.id[i]) % int(c.acquire_every) == 0:
-			var idle: bool = stance == NONE and u.moving[i] == 0 and u.task[i] == Economy.NONE and not t.worker
+			var idle: bool = stance == NONE and u.moving[i] == 0 and u.task[i] == Economy.NONE and not t.worker and posture != PASSIVE
 			var free: bool = stance == AUTO or stance == ATTACK_MOVE
 			var crowded := false
 			if u.foe[i] != 0 and free:
 				var cur: int = u.index_of(u.foe[i])
 				crowded = cur >= 0 and engaged[cur] > CROWDED
 			if (u.foe[i] == 0 and (idle or stance == ATTACK_MOVE)) or crowded:
-				var f := _nearest_foe(w, i, int(c.sight), stance == ATTACK_MOVE, engaged)
+				var am: bool = stance == ATTACK_MOVE
+				# Stand ground takes the nearest foe, not the least fought: the nearest is the one in reach.
+				var f := _nearest_foe(w, i, int(c.sight) if am else _look(w, i, t), am, engaged, 0 if posture == STAND and not am else SPREAD)
 				if f != 0 and f != u.foe[i]:
 					var old: int = u.index_of(u.foe[i]) if u.foe[i] != 0 else -1
 					if old >= 0:
@@ -206,7 +272,7 @@ static func tick(w) -> void:
 					if nj >= 0:
 						engaged[nj] += 1
 					if idle:
-						u.stance[i] = AUTO
+						_engage(w, i, f)
 		if u.foe[i] == 0:
 			continue
 		var j: int = u.index_of(u.foe[i])
@@ -230,6 +296,12 @@ static func tick(w) -> void:
 					var d := damage(t.atk, bt.arm, bt.cls, int(c.min_damage))
 					bhurt[b] += d
 					w.events.append({"type": "hit", "by": u.id[i], "to": bs.id[b], "damage": d, "ranged": t.ranged})
+		elif u.stance[i] == AUTO and posture == STAND:
+			u.foe[i] = 0   # stand ground: out of reach, let it go
+			u.stance[i] = NONE
+			u.moving[i] = 0
+		elif u.stance[i] == AUTO and posture == DEFENSIVE and Fixed.dist2(u.x[i], u.y[i], u.gx[i], u.gy[i]) > int(c.leash) * int(c.leash):
+			_go_back(w, i)   # chased far enough
 		elif u.stance[i] == AUTO and gap > int(c.sight) + 2 * SimMap.TILE:
 			_lost(w, i)   # it got away
 		else:
@@ -304,11 +376,14 @@ static func _chase(w, i: int, j: int, b: int) -> void:
 			w.order_reach(i, Economy._building_rect(w, b), key)
 
 
-## The target is gone (or out of reach for good): attack-movers carry on, others stop.
+## The target is gone (or out of reach for good): attack-movers carry on, defensive
+## units walk back, others stop.
 static func _lost(w, i: int) -> void:
 	var u = w.units
 	u.foe[i] = 0
-	if u.stance[i] == ATTACK_MOVE:
+	if u.stance[i] == AUTO and u.posture[i] == DEFENSIVE:
+		_go_back(w, i)
+	elif u.stance[i] == ATTACK_MOVE:
 		w.order_move(i, u.amx[i], u.amy[i], w.ARRIVE_STEP - w.ARRIVE_BASE, 0)
 	else:
 		u.stance[i] = NONE
@@ -316,9 +391,9 @@ static func _lost(w, i: int) -> void:
 
 
 ## The best enemy unit within `sight` (centre to centre): nearest, counting each of
-## its current attackers as SPREAD further away, lowest id on ties; then, for
+## its current attackers as `spread` further away, lowest id on ties; then, for
 ## attack-movers, the nearest enemy building. Returns an id or 0.
-static func _nearest_foe(w, i: int, sight: int, buildings_too: bool, engaged: PackedInt32Array) -> int:
+static func _nearest_foe(w, i: int, sight: int, buildings_too: bool, engaged: PackedInt32Array, spread := SPREAD) -> int:
 	var u = w.units
 	var sp = w.spatial
 	var me: int = u.owner[i]
@@ -339,7 +414,7 @@ static func _nearest_foe(w, i: int, sight: int, buildings_too: bool, engaged: Pa
 				var d2 := Fixed.dist2(u.x[i], u.y[i], u.x[j], u.y[j])
 				if d2 > sight * sight:
 					continue
-				var d := Fixed.isqrt(d2) + engaged[j] * SPREAD
+				var d := Fixed.isqrt(d2) + engaged[j] * spread
 				if d < best_d or (d == best_d and u.id[j] < best):
 					best_d = d
 					best = u.id[j]
@@ -361,7 +436,8 @@ static func _nearest_foe(w, i: int, sight: int, buildings_too: bool, engaged: Pa
 
 
 ## Land this tick's hits together, then remove the dead (units by descending slot,
-## so slots stay valid while removing). Units hit while idle turn on the attacker.
+## so slots stay valid while removing). Units hit while idle (or walking back) turn on
+## the attacker, unless passive.
 static func _apply(w, hurt: PackedInt32Array, hurt_by: PackedInt32Array, bhurt: PackedInt32Array) -> void:
 	var u = w.units
 	for j in hurt.size():
@@ -371,9 +447,9 @@ static func _apply(w, hurt: PackedInt32Array, hurt_by: PackedInt32Array, bhurt: 
 		var t: Dictionary = w.types[u.kind[j]]
 		if u.owner[j] == w.gaia:
 			Animals.hurt(w, j, hurt_by[j])   # a deer bolts
-		if u.foe[j] == 0 and u.stance[j] == NONE and u.task[j] == Economy.NONE and not t.worker and not t.get("harmless", false):
-			u.foe[j] = hurt_by[j]
-			u.stance[j] = AUTO
+		if u.foe[j] == 0 and (u.stance[j] == NONE or u.stance[j] == RETURN) and u.task[j] == Economy.NONE and not t.worker \
+				and not t.get("harmless", false) and u.posture[j] != PASSIVE:
+			_engage(w, j, hurt_by[j])
 	for j in range(hurt.size() - 1, -1, -1):
 		if u.hp[j] <= 0:
 			w.events.append({"type": "die", "id": u.id[j], "x": u.x[j], "y": u.y[j], "owner": u.owner[j], "kind": u.kind[j], "building": false})

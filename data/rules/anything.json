@@ -73,6 +73,9 @@
   "melee_reach": 150,
   "sight": 6000,
   "acquire_every": 10,
+  "defend_sight": 3000,
+  "leash": 5000,
+  "stance_note": "stances (combat.gd): defensive units engage foes within defend_sight (or their reach, if longer) and give up once leash from where they stood, then walk back (leash stays above defend_sight, or they would turn back short of a foe that stands still).",
   "note": "ticks at 20 Hz; distances in milli-tiles. Damage = max(min_damage, sum over attack classes the target has of max(0, attack - armour))."
  },
  "movement": {

@@ -33,6 +33,7 @@ const Commands := preload("res://src/sim/commands.gd")
 const SimMap := preload("res://src/sim/sim_map.gd")
 const World := preload("res://src/sim/world.gd")
 const Economy := preload("res://src/sim/economy.gd")
+const Combat := preload("res://src/sim/combat.gd")
 const Replay := preload("res://src/sim/replay.gd")
 const Bot := preload("res://src/ai/bot.gd")
 
@@ -54,6 +55,13 @@ const FIGURE_H := 26.0       # canvas units: a unit's figure from feet to head (
 const FIGURE_W := 14.0
 const DRAG_START_PX := 6.0   # screen pixels before a left press becomes a box
 const RING := Color("#f2e9c9")
+## The stance buttons, in Combat.POSTURES order: [label, tooltip].
+const STANCES := [
+	["Aggressive", "Go for any foe in sight and keep chasing it. The usual stance."],
+	["Defensive", "Fight foes that come near, chase them only a short way, then walk back to the spot."],
+	["Stand ground", "Never move to fight: hit only what is already in reach (archers shoot, spears stab what is next to them)."],
+	["No attack", "Never fight on their own, not even back. For scouts, or to walk past a fight."],
+]
 const FLOW := Color("#f2c94c")
 const GOOD := Color(0.4, 1.0, 0.4, 0.35)
 const BAD := Color(1.0, 0.3, 0.3, 0.35)
@@ -684,6 +692,29 @@ func _control_group(n: int, store: bool) -> void:
 			camera.look_at_point(views[ids[0]].position)
 	last_group = n
 	last_group_at = now
+
+
+## The stance shared by every soldier among `ids`, or -1 if they differ.
+func _soldier_stance(ids: Array) -> int:
+	var out := -2
+	for id in ids:
+		var i := world.units.index_of(id)
+		if world.types[world.units.kind[i]].worker:
+			continue
+		if out == -2:
+			out = world.units.posture[i]
+		elif out != world.units.posture[i]:
+			return -1
+	return out
+
+
+## Set the selected soldiers' stance (a Combat.POSTURES name); workers are left out.
+func set_stance(stance: String) -> void:
+	var workers := _selected_workers()
+	var ids: Array = _selected_by_owner()[active].filter(func(id): return not id in workers)
+	if not ids.is_empty():
+		world.issue(active, Commands.STANCE, {"ids": ids, "stance": stance})
+		_say("ack")
 
 
 func stop_selected() -> void:
@@ -1834,6 +1865,13 @@ func _update_panel() -> void:
 				"tip": "[b]Attack-move[/b]\nThen click where: they walk there and fight whatever they meet on the way.", "action": func(): arming_attack = true})
 			c.buttons.append({"icon": Icons.texture("stop"), "text": "Stop", "key": "X", "cost": "", "enabled": true,
 				"tip": "[b]Stop[/b]\nDrop every order: they stand where they are.", "action": stop_selected})
+			var now := _soldier_stance(mine)
+			for k in STANCES.size():
+				var stance: String = Combat.POSTURES[k]
+				c.buttons.append({"icon": Icons.texture("stance_" + stance), "text": STANCES[k][0], "key": "", "cost": "ON" if now == k else "", "enabled": true,
+					"tip": "[b]%s[/b]%s\n%s\nOrdered attacks work under every stance." % [STANCES[k][0], " (now)" if now == k else "", STANCES[k][1]],
+					"action": func(): set_stance(stance)})
+			c.info += ("\n" if c.info != "" else "") + "Stance: %s" % (STANCES[now][0] if now >= 0 else "mixed")
 		if not _selected_workers().is_empty():
 			if str(mine) != _build_page_for:
 				_build_page_for = str(mine)
