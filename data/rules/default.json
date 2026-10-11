@@ -60,7 +60,7 @@
    "wood": 24,
    "stone": 30
   },
-  "queue_max": 5
+  "queue_max": 15
  },
  "combat": {
   "min_damage": 1,

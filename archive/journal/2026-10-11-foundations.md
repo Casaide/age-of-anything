@@ -155,3 +155,7 @@ under it). Dominic: "the flag is 2D and super cheap looking". Now it's a baked p
 buildings: a staff in a little cairn, a brass finial, a team-colour cloth in one gentle wave, shown
 only while its building is selected. A parse error I'd made in the cursor code would have stopped
 the game loading; run_tests now loads every scene and view script so that can't slip through.
+Rest of phase 1: shift-click trains five, the queue holds fifteen (the one in training big, the
+rest small), WASD pans faster, a resource clicked shows what's left, and bushes, reeds and stone
+look started from the first bite. Mineable stone got its own prop, pale squared sandstone blocks,
+so it no longer looks like the grey boulders that just block.
