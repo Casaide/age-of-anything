@@ -22,12 +22,21 @@
 - Flesh out buildings - resource drop off buildings with resource gathering upgrades, walls, towers, market, lets expand the mvp here a bit more
 - WASD for map movement is a bit too slow
 
+- (2026-10-11, later) The flags on the frog huts look like golf (a lily pad green with a flag and a
+  ball on every roof). We agreed sides don't need all this extra stuff; team colour should be subtle
+- Cursors still look cheap; the "cut wood" cursor looks like a hammer
+- Animals: ones to hunt, and ones to herd and gather (like sheep)
+- Bug: clicking an enemy unit switches my fog of war to show what they see
+- (AI playtest: the AI beat Dominic)
+
 ## Plan (2026-10-11, Claude)
 
 Seven phases, smallest and most-felt first. Each phase ends with pictures in the archive and the
 tests green. Anything cut moves to `../backlog.md`.
 
-1. **Controls and feedback.** The rally flag on the ground while its building is selected; the
+1. **Controls and feedback.** Fix: selecting an enemy unit must not switch your fog to theirs.
+   Team markers made subtle (no flag-and-green "golf" toppers on roofs). Cursors redrawn to look
+   finished (the chop cursor must read as an axe). The rally flag on the ground while its building is selected; the
    attack cursor only over enemies you can see; shift-click trains 5; a bigger training queue;
    faster WASD scrolling; click a resource to see what's left; resources show they've been
    started (no longer whole) as soon as they're first used, then shrink in steps until gone.
@@ -47,7 +56,10 @@ tests green. Anything cut moves to `../backlog.md`.
    the shoreline; blocking rocks and mineable stone made clearly different.
 6. **Lobby.** A designed match setup: menu, pick your side (presets or a prompt), a live preview
    of the race, the AI's side, map, start. Production quality, not a debug form.
-7. **Exit check.** A deep review of UI, UX and art by Fable (a Fable agent works through the game
+7. **Animals.** Huntable animals (fight back or flee, give a lot of food) and herdable ones (a
+   sheep-like kind you take ownership of by finding it and lead home to gather), as data in
+   `data/` with their own art.
+8. **Exit check.** A deep review of UI, UX and art by Fable (a Fable agent works through the game
    in screenshots and the code), findings fixed, then Dominic's look.
 
 ## Checklist
@@ -57,6 +69,7 @@ tests green. Anything cut moves to `../backlog.md`.
 - [ ] 4. Buildings: barracks split, armoury, camps, market, walls
 - [ ] 5. Art consistency: rocks, farms, water, stone vs blocking rocks
 - [ ] 6. Lobby
-- [ ] 7. Fable review, fixes
+- [ ] 7. Animals: hunt and herd
+- [ ] 8. Fable review, fixes
 - [ ] Archive: pictures, journal, decisions, timeline
 

@@ -6,7 +6,8 @@ into active work, move it into `mvp-plan.md` (or a new plan) with an exit criter
 ## 0. Left open when milestones 8 and 10 closed (2026-10-11, Dominic: "close 8 and 10 for now")
 
 - **AI playtest:** Dominic plays a match against the AI and wins as a decent player (milestone 8's
-  second half; the AI already beats a passive player in `tests/test_ai.gd`).
+  second half; the AI already beats a passive player in `tests/test_ai.gd`). First try, 2026-10-11:
+  the AI beat Dominic.
 - **Testers:** 5-10 testers with `playtest.md`; the metrics in `mvp-plan.md` §4.
 - **Export build:** needs the Godot export templates (about 1 GB) and an itch account.
 - **Determinism across macOS and Linux:** run `tests/test_sim.gd` in a Linux container and compare hashes.
