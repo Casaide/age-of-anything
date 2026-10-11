@@ -100,7 +100,7 @@ static func why_not(w, player: int, b: int, id: String) -> String:
 		if w.researched[player][r] == 1:
 			return "already researched"
 		if item.has("line") and not _line_has(w, player, item.line, item.line_age):
-			return "nothing to upgrade"   # the line has no step at that age (it starts there, or later)
+			return "nothing to upgrade"   # no step at that age (it starts there, or later), or the age brought no new kit
 		if w.ages[player] < item.age:
 			return "needs a later age"
 		# The tech-tree layer (D-070): some research belongs to some creatures or cultures,
@@ -119,7 +119,8 @@ static func why_not(w, player: int, b: int, id: String) -> String:
 	return ""
 
 
-## Does this player's line have a step after its first at that age?
+## Does this player's line have a step after its first at that age, with new kit? (An
+## age with nothing better in the culture's kit leaves the line as it was: no upgrade to sell.)
 static func _line_has(w, player: int, slot: String, age: int) -> bool:
 	var k: int = w.type_of(player, slot)
 	if k < 0:
@@ -127,7 +128,7 @@ static func _line_has(w, player: int, slot: String, age: int) -> bool:
 	var line: Array = w.types[k].line
 	for l in line.size():
 		if l > 0 and int(line[l].age) == age:
-			return true
+			return line[l].recipe.parts != line[l - 1].recipe.parts
 	return false
 
 

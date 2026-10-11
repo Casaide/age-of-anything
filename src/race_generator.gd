@@ -30,6 +30,7 @@ const OPTIONAL_SLOTS := ["hand_l", "head_gear", "torso", "back"]
 ## spear stays a spear), so a unit line stays recognisably the same unit.
 const KIND_TAGS := ["spear", "lance", "blade", "blunt", "bow", "sling", "javelin", "poison", "gun", "worker",
 	"shield", "helmet", "hat", "armour", "cape", "banner", "wings", "quiver"]
+const EPITHET_SLOTS := ["hand_r", "torso"]   # a line step is named for its new weapon, then its new armour
 const WORKER_SLOTS := ["head_gear"]   # workers wear a hat at most: no capes on builders (Dominic)
 const GIANT_SCALE := 150
 const TINY_SCALE := 80
@@ -447,8 +448,31 @@ func _upgrade(prev: Dictionary, slot_def: Dictionary, ctx: Dictionary) -> Dictio
 		if spent + int(best.points) <= budget:
 			spent += int(best.points)
 			r.parts[slot] = best.id
-	r.name = _unit_name(r, lib.part(r.parts.hand_r), lib.creatures[r.creature])
+	r.name = _step_name(prev, r)
 	return r
+
+
+## A line step's name says what got better, so an upgrade never reads "X -> X": the kit's
+## own name if the main weapon changed it (Spearbearer -> Pike); else the epithet (data:
+## parts.json "epithet") of the best new piece, weapon first, then armour (Bronze
+## Spearbearer, Plated Lancer); else the culture's rank word for this step (families.json
+## "ranks": Veteran, Praetorian). Same kit keeps the same name: that step changes nothing.
+## Workers follow the age without an upgrade, so they keep their plain name.
+func _step_name(prev: Dictionary, r: Dictionary) -> String:
+	var c: Dictionary = lib.creatures[r.creature]
+	var plain := _unit_name(r, lib.part(r.parts.hand_r), c)
+	if r.parts == prev.parts:
+		return prev.name
+	if r.role == "worker" or plain != _unit_name(prev, lib.part(prev.parts.hand_r), c):
+		return plain
+	for slot in EPITHET_SLOTS:
+		var id: String = r.parts.get(slot, "")
+		if id != "" and id != prev.parts.get(slot, ""):
+			var epithet: String = lib.part(id).get("epithet", "")
+			if epithet != "" and not prev.name.begins_with(epithet + " "):
+				return "%s %s" % [epithet, plain]
+	var ranks: Array = lib.families[r.family].ranks
+	return "%s %s" % [ranks[mini(int(r.age) - int(r.tier) - 1, ranks.size() - 1)], plain]
 
 
 ## Points a recipe spends (body, head, mount and parts), as the budget counts them.
