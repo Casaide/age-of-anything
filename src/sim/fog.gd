@@ -3,6 +3,13 @@ extends RefCounted
 ## now. Allies share sight. Stamped from every unit's and building's sight radius (rules.fog,
 ## in tiles) as integer circles, every rules.fog.every ticks. Derived from the units and
 ## buildings, so it isn't hashed; the AI reads it to play fair, and the view draws it.
+##
+## Each player also remembers the map as they last saw it (the genre's remembered state): the
+## ground per cell (`fog_ground`, a terrain index, and `fog_left`, what was left there) starts as
+## the map as made and follows the truth only where the player sees now, so a farm sown in the
+## dark stays grass to them until they look; and the enemy buildings they've seen (`fog_seen`,
+## id -> [kind, owner, cx, cy, size, done, progress, age]), kept as last seen until they see the
+## spot empty. Only cells that held a resource or ever changed (`fog_watch`) are compared.
 
 const UNSEEN := 0
 const EXPLORED := 1
@@ -16,14 +23,28 @@ static func setup(w) -> void:
 	w.fog_cfg = {"every": int(f.get("every", 4)), "unit": int(f.get("unit", 6)), "worker": int(f.get("worker", 4)),
 		"building": int(f.get("building", 4)), "tower": int(f.get("tower", 8))}
 	w.fog = []
+	w.fog_ground = []
+	w.fog_left = []
+	w.fog_seen = []
+	w.fog_watch = {}
+	for c in w.map.resource_cells:
+		w.fog_watch[c] = true
+	var left := PackedInt32Array()
+	for c in w.map.width * w.map.height:
+		left.append(w.map.left_at(c))
 	for p in w.races.size():
 		var g := PackedByteArray()
 		g.resize(w.map.width * w.map.height)
 		w.fog.append(g)
+		w.fog_ground.append(w.map.terrain.duplicate())
+		w.fog_left.append(left.duplicate())
+		w.fog_seen.append({})
 	_update(w)
 
 
 static func tick(w) -> void:
+	for c in w.map.fresh:   # cells that changed this tick (before the World clears the list)
+		w.fog_watch[c] = true
 	if w.tick % int(w.fog_cfg.every) == 0:
 		_update(w)
 
@@ -35,6 +56,16 @@ static func visible(w, player: int, x: int, y: int) -> bool:
 
 static func explored(w, player: int, cx: int, cy: int) -> bool:
 	return w.fog[player][cy * w.map.width + cx] != UNSEEN
+
+
+## Does this player see any tile of the cx, cy, size square right now?
+static func sees_area(w, player: int, cx: int, cy: int, size: int) -> bool:
+	var g: PackedByteArray = w.fog[player]
+	for y in range(cy, cy + size):
+		for x in range(cx, cx + size):
+			if g[y * w.map.width + x] == VISIBLE:
+				return true
+	return false
 
 
 static func _update(w) -> void:
@@ -56,6 +87,34 @@ static func _update(w) -> void:
 				var half: int = bs.size[b] / 2
 				_stamp(w, g, bs.cx[b] + half, bs.cy[b] + half, r + half)
 		w.fog[p] = g
+		_remember(w, p)
+
+
+## What player p sees now overwrites what they remember: the ground, and enemy buildings
+## (seen ones kept as they are now; remembered ones whose spot is seen empty forgotten).
+static func _remember(w, p: int) -> void:
+	var g: PackedByteArray = w.fog[p]
+	var m = w.map
+	var ground: PackedByteArray = w.fog_ground[p]
+	var left: PackedInt32Array = w.fog_left[p]
+	for c in w.fog_watch:   # only cells that hold a resource or ever changed can differ from the map as made
+		if g[c] == VISIBLE:
+			ground[c] = m.terrain[c]
+			left[c] = m.amount[m.pool[c]] if m.pool[c] >= 0 else m.amount[c]
+	w.fog_ground[p] = ground
+	w.fog_left[p] = left
+	var seen: Dictionary = w.fog_seen[p]
+	var bs = w.buildings
+	for b in bs.count():
+		if w.teams[bs.owner[b]] != w.teams[p] and sees_area(w, p, bs.cx[b], bs.cy[b], bs.size[b]):
+			seen[bs.id[b]] = PackedInt32Array([bs.kind[b], bs.owner[b], bs.cx[b], bs.cy[b], bs.size[b], bs.done[b], bs.progress[b], w.ages[bs.owner[b]]])
+	var gone := []
+	for id in seen:
+		var s: PackedInt32Array = seen[id]
+		if bs.index_of(id) < 0 and sees_area(w, p, s[2], s[3], s[4]):
+			gone.append(id)
+	for id in gone:
+		seen.erase(id)
 
 
 static func _stamp(w, g: PackedByteArray, cx: int, cy: int, r: int) -> void:

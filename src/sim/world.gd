@@ -101,6 +101,10 @@ var started_with_town := PackedByteArray()
 var winner := -1               # the winning team, once only one is left
 var fog: Array = []            # per player: PackedByteArray per cell (fog.gd); derived, not hashed
 var fog_cfg: Dictionary
+var fog_ground: Array = []     # per player: PackedByteArray, the terrain index per cell as they last saw it (fog.gd)
+var fog_left: Array = []       # per player: PackedInt32Array, what was left per cell as they last saw it
+var fog_seen: Array = []       # per player: enemy building id -> its snapshot as last seen (fog.gd)
+var fog_watch := {}            # cell -> true: cells that held a resource or ever changed (fog.gd)
 var fields := {}               # field key -> Flow; looked up by key, never iterated
 var field_order: Array = []    # cached field keys, oldest first (eviction, invalidation)
 var field_queue: Array = []    # field keys waiting for a solve, in request order
