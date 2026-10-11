@@ -320,3 +320,13 @@ wings on the person and the mount, or no mounts. Now:
 - "Pegasus" words give only the mount wings (they no longer make the whole race want to fly).
 - The mount wing socket moves to the withers (art track).
 Supersedes the part of the generator rules that put wings on the mount only.
+
+**D-070, 2026-10-11: Restrictions are layers, and each is a host switch.** (D-060 to D-069 are
+reserved for the art agent's milestone 5 entries.) Dominic: frogs with muskets are too much fun
+to forbid outright. The layers:
+- era (host rules; "Anything goes" already allows gunpowder);
+- culture and theme;
+- each race's tech tree;
+- a "Full tech tree / No restrictions" host option, as the genre has, that lifts the culture and
+  tech limits.
+Tech tree data is to be planned so each layer is a filter that can be turned off (milestone 7).
