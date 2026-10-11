@@ -200,16 +200,14 @@
    "mount": "pony",
    "mount_wings": "wings.feather",
    "tags": {
-    "mounted": 2,
-    "flying": 2
+    "mounted": 2
    }
   },
   "pegasi": {
    "mount": "pony",
    "mount_wings": "wings.feather",
    "tags": {
-    "mounted": 2,
-    "flying": 2
+    "mounted": 2
    }
   },
   "riding": {
