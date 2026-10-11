@@ -11,12 +11,12 @@ const Fixed := preload("res://src/sim/fixed.gd")
 const Tech := preload("res://src/sim/tech.gd")
 
 const THINK_EVERY := 20        # ticks (1 s)
-const FOOD_PCT := 60
-const MAX_WORKERS := 30
+var FOOD_PCT := 60            # these three come from data/ai.json when a full bot runs this
+var MAX_WORKERS := 30
 const TRAIN_COOLDOWN := 20     # ticks between train orders (commands land two turns later)
 const HOUSE_COOLDOWN := 200
 const HOUSE_HEADROOM := 2      # build a house when free pop drops to this
-const AGE_WORKERS := 16        # with this many workers, stop training and save for the next age
+var AGE_WORKERS := 16          # with this many workers, stop training and save for the next age
 
 var player: int
 var _next_train := 0

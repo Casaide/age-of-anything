@@ -1,0 +1,24 @@
+{
+ "_doc": "The AI opponent (src/ai/bot.gd): an economy, a build order, attack waves and counter-picks. Times in seconds.",
+ "economy": {
+  "food_pct": 60,
+  "max_workers": 30,
+  "age_workers": 16
+ },
+ "build_order": [
+  {"building": "barracks", "workers": 11},
+  {"building": "stable", "age": 2, "workers": 18},
+  {"building": "barracks", "age": 2, "workers": 22}
+ ],
+ "military": {
+  "queue": 2,
+  "defend_tiles": 10,
+  "regroup_every": 5,
+  "waves": [
+   {"at": 300, "min_army": 5},
+   {"at": 480, "min_army": 9}
+  ],
+  "repeat_every": 120,
+  "repeat_min_army": 9
+ }
+}
