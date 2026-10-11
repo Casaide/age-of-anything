@@ -75,6 +75,7 @@ func _init() -> void:
 	_test_tech(races)
 	_test_market(races)
 	_test_build_queue(races)
+	_test_builder_moves_on(races)
 	_test_gates(races)
 	_test_camp_gather(races)
 	_test_drop_off(races)
@@ -590,6 +591,42 @@ func _test_bot_hunts(races: Array) -> void:
 	check(killed.get("boar", 0) >= 1, "bot hunts: ... and its boar, with a big party (%d)" % killed.get("boar", 0))
 	check(w.lost[0] <= 2, "bot hunts: ... losing no more than a couple of hunters to it (%d lost)" % w.lost[0])
 	check(meat > 0, "bot hunts: its workers gather the carcasses")
+
+
+## A builder that finishes with nothing queued goes on to an unfinished building nearby (Dominic).
+func _test_builder_moves_on(races: Array) -> void:
+	var w := World.new(SEED, SimMap.load_id("flat_test"), races, rules_)
+	w.stock[w.resources.find("wood")][0] = 1000
+	var ws := []
+	for i in w.units.count():
+		if w.units.owner[i] == 0 and w.types[w.units.kind[i]].worker:
+			ws.append(w.units.id[i])
+	var s: Array = w.map.starts[0]
+	var cx: int = s[0] / 1000
+	var cy: int = s[1] / 1000
+	var hk := Economy.btype_of(w, "house")
+	var spots := []   # two free spots near the start, 3 tiles apart
+	for dy in range(-6, 7):
+		for dx in range(3, 8):
+			if spots.size() < 2 and Economy.can_place(w, 0, hk, cx + dx, cy + dy) \
+					and (spots.is_empty() or absi(spots[0].y - (cy + dy)) >= 3):
+				spots.append(Vector2i(cx + dx, cy + dy))
+	assert(spots.size() == 2)
+	w.issue(0, Commands.BUILD, {"ids": [ws[0]], "building": "house", "cx": spots[0].x, "cy": spots[0].y})
+	w.issue(0, Commands.BUILD, {"ids": [ws[1]], "building": "house", "cx": spots[1].x, "cy": spots[1].y})
+	for t in 16:
+		w.step()
+	w.issue(0, Commands.MOVE, {"ids": [ws[1]], "x": s[0] - 6000, "y": s[1]})   # walks off: the second house is left a foundation
+	var houses := []
+	for t in 3000:
+		w.step()
+		houses = []
+		for b in w.buildings.count():
+			if w.buildings.owner[b] == 0 and w.btypes[w.buildings.kind[b]].id == "house":
+				houses.append(w.buildings.done[b])
+		if houses.size() == 2 and houses[0] == 1 and houses[1] == 1:
+			break
+	check(houses.size() == 2 and houses[0] == 1 and houses[1] == 1, "builders: done with one house, the builder goes on to finish the foundation nearby (%s)" % [houses])
 
 
 ## A long shift-queue of builds (a dragged wall) all goes up: taking the next order from a

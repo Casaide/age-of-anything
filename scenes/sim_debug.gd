@@ -2047,8 +2047,8 @@ func _update_panel() -> void:
 				_build_page_for = str(mine)
 				build_page = ""
 			if build_page == "":
-				for page in [["civilian", "Civilian", "house", "Houses, farms, camps, the market and Town Centers."],
-						["military", "Military", "barracks", "Barracks, ranges, stables, the armoury, towers and walls."]]:
+				for page in [["civilian", "Civilian", "house", "Houses, farms, camps, the market, the armoury and Town Centers."],
+						["military", "Military", "barracks", "Barracks, ranges, stables, towers, walls and gates."]]:
 					var pid: String = page[0]
 					c.buttons.append({"icon": kit.building_icon(_arch(active), page[2]), "text": "Build: %s" % page[1], "key": "", "cost": page[1], "enabled": true,
 						"glyph": Icons.texture("glyph/" + page[2]), "group": "Build",
@@ -2127,6 +2127,8 @@ func _update_cursor() -> void:
 		cursors.use({"food": "forage", "wood": "chop", "stone": "mine", "gold": "mine"}.get(map.resource_at(cell), "chop"))
 	elif workers and bid != 0 and _is_foundation_of(bid, active):
 		cursors.use("build")
+	elif workers and bid != 0 and map.pool[cell] >= 0 and world.buildings.owner[world.buildings.index_of(bid)] == active:
+		cursors.use("build")   # a worked-out farm of ours: right-click reseeds it (Dominic: it showed the plain cursor)
 	elif workers and bid != 0 and _drop_off_kind(bid, active, _selected_workers()) != "":
 		# taking it in: the carried resource's tool (there's no drop-off cursor art yet)
 		var kind := _drop_off_kind(bid, active, _selected_workers())

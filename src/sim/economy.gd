@@ -15,6 +15,7 @@ const SEARCH_TILES := 8               # how far a worker looks for more of the s
 const SPREAD_TILES := 2               # sent to a busy tile, a worker takes a quieter one this close
 const BUSY_COST := 4000000            # one more gatherer on a tile weighs like 2 tiles of distance
 const GIVE_UP := 60                   # mirrors World.STUCK_LIMIT
+const NEXT_BUILD_TILES := 8            # a builder done with nothing queued goes on to your foundations this close
 
 
 ## Resource ids in their fixed order. A unit's carry_kind is a resource's index + 1 (0: nothing).
@@ -422,7 +423,12 @@ static func _build(w, i: int) -> void:
 	var bs = w.buildings
 	var b: int = bs.index_of(u.target[i])
 	if b < 0 or bs.done[b] == 1:
-		clear_task(w, i)
+		var nb := _nearby_foundation(w, i) if u.orders[i].is_empty() else -1
+		if nb < 0:
+			clear_task(w, i)
+			return
+		u.target[i] = bs.id[nb]   # on to the next unfinished building nearby, as the genre's builders do (Dominic)
+		_approach_building(w, i, nb)
 		return
 	if _in_reach(w, i, _building_rect(w, b)):
 		u.moving[i] = 0
@@ -442,6 +448,24 @@ static func _build(w, i: int) -> void:
 			clear_task(w, i)
 		else:
 			_approach_building(w, i, b)
+
+
+## The nearest unfinished building of the worker's owner within NEXT_BUILD_TILES of it (lowest
+## index on ties), or -1.
+static func _nearby_foundation(w, i: int) -> int:
+	var u = w.units
+	var bs = w.buildings
+	var best := -1
+	var best_d2: int = NEXT_BUILD_TILES * NEXT_BUILD_TILES * SimMap.TILE * SimMap.TILE + 1
+	for b in bs.count():
+		if bs.owner[b] != u.owner[i] or bs.done[b] == 1:
+			continue
+		var half: int = bs.size[b] * SimMap.TILE / 2
+		var d2 := Fixed.dist2(u.x[i], u.y[i], bs.cx[b] * SimMap.TILE + half, bs.cy[b] * SimMap.TILE + half)
+		if d2 < best_d2:
+			best_d2 = d2
+			best = b
+	return best
 
 
 ## A finished camp (a building taking in some resources, not all, like a mill or lumber

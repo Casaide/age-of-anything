@@ -145,7 +145,7 @@
    },
    "time": 25,
    "building": "lumber_camp",
-   "age": 1,
+   "age": 2,
    "effects": [
     {
      "gather": "wood",
@@ -164,7 +164,7 @@
    },
    "time": 40,
    "building": "lumber_camp",
-   "age": 2,
+   "age": 3,
    "effects": [
     {
      "gather": "wood",
@@ -182,7 +182,7 @@
    },
    "time": 20,
    "building": "mill",
-   "age": 1,
+   "age": 2,
    "effects": [
     {
      "gather": "food",
@@ -201,7 +201,7 @@
    },
    "time": 40,
    "building": "mill",
-   "age": 2,
+   "age": 3,
    "effects": [
     {
      "gather": "food",
@@ -219,7 +219,7 @@
    },
    "time": 30,
    "building": "mining_camp",
-   "age": 1,
+   "age": 2,
    "effects": [
     {
      "gather": "stone",
@@ -302,7 +302,7 @@
    "name": "Felling Wedges",
    "desc": "Split the big trunks with wedges.",
    "building": "lumber_camp",
-   "age": 3,
+   "age": 4,
    "effect": "Wood gathered 15% faster"
   },
   {

@@ -30,7 +30,7 @@
   {
    "slot": "skirmisher",
    "role": "skirmisher",
-   "tier": 1,
+   "tier": 2,
    "name": "Skirmisher",
    "building": "archery_range",
    "desc": "Beats archers; weak to infantry and mounted"
@@ -38,7 +38,7 @@
   {
    "slot": "archer",
    "role": "archer",
-   "tier": 1,
+   "tier": 2,
    "name": "Archer",
    "building": "archery_range",
    "desc": "Beats infantry; weak to skirmishers and mounted"
