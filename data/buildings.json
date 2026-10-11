@@ -2,9 +2,10 @@
  "schema": "aow.buildings/1",
  "menu": {
   "civilian": ["house", "farm", "lumber_camp", "mill", "mining_camp", "market", "town_center"],
-  "military": ["barracks", "archery_range", "stable", "armoury", "watchtower", "wall"]
+  "military": ["barracks", "archery_range", "stable", "armoury", "watchtower", "palisade", "palisade_gate", "wall", "stone_gate"]
  },
  "_menu_doc": "a worker's two build pages (Dominic: civilian and military apart), each in the order its buttons appear (building hotkeys work from either page; hotkeys are avoided where they clash with WASD panning and the debug keys)",
+ "_walls_doc": "\"line\": placed by dragging a line of tiles (walls, gates); \"gate\": blocks like a wall but its owner's team walks through it; \"replaces\": building types of your own it may be dropped on, taking their place (a gate into a wall line)",
  "age_looks": {
   "junk": {
    "town_center": {
@@ -301,7 +302,7 @@
   },
   "wall": {
    "name": "Stone Wall",
-   "desc": "A stone wall, one tile at a time: drag to lay a line. Stops anyone who can't fly.",
+   "desc": "A stone wall, one tile at a time: drag to lay a line. Stops anyone who can't fly; put a Stone Gate in it to let your own side through.",
    "size": 1,
    "hp": 1500,
    "cost": {
@@ -320,7 +321,8 @@
     "melee": 6,
     "pierce": 10
    },
-   "note": "dragged in lines; flyers go over"
+   "note": "dragged in lines; flyers go over",
+   "line": true
   },
   "watchtower": {
    "name": "Watchtower",
@@ -350,6 +352,84 @@
     "reload": 40
    },
    "note": "shoots the nearest enemy in range"
+  },
+  "palisade": {
+   "name": "Palisade Wall",
+   "desc": "A wall of sharpened stakes, one tile at a time: drag to lay a line. Cheap and quick, but it won't hold for long. Flyers go over.",
+   "size": 1,
+   "hp": 250,
+   "cost": {
+    "food": 0,
+    "wood": 3
+   },
+   "build_time": 4,
+   "pop": 0,
+   "house": false,
+   "drop_off": [],
+   "trains": [],
+   "age": 1,
+   "hotkey": "I",
+   "armour": {
+    "melee": 2,
+    "pierce": 6
+   },
+   "note": "dragged in lines; the age-1 wall",
+   "line": true
+  },
+  "palisade_gate": {
+   "name": "Palisade Gate",
+   "desc": "A stake gate: drop it on your palisade (or open ground). It opens for your side and stays shut to everyone else.",
+   "size": 1,
+   "hp": 400,
+   "cost": {
+    "food": 0,
+    "wood": 20
+   },
+   "build_time": 12,
+   "pop": 0,
+   "house": false,
+   "drop_off": [],
+   "trains": [],
+   "age": 1,
+   "hotkey": "O",
+   "armour": {
+    "melee": 2,
+    "pierce": 6
+   },
+   "note": "opens for its owner's team",
+   "line": true,
+   "gate": true,
+   "replaces": [
+    "palisade"
+   ]
+  },
+  "stone_gate": {
+   "name": "Stone Gate",
+   "desc": "A stone gatehouse: drop it on your stone wall (or open ground). It opens for your side and stays shut to everyone else.",
+   "size": 1,
+   "hp": 1800,
+   "cost": {
+    "food": 0,
+    "wood": 0,
+    "stone": 25
+   },
+   "build_time": 25,
+   "pop": 0,
+   "house": false,
+   "drop_off": [],
+   "trains": [],
+   "age": 2,
+   "hotkey": "",
+   "armour": {
+    "melee": 6,
+    "pierce": 10
+   },
+   "note": "opens for its owner's team",
+   "line": true,
+   "gate": true,
+   "replaces": [
+    "wall"
+   ]
   }
  }
 }

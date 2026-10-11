@@ -31,7 +31,12 @@ var terrain_reseed: Array = []     # terrain index -> what reseeding turns it ba
 var terrain_cleared: Array = []    # terrain index -> what it becomes when its farm is torn down, or -1
 var terrain := PackedByteArray()   # index ty * width + tx
 var walk := PackedByteArray()      # ground: 1 walkable, 0 blocked (terrain or a building)
-var walks: Array = []              # per movement class, the same grid (walks[0] matches walk)
+var walks: Array = []              # per lane, the same grid (walks[0] matches walk); see lanes below
+## Lanes: one walk grid per movement class, for everyone (lanes 0-2), and once a team has a
+## gate, another three for that team, where its own gates are open (lane = group * 3 + class).
+## Gates are closed in the shared lanes, so maps without gates keep just the three.
+var gate := PackedInt32Array()     # per cell: the team a gate standing there opens for, + 1; 0 if none
+var lane_teams: Array = [-2]       # per lane group: the team its gates open for (group 0: nobody's)
 var occupied := PackedInt32Array() # building id standing on the cell, or 0
 var amount := PackedInt32Array()   # resource left on the cell (for a pooled cell: on its anchor)
 var pool := PackedInt32Array()     # pooled cells (a farm's): the anchor cell holding the shared amount, or -1
@@ -99,6 +104,7 @@ static func load_id(map_id: String) -> RefCounted:
 		g.resize(n)
 		m.walks.append(g)
 	m.occupied.resize(n)
+	m.gate.resize(n)
 	m.amount.resize(n)
 	m.pool.resize(n)
 	m.pool.fill(-1)
@@ -126,7 +132,8 @@ static func load_id(map_id: String) -> RefCounted:
 	return m
 
 
-## Can a unit of movement class `k` stand at (x, y) milli-tiles?
+## Can a unit in lane `k` (its movement class, in its team's lane group: World.lane) stand at
+## (x, y) milli-tiles?
 func walkable(x: int, y: int, k := 0) -> bool:
 	if x < 0 or y < 0:
 		return false
@@ -215,11 +222,25 @@ func clear_pool(cells: PackedInt32Array, k: int) -> void:
 		_refresh(c)
 
 
-## Mark a building's footprint (id) or clear it (0).
-func occupy(cells: PackedInt32Array, building_id: int) -> void:
+## Mark a building's footprint (id) or clear it (0). A gate (`gate_team` >= 0) blocks like any
+## building, except in that team's own lanes (made here, the first time the team has a gate).
+func occupy(cells: PackedInt32Array, building_id: int, gate_team := -1) -> void:
+	if gate_team >= 0 and lane_group(gate_team) == 0:
+		lane_teams.append(gate_team)
+		for k in CLASSES.size():
+			walks.append(walks[k].duplicate())   # the shared grids as they stand; _refresh opens the gates
 	for c in cells:
 		occupied[c] = building_id
+		gate[c] = gate_team + 1 if building_id != 0 else 0
 		_refresh(c)
+
+
+## The lane group a team walks in: its own if it has ever had a gate, else 0 (everyone's).
+func lane_group(team: int) -> int:
+	for g in range(1, lane_teams.size()):
+		if lane_teams[g] == team:
+			return g
+	return 0
 
 
 ## Can a building of this size go here? On ground anyone could build on, or, if the
@@ -258,6 +279,11 @@ func _refresh(cell: int) -> void:
 		# Buildings block everyone but flyers.
 		walks[k][cell] = 1 if mask & (1 << k) and (k == FLYING or clear) else 0
 	walks[0][cell] = walk[cell]
+	for g in range(1, lane_teams.size()):   # a team's own gates are open to it
+		var open: bool = clear or gate[cell] == lane_teams[g] + 1
+		for k in CLASSES.size():
+			walks[g * CLASSES.size() + k][cell] = 1 if mask & (1 << k) and (k == FLYING or open) else 0
+		walks[g * CLASSES.size()][cell] = 1 if terrain_walk[terrain[cell]] and open else 0   # as walks[0] follows walk
 	version += 1
 	fresh.append(cell)
 	if changed.size() < 4096:
