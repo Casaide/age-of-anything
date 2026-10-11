@@ -99,7 +99,9 @@ tests green. Anything cut moves to `../backlog.md`.
 - [x] 2. Sound (2026-10-11, placeholder synths, Dominic to listen): chop, clink (mining), hammer
       knock, picking rustle, timed to the blow landing in each worker's animation and quieter away
       from the middle of the screen; order acknowledged, select click, unit trained, building
-      finished, farm used up. `tests/sfx_export.gd` writes them all to WAV
+      finished, farm used up. `tests/sfx_export.gd` writes them all to WAV.
+      Superseded 2026-10-11: the placeholder synth is gone; the sound is rendered files from
+      our own offline synth, with creature voices and music (`docs/audio.md`, D-103)
 - [x] 3. UI: tooltips, icons, polish (2026-10-11): tooltip cards on every button (cost, what it is,
       trains/research, upgrades and where, later-age names, needs in red, unlocks in green;
       descriptions are data); icons for age-ups, research, resources and population; a top bar
