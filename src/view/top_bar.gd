@@ -1,7 +1,7 @@
 extends PanelContainer
 ## The top bar: your stock of each resource with its icon, your population against the cap
-## (red when it's full), your race and age, and the match clock. Styled like the command
-## panel. Resources come from data, so a new one shows up here by itself.
+## (red when it's full), your race and age, the tech tree button (F2), and the match clock.
+## Styled like the command panel. Resources come from data, so a new one shows up here by itself.
 
 const Icons := preload("res://src/view/art/icons.gd")
 
@@ -11,6 +11,7 @@ const TEXT := Color("#f0e6cc")
 const FULL := Color("#e88a70")
 
 signal idle_pressed
+signal tree_pressed
 
 var _values := {}    # key -> Label
 var _idle: Button
@@ -72,6 +73,25 @@ func setup(resource_ids: Array) -> void:
 	_idle.add_theme_stylebox_override("normal", st)
 	_idle.pressed.connect(func(): idle_pressed.emit())
 	row.add_child(_idle)
+	var tree := Button.new()   # the tech tree page (F2)
+	tree.text = "Tech tree"
+	tree.icon = Icons.texture("research")
+	tree.add_theme_constant_override("icon_max_width", 20)
+	tree.custom_minimum_size = Vector2(0, 30)
+	tree.focus_mode = Control.FOCUS_NONE
+	tree.tooltip_text = "Your race's tech tree and bonuses (F2)"
+	tree.add_theme_font_size_override("font_size", 15)
+	tree.add_theme_color_override("font_color", TEXT)
+	var tst: StyleBoxFlat = st.duplicate()
+	tst.content_margin_left = 8
+	tst.content_margin_right = 10
+	tree.add_theme_stylebox_override("normal", tst)
+	var hover := tst.duplicate()
+	hover.border_color = Color("#f2c94c")
+	tree.add_theme_stylebox_override("hover", hover)
+	tree.add_theme_stylebox_override("pressed", hover)
+	tree.pressed.connect(func(): tree_pressed.emit())
+	row.add_child(tree)
 	_clock = Label.new()
 	_clock.add_theme_font_size_override("font_size", 16)
 	_clock.add_theme_color_override("font_color", Color("#b8ad94"))

@@ -19,11 +19,11 @@ static func load_tech(resources: Array, btypes: Array) -> Dictionary:
 	var d = JSON.parse_string(FileAccess.get_file_as_string("res://data/tech.json"))
 	assert(d != null, "Bad or missing data/tech.json")
 	var ages := []
-	for a in d.ages:
+	for a in d.ages.filter(_built):   # planned ages and research are only on the tech tree page
 		ages.append({"age": int(a.age), "name": a.name, "desc": a.get("desc", ""), "cost": Economy.cost_vector(resources, a.cost),
 			"ticks": int(a.time) * 20, "building": a.building, "requires": a.get("requires", []).duplicate()})
 	var research := []
-	for r in d.research:
+	for r in d.research.filter(_built):
 		research.append({"id": r.id, "name": r.name, "desc": r.get("desc", ""), "cost": Economy.cost_vector(resources, r.cost),
 			"ticks": int(r.time) * 20, "building": r.building, "age": int(r.age), "effects": r.effects.duplicate(true),
 			"only": r.get("only", []).duplicate()})
@@ -42,6 +42,11 @@ static func load_tech(resources: Array, btypes: Array) -> Dictionary:
 					"cost": Economy.cost_vector(resources, up.cost), "ticks": int(up.time) * 20, "building": bt.id,
 					"age": age, "effects": [], "only": [], "line": slot, "line_age": age})
 	return {"ages": ages, "research": research}
+
+
+## Not marked "status": "planned" (milestone 12: drawn on the tech tree page, not in the game yet).
+static func _built(item: Dictionary) -> bool:
+	return item.get("status", "") != "planned"
 
 
 static func setup(w) -> void:
