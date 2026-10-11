@@ -118,6 +118,21 @@ without a model still fall back to the automatic bake.
 - [x] Vertical slice: the debug match (sim_debug) runs in the pixel art via `src/view/art/`
   (art kit, terrain view, building view); old placeholder views deleted
 
+## Before milestone 4 continues (Dominic, 2026-10-11)
+Finish these before the combat sim work (the combat data is already in):
+- [x] Realistic static props: bug bushes (dense shrubs with berries), rocks (broken stones), no
+  outline on props
+- [ ] Variety: more baked variants of every static prop, picked per tile, so no two neighbours
+  are identical
+- [ ] Reeds: another look, in the realistic prop style
+- [ ] UI pass:
+  - a bigger build/train queue;
+  - unit icons generated from the baked units (portraits from the real sprites);
+  - cursors that change with the action (gather/forage, build, attack, move).
+- [ ] Animation improvements: work animations per job (forage, chop, build), a proper walk cycle
+  for every creature, idle variety; attack lunge, hit flash and death poses follow with combat
+- [ ] Archive: pictures, journal, decisions, timeline
+
 ## Results
 - **Step 1 done (2026-10-11):** `scenes/style_sampler.tscn` shows all five, at the same in-game
   scale, with 4x close-ups on keys 1-5. Pictures: `archive/images/2026-10-11/08-13`.
