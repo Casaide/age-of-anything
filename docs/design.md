@@ -143,6 +143,21 @@ a slightly-too-round pony is a better clip than a perfect one.
 3. **No limits:** Spartans vs Abrams, the "10 Abrams vs 1000 Spartans" YouTube fantasy. A later
    extension. Pricing still mostly balances it: 10 Abrams cost a fortune.
 
+**Restrictions come in layers, each one a host switch (Dominic, 2026-10-11):**
+1. **Era** (host rules, today): default is bronze to medieval. "Anything goes" adds gunpowder,
+   so frogs get muskets; under default rules they get a playful substitute.
+2. **Culture and theme** (the generator's theme guards): a race's own kit is preferred and
+   other cultures' signature kit is kept out.
+3. **Tech tree** (milestone 7 and later): which unit lines, ages and upgrades each race can
+   research, from its creature and culture. Gaps are part of a race's character (rats may never
+   get plate).
+4. **"Full tech tree" / "No restrictions" host option** (the genre has one): lifts layers 2 and 3
+   so any race can research anything its era allows. Combined with "Anything goes", a frog
+   musketeer is always possible.
+
+So the default stays readable and themed, and the fun combinations are a switch away, never
+blocked forever.
+
 **Start strict:** Bronze Age to Medieval. This also caps the parts library to a manageable art kit
 (spears, bows, bronze, iron, beasts, mounts). Gunpowder, vehicles, air units and sci-fi come later
 as era packs.
