@@ -19,8 +19,12 @@ const HOUSE_SCALE := 1.3   # houses read about 2.5x a footman
 const TOWN := {"thatch": "town_center", "junk": "junk_town_center", "stone": "stone_town_center", "tent": "tent_town_center"}
 const HOUSE := {"thatch": "stilt_house", "junk": "tin_can_house", "stone": "villa_house", "tent": "tent_house"}
 const MATERIALS := ["wood", "thatch", "mud", "stone", "tin", "brick", "plaster", "terracotta", "terracotta_dark", "felt", "weave"]
-## Doodad kinds and how many bakes of each.
-const DOODADS := {"reeds": 4, "bush": 3, "rock": 3, "stones": 4, "tuft": 4, "flowers": 6, "shore": 4, "lily": 4}
+## Prop and doodad kinds and how many variants of each (each a different shape, size
+## and turn; picked per tile so neighbours differ).
+const DOODADS := {"reeds": 6, "bush": 6, "rock": 6, "stones": 6, "tuft": 6, "flowers": 6, "shore": 4, "lily": 4}
+## Resources show how much is left: reeds and bug bushes each have this many stages
+## (0 whole ... 3 nearly gone: stubble for reeds, a bare brown bush).
+const STAGES := 4
 
 var lib
 var bakes := {}       # name -> {img: Image, origin: Vector2 (baked px of the anchor)}
@@ -112,25 +116,59 @@ func bake_buildings(races: Array) -> void:
 	h[0].queue_free()
 
 
+## Every variant (and cut-down stage) of every prop, several to a render.
 func _bake_doodads(baker, models) -> void:
 	var props := PropModels.new()
 	baker.outline = false   # static props are drawn realistically, without the units' outline
+	var shadowed := {}      # name -> model
+	for v in DOODADS.reeds:
+		for st in STAGES:
+			shadowed[staged("reeds", v, st)] = props.reed_clump(300 + v, 1.0, st)
+	for v in DOODADS.bush:
+		for st in STAGES:
+			shadowed[staged("bush", v, st)] = props.bug_bush(400 + v, st)
+	for v in DOODADS.rock:
+		shadowed["rock%d" % v] = props.boulders(1000 + v)
+	var flat := {}
+	for v in DOODADS.stones:
+		flat["stones%d" % v] = props.field_stones(500 + v)
+	for v in DOODADS.tuft:
+		flat["tuft%d" % v] = props.grass_tuft(600 + v)
+	for v in DOODADS.flowers:
+		flat["flowers%d" % v] = models.flowers(800 + v)
+	for v in DOODADS.shore:
+		flat["shore%d" % v] = props.reed_clump(700 + v, 0.55)
+	for v in DOODADS.lily:
+		flat["lily%d" % v] = props.lily_pads(900 + v)
 	baker.set_ground_shadow(true)
-	for k in DOODADS.reeds:
-		await _bake(baker, "reeds%d" % k, props.reed_clump(300 + k))
-	for k in DOODADS.bush:
-		await _bake(baker, "bush%d" % k, props.bug_bush(400 + k))
-	for k in DOODADS.rock:
-		await _bake(baker, "rock%d" % k, props.boulders(1000 + k))
+	await _bake_set(baker, shadowed)
 	baker.set_ground_shadow(false)
-	for k in DOODADS.stones:
-		await _bake(baker, "stones%d" % k, models.stones(500 + k))
-		await _bake(baker, "tuft%d" % k, models.tuft(600 + k))
-		await _bake(baker, "shore%d" % k, props.reed_clump(700 + k, 0.55))
-		await _bake(baker, "lily%d" % k, props.lily_pads(900 + k))
-	for k in DOODADS.flowers:
-		await _bake(baker, "flowers%d" % k, models.flowers(800 + k))
+	await _bake_set(baker, flat)
 	baker.outline = true
+
+
+func _bake_set(baker, todo: Dictionary) -> void:
+	var names := todo.keys()
+	var out: Array = await baker.bake_many(names.map(func(k): return todo[k]))
+	for i in names.size():
+		bakes[names[i]] = {"img": (out[i].tex as Texture2D).get_image(), "origin": out[i].points[0]}
+
+
+## How used-up a resource looks: its stage from what's left of what it started with.
+## Reeds thin out, then are mostly cut, and leave stubble when used up; bug bushes
+## lose berries and colour in four steps.
+static func resource_stage(kind: String, left: int, full: int) -> int:
+	if left <= 0:
+		return STAGES - 1
+	var f := float(left) / float(full)
+	if kind == "reeds":
+		return 0 if f > 0.7 else (1 if f > 0.35 else 2)
+	return 0 if f > 0.75 else (1 if f > 0.5 else (2 if f > 0.25 else 3))
+
+
+## The bake name of a prop variant at a stage (stage 0 is the plain name).
+static func staged(kind: String, variant: int, stage: int) -> String:
+	return "%s%d" % [kind, variant] if stage == 0 else "%s%d.%d" % [kind, variant, stage]
 
 
 func _bake(baker, name: String, model: Node3D) -> void:
@@ -184,9 +222,9 @@ func sprite(name: String) -> Sprite2D:
 	return s
 
 
-## A doodad sprite of a kind, varied by a cosmetic pick.
-func doodad(kind: String, pick: int) -> Sprite2D:
-	return sprite("%s%d" % [kind, posmod(pick, DOODADS[kind])])
+## A doodad sprite of a kind, varied by a cosmetic pick (and for resources, a stage).
+func doodad(kind: String, pick: int, stage := 0) -> Sprite2D:
+	return sprite(staged(kind, posmod(pick, DOODADS[kind]), stage))
 
 
 ## One palette for the whole frame: the terrain ramps, the building materials, and
