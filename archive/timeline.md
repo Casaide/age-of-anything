@@ -59,3 +59,6 @@ One line per moment worth remembering. Newest at the bottom.
   ([image](images/2026-10-11/48-vertical-slice-centaurs-vs-steppe-riders.png))
 - **2026-10-11:** Combat: armour classes, attack-move that spreads into duels, projectiles and
   toppling dead. ([image](images/2026-10-11/51-first-battle-frogs-vs-centaur-romans.png))
+- **2026-10-11:** Milestone 6, foundations: resources from data (stone), flyers and amphibians,
+  teams, farms and paddies, shift-queues, and unit lines that change kit as you age up.
+  ([image](images/2026-10-11/56-centaur-romans-age-3-galea-scutum-lorica.png))

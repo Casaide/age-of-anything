@@ -11,7 +11,7 @@ along the way. The overview table lives in `../mvp-plan.md` §3; these files hol
 | 3 | [Economy](m3-economy.md) | built; exit check: Dominic watches an opening |
 | 4 | [Combat](m4-combat.md) | sim, view and quiz built; waiting on the quiz run and the unit card |
 | 5 | [Art rework](m5-art-rework.md) | in progress (separate agent; the art and UI track's stage A1) |
-| 6 | [Foundations](m6-foundations.md) | planned (next, alongside milestone 5) |
+| 6 | [Foundations](m6-foundations.md) | done 2026-10-11 |
 | 7 | [Progression](m7-progression.md) | planned |
 | 8 | [AI + match flow](m8-ai-match-flow.md) | planned |
 | 9 | [Fog + juice](m9-fog-juice.md) | planned |
