@@ -112,10 +112,22 @@ static func _model(arch: String, type: String) -> String:
 
 
 ## A building's model spec (town centres, houses and farms by name, the rest by type and culture).
-func _spec(models, arch: String, type: String) -> Dictionary:
+func _spec(models, arch: String, type: String, model := "") -> Dictionary:
+	if model != "":
+		return models.call(model, PartShape.TEAM_KEY)
 	if type in ["town_center", "house", "farm"]:
 		return models.call(_model(arch, type), PartShape.TEAM_KEY)
 	return models.building(type, arch, PartShape.TEAM_KEY)
+
+
+## The look of a building for a player in an age: its latest age look that's baked (data:
+## buildings.json "age_looks"), else the one it starts with.
+func building_key(arch: String, type: String, age: int) -> String:
+	for a in range(age, 1, -1):
+		var key := "%s:%s@%d" % [arch, type, a]
+		if buildings.has(key):
+			return key
+	return "%s:%s" % [arch, type]
 
 
 ## A building's picture for a button: its finished bake, from the atlas.
@@ -221,8 +233,12 @@ func bake_buildings(races: Array) -> void:
 	archs.sort()
 	var h: Array = await _hifi()
 	for arch in archs:
-		for type in DataLib.load_json("res://data/buildings.json").menu:
+		var d: Dictionary = DataLib.load_json("res://data/buildings.json")
+		for type in d.menu:
 			await _bake_building(h[0], h[1], arch, type)
+			var looks: Dictionary = d.get("age_looks", {}).get(arch, {}).get(type, {})
+			for age in looks:   # the same building, grown with the ages (a culture's story, D-081)
+				await _bake_building(h[0], h[1], arch, type, looks[age], "@" + str(age))
 	h[0].queue_free()
 
 
@@ -300,11 +316,11 @@ func _bake(baker, name: String, model: Node3D) -> void:
 	bakes[name] = {"img": (b.tex as Texture2D).get_image(), "origin": b.points[0]}
 
 
-func _bake_building(baker, models, arch: String, type: String) -> void:
-	var name := "%s:%s" % [arch, type]
+func _bake_building(baker, models, arch: String, type: String, model := "", suffix := "") -> void:
+	var name := "%s:%s%s" % [arch, type, suffix]
 	if buildings.has(name):
 		return
-	var spec: Dictionary = _spec(models, arch, type)
+	var spec: Dictionary = _spec(models, arch, type, model)
 	if type == "house":
 		spec.body.scale = Vector3.ONE * HOUSE_SCALE
 		if spec.has("smoke"):
@@ -336,7 +352,7 @@ func _bake_building(baker, models, arch: String, type: String) -> void:
 	info.stages = []
 	baker.set_ground_shadow(true)
 	for st in BUILD_STAGES.size():
-		var part: Dictionary = _spec(models, arch, type)
+		var part: Dictionary = _spec(models, arch, type, model)
 		if type == "house":
 			part.body.scale = Vector3.ONE * HOUSE_SCALE
 		_hold_back(part.body, st, models)
