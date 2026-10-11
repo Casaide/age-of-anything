@@ -10,6 +10,7 @@ const Pixelize := preload("res://scenes/art_pixel/pixelize.gd")
 const UnitModels := preload("res://scenes/art_pixel/unit_models.gd")
 
 const AZIMUTH := 35.0    # hand-built models are seen three-quarter: from the near side, a bit in front
+var azimuth := AZIMUTH   # per bake: other facings (90 = facing the camera, -90 = walking away)
 const ELEVATION := 30.0  # and from above, like the map
 
 const SS := 4            # supersampling
@@ -113,7 +114,7 @@ func _bake_model(id: String, colours: Dictionary, bake_key: String) -> void:
 	size = Vector2i.ONE * ceili(2.0 * r * px)
 	cam.keep_aspect = Camera3D.KEEP_HEIGHT
 	cam.size = 2.0 * r
-	var az := deg_to_rad(AZIMUTH)
+	var az := deg_to_rad(azimuth)
 	var el := deg_to_rad(ELEVATION)
 	var view := Vector3(sin(az) * cos(el), sin(el), cos(az) * cos(el))
 	cam.basis = Basis.looking_at(-view, Vector3.UP)

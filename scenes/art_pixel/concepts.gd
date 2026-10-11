@@ -149,3 +149,112 @@ func _concept_greek_petasos(c: Dictionary) -> Dictionary:
 	n.add_child(dome(Vector3(4.9, 3.4, 4.7), felt, Vector3(0, -3.2, 0)))
 	n.add_child(cone(7.4, 7.6, 0.5, felt, Vector3(0, -3.2, 0), Vector3(0, 0, -6), 28))
 	return {"node": n}
+
+
+# ------------------------------------------------------------------ R0 "A+": the tuned 3D human
+# Built to the proposed spec (docs/concepts/direction.md): about 4.5 heads tall, a visible neck,
+# shoulders two heads wide, chunky hands and feet, bare legs; the head is a face (egg, chin and
+# nose forward, brow ledge, dark eye row, no white) and its cranium comes from hair or head gear.
+# Untextured skin. Nothing here is used in play.
+
+const INK := Color("#2a1a12")
+
+
+func _concept_body_chunky(c: Dictionary) -> Dictionary:
+	var n := Node3D.new()
+	var tunic := surf("cloth", c.team, 8.0)
+	var trim := plain(c.cloth)
+	var skin := plain(c.skin)
+	var belt := plain(Color("#5a3a1e"))
+	n.add_child(blob(Vector3(3.9, 5.2, 6.0), tunic, Vector3(0.2, 21.4, 0)))        # chest: broad and deep
+	n.add_child(cone(4.6, 5.8, 5.2, tunic, Vector3(0, 15.4, 0)))                  # skirt to mid-thigh
+	n.add_child(ring(5.3, 6.0, trim, Vector3(0, 12.9, 0)))                        # hem in the culture's colour
+	n.add_child(ring(4.3, 5.3, belt, Vector3(0, 17.8, 0)))
+	n.add_child(rod(Vector3(0.4, 25.6, 0), Vector3(0.7, 29.2, 0), 1.7, 1.6, skin))   # the neck, visible
+	var near_hand := Vector3.ZERO
+	var front := Node3D.new()
+	for side in [1, -1]:
+		var into: Node3D = front if side == 1 else n
+		var sh := Vector3(0.3, 25.4, 6.0 * side)
+		var elbow := Vector3(1.3, 20.6, 7.2 * side)
+		var hand := Vector3(6.2, 18.4, 6.4) if side == 1 else Vector3(5.8, 19.4, -5.6)
+		if side == 1:
+			var pose := arm_pose(sh, elbow, hand, Vector3(0.7, 29.5, 0))
+			elbow = pose[0]
+			hand = pose[1]
+			near_hand = hand
+		into.add_child(blob(Vector3(2.6, 2.5, 2.6), tunic, sh))                      # shoulder, in the tunic
+		into.add_child(rod(sh, sh.lerp(elbow, 0.5), 2.0, 1.9, tunic))               # short sleeve
+		into.add_child(rod(sh.lerp(elbow, 0.5), elbow, 1.8, 1.7, skin))
+		into.add_child(rod(elbow, hand, 1.7, 1.5, skin))
+		into.add_child(blob(Vector3(1.9, 1.9, 1.7), skin, hand))                   # a fist you can see
+	return {"node": n, "front": front, "sockets": {
+		"head": Vector3(0.8, 29.2, 0), "hand_r": near_hand, "hand_l": Vector3(5.8, 19.4, -5.6),
+		"torso": Vector3(0.3, 20.8, 0), "back": Vector3(-4.4, 24, 0)},
+		"anchors": [[Vector3(-0.6, 13.6, -2.6), 0.0, -1], [Vector3(0.6, 13.6, 2.6), PI, 1]],
+		"torso_scale": Vector2(0.75, 0.85)}
+
+
+## A bare leg with a sandal: longer than today's, light against the grass.
+func _concept_leg_chunky(c: Dictionary) -> Dictionary:
+	var n := Node3D.new()
+	var skin := plain(c.skin)
+	var strap := plain(Color("#5a3a1e"))
+	n.add_child(rod(Vector3(0, 0, 0), Vector3(0.6, -6.6, 0), 2.2, 1.8, skin))
+	n.add_child(rod(Vector3(0.6, -6.6, 0), Vector3(0.2, -12.4, 0), 1.7, 1.35, skin))
+	n.add_child(ring(1.2, 1.6, strap, Vector3(0.25, -11.4, 0)))
+	n.add_child(blob(Vector3(2.7, 1.2, 1.8), strap, Vector3(1.3, -13.2, 0)))
+	return {"node": n}
+
+
+## The face: an egg, taller than wide, chin and nose forward, a brow ledge with a dark eye row
+## under it. No cranium: hair or head gear supplies the top of the head.
+func _concept_head_egg(c: Dictionary) -> Dictionary:
+	var n := Node3D.new()
+	var skin := plain(c.skin)
+	var shade := plain(c.skin.darkened(0.25))
+	n.add_child(blob(Vector3(3.3, 4.3, 3.4), skin, Vector3(0.5, 4.5, 0)))
+	n.add_child(blob(Vector3(2.5, 1.9, 2.7), skin, Vector3(1.7, 1.9, 0)))         # jaw and chin, forward
+	n.add_child(cone(0.0, 1.1, 1.8, skin, Vector3(4.1, 4.0, 0), Vector3(0, 0, -90)))   # nose
+	n.add_child(blob(Vector3(0.9, 0.55, 2.9), shade, Vector3(3.2, 5.7, 0)))        # brow ledge
+	for side in [1, -1]:
+		n.add_child(blob(Vector3(0.35, 0.5, 0.6), plain(INK), Vector3(3.55, 4.95, 1.25 * side)))   # dark eyes, no white
+		n.add_child(blob(Vector3(0.9, 1.3, 0.6), skin, Vector3(-0.6, 4.6, 3.3 * side)))       # ears
+	return {"node": n, "sockets": {"top": Vector3(0.2, 8.8, 0)}}
+
+
+## Cranium options. Each sits on the head's top socket: its rim at the brow, over the ears.
+
+func _concept_hair_crop(c: Dictionary) -> Dictionary:
+	var n := Node3D.new()
+	var hair := plain(Color("#3a2416"))
+	n.add_child(dome(Vector3(3.7, 3.6, 3.6), hair, Vector3(-0.3, -3.2, 0)))
+	n.add_child(blob(Vector3(2.4, 2.8, 3.2), hair, Vector3(-1.9, -3.8, 0)))   # the back of the skull: the head has a direction
+	return {"node": n}
+
+
+func _concept_cap_montefortino(c: Dictionary) -> Dictionary:
+	var n := Node3D.new()
+	var leather := plain(Color("#8a5a32"))
+	var dark := plain(Color("#5e3c1e"))
+	n.add_child(dome(Vector3(4.1, 4.2, 3.9), leather, Vector3(-0.3, -3.4, 0)))
+	n.add_child(ring(3.9, 4.5, dark, Vector3(-0.2, -3.3, 0)))
+	n.add_child(cone(0.35, 0.9, 1.6, dark, Vector3(-0.3, 1.2, 0)))                # the top knob
+	n.add_child(blob(Vector3(2.3, 0.45, 3.6), leather, Vector3(-3.4, -4.3, 0), Vector3(0, 0, -25)))   # a little neck lip
+	for side in [1, -1]:
+		n.add_child(blob(Vector3(1.4, 2.3, 0.45), leather, Vector3(1.4, -5.9, 3.6 * side)))   # cheek flaps
+	return {"node": n}
+
+
+func _concept_galea_heavy(c: Dictionary) -> Dictionary:
+	var n := Node3D.new()
+	var iron := plain(Color("#b8bcc0"))
+	var bronze := plain(Color("#c89048"))
+	n.add_child(dome(Vector3(4.3, 4.5, 4.1), iron, Vector3(-0.3, -3.4, 0)))
+	n.add_child(ring(4.1, 4.7, bronze, Vector3(-0.1, -3.2, 0)))
+	n.add_child(blob(Vector3(1.0, 0.35, 3.8), iron, Vector3(3.7, -3.0, 0)))        # brow peak
+	n.add_child(blob(Vector3(3.4, 0.6, 4.8), iron, Vector3(-3.6, -4.8, 0), Vector3(0, 0, -30)))   # deep neck guard
+	for side in [1, -1]:
+		n.add_child(blob(Vector3(1.7, 2.7, 0.5), iron, Vector3(1.6, -6.2, 3.9 * side)))
+	crest(n, c.crimson, Vector3(-0.3, 1.0, 0), 8.5, 4.5)
+	return {"node": n}
