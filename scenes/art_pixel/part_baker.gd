@@ -189,6 +189,8 @@ func _bake_model(id: String, colours: Dictionary, bake_key: String, k := 0) -> v
 			rig.gear_scale = spec.gear_scale
 		if spec.has("carry"):
 			rig.carry = spec.carry
+		if spec.has("legs_under"):
+			rig.legs_under = spec.legs_under
 		PartShape.rigs[rig_id] = rig
 	holder.remove_child(model)
 	model.queue_free()

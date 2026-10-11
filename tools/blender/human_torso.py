@@ -70,7 +70,7 @@ def skirt_squash(z, a):
 skirt = lathe("skirt", TEAM, [(15.2, 4.1), (14.0, 4.5), (12.6, 5.0), (11.2, 5.5), (10.6, 5.65)], squash=skirt_squash)
 hem = lathe("hem", CLOTH, [(11.15, 5.6), (10.95, 5.75), (10.55, 5.75), (10.45, 5.6)], squash=skirt_squash)
 belt = lathe("belt", LEATHER, [(14.6, 4.25), (14.8, 4.35), (15.6, 4.3), (15.8, 4.15)], squash=lambda z, a: (0.86, 1.06))
-neck = lathe("neck", SKIN, [(23.2, 2.15), (24.6, 2.05), (27.0, 1.95), (28.6, 1.85)], segs=20)   # up into the head: no gap under the jaw
+neck = lathe("neck", SKIN, [(23.2, 2.2), (24.6, 2.1), (26.4, 2.0), (27.6, 1.9)], segs=20)   # up into the head: no gap under the jaw
 
 for ob in bpy.data.objects:
     ob.location = (0.3, 0, 0)

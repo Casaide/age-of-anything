@@ -763,11 +763,12 @@ func _body_human(c: Dictionary) -> Dictionary:
 		into.add_child(blob(Vector3(1.5, 1.6, 1.3), skin, hand))
 	# (No scarf: the tunic is already the team colour, and a scarf ring hid the neck: Dominic.)
 	return {"node": n, "front": front, "sockets": {
-		"head": Vector3(0.6, 26.6, 0), "hand_r": near_hand, "hand_l": Vector3(5.5, 17.2, -4.8),
+		"head": Vector3(0.6, 25.6, 0), "hand_r": near_hand, "hand_l": Vector3(5.5, 17.2, -4.8),   # head low: a short neck (Dominic)
 		"torso": Vector3(0.3, 17.8, 0), "back": Vector3(-4.2, 22, 0)},
 		"anchors": [[Vector3(-2.3, 11.0, -2.4), 0.0, -1], [Vector3(2.0, 11.0, 2.4), PI, 1]],
 		"torso_scale": Vector2(0.66, 0.82),
-		"torso_fit": Vector3(0.47, 0.8, 0.56)}   # worn armour (built ~1.6x) just over the (Blender) chest, not an egg round it
+		"torso_fit": Vector3(0.47, 0.8, 0.56),   # worn armour (built ~1.6x) just over the (Blender) chest, not an egg round it
+		"legs_under": true}   # the tunic's skirt hangs over the thighs
 
 
 func _head_human(c: Dictionary) -> Dictionary:

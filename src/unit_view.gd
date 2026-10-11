@@ -210,7 +210,10 @@ func _make_rig(lib, body_id: String, head_id: String, colours: Dictionary, paren
 			leg.facing = facing_k
 			leg.setup(leg_part.shapes, colours)
 			leg.position = Vector2(float(a[0]), float(a[1]))
-			leg.set_meta("z", 1 if float(a[3]) > 0.0 else -2)
+			# Legs under the body where clothes hang over the hips (a tunic's skirt); else the
+			# near leg draws over the belly, as on a horse.
+			var under: bool = rig.get("legs_under", false)
+			leg.set_meta("z", -1 if under and float(a[3]) > 0.0 else (1 if float(a[3]) > 0.0 else -2))
 			if a.size() > 4 and int(a[4]) == 1:
 				leg.scale.x = -1.0
 			if rig.has("anchors") and float(a[3]) < 0.0:

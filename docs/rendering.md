@@ -77,3 +77,8 @@ godot --path . --script res://tests/concept_sheet.gd -- out.png 14 1 "prompt" [a
 godot --path . --script res://tests/building_sheet.gd -- out.png 2 type:arch prop.quarry.1300.0 ...
 godot --path . --script res://tests/sim_screenshot.gd -- out.png flat_test ai-look:x:y:zoom   # the map as played
 ```
+
+**Check facings in the facing sheet, not the concept sheet.** The concept sheet's `az=` turns the
+bake but keeps the classic view's layering, so from behind it draws the near arm across the back
+(a false alarm Dominic caught). `facing_sheet.gd -- out.png "prompt" 8 <unit index>` shows one
+unit's real 8 facings close up. Bodies whose clothes hang over the hips set `legs_under`.
