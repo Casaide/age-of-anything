@@ -477,3 +477,41 @@ cloth, name parts and paths; words egypt/egyptian(s)/pharaoh/nile, han/china/chi
 aztec(s)/mexica. The Aztecs have no mounts, so their large unit goes Heavy. They wear the shared
 kit until their gear-by-age concept round. The saucepan helmet became a signature item, worn only
 when a war word asks for it (it had leaked to everyone once it stopped being rat junk). Claude.
+
+**D-092, 2026-10-11: Cultures can prefer skins (data).** Dominic: "The Aztecs are white with
+stubble?" Skins were picked only from the creature, so a human culture could be any skin.
+Families can now list `skins` (families.json); the generator picks from the creature's skins that
+the culture prefers, or all of them when none match. Aztec and Nile people are tan or dark, Han
+light or tan. Race keys stay deterministic (the pick uses the race's own rng). Claude.
+
+**D-093, 2026-10-11: Human faces shade softly.** Every human had a dark band from ear to chin
+that read as stubble. Test renders ruled out hair, the neck, cast shadows and ambient occlusion:
+the bake's painted bands are fixed brightness steps, and the jaw's shade fell a whole step below
+the cheek. The face's skin now carries about half its light itself (lower albedo, emission), so
+its shading stays within a band; faces are a little flatter, which suits 30-pixel heads. A gentler
+jaw in the Blender head came with it. Claude.
+
+**D-094, 2026-10-11: Every rider shows its near leg.** Dominic: "riders legs missing?" Only
+clinging riders (spiders, beetles) had legs; people sat legless on their mounts. All riders now
+get the near leg down the mount's flank, held still; the far leg stays hidden. Fused mounts
+(centaurs) are unchanged. Claude.
+
+**D-095, 2026-10-11: The centaur grows out of the horse.** The human half stood on the horse's
+flat back like a legless rider. The fused horse body now has a chest that rises at the front into
+the man's waist, under the tunic's hem, and the man stands over it. Horse thighs start inside the
+barrel on every horse, so they no longer hang under it like eggs. Claude.
+
+**D-096, 2026-10-11: Body armour can be modelled for a body.** Worn armour was one generic model
+scaled onto each body (`torso_fit`), which on the Blender human torso bulged out of the belly
+seen from the front. The bake now first asks for `armour_<kind>_<body>.glb`, built in the body's
+own space (`tools/blender/human_armour.py`), and only fits the generic model when there is none.
+Humans have a fitted leather jerkin and bronze cuirass; the other armours and bodies keep the
+fitting. The human leg is a Blender model too; arms stay in code because the game poses them per
+weapon. Claude.
+
+**D-097, 2026-10-11: The Fable second pass's polish is done.** Costs under buttons are numbers
+with resource icons; the age-up card says "Becomes:" for renamed lines; tips sit under the top
+bar (tooltip cards covered them); the portrait frame stays square; the lobby roster lists each
+unit with its portrait; tool cursors carry a pointer tip as their hotspot; swamp pools are few and
+broad; mineable stone shows a split face and cut blocks; builders' mills stand on a plinth under
+their roof; the boar has a pink snout. Claude.
