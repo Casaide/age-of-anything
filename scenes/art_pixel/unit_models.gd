@@ -426,8 +426,9 @@ func _body_rat(c: Dictionary) -> Dictionary:
 	var n := Node3D.new()
 	var fur := surf("rat_fur", c.skin, 7.0)
 	var pink := surf("frog_belly", c.skin2, 6.0)
-	n.add_child(blob(Vector3(7.6, 11.0, 7.0), fur, Vector3(-0.5, 15, 0), Vector3(0, 0, 8)))
-	n.add_child(blob(Vector3(4.6, 7.6, 5.0), pink, Vector3(2.8, 13.5, 0.5), Vector3(0, 0, 8)))
+	# Lean and hunched (Dominic: "less fat"): a narrow body tilted forward, the belly showing in front.
+	n.add_child(blob(Vector3(5.4, 10.4, 5.0), fur, Vector3(0.2, 15, 0), Vector3(0, 0, 15)))
+	n.add_child(blob(Vector3(3.4, 7.0, 3.6), pink, Vector3(2.6, 13.6, 0.4), Vector3(0, 0, 15)))
 	# A long tail curling behind, thinning to a point.
 	var pts := [Vector3(-5, 7, 0), Vector3(-11, 4.5, 1.5), Vector3(-16.5, 5.5, 2.5), Vector3(-19.5, 9.5, 3.0), Vector3(-19, 14, 3.0), Vector3(-16.5, 16, 2.5)]
 	for k in range(1, pts.size()):
@@ -436,23 +437,23 @@ func _body_rat(c: Dictionary) -> Dictionary:
 	var front := Node3D.new()
 	for side in [1, -1]:
 		var into: Node3D = front if side == 1 else n
-		var sh := Vector3(3, 19.5, 5.5 * side)
-		var elbow := Vector3(4, 16.5, 7.0 * side)
-		var hand := Vector3(7.5, 15.5, 5.5 * side) if side == 1 else Vector3(7, 16.5, -5)
+		var sh := Vector3(3.6, 19.5, 4.4 * side)
+		var elbow := Vector3(5, 16.5, 5.8 * side)
+		var hand := Vector3(8, 15.5, 4.6 * side) if side == 1 else Vector3(7.5, 16.5, -4.2)
 		if side == 1:
-			var pose := arm_pose(sh, elbow, hand, Vector3(2, 25, 0))
+			var pose := arm_pose(sh, elbow, hand, Vector3(4, 24.5, 0))
 			elbow = pose[0]
 			hand = pose[1]
 			near_hand = hand
 		into.add_child(rod(sh, elbow, 1.9, 1.7, fur))
 		into.add_child(rod(elbow, hand, 1.7, 1.5, fur))
 		into.add_child(blob(Vector3(1.7, 1.4, 1.7), pink, hand))
-	kerchief(front, c, Vector3(1.5, 22.5, 0), 4.2, 8)
+	kerchief(front, c, Vector3(3.2, 22.2, 0), 3.0, 15)   # a small scarf at the neck (a big one read as a bib)
 	return {"node": n, "front": front, "sockets": {
-		"head": Vector3(2, 25, 0), "hand_r": near_hand, "hand_l": Vector3(7, 16.5, -5),
-		"torso": Vector3(0, 15, 0), "back": Vector3(-6, 19, 0)},
-		"anchors": [[Vector3(-1, 6.0, -4.0), 0.0, -1], [Vector3(-1, 6.0, 4.0), PI, 1]],
-		"torso_scale": Vector2(0.85, 1.15)}
+		"head": Vector3(4, 24.5, 0), "hand_r": near_hand, "hand_l": Vector3(7.5, 16.5, -4.2),
+		"torso": Vector3(1.2, 15.5, 0), "back": Vector3(-4.5, 19, 0)},
+		"anchors": [[Vector3(-0.5, 6.0, -3.2), 0.0, -1], [Vector3(-0.5, 6.0, 3.2), PI, 1]],
+		"torso_scale": Vector2(0.62, 1.0)}
 
 
 func _head_rat(c: Dictionary) -> Dictionary:
