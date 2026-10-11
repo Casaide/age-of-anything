@@ -31,12 +31,23 @@ mostly data. See decision D-056.
    - A team per player and an `is_enemy(a, b)` helper used everywhere instead of owner
      comparisons.
    - Two teams of two in a test.
-5. **Ages and tech as data.**
+5. **Ages and tech as data** (uses item 6's lines for the age-up's look).
    - A generic system with any number of ages and researches.
    - Research effects swap parts in recipes (D-055: upgrades change how units look) or adjust
      numbers.
    - Milestone 7 then fills in the content (the age-up, Sharp Sticks).
-6. **Farms per race.**
+6. **Gear tiers by age; the generator writes each unit line through the ages** (Dominic,
+   2026-10-11). Today every unit starts in its culture's best kit, so there's no visual room
+   for progression (centaur Romans in lorica from the first minute).
+   - Parts get a tier: age 1 light kit (cloth, leather, wood, reed, acorn); age 2 bronze and
+     mail; age 3 iron and plate.
+   - Each roster slot becomes a line: an age-1 recipe plus a recipe per later age, chosen within
+     the culture. A frog visibly toughens over the eras.
+   - The race key covers the whole line.
+   - Unit-line upgrades (spearman -> pikeman) are the other big visual step.
+   - Blacksmith upgrades change numbers, with at most a small, consistent visual tell (a metal rim,
+     studs, a brighter blade), to keep silhouettes readable and bake counts down.
+7. **Farms per race.**
    - A farm building that makes a food tile: a plain field for most, a swamp paddy for amphibians
      (placement from item 3).
    - Bug bushes stay the starting food.
@@ -48,6 +59,8 @@ Not in this milestone:
 - extra facings (4 or 8 directions): that's art-track work.
 
 ## Plan
+(Order updated: 1 resources (done), 2 teams, 3 movement classes, 4 placement, 6 gear tiers and
+unit lines, 5 ages and tech, 7 farms.)
 Dominic asked to go straight on from milestone 4 into this one (2026-10-11). Order: 1, 4, 2,
 3, 6, 5. Each step ends with green tests and a commit.
 

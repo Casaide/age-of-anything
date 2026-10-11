@@ -295,3 +295,13 @@ architecture that gets harder to retrofit:
 - per-race farms.
 Progression, AI and match flow, fog and juice, and the playtest become milestones 7-10. Claude
 finishes milestone 4, then starts milestone 6 while the art agent finishes milestone 5.
+
+**D-057, 2026-10-11: Gear goes up with the ages; the blacksmith only adds small tells.** Dominic:
+centaur Romans already in lorica "feels like we've skipped progression"; a culture can't look
+fully armoured in every age. Parts get an age tier, and the generator writes each unit line
+through the ages (light kit first, bronze and mail, then iron and plate, within the culture), so
+a frog visibly toughens over the eras. Unit-line upgrades also change the look. Blacksmith
+upgrades change numbers, with at most a subtle, consistent tell (Claude's suggestion, agreed),
+to keep silhouettes readable and bakes few. The counter quiz is reshaped: name roles from
+silhouettes, then predict counters with the unit card (Dominic scored 50% judging by gear
+quality; the equal-cost counts and roles didn't come through). Planned in milestone 6.
