@@ -40,6 +40,7 @@ var bakes := {}       # name -> {img: Image, origin: Vector2 (baked px of the an
 var regions := {}     # name -> Rect2 in the atlas
 var buildings := {}   # "arch:type" -> {body, smoke, lantern, lights, banner, vane, vane_at, stages} (canvas units from the centre)
 var icons := {}       # "side:slot" -> Texture2D: a portrait of that unit, rendered from its baked art
+var _building_icons := {}   # "arch:type" -> AtlasTexture
 
 
 ## Bake what these races need (anything already baked is kept), then rebuild the atlas.
@@ -109,10 +110,16 @@ func _model(arch: String, type: String) -> String:
 
 
 ## A building's picture for a button: its finished bake, from the atlas.
+## Cached: the command panel rebuilds its buttons when its content changes, and a new texture
+## every frame made it rebuild every frame, so clicks never landed.
 func building_icon(arch: String, type: String) -> Texture2D:
-	var at := AtlasTexture.new()
-	at.atlas = PartShape.atlas
-	at.region = regions[buildings["%s:%s" % [arch, type]].body]
+	var key := "%s:%s" % [arch, type]
+	var at: AtlasTexture = _building_icons.get(key)
+	if at == null or at.atlas != PartShape.atlas:
+		at = AtlasTexture.new()
+		at.atlas = PartShape.atlas
+		at.region = regions[buildings[key].body]
+		_building_icons[key] = at
 	return at
 
 
