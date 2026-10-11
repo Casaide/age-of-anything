@@ -16,6 +16,8 @@
   "town_center"
  ],
  "_menu_doc": "the order buildings appear in a worker's build menu (hotkeys are avoided where they clash with WASD panning and the debug keys)",
+ "age_looks": {},
+ "_age_looks_doc": "per architecture and building type, the model it takes from an age on, e.g. {\"junk\": {\"town_center\": {\"3\": \"concept_junk_tc_pride\"}}}: a culture's buildings grow with the ages. Empty until Dominic picks (concept rounds RB3 and on)",
  "buildings": {
   "archery_range": {
    "name": "Archery Range",

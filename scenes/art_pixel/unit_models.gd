@@ -1022,28 +1022,39 @@ func _leg_boar(c: Dictionary) -> Dictionary:
 
 func _body_sheep(c: Dictionary) -> Dictionary:
 	var n := Node3D.new()
-	var wool := surf("felt", c.skin, 3.0)
-	for p in [Vector3(0, 11, 0), Vector3(4, 11.5, 1.5), Vector3(4, 11.5, -1.5), Vector3(-4, 11, 1.8), Vector3(-4, 11, -1.8),
-			Vector3(0, 13.5, 1.6), Vector3(0, 13.5, -1.6), Vector3(-1.5, 14.5, 0), Vector3(3, 14, 0)]:
-		n.add_child(blob(Vector3(3.8, 3.4, 3.4), wool, p))   # lumps of fleece
-	return {"node": n, "sockets": {"head": Vector3(7.5, 12.5, 0), "torso": Vector3(0, 11, 0), "back": Vector3(-3, 14, 0)},
-		"anchors": _four_legs(4.0, -4.0, 7.5, 2.4), "carry": "harness"}
+	var wool := surf("felt", c.skin, 2.0)
+	var shade := surf("felt", c.skin.darkened(0.22), 2.0)   # curls in shadow, so the fleece has texture
+	# One smooth oval of fleece, deep and round, with soft curls on its surface (not a heap of
+	# lumps), sitting low on short dark legs; a small tail tuft.
+	n.add_child(blob(Vector3(7.5, 5.0, 4.6), wool, Vector3(-0.5, 10.5, 0)))
+	n.add_child(blob(Vector3(4.2, 3.6, 4.0), wool, Vector3(4.0, 11.0, 0)))   # the chest, full
+	var rng := RandomNumberGenerator.new()   # seeded: the same fleece every bake
+	rng.seed = 31
+	for k in 22:
+		var a := rng.randf() * TAU
+		var up := rng.randf_range(-0.2, 1.0)
+		var p := Vector3(rng.randf_range(-7.0, 6.0), 10.5 + up * 4.3, cos(a) * 4.2 * sqrt(1.0 - up * up * 0.5))
+		n.add_child(blob(Vector3(1.4, 1.1, 1.3), wool if k % 3 else shade, p))
+	n.add_child(blob(Vector3(1.4, 1.6, 1.3), wool, Vector3(-8.0, 11.5, 0)))   # the tail tuft
+	return {"node": n, "sockets": {"head": Vector3(8.0, 12.5, 0), "torso": Vector3(0, 10.5, 0), "back": Vector3(-3, 14, 0)},
+		"anchors": _four_legs(4.5, -4.5, 7.0, 2.4), "carry": "harness"}
 
 
 func _head_sheep(c: Dictionary) -> Dictionary:
 	var n := Node3D.new()
 	var face := surf("hide", c.skin2, 4.0)
-	n.add_child(blob(Vector3(1.9, 1.9, 1.7), surf("felt", c.skin, 3.0), Vector3(0, 1.0, 0)))   # a woolly topknot
-	n.add_child(rod(Vector3(0.6, 0.2, 0), Vector3(3.6, -1.6, 0), 1.4, 0.9, face))
+	n.add_child(blob(Vector3(1.8, 1.4, 1.6), surf("felt", c.skin, 2.0), Vector3(-0.4, 1.2, 0)))   # the poll of wool
+	n.add_child(blob(Vector3(2.6, 1.7, 1.5), face, Vector3(1.6, -0.6, 0), Vector3(0, 0, -25)))   # the long dark face, nose down
 	for side in [1, -1]:
-		n.add_child(blob(Vector3(1.2, 0.45, 0.6), face, Vector3(0.4, 0.4, 1.8 * side), Vector3(0, 0, -15)))   # floppy ears
-		n.add_child(blob(Vector3(0.35, 0.35, 0.35), plain(INK), Vector3(1.8, 0.4, 1.0 * side)))
+		n.add_child(blob(Vector3(1.5, 0.4, 0.7), face, Vector3(0.0, 0.4, 1.9 * side), Vector3(0, 25 * side, -10)))   # ears out sideways
+		n.add_child(blob(Vector3(0.3, 0.3, 0.3), plain(Color("#d8c8a0")), Vector3(1.2, 0.0, 1.1 * side)))   # pale eyes on the dark face
 	return {"node": n, "sockets": {"top": Vector3(0, 2, 0)}}
 
 
 func _leg_sheep(c: Dictionary) -> Dictionary:
 	var n := Node3D.new()
-	n.add_child(rod(Vector3.ZERO, Vector3(0.2, -7.2, 0), 0.75, 0.55, surf("hide", c.skin2, 4.0)))
+	n.add_child(rod(Vector3.ZERO, Vector3(0.2, -6.6, 0), 0.8, 0.6, surf("hide", c.skin2, 4.0)))
+	n.add_child(blob(Vector3(0.7, 0.45, 0.6), plain(c.skin2.darkened(0.3)), Vector3(0.4, -6.8, 0)))   # a hoof
 	return {"node": n}
 
 

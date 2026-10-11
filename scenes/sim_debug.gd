@@ -1076,11 +1076,17 @@ func _sync_buildings() -> void:
 	for b in bs.count():
 		var id := bs.id[b]
 		var view: BuildingArt = bviews.get(id)
+		var look := kit.building_key(lib.architecture(world.races[bs.owner[b]]), world.btypes[bs.kind[b]].id, world.ages[bs.owner[b]])
+		if view != null and view.get_meta("look", look) != look:
+			view.queue_free()   # its owner aged up and this building grew with them
+			bviews.erase(id)
+			view = null
 		if view == null:
 			var t: Dictionary = world.btypes[bs.kind[b]]
 			var arch: String = lib.architecture(world.races[bs.owner[b]])
 			view = BuildingArt.new()
-			view.setup(kit, "%s:%s" % [arch, t.id], bs.cx[b], bs.cy[b], bs.size[b], Color(lib.palettes.teams[bs.owner[b]]))
+			view.setup(kit, look, bs.cx[b], bs.cy[b], bs.size[b], Color(lib.palettes.teams[bs.owner[b]]))
+			view.set_meta("look", look)
 			layer.add_child(view)
 			bviews[id] = view
 			_clear_doodads(bs.cx[b], bs.cy[b], bs.size[b])
