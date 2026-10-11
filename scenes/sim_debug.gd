@@ -25,6 +25,7 @@ const TopBar := preload("res://src/view/top_bar.gd")
 const UnitCard := preload("res://src/view/unit_card.gd")
 const FogView := preload("res://src/view/fog_view.gd")
 const Minimap := preload("res://src/view/minimap.gd")
+const UiScale := preload("res://src/view/ui_scale.gd")
 const Audio := preload("res://src/view/audio.gd")
 const Fog := preload("res://src/sim/fog.gd")
 const Cursors := preload("res://src/view/art/cursors.gd")
@@ -123,6 +124,7 @@ var pause_menu: Control     # Esc against the AI: resume, surrender, back to the
 var fog_view: FogView
 var flat: Node2D             # ground-level art (farms, crops), drawn under the y-sorted layer
 var minimap: Minimap
+var hud_root: Control     # every HUD control lives in here, scaled to the screen's density
 var audio: Node           # the game's one audio node (src/view/audio.gd)
 var battle_until := 0.0   # seconds of match time until the music's battle layer fades out
 var age_ups: Array = []      # [player, age, seconds] this match (for the playtest log)
@@ -184,9 +186,19 @@ func _ready() -> void:
 	palette.visible = false
 	post.add_child(palette)
 
-	var ui := CanvasLayer.new()
-	ui.layer = 2
-	add_child(ui)
+	var layer_ui := CanvasLayer.new()
+	layer_ui.layer = 2
+	add_child(layer_ui)
+	# The HUD draws in UI pixels inside one scaled root (src/view/ui_scale.gd), so it reads on a
+	# Retina screen while the map keeps its own zoom; the lobby may have scaled the window.
+	get_window().content_scale_factor = 1.0
+	UiScale.fit_window(get_window())
+	var ui := Control.new()
+	ui.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	hud_root = ui
+	layer_ui.add_child(ui)
+	get_window().size_changed.connect(_fit_hud)
+	_fit_hud()
 	hud = _label(12, Vector2(12, 44))
 	ui.add_child(hud)
 	bar = _label(17, Vector2(12, 10))
@@ -223,6 +235,17 @@ func _ready() -> void:
 		for i in mini(args.size(), 2):
 			prompts[i] = args[i]
 	start_live(prompts)
+
+
+## The HUD's scale for this window, and its root sized to the window in UI pixels.
+func _fit_hud() -> void:
+	var f := UiScale.factor(get_window(), UiScale.HUD_NEEDS)
+	hud_root.scale = Vector2(f, f)
+	hud_root.size = get_viewport_rect().size / f
+	CommandPanel.TipButton.ui_scale = f   # tooltip cards are popups outside the HUD: they scale their own type
+	var t := Theme.new()   # plain tooltips (queue slots, the idle button) take the HUD's theme
+	t.set_font_size("font_size", "TooltipLabel", roundi(14 * f))
+	hud_root.theme = t
 
 
 func _label(size: int, pos: Vector2) -> Label:
@@ -1064,7 +1087,9 @@ func _make_pause_menu() -> Control:
 	box.name = "box"
 	box.add_theme_constant_override("separation", 12)
 	box.custom_minimum_size = Vector2(320, 0)
-	box.position = get_viewport_rect().size * 0.5 - Vector2(160, -50)   # below the victory banner
+	box.set_anchors_preset(Control.PRESET_CENTER)   # centred, below the victory banner, at any HUD size
+	box.grow_horizontal = Control.GROW_DIRECTION_BOTH
+	box.offset_top = 50
 	shade.add_child(box)
 	var title := Label.new()
 	title.name = "title"
@@ -1467,7 +1492,7 @@ func _tech_buttons(c: Dictionary, b: int) -> void:
 		var why := Tech.why_not(world, active, b, "")
 		if why != "not here":
 			c.buttons.append({"text": "Age up: %s (%s)" % [age.name, _cost_text(age.cost)], "key": "U", "cost": _cost_text(age.cost),
-				"icon": Icons.texture("age_up"), "tip": _age_tip(age),
+				"icon": Icons.texture("age_up"), "tip": _age_tip(age), "group": "Age up", "accent": true,
 				"enabled": why == "", "action": func(): world.issue(active, Commands.AGE_UP, {"building": bid})})
 	for r in world.tech.research:
 		var why := Tech.why_not(world, active, b, r.id)
@@ -1475,7 +1500,7 @@ func _tech_buttons(c: Dictionary, b: int) -> void:
 			var rid: String = r.id
 			var icon: Texture2D = kit.icons.get("%d:%s" % [active, r.line]) if r.has("line") else Icons.texture(r.id)   # a line upgrade shows its unit
 			c.buttons.append({"text": "%s (%s)" % [_research_name(r), _cost_text(r.cost)], "key": "", "cost": _cost_text(r.cost),
-				"icon": icon, "tip": _research_tip(r),
+				"icon": icon, "tip": _research_tip(r), "group": "Research",
 				"enabled": why == "", "action": func(): world.issue(active, Commands.RESEARCH, {"building": bid, "id": rid})})
 
 
@@ -1493,7 +1518,7 @@ func _market_buttons(c: Dictionary, b: int) -> void:
 			var verb := "Buy" if buy else "Sell"
 			var rr: String = res
 			var flag := 1 if buy else 0
-			c.buttons.append({"icon": Icons.texture("res_" + res), "key": "+" if buy else "-",
+			c.buttons.append({"icon": Icons.texture("res_" + res), "key": "+" if buy else "-", "group": verb,
 				"cost": "%d%s" % [price, lib.resource_info[Economy.kind_of(world, "gold")].short], "enabled": why == "",
 				"text": "%s %d %s for %d gold" % [verb, Market.LOT, name.to_lower(), price],
 				"tip": "[b]%s %d %s[/b]\n%s %d gold.\n[color=%s]Each trade moves the price: buying pushes it up, selling down. Prices are the same for everyone.[/color]%s" % [
@@ -1798,7 +1823,7 @@ func _update_panel() -> void:
 					var tslot: String = slot
 					c.buttons.append({"icon": kit.icons.get("%d:%s" % [active, slot]),
 						"text": (("Train %s (%s)" % [wt.name, _cost_text(wt.cost)]) if ok_age else "%s: needs age %d" % [wt.name, wt.line[0].age]),
-						"tip": _unit_tip(wt),
+						"tip": _unit_tip(wt), "group": "Train",
 						"key": "Q" if slot == "worker" else "", "cost": _cost_text(wt.cost), "enabled": ok_age and afford and q.size() < int(world.econ.queue_max),
 						"action": func(): _train(selected_building, tslot)})
 				_tech_buttons(c, b)
@@ -1830,9 +1855,9 @@ func _update_panel() -> void:
 			kinds.sort()
 			c.tray = kinds.map(func(k): return {"icon": kit.icons.get("%d:%s" % [world.types[k].player, world.types[k].slot]), "count": counts[k]})
 		if _selected_workers().size() < mine.size():   # soldiers: attack-move and stop
-			c.buttons.append({"icon": Icons.texture("attack_move"), "text": "Attack-move", "key": "R", "cost": "", "enabled": true,
+			c.buttons.append({"icon": Icons.texture("attack_move"), "text": "Attack-move", "key": "R", "cost": "", "enabled": true, "group": "Orders",
 				"tip": "[b]Attack-move[/b]\nThen click where: they walk there and fight whatever they meet on the way.", "action": func(): arming_attack = true})
-			c.buttons.append({"icon": Icons.texture("stop"), "text": "Stop", "key": "X", "cost": "", "enabled": true,
+			c.buttons.append({"icon": Icons.texture("stop"), "text": "Stop", "key": "X", "cost": "", "enabled": true, "group": "Orders",
 				"tip": "[b]Stop[/b]\nDrop every order: they stand where they are.", "action": stop_selected})
 		if not _selected_workers().is_empty():
 			if str(mine) != _build_page_for:
@@ -1843,7 +1868,7 @@ func _update_panel() -> void:
 						["military", "Military", "barracks", "Barracks, ranges, stables, the armoury, towers and walls."]]:
 					var pid: String = page[0]
 					c.buttons.append({"icon": kit.building_icon(_arch(active), page[2]), "text": "Build: %s" % page[1], "key": "", "cost": page[1], "enabled": true,
-						"glyph": Icons.texture("glyph/" + page[2]),
+						"glyph": Icons.texture("glyph/" + page[2]), "group": "Build",
 						"tip": "[b]%s buildings[/b]\n%s" % [page[1], page[3]], "action": func(): build_page = pid})
 			else:
 				for id in build_menu[build_page]:
@@ -1853,9 +1878,9 @@ func _update_panel() -> void:
 					var afford: bool = world.can_afford(active, t.cost)
 					var bid: String = id
 					c.buttons.append({"icon": kit.building_icon(_arch(active), id), "text": "Build %s (%s)" % [t.name, _cost_text(t.cost)],
-						"tip": _building_tip(t), "glyph": Icons.texture("glyph/" + id),   # what it's for, the same in every culture
+						"tip": _building_tip(t), "glyph": Icons.texture("glyph/" + id), "group": build_page.capitalize(),   # what it's for, the same in every culture
 						"key": t.hotkey, "cost": _cost_text(t.cost), "enabled": afford, "action": func(): start_placing(bid)})
-				c.buttons.append({"icon": Icons.texture("back"), "text": "Back", "key": "Esc", "cost": "", "enabled": true,
+				c.buttons.append({"icon": Icons.texture("back"), "text": "Back", "key": "Esc", "cost": "", "enabled": true, "group": " ",
 					"tip": "[b]Back[/b]\nTo the civilian and military pages.", "action": func(): build_page = ""})
 		if placing != "":
 			c.info = "Placing: left-click to build, shift keeps placing, right-click/Esc cancels"
