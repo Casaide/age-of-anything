@@ -734,13 +734,17 @@ func _body_human(c: Dictionary) -> Dictionary:
 	var cloth := surf("cloth", c.cloth, 6.0)
 	var skin := surf("skin", c.skin, 8.0)
 	var belt := surf("leather", Color.WHITE, 3.0)
-	# A belted tunic: chest and shoulders, a flared skirt over the hips.
-	n.add_child(blob(Vector3(4.4, 5.8, 5.4), tunic, Vector3(0.3, 19.6, 0)))
-	n.add_child(cone(4.3, 5.5, 4.6, tunic, Vector3(0, 12.9, 0)))
-	n.add_child(ring(5.0, 5.7, cloth, Vector3(0, 10.75, 0)))   # hem trim in the culture's colour
-	n.add_child(ring(4.2, 5.1, belt, Vector3(0, 15.0, 0)))
-	n.add_child(blob(Vector3(1.0, 1.0, 0.5), surf("bronze", Color.WHITE, 2.0), Vector3(4.9, 15.0, 0.6)))
-	n.add_child(rod(Vector3(0.3, 23.5, 0), Vector3(0.6, 27, 0), 1.8, 1.7, skin))
+	# A belted tunic: chest and shoulders, a flared skirt over the hips. Modelled in Blender
+	# (tools/blender/human_torso.py); the primitive version is the fallback.
+	if FileAccess.file_exists("res://assets/models/torso_human.glb"):
+		n.add_child(glb("torso_human", {"team": tunic, "cloth": cloth, "leather": belt, "skin": skin}))
+	else:
+		n.add_child(blob(Vector3(4.4, 5.8, 5.4), tunic, Vector3(0.3, 19.6, 0)))
+		n.add_child(cone(4.3, 5.5, 4.6, tunic, Vector3(0, 12.9, 0)))
+		n.add_child(ring(5.0, 5.7, cloth, Vector3(0, 10.75, 0)))   # hem trim in the culture's colour
+		n.add_child(ring(4.2, 5.1, belt, Vector3(0, 15.0, 0)))
+		n.add_child(rod(Vector3(0.3, 23.5, 0), Vector3(0.6, 27, 0), 1.8, 1.7, skin))
+	n.add_child(blob(Vector3(1.0, 1.0, 0.5), surf("bronze", Color.WHITE, 2.0), Vector3(4.6, 15.2, 0.6)))   # the buckle
 	var near_hand := Vector3.ZERO
 	var front := Node3D.new()
 	for side in [1, -1]:
