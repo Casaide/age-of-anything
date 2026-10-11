@@ -18,7 +18,7 @@ const UiScale := preload("res://src/view/ui_scale.gd")
 
 const PRESETS := ["angry swamp frogs with reed spears", "sewer rats with cheese hammers", "centaur romans",
 	"greek hoplites", "spooky beetle knights", "steppe horse archers", "forest spiders"]
-const MAPS := ["flat_test", "choke_test"]
+const MAPS := ["flat_test"]   # choke_test is a movement test map (sim_debug M key), not a battlefield: no food or wood on it
 
 const BG := Color("#1c1712")
 const PANEL := Color("#2a231b")

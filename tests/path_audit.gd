@@ -16,7 +16,7 @@ const Economy := preload("res://src/sim/economy.gd")
 
 const SEED := 7
 const WINDOW := 20          # ticks of history per unit for jitter and treading
-const EXAMPLES := 6
+const EXAMPLES := 8
 
 
 func _init() -> void:
@@ -109,9 +109,15 @@ func _example(list: Array, w: World, i: int, what: String) -> void:
 		for dx in [-1, 0, 1]:
 			around += "#" if not w.map.cell_walkable(c % w.map.width + dx, c / w.map.width + dy, u.mclass[i]) else "."
 		around += "/"
-	list.append("%s: %s (P%d %s, %s, foe %d, group %d) at cell %d (%d,%d) in %s %s" % [
-		"%d:%02d" % [w.tick / 1200, (w.tick / 20) % 60], what, u.owner[i], t.name, task, u.foe[i], u.group[i], c, c % w.map.width, c / w.map.width,
-		w.map.terrain_ids[w.map.terrain[c]] if "terrain_ids" in w.map else str(w.map.terrain[c]), around])
+	var f = w.fields.get(u.fkey[i])
+	if u.reach[i] == 1:
+		var ex: int = maxi(maxi(u.rx0[i] - u.x[i], 0), u.x[i] - u.rx1[i])
+		var ey: int = maxi(maxi(u.ry0[i] - u.y[i], 0), u.y[i] - u.ry1[i])
+		what += " [rect gap %d,%d reach %d]" % [ex, ey, u.radius[i] + Economy.REACH]
+	var field := "no field" if f == null else "dist %d next %d" % [f.dist[c], f.next[c]]
+	list.append("%s: %s (P%d %s, %s, foe %d, group %d) at (%d,%d) cell %d (%d,%d) %s; wp (%d,%d) target (%d,%d) reach %d arrive %d stuck %d; %s" % [
+		"%d:%02d" % [w.tick / 1200, (w.tick / 20) % 60], what, u.owner[i], t.name, task, u.foe[i], u.group[i], u.x[i], u.y[i], c, c % w.map.width, c / w.map.width,
+		around, u.wx[i], u.wy[i], u.tx[i], u.ty[i], u.reach[i], u.arrive[i], u.stuck[i], field])
 
 
 static func Fixed_isqrt(v: int) -> int:

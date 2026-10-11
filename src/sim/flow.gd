@@ -12,6 +12,7 @@ extends RefCounted
 ## order and the first equal-cost route wins, so ties are deterministic.
 
 const SimMap := preload("res://src/sim/sim_map.gd")
+const Fixed := preload("res://src/sim/fixed.gd")
 
 const INF := 1 << 30
 const STRAIGHT := 10
@@ -62,6 +63,13 @@ static func solve(map: SimMap, source_cells: PackedInt32Array, cutoff := INF, k 
 			var down := cy < h - 1 and walk[c + w] == 1
 			var left := cx > 0 and walk[c - 1] == 1
 			var right := cx < w - 1 and walk[c + 1] == 1
+			# A blocked source (a bush, a building) is worked from any cell touching it, corners
+			# included, so its diagonals open whatever its sides: nobody walks through it.
+			var from_blocked := walk[c] == 0
+			var ne := (up and right) or (from_blocked and cy > 0 and cx < w - 1)
+			var se := (down and right) or (from_blocked and cy < h - 1 and cx < w - 1)
+			var sw := (down and left) or (from_blocked and cy < h - 1 and cx > 0)
+			var nw := (up and left) or (from_blocked and cy > 0 and cx > 0)
 			var s := cost + STRAIGHT
 			var d := cost + DIAGONAL
 			var bs: Array = ring[s % RING]
@@ -79,13 +87,13 @@ static func solve(map: SimMap, source_cells: PackedInt32Array, cutoff := INF, k 
 				dist[s_] = s; next[s_] = c; bs.append(s_); pending += 1
 			if left and s < dist[w_]:
 				dist[w_] = s; next[w_] = c; bs.append(w_); pending += 1
-			if up and right and walk[n_ + 1] == 1 and d < dist[n_ + 1]:
+			if ne and walk[n_ + 1] == 1 and d < dist[n_ + 1]:
 				dist[n_ + 1] = d; next[n_ + 1] = c; bd.append(n_ + 1); pending += 1
-			if down and right and walk[s_ + 1] == 1 and d < dist[s_ + 1]:
+			if se and walk[s_ + 1] == 1 and d < dist[s_ + 1]:
 				dist[s_ + 1] = d; next[s_ + 1] = c; bd.append(s_ + 1); pending += 1
-			if down and left and walk[s_ - 1] == 1 and d < dist[s_ - 1]:
+			if sw and walk[s_ - 1] == 1 and d < dist[s_ - 1]:
 				dist[s_ - 1] = d; next[s_ - 1] = c; bd.append(s_ - 1); pending += 1
-			if up and left and walk[n_ - 1] == 1 and d < dist[n_ - 1]:
+			if nw and walk[n_ - 1] == 1 and d < dist[n_ - 1]:
 				dist[n_ - 1] = d; next[n_ - 1] = c; bd.append(n_ - 1); pending += 1
 		bucket.clear()
 		cost += 1
@@ -140,6 +148,37 @@ static func clear_line(map: SimMap, ax: int, ay: int, bx: int, by: int, k := 0) 
 		if not map.walkable(ax + dx * i / steps, ay + dy * i / steps, k):
 			return false
 	return true
+
+
+## clear_line for a body of radius r: the centre line and the two lines a body's width
+## either side of it must all stay on walkable ground, so a waypoint never cuts a corner the
+## body can't pass (the centre could, the shoulders couldn't; the clamp then shoved it back).
+static func clear_path(map: SimMap, ax: int, ay: int, bx: int, by: int, r: int, k := 0) -> bool:
+	var dx := bx - ax
+	var dy := by - ay
+	var len := maxi(1, Fixed.isqrt(dx * dx + dy * dy))
+	var ox := -dy * r / len
+	var oy := dx * r / len
+	var walk: PackedByteArray = map.walks[k]
+	var w := map.width
+	var h := map.height
+	var steps := maxi(absi(dx), absi(dy)) / LINE_STEP + 1
+	for i in range(1, steps + 1):
+		var x := ax + dx * i / steps
+		var y := ay + dy * i / steps
+		# The centre line, then a body's width either side of it. (Sampling the sides every
+		# other step saved 0.2 ms a tick at 143 units and doubled the jitter: not worth it.)
+		if _blocked(walk, w, h, x, y) or _blocked(walk, w, h, x + ox, y + oy) or _blocked(walk, w, h, x - ox, y - oy):
+			return false
+	return true
+
+
+static func _blocked(walk: PackedByteArray, w: int, h: int, x: int, y: int) -> bool:
+	if x < 0 or y < 0:
+		return true
+	var cx := x / TILE
+	var cy := y / TILE
+	return cx >= w or cy >= h or walk[cy * w + cx] == 0
 
 
 static func centre(map: SimMap, cell: int) -> Vector2i:
