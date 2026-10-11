@@ -14,7 +14,8 @@ along the way. The overview table lives in `../mvp-plan.md` §3; these files hol
 | 6 | [AI + match flow](m6-ai-match-flow.md) | planned |
 | 7 | [Fog + juice](m7-fog-juice.md) | planned |
 | 8 | [Playtest + balance](m8-playtest-balance.md) | planned |
-| - | [Art pass](art-pass.md) | planned (parallel) |
+| - | [Art pass](art-pass.md) | direction chosen, vertical slice done |
+| - | [Art and UI track](art-ui-track.md) | A1 in progress (with milestone 4) |
 | - | [Networking](networking.md) | planned (after the demo) |
 
 ## How to use these
