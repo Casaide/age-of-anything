@@ -208,3 +208,12 @@ glints, softer foam (the shore was already liked and stayed). Boulders got liche
 pebbles and grass at their foot, and outcrops stopped being a grid of equal stones (bigger inside,
 smaller at the edge, nudged). A first try left gaps inside an outcrop: blocked ground that looked
 walkable, so every rock tile keeps a stone. Farms are dense leafy rows now, not sticks on a board.
+
+### The lobby
+The front door is a lobby now: a title menu, then a battle setup with a banner per side. Each
+banner shows the race's name, its army baked and idling on a strip of grass (the same bake as in a
+match), the prompt with a reroll and the presets, and the roster with costs and the generator's
+notes. In the middle are the map (drawn from its data as a small isometric diamond) and Start. In
+battle, Esc pauses under a small menu, which also comes up when the match ends, so you can get
+back. The first render had every label one letter wide (wrapping labels in a row) and the team
+strip filling the whole panel.
