@@ -30,6 +30,9 @@ Milestone 7 (progression) followed straight on:
   sliver of texture. In world space, with regenerated textures (big blotches, tufts, folds,
   plates), frogs read as toads and beetles get shell plates. The cap stopped looking like an acorn
   too, since its grain is now visible as cloth.
+- **Wings.** Feather wings had thirty small feathers and baked to a white slab; now eight big
+  ones. A pegasus's wings sat so high they looked like the rider's; they now lie folded along
+  the horse's back.
 
 ## Decisions
 D-056 (milestones 5 and 6 inserted), D-057 (gear by age, small blacksmith tells), D-058 (bows for
@@ -45,6 +48,8 @@ D-070 (restrictions as layers with a host switch), D-072 (unit textures: big mar
 ![Textured frogs and beetles](../images/2026-10-11/89-unit-textures-frogs-and-beetles.png)
 ![Textured rats and centaurs](../images/2026-10-11/90-unit-textures-rats-and-centaurs.png)
 ![Textured centaurs in a Roman town](../images/2026-10-11/91-textured-centaurs-in-town.png)
+![Bug: the pegasus's wings sprouting from its rider](../images/2026-10-11/92-bug-pegasus-wings-on-the-rider.png)
+![Bolder feathers; the pegasus's wings folded along its back](../images/2026-10-11/93-bold-feathers-folded-pegasus-wings.png)
 
 ## Funny moments
 - The first unit lines gave every soldier a banner at age 2, replacing their capes. A whole
