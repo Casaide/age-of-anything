@@ -1,6 +1,6 @@
 # Milestone 4: Combat
 
-**Status:** plan written (2026-10-11), waiting for Dominic's OK
+**Status:** in progress (plan approved 2026-10-11, with armour classes; see below)
 **Exit criterion:** Blind testers predict counters from silhouettes.
 
 ## Scope
@@ -8,8 +8,7 @@ Melee/ranged attack, armour, HP, counter-tag bonuses, sim-side hitscan + cosmeti
 death animation, and the unit card (recipe, derived stats, tags).
 
 Not in this milestone: the AI's attack waves and counter-picking (milestone 6), fog (7),
-hit-flash polish and SFX (7), Blacksmith upgrades and research (5 / Next), split melee and
-pierce armour (backlog), formations, siege.
+hit-flash polish and SFX (7), Blacksmith upgrades and research (5 / Next), formations, siege.
 
 ## Plan
 
@@ -20,9 +19,22 @@ pierce armour (backlog), formations, siege.
   - sight range for picking targets automatically (6 tiles);
   - minimum damage (1);
   - how often units look for targets (every 10 ticks, staggered by id).
-- **Damage** = max(min, attack + the sum of the attacker's `bonus` for every tag the target has
-  − armour). Bonuses already live on the parts (spear +large, sling/blowgun/pilum +archer,
-  bow/crossbow +infantry, lance +ranged), so the counter web comes from data.
+- **Armour classes (Dominic: do all armour types now, so nothing important gets missed).**
+  This is the genre's model:
+  - **Attack:** every attack has a base type, `melee` or `pierce` (a weapon's `damage` field; it
+    defaults to melee), plus bonus classes (`bonus`, keyed by tag: spear +large, sling +archer,
+    lance +ranged, club +building, and so on).
+  - **Armour:** every unit has armour per class, `{"melee": m, "pierce": p, ...}`, summed over
+    its parts. It can also hold armour against a bonus class (e.g. `"large": 2` blunts spear
+    bonuses), so elite resistances need data, not code.
+  - **Classes a target belongs to:** melee and pierce always, plus every one of its tags, plus
+    `building` for buildings.
+  - **Damage** = max(minimum, Σ over the attack's classes that the target belongs to of
+    max(0, attack[class] − armour[class])).
+  - **Data:** parts' `armour` becomes a dict. Shields lean to pierce, mail and plate cover both,
+    helmets add a little of each. Ranged weapons get `"damage": "pierce"`. Blunt weapons get a
+    building bonus. Buildings get high pierce armour, so arrows barely scratch them.
+  - Derived stats only: race keys don't change.
 - **The missing edge of the web:** the design says mounted beats archers and skirmishers, but
   today only the lance carries that bonus. Mount bodies (pony, beetle, spider) get
   `stats.bonus: {"ranged": 3}`, and `pricing.gd` starts collecting body and mount-body bonuses
@@ -30,9 +42,10 @@ pierce armour (backlog), formations, siege.
 - **Buildings** keep their `hp` and get an `armour` in `buildings.json`, so units can attack them.
 
 ### Sim (`src/sim/combat.gd`, integers only, no Nodes)
-- **Unit types** carry attack, armour, range (milli-tiles), reload, and bonus and tags as
-  sorted int arrays (tag names mapped to indices once, at setup), so damage is a loop over
-  ints.
+- **Unit types** carry range (milli-tiles), reload, and two int vectors over a class table
+  built once at setup (melee, pierce, then every tag and bonus name, sorted): the attack (base
+  type + bonuses) and the armour, plus the set of classes the unit belongs to. Damage is then a
+  loop over ints.
 - **New per-unit arrays** in `units.gd`: attack target (a unit or building id), cooldown and
   stance (an explicit order or auto).
 - **Commands:**
@@ -101,21 +114,20 @@ pierce armour (backlog), formations, siege.
 ### Tests
 - **Determinism:** a recorded battle replays to the same hashes, and a battle is added to the
   10-minute match.
-- **Damage maths:** unit checks on the formula, bonuses, the minimum and armour.
+- **Damage maths:** unit checks on the formula: base types, bonus classes only against targets
+  that have the tag, class armour blunting a bonus, the minimum, and buildings' pierce armour.
 - **Behaviour:** chasing works; killing a target picks the next one; buildings take damage,
   and a destroyed one frees its footprint; dead units free their pop.
 - **Performance:** a 200-unit battle stays under the 3 ms tick budget (we're at ~0.9 ms now).
 
-### Questions for Dominic (Claude's defaults in brackets)
-1. Attack-move now, or leave it for the AI milestone? [Now: the tests need it, and it's small.]
-2. One armour value now, with split melee/pierce armour later? [Yes: one value; split goes to the
-   backlog.]
-3. Workers: fight back when hit, or flee? [Fight back only if ordered; otherwise keep working.
-   Fleeing is AI-milestone material.]
+### Decided with Dominic (2026-10-11)
+1. Attack-move is in this milestone.
+2. All armour types now (melee, pierce and per-class armour), not a single value.
+3. Workers attack only when ordered; otherwise they keep working.
 
 ## Checklist
-- [ ] Plan approved
-- [ ] Data: `combat` rules block, building armour, mount-body bonuses (+ pricing reads them)
+- [x] Plan approved (with armour classes)
+- [ ] Data: armour classes on parts and buildings, damage types, `combat` rules block, mount-body bonuses (+ pricing reads them)
 - [ ] Sim: unit combat stats, ATTACK / ATTACK_MOVE, targeting, chase, hitscan damage, death, events
 - [ ] Sim: attacking and destroying buildings
 - [ ] Tests: damage maths, behaviour, battle determinism, counter matrix, 200-unit battle tick
