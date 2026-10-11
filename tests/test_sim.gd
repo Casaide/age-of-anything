@@ -415,6 +415,18 @@ func _test_farms(races: Array) -> void:
 	check(w.map.can_build(spot.x, spot.y, 2, Economy.builder_class(w, 0), true), "farm: frogs (amphibious) may farm the shallows")
 	check(not w.map.can_build(spot.x, spot.y, 2, Economy.builder_class(w, 1), true), "farm: rats may not build on water")
 	check(not w.map.can_build(spot.x, spot.y, 2, Economy.builder_class(w, 0), false), "farm: a building that doesn't allow water can't go there")
+	# Stone: a worker mines the deposit by the start and carries it home.
+	var stone_cell := _nearest_resource(w.map, s, "stone")
+	var miner := -1
+	for i2 in w.units.count():
+		if w.units.owner[i2] == 0 and w.units.id[i2] != worker:
+			miner = w.units.id[i2]
+			break
+	var stone_before: int = w.stock[2][0]
+	w.issue(0, Commands.GATHER, {"ids": [miner], "cell": stone_cell})
+	for t in 1200:
+		w.step()
+	check(w.stock[2][0] > stone_before, "stone: a worker mines the deposit (%d -> %d)" % [stone_before, w.stock[2][0]])
 
 
 # --- ages and research ----------------------------------------------------------

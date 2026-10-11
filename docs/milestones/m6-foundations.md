@@ -1,6 +1,6 @@
 # Milestone 6: Foundations
 
-**Status:** planned (2026-10-11): next, after milestone 4 closes, alongside milestone 5 (art)
+**Status:** done (2026-10-11)
 **Exit criterion:** All from data, with no special cases in code: stone is a third resource
 mined from rock outcrops, winged units fly over water, frogs farm the swamp, and two teams of two
 fight. Tests prove each one.
@@ -108,5 +108,32 @@ Dominic asked to go straight on from milestone 4 into this one (2026-10-11). Ord
    - One test research. Milestone 7 fills in the content.
 
 ## Checklist
-- [ ] Plan approved
-- [ ] Archive: pictures along the way, journal, decisions, timeline
+- [x] Plan approved (Dominic: go straight on from milestone 4)
+- [x] 1 Resources from data; stone deposits, mined to rubble
+- [x] 2 Teams and is_enemy (2v2 test)
+- [x] 3 Movement classes: ground, amphibious, flying; shallows
+- [x] 4 Placement rules: builders' class, buildings that allow water
+- [x] 5 Ages and research as data (AGE_UP, RESEARCH, re-typing, research effects)
+- [x] 6 Gear tiers by age; unit lines through the ages
+- [x] 7 Shift-queued orders (double-click selection was already there)
+- [x] 8 Farms: fields on land, paddies in the shallows for amphibians
+- [x] Archive: pictures along the way, journal, decisions, timeline
+
+## Results
+All of it from data, and each piece tested in `tests/test_sim.gd` (130+ checks):
+- **Stone:** mined from the deposits near each start.
+- **Flyers and amphibians:** flyers cross the lake in a straight line while walkers go round;
+  frogs wade the shallows and rats stop at the edge.
+- **Teams:** two teams of two fight; allies never do.
+- **Farms:** a farm becomes a field its builder harvests; frogs may farm the shallows (paddies),
+  rats may not.
+- **Ages and research:** ageing up moves units along their lines (centaur Romans go from tunics
+  at age 1 to galea, scutum and lorica at age 3; pictures 55 and 56); Sharp Sticks adds +1
+  attack and survives the next age-up.
+- **Queued orders:** a queued worker builds, then forages.
+
+Left for milestone 7, the content:
+- the real tech tree and buildings (Barracks, Stable, Watchtower);
+- ageing-up in the bot;
+- tier-2 and tier-3 woodland kit (frogs reach for bronze and iron today);
+- creature variants.
