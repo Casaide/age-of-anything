@@ -227,14 +227,19 @@ func _make_rig(lib, body_id: String, head_id: String, colours: Dictionary, paren
 
 func _attach(lib, rig: Dictionary, slot: String, part_id: String, colours: Dictionary) -> void:
 	var socket: String = SOCKET_FOR_SLOT[slot]
+	var p: Dictionary = lib.part(part_id)
+	# Wings on a body with a wing socket (a mount: pony, beetle, spider) rise from its
+	# withers, ahead of the seat, not from the rump; drawn over its back, under the rider.
+	var withers: bool = slot == "back" and "flying" in p.tags and rig.sockets.has("wings")
+	if withers:
+		socket = "wings"
 	if not rig.sockets.has(socket):
 		return
-	var p: Dictionary = lib.part(part_id)
 	var node := _shape()
 	node.part_id = part_id
 	node.setup(p.shapes, colours)
 	node.position = rig.sockets[socket]
-	node.set_meta("z", Z_FOR_SLOT[slot])
+	node.set_meta("z", 0.5 if withers else Z_FOR_SLOT[slot])
 	if slot == "torso":
 		node.scale = rig.torso_scale
 	rig.root.add_child(node)

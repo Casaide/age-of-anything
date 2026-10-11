@@ -506,7 +506,8 @@ func _body_spider(c: Dictionary) -> Dictionary:
 	harness(n, Vector3(-1.5, 12.5, 0), 6.0, 7.0, Vector3(0, 12, 7.0), Vector3(-1, 12, -7.0))
 	return {"node": n, "sockets": {
 		"head": Vector3(11, 11, 0), "hand_r": Vector3(0, 12, 7.6), "hand_l": Vector3(-1, 12, -7.6),
-		"torso": Vector3(6, 12.5, 0), "back": Vector3(-8, 20, 0), "seat": Vector3(-5, 22.5, 0)},
+		"torso": Vector3(6, 12.5, 0), "back": Vector3(-8, 20, 0), "seat": Vector3(-5, 22.5, 0),
+		"wings": Vector3(5, 16, 0)},
 		"anchors": hips, "torso_scale": Vector2(0.6, 0.55), "carry": "harness"}
 
 
@@ -777,7 +778,8 @@ func _body_pony(c: Dictionary) -> Dictionary:
 	harness(lift, Vector3(4, 19, 0), 7.0, 6.3, Vector3(3, 18, 6.4), Vector3(3, 18, -6.4))
 	return {"node": n, "sockets": _lifted({
 		"head": Vector3(15.0, 32.5, 0), "hand_r": Vector3(3, 18, 6.9), "hand_l": Vector3(3, 18, -6.9),
-		"torso": Vector3(0, 19, 0), "back": Vector3(-8, 24, 0), "seat": Vector3(-1, 25.8, 0)}),
+		"torso": Vector3(0, 19, 0), "back": Vector3(-8, 24, 0), "seat": Vector3(-1, 25.8, 0),
+		"wings": Vector3(7.5, 25.5, 0)}),
 		"anchors": _pony_anchors(), "torso_scale": Vector2(1.3, 1.0), "carry": "harness"}
 
 
@@ -852,7 +854,8 @@ func _body_beetle(c: Dictionary) -> Dictionary:
 	harness(n, Vector3(4, 13.5, 0), 7.2, 8.0, Vector3(4, 13.5, 8.0), Vector3(3, 13.5, -8.0))
 	return {"node": n, "sockets": {
 		"head": Vector3(16, 12.5, 0), "hand_r": Vector3(4, 13.5, 8.6), "hand_l": Vector3(3, 13.5, -8.6),
-		"torso": Vector3(11, 14, 0), "back": Vector3(-8, 19, 0), "seat": Vector3(-1.5, 21.5, 0)},
+		"torso": Vector3(11, 14, 0), "back": Vector3(-8, 19, 0), "seat": Vector3(-1.5, 21.5, 0),
+		"wings": Vector3(6, 19.5, 0)},
 		"anchors": hips, "torso_scale": Vector2(0.65, 0.6), "carry": "harness"}
 
 
