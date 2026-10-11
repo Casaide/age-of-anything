@@ -35,6 +35,9 @@ const BASE := ["melee", "pierce", "building"]   # the first classes, always at t
 const SPREAD := 1500
 ## A unit whose foe has more than this many attackers looks for a free foe close by.
 const CROWDED := 2
+## A standing shooter keeps shooting until its foe is this far (milli-tiles) beyond its reach:
+## a shove from a neighbour no longer reads as "out of range" and walks it a step closer.
+const HOLD := 120
 
 
 ## Build the class table and give every unit and building type its combat vectors.
@@ -188,7 +191,13 @@ static func _look(w, i: int, t: Dictionary) -> int:
 			return maxi(int(c.defend_sight), t.reach + w.units.radius[i] + SimMap.TILE / 2)
 		STAND:
 			return t.reach + w.units.radius[i] + SimMap.TILE / 2
-	return int(c.sight)
+	return _sight(w, i, t)
+
+
+## How far a unit looks for a fight at most: rules sight, or as far as it can shoot
+## (centre to centre), whichever is further; a shooter shouldn't walk up to a foe it could hit.
+static func _sight(w, i: int, t: Dictionary) -> int:
+	return maxi(int(w.combat.sight), t.reach + w.units.radius[i] + SimMap.TILE / 2)
 
 
 ## Done with a fight it found itself: a defensive unit walks back to where it stood.
@@ -262,7 +271,13 @@ static func tick(w) -> void:
 			if (u.foe[i] == 0 and (idle or stance == ATTACK_MOVE)) or crowded:
 				var am: bool = stance == ATTACK_MOVE
 				# Stand ground takes the nearest foe, not the least fought: the nearest is the one in reach.
-				var f := _nearest_foe(w, i, int(c.sight) if am else _look(w, i, t), am, engaged, 0 if posture == STAND and not am else SPREAD)
+				var f := _nearest_foe(w, i, _sight(w, i, t) if am else _look(w, i, t), am, engaged, 0 if posture == STAND and not am else SPREAD)
+				# A shooter in reach of its crowded foe has no crowd to get round: it only swaps to
+				# another foe it can hit from where it stands, never walks off to a free one.
+				if crowded and t.ranged and f != 0 and _gap(w, i, u.index_of(u.foe[i]), -1) <= t.reach:
+					var fj: int = u.index_of(f)
+					if fj < 0 or _gap(w, i, fj, -1) > t.reach:
+						f = 0
 				if f != 0 and f != u.foe[i]:
 					var old: int = u.index_of(u.foe[i]) if u.foe[i] != 0 else -1
 					if old >= 0:
@@ -278,10 +293,19 @@ static func tick(w) -> void:
 		var j: int = u.index_of(u.foe[i])
 		var b: int = -1 if j >= 0 else bs.index_of(u.foe[i])
 		if j < 0 and b < 0:
-			_lost(w, i)
+			# An attack-mover whose foe fell takes the next one at once: walking on until its
+			# acquire beat stepped a whole line of shooters forward after every kill.
+			var next := _nearest_foe(w, i, _sight(w, i, t), true, engaged) if u.stance[i] == ATTACK_MOVE else 0
+			if next != 0:
+				u.foe[i] = next
+				var nj: int = u.index_of(next)
+				if nj >= 0:
+					engaged[nj] += 1
+			else:
+				_lost(w, i)
 			continue
 		var gap := _gap(w, i, j, b)
-		if gap <= t.reach:
+		if gap <= t.reach + (HOLD if t.ranged and u.moving[i] == 0 else 0):
 			u.moving[i] = 0
 			if u.cooldown[i] == 0:
 				u.cooldown[i] = t.reload
