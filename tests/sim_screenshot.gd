@@ -130,17 +130,24 @@ func _tip(view, which: int) -> void:
 				break
 	else:
 		view.selected_building = w.buildings.id[0]
+		for k in 6:   # a queue to show: one in training, five waiting
+			view._train(view.selected_building, "worker")
+		for f in 300:   # orders run a couple of turns after they're given
+			if w.buildings.queue[0].size() >= 6:
+				break
+			await process_frame
 	for f in 10:
 		await process_frame
 	if which == 2:
 		view.build_page = "military"
 		for f in 10:
 			await process_frame
-	var buttons: Array = view.panel._buttons.get_children()
+	var buttons: Array = view.panel.action_buttons()
 	var b = buttons[buttons.size() - 1 if which == 0 else 0]
-	var card: Control = b._make_custom_tooltip(b.tooltip_text)
-	view.panel.get_parent().add_child(card)
-	card.position = b.global_position + Vector2(0, -260)
+	var card: Control = b._make_custom_tooltip(b.tooltip_text)   # a popup in the game: outside the scaled HUD
+	view.hud_root.get_parent().add_child(card)
+	await process_frame
+	card.position = Vector2(b.global_position.x, view.panel.global_position.y - card.size.y - 12)   # above the panel, clear of its captions
 
 
 ## One of side 0's spearmen selected, so the panel shows its unit card.

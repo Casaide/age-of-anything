@@ -1,12 +1,12 @@
 extends PanelContainer
-## The bottom command panel, in three parts:
-## - who's selected: a portrait of the unit (its own baked art), its name, a health
-##   bar and what it's doing; for a group, a tray of small portraits with counts;
-## - what it can do: square buttons with the unit's or building's picture, a hotkey
-##   and the cost;
-## - for a building, its training queue: the unit being trained in a big slot with a progress
-##   bar, the rest in small slots after it; click a slot to cancel it. Shift-click a train
-##   button to queue five.
+## The bottom command panel, in three parts split by carved grooves:
+## - who's selected: a portrait of the unit (its own baked art), its name, a slim health bar
+##   with "hp / max" and what it's doing; for a group, a tray of small portraits with counts;
+## - what it can do: big square buttons with the unit's or building's picture, a hotkey and
+##   the cost, in captioned groups (Train, Research, Age up, Orders, Build...);
+## - for a building, its training queue, sunk in a well: the unit being trained in the first
+##   slot with a progress bar, the rest in small slots after it; click a slot to cancel it.
+##   Shift-click a train button to queue five.
 ## Buttons explain themselves on hover: a tooltip card (title, cost, what it does, what it
 ## needs in red, what it unlocks), from the button's `tip` (BBCode) or else its text.
 ## Rebuilt only when its content changes, so buttons don't flicker or lose clicks;
@@ -17,27 +17,38 @@ const Audio := preload("res://src/view/audio.gd")
 
 const BG := Color("#2e2820")
 const SLOT := Color("#1e1a14")
+const RAISED := Color("#342c21")    # action buttons stand up from the panel...
+const WELL := Color("#17130e")      # ...the queue sits down in it
 const EDGE := Color("#6a5a40")
+const BRONZE := Color("#a08858")
 const TEXT_DIM := Color("#b8ad94")
 const GOLD := Color("#f2c94c")
+const HP_GOOD := Color("#5cb84a")
+const HP_HURT := Color("#e0a83a")
+const HP_LOW := Color("#d8503c")
 const PORTRAIT := 96
-const BUTTON := 64
-const QUEUE_FIRST := 72
-const QUEUE_SLOT := 36
+const BUTTON := 80        # bigger than anything in the queue: what you can order reads first (Dominic)
+const QUEUE_FIRST := 60
+const QUEUE_SLOT := 28
 const QUEUE_COLUMNS := 7
+const GROUP_COLUMNS := 4
 
 var res_icons := {}   # a resource's short letter -> its icon, so costs under buttons read "10 [food icon]"
 var _portrait: TextureRect
 var _title: Label
 var _info: Label
 var _hp: ProgressBar
+var _hp_text: Label
 var _tray: HFlowContainer
-var _buttons: GridContainer
-var _queue_box: VBoxContainer
+var _actions: HBoxContainer      # the button groups side by side, a faint groove between each
+var _split_who: Control          # the carved grooves: who | actions | queue
+var _split_queue: Control
+var _queue_box: PanelContainer
 var _queue_rest: GridContainer   # the queue after the first: small slots, only the filled ones
 var _queue: HBoxContainer
 var _queue_label: Label   # "Training", or what the building is doing instead (ageing up, research)
 var _queue_bar: ProgressBar
+var _caption_font: FontVariation
 var _signature := ""
 var _team := Color.WHITE
 
@@ -46,12 +57,17 @@ func _ready() -> void:
 	var style := StyleBoxFlat.new()
 	style.bg_color = Color(BG, 0.95)
 	style.set_content_margin_all(10)
+	style.content_margin_left = 12
+	style.content_margin_right = 14
 	style.set_corner_radius_all(4)
 	style.border_width_top = 4
 	style.border_color = EDGE
 	add_theme_stylebox_override("panel", style)
+	_caption_font = FontVariation.new()   # captions in small, spaced capitals
+	_caption_font.base_font = ThemeDB.fallback_font
+	_caption_font.spacing_glyph = 1
 	var row := HBoxContainer.new()
-	row.add_theme_constant_override("separation", 14)
+	row.add_theme_constant_override("separation", 12)
 	add_child(row)
 
 	_portrait = TextureRect.new()
@@ -64,88 +80,130 @@ func _ready() -> void:
 	row.add_child(frame)
 
 	var who := VBoxContainer.new()
-	who.custom_minimum_size = Vector2(330, 0)
-	who.add_theme_constant_override("separation", 4)
+	who.custom_minimum_size = Vector2(300, 0)
+	who.add_theme_constant_override("separation", 5)
 	row.add_child(who)
 	_title = Label.new()
-	_title.add_theme_font_size_override("font_size", 17)
+	_title.add_theme_font_size_override("font_size", 18)
 	who.add_child(_title)
-	_hp = _bar(Color("#5cb84a"), 10)
-	who.add_child(_hp)
+	var hp_row := HBoxContainer.new()   # a slim bar and the number: health is a fact, not a banner (Dominic)
+	hp_row.add_theme_constant_override("separation", 8)
+	who.add_child(hp_row)
+	_hp = _bar(HP_GOOD, 5)
+	_hp.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	_hp.size_flags_vertical = Control.SIZE_SHRINK_CENTER
+	hp_row.add_child(_hp)
+	_hp_text = Label.new()
+	_hp_text.add_theme_font_size_override("font_size", 12)
+	_hp_text.add_theme_color_override("font_color", TEXT_DIM)
+	_hp_text.custom_minimum_size.x = 76
+	_hp_text.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
+	hp_row.add_child(_hp_text)
 	_info = Label.new()
 	_info.add_theme_font_size_override("font_size", 13)
 	_info.add_theme_color_override("font_color", TEXT_DIM)
 	_info.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-	_info.custom_minimum_size = Vector2(330, 0)   # room for the unit card
+	_info.custom_minimum_size = Vector2(300, 0)   # room for the unit card
 	who.add_child(_info)
 	_tray = HFlowContainer.new()
 	_tray.add_theme_constant_override("h_separation", 3)
 	_tray.add_theme_constant_override("v_separation", 3)
 	who.add_child(_tray)
 
-	_buttons = GridContainer.new()
-	_buttons.columns = 4
-	_buttons.add_theme_constant_override("h_separation", 6)
-	_buttons.add_theme_constant_override("v_separation", 6)
-	row.add_child(_buttons)
+	_split_who = _groove(true)
+	row.add_child(_split_who)
+	_actions = HBoxContainer.new()
+	_actions.add_theme_constant_override("separation", 10)
+	row.add_child(_actions)
+	_split_queue = _groove(true)
+	row.add_child(_split_queue)
 
-	_queue_box = VBoxContainer.new()
-	_queue_box.add_theme_constant_override("separation", 4)
+	_queue_box = PanelContainer.new()   # a recessed well: what's coming, apart from what you can order
+	var well := StyleBoxFlat.new()
+	well.bg_color = Color(WELL, 0.9)
+	well.border_color = Color(0, 0, 0, 0.5)
+	well.border_width_top = 2
+	well.border_width_left = 1
+	well.border_width_right = 1
+	well.set_corner_radius_all(4)
+	well.set_content_margin_all(8)
+	well.content_margin_top = 5
+	_queue_box.add_theme_stylebox_override("panel", well)
+	_queue_box.size_flags_vertical = Control.SIZE_SHRINK_BEGIN
 	row.add_child(_queue_box)
-	var ql := Label.new()
-	_queue_label = ql
-	ql.text = "Training"
-	ql.add_theme_font_size_override("font_size", 13)
-	ql.add_theme_color_override("font_color", TEXT_DIM)
-	_queue_box.add_child(ql)
+	var qcol := VBoxContainer.new()
+	qcol.add_theme_constant_override("separation", 5)
+	_queue_box.add_child(qcol)
+	_queue_label = _caption("Training")
+	qcol.add_child(_queue_label)
 	_queue = HBoxContainer.new()
 	_queue.alignment = BoxContainer.ALIGNMENT_BEGIN
-	_queue.add_theme_constant_override("separation", 5)
-	_queue_box.add_child(_queue)
+	_queue.add_theme_constant_override("separation", 6)
+	qcol.add_child(_queue)
 	_queue_rest = GridContainer.new()
 	_queue_rest.columns = QUEUE_COLUMNS
 	_queue_rest.add_theme_constant_override("h_separation", 3)
 	_queue_rest.add_theme_constant_override("v_separation", 3)
 	_queue.add_child(_queue_rest)
-	_queue_bar = _bar(GOLD, 8)
+	_queue_bar = _bar(GOLD, 4)
 	_queue_bar.custom_minimum_size.x = QUEUE_FIRST
-	_queue_box.add_child(_queue_bar)
+	_queue_bar.size_flags_horizontal = Control.SIZE_SHRINK_BEGIN
+	qcol.add_child(_queue_bar)
 
 
 ## c: {title, info, team, portrait (Texture2D or null), hp: [now, max] or [],
-##     tray: [{icon, count}], buttons: [{icon, text, key, cost, enabled, action}],
+##     tray: [{icon, count}], buttons: [{icon, text, key, cost, enabled, action, group, accent}],
 ##     queue: [{icon, name, action}] or null (no queue), queue_max, progress (0..1)}
+## Buttons sharing a `group` (its caption: "Train", "Research", "Build"...) sit together, groups
+## in the order they first appear; `accent` gives a button a gold edge (the age-up).
 func show_content(c: Dictionary) -> void:
 	_title.text = c.title
 	_team = c.team
 	_info.text = c.info
 	(get_theme_stylebox("panel") as StyleBoxFlat).border_color = c.team
 	var hp: Array = c.get("hp", [])
-	_hp.visible = not hp.is_empty()
+	_hp.get_parent().visible = not hp.is_empty()
 	if not hp.is_empty():
 		_hp.max_value = hp[1]
 		_hp.value = hp[0]
+		_hp_text.text = "%d / %d" % [hp[0], hp[1]]
+		var f := float(hp[0]) / maxf(1.0, float(hp[1]))
+		(_hp.get_theme_stylebox("fill") as StyleBoxFlat).bg_color = HP_GOOD if f > 0.5 else (HP_HURT if f > 0.25 else HP_LOW)
 	var queue = c.get("queue")
 	_queue_box.visible = queue != null
 	_queue_bar.value = c.get("progress", 0.0)
-	_queue_label.text = c.get("queue_title", "Training")
+	_queue_label.text = str(c.get("queue_title", "Training")).to_upper()
 	_queue_bar.modulate.a = 1.0 if queue != null and not queue.is_empty() else 0.25
 	var sig := "%s|%s|%s|%s|%s|%s" % [c.title, c.team, c.portrait, c.get("tray", []).map(func(t): return "%s%d" % [t.icon, t.count]),
-		c.buttons.map(func(b): return "%s:%s" % [b.text, b.enabled]), queue.map(func(q): return str(q.icon)) if queue != null else "-"]
+		c.buttons.map(func(b): return "%s:%s:%s" % [b.get("group", ""), b.text, b.enabled]), queue.map(func(q): return str(q.icon)) if queue != null else "-"]
 	if sig == _signature:
 		return
 	_signature = sig
 	_portrait.texture = c.portrait
 	_tint(_portrait)
 	_portrait.get_parent().visible = c.portrait != null
-	for n in [_tray, _buttons, _queue, _queue_rest]:
+	for n in [_tray, _actions, _queue, _queue_rest]:
 		for k in n.get_children():
 			if k != _queue_rest:
+				n.remove_child(k)   # out now, so action_buttons() and the layout see only the new ones
 				k.queue_free()
 	for t in c.get("tray", []):
 		_tray.add_child(_tray_icon(t.icon, t.count))
+	var groups := {}   # caption -> its buttons
+	var order := []    # captions, first seen first
 	for b in c.buttons:
-		_buttons.add_child(_button(b))
+		var g: String = b.get("group", "")
+		if not groups.has(g):
+			groups[g] = []
+			order.append(g)
+		groups[g].append(b)
+	for i in order.size():
+		if i > 0:
+			_actions.add_child(_groove(false))
+		_actions.add_child(_group(order[i], groups[order[i]]))
+	_actions.visible = not order.is_empty()
+	_split_who.visible = not order.is_empty() or queue != null
+	_split_queue.visible = not order.is_empty() and queue != null
 	if queue != null:
 		var first := _queue_slot(queue[0] if not queue.is_empty() else {}, true)
 		_queue.add_child(first)
@@ -155,24 +213,94 @@ func show_content(c: Dictionary) -> void:
 		_queue_rest.tooltip_text = "%d of %d" % [queue.size(), int(c.queue_max)]
 
 
-## A button whose tooltip is a styled card instead of the plain grey box.
+## Every action button, in panel order (for tests and captures).
+func action_buttons() -> Array:
+	var out := []
+	for g in _actions.get_children():
+		if g is VBoxContainer:
+			out.append_array(g.get_child(1).get_children())
+	return out
+
+
+## One group: its caption over a grid of its buttons.
+func _group(caption: String, buttons: Array) -> Control:
+	var col := VBoxContainer.new()
+	col.add_theme_constant_override("separation", 5)
+	col.size_flags_vertical = Control.SIZE_SHRINK_BEGIN
+	col.add_child(_caption(caption.to_upper()))
+	var grid := GridContainer.new()
+	grid.columns = mini(buttons.size(), GROUP_COLUMNS)
+	grid.add_theme_constant_override("h_separation", 6)
+	grid.add_theme_constant_override("v_separation", 6)
+	col.add_child(grid)
+	for b in buttons:
+		grid.add_child(_button(b))
+	return col
+
+
+func _caption(text: String) -> Label:
+	var l := Label.new()
+	l.text = text
+	l.add_theme_font_override("font", _caption_font)
+	l.add_theme_font_size_override("font_size", 11)
+	l.add_theme_color_override("font_color", BRONZE)
+	l.custom_minimum_size.y = 15
+	return l
+
+
+## A line carved down the panel: a dark cut with a light lip. A major one (between who, the
+## actions and the queue) runs the panel's height with a small bronze diamond at its middle;
+## between groups it's short and faint, starting under the captions.
+class Groove extends Control:
+	var major := false
+
+	func _draw() -> void:
+		var top := 2.0 if major else 22.0
+		var bottom := size.y - 2.0
+		var x := floorf(size.x * 0.5)
+		var a := 1.0 if major else 0.55
+		draw_line(Vector2(x, top), Vector2(x, bottom), Color(0, 0, 0, 0.6 * a), 1.0)
+		draw_line(Vector2(x + 1, top), Vector2(x + 1, bottom), Color("#8a7450", 0.5 * a), 1.0)
+		if major:
+			var m := Vector2(x + 0.5, floorf(size.y * 0.5))
+			var d := 4.0
+			var pts := PackedVector2Array([m + Vector2(0, -d), m + Vector2(d, 0), m + Vector2(0, d), m + Vector2(-d, 0)])
+			draw_colored_polygon(pts, Color("#a08858"))
+			pts.append(pts[0])
+			draw_polyline(pts, Color(0, 0, 0, 0.6), 1.0)
+
+
+func _groove(major: bool) -> Control:
+	var g := Groove.new()
+	g.major = major
+	g.custom_minimum_size = Vector2(10, 0)
+	g.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	g.resized.connect(g.queue_redraw)
+	return g
+
+
+## A button whose tooltip is a styled card instead of the plain grey box. Tooltips are popups
+## outside the scaled HUD, so the card sizes its own type by `ui_scale` (set by the HUD).
 class TipButton extends Button:
+	static var ui_scale := 1.0
+
 	func _make_custom_tooltip(for_text: String) -> Object:
+		var k := ui_scale
 		var card := PanelContainer.new()
 		var style := StyleBoxFlat.new()
 		style.bg_color = Color("#1e1a14", 0.97)
 		style.border_color = Color("#a08858")
-		style.set_border_width_all(2)
-		style.set_corner_radius_all(4)
-		style.set_content_margin_all(10)
+		style.set_border_width_all(roundi(2 * k))
+		style.set_corner_radius_all(roundi(4 * k))
+		style.set_content_margin_all(10 * k)
 		card.add_theme_stylebox_override("panel", style)
 		var text := RichTextLabel.new()
 		text.bbcode_enabled = true
 		text.fit_content = true
 		text.scroll_active = false
-		text.custom_minimum_size.x = 300
-		text.add_theme_font_size_override("normal_font_size", 14)
-		text.add_theme_font_size_override("bold_font_size", 17)
+		text.custom_minimum_size.x = 300 * k
+		text.add_theme_font_size_override("normal_font_size", roundi(14 * k))
+		text.add_theme_font_size_override("bold_font_size", roundi(17 * k))
 		text.add_theme_color_override("default_color", Color("#e8dcc0"))
 		text.text = for_text
 		card.add_child(text)
@@ -187,9 +315,10 @@ func _button(b: Dictionary) -> Button:
 	button.tooltip_text = b.get("tip", b.text)
 	button.pressed.connect(b.action)
 	button.pressed.connect(func(): Audio.of(get_tree()).play("ui_click"))
-	button.add_theme_stylebox_override("normal", _slot_style(SLOT, EDGE))
-	button.add_theme_stylebox_override("hover", _slot_style(SLOT.lightened(0.12), GOLD))
-	button.add_theme_stylebox_override("pressed", _slot_style(SLOT.darkened(0.2), GOLD))
+	var edge := GOLD.darkened(0.25) if b.get("accent", false) else EDGE
+	button.add_theme_stylebox_override("normal", _raised_style(RAISED, edge))
+	button.add_theme_stylebox_override("hover", _raised_style(RAISED.lightened(0.1), GOLD))
+	button.add_theme_stylebox_override("pressed", _slot_style(SLOT, GOLD))
 	button.add_theme_stylebox_override("disabled", _slot_style(SLOT, EDGE.darkened(0.4)))
 	if b.get("icon"):
 		var pic := TextureRect.new()
@@ -198,10 +327,10 @@ func _button(b: Dictionary) -> Button:
 		pic.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
 		pic.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
 		pic.set_anchors_preset(Control.PRESET_FULL_RECT)
-		pic.offset_left = 4
-		pic.offset_top = 4
-		pic.offset_right = -4
-		pic.offset_bottom = -12
+		pic.offset_left = 5
+		pic.offset_top = 5
+		pic.offset_right = -5
+		pic.offset_bottom = -15
 		pic.mouse_filter = Control.MOUSE_FILTER_IGNORE
 		pic.modulate.a = 1.0 if b.enabled else 0.35
 		_tint(pic)
@@ -213,13 +342,15 @@ func _button(b: Dictionary) -> Button:
 		g.texture = b.glyph
 		g.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
 		g.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
-		g.size = Vector2(24, 24)
-		g.position = Vector2(BUTTON - 26, 2)
+		g.size = Vector2(26, 26)
+		g.position = Vector2(BUTTON - 29, 3)
 		g.mouse_filter = Control.MOUSE_FILTER_IGNORE
 		g.modulate.a = 1.0 if b.enabled else 0.5
 		button.add_child(g)
 	if b.get("key", "") != "":
-		button.add_child(_corner(b.key, Vector2(4, 1), GOLD))
+		var key := _corner(b.key, Vector2(6, 2), GOLD)
+		key.add_theme_font_size_override("font_size", 13)
+		button.add_child(key)
 	if b.get("cost", "") != "":
 		button.add_child(_cost_row(b.cost, Color.WHITE if b.enabled else Color("#e07060")))
 	return button
@@ -230,8 +361,8 @@ func _cost_row(text: String, colour: Color) -> Control:
 	var row := HBoxContainer.new()
 	row.add_theme_constant_override("separation", 1)
 	row.alignment = BoxContainer.ALIGNMENT_CENTER
-	row.position = Vector2(0, BUTTON - 17)
-	row.size = Vector2(BUTTON, 14)
+	row.position = Vector2(0, BUTTON - 19)
+	row.size = Vector2(BUTTON, 15)
 	row.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	for word in text.split(" "):
 		var short := word.right(1)
@@ -243,7 +374,7 @@ func _cost_row(text: String, colour: Color) -> Control:
 		ic.texture = res_icons[short]
 		ic.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
 		ic.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
-		ic.custom_minimum_size = Vector2(14, 14)
+		ic.custom_minimum_size = Vector2(15, 15)
 		ic.mouse_filter = Control.MOUSE_FILTER_IGNORE
 		row.add_child(ic)
 	return row
@@ -256,13 +387,13 @@ func _queue_slot(q: Dictionary, first: bool) -> Control:
 		empty.custom_minimum_size = Vector2(side, side)
 		empty.add_theme_stylebox_override("panel", _slot_style(Color(SLOT, 0.5), EDGE.darkened(0.5)))
 		return empty
-	var b := Button.new()
+	var b := TipButton.new()
 	b.custom_minimum_size = Vector2(side, side)
 	b.focus_mode = Control.FOCUS_NONE
-	b.tooltip_text = "%s (click to cancel)" % q.name
+	b.tooltip_text = "[b]%s[/b]\nClick to cancel." % q.name
 	b.pressed.connect(q.action)
 	b.pressed.connect(func(): Audio.of(get_tree()).play("ui_click", -4.0))
-	b.add_theme_stylebox_override("normal", _slot_style(SLOT, GOLD if first else EDGE))
+	b.add_theme_stylebox_override("normal", _slot_style(SLOT, GOLD.darkened(0.2) if first else EDGE))
 	b.add_theme_stylebox_override("hover", _slot_style(Color("#3a1a14"), Color("#e07060")))
 	b.add_theme_stylebox_override("pressed", _slot_style(Color("#3a1a14"), Color("#e07060")))
 	var pic := TextureRect.new()
@@ -316,7 +447,7 @@ func _corner(text: String, at: Vector2, colour: Color) -> Label:
 	var l := Label.new()
 	l.text = text
 	l.position = at
-	l.add_theme_font_size_override("font_size", 11)
+	l.add_theme_font_size_override("font_size", 12)
 	l.add_theme_color_override("font_color", colour)
 	l.add_theme_color_override("font_outline_color", Color(0, 0, 0, 0.9))
 	l.add_theme_constant_override("outline_size", 4)
@@ -330,7 +461,7 @@ func _bar(fill: Color, height: int) -> ProgressBar:
 	bar.custom_minimum_size = Vector2(0, height)
 	bar.max_value = 1.0
 	var bg := StyleBoxFlat.new()
-	bg.bg_color = Color(0, 0, 0, 0.6)
+	bg.bg_color = Color(0, 0, 0, 0.55)
 	bg.set_corner_radius_all(2)
 	var fg := StyleBoxFlat.new()
 	fg.bg_color = fill
@@ -354,4 +485,15 @@ static func _slot_style(bg: Color, edge: Color) -> StyleBoxFlat:
 	s.border_color = edge
 	s.set_border_width_all(2)
 	s.set_corner_radius_all(3)
+	return s
+
+
+## A button standing up from the panel: a light lip on top, a heavier dark edge below.
+static func _raised_style(bg: Color, edge: Color) -> StyleBoxFlat:
+	var s := _slot_style(bg, edge)
+	s.border_width_bottom = 3
+	s.border_blend = false
+	s.shadow_color = Color(0, 0, 0, 0.35)
+	s.shadow_size = 2
+	s.shadow_offset = Vector2(0, 2)
 	return s
