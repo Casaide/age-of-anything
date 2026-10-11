@@ -5,6 +5,7 @@ extends SceneTree
 ## Scenes: "armies" (both test armies march at each other; the default) or
 ## "opening:<tick>" (both sides autoplay their economy; shot at that tick, over player 1's base),
 ## or "battle:<tick>" (both test armies attack-move at each other; shot mid-fight at that tick).
+## "look:<x>:<y>[:zoom]" frames a tile with the fog lifted (for art checks).
 ## Prefix any scene with "ai-" to see it as in a match against the AI.
 
 const Iso := preload("res://src/view/iso.gd")
@@ -39,6 +40,12 @@ func _initialize() -> void:
 		await _ageup(view, int(scene.get_slice(":", 1)))
 	elif scene == "farm":
 		await _farm(view)
+	elif scene.begins_with("look"):   # look:<tile x>:<tile y>[:zoom]: the map there, fog lifted
+		view.reveal = true
+		var z := float(scene.get_slice(":", 3)) if scene.get_slice_count(":") > 3 else 3.0
+		view.camera.zoom = Vector2(z, z)
+		view._on_zoom()
+		view.camera.look_at_point(Iso.to_screen(int(scene.get_slice(":", 1)) * 1000, int(scene.get_slice(":", 2)) * 1000))
 	elif scene == "walls":
 		await _walls(view)
 	elif scene.begins_with("tip"):
