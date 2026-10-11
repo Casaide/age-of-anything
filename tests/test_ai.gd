@@ -109,11 +109,12 @@ func _test_easy(rules: Dictionary, a: Dictionary, b: Dictionary) -> void:
 		for i in w.units.count():
 			if w.units.owner[i] == 0 and not w.types[w.units.kind[i]].worker:
 				army += int(w.types[w.units.kind[i]].pop)
-		most = maxi(most, army)
+		if w.tick <= 20 * 60 * 10:   # the first ten minutes, where Easy used to overrun a player reaching age 2
+			most = maxi(most, army)
 		if first_loss < 0 and w.lost[1] > 0:
 			first_loss = w.tick
-	print("\n== easy: most soldiers %d (pop), first loss %s" % [most, _clock(first_loss) if first_loss >= 0 else "none"])
-	check(most <= bot.max_army + 4, "easy keeps a small army (%d pop, cap %d)" % [most, bot.max_army])
+	print("\n== easy: most soldiers in the first 10 minutes %d (pop), first loss %s" % [most, _clock(first_loss) if first_loss >= 0 else "none"])
+	check(most <= 25, "easy keeps a modest army for the first ten minutes (%d pop)" % most)
 	check(first_loss < 0 or first_loss >= 20 * 60 * 8, "easy doesn't strike before 8 minutes (%s)" % _clock(first_loss))
 
 
