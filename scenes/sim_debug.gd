@@ -1419,7 +1419,7 @@ func _market_buttons(c: Dictionary, b: int) -> void:
 			var rr: String = res
 			var flag := 1 if buy else 0
 			c.buttons.append({"icon": Icons.texture("res_" + res), "key": "+" if buy else "-",
-				"cost": "%dG" % price, "enabled": why == "",
+				"cost": "%d%s" % [price, lib.resource_info[Economy.kind_of(world, "gold")].short], "enabled": why == "",
 				"text": "%s %d %s for %d gold" % [verb, Market.LOT, name.to_lower(), price],
 				"tip": "[b]%s %d %s[/b]\n%s %d gold.\n[color=%s]Each trade moves the price: buying pushes it up, selling down. Prices are the same for everyone.[/color]%s" % [
 					verb, Market.LOT, name.to_lower(), "Costs" if buy else "Pays", price, TIP_DIM,
@@ -1602,6 +1602,8 @@ func _cost_text(cost: PackedInt32Array) -> String:
 func _update_top_bar() -> void:
 	if top_bar.get_child_count() == 0:
 		top_bar.setup(world.resources)
+		for info in lib.resource_info:
+			panel.res_icons[info.short] = Icons.texture("res_" + info.id)
 		top_bar.idle_pressed.connect(_next_idle_worker)
 		show_debug = not vs_ai
 	top_bar.position = Vector2(0, 0) if not show_debug or vs_ai else Vector2(0, 150)
