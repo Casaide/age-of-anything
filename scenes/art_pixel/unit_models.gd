@@ -762,10 +762,20 @@ func _body_human(c: Dictionary) -> Dictionary:
 		"head": Vector3(0.6, 27, 0), "hand_r": near_hand, "hand_l": Vector3(5.5, 17.2, -4.8),
 		"torso": Vector3(0.3, 17.8, 0), "back": Vector3(-4.2, 22, 0)},
 		"anchors": [[Vector3(-2.3, 11.0, -2.4), 0.0, -1], [Vector3(2.0, 11.0, 2.4), PI, 1]],
-		"torso_scale": Vector2(0.66, 0.82)}
+		"torso_scale": Vector2(0.66, 0.82),
+		"torso_fit": Vector3(0.56, 0.78, 0.58)}   # worn armour (built ~1.6x) just over the chest, not an egg round it
 
 
 func _head_human(c: Dictionary) -> Dictionary:
+	# Modelled in Blender (tools/blender/human_head.py): a face with structure (brow, nose,
+	# cheekbones, chin) rather than primitives; the primitive head is kept below as the fallback.
+	if FileAccess.file_exists("res://assets/models/head_human.glb"):
+		return {"node": glb("head_human", {"skin": surf("skin", c.skin, 6.0), "hair": surf("mane", c.skin2.darkened(0.45), 3.0),
+			"eye": plain(Color("#1a1210"))}), "sockets": {"top": Vector3(0.3, 11.0, 0)}}
+	return _head_human_primitive(c)
+
+
+func _head_human_primitive(c: Dictionary) -> Dictionary:
 	var n := Node3D.new()
 	var skin := surf("skin", c.skin, 6.0)
 	var hair := surf("mane", c.skin2.darkened(0.45), 3.0)
