@@ -18,6 +18,13 @@ float vnoise(vec2 p) {
 	return mix(mix(hash(i), hash(i + vec2(1, 0)), f.x), mix(hash(i + vec2(0, 1)), hash(i + vec2(1, 1)), f.x), f.y);
 }
 
+const float BAYER[16] = float[](0.0, 8.0, 2.0, 10.0, 12.0, 4.0, 14.0, 6.0, 3.0, 11.0, 1.0, 9.0, 15.0, 7.0, 13.0, 5.0);
+
+// Gentle rolling ground, in tiles: a few octaves of smooth noise.
+float height(vec2 t) {
+	return vnoise(t * 0.35) * 0.55 + vnoise(t * 0.8 + 3.0) * 0.3 + vnoise(t * 1.9 + 7.0) * 0.15;
+}
+
 vec3 ramp4(vec3 a, vec3 b, vec3 c, vec3 d, float v) {
 	float q = floor(clamp(v, 0.0, 0.999) * 4.0);
 	return q < 1.0 ? a : q < 2.0 ? b : q < 3.0 ? c : d;
@@ -39,16 +46,34 @@ void fragment() {
 	float grain = vnoise(t * 9.0) * 0.55 + vnoise(t * 23.0) * 0.45;
 	vec2 cell = floor(t * 22.0);              // pixel-cluster grid in tile space
 
-	// Grass: four greens by noise, with light flecks and dark tufts.
-	vec3 col = ramp4(vec3(0.24, 0.36, 0.14), vec3(0.30, 0.43, 0.17), vec3(0.36, 0.50, 0.20), vec3(0.43, 0.56, 0.24), grain);
-	float h = hash(cell);
-	if (h > 0.965) col = vec3(0.52, 0.63, 0.29);
-	else if (h < 0.03) col = vec3(0.19, 0.29, 0.11);
+	// Ordered dither for pixel-art banding (art pixels: this canvas is at art resolution).
+	float bay = BAYER[(int(FRAGCOORD.y) % 4) * 4 + (int(FRAGCOORD.x) % 4)] / 16.0 - 0.5;
 
-	float reed = m.b + (n - 0.5) * 0.35;
-	if (reed > 0.5) {
-		col = ramp4(vec3(0.30, 0.31, 0.15), vec3(0.36, 0.37, 0.18), vec3(0.42, 0.42, 0.21), vec3(0.47, 0.46, 0.24), grain);
-	}
+	// Rolling ground, lit by the sun from the screen's upper left (-x in tiles),
+	// in five dithered light bands rather than a smooth gradient.
+	vec2 e = vec2(0.06, 0.0);
+	vec2 grad = vec2(height(t + e.xy) - height(t - e.xy), height(t + e.yx) - height(t - e.yx)) / (2.0 * e.x);
+	float lit = clamp(0.5 + dot(grad, vec2(-0.8, -0.25)) * 1.1, 0.0, 1.0);
+	float light = mix(0.8, 1.16, floor(clamp(lit + bay * 0.3, 0.0, 0.999) * 5.0) / 4.0);
+
+	// Grass: lush and darker near water, drier and yellower in open patches, with
+	// clover clumps, light flecks and dark tufts.
+	float lush = smoothstep(0.04, 0.35, m.r);
+	float dry = smoothstep(0.5, 0.78, vnoise(t * 0.45 + 17.0)) * (1.0 - lush);
+	float g = clamp(grain + bay * 0.22, 0.0, 0.999);
+	vec3 col = ramp4(vec3(0.24, 0.36, 0.14), vec3(0.30, 0.43, 0.17), vec3(0.36, 0.50, 0.20), vec3(0.43, 0.56, 0.24), g);
+	vec3 dry_col = ramp4(vec3(0.36, 0.38, 0.16), vec3(0.44, 0.45, 0.19), vec3(0.52, 0.51, 0.24), vec3(0.60, 0.57, 0.30), g);
+	vec3 lush_col = ramp4(vec3(0.16, 0.30, 0.13), vec3(0.20, 0.36, 0.15), vec3(0.24, 0.42, 0.18), vec3(0.30, 0.48, 0.20), g);
+	if (dry + bay * 0.3 > 0.45) col = dry_col;
+	if (lush + bay * 0.3 > 0.5) col = lush_col;
+	float h = hash(cell);
+	if (h > 0.965) col = col * 1.25 + vec3(0.04, 0.05, 0.0);
+	else if (h < 0.03) col *= 0.7;
+	if (vnoise(t * 3.1 + 40.0) > 0.78 && hash(cell + 21.0) > 0.4) col = mix(col, vec3(0.28, 0.48, 0.20), 0.6);   // clover
+
+	// Reed beds: damp ground, a little darker and more olive, fading out with no edge.
+	float reed = clamp(m.b * 1.3 + (n - 0.5) * 0.5, 0.0, 1.0);
+	col = mix(col, col * vec3(0.8, 0.86, 0.72), floor(reed * 3.0) / 3.0 * 0.8);
 	float swamp = m.g + (n - 0.5) * 0.4;
 	if (swamp > 0.5) {
 		col = ramp4(vec3(0.15, 0.24, 0.20), vec3(0.18, 0.29, 0.22), vec3(0.22, 0.33, 0.23), vec3(0.27, 0.36, 0.22), grain);
@@ -109,22 +134,38 @@ void fragment() {
 	} else if (top > 0.43) {
 		col = mix(col, vec3(0.30, 0.26, 0.18), 0.45);   // worn verge
 	}
+	// The ground (everything that isn't water) takes the rolling light.
 	float water = m.r + (n - 0.5) * 0.3;
-	if (water > 0.40) {
-		col = ramp4(vec3(0.33, 0.27, 0.17), vec3(0.38, 0.31, 0.19), vec3(0.43, 0.36, 0.22), vec3(0.48, 0.41, 0.26), grain);   // mud bank
+	col *= light;
+	if (water > 0.38) {
+		col = ramp4(vec3(0.42, 0.36, 0.24), vec3(0.48, 0.41, 0.27), vec3(0.54, 0.47, 0.31), vec3(0.60, 0.53, 0.36), g) * light;   // sandy bank
 	}
-	if (water > 0.47) {
-		col = vec3(0.24, 0.20, 0.14);                                    // wet edge
+	if (water > 0.45) {
+		col = mix(vec3(0.30, 0.25, 0.17), vec3(0.24, 0.20, 0.14), step(0.0, bay));                // wet edge
 	}
 	if (water > 0.5) {
-		float depth = smoothstep(0.5, 0.95, m.r);
-		vec3 shallow = vec3(0.22, 0.42, 0.44);
-		vec3 deep = vec3(0.10, 0.22, 0.32);
-		col = mix(shallow, deep, floor(depth * 4.0) / 3.0);
-		if (water < 0.53) col = vec3(0.55, 0.70, 0.66);                  // foam line
-		float ripple = vnoise(vec2(t.x * 5.0 + TIME * 0.25, t.y * 9.0));
-		if (ripple > 0.78) col += vec3(0.06, 0.08, 0.08);
-		if (hash(cell + floor(TIME * 1.5)) > 0.992) col = vec3(0.85, 0.95, 0.92);   // sparkle
+		// Depth in five dithered bands, from sandy shallows to deep blue.
+		float depth = smoothstep(0.5, 1.0, m.r + (n - 0.5) * 0.12);
+		float dq = floor(clamp(depth + bay * 0.2, 0.0, 0.999) * 5.0);
+		col = dq < 1.0 ? vec3(0.34, 0.52, 0.44) : dq < 2.0 ? vec3(0.22, 0.45, 0.48) : dq < 3.0 ? vec3(0.15, 0.36, 0.45)
+			: dq < 4.0 ? vec3(0.11, 0.27, 0.39) : vec3(0.08, 0.19, 0.31);
+		if (depth < 0.22 && hash(cell + 11.0) > 0.78) col = mix(col, vec3(0.56, 0.52, 0.36), 0.35);   // pebbles in the shallows
+		// Wavelets: short broken dashes (screen space, iso-flat) that drift and flicker,
+		// each with a darker trough just below it.
+		float row = floor(world.y / 4.0);
+		float seg = floor((world.x + TIME * 3.0 + row * 13.0) / 5.0);
+		float life = sin(TIME * 1.6 + hash(vec2(seg, row)) * 6.283);
+		bool dash = hash(vec2(seg, row + 0.5)) > 0.83 && life > 0.2;
+		float fy = fract(world.y / 4.0);
+		if (dash && fy < 0.25) col = mix(col, vec3(0.62, 0.80, 0.84), 0.55 * (1.0 - depth * 0.3));
+		else if (dash && fy < 0.5) col *= 0.86;
+		// Foam at the shore, breathing in and out.
+		float foam = 0.53 + 0.015 * sin(TIME * 1.3 + n * 9.0);
+		if (water < foam && hash(cell + floor(TIME * 2.0)) > 0.3) col = vec3(0.72, 0.86, 0.84);
+		if (hash(cell + floor(TIME * 1.5)) > 0.995) col = vec3(0.9, 0.97, 0.95);   // a glint
 	}
+	// The map's edge fades into darkness, like unexplored ground.
+	float edge = min(min(t.x, t.y), min(map_size.x - t.x, map_size.y - t.y));
+	col *= mix(0.25, 1.0, floor(clamp(edge / 0.9 + bay * 0.25, 0.0, 1.0) * 4.0) / 4.0);
 	COLOR = vec4(col, 1.0);
 }

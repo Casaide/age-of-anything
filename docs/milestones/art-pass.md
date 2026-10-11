@@ -99,6 +99,10 @@ without a model still fall back to the automatic bake.
 - [x] Groundwork: team-key bakes + team shader (colour via self_modulate), one atlas for unit
   parts, unit shadows and scene sprites, one shared material: 20 draw calls at 211 units
   (2,137 without the atlas). `tests/art_bench.gd`; B adds 200 units in the scene.
+- [x] Step 1e, landscape (Dominic: "still a bit flat; bushes seem undone, water looks very cheap,
+  reeds look bad"): rolling height and richer grass, proper water (depth, shallows, foam,
+  wavelets, lilies), reed clumps with ribbon leaves and cattails, leafy bug bushes, thatch
+  courses, contact shadows under buildings and props
 - [ ] Models for the other creatures (humans, centaurs, ponies, beetles) and gear: still the
   automatic fallback
 - [ ] Step 1b (maybe later): hero frog in the other directions at production detail
@@ -159,6 +163,10 @@ without a model still fall back to the automatic bake.
     shadow range stopped at the bake camera; the faint shadow-catcher is now a shadow-only
     second pass). The sun now comes from the screen's upper left, with shadows falling lower right.
   - The frogs still read a little toad-like in colour: the race rolled `toad_brown` skin.
+
+- **Step 1e, landscape (2026-10-11):** see the checklist. New authored textures: `reed_leaf`,
+  `ladybird`, `water_lily`, `foliage`, `thatch`. Props live in `scenes/art_pixel/prop_models.gd`.
+  Pictures: `archive/images/2026-10-11/32-34`.
 
 ## Changes from the original plan
 - The original plan assumed the painterly direction. Direction is open again (2026-10-11):

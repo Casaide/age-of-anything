@@ -210,3 +210,10 @@ its alpha), so one bake serves every team. All baked unit parts, unit shadows an
 are packed into one atlas (`PartShape.build_atlas`). Measured: 20 draw calls at 211 units vs
 2,137 without. Retires the MVP plan's batching risk. Claude's implementation of the plan's
 "params in modulate" idea.
+
+**D-047, 2026-10-11: Landscape props and building materials use authored textures, and contact
+shadows are drawn rather than lit.** Reeds, bug bushes, lily pads and roof thatch use Claude's
+authored SVG textures (as D-043 did for units), replacing stretched noise. Every baked building
+and prop gets a short hand-drawn-style dark band under its lowest pixels, plus an
+ambient-occlusion pass, because lit contact shadow alone didn't survive pixelizing. Asked for by
+Dominic ("lack of shadow at points like this"); approach by Claude.

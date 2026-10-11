@@ -45,3 +45,6 @@ One line per moment worth remembering. Newest at the bottom.
   ([image](images/2026-10-11/29-rat-junk-town-and-fixed-boardwalk.png))
 - **2026-10-11:** Groundwork: one atlas, one material, team colour from a shader. 211 units in
   20 draw calls. ([image](images/2026-10-11/30-one-atlas-19-draw-calls.png))
+- **2026-10-11:** Landscape pass: rolling grass, a deeper pond with wavelets and lilies, cattail
+  reeds, leafy bug bushes, thatch in courses, contact shadows.
+  ([image](images/2026-10-11/32-landscape-pass-2x.png))

@@ -110,6 +110,22 @@ rides in its alpha). Every unit part, the unit shadows and every scene sprite (b
 doodads) go into one atlas with one material. Result: **20 draw calls for the whole frame at 211
 units**, against 2,137 without the atlas. The batching risk in the MVP plan is retired.
 
+Step 1e was the landscape. Dominic: "still a bit flat; bushes seem undone, water looks very
+cheap, reeds look bad... getting there but not" the classic look. Then, from screenshots: the
+reeds had "that big bottom placement thing", buildings had no shadow where they meet the
+grass, the roof thatch was fuzz, and the bug bushes looked "like something clashing".
+- The ground rolls now: soft height relief lit from the left in dithered bands, lush and dry
+  grass, clover, a sandy bank and a wet edge round the water.
+- Water has five depth bands, pebbles in the shallows, broken wavelet dashes that come and go,
+  breathing foam, glints and lily pads (authored `water_lily` texture).
+- Reeds are clumps of authored ribbon leaves with velvet cattails, without the base disc.
+- Bug bushes are lumpy foliage masses with an authored foliage texture, a few edge leaves and
+  red bugs. The first try was 95 leaf cards at random angles, which cut through each other.
+- Thatch is an authored texture of straw courses running down the slope, each with a ragged
+  light tip and a shadow under it, instead of stretched noise with a heavy normal map.
+- Contact shadows: every baked building and prop now gets a short dark band under its lowest
+  pixels, plus an ambient-occlusion pass, so it sits on the ground.
+
 ## Decisions
 - D-040: the art direction is open again; choose from the sampler.
 - D-041: a sixth direction, high-fidelity pre-rendered, built as a real bake pipeline.
@@ -118,6 +134,7 @@ units**, against 2,137 without the atlas. The batching risk in the MVP plan is r
 - D-044: paths are generated and styled by the race's culture (families.json).
 - D-045: buildings follow the race's culture too (families.json `architecture`).
 - D-046: one atlas, one shared material, team colour via a baked key and self_modulate.
+- D-047: landscape props and building materials use authored textures too; contact shadows are drawn.
 
 ## Pictures
 ![All five styles, same scene, same scale](../images/2026-10-11/08-style-sampler-all.png)
@@ -143,6 +160,9 @@ units**, against 2,137 without the atlas. The batching risk in the MVP plan is r
 ![Rat junk town; the boardwalk fixed and meeting the cobbles](../images/2026-10-11/29-rat-junk-town-and-fixed-boardwalk.png)
 ![One atlas, one material: 19 draw calls](../images/2026-10-11/30-one-atlas-19-draw-calls.png)
 ![Team colours from the shader: one bake serves every team](../images/2026-10-11/31-team-colour-from-the-shader.png)
+![Landscape pass: rolling grass, bushes, thatch courses, pond](../images/2026-10-11/32-landscape-pass-2x.png)
+![Pond close-up: depth bands, wavelets, lilies, cattail reeds](../images/2026-10-11/33-landscape-pond-and-reeds.png)
+![Bug bushes and the new thatch, contact shadow under the Town Center](../images/2026-10-11/34-landscape-bushes-and-thatch.png)
 
 ## Funny moments and bugs worth remembering
 - **The frog on the roof.** Units are built from parts layered with `z_index`, and z_index is
@@ -173,6 +193,8 @@ units**, against 2,137 without the atlas. The batching risk in the MVP plan is r
   which looked like graph paper. Paper is sheets, so edges only go where the terrain changes.
 - The first framing put the 3D panel at about half the scale of the 2D ones. It's now derived
   from the projection: a tile diagonal is 32 px, and in 3D that's sqrt(2) * sin(30 degrees) units.
+- **The lettuce bushes.** Ninety-five flat leaf cards at random angles made each bug bush look
+  like a salad with interference. Three lumps of foliage texture look more like a bush.
 
 ## Ideas parked
 - Mixes: storybook units on painterly ground; toy-rendered parts with ink outlines; paper ground
