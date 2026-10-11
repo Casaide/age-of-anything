@@ -9,6 +9,8 @@ extends PanelContainer
 ## Rebuilt only when its content changes, so buttons don't flicker or lose clicks;
 ## health, progress and the info line update every frame.
 
+const PartShape := preload("res://src/part_shape.gd")
+
 const BG := Color("#2e2820")
 const SLOT := Color("#1e1a14")
 const EDGE := Color("#6a5a40")
@@ -29,6 +31,7 @@ var _queue_box: VBoxContainer
 var _queue: HBoxContainer
 var _queue_bar: ProgressBar
 var _signature := ""
+var _team := Color.WHITE
 
 
 func _ready() -> void:
@@ -98,6 +101,7 @@ func _ready() -> void:
 ##     queue: [{icon, name, action}] or null (no queue), queue_max, progress (0..1)}
 func show_content(c: Dictionary) -> void:
 	_title.text = c.title
+	_team = c.team
 	_info.text = c.info
 	(get_theme_stylebox("panel") as StyleBoxFlat).border_color = c.team
 	var hp: Array = c.get("hp", [])
@@ -115,6 +119,7 @@ func show_content(c: Dictionary) -> void:
 		return
 	_signature = sig
 	_portrait.texture = c.portrait
+	_tint(_portrait)
 	_portrait.get_parent().visible = c.portrait != null
 	for n in [_tray, _buttons, _queue]:
 		for k in n.get_children():
@@ -152,6 +157,7 @@ func _button(b: Dictionary) -> Button:
 		pic.offset_bottom = -12
 		pic.mouse_filter = Control.MOUSE_FILTER_IGNORE
 		pic.modulate.a = 1.0 if b.enabled else 0.35
+		_tint(pic)
 		button.add_child(pic)
 	else:
 		button.text = b.text
@@ -253,6 +259,14 @@ func _bar(fill: Color, height: int) -> ProgressBar:
 	bar.add_theme_stylebox_override("background", bg)
 	bar.add_theme_stylebox_override("fill", fg)
 	return bar
+
+
+## Building pictures come straight from the atlas in the team key colour: recolour
+## them like the map does (unit portraits are rendered in their team already).
+func _tint(pic: TextureRect) -> void:
+	var baked := pic.texture is AtlasTexture
+	pic.material = PartShape.team_material if baked else null
+	pic.self_modulate = Color(_team.r, _team.g, _team.b, 1.0) if baked else Color.WHITE
 
 
 static func _slot_style(bg: Color, edge: Color) -> StyleBoxFlat:
