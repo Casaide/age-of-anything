@@ -5,6 +5,7 @@ extends SceneTree
 ## Scenes: "armies" (both test armies march at each other; the default) or
 ## "opening:<tick>" (both sides autoplay their economy; shot at that tick, over player 1's base),
 ## or "battle:<tick>" (both test armies attack-move at each other; shot mid-fight at that tick).
+## Prefix any scene with "ai-" to see it as in a match against the AI.
 
 const Iso := preload("res://src/view/iso.gd")
 
@@ -17,9 +18,12 @@ func _initialize() -> void:
 	var out: String = args[0] if args.size() > 0 else "user://sim_debug.png"
 	var map_id: String = args[1] if args.size() > 1 else "flat_test"
 	var scene: String = args[2] if args.size() > 2 else "armies"
+	var vs_ai := scene.begins_with("ai-")   # "ai-<scene>": as in a match against the AI (its HUD, its fog)
+	scene = scene.trim_prefix("ai-")
 	var view = load("res://scenes/sim_debug.tscn").instantiate()
 	view.prompts = [args[3], args[4]] if args.size() > 4 else view.DEFAULT_PROMPTS.duplicate()
 	view.map_id = map_id
+	view.vs_ai = vs_ai
 	view.army = scene == "armies" or scene == "card" or scene.begins_with("battle") or scene.begins_with("ageup")
 	root.add_child(view)
 	while view.world == null or view.baking:   # the art bakes first
