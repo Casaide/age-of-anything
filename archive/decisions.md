@@ -225,3 +225,10 @@ without its neck), and the rider stands at that body's seat; this only changes t
 recipes or race keys. `families.json` `architecture` gains "stone" (imperial, hellenic, royal)
 and "tent" (steppe). Claude's call, following Dominic's "finish the art before moving on" and his
 earlier "Romans should get nice roads".
+
+**D-049, 2026-10-11: Every unit shows its team on its body, and building materials are
+authored.** After an independent art review (an agent Claude ran at Dominic's request), every
+frog, rat and human wears a team-colour kerchief drawn above armour, and human tunics are the
+team colour, with culture shown in sleeves, trim and trousers (supersedes the tunic colours in
+D-048's people). Building materials use authored SVG textures, like units (extends D-047).
+Items not fixed yet are in the backlog, section 9.

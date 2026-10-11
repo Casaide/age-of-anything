@@ -51,3 +51,6 @@ One line per moment worth remembering. Newest at the bottom.
 - **2026-10-11:** Every race modelled: people, ponies, centaurs, beetles, wings and metal-age
   gear. Romans build columned halls and villas, the steppe pitches felt tents.
   ([image](images/2026-10-11/40-stone-culture-temple-hall-and-villas.png))
+- **2026-10-11:** An independent art review; every unit now shows its team, building materials
+  are authored, houses grow and fly pennants.
+  ([image](images/2026-10-11/45-authored-building-textures-and-house-pennants.png))

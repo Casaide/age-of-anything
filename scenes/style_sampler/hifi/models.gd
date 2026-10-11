@@ -381,10 +381,12 @@ func frog_worker(team: Color) -> Dictionary:
 func stones(seed_value: int) -> Node3D:
 	rng.seed = seed_value
 	var n := Node3D.new()
-	var stone := mats.get_mat("stone")
+	# Field stones: weathered towards the grass and half sunk into it, not bright pebbles.
+	var stone := mats.get_mat("stone").duplicate()
+	stone.albedo_color = Color(0.62, 0.66, 0.56)
 	for k in rng.randi_range(2, 4):
 		var r := rng.randf_range(0.06, 0.13)
-		var s := ball(r, stone, Vector3(rng.randf_range(-0.15, 0.15), r * 0.55, rng.randf_range(-0.15, 0.15)), Vector3(1.3, 0.7, 1.0), Vector3(0, rng.randf_range(0, 180), 0))
+		var s := ball(r, stone, Vector3(rng.randf_range(-0.15, 0.15), r * 0.2, rng.randf_range(-0.15, 0.15)), Vector3(1.3, 0.7, 1.0), Vector3(0, rng.randf_range(0, 180), 0))
 		n.add_child(s)
 	return n
 
@@ -398,7 +400,8 @@ func flowers(seed_value: int) -> Node3D:
 		var p := Vector3(rng.randf_range(-0.18, 0.18), 0, rng.randf_range(-0.18, 0.18))
 		var h := rng.randf_range(0.08, 0.15)
 		n.add_child(cyl(0.006, 0.008, h, stem, p + Vector3(0, h / 2, 0), Vector3.ZERO, 5))
-		n.add_child(ball(0.03, Materials.flat(petals, 1.0), p + Vector3(0, h, 0), Vector3(1, 0.5, 1)))
+		n.add_child(ball(0.045, Materials.flat(petals, 1.0), p + Vector3(0, h, 0), Vector3(1, 0.5, 1)))
+		n.add_child(ball(0.035, stem, p + Vector3(0.02, 0.015, 0), Vector3(1.4, 0.4, 0.8)))   # a leaf
 		n.add_child(ball(0.012, Materials.flat(Color("#e0a020"), 1.0), p + Vector3(0, h + 0.01, 0)))
 	return n
 
@@ -517,6 +520,7 @@ func tin_can_house(team: Color) -> Dictionary:
 	body.add_child(ball(0.16, mats.get_mat("stone"), Vector3(-0.15, 1.24, -0.1), Vector3(1.2, 0.8, 1)))
 	body.add_child(cyl(0.06, 0.06, 0.35, Materials.flat(Color("#4a4a48"), 0.5, 0.6), Vector3(0.35, 1.3, -0.3), Vector3.ZERO, 8))
 	body.add_child(box(Vector3(0.25, 0.04, 0.12), cloth(team), Vector3(-0.5, 0.75, 0.48), Vector3(0, 40, 10)))   # a team rag
+	_pennant(body, Vector3(-0.3, 1.15, 0.3), team)
 	return {"body": body, "anchor": Vector3.ZERO, "smoke": Vector3(0.35, 1.5, -0.3), "lights": [],
 		"lantern": Vector3(0.4, 0.75, 0.75), "team": team}
 
@@ -673,6 +677,7 @@ func villa_house(team: Color) -> Dictionary:
 	body.add_child(cyl(0.03, 0.04, 0.3, mats.get_mat("wood"), Vector3(-0.72, 0.15, 0.4), Vector3.ZERO, 6))
 	body.add_child(ball(0.17, cypress, Vector3(-0.72, 0.75, 0.4), Vector3(1, 3.4, 1)))
 	body.add_child(cyl(0.05, 0.05, 0.3, stone, Vector3(0.3, 0.12 + h + rise + 0.05, -0.2), Vector3.ZERO, 8))   # chimney
+	_pennant(body, Vector3(-0.1, 0.12 + h + rise, front + 0.05), team)
 	return {"body": body, "anchor": Vector3.ZERO, "smoke": Vector3(0.3, 0.12 + h + rise + 0.25, -0.2), "lights": [],
 		"lantern": Vector3(-0.22, 0.12 + 0.62, front + 0.1), "team": team}
 
@@ -740,5 +745,14 @@ func tent_house(team: Color) -> Dictionary:
 	var body := Node3D.new()
 	var top := _yurt(body, Vector3.ZERO, 0.62, 0.48, team)
 	woodpile(Vector3(0.7, 0, -0.3), body)
+	_pennant(body, Vector3(0, top, 0), team)
 	return {"body": body, "anchor": Vector3.ZERO, "smoke": Vector3(0, top + 0.1, 0), "lights": [],
 		"lantern": Vector3(0, 0.35, 0.7), "team": team}
+
+
+## A team pennant on a short pole, so every house shows its owner from afar.
+func _pennant(parent: Node3D, at: Vector3, team: Color) -> void:
+	parent.add_child(cyl(0.015, 0.015, 0.55, mats.get_mat("wood"), at + Vector3(0, 0.27, 0), Vector3.ZERO, 6))
+	var flag := slab_tri(Vector2(0, 0), Vector2(0, -0.26), Vector2(0.5, -0.13), 0.02, cloth(team))
+	flag.position = at + Vector3(0.015, 0.54, 0)
+	parent.add_child(flag)

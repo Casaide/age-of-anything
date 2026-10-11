@@ -139,6 +139,25 @@ columned hall on a stepped podium with a team frieze, a pediment shield and a fi
 limewashed villas with tile roofs, team shutters and a cypress. Steppe peoples live in felt
 tents. Swamp and forest folk keep thatch; rats keep their junk.
 
+To finish the round, a separate agent reviewed all the art: every race, culture, texture,
+building and the landscape, in lineups, scenes, close-ups and 211-unit crowds. Its sharpest
+finding: most infantry showed no team colour at all, and culture colours clashed with team
+colours (red-tunic Romans on the blue team). Fixes made straight away:
+- A team-colour kerchief on every frog, rat and human, drawn in the front layer so armour never
+  hides it; human tunics are the team colour, with the culture in sleeves, trim and trousers.
+- Beetles and spiders hold their gear at their flanks instead of in their faces, and their
+  armour sits on the front of the body, clear of the team mark.
+- A silhouette per weapon: spears stand upright, pikes slope over the shoulder, blowguns go to
+  the mouth, slings whirl overhead, javelins are raised to throw.
+- A Corinthian helmet with cheek guards and an open face; frogs show both eyes; rats get
+  thicker arms; wings spread; ponies stand taller with bigger heads and darker manes; the
+  unit light now matches the buildings' warm sun and cool shade.
+- Building materials are authored textures now (planks, cut stone, daub, corrugated tin, brick,
+  limewash, roof tiles, felt) instead of noise. Houses are 30% bigger and all fly a team pennant.
+  The sun swung round a little, so the two visible roof faces differ.
+- Field stones sit lower and darker; flowers have real heads; bugs on bushes are bigger.
+The rest went to the backlog (section 9).
+
 ## Decisions
 - D-040: the art direction is open again; choose from the sampler.
 - D-041: a sixth direction, high-fidelity pre-rendered, built as a real bake pipeline.
@@ -149,6 +168,7 @@ tents. Swamp and forest folk keep thatch; rats keep their junk.
 - D-046: one atlas, one shared material, team colour via a baked key and self_modulate.
 - D-047: landscape props and building materials use authored textures too; contact shadows are drawn.
 - D-048: every part is modelled; fused mounts have their own body; stone and tent architecture.
+- D-049: team colour on every unit (kerchief, team tunics); all building materials authored.
 
 ## Pictures
 ![All five styles, same scene, same scale](../images/2026-10-11/08-style-sampler-all.png)
@@ -184,6 +204,10 @@ tents. Swamp and forest folk keep thatch; rats keep their junk.
 ![Centaurs vs beetles in the scene](../images/2026-10-11/39-centaurs-vs-beetles-in-the-scene.png)
 ![Stone culture: a columned hall and villas](../images/2026-10-11/40-stone-culture-temple-hall-and-villas.png)
 ![Steppe felt tents across the road from a Roman villa](../images/2026-10-11/41-steppe-felt-tents-vs-roman-villa.png)
+![After the review: team kerchiefs on frogs and rats](../images/2026-10-11/42-team-kerchiefs-frogs-and-rats.png)
+![Beetles and spiders carry gear at their flanks](../images/2026-10-11/43-beetles-and-spiders-gear-off-their-faces.png)
+![Team tunics, the sloped pike, spread wings, the new Corinthian helmet](../images/2026-10-11/44-team-tunics-pike-wings-corinthian.png)
+![Authored building textures and team pennants on houses](../images/2026-10-11/45-authored-building-textures-and-house-pennants.png)
 
 ## Funny moments and bugs worth remembering
 - **The frog on the roof.** Units are built from parts layered with `z_index`, and z_index is
@@ -223,6 +247,8 @@ tents. Swamp and forest folk keep thatch; rats keep their junk.
   front and back gave them two again.
 - **Horse-tail tassels as barcode.** Dark tassels hanging over the steppe pennant turned into
   stripes once the banner wave shader moved them. They're gone.
+- **Pumpkin heads and disco balls.** The reviewer's words: the Corinthian helmet made Greeks
+  "pumpkin heads", mail on a spider read as a disco ball, and bark armour as a walnut.
 
 ## Ideas parked
 - Mixes: storybook units on painterly ground; toy-rendered parts with ink outlines; paper ground

@@ -63,7 +63,7 @@ func _init() -> void:
 	add_child(cam)
 	var key := DirectionalLight3D.new()
 	sun = key
-	key.rotation_degrees = Vector3(-48, -72, 0)   # from the screen's upper left: left faces lit, shadows fall lower right
+	key.rotation_degrees = Vector3(-48, -58, 0)   # from the screen's upper left: left faces lit, right faces in shade, shadows fall lower right
 	key.light_energy = 1.05
 	key.shadow_enabled = true
 	key.shadow_bias = 0.05

@@ -107,8 +107,10 @@ without a model still fall back to the automatic bake.
   authored textures; centaurs use a neckless fused body (`creatures.json` `fused_body`)
 - [x] Architecture per culture: stone (imperial, hellenic, royal) and felt tents (steppe), as
   well as thatch and junk
-- [ ] Independent review of all the art (every race, texture, building and the landscape) by a
-  separate agent, then fix what it finds
+- [x] Independent review of all the art (every race, texture, building and the landscape) by a
+  separate agent; high-severity findings fixed (team colour on every unit, weapon silhouettes,
+  gear on beetles and spiders, authored building textures, the Corinthian helmet), the rest in
+  `docs/backlog.md` section 9
 - [ ] Step 1b (maybe later): hero frog in the other directions at production detail
 - [ ] Step 1b: hero rat spearman
 - [ ] Dominic picks a direction

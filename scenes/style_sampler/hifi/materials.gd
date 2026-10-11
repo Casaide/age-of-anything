@@ -64,9 +64,44 @@ func _thatch() -> StandardMaterial3D:
 	return m
 
 
+## Building materials drawn as texture art (assets/art/textures/bld_*.svg): name ->
+## [texture, world units one tile covers, tint]. Mapped triplanar in world space.
+const AUTHORED := {
+	"wood": ["bld_wood", 0.7, Color.WHITE],
+	"stone": ["bld_stone", 1.1, Color.WHITE],
+	"mud": ["bld_daub", 1.0, Color.WHITE],
+	"tin": ["bld_tin", 0.8, Color.WHITE],
+	"brick": ["bld_brick", 0.9, Color.WHITE],
+	"plaster": ["bld_plaster", 1.4, Color.WHITE],
+	"terracotta": ["bld_tiles", 0.6, Color.WHITE],
+	"terracotta_dark": ["bld_tiles", 0.6, Color(0.55, 0.5, 0.5)],
+	"felt": ["bld_felt", 1.2, Color.WHITE],
+	"weave": ["wicker", 0.35, Color.WHITE],
+}
+
+
+func _authored(spec: Array) -> StandardMaterial3D:
+	var m := StandardMaterial3D.new()
+	var img := Image.new()
+	img.load_svg_from_string(FileAccess.get_file_as_string("res://assets/art/textures/%s.svg" % spec[0]), 1.0)
+	img.generate_mipmaps()
+	m.albedo_texture = ImageTexture.create_from_image(img)
+	m.albedo_color = spec[2]
+	m.uv1_triplanar = true
+	m.uv1_world_triplanar = true
+	m.uv1_triplanar_sharpness = 4.0
+	m.uv1_scale = Vector3.ONE / float(spec[1])
+	m.roughness = 1.0
+	m.metallic_specular = 0.15
+	m.texture_filter = BaseMaterial3D.TEXTURE_FILTER_LINEAR_WITH_MIPMAPS_ANISOTROPIC
+	return m
+
+
 func _make(name: String) -> StandardMaterial3D:
 	if name == "thatch":
 		return _thatch()
+	if AUTHORED.has(name):
+		return _authored(AUTHORED[name])
 	var m := StandardMaterial3D.new()
 	var n: FastNoiseLite
 	var ramp: Array
