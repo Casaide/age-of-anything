@@ -263,6 +263,11 @@ and resource views are deleted.
   stripes once the banner wave shader moved them. They're gone.
 - **Pumpkin heads and disco balls.** The reviewer's words: the Corinthian helmet made Greeks
   "pumpkin heads", mail on a spider read as a disco ball, and bark armour as a walnut.
+- **The bush that wouldn't fit.** Three tries at the bug bushes: leaf cards (a salad), a fine
+  foliage texture (green cushions), clumps of the same (still "out of place"). Dominic named the
+  real problem: each try was a style nothing else in the game uses. They're now built like the
+  units: smooth matte masses, the frogs' own leaf decals, clear bugs. Lesson: match the
+  construction, not just the colours.
 
 ## Ideas parked
 - Mixes: storybook units on painterly ground; toy-rendered parts with ink outlines; paper ground
