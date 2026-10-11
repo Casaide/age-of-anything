@@ -66,3 +66,5 @@ One line per moment worth remembering. Newest at the bottom.
   style; the bot ages up at 4-6 minutes. ([image](images/2026-10-11/57-rat-town-barracks-stable-watchtower.png))
 - **2026-10-11:** Units get real textures: mapped in world space, big-marked and generated.
   ([image](images/2026-10-11/89-unit-textures-frogs-and-beetles.png))
+- **2026-10-11:** Frogs build reed domes on stilts, bugs dig earth mounds: architecture by
+  creature. ([image](images/2026-10-11/96-beetle-mound-town.png))

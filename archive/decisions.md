@@ -357,3 +357,8 @@ carry a few large, high-contrast marks (toad blotches, fur tufts, cloth folds, s
 rather than fine detail, written by a script (`tests/gen_unit_textures.py`) so they can be
 re-tuned together. They map in world space, because the models are built from scaled
 primitives. Dominic asked for "real textures" on units; the approach is Claude's call.
+
+**D-073, 2026-10-11: Creatures can override their culture's architecture.** A creature in
+`creatures.json` may name an `architecture`; otherwise the family's applies. Frogs build reed
+domes on stilts, beetles and spiders dig earth mounds; humans and others keep their culture's
+look. Dominic's idea (amphibians and bugs shouldn't live in timber houses); built by Claude.

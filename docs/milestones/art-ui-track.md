@@ -56,10 +56,14 @@ Claude carries on with A1. Feedback since:
 - [x] Water: the drifting "sky" bands removed (Dominic: "water looks worse"); the depth bands
   are back
 - [x] Roof: the clumped-bundle thatch looked stretched; the course-style thatch is back
-- [ ] Architecture per creature, not just per culture (Dominic): timber and thatch houses suit
+- [x] Architecture per creature, not just per culture (Dominic): timber and thatch houses suit
   beavers and bears (forest folk); amphibians want their own (reed-woven domes on stilts over
   water, mud and lily roofs); bugs want their own (earth mounds, hollow logs and seed husks,
-  silk tents for spiders). Data: creatures can name an `architecture` that overrides the family's.
+  silk tents for spiders). Data: creatures can name an `architecture` that overrides the family's
+  (`DataLib.architecture(race)`). Built: **reed** (frogs: woven domes on plank decks over
+  stilts, lily-pad caps, reed-bundle fences) and **mound** (beetles and spiders: earth mounds
+  with round doors, a hollow log, seed-husk sheds, a termite-spire watchtower). Spiders' silk
+  tents are parked in the backlog.
 - [x] Mount wings at the withers: checked in a lineup. They sat so high they read as the
   rider's; now they drop to the mount's shoulders and lie back along it, folded (flapping in
   flight). Feather wings redrawn with eight big feathers instead of thirty small ones (they baked

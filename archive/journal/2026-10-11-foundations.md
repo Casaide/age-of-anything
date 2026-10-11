@@ -30,6 +30,9 @@ Milestone 7 (progression) followed straight on:
   sliver of texture. In world space, with regenerated textures (big blotches, tufts, folds,
   plates), frogs read as toads and beetles get shell plates. The cap stopped looking like an acorn
   too, since its grain is now visible as cloth.
+- **Creature architecture.** Frogs now weave reed domes on stilt decks with lily-pad caps;
+  beetles and spiders dig earth mounds with round doors, a hollowed log and seed-husk sheds,
+  and their watchtower is a termite spire. A creature's architecture overrides its culture's.
 - **Wings.** Feather wings had thirty small feathers and baked to a white slab; now eight big
   ones. A pegasus's wings sat so high they looked like the rider's; they now lie folded along
   the horse's back.
@@ -37,7 +40,7 @@ Milestone 7 (progression) followed straight on:
 ## Decisions
 D-056 (milestones 5 and 6 inserted), D-057 (gear by age, small blacksmith tells), D-058 (bows for
 everyone, crossbows royal and rat kit, shift-queues), D-059 (winged races fly instead of riding),
-D-070 (restrictions as layers with a host switch), D-072 (unit textures: big marks, world space).
+D-070 (restrictions as layers with a host switch), D-072 (unit textures: big marks, world space), D-073 (creature architecture).
 
 ## Pictures
 ![Centaur Romans at age 1: light kit](../images/2026-10-11/55-centaur-romans-age-1-light-kit.png)
@@ -50,6 +53,9 @@ D-070 (restrictions as layers with a host switch), D-072 (unit textures: big mar
 ![Textured centaurs in a Roman town](../images/2026-10-11/91-textured-centaurs-in-town.png)
 ![Bug: the pegasus's wings sprouting from its rider](../images/2026-10-11/92-bug-pegasus-wings-on-the-rider.png)
 ![Bolder feathers; the pegasus's wings folded along its back](../images/2026-10-11/93-bold-feathers-folded-pegasus-wings.png)
+![Six architectures with build stages: reed and mound added](../images/2026-10-11/94-six-architectures-reed-and-mound-added.png)
+![A frog reed town](../images/2026-10-11/95-frog-reed-town.png)
+![A beetle mound town](../images/2026-10-11/96-beetle-mound-town.png)
 
 ## Funny moments
 - The first unit lines gave every soldier a banner at age 2, replacing their capes. A whole

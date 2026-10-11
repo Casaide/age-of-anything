@@ -19,8 +19,10 @@ const HOUSE_SCALE := 1.3
 ## Parts a worker swaps in by job (see UnitView.set_tool and sim_debug's _tool_for).
 const JOB_PARTS := ["tool.axe", "tool.basket", "tool.hammer", "tool.pick", "load.reeds", "load.stone"]
 const ICON_CELL := 160     # screen pixels per unit when rendering portraits   # houses read about 2.5x a footman
-const TOWN := {"thatch": "town_center", "junk": "junk_town_center", "stone": "stone_town_center", "tent": "tent_town_center"}
-const HOUSE := {"thatch": "stilt_house", "junk": "tin_can_house", "stone": "villa_house", "tent": "tent_house"}
+const TOWN := {"thatch": "town_center", "junk": "junk_town_center", "stone": "stone_town_center", "tent": "tent_town_center",
+	"reed": "reed_town_center", "mound": "mound_town_center"}
+const HOUSE := {"thatch": "stilt_house", "junk": "tin_can_house", "stone": "villa_house", "tent": "tent_house",
+	"reed": "reed_house", "mound": "mound_house"}
 const MATERIALS := ["wood", "thatch", "mud", "stone", "tin", "brick", "plaster", "terracotta", "terracotta_dark", "felt", "weave"]
 ## Prop and doodad kinds and how many variants of each (each a different shape, size
 ## and turn; picked per tile so neighbours differ).
@@ -181,7 +183,7 @@ func bake_props() -> void:
 func bake_buildings(races: Array) -> void:
 	var archs := []
 	for r in races:
-		var a: String = lib.families[r.family].get("architecture", "thatch")
+		var a: String = lib.architecture(r)
 		if not a in archs and not buildings.has(a + ":house"):
 			archs.append(a)
 	if archs.is_empty():
@@ -265,7 +267,8 @@ func _bake_building(baker, models, arch: String, type: String) -> void:
 	var spec: Dictionary = models.call(_model(arch, type), PartShape.TEAM_KEY)
 	if type == "house":
 		spec.body.scale = Vector3.ONE * HOUSE_SCALE
-		spec.smoke *= HOUSE_SCALE
+		if spec.has("smoke"):
+			spec.smoke *= HOUSE_SCALE
 		spec.lantern *= HOUSE_SCALE
 		spec.lights = spec.lights.map(func(p): return p * HOUSE_SCALE)
 	var pts: Array = [Vector3.ZERO, spec.get("smoke", Vector3.ZERO), spec.get("lantern", Vector3.ZERO)]
@@ -285,6 +288,7 @@ func _bake_building(baker, models, arch: String, type: String) -> void:
 	if spec.has("banner"):
 		var ban: Dictionary = await baker.bake(spec.banner, [Vector3.ZERO])
 		info.banner = {"tex": ban.tex, "origin": ban.points[0]}   # its own wave shader, so outside the atlas
+	if spec.has("vane"):
 		var vane: Dictionary = await baker.bake(spec.vane, [Vector3.ZERO, spec.vane_pivot])
 		bakes[name + ":vane"] = {"img": (vane.tex as Texture2D).get_image(), "origin": vane.points[1]}
 		info.vane = name + ":vane"

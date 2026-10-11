@@ -59,6 +59,7 @@ func setup(kit, name: String, cx: int, cy: int, size: int, p_team: Color) -> voi
 		bs.material = m
 		add_child(bs)
 		live.append(bs)
+	if info.has("vane"):
 		vane = Node2D.new()
 		vane.position = at + info.vane_at
 		var vs: Sprite2D = kit.sprite(info.vane)
