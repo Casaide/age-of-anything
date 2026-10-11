@@ -1403,3 +1403,104 @@ func _helm_cap(c: Dictionary) -> Dictionary:
 	n.add_child(ring(4.6, 5.3, surf("leather", Color(0.7, 0.6, 0.5), 2.0), Vector3(0, -3.0, 0)))
 	n.add_child(blob(Vector3(0.6, 0.6, 0.6), leather, Vector3(0, 0.7, 0)))
 	return {"node": n}
+
+
+# ------------------------------------------------------------------ the rats' junk kit, by age (RB2)
+# Never human bronze; head gear sits on the crown between the ears, which always show.
+# Age 1 a thimble, age 2 tin, age 3 cutlery steel copying the Romans.
+
+func _helm_thimble(c: Dictionary) -> Dictionary:
+	var n := Node3D.new()
+	var brass := surf("bronze", Color(1.1, 1.0, 0.75), 1.2)
+	n.add_child(cone(1.7, 2.2, 3.0, brass, Vector3(0.6, -0.4, 0), Vector3(0, 0, -12)))
+	n.add_child(blob(Vector3(1.7, 0.6, 1.7), brass, Vector3(0.9, 1.1, 0)))
+	n.add_child(ring(2.1, 2.5, brass, Vector3(0.4, -1.8, 0), Vector3(0, 0, -12)))
+	return {"node": n}
+
+
+func _helm_tin_cap(c: Dictionary) -> Dictionary:
+	var n := Node3D.new()
+	var tin := surf("iron", Color(0.95, 0.95, 1.0), 2.0)
+	n.add_child(dome(Vector3(4.0, 2.6, 2.5), tin, Vector3(0.6, -1.6, 0)))   # narrow: the ears stay out
+	n.add_child(ring(0.97, 1.08, plain(Color("#6a6c66")), Vector3(0.6, -1.5, 0), Vector3.ZERO, Vector3(4.0, 1.0, 2.5)))
+	n.add_child(blob(Vector3(0.7, 0.5, 0.7), tin, Vector3(0.6, 1.1, 0)))   # a rivet knob
+	return {"node": n}
+
+
+## Age 3 pride: a spoon's bowl as the helmet, its handle down the neck as a guard, and a
+## toothbrush along the top as the crest (copying the Romans' crested helmet).
+func _helm_spoon(c: Dictionary) -> Dictionary:
+	var n := Node3D.new()
+	var steel := surf("iron", Color.WHITE, 2.0)
+	n.add_child(dome(Vector3(4.4, 2.8, 2.6), steel, Vector3(0.8, -1.6, 0)))
+	n.add_child(rod(Vector3(-3.2, -1.4, 0), Vector3(-6.2, -5.2, 0), 0.55, 0.45, steel))   # the handle as a neck guard
+	n.add_child(rod(Vector3(-1.6, 1.5, 0), Vector3(3.6, 1.5, 0), 0.35, 0.35, plain(Color("#e8e0d0"))))   # toothbrush handle
+	n.add_child(_box(Vector3(4.0, 1.6, 0.9), plain(c.crimson), Vector3(0.6, 2.6, 0)))   # bristles, in the crest's red
+	return {"node": n}
+
+
+## Sardine-tin bands as a segmented cuirass (age 3), fitted to the lean rat.
+func _armour_sardine(c: Dictionary) -> Dictionary:
+	var n := Node3D.new()
+	var tin := surf("iron", Color(0.95, 0.97, 1.0), 2.0)
+	var label := plain(Color("#c8a040"))
+	var tilt := Node3D.new()   # follow the rat's forward hunch; torso armour is built ~1.6x and scaled down by the body
+	tilt.rotation_degrees = Vector3(0, 0, 15)
+	tilt.scale = Vector3.ONE * 1.45
+	n.add_child(tilt)
+	for k in 4:
+		var y := 4.0 - k * 2.4
+		tilt.add_child(cone(6.6 - k * 0.35, 6.9 - k * 0.35, 2.0, tin if k % 2 == 0 else label, Vector3(0.6, y, 0), Vector3.ZERO, 20))
+	tilt.add_child(_box(Vector3(1.2, 0.5, 3.2), plain(Color("#6a6c66")), Vector3(7.0, 4.6, 0), Vector3(0, 0, -20)))   # the key, rolled
+	return {"node": n}
+
+
+## A shield cut from a can: a curved tall rectangle (copying the Roman scutum), a bottle-cap boss.
+func _shield_can_scutum(c: Dictionary) -> Dictionary:
+	var n := Node3D.new()
+	var h := facing(n, Vector3(3.0, 0.0, 1.5), SHIELD_FACE)
+	var tin := surf("iron", Color(0.95, 0.95, 1.0), 2.0)
+	var R := 5.5
+	for i in 5:   # a can cut open and curved, like the scutum; its label band in the team colour
+		var a := deg_to_rad((i - 2) * 17.0)
+		for part in [[tin, 6.0, 4.2], [plain(c.team), 4.4, -1.0], [tin, 4.2, -5.3]]:
+			var strip := MeshInstance3D.new()
+			var bm := BoxMesh.new()
+			bm.size = Vector3(1.75, part[1], 0.5)
+			strip.mesh = bm
+			strip.material_override = part[0]
+			strip.position = Vector3(sin(a) * R, part[2], cos(a) * R - R)
+			strip.rotation.y = a
+			h.add_child(strip)
+	h.add_child(cone(1.2, 1.4, 0.6, surf("bronze", Color.WHITE, 1.0), Vector3(0, 0.5, 0.4), Vector3(90, 0, 0), 14))   # a bottle-cap boss
+	return {"node": n}
+
+
+func _box(size: Vector3, m: Material, pos: Vector3, rot := Vector3.ZERO) -> MeshInstance3D:
+	var b := BoxMesh.new()
+	b.size = size
+	var mi := MeshInstance3D.new()
+	mi.mesh = b
+	mi.material_override = m
+	mi.position = pos
+	mi.rotation_degrees = rot
+	return mi
+
+
+## Age 2: the leather jerkin with bottle caps sewn on as scales.
+func _armour_bottlecap(c: Dictionary) -> Dictionary:
+	var spec := _armour_leather(c)
+	var n: Node3D = spec.node
+	var cap := surf("iron", Color(1.0, 0.92, 0.75), 1.0)
+	var centre := Vector3(1.5, 0.5, 0)
+	var radii := Vector3(8.8, 8.2, 10.4)
+	for row in 3:
+		for k in 5:
+			var look := Vector3(1.0, 0.45 - row * 0.4, (k - 2) * 0.45).normalized()
+			var p: Vector3 = on_surface(centre, radii, look, 0.2)
+			var disc := cone(1.5, 1.7, 0.5, cap, p, Vector3.ZERO, 12)
+			disc.look_at_from_position(p, p + look, Vector3.UP)
+			disc.rotate_object_local(Vector3.RIGHT, PI / 2)
+			n.add_child(disc)
+	return spec
+

@@ -3082,9 +3082,7 @@
   "tags": [
    "helmet",
    "dome",
-   "saucepan",
-   "junk",
-   "sewer"
+   "saucepan"
   ],
   "stats": {
    "armour": {
@@ -3127,6 +3125,225 @@
    }
   ],
   "tier": 1
+ },
+ {
+  "id": "helm.thimble",
+  "slot": "head_gear",
+  "tags": [
+   "helmet",
+   "light",
+   "junk",
+   "sewer"
+  ],
+  "stats": {
+   "armour": {
+    "melee": 0,
+    "pierce": 1
+   }
+  },
+  "points": 1,
+  "shapes": [
+   {
+    "t": "ellipse",
+    "c": [
+     0,
+     -2
+    ],
+    "r": [
+     2.5,
+     2.5
+    ],
+    "ch": "bronze"
+   }
+  ],
+  "tier": 1,
+  "note": "a thimble on the crown, between the ears"
+ },
+ {
+  "id": "helm.tin_cap",
+  "slot": "head_gear",
+  "tags": [
+   "helmet",
+   "junk",
+   "sewer"
+  ],
+  "stats": {
+   "armour": {
+    "melee": 1,
+    "pierce": 1
+   }
+  },
+  "points": 2,
+  "shapes": [
+   {
+    "t": "ellipse",
+    "c": [
+     0,
+     -1
+    ],
+    "r": [
+     4,
+     2.5
+    ],
+    "ch": "iron"
+   }
+  ],
+  "tier": 2,
+  "note": "a tin skullcap, narrow so the ears stay out"
+ },
+ {
+  "id": "helm.spoon",
+  "slot": "head_gear",
+  "tags": [
+   "helmet",
+   "crest",
+   "junk",
+   "sewer"
+  ],
+  "stats": {
+   "armour": {
+    "melee": 2,
+    "pierce": 1
+   }
+  },
+  "points": 3,
+  "shapes": [
+   {
+    "t": "ellipse",
+    "c": [
+     0,
+     -1
+    ],
+    "r": [
+     4.4,
+     2.8
+    ],
+    "ch": "iron"
+   }
+  ],
+  "tier": 3,
+  "note": "a spoon-bowl helmet with a toothbrush crest, copying the Romans"
+ },
+ {
+  "id": "armour.bottlecap",
+  "slot": "torso",
+  "tags": [
+   "armour",
+   "heavy",
+   "junk",
+   "sewer"
+  ],
+  "stats": {
+   "armour": {
+    "melee": 2,
+    "pierce": 1
+   },
+   "speed": -1
+  },
+  "points": 3,
+  "shapes": [
+   {
+    "t": "ellipse",
+    "c": [
+     0,
+     0
+    ],
+    "r": [
+     6,
+     6
+    ],
+    "ch": "leather"
+   }
+  ],
+  "tier": 2,
+  "note": "a jerkin with bottle caps sewn on as scales"
+ },
+ {
+  "id": "armour.sardine",
+  "slot": "torso",
+  "tags": [
+   "armour",
+   "heavy",
+   "junk",
+   "sewer"
+  ],
+  "stats": {
+   "armour": {
+    "melee": 2,
+    "pierce": 1
+   },
+   "speed": -1
+  },
+  "points": 3,
+  "shapes": [
+   {
+    "t": "ellipse",
+    "c": [
+     0,
+     0
+    ],
+    "r": [
+     6,
+     6
+    ],
+    "ch": "iron"
+   }
+  ],
+  "tier": 3,
+  "note": "sardine-tin bands as a segmented cuirass"
+ },
+ {
+  "id": "shield.can_scutum",
+  "slot": "hand_l",
+  "tags": [
+   "shield",
+   "heavy",
+   "junk",
+   "sewer"
+  ],
+  "stats": {
+   "armour": {
+    "melee": 1,
+    "pierce": 4
+   },
+   "speed": -1
+  },
+  "points": 3,
+  "shapes": [
+   {
+    "t": "poly",
+    "p": [
+     [
+      -2,
+      -9
+     ],
+     [
+      5,
+      -9
+     ],
+     [
+      5,
+      8
+     ],
+     [
+      -2,
+      8
+     ]
+    ],
+    "ch": "team"
+   },
+   {
+    "t": "circle",
+    "c": [
+     1.5,
+     -0.5
+    ],
+    "r": 1.5,
+    "ch": "bronze"
+   }
+  ],
+  "tier": 2,
+  "note": "a can cut open and curved into a tall shield"
  },
  {
   "id": "helm.horned",
