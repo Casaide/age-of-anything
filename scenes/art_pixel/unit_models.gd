@@ -67,6 +67,7 @@ func surf(name: String, tint := Color.WHITE, units := 10.0) -> StandardMaterial3
 	m.albedo_texture = tex(name)
 	m.albedo_color = tint
 	m.uv1_triplanar = true
+	m.uv1_world_triplanar = true   # blobs are scaled unit spheres: in local space a whole body would get a sliver of texture
 	m.uv1_triplanar_sharpness = 2.0
 	m.uv1_scale = Vector3.ONE / units
 	m.roughness = 1.0
