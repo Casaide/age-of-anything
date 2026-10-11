@@ -120,6 +120,25 @@ func scatter(kit, layer: Node2D, keep_clear: Callable) -> Array:
 	return made
 
 
+## A variant pick (0..count-1) per cell, seeded per map, chosen so no cell repeats its
+## already-picked neighbours (left, and the three above), so neighbours always differ.
+static func variant_picks(cells: PackedInt32Array, width: int, count: int, seed_value: int) -> Dictionary:
+	var rng := RandomNumberGenerator.new()
+	rng.seed = seed_value
+	var picks := {}
+	for c in cells:
+		var taken := []
+		for n in [c - 1, c - width - 1, c - width, c - width + 1]:
+			if picks.has(n):
+				taken.append(picks[n])
+		var free := []
+		for k in count:
+			if not k in taken:
+				free.append(k)
+		picks[c] = free[rng.randi() % free.size()]
+	return picks
+
+
 func _place(s: Sprite2D, t: Vector2, layer: Node2D) -> Node2D:
 	var holder := Node2D.new()
 	holder.position = Iso.to_screen(t.x * 1000, t.y * 1000)

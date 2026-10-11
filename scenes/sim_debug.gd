@@ -230,11 +230,13 @@ func _attach(w: World, end_tick := -1) -> void:
 	ground.build(map)
 	ground.set_art_px(camera.zoom.x / ArtKit.ART_SCALE)
 	camera.bounds = Iso.map_rect(map.width, map.height)
+	var picks := TerrainView.variant_picks(map.resource_cells, map.width, ArtKit.DOODADS.bush, hash(map.id))
 	for c in map.resource_cells:
 		var kind := "bush" if map.terrain_resource[map.terrain[c]] == "food" else "reeds"
 		var holder := Node2D.new()
 		holder.position = Iso.to_screen((c % map.width) * 1000 + 500, (c / map.width) * 1000 + 500)
-		holder.add_child(kit.doodad(kind, c * 7 + c / map.width))
+		holder.add_child(kit.doodad(kind, picks[c]))
+		holder.set_meta("res", {"kind": kind, "pick": picks[c], "stage": 0, "full": map.amount[c], "gone": 0.0})
 		layer.add_child(holder)
 		rviews[c] = holder
 	_refresh_paths()
@@ -667,11 +669,25 @@ func _clear_doodads(cx: int, cy: int, size: int) -> void:
 				doodads.erase(c)
 
 
+## Resource props show what's left in stages; a used-up bush fades away, used-up reeds
+## leave stubble for a while first.
 func _sync_resources() -> void:
+	var dt := get_process_delta_time()
 	for c in rviews.keys():
+		var h: Node2D = rviews[c]
+		var r: Dictionary = h.get_meta("res")
+		var stage := ArtKit.resource_stage(r.kind, map.amount[c], r.full)
+		if stage != r.stage:
+			r.stage = stage
+			h.get_child(0).queue_free()
+			h.add_child(kit.doodad(r.kind, r.pick, stage))
 		if map.amount[c] <= 0:
-			rviews[c].queue_free()
-			rviews.erase(c)
+			r.gone += dt
+			var linger := 6.0 if r.kind == "reeds" else 0.0
+			h.modulate.a = clampf(1.0 - (r.gone - linger) / 1.5, 0.0, 1.0)
+			if h.modulate.a <= 0.0:
+				h.queue_free()
+				rviews.erase(c)
 
 
 func _make_view(kind: int, owner: int) -> UnitView:

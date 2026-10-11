@@ -218,8 +218,8 @@ func _scatter(baker, models) -> void:
 	var props := PropModels.new()
 	var kinds := {"stones": [], "flowers": [], "tuft": [], "shore": [], "lily": []}
 	for k in 4:
-		kinds.stones.append(await baker.bake(models.stones(500 + k), [Vector3.ZERO]))
-		kinds.tuft.append(await baker.bake(models.tuft(600 + k), [Vector3.ZERO]))
+		kinds.stones.append(await baker.bake(props.field_stones(500 + k), [Vector3.ZERO]))
+		kinds.tuft.append(await baker.bake(props.grass_tuft(600 + k), [Vector3.ZERO]))
 		kinds.shore.append(await baker.bake(props.reed_clump(700 + k, 0.55), [Vector3.ZERO]))
 		kinds.lily.append(await baker.bake(props.lily_pads(900 + k), [Vector3.ZERO]))
 	for k in 6:

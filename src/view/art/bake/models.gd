@@ -279,19 +279,6 @@ func bug_bush(seed_value: int) -> Node3D:
 
 # ------------------------------------------------------------------ the frog
 
-func stones(seed_value: int) -> Node3D:
-	rng.seed = seed_value
-	var n := Node3D.new()
-	# Field stones: weathered towards the grass and half sunk into it, not bright pebbles.
-	var stone := mats.get_mat("stone").duplicate()
-	stone.albedo_color = Color(0.62, 0.66, 0.56)
-	for k in rng.randi_range(2, 4):
-		var r := rng.randf_range(0.06, 0.13)
-		var s := ball(r, stone, Vector3(rng.randf_range(-0.15, 0.15), r * 0.2, rng.randf_range(-0.15, 0.15)), Vector3(1.3, 0.7, 1.0), Vector3(0, rng.randf_range(0, 180), 0))
-		n.add_child(s)
-	return n
-
-
 func flowers(seed_value: int) -> Node3D:
 	rng.seed = seed_value
 	var n := Node3D.new()
@@ -304,17 +291,6 @@ func flowers(seed_value: int) -> Node3D:
 		n.add_child(ball(0.045, Materials.flat(petals, 1.0), p + Vector3(0, h, 0), Vector3(1, 0.5, 1)))
 		n.add_child(ball(0.035, stem, p + Vector3(0.02, 0.015, 0), Vector3(1.4, 0.4, 0.8)))   # a leaf
 		n.add_child(ball(0.012, Materials.flat(Color("#e0a020"), 1.0), p + Vector3(0, h + 0.01, 0)))
-	return n
-
-
-func tuft(seed_value: int) -> Node3D:
-	rng.seed = seed_value
-	var n := Node3D.new()
-	for k in 9:
-		var h := rng.randf_range(0.1, 0.2)
-		var col := Materials.flat([Color("#4e6e28"), Color("#628634"), Color("#7a9840")][k % 3], 1.0)
-		n.add_child(box(Vector3(0.018, h, 0.018), col, Vector3(rng.randf_range(-0.06, 0.06), h / 2, rng.randf_range(-0.06, 0.06)),
-			Vector3(rng.randf_range(-25, 25), 0, rng.randf_range(-25, 25))))
 	return n
 
 
