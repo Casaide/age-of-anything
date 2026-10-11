@@ -141,6 +141,7 @@ func _make_type(player: int, u: Dictionary) -> Dictionary:
 		"pop": int(e.pop), "cost": Economy.cost_vector(resources, e.cost),
 		"train_ticks": int(e.train_time) * TICK_HZ, "worker": "worker" in e.tags, "eval": e,
 		"mclass": _movement_class(e.tags),
+		"line": u.get("line", [{"age": int(r.tier), "recipe": r, "eval": e}]),   # the unit through the ages (age-ups re-price from it)
 	}
 
 

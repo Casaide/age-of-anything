@@ -1479,7 +1479,8 @@
    "reach",
    "swamp",
    "primitive",
-   "reed"
+   "reed",
+   "woodland"
   ],
   "stats": {
    "attack": 4,
@@ -1491,7 +1492,67 @@
   "cost_mix": {
    "food": 40,
    "wood": 60
-  }
+  },
+  "tier": 1
+ },
+ {
+  "id": "weapon.spear.wood",
+  "slot": "hand_r",
+  "noun": "Spearbearer",
+  "shapes": [
+   {
+    "t": "line",
+    "p": [
+     [
+      -6,
+      4
+     ],
+     [
+      16,
+      -9
+     ]
+    ],
+    "w": 1.5,
+    "ch": "wood"
+   },
+   {
+    "t": "poly",
+    "p": [
+     [
+      15,
+      -10
+     ],
+     [
+      19,
+      -12
+     ],
+     [
+      17,
+      -8
+     ]
+    ],
+    "ch": "wood"
+   }
+  ],
+  "tags": [
+   "spear",
+   "melee",
+   "reach",
+   "primitive"
+  ],
+  "stats": {
+   "attack": 4,
+   "bonus": {
+    "large": 6
+   }
+  },
+  "points": 3,
+  "cost_mix": {
+   "food": 40,
+   "wood": 60
+  },
+  "tier": 1,
+  "note": "a fire-hardened wooden spear: everyone's first spear"
  },
  {
   "id": "weapon.spear.bronze",
@@ -1554,7 +1615,8 @@
   "cost_mix": {
    "food": 40,
    "wood": 60
-  }
+  },
+  "tier": 2
  },
  {
   "id": "weapon.pike.iron",
@@ -1618,7 +1680,8 @@
   "cost_mix": {
    "food": 40,
    "wood": 60
-  }
+  },
+  "tier": 3
  },
  {
   "id": "weapon.club.bone",
@@ -1665,7 +1728,8 @@
   "cost_mix": {
    "food": 40,
    "wood": 60
-  }
+  },
+  "tier": 1
  },
  {
   "id": "weapon.sword.bronze",
@@ -1719,7 +1783,8 @@
   "cost_mix": {
    "food": 40,
    "wood": 60
-  }
+  },
+  "tier": 2
  },
  {
   "id": "weapon.sword.iron",
@@ -1774,7 +1839,8 @@
   "cost_mix": {
    "food": 40,
    "wood": 60
-  }
+  },
+  "tier": 3
  },
  {
   "id": "weapon.cheese_hammer",
@@ -1859,7 +1925,8 @@
   "cost_mix": {
    "food": 80,
    "wood": 20
-  }
+  },
+  "tier": 1
  },
  {
   "id": "weapon.lance",
@@ -1920,7 +1987,8 @@
   "cost_mix": {
    "food": 40,
    "wood": 60
-  }
+  },
+  "tier": 2
  },
  {
   "id": "weapon.sling",
@@ -1979,7 +2047,8 @@
   "cost_mix": {
    "food": 40,
    "wood": 60
-  }
+  },
+  "tier": 1
  },
  {
   "id": "weapon.blowgun",
@@ -2017,7 +2086,8 @@
    "swamp",
    "sneaky",
    "reed",
-   "skirmish"
+   "skirmish",
+   "woodland"
   ],
   "stats": {
    "attack": 3,
@@ -2037,7 +2107,8 @@
   "cost_mix": {
    "food": 40,
    "wood": 60
-  }
+  },
+  "tier": 1
  },
  {
   "id": "weapon.bow.short",
@@ -2106,7 +2177,8 @@
   "cost_mix": {
    "food": 40,
    "wood": 60
-  }
+  },
+  "tier": 1
  },
  {
   "id": "weapon.crossbow",
@@ -2175,7 +2247,8 @@
   "cost_mix": {
    "food": 40,
    "wood": 60
-  }
+  },
+  "tier": 2
  },
  {
   "id": "weapon.musket",
@@ -2232,7 +2305,8 @@
   "cost_mix": {
    "food": 40,
    "wood": 60
-  }
+  },
+  "tier": 3
  },
  {
   "id": "tool.basket",
@@ -2290,7 +2364,8 @@
   "cost_mix": {
    "food": 100,
    "wood": 0
-  }
+  },
+  "tier": 1
  },
  {
   "id": "tool.sack",
@@ -2337,7 +2412,8 @@
   "cost_mix": {
    "food": 100,
    "wood": 0
-  }
+  },
+  "tier": 1
  },
  {
   "id": "tool.axe",
@@ -2394,7 +2470,8 @@
   "cost_mix": {
    "food": 100,
    "wood": 0
-  }
+  },
+  "tier": 1
  },
  {
   "slot": "hand_r",
@@ -2449,7 +2526,8 @@
     ],
     "ch": "iron"
    }
-  ]
+  ],
+  "tier": 1
  },
  {
   "slot": "hand_r",
@@ -2501,7 +2579,8 @@
     "w": 1.5,
     "ch": "iron"
    }
-  ]
+  ],
+  "tier": 1
  },
  {
   "slot": "hand_r",
@@ -2549,7 +2628,8 @@
     "w": 2,
     "ch": "reed"
    }
-  ]
+  ],
+  "tier": 1
  },
  {
   "slot": "hand_r",
@@ -2589,7 +2669,8 @@
     ],
     "ch": "stone"
    }
-  ]
+  ],
+  "tier": 1
  },
  {
   "id": "shield.lilypad",
@@ -2635,7 +2716,8 @@
     "w": 0.8,
     "ch": "lily2"
    }
-  ]
+  ],
+  "tier": 1
  },
  {
   "id": "shield.bottlecap",
@@ -2644,7 +2726,8 @@
    "shield",
    "silly",
    "sewer",
-   "metal"
+   "metal",
+   "junk"
   ],
   "stats": {
    "armour": {
@@ -2672,7 +2755,8 @@
     "r": 4,
     "ch": "team"
    }
-  ]
+  ],
+  "tier": 1
  },
  {
   "id": "shield.round",
@@ -2709,7 +2793,8 @@
     "r": 3,
     "ch": "team"
    }
-  ]
+  ],
+  "tier": 1
  },
  {
   "id": "shield.kite",
@@ -2778,7 +2863,8 @@
     "w": 1,
     "ch": "iron"
    }
-  ]
+  ],
+  "tier": 3
  },
  {
   "id": "helm.acorn",
@@ -2825,7 +2911,39 @@
     "w": 1,
     "ch": "wood"
    }
-  ]
+  ],
+  "tier": 1
+ },
+ {
+  "id": "helm.cap",
+  "slot": "head_gear",
+  "tags": [
+   "helmet",
+   "light"
+  ],
+  "stats": {
+   "armour": {
+    "melee": 0,
+    "pierce": 1
+   }
+  },
+  "points": 1,
+  "shapes": [
+   {
+    "t": "ellipse",
+    "c": [
+     0,
+     -1
+    ],
+    "r": [
+     5.5,
+     3
+    ],
+    "ch": "leather"
+   }
+  ],
+  "tier": 1,
+  "note": "a padded leather cap: everyone's first helmet"
  },
  {
   "id": "helm.bronze",
@@ -2890,7 +3008,8 @@
     ],
     "ch": "bronze"
    }
-  ]
+  ],
+  "tier": 2
  },
  {
   "id": "helm.iron",
@@ -2954,7 +3073,8 @@
     "w": 1.2,
     "ch": "iron"
    }
-  ]
+  ],
+  "tier": 3
  },
  {
   "id": "helm.dome",
@@ -2962,7 +3082,9 @@
   "tags": [
    "helmet",
    "dome",
-   "saucepan"
+   "saucepan",
+   "junk",
+   "sewer"
   ],
   "stats": {
    "armour": {
@@ -3003,7 +3125,8 @@
     "w": 1.5,
     "ch": "iron"
    }
-  ]
+  ],
+  "tier": 1
  },
  {
   "id": "helm.horned",
@@ -3085,7 +3208,8 @@
     ],
     "ch": "iron"
    }
-  ]
+  ],
+  "tier": 2
  },
  {
   "id": "hat.leaf",
@@ -3118,7 +3242,8 @@
     ],
     "ch": "leaf"
    }
-  ]
+  ],
+  "tier": 1
  },
  {
   "id": "armour.leather",
@@ -3147,7 +3272,8 @@
     ],
     "ch": "leather"
    }
-  ]
+  ],
+  "tier": 1
  },
  {
   "id": "armour.bronze",
@@ -3195,7 +3321,8 @@
     "w": 0.8,
     "ch": "bronze2"
    }
-  ]
+  ],
+  "tier": 2
  },
  {
   "id": "armour.mail",
@@ -3261,7 +3388,8 @@
     "w": 0.6,
     "ch": "iron2"
    }
-  ]
+  ],
+  "tier": 2
  },
  {
   "id": "armour.bark",
@@ -3323,7 +3451,8 @@
     "w": 0.8,
     "ch": "leather"
    }
-  ]
+  ],
+  "tier": 1
  },
  {
   "id": "cape.leaf",
@@ -3365,7 +3494,8 @@
     ],
     "ch": "leaf"
    }
-  ]
+  ],
+  "tier": 1
  },
  {
   "id": "cape.cloth",
@@ -3399,7 +3529,8 @@
     ],
     "ch": "team"
    }
-  ]
+  ],
+  "tier": 1
  },
  {
   "id": "banner.team",
@@ -3446,7 +3577,8 @@
     ],
     "ch": "team"
    }
-  ]
+  ],
+  "tier": 1
  },
  {
   "id": "quiver",
@@ -3513,7 +3645,8 @@
     "w": 0.8,
     "ch": "wood"
    }
-  ]
+  ],
+  "tier": 1
  },
  {
   "id": "weapon.gladius",
@@ -3567,7 +3700,8 @@
   "cost_mix": {
    "food": 40,
    "wood": 60
-  }
+  },
+  "tier": 2
  },
  {
   "id": "weapon.dory",
@@ -3629,7 +3763,8 @@
   "cost_mix": {
    "food": 40,
    "wood": 60
-  }
+  },
+  "tier": 2
  },
  {
   "id": "weapon.pilum",
@@ -3694,7 +3829,8 @@
   "cost_mix": {
    "food": 40,
    "wood": 60
-  }
+  },
+  "tier": 1
  },
  {
   "id": "shield.scutum",
@@ -3748,7 +3884,8 @@
     "r": 1.5,
     "ch": "bronze"
    }
-  ]
+  ],
+  "tier": 2
  },
  {
   "id": "shield.hoplon",
@@ -3789,7 +3926,8 @@
     "r": 4.5,
     "ch": "team"
    }
-  ]
+  ],
+  "tier": 2
  },
  {
   "id": "helm.galea",
@@ -3856,7 +3994,8 @@
     ],
     "ch": "iron"
    }
-  ]
+  ],
+  "tier": 2
  },
  {
   "id": "helm.corinthian",
@@ -3931,7 +4070,8 @@
     ],
     "ch": "bronze"
    }
-  ]
+  ],
+  "tier": 2
  },
  {
   "id": "armour.lorica",
@@ -4011,7 +4151,8 @@
     "w": 0.8,
     "ch": "iron2"
    }
-  ]
+  ],
+  "tier": 3
  },
  {
   "id": "wings.feather",
@@ -4114,7 +4255,8 @@
   "only_if": [
    "wings",
    "flying"
-  ]
+  ],
+  "tier": 1
  },
  {
   "id": "wings.bat",
@@ -4178,6 +4320,7 @@
   "only_if": [
    "wings",
    "flying"
-  ]
+  ],
+  "tier": 1
  }
 ]

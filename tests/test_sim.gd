@@ -329,18 +329,25 @@ func _test_movement_classes() -> void:
 	w.issue(0, Commands.MOVE, {"ids": [w.units.id[0]], "x": to[0], "y": to[1]})
 	w.issue(1, Commands.MOVE, {"ids": [w.units.id[1]], "x": to[0], "y": to[1] + 600})
 	var arrived := [-1, -1]
+	var walked := [0, 0]
+	var last := [Vector2(w.units.x[0], w.units.y[0]), Vector2(w.units.x[1], w.units.y[1])]
 	var over_water := false
 	var water: int = w.map.terrain_ids.find("water")
 	var t0 := w.tick
 	while w.tick < t0 + 2400 and (arrived[0] < 0 or arrived[1] < 0):
 		w.step()
 		for i in 2:
+			var now := Vector2(w.units.x[i], w.units.y[i])
+			walked[i] += int(now.distance_to(last[i]))
+			last[i] = now
 			if arrived[i] < 0 and w.units.moving[i] == 0 and w.tick > t0 + 20:
 				arrived[i] = w.tick - t0
 		if w.map.terrain[w.map.cell_of(w.units.x[0], w.units.y[0])] == water:
 			over_water = true
 	check(over_water, "the flyer crossed over open water")
-	check(arrived[0] > 0 and arrived[1] > arrived[0] * 13 / 10, "the flyer goes straight, the walker goes round (%d vs %d ticks)" % [arrived[0], arrived[1]])
+	var straight: int = to[0] - from[0]
+	check(arrived[0] > 0 and walked[0] < straight * 11 / 10, "the flyer goes straight over the lake (%d for %d)" % [walked[0], straight])
+	check(arrived[1] > 0 and walked[1] > straight * 115 / 100, "the walker goes round it (%d for %d)" % [walked[1], straight])
 	# Amphibians wade the shallows; walkers stop at the edge.
 	var shallows: int = w.map.terrain_ids.find("shallows")
 	var cell := -1
