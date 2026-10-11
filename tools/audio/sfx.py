@@ -54,11 +54,15 @@ def hit_blunt(rng):
 
 
 def hit_pierce(rng):
-    """Spear or fang: a short sharp 'thuk' with a soft give behind it."""
-    tick = _burst(rng, 0.02, _j(rng, 2600, 3600), 1.5, 220.0, 1.0)
-    body = _thump(rng, 0.1, 260.0, 120.0, 55.0, 0.7)
-    give = _burst(rng, 0.07, _j(rng, 500, 700), 0.8, 60.0, 0.5)
-    return add(tick, body, delay_start(give, 0.012))
+    """Spear or fang going in: a sharp point, a short dense punch into hide, the shaft's
+    wood knock, a little weight. Under a tenth of a second, no pitched tone. (The first
+    version, a tick and a falling sine, was "quite bad": Dominic.)"""
+    point = _burst(rng, 0.008, _j(rng, 3000, 4500), 0.6, 500.0, 1.1)
+    punch = _burst(rng, 0.045, _j(rng, 350, 700), 0.7, 110.0, 1.3)
+    f = _j(rng, 420, 500)
+    shaft = modal(seconds(0.04), [(f, 160.0, 0.35), (f * _j(rng, 2.2, 2.4), 220.0, 0.2)], rng, 0.0)
+    weight = _thump(rng, 0.05, 130.0, 90.0, 90.0, 0.35)
+    return add(point, delay_start(punch, 0.003), delay_start(shaft, 0.005), delay_start(weight, 0.004))
 
 
 def arrow_land(rng):
@@ -70,8 +74,11 @@ def arrow_land(rng):
 
 # ----------------------------------------------------------------------------- shots
 
-def _twang(rng, f, g=1.0):
-    return gain(I.pluck(f, 0.14, rng, 1.0, 0.9, 0.97), g)
+def _loose(rng, f, g=1.0):
+    """A bowstring let go: a damped slap, a 'thup', dead within 40 ms (a ringing pluck was
+    "very twangy": Dominic)."""
+    slap = lowpass(I.pluck(f, 0.06, rng, 1.0, 0.3, 0.86), 700.0)
+    return gain(add(slap, _burst(rng, 0.012, _j(rng, 900, 1400), 0.8, 300.0, 0.4)), g)
 
 
 def _whoosh(rng, dur, f0, f1, g=1.0):
@@ -81,13 +88,21 @@ def _whoosh(rng, dur, f0, f1, g=1.0):
 
 
 def shoot_arrow(rng):
-    return add(_twang(rng, _j(rng, 80, 100), 1.0), _whoosh(rng, 0.22, 900.0, 3200.0, 0.8))
+    """The loose, then the fletching: a hiss rising as it goes, with a 60 Hz flutter."""
+    n = seconds(0.17)
+    f0 = _j(rng, 1400, 1800)
+    whoosh = mul(bandpass(noise(n, rng), lambda t, f0=f0: f0 + 2200.0 * (t / 0.17), 1.2), env(n, 0.02, 0.1, 0.0))
+    flutter = [0.75 + 0.25 * math.sin(math.tau * 60.0 * i / RATE) for i in range(n)]
+    return add(_loose(rng, _j(rng, 110, 140), 1.0), delay_start(gain(mul(whoosh, flutter), 1.1), 0.01))
 
 
 def shoot_bolt(rng):
-    """A heavy bow: a louder, lower release and a thicker whoosh."""
-    clack = _burst(rng, 0.03, 1500.0, 1.2, 120.0, 0.7)
-    return add(clack, _twang(rng, _j(rng, 55, 70), 1.2), _whoosh(rng, 0.26, 600.0, 2400.0, 0.9))
+    """A heavy bow: a mechanical clack, a lower loose, a thicker whoosh."""
+    clack = _burst(rng, 0.02, _j(rng, 1200, 1800), 1.0, 180.0, 0.9)
+    n = seconds(0.21)
+    f0 = _j(rng, 900, 1200)
+    whoosh = mul(bandpass(noise(n, rng), lambda t, f0=f0: f0 + 1400.0 * (t / 0.21), 1.0), env(n, 0.02, 0.12, 0.0))
+    return add(clack, delay_start(_loose(rng, _j(rng, 70, 90), 1.2), 0.008), delay_start(gain(whoosh, 1.1), 0.02))
 
 
 def shoot_javelin(rng):
