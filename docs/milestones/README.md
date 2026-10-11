@@ -13,9 +13,10 @@ along the way. The overview table lives in `../mvp-plan.md` §3; these files hol
 | 5 | [Art rework](m5-art-rework.md) | built; waiting on Dominic's look sign-off |
 | 6 | [Foundations](m6-foundations.md) | done 2026-10-11 |
 | 7 | [Progression](m7-progression.md) | done 2026-10-11 |
-| 8 | [AI + match flow](m8-ai-match-flow.md) | built; waiting on Dominic's playtest |
+| 8 | [AI + match flow](m8-ai-match-flow.md) | closed 2026-10-11 (playtest moved to the backlog) |
 | 9 | [Fog + juice](m9-fog-juice.md) | done 2026-10-11 |
-| 10 | [Playtest + balance](m10-playtest-balance.md) | prepared; waiting on Dominic (testers, build) |
+| 10 | [Playtest + balance](m10-playtest-balance.md) | closed 2026-10-11 (testers, build, price-by-simulation moved to the backlog) |
+| 11 | [Cleanup](m11-cleanup.md) | in progress |
 | - | [Art pass](art-pass.md) | direction chosen, vertical slice done |
 | - | [Art and UI track](art-ui-track.md) | A1 = milestone 5; later stages run alongside milestones 7-10 |
 | - | [Networking](networking.md) | planned (after the demo) |
