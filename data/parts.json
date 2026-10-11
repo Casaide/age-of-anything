@@ -1904,8 +1904,7 @@
    "lance",
    "melee",
    "charge",
-   "reach",
-   "knight"
+   "reach"
   ],
   "stats": {
    "attack": 8,
@@ -2513,7 +2512,8 @@
   "tags": [
    "shield",
    "heavy",
-   "knight"
+   "knight",
+   "royal"
   ],
   "stats": {
    "armour": {
@@ -2693,7 +2693,8 @@
   "tags": [
    "helmet",
    "heavy",
-   "knight"
+   "knight",
+   "royal"
   ],
   "stats": {
    "armour": {
@@ -2997,7 +2998,8 @@
   "tags": [
    "armour",
    "heavy",
-   "knight"
+   "knight",
+   "royal"
   ],
   "stats": {
    "armour": {
@@ -3199,8 +3201,7 @@
   "slot": "back",
   "tags": [
    "banner",
-   "morale",
-   "knight"
+   "morale"
   ],
   "stats": {
    "attack": 1
@@ -3810,9 +3811,9 @@
    "wings",
    "flying",
    "angelic",
-   "greek",
    "hellenic",
-   "royal"
+   "royal",
+   "imperial"
   ],
   "stats": {
    "speed": 3,
@@ -3913,7 +3914,8 @@
    "wings",
    "flying",
    "spooky",
-   "sewer"
+   "sewer",
+   "bat"
   ],
   "stats": {
    "speed": 3,

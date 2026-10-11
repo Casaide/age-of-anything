@@ -19,6 +19,7 @@ var holder: Node3D
 var pixel_factor := 0      # > 0: pixel mode, shrink the render by this much and pixelize it
 var shadow_plane: MeshInstance3D
 var shadow_on := false
+var outline := true      # pixel mode: darker inner outline (off for realistic props)
 var sun: DirectionalLight3D
 var fill: DirectionalLight3D
 var rim: DirectionalLight3D
@@ -185,7 +186,7 @@ func bake(model: Node3D, points: Array) -> Dictionary:
 		used.position = used.position / pixel_factor * pixel_factor   # keep the pixel grid aligned
 		var crop_p := img.get_region(used)
 		var f := float(pixel_factor)
-		return {"tex": ImageTexture.create_from_image(Pixelize.run(crop_p, pixel_factor)),
+		return {"tex": ImageTexture.create_from_image(Pixelize.run(crop_p, pixel_factor, outline)),
 			"points": projected.map(func(p): return (p - Vector2(used.position)) / f)}
 	var crop := img.get_region(used)
 	crop.fix_alpha_edges()
