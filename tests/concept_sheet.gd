@@ -52,7 +52,7 @@ func _initialize() -> void:
 		cols.append(spec)
 		for slot in spec:
 			var id: String = spec[slot]
-			if id == "none" or lib.parts.has(id) or slot in ["skin", "scale", "torso", "hand_l", "hand_r", "back"]:
+			if id == "none" or lib.parts.has(id) or slot in ["skin", "scale", "torso", "hand_l", "hand_r", "back", "headpng"]:
 				continue
 			var borrow: String = {"body": base.recipe.body, "head": base.recipe.head, "legs": "leg.human"}.get(slot, "helm.cap")
 			var p: Dictionary = lib.part(borrow).duplicate(true)
@@ -99,6 +99,8 @@ func _initialize() -> void:
 				r.skin = spec.skin
 			elif key == "scale":
 				r.scale = int(spec.scale)
+			elif key == "headpng":
+				pass
 			elif key in ["torso", "hand_l", "hand_r", "back"]:
 				if spec[key] == "none":
 					r.parts.erase(key)
@@ -111,7 +113,10 @@ func _initialize() -> void:
 		probe.build(r, lib, team, base.eval.speed)
 		for ps in probe.find_children("*", "Node2D", true, false):
 			if ps is PartShape and ps.part_id != "":
-				await baker.bake(ps.part_id, ps.shapes, ps.colours)
+				if ps.part_id == r.head and spec.has("headpng"):
+					_stamp_head(ps, spec.headpng)   # the hybrid: a drawn pixel head on the baked body
+				else:
+					await baker.bake(ps.part_id, ps.shapes, ps.colours)
 		probe.free()
 	PartShape.bake_flat("unit_shadow", UnitView.SHADOW_SHAPES, UnitView.SHADOW_COLOURS, art)
 	PartShape.build_atlas()
@@ -157,3 +162,13 @@ func _initialize() -> void:
 	root.get_texture().get_image().save_png(out)
 	print("saved ", out)
 	quit()
+
+
+## Put a drawn pixel head (docs/concepts/r0/head_*.png, drawn at game scale, with its neck
+## point in the .json beside it) in place of a head part's bake.
+func _stamp_head(ps, path: String) -> void:
+	var img := Image.load_from_file(ProjectSettings.globalize_path(path + ".png"))
+	var neck: Array = JSON.parse_string(FileAccess.get_file_as_string(path + ".json")).neck
+	var key: String = PartShape.bake_key(ps.part_id, ps.shapes, PartShape.team_neutral(ps.colours))
+	PartShape.baked[key] = {"img": img, "tex": ImageTexture.create_from_image(img),
+		"origin": Vector2(neck[0], neck[1]), "scale": 1.275}

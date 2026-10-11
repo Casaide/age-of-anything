@@ -332,7 +332,34 @@ def figure(facing, gear):
     return rows(cv)
 
 
+HEADS = {"se": (HEAD_SE, {"hair": (HAIR_SE, -1, -3), "cap": (CAP_SE, -2, -6), "galea": (GALEA_SE, -3, -8)}),
+         "s": (HEAD_S, {"hair": (HAIR_S, 0, -3), "cap": (CAP_S, -1, -6), "galea": (GALEA_S, -1, -8)})}
+
+
+def head_stamp(facing, gear):
+    """A head with its head gear alone, for the hybrid (pixel heads on 3D bodies). Returns the
+    rows and the neck point (bottom centre of the face), where it sits on the body's head socket."""
+    face, gears = HEADS[facing]
+    art, gx, gy = gears[gear]
+    cv = canvas(16, 18)
+    ox, oy = 3, 9   # the face's top-left on this canvas
+    stamp(cv, face, ox, oy)
+    stamp(cv, art, ox + gx, oy + gy)
+    neck = (ox + len(face[0]) // 2, oy + len(face))
+    return rows(cv), neck
+
+
 if __name__ == "__main__":
+    import json
+    for facing in HEADS:
+        for gear in ["hair", "cap", "galea"]:
+            for skin in ["light", "dark"]:
+                PAL["l"], PAL["s"], PAL["d"] = SKINS[skin]
+                r, neck = head_stamp(facing, gear)
+                name = "head_%s_%s_%s" % (gear, facing, skin)
+                png(os.path.join(OUT, name + ".png"), r, 1)
+                json.dump({"neck": neck}, open(os.path.join(OUT, name + ".json"), "w"))
+
     os.makedirs(OUT, exist_ok=True)
     for skin in ["light", "dark"]:
         PAL["l"], PAL["s"], PAL["d"] = SKINS[skin]

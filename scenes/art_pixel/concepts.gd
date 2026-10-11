@@ -160,11 +160,37 @@ func _concept_greek_petasos(c: Dictionary) -> Dictionary:
 
 
 func _concept_body_chunky(c: Dictionary) -> Dictionary:
+	return _human_body(c, 6.0, 0.0)
+
+
+## The slim, realistic build: narrower shoulders, raised on longer legs (see leg_long).
+func _concept_body_slim(c: Dictionary) -> Dictionary:
+	return _human_body(c, 4.8, 3.0)
+
+
+func _human_body(c: Dictionary, shoulder: float, lift: float) -> Dictionary:
+	var spec := _human_body_built(c, shoulder)
+	if lift != 0.0:
+		var wrap := Node3D.new()
+		wrap.position.y = lift
+		wrap.add_child(spec.node)
+		spec.node = wrap
+		var fw := Node3D.new()
+		fw.position.y = lift
+		fw.add_child(spec.front)
+		spec.front = fw
+		for k in spec.sockets:
+			spec.sockets[k] += Vector3(0, lift, 0)
+		spec.anchors = spec.anchors.map(func(a): return [a[0] + Vector3(0, lift, 0)] + a.slice(1))
+	return spec
+
+
+func _human_body_built(c: Dictionary, shoulder: float) -> Dictionary:
 	var n := Node3D.new()
-	var tunic := surf("cloth", c.team, 8.0)
-	var trim := plain(c.cloth)
-	var skin := plain(c.skin)
-	var belt := plain(Color("#5a3a1e"))
+	var tunic := surf("cloth", c.team, 5.0)
+	var trim := surf("cloth", c.cloth, 3.0)
+	var skin := surf("skin", c.skin, 5.0)
+	var belt := surf("leather", Color.WHITE, 2.0)
 	n.add_child(blob(Vector3(3.9, 5.2, 6.0), tunic, Vector3(0.2, 21.4, 0)))        # chest: broad and deep
 	n.add_child(cone(4.6, 5.8, 5.2, tunic, Vector3(0, 15.4, 0)))                  # skirt to mid-thigh
 	n.add_child(ring(5.3, 6.0, trim, Vector3(0, 12.9, 0)))                        # hem in the culture's colour
@@ -174,8 +200,8 @@ func _concept_body_chunky(c: Dictionary) -> Dictionary:
 	var front := Node3D.new()
 	for side in [1, -1]:
 		var into: Node3D = front if side == 1 else n
-		var sh := Vector3(0.3, 25.4, 6.0 * side)
-		var elbow := Vector3(1.3, 20.6, 7.2 * side)
+		var sh := Vector3(0.3, 25.4, shoulder * side)
+		var elbow := Vector3(1.3, 20.6, (shoulder + 1.2) * side)
 		var hand := Vector3(6.2, 18.4, 6.4) if side == 1 else Vector3(5.8, 19.4, -5.6)
 		if side == 1:
 			var pose := arm_pose(sh, elbow, hand, Vector3(0.7, 29.5, 0))
@@ -196,13 +222,22 @@ func _concept_body_chunky(c: Dictionary) -> Dictionary:
 
 ## A bare leg with a sandal: longer than today's, light against the grass.
 func _concept_leg_chunky(c: Dictionary) -> Dictionary:
+	return _human_leg(c, 1.0)
+
+
+## Longer legs for the slim build (it stands on them 3 units higher).
+func _concept_leg_long(c: Dictionary) -> Dictionary:
+	return _human_leg(c, 1.23)
+
+
+func _human_leg(c: Dictionary, k: float) -> Dictionary:
 	var n := Node3D.new()
-	var skin := plain(c.skin)
-	var strap := plain(Color("#5a3a1e"))
-	n.add_child(rod(Vector3(0, 0, 0), Vector3(0.6, -6.6, 0), 2.2, 1.8, skin))
-	n.add_child(rod(Vector3(0.6, -6.6, 0), Vector3(0.2, -12.4, 0), 1.7, 1.35, skin))
-	n.add_child(ring(1.2, 1.6, strap, Vector3(0.25, -11.4, 0)))
-	n.add_child(blob(Vector3(2.7, 1.2, 1.8), strap, Vector3(1.3, -13.2, 0)))
+	var skin := surf("skin", c.skin, 5.0)
+	var strap := surf("leather", Color.WHITE, 2.0)
+	n.add_child(rod(Vector3(0, 0, 0), Vector3(0.6, -6.6 * k, 0), 2.2, 1.8, skin))
+	n.add_child(rod(Vector3(0.6, -6.6 * k, 0), Vector3(0.2, -12.4 * k, 0), 1.7, 1.35, skin))
+	n.add_child(ring(1.2, 1.6, strap, Vector3(0.25, -12.4 * k + 1.0, 0)))
+	n.add_child(blob(Vector3(2.7, 1.2, 1.8), strap, Vector3(1.3, -12.4 * k - 0.8, 0)))
 	return {"node": n}
 
 
@@ -210,7 +245,7 @@ func _concept_leg_chunky(c: Dictionary) -> Dictionary:
 ## under it. No cranium: hair or head gear supplies the top of the head.
 func _concept_head_egg(c: Dictionary) -> Dictionary:
 	var n := Node3D.new()
-	var skin := plain(c.skin)
+	var skin := surf("skin", c.skin, 4.0)
 	var shade := plain(c.skin.darkened(0.25))
 	n.add_child(blob(Vector3(3.3, 4.3, 3.4), skin, Vector3(0.5, 4.5, 0)))
 	n.add_child(blob(Vector3(2.5, 1.9, 2.7), skin, Vector3(1.7, 1.9, 0)))         # jaw and chin, forward
@@ -226,7 +261,7 @@ func _concept_head_egg(c: Dictionary) -> Dictionary:
 
 func _concept_hair_crop(c: Dictionary) -> Dictionary:
 	var n := Node3D.new()
-	var hair := plain(Color("#3a2416"))
+	var hair := surf("mane", Color("#3a2416"), 2.0)
 	n.add_child(dome(Vector3(3.7, 3.6, 3.6), hair, Vector3(-0.3, -3.2, 0)))
 	n.add_child(blob(Vector3(2.4, 2.8, 3.2), hair, Vector3(-1.9, -3.8, 0)))   # the back of the skull: the head has a direction
 	return {"node": n}
@@ -234,8 +269,8 @@ func _concept_hair_crop(c: Dictionary) -> Dictionary:
 
 func _concept_cap_montefortino(c: Dictionary) -> Dictionary:
 	var n := Node3D.new()
-	var leather := plain(Color("#8a5a32"))
-	var dark := plain(Color("#5e3c1e"))
+	var leather := surf("leather", Color(1.15, 1.0, 0.9), 2.0)
+	var dark := surf("leather", Color(0.75, 0.65, 0.55), 2.0)
 	n.add_child(dome(Vector3(4.1, 4.2, 3.9), leather, Vector3(-0.3, -3.4, 0)))
 	n.add_child(ring(3.9, 4.5, dark, Vector3(-0.2, -3.3, 0)))
 	n.add_child(cone(0.35, 0.9, 1.6, dark, Vector3(-0.3, 1.2, 0)))                # the top knob
@@ -247,8 +282,8 @@ func _concept_cap_montefortino(c: Dictionary) -> Dictionary:
 
 func _concept_galea_heavy(c: Dictionary) -> Dictionary:
 	var n := Node3D.new()
-	var iron := plain(Color("#b8bcc0"))
-	var bronze := plain(Color("#c89048"))
+	var iron := surf("iron", Color.WHITE, 3.0)
+	var bronze := surf("bronze", Color.WHITE, 2.0)
 	n.add_child(dome(Vector3(4.3, 4.5, 4.1), iron, Vector3(-0.3, -3.4, 0)))
 	n.add_child(ring(4.1, 4.7, bronze, Vector3(-0.1, -3.2, 0)))
 	n.add_child(blob(Vector3(1.0, 0.35, 3.8), iron, Vector3(3.7, -3.0, 0)))        # brow peak
@@ -385,3 +420,10 @@ func _concept_frog_c_head(c: Dictionary) -> Dictionary:
 	n.add_child(rod(Vector3(8.4, 2.2, 0), Vector3(8.0, 2.2, 4.0), 0.36, 0.36, plain(INK)))
 	_frog_eyes(n, Vector3(3.4, 5.6, 0), 3.4, 2.3, m[0])
 	return {"node": n, "sockets": {"top": Vector3(-0.2, 6.0, 0)}}
+
+
+## The slim build's head: the same face, a little smaller (a realistic head-to-body ratio).
+func _concept_head_small(c: Dictionary) -> Dictionary:
+	var spec := _scaled(_concept_head_egg(c), 0.85)
+	spec.gear_scale = 0.85
+	return spec
