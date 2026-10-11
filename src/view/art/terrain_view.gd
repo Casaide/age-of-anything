@@ -97,7 +97,21 @@ func scatter(kit, layer: Node2D, keep_clear: Callable) -> Array:
 	var grass: int = map.terrain_ids.find("grass")
 	for c in map.width * map.height:
 		if map.terrain[c] == rock:
-			made.append(_place(kit.doodad("rock", rng.randi()), Vector2(c % map.width + 0.5, c / map.width + 0.5), layer))
+			# An outcrop, not a grid: stones deep inside it are big, ones at its edge small, each
+			# nudged off its tile's centre (cosmetic; the sim only knows the tile blocks).
+			var x: int = c % map.width
+			var y: int = c / map.width
+			var inner := 0
+			for d in [Vector2i(1, 0), Vector2i(-1, 0), Vector2i(0, 1), Vector2i(0, -1)]:
+				var nx: int = x + d.x
+				var ny: int = y + d.y
+				if nx >= 0 and ny >= 0 and nx < map.width and ny < map.height and map.terrain[ny * map.width + nx] == rock:
+					inner += 1
+			var size := lerpf(0.75, 1.6, inner / 4.0) * rng.randf_range(0.85, 1.15)   # every rock tile keeps a stone: a gap would look walkable
+			var at := Vector2(x + 0.5 + rng.randf_range(-0.22, 0.22), y + 0.5 + rng.randf_range(-0.22, 0.22))
+			var h := _place(kit.doodad("rock", rng.randi()), at, layer)
+			h.scale = Vector2(size, size)
+			made.append(h)
 	var area: int = map.width * map.height
 	var want := {"stones": area / 40, "flowers": area / 22, "tuft": area / 12}
 	for kind in ["stones", "flowers", "tuft"]:

@@ -180,8 +180,8 @@ func stone_mesh(seed_value: int, cut := false) -> ArrayMesh:
 	var sphere := SphereMesh.new()
 	sphere.radius = 1.0
 	sphere.height = 2.0
-	sphere.radial_segments = 9
-	sphere.rings = 6
+	sphere.radial_segments = 12
+	sphere.rings = 8
 	var noise := FastNoiseLite.new()
 	noise.seed = seed_value
 	noise.frequency = 1.3
@@ -225,6 +225,46 @@ func boulders(seed_value: int) -> Node3D:
 		mi.rotation_degrees = Vector3(rng.randf_range(-15, 15), rng.randf_range(0, 180), rng.randf_range(-15, 15))
 		mi.position = st[0] + Vector3(0, r * 0.35, 0)   # half sunk into the ground
 		n.add_child(mi)
+	# Surface detail at the bushes' density (Dominic: the rocks read low-res next to them):
+	# lichen and moss on the tops, dark cracks, and pebbles and grass round the foot.
+	var lichen := [um.plain(Color("#b8b46a")), um.plain(Color("#d8d6c8")), um.plain(Color("#5e7a34"))]
+	for k in stones.size():
+		var st: Array = stones[k]
+		var r: float = st[1]
+		for d in (8 if k == 0 else 2):
+			var a := rng.randf() * TAU
+			var up := rng.randf_range(0.3, 0.75)
+			var p: Vector3 = st[0] + Vector3(cos(a) * r * 0.7 * (1.0 - up * 0.4), r * 0.35 + r * up * 0.7, sin(a) * r * 0.7 * (1.0 - up * 0.4))
+			var sz := r * rng.randf_range(0.14, 0.26)
+			n.add_child(um.blob(Vector3(sz * 1.4, sz * 0.3, sz), lichen[(k + d) % 3], p))
+		if k == 0:
+			for c in 3:   # cracks: thin dark seams down the big stone's face
+				var a := rng.randf_range(-0.6, 1.6)
+				var p: Vector3 = st[0] + Vector3(cos(a) * r * 0.95, r * 0.55, sin(a) * r * 0.95)
+				var crack := MeshInstance3D.new()
+				var bm := BoxMesh.new()
+				bm.size = Vector3(0.012, r * 0.6, 0.012)
+				crack.mesh = bm
+				crack.material_override = um.plain(Color("#2a2622"))
+				crack.position = p
+				crack.rotation_degrees = Vector3(rng.randf_range(-20, 20), 0, rng.randf_range(-25, 25))
+				n.add_child(crack)
+	for k in 12:   # pebbles and grass at the foot
+		var a := rng.randf() * TAU
+		var d := rng.randf_range(0.3, 0.55)
+		if k % 3 == 0:   # a grass tuft: a few blades from one root
+			var root := Vector3(cos(a) * d, 0.0, sin(a) * d)
+			for g in 4:
+				var lean := Vector3(rng.randf_range(-0.03, 0.03), rng.randf_range(0.07, 0.12), rng.randf_range(-0.03, 0.03))
+				n.add_child(um.rod(root, root + lean, 0.012, 0.003, um.plain(Color("#4e7a2c") if g % 2 == 0 else Color("#6a9238")), false))
+		else:
+			var pr := rng.randf_range(0.015, 0.035)
+			var peb := MeshInstance3D.new()
+			peb.mesh = stone_mesh(seed_value * 13 + k)
+			peb.material_override = um.surf("rock", tints[k % tints.size()], 0.6)
+			peb.scale = Vector3(pr * 1.3, pr * 0.7, pr)
+			peb.position = Vector3(cos(a) * d, pr * 0.3, sin(a) * d)
+			n.add_child(peb)
 	return n
 
 
@@ -301,21 +341,27 @@ func crops(seed_value: int) -> Node3D:
 	var bm := BoxMesh.new()
 	bm.size = Vector3(0.98, 0.04, 0.98)
 	soil.mesh = bm
-	soil.material_override = um.plain(Color("#6a4e30"))
+	soil.material_override = um.plain(Color("#5e4228"))
 	soil.position = Vector3(0, 0.02, 0)
 	n.add_child(soil)
-	var stalk := um.plain(Color("#6e8a34"))
-	var ear := um.plain(Color("#d6b24a"))
-	for row in 5:
-		var z := -0.38 + row * 0.19
-		n.add_child(um.blob(Vector3(0.48, 0.02, 0.05), um.plain(Color("#4e3820")), Vector3(0, 0.045, z + 0.09)))   # the furrow
-		for k in 7:
-			var x := -0.42 + k * 0.14 + rng.randf_range(-0.03, 0.03)
+	# Leafy plants in ridged rows at the bushes' detail (Dominic: farms read low-res): each a
+	# little clump of leaves, some with a golden head, clods of earth between the rows.
+	var leaves := [um.plain(Color("#5e8a2c")), um.plain(Color("#4a7424")), um.plain(Color("#76a038"))]
+	var ear := um.plain(Color("#d8b44a"))
+	for row in 6:
+		var z := -0.4 + row * 0.16
+		n.add_child(um.blob(Vector3(0.48, 0.025, 0.045), um.plain(Color("#6e4e30")), Vector3(0, 0.045, z)))   # the ridge
+		for k in 8:
+			var x := -0.42 + k * 0.12 + rng.randf_range(-0.02, 0.02)
+			var base := Vector3(x, 0.06, z + rng.randf_range(-0.015, 0.015))
 			var h := rng.randf_range(0.12, 0.2)
-			var base := Vector3(x, 0.04, z + rng.randf_range(-0.02, 0.02))
-			var tip := base + Vector3(rng.randf_range(-0.02, 0.02), h, rng.randf_range(-0.02, 0.02))
-			n.add_child(um.rod(base, tip, 0.012, 0.008, stalk, false))
-			n.add_child(um.blob(Vector3(0.016, 0.04, 0.016), ear, tip))
+			for l in 3:
+				var a := l * TAU / 3.0 + rng.randf()
+				n.add_child(um.blob(Vector3(0.045, 0.014, 0.022), leaves[(row + k + l) % 3], base + Vector3(cos(a) * 0.03, h * (0.35 + l * 0.22), sin(a) * 0.03), Vector3(0, rad_to_deg(a), 30)))
+			if rng.randf() < 0.55:
+				n.add_child(um.blob(Vector3(0.02, 0.04, 0.02), ear, base + Vector3(0, h + 0.03, 0)))
+		for c in 3:   # clods
+			n.add_child(um.blob(Vector3(0.02, 0.012, 0.018), um.plain(Color("#4a3420")), Vector3(rng.randf_range(-0.45, 0.45), 0.045, z + 0.08)))
 	return n
 
 
