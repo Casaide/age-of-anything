@@ -120,7 +120,7 @@ tests green. Anything cut moves to `../backlog.md`.
       presets, roster with costs, the generator's notes), a map card drawn from the map's data,
       Start; in battle Esc pauses with resume / surrender / back to the menu, and the menu comes
       up when a match ends. Maps got player names (Reed Meadow, The Pass)
-- [ ] 7. Races: ~~8 facings~~ (done 2026-10-11, D-087), ~~capybara~~ (done), ~~rat buildings by age~~ (age-3 Town Center D-089; house and barracks smaller, houses varied D-090), ~~rearing beetles~~ (done), humans in Blender (head and torso done; shoulders narrowed), spiders (SG1 posture sheet, waiting on Dominic's pick), centaurs, ponies, ~~Egypt/Han/Aztec~~ (as data, D-091; their gear needs a concept round), ~~buildings by age~~ (engine, D-089)
+- [ ] 7. Races: ~~8 facings~~ (done 2026-10-11, D-087), ~~capybara~~ (done), ~~rat buildings by age~~ (age-3 Town Center D-089; house and barracks smaller, houses varied D-090), ~~rearing beetles~~ (done), humans in Blender (head and torso done; shoulders narrowed), spiders (SG1 posture sheet, waiting on Dominic's pick), centaurs, ponies, ~~Egypt/Han/Aztec~~ (as data, D-091; gear by age: GC1 concept sheets, waiting on Dominic's picks), ~~buildings by age~~ (engine, D-089)
 - [x] 8. Animals (2026-10-11, D-088): deer (bolt), boar (fight back), sheep (claimed by whoever
       reaches them, led, slaughtered); carcasses are food; data/animals.json and a host rule.
       Not yet: the bot hunting or herding, stealing sheep, wolves

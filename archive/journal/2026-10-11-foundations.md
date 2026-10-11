@@ -320,3 +320,12 @@ costs under buttons are numbers with resource icons; the portrait frame stays sq
 a pink snout, thick tusks and a warmer brown; stone and thatch mills stand on a stone plinth under
 their own roof; tool cursors carry a small pointer whose tip is the hotspot; swamp pools are a few
 broad greenish ones (they had read as oil); mineable stone shows a fresh split and cut blocks.
+
+### GC1: gear by age for the Nile, Han and Aztec cultures
+A concept round so the three new cultures stop wearing the shared kit: per culture head gear for
+ages 1-3 plus a signature weapon and shield (docs/concepts/gc1/). First renders had their own
+bugs, caught on the close look this time: the Aztec headband floated like a halo (now it sits on a
+bowl of hair), the Han age-1 and age-2 looked the same (the cap is now black with stiff tails),
+the Han helmet read as a pith helmet (now a pointed lamellar bowl with neck lames behind), the
+Nile stripes were buried inside the cloth, the cowhide went grey in shade, and the sickle sword
+read as wood. Waiting on Dominic's picks.
