@@ -306,6 +306,7 @@ func _count_houses(w: World, p: int) -> int:
 func _test_combat(gen) -> void:
 	_test_damage()
 	_test_idle_fight(gen)
+	_test_spread(gen)
 	_test_siege(gen)
 	var wins := 0
 	var fights := 0
@@ -354,6 +355,31 @@ func _test_idle_fight(gen) -> void:
 	for t in 1200:
 		w.step()
 	check(w.lost[0] + w.lost[1] > 0, "idle spearmen 3 tiles apart fight on their own (%d lost)" % (w.lost[0] + w.lost[1]))
+
+
+## Attack-move spreads out: 10 spearmen against 10 make many duels, not a pile-on.
+func _test_spread(gen) -> void:
+	var race: Dictionary = gen.generate(PROMPTS[0], rules_)
+	var w := _bare_world([race, race])
+	for p in 2:
+		w.issue(p, Commands.SPAWN, {"slot": "spear", "count": 10, "x": FIGHT_FROM[p][0], "y": FIGHT_FROM[p][1]})
+	while w.units.count() < 20:
+		w.step()
+	for p in 2:
+		var ids := []
+		for i in w.units.count():
+			if w.units.owner[i] == p:
+				ids.append(w.units.id[i])
+		w.issue(p, Commands.ATTACK_MOVE, {"ids": ids, "x": FIGHT_FROM[1 - p][0], "y": FIGHT_FROM[1 - p][1]})
+	var most := 0
+	for t in 600:
+		w.step()
+		var foes := {}
+		for i in w.units.count():
+			if w.units.owner[i] == 0 and w.units.foe[i] != 0:
+				foes[w.units.foe[i]] = true
+		most = maxi(most, foes.size())
+	check(most >= 7, "attack-move spreads: up to %d different foes fought at once by 10 spearmen" % most)
 
 
 ## Units can knock down a Town Center; its ground opens up again.

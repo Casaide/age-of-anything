@@ -167,6 +167,15 @@ bushes that vanish when used up. Buildings under construction brighten as they'r
 camera zooms in whole art pixels, and the palette pass is a toggle (P). The old tile, building
 and resource views are deleted.
 
+Combat began (milestone 4). Dominic asked for every armour type now, the genre's model: melee
+and pierce armour, plus armour against bonus classes, so nothing important gets missed later.
+The sim fights with int vectors over a class table, hits land together, and buildings can fall.
+An equal-cost counter matrix over six races goes to the counter 79% of the time. Then
+Dominic's twist: attack-move should spread out, ten duels instead of a scrum, with winners
+going to help, the first step towards fights more organised than the genre's usual ball of
+units ("not as far as the big battle games, but not far from it either; still easy and fun").
+The art and UI track now runs as a separate agent in its own worktree.
+
 ## Decisions
 - D-040: the art direction is open again; choose from the sampler.
 - D-041: a sixth direction, high-fidelity pre-rendered, built as a real bake pipeline.
@@ -211,6 +220,9 @@ and resource views are deleted.
 ![Bug bushes as leafy clumps (Dominic: "quite out of place still")](../images/2026-10-11/46-bug-bushes-leafy-clumps.png)
 ![Vertical slice: a frog opening in the real game view](../images/2026-10-11/47-vertical-slice-frog-opening-in-the-game.png)
 ![Vertical slice: centaur Romans vs steppe riders, rock outcrop, swamp and lake](../images/2026-10-11/48-vertical-slice-centaurs-vs-steppe-riders.png)
+![Bug: the dead toppled shadow and all, as dark slivers](../images/2026-10-11/50-bug-dead-units-as-dark-slivers.png)
+![The first battle: frogs vs centaur Romans](../images/2026-10-11/51-first-battle-frogs-vs-centaur-romans.png)
+![Fallen frogs lie on their sides and darken](../images/2026-10-11/52-battle-fallen-frogs-lie-and-darken.png)
 ![Before: humans and centaurs still the automatic fallback](../images/2026-10-11/35-before-humans-centaurs-still-placeholder.png)
 ![Modelled centaur Romans and Greeks (first pass)](../images/2026-10-11/36-modelled-centaur-romans-and-greeks.png)
 ![Modelled beetles and royal knights](../images/2026-10-11/37-modelled-beetles-and-knights.png)
@@ -268,6 +280,9 @@ and resource views are deleted.
   real problem: each try was a style nothing else in the game uses. They're now built like the
   units: smooth matte masses, the frogs' own leaf decals, clear bugs. Lesson: match the
   construction, not just the colours.
+- **Dead as knives.** The first deaths tipped the whole unit over, its ground shadow too,
+  and then squashed it to "sink": every corpse became a dark blade standing in the grass. Only
+  the body topples now; the shadow stays on the ground.
 
 ## Ideas parked
 - Mixes: storybook units on painterly ground; toy-rendered parts with ink outlines; paper ground

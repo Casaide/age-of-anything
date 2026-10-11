@@ -266,3 +266,11 @@ wore the knight's iron helmet and winged Romans got bat wings: knight kit (iron 
 shield, mail) is now the royal culture's signature, bat wings the spooky/sewer one's, feather
 wings are generic, and heavy units no longer "want" knight kit. A test checks that no culture
 gets another's signature kit.
+
+**D-054, 2026-10-11: Armour classes from the start; attack-move spreads out.** Dominic: all
+armour types now (the genre's melee/pierce plus per-class armour), not one value, "so we don't
+miss something important". And attack-move should spread units over the enemy line (each picks
+a foe few allies are already fighting; a unit leaves a crowded foe for a free one), making
+battles a set of duels that winners reinforce. The direction: combat a step more organised and
+exciting than the genre's usual, short of the big-battle games, still easy and fun, and ready
+for formations later (formations themselves stay cut for now).
