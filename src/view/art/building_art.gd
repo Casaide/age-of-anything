@@ -41,7 +41,7 @@ func setup(kit, name: String, cx: int, cy: int, size: int, p_team: Color) -> voi
 		bs.position = at
 		bs.self_modulate = Color(team.r, team.g, team.b, 1.0)
 		var m := ShaderMaterial.new()
-		m.shader = load("res://scenes/style_sampler/hifi/banner.gdshader")
+		m.shader = load("res://src/view/art/bake/banner.gdshader")
 		bs.material = m
 		add_child(bs)
 		live.append(bs)

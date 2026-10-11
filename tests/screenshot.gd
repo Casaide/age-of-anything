@@ -1,5 +1,6 @@
 extends SceneTree
-## Opens the Race Lab, optionally sets the two prompts, waits, saves a PNG.
+## Opens the Race Lab, optionally sets the two prompts, waits for the art to bake,
+## then saves a PNG.
 ## Run (needs a display): godot --path . --script res://tests/screenshot.gd -- out.png "prompt A" "prompt B"
 
 func _initialize() -> void:
@@ -13,7 +14,10 @@ func _initialize() -> void:
 		if args.size() > i + 1:
 			lab.sides[i].prompt.text = args[i + 1]
 			lab._generate(i, false)
+	while lab.kit_busy or lab.sides.any(func(s): return s.race.is_empty() or s.baked != s.race.key):
+		await process_frame
 	for f in 90:
 		await process_frame
 	root.get_texture().get_image().save_png(out)
+	print("saved ", out)
 	quit()

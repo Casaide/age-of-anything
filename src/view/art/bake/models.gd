@@ -4,7 +4,7 @@ extends RefCounted
 ## sim y = world z. Each builder returns the static body plus the "live" bits
 ## (animated in 2D after baking) and the points the 2D side needs.
 
-const Materials := preload("res://scenes/style_sampler/hifi/materials.gd")
+const Materials := preload("res://src/view/art/bake/materials.gd")
 
 var mats := Materials.new()
 var rng := RandomNumberGenerator.new()
@@ -240,31 +240,6 @@ func stilt_house(team: Color) -> Dictionary:
 
 # ------------------------------------------------------------------ ground
 
-func grass_tile(seed_value: int) -> Node3D:
-	rng.seed = seed_value
-	var n := Node3D.new()
-	n.add_child(box(Vector3(1.0, 0.1, 1.0), mats.get_mat("grass"), Vector3(0, -0.05, 0)))
-	var blade := Materials.flat(Color("#5e8434"), 0.9)
-	var blade2 := Materials.flat(Color("#86a64a"), 0.9)
-	for k in 22:
-		var p := Vector3(rng.randf_range(-0.45, 0.45), 0, rng.randf_range(-0.45, 0.45))
-		for b in 3:
-			var h := rng.randf_range(0.05, 0.1)
-			n.add_child(box(Vector3(0.012, h, 0.012), blade if b % 2 == 0 else blade2, p + Vector3(b * 0.012, h / 2, 0), Vector3(rng.randf_range(-20, 20), 0, rng.randf_range(-20, 20))))
-	return n
-
-
-func swamp_tile(seed_value: int) -> Node3D:
-	rng.seed = seed_value
-	var n := Node3D.new()
-	n.add_child(box(Vector3(1.0, 0.08, 1.0), mats.get_mat("swamp"), Vector3(0, -0.06, 0)))
-	var pad := Materials.flat(Color("#4e7a34"), 0.5)
-	for k in 2:
-		var p := Vector3(rng.randf_range(-0.3, 0.3), -0.015, rng.randf_range(-0.3, 0.3))
-		n.add_child(cyl(0.11, 0.11, 0.01, pad, p, Vector3.ZERO, 16))
-	return n
-
-
 func reeds(seed_value: int) -> Node3D:
 	rng.seed = seed_value
 	var n := Node3D.new()
@@ -304,80 +279,6 @@ func bug_bush(seed_value: int) -> Node3D:
 
 # ------------------------------------------------------------------ the frog
 
-## A frog worker, facing +x, in parts that rotate about pivots in 2D:
-## far leg, far arm, body, head, near leg, near arm with its basket.
-func frog_worker(team: Color) -> Dictionary:
-	var skin := mats.get_mat("frog")
-	var cream := Materials.flat(Color("#e6e2b0"), 0.45)
-	var dark := Materials.flat(Color("#1a1612"), 0.08)
-	var white := Materials.flat(Color("#f4f0e0"), 0.2)
-	var pink := Materials.flat(Color("#e89a8a"), 0.6)
-	var leaf := Materials.flat(Color("#4e8a3a"), 0.55)
-	var parts := {}
-	var pivots := {}
-
-	var body := Node3D.new()
-	body.add_child(ball(0.3, skin, Vector3(0, 0.36, 0), Vector3(1.0, 0.95, 0.88)))
-	body.add_child(ball(0.24, cream, Vector3(0.12, 0.32, 0), Vector3(0.62, 0.95, 0.85)))
-	body.add_child(ring(0.17, 0.25, cloth(team), Vector3(0.04, 0.58, 0), Vector3(0, 0, -12), Vector3(1.05, 0.8, 1.05)))
-	body.add_child(box(Vector3(0.09, 0.26, 0.03), cloth(team), Vector3(-0.2, 0.46, 0.08), Vector3(10, 0, -20)))
-	parts.body = body
-	pivots.body = Vector3(0, 0.1, 0)
-
-	var head := Node3D.new()
-	head.add_child(ball(0.26, skin, Vector3(0.1, 0.72, 0), Vector3(1.18, 0.74, 1.12)))
-	head.add_child(ring(0.27, 0.285, dark, Vector3(0.12, 0.68, 0), Vector3(0, 0, -6), Vector3(1.12, 1, 1.07)))
-	for s in [-1, 1]:
-		var e := Vector3(0.2, 0.88, s * 0.14)
-		head.add_child(ball(0.095, skin, e))
-		head.add_child(ball(0.075, white, e + Vector3(0.04, 0.01, s * 0.01)))
-		head.add_child(ball(0.042, dark, e + Vector3(0.09, 0.015, s * 0.02)))
-		head.add_child(ball(0.1, skin, e + Vector3(-0.01, 0.045, 0), Vector3(1.0, 0.45, 1.0)))   # sleepy lid
-		head.add_child(ball(0.05, pink, Vector3(0.28, 0.66, s * 0.2), Vector3(1, 0.6, 1)))      # cheek
-	head.add_child(ball(0.24, leaf, Vector3(-0.06, 0.95, 0), Vector3(1.35, 0.1, 1.0), Vector3(0, 20, 14)))
-	head.add_child(box(Vector3(0.36, 0.01, 0.015), Materials.flat(Color("#7ab84a"), 0.5), Vector3(-0.06, 0.975, 0), Vector3(0, 20, 14)))
-	head.add_child(cyl(0.01, 0.012, 0.12, Materials.flat(Color("#6b4a2a"), 0.8), Vector3(-0.3, 1.0, -0.08), Vector3(0, 0, 60), 6))
-	parts.head = head
-	pivots.head = Vector3(0.05, 0.58, 0)
-
-	for side in ["far", "near"]:
-		var z := -0.2 if side == "far" else 0.2
-		var leg := Node3D.new()
-		leg.add_child(ball(0.17, skin, Vector3(-0.04, 0.2, z * 1.1), Vector3(1.3, 0.85, 0.75)))
-		leg.add_child(ball(0.1, skin, Vector3(0.12, 0.08, z * 1.2), Vector3(1.4, 0.5, 0.7)))
-		var foot := Vector3(0.24, 0.03, z * 1.25)
-		leg.add_child(ball(0.1, skin, foot, Vector3(1.6, 0.35, 1.1)))
-		for t in 3:
-			leg.add_child(ball(0.035, skin, foot + Vector3(0.14, 0.0, (t - 1) * 0.06)))
-		parts["leg_" + side] = leg
-		pivots["leg_" + side] = Vector3(-0.04, 0.28, z)
-
-	for side in ["far", "near"]:
-		var z := -0.24 if side == "far" else 0.24
-		var arm := Node3D.new()
-		var cap := CapsuleMesh.new()
-		cap.radius = 0.055
-		cap.height = 0.3
-		arm.add_child(_mi(cap, skin, Vector3(0.18, 0.4, z), Vector3(0, 0, 40)))
-		var hand := Vector3(0.28, 0.28, z)
-		arm.add_child(ball(0.06, skin, hand))
-		for t in 3:
-			arm.add_child(ball(0.025, skin, hand + Vector3(0.05, -0.02, (t - 1) * 0.035)))
-		if side == "near":
-			var basket := hand + Vector3(0.05, -0.16, 0.06)
-			arm.add_child(cyl(0.15, 0.12, 0.18, mats.get_mat("weave"), basket, Vector3.ZERO, 20))
-			arm.add_child(ring(0.14, 0.17, Materials.flat(Color("#6e5226"), 0.8), basket + Vector3(0, 0.09, 0)))
-			arm.add_child(ring(0.13, 0.15, Materials.flat(Color("#6e5226"), 0.8), basket + Vector3(0, 0.02, 0), Vector3(90, 0, 0), Vector3(1, 1, 1.2)))
-			for b in 5:
-				arm.add_child(ball(0.035, Materials.flat(Color("#e0607f"), 0.2), basket + Vector3(-0.06 + b * 0.03, 0.1, (b % 2) * 0.05 - 0.02), Vector3(1, 0.7, 1)))
-		parts["arm_" + side] = arm
-		pivots["arm_" + side] = Vector3(0.1, 0.48, z)
-	return {"parts": parts, "pivots": pivots,
-		"order": ["leg_far", "arm_far", "body", "head", "leg_near", "arm_near"]}
-
-
-# ------------------------------------------------------------------ doodads
-
 func stones(seed_value: int) -> Node3D:
 	rng.seed = seed_value
 	var n := Node3D.new()
@@ -416,24 +317,6 @@ func tuft(seed_value: int) -> Node3D:
 			Vector3(rng.randf_range(-25, 25), 0, rng.randf_range(-25, 25))))
 	return n
 
-
-## A few reeds at the water's edge (smaller than a reed bed tile).
-func shore_reeds(seed_value: int) -> Node3D:
-	rng.seed = seed_value
-	var n := Node3D.new()
-	var stalk := Materials.flat(Color("#8a9a40"), 1.0)
-	var tip := Materials.flat(Color("#6b4a2a"), 1.0)
-	for k in rng.randi_range(4, 7):
-		var h := rng.randf_range(0.35, 0.6)
-		var s := cyl(0.012, 0.016, h, stalk, Vector3(rng.randf_range(-0.15, 0.15), h / 2, rng.randf_range(-0.15, 0.15)),
-			Vector3(rng.randf_range(-12, 12), 0, rng.randf_range(-12, 12)), 6)
-		n.add_child(s)
-		if k % 2 == 0:
-			s.add_child(cyl(0.028, 0.028, 0.1, tip, Vector3(0, h / 2 - 0.04, 0), Vector3.ZERO, 8))
-	return n
-
-
-# ------------------------------------------------------------------ sewer-rat ("junk") buildings
 
 ## A rat Town Center built from scrap: brick footing, mismatched plank walls patched
 ## with tin, a corrugated tin roof, a stove-pipe chimney, a sewer grate, a cheese
