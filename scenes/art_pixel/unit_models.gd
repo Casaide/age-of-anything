@@ -1246,6 +1246,7 @@ func _quiver(c: Dictionary) -> Dictionary:
 ## with its root over the head, so it read as pointing forward.
 func _wings(texture: String, tint: Color) -> Dictionary:
 	var n := Node3D.new()
+	n.scale = Vector3.ONE * 0.8   # full size, they hid the unit wearing them
 	var x := Vector3(1, -0.3, -0.3).normalized()   # the far wing's picture axes: right...
 	var y := Vector3(0.3, 1, 0).normalized()       # ...and up, so its tip goes back and steeply up
 	var root := Vector3(0.5, 3.0, -4.0)
