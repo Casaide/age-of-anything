@@ -76,7 +76,9 @@ func _init() -> void:
 	_test_market(races)
 	_test_build_queue(races)
 	_test_camp_gather(races)
+	_test_drop_off(races)
 	_test_animals(races)
+	_test_bot_hunts(races)
 	_test_combat(gen)
 
 	var script := _script(map, races)
@@ -547,6 +549,48 @@ func _test_animals(races: Array) -> void:
 	check(i3 >= 0 and w3.units.owner[i3] == 0, "animals: an unguarded rival sheep is stolen by walking up to it")
 
 
+## The economy bot herds and hunts (Dominic: "bot should hunt too"): it claims and slaughters
+## its sheep early, hunts a deer that's near home and takes on a boar once it has workers to
+## spare; the hunters gather the meat.
+func _test_bot_hunts(races: Array) -> void:
+	var rules := rules_.duplicate(true)
+	rules.animals = true
+	var w := World.new(SEED, SimMap.load_id("flat_test"), races, rules)
+	var tc := -1
+	for b in w.buildings.count():
+		if tc < 0 and w.buildings.owner[b] == 0:
+			tc = b
+	var hx: int = w.buildings.cx[tc] * 1000 + 1500
+	var hy: int = w.buildings.cy[tc] * 1000 + 1500
+	for i in w.units.count():   # this map's deer graze mid-map, far from home: bring one closer
+		if w.types[w.units.kind[i]].get("animal", "") == "deer":
+			w.units.x[i] = hx + 8000
+			w.units.y[i] = hy + 2000
+			break
+	w.issue(0, Commands.SPAWN, {"slot": "spear", "count": 2, "x": hx - 3000, "y": hy - 3000})   # a guard to lead the boar hunt
+	var bot := EcoBot.new(0)
+	var killed := {}
+	var meat := 0
+	var when := {}   # the last kill of each kind
+	while w.tick < 20 * 60 * 7:
+		bot.think(w)
+		w.step()
+		for e in w.events:
+			if e.type == "die" and not e.building and w.types[e.kind].has("animal") and (e.owner == 0 or e.owner == w.gaia):
+				killed[w.types[e.kind].animal] = killed.get(w.types[e.kind].animal, 0) + 1
+				when[w.types[e.kind].animal] = "%d:%02d" % [w.tick / 1200, w.tick / 20 % 60]
+		for i in w.units.count():
+			var h: int = w.units.home[i]
+			if w.units.owner[i] == 0 and h >= 0 and w.map.terrain_ids[w.map.terrain[h]] == "carcass" and w.units.carry[i] > 0:
+				meat = maxi(meat, 1)
+	print("  bot hunting, first 7 minutes: %s, the last of each at %s" % [killed, when])
+	check(killed.get("sheep", 0) >= 3, "bot hunts: it claims and slaughters its sheep (%d)" % killed.get("sheep", 0))
+	check(killed.get("deer", 0) >= 1, "bot hunts: ... a deer near home (%d)" % killed.get("deer", 0))
+	check(killed.get("boar", 0) >= 1, "bot hunts: ... and its boar, with a big party (%d)" % killed.get("boar", 0))
+	check(w.lost[0] <= 2, "bot hunts: ... losing no more than a couple of hunters to it (%d lost)" % w.lost[0])
+	check(meat > 0, "bot hunts: its workers gather the carcasses")
+
+
 ## A long shift-queue of builds (a dragged wall) all goes up: taking the next order from a
 ## unit's queue must not wipe the rest of it (it did: only two of seven walls were built).
 func _test_build_queue(races: Array) -> void:
@@ -574,6 +618,71 @@ func _test_build_queue(races: Array) -> void:
 		if w.btypes[w.buildings.kind[b]].id == "wall":
 			done += w.buildings.done[b]
 	check(done == 7, "shift-queued builds: all 7 walls of a line go up (%d)" % done)
+
+
+## Right-clicking your Town Center with a worker half-loaded: it takes the load in and goes
+## back to the same patch (Dominic). A rally point set on a resource sits in the middle of its
+## tile, and a worker trained to it gathers there.
+func _test_drop_off(races: Array) -> void:
+	var w := World.new(SEED, SimMap.load_id("flat_test"), races, rules_)
+	var wi := -1
+	var tc := -1
+	for i in w.units.count():
+		if wi < 0 and w.units.owner[i] == 0 and w.types[w.units.kind[i]].worker:
+			wi = i
+	for b in w.buildings.count():
+		if tc < 0 and w.buildings.owner[b] == 0:
+			tc = b
+	var wood := Economy.kind_of(w, "wood")
+	var uid: int = w.units.id[wi]
+	var cell := Economy.nearest_resource(w, w.units.x[wi], w.units.y[wi], wood)
+	w.issue(0, Commands.GATHER, {"ids": [uid], "cell": cell})
+	for t in 2000:
+		w.step()
+		wi = w.units.index_of(uid)
+		if w.units.carry[wi] >= 2 and w.units.task[wi] == Economy.GATHER:
+			break
+	var home: int = w.units.home[wi]
+	var load: int = w.units.carry[wi]
+	var before: int = w.stock[wood - 1][0]
+	w.issue(0, Commands.DROP_OFF, {"ids": [uid], "building": w.buildings.id[tc]})
+	for t in 12:   # past the command delay: a load still on its back, on the way in
+		w.step()
+	wi = w.units.index_of(uid)
+	check(w.units.task[wi] == Economy.RETURN and w.units.target[wi] == w.buildings.id[tc], "drop off: right-clicking the Town Center sends a loaded worker there")
+	for t in 600:
+		w.step()
+		if w.stock[wood - 1][0] > before:
+			break
+	wi = w.units.index_of(uid)
+	check(load >= 2 and w.stock[wood - 1][0] >= before + load, "drop off: the load (%d) is taken in (%d -> %d)" % [load, before, w.stock[wood - 1][0]])
+	check(w.units.task[wi] == Economy.GATHER and w.units.home[wi] == home, "drop off: ... and the worker goes back to its patch")
+	# Rally on a resource: the middle of its tile; a worker trained there gathers it.
+	var food := Economy.kind_of(w, "food")
+	var bush := Economy.nearest_resource(w, w.units.x[wi], w.units.y[wi], food)
+	var bx: int = (bush % w.map.width) * SimMap.TILE
+	var by: int = (bush / w.map.width) * SimMap.TILE
+	w.issue(0, Commands.RALLY, {"building": w.buildings.id[tc], "x": bx + 120, "y": by + 860})
+	w.issue(0, Commands.TRAIN, {"building": w.buildings.id[tc], "slot": "worker"})
+	var n := w.units.count()
+	for t in 12:
+		w.step()
+	check(w.buildings.rally_x[tc] == bx + 500 and w.buildings.rally_y[tc] == by + 500, "rally: set on a bush, it sits in the middle of the bush's tile")
+	w.issue(0, Commands.RALLY, {"building": w.buildings.id[tc], "x": 20120, "y": 20860})   # open ground stays where clicked
+	for t in 12:
+		w.step()
+	var open: bool = w.map.resource_at(w.map.cell_of(20120, 20860)) != "" or (w.buildings.rally_x[tc] == 20120 and w.buildings.rally_y[tc] == 20860)
+	check(open, "rally: on open ground it stays where you clicked")
+	w.issue(0, Commands.RALLY, {"building": w.buildings.id[tc], "x": bx + 120, "y": by + 860})
+	for t in 1200:
+		w.step()
+		if w.units.count() > n:
+			break
+	var new_i := -1
+	for i in w.units.count():
+		if w.units.owner[i] == 0 and w.types[w.units.kind[i]].worker and w.units.id[i] > uid and new_i < 0 and w.units.task[i] == Economy.GATHER:
+			new_i = i
+	check(new_i >= 0 and w.units.carry_kind[new_i] == food, "rally: a worker trained to a bush rally gathers food")
 
 
 ## A worker who finishes a lumber camp goes and gathers wood (Dominic).

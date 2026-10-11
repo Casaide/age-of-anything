@@ -160,6 +160,37 @@ static func cmd_help_build(w, player: int, a: Dictionary) -> void:
 		start_build(w, i, a.target)
 
 
+## Right-click your own drop-off with workers carrying something it takes: they walk there,
+## drop it off and go back to what they were gathering (their `home` cell, if they had one).
+## Units with nothing it takes just walk up to it.
+static func cmd_drop_off(w, player: int, a: Dictionary) -> void:
+	var b: int = w.buildings.index_of(a.building)
+	if b < 0 or w.buildings.owner[b] != player or w.buildings.done[b] == 0:
+		return
+	var t: Dictionary = w.btypes[w.buildings.kind[b]]
+	var u = w.units
+	for uid in a.ids:
+		var i: int = u.index_of(uid)
+		if i < 0 or u.owner[i] != player:
+			continue
+		if not can_drop(w, i, t):
+			clear_task(w, i)
+			_approach_building(w, i, b)
+			continue
+		if u.task[i] != GATHER and u.task[i] != RETURN:
+			u.home[i] = -1   # a builder or an idle carrier: nothing to go back to
+		u.task[i] = RETURN
+		u.target[i] = a.building
+		u.work[i] = 0
+		_approach_building(w, i, b)
+
+
+## Does unit i carry something a building of type t takes in?
+static func can_drop(w, i: int, t: Dictionary) -> bool:
+	var u = w.units
+	return w.types[u.kind[i]].worker and u.carry[i] > 0 and u.carry_kind[i] > 0 and t.drop[u.carry_kind[i] - 1] == 1
+
+
 static func cmd_train(w, player: int, a: Dictionary) -> void:
 	var b: int = w.buildings.index_of(a.building)
 	if b < 0 or w.buildings.owner[b] != player or w.buildings.done[b] == 0:
@@ -195,8 +226,14 @@ static func cmd_rally(w, player: int, a: Dictionary) -> void:
 	var b: int = w.buildings.index_of(a.building)
 	if b < 0 or w.buildings.owner[b] != player:
 		return
-	w.buildings.rally_x[b] = clampi(a.x, 0, w.map.width * SimMap.TILE - 1)
-	w.buildings.rally_y[b] = clampi(a.y, 0, w.map.height * SimMap.TILE - 1)
+	var x: int = clampi(a.x, 0, w.map.width * SimMap.TILE - 1)
+	var y: int = clampi(a.y, 0, w.map.height * SimMap.TILE - 1)
+	var cell: int = w.map.cell_of(x, y)
+	if w.map.resource_at(cell) != "":   # on a tree, rock, bush or carcass: its middle (Dominic)
+		x = (cell % w.map.width) * SimMap.TILE + SimMap.TILE / 2
+		y = (cell / w.map.width) * SimMap.TILE + SimMap.TILE / 2
+	w.buildings.rally_x[b] = x
+	w.buildings.rally_y[b] = y
 
 
 static func _own_workers(w, player: int, ids: Array) -> Array:
