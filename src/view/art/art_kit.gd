@@ -18,6 +18,7 @@ const UNIT_SCALE := 0.85   # units at about a third of a building's height
 const UNIT_BANDS := 4      # value bands in unit shading (Pixelize.run; the paint-over hybrid)
 const SS := 4              # supersampling for the building and prop bakes
 const HOUSE_SCALE := 1.1   # houses read smaller than the halls (Fable; Dominic: rat house too big)
+const ALONG_Z := "^z"       # bake-name suffix of a gate turned a quarter, for a wall line running along sim y
 ## Parts a worker swaps in by job (see UnitView.set_tool and sim_debug's _tool_for).
 const JOB_PARTS := ["tool.axe", "tool.basket", "tool.hammer", "tool.pick", "load.reeds", "load.stone"]
 const ICON_CELL := 160     # screen pixels per unit when rendering portraits   # houses read about 2.5x a footman
@@ -132,10 +133,12 @@ func _placed(models, arch: String, type: String, model: String, suffix: String) 
 	if v > 0:
 		turn = 90.0 * v
 		s *= [1.0, 0.94, 1.05, 0.9][v % 4]
+	if suffix == ALONG_Z:
+		turn = 90.0   # a gate in a line running along sim y
 	if s == 1.0 and turn == 0.0:
 		return spec
 	var basis := Basis(Vector3.UP, deg_to_rad(turn)).scaled(Vector3.ONE * s)
-	for key in ["body", "banner", "vane"]:
+	for key in ["body", "banner", "vane", "open"]:
 		if spec.has(key):
 			var holder := Node3D.new()
 			holder.add_child(spec[key])
@@ -270,6 +273,8 @@ func bake_buildings(races: Array) -> void:
 				await _bake_building(h[0], h[1], arch, type, looks[age], "@" + str(age))
 			for v in range(1, int(d.get("variants", {}).get(type, 1))):   # a few of each house, turned and sized apart
 				await _bake_building(h[0], h[1], arch, type, "", "#" + str(v))
+			if bool(d.buildings[type].get("gate", false)):   # gates face the way their wall runs
+				await _bake_building(h[0], h[1], arch, type, "", ALONG_Z)
 	h[0].queue_free()
 
 
@@ -369,6 +374,10 @@ func _bake_building(baker, models, arch: String, type: String, model := "", suff
 	if spec.has("banner"):
 		var ban: Dictionary = await baker.bake(spec.banner, [Vector3.ZERO])
 		info.banner = {"tex": ban.tex, "origin": ban.points[0]}   # its own wave shader, so outside the atlas
+	if spec.has("open"):   # a gate: its open look, shown while a friend goes through
+		var op: Dictionary = await baker.bake(spec.open, [Vector3.ZERO])
+		bakes[name + ":open"] = {"img": (op.tex as Texture2D).get_image(), "origin": op.points[0]}
+		info.open = name + ":open"
 	if spec.has("vane"):
 		var vane: Dictionary = await baker.bake(spec.vane, [Vector3.ZERO, spec.vane_pivot])
 		bakes[name + ":vane"] = {"img": (vane.tex as Texture2D).get_image(), "origin": vane.points[1]}
@@ -379,7 +388,7 @@ func _bake_building(baker, models, arch: String, type: String, model := "", suff
 	for st in BUILD_STAGES.size():
 		var part: Dictionary = _placed(models, arch, type, model, suffix)
 		_hold_back(part.body, st, models)
-		for live in ["banner", "vane"]:   # the live parts only go up when it's finished
+		for live in ["banner", "vane", "open"]:   # the live parts only go up when it's finished
 			if part.has(live):
 				part[live].free()
 		var sb: Dictionary = await baker.bake(part.body, [Vector3.ZERO])

@@ -53,7 +53,8 @@ static func load_btypes(resources: Array) -> Array:
 			"food": int(b.get("food", 0)), "reseed": cost_vector(resources, b.get("reseed", {})),
 			"build_ticks": int(b.build_time) * 20, "pop": int(b.pop), "house": bool(b.house),
 			"trains": b.trains.duplicate(), "age": int(b.age), "armour": b.get("armour", {}).duplicate(),
-			"attack": b.get("attack", {}).duplicate(),
+			"attack": b.get("attack", {}).duplicate(), "gate": bool(b.get("gate", false)),
+			"line": bool(b.get("line", false)), "replaces": b.get("replaces", []).duplicate(),
 		})
 	return out
 
@@ -109,7 +110,9 @@ static func place(w, player: int, k: int, cx: int, cy: int) -> int:
 	var t: Dictionary = w.btypes[k]
 	var i: int = w.buildings.add(w.next_id, player, k, cx, cy, t.size, 1)
 	w.next_id += 1
-	w.map.occupy(w.buildings.footprint(i, w.map.width), w.buildings.id[i])
+	w.map.occupy(w.buildings.footprint(i, w.map.width), w.buildings.id[i], w.teams[player] if t.gate else -1)
+	if t.gate:
+		w.refresh_lanes()   # the team's first gate gives it lanes of its own
 	return i
 
 
@@ -146,10 +149,49 @@ static func lay_foundation(w, player: int, a: Dictionary) -> int:
 	var t: Dictionary = w.btypes[k]
 	if _own_workers(w, player, a.ids).is_empty() or not w.can_afford(player, t.cost) or w.ages[player] < t.age:
 		return 0
-	if not w.map.can_build(a.cx, a.cy, t.size, builder_class(w, player), t.water):
+	if not can_place(w, player, k, a.cx, a.cy):
 		return 0
 	w.pay(player, t.cost)
+	for c in _footprint(w, a.cx, a.cy, t.size):
+		if _replaceable(w, player, t, c):
+			demolish(w, w.buildings.index_of(w.map.occupied[c]))   # a gate dropped into a wall takes its place
 	return w.buildings.id[place(w, player, k, a.cx, a.cy)]
+
+
+## Can this player put a building of type k here? On open ground as usual, or (a gate) over
+## its own wall tiles of the types it `replaces`.
+static func can_place(w, player: int, k: int, cx: int, cy: int) -> bool:
+	var t: Dictionary = w.btypes[k]
+	var mc := builder_class(w, player)
+	for y in range(cy, cy + t.size):
+		for x in range(cx, cx + t.size):
+			var ok: bool = w.map.can_build(x, y, 1, mc, t.water)
+			if not ok and not (x >= 0 and y >= 0 and x < w.map.width and y < w.map.height and _replaceable(w, player, t, y * w.map.width + x)):
+				return false
+	return true
+
+
+## Does a building of type t, placed by this player, take the place of what stands on cell c?
+static func _replaceable(w, player: int, t: Dictionary, c: int) -> bool:
+	var id: int = w.map.occupied[c]
+	if id == 0 or t.replaces.is_empty():
+		return false
+	var b: int = w.buildings.index_of(id)
+	return b >= 0 and w.buildings.owner[b] == player and w.btypes[w.buildings.kind[b]].id in t.replaces
+
+
+static func _footprint(w, cx: int, cy: int, size: int) -> PackedInt32Array:
+	var out := PackedInt32Array()
+	for y in range(cy, cy + size):
+		for x in range(cx, cx + size):
+			out.append(y * w.map.width + x)
+	return out
+
+
+## Take a building away without a fight (a wall tile a gate replaces). Its builders stop.
+static func demolish(w, b: int) -> void:
+	w.map.occupy(w.buildings.footprint(b, w.map.width), 0)
+	w.buildings.remove_at(b)
 
 
 static func cmd_help_build(w, player: int, a: Dictionary) -> void:
@@ -433,11 +475,11 @@ static func clear_farm(w, b: int) -> void:
 
 
 static func _approach_cell(w, i: int, cell: int) -> void:
-	w.order_reach(i, _cell_rect(w, cell), w.cell_field(cell, true, w.units.mclass[i]))
+	w.order_reach(i, _cell_rect(w, cell), w.cell_field(cell, true, w.lane(i)))
 
 
 static func _approach_building(w, i: int, b: int) -> void:
-	w.order_reach(i, _building_rect(w, b), w.building_field(w.buildings.id[b], true, w.units.mclass[i]))
+	w.order_reach(i, _building_rect(w, b), w.building_field(w.buildings.id[b], true, w.lane(i)))
 
 
 static func _cell_rect(w, cell: int) -> Rect2i:
@@ -597,7 +639,7 @@ static func spawn_at(w, b: int, k: int) -> int:
 	for y in range(cy - 1, cy + s + 1):
 		for x in range(cx - 1, cx + s + 1):
 			var edge: bool = x == cx - 1 or x == cx + s or y == cy - 1 or y == cy + s
-			if not edge or not m.cell_walkable(x, y, w.types[k].mclass):
+			if not edge or not m.cell_walkable(x, y, w.lane_base[bs.owner[b]] + w.types[k].mclass):
 				continue
 			var d2 := Fixed.dist2(gx, gy, x * SimMap.TILE + 500, y * SimMap.TILE + 500)
 			if d2 < best_d2:
