@@ -1905,7 +1905,7 @@ func _update_panel() -> void:
 			var now := _soldier_stance(mine)
 			for k in STANCES.size():
 				var stance: String = Combat.POSTURES[k]
-				c.buttons.append({"icon": Icons.texture("stance_" + stance), "text": STANCES[k][0], "key": "", "cost": "ON" if now == k else "", "enabled": true,
+				c.buttons.append({"icon": Icons.texture("stance_" + stance), "text": STANCES[k][0], "key": "", "cost": "ON" if now == k else "", "enabled": true, "group": "Stance", "accent": now == k,
 					"tip": "[b]%s[/b]%s\n%s\nOrdered attacks work under every stance." % [STANCES[k][0], " (now)" if now == k else "", STANCES[k][1]],
 					"action": func(): set_stance(stance)})
 			c.info += ("\n" if c.info != "" else "") + "Stance: %s" % (STANCES[now][0] if now >= 0 else "mixed")
