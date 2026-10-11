@@ -31,8 +31,9 @@ var _next_build := 0
 
 ## config: data/ai.json as ints (see load_config), or {} to load it. level: a key of
 ## its "levels" (easy, normal): later, smaller attack waves and a smaller economy.
-var max_army := 0   # the level's cap on soldiers kept, in population (0: none)
-var wave_max := 0   # the level's cap on soldiers sent per wave (0: the whole army)
+var army_ratio := 0   # soldiers kept per age as a percent of workers (0: no limit); grows with the ages
+var wave_pct := 100   # the share of the army each wave sends; the rest defend
+var build_up := false # economy and upgrades come before soldiers
 
 
 func _init(p_player: int, config := {}, level := "normal") -> void:
@@ -46,8 +47,9 @@ func _init(p_player: int, config := {}, level := "normal") -> void:
 			w.min_army = maxi(1, int(w.min_army) * int(l.get("army_pct", 100)) / 100)
 		cfg.military.repeat_min_army = maxi(1, int(cfg.military.repeat_min_army) * int(l.get("army_pct", 100)) / 100)
 		cfg.economy.max_workers = int(l.get("max_workers", cfg.economy.max_workers))
-		max_army = int(l.get("max_army", 0))
-		wave_max = int(l.get("wave_max", 0))
+		army_ratio = int(l.get("army_ratio", 0))
+		wave_pct = int(l.get("wave_pct", 100))
+		build_up = int(l.get("build_up", 0)) == 1
 	eco = EcoBot.new(p_player)
 	eco.MIX = {}
 	for age in cfg.economy.mix:
@@ -151,16 +153,18 @@ func _age_three(w, tc: int, workers: Array) -> void:
 
 ## Line upgrades, as a player would: each building upgrades the lines it trains once the
 ## age allows and there's enough to spare for a few soldiers too (twice the cost in stock).
+## A building-up bot also researches gathering, and spends on it first (cost in stock is enough).
 func _upgrade_lines(w) -> void:
 	for b in w.buildings.count():
 		if w.buildings.owner[b] != player:
 			continue
 		for r in w.tech.research:
-			if not r.has("line") or Tech.why_not(w, player, b, r.id) != "":
+			var eco: bool = r.effects.any(func(fx): return fx.has("gather"))
+			if not (r.has("line") or (build_up and eco)) or Tech.why_not(w, player, b, r.id) != "":
 				continue
 			var spare := true
 			for k in r.cost.size():
-				if w.stock[k][player] < r.cost[k] * 2:
+				if w.stock[k][player] < r.cost[k] * (1 if build_up else 2):
 					spare = false
 			if spare:
 				w.issue(player, Commands.RESEARCH, {"building": w.buildings.id[b], "id": r.id})
@@ -173,8 +177,10 @@ func _train(w, workers: Array) -> void:
 	for i in w.units.count():
 		if w.units.owner[i] == player and not w.types[w.units.kind[i]].worker:
 			guard += int(w.types[w.units.kind[i]].pop)
-	if max_army > 0 and guard >= max_army:
-		return   # an easier bot keeps a smaller army (Dominic: Easy wiped him out in age 2)
+	# An easier bot keeps its army in proportion to its economy, growing with each age: it
+	# builds up more and fights less, but never stops growing (Dominic: not caps).
+	if army_ratio > 0 and guard * 100 >= workers.size() * army_ratio * w.ages[player]:
+		return
 	if w.ages[player] == 1 and workers.size() >= int(cfg.economy.age_workers) and guard >= int(cfg.military.guard):
 		var next: Dictionary = Tech.next_age(w, player)
 		if not next.is_empty():
@@ -270,7 +276,7 @@ func _waves(w, army: Array, hx: int, hy: int) -> void:
 	for i in army:
 		strength += int(w.types[w.units.kind[i]].pop)
 	if w.tick >= next_wave_tick and strength >= need:
-		var sent: Array = army if wave_max <= 0 else army.slice(0, wave_max)   # an easier bot sends a few, keeps the rest home
+		var sent: Array = army.slice(0, maxi(1, army.size() * wave_pct / 100))   # an easier bot sends part, the rest defend
 		w.issue(player, Commands.ATTACK_MOVE, {"ids": sent.map(func(i): return w.units.id[i]), "x": target.x, "y": target.y})
 		assault = true
 		wave += 1
@@ -285,7 +291,7 @@ func _waves(w, army: Array, hx: int, hy: int) -> void:
 	# Reinforcements: once we're attacking, fresh soldiers idling at home go forward in groups.
 	var home := army.filter(func(i): return w.units.foe[i] == 0 and w.units.moving[i] == 0 \
 			and Fixed.dist2(hx, hy, w.units.x[i], w.units.y[i]) <= 4 * home_r * home_r)
-	if home.size() >= REINFORCE and wave_max <= 0:   # (a capped wave's home guard stays home)
+	if home.size() >= REINFORCE and wave_pct >= 100:   # (a partial wave's home guard stays home)
 		ids.append_array(home.map(func(i): return w.units.id[i]))
 	for i in army:
 		var on_building: bool = w.units.foe[i] != 0 and w.buildings.index_of(w.units.foe[i]) >= 0
