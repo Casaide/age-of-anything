@@ -1,6 +1,6 @@
 # Milestone 4: Combat
 
-**Status:** in progress (plan approved 2026-10-11, with armour classes; see below)
+**Status:** done (2026-10-11): Dominic ran the quiz and called the stats fine for now
 **Exit criterion:** Blind testers predict counters from silhouettes.
 
 ## Scope
@@ -140,8 +140,10 @@ hit-flash polish and SFX (9), Blacksmith upgrades and research (7 / Next), forma
 - [x] View: unit card (stats, melee/pierce armour, bonuses, strong/weak vs the enemy's real roster): `src/view/unit_card.gd`, in the panel and the train buttons' tooltips
 - [x] Exit check tool: `scenes/counter_quiz.tscn`: 12 equal-cost pairs in the pixel art, no labels,
   answered with 1/2 and scored against real headless fights (saved to user://counter_quiz.json)
-- [ ] Exit check, reshaped after Dominic's first runs scored 50% (2026-10-11). The quiz is rebuilt
-  in two parts (8 roles from silhouettes, 12 counters with unit cards); **waiting on Dominic's run**.
+- [x] Exit check, reshaped after Dominic's first runs scored 50% (2026-10-11). The quiz is rebuilt
+  in two parts (8 roles from silhouettes, 12 counters with unit cards). Dominic's run: roles 4/8,
+  counters 8/12 (67%). He guessed from numbers and weapons and how he'd use a unit, not the cards,
+  and judged: "I don't think the quiz is really needed, the stats are fine for now."
   - Why: he judged by apparent quality (metal beats wood, a crossbow looks stronger than a
     blowgun). That's true per unit, but each pair is equal cost, and neither the counts nor the
     counter roles come through in the picture.
@@ -151,7 +153,14 @@ hit-flash polish and SFX (9), Blacksmith upgrades and research (7 / Next), forma
   - Also: early units should look light (milestone 6: gear tiers by age), and skirmishers should
     read as arrow-proof (a shield).
 - [x] Unit card in the panel (done with the item above)
-- [ ] Archive: pictures along the way, journal, decisions, timeline
+- [x] Archive: pictures along the way, journal, decisions, timeline
+
+## What the quiz run showed (2026-10-11)
+The roles Dominic missed were readability bugs, not balance: the rat archer's bow was invisible
+(dark wood on dark armour, read as a spearman), frog spears read as blowguns (a small bone tip),
+a saucepan helmet's handle read as a stray line, and leather armour's belt and straps floated off
+the body as dark hoops. All four fixed the same day. Weapon silhouettes are a design-review item
+(rule 3: silhouette first at 8 px).
 
 ## After this milestone
 - **Full review of the art assets (Dominic, 2026-10-11):** every unit part, building, prop,

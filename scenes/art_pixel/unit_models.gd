@@ -343,13 +343,13 @@ func _weapon_spear_reed(c: Dictionary) -> Dictionary:
 	var d := (b - a).normalized()
 	var head := CylinderMesh.new()
 	head.top_radius = 0.0
-	head.bottom_radius = 2.4
-	head.height = 7.5
+	head.bottom_radius = 3.4   # a big, pale blade: it must read as a spear, not a blowgun
+	head.height = 9.5
 	head.radial_segments = 4
 	var tip := MeshInstance3D.new()
 	tip.mesh = head
 	tip.material_override = surf("bone", Color.WHITE, 4.0)
-	tip.position = b + d * 3.0
+	tip.position = b + d * 4.0
 	tip.basis = Basis(Quaternion(Vector3.UP, d)).scaled(Vector3(1.0, 1.0, 0.45))
 	n.add_child(tip)
 	for k in 3:
@@ -646,7 +646,9 @@ func _helm_dome(c: Dictionary) -> Dictionary:
 	var iron := surf("iron", Color.WHITE, 3.0)
 	n.add_child(blob(Vector3(6.4, 4.4, 6.4), iron, Vector3(0, 0.5, 0)))
 	n.add_child(ring(6.2, 7.4, iron, Vector3(0, 0.6, 0)))
-	n.add_child(rod(Vector3(-6.8, 0.8, 0), Vector3(-12.5, 1.8, 0), 0.7, 0.6, surf("wood_grain", Color.WHITE, 4.0)))
+	# A cooking pot's two loop handles at the sides (a long pan handle read as a stray line).
+	for side in [1, -1]:
+		n.add_child(ring(0.7, 1.4, iron, Vector3(-1.0, 1.6, 6.9 * side), Vector3(90, 0, 0)))
 	return {"node": n}
 
 
@@ -1041,16 +1043,18 @@ func _weapon_gladius(c: Dictionary) -> Dictionary:
 
 func _weapon_bow_short(c: Dictionary) -> Dictionary:
 	var n := Node3D.new()
-	var wood := surf("wood_grain", Color("#c09060"), 4.0)
+	# Pale wood, thick limbs and a bright string: it has to stand out against dark armour
+	# (a dark bow vanished, and testers called the archer a spearman).
+	var wood := surf("wood_grain", Color("#e8c48a"), 4.0)
 	# Held out at its leather grip (the origin), the string drawn back towards the face.
 	var g := Vector3(5.7, 0, 0)
-	var pts := [Vector3(3.4, -11.4, 0), Vector3(2, -10, 0), Vector3(5, -5, 0), Vector3(6, 0, 0), Vector3(5, 5, 0), Vector3(2, 10, 0), Vector3(3.4, 11.4, 0)]
+	var pts := [Vector3(3.8, -13.6, 0), Vector3(2, -12, 0), Vector3(5.5, -6, 0), Vector3(6.6, 0, 0), Vector3(5.5, 6, 0), Vector3(2, 12, 0), Vector3(3.8, 13.6, 0)]
 	for k in range(1, pts.size()):
-		var r := 0.85 if k in [3, 4] else 0.6
+		var r := 1.15 if k in [3, 4] else 0.85
 		n.add_child(rod(pts[k - 1] - g, pts[k] - g, r, r, wood))
 	var nock := Vector3(-3.5, 0, 0) - g
-	n.add_child(rod(Vector3(2, -10, 0) - g, nock, 0.14, 0.14, plain(Color("#e8e0c8")), false))
-	n.add_child(rod(nock, Vector3(2, 10, 0) - g, 0.14, 0.14, plain(Color("#e8e0c8")), false))
+	n.add_child(rod(Vector3(2, -12, 0) - g, nock, 0.25, 0.25, plain(Color("#f8f2e0")), false))
+	n.add_child(rod(nock, Vector3(2, 12, 0) - g, 0.25, 0.25, plain(Color("#f8f2e0")), false))
 	n.add_child(rod(nock, Vector3(9, 0, 0) - g, 0.3, 0.3, surf("wood_grain", Color.WHITE, 2.0), false))   # the arrow
 	n.add_child(cone(1.05, 1.05, 2.4, surf("leather", Color.WHITE, 2.0), Vector3.ZERO, Vector3(0, 0, 8)))
 	return {"node": n}
@@ -1219,9 +1223,9 @@ func _armour_leather(c: Dictionary) -> Dictionary:
 	var n := Node3D.new()
 	var leather := surf("leather", Color.WHITE, 5.0)
 	n.add_child(blob(Vector3(8.8, 8.2, 10.4), leather, Vector3(1.5, 0.5, 0), Vector3(0, 0, -10)))
-	for side in [1, -1]:
-		n.add_child(ring(9.4, 10.4, surf("leather", Color("#8a6a4a"), 3.0), Vector3(1.2, 1.0, 0), Vector3(0, 0, 70 * side)))
-	n.add_child(ring(8.6, 9.8, surf("leather", Color("#5a3a20"), 3.0), Vector3(1.0, -5.5, 0), Vector3(0, 0, -10), Vector3(0.9, 1, 1.1)))
+	# The belt hugs the jerkin where it is at that height (a wider ring floated off the body as a
+	# dark hoop round the belly; so did the old shoulder straps).
+	n.add_child(ring(0.97, 1.1, surf("leather", Color("#5a3a20"), 3.0), Vector3(1.4, -5.0, 0), Vector3(0, 0, -10), Vector3(6.6, 1.0, 7.8)))
 	return {"node": n}
 
 
