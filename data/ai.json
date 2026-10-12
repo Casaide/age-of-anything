@@ -45,59 +45,68 @@
    "building": "mining_camp",
    "age": 2,
    "near": "gold",
-   "workers": 16
+   "workers": 16,
+   "save": 1
   },
   {
    "building": "stable",
    "age": 2,
    "workers": 16,
-   "builders": 3
+   "builders": 3,
+   "save": 1
   },
   {
    "building": "archery_range",
    "age": 2,
    "workers": 18,
-   "builders": 3
+   "builders": 3,
+   "save": 1
   },
   {
    "building": "mill",
    "age": 2,
    "near": "food",
-   "workers": 19
+   "workers": 19,
+   "save": 1
   },
   {
    "building": "armoury",
    "age": 2,
-   "workers": 20
+   "workers": 20,
+   "save": 1
   },
   {
    "building": "mining_camp",
    "age": 2,
    "near": "stone",
-   "workers": 21
+   "workers": 21,
+   "save": 1
   },
   {
    "building": "watchtower",
    "age": 2,
    "near": "gold",
-   "workers": 22
+   "workers": 22,
+   "save": 1
+  },
+  {
+   "building": "barracks",
+   "age": 2,
+   "workers": 24
   },
   {
    "building": "university",
    "age": 3,
    "workers": 22,
-   "builders": 3
+   "builders": 3,
+   "save": 1
   },
   {
    "building": "castle",
    "age": 3,
    "workers": 24,
-   "builders": 6
-  },
-  {
-   "building": "barracks",
-   "age": 2,
-   "workers": 26
+   "builders": 6,
+   "save": 1
   },
   {
    "building": "town_center",
@@ -124,7 +133,7 @@
    "workers": 36
   }
  ],
- "_doc_build_order": "each step: a building, from `age`, once it has `workers`; `near` lays it by the nearest patch of that resource (`away`: at least that many tiles from the Town Center); `builders`: workers sent (2 by default); `count`: how many of that building the step wants in all (default: one more than the steps before it). Steps go in order; a later age's step doesn't hold up this age's. A step it can't afford yet is what it saves for (economy shares).",
+ "_doc_build_order": "each step: a building, from `age`, once it has `workers`; `near` lays it by the nearest patch of that resource (`away`: at least that many tiles from the Town Center); `builders`: workers sent (2 by default); `count`: how many of that building the step wants in all (default: one more than the steps before it). `save`: a building-up level's soldiers leave its cost alone while it waits (the buildings the ages and the content need, not the extra ones). Steps go in order; a later age's step doesn't hold up this age's. A step it can't afford yet is what it saves for (economy shares).",
  "military": {
   "queue": 2,
   "defend_tiles": 10,

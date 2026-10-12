@@ -51,6 +51,7 @@ var _aln := 0                # our soldiers' lane (Reach)
 var _harea := 0              # the area round our Town Center in that lane
 var _rushed := -(1 << 30)    # the tick we last sent everyone at a finished enemy Wonder
 var _blocked := PackedInt32Array()   # the cost of the build step waiting on resources (what it saves for)
+var _blocked_save := false   # ... a step marked `save` (the University, the Castle): a building-up bot's soldiers wait for it
 var _tower_at := Vector2i(-1, -1)    # where a raid was: a Watchtower goes up there once it's quiet
 var _sheltering := false     # our workers were called to arms
 var _shelter_until := 0      # ... and come out by this tick
@@ -217,7 +218,8 @@ func _build_order(w, tc: int, workers: Array, count: int) -> void:
 			return   # the order is an order: wait for this step before the next
 		var k: int = Economy.btype_of(w, id)
 		if not w.can_afford(player, w.btypes[k].cost):
-			_blocked = w.btypes[k].cost   # what we save for (economy shares, and soldiers leave it alone)
+			_blocked = w.btypes[k].cost   # what we save for (economy shares; soldiers leave it alone if the step says `save`)
+			_blocked_save = int(step.get("save", 0)) == 1
 			return
 		var at := Vector2i(w.buildings.cx[tc] + 1, w.buildings.cy[tc] + 1)
 		if step.has("near"):   # a drop-off camp goes by the nearest patch of its resource
@@ -401,11 +403,11 @@ func _train(w, workers: Array, count: int) -> void:
 	# builds up more and fights less, but never stops growing (Dominic: not caps).
 	if army_ratio > 0 and guard * 100 >= count * army_ratio * w.ages[player]:
 		return
-	# Saving for the next age (and, building up, for the next building): soldiers only from
+	# Saving for the next age (and, building up, for a University or Castle: steps marked `save`): soldiers only from
 	# what's over, while nobody is raiding us (an army first, then the age) and, from age 2, once
 	# there's a guard (D-077: an age-up with nobody home invites a raid; age 1's guard trains while
 	# the age-up runs).
-	if (_saving_age or build_up) and (guard >= int(cfg.military.guard) or w.ages[player] == 1) and _threats.is_empty():
+	if (_saving_age or (build_up and _blocked_save and eco.goal == _blocked)) and (guard >= int(cfg.military.guard) or w.ages[player] == 1) and _threats.is_empty():
 		for r in eco.goal.size():
 			reserve[r] = eco.goal[r]
 	var foes := _enemy_tags(w)
