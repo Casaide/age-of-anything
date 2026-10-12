@@ -7,6 +7,8 @@ extends SceneTree
 ## or "battle:<tick>" (both test armies attack-move at each other; shot mid-fight at that tick).
 ## "tower" (side 1's town with enemy spears by its Watchtower; shot with arrows in the air).
 ## "look:<x>:<y>[:zoom]" frames a tile with the fog lifted (for art checks).
+## "loader[:<fraction>]": the match loader, with the bake cache off so it really bakes; shot once
+## the bar passes that fraction (default 0.35).
 ## Prefix any scene with "ai-" to see it as in a match against the AI.
 
 const Iso := preload("res://src/view/iso.gd")
@@ -27,8 +29,20 @@ func _initialize() -> void:
 	view.map_id = map_id
 	view.vs_ai = vs_ai
 	view.army = scene == "armies" or scene == "card" or scene.begins_with("battle") or scene.begins_with("ageup") or scene == "orders_army"
+	if scene.begins_with("loader"):
+		preload("res://src/view/art/bake_cache.gd").enabled = false
 	root.add_child(view)
-	while view.world == null or view.baking:   # the art bakes first
+	if scene.begins_with("loader"):
+		var at := float(scene.get_slice(":", 1)) if ":" in scene else 0.35
+		while view.loader == null or view.loader.shown < at or view.loader.layer.get_child_count() == 0:
+			await process_frame
+		for f in 30:   # the armies fade in
+			await process_frame
+		root.get_texture().get_image().save_png(out)
+		print("saved ", out, " at ", view.loader.shown)
+		quit()
+		return
+	while view.world == null or view.is_loading():   # the art bakes first, the loader fades out
 		await process_frame
 	view.camera.edge_scroll = false
 	view.set_process_unhandled_input(false)          # a real mouse in the window mustn't change the shot

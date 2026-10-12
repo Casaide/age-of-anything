@@ -12,9 +12,11 @@ const DataLib := preload("res://src/data_lib.gd")
 const Generator := preload("res://src/race_generator.gd")
 const ArtKit := preload("res://src/view/art/art_kit.gd")
 const UnitView := preload("res://src/unit_view.gd")
-const Icons := preload("res://src/view/art/icons.gd")
 const Audio := preload("res://src/view/audio.gd")
 const UiScale := preload("res://src/view/ui_scale.gd")
+const DiceButton := preload("res://src/view/loaders/dice_button.gd")
+const ForgeVeil := preload("res://src/view/loaders/forge_veil.gd")
+const LoaderStyle := preload("res://src/view/loaders/loader_style.gd")
 
 const MAPS := ["reed_meadow", "reed_meadow_large", "flat_test"]   # real maps; choke_test is a movement test (sim_debug lists it)
 
@@ -270,22 +272,25 @@ func _side_panel(i: int, who: String) -> Control:
 	layer.y_sort_enabled = true
 	layer.scale = Vector2.ONE * STAGE_ZOOM
 	vp.add_child(layer)
-	col.add_child(stage)
+	var stage_box := Control.new()   # the stage, and over it the veil shown while a new army is forged
+	stage_box.custom_minimum_size = Vector2(0, STAGE_H)
+	stage.set_anchors_preset(Control.PRESET_FULL_RECT)
+	stage_box.add_child(stage)
+	var veil := ForgeVeil.new()
+	stage_box.add_child(veil)
+	col.add_child(stage_box)
 	var status := _label("", 13, DIM)
 	col.add_child(status)
 	# The dice, then the prompt (Dominic: the dice is the main thing; every side starts rolled,
 	# the box starts empty, no menu of presets).
-	var dice := Button.new()
-	dice.icon = Icons.texture("dice")
-	dice.expand_icon = true
+	var dice := DiceButton.new()   # tumbles when thrown, rocks until the race is made
 	dice.custom_minimum_size = Vector2(84, 84)
 	dice.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
-	dice.focus_mode = Control.FOCUS_NONE
 	dice.tooltip_text = "Roll the dice: a new race (with words in the box, another roll of those words)"
 	dice.add_theme_stylebox_override("normal", _box(Color("#2e2820"), EDGE, 2))
 	dice.add_theme_stylebox_override("hover", _box(Color("#3a3226"), GOLD, 2))
 	dice.add_theme_stylebox_override("pressed", _box(Color("#1e1a14"), GOLD, 2))
-	dice.pressed.connect(func(): Audio.of(get_tree()).play("ui_click"); _roll(i))
+	dice.pressed.connect(func(): dice.tumble(); _roll(i))
 	col.add_child(dice)
 	var field := LineEdit.new()
 	field.placeholder_text = "...or describe your race"
@@ -322,7 +327,8 @@ func _side_panel(i: int, who: String) -> Control:
 	roster.add_theme_color_override("default_color", TEXT)
 	col.add_child(roster)
 	sides.append({"field": field, "reroll": 0, "rolled": "", "race": {}, "name": name, "line": line, "roster": roster, "units": units,
-		"stage": stage, "vp": vp, "layer": layer, "status": status, "dirty_at": 0.0, "team": team})
+		"stage": stage, "vp": vp, "layer": layer, "status": status, "dirty_at": 0.0, "team": team,
+		"veil": veil, "dice": dice, "forging": false})
 	return card
 
 
@@ -388,13 +394,34 @@ func _regenerate(i: int) -> void:
 	for n in race.notes:
 		lines.append("[i][color=#%s]%s[/color][/i]" % [BRONZE.lightened(0.2).to_html(false), n])
 	s.roster.text = "\n".join(lines)
-	s.status.text = "Mustering..."
+	s.status.text = "Forging the army..."
 	s.dirty_at = Time.get_ticks_msec() / 1000.0
+	_forging(i)
+
+
+## A side's army is being made (typed, rolled, baking): the old one dims under the forge veil
+## and the dice rocks, until _muster stands the new one up.
+func _forging(i: int) -> void:
+	var s: Dictionary = sides[i]
+	s.dice.busy = true
+	if s.forging:
+		return
+	s.forging = true
+	s.veil.show_veil()
+	_fade_army(s, LoaderStyle.DIM_ARMY, 0.2)
+
+
+func _fade_army(s: Dictionary, to: float, secs: float) -> void:
+	if s.has("tween"):
+		s.tween.kill()
+	s.tween = s.layer.create_tween()
+	s.tween.tween_property(s.layer, "modulate:a", to, secs)
 
 
 ## Bake a side's army (the kit skips parts it has) and stand it on the stage.
-func _bake(i: int) -> void:
+func _bake(_i: int) -> void:
 	baking = true
+	var t0 := Time.get_ticks_msec()
 	var races := []
 	var teams := []
 	for s in sides:
@@ -403,13 +430,20 @@ func _bake(i: int) -> void:
 			teams.append(s.team)
 	await kit.prepare_units(races, teams)
 	await kit.bake_icons(races, teams)
+	print("Lobby bake: %d ms" % (Time.get_ticks_msec() - t0))
 	baking = false
 	for k in sides.size():   # the atlas was rebuilt: every stage redraws from it
 		_muster(k)
+	if races.size() == sides.size() and sides.all(func(s): return s.dirty_at == 0.0):
+		kit.warm(races)   # while the players choose, bake the match's buildings and props
 
 
 func _muster(i: int) -> void:
 	var s: Dictionary = sides[i]
+	if s.dirty_at > 0.0:   # its new race isn't baked yet: the old army stays under the veil, redrawn from the new atlas
+		for ps in s.layer.find_children("*", "Node2D", true, false):
+			ps.queue_redraw()
+		return
 	for n in s.layer.get_children():
 		n.queue_free()
 	if s.race.is_empty():
@@ -429,6 +463,12 @@ func _muster(i: int) -> void:
 		view.face(1.0 if i == 0 else -1.0)   # both armies face the middle
 		s.layer.add_child(view)
 	s.status.text = "%d units, every one priced by its parts" % n
+	if s.forging and s.dirty_at == 0.0:   # the new army is ready: the veil lifts and it fades in
+		s.forging = false
+		s.dice.busy = false
+		s.veil.hide_veil()
+		s.layer.modulate.a = 0.0
+		_fade_army(s, 1.0, LoaderStyle.ARMY_FADE)
 	var side := 0   # the portraits: kit.icons is keyed by the side's place among the races baked
 	for k in i:
 		if not sides[k].race.is_empty():
@@ -523,12 +563,16 @@ func _map_image(m: Dictionary) -> Image:
 
 
 func _play() -> void:
+	while baking:   # the lobby's own bake finishes first (it's awaited here, so it must not outlive the lobby)
+		await get_tree().process_frame
 	var view = load("res://scenes/sim_debug.tscn").instantiate()
 	view.prompts = [_prompt(0), _prompt(1)]
 	view.rerolls = [sides[0].reroll, sides[1].reroll]
 	view.map_id = MAPS[map_index]
 	view.vs_ai = true
 	view.ai_level = ["easy", "normal", "hard"][level_pick.selected]
+	remove_child(kit)   # the match takes the kit with everything baked here (and the warm-up still going)
+	view.kit = kit
 	get_tree().root.add_child(view)
 	get_tree().current_scene = view
 	queue_free()
