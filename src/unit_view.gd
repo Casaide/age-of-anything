@@ -432,6 +432,7 @@ func die(tip: float) -> void:
 ## the hand holds to the new hand. Only if that bake exists (bake_units bakes them for
 ## workers); a missing bake leaves the pose as it is, so nothing shows magenta.
 const WORK_HOLDS := ["reach", "raise"]
+const ATTACK_HOLDS := ["thrust"]   # baked for spear and lance carriers (art_kit.bake_units)
 var work_hold := "low"
 var _body_nodes: Array = []   # the body's PartShapes (its bake and its near-arm layer)
 var _hand_rest := Vector2.ZERO   # the hand in the body's own hold
@@ -503,6 +504,7 @@ func _process(delta: float) -> void:
 	var stepped := pose_steps > 0
 	var t := floorf(time * STEP_FPS) / STEP_FPS if stepped else time
 	var stride := 1.0 if walking else 0.0
+	bob.position.x = 0.0   # a lunge, a kneel or a release pushes it this frame; nothing carries over
 	if walking:
 		phase += delta * speed_px * 0.25 * gait.cadence
 	var ph := phase
@@ -571,15 +573,16 @@ func _process(delta: float) -> void:
 ## butts with its head. A release (R1): the archer snaps forward and the bow kicks, then settles.
 func _attack(a: float) -> void:
 	var k := sin(a * PI)
+	var fwd := _forward()
 	if _attack_kind == "loose":
-		bob.rotation += 0.12 * (1.0 - a)
-		bob.position.x += 3.0 * (1.0 - a)
+		bob.rotation += 0.12 * (1.0 - a) * signf(fwd.x if fwd.x != 0.0 else 1.0)
+		bob.position += fwd * 3.0 * (1.0 - a)
 		if weapon:
 			weapon.rotation = weapon_rot + 0.2 * (1.0 - a)
-			weapon.position = weapon_rest + Vector2(2.0, 0.0) * (1.0 - a)
+			weapon.position = weapon_rest + fwd * 2.0 * (1.0 - a)
 		return
-	bob.position.x += 4.0 * k
-	bob.rotation += 0.14 * k
+	bob.position += fwd * 6.0 * k
+	bob.rotation += 0.14 * k * signf(fwd.x if fwd.x != 0.0 else 1.0)
 	if legs.size() == 2:
 		legs[0].node.rotation += -0.5 * k
 		legs[1].node.rotation += 0.3 * k
@@ -593,8 +596,14 @@ func _attack(a: float) -> void:
 	if weapon == null:
 		return
 	if _thrusts:
-		set_hold("reach" if 0.35 < a and a < 0.85 else "low")
-		weapon.position = weapon_rest + Vector2(6.0, -0.5) * k
+		# A spear: the arm straight out (the thrust hold), the spear levelled at the target and
+		# driven forward, then back to the carry.
+		var out: float = clampf((a - 0.2) / 0.25, 0.0, 1.0) * (1.0 - clampf((a - 0.75) / 0.25, 0.0, 1.0))
+		set_hold("thrust" if out > 0.0 else "low")
+		var tip: Vector2 = PartShape.rigs.get(weapon.part_id + PartShape.facing_suffix(facing_k), PartShape.rigs.get(weapon.part_id, {})).get("tip", Vector2.ZERO)
+		var level := weapon_rot if tip == Vector2.ZERO else fwd.angle() - tip.angle()
+		weapon.rotation = lerp_angle(weapon_rot, level, out)
+		weapon.position = weapon_rest + fwd * 9.0 * out
 		return
 	if a < 0.35:
 		set_hold("raise")
@@ -642,6 +651,15 @@ func _die_pose() -> void:
 		if legs.size() == 2:
 			legs[0].node.rotation += -0.4 * e
 			legs[1].node.rotation += 0.2 * e
+
+
+## Which way the unit faces, on screen, in the sprite's own space: the baked facing's
+## direction, or in the mirrored three-quarter view the couched-weapon direction.
+func _forward() -> Vector2:
+	if facing_k == 0:
+		return COUCH.normalized()
+	var rig: Dictionary = PartShape.rigs.get(_facing_body + PartShape.facing_suffix(facing_k), {})
+	return (rig.dir as Vector2).normalized() if rig.has("dir") else Vector2.RIGHT
 
 
 func _hip_height() -> float:

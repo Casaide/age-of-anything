@@ -84,3 +84,13 @@ the work holds too, so their arms swing. `tests/anim_fight_sheet.gd` shows the l
 (picture 18).
 
 ![live: lunges, the archer's release, and the five deaths](../images/2026-10-12/18-fight-live-lunge-release-deaths.png)
+
+Dominic watched rats with spears: "they basically just tap things? they're not even using the
+spears?" Two bugs under it. The lunge and the thrust moved along the sprite's own x axis, which is
+forward only in the three-quarter facing: in the other seven a rat facing up the screen thrust
+sideways, a tap. And a spear used the "reach" hold, the hand down to a bush, not an arm out at
+chest height. Now a "thrust" hold (arm straight forward, baked for spear and lance carriers) and
+the spear levelled at the target along the facing's real forward (`UnitView._forward`); the lunge
+goes the same way. Also found: the lunge added to the bob's x every frame and never reset it.
+
+![rats thrusting, close up](../images/2026-10-12/19-rats-thrust-close-up.png)
