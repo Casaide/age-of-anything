@@ -13,6 +13,7 @@ const H := 900
 
 
 func _initialize() -> void:
+	await process_frame   # the root is in the tree from the first frame on (the bake clock needs it)
 	var args := OS.get_cmdline_user_args()
 	var lib = DataLib.new()
 	var gen = Generator.new(lib)
