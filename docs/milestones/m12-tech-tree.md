@@ -50,18 +50,18 @@ age-4 gear tier (iron and plate, D-057).
 
 | Building | Age | Does | Status |
 |---|---|---|---|
-| Town Center | 1 (more from age 3) | workers, drop-off, ages, worker research; garrison shoots | built (more TCs and garrison planned) |
+| Town Center | 1 (more from age 3) | workers, drop-off, ages, worker research; garrison shoots | built (garrison, call to arms, more from age 3: phase 3) |
 | House | 1 | +pop | built |
 | Farm | 1 | renewable food | built |
 | Mill, Lumber Camp, Mining Camp | 1 | drop-off, gathering research | built |
 | Barracks | 1 | infantry | built |
-| Outpost | 1 | sight only, cheap | planned |
+| Outpost | 1 | sight only, cheap | built (phase 3; look per culture from a concept round, pick pending) |
 | Palisade Wall + Palisade Gate | 1 | wooden wall; the gate opens for its own team | planned (today's stone wall moves to age 2) |
 | Archery Range | 2 | ranged lines | built |
 | Stable | 2 | mounted lines and beasts | built |
 | Armoury | 2 | attack and armour research | built |
 | Market | 2 | trade resources; trade carts | built (carts planned) |
-| Watchtower | 2 | shoots; upgrades to Bastion (3) | built (upgrades planned) |
+| Watchtower | 2 | shoots; upgrades to Bastion (3) | built (Bastion upgrade and garrison: phase 3; the research waits for the University) |
 | Stone Wall + Stone Gate | 2 | stone wall; gate as above | wall built, gate planned |
 | Siege Workshop | 3 | siege engines | built (phase 6; trains nothing until milestone 13) |
 | University | 3 | building, tower and siege research | planned |
@@ -137,7 +137,7 @@ Ages are when it opens. Effects use the forms `tech.json` already has (`tag/stat
 | Market | Pack Animals | 3 | trade carts +25% speed | planned |
 | University | Stonecutting | 3 | buildings +10% HP, +1/+1 armour | planned |
 | University | Lifting Frames | 3 | build 20% faster | planned |
-| University | Bastion | 3 | Watchtowers become Bastions (hp, attack) | planned |
+| University | Bastion | 3 | Watchtowers become Bastions (hp, attack) | built (phase 3: `tower_upgrade`; researchable once the University stands) |
 | University | Slit Windows | 3 | towers, castles, TCs +1 range | planned |
 | University | Thick Walls | 3 | walls and gates +100% HP | planned |
 | University | Siege Wrights | 3 | siege +1 range | planned |
@@ -347,7 +347,7 @@ Fixed first, as they came in; each ticked when done.
 - [x] Plan approved by Dominic (2026-10-11: four ages, split, lacks, Wonder in)
 - [x] 1. Data and the tech tree page (2026-10-11: the tree in `data/` with `"status": "planned"`, loaders skip it, `scenes/tech_tree.tscn` from the lobby banners and in a match on F2 or the top bar's button; T stays the Watchtower's hotkey; checked in `tests/run_tests.gd`, captures with `tests/tech_tree_screenshot.gd`)
 - [x] 2. Effect kinds, plain research, research icons (age 4 cut 2026-10-12; effect kinds and research 2026-10-12, a test per kind in `tests/test_sim.gd`; icons drawn separately; Pack Animals waits for trade carts)
-- [ ] 3. Towers and garrison (walls and gates done 2026-10-11)
+- [x] 3. Towers and garrison (walls and gates done 2026-10-11; the rest 2026-10-13: Outpost, Bastion via `tower_upgrade`, garrisons, call to arms, more Town Centers from age 3; checked in `tests/test_sim.gd` `_test_garrison`, `_test_towers`; captures `tests/sim_screenshot.gd` `garrison[:bastion]`)
 - [ ] 4. University
 - [ ] 5. Castle
 - [x] 6. Siege Workshop standing (Temple cut) (2026-10-13: every architecture, military page, "Siege engines come later")
@@ -387,6 +387,28 @@ Fixed first, as they came in; each ticked when done.
   Town Center with 8 builders; an enemy Wonder it knows of (seen, or finished: announced) is the first
   target of every attack, and a finished one gets everyone sent at once. An unfinished Wonder no
   longer holds up the bots' other building. No lobby toggle for the host rule yet (data only).
+- **Phase 3 (2026-10-13, Claude):** towers and garrison.
+  - **Outpost** (age 1, 25 wood, 1 tile, sight 11, no attack, nobody inside). Three concept looks in
+    every architecture (`outpost_pole`, `outpost_deck`, `outpost_beacon` in `models.gd`; sheet 120):
+    built for now as `OUTPOST_LOOK`: the deck for thatch, reed and mound, the mast for junk and tent,
+    the beacon cairn for stone. Dominic to pick.
+  - **Bastion** (`buildings.json` `bastion`, `"upgrade_of": "watchtower"`): 1300 hp, 14 pierce, range
+    8, garrison 6, its own look per architecture (sheet 121). The effect kind `tower_upgrade` is
+    `{"building": "watchtower", "becomes": "bastion"}` in `tech.json`: every Watchtower becomes a
+    Bastion where it stands (same id, health share, queue, people inside), and a Watchtower ordered
+    afterwards is laid as a Bastion (`Economy.upgraded`). The research sits at the University (phase 4).
+  - **Garrison** (`src/sim/garrison.gd`, data `"garrison": N` on a building type, rules in
+    `buildings.json` `garrison`): Town Center 10, Watchtower 4, Bastion 6 (the Castle gets it by
+    data). Units inside leave the units arrays (no sight, no target, no pushing) and live on the
+    building as records in the hash; pop still counts them; they heal 1 hp a second; each adds an
+    arrow (towers 1 + inside, the Town Center 0 + inside); ungarrison, a falling building spills them
+    with their own ids. Riders and giants (`large`) stay out, workers always fit (centaur workers are
+    large). Right-click your own building to send units in; the panel shows "n of N inside" and
+    Ungarrison; a count shows over the roof.
+  - **Call to arms / Back to work** on the Town Center: workers within 16 tiles run to the nearest
+    building with room; back to work sends every sheltering worker to the resource it was gathering.
+  - **More Town Centers:** `"more_from_age": 3`; a Town Center now costs 275 wood + 100 stone (the
+    first is free at the start).
 
 ## Changes from the original plan
 

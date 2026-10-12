@@ -912,6 +912,243 @@ func watchtower_mound(team: Color) -> Dictionary:
 	return _tower("mound", team)
 
 
+# ------------------------------------------------------------------ outposts and bastions (milestone 12 phase 3)
+# The Outpost: a cheap lookout that only sees. Three concept looks, each in every architecture
+# (tests/building_sheet.gd outpost_pole:thatch ...); OUTPOST_LOOK picks one per culture until
+# Dominic chooses. Lower and lighter than a Watchtower, so the two never read alike.
+
+const OUTPOST_LOOK := {"thatch": "deck", "junk": "pole", "stone": "beacon", "tent": "pole", "reed": "deck", "mound": "deck"}
+
+
+func _outpost(arch: String, team: Color) -> Dictionary:
+	return call("_outpost_" + OUTPOST_LOOK[arch], arch, team)
+
+
+## A spotter's mast: one tall post on three raking legs, peg rungs up it, a crow's-nest basket
+## at the top and the team's pennant over it. Reed towns bind it from reed bundles, the mound
+## folk raise it from a clay spire, the junk-rats from a pipe on an oil drum.
+func _outpost_pole(arch: String, team: Color) -> Dictionary:
+	rng.seed = 41
+	var body := Node3D.new()
+	var wood := mats.get_mat("wood")
+	var top := 1.45
+	var post_mat: Material = wood
+	if arch == "reed":
+		post_mat = mats.get_mat("thatch")
+	elif arch == "junk":
+		post_mat = Materials.flat(Color("#5a5c5e"), 0.5, 0.6)   # a pipe
+	if arch == "mound":
+		body.add_child(cyl(0.05, 0.3, top, mats.get_mat("mud"), Vector3(0, top / 2, 0), Vector3.ZERO, 10))
+	else:
+		body.add_child(cyl(0.045, 0.06, top, post_mat, Vector3(0, top / 2, 0), Vector3.ZERO, 8))
+		for k in 3:   # the raking legs
+			var a := TAU * k / 3.0 + 0.4
+			body.add_child(beam(Vector3(cos(a) * 0.42, 0, sin(a) * 0.42), Vector3(0, top * 0.55, 0), 0.025, post_mat, 6))
+		for k in 6:   # peg rungs
+			body.add_child(box(Vector3(0.2, 0.025, 0.025), wood, Vector3(0, 0.2 + k * 0.18, 0.05), Vector3(0, 30 * (k % 2), 0)))
+	if arch == "junk":
+		body.add_child(cyl(0.2, 0.2, 0.36, Materials.flat(Color("#7a3a2a"), 0.6, 0.4), Vector3(0, 0.18, 0), Vector3.ZERO, 14))   # an oil drum foot
+		body.add_child(ring(0.19, 0.21, Materials.flat(Color("#4a2a20"), 0.6), Vector3(0, 0.3, 0)))
+	# The crow's nest: a basket (woven, a tin can for the rats, felt-lined for tents)
+	var nest: Material = {"junk": mats.get_mat("tin"), "tent": mats.get_mat("felt"), "mound": mats.get_mat("mud")}.get(arch, mats.get_mat("weave"))
+	body.add_child(cyl(0.2, 0.15, 0.22, nest, Vector3(0, top, 0), Vector3.ZERO, 14))
+	body.add_child(ring(0.18, 0.22, wood if arch != "junk" else mats.get_mat("tin"), Vector3(0, top + 0.11, 0)))
+	body.add_child(cyl(0.16, 0.16, 0.012, Materials.flat(Color("#2a1e14"), 0.95), Vector3(0, top + 0.12, 0), Vector3.ZERO, 14))   # open: you look into it
+	body.add_child(cyl(0.012, 0.012, 0.45, wood, Vector3(0.12, top + 0.32, -0.08), Vector3.ZERO, 5))   # the pennant's staff
+	body.add_child(box(Vector3(0.22, 0.1, 0.01), cloth(team), Vector3(0.24, top + 0.48, -0.08)))
+	return {"body": body, "anchor": Vector3.ZERO, "lantern": Vector3(0, top + 0.1, 0.18), "lights": [], "team": team}
+
+
+## A low look-out deck: four short legs, a ladder, a railing and a sunshade in the culture's
+## roof, a horn hung on the rail. Wide and low where the Watchtower is tall.
+func _outpost_deck(arch: String, team: Color) -> Dictionary:
+	rng.seed = 42
+	var body := Node3D.new()
+	var k: Dictionary = KIT[arch]
+	var wood := mats.get_mat("wood")
+	var h := 0.75
+	var legs: Material = mats.get_mat("thatch") if arch == "reed" else wood
+	for x in [-0.32, 0.32]:
+		for z in [-0.32, 0.32]:
+			body.add_child(cyl(0.035, 0.045, h, legs, Vector3(x, h / 2, z), Vector3(rng.randf_range(-3, 3), 0, rng.randf_range(-3, 3)), 8))
+	if arch == "mound":
+		body.add_child(cyl(0.3, 0.46, h, mats.get_mat("mud"), Vector3(0, h / 2, 0), Vector3.ZERO, 14))   # a packed-earth plinth
+	body.add_child(box(Vector3(0.82, 0.06, 0.82), wood, Vector3(0, h, 0)))
+	for side in 4:   # the rail, open at the ladder (front)
+		if side == 0:
+			continue
+		var p := Vector3(0, h + 0.2, 0.39) if side == 0 else Vector3(0.39, h + 0.2, 0) if side == 1 else Vector3(0, h + 0.2, -0.39) if side == 2 else Vector3(-0.39, h + 0.2, 0)
+		body.add_child(box(Vector3(0.8 if side % 2 == 0 else 0.03, 0.03, 0.03 if side % 2 == 0 else 0.8), wood, p))
+	for x in [-0.12, 0.12]:   # the ladder
+		body.add_child(beam(Vector3(x, 0, 0.72), Vector3(x, h, 0.4), 0.018, wood, 5))
+	for n in 3:
+		body.add_child(box(Vector3(0.26, 0.02, 0.02), wood, Vector3(0, 0, 0.72).lerp(Vector3(0, h, 0.4), (n + 1) / 4.0)))
+	# The sunshade on two poles at the back: a slanted sheet of the culture's roof stuff.
+	for x in [-0.36, 0.36]:
+		body.add_child(cyl(0.02, 0.02, 0.62, wood, Vector3(x, h + 0.31, -0.36), Vector3.ZERO, 6))
+	var shade: Material = mats.get_mat("terracotta" if k.roof == "tiles" else k.roof)
+	if k.get("dome", false):
+		body.add_child(dome(0.42, shade, Vector3(0, h + 0.56, -0.12), Vector3(1.05, 0.35, 0.8)))
+	else:
+		body.add_child(box(Vector3(0.88, 0.04, 0.6), shade, Vector3(0, h + 0.6, -0.14), Vector3(-14, 0, 0)))
+	body.add_child(box(Vector3(0.24, 0.1, 0.015), cloth(team), Vector3(0.18, h + 0.13, -0.4)))   # a team rag on the rail
+	var horn := Materials.flat(Color("#d8c8a0"), 0.6)   # a horn to call with
+	body.add_child(cyl(0.012, 0.045, 0.22, horn, Vector3(-0.39, h + 0.12, 0.05), Vector3(0, 0, 70), 8))
+	return {"body": body, "anchor": Vector3.ZERO, "lantern": Vector3(0.2, h + 0.3, 0.1), "lights": [], "team": team}
+
+
+## A beacon cairn: a heap of the culture's stuff (dressed stones, clay, crates and drums, reed
+## sheaves) with a post and a fire basket on top, lit: you see the watch from far off.
+func _outpost_beacon(arch: String, team: Color) -> Dictionary:
+	rng.seed = 43
+	var body := Node3D.new()
+	var wood := mats.get_mat("wood")
+	var h := 0.55
+	match arch:
+		"junk":
+			body.add_child(box(Vector3(0.5, 0.3, 0.5), wood, Vector3(-0.05, 0.15, 0.02), Vector3(0, 8, 0)))
+			body.add_child(box(Vector3(0.36, 0.26, 0.36), wood, Vector3(0.02, 0.43, -0.02), Vector3(0, -12, 0)))
+			body.add_child(cyl(0.13, 0.13, 0.3, Materials.flat(Color("#7a3a2a"), 0.6, 0.4), Vector3(0.3, 0.15, 0.25), Vector3.ZERO, 12))
+		"reed", "thatch", "tent":
+			var sheaf: Material = mats.get_mat("thatch") if arch != "tent" else mats.get_mat("felt")
+			body.add_child(cyl(0.18, 0.42, h, sheaf, Vector3(0, h / 2, 0), Vector3.ZERO, 16))
+			body.add_child(ring(0.3, 0.34, wood, Vector3(0, 0.22, 0)))
+		"mound":
+			body.add_child(cyl(0.16, 0.45, h + 0.1, mats.get_mat("mud"), Vector3(0, (h + 0.1) / 2, 0), Vector3.ZERO, 14))
+			h += 0.1
+		_:   # dressed stones, stacked in rings
+			var stone := mats.get_mat("stone")
+			for row in 4:
+				var r := 0.42 - row * 0.09
+				var n := 8 - row
+				for s in n:
+					var a := TAU * s / n + row * 0.4
+					body.add_child(box(Vector3(0.2, 0.14, 0.16), stone, Vector3(cos(a) * r * 0.7, 0.07 + row * 0.13, sin(a) * r * 0.7), Vector3(rng.randf_range(-6, 6), -rad_to_deg(a), rng.randf_range(-4, 4))))
+			body.add_child(cyl(0.12, 0.3, h, stone, Vector3(0, h / 2, 0), Vector3.ZERO, 10))
+	body.add_child(cyl(0.035, 0.04, 0.7, wood, Vector3(0, h + 0.35, 0), Vector3.ZERO, 8))
+	var iron := Materials.flat(Color("#3a3634"), 0.5, 0.7)
+	body.add_child(cyl(0.16, 0.08, 0.14, iron, Vector3(0, h + 0.76, 0), Vector3.ZERO, 12))   # the fire basket
+	body.add_child(cyl(0.13, 0.13, 0.03, glow(Color("#c04018"), 1.5), Vector3(0, h + 0.83, 0), Vector3.ZERO, 12))   # the embers
+	body.add_child(cyl(0.0, 0.11, 0.26, glow(Color("#ff8a20"), 2.2), Vector3(0, h + 0.97, 0), Vector3(0, 0, 6), 8))   # the flame
+	body.add_child(cyl(0.0, 0.06, 0.18, glow(Color("#ffd860"), 2.6), Vector3(0.02, h + 0.94, 0.03), Vector3(0, 0, -8), 8))
+	body.add_child(box(Vector3(0.2, 0.12, 0.015), cloth(team), Vector3(0.12, h + 0.45, 0.04)))   # a team rag tied to the post
+	return {"body": body, "anchor": Vector3.ZERO, "lantern": Vector3(0, h + 0.86, 0), "lights": [Vector3(0, h + 0.86, 0)], "team": team}
+
+
+## The Bastion (the University's tower upgrade): a Watchtower rebuilt heavy and tall, one look
+## per culture. Stone towns raise a battlemented keep; the timber towns a daub-and-frame tower
+## under a fighting gallery; the junk-rats brick topped with riveted tin; tents a timber frame
+## hung with felt; frogs a tall woven drum on stilts; the mound folk a buttressed clay spire.
+func _bastion(arch: String, team: Color) -> Dictionary:
+	rng.seed = 44
+	var body := Node3D.new()
+	var k: Dictionary = KIT[arch]
+	var wood := mats.get_mat("wood")
+	var slit := Materials.flat(Color("#1c140e"), 0.95)
+	var top := 2.2
+	var lantern := Vector3(0.3, top, 0.4)
+	match arch:
+		"stone":
+			var stone := mats.get_mat("stone")
+			body.add_child(box(Vector3(0.96, 0.24, 0.96), stone, Vector3(0, 0.12, 0)))   # a battered foot
+			body.add_child(box(Vector3(0.82, top - 0.2, 0.82), stone, Vector3(0, 0.24 + (top - 0.24 - 0.2) / 2, 0)))
+			body.add_child(box(Vector3(0.94, 0.12, 0.94), stone, Vector3(0, top - 0.14, 0)))   # the corbel course
+			for s in 4:   # merlons round the top
+				for m in 3:
+					var t := -0.33 + m * 0.33
+					var p := Vector3(t, top + 0.04, 0.42) if s == 0 else Vector3(0.42, top + 0.04, t) if s == 1 else Vector3(t, top + 0.04, -0.42) if s == 2 else Vector3(-0.42, top + 0.04, t)
+					body.add_child(box(Vector3(0.18, 0.2, 0.12) if s % 2 == 0 else Vector3(0.12, 0.2, 0.18), stone, p))
+			body.add_child(cyl(0.015, 0.015, 0.7, wood, Vector3(-0.2, top + 0.3, -0.2), Vector3.ZERO, 5))
+			body.add_child(box(Vector3(0.3, 0.18, 0.01), cloth(team), Vector3(-0.04, top + 0.55, -0.2)))
+			for y in [0.8, 1.45]:
+				body.add_child(box(Vector3(0.05, 0.22, 0.02), slit, Vector3(0.1, y, 0.415)))
+				body.add_child(box(Vector3(0.02, 0.22, 0.05), slit, Vector3(0.415, y, -0.1)))
+			body.add_child(box(Vector3(0.24, 0.36, 0.03), Materials.flat(Color("#3a2416"), 0.9), Vector3(-0.15, 0.42, 0.42)))   # the door
+		"thatch":
+			body.add_child(box(Vector3(0.84, 0.14, 0.84), mats.get_mat("mud"), Vector3(0, 0.07, 0)))
+			var h := top - 0.55
+			body.add_child(box(Vector3(0.74, h, 0.74), mats.get_mat("mud"), Vector3(0, 0.14 + h / 2, 0)))
+			for x in [-0.37, 0.37]:
+				for z in [-0.37, 0.37]:
+					body.add_child(box(Vector3(0.09, h + 0.1, 0.09), wood, Vector3(x, 0.14 + h / 2, z)))
+			for y in [0.7, 1.25]:   # timber bands and braces
+				body.add_child(box(Vector3(0.78, 0.06, 0.78), wood, Vector3(0, y, 0)))
+			body.add_child(beam(Vector3(-0.37, 0.18, 0.375), Vector3(0.37, 0.68, 0.375), 0.025, wood, 5))
+			body.add_child(beam(Vector3(0.375, 0.18, 0.37), Vector3(0.375, 0.68, -0.37), 0.025, wood, 5))
+			var g := 0.14 + h   # the fighting gallery, jutting out over the walls
+			body.add_child(box(Vector3(1.04, 0.07, 1.04), wood, Vector3(0, g, 0)))
+			for s in 4:
+				var p := Vector3(0, g + 0.17, 0.5) if s == 0 else Vector3(0.5, g + 0.17, 0) if s == 1 else Vector3(0, g + 0.17, -0.5) if s == 2 else Vector3(-0.5, g + 0.17, 0)
+				body.add_child(box(Vector3(1.02 if s % 2 == 0 else 0.05, 0.28, 0.05 if s % 2 == 0 else 1.02), wood, p))
+			body.add_child(cyl(0.0, 0.78, 0.6, mats.get_mat("thatch"), Vector3(0, g + 0.62, 0), Vector3(0, 45, 0), 4))
+			body.add_child(box(Vector3(0.26, 0.14, 0.02), cloth(team), Vector3(0.12, g + 0.12, 0.53)))
+			body.add_child(box(Vector3(0.05, 0.2, 0.02), slit, Vector3(-0.1, 0.95, 0.375)))
+			top = g + 0.9
+			lantern = Vector3(0.35, g + 0.25, 0.45)
+		"junk":
+			var brick := mats.get_mat("brick")
+			body.add_child(box(Vector3(0.84, 1.0, 0.84), brick, Vector3(0, 0.5, 0)))
+			body.add_child(box(Vector3(0.9, 0.9, 0.9), mats.get_mat("tin"), Vector3(0, 1.45, 0), Vector3(0, 3, 0)))   # riveted tin upper
+			var band := Materials.flat(Color("#4a4440"), 0.5, 0.6)
+			for y in [1.05, 1.85]:
+				body.add_child(box(Vector3(0.93, 0.05, 0.93), band, Vector3(0, y, 0), Vector3(0, 3, 0)))
+			for s in 4:   # crate merlons
+				var a := s * 90.0
+				var p := Vector3(sin(deg_to_rad(a)) * 0.34, 2.0, cos(deg_to_rad(a)) * 0.34)
+				body.add_child(box(Vector3(0.22, 0.2, 0.22), wood, p, Vector3(0, rng.randf_range(-15, 15), 0)))
+			body.add_child(box(Vector3(0.95, 0.04, 0.6), mats.get_mat("tin"), Vector3(0, 2.32, -0.15), Vector3(-12, 3, 0)))   # a sheet of tin for a roof
+			for x in [-0.4, 0.4]:
+				body.add_child(cyl(0.015, 0.015, 0.4, wood, Vector3(x, 2.15, -0.38), Vector3.ZERO, 5))
+			body.add_child(box(Vector3(0.05, 0.2, 0.02), slit, Vector3(0.12, 1.45, 0.455)))
+			body.add_child(box(Vector3(0.28, 0.18, 0.02), cloth(team), Vector3(-0.15, 1.6, 0.46)))
+			top = 2.35
+		"tent":
+			for x in [-0.36, 0.36]:
+				for z in [-0.36, 0.36]:
+					body.add_child(cyl(0.06, 0.07, top, wood, Vector3(x, top / 2, z), Vector3.ZERO, 8))
+			for y in [0.45, 1.1]:
+				body.add_child(beam(Vector3(-0.36, y, 0.36), Vector3(0.36, y + 0.55, 0.36), 0.025, wood, 5))
+				body.add_child(beam(Vector3(0.36, y, 0.36), Vector3(0.36, y + 0.55, -0.36), 0.025, wood, 5))
+			body.add_child(box(Vector3(0.9, 0.08, 0.9), wood, Vector3(0, top - 0.5, 0)))
+			body.add_child(box(Vector3(0.86, 0.46, 0.86), mats.get_mat("felt"), Vector3(0, top - 0.23, 0)))   # felt hung round the fighting floor
+			for s in 4:
+				var p := Vector3(0, top - 0.25, 0.44) if s == 0 else Vector3(0.44, top - 0.25, 0) if s == 1 else Vector3(0, top - 0.25, -0.44) if s == 2 else Vector3(-0.44, top - 0.25, 0)
+				body.add_child(box(Vector3(0.1 if s % 2 == 0 else 0.02, 0.16, 0.02 if s % 2 == 0 else 0.1), slit, p))
+			body.add_child(cyl(0.0, 0.66, 0.62, mats.get_mat("felt"), Vector3(0, top + 0.31, 0), Vector3.ZERO, 16))
+			body.add_child(cyl(0.015, 0.015, 0.35, wood, Vector3(0, top + 0.75, 0), Vector3.ZERO, 5))
+			body.add_child(box(Vector3(0.24, 0.12, 0.01), cloth(team), Vector3(0.13, top + 0.85, 0)))
+			top += 0.6
+		"reed":
+			var deck := _stilt_deck(body, Vector3.ZERO, 0.96, 0.96)
+			var h := 1.45
+			body.add_child(cyl(0.36, 0.42, h, mats.get_mat("weave"), Vector3(0, deck + h / 2, 0), Vector3.ZERO, 24))
+			body.add_child(cyl(0.43, 0.45, 0.3, mats.get_mat("mud"), Vector3(0, deck + 0.15, 0), Vector3.ZERO, 24))   # mud-plastered skirt
+			for y in [0.65, 1.2]:
+				body.add_child(ring(0.37, 0.41, mats.get_mat("wood"), Vector3(0, deck + y, 0)))
+			_reed_fence(body, Vector3(0, deck + h, 0), 0.4)
+			body.add_child(dome(0.46, mats.get_mat("thatch"), Vector3(0, deck + h + 0.28, 0), Vector3(1, 0.7, 1)))
+			for x in [-0.4, 0.4]:
+				body.add_child(cyl(0.02, 0.02, 0.3, wood, Vector3(x, deck + h + 0.15, 0.1), Vector3.ZERO, 5))
+			body.add_child(box(Vector3(0.05, 0.18, 0.02), slit, Vector3(0.12, deck + 0.95, 0.4), Vector3(0, 15, 0)))
+			body.add_child(box(Vector3(0.26, 0.12, 0.02), cloth(team), Vector3(-0.1, deck + h - 0.1, 0.42)))
+			top = deck + h + 0.6
+		"mound":
+			var mud := mats.get_mat("mud")
+			body.add_child(cyl(0.14, 0.52, top, mud, Vector3(0, top / 2, 0), Vector3.ZERO, 14))
+			for s in 5:   # buttress spires leaning on the main one
+				var a := TAU * s / 5.0 + 0.3
+				var hh := rng.randf_range(0.9, 1.4)
+				body.add_child(cyl(0.04, 0.2, hh, mud, Vector3(cos(a) * 0.36, hh / 2, sin(a) * 0.36), Vector3(sin(a) * 8, 0, -cos(a) * 8), 10))
+			for s in 6:   # vent holes to shoot from
+				var a := TAU * s / 6.0
+				var y := 1.0 + (s % 2) * 0.45
+				var r := 0.52 - y / top * 0.38
+				body.add_child(ball(0.05, slit, Vector3(cos(a) * r, y, sin(a) * r), Vector3(1, 1.4, 1)))
+			body.add_child(box(Vector3(0.26, 0.12, 0.02), cloth(team), Vector3(0.0, 1.2, 0.36), Vector3(0, 0, 4)))
+			top += 0.1
+	return {"body": body, "anchor": Vector3.ZERO, "lantern": lantern, "lights": [], "team": team}
+
+
 # ------------------------------------------------------------------ amphibians: reed domes on stilts
 # Frogs weave reed domes and raise them on stilts over the wet, capped with a lily pad.
 
