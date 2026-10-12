@@ -1,0 +1,1 @@
+display.ttf: Cinzel (variable, weight 400-900), Copyright 2020 The Cinzel Project Authors (https://github.com/NDISCOVER/Cinzel), SIL Open Font License 1.1 (display-OFL.txt). From github.com/google/fonts ofl/cinzel, downloaded 2026-10-12 with Dominic's yes.
