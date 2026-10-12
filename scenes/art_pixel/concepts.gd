@@ -712,3 +712,107 @@ func _concept_heal_lily_staff(c: Dictionary) -> Dictionary:
 ## E's moss pouch: a lily pad folded over a wad of wet moss, tied with a team cord.
 func _concept_heal_moss_pouch(c: Dictionary) -> Dictionary:
 	return _tool_satchel_moss(c)   # picked: now in the game (unit_models.gd)
+
+
+
+
+
+# ------------------------------------------------------------------ HB1: the hummingbird mount
+# Forest cavalry on a big hummingbird (Dominic, 2026-10-13): ridden like a horse, hovering,
+# iridescent green with a ruby throat, a long beak out front like a lance. The question is
+# how the wings read at game scale: a see-through blur, crisp raised wings, a multi-exposure,
+# or the hover stroke as a disc. Bodies carry their head (concept.empty on the head socket);
+# the wings are the mount's back part. Shared pieces (_hb_gloss, _hb_wing, _hb_ghosts) live
+# in unit_models.gd with the built bird (classic body + lance beak + ghost wings).
+
+const HB_EMERALD := Color("#22a060")
+const HB_EMERALD_DARK := Color("#0e5a38")
+const HB_RUBY := Color("#d0103a")
+
+
+## The bird, nose up as it hovers, slim and tapering to a forked tail: `plump` rounds it
+## out, `lance` caps the beak in bronze with a team pennant (the beak is the lance).
+func _hb_body(c: Dictionary, plump := false, lance := false) -> Dictionary:
+	var n := Node3D.new()
+	var green := _hb_gloss(HB_EMERALD)
+	var dark := _hb_gloss(HB_EMERALD_DARK, 0.4)
+	var ruby := _hb_gloss(HB_RUBY, 0.8)
+	var k := 1.25 if plump else 1.0
+	n.add_child(blob(Vector3(9.5, 5.4 * k, 5.4 * k), green, Vector3(0, 14, 0), Vector3(0, 0, 24)))         # the body
+	n.add_child(blob(Vector3(6.5, 3.2 * k, 4.4 * k), plain(HB_BELLY), Vector3(1.5, 11.0, 0), Vector3(0, 0, 24)))   # a pale belly
+	n.add_child(blob(Vector3(5.4, 6.0, 5.4) * k, green, Vector3(5.5, 17.5, 0)))                            # the chest
+	n.add_child(blob(Vector3(3.8, 3.6, 4.4) * k, ruby, Vector3(8.6, 20.0, 0)))                             # the ruby throat
+	n.add_child(blob(Vector3(4.5, 4.2, 4.0), green, Vector3(10.5, 25.0, 0)))                               # the head
+	n.add_child(blob(Vector3(3.2, 1.6, 3.1), dark, Vector3(9.8, 27.9, 0)))                                 # its darker crown
+	for side in [1, -1]:
+		n.add_child(blob(Vector3(1.1, 1.1, 0.7), plain(INK), Vector3(12.4, 25.9, 3.1 * side)))
+		n.add_child(blob(Vector3(0.4, 0.4, 0.3), plain(Color.WHITE), Vector3(12.9, 26.4, 3.5 * side)))
+		n.add_child(blob(Vector3(1.0, 0.5, 0.4), plain(Color.WHITE), Vector3(10.4, 26.8, 3.4 * side)))   # the white spot behind the eye
+	var tip := Vector3(31, 23.6, 0)
+	n.add_child(rod(Vector3(14.5, 25.2, 0), tip, 0.95, 0.3, plain(HB_BEAK)))   # the long beak
+	if lance:
+		var bronze := surf("bronze", Color.WHITE, 2.0)
+		n.add_child(cone(0.0, 0.9, 4.0, bronze, tip + Vector3(-1.2, 0.1, 0), Vector3(0, 0, -95)))
+		n.add_child(ring(0.8, 1.15, bronze, Vector3(23, 24.4, 0), Vector3(0, 0, 90)))
+		n.add_child(slab([Vector2(0, 0), Vector2(-6, 1.0), Vector2(-4.5, -1.6), Vector2(-6.5, -3.8), Vector2(0, -2.4)], 0.3, plain(c.team), Vector3(23.5, 24.2, 0)))   # a pennant
+	# The tail: a narrow forked fan, dark, white-tipped, down and back.
+	for f in 5:
+		var a := deg_to_rad(-30 + f * 15)
+		var base := Vector3(-7.5, 10.5, 0)
+		var end := base + Vector3(-9.0 + absf(f - 2) * 1.2, -4.5, sin(a) * 4.5)
+		n.add_child(rod(base, end, 0.9, 1.3, dark))
+		n.add_child(blob(Vector3(1.1, 0.5, 1.0), plain(HB_BELLY), end + Vector3(-0.6, -0.2, 0)))
+	for side in [1, -1]:   # tiny feet tucked under (it never lands to fight)
+		n.add_child(blob(Vector3(1.3, 0.7, 0.7), plain(INK), Vector3(1.5, 7.6, 1.8 * side)))
+	# A team saddle cloth and a girth.
+	var seat := Vector3(-2.5, 19.6 + 1.5 * (k - 1.0) * 4.0, 0)
+	n.add_child(blob(Vector3(4.8, 1.2, 5.6 * k), plain(c.team), seat + Vector3(0, -0.5, 0), Vector3(0, 0, 20)))
+	n.add_child(ring(0.86, 1.0, surf("leather", Color.WHITE, 3.0), Vector3(-1.0, 14.0, 0), Vector3(0, 0, 112), Vector3(5.8 * k, 1.3, 5.9 * k)))
+	return {"node": n, "sockets": {"head": Vector3(11, 28, 0), "hand_r": Vector3(0, 13, 6.0 * k), "hand_l": Vector3(0, 13, -6.0 * k),
+		"torso": Vector3(0, 14, 0), "back": Vector3(5.5, 20.5, 0), "seat": seat + Vector3(0, 0.8, 0)},
+		"anchors": [], "torso_scale": Vector2(1.1, 0.85), "carry": "harness"}
+
+
+func _concept_hb_classic(c: Dictionary) -> Dictionary:
+	return _hb_body(c)
+
+
+func _concept_hb_lance(c: Dictionary) -> Dictionary:
+	return _hb_body(c, false, true)
+
+
+func _concept_hb_plump(c: Dictionary) -> Dictionary:
+	return _hb_body(c, true)
+
+
+## (A) Blur: five close exposures per side melt into one soft fan.
+func _concept_hb_wings_blur(c: Dictionary) -> Dictionary:
+	return {"node": _hb_ghosts(5, 20, [HB_BLUR])}
+
+
+## (B) Crisp: both wings raised high in a V at the top of the stroke, glossy green (the view
+## would flap them).
+func _concept_hb_wings_v(c: Dictionary) -> Dictionary:
+	var n := Node3D.new()
+	var m := _hb_gloss(HB_EMERALD_DARK, 0.5)
+	for side in [1, -1]:
+		n.add_child(_hb_wing(m, Vector3(0, 0, 2.0 * side), Vector3(0, 24, 10.0 * side), 5.2, Vector3(1, 0, 0)))
+	return {"node": n}
+
+
+## (C) Ghosts: three distinct exposures per side, the middle one tinted green. Built (Claude's
+## pick, waiting on Dominic's): wings.hummingbird.
+func _concept_hb_wings_ghost(c: Dictionary) -> Dictionary:
+	return {"node": _hb_ghosts(3, 36, [HB_BLUR, HB_EMERALD.lightened(0.55), HB_BLUR.darkened(0.08)])}
+
+
+## (D) Halo: the hover stroke seen as it is, a near-flat disc round the shoulders (the wings
+## sweep fore and aft), pale and see-through, its rim the wingtips' path.
+func _concept_hb_wings_spread(c: Dictionary) -> Dictionary:
+	var n := Node3D.new()
+	var tilt := Node3D.new()
+	tilt.rotation_degrees = Vector3(0, 0, 18)   # the stroke plane tips back with the body
+	n.add_child(tilt)
+	tilt.add_child(blob(Vector3(11.0, 0.25, 16.0), _hb_blur_mat(HB_BLUR), Vector3(-1, 1, 0)))
+	tilt.add_child(ring(0.88, 1.0, _hb_blur_mat(HB_EMERALD.lightened(0.3)), Vector3(-1, 1.1, 0), Vector3.ZERO, Vector3(11.0, 1.5, 16.0)))
+	return {"node": n}

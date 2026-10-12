@@ -164,5 +164,26 @@
   "families": [
    "sewer"
   ]
+ },
+ "hummingbird": {
+  "voice": "hummingbird",
+  "noun": "Hummingbird",
+  "plural": "Hummingbirds",
+  "body": "body.hummingbird",
+  "head": "head.hummingbird",
+  "playable": false,
+  "mount": true,
+  "skins": [
+   "hummingbird_ruby",
+   "hummingbird_violet",
+   "hummingbird_fire"
+  ],
+  "families": [
+   "forest"
+  ],
+  "parts": {
+   "back": "wings.hummingbird"
+  },
+  "_parts_doc": "parts the creature always has as a mount (its own wings), priced like any part"
  }
 }
