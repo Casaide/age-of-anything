@@ -42,7 +42,8 @@
    "metal": "#6a5a2a",
    "ornament": "reeds",
    "banner": "ragged"
-  }
+  },
+  "siege": "timber"
  },
  "sewer": {
   "cloth": [
@@ -88,7 +89,8 @@
    "metal": "#b4783c",
    "ornament": "rivets",
    "banner": "notched"
-  }
+  },
+  "siege": "junk"
  },
  "forest": {
   "cloth": [
@@ -135,7 +137,8 @@
    "metal": "#8a6a3a",
    "ornament": "leaves",
    "banner": "notched"
-  }
+  },
+  "siege": "forest"
  },
  "imperial": {
   "cloth": [
@@ -180,7 +183,8 @@
    "metal": "#d0a850",
    "ornament": "laurel",
    "banner": "fringe"
-  }
+  },
+  "siege": "timber"
  },
  "hellenic": {
   "cloth": [
@@ -225,7 +229,8 @@
    "metal": "#c8b078",
    "ornament": "meander",
    "banner": "pointed"
-  }
+  },
+  "siege": "timber"
  },
  "royal": {
   "cloth": [
@@ -270,7 +275,8 @@
    "metal": "#d8b050",
    "ornament": "crown",
    "banner": "fringe"
-  }
+  },
+  "siege": "timber"
  },
  "steppe": {
   "cloth": [
@@ -316,7 +322,8 @@
    "thread": "#f0dca0",
    "ornament": "stitch",
    "banner": "tongues"
-  }
+  },
+  "siege": "timber"
  },
  "spooky": {
   "cloth": [
@@ -361,7 +368,8 @@
    "metal": "#a8a090",
    "ornament": "bones",
    "banner": "ragged"
-  }
+  },
+  "siege": "spooky"
  },
  "nile": {
   "skins": [
@@ -410,7 +418,8 @@
    "metal": "#d8b058",
    "ornament": "lotus",
    "banner": "pointed"
-  }
+  },
+  "siege": "timber"
  },
  "han": {
   "skins": [
@@ -459,7 +468,8 @@
    "metal": "#d0a048",
    "ornament": "cloud",
    "banner": "swallowtail"
-  }
+  },
+  "siege": "timber"
  },
  "aztec": {
   "skins": [
@@ -506,6 +516,7 @@
    "metal": "#c8a048",
    "ornament": "step",
    "banner": "scalloped"
-  }
+  },
+  "siege": "timber"
  }
 }

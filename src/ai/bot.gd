@@ -197,6 +197,7 @@ func think(w) -> void:
 	_respond(w, tc, army, workers, home_x, home_y)
 	_tower(w, workers)
 	_waves(w, army, home_x, home_y)
+	_siege(w, army)
 	_escort(w, army, healers, home_x, home_y)
 
 
@@ -435,7 +436,7 @@ func _train(w, workers: Array, count: int) -> void:
 		var best_score := -(1 << 30)
 		for slot in bt.trains:
 			var k: int = w.type_of(player, slot)
-			if k < 0 or w.ages[player] < int(w.types[k].line[0].age):
+			if k < 0 or w.ages[player] < int(w.types[k].line[0].age) or _enough(w, slot, k):
 				continue
 			var s := _score(w.types[k], foes)
 			if s > best_score:
@@ -450,6 +451,61 @@ func _train(w, workers: Array, count: int) -> void:
 				ok = false
 		if ok:
 			w.issue(player, Commands.TRAIN, {"building": w.buildings.id[b], "slot": best})
+
+
+## A line the bot keeps only a few of (data: military.siege.max: a few engines) and has them all,
+## out or queued.
+func _enough(w, slot: String, k: int) -> bool:
+	var most: Dictionary = cfg.military.get("siege", {}).get("max", {})
+	if not most.has(slot):
+		return false
+	var n := 0
+	for i in w.units.count():
+		if w.units.owner[i] == player and w.units.kind[i] == k:
+			n += 1
+	for b in w.buildings.count():
+		if w.buildings.owner[b] == player:
+			n += w.buildings.queue[b].count(k)
+	return n >= int(most[slot])
+
+
+## Engines on the regroup beat, while attacking: rams go for the nearest enemy gate, wall or tower
+## they can see (any building if none), catapults for a tower within reach of a short walk
+## (military.siege.towers_within), else they keep with the army's attack-move. Only engines not
+## already hitting a building are told.
+func _siege(w, army: Array) -> void:
+	var s: Dictionary = cfg.military.get("siege", {})
+	if s.is_empty() or not assault or w.tick % (int(cfg.military.regroup_every) * 20) != _phase():
+		return
+	var orders := {}   # target id -> engine ids
+	for i in army:
+		var t: Dictionary = w.types[w.units.kind[i]]
+		var ram: bool = t.get("buildings_only", false)
+		var thrower: bool = t.get("splash", 0) > 0
+		if not (ram or thrower) or (w.units.foe[i] != 0 and w.buildings.index_of(w.units.foe[i]) >= 0):
+			continue
+		var best := 0
+		var best_d := (int(s.towers_within) * 1000) * (int(s.towers_within) * 1000) if thrower else 1 << 60
+		var best_rank := 2
+		for b in w.buildings.count():
+			if not w.is_enemy(player, w.buildings.owner[b]) or not Fog.sees_area(w, player, w.buildings.cx[b], w.buildings.cy[b], w.buildings.sx[b], w.buildings.sy[b]):
+				continue
+			var bt: Dictionary = w.btypes[w.buildings.kind[b]]
+			var defence: bool = not bt.attack.is_empty() or bt.gate or bt.line
+			if thrower and bt.attack.is_empty():
+				continue   # catapults: towers and castles only
+			var rank := 0 if defence else 1
+			var d := Fixed.dist2(w.units.x[i], w.units.y[i], w.buildings.cx[b] * 1000 + w.buildings.sx[b] * 500, w.buildings.cy[b] * 1000 + w.buildings.sy[b] * 500)
+			if rank < best_rank or (rank == best_rank and d < best_d):
+				best = w.buildings.id[b]
+				best_d = d
+				best_rank = rank
+		if best != 0:
+			orders[best] = orders.get(best, []) + [w.units.id[i]]
+	var targets := orders.keys()
+	targets.sort()
+	for b in targets:
+		w.issue(player, Commands.ATTACK, {"ids": orders[b], "target": b})
 
 
 ## Healers from the Town Center once the age allows: one for every `per_army` soldiers, up to

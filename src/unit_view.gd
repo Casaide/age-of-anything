@@ -99,7 +99,9 @@ func build(r: Dictionary, lib, team: Color, speed := 10) -> void:
 	visual.add_child(bob)
 
 	var colours := colours_for(lib, r.skin, r.family, team)
-	if r.has("mount"):
+	if r.has("crew"):
+		_build_engine(r, lib, team, colours, speed)
+	elif r.has("mount"):
 		var m: Dictionary = r.mount
 		var mc: Dictionary = lib.creatures[m.creature]
 		var mount_colours := colours_for(lib, m.skin, r.family, team)
@@ -151,11 +153,96 @@ func build(r: Dictionary, lib, team: Color, speed := 10) -> void:
 	gait = _gait(legs.size(), flying)
 	# A creature can move its own way (data: creatures.json "gait"): frogs hop. A rider's
 	# mount decides, so a frog on a beetle scuttles.
-	if not r.has("mount") and not flying and lib.creatures.get(r.get("creature", ""), {}).get("gait", "") == "hop":
+	if not r.has("mount") and not r.has("crew") and not flying and lib.creatures.get(r.get("creature", ""), {}).get("gait", "") == "hop":
 		gait = {"hop": true, "swing": 0.0, "cadence": 0.55, "bob": 0.0, "rock": 0.0, "rock_rate": 1.0}
+	if r.has("crew"):
+		shadow.scale = Vector2.ONE * float(lib.part(r.body).stats.get("radius", 300)) / ENGINE_SHADOW
+		gait = {"swing": 0.0, "cadence": 1.0, "bob": 0.0, "rock": 0.012, "rock_rate": 3.0}
 	idle_wait = noise.randf_range(1.0, 5.0)
 	_sort_layers(self)
 	_face(facing)
+
+
+## A siege engine (milestone 13, D-118/D-119): the engine is one baked part in its facings (the
+## recipe's body), and its crew are the race's own workers (the recipe's `crew`), each a UnitView of
+## its own on the engine's crew sockets for this facing. A socket's name says how its crew member
+## stands: "crew<n>_f<k>[_reach|_raise][_in|_top]": turned k facings from the engine, the arm hold
+## it keeps, drawn behind the engine ("in": inside its frame) or over it ("top": riding); else by
+## how near the camera the socket is. Crew walk while the engine moves (not those riding on top).
+var crew: Array = []      # [{view, top}]
+var rest_hold := "low"    # the hold a unit goes back to between blows and jobs (a crew member's own)
+const ENGINE_SHADOW := 210.0   # an engine's shadow: its radius (milli-tiles) over this, times the unit's
+
+
+func _build_engine(r: Dictionary, lib, team: Color, colours: Dictionary, speed: int) -> void:
+	var part: Dictionary = lib.part(r.body)
+	var engine := _shape()
+	engine.part_id = r.body
+	engine.facing = facing_k
+	engine.setup(part.shapes, colours)
+	bob.add_child(engine)
+	_body_nodes.append(engine)
+	_facing_body = r.body
+	var rig: Dictionary = PartShape.rigs.get(r.body + PartShape.facing_suffix(facing_k), PartShape.rigs.get(r.body, {}))
+	var sockets: Dictionary = rig.get("sockets", {})
+	var depth: Dictionary = rig.get("depth", {})
+	var names: Array = sockets.keys().filter(func(s): return s.begins_with("crew"))
+	names.sort_custom(func(a, b): return float(depth[a]) < float(depth[b]) or (depth[a] == depth[b] and a < b))
+	var cr: Dictionary = r.crew.duplicate(true)
+	cr.merge({"creature": r.creature, "family": r.family, "slot": "worker", "role": "worker", "tier": 1, "name": ""})
+	for n in names.size():
+		var name: String = names[n]
+		var face := facing_k
+		var hold := "low"
+		var z := 1.0 if float(depth[name]) > 0.0 else -1.0
+		var top := false
+		for t in name.split("_"):
+			if t.begins_with("f") and t.length() == 2:
+				face = (facing_k + int(t.substr(1))) % FACINGS
+			elif t in WORK_HOLDS:
+				hold = t
+			elif t == "in":
+				z = -1.0
+			elif t == "top":
+				z = 1.0
+				top = true
+		var v = get_script().new()
+		v.facing_k = face
+		v.build(cr, lib, team, speed)
+		v.position = sockets[name]
+		v.set_meta("z", z + n * 0.01)   # the same layer: nearest the camera last
+		v.rest_hold = hold
+		v.set_hold(hold)
+		v.phase = 0.7 * n
+		bob.add_child(v)
+		crew.append({"view": v, "top": top})
+
+
+## An engine's frame: it rolls (a little rock while it moves, none of a walker's bob), its crew
+## walk with it; a blow is the whole engine lunging at the wall, a shot a kick back; it sags and
+## settles when destroyed (its crew fall, each in its own way).
+func _engine_process(delta: float) -> void:
+	time += delta
+	bob.position = Vector2.ZERO
+	bob.rotation = sin(time * gait.rock_rate * 3.0) * gait.rock if walking else 0.0
+	for c in crew:
+		c.view.walking = walking and not c.top
+	if dying:
+		die_t += delta
+		var e := minf(die_t / 0.5, 1.0)
+		visual.rotation = die_tip * 0.1 * e
+		_die_offset = Vector2(0.0, 2.5 * e)
+	elif attack_t > 0.0:
+		attack_t -= delta
+		var k := sin((1.0 - maxf(attack_t, 0.0) / 0.35) * PI)
+		bob.position += _forward() * (-2.5 if _attack_kind == "loose" else 6.0) * k
+	visual.position = _die_offset - Vector2(0, lift)
+	_shadow.position.y = -lift
+	if pose_steps > 0 and art_px > 0.0:
+		var g := global_position - Vector2(0, lift) * global_transform.get_scale().y
+		var px := 1.0 / art_px
+		var snapped := Vector2(roundf(g.x / px) * px, roundf(g.y / px) * px)
+		visual.position += (snapped - g) / maxf(global_transform.get_scale().x, 0.0001)
 
 
 ## Parts are layered by child order (their "z" meta), not z_index: z_index is global,
@@ -397,6 +484,7 @@ func _rebuild() -> void:
 	var hold := work_hold
 	legs = []
 	breathing = []
+	crew = []
 	weapon = null
 	head_node = null
 	back_node = null
@@ -447,12 +535,16 @@ func set_tool(lib, part_id: String) -> void:
 func flourish() -> void:
 	attack_t = 0.35
 	_attack_kind = "blow"
+	for c in crew:
+		c.view.flourish()   # the crew heave with it
 
 
 ## A shot leaves: the archer snaps forward on the release (R1, D-106).
 func loose() -> void:
 	attack_t = 0.35
 	_attack_kind = "loose"
+	for c in crew:
+		c.view.loose()
 
 
 ## The unit has died: from now on the view plays its fall (D3, D-106) and nothing else;
@@ -464,6 +556,8 @@ func die(tip: float) -> void:
 	walking = false
 	job = ""
 	attack_t = 0.0
+	for c in crew:
+		c.view.die(-tip if c.view.position.x < 0.0 else tip)
 
 
 ## Work poses (W1, D-105): the body is baked in three arm holds, "low" (its own, how it
@@ -535,6 +629,9 @@ func wander_in(rect: Rect2) -> void:
 
 
 func _process(delta: float) -> void:
+	if recipe.has("crew"):
+		_engine_process(delta)
+		return
 	time += delta
 	struck = false
 	if area.has_area():
@@ -597,7 +694,7 @@ func _process(delta: float) -> void:
 		_work(t, stepped)
 	elif not walking:
 		_idle(delta)
-	var rest := carry_hold if carry_hold != "" else "low"
+	var rest := carry_hold if carry_hold != "" else rest_hold
 	if attack_t <= 0.0 and (job == "" or walking) and work_hold != rest:
 		set_hold(rest)
 	_kneel(delta)

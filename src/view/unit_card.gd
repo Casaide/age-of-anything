@@ -14,6 +14,9 @@ static func text(t: Dictionary, foes: Array, combat := {}) -> String:
 	var lines := ["Attack %d %s%s    HP %d" % [int(e.attack), e.damage, reach, int(e.hp)]]
 	if int(e.get("heal", 0)) > 0:
 		lines = [heal_text(e, combat) + "    HP %d" % int(e.hp), "Never fights"]
+	var siege := siege_text(e)
+	if siege != "":
+		lines.append(siege)
 	var armour := "Armour %d melee / %d pierce" % [int(e.armour.get("melee", 0)), int(e.armour.get("pierce", 0))]
 	for k in _sorted_keys(e.armour):
 		if k != "melee" and k != "pierce" and int(e.armour[k]) != 0:
@@ -54,6 +57,23 @@ static func heal_text(e: Dictionary, combat: Dictionary) -> String:
 	var every := int(combat.heal_reload) * 10 / 20   # ticks at 20 Hz, in tenths of a second
 	var reach := int(combat.heal_range) / 100   # milli-tiles, in tenths of a tile
 	return "Heals %d hp every %s s, range %s" % [int(combat.heal_amount) * int(e.heal), _tenths(every), _tenths(reach)]
+
+
+## What a siege weapon does beyond a plain attack: "Hits buildings only", "Splash 1.1 tiles,
+## friends too", "Not within 3 tiles", "Goes through a line", "Every 5 s". "" for everyone else.
+static func siege_text(e: Dictionary) -> String:
+	var bits := []
+	if e.get("targets", "") == "buildings":
+		bits.append("Hits buildings only")
+	if int(e.get("splash", 0)) > 0:
+		bits.append("Splash %s tiles, friends too" % _tenths(int(e.splash) / 100))
+	if int(e.get("pass", 0)) > 0:
+		bits.append("Goes through a line")
+	if int(e.get("min_range", 0)) > 0:
+		bits.append("Not within %d tiles" % int(e.min_range))
+	if int(e.get("reload", 0)) > 0:
+		bits.append("Every %s s" % _tenths(int(e.reload) / 2))
+	return ", ".join(bits)
 
 
 static func _tenths(n: int) -> String:

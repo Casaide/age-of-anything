@@ -246,7 +246,7 @@ func _unit_jobs(races: Array) -> Array:
 			# Every body with arms is baked in the work holds too (raised, reaching): workers
 			# swing their tools with them (D-105) and soldiers their weapons (D-106).
 			var rides: bool = u.recipe.has("mount") and not u.recipe.mount.get("fused", false)
-			if not rides and PartShape.rigs.get(u.recipe.body, {}).get("carry", "") != "harness":
+			if not rides and not u.recipe.has("crew") and PartShape.rigs.get(u.recipe.body, {}).get("carry", "") != "harness":   # (an engine's crew are the workers)
 				var holds: Array = UnitView.WORK_HOLDS.duplicate()
 				var hand: String = u.recipe.parts.get("hand_r", "")
 				if hand != "" and ("spear" in lib.part(hand).tags or "lance" in lib.part(hand).tags):

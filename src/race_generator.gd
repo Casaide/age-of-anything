@@ -10,7 +10,8 @@ extends RefCounted
 const Rng := preload("res://src/rng.gd")
 const Pricing := preload("res://src/pricing.gd")
 
-const ROLE_NEEDS := {"worker": "worker", "spear": "spear", "skirmisher": "ranged", "archer": "bow", "large": "melee", "healer": "heal"}
+const ROLE_NEEDS := {"worker": "worker", "spear": "spear", "skirmisher": "ranged", "archer": "bow", "large": "melee", "healer": "heal",
+	"ram": "ram", "catapult": "catapult", "bolt_thrower": "bolt_thrower"}
 ## Tags a role's primary must not have (skirmishers are the non-bow ranged units).
 const ROLE_EXCLUDES := {"skirmisher": ["bow"]}
 const ROLE_BIAS := {
@@ -151,6 +152,8 @@ func generate(prompt: String, rules: Dictionary, reroll := 0) -> Dictionary:
 		ctx.age = int(slot_def.tier)
 		ctx.rng = rngs[k]
 		var recipe := _make_unit(slot_def, ctx)
+		if slot_def.slot == "worker":
+			ctx.crew = recipe   # siege engines are crewed by the race's own workers
 		var first := {"age": ctx.age, "recipe": recipe, "eval": Pricing.evaluate(recipe, lib, rules)}
 		units.append({"recipe": recipe, "eval": first.eval, "line": [first]})
 	for k in units.size():
@@ -199,6 +202,8 @@ func _race_name(rng, c: Dictionary, family: String) -> String:
 # ------------------------------------------------------------------ units
 
 func _make_unit(slot_def: Dictionary, ctx: Dictionary) -> Dictionary:
+	if slot_def.has("engine"):
+		return _make_engine(slot_def, ctx)
 	var rng = ctx.rng
 	var rules: Dictionary = ctx.rules
 	var brief: Dictionary = ctx.brief
@@ -309,6 +314,27 @@ func _make_unit(slot_def: Dictionary, ctx: Dictionary) -> Dictionary:
 			recipe.parts[pick.slot] = p.id
 			spent += int(p.points)
 	return recipe
+
+
+## A siege engine (milestone 13, D-119): the engine of its slot in the race's take (a creature's
+## own `siege` take first, else its culture's: families.json), its weapon the engine part made for
+## the role, crewed by the race's workers (the age-1 worker's recipe, drawn on the model's crew
+## sockets). Engines aren't kitted out from the budget: the engine is the unit.
+func _make_engine(slot_def: Dictionary, ctx: Dictionary) -> Dictionary:
+	var c: Dictionary = lib.creatures[ctx.creature]
+	var take: String = c.get("siege", lib.families[ctx.family].siege)
+	var body: Dictionary = lib.part("siege.%s.%s" % [slot_def.engine, take])
+	var weapons: Array = _cands("hand_r", ctx).filter(func(p): return p.get("requires_role", "") == slot_def.role)
+	assert(not weapons.is_empty(), "No engine weapon for %s" % slot_def.role)
+	var weapon: Dictionary = _best(weapons, ctx.tags, {}, ctx.rng)
+	var crew: Dictionary = {"body": ctx.crew.body, "head": ctx.crew.head, "skin": ctx.crew.skin, "parts": ctx.crew.parts.duplicate(), "scale": ctx.crew.scale}
+	if ctx.crew.has("mount"):
+		crew.mount = ctx.crew.mount.duplicate(true)   # a centaur's horse half
+	return {
+		"slot": slot_def.slot, "role": slot_def.role, "tier": int(slot_def.tier),
+		"creature": ctx.creature, "family": ctx.family, "skin": ctx.skin,
+		"body": body.id, "head": "", "parts": {"hand_r": weapon.id}, "scale": 100, "name": body.noun, "crew": crew,
+	}
 
 
 ## The optional slots a role fills.
@@ -451,6 +477,8 @@ func _upgrade(prev: Dictionary, slot_def: Dictionary, ctx: Dictionary) -> Dictio
 	var age: int = ctx.age
 	var r: Dictionary = prev.duplicate(true)
 	r.age = age
+	if slot_def.has("engine"):
+		return r   # an engine is the same engine in every age (research makes it better)
 	var role: String = slot_def.role
 	var budget := int(rules.budget[str(age)])
 	var unit_tags: Dictionary = ctx.tags.duplicate()

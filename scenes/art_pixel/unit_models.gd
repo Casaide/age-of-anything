@@ -17,7 +17,24 @@ var hold := "low"   # the body being built: how its near hand holds the weapon (
 ## Part ids may carry a hold after "@" (a body posed for its weapon: "body.frog@throw"), and
 ## body armour its wearer after "~" ("armour.leather~body.rat": baked on that body).
 func has(id: String) -> bool:
+	if _is_engine(id):
+		return _siege().has(id)
 	return has_method("_" + id.get_slice("~", 0).get_slice("@", 0).replace(".", "_"))
+
+
+## Siege engines ("siege.<engine>.<take>") are modelled in siege_models.gd (which builds on this
+## file's helpers), loaded when first asked for.
+var _siege_models = null
+
+
+func _siege():
+	if _siege_models == null:
+		_siege_models = load("res://scenes/art_pixel/siege_models.gd").new()
+	return _siege_models
+
+
+static func _is_engine(id: String) -> bool:
+	return id.begins_with("siege.") and id.count(".") == 2
 
 
 ## Body armour modelled for one body in that body's space (tools/blender/human_armour.py:
@@ -33,6 +50,8 @@ func fitted(armour_id: String, body_id: String, colours: Dictionary) -> Dictiona
 
 ## {node: Node3D, sockets: {name: Vector3}, anchors: [[Vector3 hip, phase, z]]}
 func build(id: String, colours: Dictionary) -> Dictionary:
+	if _is_engine(id):
+		return _siege().build(id, colours)
 	hold = id.get_slice("@", 1) if "@" in id and not "~" in id else "low"
 	return call("_" + id.get_slice("~", 0).get_slice("@", 0).replace(".", "_"), colours)
 

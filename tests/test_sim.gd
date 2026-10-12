@@ -29,10 +29,11 @@ const BuildingArt := preload("res://src/view/art/building_art.gd")
 const PROMPTS := ["angry swamp frogs with reed spears", "sewer rats with cheese hammers"]
 const SEED := 20261010
 const TICKS := 12000               # 10 minutes at 20 Hz
-const PER_SLOT := 17               # x 6 roster slots (healers too) x 2 players = 204 units
+const PER_SLOT := 11               # x 9 roster slots (healers and siege too) x 2 players = 198 units
 const ORDERS_EVERY := 10           # turns between each player's orders (2 s)
 const TICK_BUDGET_USEC := 3000
-const CROSS_UNITS := 10            # per roster slot: 50 units, in 5 groups of 10
+const CROSS_UNITS := 10            # per roster slot: 60 units, in 6 groups of 10
+const CROSS_ENGINES := 3           # siege engines cross on their own: three of each, one slow, big-bodied group
 const CROSS_LIMIT := 2400          # ticks (2 minutes) to get everyone across
 const OPENING_TICKS := 3600        # the 3-minute opening
 const STALL_TICKS := 100           # a worker idle this long (5 s) has stalled
@@ -75,6 +76,8 @@ func _init() -> void:
 	_test_flow(map)
 	_test_crossing(races, "flat_test")
 	_test_crossing(races, "choke_test")
+	for m in ["flat_test", "choke_test", "hill_test"]:
+		_test_crossing(races, m, true)
 	_test_opening(races)
 	_test_age_timing(races)
 	_test_queue(races)
@@ -102,6 +105,7 @@ func _init() -> void:
 	_test_garrison(races)
 	_test_towers(races)
 	_test_shots(races)
+	_test_engines(races)
 	_test_bot_hunts(races)
 	_test_wonder(races)
 	_test_combat(gen)
@@ -2769,6 +2773,118 @@ func _test_shots(races: Array) -> void:
 	check(hits > 2 and hits >= shots - 1 and g.buildings.hp[g.buildings.index_of(house)] < bhp, "shots: every shot at a house lands (%d of %d)" % [hits, shots])
 
 
+## Siege engines (milestone 13): a catapult's stone hurts everyone round where it lands, less
+## further out, friends at half; it can't hit what is under its nose and steps back; a ram goes
+## for buildings only, hits them very hard and shrugs off arrows; a bolt goes through a line.
+func _test_engines(races: Array) -> void:
+	# Splash: four foes and a friend round the catapult's target.
+	var w := _bare_world(races)
+	var cat := _lone(w, 0, "catapult", 9000, 20500, "stand")
+	var foes := []
+	for o in [[0, 0], [700, 0], [0, 700], [0, -700]]:
+		foes.append(_lone(w, 1, "spear", 17000 + o[0], 20500 + o[1], "passive"))
+	var friend := _lone(w, 0, "spear", 16400, 20500, "passive")
+	for k in foes.size():
+		var i := w.units.index_of(foes[k])
+		w.units.x[i] = 17000 + [0, 700, 0, 0][k]
+		w.units.y[i] = 20500 + [0, 0, 700, -700][k]
+	var fi := w.units.index_of(friend)
+	w.units.x[fi] = 16400
+	w.units.y[fi] = 20500
+	w.issue(0, Commands.ATTACK, {"ids": [cat], "target": foes[0]})
+	var splash := {}
+	var hits := {}
+	for k in 400:
+		w.step()
+		for e in w.events:
+			if e.type == "splash" and e.by == cat:
+				splash = e
+			elif e.type == "hit" and e.by == cat:
+				hits[e.to] = e.damage
+		if not splash.is_empty():
+			break
+	var on_foes := foes.filter(func(f): return hits.has(f))
+	check(not splash.is_empty() and on_foes.size() >= 3, "catapult: its stone lands and hurts %d of 4 foes round the spot (%s)" % [on_foes.size(), hits])
+	check(hits.get(foes[0], 0) > hits.get(foes[1], 0) and hits.get(foes[1], 0) > 0, "catapult: the target takes the most, a body further out less (%s)" % [hits])
+	check(hits.has(friend) and hits[friend] < hits.get(foes[1], 0) + 1, "catapult: a friend in the splash is hurt too, at half (%d)" % hits.get(friend, 0))
+	# Minimum range: a foe a tile and a half off isn't shot at; the catapult steps back, then shoots.
+	var m := _bare_world(races)
+	var c2 := _lone(m, 0, "catapult", 12000, 20500, "aggressive")
+	var near := _lone(m, 1, "spear", 13900, 20500, "passive")
+	var ni := m.units.index_of(near)
+	m.units.x[ni] = 13900
+	m.units.y[ni] = 20500
+	m.issue(0, Commands.ATTACK, {"ids": [c2], "target": near})
+	var close_shot := false
+	var shot_at := -1
+	for k in 600:
+		m.step()
+		var ci := m.units.index_of(c2)
+		ni = m.units.index_of(near)
+		var gap: int = Combat._gap(m, ci, ni, -1)
+		for e in m.events:
+			if e.type == "shot" and e.by == c2:
+				if gap < 3000:
+					close_shot = true
+				shot_at = gap
+		if shot_at >= 0:
+			break
+	check(not close_shot and shot_at >= 3000, "catapult: no shot inside its minimum range; it steps back and shoots from %d milli-tiles" % shot_at)
+	# The ram: ordered at a soldier, it won't; left be, it finds the house and hits it very hard.
+	var r := _bare_world(races)
+	var house := _put(r, 1, "house", 18, 20)
+	var ram := _lone(r, 0, "ram", 15500, 22500, "aggressive")
+	var guard := _lone(r, 1, "spear", 15500, 24000, "passive")
+	r.issue(0, Commands.ATTACK, {"ids": [ram], "target": guard})
+	var blow := 0
+	var on_guard := 0
+	for k in 400:
+		r.step()
+		for e in r.events:
+			if e.type == "hit" and e.by == ram:
+				if e.to == house:
+					blow = maxi(blow, e.damage)
+				elif e.to == guard:
+					on_guard += 1
+		if blow > 0:
+			break
+	check(on_guard == 0 and blow >= 30, "ram: never hits soldiers, hits a house hard (%d a blow)" % blow)
+	var archer := _lone(r, 1, "archer", 14000, 24500, "stand")
+	r.issue(1, Commands.ATTACK, {"ids": [archer], "target": ram})
+	var arrow := 0
+	for k in 300:
+		r.step()
+		for e in r.events:
+			if e.type == "hit" and e.by == archer and e.to == ram:
+				arrow = e.damage
+		if arrow > 0:
+			break
+	check(arrow == 1, "ram: arrows barely scratch it (%d)" % arrow)
+	var rk: int = r.type_of(0, "ram")
+	var ck: int = r.type_of(0, "catapult")
+	check(r.types[ck].no_heal and r.types[rk].buildings_only, "engines: machines aren't healed, rams go for buildings")
+	# A bolt through a line: aimed at the far one, it hits those in its way too.
+	var b := _bare_world(races)
+	var bolt := _lone(b, 0, "bolt_thrower", 8000, 20500, "stand")
+	var line := []
+	for x in [14500, 15500, 16500]:
+		var id := _lone(b, 1, "spear", x, 20500, "passive")
+		var li := b.units.index_of(id)
+		b.units.x[li] = x
+		b.units.y[li] = 20500
+		line.append(id)
+	b.issue(0, Commands.ATTACK, {"ids": [bolt], "target": line[2]})
+	var struck := {}
+	for k in 400:
+		b.step()
+		for e in b.events:
+			if e.type == "hit" and e.by == bolt:
+				struck[e.to] = true
+		if not struck.is_empty():
+			break
+	check(struck.size() == 3, "bolt thrower: a bolt goes through a line of three (%d hit)" % struck.size())
+
+
 func _bare_world(races: Array) -> World:
 	var bare := rules_.duplicate(true)
 	bare.economy.start.buildings = []
@@ -3267,7 +3383,7 @@ func _unit(race: Dictionary, slot: String) -> Dictionary:
 # --- movement -------------------------------------------------------------------
 
 ## The milestone 2 exit criterion: 50 units cross the map in groups, nobody stuck.
-func _test_crossing(races: Array, map_id: String) -> void:
+func _test_crossing(races: Array, map_id: String, engines := false) -> void:
 	var map: SimMap = SimMap.load_id(map_id)
 	var bare := rules_.duplicate(true)   # movement only: no town centres or starting workers
 	bare.economy.start.buildings = []
@@ -3275,12 +3391,13 @@ func _test_crossing(races: Array, map_id: String) -> void:
 	var w := World.new(SEED, map, races, bare)
 	var src: Array = map.starts[0]
 	var dst: Array = map.starts[1]
-	for u in races[0].units:
-		w.issue(0, Commands.SPAWN, {"slot": u.recipe.slot, "count": CROSS_UNITS, "x": src[0], "y": src[1]})
+	for u in races[0].units:   # the foot and horse lines, or (engines) the siege engines on their own
+		if u.recipe.has("crew") == engines:
+			w.issue(0, Commands.SPAWN, {"slot": u.recipe.slot, "count": CROSS_ENGINES if engines else CROSS_UNITS, "x": src[0], "y": src[1]})
 	while w.units.count() == 0:
 		w.step()
 	var ids := Array(w.units.id)
-	var groups := ids.size() / CROSS_UNITS
+	var groups := (ids.size() + CROSS_UNITS - 1) / CROSS_UNITS   # (the engines: one group, last)
 	for g in groups:
 		w.issue(0, Commands.MOVE, {"ids": ids.slice(g * CROSS_UNITS, (g + 1) * CROSS_UNITS),
 			"x": dst[0] + (g - groups / 2) * 1500, "y": dst[1] + ((g % 2) * 2 - 1) * 1000})

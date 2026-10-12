@@ -39,6 +39,7 @@ func _init() -> void:
 	_test_bounds(lib, gen, rules)
 	_test_prompts(gen, rules)
 	_test_healers(lib, gen, rules)
+	_test_siege(lib, gen, rules.default)
 	_test_composer(lib, gen, rules.default)
 	_test_audio(lib)
 	_test_paths()
@@ -308,7 +309,8 @@ func _test_prompts(gen, rules: Dictionary) -> void:
 	var centaurs: Dictionary = gen.generate("centaur romans", d)
 	check(centaurs.creature == "centaur" and centaurs.family == "imperial", "centaur romans")
 	for u in centaurs.units:
-		check(u.recipe.has("mount") and u.recipe.mount.fused, "every centaur is fused to a pony")
+		var who: Dictionary = u.recipe.get("crew", u.recipe)   # an engine's centaurs are its crew
+		check(who.has("mount") and who.mount.fused, "every centaur is fused to a pony")
 	var greeks: Dictionary = gen.generate("flying greeks with wings", d)
 	check(greeks.family == "hellenic", "greeks are hellenic")
 	var winged := 0
@@ -394,6 +396,30 @@ func _test_healers(lib, gen, rules: Dictionary) -> void:
 		var b: Array = gen.generate(prompt, without).units
 		check(JSON.stringify(a.map(func(u): return u.line.map(func(l): return l.recipe))) == JSON.stringify(b.map(func(u): return u.line.map(func(l): return l.recipe))),
 			"'%s': adding the healer leaves the other lines' recipes as they were" % prompt)
+
+
+## Siege engines (milestone 13): every race gets a ram, catapult and bolt thrower in its take (a
+## creature's own `siege`, else its culture's), crewed by its worker, priced with wood and gold;
+## every engine part has a model.
+func _test_siege(lib, gen, rules: Dictionary) -> void:
+	var models = preload("res://scenes/art_pixel/unit_models.gd").new()
+	for id in lib.parts:
+		if lib.parts[id].slot == "engine":
+			check(models.has(id), "%s has a model" % id)
+	for f in lib.families:
+		for e in ["ram", "catapult", "bolt"]:
+			check(lib.parts.has("siege.%s.%s" % [e, lib.families[f].siege]), "family %s's take builds a %s" % [f, e])
+	var takes := {"romans": "timber", "sewer rats": "junk", "forest beetles": "forest", "spooky spiders": "spooky", "swamp frogs": "frog", "forest frogs": "frog", "swamp beetles": "timber", "mongols": "timber"}
+	for prompt in takes:
+		var race: Dictionary = gen.generate(prompt, rules)
+		for role in ["ram", "catapult", "bolt_thrower"]:
+			var u: Dictionary = _unit(race, role)
+			check(u.recipe.body.ends_with("." + takes[prompt]) and u.recipe.crew.body == race.units[0].recipe.body,
+				"%s: the %s is the %s take, crewed by its workers (%s)" % [prompt, role, takes[prompt], u.recipe.body])
+			check(int(u.recipe.tier) == 3 and u.line.size() == 1 and int(u.eval.cost.gold) > 0 and int(u.eval.cost.wood) > 0,
+				"%s: the %s opens in age 3 and costs wood and gold (%s)" % [prompt, role, u.eval.cost])
+	var ram: Dictionary = _unit(gen.generate("romans", rules), "ram").eval
+	check(ram.targets == "buildings" and int(ram.armour.pierce) > int(ram.armour.melee), "the ram hits buildings only, shrugs off arrows, not blows")
 
 
 func _test_composer(lib, gen, rules: Dictionary) -> void:

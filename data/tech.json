@@ -819,7 +819,7 @@
   {
    "id": "siege_wrights",
    "name": "Siege Wrights",
-   "desc": "Better engines from better builders.",
+   "desc": "Better engines from better builders: catapults and bolt throwers reach a tile further.",
    "cost": {
     "food": 200,
     "wood": 200
@@ -830,11 +830,14 @@
    "effects": [
     {
      "tag": "siege",
+     "not": [
+      "ram"
+     ],
      "stat": "range",
      "add": 1
     }
    ],
-   "note": "siege units come in milestone 13; the effect reaches them by their `siege` tag"
+   "note": "reaches the siege lines by their `siege` tag; not rams (melee)"
   },
   {
    "id": "creature_research",

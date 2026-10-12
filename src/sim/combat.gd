@@ -48,7 +48,9 @@ const SPREAD := 1500
 ## A unit whose foe has more than this many attackers looks for a free foe close by.
 const CROWDED := 2
 ## A standing shooter keeps shooting until its foe is this far (milli-tiles) beyond its reach:
-## a shove from a neighbour no longer reads as "out of range" and walks it a step closer.
+## a shove from a neighbour no longer reads as "out of range" and walks it a step closer. Melee
+## units standing at their place round a building get the same slack (a big body, a ram, at a
+## place near a corner stood just out of reach).
 const HOLD := 120
 
 
@@ -116,6 +118,15 @@ static func type_vectors(w, t: Dictionary) -> void:
 			if c.shot_speeds.has(k):
 				t.shot_speed = int(c.shot_speeds[k])
 				break
+		# Siege weapons (milestone 13): their own reload, a minimum range, splash, pass-through,
+		# and rams go for buildings only. Machines aren't healed (rules heal_not).
+		if int(e.get("reload", 0)) > 0:
+			t.reload = int(e.reload)
+		t.min_range = int(e.get("min_range", 0)) * SimMap.TILE
+		t.splash = int(e.get("splash", 0))
+		t.pass_len = int(e.get("pass", 0))
+		t.buildings_only = e.get("targets", "") == "buildings"
+		t.no_heal = e.tags.any(func(k): return k in c.get("heal_not", []))
 
 
 static func _vector(w, d: Dictionary) -> PackedInt32Array:
@@ -149,7 +160,8 @@ static func cmd_attack(w, player: int, a: Dictionary) -> void:
 		return
 	for uid in a.ids:
 		var i: int = w.units.index_of(uid)
-		if i >= 0 and w.units.owner[i] == player and not w.types[w.units.kind[i]].healer and not w.types[w.units.kind[i]].get("harmless", false):   # healers and sheep never fight
+		if i >= 0 and w.units.owner[i] == player and not w.types[w.units.kind[i]].healer and not w.types[w.units.kind[i]].get("harmless", false) \
+				and not (w.types[w.units.kind[i]].get("buildings_only", false) and w.units.index_of(a.target) >= 0):   # healers and sheep never fight; rams hit buildings only
 			Economy.clear_task(w, i)
 			w.units.foe[i] = a.target
 			w.units.stance[i] = ORDERED
@@ -224,6 +236,54 @@ static func _look(w, i: int, t: Dictionary) -> int:
 ## (centre to centre), whichever is further; a shooter shouldn't walk up to a foe it could hit.
 static func _sight(w, i: int, t: Dictionary) -> int:
 	return maxi(int(w.combat.sight), t.reach + w.units.radius[i] + SimMap.TILE / 2)
+
+
+## How near (centre to centre) a foe may be for a unit with a minimum range to still hit it; 0 for
+## everyone else.
+static func _near(w, i: int, t: Dictionary) -> int:
+	return t.min_range + w.units.radius[i] + BASE_RADIUS if t.min_range > 0 else 0
+
+
+const BASE_RADIUS := 300   # a foot soldier's body (World.BASE_RADIUS), for minimum-range looks
+const BACK_OFF := 1500     # how far beyond its minimum range an engine steps back from a foe under its nose
+
+
+## Engine i's foe (unit j or building b) is inside its minimum range: another foe it can hit from
+## where it stands, if there is one (not for an ordered target); else it steps back out of range,
+## straight away from the foe, re-aimed on its re-plan beat.
+static func _too_close(w, i: int, j: int, b: int, t: Dictionary, engaged: PackedInt32Array) -> void:
+	var u = w.units
+	if u.stance[i] != ORDERED:
+		var f := _nearest_foe(w, i, t.reach + u.radius[i] + SimMap.TILE / 2, b >= 0, engaged, SPREAD, PackedInt32Array(), _near(w, i, t))
+		if f != 0 and f != u.foe[i]:
+			var fj: int = u.index_of(f)
+			if j >= 0:
+				engaged[j] -= 1
+			if fj >= 0:
+				engaged[fj] += 1
+			u.foe[i] = f
+			return
+	if u.moving[i] == 1 and (w.tick + u.id[i]) % w.REPLAN_EVERY != 0:
+		return
+	var fx: int
+	var fy: int
+	if j >= 0:
+		fx = u.x[j]
+		fy = u.y[j]
+	else:
+		var bs = w.buildings
+		fx = clampi(u.x[i], bs.cx[b] * SimMap.TILE, (bs.cx[b] + bs.sx[b]) * SimMap.TILE)
+		fy = clampi(u.y[i], bs.cy[b] * SimMap.TILE, (bs.cy[b] + bs.sy[b]) * SimMap.TILE)
+	var dx: int = u.x[i] - fx
+	var dy: int = u.y[i] - fy
+	var len := Fixed.isqrt(dx * dx + dy * dy)
+	if len == 0:
+		dx = 1
+		len = 1
+	var away: int = t.min_range + BACK_OFF
+	var x: int = clampi(fx + dx * away / len, 0, w.map.width * SimMap.TILE - 1)
+	var y: int = clampi(fy + dy * away / len, 0, w.map.height * SimMap.TILE - 1)
+	w.order_move(i, x, y, 0, 0)
 
 
 ## Done with a fight it found itself: a defensive unit walks back to where it stood.
@@ -307,7 +367,9 @@ static func tick(w) -> void:
 			if (u.foe[i] == 0 and (idle or stance == ATTACK_MOVE)) or crowded:
 				var am: bool = stance == ATTACK_MOVE
 				# Stand ground takes the nearest foe, not the least fought: the nearest is the one in reach.
-				var f := _nearest_foe(w, i, _sight(w, i, t) if am else _look(w, i, t), am, engaged, 0 if posture == STAND and not am else SPREAD)
+				# Rams look for buildings only; engines with a minimum range for foes beyond it.
+				var f := _nearest_foe(w, i, _sight(w, i, t) if am else _look(w, i, t), am or t.buildings_only, engaged, 0 if posture == STAND and not am else SPREAD,
+					PackedInt32Array(), _near(w, i, t), not t.buildings_only)
 				# A shooter in reach of its crowded foe has no crowd to get round: it only swaps to
 				# another foe it can hit from where it stands, never walks off to a free one.
 				if crowded and t.ranged and f != 0 and _gap(w, i, u.index_of(u.foe[i]), -1) <= t.reach:
@@ -348,7 +410,7 @@ static func tick(w) -> void:
 		if j < 0 and b < 0:
 			# An attack-mover whose foe fell takes the next one at once: walking on until its
 			# acquire beat stepped a whole line of shooters forward after every kill.
-			var next := _nearest_foe(w, i, _sight(w, i, t), true, engaged) if u.stance[i] == ATTACK_MOVE else 0
+			var next := _nearest_foe(w, i, _sight(w, i, t), true, engaged, SPREAD, PackedInt32Array(), _near(w, i, t), not t.buildings_only) if u.stance[i] == ATTACK_MOVE else 0
 			if next != 0:
 				u.foe[i] = next
 				var nj: int = u.index_of(next)
@@ -359,13 +421,16 @@ static func tick(w) -> void:
 			continue
 		var gap := _gap(w, i, j, b)
 		var up := _height_step(w, i, j, b) if t.ranged else 0   # high ground: shooters reach further down, less far up
-		if gap <= t.reach + up * int(w.high.reach) + (HOLD if t.ranged and u.moving[i] == 0 else 0):
+		if t.min_range > 0 and gap < t.min_range:
+			_too_close(w, i, j, b, t, engaged)   # an engine can't hit what's under its nose
+			continue
+		if gap <= t.reach + up * int(w.high.reach) + (HOLD if (t.ranged or b >= 0) and u.moving[i] == 0 else 0):
 			u.moving[i] = 0
 			if b >= 0:
 				hitters[b] = hitters.get(b, []) + [i]
 			if u.cooldown[i] == 0 and j >= 0 and t.ranged and inbound[j] >= u.hp[j] and u.stance[i] != ORDERED:
 				# Enough already flying at it to kill it: another foe in reach, or hold this shot.
-				var f := _nearest_foe(w, i, t.reach + u.radius[i] + SimMap.TILE / 2, false, engaged, SPREAD, inbound)
+				var f := _nearest_foe(w, i, t.reach + u.radius[i] + SimMap.TILE / 2, false, engaged, SPREAD, inbound, _near(w, i, t))
 				var fj: int = u.index_of(f) if f != 0 else -1
 				if fj < 0 or _gap(w, i, fj, -1) > t.reach + _height_step(w, i, fj, -1) * int(w.high.reach):
 					continue
@@ -510,7 +575,7 @@ static func _loose(w, by: int, owner: int, sx: int, sy: int, j: int, b: int, d: 
 		ax = bs.cx[b] * SimMap.TILE + bs.sx[b] * SimMap.TILE / 2
 		ay = bs.cy[b] * SimMap.TILE + bs.sy[b] * SimMap.TILE / 2
 	var f := _flight(sx, sy, ax, ay, speed)
-	w.shots.add(w.tick + f, to, by, owner, d, src, up, ax, ay)
+	w.shots.add(w.tick + f, to, by, owner, d, src, up, ax, ay, sx, sy)
 	var e := {"type": "shot", "by": by, "to": to, "x0": sx, "y0": sy, "x": ax, "y": ay, "ticks": f}
 	if arrow >= 0:
 		e["arrow"] = arrow
@@ -539,6 +604,12 @@ static func _land(w, hurt: PackedInt32Array, hurt_by: PackedInt32Array, bhurt: P
 		var d: int = recs[o + Shots.DAMAGE]
 		var j: int = u.index_of(to)
 		var b: int = w.buildings.index_of(to) if j < 0 else -1
+		var src: int = recs[o + Shots.SRC]
+		if src >= 0 and w.types[src].get("splash", 0) > 0:
+			_splash(w, recs, o, b, hurt, hurt_by, bhurt)   # a stone lands on its spot, whoever is there
+			continue
+		if src >= 0 and w.types[src].get("pass_len", 0) > 0:
+			_pass_through(w, recs, o, j, hurt, hurt_by)   # a bolt goes through those in its way, then on as a shot
 		if b >= 0:   # buildings never dodge
 			bhurt[b] += d
 			w.events.append({"type": "hit", "by": by, "to": to, "damage": d, "ranged": true, "x": ax, "y": ay})
@@ -557,6 +628,118 @@ static func _land(w, hurt: PackedInt32Array, hurt_by: PackedInt32Array, bhurt: P
 			w.events.append({"type": "hit", "by": by, "to": u.id[j], "damage": d, "ranged": true, "x": ax, "y": ay})
 		else:
 			w.events.append({"type": "miss", "by": by, "to": to, "x": ax, "y": ay})
+
+
+## A stone lands (a weapon with `splash`, milli-tiles): every unit whose body is within the splash of
+## the spot takes the shooter's damage against its own armour, scaled down by how far its edge is
+## from the spot (x (splash - gap) / splash: full on the spot, nothing at the rim); friends in it
+## take rules splash_friend_pct of that (the genre's stone throwers hurt their own side too), the
+## shooter itself and animals nothing. The building it was thrown at takes it in full; other enemy
+## buildings in the splash by the same falloff. One "splash" event for the view, a "hit" per victim.
+static func _splash(w, recs: PackedInt32Array, o: int, b: int, hurt: PackedInt32Array, hurt_by: PackedInt32Array, bhurt: PackedInt32Array) -> void:
+	var u = w.units
+	var sp = w.spatial
+	var t: Dictionary = w.types[recs[o + Shots.SRC]]
+	var by: int = recs[o + Shots.BY]
+	var owner: int = recs[o + Shots.OWNER]
+	var x: int = recs[o + Shots.X]
+	var y: int = recs[o + Shots.Y]
+	var up: int = recs[o + Shots.UP]
+	var r: int = t.splash
+	var friend_pct := int(w.combat.get("splash_friend_pct", 100))
+	w.events.append({"type": "splash", "by": by, "x": x, "y": y, "r": r})
+	var reach: int = (r + MAX_BODY) / SimMap.TILE + 1
+	var cx: int = x / SimMap.TILE
+	var cy: int = y / SimMap.TILE
+	for yy in range(maxi(cy - reach, 0), mini(cy + reach + 1, sp.height)):
+		for xx in range(maxi(cx - reach, 0), mini(cx + reach + 1, sp.width)):
+			var cell: int = yy * sp.width + xx
+			for q in range(sp.start[cell], sp.start[cell + 1]):
+				var k: int = sp.items[q]
+				if u.id[k] == by or u.owner[k] == w.gaia or w.types[u.kind[k]].has("animal"):
+					continue
+				var gap: int = maxi(0, Fixed.isqrt(Fixed.dist2(x, y, u.x[k], u.y[k])) - u.radius[k])
+				if gap >= r:
+					continue
+				var tt: Dictionary = w.types[u.kind[k]]
+				var d := damage(t.atk, tt.arm, tt.cls, maxi(int(w.combat.min_damage), tt.get("min_damage", 0)))
+				if up < 0:
+					d = uphill(w, d)
+				d = d * (r - gap) / r
+				if not w.is_enemy(owner, u.owner[k]):
+					d = d * friend_pct / 100
+				if d <= 0:
+					continue
+				hurt[k] += d
+				hurt_by[k] = by
+				w.events.append({"type": "hit", "by": by, "to": u.id[k], "damage": d, "ranged": true, "x": x, "y": y})
+	var bs = w.buildings
+	for k in bs.count():
+		if k != b and not w.is_enemy(owner, bs.owner[k]):
+			continue
+		var gx: int = maxi(maxi(bs.cx[k] * SimMap.TILE - x, 0), x - (bs.cx[k] + bs.sx[k]) * SimMap.TILE)
+		var gy: int = maxi(maxi(bs.cy[k] * SimMap.TILE - y, 0), y - (bs.cy[k] + bs.sy[k]) * SimMap.TILE)
+		var gap := Fixed.isqrt(gx * gx + gy * gy)
+		if k != b and gap >= r:
+			continue
+		var d := damage(t.atk, w.bmods[bs.owner[k]][bs.kind[k]].arm, w.btypes[bs.kind[k]].cls, int(w.combat.min_damage))
+		if up < 0:
+			d = uphill(w, d)
+		if k != b:
+			d = d * (r - gap) / r
+		if d <= 0:
+			continue
+		bhurt[k] += d
+		w.events.append({"type": "hit", "by": by, "to": bs.id[k], "damage": d, "ranged": true, "x": x, "y": y})
+
+
+const MAX_BODY := 500   # the biggest body's radius (World.MAX_RADIUS): how far round a spot to look
+
+
+## A bolt (a weapon with `pass`, milli-tiles) goes through what's in its way: every foe of the
+## shooter (not the one it was aimed at, whose hit or miss is the usual one; not animals) whose
+## body is on the last `pass` of its flight, from where it was loosed to the spot it lands on,
+## takes the shooter's damage against its own armour.
+static func _pass_through(w, recs: PackedInt32Array, o: int, aimed: int, hurt: PackedInt32Array, hurt_by: PackedInt32Array) -> void:
+	var u = w.units
+	var sp = w.spatial
+	var t: Dictionary = w.types[recs[o + Shots.SRC]]
+	var by: int = recs[o + Shots.BY]
+	var owner: int = recs[o + Shots.OWNER]
+	var x1: int = recs[o + Shots.X]
+	var y1: int = recs[o + Shots.Y]
+	var dx: int = x1 - recs[o + Shots.X0]
+	var dy: int = y1 - recs[o + Shots.Y0]
+	var len := Fixed.isqrt(dx * dx + dy * dy)
+	if len == 0:
+		return
+	var run: int = mini(t.pass_len, len)
+	var x0: int = x1 - dx * run / len
+	var y0: int = y1 - dy * run / len
+	var slack: int = int(w.combat.shot_slack)
+	var lo := Vector2i(mini(x0, x1) - MAX_BODY - slack, mini(y0, y1) - MAX_BODY - slack) / SimMap.TILE
+	var hi := Vector2i(maxi(x0, x1) + MAX_BODY + slack, maxi(y0, y1) + MAX_BODY + slack) / SimMap.TILE
+	for yy in range(maxi(lo.y, 0), mini(hi.y + 1, sp.height)):
+		for xx in range(maxi(lo.x, 0), mini(hi.x + 1, sp.width)):
+			var cell: int = yy * sp.width + xx
+			for q in range(sp.start[cell], sp.start[cell + 1]):
+				var k: int = sp.items[q]
+				if k == aimed or u.id[k] == recs[o + Shots.TO] or not w.is_foe(u.owner[k], owner) or w.types[u.kind[k]].has("animal"):
+					continue
+				# The nearest point of the bolt's run to its centre, in integers.
+				var px: int = u.x[k] - x0
+				var py: int = u.y[k] - y0
+				var along: int = clampi((px * (x1 - x0) + py * (y1 - y0)) / maxi(1, run), 0, run)
+				var nx: int = x0 + (x1 - x0) * along / maxi(1, run)
+				var ny: int = y0 + (y1 - y0) * along / maxi(1, run)
+				var rr: int = u.radius[k] + slack
+				if Fixed.dist2(nx, ny, u.x[k], u.y[k]) > rr * rr:
+					continue
+				var tt: Dictionary = w.types[u.kind[k]]
+				var d := damage(t.atk, tt.arm, tt.cls, maxi(int(w.combat.min_damage), tt.get("min_damage", 0)))
+				hurt[k] += d
+				hurt_by[k] = by
+				w.events.append({"type": "hit", "by": by, "to": u.id[k], "damage": d, "ranged": true, "x": u.x[k], "y": u.y[k]})
 
 
 ## The foe of `owner` whose body covers (x, y), nearest its centre (lowest slot on ties), not an
@@ -760,7 +943,8 @@ static func _lost(w, i: int) -> void:
 ## its current attackers as `spread` further away, lowest id on ties (skipping those the shots
 ## in `inbound` will kill, if given); then, for attack-movers, the nearest enemy building.
 ## Returns an id or 0.
-static func _nearest_foe(w, i: int, sight: int, buildings_too: bool, engaged: PackedInt32Array, spread := SPREAD, inbound := PackedInt32Array()) -> int:
+static func _nearest_foe(w, i: int, sight: int, buildings_too: bool, engaged: PackedInt32Array, spread := SPREAD, inbound := PackedInt32Array(),
+		near := 0, units_too := true) -> int:
 	var u = w.units
 	var sp = w.spatial
 	var me: int = u.owner[i]
@@ -771,7 +955,7 @@ static func _nearest_foe(w, i: int, sight: int, buildings_too: bool, engaged: Pa
 	var r := sight / SimMap.TILE + 1
 	var cx: int = u.x[i] / SimMap.TILE
 	var cy: int = u.y[i] / SimMap.TILE
-	for yy in range(maxi(cy - r, 0), mini(cy + r + 1, sp.height)):
+	for yy in (range(maxi(cy - r, 0), mini(cy + r + 1, sp.height)) if units_too else []):
 		for xx in range(maxi(cx - r, 0), mini(cx + r + 1, sp.width)):
 			var cell: int = yy * sp.width + xx
 			for k in range(sp.start[cell], sp.start[cell + 1]):
@@ -781,8 +965,8 @@ static func _nearest_foe(w, i: int, sight: int, buildings_too: bool, engaged: Pa
 				if not inbound.is_empty() and inbound[j] >= u.hp[j]:
 					continue   # as good as dead already: shots on their way will kill it
 				var d2 := Fixed.dist2(u.x[i], u.y[i], u.x[j], u.y[j])
-				if d2 > sight * sight or not Fog.visible(w, me, u.x[j], u.y[j]):
-					continue   # only what its side can see: no going for foes in the fog (Dominic)
+				if d2 > sight * sight or d2 < near * near or not Fog.visible(w, me, u.x[j], u.y[j]):
+					continue   # only what its side can see: no going for foes in the fog (Dominic); none under an engine's nose
 				var d := Fixed.isqrt(d2) + engaged[j] * spread
 				if d < best_d or (d == best_d and u.id[j] < best):
 					best_d = d
@@ -793,6 +977,8 @@ static func _nearest_foe(w, i: int, sight: int, buildings_too: bool, engaged: Pa
 	var bs = w.buildings
 	for b in bs.count():
 		if not w.is_enemy(bs.owner[b], me) or not Fog.sees_area(w, me, bs.cx[b], bs.cy[b], bs.sx[b], bs.sy[b]):
+			continue
+		if near > 0 and _gap(w, i, -1, b) < near - u.radius[i]:
 			continue
 		var mx: int = bs.cx[b] * SimMap.TILE + bs.sx[b] * SimMap.TILE / 2
 		var my: int = bs.cy[b] * SimMap.TILE + bs.sy[b] * SimMap.TILE / 2
@@ -816,7 +1002,7 @@ static func _apply(w, hurt: PackedInt32Array, hurt_by: PackedInt32Array, bhurt: 
 		if t.has("animal"):
 			Animals.hurt(w, j, hurt_by[j])   # a deer bolts, a sheep stands for the knife
 		if u.foe[j] == 0 and (u.stance[j] == NONE or u.stance[j] == RETURN) and u.task[j] == Economy.NONE and not t.worker \
-				and not t.get("harmless", false) and not t.get("healer", false) and u.posture[j] != PASSIVE:
+				and not t.get("harmless", false) and not t.get("healer", false) and not t.get("buildings_only", false) and u.posture[j] != PASSIVE:
 			_engage(w, j, hurt_by[j])
 	for j in range(hurt.size() - 1, -1, -1):
 		if u.hp[j] <= 0:
