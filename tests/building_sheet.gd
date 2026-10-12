@@ -7,10 +7,13 @@ extends SceneTree
 ## e.g. ... -- /tmp/b.png 2 stone_town_center junk_town_center concept_junk_tc_low
 ## A gate's open look: palisade_gate:stone:open
 ## Props too: prop.<function>.<seed>[.<stage>], e.g. prop.quarry.1300.0 prop.boulders.1000
+## Trees: tree.<seed>.<species>.<style>[.<stage>], e.g. tree.3.pine.0 (scenes/art_pixel/tree_models.gd)
 
 const ArtKit := preload("res://src/view/art/art_kit.gd")
 const PartShape := preload("res://src/part_shape.gd")
 const PropModels := preload("res://scenes/art_pixel/prop_models.gd")
+const TreeModels := preload("res://scenes/art_pixel/tree_models.gd")
+const BridgeModels := preload("res://scenes/art_pixel/bridge_models.gd")
 
 const W := 1600
 const H := 900
@@ -31,7 +34,12 @@ func _initialize() -> void:
 	var shots := []
 	for n in names:
 		var spec: Dictionary
-		if n.begins_with("prop."):   # a prop: prop.<function>.<seed>[.<stage>]
+		if n.begins_with("tree.") or n.begins_with("bridge."):   # tree.<seed>.<species>.<style>[.<stage>], bridge.<seed>.<length>.<style>[.<broken>]
+			var bits: PackedStringArray = String(n).split(".")
+			var targs: Array = Array(bits.slice(1)).map(func(x): return int(x) if x.is_valid_int() else x)
+			var lib = TreeModels.new() if bits[0] == "tree" else BridgeModels.new()
+			spec = {"body": lib.callv(bits[0], targs)}
+		elif n.begins_with("prop."):   # a prop: prop.<function>.<seed>[.<stage>]
 			var bits: PackedStringArray = String(n).split(".")
 			var pargs: Array = Array(bits.slice(2)).map(func(x): return int(x) if x.is_valid_int() else x)
 			spec = {"body": PropModels.new().callv(bits[1], pargs)}
@@ -44,6 +52,7 @@ func _initialize() -> void:
 		if n.contains("house"):
 			spec.body.scale = Vector3.ONE * ArtKit.HOUSE_SCALE
 		baker.set_ground_shadow(true)
+		baker.shadow_reach = 2.0 if n.begins_with("tree.") else 1.0
 		var b: Dictionary = await baker.bake(spec.body, [Vector3.ZERO])
 		shots.append(b)
 	var team_mat := ShaderMaterial.new()

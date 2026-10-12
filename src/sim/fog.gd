@@ -16,6 +16,7 @@ const EXPLORED := 1
 const VISIBLE := 2
 
 static var _circles := {}   # radius -> PackedInt32Array of (dx, dy) pairs
+static var _rays := {}      # radius -> [offsets (dx, dy) pairs, nearest ring first; parent index per offset]
 
 
 static func setup(w) -> void:
@@ -119,14 +120,89 @@ static func _remember(w, p: int) -> void:
 
 
 static func _stamp(w, g: PackedByteArray, cx: int, cy: int, r: int) -> void:
-	var offs := _circle(r)
 	var wd: int = w.map.width
 	var ht: int = w.map.height
+	if _blocked_near(w.map, cx, cy, r):
+		_stamp_los(w.map, g, cx, cy, r)
+		return
+	var offs := _circle(r)
 	for k in range(0, offs.size(), 2):
 		var x := cx + offs[k]
 		var y := cy + offs[k + 1]
 		if x >= 0 and y >= 0 and x < wd and y < ht:
 			g[y * wd + x] = VISIBLE
+
+
+## Is there anything that blocks sight (a tree) within r of (cx, cy)? Counted per chunk, so
+## open country costs a few lookups and the plain stamp runs.
+static func _blocked_near(m, cx: int, cy: int, r: int) -> bool:
+	var C: int = m.CHUNK
+	var cw: int = (m.width + C - 1) / C
+	var ch: int = (m.height + C - 1) / C
+	for y in range(maxi(cy - r, 0) / C, mini((cy + r) / C, ch - 1) + 1):
+		for x in range(maxi(cx - r, 0) / C, mini((cx + r) / C, cw - 1) + 1):
+			if m.opaque_chunks[y * cw + x] > 0:
+				return true
+	return false
+
+
+## The circle with line of sight: a cell is seen if the cell before it on the line from the
+## centre was seen and doesn't block (the first tree of a forest is seen, not what's behind it).
+static func _stamp_los(m, g: PackedByteArray, cx: int, cy: int, r: int) -> void:
+	var rays: Array = _ray_table(r)
+	var offs: PackedInt32Array = rays[0]
+	var par: PackedInt32Array = rays[1]
+	var wd: int = m.width
+	var ht: int = m.height
+	var op: PackedByteArray = m.opaque
+	var n := par.size()
+	var seen := PackedByteArray()   # per offset: 1 seen, 2 seen and sight carries on past it
+	seen.resize(n)
+	for k in n:
+		var x := cx + offs[k * 2]
+		var y := cy + offs[k * 2 + 1]
+		if x < 0 or y < 0 or x >= wd or y >= ht:
+			continue
+		if k > 0 and seen[par[k]] != 2:
+			continue
+		var c := y * wd + x
+		g[c] = VISIBLE
+		seen[k] = 1 if op[c] == 1 and k > 0 else 2
+
+
+## Offsets of the sight circle ordered ring by ring (Chebyshev distance), each with the index
+## of the offset one step nearer the centre on the line to it.
+static func _ray_table(r: int) -> Array:
+	if not _rays.has(r):
+		var offs := _circle(r)
+		var order := []
+		for k in range(0, offs.size(), 2):
+			order.append([maxi(absi(offs[k]), absi(offs[k + 1])), offs[k + 1], offs[k]])
+		order.sort()
+		var sorted := PackedInt32Array()
+		var index := {}
+		for o in order:
+			index[Vector2i(o[2], o[1])] = sorted.size() / 2
+			sorted.append(o[2])
+			sorted.append(o[1])
+		var par := PackedInt32Array()
+		for k in order.size():
+			var dx: int = sorted[k * 2]
+			var dy: int = sorted[k * 2 + 1]
+			var steps := maxi(absi(dx), absi(dy))
+			if steps == 0:
+				par.append(0)
+				continue
+			# One step back along the line, rounded half away from zero.
+			var px := _round_div(dx * (steps - 1), steps)
+			var py := _round_div(dy * (steps - 1), steps)
+			par.append(index[Vector2i(px, py)])
+		_rays[r] = [sorted, par]
+	return _rays[r]
+
+
+static func _round_div(a: int, b: int) -> int:
+	return (a * 2 + (b if a >= 0 else -b)) / (2 * b)
 
 
 static func _circle(r: int) -> PackedInt32Array:

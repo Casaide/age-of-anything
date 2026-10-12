@@ -1,0 +1,15 @@
+{
+ "schema": "aow.bridges/1",
+ "note": "Map bridges (milestone 15, src/sim/bridges.gd): timber decks over a river, placed by the map (\"bridges\": [[x0, y0, x1, y1]]), owned by nobody. Anyone can break one by attacking it (the crossing is gone until rebuilt); any player's workers rebuild it (help build on it), the first to start paying the cost. Armour per class, as buildings (building, melee, pierce).",
+ "hp": 1200,
+ "armour": {
+  "melee": 2,
+  "pierce": 20
+ },
+ "rebuild": {
+  "cost": {
+   "wood": 150
+  },
+  "time": 30
+ }
+}

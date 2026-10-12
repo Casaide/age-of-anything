@@ -18,6 +18,7 @@ const SimClock := preload("res://src/sim_clock.gd")
 const Iso := preload("res://src/view/iso.gd")
 const ArtKit := preload("res://src/view/art/art_kit.gd")
 const TerrainView := preload("res://src/view/art/terrain_view.gd")
+const LandView := preload("res://src/view/art/land_view.gd")
 const BuildingArt := preload("res://src/view/art/building_art.gd")
 const Models := preload("res://src/view/art/bake/models.gd")
 const Paths := preload("res://scenes/art_pixel/paths.gd")
@@ -85,6 +86,7 @@ var camera: RtsCamera
 var kit: ArtKit             # bakes the pixel art for the races in play
 var ground_holder: Node2D   # the terrain (rebuilt per map)
 var ground: TerrainView
+var land: LandView           # map bridges, tree species, worn trails (rebuilt per map)
 var doodads := {}           # cell -> [nodes]: cosmetic props, cleared where buildings go up
 var baking := false
 var built_shown = null      # the finished buildings shown (ids, who looks) when the paths were last planned
@@ -393,6 +395,11 @@ func _attach(w: World, end_tick := -1) -> void:
 	ground_holder.add_child(ground)
 	ground.build(map)
 	ground.set_art_px(camera.zoom.x / ArtKit.ART_SCALE)
+	if land:
+		land.queue_free()
+	land = LandView.new()
+	ground_holder.add_child(land)
+	land.setup(w, kit, flat)
 	camera.bounds = Iso.map_rect(map.width, map.height)
 	var picks := TerrainView.variant_picks(map.resource_cells, map.width, ArtKit.DOODADS.bush, hash(map.id))
 	for c in map.resource_cells:
@@ -968,7 +975,9 @@ func smart_order(pos: Vector2) -> void:
 		var ids: Array = groups[p]
 		if ids.is_empty():
 			continue
-		if attack_move:
+		if attack_move and land.bridge_at(cell) >= 0 and world.bridge_up[land.bridge_at(cell)] == 1 and foe == 0:
+			world.issue(p, Commands.ATTACK, {"ids": ids, "target": world.bridge_id[land.bridge_at(cell)], "queue": q})   # attack-click a bridge: break it
+		elif attack_move:
 			world.issue(p, Commands.ATTACK_MOVE, {"ids": ids, "x": m.x, "y": m.y, "queue": q})
 		elif foe != 0 and world.is_enemy(world.units.owner[world.units.index_of(foe)], p):
 			world.issue(p, Commands.ATTACK, {"ids": ids, "target": foe, "queue": q})   # an enemy, or an animal to hunt
@@ -979,6 +988,8 @@ func smart_order(pos: Vector2) -> void:
 			world.issue(p, Commands.ATTACK, {"ids": ids, "target": bid, "queue": q})
 		elif map.resource_at(cell) != "":
 			world.issue(p, Commands.GATHER, {"ids": ids, "cell": cell, "queue": q})
+		elif land.bridge_at(cell) >= 0 and world.bridge_up[land.bridge_at(cell)] == 0 and not _selected_workers().is_empty():
+			world.issue(p, Commands.HELP_BUILD, {"ids": ids, "target": world.bridge_id[land.bridge_at(cell)], "queue": q})   # rebuild a broken bridge
 		elif bid != 0 and _is_foundation_of(bid, p):
 			world.issue(p, Commands.HELP_BUILD, {"ids": ids, "target": bid, "queue": q})
 		elif bid != 0 and _drop_off_kind(bid, p, ids) != "":
@@ -1128,7 +1139,7 @@ func _event_target_pos(id: int) -> Vector2:
 	if b >= 0:
 		var bs := world.buildings
 		return Iso.to_screen((bs.cx[b] + bs.sx[b] * 0.5) * 1000, (bs.cy[b] + bs.sy[b] * 0.5) * 1000) - Vector2(0, 20)
-	return Vector2.INF
+	return land.target_pos(id)   # a map bridge, or nothing
 
 
 ## What the first of these units carrying something building `bid` (p's, finished) takes in
@@ -1367,6 +1378,7 @@ func _process(delta: float) -> void:
 	_sync_views()
 	_sync_buildings()
 	_sync_resources()
+	land.sync()
 	_sync_rally()
 	order_marks.update()
 	_sync_fog()
@@ -1662,7 +1674,7 @@ func _clear_doodads(cx: int, cy: int, sx: int, sy: int) -> void:
 ## Resource props show what's left in stages; a used-up bush fades away, used-up reeds
 ## leave stubble for a while first.
 ## The prop for a resource cell (bug bush, reed clump, stone outcrop, a farm's crops or paddy).
-const RESOURCE_PROP := {"bugbush": "bush", "reeds": "reeds", "stone": "quarry", "gold": "gold", "carcass": "carcass", "field": "crops", "paddy": "paddy"}
+const RESOURCE_PROP := {"bugbush": "bush", "reeds": "reeds", "stone": "quarry", "gold": "gold", "carcass": "carcass", "field": "crops", "paddy": "paddy", "tree": "tree"}
 
 
 func _add_resource_view(c: int, kind: String, left: int) -> void:
@@ -1695,6 +1707,10 @@ func _sync_resources() -> void:
 	for c in res_cells:
 		var left: int = map.left_at(c) if reveal else seen_left[c]
 		var kind: String = RESOURCE_PROP.get(map.terrain_ids[map.terrain[c] if reveal else ground[c]], "")
+		if kind == "tree":
+			kind = land.species_at(c)   # the look of the tree from the ground round it
+		elif kind == "" and map.terrain_ids[map.terrain[c]] == "stump" and rviews.has(c):
+			kind = rviews[c].get_meta("res").kind   # felled: its stump stays
 		var h: Node2D = rviews.get(c)
 		if h != null and left > 0 and (h.get_meta("res").gone > 0.0 or h.get_meta("res").kind != kind):
 			h.queue_free()   # sown again, or what you see there changed (the fog lifted)
@@ -1715,6 +1731,8 @@ func _sync_resources() -> void:
 				_sfx_at("farm_done", h.position, -6.0)   # a farm's used up
 			r.gone += dt
 			var linger := 6.0 if r.kind in ["reeds", "quarry", "gold", "carcass"] else 0.0   # stubble and rubble stay a while
+			if r.kind in ArtKit.TREES and map.occupied[c] == 0:
+				linger = INF   # a felled tree's stump stays (until something's built on it)
 			h.modulate.a = clampf(1.0 - (r.gone - linger) / 1.5, 0.0, 1.0)
 			if h.modulate.a <= 0.0:
 				h.queue_free()

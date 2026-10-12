@@ -8,8 +8,8 @@ const Iso := preload("res://src/view/iso.gd")
 const Paths := preload("res://scenes/art_pixel/paths.gd")
 
 const K := 4   # mask samples per tile
-const CHANNEL := {"water": 0, "swamp": 1, "reeds": 2, "rock": 3, "shallows": 0}
-const WEIGHT := {"shallows": 0.62}   # shallows draw as the water's edge band
+const CHANNEL := {"water": 0, "swamp": 1, "reeds": 2, "rock": 3, "shallows": 0, "river": 0, "ford": 0, "tree": 2, "stump": 2}
+const WEIGHT := {"shallows": 0.62, "ford": 0.56, "tree": 0.75, "stump": 0.35}   # shallows draw as the water's edge band; a ford as wadeable shallows; a forest floor darker, like reed beds' ground
 
 var map
 var masks_img: Image
