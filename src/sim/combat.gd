@@ -147,16 +147,18 @@ static func cmd_attack_move(w, player: int, a: Dictionary) -> void:
 			slots.append(i)
 	if slots.is_empty():
 		return
-	var arrive: int = w.ARRIVE_STEP * Fixed.isqrt(slots.size()) - w.ARRIVE_BASE
+	# Each to its own slot of the group's formation (World._formation), and back to it after a fight.
+	var centre: int = w.map.cell_of(int(a.fx), int(a.fy))
 	for i in slots:
 		Economy.clear_task(w, i)
+		var s: Vector2i = w.slot_of(a, w.units.id[i])
 		w.units.foe[i] = 0
 		w.units.patient[i] = 0
 		w.units.stance[i] = ATTACK_MOVE
-		w.units.amx[i] = a.x
-		w.units.amy[i] = a.y
-		w.order_move(i, a.x, a.y, arrive, w.next_group)
-	w.next_group += 1
+		w.units.amx[i] = s.x
+		w.units.amy[i] = s.y
+		w.units.amc[i] = centre
+		w.order_move(i, s.x, s.y, w.SLOT_ARRIVE, a.group, a.fx, a.fy, a.pace)
 
 
 ## Set the stance of a player's units. A unit fighting on its own that the new stance
@@ -235,6 +237,8 @@ static func tick(w) -> void:
 	var bs = w.buildings
 	var c: Dictionary = w.combat
 	var n: int = u.count()
+	var chasers := {}   # building slot -> melee units closing in on it (ascending slots)
+	var hitters := {}   # building slot -> units in reach of it
 	var hurt := PackedInt32Array()
 	hurt.resize(n)
 	var hurt_by := PackedInt32Array()
@@ -333,6 +337,8 @@ static func tick(w) -> void:
 		var gap := _gap(w, i, j, b)
 		if gap <= t.reach + (HOLD if t.ranged and u.moving[i] == 0 else 0):
 			u.moving[i] = 0
+			if b >= 0:
+				hitters[b] = hitters.get(b, []) + [i]
 			if u.cooldown[i] == 0:
 				u.cooldown[i] = t.reload
 				if j >= 0:
@@ -354,8 +360,14 @@ static func tick(w) -> void:
 			_go_back(w, i)   # chased far enough
 		elif u.stance[i] == AUTO and gap > int(c.sight) + 2 * SimMap.TILE:
 			_lost(w, i)   # it got away
+		elif b >= 0 and not t.ranged:
+			chasers[b] = chasers.get(b, []) + [i]   # dealt a place round it below
 		else:
 			_chase(w, i, j, b)
+	var besieged: Array = chasers.keys()
+	besieged.sort()
+	for b in besieged:
+		_surround(w, b, chasers[b], hitters.get(b, []))
 	_towers(w, hurt, hurt_by)
 	_apply(w, hurt, hurt_by, bhurt)
 	for k in brhurt.size():
@@ -428,6 +440,109 @@ static func _chase(w, i: int, j: int, b: int) -> void:
 			w.order_reach(i, Economy._building_rect(w, b), key)
 
 
+## Melee units closing in on building b each get a place of their own round it, so a crowd
+## spreads round the walls instead of piling up at the nearest one and shoving its own hitters
+## out of reach. Places are a body's width apart in rings round the footprint: the first ring
+## in reach (no corners), the outer ones to wait in for a gap. Nearest first, the nearest free
+## place; the first ring weighs RING_COST less than the next; a unit keeps its place unless
+## another is clearly better. Dealt afresh on the building's re-plan beat, or when someone new
+## comes; in between, a unit shoved off its place walks back.
+const RINGS := 3
+const RING_COST := 20000         # walking right round the walls beats waiting a row back
+const KEEP_PLACE := 1000
+
+static func _surround(w, b: int, chasers: Array, hitters: Array) -> void:
+	var u = w.units
+	var bid: int = w.buildings.id[b]
+	var rect: Rect2i = Economy._building_rect(w, b)
+	var fresh: bool = (w.tick + bid) % w.REPLAN_EVERY == 0
+	for i in chasers:
+		if u.reach[i] != 2 or u.fkey[i] != w.building_field(bid, false, w.lane(i)):
+			fresh = true
+	if not fresh:
+		var slack: int = w.SLOT_ARRIVE * w.SETTLE_FACTOR
+		for i in chasers:
+			if u.moving[i] == 0 and Fixed.dist2(u.x[i], u.y[i], u.tx[i], u.ty[i]) > slack * slack:
+				w.order_beside(i, u.tx[i], u.ty[i], rect, u.fkey[i])
+		return
+	var rmin := 1 << 20
+	var rmax := 0
+	for i in chasers + hitters:
+		rmin = mini(rmin, u.radius[i])
+		rmax = maxi(rmax, u.radius[i])
+	var reach: int = int(w.combat.melee_reach)
+	var space: int = 2 * rmax + w.FORM_GAP
+	var x0 := rect.position.x
+	var y0 := rect.position.y
+	var x1 := rect.end.x + 1
+	var y1 := rect.end.y + 1
+	var px := PackedInt32Array()
+	var py := PackedInt32Array()
+	var ring := PackedInt32Array()
+	for k in RINGS:
+		var o: int = rmin + reach / 2 + k * space
+		var wd := x1 - x0 + 2 * o
+		var ht := y1 - y0 + 2 * o
+		var perim := 2 * (wd + ht)
+		var count := maxi(perim / space, 4)
+		for m in count:
+			var along := m * perim / count + space / 2
+			along %= perim
+			var p: Vector2i
+			if along < wd:
+				p = Vector2i(x0 - o + along, y0 - o)
+			elif along < wd + ht:
+				p = Vector2i(x1 + o, y0 - o + along - wd)
+			elif along < 2 * wd + ht:
+				p = Vector2i(x1 + o - (along - wd - ht), y1 + o)
+			else:
+				p = Vector2i(x0 - o, y1 + o - (along - 2 * wd - ht))
+			if k == 0:
+				var dx := maxi(maxi(x0 - p.x, 0), p.x - x1)
+				var dy := maxi(maxi(y0 - p.y, 0), p.y - y1)
+				if Fixed.isqrt(dx * dx + dy * dy) - rmin > reach:
+					continue   # round a corner: out of reach
+			var taken := false
+			for h in hitters:
+				var rr: int = rmax + u.radius[h]
+				if Fixed.dist2(p.x, p.y, u.x[h], u.y[h]) < rr * rr * 3 / 4:
+					taken = true
+					break
+			if not taken:
+				px.append(p.x)
+				py.append(p.y)
+				ring.append(k)
+	var gaps := {}
+	for i in chasers:
+		gaps[i] = _gap(w, i, -1, b)
+	var order: Array = chasers.duplicate()
+	order.sort_custom(func(p, q): return gaps[p] < gaps[q] or (gaps[p] == gaps[q] and p < q))
+	var claimed := PackedByteArray()
+	claimed.resize(px.size())
+	for i in order:
+		var ln: int = w.lane(i)
+		var key: int = w.building_field(bid, false, ln)
+		var mine: bool = u.reach[i] == 2 and u.fkey[i] == key
+		var best := -1
+		var best_d := 1 << 62
+		for k in px.size():
+			if claimed[k] == 1 or not w.map.walkable(px[k], py[k], ln):
+				continue
+			var d := Fixed.isqrt(Fixed.dist2(u.x[i], u.y[i], px[k], py[k])) + ring[k] * RING_COST
+			if mine and px[k] == u.tx[i] and py[k] == u.ty[i]:
+				d -= KEEP_PLACE
+			if d < best_d:
+				best_d = d
+				best = k
+		if best < 0:
+			_chase(w, i, -1, b)   # no place left: the old way, straight at the nearest wall
+			continue
+		claimed[best] = 1
+		if not mine or px[best] != u.tx[i] or py[best] != u.ty[i] \
+				or (u.moving[i] == 0 and Fixed.dist2(u.x[i], u.y[i], px[best], py[best]) > w.SLOT_ARRIVE * w.SLOT_ARRIVE * 16):
+			w.order_beside(i, px[best], py[best], rect, key)
+
+
 ## The target is gone (or out of reach for good): attack-movers carry on, defensive
 ## units walk back, others stop.
 static func _lost(w, i: int) -> void:
@@ -436,7 +551,7 @@ static func _lost(w, i: int) -> void:
 	if u.stance[i] == AUTO and u.posture[i] == DEFENSIVE:
 		_go_back(w, i)
 	elif u.stance[i] == ATTACK_MOVE:
-		w.order_move(i, u.amx[i], u.amy[i], w.ARRIVE_STEP - w.ARRIVE_BASE, 0)
+		w.resume_attack_move(i)
 	else:
 		u.stance[i] = NONE
 		u.moving[i] = 0
