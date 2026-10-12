@@ -133,6 +133,8 @@ godot --path . --script res://tests/screenshot.gd -- /tmp/lab.png "prompt A" "pr
 godot --headless --path . --script res://tests/test_sim.gd         # sim determinism + tick time (~45 s)
 godot --headless --path . --script res://tests/test_ai.gd          # the AI beats a passive player; bot vs bot (~2 min)
 godot --headless --path . --script res://tests/balance.gd -- 2     # equal-cost round robin in age 2: win rates, outliers
+godot --headless --path . --script res://tests/resource_audit.gd -- reed_meadow   # resources per start, 40-minute bot economies (~3 min)
+python3 tools/maps/reed_meadow.py                                  # rebuild the Reed Meadow maps (64 and 88) from one layout
 godot --headless --path . --script res://tests/path_audit.gd -- 8  # pathing diagnostic: give-ups, snaps, jitter, treading, with examples
 godot --path . res://scenes/match_setup.tscn                       # pick races and play vs the AI (the main scene)
 godot --path . --script res://tests/sim_screenshot.gd -- /tmp/sim.png [map_id] [armies|opening:<tick>] ["prompt A" "prompt B"]

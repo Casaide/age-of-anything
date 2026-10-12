@@ -4,7 +4,7 @@ extends SceneTree
 ## - two bots play a whole match, deterministically (same seed, same winner and hashes);
 ## - surrendering ends the match.
 ## Prints a minute-by-minute timeline of each match.
-## Run: godot --headless --path . --script res://tests/test_ai.gd   (a minute or two)
+## Run: godot --headless --path . --script res://tests/test_ai.gd [-- <map_id>]   (a minute or two; flat_test by default)
 
 const DataLib := preload("res://src/data_lib.gd")
 const Generator := preload("res://src/race_generator.gd")
@@ -19,9 +19,14 @@ const LIMIT := 20 * 60 * 30    # 30 minutes: a match must end, however slowly (p
 
 var failures := 0
 var checks := 0
+var map_id := "flat_test"
 
 
 func _init() -> void:
+	var args := OS.get_cmdline_user_args()
+	if args.size() > 0:
+		map_id = args[0]
+	print("map: ", map_id)
 	var lib = DataLib.new()
 	var gen = Generator.new(lib)
 	var rules = DataLib.load_json("res://data/rules/default.json")
@@ -53,7 +58,7 @@ func _init() -> void:
 	var hard := _play(rules, [rats, frogs], [Bot.new(0, {}, "hard"), Bot.new(1)], "hard bot %s vs normal bot %s" % [rats.name, frogs.name])
 	check(hard.winner == 0, "hard beats normal (winner %d at %s)" % [hard.winner, _clock(hard.tick)])
 
-	var w := World.new(SEED, SimMap.load_id("flat_test"), [frogs, rats], rules)
+	var w := World.new(SEED, SimMap.load_id(map_id), [frogs, rats], rules)
 	w.issue(1, Commands.SURRENDER, {})
 	for k in 40:
 		w.step()
@@ -64,7 +69,7 @@ func _init() -> void:
 
 
 func _play(rules: Dictionary, races: Array, bots: Array, title: String, quiet := false) -> Dictionary:
-	var w := World.new(SEED, SimMap.load_id("flat_test"), races, rules)
+	var w := World.new(SEED, SimMap.load_id(map_id), races, rules)
 	if not quiet:
 		print("\n== ", title)
 	var aged := [-1, -1]   # when each side reached age 2 (the bots aim for 4-6 minutes)
@@ -106,7 +111,7 @@ func _play(rules: Dictionary, races: Array, bots: Array, title: String, quiet :=
 ## Easy against a passive player: a small army (its cap and a training queue's worth), and the
 ## first loss no earlier than its first wave (Dominic: Easy wiped him out in age 2).
 func _test_easy(rules: Dictionary, a: Dictionary, b: Dictionary) -> void:
-	var w := World.new(SEED, SimMap.load_id("flat_test"), [a, b], rules)
+	var w := World.new(SEED, SimMap.load_id(map_id), [a, b], rules)
 	var bot := Bot.new(0, {}, "easy")
 	var passive := EcoBot.new(1)
 	var most := 0

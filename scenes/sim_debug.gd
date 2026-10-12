@@ -45,7 +45,7 @@ const Replay := preload("res://src/sim/replay.gd")
 const Bot := preload("res://src/ai/bot.gd")
 const TechTreeModel := preload("res://src/view/tech_tree_model.gd")
 
-const MAP_IDS := ["flat_test", "choke_test"]
+const MAP_IDS := ["flat_test", "choke_test", "reed_meadow", "reed_meadow_large"]
 const SEED := 1
 const DEFAULT_PROMPTS := ["angry swamp frogs with reed spears", "sewer rats with cheese hammers"]
 ## Random prompts for Shift/Ctrl+G. Silly is fine; the generator copes with anything.
