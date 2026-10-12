@@ -315,7 +315,11 @@ func bake_units(races: Array, teams: Array) -> void:
 			# swing their tools with them (D-105) and soldiers their weapons (D-106).
 			var rides: bool = u.recipe.has("mount") and not u.recipe.mount.get("fused", false)
 			if not rides and PartShape.rigs.get(u.recipe.body, {}).get("carry", "") != "harness":
-				for h in UnitView.WORK_HOLDS:
+				var holds: Array = UnitView.WORK_HOLDS.duplicate()
+				var hand: String = u.recipe.parts.get("hand_r", "")
+				if hand != "" and ("spear" in lib.part(hand).tags or "lance" in lib.part(hand).tags):
+					holds += UnitView.ATTACK_HOLDS   # spear carriers thrust (D-106)
+				for h in holds:
 					await pb.bake(u.recipe.body + "@" + h, lib.part(u.recipe.body).shapes, colours)
 	pb.queue_free()
 	PartShape.bake_flat("unit_shadow", UnitView.SHADOW_SHAPES, UnitView.SHADOW_COLOURS, ART_SCALE * UNIT_SCALE)

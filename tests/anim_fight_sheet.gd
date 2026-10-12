@@ -11,7 +11,7 @@ const ArtKit := preload("res://src/view/art/art_kit.gd")
 
 const ZOOM := 4.0
 const DEATH_T := [0.0, 0.12, 0.25, 0.4, 0.6, 1.0]
-const PROMPTS := ["tiny vikings", "angry swamp frogs with reed spears", "centaur romans", "spooky beetle knights", "pegasus riding spartans"]
+const PROMPTS := ["tiny vikings", "angry swamp frogs with reed spears", "centaur romans", "spooky beetle knights", "pegasus riding spartans", "sewer rats with cheese hammers"]
 
 
 func _initialize() -> void:
@@ -29,7 +29,7 @@ func _initialize() -> void:
 	await kit.prepare_units(races, races.map(func(_r): return team))
 	var bg := ColorRect.new()
 	bg.color = Color("#56782e")
-	bg.size = Vector2(1600, 1700)
+	bg.size = Vector2(1600, 2000)
 	root.add_child(bg)
 	var world := Node2D.new()
 	world.scale = Vector2.ONE * ZOOM
