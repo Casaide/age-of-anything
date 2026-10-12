@@ -11,6 +11,14 @@ have larger scale sieges. My gut says a large scale siege, Romans vs rats, will 
 We need a milestone focusing on siege mechanics, while keeping it simple and enjoyable." And: "we
 should consider the effect of the 3 ms sim budget, if we're tying our hands too much."
 
+## The line with milestone 13 (agreed 2026-10-13)
+
+Milestone 13 brings the engines as plain damage dealers (ram, catapult, bolt thrower, great
+sling, sapper). This milestone owns breaches (a destroyed wall tile becomes rubble, walkable and
+repairable), walkways, gatehouses, wall towers, ladders, the siege tower (moved here from 13),
+the defenders' tools and the game modes; it turns 13's sapper and catapult hits on walls into
+breaches.
+
 ## Game modes (Dominic, 2026-10-12: "sieges should be the first step into game modes")
 
 Sieges open the game modes, built on milestone 18's match rules contract:
@@ -78,5 +86,5 @@ don't need.
 ## Changes from the original plan
 
 ## Links
-- `m13-unit-lines.md` (rams, catapults, siege towers, sappers), `m15-maps.md` (high ground),
+- `m13-unit-lines.md` (rams, catapults, sappers; the siege tower is this milestone's), `m15-maps.md` (high ground),
   `m12-tech-tree.md` (walls, gates, towers, garrison)
