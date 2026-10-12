@@ -71,6 +71,10 @@ func _paint() -> void:
 		for x in m.width:
 			var c: int = y * m.width + x
 			var col: Color = terrain_colours[ground[c]]
+			if m.has_heights:   # high ground reads lighter, a level at a time; cliffs as dark lines
+				col = col.lightened(0.11 * m.level[c] + 0.055 * m.ramp[c])
+				if m.cliff[c] == 1:
+					col = col.darkened(0.4)
 			match -1 if reveal else g[c]:
 				Fog.UNSEEN:
 					col = Color("#1a1510")   # dark earth, not a black hole

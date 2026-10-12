@@ -78,6 +78,22 @@ map; the code says the details.
   fords as shallows with the bed showing, forest floor like reed-bed ground. Worn trails come
   from the sim's wear grid (`src/sim/trails.gd`), handed over as a small texture once a second
   (`land_view.gd`) and drawn as the culture paths' earth trail.
+- **High ground** (milestone 15): a map's `heights` lift the ground by `Iso.LEVEL_PX` per level.
+  `Iso.set_relief(map)` keeps four corner heights per cell (ramps slope from their foot to the
+  level above); `Iso.lift(x, y)` is the lift at a sim point, `Iso.to_ground` the raised screen
+  point, `Iso.pick` the sim point under the mouse (the highest ground drawn there wins).
+  `TerrainView.build_relief` draws the raised ground as meshes: tops through the terrain shader
+  again (UV.x tells it how far a vertex was lifted, so it paints that cell's ground; UV.y shades
+  slopes), cliff faces down every edge that drops towards the camera (`scenes/art_pixel/cliff.gdshader`,
+  three looks: earth bank, layered rock (in play, `CLIFF_STYLE`), mossy boulders; concept sheet
+  `archive/images/2026-10-13/180`, `AOW_CLIFF_STYLE=n` in the environment picks one for a shot),
+  and a dark line along back edges. Level by level under everything; and copies of the tops near a
+  back edge go into the y-sorted layer, one per screen row, so a hill hides what stands behind it.
+  **Everything in the y-sorted layer sorts on the base plane**: its node sits where the flat map
+  puts it and its art is raised inside it (`UnitView.lift`, `BuildingArt` raises its parts, props
+  raise their sprite, piles and flags their `offset`); overlays use `UnitView.ground()` and
+  `Iso.to_ground`. The fog shader walks down the screen to the frontmost ground drawn at each
+  pixel and takes that cell's fog. The minimap lightens each level and darkens cliffs.
 - **UI art**: SVG icons and cursors in `assets/art/icons/` and `assets/art/cursors/`,
   rasterised at load.
 
