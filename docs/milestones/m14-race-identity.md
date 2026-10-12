@@ -1,4 +1,4 @@
-# Milestone 14: Race identity (asymmetric play)
+# Milestone 14: Race identity and heroes (asymmetric play)
 
 **Status:** planned (design round can run alongside milestones 12-13)
 **Exit criterion:** every playable creature and every culture has its bonuses, its own research,
@@ -45,6 +45,39 @@ Rules (unchanged from the project's): data first, no special cases in code; a me
 it; every ability has a counter; stat bonuses are applied before pricing so units pay for them
 (cost is the balancer); economy bonuses are kept small and even. The host's "Full tech tree"
 rule lifts `lacks` and `only`.
+
+## Three rules for asymmetry with generated races (agreed 2026-10-12)
+
+Hand-made factions can go all in because players learn each matchup; ours are generated, so
+nobody knows "how rats play" in advance:
+1. **Self-explaining:** a mechanic shows on the unit (a web, a shell closing, a leap) and fits on
+   one line of the lobby card and the tech tree page.
+2. **At most one strong mechanic per race, and never a different economy:** identity comes from
+   dials on the shared game, not replacing it.
+3. **From a shared vocabulary** of ability kinds with parameters in data, so any mix works and
+   the AI uses them without special cases. Start with creature mechanics only; add culture ones
+   if races still feel samey.
+
+## Heroes (Dominic, 2026-10-12: "hero unit I think sells generation a lot")
+
+Each race gets one **hero**: a named, generated champion that is the face of the race, the most
+exciting thing a prompt produces ("sewer rats with cheese hammers" -> Grand Gnawer Brie the
+Unwashed, riding the biggest capybara, wielding the wheel of cheese).
+- One per player, trained once at the Castle (or the Town Center in age 3, to decide), revived
+  for a cost if it falls; a bigger point budget than any unit, its own name from the culture's
+  name parts and the prompt's signature words.
+- An aura (nearby units +1 attack or armour, or the race's mechanic stronger near it); tanky but
+  beatable; heals slowly.
+- Shown big on the lobby card and the tech tree page; regicide uses it (milestone 18).
+- Concept round per family for the hero look (scale, a standard bearer, a cape...).
+
+## Land-shaping (decided 2026-10-12: only as race abilities)
+
+Changing the land for other races is worth it only small and fair: as a few race abilities, not
+a general system; every change wears off or can be undone, and every one has a counter (permanent
+damage reads as griefing). Candidates: beavers' dams flood a strip until the dam is smashed
+(needs rivers, milestone 15); spiders' webs slow until burnt or decayed; rats' tunnels link two
+burrows until one is found and collapsed; fire burns trees that regrow.
 
 ## Data contract
 
@@ -132,7 +165,8 @@ have), **rodents** (houses +1 pop, have), **folk** (research 15% faster).
 - [ ] 6. Mechanics
 - [ ] 7. AI
 - [ ] 8. Balance and the lobby card
-- [ ] 9. Exit check
+- [ ] 9. Heroes (generated champion, aura, revive; concept round)
+- [ ] 10. Exit check
 - [ ] Archive: pictures taken along the way, journal, decisions, timeline
 
 ## Results

@@ -184,6 +184,12 @@ still maps the brief onto parts within host rules.
   - Sci-fi "space federation" pack. A space-fleet sci-fi mod is Dominic's personal dream; keep
     official names and likenesses out of shipped content.
 
+### Battle mode (Dominic, 2026-10-12: "not just yet, but write it down")
+
+A custom battle: no economy, set armies by points, fight ("10 frog knights vs 100 sewer rats").
+The most shareable thing a prompt-made-race game can offer, and it reuses the generator, pricing,
+combat and the lobby. Mostly menus; also a good balance sandbox.
+
 ### Age 4 and the Temple (postponed 2026-10-12, Dominic: "we may come back to age 4 later")
 
 Cut from milestone 12 to keep three ages; kept whole in `data/later/age4_and_temple.json` (the
