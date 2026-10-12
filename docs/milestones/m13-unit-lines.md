@@ -1,6 +1,6 @@
 # Milestone 13: Unit lines
 
-**Status:** planned (after milestone 12; concept rounds can start earlier)
+**Status:** in progress (2026-10-13): siege concept round
 **Exit criterion:** the tech tree page shows no blank nodes for land; every line trains, fights by
 its counters, and the AI uses it; a balance round robin at ages 2 and 3 with no line more than 20%
 off at equal cost; Dominic plays a match using siege and healers.
@@ -39,6 +39,27 @@ Out: relics, conversion and the Temple (cut 2026-10-12), naval, gunpowder.
 
 ## Plan
 
+**Starting with siege (2026-10-13).** Dominic: "why we not done siege yet?". Siege goes first,
+ahead of step 1, in this order; the other steps keep their plan below.
+- **3a. Siege concept round (now).** The ram, catapult and bolt thrower in each family's own take,
+  two directions each, rendered through the unit bake at game scale and 3x with the race's worker
+  beside for size, three facings (`tests/siege_concept_sheet.gd`, models in
+  `scenes/art_pixel/siege_concepts.gd`, nothing in play). Dominic picks; see "Siege concepts" in
+  Results.
+- **2. Siege combat systems, trimmed.** Projectiles that can miss a moving target are being built
+  right now, separately, as flying arrows for every ranged unit (`src/sim/combat.gd`); this
+  milestone builds on them and adds only **splash** (an area, falling off), a **minimum range**
+  and the **attack bonus vs buildings**, each with a headless test.
+- **3b. Build the picked engines.** Siege bodies as parts (a body with no legs, rolling: the
+  engine as one baked part, its crew as composed units if B is picked), recipes and roster slots
+  (`ram`, `catapult`, `bolt_thrower` are `planned` in `data/rules/*.json`), pricing, counter tags
+  (ram > buildings, weak to melee; catapult > massed archers and infantry, weak to cavalry; bolt
+  thrower > infantry lines, weak to cavalry), the Siege Workshop trains them; `tests/balance.gd`
+  with siege at age 3.
+- **8 (siege part).** The bot brings rams and catapults against towers and walls.
+- The line with 16 stays: 13 makes the ram, catapult and bolt thrower ordinary units that deal
+  damage; the siege tower, ladders, garrisoned walls, breaches and the modes are 16's.
+
 Each phase: concept round first where there's new art (D-080: 3-5 options at game scale, Dominic
 picks), then build, tests, archive pictures.
 
@@ -47,8 +68,9 @@ picks), then build, tests, archive pictures.
    tags, pricing check in `tests/balance.gd`, the bot's counter-picks learn them. Light scout gear
    is the one small parts gap.
 2. **Combat systems siege needs.** Splash damage (an area, falling off), a minimum range, an
-   attack bonus vs buildings, projectiles that can miss a moving target (so siege is dodgeable),
-   Headless tests for each. (Carrying units over walls is milestone 16's.)
+   attack bonus vs buildings, projectiles that can miss a moving target (so siege is dodgeable;
+   2026-10-13: being built separately as flying arrows for all ranged units, so this step only
+   adds splash, minimum range and the bonus vs buildings). Headless tests for each. (Carrying units over walls is milestone 16's.)
 3. **Siege, concept round per family.** A ram, catapult and bolt thrower in each
    family's own take (a beetle-drawn ram, a frog catapult on a lily-pad sledge, a rat bottle-cap
    sling, timber engines for humans). Then build them as parts and recipes; Siege Workshop trains.
@@ -75,6 +97,9 @@ picks), then build, tests, archive pictures.
 - [ ] 1. Swordsman, raider, scout, mounted archer
 - [ ] 2. Siege combat systems
 - [ ] 3. Siege engines (concept round per family)
+  - [x] 3a. Concept round SW1: ram, catapult, bolt thrower, five families, two directions (2026-10-13)
+  - [ ] Dominic's pick (direction per engine, family takes)
+  - [ ] 3b. Build the pick: parts, recipes, roster slots, Siege Workshop, pricing
 - [ ] 4. Unique unit, sapper, great sling
 - [x] 5. Healers (built 2026-10-12; the look is a pick pending: HL1 concept sheet, look A in game)
 - [ ] 6. Trade carts
@@ -116,7 +141,33 @@ prompt/reroll/rules combinations); a race whose culture now offers a staff gets 
 `scenes/art_pixel/unit_models.gd`; `tests/healer_lineup.gd` shows every culture's healer in 8 facings
 (`archive/images/2026-10-13/100-` to `102-`).
 
+**Siege concepts SW1 (2026-10-13), waiting on Dominic.** The ram, catapult and bolt thrower, each
+in five family takes (timber for every human culture with a cloth trim, swamp frogs, sewer rats,
+forest beetles, spooky spiders) and two directions: **A, the engine alone** (one baked sprite, the
+crew hidden or implied) and **B, the crew shows** (the race's own units on the engine's sockets:
+two beside an open ram, two pulling a pole flinger, one aiming a tripod bolt thrower; the forest's
+ram is pushed by a rhinoceros beetle). Models in `scenes/art_pixel/siege_concepts.gd`, built at a
+soldier's scale and grown (catapult 1.5x, bolt thrower 1.6x); sheet `tests/siege_concept_sheet.gd`,
+three facings, the race's worker beside for size, at 3x and at game scale. Pictures:
+`archive/images/2026-10-13/220-` to `225-`, and `docs/concepts/sw1/` (with the full notes).
+- Ram: A covered shed (tortoise roof nearly to the ground) | B open ram on A-frames, crew alongside.
+- Catapult: A arm-and-cup on wheels or a lily-pad sledge | B tall pole flinger pulled by its crew.
+- Bolt thrower: A on a two-wheeled carriage | B on a tripod with a gunner.
+- Family takes: frogs on lily-pad sledges (pad shed, reed-bundle ram with a river stone, snail-shell
+  cup); rats with bottle-cap wheels (sardine-tin shed, pencil ram, spoon catapult throwing cheese,
+  bottle-cap sling, knitting-needle bolt); beetles with log-slice wheels (mossy shed, beetle-horn
+  ram, acorn cup, thorn bolt); spiders in dark wood and bone (skull ram, femur arm, web shot).
+- At game scale the open ram reads as a ram better than the shed (the log is the silhouette); the
+  arm-and-cup catapult reads in every facing; the carriage bolt thrower is small and busy at 1x.
+- **Claude's recommendation:** ram B, catapult A, bolt thrower A (a touch bigger): crews where they
+  make the silhouette, one sprite where the machine does. **Dominic to pick:** A or B per engine,
+  the beetle-pushed forest ram or not, any family take to redo, and the size.
+
 ## Changes from the original plan
+
+- 2026-10-13: siege first (Dominic: "why we not done siege yet?"), ahead of step 1. Step 2 shrinks
+  to splash, minimum range and the bonus vs buildings: projectiles that can miss are built
+  separately as flying arrows for every ranged unit.
 
 ## Links
 - `m12-tech-tree.md` (the tree), `m14-race-identity.md` (what each race does with these lines)
