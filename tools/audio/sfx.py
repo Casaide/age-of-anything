@@ -218,6 +218,32 @@ def ui_tip(rng):
     return gain(mul(bandpass(noise(n, rng), sweep, 0.9), env(n, 0.05, 0.1, 0.4, 0.07)), 0.7)
 
 
+def dice_roll(rng):
+    """Two bone dice thrown on a wooden table: a quick rattle as they leave the hand, then
+    each one tumbling, its knocks coming faster and softer as it settles, a last little
+    rock. Every knock is a click (the edge), a bright bone ring and a touch of the table."""
+    out = [0.0] * seconds(0.95)
+
+    def knock(g, bright):
+        f = _j(rng, 2300, 3300) * bright
+        ring = modal(seconds(0.05), [(f, 110.0, 0.5), (f * _j(rng, 1.5, 1.7), 150.0, 0.25)], rng, 0.0)
+        table = modal(seconds(0.08), [(_j(rng, 260, 320), 60.0, 0.35), (_j(rng, 560, 640), 80.0, 0.15)], rng, 0.0)
+        return gain(add(_burst(rng, 0.006, _j(rng, 4000, 6000), 0.7, 700.0, 0.9), ring, table), g)
+
+    for k in range(rng.randint(3, 4)):   # the rattle in the hand, the dice against each other
+        mix_into(out, knock(0.35, 1.25), seconds(0.01 + k * _j(rng, 0.028, 0.04)))
+    for die in range(2):
+        t = _j(rng, 0.14, 0.2) + die * _j(rng, 0.02, 0.05)
+        gap = _j(rng, 0.11, 0.15)
+        g = 0.9
+        while gap > 0.018 and t < 0.85:
+            mix_into(out, knock(g, _j(rng, 0.9, 1.1)), seconds(t))
+            t += gap
+            gap *= _j(rng, 0.6, 0.72)
+            g *= 0.8
+    return fade(out, 0.0, 0.03)
+
+
 def ui_nope(rng):
     """Two dull knocks: that can't be done."""
     k = add(modal(seconds(0.12), [(240.0, 40.0, 0.8), (410.0, 60.0, 0.3)], rng, 0.4), _thump(rng, 0.1, 110.0, 70.0, 40.0, 0.5))
@@ -326,6 +352,7 @@ TABLE = {
     "chop": (chop, 4, -3.0), "mine": (mine, 4, -3.0), "build": (build, 4, -3.0), "forage": (forage, 4, -6.0),
     "farm_done": (farm_done, 2, -5.0),
     "ui_click": (ui_click, 3, -6.0), "ui_tip": (ui_tip, 1, -8.0), "ui_nope": (ui_nope, 1, -5.0),
+    "dice_roll": (dice_roll, 3, -6.0),
     "trained": (trained, 1, -4.0), "built": (built, 1, -3.0), "research": (research, 1, -5.0),
     "age": (age, 1, -1.0), "won": (won, 1, -1.0), "lost": (lost, 1, -1.0), "alarm": (alarm, 1, -1.0),
     "meadow": (meadow, 1, -8.0),
