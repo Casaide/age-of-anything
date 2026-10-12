@@ -12,6 +12,14 @@ extends "res://scenes/art_pixel/unit_models.gd"
 
 const ROPE := Color("#c8b48a")
 const DARK_WOOD := Color(0.45, 0.38, 0.36)
+## Round 2's directions: "c" crewed (the open ram, the arm-and-cup catapult, the carriage bolt
+## thrower, each with its crew's sockets), "shed" the rats' covered ram pushed from behind,
+## "ridden" and "led" the forest's giant beetle (built at its own size).
+## Crew socket names carry how the crew member stands: "crew<n>_f<k>[_reach|_raise][_in|_top]":
+## f<k> turns them k facings from the engine's, reach/raise is the arm hold, "in" draws them
+## behind the engine (inside its frame), "top" over it (riding).
+const ROUND2_SCALE := {"c": {"ram": 1.5, "catapult": 1.8, "bolt": 2.1},
+	"shed": {"ram": 1.45}, "ridden": {"ram": 1.0}, "led": {"ram": 1.0}, "mount": {"ram": 1.0}}
 
 
 func has(id: String) -> bool:
@@ -24,7 +32,12 @@ func build(id: String, colours: Dictionary) -> Dictionary:
 	var p := id.split(".")
 	var s := _style(p[3], colours)
 	# The engines are built at a soldier's scale and grown to their size here (sockets too).
-	return _scaled(call("_%s_%s" % [p[1], p[2]], s, colours), {"ram": 1.0, "catapult": 1.5, "bolt": 1.6}[p[1]])
+	# Round 2 (crewed, D-118) grows them to their crew: a ram's log at chest height, a
+	# catapult's frame to the crew's shoulder; frog engines more, for the crouched frog.
+	var k: float = {"ram": 1.0, "catapult": 1.5, "bolt": 1.6}[p[1]]
+	if p[2] in ROUND2_SCALE:
+		k = ROUND2_SCALE[p[2]][p[1]] * (1.25 if p[3] == "swamp" else 1.0)
+	return _scaled(call("_%s_%s" % [p[1], p[2]], s, colours), k)
 
 
 # ------------------------------------------------------------------ the family's materials
@@ -69,6 +82,18 @@ func _style(fam: String, c: Dictionary) -> Dictionary:
 			s.roof = surf("hide", Color(0.38, 0.33, 0.4), 6.0)
 			s.trim = surf("bone", Color.WHITE, 3.0)
 			s.ammo = surf("bone", Color(0.9, 0.95, 1.0), 3.0)
+		"junk":   # round 2's rats (D-116): human-sized engines from the sewer's own junk
+			s.wood = surf("wood_grain", Color(0.78, 0.7, 0.6), 7.0)        # scrap timber, greyed
+			s.wood2 = surf("bld_wood", Color(0.62, 0.5, 0.4), 8.0)         # a mismatched plank
+			s.dark = surf("wood_grain", Color(0.52, 0.46, 0.42), 6.0)
+			s.metal = surf("iron", Color(0.8, 0.56, 0.4), 4.0)             # rusted iron
+			s.pipe = surf("iron", Color(0.58, 0.6, 0.58), 5.0)             # grey iron pipe
+			s.plate = surf("bld_tin", Color(0.72, 0.5, 0.36), 9.0)         # rusted plate
+			s.plate2 = surf("bld_tin", Color(0.5, 0.52, 0.5), 9.0)         # a greyer patch
+			s.rivet = plain(Color("#3a302a"))
+			s.trim = s.metal
+			s.roof = s.plate
+			s.ammo = surf("cheese", Color.WHITE, 4.0)
 	return s
 
 
@@ -93,6 +118,17 @@ func wheel(n: Node3D, at: Vector3, r: float, thick: float, s: Dictionary) -> voi
 		"sewer":   # a bottle cap: a crimped bronze rim round a flat face
 			n.add_child(cone(r, r, thick, s.trim, at, Vector3(90, 0, 0), 14))
 			n.add_child(cone(r * 0.75, r * 0.75, thick + 0.3, plain(Color("#d8d0b8")), at, Vector3(90, 0, 0), 20))
+		"junk":   # mismatched cart wheels: spoked ones at the back, plank discs at the front
+			if at.x > 0.0:
+				n.add_child(cone(r, r, thick, s.wood2, at, Vector3(90, 0, 0), 16))
+				n.add_child(ring(r * 0.88, r * 1.02, s.metal, at, Vector3(90, 0, 0), Vector3(1, thick * 1.1, 1)))
+				n.add_child(_box(Vector3(r * 1.8, 0.5, thick + 0.4), s.rivet, at))   # the plank seam
+			else:
+				n.add_child(ring(r * 0.8, r, s.metal, at, Vector3(90, 0, 0), Vector3(1, thick * 1.2, 1)))
+				for k in 8:
+					var a := TAU * k / 8.0 + 0.2
+					n.add_child(rod(at, at + Vector3(cos(a), sin(a), 0) * r * 0.85, 0.4, 0.35, s.dark, false))
+				n.add_child(cone(r * 0.25, r * 0.25, thick + 0.6, s.metal, at, Vector3(90, 0, 0), 10))
 		"forest":   # a slice of log, rings showing
 			n.add_child(cone(r, r, thick, s.wood, at, Vector3(90, 0, 0), 16))
 			n.add_child(cone(r * 0.85, r * 0.85, thick + 0.3, plain(Color("#c8a070")), at, Vector3(90, 0, 0), 16))
@@ -526,3 +562,336 @@ func _bolt_b(s: Dictionary, c: Dictionary) -> Dictionary:
 		var pad := cone(5.5, 5.5, 0.5, plain(Color("#4f9d4a")), Vector3(-4.0, 0.3, 0), Vector3.ZERO, 24)   # standing on a lily pad
 		n.add_child(pad)
 	return {"node": n, "sockets": {"crew0": Vector3(-15.0, 0, 0)}}
+
+
+# ================================================================== round 2 (2026-10-13)
+# Dominic on round 1: crews on every engine (D-118), rats at human scale from the sewer's own
+# junk (D-116), the forest ram a giant beetle (D-117). Sockets: see ROUND2_SCALE's note.
+
+## A short chain from a to b: links alternating flat and edge-on.
+func chain(n: Node3D, a: Vector3, b: Vector3, m: Material, link := 0.9) -> void:
+	var count := maxi(2, int(a.distance_to(b) / (link * 1.6)))
+	var d := (b - a).normalized()
+	var tilt := rad_to_deg(atan2(d.x, d.y))
+	for k in count:
+		var at := a.lerp(b, (k + 0.5) / count)
+		n.add_child(ring(link * 0.45, link * 0.8, m, at, Vector3(90 * (k % 2), 0, -tilt + 90), Vector3(1.4, 1, 1)))
+
+
+## A sewer grate: an iron frame and bars, `w` wide and `h` tall, standing at `at` facing +x.
+func grate(n: Node3D, s: Dictionary, at: Vector3, w: float, h: float, lean := 0.0) -> void:
+	var g := Node3D.new()
+	g.position = at
+	g.rotation_degrees.z = lean
+	var iron := surf("iron", Color(0.5, 0.48, 0.46), 4.0)
+	for side in [1, -1]:
+		g.add_child(_box(Vector3(1.0, h, 1.2), iron, Vector3(0, h * 0.5, w * 0.5 * side)))
+		g.add_child(_box(Vector3(1.0, 1.2, w), iron, Vector3(0, h * 0.5 + (h * 0.5 - 0.6) * side, 0)))
+	for k in range(1, 6):
+		g.add_child(_box(Vector3(0.7, h, 0.6), iron, Vector3(0, h * 0.5, -w * 0.5 + w * k / 6.0)))
+	g.add_child(_box(Vector3(0.7, 0.6, w), iron, Vector3(0, h * 0.5, 0)))
+	g.add_child(_box(Vector3(0.9, h * 0.35, w * 0.3), s.metal, Vector3(0.3, h * 0.7, w * 0.15)))   # a rust bloom
+	n.add_child(g)
+
+
+## A rusted plate patched on, with rivets at its corners: size (x, y), lying in the xy plane
+## at `at`, turned by `rot`.
+func patch(n: Node3D, s: Dictionary, at: Vector3, size: Vector2, rot: Vector3, m: Material) -> void:
+	var p := Node3D.new()
+	p.position = at
+	p.rotation_degrees = rot
+	p.add_child(_box(Vector3(size.x, size.y, 0.5), m, Vector3.ZERO))
+	for cx in [-1, 1]:
+		for cy in [-1, 1]:
+			p.add_child(blob(Vector3.ONE * 0.45, s.rivet, Vector3(cx * (size.x * 0.5 - 0.7), cy * (size.y * 0.5 - 0.7), 0.3)))
+	n.add_child(p)
+
+
+## The junk ram's head: a heavy iron pipe-end with a flange, bolted onto the beam.
+func junk_head(n: Node3D, s: Dictionary, tip: Vector3, r: float) -> void:
+	n.add_child(cone(r * 1.05, r * 1.05, 5.0, s.pipe, tip + Vector3(1.5, 0, 0), Vector3(0, 0, -90), 14))
+	n.add_child(cone(r * 1.7, r * 1.7, 1.4, s.metal, tip + Vector3(4.6, 0, 0), Vector3(0, 0, -90), 16))   # the flange
+	n.add_child(cone(r * 0.9, r * 1.4, 2.0, surf("iron", Color(0.45, 0.42, 0.4), 4.0), tip + Vector3(6.2, 0, 0), Vector3(0, 0, -90), 14))   # a cast cap
+	for k in 6:
+		var a := TAU * k / 6.0
+		n.add_child(blob(Vector3.ONE * 0.5, s.rivet, tip + Vector3(5.3, cos(a) * r * 1.4, sin(a) * r * 1.4)))
+
+
+## A scrap timber beam from x0 to x1 at height y, bound with barrel hoops, the junk head on it.
+func junk_log(n: Node3D, s: Dictionary, x0: float, x1: float, y: float, r: float) -> void:
+	n.add_child(beam(Vector3(x0, y, 0), Vector3(x1, y, 0), r * 1.8, r * 1.8, s.wood))
+	n.add_child(beam(Vector3(x0 + 6.0, y + r * 0.95, 0.4), Vector3(x0 + 18.0, y + r * 0.95, 0.4), r * 1.2, 0.6, s.wood2))   # a plank nailed on
+	for x in [x0 + 3.0, (x0 + x1) * 0.5, x1 - 3.0]:
+		n.add_child(_box(Vector3(1.2, r * 2.1, r * 2.1), s.metal, Vector3(x, y, 0)))
+	junk_head(n, s, Vector3(x1, y, 0), r)
+
+
+## C: the open ram, crewed. Timber and frogs keep round 1's B frame; the rats build theirs
+## from pipes, chains and scrap. Two of the crew swing the log from inside the frame, a third
+## shoves at the back.
+func _ram_c(s: Dictionary, c: Dictionary) -> Dictionary:
+	var spec: Dictionary = _ram_b(s, c) if s.fam != "junk" else _ram_c_junk(s, c)
+	var L := 42.0
+	spec.sockets = {"crew0_f0_reach_in": Vector3(-L * 0.3, 0, -2.5), "crew1_f0_reach_in": Vector3(L * 0.1, 0, -2.5),
+		"crew2_f0_reach": Vector3(-L * 0.5 - 5.0, 0, 5.0)}
+	return spec
+
+
+func _ram_c_junk(s: Dictionary, c: Dictionary) -> Dictionary:
+	var n := Node3D.new()
+	var L := 42.0
+	var W := 12.0
+	var wr := 4.2
+	var top := 25.0
+	undercarriage(n, s, L, W, wr)
+	var base := wr + 1.0
+	for side in [1, -1]:   # mismatched rails: a plank one side, a pipe the other
+		if side > 0:
+			n.add_child(beam(Vector3(-L * 0.5, base, W * 0.5), Vector3(L * 0.5, base, W * 0.5), 1.6, 1.6, s.wood2))
+		else:
+			n.add_child(rod(Vector3(-L * 0.5, base, -W * 0.5), Vector3(L * 0.5, base, -W * 0.5), 0.8, 0.8, s.pipe))
+	for x in [-L * 0.32, L * 0.32]:   # A-frames of iron pipe, an elbow joint at the top
+		for side in [1, -1]:
+			n.add_child(rod(Vector3(x, base, W * 0.5 * side), Vector3(x, top, 0), 0.75, 0.75, s.pipe))
+		n.add_child(blob(Vector3(1.4, 1.4, 1.6), s.metal, Vector3(x, top, 0)))
+	n.add_child(rod(Vector3(-L * 0.4, top, 0), Vector3(L * 0.4, top, 0), 0.9, 0.9, s.pipe))
+	var y := top - 9.0
+	for x in [-L * 0.25, L * 0.25]:   # hung on chains
+		chain(n, Vector3(x, top - 0.6, 0), Vector3(x, y + 2.0, 0), s.metal, 0.75)
+	junk_log(n, s, -L * 0.55, L * 0.5 + 6.0, y, 2.6)
+	# A rag tied round the top pipe for team colour.
+	n.add_child(_box(Vector3(3.0, 4.0, 0.4), s.team, Vector3(-L * 0.12, top - 2.4, 1.0), Vector3(0, 0, 8)))
+	n.add_child(ring(0.8, 1.4, s.team, Vector3(-L * 0.12, top, 0), Vector3(0, 0, 90)))
+	return {"node": n, "sockets": {}}
+
+
+## The rats' covered ram, crewed: a shed roofed like half a barrel (staves under iron hoops,
+## rusted plates riveted over the holes), a sewer grate standing in front as a shield, the
+## head poking out under it; the crew shove at the poles out the back.
+func _ram_shed(s: Dictionary, c: Dictionary) -> Dictionary:
+	var n := Node3D.new()
+	var L := 40.0
+	var W := 14.0
+	var wr := 4.0
+	undercarriage(n, s, L * 0.85, W, wr)
+	var base := wr + 1.0
+	for side in [1, -1]:
+		n.add_child(beam(Vector3(-L * 0.5, base, W * 0.5 * side), Vector3(L * 0.5, base, W * 0.5 * side), 1.6, 1.6, s.dark if side > 0 else s.wood2))
+	junk_log(n, s, -L * 0.5, L * 0.5 + 7.0, base + 5.0, 2.6)
+	# The barrel roof: staves round half a circle, hoops over them.
+	var R := W * 0.5 + 2.5
+	var cy := base + 4.0
+	var mats := [s.wood, s.wood2, s.dark, s.wood, s.wood2, s.wood, s.dark, s.wood2, s.wood]
+	var staves := 9
+	for k in staves:
+		var a := PI * (k + 0.5) / staves   # 0..PI, over the top
+		var at := Vector3(0, cy + sin(a) * R, cos(a) * R)
+		var st := _box(Vector3(L + 1.0, 1.0, PI * R / staves + 0.35), mats[k], at)
+		st.rotation.x = a - PI * 0.5
+		n.add_child(st)
+	for x in [-L * 0.38, 0.0, L * 0.38]:
+		n.add_child(ring(R + 0.1, R + 1.0, s.metal, Vector3(x, cy, 0), Vector3(0, 0, 90)))
+	# Plates riveted over the gaps (rusted, one grey).
+	patch(n, s, Vector3(-L * 0.2, cy + R * 0.82, R * 0.6), Vector2(9.0, 6.0), Vector3(-36, 0, 0), s.plate)
+	patch(n, s, Vector3(L * 0.2, cy + R + 0.4, -1.0), Vector2(7.0, 5.5), Vector3(-90, 0, 4), s.plate2)
+	patch(n, s, Vector3(L * 0.05, cy + R * 0.55, -R * 0.85), Vector2(8.0, 5.0), Vector3(-150, 0, 0), s.plate)
+	# The sewer grate in front, leaning back over the head.
+	grate(n, s, Vector3(L * 0.5 + 1.5, base + 7.5, 0), W + 2.0, 12.0, 14)
+	# Poles out the back for the crew to shove, and a team rag on the roof.
+	for side in [1, -1]:
+		n.add_child(rod(Vector3(-L * 0.45, base + 2.0, W * 0.5 * side), Vector3(-L * 0.5 - 7.0, base + 9.0, (W * 0.5 + 2.0) * side), 0.55, 0.55, s.dark))
+	n.add_child(_box(Vector3(5.0, 0.5, 4.5), s.team, Vector3(-L * 0.05, cy + R + 0.6, 2.5), Vector3(-25, 0, 6)))
+	return {"node": n, "sockets": {"crew0_f0_reach": Vector3(-L * 0.5 - 9.0, 0, W * 0.5 + 3.0),
+		"crew1_f0_reach": Vector3(-L * 0.5 - 9.0, 0, -W * 0.5 - 3.0)}}
+
+
+## C: the arm-and-cup catapult (round 1's A), crewed: one winds the winch at the back, one
+## loads from the far side. The rats' is junk-built: pipe uprights, a bucket for a cup, cheese.
+func _catapult_c(s: Dictionary, c: Dictionary) -> Dictionary:
+	var spec: Dictionary = _catapult_a(s, c) if s.fam != "junk" else _catapult_c_junk(s, c)
+	var L := 30.0
+	var W := 11.0
+	spec.sockets = {"crew0_f0_raise": Vector3(-L * 0.5 - 6.0, 0, 0.0), "crew1_f0_reach": Vector3(-L * 0.3, 0, W * 0.5 + 7.0)}
+	# A pile of ammunition by the loader.
+	for k in 3:
+		var at := Vector3(-L * 0.12 + (k % 2) * 2.4, 1.0 + (k / 2) * 1.6, W * 0.5 + 3.5 + (k % 2) * 1.2)
+		if s.fam == "junk":
+			spec.node.add_child(cone(1.6, 1.6, 1.4, s.ammo, at, Vector3.ZERO, 12))
+		else:
+			spec.node.add_child(blob(Vector3.ONE * 1.5, s.ammo, at))
+	return spec
+
+
+func _catapult_c_junk(s: Dictionary, c: Dictionary) -> Dictionary:
+	var n := Node3D.new()
+	var L := 30.0
+	var W := 11.0
+	var wr := 3.8
+	undercarriage(n, s, L, W, wr)
+	var base := wr + 1.0
+	n.add_child(beam(Vector3(-L * 0.5, base, W * 0.5), Vector3(L * 0.5, base, W * 0.5), 1.6, 1.6, s.wood2))
+	n.add_child(beam(Vector3(-L * 0.5, base, -W * 0.5), Vector3(L * 0.5, base, -W * 0.5), 1.8, 1.4, s.dark))
+	for x in [-L * 0.42, -L * 0.1, L * 0.42]:
+		n.add_child(beam(Vector3(x, base, -W * 0.5), Vector3(x, base, W * 0.5), 1.4, 1.4, s.wood if x < 0.0 else s.wood2))
+	var bar := base + 12.0
+	for side in [1, -1]:   # pipe uprights, braced with a strip of iron
+		n.add_child(rod(Vector3(L * 0.12, base, W * 0.5 * side), Vector3(L * 0.12, bar, W * 0.5 * side), 0.8, 0.8, s.pipe))
+		n.add_child(beam(Vector3(L * 0.4, base, W * 0.5 * side), Vector3(L * 0.12, bar - 3.0, W * 0.5 * side), 0.9, 0.4, s.metal))
+	n.add_child(rod(Vector3(L * 0.12, bar, -W * 0.5 - 1.0), Vector3(L * 0.12, bar, W * 0.5 + 1.0), 0.9, 0.9, s.pipe))
+	n.add_child(rod(Vector3(L * 0.12 - 1.2, bar, -W * 0.3), Vector3(L * 0.12 - 1.2, bar, W * 0.3), 1.3, 1.3, s.team))   # a rag for the pad
+	var pivot := Vector3(-L * 0.25, base + 1.2, 0)
+	n.add_child(rod(pivot + Vector3(0, 0, -W * 0.5), pivot + Vector3(0, 0, W * 0.5), 1.6, 1.6, s.rope))
+	chain(n, pivot + Vector3(0, 1.7, -W * 0.45), pivot + Vector3(0, 1.7, W * 0.45), s.metal, 0.7)
+	var tip := Vector3(L * 0.12 - 0.5, base + 22.0, 0)
+	n.add_child(beam(pivot, tip, 1.7, 1.5, s.wood))
+	for t in [0.3, 0.65]:
+		n.add_child(_box(Vector3(2.0, 0.9, 2.0), s.metal, pivot.lerp(tip, t), Vector3(0, 0, rad_to_deg(atan2(tip.y - pivot.y, tip.x - pivot.x)))))
+	# The cup: an iron bucket, a wheel of cheese in it.
+	n.add_child(cone(2.8, 2.0, 3.2, s.metal, tip + Vector3(0, 0.4, 0), Vector3.ZERO, 14))
+	n.add_child(ring(2.6, 3.0, s.rivet, tip + Vector3(0, 2.0, 0)))
+	n.add_child(_box(Vector3(3.8, 2.8, 3.8), s.ammo, tip + Vector3(0, 3.0, 0), Vector3(0, 30, 12)))   # a big wedge of cheese
+	# The winch: a pipe with a spoked hand wheel.
+	n.add_child(rod(Vector3(-L * 0.45, base + 1.6, -W * 0.5), Vector3(-L * 0.45, base + 1.6, W * 0.5 + 1.0), 0.8, 0.8, s.pipe))
+	n.add_child(ring(1.8, 2.4, s.metal, Vector3(-L * 0.45, base + 1.6, W * 0.5 + 1.2), Vector3(90, 0, 0)))
+	return {"node": n}
+
+
+## C: the bolt thrower on its carriage (round 1's A), crewed: one aims at the trail, one loads
+## from the far side. The rats': cart wheels that don't match, a pipe trail, leaf-spring arms,
+## an iron rod for a bolt and a sewer grate for a gun shield.
+func _bolt_c(s: Dictionary, c: Dictionary) -> Dictionary:
+	var spec: Dictionary = _bolt_a(s, c) if s.fam != "junk" else _bolt_c_junk(s, c)
+	spec.sockets = {"crew0_f0_reach": Vector3(-19.0, 0, 3.5), "crew1_f0_reach": Vector3(-13.0, 0, -9.5)}
+	return spec
+
+
+func _bolt_c_junk(s: Dictionary, c: Dictionary) -> Dictionary:
+	var n := Node3D.new()
+	var wr := 5.0
+	var y := 13.0
+	wheel(n, Vector3(0.0, wr, 6.5), wr, 1.6, s)   # a spoked cart wheel...
+	wheel(n, Vector3(0.01, wr * 0.92, -6.5), wr * 0.92, 1.8, s)   # ...and a plank one, a bit smaller
+	n.add_child(rod(Vector3(0, wr, -7.5), Vector3(0, wr, 7.5), 0.7, 0.7, s.pipe, false))
+	for side in [1, -1]:   # the trail: two pipes down to the ground behind
+		n.add_child(rod(Vector3(1.5, wr + 0.5, 3.0 * side), Vector3(-17, 0.8, 0.8 * side), 0.75, 0.75, s.pipe))
+	n.add_child(beam(Vector3(0, wr, 0), Vector3(0, y - 1.0, 0), 2.0, 2.0, s.wood2))
+	n.add_child(_box(Vector3(6.0, 0.4, 2.8), s.team, Vector3(-10.5, 3.6, 0), Vector3(0, 0, 18)))
+	grate(n, s, Vector3(3.0, wr - 2.0, 0), 11.0, 9.5, 8)   # the gun shield, below the bow
+	n.add_child(beam(Vector3(-10, y, 0), Vector3(10, y, 0), 2.2, 1.6, s.wood))
+	n.add_child(_box(Vector3(3.0, 3.0, 3.6), s.metal, Vector3(7.0, y + 0.4, 0)))
+	for side in [1, -1]:   # leaf-spring arms: three flat strips stacked, swept back
+		for leaf in 3:
+			var a := Vector3(7.0, y + 0.5 - leaf * 0.5, 1.4 * side)
+			var e := Vector3(3.0 + leaf * 1.2, y + 0.5 - leaf * 0.5, (11.0 - leaf * 2.6) * side)
+			n.add_child(beam(a, e, 0.9, 0.45, s.metal if leaf != 1 else s.pipe))
+		n.add_child(rod(Vector3(3.0, y + 0.5, 11.0 * side), Vector3(-6.0, y + 0.9, 0), 0.14, 0.14, s.rope, false))
+	# The bolt: a sharpened iron rod with tin fins.
+	n.add_child(rod(Vector3(-6.0, y + 1.3, 0), Vector3(13.5, y + 1.3, 0), 0.35, 0.35, s.pipe))
+	n.add_child(cone(0.05, 0.6, 2.6, s.metal, Vector3(15.0, y + 1.3, 0), Vector3(0, 0, -90), 8))
+	for side in [1, -1]:
+		n.add_child(slab([Vector2(0, 0), Vector2(2.4, 0), Vector2(0.4, 1.2 * side)], 0.2, s.plate2, Vector3(-6.0, y + 1.3, 0)))
+	return {"node": n}
+
+
+# ------------------------------------------------------------------ the giant beetle (D-117)
+
+const BEETLE_DROP := 5.0   # how far the giant's body sits lower than its first build (legs were stilts)
+
+
+## A giant rhinoceros beetle, x forward, standing on y = 0: glossy mahogany wing cases, a
+## bark-and-iron cap on its pronotum, a long head horn capped in iron for the walls and a
+## thoracic horn over it like pincers. About 2.5 times a cavalry beetle's length.
+func giant_beetle(n: Node3D, s: Dictionary) -> Node3D:
+	var shell := surf("chitin", Color("#5a3424"), 5.0)
+	shell.roughness = 0.45
+	shell.metallic_specular = 0.6
+	var dark := surf("chitin", Color("#2e1c16"), 4.0)
+	var under := plain(Color("#24160f"))
+	var iron := surf("iron", Color(0.72, 0.72, 0.76), 4.0)
+	var bark := surf("bark_plate", Color(0.85, 0.75, 0.62), 6.0)
+	var b := Node3D.new()   # the body, low on short splayed legs (it returns this, for what rides on it)
+	b.position.y = -BEETLE_DROP
+	n.add_child(b)
+	for leg in [[14.0, 7.0, 15.0], [2.0, 1.0, 2.0], [-10.0, -6.0, -14.0]]:   # three pairs, thick and spread
+		for side in [1, -1]:
+			var hip := Vector3(leg[0], 16.0 - BEETLE_DROP, 9.0 * side)
+			var knee := Vector3(leg[0] + leg[1], 20.0 - BEETLE_DROP, 21.0 * side)
+			var foot := Vector3(leg[0] + leg[2], 0.8, 25.0 * side)
+			n.add_child(rod(hip, knee, 3.2, 2.6, dark))
+			n.add_child(rod(knee, foot, 2.5, 1.4, dark))
+			n.add_child(rod(foot, foot + Vector3(2.0 * signf(leg[2] + 0.1), -0.5, 1.0 * side), 0.8, 0.5, dark))
+	b.add_child(blob(Vector3(26, 7.5, 13), under, Vector3(-2, 17, 0)))
+	for side in [1, -1]:   # the wing cases, meeting at a seam
+		b.add_child(blob(Vector3(24, 12.5, 8.6), shell, Vector3(-8, 25, 7.4 * side), Vector3(0, 0, 4)))
+	b.add_child(rod(Vector3(-31, 25, 0), Vector3(11, 37.5, 0), 0.5, 0.5, dark, false))
+	# The pronotum, capped in bark plates with an iron rim and studs.
+	b.add_child(blob(Vector3(11, 10.5, 14.5), shell, Vector3(16, 25, 0)))
+	b.add_child(dome(Vector3(10.6, 8.0, 14.0), bark, Vector3(17.5, 27.5, 0)))
+	b.add_child(ring(9.8, 11.2, iron, Vector3(17.5, 27.6, 0), Vector3.ZERO, Vector3(1, 1.2, 1.32)))
+	for k in 5:
+		var a := -0.9 + k * 0.45
+		b.add_child(blob(Vector3.ONE * 0.9, iron, Vector3(17.5 + cos(a) * 9.5, 30.5, sin(a) * 12.0)))
+	# The thoracic horn, curving forward and down over the head.
+	var th := [Vector3(22, 33, 0), Vector3(31, 35.5, 0), Vector3(39, 33, 0), Vector3(43.5, 27.5, 0)]
+	var tr := [3.0, 2.3, 1.6, 0.8]
+	for k in range(1, th.size()):
+		b.add_child(rod(th[k - 1], th[k], tr[k - 1], tr[k], dark))
+	# The head, and its horn reaching forward for the wall, an iron cap on its end.
+	b.add_child(blob(Vector3(7.5, 6.5, 8.5), shell, Vector3(29, 18, 0)))
+	var hh := [Vector3(33, 17, 0), Vector3(43, 17, 0), Vector3(52, 18.5, 0), Vector3(58, 22, 0)]
+	var hr := [4.4, 3.7, 3.0, 2.5]
+	for k in range(1, hh.size()):
+		b.add_child(rod(hh[k - 1], hh[k], hr[k - 1], hr[k], dark))
+	b.add_child(ring(3.5, 4.6, iron, Vector3(43, 17, 0), Vector3(0, 0, 90)))
+	b.add_child(cone(0.8, 3.6, 6.5, iron, Vector3(60.5, 24, 0), Vector3(0, 0, -50), 14))   # the iron cap
+	for side in [1, -1]:
+		b.add_child(blob(Vector3(1.6, 1.6, 1.2), plain(Color("#120c0a")), Vector3(31, 20, 6.8 * side)))
+		b.add_child(blob(Vector3(0.5, 0.5, 0.4), plain(Color("#d8c8b8")), Vector3(31.8, 20.8, 7.6 * side)))
+		b.add_child(rod(Vector3(34, 15, 4.5 * side), Vector3(39, 14, 7.5 * side), 0.35, 0.3, dark))   # a feeler
+		b.add_child(blob(Vector3(1.0, 0.7, 1.0), dark, Vector3(39.5, 14, 7.8 * side)))
+	# A leather girth strap round the middle.
+	b.add_child(ring(0.9, 1.0, surf("leather", Color(0.6, 0.45, 0.32), 3.0), Vector3(2, 25, 0), Vector3(0, 0, 90), Vector3(14.5, 2.2, 17.5)))
+	return b
+
+
+## The giant beetle ridden: a howdah on its back with rails, a team cloth hanging over the
+## sides, two of the race's own riders on it (one at the front driving).
+func _ram_ridden(s: Dictionary, c: Dictionary) -> Dictionary:
+	var n := Node3D.new()
+	var b := giant_beetle(n, s)
+	var deck := 37.6
+	var wood := surf("wood_grain", Color(0.75, 0.62, 0.5), 6.0)
+	b.add_child(_box(Vector3(22, 1.4, 16), wood, Vector3(-6, deck, 0)))
+	for x in [-16.5, 4.5]:
+		for side in [1, -1]:
+			b.add_child(rod(Vector3(x, deck, 7.6 * side), Vector3(x, deck + 4.5, 7.6 * side), 0.45, 0.45, s.dark))
+	for side in [1, -1]:
+		b.add_child(rod(Vector3(-16.5, deck + 4.5, 7.6 * side), Vector3(4.5, deck + 4.5, 7.6 * side), 0.4, 0.4, s.dark))
+	b.add_child(rod(Vector3(-16.5, deck + 4.5, -7.6), Vector3(-16.5, deck + 4.5, 7.6), 0.4, 0.4, s.dark))
+	for side in [1, -1]:   # the team cloth over both sides, and a little banner at the back
+		b.add_child(_box(Vector3(12, 6.5, 0.4), s.team, Vector3(-6, deck - 3.0, 8.4 * side), Vector3(16 * side, 0, 0)))
+	pennant(b, s, Vector3(-16.5, deck, -6.5), 11.0, 3.6)
+	return {"node": n, "sockets": {"crew0_f0_reach_top": Vector3(0.5, deck + 0.7 - BEETLE_DROP, 1.5), "crew1_f0_top": Vector3(-11.5, deck + 0.7 - BEETLE_DROP, -2.0)}}
+
+
+## For size on the sheet: a cavalry beetle as the game builds it (body, head, legs), unridden.
+func _ram_mount(s: Dictionary, c: Dictionary) -> Dictionary:
+	var n := _creature("beetle", c)
+	n.get_child(1).rotation_degrees.z = 0   # head up: it's standing, not pushing
+	return {"node": n}
+
+
+## The giant beetle led: a saddle cloth in team colour, a lead rope from its head to a handler
+## walking alongside, another behind with a goad.
+func _ram_led(s: Dictionary, c: Dictionary) -> Dictionary:
+	var n := Node3D.new()
+	var b := giant_beetle(n, s)
+	b.add_child(_box(Vector3(14, 0.6, 22), s.team, Vector3(-3, 37.2, 0), Vector3(0, 0, -4)))
+	for side in [1, -1]:
+		b.add_child(_box(Vector3(10, 7.0, 0.4), s.team, Vector3(-3, 33.0, 10.6 * side), Vector3(22 * side, 0, 0)))
+	# The lead rope, from the horn's base to the handler's hand (near side, ahead).
+	b.add_child(ring(2.0, 2.6, s.rope, Vector3(36, 17.2, 0), Vector3(0, 0, 90)))
+	n.add_child(rod(Vector3(36, 16 - BEETLE_DROP, 2.4), Vector3(30, 12, 20), 0.3, 0.3, s.rope, false))
+	# A goad, from the handler behind to the beast's flank.
+	n.add_child(rod(Vector3(-26, 12, 20), Vector3(-17, 22 - BEETLE_DROP, 11), 0.35, 0.3, s.dark))
+	return {"node": n, "sockets": {"crew0_f0_reach": Vector3(30, 0, 24), "crew1_f0_reach": Vector3(-30, 0, 22)}}

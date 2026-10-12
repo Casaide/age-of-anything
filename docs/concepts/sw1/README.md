@@ -61,3 +61,69 @@ engines shared by the human cultures and trimmed in their cloth.
 2. The forest ram: beetle-pushed for beetles (and other forest races), or crew like the rest?
 3. Any family take to redo (the rats' tin shed, the frogs' reed bundle...).
 4. Size: the engines are about 1.3x (ram) to 1.6x (catapult) a soldier's length. Bigger?
+
+## Round 2 (2026-10-13), waiting on Dominic
+
+Dominic on round 1: "Rats using pencils? I think we need to accept them as human sized rats"
+(D-116); the forest ram "better as a giant beetle?" (yes, D-117); "I like crews very much" (D-118:
+every engine shows its crew). `siege_r2_<engine>_3x.png` and `_1x.png`; a "for size" column (the
+race's worker; for the beetles also a cavalry beetle), then three facings.
+
+```sh
+godot --audio-driver Dummy --always-on-top --path . --script res://tests/siege_concept_sheet_r2.gd -- out_dir 4.5   # 3x
+godot --audio-driver Dummy --always-on-top --path . --script res://tests/siege_concept_sheet_r2.gd -- out_dir 1.5   # game scale
+```
+
+**Size:** the engines are grown to their crew, the race's ordinary worker at true scale: the open
+ram's log at chest height (1.5x round 1), the catapult's frame at the shoulder (1.8x of the
+soldier-scale build), the bolt thrower's stock at the chest (2.1x). The frog worker really is that
+big (as tall as a human, twice as wide), so frog engines are 1.25x more, not the frogs smaller.
+
+**Crews:** sockets on the engine name how each crew member stands: `crew<n>_f<k>[_reach|_raise][_in|_top]`
+(turned k facings from the engine, the arm hold, drawn inside the frame or riding on top). The ram's
+crew swing the log from inside the frame (the frame and log draw over them), a third shoves at the back;
+the catapult is wound from behind and loaded from the side, with an ammunition pile; the bolt thrower
+is aimed from the trail and loaded beside it. Crews stand behind the machine, so arm, cup and bow
+keep their silhouette; in the facing where the rear is towards the camera they stand in front of the
+frame, but the arm still stands above them.
+
+**Rats, from the sewer's own junk at human scale:** grimy, patched, mismatched, riveted. Scrap
+timber in three tints, grey iron pipe, rusted plate, chains, barrel hoops, cart wheels that don't
+match (spoked at the back, a plank disc at the front).
+- Covered ram: a roof like half a barrel (staves under three iron hoops, rusted plates riveted over
+  the gaps), a sewer grate standing in front as a shield, the head poking out under it, two rats
+  shoving at poles out the back.
+- Open ram: iron pipe A-frames with elbow joints, the log on chains, a scrap beam in barrel hoops
+  with a plank nailed on and a flanged pipe-end for a head; a rag tied on the top pipe.
+- Catapult: plank and timber rails, pipe uprights braced with iron strip, a rope-and-chain skein, an
+  iron-banded scrap arm, an iron bucket for the cup with a wedge of cheese, a hand-wheel winch.
+- Bolt thrower: a spoked wheel and a smaller plank one, a pipe trail, leaf-spring arms (three
+  strips each), an iron-rod bolt with tin fins, a sewer grate as the gun shield under the bow.
+
+**Forest: a giant rhinoceros beetle** (D-117). Glossy mahogany wing cases (darker than the purple
+beetle crew, so beast and riders part at 1x), a bark-plate cap with an iron rim and studs on its
+pronotum, a long head horn reaching forward with an iron cap and band, and a thoracic horn curving
+over it like pincers; low on thick, splayed legs. About 2.5 times a cavalry beetle's length.
+- Ridden: a howdah on its back, two beetle riders (the front one driving), team cloth down the sides
+  and a pennant at the back.
+- Led: a team saddle cloth over its back, a lead rope from the horn to a handler walking ahead, a
+  second handler behind with a goad.
+
+**Humans and frogs, for comparison:** round 1's picks, crewed and grown: the open ram (B), the
+arm-and-cup catapult and the carriage bolt thrower (A).
+
+**What reads at game scale (Claude's look):** every ram reads; the giant beetle most of all, a beast
+first with its team colour only in the cloth. The rats' engines are clearly theirs (grey pipe and
+rust against the humans' clean timber and iron) without any tiny objects. The catapult reads in
+every facing. The bolt thrower is still the weakest at 1x; its crew help.
+
+**Claude's recommendation:** rats: the open ram (pipes and chains), like every other family's ram
+and with its crew showing; the barrel shed is the better object and could be a later covered-ram
+upgrade. Forest: the **ridden** beetle (riders make it a war beast, not a wild one, in every
+facing). Catapult and bolt thrower crewed as shown, frog engines grown rather than frogs shrunk.
+
+**For Dominic to pick:**
+1. Rats: open ram or barrel shed (or the shed as an upgrade).
+2. Giant beetle: ridden or led.
+3. Size: the engines now stand to their crew (the ram is about two workers long). Right?
+4. Anything to redo before building (the bolt thrower at 1x?).
