@@ -37,6 +37,11 @@
    "age": 2
   },
   {
+   "building": "armoury",
+   "age": 2,
+   "workers": 18
+  },
+  {
    "building": "stable",
    "age": 2,
    "workers": 18
@@ -46,6 +51,12 @@
    "age": 2,
    "near": "gold",
    "workers": 20
+  },
+  {
+   "building": "mill",
+   "age": 2,
+   "near": "food",
+   "workers": 21
   },
   {
    "building": "barracks",
@@ -75,6 +86,11 @@
   "repeat_every": 75,
   "repeat_min_army": 8,
   "guard": 4
+ },
+ "research": {
+  "_doc": "Besides line upgrades (and gathering, for building-up levels): the economy research it buys, and the soldiers' research it buys once that research reaches at least army_min of its soldiers (the armoury track for what it fields). Both keep back the next age's cost once the bot has the workers to age up.",
+  "economy": ["baskets", "stone_axes", "picks", "big_pockets", "ploughs", "saws", "ore_carts", "fallow_fields", "pack_frames"],
+  "army_min": 4
  },
  "_doc_mix": "economy.mix: per age, the share of workers on each resource (the bot sends idle and new workers to whatever is furthest below its share)",
  "levels": {

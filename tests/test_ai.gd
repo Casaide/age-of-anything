@@ -68,10 +68,14 @@ func _play(rules: Dictionary, races: Array, bots: Array, title: String, quiet :=
 	if not quiet:
 		print("\n== ", title)
 	var aged := [-1, -1]   # when each side reached age 2 (the bots aim for 4-6 minutes)
+	var bought := [[], []]   # the research each side finished, with the time
 	while w.tick < LIMIT and w.winner < 0:
 		for bot in bots:
 			bot.think(w)
 		w.step()
+		for e in w.events:
+			if e.type == "research" and e.player < 2:
+				bought[e.player].append("%s %s" % [e.id, _clock(w.tick)])
 		for p in 2:
 			if aged[p] < 0 and w.ages[p] >= 2:
 				aged[p] = w.tick
@@ -94,6 +98,8 @@ func _play(rules: Dictionary, races: Array, bots: Array, title: String, quiet :=
 			print(line)
 	if not quiet:
 		print("winner: team %d at %s; age 2 at %s" % [w.winner, _clock(w.tick), aged.map(func(t): return _clock(t) if t >= 0 else "-")])
+		for p in 2:
+			print("research P%d: %s" % [p, ", ".join(bought[p])])
 	return {"winner": w.winner, "tick": w.tick, "hashes": w.hashes}
 
 

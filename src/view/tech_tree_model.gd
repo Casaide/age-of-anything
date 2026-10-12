@@ -144,15 +144,60 @@ static func _step(unit: Dictionary, age: int) -> Dictionary:
 	return {}
 
 
-## Research effects in words ("Spear units +1 attack", "Wood gathered 15% faster").
+## Research effects in words ("Workers +15 HP, +1 melee armour", "Wood gathered 15% faster",
+## "Buildings +3 sight"). Effects on the same units or buildings in a row share their subject.
 static func effect_text(effects: Array) -> String:
 	var out := []
+	var last := ""
 	for e in effects:
-		if e.has("tag"):
-			out.append("%s units %+d %s" % [String(e.tag).capitalize(), int(e.add), e.stat])
-		elif e.has("gather"):
+		if e.has("gather"):
 			out.append("%s gathered %d%% faster" % [String(e.gather).capitalize(), int(e.pct)])
-	return ", ".join(out)
+			last = ""
+			continue
+		var who := _subject(e)
+		var what := _phrase(e.stat, int(e.pct if e.has("pct") else e.add), e.has("pct"))
+		if who == last:
+			out[-1] += ", " + what
+		else:
+			out.append("%s %s" % [who, what])
+		last = who
+	return "; ".join(out) if out.any(func(s): return "," in s) else ", ".join(out)
+
+
+## Who an effect reaches, in words: "Workers", "Foot melee units", "Buildings", "Farms".
+static func _subject(e: Dictionary) -> String:
+	if e.has("building"):
+		return "Buildings" if e.building == "all" else String(e.building).capitalize() + "s"
+	var nots: Array = e.get("not", [])
+	var who: String = {"worker": "Workers", "all": "Every unit"}.get(e.tag, "%s units" % String(e.tag).capitalize())
+	if "mounted" in nots:
+		who = "Foot " + who.to_lower()
+	var rest := nots.filter(func(t): return t != "mounted")
+	if not rest.is_empty():
+		who += " (not %s)" % ", ".join(rest)
+	return who
+
+
+## One stat change in words: "+1 attack", "+10% speed", "reload 15% faster", "hold 50% more food".
+static func _phrase(stat: String, n: int, pct: bool) -> String:
+	var a := absi(n)
+	if pct:
+		match stat:
+			"reload": return "reload %d%% %s" % [a, "faster" if n < 0 else "slower"]
+			"train_time": return "train %d%% %s" % [a, "faster" if n < 0 else "slower"]
+			"research_time": return "research %d%% %s" % [a, "faster" if n < 0 else "slower"]
+			"build_speed": return "build %d%% %s" % [a, "faster" if n > 0 else "slower"]
+			"cost": return "%d%% %s" % [a, "cheaper" if n < 0 else "dearer"]
+			"food": return "hold %d%% %s food" % [a, "more" if n > 0 else "less"]
+			"hp": return "%+d%% HP" % n
+		return "%+d%% %s" % [n, stat.replace("_", " ")]
+	match stat:
+		"hp": return "%+d HP" % n
+		"carry": return "carry %+d" % n
+		"trade_fee": return "trade fee %d points %s (selling pays more)" % [a, "lower" if n < 0 else "higher"]
+	if stat.begins_with("armour."):
+		return "%+d %s armour" % [n, stat.trim_prefix("armour.")]
+	return "%+d %s" % [n, stat.replace("_", " ")]
 
 
 ## The race panel: name, creature, culture, bonuses in words, its own research, what it
