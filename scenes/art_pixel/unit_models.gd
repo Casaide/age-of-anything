@@ -1593,16 +1593,31 @@ func _tool_pick(c: Dictionary) -> Dictionary:
 	return {"node": n}
 
 
-## A bundle of cut reeds over the shoulder, tied in the middle.
+## A bundle of cut reeds carried over the shoulder: the hand up at the shoulder holds its front
+## end and the bundle lies back and down across the back, thick (many stems, two ties, the
+## leafy tops fanning out behind), so it reads as a load and not a blade (Dominic: the first
+## one, held out in the hand, was a green sword). Worn with the body's "raise" hold.
 func _load_reeds(c: Dictionary) -> Dictionary:
 	var n := Node3D.new()
-	var reed := surf("reed_stalk", Color.WHITE, 5.0)
-	for k in 7:
-		var off := Vector3(0, (k % 3) * 0.7, (k - 3) * 0.55)
-		n.add_child(rod(Vector3(-7, 3.5, 0) + off, Vector3(8, 9.5, 0) + off, 0.55, 0.45, reed, false))
-	n.add_child(ring(1.6, 2.2, surf("leather", Color.WHITE, 2.0), Vector3(0.5, 6.8, 0), Vector3(0, 0, 68)))
-	for k in 3:
-		n.add_child(decal("reed_leaf", 0.9, 4.0, Vector3(8.5, 10.5 + k * 0.4, (k - 1) * 0.8), Vector3(0.2, 0.3, 1), true, Vector3(1, 0.4, 0)))
+	var reed := surf("reed_stalk", Color(1.0, 0.92, 0.7), 5.0)
+	var front := Vector3(3.0, 2.0, 0)
+	var back := Vector3(-10.0, -7.0, 0)
+	var axis := (back - front).normalized()
+	var side := axis.cross(Vector3(0, 0, 1)).normalized()
+	for k in 13:
+		var a := k * TAU / 13.0
+		var r := 1.0 + 1.1 * float(k % 3) / 2.0
+		var off := side * cos(a) * r + Vector3(0, 0, 1) * sin(a) * r
+		var fan := off * 0.35   # the stems spread a little towards the tops
+		n.add_child(rod(front + off * 0.8 - axis * 0.8, back + off + fan, 0.45, 0.35, reed, false))
+	var tie := surf("leather", Color.WHITE, 2.0)
+	for f in [0.22, 0.6]:
+		var at := front.lerp(back, f)
+		n.add_child(ring(1.9, 2.7, tie, at, Vector3(0, 0, rad_to_deg(atan2(axis.y, axis.x)) + 90.0)))
+	for k in 5:   # the leafy tops
+		var a := k * TAU / 5.0
+		var off := side * cos(a) * 2.0 + Vector3(0, 0, 1) * sin(a) * 2.0
+		n.add_child(decal("reed_leaf", 1.2, 4.5, back + axis * 1.5 + off, Vector3(0.2, 0.3, 1), true, axis + off.normalized() * 0.5))
 	return {"node": n}
 
 
@@ -1630,15 +1645,16 @@ func _load_gold(c: Dictionary) -> Dictionary:
 	return {"node": n}
 
 
-## Meat from a hunt carried home: a haunch over the shoulder, the bone end sticking out.
+## Meat from a hunt carried home: a haunch slung over the shoulder, hanging down the back from
+## the hand up at the shoulder, the bone end in the fist. Worn with the body's "raise" hold.
 func _load_meat(c: Dictionary) -> Dictionary:
 	var n := Node3D.new()
 	var meat := plain(Color("#a8443a"))
-	n.add_child(blob(Vector3(3.6, 2.3, 2.4), meat, Vector3(0.5, 6.5, 0), Vector3(0, 0, 30)))
-	n.add_child(blob(Vector3(2.2, 1.0, 2.0), plain(Color("#e8c8b0")), Vector3(-0.6, 7.8, 0.3), Vector3(0, 0, 30)))   # the fat on top
+	n.add_child(blob(Vector3(2.4, 3.8, 2.6), meat, Vector3(-2.2, -4.0, 0), Vector3(0, 0, -25)))
+	n.add_child(blob(Vector3(1.4, 2.6, 2.0), plain(Color("#e8c8b0")), Vector3(-3.2, -4.6, 0.6), Vector3(0, 0, -25)))   # the fat
 	var bone := plain(Color("#f0e8d8"))
-	n.add_child(rod(Vector3(3.2, 7.8, 0), Vector3(6.2, 9.4, 0), 0.55, 0.5, bone))
-	n.add_child(blob(Vector3(0.9, 0.8, 0.9), bone, Vector3(6.4, 9.6, 0)))
+	n.add_child(rod(Vector3(-0.8, -0.8, 0), Vector3(0.6, 1.2, 0), 0.55, 0.5, bone))
+	n.add_child(blob(Vector3(0.9, 0.8, 0.9), bone, Vector3(0.7, 1.4, 0)))
 	return {"node": n}
 
 
@@ -1646,12 +1662,12 @@ func _load_meat(c: Dictionary) -> Dictionary:
 func _tool_broom(c: Dictionary) -> Dictionary:
 	var n := Node3D.new()
 	var wood := surf("wood_grain", Color.WHITE, 6.0)
-	n.add_child(rod(Vector3(-1.5, 9.0, 0), Vector3(2.5, -7.0, 0), 0.55, 0.55, wood))
+	n.add_child(rod(Vector3(-1.5, 8.0, 0), Vector3(2.0, -3.5, 0), 0.55, 0.55, wood))
 	var twig := surf("reed_stalk", Color(0.85, 0.75, 0.5), 5.0)
 	for k in 7:
 		var z := (k - 3) * 0.55
-		n.add_child(rod(Vector3(2.5, -7.0, z * 0.4), Vector3(3.6 + (k - 3) * 0.35, -11.5, z), 0.4, 0.3, twig, false))
-	n.add_child(ring(0.7, 1.2, surf("leather", Color.WHITE, 2.0), Vector3(2.4, -6.6, 0), Vector3(0, 0, -14)))
+		n.add_child(rod(Vector3(2.0, -3.5, z * 0.4), Vector3(3.0 + (k - 3) * 0.35, -7.5, z), 0.4, 0.3, twig, false))
+	n.add_child(ring(0.7, 1.2, surf("leather", Color.WHITE, 2.0), Vector3(1.9, -3.1, 0), Vector3(0, 0, -14)))
 	return {"node": n}
 
 

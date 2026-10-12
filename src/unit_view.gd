@@ -384,7 +384,12 @@ func _rebuild() -> void:
 
 
 ## Swap what the hand holds (a worker's tool for the job, or the load it carries home),
-## if that part is baked. Same arm pose: job tools are all held low.
+## if that part is baked. Job tools are held low; a load tagged "shoulder" (a bundle of reeds,
+## a haunch of meat) is carried with the arm up at the shoulder, the load lying back over it
+## (the body's "raise" bake), so it never reads as a weapon held out (Dominic: a green sword).
+var carry_hold := ""
+
+
 func set_tool(lib, part_id: String) -> void:
 	if weapon == null or harnessed or weapon.part_id == part_id:
 		return
@@ -394,6 +399,7 @@ func set_tool(lib, part_id: String) -> void:
 		return
 	weapon.part_id = part_id
 	weapon.setup(p.shapes, weapon.colours)
+	carry_hold = "raise" if "shoulder" in p.tags else ""
 
 
 func flourish() -> void:
@@ -527,8 +533,9 @@ func _process(delta: float) -> void:
 		_work(t, stepped)
 	elif not walking:
 		_idle(delta)
-	if (job == "" or walking) and work_hold != "low":
-		set_hold("low")
+	var rest := carry_hold if carry_hold != "" else "low"
+	if (job == "" or walking) and work_hold != rest:
+		set_hold(rest)
 	_kneel(delta)
 	_apply_concept()
 	if stepped and art_px > 0.0:
@@ -654,6 +661,14 @@ func _work(t: float, stepped: bool) -> void:
 ## them, the sim only knows it's idle): sweep (a broom pushed side to side, head down), sit
 ## (legs out in front and down on the ground; four or more legs lie down; a hopper settles
 ## lower), chat (turned to a neighbour: nods, a tilt of the head, a hand lifted now and then).
+## How long the legs are (hip to foot, part units): how far a body comes down to sit or lie.
+func _leg_len() -> float:
+	var hip := 0.0
+	for leg in legs:
+		hip = maxf(hip, -leg.rest.y)
+	return hip
+
+
 ## Animals graze (a claimed sheep by its Town Center): head down to the grass, up to chew.
 const CHORES := ["sweep", "sit", "chat", "graze"]
 
@@ -680,15 +695,15 @@ func _chore(t: float, stepped: bool) -> void:
 				if head_node:
 					head_node.rotation = -0.15 if p < 0.5 else 0.1
 			elif legs.size() >= 4 or harnessed:
-				for leg in legs:   # lies down: legs folded under
+				for leg in legs:   # lies down: legs folded under, the body down on them
 					leg.node.scale.y = 0.45
-				bob.position.y += 4.0
+				bob.position.y += _leg_len() * 0.55
 				if head_node:
 					head_node.rotation = 0.25 if p > 0.6 else 0.0
 			else:
 				for leg in legs:   # sits on the ground, legs out in front
 					leg.node.rotation = -1.35 + 0.08 * leg.phase
-				bob.position.y += 6.0
+				bob.position.y += _leg_len() * 0.8
 				bob.rotation -= 0.08
 				if head_node:
 					head_node.rotation = -0.1 if p < 0.7 else 0.12
@@ -703,8 +718,8 @@ func _chore(t: float, stepped: bool) -> void:
 		"graze":
 			var down := p < 0.7
 			if head_node:
-				head_node.rotation = 0.7 if down else 0.05
-			bob.rotation += 0.05 if down else 0.0
+				head_node.rotation = 0.95 if down else 0.05
+			bob.rotation += 0.08 if down else 0.0
 
 
 ## A fused mount kneels to forage (C1): the front legs fold short with a small forward knee,
