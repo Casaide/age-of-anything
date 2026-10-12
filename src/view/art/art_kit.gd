@@ -334,6 +334,9 @@ func _building_jobs(races: Array) -> Array:
 	for t in d.menu.civilian + d.menu.military:
 		if not t in types:
 			types.append(t)
+	var rest: Array = d.buildings.keys().filter(func(t): return not t in types and d.buildings[t].get("status", "") != "planned")
+	rest.sort()
+	types.append_array(rest)   # built but in no menu: what research turns a building into (the Bastion)
 	var ids := []
 	for arch in archs:
 		for type in types:

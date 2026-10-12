@@ -719,12 +719,23 @@
   },
   {
    "id": "bastion",
-   "status": "planned",
    "name": "Bastion",
-   "desc": "Raise the towers in stone.",
+   "desc": "Raise the towers in stone: every Watchtower becomes a Bastion, with more health and a harder, longer shot.",
+   "cost": {
+    "food": 0,
+    "wood": 200,
+    "stone": 300
+   },
+   "time": 60,
    "building": "university",
    "age": 3,
-   "effect": "Watchtowers become Bastions: more HP and attack"
+   "effect": "Watchtowers become Bastions: more HP, attack and range",
+   "effects": [
+    {
+     "building": "watchtower",
+     "becomes": "bastion"
+    }
+   ]
   },
   {
    "id": "slit_windows",

@@ -27,6 +27,7 @@ const CombatFx := preload("res://src/view/combat_fx.gd")
 const Tech := preload("res://src/sim/tech.gd")
 const Market := preload("res://src/sim/market.gd")
 const Pens := preload("res://src/sim/pens.gd")
+const Garrison := preload("res://src/sim/garrison.gd")
 const RtsCamera := preload("res://src/view/rts_camera.gd")
 const CommandPanel := preload("res://src/view/command_panel.gd")
 const UiTheme := preload("res://src/view/ui/theme.gd")
@@ -135,6 +136,7 @@ var rviews := {}            # resource cell -> its prop (reed clump, bug bush)
 var res_cells := {}         # cell -> its prop variant: every cell that held a resource or changed (props come and go here)
 var ghosts := {}            # building id -> BuildingArt: enemy buildings gone out of sight, shown as last seen
 var selected := {}          # unit id -> true
+var sheltered := {}         # unit id -> true: went inside a building (garrison.gd); back out it isn't "trained"
 var selected_building := 0  # building id, or 0
 var selected_resource := -1 # a resource cell clicked to see what's left, or -1
 var active := 0             # the side you're commanding
@@ -1123,6 +1125,8 @@ func smart_order(pos: Vector2) -> void:
 			world.issue(p, Commands.DROP_OFF, {"ids": ids, "building": bid, "queue": q})   # take what they carry in
 		elif bid != 0 and map.pool[cell] >= 0 and world.buildings.owner[world.buildings.index_of(bid)] == p:
 			world.issue(p, Commands.RESEED, {"ids": ids, "building": bid})   # a fallow farm of ours
+		elif bid != 0 and _can_garrison(bid, p, ids):
+			world.issue(p, Commands.GARRISON, {"ids": ids, "building": bid, "queue": q})   # inside our Town Center or tower
 		else:
 			world.issue(p, Commands.MOVE, {"ids": ids, "x": m.x, "y": m.y, "queue": q})
 	flags.append({"pos": pos, "t": 1.0})
@@ -1201,6 +1205,15 @@ func _play_events() -> void:
 				var side_a := world.units.owner[i] if i >= 0 else -1
 				if side_a == active or _owner_of(e.to) == active:
 					battle_until = world.tick / float(World.TICK_HZ) + 8.0
+		elif e.type == "garrison" or e.type == "ungarrison":
+			var gb: BuildingArt = bviews.get(e.building)
+			if gb != null:
+				gb.door_pulse()   # the door opens for them
+			if e.type == "garrison":
+				sheltered[e.id] = true
+				selected.erase(e.id)
+		elif e.type == "upgraded" and e.player == active:
+			audio.play("built", -4.0)
 		elif e.type == "heal":
 			var healer: Node2D = views.get(e.by)
 			var patient: Node2D = views.get(e.to)
@@ -1281,7 +1294,9 @@ func _play_events() -> void:
 ## Where a shot or blow lands on a unit (its body) or a building (its middle).
 ## A watchtower's shot: an arrow from near its top, the target flashing when it lands.
 func _tower_shot(e: Dictionary, tower: BuildingArt, to: Vector2) -> void:
-	var lands := fx.shoot(tower.loose_at(), to, "arrow")
+	var k: int = e.get("arrow", 0)   # a volley (one arrow each for those inside): from along the top, landing round the target
+	var spread := Vector2(((k * 5) % 7 - 3) * 2.0, ((k * 3) % 5 - 2) * 1.5)
+	var lands := fx.shoot(tower.loose_at() + spread, to + spread * 0.5, "arrow")
 	var target: Node2D = views.get(e.to)
 	if target != null:
 		fx.flash(target, lands)
@@ -1301,6 +1316,16 @@ func _event_target_pos(id: int) -> Vector2:
 		var bs := world.buildings
 		return Iso.to_screen((bs.cx[b] + bs.sx[b] * 0.5) * 1000, (bs.cy[b] + bs.sy[b] * 0.5) * 1000) - Vector2(0, 20)
 	return land.target_pos(id)   # a map bridge, or nothing
+
+
+## Can any of these units of p's go inside building `bid` (p's, finished, with room)?
+func _can_garrison(bid: int, p: int, ids: Array) -> bool:
+	var b := world.buildings.index_of(bid)
+	if b < 0 or world.buildings.owner[b] != p or Garrison.room(world, b) <= 0:
+		return false
+	return ids.any(func(id):
+		var i := world.units.index_of(id)
+		return i >= 0 and Garrison.can_hold(world, b, i))
 
 
 ## What the first of these units carrying something building `bid` (p's, finished) takes in
@@ -1684,8 +1709,9 @@ func _sync_views() -> void:
 			view.queue_free()   # its type moved on (an age-up), or it changed hands (a claimed sheep)
 			view = null
 		if view == null:
-			if not views.has(id) and u.owner[i] == active and world.tick > 40:
-				audio.play("trained", -6.0)   # a new unit of yours (not one restyled by an age-up)
+			if not views.has(id) and u.owner[i] == active and world.tick > 40 and not sheltered.has(id):
+				audio.play("trained", -6.0)   # a new unit of yours (not one restyled by an age-up, nor one out of shelter)
+			sheltered.erase(id)
 			view = _make_view(u.kind[i], u.owner[i])
 			view.set_meta("version", int(world.types[u.kind[i]].get("version", 0)))
 			view.set_meta("owner", u.owner[i])
@@ -1865,6 +1891,7 @@ func _sync_buildings() -> void:
 			view.set_links(_links(b) if _shown_done(b) else 0)
 		if t.gate:
 			view.set_open(BuildingArt.gate_open(world, b))
+		view.set_garrison(bs.inside[b].size() if world.teams[bs.owner[b]] == world.teams[active] or reveal else 0)
 		if _shown_done(b) and not t.becomes.is_empty() and view.get_parent() == layer:
 			view.reparent(flat)   # a sown farm is walked across: it lies under the units
 	var built := PackedInt32Array([active, int(reveal)])
@@ -2432,6 +2459,8 @@ func _update_panel() -> void:
 				c.info = "Stands for %d:%02d more, and %s win." % [secs / 60, secs % 60, "you" if mine else world.races[owner].name]
 		if mine and bs.done[b] == 1 and (not t.becomes.is_empty() or t.id == "mill"):
 			_farm_buttons(c, b, t)
+		if bs.done[b] == 1 and t.garrison > 0:
+			_garrison_buttons(c, b, t, mine)
 		panel.show_content(c)
 		return
 	var mine: Array = _selected_by_owner()[active]
@@ -2444,7 +2473,7 @@ func _update_panel() -> void:
 		var herd: Array = mine.filter(_is_animal)
 		var soldiers: int = mine.size() - herd.size() - _selected_workers().size()
 		if mine.size() == 1 and ft.worker:
-			c.info = ["Idle", "Gathering", "Carrying back", "Building"][u.task[first]]
+			c.info = ["Idle", "Gathering", "Carrying back", "Building", "Going inside"][u.task[first]]
 			if u.carry[first] > 0:
 				c.info += " (%d %s)" % [u.carry[first], world.resources[u.carry_kind[first] - 1]]
 		elif mine.size() == 1 and ft.has("animal"):
@@ -2491,14 +2520,17 @@ func _update_panel() -> void:
 						"tip": "[b]%s buildings[/b]\n%s" % [page[1], page[3]], "action": func(): build_page = pid})
 			else:
 				for id in build_menu[build_page]:
-					var t: Dictionary = world.btypes[Economy.btype_of(world, id)]
+					var bk := Economy.upgraded(world, active, Economy.btype_of(world, id))   # a Watchtower after the Bastion research: a Bastion
+					var t: Dictionary = world.btypes[bk]
 					if world.ages[active] < t.age:
 						continue
+					var why := Economy.why_not_build(world, active, bk)   # another Town Center: from age 3
 					var afford: bool = world.can_afford(active, t.cost)
 					var bid: String = id
-					c.buttons.append({"icon": kit.building_icon(_arch(active), id), "text": "Build %s (%s)" % [t.name, _cost_text(t.cost)],
-						"tip": _building_tip(t), "glyph": Icons.texture("glyph/" + id), "group": build_page.capitalize(),   # what it's for, the same in every culture
-						"key": t.hotkey, "cost": _cost_text(t.cost), "enabled": afford, "action": func(): start_placing(bid)})
+					c.buttons.append({"icon": kit.building_icon(_arch(active), t.id), "text": "Build %s (%s)" % [t.name, _cost_text(t.cost)] if why == "" else "%s: %s" % [t.name, why],
+						"tip": _building_tip(t) + ("" if why == "" else "\n[color=#e07060]%s %s[/color]" % [t.name.capitalize(), why]),
+						"glyph": Icons.texture("glyph/" + t.id), "group": build_page.capitalize(),   # what it's for, the same in every culture
+						"key": t.hotkey, "cost": _cost_text(t.cost), "enabled": afford and why == "", "action": func(): start_placing(bid)})
 				c.buttons.append({"icon": Icons.texture("back"), "text": "Back", "key": "Esc", "cost": "", "enabled": true, "group": " ",
 					"tip": "[b]Back[/b]\nTo the civilian and military pages.", "action": func(): build_page = ""})
 		if placing != "":
@@ -2527,6 +2559,30 @@ func _update_panel() -> void:
 		return
 	panel.show_content({"title": world.races[active].name, "team": team, "portrait": null,
 		"info": "Select units or a building." if vs_ai else "Select units or a building.  Tab switches side.  F6: let the bots play.", "buttons": [], "queue": null})
+
+
+## A building people shelter in (garrison.gd): how many are inside and what they add, and for
+## its owner Ungarrison; a Town Center also rings the call to arms, and sends them back to work.
+func _garrison_buttons(c: Dictionary, b: int, t: Dictionary, mine: bool) -> void:
+	var n: int = world.buildings.inside[b].size()
+	var arrows: int = t.arrows + n if not t.attack.is_empty() else 0
+	var line := "%d of %d inside" % [n, t.garrison]
+	if not t.attack.is_empty():
+		line += ": %d arrow%s a volley" % [arrows, "" if arrows == 1 else "s"] if arrows > 0 else ": it shoots once people are inside"
+	c.info = line + ("\n" + c.info if c.info != "" else "")
+	if not mine:
+		return
+	c.info += "\nRight-click it with units selected to send them in."
+	c.buttons.append({"icon": Icons.texture("ungarrison"), "text": "Ungarrison", "key": "", "cost": "", "enabled": n > 0, "group": "Orders",
+		"tip": "[b]Ungarrison[/b]\nEveryone inside comes out (to the rally point, if it has one).",
+		"action": func(): world.issue(active, Commands.UNGARRISON, {"building": selected_building})})
+	if t.id == "town_center":
+		c.buttons.append({"icon": Icons.texture("call_to_arms"), "text": "Call to arms", "key": "", "cost": "", "enabled": true, "group": "Orders",
+			"tip": "[b]Call to arms[/b]\nEvery worker within %d tiles runs into the nearest Town Center or tower with room, and shoots from it." % int(world.garrison_cfg.call_range),
+			"action": func(): world.issue(active, Commands.CALL_TO_ARMS, {"building": selected_building})})
+		c.buttons.append({"icon": Icons.texture("back_to_work"), "text": "Back to work", "key": "", "cost": "", "enabled": true, "group": "Orders",
+			"tip": "[b]Back to work[/b]\nEvery worker sheltering anywhere comes out and goes back to what it was gathering.",
+			"action": func(): world.issue(active, Commands.BACK_TO_WORK, {})})
 
 
 func _arch(player: int) -> String:
