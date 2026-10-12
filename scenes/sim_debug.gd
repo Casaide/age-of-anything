@@ -139,6 +139,8 @@ var show_flow := false
 var autoplay := false
 var army := false           # also spawn a test army per side (F7 toggles and restarts)
 var ai_level := "normal"    # easy, normal or hard (data/ai.json levels; picked in the lobby)
+var ai_levels: Array = []   # per player in a match against the AI: its level, "" for you (player 0); empty: every other player at ai_level
+var player_teams: Array = [] # per player: its team (allies share one); empty: everyone for themselves
 var vs_ai := false          # side 2 is played by the AI (set by the match setup screen)
 var banner: Label           # victory / defeat
 var pause_menu: Control     # Esc against the AI: resume, surrender, back to the menu
@@ -307,9 +309,9 @@ func start_live(race_prompts: Array) -> void:
 	map = SimMap.load_id(map_id)
 	var races := []
 	for k in race_prompts.size():
-		races.append(gen.generate(race_prompts[k], rules, rerolls[k]))
+		races.append(gen.generate(race_prompts[k], rules, rerolls[k] if k < rerolls.size() else 0))
 	await _bake(races)
-	_attach(World.new(SEED, map, races, rules))
+	_attach(World.new(SEED, map, races, rules, player_teams))
 	playback = {}
 	audio.music_age(world.ages[active])
 	audio.ambience(true)
@@ -494,9 +496,13 @@ func _set_autoplay(on: bool) -> void:
 	if not playback.is_empty():
 		clock.bots = []
 	elif on:
-		clock.bots = [Bot.new(0), Bot.new(1)]   # watch two AIs play
+		clock.bots = range(world.races.size()).map(func(p): return Bot.new(p))   # watch the AIs play
 	else:
-		clock.bots = [Bot.new(1, {}, ai_level)] if vs_ai else []
+		clock.bots = []
+		if vs_ai:   # a bot for every player but you, each at its own level
+			for p in range(1, world.races.size()):
+				var lv: String = ai_levels[p] if p < ai_levels.size() and ai_levels[p] != "" else ai_level
+				clock.bots.append(Bot.new(p, {}, lv))
 
 
 # ------------------------------------------------------------------ input
@@ -2028,6 +2034,7 @@ func _update_top_bar() -> void:
 	var ages: Array = world.tech.ages.filter(func(a): return int(a.age) == world.ages[active])
 	var age: Dictionary = ages[0] if not ages.is_empty() else {}
 	top_bar.show_idle(_idle_workers().size())
+	top_bar.show_workers(_gatherers(active))
 	top_bar.show_state(stock, world.pop[active], world.pop_cap[active], world.races[active].name, world.tick / World.TICK_HZ)
 	var next := ""
 	var frac := 0.0
@@ -2036,6 +2043,36 @@ func _update_top_bar() -> void:
 			next = Tech.next_age(world, active).get("name", "")
 			frac = float(world.buildings.train[b]) / float(Tech.head_ticks(world, b)) if Tech.head(world, b) == Tech.AGE_UP else 0.0   # 0 while it waits its turn
 	top_bar.show_age(world.ages[active], age.get("name", "Age %d" % world.ages[active]), next, frac)
+
+
+## Your workers on each resource, by what they do: {resource id: {verb: count}}. A worker
+## counts while it gathers or carries a load home, or chases game; by the ground it works
+## (a farm's field or paddy is farming, a carcass hunting, a bush foraging, reeds chopping,
+## stone and gold mining). View only.
+const WORK_VERBS := {"field": "farming", "paddy": "farming", "carcass": "hunting", "bugbush": "foraging", "reeds": "chopping",
+	"stone": "mining", "gold": "mining"}
+
+func _gatherers(p: int) -> Dictionary:
+	var out := {}
+	var u := world.units
+	for i in u.count():
+		if u.owner[i] != p or not world.types[u.kind[i]].worker:
+			continue
+		var res := ""
+		var verb := ""
+		if (u.task[i] == Economy.GATHER or u.task[i] == Economy.RETURN) and u.carry_kind[i] > 0:
+			res = world.resources[u.carry_kind[i] - 1]
+			var cell: int = u.home[i] if u.home[i] >= 0 else u.target[i]
+			verb = WORK_VERBS.get(map.terrain_at(cell), "gathering") if u.task[i] == Economy.GATHER or u.home[i] >= 0 else "gathering"
+		elif u.foe[i] != 0 and _owner_of(u.foe[i]) == world.gaia:
+			res = "food"
+			verb = "hunting"
+		if res == "":
+			continue
+		if not out.has(res):
+			out[res] = {}
+		out[res][verb] = int(out[res].get(verb, 0)) + 1
+	return out
 
 
 func _bar_text() -> String:

@@ -8,6 +8,8 @@ extends Control
 ## Start. The match runs in the game view with the AI on side 2 and comes back here when it ends.
 ## Each banner's "Tech tree" button opens that race's tech tree page (scenes/tech_tree.tscn).
 ## Everything has a fixed size, so nothing moves when a race or map changes (Dominic).
+## A map with more than two starts is a team game: a panel per player in two teams (you and an
+## AI ally against two AIs), each with its own dice, prompt and AI level, all rolled on entry.
 ## Run: godot --path . res://scenes/match_setup.tscn
 
 const DataLib := preload("res://src/data_lib.gd")
@@ -20,7 +22,8 @@ const UiScale := preload("res://src/view/ui_scale.gd")
 const UiTheme := preload("res://src/view/ui/theme.gd")
 const Mat := preload("res://src/view/ui/ui_materials.gd")
 
-const MAPS := ["reed_meadow", "reed_meadow_large", "flat_test"]   # real maps; choke_test is a movement test (sim_debug lists it)
+const NOT_MAPS := ["choke_test"]   # a movement test (sim_debug lists it)
+var MAPS := _maps()   # every map in data/maps: the real ones first (by name), the test maps last
 const LEVELS := ["Easy", "Normal", "Hard"]
 
 const BASE := 20                 # the lobby's body type in UI pixels (Dominic: "text is all too small")
@@ -30,7 +33,8 @@ const BANNER_H := 96
 const STAGE_H := 144
 const CARD_H := 72
 const NOTES_H := 70
-const MENU_STAGE_H := 230
+const MENU_STAGE_H := 270
+const MENU_ZOOM := 3.0           # the title screen's armies, bigger
 const STAGE_ZOOM := 2.0          # screen pixels per canvas unit on the preview stage
 const BAKE_AFTER := 0.6          # seconds of no typing before a prompt is re-baked
 const GRASS := Color("#4e6e2a")
@@ -47,8 +51,11 @@ var map_index := 0
 var map_name: Label
 var map_pic: TextureRect
 var map_note: Label
-var level_pick: OptionButton    # kept for the match (its selected index); shown as three buttons
+var map_data: Dictionary        # the map picked (its starts say how many players)
+var level_card: Control         # 1v1: how hard the AI plays (in a team game each AI panel has its own)
 var level_buttons: Array = []
+var left_col: VBoxContainer     # your team's panels
+var right_col: VBoxContainer    # the other team's
 var tree_page: Control          # the tech tree page, over everything while open
 var menu_layer: Node2D          # the title screen's hill, both armies on it
 var menu_stage: SubViewportContainer
@@ -68,10 +75,6 @@ func _ready() -> void:
 	add_child(kit)
 	theme = _theme("")
 	add_child(_backdrop())
-	level_pick = OptionButton.new()
-	for l in LEVELS:
-		level_pick.add_item(l)
-	level_pick.selected = 0
 	menu = _menu()
 	add_child(menu)
 	setup = _setup()
@@ -81,8 +84,6 @@ func _ready() -> void:
 	var audio := Audio.of(get_tree())
 	audio.ambience(false)
 	audio.music("lobby")
-	for i in sides.size():   # every side starts rolled (Dominic); the title screen shows the two armies
-		_roll(i)
 
 
 ## The lobby is a designed screen: laid out at DESIGN and scaled to fill the window; the UI-size
@@ -167,15 +168,13 @@ func _menu() -> Control:
 	vp.add_child(fade)
 	menu_layer = Node2D.new()
 	menu_layer.y_sort_enabled = true
-	menu_layer.scale = Vector2.ONE * STAGE_ZOOM
+	menu_layer.scale = Vector2.ONE * MENU_ZOOM
 	vp.add_child(menu_layer)
-	var shade := TextureRect.new()   # the hill's ends in the dark, so the armies stand in a pool of light
-	shade.texture = _side_shade()
-	shade.size = Vector2(4000, MENU_STAGE_H)
-	shade.stretch_mode = TextureRect.STRETCH_SCALE
-	shade.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	vp.add_child(shade)
-	menu_stage.resized.connect(func(): hill.size.x = menu_stage.size.x; fade.size.x = menu_stage.size.x; shade.size.x = menu_stage.size.x; _muster_menu())
+	var melt := ShaderMaterial.new()   # the hill melts into the table at its top and its ends: a pool of light, no edges
+	melt.shader = Shader.new()
+	melt.shader.code = "shader_type canvas_item;\nvoid fragment() {\n\tvec4 c = texture(TEXTURE, UV) * COLOR;\n\tc.a *= smoothstep(0.0, 0.3, UV.y) * smoothstep(0.0, 0.24, UV.x) * smoothstep(1.0, 0.76, UV.x);\n\tCOLOR = c;\n}\n"
+	menu_stage.material = melt
+	menu_stage.resized.connect(func(): hill.size.x = menu_stage.size.x; fade.size.x = menu_stage.size.x; _muster_menu())
 	root.add_child(menu_stage)
 
 	var centre := CenterContainer.new()
@@ -244,7 +243,7 @@ func _muster_menu() -> void:
 		return
 	for n in menu_layer.get_children():
 		n.queue_free()
-	var w: float = menu_stage.size.x / STAGE_ZOOM
+	var w: float = menu_stage.size.x / MENU_ZOOM
 	if w <= 0.0 or kit.icons.is_empty():
 		return
 	for i in sides.size():
@@ -258,9 +257,9 @@ func _muster_menu() -> void:
 			view.build(u.recipe, lib, s.team, u.eval.speed)
 			view.scale = Vector2.ONE * ArtKit.UNIT_SCALE
 			view.pose_steps = 8
-			view.art_px = ArtKit.ART_SCALE / STAGE_ZOOM
-			var x := w * (0.4 - 0.065 * k) if i == 0 else w * (0.6 + 0.065 * k)
-			view.position = Vector2(x, MENU_STAGE_H / STAGE_ZOOM * (0.62 if k % 2 == 0 else 0.78))
+			view.art_px = ArtKit.ART_SCALE / MENU_ZOOM
+			var x := w * (0.42 - 0.055 * k) if i == 0 else w * (0.58 + 0.055 * k)
+			view.position = Vector2(x, MENU_STAGE_H / MENU_ZOOM * (0.7 if k % 2 == 0 else 0.86))
 			view.face(1.0 if i == 0 else -1.0)
 			menu_layer.add_child(view)
 
@@ -302,10 +301,59 @@ func _setup() -> Control:
 	row.add_theme_constant_override("separation", 22)
 	row.size_flags_vertical = Control.SIZE_EXPAND_FILL
 	col.add_child(row)
-	row.add_child(_side_panel(0, "You"))
+	left_col = VBoxContainer.new()
+	left_col.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	left_col.add_theme_constant_override("separation", 30)   # room for the lower panel's crest
+	row.add_child(left_col)
 	row.add_child(_centre())
-	row.add_child(_side_panel(1, "The AI"))
+	right_col = VBoxContainer.new()
+	right_col.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	right_col.add_theme_constant_override("separation", 30)
+	row.add_child(right_col)
+	_set_map(0)   # the map says how many sides: their panels are made (and rolled) there
 	return root
+
+
+## Which team player i of n is on: the map's "teams" if it has them (lists of start indices),
+## else the first half against the second; 1v1 is each for themselves.
+func _team_of(i: int, n: int) -> int:
+	if map_data.has("teams"):
+		for t in map_data.teams.size():
+			if i in map_data.teams[t].map(func(v): return int(v)):
+				return t
+	return i if n <= 2 else (0 if i < n / 2 else 1)
+
+
+## A panel per player: your team on the left, the other on the right; compact when there are
+## more than two. What was typed, rolled and picked for a player carries over when the map
+## changes; new players are rolled.
+func _build_sides(n: int) -> void:
+	var keep := []
+	for s in sides:
+		keep.append({"text": s.field.text, "rolled": s.rolled, "reroll": s.reroll, "level": s.level})
+	for c in left_col.get_children() + right_col.get_children():
+		c.get_parent().remove_child(c)
+		c.queue_free()
+	sides.clear()
+	var compact := n > 2
+	for i in n:
+		var t := _team_of(i, n)
+		var who := "You" if i == 0 else ("Your ally (AI)" if t == _team_of(0, n) else "The AI")
+		var panel := _side_panel(i, who, compact)
+		sides[i].side_team = t
+		(left_col if t == _team_of(0, n) else right_col).add_child(panel)
+	for i in n:
+		if i < keep.size():
+			sides[i].field.text = keep[i].text
+			sides[i].rolled = keep[i].rolled
+			sides[i].reroll = keep[i].reroll
+			sides[i].level = keep[i].level
+			_regenerate(i)
+		else:
+			_roll(i)
+	level_card.visible = not compact
+	for k in level_buttons.size():
+		level_buttons[k].set_pressed_no_signal(n > 1 and k == sides[1].level)
 
 
 ## The middle: the cast "vs", the map card, the AI's level, and Start.
@@ -356,9 +404,9 @@ func _centre() -> Control:
 	map_note = UiTheme.label("", "Dim")
 	map_note.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	inner.add_child(map_note)
-	_set_map(0)
 	var level := PanelContainer.new()   # how hard the AI plays: three buttons, one lit
 	level.theme_type_variation = "Card"
+	level_card = level
 	col.add_child(level)
 	var lcol := VBoxContainer.new()
 	lcol.add_theme_constant_override("separation", 6)
@@ -374,10 +422,10 @@ func _centre() -> Control:
 		var b := UiTheme.button(LEVELS[k])
 		b.toggle_mode = true
 		b.button_group = group
-		b.button_pressed = k == level_pick.selected
+		b.button_pressed = k == 0
 		b.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 		b.custom_minimum_size.y = 46
-		b.toggled.connect(func(on): if on: level_pick.selected = k)
+		b.toggled.connect(func(on): if on and sides.size() > 1: sides[1].level = k)
 		lrow.add_child(b)
 		level_buttons.append(b)
 	var start := UiTheme.button("Start Battle", true)
@@ -396,12 +444,15 @@ func _centre() -> Control:
 
 
 ## One side's panel, in its race's culture: who it is and the tech tree, the race's banner,
-## its army on a lit stage, the dice and the prompt, the roster as cards, the notes.
-func _side_panel(i: int, who: String) -> Control:
+## its army on a lit stage, the dice and the prompt, the roster as cards, the notes. Compact (a
+## team game, two panels a column): a smaller banner and stage, the roster as portraits (their
+## names and costs on hover), the notes on the banner's hover, an AI's level in its top row.
+func _side_panel(i: int, who: String, compact := false) -> Control:
 	var team := Color(lib.palettes.teams[i])
 	var card := PanelContainer.new()
 	card.theme_type_variation = "CrestFrame"
 	card.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	card.size_flags_vertical = Control.SIZE_EXPAND_FILL   # two to a column share it; the stages take the slack
 	var col := VBoxContainer.new()
 	col.add_theme_constant_override("separation", 9)
 	card.add_child(col)
@@ -417,21 +468,32 @@ func _side_panel(i: int, who: String) -> Control:
 	whol.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	whol.size_flags_vertical = Control.SIZE_SHRINK_CENTER
 	top.add_child(whol)
+	if compact and i > 0:   # this AI's level, in its own panel
+		var group := ButtonGroup.new()
+		for k in LEVELS.size():
+			var lb := UiTheme.button(LEVELS[k])
+			lb.toggle_mode = true
+			lb.button_group = group
+			lb.button_pressed = k == 0
+			lb.add_theme_font_size_override("font_size", 15)
+			lb.custom_minimum_size = Vector2(0, 38)
+			lb.toggled.connect(func(on): if on: sides[i].level = k)
+			top.add_child(lb)
 	var tree_b := UiTheme.button("Tech tree")
 	tree_b.icon = Icons.texture("research")
 	tree_b.add_theme_constant_override("icon_max_width", 22)
-	tree_b.add_theme_font_size_override("font_size", 18)
+	tree_b.add_theme_font_size_override("font_size", 16 if compact else 18)
 	tree_b.tooltip_text = "Everything this race can build, train and research, and its bonuses"
 	tree_b.pressed.connect(func(): _open_tree(i))
 	top.add_child(tree_b)
 	col.add_child(top)
 	var banner := PanelContainer.new()
-	banner.custom_minimum_size.y = BANNER_H
+	banner.custom_minimum_size.y = 72 if compact else BANNER_H
 	var bcol := VBoxContainer.new()
 	bcol.add_theme_constant_override("separation", -2)
 	banner.add_child(bcol)
 	var name := UiTheme.label("", "Title")
-	name.add_theme_font_size_override("font_size", 42)
+	name.add_theme_font_size_override("font_size", 30 if compact else 42)
 	name.clip_text = true
 	name.text_overrun_behavior = TextServer.OVERRUN_TRIM_ELLIPSIS
 	bcol.add_child(name)
@@ -447,7 +509,7 @@ func _side_panel(i: int, who: String) -> Control:
 	well.size_flags_vertical = Control.SIZE_EXPAND_FILL   # the stage takes what the window spares
 	col.add_child(well)
 	var stage := SubViewportContainer.new()
-	stage.custom_minimum_size = Vector2(0, STAGE_H)
+	stage.custom_minimum_size = Vector2(0, 84 if compact else STAGE_H)
 	stage.size_flags_vertical = Control.SIZE_EXPAND_FILL
 	stage.stretch = true
 	var vp := SubViewport.new()
@@ -481,6 +543,7 @@ func _side_panel(i: int, who: String) -> Control:
 	status.size_flags_vertical = Control.SIZE_SHRINK_END
 	status.size_flags_horizontal = Control.SIZE_SHRINK_BEGIN
 	status.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	status.visible = not compact
 	well.add_child(status)
 	# The dice, then the prompt (Dominic: the dice is the main thing; every side starts rolled,
 	# the box starts empty, no menu of presets).
@@ -490,7 +553,7 @@ func _side_panel(i: int, who: String) -> Control:
 	var dice := Button.new()
 	dice.icon = Icons.texture("dice")
 	dice.expand_icon = true
-	dice.custom_minimum_size = Vector2(68, 68)
+	dice.custom_minimum_size = Vector2.ONE * (54 if compact else 68)
 	dice.focus_mode = Control.FOCUS_NONE
 	dice.tooltip_text = "Roll the dice: a new race (with words in the box, another roll of those words)"
 	dice.pressed.connect(func(): _roll(i))
@@ -498,18 +561,18 @@ func _side_panel(i: int, who: String) -> Control:
 	prompt.add_child(dice)
 	var field := LineEdit.new()
 	field.placeholder_text = "...or describe your race"
-	field.custom_minimum_size = Vector2(0, 68)
+	field.custom_minimum_size = Vector2(0, 54 if compact else 68)
 	field.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	field.alignment = HORIZONTAL_ALIGNMENT_CENTER
-	field.add_theme_font_size_override("font_size", 28)
+	field.add_theme_font_size_override("font_size", 22 if compact else 28)
 	field.text_changed.connect(func(_t): sides[i].reroll = 0; _regenerate(i))
 	field.text_submitted.connect(func(_t): _regenerate(i))   # Enter shows the race; only Start starts (Fable)
 	prompt.add_child(field)
 	var units := GridContainer.new()   # the roster as cards: portrait, name, role and cost
-	units.columns = 2
-	units.add_theme_constant_override("h_separation", 10)
+	units.columns = 6 if compact else 2
+	units.add_theme_constant_override("h_separation", 8 if compact else 10)
 	units.add_theme_constant_override("v_separation", 8)
-	units.custom_minimum_size.y = CARD_H * 3 + 16
+	units.custom_minimum_size.y = 54 if compact else CARD_H * 3 + 16
 	col.add_child(units)
 	var roster := RichTextLabel.new()   # the generator's notes
 	roster.bbcode_enabled = true
@@ -521,8 +584,10 @@ func _side_panel(i: int, who: String) -> Control:
 	roster.add_theme_constant_override("line_separation", -2)
 	roster.add_theme_color_override("default_color", Color("#e8d8a8"))
 	col.add_child(roster)
+	roster.visible = not compact
 	sides.append({"field": field, "dice": dice, "reroll": 0, "rolled": "", "race": {}, "name": name, "line": line, "roster": roster, "units": units,
-		"stage": stage, "vp": vp, "layer": layer, "status": status, "dirty_at": 0.0, "team": team, "panel": card, "banner": banner, "family": "?"})
+		"stage": stage, "vp": vp, "layer": layer, "status": status, "dirty_at": 0.0, "team": team, "panel": card, "banner": banner, "family": "?",
+		"level": 0, "side_team": i, "compact": compact})
 	return card
 
 
@@ -615,12 +680,13 @@ func _regenerate(i: int) -> void:
 		s.units.remove_child(n)
 		n.queue_free()
 	for u in race.units:
-		s.units.add_child(_unit_card(u))
+		s.units.add_child(_unit_chip(u) if s.compact else _unit_card(u))
 	var lines := []
 	for n in race.notes:
 		lines.append("[i]%s[/i]" % n)
 	s.roster.text = "\n".join(lines)
 	s.roster.tooltip_text = "\n".join(race.notes)
+	s.banner.tooltip_text = "\n".join(race.notes)
 	s.status.text = "  Mustering..."
 	s.dirty_at = Time.get_ticks_msec() / 1000.0
 
@@ -672,6 +738,29 @@ func _muster(i: int) -> void:
 	for k in mini(n, s.units.get_child_count()):
 		var pic: TextureRect = s.units.get_child(k).find_child("portrait", true, false)
 		pic.texture = kit.icons.get("%d:%s" % [side, units[k].recipe.slot])
+
+
+## A team game's roster entry: the portrait alone in a well; name, role and cost on hover.
+func _unit_chip(u: Dictionary) -> Control:
+	var well := PanelContainer.new()
+	well.add_theme_stylebox_override("panel", _stage_well())
+	well.custom_minimum_size = Vector2(54, 54)
+	var role: Dictionary = {}
+	for r in rules.roster:
+		if r.slot == u.recipe.slot:
+			role = r
+	var cost := []
+	for r in ["food", "wood", "stone", "gold"]:
+		if int(u.eval.cost.get(r, 0)) > 0:
+			cost.append("%d %s" % [int(u.eval.cost[r]), r])
+	well.tooltip_text = "%s (%s)\n%s\n%s" % [u.recipe.name, role.get("name", u.recipe.slot), ", ".join(cost), role.get("desc", "")]
+	var pic := TextureRect.new()
+	pic.name = "portrait"
+	pic.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+	pic.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
+	pic.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
+	well.add_child(pic)
+	return well
 
 
 ## A roster card: the unit's portrait in a well (filled in once the army is baked), its name,
@@ -768,11 +857,24 @@ func _open_tree(i: int) -> void:
 	tree_page.open(s.race, rules, lib, kit, side, s.team)
 
 
+static func _maps() -> Array:
+	var ids := []
+	for f in DirAccess.get_files_at("res://data/maps"):
+		if f.ends_with(".json") and not f.get_basename() in NOT_MAPS:
+			ids.append(f.get_basename())
+	ids.sort_custom(func(a, b): return a < b if a.contains("test") == b.contains("test") else b.contains("test"))
+	return ids
+
+
 func _set_map(k: int) -> void:
 	map_index = posmod(k, MAPS.size())
 	var m: Dictionary = DataLib.load_json("res://data/maps/%s.json" % MAPS[map_index])
+	map_data = m
+	if m.starts.size() != sides.size():
+		_build_sides(m.starts.size())
 	map_name.text = m.name
-	map_note.text = "%d x %d tiles  ·  %d players" % [int(m.width), int(m.height), m.starts.size()]
+	var n: int = m.starts.size()
+	map_note.text = "%d x %d tiles  ·  %s" % [int(m.width), int(m.height), "1 v 1" if n == 2 else "%d v %d" % [n / 2, n - n / 2]]
 	map_pic.texture = ImageTexture.create_from_image(_map_image(m))
 
 
@@ -802,11 +904,14 @@ func _map_image(m: Dictionary) -> Image:
 func _play() -> void:
 	Audio.of(get_tree()).play("ui_start")
 	var view = load("res://scenes/sim_debug.tscn").instantiate()
-	view.prompts = [_prompt(0), _prompt(1)]
-	view.rerolls = [sides[0].reroll, sides[1].reroll]
+	view.prompts = range(sides.size()).map(func(i): return _prompt(i))
+	view.rerolls = sides.map(func(s): return s.reroll)
+	view.player_teams = sides.map(func(s): return s.side_team)
+	view.ai_levels = sides.map(func(s): return LEVELS[s.level].to_lower())
+	view.ai_levels[0] = ""   # you
 	view.map_id = MAPS[map_index]
 	view.vs_ai = true
-	view.ai_level = ["easy", "normal", "hard"][level_pick.selected]
+	view.ai_level = view.ai_levels[1]
 	get_tree().root.add_child(view)
 	get_tree().current_scene = view
 	queue_free()
@@ -851,20 +956,7 @@ func _hill() -> Texture2D:
 	g.fill_from = Vector2(0.5, 0.0)
 	g.fill_to = Vector2(0.5, 1.0)
 	var grad := Gradient.new()
-	grad.offsets = PackedFloat32Array([0.0, 0.3, 0.55, 1.0])
-	grad.colors = PackedColorArray([Color(0.06, 0.04, 0.03, 1.0), Color(0.06, 0.04, 0.03, 0.55), Color(0, 0, 0, 0.05), Color(0, 0, 0, 0.5)])
-	g.gradient = grad
-	return g
-
-
-func _side_shade() -> Texture2D:
-	var g := GradientTexture2D.new()
-	g.width = 256
-	g.height = 8
-	g.fill_from = Vector2(0.0, 0.5)
-	g.fill_to = Vector2(1.0, 0.5)
-	var grad := Gradient.new()
-	grad.offsets = PackedFloat32Array([0.0, 0.25, 0.75, 1.0])
-	grad.colors = PackedColorArray([Color(0.05, 0.03, 0.02, 0.95), Color(0, 0, 0, 0), Color(0, 0, 0, 0), Color(0.05, 0.03, 0.02, 0.95)])
+	grad.offsets = PackedFloat32Array([0.0, 0.55, 1.0])
+	grad.colors = PackedColorArray([Color(0, 0, 0, 0.35), Color(0, 0, 0, 0.0), Color(0, 0, 0, 0.5)])
 	g.gradient = grad
 	return g

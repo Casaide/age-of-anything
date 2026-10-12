@@ -3,6 +3,8 @@ extends PanelContainer
 ## with your stock of each resource sunk in a plaque with its icon, your population against the
 ## cap (red when it's full), your race's name, the age badge, idle workers, the tech tree (F2)
 ## and the match clock. Resources come from data, so a new one shows up here by itself.
+## Under each stock, how many of your workers are on it (a small worker and a count; the
+## breakdown, farming / foraging / hunting..., on hover).
 
 const Icons := preload("res://src/view/art/icons.gd")
 const UiTheme := preload("res://src/view/ui/theme.gd")
@@ -13,6 +15,8 @@ signal idle_pressed
 signal tree_pressed
 
 var _values := {}    # key -> Label
+var _workers := {}   # resource id -> Label: how many work it
+var _plaques := {}   # resource id -> its plaque (the breakdown is its tooltip)
 var _idle: Button
 var _title: Label
 var _clock: Label
@@ -39,11 +43,32 @@ func setup(resource_ids: Array) -> void:
 		icon.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
 		icon.custom_minimum_size = Vector2(28, 28)
 		cell.add_child(icon)
+		var nums := VBoxContainer.new()
+		nums.add_theme_constant_override("separation", -4)
+		nums.size_flags_vertical = Control.SIZE_SHRINK_CENTER
+		cell.add_child(nums)
 		var value := UiTheme.label("", "Name")
 		value.add_theme_font_size_override("font_size", 20)
 		value.custom_minimum_size.x = 66 if id == "pop" else 50
-		cell.add_child(value)
+		nums.add_child(value)
 		_values[id] = value
+		if id != "pop":   # who's on it: a small worker and a count
+			var line := HBoxContainer.new()
+			line.add_theme_constant_override("separation", 3)
+			var who := TextureRect.new()
+			who.texture = Icons.texture("res_pop")
+			who.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+			who.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
+			who.custom_minimum_size = Vector2(14, 14)
+			who.modulate = Color(1, 1, 1, 0.85)
+			line.add_child(who)
+			var n := UiTheme.label("0", "Name")
+			n.add_theme_font_size_override("font_size", 15)
+			n.add_theme_color_override("font_color", Color("#d8c8a0"))
+			line.add_child(n)
+			nums.add_child(line)
+			_workers[id] = n
+			_plaques[id] = plaque
 		row.add_child(plaque)
 	_title = UiTheme.label("", "Heading")
 	_title.add_theme_font_size_override("font_size", 22)
@@ -126,6 +151,20 @@ func show_age(age: int, name: String, next: String, frac: float) -> void:
 		_age_name.text = "%s  ->  %s  %d%%" % [name, next, int(frac * 100.0)]
 		_age_name.add_theme_color_override("font_color", Color("#f6d77a"))
 		_age_bar.value = frac * 100.0
+
+
+## work: {resource id: {verb: count}} (e.g. food: {farming: 6, foraging: 2, hunting: 1}).
+func show_workers(work: Dictionary) -> void:
+	for id in _workers:
+		var jobs: Dictionary = work.get(id, {})
+		var total := 0
+		var parts := []
+		for verb in jobs:
+			total += int(jobs[verb])
+			parts.append("%d %s" % [jobs[verb], verb])
+		_workers[id].text = str(total)
+		_workers[id].modulate.a = 1.0 if total > 0 else 0.55
+		_plaques[id].tooltip_text = "%s: %s" % [String(id).capitalize(), ", ".join(parts) if total > 0 else "nobody on it"]
 
 
 func show_idle(n: int) -> void:
