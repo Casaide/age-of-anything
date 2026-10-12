@@ -146,6 +146,45 @@ Ages are when it opens. Effects use the forms `tech.json` already has (`tag/stat
 | Castle | culture research | 3 | from the culture (see bonuses) | planned |
 | Castle | War Drums | 3 | military trains 30% faster | planned |
 
+### Postponed: age 4 and the Temple (Dominic, 2026-10-12)
+
+"Lose age 4, and the temple ... don't throw anything away, we may come back to age 4 later." The
+game has three ages and no Temple for now. Every cut entry is kept, exactly as it was, in
+`data/later/age4_and_temple.json` (nothing loads it); to bring them back, move the entries back
+into `data/tech.json`, `data/buildings.json` and `data/rules/*.json`. What was cut or moved:
+
+- **Age 4 "Shiny Age"** (needed a Castle, or two age-3 buildings) and each line's fourth step;
+  an age-4 kit tier per culture.
+- **Fourth steps of tracks:** Water Wheels (mill), Felling Wedges (lumber), Deep Shafts (mining),
+  Iron Edges, Iron Heads, Plate Shells, Ring Jacks, Iron Barding (armoury), Merchant Halls
+  (market), Deep Foundations and Citadel Tower (university), the unique unit's elite step.
+- **Moved to age 3:** Thick Walls, Siege Wrights, the culture's Castle research, War Drums, the
+  Wonder, the siege tower and the great sling.
+- **The Temple:** the building, mystics (healing and conversion; the healer at the Town Center
+  takes the healing role), and its research: Soothing Songs, Long Sermons, Stubborn Hearts,
+  Pilgrim Sandals, Patient Faith, Deep Faith.
+
+The rows as they stood in the tables above:
+
+| Where | Item | Age | Effect / does | Status then |
+|---|---|---|---|---|
+| 4 | Shiny Age (working name) | a Castle, or two age-3 buildings (University, Temple, Siege Workshop) | planned |
+| Temple | 3 | mystics and their research | planned |
+| Temple | Mystic (`mystic`) | 3-4 | heals; converts large units and beasts / scouts, raiders | planned | **gap**: staff, robes |
+| Mill | Water Wheels | 4 | food +15% | planned |
+| Lumber Camp | Felling Wedges | 4 | wood +15% | planned |
+| Mining Camp | Deep Shafts | 4 | stone, gold +15% | planned |
+| Market | Merchant Halls | 4 | trade fee lowest; carts +gold | planned |
+| University | Deep Foundations | 4 | buildings +10% HP, +1/+1 armour | planned |
+| University | Citadel Tower | 4 | Bastions become Citadel Towers | planned |
+| Castle | unique elite | 4 | the unique unit's age-4 step | planned |
+| Temple | Soothing Songs | 3 | mystics heal faster | planned |
+| Temple | Long Sermons | 3 | conversion +3 range | planned |
+| Temple | Stubborn Hearts | 3 | your units are harder to convert | planned |
+| Temple | Pilgrim Sandals | 3 | mystics +15% speed | planned |
+| Temple | Patient Faith | 4 | mystics recover faster | planned |
+| Temple | Deep Faith | 4 | mystics convert siege and buildings | planned |
+
 ### Race bonuses (moved to milestone 14, `m14-race-identity.md`)
 
 Today a race's bonuses are scattered: creature `economy` (rats cheap and quick, centaurs carry

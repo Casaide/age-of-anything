@@ -1,0 +1,251 @@
+{
+ "schema": "aow.later/1",
+ "_doc": "Postponed, not thrown away (Dominic, 2026-10-12: 'lose age 4, and the temple ... don't throw anything away, we may come back to age 4 later'). The exact entries as they stood in data/tech.json, data/buildings.json and data/rules/*.json on 2026-10-12, before the cut. Nothing loads this file; to bring age 4 or the Temple back, move these entries back into those files.",
+ "ages": [
+  {
+   "age": 4,
+   "status": "planned",
+   "name": "Shiny Age",
+   "desc": "Every unit line's fourth step (iron and plate), the Wonder, and the last research.",
+   "building": "town_center",
+   "requires": [
+    "castle"
+   ],
+   "requires_text": "a Castle, or two age-3 buildings (University, Temple, Siege Workshop)"
+  }
+ ],
+ "research": [
+  {
+   "id": "water_wheels",
+   "status": "planned",
+   "name": "Water Wheels",
+   "desc": "The river grinds the grain.",
+   "building": "mill",
+   "age": 4,
+   "effect": "Food gathered 15% faster"
+  },
+  {
+   "id": "felling_wedges",
+   "status": "planned",
+   "name": "Felling Wedges",
+   "desc": "Split the big trunks with wedges.",
+   "building": "lumber_camp",
+   "age": 4,
+   "effect": "Wood gathered 15% faster"
+  },
+  {
+   "id": "deep_shafts",
+   "status": "planned",
+   "name": "Deep Shafts",
+   "desc": "Dig deeper for the good seams.",
+   "building": "mining_camp",
+   "age": 4,
+   "effect": "Stone and gold gathered 15% faster"
+  },
+  {
+   "id": "iron_edges",
+   "status": "planned",
+   "name": "Iron Edges",
+   "desc": "Iron, hammered and honed.",
+   "building": "armoury",
+   "age": 4,
+   "effect": "Melee units +1 attack",
+   "after": "bronze_edges"
+  },
+  {
+   "id": "iron_heads",
+   "status": "planned",
+   "name": "Iron Heads",
+   "desc": "Iron heads punch through.",
+   "building": "armoury",
+   "age": 4,
+   "effect": "Ranged units +1 attack",
+   "after": "barbed_heads"
+  },
+  {
+   "id": "plate_shells",
+   "status": "planned",
+   "name": "Plate Shells",
+   "desc": "Plates over the chest and back.",
+   "building": "armoury",
+   "age": 4,
+   "effect": "Foot melee units +1 melee, +1 pierce armour",
+   "after": "ring_mail"
+  },
+  {
+   "id": "ring_jacks",
+   "status": "planned",
+   "name": "Ring Jacks",
+   "desc": "Leather sewn with rings.",
+   "building": "armoury",
+   "age": 4,
+   "effect": "Ranged units +1 melee, +1 pierce armour",
+   "after": "leather_jacks"
+  },
+  {
+   "id": "iron_barding",
+   "status": "planned",
+   "name": "Iron Barding",
+   "desc": "Iron for the mount.",
+   "building": "armoury",
+   "age": 4,
+   "effect": "Mounted units +1 melee, +1 pierce armour",
+   "after": "scale_barding"
+  },
+  {
+   "id": "merchant_halls",
+   "status": "planned",
+   "name": "Merchant Halls",
+   "desc": "A hall where the merchants meet.",
+   "building": "market",
+   "age": 4,
+   "effect": "Lowest trade fee; trade carts bring more gold",
+   "after": "haggling"
+  },
+  {
+   "id": "deep_foundations",
+   "status": "planned",
+   "name": "Deep Foundations",
+   "desc": "Dig down before building up.",
+   "building": "university",
+   "age": 4,
+   "effect": "Buildings +10% HP, +1 melee, +1 pierce armour",
+   "after": "stonecutting"
+  },
+  {
+   "id": "citadel_tower",
+   "status": "planned",
+   "name": "Citadel Tower",
+   "desc": "The tallest towers.",
+   "building": "university",
+   "age": 4,
+   "effect": "Bastions become Citadel Towers",
+   "after": "bastion"
+  },
+  {
+   "id": "soothing_songs",
+   "status": "planned",
+   "name": "Soothing Songs",
+   "desc": "Songs that close wounds.",
+   "building": "temple",
+   "age": 3,
+   "effect": "Mystics heal faster"
+  },
+  {
+   "id": "long_sermons",
+   "status": "planned",
+   "name": "Long Sermons",
+   "desc": "They can be heard from further away.",
+   "building": "temple",
+   "age": 3,
+   "effect": "Conversion +3 range"
+  },
+  {
+   "id": "stubborn_hearts",
+   "status": "planned",
+   "name": "Stubborn Hearts",
+   "desc": "Your people don't listen to strangers.",
+   "building": "temple",
+   "age": 3,
+   "effect": "Your units are harder to convert"
+  },
+  {
+   "id": "pilgrim_sandals",
+   "status": "planned",
+   "name": "Pilgrim Sandals",
+   "desc": "Light shoes for long roads.",
+   "building": "temple",
+   "age": 3,
+   "effect": "Mystics +15% speed"
+  },
+  {
+   "id": "patient_faith",
+   "status": "planned",
+   "name": "Patient Faith",
+   "desc": "Rest between sermons.",
+   "building": "temple",
+   "age": 4,
+   "effect": "Mystics recover faster"
+  },
+  {
+   "id": "deep_faith",
+   "status": "planned",
+   "name": "Deep Faith",
+   "desc": "Even the stones listen.",
+   "building": "temple",
+   "age": 4,
+   "effect": "Mystics convert siege engines and buildings"
+  }
+ ],
+ "research_moved_to_age_3": {
+  "thick_walls": {
+   "was_age": 4
+  },
+  "siege_wrights": {
+   "was_age": 4
+  },
+  "culture_research": {
+   "was_age": 4
+  },
+  "war_drums": {
+   "was_age": 4
+  }
+ },
+ "buildings": {
+  "temple": {
+   "status": "planned",
+   "name": "Temple",
+   "desc": "Trains mystics, who heal and win enemies over, and researches their lore.",
+   "age": 3
+  },
+  "wonder_was_age": 4
+ },
+ "tree_had": [
+  "town_center",
+  "house",
+  "farm",
+  "mill",
+  "lumber_camp",
+  "mining_camp",
+  "barracks",
+  "outpost",
+  "palisade",
+  "palisade_gate",
+  "archery_range",
+  "stable",
+  "armoury",
+  "market",
+  "watchtower",
+  "wall",
+  "stone_gate",
+  "siege_workshop",
+  "university",
+  "temple",
+  "castle",
+  "wonder"
+ ],
+ "roster": [
+  {
+   "slot": "mystic",
+   "role": "mystic",
+   "tier": 3,
+   "name": "Mystic",
+   "building": "temple",
+   "desc": "Heals; wins large units and beasts over; weak to scouts and raiders",
+   "status": "planned"
+  }
+ ],
+ "roster_moved_to_age_3": {
+  "siege_tower": {
+   "was_tier": 4
+  },
+  "great_sling": {
+   "was_tier": 4
+  }
+ },
+ "line_descs_before": {
+  "raider": "Beats siege, archers and mystics; weak to infantry",
+  "scout": "Beats siege, archers and mystics, raids; weak to spears",
+  "war_beast": "Beats buildings and infantry; weak to spears and mystics"
+ }
+}
