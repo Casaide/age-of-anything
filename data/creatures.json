@@ -185,9 +185,13 @@
    "back": "wings.hummingbird"
   },
   "_parts_doc": "parts the creature always has as a mount (its own wings), priced like any part",
+  "not_ridden_by": [
+   "beetle",
+   "spider"
+  ],
+  "_not_ridden_by_doc": "creatures this mount never carries, even when asked (bugs on a hummingbird looked wrong, Dominic); they walk, with a note",
   "rider_scale": {
    "frog": 55,
-   "beetle": 80,
    "rat": 90
   },
   "_rider_scale_doc": "percent: riders of these creatures sit smaller on this mount (a frog dwarfed the hummingbird, Dominic)"
