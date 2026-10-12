@@ -1,7 +1,8 @@
 extends RefCounted
 ## Animals (data/animals.json): deer to hunt (they bolt when hurt), boar (they turn on whoever
 ## hurts them) and sheep to herd (they belong to the first player whose unit comes close, and
-## follow orders like units). Nobody owns them at first: their owner is the world's `gaia`,
+## follow orders like units; a claimed one walks to a pen by its owner's Town Center and stands
+## there grazing). Nobody owns them at first: their owner is the world's `gaia`,
 ## one past the last player, on a team of its own. A dead animal leaves a carcass where it
 ## fell, food to gather, and the hunters who brought it down start gathering it. Integers only.
 
@@ -36,6 +37,7 @@ static func add_types(w, d: Dictionary) -> void:
 		t.behaviour = a.behaviour
 		t.flee = int(a.get("flee_tiles", 0)) * SimMap.TILE
 		t.harmless = int(a.attack) == 0
+		t.min_damage = int(a.get("slaughter_damage", 0))   # every blow does at least this (a sheep is quick work)
 		w.types.append(t)
 
 
@@ -168,14 +170,32 @@ static func tick(w) -> void:
 				best_d = d
 				best = o
 		if best >= 0 and not guarded:
-			u.owner[i] = best
-			u.foe[i] = 0
-			_to_town_center(w, i)
+			_claim(w, i, best)
 
 
-## A newly claimed sheep walks to its new owner's nearest Town Center and waits beside it, so
-## it's killed where the food is wanted (Dominic). Spread round the centre by id.
-static func _to_town_center(w, i: int) -> void:
+## A herd animal changes hands: whatever it was doing for its old owner (a walk, a queued order)
+## is forgotten, and it walks to its new owner's pen by their Town Center and stays there. If
+## its new owner is already slaughtering it, it stands still for the knife instead.
+static func _claim(w, i: int, player: int) -> void:
+	var u = w.units
+	u.owner[i] = player
+	u.foe[i] = 0   # Combat.clear (combat.gd preloads this file)
+	u.stance[i] = 0
+	u.patient[i] = 0
+	Economy.clear_task(w, i)
+	u.orders[i] = []
+	u.moving[i] = 0
+	for j in u.count():
+		if u.foe[j] == u.id[i] and u.owner[j] == player:
+			return
+	var b := _nearest_town_center(w, i)
+	if b < 0:
+		return
+	var at := pen_slot(w, b, i)
+	w.order_move(i, at[0], at[1], 200, 0)
+
+
+static func _nearest_town_center(w, i: int) -> int:
 	var bs = w.buildings
 	var u = w.units
 	var best := -1
@@ -189,20 +209,79 @@ static func _to_town_center(w, i: int) -> void:
 		if d < best_d:
 			best_d = d
 			best = b
-	if best < 0:
-		return
-	var half: int = bs.sx[best] * SimMap.TILE / 2   # town centres are square
-	var cx: int = bs.cx[best] * SimMap.TILE + half
-	var cy: int = bs.cy[best] * SimMap.TILE + half
-	var k: int = (u.id[i] + w.tick / (3 * 20)) % 8   # one of eight spots just outside the footprint; another every 3 s if it can't get there
-	var dirs := [[1, 0], [1, 1], [0, 1], [-1, 1], [-1, 0], [-1, -1], [0, -1], [1, -1]]
-	var reach: int = half + SimMap.TILE * 3 / 2
-	w.order_move(i, cx + dirs[k][0] * reach, cy + dirs[k][1] * reach, 300, 0)
+	return best
 
 
-## Hurt this tick by `by` (a unit id): a deer bolts away from it.
+const PEN := 3                     # a pen is PEN x PEN tiles
+const PEN_GAP := 850               # milli-tiles between the sheep's places in the pen (a sheep is ~810 across)
+const DIRS := [[1, 1], [1, 0], [0, 1], [-1, 1], [1, -1], [-1, 0], [0, -1], [-1, -1]]
+
+## Town Center building b's pen: the centre [x, y] (milli-tiles) of a PEN x PEN patch of open
+## ground beside it, chosen once when its first sheep comes home (Dominic: claimed sheep gather
+## at one spot, so the town view can fence them in). The side away from the map's middle comes
+## first (the safe back yard), ties in DIRS order; the patch must be walkable, unbuilt and
+## free of resources, or the most open one is taken.
+static func pen_of(w, b: int) -> Array:
+	var bs = w.buildings
+	var id: int = bs.id[b]
+	if w.pens.has(id):
+		return w.pens[id]
+	var m = w.map
+	var tx: int = bs.cx[b] + bs.sx[b] / 2   # the centre tile (Town Centers are square, odd-sized)
+	var ty: int = bs.cy[b] + bs.sy[b] / 2
+	var off: int = bs.sx[b] / 2 + 2 + PEN / 2   # a tile of path between the walls and the pen
+	var mx: int = m.width / 2
+	var my: int = m.height / 2
+	var best := []
+	var best_score := -1
+	for k in DIRS.size():
+		var px: int = tx + DIRS[k][0] * off
+		var py: int = ty + DIRS[k][1] * off
+		var open := 0
+		for dy in range(-(PEN / 2), PEN / 2 + 1):
+			for dx in range(-(PEN / 2), PEN / 2 + 1):
+				var x: int = px + dx
+				var y: int = py + dy
+				if x >= 0 and y >= 0 and x < m.width and y < m.height:
+					var c: int = y * m.width + x
+					if m.walk[c] == 1 and m.occupied[c] == 0 and m.amount[c] == 0:
+						open += 1
+		var away: int = absi(px - mx) + absi(py - my)
+		var score: int = open * 10000 + away   # open ground first, then the back yard
+		if score > best_score:
+			best_score = score
+			best = [px * SimMap.TILE + SimMap.TILE / 2, py * SimMap.TILE + SimMap.TILE / 2]
+	w.pens[id] = best
+	return best
+
+
+## Where in Town Center b's pen herd animal i stands: the first of the pen's places (a 3 x 3
+## grid, then round again) no other herd animal of its owner is heading for or standing at.
+static func pen_slot(w, b: int, i: int) -> Array:
+	var pen := pen_of(w, b)
+	var u = w.units
+	var taken := {}
+	for j in u.count():
+		if j != i and u.owner[j] == u.owner[i] and w.types[u.kind[j]].get("behaviour", "") == "herd":
+			taken[[u.tx[j], u.ty[j]]] = true
+	var first := []
+	for n in 18:
+		var k: int = n % 9
+		var at := [pen[0] + (k % 3 - 1) * PEN_GAP + (n / 9) * PEN_GAP / 2, pen[1] + (k / 3 - 1) * PEN_GAP + (n / 9) * PEN_GAP / 2]
+		if first.is_empty():
+			first = at
+		if not taken.has(at):
+			return at
+	return first
+
+
+## Hurt this tick by `by` (a unit id): a deer bolts away from it; a sheep stands still.
 static func hurt(w, i: int, by: int) -> void:
 	var t: Dictionary = w.types[w.units.kind[i]]
+	if t.get("behaviour", "") == "herd":
+		w.units.moving[i] = 0
+		w.units.orders[i] = []
+		return
 	if t.get("behaviour", "") != "flee":
 		return
 	var a: int = w.units.index_of(by)

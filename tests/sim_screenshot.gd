@@ -55,6 +55,8 @@ func _initialize() -> void:
 	elif scene.begins_with("life"):
 		var look := Vector2(float(scene.get_slice(":", 2)), float(scene.get_slice(":", 3))) if scene.get_slice_count(":") > 3 else Vector2(-1.5, 2.5)
 		await _life(view, int(scene.get_slice(":", 1)), look)
+	elif scene.begins_with("sheep"):
+		await _sheep(view, scene.get_slice(":", 1))
 	elif scene == "tower":
 		await _tower(view)
 	elif scene.begins_with("wear"):
@@ -606,6 +608,44 @@ func _life(view, at_tick: int, look: Vector2) -> void:
 	view.camera.zoom = Vector2(3.0, 3.0)
 	view._on_zoom()
 	view.camera.look_at_point(Iso.to_screen(s[0] + look.x * 1000, s[1] + look.y * 1000))
+
+
+## "sheep[:card|:mixed]": a worker walks round side 0's sheep and claims them; they gather in
+## their pen by the Town Center, shot close up a while later. ":card" selects a sheep (its card
+## and orders), ":mixed" a sheep and a worker (Stop and Slaughter).
+func _sheep(view, what: String) -> void:
+	var w = view.world
+	var Commands = load("res://src/sim/commands.gd")
+	var s: Array = w.map.starts[0]
+	var worker := -1
+	var sheep := []
+	for i in w.units.count():
+		if worker < 0 and w.units.owner[i] == 0 and w.types[w.units.kind[i]].worker:
+			worker = w.units.id[i]
+		if w.types[w.units.kind[i]].get("animal", "") == "sheep" and absi(w.units.x[i] - s[0]) + absi(w.units.y[i] - s[1]) < 15000:
+			sheep.append(w.units.id[i])
+	for id in sheep:
+		var i: int = w.units.index_of(id)
+		w.issue(0, Commands.MOVE, {"ids": [worker], "x": w.units.x[i], "y": w.units.y[i], "queue": 1})
+	view.clock.speed = 16.0
+	while w.tick < 1800:
+		await process_frame
+	view.clock.speed = 1.0
+	var tc := -1
+	for b in w.buildings.count():
+		if tc < 0 and w.buildings.owner[b] == 0 and w.btypes[w.buildings.kind[b]].id == "town_center":
+			tc = b
+	var pen: Array = w.pens.get(w.buildings.id[tc], [s[0], s[1]])
+	view.selected_building = 0
+	if what == "card" or what == "mixed":
+		view.selected[sheep[0]] = true
+	if what == "mixed":
+		view.selected[worker] = true
+	for f in 40:   # the town view lays the pen a few times a second
+		await process_frame
+	view.camera.zoom = Vector2(3.0, 3.0)
+	view._on_zoom()
+	view.camera.look_at_point(Iso.to_screen((pen[0] + w.buildings.cx[tc] * 1000 + 1500) / 2, (pen[1] + w.buildings.cy[tc] * 1000 + 1500) / 2))
 
 
 func _opening(view, at_tick: int, zoom := 3.0) -> void:

@@ -91,6 +91,7 @@ var hashes: Array = []         # [[tick, hash]] every HASH_EVERY ticks
 var next_id := 1               # shared by units and buildings
 var gaia := -1                # the owner of wild animals: one past the last player, on a team of its own
 var claim_tiles := 4          # how close a player's unit must come to claim a herd animal (animals.json)
+var pens := {}                # Town Center id -> [x, y]: the middle of its sheep pen, chosen once (animals.gd)
 var next_group := 1
 var resources: Array = []      # resource ids in their fixed order (data/resources.json)
 var stock: Array = []          # per resource: PackedInt32Array per player
