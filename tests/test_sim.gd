@@ -624,6 +624,85 @@ func _test_one_farmer(races: Array) -> void:
 	check(on.call(ids[4], a), "one farmer: a worker waiting by a farm takes it when its farmer leaves")
 
 
+## Auto-reseed (Dominic, 2026-10-13): on by default, a worked-out farm is sown again at once
+## (for its reseed cost) and its farmer farms on; without the wood the farmer waits by it and it
+## reseeds when the wood comes in; with it off, the farmer moves to a free farm nearby. Never off
+## to other work. Every time, a farm_done event (the sound and the line).
+func _test_auto_reseed(races: Array) -> void:
+	var w := World.new(SEED, SimMap.load_id("flat_test"), races, rules_)
+	w.stock[1][0] = 1000
+	var s: Array = w.map.starts[0]
+	var ids := []
+	for i in w.units.count():
+		if w.units.owner[i] == 0:
+			ids.append(w.units.id[i])
+	var field: int = w.map.terrain_ids.find("field")
+	var fallow: int = w.map.terrain_ids.find("fallow")
+	var a: int = (s[1] / 1000 + 2) * w.map.width + s[0] / 1000 + 3
+	var fk: int = Economy.btype_of(w, "farm")
+	var b2 := -1
+	for d in [3, 4, 5, -3, -4, -5]:
+		for c in [a + d, a + d * w.map.width]:
+			if b2 < 0 and Economy.can_place(w, 0, fk, c % w.map.width, c / w.map.width):
+				b2 = c
+	w.issue(0, Commands.BUILD, {"ids": [ids[0]], "building": "farm", "cx": a % w.map.width, "cy": a / w.map.width})
+	while w.tick < 1600 and w.map.terrain[a] != field:
+		w.step()
+	check(w.auto_reseed[0] == 1, "auto-reseed: on by default")
+	var on := func(id: int, farm: int) -> bool:
+		var i := w.units.index_of(id)
+		var h: int = w.units.home[i]
+		return w.units.task[i] in [Economy.GATHER, Economy.RETURN] and h >= 0 and w.map.pool[h] == farm
+	var drain := func() -> Dictionary:   # nearly out; step until the farm_done event
+		w.map.amount[a] = 1
+		var t0 := w.tick
+		while w.tick < t0 + 600:
+			w.step()
+			for e in w.events:
+				if e.type == "farm_done":
+					return e
+		return {}
+	var wood: int = w.stock[1][0]
+	var e: Dictionary = drain.call()
+	check(not e.is_empty() and e.player == 0 and e.building == w.map.occupied[a], "auto-reseed: a farm worked out sends a farm_done event")
+	check(e.get("reseeded", false) and w.map.terrain[a] == field and w.map.left_at(a) > 0, "auto-reseed: the farm is sown again at once (%d food)" % w.map.left_at(a))
+	check(wood - w.stock[1][0] == w.btypes[fk].reseed[1], "auto-reseed: it costs the reseed (%d wood)" % (wood - w.stock[1][0]))
+	for t in 100:
+		w.step()
+	check(on.call(ids[0], a), "auto-reseed: the farmer farms on")
+	# No wood: it lies fallow and the farmer waits by it (bugs close by or not), then the wood comes in.
+	w.stock[1][0] = 0
+	e = drain.call()
+	check(not e.is_empty() and not e.reseeded and w.map.terrain[a] == fallow, "auto-reseed: without the wood it lies fallow")
+	for t in 300:
+		w.step()
+	var i0 := w.units.index_of(ids[0])
+	var near_farm: bool = absi(w.units.x[i0] / 1000 - a % w.map.width) <= 3 and absi(w.units.y[i0] / 1000 - a / w.map.width) <= 3
+	check(on.call(ids[0], a) and w.units.carry[i0] == 0 and near_farm, "auto-reseed: its farmer waits by it, not off to other work (at %d,%d)" % [w.units.x[i0] / 1000, w.units.y[i0] / 1000])
+	w.stock[1][0] = 100
+	for t in Economy.WAIT_TICKS + 2:
+		w.step()
+	check(w.map.terrain[a] == field and w.stock[1][0] == 100 - w.btypes[fk].reseed[1], "auto-reseed: with the wood in, it's sown again")
+	var food: int = w.stock[0][0]
+	for t in 600:
+		w.step()
+	check(on.call(ids[0], a) and w.stock[0][0] > food, "auto-reseed: ...and farmed (%d -> %d food)" % [food, w.stock[0][0]])
+	# Off, with a free farm nearby: the farmer moves over to it.
+	w.issue(0, Commands.BUILD, {"ids": [ids[1]], "building": "farm", "cx": b2 % w.map.width, "cy": b2 / w.map.width})
+	while w.tick < 6000 and w.map.terrain[b2] != field:
+		w.step()
+	w.issue(0, Commands.MOVE, {"ids": [ids[1]], "x": s[0] - 4000, "y": s[1]})
+	w.issue(0, Commands.AUTO_RESEED, {"on": 0})
+	for t in 12:
+		w.step()
+	check(w.auto_reseed[0] == 0, "auto-reseed: the player turns it off")
+	e = drain.call()
+	check(not e.is_empty() and not e.reseeded, "auto-reseed: off, the farm lies fallow")
+	for t in 200:
+		w.step()
+	check(on.call(ids[0], b2), "auto-reseed: off, its farmer takes the free farm nearby")
+
+
 ## A farm becomes a crop field its builder harvests; amphibians may farm the shallows
 ## (a rice paddy); other races can't build on water.
 func _test_farms(races: Array) -> void:
@@ -656,6 +735,9 @@ func _test_farms(races: Array) -> void:
 	check(cells.all(func(c): return w.map.walk[c] == 1), "farm: units can walk across it")
 	var farm_id: int = w.map.occupied[cells[0]]
 	check(farm_id != 0, "farm: the farm stays standing after it's sown")
+	w.issue(0, Commands.AUTO_RESEED, {"on": 0})   # by hand here; auto-reseed has its own test
+	for t in 12:
+		w.step()
 	w.map.amount[cells[0]] = 1   # nearly worked out
 	while w.tick < 6000 and w.map.left_at(cells[0]) > 0:
 		w.step()
@@ -668,6 +750,7 @@ func _test_farms(races: Array) -> void:
 	check(w.map.terrain[cells[0]] == field and w.map.left_at(cells[0]) > 0, "farm: reseeding brings the crops back")
 	check(w.stock[1][0] < wood_before, "farm: reseeding costs wood (%d -> %d)" % [wood_before, w.stock[1][0]])
 	_test_one_farmer(races)
+	_test_auto_reseed(races)
 	# Water: find a 2x2 of shallows.
 	var sh: int = w.map.terrain_ids.find("shallows")
 	var spot := Vector2i(-1, -1)
@@ -740,6 +823,7 @@ func _test_fog_memory(races: Array) -> void:
 		w.step()
 	check(w.fog[0][c] == Fog.EXPLORED, "fog memory: away again, the farm is under explored fog")
 	var seen_left: int = w.fog_left[0][c]
+	w.auto_reseed[1] = 0   # left fallow (auto-reseed would sow it again at once)
 	w.map.amount[c] = 1   # nearly worked out
 	while w.tick < 6000 and w.map.left_at(c) > 0:
 		w.step()
@@ -1440,6 +1524,7 @@ func _test_effects(races: Array) -> void:
 	var fw := World.new(SEED, SimMap.load_id("flat_test"), races, rules_)
 	fw.stock[1][0] = 1000
 	_give(fw, 0, "fallow_fields")
+	fw.auto_reseed[0] = 0   # reseeded by hand below
 	var farmer := -1
 	for i in fw.units.count():
 		if fw.units.owner[i] == 0:

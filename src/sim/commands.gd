@@ -26,7 +26,8 @@ const TRADE := "trade"             # {building: a market, resource: id, buy: 1 o
 const STOP := "stop"               # {ids}  drop everything: no move, no job, no fight, no queued orders
 const STANCE := "stance"           # {ids, stance: "aggressive" / "defensive" / "stand" / "passive"}  (combat.gd POSTURES)
 const DROP_OFF := "drop_off"       # {ids, building}  workers take what they carry there, then go back to gathering
-const TYPES := [MOVE, SPAWN, GATHER, BUILD, HELP_BUILD, TRAIN, CANCEL, RALLY, ATTACK, ATTACK_MOVE, AGE_UP, RESEARCH, SURRENDER, RESEED, TRADE, STOP, STANCE, DROP_OFF]
+const AUTO_RESEED := "auto_reseed" # {on: 1 or 0}  the player's setting: farms worked out reseed themselves (economy.gd)
+const TYPES := [MOVE, SPAWN, GATHER, BUILD, HELP_BUILD, TRAIN, CANCEL, RALLY, ATTACK, ATTACK_MOVE, AGE_UP, RESEARCH, SURRENDER, RESEED, TRADE, STOP, STANCE, DROP_OFF, AUTO_RESEED]
 ## Unit orders that can be queued: with args.queue = 1, a busy unit keeps the order for
 ## when it's done (shift-queuing); without it, the order replaces the unit's queue.
 const QUEUEABLE := [MOVE, GATHER, BUILD, HELP_BUILD, ATTACK, ATTACK_MOVE, DROP_OFF]
