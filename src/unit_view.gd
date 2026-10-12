@@ -62,6 +62,12 @@ var time := 0.0
 var phase := 0.0
 var walking := false
 var attack_t := 0.0
+var _attack_kind := "blow"   # "blow" (a melee lunge, T1) or "loose" (an archer's release, R1)
+var _thrusts := false         # the weapon is a spear: it thrusts instead of swinging
+var dying := false            # D-106: the view plays its own death (D3, by body shape)
+var die_t := 0.0
+var die_tip := 1.0
+var _die_offset := Vector2.ZERO
 var speed_px := 30.0
 var area := Rect2()
 var target := Vector2.ZERO
@@ -314,6 +320,7 @@ func _attach(lib, rig: Dictionary, slot: String, part_id: String, colours: Dicti
 		_hand_rest = node.position
 		weapon_rot = node.rotation
 		harnessed = rig.carry == "harness"
+		_thrusts = "spear" in p.tags or "lance" in p.tags
 	if slot == "back":
 		back_node = node
 
@@ -396,8 +403,27 @@ func set_tool(lib, part_id: String) -> void:
 	weapon.setup(p.shapes, weapon.colours)
 
 
+## A melee blow lands: the lunge (T1, D-106).
 func flourish() -> void:
 	attack_t = 0.35
+	_attack_kind = "blow"
+
+
+## A shot leaves: the archer snaps forward on the release (R1, D-106).
+func loose() -> void:
+	attack_t = 0.35
+	_attack_kind = "loose"
+
+
+## The unit has died: from now on the view plays its fall (D3, D-106) and nothing else;
+## tip is which way a topple goes where that's a free choice.
+func die(tip: float) -> void:
+	dying = true
+	die_t = 0.0
+	die_tip = tip
+	walking = false
+	job = ""
+	attack_t = 0.0
 
 
 ## Work poses (W1, D-105): the body is baked in three arm holds, "low" (its own, how it
@@ -514,29 +540,115 @@ func _process(delta: float) -> void:
 	if weapon:
 		weapon.position = weapon_rest
 		weapon.rotation = weapon_rot
-	if attack_t > 0.0:
+	if dying:
+		die_t += delta
+		_die_pose()
+	elif attack_t > 0.0:
 		attack_t -= delta
 		var a := 1.0 - maxf(attack_t, 0.0) / 0.35
 		if stepped:
 			a = floorf(a * 5.0) / 5.0
-		var k := sin(a * PI)
-		if weapon:
-			weapon.position = weapon_rest + Vector2(6.0 * k, -2.0 * k)
-			weapon.rotation = weapon_rot - 0.4 * k
+		_attack(a)
 	elif job != "" and not walking:
 		_work(t, stepped)
 	elif not walking:
 		_idle(delta)
-	if (job == "" or walking) and work_hold != "low":
+	if attack_t <= 0.0 and (job == "" or walking) and work_hold != "low":
 		set_hold("low")
 	_kneel(delta)
 	_apply_concept()
+	visual.position = _die_offset
 	if stepped and art_px > 0.0:
 		# Sit on whole art pixels: offset the drawing so its global position snaps.
 		var g := global_position
 		var px := 1.0 / art_px
 		var snapped := Vector2(roundf(g.x / px) * px, roundf(g.y / px) * px)
-		visual.position = (snapped - g) / maxf(global_transform.get_scale().x, 0.0001)
+		visual.position += (snapped - g) / maxf(global_transform.get_scale().x, 0.0001)
+
+
+## A blow (T1): the body lunges forward and the near leg steps; the arm swings through its
+## baked holds (wound up, then reaching into the blow), a spear thrusts, an armless creature
+## butts with its head. A release (R1): the archer snaps forward and the bow kicks, then settles.
+func _attack(a: float) -> void:
+	var k := sin(a * PI)
+	if _attack_kind == "loose":
+		bob.rotation += 0.12 * (1.0 - a)
+		bob.position.x += 3.0 * (1.0 - a)
+		if weapon:
+			weapon.rotation = weapon_rot + 0.2 * (1.0 - a)
+			weapon.position = weapon_rest + Vector2(2.0, 0.0) * (1.0 - a)
+		return
+	bob.position.x += 4.0 * k
+	bob.rotation += 0.14 * k
+	if legs.size() == 2:
+		legs[0].node.rotation += -0.5 * k
+		legs[1].node.rotation += 0.3 * k
+	elif legs.size() >= 4:
+		for leg in legs:
+			leg.node.rotation += (0.25 if leg.node.position.x > 0.0 else -0.2) * k
+	if harnessed:
+		if head_node:
+			head_node.rotation = 0.6 * k
+		return
+	if weapon == null:
+		return
+	if _thrusts:
+		set_hold("reach" if 0.35 < a and a < 0.85 else "low")
+		weapon.position = weapon_rest + Vector2(6.0, -0.5) * k
+		return
+	if a < 0.35:
+		set_hold("raise")
+		weapon.rotation = weapon_rot - 1.1 * (a / 0.35)
+	elif a < 0.8:
+		set_hold("reach")
+		weapon.rotation = weapon_rot + lerpf(-0.4, 0.9, (a - 0.35) / 0.45)
+	else:
+		set_hold("low")
+		weapon.rotation = weapon_rot + lerpf(0.9, 0.0, (a - 0.8) / 0.2)
+
+
+## The fall, by body shape (D3): a hopper gives one last hop and lands on its back; a flyer
+## drops to the ground, then topples; four or six legs fold and the body sinks (a rider slumps);
+## a biped topples backwards, away from the blow, and bounces once. The shadow stays put;
+## combat_fx fades the body and raises the dust.
+func _die_pose() -> void:
+	var t := die_t
+	_die_offset = Vector2.ZERO
+	if gait.get("hop", false):
+		var a := minf(t / 0.45, 1.0)
+		var h := _hip_height() + 8.0
+		visual.rotation = -PI * a
+		_die_offset = Vector2(0.0, -h * (1.0 - cos(PI * a)) * 0.5 - sin(a * PI) * 5.0)
+	elif flying:
+		var drop := minf(t / 0.3, 1.0)
+		bob.position.y = lerpf(bob.position.y, 0.0, drop)
+		var a := clampf((t - 0.3) / 0.35, 0.0, 1.0)
+		visual.rotation = die_tip * a * a * 1.45
+	elif legs.size() >= 4:
+		var a := minf(t / 0.4, 1.0)
+		var e := a * a * (3.0 - 2.0 * a)
+		for leg in legs:
+			leg.node.scale.y = 1.0 - 0.7 * e
+		bob.position.y += _hip_height() * 0.7 * e
+		bob.rotation += 0.3 * e
+		if head_node:
+			head_node.rotation = 0.6 * e
+		if seat_node:
+			seat_node.rotation = 0.7 * e
+	else:
+		var a := minf(t / 0.4, 1.0)
+		var e := 1.0 - (1.0 - a) * (1.0 - a)
+		visual.rotation = -1.45 * e + 0.12 * sin(clampf((t - 0.4) / 0.25, 0.0, 1.0) * PI)
+		if legs.size() == 2:
+			legs[0].node.rotation += -0.4 * e
+			legs[1].node.rotation += 0.2 * e
+
+
+func _hip_height() -> float:
+	var h := 6.0
+	for leg in legs:
+		h = maxf(h, -leg.rest.y)
+	return h
 
 
 ## A hop per cycle: push off (legs kick back), an arc through the air with the nose up then
