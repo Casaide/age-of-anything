@@ -138,6 +138,9 @@ func show_content(c: Dictionary) -> void:
 	_title.text = c.title
 	_team = c.team
 	_info.text = c.info
+	# How-to lines show on hover, so the text stays short and the panel one row tall.
+	_info.tooltip_text = c.get("hint", "")
+	_info.mouse_filter = Control.MOUSE_FILTER_PASS if _info.tooltip_text != "" else Control.MOUSE_FILTER_IGNORE
 	var hp: Array = c.get("hp", [])
 	_hp.get_parent().visible = not hp.is_empty()
 	if not hp.is_empty():
