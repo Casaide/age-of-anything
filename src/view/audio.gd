@@ -7,7 +7,8 @@ extends Node
 ##   limited per name so a big fight isn't a wall of noise; play_in() for one that lands later.
 ## - say(voice, kind): a creature's voice (select / ack / die), one at a time.
 ## - music(mix) and battle(on): the theme's stems, faded between mixes (by age, the lobby, off).
-## - ambience(on): the meadow loop under a match.
+## - ambience(on): the meadow loop under a match; town(level): the town's own sound on top,
+##   growing with it (two loops, quiet then busy, faded by a 0..1 level the match view sets).
 ## View side only; cosmetic randomness is fine here.
 
 const DataLib := preload("res://src/data_lib.gd")
@@ -33,6 +34,10 @@ var mix_name := "off"
 var battle_on := false
 var music_enabled := true
 var ambience_wanted := false
+var town_players: Array[AudioStreamPlayer] = []   # town_quiet, town_busy
+var town_db := [SILENT, SILENT]
+var town_want := [SILENT, SILENT]
+const TOWN_FADE_DB_S := 12.0
 
 
 ## The one audio node, made on first use. It joins the root a frame later (a scene's _ready
@@ -72,6 +77,16 @@ func _init() -> void:
 	meadow.loop_end = meadow.data.size() / 2
 	ambience_player.stream = meadow
 	add_child(ambience_player)
+	for n in ["town_quiet", "town_busy"]:
+		var loop: AudioStreamWAV = takes[n][0]
+		loop.loop_mode = AudioStreamWAV.LOOP_FORWARD
+		loop.loop_end = loop.data.size() / 2
+		var tp := AudioStreamPlayer.new()
+		tp.bus = "Ambience"
+		tp.stream = loop
+		tp.volume_db = SILENT
+		add_child(tp)
+		town_players.append(tp)
 	stems = AudioStreamSynchronized.new()
 	stem_names = cfg.music.stems
 	stems.stream_count = stem_names.size()
@@ -203,6 +218,30 @@ func ambience(on: bool) -> void:
 		ambience_player.play()
 	elif not on:
 		ambience_player.stop()
+		town(0.0)
+
+
+## The town's sound, 0 (none: no town, or the camera far from it) .. 1 (a big town, right
+## under the camera): the quiet loop comes in first, the busy one joins past the middle.
+func town(level: float) -> void:
+	var quiet := clampf(level * 2.5, 0.0, 1.0)
+	var busy := clampf((level - 0.4) / 0.6, 0.0, 1.0)
+	town_want = [linear_to_db(quiet) + 4.0 if quiet > 0.01 else SILENT, linear_to_db(busy) + 4.0 if busy > 0.01 else SILENT]
+	if not ambience_wanted:
+		town_want = [SILENT, SILENT]
+
+
+func _fade_town(delta: float) -> void:
+	for k in town_players.size():
+		var p: AudioStreamPlayer = town_players[k]
+		if town_db[k] == town_want[k]:
+			continue
+		town_db[k] = move_toward(town_db[k], town_want[k], TOWN_FADE_DB_S * delta)
+		p.volume_db = town_db[k]
+		if town_db[k] > SILENT and not p.playing and is_inside_tree():
+			p.play(randf() * 20.0)   # each starts somewhere in its loop
+		elif town_db[k] <= SILENT and p.playing:
+			p.stop()
 
 
 func _retarget() -> void:
@@ -218,6 +257,7 @@ func _retarget() -> void:
 
 
 func _process(delta: float) -> void:
+	_fade_town(delta)
 	if not music_player.playing:
 		return
 	var step := (0.0 - SILENT) * delta / float(cfg.music.fade_s)

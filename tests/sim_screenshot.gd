@@ -11,6 +11,7 @@ extends SceneTree
 ## "pause" the pause menu; "end" / "defeat" the end screen.
 ## "loader[:<fraction>]": the match loader, with the bake cache off so it really bakes; shot once
 ## the bar passes that fraction (default 0.35).
+## "life:<tick>[:dx:dy]": living towns (idle workers at chores, a damaged house), see _life.
 ## Prefix any scene with "ai-" to see it as in a match against the AI.
 
 const Iso := preload("res://src/view/iso.gd")
@@ -51,8 +52,13 @@ func _initialize() -> void:
 	view.camera.set_process_unhandled_input(false)
 	if scene.begins_with("opening"):
 		await _opening(view, int(scene.get_slice(":", 1)), float(scene.get_slice(":", 2)) if scene.get_slice_count(":") > 2 else 3.0)
+	elif scene.begins_with("life"):
+		var look := Vector2(float(scene.get_slice(":", 2)), float(scene.get_slice(":", 3))) if scene.get_slice_count(":") > 3 else Vector2(-1.5, 2.5)
+		await _life(view, int(scene.get_slice(":", 1)), look)
 	elif scene == "tower":
 		await _tower(view)
+	elif scene.begins_with("wear"):
+		await _wear(view, int(scene.get_slice(":", 1)))
 	elif scene.begins_with("town"):
 		await _town(view, int(scene.get_slice(":", 1)))
 	elif scene.begins_with("ageup"):
@@ -529,6 +535,24 @@ func _town(view, side: int) -> void:
 	view.camera.look_at_point(Iso.to_screen(s[0] + 1000, s[1] + 1500))
 
 
+## Living towns: a side's town (as "town") with its house at a fifth of its hit points (burning)
+## and its barracks at a half (cracked); shot close.
+func _wear(view, side: int) -> void:
+	await _town(view, side)
+	view.reveal = side != 0   # the other side's town: lift the fog
+	var w = view.world
+	for b in w.buildings.count():
+		var t: Dictionary = w.btypes[w.buildings.kind[b]]
+		if w.buildings.owner[b] == side and t.id in ["house", "barracks"]:
+			w.buildings.hp[b] = t.hp * (20 if t.id == "house" else 55) / 100
+	for f in 200:
+		await process_frame
+	for f in 30:   # and someone at every door, so the doorways show lit
+		for v in view.bviews.values():
+			v.door_pulse()
+		await process_frame
+
+
 ## Side 1's town, and a few of side 0's spears by its Watchtower: shot once the tower's
 ## arrows are in the air.
 func _tower(view) -> void:
@@ -544,6 +568,44 @@ func _tower(view) -> void:
 	for f in 4:
 		await process_frame
 	view.camera.look_at_point(Iso.to_screen(s[0] + 4500, s[1] + 4500))
+
+
+## Living towns (milestone 17): both sides play their opening to the tick, then side 0 is left
+## alone: four of its workers walk to just south of the Town Center and stand idle (two by two,
+## so they chat, sit and sweep), one house is knocked to half and one building to a quarter (cracks,
+## then fire). Shot over side 0's town. "life:<tick>:<tile dx>:<tile dy>" moves the camera.
+func _life(view, at_tick: int, look: Vector2) -> void:
+	view._set_autoplay(true)
+	view.clock.speed = 16.0
+	while view.world.tick < at_tick - 40:
+		await process_frame
+	view.clock.speed = 1.0
+	view.clock.bots = [load("res://src/ai/bot.gd").new(1)]   # side 0 stops managing itself
+	var w = view.world
+	var Commands = load("res://src/sim/commands.gd")
+	var s: Array = w.map.starts[0]
+	var picked := []
+	for i in w.units.count():
+		if w.units.owner[i] == 0 and w.types[w.units.kind[i]].worker and w.units.carry[i] == 0 and picked.size() < 4:
+			picked.append(w.units.id[i])
+	for k in picked.size():
+		w.issue(0, Commands.MOVE, {"ids": [picked[k]], "x": s[0] - 3000 + (k / 2) * 3000 + (k % 2) * 900, "y": s[1] + 3200 + (k % 2) * 400})
+	var near := []   # side 0's buildings nearest its start, but the Town Center and farms
+	for b in w.buildings.count():
+		var t: Dictionary = w.btypes[w.buildings.kind[b]]
+		if w.buildings.owner[b] == 0 and w.buildings.done[b] == 1 and t.id != "town_center" and t.id != "farm":
+			near.append([absi(w.buildings.cx[b] * 1000 - s[0]) + absi(w.buildings.cy[b] * 1000 - s[1]), b])
+	near.sort()
+	for k in mini(2, near.size()):
+		var b: int = near[k][1]
+		w.buildings.hp[b] = w.btypes[w.buildings.kind[b]].hp * (55 if k == 0 else 20) / 100
+	var until: int = w.tick + 20 * 9
+	while w.tick < until:
+		await process_frame
+	view.selected_building = 0
+	view.camera.zoom = Vector2(3.0, 3.0)
+	view._on_zoom()
+	view.camera.look_at_point(Iso.to_screen(s[0] + look.x * 1000, s[1] + look.y * 1000))
 
 
 func _opening(view, at_tick: int, zoom := 3.0) -> void:

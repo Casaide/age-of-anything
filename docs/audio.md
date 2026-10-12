@@ -108,7 +108,12 @@ carries on from the lobby into the match. The match view (`scenes/sim_debug.gd`)
 - the creature's `select` and `ack` for your own units; a token click for buildings and rally;
 - trained, built, research, age-up, farm used up, under attack, victory, defeat;
 - the theme by your age, the battle layer when your units fight on screen (or the alarm sounds),
-  the meadow ambience under the match.
+  the meadow ambience under the match;
+- the town's own sound on top (milestone 17): two 24-second loops, `town_quiet` and `town_busy`
+  (far-off talk that never makes words, a mallet on a frame, a log split, a broom, a bucket set
+  down, a door), faded by `audio.town(level)`. `src/view/town_life.gd` sets the level from your
+  town's size (finished buildings and workers) and how close the camera is to your Town Center:
+  the quiet loop comes in first, the busy one joins past the middle.
 
 ## Known gaps and next steps
 
