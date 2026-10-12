@@ -1,4 +1,4 @@
-# Milestone 16: Sieges
+# Milestone 16: Sieges (and the first game modes)
 
 **Status:** planned (proposed 2026-10-12; after milestone 13's siege engines)
 **Exit criterion:** a walled town can be held and taken: defenders on the walls, attackers with
@@ -10,6 +10,17 @@ Dominic (2026-10-12): "Right now [walls are] small... I always wished you could 
 have larger scale sieges. My gut says a large scale siege, Romans vs rats, will go down very well.
 We need a milestone focusing on siege mechanics, while keeping it simple and enjoyable." And: "we
 should consider the effect of the 3 ms sim budget, if we're tying our hands too much."
+
+## Game modes (Dominic, 2026-10-12: "sieges should be the first step into game modes")
+
+Sieges open the game modes, built on milestone 18's match rules contract:
+- **Fortress:** every side starts with a walled town already built (palisade or stone ring with
+  gatehouses and towers by its culture, a few defenders on the walls), more resources to spend on
+  siege; matches are about breaking in and holding out.
+- **Siege (attack/defend):** one side starts walled and stocked, the other with an army and siege
+  engines; win by taking the Town Center, or by holding until a timer runs out.
+- Each mode is data (start buildings and walls per map, rules), offered in the lobby, with the
+  bot able to play both roles.
 
 ## Mechanics (simple first)
 1. **Walls you stand on.** Stone walls get a walkway: ranged units ordered onto a wall stand on it
@@ -48,7 +59,8 @@ don't need.
 5. Defenders' tools; readability (outlines, damage states).
 6. The AI: defend walls (man the walkway, sally against rams), assault (bring rams and ladders,
    pick the weak side).
-7. A siege showcase map (a walled town to start in); balance; exit check.
+7. Game modes: Fortress and Siege (attack/defend) in the lobby, prebuilt walls per culture and
+   map; a siege showcase map; balance; exit check.
 
 ## Checklist
 - [ ] Plan approved by Dominic
@@ -58,7 +70,7 @@ don't need.
 - [ ] 4. Ladders, siege towers
 - [ ] 5. Defenders' tools, readability
 - [ ] 6. AI
-- [ ] 7. Showcase map, balance, exit check
+- [ ] 7. Game modes (Fortress, Siege), showcase map, balance, exit check
 - [ ] Archive: pictures taken along the way, journal, decisions, timeline
 
 ## Results
