@@ -2651,12 +2651,30 @@ func _garrison_buttons(c: Dictionary, b: int, t: Dictionary, mine: bool) -> void
 		"tip": "[b]Ungarrison[/b]\nEveryone inside comes out (to the rally point, if it has one).",
 		"action": func(): world.issue(active, Commands.UNGARRISON, {"building": selected_building})})
 	if t.id == "town_center":
-		c.buttons.append({"icon": Icons.texture("call_to_arms"), "text": "Call to arms", "key": "", "cost": "", "enabled": true, "group": "Orders",
-			"tip": "[b]Call to arms[/b]\nEvery worker within %d tiles runs into the nearest Town Center or tower with room, and shoots from it." % int(world.garrison_cfg.call_range),
-			"action": func(): world.issue(active, Commands.CALL_TO_ARMS, {"building": selected_building})})
-		c.buttons.append({"icon": Icons.texture("back_to_work"), "text": "Back to work", "key": "", "cost": "", "enabled": true, "group": "Orders",
-			"tip": "[b]Back to work[/b]\nEvery worker sheltering anywhere comes out and goes back to what it was gathering.",
-			"action": func(): world.issue(active, Commands.BACK_TO_WORK, {})})
+		# One bell, rung and unrung (Dominic): while workers shelter it shows rung, and a second
+		# press sends them back to what they were gathering.
+		var rung := _sheltering(active) > 0
+		c.buttons.append({"icon": Icons.texture("back_to_work" if rung else "call_to_arms"), "text": "Back to work" if rung else "Call to arms",
+			"key": "", "cost": "", "enabled": true, "group": "Orders", "accent": rung,
+			"tip": ("[b]Back to work[/b]\n%d workers are sheltering: they all come out and go back to what they were gathering." % _sheltering(active)) if rung
+				else "[b]Call to arms[/b]\nEvery worker within %d tiles runs into the nearest Town Center or tower with room, and shoots from it. Press again to send them back to work." % int(world.garrison_cfg.call_range),
+			"action": func(): world.issue(active, Commands.BACK_TO_WORK if _sheltering(active) > 0 else Commands.CALL_TO_ARMS, {"building": selected_building})})
+
+
+## How many of a player's workers are inside a building or on their way in.
+func _sheltering(player: int) -> int:
+	var n := 0
+	var u = world.units
+	for i in u.count():
+		if u.owner[i] == player and u.task[i] == Economy.GARRISON and world.types[u.kind[i]].worker:
+			n += 1
+	var bs = world.buildings
+	for b in bs.count():
+		if bs.owner[b] == player:
+			for rec in bs.inside[b]:
+				if world.types[rec[Garrison.REC_KIND]].worker:
+					n += 1
+	return n
 
 
 func _arch(player: int) -> String:
