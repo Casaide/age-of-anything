@@ -62,6 +62,16 @@ static func place(w, spawn: Dictionary) -> void:
 	# are 0, 2 against 1, 3), and each odd start gets the mirror image of its partner's animals.
 	var mirror: bool = m.symmetry == "rotate" and m.starts.size() % 2 == 0
 	var taken := {}
+	# "fixed": animals at given cells (a forest glade's deer, an island's sheep), nobody's; on a
+	# turned map each one gets its twin. Placed first, so the rings round the starts go round them.
+	for entry in spawn.get("fixed", []):
+		var k := type_of(w, entry.kind)
+		for xy in entry.cells:
+			var c: int = int(xy[1]) * m.width + int(xy[0])
+			for at in ([c, m.width * m.height - 1 - c] if m.symmetry == "rotate" else [c]):
+				if _open(w, at, taken):
+					taken[at] = true
+					_add(w, k, at)
 	var placed := []   # [kind, cell] for the last even start, for its mirror image
 	for p in mini(w.races.size(), m.starts.size()):
 		if mirror and p % 2 == 1:
