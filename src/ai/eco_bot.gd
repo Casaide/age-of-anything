@@ -329,11 +329,13 @@ func _farms(w, tc: int, workers: Array, n: PackedInt32Array) -> void:
 	var hx: int = bs.cx[tc] * 1000 + 1500
 	var hy: int = bs.cy[tc] * 1000 + 1500
 	var wild := 0
-	for c in w.map.resource_cells:
-		if w.map.pool[c] >= 0 or w.map.amount[c] <= 0 or Economy.kind_of(w, w.map.resource_at(c)) != food:
+	var m = w.map
+	var kinds := _terrain_kinds(w)
+	for c in m.resource_cells:
+		if m.pool[c] >= 0 or m.amount[c] <= 0 or kinds[m.terrain[c]] != food:
 			continue
-		if Fixed.dist2(hx, hy, (c % w.map.width) * 1000 + 500, (c / w.map.width) * 1000 + 500) <= FARM_RADIUS * FARM_RADIUS * 1000000:
-			wild += w.map.amount[c]
+		if Fixed.dist2(hx, hy, (c % m.width) * 1000 + 500, (c / m.width) * 1000 + 500) <= FARM_RADIUS * FARM_RADIUS * 1000000:
+			wild += m.amount[c]
 	for i in w.units.count():   # and the meat still walking about near home: our sheep, wild deer and boar
 		var t: Dictionary = w.types[w.units.kind[i]]
 		if t.has("animal") and (w.units.owner[i] == player or w.units.owner[i] == w.gaia) \
@@ -415,9 +417,7 @@ func _nearest_resource(w, x: int, y: int, kind: int, free := false, area := -1, 
 	if area < 0:
 		area = home
 	var m = w.map
-	var kinds := PackedInt32Array()   # carry kind per terrain index (0: none)
-	for t in m.terrain_ids.size():
-		kinds.append(w.resources.find(m.terrain_resource[t]) + 1)
+	var kinds := _terrain_kinds(w)
 	var amount: PackedInt32Array = m.amount
 	var terrain: PackedByteArray = m.terrain
 	var wd: int = m.width
@@ -436,6 +436,15 @@ func _nearest_resource(w, x: int, y: int, kind: int, free := false, area := -1, 
 		if any:
 			break
 	return best
+
+
+## The carry kind (1-based resource) each terrain index gives, 0 for none: Economy.kind_of of
+## SimMap.resource_at without the strings, for loops over every resource cell.
+func _terrain_kinds(w) -> PackedInt32Array:
+	var kinds := PackedInt32Array()
+	for t in w.map.terrain_ids.size():
+		kinds.append(w.resources.find(w.map.terrain_resource[t]) + 1)
+	return kinds
 
 
 ## A free size x size spot with a tile of space around it, spiralling out from (cx, cy).
