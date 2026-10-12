@@ -522,5 +522,6 @@ static func _apply(w, hurt: PackedInt32Array, hurt_by: PackedInt32Array, bhurt: 
 			w.events.append({"type": "die", "id": bs.id[b], "x": bs.cx[b] * SimMap.TILE + bs.sx[b] * SimMap.TILE / 2, "y": bs.cy[b] * SimMap.TILE + bs.sy[b] * SimMap.TILE / 2,
 				"owner": bs.owner[b], "kind": bs.kind[b], "building": true})
 			Economy.clear_farm(w, b)
+			Economy.Pens.gone(w, b)   # a pen's animals spill out
 			w.map.occupy(bs.footprint(b, w.map.width), 0)
 			bs.remove_at(b)

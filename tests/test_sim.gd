@@ -17,6 +17,7 @@ const Economy := preload("res://src/sim/economy.gd")
 const EcoBot := preload("res://src/ai/eco_bot.gd")
 const Combat := preload("res://src/sim/combat.gd")
 const Animals := preload("res://src/sim/animals.gd")
+const Pens := preload("res://src/sim/pens.gd")
 const Tech := preload("res://src/sim/tech.gd")
 const Fog := preload("res://src/sim/fog.gd")
 const Market := preload("res://src/sim/market.gd")
@@ -91,7 +92,8 @@ func _init() -> void:
 	_test_camp_gather(races)
 	_test_drop_off(races)
 	_test_animals(races)
-	_test_sheep_pen(races)
+	_test_sheep_spot(races)
+	_test_pen(races)
 	_test_bot_hunts(races)
 	_test_combat(gen)
 
@@ -852,7 +854,7 @@ func _test_animals(races: Array) -> void:
 ## Center and stops there for good, forgetting what its old owner told it; a sheep takes no
 ## fighting orders (no attack, no stance; an attack-move just walks it); a worker slaughters
 ## one in a few blows, a deer still takes a few more and a boar gets no such help.
-func _test_sheep_pen(races: Array) -> void:
+func _test_sheep_spot(races: Array) -> void:
 	var rules := rules_.duplicate(true)
 	rules.animals = true
 	var w := World.new(SEED, SimMap.load_id("flat_test"), races, rules)
@@ -875,7 +877,7 @@ func _test_sheep_pen(races: Array) -> void:
 	for b in w.buildings.count():
 		if tc < 0 and w.buildings.owner[b] == 0 and w.btypes[w.buildings.kind[b]].id == "town_center":
 			tc = b
-	var pen: Array = w.pens.get(w.buildings.id[tc], [])
+	var pen: Array = w.herd_spots.get(w.buildings.id[tc], [])
 	var penned := 0
 	var still := 0
 	var forgot := true
@@ -887,7 +889,7 @@ func _test_sheep_pen(races: Array) -> void:
 			still += 1
 		if si >= 0 and not w.units.orders[si].is_empty():
 			forgot = false
-	check(sheep.size() == 4 and penned == 4, "sheep: every claimed sheep gathers in one pen by the Town Center (%d of %d)" % [penned, sheep.size()])
+	check(sheep.size() == 4 and penned == 4, "sheep: with no pen, every claimed sheep gathers at one spot by the Town Center (%d of %d)" % [penned, sheep.size()])
 	check(still == 4 and forgot, "sheep: ... and stands there, its old owner's orders forgotten")
 	var bx: int = w.buildings.cx[tc] * 1000 + 1500
 	var by: int = w.buildings.cy[tc] * 1000 + 1500
@@ -934,9 +936,142 @@ func _test_sheep_pen(races: Array) -> void:
 	check(boar_t.min_damage == 0 and not boar_t.harmless, "sheep: a boar gets no slaughter rule and fights back")
 
 
-## The economy bot herds and hunts (Dominic: "bot should hunt too"): it claims and slaughters
-## its sheep early, hunts a deer that's near home and takes on a boar once it has workers to
-## spare; the hunters gather the meat.
+## Pens (Dominic, 2026-10-13: the long-term alternative to slaughter): claimed sheep go into
+## their owner's pen; penned ones add food with no worker (exactly pen.food per animal every
+## pen.food_every s, up to the cap), two or more breed up to the cap, a rival outside the pen
+## can't steal them but takes them once it's torn down, and Release walks them out.
+func _test_pen(races: Array) -> void:
+	var rules := rules_.duplicate(true)
+	rules.animals = true
+	var w := World.new(SEED, SimMap.load_id("flat_test"), races, rules)
+	var s0: Array = w.map.starts[0]
+	var tc := -1
+	for b in w.buildings.count():
+		if tc < 0 and w.buildings.owner[b] == 0:
+			tc = b
+	var k: int = Economy.btype_of(w, "pen")
+	var p: Dictionary = w.btypes[k].pen
+	var spot := _pen_spot(w, tc)
+	var pb := Economy.place(w, 0, k, spot.x, spot.y, 0)
+	w.buildings.done[pb] = 1
+	w.buildings.hp[pb] = w.btypes[k].hp
+	Pens.opened(w, pb)
+	var pen_id: int = w.buildings.id[pb]
+	var sheep := []
+	var worker := -1
+	for i in w.units.count():
+		if w.units.owner[i] == w.gaia and w.types[w.units.kind[i]].animal == "sheep" and absi(w.units.x[i] - s0[0]) + absi(w.units.y[i] - s0[1]) < 15000:
+			sheep.append(w.units.id[i])
+		if worker < 0 and w.units.owner[i] == 0 and w.types[w.units.kind[i]].worker:
+			worker = w.units.id[i]
+	for id in sheep:
+		var si := w.units.index_of(id)
+		w.issue(0, Commands.MOVE, {"ids": [worker], "x": w.units.x[si], "y": w.units.y[si], "queue": 1})
+	for t in 2400:
+		w.step()
+	pb = w.buildings.index_of(pen_id)
+	var penned := Pens.animals(w, pb, true).size()
+	check(penned == 4, "pen: claimed sheep walk into their owner's pen (%d of 4)" % penned)
+	# The trickle: exactly food per animal every food_ticks, with nobody gathering.
+	var food: int = w.resources.find("food")
+	var t0: int = w.tick
+	var before: int = w.stock[food][0]
+	for t in 1200:
+		w.step()
+	var want: int = 4 * int(p.food) * ((w.tick - 1) / int(p.food_ticks) - (t0 - 1) / int(p.food_ticks))
+	check(w.stock[food][0] - before == want, "pen: 4 penned sheep bring in %d food a minute (%d)" % [want, w.stock[food][0] - before])
+	# Breeding: by the next breeding beat there's a lamb.
+	while w.tick % int(p.breed_ticks) != 1:
+		w.step()
+	pb = w.buildings.index_of(pen_id)
+	check(Pens.animals(w, pb).size() == 5, "pen: two or more breed (%d now)" % Pens.animals(w, pb).size())
+	# The cap: more than it holds are there, but only the cap is paid for, and none are born.
+	for n in 6:
+		Pens._born(w, pb, Pens.animals(w, pb)[0])
+	for t in 600:
+		w.step()
+	pb = w.buildings.index_of(pen_id)
+	var inside: int = Pens.animals(w, pb, true).size()
+	t0 = w.tick
+	before = w.stock[food][0]
+	for t in int(p.food_ticks):
+		w.step()
+	check(inside > int(p.animals) and w.stock[food][0] - before == int(p.animals) * int(p.food) and not Pens.room(w, pb),
+		"pen: it pays for its cap (%d) and no more (%d inside, +%d food)" % [p.animals, inside, w.stock[food][0] - before])
+	# Release: they walk out and stand in front of it.
+	var w2 := World.new(SEED, SimMap.load_id("flat_test"), races, rules)
+	# (the rest on this world) A rival next to the pen, outside it, steals nothing while it stands...
+	for i in w.units.count():
+		if w.units.owner[i] == 0 and not w.types[w.units.kind[i]].has("animal"):
+			w.units.x[i] = 2000
+			w.units.y[i] = 2000
+			w.units.moving[i] = 0
+			w.units.task[i] = Economy.NONE
+	var c := Pens.centre(w, pb)
+	w.issue(1, Commands.SPAWN, {"slot": "spear", "count": 4, "x": c[0], "y": c[1] - 2600})
+	for t in 200:
+		w.step()
+	var theirs := func() -> int:
+		var n := 0
+		for i in w.units.count():
+			if w.units.owner[i] == 1 and w.types[w.units.kind[i]].get("animal", "") == "sheep":
+				n += 1
+		return n
+	check(theirs.call() == 0, "pen: a rival outside the pen steals nothing")
+	# ...but tear it down and the sheep spill out to them.
+	var spears := []
+	for i in w.units.count():
+		if w.units.owner[i] == 1 and w.types[w.units.kind[i]].slot == "spear":
+			spears.append(w.units.id[i])
+	w.issue(1, Commands.ATTACK, {"ids": spears, "target": pen_id})
+	for t in 3000:
+		w.step()
+		if w.buildings.index_of(pen_id) < 0 and theirs.call() > 0:
+			break
+	check(w.buildings.index_of(pen_id) < 0 and theirs.call() > 0, "pen: torn down, its sheep are stolen (%d)" % theirs.call())
+	check(w.map.walk_over[w.map.cell_of(c[0], c[1])] == 0, "pen: torn down, its ground is plain again")
+	# Release on a fresh world: a pen, a sheep in it, then Release: it walks out.
+	var tc2 := -1
+	for b in w2.buildings.count():
+		if tc2 < 0 and w2.buildings.owner[b] == 0:
+			tc2 = b
+	var spot2 := _pen_spot(w2, tc2)
+	var pb2 := Economy.place(w2, 0, k, spot2.x, spot2.y, 0)
+	w2.buildings.done[pb2] = 1
+	Pens.opened(w2, pb2)
+	var one := -1
+	for i in w2.units.count():
+		if one < 0 and w2.units.owner[i] == w2.gaia and w2.types[w2.units.kind[i]].get("animal", "") == "sheep":
+			one = w2.units.id[i]
+			w2.units.owner[i] = 0
+	w2.issue(0, Commands.PEN, {"ids": [one], "building": w2.buildings.id[pb2]})
+	for t in 1600:
+		w2.step()
+	var in_before := Pens.animals(w2, w2.buildings.index_of(w2.buildings.id[pb2]), true).size()
+	w2.issue(0, Commands.RELEASE, {"building": w2.buildings.id[pb2]})
+	for t in 600:
+		w2.step()
+	check(in_before == 1 and Pens.animals(w2, pb2, true).is_empty() and Pens.pen_at(w2, w2.units.index_of(one)) < 0,
+		"pen: Release walks its animals out (%d in, then %d)" % [in_before, Pens.animals(w2, pb2, true).size()])
+
+
+## Somewhere a pen may go near Town Center building tc: the first open 3 x 3 (with a tile of
+## room round it) west of it, then further out.
+func _pen_spot(w, tc: int) -> Vector2i:
+	var cx: int = w.buildings.cx[tc]
+	var cy: int = w.buildings.cy[tc]
+	for r in range(5, 12):
+		for dy in range(-r, r + 1):
+			if w.map.can_build(cx - r - 1, cy + dy - 1, 5):
+				return Vector2i(cx - r, cy + dy)
+	assert(false, "no room for a pen")
+	return Vector2i(-1, -1)
+
+
+## The economy bot herds and hunts (Dominic: "bot should hunt too"): it claims its sheep and
+## pens them (a pen it builds for them; it keeps penned sheep rather than slaughter them), hunts
+## a deer that's near home and takes on a boar once it has workers to spare; the hunters gather
+## the meat.
 func _test_bot_hunts(races: Array) -> void:
 	var rules := rules_.duplicate(true)
 	rules.animals = true
@@ -968,11 +1103,16 @@ func _test_bot_hunts(races: Array) -> void:
 			var h: int = w.units.home[i]
 			if w.units.owner[i] == 0 and h >= 0 and w.map.terrain_ids[w.map.terrain[h]] == "carcass" and w.units.carry[i] > 0:
 				meat = maxi(meat, 1)
-	print("  bot hunting, first 7 minutes: %s, the last of each at %s" % [killed, when])
-	check(killed.get("sheep", 0) >= 3, "bot hunts: it claims and slaughters its sheep (%d)" % killed.get("sheep", 0))
+	var penned := 0
+	for b in w.buildings.count():
+		if w.buildings.owner[b] == 0 and Pens.is_pen(w, b) and w.buildings.done[b] == 1:
+			penned += Pens.animals(w, b, true).size()
+	print("  bot hunting, first 7 minutes: %s, the last of each at %s; %d sheep penned" % [killed, when, penned])
+	check(penned >= 2 and killed.get("sheep", 0) >= 1, "bot hunts: it slaughters its first sheep, then builds a pen and pens the rest (%d slaughtered, %d penned)" % [killed.get("sheep", 0), penned])
 	check(killed.get("deer", 0) >= 1, "bot hunts: ... a deer near home (%d)" % killed.get("deer", 0))
 	check(killed.get("boar", 0) >= 1, "bot hunts: ... and its boar, with a big party (%d)" % killed.get("boar", 0))
-	check(w.lost[0] <= 2, "bot hunts: ... losing no more than a couple of hunters to it (%d lost)" % w.lost[0])
+	# (three since pens: with no sheep to butcher the bot takes the boar on two minutes sooner, and one more hunter may fall)
+	check(w.lost[0] <= 3, "bot hunts: ... losing no more than a few hunters to it (%d lost)" % w.lost[0])
 	check(meat > 0, "bot hunts: its workers gather the carcasses")
 
 

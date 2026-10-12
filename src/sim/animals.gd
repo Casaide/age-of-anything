@@ -1,14 +1,15 @@
 extends RefCounted
 ## Animals (data/animals.json): deer to hunt (they bolt when hurt), boar (they turn on whoever
 ## hurts them) and sheep to herd (they belong to the first player whose unit comes close, and
-## follow orders like units; a claimed one walks to a pen by its owner's Town Center and stands
-## there grazing). Nobody owns them at first: their owner is the world's `gaia`,
+## follow orders like units; a claimed one walks into its owner's pen (pens.gd) if it has one
+## with room, else to a spot by their Town Center, and stands there grazing). Nobody owns them at first: their owner is the world's `gaia`,
 ## one past the last player, on a team of its own. A dead animal leaves a carcass where it
 ## fell, food to gather, and the hunters who brought it down start gathering it. Integers only.
 
 const SimMap := preload("res://src/sim/sim_map.gd")
 const Economy := preload("res://src/sim/economy.gd")
 const Flow := preload("res://src/sim/flow.gd")
+const Pens := preload("res://src/sim/pens.gd")
 
 const CLAIM_EVERY := 10    # ticks between checks for whose sheep is whose
 
@@ -139,10 +140,12 @@ static func _add(w, k: int, c: int) -> void:
 	w.next_id += 1
 
 
-## Each tick: a herd animal goes to the first player (in order) with a unit within claim
-## range while none of its owner's units are (unowned sheep: the nearest player's). So a rival
-## steals your sheep by walking up while yours aren't near, as in the genre.
+## Each tick: pens feed and breed (pens.gd); a herd animal goes to the first player (in order)
+## with a unit within claim range while none of its owner's units are (unowned sheep: the
+## nearest player's). So a rival steals your sheep by walking up while yours aren't near, as in
+## the genre; a penned one only by getting into the pen (or tearing it down).
 static func tick(w) -> void:
+	Pens.tick(w)
 	if w.tick % CLAIM_EVERY != 0:
 		return
 	var u = w.units
@@ -154,10 +157,13 @@ static func tick(w) -> void:
 		var best := -1
 		var best_d := reach * reach + 1
 		var guarded := false
+		var pen: int = Pens.pen_at(w, i) if owner != w.gaia else -1
 		for j in u.count():
 			var o: int = u.owner[j]
 			if o == w.gaia or w.types[u.kind[j]].has("animal"):
 				continue
+			if pen >= 0 and o != owner and not Pens.inside(w, pen, j):
+				continue   # penned: a rival must get into the pen
 			var dx: int = u.x[j] - u.x[i]
 			var dy: int = u.y[j] - u.y[i]
 			var d := dx * dx + dy * dy
@@ -174,8 +180,9 @@ static func tick(w) -> void:
 
 
 ## A herd animal changes hands: whatever it was doing for its old owner (a walk, a queued order)
-## is forgotten, and it walks to its new owner's pen by their Town Center and stays there. If
-## its new owner is already slaughtering it, it stands still for the knife instead.
+## is forgotten, and it walks into its new owner's nearest pen with room, else to a spot by their
+## Town Center, and stays there. If its new owner is already slaughtering it, it stands still
+## for the knife instead.
 static func _claim(w, i: int, player: int) -> void:
 	var u = w.units
 	u.owner[i] = player
@@ -188,10 +195,14 @@ static func _claim(w, i: int, player: int) -> void:
 	for j in u.count():
 		if u.foe[j] == u.id[i] and u.owner[j] == player:
 			return
+	var pen := Pens.nearest_with_room(w, player, u.x[i], u.y[i])
+	if pen >= 0:
+		Pens.send(w, i, pen)
+		return
 	var b := _nearest_town_center(w, i)
 	if b < 0:
 		return
-	var at := pen_slot(w, b, i)
+	var at := Pens.slot(w, herd_spot(w, b), i)
 	w.order_move(i, at[0], at[1], 200, 0)
 
 
@@ -212,20 +223,19 @@ static func _nearest_town_center(w, i: int) -> int:
 	return best
 
 
-const PEN := 3                     # a pen is PEN x PEN tiles
-const PEN_GAP := 850               # milli-tiles between the sheep's places in the pen (a sheep is ~810 across)
+const PEN := 3                     # a herd spot is PEN x PEN tiles
 const DIRS := [[1, 1], [1, 0], [0, 1], [-1, 1], [1, -1], [-1, 0], [0, -1], [-1, -1]]
 
-## Town Center building b's pen: the centre [x, y] (milli-tiles) of a PEN x PEN patch of open
-## ground beside it, chosen once when its first sheep comes home (Dominic: claimed sheep gather
-## at one spot, so the town view can fence them in). The side away from the map's middle comes
+## Town Center building b's herd spot: the centre [x, y] (milli-tiles) of a PEN x PEN patch of
+## open ground beside it, chosen once when its first sheep comes home with no pen to go to
+## (Dominic: claimed sheep gather at one spot and stop). The side away from the map's middle comes
 ## first (the safe back yard), ties in DIRS order; the patch must be walkable, unbuilt and
 ## free of resources, or the most open one is taken.
-static func pen_of(w, b: int) -> Array:
+static func herd_spot(w, b: int) -> Array:
 	var bs = w.buildings
 	var id: int = bs.id[b]
-	if w.pens.has(id):
-		return w.pens[id]
+	if w.herd_spots.has(id):
+		return w.herd_spots[id]
 	var m = w.map
 	var tx: int = bs.cx[b] + bs.sx[b] / 2   # the centre tile (Town Centers are square, odd-sized)
 	var ty: int = bs.cy[b] + bs.sy[b] / 2
@@ -251,28 +261,8 @@ static func pen_of(w, b: int) -> Array:
 		if score > best_score:
 			best_score = score
 			best = [px * SimMap.TILE + SimMap.TILE / 2, py * SimMap.TILE + SimMap.TILE / 2]
-	w.pens[id] = best
+	w.herd_spots[id] = best
 	return best
-
-
-## Where in Town Center b's pen herd animal i stands: the first of the pen's places (a 3 x 3
-## grid, then round again) no other herd animal of its owner is heading for or standing at.
-static func pen_slot(w, b: int, i: int) -> Array:
-	var pen := pen_of(w, b)
-	var u = w.units
-	var taken := {}
-	for j in u.count():
-		if j != i and u.owner[j] == u.owner[i] and w.types[u.kind[j]].get("behaviour", "") == "herd":
-			taken[[u.tx[j], u.ty[j]]] = true
-	var first := []
-	for n in 18:
-		var k: int = n % 9
-		var at := [pen[0] + (k % 3 - 1) * PEN_GAP + (n / 9) * PEN_GAP / 2, pen[1] + (k / 3 - 1) * PEN_GAP + (n / 9) * PEN_GAP / 2]
-		if first.is_empty():
-			first = at
-		if not taken.has(at):
-			return at
-	return first
 
 
 ## Hurt this tick by `by` (a unit id): a deer bolts away from it; a sheep stands still.

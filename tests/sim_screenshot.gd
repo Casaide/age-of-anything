@@ -56,7 +56,7 @@ func _initialize() -> void:
 		var look := Vector2(float(scene.get_slice(":", 2)), float(scene.get_slice(":", 3))) if scene.get_slice_count(":") > 3 else Vector2(-1.5, 2.5)
 		await _life(view, int(scene.get_slice(":", 1)), look)
 	elif scene.begins_with("sheep"):
-		await _sheep(view, scene.get_slice(":", 1))
+		await _sheep(view, scene.trim_prefix("sheep").trim_prefix(":"))
 	elif scene == "tower":
 		await _tower(view)
 	elif scene.begins_with("wear"):
@@ -610,7 +610,7 @@ func _life(view, at_tick: int, look: Vector2) -> void:
 	view.camera.look_at_point(Iso.to_screen(s[0] + look.x * 1000, s[1] + look.y * 1000))
 
 
-## "sheep[:card|:mixed]": a worker walks round side 0's sheep and claims them; they gather in
+## "sheep[:card|:mixed|:pen|:pen:card]": a worker walks round side 0's sheep and claims them; they gather in
 ## their pen by the Town Center, shot close up a while later. ":card" selects a sheep (its card
 ## and orders), ":mixed" a sheep and a worker (Stop and Slaughter).
 func _sheep(view, what: String) -> void:
@@ -624,6 +624,16 @@ func _sheep(view, what: String) -> void:
 			worker = w.units.id[i]
 		if w.types[w.units.kind[i]].get("animal", "") == "sheep" and absi(w.units.x[i] - s[0]) + absi(w.units.y[i] - s[1]) < 15000:
 			sheep.append(w.units.id[i])
+	var pen_id := 0
+	if what.begins_with("pen"):   # a pen of side 0's by its Town Center first: the sheep go in
+		var Economy = load("res://src/sim/economy.gd")
+		var k: int = Economy.btype_of(w, "pen")
+		var at: Array = load("res://src/sim/animals.gd").herd_spot(w, 0)   # the open patch by the Town Center
+		var pb: int = Economy.place(w, 0, k, at[0] / 1000 - 1, at[1] / 1000 - 1, 0)
+		w.buildings.done[pb] = 1
+		w.buildings.hp[pb] = w.btypes[k].hp
+		Economy.Pens.opened(w, pb)
+		pen_id = w.buildings.id[pb]
 	for id in sheep:
 		var i: int = w.units.index_of(id)
 		w.issue(0, Commands.MOVE, {"ids": [worker], "x": w.units.x[i], "y": w.units.y[i], "queue": 1})
@@ -635,13 +645,15 @@ func _sheep(view, what: String) -> void:
 	for b in w.buildings.count():
 		if tc < 0 and w.buildings.owner[b] == 0 and w.btypes[w.buildings.kind[b]].id == "town_center":
 			tc = b
-	var pen: Array = w.pens.get(w.buildings.id[tc], [s[0], s[1]])
-	view.selected_building = 0
+	var pen: Array = w.herd_spots.get(w.buildings.id[tc], [s[0], s[1]])
+	if pen_id != 0:
+		pen = load("res://src/sim/pens.gd").centre(w, w.buildings.index_of(pen_id))
+	view.selected_building = pen_id if what == "pen:card" else 0
 	if what == "card" or what == "mixed":
 		view.selected[sheep[0]] = true
 	if what == "mixed":
 		view.selected[worker] = true
-	for f in 40:   # the town view lays the pen a few times a second
+	for f in 40:
 		await process_frame
 	view.camera.zoom = Vector2(3.0, 3.0)
 	view._on_zoom()

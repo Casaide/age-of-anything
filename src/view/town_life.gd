@@ -40,7 +40,6 @@ var _pile_sprites := {}      # "bid:kind" -> Sprite2D
 var _born := {}              # house id -> match seconds it was first seen finished
 var _growth := {}            # "bid:yard" / "bid:garden" -> Sprite2D
 var _tethered := {}          # stable id -> [UnitView, post Sprite2D]
-var _pens := {}              # town centre id -> its pen's fence (Sprite2D per tile of fence)
 var puffs: Array = []        # [{p, t, v}] dust from builders' blows
 var critters: Array = []     # [{kind, home, p, v, t, air, state}]
 var _critter_towns := {}     # town centre id -> true once its critters are made
@@ -65,10 +64,6 @@ func reset() -> void:
 		for n in _tethered[k]:
 			n.queue_free()
 	_tethered.clear()
-	for k in _pens:
-		for n in _pens[k]:
-			n.queue_free()
-	_pens.clear()
 	_last.clear()
 	_idle_since.clear()
 	piles.clear()
@@ -93,7 +88,6 @@ func update(delta: float) -> void:
 	if frames % 15 == 0:   # houses age slowly: a few times a second is plenty
 		_sync_growth(w)
 		_sync_tethers(w)
-		_sync_pens(w)
 	_critters_update(w, delta)
 	spent_us += Time.get_ticks_usec() - t0
 	frames += 1
@@ -451,52 +445,6 @@ func _sync_tethers(w) -> void:
 			for n in _tethered[bid]:
 				n.queue_free()
 			_tethered.erase(bid)
-
-
-## A Town Center's sheep pen (the sim picks its spot when the first claimed sheep comes home,
-## animals.gd): a 3 x 3 tile fence a tile at a time, so the y-sort puts the back rails behind
-## the sheep and the front ones before them, with a gap for the gate on the side facing home.
-func _sync_pens(w) -> void:
-	var bs = w.buildings
-	for tid in w.pens:
-		var b: int = bs.index_of(tid)
-		var view = host.bviews.get(tid)
-		if b < 0 or view == null:
-			if _pens.has(tid):
-				for n in _pens[tid]:
-					n.queue_free()
-				_pens.erase(tid)
-			continue
-		if not _pens.has(tid):
-			var pen: Array = w.pens[tid]
-			var hx: int = bs.cx[b] * 1000 + bs.sx[b] * 500
-			var hy: int = bs.cy[b] * 1000 + bs.sy[b] * 500
-			var x0: int = pen[0] - 1500
-			var y0: int = pen[1] - 1500
-			var gate := ""   # the middle rail of the side that faces the Town Center
-			if pen[0] != hx:
-				gate = "x%d" % (x0 if pen[0] > hx else x0 + 3000)
-			else:
-				gate = "y%d" % (y0 if pen[1] > hy else y0 + 3000)
-			var rails := []
-			for k in 3:
-				var along := y0 + 500 + 1000 * k
-				for x in [x0, x0 + 3000]:   # the sides running along sim y
-					if k != 1 or gate != "x%d" % x:
-						rails.append([Vector2(x, along), 1])
-				var across := x0 + 500 + 1000 * k
-				for y in [y0, y0 + 3000]:   # the sides running along sim x
-					if k != 1 or gate != "y%d" % y:
-						rails.append([Vector2(across, y), 0])
-			var sprites := []
-			for r in rails:
-				var s: Sprite2D = host.kit.sprite("pen_rail%d" % r[1])
-				s.position = Iso.to_screen(int(r[0].x), int(r[0].y))
-				host.layer.add_child(s)
-				sprites.append(s)
-			_pens[tid] = sprites
-		for n in _pens[tid]:
-			n.visible = view.visible
 
 
 ## The mount a race's large unit rides, as a unit recipe of its own (no rider), or {} if the
