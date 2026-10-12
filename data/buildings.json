@@ -558,7 +558,7 @@
   },
   "siege_workshop": {
    "name": "Siege Workshop",
-   "desc": "A yard of timber frames where siege engines are built: rams, catapults, bolt throwers and siege towers. Siege engines come later; for now it stands ready.",
+   "desc": "A yard of timber frames where siege engines are built: rams for gates and walls, catapults for towers and crowds, bolt throwers for lines of soldiers.",
    "size": 3,
    "hp": 1300,
    "cost": {
@@ -569,15 +569,18 @@
    "pop": 0,
    "house": false,
    "drop_off": [],
-   "trains": [],
+   "trains": [
+    "ram",
+    "catapult",
+    "bolt_thrower"
+   ],
    "age": 3,
    "hotkey": "",
    "armour": {
     "melee": 1,
     "pierce": 7
    },
-   "note": "trains nothing yet: its engines are milestone 13 (the roster's siege lines name it as their building)",
-   "idle_note": "Siege engines come later."
+   "note": "trains the siege lines (milestone 13); the siege tower is milestone 16's"
   },
   "university": {
    "name": "University",

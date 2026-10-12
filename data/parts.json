@@ -285,7 +285,9 @@
   "slot": "body",
   "noun": "Spider",
   "points": 6,
-  "rider_loses": ["infantry"],
+  "rider_loses": [
+   "infantry"
+  ],
   "tags": [
    "arachnid",
    "venom",
@@ -555,7 +557,9 @@
   "noun": "Beetle",
   "points": 12,
   "price_points": 15,
-  "rider_loses": ["infantry"],
+  "rider_loses": [
+   "infantry"
+  ],
   "tags": [
    "insect",
    "armoured",
@@ -569,7 +573,8 @@
     "pierce": 3
    },
    "bonus": {
-    "ranged": 2
+    "ranged": 2,
+    "siege": 4
    }
   },
   "shapes": [
@@ -697,7 +702,9 @@
   "noun": "Capybara",
   "points": 10,
   "price_points": 13,
-  "rider_loses": ["infantry"],
+  "rider_loses": [
+   "infantry"
+  ],
   "tags": [
    "beast",
    "mount",
@@ -712,7 +719,8 @@
     "pierce": 2
    },
    "bonus": {
-    "ranged": 2
+    "ranged": 2,
+    "siege": 4
    }
   },
   "shapes": [
@@ -906,7 +914,9 @@
   "noun": "Hummingbird",
   "points": 9,
   "price_points": 12,
-  "rider_loses": ["infantry"],
+  "rider_loses": [
+   "infantry"
+  ],
   "tags": [
    "bird",
    "mount",
@@ -920,7 +930,8 @@
     "pierce": 2
    },
    "bonus": {
-    "ranged": 3
+    "ranged": 3,
+    "siege": 4
    }
   },
   "sockets": {
@@ -1174,7 +1185,9 @@
   "noun": "Pony",
   "points": 9,
   "price_points": 12,
-  "rider_loses": ["infantry"],
+  "rider_loses": [
+   "infantry"
+  ],
   "tags": [
    "beast",
    "mount",
@@ -1188,7 +1201,8 @@
     "pierce": 3
    },
    "bonus": {
-    "ranged": 3
+    "ranged": 3,
+    "siege": 4
    }
   },
   "shapes": [
@@ -1326,7 +1340,9 @@
   "slot": "body",
   "noun": "Pony",
   "points": 9,
-  "rider_loses": ["infantry"],
+  "rider_loses": [
+   "infantry"
+  ],
   "tags": [
    "beast",
    "mount",
@@ -1340,7 +1356,8 @@
     "pierce": 3
    },
    "bonus": {
-    "ranged": 3
+    "ranged": 3,
+    "siege": 4
    }
   },
   "shapes": [
@@ -7931,5 +7948,895 @@
   ],
   "note": "a bundle wrapped in big leaves, tied with a team cord",
   "favour": 5
+ },
+ {
+  "id": "siege.ram.timber",
+  "slot": "engine",
+  "noun": "Ram",
+  "points": 22,
+  "tags": [
+   "siege",
+   "large",
+   "machine"
+  ],
+  "stats": {
+   "hp": 160,
+   "speed": 8,
+   "armour": {
+    "melee": 0,
+    "pierce": 14
+   },
+   "radius": 420
+  },
+  "shapes": [
+   {
+    "t": "poly",
+    "p": [
+     [
+      -22,
+      -26
+     ],
+     [
+      22,
+      -26
+     ],
+     [
+      22,
+      0
+     ],
+     [
+      -22,
+      0
+     ]
+    ],
+    "ch": "wood"
+   }
+  ],
+  "cost_mix": {
+   "food": 0,
+   "wood": 70,
+   "gold": 30
+  },
+  "note": "a siege engine (milestone 13, D-119): the race's own workers crew it (UnitView draws the recipe's crew on the model's crew sockets); its weapon is an engine.* part; timber and iron, spoked wheels, a hem in the culture's cloth (every human culture, and the swamp folk who are not frogs)"
+ },
+ {
+  "id": "siege.ram.junk",
+  "slot": "engine",
+  "noun": "Ram",
+  "points": 22,
+  "tags": [
+   "siege",
+   "large",
+   "machine"
+  ],
+  "stats": {
+   "hp": 160,
+   "speed": 8,
+   "armour": {
+    "melee": 0,
+    "pierce": 14
+   },
+   "radius": 420
+  },
+  "shapes": [
+   {
+    "t": "poly",
+    "p": [
+     [
+      -22,
+      -26
+     ],
+     [
+      22,
+      -26
+     ],
+     [
+      22,
+      0
+     ],
+     [
+      -22,
+      0
+     ]
+    ],
+    "ch": "wood"
+   }
+  ],
+  "cost_mix": {
+   "food": 0,
+   "wood": 70,
+   "gold": 30
+  },
+  "note": "a siege engine (milestone 13, D-119): the race's own workers crew it (UnitView draws the recipe's crew on the model's crew sockets); its weapon is an engine.* part; the sewer's own junk at human scale (D-116): scrap timber, iron pipe, chains, rusted plate"
+ },
+ {
+  "id": "siege.ram.forest",
+  "slot": "engine",
+  "noun": "Ram Beetle",
+  "points": 22,
+  "tags": [
+   "siege",
+   "large",
+   "beast",
+   "insect"
+  ],
+  "stats": {
+   "hp": 230,
+   "speed": 9,
+   "armour": {
+    "melee": 2,
+    "pierce": 8
+   },
+   "radius": 420
+  },
+  "shapes": [
+   {
+    "t": "poly",
+    "p": [
+     [
+      -22,
+      -26
+     ],
+     [
+      22,
+      -26
+     ],
+     [
+      22,
+      0
+     ],
+     [
+      -22,
+      0
+     ]
+    ],
+    "ch": "wood"
+   }
+  ],
+  "cost_mix": {
+   "food": 40,
+   "wood": 30,
+   "gold": 30
+  },
+  "note": "the forest's ram (D-117, D-119): a giant rhinoceros beetle charging walls with its iron-capped horn, two riders on a howdah; alive, so it heals and costs food; priced by points like any engine"
+ },
+ {
+  "id": "siege.ram.spooky",
+  "slot": "engine",
+  "noun": "Ram",
+  "points": 22,
+  "tags": [
+   "siege",
+   "large",
+   "machine"
+  ],
+  "stats": {
+   "hp": 160,
+   "speed": 8,
+   "armour": {
+    "melee": 0,
+    "pierce": 14
+   },
+   "radius": 420
+  },
+  "shapes": [
+   {
+    "t": "poly",
+    "p": [
+     [
+      -22,
+      -26
+     ],
+     [
+      22,
+      -26
+     ],
+     [
+      22,
+      0
+     ],
+     [
+      -22,
+      0
+     ]
+    ],
+    "ch": "wood"
+   }
+  ],
+  "cost_mix": {
+   "food": 0,
+   "wood": 70,
+   "gold": 30
+  },
+  "note": "a siege engine (milestone 13, D-119): the race's own workers crew it (UnitView draws the recipe's crew on the model's crew sockets); its weapon is an engine.* part; dark wood and bone, a skull on the prow, silk strings"
+ },
+ {
+  "id": "siege.ram.frog",
+  "slot": "engine",
+  "noun": "Snapper",
+  "points": 22,
+  "tags": [
+   "siege",
+   "large",
+   "beast",
+   "reptile"
+  ],
+  "stats": {
+   "hp": 220,
+   "speed": 8,
+   "armour": {
+    "melee": 1,
+    "pierce": 12
+   },
+   "radius": 420
+  },
+  "shapes": [
+   {
+    "t": "poly",
+    "p": [
+     [
+      -22,
+      -26
+     ],
+     [
+      22,
+      -26
+     ],
+     [
+      22,
+      0
+     ],
+     [
+      -22,
+      0
+     ]
+    ],
+    "ch": "wood"
+   }
+  ],
+  "cost_mix": {
+   "food": 40,
+   "wood": 30,
+   "gold": 30
+  },
+  "note": "the frogs' ram (D-121, round 3's B, swamp beasts): a giant snapping turtle butting walls with a stone-studded clay casque, a frog riding in a basket on its shell and one walking; alive, so it heals and costs food"
+ },
+ {
+  "id": "siege.catapult.timber",
+  "slot": "engine",
+  "noun": "Catapult",
+  "points": 22,
+  "tags": [
+   "siege",
+   "large",
+   "machine"
+  ],
+  "stats": {
+   "hp": 70,
+   "speed": 8,
+   "armour": {
+    "melee": 0,
+    "pierce": 6
+   },
+   "radius": 420
+  },
+  "shapes": [
+   {
+    "t": "poly",
+    "p": [
+     [
+      -18,
+      -30
+     ],
+     [
+      18,
+      -30
+     ],
+     [
+      18,
+      0
+     ],
+     [
+      -18,
+      0
+     ]
+    ],
+    "ch": "wood"
+   }
+  ],
+  "cost_mix": {
+   "food": 0,
+   "wood": 70,
+   "gold": 30
+  },
+  "note": "a siege engine (milestone 13, D-119): the race's own workers crew it (UnitView draws the recipe's crew on the model's crew sockets); its weapon is an engine.* part; timber and iron, spoked wheels, a hem in the culture's cloth (every human culture, and the swamp folk who are not frogs)"
+ },
+ {
+  "id": "siege.catapult.junk",
+  "slot": "engine",
+  "noun": "Catapult",
+  "points": 22,
+  "tags": [
+   "siege",
+   "large",
+   "machine"
+  ],
+  "stats": {
+   "hp": 70,
+   "speed": 8,
+   "armour": {
+    "melee": 0,
+    "pierce": 6
+   },
+   "radius": 420
+  },
+  "shapes": [
+   {
+    "t": "poly",
+    "p": [
+     [
+      -18,
+      -30
+     ],
+     [
+      18,
+      -30
+     ],
+     [
+      18,
+      0
+     ],
+     [
+      -18,
+      0
+     ]
+    ],
+    "ch": "wood"
+   }
+  ],
+  "cost_mix": {
+   "food": 0,
+   "wood": 70,
+   "gold": 30
+  },
+  "note": "a siege engine (milestone 13, D-119): the race's own workers crew it (UnitView draws the recipe's crew on the model's crew sockets); its weapon is an engine.* part; the sewer's own junk at human scale (D-116): scrap timber, iron pipe, chains, rusted plate"
+ },
+ {
+  "id": "siege.catapult.forest",
+  "slot": "engine",
+  "noun": "Catapult",
+  "points": 22,
+  "tags": [
+   "siege",
+   "large",
+   "machine"
+  ],
+  "stats": {
+   "hp": 70,
+   "speed": 8,
+   "armour": {
+    "melee": 0,
+    "pierce": 6
+   },
+   "radius": 420
+  },
+  "shapes": [
+   {
+    "t": "poly",
+    "p": [
+     [
+      -18,
+      -30
+     ],
+     [
+      18,
+      -30
+     ],
+     [
+      18,
+      0
+     ],
+     [
+      -18,
+      0
+     ]
+    ],
+    "ch": "wood"
+   }
+  ],
+  "cost_mix": {
+   "food": 0,
+   "wood": 70,
+   "gold": 30
+  },
+  "note": "a siege engine (milestone 13, D-119): the race's own workers crew it (UnitView draws the recipe's crew on the model's crew sockets); its weapon is an engine.* part; bark, log-slice wheels and acorn caps; the ram is a giant rhinoceros beetle, ridden (D-117, D-119)"
+ },
+ {
+  "id": "siege.catapult.spooky",
+  "slot": "engine",
+  "noun": "Catapult",
+  "points": 22,
+  "tags": [
+   "siege",
+   "large",
+   "machine"
+  ],
+  "stats": {
+   "hp": 70,
+   "speed": 8,
+   "armour": {
+    "melee": 0,
+    "pierce": 6
+   },
+   "radius": 420
+  },
+  "shapes": [
+   {
+    "t": "poly",
+    "p": [
+     [
+      -18,
+      -30
+     ],
+     [
+      18,
+      -30
+     ],
+     [
+      18,
+      0
+     ],
+     [
+      -18,
+      0
+     ]
+    ],
+    "ch": "wood"
+   }
+  ],
+  "cost_mix": {
+   "food": 0,
+   "wood": 70,
+   "gold": 30
+  },
+  "note": "a siege engine (milestone 13, D-119): the race's own workers crew it (UnitView draws the recipe's crew on the model's crew sockets); its weapon is an engine.* part; dark wood and bone, a skull on the prow, silk strings"
+ },
+ {
+  "id": "siege.catapult.frog",
+  "slot": "engine",
+  "noun": "Snail Catapult",
+  "points": 22,
+  "tags": [
+   "siege",
+   "large",
+   "beast"
+  ],
+  "stats": {
+   "hp": 110,
+   "speed": 7,
+   "armour": {
+    "melee": 1,
+    "pierce": 8
+   },
+   "radius": 420
+  },
+  "shapes": [
+   {
+    "t": "poly",
+    "p": [
+     [
+      -18,
+      -30
+     ],
+     [
+      18,
+      -30
+     ],
+     [
+      18,
+      0
+     ],
+     [
+      -18,
+      0
+     ]
+    ],
+    "ch": "wood"
+   }
+  ],
+  "cost_mix": {
+   "food": 40,
+   "wood": 30,
+   "gold": 30
+  },
+  "note": "the frogs' catapult (D-122, round 4): a giant swamp snail carrying a reed catapult on a deck lashed over its shell, a frog winding on the deck and one loading; slow, the shell turns arrows; alive"
+ },
+ {
+  "id": "siege.bolt.timber",
+  "slot": "engine",
+  "noun": "Bolt Thrower",
+  "points": 15,
+  "tags": [
+   "siege",
+   "large",
+   "machine"
+  ],
+  "stats": {
+   "hp": 55,
+   "speed": 8,
+   "armour": {
+    "melee": 0,
+    "pierce": 6
+   },
+   "radius": 420
+  },
+  "shapes": [
+   {
+    "t": "poly",
+    "p": [
+     [
+      -18,
+      -24
+     ],
+     [
+      18,
+      -24
+     ],
+     [
+      18,
+      0
+     ],
+     [
+      -18,
+      0
+     ]
+    ],
+    "ch": "wood"
+   }
+  ],
+  "cost_mix": {
+   "food": 0,
+   "wood": 70,
+   "gold": 30
+  },
+  "note": "a siege engine (milestone 13, D-119): the race's own workers crew it (UnitView draws the recipe's crew on the model's crew sockets); its weapon is an engine.* part; timber and iron, spoked wheels, a hem in the culture's cloth (every human culture, and the swamp folk who are not frogs)"
+ },
+ {
+  "id": "siege.bolt.junk",
+  "slot": "engine",
+  "noun": "Bolt Thrower",
+  "points": 15,
+  "tags": [
+   "siege",
+   "large",
+   "machine"
+  ],
+  "stats": {
+   "hp": 55,
+   "speed": 8,
+   "armour": {
+    "melee": 0,
+    "pierce": 6
+   },
+   "radius": 420
+  },
+  "shapes": [
+   {
+    "t": "poly",
+    "p": [
+     [
+      -18,
+      -24
+     ],
+     [
+      18,
+      -24
+     ],
+     [
+      18,
+      0
+     ],
+     [
+      -18,
+      0
+     ]
+    ],
+    "ch": "wood"
+   }
+  ],
+  "cost_mix": {
+   "food": 0,
+   "wood": 70,
+   "gold": 30
+  },
+  "note": "a siege engine (milestone 13, D-119): the race's own workers crew it (UnitView draws the recipe's crew on the model's crew sockets); its weapon is an engine.* part; the sewer's own junk at human scale (D-116): scrap timber, iron pipe, chains, rusted plate"
+ },
+ {
+  "id": "siege.bolt.forest",
+  "slot": "engine",
+  "noun": "Bolt Thrower",
+  "points": 15,
+  "tags": [
+   "siege",
+   "large",
+   "machine"
+  ],
+  "stats": {
+   "hp": 55,
+   "speed": 8,
+   "armour": {
+    "melee": 0,
+    "pierce": 6
+   },
+   "radius": 420
+  },
+  "shapes": [
+   {
+    "t": "poly",
+    "p": [
+     [
+      -18,
+      -24
+     ],
+     [
+      18,
+      -24
+     ],
+     [
+      18,
+      0
+     ],
+     [
+      -18,
+      0
+     ]
+    ],
+    "ch": "wood"
+   }
+  ],
+  "cost_mix": {
+   "food": 0,
+   "wood": 70,
+   "gold": 30
+  },
+  "note": "a siege engine (milestone 13, D-119): the race's own workers crew it (UnitView draws the recipe's crew on the model's crew sockets); its weapon is an engine.* part; bark, log-slice wheels and acorn caps; the ram is a giant rhinoceros beetle, ridden (D-117, D-119)"
+ },
+ {
+  "id": "siege.bolt.spooky",
+  "slot": "engine",
+  "noun": "Bolt Thrower",
+  "points": 15,
+  "tags": [
+   "siege",
+   "large",
+   "machine"
+  ],
+  "stats": {
+   "hp": 55,
+   "speed": 8,
+   "armour": {
+    "melee": 0,
+    "pierce": 6
+   },
+   "radius": 420
+  },
+  "shapes": [
+   {
+    "t": "poly",
+    "p": [
+     [
+      -18,
+      -24
+     ],
+     [
+      18,
+      -24
+     ],
+     [
+      18,
+      0
+     ],
+     [
+      -18,
+      0
+     ]
+    ],
+    "ch": "wood"
+   }
+  ],
+  "cost_mix": {
+   "food": 0,
+   "wood": 70,
+   "gold": 30
+  },
+  "note": "a siege engine (milestone 13, D-119): the race's own workers crew it (UnitView draws the recipe's crew on the model's crew sockets); its weapon is an engine.* part; dark wood and bone, a skull on the prow, silk strings"
+ },
+ {
+  "id": "siege.bolt.frog",
+  "slot": "engine",
+  "noun": "Toad Bolt Thrower",
+  "points": 15,
+  "tags": [
+   "siege",
+   "large",
+   "beast"
+  ],
+  "stats": {
+   "hp": 85,
+   "speed": 9,
+   "armour": {
+    "melee": 1,
+    "pierce": 4
+   },
+   "radius": 420
+  },
+  "shapes": [
+   {
+    "t": "poly",
+    "p": [
+     [
+      -18,
+      -24
+     ],
+     [
+      18,
+      -24
+     ],
+     [
+      18,
+      0
+     ],
+     [
+      -18,
+      0
+     ]
+    ],
+    "ch": "wood"
+   }
+  ],
+  "cost_mix": {
+   "food": 40,
+   "wood": 30,
+   "gold": 30
+  },
+  "note": "the frogs' bolt thrower (D-121, round 3's B): a reed-bow bolt thrower saddled on a giant toad, a frog aiming from its rump and one loading beside; alive"
+ },
+ {
+  "id": "engine.ram",
+  "slot": "hand_r",
+  "noun": "Ram",
+  "points": 12,
+  "tags": [
+   "siege",
+   "ram"
+  ],
+  "stats": {
+   "attack": 1,
+   "damage": "melee",
+   "bonus": {
+    "building": 70
+   },
+   "reload": 60,
+   "targets": "buildings"
+  },
+  "requires_role": "ram",
+  "tier": 3,
+  "cost_mix": {
+   "food": 0,
+   "wood": 60,
+   "gold": 40
+  },
+  "note": "the ram's head (or the beetle's horn): hits buildings only (targets), very hard (bonus vs the building class), once every 3 s (reload, ticks)",
+  "shapes": [
+   {
+    "t": "line",
+    "p": [
+     [
+      0,
+      0
+     ],
+     [
+      8,
+      0
+     ]
+    ],
+    "w": 1.5,
+    "ch": "wood"
+   }
+  ]
+ },
+ {
+  "id": "engine.catapult",
+  "slot": "hand_r",
+  "noun": "Catapult",
+  "points": 15,
+  "tags": [
+   "siege",
+   "catapult",
+   "ranged"
+  ],
+  "stats": {
+   "attack": 14,
+   "damage": "melee",
+   "range": 8,
+   "min_range": 3,
+   "splash": 1100,
+   "bonus": {
+    "building": 18
+   },
+   "reload": 100
+  },
+  "requires_role": "catapult",
+  "tier": 3,
+  "cost_mix": {
+   "food": 0,
+   "wood": 50,
+   "gold": 50
+  },
+  "note": "a stone (or cheese, or acorns...) thrown in an arc: it lands on a spot and hurts everyone within splash milli-tiles, less further out (rules combat splash_*), friends too; can't hit what's closer than min_range tiles; every 5 s",
+  "shapes": [
+   {
+    "t": "line",
+    "p": [
+     [
+      0,
+      0
+     ],
+     [
+      8,
+      0
+     ]
+    ],
+    "w": 1.5,
+    "ch": "wood"
+   }
+  ]
+ },
+ {
+  "id": "engine.bolt",
+  "slot": "hand_r",
+  "noun": "Bolt Thrower",
+  "points": 12,
+  "tags": [
+   "siege",
+   "bolt_thrower",
+   "ranged"
+  ],
+  "stats": {
+   "attack": 12,
+   "damage": "pierce",
+   "range": 9,
+   "min_range": 2,
+   "pass": 2500,
+   "bonus": {
+    "large": 8
+   },
+   "reload": 70
+  },
+  "requires_role": "bolt_thrower",
+  "tier": 3,
+  "cost_mix": {
+   "food": 0,
+   "wood": 60,
+   "gold": 40
+  },
+  "note": "a heavy bolt, slow in the air (rules shot_speeds bolt_thrower): it goes through a line, hitting every foe on its last `pass` milli-tiles; hard on large units; can't hit what's closer than min_range tiles",
+  "shapes": [
+   {
+    "t": "line",
+    "p": [
+     [
+      0,
+      0
+     ],
+     [
+      8,
+      0
+     ]
+    ],
+    "w": 1.5,
+    "ch": "wood"
+   }
+  ]
  }
 ]

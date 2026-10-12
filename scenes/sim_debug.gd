@@ -1259,6 +1259,13 @@ func _play_events() -> void:
 		if e.type == "shot":
 			_shot(e)
 			continue
+		if e.type == "splash":   # a catapult's stone comes down: dirt flies over the whole area
+			if reveal or Fog.visible(world, active, e.x, e.y):
+				var at := Iso.to_ground(e.x, e.y)
+				fx.splash(at, float(e.r) * Iso.RADIUS_PX)
+				if _on_screen(at):
+					audio.play("hit_blunt", -2.0)
+			continue
 		if e.type == "miss" or (e.type == "hit" and e.has("x")):
 			_landed(e)   # a shot in flight came down
 			continue
@@ -1288,7 +1295,7 @@ func _play_events() -> void:
 				var i := world.units.index_of(e.by)
 				var tags: Array = world.types[world.units.kind[i]].eval.tags if i >= 0 else []
 				if e.ranged:
-					audio.play("shoot_" + CombatFx.shot_kind(tags), -4.0)
+					audio.play(CombatFx.shot_sound(CombatFx.shot_kind(tags)), -4.0)
 					audio.play_in("arrow_land", lands, -8.0)
 				else:
 					audio.play(_blow_sound(tags))
@@ -1415,7 +1422,7 @@ func _shot(e: Dictionary) -> void:
 	shot_kinds[e.by] = kind
 	fx.shoot(from, to, kind, e.ticks * SimClock.STEP / maxf(clock.speed, 0.01))
 	if _on_screen(from) and seen:
-		audio.play("shoot_" + kind, -4.0)
+		audio.play(CombatFx.shot_sound(kind), -4.0)
 		if _owner_of(e.by) == active or _owner_of(e.to) == active:
 			battle_until = world.tick / float(World.TICK_HZ) + 8.0
 

@@ -178,7 +178,16 @@
    "seconds": 30,
    "every": 120,
    "_doc": "a raid within `tiles` of the Town Center by at least the level's `shelter_pop` of enemy population, more than its soldiers at home can answer: call to arms (workers into the Town Center and towers); back to work once quiet or after `seconds` (the economy stands still inside), and no call again for `every` seconds"
-  }
+  },
+  "siege": {
+   "max": {
+    "ram": 2,
+    "catapult": 2,
+    "bolt_thrower": 1
+   },
+   "towers_within": 14
+  },
+  "_doc_siege": "siege (Siege Workshop, age 3): the bot keeps at most max of each engine (out and queued); on its regroup beats its rams go for the nearest enemy gate, wall or tower it can see (else any building), its catapults for a tower within towers_within tiles of them, else they keep with the army"
  },
  "research": {
   "_doc": "Besides line upgrades (and gathering, for building-up levels): the economy research it buys (economy, then buildings: the University's, Bastion once it has a tower), and the soldiers' research it buys once that research reaches at least army_min of its soldiers (the armoury track for what it fields). Both keep back what it's saving for (the next age, a blocked build step) once it has the workers to age up.",

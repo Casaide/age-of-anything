@@ -29,6 +29,16 @@ const MATCHES := [
 	["archers v mixed", ["archer"], ["spear", "skirmisher", "large"]],
 	["archers v spear+archer", ["archer"], ["spear", "archer"]],
 ]
+## Siege (milestone 13, age 3): engines behind a screen of spears against what they should beat
+## (crowds of archers and foot) and what should beat them (cavalry).
+const SIEGE_MATCHES := [
+	["catapult+spear v archers", ["catapult", "spear"], ["archer"]],
+	["catapult+spear v spear+archer", ["catapult", "spear"], ["spear", "archer"]],
+	["bolt+spear v spears", ["bolt_thrower", "spear"], ["spear"]],
+	["bolt+spear v spear+cavalry", ["bolt_thrower", "spear"], ["spear", "large"]],
+	["catapults v cavalry", ["catapult"], ["large"]],
+	["bolt throwers v cavalry", ["bolt_thrower"], ["large"]],
+]
 const LIMIT := 4000   # ticks (3:20)
 const FRONT := [22000, 42000]   # x of each side's front line; the map is 64 tiles square
 const MID_Y := 32000
@@ -48,7 +58,7 @@ func _init() -> void:
 	var races := RACES.map(func(p): return gen.generate(p, rules))
 	var t0 := Time.get_ticks_msec()
 	print("Mass battles, age %d, budget %d a side, each fought both ways round" % [age, budget])
-	for m in MATCHES:
+	for m in MATCHES + (SIEGE_MATCHES if age >= 3 else []):
 		var wins := 0
 		var losses := 0
 		var left_a := 0
@@ -145,4 +155,4 @@ static func fight(rules: Dictionary, age: int, budget: int, race: Dictionary, sa
 
 
 static func _rank(slot: String) -> int:
-	return ["large", "spear", "skirmisher", "archer"].find(slot)
+	return ["large", "ram", "spear", "skirmisher", "archer", "bolt_thrower", "catapult"].find(slot)

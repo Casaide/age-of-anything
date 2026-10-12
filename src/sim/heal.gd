@@ -90,11 +90,12 @@ static func tick(w) -> void:
 			u.hp[j] = mini(u.hp[j] + heals[j], int(w.types[u.kind[j]].hp))
 
 
-## Can healer i heal unit j: someone else on its team, not an animal, and hurt?
+## Can healer i heal unit j: someone else on its team, not an animal nor a machine (rules heal_not:
+## a timber ram is mended by carpenters, not herbs), and hurt?
 static func _wounded(w, i: int, j: int) -> bool:
 	var u = w.units
 	var tj: Dictionary = w.types[u.kind[j]]
-	return j != i and not tj.has("animal") and u.owner[j] != w.gaia and not w.is_enemy(u.owner[i], u.owner[j]) \
+	return j != i and not tj.has("animal") and not tj.get("no_heal", false) and u.owner[j] != w.gaia and not w.is_enemy(u.owner[i], u.owner[j]) \
 			and u.hp[j] < int(tj.hp)
 
 

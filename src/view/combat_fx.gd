@@ -15,6 +15,9 @@ const SHOTS := {
 	"stone": {"speed": 380.0, "arc": 0.18, "len": 0.0, "w": 2.4, "col": Color("#8a8a80")},
 	"dart": {"speed": 650.0, "arc": 0.04, "len": 4.0, "w": 0.8, "col": Color("#2a2a20")},
 	"ball": {"speed": 900.0, "arc": 0.02, "len": 0.0, "w": 1.8, "col": Color("#303030")},
+	# Siege (milestone 13): a catapult's stone, lobbed high and heavy; a bolt thrower's long bolt.
+	"boulder": {"speed": 260.0, "arc": 0.42, "len": 0.0, "w": 4.2, "col": Color("#8f8a7c"), "sound": "shoot_stone"},
+	"siege_bolt": {"speed": 420.0, "arc": 0.1, "len": 13.0, "w": 1.9, "col": Color("#a89a7c"), "sound": "shoot_bolt"},
 }
 const DIE_TIME := 2.2
 const FLASH_TIME := 0.12
@@ -35,6 +38,10 @@ const HEAL_MOTE := Color("#e4f4c0")
 
 ## The shot a weapon's tags call for.
 static func shot_kind(tags: Array) -> String:
+	if "catapult" in tags:
+		return "boulder"
+	if "bolt_thrower" in tags:
+		return "siege_bolt"
 	if "javelin" in tags:
 		return "javelin"
 	if "sling" in tags:
@@ -46,6 +53,22 @@ static func shot_kind(tags: Array) -> String:
 	if "heavy" in tags and "bow" in tags:
 		return "bolt"
 	return "arrow"
+
+
+## The sound a shot of this kind makes as it leaves (its own "shoot_<kind>", or one it shares).
+static func shot_sound(kind: String) -> String:
+	return SHOTS[kind].get("sound", "shoot_" + kind)
+
+
+## A catapult's stone lands: a burst of dirt over the area it hurts (radius in canvas px), a
+## heavy spark where it struck.
+func splash(at: Vector2, r: float) -> void:
+	spark(at, true)
+	dusts.append({"pos": at, "t": 0.0, "size": r * 0.45})
+	for k in 7:
+		var a := TAU * k / 7.0 + randf_range(-0.3, 0.3)
+		var d := r * randf_range(0.4, 0.9)
+		dusts.append({"pos": at + Vector2(cos(a) * d, sin(a) * d * 0.5), "t": -randf() * 0.12, "size": randf_range(2.5, 4.5)})
 
 
 ## A shot flies, for `dur` seconds (the sim's flight) or, without one, at the weapon's own pace;
