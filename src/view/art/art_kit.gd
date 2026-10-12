@@ -307,10 +307,14 @@ func bake_units(races: Array, teams: Array) -> void:
 					await pb.bake(ps.part_id, ps.shapes, ps.colours)
 			probe.free()
 			if u.recipe.slot == "worker":
-				# Workers change tools for the job and carry their load home in their hands.
+				# Workers change tools for the job and carry their load home in their hands,
+				# and their body is baked in the work holds too (the arm raised, reaching: D-105).
 				var colours := UnitView.colours_for(lib, u.recipe.skin, u.recipe.family, teams[side])
 				for id in JOB_PARTS:
 					await pb.bake(id, lib.part(id).shapes, colours)
+				if not u.recipe.has("mount") or u.recipe.mount.get("fused", false):
+					for h in UnitView.WORK_HOLDS:
+						await pb.bake(u.recipe.body + "@" + h, lib.part(u.recipe.body).shapes, colours)
 	pb.queue_free()
 	PartShape.bake_flat("unit_shadow", UnitView.SHADOW_SHAPES, UnitView.SHADOW_COLOURS, ART_SCALE * UNIT_SCALE)
 
