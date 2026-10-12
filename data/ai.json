@@ -91,11 +91,6 @@
    "save": 1
   },
   {
-   "building": "barracks",
-   "age": 2,
-   "workers": 24
-  },
-  {
    "building": "university",
    "age": 3,
    "workers": 22,
@@ -108,6 +103,11 @@
    "workers": 24,
    "builders": 6,
    "save": 1
+  },
+  {
+   "building": "barracks",
+   "age": 2,
+   "workers": 26
   },
   {
    "building": "town_center",
