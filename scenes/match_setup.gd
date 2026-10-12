@@ -25,7 +25,7 @@ const DiceButton := preload("res://src/view/loaders/dice_button.gd")
 const ForgeVeil := preload("res://src/view/loaders/forge_veil.gd")
 const LoaderStyle := preload("res://src/view/loaders/loader_style.gd")
 
-const NOT_MAPS := ["choke_test"]   # a movement test (sim_debug lists it)
+const NOT_MAPS := ["choke_test", "river_test", "hill_test"]   # test maps (sim_debug lists them)
 var MAPS := _maps()   # every map in data/maps: the real ones first (by name), the test maps last
 const LEVELS := ["Easy", "Normal", "Hard"]
 

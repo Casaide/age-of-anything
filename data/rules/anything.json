@@ -271,5 +271,12 @@
   "trail": 30,
   "speed_pct": 0,
   "note": "worn trails (src/sim/trails.gd, milestone 15): every `every` ticks each walking (not flying) unit wears its cell by `add` (up to `max`); every `decay_every` ticks every cell grows back by `decay`. A cell worn to `trail` is a trail: the view draws it, and walkers on it are `speed_pct` faster (0: off; the experiment in docs/milestones/m15-maps.md)"
+ },
+ "high_ground": {
+  "reach": 1000,
+  "uphill_damage_pct": 75,
+  "sight_unit": 1,
+  "sight_building": 2,
+  "note": "high ground (src/sim/sim_map.gd heights, milestone 15): a shooter a level above its target reaches `reach` milli-tiles further, one below reaches that much less and deals `uphill_damage_pct` of its damage (arrows fall short; integers, no dice). Units see `sight_unit` tiles further per level they stand on, buildings `sight_building`. Ground above the viewer's level blocks sight past its rim (fog.gd)."
  }
 }

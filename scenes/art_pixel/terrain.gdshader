@@ -9,7 +9,8 @@ uniform sampler2D path_arc : filter_linear, repeat_disable;   // R: distance alo
 uniform sampler2D wear : filter_linear, repeat_disable, hint_default_black;   // R: how worn the ground is by walkers, per tile (trails.gd)
 uniform vec2 map_size;          // tiles
 uniform float art_px = 1.0;     // screen pixels per art pixel (the dither works on art pixels)
-varying vec2 world;             // canvas units at scale 1 (64 x 32 per tile)
+varying vec2 world;             // canvas units at scale 1 (64 x 32 per tile), on the ground's base plane
+varying float shade;            // high ground: slopes facing away from the light darker, plateaus a touch lighter
 
 float hash(vec2 p) { return fract(sin(dot(p, vec2(127.1, 311.7))) * 43758.5453); }
 
@@ -62,8 +63,12 @@ vec3 ramp4(vec3 a, vec3 b, vec3 c, vec3 d, float v) {
 	return q < 1.0 ? a : q < 2.0 ? b : q < 3.0 ? c : d;
 }
 
+// High ground (milestone 15): raised ground is drawn by meshes whose UV.x is how far the
+// vertex was lifted on screen, so `world` is the point on the base plane this ground belongs
+// to; UV.y is a shade. The flat ground has UV 0.
 void vertex() {
-	world = VERTEX;
+	world = VERTEX + vec2(0.0, UV.x);
+	shade = 1.0 + UV.y;
 }
 
 void fragment() {
@@ -250,6 +255,7 @@ void fragment() {
 		float foam = 0.53 + 0.012 * sin(TIME * 1.1 + n * 9.0);
 		if (water < foam) col = mix(col, vec3(0.70, 0.80, 0.76), 0.6 * step(0.35, vnoise(t * 14.0 + TIME * 0.3)));
 	}
+	col *= shade;
 	// The map's edge fades into darkness, like unexplored ground.
 	float edge = min(min(t.x, t.y), min(map_size.x - t.x, map_size.y - t.y));
 	col *= mix(0.25, 1.0, floor(clamp(edge / 0.9 + bay * 0.25, 0.0, 1.0) * 4.0) / 4.0);
