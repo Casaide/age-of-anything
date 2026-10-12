@@ -10,6 +10,10 @@ line, its building, ages and counters, is in `m12-tech-tree.md` ("Unit lines"). 
 leaves the buildings standing; this milestone fills them. The 14 planned roster slots are already
 in `data/rules/*.json` with `"status": "planned"`.
 
+**Before this milestone (Dominic, 2026-10-12):** the 1v1 map needs resources for a long game,
+so the new units and the progression can be enjoyed: milestone 15's phase 1 (resource audit, a
+dense 64 x 64 and an 88 x 88 Reed Meadow for Dominic to pick by playing) runs first.
+
 ## Scope
 
 | Building | Lines | New systems |
