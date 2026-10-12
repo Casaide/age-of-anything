@@ -29,7 +29,7 @@ func _initialize() -> void:
 	var kit := ArtKit.new()
 	root.add_child(kit)
 	await process_frame
-	var h: Array = await kit._hifi()
+	var h: Array = [await kit._hifi_baker(), kit._models]
 	var baker = h[0]
 	var models = h[1]
 	var team := Color(PartShape.TEAM_KEY)

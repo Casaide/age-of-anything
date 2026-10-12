@@ -41,6 +41,7 @@ func _init() -> void:
 	_test_healers(lib, gen, rules)
 	_test_composer(lib, gen, rules.default)
 	_test_audio(lib)
+	_test_paths()
 	_test_tech_tree(lib, gen, rules)
 	_test_scripts_parse()
 
@@ -56,6 +57,21 @@ func _test_scripts_parse() -> void:
 			if f.ends_with(".gd"):
 				var script: Script = load(dir + f)
 				check(script != null and script.can_instantiate(), "script parses: " + dir + f)
+
+
+## Culture paths grow, they don't move: planned again with a new building (and the targets in
+## another order), every stretch laid before is still there, point for point.
+func _test_paths() -> void:
+	var Paths = load("res://scenes/art_pixel/paths.gd")
+	var blocked := func(t: Vector2) -> bool: return t.x < 0.2 or t.y < 0.2 or t.x > 23.8 or t.y > 23.8 or (t.x > 8.0 and t.x < 9.0 and t.y < 14.0)
+	var memo := {}
+	var hub := Vector2(5, 5)
+	var first: Array = Paths.plan(24, 24, blocked, [{"style": "trail", "width": 0.4, "hub": hub, "targets": [Vector2(12, 6), Vector2(4, 12)]}], memo)
+	var before: Array = first.map(func(p): return p.points)
+	var later: Array = Paths.plan(24, 24, blocked, [{"style": "trail", "width": 0.4, "hub": hub, "targets": [Vector2(1, 9), Vector2(4, 12), Vector2(12, 6)]}], memo)
+	check(later.size() > before.size(), "paths: a new building adds a branch")
+	for k in before.size():
+		check(later[k].points == before[k], "paths: stretch %d stays put when a building is added" % k)
 
 
 ## Every sound data/audio.json names has its takes on disk and loads; every creature's voice

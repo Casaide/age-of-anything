@@ -95,6 +95,7 @@ var land: LandView           # map bridges, tree species, worn trails (rebuilt p
 var doodads := {}           # cell -> [nodes]: cosmetic props, cleared where buildings go up
 var baking := false
 var built_shown = null      # the finished buildings shown (ids, who looks) when the paths were last planned
+var path_anchors := {}      # player -> {hub, res}: where its paths start and the food and wood they lead to (picked once)
 var palette: ColorRect      # optional whole-frame palette pass (P)
 var attack_move := false    # the order being given is an attack-move
 var queueing := false       # the order being given is shift-queued
@@ -425,6 +426,7 @@ func _attach(w: World, end_tick := -1) -> void:
 	fx.clear()
 	town.reset()
 	built_shown = null
+	path_anchors.clear()
 	res_cells.clear()
 	selected.clear()
 	selected_building = 0
@@ -469,8 +471,8 @@ func _keep_clear(t: Vector2) -> bool:
 			if x < 0 or y < 0 or x >= map.width or y >= map.height:
 				continue
 			var c := y * map.width + x
-			if map.amount[c] > 0 or map.occupied[c] != 0:
-				return true
+			if map.amount[c] > 0 or map.occupied[c] != 0 or land.bridge_at(c) >= 0:
+				return true   # (no shore reeds growing through a bridge deck)
 	for s in map.starts:
 		if t.distance_to(Vector2(s[0], s[1]) / 1000.0) < 4.0:
 			return true
@@ -492,14 +494,23 @@ func _refresh_paths() -> void:
 			continue
 		mine.sort_custom(func(a, b): return bs.sx[a] * bs.sy[a] > bs.sx[b] * bs.sy[b] or (bs.sx[a] * bs.sy[a] == bs.sx[b] * bs.sy[b] and bs.id[a] < bs.id[b]))
 		var style: Dictionary = lib.families[world.races[p].family].get("paths", {"style": "trail", "width": 0.36})
-		var hub := _door(mine[0])
+		# The hub and the paths out to food and wood are picked once, from the first town: the
+		# ground plans paths to grow (laid ones stay), and a hub or resource that moved with every
+		# bush eaten or hall built would re-route roads that had stood for minutes.
+		if not path_anchors.has(p):
+			var at := _door(mine[0])
+			var res := []
+			for kind in ["food", "wood"]:
+				var t := _nearest_resource_edge(kind, at)
+				if t.x >= 0:
+					res.append(t)
+			path_anchors[p] = {"hub": at, "res": res}
+		var hub: Vector2 = path_anchors[p].hub
 		var targets := []
-		for b in mine.slice(1):
-			targets.append(_door(b))
-		for kind in ["food", "wood"]:
-			var t := _nearest_resource_edge(kind, hub)
-			if t.x >= 0:
-				targets.append(t)
+		for b in mine:
+			if _door(b) != hub:
+				targets.append(_door(b))
+		targets.append_array(path_anchors[p].res)
 		owners.append({"style": style.style, "width": float(style.width), "hub": hub, "targets": targets})
 	ground.set_paths(owners)
 
@@ -1568,12 +1579,14 @@ func _sync_views() -> void:
 		view.job = town.job_for(i, _job(i))
 		if world.types[u.kind[i]].worker:
 			view.set_tool(lib, town.tool_for(i, _tool_for(i)))
-		if absi(dx) + absi(dy) > 4:
-			view.face_vec(Iso.to_screen(dx, dy))   # the way it walks, on screen (8 facings)
-		elif view.job != "":
-			var at := _work_point(i)   # face what it's working on
-			if absf(at.x - view.position.x) > 1.0:
+		if _job(i) != "":
+			# At work: face what it's working on, whichever of the 8 ways that is (a nudge from
+			# the crowd round a mine mustn't turn it, nor a target straight up or down the screen).
+			var at := _work_point(i)
+			if at.distance_to(view.position) > 2.0:
 				view.face_vec(at - view.position)
+		elif absi(dx) + absi(dy) > 4:
+			view.face_vec(Iso.to_screen(dx, dy))   # the way it walks, on screen (8 facings)
 	for id in views.keys():
 		if not alive.has(id):
 			views[id].queue_free()
