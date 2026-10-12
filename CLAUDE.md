@@ -65,6 +65,11 @@ move it to `docs/backlog.md` rather than deleting it.
 - **Done (milestone 11): cleanup.** UI, UX and art polish from Dominic's list, the lobby (`scenes/match_setup.tscn`),
   animals, gold and new buildings, 8 facings, Blender-modelled humans, reared spiders, the Nile/Han/Aztec kits; the
   Fable review met the exit criterion. See `docs/milestones/m11-cleanup.md`.
+- **Closed for now (milestones 12 and 15): the land tech tree and maps.** Three ages, walls, gates, towers, castle,
+  research as data, the tech tree page; big maps, high ground, bridges, fords (Dominic, 2026-10-13).
+- **Done (milestone 17): living towns** ("living town is good"). **Milestone 19 (UI):** the timber look approved.
+- **In progress (milestone 13): unit lines, siege first.** Crewed engines per family (D-116 to D-119); shots fly
+  and can miss (`src/sim/shots.gd`). See `docs/milestones/m13-unit-lines.md`.
 
 ## Layout
 

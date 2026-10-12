@@ -192,6 +192,7 @@ four with a rider; a bear cavalry mount for other races), head and fur skins, a 
 take and architecture, and pricing (big hp through points, no special case).
 Dominic's direction (2026-10-13): two legs, armoured, more like the Greeks: dignified and intelligent,
 the smarter counterpart to the rats. Bears also rideable as a mount for some races.
+Some bears bigger still, on two legs and much larger: polar bears, or older bears (Dominic) — a natural large/giant line.
 
 ### Eras and themes as a layer (Dominic, 2026-10-13: later; "we're not ready for later ages like that yet")
 

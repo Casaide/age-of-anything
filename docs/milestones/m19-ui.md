@@ -1,6 +1,6 @@
 # Milestone 19: UI that feels like the game
 
-**Status:** planned (proposed 2026-10-12; concept round can start any time)
+**Status:** in progress (2026-10-13: the timber look approved, "ui is great"; loaders and the review left)
 **Exit criterion:** the menu, lobby, loaders, HUD, tech tree page and end screens look designed and
 finished, not flat; the UI wears your race's culture; every wait shows something worth watching;
 Dominic: "this looks like a real game".
@@ -57,7 +57,7 @@ presets menu; a fixed-width centre with a bigger map.
 
 ## Checklist
 - [ ] Plan approved by Dominic
-- [ ] 1. Concept round (Dominic's pick): three directions rendered (archive 205-210), timber built as the recommendation; his pick pending
+- [x] 1. Concept round (Dominic's pick): three directions rendered (archive 205-210), timber built as the recommendation; Dominic: "ui is great" (2026-10-13), timber kept
 - [x] 2. Theme and type: `src/view/ui/theme.gd` (open-licence fonts wait on a download yes)
 - [ ] 3. Match loader, lobby loaders
 - [x] 4. The UI wears the race: a `ui` block per culture, on the lobby panels and banners, the HUD, pause/end and the tech tree page
