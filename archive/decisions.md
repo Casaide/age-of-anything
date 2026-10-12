@@ -741,3 +741,8 @@ archers one); that's a roster design question (a swordsman line?), not a price.
 round 3's B ("swamp beasts, looks great"): the snapping turtle ram and the toad-borne bolt thrower. He's
 not sure of the newt as the catapult carrier and wonders if it suits cavalry better: a concept round
 tries the newt as the frogs' mount and other catapults for the frogs.
+
+**D-122, 2026-10-13: The snail carries the frogs' catapult; frogs ride newts.** Dominic: "snail yes, the
+newts look amazing". The frogs' siege is three beasts: the snapping turtle ram, the snail catapult, the toad
+bolt thrower. Frog cavalry rides a giant newt instead of a beetle (the beetle stays the forest's); all three
+colourings are kept as the newt's skins (fire as the usual one; the red eft not under red-skinned frogs).
