@@ -285,6 +285,7 @@
   "slot": "body",
   "noun": "Spider",
   "points": 6,
+  "rider_loses": ["infantry"],
   "tags": [
    "arachnid",
    "venom",
@@ -553,6 +554,8 @@
   "slot": "body",
   "noun": "Beetle",
   "points": 12,
+  "price_points": 15,
+  "rider_loses": ["infantry"],
   "tags": [
    "insect",
    "armoured",
@@ -693,6 +696,8 @@
   "slot": "body",
   "noun": "Capybara",
   "points": 10,
+  "price_points": 13,
+  "rider_loses": ["infantry"],
   "tags": [
    "beast",
    "mount",
@@ -900,6 +905,8 @@
   "slot": "body",
   "noun": "Hummingbird",
   "points": 9,
+  "price_points": 12,
+  "rider_loses": ["infantry"],
   "tags": [
    "bird",
    "mount",
@@ -1166,6 +1173,8 @@
   "slot": "body",
   "noun": "Pony",
   "points": 9,
+  "price_points": 12,
+  "rider_loses": ["infantry"],
   "tags": [
    "beast",
    "mount",
@@ -1317,6 +1326,7 @@
   "slot": "body",
   "noun": "Pony",
   "points": 9,
+  "rider_loses": ["infantry"],
   "tags": [
    "beast",
    "mount",
@@ -2518,6 +2528,7 @@
    }
   },
   "points": 6,
+  "price_points": 8,
   "two_handed": true,
   "cost_mix": {
    "food": 80,
@@ -2836,6 +2847,7 @@
    "damage": "pierce"
   },
   "points": 4,
+  "price_points": 5,
   "era": [
    "medieval",
    "gunpowder"

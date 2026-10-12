@@ -172,7 +172,12 @@ as era packs.
 - **Counter tags** from parts (the genre's standard web): spear > large/mounted, mounted > archers/skirmishers,
   archer > infantry, skirmisher > archer. Even
   absurd races have obvious weaknesses (big gets `large`, which is weak to spears).
-- Costs split across resources by each part's `cost_mix`.
+- Costs split across resources by each part's `cost_mix`. A role can set its own terms in
+  `rules.cost.roles` (workers: food only, at least 50 before the creature's `cost_pct`).
+- A part's `points` are what the generator's budget spends; `price_points`, when a part has them,
+  are what it costs (mounts and a few weapons are worth more in a fight than their budget points),
+  so a price change never changes a race. A mount's `rider_loses` drops rider tags: a rider is
+  cavalry, not infantry, so archers' and skirmishers' bonus against infantry doesn't reach it.
 - Races fit a **shared roster template** (worker, spear, skirmisher, archer, tier-2 large; later
   siege, unique unit), so frogs still get an age-2 skirmisher (a frog with a reed blowgun).
 - **Price by simulation (planned):** each new unit fights reference units in quick headless

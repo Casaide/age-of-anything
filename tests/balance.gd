@@ -44,5 +44,5 @@ func _init() -> void:
 			off += 1
 		var e: Dictionary = RoundRobin.recipe_at(units[k][0], units[k][1], age).eval
 		print("%4d%%  %+4d%%  %-48s cost %3d  hp %3d  atk %2d %s%s" % [rates[k], dev, units[k][2], int(e.cost.food) + int(e.cost.wood) + int(e.cost.get("stone", 0)), int(e.hp), int(e.attack), e.damage, flag])
-	print("\n%d of %d units more than %d%% off the mean" % [off, units.size(), TOLERANCE])
+	print("\n%d of %d units more than %d%% off the mean; counters won %d%% of same-race counter fights" % [off, units.size(), TOLERANCE, rr.counters])
 	quit()

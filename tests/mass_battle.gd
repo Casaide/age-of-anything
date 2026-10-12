@@ -1,10 +1,11 @@
 extends SceneTree
 ## Mass battles at equal cost: about 30 against 30, mixed armies, both sides attack-moving on an
 ## open map, every match fought twice with the sides swapped (so where they start doesn't decide
-## it). For each race of the balance prompts, in one age: archers against cavalry (the large
-## slot), skirmishers and spears; spears with archers against spears with cavalry; a mixed army
-## and spears with archers against all archers. Prints win rates and the value each side has
-## left. Deterministic. Massed archers should be strong but counterable.
+## it). For each race of the balance prompts, in one age (unit lines upgraded to it): archers
+## against cavalry (the large slot), skirmishers and spears; spears and skirmishers against
+## cavalry; spears with archers against spears with cavalry; a mixed army and spears with
+## archers against all archers. Prints win rates and the value each side has left.
+## Deterministic. Massed archers should be strong but counterable.
 ## Run: godot --headless --path . --script res://tests/mass_battle.gd [-- age [budget] [combat_rule=value ...]]
 
 const DataLib := preload("res://src/data_lib.gd")
@@ -22,6 +23,8 @@ const MATCHES := [
 	["archers v cavalry", ["archer"], ["large"]],
 	["archers v skirmishers", ["archer"], ["skirmisher"]],
 	["archers v spears", ["archer"], ["spear"]],
+	["spears v cavalry", ["spear"], ["large"]],
+	["skirmishers v cavalry", ["skirmisher"], ["large"]],
 	["spear+archer v spear+cavalry", ["spear", "archer"], ["spear", "large"]],
 	["archers v mixed", ["archer"], ["spear", "skirmisher", "large"]],
 	["archers v spear+archer", ["archer"], ["spear", "archer"]],
@@ -86,8 +89,7 @@ static func fight(rules: Dictionary, age: int, budget: int, race: Dictionary, sa
 	bare["animals"] = false
 	var w := World.new(1, SimMap.load_id("flat_test"), [race, race], bare)
 	for p in 2:
-		w.ages[p] = age
-		Tech.retype(w, p)
+		RoundRobin.in_age(w, p, age)
 	var sides := [sa, sb] if not swap else [sb, sa]
 	var cost := {}   # type index -> cost
 	var total := [0, 0]

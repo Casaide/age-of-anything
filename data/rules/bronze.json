@@ -185,12 +185,14 @@
   "base": 60,
   "curve": "pow1.4_ref12",
   "train_curve": "pow0.5_ref12",
-  "train_base": 20
+  "train_base": 20,
+  "roles": {"worker": {"floor": 50, "mix": {"food": 100}}},
+  "roles_note": "a role's own price terms (pricing.gd): the total is at least floor (before the creature's cost_pct), and mix replaces the parts' cost_mix"
  },
  "animals": true,
  "economy": {
   "start": {
-   "food": 200,
+   "food": 300,
    "wood": 200,
    "stone": 0,
    "gold": 0,

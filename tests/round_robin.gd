@@ -10,7 +10,7 @@ const Commands := preload("res://src/sim/commands.gd")
 const Tech := preload("res://src/sim/tech.gd")
 
 const SLOTS := ["spear", "skirmisher", "archer", "large"]
-const BUDGET := 600
+const BUDGET := 1200
 const LIMIT := 3000
 const FROM := [[11000, 20500], [21000, 20500]]
 ## Within one race, who should beat whom at equal cost (the genre's counters).
@@ -21,7 +21,7 @@ static func run(races: Array, rules: Dictionary, age: int) -> Dictionary:
 	var units := []
 	for r in races:
 		for slot in SLOTS:
-			units.append([r, slot, "%s (%s)" % [name_of(r, slot), r.name]])
+			units.append([r, slot, "%s (%s)" % [recipe_at(r, slot, age).recipe.name, r.name]])
 	var wins := []
 	var played := []
 	wins.resize(units.size())
@@ -62,8 +62,7 @@ static func fight(rules: Dictionary, age: int, a: Array, b: Array) -> int:
 	bare.economy.start.workers = 0
 	var w := World.new(1, SimMap.load_id("flat_test"), [a[0], b[0]], bare)
 	for p in 2:
-		w.ages[p] = age
-		Tech.retype(w, p)
+		in_age(w, p, age)
 	var value := []
 	for p in 2:
 		var slot: String = [a, b][p][1]
@@ -91,6 +90,16 @@ static func fight(rules: Dictionary, age: int, a: Array, b: Array) -> int:
 	var va: int = left[0] * value[0]
 	var vb: int = left[1] * value[1]
 	return 1 if va > vb else -1 if vb > va else 0
+
+
+## Put a player in an age with every unit line upgraded up to it (the step recipe_at shows).
+static func in_age(w, p: int, age: int) -> void:
+	w.ages[p] = age
+	for k in w.tech.research.size():
+		var r: Dictionary = w.tech.research[k]
+		if r.has("line") and int(r.line_age) <= age:
+			w.researched[p][k] = 1
+	Tech.retype(w, p)
 
 
 static func name_of(race: Dictionary, slot: String) -> String:
