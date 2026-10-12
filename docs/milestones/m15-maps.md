@@ -52,6 +52,8 @@ a legend into `data/terrain.json` (`data/maps/*.json`), the view builds tiles an
 
 ## Plan
 1. Resource audit and the bigger 1v1 (with today's assets): fixes "not enough resources" first.
+   Moved ahead of milestone 13 (Dominic, 2026-10-12). Two versions of the same layout, 64 x 64
+   dense and 88 x 88, for Dominic to pick by playing ("two minds about size").
 2. Trees (concept round, then build).
 3. Rivers, fords, bridges.
 4. Worn paths and the speed question.
