@@ -67,7 +67,7 @@ func candidates(slot: String, eras: Array) -> Array:
 	var out := []
 	for id in ids:
 		var p: Dictionary = parts[id]
-		if p.slot == slot and era_ok(p, eras):
+		if p.slot == slot and era_ok(p, eras) and not p.get("innate", false):   # innate: grown, never picked (a hummingbird's wings)
 			out.append(p)
 	return out
 

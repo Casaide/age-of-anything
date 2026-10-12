@@ -302,6 +302,12 @@ func _attach(lib, rig: Dictionary, slot: String, part_id: String, colours: Dicti
 		# a cape shows when it walks away, the far hand's shield goes behind.
 		var near: bool = float(rig.depth[socket]) >= -0.5
 		z = (1.6 if slot == "back" else absf(z)) if near else (-3.0 if slot == "back" else -absf(z))
+	if p.has("blur"):
+		# A wing blur (parts.json "blur": its opacity in percent): see-through, over the body in
+		# every facing (a hummingbird's wings beat on both sides at once), and it buzzes.
+		z = 0.5
+		node.modulate.a = float(p.blur) / 100.0
+		node.set_meta("buzz", true)
 	node.set_meta("z", z)
 	if slot == "torso" and not worn:
 		node.scale = rig.torso_scale
@@ -544,6 +550,8 @@ func _process(delta: float) -> void:
 	if back_node and flying:
 		# Flap: quick down-strokes, the wings' tips sweeping through a few pixels.
 		var f := sin(t * (11.0 if walking else 7.0))
+		if back_node.has_meta("buzz"):
+			f = [0.0, 1.0, -0.6][int(time * 24.0) % 3]   # a blur flickers through three spreads, too fast for a stroke
 		back_node.rotation = back_node.get_meta("rest", 0.0) - 0.12 * f
 		var rs: float = back_node.get_meta("rest_scale", 1.0)
 		back_node.scale = Vector2(rs, rs * (1.0 + 0.1 * f))

@@ -409,8 +409,9 @@ func _skins(c: Dictionary, family: String) -> Array:
 
 func _mount_for(creature: String, fused: bool, rng, brief: Dictionary) -> Dictionary:
 	var mc: Dictionary = lib.creatures[creature]
-	var m := {"creature": creature, "skin": rng.pick(mc.skins), "fused": fused, "parts": {}}
-	if brief.mount_wings != "" and not fused:
+	# A mount's own parts come with it (creatures.json "parts": a hummingbird's wings).
+	var m := {"creature": creature, "skin": rng.pick(mc.skins), "fused": fused, "parts": mc.get("parts", {}).duplicate()}
+	if brief.mount_wings != "" and not fused and not m.parts.has("back"):
 		m.parts.back = brief.mount_wings
 	return m
 
@@ -544,7 +545,7 @@ func _unit_name(recipe: Dictionary, primary: Dictionary, c: Dictionary) -> Strin
 		name = "Heavy " + name
 	if recipe.has("mount") and not recipe.mount.fused:
 		var mount_noun: String = lib.creatures[recipe.mount.creature].noun
-		if recipe.mount.parts.has("back"):
+		if recipe.mount.parts.has("back") and not lib.creatures[recipe.mount.creature].get("parts", {}).has("back"):   # its own wings go without saying
 			mount_noun = "Pegasus" if recipe.mount.creature == "pony" else "Winged " + mount_noun
 		name += " on a " + mount_noun
 	return name
