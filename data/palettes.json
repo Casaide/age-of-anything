@@ -80,6 +80,25 @@
    "#9a6a40",
    "#6a4a2c"
   ],
+  "newt_fire": [
+   "#2e2b26",
+   "#e2862a",
+   "#f0c030",
+   "#2e2b26"
+  ],
+  "newt_eft": [
+   "#d0582a",
+   "#f0a448",
+   "#d42a1a",
+   "#1e1410"
+  ],
+  "newt_crested": [
+   "#5a5434",
+   "#e88a22",
+   "#1c1a12",
+   "#5a5434",
+   "#5a5434"
+  ],
   "deer": [
    "#9a6a40",
    "#2a2018"
@@ -130,5 +149,6 @@
   "#e0533d",
   "#e8c33a",
   "#8a4fd0"
- ]
+ ],
+ "_skins_doc": "skin palettes: [main, second] and, for patterned skins, more (skin3, skin4...: a newt's spots, the rings round them (none when the main colour), a fifth colour for a crest)"
 }

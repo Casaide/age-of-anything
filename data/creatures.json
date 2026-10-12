@@ -17,7 +17,11 @@
    "forest"
   ],
   "architecture": "reed",
-  "gait": "hop"
+  "gait": "hop",
+  "mounts": [
+   "newt"
+  ],
+  "_mounts_doc": "frogs ride giant newts (Dominic, D-122), in the forest too; the swamp's family mount is the newt as well, so swamp frogs never ride beetles"
  },
  "rat": {
   "voice": "rat",
@@ -164,6 +168,34 @@
   "families": [
    "sewer"
   ]
+ },
+ "newt": {
+  "voice": "frog",
+  "noun": "Newt",
+  "plural": "Newts",
+  "body": "body.newt",
+  "head": "head.newt",
+  "playable": false,
+  "mount": true,
+  "skins": [
+   "newt_fire",
+   "newt_eft",
+   "newt_crested"
+  ],
+  "skin_weights": {
+   "newt_fire": 2
+  },
+  "_skin_weights_doc": "how often each skin is picked, against 1 for the rest (fire is the usual newt, Dominic D-122)",
+  "skins_not_under": {
+   "newt_eft": [
+    "poison_red"
+   ]
+  },
+  "_skins_not_under_doc": "a mount skin never picked under a rider of these skins (a red eft under a red frog reads as one blob, D-122)",
+  "families": [
+   "swamp"
+  ],
+  "_voice_doc": "mounts don't speak in play (a unit speaks with its race's voice); a newt is a quiet frog"
  },
  "hummingbird": {
   "voice": "hummingbird",
