@@ -25,7 +25,7 @@ as strong as a plain one.
 |---|---|---|---|---|---|
 | Group | bugs (beetles, spiders), amphibians (frogs), rodents (rats, capybaras), folk (humans, centaurs) | 1 | - | - | - |
 | Creature | beetles | 1 | 1 (age 3) | 1-2 | 1 |
-| Culture | Aztec, Imperial, Swamp... | 1 | 1 (age 4) | 1-2 | 1 (lighter) |
+| Culture | Aztec, Imperial, Swamp... | 1 | 1 (age 3) | 1-2 | 1 (lighter) |
 | Prompt | "cheese hammers", wings | - | - | - | the unique unit's signature (milestone 13) |
 
 - **Groups** are data: `creatures.json` gains `"group": "bugs"`, and a new `data/groups.json`
