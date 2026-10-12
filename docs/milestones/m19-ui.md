@@ -89,6 +89,11 @@ sits best with the buildings); B and C are a one-line switch in `data/ui.json`.
   plaques, the command panel in the race's frame with its crest, material buttons, wells, display-face titles,
   bigger captions and costs; the minimap's diamond frame; tooltip cards), pause and end screens (a framed
   card), the tech tree page.
+- Team games in the lobby (coordinator, for the 2v2 map): a map with more than two starts shows a compact panel
+  per player in two teams (the map's `teams`, else the first half against the second), each with its own dice,
+  prompt and AI level; the match takes `prompts`, `rerolls`, `player_teams` and `ai_levels` per player and runs a
+  bot per AI player. Checked headless: four bots on a four-start map, team 0 won at 12:14, no blow on an ally.
+- The top bar shows how many of your workers are on each resource, the breakdown on hover (Dominic).
 - Sounds: `ui_hover`, `ui_start` (tools/audio/sfx.py). Every themed button ticks on hover and sinks on press.
 - The lobby fills the window; the UI-size setting scales it from 76% (at 40%) to 100% of that, and still sizes
   the HUD and in-match pages from 40% to 100%.
