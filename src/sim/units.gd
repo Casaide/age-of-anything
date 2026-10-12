@@ -32,6 +32,7 @@ var ry1 := PackedInt32Array()
 var task := PackedInt32Array()     # Economy.NONE / GATHER / RETURN / BUILD
 var target := PackedInt32Array()   # resource cell (GATHER) or building id (RETURN, BUILD)
 var home := PackedInt32Array()     # resource cell to go back to after a drop-off, or -1
+var gspot := PackedInt32Array()    # its standing spot round `home` (Economy.SPOTS), held while it works there, or -1
 var carry_kind := PackedInt32Array()   # 0 nothing, 1 food, 2 wood
 var carry := PackedInt32Array()
 var work := PackedInt32Array()     # ticks into the current gather
@@ -98,6 +99,7 @@ func _put(at: int, uid: int, p_owner: int, p_kind: int, p_x: int, p_y: int, p_sp
 	task.insert(at, 0)
 	target.insert(at, -1)
 	home.insert(at, -1)
+	gspot.insert(at, -1)
 	carry_kind.insert(at, 0)
 	carry.insert(at, 0)
 	work.insert(at, 0)
@@ -156,6 +158,7 @@ func remove_at(i: int) -> void:
 	task.remove_at(i)
 	target.remove_at(i)
 	home.remove_at(i)
+	gspot.remove_at(i)
 	carry_kind.remove_at(i)
 	carry.remove_at(i)
 	work.remove_at(i)
