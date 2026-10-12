@@ -13,6 +13,7 @@ const Reach := preload("res://src/ai/reach.gd")
 const Pens := preload("res://src/sim/pens.gd")
 
 const THINK_EVERY := 20        # ticks (1 s)
+const STAGGER := 2             # ticks between one player's think and the next's (no tick thinks for everyone)
 var MIX := {1: {"food": 60, "wood": 40}}   # age -> share of workers per resource (data/ai.json when a full bot runs this)
 var MAX_WORKERS := 30
 const TRAIN_COOLDOWN := 20     # ticks between train orders (commands land two turns later)
@@ -46,8 +47,13 @@ func _init(p_player: int) -> void:
 	player = p_player
 
 
+## The tick of each second this player's economy thinks on: players one after another.
+func phase() -> int:
+	return player * STAGGER % THINK_EVERY
+
+
 func think(w) -> void:
-	if w.tick % THINK_EVERY != 0:
+	if w.tick % THINK_EVERY != phase():
 		return
 	var tc := _town_center(w)
 	if tc < 0:
