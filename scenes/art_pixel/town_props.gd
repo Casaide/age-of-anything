@@ -32,7 +32,7 @@ func pile(kind: String, stage: int, style := "a") -> Node3D:
 
 ## A reed bundle lying from a to b, tied twice.
 func _bundle(n: Node3D, a: Vector3, b: Vector3, r: float) -> void:
-	var stalk := um.surf("reed_stalk", Color(0.95, 0.9, 0.7), 0.08)
+	var stalk := um.surf("reed_stalk", Color(1.0, 0.84, 0.55), 0.08)   # cut and drying: tan over the green
 	var tie := um.plain(Color("#5a3a20"))
 	var dir := (b - a)
 	for k in 5:   # a few stalks round a core, so it reads as a bundle and not a log
