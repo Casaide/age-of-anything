@@ -1568,6 +1568,376 @@ func _market(arch: String, team: Color) -> Dictionary:
 	return {"body": body, "anchor": Vector3.ZERO, "lights": [], "team": team, "lantern": Vector3(0, 0.6, 0)}
 
 
+# ------------------------------------------------------------------ siege workshop and wonder (milestone 12)
+
+## Siege Workshop: a yard of timber frames. An open shed at the back under the culture's roof, a
+## workbench in it; in the yard two engines going up in fresh-sawn timber: a catapult half built
+## (its chassis on three wheels, the fourth leaning by, the A-frames up, the throwing arm propped
+## against its crossbar, not yet fitted) and the bare rafters of a ram's shed. Wheels in the
+## culture's stuff (_engine_wheel).
+func _siege_workshop(arch: String, team: Color) -> Dictionary:
+	var body := Node3D.new()
+	var wood := mats.get_mat("wood")
+	var raw := Materials.flat(Color("#c8a06a"), 0.85)   # fresh-sawn timber, paler than the weathered shed
+	var iron := Materials.flat(Color("#4a4c50"), 0.5, 0.7)
+	body.add_child(box(Vector3(2.8, 0.015, 2.6), mats.get_mat("mud"), Vector3(0, 0.008, 0.05)))   # the trodden yard
+	var rise := _lean_to(body, arch, Vector3(-0.2, 0, -1.0), 2.3, 0.75, 0.72)
+	body.add_child(box(Vector3(0.4, 0.26, 0.03), cloth(team), Vector3(-1.1, 0.5, -0.6)))   # a team cloth on the shed post
+	body.add_child(box(Vector3(1.0, 0.06, 0.3), wood, Vector3(-0.2, 0.36, -1.1)))   # the bench, a tool on it
+	for x in [-0.62, 0.22]:
+		body.add_child(box(Vector3(0.06, 0.33, 0.25), wood, Vector3(x, 0.17, -1.1)))
+	body.add_child(box(Vector3(0.22, 0.06, 0.06), iron, Vector3(-0.35, 0.42, -1.05)))
+	for k in 3:   # sawn beams stacked under the shed's end
+		body.add_child(box(Vector3(0.9, 0.08, 0.08), raw, Vector3(0.75, 0.04 + (k / 2) * 0.08, -1.1 + (k % 2) * 0.1 + (k / 2) * 0.05)))
+	# The catapult: a chassis along x on its wheels.
+	var e := Vector3(-0.45, 0.24, 0.45)
+	for z in [-0.26, 0.26]:
+		body.add_child(box(Vector3(1.2, 0.1, 0.1), raw, e + Vector3(0, 0, z)))
+	for x in [-0.55, 0.55]:
+		body.add_child(box(Vector3(0.1, 0.09, 0.62), raw, e + Vector3(x, 0.02, 0)))
+	_engine_wheel(body, arch, e + Vector3(-0.4, -0.03, -0.36), Vector3(90, 0, 0))
+	_engine_wheel(body, arch, e + Vector3(0.4, -0.03, -0.36), Vector3(90, 0, 0))
+	_engine_wheel(body, arch, e + Vector3(-0.4, -0.03, 0.36), Vector3(90, 0, 0))
+	_engine_wheel(body, arch, e + Vector3(0.35, -0.04, 0.62), Vector3(70, 0, -10))   # the fourth, leaning by its axle
+	# Its A-frames, one each side, and the crossbar over them.
+	var apex := e + Vector3(0.1, 0.62, 0)
+	for z in [-0.26, 0.26]:
+		body.add_child(beam(e + Vector3(-0.35, 0.05, z), apex + Vector3(0, 0, z), 0.035, raw, 6))
+		body.add_child(beam(e + Vector3(0.5, 0.05, z), apex + Vector3(0, 0, z), 0.035, raw, 6))
+	body.add_child(box(Vector3(0.08, 0.08, 0.66), raw, apex + Vector3(0, 0.02, 0)))
+	# The arm, propped on the crossbar, its cup on the ground.
+	body.add_child(beam(e + Vector3(-0.85, -0.18, 0.02), apex + Vector3(0.18, 0.12, 0.02), 0.04, raw, 6))
+	body.add_child(cyl(0.11, 0.07, 0.07, wood, e + Vector3(-0.9, -0.17, 0.02), Vector3(0, 0, 20), 12))
+	body.add_child(box(Vector3(0.03, 0.14, 0.12), cloth(team), apex + Vector3(0.05, 0.12, 0.34)))   # a team rag tied on
+	# The ram's shed: bare rafters on two sills, along z, a ridge pole over them.
+	var r := Vector3(0.85, 0, 0.35)
+	for x in [-0.3, 0.3]:
+		body.add_child(box(Vector3(0.09, 0.09, 1.3), raw, r + Vector3(x, 0.045, 0)))
+	var ridge_h := 0.75
+	for k in 4:
+		var z := -0.55 + k * 0.37
+		for x in [-0.3, 0.3]:
+			body.add_child(beam(r + Vector3(x, 0.08, z), r + Vector3(0, ridge_h, z), 0.03, raw, 6))
+	body.add_child(box(Vector3(0.07, 0.07, 1.36), raw, r + Vector3(0, ridge_h, 0)))
+	body.add_child(cyl(0.09, 0.09, 1.1, wood, r + Vector3(0, 0.22, 0.05), Vector3(90, 0, 0), 12))   # the ram's log, slung under
+	body.add_child(cyl(0.11, 0.1, 0.12, iron, r + Vector3(0, 0.22, 0.62), Vector3(90, 0, 0), 12))     # its iron head
+	return {"body": body, "anchor": Vector3.ZERO, "lantern": Vector3(-0.2, rise * 0.3 + 0.6, -0.65), "lights": [], "team": team}
+
+
+## An engine's wheel in the culture's stuff: a tin lid crimped red for the junk-rats, a round sawn
+## off a log for reed and mound, a spoked timber wheel for the rest.
+func _engine_wheel(body: Node3D, arch: String, at: Vector3, rot: Vector3) -> void:
+	var holder := Node3D.new()
+	holder.position = at
+	holder.rotation_degrees = rot
+	body.add_child(holder)
+	var wood := mats.get_mat("wood")
+	if arch == "junk":
+		holder.add_child(cyl(0.2, 0.2, 0.04, Materials.flat(Color("#b8bcc0"), 0.35, 0.8), Vector3.ZERO, Vector3.ZERO, 18))
+		holder.add_child(ring(0.18, 0.22, Materials.flat(Color("#c84030"), 0.5, 0.4)))
+	elif arch in ["reed", "mound"]:
+		holder.add_child(cyl(0.2, 0.2, 0.07, wood, Vector3.ZERO, Vector3.ZERO, 16))
+		holder.add_child(cyl(0.17, 0.17, 0.075, Materials.flat(Color("#d8b47a"), 0.9), Vector3.ZERO, Vector3.ZERO, 16))
+	else:
+		holder.add_child(ring(0.17, 0.21, wood))
+		for s in 3:
+			holder.add_child(box(Vector3(0.36, 0.03, 0.03), wood, Vector3.ZERO, Vector3(0, s * 60.0, 0)))
+		holder.add_child(cyl(0.04, 0.04, 0.06, wood, Vector3.ZERO, Vector3.ZERO, 8))
+
+
+## A pole with a team pennant, the live banner a Wonder flies. Returns [banner node, its pivot].
+func _pennant(body: Node3D, foot: Vector3, h: float, team: Color, finial: Material = null) -> Array:
+	var wood := mats.get_mat("wood")
+	body.add_child(cyl(0.03, 0.04, h, wood, foot + Vector3(0, h / 2, 0), Vector3.ZERO, 8))
+	if finial != null:
+		body.add_child(ball(0.06, finial, foot + Vector3(0, h + 0.03, 0)))
+	var banner := Node3D.new()
+	var flag_top := foot + Vector3(0.03, h - 0.1, 0)
+	banner.add_child(box(Vector3(0.5, 0.05, 0.03), wood, flag_top + Vector3(0.25, 0, 0)))
+	banner.add_child(slab_tri(Vector2(0, 0), Vector2(0.62, -0.22), Vector2(0, -0.5), 0.02, cloth(team)))
+	banner.get_child(banner.get_child_count() - 1).position = flag_top
+	return [banner, flag_top]
+
+
+## The builders' Wonder (stone): a great temple on a three-stepped podium, a colonnade all round
+## its limewashed hall, a gilded ridge, a team frieze, and a bronze figure on a plinth by the stair.
+func wonder_stone(team: Color) -> Dictionary:
+	var body := Node3D.new()
+	var stone := mats.get_mat("stone")
+	var plaster := mats.get_mat("plaster")
+	var marble := Materials.flat(Color("#e6e0d2"), 0.75)
+	var gold := Materials.flat(Color("#e0b040"), 0.3, 0.85)
+	var bronze := Materials.flat(Color("#b07a36"), 0.4, 0.7)
+	var y := 0.0
+	for s in 3:   # the podium, three steps
+		var wd := 4.7 - s * 0.35
+		body.add_child(box(Vector3(wd, 0.18, wd), stone, Vector3(0, y + 0.09, -s * 0.12)))
+		y += 0.18
+	var cz := -0.25   # the temple's middle, a little back: the front steps stay clear
+	var w := 3.3
+	var d := 3.6
+	body.add_child(box(Vector3(w - 0.7, 1.5, d - 0.8), plaster, Vector3(0, y + 0.75, cz)))   # the hall
+	body.add_child(box(Vector3(w - 0.68, 0.14, d - 0.78), cloth(team), Vector3(0, y + 1.32, cz)))   # a frieze in the team colour
+	body.add_child(box(Vector3(0.6, 0.9, 0.04), Materials.flat(Color("#3a2414"), 0.8), Vector3(0, y + 0.45, cz + (d - 0.8) / 2 + 0.02)))   # the doors
+	for k in 6:
+		body.add_child(ball(0.03, gold, Vector3(-0.15 + (k % 3) * 0.15, y + 0.3 + (k / 3) * 0.35, cz + (d - 0.8) / 2 + 0.05)))
+	var colh := 1.55
+	for i in 6:   # the colonnade: six across the ends, seven down the sides
+		for side in [-1, 1]:
+			var x := -w / 2 + 0.15 + i * (w - 0.3) / 5.0
+			body.add_child(cyl(0.085, 0.1, colh, marble, Vector3(x, y + colh / 2, cz + side * (d / 2 - 0.15)), Vector3.ZERO, 14))
+	for i in range(1, 6):
+		for side in [-1, 1]:
+			var z := cz - d / 2 + 0.15 + i * (d - 0.3) / 6.0
+			body.add_child(cyl(0.085, 0.1, colh, marble, Vector3(side * (w / 2 - 0.15), y + colh / 2, z), Vector3.ZERO, 14))
+	body.add_child(box(Vector3(w + 0.1, 0.2, d + 0.1), marble, Vector3(0, y + colh + 0.1, cz)))   # the entablature
+	body.add_child(box(Vector3(w + 0.12, 0.07, d + 0.12), cloth(team), Vector3(0, y + colh + 0.06, cz)))
+	var holder := Node3D.new()   # tile_roof runs its ridge along z: front to back here
+	holder.position = Vector3(0, y + colh + 0.2, cz)
+	body.add_child(holder)
+	var rise := tile_roof(holder, Vector3.ZERO, w / 2 + 0.12, d + 0.2, 22.0, marble, plaster)
+	var ry := y + colh + 0.2
+	body.add_child(box(Vector3(0.1, 0.08, d + 0.25), gold, Vector3(0, ry + rise + 0.03, cz)))   # the gilded ridge
+	for z in [-1, 1]:   # gold finials on the gables, a team disc in the front one
+		body.add_child(ball(0.09, gold, Vector3(0, ry + rise + 0.1, cz + z * (d / 2 + 0.1))))
+	body.add_child(ball(0.17, cloth(team), Vector3(0, ry + rise * 0.4, cz + d / 2 + 0.12), Vector3(1, 1, 0.3)))
+	body.add_child(ring(0.16, 0.21, gold, Vector3(0, ry + rise * 0.4, cz + d / 2 + 0.13), Vector3(90, 0, 0)))
+	# Two fire bowls before the doors, and the figure on its plinth at the corner.
+	for x in [-0.7, 0.7]:
+		body.add_child(cyl(0.16, 0.08, 0.12, bronze, Vector3(x, y + 0.06, 1.62), Vector3.ZERO, 14))
+		body.add_child(cyl(0.13, 0.13, 0.02, glow(Color("#ff9a3a"), 2.0), Vector3(x, y + 0.12, 1.62), Vector3.ZERO, 14))
+	var fig := Vector3(-1.85, y, 1.5)
+	body.add_child(box(Vector3(0.4, 0.5, 0.4), marble, fig + Vector3(0, 0.25, 0)))
+	body.add_child(cyl(0.1, 0.14, 0.55, bronze, fig + Vector3(0, 0.78, 0), Vector3.ZERO, 12))
+	body.add_child(ball(0.08, bronze, fig + Vector3(0, 1.12, 0)))
+	body.add_child(beam(fig + Vector3(0.1, 0.95, 0), fig + Vector3(0.2, 1.45, 0.05), 0.02, bronze, 6))   # a raised spear
+	var p := _pennant(body, Vector3(1.9, y, 1.55), 2.6, team, gold)
+	return {"body": body, "anchor": Vector3.ZERO, "banner": p[0], "banner_pivot": p[1], "lights": [Vector3(-0.7, y + 0.14, 1.62), Vector3(0.7, y + 0.14, 1.62)],
+		"smoke": Vector3(0.7, y + 0.3, 1.62), "lantern": Vector3(0, y + 0.6, cz + d / 2 + 0.1)}
+
+
+## The timber towns' Wonder (thatch): the elders' great hall, mud and timber under deep thatch,
+## a stave tower of three stacked roofs rising out of its middle, carved posts at the corners
+## with heads in the team colour, and a fire pit before the door.
+func wonder_thatch(team: Color) -> Dictionary:
+	var body := Node3D.new()
+	var wood := mats.get_mat("wood")
+	var thatch := mats.get_mat("thatch")
+	var dark := Materials.flat(Color("#3a2414"), 0.8)
+	var hall := Node3D.new()
+	hall.position = Vector3(0, 0, -0.3)
+	body.add_child(hall)
+	var base := _hall(hall, "thatch", 3.6, 2.4, 0.85)
+	var rise := _roof(hall, "thatch", Vector3(0, base + 0.85, 0), 3.6, 2.4)
+	hall.add_child(box(Vector3(0.6, 0.7, 0.04), cloth(team), Vector3(0, base + 0.35, 1.22)))
+	# The stave tower: three storeys, each a timber box under its own steep thatch hat.
+	var y := base + 0.85 + rise * 0.55
+	var sizes := [1.3, 1.0, 0.7]
+	var hs := [0.6, 0.45, 0.4]
+	for s in 3:
+		var sz: float = sizes[s]
+		var hh: float = hs[s]
+		hall.add_child(box(Vector3(sz, hh, sz), wood, Vector3(0, y + hh / 2, 0)))
+		for x in [-1, 1]:
+			for z in [-1, 1]:
+				hall.add_child(box(Vector3(0.07, hh + 0.04, 0.07), dark, Vector3(x * sz / 2, y + hh / 2, z * sz / 2)))
+		hall.add_child(cyl(0.0, sz * 0.95, sz * 0.55, thatch, Vector3(0, y + hh + sz * 0.22, 0), Vector3(0, 45, 0), 4))
+		y += hh + sz * 0.3
+	hall.add_child(beam(Vector3(0, y + 0.05, 0), Vector3(0, y + 0.5, 0), 0.02, wood, 6))
+	hall.add_child(box(Vector3(0.24, 0.16, 0.02), cloth(team), Vector3(0.12, y + 0.42, 0)))
+	# Carved posts: a tall trunk with rings cut into it and a painted head on top.
+	for p in [Vector3(-2.15, 0, 1.55), Vector3(2.15, 0, 1.55), Vector3(-2.15, 0, -1.8), Vector3(2.15, 0, -1.8)]:
+		var h := 1.5
+		body.add_child(cyl(0.11, 0.14, h, wood, p + Vector3(0, h / 2, 0), Vector3.ZERO, 10))
+		for r in 3:
+			body.add_child(ring(0.1, 0.15, dark, p + Vector3(0, 0.4 + r * 0.35, 0)))
+		body.add_child(box(Vector3(0.26, 0.3, 0.26), wood, p + Vector3(0, h + 0.15, 0)))   # the carved head
+		body.add_child(box(Vector3(0.28, 0.07, 0.28), cloth(team), p + Vector3(0, h + 0.05, 0)))   # painted in the team colour
+		body.add_child(box(Vector3(0.1, 0.08, 0.16), dark, p + Vector3(0, h + 0.12, 0.18), Vector3(-15, 0, 0)))   # its beak
+		body.add_child(box(Vector3(0.34, 0.05, 0.08), dark, p + Vector3(0, h + 0.32, 0)))   # a crest
+		for x in [-0.07, 0.07]:   # its eyes
+			body.add_child(ball(0.035, Materials.flat(Color("#f0e6c8"), 0.6), p + Vector3(x, h + 0.22, 0.13)))
+	# A fire pit in a ring of stones before the door, benches by it.
+	var pit := Vector3(0, 0, 1.6)
+	body.add_child(ring(0.24, 0.36, mats.get_mat("stone"), pit + Vector3(0, 0.04, 0)))
+	body.add_child(cyl(0.22, 0.22, 0.03, glow(Color("#ff8a30"), 2.2), pit + Vector3(0, 0.04, 0), Vector3.ZERO, 14))
+	for x in [-0.8, 0.8]:
+		body.add_child(box(Vector3(0.7, 0.08, 0.16), wood, Vector3(x, 0.18, 1.7)))
+		for e in [-0.25, 0.25]:
+			body.add_child(box(Vector3(0.08, 0.16, 0.12), wood, Vector3(x + e, 0.08, 1.7)))
+	return {"body": body, "anchor": Vector3.ZERO, "lights": [pit + Vector3(0, 0.06, 0)], "smoke": pit + Vector3(0, 0.2, 0),
+		"lantern": Vector3(0.5, base + 0.5, 0.95), "team": team}
+
+
+## The junk-rats' Wonder: the Great Cheese. A brick plinth ringed with painted oil drums, a giant
+## tin can on it, and on the can a whole cheese wheel stood on its edge, holes and all, crowned
+## with a gold bottle cap; team banners fly from poles by the drums.
+func wonder_junk(team: Color) -> Dictionary:
+	rng.seed = 91
+	var body := Node3D.new()
+	var brick := mats.get_mat("brick")
+	var tin := mats.get_mat("tin")
+	var wood := mats.get_mat("wood")
+	var gold := Materials.flat(Color("#e0b040"), 0.3, 0.85)
+	body.add_child(box(Vector3(4.5, 0.3, 4.5), brick, Vector3(0, 0.15, 0)))
+	body.add_child(box(Vector3(3.6, 0.2, 3.6), brick, Vector3(0, 0.4, 0)))
+	var paint := [Color("#8a3a2a"), Color("#3a5a7a"), Color("#6a6a5a"), Color("#7a6a2a")]
+	var n := 0
+	for side in 4:   # oil drums round the plinth's top
+		for k in 3:
+			var t := -1.2 + k * 1.2
+			var at := Vector3(t, 0.5, 1.6) if side == 0 else Vector3(1.6, 0.5, -t) if side == 1 else Vector3(-t, 0.5, -1.6) if side == 2 else Vector3(-1.6, 0.5, t)
+			if side == 0 and k == 1:
+				continue   # the way in
+			_drum(body, at, 0.22, 0.5, paint[n % 4])
+			n += 1
+	var can_h := 1.0
+	body.add_child(cyl(1.15, 1.15, can_h, tin, Vector3(0, 0.5 + can_h / 2, -0.1), Vector3.ZERO, 32))   # the great can
+	for y in [0.2, 0.5, 0.8]:
+		body.add_child(ring(1.13, 1.2, Materials.flat(Color("#9a9c96"), 0.5, 0.5), Vector3(0, 0.5 + can_h * y, -0.1)))
+	body.add_child(cyl(1.0, 1.0, 0.04, Materials.flat(Color("#c8ccd0"), 0.35, 0.8), Vector3(0, 0.5 + can_h + 0.02, -0.1), Vector3.ZERO, 32))
+	body.add_child(box(Vector3(0.5, 0.7, 0.04), Materials.flat(Color("#2a1e16"), 0.9), Vector3(0, 0.85, 1.07)))   # a door cut in the can
+	body.add_child(box(Vector3(1.0, 0.18, 0.03), cloth(team), Vector3(0, 1.3, 1.06)))   # a label in the team colour
+	# The cheese, on edge in a timber cradle.
+	var cheese := Materials.flat(Color("#f2c94c"), 0.7)
+	var rind := Materials.flat(Color("#c99a1e"), 0.8)
+	var c := Vector3(0, 0.5 + can_h + 0.92, -0.1)
+	for x in [-0.4, 0.4]:
+		body.add_child(box(Vector3(0.12, 0.3, 0.9), wood, Vector3(x, 0.5 + can_h + 0.15, -0.1)))
+	body.add_child(cyl(0.9, 0.9, 0.62, cheese, c, Vector3(90, 0, 0), 32))
+	for z in [0.3, -0.3]:
+		body.add_child(ring(0.86, 0.94, rind, c + Vector3(0, 0, z), Vector3(90, 0, 0)))
+	for k in 7:   # holes on the face
+		var a := rng.randf() * TAU
+		var r := rng.randf_range(0.15, 0.7)
+		body.add_child(cyl(0.06 + rng.randf() * 0.06, 0.06, 0.02, Materials.flat(Color("#c8961e"), 0.9), c + Vector3(cos(a) * r, sin(a) * r, 0.315), Vector3(90, 0, 0), 12))
+	# The bottle cap crown: a crimped gold disc on the cheese's top.
+	var cap := c + Vector3(0, 0.95, 0)
+	body.add_child(cyl(0.3, 0.3, 0.08, gold, cap, Vector3.ZERO, 20))
+	for k in 12:
+		var a := TAU * k / 12.0
+		body.add_child(box(Vector3(0.06, 0.12, 0.05), gold, cap + Vector3(cos(a) * 0.3, -0.03, sin(a) * 0.3), Vector3(0, -rad_to_deg(a), 0)))
+	_pennant(body, Vector3(1.6, 0.5, -1.6), 2.0, team).front().free()   # a still pole at the back (one banner waves)
+	body.add_child(slab_tri(Vector2(0, 0), Vector2(0.5, -0.18), Vector2(0, -0.4), 0.02, cloth(team)))
+	body.get_child(body.get_child_count() - 1).position = Vector3(1.63, 2.35, -1.6)
+	var p := _pennant(body, Vector3(-1.6, 0.5, 1.6), 2.2, team)
+	return {"body": body, "anchor": Vector3.ZERO, "banner": p[0], "banner_pivot": p[1], "lights": [],
+		"lantern": Vector3(0.4, 1.0, 1.15), "team": team}
+
+
+## The tent people's Wonder: the great pavilion. A two-storey felt palace on a timber floor, a
+## gilded crown on its smoke ring, four tents round it and a ring of tall horse-tail standards.
+func wonder_tent(team: Color) -> Dictionary:
+	var body := Node3D.new()
+	var wood := mats.get_mat("wood")
+	var felt := mats.get_mat("felt")
+	var gold := Materials.flat(Color("#e0b040"), 0.3, 0.85)
+	body.add_child(cyl(1.85, 1.95, 0.14, wood, Vector3(0, 0.07, -0.1), Vector3.ZERO, 32))   # the floor
+	var top := _yurt(body, Vector3(0, 0.14, -0.1), 1.6, 1.0, team)
+	body.add_child(cyl(0.62, 0.62, 0.45, felt, Vector3(0, 0.14 + top + 0.2, -0.1), Vector3.ZERO, 24))   # the upper storey
+	body.add_child(ring(0.6, 0.66, cloth(team), Vector3(0, 0.14 + top + 0.35, -0.1)))
+	body.add_child(cyl(0.12, 0.7, 0.42, felt, Vector3(0, 0.14 + top + 0.62, -0.1), Vector3.ZERO, 24))
+	var crown := Vector3(0, 0.14 + top + 0.86, -0.1)
+	body.add_child(cyl(0.14, 0.14, 0.08, gold, crown, Vector3.ZERO, 16))
+	body.add_child(cyl(0.0, 0.06, 0.4, gold, crown + Vector3(0, 0.24, 0), Vector3.ZERO, 8))
+	body.add_child(ball(0.07, gold, crown + Vector3(0, 0.12, 0)))
+	for at in [Vector3(-1.75, 0, 1.55), Vector3(1.75, 0, 1.55), Vector3(-1.85, 0, -1.65), Vector3(1.85, 0, -1.65)]:
+		_yurt(body, at, 0.42, 0.42, team)
+	# Horse-tail standards: tall poles, a dark tuft under a gold point.
+	var hair := Materials.flat(Color("#2a2018"), 0.95)
+	for k in 6:
+		var a := TAU * (k + 0.5) / 6.0
+		var foot := Vector3(cos(a) * 2.15, 0, sin(a) * 2.0 - 0.1)
+		if foot.z > 1.2 and absf(foot.x) < 0.8:
+			continue   # the way in stays open
+		body.add_child(cyl(0.025, 0.03, 2.1, wood, foot + Vector3(0, 1.05, 0), Vector3.ZERO, 6))
+		body.add_child(cyl(0.0, 0.04, 0.16, gold, foot + Vector3(0, 2.18, 0), Vector3.ZERO, 6))
+		body.add_child(ball(0.1, hair, foot + Vector3(0, 1.9, 0), Vector3(1.0, 1.8, 1.0)))
+	var p := _pennant(body, Vector3(-0.75, 0.14, 1.75), 2.5, team, gold)
+	return {"body": body, "anchor": Vector3.ZERO, "banner": p[0], "banner_pivot": p[1], "lights": [],
+		"smoke": crown + Vector3(0, 0.1, 0), "lantern": Vector3(0, 0.6, 1.6), "team": team}
+
+
+## The frogs' Wonder: the Lily Spire. A great deck on stilts, a big woven dome and a spire of
+## woven drums stacked on it, each under its own reed cap, opening at the top into a pink water
+## lily the size of a hut; small domes at the deck's corners and a reed fence round it.
+func wonder_reed(team: Color) -> Dictionary:
+	rng.seed = 92
+	var body := Node3D.new()
+	var weave := mats.get_mat("weave")
+	var thatch := mats.get_mat("thatch")
+	var deck := _stilt_deck(body, Vector3.ZERO, 4.5, 4.5)
+	var top := _reed_dome(body, Vector3(0, deck, -0.2), 1.35, team)
+	var y := top - 0.15
+	var radii := [0.7, 0.52, 0.38]
+	for s in 3:   # the spire: drum, cap, drum, cap ...
+		var r: float = radii[s]
+		body.add_child(cyl(r * 0.92, r, 0.4, weave, Vector3(0, y + 0.2, -0.2), Vector3.ZERO, 24))
+		body.add_child(ring(r - 0.02, r + 0.04, cloth(team) if s == 0 else mats.get_mat("mud"), Vector3(0, y + 0.08, -0.2)))
+		body.add_child(dome(r + 0.08, thatch, Vector3(0, y + 0.38, -0.2), Vector3(1.0, 0.45, 1.0)))
+		y += 0.52
+	# The lily: two rings of petals round a gold heart, on a wide pad.
+	var heart := Vector3(0, y + 0.1, -0.2)
+	body.add_child(cyl(0.75, 0.75, 0.03, Materials.flat(Color("#3d6a2c"), 0.8), heart - Vector3(0, 0.12, 0), Vector3.ZERO, 24))
+	for rk in 2:
+		var count := 8 if rk == 0 else 6
+		for k in count:
+			var a := TAU * (k + rk * 0.5) / count
+			var lean := 55.0 if rk == 0 else 25.0
+			var petal := Node3D.new()   # turned to face out, then tipped outwards
+			petal.position = heart + Vector3(cos(a), 0, sin(a)) * (0.3 - rk * 0.13) + Vector3(0, 0.12 + rk * 0.08, 0)
+			petal.rotation_degrees = Vector3(0, -rad_to_deg(a) + 90.0, 0)
+			body.add_child(petal)
+			petal.add_child(ball(0.32 - rk * 0.06, Materials.flat(Color("#e890b0") if rk == 0 else Color("#f4c0d0"), 0.6),
+				Vector3.ZERO, Vector3(0.45, 1.0, 0.22), Vector3(lean, 0, 0)))
+	body.add_child(ball(0.13, Materials.flat(Color("#f2c94c"), 0.5), heart + Vector3(0, 0.2, 0)))
+	for at in [Vector3(-1.7, deck, -1.7), Vector3(1.65, deck, 1.6), Vector3(1.75, deck, -1.7)]:
+		_reed_dome(body, at, 0.42, team, 20.0 * signf(at.x))
+	_reed_fence(body, Vector3(0, deck, 0), 2.15)
+	var wood := mats.get_mat("wood")
+	for k in 3:   # steps down at the front
+		body.add_child(box(Vector3(0.6, 0.05, 0.16), wood, Vector3(0, deck * (k + 0.5) / 3.0, 2.55 - k * 0.14)))
+	var p := _pennant(body, Vector3(-1.9, deck, 1.9), 2.2, team)   # on the left corner, clear of the spire
+	return {"body": body, "anchor": Vector3.ZERO, "banner": p[0], "banner_pivot": p[1], "lights": [],
+		"lantern": Vector3(0, deck + 0.4, 1.3), "team": team}
+
+
+## The bugs' Wonder: the great termite spires. A broad earthen mound with five tall fluted spires
+## grown out of it, round doors at their feet, amber set glowing into the walls, and a polished
+## shell hung up as a trophy over the main door.
+func wonder_mound(team: Color) -> Dictionary:
+	rng.seed = 93
+	var body := Node3D.new()
+	var mud := mats.get_mat("mud")
+	body.add_child(dome(2.0, mud, Vector3(0, 0, -0.1), Vector3(1.05, 0.55, 1.0)))
+	var spires := [[Vector3(-0.1, 0, -0.35), 0.75, 3.4], [Vector3(-0.95, 0, 0.35), 0.5, 2.3], [Vector3(0.85, 0, -0.85), 0.55, 2.6],
+		[Vector3(0.9, 0, 0.6), 0.45, 1.8], [Vector3(-1.0, 0, -1.1), 0.42, 1.7]]
+	for s in spires:
+		var at: Vector3 = s[0]
+		var r: float = s[1]
+		var h: float = s[2]
+		body.add_child(cyl(r * 0.12, r, h, mud, at + Vector3(0, h / 2, 0), Vector3(rng.randf_range(-3, 3), 0, rng.randf_range(-3, 3)), 14))
+		for k in 3:   # flutes: lumps up its sides
+			var a := TAU * k / 3.0 + rng.randf()
+			body.add_child(cyl(r * 0.05, r * 0.4, h * 0.6, mud, at + Vector3(cos(a) * r * 0.55, h * 0.3, sin(a) * r * 0.55), Vector3.ZERO, 8))
+	_burrow_door(body, Vector3(0.0, 0.32, 1.8), 0.3, 0.0, team)
+	_burrow_door(body, Vector3(-1.6, 0.25, 1.0), 0.16, -50.0, team)
+	_burrow_door(body, Vector3(1.75, 0.25, 0.6), 0.16, 60.0)
+	var amber := glow(Color("#ffb040"), 1.6)
+	var lights := []
+	for p in [Vector3(-0.55, 0.65, 1.55), Vector3(0.6, 0.7, 1.45), Vector3(-0.1, 1.6, 0.25), Vector3(0.95, 1.2, -0.45)]:
+		body.add_child(ball(0.08, amber, p, Vector3(1.0, 1.3, 0.7)))
+		lights.append(p)
+	# The trophy: a polished beetle shell over the main door.
+	var shell := Materials.flat(Color("#2e5a4a"), 0.25, 0.6)
+	body.add_child(ball(0.32, shell, Vector3(0.0, 0.95, 1.62), Vector3(1.0, 0.55, 0.5), Vector3(-25, 0, 0)))
+	body.add_child(box(Vector3(0.03, 0.17, 0.2), Materials.flat(Color("#1a3028"), 0.3), Vector3(0.0, 0.96, 1.75), Vector3(-25, 0, 0)))
+	_grass_tufts(body, Vector3(0, 0.6, 0), 1.4, 12)
+	var p := _pennant(body, Vector3(1.85, 0.0, -1.8), 2.4, team)
+	return {"body": body, "anchor": Vector3.ZERO, "banner": p[0], "banner_pivot": p[1], "lights": lights,
+		"lantern": Vector3(0.3, 0.5, 1.9), "team": team}
+
+
 # ------------------------------------------------------------------ walls and gates
 # A wall tile is a post in the tile's middle plus an arm out to each wall neighbour, the eight
 # ways round (LINKS: sim dx, dy). Each piece bakes on its own, anchored on the tile's centre, and

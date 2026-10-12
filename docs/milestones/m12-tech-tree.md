@@ -63,10 +63,10 @@ age-4 gear tier (iron and plate, D-057).
 | Market | 2 | trade resources; trade carts | built (carts planned) |
 | Watchtower | 2 | shoots; upgrades to Bastion (3) | built (upgrades planned) |
 | Stone Wall + Stone Gate | 2 | stone wall; gate as above | wall built, gate planned |
-| Siege Workshop | 3 | siege engines | planned |
+| Siege Workshop | 3 | siege engines | built (phase 6; trains nothing until milestone 13) |
 | University | 3 | building, tower and siege research | planned |
 | Castle | 3 | unique unit, sapper, great sling, unique research; shoots, garrison | planned |
-| Wonder | 3 | alternative victory: stand for a time | planned |
+| Wonder | 3 | alternative victory: stand for a time | built (phase 7) |
 
 Every building comes in all six architectures (concept-first for new ones, D-080).
 
@@ -350,8 +350,8 @@ Fixed first, as they came in; each ticked when done.
 - [ ] 3. Towers and garrison (walls and gates done 2026-10-11)
 - [ ] 4. University
 - [ ] 5. Castle
-- [ ] 6. Siege Workshop standing (Temple cut)
-- [ ] 7. Wonder
+- [x] 6. Siege Workshop standing (Temple cut) (2026-10-13: every architecture, military page, "Siege engines come later")
+- [x] 7. Wonder (2026-10-13: six showpieces, hold-to-win in `match.gd`, host rule `wonder`, countdown and alerts, the bot builds and targets one; tests in `test_sim.gd` and `test_ai.gd`)
 - [ ] 8. AI
 - [ ] 9. Exit check
 - [ ] Archive: pictures taken along the way, journal, decisions, timeline
@@ -367,6 +367,26 @@ Fixed first, as they came in; each ticked when done.
   and a mill. test_ai: age 2 at the same times as before (4:20-5:49, one slow 8:30 as before),
   bot match lengths 10:35 / 10:58 / 13:35 (median 10:58; was 13:11). Bots still don't reach age 3
   in these matches (as before): the age-2 wood economy is phase 8's.
+
+- **Phases 6 and 7 (2026-10-13, Claude):** the **Siege Workshop** is real: age 3, 3x3, 200 wood, on the
+  military page, a yard in each culture's materials (the shed under its roof, a catapult half built,
+  the bare rafters of a ram's shed, wheels as tin lids for the junk-rats and log rounds for reed and
+  mound; `_siege_workshop` in `models.gd`). It trains nothing yet; its panel says "Siege engines come
+  later." (`idle_note` in `buildings.json`). The **Wonder**: age 3, 5x5, 1000 of each resource,
+  1500 s of work, 4800 hp; a showpiece per architecture (`wonder_<arch>`): a colonnaded temple
+  (stone), the elders' hall with a stave tower and carved posts (thatch), the Great Cheese on a giant
+  can (junk), a two-storey felt pavilion with horse-tail standards (tent), the Lily Spire on stilts
+  (reed), termite spires with amber (mound). Concept round 1, pictures 160-162, for Dominic to pick
+  or redirect (stone serves six cultures; Nile, Han and Aztec may want their own later). Victory in
+  `src/sim/match.gd`: a finished Wonder whose owner is still in starts a countdown
+  (`rules.wonder.hold_seconds`, 600); standing that long wins for the owner's team; a fallen one stops
+  (a new one starts from the top); `rules.wonder.victory: false` turns it off. The list of standing
+  Wonders and their start ticks is in the hash. Everyone gets an alert when one is finished or falls
+  (events "wonder"), and the countdown sits under the top bar for all (`src/view/wonder_clock.gd`).
+  The bot (`data/ai.json` "wonder"): in age 3 with 150% of the cost in every stock it lays one by its
+  Town Center with 8 builders; an enemy Wonder it knows of (seen, or finished: announced) is the first
+  target of every attack, and a finished one gets everyone sent at once. An unfinished Wonder no
+  longer holds up the bots' other building. No lobby toggle for the host rule yet (data only).
 
 ## Changes from the original plan
 

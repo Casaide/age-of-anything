@@ -103,6 +103,12 @@
   "economy": ["baskets", "stone_axes", "picks", "big_pockets", "ploughs", "saws", "ore_carts", "fallow_fields", "pack_frames"],
   "army_min": 4
  },
+ "wonder": {
+  "age": 3,
+  "spare_pct": 150,
+  "builders": 8,
+  "_doc": "a Wonder (bot.gd _wonder): from `age`, with none of its own standing or going up, once its stock of every resource is at least spare_pct percent of the Wonder's cost, it lays one by its Town Center and sends `builders` workers. Every bot also attacks a Wonder it knows of (seen, or finished: everyone hears of that) before anything else, and a finished one at once"
+ },
  "_doc_mix": "economy.mix: per age, the share of workers on each resource (the bot sends idle and new workers to whatever is furthest below its share)",
  "levels": {
   "_doc": "difficulty, as in the genre: easier bots build up more and fight less, but grow all game (no caps, up to the population limit). delay: seconds added to every wave's time; army_pct: the share of each wave's minimum army; army_ratio: soldiers kept (population) as a percent of its workers per age (50: half its workers in age 1, as many in age 2, one and a half in age 3; absent: no limit); wave_pct: the share of its army each wave sends (the rest defend); build_up: research gathering and line upgrades before soldiers. (Dominic: not caps; less focus on fighting, more building up.)",

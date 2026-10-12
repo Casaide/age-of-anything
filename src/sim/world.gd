@@ -112,6 +112,9 @@ var auto_reseed := PackedByteArray()   # per player: 1 if worked-out farms resee
 var defeated := PackedInt32Array()       # per player: the tick + 1 they were knocked out, or 0 (match.gd)
 var started_with_town := PackedByteArray()
 var winner := -1               # the winning team, once only one is left
+var wonder_ids := PackedInt32Array()      # standing finished Wonders, in id order (match.gd)
+var wonder_since := PackedInt32Array()    # the tick each was found finished: its countdown runs from there
+var wonder_owners := PackedInt32Array()   # who owns each
 var fog: Array = []            # per player: PackedByteArray per cell (fog.gd); derived, not hashed
 var fog_cfg: Dictionary
 var fog_ground: Array = []     # per player: PackedByteArray, the terrain index per cell as they last saw it (fog.gd)
@@ -1321,6 +1324,8 @@ func state_hash() -> int:
 		h = Fixed.mix(h, auto_reseed[p])
 		for v in researched[p]:
 			h = Fixed.mix(h, v)
+	for k in wonder_ids.size():
+		h = Fixed.mix(Fixed.mix(h, wonder_ids[k]), wonder_since[k])
 	for v in market_price:
 		h = Fixed.mix(h, v)
 	# Which fields are solved or pending changes how units steer, so it's state too.

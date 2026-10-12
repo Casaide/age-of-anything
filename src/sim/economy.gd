@@ -61,6 +61,7 @@ static func load_btypes(resources: Array) -> Array:
 			"attack": b.get("attack", {}).duplicate(), "gate": bool(b.get("gate", false)),
 			"line": bool(b.get("line", false)), "replaces": b.get("replaces", []).duplicate(),
 			"pen": _pen_ticks(b.get("pen", {})),
+			"idle_note": b.get("idle_note", ""),
 		})
 	return out
 

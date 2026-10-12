@@ -12,7 +12,9 @@ extends RefCounted
 ## - attack waves at set times when the army is big enough, then more every couple of minutes;
 ##   units that run out of things to fight go on to the next enemy building;
 ## - a couple of healers from the Town Center in ages 2-3 (data: military.healers), kept a few
-##   tiles behind the army, on the side towards home; they heal whoever is hurt near them.
+##   tiles behind the army, on the side towards home; they heal whoever is hurt near them;
+## - a Wonder when it's rich in age 3 (data: wonder); and an enemy Wonder it knows of is the
+##   first target of every attack, a finished one (its countdown running) attacked at once.
 ## Like EcoBot it only reads sim state and issues commands, so it's deterministic.
 
 const EcoBot := preload("res://src/ai/eco_bot.gd")
@@ -43,6 +45,7 @@ var _threats := {}           # enemy unit or building id -> the tick it last hit
 var _sent := {}              # our soldier id -> the tick it was sent to trouble
 var _aln := 0                # our soldiers' lane (Reach)
 var _harea := 0              # the area round our Town Center in that lane
+var _rushed := -(1 << 30)    # the tick we last sent everyone at a finished enemy Wonder
 
 
 ## config: data/ai.json as ints (see load_config), or {} to load it. level: a key of
@@ -119,6 +122,7 @@ func think(w) -> void:
 			army.append(i)
 	_build_order(w, tc, workers)
 	_age_three(w, tc, workers)
+	_wonder(w, tc, workers)
 	_upgrade_lines(w, workers, army)
 	_train(w, workers)
 	_train_healers(w, tc, army, healers)
@@ -165,6 +169,28 @@ func _build_order(w, tc: int, workers: Array) -> void:
 		w.issue(player, Commands.BUILD, {"ids": builders, "building": id, "cx": spot.x, "cy": spot.y})
 		_next_build = w.tick + BUILD_COOLDOWN
 		return
+
+
+## A Wonder, when we're rich: from the age in data, with none of ours up or going up, once
+## every stock is spare_pct percent of its cost. Laid by the Town Center, `builders` workers on it.
+func _wonder(w, tc: int, workers: Array) -> void:
+	var c: Dictionary = cfg.get("wonder", {})
+	var k: int = Economy.btype_of(w, "wonder")
+	if c.is_empty() or k < 0 or w.ages[player] < int(c.age) or w.tick < _next_build:
+		return
+	for b in w.buildings.count():
+		if w.buildings.owner[b] == player and w.buildings.kind[b] == k:
+			return
+	var cost: PackedInt32Array = w.btypes[k].cost
+	for r in cost.size():
+		if w.stock[r][player] < cost[r] * int(c.spare_pct) / 100:
+			return
+	var spot: Vector2i = eco._house_spot(w, w.buildings.cx[tc] + 1, w.buildings.cy[tc] + 1, w.btypes[k].size)
+	if spot.x < 0 or workers.is_empty():
+		return
+	var builders := workers.slice(0, int(c.builders)).map(func(i): return w.units.id[i])
+	w.issue(player, Commands.BUILD, {"ids": builders, "building": "wonder", "cx": spot.x, "cy": spot.y})
+	_next_build = w.tick + BUILD_COOLDOWN
 
 
 ## EcoBot takes us to age 2; past that, the bot ages up again once the economy is big.
@@ -524,6 +550,7 @@ func _reachable(w, at: Vector2i) -> Vector2i:
 
 func _waves(w, army: Array, hx: int, hy: int) -> void:
 	var m: Dictionary = cfg.military
+	var wonder := _known_enemy_wonder(w, hx, hy)
 	var target := _enemy_target(w, hx, hy)
 	if target.x < 0:
 		return
@@ -535,7 +562,12 @@ func _waves(w, army: Array, hx: int, hy: int) -> void:
 	var strength := 0   # army size in population, so big units count for what they cost
 	for i in army:
 		strength += int(w.types[w.units.kind[i]].pop)
-	if w.tick >= next_wave_tick and strength >= need:
+	# A finished enemy Wonder can't wait for the next wave: everyone goes now (again every
+	# regroup while it stands), however few.
+	var urgent: bool = wonder > 0 and w.wonder_ids.has(wonder) and w.tick - _rushed >= int(m.regroup_every) * 20 and strength > 0
+	if urgent:
+		_rushed = w.tick
+	if (w.tick >= next_wave_tick and strength >= need) or urgent:
 		var sent: Array = army.slice(0, maxi(1, army.size() * wave_pct / 100))   # an easier bot sends part, the rest defend
 		w.issue(player, Commands.ATTACK_MOVE, {"ids": sent.map(func(i): return w.units.id[i]), "x": target.x, "y": target.y})
 		assault = true
@@ -562,7 +594,7 @@ func _waves(w, army: Array, hx: int, hy: int) -> void:
 		return
 	# With the field clear, go for the Town Center itself (that ends the match) rather than
 	# chewing through every house on the way.
-	var tc_id := _known_enemy_town(w, hx, hy)
+	var tc_id := wonder if wonder > 0 else _known_enemy_town(w, hx, hy)   # (a Wonder first)
 	if tc_id <= 0:
 		w.issue(player, Commands.ATTACK_MOVE, {"ids": ids, "x": target.x, "y": target.y})
 		return
@@ -589,6 +621,29 @@ func _defenders(w, b: int) -> int:
 	return n
 
 
+## Whether we know of this enemy Wonder: seen, or finished (everyone hears of that).
+func _knows_wonder(w, b: int) -> bool:
+	var bs = w.buildings
+	return w.wonder_ids.has(bs.id[b]) or Fog.explored(w, player, bs.cx[b], bs.cy[b])
+
+
+## The id of the nearest enemy Wonder we know of and can get to, finished ones first, or 0.
+func _known_enemy_wonder(w, hx: int, hy: int) -> int:
+	var wk: int = Economy.btype_of(w, "wonder")
+	var bs = w.buildings
+	var best := 0
+	var best_key := 1 << 62
+	for b in bs.count():
+		if wk < 0 or bs.kind[b] != wk or not w.is_enemy(player, bs.owner[b]) or not _knows_wonder(w, b) \
+				or not eco.reach.reaches_building(w, _aln, _harea, b):
+			continue
+		var key: int = Fixed.dist2(hx, hy, bs.cx[b] * 1000, bs.cy[b] * 1000) / 1000 + (0 if bs.done[b] == 1 else (1 << 40))
+		if key < best_key:
+			best_key = key
+			best = bs.id[b]
+	return best
+
+
 ## The id of the nearest enemy Town Center we've seen, or 0.
 func _known_enemy_town(w, hx: int, hy: int) -> int:
 	var tc_kind: int = Economy.btype_of(w, "town_center")
@@ -613,23 +668,25 @@ func _known_enemy_town(w, hx: int, hy: int) -> int:
 ## caller marches to the nearest bank (_reachable).
 func _enemy_target(w, hx: int, hy: int) -> Vector2i:
 	var tc_kind: int = Economy.btype_of(w, "town_center")
+	var wk: int = Economy.btype_of(w, "wonder")
 	var best := Vector2i(-1, -1)
 	var best_d2 := 1 << 62
-	var best_tc := false
+	var best_rank := -1   # 2: a Wonder, 1: a Town Center, 0: anything else
 	var best_ok := false
 	for b in w.buildings.count():
 		var bs = w.buildings
-		if not w.is_enemy(player, bs.owner[b]) or not Fog.explored(w, player, bs.cx[b], bs.cy[b]):
+		var wonder: bool = bs.kind[b] == wk
+		if not w.is_enemy(player, bs.owner[b]) or not (Fog.explored(w, player, bs.cx[b], bs.cy[b]) or (wonder and _knows_wonder(w, b))):
 			continue
 		var x: int = bs.cx[b] * 1000 + bs.sx[b] * 500
 		var y: int = bs.cy[b] * 1000 + bs.sy[b] * 500
-		var is_tc: bool = bs.kind[b] == tc_kind
+		var rank: int = 2 if wonder else (1 if bs.kind[b] == tc_kind else 0)
 		var ok: bool = eco.reach.reaches_building(w, _aln, _harea, b)
 		var d2 := Fixed.dist2(hx, hy, x, y)
-		if (ok and not best_ok) or (ok == best_ok and ((is_tc and not best_tc) or (is_tc == best_tc and d2 < best_d2))):
+		if (ok and not best_ok) or (ok == best_ok and (rank > best_rank or (rank == best_rank and d2 < best_d2))):
 			best = Vector2i(x, y)
 			best_d2 = d2
-			best_tc = is_tc
+			best_rank = rank
 			best_ok = ok
 	if best.x < 0:
 		for p in w.races.size():
