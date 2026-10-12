@@ -1326,16 +1326,18 @@ func _weapon_dory(c: Dictionary) -> Dictionary:
 
 
 func _weapon_pilum(c: Dictionary) -> Dictionary:
+	# Raised steeply over the shoulder, a slim shaft and a long bare iron shank with a small
+	# point: held level and thick, with a lump at the grip, it read as a rifle (Dominic).
 	var n := Node3D.new()
 	var iron := surf("iron", Color.WHITE, 3.0)
-	var a := Vector3(-7, -4.5, 0)   # gripped at its balance: raised over the shoulder, ready to throw
-	var b := Vector3(6, 3.5, 0)
-	n.add_child(rod(a, b, 0.8, 0.8, surf("wood_grain", Color.WHITE, 6.0), false))
-	var d := (b - a).normalized()
-	var tip := b + d * 6.0
-	n.add_child(rod(b, tip, 0.4, 0.35, iron, false))
-	n.add_child(blob(Vector3(1.2, 1.0, 1.0), surf("wood_grain", Color("#b08050"), 3.0), b))
-	n.add_child(blade([Vector2(0, -0.8), Vector2(2.2, 0), Vector2(0, 0.8)], 0.8, iron, tip, atan2(d.y, d.x)))
+	var d := Vector3(0.62, 0.78, 0)   # gripped at its balance, tip up and forward, ready to throw
+	var a := -d * 4.0   # little behind the hand, so the shank and point clear the helmet
+	var b := d * 10.0
+	n.add_child(rod(a, b, 0.55, 0.55, surf("wood_grain", Color.WHITE, 6.0), false))
+	var tip := b + d * 10.0
+	n.add_child(rod(b, tip, 0.35, 0.3, iron, false))
+	n.add_child(ring(0.45, 0.7, iron, b, Vector3(0, 0, rad_to_deg(atan2(d.y, d.x)) - 90)))   # the binding
+	n.add_child(blade([Vector2(0, -0.9), Vector2(2.6, 0), Vector2(0, 0.9)], 0.8, iron, tip, atan2(d.y, d.x)))
 	return {"node": n}
 
 
