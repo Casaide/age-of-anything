@@ -74,7 +74,13 @@ static func display_font() -> Font:
 	if not _fonts.has("display"):
 		var f: Font
 		if FileAccess.file_exists(FONT_DIR + "display.ttf"):
-			f = load(FONT_DIR + "display.ttf")
+			var ff := FontFile.new()   # loaded raw, so headless --script runs need no editor import
+			ff.load_dynamic_font(FONT_DIR + "display.ttf")
+			var v := FontVariation.new()   # Cinzel is a variable font: a semi-bold weight for titles
+			v.base_font = ff
+			v.variation_opentype = {TextServerManager.get_primary_interface().name_to_tag("wght"): 600}
+			v.fallbacks = [ThemeDB.fallback_font]
+			f = v
 		else:
 			var s := SystemFont.new()
 			s.font_names = PackedStringArray(DISPLAY_SYSTEM)
@@ -91,7 +97,9 @@ static func text_font(bold := false) -> Font:
 	if not _fonts.has(key):
 		var f: Font
 		if FileAccess.file_exists(FONT_DIR + key + ".ttf"):
-			f = load(FONT_DIR + key + ".ttf")
+			var ff := FontFile.new()
+			ff.load_dynamic_font(FONT_DIR + key + ".ttf")
+			f = ff
 		elif bold:
 			var v := FontVariation.new()
 			v.base_font = ThemeDB.fallback_font
