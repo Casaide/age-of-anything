@@ -317,13 +317,12 @@ func _setup() -> Control:
 	return root
 
 
-## Which team player i of n is on: the map's "teams" if it has them (lists of start indices),
-## else the first half against the second; 1v1 is each for themselves.
+## Which team player i of n is on: the map's "teams" (a team per start, as the sim reads it:
+## SimMap.start_teams), else the first half against the second; 1v1 is each for themselves.
 func _team_of(i: int, n: int) -> int:
-	if map_data.has("teams"):
-		for t in map_data.teams.size():
-			if i in map_data.teams[t].map(func(v): return int(v)):
-				return t
+	var teams: Array = map_data.get("teams", [])
+	if i < teams.size():
+		return int(teams[i])
 	return i if n <= 2 else (0 if i < n / 2 else 1)
 
 
@@ -915,6 +914,13 @@ func _set_map(k: int) -> void:
 	if m.starts.size() != sides.size():
 		_build_sides(m.starts.size())
 	map_name.text = m.name
+	map_name.remove_theme_font_size_override("font_size")
+	var room: float = map_name.size.x
+	var f: Font = map_name.get_theme_font("font")
+	var fs: int = map_name.get_theme_font_size("font_size")
+	while room > 0.0 and fs > 16 and f.get_string_size(m.name, HORIZONTAL_ALIGNMENT_LEFT, -1, fs).x > room:
+		fs -= 2   # a long name ("Reed Meadow (2v2)") gets a smaller size, not an ellipsis (Dominic)
+	map_name.add_theme_font_size_override("font_size", fs)
 	var n: int = m.starts.size()
 	map_note.text = "%d x %d tiles  ·  %s" % [int(m.width), int(m.height), "1 v 1" if n == 2 else "%d v %d" % [n / 2, n - n / 2]]
 	map_pic.texture = ImageTexture.create_from_image(_map_image(m))
