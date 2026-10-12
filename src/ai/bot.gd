@@ -836,21 +836,21 @@ func _blocker(w, hx: int, hy: int, target: Vector2i) -> Vector2i:
 	return best
 
 
-## How many cells of `area` share a side (not just a corner) with building b's footprint.
+## How many cells of `area` share a side (not just a corner) with building b's footprint (a
+## diagonal gate's too: the cells of its stair on either side).
 func _sides(w, b: int, area: int) -> int:
 	var lab: PackedInt32Array = eco.reach.labels(w, _aln)
-	var bs = w.buildings
 	var m = w.map
-	var n := 0
-	for y in range(bs.cy[b], bs.cy[b] + bs.sy[b]):
-		for x in [bs.cx[b] - 1, bs.cx[b] + bs.sx[b]]:
-			if x >= 0 and x < m.width and lab[y * m.width + x] == area:
-				n += 1
-	for x in range(bs.cx[b], bs.cx[b] + bs.sx[b]):
-		for y in [bs.cy[b] - 1, bs.cy[b] + bs.sy[b]]:
-			if y >= 0 and y < m.height and lab[y * m.width + x] == area:
-				n += 1
-	return n
+	var cells: PackedInt32Array = w.buildings.footprint(b, m.width)
+	var counted := {}
+	for c in cells:
+		for d in [Vector2i(-1, 0), Vector2i(1, 0), Vector2i(0, -1), Vector2i(0, 1)]:
+			var x: int = c % m.width + d.x
+			var y: int = c / m.width + d.y
+			var o: int = y * m.width + x
+			if x >= 0 and y >= 0 and x < m.width and y < m.height and lab[o] == area and not cells.has(o):
+				counted[o] = true
+	return counted.size()
 
 
 ## A point our soldiers can get to: the point itself if it's in our area, else the nearest

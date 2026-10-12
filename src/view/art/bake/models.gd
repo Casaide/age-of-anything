@@ -10,6 +10,7 @@ const Materials := preload("res://src/view/art/bake/materials.gd")
 
 var mats := Materials.new()
 var rng := RandomNumberGenerator.new()
+var gate_span := 3.0   # a gate's length end to end in tiles: 3 along x, 3 x sqrt 2 corner to corner on a diagonal (ArtKit sets it)
 
 
 func _mi(mesh: Mesh, mat: Material, pos := Vector3.ZERO, rot := Vector3.ZERO, scl := Vector3.ONE) -> MeshInstance3D:
@@ -2658,7 +2659,9 @@ func _books(body: Node3D, at: Vector3) -> void:
 # reads as one wall whichever way it runs, diagonals included. Arms end on the tile's edge (or
 # corner) where the neighbour's arm takes over; the stake or merlon on that edge belongs to the
 # arm pointing down the screen (OWNS), so it isn't stood there twice.
-# Gates are `length` tiles long along x (sim x) and baked a quarter turn for lines along z.
+# Gates are `length` tiles long along x (sim x) and baked a quarter turn for lines along z; on a
+# diagonal (ArtKit: an eighth turn) they run corner to corner across their square, `gate_span` long,
+# so their ends meet the diagonal wall arms on the cells' corners.
 
 const LINKS := [Vector2i(1, 0), Vector2i(1, 1), Vector2i(0, 1), Vector2i(-1, 1), Vector2i(-1, 0), Vector2i(-1, -1), Vector2i(0, -1), Vector2i(1, -1)]
 
@@ -2802,7 +2805,7 @@ func _palisade_dress(body: Node3D, arch: String, spots: Array, l: float, k := 0)
 ## Palisade Gate, three tiles long (closed in "body", open in "open"): a stout post at each end
 ## of the gate, where the wall arms meet it; a lintel resting on the two, exactly as long as the
 ## gate, with knee braces; the team cloth hung from it; two wide leaves of stakes that swing back.
-const GATE_POST := 1.36    # the gate posts' centres: their outer faces flush with the gate's ends
+const GATE_POST := 0.14    # the gate posts' centres in from the gate's ends: their outer faces flush with them
 const GATE_POST_R := 0.13
 const GATE_TOP := 1.16     # the lintel's underside
 
@@ -2815,34 +2818,36 @@ func _stake_gate(arch: String, team: Color, open: bool) -> Node3D:
 	var body := Node3D.new()
 	rng.seed = 95
 	var wood := mats.get_mat("wood")
-	var posts := [Vector3(-GATE_POST, 0, 0), Vector3(GATE_POST, 0, 0)]
+	var post := gate_span / 2.0 - GATE_POST
+	var posts := [Vector3(-post, 0, 0), Vector3(post, 0, 0)]
 	for p in posts:   # the gate posts, taller and thicker than the fence, propped from behind
 		body.add_child(cyl(GATE_POST_R, GATE_POST_R + 0.01, GATE_TOP + 0.13, wood, p + Vector3(0, (GATE_TOP + 0.13) / 2, 0), Vector3.ZERO, 10))
 		body.add_child(cyl(0.0, GATE_POST_R, 0.16, wood, p + Vector3(0, GATE_TOP + 0.21, 0), Vector3.ZERO, 10))   # its point, over the lintel
 		body.add_child(beam(p + Vector3(0, 0.0, -0.42), p + Vector3(0, 0.72, -GATE_POST_R + 0.02), 0.045, wood))   # a prop leaning on it
 	# The lintel: one squared beam across the post tops, as long as the gate and no longer,
 	# held by a knee brace at each post.
-	body.add_child(box(Vector3(2.0 * (GATE_POST + GATE_POST_R), 0.13, 0.17), wood, Vector3(0, GATE_TOP + 0.065, 0)))
+	body.add_child(box(Vector3(2.0 * (post + GATE_POST_R), 0.13, 0.17), wood, Vector3(0, GATE_TOP + 0.065, 0)))
 	for side in [-1, 1]:
-		body.add_child(beam(Vector3(side * (GATE_POST - GATE_POST_R + 0.02), GATE_TOP - 0.36, 0.0), Vector3(side * (GATE_POST - 0.46), GATE_TOP + 0.01, 0.0), 0.035, wood))
+		body.add_child(beam(Vector3(side * (post - GATE_POST_R + 0.02), GATE_TOP - 0.36, 0.0), Vector3(side * (post - 0.46), GATE_TOP + 0.01, 0.0), 0.035, wood))
 	# The team cloth hangs from the lintel: a batten tied on under it by two cords.
 	var batten := GATE_TOP - 0.08
 	for x in [-0.2, 0.2]:
 		body.add_child(beam(Vector3(x, GATE_TOP + 0.01, 0.07), Vector3(x, batten, 0.07), 0.012, mats.get_mat("thatch"), 4))
 	body.add_child(box(Vector3(0.52, 0.04, 0.04), wood, Vector3(0, batten, 0.07)))
 	body.add_child(box(Vector3(0.44, 0.32, 0.02), cloth(team), Vector3(0, batten - 0.18, 0.07)))
+	var leaf_w := post - GATE_POST_R   # each leaf half the way through
 	for side in [-1, 1]:
 		var leaf := Node3D.new()   # hinged on its post; it swings back (away from the viewer) when open
-		leaf.position = Vector3(side * (GATE_POST - GATE_POST_R), 0, 0)
+		leaf.position = Vector3(side * leaf_w, 0, 0)
 		leaf.rotation_degrees = Vector3(0, 90 * -side if open else 0, 0)
 		body.add_child(leaf)
-		for k in 10:
+		for k in int(leaf_w / 0.12):   # stakes 0.12 apart (ten on a straight gate's leaf)
 			var x: float = -side * (0.06 + k * 0.12)
 			leaf.add_child(cyl(0.05, 0.055, 0.76, wood, Vector3(x, 0.4, 0), Vector3.ZERO, 6))
 			leaf.add_child(cyl(0.0, 0.05, 0.1, wood, Vector3(x, 0.83, 0), Vector3.ZERO, 6))
 		for y in [0.22, 0.6]:
-			leaf.add_child(box(Vector3(1.18, 0.05, 0.03), wood, Vector3(-side * 0.6, y, 0.05)))
-		leaf.add_child(beam(Vector3(-side * 0.05, 0.22, 0.06), Vector3(-side * 1.12, 0.6, 0.06), 0.022, wood))   # a brace across
+			leaf.add_child(box(Vector3(leaf_w - 0.05, 0.05, 0.03), wood, Vector3(-side * (leaf_w / 2.0 - 0.015), y, 0.05)))
+		leaf.add_child(beam(Vector3(-side * 0.05, 0.22, 0.06), Vector3(-side * (leaf_w - 0.11), 0.6, 0.06), 0.022, wood))   # a brace across
 	for p in posts:   # the culture's touch at each post's foot, not in the way through
 		var foot := Node3D.new()
 		foot.position = p
@@ -2861,7 +2866,7 @@ func _stake_gate(arch: String, team: Color, open: bool) -> Node3D:
 ## vanishing under a roof; no floor is drawn, so the ground shows through); the team banner hung
 ## from the front arch, in the middle; iron-banded double doors filling the arch, which swing
 ## in flat against the piers.
-const GATE_PIER := 1.27    # the piers' centres: their outer faces flush with the gate's ends
+const GATE_PIER := 0.23    # the piers' centres in from the gate's ends: their outer faces flush with them
 const GATE_PIER_W := 0.46
 const GATE_ARCH := 1.1    # the arches' undersides
 
@@ -2876,12 +2881,13 @@ func _gatehouse(arch: String, team: Color, open: bool) -> Node3D:
 	var wood := mats.get_mat("wood")
 	var iron := Materials.flat(Color("#4a4c50"), 0.5, 0.7)
 	var top := GATE_ARCH + 0.28
-	for x in [-GATE_PIER, GATE_PIER]:
+	var pier := gate_span / 2.0 - GATE_PIER
+	for x in [-pier, pier]:
 		body.add_child(box(Vector3(GATE_PIER_W, top + 0.04, 0.98), m, Vector3(x, (top + 0.04) / 2, 0)))   # a pier, as deep as the gate
 		for z in [-0.34, 0.0, 0.34]:
 			body.add_child(box(Vector3(0.18, 0.18, 0.18), m, Vector3(x, top + 0.13, z)))
 		body.add_child(box(Vector3(0.07, 0.22, 0.03), Materials.flat(Color("#1e1a16"), 1.0), Vector3(x, 0.7, 0.5)))   # an arrow slit
-	var inner := GATE_PIER - GATE_PIER_W / 2   # the piers' inner faces
+	var inner := pier - GATE_PIER_W / 2   # the piers' inner faces
 	for z in [-0.37, 0.37]:   # the arches, front and back, open to the sky between
 		body.add_child(box(Vector3(2.0 * inner, 0.28, 0.24), m, Vector3(0, GATE_ARCH + 0.14, z)))
 		body.add_child(box(Vector3(2.0 * inner, 0.05, 0.2), mats.get_mat("stone"), Vector3(0, GATE_ARCH + 0.025, z)))   # the arch stones' soffit

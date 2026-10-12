@@ -97,6 +97,7 @@ func _init() -> void:
 	_test_builder_moves_on(races)
 	_test_gates(races)
 	_test_diagonal_wall(races)
+	_test_diagonal_gates(races)
 	_test_camp_gather(races)
 	_test_drop_off(races)
 	_test_animals(races)
@@ -1902,6 +1903,128 @@ func _test_diagonal_wall(races: Array) -> void:
 		w.step()
 	check(inside.call(w.units.index_of(ids[0])), "diagonal wall: a unit steered straight at the corner gap doesn't slip through")
 
+
+## Diagonal gates (Dominic: "diagonal gates missing?"): a gate dropped into a diagonal wall run
+## lies on it corner to corner, three cells (along 2: x and y grow together, straight down the
+## screen; along 3: across it). Its own side walks through; the enemy doesn't, neither through
+## it nor between its ends and the wall pieces they touch at a corner; the cells beside it stay
+## open ground. The diamond of side 1's palisade from _test_diagonal_wall, round (16, 24), with a
+## gate dropped into its upper-right side (along 2) and its lower-right side (along 3).
+func _test_diagonal_gates(races: Array) -> void:
+	var bare := rules_.duplicate(true)
+	bare.economy.start.buildings = []
+	bare.economy.start.workers = 0
+	var w := World.new(SEED, SimMap.load_id("flat_test"), races, bare)
+	var r := 6
+	for k in 4 * r:
+		var q := k % r
+		var c: Vector2i = [Vector2i(16 + q, 18 + q), Vector2i(22 - q, 24 + q), Vector2i(16 - q, 30 - q), Vector2i(10 + q, 24 - q)][k / r]
+		_put(w, 1, "palisade", c.x, c.y)
+	var inside := func(i: int) -> bool:
+		return absi(w.units.x[i] / 1000 - 16) + absi(w.units.y[i] / 1000 - 24) < r
+	var mw: int = w.map.width
+	var k := Economy.btype_of(w, "palisade_gate")
+	# Placement: on your own wall of the kind it replaces, three cells corner to corner.
+	check(Economy.dims(w.btypes[k], 2) == Vector2i(3, 3) and Economy.dims(w.btypes[k], 3) == Vector2i(3, 3), "diagonal gates: a diagonal gate spans a 3 x 3 square")
+	check(Economy.can_place(w, 1, k, 17, 19, 2) and Economy.can_place(w, 1, k, 19, 25, 3), "diagonal gates: one goes on each diagonal of your own wall")
+	check(not Economy.can_place(w, 0, k, 17, 19, 2), "diagonal gates: ... not on a rival's")
+	check(not Economy.can_place(w, 1, Economy.btype_of(w, "stone_gate"), 17, 19, 2), "diagonal gates: a stone gate doesn't go on a palisade")
+	check(not Economy.can_place(w, 1, k, 62, 30, 2) and not Economy.can_place(w, 1, k, -1, 30, 3), "diagonal gates: not off the map's edge")
+	_put(w, 1, "house", 34, 10)
+	check(not Economy.can_place(w, 1, k, 33, 9, 2) and not Economy.can_place(w, 1, k, 33, 9, 3), "diagonal gates: not over another building")
+	check(Economy.can_place(w, 1, k, 32, 8, 3), "diagonal gates: only its diagonal counts (its square's corner may overlap a house)")
+	# Built by a worker from inside, with BUILD clicks (along 2, then along 3).
+	var builder := _spawn_at(w, 1, "worker", 16500, 24500)
+	w.stock[w.resources.find("wood")][1] = 500
+	var walls := []
+	for q in range(1, 4):
+		walls.append(w.map.occupied[(18 + q) * mw + 16 + q])
+	w.issue(1, Commands.BUILD, {"ids": [builder], "building": "palisade_gate", "cx": 17, "cy": 19, "along": 2})
+	w.issue(1, Commands.BUILD, {"ids": [builder], "building": "palisade_gate", "cx": 19, "cy": 25, "along": 3, "queue": 1})
+	for t in 3000:
+		w.step()
+		var a: int = w.buildings.index_of(w.map.occupied[20 * mw + 18])
+		var b: int = w.buildings.index_of(w.map.occupied[26 * mw + 20])
+		if a >= 0 and b >= 0 and w.buildings.done[a] == 1 and w.buildings.done[b] == 1 and w.btypes[w.buildings.kind[b]].gate:
+			break
+	var g1: int = w.map.occupied[20 * mw + 18]
+	var g2: int = w.map.occupied[26 * mw + 20]
+	var b1 := w.buildings.index_of(g1)
+	var b2 := w.buildings.index_of(g2)
+	check(b1 >= 0 and w.btypes[w.buildings.kind[b1]].gate and w.buildings.done[b1] == 1 and w.buildings.diag[b1] == 1, "diagonal gates: built down the screen (along 2)")
+	check(b2 >= 0 and w.btypes[w.buildings.kind[b2]].gate and w.buildings.done[b2] == 1 and w.buildings.diag[b2] == 2, "diagonal gates: ... and across it (along 3)")
+	check(walls.all(func(id): return w.buildings.index_of(id) < 0), "diagonal gates: the three wall tiles under it are gone")
+	check(w.map.occupied[19 * mw + 17] == g1 and w.map.occupied[21 * mw + 19] == g1 and w.map.occupied[25 * mw + 21] == g2 and w.map.occupied[27 * mw + 19] == g2,
+		"diagonal gates: each holds the three cells of its diagonal")
+	var open := [Vector2i(18, 19), Vector2i(19, 19), Vector2i(17, 20), Vector2i(17, 21), Vector2i(20, 25), Vector2i(19, 26), Vector2i(21, 26)]
+	check(open.all(func(c): return w.map.occupied[c.y * mw + c.x] == 0 and w.map.walks[0][c.y * mw + c.x] == 1), "diagonal gates: the rest of its square is open ground")
+	# Fields: none out of the diamond for side 0; out for side 1, through the gates.
+	var mine := w.lane_base[1]
+	var theirs := w.lane_base[0]
+	var f0 = Flow.solve(w.map, PackedInt32Array([24 * mw + 16]), Flow.INF, theirs)
+	check(f0.dist[24 * mw + 26] >= Flow.INF, "diagonal gates: no field leads the enemy out (no corner slipped at the gates' ends)")
+	var f1 = Flow.solve(w.map, PackedInt32Array([24 * mw + 16]), Flow.INF, mine)
+	check(f1.dist[18 * mw + 21] < Flow.INF and f1.dist[29 * mw + 22] < Flow.INF, "diagonal gates: the owner's field goes out through both")
+	# Side 1 walks out through each gate and back in; side 0's crowd pushed at them stays in.
+	var friends := []
+	for n in 3:
+		friends.append(_spawn_at(w, 1, ["spear", "worker", "large"][n], 15500 + n * 700, 23500))
+	for dest in [Vector2i(21000, 18000), Vector2i(23000, 29000)]:
+		w.issue(1, Commands.MOVE, {"ids": friends, "x": dest.x, "y": dest.y})
+		for t in 700:
+			w.step()
+		var out := 0
+		for id in friends:
+			var i := w.units.index_of(id)
+			if i >= 0 and Fixed.dist2(w.units.x[i], w.units.y[i], dest.x, dest.y) < 2000 * 2000:
+				out += 1
+		check(out == friends.size(), "diagonal gates: side 1 walks out through its gate to (%d, %d) (%d of %d)" % [dest.x, dest.y, out, friends.size()])
+		w.issue(1, Commands.MOVE, {"ids": friends, "x": 16500, "y": 24500})
+		for t in 700:
+			w.step()
+		check(friends.all(func(id): return inside.call(w.units.index_of(id))), "diagonal gates: ... and back in")
+	for id in friends + [builder]:   # (side 0 would fight them)
+		if w.units.index_of(id) >= 0:
+			w.units.remove_at(w.units.index_of(id))
+	var crowd := []
+	for n in 9:
+		crowd.append(_spawn_at(w, 0, ["spear", "worker", "large"][n % 3], 15000 + (n % 3) * 700, 25000 + (n / 3) * 700))
+	for dest in [Vector2i(21000, 18000), Vector2i(23000, 29000)]:
+		w.issue(0, Commands.MOVE, {"ids": crowd, "x": dest.x, "y": dest.y})
+		for t in 700:
+			w.step()
+	var esc := 0
+	for id in crowd:
+		if not inside.call(w.units.index_of(id)):
+			esc += 1
+	check(esc == 0, "diagonal gates: the enemy crowd pushed at both gates stays in (%d got out)" % esc)
+	# Right at the corner where the gate's end meets the next wall tile (16, 18) and (17, 19) touch
+	# at (17000, 19000)), stepping straight through the point: stopped.
+	var i := w.units.index_of(crowd[0])
+	w.units.x[i] = 16960
+	w.units.y[i] = 19040
+	w.order_direct(i, 17600, 18400)
+	for t in 40:
+		w.step()
+	check(inside.call(w.units.index_of(crowd[0])), "diagonal gates: no slipping between the gate's end and the wall at their corner")
+	# Its look opens for a friend at its cells, not one off in its square's open corner.
+	for id in crowd:
+		w.units.remove_at(w.units.index_of(id))
+	b1 = w.buildings.index_of(g1)
+	var by := _spawn_at(w, 1, "worker", 19800, 19200)   # in the square's corner cell (19, 19), over a tile from the gate's cells
+	check(not BuildingArt.gate_open(w, b1), "diagonal gates: a friend off in its square's corner doesn't open it")
+	w.units.x[w.units.index_of(by)] = 18600   # beside the middle cell
+	w.units.y[w.units.index_of(by)] = 19400
+	check(BuildingArt.gate_open(w, b1), "diagonal gates: a friend beside it does")
+	w.units.remove_at(w.units.index_of(by))
+	# The enemy knocks it down from outside, and the way is open.
+	var foe := _spawn_at(w, 0, "spear", 21000, 18000)
+	w.issue(0, Commands.ATTACK, {"ids": [foe], "target": g1})
+	var t0 := w.tick
+	while w.tick < t0 + 12000 and w.buildings.index_of(g1) >= 0:
+		w.step()
+	check(w.buildings.index_of(g1) < 0, "diagonal gates: an enemy spearman knocks one down (%d ticks)" % (w.tick - t0))
+	check(w.map.walks[w.lane_base[0]][20 * mw + 18] == 1, "diagonal gates: ... and its cells are open to everyone")
 
 ## A worker who finishes a lumber camp goes and gathers wood (Dominic).
 func _test_camp_gather(races: Array) -> void:
