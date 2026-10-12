@@ -19,7 +19,11 @@ along the way. The overview table lives in `../mvp-plan.md` §3; these files hol
 | 11 | [Cleanup](m11-cleanup.md) | done 2026-10-11 |
 | 12 | [The full land tech tree](m12-tech-tree.md) | in progress |
 | 13 | [Unit lines](m13-unit-lines.md) | planned |
-| 14 | [Race identity](m14-race-identity.md) | planned (design round can start now) |
+| 14 | [Race identity and heroes](m14-race-identity.md) | planned (design round can start now) |
+| 15 | [Maps and land](m15-maps.md) | planned (phase 1 can start now) |
+| 16 | [Sieges](m16-sieges.md) | planned (after 13) |
+| 17 | [Living towns](m17-living-towns.md) | planned (view-side, any time) |
+| 18 | [Match rules](m18-match-rules.md) | planned (small, any time) |
 | - | [Art pass](art-pass.md) | direction chosen, vertical slice done |
 | - | [Art and UI track](art-ui-track.md) | A1 = milestone 5; later stages run alongside milestones 7-10 |
 | - | [Networking](networking.md) | planned (after the demo) |
