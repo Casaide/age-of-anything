@@ -1045,6 +1045,7 @@ func _play_events() -> void:
 				if i >= 0:
 					kind = CombatFx.shot_kind(world.types[world.units.kind[i]].eval.tags)
 				lands = fx.shoot(_body(a) - Vector2(0, 2), to, kind)
+				a.loose()
 			else:
 				a.flourish()
 				fx.spark(to, e.damage >= 8)
