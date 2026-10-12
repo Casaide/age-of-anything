@@ -40,6 +40,11 @@ func _init() -> void:
 		print("\n%d checks, %d failed" % [checks, failures])
 		quit(1 if failures > 0 else 0)
 		return
+	if args.size() > 1 and args[1] == "levels":   # just the per-level build-up checks (a few minutes)
+		_test_levels(rules, frogs, rats)
+		print("\n%d checks, %d failed" % [checks, failures])
+		quit(1 if failures > 0 else 0)
+		return
 	if args.size() > 1 and args[1] == "reach":   # just the raid and walled-ford checks (a couple of minutes)
 		_test_respond(rules, rats, frogs)
 		_test_walled_fords(rules, frogs, rats)
@@ -231,6 +236,64 @@ func _test_age_three(rules: Dictionary, a: Dictionary, b: Dictionary) -> void:
 	print("\n== age 3: %d workers, buildings %s; University/Castle research %s" % [workers, done.keys(), theirs])
 	check(done.has("university") and done.has("castle"), "age 3: the bot builds a University and a Castle")
 	check(theirs.size() >= 2, "age 3: ...and buys at least two of their research (%s)" % [theirs])
+
+
+## Each level left to build up (milestone 12 phase 8): the bot with its attack waves switched
+## off, against a passive side, for 30 minutes. Reports when it reaches each age, what it has
+## built and researched by 20 minutes, and its army; checks the targets: age 2 by 6 minutes
+## (Normal, Hard), age 3 by 16 minutes (Easy, Normal), and by 20 minutes a University, a Castle
+## and a tower (Easy, Normal) and some research; by 30 minutes Normal has an army still growing.
+func _test_levels(rules: Dictionary, a: Dictionary, b: Dictionary) -> void:
+	for level in ["easy", "normal", "hard"]:
+		var cfg: Dictionary = Bot.load_config()
+		for wv in cfg.military.waves:
+			wv.at = 1 << 20   # no attacks: building up alone
+		var w := World.new(SEED, SimMap.load_id(map_id), [a, b], rules)
+		var bots := [Bot.new(0, cfg, level), EcoBot.new(1)]
+		var aged := {}
+		var bought := []
+		var built20 := {}
+		var army := {}   # minute -> soldiers' population
+		while w.tick < 20 * 60 * 30 and w.winner < 0:
+			for bot in bots:
+				bot.think(w)
+			w.step()
+			for e in w.events:
+				if e.type == "age" and e.player == 0:
+					aged[e.age] = w.tick
+				elif e.type == "research" and e.player == 0 and w.tick <= 20 * 60 * 20:
+					bought.append(e.id)
+			if w.tick % 1200 == 0:
+				var pop := 0
+				var workers := 0
+				for i in w.units.count():
+					var t: Dictionary = w.types[w.units.kind[i]]
+					if w.units.owner[i] == 0 and not t.worker and not t.healer and not t.has("animal"):
+						pop += int(t.pop)
+					elif w.units.owner[i] == 0 and t.worker:
+						workers += 1
+				army[w.tick / 1200] = pop
+				if w.tick % 6000 == 0:
+					print("  %s %s: age %d, %d workers, %d soldier pop, stock %s" % [level, _clock(w.tick), w.ages[0], workers, pop, range(w.resources.size()).map(func(r): return w.stock[r][0])])
+			if w.tick == 20 * 60 * 20:
+				for k in w.buildings.count():
+					if w.buildings.owner[k] == 0 and w.buildings.done[k] == 1:
+						var id: String = w.btypes[w.buildings.kind[k]].id
+						built20[id] = int(built20.get(id, 0)) + 1
+		var a2: int = aged.get(2, -1)
+		var a3: int = aged.get(3, -1)
+		var towers: int = built20.get("watchtower", 0) + built20.get("bastion", 0)
+		print("\n== %s, left alone: age 2 at %s, age 3 at %s; by 20:00 built %s; research by 20:00 (%d) %s; army pop at 10/20/30 min %s/%s/%s" % [
+			level, _clock(a2) if a2 >= 0 else "-", _clock(a3) if a3 >= 0 else "-", built20, bought.size(), bought, army.get(10, 0), army.get(20, 0), army.get(30, 0)])
+		if level != "easy":
+			check(a2 >= 0 and a2 <= 20 * 60 * 6, "%s: age 2 by 6:00 (%s)" % [level, _clock(a2)])
+		if level != "hard":
+			check(a3 >= 0 and a3 <= 20 * 60 * 16, "%s: age 3 by 16:00 (%s)" % [level, _clock(a3)])
+			check(built20.has("university") and built20.has("castle"), "%s: a University and a Castle by 20:00" % level)
+			check(towers >= 1, "%s: a tower by 20:00" % level)
+			check(bought.size() >= 10, "%s: ten or more research by 20:00 (%d)" % [level, bought.size()])
+		if level == "normal":
+			check(army.get(30, 0) > army.get(20, 0), "normal: its army keeps growing (%d at 20:00, %d at 30:00)" % [army.get(20, 0), army.get(30, 0)])
 
 
 ## Raids anywhere get an answer (Dominic, 2026-10-13: "attacking any enemy builds doesn't

@@ -26,7 +26,6 @@ const Fog := preload("res://src/sim/fog.gd")
 
 const THINK_EVERY := 20     # ticks (1 s), offset from EcoBot's think by half a second
 const BUILD_COOLDOWN := 200
-const AGE3_WORKERS := 24
 const REINFORCE := 4         # soldiers idle at home that go forward as a group during an attack
 const THREAT_TICKS := 200    # a blow on our buildings or workers is answered for 10 s after
 const RESEND := 100          # ticks before a soldier already sent to trouble is sent again
@@ -46,18 +45,25 @@ var _sent := {}              # our soldier id -> the tick it was sent to trouble
 var _aln := 0                # our soldiers' lane (Reach)
 var _harea := 0              # the area round our Town Center in that lane
 var _rushed := -(1 << 30)    # the tick we last sent everyone at a finished enemy Wonder
+var _blocked := PackedInt32Array()   # the cost of the build step waiting on resources (what it saves for)
+var _tower_at := Vector2i(-1, -1)    # where a raid was: a Watchtower goes up there once it's quiet
+var _sheltering := false     # our workers were called to arms
 
 
 ## config: data/ai.json as ints (see load_config), or {} to load it. level: a key of
-## its "levels" (easy, normal): later, smaller attack waves and a smaller economy.
+## its "levels" (easy, normal, hard): how it plays (see "levels" there).
 var army_ratio := 0   # soldiers kept per age as a percent of workers (0: no limit); grows with the ages
 var wave_pct := 100   # the share of the army each wave sends; the rest defend
 var build_up := false # economy and upgrades come before soldiers
+var age3_workers := 26   # workers before it saves for age 3
+var towers := 0       # Watchtowers it raises where it was raided
+var shelter_pop := 0  # a raid this big (enemy population) by the Town Center calls the workers to arms (0: never)
 
 
 func _init(p_player: int, config := {}, level := "normal") -> void:
 	player = p_player
 	cfg = config if not config.is_empty() else load_config()
+	age3_workers = int(cfg.economy.get("age3_workers", age3_workers))
 	if cfg.has("levels") and cfg.levels.has(level):
 		var l: Dictionary = cfg.levels[level]
 		cfg = cfg.duplicate(true)
@@ -65,17 +71,33 @@ func _init(p_player: int, config := {}, level := "normal") -> void:
 			w.at = int(w.at) + int(l.get("delay", 0))
 			w.min_army = maxi(1, int(w.min_army) * int(l.get("army_pct", 100)) / 100)
 		cfg.military.repeat_min_army = maxi(1, int(cfg.military.repeat_min_army) * int(l.get("army_pct", 100)) / 100)
-		cfg.economy.max_workers = int(l.get("max_workers", cfg.economy.max_workers))
+		cfg.economy.max_workers = l.get("max_workers", cfg.economy.max_workers)
 		army_ratio = int(l.get("army_ratio", 0))
 		wave_pct = int(l.get("wave_pct", 100))
 		build_up = int(l.get("build_up", 0)) == 1
+		age3_workers = int(l.get("age3_workers", age3_workers))
+		towers = int(l.get("towers", 0))
+		shelter_pop = int(l.get("shelter_pop", 0))
 	eco = EcoBot.new(p_player)
 	eco.MIX = {}
 	for age in cfg.economy.mix:
 		eco.MIX[int(age)] = cfg.economy.mix[age]
-	eco.MAX_WORKERS = int(cfg.economy.max_workers)
+	eco.MAX_WORKERS = _max_workers(1)
 	eco.AGE_WORKERS = int(cfg.economy.age_workers)
+	eco.REBALANCE = int(cfg.economy.get("rebalance_every", 0)) * 20
 	next_wave_tick = int(cfg.military.waves[0].at) * 20
+
+
+## The most workers it trains in an age (economy.max_workers: one number, or one per age).
+func _max_workers(age: int) -> int:
+	var m = cfg.economy.max_workers
+	if typeof(m) != TYPE_DICTIONARY:
+		return int(m)
+	var best := 0
+	for a in m:
+		if int(a) <= age:
+			best = maxi(best, int(m[a]))
+	return best
 
 
 static func load_config() -> Dictionary:
@@ -101,6 +123,7 @@ func think(w) -> void:
 	if w.defeated[player] != 0 or w.winner >= 0:
 		return
 	_note_hits(w)
+	eco.MAX_WORKERS = _max_workers(w.ages[player])
 	eco.think(w)
 	if w.tick % THINK_EVERY != THINK_EVERY / 2:
 		return
@@ -120,57 +143,127 @@ func think(w) -> void:
 			healers.append(i)
 		elif not t.has("animal"):   # our sheep aren't soldiers
 			army.append(i)
-	_build_order(w, tc, workers)
-	_age_three(w, tc, workers)
+	var count: int = workers.size() + eco.sheltered(w)
+	_build_order(w, tc, workers, count)
+	eco.goal = _goal(w, count)
+	_age_three(w, tc, count)
 	_wonder(w, tc, workers)
-	_upgrade_lines(w, workers, army)
-	_train(w, workers)
+	_upgrade_lines(w, army)
+	_train(w, workers, count)
 	_train_healers(w, tc, army, healers)
 	var home_x: int = w.buildings.cx[tc] * 1000 + 1500
 	var home_y: int = w.buildings.cy[tc] * 1000 + 1500
 	_aln = w.lane(army[0]) if not army.is_empty() else w.lane_base[player]
 	_harea = eco.reach.area_at(w, _aln, home_x, home_y)
 	_defend(w, army, home_x, home_y)
-	_respond(w, army, workers, home_x, home_y)
+	_respond(w, tc, army, workers, home_x, home_y)
+	_tower(w, workers)
 	_waves(w, army, home_x, home_y)
 	_escort(w, army, healers, home_x, home_y)
 
 
 # ------------------------------------------------------------------ buildings
 
-func _build_order(w, tc: int, workers: Array) -> void:
+func _build_order(w, tc: int, workers: Array, count: int) -> void:
 	if w.tick < _next_build or eco._building_underway(w):
 		return
+	_blocked = PackedInt32Array()
 	var have := {}
 	for b in w.buildings.count():
 		if w.buildings.owner[b] == player and (w.buildings.done[b] == 1 or eco.reach.reaches_building(w, eco.wln, eco.home, b)):
 			var id: String = w.btypes[w.buildings.kind[b]].id   # (a foundation cut off counts for nothing: another goes up)
 			have[id] = have.get(id, 0) + 1
+			var was := _upgrade_of(w, id)
+			if was != "":
+				have[was] = have.get(was, 0) + 1   # a Bastion is the Watchtower it was
 	var wanted := {}
 	for step in cfg.build_order:
 		var id: String = step.building
-		wanted[id] = wanted.get(id, 0) + 1
+		wanted[id] = int(step.get("count", wanted.get(id, 0) + 1))
 		if have.get(id, 0) >= wanted[id]:
 			continue
 		if w.ages[player] < int(step.get("age", 1)):
 			continue   # a later age's step (the University, the Castle) doesn't hold up this age's
-		if workers.size() < int(step.workers):
+		if count < int(step.workers) or workers.is_empty():
 			return   # the order is an order: wait for this step before the next
 		var k: int = Economy.btype_of(w, id)
 		if not w.can_afford(player, w.btypes[k].cost):
+			_blocked = w.btypes[k].cost   # what we save for (economy shares, and soldiers leave it alone)
 			return
 		var at := Vector2i(w.buildings.cx[tc] + 1, w.buildings.cy[tc] + 1)
 		if step.has("near"):   # a drop-off camp goes by the nearest patch of its resource
-			var cell: int = eco._nearest_resource(w, at.x * 1000, at.y * 1000, w.resources.find(step.near) + 1)
+			var cell: int = _patch(w, at, w.resources.find(step.near) + 1, int(step.get("away", 0)))
 			if cell >= 0:
 				at = Vector2i(cell % w.map.width, cell / w.map.width)
 		var spot: Vector2i = eco._house_spot(w, at.x, at.y, w.btypes[k].size)
 		if spot.x < 0:
 			return
-		var builders := workers.slice(0, 2).map(func(i): return w.units.id[i])
+		var builders := _nearest_workers(w, workers, spot.x * 1000, spot.y * 1000, int(step.get("builders", 2)))
 		w.issue(player, Commands.BUILD, {"ids": builders, "building": id, "cx": spot.x, "cy": spot.y})
 		_next_build = w.tick + BUILD_COOLDOWN
 		return
+
+
+## The building type a research turns into this one (tech.json `becomes`: a Watchtower for a
+## Bastion), or "".
+static func _upgrade_of(w, id: String) -> String:
+	for r in w.tech.research:
+		for fx in r.effects:
+			if fx.get("becomes", "") == id:
+				return fx.building
+	return ""
+
+
+## Our Watchtowers (Bastions too), built or going up.
+func _towers_up(w) -> int:
+	var n := 0
+	for b in w.buildings.count():
+		var id: String = w.btypes[w.buildings.kind[b]].id
+		if w.buildings.owner[b] == player and (id == "watchtower" or _upgrade_of(w, id) == "watchtower"):
+			n += 1
+	return n
+
+
+## The nearest cell of that resource (1-based kind) our workers can get to, at least `away`
+## tiles from `at` (a second Town Center goes out by the resources further off), or -1.
+func _patch(w, at: Vector2i, kind: int, away: int) -> int:
+	if away <= 0:
+		return eco._nearest_resource(w, at.x * 1000, at.y * 1000, kind)
+	var best := -1
+	var best_d2 := 1 << 62
+	for c in w.map.resource_cells:
+		if w.map.amount[c] <= 0 or Economy.kind_of(w, w.map.resource_at(c)) != kind:
+			continue
+		var d2 := Fixed.dist2(at.x, at.y, c % w.map.width, c / w.map.width)
+		if d2 >= away * away and d2 < best_d2 and eco.reach.reaches_cell(w, eco.wln, eco.home, c):
+			best_d2 = d2
+			best = c
+	return best
+
+
+## Up to `n` of our workers' ids, nearest a point (ties: lower id), not counting ones kept from work.
+func _nearest_workers(w, workers: Array, x: int, y: int, n: int) -> Array:
+	var pool := []
+	for i in workers:
+		if int(eco.held.get(w.units.id[i], 0)) <= w.tick:
+			pool.append([Fixed.dist2(x, y, w.units.x[i], w.units.y[i]), w.units.id[i]])
+	pool.sort_custom(func(a, b): return a[0] < b[0] or (a[0] == b[0] and a[1] < b[1]))
+	return pool.slice(0, n).map(func(e): return e[1])
+
+
+## What we save for (eco.goal: the economy leans towards what it lacks, soldiers and research
+## leave it alone): the next age once we have the workers for it, else the build step waiting
+## on resources, else a Watchtower where we were raided.
+func _goal(w, count: int) -> PackedInt32Array:
+	var next: Dictionary = Tech.next_age(w, player)
+	var at: int = int(cfg.economy.age_workers) if w.ages[player] == 1 else age3_workers
+	if not next.is_empty() and count >= at:
+		return next.cost
+	if not _blocked.is_empty():
+		return _blocked
+	if _tower_at.x >= 0 and _towers_up(w) < towers:
+		return w.btypes[Economy.btype_of(w, "watchtower")].cost
+	return PackedInt32Array()
 
 
 ## A Wonder, when we're rich: from the age in data, with none of ours up or going up, once
@@ -195,9 +288,10 @@ func _wonder(w, tc: int, workers: Array) -> void:
 	_next_build = w.tick + BUILD_COOLDOWN
 
 
-## EcoBot takes us to age 2; past that, the bot ages up again once the economy is big.
-func _age_three(w, tc: int, workers: Array) -> void:
-	if w.ages[player] != 2 or workers.size() < AGE3_WORKERS:
+## EcoBot takes us to age 2; past that, the bot ages up again once it has age3_workers (it
+## saves for it from then: _goal, _train).
+func _age_three(w, tc: int, count: int) -> void:
+	if w.ages[player] != 2 or count < age3_workers:
 		return
 	if Tech.why_not(w, player, tc, "") == "":
 		w.issue(player, Commands.AGE_UP, {"building": w.buildings.id[tc]})
@@ -210,17 +304,16 @@ func _age_three(w, tc: int, workers: Array) -> void:
 ## A building-up bot also researches gathering, and spends on it first (cost in stock is enough).
 ## Then the rest of the economy research (data: research.economy) and the soldiers' research
 ## (armoury tracks, drums, hay ...) for what it fields: research reaching at least
-## research.army_min of its soldiers. Those two keep back the next age's cost once the bot is
-## big enough to age up, so they never hold the age-up back.
-func _upgrade_lines(w, workers: Array, army: Array) -> void:
+## research.army_min of its soldiers. Those two keep back what it saves for (_goal: the next
+## age once the bot is big enough to age up, a build step), so they never hold those back.
+func _upgrade_lines(w, army: Array) -> void:
 	var fielded := {}   # unit type -> how many of our soldiers
 	for i in army:
 		fielded[w.units.kind[i]] = int(fielded.get(w.units.kind[i], 0)) + 1
 	var keep := PackedInt32Array()
 	keep.resize(w.resources.size())
-	var at: int = int(cfg.economy.age_workers) if w.ages[player] == 1 else AGE3_WORKERS
-	if workers.size() >= at and not Tech.next_age(w, player).is_empty():
-		keep = Tech.next_age(w, player).cost
+	for r in eco.goal.size():
+		keep[r] = eco.goal[r]
 	for b in w.buildings.count():
 		if w.buildings.owner[b] != player or w.buildings.queue[b].any(func(e): return e < 0):
 			continue   # one research at a time per building, as before queues held research
@@ -230,6 +323,9 @@ func _upgrade_lines(w, workers: Array, army: Array) -> void:
 			if not (old or r.id in cfg.research.economy or r.id in cfg.research.get("buildings", []) or _reach(w, r, fielded) >= int(cfg.research.army_min)) \
 					or Tech.why_not(w, player, b, r.id) != "":
 				continue
+			var wait: String = cfg.research.get("wait_for", {}).get(r.id, "")
+			if wait != "" and not Tech.has_building(w, player, wait):
+				continue   # (the Bastion's stone waits for the Castle's)
 			var spare := true
 			for k in r.cost.size():
 				if w.stock[k][player] < r.cost[k] * (1 if build_up else 2) + (0 if old else keep[k]):
@@ -247,21 +343,23 @@ func _reach(w, r: Dictionary, fielded: Dictionary) -> int:
 			n += int(fielded[k])
 	return n
 
-func _train(w, workers: Array) -> void:
+func _train(w, workers: Array, count: int) -> void:
 	var reserve := PackedInt32Array()
 	reserve.resize(w.resources.size())
 	var guard := 0   # keep a small guard even while saving for an age, like a sensible player
 	for i in w.units.count():
-		if w.units.owner[i] == player and not w.types[w.units.kind[i]].worker and not w.types[w.units.kind[i]].healer:
+		if w.units.owner[i] == player and not w.types[w.units.kind[i]].worker and not w.types[w.units.kind[i]].healer \
+				and not w.types[w.units.kind[i]].has("animal"):
 			guard += int(w.types[w.units.kind[i]].pop)
 	# An easier bot keeps its army in proportion to its economy, growing with each age: it
 	# builds up more and fights less, but never stops growing (Dominic: not caps).
-	if army_ratio > 0 and guard * 100 >= workers.size() * army_ratio * w.ages[player]:
+	if army_ratio > 0 and guard * 100 >= count * army_ratio * w.ages[player]:
 		return
-	if w.ages[player] == 1 and workers.size() >= int(cfg.economy.age_workers) and guard >= int(cfg.military.guard):
-		var next: Dictionary = Tech.next_age(w, player)
-		if not next.is_empty():
-			reserve = next.cost   # saving for the age: soldiers only from what's over
+	# Saving for something (the next age, a building): soldiers only from what's over, once
+	# there's a guard (an age-up with nobody home invites a raid).
+	if guard >= int(cfg.military.guard) or Tech.next_age(w, player).is_empty() or eco.goal != Tech.next_age(w, player).cost:
+		for r in eco.goal.size():
+			reserve[r] = eco.goal[r]
 	var foes := _enemy_tags(w)
 	for b in w.buildings.count():
 		if w.buildings.owner[b] != player or w.buildings.done[b] == 0 or Tech.head(w, b) != -1:
@@ -432,7 +530,7 @@ func _where(w, id: int) -> Vector2i:
 ## their way count); soldiers fighting other soldiers stay in their fight, and ones far out on
 ## an attack keep to it. Workers near the raiders go to the Town Center (behind it, if the raid
 ## is there) and are kept from work until things are quiet. Once quiet, the soldiers sent go home.
-func _respond(w, army: Array, workers: Array, hx: int, hy: int) -> void:
+func _respond(w, tc: int, army: Array, workers: Array, hx: int, hy: int) -> void:
 	var ids: Array = _threats.keys()
 	ids.sort()
 	var live := []
@@ -443,6 +541,9 @@ func _respond(w, army: Array, workers: Array, hx: int, hy: int) -> void:
 			live.append(id)
 	if live.is_empty():
 		_send_home(w, hx, hy)
+		if _sheltering:   # quiet again: everyone out and back to what they were gathering
+			w.issue(player, Commands.BACK_TO_WORK, {})
+			_sheltering = false
 		return
 	var focus: int = live[0]
 	for id in live:
@@ -458,17 +559,36 @@ func _respond(w, army: Array, workers: Array, hx: int, hy: int) -> void:
 		raiders.append(at)
 		var i: int = w.units.index_of(id)
 		strength += int(w.types[w.units.kind[i]].pop) if i >= 0 else 4   # a tower counts like a few
+	var d := Fixed.isqrt(Fixed.dist2(f.x, f.y, hx, hy))
+	# A raid on the outskirts (a camp, workers at a far patch): a tower goes up there once it's quiet.
+	var tw: Dictionary = cfg.military.get("towers", {})
+	if not tw.is_empty() and w.ages[player] >= int(tw.age) and d > (FLEE_TILES + 2) * 1000 and d <= int(tw.within) * 1000:
+		_tower_at = f
+	# A big raid by the Town Center that the soldiers at home can't answer: call to arms.
+	if shelter_pop > 0 and not _sheltering and strength >= shelter_pop and d <= int(cfg.military.shelter.tiles) * 1000:
+		var home_pop := 0
+		var home_r := 2 * int(cfg.military.defend_tiles) * 1000
+		for i in army:
+			if Fixed.dist2(w.units.x[i], w.units.y[i], hx, hy) <= home_r * home_r:
+				home_pop += int(w.types[w.units.kind[i]].pop)
+		if home_pop < strength:
+			w.issue(player, Commands.CALL_TO_ARMS, {"building": w.buildings.id[tc]})
+			_sheltering = true
 	# Workers out of the way.
 	var to := Vector2i(hx, hy)
-	var d := Fixed.isqrt(Fixed.dist2(f.x, f.y, hx, hy))
 	if d <= (FLEE_TILES + 2) * 1000:   # at the Town Center itself: behind it, away from them
 		to = _reachable(w, Vector2i(clampi(hx + (hx - f.x) * 6000 / maxi(d, 1), 0, w.map.width * 1000 - 1),
 			clampi(hy + (hy - f.y) * 6000 / maxi(d, 1), 0, w.map.height * 1000 - 1)))
 	var flee := []
+	var call: int = int(w.garrison_cfg.call_range) * 1000 - 1500   # (from the Town Center's middle, roughly)
 	for i in workers:
 		var uid: int = w.units.id[i]
 		if not raiders.any(func(at): return Fixed.dist2(at.x, at.y, w.units.x[i], w.units.y[i]) <= FLEE_TILES * FLEE_TILES * 1000000):
 			continue
+		eco.held[uid] = w.tick + THREAT_TICKS
+		if _sheltering and (w.units.task[i] == Economy.GARRISON or Fixed.dist2(w.units.x[i], w.units.y[i], hx, hy) <= call * call):
+			continue   # on its way inside (or about to be)
+
 		if int(eco.held.get(uid, 0)) <= w.tick or w.units.moving[i] == 0:
 			flee.append(uid)
 		eco.held[uid] = w.tick + THREAT_TICKS
@@ -499,6 +619,26 @@ func _respond(w, army: Array, workers: Array, hx: int, hy: int) -> void:
 	if not go.is_empty():
 		var at := _reachable(w, f)
 		w.issue(player, Commands.ATTACK_MOVE, {"ids": go, "x": at.x, "y": at.y})
+
+
+## A Watchtower where we were raided (data: military.towers), once it's quiet, up to the level's
+## `towers` (the build order's one counts), with the two workers nearest.
+func _tower(w, workers: Array) -> void:
+	if _tower_at.x < 0 or not _threats.is_empty() or w.tick < _next_build:
+		return
+	if _towers_up(w) >= towers:
+		_tower_at = Vector2i(-1, -1)
+		return
+	var k: int = Economy.btype_of(w, "watchtower")
+	if eco._building_underway(w) or not w.can_afford(player, w.btypes[k].cost) or workers.is_empty():
+		return
+	var spot: Vector2i = eco._house_spot(w, _tower_at.x / 1000, _tower_at.y / 1000, w.btypes[k].size)
+	_tower_at = Vector2i(-1, -1)
+	if spot.x < 0:
+		return
+	var builders := _nearest_workers(w, workers, spot.x * 1000, spot.y * 1000, 2)
+	w.issue(player, Commands.BUILD, {"ids": builders, "building": "watchtower", "cx": spot.x, "cy": spot.y})
+	_next_build = w.tick + BUILD_COOLDOWN
 
 
 ## Quiet again: soldiers sent to a raid, standing about far from home with nothing to fight, walk
