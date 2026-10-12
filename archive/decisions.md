@@ -726,3 +726,13 @@ rats' open pipe-and-chain ram, the ridden giant beetle for the forest, and the r
 amazing"): crewed timber engines for humans (ram B, catapult and bolt thrower A, crewed), the rats' junk
 catapult and bolt thrower. The frogs' takes are the weak point ("overusing lily pads and stuff"): their
 direction is rethought in a new concept round before any frog engine is built.
+
+**D-120, 2026-10-13: Cavalry isn't infantry; prices can move without moving races; workers cost food.**
+Large units lost to massed archers mainly because a mounted unit kept its rider's "infantry" tag, so the
+archers' bonus against infantry hit cavalry too: mount bodies now carry `rider_loses: ["infantry"]`. A part
+can have `price_points` (pricing uses them; the generator still spends `points`), so mounts and a few parts
+were re-priced without changing any race key (168 checked). Workers (Dominic: "yes, do them"): food only,
+at least 50 before the creature's cost (`rules.cost.roles`); the start is 300 food / 200 wood so openings
+don't stall (Claude's call, Dominic may overrule). Superseding D-076's single price and refining D-078.
+The equal-cost round robin can't reach ±20% for every unit with four slots (large units counter two,
+archers one); that's a roster design question (a swordsman line?), not a price.
