@@ -250,6 +250,57 @@ nothing in play. Notes and pictures in `docs/concepts/sw1/README.md` (round 4); 
   catapult beside the picked turtle ram and toad bolt thrower: three different beasts, the slowest
   throwing the rocks.
 
+**Siege engines built (2026-10-13; steps 2, 3b and 8's siege part).** The Siege Workshop (age 3)
+trains a ram, a catapult and a bolt thrower for every race (roster slots live, `own_seed`, each with
+`engine`). An engine's body is the engine of the race's **take** (`families.json` `siege`, a
+creature's own `siege` first): **timber** for every human culture and the swamp folk who aren't frogs
+(the open ram, arm-and-cup catapult and carriage bolt thrower, hemmed in the culture's cloth),
+**junk** for the sewer (pipes, chains, a bucket of cheese, leaf springs and a grate), **forest** (the
+ridden giant beetle ram; round 1's twig-and-acorn catapult and log-wheeled bolt thrower, crewed),
+**spooky** (round 1's dark wood and bone, crewed), and **frog** for frogs whatever their culture
+(D-121, D-122: the snapping turtle ram, the snail carrying the reed catapult, the toad-borne bolt
+thrower). Every engine is one part (`siege.<engine>.<take>`, slot `engine`) baked in 8 facings from
+`scenes/art_pixel/siege_models.gd` (the concept builders moved there; `siege_concepts.gd` keeps the
+concept ids); the crew are the race's age-1 workers (the recipe's `crew`), composed by `UnitView` on
+the crew sockets, walking while it rolls, heaving with a ram's blow, falling when it breaks.
+- **Combat** (rules `splash_*`, weapon stats in the `engine.*` parts): the catapult's stone lands on
+  a spot and hurts every unit within 1.1 tiles, `damage x (splash - gap) / splash`; **friends in it
+  take half** (`splash_friend_pct` 50: the genre's stone throwers hurt their own side; so they're for
+  crowds and towers, not your own melee), enemy buildings by the same falloff. Catapults (3 tiles)
+  and bolt throwers (2) have a **minimum range**: they don't pick foes inside it and step back from
+  one that comes in. The ram goes for **buildings only** (`targets`), +70 vs the building class
+  every 3 s, pierce armour 14 (arrows do 1), melee armour 0. Bolts fly slowly (`shot_speeds`
+  bolt_thrower 220, catapult 180) and go **through a line** (every foe on the last 2.5 tiles of the
+  flight). Weapons carry their own `reload`. Cavalry (every mount body) +4 vs siege. Machines aren't
+  healed (`heal_not`); the beasts are. Stopped melee units hitting a building get the shooters' hold
+  slack (a big body at a corner place stood just out of reach).
+- **Prices** (points through the cost curve, no special cases): ram 260 (170 wood, 90 gold), catapult
+  290, bolt thrower 185; the beasts cost some food (turtle 260, snail 290, toad 185); rats about 70%.
+  Engines move at 8 (a worker 10), are large (pop 2) and the size of a horse in the sim (radius 420;
+  500 stuck at one-tile gaps).
+- **Numbers.** Three rams break a stone gate in 0:30 and a wall in 0:26; the same cost in spears
+  takes 2:50 and 3:20, in cavalry 6:06 and 5:06 (`tests/test_ai.gd -- flat_test rams`). Mass battles
+  at age 3, 1500 a side (`tests/mass_battle.gd -- 3`, new siege matches): catapult+spear beat massed
+  archers 8 of 10 but lose to spear+archer 9 of 10 (their own spears in the splash); bolt+spear beat
+  spear+cavalry 8 of 10 and spears 6 of 10; catapults alone lose to cavalry 10 of 10, bolt throwers 8
+  of 10. The balance round robin (soldiers only) is unchanged at age 3.
+- **AI** (`data/ai.json` military.siege): the workshop goes up at 28 workers in age 3 (before the
+  second Town Center); the bot keeps at most 2 rams, 2 catapults and 1 bolt thrower, training the one
+  it has fewest of (a ram first); on its regroup beats rams go for the nearest enemy gate, wall or
+  tower in sight (else any building, else they march on the army's target), catapults for a tower
+  within 14 tiles. A bot in age 3 fields all three by 15:30.
+- **Tests:** `tests/test_sim.gd` (splash and falloff, friends at half, minimum range and the step
+  back, the ram ignoring soldiers and shrugging off arrows, a bolt through three; engines crossing
+  flat, choke and hill maps on their own), `tests/run_tests.gd` (every take builds, crews are the
+  workers), `tests/test_ai.gd` (rams vs stone, the siege bot). `tests/siege_lineup.gd` shows every
+  take in four facings. Pictures `archive/images/2026-10-13/270-` to `275-`.
+- **Cost to draw:** crews are composed, not baked in (each crew member a worker UnitView): 60 crewed
+  engines on top of 211 units stay at the frame cap (8.3 ms; `tests/art_bench.gd`, which bakes them
+  outside the atlas, so 137 draw calls there; in a match they're in the one atlas). The sim tick with
+  siege in the 200-unit script measured 2.75 ms against main's 2.79 the same hour.
+- **Open:** Dominic's look in a match; the engines' sounds reuse the stone and bolt shots and the
+  blunt hit; workers don't repair engines yet; garrisoning a ram is milestone 16's.
+
 ## Changes from the original plan
 
 - 2026-10-13: siege first (Dominic: "why we not done siege yet?"), ahead of step 1. Step 2 shrinks
