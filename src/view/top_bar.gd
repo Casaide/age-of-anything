@@ -1,14 +1,13 @@
 extends PanelContainer
-## The top bar: your stock of each resource with its icon, your population against the cap
-## (red when it's full), your race and age, the tech tree button (F2), and the match clock.
-## Styled like the command panel. Resources come from data, so a new one shows up here by itself.
+## The top bar: a beam in your race's frame material (src/view/ui/theme.gd, the HUD's theme)
+## with your stock of each resource sunk in a plaque with its icon, your population against the
+## cap (red when it's full), your race's name, the age badge, idle workers, the tech tree (F2)
+## and the match clock. Resources come from data, so a new one shows up here by itself.
 
 const Icons := preload("res://src/view/art/icons.gd")
+const UiTheme := preload("res://src/view/ui/theme.gd")
 
-const BG := Color("#2e2820")
-const EDGE := Color("#6a5a40")
-const TEXT := Color("#f0e6cc")
-const FULL := Color("#e88a70")
+const FULL := Color("#ff8a70")
 
 signal idle_pressed
 signal tree_pressed
@@ -23,95 +22,74 @@ var _age_bar: ProgressBar
 
 
 func setup(resource_ids: Array) -> void:
-	var style := StyleBoxFlat.new()
-	style.bg_color = Color(BG, 0.94)
-	style.border_color = EDGE
-	style.border_width_bottom = 2
-	style.border_width_right = 2
-	style.corner_radius_bottom_right = 6
-	style.content_margin_left = 14
-	style.content_margin_right = 18
-	style.content_margin_top = 6
-	style.content_margin_bottom = 6
-	add_theme_stylebox_override("panel", style)
+	theme_type_variation = "Bar"
 	var row := HBoxContainer.new()
-	row.add_theme_constant_override("separation", 22)
+	row.add_theme_constant_override("separation", 10)
 	add_child(row)
 	for id in resource_ids + ["pop"]:
+		var plaque := PanelContainer.new()
+		plaque.theme_type_variation = "Plaque"
+		plaque.tooltip_text = String(id).capitalize() if id != "pop" else "Population / room (build houses for more)"
 		var cell := HBoxContainer.new()
 		cell.add_theme_constant_override("separation", 6)
+		plaque.add_child(cell)
 		var icon := TextureRect.new()
 		icon.texture = Icons.texture("res_" + id)
 		icon.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
 		icon.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
-		icon.custom_minimum_size = Vector2(26, 26)
+		icon.custom_minimum_size = Vector2(28, 28)
 		cell.add_child(icon)
-		var value := Label.new()
-		value.add_theme_font_size_override("font_size", 18)
-		value.add_theme_color_override("font_color", TEXT)
-		value.custom_minimum_size.x = 64 if id == "pop" else 48
+		var value := UiTheme.label("", "Name")
+		value.add_theme_font_size_override("font_size", 20)
+		value.custom_minimum_size.x = 66 if id == "pop" else 50
 		cell.add_child(value)
 		_values[id] = value
-		row.add_child(cell)
-	_title = Label.new()
-	_title.add_theme_font_size_override("font_size", 16)
-	_title.add_theme_color_override("font_color", Color("#d8c89a"))
+		row.add_child(plaque)
+	_title = UiTheme.label("", "Heading")
+	_title.add_theme_font_size_override("font_size", 22)
+	_title.size_flags_vertical = Control.SIZE_SHRINK_CENTER
+	var lead := Control.new()
+	lead.custom_minimum_size.x = 8
+	row.add_child(lead)
 	row.add_child(_title)
 	row.add_child(_make_age_badge())
 	_idle = Button.new()   # idle workers: how many, and a click cycles through them (".")
+	_idle.theme_type_variation = "IconButton"
 	_idle.icon = Icons.texture("idle")
 	_idle.expand_icon = true
-	_idle.custom_minimum_size = Vector2(70, 30)
+	_idle.custom_minimum_size = Vector2(74, 40)
 	_idle.focus_mode = Control.FOCUS_NONE
 	_idle.tooltip_text = "Idle workers: click (or press .) to go to the next one"
-	_idle.add_theme_font_size_override("font_size", 16)
-	var st := StyleBoxFlat.new()
-	st.bg_color = Color("#3a2e20")
-	st.border_color = EDGE
-	st.set_border_width_all(1)
-	st.set_corner_radius_all(3)
-	_idle.add_theme_stylebox_override("normal", st)
+	_idle.add_theme_font_size_override("font_size", 18)
 	_idle.pressed.connect(func(): idle_pressed.emit())
 	row.add_child(_idle)
 	var tree := Button.new()   # the tech tree page (F2)
 	tree.text = "Tech tree"
 	tree.icon = Icons.texture("research")
-	tree.add_theme_constant_override("icon_max_width", 20)
-	tree.custom_minimum_size = Vector2(0, 30)
+	tree.add_theme_constant_override("icon_max_width", 22)
+	tree.custom_minimum_size = Vector2(0, 40)
 	tree.focus_mode = Control.FOCUS_NONE
 	tree.tooltip_text = "Your race's tech tree and bonuses (F2)"
-	tree.add_theme_font_size_override("font_size", 15)
-	tree.add_theme_color_override("font_color", TEXT)
-	var tst: StyleBoxFlat = st.duplicate()
-	tst.content_margin_left = 8
-	tst.content_margin_right = 10
-	tree.add_theme_stylebox_override("normal", tst)
-	var hover := tst.duplicate()
-	hover.border_color = Color("#f2c94c")
-	tree.add_theme_stylebox_override("hover", hover)
-	tree.add_theme_stylebox_override("pressed", hover)
+	tree.add_theme_font_size_override("font_size", 17)
 	tree.pressed.connect(func(): tree_pressed.emit())
 	row.add_child(tree)
-	_clock = Label.new()
-	_clock.add_theme_font_size_override("font_size", 16)
-	_clock.add_theme_color_override("font_color", Color("#b8ad94"))
-	row.add_child(_clock)
+	var clock := PanelContainer.new()
+	clock.theme_type_variation = "Plaque"
+	_clock = UiTheme.label("", "Name")
+	_clock.add_theme_font_size_override("font_size", 18)
+	_clock.custom_minimum_size.x = 52
+	_clock.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	clock.add_child(_clock)
+	row.add_child(clock)
 
 
-## The age on its own (Dominic: it was lost after the race name): framed, the age-up icon, a
-## big gold number, the name; while ageing up, the next age's name and a progress bar.
+## The age on its own (Dominic: it was lost after the race name): the age-up icon, a big
+## number, the name; while ageing up, the next age's name and a progress bar.
 func _make_age_badge() -> Control:
 	var badge := PanelContainer.new()
-	var st := StyleBoxFlat.new()
-	st.bg_color = Color("#3a2e20")
-	st.border_color = Color("#f2c94c")
-	st.set_border_width_all(1)
-	st.set_corner_radius_all(4)
-	st.content_margin_left = 8
-	st.content_margin_right = 10
-	badge.add_theme_stylebox_override("panel", st)
+	badge.theme_type_variation = "Plaque"
 	var col := VBoxContainer.new()
-	col.add_theme_constant_override("separation", 0)
+	col.add_theme_constant_override("separation", 1)
 	badge.add_child(col)
 	var line := HBoxContainer.new()
 	line.add_theme_constant_override("separation", 6)
@@ -120,26 +98,18 @@ func _make_age_badge() -> Control:
 	icon.texture = Icons.texture("age_up")
 	icon.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
 	icon.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
-	icon.custom_minimum_size = Vector2(22, 22)
+	icon.custom_minimum_size = Vector2(26, 26)
 	line.add_child(icon)
-	_age_num = Label.new()
-	_age_num.add_theme_font_size_override("font_size", 20)
-	_age_num.add_theme_color_override("font_color", Color("#f2c94c"))
+	_age_num = UiTheme.label("", "Heading")
+	_age_num.add_theme_font_size_override("font_size", 24)
 	line.add_child(_age_num)
-	_age_name = Label.new()
-	_age_name.add_theme_font_size_override("font_size", 16)
-	_age_name.add_theme_color_override("font_color", TEXT)
+	_age_name = UiTheme.label("", "Name")
+	_age_name.add_theme_font_size_override("font_size", 17)
 	_age_name.size_flags_vertical = Control.SIZE_SHRINK_CENTER
 	line.add_child(_age_name)
 	_age_bar = ProgressBar.new()
 	_age_bar.show_percentage = false
-	_age_bar.custom_minimum_size = Vector2(0, 4)
-	var fill := StyleBoxFlat.new()
-	fill.bg_color = Color("#f2c94c")
-	var back := StyleBoxFlat.new()
-	back.bg_color = Color("#1e1a14")
-	_age_bar.add_theme_stylebox_override("fill", fill)
-	_age_bar.add_theme_stylebox_override("background", back)
+	_age_bar.custom_minimum_size = Vector2(0, 5)
 	col.add_child(_age_bar)
 	return badge
 
@@ -151,24 +121,27 @@ func show_age(age: int, name: String, next: String, frac: float) -> void:
 	_age_bar.visible = next != ""
 	if next == "":
 		_age_name.text = name
-		_age_name.add_theme_color_override("font_color", TEXT)
+		_age_name.remove_theme_color_override("font_color")
 	else:
 		_age_name.text = "%s  ->  %s  %d%%" % [name, next, int(frac * 100.0)]
-		_age_name.add_theme_color_override("font_color", Color("#f2c94c"))
+		_age_name.add_theme_color_override("font_color", Color("#f6d77a"))
 		_age_bar.value = frac * 100.0
 
 
 func show_idle(n: int) -> void:
 	_idle.text = str(n)
-	_idle.modulate = Color(1, 1, 1, 1.0 if n > 0 else 0.45)
-	_idle.add_theme_color_override("font_color", Color("#ffb070") if n > 0 else TEXT)
+	_idle.modulate = Color(1, 1, 1, 1.0 if n > 0 else 0.5)
+	_idle.add_theme_color_override("font_color", Color("#ffb070") if n > 0 else Color("#efe4c8"))
 
 
-## stock: {resource id: amount}; pop, cap; title e.g. "Bog Frogs, Stick Age"; secs of match time.
+## stock: {resource id: amount}; pop, cap; title e.g. "Bog Frogs"; secs of match time.
 func show_state(stock: Dictionary, pop: int, cap: int, title: String, secs: int) -> void:
 	for id in stock:
 		_values[id].text = str(stock[id])
 	_values.pop.text = "%d/%d" % [pop, cap]
-	_values.pop.add_theme_color_override("font_color", FULL if pop >= cap else TEXT)
+	if pop >= cap:
+		_values.pop.add_theme_color_override("font_color", FULL)
+	else:
+		_values.pop.remove_theme_color_override("font_color")
 	_title.text = title
 	_clock.text = "%d:%02d" % [secs / 60, secs % 60]
