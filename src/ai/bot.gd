@@ -48,6 +48,7 @@ var _rushed := -(1 << 30)    # the tick we last sent everyone at a finished enem
 var _blocked := PackedInt32Array()   # the cost of the build step waiting on resources (what it saves for)
 var _tower_at := Vector2i(-1, -1)    # where a raid was: a Watchtower goes up there once it's quiet
 var _sheltering := false     # our workers were called to arms
+var _saving_age := false     # the goal is the next age (the economy leans on it hard)
 
 
 ## config: data/ai.json as ints (see load_config), or {} to load it. level: a key of
@@ -70,7 +71,12 @@ func _init(p_player: int, config := {}, level := "normal") -> void:
 		for w in cfg.military.waves:
 			w.at = int(w.at) + int(l.get("delay", 0))
 			w.min_army = maxi(1, int(w.min_army) * int(l.get("army_pct", 100)) / 100)
-		cfg.military.repeat_min_army = maxi(1, int(cfg.military.repeat_min_army) * int(l.get("army_pct", 100)) / 100)
+		var rm = cfg.military.repeat_min_army
+		if typeof(rm) == TYPE_DICTIONARY:
+			for a in rm:
+				rm[a] = maxi(1, int(rm[a]) * int(l.get("army_pct", 100)) / 100)
+		else:
+			cfg.military.repeat_min_army = maxi(1, int(rm) * int(l.get("army_pct", 100)) / 100)
 		cfg.economy.max_workers = l.get("max_workers", cfg.economy.max_workers)
 		army_ratio = int(l.get("army_ratio", 0))
 		wave_pct = int(l.get("wave_pct", 100))
@@ -86,6 +92,19 @@ func _init(p_player: int, config := {}, level := "normal") -> void:
 	eco.AGE_WORKERS = int(cfg.economy.age_workers)
 	eco.REBALANCE = int(cfg.economy.get("rebalance_every", 0)) * 20
 	next_wave_tick = int(cfg.military.waves[0].at) * 20
+
+
+## The army (population) a repeat wave needs in this age (military.repeat_min_army: one number,
+## or one per age: a Town Center full of workers and a tower or two want a bigger wave in age 3).
+func _repeat_min(w) -> int:
+	var m = cfg.military.repeat_min_army
+	if typeof(m) != TYPE_DICTIONARY:
+		return int(m)
+	var best := 1
+	for a in m:
+		if int(a) <= w.ages[player]:
+			best = maxi(best, int(m[a]))
+	return best
 
 
 ## The most workers it trains in an age (economy.max_workers: one number, or one per age).
@@ -146,6 +165,7 @@ func think(w) -> void:
 	var count: int = workers.size() + eco.sheltered(w)
 	_build_order(w, tc, workers, count)
 	eco.goal = _goal(w, count)
+	eco.push = 100 if _saving_age else int(cfg.economy.get("build_push", 30))   # (a building leans gently)
 	_age_three(w, tc, count)
 	_wonder(w, tc, workers)
 	_upgrade_lines(w, army)
@@ -214,6 +234,15 @@ static func _upgrade_of(w, id: String) -> String:
 	return ""
 
 
+## Do we have one of these, built or going up?
+func _has_any(w, id: String) -> bool:
+	var k: int = Economy.btype_of(w, id)
+	for b in w.buildings.count():
+		if w.buildings.owner[b] == player and w.buildings.kind[b] == k:
+			return true
+	return false
+
+
 ## Our Watchtowers (Bastions too), built or going up.
 func _towers_up(w) -> int:
 	var n := 0
@@ -255,10 +284,18 @@ func _nearest_workers(w, workers: Array, x: int, y: int, n: int) -> Array:
 ## leave it alone): the next age once we have the workers for it, else the build step waiting
 ## on resources, else a Watchtower where we were raided.
 func _goal(w, count: int) -> PackedInt32Array:
+	_saving_age = false
 	var next: Dictionary = Tech.next_age(w, player)
 	var at: int = int(cfg.economy.age_workers) if w.ages[player] == 1 else age3_workers
-	if not next.is_empty() and count >= at:
-		return next.cost
+	if not next.is_empty() and count >= at and not Tech.queued(w, player, Tech.AGE_UP):
+		var cost: PackedInt32Array = next.cost.duplicate()
+		for need in next.requires:   # and the building the age needs, if it isn't up or going up
+			if not _has_any(w, need):
+				var bc: PackedInt32Array = w.btypes[Economy.btype_of(w, need)].cost
+				for r in cost.size():
+					cost[r] += bc[r]
+		_saving_age = true
+		return cost
 	if not _blocked.is_empty():
 		return _blocked
 	if _tower_at.x >= 0 and _towers_up(w) < towers:
@@ -355,9 +392,10 @@ func _train(w, workers: Array, count: int) -> void:
 	# builds up more and fights less, but never stops growing (Dominic: not caps).
 	if army_ratio > 0 and guard * 100 >= count * army_ratio * w.ages[player]:
 		return
-	# Saving for something (the next age, a building): soldiers only from what's over, once
-	# there's a guard (an age-up with nobody home invites a raid).
-	if guard >= int(cfg.military.guard) or Tech.next_age(w, player).is_empty() or eco.goal != Tech.next_age(w, player).cost:
+	# Saving for something (the next age, a building): soldiers only from what's over, while
+	# nobody is raiding us (an army first, then the age) and, from age 2, once there's a guard
+	# (D-077: an age-up with nobody home invites a raid; age 1's guard trains while the age-up runs).
+	if (guard >= int(cfg.military.guard) or w.ages[player] == 1) and _threats.is_empty():
 		for r in eco.goal.size():
 			reserve[r] = eco.goal[r]
 	var foes := _enemy_tags(w)
@@ -585,10 +623,9 @@ func _respond(w, tc: int, army: Array, workers: Array, hx: int, hy: int) -> void
 		var uid: int = w.units.id[i]
 		if not raiders.any(func(at): return Fixed.dist2(at.x, at.y, w.units.x[i], w.units.y[i]) <= FLEE_TILES * FLEE_TILES * 1000000):
 			continue
-		eco.held[uid] = w.tick + THREAT_TICKS
 		if _sheltering and (w.units.task[i] == Economy.GARRISON or Fixed.dist2(w.units.x[i], w.units.y[i], hx, hy) <= call * call):
+			eco.held[uid] = w.tick + THREAT_TICKS
 			continue   # on its way inside (or about to be)
-
 		if int(eco.held.get(uid, 0)) <= w.tick or w.units.moving[i] == 0:
 			flee.append(uid)
 		eco.held[uid] = w.tick + THREAT_TICKS
@@ -700,7 +737,7 @@ func _waves(w, army: Array, hx: int, hy: int) -> void:
 		target = _blocker(w, hx, hy, target)
 	target = _reachable(w, target)
 	var waves: Array = m.waves
-	var need: int = int(waves[wave].min_army) if wave < waves.size() else int(m.repeat_min_army)
+	var need: int = int(waves[wave].min_army) if wave < waves.size() else _repeat_min(w)
 	var strength := 0   # army size in population, so big units count for what they cost
 	for i in army:
 		strength += int(w.types[w.units.kind[i]].pop)
@@ -710,8 +747,15 @@ func _waves(w, army: Array, hx: int, hy: int) -> void:
 	if urgent:
 		_rushed = w.tick
 	if (w.tick >= next_wave_tick and strength >= need) or urgent:
-		var sent: Array = army.slice(0, maxi(1, army.size() * wave_pct / 100))   # an easier bot sends part, the rest defend
-		w.issue(player, Commands.ATTACK_MOVE, {"ids": sent.map(func(i): return w.units.id[i]), "x": target.x, "y": target.y})
+		# An easier bot sends part, the rest defend: those already out go on, and from home all
+		# but a guard of the rest of the army (newest stay).
+		var near := int(m.defend_tiles) * 2000
+		var away := army.filter(func(i): return Fixed.dist2(hx, hy, w.units.x[i], w.units.y[i]) > near * near)
+		var at_home := army.filter(func(i): return Fixed.dist2(hx, hy, w.units.x[i], w.units.y[i]) <= near * near)
+		var keep: int = army.size() - maxi(1, army.size() * wave_pct / 100)
+		var sent: Array = away + at_home.slice(0, maxi(0, at_home.size() - keep))
+		if not sent.is_empty():
+			w.issue(player, Commands.ATTACK_MOVE, {"ids": sent.map(func(i): return w.units.id[i]), "x": target.x, "y": target.y})
 		assault = true
 		wave += 1
 		next_wave_tick = int(waves[wave].at) * 20 if wave < waves.size() else w.tick + int(m.repeat_every) * 20
@@ -733,6 +777,17 @@ func _waves(w, army: Array, hx: int, hy: int) -> void:
 		if free and Fixed.dist2(hx, hy, w.units.x[i], w.units.y[i]) > 4 * home_r * home_r:
 			ids.append(w.units.id[i])
 	if ids.is_empty():
+		return
+	# What's left out there is a trickle (under half a wave): it comes home to join the next wave
+	# instead of walking into the Town Center's arrows one by one.
+	var out_pop := 0
+	for i in army:
+		if Fixed.dist2(hx, hy, w.units.x[i], w.units.y[i]) > 4 * home_r * home_r:
+			out_pop += int(w.types[w.units.kind[i]].pop)
+	if out_pop * 2 < need and wonder <= 0:
+		var back := ids.filter(func(id): return Fixed.dist2(hx, hy, w.units.x[w.units.index_of(id)], w.units.y[w.units.index_of(id)]) > 4 * home_r * home_r)
+		if not back.is_empty():
+			w.issue(player, Commands.ATTACK_MOVE, {"ids": back, "x": hx, "y": hy})
 		return
 	# With the field clear, go for the Town Center itself (that ends the match) rather than
 	# chewing through every house on the way.
