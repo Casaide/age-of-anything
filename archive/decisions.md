@@ -703,3 +703,20 @@ of typed words; no presets menu. Dominic's call.
 (Dominic: "sounds better for now"); the folder and repo keep the old name; a trademark check is
 still due before any public release. Claude offered names without "Age of"; Dominic kept the
 pattern for now.
+
+**D-116, 2026-10-13: Rats are human-sized; no tiny found objects for new rat art.** Dominic, on the siege
+concepts (a pencil ram, a spoon catapult, bottle-cap wheels, a sardine-tin shed): "I think we need to
+accept them as human sized rats and not do stuff like that." New rat engines and gear are built at human
+scale from the sewer's own junk (scrap timber, pipes, rope, rusted iron). The rats' existing tiny-object
+gear (thimble and spoon helmets, bottle-cap shield and armour, sardine-tin armour) is left as it is until
+Dominic decides on it. Cheese stays: it's the rats' food, not a joke about size.
+
+**D-117, 2026-10-13: The forest ram is a giant beetle.** Dominic asked whether the beetle battering ram
+would be better as a giant beetle; Claude agreed: the forest family's ram is a living siege beast, a
+giant horned beetle that charges walls with its armoured head (crew riding or goading it), instead of a
+beetle pushing a log.
+
+**D-118, 2026-10-13: Siege engines show their crews.** Dominic: "I like crews very much, sad when games
+don't show them." Every engine is drawn with the race's own workers working it (pushing, winding,
+loading, aiming), placed so the machine's silhouette still reads at game scale. The catapult and bolt
+thrower keep the round-1 A machines (arm and cup on wheels; a wheeled carriage), now crewed.
