@@ -20,6 +20,7 @@ var holder: Node3D
 var pixel_factor := 0      # > 0: pixel mode, shrink the render by this much and pixelize it
 var shadow_plane: MeshInstance3D
 var shadow_on := false
+var shadow_reach := 1.0    # room cut for ground shadows, in half the model's size (tall trees cast long ones)
 var outline := true      # pixel mode: darker inner outline (off for realistic props)
 var sun: DirectionalLight3D
 var fill: DirectionalLight3D
@@ -252,7 +253,7 @@ func _cut(shots: Array, area: Rect2i, projected: Array) -> Dictionary:
 	if pixel_factor > 0:
 		if shots.size() > 1:   # room for the shadows: they fall to the lower right
 			var g := maxi(used.size.x, used.size.y) / 2
-			used = used.grow_individual(g / 8, g / 8, g, g / 2).intersection(area)
+			used = used.grow_individual(g / 8, g / 8, int(g * shadow_reach), int(g / 2 * shadow_reach)).intersection(area)
 		used.position = used.position / pixel_factor * pixel_factor   # keep the pixel grid aligned
 		var f := float(pixel_factor)
 		var art := Pixelize.run(img.get_region(used), pixel_factor, outline)

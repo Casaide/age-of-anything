@@ -127,6 +127,38 @@
    "amount": 100,
    "depleted": "grass",
    "note": "where an animal fell: food to gather (its amount is set from the animal); grass again when it's gone"
+  },
+  "tree": {
+   "walkable": false,
+   "opaque": true,
+   "colour": "#3a5a2a",
+   "colour2": "#34522a",
+   "resource": "wood",
+   "amount": 100,
+   "depleted": "stump",
+   "note": "a tree (milestone 15): 100 wood; blocks movement and sight (fog) until felled; leaves a stump. The view picks the species by the ground round it"
+  },
+  "stump": {
+   "walkable": true,
+   "colour": "#5b6338",
+   "colour2": "#55603a",
+   "note": "where a tree stood: walkable ground with its stump"
+  },
+  "river": {
+   "walkable": false,
+   "move": [
+    "amphibious",
+    "flying"
+   ],
+   "colour": "#2f5f72",
+   "colour2": "#2b586a",
+   "note": "a river's running water (milestone 15): ground units go round (fords, bridges); amphibians swim it"
+  },
+  "ford": {
+   "walkable": true,
+   "colour": "#4a8084",
+   "colour2": "#44787c",
+   "note": "a ford: shallow river water anyone can wade (slowly: rules.movement.terrain_speed); amphibians quicker"
   }
  }
 }

@@ -11,6 +11,8 @@ const PartBaker := preload("res://scenes/art_pixel/part_baker.gd")
 const Baker := preload("res://src/view/art/bake/baker.gd")
 const Models := preload("res://src/view/art/bake/models.gd")
 const PropModels := preload("res://scenes/art_pixel/prop_models.gd")
+const TreeModels := preload("res://scenes/art_pixel/tree_models.gd")
+const BridgeModels := preload("res://scenes/art_pixel/bridge_models.gd")
 const DataLib := preload("res://src/data_lib.gd")
 const UnitModels := preload("res://scenes/art_pixel/unit_models.gd")
 const BakeCache := preload("res://src/view/art/bake_cache.gd")
@@ -33,7 +35,15 @@ const HOUSE := {"thatch": "stilt_house", "junk": "tin_can_house", "stone": "vill
 const MATERIALS := ["wood", "thatch", "mud", "stone", "tin", "brick", "plaster", "terracotta", "terracotta_dark", "felt", "weave"]
 ## Prop and doodad kinds and how many variants of each (each a different shape, size
 ## and turn; picked per tile so neighbours differ).
-const DOODADS := {"reeds": 6, "bush": 6, "rock": 6, "quarry": 4, "gold": 4, "carcass": 3, "stones": 6, "tuft": 6, "flowers": 6, "shore": 4, "lily": 4, "crops": 4, "paddy": 4}
+const DOODADS := {"reeds": 6, "bush": 6, "rock": 6, "quarry": 4, "gold": 4, "carcass": 3, "stones": 6, "tuft": 6, "flowers": 6, "shore": 4, "lily": 4, "crops": 4, "paddy": 4,
+	"tree_broadleaf": 4, "tree_pine": 4, "tree_swamp": 4}
+## Trees (milestone 15): each species in the look picked from its concept round
+## (tree_models.gd styles; the sheet is waiting on Dominic's pick, D-080).
+const TREE_STYLE := {"broadleaf": 0, "pine": 0, "swamp": 1}
+const TREES := ["tree_broadleaf", "tree_pine", "tree_swamp"]
+## Map bridges: the look (bridge_models.gd style). Every size a map uses is baked (bridge_sizes),
+## along sim x and along sim y (^z), standing and broken (.1).
+const BRIDGE_STYLE := 0
 ## Resources show how much is left: reeds, bug bushes and quarry stone each have this many stages
 ## (0 whole ... 3 nearly gone: stubble for reeds, a bare brown bush).
 const STAGES := 4
@@ -286,17 +296,23 @@ func _props_jobs() -> Array:
 		_models.mats.matte = true
 	var specs := _doodad_specs()
 	var ids := []
-	for shadow in [true, false]:
-		var list: Array = specs[0] if shadow else specs[1]
-		for first in range(0, list.size(), 9):
-			var todo: Array = list.slice(first, first + 9)
+	# [list, per render, shadow, columns, shadow reach, what the loader says]
+	var groups := [[specs[0], 9, true, 3, 1.0, "Growing the reeds"], [specs[1], 9, false, 3, 1.0, "Growing the reeds"],
+		[specs[2], 4, true, 2, 2.0, "Planting the woods"], [specs[3], 1, true, 3, 1.0, "Building the bridges"]]
+	for g in groups:
+		var list: Array = g[0]
+		for first in range(0, list.size(), g[1]):
+			var todo: Array = list.slice(first, first + g[1])
+			var shadow: bool = g[2]
+			var cols: int = g[3]
+			var reach: float = g[4]
 			var make := func(baker) -> Dictionary:
-				var made: Dictionary = await _bake_set(baker, todo, shadow)
+				var made: Dictionary = await _bake_set(baker, todo, shadow, cols, reach)
 				bakes.merge(made, true)
 				return {"bakes": _pack_bakes(made)}
 			var apply := func(e: Dictionary) -> void:
 				_unpack_bakes(e.bakes)
-			ids.append(_job("props|%s" % ",".join(todo.map(func(t): return t[0])), "hifi", 4 if shadow else 2, "Growing the reeds",
+			ids.append(_job("props|%s" % ",".join(todo.map(func(t): return t[0])), "hifi", 4 if shadow else 2, g[5],
 				bakes.has(todo[0][0]), make, apply))
 	return ids
 
@@ -653,6 +669,13 @@ func _doodad_specs() -> Array:
 		for st in STAGES:
 			shadowed.append([staged("quarry", v, st), func(): return props.quarry(1300 + v, st)])
 			shadowed.append([staged("gold", v, st), func(): return props.quarry(1300 + v, st, "gold")])   # the same deposits, gold showing
+	var trees := []         # tall: baked two to a row, with room for their long shadows
+	var tm := TreeModels.new()
+	for kind in TREES:
+		var species: String = kind.trim_prefix("tree_")
+		for v in DOODADS[kind]:
+			for st in STAGES:
+				trees.append([staged(kind, v, st), func(): return tm.tree(1500 + v, species, TREE_STYLE[species], st)])
 	for v in DOODADS.carcass:
 		for st in STAGES:
 			shadowed.append([staged("carcass", v, st), func(): return props.carcass(1400 + v, st)])
@@ -673,13 +696,26 @@ func _doodad_specs() -> Array:
 		flat.append(["crops%d" % v, func(): return props.crops(1100 + v)])
 	for v in DOODADS.paddy:
 		flat.append(["paddy%d" % v, func(): return props.paddy(1200 + v)])
-	return [shadowed, flat]
+	var bridges := []       # map bridges: every size a map uses, both ways, standing and broken
+	var bm := BridgeModels.new()
+	for size in bridge_sizes():
+		for broken in 2:
+			for along in 2:
+				bridges.append([bridge_name(size.x, along, broken, size.y), func():
+					var m: Node3D = bm.bridge(1700 + size.x, size.x, BRIDGE_STYLE, broken, size.y)
+					if along == 1:
+						m.basis = Basis(Vector3.UP, deg_to_rad(90.0))   # running along sim y
+					return m])
+	return [shadowed, flat, trees, bridges]
 
 
 ## Bake a few props in one render (bake_many: up to nine to a frame): name -> {img, origin}.
-func _bake_set(baker, todo: Array, shadow: bool) -> Dictionary:
+## Trees bake two to a row with room for long shadows (cols 2, reach 2).
+func _bake_set(baker, todo: Array, shadow: bool, cols := 3, reach := 1.0) -> Dictionary:
 	baker.set_ground_shadow(shadow)
-	var out: Array = await baker.bake_many(todo.map(func(t): return t[1].call()))
+	baker.shadow_reach = reach
+	var out: Array = await baker.bake_many(todo.map(func(t): return t[1].call()), cols)
+	baker.shadow_reach = 1.0
 	baker.set_ground_shadow(false)
 	var made := {}
 	for i in todo.size():
@@ -691,16 +727,39 @@ func _bake_set(baker, todo: Array, shadow: bool) -> Dictionary:
 ## Whole until first used, then visibly started at once, then further down, then gone:
 ## reeds thin and leave stubble, bug bushes lose berries and colour, quarry stone loses blocks.
 static func resource_stage(kind: String, left: int, full: int) -> int:
-	if not kind in ["reeds", "bush", "quarry", "gold", "carcass"]:
+	if not kind in ["reeds", "bush", "quarry", "gold", "carcass"] and not kind in TREES:
 		return 0   # only reeds, bug bushes and quarry stone have used-up stages
 	if left <= 0:
-		return STAGES - 1
+		return STAGES - 1   # a tree's stump
 	if left >= full:
-		return 0   # whole until the first bite; started shows straight away (Dominic)
+		return 0   # whole until the first bite; started shows straight away (Dominic); a tree stands till its first chop
 	var f := float(left) / float(full)
 	if kind == "bush":
 		return 1 if f > 0.5 else 2
 	return 1 if f > 0.45 else 2
+
+
+## The bake name of a map bridge: its length and width in tiles, along sim x (0) or y (1), broken or not.
+static func bridge_name(length: int, along: int, broken: int, wide := 1) -> String:
+	return "bridge%dx%d%s%s" % [length, wide, ALONG_Z if along == 1 else "", ".1" if broken == 1 else ""]
+
+
+## Every bridge size the maps use, as (length, width) in tiles: a bridge runs along its longer
+## side (along y when square), reading data/maps (data first: a new map's bridges just bake).
+static func bridge_sizes() -> Array:
+	var out := []
+	var dir := DirAccess.open("res://data/maps")
+	var files := Array(dir.get_files()).filter(func(f): return f.ends_with(".json"))
+	files.sort()
+	for f in files:
+		var d: Dictionary = DataLib.load_json("res://data/maps/" + f)
+		for r in d.get("bridges", []):
+			var sx := int(r[2]) - int(r[0]) + 1
+			var sy := int(r[3]) - int(r[1]) + 1
+			var size := Vector2i(maxi(sx, sy), mini(sx, sy))
+			if not size in out:
+				out.append(size)
+	return out
 
 
 ## The bake name of a prop variant at a stage (stage 0 is the plain name).

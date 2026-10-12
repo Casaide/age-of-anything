@@ -29,6 +29,8 @@ const Market := preload("res://src/sim/market.gd")
 const Animals := preload("res://src/sim/animals.gd")
 const Match := preload("res://src/sim/match.gd")
 const Fog := preload("res://src/sim/fog.gd")
+const Bridges := preload("res://src/sim/bridges.gd")
+const Trails := preload("res://src/sim/trails.gd")
 
 const TICK_HZ := 20
 const HASH_EVERY := 30
@@ -48,7 +50,7 @@ const STUCK_LIMIT := 60        # ticks without progress before a unit gives up (
 const PROGRESS_EVERY := 40     # ticks between net-progress checks (staggered by unit id)
 const CORRECT_MAX := 150       # milli-tiles a tick a body is eased off blocked ground (no teleports)
 const RETURN_SLACK := 1000     # shoved this far beyond its settle radius, a stopped unit walks back
-const FIELD_CACHE := 24        # flow fields kept (oldest dropped first)
+const FIELD_CACHE := 12        # flow fields kept per player (oldest dropped first; at least 24)
 const SOLVE_BUDGET := 1500     # flow-field cells settled per tick: one full solve, or a few near ones
 const NEAR_CUTOFF := 160       # cost cutoff for "near" fields (16 tiles): short work trips
 
@@ -106,10 +108,21 @@ var fog_cfg: Dictionary
 var fog_ground: Array = []     # per player: PackedByteArray, the terrain index per cell as they last saw it (fog.gd)
 var fog_left: Array = []       # per player: PackedInt32Array, what was left per cell as they last saw it
 var fog_seen: Array = []       # per player: enemy building id -> its snapshot as last seen (fog.gd)
+var fog_lit: Array = []        # per player: PackedInt32Array, the cells lit at the last update (fog.gd)
 var fog_watch := {}            # cell -> true: cells that held a resource or ever changed (fog.gd)
 var fields := {}               # field key -> Flow; looked up by key, never iterated
 var field_order: Array = []    # cached field keys, oldest first (eviction, invalidation)
 var field_queue: Array = []    # field keys waiting for a solve, in request order
+var bridge_cfg: Dictionary     # data/bridges.json, as vectors (bridges.gd)
+var trail_cfg: Dictionary      # rules.trails as ints (trails.gd)
+var wear := PackedByteArray()  # per cell: how worn the ground is by walkers (trails.gd)
+var bridge_id := PackedInt32Array()   # per map bridge: its id (from next_id), and the rest of its state (bridges.gd)
+var bridge_cells: Array = []          # PackedInt32Array of its deck cells
+var bridge_rect: Array = []           # Rect2i in milli-tiles (inclusive end, as Economy's rects)
+var bridge_hp := PackedInt32Array()
+var bridge_up := PackedByteArray()    # 1 standing, 0 broken
+var bridge_work := PackedInt32Array() # rebuild ticks put in
+var bridge_payer := PackedInt32Array()   # the player who paid for the rebuild under way, or -1
 
 
 ## p_teams: a team id per player; empty means everyone for themselves (team = player).
@@ -150,8 +163,11 @@ func _init(p_seed: int, p_map: SimMap, p_races: Array, p_rules: Dictionary, p_te
 	if bool(rules.get("animals", false)):   # a host rule (on by default); some tests turn it off
 		Animals.place(self, animals.spawn)
 	Match.setup(self)
+	Bridges.setup(self)
+	Trails.setup(self)
 	Fog.setup(self)
 	map.fresh.clear()
+	map.fresh_closed.clear()
 
 
 static func _ints(v):
@@ -294,6 +310,7 @@ func step() -> void:
 	Combat.tick(self)
 	Match.tick(self)
 	Fog.tick(self)
+	Trails.tick(self)
 	_next_orders()
 	_sync_map()
 	_solve_queued()
@@ -567,9 +584,12 @@ func _move() -> void:
 				continue
 		var s := sp[i]
 		var mc := lane_base[owners[i]] + units.mclass[i]   # the walk grid (lane); speed goes by class
-		var pct: int = move_pct[units.mclass[i]][map.terrain[map.cell_of(x, y)]]
+		var here := map.cell_of(x, y)
+		var pct: int = move_pct[units.mclass[i]][map.terrain[here]]
 		if pct != 100:
 			s = s * pct / 100   # amphibians are quicker in the swamp (rules.movement.terrain_speed)
+		if trail_cfg.speed_pct != 0 and units.mclass[i] != SimMap.FLYING:
+			s = s * Trails.speed_pct(self, here) / 100   # quicker on a worn trail (rules.trails, off by default)
 		if (tick + ids[i]) % PROGRESS_EVERY == 0 and units.foe[i] == 0:
 			# Net progress, after the pushes: a unit that walks into a planted worker or a wall
 			# and is shoved straight back moves every tick but gets nowhere. Measured along the
@@ -724,33 +744,49 @@ func _solve_queued() -> void:
 			var b := buildings.index_of(target)
 			if b >= 0:
 				sources = buildings.footprint(b, map.width)
+			else:
+				var br := Bridges.index_of(self, target)
+				if br >= 0:
+					sources = bridge_cells[br]
 		var near := kind == FIELD_CELL_NEAR or kind == FIELD_BUILDING_NEAR
 		var f = Flow.solve(map, sources, NEAR_CUTOFF if near else Flow.INF, mc)
 		spent += maxi(f.pops, 1)
 		fields[key] = f
 		field_order.append(key)
-		if field_order.size() > FIELD_CACHE:
+		if field_order.size() > maxi(24, FIELD_CACHE * races.size()):
 			fields.erase(field_order.pop_front())
 
 
 ## The map changed this tick (a building placed, a resource used up): drop every
-## cached field the change could affect. Units re-request what they need.
+## cached field a closing change could affect (units re-request what they need); where cells
+## only opened (a tree felled, a bush picked bare, a bridge rebuilt) patch the field instead,
+## unless the cell was one of its sources (Flow.patch). Felling a forest no longer re-solves
+## every field that saw it.
 func _sync_map() -> void:
 	if map.fresh.is_empty():
 		return
 	var keep := []
 	for key in field_order:
+		var f = fields[key]
 		var stale := false
-		for c in map.fresh:
-			if fields[key].touches(map, c):
+		var opened := PackedInt32Array()
+		for k in map.fresh.size():
+			var c: int = map.fresh[k]
+			if not f.touches(map, c):
+				continue
+			if map.fresh_closed[k] == 1 or c in f.sources:
 				stale = true
 				break
+			opened.append(c)
 		if stale:
 			fields.erase(key)
-		else:
-			keep.append(key)
+			continue
+		for c in opened:
+			f.patch(map, c, key % LANES)
+		keep.append(key)
 	field_order = keep
 	map.fresh.clear()
+	map.fresh_closed.clear()
 
 
 # ------------------------------------------------------------------ separation
@@ -917,6 +953,11 @@ func state_hash() -> int:
 		h = Fixed.mix(h, key)
 	for c in map.resource_cells:
 		h = Fixed.mix(h, map.amount[c])
+	h = Bridges.hash_into(self, h)
+	var worn := 0
+	for c in wear.size():
+		worn += wear[c] * (c % 251 + 1)
+	h = Fixed.mix(h, worn)
 	var u := units
 	for i in u.count():
 		for v in [u.id[i], u.owner[i], u.kind[i], u.x[i], u.y[i], u.tx[i], u.ty[i], u.moving[i],

@@ -63,10 +63,10 @@ a legend into `data/terrain.json` (`data/maps/*.json`), the view builds tiles an
 
 ## Checklist
 - [ ] Plan approved by Dominic
-- [x] 1. Resource audit, bigger 1v1 (built 2026-10-12; two sizes waiting for Dominic's pick by playing)
-- [ ] 2. Trees
-- [ ] 3. Rivers, fords, bridges
-- [ ] 4. Worn paths
+- [x] 1. Resource audit, bigger 1v1 (built 2026-10-12; Dominic picked: the 64 is the 1v1, the 88 becomes the 2v2)
+- [x] 2. Trees (built 2026-10-12; concept sheet waiting on Dominic's pick, one look per species in play)
+- [x] 3. Rivers, fords, bridges (built 2026-10-12; bridge look waiting on Dominic's pick)
+- [x] 4. Worn paths (built 2026-10-12; the speed bonus is off, see the experiment)
 - [ ] 5. High ground
 - [ ] 6. 2v2 map, variety maps, lobby teams
 - [ ] 7. Performance, AI, exit check
@@ -109,7 +109,70 @@ of dropping them.
 Bot notes found on the way (not map problems): after wild food the bots farm slowly (30-130 food a
 minute at 30 workers), and the bots' 30-worker cap makes a 40-minute economy smaller than a player's.
 
+### Phases 2-4: trees, rivers, fords, bridges, worn trails (2026-10-12, Claude)
+**Trees.** One `tree` terrain (100 wood, blocks movement and sight, `"opaque"` in terrain.json),
+felled into a walkable `stump`. Sight: fog stamps go through a line-of-sight table (each cell
+of the sight circle seen only if the cell before it on the line from the centre is seen and
+doesn't block) where a chunk counter says a tree is near; open country keeps the plain stamp.
+Workers chop with the existing wood job, animation and sound. Art (`scenes/art_pixel/tree_models.gd`):
+three species in three concept looks each (`archive/images/2026-10-12/300`), in play: broadleaf 0
+(leaf-card crown), pine 0 (tiers of needle cards), swamp 1 (weeping willow); the view picks the
+species from the ground (swamp trees by water and swamp, pine and broadleaf groves elsewhere).
+Felled stages: the log by its stump, sawn up, the stump (303); stumps stay until built over.
+**Rivers.** `river` terrain (deep running water: walkers go round, amphibians swim it at 115%)
+and `ford` (walkable, walkers at 70%, amphibians 120%: rules.movement.terrain_speed). Drawn
+with the existing water shader (a ford reads as shallows with the bed showing).
+**Bridges** (`src/sim/bridges.gd`, `data/bridges.json`): placed by the map (`"bridges": [[x0, y0,
+x1, y1]]`), owned by nobody, ids from the shared counter. A standing bridge lays a deck
+(`SimMap.deck`: ground over the water). Anyone breaks one with an ATTACK (an attack-click on it
+in the view; 1200 hp, pierce armour 20, so spears and axes, not arrows); it falls, the deck goes,
+anyone on it scrambles to a bank. Any player's workers rebuild it with HELP_BUILD (right-click
+a broken bridge), the first to start paying 150 wood, 30 s of work. Neutral timber look, three
+concepts (trestle in play, log, humped: 301); every size the maps use is baked.
+**Maps.** `tools/maps/reed_meadow.py` builds both, asserting symmetry, bridges standing on river
+and landing on ground, and that the river cuts the map in two without its crossings.
+- `reed_meadow` 64 x 64, the 1v1: the wood line behind each base and groves are trees now
+  (reeds stay down the side and on the swamp), a contested wood; a stream along the swamp band
+  (2-3 tiles) with two fords and a 2 x 2 bridge in the middle (304). Resources as phase 1 but
+  contested wood 9600 (from 7200).
+- `reed_meadow_2v2` 88 x 88 (was reed_meadow_large; Dominic: "much too big for 1v1, call it our
+  first 2v2"): four starts listed in mirror pairs (0, 1 and 2, 3; `"teams": [0, 1, 0, 1]`),
+  teammates side by side on one half, the second start the first one's kit transposed, the
+  other team the half turn. Each start: 8 bushes (+4 between teammates), the animal kit, a
+  forest line, 2 stone, 2 gold; flanks with gold, stone, bushes and a forest; a shared corner
+  forest; contested gold, stone, bushes and woods by the centre; the wide river with two fords
+  and three bridges (a kink in each arm and the centre) (305, 306). Per start (16 tiles): F/W/S/G
+  3800 (2220 for the north starts in a 2-player run, which places no animals there) / 11-12k /
+  3500 / 6400; contested 5000 / 78000 / 10500 / 25600. Animals are mirrored per start pair now.
+**Worn trails** (`src/sim/trails.gd`, rules.trails): a byte per cell; every 10 ticks each walking
+unit wears its cell, every 100 ticks each row grows back (spread over ticks). The view hands the
+grid to the terrain shader once a second, softened, drawn as earth trail (307). It reads as a
+trail between the Town Center and its work, and as trampled ground where soldiers stand at a
+rally; tuning by eye left for Dominic.
+**The speed question** (`tests/trail_experiment.gd`, reed_meadow, the same matches with
+`speed_pct` 0 and 12): trails cover about 1.4% of the map and units walk on them 17-26% of the
+time. Peace, 15 minutes: gathered 6276 / 8612 without, 6309 / 7896 with (within the noise of
+diverging matches). Bot vs bot: the same winner, 11:52 without, 12:37 with. A 12% bonus on a
+fifth of the walking is a 2-3% speed-up: not felt. Left off (default 0); worth trying again
+when culture paths are known to the sim (roads between buildings carry most traffic).
+**Performance.** Flow fields are patched where cells only opened (felled trees, picked-bare
+bushes, a rebuilt bridge: a decrease-only relaxation, checked against fresh solves in
+test_sim) instead of dropped: dropped fields on the old large map over 20 minutes 2706 -> 770.
+Fog: allies share one grid (copied), units on the same cell stamp once, only last update's lit
+cells are dimmed. The flow cache holds 12 fields per player (24 at least). `tests/sim_profile.gd`
+times World.step's parts. Measured with the machine loaded by other agents' Godot runs (13
+processes): 1v1 test_sim match 2.68 ms avg; reed_meadow peace 1.83 ms; the 2v2 with four bots
+(20 minutes) 2.83 ms avg (fog 0.72, solve 0.66, separation 0.44); a whole 2v2 bot match 3.7 ms.
+**Bots.** test_ai on reed_meadow: 10/10, matches 10:47 / 11:52 / 18:41 (median 11:52).
+`tests/test_2v2.gd`: four bots in teams on reed_meadow_2v2: ended 37:01, team 0 won, no hits
+between teammates, 9706 across.
+Known gaps: bots don't break or rebuild bridges (they path over them); the lobby has two sides
+(another agent's redesign); a 2-player match on the 2v2 map uses starts 0 and 1 (opposite).
+
 ## Changes from the original plan
+- 2026-10-12 (Dominic): the 88 x 88 Reed Meadow became the first 2v2 instead of a second 1v1 size.
+- Bridges are one neutral timber look, not one per culture (they belong to nobody); amphibians
+  swim the river anywhere (no shallows band needed).
 
 ## Links
 - `m16-sieges.md` (walls and high ground meet there), `m14-race-identity.md` (land-shaping as race abilities)
