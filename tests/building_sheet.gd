@@ -7,10 +7,12 @@ extends SceneTree
 ## e.g. ... -- /tmp/b.png 2 stone_town_center junk_town_center concept_junk_tc_low
 ## A gate's open look: palisade_gate:stone:open
 ## Props too: prop.<function>.<seed>[.<stage>], e.g. prop.quarry.1300.0 prop.boulders.1000
+## Town-life props: town.<function>.<args>, e.g. town.pile.wood.3.a town.yard.2 town.garden.3
 
 const ArtKit := preload("res://src/view/art/art_kit.gd")
 const PartShape := preload("res://src/part_shape.gd")
 const PropModels := preload("res://scenes/art_pixel/prop_models.gd")
+const TownProps := preload("res://scenes/art_pixel/town_props.gd")
 
 const W := 1600
 const H := 900
@@ -31,7 +33,12 @@ func _initialize() -> void:
 	var shots := []
 	for n in names:
 		var spec: Dictionary
-		if n.begins_with("prop."):   # a prop: prop.<function>.<seed>[.<stage>]
+		if n.begins_with("town."):   # a town-life prop: town.<function>.<args...>, e.g. town.pile.wood.3.a
+			var bits: PackedStringArray = String(n).split(".")
+			var tp := TownProps.new()
+			tp.models = models
+			spec = {"body": tp.callv(bits[1], Array(bits.slice(2)).map(func(x): return int(x) if x.is_valid_int() else x))}
+		elif n.begins_with("prop."):   # a prop: prop.<function>.<seed>[.<stage>]
 			var bits: PackedStringArray = String(n).split(".")
 			var pargs: Array = Array(bits.slice(2)).map(func(x): return int(x) if x.is_valid_int() else x)
 			spec = {"body": PropModels.new().callv(bits[1], pargs)}
