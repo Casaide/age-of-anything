@@ -1,0 +1,10 @@
+<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" width="200" height="60" viewBox="0 0 200 60">
+<defs>
+<linearGradient id="metal" x1="0" y1="0" x2="0" y2="1">
+<stop offset="0" stop-color="{L}"/><stop offset="0.5" stop-color="{M}"/><stop offset="1" stop-color="{D}"/>
+</linearGradient>
+</defs>
+<g transform="translate(1.6,2.4)" fill="#000" stroke="#000" opacity="0.55"><path d="M40,48 Q70.0,45 100,45 Q130.0,45 160,48 Q130.0,51 100,51 Q70.0,51 40,48Z"/><path d="M72,46 L68,18 L84,32 L100,10 L116,32 L132,18 L128,46Z"/><circle cx="68" cy="16" r="4"/><circle cx="100" cy="8" r="4.5"/><circle cx="132" cy="16" r="4"/><rect x="74" y="38" width="52" height="5" class="raise"/></g>
+<g fill="url(#metal)" stroke="{D}" stroke-width="1.1" stroke-linejoin="round"><path d="M40,48 Q70.0,45 100,45 Q130.0,45 160,48 Q130.0,51 100,51 Q70.0,51 40,48Z"/><path d="M72,46 L68,18 L84,32 L100,10 L116,32 L132,18 L128,46Z"/><circle cx="68" cy="16" r="4"/><circle cx="100" cy="8" r="4.5"/><circle cx="132" cy="16" r="4"/><rect x="74" y="38" width="52" height="5" class="raise"/></g>
+<g fill="none" stroke="{L}" stroke-width="0.7" opacity="0.6" transform="translate(-0.5,-0.6)"><path d="M40,48 Q70.0,45 100,45 Q130.0,45 160,48 Q130.0,51 100,51 Q70.0,51 40,48Z"/><path d="M72,46 L68,18 L84,32 L100,10 L116,32 L132,18 L128,46Z"/><circle cx="68" cy="16" r="4"/><circle cx="100" cy="8" r="4.5"/><circle cx="132" cy="16" r="4"/><rect x="74" y="38" width="52" height="5" class="raise"/></g>
+</svg>

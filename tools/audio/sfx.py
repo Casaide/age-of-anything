@@ -211,6 +211,22 @@ def ui_click(rng):
                modal(seconds(0.07), [(_j(rng, 1200, 1400), 90.0, 0.5), (_j(rng, 2600, 2900), 120.0, 0.2)], rng, 0.0))
 
 
+def ui_hover(rng):
+    """The pointer over a button: the faintest knock of a fingertip on carved wood."""
+    return add(_burst(rng, 0.006, _j(rng, 2600, 3200), 1.4, 700.0, 0.5),
+               modal(seconds(0.04), [(_j(rng, 1900, 2100), 160.0, 0.25)], rng, 0.0))
+
+
+def ui_start(rng):
+    """To battle: a war horn's call over two heavy drum strokes."""
+    out = []
+    mix_into(out, I.low_drum(rng, 1.0), 0)
+    mix_into(out, I.low_drum(rng, 0.9), seconds(0.32))
+    mix_into(out, I.war_horn(I.note_hz("D3"), 1.3, rng, 0.9), seconds(0.3))
+    mix_into(out, I.horn(I.note_hz("A3"), 1.1, rng, 0.5, 0.8), seconds(0.5))
+    return _rev(out, 0.8, 0.3)
+
+
 def ui_tip(rng):
     """A page of the almanac turning."""
     n = seconds(0.22)
@@ -325,7 +341,7 @@ TABLE = {
     "fall": (fall, 3, -3.0), "building_fall": (building_fall, 2, -1.0),
     "chop": (chop, 4, -3.0), "mine": (mine, 4, -3.0), "build": (build, 4, -3.0), "forage": (forage, 4, -6.0),
     "farm_done": (farm_done, 2, -5.0),
-    "ui_click": (ui_click, 3, -6.0), "ui_tip": (ui_tip, 1, -8.0), "ui_nope": (ui_nope, 1, -5.0),
+    "ui_click": (ui_click, 3, -6.0), "ui_tip": (ui_tip, 1, -8.0), "ui_hover": (ui_hover, 2, -14.0), "ui_start": (ui_start, 1, -2.0), "ui_nope": (ui_nope, 1, -5.0),
     "trained": (trained, 1, -4.0), "built": (built, 1, -3.0), "research": (research, 1, -5.0),
     "age": (age, 1, -1.0), "won": (won, 1, -1.0), "lost": (lost, 1, -1.0), "alarm": (alarm, 1, -1.0),
     "meadow": (meadow, 1, -8.0),

@@ -28,7 +28,21 @@
   "ranks": [
    "Seasoned",
    "Elder"
-  ]
+  ],
+  "ui": {
+   "frame": "reed",
+   "frame_colour": "#a49456",
+   "panel": "wood",
+   "colour": "#38391f",
+   "button": "wood",
+   "button_colour": "#4c4c28",
+   "primary": "felt",
+   "primary_colour": "#4e6a24",
+   "accent": "#b8e070",
+   "metal": "#6a5a2a",
+   "ornament": "reeds",
+   "banner": "ragged"
+  }
  },
  "sewer": {
   "cloth": [
@@ -60,7 +74,21 @@
   "ranks": [
    "Scarred",
    "Grizzled"
-  ]
+  ],
+  "ui": {
+   "frame": "iron",
+   "frame_colour": "#6a6258",
+   "panel": "iron",
+   "colour": "#3c3630",
+   "button": "leather",
+   "button_colour": "#5a4632",
+   "primary": "iron",
+   "primary_colour": "#a87a1c",
+   "accent": "#f4c63a",
+   "metal": "#b4783c",
+   "ornament": "rivets",
+   "banner": "notched"
+  }
  },
  "forest": {
   "cloth": [
@@ -92,7 +120,21 @@
   "ranks": [
    "Hardy",
    "Elder"
-  ]
+  ],
+  "ui": {
+   "frame": "wood",
+   "frame_colour": "#6e4c2c",
+   "panel": "wood",
+   "colour": "#2c3a22",
+   "button": "wood",
+   "button_colour": "#3e4e2c",
+   "primary": "felt",
+   "primary_colour": "#3e6a28",
+   "accent": "#c4e07a",
+   "metal": "#8a6a3a",
+   "ornament": "leaves",
+   "banner": "notched"
+  }
  },
  "imperial": {
   "cloth": [
@@ -123,7 +165,21 @@
   "ranks": [
    "Veteran",
    "Praetorian"
-  ]
+  ],
+  "ui": {
+   "frame": "gold",
+   "frame_colour": "#b8903e",
+   "panel": "marble",
+   "colour": "#3c1c18",
+   "button": "marble",
+   "button_colour": "#562a24",
+   "primary": "lacquer",
+   "primary_colour": "#8a2418",
+   "accent": "#f2c94c",
+   "metal": "#d0a850",
+   "ornament": "laurel",
+   "banner": "fringe"
+  }
  },
  "hellenic": {
   "cloth": [
@@ -154,7 +210,21 @@
   "ranks": [
    "Veteran",
    "Champion"
-  ]
+  ],
+  "ui": {
+   "frame": "marble",
+   "frame_colour": "#d8d2c4",
+   "panel": "marble",
+   "colour": "#3a4656",
+   "button": "marble",
+   "button_colour": "#4a586a",
+   "primary": "lacquer",
+   "primary_colour": "#24527e",
+   "accent": "#9fd0f4",
+   "metal": "#c8b078",
+   "ornament": "meander",
+   "banner": "pointed"
+  }
  },
  "royal": {
   "cloth": [
@@ -185,7 +255,21 @@
   "ranks": [
    "Sworn",
    "Elite"
-  ]
+  ],
+  "ui": {
+   "frame": "gold",
+   "frame_colour": "#c09a40",
+   "panel": "lacquer",
+   "colour": "#3a2050",
+   "button": "lacquer",
+   "button_colour": "#4c2c66",
+   "primary": "lacquer",
+   "primary_colour": "#7a1c2a",
+   "accent": "#f4d060",
+   "metal": "#d8b050",
+   "ornament": "crown",
+   "banner": "fringe"
+  }
  },
  "steppe": {
   "cloth": [
@@ -216,7 +300,22 @@
   "ranks": [
    "Blooded",
    "Elite"
-  ]
+  ],
+  "ui": {
+   "frame": "leather",
+   "frame_colour": "#7a4e2a",
+   "panel": "felt",
+   "colour": "#5c2e24",
+   "button": "felt",
+   "button_colour": "#6e3a2c",
+   "primary": "felt",
+   "primary_colour": "#1f6a66",
+   "accent": "#5fd4c4",
+   "metal": "#d8b070",
+   "thread": "#f0dca0",
+   "ornament": "stitch",
+   "banner": "tongues"
+  }
  },
  "spooky": {
   "cloth": [
@@ -247,10 +346,27 @@
   "ranks": [
    "Restless",
    "Dread"
-  ]
+  ],
+  "ui": {
+   "frame": "bone",
+   "frame_colour": "#cfc6b0",
+   "panel": "stone",
+   "colour": "#2c2832",
+   "button": "stone",
+   "button_colour": "#3c3644",
+   "primary": "felt",
+   "primary_colour": "#4a2a6a",
+   "accent": "#c49cf0",
+   "metal": "#a8a090",
+   "ornament": "bones",
+   "banner": "ragged"
+  }
  },
  "nile": {
-  "skins": ["human_tan", "human_dark"],
+  "skins": [
+   "human_tan",
+   "human_dark"
+  ],
   "cloth": [
    "#e8e0c8",
    "#2a5a9a"
@@ -279,10 +395,27 @@
   "ranks": [
    "Veteran",
    "Royal"
-  ]
+  ],
+  "ui": {
+   "frame": "gold",
+   "frame_colour": "#c49a48",
+   "panel": "sandstone",
+   "colour": "#6a5434",
+   "button": "sandstone",
+   "button_colour": "#7a6440",
+   "primary": "lacquer",
+   "primary_colour": "#1e4a8a",
+   "accent": "#58b8e0",
+   "metal": "#d8b058",
+   "ornament": "lotus",
+   "banner": "pointed"
+  }
  },
  "han": {
-  "skins": ["human_light", "human_tan"],
+  "skins": [
+   "human_light",
+   "human_tan"
+  ],
   "cloth": [
    "#9a2a24",
    "#2a2422"
@@ -311,10 +444,27 @@
   "ranks": [
    "Veteran",
    "Elite"
-  ]
+  ],
+  "ui": {
+   "frame": "gold",
+   "frame_colour": "#b88c3a",
+   "panel": "lacquer",
+   "colour": "#3e1612",
+   "button": "lacquer",
+   "button_colour": "#5a1e18",
+   "primary": "lacquer",
+   "primary_colour": "#a02418",
+   "accent": "#f0b848",
+   "metal": "#d0a048",
+   "ornament": "cloud",
+   "banner": "swallowtail"
+  }
  },
  "aztec": {
-  "skins": ["human_tan", "human_dark"],
+  "skins": [
+   "human_tan",
+   "human_dark"
+  ],
   "cloth": [
    "#e0a020",
    "#2a7a6a"
@@ -341,6 +491,20 @@
   "ranks": [
    "Seasoned",
    "Elite"
-  ]
+  ],
+  "ui": {
+   "frame": "stone",
+   "frame_colour": "#8a8272",
+   "panel": "stone",
+   "colour": "#2a3a32",
+   "button": "stone",
+   "button_colour": "#38483e",
+   "primary": "felt",
+   "primary_colour": "#1e7a5a",
+   "accent": "#4ad8a0",
+   "metal": "#c8a048",
+   "ornament": "step",
+   "banner": "scalloped"
+  }
  }
 }
