@@ -19,8 +19,9 @@ extends RefCounted
 ##       whenever a type changes, so units already out and units trained later both have it.
 ##       add: any eval stat (attack, hp, range, speed, armour.melee, armour.pierce, ...), plus
 ##       UNIT_EXTRA (sight in tiles, carry); pct: UNIT_PCT.
-##   {"building": "all", "stat": "sight", "add": 3}   building types ("all" or one id): add:
-##       BUILDING_ADD; pct: BUILDING_PCT. Kept per player in w.bmods (see refresh).
+##   {"building": "all", "stat": "sight", "add": 3}   building types ("all", one id, or a list of
+##       ids): add: BUILDING_ADD; pct: BUILDING_PCT. Kept per player in w.bmods (see refresh).
+##       range: a shooting building's reach in tiles (Slit Windows).
 ##   {"gather": "wood", "pct": 15}   gathers wood 15% faster (cuts the ticks per unit).
 ##   {"building": "watchtower", "becomes": "bastion"}   tower_upgrade: every building of the first
 ##       type turns into the second where it stands, keeping its share of health (and of the work
@@ -34,7 +35,7 @@ const RESEARCH := -3   # queue entry for research r is RESEARCH - r; unit types 
 
 const UNIT_EXTRA := ["sight", "carry"]                                   # unit adds outside the eval
 const UNIT_PCT := ["speed", "reload", "cost", "train_time", "build_speed"]
-const BUILDING_ADD := ["sight", "armour.melee", "armour.pierce", "trade_fee"]   # trade_fee: points of the market's fee
+const BUILDING_ADD := ["sight", "armour.melee", "armour.pierce", "trade_fee", "range"]   # trade_fee: points of the market's fee
 const BUILDING_PCT := ["hp", "food", "research_time"]                    # food: a farm's pool, sown or reseeded
 
 
@@ -332,7 +333,7 @@ static func refresh(w, player: int) -> void:
 		var bt: Dictionary = w.btypes[k]
 		var m := {"add": {}, "pct": {}}
 		for fx in fxs:
-			if fx.has("building") and not fx.has("becomes") and (fx.building == "all" or fx.building == bt.id):
+			if fx.has("building") and not fx.has("becomes") and covers(fx, bt.id):
 				var how := "pct" if fx.has("pct") else "add"
 				m[how][fx.stat] = int(m[how].get(fx.stat, 0)) + int(fx[how])
 		m.hp = maxi(1, int(bt.hp) * (100 + int(m.pct.get("hp", 0))) / 100)
@@ -368,6 +369,13 @@ static func _upgrade_buildings(w, player: int) -> void:
 		bs.progress[b] = bs.progress[b] * w.btypes[to].build_ticks / maxi(1, w.btypes[k].build_ticks)
 		bs.kind[b] = to
 		w.events.append({"type": "upgraded", "player": player, "building": bs.id[b], "from": k, "to": to})
+
+
+## Does a building effect reach building type `id`? ("all", that id, or a list holding it.)
+static func covers(fx: Dictionary, id: String) -> bool:
+	if fx.building is Array:
+		return id in fx.building
+	return fx.building == "all" or fx.building == id
 
 
 ## The sum of a building effect's adds (or pcts) for a player's building type k.
