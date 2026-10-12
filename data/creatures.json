@@ -184,6 +184,12 @@
   "parts": {
    "back": "wings.hummingbird"
   },
-  "_parts_doc": "parts the creature always has as a mount (its own wings), priced like any part"
+  "_parts_doc": "parts the creature always has as a mount (its own wings), priced like any part",
+  "rider_scale": {
+   "frog": 55,
+   "beetle": 80,
+   "rat": 90
+  },
+  "_rider_scale_doc": "percent: riders of these creatures sit smaller on this mount (a frog dwarfed the hummingbird, Dominic)"
  }
 }
