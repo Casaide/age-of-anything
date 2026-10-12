@@ -1020,7 +1020,9 @@ func select_army(player: int, add := false) -> void:
 func _selected_by_owner() -> Array:
 	var ids := selected.keys()
 	ids.sort()
-	var out := [[], []]
+	var out := []   # one list per owner: every player (four in a 2v2) and the animals' gaia
+	for k in world.races.size() + 1:
+		out.append([])
 	for id in ids:
 		var i := world.units.index_of(id)
 		if i >= 0 and (not vs_ai or world.units.owner[i] == active):   # the AI's units can be inspected, not ordered
