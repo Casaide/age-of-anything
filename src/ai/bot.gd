@@ -197,7 +197,7 @@ func think(w) -> void:
 	_respond(w, tc, army, workers, home_x, home_y)
 	_tower(w, workers)
 	_waves(w, army, home_x, home_y)
-	_siege(w, army)
+	_siege(w, army, home_x, home_y)
 	_escort(w, army, healers, home_x, home_y)
 
 
@@ -438,7 +438,7 @@ func _train(w, workers: Array, count: int) -> void:
 			var k: int = w.type_of(player, slot)
 			if k < 0 or w.ages[player] < int(w.types[k].line[0].age) or _enough(w, slot, k):
 				continue
-			var s := _score(w.types[k], foes)
+			var s := _siege_score(w, slot, k) if cfg.military.get("siege", {}).get("max", {}).has(slot) else _score(w.types[k], foes)
 			if s > best_score:
 				best_score = s
 				best = slot
@@ -457,8 +457,11 @@ func _train(w, workers: Array, count: int) -> void:
 ## out or queued.
 func _enough(w, slot: String, k: int) -> bool:
 	var most: Dictionary = cfg.military.get("siege", {}).get("max", {})
-	if not most.has(slot):
-		return false
+	return most.has(slot) and _fielded(w, k) >= int(most[slot])
+
+
+## How many of unit type k we have, out and queued.
+func _fielded(w, k: int) -> int:
 	var n := 0
 	for i in w.units.count():
 		if w.units.owner[i] == player and w.units.kind[i] == k:
@@ -466,18 +469,25 @@ func _enough(w, slot: String, k: int) -> bool:
 	for b in w.buildings.count():
 		if w.buildings.owner[b] == player:
 			n += w.buildings.queue[b].count(k)
-	return n >= int(most[slot])
+	return n
+
+
+## Engines go round: the one we have fewest of next, ties in military.siege.max's order (a ram
+## first: it's what opens a walled town).
+func _siege_score(w, slot: String, k: int) -> int:
+	return -_fielded(w, k) * 100 - cfg.military.siege.max.keys().find(slot)
 
 
 ## Engines on the regroup beat, while attacking: rams go for the nearest enemy gate, wall or tower
 ## they can see (any building if none), catapults for a tower within reach of a short walk
 ## (military.siege.towers_within), else they keep with the army's attack-move. Only engines not
-## already hitting a building are told.
-func _siege(w, army: Array) -> void:
+## already hitting a building are told; idle rams with nothing in sight march on the army's target.
+func _siege(w, army: Array, hx: int, hy: int) -> void:
 	var s: Dictionary = cfg.military.get("siege", {})
 	if s.is_empty() or not assault or w.tick % (int(cfg.military.regroup_every) * 20) != _phase():
 		return
 	var orders := {}   # target id -> engine ids
+	var march := []    # rams with nothing to hit in sight
 	for i in army:
 		var t: Dictionary = w.types[w.units.kind[i]]
 		var ram: bool = t.get("buildings_only", false)
@@ -502,10 +512,16 @@ func _siege(w, army: Array) -> void:
 				best_rank = rank
 		if best != 0:
 			orders[best] = orders.get(best, []) + [w.units.id[i]]
+		elif ram and w.units.foe[i] == 0 and w.units.moving[i] == 0:
+			march.append(w.units.id[i])   # nothing of theirs in sight: off to where the army is going
 	var targets := orders.keys()
 	targets.sort()
 	for b in targets:
 		w.issue(player, Commands.ATTACK, {"ids": orders[b], "target": b})
+	var to := _enemy_target(w, hx, hy)
+	if not march.is_empty() and to.x >= 0:
+		to = _reachable(w, to)
+		w.issue(player, Commands.ATTACK_MOVE, {"ids": march, "x": to.x, "y": to.y})
 
 
 ## Healers from the Town Center once the age allows: one for every `per_army` soldiers, up to
