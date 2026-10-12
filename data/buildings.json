@@ -1,12 +1,51 @@
 {
  "schema": "aow.buildings/1",
  "menu": {
-  "civilian": ["house", "farm", "lumber_camp", "mill", "mining_camp", "market", "armoury", "town_center"],
-  "military": ["barracks", "archery_range", "stable", "watchtower", "palisade", "palisade_gate", "wall", "stone_gate"]
+  "civilian": [
+   "house",
+   "farm",
+   "lumber_camp",
+   "mill",
+   "mining_camp",
+   "market",
+   "armoury",
+   "town_center"
+  ],
+  "military": [
+   "barracks",
+   "archery_range",
+   "stable",
+   "watchtower",
+   "palisade",
+   "palisade_gate",
+   "wall",
+   "stone_gate"
+  ]
  },
  "_menu_doc": "a worker's two build pages (Dominic: civilian and military apart), each in the order its buttons appear (building hotkeys work from either page; hotkeys are avoided where they clash with WASD panning and the debug keys)",
- "tree": ["town_center", "house", "farm", "mill", "lumber_camp", "mining_camp", "barracks", "outpost", "palisade", "palisade_gate",
-  "archery_range", "stable", "armoury", "market", "watchtower", "wall", "stone_gate", "siege_workshop", "university", "temple", "castle", "wonder"],
+ "tree": [
+  "town_center",
+  "house",
+  "farm",
+  "mill",
+  "lumber_camp",
+  "mining_camp",
+  "barracks",
+  "outpost",
+  "palisade",
+  "palisade_gate",
+  "archery_range",
+  "stable",
+  "armoury",
+  "market",
+  "watchtower",
+  "wall",
+  "stone_gate",
+  "siege_workshop",
+  "university",
+  "castle",
+  "wonder"
+ ],
  "_tree_doc": "the tech tree page's columns, left to right (scenes/tech_tree.gd); a building missing here goes after these, by age. Buildings with \"status\": \"planned\" are drawn on the page as blank frames and skipped by the sim, the build menus and the art bakes (milestone 12)",
  "_walls_doc": "\"line\": placed by dragging a line of tiles (walls); \"gate\": blocks like a wall but its owner's team walks through it; \"length\": a gate's footprint is length x size, turned to run along sim x or sim y (chosen at placement, from the wall under it); \"replaces\": building types of your own it may be dropped on, taking their place (a gate into a wall line)",
  "age_looks": {
@@ -454,12 +493,6 @@
    "desc": "Research for buildings, towers and siege: stronger walls, taller towers, longer reach.",
    "age": 3
   },
-  "temple": {
-   "status": "planned",
-   "name": "Temple",
-   "desc": "Trains mystics, who heal and win enemies over, and researches their lore.",
-   "age": 3
-  },
   "castle": {
    "status": "planned",
    "name": "Castle",
@@ -470,7 +503,7 @@
    "status": "planned",
    "name": "Wonder",
    "desc": "A great work of your people. Build it and keep it standing long enough, and you win.",
-   "age": 4
+   "age": 3
   }
  }
 }

@@ -3,12 +3,12 @@
 **Status:** in progress (plan approved 2026-10-11)
 **Exit criterion:** the tech tree page shows every building and research of the plan below with
 no blank (planned) nodes left (the new unit lines are milestone 13's); a bot-vs-bot match reaches
-age 4 and uses every building; tests green; Dominic plays a match to age 4.
+age 3 and uses every building; tests green; Dominic plays a match to age 3.
 
 This file holds the whole land tree. Dominic split it in two (2026-10-11): **milestone 12** is the
-page, the bonuses, age 4, the research, walls, gates, towers, garrison, the Castle, University,
+page, the research, walls, gates, towers, garrison, the Castle, University,
 the Wonder and the buildings the new lines need; **milestone 13** (`m13-unit-lines.md`) is the
-new unit lines, siege, mystics and war beasts, the art-heavy half with concept rounds.
+new unit lines, siege, healers and war beasts, the art-heavy half with concept rounds.
 
 Dominic, 2026-10-11: "Tech tree page so I can easily see what my race can do, and what their
 bonuses are. Should show the full planned tree, with no icons for things we haven't made. This will
@@ -23,7 +23,7 @@ In:
   Planned items sit in `data/` with `"status": "planned"`: the page draws them (blank frame, no
   icon), the sim and the build menus skip them. Building an item means removing that flag.
 - ~~Race bonuses as data~~: moved to milestone 14 (race identity) with the rest of what makes races differ.
-- **A fourth age**, the walls and gates, the towers, the Castle, University, Temple, Siege
+- The walls and gates, the towers, the Castle, University, Siege
   Workshop, the Market's trade carts, garrisoning, and the new unit lines.
 
 Out (stay in `../backlog.md`): Dock and everything naval, flying craft, gunpowder (cannons,
@@ -32,7 +32,7 @@ gunners, bombard towers), relics, heroes, allies and tribute (until teams play o
 ## The tree
 
 Status today: **built** = in the game, **planned** = blank node on the page until built.
-All names are ours (no names from other games). Ages 1-3 keep their names; age 4 is new.
+All names are ours (no names from other games). Three ages (Dominic, 2026-10-12: "lose age 4").
 
 ### Ages
 
@@ -41,7 +41,6 @@ All names are ours (no names from other games). Ages 1-3 keep their names; age 4
 | 1 | Mud Age | - | built |
 | 2 | Stick Age | a Barracks | built |
 | 3 | Stone Age | two age-2 buildings (Archery Range, Stable, Armoury, Market) | built (needs the Stable today) |
-| 4 | Shiny Age (working name) | a Castle, or two age-3 buildings (University, Temple, Siege Workshop) | planned |
 
 Unit lines get a step per age (D-100: upgraded at the building that trains them). Age 4 adds a
 fourth step to every line; the generator's point budget gains `"4"`, and the culture kits need an
@@ -62,13 +61,12 @@ age-4 gear tier (iron and plate, D-057).
 | Stable | 2 | mounted lines and beasts | built |
 | Armoury | 2 | attack and armour research | built |
 | Market | 2 | trade resources; trade carts | built (carts planned) |
-| Watchtower | 2 | shoots; upgrades to Bastion (3), Citadel Tower (4) | built (upgrades planned) |
+| Watchtower | 2 | shoots; upgrades to Bastion (3) | built (upgrades planned) |
 | Stone Wall + Stone Gate | 2 | stone wall; gate as above | wall built, gate planned |
 | Siege Workshop | 3 | siege engines | planned |
 | University | 3 | building, tower and siege research | planned |
-| Temple | 3 | mystics and their research | planned |
 | Castle | 3 | unique unit, sapper, great sling, unique research; shoots, garrison | planned |
-| Wonder | 4 | alternative victory: stand for a time | planned |
+| Wonder | 3 | alternative victory: stand for a time | planned |
 
 Every building comes in all six architectures (concept-first for new ones, D-080).
 
@@ -80,23 +78,23 @@ fills it from the race (one creature in its culture's gear, or variants once tho
 | Building | Line (slot) | Ages | Beats / weak to | Status | Parts |
 |---|---|---|---|---|---|
 | Town Center | Worker (`worker`) | 1+ | - | built | ok |
-| Barracks | Spear (`spear`) | 1-4 | mounted, beasts / ranged, infantry | built (to 3) | ok |
-| Barracks | Swordsman (`infantry`) | 1-4 | buildings, spears, skirmishers / archers | planned | swords, clubs exist |
-| Barracks | Raider (`raider`) | 3-4 | siege, archers, mystics / infantry | planned | light kit |
-| Archery Range | Skirmisher (`skirmisher`) | 2-4 | archers / infantry, mounted | built (to 3) | ok |
-| Archery Range | Archer (`archer`) | 2-4 | infantry / skirmishers, mounted | built (to 3) | ok |
-| Archery Range | Mounted Archer (`mounted_archer`) | 3-4 | infantry, hit and run / skirmishers | planned | generator makes them already |
-| Stable | Scout (`scout`) | 2-4 | siege, archers, mystics, raids / spears | planned | light mount gear |
-| Stable | Heavy (`large`) | 2-4 | ranged / spears, mystics | built (to 3) | ok |
-| Stable | War Beast (`war_beast`) | 3-4 | buildings, infantry / spears, mystics | planned | **gap**: big beasts |
-| Siege Workshop | Ram (`ram`) | 3-4 | buildings / melee | planned | **gap** |
-| Siege Workshop | Catapult (`catapult`) | 3-4 | massed units, splash / mounted | planned | **gap** |
-| Siege Workshop | Bolt Thrower (`bolt_thrower`) | 3-4 | infantry lines / mounted | planned | **gap** |
-| Siege Workshop | Siege Tower (`siege_tower`) | 4 | carries units over walls | planned | **gap** |
-| Castle | Unique (`unique`) | 3, elite 4 | the race's signature (bigger budget) | planned | from the prompt |
+| Town Center | Healer (`healer`) | 2-3 | heals nearby wounded / scouts, raiders | planned (milestone 13; Dominic, 2026-10-12) | **gap**: concept round |
+| Barracks | Spear (`spear`) | 1-3 | mounted, beasts / ranged, infantry | built (to 3) | ok |
+| Barracks | Swordsman (`infantry`) | 1-3 | buildings, spears, skirmishers / archers | planned | swords, clubs exist |
+| Barracks | Raider (`raider`) | 3 | siege, archers, healers / infantry | planned | light kit |
+| Archery Range | Skirmisher (`skirmisher`) | 2-3 | archers / infantry, mounted | built (to 3) | ok |
+| Archery Range | Archer (`archer`) | 2-3 | infantry / skirmishers, mounted | built (to 3) | ok |
+| Archery Range | Mounted Archer (`mounted_archer`) | 3 | infantry, hit and run / skirmishers | planned | generator makes them already |
+| Stable | Scout (`scout`) | 2-3 | siege, archers, healers, raids / spears | planned | light mount gear |
+| Stable | Heavy (`large`) | 2-3 | ranged / spears | built (to 3) | ok |
+| Stable | War Beast (`war_beast`) | 3 | buildings, infantry / spears | planned | **gap**: big beasts |
+| Siege Workshop | Ram (`ram`) | 3 | buildings / melee | planned | **gap** |
+| Siege Workshop | Catapult (`catapult`) | 3 | massed units, splash / mounted | planned | **gap** |
+| Siege Workshop | Bolt Thrower (`bolt_thrower`) | 3 | infantry lines / mounted | planned | **gap** |
+| Siege Workshop | Siege Tower (`siege_tower`) | 3 | carries units over walls | planned | **gap** |
+| Castle | Unique (`unique`) | 3 | the race's signature (bigger budget) | planned | from the prompt |
 | Castle | Sapper (`sapper`) | 3 | buildings, walls (blows up) | planned | small: a satchel |
-| Castle | Great Sling (`great_sling`) | 4 | buildings at long range; packs/unpacks | planned | **gap** |
-| Temple | Mystic (`mystic`) | 3-4 | heals; converts large units and beasts / scouts, raiders | planned | **gap**: staff, robes |
+| Castle | Great Sling (`great_sling`) | 3 | buildings at long range; packs/unpacks | planned | **gap** |
 | Market | Trade Cart (`trader`) | 2 | gold by distance between your markets | planned | **gap**: cart |
 
 Siege bodies are the creature's own take (a beetle-drawn ram, a frog catapult on a lily-pad
@@ -117,49 +115,36 @@ Ages are when it opens. Effects use the forms `tech.json` already has (`tag/stat
 | Mill | Bigger Baskets | 2 | food +15% | built |
 | Mill | Ploughs | 3 | food +15% | built |
 | Mill | Fallow Fields | 3 | farms +50% food | planned |
-| Mill | Water Wheels | 4 | food +15% | planned |
 | Lumber Camp | Stone Axes, Saws | 2, 3 | wood +15% each | built |
-| Lumber Camp | Felling Wedges | 4 | wood +15% | planned |
 | Mining Camp | Iron Picks | 2 | stone, gold +15% | built |
 | Mining Camp | Ore Carts | 3 | stone, gold +15% | planned |
-| Mining Camp | Deep Shafts | 4 | stone, gold +15% | planned |
-| Armoury | Melee: Sharp Sticks, Bronze Edges, Iron Edges | 2, 3, 4 | melee +1 attack each | Sharp Sticks built (spears only: becomes all melee) |
-| Armoury | Ranged: Hardened Tips, Barbed Heads, Iron Heads | 2, 3, 4 | ranged +1 attack each | Hardened Tips built |
+| Armoury | Melee: Sharp Sticks, Bronze Edges | 2, 3 | melee +1 attack each | Sharp Sticks built (spears only: becomes all melee) |
+| Armoury | Ranged: Hardened Tips, Barbed Heads | 2, 3 | ranged +1 attack each | Hardened Tips built |
 | Armoury | Range: Fletching, Long Shafts | 2, 3 | bows +1 range each | Fletching built |
-| Armoury | Infantry armour: Padded Coats, Ring Mail, Plate Shells | 2, 3, 4 | foot melee units +1/+1 | planned |
-| Armoury | Ranged armour: Quilted Vests, Leather Jacks, Ring Jacks | 2, 3, 4 | ranged units +1/+1 | planned |
-| Armoury | Mount armour: Saddle Blankets, Scale Barding, Iron Barding | 2, 3, 4 | mounted +1/+1 | planned |
-| Barracks | line upgrades | 2-4 | next kit | built (to 3) |
+| Armoury | Infantry armour: Padded Coats, Ring Mail | 2, 3 | foot melee units +1/+1 | planned |
+| Armoury | Ranged armour: Quilted Vests, Leather Jacks | 2, 3 | ranged units +1/+1 | planned |
+| Armoury | Mount armour: Saddle Blankets, Scale Barding | 2, 3 | mounted +1/+1 | planned |
+| Barracks | line upgrades | 2-3 | next kit | built (to 3) |
 | Barracks | Marching Drums | 3 | infantry +10% speed | planned |
 | Barracks | Strong Legs | 2 | frogs only: amphibians +2 speed | built |
-| Archery Range | line upgrades | 2-4 | next kit | built (to 3) |
+| Archery Range | line upgrades | 2-3 | next kit | built (to 3) |
 | Archery Range | Quick Draw | 3 | ranged reload -15% | planned |
-| Stable | line upgrades | 2-4 | next kit | built (to 3) |
+| Stable | line upgrades | 2-3 | next kit | built (to 3) |
 | Stable | Hoof Wraps | 2 | mounted +10% speed | planned |
 | Stable | Good Hay | 3 | mounted +20 HP | planned |
 | Market | trading | 2 | buy/sell | built |
 | Market | Haggling | 3 | trade fee lower | planned |
 | Market | Pack Animals | 3 | trade carts +25% speed | planned |
-| Market | Merchant Halls | 4 | trade fee lowest; carts +gold | planned |
 | University | Stonecutting | 3 | buildings +10% HP, +1/+1 armour | planned |
-| University | Deep Foundations | 4 | buildings +10% HP, +1/+1 armour | planned |
 | University | Lifting Frames | 3 | build 20% faster | planned |
 | University | Bastion | 3 | Watchtowers become Bastions (hp, attack) | planned |
-| University | Citadel Tower | 4 | Bastions become Citadel Towers | planned |
 | University | Slit Windows | 3 | towers, castles, TCs +1 range | planned |
-| University | Thick Walls | 4 | walls and gates +100% HP | planned |
-| University | Siege Wrights | 4 | siege +1 range | planned |
-| Siege Workshop | line upgrades | 4 | heavier engines | planned |
+| University | Thick Walls | 3 | walls and gates +100% HP | planned |
+| University | Siege Wrights | 3 | siege +1 range | planned |
+| Siege Workshop | (none: engines don't upgrade) | - | - | - |
 | Castle | creature research | 3 | from the creature (see bonuses) | planned |
-| Castle | culture research | 4 | from the culture (see bonuses) | planned |
-| Castle | unique elite | 4 | the unique unit's age-4 step | planned |
-| Castle | War Drums | 4 | military trains 30% faster | planned |
-| Temple | Soothing Songs | 3 | mystics heal faster | planned |
-| Temple | Long Sermons | 3 | conversion +3 range | planned |
-| Temple | Stubborn Hearts | 3 | your units are harder to convert | planned |
-| Temple | Pilgrim Sandals | 3 | mystics +15% speed | planned |
-| Temple | Patient Faith | 4 | mystics recover faster | planned |
-| Temple | Deep Faith | 4 | mystics convert siege and buildings | planned |
+| Castle | culture research | 3 | from the culture (see bonuses) | planned |
+| Castle | War Drums | 3 | military trains 30% faster | planned |
 
 ### Race bonuses (moved to milestone 14, `m14-race-identity.md`)
 
@@ -174,7 +159,7 @@ them stated, so they become one data field on creatures and families:
 ```
 
 - A race = its creature's bonuses + its culture's bonuses, plus its own research at the Castle
-  (one from the creature, age 3; one from the culture, age 4).
+  (one from the creature, one from the culture, both age 3).
 - Bonuses that change unit stats are applied **before pricing**, so the unit pays for them
   (cost is the balancer, D-078). Economy bonuses aren't priced, so they stay small and every
   creature and culture gets about the same amount.
@@ -209,7 +194,7 @@ e.g. buildings), `slow_on_hit`, `tower_upgrade` (replaces a building type), `far
 `scenes/tech_tree.tscn`, view only. It takes a race and the rules; in a match it also reads the
 player's state.
 
-- **Layout:** ages as rows (1 at the top, 4 at the bottom), buildings as columns. Under each
+- **Layout:** ages as rows (1 at the top, 3 at the bottom), buildings as columns. Under each
   building: its unit lines (one node per age step, joined by a line) and its research. Lines
   between nodes show what unlocks what.
 - **Nodes:** built items show their icon, or the race's own unit portrait and name for that age
@@ -233,42 +218,38 @@ Each phase ends with tests green and pictures in the archive. New art is concept
 Replanned 2026-10-12 after phase 1 and Dominic's playtest fixes. Race bonuses moved to milestone 14.
 
 1. ~~Data and the page~~ (done).
-2. **Age 4 and the research that needs no new systems.** The Shiny Age (needs a Castle, or two of
-   University / Temple / Siege Workshop); an age-4 kit tier in every culture (concept round for the
-   look) and each line's fourth step; the effect kinds the research needs (`cost_pct`, `train_pct`,
-   `research_pct`, `build_pct`, `carry_add`, `sight_add`, `building_hp_pct`, `reload_pct`,
-   `farm_food_pct`, `trade_fee`), each with a test; then all the plain research: Town Center (Thick
-   Skins, Big Pockets, Pack Frames, Lookouts, Night Lanterns), camps (Fallow Fields, Water Wheels,
-   Felling Wedges, Ore Carts, Deep Shafts), the armoury's six tracks (melee, ranged, range, infantry,
-   ranged and mount armour), Marching Drums, Quick Draw, Hoof Wraps, Good Hay, the market's three.
-   An icon per research (SVG, the house style), so no scroll fallbacks remain.
+2. **The research that needs no new systems.** The effect kinds the research needs (`cost_pct`,
+   `train_pct`, `research_pct`, `build_pct`, `carry_add`, `sight_add`, `building_hp_pct`,
+   `reload_pct`, `farm_food_pct`, `trade_fee`), each with a test; then all the plain research: Town
+   Center (Thick Skins, Big Pockets, Pack Frames, Lookouts, Night Lanterns), Fallow Fields, Ore Carts,
+   the armoury's six two-step tracks, Marching Drums, Quick Draw, Hoof Wraps, Good Hay, Haggling and
+   Pack Animals. An icon per research (SVG, the house style), so no scroll fallbacks remain.
 3. **Towers and garrison.** ~~Walls and gates~~ (done). Outpost (sight only); Watchtower upgrades
-   to Bastion and Citadel Tower (`tower_upgrade`: a type replaced in place); garrisoning (Town
+   to Bastion (`tower_upgrade`: a type replaced in place); garrisoning (Town
    Center, towers, Castle: units go inside, heal slowly, each adds an arrow; ungarrison; the Town
    Center's call to arms for workers); more Town Centers from age 3.
 4. **University.** The building (every architecture, concept-first) and its research: Stonecutting,
-   Deep Foundations, Lifting Frames, Bastion, Citadel Tower, Slit Windows, Thick Walls, Siege Wrights.
+   Lifting Frames, Bastion, Slit Windows, Thick Walls, Siege Wrights.
 5. **Castle.** The building (big, shoots, garrisons; concept round per architecture), War Drums,
    and the two race research slots (filled by milestone 14; a placeholder "own research" until then).
-6. **Siege Workshop and Temple, standing.** Built and placeable in every architecture, with their
-   research where it needs no units (Temple's lore waits for mystics in 13).
+6. **Siege Workshop, standing.** Built and placeable in every architecture (the Temple was cut, 2026-10-12).
 7. **Wonder.** One per architecture (the culture's showpiece; concept round); build it and hold it
    for N minutes to win, with a countdown everyone sees; the bot attacks a Wonder.
-8. **AI.** `data/ai.json` learns age 4, the new research (gathering first, then armoury tracks by its
+8. **AI.** `data/ai.json` learns the new research (gathering first, then armoury tracks by its
    army), towers and garrisoning when attacked, a University, a Castle; walls stay optional.
-9. **Exit check.** No blank buildings or research on the page; bot-vs-bot reaches age 4 using every
-   building; Dominic plays to age 4.
+9. **Exit check.** No blank buildings or research on the page; bot-vs-bot reaches age 3 using every
+   building; Dominic plays to age 3.
 
 ### Milestone 13 (`m13-unit-lines.md`)
 
 Swordsman, raider, scout and mounted archer (parts exist); the unique unit and sapper; siege
-(ram, catapult, bolt thrower, great sling, siege tower) with a concept round per family; mystics
-(healing, conversion) and the Temple research; trade carts and the market's cart research; war
+(ram, catapult, bolt thrower, great sling, siege tower) with a concept round per family; healers at
+the Town Center (Temple cut); trade carts and the market's cart research; war
 beasts; balance round robin at ages 3 and 4.
 
 ## Decided (Dominic, 2026-10-11)
 
-1. Four ages (working name for age 4: "Shiny Age").
+1. ~~Four ages~~: back to three, and no Temple (Dominic, 2026-10-12: "lose age 4, and the temple"); a healer trains at the Town Center instead of mystics.
 2. Split: buildings and systems here, unit lines in milestone 13.
 3. Races lack a few things each (`lacks`), lifted by the host's Full tech tree.
 4. The Wonder is in.
@@ -300,11 +281,11 @@ Fixed first, as they came in; each ticked when done.
 ## Checklist
 - [x] Plan approved by Dominic (2026-10-11: four ages, split, lacks, Wonder in)
 - [x] 1. Data and the tech tree page (2026-10-11: the tree in `data/` with `"status": "planned"`, loaders skip it, `scenes/tech_tree.tscn` from the lobby banners and in a match on F2 or the top bar's button; T stays the Watchtower's hotkey; checked in `tests/run_tests.gd`, captures with `tests/tech_tree_screenshot.gd`)
-- [ ] 2. Age 4, effect kinds, plain research, research icons
+- [ ] 2. Effect kinds, plain research, research icons (age 4 cut 2026-10-12)
 - [ ] 3. Towers and garrison (walls and gates done 2026-10-11)
 - [ ] 4. University
 - [ ] 5. Castle
-- [ ] 6. Siege Workshop and Temple standing
+- [ ] 6. Siege Workshop standing (Temple cut)
 - [ ] 7. Wonder
 - [ ] 8. AI
 - [ ] 9. Exit check
