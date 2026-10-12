@@ -53,6 +53,7 @@ const CORRECT_MAX := 150       # milli-tiles a tick a body is eased off blocked 
 const RETURN_SLACK := 1000     # shoved this far beyond its settle radius, a stopped unit walks back
 const FIELD_CACHE := 12        # flow fields kept per player (oldest dropped first; at least 24)
 const SOLVE_BUDGET := 1500     # flow-field cells settled per tick: one full solve, or a few near ones
+const PATCH_BUDGET := 3000     # flow-field cells settled per tick patching cached fields for map changes (then they're dropped)
 const NEAR_CUTOFF := 160       # cost cutoff for "near" fields (16 tiles): short work trips
 # Places of their own (Dominic's playtest, 2026-10-13: a group's units pushed each other about
 # at the end of a move, workers got stuck on each other, a crowd fought the pathing at a wall).
@@ -124,7 +125,8 @@ var fog_ground: Array = []     # per player: PackedByteArray, the terrain index 
 var fog_left: Array = []       # per player: PackedInt32Array, what was left per cell as they last saw it
 var fog_seen: Array = []       # per player: enemy building id -> its snapshot as last seen (fog.gd)
 var fog_lit: Array = []        # per player: PackedInt32Array, the cells lit at the last update (fog.gd)
-var fog_watch := {}            # cell -> true: cells that held a resource or ever changed (fog.gd)
+var fog_watch := PackedByteArray()        # per cell: 1 if it held a resource or ever changed (fog.gd)
+var fog_watch_cells := PackedInt32Array() # those cells, in the order they were first watched
 var fields := {}               # field key -> Flow; looked up by key, never iterated
 var field_order: Array = []    # cached field keys, oldest first (eviction, invalidation)
 var field_queue: Array = []    # field keys waiting for a solve, in request order
@@ -190,6 +192,7 @@ func _init(p_seed: int, p_map: SimMap, p_races: Array, p_rules: Dictionary, p_te
 	Fog.setup(self)
 	map.fresh.clear()
 	map.fresh_closed.clear()
+	map.fresh_was.clear()
 
 
 static func _ints(v):
@@ -1129,36 +1132,72 @@ func _solve_queued() -> void:
 			fields.erase(field_order.pop_front())
 
 
-## The map changed this tick (a building placed, a resource used up): drop every
-## cached field a closing change could affect (units re-request what they need); where cells
-## only opened (a tree felled, a bush picked bare, a bridge rebuilt) patch the field instead,
-## unless the cell was one of its sources (Flow.patch). Felling a forest no longer re-solves
-## every field that saw it.
+## The map changed this tick (a building placed, a resource used up, a tree felled, a bridge
+## rebuilt): patch the cached fields the change touches instead of dropping them (Flow.patch_closed
+## and patch_opened: the costs come out as a fresh solve's), newest first while this tick's patch
+## budget lasts (each patch gets at most a quarter of the map's cells); past it, or where a
+## source cell itself changed, the field is dropped (units
+## re-request it and _solve_queued spreads the solves over ticks). Only lanes whose walk grid
+## really changed at a cell count: a building shuts nothing for flyers, a team's gate nothing for
+## that team. Compares each cell's walk values before the tick's first change with now.
 func _sync_map() -> void:
 	if map.fresh.is_empty():
 		return
-	var keep := []
-	for key in field_order:
-		var f = fields[key]
-		var stale := false
-		var opened := PackedInt32Array()
-		for k in map.fresh.size():
-			var c: int = map.fresh[k]
-			if not f.touches(map, c):
+	var cells: Array = map.fresh_was.keys()
+	cells.sort()
+	var opened := {}   # lane -> Array of cells, ascending
+	var closed := {}
+	for c in cells:
+		var was: PackedByteArray = map.fresh_was[c]
+		for k in mini(was.size(), map.walks.size()):   # (a lane made this tick has no fields yet)
+			var now: int = map.walks[k][c]
+			if now == was[k]:
 				continue
-			if map.fresh_closed[k] == 1 or c in f.sources:
-				stale = true
-				break
-			opened.append(c)
+			var into: Dictionary = opened if now == 1 else closed
+			if not into.has(k):
+				into[k] = []
+			into[k].append(c)
+	var budget := PATCH_BUDGET
+	var keep := []
+	for n in range(field_order.size() - 1, -1, -1):
+		var key: int = field_order[n]
+		var f = fields[key]
+		var ln := key % LANES
+		var op := PackedInt32Array()
+		var cl := PackedInt32Array()
+		var stale := false
+		for c in opened.get(ln, []):
+			if f.touches(map, c):
+				stale = stale or c in f.sources
+				op.append(c)
+		for c in closed.get(ln, []):
+			if f.touches(map, c):
+				stale = stale or c in f.sources
+				cl.append(c)
+		if not stale and not (op.is_empty() and cl.is_empty()):
+			# A patch past its share is given up (the field dropped): a big one costs more than a solve.
+			var limit := mini(budget, map.width * map.height / 4)
+			stale = limit <= 0
+			if not stale and not cl.is_empty():
+				var spent: int = f.patch_closed(map, cl, ln, limit)
+				stale = spent < 0
+				budget -= limit if stale else spent
+				limit = mini(budget, limit - maxi(spent, 0))
+			if not stale and not op.is_empty():
+				stale = limit <= 0
+				if not stale:
+					var spent: int = f.patch_opened(map, op, ln, limit)
+					stale = spent < 0
+					budget -= limit if stale else spent
 		if stale:
 			fields.erase(key)
-			continue
-		for c in opened:
-			f.patch(map, c, key % LANES)
-		keep.append(key)
+		else:
+			keep.append(key)
+	keep.reverse()
 	field_order = keep
 	map.fresh.clear()
 	map.fresh_closed.clear()
+	map.fresh_was.clear()
 
 
 # ------------------------------------------------------------------ separation
