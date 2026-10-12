@@ -1,6 +1,6 @@
 # The Archive
 
-A record of how Age of Whatever grows: pictures, decisions, changes of direction, funny bugs,
+A record of how Age of Anything grows: pictures, decisions, changes of direction, funny bugs,
 and the ideas that didn't make it. Two reasons:
 
 1. **For future AI sessions (and future us):** *why* things are the way they are. Code shows what;

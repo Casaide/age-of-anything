@@ -93,3 +93,4 @@ One line per moment worth remembering. Newest at the bottom.
 - **2026-10-12:** Dominic picked W1, C1, A1 (D-105): baked work holds for the arm, the centaur kneel, head-digging for armless creatures; built.
 - **2026-10-12:** Concept round two: attacks (step-in, swing, as now; draw and loose) and deaths (topple, crumple, by shape). Pick pending.
 - **2026-10-12:** Dominic picked T1, R1, D3 (D-106): the lunge, the release snap, deaths by body shape; built.
+- **2026-10-12:** Playtest fixes by parallel agents (stances, towers, drop-off, hunting bot, UI scale, research queue, order routes, fog memory, one farmer per farm; D-108); walls and 3-tile gates (D-109); three ages, a healer, age 4 and the Temple parked (D-110); research effects and icons (D-111); Reed Meadow 64 and 88 (D-112); milestones 13-19 planned (D-113); the lobby's dice (D-114); renamed "Age of Anything" (D-115).

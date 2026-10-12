@@ -638,3 +638,68 @@ and kicks the bow, then settles. The death belongs to the view (`UnitView.die`):
 one last hop and lands on its back, a flyer drops to the ground and then topples, four or six
 legs fold and the body sinks (a rider slumps), a biped topples backwards away from the blow and
 bounces once; `combat_fx` only times the fade and the dust. Dominic picked, Claude built.
+
+(Numbering note, 2026-10-12: two sessions both used D-104 to D-106; entries from here on start at
+D-108 to keep numbers unique. Old entries are left as written.)
+
+**D-108, 2026-10-12: Playtest fixes and features, done by parallel agents and merged into main.**
+From Dominic's notes while playing: unit stances (aggressive, defensive, stand ground, no
+attack) as a per-unit sim field; watchtower arrows drawn (they hit but didn't show; attack 5 to
+10 pierce); right-click a drop-off to unload, rally points centred on resources; the bot hunts
+sheep, deer and boar; line steps named for what got better, and a step with no new kit isn't
+sold; the HUD scales with screen density (a saved UI size, 60% of density by default; Cmd/Ctrl
+minus and plus); the panel groups its buttons; house variants keep their door in view; ranged
+units hold their ground in range (the attack-move's walk-back pulled them forward); fog keeps
+what each side last saw (enemy farms and buildings don't leak); research queues with units in a
+building's one queue; queued orders show as routes with a baked waypoint pennant; one farmer
+per farm (data `workers`), only your own farms; builders go on to nearby foundations;
+gathering research opens in age 2; archers and skirmishers start at age 2 with their range; the
+armoury is a civilian building. Centaurs struggling against spiders is the genre's counters
+(every centaur is large and mounted), left to pricing. Claude, on Dominic's reports.
+
+**D-109, 2026-10-12: Walls and gates as built.** A palisade (age 1, wood) and the stone wall (age 2);
+gates are 3 tiles long, placed into a wall line (they replace the tiles under them, `replaces`),
+open only for their own team (a walk grid per movement class and team, flow fields keyed by
+lane), and stay shut with an enemy near. Buildings have rectangular sx x sy footprints. Walls
+join in every direction from a baked post plus up to eight baked arms; a diagonal step needs both
+corner cells open, so walls touching at a corner hold. The walls' look skipped a concept round
+and waits for Dominic's eye. Claude.
+
+**D-110, 2026-10-12: Three ages, no Temple, a healer at the Town Center; nothing thrown away.**
+Dominic: "lose age 4, and the temple", then "don't throw anything away". Age 4 and its fourth
+steps, the Temple, mystics and their research are parked whole in `data/later/age4_and_temple.json`
+(not loaded) and listed in milestone 12 and the backlog. The healer (age 2, Town Center) heals
+3 hp every 1.5 s within 2.5 tiles, never fights, costs mostly gold, its own random stream so
+other lines keep their kit; looks from concept sheet HL1 (A for most, cheese for rats, lily for
+frogs) await Dominic's pick. Sharp Sticks starts an all-melee track. Claude, Dominic's calls.
+
+**D-111, 2026-10-12: Research effects share one data shape.** A scope (a unit tag with an
+optional `not`, or a building), a stat, and an `add` or a signed `pct`, instead of a key per
+effect kind; milestone 14's race bonuses will reuse it. 19 more research are live (Town Center,
+camps, the armoury's six two-step tracks, barracks, range, stable, market), each with its own
+icon; the bot builds an armoury and a mill and buys research. Claude.
+
+**D-112, 2026-10-12: Reed Meadow in two sizes; the 1v1's resources come before new units.**
+Dominic: the test map ran dry. One symmetric layout from `tools/maps/reed_meadow.py` at 64 x 64
+and 88 x 88, about three times the wood, twice the gold and 2.5 times the stone per start, sheep,
+deer and boar; `tests/resource_audit.gd` shows nothing near home runs out before 25 minutes
+(the first map's ran out at 21-23). Claude recommends the 88; Dominic picks by playing.
+
+**D-113, 2026-10-12: Milestones 13-19 planned.** 13 unit lines (siege, castle units, war beasts;
+the 1v1 map first), 14 race identity and heroes (bonuses mixed from group, creature and culture,
+the same count for every race; one signature mechanic per race from a shared vocabulary;
+land-shaping only as reversible race abilities; a generated hero per race), 15 maps and land
+(trees, rivers, bridges, worn paths instead of road building, high ground, a 2v2 map), 16 sieges
+and the first game modes (walkways, ladders, breaches; Fortress and Siege modes; the tick budget
+measured, not assumed), 17 living towns, 18 match rules, 19 UI that feels like the game (the UI
+wears the race; loaders; a lobby redesign). Battle mode is in the backlog. Dominic's directions,
+Claude's plans.
+
+**D-114, 2026-10-12: The lobby rolls the dice.** Every side starts with a rolled race (random
+words from the lexicon); a big dice above an empty prompt box rolls a new race, or another roll
+of typed words; no presets menu. Dominic's call.
+
+**D-115, 2026-10-12: The working title is "Age of Anything".** Renamed from "Age of Whatever"
+(Dominic: "sounds better for now"); the folder and repo keep the old name; a trademark check is
+still due before any public release. Claude offered names without "Age of"; Dominic kept the
+pattern for now.
