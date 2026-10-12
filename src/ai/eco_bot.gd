@@ -374,7 +374,7 @@ func _short_of(w, n: PackedInt32Array, x: int, y: int, area := -1) -> int:
 		var gap := pct * total - n[r] * 100
 		if w.stock[r][player] >= PLENTY:
 			gap -= 1 << 20   # piling up: the others first
-		if gap > best_gap and _nearest_resource(w, x, y, r + 1, false, area) >= 0:
+		if gap > best_gap and _nearest_resource(w, x, y, r + 1, false, area, true) >= 0:
 			best_gap = gap
 			best = r + 1
 	return best
@@ -409,20 +409,32 @@ func _pick_builder(w, workers: Array) -> int:
 
 ## Nearest cell with that resource left, anywhere on the map our workers in `area` can get to
 ## (-1: the home area; ties: lower cell). `free` passes over farms already worked by as many as they take.
-func _nearest_resource(w, x: int, y: int, kind: int, free := false, area := -1) -> int:
+## `any`: the first such cell found, not the nearest (is there one at all?). The cheap tests go
+## first (kind by terrain, then distance), the reach and farm checks only for a nearer cell.
+func _nearest_resource(w, x: int, y: int, kind: int, free := false, area := -1, any := false) -> int:
 	if area < 0:
 		area = home
+	var m = w.map
+	var kinds := PackedInt32Array()   # carry kind per terrain index (0: none)
+	for t in m.terrain_ids.size():
+		kinds.append(w.resources.find(m.terrain_resource[t]) + 1)
+	var amount: PackedInt32Array = m.amount
+	var terrain: PackedByteArray = m.terrain
+	var wd: int = m.width
 	var best := -1
 	var best_d2 := 1 << 62
-	for c in w.map.resource_cells:
-		if w.map.amount[c] <= 0 or Economy.kind_of(w, w.map.resource_at(c)) != kind or (free and Economy.taken(w, c)):
+	for c in m.resource_cells:
+		if amount[c] <= 0 or kinds[terrain[c]] != kind:
 			continue
-		if not reach.reaches_cell(w, wln, area, c):
+		var dx: int = (c % wd) * 1000 + 500 - x
+		var dy: int = (c / wd) * 1000 + 500 - y
+		var d2 := dx * dx + dy * dy
+		if d2 >= best_d2 or (free and Economy.taken(w, c)) or not reach.reaches_cell(w, wln, area, c):
 			continue
-		var d2 := Fixed.dist2(x, y, (c % w.map.width) * 1000 + 500, (c / w.map.width) * 1000 + 500)
-		if d2 < best_d2:
-			best_d2 = d2
-			best = c
+		best_d2 = d2
+		best = c
+		if any:
+			break
 	return best
 
 
