@@ -184,6 +184,13 @@ still maps the brief onto parts within host rules.
   - Sci-fi "space federation" pack. A space-fleet sci-fi mod is Dominic's personal dream; keep
     official names and likenesses out of shipped content.
 
+### Age 4 and the Temple (postponed 2026-10-12, Dominic: "we may come back to age 4 later")
+
+Cut from milestone 12 to keep three ages; kept whole in `data/later/age4_and_temple.json` (the
+exact data entries) and listed in `docs/milestones/m12-tech-tree.md` ("Postponed: age 4 and the
+Temple"): the Shiny Age and fourth line steps, the fourth steps of the research tracks, the
+Temple with mystics (conversion) and their six research. Bring back by moving the entries home.
+
 ### Gates (moved from milestone 11, 2026-10-11; moved into milestone 12 phase 4, 2026-10-11)
 
 Walls block everyone today; leave a gap. A gate lets its own team through and nobody else, which
