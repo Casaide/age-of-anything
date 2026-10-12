@@ -43,6 +43,8 @@ var pool := PackedInt32Array()     # pooled cells (a farm's): the anchor cell ho
 var walk_over := PackedByteArray() # 1 where a building may be walked across (farms)
 var resource_cells := PackedInt32Array()   # every cell that started with a resource, ascending
 var starts: Array = []             # [[x, y]] in milli-tiles, tile centres
+var animals := {}                  # the map's own animal spawn (data/animals.json "spawn" shape), or {} for the default
+var symmetry := ""                 # "rotate": the map is the same turned half a turn (animals are placed to match)
 var map_hash: int                  # content hash of the file, for replays
 var version := 0
 var fresh := PackedInt32Array()    # cells changed this tick (the World reads and clears it)
@@ -127,8 +129,14 @@ static func load_id(map_id: String) -> RefCounted:
 	for s in d.starts:
 		m.starts.append([int(s[0]) * TILE + TILE / 2, int(s[1]) * TILE + TILE / 2])
 		assert(m.walkable(m.starts[-1][0], m.starts[-1][1]), "Map %s: start on blocked ground" % map_id)
-	# Hash the content (rows + what each char means), not the file bytes.
-	m.map_hash = Rng.hash_string("%s|%d|%d|%s|%s" % [map_id, m.width, m.height, legend_text, "\n".join(d.rows)])
+	m.animals = d.get("animals", {})
+	m.symmetry = d.get("symmetry", "")
+	assert(m.symmetry in ["", "rotate"], "Map %s: unknown symmetry %s" % [map_id, m.symmetry])
+	# Hash the content (rows + what each char means, and the map's own animals), not the file bytes.
+	var content := "%s|%d|%d|%s|%s" % [map_id, m.width, m.height, legend_text, "\n".join(d.rows)]
+	if not m.animals.is_empty():
+		content += "|%s|%s" % [m.symmetry, JSON.stringify(m.animals, "", true)]
+	m.map_hash = Rng.hash_string(content)
 	return m
 
 
