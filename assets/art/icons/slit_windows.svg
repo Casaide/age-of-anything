@@ -1,0 +1,29 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="64" height="64" viewBox="0 0 64 64">
+<!-- Slit Windows: a stone wall with a narrow slit, an arrow flying out of it. -->
+<defs>
+<linearGradient id="steel" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#f4f6f8"/><stop offset="0.45" stop-color="#b9c0c6"/><stop offset="1" stop-color="#6e767e"/></linearGradient>
+<linearGradient id="iron" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#c4c8cc"/><stop offset="0.5" stop-color="#7c838a"/><stop offset="1" stop-color="#3c4046"/></linearGradient>
+<linearGradient id="bronze" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#ffd8a0"/><stop offset="0.5" stop-color="#c0803c"/><stop offset="1" stop-color="#6a3e14"/></linearGradient>
+<linearGradient id="wood" x1="0" y1="0" x2="1" y2="0"><stop offset="0" stop-color="#c08850"/><stop offset="0.5" stop-color="#8a5a2e"/><stop offset="1" stop-color="#5e3a1a"/></linearGradient>
+<linearGradient id="woodv" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#c08850"/><stop offset="0.5" stop-color="#8a5a2e"/><stop offset="1" stop-color="#5e3a1a"/></linearGradient>
+<linearGradient id="gold" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#ffe9a8"/><stop offset="0.5" stop-color="#d4a640"/><stop offset="1" stop-color="#8a6018"/></linearGradient>
+<linearGradient id="cloth" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#e0503c"/><stop offset="1" stop-color="#8a2a20"/></linearGradient>
+<linearGradient id="linen" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#fbf0d4"/><stop offset="1" stop-color="#c8b080"/></linearGradient>
+<linearGradient id="leather" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#d09060"/><stop offset="0.55" stop-color="#9a5e30"/><stop offset="1" stop-color="#5a3216"/></linearGradient>
+<linearGradient id="stone" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#eee4d0"/><stop offset="0.55" stop-color="#b0a28a"/><stop offset="1" stop-color="#6e6250"/></linearGradient>
+<linearGradient id="hay" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#fff0a0"/><stop offset="0.5" stop-color="#e8c050"/><stop offset="1" stop-color="#a07820"/></linearGradient>
+<linearGradient id="leaf" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#a8d870"/><stop offset="1" stop-color="#4e8428"/></linearGradient>
+<linearGradient id="soil" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#9a6a3c"/><stop offset="1" stop-color="#5a3a1c"/></linearGradient>
+<linearGradient id="blue" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#4a6a96"/><stop offset="1" stop-color="#22324e"/></linearGradient>
+<radialGradient id="glow" cx="0.5" cy="0.45" r="0.6"><stop offset="0" stop-color="#fff2c0" stop-opacity="0.9"/><stop offset="1" stop-color="#fff2c0" stop-opacity="0"/></radialGradient>
+<radialGradient id="flame" cx="0.5" cy="0.7" r="0.6"><stop offset="0" stop-color="#fff8c0"/><stop offset="0.5" stop-color="#ffb030"/><stop offset="1" stop-color="#d04818"/></radialGradient>
+</defs>
+<rect x="6" y="6" width="38" height="54" rx="2" fill="url(#stone)" stroke="#1c120a" stroke-width="2.4"/>
+<g stroke="#6e6250" stroke-width="1.4"><path d="M6,18 L44,18 M6,30 L44,30 M6,42 L44,42 M6,52 L44,52 M18,6 L18,18 M32,6 L32,18 M12,18 L12,30 M38,18 L38,30 M14,42 L14,52 M36,42 L36,52 M22,52 L22,60"/></g>
+<path d="M19,20 L31,20 L28,26 L28,40 L31,46 L19,46 L22,40 L22,26 Z" fill="#7c705c" stroke="#1c120a" stroke-width="1.6" stroke-linejoin="round"/>
+<rect x="22.5" y="22" width="5" height="22" rx="1.5" fill="#1c120a"/>
+<path d="M26,33 L54,33" stroke="#1c120a" stroke-width="5" stroke-linecap="round"/>
+<path d="M26,33 L54,33" stroke="#c08850" stroke-width="2.4" stroke-linecap="round"/>
+<path d="M52,27 L62,33 L52,39 Z" fill="url(#iron)" stroke="#1c120a" stroke-width="1.8" stroke-linejoin="round"/>
+<g stroke="#f4ecd8" stroke-width="2" stroke-linecap="round"><path d="M46,24 L56,24 M46,42 L56,42"/></g>
+</svg>

@@ -1,0 +1,26 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="64" height="64" viewBox="0 0 64 64">
+<!-- Scale Barding: the saddle cloth turned into overlapping bronze scales (the mounted armour track, step 2). -->
+<defs>
+<linearGradient id="steel" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#f4f6f8"/><stop offset="0.45" stop-color="#b9c0c6"/><stop offset="1" stop-color="#6e767e"/></linearGradient>
+<linearGradient id="iron" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#c4c8cc"/><stop offset="0.5" stop-color="#7c838a"/><stop offset="1" stop-color="#3c4046"/></linearGradient>
+<linearGradient id="bronze" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#ffd8a0"/><stop offset="0.5" stop-color="#c0803c"/><stop offset="1" stop-color="#6a3e14"/></linearGradient>
+<linearGradient id="wood" x1="0" y1="0" x2="1" y2="0"><stop offset="0" stop-color="#c08850"/><stop offset="0.5" stop-color="#8a5a2e"/><stop offset="1" stop-color="#5e3a1a"/></linearGradient>
+<linearGradient id="woodv" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#c08850"/><stop offset="0.5" stop-color="#8a5a2e"/><stop offset="1" stop-color="#5e3a1a"/></linearGradient>
+<linearGradient id="gold" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#ffe9a8"/><stop offset="0.5" stop-color="#d4a640"/><stop offset="1" stop-color="#8a6018"/></linearGradient>
+<linearGradient id="cloth" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#e0503c"/><stop offset="1" stop-color="#8a2a20"/></linearGradient>
+<linearGradient id="linen" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#fbf0d4"/><stop offset="1" stop-color="#c8b080"/></linearGradient>
+<linearGradient id="leather" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#d09060"/><stop offset="0.55" stop-color="#9a5e30"/><stop offset="1" stop-color="#5a3216"/></linearGradient>
+<linearGradient id="stone" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#eee4d0"/><stop offset="0.55" stop-color="#b0a28a"/><stop offset="1" stop-color="#6e6250"/></linearGradient>
+<linearGradient id="hay" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#fff0a0"/><stop offset="0.5" stop-color="#e8c050"/><stop offset="1" stop-color="#a07820"/></linearGradient>
+<linearGradient id="leaf" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#a8d870"/><stop offset="1" stop-color="#4e8428"/></linearGradient>
+<linearGradient id="soil" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#9a6a3c"/><stop offset="1" stop-color="#5a3a1c"/></linearGradient>
+<linearGradient id="blue" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#4a6a96"/><stop offset="1" stop-color="#22324e"/></linearGradient>
+<radialGradient id="glow" cx="0.5" cy="0.45" r="0.6"><stop offset="0" stop-color="#fff2c0" stop-opacity="0.9"/><stop offset="1" stop-color="#fff2c0" stop-opacity="0"/></radialGradient>
+<radialGradient id="flame" cx="0.5" cy="0.7" r="0.6"><stop offset="0" stop-color="#fff8c0"/><stop offset="0.5" stop-color="#ffb030"/><stop offset="1" stop-color="#d04818"/></radialGradient>
+</defs>
+<path d="M8,20 Q32,14 56,20 L58,52 Q32,46 6,52 Z" fill="url(#bronze)" stroke="#1c120a" stroke-width="2.4" stroke-linejoin="round"/>
+<g fill="url(#bronze)" stroke="#1c120a" stroke-width="1.2"><path d="M8,22 Q8,28 12,29 Q16,28 16,22 Z"/><path d="M16,22 Q16,28 20,29 Q24,28 24,22 Z"/><path d="M24,22 Q24,28 28,29 Q32,28 32,22 Z"/><path d="M32,22 Q32,28 36,29 Q40,28 40,22 Z"/><path d="M40,22 Q40,28 44,29 Q48,28 48,22 Z"/><path d="M48,22 Q48,28 52,29 Q56,28 56,22 Z"/><path d="M12,29 Q12,35 16,36 Q20,35 20,29 Z"/><path d="M20,29 Q20,35 24,36 Q28,35 28,29 Z"/><path d="M28,29 Q28,35 32,36 Q36,35 36,29 Z"/><path d="M36,29 Q36,35 40,36 Q44,35 44,29 Z"/><path d="M44,29 Q44,35 48,36 Q52,35 52,29 Z"/><path d="M8,36 Q8,42 12,43 Q16,42 16,36 Z"/><path d="M16,36 Q16,42 20,43 Q24,42 24,36 Z"/><path d="M24,36 Q24,42 28,43 Q32,42 32,36 Z"/><path d="M32,36 Q32,42 36,43 Q40,42 40,36 Z"/><path d="M40,36 Q40,42 44,43 Q48,42 48,36 Z"/><path d="M48,36 Q48,42 52,43 Q56,42 56,36 Z"/><path d="M12,43 Q12,49 16,50 Q20,49 20,43 Z"/><path d="M20,43 Q20,49 24,50 Q28,49 28,43 Z"/><path d="M28,43 Q28,49 32,50 Q36,49 36,43 Z"/><path d="M36,43 Q36,49 40,50 Q44,49 44,43 Z"/><path d="M44,43 Q44,49 48,50 Q52,49 52,43 Z"/></g>
+<g transform="translate(0 0)"><path d="M20,22 Q22,10 32,14 Q42,10 44,22 Q32,26 20,22 Z" fill="url(#leather)" stroke="#1c120a" stroke-width="2" stroke-linejoin="round"/>
+<path d="M18,22 Q16,12 22,10 L24,14 Q20,16 21,22 Z M46,22 Q48,12 42,10 L40,14 Q44,16 43,22 Z" fill="#5a3216" stroke="#1c120a" stroke-width="1.4"/>
+<path d="M30,26 L30,40" stroke="#1c120a" stroke-width="3"/><rect x="26" y="38" width="8" height="5" rx="1.5" fill="url(#iron)" stroke="#1c120a" stroke-width="1.4"/></g>
+</svg>
