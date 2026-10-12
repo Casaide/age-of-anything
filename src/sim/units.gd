@@ -50,6 +50,7 @@ var mclass := PackedInt32Array()   # movement class (SimMap.CLASSES)
 var patient := PackedInt32Array()  # healers: the unit id being healed (or walked to), or 0 (heal.gd)
 var pace := PackedInt32Array()     # a group move's pace (its slowest member's speed), or 0: own speed
 var amc := PackedInt32Array()      # an attack-move's centre cell (its field), or -1; amx/amy is the unit's own slot
+var changes := 0                   # bumped on every add, insert and removal (World.step rebuilds its buckets)
 var orders: Array = []             # per unit: queued orders [{type, args}] (shift-queued), oldest first
 
 
@@ -59,51 +60,64 @@ func count() -> int:
 
 func add(uid: int, p_owner: int, p_kind: int, p_x: int, p_y: int, p_speed: int, p_radius: int, p_hp: int) -> int:
 	assert(id.is_empty() or uid > id[id.size() - 1], "Unit ids must grow")
-	id.append(uid)
-	owner.append(p_owner)
-	kind.append(p_kind)
-	x.append(p_x)
-	y.append(p_y)
-	px.append(p_x)
-	py.append(p_y)
-	tx.append(p_x)
-	ty.append(p_y)
-	moving.append(0)
-	arrive.append(0)
-	wx.append(p_x)
-	wy.append(p_y)
-	group.append(0)
-	stuck.append(0)
-	prog.append(-1)
-	fkey.append(-1)
-	reach.append(0)
-	rx0.append(0)
-	ry0.append(0)
-	rx1.append(0)
-	ry1.append(0)
-	task.append(0)
-	target.append(-1)
-	home.append(-1)
-	carry_kind.append(0)
-	carry.append(0)
-	work.append(0)
-	speed.append(p_speed)
-	radius.append(p_radius)
-	hp.append(p_hp)
-	foe.append(0)
-	cooldown.append(0)
-	stance.append(0)
-	posture.append(0)
-	gx.append(p_x)
-	gy.append(p_y)
-	amx.append(0)
-	amy.append(0)
-	orders.append([])
-	mclass.append(0)
-	patient.append(0)
-	pace.append(0)
-	amc.append(-1)
-	return id.size() - 1
+	return _put(id.size(), uid, p_owner, p_kind, p_x, p_y, p_speed, p_radius, p_hp)
+
+
+## A unit back in the arrays under an id it had before (out of a building it sheltered in,
+## garrison.gd), in its place by id, so slots stay sorted. Returns its slot.
+func insert(uid: int, p_owner: int, p_kind: int, p_x: int, p_y: int, p_speed: int, p_radius: int, p_hp: int) -> int:
+	var at := id.bsearch(uid)
+	assert(at >= id.size() or id[at] != uid, "Unit %d is already out" % uid)
+	return _put(at, uid, p_owner, p_kind, p_x, p_y, p_speed, p_radius, p_hp)
+
+
+func _put(at: int, uid: int, p_owner: int, p_kind: int, p_x: int, p_y: int, p_speed: int, p_radius: int, p_hp: int) -> int:
+	changes += 1
+	id.insert(at, uid)
+	owner.insert(at, p_owner)
+	kind.insert(at, p_kind)
+	x.insert(at, p_x)
+	y.insert(at, p_y)
+	px.insert(at, p_x)
+	py.insert(at, p_y)
+	tx.insert(at, p_x)
+	ty.insert(at, p_y)
+	moving.insert(at, 0)
+	arrive.insert(at, 0)
+	wx.insert(at, p_x)
+	wy.insert(at, p_y)
+	group.insert(at, 0)
+	stuck.insert(at, 0)
+	prog.insert(at, -1)
+	fkey.insert(at, -1)
+	reach.insert(at, 0)
+	rx0.insert(at, 0)
+	ry0.insert(at, 0)
+	rx1.insert(at, 0)
+	ry1.insert(at, 0)
+	task.insert(at, 0)
+	target.insert(at, -1)
+	home.insert(at, -1)
+	carry_kind.insert(at, 0)
+	carry.insert(at, 0)
+	work.insert(at, 0)
+	speed.insert(at, p_speed)
+	radius.insert(at, p_radius)
+	hp.insert(at, p_hp)
+	foe.insert(at, 0)
+	cooldown.insert(at, 0)
+	stance.insert(at, 0)
+	posture.insert(at, 0)
+	gx.insert(at, p_x)
+	gy.insert(at, p_y)
+	amx.insert(at, 0)
+	amy.insert(at, 0)
+	orders.insert(at, [])
+	mclass.insert(at, 0)
+	patient.insert(at, 0)
+	pace.insert(at, 0)
+	amc.insert(at, -1)
+	return at
 
 
 ## Slot of a unit id, or -1 if it doesn't exist (any more).
@@ -115,6 +129,7 @@ func index_of(uid: int) -> int:
 
 
 func remove_at(i: int) -> void:
+	changes += 1
 	# Field by field: packed arrays put in an Array literal would be copies.
 	id.remove_at(i)
 	owner.remove_at(i)
