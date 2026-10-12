@@ -722,6 +722,12 @@ func _doodad_specs() -> Array:
 		shadowed.append(["yard%d" % st, func(): return tp.yard(st)])
 		flat.append(["garden%d" % st, func(): return tp.garden(st)])
 	shadowed.append(["tether_post", func(): return tp.tether_post()])
+	for along in 2:   # the sheep pen's fence, a tile at a time: along sim x, and along sim y
+		shadowed.append(["pen_rail%d" % along, func():
+			var m: Node3D = tp.pen_rail(along)
+			if along == 1:
+				m.basis = Basis(Vector3.UP, deg_to_rad(90.0))
+			return m])
 	return [shadowed, flat, trees, bridges]
 
 

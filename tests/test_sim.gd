@@ -16,6 +16,7 @@ const Flow := preload("res://src/sim/flow.gd")
 const Economy := preload("res://src/sim/economy.gd")
 const EcoBot := preload("res://src/ai/eco_bot.gd")
 const Combat := preload("res://src/sim/combat.gd")
+const Animals := preload("res://src/sim/animals.gd")
 const Tech := preload("res://src/sim/tech.gd")
 const Fog := preload("res://src/sim/fog.gd")
 const Market := preload("res://src/sim/market.gd")
@@ -90,6 +91,7 @@ func _init() -> void:
 	_test_camp_gather(races)
 	_test_drop_off(races)
 	_test_animals(races)
+	_test_sheep_pen(races)
 	_test_bot_hunts(races)
 	_test_combat(gen)
 
@@ -844,6 +846,92 @@ func _test_animals(races: Array) -> void:
 		w3.step()
 	i3 = w3.units.index_of(s3)
 	check(i3 >= 0 and w3.units.owner[i3] == 0, "animals: an unguarded rival sheep is stolen by walking up to it")
+
+
+## Claimed sheep (Dominic's playtest, 2026-10-13): each walks to one pen by its owner's Town
+## Center and stops there for good, forgetting what its old owner told it; a sheep takes no
+## fighting orders (no attack, no stance; an attack-move just walks it); a worker slaughters
+## one in a few blows, a deer still takes a few more and a boar gets no such help.
+func _test_sheep_pen(races: Array) -> void:
+	var rules := rules_.duplicate(true)
+	rules.animals = true
+	var w := World.new(SEED, SimMap.load_id("flat_test"), races, rules)
+	var s0: Array = w.map.starts[0]
+	var sheep := []
+	var worker := -1
+	for i in w.units.count():
+		if w.units.owner[i] == w.gaia and w.types[w.units.kind[i]].animal == "sheep" and absi(w.units.x[i] - s0[0]) + absi(w.units.y[i] - s0[1]) < 15000:
+			sheep.append(w.units.id[i])
+		if worker < 0 and w.units.owner[i] == 0 and w.types[w.units.kind[i]].worker:
+			worker = w.units.id[i]
+	var first := w.units.index_of(sheep[0])
+	w.units.orders[first] = [{"type": Commands.MOVE, "args": {"x": 1000, "y": 1000}}]   # an order left over from before
+	for id in sheep:
+		var si := w.units.index_of(id)
+		w.issue(0, Commands.MOVE, {"ids": [worker], "x": w.units.x[si], "y": w.units.y[si], "queue": 1})
+	for t in 2400:
+		w.step()
+	var tc := -1
+	for b in w.buildings.count():
+		if tc < 0 and w.buildings.owner[b] == 0 and w.btypes[w.buildings.kind[b]].id == "town_center":
+			tc = b
+	var pen: Array = w.pens.get(w.buildings.id[tc], [])
+	var penned := 0
+	var still := 0
+	var forgot := true
+	for id in sheep:
+		var si := w.units.index_of(id)
+		if si >= 0 and w.units.owner[si] == 0 and not pen.is_empty() and Fixed.dist2(w.units.x[si], w.units.y[si], pen[0], pen[1]) <= 1800 * 1800:
+			penned += 1
+		if si >= 0 and w.units.moving[si] == 0:
+			still += 1
+		if si >= 0 and not w.units.orders[si].is_empty():
+			forgot = false
+	check(sheep.size() == 4 and penned == 4, "sheep: every claimed sheep gathers in one pen by the Town Center (%d of %d)" % [penned, sheep.size()])
+	check(still == 4 and forgot, "sheep: ... and stands there, its old owner's orders forgotten")
+	var bx: int = w.buildings.cx[tc] * 1000 + 1500
+	var by: int = w.buildings.cy[tc] * 1000 + 1500
+	check(not pen.is_empty() and maxi(absi(pen[0] - bx), absi(pen[1] - by)) >= 3000, "sheep: the pen is beside the Town Center, not inside it")
+	var x0: int = w.units.x[first]
+	var y0: int = w.units.y[first]
+	for t in 1200:
+		w.step()
+	check(w.units.x[first] == x0 and w.units.y[first] == y0, "sheep: ... for good (no wandering a minute later)")
+	# No fighting orders for a sheep: an attack and a stance do nothing, an attack-move only walks it.
+	var foe := -1
+	for i in w.units.count():
+		if foe < 0 and w.units.owner[i] == 1:
+			foe = w.units.id[i]
+	w.issue(0, Commands.ATTACK, {"ids": [sheep[0]], "target": foe})
+	w.issue(0, Commands.STANCE, {"ids": [sheep[0]], "stance": "passive"})
+	for t in 20:
+		w.step()
+	first = w.units.index_of(sheep[0])
+	check(w.units.foe[first] == 0 and w.units.posture[first] == Combat.AGGRESSIVE, "sheep: no attack orders, no stances")
+	w.issue(0, Commands.ATTACK_MOVE, {"ids": [sheep[0]], "x": x0 + 3000, "y": y0})
+	for t in 20:
+		w.step()
+	first = w.units.index_of(sheep[0])
+	check(w.units.stance[first] == Combat.NONE and w.units.moving[first] == 1, "sheep: an attack-move just walks it")
+	# One worker slaughters a sheep in a few blows.
+	var blows := 0
+	w.issue(0, Commands.ATTACK, {"ids": [worker], "target": sheep[1]})
+	for t in 1200:
+		w.step()
+		for e in w.events:
+			if e.type == "hit" and e.to == sheep[1]:
+				blows += 1
+		if w.units.index_of(sheep[1]) < 0:
+			break
+	check(w.units.index_of(sheep[1]) < 0 and blows <= 3, "sheep: a worker slaughters one in a few blows (%d)" % blows)
+	# A deer takes more (it's harmless too, but bigger); a boar fights at full armour.
+	var deer_t: Dictionary = w.types[Animals.type_of(w, "deer")]
+	var boar_t: Dictionary = w.types[Animals.type_of(w, "boar")]
+	var wt: Dictionary = w.types[w.units.kind[w.units.index_of(worker)]]
+	var c: Dictionary = w.combat
+	var to_deer := Combat.damage(wt.atk, deer_t.arm, deer_t.cls, maxi(int(c.min_damage), deer_t.min_damage))
+	check(deer_t.hp / to_deer >= 5, "sheep: a deer still takes a worker %d blows" % (deer_t.hp / to_deer))
+	check(boar_t.min_damage == 0 and not boar_t.harmless, "sheep: a boar gets no slaughter rule and fights back")
 
 
 ## The economy bot herds and hunts (Dominic: "bot should hunt too"): it claims and slaughters

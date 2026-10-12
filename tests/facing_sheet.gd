@@ -21,6 +21,7 @@ func _initialize() -> void:
 	var kit := ArtKit.new()
 	kit.lib = lib
 	root.add_child(kit)
+	await process_frame   # the bake clock renders from the tree, which isn't up during _initialize
 	var team := Color(lib.palettes.teams[0])
 	await kit.prepare_units([race], [team])
 	var bg := ColorRect.new()
