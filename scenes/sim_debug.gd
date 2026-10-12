@@ -47,6 +47,7 @@ const Combat := preload("res://src/sim/combat.gd")
 const Replay := preload("res://src/sim/replay.gd")
 const Bot := preload("res://src/ai/bot.gd")
 const TechTreeModel := preload("res://src/view/tech_tree_model.gd")
+const TownLife := preload("res://src/view/town_life.gd")
 
 const MAP_IDS := ["flat_test", "choke_test", "reed_meadow", "reed_meadow_2v2", "river_test"]
 const SEED := 1
@@ -109,6 +110,7 @@ var hint: Label             # the opening hints (against the AI), one at a time
 var hint_step := 0
 var start_units := 0
 var fx: CombatFx            # projectiles, sparks, deaths (from the sim's events)
+var town: TownLife          # the town at work and at rest: piles, chores, smoke, critters, its sound
 var marks: Node2D           # under units: selection rings, move lines, flow arrows
 var layer: Node2D           # units, buildings and resource props, y-sorted
 var overlay: Node2D         # over everything: selection box, placement ghost, carried loads
@@ -188,6 +190,9 @@ func _ready() -> void:
 	layer = Node2D.new()
 	layer.y_sort_enabled = true
 	add_child(layer)
+	town = TownLife.new()   # over the y-sorted layer (dust, critters), under the fog
+	town.setup(self)
+	add_child(town)
 	fx = CombatFx.new()
 	add_child(fx)
 	fog_view = FogView.new()
@@ -418,6 +423,7 @@ func _attach(w: World, end_tick := -1) -> void:
 		order_marks.clear()
 	order_marks = OrderMarks.new(self)
 	fx.clear()
+	town.reset()
 	built_shown = null
 	res_cells.clear()
 	selected.clear()
@@ -1452,6 +1458,7 @@ func _process(delta: float) -> void:
 	_sync_buildings()
 	_sync_resources()
 	land.sync()
+	town.update(delta)
 	_sync_rally()
 	order_marks.update()
 	_sync_fog()
@@ -1556,11 +1563,11 @@ func _sync_views() -> void:
 		var dy := u.y[i] - u.py[i]
 		view.position = Iso.to_screen(u.px[i] + dx * a, u.py[i] + dy * a)
 		view.walking = dx != 0 or dy != 0
-		if view.struck and view.job != "" and u.owner[i] == active:
-			_sfx_at(view.job, view.position, -8.0)   # the blow you see lands: chop, clink, knock, rustle
-		view.job = _job(i)
+		if view.struck and WORK_SOUND.has(view.job) and u.owner[i] == active:
+			_sfx_at(WORK_SOUND[view.job], view.position, -8.0)   # the blow you see lands: chop, clink, knock, rustle
+		view.job = town.job_for(i, _job(i))
 		if world.types[u.kind[i]].worker:
-			view.set_tool(lib, _tool_for(i))
+			view.set_tool(lib, town.tool_for(i, _tool_for(i)))
 		if absi(dx) + absi(dy) > 4:
 			view.face_vec(Iso.to_screen(dx, dy))   # the way it walks, on screen (8 facings)
 		elif view.job != "":
@@ -1572,6 +1579,9 @@ func _sync_views() -> void:
 			views[id].queue_free()
 			views.erase(id)
 			selected.erase(id)
+
+
+const WORK_SOUND := {"chop": "chop", "mine": "mine", "build": "build", "forage": "forage", "till": "forage"}
 
 
 ## The work animation for a unit standing at its job: forage (bug bushes), chop

@@ -8,12 +8,14 @@ extends SceneTree
 ## A gate's open look: palisade_gate:stone:open
 ## Props too: prop.<function>.<seed>[.<stage>], e.g. prop.quarry.1300.0 prop.boulders.1000
 ## Trees: tree.<seed>.<species>.<style>[.<stage>], e.g. tree.3.pine.0 (scenes/art_pixel/tree_models.gd)
+## Town-life props: town.<function>.<args>, e.g. town.pile.wood.3.a town.yard.2 town.garden.3
 
 const ArtKit := preload("res://src/view/art/art_kit.gd")
 const PartShape := preload("res://src/part_shape.gd")
 const PropModels := preload("res://scenes/art_pixel/prop_models.gd")
 const TreeModels := preload("res://scenes/art_pixel/tree_models.gd")
 const BridgeModels := preload("res://scenes/art_pixel/bridge_models.gd")
+const TownProps := preload("res://scenes/art_pixel/town_props.gd")
 
 const W := 1600
 const H := 900
@@ -39,6 +41,11 @@ func _initialize() -> void:
 			var targs: Array = Array(bits.slice(1)).map(func(x): return int(x) if x.is_valid_int() else x)
 			var lib = TreeModels.new() if bits[0] == "tree" else BridgeModels.new()
 			spec = {"body": lib.callv(bits[0], targs)}
+		elif n.begins_with("town."):   # a town-life prop: town.<function>.<args...>, e.g. town.pile.wood.3.a
+			var bits: PackedStringArray = String(n).split(".")
+			var tp := TownProps.new()
+			tp.models = models
+			spec = {"body": tp.callv(bits[1], Array(bits.slice(2)).map(func(x): return int(x) if x.is_valid_int() else x))}
 		elif n.begins_with("prop."):   # a prop: prop.<function>.<seed>[.<stage>]
 			var bits: PackedStringArray = String(n).split(".")
 			var pargs: Array = Array(bits.slice(2)).map(func(x): return int(x) if x.is_valid_int() else x)

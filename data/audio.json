@@ -33,7 +33,9 @@
     "won": {"takes": 1, "bus": "Ui", "gap_ms": 1000, "voices": 1},
     "lost": {"takes": 1, "bus": "Ui", "gap_ms": 1000, "voices": 1},
     "alarm": {"takes": 1, "bus": "Ui", "gap_ms": 1000, "voices": 1},
-    "meadow": {"takes": 1, "bus": "Ambience", "gap_ms": 0, "voices": 1}
+    "meadow": {"takes": 1, "bus": "Ambience", "gap_ms": 0, "voices": 1},
+    "town_quiet": {"takes": 1, "bus": "Ambience", "gap_ms": 0, "voices": 1},
+    "town_busy": {"takes": 1, "bus": "Ambience", "gap_ms": 0, "voices": 1}
   },
   "voices": {"kinds": {"select": 2, "ack": 3, "die": 2}, "gap_ms": 400, "die_gap_ms": 700},
   "music": {
