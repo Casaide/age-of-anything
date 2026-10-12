@@ -37,7 +37,7 @@ func build(id: String, colours: Dictionary) -> Dictionary:
 	var k: float = {"ram": 1.0, "catapult": 1.5, "bolt": 1.6}[p[1]]
 	if p[2] in ROUND2_SCALE:
 		k = ROUND2_SCALE[p[2]][p[1]] * (1.25 if p[3] == "swamp" else 1.0)
-	if p[2] in ROUND3:   # round 3's frog engines are built at their true size
+	if p[2] in ROUND3 or p[2] in ROUND4:   # round 3 and 4's frog engines are built at their true size
 		k = 1.0
 	return _scaled(call("_%s_%s" % [p[1], p[2]], s, colours), k)
 
@@ -1105,6 +1105,20 @@ func _bolt_reed(s: Dictionary, c: Dictionary) -> Dictionary:
 ## casque, thick clawed legs, a spiked tail; two frogs ride in a wicker basket on its back.
 func _ram_beast(s: Dictionary, c: Dictionary) -> Dictionary:
 	var n := Node3D.new()
+	var deck := snapping_turtle(n, s)
+	# The basket on its back, lashed down, team cloth over the shell's sides.
+	n.add_child(cone(10.5, 9.0, 6.0, s.wicker, Vector3(-6, deck + 1.0, 0), Vector3.ZERO, 20))
+	n.add_child(ring(10.0, 11.2, s.reed, Vector3(-6, deck + 4.0, 0)))
+	for side in [1, -1]:
+		n.add_child(_box(Vector3(14.0, 0.6, 13.0), s.team, Vector3(-6, deck - 6.0, 15.5 * side), Vector3(48 * side, 0, 0)))
+	pennant(n, s, Vector3(-15, deck + 2.0, -5), 14.0, 4.0)
+	return {"node": n, "sockets": {"crew0_f0_reach_top": Vector3(-4.0, deck + 0.5, 0.0), "crew1_f0_reach": Vector3(-46.0, 0, 22.0)}}
+
+
+## The snapping turtle itself (round 3's ram, round 4's bolt thrower and catapults): a high ridged
+## shell, a long neck, a hooked beak under a stone brow plate, thick clawed legs, a spiked tail.
+## Returns the height of the top of its shell (where a load goes).
+func snapping_turtle(n: Node3D, s: Dictionary) -> float:
 	var skin := surf("hide", Color(0.4, 0.41, 0.36), 6.0)
 	var shell := surf("chitin", Color("#5e5a32"), 8.0)
 	shell.roughness = 0.6
@@ -1148,14 +1162,7 @@ func _ram_beast(s: Dictionary, c: Dictionary) -> Dictionary:
 	n.add_child(rod(Vector3(-46, 9, 0), Vector3(-56, 4, 0), 2.4, 0.6, skin))
 	for k in 4:
 		n.add_child(cone(0.1, 1.2, 2.6, keel, Vector3(-36.0 - k * 5.0, 17.5 - k * 2.4, 0), Vector3(0, 0, 20), 6))
-	# The basket on its back, lashed down, team cloth over the shell's sides.
-	var deck := C.y + R.y - 1.0
-	n.add_child(cone(10.5, 9.0, 6.0, s.wicker, Vector3(-6, deck + 1.0, 0), Vector3.ZERO, 20))
-	n.add_child(ring(10.0, 11.2, s.reed, Vector3(-6, deck + 4.0, 0)))
-	for side in [1, -1]:
-		n.add_child(_box(Vector3(14.0, 0.6, 13.0), s.team, Vector3(-6, deck - 6.0, 15.5 * side), Vector3(48 * side, 0, 0)))
-	pennant(n, s, Vector3(-15, deck + 2.0, -5), 14.0, 4.0)
-	return {"node": n, "sockets": {"crew0_f0_reach_top": Vector3(-4.0, deck + 0.5, 0.0), "crew1_f0_reach": Vector3(-46.0, 0, 22.0)}}
+	return C.y + R.y - 1.0
 
 
 ## A giant newt (black, an orange belly and yellow spots), a deck strapped to its back carrying a
@@ -1196,24 +1203,60 @@ func _catapult_beast(s: Dictionary, c: Dictionary) -> Dictionary:
 		n.add_child(ring(0.6, 0.9, s.lash, Vector3(x, 13.5, 0), Vector3(0, 0, 90), Vector3(9.0, 1, 11.0)))
 	for side in [1, -1]:
 		n.add_child(_box(Vector3(30.0, 6.0, 0.6), s.team, Vector3(-4.0, d - 3.5, 10.4 * side), Vector3(12 * side, 0, 0)))
-	var bar := d + 24.0
+	deck_catapult(n, s, d, -4.0)
+	return {"node": n, "sockets": {"crew0_f0_raise_top": Vector3(-20.0, d + 0.9, 0), "crew1_f0_reach": Vector3(-6.0, 0, 30.0)}}
+
+
+## A reed-armed catapult standing on a deck at height `d`, the deck's middle at x0: two reed-bundle
+## uprights and braces, a crossbar with the team's pad, a reed skein, the arm (`h` from deck to cup)
+## standing against the bar with a clay ball in its wicker cup.
+func deck_catapult(n: Node3D, s: Dictionary, d: float, x0: float, h := 42.0) -> void:
+	var bar := d + h * 24.0 / 42.0
 	for side in [1, -1]:
-		bundle(n, Vector3(6.0, d, 8.5 * side), Vector3(6.0, bar, 8.5 * side), 1.9, s, 2)
-		bundle(n, Vector3(13.0, d, 8.5 * side), Vector3(6.0, bar - 7.0, 8.5 * side), 1.1, s, 1)
-	bundle(n, Vector3(6.0, bar, -10.5), Vector3(6.0, bar, 10.5), 1.8, s, 3)
-	n.add_child(rod(Vector3(3.8, bar, -6.0), Vector3(3.8, bar, 6.0), 2.2, 2.2, s.team))
-	var pivot := Vector3(-12.0, d + 3.0, 0)
+		bundle(n, Vector3(x0 + 10.0, d, 8.5 * side), Vector3(x0 + 10.0, bar, 8.5 * side), 1.9, s, 2)
+		bundle(n, Vector3(x0 + 17.0, d, 8.5 * side), Vector3(x0 + 10.0, bar - 7.0, 8.5 * side), 1.1, s, 1)
+	bundle(n, Vector3(x0 + 10.0, bar, -10.5), Vector3(x0 + 10.0, bar, 10.5), 1.8, s, 3)
+	n.add_child(rod(Vector3(x0 + 7.8, bar, -6.0), Vector3(x0 + 7.8, bar, 6.0), 2.2, 2.2, s.team))
+	var pivot := Vector3(x0 - 8.0, d + 3.0, 0)
 	n.add_child(rod(pivot + Vector3(0, 0, -8.0), pivot + Vector3(0, 0, 8.0), 2.6, 2.6, s.reed))
-	var tip := Vector3(3.0, d + 42.0, 0)
+	var tip := Vector3(x0 + 7.0, d + h, 0)
 	bundle(n, pivot, tip, 2.0, s, 3, 1.4)
 	clay_cup(n, s, tip + Vector3(0, 0.8, 0), 4.0)
-	return {"node": n, "sockets": {"crew0_f0_raise_top": Vector3(-20.0, d + 0.9, 0), "crew1_f0_reach": Vector3(-6.0, 0, 30.0)}}
 
 
 ## A giant toad (brown, warty, gold-eyed) with a bolt thrower on a saddle on its back: a frog
 ## aims from its rump, another loads from beside it.
 func _bolt_beast(s: Dictionary, c: Dictionary) -> Dictionary:
 	var n := Node3D.new()
+	giant_toad(n, s)
+	# The saddle (team cloth) and the bolt thrower on a short post.
+	var top := 33.0
+	n.add_child(_box(Vector3(20.0, 0.8, 24.0), s.team, Vector3(-4.0, top - 1.0, 0), Vector3(0, 0, 10)))
+	post_bolt(n, s, top, -2.0)
+	return {"node": n, "sockets": {"crew0_f0_reach_top": Vector3(-20.0, 27.0, 0), "crew1_f0_reach": Vector3(-6.0, 0, -30.0)}}
+
+
+## A reed-bow bolt thrower on a short post standing on a pad at height `top`, the post at x0.
+func post_bolt(n: Node3D, s: Dictionary, top: float, x0: float) -> void:
+	n.add_child(_box(Vector3(10.0, 2.0, 10.0), s.dark, Vector3(x0, top, 0)))
+	n.add_child(rod(Vector3(x0, top, 0), Vector3(x0, top + 6.0, 0), 1.6, 1.4, s.dark))
+	var y := top + 7.0
+	n.add_child(beam(Vector3(x0 - 18, y, 0), Vector3(x0 + 20, y, 0), 2.8, 2.2, s.dark))
+	var bx := x0 + 18.0
+	for side in [1, -1]:
+		var mid := Vector3(bx - 2.0, y + 0.5, 13.0 * side)
+		var end := Vector3(bx - 9.0, y + 0.5, 24.0 * side)
+		bundle(n, Vector3(bx, y + 0.5, 1.8 * side), mid, 2.0, s, 1, 1.6)
+		bundle(n, mid, end, 1.6, s, 1, 1.0)
+		n.add_child(rod(end, Vector3(x0 - 12.0, y + 1.2, 0), 0.4, 0.4, s.lash, false))
+	n.add_child(_box(Vector3(4.6, 4.0, 4.6), s.lash, Vector3(bx, y + 0.5, 0)))
+	n.add_child(rod(Vector3(x0 - 12.0, y + 2.2, 0), Vector3(x0 + 34.0, y + 2.2, 0), 1.0, 0.9, s.stalk))
+	n.add_child(cone(0.1, 1.2, 6.0, plain(Color("#3a2a1c")), Vector3(x0 + 37.0, y + 2.2, 0), Vector3(0, 0, -90), 8))
+
+
+## The giant toad itself (round 3's bolt thrower carrier, round 4's catapult carrier): brown,
+## warty, gold-eyed, wide-mouthed, crouched; its back about 33 high.
+func giant_toad(n: Node3D, s: Dictionary) -> void:
 	var skin := surf("frog_skin", Color("#a08a52"), 6.0)
 	skin.roughness = 0.6
 	var wart := plain(Color("#5a4a26"))
@@ -1239,24 +1282,6 @@ func _bolt_beast(s: Dictionary, c: Dictionary) -> Dictionary:
 		var b := fmod(k * 0.618034, 1.0) * 1.2
 		var at := on_surface(Vector3(-3.0, 18.0, 0), Vector3(21.0, 15.0, 19.0), Vector3(cos(a) * sin(b), cos(b), sin(a) * sin(b)), -0.6)
 		n.add_child(blob(Vector3.ONE * (1.0 + fmod(k * 0.37, 0.8)), wart, at))
-	# The saddle (team cloth) and the bolt thrower on a short post.
-	var top := 33.0
-	n.add_child(_box(Vector3(20.0, 0.8, 24.0), s.team, Vector3(-4.0, top - 1.0, 0), Vector3(0, 0, 10)))
-	n.add_child(_box(Vector3(10.0, 2.0, 10.0), s.dark, Vector3(-2.0, top, 0)))
-	n.add_child(rod(Vector3(-2.0, top, 0), Vector3(-2.0, top + 6.0, 0), 1.6, 1.4, s.dark))
-	var y := top + 7.0
-	n.add_child(beam(Vector3(-20, y, 0), Vector3(18, y, 0), 2.8, 2.2, s.dark))
-	var bx := 16.0
-	for side in [1, -1]:
-		var mid := Vector3(bx - 2.0, y + 0.5, 13.0 * side)
-		var end := Vector3(bx - 9.0, y + 0.5, 24.0 * side)
-		bundle(n, Vector3(bx, y + 0.5, 1.8 * side), mid, 2.0, s, 1, 1.6)
-		bundle(n, mid, end, 1.6, s, 1, 1.0)
-		n.add_child(rod(end, Vector3(-14.0, y + 1.2, 0), 0.4, 0.4, s.lash, false))
-	n.add_child(_box(Vector3(4.6, 4.0, 4.6), s.lash, Vector3(bx, y + 0.5, 0)))
-	n.add_child(rod(Vector3(-14.0, y + 2.2, 0), Vector3(32.0, y + 2.2, 0), 1.0, 0.9, s.stalk))
-	n.add_child(cone(0.1, 1.2, 6.0, plain(Color("#3a2a1c")), Vector3(35.0, y + 2.2, 0), Vector3(0, 0, -90), 8))
-	return {"node": n, "sockets": {"crew0_f0_reach_top": Vector3(-20.0, 27.0, 0), "crew1_f0_reach": Vector3(-6.0, 0, -30.0)}}
 
 
 # ------------------------------------------------------------------ C: river engines
@@ -1371,3 +1396,150 @@ func _bolt_river(s: Dictionary, c: Dictionary) -> Dictionary:
 	pennant(n, s, Vector3(-L * 0.47, H + 1.0, -5.0), 14.0, 4.0)
 	n.add_child(_box(Vector3(5.0, 0.4, 4.0), s.team, Vector3(-17.0, y + 1.4, 0)))
 	return {"node": n, "sockets": {"crew0_f0_reach": Vector3(-46.0, 0, 8.0), "crew1_f0_reach": Vector3(-8.0, 0, -30.0)}}
+
+
+
+# ================================================================== round 4 (2026-10-13): frog catapults
+# Dominic picked round 3's swamp beasts (D-121) but wasn't sure of the newt as the catapult carrier
+# ("I wonder if better for cavalry?"; the newt mount is in newt_concepts.gd), then: "catapult on
+# snail maybe?". Ids "siege.<engine>.<dir>.frog", built at their true size like round 3:
+#   snail   catapult: a giant swamp snail, the catapult on a deck lashed over its coiled shell
+#   toad    catapult: round 3's giant toad carrying the catapult instead of the bolt thrower...
+#   turtle  ...and the snapping turtle carrying the bolt thrower (the swap); or the catapult on a
+#           bigger snapping turtle
+#   haul    catapult: round 3's reed and clay catapult on its sledge, hauled by the snapping turtle
+const ROUND4 := ["snail", "toad", "turtle", "haul"]
+
+
+## A giant swamp snail: a long, wet, slime-glossy foot, a head on a raised neck with two long eye
+## stalks and two short feelers, a big shell coiled flat like a ram's horn (so its spiral shows
+## from the side), amber with dark growth bands and a dark spiral line, a slime trail behind.
+## Returns the height of the shell's top.
+func swamp_snail(n: Node3D, s: Dictionary) -> float:
+	var body := surf("frog_skin", Color("#8a7a5a"), 8.0)
+	body.roughness = 0.12
+	body.metallic_specular = 1.0
+	var sole := surf("frog_belly", Color("#c8b892"), 5.0)
+	sole.roughness = 0.2
+	n.add_child(blob(Vector3(38.0, 5.5, 12.5), body, Vector3(-2.0, 5.0, 0)))   # the foot
+	n.add_child(blob(Vector3(37.0, 1.6, 13.9), sole, Vector3(-2.0, 1.8, 0)))   # its frilled edge
+	n.add_child(rod(Vector3(-30, 4.5, 0), Vector3(-52, 1.8, 0), 8.0, 1.6, body))   # the foot's tail behind the shell
+	n.add_child(rod(Vector3(20, 6.0, 0), Vector3(37, 13.0, 0), 8.0, 6.4, body))   # the neck, raised
+	n.add_child(blob(Vector3(8.0, 6.4, 7.4), body, Vector3(41.0, 14.0, 0)))
+	n.add_child(rod(Vector3(46.5, 11.0, -3.5), Vector3(48.0, 11.2, 0), 0.4, 0.4, plain(INK)))   # the mouth
+	n.add_child(rod(Vector3(48.0, 11.2, 0), Vector3(46.5, 11.0, 3.5), 0.4, 0.4, plain(INK)))
+	var eye := plain(Color("#141210"))
+	eye.roughness = 0.1
+	eye.metallic_specular = 1.0
+	for side in [1, -1]:
+		n.add_child(rod(Vector3(43, 18, 3.0 * side), Vector3(52, 36, 7.5 * side), 2.4, 1.6, body))   # eye stalks
+		n.add_child(blob(Vector3.ONE * 2.9, eye, Vector3(52.4, 37.0, 7.7 * side)))
+		n.add_child(blob(Vector3.ONE * 0.8, plain(Color("#e8e4d8")), Vector3(53.6, 38.4, 8.6 * side)))   # the wet glint
+		n.add_child(rod(Vector3(47, 12, 4.0 * side), Vector3(57, 7.0, 8.5 * side), 1.9, 0.8, body))   # feelers
+	# The shell: a tube coiled in the side plane, starting at the aperture low at the front, over
+	# the top, round the back and in; amber with dark growth bands, a dark line along the coil.
+	# Each turn of the coil a shade darker towards the middle, so the turns part at a glance.
+	var whorls := [Color("#c88a3c"), Color("#9a6428"), Color("#6e4420"), Color("#4e3018")]
+	var band := surf("chitin", Color("#3a2410"), 6.0)
+	var lip := plain(Color("#ecdcb4"))
+	var R0 := 19.0
+	var O := Vector3(-8.0, 29.0, 0)
+	var top := 0.0
+	for k in 70:
+		var th := k * 0.16
+		var R := R0 * exp(-0.12 * th)
+		var r := R * 0.5
+		var phi := deg_to_rad(-50.0) + th
+		var at := O + Vector3(cos(phi) * R, sin(phi) * R, 0)
+		var shell := surf("chitin", whorls[mini(int(th / TAU), 3)], 6.0)
+		shell.roughness = 0.45
+		n.add_child(blob(Vector3(r * 1.1, r * 1.1, r * 1.35), band if k % 8 == 4 else shell, at))
+		top = maxf(top, at.y + r * 1.1)
+		if k > 4:   # the dark seam where each turn meets the one inside it, on both flat sides
+			var inward := Vector3(-cos(phi), -sin(phi), 0) * r * 0.8
+			for side in [1, -1]:
+				n.add_child(blob(Vector3.ONE * clampf(r * 0.28, 0.7, 2.0), band, at + inward + Vector3(0, 0, r * 1.05 * side)))
+	var a0 := deg_to_rad(-50.0)
+	n.add_child(ring(R0 * 0.42, R0 * 0.56, lip, O + Vector3(cos(a0) * R0 + 2.0, sin(a0) * R0, 0),
+		Vector3(90, 0, 40), Vector3(1, 1, 1.3)))   # the aperture's pale lip
+	return top
+
+
+## The snail's catapult: a timber deck lashed over the shell's top, ropes down to the foot, the
+## reed catapult standing on it; a frog rides behind the arm winding, a driver sits on the snail's
+## neck with a goad, a loader walks beside with clay shot in a basket.
+func _catapult_snail(s: Dictionary, c: Dictionary) -> Dictionary:
+	var n := Node3D.new()
+	var top := swamp_snail(n, s)
+	var x0 := -8.0
+	var d := top + 1.0
+	n.add_child(_box(Vector3(30.0, 2.0, 19.0), s.dark, Vector3(x0 - 3.0, d - 1.0, 0)))
+	for x in [x0 - 15.0, x0 + 9.0]:   # crossbars, roped down to the foot on both sides
+		n.add_child(beam(Vector3(x, d - 2.4, -10.5), Vector3(x, d - 2.4, 10.5), 2.4, 2.4, s.wood))
+		for side in [1, -1]:
+			n.add_child(rod(Vector3(x, d - 2.4, 10.0 * side), Vector3(x * 1.3, 7.0, 13.0 * side), 0.45, 0.45, s.rope, false))
+	n.add_child(_box(Vector3(30.4, 2.4, 1.2), s.team, Vector3(x0 - 3.0, d - 1.0, 9.9)))   # team cloth along the deck's edges
+	n.add_child(_box(Vector3(30.4, 2.4, 1.2), s.team, Vector3(x0 - 3.0, d - 1.0, -9.9)))
+	deck_catapult(n, s, d, x0, 32.0)
+	clay_cup(n, s, Vector3(x0 + 4.0, 4.0, -22.0), 4.0)   # shot by the loader
+	return {"node": n, "sockets": {"crew0_f0_raise_top": Vector3(x0 - 17.0, d, 0), "crew1_f0_reach": Vector3(x0 - 8.0, 0, -30.0)}}
+
+
+## The toad's catapult (the swap): round 3's giant toad, a team saddle cloth and a deck on its back,
+## the reed catapult on the deck; a frog rides its rump winding, one loads from beside.
+func _catapult_toad(s: Dictionary, c: Dictionary) -> Dictionary:
+	var n := Node3D.new()
+	giant_toad(n, s)
+	var top := 33.0
+	n.add_child(_box(Vector3(20.0, 0.8, 24.0), s.team, Vector3(-4.0, top - 1.0, 0), Vector3(0, 0, 10)))
+	n.add_child(_box(Vector3(26.0, 1.8, 18.0), s.dark, Vector3(-2.0, top + 0.8, 0)))
+	deck_catapult(n, s, top + 1.6, -2.0, 38.0)
+	return {"node": n, "sockets": {"crew0_f0_raise_top": Vector3(-20.0, 27.0, 0), "crew1_f0_reach": Vector3(-6.0, 0, -30.0)}}
+
+
+## The turtle's bolt thrower (the swap): the snapping turtle with team cloths over its shell and
+## round 3's reed-bow bolt thrower on a post; a frog aims from the back of the shell, one loads.
+func _bolt_turtle(s: Dictionary, c: Dictionary) -> Dictionary:
+	var n := Node3D.new()
+	var deck := snapping_turtle(n, s)
+	for side in [1, -1]:
+		n.add_child(_box(Vector3(14.0, 0.6, 13.0), s.team, Vector3(-6, deck - 6.0, 15.5 * side), Vector3(48 * side, 0, 0)))
+	post_bolt(n, s, deck, -4.0)
+	return {"node": n, "sockets": {"crew0_f0_reach_top": Vector3(-24.0, 29.0, 0), "crew1_f0_reach": Vector3(-6.0, 0, 34.0)}}
+
+
+## The catapult on a bigger snapping turtle (a quarter larger than the ram's): a deck on its shell,
+## the reed catapult on it; a frog rides behind the arm, one loads from beside.
+func _catapult_turtle(s: Dictionary, c: Dictionary) -> Dictionary:
+	var n := Node3D.new()
+	var big := Node3D.new()
+	big.scale = Vector3.ONE * 1.25
+	n.add_child(big)
+	var deck := snapping_turtle(big, s) * 1.25
+	n.add_child(_box(Vector3(30.0, 2.0, 22.0), s.dark, Vector3(-6.0, deck, 0)))
+	for side in [1, -1]:
+		n.add_child(_box(Vector3(18.0, 0.6, 16.0), s.team, Vector3(-6, deck - 7.0, 19.0 * side), Vector3(48 * side, 0, 0)))
+	deck_catapult(n, s, deck + 1.0, -4.0, 38.0)
+	return {"node": n, "sockets": {"crew0_f0_raise_top": Vector3(-26.0, 39.0, 0), "crew1_f0_reach": Vector3(-6.0, 0, 38.0)}}
+
+
+## Round 3's reed and clay catapult on its sledge, hauled by the snapping turtle on two traces; a
+## driver rides the turtle, the catapult's own crew wind and load behind.
+func _catapult_haul(s: Dictionary, c: Dictionary) -> Dictionary:
+	var n := Node3D.new()
+	var cat := _catapult_reed(s, c)
+	var back := -49.0
+	cat.node.position.x = back
+	n.add_child(cat.node)
+	var beast := Node3D.new()
+	beast.position.x = 47.0
+	n.add_child(beast)
+	var deck := snapping_turtle(beast, s)
+	for side in [1, -1]:
+		n.add_child(_box(Vector3(14.0, 0.6, 13.0), s.team, Vector3(41, deck - 6.0, 15.5 * side), Vector3(48 * side, 0, 0)))
+		n.add_child(rod(Vector3(back + 30.0, 5.0, 13.0 * side), Vector3(61.0, 14.0, 24.0 * side), 0.6, 0.6, s.rope, false))   # the traces
+	n.add_child(beam(Vector3(61.0, 14.0, -24.0), Vector3(61.0, 14.0, 24.0), 1.6, 1.6, s.dark))   # the breast bar
+	var sockets := {"crew2_f0_reach_top": Vector3(43.0, deck + 0.5, 0)}
+	for k in cat.sockets:
+		sockets[k] = cat.sockets[k] + Vector3(back, 0, 0)
+	return {"node": n, "sockets": sockets}
