@@ -28,7 +28,24 @@ func _initialize() -> void:
 				ps.queue_redraw()
 	# Siege engines (milestone 13): each is its baked part plus its crew, composed (a worker
 	# UnitView per crew socket). 60 more, engines only, to see what crews cost.
-	var engines: Array = s.unit_picks.filter(func(p): return s.races[p[0]].units[p[1]].recipe.has("crew"))
+	var engines := []
+	var pb = load("res://scenes/art_pixel/part_baker.gd").new()
+	pb.art_scale = s.ART_SCALE * s.UNIT_SCALE
+	s.add_child(pb)
+	for side in s.races.size():
+		for k in s.races[side].units.size():
+			var u: Dictionary = s.races[side].units[k]
+			if not u.recipe.has("crew"):
+				continue
+			engines.append([side, k])
+			for pass_n in 2:   # the engine first (its crew sockets come with its bake), then its crew
+				var probe = load("res://src/unit_view.gd").new()
+				probe.build(u.recipe, s.lib, Color(s.lib.palettes.teams[side]), u.eval.speed)
+				for ps in probe.find_children("*", "Node2D", true, false):
+					if ps is PartShape and ps.part_id != "":
+						await pb.bake(ps.part_id, ps.shapes, ps.colours)
+				probe.free()
+	pb.queue_free()
 	if not engines.is_empty():
 		s.unit_picks = engines
 		s.spawn_bench(60)

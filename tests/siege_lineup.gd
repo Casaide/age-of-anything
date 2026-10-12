@@ -11,7 +11,7 @@ const UnitView := preload("res://src/unit_view.gd")
 
 const PROMPTS := ["romans", "sewer rats", "forest beetles", "spooky spiders", "swamp frogs"]
 const FACINGS := [0, 2, 5, 6]
-const CELL := Vector2(78, 62)   # world units per cell (at zoom 1)
+const CELL := Vector2(84, 70)   # world units per cell (at zoom 1)
 const LABEL_W := 150.0
 
 
