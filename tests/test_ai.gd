@@ -47,6 +47,7 @@ func _init() -> void:
 		return
 	if args.size() > 1 and args[1] == "reach":   # just the raid and walled-ford checks (a couple of minutes)
 		_test_respond(rules, rats, frogs)
+		_test_shelter(rules, rats, frogs)
 		_test_walled_fords(rules, frogs, rats)
 		print("\n%d checks, %d failed" % [checks, failures])
 		quit(1 if failures > 0 else 0)
@@ -86,6 +87,7 @@ func _init() -> void:
 	check(hard.winner == 0, "hard beats normal (winner %d at %s)" % [hard.winner, _clock(hard.tick)])
 
 	_test_respond(rules, rats, frogs)
+	_test_shelter(rules, rats, frogs)
 	_test_walled_fords(rules, frogs, rats)
 	_test_age_three(rules, frogs, rats)
 
@@ -435,6 +437,48 @@ func _test_respond(rules: Dictionary, a: Dictionary, b: Dictionary) -> void:
 	check(first_hit >= 0 and sent >= 0 and sent - first_hit <= 100, "respond: soldiers are sent to a raided camp within 5 s (%d ticks)" % (sent - first_hit))
 	check(pulled >= 0 and pulled - first_hit <= 100, "respond: the worker by it is pulled back within 5 s")
 	check(blows > 0, "respond: the bot's soldiers fight the raiders")
+
+
+## A big raid by the Town Center (milestone 12 phase 8): the bot calls its workers to arms
+## within seconds, and sends them back to work (when it's quiet, or after shelter.seconds).
+func _test_shelter(rules: Dictionary, a: Dictionary, b: Dictionary) -> void:
+	var w := World.new(SEED, SimMap.load_id(map_id), [a, b], rules)
+	var bot := Bot.new(1)
+	while w.tick < 1200:
+		bot.think(w)
+		w.step()
+	var tc: int = bot.eco._town_center(w)
+	var tx: int = w.buildings.cx[tc] * 1000 + 1500
+	var ty: int = w.buildings.cy[tc] * 1000 + 1500
+	w.issue(0, Commands.SPAWN, {"slot": "spear", "count": 6, "x": tx + 4500, "y": ty})
+	for t in 12:
+		bot.think(w)
+		w.step()
+	var raiders := []
+	for i in w.units.count():
+		if w.units.owner[i] == 0 and not w.types[w.units.kind[i]].worker and absi(w.units.x[i] - tx) < 8000 and absi(w.units.y[i] - ty) < 8000:
+			raiders.append(w.units.id[i])
+	w.issue(0, Commands.ATTACK_MOVE, {"ids": raiders, "x": tx, "y": ty + 2500})
+	var start := w.tick
+	var called := -1
+	var back := -1
+	var inside := 0
+	var seen := w.history.size()
+	while w.tick < start + 20 * 90 and back < 0:
+		bot.think(w)
+		w.step()
+		for n in range(seen, w.history.size()):
+			var cmd: Dictionary = w.history[n]
+			if cmd.player == 1 and cmd.type == Commands.CALL_TO_ARMS and called < 0:
+				called = w.tick
+			elif cmd.player == 1 and cmd.type == Commands.BACK_TO_WORK and called >= 0:
+				back = w.tick
+		seen = w.history.size()
+		inside = maxi(inside, bot.eco.sheltered(w))
+	print("\n== shelter: %d raiders; call to arms %s, most inside %d, back to work %s" % [raiders.size(), _clock(called) if called >= 0 else "never", inside, _clock(back) if back >= 0 else "never"])
+	check(called >= 0 and called - start <= 20 * 10, "shelter: a raid on the Town Center calls the workers to arms within 10 s")
+	check(inside >= 5, "shelter: ...and they go inside (%d)" % inside)
+	check(back >= 0, "shelter: ...and back to work afterwards")
 
 
 ## Walled-off fords (Dominic, 2026-10-13: "enemy had 10 builders just stuck waiting for nothing
