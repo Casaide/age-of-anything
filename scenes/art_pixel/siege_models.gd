@@ -1413,7 +1413,7 @@ func _bolt_river(s: Dictionary, c: Dictionary) -> Dictionary:
 
 # ================================================================== round 4 (2026-10-13): frog catapults
 # Dominic picked round 3's swamp beasts (D-121) but wasn't sure of the newt as the catapult carrier
-# ("I wonder if better for cavalry?"; the newt mount is in newt_concepts.gd), then: "catapult on
+# ("I wonder if better for cavalry?"; the newt mount is built in unit_models.gd), then: "catapult on
 # snail maybe?". Ids "siege.<engine>.<dir>.frog", built at their true size like round 3:
 #   snail   catapult: a giant swamp snail, the catapult on a deck lashed over its coiled shell
 #   toad    catapult: round 3's giant toad carrying the catapult instead of the bolt thrower...
