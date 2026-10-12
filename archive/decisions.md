@@ -720,3 +720,9 @@ beetle pushing a log.
 don't show them." Every engine is drawn with the race's own workers working it (pushing, winding,
 loading, aiming), placed so the machine's silhouette still reads at game scale. The catapult and bolt
 thrower keep the round-1 A machines (arm and cup on wheels; a wheeled carriage), now crewed.
+
+**D-119, 2026-10-13: Siege picks; the frogs' engines get a new direction.** Dominic picked from round 2: the
+rats' open pipe-and-chain ram, the ridden giant beetle for the forest, and the rest as shown ("looks
+amazing"): crewed timber engines for humans (ram B, catapult and bolt thrower A, crewed), the rats' junk
+catapult and bolt thrower. The frogs' takes are the weak point ("overusing lily pads and stuff"): their
+direction is rethought in a new concept round before any frog engine is built.
