@@ -1089,6 +1089,9 @@ func _body_sheep(c: Dictionary) -> Dictionary:
 		var p := Vector3(rng.randf_range(-7.0, 6.0), 10.5 + up * 4.3, cos(a) * 4.2 * sqrt(1.0 - up * up * 0.5))
 		n.add_child(blob(Vector3(1.4, 1.1, 1.3), wool if k % 3 else shade, p))
 	n.add_child(blob(Vector3(1.4, 1.6, 1.3), wool, Vector3(-8.0, 11.5, 0)))   # the tail tuft
+	# A collar in the team key at the neck, the one quiet mark of whose sheep it is (Dominic:
+	# a claimed sheep should show some team colour); nobody's sheep wear it in plain leather.
+	n.add_child(ring(2.1, 3.1, plain(c.team), Vector3(7.9, 12.6, 0), Vector3(0, 0, 65), Vector3(1.0, 1.8, 1.0)))
 	return {"node": n, "sockets": {"head": Vector3(8.0, 12.5, 0), "torso": Vector3(0, 10.5, 0), "back": Vector3(-3, 14, 0)},
 		"anchors": _four_legs(4.5, -4.5, 7.0, 2.4), "carry": "harness"}
 
