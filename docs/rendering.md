@@ -58,8 +58,21 @@ map; the code says the details.
   the view picks the turn from its neighbours and shows it open while a friendly unit is at it.
 - **Props** (`scenes/art_pixel/prop_models.gd`): bushes, reeds, boulders, quarry stone and
   gold, carcasses, crops, the rally flag; resources bake in used-up stages.
+- **Trees** (`scenes/art_pixel/tree_models.gd`, milestone 15): broadleaf, pine and swamp trees,
+  each in a few concept looks (`style`; `ArtKit.TREE_STYLE` picks the one in play), built like
+  the bushes (leaf and needle cards over dark lobes, bark-textured trunks), baked two to a
+  render with room for long shadows (`baker.shadow_reach`), in four stages: standing, felled
+  (the log by its stump), sawn up, stump. The sim has one `tree` terrain; the view picks the
+  species from the ground round it (`src/view/art/land_view.gd`: swamp trees by water, pine and
+  broadleaf groves by a smooth noise). Stumps stay until something is built there.
+- **Bridges** (`scenes/art_pixel/bridge_models.gd`): neutral timber, no team colour; every size
+  the maps use is baked (`ArtKit.bridge_sizes` reads `data/maps`), along sim x and y, standing
+  and broken. Drawn in the flat layer (walked across, under units).
 - **Terrain** (`scenes/art_pixel/terrain.gdshader`): one shader paints the ground from blurred
-  terrain masks (water depth and sky, swamp, rock, paths); not baked.
+  terrain masks (water depth and sky, swamp, rock, paths); not baked. Rivers draw as water,
+  fords as shallows with the bed showing, forest floor like reed-bed ground. Worn trails come
+  from the sim's wear grid (`src/sim/trails.gd`), handed over as a small texture once a second
+  (`land_view.gd`) and drawn as the culture paths' earth trail.
 - **UI art**: SVG icons and cursors in `assets/art/icons/` and `assets/art/cursors/`,
   rasterised at load.
 
@@ -88,6 +101,7 @@ shapes at once). Close up and at game size:
 godot --path . --script res://tests/facing_sheet.gd -- out.png "prompt" [zoom]          # a roster in all 8 facings ("animals" too)
 godot --path . --script res://tests/concept_sheet.gd -- out.png 14 1 "prompt" [az=215] "gear=..." ...   # one unit, close, options side by side
 godot --path . --script res://tests/building_sheet.gd -- out.png 2 type:arch prop.quarry.1300.0 ...
+godot --path . --script res://tests/building_sheet.gd -- out.png 2 stilt_house tree.1.pine.0 tree.1.swamp.1.3 bridge.1.3.0.1   # trees (seed.species.style[.stage]), bridges (seed.length.style[.broken])
 godot --path . --script res://tests/building_variants.gd -- out.png 1.5   # every variant of every culture
 godot --path . --script res://tests/sim_screenshot.gd -- out.png flat_test ai-look:x:y:zoom   # the map as played
 ```
