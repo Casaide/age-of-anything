@@ -1,4 +1,4 @@
-"""Pure-Python sound synthesis for Age of Whatever (no numpy: this Mac has none).
+"""Pure-Python sound synthesis for Age of Anything (no numpy: this Mac has none).
 
 A sound is a list of floats at RATE Hz, mono, in roughly -1..1. Everything here is
 deterministic: noise comes from a random.Random you pass in, so a re-render gives the

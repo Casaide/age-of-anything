@@ -1,4 +1,4 @@
-# Age of Whatever: design
+# Age of Anything: design
 
 The source of truth for *what* the game is and *why*. For *how* and *when*, see `mvp-plan.md`.
 For technical reference and sources, see `research.md`. For everything deliberately postponed,

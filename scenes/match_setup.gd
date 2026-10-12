@@ -109,7 +109,7 @@ func _menu() -> Control:
 	col.alignment = BoxContainer.ALIGNMENT_CENTER
 	root.add_child(col)
 	var title := Label.new()
-	title.text = "Age of Whatever"
+	title.text = "Age of Anything"
 	title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	title.add_theme_font_size_override("font_size", 72)
 	title.add_theme_color_override("font_color", GOLD)
