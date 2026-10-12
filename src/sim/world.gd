@@ -31,6 +31,7 @@ const Match := preload("res://src/sim/match.gd")
 const Fog := preload("res://src/sim/fog.gd")
 const Bridges := preload("res://src/sim/bridges.gd")
 const Trails := preload("res://src/sim/trails.gd")
+const Garrison := preload("res://src/sim/garrison.gd")
 
 const TICK_HZ := 20
 const HASH_EVERY := 30
@@ -127,6 +128,7 @@ var field_order: Array = []    # cached field keys, oldest first (eviction, inva
 var field_queue: Array = []    # field keys waiting for a solve, in request order
 var bridge_cfg: Dictionary     # data/bridges.json, as vectors (bridges.gd)
 var trail_cfg: Dictionary      # rules.trails as ints (trails.gd)
+var garrison_cfg: Dictionary   # buildings.json garrison: heal_every, call_range, not (garrison.gd)
 var wear := PackedByteArray()  # per cell: how worn the ground is by walkers (trails.gd)
 var bridge_id := PackedInt32Array()   # per map bridge: its id (from next_id), and the rest of its state (bridges.gd)
 var bridge_cells: Array = []          # PackedInt32Array of its deck cells
@@ -169,6 +171,7 @@ func _init(p_seed: int, p_map: SimMap, p_races: Array, p_rules: Dictionary, p_te
 	Animals.add_types(self, animals)
 	Combat.setup(self)
 	Tech.setup(self)
+	Garrison.setup(self)
 	Market.setup(self)
 	Economy.setup(self)
 	lost.append(0)   # gaia's
@@ -316,16 +319,17 @@ func step() -> void:
 	Economy.train(self)
 	Tech.tick(self)
 	Economy.work(self)
+	Garrison.tick(self)
 	Animals.tick(self)
 	spatial.build(units.x, units.y)
-	var alive := units.count()
+	var alive := units.changes
 	Heal.tick(self)
 	Combat.tick(self)
 	Match.tick(self)
 	Fog.tick(self)
 	Trails.tick(self)
-	if units.count() != alive:
-		spatial.build(units.x, units.y)   # the dead are gone: moves look round at who's left (World._spot)
+	if units.changes != alive:
+		spatial.build(units.x, units.y)   # the dead are gone (and the sheltered spilled out): moves look round at who's left (World._spot)
 	_next_orders()
 	_sync_map()
 	_solve_queued()
@@ -420,6 +424,15 @@ func _run(cmd: Dictionary) -> void:
 			Economy.Pens.cmd_pen(self, cmd.player, a)
 		Commands.RELEASE:
 			Economy.Pens.cmd_release(self, cmd.player, a)
+		Commands.GARRISON:
+			_clear_combat(cmd.player, a.ids)
+			Garrison.cmd_garrison(self, cmd.player, a)
+		Commands.UNGARRISON:
+			Garrison.cmd_ungarrison(self, cmd.player, a)
+		Commands.CALL_TO_ARMS:
+			Garrison.cmd_call_to_arms(self, cmd.player, a)
+		Commands.BACK_TO_WORK:
+			Garrison.cmd_back_to_work(self, cmd.player, a)
 		Commands.STOP:
 			for uid in a.ids:
 				var i := units.index_of(uid)
@@ -479,7 +492,8 @@ func _next_orders() -> void:
 		if o.type == Commands.BUILD:
 			var bid: int = map.occupied[o.args.cy * map.width + o.args.cx]
 			var b := buildings.index_of(bid)
-			if b >= 0 and buildings.owner[b] == p and buildings.done[b] == 0 and btypes[buildings.kind[b]].id == o.args.building:
+			var ordered := Economy.btype_of(self, o.args.building)
+			if b >= 0 and buildings.owner[b] == p and buildings.done[b] == 0 and ordered >= 0 and buildings.kind[b] == Economy.upgraded(self, p, ordered):
 				o = {"type": Commands.HELP_BUILD, "args": {"ids": o.args.ids, "target": bid}}
 		var args: Dictionary = o.args.duplicate()
 		args.queue = 1   # run now (the unit's free) without wiping the rest of its queue
@@ -1357,4 +1371,8 @@ func state_hash() -> int:
 			h = Fixed.mix(h, v)
 		for k in b.queue[i]:
 			h = Fixed.mix(h, k)
+		h = Fixed.mix(h, b.inside[i].size())
+		for rec in b.inside[i]:   # those sheltering inside (garrison.gd)
+			for v in rec:
+				h = Fixed.mix(h, v)
 	return h

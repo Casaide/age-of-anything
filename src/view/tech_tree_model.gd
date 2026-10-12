@@ -154,6 +154,10 @@ static func effect_text(effects: Array) -> String:
 			out.append("%s gathered %d%% faster" % [String(e.gather).capitalize(), int(e.pct)])
 			last = ""
 			continue
+		if e.has("becomes"):   # tower_upgrade
+			out.append("%ss become %ss" % [String(e.building).capitalize(), String(e.becomes).capitalize()])
+			last = ""
+			continue
 		var who := _subject(e)
 		var what := _phrase(e.stat, int(e.pct if e.has("pct") else e.add), e.has("pct"))
 		if who == last:

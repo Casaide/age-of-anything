@@ -29,10 +29,15 @@ const DROP_OFF := "drop_off"       # {ids, building}  workers take what they car
 const AUTO_RESEED := "auto_reseed" # {on: 1 or 0}  the player's setting: farms worked out reseed themselves (economy.gd)
 const PEN := "pen"                 # {ids, building}  herd animals go into the player's pen (pens.gd)
 const RELEASE := "release"         # {building}  a pen's animals walk out
-const TYPES := [MOVE, SPAWN, GATHER, BUILD, HELP_BUILD, TRAIN, CANCEL, RALLY, ATTACK, ATTACK_MOVE, AGE_UP, RESEARCH, SURRENDER, RESEED, TRADE, STOP, STANCE, DROP_OFF, AUTO_RESEED, PEN, RELEASE]
+const GARRISON := "garrison"       # {ids, building}  units go inside their own building (garrison.gd)
+const UNGARRISON := "ungarrison"   # {building}  everyone inside comes out
+const CALL_TO_ARMS := "call_to_arms"   # {building}  workers near that Town Center go inside the nearest buildings with room
+const BACK_TO_WORK := "back_to_work"   # {}  sheltering workers come out and go back to what they gathered
+const TYPES := [MOVE, SPAWN, GATHER, BUILD, HELP_BUILD, TRAIN, CANCEL, RALLY, ATTACK, ATTACK_MOVE, AGE_UP, RESEARCH, SURRENDER, RESEED, TRADE, STOP, STANCE, DROP_OFF, AUTO_RESEED, PEN, RELEASE,
+	GARRISON, UNGARRISON, CALL_TO_ARMS, BACK_TO_WORK]
 ## Unit orders that can be queued: with args.queue = 1, a busy unit keeps the order for
 ## when it's done (shift-queuing); without it, the order replaces the unit's queue.
-const QUEUEABLE := [MOVE, GATHER, BUILD, HELP_BUILD, ATTACK, ATTACK_MOVE, DROP_OFF]
+const QUEUEABLE := [MOVE, GATHER, BUILD, HELP_BUILD, ATTACK, ATTACK_MOVE, DROP_OFF, GARRISON]
 
 var pending := {}            # run turn -> [commands]; looked up by key, never iterated
 var next_seq := {}           # player -> next seq; looked up by key, never iterated

@@ -16,6 +16,7 @@ const Economy := preload("res://src/sim/economy.gd")
 const Flow := preload("res://src/sim/flow.gd")
 const Animals := preload("res://src/sim/animals.gd")
 const Bridges := preload("res://src/sim/bridges.gd")
+const Garrison := preload("res://src/sim/garrison.gd")
 
 ## units.stance, what a unit is doing: nothing, an ordered target, a fight it found
 ## itself, an attack-move, or walking back to where it stood (defensive units).
@@ -379,7 +380,8 @@ static func tick(w) -> void:
 			Bridges.hurt(w, k, brhurt[k])
 
 
-## Finished buildings that attack (watchtowers) shoot the nearest enemy unit in reach.
+## Finished buildings that attack (towers, a Town Center with people inside) shoot the nearest
+## enemy unit in reach: a volley of the type's arrows plus one for each unit sheltering inside.
 static func _towers(w, hurt: PackedInt32Array, hurt_by: PackedInt32Array) -> void:
 	var bs = w.buildings
 	var u = w.units
@@ -387,6 +389,9 @@ static func _towers(w, hurt: PackedInt32Array, hurt_by: PackedInt32Array) -> voi
 	for b in bs.count():
 		var bt: Dictionary = w.btypes[bs.kind[b]]
 		if bt.attack.is_empty() or bs.done[b] == 0:
+			continue
+		var arrows: int = bt.arrows + bs.inside[b].size()
+		if arrows <= 0:
 			continue
 		if bs.cooldown[b] > 0:
 			bs.cooldown[b] -= 1
@@ -407,10 +412,11 @@ static func _towers(w, hurt: PackedInt32Array, hurt_by: PackedInt32Array) -> voi
 			continue
 		var tt: Dictionary = w.types[u.kind[best]]
 		var dmg := damage(bt.atk, tt.arm, tt.cls, int(c.min_damage))
-		hurt[best] += dmg
+		hurt[best] += dmg * arrows
 		hurt_by[best] = bs.id[b]
 		bs.cooldown[b] = bt.reload
-		w.events.append({"type": "hit", "by": bs.id[b], "to": u.id[best], "damage": dmg, "ranged": true})
+		for k in arrows:   # one event an arrow, so the view draws the volley
+			w.events.append({"type": "hit", "by": bs.id[b], "to": u.id[best], "damage": dmg, "ranged": true, "arrow": k})
 
 
 ## The edge-to-edge gap from unit i to unit j or building b, in milli-tiles.
@@ -638,5 +644,6 @@ static func _apply(w, hurt: PackedInt32Array, hurt_by: PackedInt32Array, bhurt: 
 				"owner": bs.owner[b], "kind": bs.kind[b], "building": true})
 			Economy.clear_farm(w, b)
 			Economy.Pens.gone(w, b)   # a pen's animals spill out
+			Garrison.spill(w, b)      # and so do the people sheltering inside
 			w.map.occupy(bs.footprint(b, w.map.width), 0)
 			bs.remove_at(b)

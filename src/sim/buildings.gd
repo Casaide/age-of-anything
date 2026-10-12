@@ -18,6 +18,7 @@ var rally_x := PackedInt32Array()     # milli-tiles, or -1 for none
 var rally_y := PackedInt32Array()
 var cooldown := PackedInt32Array()   # towers: ticks until the next shot
 var queue: Array = []                 # per building, head first: unit type indexes (>= 0) and techs (Tech.entry)
+var inside: Array = []                # per building: the units sheltering in it (garrison.gd), each a PackedInt32Array record, by id
 
 
 func count() -> int:
@@ -40,6 +41,7 @@ func add(bid: int, p_owner: int, p_kind: int, p_cx: int, p_cy: int, p_sx: int, p
 	rally_x.append(-1)
 	rally_y.append(-1)
 	queue.append([])
+	inside.append([])
 	cooldown.append(0)
 	return id.size() - 1
 
@@ -67,6 +69,7 @@ func remove_at(i: int) -> void:
 	rally_x.remove_at(i)
 	rally_y.remove_at(i)
 	queue.remove_at(i)
+	inside.remove_at(i)
 	cooldown.remove_at(i)
 
 

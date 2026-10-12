@@ -31,6 +31,8 @@ var _fires: Array = []    # [CPUParticles2D, CPUParticles2D] flame and smoke per
 var _door: Node2D         # over the body: the doorway, lit while someone goes in or out
 var _door_shape := PackedVector2Array()
 var door_open := 0.0      # 0 shut .. 1 open (eased)
+var garrison := 0         # people sheltering inside (garrison.gd): a small count over the roof
+var _badge: Node2D        # draws that count
 var _door_until := 0.0    # time it stays open to
 
 const DOOR_OPEN_S := 1.6  # a door stays open this long after someone passes
@@ -366,12 +368,43 @@ func _process(delta: float) -> void:
 		vane.scale.x = cos(time * 1.3)
 
 
+## How many shelter inside (0: no badge). Shown for your own side's buildings.
+func set_garrison(n: int) -> void:
+	if n == garrison:
+		return
+	garrison = n
+	if _badge == null:
+		_badge = Node2D.new()   # over the body (a node's own drawing goes under its children)
+		_badge.draw.connect(_draw_garrison)
+		add_child(_badge)
+	_badge.visible = garrison > 0
+	_badge.queue_redraw()
+
+
 func _draw() -> void:
 	if done:
 		return
 	var w := 40.0
 	draw_rect(Rect2(bar_at - Vector2(w * 0.5, 0), Vector2(w, 4)), Color(0, 0, 0, 0.7))
 	draw_rect(Rect2(bar_at - Vector2(w * 0.5, 0) + Vector2(1, 1), Vector2((w - 2) * progress, 2)), Color("#f2c94c"))
+
+
+## The count of people inside: a dark pill by the roof with a little figure and the number.
+func _draw_garrison() -> void:
+	if not done:
+		return
+	var r := body.get_rect()
+	var at := body.position + Vector2(r.position.x + r.size.x * 0.72, r.position.y + r.size.y * 0.22) * body.scale
+	var font := ThemeDB.fallback_font
+	var txt := str(garrison)
+	var fs := 8
+	var tw := font.get_string_size(txt, HORIZONTAL_ALIGNMENT_LEFT, -1, fs).x
+	var box := Rect2(at - Vector2(5, 5), Vector2(tw + 13, 10))
+	_badge.draw_rect(box, Color(0.08, 0.06, 0.04, 0.8))
+	_badge.draw_rect(box, Color(team.r, team.g, team.b, 0.9), false, 1.0)
+	_badge.draw_circle(at + Vector2(-1, -2), 1.4, Color("#f2e6cc"))   # a head
+	_badge.draw_rect(Rect2(at + Vector2(-2.5, -0.5), Vector2(3, 3.5)), Color("#f2e6cc"))   # shoulders
+	_badge.draw_string(font, at + Vector2(3, 3), txt, HORIZONTAL_ALIGNMENT_LEFT, -1, fs, Color("#f2e6cc"))
 
 
 func _smoke(at: Vector2) -> CPUParticles2D:

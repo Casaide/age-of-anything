@@ -1,0 +1,12 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="64" height="64" viewBox="0 0 64 64">
+<!-- Back to work: a hand axe over a basket, the bell's all-clear. -->
+<circle cx="32" cy="32" r="27" fill="#5a7a3a" stroke="#1c120a" stroke-width="2.5"/>
+<circle cx="32" cy="32" r="22" fill="none" stroke="#a8c080" stroke-width="2" opacity="0.5"/>
+<g stroke="#1c120a" stroke-width="1.6" stroke-linejoin="round">
+<path d="M14,36 L40,36 L37,50 L17,50 Z" fill="#c8a070"/>
+<path d="M16,41 L38,41 M16.8,45.5 L37.2,45.5" fill="none" stroke="#8a6038" stroke-width="1.4"/>
+<path d="M23,36 Q27,30 31,36" fill="none" stroke="#8a6038" stroke-width="2"/>
+<rect x="34" y="12" width="4.5" height="30" rx="1.8" fill="#a07848" transform="rotate(32 36 27)"/>
+<path d="M40,12 L52,14 L50,23 L42,22 Z" fill="#c0c4c8" transform="rotate(32 36 27) translate(-6 2)"/>
+</g>
+</svg>
