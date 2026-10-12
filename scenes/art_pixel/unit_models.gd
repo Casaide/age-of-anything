@@ -951,10 +951,31 @@ func _leg_hoof(c: Dictionary) -> Dictionary:
 
 
 # ------------------------------------------------------------------ capybara (the rats' mount, RB1)
-# The rats' "big cousin" (Dominic's pick): a barrel of a body on short legs, a blunt square
+# The rats' "big cousin" (Dominic's pick): a barrel of a body on short legs, a blunt
 # head with tiny ears, a tea towel for a saddle with the team's stripe across it.
+# Its looks (CP1, "very cubey face": Dominic; tests/capybara_sheet.gd shows them side by side):
+# box (RB1's primitives), soft (rounded primitives: a deep muzzle, a heavy cheek, a sloping
+# barrel), sculpt (the head modelled in Blender, tools/blender/capybara.py, on the soft body),
+# full (Blender head and body). capybara_look picks the one in the game.
+
+const CAPYBARA_LOOKS := ["box", "soft", "sculpt", "full"]
+static var capybara_look := "full"   # the recommendation (CP1); Dominic to confirm
+const CAPYBARA_HEAD := 1.25   # the reworked heads' scale: a capybara's head is a third of its length
+
 
 func _body_capybara(c: Dictionary) -> Dictionary:
+	return call("_body_capybara_" + capybara_look, c)
+
+
+func _head_capybara(c: Dictionary) -> Dictionary:
+	return call("_head_capybara_" + capybara_look, c)
+
+
+func _leg_capybara(c: Dictionary) -> Dictionary:
+	return call("_leg_capybara_" + capybara_look, c)
+
+
+func _body_capybara_box(c: Dictionary) -> Dictionary:
 	var n := Node3D.new()
 	var fur := surf("rat_fur", c.skin, 5.0)
 	n.add_child(blob(Vector3(13.0, 8.0, 8.5), fur, Vector3(0, 13, 0)))
@@ -972,7 +993,7 @@ func _body_capybara(c: Dictionary) -> Dictionary:
 		"torso_scale": Vector2(1.4, 0.9), "carry": "harness"}
 
 
-func _head_capybara(c: Dictionary) -> Dictionary:
+func _head_capybara_box(c: Dictionary) -> Dictionary:
 	var n := Node3D.new()
 	var fur := surf("rat_fur", c.skin, 5.0)
 	n.add_child(_box(Vector3(8.5, 6.0, 6.0), fur, Vector3(3.5, 0, 0), Vector3(0, 0, -14)))   # the blunt square head
@@ -983,12 +1004,114 @@ func _head_capybara(c: Dictionary) -> Dictionary:
 	return {"node": n, "sockets": {"top": Vector3(1, 3.2, 0)}}
 
 
-func _leg_capybara(c: Dictionary) -> Dictionary:
+func _leg_capybara_box(c: Dictionary) -> Dictionary:
 	var n := Node3D.new()
 	var fur := surf("rat_fur", c.skin, 5.0)
 	n.add_child(rod(Vector3.ZERO, Vector3(0.4, -6.4, 0), 2.4, 1.9, fur))
 	n.add_child(blob(Vector3(2.4, 0.9, 1.8), surf("rat_fur", c.skin.darkened(0.45), 3.0), Vector3(1.0, -7.0, 0)))   # a broad dark foot
 	return {"node": n}
+
+
+## The tea-towel saddle over the back at height y, its team stripe across, hanging down the flanks.
+func _capybara_towel(n: Node3D, c: Dictionary, y: float, half: float) -> void:
+	var towel := plain(Color("#e8e0d0"))
+	n.add_child(_box(Vector3(9.0, 0.9, half * 1.6), towel, Vector3(-1, y, 0)))
+	n.add_child(_box(Vector3(9.2, 1.0, 2.4), plain(c.team), Vector3(-1, y + 0.1, 0)))
+	for side in [1, -1]:
+		n.add_child(_box(Vector3(9.0, 4.0, 0.5), towel, Vector3(-1, y - 2.4, (half * 0.8 - 0.2) * side), Vector3(12 * side, 0, 0)))
+
+
+## The capybara's rig but the body's mesh: sockets, leg hips, the saddle's seat.
+func _capybara_rig(head: Vector3, seat_y: float) -> Dictionary:
+	return {"sockets": {
+		"head": head, "hand_r": Vector3(4, 16, 7.6), "hand_l": Vector3(3, 16, -7.6),
+		"torso": Vector3(0, 14, 0), "back": Vector3(-8, seat_y - 2.5, 0), "seat": Vector3(-1, seat_y, 0), "wings": Vector3(6, seat_y - 2.5, 0)},
+		"anchors": [[Vector3(8.0, 6.5, 4.6), 0.0, 1, 0], [Vector3(-8.5, 7.0, 5.0), PI, 1, 0],
+			[Vector3(7.0, 6.5, -4.6), PI, -1, 0], [Vector3(-9.5, 7.0, -5.0), 0.0, -1, 0]],
+		"torso_scale": Vector2(1.4, 0.9), "carry": "harness"}
+
+
+## Soft: rounded primitives, the back sloping up to a heavy tailless rump, a thick short neck.
+func _body_capybara_soft(c: Dictionary) -> Dictionary:
+	var n := Node3D.new()
+	var fur := surf("rat_fur", c.skin, 5.0)
+	n.add_child(blob(Vector3(12.5, 7.4, 8.2), fur, Vector3(0, 11.8, 0), Vector3(0, 0, -4)))
+	n.add_child(blob(Vector3(6.8, 7.2, 7.8), fur, Vector3(-7.5, 12.4, 0)))   # the heavy rump, no tail
+	n.add_child(blob(Vector3(5.6, 4.8, 5.4), fur, Vector3(9.5, 13.0, 0), Vector3(0, 0, 28)))   # a thick neck up to the head
+	n.add_child(blob(Vector3(7.0, 3.2, 6.2), surf("rat_fur", c.skin.lightened(0.08), 4.0), Vector3(1.5, 7.0, 0)))   # the belly
+	_capybara_towel(n, c, 19.4, 8.0)
+	var r := _capybara_rig(Vector3(11.5, 15.4, 0), 20.8)
+	r["node"] = n
+	return r
+
+
+## Full: the body modelled in Blender (tools/blender/capybara.py).
+func _body_capybara_full(c: Dictionary) -> Dictionary:
+	var n := Node3D.new()
+	n.add_child(glb("body_capybara", {"fur": surf("rat_fur", c.skin, 5.0)}))
+	_capybara_towel(n, c, 19.8, 8.4)
+	var r := _capybara_rig(Vector3(12.0, 14.6, 0), 21.2)
+	r["node"] = n
+	return r
+
+
+func _body_capybara_sculpt(c: Dictionary) -> Dictionary:
+	return _body_capybara_soft(c)
+
+
+## Soft: a head of rounded parts: a crown, a heavy cheek, a deep blunt muzzle with the bare
+## nose on top of its front, eyes high and back, small round ears on the crown.
+func _head_capybara_soft(c: Dictionary) -> Dictionary:
+	var root := Node3D.new()
+	var n := Node3D.new()
+	n.rotation_degrees.z = -10
+	n.scale = Vector3.ONE * CAPYBARA_HEAD
+	root.add_child(n)
+	var fur := surf("rat_fur", c.skin, 5.0)
+	n.add_child(blob(Vector3(3.6, 2.5, 2.2), fur, Vector3(1.6, 0.5, 0)))   # the crown
+	n.add_child(blob(Vector3(3.2, 2.8, 2.5), fur, Vector3(2.8, -1.0, 0)))   # the cheeks and jaw
+	n.add_child(blob(Vector3(3.4, 1.7, 1.9), fur, Vector3(5.0, 0.9, 0)))   # the bridge of the nose
+	n.add_child(blob(Vector3(2.3, 2.8, 1.9), fur, Vector3(6.4, -0.5, 0)))   # the deep, blunt muzzle
+	var dark := surf("rat_fur", c.skin.darkened(0.5), 3.0)
+	n.add_child(blob(Vector3(0.9, 0.8, 1.4), dark, Vector3(8.0, 1.0, 0)))   # the bare nose
+	for side in [1, -1]:
+		n.add_child(blob(Vector3(0.3, 0.2, 0.22), plain(INK), Vector3(8.4, 1.6, 0.6 * side)))   # nostrils, on top
+		n.add_child(blob(Vector3(0.48, 0.42, 0.3), plain(INK), Vector3(2.9, 1.6, 2.05 * side)))   # eyes, high and back
+		n.add_child(blob(Vector3(0.55, 0.6, 0.3), surf("rat_fur", c.skin.darkened(0.3), 3.0), Vector3(-0.3, 2.7, 1.5 * side), Vector3(20 * side, 0, 0)))
+	return {"node": root, "sockets": {"top": Vector3(1, 3.0, 0) * CAPYBARA_HEAD}}
+
+
+## Sculpt and full: the head modelled in Blender (tools/blender/capybara.py).
+func _head_capybara_sculpt(c: Dictionary) -> Dictionary:
+	var root := Node3D.new()
+	var n := glb("head_capybara", {"fur": surf("rat_fur", c.skin, 5.0), "nose": surf("rat_fur", c.skin.darkened(0.55), 3.0),
+		"eye": plain(INK), "ear": surf("rat_fur", c.skin.darkened(0.3), 3.0)})
+	n.rotation_degrees.z = -10
+	n.scale = Vector3.ONE * CAPYBARA_HEAD
+	root.add_child(n)
+	return {"node": root, "sockets": {"top": Vector3(1, 3.0, 0) * CAPYBARA_HEAD}}
+
+
+func _head_capybara_full(c: Dictionary) -> Dictionary:
+	return _head_capybara_sculpt(c)
+
+
+## Short thick legs: a thigh that starts up inside the barrel, a stout shank, a broad dark foot.
+func _leg_capybara_soft(c: Dictionary) -> Dictionary:
+	var n := Node3D.new()
+	var fur := surf("rat_fur", c.skin, 5.0)
+	n.add_child(blob(Vector3(3.2, 3.8, 2.9), fur, Vector3(0, -0.4, 0)))
+	n.add_child(rod(Vector3(0.2, -3.0, 0), Vector3(0.5, -5.6, 0), 2.2, 1.9, fur))
+	n.add_child(blob(Vector3(2.4, 0.9, 1.9), surf("rat_fur", c.skin.darkened(0.45), 3.0), Vector3(1.2, -6.0, 0)))
+	return {"node": n}
+
+
+func _leg_capybara_sculpt(c: Dictionary) -> Dictionary:
+	return _leg_capybara_soft(c)
+
+
+func _leg_capybara_full(c: Dictionary) -> Dictionary:
+	return _leg_capybara_soft(c)
 
 
 # ------------------------------------------------------------------ hummingbird (forest cavalry, HB1)
