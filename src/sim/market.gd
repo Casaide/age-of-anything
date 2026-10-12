@@ -8,7 +8,7 @@ const START := 100         # gold per lot at the start
 const STEP := 5            # a trade moves the price this much
 const LOW := 20
 const HIGH := 500
-const SELL_PCT := 75       # selling a lot pays this share of its price
+const SELL_PCT := 75       # selling a lot pays this share of its price (the fee: the rest)
 
 
 static func setup(w) -> void:
@@ -17,9 +17,16 @@ static func setup(w) -> void:
 		w.market_price.append(0 if res == "gold" else START)
 
 
-## What one trade would cost (buy) or pay (sell) in gold right now.
-static func quote(w, r: int, buy: bool) -> int:
-	return w.market_price[r] if buy else w.market_price[r] * SELL_PCT / 100
+## What one trade would cost (buy) or pay (sell) this player in gold right now. Research on the
+## market (`trade_fee`, points of the fee) makes selling pay more.
+static func quote(w, player: int, r: int, buy: bool) -> int:
+	if buy:
+		return w.market_price[r]
+	var fee: int = 100 - SELL_PCT
+	for k in w.btypes.size():
+		if w.btypes[k].id == "market":
+			fee = maxi(0, fee + int(w.bmods[player][k].add.get("trade_fee", 0)))
+	return w.market_price[r] * (100 - fee) / 100
 
 
 ## The reason a player can't make this trade, or "" if they can.
@@ -30,7 +37,7 @@ static func why_not(w, player: int, b: int, r: int, buy: bool) -> String:
 	if r < 0 or w.resources[r] == "gold":
 		return "gold isn't traded"
 	var g: int = w.resources.find("gold")
-	if buy and w.stock[g][player] < quote(w, r, true):
+	if buy and w.stock[g][player] < quote(w, player, r, true):
 		return "not enough gold"
 	if not buy and w.stock[r][player] < LOT:
 		return "not enough to sell"
@@ -45,10 +52,10 @@ static func cmd_trade(w, player: int, a: Dictionary) -> void:
 		return
 	var g: int = w.resources.find("gold")
 	if buy:
-		w.stock[g][player] -= quote(w, r, true)
+		w.stock[g][player] -= quote(w, player, r, true)
 		w.stock[r][player] += LOT
 		w.market_price[r] = mini(HIGH, w.market_price[r] + STEP)
 	else:
 		w.stock[r][player] -= LOT
-		w.stock[g][player] += quote(w, r, false)
+		w.stock[g][player] += quote(w, player, r, false)
 		w.market_price[r] = maxi(LOW, w.market_price[r] - STEP)

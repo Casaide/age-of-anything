@@ -43,6 +43,7 @@ const Economy := preload("res://src/sim/economy.gd")
 const Combat := preload("res://src/sim/combat.gd")
 const Replay := preload("res://src/sim/replay.gd")
 const Bot := preload("res://src/ai/bot.gd")
+const TechTreeModel := preload("res://src/view/tech_tree_model.gd")
 
 const MAP_IDS := ["flat_test", "choke_test"]
 const SEED := 1
@@ -1756,7 +1757,7 @@ func _market_buttons(c: Dictionary, b: int) -> void:
 		if res == "gold":
 			continue
 		for buy in [true, false]:
-			var price := Market.quote(world, r, buy)
+			var price := Market.quote(world, active, r, buy)
 			var why := Market.why_not(world, active, b, r, buy)
 			var name: String = lib.resource_info[r].name
 			var verb := "Buy" if buy else "Sell"
@@ -1803,14 +1804,9 @@ func _bname(id: String) -> String:
 	return world.btypes[Economy.btype_of(world, id)].name
 
 
+## Research effects in words, the same as the tech tree page's.
 func _effect_text(effects: Array) -> String:
-	return ", ".join(effects.map(_one_effect))
-
-
-func _one_effect(e: Dictionary) -> String:
-	if e.has("tag"):
-		return "%+d %s for %s units" % [int(e.add), e.stat, e.tag]
-	return "%s gathered %d%% faster" % [String(e.gather).capitalize(), int(e.pct)]
+	return TechTreeModel.effect_text(effects)
 
 
 ## Research this player's race can do (the tech tree's culture layer, D-070).
@@ -1825,7 +1821,7 @@ func _unit_tip(wt: Dictionary) -> String:
 	lines.append("Gathers food, wood, stone and gold, and builds." if wt.worker else UnitCard.text(wt, _foe_types(active)))
 	var ups := []
 	for r in _my_research():
-		if r.effects.any(func(e): return e.has("tag") and e.tag in wt.eval.tags):
+		if r.effects.any(func(e): return Tech.reaches(e, wt.eval.tags)):
 			ups.append("%s at the %s (%s)" % [r.name, _bname(r.building), _effect_text(r.effects)])
 	if not ups.is_empty():
 		lines.append("[color=%s]Upgrades: %s[/color]" % [TIP_DIM, "; ".join(ups)])
@@ -2057,7 +2053,7 @@ func _update_panel() -> void:
 		var owner := bs.owner[b]
 		var t: Dictionary = world.btypes[bs.kind[b]]
 		var mine := owner == active
-		var c := {"title": t.name if owner == active else "%s %s" % [world.races[owner].name, t.name], "team": Color(lib.palettes.teams[owner]), "hp": [bs.hp[b], t.hp],
+		var c := {"title": t.name if owner == active else "%s %s" % [world.races[owner].name, t.name], "team": Color(lib.palettes.teams[owner]), "hp": [bs.hp[b], world.bmods[owner][bs.kind[b]].hp],
 			"portrait": kit.building_icon(_arch(owner), t.id), "buttons": [], "queue": null, "info": ""}
 		if bs.done[b] == 0:
 			c.info = "Being built: %d%%" % (100 * bs.progress[b] / t.build_ticks)

@@ -74,6 +74,7 @@ var ages := PackedInt32Array()     # per player: the age it's in (1 at the start
 var researched: Array = []         # per player: PackedByteArray over tech.research
 var market_price := PackedInt32Array()   # gold per lot of each resource, shared by everyone (market.gd)
 var gather_ticks: Array = []       # per player: ticks per unit of each resource gathered (research cuts them)
+var bmods: Array = []              # per player, per building type: research on it {add, pct, hp, arm} (Tech.refresh)
 var move_pct: Array = []       # per movement class, per terrain index: speed percent (rules.movement)
 var events: Array = []         # this tick's hits and deaths, for views (not state, not hashed)
 var types: Array = []          # unit types, per player per roster slot (see _make_type)
@@ -181,6 +182,7 @@ func _make_type(player: int, u: Dictionary) -> Dictionary:
 		"pop": int(e.pop), "cost": Economy.cost_vector(resources, e.cost),
 		"train_ticks": int(e.train_time) * TICK_HZ, "worker": "worker" in e.tags, "eval": e,
 		"mclass": _movement_class(e.tags),
+		"sight_add": 0, "carry_add": 0, "build_pct": 0,   # research on the type (Tech.retype)
 		"line": u.get("line", [{"age": int(r.tier), "recipe": r, "eval": e}]),   # the unit through the ages (age-ups re-price from it)
 	}
 
