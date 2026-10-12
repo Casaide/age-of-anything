@@ -17,6 +17,7 @@ const Flow := preload("res://src/sim/flow.gd")
 const Animals := preload("res://src/sim/animals.gd")
 const Bridges := preload("res://src/sim/bridges.gd")
 const Garrison := preload("res://src/sim/garrison.gd")
+const Fog := preload("res://src/sim/fog.gd")
 
 ## units.stance, what a unit is doing: nothing, an ordered target, a fight it found
 ## itself, an attack-move, or walking back to where it stood (defensive units).
@@ -368,8 +369,8 @@ static func tick(w) -> void:
 			u.moving[i] = 0
 		elif u.stance[i] == AUTO and posture == DEFENSIVE and Fixed.dist2(u.x[i], u.y[i], u.gx[i], u.gy[i]) > int(c.leash) * int(c.leash):
 			_go_back(w, i)   # chased far enough
-		elif u.stance[i] == AUTO and gap > int(c.sight) + 2 * SimMap.TILE:
-			_lost(w, i)   # it got away
+		elif u.stance[i] == AUTO and (gap > int(c.sight) + 2 * SimMap.TILE or (j >= 0 and u.owner[i] != w.gaia and not Fog.visible(w, u.owner[i], u.x[j], u.y[j]))):
+			_lost(w, i)   # it got away, or out of its side's sight
 		elif b >= 0 and not t.ranged:
 			chasers[b] = chasers.get(b, []) + [i]   # dealt a place round it below
 		else:
@@ -635,8 +636,8 @@ static func _nearest_foe(w, i: int, sight: int, buildings_too: bool, engaged: Pa
 				if not w.is_foe(u.owner[j], me) or w.types[u.kind[j]].has("animal"):
 					continue   # a rival's sheep is stolen by walking up to it, not killed (Dominic)
 				var d2 := Fixed.dist2(u.x[i], u.y[i], u.x[j], u.y[j])
-				if d2 > sight * sight:
-					continue
+				if d2 > sight * sight or not Fog.visible(w, me, u.x[j], u.y[j]):
+					continue   # only what its side can see: no going for foes in the fog (Dominic)
 				var d := Fixed.isqrt(d2) + engaged[j] * spread
 				if d < best_d or (d == best_d and u.id[j] < best):
 					best_d = d
@@ -646,7 +647,7 @@ static func _nearest_foe(w, i: int, sight: int, buildings_too: bool, engaged: Pa
 	best_d = sight * sight + 1
 	var bs = w.buildings
 	for b in bs.count():
-		if not w.is_enemy(bs.owner[b], me):
+		if not w.is_enemy(bs.owner[b], me) or not Fog.sees_area(w, me, bs.cx[b], bs.cy[b], bs.sx[b], bs.sy[b]):
 			continue
 		var mx: int = bs.cx[b] * SimMap.TILE + bs.sx[b] * SimMap.TILE / 2
 		var my: int = bs.cy[b] * SimMap.TILE + bs.sy[b] * SimMap.TILE / 2
