@@ -55,17 +55,20 @@ static func place(w, spawn: Dictionary) -> void:
 	var m = w.map
 	if not m.animals.is_empty():
 		spawn = m.animals
-	var mirror: bool = m.symmetry == "rotate" and m.starts.size() == 2
+	# A map turned half a turn lists its starts in mirror pairs (0 and 1, 2 and 3: a 2v2's teams
+	# are 0, 2 against 1, 3), and each odd start gets the mirror image of its partner's animals.
+	var mirror: bool = m.symmetry == "rotate" and m.starts.size() % 2 == 0
 	var taken := {}
-	var placed := []   # [kind, cell] for the first start, for its mirror image
+	var placed := []   # [kind, cell] for the last even start, for its mirror image
 	for p in mini(w.races.size(), m.starts.size()):
-		if mirror and p == 1:
+		if mirror and p % 2 == 1:
 			for e in placed:
 				var c: int = m.width * m.height - 1 - e[1]
 				if _open(w, c, taken):
 					taken[c] = true
 					_add(w, e[0], c)
 			continue
+		placed = []
 		var s: Array = m.starts[p]
 		for entry in spawn.near_start:
 			var k := type_of(w, entry.kind)

@@ -15,8 +15,8 @@ extends SceneTree
 
 const Iso := preload("res://src/view/iso.gd")
 
-const MEET := {"flat_test": Vector2(23.5, 33.5), "choke_test": Vector2(30.5, 16.5), "reed_meadow": Vector2(22.5, 26.5), "reed_meadow_large": Vector2(30.5, 36.5)}   # tiles
-const SHOOT_AT_TICK := {"flat_test": 1100, "choke_test": 700, "reed_meadow": 1100, "reed_meadow_large": 1300}
+const MEET := {"flat_test": Vector2(23.5, 33.5), "choke_test": Vector2(30.5, 16.5), "reed_meadow": Vector2(22.5, 26.5), "reed_meadow_2v2": Vector2(30.5, 36.5)}   # tiles
+const SHOOT_AT_TICK := {"flat_test": 1100, "choke_test": 700, "reed_meadow": 1100, "reed_meadow_2v2": 1300}
 
 
 func _initialize() -> void:
@@ -50,7 +50,7 @@ func _initialize() -> void:
 	view.set_process_unhandled_input(false)          # a real mouse in the window mustn't change the shot
 	view.camera.set_process_unhandled_input(false)
 	if scene.begins_with("opening"):
-		await _opening(view, int(scene.get_slice(":", 1)))
+		await _opening(view, int(scene.get_slice(":", 1)), float(scene.get_slice(":", 2)) if scene.get_slice_count(":") > 2 else 3.0)
 	elif scene == "tower":
 		await _tower(view)
 	elif scene.begins_with("town"):
@@ -546,7 +546,7 @@ func _tower(view) -> void:
 	view.camera.look_at_point(Iso.to_screen(s[0] + 4500, s[1] + 4500))
 
 
-func _opening(view, at_tick: int) -> void:
+func _opening(view, at_tick: int, zoom := 3.0) -> void:
 	view._set_autoplay(true)
 	view.clock.speed = 16.0
 	while view.world.tick < at_tick - 40:
@@ -556,6 +556,6 @@ func _opening(view, at_tick: int) -> void:
 		await process_frame
 	view.selected_building = view.world.buildings.id[0]
 	var s: Array = view.map.starts[0]
-	view.camera.zoom = Vector2(3.0, 3.0)
+	view.camera.zoom = Vector2(zoom, zoom)
 	view._on_zoom()
 	view.camera.look_at_point(Iso.to_screen(s[0] - 1500, s[1] + 2500))

@@ -242,7 +242,12 @@
   "terrain_speed": {
    "amphibious": {
     "swamp": 125,
-    "shallows": 90
+    "shallows": 90,
+    "river": 115,
+    "ford": 120
+   },
+   "ground": {
+    "ford": 70
    }
   }
  },
@@ -256,5 +261,15 @@
   "building": 4,
   "tower": 8,
   "note": "sight radii in tiles; the fog grid updates every `every` ticks (5 Hz)"
+ },
+ "trails": {
+  "every": 10,
+  "add": 1,
+  "max": 120,
+  "decay_every": 100,
+  "decay": 1,
+  "trail": 30,
+  "speed_pct": 0,
+  "note": "worn trails (src/sim/trails.gd, milestone 15): every `every` ticks each walking (not flying) unit wears its cell by `add` (up to `max`); every `decay_every` ticks every cell grows back by `decay`. A cell worn to `trail` is a trail: the view draws it, and walkers on it are `speed_pct` faster (0: off; the experiment in docs/milestones/m15-maps.md)"
  }
 }
