@@ -107,6 +107,7 @@ var claim_tiles := 4          # how close a player's unit must come to claim a h
 var herd_spots := {}          # Town Center id -> [x, y]: where its claimed sheep gather with no pen to go to, chosen once (animals.gd)
 var next_group := 1
 var resources: Array = []      # resource ids in their fixed order (data/resources.json)
+var gather_spots := PackedByteArray()   # per resource: 1 if gatherers stand at spots round its tiles (Economy.spotted)
 var stock: Array = []          # per resource: PackedInt32Array per player
 var gathered: Array = []       # per resource, per player: everything ever dropped off
 var pop := PackedInt32Array()     # derived each tick (Economy.update_pop)
@@ -173,6 +174,7 @@ func _init(p_seed: int, p_map: SimMap, p_races: Array, p_rules: Dictionary, p_te
 		move_pct.append(row)
 	spatial = Spatial.new(map.width, map.height)
 	resources = Economy.load_resources()
+	gather_spots = Economy.load_gather_spots()
 	btypes = Economy.load_btypes(resources)
 	tech = Tech.load_tech(resources, btypes)
 	for p in races.size():
@@ -524,7 +526,8 @@ func _clear_combat(player: int, ids: Array) -> void:
 ## Head for a point (snapped to walkable ground) and stop within `arrive`. A unit in a group
 ## move heads for its own slot but follows the field of the group's centre (fx, fy), so a
 ## group shares one field, at the group's pace (its slowest member's speed; 0: its own).
-func order_move(i: int, x: int, y: int, arrive: int, group: int, fx := -1, fy := -1, pace := 0) -> void:
+## `near`: a near field (a short walk, as to a worker's gather spot).
+func order_move(i: int, x: int, y: int, arrive: int, group: int, fx := -1, fy := -1, pace := 0, near := false) -> void:
 	var ln := lane(i)
 	var p := _snap(x, y, ln)
 	var cell := map.cell_of(p.x, p.y)
@@ -534,7 +537,7 @@ func order_move(i: int, x: int, y: int, arrive: int, group: int, fx := -1, fy :=
 	units.tx[i] = p.x
 	units.ty[i] = p.y
 	units.reach[i] = 0
-	units.fkey[i] = cell_field(cell, false, ln)
+	units.fkey[i] = cell_field(cell, near, ln)
 	units.arrive[i] = arrive
 	units.group[i] = group
 	units.pace[i] = pace
@@ -968,7 +971,7 @@ func _plan(i: int, x: int, y: int) -> Vector2i:
 		return Vector2i(-1, -1)
 	if units.reach[i] == 1:
 		if cost <= 2 * Flow.DIAGONAL:   # within two cells: make for a free spot before meeting the crowd
-			return _spot(i, x, y)
+			return _drop_spot(i, x, y) if units.task[i] == Economy.RETURN and units.gspot[i] >= 0 else _spot(i, x, y)
 	elif cost == 0 or (cost <= DIRECT_COST and units.stuck[i] < STUCK_LIMIT / 2 and Flow.clear_path(map, x, y, tx, ty, units.radius[i], lane(i))):
 		return Vector2i(tx, ty)
 	elif units.reach[i] == 2 and cost <= 4 * Flow.STRAIGHT:
@@ -1061,6 +1064,68 @@ func _spot(i: int, x: int, y: int) -> Vector2i:
 	if Flow.clear_path(map, x, y, best.x, best.y, r, ln):
 		return best
 	return _rect_near(i, x, y)   # no straight way to it: in the old way (anywhere in reach will do)
+
+
+## Where a worker carrying home (task RETURN) makes for round its drop-off: the point of the ring a
+## body's width out from the rect nearest what it gathers (its home tile, else itself), moved round
+## the ring by a lane of its own (by id), so a stream of carriers from one bush spreads along the
+## wall instead of meeting at one corner. They drop off on coming in reach and walk on (nobody stops
+## there); a lane that's blocked or not straight ahead falls back to _spot.
+func _drop_spot(i: int, x: int, y: int) -> Vector2i:
+	var r := units.radius[i]
+	var o := r + SPOT_GAP
+	var x0 := units.rx0[i] - o
+	var y0 := units.ry0[i] - o
+	var x1 := units.rx1[i] + o
+	var y1 := units.ry1[i] + o
+	var ax := x
+	var ay := y
+	if units.home[i] >= 0:
+		ax = (units.home[i] % map.width) * SimMap.TILE + SimMap.TILE / 2
+		ay = (units.home[i] / map.width) * SimMap.TILE + SimMap.TILE / 2
+	var px := clampi(ax, x0, x1)
+	var py := clampi(ay, y0, y1)
+	if px > x0 and px < x1 and py > y0 and py < y1:   # inside the ring: out to its nearest side
+		var d := mini(mini(px - x0, x1 - px), mini(py - y0, y1 - py))
+		if d == px - x0:
+			px = x0
+		elif d == x1 - px:
+			px = x1
+		elif d == py - y0:
+			py = y0
+		else:
+			py = y1
+	# Round the ring clockwise from its top-left corner: top, right, bottom, left.
+	var wd := x1 - x0
+	var ht := y1 - y0
+	var perim := 2 * (wd + ht)
+	var along := 0
+	if py == y0:
+		along = px - x0
+	elif px == x1:
+		along = wd + py - y0
+	elif py == y1:
+		along = wd + ht + x1 - px
+	else:
+		along = 2 * wd + ht + y1 - py
+	along = posmod(along + (units.id[i] * 7 % 5 - 2) * r / 2, perim)
+	var p: Vector2i
+	if along < wd:
+		p = Vector2i(x0 + along, y0)
+	elif along < wd + ht:
+		p = Vector2i(x1, y0 + along - wd)
+	elif along < 2 * wd + ht:
+		p = Vector2i(x1 - (along - wd - ht), y1)
+	else:
+		p = Vector2i(x0, y1 - (along - 2 * wd - ht))
+	# Off a corner the ring is out of reach: in along the diagonal until it isn't.
+	var c := (r + Economy.REACH - 50) * 707 / 1000
+	if (p.x < units.rx0[i] or p.x > units.rx1[i]) and (p.y < units.ry0[i] or p.y > units.ry1[i]):
+		p = Vector2i(clampi(p.x, units.rx0[i] - c, units.rx1[i] + c), clampi(p.y, units.ry0[i] - c, units.ry1[i] + c))
+	var ln := lane(i)
+	if not map.walkable(p.x, p.y, ln) or not Flow.clear_path(map, x, y, p.x, p.y, r, ln):
+		return _spot(i, x, y)
+	return p
 
 
 ## The nearest point of unit i's rect, the old way in when there's no spot to make for.
@@ -1251,11 +1316,14 @@ func _separate() -> void:
 			stood[i] = 1
 	var tasks := units.task
 	var foes := units.foe
-	var role := PackedByteArray()   # 1: standing idle (gives way), 2: walking to or from a job
+	var owners := units.owner
+	var role := PackedByteArray()   # 1: standing idle (gives way), 2: walking to or from a job, 3: one passing through (below)
 	role.resize(n)
 	for i in n:
 		if mv[i] == 0 and tasks[i] == Economy.NONE and foes[i] == 0 and stood[i] == 0:
 			role[i] = 1
+		elif mv[i] == 1 and units.gspot[i] >= 0 and (tasks[i] == Economy.GATHER or tasks[i] == Economy.RETURN):
+			role[i] = 3   # making for its own gather spot, or carrying home from it: it won't stop in the crowd
 		elif mv[i] == 1 and tasks[i] != Economy.NONE:
 			role[i] = 2
 	for i in n:
@@ -1308,9 +1376,17 @@ func _separate() -> void:
 					if stood[i] == 1 and stood[j] == 1:
 						continue   # two groups' formations overlapping: no shoving match (and no walking back into it)
 					# A worker on its way to or from a job walks on; anyone standing idle in its way gives way.
-					var hi := planted[i] == 1 or (role[i] == 2 and role[j] == 1)
-					var hj := planted[j] == 1 or (role[j] == 2 and role[i] == 1)
+					var hi := planted[i] == 1 or (role[i] >= 2 and role[j] == 1)
+					var hj := planted[j] == 1 or (role[j] >= 2 and role[i] == 1)
 					if hi and hj:
+						continue
+					# One of the side's own at work and a gatherer making for its spot or carrying home
+					# from it (role 3: it won't stop here): the walker slips past (stepping round standing
+					# bodies as it comes, _sidestep), overlapping for a moment at most. (Workers without
+					# spots, woodcutters, are still shoved: let through, they stacked up in the woodlines.) Shoved off a gatherer's back it bounced to and fro (the jitter round
+					# the bushes and the drop-off); easing it round at half the give was worse still
+					# (hunters gave up on their carcass, a quarter less food).
+					if owners[i] == owners[j] and ((planted[i] == 1 and role[j] == 3) or (planted[j] == 1 and role[i] == 3)):
 						continue
 					var push := (rr - d) / SEPARATION_DIV + 1
 					var px := ux * push / Fixed.ONE
@@ -1324,7 +1400,6 @@ func _separate() -> void:
 	var t := SimMap.TILE
 	var mw := map.width
 	var mh := map.height
-	var owners := units.owner
 	var mcls := units.mclass
 	for i in n:
 		if settle[i] == 1:
@@ -1430,7 +1505,7 @@ func state_hash() -> int:
 	for i in u.count():
 		for v in [u.id[i], u.owner[i], u.kind[i], u.x[i], u.y[i], u.tx[i], u.ty[i], u.moving[i],
 				u.arrive[i], u.wx[i], u.wy[i], u.group[i], u.stuck[i], u.prog[i], u.hp[i], u.fkey[i], u.reach[i],
-				u.task[i], u.target[i], u.home[i], u.carry_kind[i], u.carry[i], u.work[i],
+				u.task[i], u.target[i], u.home[i], u.gspot[i], u.carry_kind[i], u.carry[i], u.work[i],
 				u.foe[i], u.cooldown[i], u.stance[i], u.posture[i], u.gx[i], u.gy[i], u.amx[i], u.amy[i], u.orders[i].size(), u.mclass[i], u.patient[i], u.pace[i], u.amc[i]]:
 			h = Fixed.mix(h, v)
 		for o in u.orders[i]:

@@ -32,6 +32,8 @@ extends SceneTree
 ## the Bastion research done (the tower a Bastion).
 ## "engines", "ram", "catapult": siege engines rolling out, rams at a stone gate, a catapult
 ## volley on a crowd (see _engines).
+## "gather:<tick>[:hunt]" (Reed Meadow): twelve of side 0's workers sent to one bug bush of the
+## clump by its Town Center, a mill beside it (":hunt": six on a carcass south of it); shot at that tick.
 ## Prefix any scene with "ai-" to see it as in a match against the AI.
 
 const Iso := preload("res://src/view/iso.gd")
@@ -140,6 +142,8 @@ func _initialize() -> void:
 		await _engines(view, map_id, scene)
 	elif scene.begins_with("siege"):
 		await _siege(view, int(scene.get_slice(":", 1)))
+	elif scene.begins_with("gather"):
+		await _gather(view, int(scene.get_slice(":", 1)), scene.ends_with(":hunt"))
 	elif scene.begins_with("wonder"):
 		await _wonder(view, scene.get_slice(":", 1) if ":" in scene else "")
 	else:
@@ -149,6 +153,46 @@ func _initialize() -> void:
 	root.get_texture().get_image().save_png(out)
 	print("saved ", out, " at tick ", view.world.tick)
 	quit()
+
+
+## Side 0's workers on the bug bushes by its Town Center (Reed Meadow), as tests/path_audit.gd's
+## "bushes" and "hunt" scenes.
+func _gather(view, at_tick: int, hunt: bool) -> void:
+	var w = view.world
+	var Economy = load("res://src/sim/economy.gd")
+	var worker: int = w.type_of(0, "worker")
+	var want := 6 if hunt else 12
+	var ids := []
+	while ids.size() < want:
+		ids.clear()
+		for i in w.units.count():
+			if w.units.owner[i] == 0 and w.types[w.units.kind[i]].worker:
+				ids.append(w.units.id[i])
+		if ids.size() < want:
+			Economy.spawn_at(w, 0, worker)
+	var m = w.map
+	var look := Vector2i(17000, 12000)
+	if hunt:
+		var cell: int = 18 * m.width + 12
+		m.set_terrain(cell, m.terrain_ids.find("carcass"))
+		m.amount[cell] = 1000
+		w.issue(0, "gather", {"ids": ids, "cell": cell})
+		look = Vector2i(12500, 17500)
+	else:
+		var mill: int = Economy.place(w, 0, Economy.btype_of(w, "mill"), 20, 12)
+		w.buildings.done[mill] = 1
+		w.buildings.hp[mill] = w.bmods[0][w.buildings.kind[mill]].hp
+		w.issue(0, "gather", {"ids": ids, "cell": 12 * m.width + 17})
+	view.reveal = true
+	view.clock.speed = 8.0
+	while w.tick < at_tick - 40:
+		await process_frame
+	view.clock.speed = 1.0
+	while w.tick < at_tick:
+		await process_frame
+	view.camera.zoom = Vector2(3.5, 3.5)
+	view._on_zoom()
+	view.camera.look_at_point(Iso.to_screen(look.x, look.y))
 
 
 ## Side 0 builds a farm by the Town Center and works it; the Town Center is selected with a
