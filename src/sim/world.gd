@@ -761,6 +761,9 @@ func _move() -> void:
 	var ry1 := units.ry1
 	var owners := units.owner
 	var pc := units.pace
+	var t := SimMap.TILE
+	var mw := map.width
+	var mh := map.height
 	for i in xs.size():
 		if mv[i] == 0:
 			# Shoved well off its spot by passing units? Walk back (checked on re-plan ticks).
@@ -855,12 +858,15 @@ func _move() -> void:
 		if d > 0:
 			nx = x + dx * mini(s, d) / d
 			ny = y + dy * mini(s, d) / d
-		if map.walkable(nx, ny, mc) and (nx / SimMap.TILE == x / SimMap.TILE or ny / SimMap.TILE == y / SimMap.TILE
-				or (map.walkable(nx, y, mc) and map.walkable(x, ny, mc))):
+		var wk: PackedByteArray = map.walks[mc]   # (map.walkable written out: three looks a unit, every tick)
+		var ok_xy := nx >= 0 and ny >= 0 and nx / t < mw and ny / t < mh and wk[ny / t * mw + nx / t] == 1
+		var ok_x := nx >= 0 and y >= 0 and nx / t < mw and y / t < mh and wk[y / t * mw + nx / t] == 1
+		var ok_y := x >= 0 and ny >= 0 and x / t < mw and ny / t < mh and wk[ny / t * mw + x / t] == 1
+		if ok_xy and (nx / t == x / t or ny / t == y / t or (ok_x and ok_y)):
 			pass   # a step into a diagonal neighbour cell needs both cells beside it open: no slipping between two corners
-		elif map.walkable(nx, y, mc):
+		elif ok_x:
 			ny = y
-		elif map.walkable(x, ny, mc):
+		elif ok_y:
 			nx = x
 		else:
 			nx = x
@@ -1312,11 +1318,18 @@ func _separate() -> void:
 						pushx[j] += px * (2 if hi else 1)
 						pushy[j] += py * (2 if hi else 1)
 	var t := SimMap.TILE
+	var mw := map.width
+	var mh := map.height
+	var owners := units.owner
+	var mcls := units.mclass
 	for i in n:
 		if settle[i] == 1:
 			mv[i] = 0
-		var mc := lane(i)
-		if not map.walkable(xs[i], ys[i], mc):
+		var mc := lane_base[owners[i]] + mcls[i]
+		var wk: PackedByteArray = map.walks[mc]
+		var x0 := xs[i]
+		var y0 := ys[i]
+		if x0 < 0 or y0 < 0 or x0 / t >= mw or y0 / t >= mh or wk[y0 / t * mw + x0 / t] == 0:   # (map.walkable, inline)
 			# Its centre is on blocked ground (a foundation laid on it, or a spawn): step out
 			# to the nearest open neighbour's edge, the least move that makes it walkable;
 			# with no open neighbour (deep in a footprint) the nearest open cell, outright.
@@ -1324,22 +1337,27 @@ func _separate() -> void:
 			xs[i] = p.x
 			ys[i] = p.y
 			continue
-		if pushx[i] != 0 and map.walkable(xs[i] + pushx[i], ys[i], mc):
-			xs[i] += pushx[i]
-		if pushy[i] != 0 and map.walkable(xs[i], ys[i] + pushy[i], mc):
-			ys[i] += pushy[i]
+		if pushx[i] != 0:
+			var nx := x0 + pushx[i]
+			if nx >= 0 and nx / t < mw and wk[y0 / t * mw + nx / t] == 1:
+				xs[i] = nx
+		if pushy[i] != 0:
+			var ny := y0 + pushy[i]
+			if ny >= 0 and ny / t < mh and wk[ny / t * mw + xs[i] / t] == 1:
+				ys[i] = ny
 		# Keep the body (not just the centre) off blocked neighbour tiles, easing it off by at
 		# most CORRECT_MAX a tick: a shove into a wall slides back out, never pops a tile.
 		var cx := xs[i] / t
 		var cy := ys[i] / t
 		var r := rs[i]
-		if xs[i] - cx * t < r and not map.cell_walkable(cx - 1, cy, mc):
+		var c := cy * mw + cx
+		if xs[i] - cx * t < r and (cx == 0 or wk[c - 1] == 0):
 			xs[i] = mini(cx * t + r, xs[i] + CORRECT_MAX)
-		elif (cx + 1) * t - xs[i] < r and not map.cell_walkable(cx + 1, cy, mc):
+		elif (cx + 1) * t - xs[i] < r and (cx + 1 >= mw or wk[c + 1] == 0):
 			xs[i] = maxi((cx + 1) * t - r, xs[i] - CORRECT_MAX)
-		if ys[i] - cy * t < r and not map.cell_walkable(cx, cy - 1, mc):
+		if ys[i] - cy * t < r and (cy == 0 or wk[c - mw] == 0):
 			ys[i] = mini(cy * t + r, ys[i] + CORRECT_MAX)
-		elif (cy + 1) * t - ys[i] < r and not map.cell_walkable(cx, cy + 1, mc):
+		elif (cy + 1) * t - ys[i] < r and (cy + 1 >= mh or wk[c + mw] == 0):
 			ys[i] = maxi((cy + 1) * t - r, ys[i] - CORRECT_MAX)
 	units.x = xs
 	units.y = ys

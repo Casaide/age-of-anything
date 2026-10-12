@@ -24,7 +24,7 @@ const Fixed := preload("res://src/sim/fixed.gd")
 const Tech := preload("res://src/sim/tech.gd")
 const Fog := preload("res://src/sim/fog.gd")
 
-const THINK_EVERY := 20     # ticks (1 s), offset from EcoBot's think by half a second
+const THINK_EVERY := 20     # ticks (1 s), offset from EcoBot's think by half a second (and per player: _phase)
 const BUILD_COOLDOWN := 200
 const AGE3_WORKERS := 24
 const REINFORCE := 4         # soldiers idle at home that go forward as a group during an attack
@@ -78,6 +78,12 @@ func _init(p_player: int, config := {}, level := "normal") -> void:
 	next_wave_tick = int(cfg.military.waves[0].at) * 20
 
 
+## The tick of each second this bot thinks on: half a second after its economy, players one after
+## another (EcoBot.STAGGER), so four bots don't all think on one tick.
+func _phase() -> int:
+	return (THINK_EVERY / 2 + eco.phase()) % THINK_EVERY
+
+
 static func load_config() -> Dictionary:
 	var d = JSON.parse_string(FileAccess.get_file_as_string("res://data/ai.json"))
 	assert(d != null, "Bad or missing data/ai.json")
@@ -102,7 +108,7 @@ func think(w) -> void:
 		return
 	_note_hits(w)
 	eco.think(w)
-	if w.tick % THINK_EVERY != THINK_EVERY / 2:
+	if w.tick % THINK_EVERY != _phase():
 		return
 	var tc: int = eco._town_center(w)
 	if tc < 0:
@@ -319,7 +325,7 @@ func _train_healers(w, tc: int, army: Array, healers: Array) -> void:
 ## stays with its patient, and one near the spot picks the wounded up on its own.
 func _escort(w, army: Array, healers: Array, hx: int, hy: int) -> void:
 	var h: Dictionary = cfg.military.get("healers", {})
-	if healers.is_empty() or army.is_empty() or w.tick % (int(h.get("every", 3)) * 20) != THINK_EVERY / 2:
+	if healers.is_empty() or army.is_empty() or w.tick % (int(h.get("every", 3)) * 20) != _phase():
 		return
 	# The army that's out (beyond the home guard's reach); with none out, the healers stay home,
 	# where the hurt come back to (and the workers are).
@@ -582,7 +588,7 @@ func _waves(w, army: Array, hx: int, hy: int) -> void:
 		wave += 1
 		next_wave_tick = int(waves[wave].at) * 20 if wave < waves.size() else w.tick + int(m.repeat_every) * 20
 		return
-	if not assault or w.tick % (int(m.regroup_every) * 20) != THINK_EVERY / 2:
+	if not assault or w.tick % (int(m.regroup_every) * 20) != _phase():
 		return
 	# Soldiers out in the field with no enemy soldier to fight (idle, or hacking at a house)
 	# push on to the next target.
