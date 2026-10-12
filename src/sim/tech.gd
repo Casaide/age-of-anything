@@ -4,8 +4,8 @@ extends RefCounted
 ##
 ## A unit line (written by the generator through the ages: new kit, re-priced) moves to an
 ## age's step when its line upgrade ("line.<slot>.<age>", data: tech.json line_upgrades) is
-## researched at the building that trains it, in that age or later (workers just follow the
-## age); the player's units follow, keeping their share of health. Research adds to stats of
+## researched at the building that trains it, in that age or later, after the line's earlier
+## upgrade (workers just follow the age); the player's units follow, keeping their share of health. Research adds to stats of
 ## units with a tag, re-applied whenever a type changes. A building does one thing at a
 ## time, from one queue, the genre's way: trained units, research and the age-up wait in it in
 ## the order clicked, each paid when queued (a cancel refunds it). A research queued anywhere
@@ -63,6 +63,13 @@ static func load_tech(resources: Array, btypes: Array) -> Dictionary:
 					"desc": "This line's age %d kit for every one of them, and the ones you train." % age,
 					"cost": Economy.cost_vector(resources, up.cost), "ticks": int(up.time) * 20, "building": bt.id,
 					"age": age, "effects": [], "only": [], "after": "", "line": slot, "line_age": age})
+	for r in research:   # a line upgrade's earlier ones (research indices, latest first), for line_before
+		if r.has("line"):
+			r.earlier = []
+			for age in range(int(r.line_age) - 1, 1, -1):
+				var k := research.find_custom(func(o): return o.id == "line.%s.%d" % [r.line, age])
+				if k >= 0:
+					r.earlier.append(k)
 	for r in research:
 		assert(r.after == "" or research.any(func(o): return o.id == r.after), "%s comes after unknown research %s" % [r.id, r.after])
 	return {"ages": ages, "research": research}
@@ -193,6 +200,10 @@ static func why_not(w, player: int, b: int, id: String) -> String:
 			return "needs %s first" % w.tech.research[research_index(w, item.after)].name   # a track's steps go in order
 		if item.has("line") and not _line_has(w, player, item.line, item.line_age):
 			return "nothing to upgrade"   # no step at that age (it starts there, or later), or the age brought no new kit
+		if item.has("line"):
+			var before := line_before(w, player, item)
+			if before >= 0 and w.researched[player][before] == 0:
+				return "needs %s first" % w.tech.research[before].name   # a line's upgrades go in order, like a track
 		if w.ages[player] < item.age:
 			return "needs a later age"
 		# The tech-tree layer (D-070): some research belongs to some creatures or cultures,
@@ -223,6 +234,26 @@ static func _line_has(w, player: int, slot: String, age: int) -> bool:
 		if l > 0 and int(line[l].age) == age:
 			return line[l].recipe.parts != line[l - 1].recipe.parts
 	return false
+
+
+## The line upgrade that must come before this one (the line's latest earlier age with new kit
+## for this player), as a research index, or -1 if it's the line's first.
+static func line_before(w, player: int, item: Dictionary) -> int:
+	for r in item.earlier:
+		if _line_has(w, player, item.line, w.tech.research[r].line_age):
+			return r
+	return -1
+
+
+## A research's track: the first research of its chain (`after` steps, or a line's upgrades),
+## so the panel can show a chain's steps one at a time in one slot.
+static func track_of(w, r: int) -> String:
+	var item: Dictionary = w.tech.research[r]
+	if item.has("line"):
+		return "line." + item.line
+	while item.after != "":
+		item = w.tech.research[research_index(w, item.after)]
+	return item.id
 
 
 static func has_building(w, player: int, id: String) -> bool:
