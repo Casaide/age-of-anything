@@ -1568,6 +1568,483 @@ func _market(arch: String, team: Color) -> Dictionary:
 	return {"body": body, "anchor": Vector3.ZERO, "lights": [], "team": team, "lantern": Vector3(0, 0.6, 0)}
 
 
+# ------------------------------------------------------------------ University and Castle (milestone 12)
+# Built from one vocabulary per culture: its tower (_fort_tower), its wall (_fort_wall) and its
+# great hall (_keep), so a castle reads as its culture's whatever the layout: dressed stone and
+# merlons for the builders, timber and thatch on an earth bank for the timber towns, stacked tin
+# cans and brick for the junk-rats, felt on poles for the tent people, woven reed on stilts for
+# the frogs, termite spires for the mound-diggers. The concept round (D-080) tried three layouts
+# of each (building sheet: castle:stone:curtain); CASTLE_LOOK and UNIVERSITY_LOOK say which one
+# each culture builds in play until Dominic picks.
+
+const UNIVERSITY_LOOK := {"stone": "cloister", "thatch": "cloister", "junk": "builders", "tent": "builders",
+	"reed": "observatory", "mound": "observatory"}
+const CASTLE_LOOK := {"stone": "curtain", "thatch": "motte", "junk": "great_tower", "tent": "curtain", "reed": "great_tower",
+	"mound": "great_tower"}
+const UNIVERSITY_LOOKS := ["observatory", "cloister", "builders"]
+const CASTLE_LOOKS := ["curtain", "motte", "great_tower"]
+
+
+## A building type's model in one of its concept looks (the building sheet: type:arch:look).
+func look(type: String, arch: String, name: String, team: Color) -> Dictionary:
+	return call("_%s_look" % type, name, arch, team)
+
+
+func _university(arch: String, team: Color) -> Dictionary:
+	return _university_look(UNIVERSITY_LOOK[arch], arch, team)
+
+
+func _castle(arch: String, team: Color) -> Dictionary:
+	return _castle_look(CASTLE_LOOK[arch], arch, team)
+
+
+## A dark arrow slit on a wall facing `turn` degrees (0: +z), centred on `at`.
+func _slit(body: Node3D, at: Vector3, turn: float, h := 0.18) -> void:
+	body.add_child(box(Vector3(0.035, h, 0.02), Materials.flat(Color("#1a140e"), 1.0), at, Vector3(0, turn, 0)))
+
+
+## Merlons round a circle of radius r at height y.
+func _merlon_ring(body: Node3D, at: Vector3, r: float, y: float, mat: Material, n := 8) -> void:
+	for k in n:
+		var a := TAU * (k + 0.5) / n
+		body.add_child(box(Vector3(0.11, 0.12, 0.09), mat, at + Vector3(sin(a) * r, y + 0.06, cos(a) * r), Vector3(0, rad_to_deg(a), 0)))
+
+
+## A tower in the culture's own way, standing on `at`, radius r (half its width) and h tall to
+## its fighting top. Returns the height of its very top.
+func _fort_tower(body: Node3D, arch: String, at: Vector3, r: float, h: float) -> float:
+	var wood := mats.get_mat("wood")
+	match arch:
+		"stone":   # a round drum tower of dressed stone, a string course, slits, merlons
+			var stone := mats.get_mat("stone")
+			body.add_child(cyl(r, r * 1.08, h, stone, at + Vector3(0, h / 2, 0), Vector3.ZERO, 20))
+			body.add_child(ring(r * 1.0, r * 1.07, stone, at + Vector3(0, h * 0.62, 0)))
+			body.add_child(cyl(r + 0.05, r + 0.03, 0.1, stone, at + Vector3(0, h + 0.05, 0), Vector3.ZERO, 20))
+			_merlon_ring(body, at, r + 0.0, h + 0.1, stone, 8)
+			for turn in [0.0, 90.0]:
+				var a := deg_to_rad(turn)
+				_slit(body, at + Vector3(sin(a), 0, cos(a)) * (r * 1.02) + Vector3(0, h * 0.45, 0), turn)
+			return h + 0.22
+		"thatch":   # a square mud-and-timber tower, a jettied plank top, a thatched pyramid roof
+			var mud := mats.get_mat("mud")
+			_footing(body, arch, r * 2 + 0.1, r * 2 + 0.1, 0.1, at)
+			body.add_child(box(Vector3(r * 2, h, r * 2), mud, at + Vector3(0, h / 2 + 0.1, 0)))
+			for x in [-1, 1]:
+				for z in [-1, 1]:
+					body.add_child(box(Vector3(0.08, h, 0.08), wood, at + Vector3(x * r, h / 2 + 0.1, z * r)))
+			body.add_child(beam(at + Vector3(-r, 0.15, r + 0.01), at + Vector3(r, h * 0.8, r + 0.01), 0.03, wood, 4))   # a brace across the front
+			body.add_child(box(Vector3(r * 2 + 0.16, 0.3, r * 2 + 0.16), wood, at + Vector3(0, h + 0.25, 0)))   # the jetty
+			_slit(body, at + Vector3(0, h + 0.25, r + 0.09), 0.0, 0.14)
+			var rr := (r + 0.18) * 1.414
+			body.add_child(cyl(0.0, rr, r * 1.5, mats.get_mat("thatch"), at + Vector3(0, h + 0.4 + r * 0.75, 0), Vector3(0, 45, 0), 4))
+			return h + 0.4 + r * 1.5
+		"junk":   # tin cans stacked on a brick drum, a funnel for a roof and a stove pipe
+			var tin := mats.get_mat("tin")
+			var band := Materials.flat(Color("#9a9c96"), 0.5, 0.5)
+			body.add_child(cyl(r * 1.08, r * 1.12, 0.3, mats.get_mat("brick"), at + Vector3(0, 0.15, 0), Vector3.ZERO, 16))
+			var y := 0.3
+			var k := 0
+			while y < h - 0.05:
+				var ch := minf(0.55, h - y)
+				var cr := r * (1.0 - 0.06 * k)
+				body.add_child(cyl(cr, cr, ch, tin, at + Vector3(0.02 * (k % 2), y + ch / 2, 0), Vector3(0, 30 * k, 0), 18))
+				body.add_child(ring(cr - 0.01, cr + 0.03, band, at + Vector3(0.02 * (k % 2), y + ch - 0.04, 0)))
+				y += ch
+				k += 1
+			_slit(body, at + Vector3(0, h * 0.55, r * 0.95), 0.0)
+			body.add_child(cyl(0.0, r + 0.12, r * 0.9, tin, at + Vector3(0, y + r * 0.45, 0), Vector3.ZERO, 18))   # the funnel roof
+			body.add_child(cyl(0.05, 0.05, r * 1.4, Materials.flat(Color("#4a4a48"), 0.5, 0.6), at + Vector3(r * 0.35, y + r * 0.7, 0), Vector3.ZERO, 8))
+			return y + r * 0.9
+		"tent":   # four poles to a railed platform, felt wrapped round the lower half, a felt cap
+			var felt := mats.get_mat("felt")
+			for x in [-1, 1]:
+				for z in [-1, 1]:
+					body.add_child(beam(at + Vector3(x * r * 1.15, 0, z * r * 1.15), at + Vector3(x * r * 0.85, h, z * r * 0.85), 0.04, wood))
+			body.add_child(cyl(r * 1.02, r * 1.12, h * 0.55, felt, at + Vector3(0, h * 0.275, 0), Vector3(0, 45, 0), 4))
+			body.add_child(box(Vector3(r * 2 + 0.1, 0.07, r * 2 + 0.1), wood, at + Vector3(0, h, 0)))
+			body.add_child(cyl(r * 0.85, r * 0.85, 0.28, felt, at + Vector3(0, h + 0.17, 0), Vector3.ZERO, 20))
+			body.add_child(cyl(r * 0.15, r + 0.05, r * 0.6, felt, at + Vector3(0, h + 0.31 + r * 0.3, 0), Vector3.ZERO, 20))
+			return h + 0.31 + r * 0.6
+		"reed":   # a woven tower on stilts, banded with mud, under a reed dome
+			var deck := _stilt_deck(body, at, r * 2 + 0.2, r * 2 + 0.2)
+			var weave := mats.get_mat("weave")
+			body.add_child(cyl(r * 0.88, r, h - deck, weave, at + Vector3(0, deck + (h - deck) / 2, 0), Vector3.ZERO, 22))
+			for t in [0.25, 0.7]:
+				body.add_child(ring(r * (1.0 - 0.12 * t) - 0.02, r * (1.0 - 0.12 * t) + 0.04, mats.get_mat("mud"), at + Vector3(0, deck + (h - deck) * t, 0)))
+			_slit(body, at + Vector3(0, deck + (h - deck) * 0.5, r * 0.95), 0.0)
+			body.add_child(dome(r * 0.98, mats.get_mat("thatch"), at + Vector3(0, h - 0.02, 0), Vector3(1.0, 1.0, 1.0)))
+			return h + r * 0.98
+		"mound":   # a termite spire: a tapering cone of packed earth, lumps on its flanks
+			var mud := mats.get_mat("mud")
+			body.add_child(cyl(r * 0.28, r * 1.05, h, mud, at + Vector3(0, h / 2, 0), Vector3.ZERO, 14))
+			for k in 4:
+				var a := TAU * k / 4.0 + 0.6
+				var y := h * (0.25 + 0.15 * k)
+				var rad := r * 1.05 - (r * 0.77) * y / h
+				body.add_child(ball(r * 0.32, mud, at + Vector3(sin(a) * rad * 0.8, y, cos(a) * rad * 0.8), Vector3(1.0, 1.3, 1.0)))
+			body.add_child(ball(r * 0.3, mud, at + Vector3(0, h, 0), Vector3(1.0, 1.4, 1.0)))
+			_burrow_door(body, at + Vector3(0, h * 0.5, r * 0.62), r * 0.18, 0.0)
+			return h + r * 0.4
+	assert(false, "no tower for %s" % arch)
+	return h
+
+
+## A stretch of curtain wall h high from a to b (on the ground), in the culture's stuff.
+func _fort_wall(body: Node3D, arch: String, a: Vector3, b: Vector3, h: float, thick := 0.22) -> void:
+	var holder := Node3D.new()
+	holder.position = (a + b) / 2
+	holder.transform.basis = Basis(Vector3.UP, atan2(-(b.z - a.z), b.x - a.x))
+	body.add_child(holder)
+	var l := a.distance_to(b)
+	var wood := mats.get_mat("wood")
+	match arch:
+		"stone":   # dressed stone, a walkway cap, merlons
+			var stone := mats.get_mat("stone")
+			holder.add_child(box(Vector3(l, h, thick), stone, Vector3(0, h / 2, 0)))
+			holder.add_child(box(Vector3(l, 0.05, thick + 0.06), stone, Vector3(0, h + 0.025, 0)))
+			var n := maxi(1, int(l / 0.24))
+			for k in n:
+				holder.add_child(box(Vector3(0.12, 0.11, thick * 0.6), stone, Vector3(-l / 2 + (k + 0.5) * l / n, h + 0.1, 0)))
+		"thatch", "tent":   # sharpened stakes (on an earth bank in the timber towns; felt hung on them for the tents)
+			if arch == "thatch":
+				holder.add_child(box(Vector3(l + 0.1, 0.16, thick + 0.3), mats.get_mat("mud"), Vector3(0, 0.08, 0)))
+			var base := 0.14 if arch == "thatch" else 0.0
+			var n := maxi(2, int(l / 0.11))
+			for k in n:
+				var x := -l / 2 + (k + 0.5) * l / n
+				var sh := h - base + (0.04 if k % 2 == 0 else -0.02)
+				holder.add_child(cyl(0.05, 0.055, sh, wood, Vector3(x, base + sh / 2, 0), Vector3(rng.randf_range(-3, 3), 0, 0), 7))
+				holder.add_child(cyl(0.0, 0.05, 0.1, wood, Vector3(x, base + sh + 0.05, 0), Vector3.ZERO, 7))
+			holder.add_child(box(Vector3(l, 0.04, 0.03), wood, Vector3(0, base + (h - base) * 0.7, thick * 0.3)))   # a rail binding them
+			if arch == "tent":
+				holder.add_child(box(Vector3(l, h * 0.42, 0.03), mats.get_mat("felt"), Vector3(0, h * 0.3, 0.07)))
+		"junk":   # a brick footing with tin sheets and planks nailed up above it
+			holder.add_child(box(Vector3(l, h * 0.45, thick), mats.get_mat("brick"), Vector3(0, h * 0.225, 0)))
+			var n := maxi(1, int(l / 0.42))
+			for k in n:
+				var x := -l / 2 + (k + 0.5) * l / n
+				var sh := h * 0.6 + rng.randf_range(-0.05, 0.08)
+				var mat: Material = mats.get_mat("tin") if k % 3 != 1 else Materials.flat(Color("#6e4a2c").lerp(Color("#8a7050"), rng.randf()), 0.9)
+				holder.add_child(box(Vector3(l / n + 0.03, sh, 0.05), mat, Vector3(x, h * 0.4 + sh / 2, rng.randf_range(-0.02, 0.02)), Vector3(0, 0, rng.randf_range(-4, 4))))
+		"reed":   # reed bundles tied upright on a mud bank
+			holder.add_child(box(Vector3(l + 0.1, 0.12, thick + 0.2), mats.get_mat("mud"), Vector3(0, 0.06, 0)))
+			var reed := mats.get_mat("thatch")
+			var n := maxi(2, int(l / 0.1))
+			for k in n:
+				var x := -l / 2 + (k + 0.5) * l / n
+				holder.add_child(cyl(0.04, 0.055, h - 0.1, reed, Vector3(x, 0.1 + (h - 0.1) / 2, 0), Vector3(rng.randf_range(-5, 5), 0, rng.randf_range(-4, 4)), 7))
+			for y in [0.35, 0.75]:
+				holder.add_child(box(Vector3(l, 0.035, thick * 0.5), wood, Vector3(0, h * y, 0)))
+		"mound":   # rammed earth with a rounded top
+			var mud := mats.get_mat("mud")
+			holder.add_child(box(Vector3(l, h - thick / 2, thick + 0.1), mud, Vector3(0, (h - thick / 2) / 2, 0)))
+			holder.add_child(cyl(thick / 2 + 0.05, thick / 2 + 0.05, l, mud, Vector3(0, h - thick / 2, 0), Vector3(0, 0, 90), 10))
+
+
+## The culture's great hall or keep, centred on `at`: w wide (x), d deep (z), h to its eaves or
+## battlements, its door on the front (+z). Returns its top.
+func _keep(body: Node3D, arch: String, at: Vector3, w: float, d: float, h: float, team: Color) -> float:
+	var holder := Node3D.new()
+	holder.position = at
+	body.add_child(holder)
+	match arch:
+		"stone":   # a square keep: plinth, battlements, corner turrets, slits, a hung team banner
+			var stone := mats.get_mat("stone")
+			holder.add_child(box(Vector3(w + 0.12, 0.14, d + 0.12), stone, Vector3(0, 0.07, 0)))
+			holder.add_child(box(Vector3(w, h, d), stone, Vector3(0, h / 2, 0)))
+			holder.add_child(box(Vector3(w + 0.08, 0.08, d + 0.08), stone, Vector3(0, h + 0.04, 0)))
+			for side in 4:
+				var along := w if side % 2 == 0 else d
+				var n := maxi(2, int(along / 0.24))
+				for k in n:
+					var t := -along / 2 + (k + 0.5) * along / n
+					var p := Vector3(t, h + 0.14, d / 2) if side == 0 else Vector3(w / 2, h + 0.14, t) if side == 1 else Vector3(t, h + 0.14, -d / 2) if side == 2 else Vector3(-w / 2, h + 0.14, t)
+					holder.add_child(box(Vector3(0.11 if side % 2 == 0 else 0.09, 0.12, 0.09 if side % 2 == 0 else 0.11), stone, p))
+			for x in [-1, 1]:
+				for z in [-1, 1]:
+					holder.add_child(cyl(0.13, 0.13, h + 0.35, stone, Vector3(x * w / 2, (h + 0.35) / 2, z * d / 2), Vector3.ZERO, 12))
+					holder.add_child(cyl(0.0, 0.17, 0.3, mats.get_mat("terracotta"), Vector3(x * w / 2, h + 0.5, z * d / 2), Vector3.ZERO, 12))
+			for x in [-w * 0.25, w * 0.25]:
+				_slit(holder, Vector3(x, h * 0.7, d / 2 + 0.01), 0.0)
+			_slit(holder, Vector3(w / 2 + 0.01, h * 0.6, 0), 90.0)
+			holder.add_child(box(Vector3(0.36, 0.5, 0.04), Materials.flat(Color("#3a2416"), 0.9), Vector3(0, 0.39, d / 2 + 0.02)))   # the door
+			holder.add_child(box(Vector3(0.2, 0.42, 0.02), cloth(team), Vector3(w * 0.3, h * 0.55, d / 2 + 0.02)))   # a banner hung on the face
+			return at.y + h + 0.65
+		"tent":   # a great felt tent
+			return at.y + _yurt(holder, Vector3.ZERO, minf(w, d) / 2 + 0.15, h * 0.55, team)
+		"reed":   # a big reed dome on its deck, a second dome stacked on it
+			var deck := _stilt_deck(holder, Vector3.ZERO, w + 0.2, d + 0.2)
+			var r := minf(w, d) / 2
+			var top := _reed_dome(holder, Vector3(0, deck, 0), r, team)
+			holder.add_child(cyl(r * 0.36, r * 0.44, 0.22, mats.get_mat("weave"), Vector3(0, top - 0.06, 0), Vector3.ZERO, 20))
+			holder.add_child(dome(r * 0.44, mats.get_mat("thatch"), Vector3(0, top + 0.05, 0), Vector3(1.0, 1.1, 1.0)))
+			return at.y + top + r * 0.5
+		"mound":   # a great earth mound, a crown on it, a round door hung with the team's cloth
+			var mud := mats.get_mat("mud")
+			var r := minf(w, d) / 2
+			holder.add_child(dome(r, mud, Vector3.ZERO, Vector3(w / (2 * r), h / r, d / (2 * r))))
+			holder.add_child(dome(r * 0.45, mud, Vector3(0, h * 0.85, 0), Vector3(1.0, 1.0, 1.0)))
+			_burrow_door(holder, Vector3(0, h * 0.25, d / 2 - 0.05), r * 0.22, 0.0, team)
+			return at.y + h * 0.85 + r * 0.45
+	# The hall kinds: mud and thatch, tin and brick (their walls, frame and roof from KIT).
+	var base := _hall(holder, arch, w, d, h)
+	var rise := _roof(holder, arch, Vector3(0, base + h, 0), w, d)
+	holder.add_child(box(Vector3(0.36, 0.5, 0.04), Materials.flat(Color("#2a1e14"), 0.9), Vector3(0, base + 0.25, d / 2 + 0.02)))
+	holder.add_child(box(Vector3(0.42, 0.07, 0.06), cloth(team), Vector3(0, base + 0.53, d / 2 + 0.03)))   # a team cloth over the door
+	return at.y + base + h + rise
+
+
+## A standard on a pole at `at`, `tall` high: the team pennant, waved in 2D (a live banner).
+func _standard(body: Node3D, at: Vector3, tall: float, team: Color) -> Array:
+	var wood := mats.get_mat("wood")
+	body.add_child(cyl(0.025, 0.03, tall, wood, at + Vector3(0, tall / 2, 0), Vector3.ZERO, 8))
+	var banner := Node3D.new()
+	var flag_top := at + Vector3(0.03, tall - 0.08, 0)
+	banner.add_child(box(Vector3(0.46, 0.04, 0.03), wood, flag_top + Vector3(0.23, 0, 0)))
+	banner.add_child(slab_tri(Vector2(0, 0), Vector2(0.56, -0.2), Vector2(0, -0.44), 0.02, cloth(team)))
+	banner.get_child(banner.get_child_count() - 1).position = flag_top
+	return [banner, flag_top]
+
+
+## A castle (4 x 4 tiles) in one of three layouts:
+##   curtain: a square of curtain wall, a tower at each corner, a gate in the front, the keep inside;
+##   motte: the keep up on an earth mound at the back, a lower wall round a yard at its foot;
+##   great_tower: one huge tower beside a hall, a short wall round a small yard.
+func _castle_look(name: String, arch: String, team: Color) -> Dictionary:
+	rng.seed = 400 + CASTLE_LOOKS.find(name)
+	var body := Node3D.new()
+	var wood := mats.get_mat("wood")
+	var top := 0.0
+	var flag := []
+	var c := 1.55   # the corner towers' centres
+	match name:
+		"curtain":
+			var tr := 0.34
+			var th := 1.25
+			for x in [-1, 1]:
+				for z in [-1, 1]:
+					_fort_tower(body, arch, Vector3(x * c, 0, z * c), tr, th + (0.15 if z < 0 else 0.0))
+			var wh := 0.82
+			_fort_wall(body, arch, Vector3(-c, 0, -c), Vector3(c, 0, -c), wh)
+			_fort_wall(body, arch, Vector3(-c, 0, -c), Vector3(-c, 0, c), wh)
+			_fort_wall(body, arch, Vector3(c, 0, -c), Vector3(c, 0, c), wh)
+			_fort_wall(body, arch, Vector3(-c, 0, c), Vector3(-0.42, 0, c), wh)   # the front, either side of the gate
+			_fort_wall(body, arch, Vector3(0.42, 0, c), Vector3(c, 0, c), wh)
+			_gate(body, arch, Vector3(0, 0, c), wh, team)
+			top = _keep(body, arch, Vector3(0, 0, -0.35), 1.45, 1.15, 1.45, team)
+			flag = _standard(body, Vector3(0.3, 1.53, -0.35), 0.9, team) if arch == "stone" else _standard(body, Vector3(-0.95, 0, -0.95), top + 0.4, team)
+		"motte":
+			var mx := Vector3(-0.35, 0, -0.45)
+			var mr := 1.25
+			var mh := 0.55
+			body.add_child(dome(mr, mats.get_mat("mud"), mx, Vector3(1.0, mh / mr, 1.0)))
+			_grass_tufts(body, mx + Vector3(0, mh * 0.6, 0.5), 0.45, 8)
+			top = _keep(body, arch, mx + Vector3(0, mh - 0.1, 0), 1.2, 1.05, 1.4, team)
+			for k in 5:   # steps up the mound's front
+				body.add_child(box(Vector3(0.36, 0.06, 0.16), wood, mx + Vector3(0.45, mh * (k + 0.5) / 5.0, mr * 0.95 - k * 0.14), Vector3(0, 25, 0)))
+			var wh := 0.62
+			var fz := 1.6
+			_fort_tower(body, arch, Vector3(-c, 0, fz), 0.3, 1.0)
+			_fort_tower(body, arch, Vector3(c, 0, fz), 0.3, 1.0)
+			_fort_tower(body, arch, Vector3(c, 0, -c), 0.28, 0.9)
+			_fort_wall(body, arch, Vector3(-c, 0, fz), Vector3(-0.42, 0, fz), wh)
+			_fort_wall(body, arch, Vector3(0.42, 0, fz), Vector3(c, 0, fz), wh)
+			_fort_wall(body, arch, Vector3(c, 0, -c), Vector3(c, 0, fz), wh)
+			_fort_wall(body, arch, Vector3(-c, 0, fz), Vector3(-c, 0, 0.35), wh)
+			_fort_wall(body, arch, Vector3(-0.9, 0, -c), Vector3(c, 0, -c), wh)
+			_gate(body, arch, Vector3(0, 0, fz), wh, team)
+			crate(Vector3(0.95, 0, 0.75), body, 20.0)
+			barrel(Vector3(0.75, 0, 1.05), body)
+			flag = _standard(body, mx + Vector3(0.4, mh, -0.4), top - mh + 0.5, team)
+		"great_tower":
+			var tx := Vector3(-0.55, 0, -0.55)
+			top = _fort_tower(body, arch, tx, 0.78, 2.5)
+			_keep(body, arch, Vector3(0.75, 0, -0.65), 1.2, 1.0, 0.8, team)
+			var wh := 0.6
+			_fort_tower(body, arch, Vector3(c, 0, c), 0.26, 0.95)
+			_fort_tower(body, arch, Vector3(-c, 0, c), 0.26, 0.95)
+			_fort_wall(body, arch, Vector3(-c, 0, c), Vector3(-0.4, 0, c), wh)
+			_fort_wall(body, arch, Vector3(0.4, 0, c), Vector3(c, 0, c), wh)
+			_fort_wall(body, arch, Vector3(c, 0, c), Vector3(c, 0, 0.0), wh)
+			_fort_wall(body, arch, Vector3(-c, 0, c), Vector3(-c, 0, 0.3), wh)
+			_gate(body, arch, Vector3(0, 0, c), wh, team)
+			woodpile(Vector3(0.6, 0, 0.55), body)
+			flag = _standard(body, tx + Vector3(0.0, top - 0.05, 0.0), 0.8, team)
+	return {"body": body, "anchor": Vector3.ZERO, "banner": flag[0], "banner_pivot": flag[1], "lights": [], "team": team,
+		"lantern": Vector3(0.0, 0.9, 1.7), "smoke": Vector3(0.0, top, -0.35)}
+
+
+## A gateway in a front wall (+z face) at `at`: two posts or piers, a lintel or arch, the doors.
+func _gate(body: Node3D, arch: String, at: Vector3, h: float, team: Color) -> void:
+	var post: Material = mats.get_mat({"stone": "stone", "junk": "brick", "mound": "mud", "reed": "wood", "tent": "wood", "thatch": "wood"}[arch])
+	var gh := h + 0.3
+	for x in [-0.42, 0.42]:
+		body.add_child(box(Vector3(0.2, gh, 0.32), post, at + Vector3(x, gh / 2, 0)))
+	body.add_child(box(Vector3(1.04, 0.2, 0.34), post, at + Vector3(0, gh - 0.1, 0)))
+	if arch == "stone":
+		for x in [-0.42, 0.0, 0.42]:
+			body.add_child(box(Vector3(0.12, 0.12, 0.1), post, at + Vector3(x, gh + 0.06, 0.12)))
+	body.add_child(box(Vector3(0.62, gh - 0.22, 0.05), Materials.flat(Color("#3a2416"), 0.9), at + Vector3(0, (gh - 0.22) / 2, 0.02)))   # the doors, shut
+	body.add_child(box(Vector3(0.6, 0.04, 0.06), mats.get_mat("wood"), at + Vector3(0, (gh - 0.22) * 0.3, 0.05)))
+	body.add_child(box(Vector3(0.6, 0.04, 0.06), mats.get_mat("wood"), at + Vector3(0, (gh - 0.22) * 0.75, 0.05)))
+	body.add_child(box(Vector3(0.16, 0.24, 0.02), cloth(team), at + Vector3(-0.42, gh * 0.6, 0.17)))   # a small team cloth on a pier
+
+
+## A University (3 x 3 tiles) in one of three looks:
+##   observatory: a hall and a round tower crowned with a dome, a sundial in the yard;
+##   cloister: a hall behind a yard ringed by a covered walk, a tree in it, a bell tower;
+##   builders: a hall, a lifting frame hoisting a cut block, stacked stone and a model arch.
+func _university_look(name: String, arch: String, team: Color) -> Dictionary:
+	rng.seed = 300 + UNIVERSITY_LOOKS.find(name)
+	var body := Node3D.new()
+	var wood := mats.get_mat("wood")
+	var k: Dictionary = KIT[arch]
+	var stone_like: Material = mats.get_mat({"stone": "stone", "junk": "brick", "mound": "mud", "reed": "mud", "tent": "wood", "thatch": "stone"}[arch])
+	var top := 0.0
+	var lights := []
+	match name:
+		"observatory":
+			top = _uni_hall(body, arch, Vector3(-0.35, 0, 0.05), 1.8, 1.1, 0.8, team)
+			var at := Vector3(0.8, 0, -0.85)
+			var r := 0.42
+			var th := 2.0
+			var scope_from := at + Vector3(0, th + r * 0.45, r * 0.45)
+			if arch == "mound":   # a spire with a glass poking out near its top
+				top = maxf(top, _fort_tower(body, arch, at, r, th))
+				scope_from = at + Vector3(0, th * 0.8, r * 0.35)
+			elif arch == "reed":   # the woven tower, under its own reed dome
+				top = maxf(top, _fort_tower(body, arch, at, r, th))
+			else:
+				_plain_tower(body, arch, at, r, th)
+				var dome_mat: Material = {"stone": Materials.flat(Color("#6a9a86"), 0.5, 0.4), "junk": mats.get_mat("tin"),
+					"tent": mats.get_mat("felt"), "thatch": mats.get_mat("thatch")}[arch]
+				body.add_child(dome(r + 0.06, dome_mat, at + Vector3(0, th, 0)))
+				body.add_child(box(Vector3(0.1, r * 0.8, 0.03), Materials.flat(Color("#1a140e"), 1.0), at + Vector3(0, th + r * 0.35, r * 0.62), Vector3(-35, 0, 0)))   # the slot in the dome
+				top = maxf(top, th + r + 0.06)
+			body.add_child(beam(scope_from, scope_from + Vector3(0.12, 0.32, 0.3), 0.04, Materials.flat(Color("#b07a36"), 0.4, 0.7), 10))   # the brass glass, out at the sky
+			# A sundial on a plinth, and a bench of books.
+			body.add_child(cyl(0.13, 0.15, 0.3, stone_like, Vector3(0.95, 0.15, 0.85), Vector3.ZERO, 12))
+			body.add_child(cyl(0.18, 0.18, 0.03, Materials.flat(Color("#c8b48a"), 0.6), Vector3(0.95, 0.315, 0.85), Vector3.ZERO, 16))
+			body.add_child(slab_tri(Vector2(0, 0), Vector2(0.14, 0), Vector2(0, 0.12), 0.012, Materials.flat(Color("#b07a36"), 0.4, 0.7)))
+			body.get_child(body.get_child_count() - 1).position = Vector3(0.93, 0.33, 0.85)
+			_books(body, Vector3(-0.4, 0, 1.05))
+			lights.append(at + Vector3(r * 0.9, th * 0.6, r * 0.4))
+		"cloister":
+			top = _uni_hall(body, arch, Vector3(0, 0, -0.85), 2.4, 0.8, 0.8, team)
+			for side in [-1, 1]:   # the covered walks down the sides, open to the yard
+				_walk(body, arch, Vector3(side * 1.1, 0, 0.25), 0.5, 1.5, true)
+			_walk(body, arch, Vector3(0, 0, 1.15), 1.7, 0.42, false)
+			body.add_child(cyl(0.05, 0.06, 0.4, wood, Vector3(0.15, 0.2, 0.25), Vector3.ZERO, 8))   # a tree in the yard
+			body.add_child(ball(0.32, Materials.flat(Color("#4e7a30"), 0.9), Vector3(0.15, 0.62, 0.25), Vector3(1.0, 0.9, 1.0)))
+			body.add_child(ball(0.2, Materials.flat(Color("#5e8a38"), 0.9), Vector3(0.0, 0.75, 0.35)))
+			body.add_child(cyl(0.12, 0.14, 0.12, stone_like, Vector3(-0.35, 0.06, 0.3), Vector3.ZERO, 12))   # a well
+			# The bell tower, at the back corner: square, an open belfry, the bell hung in it.
+			var bt := Vector3(-1.05, 0, -1.05)
+			var bh := 1.55
+			body.add_child(box(Vector3(0.5, bh, 0.5), mats.get_mat(k.wall), bt + Vector3(0, bh / 2, 0)))
+			for x in [-1, 1]:
+				for z in [-1, 1]:
+					body.add_child(box(Vector3(0.07, 0.42, 0.07), mats.get_mat(k.frame), bt + Vector3(x * 0.22, bh + 0.21, z * 0.22)))
+			body.add_child(cyl(0.05, 0.1, 0.14, Materials.flat(Color("#b07a36"), 0.4, 0.7), bt + Vector3(0, bh + 0.22, 0), Vector3.ZERO, 12))
+			var roof_mat: Material = mats.get_mat("terracotta" if k.roof == "tiles" else k.roof)
+			body.add_child(cyl(0.0, 0.45, 0.4, roof_mat, bt + Vector3(0, bh + 0.62, 0), Vector3(0, 45, 0), 4))
+			top = maxf(top, bh + 0.82)
+		"builders":
+			top = _uni_hall(body, arch, Vector3(-0.5, 0, -0.6), 1.6, 1.1, 0.85, team)
+			# The lifting frame: two legs, a beam, a rope, a cut block hanging; a drum to wind it.
+			var f := Vector3(0.8, 0, 0.15)
+			for z in [-0.35, 0.35]:
+				body.add_child(beam(f + Vector3(-0.45, 0, z), f + Vector3(0, 1.75, z * 0.3), 0.055, wood))
+				body.add_child(beam(f + Vector3(0.45, 0, z), f + Vector3(0, 1.75, z * 0.3), 0.055, wood))
+			body.add_child(beam(f + Vector3(0, 1.72, -0.15), f + Vector3(0.0, 1.72, 0.15), 0.04, wood))
+			body.add_child(beam(f + Vector3(0, 1.72, 0.0), f + Vector3(0.0, 0.84, 0.0), 0.015, Materials.flat(Color("#8a6a3c"), 0.9), 4))
+			body.add_child(box(Vector3(0.42, 0.28, 0.3), stone_like, f + Vector3(0, 0.7, 0)))
+			body.add_child(cyl(0.1, 0.1, 0.5, wood, f + Vector3(-0.3, 0.3, 0), Vector3(90, 0, 0), 10))   # the winding drum
+			# Cut blocks stacked, and a half-built arch to learn on.
+			for p in [Vector3(-0.2, 0.11, 0.85), Vector3(0.15, 0.11, 0.9), Vector3(-0.03, 0.33, 0.87)]:
+				body.add_child(box(Vector3(0.32, 0.22, 0.24), stone_like, p, Vector3(0, rng.randf_range(-8, 8), 0)))
+			for x in [-1.05, -0.55]:
+				body.add_child(box(Vector3(0.16, 0.5, 0.18), stone_like, Vector3(x, 0.25, 0.7)))
+			body.add_child(box(Vector3(0.66, 0.14, 0.18), stone_like, Vector3(-0.8, 0.57, 0.7)))
+			body.add_child(box(Vector3(0.3, 0.03, 0.22), Materials.flat(Color("#e8dcc0"), 0.9), Vector3(0.45, 0.42, 1.05), Vector3(0, 10, 0)))   # a plan on a trestle
+			for x in [0.33, 0.57]:
+				body.add_child(beam(Vector3(x, 0, 0.98), Vector3(x, 0.4, 1.06), 0.015, wood, 4))
+				body.add_child(beam(Vector3(x, 0, 1.14), Vector3(x, 0.4, 1.06), 0.015, wood, 4))
+			top = maxf(top, 1.75)
+	return {"body": body, "anchor": Vector3.ZERO, "lights": lights, "team": team, "lantern": Vector3(0.0, 0.5, 0.9),
+		"smoke": Vector3(-0.3, top, -0.45)}
+
+
+## A University's hall: the culture's hall and roof, or its dome on stilts or mound (reed, mound),
+## centred on `at`, with a team cloth over the door. Returns its top.
+func _uni_hall(body: Node3D, arch: String, at: Vector3, w: float, d: float, h: float, team: Color) -> float:
+	if arch in ["reed", "mound", "tent"]:
+		return _keep(body, arch, at, w, d, h, team)
+	var holder := Node3D.new()
+	holder.position = at
+	body.add_child(holder)
+	var base := _hall(holder, arch, w, d, h)
+	var rise := _roof(holder, arch, Vector3(0, base + h, 0), w, d)
+	holder.add_child(box(Vector3(0.36, 0.5, 0.04), Materials.flat(Color("#2a1e14"), 0.9), Vector3(-w * 0.2, base + 0.25, d / 2 + 0.02)))
+	holder.add_child(box(Vector3(0.42, 0.07, 0.06), cloth(team), Vector3(-w * 0.2, base + 0.53, d / 2 + 0.03)))
+	for x in [w * 0.1, w * 0.32]:   # tall windows: a place of reading
+		holder.add_child(box(Vector3(0.14, 0.32, 0.03), glow(Color("#ffcf6a"), 1.2), Vector3(x, base + h * 0.55, d / 2 + 0.01)))
+	return at.y + base + h + rise
+
+
+## A plain round or square tower of the culture's walls (not a fortification), h to its top.
+func _plain_tower(body: Node3D, arch: String, at: Vector3, r: float, h: float) -> float:
+	var k: Dictionary = KIT[arch]
+	if arch == "stone":
+		body.add_child(cyl(r, r * 1.05, h, mats.get_mat("plaster"), at + Vector3(0, h / 2, 0), Vector3.ZERO, 20))
+		body.add_child(ring(r, r * 1.06, mats.get_mat("stone"), at + Vector3(0, h - 0.05, 0)))
+		body.add_child(ring(r * 1.02, r * 1.08, mats.get_mat("stone"), at + Vector3(0, 0.06, 0)))
+	elif arch == "junk":
+		body.add_child(cyl(r, r, h, mats.get_mat("tin"), at + Vector3(0, h / 2, 0), Vector3.ZERO, 20))
+		for y in [0.3, 0.75]:
+			body.add_child(ring(r - 0.01, r + 0.03, Materials.flat(Color("#9a9c96"), 0.5, 0.5), at + Vector3(0, h * y, 0)))
+	elif arch == "tent":
+		body.add_child(cyl(r, r * 1.1, h, mats.get_mat("felt"), at + Vector3(0, h / 2, 0), Vector3.ZERO, 20))
+		for y in [0.3, 0.7]:
+			body.add_child(ring(r * 1.02, r * 1.08, Materials.flat(Color("#8a6a3c"), 0.9), at + Vector3(0, h * y, 0)))
+	else:
+		body.add_child(cyl(r, r * 1.05, h, mats.get_mat(k.wall), at + Vector3(0, h / 2, 0), Vector3.ZERO, 20))
+		for a in [0.0, 120.0, 240.0]:
+			var t := deg_to_rad(a)
+			body.add_child(box(Vector3(0.07, h, 0.07), mats.get_mat(k.frame), at + Vector3(sin(t) * r, h / 2, cos(t) * r)))
+	body.add_child(box(Vector3(0.1, 0.24, 0.03), glow(Color("#ffcf6a"), 1.2), at + Vector3(0, h * 0.6, r + 0.005)))
+	return at.y + h
+
+
+## A covered walk: a row of posts under a lean-to roof of the culture's roofing, w x d.
+func _walk(body: Node3D, arch: String, at: Vector3, w: float, d: float, along_z: bool) -> void:
+	var k: Dictionary = KIT[arch]
+	var post: Material = mats.get_mat("stone" if arch == "stone" else k.frame)
+	var h := 0.5
+	var n := maxi(2, int((d if along_z else w) / 0.38) + 1)
+	for i in n:
+		var t := -0.5 + float(i) / (n - 1)
+		var p := at + (Vector3(0, 0, t * d) if along_z else Vector3(t * w, 0, 0))
+		if arch == "stone":
+			body.add_child(cyl(0.04, 0.05, h, post, p + Vector3(0, h / 2, 0), Vector3.ZERO, 10))
+		else:
+			body.add_child(box(Vector3(0.06, h, 0.06), post, p + Vector3(0, h / 2, 0)))
+	var roof_mat: Material = mats.get_mat("terracotta" if k.roof == "tiles" else k.roof)
+	body.add_child(box(Vector3(w + 0.1, 0.05, d + 0.1), roof_mat, at + Vector3(0, h + 0.06, 0), Vector3(0, 0, 0)))
+
+
+## A stack of books and a scroll on a little bench.
+func _books(body: Node3D, at: Vector3) -> void:
+	var wood := mats.get_mat("wood")
+	body.add_child(box(Vector3(0.5, 0.04, 0.18), wood, at + Vector3(0, 0.2, 0)))
+	for x in [-0.2, 0.2]:
+		body.add_child(box(Vector3(0.04, 0.2, 0.14), wood, at + Vector3(x, 0.1, 0)))
+	var covers := [Color("#7a2a22"), Color("#2a4a6a"), Color("#5a6a2a")]
+	for i in 3:
+		body.add_child(box(Vector3(0.16, 0.04, 0.12), Materials.flat(covers[i], 0.8), at + Vector3(-0.08, 0.24 + i * 0.04, 0), Vector3(0, i * 12, 0)))
+	body.add_child(cyl(0.03, 0.03, 0.18, Materials.flat(Color("#e8dcc0"), 0.9), at + Vector3(0.14, 0.25, 0), Vector3(0, 30, 90), 8))
+
+
 # ------------------------------------------------------------------ walls and gates
 # A wall tile is a post in the tile's middle plus an arm out to each wall neighbour, the eight
 # ways round (LINKS: sim dx, dy). Each piece bakes on its own, anchored on the tile's centre, and

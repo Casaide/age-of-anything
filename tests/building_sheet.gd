@@ -5,7 +5,7 @@ extends SceneTree
 ## Run (needs a display):
 ##   godot --path . --script res://tests/building_sheet.gd -- out.png <zoom> model [model ...]
 ## e.g. ... -- /tmp/b.png 2 stone_town_center junk_town_center concept_junk_tc_low
-## A gate's open look: palisade_gate:stone:open
+## A gate's open look: palisade_gate:stone:open; a concept look: castle:stone:motte (Models.look)
 ## Props too: prop.<function>.<seed>[.<stage>], e.g. prop.quarry.1300.0 prop.boulders.1000
 ## Trees: tree.<seed>.<species>.<style>[.<stage>], e.g. tree.3.pine.0 (scenes/art_pixel/tree_models.gd)
 ## Town-life props: town.<function>.<args>, e.g. town.pile.wood.3.a town.yard.2 town.garden.3
@@ -51,7 +51,10 @@ func _initialize() -> void:
 			var pargs: Array = Array(bits.slice(2)).map(func(x): return int(x) if x.is_valid_int() else x)
 			spec = {"body": PropModels.new().callv(bits[1], pargs)}
 		elif n.contains(":"):   # type:arch, e.g. market:stone; type:arch:open for a gate's open look
-			spec = models.building(n.get_slice(":", 0), n.get_slice(":", 1), team)
+			if n.get_slice_count(":") > 2 and n.get_slice(":", 2) != "open":   # type:arch:look, a concept look (castle:stone:motte)
+				spec = models.look(n.get_slice(":", 0), n.get_slice(":", 1), n.get_slice(":", 2), team)
+			else:
+				spec = models.building(n.get_slice(":", 0), n.get_slice(":", 1), team)
 			if n.get_slice_count(":") > 2 and n.get_slice(":", 2) == "open":
 				spec.body = spec.open
 		else:

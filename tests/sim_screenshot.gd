@@ -6,6 +6,8 @@ extends SceneTree
 ## "opening:<tick>" (both sides autoplay their economy; shot at that tick, over player 1's base),
 ## or "battle:<tick>" (both test armies attack-move at each other; shot mid-fight at that tick).
 ## "tower" (side 1's town with enemy spears by its Watchtower; shot with arrows in the air).
+## "castle" (side 1's Castle and University by its Town Center, enemy spears in the Castle's
+## reach; shot with a volley in the air).
 ## "heal" (side 0's healers by wounded spearmen, shot mid-heal; "heal:card" with a healer selected).
 ## "look:<x>:<y>[:zoom]" frames a tile with the fog lifted (for art checks).
 ## "pause" the pause menu; "end" / "defeat" the end screen.
@@ -67,6 +69,8 @@ func _initialize() -> void:
 		await _sheep(view, scene.trim_prefix("sheep").trim_prefix(":"))
 	elif scene == "tower":
 		await _tower(view)
+	elif scene == "castle":
+		await _castle(view)
 	elif scene.begins_with("wear"):
 		await _wear(view, int(scene.get_slice(":", 1)))
 	elif scene.begins_with("town"):
@@ -709,6 +713,43 @@ func _tower(view) -> void:
 	for f in 4:
 		await process_frame
 	view.camera.look_at_point(Iso.to_screen(s[0] + 4500, s[1] + 4500))
+
+
+## Side 1's Castle and University by its Town Center, a few of side 0's spears in the Castle's
+## reach: shot once its volley is in the air.
+func _castle(view) -> void:
+	var w = view.world
+	var Economy = load("res://src/sim/economy.gd")
+	var s: Array = w.map.starts[1]
+	var cx: int = s[0] / 1000
+	var cy: int = s[1] / 1000
+	for spec in [["castle", cx - 7, cy - 3], ["university", cx - 2, cy - 6], ["house", cx - 4, cy - 1]]:
+		var k: int = Economy.btype_of(w, spec[0])
+		var at := Vector2i(-1, -1)
+		for r in 6:   # the nearest free ground to the wanted spot
+			for dy in range(-r, r + 1):
+				for dx in range(-r, r + 1):
+					if at.x < 0 and w.map.can_build(spec[1] + dx, spec[2] + dy, w.btypes[k].size):
+						at = Vector2i(spec[1] + dx, spec[2] + dy)
+		if at.x >= 0:
+			var i: int = Economy.place(w, 1, k, at.x, at.y)
+			w.buildings.done[i] = 1
+			w.buildings.hp[i] = w.btypes[k].hp
+		else:
+			print("castle scene: no room for the ", spec[0])
+	for f in 40:
+		await process_frame
+	view.camera.zoom = Vector2(2.5, 2.5)
+	view._on_zoom()
+	view.reveal = true
+	w.issue(0, load("res://src/sim/commands.gd").SPAWN, {"slot": "spear", "count": 5, "x": s[0] - 8000, "y": s[1] + 6000})
+	for f in 600:
+		await process_frame
+		if view.fx.shots.size() > 2:
+			break
+	for f in 4:
+		await process_frame
+	view.camera.look_at_point(Iso.to_screen(s[0] - 4500, s[1] - 1000))
 
 
 ## Living towns (milestone 17): both sides play their opening to the tick, then side 0 is left
