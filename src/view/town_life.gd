@@ -44,6 +44,7 @@ var puffs: Array = []        # [{p, t, v}] dust from builders' blows
 var critters: Array = []     # [{kind, home, p, v, t, air, state}]
 var _critter_towns := {}     # town centre id -> true once its critters are made
 var _town_level := -1.0
+var enabled := true          # off: the town stands still (tests/town_bench.gd compares)
 
 
 func setup(p_host) -> void:
@@ -70,6 +71,8 @@ func reset() -> void:
 
 
 func update(delta: float) -> void:
+	if not enabled:
+		return
 	time += delta
 	var w = host.world
 	_deliveries(w)
@@ -213,6 +216,8 @@ func _sync_sprites(have: Dictionary, want: Dictionary, parent: Node) -> void:
 ## tends the rows with a hoe ("till"), an idle worker near home does a chore, an idle herd
 ## animal grazes. Called by the match view for every unit, every frame.
 func job_for(i: int, job: String) -> String:
+	if not enabled:
+		return job
 	var w = host.world
 	var u = w.units
 	if job == "forage" and _ground(w, i) in ["field", "paddy"]:
@@ -227,6 +232,8 @@ func job_for(i: int, job: String) -> String:
 ## What a worker holds, on top of the match view's pick: meat home from a hunt, a hoe in
 ## the fields, a broom for sweeping.
 func tool_for(i: int, tool: String) -> String:
+	if not enabled:
+		return tool
 	var w = host.world
 	var u = w.units
 	if u.task[i] == Economy.RETURN and u.carry[i] > 0 and _ground(w, i) == "carcass":

@@ -2979,7 +2979,8 @@
   "id": "load.reeds",
   "tags": [
    "load",
-   "job"
+   "job",
+   "shoulder"
   ],
   "shapes": [
    {
@@ -3110,7 +3111,8 @@
   "id": "load.meat",
   "tags": [
    "load",
-   "job"
+   "job",
+   "shoulder"
   ],
   "shapes": [
    {
