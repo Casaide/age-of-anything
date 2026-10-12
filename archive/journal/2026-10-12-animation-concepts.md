@@ -64,3 +64,13 @@ about the planted hind hooves and the human half leans back over the hindquarter
 ## Ideas parked
 - Attack: a step-in and body lean, a draw-to-release swap for archers. Deaths: quadrupeds
   collapse down, bipeds topple, flyers drop first. Dust at building sites. (Next concept round.)
+
+## Round two: attacks and deaths (concepts, pick pending)
+`tests/anim_concept_sheet2.gd`, pictures 09-17. Attacks: T1 step-in (a lunge forward, the near
+leg stepping, the arm swinging through its baked holds, or a spear thrusting; armless creatures
+butt with the head), T2 swing only (holds and weapon, feet still), T3 as now (the weapon twitches
+six pixels). Archers: R1 draw and loose (lean back, bow up, snap forward on the shot), R2 as now
+(nothing). Deaths: D1 topple as now (the sprite tips 80 degrees about its feet), D2 crumple (legs
+fold, the body sinks, the head drops, a rider slumps), D3 by shape (bipeds topple backwards with
+a bounce, hoppers flop belly-up after a last little hop, four and six legs crumple, flyers drop
+to the ground first and then topple).
