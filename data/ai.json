@@ -7,20 +7,29 @@
     "wood": 50
    },
    "2": {
-    "food": 50,
-    "wood": 35,
-    "gold": 15
+    "food": 45,
+    "wood": 30,
+    "gold": 20,
+    "stone": 5
    },
    "3": {
-    "food": 45,
+    "food": 40,
     "wood": 25,
     "gold": 20,
-    "stone": 10
+    "stone": 15
    }
   },
-  "max_workers": 30,
-  "age_workers": 16
+  "max_workers": {
+   "1": 30,
+   "2": 32,
+   "3": 50
+  },
+  "age_workers": 16,
+  "age3_workers": 26,
+  "rebalance_every": 2,
+  "_doc": "max_workers: per age, the most workers it trains. age_workers: with this many it stops training workers and saves for age 2; age3_workers: with this many in age 2 (and a guard) its soldiers and research leave the age-3 cost alone. rebalance_every: seconds between moving one gatherer to the resource most short of its share (shares: the mix, less a resource piled up or saved for what it's saving for, the next age or a blocked build step)."
  },
+ "_doc_mix": "economy.mix: per age, the share of workers on each resource (the bot sends idle and new workers to whatever is furthest below its share, and moves one gatherer at a time over to it)",
  "build_order": [
   {
    "building": "lumber_camp",
@@ -32,53 +41,89 @@
    "workers": 11
   },
   {
-   "building": "archery_range",
-   "workers": 18,
-   "age": 2
-  },
-  {
-   "building": "armoury",
+   "building": "mining_camp",
    "age": 2,
-   "workers": 18
+   "near": "gold",
+   "workers": 16
   },
   {
    "building": "stable",
    "age": 2,
-   "workers": 18
+   "workers": 16,
+   "builders": 3
   },
   {
-   "building": "mining_camp",
+   "building": "archery_range",
    "age": 2,
-   "near": "gold",
-   "workers": 20
+   "workers": 18,
+   "builders": 3
   },
   {
    "building": "mill",
    "age": 2,
    "near": "food",
+   "workers": 19
+  },
+  {
+   "building": "armoury",
+   "age": 2,
+   "workers": 20
+  },
+  {
+   "building": "mining_camp",
+   "age": 2,
+   "near": "stone",
    "workers": 21
+  },
+  {
+   "building": "watchtower",
+   "age": 2,
+   "near": "gold",
+   "workers": 22
   },
   {
    "building": "university",
    "age": 3,
-   "workers": 22
+   "workers": 22,
+   "builders": 3
   },
   {
    "building": "castle",
    "age": 3,
-   "workers": 24
+   "workers": 24,
+   "builders": 6
   },
   {
    "building": "barracks",
    "age": 2,
-   "workers": 22
+   "workers": 26
+  },
+  {
+   "building": "town_center",
+   "age": 3,
+   "count": 2,
+   "near": "wood",
+   "away": 12,
+   "workers": 32,
+   "builders": 4
+  },
+  {
+   "building": "siege_workshop",
+   "age": 3,
+   "workers": 34
+  },
+  {
+   "building": "market",
+   "age": 2,
+   "workers": 34
   },
   {
    "building": "stable",
    "age": 2,
-   "workers": 27
+   "workers": 36
   }
  ],
+ "_doc_build_order": "each step: a building, from `age`, once it has `workers`; `near` lays it by the nearest patch of that resource (`away`: at least that many tiles from the Town Center); `builders`: workers sent (2 by default); `count`: how many of that building the step wants in all (default: one more than the steps before it). Steps go in order; a later age's step doesn't hold up this age's. A step it can't afford yet is what it saves for (economy shares).",
  "military": {
   "queue": 2,
   "defend_tiles": 10,
@@ -106,13 +151,44 @@
    "follow": 3,
    "every": 3
   },
-  "_doc_healers": "healers (Town Center, from age 2): one per per_army soldiers, up to max per age; kept `behind` tiles back from the army's middle (towards home); idle ones further than `follow` tiles from that spot are sent there every `every` seconds"
+  "_doc_healers": "healers (Town Center, from age 2): one per per_army soldiers, up to max per age; kept `behind` tiles back from the army's middle (towards home); idle ones further than `follow` tiles from that spot are sent there every `every` seconds",
+  "towers": {
+   "age": 2,
+   "within": 24,
+   "_doc": "after a raid on its buildings or workers within `within` tiles of its Town Center (not at the Town Center itself, which shoots), once quiet, it raises a Watchtower by the spot (up to the level's `towers`, one at a time)"
+  },
+  "shelter": {
+   "tiles": 12,
+   "_doc": "a raid within `tiles` of the Town Center by at least the level's `shelter_pop` of enemy population, more than its soldiers at home can answer: call to arms (workers into the Town Center and towers); once quiet, back to work"
+  }
  },
  "research": {
-  "_doc": "Besides line upgrades (and gathering, for building-up levels): the economy research it buys (economy, then buildings: the University's), and the soldiers' research it buys once that research reaches at least army_min of its soldiers (the armoury track for what it fields). Both keep back the next age's cost once the bot has the workers to age up.",
-  "economy": ["baskets", "stone_axes", "picks", "big_pockets", "ploughs", "saws", "ore_carts", "fallow_fields", "pack_frames"],
-  "buildings": ["lifting_frames", "stonecutting"],
-  "army_min": 4
+  "_doc": "Besides line upgrades (and gathering, for building-up levels): the economy research it buys (economy, then buildings: the University's, Bastion once it has a tower), and the soldiers' research it buys once that research reaches at least army_min of its soldiers (the armoury track for what it fields). Both keep back what it's saving for (the next age, a blocked build step) once it has the workers to age up.",
+  "economy": [
+   "baskets",
+   "stone_axes",
+   "picks",
+   "big_pockets",
+   "ploughs",
+   "saws",
+   "ore_carts",
+   "fallow_fields",
+   "pack_frames",
+   "lookouts"
+  ],
+  "buildings": [
+   "lifting_frames",
+   "stonecutting",
+   "bastion",
+   "slit_windows",
+   "night_lanterns"
+  ],
+  "army_min": 4,
+  "wait_for": {
+   "bastion": "castle",
+   "slit_windows": "castle"
+  },
+  "_doc_wait_for": "wait_for: research it leaves until it has that building (the Bastion's stone waits for the Castle's)"
  },
  "wonder": {
   "age": 3,
@@ -120,26 +196,34 @@
   "builders": 8,
   "_doc": "a Wonder (bot.gd _wonder): from `age`, with none of its own standing or going up, once its stock of every resource is at least spare_pct percent of the Wonder's cost, it lays one by its Town Center and sends `builders` workers. Every bot also attacks a Wonder it knows of (seen, or finished: everyone hears of that) before anything else, and a finished one at once"
  },
- "_doc_mix": "economy.mix: per age, the share of workers on each resource (the bot sends idle and new workers to whatever is furthest below its share)",
  "levels": {
-  "_doc": "difficulty, as in the genre: easier bots build up more and fight less, but grow all game (no caps, up to the population limit). delay: seconds added to every wave's time; army_pct: the share of each wave's minimum army; army_ratio: soldiers kept (population) as a percent of its workers per age (50: half its workers in age 1, as many in age 2, one and a half in age 3; absent: no limit); wave_pct: the share of its army each wave sends (the rest defend); build_up: research gathering and line upgrades before soldiers. (Dominic: not caps; less focus on fighting, more building up.)",
+  "_doc": "difficulty, as in the genre: easier bots build up more and fight less, but grow all game (no caps, up to the population limit). delay: seconds added to every wave's time; army_pct: the share of each wave's minimum army; army_ratio: soldiers kept (population) as a percent of its workers per age (50: half its workers in age 1, as many in age 2, one and a half in age 3; absent: no limit); wave_pct: the share of its army each wave sends (the rest defend); build_up: research gathering and line upgrades before soldiers; age3_workers: workers before it saves for age 3 (economy.age3_workers otherwise); towers: Watchtowers it raises where it was raided; shelter_pop: the raid (enemy population) that makes it call its workers to arms (absent: never). (Dominic: not caps; less focus on fighting, more building up.)",
   "easy": {
    "delay": 300,
    "army_pct": 50,
    "army_ratio": 35,
    "wave_pct": 40,
-   "build_up": 1
+   "build_up": 1,
+   "age3_workers": 24,
+   "towers": 3,
+   "shelter_pop": 2
   },
   "normal": {
    "delay": 120,
    "army_pct": 100,
    "army_ratio": 70,
    "wave_pct": 70,
-   "build_up": 1
+   "build_up": 1,
+   "age3_workers": 26,
+   "towers": 2,
+   "shelter_pop": 4
   },
   "hard": {
    "delay": 0,
-   "army_pct": 100
+   "army_pct": 100,
+   "age3_workers": 30,
+   "towers": 1,
+   "shelter_pop": 8
   }
  }
 }
