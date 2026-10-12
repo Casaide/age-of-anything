@@ -9,12 +9,14 @@ extends Control
 const Iso := preload("res://src/view/iso.gd")
 const Fog := preload("res://src/sim/fog.gd")
 
+const Mat := preload("res://src/view/ui/ui_materials.gd")
+
 const SIZE := 300.0   # width in screen pixels; the diamond is half as tall (Fable: 220 was too small)
-const FRAME := Color("#2e2820")
-const EDGE := Color("#6a5a40")
+const RIM := 12.0     # the frame round the diamond
 const EVERY := 0.2    # seconds between redraws of the terrain picture
 
 var world
+var look := {}        # the HUD's look (src/view/ui/theme.gd): the frame's material and metal
 var player := 0
 var reveal := false   # the fog lifted (debug): the truth everywhere
 var teams: Array = []           # team colour per player
@@ -39,6 +41,7 @@ func setup(p_world, p_teams: Array, terrain_data: Dictionary, p_camera) -> void:
 	for id in world.map.terrain_ids:
 		terrain_colours.append(Color(terrain_data[id].colour))
 	custom_minimum_size = Vector2(SIZE, SIZE * 0.5)
+	texture_repeat = CanvasItem.TEXTURE_REPEAT_ENABLED   # the frame tiles its material
 	size = custom_minimum_size
 	_img = null
 	_t = EVERY
@@ -89,12 +92,7 @@ func _to_mini(tx: float, ty: float) -> Vector2:
 func _draw() -> void:
 	if world == null or _tex == null:
 		return
-	var frame := PackedVector2Array([Vector2(SIZE * 0.5, -8), Vector2(SIZE + 12, SIZE * 0.25),
-		Vector2(SIZE * 0.5, SIZE * 0.5 + 8), Vector2(-12, SIZE * 0.25)])   # framed like the command panel
-	draw_colored_polygon(frame, Color(FRAME, 0.95))
-	var edge := frame.duplicate()
-	edge.append(frame[0])
-	draw_polyline(edge, EDGE, 2.0)
+	_draw_frame()
 	var s: float = SIZE / world.map.width
 	draw_set_transform_matrix(Transform2D(Vector2(s * 0.5, s * 0.25), Vector2(-s * 0.5, s * 0.25), Vector2(SIZE * 0.5, 0)))
 	draw_texture(_tex, Vector2.ZERO)
@@ -128,6 +126,42 @@ func _draw() -> void:
 	for p in pings:   # under attack here: a red ring that pulses
 		var k: float = fmod(p.t, 1.0)
 		draw_arc(_to_mini(p.at.x, p.at.y), 4.0 + 10.0 * (1.0 - k), 0.0, TAU, 20, Color(1.0, 0.25, 0.2, k), 2.0)
+
+
+## The diamond's frame, in the HUD's frame material: lit on its upper edges, in shade below, a
+## dark well inside, a stud at each point.
+func _draw_frame() -> void:
+	var c := Vector2(SIZE * 0.5, SIZE * 0.25)
+	var o := PackedVector2Array([Vector2(c.x, -RIM * 0.6), Vector2(SIZE + RIM, c.y), Vector2(c.x, SIZE * 0.5 + RIM * 0.6), Vector2(-RIM, c.y)])
+	var i := PackedVector2Array([Vector2(c.x, -1), Vector2(SIZE + 1.5, c.y), Vector2(c.x, SIZE * 0.5 + 1), Vector2(-1.5, c.y)])
+	var shadow := PackedVector2Array()
+	for p in o:
+		shadow.append(p + Vector2(3, 6))
+	draw_colored_polygon(shadow, Color(0, 0, 0, 0.4))
+	var mat: String = look.get("frame", "bronze")
+	var tex := Mat.texture(mat, look.get("frame_colour", Color("#9a7438")))
+	var uvs := PackedVector2Array()
+	for p in o:
+		uvs.append(p / 128.0)
+	draw_colored_polygon(o, Color.WHITE, uvs, tex)
+	var light := [Color(1, 0.95, 0.85, 0.3), Color(0, 0, 0, 0.35), Color(0, 0, 0, 0.5), Color(1, 0.95, 0.85, 0.15)]   # edges from the top point, clockwise
+	for k in 4:
+		var a := o[k]
+		var b := o[(k + 1) % 4]
+		draw_polygon(PackedVector2Array([a, b, i[(k + 1) % 4], i[k]]), PackedColorArray([light[k], light[k], Color(light[k], 0.0), Color(light[k], 0.0)]))
+	draw_colored_polygon(i, Color("#120d08"))
+	var edge := o.duplicate()
+	edge.append(o[0])
+	draw_polyline(edge, Color(0, 0, 0, 0.75), 1.5, true)
+	var inner := i.duplicate()
+	inner.append(i[0])
+	draw_polyline(inner, Color(0, 0, 0, 0.7), 1.5, true)
+	var metal: Color = look.get("metal", Color("#c09048"))
+	for p in o:
+		draw_circle(p + Vector2(0.6, 1.2), 5.5, Color(0, 0, 0, 0.5))
+		draw_circle(p, 4.8, metal.darkened(0.3))
+		draw_circle(p - Vector2(0.6, 0.6), 3.6, metal)
+		draw_circle(p - Vector2(1.5, 1.5), 1.6, metal.lightened(0.45))
 
 
 func _building(cx: int, cy: int, sx: int, sy: int, colour: Color) -> void:

@@ -223,6 +223,27 @@ static func tip_box(lk: Dictionary, k := 1.0) -> StyleBox:
 	return _margins(b, 14 * k, 10 * k)
 
 
+## A tooltip card: the title (bold) in the display face, the text a size up from the old cards.
+## k: the HUD's scale (tooltips are popups outside the scaled HUD, so they size themselves).
+static func tip_card(bbcode: String, lk: Dictionary, k := 1.0) -> Control:
+	var card := PanelContainer.new()
+	card.add_theme_stylebox_override("panel", tip_box(lk, k))
+	var text := RichTextLabel.new()
+	text.bbcode_enabled = true
+	text.fit_content = true
+	text.scroll_active = false
+	text.custom_minimum_size.x = 330 * k
+	text.add_theme_font_override("normal_font", text_font())
+	text.add_theme_font_override("bold_font", display_font())
+	text.add_theme_font_size_override("normal_font_size", roundi(15 * k))
+	text.add_theme_font_size_override("bold_font_size", roundi(20 * k))
+	text.add_theme_color_override("default_color", Color("#efe4c8"))
+	text.add_theme_constant_override("line_separation", roundi(1 * k))
+	text.text = bbcode
+	card.add_child(text)
+	return card
+
+
 ## A bar's fill: the accent, lit like a rod of metal.
 static func bar_fill(c: Color) -> StyleBox:
 	var b := UiBox.new()
@@ -293,7 +314,7 @@ static func theme(lk: Dictionary, base := 20) -> Theme:
 	t.set_color("font_outline_color", "Title", Color(0, 0, 0, 0.75))
 	t.set_constant("outline_size", "Title", maxi(4, base / 4))
 	# Buttons.
-	for kind in ["Button", "PrimaryButton"]:
+	for kind in ["Button", "PrimaryButton", "OptionButton"]:
 		var primary: bool = kind == "PrimaryButton"
 		if primary:
 			t.set_type_variation(kind, "Button")
@@ -314,7 +335,6 @@ static func theme(lk: Dictionary, base := 20) -> Theme:
 		t.set_color("icon_normal_color", kind, Color.WHITE)
 		t.set_color("icon_hover_color", kind, Color(1.15, 1.12, 1.05))
 	# The option picker and its list.
-	t.set_type_variation("OptionButton", "Button")
 	t.set_stylebox("panel", "PopupMenu", card_box(lk))
 	t.set_stylebox("hover", "PopupMenu", button_box(lk, "hover"))
 	t.set_color("font_color", "PopupMenu", text)
@@ -335,6 +355,42 @@ static func theme(lk: Dictionary, base := 20) -> Theme:
 	t.set_stylebox("panel", "CrestFrame", frame_box(lk, true))
 	t.set_stylebox("panel", "Card", card_box(lk))
 	t.set_stylebox("panel", "Well", well_box(lk))
+	# The HUD's pieces: the top bar's beam, plaques for numbers, square icon buttons, slots.
+	for kind in ["Bar", "Plaque", "Slot"]:
+		t.set_type_variation(kind, "PanelContainer")
+	var beam: UiBox = frame_box(lk, false, 6.0)
+	_margins(beam, 16, 9)
+	beam.shadow = 8.0
+	t.set_stylebox("panel", "Bar", beam)
+	var plaque: StyleBox = well_box(lk)
+	_margins(plaque, 8, 2)
+	t.set_stylebox("panel", "Plaque", plaque)
+	var slot: StyleBox = well_box(lk)
+	_margins(slot, 2, 2)
+	t.set_stylebox("panel", "Slot", slot)
+	t.set_type_variation("Hud", "PanelContainer")   # the command panel: a lighter frame, the crest on top
+	var hud: UiBox = frame_box(lk, true, 8.0)
+	hud.crest_h = 36.0
+	_margins(hud, 16, 12)
+	hud.content_margin_top = 16
+	t.set_stylebox("panel", "Hud", hud)
+	t.set_type_variation("IconButton", "Button")
+	for state in ["normal", "hover", "pressed", "disabled"]:
+		var ib: StyleBox = button_box(lk, state)
+		_margins(ib, 4, 4)
+		t.set_stylebox(state, "IconButton", ib)
+	var ip: StyleBox = button_box(lk, "pressed")
+	_margins(ip, 4, 4)
+	t.set_stylebox("hover_pressed", "IconButton", ip)
+	t.set_stylebox("focus", "IconButton", StyleBoxEmpty.new())
+	t.set_type_variation("Accent", "Button")   # a button with the accent's rim (the age-up)
+	for state in ["normal", "hover", "pressed", "disabled"]:
+		var ab: UiBox = button_box(lk, state)
+		_margins(ab, 4, 4)
+		if state == "normal":
+			ab.accent = Color(lk.accent, 0.7)
+		t.set_stylebox(state, "Accent", ab)
+	t.set_stylebox("focus", "Accent", StyleBoxEmpty.new())
 	# Tooltips.
 	t.set_stylebox("panel", "TooltipPanel", tip_box(lk))
 	t.set_color("font_color", "TooltipLabel", Color("#efe4c8"))

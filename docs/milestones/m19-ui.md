@@ -57,16 +57,43 @@ presets menu; a fixed-width centre with a bigger map.
 
 ## Checklist
 - [ ] Plan approved by Dominic
-- [ ] 1. Concept round (Dominic's pick)
-- [ ] 2. Theme and type
+- [ ] 1. Concept round (Dominic's pick): three directions rendered (archive 205-210), timber built as the recommendation; his pick pending
+- [x] 2. Theme and type: `src/view/ui/theme.gd` (open-licence fonts wait on a download yes)
 - [ ] 3. Match loader, lobby loaders
-- [ ] 4. The UI wears the race
-- [ ] 5. Lobby, menus, pause, end screens
-- [ ] 6. HUD and tech tree
+- [x] 4. The UI wears the race: a `ui` block per culture, on the lobby panels and banners, the HUD, pause/end and the tech tree page
+- [x] 5. Lobby, menus, pause, end screens (the end screen's match story still to come)
+- [x] 6. HUD and tech tree
 - [ ] 7. Review and fixes
 - [ ] Archive: pictures taken along the way, journal, decisions, timeline
 
 ## Results
+
+**UI review and the shared theme (2026-10-12, Claude; Dominic: "text is all too small on the lobby too ... do the
+full review and fix now").** The review is `docs/reviews/m19/ui-review.md`: what makes the genre's screens feel
+exciting (materials and depth, framing, a type pairing, hierarchy, motion and sound, faction dressing, lobbies
+that build anticipation) and screen-by-screen findings. Three directions were rendered as the real lobby and a
+HUD mock (`tests/ui_directions.gd`; archive 205-210): A carved timber and bronze, B parchment and tooled
+leather, C chiselled stone and iron. A was built (warmest, lets every culture bring its own face material,
+sits best with the buildings); B and C are a one-line switch in `data/ui.json`.
+
+- One theme for every screen: `src/view/ui/theme.gd` (looks, the Theme, type, button weight, arrivals),
+  `ui_materials.gd` (wood, bronze, gold, iron, marble, stone, sandstone, parchment, felt, leather, reed,
+  lacquer, bone, painted in code as seamless 2x tiles), `ui_box.gd` (lit frames and faces, raised or sunk,
+  studs, rivets, reed bindings, stitching, a crest on top), `ui_banner.gd` (cloth banners in eight cuts with a
+  team-coloured hem), `assets/art/ui/crest_*.svg` (twelve cast crests, written by `tools/ui/crests.py`).
+- Per culture: a `ui` block in `data/families.json` (frame, frame_colour, panel, colour, button, primary,
+  accent, metal, thread, ornament, banner) for all eleven cultures.
+- The title screen (the rolled armies facing each other on a lit hill), the lobby (type 20-46 px, the window
+  filled; each side in its culture with a cloth banner, lit stage, roster cards, notes; a cast "vs"; the map
+  in a well; the AI's level as three buttons; a breathing Start with a horn), the HUD (top bar beam with
+  plaques, the command panel in the race's frame with its crest, material buttons, wells, display-face titles,
+  bigger captions and costs; the minimap's diamond frame; tooltip cards), pause and end screens (a framed
+  card), the tech tree page.
+- Sounds: `ui_hover`, `ui_start` (tools/audio/sfx.py). Every themed button ticks on hover and sinks on press.
+- The lobby fills the window; the UI-size setting scales it from 76% (at 40%) to 100% of that, and still sizes
+  the HUD and in-match pages from 40% to 100%.
+- Open: fonts (an OFL display face needs a download yes), the unit card as icons, the tech tree's empty lower
+  half, the end screen's match story, the Race Lab and counter quiz still old-style.
 
 ## Changes from the original plan
 

@@ -81,6 +81,7 @@ data/            the data contract; mods are just more of this
   cost_curves.json fixed-point cost curves (per-mille by points), written by tests/gen_cost_curve.gd
   terrain.json     terrain types: walkable, colours, resource + amount + what it turns into when used up
   audio.json       buses, every sound's takes / bus / gap / voices, the music mixes by age
+  ui.json          the UI's directions (materials, colours, crest, banner cut) and which one is in use
   buildings.json   building types: footprint, hp, cost, build time, pop, drop-off, what it trains
   maps/*.json      maps: ASCII rows + legend into terrain.json, start tiles; the view builds tiles from them
 src/
@@ -108,6 +109,8 @@ src/
 scenes/race_lab.*  prompt UI, race cards, two armies milling about in the baked art (bakes per generate)
   view/            view side (Nodes allowed): iso.gd projection, rts_camera.gd, command_panel.gd,
                    audio.gd (the one audio node: effects, creature voices, the theme's stems)
+    ui/              the UI's look: theme.gd (every screen's Theme, type, button weight; looks from data/ui.json
+                     + each culture's `ui` block), painted materials, lit frames, cloth banners
     art/             the pixel-art views: art_kit.gd (bakes units, buildings, props into one atlas),
                      terrain_view.gd (shader ground + paths + doodads from a SimMap), building_art.gd
       bake/            the 3D bake pipeline for buildings and props: baker.gd, models.gd, materials.gd
@@ -119,6 +122,7 @@ scenes/sim_debug.* the playable debug match: select, smart right-click, panel (Q
                    F3 flow, F5/F9 replays, G regen army
 tests/           headless checks and dev tools (see Commands)
 tools/blender/   bpy scripts that model parts (blender -b --python ...); output .glb in assets/models/
+tools/ui/        crests.py: writes the culture crests (assets/art/ui/crest_*.svg)
 tools/audio/     the sound synth (pure Python): synth, instruments, sfx and voice recipes, the theme; render.py
 ```
 

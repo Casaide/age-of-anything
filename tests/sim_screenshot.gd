@@ -7,7 +7,8 @@ extends SceneTree
 ## or "battle:<tick>" (both test armies attack-move at each other; shot mid-fight at that tick).
 ## "tower" (side 1's town with enemy spears by its Watchtower; shot with arrows in the air).
 ## "look:<x>:<y>[:zoom]" frames a tile with the fog lifted (for art checks).
-## Prefix any scene with "ai-" to see it as in a match against the AI.
+## "pause" the pause menu; "end" / "defeat" the end screen. Prefix any scene with "ai-" to see it as
+## in a match against the AI.
 
 const Iso := preload("res://src/view/iso.gd")
 
@@ -59,6 +60,10 @@ func _initialize() -> void:
 		view.camera.look_at_point(Iso.to_screen(int(scene.get_slice(":", 1)) * 1000, int(scene.get_slice(":", 2)) * 1000))
 	elif scene == "pause":
 		view._toggle_pause_menu()
+	elif scene == "end" or scene == "defeat":   # the end screen, won (or lost) at once (a look only: the sim isn't played out)
+		view.world.tick = 20 * 754
+		view.world.winner = view.world.teams[0 if scene == "end" else 1]
+		view._show_pause_menu(true)
 	elif scene.begins_with("walls"):
 		await _walls(view, scene == "walls:far")
 	elif scene.begins_with("tip"):
