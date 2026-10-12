@@ -45,6 +45,7 @@ var wln := 0                   # our workers' lane (movement class and team)
 var home := 0                  # the area round our Town Center (Reach); 0 until the first think
 var held := {}                 # worker id -> tick: kept out of the way until then (the bot pulled it from a fight)
 var goal := PackedInt32Array() # what we're saving for (the next age, a Castle): set by the full bot; empty: nothing
+var push := 100                # how hard the shares lean to the goal: a hundred shares split by what it lacks (100: the rest halved too)
 var _next_rebalance := 0
 
 
@@ -209,7 +210,8 @@ func _pen(w, tc: int, workers: Array) -> void:
 					and Fixed.dist2(hx, hy, u.x[i], u.y[i]) <= HUNT_RADIUS * HUNT_RADIUS * 1000000:
 				near += 1
 		var k: int = Economy.btype_of(w, "pen")
-		if w.ages[player] == 1 and near >= PEN_SHEEP and w.can_afford(player, w.btypes[k].cost) and not _building_underway(w):
+		var ageing: bool = push >= 100 and not goal.is_empty()   # (its wood waits while the full bot saves for the age)
+		if w.ages[player] <= 2 and not ageing and near >= PEN_SHEEP and w.can_afford(player, w.btypes[k].cost) and not _building_underway(w):
 			var builder := _pick_builder(w, workers)
 			var spot := _house_spot(w, bs.cx[tc] + 1, bs.cy[tc] + 1, w.btypes[k].size)
 			if builder >= 0 and spot.x >= 0:
@@ -356,7 +358,7 @@ func _farms(w, tc: int, workers: Array, n: PackedInt32Array) -> void:
 	for v in n:
 		total += v
 	var want: int = maxi(n[food - 1], mix[food - 1] * total / _sum(mix))
-	if farms >= want - wild / WILD_PER_WORKER or w.stock[food - 1][player] >= FARM_BELOW or _building_underway(w) or not w.can_afford(player, ft.cost):
+	if farms >= want - wild / WILD_PER_WORKER or w.stock[food - 1][player] >= FARM_BELOW or _farm_underway(w, fk) or not w.can_afford(player, ft.cost):
 		return
 	var builder := -1
 	for i in workers:
@@ -385,9 +387,10 @@ func _mix(w) -> PackedInt32Array:
 
 
 ## The share of workers we want on each resource (by resource index): this age's mix, plus, for
-## the ones the goal still lacks, a hundred more split by how much each lacks (so stone for a
-## Castle comes in an age whose mix has little); the ones saved up for it halved while another
-## still falls short; none on a stock of PLENTY. With nothing left wanted, the plain mix.
+## the ones the goal still lacks, `push` more split by how much each lacks (so stone for a
+## Castle comes in an age whose mix has little); with a full push (an age-up) the ones saved up
+## for it are halved while another still falls short; none on a stock of PLENTY. With nothing
+## left wanted, the plain mix.
 func shares(w) -> PackedInt32Array:
 	var base := _mix(w)
 	var lack := 0   # all the goal still lacks
@@ -398,8 +401,8 @@ func shares(w) -> PackedInt32Array:
 	for r in base.size():
 		var s: int = w.stock[r][player]
 		if r < goal.size() and s < goal[r]:
-			out[r] = base[r] + 100 * (goal[r] - s) / lack
-		elif lack > 0 and (r >= goal.size() or s >= goal[r] + GOAL_SPARE):
+			out[r] = base[r] + push * (goal[r] - s) / lack
+		elif lack > 0 and push >= 100 and (r >= goal.size() or s >= goal[r] + GOAL_SPARE):
 			out[r] = base[r] / 2
 		if s >= PLENTY:
 			out[r] = 0
@@ -449,22 +452,27 @@ func _rebalance(w, workers: Array, n: PackedInt32Array) -> void:
 	for v in n:
 		total += v
 	var over := -1
-	var under := -1
 	var most := 0
-	var least := 0
+	var unders := []   # [how far under, resource], most under first
 	for r in w.resources.size():
 		var gap: int = n[r] * sum - mix[r] * total   # in workers, times sum
 		if gap >= sum and gap > most:
 			most = gap
 			over = r
-		if mix[r] > 0 and -gap >= sum and -gap > least:
-			least = -gap
-			under = r
-	if over < 0 or under < 0:
+		if mix[r] > 0 and -gap >= sum:
+			unders.append([-gap, r])
+	unders.sort_custom(func(a, b): return a[0] > b[0] or (a[0] == b[0] and a[1] < b[1]))
+	if over < 0 or unders.is_empty():
 		return
 	var u = w.units
 	var tc := _town_center(w)
-	var to := _nearest_resource(w, w.buildings.cx[tc] * 1000 + 1500, w.buildings.cy[tc] * 1000 + 1500, under + 1, true)
+	var under := -1
+	var to := -1
+	for e in unders:   # the most under that has a patch free (food may wait for its farms)
+		to = _nearest_resource(w, w.buildings.cx[tc] * 1000 + 1500, w.buildings.cy[tc] * 1000 + 1500, e[1] + 1, true)
+		if to >= 0:
+			under = e[1]
+			break
 	if to < 0:
 		return
 	var tx: int = (to % w.map.width) * 1000 + 500
@@ -510,7 +518,16 @@ func _town_center(w) -> int:
 func _building_underway(w) -> bool:
 	for b in w.buildings.count():
 		if w.buildings.owner[b] == player and w.buildings.done[b] == 0 and reach.reaches_building(w, wln, home, b) \
-				and w.btypes[w.buildings.kind[b]].id != "wonder":   # (a Wonder takes minutes: houses and the rest go on meanwhile)
+				and not w.btypes[w.buildings.kind[b]].id in ["wonder", "farm"]:   # (a Wonder takes minutes: houses and the rest go on meanwhile; farms go up apart)
+			return true
+	return false
+
+
+## A farm of ours going up (one at a time; other foundations don't hold farms back: a Castle
+## takes minutes, and the farmers it waited for were starving the age).
+func _farm_underway(w, fk: int) -> bool:
+	for b in w.buildings.count():
+		if w.buildings.owner[b] == player and w.buildings.kind[b] == fk and w.buildings.done[b] == 0:
 			return true
 	return false
 
@@ -556,9 +573,57 @@ func _house_spot(w, cx: int, cy: int, size: int) -> Vector2i:
 						continue
 					var ok: bool = w.map.can_build(cx + dx - 1, cy + dy - 1, size + 2) if strict else w.map.can_build(cx + dx, cy + dy, size)
 					if ok and (not strict or not _blocks_resource(w, cx + dx - 1, cy + dy - 1, size + 2)) \
-							and reach.touches(w, wln, home, cx + dx, cy + dy, size, size):
+							and reach.touches(w, wln, home, cx + dx, cy + dy, size, size) and not _seals(w, cx + dx, cy + dy, size):
 						return Vector2i(cx + dx, cy + dy)
 	return Vector2i(-1, -1)
+
+
+## Would a building here shut a pocket off (its own houses, a forest and a cliff round a barracks
+## whose soldiers then came out into a dead end and never left; workers shut in)? The walkable
+## cells round the footprint must still join up, and reach out of a window SEAL_MARGIN tiles
+## round it, without crossing the footprint (4-neighbour steps, as units move).
+const SEAL_MARGIN := 5
+
+func _seals(w, cx: int, cy: int, size: int) -> bool:
+	var m = w.map
+	var walk: PackedByteArray = m.walks[wln]
+	var x0 := maxi(0, cx - SEAL_MARGIN)
+	var y0 := maxi(0, cy - SEAL_MARGIN)
+	var x1 := mini(m.width - 1, cx + size - 1 + SEAL_MARGIN)
+	var y1 := mini(m.height - 1, cy + size - 1 + SEAL_MARGIN)
+	var inside := func(x: int, y: int) -> bool: return x >= cx and y >= cy and x < cx + size and y < cy + size
+	var ring := []
+	for y in range(cy - 1, cy + size + 1):
+		for x in range(cx - 1, cx + size + 1):
+			if x < 0 or y < 0 or x >= m.width or y >= m.height or inside.call(x, y):
+				continue
+			if (x == cx - 1 or x == cx + size) and (y == cy - 1 or y == cy + size):
+				continue   # corners: not a step from the footprint's sides
+			if walk[y * m.width + x] == 1:
+				ring.append(y * m.width + x)
+	if ring.is_empty():
+		return true
+	var seen := {ring[0]: true}
+	var queue := [ring[0]]
+	var out := false   # reached the window's edge (the way on)
+	var head := 0
+	while head < queue.size():
+		var c: int = queue[head]
+		head += 1
+		var x: int = c % m.width
+		var y: int = c / m.width
+		if x == x0 or y == y0 or x == x1 or y == y1:
+			out = true
+		for d in [Vector2i(1, 0), Vector2i(-1, 0), Vector2i(0, 1), Vector2i(0, -1)]:
+			var nx: int = x + d.x
+			var ny: int = y + d.y
+			if nx < x0 or ny < y0 or nx > x1 or ny > y1 or inside.call(nx, ny):
+				continue
+			var n: int = ny * m.width + nx
+			if walk[n] == 1 and not seen.has(n):
+				seen[n] = true
+				queue.append(n)
+	return not out or ring.any(func(c): return not seen.has(c))
 
 
 ## Don't wall in a resource: keep the margin box clear of resource tiles' neighbours.

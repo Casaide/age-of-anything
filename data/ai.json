@@ -3,8 +3,8 @@
  "economy": {
   "mix": {
    "1": {
-    "food": 50,
-    "wood": 50
+    "food": 45,
+    "wood": 55
    },
    "2": {
     "food": 45,
@@ -24,10 +24,11 @@
    "2": 32,
    "3": 50
   },
-  "age_workers": 16,
+  "age_workers": 15,
   "age3_workers": 26,
   "rebalance_every": 2,
-  "_doc": "max_workers: per age, the most workers it trains. age_workers: with this many it stops training workers and saves for age 2; age3_workers: with this many in age 2 (and a guard) its soldiers and research leave the age-3 cost alone. rebalance_every: seconds between moving one gatherer to the resource most short of its share (shares: the mix, less a resource piled up or saved for what it's saving for, the next age or a blocked build step)."
+  "build_push": 30,
+  "_doc": "max_workers: per age, the most workers it trains. age_workers: with this many it stops training workers and saves for age 2; age3_workers: with this many in age 2 it saves for age 3 (soldiers and research leave the cost alone until the age-up is clicked; the guard trains while it runs). rebalance_every: seconds between moving one gatherer from the resource most over its share to the one most under. Shares: the mix, leaning to what it saves for (the next age: a hundred shares split by what it lacks, the rest halved; a build step waiting on resources: build_push shares); none on a stock of 1000."
  },
  "_doc_mix": "economy.mix: per age, the share of workers on each resource (the bot sends idle and new workers to whatever is furthest below its share, and moves one gatherer at a time over to it)",
  "build_order": [
@@ -139,7 +140,12 @@
    }
   ],
   "repeat_every": 75,
-  "repeat_min_army": 8,
+  "repeat_min_army": {
+   "1": 8,
+   "2": 10,
+   "3": 16
+  },
+  "_doc_waves": "waves: set times and the army (population) each needs; then one every repeat_every seconds once the army is repeat_min_army (per age: a Town Center full of workers wants a bigger wave). Soldiers left out in the field under half a wave come home to join the next one.",
   "guard": 4,
   "healers": {
    "per_army": 5,

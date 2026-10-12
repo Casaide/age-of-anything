@@ -211,7 +211,10 @@ func _test_easy(rules: Dictionary, a: Dictionary, b: Dictionary) -> void:
 ## with a full stock against a passive side, topped up each minute, for fifteen minutes.
 func _test_age_three(rules: Dictionary, a: Dictionary, b: Dictionary) -> void:
 	var w := World.new(SEED, SimMap.load_id(map_id), [a, b], rules)
-	var bots := [Bot.new(0), EcoBot.new(1)]
+	var cfg: Dictionary = Bot.load_config()
+	for wv in cfg.military.waves:
+		wv.at = 1 << 20   # building up: its waves would end the match first
+	var bots := [Bot.new(0, cfg), EcoBot.new(1)]
 	w.ages[0] = 3
 	var done := {}
 	var bought := []
