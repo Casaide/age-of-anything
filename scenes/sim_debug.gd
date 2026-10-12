@@ -791,15 +791,20 @@ func _maybe_alert(e: Dictionary, to: Vector2) -> void:
 	battle_until = now + 8.0
 	var m := Iso.to_milli(to)
 	minimap.ping(Vector2(m.x / 1000.0, m.y / 1000.0))
+	_show_line("Under attack!  (Space to look)", Color("#ff8a70"))
+
+
+## A line at the top of the screen for three seconds (under attack, a farm worked out).
+func _show_line(text: String, color: Color) -> void:
 	if alert_label == null:
 		alert_label = _label(26, Vector2.ZERO)
-		alert_label.add_theme_color_override("font_color", Color("#ff8a70"))
 		alert_label.set_anchors_preset(Control.PRESET_CENTER_TOP)
 		alert_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 		alert_label.grow_horizontal = Control.GROW_DIRECTION_BOTH
 		alert_label.position.y = 150   # below the tip strip
 		banner.get_parent().add_child(alert_label)
-	alert_label.text = "Under attack!  (Space to look)"
+	alert_label.add_theme_color_override("font_color", color)
+	alert_label.text = text
 	alert_label.visible = true
 	alert_label.set_meta("until", Time.get_ticks_msec() + 3000)
 
@@ -1165,6 +1170,15 @@ func _play_events() -> void:
 		elif e.type == "research":
 			if e.player == active:
 				audio.play("research", -4.0)
+		elif e.type == "farm_done":
+			if e.player == active:   # one of our farms is worked out: a sound wherever it is, and a line
+				audio.play("farm_done", -4.0)
+				var fighting := alert_label != null and alert_label.visible and alert_label.text.begins_with("Under attack")
+				if e.reseeded and not fighting:
+					_show_line("Farm worked out: reseeded", Color("#e8d27a"))
+				elif not e.reseeded and not fighting:
+					alert_at = Iso.to_screen(e.x, e.y)
+					_show_line("Farm worked out: its farmer waits  (Space to look)", Color("#e8d27a"))
 		elif e.type == "won":
 			var mine: bool = world.teams[active] == e.team
 			audio.play("won" if mine else "lost")
@@ -1865,9 +1879,7 @@ func _sync_resources() -> void:
 			h.get_child(0).queue_free()
 			h.add_child(kit.doodad(r.kind, r.pick, stage))
 		if left <= 0:
-			if r.gone == 0.0 and map.pool[c] >= 0:
-				_sfx_at("farm_done", h.position, -6.0)   # a farm's used up
-			r.gone += dt
+			r.gone += dt   # (a farm worked out sounds from its sim event: _play_events)
 			var linger := 6.0 if r.kind in ["reeds", "quarry", "gold", "carcass"] else 0.0   # stubble and rubble stay a while
 			if r.kind in ArtKit.TREES and map.occupied[c] == 0:
 				linger = INF   # a felled tree's stump stays (until something's built on it)
@@ -1944,6 +1956,28 @@ func _market_buttons(c: Dictionary, b: int) -> void:
 					verb, Market.LOT, name.to_lower(), "Costs" if buy else "Pays", price, TIP_DIM,
 					("" if why == "" else "\n[color=%s]%s[/color]" % [TIP_NEED, why.capitalize()])],
 				"action": func(): world.issue(active, Commands.TRADE, {"building": bid, "resource": rr, "buy": flag})})
+
+
+## A farm (or the mill): what's left, Reseed when it's worked out, and the Auto-reseed setting.
+func _farm_buttons(c: Dictionary, b: int, t: Dictionary) -> void:
+	var bs := world.buildings
+	var bid: int = bs.id[b]
+	var fk := Economy.btype_of(world, "farm")
+	var reseed: PackedInt32Array = world.btypes[fk].reseed
+	if not t.becomes.is_empty():
+		var left := world.map.left_at(bs.cy[b] * world.map.width + bs.cx[b])
+		c.info += ("\n" if c.info != "" else "") + ("Food left: %d" % left if left > 0 else "Worked out: lies fallow")
+		if left <= 0:
+			c.buttons.append({"icon": Icons.texture("fallow_fields"), "text": "Reseed (%s)" % _cost_text(reseed), "key": "", "cost": _cost_text(reseed),
+				"enabled": world.can_afford(active, reseed), "group": "Farm",
+				"tip": "[b]Reseed[/b]\nCrops again for %s; its farmer starts the harvest." % _cost_text(reseed),
+				"action": func(): world.issue(active, Commands.RESEED, {"ids": [], "building": bid})})
+	var on: bool = world.auto_reseed[active] == 1
+	c.buttons.append({"icon": Icons.texture("fallow_fields"), "text": "Auto-reseed", "key": "", "cost": "ON" if on else "OFF", "enabled": true,
+		"group": "Farm", "accent": on,
+		"tip": "[b]Auto-reseed[/b] (%s)\nA farm worked out is sown again at once for %s, and its farmer farms on. Without the wood, or with this off, the farmer waits by it.\n[color=%s]For all your farms.[/color]" % [
+			"on" if on else "off", _cost_text(reseed), TIP_DIM],
+		"action": func(): world.issue(active, Commands.AUTO_RESEED, {"on": 0 if on else 1})})
 
 
 # ------------------------------------------------------------------ tooltips
@@ -2318,6 +2352,8 @@ func _update_panel() -> void:
 				if t.id == "market" and bs.done[b] == 1:
 					_market_buttons(c, b)
 				c.info += ("\n" if c.info != "" else "") + "Right-click: rally point"
+		if mine and bs.done[b] == 1 and (not t.becomes.is_empty() or t.id == "mill"):
+			_farm_buttons(c, b, t)
 		panel.show_content(c)
 		return
 	var mine: Array = _selected_by_owner()[active]
