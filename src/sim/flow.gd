@@ -374,17 +374,39 @@ static func clear_path(map: SimMap, ax: int, ay: int, bx: int, by: int, r: int, 
 	var ox := -dy * r / len
 	var oy := dx * r / len
 	var walk: PackedByteArray = map.walks[k]
+	var room: PackedByteArray = map.roomy_grid(k)
 	var w := map.width
 	var h := map.height
 	var steps := maxi(absi(dx), absi(dy)) / LINE_STEP + 1
 	var px := ax
 	var py := ay
+	# (_blocked written out inline: this runs for every waypoint a unit plans, several lines each.)
 	for i in range(1, steps + 1):
 		var x := ax + dx * i / steps
 		var y := ay + dy * i / steps
+		var cx := x / TILE
+		var cy := y / TILE
+		if x < 0 or y < 0 or cx >= w or cy >= h or walk[cy * w + cx] == 0:
+			return false
+		if room[cy * w + cx] == 1:
+			# Its cell and all round it open: the sides (a body's width, at most half a tile, off
+			# the line) and the corner checks below only look at those cells. Clear here.
+			px = x
+			py = y
+			continue
 		# The centre line, then a body's width either side of it. (Sampling the sides every
 		# other step saved 0.2 ms a tick at 143 units and doubled the jitter: not worth it.)
-		if _blocked(walk, w, h, x, y) or _blocked(walk, w, h, x + ox, y + oy) or _blocked(walk, w, h, x - ox, y - oy):
+		var sx := x + ox
+		var sy := y + oy
+		cx = sx / TILE
+		cy = sy / TILE
+		if sx < 0 or sy < 0 or cx >= w or cy >= h or walk[cy * w + cx] == 0:
+			return false
+		sx = x - ox
+		sy = y - oy
+		cx = sx / TILE
+		cy = sy / TILE
+		if sx < 0 or sy < 0 or cx >= w or cy >= h or walk[cy * w + cx] == 0:
 			return false
 		# Into a diagonal neighbour cell: both cells beside the corner must be open (as World._move
 		# steps), else the line slips between two blocks touching at a corner (a diagonal wall).
