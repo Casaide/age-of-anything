@@ -20,13 +20,33 @@ const BUSY_COST := 4000000            # one more gatherer on a tile weighs like 
 const GIVE_UP := 60                   # mirrors World.STUCK_LIMIT
 const NEXT_BUILD_TILES := 8            # a builder done with nothing queued goes on to your foundations this close
 const WAIT_TICKS := 20                 # a worker waiting by a full farm looks again this often
+# Gather spots (Dominic, 2026-10-13: "food gathering needs to be more organised like with the unit
+# formations"): a tile of a resource with "spots" (data/resources.json; food: bushes and carcasses,
+# not farms) offers SPOTS places to stand round it, N, NE, E, SE, S, SW, W, NW; a gatherer holds
+# one while it works the tile (carrying home included), walks to it and stands there, so a crowd
+# spreads round the bush instead of heaping up on the near side. Held spots are derived (home +
+# gspot of everyone gathering or carrying), so leaving, dying or a new order frees them.
+const SPOTS := 8
+const SPOT_GAP := 100                  # between a body and its tile at an edge spot (World.SPOT_GAP)
+const SPOT_NEAR := 150                 # a gatherer this close to its spot (or stopped in reach) is at work
+const SPOT_DX := [0, 1, 1, 1, 0, -1, -1, -1]
+const SPOT_DY := [-1, -1, 0, 1, 1, 1, 0, -1]
 
 
 ## Resource ids in their fixed order. A unit's carry_kind is a resource's index + 1 (0: nothing).
 static func load_resources() -> Array:
+	return _resource_data().map(func(r): return r.id)
+
+
+## Per resource, in order: 1 if its gatherers stand at spots round a tile (its "spots").
+static func load_gather_spots() -> PackedByteArray:
+	return PackedByteArray(_resource_data().map(func(r): return 1 if bool(r.get("spots", false)) else 0))
+
+
+static func _resource_data() -> Array:
 	var d = JSON.parse_string(FileAccess.get_file_as_string("res://data/resources.json"))
 	assert(d != null, "Bad or missing data/resources.json")
-	return d.resources.map(func(r): return r.id)
+	return d.resources
 
 
 ## carry_kind for a resource id (0 if it isn't one).
@@ -372,6 +392,7 @@ static func start_gather(w, i: int, cell: int, kind: int) -> void:
 	u.task[i] = GATHER
 	u.target[i] = c if c >= 0 else cell
 	u.home[i] = c
+	u.gspot[i] = -1
 	u.work[i] = 0
 	_approach_cell(w, i, u.target[i])
 
@@ -381,6 +402,13 @@ static func start_gather(w, i: int, cell: int, kind: int) -> void:
 static func _pick(w, i: int, cell: int, kind: int) -> int:
 	var c := least_busy(w, cell, kind, -1, i)
 	var to_farm: bool = w.map.pool[cell] >= 0
+	if spotted(w, c) and free_spot(w, i, c) < 0:
+		# Every place round the clump is held: the nearest tile of it with room, if any.
+		var x: int = (cell % w.map.width) * SimMap.TILE + SimMap.TILE / 2
+		var y: int = (cell / w.map.width) * SimMap.TILE + SimMap.TILE / 2
+		var roomy := nearest_resource(w, x, y, kind, i, false, true)
+		if roomy >= 0:
+			return roomy
 	if not taken(w, c, i) and (not to_farm or w.map.pool[c] >= 0):
 		return c
 	var x: int = (cell % w.map.width) * SimMap.TILE + SimMap.TILE / 2
@@ -426,6 +454,7 @@ static func clear_task(w, i: int) -> void:
 	w.units.task[i] = NONE
 	w.units.target[i] = -1
 	w.units.home[i] = -1
+	w.units.gspot[i] = -1
 	w.units.work[i] = 0
 
 
@@ -456,10 +485,13 @@ static func _gather(w, i: int, carry_max: int) -> void:
 		_fallow(w, i, cell, kind)
 		return
 	if kind_of(w, w.map.resource_at(cell)) != kind:
-		var more := nearest_resource(w, u.x[i], u.y[i], kind, i)
+		var more := nearest_resource(w, u.x[i], u.y[i], kind, i, false, true)
+		if more < 0:
+			more = nearest_resource(w, u.x[i], u.y[i], kind, i)
 		if more >= 0:
 			u.target[i] = more
 			u.home[i] = more
+			u.gspot[i] = -1
 			u.work[i] = 0
 			_approach_cell(w, i, more)
 		elif u.carry[i] > 0:
@@ -471,7 +503,9 @@ static func _gather(w, i: int, carry_max: int) -> void:
 	if u.home[i] < 0:
 		_wait(w, i, cell, kind)
 		return
-	if _in_reach(w, i, _cell_rect(w, cell)):
+	# At work once in reach; one making for its spot gets there first (or stops on the way).
+	if _in_reach(w, i, _cell_rect(w, cell)) and (u.reach[i] == 1 or u.moving[i] == 0 \
+			or Fixed.dist2(u.x[i], u.y[i], u.tx[i], u.ty[i]) <= SPOT_NEAR * SPOT_NEAR):
 		u.moving[i] = 0
 		u.stuck[i] = 0   # at its job (pushed there by the crowd, maybe): a stale count isn't a give-up
 		u.work[i] += 1
@@ -489,9 +523,14 @@ static func _gather(w, i: int, carry_max: int) -> void:
 			if other != cell and not taken(w, other, i):
 				u.target[i] = other
 				u.home[i] = other
+				u.gspot[i] = -1
 				_approach_cell(w, i, other)
 			else:
 				clear_task(w, i)
+		elif u.reach[i] == 0 and u.gspot[i] >= 0:
+			# Stopped short of its spot (crowded off it, or close enough to call it there): in the
+			# old way this trip, anywhere in reach (it keeps the spot for the next).
+			w.order_reach(i, _cell_rect(w, cell), w.cell_field(cell, true, w.lane(i)))
 		else:
 			_approach_cell(w, i, cell)
 
@@ -510,6 +549,7 @@ static func _wait(w, i: int, cell: int, kind: int) -> void:
 	if c >= 0:
 		u.target[i] = c
 		u.home[i] = c
+		u.gspot[i] = -1
 		_approach_cell(w, i, c)
 
 
@@ -756,8 +796,109 @@ static func clear_farm(w, b: int) -> void:
 		w.map.clear_pool(cells, to)
 
 
+## Walk up to a resource tile: to the worker's own spot round it while it gathers there (taking
+## the nearest free one if it holds none, or lost it), else anywhere in reach (a farm, or no room).
 static func _approach_cell(w, i: int, cell: int) -> void:
+	var u = w.units
+	if u.home[i] == cell and spotted(w, cell):
+		if u.gspot[i] < 0 or _spot_held(w, cell, u.gspot[i], i):
+			u.gspot[i] = free_spot(w, i, cell)
+		if u.gspot[i] >= 0:
+			var p := spot_at(w, i, cell, u.gspot[i])
+			w.order_move(i, p.x, p.y, w.SLOT_ARRIVE, 0, -1, -1, 0, true)   # by the spot's own field: round the clump if need be
+			return
 	w.order_reach(i, _cell_rect(w, cell), w.cell_field(cell, true, w.lane(i)))
+
+
+## Do gatherers at this tile stand at spots round it? Not on a farm (its farmer works it from
+## anywhere); otherwise as its resource says (data/resources.json "spots").
+static func spotted(w, cell: int) -> bool:
+	if w.map.pool[cell] >= 0:
+		return false
+	var k := kind_of(w, w.map.resource_at(cell))
+	return k > 0 and w.gather_spots[k - 1] == 1
+
+
+## Where worker i stands at spot k round resource tile `cell`: off the middle of an edge, or off
+## a corner, its body clear of the tile and in reach of it; (-1, -1) if that ground is blocked.
+static func spot_at(w, i: int, cell: int, k: int) -> Vector2i:
+	var t := SimMap.TILE
+	var r: int = w.units.radius[i]
+	var dx: int = SPOT_DX[k]
+	var dy: int = SPOT_DY[k]
+	var off := r + SPOT_GAP
+	if dx != 0 and dy != 0:
+		off = (r + REACH - 60) * 707 / 1000   # a corner: as far out on the diagonal as reach allows
+	var x0: int = (cell % w.map.width) * t
+	var y0: int = (cell / w.map.width) * t
+	var x: int = x0 + t / 2 if dx == 0 else (x0 - off if dx < 0 else x0 + t - 1 + off)
+	var y: int = y0 + t / 2 if dy == 0 else (y0 - off if dy < 0 else y0 + t - 1 + off)
+	var ln: int = w.lane(i)
+	if not w.map.walkable(x, y, ln):
+		return Vector2i(-1, -1)
+	var p: Vector2i = w._off_walls(x, y, r, ln)
+	var ex := maxi(maxi(x0 - p.x, 0), p.x - (x0 + t - 1))
+	var ey := maxi(maxi(y0 - p.y, 0), p.y - (y0 + t - 1))
+	if ex * ex + ey * ey > (r + REACH - 20) * (r + REACH - 20):
+		return Vector2i(-1, -1)   # pushed off a wall out of reach
+	return p
+
+
+## Does another gatherer hold spot k round `cell`, or one so close it would stand in it (a spot
+## of a neighbouring tile of the clump)?
+static func _spot_held(w, cell: int, k: int, i: int) -> bool:
+	var p := spot_at(w, i, cell, k)
+	return p.x < 0 or _crowded(w, i, p, _held_near(w, cell, i))
+
+
+## The spots held round tiles within two of `cell` by gatherers other than i, and where builders
+## at work stand near it: [x, y, radius] each.
+static func _held_near(w, cell: int, i: int) -> Array:
+	var u = w.units
+	var mw: int = w.map.width
+	var out := []
+	for j in u.count():
+		if j == i:
+			continue
+		var h: int = u.home[j]
+		if h >= 0 and u.gspot[j] >= 0 and (u.task[j] == GATHER or u.task[j] == RETURN):
+			if absi(h % mw - cell % mw) <= 2 and absi(h / mw - cell / mw) <= 2:
+				var q := spot_at(w, j, h, u.gspot[j])
+				out.append([q.x, q.y, u.radius[j]])
+		elif u.task[j] == BUILD and u.moving[j] == 0:
+			var c: int = w.map.cell_of(u.x[j], u.y[j])
+			if absi(c % mw - cell % mw) <= 2 and absi(c / mw - cell / mw) <= 2:
+				out.append([u.x[j], u.y[j], u.radius[j]])
+	return out
+
+
+## Would a body of unit i at p stand in a held spot (overlapping it by more than SPOT_GAP)?
+static func _crowded(w, i: int, p: Vector2i, held: Array) -> bool:
+	var r: int = w.units.radius[i]
+	for q in held:
+		var rr: int = r + q[2] - SPOT_GAP
+		if Fixed.dist2(p.x, p.y, q[0], q[1]) < rr * rr:
+			return true
+	return false
+
+
+## The free spot round `cell` nearest worker i (lowest k on ties), or -1 (a farm, or all held or blocked).
+static func free_spot(w, i: int, cell: int) -> int:
+	if not spotted(w, cell):
+		return -1
+	var u = w.units
+	var held := _held_near(w, cell, i)
+	var best := -1
+	var best_d := 1 << 62
+	for k in SPOTS:
+		var p := spot_at(w, i, cell, k)
+		if p.x < 0 or _crowded(w, i, p, held):
+			continue
+		var d := Fixed.dist2(u.x[i], u.y[i], p.x, p.y)
+		if d < best_d:
+			best_d = d
+			best = k
+	return best
 
 
 static func _approach_building(w, i: int, b: int) -> void:
@@ -800,16 +941,18 @@ static func least_busy(w, cell: int, kind: int, except := -1, i := -1) -> int:
 	var cy: int = cell / m.width
 	var best := cell
 	var best_score := 1 << 62
+	var busy := {}   # cell -> gatherers working it
+	for j in u.count():
+		if u.home[j] >= 0 and (u.task[j] == GATHER or u.task[j] == RETURN):
+			busy[u.home[j]] = int(busy.get(u.home[j], 0)) + 1
 	for yy in range(maxi(cy - SPREAD_TILES, 0), mini(cy + SPREAD_TILES + 1, m.height)):
 		for xx in range(maxi(cx - SPREAD_TILES, 0), mini(cx + SPREAD_TILES + 1, m.width)):
 			var c: int = yy * m.width + xx
 			if c == except or m.amount[c] <= 0 or kind_of(w, m.resource_at(c)) != kind or taken(w, c, i):
 				continue
-			var busy := 0
-			for j in u.count():
-				if u.home[j] == c and (u.task[j] == GATHER or u.task[j] == RETURN):
-					busy += 1
-			var score: int = busy * BUSY_COST + Fixed.dist2(cx * 1000, cy * 1000, xx * 1000, yy * 1000)
+			var score: int = int(busy.get(c, 0)) * BUSY_COST + Fixed.dist2(cx * 1000, cy * 1000, xx * 1000, yy * 1000)
+			if i >= 0 and busy.has(c) and spotted(w, c) and free_spot(w, i, c) < 0:
+				score += 1 << 40   # no room round it: only if no tile near has any
 			if score < best_score:
 				best_score = score
 				best = c
@@ -817,8 +960,9 @@ static func least_busy(w, cell: int, kind: int, except := -1, i := -1) -> int:
 
 
 ## The nearest cell with this resource within SEARCH_TILES, or -1. Ties go to the lower cell.
-## With a worker i, farms full without it are passed over; `farms` keeps to farms.
-static func nearest_resource(w, x: int, y: int, kind: int, i := -1, farms := false) -> int:
+## With a worker i, farms full without it are passed over; `farms` keeps to farms; `roomy`
+## keeps to tiles with a free spot round them for it (tiles without spots, as farms, count as roomy).
+static func nearest_resource(w, x: int, y: int, kind: int, i := -1, farms := false, roomy := false) -> int:
 	var m = w.map
 	var cx: int = x / SimMap.TILE
 	var cy: int = y / SimMap.TILE
@@ -831,9 +975,10 @@ static func nearest_resource(w, x: int, y: int, kind: int, i := -1, farms := fal
 					or (i >= 0 and taken(w, c, i)):
 				continue
 			var d2 := Fixed.dist2(x, y, xx * SimMap.TILE + 500, yy * SimMap.TILE + 500)
-			if d2 < best_d2:
-				best_d2 = d2
-				best = c
+			if d2 >= best_d2 or (roomy and spotted(w, c) and free_spot(w, i, c) < 0):
+				continue   # (roomy: a tile with a free spot round it)
+			best_d2 = d2
+			best = c
 	return best
 
 
