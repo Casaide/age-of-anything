@@ -23,6 +23,7 @@ static func evaluate(recipe: Dictionary, lib, rules: Dictionary) -> Dictionary:
 	_add_classes(armour, body.stats.get("armour", {}))
 	var speed := int(body.stats.get("speed", 10))
 	var attack := 0
+	var heal := 0   # healers (parts' "heal" stat): they mend, never strike, and are priced by their kit's points
 	var reach := 1
 	var bonus := {}
 	_add_classes(bonus, body.stats.get("bonus", {}))
@@ -40,6 +41,7 @@ static func evaluate(recipe: Dictionary, lib, rules: Dictionary) -> Dictionary:
 		_add_classes(armour, s.get("armour", {}))
 		speed += int(s.get("speed", 0))
 		attack += int(s.get("attack", 0))
+		heal += int(s.get("heal", 0))
 		reach = maxi(reach, int(s.get("range", 1)))
 		if s.has("damage"):
 			damage = s.damage
@@ -111,7 +113,8 @@ static func evaluate(recipe: Dictionary, lib, rules: Dictionary) -> Dictionary:
 	tag_list.sort()
 	return {
 		"hp": maxi(1, hp),
-		"attack": maxi(1, attack),
+		"attack": 0 if heal > 0 else maxi(1, attack),
+		"heal": heal,
 		"damage": damage,
 		"armour": armour,
 		"range": reach,

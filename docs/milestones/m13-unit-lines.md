@@ -66,7 +66,7 @@ picks), then build, tests, archive pictures.
 - [ ] 2. Siege combat systems
 - [ ] 3. Siege engines (concept round per family)
 - [ ] 4. Unique unit, sapper, great sling
-- [ ] 5. Healers
+- [x] 5. Healers (built 2026-10-12; the look is a pick pending: HL1 concept sheet, look A in game)
 - [ ] 6. Trade carts
 - [ ] 7. War beasts
 - [ ] 8. AI
@@ -74,6 +74,23 @@ picks), then build, tests, archive pictures.
 - [ ] Archive: pictures taken along the way, journal, decisions, timeline
 
 ## Results
+
+**Healers (2026-10-12).** A `healer` roster slot (Town Center, age 2, `own_seed`: its own random
+stream, so every other line's recipes are as they were). The generator gives it a staff
+(`tool.staff.herbs`; `tool.staff.cheese` for rats, `tool.staff.lily` for frogs) and a bag in the off
+hand, a light hat at most, wings only on a winged race; no shield, no armour. Pricing: attack 0,
+`heal` from the staff's stat; the staff's 8 points (mostly gold) set the cost (about 60, 45 gold).
+Sim: `src/sim/heal.gd`, before combat: the most wounded unit of its own team within `heal_sight`
+(6 tiles), walking up to `heal_range` (2.5 tiles) when idle or on an attack-move, `heal_amount` 3 hp
+every `heal_reload` 30 ticks (1.5 s); not itself, animals or buildings; heals land together, capped
+at full; `units.patient` is hashed. Healers spawn passive, combat skips them, an attack order is
+ignored. View: a soft warm-up and three pale motes on the healed unit, a quiet `heal` sound (herb
+rustle and a wooden chime), the card says "Heals 3 hp every 1.5 s, range 2.5". The bot trains one
+healer per 5 soldiers, at most 2 in age 2 and 3 in age 3, and keeps them 2 tiles behind the army
+that's out (on an attack-move), at home otherwise (`data/ai.json` military.healers). Concept sheet
+HL1: `archive/images/2026-10-12/60-` and `61-` (A herb staff + satchel, B salve bowl + bandages,
+C pale hood + gourd staff, D cheese staff + poultice sack, E lily staff + moss pouch); A with D and
+E as the rat and frog variants is in the game until Dominic picks.
 
 ## Changes from the original plan
 
