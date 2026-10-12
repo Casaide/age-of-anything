@@ -93,6 +93,20 @@ HL1: `archive/images/2026-10-12/60-` and `61-` (A herb staff + satchel, B salve 
 C pale hood + gourd staff, D cheese staff + poultice sack, E lily staff + moss pouch); A with D and
 E as the rat and frog variants is in the game until Dominic picks.
 
+**A staff per culture (2026-10-13).** Dominic: "staffs look good; different staffs for each". Every
+culture in `data/families.json` now has its own staff, and a bag where one reads: imperial a
+laurel-wound rod with bronze fittings (leather satchel), hellenic an olive staff (clay flask), steppe
+a horsehair-tasselled staff (felt pouch), nile a papyrus reed with its umbel (linen bag), han a bamboo
+staff with a medicine gourd (lacquered box), aztec a staff with a fan of plumes (woven pouch), royal a
+lantern staff (leather satchel), spooky a crooked bone staff with a candle (dark bottle), forest a
+living branch (leaf bundle); swamp keeps the lily staff and sewer the cheese staff. All data: each
+part carries its family's tag, `only_if: [family]` (the family is always in the race's tags) and
+`favour` 5, the same way the cheese and lily kits are picked; no generator code changed. The herb staff
+stays as the fallback. Races whose healer kit didn't change keep their keys (checked over 174
+prompt/reroll/rules combinations); a race whose culture now offers a staff gets a new key. Models in
+`scenes/art_pixel/unit_models.gd`; `tests/healer_lineup.gd` shows every culture's healer in 8 facings
+(`archive/images/2026-10-13/100-` to `102-`).
+
 ## Changes from the original plan
 
 ## Links
