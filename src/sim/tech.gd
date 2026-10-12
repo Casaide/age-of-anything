@@ -10,12 +10,29 @@ extends RefCounted
 ## time, from one queue, the genre's way: trained units, research and the age-up wait in it in
 ## the order clicked, each paid when queued (a cancel refunds it). A research queued anywhere
 ## can't be queued again, nor a second age-up.
+##
+## Research effects (data/tech.json) all take one shape: a scope, a stat, and an `add` or a
+## `pct` (the change to that number in percent: cost -10 is 10% cheaper, reload -15 reloads 15%
+## sooner, build_speed 20 builds 20% faster). Each sums over everything the player researched.
+##   {"tag": "melee", "not": ["mounted"], "stat": "attack", "add": 1}
+##       unit types with the tag ("all": every unit) and none of the `not` tags, re-applied
+##       whenever a type changes, so units already out and units trained later both have it.
+##       add: any eval stat (attack, hp, range, speed, armour.melee, armour.pierce, ...), plus
+##       UNIT_EXTRA (sight in tiles, carry); pct: UNIT_PCT.
+##   {"building": "all", "stat": "sight", "add": 3}   building types ("all" or one id): add:
+##       BUILDING_ADD; pct: BUILDING_PCT. Kept per player in w.bmods (see refresh).
+##   {"gather": "wood", "pct": 15}   gathers wood 15% faster (cuts the ticks per unit).
 
 const Economy := preload("res://src/sim/economy.gd")
 const Combat := preload("res://src/sim/combat.gd")
 
 const AGE_UP := -2     # a queue entry (and tech index) meaning: age up
 const RESEARCH := -3   # queue entry for research r is RESEARCH - r; unit types are >= 0
+
+const UNIT_EXTRA := ["sight", "carry"]                                   # unit adds outside the eval
+const UNIT_PCT := ["speed", "reload", "cost", "train_time", "build_speed"]
+const BUILDING_ADD := ["sight", "armour.melee", "armour.pierce", "trade_fee"]   # trade_fee: points of the market's fee
+const BUILDING_PCT := ["hp", "food", "research_time"]                    # food: a farm's pool, sown or reseeded
 
 
 static func load_tech(resources: Array, btypes: Array) -> Dictionary:
@@ -27,9 +44,11 @@ static func load_tech(resources: Array, btypes: Array) -> Dictionary:
 			"ticks": int(a.time) * 20, "building": a.building, "requires": a.get("requires", []).duplicate()})
 	var research := []
 	for r in d.research.filter(_built):
+		for fx in r.effects:
+			_check(fx, r.id)
 		research.append({"id": r.id, "name": r.name, "desc": r.get("desc", ""), "cost": Economy.cost_vector(resources, r.cost),
 			"ticks": int(r.time) * 20, "building": r.building, "age": int(r.age), "effects": r.effects.duplicate(true),
-			"only": r.get("only", []).duplicate()})
+			"only": r.get("only", []).duplicate(), "after": r.get("after", "")})
 	# Line upgrades: one per trained line (not workers) per later age, where the line trains.
 	var ups: Dictionary = d.get("line_upgrades", {})
 	for bt in btypes:
@@ -43,8 +62,23 @@ static func load_tech(resources: Array, btypes: Array) -> Dictionary:
 				research.append({"id": "line.%s.%d" % [slot, age], "name": "%s upgrade" % String(slot).capitalize(),
 					"desc": "This line's age %d kit for every one of them, and the ones you train." % age,
 					"cost": Economy.cost_vector(resources, up.cost), "ticks": int(up.time) * 20, "building": bt.id,
-					"age": age, "effects": [], "only": [], "line": slot, "line_age": age})
+					"age": age, "effects": [], "only": [], "after": "", "line": slot, "line_age": age})
+	for r in research:
+		assert(r.after == "" or research.any(func(o): return o.id == r.after), "%s comes after unknown research %s" % [r.id, r.after])
 	return {"ages": ages, "research": research}
+
+
+## Assert an effect has the one shape (see the top of this file).
+static func _check(fx: Dictionary, id: String) -> void:
+	if fx.has("gather"):
+		assert(fx.has("pct"), "%s: a gather effect needs pct" % id)
+		return
+	assert(fx.has("stat") and (fx.has("add") != fx.has("pct")), "%s: an effect needs a stat and an add or a pct" % id)
+	if fx.has("tag"):
+		assert(not fx.has("pct") or fx.stat in UNIT_PCT, "%s: no unit pct for %s" % [id, fx.stat])
+	else:
+		assert(fx.has("building"), "%s: an effect needs a tag, a building or gather" % id)
+		assert(fx.stat in (BUILDING_PCT if fx.has("pct") else BUILDING_ADD), "%s: no building effect on %s" % [id, fx.stat])
 
 
 ## Not marked "status": "planned" (milestone 12: drawn on the tech tree page, not in the game yet).
@@ -59,7 +93,8 @@ static func setup(w) -> void:
 		done.resize(w.tech.research.size())
 		w.researched.append(done)
 		w.gather_ticks.append(PackedInt32Array())
-		refresh_gather(w, p)
+		w.bmods.append([])
+		refresh(w, p)
 
 
 ## The next age's entry for a player, or {} at the last age.
@@ -115,10 +150,16 @@ static func entry_cost(w, player: int, e: int) -> PackedInt32Array:
 
 
 ## How long building b's head-of-queue tech takes, in ticks (its train[b] counts up to it), or 0
-## with no tech at the head.
+## with no tech at the head. Research (not the age-up) follows the building's research_time.
 static func head_ticks(w, b: int) -> int:
 	var t := head(w, b)
-	return 0 if t == -1 else maxi(1, int(item_of(w, w.buildings.owner[b], t).ticks))
+	if t == -1:
+		return 0
+	var p: int = w.buildings.owner[b]
+	var ticks := int(item_of(w, p, t).ticks)
+	if t != AGE_UP:
+		ticks = ticks * (100 + bpct(w, p, w.buildings.kind[b], "research_time")) / 100
+	return maxi(1, ticks)
 
 
 ## Why this building can't queue that (age-up: id ""), or "" if it can.
@@ -148,6 +189,8 @@ static func why_not(w, player: int, b: int, id: String) -> String:
 			return "not here"
 		if w.researched[player][r] == 1:
 			return "already researched"
+		if item.after != "" and w.researched[player][research_index(w, item.after)] == 0:
+			return "needs %s first" % w.tech.research[research_index(w, item.after)].name   # a track's steps go in order
 		if item.has("line") and not _line_has(w, player, item.line, item.line_age):
 			return "nothing to upgrade"   # no step at that age (it starts there, or later), or the age brought no new kit
 		if w.ages[player] < item.age:
@@ -219,7 +262,7 @@ static func tick(w) -> void:
 		var p: int = bs.owner[b]
 		var item: Dictionary = item_of(w, p, r)
 		bs.train[b] += 1
-		if bs.train[b] < item.ticks:
+		if bs.train[b] < head_ticks(w, b):
 			continue
 		bs.queue[b].pop_front()
 		bs.train[b] = 0
@@ -228,23 +271,74 @@ static func tick(w) -> void:
 		else:
 			w.researched[p][r] = 1
 		retype(w, p)
-		refresh_gather(w, p)
+		refresh(w, p)
 		w.events.append({"type": "age" if r == AGE_UP else "research", "player": p, "age": w.ages[p], "id": "" if r == AGE_UP else item.id})
 
 
-## A player's gathering speed per resource: the rules' ticks per unit, cut by every
-## gathering research it has ({"gather": "wood", "pct": 15} gathers wood 15% faster).
-static func refresh_gather(w, player: int) -> void:
+## A player's research outside its unit types: gathering speed per resource (the rules' ticks
+## per unit, cut by every {"gather": "wood", "pct": 15}), and per building type the sums of the
+## building effects (w.bmods[p][k]: {add: {stat: n}, pct: {stat: n}, hp: its max, arm: its armour
+## vector}). Buildings already standing keep their share of health when their max changes.
+static func refresh(w, player: int) -> void:
+	var fxs := _effects(w, player)
 	var out := PackedInt32Array()
 	for res in w.resources:
 		var pct := 0
-		for r in w.tech.research.size():
-			if w.researched[player][r] == 1:
-				for fx in w.tech.research[r].effects:
-					if fx.get("gather", "") == res:
-						pct += int(fx.pct)
+		for fx in fxs:
+			if fx.get("gather", "") == res:
+				pct += int(fx.pct)
 		out.append(maxi(1, int(w.econ.gather_ticks[res]) * (100 - pct) / 100))
 	w.gather_ticks[player] = out
+	var old: Array = w.bmods[player]
+	var mods := []
+	for k in w.btypes.size():
+		var bt: Dictionary = w.btypes[k]
+		var m := {"add": {}, "pct": {}}
+		for fx in fxs:
+			if fx.has("building") and (fx.building == "all" or fx.building == bt.id):
+				var how := "pct" if fx.has("pct") else "add"
+				m[how][fx.stat] = int(m[how].get(fx.stat, 0)) + int(fx[how])
+		m.hp = maxi(1, int(bt.hp) * (100 + int(m.pct.get("hp", 0))) / 100)
+		var arm: PackedInt32Array = bt.arm.duplicate()
+		for cls in ["melee", "pierce"]:
+			arm[w.classes.find(cls)] += int(m.add.get("armour." + cls, 0))
+		m.arm = arm
+		mods.append(m)
+	w.bmods[player] = mods
+	if old.is_empty():
+		return
+	var bs = w.buildings
+	for b in bs.count():
+		if bs.owner[b] == player and old[bs.kind[b]].hp != mods[bs.kind[b]].hp:
+			bs.hp[b] = maxi(1, bs.hp[b] * mods[bs.kind[b]].hp / old[bs.kind[b]].hp)
+
+
+## The sum of a building effect's adds (or pcts) for a player's building type k.
+static func badd(w, player: int, k: int, stat: String) -> int:
+	return int(w.bmods[player][k].add.get(stat, 0))
+
+
+static func bpct(w, player: int, k: int, stat: String) -> int:
+	return int(w.bmods[player][k].pct.get(stat, 0))
+
+
+## Every effect of every research this player has, in research order.
+static func _effects(w, player: int) -> Array:
+	var out := []
+	for r in w.tech.research.size():
+		if w.researched[player][r] == 1:
+			out.append_array(w.tech.research[r].effects)
+	return out
+
+
+## Does a unit effect reach a type with these tags?
+static func reaches(fx: Dictionary, tags: Array) -> bool:
+	if not fx.has("tag") or not (fx.tag == "all" or fx.tag in tags):
+		return false
+	for t in fx.get("not", []):
+		if t in tags:
+			return false
+	return true
 
 
 static func _upgraded(w, player: int, slot: String, age: int) -> bool:
@@ -265,13 +359,31 @@ static func retype(w, player: int) -> void:
 				step = l
 		var old_hp: int = t.hp
 		var e: Dictionary = step.eval.duplicate(true)
-		for r in w.tech.research.size():
-			if w.researched[player][r] == 0:
+		var add := {}   # sight, carry: outside the eval
+		var pct := {}
+		for fx in _effects(w, player):
+			if not reaches(fx, e.tags):
 				continue
-			for fx in w.tech.research[r].effects:
-				if fx.has("tag") and fx.tag in e.tags:
-					e[fx.stat] = int(e[fx.stat]) + int(fx.add)
+			if fx.has("pct"):
+				pct[fx.stat] = int(pct.get(fx.stat, 0)) + int(fx.pct)
+			elif fx.stat in UNIT_EXTRA:
+				add[fx.stat] = int(add.get(fx.stat, 0)) + int(fx.add)
+			elif "." in fx.stat:   # armour.melee: a class inside a stat
+				var parts: PackedStringArray = fx.stat.split(".")
+				e[parts[0]][parts[1]] = int(e[parts[0]].get(parts[1], 0)) + int(fx.add)
+			else:
+				e[fx.stat] = int(e[fx.stat]) + int(fx.add)
 		w.set_type(k, step.recipe, e)
+		t.speed = maxi(1, t.speed * (100 + int(pct.get("speed", 0))) / 100)
+		t.reload = maxi(1, t.reload * (100 + int(pct.get("reload", 0))) / 100)
+		t.train_ticks = maxi(1, t.train_ticks * (100 + int(pct.get("train_time", 0))) / 100)
+		var cost: PackedInt32Array = t.cost
+		for c in cost.size():
+			cost[c] = cost[c] * (100 + int(pct.get("cost", 0))) / 100
+		t.cost = cost
+		t.build_pct = int(pct.get("build_speed", 0))
+		t.sight_add = int(add.get("sight", 0))
+		t.carry_add = int(add.get("carry", 0))
 		var u = w.units
 		for i in u.count():
 			if u.kind[i] == k:

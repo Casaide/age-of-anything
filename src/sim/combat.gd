@@ -317,7 +317,7 @@ static func tick(w) -> void:
 					w.events.append({"type": "hit", "by": u.id[i], "to": u.id[j], "damage": d, "ranged": t.ranged})
 				else:
 					var bt: Dictionary = w.btypes[bs.kind[b]]
-					var d := damage(t.atk, bt.arm, bt.cls, int(c.min_damage))
+					var d := damage(t.atk, w.bmods[bs.owner[b]][bs.kind[b]].arm, bt.cls, int(c.min_damage))   # armour with research
 					bhurt[b] += d
 					w.events.append({"type": "hit", "by": u.id[i], "to": bs.id[b], "damage": d, "ranged": t.ranged})
 		elif u.stance[i] == AUTO and posture == STAND:
