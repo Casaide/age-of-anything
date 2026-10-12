@@ -51,7 +51,7 @@ func _initialize() -> void:
 				if ps is PartShape and ps.part_id != "":
 					await baker.bake(ps.part_id, ps.shapes, ps.colours)
 			probe.free()
-			bakes.append([u, team, k, side])
+			bakes.append([u, team, k, side, race.units.size()])
 	PartShape.bake_flat("unit_shadow", UnitView.SHADOW_SHAPES, UnitView.SHADOW_COLOURS, ART)
 	PartShape.build_atlas()
 	for e in bakes:
@@ -62,7 +62,7 @@ func _initialize() -> void:
 			var v := UnitView.new()
 			v.build(u.recipe, lib, team, u.eval.speed)
 			v.scale = Vector2(ART, ART)
-			v.position = Vector2(40 + k * 75, 95 + side * 105)
+			v.position = Vector2(40 + k * mini(75, 330 / maxi(1, int(e[4]) - 1)), 95 + side * 105)   # a longer roster packs closer
 			vp.add_child(v)
 	for f in 20:
 		await process_frame

@@ -6,11 +6,14 @@ extends RefCounted
 const MAX_NAMES := 3
 
 
-## t: a unit type (world.types entry, or anything with name + eval); foes: the enemy's types.
-static func text(t: Dictionary, foes: Array) -> String:
+## t: a unit type (world.types entry, or anything with name + eval); foes: the enemy's types;
+## combat: the rules' combat numbers (world.combat), for what a healer heals.
+static func text(t: Dictionary, foes: Array, combat := {}) -> String:
 	var e: Dictionary = t.eval
 	var reach := "" if int(e.range) <= 1 else ", range %d" % int(e.range)
 	var lines := ["Attack %d %s%s    HP %d" % [int(e.attack), e.damage, reach, int(e.hp)]]
+	if int(e.get("heal", 0)) > 0:
+		lines = [heal_text(e, combat) + "    HP %d" % int(e.hp), "Never fights"]
 	var armour := "Armour %d melee / %d pierce" % [int(e.armour.get("melee", 0)), int(e.armour.get("pierce", 0))]
 	for k in _sorted_keys(e.armour):
 		if k != "melee" and k != "pierce" and int(e.armour[k]) != 0:
@@ -35,6 +38,19 @@ static func text(t: Dictionary, foes: Array) -> String:
 	if not weak.is_empty():
 		lines.append("Weak vs: " + _names(weak))
 	return "\n".join(lines)
+
+
+## "Heals 3 hp every 1.5 s, range 2.5" (rules combat heal_*), or a plain line without the rules.
+static func heal_text(e: Dictionary, combat: Dictionary) -> String:
+	if not combat.has("heal_amount"):
+		return "Heals wounded friends"
+	var every := int(combat.heal_reload) * 10 / 20   # ticks at 20 Hz, in tenths of a second
+	var reach := int(combat.heal_range) / 100   # milli-tiles, in tenths of a tile
+	return "Heals %d hp every %s s, range %s" % [int(combat.heal_amount) * int(e.heal), _tenths(every), _tenths(reach)]
+
+
+static func _tenths(n: int) -> String:
+	return str(n / 10) if n % 10 == 0 else "%d.%d" % [n / 10, n % 10]
 
 
 static func _names(names: Array) -> String:

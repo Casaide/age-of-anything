@@ -334,7 +334,8 @@
     "gold"
    ],
    "trains": [
-    "worker"
+    "worker",
+    "healer"
    ],
    "age": 1,
    "hotkey": "C",

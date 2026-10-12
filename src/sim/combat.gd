@@ -123,6 +123,7 @@ static func damage(atk: PackedInt32Array, arm: PackedInt32Array, cls: PackedByte
 static func clear(w, i: int) -> void:
 	w.units.foe[i] = 0
 	w.units.stance[i] = NONE
+	w.units.patient[i] = 0
 
 
 static func cmd_attack(w, player: int, a: Dictionary) -> void:
@@ -130,7 +131,7 @@ static func cmd_attack(w, player: int, a: Dictionary) -> void:
 		return
 	for uid in a.ids:
 		var i: int = w.units.index_of(uid)
-		if i >= 0 and w.units.owner[i] == player:
+		if i >= 0 and w.units.owner[i] == player and not w.types[w.units.kind[i]].healer:   # healers never fight
 			Economy.clear_task(w, i)
 			w.units.foe[i] = a.target
 			w.units.stance[i] = ORDERED
@@ -149,6 +150,7 @@ static func cmd_attack_move(w, player: int, a: Dictionary) -> void:
 	for i in slots:
 		Economy.clear_task(w, i)
 		w.units.foe[i] = 0
+		w.units.patient[i] = 0
 		w.units.stance[i] = ATTACK_MOVE
 		w.units.amx[i] = a.x
 		w.units.amy[i] = a.y
@@ -256,6 +258,8 @@ static func tick(w) -> void:
 		var t: Dictionary = w.types[u.kind[i]]
 		if u.stance[i] == RETURN and u.moving[i] == 0:
 			u.stance[i] = NONE   # back where it stood
+		if t.healer:
+			continue   # healers never fight (heal.gd); an attack-move walks them along with the army
 		var stance: int = u.stance[i]
 		var posture: int = u.posture[i]
 		# Look for a fight: idle soldiers (not workers, not passive) and attack-movers, on their own beat.
@@ -470,7 +474,7 @@ static func _apply(w, hurt: PackedInt32Array, hurt_by: PackedInt32Array, bhurt: 
 		if u.owner[j] == w.gaia:
 			Animals.hurt(w, j, hurt_by[j])   # a deer bolts
 		if u.foe[j] == 0 and (u.stance[j] == NONE or u.stance[j] == RETURN) and u.task[j] == Economy.NONE and not t.worker \
-				and not t.get("harmless", false) and u.posture[j] != PASSIVE:
+				and not t.get("harmless", false) and not t.get("healer", false) and u.posture[j] != PASSIVE:
 			_engage(w, j, hurt_by[j])
 	for j in range(hurt.size() - 1, -1, -1):
 		if u.hp[j] <= 0:

@@ -78,7 +78,7 @@ fills it from the race (one creature in its culture's gear, or variants once tho
 | Building | Line (slot) | Ages | Beats / weak to | Status | Parts |
 |---|---|---|---|---|---|
 | Town Center | Worker (`worker`) | 1+ | - | built | ok |
-| Town Center | Healer (`healer`) | 2-3 | heals nearby wounded / scouts, raiders | planned (milestone 13; Dominic, 2026-10-12) | **gap**: concept round |
+| Town Center | Healer (`healer`) | 2-3 | heals nearby wounded / scouts, raiders | built (milestone 13, 2026-10-12; look A in, the pick pending: HL1 sheet) | staff + bag (herbs; cheese for rats, a lily for frogs) |
 | Barracks | Spear (`spear`) | 1-3 | mounted, beasts / ranged, infantry | built (to 3) | ok |
 | Barracks | Swordsman (`infantry`) | 1-3 | buildings, spears, skirmishers / archers | planned | swords, clubs exist |
 | Barracks | Raider (`raider`) | 3 | siege, archers, healers / infantry | planned | light kit |

@@ -41,14 +41,21 @@ func _init() -> void:
 	var b := _play(rules, [frogs, rats], [Bot.new(0), Bot.new(1)], "bot vs bot, again", true)
 	check(a.hashes == b.hashes and a.winner == b.winner, "bot vs bot is deterministic")
 	check(a.winner >= 0, "bot vs bot ends with a winner (%d at %s)" % [a.winner, _clock(a.tick)])
+	# Healers (Dominic, 2026-10-12): a couple from age 2, kept behind the army, and they heal.
+	var m: Dictionary = a.medics
+	check(m.most.max() >= 1 and m.most.max() <= 3, "the bots train a couple of healers (most %s)" % [m.most])
+	check(m.samples == 0 or m.behind * 100 >= m.samples * 70, "healers keep behind the army (%d of %d looks)" % [m.behind, m.samples])
 
 	# Whole matches end: no stalemates between bots, whatever the races.
 	var centaurs: Dictionary = gen.generate("centaur romans", rules)
 	var lengths := [a.tick]
+	var heals: int = a.medics.heals[0] + a.medics.heals[1]
 	for pair in [[centaurs, frogs], [rats, centaurs]]:
 		var r := _play(rules, pair, [Bot.new(0), Bot.new(1)], "bot %s vs bot %s" % [pair[0].name, pair[1].name])
 		check(r.winner >= 0, "%s vs %s ends with a winner" % [pair[0].name, pair[1].name])
 		lengths.append(r.tick)
+		heals += r.medics.heals[0] + r.medics.heals[1]
+	check(heals > 0, "the bots' healers heal someone in their matches (%d heals)" % heals)
 	lengths.sort()
 	# Pacing is a tester metric (milestone 10); bot vs bot is a guide, so it's reported, not
 	# enforced. It was 10:50 before workers got one price, about 12 minutes after.
@@ -74,6 +81,7 @@ func _play(rules: Dictionary, races: Array, bots: Array, title: String, quiet :=
 		print("\n== ", title)
 	var aged := [-1, -1]   # when each side reached age 2 (the bots aim for 4-6 minutes)
 	var bought := [[], []]   # the research each side finished, with the time
+	var medics := {"most": [0, 0], "heals": [0, 0], "behind": 0, "samples": 0}   # healers: how many, heals, kept behind the army
 	while w.tick < LIMIT and w.winner < 0:
 		for bot in bots:
 			bot.think(w)
@@ -81,6 +89,12 @@ func _play(rules: Dictionary, races: Array, bots: Array, title: String, quiet :=
 		for e in w.events:
 			if e.type == "research" and e.player < 2:
 				bought[e.player].append("%s %s" % [e.id, _clock(w.tick)])
+			elif e.type == "heal":
+				var hi: int = w.units.index_of(e.by)
+				if hi >= 0:
+					medics.heals[w.units.owner[hi]] += 1
+		if w.tick % 100 == 0:
+			_watch_healers(w, medics)
 		for p in 2:
 			if aged[p] < 0 and w.ages[p] >= 2:
 				aged[p] = w.tick
@@ -89,23 +103,54 @@ func _play(rules: Dictionary, races: Array, bots: Array, title: String, quiet :=
 			for p in races.size():
 				var army := 0
 				var workers := 0
+				var healers := 0
 				for i in w.units.count():
 					if w.units.owner[i] == p:
 						if w.types[w.units.kind[i]].worker:
 							workers += 1
+						elif w.types[w.units.kind[i]].healer:
+							healers += 1
 						elif not w.types[w.units.kind[i]].has("animal"):
 							army += 1
 				var blds := 0
 				for k in w.buildings.count():
 					if w.buildings.owner[k] == p:
 						blds += 1
-				line += "   P%d age %d, %d workers, %d soldiers, %d buildings, %d lost" % [p, w.ages[p], workers, army, blds, w.lost[p]]
+				line += "   P%d age %d, %d workers, %d soldiers, %d healers, %d buildings, %d lost" % [p, w.ages[p], workers, army, healers, blds, w.lost[p]]
 			print(line)
 	if not quiet:
 		print("winner: team %d at %s; age 2 at %s" % [w.winner, _clock(w.tick), aged.map(func(t): return _clock(t) if t >= 0 else "-")])
 		for p in 2:
 			print("research P%d: %s" % [p, ", ".join(bought[p])])
-	return {"winner": w.winner, "tick": w.tick, "hashes": w.hashes}
+		print("healers: most %s, heals %s, behind their army in %d of %d looks" % [medics.most, medics.heals, medics.behind, medics.samples])
+	return {"winner": w.winner, "tick": w.tick, "hashes": w.hashes, "medics": medics}
+
+
+## Healers: the most each side had, and whether they keep behind their army: when soldiers are
+## out (3 or more over 10 tiles from home), the healers' middle is nearer home than theirs.
+func _watch_healers(w: World, medics: Dictionary) -> void:
+	for p in 2:
+		var home: Array = w.map.starts[p]
+		var n := [0, 0]
+		var d := [0, 0]
+		for i in w.units.count():
+			var t: Dictionary = w.types[w.units.kind[i]]
+			if w.units.owner[i] != p or t.worker or t.has("animal"):
+				continue
+			var k := 1 if t.healer else 0
+			var dist := isqrt_tiles(w.units.x[i] - int(home[0]), w.units.y[i] - int(home[1]))
+			if k == 1 or dist > 10:
+				n[k] += 1
+				d[k] += dist
+		medics.most[p] = maxi(medics.most[p], n[1])
+		if n[0] >= 3 and n[1] > 0:
+			medics.samples += 1
+			if d[1] / n[1] < d[0] / n[0]:
+				medics.behind += 1
+
+
+static func isqrt_tiles(dx: int, dy: int) -> int:
+	return int(sqrt(float(dx) * dx + float(dy) * dy)) / 1000
 
 
 ## Easy against a passive player: a small army (its cap and a training queue's worth), and the
@@ -122,7 +167,7 @@ func _test_easy(rules: Dictionary, a: Dictionary, b: Dictionary) -> void:
 		w.step()
 		var army := 0
 		for i in w.units.count():
-			if w.units.owner[i] == 0 and not w.types[w.units.kind[i]].worker:
+			if w.units.owner[i] == 0 and not w.types[w.units.kind[i]].worker and not w.types[w.units.kind[i]].healer:   # healers never fight
 				army += int(w.types[w.units.kind[i]].pop)
 		if w.tick <= 20 * 60 * 10:   # the first ten minutes, where Easy used to overrun a player reaching age 2
 			most = maxi(most, army)

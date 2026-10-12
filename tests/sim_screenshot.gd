@@ -6,6 +6,7 @@ extends SceneTree
 ## "opening:<tick>" (both sides autoplay their economy; shot at that tick, over player 1's base),
 ## or "battle:<tick>" (both test armies attack-move at each other; shot mid-fight at that tick).
 ## "tower" (side 1's town with enemy spears by its Watchtower; shot with arrows in the air).
+## "heal" (side 0's healers by wounded spearmen, shot mid-heal; "heal:card" with a healer selected).
 ## "look:<x>:<y>[:zoom]" frames a tile with the fog lifted (for art checks).
 ## Prefix any scene with "ai-" to see it as in a match against the AI.
 
@@ -65,6 +66,8 @@ func _initialize() -> void:
 		await _tip(view, int(scene.get_slice(":", 1)))
 	elif scene == "card":
 		await _card(view)
+	elif scene.begins_with("heal"):
+		await _heal(view, scene == "heal:card")
 	elif scene.begins_with("battle"):
 		await _battle(view, map_id, int(scene.get_slice(":", 1)))
 	else:
@@ -325,6 +328,36 @@ func _card(view) -> void:
 			break
 	view.camera.zoom = Vector2(2.0, 2.0)
 	view._on_zoom()
+
+
+## Side 0's healers at work: four wounded spearmen by two healers by the Town Center; shot as a
+## heal's motes rise. "heal:card" selects a healer, so the card says what it heals.
+func _heal(view, card: bool) -> void:
+	var w = view.world
+	var Commands = load("res://src/sim/commands.gd")
+	var s: Array = w.map.starts[0]
+	var at := Vector2i(int(s[0]) + 4500, int(s[1]) + 3500)
+	var before: int = w.units.count()
+	w.issue(0, Commands.SPAWN, {"slot": "healer", "count": 2, "x": at.x - 1200, "y": at.y})
+	w.issue(0, Commands.SPAWN, {"slot": "spear", "count": 4, "x": at.x + 900, "y": at.y + 300})
+	while w.units.count() < before + 6:
+		await process_frame
+	var healers := []
+	for i in w.units.count():
+		var t: Dictionary = w.types[w.units.kind[i]]
+		if w.units.owner[i] == 0 and t.slot == "spear":
+			w.units.hp[i] = int(t.hp) / 4
+		elif w.units.owner[i] == 0 and t.slot == "healer":
+			healers.append(w.units.id[i])
+	if card:
+		view.selected[healers[0]] = true
+	view.camera.zoom = Vector2(3.0, 3.0)
+	view._on_zoom()
+	view.camera.look_at_point(Iso.to_screen(at.x, at.y - 500))
+	for f in 1200:   # until a heal's motes are well up
+		await process_frame
+		if view.fx.heals.any(func(h): return h.t > 0.35 and h.t < 0.5):
+			break
 
 
 func _armies(view, map_id: String) -> void:
