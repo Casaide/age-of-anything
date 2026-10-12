@@ -345,13 +345,21 @@ func _cost_row(text: String, colour: Color) -> Control:
 		ic.custom_minimum_size = Vector2(15, 15)
 		ic.mouse_filter = Control.MOUSE_FILTER_IGNORE
 		row.add_child(ic)
-	var w := row.get_combined_minimum_size().x
-	if w > BUTTON - 4:   # three costs (an age-up) spilled past the button's edges: shrink the row to fit
-		var k := (BUTTON - 4) / w
-		row.scale = Vector2(k, k)
-		row.size.x = BUTTON / k
-		row.position = Vector2(0, BUTTON - 4 - 15 * k)
+	# Three or four costs (an age-up, a Wonder) spill past the button's edges: shrink the row to
+	# fit, once its labels know their font (before it's in the tree they measure nothing).
+	row.minimum_size_changed.connect(_fit_cost.bind(row))
+	_fit_cost(row)
 	return row
+
+
+func _fit_cost(row: HBoxContainer) -> void:
+	var w := row.get_combined_minimum_size().x
+	var k := minf(1.0, (BUTTON - 6) / maxf(1.0, w))
+	if is_equal_approx(k, row.scale.x):
+		return
+	row.scale = Vector2(k, k)
+	row.size.x = BUTTON / k
+	row.position = Vector2(0, BUTTON - 4 - 15 * k)
 
 
 func _queue_slot(q: Dictionary, first: bool) -> Control:
