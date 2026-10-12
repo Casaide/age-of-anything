@@ -49,6 +49,7 @@ var opaque_chunks := PackedInt32Array()   # opaque cells per CHUNK x CHUNK block
 var bridge_rects: Array = []       # the map's bridges: [x0, y0, x1, y1] cells, inclusive (World makes them, bridges.gd)
 var resource_cells := PackedInt32Array()   # every cell that started with a resource, ascending
 var starts: Array = []             # [[x, y]] in milli-tiles, tile centres
+var start_teams: Array = []        # the team each start is for (a 2v2: [0, 1, 0, 1]), or [] (everyone for themselves)
 var animals := {}                  # the map's own animal spawn (data/animals.json "spawn" shape), or {} for the default
 var symmetry := ""                 # "rotate": the map is the same turned half a turn (animals are placed to match)
 var map_hash: int                  # content hash of the file, for replays
@@ -146,6 +147,8 @@ static func load_id(map_id: String) -> RefCounted:
 	for r in d.get("bridges", []):
 		assert(r.size() == 4 and r[0] <= r[2] and r[1] <= r[3], "Map %s: a bridge is [x0, y0, x1, y1]" % map_id)
 		m.bridge_rects.append([int(r[0]), int(r[1]), int(r[2]), int(r[3])])
+	m.start_teams = d.get("teams", []).map(func(t): return int(t))
+	assert(m.start_teams.is_empty() or m.start_teams.size() == m.starts.size(), "Map %s: a team per start" % map_id)
 	m.animals = d.get("animals", {})
 	m.symmetry = d.get("symmetry", "")
 	assert(m.symmetry in ["", "rotate"], "Map %s: unknown symmetry %s" % [map_id, m.symmetry])

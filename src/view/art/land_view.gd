@@ -55,9 +55,10 @@ func sync() -> void:
 		for c in h.get_children():
 			c.queue_free()
 		var r: Rect2i = world.bridge_rect[k]
-		var along := 1 if r.size.y > r.size.x else 0
-		var length := clampi((maxi(r.size.x, r.size.y) + 1) / 1000, ArtKit.BRIDGE_LENGTHS[0], ArtKit.BRIDGE_LENGTHS[-1])
-		h.add_child(kit.sprite(ArtKit.bridge_name(length, along, 0 if up == 1 else 1)))
+		var along := 1 if r.size.y >= r.size.x else 0   # along its longer side, along y when square (ArtKit.bridge_sizes)
+		var length := (maxi(r.size.x, r.size.y) + 1) / 1000
+		var wide := (mini(r.size.x, r.size.y) + 1) / 1000
+		h.add_child(kit.sprite(ArtKit.bridge_name(length, along, 0 if up == 1 else 1, wide)))
 
 
 ## The wear grid as a texture: per tile, 0..1 of the most wear there can be, softened with

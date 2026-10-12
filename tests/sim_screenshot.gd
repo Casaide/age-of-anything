@@ -11,8 +11,8 @@ extends SceneTree
 
 const Iso := preload("res://src/view/iso.gd")
 
-const MEET := {"flat_test": Vector2(23.5, 33.5), "choke_test": Vector2(30.5, 16.5), "reed_meadow": Vector2(22.5, 26.5), "reed_meadow_large": Vector2(30.5, 36.5)}   # tiles
-const SHOOT_AT_TICK := {"flat_test": 1100, "choke_test": 700, "reed_meadow": 1100, "reed_meadow_large": 1300}
+const MEET := {"flat_test": Vector2(23.5, 33.5), "choke_test": Vector2(30.5, 16.5), "reed_meadow": Vector2(22.5, 26.5), "reed_meadow_2v2": Vector2(30.5, 36.5)}   # tiles
+const SHOOT_AT_TICK := {"flat_test": 1100, "choke_test": 700, "reed_meadow": 1100, "reed_meadow_2v2": 1300}
 
 
 func _initialize() -> void:

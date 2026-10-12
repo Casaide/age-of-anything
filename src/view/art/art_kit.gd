@@ -37,10 +37,9 @@ const DOODADS := {"reeds": 6, "bush": 6, "rock": 6, "quarry": 4, "gold": 4, "car
 ## (tree_models.gd styles; the sheet is waiting on Dominic's pick, D-080).
 const TREE_STYLE := {"broadleaf": 0, "pine": 0, "swamp": 1}
 const TREES := ["tree_broadleaf", "tree_pine", "tree_swamp"]
-## Map bridges: the look (bridge_models.gd style) and the lengths baked (tiles of water), each
+## Map bridges: the look (bridge_models.gd style). Every size a map uses is baked (bridge_sizes),
 ## along sim x and along sim y (^z), standing and broken (.1).
 const BRIDGE_STYLE := 0
-const BRIDGE_LENGTHS := [2, 3, 4, 5]
 ## Resources show how much is left: reeds, bug bushes and quarry stone each have this many stages
 ## (0 whole ... 3 nearly gone: stubble for reeds, a bare brown bush).
 const STAGES := 4
@@ -428,13 +427,13 @@ func _bake_doodads(baker, models) -> void:
 	await _bake_set(baker, trees, 2)
 	baker.shadow_reach = 1.0
 	var bm := BridgeModels.new()
-	for length in BRIDGE_LENGTHS:
+	for size in bridge_sizes():
 		for broken in 2:
 			for along in 2:
-				var m: Node3D = bm.bridge(1700 + length, length, BRIDGE_STYLE, broken)
+				var m: Node3D = bm.bridge(1700 + size.x, size.x, BRIDGE_STYLE, broken, size.y)
 				if along == 1:
 					m.basis = Basis(Vector3.UP, deg_to_rad(90.0))   # running along sim y
-				await _bake(baker, bridge_name(length, along, broken), m)
+				await _bake(baker, bridge_name(size.x, along, broken, size.y), m)
 	baker.set_ground_shadow(false)
 	await _bake_set(baker, flat)
 
@@ -462,9 +461,27 @@ static func resource_stage(kind: String, left: int, full: int) -> int:
 	return 1 if f > 0.45 else 2
 
 
-## The bake name of a map bridge: its length in tiles, along sim x (0) or y (1), broken or not.
-static func bridge_name(length: int, along: int, broken: int) -> String:
-	return "bridge%d%s%s" % [length, ALONG_Z if along == 1 else "", ".1" if broken == 1 else ""]
+## The bake name of a map bridge: its length and width in tiles, along sim x (0) or y (1), broken or not.
+static func bridge_name(length: int, along: int, broken: int, wide := 1) -> String:
+	return "bridge%dx%d%s%s" % [length, wide, ALONG_Z if along == 1 else "", ".1" if broken == 1 else ""]
+
+
+## Every bridge size the maps use, as (length, width) in tiles: a bridge runs along its longer
+## side (along y when square), reading data/maps (data first: a new map's bridges just bake).
+static func bridge_sizes() -> Array:
+	var out := []
+	var dir := DirAccess.open("res://data/maps")
+	var files := Array(dir.get_files()).filter(func(f): return f.ends_with(".json"))
+	files.sort()
+	for f in files:
+		var d: Dictionary = DataLib.load_json("res://data/maps/" + f)
+		for r in d.get("bridges", []):
+			var sx := int(r[2]) - int(r[0]) + 1
+			var sy := int(r[3]) - int(r[1]) + 1
+			var size := Vector2i(maxi(sx, sy), mini(sx, sy))
+			if not size in out:
+				out.append(size)
+	return out
 
 
 ## The bake name of a prop variant at a stage (stage 0 is the plain name).
