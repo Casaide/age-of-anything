@@ -213,6 +213,13 @@ from every start and none without its ramps.
 sim (flat maps unchanged). reed_meadow with its hills (15 min, peace): 1.65 ms (fog 0.43).
 test_sim's 200-unit match measured 3.34 ms avg with the machine loaded (load 6, eight other Godot
 runs); the same code on flat ground is within 1% of main, so that's the load.
+**Bots.** `test_2v2`: four bots on the hilly 2v2, ended 12:40, no hits between teammates (4/4).
+`test_ai -- reed_meadow`: 24 of 26; the same code on the flat map passes 26/26. The first two
+matches play out the same; later ones diverge and two checks fail on bot habits the new ground
+brings out, not on pathing: a Cohort-vs-Frogs match runs to the 30-minute limit (the Cohort's
+army stands at home on an attack-move whose formation slots fall on its own Town Center, while
+the Frogs' archers hold the Cohort's ridge), and in the walled-fords check a worker is shut in
+for 30 s by its own houses and the forest. Both are for the bot pass (phase 7).
 **Not done:** the bots don't seek high ground for their archers (they path over hills fine);
 cliff edges are staircases of cells (no rounded or diagonal faces); a farm sown within two cells
 of a plateau's back edge is drawn under the hill's copy of its ground (flat things lie under the
