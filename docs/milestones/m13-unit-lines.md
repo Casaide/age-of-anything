@@ -100,7 +100,9 @@ picks), then build, tests, archive pictures.
   - [x] 3a. Concept round SW1: ram, catapult, bolt thrower, five families, two directions (2026-10-13)
   - [ ] Dominic's pick (direction per engine, family takes)
   - [x] Round 3: the frogs' engines rethought, three directions (2026-10-13)
-  - [ ] Dominic's pick for the frogs
+  - [x] Dominic's pick for the frogs: B, the turtle ram and the toad bolt thrower (D-121)
+  - [x] Round 4: the newt as frog cavalry, other frog catapults (the snail first) (2026-10-13)
+  - [ ] Dominic's pick: the newt mount, the frogs' catapult
   - [ ] 3b. Build the pick: parts, recipes, roster slots, Siege Workshop, pricing
 - [ ] 4. Unique unit, sapper, great sling
 - [x] 5. Healers (built 2026-10-12; the look is a pick pending: HL1 concept sheet, look A in game)
@@ -216,6 +218,36 @@ models in the round-3 section of `scenes/art_pixel/siege_concepts.gd`. Pictures:
 - **Claude's recommendation:** A for all three (their own architecture, the clearest at 1x, the same
   kind of crewed engine as everyone else's), with the turtle kept for a later showpiece (a heavy ram
   or unique unit, as the forest has its beetle).
+- Dominic picked B's turtle ram and toad bolt thrower (D-121), not the newt as the catapult carrier.
+
+**Concept round SW1 round 4 (2026-10-13), waiting on Dominic.** Dominic: "Salamander I'm not 100%
+sure, I wonder if better for cavalry?", then "catapult on snail maybe?". Two questions, concepts only,
+nothing in play. Notes and pictures in `docs/concepts/sw1/README.md` (round 4); archive pictures
+`archive/images/2026-10-13/244-` to `253-`.
+- **The newt as frog cavalry** (`tests/newt_cavalry_sheet.gd`, models in
+  `scenes/art_pixel/newt_concepts.gd`): a real mount in the real pipeline (body, head and four legs
+  baked apart in eight facings and composed by UnitView like the beetle; the sheet puts the parts in
+  the loaded data for the run only). Long and low, sprawling legs, a paddle tail, a broad flat head,
+  a team saddle cloth and reed saddle roll; sized so the frog sits on it at about a beetle's saddle
+  height. Three colourings: fire (black and yellow), red eft, crested (olive). All eight facings and
+  a walk, beside the frog on a beetle and a human on a pony. At 1x it reads as a rider on a beast in
+  every facing; the fire colouring reads best (the eft would merge with red frogs, the crested is
+  muddy); it is about twice the beetle's length with its tail.
+- **Frog catapults** (`tests/siege_concept_sheet_r4.gd`, the round-4 section of
+  `scenes/art_pixel/siege_concepts.gd`, which now shares the turtle, the toad, the deck catapult and
+  the post bolt thrower as helpers): 1. a giant swamp snail (Dominic's idea) with the catapult on a
+  deck over its coiled shell, eye stalks up; 2. the toad carrying the catapult, the turtle taking the
+  bolt thrower (a swap); 3. a bigger snapping turtle with the catapult; 4. round 3's reed catapult on
+  its sledge hauled by the turtle. A sets sheet shows the whole frog siege per proposal. The snail
+  reads as a snail and a catapult in all three facings and is nothing like the turtle ram (tan, wet,
+  legless, an amber coil); it is the tallest engine, and edge-on from the front its shell looks more
+  like a jar. The toad is still a big frog carrying frogs; two turtles blur ram and catapult; the
+  hauled one is a cart and the longest thing on the sheet. A heron wasn't tried (it wouldn't read as
+  a load-bearer, and herons eat frogs).
+- **Claude's recommendation:** the newt as the swamp family's cavalry mount in the fire colouring
+  (the beetle stays the forest's; amphibious movement could give it a reason later), and the snail
+  catapult beside the picked turtle ram and toad bolt thrower: three different beasts, the slowest
+  throwing the rocks.
 
 ## Changes from the original plan
 

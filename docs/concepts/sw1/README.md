@@ -128,7 +128,7 @@ facing). Catapult and bolt thrower crewed as shown, frog engines grown rather th
 3. Size: the engines now stand to their crew (the ram is about two workers long). Right?
 4. Anything to redo before building (the bolt thrower at 1x?).
 
-## Round 3: the frogs (2026-10-13), waiting on Dominic
+## Round 3: the frogs (2026-10-13), picked: B's turtle ram and toad bolt thrower (D-121)
 
 Dominic on round 2's frog engines: "I think frogs for all are the weakpoint, overusing lilypads and
 stuff, I think need to rethink direction" (D-119). Three new directions, each with a ram, a catapult
@@ -192,3 +192,95 @@ its beetle; the newt and toad are not needed. C's harpoon boat could come back i
 1. A direction (or a mix per engine: e.g. A's catapult and bolt thrower with the turtle as the ram).
 2. The thatch roof over the reed ram: keep it, or open like the others?
 3. Size: the frog engines are about 1.2 to 1.3 times the human ones, to fit their crew. Right?
+
+## Round 4: the newt as cavalry, other frog catapults (2026-10-13), waiting on Dominic
+
+Dominic picked round 3's B for the frogs ("swamp beasts, looks great": the snapping turtle ram and
+the toad-borne bolt thrower, D-121) but: "Salamander I'm not 100% sure, I wonder if better for
+cavalry?", and then: "catapult on snail maybe?". Two questions, concepts only.
+
+### 1. The giant newt as the frogs' cavalry mount
+
+`newt_cavalry_facings_*` shows each mount in all eight facings with a worker for size;
+`newt_cavalry_walk_*` a walk cycle (four steps in two facings). Rows: a human on a pony, today's
+frog on a beetle, then the frog lancer on the newt in three colourings. `_3x` close-up, `_1x` game scale.
+
+```sh
+godot --audio-driver Dummy --always-on-top --path . --script res://tests/newt_cavalry_sheet.gd -- out_dir 4.5   # 3x
+godot --audio-driver Dummy --always-on-top --path . --script res://tests/newt_cavalry_sheet.gd -- out_dir 1.5   # game scale
+```
+
+The newt is a real mount in the real pipeline: a body, a head and four legs baked apart in eight
+facings and composed by UnitView like the beetle (the seat, the rider's near leg down its flank, the
+legs walking on their anchors). Its parts are in `scenes/art_pixel/newt_concepts.gd`; the sheet puts
+them into the loaded data for the run only (the beetle's entries under the newt's ids), so nothing in
+`data/` changes and nothing is in play.
+- A long, low trunk in three lobes, a pale belly, a long tail flattened side to side like a newt's
+  paddle and curving a little, short sprawling legs (elbows out, a splayed four-toed hand), a broad
+  flat head with small gold-ringed eyes high on its sides and a long closed mouth. Wet and glossy.
+- Built a fifth bigger than first sketched and low, so the big frog sits on it rather than over it:
+  its saddle is at about a beetle's height, the trunk about a pony's length, the tail as long again.
+- Tack: a team saddle cloth hanging down both flanks, a reed-bundle saddle roll behind the seat, the
+  harness every unarmed mount has (girth, lance holder, shield pad), a team browband and a noseband.
+- Colourings: **fire** (black, an orange belly, yellow spots: round 3's), **red eft** (orange-red,
+  red spots ringed in black), **crested** (dark olive-brown, black spots, an orange belly and a
+  jagged crest down the tail).
+
+What reads at game scale (Claude's look): a rider on a lizard-like beast in every facing; it walks
+with the legs the view already animates. The fire newt reads best: black and yellow stand apart from
+every frog skin and from the green field. The eft reads too, but a red frog on it would merge (the
+sheet's frogs are brown). The crested one is muddy at 1x. The tail makes it the longest cavalry
+(about twice the beetle's length, nose to tail); a shorter tail would be easy if that's a problem.
+
+### 2. Other catapults for the frogs (to replace the newt-borne one)
+
+`siege_r4_catapult_*`: the humans' catapult and round 3's newt for comparison, then four options,
+three facings each, crewed. `siege_r4_bolt_*`: round 3's toad bolt thrower (picked) and the turtle
+carrying it instead (the other half of a swap). `siege_r4_sets_*`: the whole frog siege per proposal
+in one facing, beside the humans'. Models in the round-4 section of `scenes/art_pixel/siege_concepts.gd`.
+
+```sh
+godot --audio-driver Dummy --always-on-top --path . --script res://tests/siege_concept_sheet_r4.gd -- out_dir 4.5   # 3x
+godot --audio-driver Dummy --always-on-top --path . --script res://tests/siege_concept_sheet_r4.gd -- out_dir 1.5   # game scale
+```
+
+1. **Snail** (Dominic's idea): a giant swamp snail: a long wet foot with a frilled pale edge, its head
+   raised on a neck with two long eye stalks (glossy black eyes with a glint) and two short feelers,
+   a big shell coiled flat like a ram's horn so its spiral shows from the side (amber, each turn
+   darker towards the middle, dark growth bands, a dark seam along the coil, a pale lip at the mouth).
+   A timber deck sits on the shell's top, roped down to the foot, with the team cloth along its
+   edges and round 3's reed catapult on it. One frog rides behind the arm winding, one loads from
+   the far side with a basket of clay shot.
+2. **Toad** (a swap): round 3's giant toad carrying the catapult on a deck, the turtle then carrying
+   the bolt thrower (`siege_r4_bolt_*`).
+3. **A bigger snapping turtle** (a quarter larger than the ram's) with the catapult on a deck.
+4. **Hauled**: round 3's reed and clay catapult on its sledge, pulled on two traces by the snapping
+   turtle with a driver riding it, the catapult's own crew behind.
+
+Not tried: a giant heron. A wading bird on stilt legs makes a tall thin silhouette that doesn't read
+as something carrying a load, and herons eat frogs.
+
+What reads at game scale (Claude's look):
+- The snail reads as a snail first (the coil and the eye stalks) and a catapult second (the arm and
+  the clay ball over the deck) in all three facings. It is nothing like the turtle ram: tan, wet and
+  legless with an amber coil against a grey-green dome on four thick legs. Slow and heavy suits a
+  catapult. Weak points: seen from straight ahead or behind the shell is edge-on and looks more like
+  a jar; it's the tallest engine (the arm's top about 1.4 times the human catapult's).
+- The toad catapult reads, but it's still the round-3 problem: a big frog carrying frogs. The turtle
+  bolt thrower reads well, but the turtle would then be the ram and the bolt thrower both.
+- The bigger turtle reads as a catapult, but two turtles of two sizes blur ram and catapult.
+- The hauled catapult reads as a catapult and a turtle, but it's a cart, not a beast engine; it's
+  the longest thing on the sheet (two engines' length) and the turtle hides the crew in some facings.
+
+**Claude's recommendation:**
+1. Yes to the newt as the frogs' cavalry, in the **fire** colouring (the swamp family's mount instead
+   of the beetle, which stays the forest's). As a later design note, it could be amphibious like the
+   frogs (movement classes exist), which would give it a reason beyond looks.
+2. The **snail** for the catapult, with the turtle ram and the toad bolt thrower as picked: three
+   different beasts, each one readable, and the slowest one throws the rocks. If the height bothers,
+   the arm can come down a little.
+
+**For Dominic to pick:**
+1. The newt as cavalry: yes or no; which colouring; the tail as is or shorter.
+2. The catapult: snail, toad (with the turtle taking the bolt thrower), the big turtle, or the hauled
+   reed catapult.
