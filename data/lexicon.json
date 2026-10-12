@@ -1509,6 +1509,18 @@
    },
    "default_creature": "human"
   },
+  "capybara": {
+   "mount": "capybara",
+   "tags": {
+    "mounted": 1
+   }
+  },
+  "capybaras": {
+   "mount": "capybara",
+   "tags": {
+    "mounted": 1
+   }
+  },
   "hummingbird": {
    "mount": "hummingbird",
    "tags": {
