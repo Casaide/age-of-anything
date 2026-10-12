@@ -226,7 +226,7 @@ func _make_unit(slot_def: Dictionary, ctx: Dictionary) -> Dictionary:
 	var giant_ok: bool = c.get("giant_ok", true) or brief.body_size == "giant"
 	var heavy := false
 	if c.has("fused_mount"):
-		recipe.mount = _mount_for(c.fused_mount, true, rng, brief)
+		recipe.mount = _mount_for(c.fused_mount, true, rng, brief, ctx.skin)
 		spent += _mount_points(recipe.mount)
 		if role == "large":
 			if brief.body_size == "giant":
@@ -237,7 +237,7 @@ func _make_unit(slot_def: Dictionary, ctx: Dictionary) -> Dictionary:
 	elif role == "large":
 		var mount := _choose_mount(ctx, not c.get("giant_ok", true))
 		if mount != "" and brief.body_size != "giant":
-			recipe.mount = _mount_for(mount, false, rng, brief)
+			recipe.mount = _mount_for(mount, false, rng, brief, ctx.skin)
 			spent += _mount_points(recipe.mount)
 		elif giant_ok:
 			recipe.scale = GIANT_SCALE
@@ -247,7 +247,7 @@ func _make_unit(slot_def: Dictionary, ctx: Dictionary) -> Dictionary:
 	elif role == "archer" and int(ctx.tags.get("mounted", 0)) >= 2:
 		var mount := _choose_mount(ctx)
 		if mount != "":
-			var m := _mount_for(mount, false, rng, brief)
+			var m := _mount_for(mount, false, rng, brief, ctx.skin)
 			if spent + _mount_points(m) + 4 <= budget:
 				recipe.mount = m
 				spent += _mount_points(m)
@@ -445,13 +445,27 @@ func _skins(c: Dictionary, family: String) -> Array:
 	return both if not both.is_empty() else c.skins
 
 
-func _mount_for(creature: String, fused: bool, rng, brief: Dictionary) -> Dictionary:
+func _mount_for(creature: String, fused: bool, rng, brief: Dictionary, rider_skin: String) -> Dictionary:
 	var mc: Dictionary = lib.creatures[creature]
 	# A mount's own parts come with it (creatures.json "parts": a hummingbird's wings).
-	var m := {"creature": creature, "skin": rng.pick(mc.skins), "fused": fused, "parts": mc.get("parts", {}).duplicate()}
+	var m := {"creature": creature, "skin": rng.pick(_mount_skins(mc, rider_skin)), "fused": fused, "parts": mc.get("parts", {}).duplicate()}
 	if brief.mount_wings != "" and not fused and not m.parts.has("back"):
 		m.parts.back = brief.mount_wings
 	return m
+
+
+## The skins a mount may wear under this rider, each listed as often as its weight (creatures.json
+## "skin_weights": fire newts are the usual) and without those it never wears under the rider's
+## skin ("skins_not_under": no red eft under a red frog). One pick either way, so a mount without
+## these fields picks as it always did.
+func _mount_skins(mc: Dictionary, rider_skin: String) -> Array:
+	var out := []
+	for s in mc.skins:
+		if not rider_skin in mc.get("skins_not_under", {}).get(s, []):
+			for k in int(mc.get("skin_weights", {}).get(s, 1)):
+				out.append(s)
+	assert(not out.is_empty(), "a mount with no skin left for its rider")
+	return out
 
 
 func _mount_points(m: Dictionary) -> int:

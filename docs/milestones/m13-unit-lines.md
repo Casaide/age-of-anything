@@ -102,9 +102,11 @@ picks), then build, tests, archive pictures.
   - [x] Round 3: the frogs' engines rethought, three directions (2026-10-13)
   - [x] Dominic's pick for the frogs: B, the turtle ram and the toad bolt thrower (D-121)
   - [x] Round 4: the newt as frog cavalry, other frog catapults (the snail first) (2026-10-13)
-  - [x] Dominic's pick: the frogs' catapult, the snail (D-122); the newt mount is another agent's
+  - [x] Dominic's pick: the frogs' catapult, the snail (D-122); the newt mount too
   - [x] 3b. Build the pick: parts, recipes, roster slots, Siege Workshop, pricing (2026-10-13)
   - [ ] Dominic's look in a match
+  - [x] The newt built as the frogs' cavalry mount (D-122): `body/head/leg.newt` in data and
+    `unit_models.gd`, three skins, amphibious, the swamp family's and the frogs' own mount (2026-10-13)
 - [ ] 4. Unique unit, sapper, great sling
 - [x] 5. Healers (built 2026-10-12; the look is a pick pending: HL1 concept sheet, look A in game)
 - [ ] 6. Trade carts
