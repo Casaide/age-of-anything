@@ -16,6 +16,10 @@ const Z_FOR_SLOT := {"back": -3, "torso": 1, "head_gear": 3, "hand_l": 4, "hand_
 
 var recipe: Dictionary
 var visual: Node2D        # flipped for facing
+## High ground (milestone 15): the unit is drawn this many pixels up from its node, which stays
+## on the ground's base plane so the y-sort orders it with the hills (Iso.lift).
+var lift := 0.0
+var _shadow: Node2D
 var bob: Node2D           # moves up/down while walking or hovering
 var legs: Array = []      # [{node, phase}]
 var breathing: Array = []
@@ -86,6 +90,7 @@ func build(r: Dictionary, lib, team: Color, speed := 10) -> void:
 	shadow.part_id = "unit_shadow"
 	shadow.setup(SHADOW_SHAPES, SHADOW_COLOURS)
 	add_child(shadow)
+	_shadow = shadow
 
 	visual = Node2D.new()
 	add_child(visual)
@@ -151,6 +156,11 @@ func build(r: Dictionary, lib, team: Color, speed := 10) -> void:
 
 ## Parts are layered by child order (their "z" meta), not z_index: z_index is global,
 ## so a part with z above 0 would draw over every y-sorted building and unit.
+## Where it stands as drawn (its node's place, raised by the ground it's on).
+func ground() -> Vector2:
+	return position - Vector2(0, lift)
+
+
 func _sort_layers(n: Node) -> void:
 	var kids := n.get_children()
 	var order := []
@@ -588,10 +598,11 @@ func _process(delta: float) -> void:
 		set_hold(rest)
 	_kneel(delta)
 	_apply_concept()
-	visual.position = _die_offset
+	visual.position = _die_offset - Vector2(0, lift)
+	_shadow.position.y = -lift
 	if stepped and art_px > 0.0:
 		# Sit on whole art pixels: offset the drawing so its global position snaps.
-		var g := global_position
+		var g := global_position - Vector2(0, lift) * global_transform.get_scale().y
 		var px := 1.0 / art_px
 		var snapped := Vector2(roundf(g.x / px) * px, roundf(g.y / px) * px)
 		visual.position += (snapped - g) / maxf(global_transform.get_scale().x, 0.0001)

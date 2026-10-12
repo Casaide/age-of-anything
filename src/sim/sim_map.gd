@@ -46,6 +46,17 @@ var walk_over := PackedByteArray() # 1 where a building may be walked across (fa
 var deck := PackedByteArray()      # 1 where a standing bridge spans the water: ground and amphibians walk it (bridges.gd)
 var opaque := PackedByteArray()    # 1 where the cell blocks sight (a tree), for fog.gd
 var opaque_chunks := PackedInt32Array()   # opaque cells per CHUNK x CHUNK block, so sight skips open country
+## High ground (milestone 15): a level per cell, 0-3, from the map's optional `heights` rows
+## (digits; a ramp is a letter: `a` climbs from 0 to 1, `b` from 1 to 2, `c` from 2 to 3). A
+## cell lower than a neighbour it has no ramp to is a cliff: the foot of the step, where the
+## face stands, blocked for everyone but flyers. So walkers only change level on a ramp, and
+## the walk grids (flow fields, movement, separation) need nothing else.
+const RAMPS := "abc"
+var has_heights := false
+var level := PackedByteArray()     # 0-3 per cell (a ramp: the level at its foot)
+var ramp := PackedByteArray()      # 1 on a ramp (a slope from `level` up to level + 1)
+var cliff := PackedByteArray()     # 1 at the foot of a step without a ramp: blocked but for flyers
+var level_chunks := PackedByteArray()   # the highest level per CHUNK x CHUNK block (fog skips flat country)
 var bridge_rects: Array = []       # the map's bridges: [x0, y0, x1, y1] cells, inclusive (World makes them, bridges.gd)
 var resource_cells := PackedInt32Array()   # every cell that started with a resource, ascending
 var starts: Array = []             # [[x, y]] in milli-tiles, tile centres
@@ -141,6 +152,14 @@ static func load_id(map_id: String) -> RefCounted:
 			if m.terrain_opaque[k]:
 				m.opaque[c] = 1
 				m.opaque_chunks[m.chunk_of(c)] += 1
+	m.level.resize(n)
+	m.ramp.resize(n)
+	m.cliff.resize(n)
+	m.level_chunks.resize(m.opaque_chunks.size())
+	var heights: Array = d.get("heights", [])
+	m.has_heights = not heights.is_empty()
+	if m.has_heights:
+		m._load_heights(heights)
 	for s in d.starts:
 		m.starts.append([int(s[0]) * TILE + TILE / 2, int(s[1]) * TILE + TILE / 2])
 		assert(m.walkable(m.starts[-1][0], m.starts[-1][1]), "Map %s: start on blocked ground" % map_id)
@@ -158,8 +177,49 @@ static func load_id(map_id: String) -> RefCounted:
 		content += "|%s|%s" % [m.symmetry, JSON.stringify(m.animals, "", true)]
 	if not m.bridge_rects.is_empty():
 		content += "|bridges|%s" % JSON.stringify(m.bridge_rects)
+	if m.has_heights:
+		content += "|heights|%s" % "\n".join(heights)
 	m.map_hash = Rng.hash_string(content)
 	return m
+
+
+## Levels and ramps from the map's `heights` rows, then the cliffs they make (blocked to walkers).
+func _load_heights(rows: Array) -> void:
+	assert(rows.size() == height, "Map %s: %d heights rows, expected %d" % [id, rows.size(), height])
+	for y in height:
+		var row: String = rows[y]
+		assert(row.length() == width, "Map %s heights row %d is %d wide" % [id, y, row.length()])
+		for x in width:
+			var c := y * width + x
+			var ch := row[x]
+			if RAMPS.contains(ch):
+				level[c] = RAMPS.find(ch)
+				ramp[c] = 1
+			else:
+				assert(ch >= "0" and ch <= "3", "Map %s: height '%s' at %d,%d (0-3, or a ramp a-c)" % [id, ch, x, y])
+				level[c] = ch.unicode_at(0) - 48
+			var k := chunk_of(c)
+			level_chunks[k] = maxi(level_chunks[k], level[c] + ramp[c])
+	for y in height:
+		for x in width:
+			var c := y * width + x
+			var top: int = level[c] + ramp[c]   # the highest ground this cell reaches
+			for dy in range(-1, 2):
+				for dx in range(-1, 2):
+					var nx := x + dx
+					var ny := y + dy
+					if nx >= 0 and ny >= 0 and nx < width and ny < height and level[ny * width + nx] > top:
+						cliff[c] = 1
+			if cliff[c] == 1:
+				walk[c] = 0
+				for k in CLASSES.size():
+					if k != FLYING:
+						walks[k][c] = 0
+
+
+## The level at (x, y) milli-tiles (a ramp counts as its foot).
+func level_at(x: int, y: int) -> int:
+	return level[cell_of(x, y)]
 
 
 ## Can a unit in lane `k` (its movement class, in its team's lane group: World.lane) stand at
@@ -303,6 +363,8 @@ func can_build(cx: int, cy: int, size: int, mc := 0, water_ok := false) -> bool:
 			var c := y * width + x
 			if occupied[c] != 0 or amount[c] > 0 or deck[c] == 1:
 				return false
+			if cliff[c] == 1 or ramp[c] == 1 or level[c] != level[cy * width + cx]:
+				return false   # not on a cliff or a ramp, and all on one level
 			var t: int = terrain[c]
 			if not terrain_walk[t] and not (water_ok and mc != FLYING and terrain_move[t] & (1 << mc)):
 				return false
@@ -324,7 +386,7 @@ func _refresh(cell: int) -> void:
 	var was := PackedByteArray()
 	for g in walks:
 		was.append(g[cell])
-	var clear: bool = occupied[cell] == 0 or walk_over[cell] == 1   # buildings block, farms don't
+	var clear: bool = (occupied[cell] == 0 or walk_over[cell] == 1) and cliff[cell] == 0   # buildings and cliffs block, farms don't
 	var ground: bool = terrain_walk[terrain[cell]] or deck[cell] == 1   # a bridge's deck is ground over the water
 	walk[cell] = 1 if ground and clear else 0
 	var mask: int = terrain_move[terrain[cell]] | (7 if deck[cell] == 1 else 0)
