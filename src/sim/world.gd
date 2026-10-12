@@ -165,6 +165,7 @@ func _init(p_seed: int, p_map: SimMap, p_races: Array, p_rules: Dictionary, p_te
 	Trails.setup(self)
 	Fog.setup(self)
 	map.fresh.clear()
+	map.fresh_closed.clear()
 
 
 static func _ints(v):
@@ -751,23 +752,35 @@ func _solve_queued() -> void:
 
 
 ## The map changed this tick (a building placed, a resource used up): drop every
-## cached field the change could affect. Units re-request what they need.
+## cached field a closing change could affect (units re-request what they need); where cells
+## only opened (a tree felled, a bush picked bare, a bridge rebuilt) patch the field instead,
+## unless the cell was one of its sources (Flow.patch). Felling a forest no longer re-solves
+## every field that saw it.
 func _sync_map() -> void:
 	if map.fresh.is_empty():
 		return
 	var keep := []
 	for key in field_order:
+		var f = fields[key]
 		var stale := false
-		for c in map.fresh:
-			if fields[key].touches(map, c):
+		var opened := PackedInt32Array()
+		for k in map.fresh.size():
+			var c: int = map.fresh[k]
+			if not f.touches(map, c):
+				continue
+			if map.fresh_closed[k] == 1 or c in f.sources:
 				stale = true
 				break
+			opened.append(c)
 		if stale:
 			fields.erase(key)
-		else:
-			keep.append(key)
+			continue
+		for c in opened:
+			f.patch(map, c, key % LANES)
+		keep.append(key)
 	field_order = keep
 	map.fresh.clear()
+	map.fresh_closed.clear()
 
 
 # ------------------------------------------------------------------ separation

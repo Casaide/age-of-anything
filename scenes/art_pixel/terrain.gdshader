@@ -6,6 +6,7 @@ shader_type canvas_item;
 uniform sampler2D masks : filter_linear, repeat_disable;
 uniform sampler2D paths : filter_linear, repeat_disable;   // R trail, G boardwalk, B cobble, A road
 uniform sampler2D path_arc : filter_linear, repeat_disable;   // R: distance along the nearest path (tiles)
+uniform sampler2D wear : filter_linear, repeat_disable, hint_default_black;   // R: how worn the ground is by walkers, per tile (trails.gd)
 uniform vec2 map_size;          // tiles
 uniform float art_px = 1.0;     // screen pixels per art pixel (the dither works on art pixels)
 varying vec2 world;             // canvas units at scale 1 (64 x 32 per tile)
@@ -146,6 +147,9 @@ void fragment() {
 	}
 
 	vec4 pth = texture(paths, t / map_size);
+	// Worn trails: where units walk often the grass wears to earth (a trail once worn through).
+	float worn = texture(wear, t / map_size).r;
+	pth.r = max(pth.r, smoothstep(0.08, 0.45, worn) * 0.72);
 	// Where path styles meet, the locally strongest surface wins, so seams are ragged.
 	float st_trail = pth.r + (n - 0.5) * 0.45;
 	float st_board = pth.g + (n - 0.5) * 0.12;
