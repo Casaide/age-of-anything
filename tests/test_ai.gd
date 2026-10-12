@@ -35,6 +35,11 @@ func _init() -> void:
 	var rules = DataLib.load_json("res://data/rules/default.json")
 	var frogs: Dictionary = gen.generate("angry swamp frogs with reed spears", rules)
 	var rats: Dictionary = gen.generate("sewer rats with cheese hammers", rules)
+	if args.size() > 1 and args[1] == "age3":   # just the age-3 buildings check
+		_test_age_three(rules, frogs, rats)
+		print("\n%d checks, %d failed" % [checks, failures])
+		quit(1 if failures > 0 else 0)
+		return
 	if args.size() > 1 and args[1] == "reach":   # just the raid and walled-ford checks (a couple of minutes)
 		_test_respond(rules, rats, frogs)
 		_test_walled_fords(rules, frogs, rats)
@@ -77,6 +82,7 @@ func _init() -> void:
 
 	_test_respond(rules, rats, frogs)
 	_test_walled_fords(rules, frogs, rats)
+	_test_age_three(rules, frogs, rats)
 
 	var w := World.new(SEED, SimMap.load_id(map_id), [frogs, rats], rules)
 	w.issue(1, Commands.SURRENDER, {})
@@ -193,6 +199,38 @@ func _test_easy(rules: Dictionary, a: Dictionary, b: Dictionary) -> void:
 	print("\n== easy: most soldiers in the first 10 minutes %d (pop), first loss %s" % [most, _clock(first_loss) if first_loss >= 0 else "none"])
 	check(most <= 25, "easy keeps a modest army for the first ten minutes (%d pop)" % most)
 	check(first_loss < 0 or first_loss >= 20 * 60 * 8, "easy doesn't strike before 8 minutes (%s)" % _clock(first_loss))
+
+
+## In age 3 the bot raises a University and a Castle and buys some of their research (milestone
+## 12 phases 4-5). Bots rarely reach age 3 in a match yet (phase 8), so this one starts there
+## with a full stock against a passive side, topped up each minute, for fifteen minutes.
+func _test_age_three(rules: Dictionary, a: Dictionary, b: Dictionary) -> void:
+	var w := World.new(SEED, SimMap.load_id(map_id), [a, b], rules)
+	var bots := [Bot.new(0), EcoBot.new(1)]
+	w.ages[0] = 3
+	var done := {}
+	var bought := []
+	while w.tick < 20 * 900:
+		if w.tick % 1200 == 0:
+			for r in w.resources.size():
+				w.stock[r][0] = maxi(w.stock[r][0], 3000)
+		for bot in bots:
+			bot.think(w)
+		w.step()
+		for e in w.events:
+			if e.type == "research" and e.player == 0:
+				bought.append(e.id)
+	for k in w.buildings.count():
+		if w.buildings.owner[k] == 0 and w.buildings.done[k] == 1:
+			done[w.btypes[w.buildings.kind[k]].id] = true
+	var theirs := bought.filter(func(id): return id in ["stonecutting", "lifting_frames", "slit_windows", "thick_walls", "siege_wrights", "war_drums", "creature_research", "culture_research"])
+	var workers := 0
+	for i in w.units.count():
+		if w.units.owner[i] == 0 and w.types[w.units.kind[i]].worker:
+			workers += 1
+	print("\n== age 3: %d workers, buildings %s; University/Castle research %s" % [workers, done.keys(), theirs])
+	check(done.has("university") and done.has("castle"), "age 3: the bot builds a University and a Castle")
+	check(theirs.size() >= 2, "age 3: ...and buys at least two of their research (%s)" % [theirs])
 
 
 ## Raids anywhere get an answer (Dominic, 2026-10-13: "attacking any enemy builds doesn't

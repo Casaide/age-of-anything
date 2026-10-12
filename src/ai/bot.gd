@@ -152,7 +152,9 @@ func _build_order(w, tc: int, workers: Array) -> void:
 		wanted[id] = wanted.get(id, 0) + 1
 		if have.get(id, 0) >= wanted[id]:
 			continue
-		if w.ages[player] < int(step.get("age", 1)) or workers.size() < int(step.workers):
+		if w.ages[player] < int(step.get("age", 1)):
+			continue   # a later age's step (the University, the Castle) doesn't hold up this age's
+		if workers.size() < int(step.workers):
 			return   # the order is an order: wait for this step before the next
 		var k: int = Economy.btype_of(w, id)
 		if not w.can_afford(player, w.btypes[k].cost):
@@ -225,7 +227,7 @@ func _upgrade_lines(w, workers: Array, army: Array) -> void:
 		for r in w.tech.research:
 			var gather: bool = r.effects.any(func(fx): return fx.has("gather"))
 			var old: bool = r.has("line") or (build_up and gather)
-			if not (old or r.id in cfg.research.economy or _reach(w, r, fielded) >= int(cfg.research.army_min)) \
+			if not (old or r.id in cfg.research.economy or r.id in cfg.research.get("buildings", []) or _reach(w, r, fielded) >= int(cfg.research.army_min)) \
 					or Tech.why_not(w, player, b, r.id) != "":
 				continue
 			var spare := true
