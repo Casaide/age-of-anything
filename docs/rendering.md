@@ -20,6 +20,10 @@ map; the code says the details.
      legacy), `torso_fit` (3D scale for worn armour), `torso_tilt`, `gear_scale` (on heads).
    - Concept options live in `scenes/art_pixel/concepts.gd` (`concept.*` ids), shown with
      `tests/concept_sheet.gd`; nothing there is in play until picked.
+   - **Holds.** A body is baked with its near arm posed for what it holds (`unit_models.arm_pose`:
+     `body.frog@throw`, `@draw`, `@aim`...). Workers are also baked in the work holds `@raise` and
+     `@reach` (D-105): `UnitView.set_hold()` swaps the body's bake through the work cycle and moves
+     the tool to the new hand. Animation concepts render through `tests/anim_concept_sheet.gd`.
 2. **Bake** (`scenes/art_pixel/part_baker.gd`): each part is rendered by an orthographic
    camera from above (elevation 30) at **8 facings**, 45 degrees apart (azimuth 35 + 45k; D-087),
    lit by one warm key light from the viewer's upper left and a cool fill, with self-shadowing,

@@ -618,3 +618,13 @@ blocked ground at a capped rate instead of teleported, flow fields that lead to 
 source's corners, a crowded-off gatherer taking the clump's least busy other tile, claimed
 sheep rotating their spot. `choke_test` has no food or wood (a movement test map), so it left
 the lobby; it stays in sim_debug. Measured by `tests/path_audit.gd`. Dominic asked, Claude.
+
+**D-105, 2026-10-12: Work animation: baked arm poses (W1), the centaur kneel (C1), head-digging
+for armless creatures (A1).** Dominic's picks from the concept sheets (`tests/anim_concept_sheet.gd`,
+pictures in `archive/images/2026-10-12/`). The rig keeps its one baked body, but workers' bodies
+are baked in three arm holds (their own, "raise", "reach") and the work cycle swaps between them,
+the tool following the hand: wound up behind the shoulder, coming down, the blow reaching out and
+down; foraging reaches in, then lifts. A fused mount kneels to forage: the front legs fold short
+with a small forward knee, the chest dips about the feet, the rider half comes forward. Armless
+creatures work with the head and the whole body, rearing back between blows. Attacks and deaths
+wait for the next concept round. Dominic picked, Claude built.

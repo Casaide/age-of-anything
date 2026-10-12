@@ -31,7 +31,13 @@ Attack step-ins and deaths per body shape wait for the next round. Nothing here 
 the concept hooks (`UnitView.concept`, `set_hold`) only run when a sheet sets them.
 
 ## Decisions
-- None yet: Dominic's pick is pending (then a D-number).
+- D-105: Dominic picked W1, C1 and A1 ("go ahead"); built the same day.
+
+## Built (later the same day)
+Workers' bodies are baked in the two work holds alongside their own (`bake_units`, workers only),
+`UnitView.set_hold()` swaps them through the work cycle and keeps the hold across a facing
+change, the fused mount kneels to forage with an eased fold, and harnessed bodies dig with the
+head and body. The concept hooks stay for the next sheets. Live sheets: pictures 06 and 07.
 
 ## Pictures
 ![workers: humans, W1 three poses / W2 two / W3 as now](../images/2026-10-12/01-anim-concepts-workers-humans.png)
@@ -39,6 +45,15 @@ the concept hooks (`UnitView.concept`, `set_hold`) only run when a sheet sets th
 ![centaur: kneel, bow, as now](../images/2026-10-12/03-anim-concepts-centaur-kneel.png)
 ![beetle: head-dig, pounce, as now](../images/2026-10-12/04-anim-concepts-beetle-dig.png)
 ![spider: head-dig, pounce, as now](../images/2026-10-12/05-anim-concepts-spider-dig.png)
+![built: humans and frogs at work through the game's own animation (walk, forage, chop, build)](../images/2026-10-12/06-work-poses-live-humans-frogs.png)
+![built: centaurs kneeling to forage, beetles digging with the head](../images/2026-10-12/07-work-poses-live-centaur-beetle.png)
+
+Dominic on the first live kneel: "deep isn't the issue. The knees aren't bent, and the body isn't
+leaning back to maintain balance." So the front legs got a knee: the leg's own sprite shortens to
+the knee and a second copy, the shin, folds back from it along the ground; the chest comes down
+about the planted hind hooves and the human half leans back over the hindquarters.
+
+![the kneel close up: knees bent, shins along the ground, the rider leaning back](../images/2026-10-12/08-centaur-kneel-close-up.png)
 
 ## Funny moments and bugs worth remembering
 - Four Godot windows baking at once starved Dominic's running game of the GPU ("running game

@@ -31,6 +31,7 @@ const WITHERS_DROP := Vector2(2.0, 5.0)    # part units: wings on a mount start 
 const WITHERS_TILT := -0.5                 # ...and lie back along it, folded, clear of the rider
 const WITHERS_SCALE := 2.0                 # a horse's wings are a horse's size (Dominic)
 var head_node: Node2D     # the unit's own head (the rider's, when mounted)
+var seat_node: Node2D     # where a rider (or a centaur's human half) sits on its mount
 var back_node: Node2D     # what's on its back (wings flap)
 var job := ""             # "", "forage", "chop" or "build": set by the view each frame
 var struck := false       # this frame the tool landed (or a pick was made): the view plays its sound
@@ -110,6 +111,7 @@ func build(r: Dictionary, lib, team: Color, speed := 10) -> void:
 			seat.position = mount_rig.sockets.get("seat", Vector2(0, -20)) + Vector2(0, 6)
 			seat.scale = Vector2(0.8, 0.8)
 		bob.add_child(seat)
+		seat_node = seat
 		# Every rider shows its near leg down the mount's flank, held still (people had none: Dominic).
 		_clinging = not m.fused
 		var rider := _make_rig(lib, r.body, r.head, colours, seat, _clinging, r.parts.get("hand_r", ""))
@@ -221,7 +223,7 @@ func _make_rig(lib, body_id: String, head_id: String, colours: Dictionary, paren
 			if rig.has("anchors") and float(a[3]) < 0.0:
 				leg.shade = 0.78   # the far leg sits in shadow
 			root.add_child(leg)
-			legs.append({"node": leg, "phase": float(a[2]), "cling": _clinging})
+			legs.append({"node": leg, "phase": float(a[2]), "cling": _clinging, "rest": leg.position})
 
 	var body_node := _shape()
 	body_node.part_id = body_id + _hold_suffix
@@ -229,6 +231,8 @@ func _make_rig(lib, body_id: String, head_id: String, colours: Dictionary, paren
 	body_node.setup(body.shapes, colours)
 	root.add_child(body_node)
 	breathing.append(body_node)
+	if body_id == recipe.body:
+		_body_nodes.append(body_node)
 	if rig.get("front", false):
 		# The body's near arm, drawn above torso armour and below what the hands hold.
 		var arm := _shape()
@@ -239,6 +243,8 @@ func _make_rig(lib, body_id: String, head_id: String, colours: Dictionary, paren
 		# Over the body, unless this facing turns that side away (then behind it).
 		arm.set_meta("z", 1.5 if facing_k == 0 or float(rig.get("depth", {}).get("hand_r", 1.0)) >= -0.5 else -1.0)
 		root.add_child(arm)
+		if body_id == recipe.body:
+			_body_nodes.append(arm)
 
 	var gear_scale := 1.0
 	if head_id != "":
@@ -305,6 +311,7 @@ func _attach(lib, rig: Dictionary, slot: String, part_id: String, colours: Dicti
 	if slot == "hand_r":
 		weapon = node
 		weapon_rest = node.position
+		_hand_rest = node.position
 		weapon_rot = node.rotation
 		harnessed = rig.carry == "harness"
 	if slot == "back":
@@ -357,11 +364,15 @@ func _rebuild() -> void:
 	for c in get_children():
 		remove_child(c)
 		c.queue_free()
+	var hold := work_hold
 	legs = []
 	breathing = []
 	weapon = null
 	head_node = null
 	back_node = null
+	seat_node = null
+	_body_nodes = []
+	work_hold = "low"
 	flying = false
 	facing = 1.0
 	build(_built[0], _built[1], _built[2], _built[3])
@@ -369,6 +380,7 @@ func _rebuild() -> void:
 	phase = keep_phase
 	if tool != "" and weapon != null and tool != weapon.part_id:
 		set_tool(_built[1], tool)
+	set_hold(hold)
 
 
 ## Swap what the hand holds (a worker's tool for the job, or the load it carries home),
@@ -388,35 +400,35 @@ func flourish() -> void:
 	attack_t = 0.35
 
 
-## Swap the body for the same body in another hold ("reach", "raise", "low": a bake posed
-## with its near arm there), moving what the hand holds to the new hand. Only if that bake
-## exists; the game never asks for one it hasn't baked. (Animation concepts, 2026-10-12.)
+## Work poses (W1, D-105): the body is baked in three arm holds, "low" (its own, how it
+## carries its tool), "raise" (the tool wound up high behind the shoulder) and "reach" (the
+## hand out and down to the work), and the work cycle swaps between them. Swapping moves what
+## the hand holds to the new hand. Only if that bake exists (bake_units bakes them for
+## workers); a missing bake leaves the pose as it is, so nothing shows magenta.
+const WORK_HOLDS := ["reach", "raise"]
+var work_hold := "low"
+var _body_nodes: Array = []   # the body's PartShapes (its bake and its near-arm layer)
+var _hand_rest := Vector2.ZERO   # the hand in the body's own hold
+
+
 func set_hold(hold: String) -> void:
-	if recipe.has("mount") and recipe.mount.get("fused", false) == false:
+	if hold == work_hold:
 		return
-	var body_id: String = recipe.body
-	var id := body_id + ("" if hold == "low" else "@" + hold)
+	if recipe.has("mount") and not recipe.mount.get("fused", false):
+		return   # a rider's body is baked once; mounts don't work with their hands
+	var natural: String = recipe.body + _hold_suffix
+	var id: String = natural if hold == "low" else recipe.body + "@" + hold
 	var rig: Dictionary = PartShape.rigs.get(id + PartShape.facing_suffix(facing_k), PartShape.rigs.get(id, {}))
-	if rig.is_empty() and hold != "low":
-		return
-	for ps in find_children("*", "Node2D", true, false):
-		if ps is PartShape and (ps.part_id == body_id or ps.part_id.begins_with(body_id + "@")) and ps.part_id == _body_part_id():
-			ps.part_id = id
-			ps.setup(ps.shapes, ps.colours)
-	_body_hold = id
-	if weapon != null and rig.has("sockets") and rig.sockets.has("hand_r"):
-		weapon.position = rig.sockets.hand_r
+	if hold != "low":
+		if rig.is_empty() or not PartShape.baked.has(PartShape.bake_key(id, _body_nodes[0].shapes, PartShape.team_neutral(_body_nodes[0].colours)) + PartShape.facing_suffix(facing_k)):
+			return
+	for ps in _body_nodes:
+		ps.part_id = id
+		ps.setup(ps.shapes, ps.colours)
+	work_hold = hold
+	if weapon != null:
+		weapon.position = rig.sockets.hand_r if hold != "low" and rig.has("sockets") and rig.sockets.has("hand_r") else _hand_rest
 		weapon_rest = weapon.position
-		weapon.rotation = weapon_rot
-	elif weapon != null and hold == "low":
-		weapon.position = weapon_rest
-
-
-var _body_hold := ""
-
-
-func _body_part_id() -> String:
-	return _body_hold if _body_hold != "" else recipe.body + _hold_suffix
 
 
 ## A pose on top of the animation, for concept sheets: kneel (0..1: the front legs fold and
@@ -476,6 +488,7 @@ func _process(delta: float) -> void:
 	else:
 		for leg in legs:
 			leg.node.rotation = 0.35 if leg.cling else sin(ph + leg.phase) * gait.swing * stride
+			leg.node.scale.y = 1.0
 		var hover := 0.0
 		if flying:
 			hover = -9.0 + sin(t * 3.0) * 2.0
@@ -514,6 +527,9 @@ func _process(delta: float) -> void:
 		_work(t, stepped)
 	elif not walking:
 		_idle(delta)
+	if (job == "" or walking) and work_hold != "low":
+		set_hold("low")
+	_kneel(delta)
 	_apply_concept()
 	if stepped and art_px > 0.0:
 		# Sit on whole art pixels: offset the drawing so its global position snaps.
@@ -561,9 +577,11 @@ static func _gait(n: int, flies: bool) -> Dictionary:
 	return {"swing": 0.5, "cadence": 1.0, "bob": 1.5, "rock": 0.0, "rock_rate": 1.0}
 
 
-## Work, per job, with the tool in the right hand (it turns about the hand):
-## forage: stoop and reach in, pick, lift; chop: wind the axe back over the shoulder,
-## strike down hard, recover; build: short quick hammer blows.
+## Work, per job (D-105). Two arms: the body swaps through its baked holds, the tool wound
+## up high behind the shoulder (raise), coming down (low), the blow reaching out and down to
+## the work (reach); forage reaches in, then lifts. No arms (a beetle, a spider): the head
+## and body drive into the work and rear back between blows (A1). A fused mount (a centaur)
+## kneels to forage (C1, see _kneel).
 func _work(t: float, stepped: bool) -> void:
 	var period: float = {"forage": 1.1, "chop": 0.9, "mine": 1.0, "build": 0.5}[job]
 	var p := fmod(t / period + noise.seed % 7 * 0.13, 1.0)
@@ -575,41 +593,129 @@ func _work(t: float, stepped: bool) -> void:
 	var swing := 0.0   # tool rotation: negative raises it back
 	var lean := 0.0    # body lean: positive leans forward
 	var crouch := 0.0
+	var hold := "low"
+	var head := 0.0    # the head's dip (armless creatures work with it)
 	match job:
 		"forage":
 			var k := sin(p * TAU) * 0.5 + 0.5
-			lean = 0.1 + 0.08 * k
-			crouch = 1.5 * k
-			swing = 0.35 * k
-			if weapon:
-				weapon.position = weapon_rest + Vector2(3.0, 4.0) * k
+			hold = "reach" if p < 0.5 else "low"
+			lean = 0.04 + 0.12 * k
+			crouch = 2.0 * k
+			swing = 0.3 * k - 0.1 * (1.0 - k)
+			head = 0.7 * k
+			if weapon and work_hold == "low":
+				weapon.position = weapon_rest + Vector2(3.0, 4.0) * k   # no reach bake: the hand goes down anyway
 		"chop", "mine", "build":
-			var up := 1.2 if job == "build" else 2.0
-			var wind := 0.6
-			var hit := 0.75
+			var up := 0.9 if job == "build" else 1.2
+			var wind := 0.6 if job != "build" else 0.5
+			var hit := 0.75 if job != "build" else 0.65
 			if p < wind:
-				swing = -up * (p / wind)
-				lean = -0.04 * (p / wind)
+				hold = "raise"
+				var q := p / wind
+				swing = -up * (0.7 + 0.3 * q)
+				lean = -0.06 - 0.02 * q
+				head = -0.5 - 0.2 * q
+				crouch = -1.0 * q if harnessed else 0.0
 			elif p < hit:
 				var q := (p - wind) / (hit - wind)
-				swing = lerpf(-up, 0.45, q)
-				lean = lerpf(-0.04, 0.1, q)
+				hold = "low" if p < land else "reach"
+				swing = lerpf(-up * 0.4, 0.9 if job != "build" else 0.5, q)
+				lean = lerpf(0.02, 0.14, q)
+				head = lerpf(0.3, 0.8, q)
+				crouch = lerpf(0.5, 1.5, q)
 			else:
 				var q := (p - hit) / (1.0 - hit)
-				swing = lerpf(0.45, 0.0, q)
-				lean = lerpf(0.1, 0.0, q)
-			crouch = 0.5 if job == "build" else 0.0
-			if weapon:
-				weapon.position = weapon_rest + Vector2(-1.5, -3.0) * clampf(-swing / up, 0.0, 1.0)
-	if harnessed:   # no arms: the whole body digs, rocks or butts at the work
-		lean = lean * 0.6 + absf(swing) * 0.06
+				hold = "reach" if p < 0.9 else "low"
+				swing = lerpf(0.9 if job != "build" else 0.5, 0.0, q)
+				lean = lerpf(0.14, 0.0, q)
+				head = lerpf(0.8, 0.0, q)
+				crouch = lerpf(1.5, 0.0, q)
+	if harnessed:   # no arms: the head and the whole body dig; the tool rides along
+		lean = lean * 1.6
+		crouch = crouch * 1.4
 		swing = 0.0
+		if head_node:
+			head_node.rotation = head
 		if weapon:
 			weapon.position = weapon_rest
+	else:
+		set_hold(hold)
+		crouch *= 0.5
 	if weapon:
 		weapon.rotation = weapon_rot + swing
 	bob.rotation += lean
 	bob.position.y += crouch
+
+
+## A fused mount kneels to forage (C1): the front legs fold short with a small forward knee,
+## the chest dips about the feet (the hind end stays up) and the rider half comes forward with
+## it. Eased in and out over a third of a second on the unit's own clock (so a sheet of single
+## frames shows it too); walking stands it up again.
+var kneel := 0.0
+var _kneel_want := 0.0
+var _kneel_from := 0.0    # the kneel when it last changed its mind
+var _kneel_at := 0.0      # ...and the time then
+var _kneel_seen := false
+
+
+func _kneel(_delta: float) -> void:
+	var want := 1.0 if job == "forage" and not walking and recipe.has("mount") and recipe.mount.get("fused", false) else 0.0
+	if not _kneel_seen:
+		_kneel_seen = true   # a view made of a unit already at work starts in the pose
+		_kneel_want = want
+		_kneel_from = want
+		_kneel_at = time
+	if want != _kneel_want:
+		_kneel_want = want
+		_kneel_from = kneel
+		_kneel_at = time
+	kneel = move_toward(_kneel_from, want, maxf(0.0, time - _kneel_at) * 3.0)
+	if kneel <= 0.0 or legs.size() < 4:
+		for leg in legs:
+			if leg.has("shin"):
+				leg.shin.visible = false
+		if seat_node != null and seat_node.rotation != 0.0:
+			seat_node.rotation = 0.0
+			seat_node.position.x = seat_node.get_meta("rest_x", seat_node.position.x)
+		return
+	if seat_node != null and not seat_node.has_meta("rest_x"):
+		seat_node.set_meta("rest_x", seat_node.position.x)
+	var xs := legs.map(func(l): return l.node.position.x)
+	xs.sort()
+	var mid: float = (xs[1] + xs[2]) * 0.5
+	for leg in legs:
+		if leg.node.position.x <= mid:
+			continue
+		# A front leg bends at the knee (Dominic: "the knees aren't bent"): the upper leg, the
+		# leg's own sprite, shortens to the knee; a second copy of it, the shin, folds back
+		# from the knee to lie along the ground.
+		var upper := 1.0 - 0.45 * kneel
+		leg.node.scale.y = upper
+		leg.node.rotation += 0.1 * kneel
+		var shin: Node2D = leg.get("shin")
+		if shin == null:
+			shin = _shape()
+			shin.part_id = leg.node.part_id
+			shin.facing = leg.node.facing
+			shin.shade = leg.node.shade
+			shin.setup(leg.node.shapes, leg.node.colours)
+			shin.set_meta("z", leg.node.get_meta("z", 0))
+			leg.node.add_sibling(shin)
+			leg.shin = shin
+		shin.visible = kneel > 0.03
+		var hip_to_ground: float = -leg.rest.y
+		shin.position = leg.node.position + Vector2(0.0, hip_to_ground * upper).rotated(leg.node.rotation)
+		shin.rotation = leg.node.rotation + 1.45 * kneel   # back along the ground, hoof behind the knee
+		shin.scale = Vector2(leg.node.scale.x, 0.5)
+	# The chest comes down with the folded legs, pivoting about the hind hooves (which stay
+	# planted), and the human half leans back over the hindquarters to keep its balance.
+	var a := 0.17 * kneel
+	var pivot := Vector2((xs[0] + xs[1]) * 0.5, 0.0)
+	bob.rotation += a
+	bob.position += pivot - pivot.rotated(a)
+	if seat_node != null:
+		seat_node.rotation = -0.4 * kneel
+		seat_node.position.x = seat_node.get_meta("rest_x", seat_node.position.x) - 1.5 * kneel
 
 
 ## Now and then, standing still, a unit fidgets: shifts its weight, looks up and
