@@ -432,16 +432,7 @@ func _train(w, workers: Array, count: int) -> void:
 		var bt: Dictionary = w.btypes[w.buildings.kind[b]]
 		if bt.trains.is_empty() or "worker" in bt.trains or w.buildings.queue[b].size() >= int(cfg.military.queue):
 			continue
-		var best := ""
-		var best_score := -(1 << 30)
-		for slot in bt.trains:
-			var k: int = w.type_of(player, slot)
-			if k < 0 or w.ages[player] < int(w.types[k].line[0].age) or _enough(w, slot, k):
-				continue
-			var s := _siege_score(w, slot, k) if cfg.military.get("siege", {}).get("max", {}).has(slot) else _score(w.types[k], foes)
-			if s > best_score:
-				best_score = s
-				best = slot
+		var best := pick(w, bt.trains, foes)
 		if best == "":
 			continue
 		var cost: PackedInt32Array = w.types[w.type_of(player, best)].cost
@@ -524,6 +515,23 @@ func _siege(w, army: Array, hx: int, hy: int) -> void:
 		w.issue(player, Commands.ATTACK_MOVE, {"ids": march, "x": to.x, "y": to.y})
 
 
+## Which of a building's lines to train against these foes (_enemy_tags): the best _score plus the
+## slot's military.pick_bias (engines go round instead, _siege_score); "" if none is open yet.
+func pick(w, trains: Array, foes: Dictionary) -> String:
+	var best := ""
+	var best_score := -(1 << 30)
+	for slot in trains:
+		var k: int = w.type_of(player, slot)
+		if k < 0 or w.ages[player] < int(w.types[k].line[0].age) or _enough(w, slot, k):
+			continue
+		var s := _siege_score(w, slot, k) if cfg.military.get("siege", {}).get("max", {}).has(slot) \
+			else _score(w.types[k], foes) + int(cfg.military.pick_bias.get(slot, 0))
+		if s > best_score:
+			best_score = s
+			best = slot
+	return best
+
+
 ## Healers from the Town Center once the age allows: one for every `per_army` soldiers, up to
 ## the age's cap (data: military.healers), one at a time, when there's enough to spare beyond a worker.
 func _train_healers(w, tc: int, army: Array, healers: Array) -> void:
@@ -589,6 +597,8 @@ func _enemy_tags(w) -> Dictionary:
 			tags[tag] = tags.get(tag, 0) + 1
 		for c in t.eval.bonus:   # remember what they're good against, keyed apart
 			tags["bonus:" + c] = tags.get("bonus:" + c, 0) + int(t.eval.bonus[c])
+	if _aim != 0:   # the army is going for a building (a wall shutting the way): wall-breakers count (military.building_foes)
+		tags["building"] = int(cfg.military.building_foes)
 	return tags
 
 

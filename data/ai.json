@@ -157,6 +157,12 @@
   },
   "_doc_waves": "waves: set times and the army (population) each needs; then one every repeat_every seconds once the army is repeat_min_army (per age: a Town Center full of workers wants a bigger wave). Soldiers left out in the field under half a wave come home to join the next one.",
   "guard": 4,
+  "pick_bias": {
+   "infantry": -7
+  },
+  "building_foes": 0,
+  "_doc_pick_bias": "the counter-pick (bot.gd _train: the unit whose attack, hp/10 and bonuses times the foes seen with that class score best, less the bonuses foes have against it) adds this per slot: with nothing seen the Barracks trains spears, as before the swordsman (even the rats, whose swordsman swings a cheese hammer); a few seen spears or skirmishers (the swordsman's bonus) tip it to swords (tests/test_ai.gd pick)",
+  "_doc_building_foes": "while the army goes for an enemy building (bot.gd _aim: a wall shutting the way), the counter-pick counts this many foes of class building, so the line with a bonus against buildings (the swordsman's) is trained for the raid. Off (0) for now: at 2 a stone ring fell sooner (18:40 against 20:25) but a palisade ring much later (18:10 against 12:00), its blows spread over many pieces (tests/test_ai.gd walls): the bot fielded seven swordsmen by 7:00 and trained no more until 13:00 (dearer than spears, out of what it saves for the age), so the assault stalled; worth a look with the big-map AI work",
   "healers": {
    "per_army": 5,
    "max": {

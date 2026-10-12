@@ -84,6 +84,11 @@ static func evaluate(recipe: Dictionary, lib, rules: Dictionary) -> Dictionary:
 		tags["mounted"] = true
 		tags["large"] = true
 
+	for sd in rules.roster:   # the line's own counters (rules roster "bonus": the swordsman's), whatever it holds, and their price
+		if sd.slot == recipe.get("slot", ""):
+			_add_classes(bonus, sd.get("bonus", {}))
+			points += int(sd.get("price_points", 0))
+
 	var scale := int(recipe.scale)
 	if scale >= 140:
 		hp *= 2

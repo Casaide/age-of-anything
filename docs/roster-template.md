@@ -50,7 +50,7 @@ Legend:
 
 | Line                     | Slot              | Role / needs                   | Beats / weak to                                 | Age | Status                  |
 | ------------------------ | ----------------- | ------------------------------ | ----------------------------------------------- | --- | ----------------------- |
-| Swordsman line (4 tiers) | `infantry`        | melee, not spear (blade/blunt) | buildings, cheap units; weak to archers         | 1   | Next                    |
+| Swordsman line (3 tiers) | `infantry`        | melee, not spear (blade/blunt) | buildings, spears, skirmishers; weak to archers | 1   | **Built** (m13)         |
 | Spear line (3 tiers)     | `spear`           | spear                          | beats large/mounted; weak to archers, infantry  | 2   | **MVP**                 |
 | Fast light infantry      | `raider_infantry` | fast melee infantry            | beats mystics, siege, archers; weak to infantry | 2   | Later (family-specific) |
 
