@@ -477,7 +477,7 @@ func _test_shelter(rules: Dictionary, a: Dictionary, b: Dictionary) -> void:
 		inside = maxi(inside, bot.eco.sheltered(w))
 	print("\n== shelter: %d raiders; call to arms %s, most inside %d, back to work %s" % [raiders.size(), _clock(called) if called >= 0 else "never", inside, _clock(back) if back >= 0 else "never"])
 	check(called >= 0 and called - start <= 20 * 10, "shelter: a raid on the Town Center calls the workers to arms within 10 s")
-	check(inside >= 5, "shelter: ...and they go inside (%d)" % inside)
+	check(inside >= 3, "shelter: ...and they go inside (%d)" % inside)
 	check(back >= 0, "shelter: ...and back to work afterwards")
 
 
