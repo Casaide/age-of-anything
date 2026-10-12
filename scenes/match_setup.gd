@@ -16,8 +16,6 @@ const Icons := preload("res://src/view/art/icons.gd")
 const Audio := preload("res://src/view/audio.gd")
 const UiScale := preload("res://src/view/ui_scale.gd")
 
-const PRESETS := ["angry swamp frogs with reed spears", "sewer rats with cheese hammers", "centaur romans",
-	"greek hoplites", "spooky beetle knights", "steppe horse archers", "forest spiders"]
 const MAPS := ["reed_meadow", "reed_meadow_large", "flat_test"]   # real maps; choke_test is a movement test (sim_debug lists it)
 
 const BG := Color("#1c1712")
@@ -145,9 +143,9 @@ func _menu() -> Control:
 func _open_setup() -> void:
 	menu.visible = false
 	setup.visible = true
-	for i in sides.size():
+	for i in sides.size():   # every side starts rolled (Dominic): flick the dice again, or type
 		if sides[i].race.is_empty():
-			_regenerate(i)
+			_roll(i)
 
 
 # ------------------------------------------------------------------ the battle setup
@@ -173,16 +171,16 @@ func _setup() -> Control:
 	row.add_theme_constant_override("separation", 24)
 	row.size_flags_vertical = Control.SIZE_EXPAND_FILL
 	col.add_child(row)
-	row.add_child(_side_panel(0, "You", PRESETS[0]))
+	row.add_child(_side_panel(0, "You"))
 	row.add_child(_centre())
-	row.add_child(_side_panel(1, "The AI", PRESETS[1]))
+	row.add_child(_side_panel(1, "The AI"))
 	return margin
 
 
 ## The middle: the "versus" seal, the map card, and Start.
 func _centre() -> Control:
 	var col := VBoxContainer.new()
-	col.custom_minimum_size.x = 300
+	col.custom_minimum_size.x = 400   # fixed: a longer map name mustn't push the banners about (Dominic)
 	col.add_theme_constant_override("separation", 16)
 	col.alignment = BoxContainer.ALIGNMENT_CENTER
 	var vs := _label("vs", 54, BRONZE)
@@ -203,13 +201,14 @@ func _centre() -> Control:
 	map_name = _label("", 21, TEXT)
 	map_name.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	map_name.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	map_name.clip_text = true
 	pick.add_child(map_name)
 	var next := _button(">", 18, false)
 	next.pressed.connect(func(): _set_map(map_index + 1))
 	pick.add_child(next)
 	inner.add_child(pick)
 	map_pic = TextureRect.new()
-	map_pic.custom_minimum_size = Vector2(256, 140)
+	map_pic.custom_minimum_size = Vector2(360, 200)   # Dominic: the map needs more room
 	map_pic.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
 	map_pic.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
 	inner.add_child(map_pic)
@@ -227,9 +226,9 @@ func _centre() -> Control:
 	return col
 
 
-## One side's banner: the race's name, its army on a strip of grass, the prompt, presets,
+## One side's banner: the race's name, its army on a strip of grass, the dice and the prompt,
 ## the roster with costs, and the generator's notes.
-func _side_panel(i: int, who: String, prompt: String) -> Control:
+func _side_panel(i: int, who: String) -> Control:
 	var team := Color(lib.palettes.teams[i])
 	var card := _panel(team)
 	card.size_flags_horizontal = Control.SIZE_EXPAND_FILL
@@ -274,6 +273,32 @@ func _side_panel(i: int, who: String, prompt: String) -> Control:
 	col.add_child(stage)
 	var status := _label("", 13, DIM)
 	col.add_child(status)
+	# The dice, then the prompt (Dominic: the dice is the main thing; every side starts rolled,
+	# the box starts empty, no menu of presets).
+	var dice := Button.new()
+	dice.icon = Icons.texture("dice")
+	dice.expand_icon = true
+	dice.custom_minimum_size = Vector2(84, 84)
+	dice.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
+	dice.focus_mode = Control.FOCUS_NONE
+	dice.tooltip_text = "Roll the dice: a new race (with words in the box, another roll of those words)"
+	dice.add_theme_stylebox_override("normal", _box(Color("#2e2820"), EDGE, 2))
+	dice.add_theme_stylebox_override("hover", _box(Color("#3a3226"), GOLD, 2))
+	dice.add_theme_stylebox_override("pressed", _box(Color("#1e1a14"), GOLD, 2))
+	dice.pressed.connect(func(): Audio.of(get_tree()).play("ui_click"); _roll(i))
+	col.add_child(dice)
+	var field := LineEdit.new()
+	field.placeholder_text = "...or describe your race"
+	field.custom_minimum_size = Vector2(0, 60)
+	field.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	field.alignment = HORIZONTAL_ALIGNMENT_CENTER
+	field.add_theme_font_size_override("font_size", 26)
+	field.add_theme_color_override("font_placeholder_color", Color(DIM, 0.7))
+	field.add_theme_stylebox_override("normal", _box(Color("#16120d"), BRONZE, 2))
+	field.add_theme_stylebox_override("focus", _box(Color("#1c1710"), GOLD, 3))
+	field.text_changed.connect(func(_t): sides[i].reroll = 0; _regenerate(i))
+	field.text_submitted.connect(func(_t): _regenerate(i))   # Enter shows the race; only Start starts (Fable)
+	col.add_child(field)
 	if i == 1:   # the AI's banner: how hard it plays
 		var lrow := HBoxContainer.new()
 		lrow.add_theme_constant_override("separation", 8)
@@ -286,32 +311,6 @@ func _side_panel(i: int, who: String, prompt: String) -> Control:
 		level_pick.focus_mode = Control.FOCUS_NONE
 		lrow.add_child(level_pick)
 		col.add_child(lrow)
-	# The prompt, a reroll, presets.
-	var prow := HBoxContainer.new()
-	prow.add_theme_constant_override("separation", 8)
-	var field := LineEdit.new()
-	field.text = prompt
-	field.placeholder_text = "Describe a race: \"sewer rats with cheese hammers\""
-	field.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	field.add_theme_font_size_override("font_size", 19)
-	field.add_theme_stylebox_override("normal", _box(Color("#16120d"), EDGE, 1))
-	field.add_theme_stylebox_override("focus", _box(Color("#16120d"), GOLD, 1))
-	field.text_changed.connect(func(_t): sides[i].reroll = 0; _regenerate(i))
-	field.text_submitted.connect(func(_t): _regenerate(i))   # Enter shows the race; only Start starts (Fable)
-	prow.add_child(field)
-	var dice := _button("Reroll", 16, false)
-	dice.tooltip_text = "Same words, another roll of the dice"
-	dice.pressed.connect(func(): sides[i].reroll += 1; _regenerate(i))
-	prow.add_child(dice)
-	col.add_child(prow)
-	var pick := OptionButton.new()   # presets in one menu, not a wall of chips (Fable)
-	pick.add_item("Try one of these...")
-	for p in PRESETS:
-		pick.add_item(p)
-	pick.focus_mode = Control.FOCUS_NONE
-	pick.add_theme_font_size_override("font_size", 15)
-	pick.item_selected.connect(func(k): if k > 0: field.text = PRESETS[k - 1]; sides[i].reroll = 0; _regenerate(i); pick.select(0))
-	col.add_child(pick)
 	var units := VBoxContainer.new()   # one row per unit: its portrait, name and cost (the banner's lower half was empty: Fable)
 	units.add_theme_constant_override("separation", 4)
 	col.add_child(units)
@@ -322,16 +321,57 @@ func _side_panel(i: int, who: String, prompt: String) -> Control:
 	roster.add_theme_font_size_override("normal_font_size", 15)
 	roster.add_theme_color_override("default_color", TEXT)
 	col.add_child(roster)
-	sides.append({"field": field, "reroll": 0, "race": {}, "name": name, "line": line, "roster": roster, "units": units,
+	sides.append({"field": field, "reroll": 0, "rolled": "", "race": {}, "name": name, "line": line, "roster": roster, "units": units,
 		"stage": stage, "vp": vp, "layer": layer, "status": status, "dirty_at": 0.0, "team": team})
 	return card
+
+
+## The words a side's race comes from: what's typed, else what the dice rolled.
+func _prompt(i: int) -> String:
+	var typed: String = sides[i].field.text.strip_edges()
+	return typed if typed != "" else sides[i].rolled
+
+
+## The dice: with the box empty, a new race from random words; with words typed, another roll
+## of those words. Lobby-only randomness: the match gets the words and the roll, as ever.
+func _roll(i: int) -> void:
+	if sides[i].field.text.strip_edges() != "":
+		sides[i].reroll += 1
+	else:
+		sides[i].rolled = _random_words()
+		sides[i].reroll = randi() % 4
+	_regenerate(i)
+
+
+## A race's worth of words from the lexicon: maybe a culture, a creature, maybe "with" some kit.
+func _random_words() -> String:
+	var creatures := []
+	var cultures := []
+	var kit := []
+	for w in lib.lexicon:
+		var e: Dictionary = lib.lexicon[w]
+		if e.has("creature") and w.ends_with("s") and lib.creatures.get(e.creature, {}).get("playable", false):
+			creatures.append(w)
+		elif e.has("family") and not e.has("creature"):
+			cultures.append(w)
+		elif e.keys().size() == 1 and e.has("tags"):
+			kit.append(w)
+	creatures.sort()
+	cultures.sort()
+	kit.sort()
+	var words := []
+	if randi() % 3 != 0:
+		words.append(cultures[randi() % cultures.size()])
+	words.append(creatures[randi() % creatures.size()])
+	if randi() % 2 == 0:
+		words.append("with " + kit[randi() % kit.size()])
+	return " ".join(words)
 
 
 ## A prompt changed: the name and roster at once (generation is instant), the army after a pause.
 func _regenerate(i: int) -> void:
 	var s: Dictionary = sides[i]
-	var prompt: String = s.field.text.strip_edges()
-	var race: Dictionary = gen.generate(prompt if prompt != "" else "?", rules, s.reroll)
+	var race: Dictionary = gen.generate(_prompt(i), rules, s.reroll)
 	s.race = race
 	s.name.text = race.name
 	s.line.text = "%s, %s" % [lib.creatures[race.creature].plural, String(race.family).capitalize()]
@@ -484,7 +524,7 @@ func _map_image(m: Dictionary) -> Image:
 
 func _play() -> void:
 	var view = load("res://scenes/sim_debug.tscn").instantiate()
-	view.prompts = [sides[0].field.text, sides[1].field.text]
+	view.prompts = [_prompt(0), _prompt(1)]
 	view.rerolls = [sides[0].reroll, sides[1].reroll]
 	view.map_id = MAPS[map_index]
 	view.vs_ai = true
