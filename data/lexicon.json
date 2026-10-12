@@ -1520,6 +1520,18 @@
    "tags": {
     "mounted": 1
    }
+  },
+  "newt": {
+   "mount": "newt",
+   "tags": {
+    "mounted": 1
+   }
+  },
+  "salamander": {
+   "mount": "newt",
+   "tags": {
+    "mounted": 1
+   }
   }
  }
 }
