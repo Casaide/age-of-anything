@@ -367,7 +367,7 @@ Fixed first, as they came in; each ticked when done.
 - [x] 5. Castle (2026-10-13: concept round, 140-145; arrows, garrison by data, War Drums, the two race slots as placeholders)
 - [ ] 6. Siege Workshop standing (Temple cut)
 - [ ] 7. Wonder
-- [ ] 8. AI
+- [x] 8. AI (2026-10-13: ages on time, the content used, levels in data; `test_ai -- <map> levels`, `_test_shelter`; results below. Open: Hard draws with Normal on old_forest)
 - [ ] 9. Exit check
 - [ ] Archive: pictures taken along the way, journal, decisions, timeline
 
@@ -440,6 +440,61 @@ Fixed first, as they came in; each ticked when done.
   build order) and buys Lifting Frames and Stonecutting (`research.buildings`); War Drums by its
   army. Checks: `test_sim` (each effect, the volley, Slit Windows' reach), `test_ai -- <map> age3`.
   Age 3 still needs the Stable, as before (unchanged).
+- **Phase 8 (2026-10-13, Claude):** the AI plays the ages and the new content (`src/ai/bot.gd`,
+  `src/ai/eco_bot.gd`, `data/ai.json`; no sim changes).
+  - **A goal steers the economy.** What the bot saves for (`_goal`): the next age, plus the
+    building the age needs, once it has `age_workers` (15) / `age3_workers` (Easy 24, Normal 26,
+    Hard 30); else the build step waiting on resources. The worker shares (`EcoBot.shares`) lean
+    to what the goal lacks (an age-up: a hundred shares split by the shortfall, the rest halved; a
+    building: `build_push` 30), and a resource piled past `plenty` (600) gets nobody. Workers no
+    longer stay where they were first sent: one gatherer every `rebalance_every` (2 s) moves from
+    the resource most over its share to the one most under. Soldiers and research leave the
+    age's cost alone (while nobody raids it; age 1's guard trains while the age-up runs), and a
+    building-up level's soldiers leave alone the cost of steps marked `save` (the buildings the
+    ages and the content need). Gold income starts as age 2 does (a mining camp by gold is the
+    first age-2 step, gold in the age-2 mix), a stone camp and a Watchtower by the gold follow.
+  - **Fixes found on the way:** farms were never built once wild food ran out (farms followed the
+    food gatherers, and with no food left there were none: a deadlock that starved age 3), now
+    they follow food's share, and go up beside other foundations; a boar hunt killed seven
+    workers in age 1 (now soldiers must lead it); buildings could seal a pocket with houses and
+    forest, and soldiers trained into it never left (`_seals`: the ground round a footprint
+    must still join up and reach out); waves sent the soldiers already out and left the new ones
+    at home; trickles of a few soldiers walked into Town Center arrows one by one (under half a
+    wave out, they come home to join the next).
+  - **Content:** a University and a Castle in age 3 (more builders: 3 and 6), research by plan
+    (economy, then the University's: Lifting Frames, Stonecutting, then Bastion and Slit Windows
+    once the Castle stands, `research.wait_for`), line upgrades at their own cost, a Watchtower
+    by the gold and another where it was raided once quiet (up to the level's `towers`), call
+    to arms when a raid on the Town Center outnumbers the soldiers at home (for `shelter.seconds`
+    30, then back to work; not again for 120 s: a Town Center full of workers held out for ever
+    and bot matches stalled at 30 minutes), a second Town Center by far wood at 40 workers, a
+    Siege Workshop and a Market late, the Wonder (as before), workers up to 50 in age 3.
+  - **Levels** (data `levels`): Easy builds up most (army 35% of workers per age, sends 40%,
+    towers 3, shelters from 2 raiders), Normal (70%, 70%, 2 towers, shelters from 4), Hard (no
+    ratio, all, first wave at 4:00, 1 tower, shelters from 8); `all_in`: a big army leaves no
+    guard (Easy 60, Normal 36).
+  - **Numbers** (Reed Meadow 64; frogs, left alone = waves off against a passive side, 30 min):
+
+    | | before | after |
+    |---|---|---|
+    | age 2, left alone (Easy/Normal/Hard) | 7:01 / 7:01 / 7:01 | 5:37 / 5:37 / 5:37 |
+    | age 3, left alone | 14:15 / 15:12 / 15:13 | 12:35 / 12:41 / 13:46 |
+    | by 20:00 (Easy, Normal) | no Castle, no tower; University for Normal only | University, Castle, Watchtower (Bastion), 19-20 research |
+    | research by 20:00 (E/N/H) | 18 / 13 / 11 | 19 / 20 / 8 |
+    | army pop at 10/20/30 min, Normal | 15 / 60 / 68 | 7 / 29 / 83 |
+    | age 2 in matches vs passive | 7:01, 6:13 | 5:37, 4:53 |
+    | bot vs bot (Reed Meadow) | 10:02, 16:16, 16:49; nobody in age 3 | 20:35, 24:23, 28:08; the winner in age 3 |
+    | bot vs bot (old_forest / river_delta) | - | 9:09, 15:49, 26:26 / 16:29, 24:18, 26:08 |
+    | Hard vs Normal (Reed Meadow) | Hard 7:35 | Hard 10:06 |
+    | 2v2 (reed_meadow_2v2) | 12:52 | 15:03 (all four in age 3 in the longer runs) |
+
+    Centaur workers cost more, so centaurs still reach age 2 at 7-8 minutes. Bot matches are
+    longer because both sides now build up (D-077: a tester metric).
+  - **Open:** on old_forest Hard and Normal draw at 30:00 (Hard rushes, Normal's call to arms,
+    tower and upgrades hold; a mirror of rats draws too), so `test_ai -- old_forest` fails that one
+    check; Hard needs a better plan than "more soldiers" (siege in milestone 13 is the genre's
+    answer to a garrisoned Town Center). Not done: cutting through thin woods for a road, healers
+    in forest lanes, amphibious bots using swim routes on purpose.
 
 ## Changes from the original plan
 
