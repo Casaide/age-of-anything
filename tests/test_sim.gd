@@ -2861,8 +2861,8 @@ func _test_engines(races: Array) -> void:
 			break
 	check(arrow == 1, "ram: arrows barely scratch it (%d)" % arrow)
 	var rk: int = r.type_of(0, "ram")
-	var ck: int = r.type_of(0, "catapult")
-	check(r.types[ck].no_heal and r.types[rk].buildings_only, "engines: machines aren't healed, rams go for buildings")
+	var heals_ok := r.types.filter(func(t): return t.eval.tags.has("siege")).all(func(t): return t.no_heal == t.eval.tags.has("machine"))
+	check(heals_ok and r.types[rk].buildings_only, "engines: machines aren't healed (beasts are), rams go for buildings")
 	# A bolt through a line: aimed at the far one, it hits those in its way too.
 	var b := _bare_world(races)
 	var bolt := _lone(b, 0, "bolt_thrower", 8000, 20500, "stand")
