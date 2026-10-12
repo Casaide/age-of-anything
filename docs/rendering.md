@@ -23,7 +23,10 @@ map; the code says the details.
    - **Holds.** A body is baked with its near arm posed for what it holds (`unit_models.arm_pose`:
      `body.frog@throw`, `@draw`, `@aim`...). Workers are also baked in the work holds `@raise` and
      `@reach` (D-105): `UnitView.set_hold()` swaps the body's bake through the work cycle and moves
-     the tool to the new hand. Animation concepts render through `tests/anim_concept_sheet.gd`.
+     the tool to the new hand; soldiers swing their weapons through the same holds in a lunge
+     (D-106), and the view plays each death by body shape (`UnitView.die`). Animation concepts
+     render through `tests/anim_concept_sheet.gd` and `anim_concept_sheet2.gd`; the live result
+     through `tests/art_anim.gd` (work) and `tests/anim_fight_sheet.gd` (attacks and deaths).
 2. **Bake** (`scenes/art_pixel/part_baker.gd`): each part is rendered by an orthographic
    camera from above (elevation 30) at **8 facings**, 45 degrees apart (azimuth 35 + 45k; D-087),
    lit by one warm key light from the viewer's upper left and a cool fill, with self-shadowing,

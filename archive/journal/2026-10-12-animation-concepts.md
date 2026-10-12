@@ -74,3 +74,13 @@ six pixels). Archers: R1 draw and loose (lean back, bow up, snap forward on the 
 fold, the body sinks, the head drops, a rider slumps), D3 by shape (bipeds topple backwards with
 a bounce, hoppers flop belly-up after a last little hop, four and six legs crumple, flyers drop
 to the ground first and then topple).
+
+## Built: round two (D-106)
+Dominic picked T1, R1 and D3. The lunge replaced the six-pixel twitch (`UnitView._attack`), the
+archer got `loose()` for the release, and the death moved out of `combat_fx` into the view
+(`UnitView.die`, `_die_pose`), by body shape: hoppers belly-up, flyers down then over, legs
+folding under four and six legs, bipeds backwards with a bounce. Soldiers' bodies are baked in
+the work holds too, so their arms swing. `tests/anim_fight_sheet.gd` shows the live result
+(picture 18).
+
+![live: lunges, the archer's release, and the five deaths](../images/2026-10-12/18-fight-live-lunge-release-deaths.png)

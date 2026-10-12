@@ -628,3 +628,13 @@ down; foraging reaches in, then lifts. A fused mount kneels to forage: the front
 with a small forward knee, the chest dips about the feet, the rider half comes forward. Armless
 creatures work with the head and the whole body, rearing back between blows. Attacks and deaths
 wait for the next concept round. Dominic picked, Claude built.
+
+**D-106, 2026-10-12: Attacks step in, archers snap on the release, deaths go by body shape (T1,
+R1, D3).** Dominic's picks from the second concept round. A blow is a lunge: the body steps
+forward and leans, the near leg steps, the arm swings through its baked holds (wound up, then
+reaching into the blow); a spear thrusts; an armless creature butts with its head. Every body
+with arms is baked in the work holds now, soldiers included. A release snaps the archer forward
+and kicks the bow, then settles. The death belongs to the view (`UnitView.die`): a hopper gives
+one last hop and lands on its back, a flyer drops to the ground and then topples, four or six
+legs fold and the body sinks (a rider slumps), a biped topples backwards away from the blow and
+bounces once; `combat_fx` only times the fade and the dust. Dominic picked, Claude built.

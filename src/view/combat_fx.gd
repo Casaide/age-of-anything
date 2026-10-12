@@ -58,9 +58,11 @@ func spark(at: Vector2, heavy := false) -> void:
 	sparks.append({"pos": at + Vector2(randf_range(-2, 2), randf_range(-2, 2)), "t": 0.0, "big": heavy})
 
 
-## A unit has died: its view stays a moment, tipping over, darkening and sinking.
+## A unit has died: its view stays a moment and plays its fall (UnitView.die: by body shape,
+## D-106), darkening and sinking; this node times the fade and the dust.
 func kill(view: Node2D) -> void:
-	ghosts.append({"node": view, "t": 0.0, "tip": 1.0 if randf() < 0.5 else -1.0, "puffed": false})
+	view.die(1.0 if randf() < 0.5 else -1.0)
+	ghosts.append({"node": view, "t": 0.0, "puffed": false})
 
 
 ## A building has fallen.
@@ -102,16 +104,13 @@ func _process(delta: float) -> void:
 	for g in ghosts:
 		g.t += delta
 		var n: Node2D = g.node
-		var a := minf(g.t / 0.35, 1.0)
-		n.walking = false
-		n.visual.rotation = g.tip * a * a * 1.45     # the body topples about its feet; the shadow stays put
 		var fade := clampf((g.t - 0.6) / (DIE_TIME - 0.9), 0.0, 1.0)
 		n.visual.modulate.a = 1.0 - fade * 0.8      # baked art reads modulate alpha as shade: darkens
 		(n.get_child(0) as CanvasItem).modulate.a = 1.0 - fade   # the shadow (UnitView adds it first)
 		if g.t >= DIE_TIME - 0.3 and not g.puffed:
 			g.puffed = true
 			for k in 4:
-				dusts.append({"pos": n.position + Vector2(g.tip * 8.0 + randf_range(-5, 5), randf_range(-3, 2)), "t": 0.0, "size": randf_range(3, 5)})
+				dusts.append({"pos": n.position + Vector2(n.die_tip * 8.0 + randf_range(-5, 5), randf_range(-3, 2)), "t": 0.0, "size": randf_range(3, 5)})
 		if g.t >= DIE_TIME:
 			n.queue_free()
 	ghosts = ghosts.filter(func(g): return g.t < DIE_TIME)

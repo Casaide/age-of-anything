@@ -306,15 +306,17 @@ func bake_units(races: Array, teams: Array) -> void:
 				if ps is PartShape and ps.part_id != "":
 					await pb.bake(ps.part_id, ps.shapes, ps.colours)
 			probe.free()
+			var colours := UnitView.colours_for(lib, u.recipe.skin, u.recipe.family, teams[side])
 			if u.recipe.slot == "worker":
-				# Workers change tools for the job and carry their load home in their hands,
-				# and their body is baked in the work holds too (the arm raised, reaching: D-105).
-				var colours := UnitView.colours_for(lib, u.recipe.skin, u.recipe.family, teams[side])
+				# Workers change tools for the job and carry their load home in their hands.
 				for id in JOB_PARTS:
 					await pb.bake(id, lib.part(id).shapes, colours)
-				if not u.recipe.has("mount") or u.recipe.mount.get("fused", false):
-					for h in UnitView.WORK_HOLDS:
-						await pb.bake(u.recipe.body + "@" + h, lib.part(u.recipe.body).shapes, colours)
+			# Every body with arms is baked in the work holds too (raised, reaching): workers
+			# swing their tools with them (D-105) and soldiers their weapons (D-106).
+			var rides: bool = u.recipe.has("mount") and not u.recipe.mount.get("fused", false)
+			if not rides and PartShape.rigs.get(u.recipe.body, {}).get("carry", "") != "harness":
+				for h in UnitView.WORK_HOLDS:
+					await pb.bake(u.recipe.body + "@" + h, lib.part(u.recipe.body).shapes, colours)
 	pb.queue_free()
 	PartShape.bake_flat("unit_shadow", UnitView.SHADOW_SHAPES, UnitView.SHADOW_COLOURS, ART_SCALE * UNIT_SCALE)
 

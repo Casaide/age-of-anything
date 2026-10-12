@@ -92,3 +92,4 @@ One line per moment worth remembering. Newest at the bottom.
 - **2026-10-12:** Animation review (work invisible, cardboard deaths, weapon-twitch attacks) and concept sheets: workers' baked arm poses, the centaur kneel, head-digging for armless creatures. Dominic's pick pending.
 - **2026-10-12:** Dominic picked W1, C1, A1 (D-105): baked work holds for the arm, the centaur kneel, head-digging for armless creatures; built.
 - **2026-10-12:** Concept round two: attacks (step-in, swing, as now; draw and loose) and deaths (topple, crumple, by shape). Pick pending.
+- **2026-10-12:** Dominic picked T1, R1, D3 (D-106): the lunge, the release snap, deaths by body shape; built.
