@@ -64,8 +64,8 @@ age-4 gear tier (iron and plate, D-057).
 | Watchtower | 2 | shoots; upgrades to Bastion (3) | built (upgrades planned) |
 | Stone Wall + Stone Gate | 2 | stone wall; gate as above | wall built, gate planned |
 | Siege Workshop | 3 | siege engines | planned |
-| University | 3 | building, tower and siege research | planned |
-| Castle | 3 | unique unit, sapper, great sling, unique research; shoots, garrison | planned |
+| University | 3 | building, tower and siege research | built (phase 4; look per culture pending Dominic's pick) |
+| Castle | 3 | unique unit, sapper, great sling, unique research; shoots, garrison | built (phase 5: shoots a 4-arrow volley, `garrison` 20 in data, War Drums and the race slots; trains nothing until milestone 13) |
 | Wonder | 3 | alternative victory: stand for a time | planned |
 
 Every building comes in all six architectures (concept-first for new ones, D-080).
@@ -135,16 +135,16 @@ Ages are when it opens. Effects use the forms `tech.json` already has (`tag/stat
 | Market | trading | 2 | buy/sell | built |
 | Market | Haggling | 3 | selling fee 25 -> 15 points | built (phase 2) |
 | Market | Pack Animals | 3 | trade carts +25% speed | planned |
-| University | Stonecutting | 3 | buildings +10% HP, +1/+1 armour | planned |
-| University | Lifting Frames | 3 | build 20% faster | planned |
+| University | Stonecutting | 3 | buildings +10% HP, +1/+1 armour | built |
+| University | Lifting Frames | 3 | build 20% faster | built |
 | University | Bastion | 3 | Watchtowers become Bastions (hp, attack) | planned |
-| University | Slit Windows | 3 | towers, castles, TCs +1 range | planned |
-| University | Thick Walls | 3 | walls and gates +100% HP | planned |
-| University | Siege Wrights | 3 | siege +1 range | planned |
+| University | Slit Windows | 3 | towers, castles, TCs +1 range | built |
+| University | Thick Walls | 3 | walls and gates +100% HP | built |
+| University | Siege Wrights | 3 | siege +1 range | built (reaches units tagged `siege`: milestone 13) |
 | Siege Workshop | (none: engines don't upgrade) | - | - | - |
-| Castle | creature research | 3 | from the creature (see bonuses) | planned |
-| Castle | culture research | 3 | from the culture (see bonuses) | planned |
-| Castle | War Drums | 3 | military trains 30% faster | planned |
+| Castle | creature research | 3 | from the creature (see bonuses) | built as a slot: "Creature's Own Way", soldiers +5 HP until milestone 14 fills it |
+| Castle | culture research | 3 | from the culture (see bonuses) | built as a slot: "Culture's Own Way", soldiers +5% speed until milestone 14 fills it |
+| Castle | War Drums | 3 | military trains 30% faster | built |
 
 ### Postponed: age 4 and the Temple (Dominic, 2026-10-12)
 
@@ -348,8 +348,8 @@ Fixed first, as they came in; each ticked when done.
 - [x] 1. Data and the tech tree page (2026-10-11: the tree in `data/` with `"status": "planned"`, loaders skip it, `scenes/tech_tree.tscn` from the lobby banners and in a match on F2 or the top bar's button; T stays the Watchtower's hotkey; checked in `tests/run_tests.gd`, captures with `tests/tech_tree_screenshot.gd`)
 - [x] 2. Effect kinds, plain research, research icons (age 4 cut 2026-10-12; effect kinds and research 2026-10-12, a test per kind in `tests/test_sim.gd`; icons drawn separately; Pack Animals waits for trade carts)
 - [ ] 3. Towers and garrison (walls and gates done 2026-10-11)
-- [ ] 4. University
-- [ ] 5. Castle
+- [x] 4. University (2026-10-13: concept round of three looks per culture, archive/images/2026-10-13/146-151; research real, the Bastion's effect is phase 3's)
+- [x] 5. Castle (2026-10-13: concept round, 140-145; arrows, garrison by data, War Drums, the two race slots as placeholders)
 - [ ] 6. Siege Workshop standing (Temple cut)
 - [ ] 7. Wonder
 - [ ] 8. AI
@@ -367,6 +367,23 @@ Fixed first, as they came in; each ticked when done.
   and a mill. test_ai: age 2 at the same times as before (4:20-5:49, one slow 8:30 as before),
   bot match lengths 10:35 / 10:58 / 13:35 (median 10:58; was 13:11). Bots still don't reach age 3
   in these matches (as before): the age-2 wood economy is phase 8's.
+
+- **Phases 4 and 5 (2026-10-13, Claude):** the University (3 x 3, 200 wood 50 stone) and the
+  Castle (4 x 4, 650 stone, 4800 HP, a volley of 4 arrows at 8 tiles, `garrison: 20` for phase 3's
+  system, +10 pop) are in every architecture, built from one vocabulary per culture (its tower,
+  wall and hall in `models.gd`), so a castle reads as its culture. Concept round: three layouts
+  each (Castle: curtain, motte, great tower; University: observatory, cloister, builders' yard),
+  sheets 140-151; until Dominic picks, `CASTLE_LOOK` and `UNIVERSITY_LOOK` in `models.gd` say
+  which each culture builds (the building sheet shows any look as `castle:<arch>:<look>`). The
+  research: Stonecutting, Lifting Frames, Slit Windows (a building effect on `range`; building
+  effects may now name a list of ids), Thick Walls, Siege Wrights (by the `siege` tag, no units
+  yet), War Drums, and the race slots as generic placeholders (soldiers +5 HP / +5% speed) for
+  milestone 14. A shooting building's `attack.arrows` (default 1) looses that many, one at each of
+  the nearest foes in turn. The Bastion research stays phase 3's (it lives at the University).
+  The bot builds a University and a Castle in age 3 (steps of a later age no longer hold up the
+  build order) and buys Lifting Frames and Stonecutting (`research.buildings`); War Drums by its
+  army. Checks: `test_sim` (each effect, the volley, Slit Windows' reach), `test_ai -- <map> age3`.
+  Age 3 still needs the Stable, as before (unchanged).
 
 ## Changes from the original plan
 
