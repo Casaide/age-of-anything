@@ -78,6 +78,7 @@ func _init() -> void:
 	_test_farms(races)
 	_test_fog_memory(races)
 	_test_land()
+	_test_flow_patch()
 	_test_tech(races)
 	_test_research_queue(races)
 	_test_effects(races)
@@ -508,6 +509,39 @@ func _test_land() -> void:
 		w.step()
 	check(m.terrain_ids[m.terrain[tc]] == "stump" and m.walks[0][tc] == 1 and m.opaque[tc] == 0, "land: the felled tree is a walkable stump that doesn't block sight")
 	check(m.terrain[5 * m.width + 20] == ford, "land: the map has its ford")
+
+
+## A field patched for opened cells (trees felled, one by one and side by side) has the same
+## costs as one solved from scratch on the changed map.
+func _test_flow_patch() -> void:
+	var m: SimMap = SimMap.load_id("river_test")
+	var target: int = 12 * m.width + 4
+	var full = Flow.solve(m, PackedInt32Array([target]))
+	var near = Flow.solve(m, PackedInt32Array([target]), World.NEAR_CUTOFF)
+	var fell := [11 * m.width + 8, 11 * m.width + 9, 12 * m.width + 9, 10 * m.width + 10, 11 * m.width + 10]
+	for c in fell:
+		m.fresh.clear()
+		while m.amount[c] > 0:
+			m.take(c)
+		for f in m.fresh:
+			full.patch(m, f)
+			near.patch(m, f)
+	var fresh = Flow.solve(m, PackedInt32Array([target]))
+	var fresh_near = Flow.solve(m, PackedInt32Array([target]), World.NEAR_CUTOFF)
+	var same := 0
+	var same_near := 0
+	for c in m.width * m.height:
+		if full.dist[c] == fresh.dist[c]:
+			same += 1
+		if (near.dist[c] <= World.NEAR_CUTOFF) == (fresh_near.dist[c] <= World.NEAR_CUTOFF) and (near.dist[c] > World.NEAR_CUTOFF or near.dist[c] == fresh_near.dist[c]):
+			same_near += 1
+	check(same == m.width * m.height, "flow patch: a patched field matches a fresh solve (%d of %d cells)" % [same, m.width * m.height])
+	check(same_near == m.width * m.height, "flow patch: a patched near field matches within its cutoff (%d of %d)" % [same_near, m.width * m.height])
+	for c in m.width * m.height:   # every step leads downhill to the target
+		if full.dist[c] > 0 and full.dist[c] < Flow.INF:
+			if full.dist[full.next[c]] >= full.dist[c]:
+				check(false, "flow patch: next of cell %d goes uphill" % c)
+				break
 
 
 # --- farms and placement -------------------------------------------------------

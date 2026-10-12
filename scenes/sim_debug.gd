@@ -399,7 +399,7 @@ func _attach(w: World, end_tick := -1) -> void:
 		land.queue_free()
 	land = LandView.new()
 	ground_holder.add_child(land)
-	land.setup(w, kit, flat)
+	land.setup(w, kit, flat, ground.mat)
 	camera.bounds = Iso.map_rect(map.width, map.height)
 	var picks := TerrainView.variant_picks(map.resource_cells, map.width, ArtKit.DOODADS.bush, hash(map.id))
 	for c in map.resource_cells:

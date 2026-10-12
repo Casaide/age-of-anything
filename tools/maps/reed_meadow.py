@@ -8,6 +8,11 @@ centre for the south-east one, so both starts get the same ground (rotational sy
 
   python3 tools/maps/reed_meadow.py          # writes both maps, prints the ASCII and counts
 
+Milestone 15, phases 2-3: forests (real trees: the north wood line behind each base, groves,
+contested woods) and a river along the swamp band from corner to corner, deep for walkers
+(amphibians swim it), with two fords (mirror images) and a timber bridge in the middle, so each
+side has the same three crossings. The pond gives way to the river.
+
 Two sizes, for Dominic to pick by playing (milestone 15, phase 1):
   reed_meadow        64 x 64, dense: today's size with a long game's resources packed in
   reed_meadow_large  88 x 88: more room between bases, a richer contested middle
@@ -20,8 +25,9 @@ import sys
 ROOT = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 LEGEND = {".": "grass", ",": "swamp", '"': "reeds", "#": "rock", "~": "water",
-          "b": "bugbush", "s": "stone", "w": "shallows", "g": "gold"}
-AMOUNT = {"b": ("food", 150), '"': ("wood", 100), "s": ("stone", 350), "g": ("gold", 800)}
+          "b": "bugbush", "s": "stone", "w": "shallows", "g": "gold",
+          "T": "tree", "R": "river", "f": "ford"}
+AMOUNT = {"b": ("food", 150), '"': ("wood", 100), "s": ("stone", 350), "g": ("gold", 800), "T": ("wood", 100)}
 
 # Animals per start (sim: src/sim/animals.gd). "size" places a herd: one animal on the ring,
 # the rest beside it. On a map with "symmetry": "rotate" the south-east start gets the mirror
@@ -75,8 +81,8 @@ def layout(size):
         sx, sy = 12, 12
         f = [
             # home: the big reed line along the north and west edges behind the base, and groves
-            ('"', line(2, 2, 22, 4)), ('"', line(2, 5, 4, 22)),
-            ('"', rect(17, 5, 21, 7)),
+            ("T", line(2, 2, 22, 4)), ('"', line(2, 5, 4, 22)),   # a forest behind the base, reeds down the side
+            ("T", rect(17, 5, 21, 7)),
             ('"', rect(5, 19, 10, 21)),
             ('"', rect(24, 11, 26, 14)),
             ("b", rect(17, 11, 18, 14)),                       # 8 bug bushes
@@ -87,18 +93,19 @@ def layout(size):
             # rock outcrops (the first Reed Meadow's, made to pair up)
             ("#", rect(28, 8, 30, 9)), ("#", rect(21, 15, 23, 17)), ("#", rect(10, 31, 12, 36)),
             # contested: wings of the swamp band (NE for this start's half), by the pond
-            ("g", rect(45, 17, 46, 18)),                       # gold on the band, equidistant
+            ("g", rect(41, 17, 42, 18)),                       # gold on the band, by the river
             ("s", rect(37, 25, 38, 26) + [(39, 25)]),          # stone by the pond
-            ('"', rect(33, 15, 35, 18)), ('"', rect(48, 6, 53, 7)), ('"', rect(36, 3, 41, 4)),
+            ('"', rect(33, 15, 35, 18)), ('"', rect(48, 6, 53, 7)), ("T", rect(36, 3, 41, 4)),
+            ("T", blob(29, 4.5, 2.2, 1.6)),                    # a contested wood by the north edge
             ("#", rect(40, 22, 41, 27)),                       # the rock spit in the swamp
         ]
-        pond = (2.6, 4.6)
+        pond = None
     else:
         sx, sy = 16, 16
         f = [
             # home: the big reed line along the north and west edges, and groves
-            ('"', line(2, 2, 30, 4)), ('"', line(2, 5, 4, 30)),
-            ('"', rect(23, 6, 27, 8)),
+            ("T", line(2, 2, 30, 4)), ('"', line(2, 5, 4, 30)),   # a forest behind the base, reeds down the side
+            ("T", rect(23, 6, 27, 8)),
             ('"', rect(6, 24, 9, 28)),
             ('"', rect(30, 14, 32, 18)),
             ("b", rect(21, 15, 22, 18)),                       # 8 bug bushes
@@ -111,16 +118,55 @@ def layout(size):
             ("#", rect(46, 3, 48, 5)),
             # contested: the swamp band's wings, the middle round the pond
             ("g", rect(62, 23, 63, 24)),                       # gold on the band, equidistant
-            ("g", rect(76, 10, 77, 11)),                       # far wing gold
+            ("g", rect(70, 8, 71, 9)),                         # far wing gold (this side of the river)
             ("s", rect(51, 33, 52, 34) + [(53, 33)]),          # stone by the pond
             ("s", rect(66, 6, 67, 7) + [(68, 6)]),             # wing stone
-            ('"', rect(45, 20, 48, 24)), ('"', rect(58, 8, 64, 10)), ('"', rect(50, 3, 56, 4)),
-            ('"', rect(70, 15, 72, 19)), ('"', rect(36, 30, 39, 32)),
+            ('"', rect(45, 20, 48, 24)), ('"', rect(58, 8, 64, 10)), ("T", rect(50, 3, 56, 4)),
+            ('"', rect(70, 15, 72, 19)), ("T", rect(36, 30, 39, 32)),
+            ("T", blob(40, 16, 3.0, 2.2)), ("T", blob(34, 40, 2.4, 2.4)),   # contested woods
             ("b", rect(56, 28, 57, 29)),                       # a contested bush patch
             ("#", rect(55, 30, 56, 36)),                       # the rock spit in the swamp
         ]
-        pond = (3.4, 6.0)
+        pond = None
     return (sx, sy), f, pond
+
+
+# The river, in the north-west start's frame: the arm from the north-east corner to the middle,
+# then along x to the centre (the half turn draws the rest). Radius in tiles; the fords are
+# points on the arm (river cells this close become ford); the bridge is centred on the map
+# (so it maps onto itself), across the middle stretch, [x0, y0, x1, y1].
+RIVER = {
+    64: {"arm": [(64.5, -1.5), (50.0, 15.0), (39.0, 28.0), (35.0, 31.5), (31.5, 31.5)], "r": 1.6,
+         "fords": [(44.5, 21.5)], "ford_r": 2.1, "bridge": [31, 30, 32, 33]},
+    88: {"arm": [(88.5, -1.5), (70.0, 18.0), (57.0, 38.0), (51.0, 43.5), (43.5, 43.5)], "r": 2.0,
+         "fords": [(63.5, 28.0)], "ford_r": 2.3, "bridge": [43, 42, 44, 45]},
+}
+
+
+def seg_dist(px, py, ax, ay, bx, by):
+    dx, dy = bx - ax, by - ay
+    t = max(0.0, min(1.0, ((px - ax) * dx + (py - ay) * dy) / (dx * dx + dy * dy)))
+    return math.hypot(px - ax - t * dx, py - ay - t * dy)
+
+
+def river(grid, S):
+    spec = RIVER[S]
+    arm = spec["arm"]
+    for y in range(S):
+        for x in range(S):
+            d = min(seg_dist(x, y, *arm[k], *arm[k + 1]) for k in range(len(arm) - 1))
+            if d <= spec["r"]:
+                grid[y][x] = "R"
+            elif d <= spec["r"] + 1.0 and grid[y][x] == ".":
+                grid[y][x] = ","   # wet banks
+    for (fx, fy) in spec["fords"]:
+        for y in range(S):
+            for x in range(S):
+                if grid[y][x] == "R" and math.hypot(x - fx, y - fy) <= spec["ford_r"]:
+                    grid[y][x] = "f"
+    x0, y0, x1, y1 = spec["bridge"]
+    assert x0 + x1 == S - 1 and y0 + y1 == S - 1, "the bridge must sit on the centre"
+    return spec["bridge"]
 
 
 def build(map_id, name, size):
@@ -135,21 +181,21 @@ def build(map_id, name, size):
             off = 2.0 * math.sin(d / 9.0)
             if abs(x + y - (S - 1) - off) <= 4.0:
                 grid[y][x] = ","
-    # the pond, round the exact centre
-    water_r, shallow_r = layout(S)[2]
-    for y in range(S):
-        for x in range(S):
-            r2 = (x - c) ** 2 + (y - c) ** 2
-            if r2 <= water_r ** 2:
-                grid[y][x] = "~"
-            elif r2 <= shallow_r ** 2:
-                grid[y][x] = "w"
     start, feats, _ = layout(S)
     for ch, cells in feats:
         for (x, y) in cells:
             for (px, py) in ((x, y), (S - 1 - x, S - 1 - y)):
                 if 0 < px < S - 1 and 0 < py < S - 1:
                     grid[py][px] = ch
+    lost = {}
+    before = [row[:] for row in grid]
+    bridge = river(grid, S)
+    for y in range(S):
+        for x in range(S):
+            if before[y][x] in AMOUNT and grid[y][x] != before[y][x]:
+                lost[before[y][x]] = lost.get(before[y][x], 0) + 1
+    if lost:
+        print("   %s: the river took %s" % (map_id, lost))
     # guarantee the half turn (the north-west half wins any overlap)
     for y in range(S):
         for x in range(S):
@@ -166,8 +212,15 @@ def build(map_id, name, size):
     rows = ["".join(r) for r in grid]
     for y in range(S):
         assert rows[y] == rows[S - 1 - y][::-1], "%s: not symmetric at row %d" % (map_id, y)
+    x0, y0, x1, y1 = bridge
+    for x in range(x0, x1 + 1):
+        for y in range(y0, y1 + 1):
+            assert rows[y][x] == "R", "%s: the bridge must stand on the river at %d,%d" % (map_id, x, y)
+        for y in (y0 - 1, y1 + 1):
+            assert LEGEND[rows[y][x]] in ("grass", "swamp"), "%s: the bridge must land on ground at %d,%d" % (map_id, x, y)
     d = {"schema": "aow.map/2", "id": map_id, "name": name, "width": S, "height": S,
-         "symmetry": "rotate", "legend": LEGEND, "rows": rows, "starts": starts, "animals": ANIMALS}
+         "symmetry": "rotate", "legend": LEGEND, "rows": rows, "starts": starts, "animals": ANIMALS,
+         "bridges": [bridge]}
     return d
 
 
