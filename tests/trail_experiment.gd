@@ -17,7 +17,7 @@ const MIN := 1200
 
 func _initialize() -> void:
 	var args := OS.get_cmdline_user_args()
-	var map_id: String = args[0] if args.size() > 0 else "reed_meadow_large"
+	var map_id: String = args[0] if args.size() > 0 else "reed_meadow"
 	var minutes := int(args[1]) if args.size() > 1 else 15
 	var pct := int(args[2]) if args.size() > 2 else 12
 	var lib = DataLib.new()

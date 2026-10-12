@@ -49,7 +49,7 @@ const STUCK_LIMIT := 60        # ticks without progress before a unit gives up (
 const PROGRESS_EVERY := 40     # ticks between net-progress checks (staggered by unit id)
 const CORRECT_MAX := 150       # milli-tiles a tick a body is eased off blocked ground (no teleports)
 const RETURN_SLACK := 1000     # shoved this far beyond its settle radius, a stopped unit walks back
-const FIELD_CACHE := 24        # flow fields kept (oldest dropped first)
+const FIELD_CACHE := 12        # flow fields kept per player (oldest dropped first; at least 24)
 const SOLVE_BUDGET := 1500     # flow-field cells settled per tick: one full solve, or a few near ones
 const NEAR_CUTOFF := 160       # cost cutoff for "near" fields (16 tiles): short work trips
 
@@ -107,6 +107,7 @@ var fog_cfg: Dictionary
 var fog_ground: Array = []     # per player: PackedByteArray, the terrain index per cell as they last saw it (fog.gd)
 var fog_left: Array = []       # per player: PackedInt32Array, what was left per cell as they last saw it
 var fog_seen: Array = []       # per player: enemy building id -> its snapshot as last seen (fog.gd)
+var fog_lit: Array = []        # per player: PackedInt32Array, the cells lit at the last update (fog.gd)
 var fog_watch := {}            # cell -> true: cells that held a resource or ever changed (fog.gd)
 var fields := {}               # field key -> Flow; looked up by key, never iterated
 var field_order: Array = []    # cached field keys, oldest first (eviction, invalidation)
@@ -747,7 +748,7 @@ func _solve_queued() -> void:
 		spent += maxi(f.pops, 1)
 		fields[key] = f
 		field_order.append(key)
-		if field_order.size() > FIELD_CACHE:
+		if field_order.size() > maxi(24, FIELD_CACHE * races.size()):
 			fields.erase(field_order.pop_front())
 
 

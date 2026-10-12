@@ -16,7 +16,7 @@ const Icons := preload("res://src/view/art/icons.gd")
 const Audio := preload("res://src/view/audio.gd")
 const UiScale := preload("res://src/view/ui_scale.gd")
 
-const MAPS := ["reed_meadow", "reed_meadow_large", "flat_test"]   # real maps; choke_test is a movement test (sim_debug lists it)
+const MAPS := ["reed_meadow", "reed_meadow_2v2", "flat_test"]   # real maps; choke_test is a movement test (sim_debug lists it)
 
 const BG := Color("#1c1712")
 const PANEL := Color("#2a231b")
