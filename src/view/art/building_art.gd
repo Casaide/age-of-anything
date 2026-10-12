@@ -52,7 +52,8 @@ func setup(kit, name: String, cx: int, cy: int, sx: int, sy: int, p_team: Color)
 	# it's higher and goes behind. (Sorting by the front corner hid units standing beside
 	# the lower faces.) Art spilling past the footprint doesn't move the sort point.
 	position = centre
-	var at := centre - position
+	# On high ground the art stands raised (Iso.lift) while the sort point stays on the base plane.
+	var at := centre - position - Vector2(0, Iso.lift((cx + sx * 0.5) * 1000, (cy + sy * 0.5) * 1000))
 	body = kit.sprite(info.body)
 	body.position = at
 	body.self_modulate = Color(team.r, team.g, team.b, 1.0)

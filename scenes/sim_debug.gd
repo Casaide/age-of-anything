@@ -450,9 +450,11 @@ func _attach(w: World, end_tick := -1) -> void:
 	clock.paused = false
 	if ground:
 		ground.queue_free()
+	Iso.set_relief(map)   # high ground lifts everything drawn on it (none on a flat map)
 	ground = TerrainView.new()
 	ground_holder.add_child(ground)
 	ground.build(map)
+	ground.build_relief(layer)
 	ground.set_art_px(camera.zoom.x / ArtKit.ART_SCALE)
 	if land:
 		land.queue_free()
@@ -944,11 +946,11 @@ func _clear_selection() -> void:
 
 
 func _body(view: Node2D) -> Vector2:
-	return view.position - Vector2(0, BODY_LIFT)
+	return view.ground() - Vector2(0, BODY_LIFT)
 
 
 func _cell_at(pos: Vector2) -> int:
-	var m := Iso.to_milli(pos)
+	var m := Iso.pick(pos)
 	return map.cell_of(m.x, m.y)
 
 
@@ -1009,7 +1011,7 @@ func select_same_type_on_screen(pos: Vector2, add := false) -> void:
 		# The same kind with the same owner, that you can see (unowned sheep under the fog stayed
 		# selectable: Dominic).
 		if world.units.kind[j] == kind and world.units.owner[j] == owner and views.has(id) and views[id].visible \
-				and screen.has_point(views[id].position):
+				and screen.has_point(views[id].ground()):
 			selected[id] = true
 
 
@@ -1081,14 +1083,14 @@ func _animal_info(t: Dictionary, owner: int) -> String:
 func smart_order(pos: Vector2) -> void:
 	if not playback.is_empty():
 		return
-	var m := Iso.to_milli(pos)
+	var m := Iso.pick(pos)
 	var cell := map.cell_of(m.x, m.y)
 	if selected_building != 0:
 		var b := world.buildings.index_of(selected_building)
 		if b >= 0 and world.buildings.owner[b] == active:
 			world.issue(active, Commands.RALLY, {"building": selected_building, "x": m.x, "y": m.y})
 			if map.resource_at(cell) != "":   # the sim puts it in the middle of the resource's tile
-				pos = Iso.to_screen((cell % map.width) * SimMap.TILE + SimMap.TILE / 2, (cell / map.width) * SimMap.TILE + SimMap.TILE / 2)
+				pos = Iso.to_ground((cell % map.width) * SimMap.TILE + SimMap.TILE / 2, (cell / map.width) * SimMap.TILE + SimMap.TILE / 2)
 			flags.append({"pos": pos, "t": 1.0})
 			audio.play("ui_click", -4.0)
 		return
@@ -1153,7 +1155,8 @@ func unit_at(pos: Vector2) -> int:
 		var t: Dictionary = world.types[world.units.kind[i]]
 		var tall: float = FIGURE_H * (1.6 if int(t.pop) > 1 else 1.0) + (9.0 if t.mclass == SimMap.FLYING else 0.0)
 		var half_w: float = FIGURE_W * (1.6 if int(t.pop) > 1 else 1.0) * 0.5
-		var r := Rect2(v.position.x - half_w - slack, v.position.y - tall - slack, (half_w + slack) * 2.0, tall + slack * 2.0 + 3.0)
+		var g: Vector2 = v.ground()
+		var r := Rect2(g.x - half_w - slack, g.y - tall - slack, (half_w + slack) * 2.0, tall + slack * 2.0 + 3.0)
 		if not r.has_point(pos):
 			continue
 		var d := _body(v).distance_to(pos)
@@ -1239,7 +1242,7 @@ func _play_events() -> void:
 				if e.reseeded and not fighting:
 					_show_line("Farm worked out: reseeded", Color("#e8d27a"))
 				elif not e.reseeded and not fighting:
-					alert_at = Iso.to_screen(e.x, e.y)
+					alert_at = Iso.to_ground(e.x, e.y)
 					_show_line("Farm worked out: its farmer waits  (Space to look)", Color("#e8d27a"))
 		elif e.type == "wonder":   # a Wonder finished or fallen: everyone hears, wherever it is
 			var who: String = WonderClock.possessive(world.races[e.player].name)
@@ -1286,7 +1289,7 @@ func _play_events() -> void:
 					ghosts[e.id] = bv   # it fell where you can't see: you still see it standing
 					continue
 				var t: Dictionary = world.btypes[e.kind]
-				fx.collapse(bv, Iso.to_screen(e.x, e.y), int(t.length))
+				fx.collapse(bv, Iso.to_ground(e.x, e.y), int(t.length))
 				if bv.visible and _on_screen(bv.position):
 					audio.play("building_fall", -2.0)
 
@@ -1314,7 +1317,7 @@ func _event_target_pos(id: int) -> Vector2:
 	var b := world.buildings.index_of(id)
 	if b >= 0:
 		var bs := world.buildings
-		return Iso.to_screen((bs.cx[b] + bs.sx[b] * 0.5) * 1000, (bs.cy[b] + bs.sy[b] * 0.5) * 1000) - Vector2(0, 20)
+		return Iso.to_ground((bs.cx[b] + bs.sx[b] * 0.5) * 1000, (bs.cy[b] + bs.sy[b] * 0.5) * 1000) - Vector2(0, 20)
 	return land.target_pos(id)   # a map bridge, or nothing
 
 
@@ -1351,7 +1354,7 @@ func _is_foundation_of(bid: int, p: int) -> bool:
 func move_selected_to(pos: Vector2) -> void:
 	if not playback.is_empty() or selected.is_empty():
 		return
-	var m := Iso.to_milli(pos)
+	var m := Iso.pick(pos)
 	var groups := _selected_by_owner()
 	for p in groups.size():
 		if not groups[p].is_empty():
@@ -1518,7 +1521,7 @@ func _ghost_ok(k: int, cx: int, cy: int, along: int) -> bool:
 
 ## Top-left cell of the footprint the ghost shows at a canvas point (centred on the cursor).
 func _ghost_cell(pos: Vector2) -> Vector2i:
-	var m := Iso.to_milli(pos)
+	var m := Iso.pick(pos)
 	var d := Economy.dims(world.btypes[Economy.btype_of(world, placing)], _ghost_along(pos))
 	return Vector2i(floori(m.x / 1000.0) - (d.x - 1) / 2, floori(m.y / 1000.0) - (d.y - 1) / 2)
 
@@ -1529,7 +1532,7 @@ func _ghost_along(pos: Vector2) -> int:
 	var t: Dictionary = world.btypes[Economy.btype_of(world, placing)]
 	if not t.gate:
 		return 0
-	var m := Iso.to_milli(pos)
+	var m := Iso.pick(pos)
 	var c := Vector2i(floori(m.x / 1000.0), floori(m.y / 1000.0))
 	var along_x := _walled(c + Vector2i(-1, 0)) or _walled(c + Vector2i(1, 0))
 	var along_y := _walled(c + Vector2i(0, -1)) or _walled(c + Vector2i(0, 1))
@@ -1644,11 +1647,13 @@ func _sync_rally() -> void:
 	var show := b >= 0 and world.buildings.owner[b] == active and world.buildings.rally_x[b] >= 0
 	if show and rally_flag == null:
 		rally_flag = kit.sprite("rally_flag")
+		rally_flag.set_meta("offset_y", rally_flag.offset.y)   # raised on a hill from here
 		layer.add_child(rally_flag)
 	if rally_flag != null:
 		rally_flag.visible = show
 		if show:
 			rally_flag.position = Iso.to_screen(world.buildings.rally_x[b], world.buildings.rally_y[b])
+			rally_flag.offset.y = rally_flag.get_meta("offset_y") - Iso.lift(world.buildings.rally_x[b], world.buildings.rally_y[b]) / rally_flag.scale.y
 			rally_flag.self_modulate = Color(lib.palettes.teams[world.buildings.owner[b]])
 
 
@@ -1719,6 +1724,7 @@ func _sync_views() -> void:
 		var dx := u.x[i] - u.px[i]
 		var dy := u.y[i] - u.py[i]
 		view.position = Iso.to_screen(u.px[i] + dx * a, u.py[i] + dy * a)
+		view.lift = Iso.lift(u.px[i] + dx * a, u.py[i] + dy * a)   # on a hill: drawn raised, sorted on the base plane
 		view.walking = dx != 0 or dy != 0
 		if view.struck and WORK_SOUND.has(view.job) and u.owner[i] == active:
 			_sfx_at(WORK_SOUND[view.job], view.position, -8.0)   # the blow you see lands: chop, clink, knock, rustle
@@ -1928,7 +1934,9 @@ func _add_resource_view(c: int, kind: String, left: int) -> void:
 		full = maxi(full, int(world.btypes[world.buildings.kind[b]].get("food", 0)))   # a farm's crops: out of its whole harvest
 	var holder := Node2D.new()
 	holder.position = Iso.to_screen((c % map.width) * 1000 + 500, (c / map.width) * 1000 + 500)
-	holder.add_child(kit.doodad(kind, pick, ArtKit.resource_stage(kind, left, full)))
+	var prop: Node2D = kit.doodad(kind, pick, ArtKit.resource_stage(kind, left, full))
+	prop.position.y -= Iso.lift((c % map.width) * 1000 + 500, (c / map.width) * 1000 + 500)   # on a hill: raised, sorted on the base plane
+	holder.add_child(prop)
 	holder.set_meta("res", {"kind": kind, "pick": pick, "stage": ArtKit.resource_stage(kind, left, full), "full": full, "gone": 0.0})
 	# A farm's crops share its pool (every tile shows them) and lie flat under the farmers.
 	(flat if map.pool[c] >= 0 else layer).add_child(holder)
@@ -1968,7 +1976,9 @@ func _sync_resources() -> void:
 		if stage != r.stage:
 			r.stage = stage
 			h.get_child(0).queue_free()
-			h.add_child(kit.doodad(r.kind, r.pick, stage))
+			var prop: Node2D = kit.doodad(r.kind, r.pick, stage)
+			prop.position.y -= Iso.lift((c % map.width) * 1000 + 500, (c / map.width) * 1000 + 500)
+			h.add_child(prop)
 		if left <= 0:
 			r.gone += dt   # (a farm worked out sounds from its sim event: _play_events)
 			var linger := 6.0 if r.kind in ["reeds", "quarry", "gold", "carcass"] else 0.0   # stubble and rubble stay a while
@@ -2648,7 +2658,7 @@ func _draw_marks() -> void:
 		var view: Node2D = views.get(id)
 		if i < 0 or view == null:
 			continue
-		marks.draw_set_transform(view.position, 0.0, Vector2(1.0, 0.5))
+		marks.draw_set_transform(view.ground(), 0.0, Vector2(1.0, 0.5))
 		marks.draw_arc(Vector2.ZERO, u.radius[i] * Iso.RADIUS_PX, 0.0, TAU, 24, Color(0, 0, 0, 0.6), 3.5 / camera.zoom.x)   # a dark edge...
 		marks.draw_arc(Vector2.ZERO, u.radius[i] * Iso.RADIUS_PX, 0.0, TAU, 24, RING, 2.0 / camera.zoom.x)   # ...under a bright ring (Fable: 1.5 px was too thin)
 		marks.draw_set_transform(Vector2.ZERO)
@@ -2695,7 +2705,7 @@ func _draw_overlay() -> void:
 		var view: Node2D = views.get(id)
 		if view == null or not view.visible:
 			continue
-		var at := view.position - Vector2(bar_w * 0.5, BODY_LIFT * 2.6)
+		var at: Vector2 = view.ground() - Vector2(bar_w * 0.5, BODY_LIFT * 2.6)
 		var k := clampf(float(u.hp[i]) / float(full), 0.0, 1.0)
 		overlay.draw_rect(Rect2(at, Vector2(bar_w, 2)), Color(0, 0, 0, 0.6))
 		overlay.draw_rect(Rect2(at, Vector2(bar_w * k, 2)), Color(1.0 - k, 0.3 + 0.6 * k, 0.15).lerp(Color.WHITE, 0.1))
@@ -2706,13 +2716,14 @@ func _draw_overlay() -> void:
 		var sy := bs.sy[b] * 1000
 		var x0 := bs.cx[b] * 1000
 		var y0 := bs.cy[b] * 1000
-		var pts := PackedVector2Array([Iso.to_screen(x0, y0), Iso.to_screen(x0 + sx, y0), Iso.to_screen(x0 + sx, y0 + sy),
-			Iso.to_screen(x0, y0 + sy), Iso.to_screen(x0, y0)])
+		var up := Vector2(0, Iso.lift(x0 + sx / 2, y0 + sy / 2))   # on a hill, the outline sits on its top
+		var pts := PackedVector2Array([Iso.to_screen(x0, y0) - up, Iso.to_screen(x0 + sx, y0) - up, Iso.to_screen(x0 + sx, y0 + sy) - up,
+			Iso.to_screen(x0, y0 + sy) - up, Iso.to_screen(x0, y0) - up])
 		overlay.draw_polyline(pts, Color(0, 0, 0, 0.6), 4.0 / camera.zoom.x)
 		overlay.draw_polyline(pts, RING, 2.0 / camera.zoom.x)
 		if bs.rally_x[b] >= 0:
-			var rp := Iso.to_screen(bs.rally_x[b], bs.rally_y[b])
-			overlay.draw_line(Iso.to_screen(x0 + sx / 2, y0 + sy / 2), rp, Color(RING, 0.4), 1.0 / camera.zoom.x)   # the flag itself is in the marks
+			var rp := Iso.to_ground(bs.rally_x[b], bs.rally_y[b])
+			overlay.draw_line(Iso.to_screen(x0 + sx / 2, y0 + sy / 2) - up, rp, Color(RING, 0.4), 1.0 / camera.zoom.x)   # the flag itself is in the marks
 	if placing != "":
 		var c := _ghost_cell(get_global_mouse_position())
 		var along := _ghost_along(get_global_mouse_position())
@@ -2724,8 +2735,9 @@ func _draw_overlay() -> void:
 			var y0: int = g.y * 1000
 			var sx := d.x * 1000
 			var sy := d.y * 1000
-			overlay.draw_colored_polygon(PackedVector2Array([Iso.to_screen(x0, y0), Iso.to_screen(x0 + sx, y0),
-				Iso.to_screen(x0 + sx, y0 + sy), Iso.to_screen(x0, y0 + sy)]), GOOD if ok else BAD)
+			var up := Vector2(0, Iso.lift(x0 + sx / 2, y0 + sy / 2))
+			overlay.draw_colored_polygon(PackedVector2Array([Iso.to_screen(x0, y0) - up, Iso.to_screen(x0 + sx, y0) - up,
+				Iso.to_screen(x0 + sx, y0 + sy) - up, Iso.to_screen(x0, y0 + sy) - up]), GOOD if ok else BAD)
 	if boxing:
 		var r := Rect2(press_world, Vector2.ZERO).expand(get_global_mouse_position())
 		overlay.draw_rect(r, Color(RING, 0.12))

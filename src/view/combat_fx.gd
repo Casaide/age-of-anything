@@ -135,7 +135,7 @@ func _process(delta: float) -> void:
 		if g.t >= DIE_TIME - 0.3 and not g.puffed:
 			g.puffed = true
 			for k in 4:
-				dusts.append({"pos": n.position + Vector2(n.die_tip * 8.0 + randf_range(-5, 5), randf_range(-3, 2)), "t": 0.0, "size": randf_range(3, 5)})
+				dusts.append({"pos": n.ground() + Vector2(n.die_tip * 8.0 + randf_range(-5, 5), randf_range(-3, 2)), "t": 0.0, "size": randf_range(3, 5)})
 		if g.t >= DIE_TIME:
 			n.queue_free()
 	ghosts = ghosts.filter(func(g): return g.t < DIE_TIME)
@@ -167,7 +167,7 @@ func _draw() -> void:
 			if t <= 0.0:
 				continue
 			var a := sin(PI * clampf(t / (HEAL_TIME - 0.25), 0.0, 1.0))
-			var p: Vector2 = n.position + m[0] + Vector2(sin(t * 5.0 + float(m[2]) * 20.0) * 1.2, -float(m[1]) * t)
+			var p: Vector2 = n.ground() + m[0] + Vector2(sin(t * 5.0 + float(m[2]) * 20.0) * 1.2, -float(m[1]) * t)
 			draw_circle(p, 1.6, Color(HEAL_MOTE, 0.25 * a))   # a soft halo...
 			draw_circle(p, 0.7, Color(HEAL_MOTE, 0.85 * a))   # ...round a bright core
 	for s in sparks:
