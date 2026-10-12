@@ -717,6 +717,8 @@ func _test_fog_memory(races: Array) -> void:
 	var field: int = w.map.terrain_ids.find("field")
 	while w.tick < 1600 and w.map.terrain[c] != field:
 		w.step()
+	for t in 5:
+		w.step()   # the next fog update (every 4 ticks) sees the new crops
 	var farm_id: int = w.map.occupied[c]
 	check(w.map.terrain[c] == field, "fog memory: player 1's farm became a field")
 	check(w.fog[0][c] == Fog.UNSEEN and w.fog_ground[0][c] == grass, "fog memory: player 0 hasn't seen it, so it's grass to them")
@@ -1760,6 +1762,8 @@ func _test_combat(gen) -> void:
 	_test_spread(gen)
 	_test_teams(gen)
 	_test_siege(gen)
+	_test_surround(gen)
+	_test_formation(gen)
 	_test_stances(gen)
 	_test_ranged_holds(gen)
 	var wins := 0
@@ -1947,6 +1951,116 @@ func _test_siege(gen) -> void:
 				hits += 1
 	check(w.buildings.index_of(tc) < 0, "a dozen large units knock down a Town Center (%d hits by tick %d)" % [hits, w.tick])
 	check(cells.size() > 0 and Array(cells).all(func(c): return w.map.occupied[c] == 0), "its footprint is free again")
+
+
+## Twenty melee units on a Town Center (Dominic, 2026-10-13: "attacking buildings turns into
+## fighting the pathfinding"): they spread round its walls, most of them strike within half a
+## minute, from every side, and nobody hitting it is shoved about.
+func _test_surround(gen) -> void:
+	var race: Dictionary = gen.generate(PROMPTS[0], rules_)
+	var r := rules_.duplicate(true)
+	r.economy.start.workers = 0
+	var w := World.new(SEED, SimMap.load_id("flat_test"), [race, race], r)
+	var b := 1
+	var tc: int = w.buildings.id[b]
+	var ids := _spawn_n(w, "spear", 20, w.buildings.cx[b] * 1000 - 5000, w.buildings.cy[b] * 1000 - 5000)
+	w.issue(0, Commands.ATTACK, {"ids": ids, "target": tc})
+	var struck := {}
+	var shoved := 0
+	var sides := {}
+	var mx: int = w.buildings.cx[b] * 1000 + w.buildings.sx[b] * 500
+	var my: int = w.buildings.cy[b] * 1000 + w.buildings.sy[b] * 500
+	var start := w.tick
+	while w.tick < start + 600 and w.buildings.index_of(tc) >= 0:
+		var held := {}
+		for i in w.units.count():
+			if w.units.foe[i] == tc and w.units.moving[i] == 0 and Combat._gap(w, i, -1, b) <= int(rules_.combat.melee_reach):
+				held[w.units.id[i]] = Vector2i(w.units.x[i], w.units.y[i])
+		w.step()
+		for uid in held:
+			var i := w.units.index_of(uid)
+			shoved = maxi(shoved, absi(w.units.x[i] - held[uid].x) + absi(w.units.y[i] - held[uid].y))
+		for e in w.events:
+			if e.type == "hit" and e.to == tc and not struck.has(e.by):
+				struck[e.by] = true
+				var i := w.units.index_of(e.by)
+				var dx: int = w.units.x[i] - mx
+				var dy: int = w.units.y[i] - my
+				sides[(0 if dx > 0 else 1) if absi(dx) > absi(dy) else (2 if dy > 0 else 3)] = true
+	check(struck.size() >= 15, "surround: %d of 20 melee units strike a Town Center within 30 s" % struck.size())
+	check(sides.size() == 4, "surround: they hit it from all sides (%d)" % sides.size())
+	check(shoved <= 10, "surround: a unit hitting the wall isn't shoved (most in a tick %d milli-tiles)" % shoved)
+
+
+## A group move ends in a formation (Dominic, 2026-10-13: "they should adopt a basic formation
+## just to keep it from looking buggy"): every unit stands in a slot of its own, nobody
+## overlaps, the archers stand behind the spearmen, units already in their slots aren't
+## shoved about by the rest coming in, and it all holds still afterwards. An attack-move and a
+## shift-queued move keep the formation too.
+func _test_formation(gen) -> void:
+	var race: Dictionary = gen.generate(PROMPTS[0], rules_)
+	for kind in [Commands.MOVE, Commands.ATTACK_MOVE, "queued"]:
+		var w := _bare_world([race, race])
+		var spears := _spawn_n(w, "spear", 20, 12000, 14000)
+		var archers := _spawn_n(w, "archer", 10, 12000, 16000)
+		var ids := spears + archers
+		if kind == "queued":
+			w.issue(0, Commands.MOVE, {"ids": ids, "x": 30000, "y": 22000})
+			w.issue(0, Commands.MOVE, {"ids": ids, "x": 40000, "y": 40000, "queue": 1})
+		else:
+			w.issue(0, kind, {"ids": ids, "x": 40000, "y": 40000})
+		var shoved := 0
+		var settled := -1
+		while w.tick < 4000 and settled < 0:
+			var qx := w.units.x.duplicate()
+			var qy := w.units.y.duplicate()
+			var qm := w.units.moving.duplicate()
+			w.step()
+			for i in w.units.count():
+				if qm[i] == 0 and w.units.moving[i] == 0 and w.tick > 60:
+					shoved += absi(w.units.x[i] - qx[i]) + absi(w.units.y[i] - qy[i])
+			if w.tick % 20 == 0 and w.tick > 200 and not 1 in w.units.moving and w.units.orders.all(func(o): return o.is_empty()):
+				settled = w.tick
+		var what := "formation (%s)" % kind
+		check(settled > 0, "%s: settles (tick %d)" % [what, settled])
+		var x0 := w.units.x.duplicate()
+		var y0 := w.units.y.duplicate()
+		for t in 200:
+			w.step()
+		var still := true
+		var overlaps := 0
+		var off_slot := 0
+		var slots := {}
+		var front := 1 << 30
+		var back := -(1 << 30)
+		for i in w.units.count():
+			still = still and w.units.x[i] == x0[i] and w.units.y[i] == y0[i]
+			slots[Vector2i(w.units.tx[i], w.units.ty[i])] = true
+			if Fixed.dist2(w.units.x[i], w.units.y[i], w.units.tx[i], w.units.ty[i]) > 400 * 400:
+				off_slot += 1
+			for j in range(i + 1, w.units.count()):
+				var rr: int = w.units.radius[i] + w.units.radius[j]
+				if Fixed.dist2(w.units.x[i], w.units.y[i], w.units.x[j], w.units.y[j]) < rr * rr * 81 / 100:
+					overlaps += 1
+			var ahead: int = w.units.x[i] + w.units.y[i]   # along the way they went: down and right
+			if w.units.id[i] in archers:
+				back = maxi(back, ahead)
+			else:
+				front = mini(front, ahead)
+		check(slots.size() == ids.size(), "%s: %d slots for %d units" % [what, slots.size(), ids.size()])
+		check(off_slot <= 2, "%s: everyone stands in its slot (%d off)" % [what, off_slot])
+		check(overlaps == 0, "%s: no one overlaps (%d pairs)" % [what, overlaps])
+		check(back < front, "%s: the archers stand behind the spearmen" % what)
+		check(shoved < 2000, "%s: arrivals aren't shoved about (%d milli-tiles in all)" % [what, shoved])
+		check(still, "%s: it holds still afterwards" % what)
+
+
+func _spawn_n(w: World, slot: String, n: int, x: int, y: int) -> Array:
+	var before := w.next_id
+	w.issue(0, Commands.SPAWN, {"slot": slot, "count": n, "x": x, "y": y})
+	while w.next_id == before:
+		w.step()
+	return range(before, w.next_id)
 
 
 ## One unit of `slot` for player p at (x, y) with a stance; returns its id once it exists.
