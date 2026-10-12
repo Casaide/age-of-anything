@@ -1,0 +1,37 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="64" height="64" viewBox="0 0 64 64">
+<!-- Pack Frames: a wooden back frame, a bundle of sticks and a sack strapped on. -->
+<defs>
+<linearGradient id="steel" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#f4f6f8"/><stop offset="0.45" stop-color="#b9c0c6"/><stop offset="1" stop-color="#6e767e"/></linearGradient>
+<linearGradient id="iron" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#c4c8cc"/><stop offset="0.5" stop-color="#7c838a"/><stop offset="1" stop-color="#3c4046"/></linearGradient>
+<linearGradient id="bronze" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#ffd8a0"/><stop offset="0.5" stop-color="#c0803c"/><stop offset="1" stop-color="#6a3e14"/></linearGradient>
+<linearGradient id="wood" x1="0" y1="0" x2="1" y2="0"><stop offset="0" stop-color="#c08850"/><stop offset="0.5" stop-color="#8a5a2e"/><stop offset="1" stop-color="#5e3a1a"/></linearGradient>
+<linearGradient id="woodv" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#c08850"/><stop offset="0.5" stop-color="#8a5a2e"/><stop offset="1" stop-color="#5e3a1a"/></linearGradient>
+<linearGradient id="gold" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#ffe9a8"/><stop offset="0.5" stop-color="#d4a640"/><stop offset="1" stop-color="#8a6018"/></linearGradient>
+<linearGradient id="cloth" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#e0503c"/><stop offset="1" stop-color="#8a2a20"/></linearGradient>
+<linearGradient id="linen" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#fbf0d4"/><stop offset="1" stop-color="#c8b080"/></linearGradient>
+<linearGradient id="leather" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#d09060"/><stop offset="0.55" stop-color="#9a5e30"/><stop offset="1" stop-color="#5a3216"/></linearGradient>
+<linearGradient id="stone" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#eee4d0"/><stop offset="0.55" stop-color="#b0a28a"/><stop offset="1" stop-color="#6e6250"/></linearGradient>
+<linearGradient id="hay" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#fff0a0"/><stop offset="0.5" stop-color="#e8c050"/><stop offset="1" stop-color="#a07820"/></linearGradient>
+<linearGradient id="leaf" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#a8d870"/><stop offset="1" stop-color="#4e8428"/></linearGradient>
+<linearGradient id="soil" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#9a6a3c"/><stop offset="1" stop-color="#5a3a1c"/></linearGradient>
+<linearGradient id="blue" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#4a6a96"/><stop offset="1" stop-color="#22324e"/></linearGradient>
+<radialGradient id="glow" cx="0.5" cy="0.45" r="0.6"><stop offset="0" stop-color="#fff2c0" stop-opacity="0.9"/><stop offset="1" stop-color="#fff2c0" stop-opacity="0"/></radialGradient>
+<radialGradient id="flame" cx="0.5" cy="0.7" r="0.6"><stop offset="0" stop-color="#fff8c0"/><stop offset="0.5" stop-color="#ffb030"/><stop offset="1" stop-color="#d04818"/></radialGradient>
+</defs>
+<g stroke="#1c120a" stroke-width="2" stroke-linejoin="round">
+<rect x="14" y="6" width="5" height="54" rx="2" fill="url(#wood)"/>
+<rect x="45" y="6" width="5" height="54" rx="2" fill="url(#wood)"/>
+<rect x="12" y="12" width="40" height="4" rx="1.5" fill="url(#woodv)"/>
+<rect x="12" y="50" width="40" height="4" rx="1.5" fill="url(#woodv)"/>
+</g>
+<path d="M20,16 Q16,4 32,4 Q48,4 44,16 Q48,28 32,30 Q16,28 20,16 Z" fill="url(#linen)" stroke="#1c120a" stroke-width="2" stroke-linejoin="round"/>
+<path d="M28,6 Q32,10 36,6" fill="none" stroke="#1c120a" stroke-width="1.6"/>
+<g stroke="#1c120a" stroke-width="1.8">
+<rect x="16" y="32" width="32" height="6" rx="3" fill="url(#woodv)"/>
+<rect x="16" y="38" width="32" height="6" rx="3" fill="url(#woodv)"/>
+<rect x="16" y="44" width="32" height="6" rx="3" fill="url(#woodv)"/>
+</g>
+<g fill="#e8c890" stroke="#1c120a" stroke-width="1.2"><circle cx="16" cy="35" r="3"/><circle cx="16" cy="41" r="3"/><circle cx="16" cy="47" r="3"/></g>
+<path d="M26,30 L26,52 M38,30 L38,52" stroke="#1c120a" stroke-width="5"/>
+<path d="M26,30 L26,52 M38,30 L38,52" stroke="#c84a30" stroke-width="2.6"/>
+</svg>
