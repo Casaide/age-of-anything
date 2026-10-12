@@ -27,6 +27,7 @@ var weapon: Node2D
 var weapon_rest := Vector2.ZERO
 var weapon_rot := 0.0     # at rest: couched forward on a harness, else upright
 var _hold_suffix := ""
+var _cling_reach := 1.0   # how far a rider's leg stretches down its mount's flank
 var _clinging := false    # building a riding creature: legs that hug the mount    # "@hold" on the body being built (its arm posed for its weapon)
 var harnessed := false    # no arms: gear rides on a harness, work is done with the whole body
 const COUCH := Vector2(1.0, -0.3)   # a couched weapon points forward, a little up
@@ -127,6 +128,9 @@ func build(r: Dictionary, lib, team: Color, speed := 10) -> void:
 		bob.add_child(seat)
 		seat_node = seat
 		# Every rider shows its near leg down the mount's flank, held still (people had none: Dominic).
+		# A person's leg reaches down the barrel to the girth, longer than its standing stride
+		# (at the seat's scale it ended at the horse's spine: "tiny legs", Dominic).
+		_cling_reach = 1.0 if _clinging else 1.7
 		_clinging = not m.fused
 		var rider := _make_rig(lib, r.body, r.head, colours, seat, _clinging, r.parts.get("hand_r", ""))
 		_clinging = false
@@ -242,7 +246,7 @@ func _make_rig(lib, body_id: String, head_id: String, colours: Dictionary, paren
 			if rig.has("anchors") and float(a[3]) < 0.0:
 				leg.shade = 0.78   # the far leg sits in shadow
 			root.add_child(leg)
-			legs.append({"node": leg, "phase": float(a[2]), "cling": _clinging, "rest": leg.position})
+			legs.append({"node": leg, "phase": float(a[2]), "cling": _clinging, "reach": _cling_reach if _clinging else 1.0, "rest": leg.position})
 
 	var body_node := _shape()
 	body_node.part_id = body_id + _hold_suffix
@@ -552,7 +556,7 @@ func _process(delta: float) -> void:
 	else:
 		for leg in legs:
 			leg.node.rotation = 0.35 if leg.cling else sin(ph + leg.phase) * gait.swing * stride
-			leg.node.scale.y = 1.0
+			leg.node.scale.y = leg.reach
 		var hover := 0.0
 		if flying:
 			hover = -9.0 + sin(t * 3.0) * 2.0
