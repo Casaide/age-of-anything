@@ -20,8 +20,13 @@ func _initialize() -> void:
 			lobby._regenerate(1)
 		while lobby.sides[0].layer.get_child_count() == 0 or lobby.sides[1].layer.get_child_count() == 0 or lobby.baking:
 			await process_frame
+	else:   # the title screen: both armies on its hill
+		while lobby.menu_layer.get_child_count() == 0 or lobby.baking:
+			await process_frame
 	for f in 30:
 		await process_frame
+	if lobby.setup.visible:   # does it fit? (the lobby is laid out for match_setup.gd's DESIGN)
+		print("side panel needs ", lobby.sides[0].panel.get_combined_minimum_size(), ", the screen is ", lobby.get_viewport_rect().size)
 	root.get_texture().get_image().save_png(args[0])
 	print("saved ", args[0])
 	quit()

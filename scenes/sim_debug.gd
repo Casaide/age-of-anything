@@ -26,6 +26,7 @@ const Tech := preload("res://src/sim/tech.gd")
 const Market := preload("res://src/sim/market.gd")
 const RtsCamera := preload("res://src/view/rts_camera.gd")
 const CommandPanel := preload("res://src/view/command_panel.gd")
+const UiTheme := preload("res://src/view/ui/theme.gd")
 const TopBar := preload("res://src/view/top_bar.gd")
 const UnitCard := preload("res://src/view/unit_card.gd")
 const FogView := preload("res://src/view/fog_view.gd")
@@ -138,9 +139,13 @@ var show_flow := false
 var autoplay := false
 var army := false           # also spawn a test army per side (F7 toggles and restarts)
 var ai_level := "normal"    # easy, normal or hard (data/ai.json levels; picked in the lobby)
+var ai_levels: Array = []   # per player in a match against the AI: its level, "" for you (player 0); empty: every other player at ai_level
+var player_teams: Array = [] # per player: its team (allies share one); empty: everyone for themselves
 var vs_ai := false          # side 2 is played by the AI (set by the match setup screen)
 var banner: Label           # victory / defeat
 var pause_menu: Control     # Esc against the AI: resume, surrender, back to the menu
+var hud_family := "?"       # whose culture the HUD wears (the side you command)
+var hud_themes := {}        # family -> the HUD's Theme
 var fog_view: FogView
 var flat: Node2D             # ground-level art (farms, crops), drawn under the y-sorted layer
 var minimap: Minimap
@@ -267,14 +272,19 @@ func _ready() -> void:
 	start_live(prompts)
 
 
-## The HUD's scale for this window, and its root sized to the window in UI pixels.
+## The HUD's scale for this window, and its root sized to the window in UI pixels. Its theme is
+## the culture of the side you command (src/view/ui/theme.gd): frames, crest, buttons, type.
 func _fit_hud() -> void:
 	var f := UiScale.factor(get_window(), UiScale.HUD_NEEDS)
 	hud_root.scale = Vector2(f, f)
 	hud_root.size = get_viewport_rect().size / f
 	CommandPanel.TipButton.ui_scale = f   # tooltip cards are popups outside the HUD: they scale their own type
-	var t := Theme.new()   # plain tooltips (queue slots, the idle button) take the HUD's theme
-	t.set_font_size("font_size", "TooltipLabel", roundi(14 * f))
+	var fam := hud_family if hud_family != "?" else ""
+	if not hud_themes.has(fam):
+		hud_themes[fam] = UiTheme.theme(UiTheme.look(fam), 16)
+	var t: Theme = hud_themes[fam]
+	t.set_font_size("font_size", "TooltipLabel", roundi(15 * f))   # plain tooltips (the idle button) are popups too
+	t.set_stylebox("panel", "TooltipPanel", UiTheme.tip_box(UiTheme.look(fam), f))
 	hud_root.theme = t
 	if pages_root != null:
 		pages_root.scale = hud_root.scale
@@ -299,9 +309,9 @@ func start_live(race_prompts: Array) -> void:
 	map = SimMap.load_id(map_id)
 	var races := []
 	for k in race_prompts.size():
-		races.append(gen.generate(race_prompts[k], rules, rerolls[k]))
+		races.append(gen.generate(race_prompts[k], rules, rerolls[k] if k < rerolls.size() else 0))
 	await _bake(races)
-	_attach(World.new(SEED, map, races, rules))
+	_attach(World.new(SEED, map, races, rules, player_teams))
 	playback = {}
 	audio.music_age(world.ages[active])
 	audio.ambience(true)
@@ -486,9 +496,13 @@ func _set_autoplay(on: bool) -> void:
 	if not playback.is_empty():
 		clock.bots = []
 	elif on:
-		clock.bots = [Bot.new(0), Bot.new(1)]   # watch two AIs play
+		clock.bots = range(world.races.size()).map(func(p): return Bot.new(p))   # watch the AIs play
 	else:
-		clock.bots = [Bot.new(1, {}, ai_level)] if vs_ai else []
+		clock.bots = []
+		if vs_ai:   # a bot for every player but you, each at its own level
+			for p in range(1, world.races.size()):
+				var lv: String = ai_levels[p] if p < ai_levels.size() and ai_levels[p] != "" else ai_level
+				clock.bots.append(Bot.new(p, {}, lv))
 
 
 # ------------------------------------------------------------------ input
@@ -659,23 +673,19 @@ const HINTS := [
 ]
 
 func _update_hint() -> void:
-	if not vs_ai or hint_step >= HINTS.size():
+	if not vs_ai or hint_step >= HINTS.size() or world.winner >= 0:
 		if hint != null:
 			hint.visible = false
 		return
 	if hint == null:
-		hint = _label(17, Vector2(24, 0))
-		hint.add_theme_color_override("font_color", Color("#f2e6c8"))
-		var st := StyleBoxFlat.new()
-		st.bg_color = Color("#2e2820", 0.92)
-		st.border_color = Color("#f2c94c")
-		st.set_border_width_all(1)
-		st.set_corner_radius_all(4)
-		st.set_content_margin_all(10)
+		hint = _label(18, Vector2(24, 0))
+		hint.add_theme_color_override("font_color", Color("#f4ead0"))
+		var st: StyleBox = UiTheme.tip_box(UiTheme.look(hud_family))
+		st.accent = Color(UiTheme.look(hud_family).accent, 0.6)
 		hint.add_theme_stylebox_override("normal", st)
 		hint.set_anchors_preset(Control.PRESET_CENTER_TOP)   # under the top bar: tooltip cards live above the panel
 		hint.grow_horizontal = Control.GROW_DIRECTION_BOTH
-		hint.position.y = 44
+		hint.position.y = 84
 		banner.get_parent().add_child(hint)
 		var u := world.units
 		for i in u.count():
@@ -731,7 +741,7 @@ func _maybe_alert(e: Dictionary, to: Vector2) -> void:
 		alert_label.set_anchors_preset(Control.PRESET_CENTER_TOP)
 		alert_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 		alert_label.grow_horizontal = Control.GROW_DIRECTION_BOTH
-		alert_label.position.y = 100   # below the tip strip
+		alert_label.position.y = 150   # below the tip strip
 		banner.get_parent().add_child(alert_label)
 	alert_label.text = "Under attack!  (Space to look)"
 	alert_label.visible = true
@@ -1181,7 +1191,7 @@ func _ui_size_cycle() -> void:
 	else:
 		UiScale.step(1)
 	_fit_hud()
-	var b: Button = pause_menu.get_node_or_null("box/ui")
+	var b: Button = pause_menu.get_node_or_null("card/box/ui")
 	if b != null:
 		b.text = "UI size: %d%%  (larger)" % UiScale.size_pct()
 
@@ -1197,22 +1207,41 @@ func _show_pause_menu(on: bool) -> void:
 		banner.get_parent().add_child(pause_menu)
 	var over: bool = world.winner >= 0
 	pause_menu.visible = on
-	pause_menu.get_node("box/resume").visible = not over
-	pause_menu.get_node("box/surrender").visible = not over
-	var result := ""
+	var box: Control = pause_menu.get_node("card/box")
+	box.get_node("resume").visible = not over
+	box.get_node("surrender").visible = not over
+	var back: Button = box.get_node("menu")   # when it's over, the way back is the call to action
+	back.theme_type_variation = "PrimaryButton" if over else ""
+	back.custom_minimum_size.y = 64 if over else 50
+	back.add_theme_font_size_override("font_size", 26 if over else 19)
+	var title: Label = box.get_node("title")
+	var sub: Label = box.get_node("sub")
 	if over:
-		result = "Victory" if world.teams[active] == world.winner else "Defeat"
+		var won: bool = world.teams[active] == world.winner
 		banner.visible = false   # the result is the menu's title (it collided with the menu)
-	var title := ("%s: %s win" % [result, world.races[_first_of_team(world.winner)].name]) if over else "Paused"
-	if over and result == "Victory" and vs_ai and ai_level != "hard":
-		title += "\nBeat %s? Try %s next." % [ai_level.capitalize(), "Normal" if ai_level == "easy" else "Hard"]   # so testers know the step up exists
-	pause_menu.get_node("box/title").text = title
+		title.text = "Victory" if won else "Defeat"
+		title.add_theme_color_override("font_color", Color("#f6d77a") if won else Color("#e88070"))
+		title.add_theme_font_size_override("font_size", 72)
+		var secs := world.tick / World.TICK_HZ
+		var story := "%s win.\n%d:%02d of battle, %s reached age %d." % [world.races[_first_of_team(world.winner)].name, secs / 60, secs % 60,
+			world.races[active].name, world.ages[active]]
+		if won and vs_ai and ai_level != "hard":
+			story += "\nBeat %s? Try %s next." % [ai_level.capitalize(), "Normal" if ai_level == "easy" else "Hard"]   # so testers know the step up exists
+		sub.text = story
+	else:
+		title.text = "Paused"
+		title.remove_theme_color_override("font_color")
+		title.add_theme_font_size_override("font_size", 52)
+		sub.text = "%s  ·  %s" % [world.races[active].name, map.id.capitalize()]
 	clock.paused = on and not over
+	if on:
+		UiTheme.arrive(pause_menu.get_node("card"), 10.0)
+		audio.play("ui_tip")
 
 
 ## Surrender asks once more: the first click turns the button into "Click again to give up".
 func _confirm_surrender() -> void:
-	var b: Button = pause_menu.get_node("box/surrender")
+	var b: Button = pause_menu.get_node("card/box/surrender")
 	if b.text == "Surrender":
 		b.text = "Click again to give up"
 		return
@@ -1221,44 +1250,46 @@ func _confirm_surrender() -> void:
 	_show_pause_menu(false)
 
 
+## The pause menu (and, when the match is over, the end screen): a framed card in your race's
+## culture over the darkened battle, the title in the display face, buttons with weight.
 func _make_pause_menu() -> Control:
 	var shade := ColorRect.new()
-	shade.color = Color(0, 0, 0, 0.45)
+	shade.color = Color(0, 0, 0, 0.5)
 	shade.set_anchors_preset(Control.PRESET_FULL_RECT)
+	var card := PanelContainer.new()
+	card.name = "card"
+	card.theme_type_variation = "CrestFrame"
+	card.custom_minimum_size = Vector2(420, 0)
+	card.set_anchors_preset(Control.PRESET_CENTER)   # centred at any HUD size
+	card.grow_horizontal = Control.GROW_DIRECTION_BOTH
+	card.grow_vertical = Control.GROW_DIRECTION_BOTH
+	shade.add_child(card)
 	var box := VBoxContainer.new()
 	box.name = "box"
 	box.add_theme_constant_override("separation", 12)
-	box.custom_minimum_size = Vector2(320, 0)
-	box.set_anchors_preset(Control.PRESET_CENTER)   # centred, below the victory banner, at any HUD size
-	box.grow_horizontal = Control.GROW_DIRECTION_BOTH
-	box.offset_top = 50
-	shade.add_child(box)
-	var title := Label.new()
+	card.add_child(box)
+	var gap := Control.new()
+	gap.custom_minimum_size.y = 8
+	box.add_child(gap)
+	var title := UiTheme.label("", "Title")
 	title.name = "title"
 	title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	title.add_theme_font_size_override("font_size", 30)
-	title.add_theme_color_override("font_color", Color("#f2c94c"))
 	box.add_child(title)
+	var sub := UiTheme.label("", "Dim", true)
+	sub.name = "sub"
+	sub.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	sub.add_theme_font_size_override("font_size", 17)
+	box.add_child(sub)
+	box.add_child(UiTheme.Rule.new(UiTheme.look(hud_family).metal))
 	for item in [["resume", "Resume", func(): _show_pause_menu(false)],
 			["music", "Music: on", func(): _toggle_music()],
 			["ui", "UI size: %d%%  (larger)" % UiScale.size_pct(), func(): _ui_size_cycle()],
 			["surrender", "Surrender", func(): _confirm_surrender()],
 			["menu", "Back to the menu", func(): get_tree().paused = false; get_tree().change_scene_to_file("res://scenes/match_setup.tscn")]]:
-		var b := Button.new()
+		var b := UiTheme.button(item[1], item[0] == "resume")
 		b.name = item[0]
-		b.text = item[1]
-		b.focus_mode = Control.FOCUS_NONE
-		b.custom_minimum_size = Vector2(320, 52)
-		b.add_theme_font_size_override("font_size", 20)
-		var st := StyleBoxFlat.new()
-		st.bg_color = Color("#2e2820")
-		st.border_color = Color("#6a5a40")
-		st.set_border_width_all(2)
-		st.set_corner_radius_all(4)
-		b.add_theme_stylebox_override("normal", st)
-		var hv: StyleBoxFlat = st.duplicate()
-		hv.border_color = Color("#f2c94c")
-		b.add_theme_stylebox_override("hover", hv)
+		b.custom_minimum_size = Vector2(380, 64 if item[0] == "resume" else 50)
+		b.add_theme_font_size_override("font_size", 28 if item[0] == "resume" else 19)
 		b.pressed.connect(item[2])
 		box.add_child(b)
 	return shade
@@ -1455,7 +1486,7 @@ func _owner_of(id: int) -> int:
 
 func _toggle_music() -> void:
 	var on: bool = audio.toggle_music()
-	var b: Button = pause_menu.get_node_or_null("box/music") if pause_menu != null else null
+	var b: Button = pause_menu.get_node_or_null("card/box/music") if pause_menu != null else null
 	if b != null:
 		b.text = "Music: on" if on else "Music: off"
 
@@ -1993,6 +2024,13 @@ func toggle_tech_tree() -> void:
 
 
 func _update_top_bar() -> void:
+	var fam: String = world.races[active].family
+	if fam != hud_family:   # the HUD wears the culture of the side you command
+		hud_family = fam
+		var lk := UiTheme.look(fam)
+		CommandPanel.TipButton.look = lk
+		minimap.look = lk
+		_fit_hud()
 	if top_bar.get_child_count() == 0:
 		top_bar.setup(world.resources)
 		top_bar.tree_pressed.connect(toggle_tech_tree)
@@ -2000,13 +2038,14 @@ func _update_top_bar() -> void:
 			panel.res_icons[info.short] = Icons.texture("res_" + info.id)
 		top_bar.idle_pressed.connect(_next_idle_worker)
 		show_debug = not vs_ai
-	top_bar.position = Vector2(0, 0) if not show_debug or vs_ai else Vector2(0, 150)
+	top_bar.position = Vector2(10, 8) if not show_debug or vs_ai else Vector2(10, 150)
 	var stock := {}
 	for r in world.resources.size():
 		stock[world.resources[r]] = world.stock[r][active]
 	var ages: Array = world.tech.ages.filter(func(a): return int(a.age) == world.ages[active])
 	var age: Dictionary = ages[0] if not ages.is_empty() else {}
 	top_bar.show_idle(_idle_workers().size())
+	top_bar.show_workers(_gatherers(active))
 	top_bar.show_state(stock, world.pop[active], world.pop_cap[active], world.races[active].name, world.tick / World.TICK_HZ)
 	var next := ""
 	var frac := 0.0
@@ -2015,6 +2054,36 @@ func _update_top_bar() -> void:
 			next = Tech.next_age(world, active).get("name", "")
 			frac = float(world.buildings.train[b]) / float(Tech.head_ticks(world, b)) if Tech.head(world, b) == Tech.AGE_UP else 0.0   # 0 while it waits its turn
 	top_bar.show_age(world.ages[active], age.get("name", "Age %d" % world.ages[active]), next, frac)
+
+
+## Your workers on each resource, by what they do: {resource id: {verb: count}}. A worker
+## counts while it gathers or carries a load home, or chases game; by the ground it works
+## (a farm's field or paddy is farming, a carcass hunting, a bush foraging, reeds chopping,
+## stone and gold mining). View only.
+const WORK_VERBS := {"field": "farming", "paddy": "farming", "carcass": "hunting", "bugbush": "foraging", "reeds": "chopping",
+	"stone": "mining", "gold": "mining"}
+
+func _gatherers(p: int) -> Dictionary:
+	var out := {}
+	var u := world.units
+	for i in u.count():
+		if u.owner[i] != p or not world.types[u.kind[i]].worker:
+			continue
+		var res := ""
+		var verb := ""
+		if (u.task[i] == Economy.GATHER or u.task[i] == Economy.RETURN) and u.carry_kind[i] > 0:
+			res = world.resources[u.carry_kind[i] - 1]
+			var cell: int = u.home[i] if u.home[i] >= 0 else u.target[i]
+			verb = WORK_VERBS.get(map.terrain_at(cell), "gathering") if u.task[i] == Economy.GATHER or u.home[i] >= 0 else "gathering"
+		elif u.foe[i] != 0 and _owner_of(u.foe[i]) == world.gaia:
+			res = "food"
+			verb = "hunting"
+		if res == "":
+			continue
+		if not out.has(res):
+			out[res] = {}
+		out[res][verb] = int(out[res].get(verb, 0)) + 1
+	return out
 
 
 func _bar_text() -> String:
