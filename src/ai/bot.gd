@@ -29,7 +29,7 @@ const Fixed := preload("res://src/sim/fixed.gd")
 const Tech := preload("res://src/sim/tech.gd")
 const Fog := preload("res://src/sim/fog.gd")
 
-const THINK_EVERY := 20     # ticks (1 s), offset from EcoBot's think by half a second
+const THINK_EVERY := 20     # ticks (1 s), offset from EcoBot's think by half a second (and per player: _phase)
 const BUILD_COOLDOWN := 200
 const REINFORCE := 4         # soldiers idle at home that go forward as a group during an attack
 const THREAT_TICKS := 200    # a blow on our buildings or workers is answered for 10 s after
@@ -101,6 +101,7 @@ func _init(p_player: int, config := {}, level := "normal") -> void:
 	eco.MAX_WORKERS = _max_workers(1)
 	eco.AGE_WORKERS = int(cfg.economy.age_workers)
 	eco.REBALANCE = int(cfg.economy.get("rebalance_every", 0)) * 20
+	eco.PLENTY = int(cfg.economy.get("plenty", eco.PLENTY))
 	next_wave_tick = int(cfg.military.waves[0].at) * 20
 
 
@@ -129,6 +130,12 @@ func _max_workers(age: int) -> int:
 	return best
 
 
+## The tick of each second this bot thinks on: half a second after its economy, players one after
+## another (EcoBot.STAGGER), so four bots don't all think on one tick.
+func _phase() -> int:
+	return (THINK_EVERY / 2 + eco.phase()) % THINK_EVERY
+
+
 static func load_config() -> Dictionary:
 	var d = JSON.parse_string(FileAccess.get_file_as_string("res://data/ai.json"))
 	assert(d != null, "Bad or missing data/ai.json")
@@ -154,7 +161,7 @@ func think(w) -> void:
 	_note_hits(w)
 	eco.MAX_WORKERS = _max_workers(w.ages[player])
 	eco.think(w)
-	if w.tick % THINK_EVERY != THINK_EVERY / 2:
+	if w.tick % THINK_EVERY != _phase():
 		return
 	var tc: int = eco._town_center(w)
 	if tc < 0:
@@ -362,18 +369,24 @@ func _upgrade_lines(w, army: Array) -> void:
 	keep.resize(w.resources.size())
 	for r in eco.goal.size():
 		keep[r] = eco.goal[r]
+	var wanted := []   # [research, old]: what we'd research, in data order (worked out once, not per building)
+	for r in w.tech.research:
+		var gather: bool = r.effects.any(func(fx): return fx.has("gather"))
+		var old: bool = r.has("line") or (build_up and gather)
+		var wait: String = cfg.research.get("wait_for", {}).get(r.id, "")
+		if wait != "" and not Tech.has_building(w, player, wait):
+			continue   # (the Bastion's stone waits for the Castle's)
+		if old or r.id in cfg.research.economy or r.id in cfg.research.get("buildings", []) or _reach(w, r, fielded) >= int(cfg.research.army_min):
+			wanted.append([r, old])
 	for b in w.buildings.count():
 		if w.buildings.owner[b] != player or w.buildings.queue[b].any(func(e): return e < 0):
 			continue   # one research at a time per building, as before queues held research
-		for r in w.tech.research:
-			var gather: bool = r.effects.any(func(fx): return fx.has("gather"))
-			var old: bool = r.has("line") or (build_up and gather)
-			if not (old or r.id in cfg.research.economy or r.id in cfg.research.get("buildings", []) or _reach(w, r, fielded) >= int(cfg.research.army_min)) \
-					or Tech.why_not(w, player, b, r.id) != "":
-				continue
-			var wait: String = cfg.research.get("wait_for", {}).get(r.id, "")
-			if wait != "" and not Tech.has_building(w, player, wait):
-				continue   # (the Bastion's stone waits for the Castle's)
+		var bt: String = w.btypes[w.buildings.kind[b]].id
+		for e in wanted:
+			var r: Dictionary = e[0]
+			var old: bool = e[1]
+			if r.building != bt or Tech.why_not(w, player, b, r.id) != "":
+				continue   # (researched elsewhere: why_not would say "not here")
 			var spare := true
 			for k in r.cost.size():
 				if w.stock[k][player] < r.cost[k] * (1 if build_up else 2) + (0 if old else keep[k]):
@@ -461,7 +474,7 @@ func _train_healers(w, tc: int, army: Array, healers: Array) -> void:
 ## stays with its patient, and one near the spot picks the wounded up on its own.
 func _escort(w, army: Array, healers: Array, hx: int, hy: int) -> void:
 	var h: Dictionary = cfg.military.get("healers", {})
-	if healers.is_empty() or army.is_empty() or w.tick % (int(h.get("every", 3)) * 20) != THINK_EVERY / 2:
+	if healers.is_empty() or army.is_empty() or w.tick % (int(h.get("every", 3)) * 20) != _phase():
 		return
 	# The army that's out (beyond the home guard's reach); with none out, the healers stay home,
 	# where the hurt come back to (and the workers are).
@@ -782,7 +795,7 @@ func _waves(w, army: Array, hx: int, hy: int) -> void:
 		wave += 1
 		next_wave_tick = int(waves[wave].at) * 20 if wave < waves.size() else w.tick + int(m.repeat_every) * 20
 		return
-	if not assault or w.tick % (int(m.regroup_every) * 20) != THINK_EVERY / 2:
+	if not assault or w.tick % (int(m.regroup_every) * 20) != _phase():
 		return
 	# Soldiers out in the field with no enemy soldier to fight (idle, or hacking at a house)
 	# push on to the next target.

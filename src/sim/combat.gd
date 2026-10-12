@@ -412,18 +412,26 @@ static func _towers(w, hurt: PackedInt32Array, hurt_by: PackedInt32Array) -> voi
 		var limit: int = far * far + 1
 		var lv: int = w.map.level[bs.cy[b] * w.map.width + bs.cx[b]]
 		var near := []   # [distance squared, unit index, up], the nearest first (ties by index: stable)
-		for j in u.count():
-			if not w.is_foe(u.owner[j], bs.owner[b]):
-				continue
-			var d := Fixed.dist2(mx, my, u.x[j], u.y[j])
-			var up := 0
-			if hills:   # high ground: a tower on a hill reaches further down, less far up
-				up = signi(lv - w.map.level_at(u.x[j], u.y[j]))
-				var r: int = reach + s / 2 + up * int(w.high.reach)
-				if d > r * r:
-					continue
-			if d < limit:
-				near.append([d, j, up])
+		var sp = w.spatial   # only the tiles within reach (not every unit on the map, every tick a tower is loaded)
+		var tr: int = far / SimMap.TILE + 1
+		var tx: int = mx / SimMap.TILE
+		var ty: int = my / SimMap.TILE
+		for yy in range(maxi(ty - tr, 0), mini(ty + tr + 1, sp.height)):
+			for xx in range(maxi(tx - tr, 0), mini(tx + tr + 1, sp.width)):
+				var cell: int = yy * sp.width + xx
+				for q in range(sp.start[cell], sp.start[cell + 1]):
+					var j: int = sp.items[q]
+					if not w.is_foe(u.owner[j], bs.owner[b]):
+						continue
+					var d := Fixed.dist2(mx, my, u.x[j], u.y[j])
+					var up := 0
+					if hills:   # high ground: a tower on a hill reaches further down, less far up
+						up = signi(lv - w.map.level_at(u.x[j], u.y[j]))
+						var r: int = reach + s / 2 + up * int(w.high.reach)
+						if d > r * r:
+							continue
+					if d < limit:
+						near.append([d, j, up])
 		if near.is_empty():
 			continue
 		near.sort_custom(func(p, q): return p[0] < q[0] or (p[0] == q[0] and p[1] < q[1]))

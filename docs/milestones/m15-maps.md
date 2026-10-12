@@ -69,7 +69,7 @@ a legend into `data/terrain.json` (`data/maps/*.json`), the view builds tiles an
 - [x] 4. Worn paths (built 2026-10-12; the speed bonus is off, see the experiment)
 - [x] 5. High ground (built 2026-10-13; cliff look waiting on Dominic's pick: layered rock in play)
 - [x] 6. 2v2 map, variety maps, lobby teams (variety maps built 2026-10-13: Old Forest, River Delta)
-- [ ] 7. Performance, AI, exit check
+- [ ] 7. Performance, AI, exit check (performance at size done 2026-10-13, numbers below; the AI and the exit check to come)
 - [ ] Archive: pictures taken along the way, journal, decisions, timeline
 
 ## Results
@@ -275,6 +275,58 @@ Forest (Rats age at 5:30), and lost the bot-vs-bot match without reaching age 2;
 cut through the thin woods to open the straight road; no bot uses its amphibians' swimming as a
 route choice beyond what pathing gives them; the causeway fords read close to the lagoon's
 shallows in the view (a look for Dominic).
+
+### Phase 7, performance at size (2026-10-13, Claude)
+**Measured first** (`tests/sim_profile.gd`, which now times every part of `World.step` and the
+bots' thinking, prints the average, p99 and worst tick, what the ten worst ticks spent their time
+on and the final hash; `-- test_sim` plays test_sim's timed match). Main and this branch were run
+side by side in the same minutes (other agents' Godot runs loaded the machine, load average 7-8):
+
+| | main | this branch |
+|---|---|---|
+| 2v2, four bots (ended 12:40): tick avg / p99 / worst | 4.27 / 30.6 / 117 ms | 2.99 / 9.6 / 43.6 ms (next worst 17.8) |
+| reed_meadow 1v1, two bots (ended ~17:30) | 2.13 / 11.9 / 26.8 ms | 1.83 / 6.3 / 11.1 ms |
+| test_sim's match (200 units, no bots) | 3.35 / 8.5 / 17.0 ms | 2.78 / 6.8 / 16.6 ms |
+| 2v2 bots' share / fog / map sync worst | 1.51 ms avg, 110 ms worst / 12.0 / 43.7 ms | 0.45 ms avg, 4.3 ms worst / 3.7 / 7.6 ms |
+| flow fields dropped by map changes (2v2, 1v1) | 1176, 615 | 353, 88 |
+| match view, 2v2 at 10 min, 340-350 units, over a town at 3x / 1x (`tests/view_bench.gd`) | 14.5 / 14.8 ms a frame (worst 48) | 9.4 / 10.1 ms (worst 23); 350-440 draw calls either way |
+
+What the worst ticks were: the four bots thinking on one tick (the economy's resource search walked
+every resource cell of the map with string lookups, per idle worker and per resource; research
+wishes worked out once per building), flow fields patched cell by cell for a farm finishing (a
+label-correcting relaxation over the whole shadow behind it, 48 fields x 9 cells: 44 ms), fog for
+every team on one tick, and the bots' area labels.
+**Fixed:**
+- Bots: the resource search tests kind (per terrain) and distance before reach and farms; "is
+  there any" stops at the first; research wishes once per think; reach labels without a list per
+  cell (all the same answers: same final hashes on the 2v2). Then each player's bot thinks on its own
+  tick (two ticks apart), so no tick thinks for everyone (a behaviour change: decisions move by a
+  few ticks; test_ai fails only the two age-3 checks main fails too, test_2v2 passes).
+- Flow fields (`Flow.patch_opened`, `patch_closed`): cells that open are patched in one pass
+  cheapest first (each cell settled once); cells that close no longer drop the field: the cells
+  whose way ran through them are reset and re-solved locally. Only lanes whose grid really changed
+  count (a building shuts nothing for flyers). A per-tick budget (3000 cells, a quarter of the map
+  per field) bounds it; past it a field is dropped as before. Checked against fresh solves through
+  180 closings and openings on the 2v2 map (`test_sim`: `_test_flow_patch_mixed`).
+- Fog: one team per tick of the fog cycle; allies copy their leader's grid and memory instead of
+  working it out again; the remembered ground walks the shorter of "in sight" and "watched".
+- Towers find targets in the tiles within reach (spatial grid), not by scanning every unit.
+- Movement: `clear_path` answers a sample in one look where its cell and all round it are open (a
+  "roomy" grid per lane, kept up by `SimMap._refresh`); the walk checks in `_move` and `_separate`
+  written out. test_sim's movement 1.34 -> 0.85 ms, same hashes.
+- View: units off screen or in the fog don't animate, turn or change tools; resource props are
+  looked at when what you'd see there changed (all of them at the fog's rate, only cells whose
+  shown amount or ground moved; fading ones every frame: 1.7 ms a frame -> nothing most frames);
+  the minimap repaints from a colour table (2.9 -> 0.7 ms, five times a second); town life reads
+  the sim once a tick (dust from blows still every frame). Units sync 2.2 -> 0.9 ms a frame.
+**What's left:** a full flow-field solve on 88 x 88 is 4-5 ms (more when the machine is busy) and
+runs whole in one tick: the remaining spikes. A solve sliced over ticks would flatten them. Fog
+with forests everywhere is line-of-sight stamps (~25 us each), 0.4-0.7 ms a tick on average.
+**The budget** (milestone 16 asks): test_sim's 200-unit match measures 2.8 ms with the machine
+loaded (main 3.35 ms in the same minutes, 17% more); no quiet machine was to be had, so the
+margin on a quiet one is still to confirm (test_sim's own check passed at 2.82 ms loaded). Proposal: keep 3 ms average at 200 units and allow 5 ms at 400 units for sieges (movement,
+separation and fog grow with the units; bots excluded, as each runs on one machine), p99 under 10 ms
+on Dominic's Mac, checked on a weaker machine before release.
 
 ## Changes from the original plan
 - 2026-10-12 (Dominic): the 88 x 88 Reed Meadow became the first 2v2 instead of a second 1v1 size.
