@@ -99,6 +99,8 @@ picks), then build, tests, archive pictures.
 - [ ] 3. Siege engines (concept round per family)
   - [x] 3a. Concept round SW1: ram, catapult, bolt thrower, five families, two directions (2026-10-13)
   - [ ] Dominic's pick (direction per engine, family takes)
+  - [x] Round 3: the frogs' engines rethought, three directions (2026-10-13)
+  - [ ] Dominic's pick for the frogs
   - [ ] 3b. Build the pick: parts, recipes, roster slots, Siege Workshop, pricing
 - [ ] 4. Unique unit, sapper, great sling
 - [x] 5. Healers (built 2026-10-12; the look is a pick pending: HL1 concept sheet, look A in game)
@@ -193,6 +195,27 @@ three facings), models in the round-2 section of `scenes/art_pixel/siege_concept
   the other families' open ram and its crew show; the barrel shed is the better-looking object and
   could be an age-3 upgrade (a covered ram). The forest's beetle **ridden** (the riders make it read
   as a war beast, not a wild one, in every facing). Crewed catapult and bolt thrower as shown.
+
+**Siege concepts SW1 round 3, the frogs (2026-10-13), waiting on Dominic.** Dominic picked the rest of
+round 2 but not the frogs' engines ("overusing lilypads and stuff", D-119). Three new directions, each
+with a ram, catapult and bolt thrower crewed by the frog worker at true scale, no lily pads: **A, reed
+and clay engineers** (the frogs' own reed-town building culture on timber sledges: a reed-bundle log
+with a fired-clay, stone-studded head under a small thatch roof; reed uprights, a twisted-reed skein
+in daub blocks and a wicker cup of fired clay; a reed-bow bolt thrower firing a sharpened reed spear
+behind a wicker mantlet); **B, living swamp beasts** (a giant snapping turtle rams with a frog driving
+from a basket; a giant newt carries the catapult; a giant toad carries the bolt thrower); **C, river
+engines** (boats dragged through the shallows: a net-wrapped stone ram on crossed punt poles, a
+swing beam with a stone basket and a net of stones, a harpoon thrower with its line in a basket).
+Sheet `tests/siege_concept_sheet_r3.gd` (per engine, three facings, and a "directions" overview),
+models in the round-3 section of `scenes/art_pixel/siege_concepts.gd`. Pictures:
+`archive/images/2026-10-13/236-` to `243-`, and `docs/concepts/sw1/siege_r3_*`.
+- At game scale A reads best (golden reed parts from the frog crew; roof and log, arm and clay ball,
+  mantlet and bow each name the engine in every facing). B's turtle is a strong beast and nothing like
+  the beetle; the newt reads; the toad is a big frog carrying frogs. C's boats read, the harpoon best,
+  the swing beam more like a crane.
+- **Claude's recommendation:** A for all three (their own architecture, the clearest at 1x, the same
+  kind of crewed engine as everyone else's), with the turtle kept for a later showpiece (a heavy ram
+  or unique unit, as the forest has its beetle).
 
 ## Changes from the original plan
 
