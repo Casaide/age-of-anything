@@ -54,6 +54,7 @@ var symmetry := ""                 # "rotate": the map is the same turned half a
 var map_hash: int                  # content hash of the file, for replays
 var version := 0
 var fresh := PackedInt32Array()    # cells changed this tick (the World reads and clears it)
+var fresh_closed := PackedByteArray()   # per fresh entry: 1 if some lane lost a walkable cell there (else it only opened)
 var changed := PackedInt32Array()  # cells changed since the view last looked (view clears it)
 var changed_overflow := false      # too many to list: the view should redraw everything
 
@@ -310,6 +311,9 @@ func set_terrain(cell: int, k: int) -> void:
 
 
 func _refresh(cell: int) -> void:
+	var was := PackedByteArray()
+	for g in walks:
+		was.append(g[cell])
 	var clear: bool = occupied[cell] == 0 or walk_over[cell] == 1   # buildings block, farms don't
 	var ground: bool = terrain_walk[terrain[cell]] or deck[cell] == 1   # a bridge's deck is ground over the water
 	walk[cell] = 1 if ground and clear else 0
@@ -328,7 +332,12 @@ func _refresh(cell: int) -> void:
 			walks[g * CLASSES.size() + k][cell] = 1 if mask & (1 << k) and (k == FLYING or open) else 0
 		walks[g * CLASSES.size()][cell] = 1 if ground and open else 0   # as walks[0] follows walk
 	version += 1
+	var closed := 0
+	for k in walks.size():
+		if was[k] == 1 and walks[k][cell] == 0:
+			closed = 1
 	fresh.append(cell)
+	fresh_closed.append(closed)
 	if changed.size() < 4096:
 		changed.append(cell)
 	else:
