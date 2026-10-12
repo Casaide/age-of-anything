@@ -1,6 +1,6 @@
 # Milestone 13: Unit lines
 
-**Status:** in progress (2026-10-13): siege concept round
+**Status:** in progress (2026-10-13): siege engines built (step 3b), steps 2 and 8 (siege part) done
 **Exit criterion:** the tech tree page shows no blank nodes for land; every line trains, fights by
 its counters, and the AI uses it; a balance round robin at ages 2 and 3 with no line more than 20%
 off at equal cost; Dominic plays a match using siege and healers.
@@ -95,20 +95,21 @@ picks), then build, tests, archive pictures.
 ## Checklist
 - [ ] Plan approved by Dominic
 - [ ] 1. Swordsman, raider, scout, mounted archer
-- [ ] 2. Siege combat systems
+- [x] 2. Siege combat systems (splash, minimum range, bonus vs buildings, rams for buildings only, bolts through a line; 2026-10-13)
 - [ ] 3. Siege engines (concept round per family)
   - [x] 3a. Concept round SW1: ram, catapult, bolt thrower, five families, two directions (2026-10-13)
-  - [ ] Dominic's pick (direction per engine, family takes)
+  - [x] Dominic's pick (D-119: crewed engines, the rats' open ram, the ridden giant beetle)
   - [x] Round 3: the frogs' engines rethought, three directions (2026-10-13)
   - [x] Dominic's pick for the frogs: B, the turtle ram and the toad bolt thrower (D-121)
   - [x] Round 4: the newt as frog cavalry, other frog catapults (the snail first) (2026-10-13)
-  - [ ] Dominic's pick: the newt mount, the frogs' catapult
-  - [ ] 3b. Build the pick: parts, recipes, roster slots, Siege Workshop, pricing
+  - [x] Dominic's pick: the frogs' catapult, the snail (D-122); the newt mount is another agent's
+  - [x] 3b. Build the pick: parts, recipes, roster slots, Siege Workshop, pricing (2026-10-13)
+  - [ ] Dominic's look in a match
 - [ ] 4. Unique unit, sapper, great sling
 - [x] 5. Healers (built 2026-10-12; the look is a pick pending: HL1 concept sheet, look A in game)
 - [ ] 6. Trade carts
 - [ ] 7. War beasts
-- [ ] 8. AI
+- [ ] 8. AI (siege part done 2026-10-13: a few engines, rams at gates, walls and towers, catapults at towers)
 - [ ] 9. Balance and exit check
 - [ ] Archive: pictures taken along the way, journal, decisions, timeline
 
