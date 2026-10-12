@@ -1,6 +1,6 @@
 extends RefCounted
 ## Fog of war: per player, a byte per cell: 0 never seen, 1 explored (seen before), 2 visible
-## now. Allies share sight. Stamped from every unit's and building's sight radius (rules.fog,
+## now. Allies share sight. Stamped from every unit's and finished building's sight radius (rules.fog,
 ## in tiles) as integer circles, every rules.fog.every ticks. Derived from the units and
 ## buildings, so it isn't hashed; the AI reads it to play fair, and the view draws it.
 ##
@@ -97,7 +97,7 @@ static func _update(w) -> void:
 				_stamp(w, g, lit, w.units.x[i] / 1000, w.units.y[i] / 1000, r)
 		var bs = w.buildings
 		for b in bs.count():
-			if w.teams[bs.owner[b]] == w.teams[p]:
+			if w.teams[bs.owner[b]] == w.teams[p] and bs.done[b] == 1:   # a foundation sees nothing: laid in the dark, it stays dark (Dominic)
 				var t: Dictionary = w.btypes[bs.kind[b]]
 				var r: int = cfg.tower if t.get("attack", {}).size() > 0 else cfg.building
 				r += int(w.bmods[bs.owner[b]][bs.kind[b]].add.get("sight", 0))   # research (Tech.refresh)

@@ -12,6 +12,11 @@ extends SceneTree
 ## "loader[:<fraction>]": the match loader, with the bake cache off so it really bakes; shot once
 ## the bar passes that fraction (default 0.35).
 ## "life:<tick>[:dx:dy]": living towns (idle workers at chores, a damaged house), see _life.
+## "stance": side 0's army selected, Defensive clicked; shot before the sim has applied it.
+## "research:<age>": side 0's Barracks in that age, its research slots (at age 3, the spear
+## line's age-2 upgrade is done, so its age-3 one has taken the slot).
+## "fogplace": placing a house over ground never seen; "fogfound": a house's foundation laid
+## there (use with "ai-": the fog as you play it).
 ## Prefix any scene with "ai-" to see it as in a match against the AI.
 
 const Iso := preload("res://src/view/iso.gd")
@@ -31,7 +36,7 @@ func _initialize() -> void:
 	view.prompts = [args[3], args[4]] if args.size() > 4 else view.DEFAULT_PROMPTS.duplicate()
 	view.map_id = map_id
 	view.vs_ai = vs_ai
-	view.army = scene == "armies" or scene == "card" or scene.begins_with("battle") or scene.begins_with("ageup") or scene == "orders_army"
+	view.army = scene == "armies" or scene == "card" or scene.begins_with("battle") or scene.begins_with("ageup") or scene == "orders_army" or scene == "stance"
 	if scene.begins_with("loader"):
 		preload("res://src/view/art/bake_cache.gd").enabled = false
 	root.add_child(view)
@@ -91,6 +96,12 @@ func _initialize() -> void:
 		await _tip(view, int(scene.get_slice(":", 1)))
 	elif scene == "card":
 		await _card(view)
+	elif scene == "stance":
+		await _stance(view)
+	elif scene.begins_with("research"):
+		await _research(view, int(scene.get_slice(":", 1)))
+	elif scene == "fogplace" or scene == "fogfound":
+		await _fog_place(view, scene == "fogfound")
 	elif scene.begins_with("heal"):
 		await _heal(view, scene == "heal:card")
 	elif scene.begins_with("battle"):
@@ -353,6 +364,76 @@ func _card(view) -> void:
 			break
 	view.camera.zoom = Vector2(2.0, 2.0)
 	view._on_zoom()
+
+
+## Side 0's army selected and a stance clicked: the panel shows it at once.
+func _stance(view) -> void:
+	while view.world.units.count() <= 6:
+		await process_frame
+	view.select_army(0)
+	for f in 5:
+		await process_frame
+	view.set_stance("defensive")
+
+
+## Side 0 in an age with a finished Barracks selected: its research, one slot per line.
+func _research(view, age: int) -> void:
+	var w = view.world
+	var Economy = load("res://src/sim/economy.gd")
+	var Tech = load("res://src/sim/tech.gd")
+	for r in w.resources.size():
+		w.stock[r][0] = 99999
+	var s: Array = w.map.starts[0]
+	var k: int = Economy.btype_of(w, "barracks")
+	var barracks := -1
+	for tries in 30:
+		var cx: int = s[0] / 1000 - 8 + (tries % 6) * 3
+		var cy: int = s[1] / 1000 + 5 + (tries / 6) * 3
+		if w.map.can_build(cx, cy, w.btypes[k].size):
+			barracks = Economy.place(w, 0, k, cx, cy)
+			w.buildings.done[barracks] = 1
+			w.buildings.hp[barracks] = w.btypes[k].hp
+			break
+	w.ages[0] = age
+	if age >= 3:
+		w.researched[0][Tech.research_index(w, "line.spear.2")] = 1
+	Tech.retype(w, 0)
+	Tech.refresh(w, 0)
+	view.selected_building = w.buildings.id[barracks]
+	view.camera.look_at_point(Iso.to_screen(w.buildings.cx[barracks] * 1000, w.buildings.cy[barracks] * 1000))
+
+
+## A worker of side 0 places a house on ground it has never seen (the ghost), or lays it
+## there (the foundation, shot a moment later with the camera over it).
+func _fog_place(view, lay: bool) -> void:
+	var w = view.world
+	while w.units.count() < 3:
+		await process_frame
+	var s: Array = w.map.starts[0]
+	var worker := -1
+	for i in w.units.count():
+		if w.units.owner[i] == 0 and w.types[w.units.kind[i]].worker:
+			worker = w.units.id[i]
+			break
+	view.selected[worker] = true
+	var cx: int = s[0] / 1000 + 14
+	var cy: int = s[1] / 1000 - 4
+	var at := Iso.to_screen(cx * 1000 + 1000, cy * 1000 + 1000)
+	view.camera.zoom = Vector2(2.0, 2.0)
+	view._on_zoom()
+	view.camera.look_at_point(Iso.to_screen(cx * 1000 - 4000, cy * 1000 + 4000))
+	for f in 10:
+		await process_frame
+	if lay:
+		w.issue(0, "build", {"ids": [worker], "building": "house", "cx": cx, "cy": cy})
+		for f in 60:
+			await process_frame
+		print("fog at the foundation: ", w.fog[0][cy * w.map.width + cx], " buildings: ", w.buildings.count())
+	else:
+		view.start_placing("house")
+		root.warp_mouse(view.get_viewport().get_canvas_transform() * at)
+		for f in 5:
+			await process_frame
 
 
 ## Side 0's healers at work: four wounded spearmen by two healers by the Town Center; shot as a
