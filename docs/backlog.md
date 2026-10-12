@@ -184,6 +184,23 @@ still maps the brief onto parts within host rules.
   - Sci-fi "space federation" pack. A space-fleet sci-fi mod is Dominic's personal dream; keep
     official names and likenesses out of shipped content.
 
+### Eras and themes as a layer (Dominic, 2026-10-13: later; "we're not ready for later ages like that yet")
+
+"Rats with guns" showed that a gun is really an era ask, not just a weapon: under Anything
+goes, the soldiers get muskets but the healer still carries a herb staff and the town is thatch.
+The idea: the era becomes its own layer, from the prompt's words within the host's bounds, and
+it sets the technology level of every role. Culture sets the style within it, and the creature
+adds the flavour:
+- Era (guns, muskets, tanks, steam, cogs...): a field medic with a satchel and bandages instead of
+  a staff; sappers and engineers for workers; bayonets, dragoons, cannon crews or steam walkers.
+- Culture (sewer, imperial...): the style within that era (scrappy and junk-built for sewer).
+- Creature (rats): the signature on top (the cheese sack fits a GI or a Napoleonic medic).
+Steampunk is a theme the host allows, like the fantasy pack, triggered by "cogs", "brass", "steam".
+Needs: an `era` per race (in the race key), era-tagged parts per role, the generator picking
+era, then culture, then creature, and buildings by era (the biggest art cost). The era packs
+below plug into it: gunpowder first (Napoleonic-ish), steampunk as the first theme. After
+milestone 13 at the earliest.
+
 ### Battle mode (Dominic, 2026-10-12: "not just yet, but write it down")
 
 A custom battle: no economy, set armies by points, fight ("10 frog knights vs 100 sewer rats").
