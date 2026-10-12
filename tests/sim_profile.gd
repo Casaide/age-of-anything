@@ -59,6 +59,7 @@ func _initialize() -> void:
 		Economy.work(w)
 		Animals.tick(w)
 		w.spatial.build(w.units.x, w.units.y)
+		var alive: int = w.units.count()
 		marks.append(Time.get_ticks_usec())
 		Combat.tick(w)
 		Match.tick(w)
@@ -66,6 +67,8 @@ func _initialize() -> void:
 		Fog.tick(w)
 		marks.append(Time.get_ticks_usec())
 		Trails.tick(w)
+		if w.units.count() != alive:
+			w.spatial.build(w.units.x, w.units.y)   # as World.step: moves look round at who's left
 		w._next_orders()
 		marks.append(Time.get_ticks_usec())
 		var before: int = w.field_order.size()

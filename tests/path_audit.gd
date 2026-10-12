@@ -6,6 +6,7 @@ extends SceneTree
 ## nowhere for a while). Prints counts per map and a few examples each with the cell, the
 ## terrain there and what the unit was doing. Diagnostic, not a pass/fail test.
 ## Run: godot --headless --path . --script res://tests/path_audit.gd -- [minutes] [map ...]
+## AUDIT_SEEDS=7,8,9 in the environment plays each map once per seed (one match is noisy).
 
 const DataLib := preload("res://src/data_lib.gd")
 const Generator := preload("res://src/race_generator.gd")
@@ -28,18 +29,20 @@ func _init() -> void:
 	var rules = DataLib.load_json("res://data/rules/default.json")
 	var races := [gen.generate("angry swamp frogs with reed spears", rules), gen.generate("centaur romans", rules)]
 	for map_id in maps:
-		_audit(map_id, races, rules, minutes)
+		for sd in OS.get_environment("AUDIT_SEEDS").split(",", false) if OS.get_environment("AUDIT_SEEDS") != "" else [str(SEED)]:
+			_audit(map_id, races, rules, minutes, int(sd))
 	quit()
 
 
-func _audit(map_id: String, races: Array, rules: Dictionary, minutes: int) -> void:
-	var w := World.new(SEED, SimMap.load_id(map_id), races, rules)
+func _audit(map_id: String, races: Array, rules: Dictionary, minutes: int, sd: int) -> void:
+	var w := World.new(sd, SimMap.load_id(map_id), races, rules)
 	var bots := [Bot.new(0), Bot.new(1)]
 	var hist := {}        # id -> [[x, y, moving], ...] last WINDOW ticks
 	var stuck_seen := {}  # id -> tick of the last counted give-up
 	var tread_seen := {}
 	var jitter_seen := {}
 	var counts := {"give_up": 0, "snap": 0, "jitter": 0, "tread": 0, "moves": 0}
+	var wcounts := {"give_up": 0, "snap": 0, "jitter": 0, "tread": 0, "moves": 0}   # workers only
 	var examples := {"give_up": [], "snap": [], "jitter": [], "tread": []}
 	var limit := 20 * 60 * minutes
 	while w.tick < limit and w.winner < 0:
@@ -58,12 +61,18 @@ func _audit(map_id: String, races: Array, rules: Dictionary, minutes: int) -> vo
 				var s: int = u.speed[i]
 				if dx * dx + dy * dy > (3 * s + 60) * (3 * s + 60):
 					counts.snap += 1
+					if w.types[u.kind[i]].worker:
+						wcounts.snap += 1
 					_example(examples.snap, w, i, "jumped %d milli-tiles" % Fixed_isqrt(dx * dx + dy * dy))
 				if u.moving[i] == 1:
 					counts.moves += 1
+					if w.types[u.kind[i]].worker:
+						wcounts.moves += 1
 				if u.stuck[i] >= World.STUCK_LIMIT and u.moving[i] == 0 and w.tick - int(stuck_seen.get(id, -1000)) > 100:
 					stuck_seen[id] = w.tick
 					counts.give_up += 1
+					if w.types[u.kind[i]].worker:
+						wcounts.give_up += 1
 					_example(examples.give_up, w, i, "gave up towards cell %d" % w.map.cell_of(u.tx[i], u.ty[i]))
 			h.append(rec)
 			if h.size() > WINDOW:
@@ -77,6 +86,8 @@ func _audit(map_id: String, races: Array, rules: Dictionary, minutes: int) -> vo
 				if dd < s * s * 4 and w.tick - int(tread_seen.get(id, -1000)) > WINDOW * 3:
 					tread_seen[id] = w.tick
 					counts.tread += 1
+					if w.types[u.kind[i]].worker:
+						wcounts.tread += 1
 					_example(examples.tread, w, i, "moving for %d ticks, went %d milli-tiles" % [WINDOW, Fixed_isqrt(dd)])
 				var flips := 0
 				for k in range(2, WINDOW):
@@ -89,9 +100,12 @@ func _audit(map_id: String, races: Array, rules: Dictionary, minutes: int) -> vo
 				if flips >= 6 and w.tick - int(jitter_seen.get(id, -1000)) > WINDOW * 3:
 					jitter_seen[id] = w.tick
 					counts.jitter += 1
+					if w.types[u.kind[i]].worker:
+						wcounts.jitter += 1
 					_example(examples.jitter, w, i, "%d direction reversals in %d ticks" % [flips, WINDOW])
-	print("\n== %s, %d:%02d of match, winner %d" % [map_id, w.tick / 1200, (w.tick / 20) % 60, w.winner])
+	print("\n== %s (seed %d), %d:%02d of match, winner %d" % [map_id, sd, w.tick / 1200, (w.tick / 20) % 60, w.winner])
 	print("unit-ticks moving %d; give-ups %d, snaps %d, jitter %d, treading %d" % [counts.moves, counts.give_up, counts.snap, counts.jitter, counts.tread])
+	print("  workers: unit-ticks moving %d; give-ups %d, snaps %d, jitter %d, treading %d" % [wcounts.moves, wcounts.give_up, wcounts.snap, wcounts.jitter, wcounts.tread])
 	for kind in ["give_up", "snap", "jitter", "tread"]:
 		for e in examples[kind]:
 			print("  %-8s %s" % [kind, e])

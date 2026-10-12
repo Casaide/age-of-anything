@@ -130,4 +130,4 @@ static func _done(w, i: int) -> void:
 		u.stance[i] = Combat.NONE
 		u.moving[i] = 0
 	elif u.stance[i] == Combat.ATTACK_MOVE:
-		w.order_move(i, u.amx[i], u.amy[i], w.ARRIVE_STEP - w.ARRIVE_BASE, 0)
+		w.resume_attack_move(i)
