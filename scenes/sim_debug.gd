@@ -2700,7 +2700,8 @@ func _update_panel() -> void:
 		elif mine.size() == 1 and ft.has("animal"):
 			c.info = _animal_info(ft, active)
 		elif mine.size() == 1:
-			c.info = UnitCard.text(ft, _foe_types(active), world.combat)
+			c.info = UnitCard.short(ft, world.combat)
+			c["hint"] = UnitCard.text(ft, _foe_types(active), world.combat)
 		else:
 			c.info = ""
 			var counts := {}
@@ -2727,7 +2728,6 @@ func _update_panel() -> void:
 				c.buttons.append({"icon": Icons.texture("stance_" + stance), "text": STANCES[k][0], "key": "", "cost": "ON" if now == k else "", "enabled": true, "group": "Stance", "accent": now == k,
 					"tip": "[b]%s[/b]%s\n%s\nOrdered attacks work under every stance." % [STANCES[k][0], " (now)" if now == k else "", STANCES[k][1]],
 					"action": func(): set_stance(stance)})
-			c.info += ("\n" if c.info != "" else "") + "Stance: %s" % (STANCES[now][0] if now >= 0 else "mixed")
 		if not _selected_workers().is_empty():
 			if str(mine) != _build_page_for:
 				_build_page_for = str(mine)
@@ -2776,7 +2776,8 @@ func _update_panel() -> void:
 		var eo := world.units.owner[i]
 		panel.show_content({"title": et.name if eo == world.gaia else "%s, %s" % [et.name, world.races[eo].name], "team": Color(lib.palettes.teams[eo]) if eo != world.gaia else ArtKit.ANIMAL_TEAM, "buttons": [], "queue": null,
 			"portrait": kit.icons.get("%d:%s" % [et.player, et.slot]), "hp": [world.units.hp[i], et.hp],
-			"info": _animal_info(et, eo) if et.has("animal") else UnitCard.text(et, _foe_types(eo), world.combat)})
+			"info": _animal_info(et, eo) if et.has("animal") else UnitCard.short(et, world.combat),
+			"hint": "" if et.has("animal") else UnitCard.text(et, _foe_types(eo), world.combat)})
 		return
 	panel.show_content({"title": world.races[active].name, "team": team, "portrait": null,
 		"info": "Select units or a building." if vs_ai else "Select units or a building.  Tab switches side.  F6: let the bots play.", "buttons": [], "queue": null})
