@@ -85,11 +85,22 @@ func _ready() -> void:
 		_roll(i)
 
 
-## The lobby is a designed screen: laid out at DESIGN and scaled to fill the window, at any UI
-## size (the UI-size setting sizes the match's HUD and pages, where room matters).
+## The lobby is a designed screen: laid out at DESIGN and scaled to fill the window; the UI-size
+## setting takes it from 76% of that (at 40%) to all of it (at 100%), so it always reads at a
+## glance (Dominic: "text is all too small on the lobby") and the size steps still do something.
 func _rescale() -> void:
 	var px := Vector2(get_window().size)
-	get_window().content_scale_factor = maxf(1.0, minf(px.x / DESIGN.x, px.y / DESIGN.y))
+	var fill := minf(px.x / DESIGN.x, px.y / DESIGN.y)
+	get_window().content_scale_factor = maxf(1.0, fill * (0.6 + 0.4 * UiScale.size_pct() / 100.0))
+
+
+## Cmd/Ctrl + minus / plus: the UI a step smaller or larger (saved).
+func _unhandled_key_input(event: InputEvent) -> void:
+	var d := UiScale.key_step(event)
+	if d != 0:
+		UiScale.step(d)
+		_rescale()
+		get_viewport().set_input_as_handled()
 
 
 func _process(_delta: float) -> void:
@@ -308,6 +319,7 @@ func _centre() -> Control:
 	col.add_child(vs)
 	var card := PanelContainer.new()
 	card.theme_type_variation = "CrestFrame"
+	card.size_flags_vertical = Control.SIZE_EXPAND_FILL
 	col.add_child(card)
 	var inner := VBoxContainer.new()
 	inner.add_theme_constant_override("separation", 8)
@@ -334,6 +346,7 @@ func _centre() -> Control:
 	inner.add_child(pick)
 	var well := PanelContainer.new()
 	well.theme_type_variation = "Well"
+	well.size_flags_vertical = Control.SIZE_EXPAND_FILL   # the map takes the room a tall window spares
 	inner.add_child(well)
 	map_pic = TextureRect.new()
 	map_pic.custom_minimum_size = Vector2(0, 196)   # Dominic: the map needs more room
@@ -367,9 +380,6 @@ func _centre() -> Control:
 		b.toggled.connect(func(on): if on: level_pick.selected = k)
 		lrow.add_child(b)
 		level_buttons.append(b)
-	var spring := Control.new()
-	spring.size_flags_vertical = Control.SIZE_EXPAND_FILL
-	col.add_child(spring)
 	var start := UiTheme.button("Start Battle", true)
 	start.custom_minimum_size = Vector2(0, 100)
 	start.add_theme_font_size_override("font_size", 40)
@@ -638,7 +648,9 @@ func _muster(i: int) -> void:
 		n.queue_free()
 	if s.race.is_empty():
 		return
-	var w: float = maxf(s.stage.size.x, 300.0) / STAGE_ZOOM
+	var zoom := 3.0 if s.stage.size.y >= STAGE_H * 1.45 else STAGE_ZOOM   # a tall stage (a big window) shows the army bigger, in whole pixels
+	s.layer.scale = Vector2.ONE * zoom
+	var w: float = maxf(s.stage.size.x, 300.0) / zoom
 	var units: Array = s.race.units
 	var n := units.size()
 	for k in n:
@@ -647,9 +659,9 @@ func _muster(i: int) -> void:
 		view.build(u.recipe, lib, s.team, u.eval.speed)
 		view.scale = Vector2.ONE * ArtKit.UNIT_SCALE
 		view.pose_steps = 8
-		view.art_px = ArtKit.ART_SCALE / STAGE_ZOOM
+		view.art_px = ArtKit.ART_SCALE / zoom
 		var x := w * (k + 0.75) / (n + 0.5)
-		view.position = Vector2(x, maxf(s.stage.size.y, STAGE_H) / STAGE_ZOOM * (0.66 if k % 2 == 0 else 0.82))
+		view.position = Vector2(x, maxf(s.stage.size.y, STAGE_H) / zoom * (0.62 if k % 2 == 0 else 0.8))
 		view.face(1.0 if i == 0 else -1.0)   # both armies face the middle
 		s.layer.add_child(view)
 	s.status.text = "  %d units, every one priced by its parts" % n
