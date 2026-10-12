@@ -7,6 +7,7 @@ extends SubViewport
 
 const PartShape := preload("res://src/part_shape.gd")
 const Pixelize := preload("res://scenes/art_pixel/pixelize.gd")
+const BakeClock := preload("res://src/view/art/bake/bake_clock.gd")
 const UnitModels := preload("res://scenes/art_pixel/unit_models.gd")
 
 const AZIMUTH := 35.0    # hand-built models are seen three-quarter: from the near side, a bit in front
@@ -347,9 +348,6 @@ func _shape3d(s: Dictionary, colours: Dictionary, i: int) -> Node3D:
 	return Node3D.new()
 
 
-## Render this viewport once, on the next frame. (Drawing on demand with force_draw
-## came back empty, so bakes wait on frames: a window the OS hides or throttles bakes
-## far slower.)
 ## Make the holdout colour (and the edge pixels mostly made of it) transparent.
 static func _cut_holdout(img: Image) -> void:
 	for y in img.get_height():
@@ -359,6 +357,6 @@ static func _cut_holdout(img: Image) -> void:
 				img.set_pixel(x, y, Color(0, 0, 0, 0))
 
 
+## Render this viewport once (BakeClock: drawn on demand, even while the window is hidden).
 func _render() -> void:
-	render_target_update_mode = SubViewport.UPDATE_ONCE
-	await RenderingServer.frame_post_draw
+	await BakeClock.render(self)

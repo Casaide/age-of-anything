@@ -79,6 +79,28 @@ Model in the game's part units, facing +X, up +Z (glTF export turns it into Godo
 +Y up). Name every material for what the game should put there. Keep the primitive version as
 a fallback when a `.glb` is missing.
 
+## When the bakes run (and how long they take)
+
+Every bake is a job in `ArtKit` (`src/view/art/art_kit.gd`): one unit part in all its facings,
+one look of one building (with its stages and extra parts), nine props to a render.
+
+- **On demand, never on frames.** A bake asks `BakeClock` (`src/view/art/bake/bake_clock.gd`)
+  to render its viewport: the clock flushes the viewport's transforms and forces one draw of
+  every viewport waiting, then wakes them. Waiting on the engine's frames stalled whenever macOS
+  stopped drawing the window (hidden, covered, minimised). `tests/bake_hidden.gd` bakes with the
+  window minimised.
+- **Several at once.** Four part bakers and four building bakers share each draw.
+- **On disk.** `BakeCache` (`src/view/art/bake_cache.gd`) keeps every bake in
+  `user://bake_cache/<version>/`, the version a hash of the bake code, models, textures and art
+  data: change any of them and everything bakes fresh. A race or culture seen before loads in
+  milliseconds.
+- **Early.** The lobby's `ArtKit` bakes the armies, then warms up the props and both cultures'
+  buildings in the background (`ArtKit.warm`), and hands itself to the match.
+- **The match loader** (`scenes/match_loader.gd`) shows `ArtKit.progress()`, the share of the
+  asked-for jobs done, weighted by their renders.
+
+`tests/art_bake_time.gd -- cold|warm|off` times a match start (two races, all their buildings).
+
 ## Checking art
 
 Look at every change before showing it (Dominic catches floating parts, wrong layering and odd
