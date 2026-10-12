@@ -77,13 +77,15 @@ static func _update(w) -> void:
 				g[c] = EXPLORED
 		for i in w.units.count():
 			if w.teams[w.units.owner[i]] == w.teams[p]:
-				var r: int = cfg.worker if w.types[w.units.kind[i]].worker else cfg.unit
+				var t: Dictionary = w.types[w.units.kind[i]]
+				var r: int = (cfg.worker if t.worker else cfg.unit) + int(t.sight_add)   # research adds sight (Tech.retype)
 				_stamp(w, g, w.units.x[i] / 1000, w.units.y[i] / 1000, r)
 		var bs = w.buildings
 		for b in bs.count():
 			if w.teams[bs.owner[b]] == w.teams[p]:
 				var t: Dictionary = w.btypes[bs.kind[b]]
 				var r: int = cfg.tower if t.get("attack", {}).size() > 0 else cfg.building
+				r += int(w.bmods[bs.owner[b]][bs.kind[b]].add.get("sight", 0))   # research (Tech.refresh)
 				_stamp(w, g, bs.cx[b] + bs.sx[b] / 2, bs.cy[b] + bs.sy[b] / 2, r + maxi(bs.sx[b], bs.sy[b]) / 2)
 		w.fog[p] = g
 		_remember(w, p)

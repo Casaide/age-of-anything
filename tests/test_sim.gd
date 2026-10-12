@@ -18,6 +18,8 @@ const EcoBot := preload("res://src/ai/eco_bot.gd")
 const Combat := preload("res://src/sim/combat.gd")
 const Tech := preload("res://src/sim/tech.gd")
 const Fog := preload("res://src/sim/fog.gd")
+const Market := preload("res://src/sim/market.gd")
+const TechTreeModel := preload("res://src/view/tech_tree_model.gd")
 const BuildingArt := preload("res://src/view/art/building_art.gd")
 
 const PROMPTS := ["angry swamp frogs with reed spears", "sewer rats with cheese hammers"]
@@ -77,6 +79,7 @@ func _init() -> void:
 	_test_fog_memory(races)
 	_test_tech(races)
 	_test_research_queue(races)
+	_test_effects(races)
 	_test_market(races)
 	_test_build_queue(races)
 	_test_builder_moves_on(races)
@@ -1105,6 +1108,226 @@ func _test_market(races: Array) -> void:
 	for t in 20:
 		w.step()
 	check(w.stock[g][1] == g1, "market: nobody trades at someone else's market")
+
+
+## Mark research `id` (from data) or a made-up one with these effects done for player p, as if
+## it had just finished (milestone 12: effect kinds no built research uses yet get tested too).
+func _give(w: World, p: int, id: String, effects := []) -> void:
+	var r := Tech.research_index(w, id)
+	if r < 0:
+		for fx in effects:
+			Tech._check(fx, id)
+		w.tech.research.append({"id": id, "name": id, "desc": "", "cost": Economy.cost_vector(w.resources, {}), "ticks": 20,
+			"building": "town_center", "age": 1, "effects": effects, "only": [], "after": ""})
+		for q in w.researched.size():
+			w.researched[q].resize(w.tech.research.size())
+		r = w.tech.research.size() - 1
+	w.researched[p][r] = 1
+	Tech.retype(w, p)
+	Tech.refresh(w, p)
+
+
+func _visible_cells(w: World, p: int) -> int:
+	return w.fog[p].count(Fog.VISIBLE)
+
+
+## Every research effect kind (milestone 12 phase 2), one check or two each: it lands on the
+## units or buildings it names, on those already out and those made later, and nowhere else.
+func _test_effects(races: Array) -> void:
+	var w := World.new(SEED, SimMap.load_id("flat_test"), races, rules_)
+	for r in w.resources.size():
+		w.stock[r][0] = 5000
+	var wk: int = w.type_of(0, "worker")
+	var sp: int = w.type_of(0, "spear")
+	var melee: int = w.classes.find("melee")
+	# {tag, stat, add}, armour inside a stat: Thick Skins, researched at the Town Center in age 1.
+	var hp0: int = w.types[wk].hp
+	var arm0: int = w.types[wk].arm[melee]
+	w.issue(0, Commands.RESEARCH, {"building": w.buildings.id[0], "id": "thick_skins"})
+	while w.tick < 1000 and w.researched[0][Tech.research_index(w, "thick_skins")] == 0:
+		w.step()
+	check(w.types[wk].hp == hp0 + 15 and w.types[wk].arm[melee] == arm0 + 1, "effects: Thick Skins gives workers +15 hp, +1 melee armour (%d -> %d, %d -> %d)" % [hp0, w.types[wk].hp, arm0, w.types[wk].arm[melee]])
+	var full := true
+	for i in w.units.count():
+		if w.units.kind[i] == wk:
+			full = full and w.units.hp[i] == w.types[wk].hp
+	check(full, "effects: workers already out are at their new full health")
+	check(w.types[sp].hp == int(w.types[sp].eval.hp) and int(w.types[sp].eval.hp) == int(w.types[sp].line[0].eval.hp), "effects: Thick Skins leaves spears alone")
+	# A track's next step needs the one before.
+	w.ages[0] = 3
+	var ak := Economy.btype_of(w, "armoury")
+	var s: Array = w.map.starts[0]
+	var arm: int = w.buildings.index_of(_put(w, 0, "armoury", s[0] / 1000 + 4, s[1] / 1000 + 3))
+	check(Tech.why_not(w, 0, arm, "bronze_edges") == "needs Sharp Sticks first", "effects: Bronze Edges needs Sharp Sticks first (%s)" % Tech.why_not(w, 0, arm, "bronze_edges"))
+	_give(w, 0, "sharp_sticks")
+	check(Tech.why_not(w, 0, arm, "bronze_edges") == "", "effects: after Sharp Sticks, Bronze Edges can be researched")
+	check(ak >= 0, "effects: the armoury is built")
+	# speed pct and carry add: Big Pockets.
+	var speed0: int = w.types[wk].speed
+	_give(w, 0, "big_pockets")
+	var wi := -1
+	for i in w.units.count():
+		if w.units.owner[i] == 0 and w.units.kind[i] == wk:
+			wi = i
+			break
+	check(w.types[wk].speed == speed0 * 110 / 100 and w.units.speed[wi] == w.types[wk].speed, "effects: Big Pockets makes workers 10%% faster, those out too (%d -> %d)" % [speed0, w.types[wk].speed])
+	check(w.types[wk].carry_add == 3, "effects: Big Pockets adds 3 to what a worker carries")
+	var carry_max: int = int(w.econ.carry) * int(w.races[0].economy.get("carry_pct", 100)) / 100 + 3
+	var wid: int = w.units.id[wi]
+	w.issue(0, Commands.GATHER, {"ids": [wid], "cell": _nearest_resource(w.map, s, "wood")})
+	var most := 0
+	for t in 1500:
+		w.step()
+		most = maxi(most, w.units.carry[w.units.index_of(wid)])
+	check(most == carry_max, "effects: a worker now carries %d before going back (%d)" % [carry_max, most])
+	# speed pct with `not`: Marching Drums, foot melee only.
+	var foot := -1
+	var mounted := -1
+	for k in w.types.size():
+		if w.types[k].player == 0 and not w.types[k].worker:
+			var tags: Array = w.types[k].eval.tags
+			if "melee" in tags and not "mounted" in tags and foot < 0:
+				foot = k
+			if "mounted" in tags and mounted < 0:
+				mounted = k
+	var fs: int = w.types[foot].speed
+	var ms: int = w.types[mounted].speed if mounted >= 0 else 0
+	_give(w, 0, "marching_drums")
+	check(w.types[foot].speed == fs * 110 / 100, "effects: Marching Drums makes foot melee 10%% faster (%d -> %d)" % [fs, w.types[foot].speed])
+	check(mounted < 0 or w.types[mounted].speed == ms, "effects: ...but not mounted units")
+	# reload pct: Quick Draw.
+	var rk := -1
+	for k in w.types.size():
+		if w.types[k].player == 0 and w.types[k].ranged and rk < 0:
+			rk = k
+	var reload0: int = w.types[rk].reload
+	_give(w, 0, "quick_draw")
+	check(w.types[rk].reload == reload0 * 85 / 100 and w.types[rk].reload < reload0, "effects: Quick Draw reloads 15%% sooner (%d -> %d ticks)" % [reload0, w.types[rk].reload])
+	check(w.types[sp].reload == int(w.combat.melee_reload), "effects: ...and leaves melee units alone")
+	# cost pct and train_time pct (no research uses them yet: race bonuses, War Drums).
+	var cost0: PackedInt32Array = w.types[sp].cost
+	var train0: int = w.types[sp].train_ticks
+	var wtrain0: int = w.types[wk].train_ticks
+	_give(w, 0, "test.cheaper", [{"tag": "all", "stat": "cost", "pct": -10}, {"tag": "all", "not": ["worker"], "stat": "train_time", "pct": -30}])
+	var cheaper := true
+	for c in cost0.size():
+		cheaper = cheaper and w.types[sp].cost[c] == cost0[c] * 90 / 100
+	check(cheaper, "effects: cost -10%% makes spears 10%% cheaper (%s -> %s)" % [cost0, w.types[sp].cost])
+	check(w.types[sp].train_ticks == train0 * 70 / 100 and w.types[wk].train_ticks == wtrain0, "effects: train_time -30%% trains spears faster, workers as before (%d -> %d)" % [train0, w.types[sp].train_ticks])
+	# Unit sight: a lone spear sees further.
+	var b := _bare_world(races)
+	_spawn_at(b, 0, "spear", 16500, 22500)
+	for t in 8:
+		b.step()
+	var seen0 := _visible_cells(b, 0)
+	_give(b, 0, "test.sight", [{"tag": "all", "stat": "sight", "add": 3}])
+	for t in 8:
+		b.step()
+	check(_visible_cells(b, 0) > seen0, "effects: unit sight +3 shows more of the map (%d -> %d cells)" % [seen0, _visible_cells(b, 0)])
+	# Building sight: Lookouts, on a lone house.
+	var bw := _bare_world(races)
+	var house := _put(bw, 0, "house", 16, 22)
+	for t in 8:
+		bw.step()
+	seen0 = _visible_cells(bw, 0)
+	_give(bw, 0, "lookouts")
+	for t in 8:
+		bw.step()
+	check(_visible_cells(bw, 0) > seen0, "effects: Lookouts give buildings +3 sight (%d -> %d cells)" % [seen0, _visible_cells(bw, 0)])
+	# Building hp pct and armour: a standing house keeps its share of health; hits do less.
+	var hb := bw.buildings.index_of(house)
+	var hk: int = bw.buildings.kind[hb]
+	var hp_full: int = bw.btypes[hk].hp
+	bw.buildings.hp[hb] = hp_full / 2
+	var atk := PackedInt32Array()
+	atk.resize(bw.classes.size())
+	atk[bw.classes.find("melee")] = 10
+	var d0 := Combat.damage(atk, bw.bmods[0][hk].arm, bw.btypes[hk].cls, 1)
+	_give(bw, 0, "test.stone", [{"building": "all", "stat": "hp", "pct": 10}, {"building": "all", "stat": "armour.melee", "add": 2}])
+	check(bw.bmods[0][hk].hp == hp_full * 110 / 100 and bw.buildings.hp[hb] == hp_full / 2 * bw.bmods[0][hk].hp / hp_full, "effects: buildings +10%% hp, a half-hurt house stays half (%d of %d)" % [bw.buildings.hp[hb], bw.bmods[0][hk].hp])
+	check(Combat.damage(atk, bw.bmods[0][hk].arm, bw.btypes[hk].cls, 1) == d0 - 2, "effects: buildings +2 melee armour take 2 less from a blow (%d -> %d)" % [d0, Combat.damage(atk, bw.bmods[0][hk].arm, bw.btypes[hk].cls, 1)])
+	check(bw.bmods[1][hk].hp == hp_full, "effects: ...only the researching player's buildings")
+	# Build speed: a worker who builds 100% faster finishes a house in about half the time.
+	var times := []
+	for pct in [0, 100]:
+		var cw := World.new(SEED, SimMap.load_id("flat_test"), races, rules_)
+		cw.stock[1][0] = 1000
+		if pct > 0:
+			_give(cw, 0, "test.frames", [{"tag": "worker", "stat": "build_speed", "pct": pct}])
+		var builder := -1
+		for i in cw.units.count():
+			if cw.units.owner[i] == 0:
+				builder = cw.units.id[i]
+				break
+		var cs: Array = cw.map.starts[0]
+		cw.issue(0, Commands.BUILD, {"ids": [builder], "building": "house", "cx": cs[0] / 1000 + 4, "cy": cs[1] / 1000 + 3})
+		var started := -1
+		var done := -1
+		while cw.tick < 3000 and done < 0:
+			cw.step()
+			for k in cw.buildings.count():
+				if cw.buildings.owner[k] == 0 and cw.btypes[cw.buildings.kind[k]].id == "house":
+					if started < 0 and cw.buildings.progress[k] > 0:
+						started = cw.tick
+					if cw.buildings.done[k] == 1:
+						done = cw.tick
+		times.append(done - started)
+	var house_ticks: int = w.btypes[Economy.btype_of(w, "house")].build_ticks
+	check(times[1] > 0 and absi(times[1] - house_ticks / 2) <= 3 and absi(times[0] - house_ticks) <= 3, "effects: build_speed +100%% builds a house in half the time (%s ticks, alone %d)" % [times, house_ticks])
+	# Research time: a building whose research goes 50% faster.
+	var rw := World.new(SEED, SimMap.load_id("flat_test"), races, rules_)
+	for r in rw.resources.size():
+		rw.stock[r][0] = 5000
+	_give(rw, 0, "test.scholars", [{"building": "town_center", "stat": "research_time", "pct": -50}])
+	rw.issue(0, Commands.RESEARCH, {"building": rw.buildings.id[0], "id": "thick_skins"})
+	for t in 12:
+		rw.step()
+	var base_ticks: int = rw.tech.research[Tech.research_index(rw, "thick_skins")].ticks
+	check(Tech.head_ticks(rw, 0) == base_ticks / 2, "effects: research_time -50%% halves a research's time (%d of %d ticks)" % [Tech.head_ticks(rw, 0), base_ticks])
+	var t0 := rw.tick
+	while rw.tick < 2000 and rw.researched[0][Tech.research_index(rw, "thick_skins")] == 0:
+		rw.step()
+	check(rw.tick - t0 <= base_ticks / 2, "effects: ...and it's done in that time (%d ticks)" % (rw.tick - t0))
+	# Farm food pct: Fallow Fields, sown and reseeded.
+	var fk := Economy.btype_of(w, "farm")
+	var food0: int = w.btypes[fk].food
+	check(Economy.farm_food(w, 1, fk) == food0, "effects: farms hold %d food without Fallow Fields" % food0)
+	_give(w, 0, "fallow_fields")
+	check(Economy.farm_food(w, 0, fk) == food0 * 150 / 100, "effects: Fallow Fields: farms hold 50%% more (%d)" % Economy.farm_food(w, 0, fk))
+	var fw := World.new(SEED, SimMap.load_id("flat_test"), races, rules_)
+	fw.stock[1][0] = 1000
+	_give(fw, 0, "fallow_fields")
+	var farmer := -1
+	for i in fw.units.count():
+		if fw.units.owner[i] == 0:
+			farmer = fw.units.id[i]
+			break
+	var fs0: Array = fw.map.starts[0]
+	var fcx: int = fs0[0] / 1000 + 3
+	var fcy: int = fs0[1] / 1000 + 2
+	fw.issue(0, Commands.BUILD, {"ids": [farmer], "building": "farm", "cx": fcx, "cy": fcy})
+	var cell: int = fcy * fw.map.width + fcx
+	while fw.tick < 1600 and fw.map.pool[cell] < 0:
+		fw.step()
+	check(fw.map.left_at(cell) >= food0 * 150 / 100 - 5, "effects: a farm sown after Fallow Fields holds %d (%d)" % [food0 * 150 / 100, fw.map.left_at(cell)])
+	fw.map.amount[fw.map.pool[cell]] = 1
+	while fw.tick < 3000 and fw.map.left_at(cell) > 0:
+		fw.step()
+	fw.issue(0, Commands.RESEED, {"ids": [farmer], "building": fw.map.occupied[cell]})
+	for t in 12:
+		fw.step()
+	check(fw.map.left_at(cell) >= food0 * 150 / 100 - 5, "effects: ...and so does a reseeded one (%d)" % fw.map.left_at(cell))
+	# Trade fee: Haggling, selling pays more for the player who has it.
+	var f: int = w.resources.find("food")
+	var sell0 := Market.quote(w, 1, f, false)
+	_give(w, 0, "haggling")
+	check(Market.quote(w, 0, f, false) == w.market_price[f] * 85 / 100 and sell0 == w.market_price[f] * 75 / 100,
+		"effects: Haggling cuts the fee from 25 to 15 points (sells for %d, not %d)" % [Market.quote(w, 0, f, false), sell0])
+	check(Market.quote(w, 0, f, true) == Market.quote(w, 1, f, true), "effects: ...buying costs the same")
+	# Every built research's effects say something in words.
+	for r in w.tech.research:
+		if not r.has("line") and not String(r.id).begins_with("test."):
+			check(TechTreeModel.effect_text(r.effects) != "", "effects: %s says what it does (%s)" % [r.id, TechTreeModel.effect_text(r.effects)])
 
 
 ## Research and the age-up queue with units, the genre's way: in the order clicked, paid when

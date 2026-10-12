@@ -105,7 +105,7 @@ static func setup(w) -> void:
 			assert(w.map.can_build(cx, cy, size), "No room for a %s at start %d" % [bid, p])
 			var i := place(w, p, k, cx, cy)
 			w.buildings.done[i] = 1
-			w.buildings.hp[i] = w.btypes[k].hp
+			w.buildings.hp[i] = w.bmods[p][k].hp
 		var worker: int = w.type_of(p, "worker")
 		if w.buildings.count() > 0 and worker >= 0:
 			var tc: int = w.buildings.count() - 1
@@ -378,7 +378,7 @@ static func work(w) -> void:
 	for i in u.count():
 		match u.task[i]:
 			GATHER:
-				_gather(w, i, carry_max[u.owner[i]])
+				_gather(w, i, carry_max[u.owner[i]] + int(w.types[u.kind[i]].carry_add))   # research adds to it (Tech.retype)
 			RETURN:
 				_return(w, i)
 			BUILD:
@@ -502,11 +502,17 @@ static func _build(w, i: int) -> void:
 		u.moving[i] = 0
 		u.stuck[i] = 0
 		var t: Dictionary = w.btypes[bs.kind[b]]
-		bs.progress[b] += 1
-		bs.hp[b] = maxi(1, t.hp * bs.progress[b] / t.build_ticks)
+		var max_hp: int = w.bmods[bs.owner[b]][bs.kind[b]].hp
+		var pct: int = w.types[u.kind[i]].build_pct   # research: a tick's work counts for more (an extra tick every 100 / pct)
+		var step := 1
+		if pct != 0:
+			u.work[i] += 1
+			step += u.work[i] * pct / 100 - (u.work[i] - 1) * pct / 100
+		bs.progress[b] = mini(t.build_ticks, bs.progress[b] + step)
+		bs.hp[b] = maxi(1, max_hp * bs.progress[b] / t.build_ticks)
 		if bs.progress[b] >= t.build_ticks:
 			bs.done[b] = 1
-			bs.hp[b] = t.hp
+			bs.hp[b] = max_hp
 			if not t.becomes.is_empty():
 				_become_ground(w, b, i)
 			else:
@@ -582,7 +588,7 @@ static func _become_ground(w, b: int, i: int) -> void:
 	var t: Dictionary = w.btypes[bs.kind[b]]
 	var cells: PackedInt32Array = bs.footprint(b, w.map.width)
 	var land: bool = w.map.terrain_walk[w.map.terrain[cells[0]]]   # grass under it, or shallows
-	w.map.make_pool(cells, w.map.terrain_ids.find(t.becomes.land if land else t.becomes.water), t.food)
+	w.map.make_pool(cells, w.map.terrain_ids.find(t.becomes.land if land else t.becomes.water), farm_food(w, bs.owner[b], bs.kind[b]))
 	if w.units.orders[i].is_empty():
 		start_gather(w, i, cells[0], kind_of(w, "food"))
 	else:
@@ -600,9 +606,14 @@ static func cmd_reseed(w, player: int, a: Dictionary) -> void:
 	if t.becomes.is_empty() or w.map.left_at(cells[0]) > 0 or to < 0 or not w.can_afford(player, t.reseed):
 		return
 	w.pay(player, t.reseed)
-	w.map.make_pool(cells, to, t.food)
+	w.map.make_pool(cells, to, farm_food(w, player, w.buildings.kind[b]))
 	for i in _own_workers(w, player, a.ids):
 		start_gather(w, i, cells[0], kind_of(w, "food"))
+
+
+## The food a player's farm of type k holds when sown or reseeded (research: its `food` pct).
+static func farm_food(w, player: int, k: int) -> int:
+	return int(w.btypes[k].food) * (100 + int(w.bmods[player][k].pct.get("food", 0))) / 100
 
 
 ## A farm torn down leaves plain ground (or water) behind.
