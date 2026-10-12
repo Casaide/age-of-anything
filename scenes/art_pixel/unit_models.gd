@@ -1768,8 +1768,14 @@ func glb(name: String, mats: Dictionary) -> Node3D:
 		var state := GLTFState.new()
 		var err := doc.append_from_file(path, state)
 		assert(err == OK, "Can't load %s" % path)
-		_glb_cache[name] = doc.generate_scene(state)
-	var n: Node3D = _glb_cache[name].duplicate()
+		# Cached packed, not as a live node: a node outside the tree is never freed, so its meshes,
+		# materials and render instances leaked at exit (Dominic: a wall of leak warnings on quit).
+		var scene: Node = doc.generate_scene(state)
+		var packed := PackedScene.new()
+		assert(packed.pack(scene) == OK, "Can't pack %s" % path)
+		scene.free()
+		_glb_cache[name] = packed
+	var n: Node3D = (_glb_cache[name] as PackedScene).instantiate()
 	for mi in n.find_children("*", "MeshInstance3D", true, false):
 		var m: MeshInstance3D = mi
 		for k in m.mesh.get_surface_count():
