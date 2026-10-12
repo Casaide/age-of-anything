@@ -8,6 +8,13 @@ centre for the south-east one, so both starts get the same ground (rotational sy
 
   python3 tools/maps/reed_meadow.py          # writes both maps, prints the ASCII and counts
 
+Milestone 15, phase 5: high ground. A `heights` layer (digits 0-3; ramps are letters, `a`
+climbing from 0 to 1, `b` from 1 to 2, `c` from 2 to 3). A cell lower than a neighbour it has
+no ramp to is a cliff (src/sim/sim_map.gd: blocked to walkers), so a hill is climbed only by
+its ramps; checked here with the same rule. The 1v1 has a ridge on each side of the middle
+bridge (the bridgehead: archers on it cover the crossing), the 2v2 a two-level hill between
+each team's bases and a lookout hill on every start's flank, over the fords.
+
 Milestone 15, phases 2-3: forests (real trees: the north wood line behind each base, groves,
 contested woods) and a river along the swamp band from corner to corner, deep for walkers
 (amphibians swim it), with fords (mirror images) and timber bridges, so each side has the same
@@ -149,6 +156,144 @@ RIVER = {
 }
 
 
+# Hills in the north-west start's frame (the half turn draws the other side's): an ellipse of
+# cells raised to `level` (a ridge when `turn` is set: its long axis runs along x - y, the
+# river's way), and ramps up onto it, each centred where a ray from the hill's centre in a
+# direction of `ramps` (in tiles) leaves it, about three cells wide.
+HILLS = {
+    64: [
+        {"c": (25.0, 25.0), "r": (7.6, 3.6), "turn": 1, "level": 1, "ramps": [(-1, -1), (1, 1)]},
+    ],
+}
+# The 2v2: the team hill between the two bases (drawn once, on the diagonal: teammates get the
+# same), and a lookout on each start's flank (in the kit: drawn for A1 and transposed for A2).
+HILLS_2V2_SHARED = [
+    {"c": (18.0, 18.0), "r": (5.3, 5.3), "level": 1, "ramps": [(1, 0), (0, 1)]},
+    {"c": (18.0, 18.0), "r": (2.3, 2.3), "level": 2, "ramps": [(1, 1)]},
+]
+HILLS_2V2_KIT = [
+    {"c": (19.5, 48.5), "r": (3.4, 2.6), "level": 1, "ramps": [(-1, -1), (1, 0)]},
+]
+RAMP = "abc"
+
+
+def in_hill(hl, x, y):
+    cx, cy = hl["c"]
+    rx, ry = hl["r"]
+    dx, dy = x - cx, y - cy
+    if hl.get("turn"):
+        dx, dy = (dx - dy) / math.sqrt(2.0), (dx + dy) / math.sqrt(2.0)
+    return (dx / rx) ** 2 + (dy / ry) ** 2 <= 1.0
+
+
+def raise_hill(H, hl, S, flip=None):
+    """Raise a hill and its half-turned twin in the heights grid H (rows of ints). `flip` maps
+    a cell into the frame drawn (the 2v2 kit's transpose)."""
+    f = flip or (lambda x, y: (x, y))
+    for y in range(S):
+        for x in range(S):
+            if in_hill(hl, x, y):
+                fx, fy = f(x, y)
+                for (px, py) in ((fx, fy), (S - 1 - fx, S - 1 - fy)):
+                    H[py][px] = max(H[py][px], hl["level"])
+
+
+def cut_ramps(H, ramps, hl, S, flip=None):
+    """Ramps up onto a raised hill (and its twin): the cells at the level below, beside the
+    hill, round where each ramp direction leaves it. `ramps`: cell -> foot level."""
+    f = flip or (lambda x, y: (x, y))
+    lv = hl["level"]
+    cx, cy = hl["c"]
+    for (dx, dy) in hl["ramps"]:
+        n = math.hypot(dx, dy)
+        dx, dy = dx / n, dy / n
+        t = 0.0
+        while in_hill(hl, cx + dx * t, cy + dy * t):
+            t += 0.05
+        ax, ay = f(cx + dx * (t + 0.5), cy + dy * (t + 0.5))
+        for y in range(S):
+            for x in range(S):
+                if H[y][x] != lv - 1 or math.hypot(x - ax, y - ay) > 2.1:
+                    continue
+                if not any(0 <= x + ex < S and 0 <= y + ey < S and H[y + ey][x + ex] >= lv
+                           for ex in (-1, 0, 1) for ey in (-1, 0, 1)):
+                    continue
+                for (px, py) in ((x, y), (S - 1 - x, S - 1 - y)):
+                    ramps[(px, py)] = lv - 1
+    # Fill the notches: a cell at the foot between a ramp and the hill (4-way) joins the ramp,
+    # or it stands as a pit of cliff in the slope.
+    four = ((1, 0), (-1, 0), (0, 1), (0, -1))
+    fill = [(x, y) for y in range(1, S - 1) for x in range(1, S - 1)
+            if H[y][x] == lv - 1 and (x, y) not in ramps
+            and sum(1 for (ex, ey) in four if ramps.get((x + ex, y + ey)) == lv - 1) >= 1
+            and any(H[y + ey][x + ex] >= lv and (x + ex, y + ey) not in ramps for (ex, ey) in four)
+            and sum(1 for ex in (-1, 0, 1) for ey in (-1, 0, 1) if ramps.get((x + ex, y + ey)) == lv - 1) >= 1]
+    for (x, y) in fill:
+        for (px, py) in ((x, y), (S - 1 - x, S - 1 - y)):
+            ramps[(px, py)] = lv - 1
+
+
+def height_rows(H, ramps, S):
+    return ["".join(RAMP[ramps[(x, y)]] if (x, y) in ramps else str(H[y][x]) for x in range(S)) for y in range(S)]
+
+
+def levels(heights):
+    """Per cell (level, ramp) from height rows."""
+    return [[(RAMP.find(ch), 1) if ch in RAMP else (int(ch), 0) for ch in row] for row in heights]
+
+
+def cliffs(heights):
+    """The sim's rule (sim_map.gd): a cell is a cliff if a neighbour (8-way) stands higher than
+    the highest ground it reaches (its level, or a ramp's top)."""
+    L = levels(heights)
+    S = len(heights)
+    out = set()
+    for y in range(S):
+        for x in range(S):
+            top = L[y][x][0] + L[y][x][1]
+            for dy in (-1, 0, 1):
+                for dx in (-1, 0, 1):
+                    nx, ny = x + dx, y + dy
+                    if 0 <= nx < S and 0 <= ny < S and L[ny][nx][0] > top:
+                        out.add((x, y))
+    return out
+
+
+def check_heights(map_id, rows, heights, starts, bridges):
+    """High ground that plays: symmetric; hills, ramps and cliffs on open ground (no resources,
+    rock or water under a face or a ramp); starts and bridge landings flat and clear; every
+    hill top reached from every start, and only by its ramps."""
+    S = len(rows)
+    for y in range(S):
+        assert heights[y] == heights[S - 1 - y][::-1], "%s: heights not symmetric at row %d" % (map_id, y)
+    cl = cliffs(heights)
+    L = levels(heights)
+    for y in range(S):
+        for x in range(S):
+            if L[y][x][0] > 0 or L[y][x][1] or (x, y) in cl:
+                assert rows[y][x] in ".,", "%s: high ground, a ramp or a cliff on '%s' at %d,%d" % (map_id, rows[y][x], x, y)
+    for (sx, sy) in starts:
+        for y in range(sy - 4, sy + 5):
+            for x in range(sx - 4, sx + 5):
+                assert heights[y][x] == "0" and (x, y) not in cl, "%s: start %s not on flat ground" % (map_id, (sx, sy))
+    for (x0, y0, x1, y1) in bridges:
+        for y in range(y0 - 1, y1 + 2):
+            for x in range(x0 - 1, x1 + 2):
+                assert heights[y][x] == "0" and (x, y) not in cl, "%s: a bridge in the hills at %d,%d" % (map_id, x, y)
+    tops = [(x, y) for y in range(S) for x in range(S) if L[y][x][0] > 0 and (x, y) not in cl]
+    assert tops, "%s: no high ground" % map_id
+    for s in starts:
+        joined = reach(rows, s, bridges, cl)
+        for t in tops:
+            assert t in joined, "%s: hill top %s can't be reached from %s" % (map_id, t, s)
+    # Without its ramps (each one plain ground at its foot) no hill top is reached.
+    flat = ["".join(str(RAMP.find(ch)) if ch in RAMP else ch for ch in row) for row in heights]
+    shut = reach(rows, starts[0], bridges, cliffs(flat))
+    for t in tops:
+        assert t not in shut, "%s: hill top %s is reached without a ramp" % (map_id, t)
+    return len(tops), len(cl)
+
+
 def seg_dist(px, py, ax, ay, bx, by):
     dx, dy = bx - ax, by - ay
     t = max(0.0, min(1.0, ((px - ax) * dx + (py - ay) * dy) / (dx * dx + dy * dy)))
@@ -229,22 +374,31 @@ def build(map_id, name, size):
         assert rows[y] == rows[S - 1 - y][::-1], "%s: not symmetric at row %d" % (map_id, y)
     check_bridges(map_id, rows, bridges)
     check_crossings(map_id, rows, starts, bridges)
+    H = [[0] * S for _ in range(S)]
+    ramps = {}
+    for hl in HILLS[S]:
+        raise_hill(H, hl, S)
+    for hl in HILLS[S]:
+        cut_ramps(H, ramps, hl, S)
+    heights = height_rows(H, ramps, S)
+    tops, cl = check_heights(map_id, rows, heights, starts, bridges)
+    print("   %s: %d cells of high ground, %d cliff cells, %d ramp cells" % (map_id, tops, cl, len(ramps)))
     d = {"schema": "aow.map/2", "id": map_id, "name": name, "width": S, "height": S,
-         "symmetry": "rotate", "legend": LEGEND, "rows": rows, "starts": starts, "animals": ANIMALS,
-         "bridges": bridges}
+         "symmetry": "rotate", "legend": LEGEND, "rows": rows, "heights": heights, "starts": starts,
+         "animals": ANIMALS, "bridges": bridges}
     return d
 
 
-def reach(rows, start, crossings):
+def reach(rows, start, crossings, cliff=frozenset()):
     """Cells a walker reaches from start (8-way, no corner cutting, as the sim walks), with
-    or without the fords and bridges."""
+    or without the fords and bridges, never onto a cliff."""
     S = len(rows)
     deck = set()
     if crossings:
         for b in crossings:
             deck |= {(x, y) for x in range(b[0], b[2] + 1) for y in range(b[1], b[3] + 1)}
     def ok(x, y):
-        if not (0 <= x < S and 0 <= y < S):
+        if not (0 <= x < S and 0 <= y < S) or (x, y) in cliff:
             return False
         t = LEGEND[rows[y][x]]
         return t in ("grass", "swamp") or (crossings is not None and (t == "ford" or (x, y) in deck))
@@ -371,16 +525,32 @@ def build_2v2(map_id, name):
         assert rows[y] == rows[S - 1 - y][::-1], "%s: not symmetric at row %d" % (map_id, y)
     check_bridges(map_id, rows, bridges)
     check_crossings(map_id, rows, starts, bridges)
+    H = [[0] * S for _ in range(S)]
+    ramps = {}
+    tr = lambda x, y: (y, x)
+    for hl in HILLS_2V2_SHARED:
+        raise_hill(H, hl, S)
+    for hl in HILLS_2V2_KIT:
+        raise_hill(H, hl, S)
+        raise_hill(H, hl, S, tr)
+    for hl in HILLS_2V2_SHARED:
+        cut_ramps(H, ramps, hl, S)
+    for hl in HILLS_2V2_KIT:
+        cut_ramps(H, ramps, hl, S)
+        cut_ramps(H, ramps, hl, S, tr)
+    heights = height_rows(H, ramps, S)
+    tops, cl = check_heights(map_id, rows, heights, starts, bridges)
+    print("   %s: %d cells of high ground, %d cliff cells, %d ramp cells" % (map_id, tops, cl, len(ramps)))
     return {"schema": "aow.map/2", "id": map_id, "name": name, "width": S, "height": S,
-            "symmetry": "rotate", "legend": LEGEND, "rows": rows, "starts": starts, "teams": [0, 1, 0, 1],
-            "animals": ANIMALS, "bridges": bridges}
+            "symmetry": "rotate", "legend": LEGEND, "rows": rows, "heights": heights, "starts": starts,
+            "teams": [0, 1, 0, 1], "animals": ANIMALS, "bridges": bridges}
 
 
 def report(d, radius=16):
     S = d["width"]
     print("== %s (%d x %d), starts %s" % (d["id"], S, S, d["starts"]))
-    for r in d["rows"]:
-        print("   " + r)
+    for y, r in enumerate(d["rows"]):
+        print("   " + r + ("   " + d["heights"][y] if "heights" in d else ""))
     regions = {}
     for y, row in enumerate(d["rows"]):
         for x, ch in enumerate(row):

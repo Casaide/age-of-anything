@@ -67,7 +67,7 @@ a legend into `data/terrain.json` (`data/maps/*.json`), the view builds tiles an
 - [x] 2. Trees (built 2026-10-12; concept sheet waiting on Dominic's pick, one look per species in play)
 - [x] 3. Rivers, fords, bridges (built 2026-10-12; bridge look waiting on Dominic's pick)
 - [x] 4. Worn paths (built 2026-10-12; the speed bonus is off, see the experiment)
-- [ ] 5. High ground
+- [x] 5. High ground (built 2026-10-13; cliff look waiting on Dominic's pick: layered rock in play)
 - [ ] 6. 2v2 map, variety maps, lobby teams
 - [ ] 7. Performance, AI, exit check
 - [ ] Archive: pictures taken along the way, journal, decisions, timeline
@@ -168,6 +168,62 @@ processes): 1v1 test_sim match 2.68 ms avg; reed_meadow peace 1.83 ms; the 2v2 w
 between teammates, 9706 across.
 Known gaps: bots don't break or rebuild bridges (they path over them); the lobby has two sides
 (another agent's redesign); a 2-player match on the 2v2 map uses starts 0 and 1 (opposite).
+
+### Phase 5: high ground (2026-10-13, Claude; Dominic: "high ground I always wanted")
+**Data.** A map may carry `heights`, rows like the terrain rows: a level per cell, `0`-`3`, and
+ramps as letters (`a` climbs from 0 to 1, `b` from 1 to 2, `c` from 2 to 3). Maps without it are
+flat. Cliffs are derived (`SimMap._load_heights`): a cell is a cliff if a neighbour (8-way) stands
+higher than the highest ground it reaches (its level, or a ramp's top). So any step without a
+ramp, and any step of two levels, has a cliff cell at its foot. The heights go into the map hash.
+**Sim.** A cliff cell is closed to walkers and amphibians in every walk grid (flyers cross it) and
+can't be built on; buildings stand on one level, never on a ramp. Nothing else had to change:
+flow fields, movement, separation and the bots' reach areas all read the walk grids, so walkers
+change level only on a ramp. Combat (`rules.high_ground`, integers): a shooter a level above its
+target reaches 1 tile further, one below 1 tile less and deals 75% (arrows falling short, no
+dice); towers the same. Fog: ground above the viewer's level blocks sight like a tree, so from
+below you see a hill's rim but not its top; units see 1 tile further per level, buildings 2. A
+per-chunk highest level keeps the plain stamp in flat country. Tests (`tests/test_sim.gd`
+`_test_hills`, on `hill_test`: a plateau with a ramp and a knoll on it): cliffs close, flyers
+cross, nothing built on cliffs or ramps or across levels, a walker climbs by the ramp and never
+stands on a cliff, the rim is seen from below and the top beyond it isn't, the top sees 7 tiles,
+an archer hits 600 beyond its flat reach downhill without moving, closes in uphill (as on the
+flat) and hits for less, 60 walkers cross onto the plateau and settle, a fight over the ramp
+gives the same hashes twice.
+**View.** `Iso` keeps corner heights per cell (`set_relief`; `lift`, `to_ground`, `pick`); a level
+is `Iso.LEVEL_PX` = 20 px. `TerrainView.build_relief` draws raised tops through the terrain
+shader again (UV.x: the lift, so it paints that cell's ground; ramps slope, shaded by their
+facing), cliff faces down the edges that face the camera (`scenes/art_pixel/cliff.gdshader`: a
+grass lip, the face, scree at the foot, lit faces turned to the light) and a dark line on back
+edges. Under everything, level by level; copies of the tops within two cells of a back edge go
+into the y-sorted layer, one per screen row, so a hill hides units behind it. The rule that
+makes it work: everything in the y-sorted layer sorts on the base plane, its art raised inside
+the node (units, buildings, props, piles, flags; overlays use `UnitView.ground()` and
+`Iso.to_ground`). Mouse picking finds the highest ground drawn under the cursor; the fog shader
+walks down the screen to the frontmost ground drawn at each pixel; the minimap lightens each
+level and darkens cliffs. **Concept round** (180): earth bank, layered rock, mossy boulders;
+layered rock is in play (the other two read as a wall); Dominic to pick.
+**Maps.** `reed_meadow`: a ridge on each side of the middle bridge (the bridgehead, 166 cells of
+level 1 per map, a ramp from home and one towards the bridge; 182, the fight up the ramp 181).
+`reed_meadow_2v2`: between each team's bases a two-level hill (ramps towards both bases, a ramp
+onto the knoll), and a lookout hill on each start's flank over the fords (183). Both symmetric
+(asserted), resources untouched (no resource, rock or water on a hill, ramp or cliff), starts and
+bridge landings flat; the generator checks with the sim's rule that every hill top is reached
+from every start and none without its ramps.
+**Numbers.** `sim_profile` flat_test (10 min): 1.08 / 1.09 ms with this branch, 1.07 ms with main's
+sim (flat maps unchanged). reed_meadow with its hills (15 min, peace): 1.65 ms (fog 0.43).
+test_sim's 200-unit match measured 3.34 ms avg with the machine loaded (load 6, eight other Godot
+runs); the same code on flat ground is within 1% of main, so that's the load.
+**Bots.** `test_2v2`: four bots on the hilly 2v2, ended 12:40, no hits between teammates (4/4).
+`test_ai -- reed_meadow`: 24 of 26; the same code on the flat map passes 26/26. The first two
+matches play out the same; later ones diverge and two checks fail on bot habits the new ground
+brings out, not on pathing: a Cohort-vs-Frogs match runs to the 30-minute limit (the Cohort's
+army stands at home on an attack-move whose formation slots fall on its own Town Center, while
+the Frogs' archers hold the Cohort's ridge), and in the walled-fords check a worker is shut in
+for 30 s by its own houses and the forest. Both are for the bot pass (phase 7).
+**Not done:** the bots don't seek high ground for their archers (they path over hills fine);
+cliff edges are staircases of cells (no rounded or diagonal faces); a farm sown within two cells
+of a plateau's back edge is drawn under the hill's copy of its ground (flat things lie under the
+y-sort); a level is 20 px, subtle when zoomed out: Dominic may want it taller.
 
 ## Changes from the original plan
 - 2026-10-12 (Dominic): the 88 x 88 Reed Meadow became the first 2v2 instead of a second 1v1 size.

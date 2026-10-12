@@ -58,7 +58,7 @@ func update() -> void:
 		var view: Node2D = d.views.get(id)
 		if i < 0 or view == null or w.units.owner[i] != d.active:
 			continue
-		var from := view.position
+		var from: Vector2 = view.ground()
 		var prev := {}   # the spot the leg starts from (none: the unit itself)
 		var k := 0
 		for s in route(w, i):
@@ -146,7 +146,7 @@ static func route(w, i: int) -> Array:
 func _anchor(s: Dictionary) -> Variant:
 	var w = d.world
 	if s.has("x"):
-		return Iso.to_screen(s.x, s.y)
+		return Iso.to_ground(s.x, s.y)
 	if s.has("cell"):
 		s.cx = s.cell % w.map.width
 		s.cy = s.cell / w.map.width
@@ -164,9 +164,9 @@ func _anchor(s: Dictionary) -> Variant:
 			if v == null or not v.visible:
 				return null   # dead, or in the fog
 			s.unit = w.units.index_of(s.id)
-			return v.position
+			return v.ground()
 	var half: int = s.size * SimMap.TILE / 2
-	return Iso.to_screen(s.cx * SimMap.TILE + half, s.cy * SimMap.TILE + half)
+	return Iso.to_ground(s.cx * SimMap.TILE + half, s.cy * SimMap.TILE + half)
 
 
 ## A leg's end at a footprint stops at its edge (not across the foundation or the reeds).
@@ -239,8 +239,9 @@ func _diamond(c: Node2D, s: Dictionary, col: Color, a: float, px: float, fill: b
 	var x0: int = s.cx * SimMap.TILE
 	var y0: int = s.cy * SimMap.TILE
 	var e: int = s.size * SimMap.TILE
-	var pts := PackedVector2Array([Iso.to_screen(x0, y0), Iso.to_screen(x0 + e, y0), Iso.to_screen(x0 + e, y0 + e),
-		Iso.to_screen(x0, y0 + e), Iso.to_screen(x0, y0)])
+	var up := Vector2(0, Iso.lift(x0 + e / 2, y0 + e / 2))   # on a hill, on its top
+	var pts := PackedVector2Array([Iso.to_screen(x0, y0) - up, Iso.to_screen(x0 + e, y0) - up, Iso.to_screen(x0 + e, y0 + e) - up,
+		Iso.to_screen(x0, y0 + e) - up, Iso.to_screen(x0, y0) - up])
 	if fill:
 		c.draw_colored_polygon(pts.slice(0, 4), Color(col, 0.14 * a))
 	c.draw_polyline(pts, Color(EDGE, 0.6 * a), 3.5 * px)
