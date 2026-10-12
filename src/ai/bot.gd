@@ -14,7 +14,12 @@ extends RefCounted
 ## - a couple of healers from the Town Center in ages 2-3 (data: military.healers), kept a few
 ##   tiles behind the army, on the side towards home; they heal whoever is hurt near them;
 ## - a Wonder when it's rich in age 3 (data: wonder); and an enemy Wonder it knows of is the
-##   first target of every attack, a finished one (its countdown running) attacked at once.
+##   first target of every attack, a finished one (its countdown running) attacked at once;
+## - a plan for the ages (milestone 12 phase 8): what it saves for (_goal: the next age with the
+##   building it needs, else the build step waiting on resources) steers the economy's shares
+##   (EcoBot.shares, a gatherer moved at a time) and holds back soldiers and research;
+## - a Watchtower where it was raided, a call to arms for a big raid on the Town Center (for a
+##   while, then back to work), and per level (data: levels) how hard it builds up and fights.
 ## Like EcoBot it only reads sim state and issues commands, so it's deterministic.
 
 const EcoBot := preload("res://src/ai/eco_bot.gd")
