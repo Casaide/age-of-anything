@@ -805,5 +805,6 @@ static func spawn_at(w, b: int, k: int) -> int:
 	var i: int = w.units.add(w.next_id, bs.owner[b], k, (best % m.width) * SimMap.TILE + 500,
 		(best / m.width) * SimMap.TILE + 500, t.speed, t.radius, t.hp)
 	w.units.mclass[i] = t.mclass
+	w.units.posture[i] = t.posture
 	w.next_id += 1
 	return i

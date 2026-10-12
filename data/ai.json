@@ -85,7 +85,18 @@
   ],
   "repeat_every": 75,
   "repeat_min_army": 8,
-  "guard": 4
+  "guard": 4,
+  "healers": {
+   "per_army": 5,
+   "max": {
+    "2": 2,
+    "3": 3
+   },
+   "behind": 2,
+   "follow": 3,
+   "every": 3
+  },
+  "_doc_healers": "healers (Town Center, from age 2): one per per_army soldiers, up to max per age; kept `behind` tiles back from the army's middle (towards home); idle ones further than `follow` tiles from that spot are sent there every `every` seconds"
  },
  "research": {
   "_doc": "Besides line upgrades (and gathering, for building-up levels): the economy research it buys, and the soldiers' research it buys once that research reaches at least army_min of its soldiers (the armoury track for what it fields). Both keep back the next age's cost once the bot has the workers to age up.",

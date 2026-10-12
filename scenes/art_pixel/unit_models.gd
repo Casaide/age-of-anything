@@ -2009,3 +2009,85 @@ func _shield_chimalli(c: Dictionary) -> Dictionary:
 		var x := -4.0 + k * 1.0
 		h.add_child(blob(Vector3(0.45, 2.0, 0.3), plain(cols[k % 3]), Vector3(x, -6.0 - absf(x) * -0.25, 0.1)))
 	return {"node": n}
+
+
+# ------------------------------------------------------------------ the healer's kit (HL1, look A)
+# A tall staff with a healing token tied at the top (herbs; cheese for rats; a water lily for
+# frogs) and a bag in the off hand. Held low, like a spear: built around the grip at the hand.
+# No red cross (a protected emblem): healing reads from herbs, bags and bandages.
+
+const HERB := Color("#8cc850")
+const LINEN_PALE := Color("#efe8d6")
+
+
+## A: the herbalist. A tall crooked staff with a bundle of herbs tied under the crook.
+func _tool_staff_herbs(c: Dictionary) -> Dictionary:
+	var n := Node3D.new()
+	var wood := surf("bone", Color("#e2cc9c"), 6.0)   # peeled pale wood: it reads on dark fur and skin
+	var a := Vector3(-2, -9, 0)
+	var b := Vector3(6, 31, 0)   # taller than its bearer: the herbs ride above the head
+	n.add_child(rod(a, b, 1.0, 0.9, wood, false))
+	n.add_child(rod(b, b + Vector3(3.0, 2.0, 0), 0.9, 0.7, wood))   # the crook
+	n.add_child(rod(b + Vector3(3.0, 2.0, 0), b + Vector3(4.2, 0.2, 0), 0.6, 0.5, wood))
+	var herb := surf("leaf", HERB, 2.0)
+	for k in 5:
+		var ang := -0.9 + k * 0.45
+		n.add_child(blob(Vector3(0.8, 2.6, 0.8), herb, b + Vector3(-0.6 + sin(ang) * 1.6, -2.4, cos(ang) * 0.8), Vector3(0, 0, rad_to_deg(ang) * 0.6)))
+	n.add_child(ring(0.7, 1.15, plain(c.team), b + Vector3(0, -0.6, 0), Vector3(0, 0, -14)))   # the tie
+	return {"node": n}
+
+
+## A's satchel: a leather bag, a linen bandage roll under the flap.
+func _tool_satchel(c: Dictionary) -> Dictionary:
+	var n := Node3D.new()
+	var leather := surf("leather", Color(1.0, 0.92, 0.8), 3.0)
+	n.add_child(_box(Vector3(2.6, 4.4, 5.0), leather, Vector3(2.4, -2.6, 1.6)))
+	n.add_child(_box(Vector3(2.8, 2.0, 5.2), surf("leather", Color(0.7, 0.55, 0.42), 3.0), Vector3(2.6, -0.8, 1.6)))   # the flap
+	n.add_child(cone(1.0, 1.0, 3.2, plain(LINEN_PALE), Vector3(3.2, 0.6, 1.6), Vector3(90, 0, 0)))
+	return {"node": n}
+
+
+## D (rats): a crooked stick with a wedge of cheese bound to its top (cheese cures everything).
+func _tool_staff_cheese(c: Dictionary) -> Dictionary:
+	var n := Node3D.new()
+	var wood := surf("bone", Color("#e2cc9c"), 5.0)   # a peeled stick: it reads on brown fur
+	var a := Vector3(-3, -9, 0)
+	var b := Vector3(2, 12, 0)
+	var t := Vector3(5, 29, 0)
+	n.add_child(rod(a, b, 1.0, 0.9, wood))
+	n.add_child(rod(b, t, 0.9, 0.75, wood))
+	n.add_child(slab([Vector2(-2.6, -1.6), Vector2(3.0, -1.6), Vector2(-2.6, 2.6)], 2.6, surf("cheese", Color.WHITE, 3.0), t + Vector3(0.4, 1.2, 0)))
+	n.add_child(ring(0.7, 1.1, plain(c.team), t + Vector3(-0.2, -0.6, 0), Vector3(0, 0, -16)))
+	return {"node": n}
+
+
+## D's poultice sack: a stained cloth sack, knotted, a cheese rind poking out.
+func _tool_satchel_cheese(c: Dictionary) -> Dictionary:
+	var n := Node3D.new()
+	var sack := surf("cloth", Color("#cdbb92"), 3.0)
+	n.add_child(blob(Vector3(2.8, 3.4, 2.8), sack, Vector3(2.6, -2.4, 1.6)))
+	n.add_child(cone(0.7, 1.5, 1.4, sack, Vector3(2.6, 1.0, 1.6)))
+	n.add_child(ring(0.6, 1.0, plain(c.team), Vector3(2.6, 1.2, 1.6)))
+	n.add_child(slab([Vector2(0, 0), Vector2(2.2, 0.6), Vector2(0.2, 1.8)], 1.2, surf("cheese", Color.WHITE, 2.0), Vector3(3.6, -0.6, 3.6)))
+	return {"node": n}
+
+
+## E (frogs): a reed staff crowned with a water-lily flower.
+func _tool_staff_lily(c: Dictionary) -> Dictionary:
+	var n := Node3D.new()
+	var a := Vector3(-2, -9, 0)
+	var b := Vector3(5, 25, 0)
+	n.add_child(rod(a, b, 1.1, 1.0, surf("reed_stalk", Color.WHITE, 5.0), false))
+	n.add_child(decal("water_lily", 7.0, 7.0, b + Vector3(0, 1.8, 0.4), Vector3(0.3, 0.6, 1.0)))
+	n.add_child(blob(Vector3(2.4, 0.6, 2.4), plain(c.lily), b + Vector3(0, -0.2, 0)))
+	return {"node": n}
+
+
+## E's moss pouch: a lily pad folded over a wad of wet moss, tied with a team cord.
+func _tool_satchel_moss(c: Dictionary) -> Dictionary:
+	var n := Node3D.new()
+	n.add_child(blob(Vector3(2.8, 2.4, 3.0), surf("lily_pad", Color.WHITE, 4.0), Vector3(2.6, -2.0, 1.6)))
+	n.add_child(blob(Vector3(1.8, 1.0, 2.0), plain(Color("#6f8f3a")), Vector3(3.0, -0.2, 1.6)))
+	n.add_child(_box(Vector3(5.8, 0.6, 0.6), plain(c.team), Vector3(2.6, -2.0, 4.5)))   # a team cord
+	return {"node": n}
+
