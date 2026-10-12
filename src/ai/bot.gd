@@ -48,6 +48,8 @@ var _rushed := -(1 << 30)    # the tick we last sent everyone at a finished enem
 var _blocked := PackedInt32Array()   # the cost of the build step waiting on resources (what it saves for)
 var _tower_at := Vector2i(-1, -1)    # where a raid was: a Watchtower goes up there once it's quiet
 var _sheltering := false     # our workers were called to arms
+var _shelter_until := 0      # ... and come out by this tick
+var _shelter_next := 0       # no call to arms again before this tick
 var _saving_age := false     # the goal is the next age (the economy leans on it hard)
 
 
@@ -58,6 +60,7 @@ var wave_pct := 100   # the share of the army each wave sends; the rest defend
 var build_up := false # economy and upgrades come before soldiers
 var age3_workers := 26   # workers before it saves for age 3
 var towers := 0       # Watchtowers it raises where it was raided
+var all_in := 0       # an army this big (population) goes out whole, home guard and all (0: never)
 var shelter_pop := 0  # a raid this big (enemy population) by the Town Center calls the workers to arms (0: never)
 
 
@@ -84,6 +87,7 @@ func _init(p_player: int, config := {}, level := "normal") -> void:
 		age3_workers = int(l.get("age3_workers", age3_workers))
 		towers = int(l.get("towers", 0))
 		shelter_pop = int(l.get("shelter_pop", 0))
+		all_in = int(l.get("all_in", 0))
 	eco = EcoBot.new(p_player)
 	eco.MIX = {}
 	for age in cfg.economy.mix:
@@ -392,10 +396,10 @@ func _train(w, workers: Array, count: int) -> void:
 	# builds up more and fights less, but never stops growing (Dominic: not caps).
 	if army_ratio > 0 and guard * 100 >= count * army_ratio * w.ages[player]:
 		return
-	# Saving for something (the next age, a building): soldiers only from what's over, while
+	# Saving for the next age: soldiers only from what's over (a building waits its turn), while
 	# nobody is raiding us (an army first, then the age) and, from age 2, once there's a guard
 	# (D-077: an age-up with nobody home invites a raid; age 1's guard trains while the age-up runs).
-	if (guard >= int(cfg.military.guard) or w.ages[player] == 1) and _threats.is_empty():
+	if _saving_age and (guard >= int(cfg.military.guard) or w.ages[player] == 1) and _threats.is_empty():
 		for r in eco.goal.size():
 			reserve[r] = eco.goal[r]
 	var foes := _enemy_tags(w)
@@ -602,8 +606,14 @@ func _respond(w, tc: int, army: Array, workers: Array, hx: int, hy: int) -> void
 	var tw: Dictionary = cfg.military.get("towers", {})
 	if not tw.is_empty() and w.ages[player] >= int(tw.age) and d > (FLEE_TILES + 2) * 1000 and d <= int(tw.within) * 1000:
 		_tower_at = f
-	# A big raid by the Town Center that the soldiers at home can't answer: call to arms.
-	if shelter_pop > 0 and not _sheltering and strength >= shelter_pop and d <= int(cfg.military.shelter.tiles) * 1000:
+	# A big raid by the Town Center that the soldiers at home can't answer: call to arms, for a
+	# while (shelter.seconds: a Town Center full of workers can't hold out for ever, and the
+	# economy stands still meanwhile), then not again for shelter.every seconds.
+	var sh: Dictionary = cfg.military.shelter
+	if _sheltering and w.tick >= _shelter_until:
+		w.issue(player, Commands.BACK_TO_WORK, {})
+		_sheltering = false
+	if shelter_pop > 0 and not _sheltering and w.tick >= _shelter_next and strength >= shelter_pop and d <= int(sh.tiles) * 1000:
 		var home_pop := 0
 		var home_r := 2 * int(cfg.military.defend_tiles) * 1000
 		for i in army:
@@ -612,6 +622,8 @@ func _respond(w, tc: int, army: Array, workers: Array, hx: int, hy: int) -> void
 		if home_pop < strength:
 			w.issue(player, Commands.CALL_TO_ARMS, {"building": w.buildings.id[tc]})
 			_sheltering = true
+			_shelter_until = w.tick + int(sh.seconds) * 20
+			_shelter_next = w.tick + int(sh.every) * 20
 	# Workers out of the way.
 	var to := Vector2i(hx, hy)
 	if d <= (FLEE_TILES + 2) * 1000:   # at the Town Center itself: behind it, away from them
@@ -753,6 +765,8 @@ func _waves(w, army: Array, hx: int, hy: int) -> void:
 		var away := army.filter(func(i): return Fixed.dist2(hx, hy, w.units.x[i], w.units.y[i]) > near * near)
 		var at_home := army.filter(func(i): return Fixed.dist2(hx, hy, w.units.x[i], w.units.y[i]) <= near * near)
 		var keep: int = army.size() - maxi(1, army.size() * wave_pct / 100)
+		if all_in > 0 and strength >= all_in:
+			keep = 0   # a big army goes all in: a guard at home only spreads it thin against castles and towers
 		var sent: Array = away + at_home.slice(0, maxi(0, at_home.size() - keep))
 		if not sent.is_empty():
 			w.issue(player, Commands.ATTACK_MOVE, {"ids": sent.map(func(i): return w.units.id[i]), "x": target.x, "y": target.y})
