@@ -100,6 +100,7 @@ var lost := PackedInt32Array()    # per player: units killed so far
 var teams := PackedInt32Array()   # per player: team id (players on one team are allies)
 var lane_base := PackedInt32Array()   # per player (and gaia): first lane of its team's walk grids (refresh_lanes)
 var pop_cap := PackedInt32Array()
+var auto_reseed := PackedByteArray()   # per player: 1 if worked-out farms reseed themselves (Commands.AUTO_RESEED)
 var defeated := PackedInt32Array()       # per player: the tick + 1 they were knocked out, or 0 (match.gd)
 var started_with_town := PackedByteArray()
 var winner := -1               # the winning team, once only one is left
@@ -391,6 +392,8 @@ func _run(cmd: Dictionary) -> void:
 			Match.cmd_surrender(self, cmd.player)
 		Commands.RESEED:
 			Economy.cmd_reseed(self, cmd.player, a)
+		Commands.AUTO_RESEED:
+			auto_reseed[cmd.player] = 1 if int(a.on) == 1 else 0
 		Commands.TRAIN:
 			Economy.cmd_train(self, cmd.player, a)
 		Commands.CANCEL:
@@ -941,6 +944,7 @@ func state_hash() -> int:
 		h = Fixed.mix(h, teams[p])
 		h = Fixed.mix(h, ages[p])
 		h = Fixed.mix(h, defeated[p])
+		h = Fixed.mix(h, auto_reseed[p])
 		for v in researched[p]:
 			h = Fixed.mix(h, v)
 	for v in market_price:

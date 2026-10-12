@@ -93,6 +93,7 @@ static func setup(w) -> void:
 		w.pop.append(0)
 		w.pop_cap.append(0)
 		w.lost.append(0)
+		w.auto_reseed.append(1)   # the genre's auto-reseed, on until the player turns it off
 	for p in w.races.size():
 		if start.buildings.is_empty() and int(start.workers) == 0:
 			continue   # nothing to put down (tests and sandboxes; maps may have fewer starts than players)
@@ -395,6 +396,9 @@ static func _gather(w, i: int, carry_max: int) -> void:
 		return
 	var cell: int = u.target[i]
 	var kind: int = u.carry_kind[i]
+	if kind_of(w, w.map.resource_at(cell)) != kind and u.home[i] == cell and farm_at(w, cell, u.owner[i]) >= 0:
+		_fallow(w, i, cell, kind)
+		return
 	if kind_of(w, w.map.resource_at(cell)) != kind:
 		var more := nearest_resource(w, u.x[i], u.y[i], kind, i)
 		if more >= 0:
@@ -419,6 +423,8 @@ static func _gather(w, i: int, carry_max: int) -> void:
 			u.work[i] = 0
 			w.map.take(cell)
 			u.carry[i] += 1
+			if w.map.pool[cell] >= 0 and w.map.left_at(cell) <= 0:
+				_farm_done(w, i, cell)
 	elif u.moving[i] == 0:
 		if u.stuck[i] >= GIVE_UP:
 			# Can't get there (a crowd planted round the bush, or no way through): another
@@ -607,17 +613,73 @@ static func _become_ground(w, b: int, i: int) -> void:
 ## Reseed a worked-out farm: pay, crops again, the workers start the harvest.
 static func cmd_reseed(w, player: int, a: Dictionary) -> void:
 	var b: int = w.buildings.index_of(int(a.building))
-	if b < 0 or w.buildings.owner[b] != player or w.buildings.done[b] == 0:
+	if b < 0 or w.buildings.owner[b] != player or not reseed(w, b):
 		return
+	var cells: PackedInt32Array = w.buildings.footprint(b, w.map.width)
+	for i in _own_workers(w, player, a.ids):
+		start_gather(w, i, cells[0], kind_of(w, "food"))
+
+
+## Reseed finished farm b if it's worked out and its owner can pay: crops again. Whether it was.
+static func reseed(w, b: int) -> bool:
+	var p: int = w.buildings.owner[b]
 	var t: Dictionary = w.btypes[w.buildings.kind[b]]
 	var cells: PackedInt32Array = w.buildings.footprint(b, w.map.width)
 	var to: int = w.map.terrain_reseed[w.map.terrain[cells[0]]]
-	if t.becomes.is_empty() or w.map.left_at(cells[0]) > 0 or to < 0 or not w.can_afford(player, t.reseed):
+	if w.buildings.done[b] == 0 or t.becomes.is_empty() or w.map.left_at(cells[0]) > 0 or to < 0 or not w.can_afford(p, t.reseed):
+		return false
+	w.pay(p, t.reseed)
+	w.map.make_pool(cells, to, farm_food(w, p, w.buildings.kind[b]))
+	return true
+
+
+## The finished farm of `player` whose crops cover `cell`, or -1.
+static func farm_at(w, cell: int, player: int) -> int:
+	if w.map.pool[cell] < 0:
+		return -1
+	var b: int = w.buildings.index_of(w.map.occupied[cell])
+	if b < 0 or w.buildings.owner[b] != player or w.buildings.done[b] == 0 or w.btypes[w.buildings.kind[b]].becomes.is_empty():
+		return -1
+	return b
+
+
+## Farmer i just took the last of its farm's food: the farm-done event (a sound and a line for
+## its owner) and, with auto-reseed on and the wood there, crops again at once; the farmer
+## keeps farming. Otherwise it lies fallow and the farmer waits by it (_fallow).
+static func _farm_done(w, i: int, cell: int) -> void:
+	var b := farm_at(w, cell, w.units.owner[i])
+	if b < 0:
 		return
-	w.pay(player, t.reseed)
-	w.map.make_pool(cells, to, farm_food(w, player, w.buildings.kind[b]))
-	for i in _own_workers(w, player, a.ids):
-		start_gather(w, i, cells[0], kind_of(w, "food"))
+	var p: int = w.buildings.owner[b]
+	var again: bool = w.auto_reseed[p] == 1 and reseed(w, b)
+	var bs = w.buildings
+	w.events.append({"type": "farm_done", "player": p, "building": bs.id[b], "reseeded": again,
+		"x": bs.cx[b] * SimMap.TILE + bs.sx[b] * SimMap.TILE / 2, "y": bs.cy[b] * SimMap.TILE + bs.sy[b] * SimMap.TILE / 2})
+
+
+## A farmer by its worked-out farm takes what it carries home first (and comes back), then
+## waits by the farm, its place there kept (one farmer per farm). Every WAIT_TICKS it looks
+## again: reseeded meanwhile (by hand, or auto-reseed can pay now), it farms on; else a free
+## farm with crops nearby, it goes there. It never wanders off to other work (Dominic).
+static func _fallow(w, i: int, cell: int, kind: int) -> void:
+	var u = w.units
+	if u.carry[i] > 0:
+		_to_drop_off(w, i)
+		return
+	if _in_reach(w, i, _cell_rect(w, cell)):
+		u.moving[i] = 0
+		u.stuck[i] = 0
+	elif u.moving[i] == 0 and u.stuck[i] < GIVE_UP:
+		_approach_cell(w, i, cell)
+	u.work[i] += 1
+	if u.work[i] < WAIT_TICKS:
+		return
+	u.work[i] = 0
+	if w.auto_reseed[u.owner[i]] == 1 and reseed(w, farm_at(w, cell, u.owner[i])):
+		return   # crops again: back to work next tick
+	var other := nearest_resource(w, u.x[i], u.y[i], kind, i, true)
+	if other >= 0:
+		start_gather(w, i, other, kind)
 
 
 ## The food a player's farm of type k holds when sown or reseeded (research: its `food` pct).
