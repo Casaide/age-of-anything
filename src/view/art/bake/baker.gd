@@ -13,6 +13,7 @@ const SIZE := 1024
 const PIXEL_SIZE := 2048
 
 const Pixelize := preload("res://scenes/art_pixel/pixelize.gd")
+const BakeClock := preload("res://src/view/art/bake/bake_clock.gd")
 
 var cam: Camera3D
 var holder: Node3D
@@ -230,9 +231,9 @@ func bake_many(models: Array, cols := 3) -> Array:
 	return out
 
 
-## Render what's in the holder: [image, then the shadow passes if they're on].
+## Render what's in the holder: [image, then the shadow passes if they're on]. (One render is
+## enough: BakeClock brings every transform up to date before it draws.)
 func _shoot() -> Array:
-	await _render()
 	await _render()
 	var shots := [get_texture().get_image()]
 	if pixel_factor > 0 and shadow_on:
@@ -244,7 +245,8 @@ func _shoot() -> Array:
 ## paint its shadows. Points come in render pixels and go out in the sprite's pixels.
 func _cut(shots: Array, area: Rect2i, projected: Array) -> Dictionary:
 	var img: Image = shots[0]
-	var used := img.get_region(area).get_used_rect()
+	var whole := area == Rect2i(Vector2i.ZERO, img.get_size())
+	var used := img.get_used_rect() if whole else img.get_region(area).get_used_rect()   # no copy of the whole render
 	used.position += area.position
 	used = used.grow(4).intersection(area)
 	if pixel_factor > 0:
@@ -267,9 +269,6 @@ func _cut(shots: Array, area: Rect2i, projected: Array) -> Dictionary:
 		"points": projected.map(func(p): return p - Vector2(used.position))}
 
 
-## Render this viewport once, on the next frame. (Drawing on demand with force_draw
-## came back empty, so bakes wait on frames: a window the OS hides or throttles bakes
-## far slower.)
+## Render this viewport once (BakeClock: drawn on demand, even while the window is hidden).
 func _render() -> void:
-	render_target_update_mode = SubViewport.UPDATE_ONCE
-	await RenderingServer.frame_post_draw
+	await BakeClock.render(self)

@@ -21,6 +21,9 @@ const Audio := preload("res://src/view/audio.gd")
 const UiScale := preload("res://src/view/ui_scale.gd")
 const UiTheme := preload("res://src/view/ui/theme.gd")
 const Mat := preload("res://src/view/ui/ui_materials.gd")
+const DiceButton := preload("res://src/view/loaders/dice_button.gd")
+const ForgeVeil := preload("res://src/view/loaders/forge_veil.gd")
+const LoaderStyle := preload("res://src/view/loaders/loader_style.gd")
 
 const NOT_MAPS := ["choke_test"]   # a movement test (sim_debug lists it)
 var MAPS := _maps()   # every map in data/maps: the real ones first (by name), the test maps last
@@ -534,7 +537,14 @@ func _side_panel(i: int, who: String, compact := false) -> Control:
 	layer.y_sort_enabled = true
 	layer.scale = Vector2.ONE * STAGE_ZOOM
 	vp.add_child(layer)
-	well.add_child(stage)
+	var stage_box := Control.new()   # the stage, and over it the veil shown while a new army is forged
+	stage_box.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	stage_box.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	stage.set_anchors_preset(Control.PRESET_FULL_RECT)
+	stage_box.add_child(stage)
+	var veil := ForgeVeil.new()
+	stage_box.add_child(veil)
+	well.add_child(stage_box)
 	var status := UiTheme.label("", "Dim")   # over the stage's foot
 	status.add_theme_font_size_override("font_size", 15)
 	status.add_theme_color_override("font_color", Color("#f4ecd4", 0.85))
@@ -550,13 +560,11 @@ func _side_panel(i: int, who: String, compact := false) -> Control:
 	var prompt := HBoxContainer.new()
 	prompt.add_theme_constant_override("separation", 10)
 	col.add_child(prompt)
-	var dice := Button.new()
-	dice.icon = Icons.texture("dice")
-	dice.expand_icon = true
+	var dice := DiceButton.new()   # tumbles when thrown, rocks until the race is made
 	dice.custom_minimum_size = Vector2.ONE * (54 if compact else 68)
 	dice.focus_mode = Control.FOCUS_NONE
 	dice.tooltip_text = "Roll the dice: a new race (with words in the box, another roll of those words)"
-	dice.pressed.connect(func(): _roll(i))
+	dice.pressed.connect(func(): dice.tumble(); _roll(i))
 	UiTheme.juice(dice)
 	prompt.add_child(dice)
 	var field := LineEdit.new()
@@ -587,7 +595,7 @@ func _side_panel(i: int, who: String, compact := false) -> Control:
 	roster.visible = not compact
 	sides.append({"field": field, "dice": dice, "reroll": 0, "rolled": "", "race": {}, "name": name, "line": line, "roster": roster, "units": units,
 		"stage": stage, "vp": vp, "layer": layer, "status": status, "dirty_at": 0.0, "team": team, "panel": card, "banner": banner, "family": "?",
-		"level": 0, "side_team": i, "compact": compact})
+		"level": 0, "side_team": i, "compact": compact, "veil": veil, "forging": false})
 	return card
 
 
@@ -687,13 +695,34 @@ func _regenerate(i: int) -> void:
 	s.roster.text = "\n".join(lines)
 	s.roster.tooltip_text = "\n".join(race.notes)
 	s.banner.tooltip_text = "\n".join(race.notes)
-	s.status.text = "  Mustering..."
+	s.status.text = "  Forging the army..."
 	s.dirty_at = Time.get_ticks_msec() / 1000.0
+	_forging(i)
+
+
+## A side's army is being made (typed, rolled, baking): the old one dims under the forge veil
+## and the dice rocks, until _muster stands the new one up.
+func _forging(i: int) -> void:
+	var s: Dictionary = sides[i]
+	s.dice.busy = true
+	if s.forging:
+		return
+	s.forging = true
+	s.veil.show_veil()
+	_fade_army(s, LoaderStyle.DIM_ARMY, 0.2)
+
+
+func _fade_army(s: Dictionary, to: float, secs: float) -> void:
+	if s.has("tween"):
+		s.tween.kill()
+	s.tween = s.layer.create_tween()
+	s.tween.tween_property(s.layer, "modulate:a", to, secs)
 
 
 ## Bake a side's army (the kit skips parts it has) and stand it on the stage.
-func _bake(i: int) -> void:
+func _bake(_i: int) -> void:
 	baking = true
+	var t0 := Time.get_ticks_msec()
 	var races := []
 	var teams := []
 	for s in sides:
@@ -702,14 +731,21 @@ func _bake(i: int) -> void:
 			teams.append(s.team)
 	await kit.prepare_units(races, teams)
 	await kit.bake_icons(races, teams)
+	print("Lobby bake: %d ms" % (Time.get_ticks_msec() - t0))
 	baking = false
 	for k in sides.size():   # the atlas was rebuilt: every stage redraws from it
 		_muster(k)
 	_muster_menu()
+	if races.size() == sides.size() and sides.all(func(s): return s.dirty_at == 0.0):
+		kit.warm(races)   # while the players choose, bake the match's buildings and props
 
 
 func _muster(i: int) -> void:
 	var s: Dictionary = sides[i]
+	if s.dirty_at > 0.0:   # its new race isn't baked yet: the old army stays under the veil, redrawn from the new atlas
+		for ps in s.layer.find_children("*", "Node2D", true, false):
+			ps.queue_redraw()
+		return
 	for n in s.layer.get_children():
 		n.queue_free()
 	if s.race.is_empty():
@@ -731,6 +767,12 @@ func _muster(i: int) -> void:
 		view.face(1.0 if i == 0 else -1.0)   # both armies face the middle
 		s.layer.add_child(view)
 	s.status.text = "  %d units, every one priced by its parts" % n
+	if s.forging and s.dirty_at == 0.0:   # the new army is ready: the veil lifts and it fades in
+		s.forging = false
+		s.dice.busy = false
+		s.veil.hide_veil()
+		s.layer.modulate.a = 0.0
+		_fade_army(s, 1.0, LoaderStyle.ARMY_FADE)
 	var side := 0   # the portraits: kit.icons is keyed by the side's place among the races baked
 	for k in i:
 		if not sides[k].race.is_empty():
@@ -903,6 +945,8 @@ func _map_image(m: Dictionary) -> Image:
 
 func _play() -> void:
 	Audio.of(get_tree()).play("ui_start")
+	while baking:   # the lobby's own bake finishes first (it's awaited here, so it must not outlive the lobby)
+		await get_tree().process_frame
 	var view = load("res://scenes/sim_debug.tscn").instantiate()
 	view.prompts = range(sides.size()).map(func(i): return _prompt(i))
 	view.rerolls = sides.map(func(s): return s.reroll)
@@ -912,6 +956,8 @@ func _play() -> void:
 	view.map_id = MAPS[map_index]
 	view.vs_ai = true
 	view.ai_level = view.ai_levels[1]
+	remove_child(kit)   # the match takes the kit with everything baked here (and the warm-up still going)
+	view.kit = kit
 	get_tree().root.add_child(view)
 	get_tree().current_scene = view
 	queue_free()

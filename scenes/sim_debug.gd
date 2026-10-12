@@ -21,6 +21,7 @@ const TerrainView := preload("res://src/view/art/terrain_view.gd")
 const BuildingArt := preload("res://src/view/art/building_art.gd")
 const Models := preload("res://src/view/art/bake/models.gd")
 const Paths := preload("res://scenes/art_pixel/paths.gd")
+const MatchLoader := preload("res://scenes/match_loader.gd")
 const CombatFx := preload("res://src/view/combat_fx.gd")
 const Tech := preload("res://src/sim/tech.gd")
 const Market := preload("res://src/sim/market.gd")
@@ -83,7 +84,9 @@ var map: SimMap
 var world: World
 var clock: SimClock
 var camera: RtsCamera
-var kit: ArtKit             # bakes the pixel art for the races in play
+var kit: ArtKit             # bakes the pixel art for the races in play (the lobby's, when it set one)
+var loader: Control         # the match loader (scenes/match_loader.gd) while the first match's art is made
+var loader_layer: CanvasLayer   # its layer, until it has faded out (is_loading())
 var ground_holder: Node2D   # the terrain (rebuilt per map)
 var ground: TerrainView
 var doodads := {}           # cell -> [nodes]: cosmetic props, cleared where buildings go up
@@ -169,8 +172,9 @@ func _ready() -> void:
 
 	clock = SimClock.new()
 	add_child(clock)
-	kit = ArtKit.new()
-	kit.lib = lib
+	if kit == null:   # the lobby hands over its kit, with what it baked already
+		kit = ArtKit.new()
+		kit.lib = lib
 	add_child(kit)
 	ground_holder = Node2D.new()
 	add_child(ground_holder)
@@ -312,6 +316,7 @@ func start_live(race_prompts: Array) -> void:
 		races.append(gen.generate(race_prompts[k], rules, rerolls[k] if k < rerolls.size() else 0))
 	await _bake(races)
 	_attach(World.new(SEED, map, races, rules, player_teams))
+	_loaded()
 	playback = {}
 	audio.music_age(world.ages[active])
 	audio.ambience(true)
@@ -330,17 +335,43 @@ func start_replay(rep: Dictionary) -> void:
 	var w: World = Replay.build_world(rep, lib)
 	await _bake(w.races)
 	_attach(w, rep.ticks)
+	_loaded()
 	playback = rep
 	clock.bots = []
 
 
-## Bake the art for these races (only what isn't baked yet), showing a note meanwhile.
+## Bake the art for these races (only what isn't baked yet). The first match shows the match
+## loader meanwhile (it fades out in _loaded once the world is attached); a restart a note.
 func _bake(races: Array) -> void:
 	baking = true
 	clock.paused = true
-	bar.text = "Baking the art..."
-	await kit.prepare(races, races.map(func(r): return Color(lib.palettes.teams[races.find(r)])))
+	var teams := []
+	for k in races.size():
+		teams.append(Color(lib.palettes.teams[k]))
+	if world == null:
+		var over := CanvasLayer.new()
+		over.layer = 10   # over the HUD and the pages
+		add_child(over)
+		loader_layer = over
+		loader = MatchLoader.new()
+		over.add_child(loader)
+		loader.start(kit, lib, races, teams, map_id)
+	else:
+		bar.text = "Baking the art..."
+	await kit.prepare(races, teams)
 	baking = false
+
+
+## The match loader is still up (making the art, or fading into the match).
+func is_loading() -> bool:
+	return baking or is_instance_valid(loader_layer)
+
+
+## The world is up: the loader fades into it.
+func _loaded() -> void:
+	if loader != null:
+		loader.finish()
+		loader = null
 
 
 ## Playtest log: one JSON line per finished match in user://matches.jsonl (races, who won,
