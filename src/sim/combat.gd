@@ -150,12 +150,12 @@ static func cmd_attack_move(w, player: int, a: Dictionary) -> void:
 	# Each to its own slot of the group's formation (World._formation), and back to it after a fight.
 	var centre: int = w.map.cell_of(int(a.fx), int(a.fy))
 	for i in slots:
+		var s: Vector2i = w.slot_of(a, w.units.id[i])
 		if w.types[w.units.kind[i]].get("harmless", false):
-			clear(w, i)   # a sheep along with the army just walks
-			w.order_move(i, a.x, a.y, arrive, w.next_group)
+			clear(w, i)   # a sheep along with the army just walks to its place
+			w.order_move(i, s.x, s.y, w.SLOT_ARRIVE, a.group, a.fx, a.fy, a.pace)
 			continue
 		Economy.clear_task(w, i)
-		var s: Vector2i = w.slot_of(a, w.units.id[i])
 		w.units.foe[i] = 0
 		w.units.patient[i] = 0
 		w.units.stance[i] = ATTACK_MOVE
