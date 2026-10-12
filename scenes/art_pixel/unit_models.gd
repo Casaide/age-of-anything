@@ -956,10 +956,15 @@ func _leg_hoof(c: Dictionary) -> Dictionary:
 # Its looks (CP1, "very cubey face": Dominic; tests/capybara_sheet.gd shows them side by side):
 # box (RB1's primitives), soft (rounded primitives: a deep muzzle, a heavy cheek, a sloping
 # barrel), sculpt (the head modelled in Blender, tools/blender/capybara.py, on the soft body),
-# full (Blender head and body). capybara_look picks the one in the game.
+# full (Blender head and body). Pushed further (RM1, "bigger head, need to avoid it looking like
+# a bear": Dominic; tests/rat_mount_sheet.gd): long (a brick of a head a third of the animal, flat
+# on top, eyes and ears high, the whole blunt front a dark nose; the rump well above the
+# shoulders) and long_tan (longer still, carried level, a tan face); tools/blender/capybara.py
+# variants. capybara_look picks the one in the game.
 
-const CAPYBARA_LOOKS := ["box", "soft", "sculpt", "full"]
-static var capybara_look := "full"   # the recommendation (CP1); Dominic to confirm
+const CAPYBARA_LOOKS := ["box", "soft", "sculpt", "full", "long", "long_tan"]
+static var capybara_look := "long"   # the recommendation (RM1, over CP1's full); Dominic to confirm
+const CAPYBARA_LONG_HEAD := 1.35
 const CAPYBARA_HEAD := 1.25   # the reworked heads' scale: a capybara's head is a third of its length
 
 
@@ -1112,6 +1117,64 @@ func _leg_capybara_sculpt(c: Dictionary) -> Dictionary:
 
 func _leg_capybara_full(c: Dictionary) -> Dictionary:
 	return _leg_capybara_soft(c)
+
+
+## Long and long_tan (RM1): the pushed Blender head and body, on short legs with webbed feet.
+func _capybara_long_mats(c: Dictionary) -> Dictionary:
+	return {"fur": surf("rat_fur", c.skin, 5.0), "nose": surf("rat_fur", Color("#3a2a22"), 3.0),
+		"eye": plain(INK), "ear": surf("rat_fur", c.skin.darkened(0.5), 3.0),
+		"face": surf("rat_fur", c.skin.lerp(Color("#d8b888"), 0.6), 4.0)}
+
+
+func _capybara_long_body(kind: String, c: Dictionary, head: Vector3, seat_y: float) -> Dictionary:
+	var n := Node3D.new()
+	n.add_child(glb("body_capybara_" + kind, _capybara_long_mats(c)))
+	_capybara_towel(n, c, seat_y - 1.4, 8.0)
+	var r := _capybara_rig(head, seat_y)
+	r["node"] = n
+	return r
+
+
+func _capybara_long_head(kind: String, c: Dictionary, tilt: float) -> Dictionary:
+	var root := Node3D.new()
+	var n := glb("head_capybara_" + kind, _capybara_long_mats(c))
+	n.rotation_degrees.z = tilt
+	n.scale = Vector3.ONE * CAPYBARA_LONG_HEAD
+	root.add_child(n)
+	return {"node": root, "sockets": {"top": Vector3(1, 2.6, 0) * CAPYBARA_LONG_HEAD}}
+
+
+func _body_capybara_long(c: Dictionary) -> Dictionary:
+	return _capybara_long_body("long", c, Vector3(11.0, 14.4, 0), 20.6)
+
+
+func _head_capybara_long(c: Dictionary) -> Dictionary:
+	return _capybara_long_head("long", c, -3)
+
+
+func _body_capybara_long_tan(c: Dictionary) -> Dictionary:
+	return _capybara_long_body("long_tan", c, Vector3(11.0, 14.2, 0), 20.8)
+
+
+func _head_capybara_long_tan(c: Dictionary) -> Dictionary:
+	return _capybara_long_head("long_tan", c, 0)
+
+
+## Short thick legs on broad, webbed, dark-toed feet.
+func _leg_capybara_long(c: Dictionary) -> Dictionary:
+	var n := Node3D.new()
+	var fur := surf("rat_fur", c.skin, 5.0)
+	var dark := surf("rat_fur", c.skin.darkened(0.5), 3.0)
+	n.add_child(blob(Vector3(3.2, 3.8, 2.9), fur, Vector3(0, -0.4, 0)))
+	n.add_child(rod(Vector3(0.2, -3.0, 0), Vector3(0.5, -5.6, 0), 2.1, 1.8, fur))
+	n.add_child(blob(Vector3(2.6, 0.8, 2.2), dark, Vector3(1.3, -6.0, 0)))   # the webbed foot, broad and flat
+	for k in [-1, 0, 1]:
+		n.add_child(blob(Vector3(0.9, 0.55, 0.5), dark, Vector3(3.3, -6.2, 0.9 * k), Vector3(0, 20 * k, 0)))   # splayed toes
+	return {"node": n}
+
+
+func _leg_capybara_long_tan(c: Dictionary) -> Dictionary:
+	return _leg_capybara_long(c)
 
 
 # ------------------------------------------------------------------ hummingbird (forest cavalry, HB1)
