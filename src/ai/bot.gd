@@ -98,7 +98,7 @@ func think(w) -> void:
 			army.append(i)
 	_build_order(w, tc, workers)
 	_age_three(w, tc, workers)
-	_upgrade_lines(w)
+	_upgrade_lines(w, workers, army)
 	_train(w, workers)
 	var home_x: int = w.buildings.cx[tc] * 1000 + 1500
 	var home_y: int = w.buildings.cy[tc] * 1000 + 1500
@@ -154,21 +154,44 @@ func _age_three(w, tc: int, workers: Array) -> void:
 ## Line upgrades, as a player would: each building upgrades the lines it trains once the
 ## age allows and there's enough to spare for a few soldiers too (twice the cost in stock).
 ## A building-up bot also researches gathering, and spends on it first (cost in stock is enough).
-func _upgrade_lines(w) -> void:
+## Then the rest of the economy research (data: research.economy) and the soldiers' research
+## (armoury tracks, drums, hay ...) for what it fields: research reaching at least
+## research.army_min of its soldiers. Those two keep back the next age's cost once the bot is
+## big enough to age up, so they never hold the age-up back.
+func _upgrade_lines(w, workers: Array, army: Array) -> void:
+	var fielded := {}   # unit type -> how many of our soldiers
+	for i in army:
+		fielded[w.units.kind[i]] = int(fielded.get(w.units.kind[i], 0)) + 1
+	var keep := PackedInt32Array()
+	keep.resize(w.resources.size())
+	var at: int = int(cfg.economy.age_workers) if w.ages[player] == 1 else AGE3_WORKERS
+	if workers.size() >= at and not Tech.next_age(w, player).is_empty():
+		keep = Tech.next_age(w, player).cost
 	for b in w.buildings.count():
 		if w.buildings.owner[b] != player or w.buildings.queue[b].any(func(e): return e < 0):
 			continue   # one research at a time per building, as before queues held research
 		for r in w.tech.research:
-			var eco: bool = r.effects.any(func(fx): return fx.has("gather"))
-			if not (r.has("line") or (build_up and eco)) or Tech.why_not(w, player, b, r.id) != "":
+			var gather: bool = r.effects.any(func(fx): return fx.has("gather"))
+			var old: bool = r.has("line") or (build_up and gather)
+			if not (old or r.id in cfg.research.economy or _reach(w, r, fielded) >= int(cfg.research.army_min)) \
+					or Tech.why_not(w, player, b, r.id) != "":
 				continue
 			var spare := true
 			for k in r.cost.size():
-				if w.stock[k][player] < r.cost[k] * (1 if build_up else 2):
+				if w.stock[k][player] < r.cost[k] * (1 if build_up else 2) + (0 if old else keep[k]):
 					spare = false
 			if spare:
 				w.issue(player, Commands.RESEARCH, {"building": w.buildings.id[b], "id": r.id})
 				break
+
+
+## How many of our soldiers (unit type -> count) a research's unit effects reach.
+func _reach(w, r: Dictionary, fielded: Dictionary) -> int:
+	var n := 0
+	for k in fielded:
+		if r.effects.any(func(fx): return Tech.reaches(fx, w.types[k].eval.tags)):
+			n += int(fielded[k])
+	return n
 
 func _train(w, workers: Array) -> void:
 	var reserve := PackedInt32Array()

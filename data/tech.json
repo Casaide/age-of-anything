@@ -1,6 +1,6 @@
 {
  "schema": "aow.tech/1",
- "note": "Ages and researches. An age-up moves the player's units to the next step of their unit lines (new kit, re-priced). Research effects add to stats of units with a tag (the blacksmith kind, a small visual tell only, D-057). Milestone 7 fills in the content and the buildings. Anything with \"status\": \"planned\" (milestone 12) is only drawn on the tech tree page (a blank frame, its name in grey): the sim skips it. Planned research names its effect in words (`effect`) and may follow another (`after`: the page joins them).",
+ "note": "Ages and researches. An age-up moves the player's units to the next step of their unit lines (new kit, re-priced). Research effects add to stats of units with a tag (the blacksmith kind, a small visual tell only, D-057). Milestone 7 fills in the content and the buildings. Anything with \"status\": \"planned\" (milestone 12) is only drawn on the tech tree page (a blank frame, its name in grey): the sim skips it. Planned research names its effect in words (`effect`). Research may follow another (`after`: it needs that one first, and the page joins them). Effects take one shape (see src/sim/tech.gd): a scope (`tag` with optional `not`, or `building`), a `stat`, and an `add` or a `pct` (the change in percent); or the older {gather, pct}.",
  "ages": [
   {
    "age": 1,
@@ -222,200 +222,473 @@
   },
   {
    "id": "thick_skins",
-   "status": "planned",
    "name": "Thick Skins",
    "desc": "Tougher hides for the people who do the work.",
+   "cost": {
+    "food": 75
+   },
+   "time": 25,
    "building": "town_center",
    "age": 1,
-   "effect": "Workers +15 HP, +1 melee armour"
+   "effects": [
+    {
+     "tag": "worker",
+     "stat": "hp",
+     "add": 15
+    },
+    {
+     "tag": "worker",
+     "stat": "armour.melee",
+     "add": 1
+    }
+   ]
   },
   {
    "id": "big_pockets",
-   "status": "planned",
    "name": "Big Pockets",
    "desc": "Deeper pockets and lighter feet.",
+   "cost": {
+    "food": 150,
+    "wood": 50
+   },
+   "time": 35,
    "building": "town_center",
    "age": 2,
-   "effect": "Workers +10% speed, carry +3"
+   "effects": [
+    {
+     "tag": "worker",
+     "stat": "speed",
+     "pct": 10
+    },
+    {
+     "tag": "worker",
+     "stat": "carry",
+     "add": 3
+    }
+   ]
   },
   {
    "id": "pack_frames",
-   "status": "planned",
    "name": "Pack Frames",
    "desc": "A frame on every back: more each trip.",
+   "cost": {
+    "food": 250,
+    "wood": 75,
+    "gold": 50
+   },
+   "time": 45,
    "building": "town_center",
    "age": 3,
-   "effect": "Workers +10% speed, carry +5",
-   "after": "big_pockets"
+   "after": "big_pockets",
+   "effects": [
+    {
+     "tag": "worker",
+     "stat": "speed",
+     "pct": 10
+    },
+    {
+     "tag": "worker",
+     "stat": "carry",
+     "add": 5
+    }
+   ]
   },
   {
    "id": "lookouts",
-   "status": "planned",
    "name": "Lookouts",
    "desc": "Someone on every roof, watching.",
+   "cost": {
+    "food": 75
+   },
+   "time": 20,
    "building": "town_center",
    "age": 2,
-   "effect": "Buildings +3 sight"
+   "effects": [
+    {
+     "building": "all",
+     "stat": "sight",
+     "add": 3
+    }
+   ]
   },
   {
    "id": "night_lanterns",
-   "status": "planned",
    "name": "Night Lanterns",
    "desc": "Lights on the walls see further into the dark.",
+   "cost": {
+    "food": 150,
+    "gold": 50
+   },
+   "time": 30,
    "building": "town_center",
    "age": 3,
-   "effect": "Buildings +3 sight",
-   "after": "lookouts"
+   "after": "lookouts",
+   "effects": [
+    {
+     "building": "all",
+     "stat": "sight",
+     "add": 3
+    }
+   ]
   },
   {
    "id": "fallow_fields",
-   "status": "planned",
    "name": "Fallow Fields",
    "desc": "Rest the ground in turns and it gives more.",
+   "cost": {
+    "food": 175,
+    "wood": 100,
+    "gold": 50
+   },
+   "time": 40,
    "building": "mill",
    "age": 3,
-   "effect": "Farms hold 50% more food"
+   "effects": [
+    {
+     "building": "farm",
+     "stat": "food",
+     "pct": 50
+    }
+   ]
   },
   {
    "id": "ore_carts",
-   "status": "planned",
    "name": "Ore Carts",
    "desc": "Carts on rails bring the rock up.",
+   "cost": {
+    "food": 150,
+    "wood": 100,
+    "gold": 25
+   },
+   "time": 40,
    "building": "mining_camp",
    "age": 3,
-   "effect": "Stone and gold gathered 15% faster"
+   "effects": [
+    {
+     "gather": "stone",
+     "pct": 15
+    },
+    {
+     "gather": "gold",
+     "pct": 15
+    }
+   ]
   },
   {
    "id": "bronze_edges",
-   "status": "planned",
    "name": "Bronze Edges",
    "desc": "Bronze blades and points.",
+   "cost": {
+    "food": 175,
+    "gold": 75
+   },
+   "time": 45,
    "building": "armoury",
    "age": 3,
-   "effect": "Melee units +1 attack",
-   "after": "sharp_sticks"
+   "after": "sharp_sticks",
+   "effects": [
+    {
+     "tag": "melee",
+     "stat": "attack",
+     "add": 1
+    }
+   ]
   },
   {
    "id": "barbed_heads",
-   "status": "planned",
    "name": "Barbed Heads",
    "desc": "Barbs that stay in.",
+   "cost": {
+    "food": 175,
+    "gold": 75
+   },
+   "time": 45,
    "building": "armoury",
    "age": 3,
-   "effect": "Ranged units +1 attack",
-   "after": "hardened_tips"
+   "after": "hardened_tips",
+   "effects": [
+    {
+     "tag": "ranged",
+     "stat": "attack",
+     "add": 1
+    }
+   ]
   },
   {
    "id": "long_shafts",
-   "status": "planned",
    "name": "Long Shafts",
    "desc": "Longer arrows from longer bows.",
+   "cost": {
+    "food": 150,
+    "wood": 50,
+    "gold": 75
+   },
+   "time": 40,
    "building": "armoury",
    "age": 3,
-   "effect": "Bows +1 range",
-   "after": "fletching"
+   "after": "fletching",
+   "effects": [
+    {
+     "tag": "bow",
+     "stat": "range",
+     "add": 1
+    }
+   ]
   },
   {
    "id": "padded_coats",
-   "status": "planned",
    "name": "Padded Coats",
    "desc": "Quilted coats for the front line.",
+   "cost": {
+    "food": 100
+   },
+   "time": 30,
    "building": "armoury",
    "age": 2,
-   "effect": "Foot melee units +1 melee, +1 pierce armour"
+   "effects": [
+    {
+     "tag": "melee",
+     "not": [
+      "mounted"
+     ],
+     "stat": "armour.melee",
+     "add": 1
+    },
+    {
+     "tag": "melee",
+     "not": [
+      "mounted"
+     ],
+     "stat": "armour.pierce",
+     "add": 1
+    }
+   ]
   },
   {
    "id": "ring_mail",
-   "status": "planned",
    "name": "Ring Mail",
    "desc": "Rings of metal, linked.",
+   "cost": {
+    "food": 175,
+    "gold": 75
+   },
+   "time": 45,
    "building": "armoury",
    "age": 3,
-   "effect": "Foot melee units +1 melee, +1 pierce armour",
-   "after": "padded_coats"
+   "after": "padded_coats",
+   "effects": [
+    {
+     "tag": "melee",
+     "not": [
+      "mounted"
+     ],
+     "stat": "armour.melee",
+     "add": 1
+    },
+    {
+     "tag": "melee",
+     "not": [
+      "mounted"
+     ],
+     "stat": "armour.pierce",
+     "add": 1
+    }
+   ]
   },
   {
    "id": "quilted_vests",
-   "status": "planned",
    "name": "Quilted Vests",
    "desc": "Light vests that don't spoil the aim.",
+   "cost": {
+    "food": 100
+   },
+   "time": 30,
    "building": "armoury",
    "age": 2,
-   "effect": "Ranged units +1 melee, +1 pierce armour"
+   "effects": [
+    {
+     "tag": "ranged",
+     "stat": "armour.melee",
+     "add": 1
+    },
+    {
+     "tag": "ranged",
+     "stat": "armour.pierce",
+     "add": 1
+    }
+   ]
   },
   {
    "id": "leather_jacks",
-   "status": "planned",
    "name": "Leather Jacks",
    "desc": "Boiled leather, stiff and tough.",
+   "cost": {
+    "food": 150,
+    "gold": 75
+   },
+   "time": 45,
    "building": "armoury",
    "age": 3,
-   "effect": "Ranged units +1 melee, +1 pierce armour",
-   "after": "quilted_vests"
+   "after": "quilted_vests",
+   "effects": [
+    {
+     "tag": "ranged",
+     "stat": "armour.melee",
+     "add": 1
+    },
+    {
+     "tag": "ranged",
+     "stat": "armour.pierce",
+     "add": 1
+    }
+   ]
   },
   {
    "id": "saddle_blankets",
-   "status": "planned",
    "name": "Saddle Blankets",
    "desc": "Thick blankets under the saddle.",
+   "cost": {
+    "food": 125
+   },
+   "time": 30,
    "building": "armoury",
    "age": 2,
-   "effect": "Mounted units +1 melee, +1 pierce armour"
+   "effects": [
+    {
+     "tag": "mounted",
+     "stat": "armour.melee",
+     "add": 1
+    },
+    {
+     "tag": "mounted",
+     "stat": "armour.pierce",
+     "add": 1
+    }
+   ]
   },
   {
    "id": "scale_barding",
-   "status": "planned",
    "name": "Scale Barding",
    "desc": "Scales for the mount.",
+   "cost": {
+    "food": 200,
+    "gold": 100
+   },
+   "time": 45,
    "building": "armoury",
    "age": 3,
-   "effect": "Mounted units +1 melee, +1 pierce armour",
-   "after": "saddle_blankets"
+   "after": "saddle_blankets",
+   "effects": [
+    {
+     "tag": "mounted",
+     "stat": "armour.melee",
+     "add": 1
+    },
+    {
+     "tag": "mounted",
+     "stat": "armour.pierce",
+     "add": 1
+    }
+   ]
   },
   {
    "id": "marching_drums",
-   "status": "planned",
    "name": "Marching Drums",
    "desc": "Keep step to the beat.",
+   "cost": {
+    "food": 150,
+    "gold": 50
+   },
+   "time": 40,
    "building": "barracks",
    "age": 3,
-   "effect": "Infantry +10% speed"
+   "effects": [
+    {
+     "tag": "melee",
+     "not": [
+      "mounted"
+     ],
+     "stat": "speed",
+     "pct": 10
+    }
+   ]
   },
   {
    "id": "quick_draw",
-   "status": "planned",
    "name": "Quick Draw",
    "desc": "Nock, draw, loose: faster.",
+   "cost": {
+    "food": 150,
+    "wood": 50,
+    "gold": 50
+   },
+   "time": 40,
    "building": "archery_range",
    "age": 3,
-   "effect": "Ranged units reload 15% faster"
+   "effects": [
+    {
+     "tag": "ranged",
+     "stat": "reload",
+     "pct": -15
+    }
+   ]
   },
   {
    "id": "hoof_wraps",
-   "status": "planned",
    "name": "Hoof Wraps",
    "desc": "Wrapped feet run further.",
+   "cost": {
+    "food": 125,
+    "wood": 50
+   },
+   "time": 30,
    "building": "stable",
    "age": 2,
-   "effect": "Mounted units +10% speed"
+   "effects": [
+    {
+     "tag": "mounted",
+     "stat": "speed",
+     "pct": 10
+    }
+   ]
   },
   {
    "id": "good_hay",
-   "status": "planned",
    "name": "Good Hay",
    "desc": "Well fed, well rested.",
+   "cost": {
+    "food": 175,
+    "gold": 75
+   },
+   "time": 40,
    "building": "stable",
    "age": 3,
-   "effect": "Mounted units +20 HP"
+   "effects": [
+    {
+     "tag": "mounted",
+     "stat": "hp",
+     "add": 20
+    }
+   ]
   },
   {
    "id": "haggling",
-   "status": "planned",
    "name": "Haggling",
    "desc": "Never take the first price.",
+   "cost": {
+    "food": 150,
+    "gold": 100
+   },
+   "time": 40,
    "building": "market",
    "age": 3,
-   "effect": "Lower trade fee"
+   "effects": [
+    {
+     "building": "market",
+     "stat": "trade_fee",
+     "add": -10
+    }
+   ]
   },
   {
    "id": "pack_animals",
