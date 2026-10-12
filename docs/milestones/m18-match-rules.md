@@ -6,6 +6,9 @@ respect, each tested; Dominic plays two of them and they change how the match fe
 
 Dominic (2026-10-12): "match rules we can start to move on, yes."
 
+Game modes start in milestone 16 (Fortress, Siege), on this milestone's rules contract; if 18
+isn't done by then, 16 builds the contract.
+
 Host rules already exist (`data/rules/*.json`: era, budgets, Full tech tree, No restrictions,
 animals). Match rules are more of the same: switches on a rules file, picked in the lobby.
 
