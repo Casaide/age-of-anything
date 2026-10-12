@@ -25,28 +25,40 @@ func labels(w, ln: int) -> PackedInt32Array:
 
 static func _label(m, ln: int) -> PackedInt32Array:
 	var walk: PackedByteArray = m.walks[ln]
+	var wd: int = m.width
+	var n: int = wd * m.height
 	var out := PackedInt32Array()
-	out.resize(m.width * m.height)
+	out.resize(n)
 	var queue := PackedInt32Array()
-	queue.resize(m.width * m.height)
+	queue.resize(n)
 	var next := 1
-	for start in out.size():
+	for start in n:
 		if walk[start] == 0 or out[start] != 0:
 			continue
 		out[start] = next
 		var head := 0
 		var tail := 1
 		queue[0] = start
-		while head < tail:
+		while head < tail:   # 4-neighbour flood fill (no lists built per cell: this runs over the whole map)
 			var c: int = queue[head]
 			head += 1
-			var x: int = c % m.width
-			for n in [c - m.width if c >= m.width else -1, c + m.width if c + m.width < out.size() else -1,
-					c - 1 if x > 0 else -1, c + 1 if x < m.width - 1 else -1]:
-				if n >= 0 and walk[n] == 1 and out[n] == 0:
-					out[n] = next
-					queue[tail] = n
-					tail += 1
+			var x: int = c % wd
+			if c >= wd and walk[c - wd] == 1 and out[c - wd] == 0:
+				out[c - wd] = next
+				queue[tail] = c - wd
+				tail += 1
+			if c + wd < n and walk[c + wd] == 1 and out[c + wd] == 0:
+				out[c + wd] = next
+				queue[tail] = c + wd
+				tail += 1
+			if x > 0 and walk[c - 1] == 1 and out[c - 1] == 0:
+				out[c - 1] = next
+				queue[tail] = c - 1
+				tail += 1
+			if x < wd - 1 and walk[c + 1] == 1 and out[c + 1] == 0:
+				out[c + 1] = next
+				queue[tail] = c + 1
+				tail += 1
 		next += 1
 	return out
 
