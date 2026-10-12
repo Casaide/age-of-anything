@@ -158,6 +158,10 @@ godot --path .                                                     # run the gam
 A GDScript parse error in a `--script` run leaves Godot hanging instead of exiting; put a
 timeout on headless runs.
 
+Windowed test and capture runs (screenshots, sheets, benches) play the game's sound: add
+`--audio-driver Dummy` so they're silent (Dominic), and `--always-on-top` so a covered window
+doesn't crawl.
+
 Run the tests after every change to `data/` or `src/`, and `test_sim.gd` after every change to
 `src/sim/` or pricing. Look at a screenshot after visual changes. After a change to `tools/audio/`,
 re-render and commit the files in `assets/audio/` with it (the game plays files, not recipes).
