@@ -391,7 +391,13 @@ func _rebuild() -> void:
 
 
 ## Swap what the hand holds (a worker's tool for the job, or the load it carries home),
-## if that part is baked. Same arm pose: job tools are all held low.
+## if that part is baked. Job tools are held low; a load tagged "shoulder" (a bundle of reeds,
+## a haunch of meat) is carried with the arm up at the shoulder, the load lying back over it
+## (the body's "raise" bake), so it never reads as a weapon held out (Dominic: a green sword).
+var carry_hold := ""
+const LOAD_Z := 1.2   # between the body (0) and its near arm (1.5)
+
+
 func set_tool(lib, part_id: String) -> void:
 	if weapon == null or harnessed or weapon.part_id == part_id:
 		return
@@ -401,6 +407,17 @@ func set_tool(lib, part_id: String) -> void:
 		return
 	weapon.part_id = part_id
 	weapon.setup(p.shapes, weapon.colours)
+	carry_hold = "raise" if "shoulder" in p.tags else ""
+	# A tool is gripped: drawn over the arm. A load is carried: under the near arm (the arm and
+	# hand come over it, holding it to the chest or on the shoulder), not pasted on top of the
+	# arm (Dominic: "on top of his arm, not under it or in the hand").
+	if not weapon.has_meta("tool_z"):
+		weapon.set_meta("tool_z", weapon.get_meta("z", Z_FOR_SLOT.hand_r))
+	var tool_z: float = weapon.get_meta("tool_z")
+	var z: float = (LOAD_Z if tool_z > 0.0 else -LOAD_Z) if "load" in p.tags else tool_z
+	if z != float(weapon.get_meta("z", tool_z)):
+		weapon.set_meta("z", z)
+		_sort_layers(weapon.get_parent())
 
 
 ## A melee blow lands: the lunge (T1, D-106).
@@ -555,8 +572,9 @@ func _process(delta: float) -> void:
 		_work(t, stepped)
 	elif not walking:
 		_idle(delta)
-	if attack_t <= 0.0 and (job == "" or walking) and work_hold != "low":
-		set_hold("low")
+	var rest := carry_hold if carry_hold != "" else "low"
+	if attack_t <= 0.0 and (job == "" or walking) and work_hold != rest:
+		set_hold(rest)
 	_kneel(delta)
 	_apply_concept()
 	visual.position = _die_offset
@@ -713,7 +731,10 @@ static func _gait(n: int, flies: bool) -> Dictionary:
 ## and body drive into the work and rear back between blows (A1). A fused mount (a centaur)
 ## kneels to forage (C1, see _kneel).
 func _work(t: float, stepped: bool) -> void:
-	var period: float = {"forage": 1.1, "chop": 0.9, "mine": 1.0, "build": 0.5}[job]
+	if job in CHORES:
+		_chore(t, stepped)
+		return
+	var period: float = {"forage": 1.1, "chop": 0.9, "mine": 1.0, "build": 0.5, "till": 1.3}[job]
 	var p := fmod(t / period + noise.seed % 7 * 0.13, 1.0)
 	if stepped:
 		p = floorf(p * 6.0) / 6.0
@@ -735,8 +756,8 @@ func _work(t: float, stepped: bool) -> void:
 			head = 0.7 * k
 			if weapon and work_hold == "low":
 				weapon.position = weapon_rest + Vector2(3.0, 4.0) * k   # no reach bake: the hand goes down anyway
-		"chop", "mine", "build":
-			var up := 0.9 if job == "build" else 1.2
+		"chop", "mine", "build", "till":
+			var up := 0.9 if job == "build" else 0.7 if job == "till" else 1.2   # a hoe only lifts to the waist
 			var wind := 0.6 if job != "build" else 0.5
 			var hit := 0.75 if job != "build" else 0.65
 			if p < wind:
@@ -775,6 +796,71 @@ func _work(t: float, stepped: bool) -> void:
 		weapon.rotation = weapon_rot + swing
 	bob.rotation += lean
 	bob.position.y += crouch
+
+
+## Small jobs round the house for a worker with nothing to do (milestone 17; the view picks
+## them, the sim only knows it's idle): sweep (a broom pushed side to side, head down), sit
+## (legs out in front and down on the ground; four or more legs lie down; a hopper settles
+## lower), chat (turned to a neighbour: nods, a tilt of the head, a hand lifted now and then).
+## How long the legs are (hip to foot, part units): how far a body comes down to sit or lie.
+func _leg_len() -> float:
+	var hip := 0.0
+	for leg in legs:
+		hip = maxf(hip, -leg.rest.y)
+	return hip
+
+
+## Animals graze (a claimed sheep by its Town Center): head down to the grass, up to chew.
+const CHORES := ["sweep", "sit", "chat", "graze"]
+
+
+func _chore(t: float, stepped: bool) -> void:
+	struck = false
+	var p := fmod(t / {"sweep": 1.2, "sit": 5.0, "chat": 2.6, "graze": 4.0}[job] + noise.seed % 5 * 0.21, 1.0)
+	if stepped:
+		p = floorf(p * 8.0) / 8.0
+	match job:
+		"sweep":
+			var k := sin(p * TAU)
+			if not harnessed:
+				set_hold("reach")
+			if weapon:
+				weapon.rotation = weapon_rot + 0.35 + 0.3 * k   # the broom's foot swishes to and fro
+			bob.rotation += 0.1 + 0.03 * absf(k)
+			bob.position.y += 0.5
+			if head_node:
+				head_node.rotation = 0.35
+		"sit":
+			if gait.get("hop", false):
+				bob.position.y += 1.5   # a frog sits already: it settles lower and looks about
+				if head_node:
+					head_node.rotation = -0.15 if p < 0.5 else 0.1
+			elif legs.size() >= 4 or harnessed:
+				for leg in legs:   # lies down: legs folded under, the body down on them
+					leg.node.scale.y = 0.45
+				bob.position.y += _leg_len() * 0.55
+				if head_node:
+					head_node.rotation = 0.25 if p > 0.6 else 0.0
+			else:
+				for leg in legs:   # sits on the ground, legs out in front
+					leg.node.rotation = -1.35 + 0.08 * leg.phase
+				bob.position.y += _leg_len() * 0.8
+				bob.rotation -= 0.08
+				if head_node:
+					head_node.rotation = -0.1 if p < 0.7 else 0.12
+		"chat":
+			var talk := p < 0.55
+			if head_node:
+				head_node.rotation = (0.12 * sin(p * TAU * 6.0) if talk else -0.08)
+			bob.rotation += 0.03 * sin(p * TAU)
+			if talk and weapon and not harnessed and p > 0.2 and p < 0.4:
+				weapon.rotation = weapon_rot - 0.35   # a hand lifted to make the point
+				weapon.position = weapon_rest + Vector2(1.0, -2.0)
+		"graze":
+			var down := p < 0.7
+			if head_node:
+				head_node.rotation = 0.95 if down else 0.05
+			bob.rotation += 0.08 if down else 0.0
 
 
 ## A fused mount kneels to forage (C1): the front legs fold short with a small forward knee,

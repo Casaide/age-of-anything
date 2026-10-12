@@ -26,7 +26,7 @@ def render_sfx(name):
     fn, takes, peak_db = sfx.TABLE[name]
     for k in range(takes):
         buf = fn(random.Random(_seed("sfx", name, k)))
-        if name != "meadow":
+        if name not in ("meadow", "town_quiet", "town_busy"):   # loops keep their length
             buf = trim_tail(buf)
         buf = normalize(buf, peak_db)
         write_wav(os.path.join(OUT, "sfx", "%s_%d.wav" % (name, k + 1)), buf)

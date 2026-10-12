@@ -13,6 +13,7 @@ const Models := preload("res://src/view/art/bake/models.gd")
 const PropModels := preload("res://scenes/art_pixel/prop_models.gd")
 const TreeModels := preload("res://scenes/art_pixel/tree_models.gd")
 const BridgeModels := preload("res://scenes/art_pixel/bridge_models.gd")
+const TownProps := preload("res://scenes/art_pixel/town_props.gd")
 const DataLib := preload("res://src/data_lib.gd")
 const UnitModels := preload("res://scenes/art_pixel/unit_models.gd")
 const BakeCache := preload("res://src/view/art/bake_cache.gd")
@@ -25,7 +26,7 @@ const SS := 4              # supersampling for the building and prop bakes
 const HOUSE_SCALE := 1.1   # houses read smaller than the halls (Fable; Dominic: rat house too big)
 const ALONG_Z := "^z"       # bake-name suffix of a gate turned a quarter, for a wall line running along sim y
 ## Parts a worker swaps in by job (see UnitView.set_tool and sim_debug's _tool_for).
-const JOB_PARTS := ["tool.axe", "tool.basket", "tool.hammer", "tool.pick", "load.reeds", "load.stone"]
+const JOB_PARTS := ["tool.axe", "tool.basket", "tool.hammer", "tool.pick", "tool.hoe", "tool.broom", "load.reeds", "load.stone", "load.gold", "load.meat"]
 const LOAD_SLICE_MS := 8   # cache loads per frame, at most this long
 const ICON_CELL := 160    # screen pixels per unit when rendering portraits   # houses read about 2.5x a footman
 const TOWN := {"thatch": "town_center", "junk": "junk_town_center_small", "stone": "stone_town_center", "tent": "tent_town_center",
@@ -47,6 +48,8 @@ const BRIDGE_STYLE := 0
 ## Resources show how much is left: reeds, bug bushes and quarry stone each have this many stages
 ## (0 whole ... 3 nearly gone: stubble for reeds, a bare brown bush).
 const STAGES := 4
+## Town life (milestone 17): which concept-sheet style each drop-off pile is baked in.
+const PILE_STYLE := {"food": "a", "wood": "a", "stone": "b", "gold": "a"}
 ## A building under construction shows four stages: foundations; the scaffold with what
 ## stands low; the walls; the roof going on. Each keeps the parts whose top (first two)
 ## or middle (last two) is below this fraction of the building's height.
@@ -483,6 +486,8 @@ func _placed(models, arch: String, type: String, model: String, suffix: String) 
 		if spec.has(key):
 			spec[key] = basis * spec[key]
 	spec.lights = spec.get("lights", []).map(func(p): return basis * p)
+	if spec.has("doorway"):
+		spec.doorway = spec.doorway.map(func(p): return basis * p)
 	return spec
 
 
@@ -706,6 +711,17 @@ func _doodad_specs() -> Array:
 					if along == 1:
 						m.basis = Basis(Vector3.UP, deg_to_rad(90.0))   # running along sim y
 					return m])
+	# Town life props (milestone 17): drop-off piles by resource in three stages ("pile.food.2"),
+	# a house's yard and garden as they grow ("yard2", "garden3"), the stable's tether post.
+	var tp := TownProps.new()
+	tp.models = models
+	for kind in TownProps.PILE_KINDS:
+		for st in range(1, TownProps.STAGES + 1):
+			shadowed.append(["pile.%s.%d" % [kind, st], func(): return tp.pile(kind, st, PILE_STYLE[kind])])
+	for st in range(1, TownProps.STAGES + 1):
+		shadowed.append(["yard%d" % st, func(): return tp.yard(st)])
+		flat.append(["garden%d" % st, func(): return tp.garden(st)])
+	shadowed.append(["tether_post", func(): return tp.tether_post()])
 	return [shadowed, flat, trees, bridges]
 
 
@@ -774,6 +790,8 @@ func _bake_building(baker, models, arch: String, type: String, model := "", suff
 	var spec: Dictionary = _placed(models, arch, type, model, suffix)
 	var pts: Array = [Vector3.ZERO, spec.get("smoke", Vector3.ZERO), spec.get("lantern", Vector3.ZERO)]
 	pts.append_array(spec.lights)
+	var door: Array = spec.get("doorway", []).slice(0, 3)
+	pts.append_array(door)
 	baker.set_ground_shadow(true)
 	var body: Dictionary = await baker.bake(spec.body, pts)
 	baker.set_ground_shadow(false)
@@ -786,6 +804,10 @@ func _bake_building(baker, models, arch: String, type: String, model := "", suff
 		info.lantern = local.call(body.points[2])
 	for k in spec.lights.size():
 		info.lights.append(local.call(body.points[3 + k]))
+	if not door.is_empty():   # the doorway's three corners on screen, and whether it's round
+		var at: int = 3 + spec.lights.size()
+		info.doorway = {"corners": [local.call(body.points[at]), local.call(body.points[at + 1]), local.call(body.points[at + 2])],
+			"round": spec.doorway.size() > 3}
 	if spec.has("banner"):
 		var ban: Dictionary = await baker.bake(spec.banner, [Vector3.ZERO])
 		info.banner = {"tex": ban.tex, "origin": ban.points[0]}   # its own wave shader, so outside the atlas
