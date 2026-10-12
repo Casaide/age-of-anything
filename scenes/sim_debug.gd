@@ -2458,14 +2458,15 @@ func _update_panel() -> void:
 		var t: Dictionary = world.btypes[bs.kind[b]]
 		var mine := owner == active
 		var c := {"title": t.name if owner == active else "%s %s" % [world.races[owner].name, t.name], "team": Color(lib.palettes.teams[owner]), "hp": [bs.hp[b], world.bmods[owner][bs.kind[b]].hp],
-			"portrait": kit.building_icon(_arch(owner), t.id), "buttons": [], "queue": null, "info": ""}
+			"portrait": kit.building_icon(_arch(owner), t.id), "buttons": [], "queue": null, "info": "", "hint": ""}
 		if bs.done[b] == 0:
 			c.info = "Being built: %d%%" % (100 * bs.progress[b] / t.build_ticks)
 		elif not t.pen.is_empty():   # a pen: its animals and what they bring in
 			var n: int = mini(Pens.animals(world, b, true).size(), int(t.pen.animals))
-			c.info = "%d of %d animals: %d food a minute.\nTwo or more breed, now and then." % [n, t.pen.animals, n * int(t.pen.food) * 1200 / int(t.pen.food_ticks)]
+			c.info = "%d / %d animals: %d food a minute" % [n, t.pen.animals, n * int(t.pen.food) * 1200 / int(t.pen.food_ticks)]
+			c.hint = "Two or more breed, now and then."
 			if mine:
-				c.info += "\nRight-click it with sheep selected to put them in."
+				c.hint = _hint_add(c, "Right-click it with sheep selected to put them in.")
 				c.buttons.append({"icon": Icons.texture("release"), "text": "Release", "key": "", "cost": "", "enabled": n > 0, "group": "Orders",
 					"tip": "[b]Release[/b]\nThe animals walk out and stand in front of the pen (to slaughter them, or lead them elsewhere).",
 					"action": func(): world.issue(active, Commands.RELEASE, {"building": selected_building})})
@@ -2517,7 +2518,7 @@ func _update_panel() -> void:
 				_tech_buttons(c, b)
 				if t.id == "market" and bs.done[b] == 1:
 					_market_buttons(c, b)
-				c.info += ("\n" if c.info != "" else "") + "Right-click: rally point"
+				c.hint = _hint_add(c, "Right-click: set its rally point.")
 		elif t.idle_note != "":   # nothing to train or research (yet): say so
 			c.info = t.idle_note
 			var wk: int = world.wonder_ids.find(bs.id[b])
@@ -2628,18 +2629,24 @@ func _update_panel() -> void:
 		"info": "Select units or a building." if vs_ai else "Select units or a building.  Tab switches side.  F6: let the bots play.", "buttons": [], "queue": null})
 
 
+## How-to lines go in the panel's hint (the info's tooltip), not its text: they made the panel
+## two rows tall (Dominic).
+func _hint_add(c: Dictionary, line: String) -> String:
+	return (c.get("hint", "") + "\n" if c.get("hint", "") != "" else "") + line
+
+
 ## A building people shelter in (garrison.gd): how many are inside and what they add, and for
 ## its owner Ungarrison; a Town Center also rings the call to arms, and sends them back to work.
 func _garrison_buttons(c: Dictionary, b: int, t: Dictionary, mine: bool) -> void:
 	var n: int = world.buildings.inside[b].size()
 	var arrows: int = t.arrows + n if not t.attack.is_empty() else 0
-	var line := "%d of %d inside" % [n, t.garrison]
+	var line := "%d / %d inside" % [n, t.garrison]
 	if not t.attack.is_empty():
-		line += ": %d arrow%s a volley" % [arrows, "" if arrows == 1 else "s"] if arrows > 0 else ": it shoots once people are inside"
+		line += ", %d arrow%s a volley" % [arrows, "" if arrows == 1 else "s"] if arrows > 0 else ", no arrows till manned"
 	c.info = line + ("\n" + c.info if c.info != "" else "")
 	if not mine:
 		return
-	c.info += "\nRight-click it with units selected to send them in."
+	c.hint = _hint_add(c, "Right-click it with units selected to send them in.")
 	c.buttons.append({"icon": Icons.texture("ungarrison"), "text": "Ungarrison", "key": "", "cost": "", "enabled": n > 0, "group": "Orders",
 		"tip": "[b]Ungarrison[/b]\nEveryone inside comes out (to the rally point, if it has one).",
 		"action": func(): world.issue(active, Commands.UNGARRISON, {"building": selected_building})})
