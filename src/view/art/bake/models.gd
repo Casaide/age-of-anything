@@ -127,7 +127,7 @@ func _doorway(foot: Vector3, w: float, h: float, round := false) -> Array:
 		out.append(Vector3.ZERO)   # a fourth point marks it round
 	return out
 
-## A frog-culture Town Center: stone footing, timber frame on mud daub, stepped
+## A frog-culture Town Center: timber sills on earth, timber frame on mud daub, stepped
 ## reed thatch, a chimney, barrels, a crate and a woodpile; a team banner and a
 ## dragonfly weathervane as live parts.
 func town_center(team: Color) -> Dictionary:
@@ -137,16 +137,8 @@ func town_center(team: Color) -> Dictionary:
 	var wood := mats.get_mat("wood")
 	var mud := mats.get_mat("mud")
 	var thatch := mats.get_mat("thatch")
-	# Footing: a slab with a rim of uneven stones.
-	body.add_child(box(Vector3(2.8, 0.22, 2.8), stone, Vector3(0, 0.11, 0)))
-	for side in 4:
-		for k in 9:
-			var t := -1.3 + k * 0.325
-			var p := Vector3(t, 0.13, 1.38) if side == 0 else Vector3(1.38, 0.13, t) if side == 1 else Vector3(t, 0.13, -1.38) if side == 2 else Vector3(-1.38, 0.13, t)
-			var s := Vector3(rng.randf_range(0.26, 0.32), rng.randf_range(0.2, 0.28), rng.randf_range(0.18, 0.24))
-			if side % 2 == 1:
-				s = Vector3(s.z, s.y, s.x)
-			body.add_child(box(s, stone, p, Vector3(0, rng.randf_range(-8, 8), 0)))
+	# Footing: timber sills on packed earth (a wooden town builds no stone plinths; Dominic).
+	_footing(body, "thatch", 2.8, 2.8, 0.22)
 	# Hall: daub walls inside a timber frame.
 	var w := 2.1
 	var h := 1.15
@@ -669,7 +661,7 @@ func farm_plot(team: Color) -> Dictionary:
 # own materials and roof: mud and thatch, scrap tin and brick, limewash and tile, felt and poles.
 
 const KIT := {
-	"thatch": {"wall": "mud", "frame": "wood", "roof": "thatch", "base": "stone"},
+	"thatch": {"wall": "mud", "frame": "wood", "roof": "thatch", "base": "timber"},   # timber sills on earth, no stone (Dominic)
 	"junk": {"wall": "tin", "frame": "wood", "roof": "tin", "base": "brick"},
 	"stone": {"wall": "plaster", "frame": "stone", "roof": "tiles", "base": "stone"},
 	"tent": {"wall": "felt", "frame": "wood", "roof": "felt", "base": ""},
@@ -713,7 +705,7 @@ func _hall(body: Node3D, arch: String, w: float, d: float, h: float) -> float:
 	var k: Dictionary = KIT[arch]
 	var base := 0.0
 	if k.base != "":
-		body.add_child(box(Vector3(w + 0.3, 0.16, d + 0.3), mats.get_mat(k.base), Vector3(0, 0.08, 0)))
+		_footing(body, arch, w + 0.3, d + 0.3, 0.16)
 		base = 0.16
 	if k.get("stilts", false):
 		base = _stilt_deck(body, Vector3.ZERO, w + 0.3, d + 0.3)
@@ -722,6 +714,27 @@ func _hall(body: Node3D, arch: String, w: float, d: float, h: float) -> float:
 		for z in [-1, 1]:
 			body.add_child(box(Vector3(0.12, h + 0.04, 0.12), mats.get_mat(k.frame), Vector3(x * w / 2, base + h / 2, z * d / 2)))
 	return base
+
+
+## A footing `h` high under a w x d building (centred on `at`, on the ground), in the culture's
+## base: a stone or brick plinth; for the timber towns (KIT base "timber": no stone under a
+## wooden house) a timber sill on packed earth: squared beams round the edge, their ends
+## crossing past each other at the corners, and a plank floor between them.
+func _footing(body: Node3D, arch: String, w: float, d: float, h: float, at := Vector3.ZERO) -> void:
+	var k: Dictionary = KIT[arch]
+	if k.base != "timber":
+		body.add_child(box(Vector3(w, h, d), mats.get_mat(k.base), at + Vector3(0, h / 2, 0)))
+		return
+	var wood := mats.get_mat("wood")
+	var s := minf(h, 0.16)   # the beams' section
+	body.add_child(box(Vector3(w - 0.02, h - 0.02, d - 0.02), mats.get_mat("mud"), at + Vector3(0, (h - 0.02) / 2, 0)))   # packed earth
+	for side in [-1, 1]:
+		body.add_child(box(Vector3(w + 0.08, s, s), wood, at + Vector3(0, h - s / 2, side * (d - s) / 2)))
+		body.add_child(box(Vector3(s * 0.9, s * 0.9, d + 0.08), wood, at + Vector3(side * (w - s) / 2, h - s * 0.55, 0)))
+	var n := maxi(int((w - 2.0 * s) / 0.22), 1)   # planks across, between the sills
+	for i in n:
+		var x := -w / 2 + s + (i + 0.5) * (w - 2.0 * s) / n
+		body.add_child(box(Vector3((w - 2.0 * s) / n - 0.02, 0.03, d - 2.0 * s), wood, at + Vector3(x, h - 0.012, 0)))
 
 
 func barracks_thatch(team: Color) -> Dictionary:
@@ -803,7 +816,7 @@ func _stable(arch: String, team: Color) -> Dictionary:
 	var h := 0.8
 	var base := 0.0
 	if k.base != "":
-		body.add_child(box(Vector3(w + 0.3, 0.12, d + 0.3), mats.get_mat(k.base), Vector3(0, 0.06, -0.3)))
+		_footing(body, arch, w + 0.3, d + 0.3, 0.12, Vector3(0, 0, -0.3))
 		base = 0.12
 	body.add_child(box(Vector3(w, h, 0.08), mats.get_mat(k.wall), Vector3(0, base + h / 2, -0.3 - d / 2)))   # back wall
 	for side in [-1, 1]:
@@ -1393,7 +1406,7 @@ func _armoury(arch: String, team: Color) -> Dictionary:
 	else:
 		body.add_child(box(Vector3(0.36, 1.5, 0.36), stack_mat, Vector3(0.55, 0.75, -0.55)))
 		body.add_child(box(Vector3(0.42, 0.08, 0.42), stack_mat, Vector3(0.55, 1.5, -0.55)))
-	body.add_child(box(Vector3(0.44, 0.34, 0.4), stone, Vector3(0.6, 0.17, 0.25)))   # the forge
+	body.add_child(box(Vector3(0.44, 0.34, 0.4), stack_mat if arch == "thatch" else stone, Vector3(0.6, 0.17, 0.25)))   # the forge (brick, like its stack, in a timber town)
 	body.add_child(box(Vector3(0.3, 0.04, 0.26), glow(Color("#ff8a30"), 2.2), Vector3(0.6, 0.35, 0.25)))
 	body.add_child(box(Vector3(0.22, 0.1, 0.1), iron, Vector3(0.1, 0.26, 0.62)))   # the anvil on its stump
 	body.add_child(cyl(0.08, 0.09, 0.2, wood, Vector3(0.1, 0.1, 0.62), Vector3.ZERO, 10))
@@ -1431,8 +1444,8 @@ func _mill(arch: String, team: Color) -> Dictionary:
 			body.add_child(ball(0.05, Materials.flat([Color("#c8302a"), Color("#d8b44a"), Color("#7a9a3a")][(n + int(z * 10)) % 3], 0.8),
 				Vector3(-0.45 + n * 0.22, 0.85, z), Vector3(0.8, 1.6, 0.8)))
 	body.add_child(box(Vector3(0.36, 0.12, 0.03), cloth(team), Vector3(0, 0.98, 0.32)))   # a team cloth over a rail
-	if arch in ["stone", "thatch"]:   # builders' towns: on a stone plinth under their own roof, so it belongs (Fable)
-		body.add_child(box(Vector3(1.5, 0.3, 1.2), mats.get_mat("stone"), Vector3(0, 0.15, -0.15)))
+	if arch in ["stone", "thatch"]:   # builders' towns: on their own footing under their own roof, so it belongs (Fable)
+		_footing(body, arch, 1.5, 1.2, 0.3, Vector3(0, 0, -0.15))
 		_roof(body, arch, Vector3(0, 1.0, -0.15), 1.4, 1.1)
 	var sack := Materials.flat(Color("#c8b48a"), 1.0)
 	for p in [Vector3(-0.55, 0.12, 0.6), Vector3(-0.3, 0.12, 0.68), Vector3(-0.42, 0.3, 0.64)]:
@@ -1467,7 +1480,7 @@ func _market(arch: String, team: Color) -> Dictionary:
 	var k: Dictionary = KIT[arch]
 	var wood := mats.get_mat("wood")
 	if k.base != "":
-		body.add_child(box(Vector3(2.7, 0.06, 2.7), mats.get_mat(k.base), Vector3(0, 0.03, 0)))
+		_footing(body, arch, 2.7, 2.7, 0.06)
 	var awnings := [Color("#c8a040"), Color("#7a9a5a"), Color("#e8dcc0")]   # cream, ochre, olive: not the team (Fable)
 	var spots := [[Vector3(-0.8, 0, -0.8), 0.0], [Vector3(0.85, 0, -0.75), -90.0], [Vector3(-0.8, 0, 0.75), 90.0]]
 	for i in 3:
@@ -1636,8 +1649,14 @@ func _palisade_dress(body: Node3D, arch: String, spots: Array, l: float, k := 0)
 			body.add_child(box(Vector3(run, 0.2, 0.56), mats.get_mat("mud"), mid + Vector3(0, 0.08, 0)))
 
 
-## Palisade Gate, three tiles long (closed in "body", open in "open"): two tall posts under a
-## lintel with a team cloth, and two wide leaves of stakes that swing back.
+## Palisade Gate, three tiles long (closed in "body", open in "open"): a stout post at each end
+## of the gate, where the wall arms meet it; a lintel resting on the two, exactly as long as the
+## gate, with knee braces; the team cloth hung from it; two wide leaves of stakes that swing back.
+const GATE_POST := 1.36    # the gate posts' centres: their outer faces flush with the gate's ends
+const GATE_POST_R := 0.13
+const GATE_TOP := 1.16     # the lintel's underside
+
+
 func _palisade_gate(arch: String, team: Color) -> Dictionary:
 	return {"body": _stake_gate(arch, team, false), "open": _stake_gate(arch, team, true), "anchor": Vector3.ZERO, "lights": [], "team": team}
 
@@ -1646,15 +1665,25 @@ func _stake_gate(arch: String, team: Color, open: bool) -> Node3D:
 	var body := Node3D.new()
 	rng.seed = 95
 	var wood := mats.get_mat("wood")
-	for x in [-1.32, 1.32]:   # the gate posts, taller and thicker than the fence, braced behind
-		_stake(body, Vector3(x, 0, 0), 1.2, wood, 0.12)
-		_stake(body, Vector3(x, 0, -0.22), 0.9, wood)
-		_stake(body, Vector3(x * 1.1, 0, 0), 0.82, wood)   # the fence closing up to the tile's end
-	body.add_child(box(Vector3(2.9, 0.1, 0.12), wood, Vector3(0, 1.18, 0)))   # the lintel
-	body.add_child(box(Vector3(0.44, 0.26, 0.02), cloth(team), Vector3(0, 1.0, 0.07)))   # a team cloth under it
+	var posts := [Vector3(-GATE_POST, 0, 0), Vector3(GATE_POST, 0, 0)]
+	for p in posts:   # the gate posts, taller and thicker than the fence, propped from behind
+		body.add_child(cyl(GATE_POST_R, GATE_POST_R + 0.01, GATE_TOP + 0.13, wood, p + Vector3(0, (GATE_TOP + 0.13) / 2, 0), Vector3.ZERO, 10))
+		body.add_child(cyl(0.0, GATE_POST_R, 0.16, wood, p + Vector3(0, GATE_TOP + 0.21, 0), Vector3.ZERO, 10))   # its point, over the lintel
+		body.add_child(beam(p + Vector3(0, 0.0, -0.42), p + Vector3(0, 0.72, -GATE_POST_R + 0.02), 0.045, wood))   # a prop leaning on it
+	# The lintel: one squared beam across the post tops, as long as the gate and no longer,
+	# held by a knee brace at each post.
+	body.add_child(box(Vector3(2.0 * (GATE_POST + GATE_POST_R), 0.13, 0.17), wood, Vector3(0, GATE_TOP + 0.065, 0)))
+	for side in [-1, 1]:
+		body.add_child(beam(Vector3(side * (GATE_POST - GATE_POST_R + 0.02), GATE_TOP - 0.36, 0.0), Vector3(side * (GATE_POST - 0.46), GATE_TOP + 0.01, 0.0), 0.035, wood))
+	# The team cloth hangs from the lintel: a batten tied on under it by two cords.
+	var batten := GATE_TOP - 0.08
+	for x in [-0.2, 0.2]:
+		body.add_child(beam(Vector3(x, GATE_TOP + 0.01, 0.07), Vector3(x, batten, 0.07), 0.012, mats.get_mat("thatch"), 4))
+	body.add_child(box(Vector3(0.52, 0.04, 0.04), wood, Vector3(0, batten, 0.07)))
+	body.add_child(box(Vector3(0.44, 0.32, 0.02), cloth(team), Vector3(0, batten - 0.18, 0.07)))
 	for side in [-1, 1]:
 		var leaf := Node3D.new()   # hinged on its post; it swings back (away from the viewer) when open
-		leaf.position = Vector3(side * 1.22, 0, 0)
+		leaf.position = Vector3(side * (GATE_POST - GATE_POST_R), 0, 0)
 		leaf.rotation_degrees = Vector3(0, 90 * -side if open else 0, 0)
 		body.add_child(leaf)
 		for k in 10:
@@ -1664,11 +1693,14 @@ func _stake_gate(arch: String, team: Color, open: bool) -> Node3D:
 		for y in [0.22, 0.6]:
 			leaf.add_child(box(Vector3(1.18, 0.05, 0.03), wood, Vector3(-side * 0.6, y, 0.05)))
 		leaf.add_child(beam(Vector3(-side * 0.05, 0.22, 0.06), Vector3(-side * 1.12, 0.6, 0.06), 0.022, wood))   # a brace across
-	_palisade_dress(body, arch, [Vector3(-1.32, 0, 0), Vector3(1.32, 0, 0)], 0.0)
-	if arch == "reed":   # the reed bindings show on the posts too
-		for x in [-1.32, 1.32]:
+	for p in posts:   # the culture's touch at each post's foot, not in the way through
+		var foot := Node3D.new()
+		foot.position = p
+		_palisade_dress(foot, arch, [Vector3.ZERO], 0.0)
+		body.add_child(foot)
+		if arch == "reed":   # the reed bindings show on the posts too
 			for y in [0.3, 0.6, 0.95]:
-				body.add_child(cyl(0.14, 0.14, 0.06, mats.get_mat("thatch"), Vector3(x, y, 0), Vector3.ZERO, 8))
+				body.add_child(cyl(GATE_POST_R + 0.025, GATE_POST_R + 0.025, 0.06, mats.get_mat("thatch"), p + Vector3(0, y, 0), Vector3.ZERO, 8))
 	return body
 
 

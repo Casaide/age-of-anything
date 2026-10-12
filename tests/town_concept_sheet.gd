@@ -174,7 +174,7 @@ func _props() -> void:
 	var world := _clear()
 	var zoom := 3.0
 	world.scale = Vector2.ONE * zoom
-	var h: Array = await kit._hifi()
+	var h: Array = [await kit._hifi_baker(), kit._models]
 	var baker = h[0]
 	var tp := TownProps.new()
 	tp.models = h[1]
