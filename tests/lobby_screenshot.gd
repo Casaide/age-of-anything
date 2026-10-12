@@ -1,6 +1,6 @@
 extends SceneTree
 ## Captures the lobby: the title menu, or the battle setup with both armies mustered.
-## Run (needs a display): godot --path . --script res://tests/lobby_screenshot.gd -- out.png [menu|setup] ["prompt A" "prompt B"]
+## Run (needs a display): godot --path . --script res://tests/lobby_screenshot.gd -- out.png [menu|setup|setup:<map_id>] ["prompt A" "prompt B"]
 
 func _initialize() -> void:
 	var args := OS.get_cmdline_user_args()
@@ -13,6 +13,8 @@ func _initialize() -> void:
 			lobby.sides[0].field.text = args[2]
 			lobby.sides[1].field.text = args[3]
 		lobby._open_setup()
+		if args.size() > 1 and args[1].begins_with("setup:"):
+			lobby._set_map(lobby.MAPS.find(args[1].get_slice(":", 1)))
 		if args.size() > 3:
 			lobby._regenerate(0)
 			lobby._regenerate(1)

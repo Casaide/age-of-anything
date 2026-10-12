@@ -78,7 +78,7 @@
   }
  },
  "spawn": {
-  "_doc": "per player start: count at a ring of min..max tiles; then wild herds over the open map, away from starts",
+  "_doc": "per player start: count at a ring of min..max tiles (with \"size\": that many herds of that size); then wild herds over the open map, away from starts. A map may bring its own spawn in this shape (data/maps/*.json \"animals\"); on a \"symmetry\": \"rotate\" map the second start gets the first one's animals turned half a turn and each wild herd a twin",
   "near_start": [
    {
     "kind": "sheep",
