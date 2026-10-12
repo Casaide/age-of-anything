@@ -13,6 +13,9 @@ const World := preload("res://src/sim/world.gd")
 const Commands := preload("res://src/sim/commands.gd")
 const Bot := preload("res://src/ai/bot.gd")
 const EcoBot := preload("res://src/ai/eco_bot.gd")
+const Economy := preload("res://src/sim/economy.gd")
+const Bridges := preload("res://src/sim/bridges.gd")
+const Reach := preload("res://src/ai/reach.gd")
 
 const SEED := 7
 const LIMIT := 20 * 60 * 30    # 30 minutes: a match must end, however slowly (pacing is a tester metric)
@@ -32,6 +35,12 @@ func _init() -> void:
 	var rules = DataLib.load_json("res://data/rules/default.json")
 	var frogs: Dictionary = gen.generate("angry swamp frogs with reed spears", rules)
 	var rats: Dictionary = gen.generate("sewer rats with cheese hammers", rules)
+	if args.size() > 1 and args[1] == "reach":   # just the raid and walled-ford checks (a couple of minutes)
+		_test_respond(rules, rats, frogs)
+		_test_walled_fords(rules, frogs, rats)
+		print("\n%d checks, %d failed" % [checks, failures])
+		quit(1 if failures > 0 else 0)
+		return
 
 	for pair in [[frogs, rats], [rats, frogs]]:
 		var r := _play(rules, pair, [Bot.new(0), EcoBot.new(1)], "bot %s vs passive %s" % [pair[0].name, pair[1].name])
@@ -64,6 +73,9 @@ func _init() -> void:
 	_test_easy(rules, rats, frogs)
 	var hard := _play(rules, [rats, frogs], [Bot.new(0, {}, "hard"), Bot.new(1)], "hard bot %s vs normal bot %s" % [rats.name, frogs.name])
 	check(hard.winner == 0, "hard beats normal (winner %d at %s)" % [hard.winner, _clock(hard.tick)])
+
+	_test_respond(rules, rats, frogs)
+	_test_walled_fords(rules, frogs, rats)
 
 	var w := World.new(SEED, SimMap.load_id(map_id), [frogs, rats], rules)
 	w.issue(1, Commands.SURRENDER, {})
@@ -180,6 +192,182 @@ func _test_easy(rules: Dictionary, a: Dictionary, b: Dictionary) -> void:
 	print("\n== easy: most soldiers in the first 10 minutes %d (pop), first loss %s" % [most, _clock(first_loss) if first_loss >= 0 else "none"])
 	check(most <= 25, "easy keeps a modest army for the first ten minutes (%d pop)" % most)
 	check(first_loss < 0 or first_loss >= 20 * 60 * 8, "easy doesn't strike before 8 minutes (%s)" % _clock(first_loss))
+
+
+## Raids anywhere get an answer (Dominic, 2026-10-13: "attacking any enemy builds doesn't
+## trigger a response"). The bot's lone lumber camp far from home, a worker beside it, and a
+## few enemy soldiers hacking at both: within seconds the bot sends soldiers there, pulls the
+## worker away, and its soldiers come to blows with the raiders.
+func _test_respond(rules: Dictionary, a: Dictionary, b: Dictionary) -> void:
+	var w := World.new(SEED, SimMap.load_id(map_id), [a, b], rules)
+	var bot := Bot.new(1)
+	while w.tick < 1200:   # a minute of its economy
+		bot.think(w)
+		w.step()
+	var tc: int = bot.eco._town_center(w)
+	var tx: int = w.buildings.cx[tc] + 1
+	var ty: int = w.buildings.cy[tc] + 1
+	var k := Economy.btype_of(w, "lumber_camp")
+	var spot := Vector2i(-1, -1)   # 16-22 tiles out, somewhere its workers can walk to
+	var rc := Reach.new()
+	var ln: int = w.lane_base[1] + Economy.builder_class(w, 1)
+	var home: int = rc.area_at(w, ln, tx * 1000 + 500, ty * 1000 + 500)
+	for r in range(16, 23):
+		for dy in range(-r, r + 1):
+			for dx in range(-r, r + 1):
+				if spot.x < 0 and maxi(absi(dx), absi(dy)) == r and Economy.can_place(w, 1, k, tx + dx, ty + dy) \
+						and rc.touches(w, ln, home, tx + dx, ty + dy, 2, 2):
+					spot = Vector2i(tx + dx, ty + dy)
+	check(spot.x >= 0, "respond: room for a lone camp")
+	var camp := Economy.place(w, 1, k, spot.x, spot.y)
+	w.buildings.done[camp] = 1
+	w.buildings.hp[camp] = w.bmods[1][k].hp
+	var camp_id: int = w.buildings.id[camp]
+	var cx := spot.x * 1000 + 1000
+	var cy := spot.y * 1000 + 1000
+	w.issue(1, Commands.SPAWN, {"slot": "spear", "count": 4, "x": tx * 1000 + 500, "y": ty * 1000 + 3500})   # a home guard
+	w.issue(1, Commands.SPAWN, {"slot": "worker", "count": 1, "x": cx + 2000, "y": cy})
+	w.issue(0, Commands.SPAWN, {"slot": "spear", "count": 3, "x": cx - 2500, "y": cy})
+	for t in 12:
+		bot.think(w)
+		w.step()
+	var raiders := []
+	var worker := -1
+	for i in w.units.count():
+		if w.units.owner[i] == 0 and not w.types[w.units.kind[i]].worker and absi(w.units.x[i] - cx) < 5000 and absi(w.units.y[i] - cy) < 5000:
+			raiders.append(w.units.id[i])
+		if w.units.owner[i] == 1 and w.types[w.units.kind[i]].worker and absi(w.units.x[i] - cx - 2000) < 1500 and absi(w.units.y[i] - cy) < 1500:
+			worker = w.units.id[i]
+	check(raiders.size() == 3 and worker > 0, "respond: three raiders by the camp, a worker beside it")
+	w.issue(0, Commands.ATTACK, {"ids": raiders.slice(0, 2), "target": camp_id})
+	w.issue(0, Commands.ATTACK, {"ids": raiders.slice(2), "target": worker})
+	var first_hit := -1
+	var sent := -1
+	var pulled := -1
+	var blows := 0
+	var seen := w.history.size()
+	while w.tick < 1200 + 20 * 60:
+		bot.think(w)
+		w.step()
+		for e in w.events:
+			if e.type != "hit":
+				continue
+			if first_hit < 0 and e.by in raiders:
+				first_hit = w.tick
+			if e.to in raiders:
+				var bi: int = w.units.index_of(e.by)
+				if bi >= 0 and w.units.owner[bi] == 1:
+					blows += 1
+		for n in range(seen, w.history.size()):
+			var cmd: Dictionary = w.history[n]
+			if cmd.player != 1:
+				continue
+			if sent < 0 and cmd.type == Commands.ATTACK_MOVE and absi(int(cmd.args.x) - cx) < 6000 and absi(int(cmd.args.y) - cy) < 6000:
+				sent = w.tick
+			if pulled < 0 and cmd.type == Commands.MOVE and worker in cmd.args.ids:
+				pulled = w.tick
+		seen = w.history.size()
+		if blows > 0 and sent >= 0 and pulled >= 0:
+			break
+	print("\n== respond: first blow %s, soldiers sent %s, worker pulled back %s, blows on the raiders %d" % [
+		_clock(first_hit), _clock(sent) if sent >= 0 else "never", _clock(pulled) if pulled >= 0 else "never", blows])
+	check(first_hit >= 0 and sent >= 0 and sent - first_hit <= 100, "respond: soldiers are sent to a raided camp within 5 s (%d ticks)" % (sent - first_hit))
+	check(pulled >= 0 and pulled - first_hit <= 100, "respond: the worker by it is pulled back within 5 s")
+	check(blows > 0, "respond: the bot's soldiers fight the raiders")
+
+
+## Walled-off fords (Dominic, 2026-10-13: "enemy had 10 builders just stuck waiting for nothing
+## because I had blocked off the river fords"). On a river map, the passive side's walls on every
+## ford and the bridge down: the bot's half is cut off. Its workers keep working (never
+## queueing for spots they can't reach), it builds and ages on its own side, and its army goes
+## for the walls (the only thing of the enemy's it can reach) rather than standing about.
+func _test_walled_fords(rules: Dictionary, a: Dictionary, b: Dictionary) -> void:
+	var m := SimMap.load_id(map_id)
+	if m.terrain_ids.find("ford") < 0 or not m.terrain.has(m.terrain_ids.find("ford")):
+		print("\n== walled fords: %s has no fords, skipped" % map_id)
+		return
+	var w := World.new(SEED, m, [a, b], rules)
+	var ford: int = w.map.terrain_ids.find("ford")
+	var wk := Economy.btype_of(w, "wall")
+	var walls := 0
+	for c in w.map.width * w.map.height:
+		if w.map.terrain[c] == ford and w.map.occupied[c] == 0:
+			var bi := Economy.place(w, 0, wk, c % w.map.width, c / w.map.width)
+			w.buildings.done[bi] = 1
+			w.buildings.hp[bi] = w.bmods[0][wk].hp
+			walls += 1
+	for k in w.bridge_id.size():
+		Bridges.hurt(w, k, 1 << 20)
+	var bot := Bot.new(1)
+	var passive := EcoBot.new(0)
+	var reach := Reach.new()
+	var ln: int = w.lane_base[1] + Economy.builder_class(w, 1)
+	var s0: Array = w.map.starts[0]
+	var s1: Array = w.map.starts[1]
+	var cut: bool = reach.area_at(w, ln, s0[0], s0[1]) != reach.area_at(w, ln, s1[0], s1[1])
+	check(cut, "walled fords: %d walls and the bridge down cut the bot (%s, movement class %d) off" % [walls, b.name, Economy.builder_class(w, 1)])
+	# A barracks foundation the bot laid over the river before the walls went up: cut off now.
+	var bk := Economy.btype_of(w, "barracks")
+	var far := -1
+	for r in range(6, 14):
+		for d in [Vector2i(r, 0), Vector2i(0, r), Vector2i(r, r)]:
+			if far < 0 and Economy.can_place(w, 1, bk, s0[0] / 1000 + d.x, s0[1] / 1000 + d.y):
+				far = Economy.place(w, 1, bk, s0[0] / 1000 + d.x, s0[1] / 1000 + d.y)
+	var far_id: int = w.buildings.id[far]
+	var stranded := 0   # 5 s looks at bot workers sent to that foundation
+	var idle_for := {}   # bot worker id -> 5 s looks in a row it stood idle
+	var worst := 0
+	var idle_looks := 0
+	var looks := 0
+	var cut_off := 0
+	var wall_hits := 0
+	while w.tick < 20 * 60 * 12 and w.winner < 0:
+		bot.think(w)
+		passive.think(w)
+		w.step()
+		for e in w.events:
+			if e.type == "hit":
+				var tb: int = w.buildings.index_of(e.to)
+				if tb >= 0 and w.buildings.kind[tb] == wk and w.buildings.owner[tb] == 0:
+					wall_hits += 1
+		if w.tick % 100 != 0 or w.tick < 1200:
+			continue
+		var home: int = reach.area_at(w, ln, s1[0], s1[1])
+		for i in w.units.count():
+			if w.units.owner[i] != 1 or not w.types[w.units.kind[i]].worker:
+				continue
+			var id: int = w.units.id[i]
+			looks += 1
+			var idle: bool = w.units.task[i] == 0 and w.units.moving[i] == 0 and w.units.foe[i] == 0
+			if w.units.task[i] == 3 and w.units.target[i] == far_id:
+				stranded += 1
+			idle_for[id] = int(idle_for.get(id, 0)) + 1 if idle else 0
+			worst = maxi(worst, idle_for[id])
+			if idle:
+				idle_looks += 1
+		for bi in w.buildings.count():
+			if w.buildings.id[bi] != far_id and w.buildings.owner[bi] == 1 and w.buildings.done[bi] == 0 and not reach.touches(w, ln, home, w.buildings.cx[bi], w.buildings.cy[bi], w.buildings.sx[bi], w.buildings.sy[bi]):
+				cut_off += 1
+	var workers := 0
+	var blds := 0
+	for i in w.units.count():
+		if w.units.owner[i] == 1 and w.types[w.units.kind[i]].worker:
+			workers += 1
+	var barracks := 0
+	for bi in w.buildings.count():
+		if w.buildings.owner[bi] == 1:
+			blds += 1
+			if w.buildings.kind[bi] == bk and w.buildings.done[bi] == 1:
+				barracks += 1
+	print("\n== walled fords (%s): at %s the bot has %d workers, %d buildings, age %d; idle %d of %d worker looks, longest idle %d s; workers sent to the cut-off foundation %d looks; barracks built %d; new foundations it can't reach %d; blows on the walls %d" % [
+		map_id, _clock(w.tick), workers, blds, w.ages[1], idle_looks, looks, worst * 5, stranded, barracks, cut_off, wall_hits])
+	check(cut_off == 0, "walled fords: the bot lays no foundation it can't reach")
+	check(stranded == 0, "walled fords: nobody is sent to the foundation over the river (%d looks)" % stranded)
+	check(barracks >= 1, "walled fords: it builds a barracks on its own side instead")
+	check(idle_looks * 100 <= looks * 5, "walled fords: its workers keep working (idle %d of %d looks)" % [idle_looks, looks])
+	check(worst <= 4, "walled fords: no worker stands idle for long (longest %d s)" % (worst * 5))
+	check(w.ages[1] >= 2 and workers >= 20, "walled fords: the bot grows on its own side (age %d, %d workers)" % [w.ages[1], workers])
+	check(wall_hits > 0, "walled fords: its army goes for the walls")
 
 
 func _clock(tick: int) -> String:

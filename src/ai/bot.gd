@@ -3,7 +3,12 @@ extends RefCounted
 ## - a build order from data (data/ai.json: which building, in which age, at how many workers);
 ## - soldiers from every finished military building, picked to counter what the enemy fields
 ##   (our bonus classes against their tags, minus theirs against ours);
-## - defence: soldiers at home go for enemies near the Town Center;
+## - defence: soldiers at home go for enemies near the Town Center; a blow on any of our
+##   buildings or workers, anywhere, gets soldiers sent there (enough to win, nearest first) and
+##   the workers near the attackers pulled back to the Town Center for a while;
+## - reach (src/ai/reach.gd, through EcoBot): it only sends units where they can get to. A
+##   target cut off (a walled ford) is passed over for another; an enemy out of reach is
+##   attacked through the wall that shuts the way (or from the nearest bank, with none);
 ## - attack waves at set times when the army is big enough, then more every couple of minutes;
 ##   units that run out of things to fight go on to the next enemy building;
 ## - a couple of healers from the Town Center in ages 2-3 (data: military.healers), kept a few
@@ -21,6 +26,11 @@ const THINK_EVERY := 20     # ticks (1 s), offset from EcoBot's think by half a 
 const BUILD_COOLDOWN := 200
 const AGE3_WORKERS := 24
 const REINFORCE := 4         # soldiers idle at home that go forward as a group during an attack
+const THREAT_TICKS := 200    # a blow on our buildings or workers is answered for 10 s after
+const RESEND := 100          # ticks before a soldier already sent to trouble is sent again
+const TROUBLE_TILES := 8     # attackers this close to the latest blow count as one raid
+const FLEE_TILES := 7        # our workers this close to a raider get out of the way
+const RESPOND_TILES := 30    # soldiers away from home further than this from the raid keep to their own fight
 
 var player: int
 var eco
@@ -29,6 +39,10 @@ var wave := 0               # the next wave in cfg.military.waves (past the list
 var next_wave_tick := 0
 var assault := false        # a wave has gone out: units away from home keep pushing
 var _next_build := 0
+var _threats := {}           # enemy unit or building id -> the tick it last hit our buildings or workers
+var _sent := {}              # our soldier id -> the tick it was sent to trouble
+var _aln := 0                # our soldiers' lane (Reach)
+var _harea := 0              # the area round our Town Center in that lane
 
 
 ## config: data/ai.json as ints (see load_config), or {} to load it. level: a key of
@@ -83,6 +97,7 @@ static func _ints(v):
 func think(w) -> void:
 	if w.defeated[player] != 0 or w.winner >= 0:
 		return
+	_note_hits(w)
 	eco.think(w)
 	if w.tick % THINK_EVERY != THINK_EVERY / 2:
 		return
@@ -109,7 +124,10 @@ func think(w) -> void:
 	_train_healers(w, tc, army, healers)
 	var home_x: int = w.buildings.cx[tc] * 1000 + 1500
 	var home_y: int = w.buildings.cy[tc] * 1000 + 1500
+	_aln = w.lane(army[0]) if not army.is_empty() else w.lane_base[player]
+	_harea = eco.reach.area_at(w, _aln, home_x, home_y)
 	_defend(w, army, home_x, home_y)
+	_respond(w, army, workers, home_x, home_y)
 	_waves(w, army, home_x, home_y)
 	_escort(w, army, healers, home_x, home_y)
 
@@ -121,8 +139,8 @@ func _build_order(w, tc: int, workers: Array) -> void:
 		return
 	var have := {}
 	for b in w.buildings.count():
-		if w.buildings.owner[b] == player:
-			var id: String = w.btypes[w.buildings.kind[b]].id
+		if w.buildings.owner[b] == player and (w.buildings.done[b] == 1 or eco.reach.reaches_building(w, eco.wln, eco.home, b)):
+			var id: String = w.btypes[w.buildings.kind[b]].id   # (a foundation cut off counts for nothing: another goes up)
 			have[id] = have.get(id, 0) + 1
 	var wanted := {}
 	for step in cfg.build_order:
@@ -345,7 +363,163 @@ func _defend(w, army: Array, hx: int, hy: int) -> void:
 		if w.units.foe[i] == 0 and Fixed.dist2(hx, hy, w.units.x[i], w.units.y[i]) < 4 * r * r:
 			ids.append(w.units.id[i])
 	if not ids.is_empty():
-		w.issue(player, Commands.ATTACK_MOVE, {"ids": ids, "x": w.units.x[intruder], "y": w.units.y[intruder]})
+		var to := _reachable(w, Vector2i(w.units.x[intruder], w.units.y[intruder]))
+		w.issue(player, Commands.ATTACK_MOVE, {"ids": ids, "x": to.x, "y": to.y})
+
+
+## Remember every enemy blow on our buildings and workers, wherever they are (a player hears
+## the alarm; the bot reads the hits). Soldiers hit in a fight fight back on their own.
+func _note_hits(w) -> void:
+	for e in w.events:
+		if e.type != "hit":
+			continue
+		var vi: int = w.units.index_of(e.to)
+		if vi >= 0:
+			if w.units.owner[vi] != player or not w.types[w.units.kind[vi]].worker:
+				continue
+		else:
+			var vb: int = w.buildings.index_of(e.to)
+			if vb < 0 or w.buildings.owner[vb] != player:
+				continue
+		var ai: int = w.units.index_of(e.by)
+		var ab: int = w.buildings.index_of(e.by) if ai < 0 else -1
+		var by: int = w.units.owner[ai] if ai >= 0 else (w.buildings.owner[ab] if ab >= 0 else -1)
+		if by >= 0 and w.is_foe(player, by):
+			_threats[e.by] = w.tick
+
+
+## Where an enemy unit or building is (a building's middle), or (-1, -1) if it's gone.
+func _where(w, id: int) -> Vector2i:
+	var i: int = w.units.index_of(id)
+	if i >= 0:
+		return Vector2i(w.units.x[i], w.units.y[i])
+	var b: int = w.buildings.index_of(id)
+	if b >= 0:
+		return Vector2i(w.buildings.cx[b] * 1000 + w.buildings.sx[b] * 500, w.buildings.cy[b] * 1000 + w.buildings.sy[b] * 500)
+	return Vector2i(-1, -1)
+
+
+## Answer raids anywhere: the latest one (its attackers within TROUBLE_TILES of the last blow)
+## gets soldiers, nearest first, until they're twice the raiders' population (those already on
+## their way count); soldiers fighting other soldiers stay in their fight, and ones far out on
+## an attack keep to it. Workers near the raiders go to the Town Center (behind it, if the raid
+## is there) and are kept from work until things are quiet. Once quiet, the soldiers sent go home.
+func _respond(w, army: Array, workers: Array, hx: int, hy: int) -> void:
+	var ids: Array = _threats.keys()
+	ids.sort()
+	var live := []
+	for id in ids:
+		if w.tick - int(_threats[id]) > THREAT_TICKS or _where(w, id).x < 0:
+			_threats.erase(id)
+		else:
+			live.append(id)
+	if live.is_empty():
+		_send_home(w, hx, hy)
+		return
+	var focus: int = live[0]
+	for id in live:
+		if int(_threats[id]) > int(_threats[focus]):
+			focus = id
+	var f := _where(w, focus)
+	var raiders := []
+	var strength := 0
+	for id in live:
+		var at := _where(w, id)
+		if Fixed.dist2(at.x, at.y, f.x, f.y) > TROUBLE_TILES * TROUBLE_TILES * 1000000:
+			continue
+		raiders.append(at)
+		var i: int = w.units.index_of(id)
+		strength += int(w.types[w.units.kind[i]].pop) if i >= 0 else 4   # a tower counts like a few
+	# Workers out of the way.
+	var to := Vector2i(hx, hy)
+	var d := Fixed.isqrt(Fixed.dist2(f.x, f.y, hx, hy))
+	if d <= (FLEE_TILES + 2) * 1000:   # at the Town Center itself: behind it, away from them
+		to = _reachable(w, Vector2i(clampi(hx + (hx - f.x) * 6000 / maxi(d, 1), 0, w.map.width * 1000 - 1),
+			clampi(hy + (hy - f.y) * 6000 / maxi(d, 1), 0, w.map.height * 1000 - 1)))
+	var flee := []
+	for i in workers:
+		var uid: int = w.units.id[i]
+		if not raiders.any(func(at): return Fixed.dist2(at.x, at.y, w.units.x[i], w.units.y[i]) <= FLEE_TILES * FLEE_TILES * 1000000):
+			continue
+		if int(eco.held.get(uid, 0)) <= w.tick or w.units.moving[i] == 0:
+			flee.append(uid)
+		eco.held[uid] = w.tick + THREAT_TICKS
+	if not flee.is_empty():
+		w.issue(player, Commands.MOVE, {"ids": flee, "x": to.x, "y": to.y})
+	# Soldiers to the raid.
+	var home_r := 2 * int(cfg.military.defend_tiles) * 1000
+	var cands := []
+	for i in army:
+		if w.units.foe[i] != 0 and w.units.index_of(w.units.foe[i]) >= 0:
+			continue   # fighting someone already
+		var d2 := Fixed.dist2(w.units.x[i], w.units.y[i], f.x, f.y)
+		if Fixed.dist2(w.units.x[i], w.units.y[i], hx, hy) > home_r * home_r and d2 > RESPOND_TILES * RESPOND_TILES * 1000000:
+			continue
+		cands.append([d2, w.units.id[i], int(w.types[w.units.kind[i]].pop)])
+	cands.sort_custom(func(a, b): return a[0] < b[0] or (a[0] == b[0] and a[1] < b[1]))
+	var need := 2 * strength + 2
+	var got := 0
+	var go := []
+	for c in cands:
+		if got >= need:
+			break
+		got += c[2]
+		if int(_sent.get(c[1], -RESEND)) + RESEND > w.tick:
+			continue   # on its way already
+		go.append(c[1])
+		_sent[c[1]] = w.tick
+	if not go.is_empty():
+		var at := _reachable(w, f)
+		w.issue(player, Commands.ATTACK_MOVE, {"ids": go, "x": at.x, "y": at.y})
+
+
+## Quiet again: soldiers sent to a raid, standing about far from home with nothing to fight, walk
+## back (attack-moving) unless an attack wave is out (that pushes them on instead).
+func _send_home(w, hx: int, hy: int) -> void:
+	if _sent.is_empty():
+		return
+	var ids: Array = _sent.keys()
+	ids.sort()
+	_sent.clear()
+	if assault:
+		return
+	var home_r := 2 * int(cfg.military.defend_tiles) * 1000
+	var back := []
+	for id in ids:
+		var i: int = w.units.index_of(id)
+		if i >= 0 and w.units.foe[i] == 0 and w.units.moving[i] == 0 and Fixed.dist2(w.units.x[i], w.units.y[i], hx, hy) > home_r * home_r:
+			back.append(id)
+	if not back.is_empty():
+		w.issue(player, Commands.ATTACK_MOVE, {"ids": back, "x": hx, "y": hy})
+
+
+## The enemy is out of reach: the middle of the enemy building on the edge of our area (a wall
+## across a ford, a gate) that's least out of the way from home to `target`, or `target` if
+## there's none. The bot knows the map's crossings as a player knows the map: it goes to knock
+## on the wall that shuts one, even before it has seen it.
+func _blocker(w, hx: int, hy: int, target: Vector2i) -> Vector2i:
+	var bs = w.buildings
+	var best := target
+	var best_d := 1 << 62
+	for b in bs.count():
+		if not w.is_enemy(player, bs.owner[b]) or not eco.reach.reaches_building(w, _aln, _harea, b):
+			continue
+		var x: int = bs.cx[b] * 1000 + bs.sx[b] * 500
+		var y: int = bs.cy[b] * 1000 + bs.sy[b] * 500
+		var d: int = Fixed.isqrt(Fixed.dist2(hx, hy, x, y)) + Fixed.isqrt(Fixed.dist2(x, y, target.x, target.y))
+		if d < best_d:
+			best_d = d
+			best = Vector2i(x, y)
+	return best
+
+
+## A point our soldiers can get to: the point itself if it's in our area, else the nearest
+## spot of our area to it (the near bank of a river whose fords are walled off).
+func _reachable(w, at: Vector2i) -> Vector2i:
+	if _harea == 0 or eco.reach.labels(w, _aln)[w.map.cell_of(at.x, at.y)] == _harea:
+		return at   # (on its own cell: a point on a wall would snap to whichever side is nearer)
+	var near: Vector2i = eco.reach.nearest_in(w, _aln, _harea, at.x, at.y)
+	return near if near.x >= 0 else at
 
 
 func _waves(w, army: Array, hx: int, hy: int) -> void:
@@ -353,6 +527,9 @@ func _waves(w, army: Array, hx: int, hy: int) -> void:
 	var target := _enemy_target(w, hx, hy)
 	if target.x < 0:
 		return
+	if _harea != 0 and eco.reach.area_at(w, _aln, target.x, target.y) != _harea:
+		target = _blocker(w, hx, hy, target)
+	target = _reachable(w, target)
 	var waves: Array = m.waves
 	var need: int = int(waves[wave].min_army) if wave < waves.size() else int(m.repeat_min_army)
 	var strength := 0   # army size in population, so big units count for what they cost
@@ -419,8 +596,9 @@ func _known_enemy_town(w, hx: int, hy: int) -> int:
 	var best := 0
 	var best_d2 := 1 << 62
 	for b in bs.count():
-		if bs.kind[b] != tc_kind or not w.is_enemy(player, bs.owner[b]) or not Fog.explored(w, player, bs.cx[b], bs.cy[b]):
-			continue
+		if bs.kind[b] != tc_kind or not w.is_enemy(player, bs.owner[b]) or not Fog.explored(w, player, bs.cx[b], bs.cy[b]) \
+				or not eco.reach.reaches_building(w, _aln, _harea, b):
+			continue   # (one across a walled ford isn't marched on directly)
 		var d2 := Fixed.dist2(hx, hy, bs.cx[b] * 1000, bs.cy[b] * 1000)
 		if d2 < best_d2:
 			best_d2 = d2
@@ -429,12 +607,16 @@ func _known_enemy_town(w, hx: int, hy: int) -> int:
 
 
 ## Where to attack: the nearest enemy Town Center we've seen, else the nearest enemy building
-## we've seen, else an enemy's starting spot (every player knows where the others start).
+## we've seen, else an enemy's starting spot (every player knows where the others start). Ones
+## our soldiers can get to come first: with the Town Center behind a walled ford, the wall we've
+## seen there is the target (it comes down, then the way is open). With nothing in reach, the
+## caller marches to the nearest bank (_reachable).
 func _enemy_target(w, hx: int, hy: int) -> Vector2i:
 	var tc_kind: int = Economy.btype_of(w, "town_center")
 	var best := Vector2i(-1, -1)
 	var best_d2 := 1 << 62
 	var best_tc := false
+	var best_ok := false
 	for b in w.buildings.count():
 		var bs = w.buildings
 		if not w.is_enemy(player, bs.owner[b]) or not Fog.explored(w, player, bs.cx[b], bs.cy[b]):
@@ -442,11 +624,13 @@ func _enemy_target(w, hx: int, hy: int) -> Vector2i:
 		var x: int = bs.cx[b] * 1000 + bs.sx[b] * 500
 		var y: int = bs.cy[b] * 1000 + bs.sy[b] * 500
 		var is_tc: bool = bs.kind[b] == tc_kind
+		var ok: bool = eco.reach.reaches_building(w, _aln, _harea, b)
 		var d2 := Fixed.dist2(hx, hy, x, y)
-		if (is_tc and not best_tc) or (is_tc == best_tc and d2 < best_d2):
+		if (ok and not best_ok) or (ok == best_ok and ((is_tc and not best_tc) or (is_tc == best_tc and d2 < best_d2))):
 			best = Vector2i(x, y)
 			best_d2 = d2
 			best_tc = is_tc
+			best_ok = ok
 	if best.x < 0:
 		for p in w.races.size():
 			if w.is_enemy(player, p) and w.defeated[p] == 0 and p < w.map.starts.size():

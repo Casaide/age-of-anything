@@ -9,6 +9,7 @@ const Economy := preload("res://src/sim/economy.gd")
 const Commands := preload("res://src/sim/commands.gd")
 const Fixed := preload("res://src/sim/fixed.gd")
 const Tech := preload("res://src/sim/tech.gd")
+const Reach := preload("res://src/ai/reach.gd")
 
 const THINK_EVERY := 20        # ticks (1 s)
 var MIX := {1: {"food": 60, "wood": 40}}   # age -> share of workers per resource (data/ai.json when a full bot runs this)
@@ -33,6 +34,10 @@ var _next_train := 0
 var _next_house := 0
 var _next_claim := 0
 var _ordered := {}             # unit ids given an order this think (later orders leave them be)
+var reach := Reach.new()       # where our workers can walk to (no sending them at a walled-off ford)
+var wln := 0                   # our workers' lane (movement class and team)
+var home := 0                  # the area round our Town Center (Reach); 0 until the first think
+var held := {}                 # worker id -> tick: kept out of the way until then (the bot pulled it from a fight)
 
 
 func _init(p_player: int) -> void:
@@ -45,6 +50,9 @@ func think(w) -> void:
 	var tc := _town_center(w)
 	if tc < 0:
 		return
+	var bs = w.buildings
+	wln = w.lane_base[player] + Economy.builder_class(w, player)
+	home = reach.area_at(w, wln, bs.cx[tc] * 1000 + bs.sx[tc] * 500, bs.cy[tc] * 1000 + bs.sy[tc] * 500)
 	var workers := []
 	var n := PackedInt32Array()   # workers on each resource (by resource index)
 	n.resize(w.resources.size())
@@ -60,14 +68,14 @@ func think(w) -> void:
 			Economy.NONE:
 				if w.units.foe[i] != 0:
 					n[Economy.kind_of(w, "food") - 1] += 1   # hunting: food on the hoof
-				elif w.units.moving[i] == 0:
+				elif w.units.moving[i] == 0 and int(held.get(w.units.id[i], 0)) <= w.tick:
 					idle.append(i)
-	var bs = w.buildings
-	# Idle hands: back to work on whatever we're shortest of.
+	# Idle hands: back to work on whatever we're shortest of, that they can get to.
 	for i in idle:
-		var kind := _short_of(w, n, w.units.x[i], w.units.y[i])
+		var area := reach.area_of_unit(w, i)
+		var kind := _short_of(w, n, w.units.x[i], w.units.y[i], area)
 		if kind > 0:
-			w.issue(player, Commands.GATHER, {"ids": [w.units.id[i]], "cell": _nearest_resource(w, w.units.x[i], w.units.y[i], kind, true)})
+			w.issue(player, Commands.GATHER, {"ids": [w.units.id[i]], "cell": _nearest_resource(w, w.units.x[i], w.units.y[i], kind, true, area)})
 			n[kind - 1] += 1
 	# New workers go where we're short.
 	var rally_kind := _short_of(w, n, bs.cx[tc] * 1000 + 1500, bs.cy[tc] * 1000 + 1500)
@@ -76,6 +84,9 @@ func think(w) -> void:
 		w.issue(player, Commands.RALLY, {"building": bs.id[tc], "x": (rally % w.map.width) * 1000 + 500, "y": (rally / w.map.width) * 1000 + 500})
 	# Meat first (the orders below then leave these hunters be), and no foundation left alone.
 	_ordered.clear()
+	for i in workers:
+		if int(held.get(w.units.id[i], 0)) > w.tick:
+			_ordered[w.units.id[i]] = true   # pulled from a fight: not a builder or a hunter for now
 	_herd(w, tc, workers)
 	_hunt(w, tc, workers)
 	_finish_foundations(w, workers)
@@ -129,8 +140,9 @@ func _finish_foundations(w, workers: Array) -> void:
 		var best := -1
 		var best_d2 := 1 << 62
 		for i in workers:
-			if _ordered.has(u.id[i]) or u.foe[i] != 0 or u.task[i] == Economy.BUILD:
-				continue
+			if _ordered.has(u.id[i]) or u.foe[i] != 0 or u.task[i] == Economy.BUILD \
+					or not reach.reaches_building(w, wln, reach.area_of_unit(w, i), b):
+				continue   # (a foundation nobody can get to waits; nobody queues at the wall)
 			var d2 := Fixed.dist2(x, y, u.x[i], u.y[i])
 			if d2 < best_d2:
 				best_d2 = d2
@@ -151,7 +163,7 @@ func _herd(w, tc: int, workers: Array) -> void:
 	var sheep := -1
 	var best_d2 := HUNT_RADIUS * HUNT_RADIUS * 1000000
 	for i in u.count():
-		if u.owner[i] != w.gaia or w.types[u.kind[i]].get("behaviour", "") != "herd":
+		if u.owner[i] != w.gaia or w.types[u.kind[i]].get("behaviour", "") != "herd" or reach.area_at(w, wln, u.x[i], u.y[i]) != home:
 			continue
 		var d2 := Fixed.dist2(hx, hy, u.x[i], u.y[i])
 		if d2 < best_d2:
@@ -184,7 +196,7 @@ func _hunt(w, tc: int, workers: Array) -> void:
 	var near := FARM_RADIUS * FARM_RADIUS * 1000000
 	for c in m.resource_cells:   # meat near home nobody's gathering (soldiers brought it down): butcher it
 		if m.terrain_ids[m.terrain[c]] != "carcass" or m.amount[c] <= MEAT_LEFT \
-				or Fixed.dist2(hx, hy, (c % m.width) * 1000 + 500, (c / m.width) * 1000 + 500) > near:
+				or Fixed.dist2(hx, hy, (c % m.width) * 1000 + 500, (c / m.width) * 1000 + 500) > near or not reach.reaches_cell(w, wln, home, c):
 			continue
 		if workers.any(func(i): return u.home[i] == c and (u.task[i] == Economy.GATHER or u.task[i] == Economy.RETURN)):
 			continue
@@ -214,7 +226,7 @@ func _hunt(w, tc: int, workers: Array) -> void:
 			var t: Dictionary = w.types[u.kind[i]]
 			var mine: bool = u.owner[i] == player and want == "herd"
 			var wild: bool = u.owner[i] == w.gaia and want != "herd"
-			if not (mine or wild) or t.get("behaviour", "") != want:
+			if not (mine or wild) or t.get("behaviour", "") != want or reach.area_at(w, wln, u.x[i], u.y[i]) != home:
 				continue
 			var d2 := Fixed.dist2(hx, hy, u.x[i], u.y[i])
 			if d2 < best_d2:
@@ -293,7 +305,7 @@ func _farms(w, tc: int, workers: Array, n: PackedInt32Array) -> void:
 
 ## The resource (1-based kind) furthest below its share in this age's mix that has some left
 ## on the map, or 0. Ties go to the earlier resource.
-func _short_of(w, n: PackedInt32Array, x: int, y: int) -> int:
+func _short_of(w, n: PackedInt32Array, x: int, y: int, area := -1) -> int:
 	var mix: Dictionary = MIX[1]
 	var keys := MIX.keys()
 	keys.sort()
@@ -312,7 +324,7 @@ func _short_of(w, n: PackedInt32Array, x: int, y: int) -> int:
 		var gap := pct * total - n[r] * 100
 		if w.stock[r][player] >= PLENTY:
 			gap -= 1 << 20   # piling up: the others first
-		if gap > best_gap and _nearest_resource(w, x, y, r + 1) >= 0:
+		if gap > best_gap and _nearest_resource(w, x, y, r + 1, false, area) >= 0:
 			best_gap = gap
 			best = r + 1
 	return best
@@ -326,9 +338,11 @@ func _town_center(w) -> int:
 	return -1
 
 
+## A foundation of ours waiting to be built, one our workers can get to (one cut off by a
+## walled ford doesn't hold every later building back).
 func _building_underway(w) -> bool:
 	for b in w.buildings.count():
-		if w.buildings.owner[b] == player and w.buildings.done[b] == 0:
+		if w.buildings.owner[b] == player and w.buildings.done[b] == 0 and reach.reaches_building(w, wln, home, b):
 			return true
 	return false
 
@@ -342,13 +356,17 @@ func _pick_builder(w, workers: Array) -> int:
 	return free[0] if not free.is_empty() else -1
 
 
-## Nearest cell with that resource left, anywhere on the map (ties: lower cell). `free`
-## passes over farms already worked by as many as they take.
-func _nearest_resource(w, x: int, y: int, kind: int, free := false) -> int:
+## Nearest cell with that resource left, anywhere on the map our workers in `area` can get to
+## (-1: the home area; ties: lower cell). `free` passes over farms already worked by as many as they take.
+func _nearest_resource(w, x: int, y: int, kind: int, free := false, area := -1) -> int:
+	if area < 0:
+		area = home
 	var best := -1
 	var best_d2 := 1 << 62
 	for c in w.map.resource_cells:
 		if w.map.amount[c] <= 0 or Economy.kind_of(w, w.map.resource_at(c)) != kind or (free and Economy.taken(w, c)):
+			continue
+		if not reach.reaches_cell(w, wln, area, c):
 			continue
 		var d2 := Fixed.dist2(x, y, (c % w.map.width) * 1000 + 500, (c / w.map.width) * 1000 + 500)
 		if d2 < best_d2:
@@ -364,7 +382,8 @@ func _house_spot(w, cx: int, cy: int, size: int) -> Vector2i:
 			for dx in range(-r, r + 1):
 				if maxi(absi(dx), absi(dy)) != r:
 					continue
-				if w.map.can_build(cx + dx - 1, cy + dy - 1, size + 2) and not _blocks_resource(w, cx + dx - 1, cy + dy - 1, size + 2):
+				if w.map.can_build(cx + dx - 1, cy + dy - 1, size + 2) and not _blocks_resource(w, cx + dx - 1, cy + dy - 1, size + 2) \
+						and reach.touches(w, wln, home, cx + dx, cy + dy, size, size):
 					return Vector2i(cx + dx, cy + dy)
 	return Vector2i(-1, -1)
 
