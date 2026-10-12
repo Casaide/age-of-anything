@@ -2261,3 +2261,299 @@ func _tool_satchel_moss(c: Dictionary) -> Dictionary:
 	n.add_child(_box(Vector3(5.8, 0.6, 0.6), plain(c.team), Vector3(2.6, -2.0, 4.5)))   # a team cord
 	return {"node": n}
 
+
+# Every culture its own staff (Dominic, 2026-10-12: "staffs look good; different staffs for
+# each"). Same grip and height as the herb staff, so the hold and the bake stay the same; each
+# top is chunky enough to read at game scale, with a team tie.
+
+## A glow (a lantern pane, a candle flame): unshaded, so it reads lit in every facing.
+func glow(col: Color) -> StandardMaterial3D:
+	var m := plain(col)
+	m.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
+	return m
+
+
+## The angle (degrees about z) that stands a ring or cone along a staff from a to b.
+func tilt_of(a: Vector3, b: Vector3) -> float:
+	var d := (b - a).normalized()
+	return rad_to_deg(atan2(d.y, d.x)) - 90.0
+
+
+## Leaves set along a stretch of a staff, alternating sides (laurel, olive).
+func _leaves(n: Node3D, a: Vector3, b: Vector3, count: int, size: Vector3, m: Material, spread := 1.3) -> void:
+	for k in count:
+		var t := float(k) / maxf(1.0, count - 1.0)
+		var side := 1.0 if k % 2 == 0 else -1.0
+		var ang := t * 5.5
+		var p := a.lerp(b, t) + Vector3(cos(ang) * spread * side, 0.3, sin(ang) * spread)
+		n.add_child(blob(size, m, p, Vector3(sin(ang) * 30.0, 0, side * 50.0)))
+
+
+## Imperial: a straight dark rod with bronze fittings, wound with laurel, a laurel wreath
+## under a bronze knob.
+func _tool_staff_laurel(c: Dictionary) -> Dictionary:
+	var n := Node3D.new()
+	var a := Vector3(-2, -9, 0)
+	var b := Vector3(5, 29, 0)
+	var d := (b - a).normalized()
+	var tilt := tilt_of(a, b)
+	var bronze := surf("bronze", Color.WHITE, 3.0)
+	n.add_child(rod(a, b, 0.95, 0.9, surf("bone", Color("#b48a5c"), 6.0)))
+	n.add_child(cone(0.6, 1.2, 2.2, bronze, a + d * 1.0, Vector3(0, 0, tilt)))   # the ferrule
+	n.add_child(blob(Vector3(1.9, 1.9, 1.9), bronze, b + d * 1.6))   # the knob
+	n.add_child(ring(0.8, 1.3, bronze, b - d * 0.4, Vector3(0, 0, tilt)))
+	var laurel := surf("leaf", Color("#78b040"), 2.0)
+	n.add_child(ring(1.4, 2.9, laurel, b - d * 1.6, Vector3(0, 0, tilt), Vector3(1, 1.8, 1)))   # the wreath
+	_leaves(n, a.lerp(b, 0.45), b - d * 3.0, 7, Vector3(0.9, 2.0, 0.8), laurel, 1.4)
+	n.add_child(ring(0.7, 1.15, plain(c.team), a.lerp(b, 0.42), Vector3(0, 0, tilt)))
+	return {"node": n}
+
+
+## Hellenic: a gnarled olive staff, a sprig of silvery olive leaves and a few olives at the top.
+func _tool_staff_olive(c: Dictionary) -> Dictionary:
+	var n := Node3D.new()
+	var wood := surf("bone", Color("#c4b494"), 5.0)   # pale grey olive wood
+	var pts := [Vector3(-2, -9, 0), Vector3(1.2, 6, 0.4), Vector3(2.6, 18, -0.4), Vector3(5.4, 29, 0)]
+	for k in 3:
+		n.add_child(rod(pts[k], pts[k + 1], 1.05 - k * 0.08, 0.95 - k * 0.08, wood))
+	n.add_child(blob(Vector3(1.4, 1.1, 1.3), wood, pts[1]))   # knots
+	n.add_child(blob(Vector3(1.3, 1.0, 1.2), wood, pts[2]))
+	var top: Vector3 = pts[3]
+	n.add_child(rod(top, top + Vector3(-2.2, 3.4, 0.3), 0.6, 0.45, wood))   # the fork
+	n.add_child(rod(top, top + Vector3(2.4, 3.0, -0.3), 0.6, 0.45, wood))
+	var olive := surf("leaf", Color("#b4c896"), 2.0)
+	_leaves(n, top + Vector3(-2.2, 2.8, 0), top + Vector3(2.4, 3.6, 0), 10, Vector3(0.75, 2.1, 0.75), olive, 1.6)
+	for k in 3:
+		n.add_child(blob(Vector3(0.75, 0.9, 0.75), plain(Color("#3a3a2a")), top + Vector3(-0.8 + k * 0.9, 1.4 - k * 0.2, 1.0 - k * 0.6)))
+	n.add_child(ring(0.7, 1.15, plain(c.team), top + Vector3(-0.3, -1.4, 0), Vector3(0, 0, -14)))
+	return {"node": n}
+
+
+## Hellenic bag: a round clay flask with a black band and a stopper, on a team cord.
+func _tool_satchel_flask(c: Dictionary) -> Dictionary:
+	var n := Node3D.new()
+	var clay := surf("bld_brick", Color("#e09a62"), 4.0)
+	var at := Vector3(2.6, -2.6, 1.6)
+	n.add_child(blob(Vector3(2.5, 2.4, 2.5), clay, at))
+	n.add_child(ring(2.1, 2.6, plain(Color("#2a1e18")), at + Vector3(0, 0.4, 0), Vector3.ZERO, Vector3(1, 1.6, 1)))
+	n.add_child(cone(0.8, 1.0, 1.8, clay, at + Vector3(0, 2.6, 0)))   # the neck
+	n.add_child(cone(0.7, 0.7, 0.9, plain(Color("#7a5a3a")), at + Vector3(0, 3.8, 0)))   # the stopper
+	n.add_child(rod(at + Vector3(-1.2, 2.4, 0), Vector3(0, 1.2, 0), 0.35, 0.35, plain(c.team)))   # the cord to the hand
+	return {"node": n}
+
+
+## Steppe: a plain staff under an iron finial with a long tuft of horsehair hanging from it.
+func _tool_staff_horsehair(c: Dictionary) -> Dictionary:
+	var n := Node3D.new()
+	var a := Vector3(-2, -9, 0)
+	var b := Vector3(5, 28, 0)
+	var d := (b - a).normalized()
+	var tilt := tilt_of(a, b)
+	n.add_child(rod(a, b, 0.95, 0.85, surf("bone", Color("#c8a070"), 6.0), false))
+	var bronze := surf("bronze", Color.WHITE, 3.0)
+	n.add_child(blob(Vector3(1.4, 1.4, 1.4), bronze, b + d * 1.4))   # a round knob, no point: a healer's, not a spear
+	n.add_child(cone(1.6, 1.3, 1.0, bronze, b + d * 0.1, Vector3(0, 0, tilt), 20))   # the collar the hair hangs from
+	var hair := plain(Color("#3e2a1e"))
+	var tips := plain(Color("#6a4a32"))
+	for k in 10:   # the tassel: long dark strands spilling out of the collar and falling past it
+		var ang := k * TAU / 10.0
+		var out := Vector3(cos(ang), 0, sin(ang))
+		var root := b + out * 1.1
+		var tip := b + out * (2.6 + (k % 3) * 0.5) + Vector3(0, -8.0 - (k % 2) * 1.5, 0)
+		n.add_child(rod(root, tip, 0.55, 0.35, hair, false))
+		n.add_child(blob(Vector3(0.45, 0.8, 0.45), tips, tip))
+	n.add_child(blob(Vector3(1.9, 1.3, 1.9), hair, b + Vector3(0, -0.7, 0)))
+	n.add_child(ring(0.7, 1.15, plain(c.team), b - d * 12.0, Vector3(0, 0, tilt)))
+	return {"node": n}
+
+
+## Steppe bag: a felt pouch with a team-coloured stitched band and a bone toggle.
+func _tool_satchel_felt(c: Dictionary) -> Dictionary:
+	var n := Node3D.new()
+	var felt := surf("bld_felt", Color("#e8dcc0"), 3.0)
+	n.add_child(blob(Vector3(2.7, 3.0, 2.6), felt, Vector3(2.6, -2.6, 1.6)))
+	n.add_child(cone(0.9, 1.5, 1.2, felt, Vector3(2.6, 0.4, 1.6)))
+	n.add_child(ring(1.9, 2.75, plain(c.team), Vector3(2.6, -2.0, 1.6), Vector3.ZERO, Vector3(1, 1.4, 1)))
+	n.add_child(blob(Vector3(0.5, 0.9, 0.5), surf("bone", Color.WHITE, 2.0), Vector3(2.6, 1.2, 3.0)))   # the toggle
+	return {"node": n}
+
+
+## Nile: a green papyrus reed crowned with its umbel, a spray of fine stalks.
+func _tool_staff_papyrus(c: Dictionary) -> Dictionary:
+	var n := Node3D.new()
+	var a := Vector3(-2, -9, 0)
+	var b := Vector3(4, 25, 0)
+	n.add_child(rod(a, b, 1.05, 0.8, surf("reed_stalk", Color("#9cc46a"), 5.0), false))
+	n.add_child(cone(0.8, 1.6, 2.4, surf("reed_leaf", Color("#c8b070"), 3.0), b + Vector3(0, 0.6, 0)))   # the bract
+	var spray := plain(Color("#6aa040"))
+	var tips := plain(Color("#c8d070"))
+	for k in 11:   # the umbel: fine stalks fanning out and drooping a little
+		var ang := k * TAU / 11.0
+		var tip := b + Vector3(cos(ang) * 4.6, 4.4 - absf(sin(ang * 0.5)) * 0.8, sin(ang) * 4.6)
+		n.add_child(rod(b + Vector3(0, 1.6, 0), tip, 0.32, 0.32, spray, false))
+		n.add_child(blob(Vector3(0.75, 0.6, 0.75), tips, tip))
+	n.add_child(ring(0.7, 1.15, plain(c.team), b + Vector3(-0.9, -5.0, 0), Vector3(0, 0, -10)))
+	return {"node": n}
+
+
+## Nile bag: a pale linen bag with a blue band, drawn shut with a team cord.
+func _tool_satchel_linen(c: Dictionary) -> Dictionary:
+	var n := Node3D.new()
+	var linen := surf("cloth", Color("#f2ecd8"), 3.0)
+	n.add_child(blob(Vector3(2.6, 3.2, 2.6), linen, Vector3(2.6, -2.6, 1.6)))
+	n.add_child(cone(0.6, 1.4, 1.6, linen, Vector3(2.6, 0.8, 1.6)))
+	n.add_child(ring(2.1, 2.7, plain(Color("#2a5a9a")), Vector3(2.6, -3.4, 1.6), Vector3.ZERO, Vector3(1, 1.5, 1)))
+	n.add_child(ring(0.6, 1.0, plain(c.team), Vector3(2.6, 0.4, 1.6)))
+	return {"node": n}
+
+
+## Han: a jointed bamboo staff with a medicine gourd tied at the top, a red tassel below it.
+func _tool_staff_gourd(c: Dictionary) -> Dictionary:
+	var n := Node3D.new()
+	var a := Vector3(-2, -9, 0)
+	var b := Vector3(4.5, 25, 0)
+	var d := (b - a).normalized()
+	var tilt := tilt_of(a, b)
+	n.add_child(rod(a, b, 1.0, 0.9, surf("reed_stalk", Color("#d8c878"), 5.0)))
+	for k in 5:   # the joints
+		n.add_child(ring(0.8, 1.25, surf("reed_stalk", Color("#a89848"), 3.0), a.lerp(b, 0.15 + k * 0.19), Vector3(0, 0, tilt)))
+	var gourd := surf("bone", Color("#f2b84a"), 4.0)
+	var g := b + d * 1.2 + Vector3(0.4, 0, 0)
+	n.add_child(blob(Vector3(2.6, 2.6, 2.6), gourd, g + Vector3(0, 1.6, 0)))   # the belly
+	n.add_child(blob(Vector3(1.8, 1.8, 1.8), gourd, g + Vector3(0, 4.9, 0)))   # the head
+	n.add_child(ring(0.7, 1.2, plain(Color("#c02a20")), g + Vector3(0, 3.5, 0)))   # the waist cord
+	n.add_child(cone(0.5, 0.6, 1.2, plain(Color("#5a3a20")), g + Vector3(0, 7.0, 0)))   # the stopper
+	n.add_child(blob(Vector3(0.7, 2.4, 0.7), plain(Color("#c02a20")), b - d * 2.5 + Vector3(1.1, -2.0, 0.4)))   # the tassel
+	n.add_child(ring(0.7, 1.15, plain(c.team), b - d * 1.2, Vector3(0, 0, tilt)))
+	return {"node": n}
+
+
+## Han bag: a small black lacquered medicine box, red-edged, on a team cord.
+func _tool_satchel_lacquer(c: Dictionary) -> Dictionary:
+	var n := Node3D.new()
+	n.add_child(_box(Vector3(3.6, 3.8, 4.2), plain(Color("#221816")), Vector3(2.6, -2.6, 1.6)))
+	n.add_child(_box(Vector3(3.8, 0.7, 4.4), plain(Color("#b82a20")), Vector3(2.6, -1.0, 1.6)))   # the lid's red edge
+	n.add_child(_box(Vector3(1.0, 1.0, 0.5), surf("bronze", Color.WHITE, 2.0), Vector3(2.6, -2.2, 3.9)))   # the clasp
+	n.add_child(rod(Vector3(2.6, -0.6, 1.6), Vector3(0, 1.2, 0), 0.35, 0.35, plain(c.team)))
+	return {"node": n}
+
+
+## Aztec: a staff painted in bands, crowned with a fan of long green, red and yellow feathers.
+func _tool_staff_feather(c: Dictionary) -> Dictionary:
+	var n := Node3D.new()
+	var a := Vector3(-2, -9, 0)
+	var b := Vector3(4.5, 25, 0)
+	var d := (b - a).normalized()
+	var tilt := tilt_of(a, b)
+	n.add_child(rod(a, b, 0.95, 0.9, surf("bone", Color("#c08a58"), 6.0)))
+	var bands := [Color("#2a7a6a"), Color("#e8c040"), Color("#c83a2a")]
+	for k in 3:
+		n.add_child(ring(0.75, 1.15, plain(bands[k]), b - d * (2.0 + k * 1.3), Vector3(0, 0, tilt)))
+	n.add_child(blob(Vector3(1.5, 1.2, 1.5), plain(Color("#e8c040")), b + d * 0.6))   # the socket
+	var cols := [Color("#1f9a5a"), Color("#c83a2a"), Color("#1f9a5a"), Color("#e8c040"), Color("#1f9a5a"), Color("#c83a2a"), Color("#1f9a5a")]
+	for k in 7:   # long plumes, the green quetzal ones in the middle
+		var ang := (k - 3) * 0.32
+		var length := 5.8 - absf(k - 3) * 0.6
+		var p := b + d * 1.0 + Vector3(sin(ang) * length * 0.75, cos(ang) * length, sin(ang) * length * 0.45)   # a fan with some depth: it reads side-on too
+		n.add_child(blob(Vector3(0.75, length * 0.62, 0.75), plain(cols[k]), p, Vector3(rad_to_deg(ang) * 0.6, 0, -rad_to_deg(ang))))
+	n.add_child(ring(0.7, 1.15, plain(c.team), a.lerp(b, 0.5), Vector3(0, 0, tilt)))
+	return {"node": n}
+
+
+## Aztec bag: a woven pouch in bright stripes, a feather tucked in its knot.
+func _tool_satchel_woven(c: Dictionary) -> Dictionary:
+	var n := Node3D.new()
+	n.add_child(_box(Vector3(3.0, 4.2, 4.6), surf("wicker", Color("#e0c080"), 2.5), Vector3(2.6, -2.6, 1.6)))
+	n.add_child(_box(Vector3(3.1, 0.8, 4.7), plain(Color("#2a7a6a")), Vector3(2.6, -1.9, 1.6)))
+	n.add_child(_box(Vector3(3.1, 0.8, 4.7), plain(Color("#c83a2a")), Vector3(2.6, -3.4, 1.6)))
+	n.add_child(ring(0.5, 0.9, plain(c.team), Vector3(2.6, -0.1, 1.6)))
+	n.add_child(blob(Vector3(0.5, 2.0, 0.35), plain(Color("#1f9a5a")), Vector3(3.2, 1.2, 2.4), Vector3(0, 0, -20)))
+	return {"node": n}
+
+
+## Royal: a tall staff with an iron hook at the top, a glowing lantern hanging from it.
+func _tool_staff_lantern(c: Dictionary) -> Dictionary:
+	var n := Node3D.new()
+	var a := Vector3(-2, -9, 0)
+	var b := Vector3(4, 28, 0)
+	n.add_child(rod(a, b, 0.95, 0.85, surf("wood_grain", Color(0.55, 0.38, 0.26), 6.0)))
+	var iron := surf("iron", Color(0.55, 0.55, 0.6), 3.0)
+	n.add_child(rod(b, b + Vector3(2.4, 2.4, 0), 0.6, 0.55, iron))   # the hook arm
+	n.add_child(rod(b + Vector3(2.4, 2.4, 0), b + Vector3(4.6, 1.6, 0), 0.55, 0.5, iron))
+	var lt := b + Vector3(4.6, -3.4, 0)   # the lantern's centre, hanging under the hook's tip
+	n.add_child(rod(b + Vector3(4.6, 1.6, 0), lt + Vector3(0, 2.8, 0), 0.3, 0.3, iron))   # the bail
+	n.add_child(_box(Vector3(2.6, 3.2, 2.6), glow(Color("#ffd060")), lt))   # the lit panes
+	for x in [-1.3, 1.3]:   # the frame's corner posts
+		for z in [-1.3, 1.3]:
+			n.add_child(_box(Vector3(0.45, 3.4, 0.45), iron, lt + Vector3(x, 0, z)))
+	n.add_child(cone(0.4, 2.1, 1.6, iron, lt + Vector3(0, 2.3, 0)))   # the cap
+	n.add_child(_box(Vector3(2.9, 0.5, 2.9), iron, lt + Vector3(0, -1.8, 0)))   # the base
+	n.add_child(ring(0.7, 1.15, plain(c.team), b + Vector3(-0.6, -3.5, 0), Vector3(0, 0, -10)))
+	return {"node": n}
+
+
+## Spooky: a crooked staff of lashed bones, a bone cup on top holding a lit candle.
+func _tool_staff_candle(c: Dictionary) -> Dictionary:
+	var n := Node3D.new()
+	var bone := surf("bone", Color("#ece4cc"), 4.0)
+	var pts := [Vector3(-2, -9, 0), Vector3(1.8, 4, 0.5), Vector3(0.8, 13, -0.4), Vector3(4.2, 22, 0.3), Vector3(3.6, 26, 0)]
+	for k in 4:
+		n.add_child(rod(pts[k], pts[k + 1], 0.95, 0.85, bone))
+		n.add_child(blob(Vector3(1.45, 1.2, 1.35), bone, pts[k + 1]))   # the knuckles
+	var top: Vector3 = pts[4]
+	n.add_child(cone(2.6, 1.2, 2.0, bone, top + Vector3(0, 1.2, 0)))   # the cup
+	var wax := plain(Color("#f8f2e0"))
+	n.add_child(cone(1.3, 1.3, 3.6, wax, top + Vector3(0, 3.8, 0)))   # the candle
+	n.add_child(blob(Vector3(0.6, 1.3, 0.6), wax, top + Vector3(1.3, 3.0, 0.4)))   # drips
+	n.add_child(blob(Vector3(0.5, 1.0, 0.5), wax, top + Vector3(-1.2, 3.4, 0.6)))
+	n.add_child(blob(Vector3(1.2, 2.1, 1.2), glow(Color("#ff9a30")), top + Vector3(0, 7.4, 0)))   # the flame
+	n.add_child(blob(Vector3(0.6, 1.1, 0.6), glow(Color("#fff2b0")), top + Vector3(0, 7.0, 0.7)))
+	n.add_child(ring(0.7, 1.15, plain(c.team), pts[3] + Vector3(-0.6, -2.0, 0), Vector3(0, 0, -20)))
+	return {"node": n}
+
+
+## Spooky bag: a dark stoppered bottle, a glint of green brew, a team band round it.
+func _tool_satchel_bottle(c: Dictionary) -> Dictionary:
+	var n := Node3D.new()
+	var at := Vector3(2.6, -2.8, 1.6)
+	var glass := plain(Color("#4a2a6a"))
+	n.add_child(blob(Vector3(2.3, 2.6, 2.3), glass, at))
+	n.add_child(cone(0.7, 0.9, 2.2, glass, at + Vector3(0, 2.8, 0)))
+	n.add_child(cone(0.75, 0.6, 1.0, plain(Color("#8a6a40")), at + Vector3(0, 4.2, 0)))   # the cork
+	n.add_child(blob(Vector3(0.8, 0.9, 0.4), glow(Color("#9ae070")), at + Vector3(0.9, 0.4, 2.0)))   # a glint of the brew
+	n.add_child(ring(2.0, 2.5, plain(c.team), at + Vector3(0, 0.6, 0), Vector3.ZERO, Vector3(1, 1.3, 1)))
+	return {"node": n}
+
+
+## Forest: a living branch, still in leaf, a twig or two sprouting from it.
+func _tool_staff_branch(c: Dictionary) -> Dictionary:
+	var n := Node3D.new()
+	var bark := surf("bark_plate", Color("#b08a60"), 4.0)
+	var pts := [Vector3(-2, -9, 0), Vector3(0.8, 5, -0.4), Vector3(3.4, 17, 0.4), Vector3(5, 26, 0)]
+	for k in 3:
+		n.add_child(rod(pts[k], pts[k + 1], 1.15 - k * 0.12, 1.0 - k * 0.12, bark))
+	var top: Vector3 = pts[3]
+	var leaf := surf("leaf", Color("#80c850"), 2.0)
+	var twigs := [[pts[2], pts[2] + Vector3(-3.4, 3.2, 0.6)], [top, top + Vector3(-2.0, 3.6, -0.4)], [top, top + Vector3(2.6, 3.0, 0.5)]]
+	for t in twigs:
+		n.add_child(rod(t[0], t[1], 0.5, 0.35, bark))
+		n.add_child(blob(Vector3(1.4, 1.0, 1.2), leaf, t[1] + Vector3(0, 0.6, 0)))
+	for k in 6:   # the crown of leaves
+		var ang := k * TAU / 6.0
+		n.add_child(blob(Vector3(1.0, 2.0, 0.6), leaf, top + Vector3(cos(ang) * 1.8, 2.0 + sin(ang * 2.0) * 0.6, sin(ang) * 1.8), Vector3(sin(ang) * 40.0, 0, cos(ang) * 40.0)))
+	n.add_child(blob(Vector3(1.8, 1.6, 1.8), leaf, top + Vector3(0, 3.6, 0)))
+	n.add_child(ring(0.7, 1.15, plain(c.team), pts[1] + Vector3(0.9, 3.5, 0), Vector3(0, 0, -14)))
+	return {"node": n}
+
+
+## Forest bag: a bundle wrapped in big leaves, tied with a team cord.
+func _tool_satchel_leaf(c: Dictionary) -> Dictionary:
+	var n := Node3D.new()
+	var at := Vector3(2.6, -2.4, 1.6)
+	n.add_child(blob(Vector3(2.6, 2.9, 2.6), surf("leaf", Color("#6aa848"), 3.0), at))
+	for k in 3:   # the wrapping leaves' tips
+		var ang := k * TAU / 3.0
+		n.add_child(blob(Vector3(1.0, 1.8, 0.5), surf("leaf", Color("#4a8a38"), 2.0), at + Vector3(cos(ang) * 1.2, 2.6, sin(ang) * 1.2), Vector3(sin(ang) * 30.0, 0, cos(ang) * 30.0)))
+	n.add_child(ring(2.0, 2.7, plain(c.team), at + Vector3(0, 0.8, 0), Vector3.ZERO, Vector3(1, 1.3, 1)))
+	return {"node": n}
+
