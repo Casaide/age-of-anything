@@ -196,6 +196,25 @@ func _test_data(lib) -> void:
 			check(lib.families.has(e.family), "lexicon %s family exists" % w)
 		if e.has("mount_wings"):
 			check(lib.parts.has(e.mount_wings), "lexicon %s wings part exists" % w)
+	# The UI's looks (src/view/ui/theme.gd): every culture wears one; its materials, crest and cut exist.
+	var mats := ["wood", "bronze", "gold", "iron", "marble", "stone", "sandstone", "parchment", "felt", "leather", "reed", "lacquer", "bone"]
+	var cuts := ["square", "fringe", "swallowtail", "pointed", "notched", "tongues", "ragged", "scalloped"]
+	var ui: Dictionary = DataLib.load_json("res://data/ui.json")
+	var looks := []
+	for d in ui.directions:
+		looks.append(["direction " + d, ui.directions[d]])
+	for f in lib.families:
+		check(lib.families[f].has("ui"), "family %s has a ui block" % f)
+		looks.append(["family " + f, lib.families[f].get("ui", {})])
+	for l in looks:
+		for k in ["frame", "panel", "button", "primary"]:
+			if l[1].has(k):
+				check(l[1][k] in mats, "%s: %s material %s is known" % [l[0], k, l[1][k]])
+		if l[1].has("banner"):
+			check(l[1].banner in cuts, "%s: banner cut %s is known" % [l[0], l[1].banner])
+		if l[1].has("ornament"):
+			check(FileAccess.file_exists("res://assets/art/ui/crest_%s.svg" % l[1].ornament), "%s: crest %s exists" % [l[0], l[1].ornament])
+	check(ui.directions.has(ui.direction), "the UI direction in use exists")
 
 
 func _test_determinism(gen, rules: Dictionary) -> void:
