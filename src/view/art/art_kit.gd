@@ -12,6 +12,9 @@ const Baker := preload("res://src/view/art/bake/baker.gd")
 const Models := preload("res://src/view/art/bake/models.gd")
 const PropModels := preload("res://scenes/art_pixel/prop_models.gd")
 const DataLib := preload("res://src/data_lib.gd")
+const UnitModels := preload("res://scenes/art_pixel/unit_models.gd")
+const BakeCache := preload("res://src/view/art/bake_cache.gd")
+const BakeClock := preload("res://src/view/art/bake/bake_clock.gd")
 
 const ART_SCALE := 1.5     # art pixels per canvas unit (a tile is 96 x 48 art pixels)
 const UNIT_SCALE := 0.85   # units at about a third of a building's height
@@ -21,7 +24,8 @@ const HOUSE_SCALE := 1.1   # houses read smaller than the halls (Fable; Dominic:
 const ALONG_Z := "^z"       # bake-name suffix of a gate turned a quarter, for a wall line running along sim y
 ## Parts a worker swaps in by job (see UnitView.set_tool and sim_debug's _tool_for).
 const JOB_PARTS := ["tool.axe", "tool.basket", "tool.hammer", "tool.pick", "load.reeds", "load.stone"]
-const ICON_CELL := 160     # screen pixels per unit when rendering portraits   # houses read about 2.5x a footman
+const LOAD_SLICE_MS := 8   # cache loads per frame, at most this long
+const ICON_CELL := 160    # screen pixels per unit when rendering portraits   # houses read about 2.5x a footman
 const TOWN := {"thatch": "town_center", "junk": "junk_town_center_small", "stone": "stone_town_center", "tent": "tent_town_center",
 	"reed": "reed_town_center", "mound": "mound_town_center"}
 const HOUSE := {"thatch": "stilt_house", "junk": "tin_can_house", "stone": "villa_house", "tent": "tent_house",
@@ -45,22 +49,333 @@ var buildings := {}   # "arch:type" -> {body, smoke, lantern, lights, banner, va
 var icons := {}       # "side:slot" -> Texture2D: a portrait of that unit, rendered from its baked art
 var _building_icons := {}   # "arch:type" -> AtlasTexture
 var _wall_looks := {}       # "arch:type|links" -> {tex, origin}: a wall tile with its arms (wall_look)
+var part_workers := 4       # unit-part bakers rendering at once
+var hifi_workers := 4       # building and prop bakers rendering at once (2048 px viewports each)
+var track: Array = []       # the job ids the running prepare() waits on (progress())
+var report := ""            # how long the last prepare() took, in words
+
+var _jobs := {}             # job id -> {kind: part | hifi | load, weight, what, done, running, make, apply}
+var _queue := {"part": [], "hifi": [], "load": []}   # job ids waiting, per kind of worker
+var _workers := {"part": 0, "hifi": 0, "load": 0}
+var _front := {}            # job ids a prepare asked for (a warm-up never drops these)
+var _warming := {}          # job ids the last warm-up asked for
+var _dirty := false         # something was baked or loaded since the atlas was last built
+var _models                 # the building and prop models (Models), shared by the bakers
+var _unit_models := UnitModels.new()   # which parts are modelled (eight facings) rather than flat
+var _bdata := {}            # data/buildings.json (_buildings_data)
+
+signal units_ready          # prepare(): every unit part is baked and in the atlas
+signal atlas_rebuilt        # the atlas texture was replaced: anything drawn from it should redraw
 
 
-## Bake what these races need (anything already baked is kept), then rebuild the atlas.
+## Bake what these races need (anything already baked or on disk is kept), then rebuild the
+## atlas. The units come first (units_ready: a loader can stand the armies up), then the props
+## and the buildings, then the portraits. A loader follows it with progress() and busy_with().
 ## Prints how long each part took (bake time at match start is a budget we watch).
 func prepare(races: Array, teams: Array) -> void:
 	var t0 := Time.get_ticks_msec()
-	await bake_units(races + [animal_race()], teams + [ANIMAL_TEAM])
+	var unit_ids := _unit_jobs(races + [animal_race()])
+	var rest_ids: Array = _props_jobs() + _building_jobs(races)
+	track = unit_ids + rest_ids
+	var rendered := _count_cold(track)
+	_ask(unit_ids, true)
+	await _await_jobs(unit_ids)   # the armies first, on their own (a loader stands them up)
+	_ask(rest_ids, true)
+	PartShape.bake_flat("unit_shadow", UnitView.SHADOW_SHAPES, UnitView.SHADOW_COLOURS, ART_SCALE * UNIT_SCALE)
+	if _dirty or PartShape.atlas == null:
+		rebuild_atlas()
 	var t1 := Time.get_ticks_msec()
-	await bake_props()
+	units_ready.emit()
+	await _await_jobs(rest_ids)
 	var t2 := Time.get_ticks_msec()
-	await bake_buildings(races)
-	var t3 := Time.get_ticks_msec()
 	rebuild_atlas()
-	var t4 := Time.get_ticks_msec()
+	var t3 := Time.get_ticks_msec()
 	await bake_icons(races, teams)
-	print("Art kit: units %d ms, props %d ms, buildings %d ms, atlas %d ms, icons %d ms" % [t1 - t0, t2 - t1, t3 - t2, t4 - t3, Time.get_ticks_msec() - t4])
+	track = []
+	report = "units %d ms, props + buildings %d ms, atlas %d ms, icons %d ms; total %d ms (%d of %d bakes rendered, the rest loaded or already baked)" % [
+		t1 - t0, t2 - t1, t3 - t2, Time.get_ticks_msec() - t3, Time.get_ticks_msec() - t0, rendered, unit_ids.size() + rest_ids.size()]
+	print("Art kit: ", report)
+
+
+## Bake the animals, the props and these races' buildings in the background (the lobby, while
+## players choose), so a match start finds them done. Drops the last warm-up's pending work.
+func warm(races: Array) -> void:
+	var ids: Array = _unit_jobs([animal_race()]) + _props_jobs() + _building_jobs(races)
+	for kind in _queue:
+		_queue[kind] = _queue[kind].filter(func(id): return _front.has(id) or id in ids or not _warming.has(id))
+	_warming = {}
+	for id in ids:
+		_warming[id] = true
+	_ask(ids, false)
+
+
+## How far the tracked work is: Vector2(done, total) in estimated renders (a loader's bar).
+func progress() -> Vector2:
+	var p := Vector2.ZERO
+	for id in track:
+		var j: Dictionary = _jobs[id]
+		p.y += j.weight
+		if j.done:
+			p.x += j.weight
+	return p
+
+
+## What the tracked work is busy with, in words.
+func busy_with() -> String:
+	for id in track:
+		if _jobs[id].running or not _jobs[id].done:
+			return _jobs[id].what
+	return "Painting the portraits"
+
+
+func _count_cold(ids: Array) -> int:
+	return ids.filter(func(id): return not _jobs[id].done and _jobs[id].kind != "load").size()
+
+
+# ------------------------------------------------------------------ bake jobs
+#
+# Every bake is a job: a unit part (all its facings), a building (with its stages and extra
+# looks), the prop set. A job found in the disk cache (BakeCache) just loads; the rest render
+# on a few bakers at once (each its own viewport: BakeClock draws them together, and a draw
+# costs hardly more with four than with one). A job
+# asked for twice runs once; a match start asks for its jobs at the front of the queue, the
+# lobby's warm-up at the back.
+
+## Queue jobs (front: ahead of background work) and start workers for them.
+func _ask(ids: Array, front: bool) -> void:
+	for id in ids:
+		if front:
+			_front[id] = true
+	for kind in _queue:
+		var mine := ids.filter(func(id): return _jobs[id].kind == kind and not _jobs[id].done and not _jobs[id].running)
+		if mine.is_empty():
+			continue
+		var rest: Array = _queue[kind].filter(func(id): return not id in mine)
+		_queue[kind] = mine + rest if front else rest + mine
+		_spawn(kind)
+
+
+func _await_jobs(ids: Array) -> void:
+	while ids.any(func(id): return not _jobs[id].done):
+		await get_tree().process_frame
+
+
+## A job, made once per id (done: already baked in this run).
+func _job(id: String, kind: String, weight: float, what: String, done: bool, make: Callable, apply: Callable) -> String:
+	if not _jobs.has(id):
+		var cached := not done and BakeCache.has(id)
+		_jobs[id] = {"kind": "load" if cached else kind, "weight": 0.2 if cached else weight, "what": what, "done": done,
+			"running": false, "make": make, "apply": apply}
+	return id
+
+
+func _spawn(kind: String) -> void:
+	var cap: int = {"part": part_workers, "hifi": hifi_workers, "load": 1}[kind]
+	while _workers[kind] < mini(cap, _queue[kind].size()):
+		_workers[kind] += 1
+		_work(kind)
+
+
+## One worker: takes jobs of its kind off the queue until there are none.
+func _work(kind: String) -> void:
+	var baker: Node = null
+	if kind == "part":
+		baker = PartBaker.new()
+		baker.art_scale = ART_SCALE * UNIT_SCALE   # baked at the size they're drawn: crisp pixels
+		baker.bands = UNIT_BANDS   # the paint-over look: painted value bands, not plastic gradients
+		add_child(baker)
+	elif kind == "hifi":
+		baker = await _hifi_baker()
+	var slice := Time.get_ticks_msec()
+	while not _queue[kind].is_empty():
+		var id: String = _queue[kind].pop_front()
+		var j: Dictionary = _jobs[id]
+		if j.done or j.running:
+			continue
+		j.running = true
+		if kind == "load":
+			j.apply.call(BakeCache.read(id))
+			if Time.get_ticks_msec() - slice > LOAD_SLICE_MS:   # loading never holds a frame up for long
+				await get_tree().process_frame
+				slice = Time.get_ticks_msec()
+		else:
+			var entry: Dictionary = await j.make.call(baker)
+			BakeCache.write(id, entry)
+		j.running = false
+		j.done = true
+		_dirty = true
+	if baker != null:
+		baker.queue_free()
+	_workers[kind] -= 1
+
+
+## A unit-part job for each part these races' units are drawn with (every age of every line,
+## the workers' tools, loads and work holds), each once.
+func _unit_jobs(races: Array) -> Array:
+	var ids := []
+	for race in races:
+		var steps := []
+		for u in race.units:   # every age of every unit line: ageing up never waits on a bake
+			for l in u.get("line", [{"recipe": u.recipe, "eval": u.eval}]):
+				steps.append(l)
+		for u in steps:
+			var probe := UnitView.new()
+			probe.build(u.recipe, lib, ANIMAL_TEAM, u.eval.speed)   # parts bake in the team key: any team will do
+			for ps in probe.find_children("*", "Node2D", true, false):
+				if ps is PartShape and ps.part_id != "":
+					ids.append(_part_job(ps.part_id, ps.shapes, ps.colours))
+			probe.free()
+			var colours := UnitView.colours_for(lib, u.recipe.skin, u.recipe.family, ANIMAL_TEAM)
+			if u.recipe.slot == "worker":
+				# Workers change tools for the job and carry their load home in their hands.
+				for id in JOB_PARTS:
+					ids.append(_part_job(id, lib.part(id).shapes, colours))
+			# Every body with arms is baked in the work holds too (raised, reaching): workers
+			# swing their tools with them (D-105) and soldiers their weapons (D-106).
+			var rides: bool = u.recipe.has("mount") and not u.recipe.mount.get("fused", false)
+			if not rides and PartShape.rigs.get(u.recipe.body, {}).get("carry", "") != "harness":
+				var holds: Array = UnitView.WORK_HOLDS.duplicate()
+				var hand: String = u.recipe.parts.get("hand_r", "")
+				if hand != "" and ("spear" in lib.part(hand).tags or "lance" in lib.part(hand).tags):
+					holds += UnitView.ATTACK_HOLDS   # spear carriers thrust (D-106)
+				for h in holds:
+					ids.append(_part_job(u.recipe.body + "@" + h, lib.part(u.recipe.body).shapes, colours))
+	var seen := {}
+	var out := []
+	for id in ids:
+		if not seen.has(id):
+			seen[id] = true
+			out.append(id)
+	return out
+
+
+func _part_job(id: String, shapes: Array, colours: Dictionary) -> String:
+	var key := PartShape.bake_key(id, shapes, PartShape.team_neutral(colours))
+	var modelled: bool = _unit_models.has(id)
+	var make := func(pb) -> Dictionary:
+		await pb.bake(id, shapes, colours)
+		return _part_entry(id, key, modelled)
+	var apply := func(e: Dictionary) -> void:
+		for k in e.baked:
+			var img := BakeCache.unpack(e.baked[k].img)
+			PartShape.baked[k] = {"img": img, "tex": ImageTexture.create_from_image(img), "origin": e.baked[k].origin, "scale": e.baked[k].scale}
+		PartShape.rigs.merge(e.rigs, true)
+	return _job("part|%s|%s|%d" % [key, ART_SCALE * UNIT_SCALE, UNIT_BANDS], "part", 1 + 8 * int(modelled), "Mustering the armies",
+		PartShape.baked.has(key), make, apply)
+
+
+## What a part bake made, to keep: its sprites (every facing, front layers) and rigs.
+func _part_entry(id: String, key: String, modelled: bool) -> Dictionary:
+	var e := {"baked": {}, "rigs": {}}
+	for k in (8 if modelled else 1):
+		var kk := key + PartShape.facing_suffix(k) if modelled else key
+		for name in [kk, PartShape.front_key(kk)]:
+			if PartShape.baked.has(name):
+				var b: Dictionary = PartShape.baked[name]
+				e.baked[name] = {"img": BakeCache.pack(b.img), "origin": b.origin, "scale": b.scale}
+		var rig := id + PartShape.facing_suffix(k)
+		if PartShape.rigs.has(rig):
+			e.rigs[rig] = PartShape.rigs[rig]
+	return e
+
+
+## Prop jobs: nine props to a render, each render a job (so several bakers share them).
+func _props_jobs() -> Array:
+	if _models == null:
+		_models = Models.new()
+		_models.mats.matte = true
+	var specs := _doodad_specs()
+	var ids := []
+	for shadow in [true, false]:
+		var list: Array = specs[0] if shadow else specs[1]
+		for first in range(0, list.size(), 9):
+			var todo: Array = list.slice(first, first + 9)
+			var make := func(baker) -> Dictionary:
+				var made: Dictionary = await _bake_set(baker, todo, shadow)
+				bakes.merge(made, true)
+				return {"bakes": _pack_bakes(made)}
+			var apply := func(e: Dictionary) -> void:
+				_unpack_bakes(e.bakes)
+			ids.append(_job("props|%s" % ",".join(todo.map(func(t): return t[0])), "hifi", 4 if shadow else 2, "Growing the reeds",
+				bakes.has(todo[0][0]), make, apply))
+	return ids
+
+
+## A building job for each look of each building of these races' cultures (town centre and
+## houses first: they stand from the first second).
+func _building_jobs(races: Array) -> Array:
+	var archs := []
+	for r in races:
+		var a: String = lib.architecture(r)
+		if not a in archs:
+			archs.append(a)
+	archs.sort()
+	var d: Dictionary = _buildings_data()
+	var types: Array = ["town_center", "house"]
+	for t in d.menu.civilian + d.menu.military:
+		if not t in types:
+			types.append(t)
+	var ids := []
+	for arch in archs:
+		for type in types:
+			ids.append(_building_job(d, arch, type))
+			var looks: Dictionary = d.get("age_looks", {}).get(arch, {}).get(type, {})
+			for age in looks:   # the same building, grown with the ages (a culture's story, D-081)
+				ids.append(_building_job(d, arch, type, looks[age], "@" + str(age)))
+			for v in range(1, int(d.get("variants", {}).get(type, 1))):   # a few of each house, turned and sized apart
+				ids.append(_building_job(d, arch, type, "", "#" + str(v)))
+			if bool(d.buildings[type].get("gate", false)):   # gates face the way their wall runs
+				ids.append(_building_job(d, arch, type, "", ALONG_Z))
+	return ids
+
+
+func _building_job(d: Dictionary, arch: String, type: String, model := "", suffix := "") -> String:
+	var name := "%s:%s%s" % [arch, type, suffix]
+	var make := func(baker) -> Dictionary:
+		var e: Dictionary = await _bake_building(baker, _models, arch, type, model, suffix)
+		bakes.merge(e.bakes, true)
+		buildings[name] = e.info
+		var keep: Dictionary = e.info.duplicate()
+		if keep.has("banner"):
+			keep.banner = {"img": BakeCache.pack((keep.banner.tex as Texture2D).get_image()), "origin": keep.banner.origin}
+		return {"bakes": _pack_bakes(e.bakes), "info": keep}
+	var apply := func(e: Dictionary) -> void:
+		_unpack_bakes(e.bakes)
+		var info: Dictionary = e.info
+		if info.has("banner"):
+			info.banner = {"tex": ImageTexture.create_from_image(BakeCache.unpack(info.banner.img)), "origin": info.banner.origin}
+		buildings[name] = info
+	var label: String = d.buildings[type].get("name", type.capitalize())
+	return _job("bld|%s|%s" % [name, model], "hifi", 22, "Raising the %s" % label.to_lower(), buildings.has(name), make, apply)
+
+
+func _pack_bakes(made: Dictionary) -> Dictionary:
+	var out := {}
+	for n in made:
+		out[n] = {"img": BakeCache.pack(made[n].img), "origin": made[n].origin}
+	return out
+
+
+func _unpack_bakes(packed: Dictionary) -> void:
+	for n in packed:
+		bakes[n] = {"img": BakeCache.unpack(packed[n].img), "origin": packed[n].origin}
+
+
+## A baker for buildings and props, with the shared models (their noise textures ready).
+func _hifi_baker() -> Node:
+	if _models == null:
+		_models = Models.new()
+		_models.mats.matte = true
+	var baker := Baker.new()
+	add_child(baker)
+	baker.set_pixel_mode(ART_SCALE, SS)
+	baker.outline = false   # props and buildings are drawn realistically, without the units' outline
+	for name in MATERIALS:
+		var m: StandardMaterial3D = _models.mats.get_mat(name)
+		for t in [m.albedo_texture, m.normal_texture]:
+			while t != null and t.get_image() == null:   # noise textures build in a thread
+				await get_tree().process_frame
+	return baker
 
 
 ## A portrait of every unit of these races, for the command panel: each unit's own
@@ -91,8 +406,8 @@ func bake_icons(races: Array, teams: Array) -> void:
 		view.set_process(false)       # a still pose
 		view.get_child(0).visible = false   # no ground shadow
 		vp.add_child(view)
-	vp.render_target_update_mode = SubViewport.UPDATE_ONCE
-	await RenderingServer.frame_post_draw
+	await get_tree().process_frame   # the views draw themselves (a deferred call) before the render
+	await BakeClock.render(vp)
 	var img := vp.get_texture().get_image()
 	for k in list.size():
 		var cell := img.get_region(Rect2i(Vector2i(k % cols, k / cols) * ICON_CELL, Vector2i.ONE * ICON_CELL))
@@ -130,7 +445,7 @@ func _spec(models, arch: String, type: String, model := "") -> Dictionary:
 ## a variant's turn or mirror and nudge in size (data: "variants"), so a street of houses varies.
 func _placed(models, arch: String, type: String, model: String, suffix: String) -> Dictionary:
 	var spec: Dictionary = _spec(models, arch, type, model)
-	var d: Dictionary = DataLib.load_json("res://data/buildings.json")
+	var d: Dictionary = _buildings_data()
 	var s: float = (HOUSE_SCALE if type == "house" else 1.0) * float(d.get("scale", {}).get(arch, {}).get(type, 1.0))
 	var look := Basis.IDENTITY
 	var v := int(suffix.get_slice("#", 1)) if "#" in suffix else 0
@@ -153,6 +468,13 @@ func _placed(models, arch: String, type: String, model: String, suffix: String) 
 			spec[key] = basis * spec[key]
 	spec.lights = spec.get("lights", []).map(func(p): return basis * p)
 	return spec
+
+
+## data/buildings.json, read once (a building's model is placed several times per bake).
+func _buildings_data() -> Dictionary:
+	if _bdata.is_empty():
+		_bdata = DataLib.load_json("res://data/buildings.json")
+	return _bdata
 
 
 ## The bake camera looks from +x +z (baker.gd: yaw 45), so a face whose outward direction
@@ -286,141 +608,83 @@ func rebuild_atlas() -> void:
 	for name in bakes:
 		extras[name] = bakes[name].img
 	regions = PartShape.build_atlas(extras)
+	_dirty = false
+	atlas_rebuilt.emit()
 
 
-## Every part of every unit of these races, in each side's team key (skips what's baked).
-func bake_units(races: Array, teams: Array) -> void:
-	var pb := PartBaker.new()
-	pb.art_scale = ART_SCALE * UNIT_SCALE   # baked at the size they're drawn: crisp pixels
-	pb.bands = UNIT_BANDS   # the paint-over look: painted value bands, not plastic gradients
-	add_child(pb)
-	for side in races.size():
-		var steps := []
-		for u in races[side].units:   # every age of every unit line: ageing up never waits on a bake
-			for l in u.get("line", [{"recipe": u.recipe, "eval": u.eval}]):
-				steps.append(l)
-		for u in steps:
-			var probe := UnitView.new()
-			probe.build(u.recipe, lib, teams[side], u.eval.speed)
-			for ps in probe.find_children("*", "Node2D", true, false):
-				if ps is PartShape and ps.part_id != "":
-					await pb.bake(ps.part_id, ps.shapes, ps.colours)
-			probe.free()
-			var colours := UnitView.colours_for(lib, u.recipe.skin, u.recipe.family, teams[side])
-			if u.recipe.slot == "worker":
-				# Workers change tools for the job and carry their load home in their hands.
-				for id in JOB_PARTS:
-					await pb.bake(id, lib.part(id).shapes, colours)
-			# Every body with arms is baked in the work holds too (raised, reaching): workers
-			# swing their tools with them (D-105) and soldiers their weapons (D-106).
-			var rides: bool = u.recipe.has("mount") and not u.recipe.mount.get("fused", false)
-			if not rides and PartShape.rigs.get(u.recipe.body, {}).get("carry", "") != "harness":
-				var holds: Array = UnitView.WORK_HOLDS.duplicate()
-				var hand: String = u.recipe.parts.get("hand_r", "")
-				if hand != "" and ("spear" in lib.part(hand).tags or "lance" in lib.part(hand).tags):
-					holds += UnitView.ATTACK_HOLDS   # spear carriers thrust (D-106)
-				for h in holds:
-					await pb.bake(u.recipe.body + "@" + h, lib.part(u.recipe.body).shapes, colours)
-	pb.queue_free()
+## Every part of every unit of these races (skips what's baked; loads what's on disk).
+## Parts bake in the team key, so the teams don't matter here.
+func bake_units(races: Array, _teams := []) -> void:
+	var ids := _unit_jobs(races)
+	_ask(ids, true)
+	await _await_jobs(ids)
 	PartShape.bake_flat("unit_shadow", UnitView.SHADOW_SHAPES, UnitView.SHADOW_COLOURS, ART_SCALE * UNIT_SCALE)
-
-
-func _hifi() -> Array:
-	var models := Models.new()
-	models.mats.matte = true
-	var baker := Baker.new()
-	add_child(baker)
-	baker.set_pixel_mode(ART_SCALE, SS)
-	baker.outline = false   # props and buildings are drawn realistically, without the units' outline
-	for name in MATERIALS:
-		var m: StandardMaterial3D = models.mats.get_mat(name)
-		for t in [m.albedo_texture, m.normal_texture]:
-			while t != null and t.get_image() == null:   # noise textures build in a thread
-				await get_tree().process_frame
-	return [baker, models]
 
 
 ## Resource props and ground doodads (once per run).
 func bake_props() -> void:
-	if bakes.has("reeds0"):
-		return
-	var h: Array = await _hifi()
-	await _bake_doodads(h[0], h[1])
-	h[0].queue_free()
+	var ids := _props_jobs()
+	_ask(ids, true)
+	await _await_jobs(ids)
 
 
 ## Each culture's buildings for these races (skips what's baked).
 func bake_buildings(races: Array) -> void:
-	var archs := []
-	for r in races:
-		var a: String = lib.architecture(r)
-		if not a in archs and not buildings.has(a + ":house"):
-			archs.append(a)
-	if archs.is_empty():
-		return
-	archs.sort()
-	var h: Array = await _hifi()
-	for arch in archs:
-		var d: Dictionary = DataLib.load_json("res://data/buildings.json")
-		for type in d.menu.civilian + d.menu.military:
-			await _bake_building(h[0], h[1], arch, type)
-			var looks: Dictionary = d.get("age_looks", {}).get(arch, {}).get(type, {})
-			for age in looks:   # the same building, grown with the ages (a culture's story, D-081)
-				await _bake_building(h[0], h[1], arch, type, looks[age], "@" + str(age))
-			for v in range(1, int(d.get("variants", {}).get(type, 1))):   # a few of each house, turned and sized apart
-				await _bake_building(h[0], h[1], arch, type, "", "#" + str(v))
-			if bool(d.buildings[type].get("gate", false)):   # gates face the way their wall runs
-				await _bake_building(h[0], h[1], arch, type, "", ALONG_Z)
-	h[0].queue_free()
+	var ids := _building_jobs(races)
+	_ask(ids, true)
+	await _await_jobs(ids)
 
 
-## Every variant (and cut-down stage) of every prop, several to a render.
-func _bake_doodads(baker, models) -> void:
+## Every variant (and cut-down stage) of every prop, as [[name, make model], ...] for the
+## shadowed ones and for those flat on the ground.
+func _doodad_specs() -> Array:
 	var props := PropModels.new()
-	var shadowed := {}      # name -> model
+	var models: Models = _models
+	var shadowed := []
 	for v in DOODADS.reeds:
 		for st in STAGES:
-			shadowed[staged("reeds", v, st)] = props.reed_clump(300 + v, 1.0, st)
+			shadowed.append([staged("reeds", v, st), func(): return props.reed_clump(300 + v, 1.0, st)])
 	for v in DOODADS.bush:
 		for st in STAGES:
-			shadowed[staged("bush", v, st)] = props.bug_bush(400 + v, st)
+			shadowed.append([staged("bush", v, st), func(): return props.bug_bush(400 + v, st)])
 	for v in DOODADS.rock:
-		shadowed["rock%d" % v] = props.boulders(1000 + v)
+		shadowed.append(["rock%d" % v, func(): return props.boulders(1000 + v)])
 	for v in DOODADS.quarry:
 		for st in STAGES:
-			shadowed[staged("quarry", v, st)] = props.quarry(1300 + v, st)
-			shadowed[staged("gold", v, st)] = props.quarry(1300 + v, st, "gold")   # the same deposits, gold showing
+			shadowed.append([staged("quarry", v, st), func(): return props.quarry(1300 + v, st)])
+			shadowed.append([staged("gold", v, st), func(): return props.quarry(1300 + v, st, "gold")])   # the same deposits, gold showing
 	for v in DOODADS.carcass:
 		for st in STAGES:
-			shadowed[staged("carcass", v, st)] = props.carcass(1400 + v, st)
-	shadowed["rally_flag"] = models.rally_flag(Color(PartShape.TEAM_KEY))
-	shadowed["waypoint_flag"] = models.waypoint_flag(Color(PartShape.TEAM_KEY))
-	var flat := {}
+			shadowed.append([staged("carcass", v, st), func(): return props.carcass(1400 + v, st)])
+	shadowed.append(["rally_flag", func(): return models.rally_flag(Color(PartShape.TEAM_KEY))])
+	shadowed.append(["waypoint_flag", func(): return models.waypoint_flag(Color(PartShape.TEAM_KEY))])
+	var flat := []
 	for v in DOODADS.stones:
-		flat["stones%d" % v] = props.field_stones(500 + v)
+		flat.append(["stones%d" % v, func(): return props.field_stones(500 + v)])
 	for v in DOODADS.tuft:
-		flat["tuft%d" % v] = props.grass_tuft(600 + v)
+		flat.append(["tuft%d" % v, func(): return props.grass_tuft(600 + v)])
 	for v in DOODADS.flowers:
-		flat["flowers%d" % v] = models.flowers(800 + v)
+		flat.append(["flowers%d" % v, func(): return models.flowers(800 + v)])
 	for v in DOODADS.shore:
-		flat["shore%d" % v] = props.reed_clump(700 + v, 0.55)
+		flat.append(["shore%d" % v, func(): return props.reed_clump(700 + v, 0.55)])
 	for v in DOODADS.lily:
-		flat["lily%d" % v] = props.lily_pads(900 + v)
+		flat.append(["lily%d" % v, func(): return props.lily_pads(900 + v)])
 	for v in DOODADS.crops:
-		flat["crops%d" % v] = props.crops(1100 + v)
+		flat.append(["crops%d" % v, func(): return props.crops(1100 + v)])
 	for v in DOODADS.paddy:
-		flat["paddy%d" % v] = props.paddy(1200 + v)
-	baker.set_ground_shadow(true)
-	await _bake_set(baker, shadowed)
+		flat.append(["paddy%d" % v, func(): return props.paddy(1200 + v)])
+	return [shadowed, flat]
+
+
+## Bake a few props in one render (bake_many: up to nine to a frame): name -> {img, origin}.
+func _bake_set(baker, todo: Array, shadow: bool) -> Dictionary:
+	baker.set_ground_shadow(shadow)
+	var out: Array = await baker.bake_many(todo.map(func(t): return t[1].call()))
 	baker.set_ground_shadow(false)
-	await _bake_set(baker, flat)
-
-
-func _bake_set(baker, todo: Dictionary) -> void:
-	var names := todo.keys()
-	var out: Array = await baker.bake_many(names.map(func(k): return todo[k]))
-	for i in names.size():
-		bakes[names[i]] = {"img": (out[i].tex as Texture2D).get_image(), "origin": out[i].points[0]}
+	var made := {}
+	for i in todo.size():
+		made[todo[i][0]] = {"img": (out[i].tex as Texture2D).get_image(), "origin": out[i].points[0]}
+	return made
 
 
 ## How used-up a resource looks: its stage from what's left of what it started with.
@@ -444,22 +708,17 @@ static func staged(kind: String, variant: int, stage: int) -> String:
 	return "%s%d" % [kind, variant] if stage == 0 else "%s%d.%d" % [kind, variant, stage]
 
 
-func _bake(baker, name: String, model: Node3D) -> void:
-	var b: Dictionary = await baker.bake(model, [Vector3.ZERO])
-	bakes[name] = {"img": (b.tex as Texture2D).get_image(), "origin": b.points[0]}
-
-
-func _bake_building(baker, models, arch: String, type: String, model := "", suffix := "") -> void:
+## One look of a building, with its stages and extra parts: {bakes: name -> {img, origin}, info}.
+func _bake_building(baker, models, arch: String, type: String, model := "", suffix := "") -> Dictionary:
 	var name := "%s:%s%s" % [arch, type, suffix]
-	if buildings.has(name):
-		return
+	var made := {}
 	var spec: Dictionary = _placed(models, arch, type, model, suffix)
 	var pts: Array = [Vector3.ZERO, spec.get("smoke", Vector3.ZERO), spec.get("lantern", Vector3.ZERO)]
 	pts.append_array(spec.lights)
 	baker.set_ground_shadow(true)
 	var body: Dictionary = await baker.bake(spec.body, pts)
 	baker.set_ground_shadow(false)
-	bakes[name] = {"img": (body.tex as Texture2D).get_image(), "origin": body.points[0]}
+	made[name] = {"img": (body.tex as Texture2D).get_image(), "origin": body.points[0]}
 	var local := func(p: Vector2) -> Vector2: return (p - body.points[0]) / ART_SCALE
 	var info := {"body": name, "lights": []}
 	if spec.has("smoke"):
@@ -475,21 +734,21 @@ func _bake_building(baker, models, arch: String, type: String, model := "", suff
 		baker.set_ground_shadow(true)
 		var op: Dictionary = await baker.bake(spec.open, [Vector3.ZERO])
 		baker.set_ground_shadow(false)
-		bakes[name + ":open"] = {"img": (op.tex as Texture2D).get_image(), "origin": op.points[0]}
+		made[name + ":open"] = {"img": (op.tex as Texture2D).get_image(), "origin": op.points[0]}
 		info.open = name + ":open"
 	if spec.has("arms"):   # a wall: an arm towards each of the eight neighbours (Models.LINKS), and a run for its picture
 		baker.set_ground_shadow(true)
 		info.arms = []
 		var out: Array = await baker.bake_many(spec.arms + [spec.icon])   # all nine in one render: small, and a render is most of a bake
 		for k in spec.arms.size():
-			bakes["%s:arm%d" % [name, k]] = {"img": (out[k].tex as Texture2D).get_image(), "origin": out[k].points[0]}
+			made["%s:arm%d" % [name, k]] = {"img": (out[k].tex as Texture2D).get_image(), "origin": out[k].points[0]}
 			info.arms.append("%s:arm%d" % [name, k])
-		bakes[name + ":icon"] = {"img": (out[-1].tex as Texture2D).get_image(), "origin": out[-1].points[0]}
+		made[name + ":icon"] = {"img": (out[-1].tex as Texture2D).get_image(), "origin": out[-1].points[0]}
 		info.icon = name + ":icon"
 		baker.set_ground_shadow(false)
 	if spec.has("vane"):
 		var vane: Dictionary = await baker.bake(spec.vane, [Vector3.ZERO, spec.vane_pivot])
-		bakes[name + ":vane"] = {"img": (vane.tex as Texture2D).get_image(), "origin": vane.points[1]}
+		made[name + ":vane"] = {"img": (vane.tex as Texture2D).get_image(), "origin": vane.points[1]}
 		info.vane = name + ":vane"
 		info.vane_at = (vane.points[1] - vane.points[0]) / ART_SCALE
 	info.stages = []
@@ -504,10 +763,10 @@ func _bake_building(baker, models, arch: String, type: String, model := "", suff
 			n.free()
 		var sb: Dictionary = await baker.bake(part.body, [Vector3.ZERO])
 		var sname := "%s:stage%d" % [name, st]
-		bakes[sname] = {"img": (sb.tex as Texture2D).get_image(), "origin": sb.points[0]}
+		made[sname] = {"img": (sb.tex as Texture2D).get_image(), "origin": sb.points[0]}
 		info.stages.append(sname)
 	baker.set_ground_shadow(false)
-	buildings[name] = info
+	return {"bakes": made, "info": info}
 
 
 ## A building under construction, from its own model with parts held back (see
