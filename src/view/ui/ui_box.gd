@@ -90,6 +90,8 @@ func _rect(ci: RID, r: Rect2, c: Color) -> void:
 
 
 func _quad(ci: RID, a: Vector2, b: Vector2, c: Vector2, d: Vector2, ca: Color, cb: Color, cc: Color, cd: Color) -> void:
+	if (b - a).cross(c - a) * (c - a).cross(d - a) <= 0.01:
+		return   # collapsed or crossed over (a box smaller than its bevel): nothing to draw, and it can't be triangulated
 	RenderingServer.canvas_item_add_polygon(ci, PackedVector2Array([a, b, c, d]), PackedColorArray([ca, cb, cc, cd]))
 
 
