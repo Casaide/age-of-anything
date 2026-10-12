@@ -24,6 +24,8 @@ var terrain_colours: Array = [] # per terrain index
 var camera
 var _tex: ImageTexture
 var _img: Image
+var _relief := PackedByteArray()   # per cell: its relief code (see _relief_and_table)
+var _lut := PackedByteArray()      # RGB per (terrain, relief code, fog state)
 var _t := 0.0
 var pings: Array = []   # [{at: Vector2 (tiles), t: seconds left}]: where you're under attack
 
@@ -60,31 +62,60 @@ func _process(delta: float) -> void:
 	queue_redraw()
 
 
-## The terrain picture, one pixel per tile, dimmed by the fog.
+## The terrain picture, one pixel per tile, dimmed by the fog. Each pixel's colour comes from a
+## table by (ground, the cell's relief, its fog) worked out once per match: the loop only looks up
+## and copies three bytes.
 func _paint() -> void:
 	var m = world.map
 	var g: PackedByteArray = world.fog[player]
 	var ground: PackedByteArray = m.terrain if reveal else world.fog_ground[player]
 	if _img == null:
 		_img = Image.create(m.width, m.height, false, Image.FORMAT_RGB8)
-	for y in m.height:
-		for x in m.width:
-			var c: int = y * m.width + x
-			var col: Color = terrain_colours[ground[c]]
-			if m.has_heights:   # high ground reads lighter, a level at a time; cliffs as dark lines
-				col = col.lightened(0.11 * m.level[c] + 0.055 * m.ramp[c])
-				if m.cliff[c] == 1:
-					col = col.darkened(0.4)
-			match -1 if reveal else g[c]:
-				Fog.UNSEEN:
-					col = Color("#1a1510")   # dark earth, not a black hole
-				Fog.EXPLORED:
-					col = col.darkened(0.3)
-			_img.set_pixel(x, y, col)
+		_relief_and_table(m)
+	var n: int = m.width * m.height
+	var px := PackedByteArray()
+	px.resize(n * 3)
+	var lut := _lut
+	var rel := _relief
+	for c in n:
+		var k: int = ((ground[c] * RELIEF + rel[c]) * 4 + (3 if reveal else g[c])) * 3
+		px[c * 3] = lut[k]
+		px[c * 3 + 1] = lut[k + 1]
+		px[c * 3 + 2] = lut[k + 2]
+	_img.set_data(m.width, m.height, false, Image.FORMAT_RGB8, px)
 	if _tex == null:
 		_tex = ImageTexture.create_from_image(_img)
 	else:
 		_tex.update(_img)
+
+
+const RELIEF := 16   # relief codes: level (0-3) * 4 + ramp * 2 + cliff
+
+
+## Per cell its relief code, and the colour table: per terrain, relief code and fog state
+## (unseen, explored, visible, the fog lifted), as RGB bytes.
+func _relief_and_table(m) -> void:
+	_relief = PackedByteArray()
+	_relief.resize(m.width * m.height)
+	if m.has_heights:
+		for c in _relief.size():
+			_relief[c] = m.level[c] * 4 + m.ramp[c] * 2 + m.cliff[c]
+	_lut = PackedByteArray()
+	for t in terrain_colours.size():
+		for code in RELIEF:
+			var col: Color = terrain_colours[t]
+			col = col.lightened(0.11 * (code / 4) + 0.055 * ((code / 2) % 2))   # high ground reads lighter, a level at a time
+			if code % 2 == 1:
+				col = col.darkened(0.4)   # cliffs as dark lines
+			for fog in 4:
+				var f: Color = col
+				if fog == Fog.UNSEEN:
+					f = Color("#1a1510")   # dark earth, not a black hole
+				elif fog == Fog.EXPLORED:
+					f = col.darkened(0.3)
+				_lut.append(f.r8)
+				_lut.append(f.g8)
+				_lut.append(f.b8)
 
 
 ## Tile coordinates (fractional) to a point on the minimap.

@@ -45,6 +45,8 @@ var critters: Array = []     # [{kind, home, p, v, t, air, state}]
 var _critter_towns := {}     # town centre id -> true once its critters are made
 var _town_level := -1.0
 var _queue_len := {}         # building id -> its queue's length last frame (a unit out: the door opens)
+var _builders: Array = []   # unit slots building on the last tick read (their blows raise dust)
+var _tick_seen := -1         # the world tick the sim was last read at
 var spent_us := 0          # time spent in update (tests/town_bench.gd reads it)
 var frames := 0
 var enabled := true          # off: the town stands still (tests/town_bench.gd compares)
@@ -69,6 +71,8 @@ func reset() -> void:
 	piles.clear()
 	_born.clear()
 	_queue_len.clear()
+	_tick_seen = -1
+	_builders.clear()
 	puffs.clear()
 	critters.clear()
 	_critter_towns.clear()
@@ -80,10 +84,13 @@ func update(delta: float) -> void:
 	time += delta
 	var w = host.world
 	var t0 := Time.get_ticks_usec()
-	_deliveries(w)
+	if w.tick != _tick_seen:   # what's read from the sim changes only on its ticks (20 a second)
+		_tick_seen = w.tick
+		_deliveries(w)
+		_buildings(w)
+		_workers(w)
+	_dust(w)
 	_decay(delta)
-	_workers(w)
-	_buildings(w)
 	_sync_piles(w)
 	if frames % 15 == 0:   # houses age slowly: a few times a second is plenty
 		_sync_growth(w)
@@ -273,18 +280,14 @@ func _workers(w) -> void:
 	var u = w.units
 	var now := _now(w)
 	var idle := []
+	_builders.clear()
 	for i in u.count():
 		var id: int = u.id[i]
 		var view = host.views.get(id)
 		if view == null or not w.types[u.kind[i]].worker:
 			continue
-		if view.job == "build" and view.struck and view.visible:
-			var at: Vector2 = host._work_point(i)
-			var d: Vector2 = at - view.position
-			var hit: Vector2 = view.ground() + d.normalized() * minf(10.0, d.length())
-			for k in 3:
-				puffs.append({"p": hit + Vector2(randf_range(-2, 2), randf_range(-1, 1)), "t": 0.0,
-					"v": Vector2(randf_range(-7, 7), randf_range(-6, -2))})
+		if u.task[i] == Economy.BUILD:
+			_builders.append(i)
 		if u.task[i] == Economy.NONE and u.moving[i] == 0 and u.orders[i].is_empty():
 			if not _idle_since.has(id):
 				_idle_since[id] = now
@@ -316,6 +319,24 @@ func _workers(w) -> void:
 			if other != null:
 				host.views[id].face_vec(other.position - host.views[id].position)
 		chores[id] = chore
+
+
+## Dust where a builder's blow lands: every frame, over the builders found on the last tick read
+## (unit slots stay put between ticks).
+func _dust(w) -> void:
+	var u = w.units
+	for i in _builders:
+		if i >= u.count():
+			continue
+		var view = host.views.get(u.id[i])
+		if view == null or not (view.job == "build" and view.struck and view.visible):
+			continue
+		var at: Vector2 = host._work_point(i)
+		var d: Vector2 = at - view.position
+		var hit: Vector2 = view.ground() + d.normalized() * minf(10.0, d.length())
+		for k in 3:
+			puffs.append({"p": hit + Vector2(randf_range(-2, 2), randf_range(-1, 1)), "t": 0.0,
+				"v": Vector2(randf_range(-7, 7), randf_range(-6, -2))})
 
 
 func _near_home(w, i: int) -> bool:
