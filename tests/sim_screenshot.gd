@@ -110,6 +110,8 @@ func _initialize() -> void:
 		view.world.tick = 20 * 754
 		view.world.winner = view.world.teams[0 if scene == "end" else 1]
 		view._show_pause_menu(true)
+	elif scene.begins_with("gate:"):
+		await _gate(view, scene.get_slice(":", 1), scene.get_slice(":", 2))
 	elif scene.begins_with("walls"):
 		await _walls(view, scene == "walls:far")
 	elif scene.begins_with("tip"):
@@ -345,6 +347,78 @@ func _walls(view, far := false) -> void:
 		if i >= 0 and w.units.x[i] > 16000 and w.units.x[i] < 16800:
 			break
 		await process_frame
+
+
+## A close-up of one gate in a wall line on open ground by side 0's Town Center (flat_test):
+## "gate:<kind>:<state>" with kind "stone" or "palisade", plus "y" for a line along sim y
+## ("stone", "stoney", "palisade", "palisadey"); state "site" (three workers dropped it on the
+## wall with a BUILD click and are building it, shot half done), "open" (finished, a worker
+## walking through) or "shut" (finished, an enemy spearman at it).
+func _gate(view, kind: String, state: String) -> void:
+	var w = view.world
+	var Economy = load("res://src/sim/economy.gd")
+	view.reveal = true
+	w.ages[0] = 2
+	var along := 1 if kind.ends_with("y") else 0
+	var wall := "wall" if kind.begins_with("stone") else "palisade"
+	var gate := "stone_gate" if kind.begins_with("stone") else "palisade_gate"
+	var a := Vector2i(8, 21) if along == 0 else Vector2i(26, 4)
+	var b := Vector2i(18, 21) if along == 0 else Vector2i(26, 16)
+	var g := Vector2i(12, 21) if along == 0 else Vector2i(26, 9)
+	var k: int = Economy.btype_of(w, wall)
+	for c in view.wall_cells(a, b):
+		var bi: int = Economy.place(w, 0, k, c.x, c.y)
+		w.buildings.done[bi] = 1
+		w.buildings.hp[bi] = w.btypes[k].hp
+	var gk: int = Economy.btype_of(w, gate)
+	var mid := Vector2i(g.x * 1000 + (1500 if along == 0 else 500), g.y * 1000 + (500 if along == 0 else 1500))
+	var side := Vector2i(0, 2500) if along == 0 else Vector2i(2500, 0)   # across the line
+	var ids := []
+	for i in w.units.count():
+		if w.units.owner[i] == 0 and w.types[w.units.kind[i]].worker and ids.size() < 3:
+			ids.append(w.units.id[i])
+	if state == "site":
+		for r in w.stock.size():
+			w.stock[r][0] = 500
+		w.issue(0, "build", {"ids": ids, "building": gate, "cx": g.x, "cy": g.y, "along": along})
+		view.clock.speed = 8.0
+		for f in 6000:
+			var gb := -1
+			for bi in w.buildings.count():
+				if w.buildings.kind[bi] == gk:
+					gb = bi
+			if gb >= 0 and w.buildings.progress[gb] * 2 >= int(w.btypes[gk].build_ticks):
+				break
+			await process_frame
+		view.clock.speed = 0.0
+	else:
+		for c in Economy._footprint(w, g.x, g.y, Economy.dims(w.btypes[gk], along)):
+			if w.map.occupied[c] != 0:
+				Economy.demolish(w, w.buildings.index_of(w.map.occupied[c]))
+		var gb: int = Economy.place(w, 0, gk, g.x, g.y, along)
+		w.buildings.done[gb] = 1
+		w.buildings.hp[gb] = w.btypes[gk].hp
+		if state == "shut":
+			w.issue(1, "spawn", {"slot": "spear", "count": 1, "x": mid.x + side.x, "y": mid.y + side.y})
+		else:   # the workers walk through, selected (their rings and health bars show)
+			w.issue(0, "move", {"ids": ids, "x": mid.x + side.x, "y": mid.y + side.y})
+			for id in ids:
+				view.selected[id] = true
+			view.clock.speed = 2.0
+		for f in 1200:
+			var i: int = w.units.index_of(ids[0])
+			if state == "shut" and f > 60:
+				break
+			var off := Vector2i(w.units.x[i] - mid.x, w.units.y[i] - mid.y) if i >= 0 else Vector2i(9999, 9999)
+			if along == 1:
+				off = Vector2i(off.y, off.x)
+			if state == "open" and absi(off.x) < 1500 and off.y > -400 and off.y < 0:   # in the gateway, just short of its middle line
+				view.clock.speed = 0.0
+				break
+			await process_frame
+	view.camera.zoom = Vector2(4.0, 4.0)
+	view._on_zoom()
+	view.camera.look_at_point(Iso.to_screen(mid.x, mid.y))
 
 
 ## The Town Center selected (or a worker: "tip:1" its build pages, "tip:2" the military page),
