@@ -1508,6 +1508,18 @@
     "aztec": 4
    },
    "default_creature": "human"
+  },
+  "hummingbird": {
+   "mount": "hummingbird",
+   "tags": {
+    "mounted": 1
+   }
+  },
+  "hummingbirds": {
+   "mount": "hummingbird",
+   "tags": {
+    "mounted": 1
+   }
   }
  }
 }

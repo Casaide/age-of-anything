@@ -26,16 +26,18 @@ func _initialize() -> void:
 	var ids: Array = args.slice(4)
 	var azimuth := PartBaker.AZIMUTH
 	var settings := {}   # leading az=, el=, outline=, bands= arguments set up the bake
-	while ids.size() > 0 and String(ids[0]).get_slice("=", 0) in ["az", "el", "outline", "bands"]:
-		settings[String(ids[0]).get_slice("=", 0)] = float(String(ids[0]).get_slice("=", 1))
+	while ids.size() > 0 and String(ids[0]).get_slice("=", 0) in ["az", "el", "outline", "bands", "unit"]:
+		var key := String(ids[0]).get_slice("=", 0)
+		var val := String(ids[0]).get_slice("=", 1)
+		settings[key] = val if key == "unit" else float(val)
 		ids = ids.slice(1)
 	azimuth = settings.get("az", azimuth)
 	var lib = DataLib.new()
 	var gen = Generator.new(lib)
 	var race: Dictionary = gen.generate(prompt, DataLib.load_json("res://data/rules/default.json"))
-	var base: Dictionary = race.units[1]   # the spear unit at its first age
+	var base: Dictionary = race.units[1]   # the spear unit at its first age (unit=<slot> for another)
 	for u in race.units:
-		if u.recipe.slot == "spear":
+		if u.recipe.slot == settings.get("unit", "spear"):
 			base = u
 	# A column is a head-gear concept id, or several slot swaps: "body=concept.x;legs=concept.y;
 	# head=concept.z;gear=concept.w" (gear=none for a bare head). Concepts borrow a real part's
@@ -54,14 +56,19 @@ func _initialize() -> void:
 		cols.append(spec)
 		for slot in spec:
 			var id: String = spec[slot]
-			if id == "none" or lib.parts.has(id) or slot in ["skin", "scale", "headpng"]:
+			if id == "none" or lib.parts.has(id) or slot in ["skin", "scale", "headpng", "mountalpha"]:
 				continue
 			var borrow: String = {"body": base.recipe.body, "head": base.recipe.head, "legs": "leg.human",
-				"torso": "armour.leather", "hand_l": "shield.round", "hand_r": "weapon.spear.wood", "back": "cape.cloth"}.get(slot, "helm.cap")
+				"torso": "armour.leather", "hand_l": "shield.round", "hand_r": "weapon.spear.wood", "back": "cape.cloth",
+				"mount": "body.pony", "mounthead": "head.pony", "mountback": "wings.feather"}.get(slot, "helm.cap")
 			var p: Dictionary = lib.part(borrow).duplicate(true)
 			p.id = id
 			if slot == "body" and spec.has("legs"):
 				p.legs.part = spec.legs
+			if slot == "mount" and not spec.has("legs"):
+				p.erase("legs")   # a flying mount with no legs to walk on
+			if slot == "mountback" and spec.has("mountalpha"):
+				p.blur = int(spec.mountalpha)
 			lib.parts[id] = p
 	var baker := PartBaker.new()
 	baker.art_scale = art
@@ -113,6 +120,12 @@ func _initialize() -> void:
 					r.parts.erase(key)
 				else:
 					r.parts[key] = spec[key]
+		if spec.has("mount"):   # a mount concept: mount=<body> [mounthead=<head>] [mountback=<wings>] [mountalpha=<0-100>]
+			var mc := "concept_mount_%d" % recipes.size()
+			lib.creatures[mc] = {"noun": "Mount", "body": spec.mount, "head": spec.get("mounthead", "head.pony"), "skins": ["pony_bay"], "mount": true}
+			r.mount = {"creature": mc, "skin": "pony_bay", "fused": false, "parts": {}}
+			if spec.has("mountback"):
+				r.mount.parts.back = spec.mountback
 		recipes.append(r)
 		if r.has("png"):
 			continue
