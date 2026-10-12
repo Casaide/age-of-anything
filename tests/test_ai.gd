@@ -60,6 +60,11 @@ func _init() -> void:
 		print("\n%d checks, %d failed" % [checks, failures])
 		quit(1 if failures > 0 else 0)
 		return
+	if args.size() > 1 and args[1] == "pick":   # just the counter-pick checks (seconds)
+		_test_pick(rules, gen)
+		print("\n%d checks, %d failed" % [checks, failures])
+		quit(1 if failures > 0 else 0)
+		return
 	if args.size() > 1 and args[1] == "reach":   # just the raid and walled-ford checks (a couple of minutes)
 		_test_respond(rules, rats, frogs)
 		_test_shelter(rules, rats, frogs)
@@ -68,6 +73,7 @@ func _init() -> void:
 		quit(1 if failures > 0 else 0)
 		return
 
+	_test_pick(rules, gen)
 	_test_wonder(rules, rats, frogs)
 	for pair in [[frogs, rats], [rats, frogs]]:
 		var r := _play(rules, pair, [Bot.new(0), EcoBot.new(1)], "bot %s vs passive %s" % [pair[0].name, pair[1].name])
@@ -378,6 +384,35 @@ func _test_levels(rules: Dictionary, a: Dictionary, b: Dictionary) -> void:
 ## trigger a response"). The bot's lone lumber camp far from home, a worker beside it, and a
 ## few enemy soldiers hacking at both: within seconds the bot sends soldiers there, pulls the
 ## worker away, and its soldiers come to blows with the raiders.
+## The Barracks' counter-pick (milestone 13, the swordsman line): spears with nothing seen, and
+## against cavalry; swords against spears and skirmishers, and (with military.building_foes on)
+## while the army goes for a wall.
+func _test_pick(rules: Dictionary, gen) -> void:
+	for prompt in ["greeks", "swamp frogs", "sewer rats", "egyptians"]:
+		var race: Dictionary = gen.generate(prompt, rules)
+		var w := World.new(SEED, SimMap.load_id(map_id), [race, race], rules)
+		for age in [1, 2]:
+			w.ages[0] = age
+			var bot := Bot.new(0)
+			var barracks := ["spear", "infantry"]
+			var seen := {}
+			for slot in ["spear", "skirmisher", "large"]:   # the foes' tags, as _enemy_tags counts them, for 4 of one line
+				var e: Dictionary = w.types[w.type_of(1, slot)].eval
+				var tags := {}
+				for t in e.tags:
+					tags[t] = 4
+				for c in e.bonus:
+					tags["bonus:" + c] = 4 * int(e.bonus[c])
+				seen[slot] = tags
+			check(bot.pick(w, barracks, {}) == "spear", "pick %s age %d: spears with nothing seen" % [prompt, age])
+			check(bot.pick(w, barracks, seen.large) == "spear", "pick %s age %d: spears against cavalry" % [prompt, age])
+			check(bot.pick(w, barracks, seen.spear) == "infantry", "pick %s age %d: swords against spears" % [prompt, age])
+			check(bot.pick(w, barracks, seen.skirmisher) == "infantry", "pick %s age %d: swords against skirmishers" % [prompt, age])
+			if int(bot.cfg.military.building_foes) > 0:   # (off for now: data/ai.json _doc_building_foes)
+				bot._aim = 1
+				check(bot.pick(w, barracks, bot._enemy_tags(w)) == "infantry", "pick %s age %d: swords for a wall in the way" % [prompt, age])
+
+
 ## The Wonder and the bot (data/ai.json "wonder"): an enemy Wonder, finished, is the first thing
 ## its soldiers go for (before the Town Center, without waiting for a wave); and a bot rich in
 ## age 3 builds one of its own.
