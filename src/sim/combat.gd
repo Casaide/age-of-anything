@@ -339,7 +339,8 @@ static func tick(w) -> void:
 				_lost(w, i)
 			continue
 		var gap := _gap(w, i, j, b)
-		if gap <= t.reach + (HOLD if t.ranged and u.moving[i] == 0 else 0):
+		var up := _height_step(w, i, j, b) if t.ranged else 0   # high ground: shooters reach further down, less far up
+		if gap <= t.reach + up * int(w.high.reach) + (HOLD if t.ranged and u.moving[i] == 0 else 0):
 			u.moving[i] = 0
 			if b >= 0:
 				hitters[b] = hitters.get(b, []) + [i]
@@ -348,12 +349,16 @@ static func tick(w) -> void:
 				if j >= 0:
 					var tt: Dictionary = w.types[u.kind[j]]
 					var d := damage(t.atk, tt.arm, tt.cls, maxi(int(c.min_damage), tt.get("min_damage", 0)))   # a sheep goes down in a few blows
+					if up < 0:
+						d = uphill(w, d)
 					hurt[j] += d
 					hurt_by[j] = u.id[i]
 					w.events.append({"type": "hit", "by": u.id[i], "to": u.id[j], "damage": d, "ranged": t.ranged})
 				else:
 					var bt: Dictionary = w.btypes[bs.kind[b]]
 					var d := damage(t.atk, w.bmods[bs.owner[b]][bs.kind[b]].arm, bt.cls, int(c.min_damage))   # armour with research
+					if up < 0:
+						d = uphill(w, d)
 					bhurt[b] += d
 					w.events.append({"type": "hit", "by": u.id[i], "to": bs.id[b], "damage": d, "ranged": t.ranged})
 		elif u.stance[i] == AUTO and posture == STAND:
@@ -395,22 +400,52 @@ static func _towers(w, hurt: PackedInt32Array, hurt_by: PackedInt32Array) -> voi
 		var mx: int = bs.cx[b] * SimMap.TILE + bs.sx[b] * SimMap.TILE / 2
 		var my: int = bs.cy[b] * SimMap.TILE + bs.sy[b] * SimMap.TILE / 2
 		var best := -1
-		var best_d: int = (bt.reach + s / 2) * (bt.reach + s / 2) + 1
+		var hills: bool = w.map.has_heights
+		var far: int = bt.reach + s / 2 + (int(w.high.reach) if hills else 0)
+		var best_d: int = far * far + 1
+		var lv: int = w.map.level[bs.cy[b] * w.map.width + bs.cx[b]]
+		var best_up := 0
 		for j in u.count():
 			if not w.is_foe(u.owner[j], bs.owner[b]):
 				continue
 			var d := Fixed.dist2(mx, my, u.x[j], u.y[j])
+			var up := 0
+			if hills:   # high ground: a tower on a hill reaches further down, less far up
+				up = signi(lv - w.map.level_at(u.x[j], u.y[j]))
+				var r: int = bt.reach + s / 2 + up * int(w.high.reach)
+				if d > r * r:
+					continue
 			if d < best_d:
 				best_d = d
 				best = j
+				best_up = up
 		if best < 0:
 			continue
 		var tt: Dictionary = w.types[u.kind[best]]
 		var dmg := damage(bt.atk, tt.arm, tt.cls, int(c.min_damage))
+		if best_up < 0:
+			dmg = uphill(w, dmg)
 		hurt[best] += dmg
 		hurt_by[best] = bs.id[b]
 		bs.cooldown[b] = bt.reload
 		w.events.append({"type": "hit", "by": bs.id[b], "to": u.id[best], "damage": dmg, "ranged": true})
+
+
+## High ground (milestone 15): 1 if unit i stands a level above its target (unit j or building
+## b), -1 if below, 0 on the level or on a flat map. A ramp counts as its foot.
+static func _height_step(w, i: int, j: int, b: int) -> int:
+	var m = w.map
+	if not m.has_heights:
+		return 0
+	var u = w.units
+	var at: int = m.level_at(u.x[i], u.y[i])
+	var to: int = m.level_at(u.x[j], u.y[j]) if j >= 0 else m.level[w.buildings.cy[b] * m.width + w.buildings.cx[b]]
+	return signi(at - to)
+
+
+## A shot up a hill: part of it falls short (rules.high_ground.uphill_damage_pct; at least 1).
+static func uphill(w, d: int) -> int:
+	return maxi(1, d * int(w.high.uphill_damage_pct) / 100)
 
 
 ## The edge-to-edge gap from unit i to unit j or building b, in milli-tiles.

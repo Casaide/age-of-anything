@@ -90,6 +90,8 @@ static func _update(w) -> void:
 			if w.teams[w.units.owner[i]] == w.teams[p]:
 				var t: Dictionary = w.types[w.units.kind[i]]
 				var r: int = (cfg.worker if t.worker else cfg.unit) + int(t.sight_add)   # research adds sight (Tech.retype)
+				if w.map.has_heights:
+					r += w.map.level_at(w.units.x[i], w.units.y[i]) * int(w.high.sight_unit)   # high ground sees further
 				var key: int = (w.units.y[i] / 1000 * w.map.width + w.units.x[i] / 1000) * 64 + r
 				if stamped.has(key):
 					continue
@@ -101,6 +103,8 @@ static func _update(w) -> void:
 				var t: Dictionary = w.btypes[bs.kind[b]]
 				var r: int = cfg.tower if t.get("attack", {}).size() > 0 else cfg.building
 				r += int(w.bmods[bs.owner[b]][bs.kind[b]].add.get("sight", 0))   # research (Tech.refresh)
+				if w.map.has_heights:
+					r += w.map.level[bs.cy[b] * w.map.width + bs.cx[b]] * int(w.high.sight_building)   # a tower on a hill sees further
 				_stamp(w, g, lit, bs.cx[b] + bs.sx[b] / 2, bs.cy[b] + bs.sy[b] / 2, r + maxi(bs.sx[b], bs.sy[b]) / 2)
 		w.fog[p] = g
 		w.fog_lit[p] = lit
@@ -138,8 +142,9 @@ static func _remember(w, p: int) -> void:
 static func _stamp(w, g: PackedByteArray, lit: PackedInt32Array, cx: int, cy: int, r: int) -> void:
 	var wd: int = w.map.width
 	var ht: int = w.map.height
-	if _blocked_near(w.map, cx, cy, r):
-		_stamp_los(w.map, g, lit, cx, cy, r)
+	var v: int = w.map.level[cy * wd + cx]
+	if _blocked_near(w.map, cx, cy, r, v):
+		_stamp_los(w.map, g, lit, cx, cy, r, v)
 		return
 	var offs := _circle(r)
 	for k in range(0, offs.size(), 2):
@@ -152,28 +157,32 @@ static func _stamp(w, g: PackedByteArray, lit: PackedInt32Array, cx: int, cy: in
 				lit.append(c)
 
 
-## Is there anything that blocks sight (a tree) within r of (cx, cy)? Counted per chunk, so
-## open country costs a few lookups and the plain stamp runs.
-static func _blocked_near(m, cx: int, cy: int, r: int) -> bool:
+## Is there anything that blocks sight (a tree, or ground higher than the viewer's level v)
+## within r of (cx, cy)? Counted per chunk, so open country costs a few lookups and the plain
+## stamp runs.
+static func _blocked_near(m, cx: int, cy: int, r: int, v: int) -> bool:
 	var C: int = m.CHUNK
 	var cw: int = (m.width + C - 1) / C
 	var ch: int = (m.height + C - 1) / C
 	for y in range(maxi(cy - r, 0) / C, mini((cy + r) / C, ch - 1) + 1):
 		for x in range(maxi(cx - r, 0) / C, mini((cx + r) / C, cw - 1) + 1):
-			if m.opaque_chunks[y * cw + x] > 0:
+			if m.opaque_chunks[y * cw + x] > 0 or m.level_chunks[y * cw + x] > v:
 				return true
 	return false
 
 
 ## The circle with line of sight: a cell is seen if the cell before it on the line from the
 ## centre was seen and doesn't block (the first tree of a forest is seen, not what's behind it).
-static func _stamp_los(m, g: PackedByteArray, lit: PackedInt32Array, cx: int, cy: int, r: int) -> void:
+## Ground higher than the viewer's level v blocks like a tree: from below you see a hill's rim,
+## not what stands on it beyond the edge.
+static func _stamp_los(m, g: PackedByteArray, lit: PackedInt32Array, cx: int, cy: int, r: int, v: int) -> void:
 	var rays: Array = _ray_table(r)
 	var offs: PackedInt32Array = rays[0]
 	var par: PackedInt32Array = rays[1]
 	var wd: int = m.width
 	var ht: int = m.height
 	var op: PackedByteArray = m.opaque
+	var lv: PackedByteArray = m.level
 	var n := par.size()
 	var seen := PackedByteArray()   # per offset: 1 seen, 2 seen and sight carries on past it
 	seen.resize(n)
@@ -188,7 +197,7 @@ static func _stamp_los(m, g: PackedByteArray, lit: PackedInt32Array, cx: int, cy
 		if g[c] != VISIBLE:
 			g[c] = VISIBLE
 			lit.append(c)
-		seen[k] = 1 if op[c] == 1 and k > 0 else 2
+		seen[k] = 1 if (op[c] == 1 or lv[c] > v) and k > 0 else 2
 
 
 ## Offsets of the sight circle ordered ring by ring (Chebyshev distance), each with the index
