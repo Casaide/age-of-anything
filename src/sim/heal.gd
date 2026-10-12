@@ -5,7 +5,7 @@ extends RefCounted
 ## Static functions over the World `w`, like combat.gd. Integers only, slot order.
 ##
 ## Data (rules combat): heal_amount hp per heal (times the unit's heal stat), heal_reload
-## ticks between heals, heal_range (edge to edge, milli-tiles) to heal from, heal_sight
+## ticks between heals (a healer stands still that long before each one: none on the move), heal_range (edge to edge, milli-tiles) to heal from, heal_sight
 ## (centre to centre) to look for the wounded in. Not itself, not animals, not buildings.
 
 const Fixed := preload("res://src/sim/fixed.gd")
@@ -61,7 +61,11 @@ static func tick(w) -> void:
 				u.moving[i] = 0
 			if u.stance[i] == Combat.AUTO:
 				u.stance[i] = Combat.NONE
-			if u.cooldown[i] == 0:
+			if u.moving[i] != 0:
+				# Walking where it was sent: no healing on the move (Dominic: they seemed to walk
+				# and heal); it has to stand a whole heal_reload first.
+				u.cooldown[i] = maxi(u.cooldown[i], int(c.heal_reload))
+			elif u.cooldown[i] == 0:
 				u.cooldown[i] = int(c.heal_reload)
 				var amount: int = int(c.heal_amount) * int(t.eval.heal)
 				heals[j] += amount
@@ -70,7 +74,9 @@ static func tick(w) -> void:
 			tending[j] -= 1
 			_done(w, i)   # stand ground heals only who it can reach; or the patient got away
 		elif free:
-			# Walk up to the patient (re-aimed on re-plan beats, like a chase).
+			# Walk up to the patient (re-aimed on re-plan beats, like a chase); arriving, it
+			# stops and tends for a whole heal_reload before the first heal lands.
+			u.cooldown[i] = maxi(u.cooldown[i], int(c.heal_reload))
 			if u.moving[i] == 0 or (w.tick + u.id[i]) % w.REPLAN_EVERY == 0:
 				if Flow.clear_line(w.map, u.x[i], u.y[i], u.x[j], u.y[j], w.lane(i)):
 					w.order_direct(i, u.x[j], u.y[j])

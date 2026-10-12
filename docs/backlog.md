@@ -190,6 +190,8 @@ A new creature: bears. Not in the data yet. To plan, concept-first: how big a be
 four with a rider; a bear cavalry mount for other races), head and fur skins, a culture or favoured families
 (forest? northern?), lexicon words (bear, bears, grizzly, panda?, polar?), `giant_ok`, gear fit, its siege
 take and architecture, and pricing (big hp through points, no special case).
+Dominic's direction (2026-10-13): two legs, armoured, more like the Greeks: dignified and intelligent,
+the smarter counterpart to the rats. Bears also rideable as a mount for some races.
 
 ### Eras and themes as a layer (Dominic, 2026-10-13: later; "we're not ready for later ages like that yet")
 

@@ -158,7 +158,9 @@ func generate(prompt: String, rules: Dictionary, reroll := 0) -> Dictionary:
 		ctx.rng = rngs[k]
 		for age in range(int(slot_def.tier) + 1, int(rules.get("ages", 1)) + 1):
 			ctx.age = age
-			var up := _upgrade(units[k].line[-1].recipe, slot_def, ctx)
+			# A line that doesn't upgrade (rules "upgrades": false, the healer: Dominic) stays as
+			# it came; the tech tree shows no second tier.
+			var up: Dictionary = units[k].line[-1].recipe if not slot_def.get("upgrades", true) else _upgrade(units[k].line[-1].recipe, slot_def, ctx)
 			units[k].line.append({"age": age, "recipe": up, "eval": Pricing.evaluate(up, lib, rules)})
 	ctx.rng = rng
 
