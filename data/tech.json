@@ -701,21 +701,51 @@
   },
   {
    "id": "stonecutting",
-   "status": "planned",
    "name": "Stonecutting",
    "desc": "Cut stone fits tighter.",
+   "cost": {
+    "food": 300,
+    "stone": 150
+   },
+   "time": 50,
    "building": "university",
    "age": 3,
-   "effect": "Buildings +10% HP, +1 melee, +1 pierce armour"
+   "effects": [
+    {
+     "building": "all",
+     "stat": "hp",
+     "pct": 10
+    },
+    {
+     "building": "all",
+     "stat": "armour.melee",
+     "add": 1
+    },
+    {
+     "building": "all",
+     "stat": "armour.pierce",
+     "add": 1
+    }
+   ]
   },
   {
    "id": "lifting_frames",
-   "status": "planned",
    "name": "Lifting Frames",
-   "desc": "Frames and pulleys lift the heavy parts.",
+   "desc": "Frames and pulleys lift the heavy parts: workers build faster.",
+   "cost": {
+    "food": 200,
+    "wood": 100
+   },
+   "time": 40,
    "building": "university",
    "age": 3,
-   "effect": "Workers build 20% faster"
+   "effects": [
+    {
+     "tag": "worker",
+     "stat": "build_speed",
+     "pct": 20
+    }
+   ]
   },
   {
    "id": "bastion",
@@ -739,57 +769,143 @@
   },
   {
    "id": "slit_windows",
-   "status": "planned",
    "name": "Slit Windows",
    "desc": "Shoot out, but not in.",
+   "cost": {
+    "food": 200,
+    "wood": 150,
+    "gold": 50
+   },
+   "time": 40,
    "building": "university",
    "age": 3,
-   "effect": "Towers, Castles and Town Centers +1 range"
+   "effects": [
+    {
+     "building": [
+      "watchtower",
+      "bastion",
+      "castle",
+      "town_center"
+     ],
+     "stat": "range",
+     "add": 1
+    }
+   ]
   },
   {
    "id": "thick_walls",
-   "status": "planned",
    "name": "Thick Walls",
-   "desc": "Twice the stone.",
+   "desc": "Twice as thick, twice as hard to knock down.",
+   "cost": {
+    "food": 200,
+    "stone": 100
+   },
+   "time": 50,
    "building": "university",
    "age": 3,
-   "effect": "Walls and gates +100% HP"
+   "effects": [
+    {
+     "building": [
+      "palisade",
+      "palisade_gate",
+      "wall",
+      "stone_gate"
+     ],
+     "stat": "hp",
+     "pct": 100
+    }
+   ]
   },
   {
    "id": "siege_wrights",
-   "status": "planned",
    "name": "Siege Wrights",
    "desc": "Better engines from better builders.",
+   "cost": {
+    "food": 200,
+    "wood": 200
+   },
+   "time": 40,
    "building": "university",
    "age": 3,
-   "effect": "Siege engines +1 range"
+   "effects": [
+    {
+     "tag": "siege",
+     "stat": "range",
+     "add": 1
+    }
+   ],
+   "note": "siege units come in milestone 13; the effect reaches them by their `siege` tag"
   },
   {
    "id": "creature_research",
-   "status": "planned",
-   "name": "Creature research",
-   "desc": "Every creature's own trick, learned at the Castle.",
+   "name": "Creature's Own Way",
+   "desc": "Your creature's own trick, learned at the Castle. Until each creature has its own (milestone 14), a hardy one: soldiers +5 HP.",
+   "cost": {
+    "food": 200,
+    "gold": 150
+   },
+   "time": 50,
    "building": "castle",
    "age": 3,
-   "effect": "Each creature's own (milestone 12 phase 2)"
+   "effects": [
+    {
+     "tag": "all",
+     "not": [
+      "worker",
+      "heal"
+     ],
+     "stat": "hp",
+     "add": 5
+    }
+   ],
+   "note": "the race's creature research slot (milestone 14 fills it from the creature: Gnawing Teeth, Shell Polish...); until then this generic placeholder so it can be bought"
   },
   {
    "id": "culture_research",
-   "status": "planned",
-   "name": "Culture research",
-   "desc": "Every culture's own trick, learned at the Castle.",
+   "name": "Culture's Own Way",
+   "desc": "Your culture's own trick, learned at the Castle. Until each culture has its own (milestone 14), a drilled one: soldiers 5% faster.",
+   "cost": {
+    "food": 200,
+    "gold": 150
+   },
+   "time": 50,
    "building": "castle",
    "age": 3,
-   "effect": "Each culture's own (milestone 12 phase 2)"
+   "effects": [
+    {
+     "tag": "all",
+     "not": [
+      "worker",
+      "heal"
+     ],
+     "stat": "speed",
+     "pct": 5
+    }
+   ],
+   "note": "the race's culture research slot (milestone 14 fills it from the culture: Shield Wall, Long Spears...); until then this generic placeholder so it can be bought"
   },
   {
    "id": "war_drums",
-   "status": "planned",
    "name": "War Drums",
    "desc": "Drums call the soldiers in.",
+   "cost": {
+    "food": 250,
+    "gold": 200
+   },
+   "time": 50,
    "building": "castle",
    "age": 3,
-   "effect": "Military units train 30% faster"
+   "effects": [
+    {
+     "tag": "all",
+     "not": [
+      "worker",
+      "heal"
+     ],
+     "stat": "train_time",
+     "pct": -30
+    }
+   ]
   }
  ],
  "line_upgrades": {

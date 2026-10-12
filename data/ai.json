@@ -13,9 +13,9 @@
    },
    "3": {
     "food": 45,
-    "wood": 30,
+    "wood": 25,
     "gold": 20,
-    "stone": 5
+    "stone": 10
    }
   },
   "max_workers": 30,
@@ -59,6 +59,16 @@
    "workers": 21
   },
   {
+   "building": "university",
+   "age": 3,
+   "workers": 22
+  },
+  {
+   "building": "castle",
+   "age": 3,
+   "workers": 24
+  },
+  {
    "building": "barracks",
    "age": 2,
    "workers": 22
@@ -99,8 +109,9 @@
   "_doc_healers": "healers (Town Center, from age 2): one per per_army soldiers, up to max per age; kept `behind` tiles back from the army's middle (towards home); idle ones further than `follow` tiles from that spot are sent there every `every` seconds"
  },
  "research": {
-  "_doc": "Besides line upgrades (and gathering, for building-up levels): the economy research it buys, and the soldiers' research it buys once that research reaches at least army_min of its soldiers (the armoury track for what it fields). Both keep back the next age's cost once the bot has the workers to age up.",
+  "_doc": "Besides line upgrades (and gathering, for building-up levels): the economy research it buys (economy, then buildings: the University's), and the soldiers' research it buys once that research reaches at least army_min of its soldiers (the armoury track for what it fields). Both keep back the next age's cost once the bot has the workers to age up.",
   "economy": ["baskets", "stone_axes", "picks", "big_pockets", "ploughs", "saws", "ore_carts", "fallow_fields", "pack_frames"],
+  "buildings": ["lifting_frames", "stonecutting"],
   "army_min": 4
  },
  "wonder": {

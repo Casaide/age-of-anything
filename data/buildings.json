@@ -10,6 +10,7 @@
    "mining_camp",
    "market",
    "armoury",
+   "university",
    "town_center"
   ],
   "military": [
@@ -18,6 +19,7 @@
    "stable",
    "watchtower",
    "outpost",
+   "castle",
    "palisade",
    "palisade_gate",
    "wall",
@@ -578,16 +580,58 @@
    "idle_note": "Siege engines come later."
   },
   "university": {
-   "status": "planned",
    "name": "University",
    "desc": "Research for buildings, towers and siege: stronger walls, taller towers, longer reach.",
-   "age": 3
+   "size": 3,
+   "hp": 2100,
+   "cost": {
+    "food": 0,
+    "wood": 200,
+    "stone": 50
+   },
+   "build_time": 60,
+   "pop": 0,
+   "house": false,
+   "drop_off": [],
+   "trains": [],
+   "age": 3,
+   "hotkey": "",
+   "armour": {
+    "melee": 2,
+    "pierce": 8
+   },
+   "note": "building, tower, wall and siege research (milestone 12 phase 4)"
   },
   "castle": {
-   "status": "planned",
    "name": "Castle",
-   "desc": "A fortress that shoots and shelters: trains the race's own unique unit, sappers and the great sling, and holds its own research.",
-   "age": 3
+   "desc": "A stone fortress that looses a volley of arrows at every enemy in reach and shelters your soldiers. Its own research: War Drums and your race's two tricks.",
+   "size": 4,
+   "hp": 4800,
+   "cost": {
+    "food": 0,
+    "wood": 0,
+    "stone": 650
+   },
+   "build_time": 200,
+   "pop": 10,
+   "house": false,
+   "drop_off": [],
+   "trains": [],
+   "age": 3,
+   "hotkey": "",
+   "armour": {
+    "melee": 8,
+    "pierce": 11
+   },
+   "attack": {
+    "damage": "pierce",
+    "attack": 11,
+    "range": 8,
+    "reload": 40,
+    "arrows": 4
+   },
+   "garrison": 20,
+   "note": "shoots `arrows` arrows a volley, each at the next-nearest foe (src/sim/combat.gd _towers); garrison: how many units shelter inside (the garrison system, milestone 12 phase 3); trains nothing yet (unique unit, sapper and great sling are milestone 13)"
   },
   "wonder": {
    "name": "Wonder",

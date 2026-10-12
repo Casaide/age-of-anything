@@ -171,6 +171,9 @@ static func effect_text(effects: Array) -> String:
 ## Who an effect reaches, in words: "Workers", "Foot melee units", "Buildings", "Farms".
 static func _subject(e: Dictionary) -> String:
 	if e.has("building"):
+		if e.building is Array:
+			var names: Array = e.building.map(func(b): return String(b).capitalize() + "s")
+			return names[0] if names.size() == 1 else ", ".join(names.slice(0, -1)) + " and " + names[-1]
 		return "Buildings" if e.building == "all" else String(e.building).capitalize() + "s"
 	var nots: Array = e.get("not", [])
 	var who: String = {"worker": "Workers", "all": "Every unit"}.get(e.tag, "%s units" % String(e.tag).capitalize())
@@ -198,6 +201,7 @@ static func _phrase(stat: String, n: int, pct: bool) -> String:
 	match stat:
 		"hp": return "%+d HP" % n
 		"carry": return "carry %+d" % n
+		"range": return "%+d range" % n
 		"trade_fee": return "trade fee %d points %s (selling pays more)" % [a, "lower" if n < 0 else "higher"]
 	if stat.begins_with("armour."):
 		return "%+d %s armour" % [n, stat.trim_prefix("armour.")]
