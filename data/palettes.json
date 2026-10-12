@@ -91,6 +91,18 @@
   "sheep": [
    "#e4dccb",
    "#2e2622"
+  ],
+  "hummingbird_ruby": [
+   "#22a060",
+   "#d0103a"
+  ],
+  "hummingbird_violet": [
+   "#1c8c84",
+   "#7a3ad0"
+  ],
+  "hummingbird_fire": [
+   "#5a9a2a",
+   "#f06a1a"
   ]
  },
  "materials": {

@@ -43,7 +43,8 @@ map; the code says the details.
    sockets for its current facing, layered by depth (a cape draws over the body walking away, a
    far shield under it), animated in 2D (walk cycles, hops, work blows, attacks). A unit picks
    the facing that best fits its movement on screen, with hysteresis, and rebuilds when it
-   changes.
+   changes. The bake's alpha is hard, so see-through is the view's job: a part with `blur`
+   in parts.json (a hummingbird's wings) is drawn at that opacity over the body and flickers.
 
 ## Buildings, props, terrain
 
@@ -125,6 +126,7 @@ shapes at once). Close up and at game size:
 ```sh
 godot --path . --script res://tests/facing_sheet.gd -- out.png "prompt" [zoom]          # a roster in all 8 facings ("animals" too)
 godot --path . --script res://tests/concept_sheet.gd -- out.png 14 1 "prompt" [az=215] "gear=..." ...   # one unit, close, options side by side
+godot --path . --script res://tests/concept_sheet.gd -- out.png 4 2 "forest folk" unit=large "mount=concept.x;mounthead=concept.empty;mountback=concept.w;mountalpha=70"   # mount concepts under a rider
 godot --path . --script res://tests/building_sheet.gd -- out.png 2 type:arch prop.quarry.1300.0 ...
 godot --path . --script res://tests/building_sheet.gd -- out.png 2 stilt_house tree.1.pine.0 tree.1.swamp.1.3 bridge.1.3.0.1   # trees (seed.species.style[.stage]), bridges (seed.length.style[.broken])
 godot --path . --script res://tests/building_variants.gd -- out.png 1.5   # every variant of every culture

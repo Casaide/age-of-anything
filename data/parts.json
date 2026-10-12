@@ -896,6 +896,219 @@
   "points": 0
  },
  {
+  "id": "body.hummingbird",
+  "slot": "body",
+  "noun": "Hummingbird",
+  "points": 9,
+  "tags": [
+   "bird",
+   "mount",
+   "fast"
+  ],
+  "stats": {
+   "hp": 42,
+   "speed": 17,
+   "armour": {
+    "melee": 0,
+    "pierce": 2
+   },
+   "bonus": {
+    "ranged": 3
+   }
+  },
+  "sockets": {
+   "head": [
+    11,
+    -25
+   ],
+   "hand_r": [
+    0,
+    -13
+   ],
+   "hand_l": [
+    0,
+    -13
+   ],
+   "torso": [
+    0,
+    -14
+   ],
+   "back": [
+    5,
+    -20
+   ],
+   "seat": [
+    -2,
+    -20
+   ]
+  },
+  "torso_scale": [
+   1.1,
+   0.85
+  ],
+  "shapes": [
+   {
+    "t": "poly",
+    "p": [
+     [
+      -8,
+      -11
+     ],
+     [
+      -17,
+      -6
+     ],
+     [
+      -15,
+      -9
+     ],
+     [
+      -17,
+      -12
+     ]
+    ],
+    "ch": "skin2"
+   },
+   {
+    "t": "ellipse",
+    "c": [
+     0,
+     -14
+    ],
+    "r": [
+     10,
+     5.5
+    ],
+    "ch": "skin"
+   },
+   {
+    "t": "ellipse",
+    "c": [
+     8,
+     -20
+    ],
+    "r": [
+     4,
+     3.6
+    ],
+    "ch": "skin2"
+   }
+  ],
+  "note": "forest cavalry (HB1, Dominic 2026-10-13): a big hummingbird that hovers; no legs to walk on. With its wings (wings.hummingbird, innate, priced as a part) it flies over walls and water"
+ },
+ {
+  "id": "head.hummingbird",
+  "slot": "head",
+  "sockets": {
+   "top": [
+    0,
+    -4
+   ]
+  },
+  "tags": [],
+  "stats": {},
+  "points": 0,
+  "shapes": [
+   {
+    "t": "ellipse",
+    "c": [
+     0,
+     0
+    ],
+    "r": [
+     4.5,
+     4
+    ],
+    "ch": "skin"
+   },
+   {
+    "t": "line",
+    "p": [
+     [
+      4,
+      0
+     ],
+     [
+      20,
+      1.5
+     ]
+    ],
+    "w": 1.2,
+    "ch": "leather"
+   },
+   {
+    "t": "circle",
+    "c": [
+     2,
+     -1
+    ],
+    "r": 0.9,
+    "ch": "eye"
+   }
+  ]
+ },
+ {
+  "id": "wings.hummingbird",
+  "slot": "back",
+  "tags": [
+   "flying"
+  ],
+  "stats": {
+   "speed": 2,
+   "hp": -2
+  },
+  "points": 4,
+  "innate": true,
+  "blur": 70,
+  "shapes": [
+   {
+    "t": "poly",
+    "p": [
+     [
+      0,
+      0
+     ],
+     [
+      -4,
+      -18
+     ],
+     [
+      -1,
+      -21
+     ],
+     [
+      3,
+      -6
+     ]
+    ],
+    "ch": "white"
+   },
+   {
+    "t": "poly",
+    "p": [
+     [
+      0,
+      0
+     ],
+     [
+      -10,
+      -12
+     ],
+     [
+      -8,
+      -15
+     ],
+     [
+      2,
+      -4
+     ]
+    ],
+    "ch": "white"
+   }
+  ],
+  "_doc": "innate: grown, not worn: the generator never picks it as gear; a creature's own `parts` put it on. blur: drawn see-through (this opacity, percent) and flickering over the body"
+ },
+ {
   "id": "leg.capybara",
   "slot": "leg",
   "shapes": [

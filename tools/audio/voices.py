@@ -176,7 +176,29 @@ def capybara(rng, kind):
     return add(chirp(2000.0, 900.0, 0.4), delay_start(purr(0.3, 18.0), 0.1))
 
 
+def hummingbird(rng, kind):
+    """Sharp little 'tsip' chips over the low hum of its wings."""
+    def chip(f0, f1, dur):
+        n = seconds(dur)
+        return mul(add(sine(n, _contour(f0, f1, dur)), gain(sine(n, _contour(f0 * 1.5, f1 * 1.5, dur)), 0.2)), env(n, 0.003, dur * 0.5, 0.3, 0.01))
+    def hum(dur, f):
+        n = seconds(dur)
+        wob = lambda t: f * (1.0 + 0.04 * math.sin(TAU * 7.0 * t))
+        return gain(mul(lowpass(pulse_train(n, wob, 0.4), 900.0), env(n, 0.04, dur * 0.4, 0.7, 0.08)), 0.7)
+    f = 4200.0 * rng.uniform(0.94, 1.06)
+    if kind == "select":
+        return add(gain(hum(0.22, 62.0), 0.6), chip(f, f * 1.25, 0.05))
+    if kind == "ack":
+        out = gain(hum(0.32, 66.0), 0.6)
+        for k in range(rng.choice([2, 3])):
+            mix_into(out, chip(f * rng.uniform(0.95, 1.05), f * 1.3, 0.04), seconds(0.03 + k * 0.07))
+        return out
+    out = gain(hum(0.5, 70.0), 0.5)   # the hum winds down under a falling squeak
+    mix_into(out, chip(f * 1.1, f * 0.55, 0.28), 0)
+    return out
+
+
 CREATURES = {"frog": frog, "rat": rat, "human": human, "spider": spider, "beetle": beetle,
-             "pony": pony, "centaur": centaur, "capybara": capybara}
+             "pony": pony, "centaur": centaur, "capybara": capybara, "hummingbird": hummingbird}
 KINDS = {"select": 2, "ack": 3, "die": 2}   # takes per kind
 PEAK_DB = -4.0
