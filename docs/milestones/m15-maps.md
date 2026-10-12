@@ -61,7 +61,7 @@ a legend into `data/terrain.json` (`data/maps/*.json`), the view builds tiles an
 
 ## Checklist
 - [ ] Plan approved by Dominic
-- [ ] 1. Resource audit, bigger 1v1
+- [x] 1. Resource audit, bigger 1v1 (built 2026-10-12; two sizes waiting for Dominic's pick by playing)
 - [ ] 2. Trees
 - [ ] 3. Rivers, fords, bridges
 - [ ] 4. Worn paths
@@ -71,6 +71,41 @@ a legend into `data/terrain.json` (`data/maps/*.json`), the view builds tiles an
 - [ ] Archive: pictures taken along the way, journal, decisions, timeline
 
 ## Results
+
+### Phase 1: resource audit and the bigger 1v1 (2026-10-12, Claude; moved ahead of milestone 13 by Dominic)
+Tools: `tests/resource_audit.gd -- <map> [minutes] [radius]` counts each resource within 16 tiles of
+each start and in contested ground, then plays bot vs bot, bot vs passive and "peace" (two bots that
+never attack) for up to 40 minutes, printing per minute what each side gathered, what's left near
+home, idle and far workers, and when each resource ran out near home. `tools/maps/reed_meadow.py`
+builds both new maps from one layout, turned half a turn for the second start (rotational symmetry,
+asserted). Maps can now carry their own animals (`"animals"`, the `data/animals.json` spawn shape,
+with herds via `"size"`) and `"symmetry": "rotate"` mirrors them for the second start.
+
+| | flat_test (first Reed Meadow) | reed_meadow 64 x 64 | reed_meadow_large 88 x 88 |
+|---|---|---|---|
+| per start (16 tiles) F/W/S/G | 1620 / 4900 / 1400 / 3200 | 3480 / 14900 / 3500 / 6400 | 3900 / 14400 / 3500 / 6400 |
+| contested F/W/S/G | 1260 / 2600 / 0 / 0 | 1680 / 7200 / 3500 / 6400 | 2040 / 27600 / 7000 / 12800 |
+| animals per start | 4 sheep, 1 boar | 8 sheep, 2 deer herds of 3, 2 boar | the same (+ a wild herd near) |
+| peace: wild food gone near home | 7-9 min | 17-18 min | 16-21 min |
+| peace: wood gone near home | 21-23 min (whole map dry at 32) | never (6700-7700 left at 40) | never (7500-9700 left) |
+| peace: gold gone near home | 22-36 min (whole map dry at 38) | 37:30 / never | never |
+| peace: sim tick avg (machine loaded) | 1.96 ms (25 min) | 1.57-1.85 ms | 2.4-3.0 ms |
+
+Per start: 8 bug bushes, 4 sheep by the Town Center and 2 pairs further out, 2 deer herds and 2 boar
+within 9-15 tiles, a ragged reed line along the two map edges behind the base plus groves, 2 stone
+(5 tiles) and 2 gold (4 tiles) deposits. Contested: gold on the swamp band (equidistant), stone by the
+pond, reed beds; the large map adds wing gold and stone, more reeds and a bush patch in the middle.
+
+Bot matches (test_ai with a map argument): all pass on reed_meadow (median 11:45); on the large map
+everything passes but Easy's army in the first ten minutes (26 pop against a cap of 25: a richer map
+feeds a bigger Easy army) and one bot-vs-bot match ran 21:30. Camera bounds, minimap, fog and the
+lobby card all scale from the map size; nothing broke at 88 x 88. Flow fields cost more there (full
+fields are re-solved whenever a resource tile runs out, 6000+ cells each); the average holds the
+budget, the worst ticks spike. A follow-up for phase 7: patch opened cells into cached fields instead
+of dropping them.
+
+Bot notes found on the way (not map problems): after wild food the bots farm slowly (30-130 food a
+minute at 30 workers), and the bots' 30-worker cap makes a 40-minute economy smaller than a player's.
 
 ## Changes from the original plan
 
