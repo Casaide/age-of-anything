@@ -2,8 +2,8 @@
 
 **Status:** planned (after milestone 12; concept rounds can start earlier)
 **Exit criterion:** the tech tree page shows no blank nodes for land; every line trains, fights by
-its counters, and the AI uses it; a balance round robin at ages 3 and 4 with no line more than 20%
-off at equal cost; Dominic plays a match using siege and mystics.
+its counters, and the AI uses it; a balance round robin at ages 2 and 3 with no line more than 20%
+off at equal cost; Dominic plays a match using siege and healers.
 
 The second half of the full land tree (Dominic split it, 2026-10-11). The tree itself, with every
 line, its building, ages and counters, is in `m12-tech-tree.md` ("Unit lines"). Milestone 12
@@ -14,15 +14,15 @@ in `data/rules/*.json` with `"status": "planned"`.
 
 | Building | Lines | New systems |
 |---|---|---|
-| Barracks | Swordsman (1-4), Raider (3-4) | none: parts exist (swords, clubs); raider = light, fast |
-| Archery Range | Mounted Archer (3-4) | none: the generator already makes horse archers |
-| Stable | Scout (2-4), War Beast (3-4) | big beasts (bodies) |
-| Siege Workshop | Ram, Catapult, Bolt Thrower (3-4), Siege Tower (4) | siege bodies; splash, minimum range, attack vs buildings, carrying units over walls |
-| Castle | Unique (3, elite 4), Sapper (3), Great Sling (4) | the unique slot's bigger budget; self-destruct; pack/unpack |
-| Temple | Mystic (3-4) + six research | healing, conversion |
+| Barracks | Swordsman (1-3), Raider (3) | none: parts exist (swords, clubs); raider = light, fast |
+| Archery Range | Mounted Archer (3) | none: the generator already makes horse archers |
+| Stable | Scout (2-3), War Beast (3) | big beasts (bodies) |
+| Siege Workshop | Ram, Catapult, Bolt Thrower, Siege Tower (3) | siege bodies; splash, minimum range, attack vs buildings, carrying units over walls |
+| Castle | Unique, Sapper, Great Sling (3) | the unique slot's bigger budget; self-destruct; pack/unpack |
+| Town Center | Healer (2-3) | healing (Dominic, 2026-10-12: the Temple and conversion are cut) |
 | Market | Trade Cart (2) + cart research | trade routes between your markets |
 
-Out: relics (backlog), naval, gunpowder.
+Out: relics, conversion and the Temple (cut 2026-10-12), naval, gunpowder.
 
 ## Plan
 
@@ -40,19 +40,19 @@ picks), then build, tests, archive pictures.
    family's own take (a beetle-drawn ram, a frog catapult on a lily-pad sledge, a rat bottle-cap
    sling, timber engines for humans). Then build them as parts and recipes; Siege Workshop trains.
 4. **Castle units.** The unique unit: a slot with a bigger point budget, picked from the prompt's
-   signature words (the generator's showcase: "romans" -> a testudo legionary); its elite step at
-   age 4. The sapper (walks up and blows a hole in a wall). The great sling (long-range anti-building,
+   signature words (the generator's showcase: "romans" -> a testudo legionary); no elite step
+   (three ages). The sapper (walks up and blows a hole in a wall). The great sling (long-range anti-building,
    packs and unpacks).
-5. **Mystics.** Staff and robes concept round; heal nearby wounded; convert an enemy unit after a
-   channel (large units and beasts first; buildings and siege with Deep Faith); a recharge between
-   conversions; the six Temple research. The counter: scouts and raiders.
+5. **Healers.** The Town Center trains a healer from age 2 (Dominic, 2026-10-12): it heals nearby
+   wounded friends, never fights; concept round for its look per family. Built early, see the
+   milestone 12 notes; the counter is scouts and raiders.
 6. **Trade carts.** Between two of your markets: gold by distance, carts walk the route; the
    market's cart research (Pack Animals, Merchant Halls).
 7. **War beasts.** Concept round: elephants for humans, giant toads for frogs, capybara-scale beasts
-   for rats, a rhino beetle, a tarantula; tanky vs buildings and infantry, weak to spears and mystics.
+   for rats, a rhino beetle, a tarantula; tanky vs buildings and infantry, weak to spears.
 8. **AI.** The bot trains every line by its counter-reading; uses siege against towers and walls,
-   mystics behind its army, trade when it has two markets.
-9. **Balance and exit check.** `tests/balance.gd` round robin at ages 3 and 4 with every line;
+   healers behind its army, trade when it has two markets.
+9. **Balance and exit check.** `tests/balance.gd` round robin at ages 2 and 3 with every line;
    no line more than 20% off at equal cost (or price-by-simulation, with Dominic's go-ahead);
    Dominic's match.
 
@@ -62,7 +62,7 @@ picks), then build, tests, archive pictures.
 - [ ] 2. Siege combat systems
 - [ ] 3. Siege engines (concept round per family)
 - [ ] 4. Unique unit, sapper, great sling
-- [ ] 5. Mystics and the Temple research
+- [ ] 5. Healers
 - [ ] 6. Trade carts
 - [ ] 7. War beasts
 - [ ] 8. AI

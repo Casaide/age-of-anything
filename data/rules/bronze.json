@@ -65,7 +65,7 @@
    "tier": 3,
    "name": "Raider",
    "building": "barracks",
-   "desc": "Beats siege, archers and mystics; weak to infantry",
+   "desc": "Beats siege, archers and healers; weak to infantry",
    "status": "planned"
   },
   {
@@ -83,7 +83,7 @@
    "tier": 2,
    "name": "Scout",
    "building": "stable",
-   "desc": "Beats siege, archers and mystics, raids; weak to spears",
+   "desc": "Beats siege, archers and healers, raids; weak to spears",
    "status": "planned"
   },
   {
@@ -92,7 +92,7 @@
    "tier": 3,
    "name": "War Beast",
    "building": "stable",
-   "desc": "Beats buildings and infantry; weak to spears and mystics",
+   "desc": "Beats buildings and infantry; weak to spears",
    "status": "planned"
   },
   {
@@ -125,7 +125,7 @@
   {
    "slot": "siege_tower",
    "role": "siege_tower",
-   "tier": 4,
+   "tier": 3,
    "name": "Siege Tower",
    "building": "siege_workshop",
    "desc": "Carries units over walls",
@@ -153,19 +153,10 @@
   {
    "slot": "great_sling",
    "role": "great_sling",
-   "tier": 4,
+   "tier": 3,
    "name": "Great Sling",
    "building": "castle",
    "desc": "Hits buildings from far away; packs and unpacks",
-   "status": "planned"
-  },
-  {
-   "slot": "mystic",
-   "role": "mystic",
-   "tier": 3,
-   "name": "Mystic",
-   "building": "temple",
-   "desc": "Heals; wins large units and beasts over; weak to scouts and raiders",
    "status": "planned"
   },
   {
