@@ -181,6 +181,7 @@ beast, siege, unique. "Variant" means a different body. "Rides" means a mount.
 | Watchtower (upgrades through 3 levels) | Defence, vision                                       | **MVP** (one level)                              |
 | Drop-off camps (wood, food, mining)    | Drop-off                                              | Next                                             |
 | Farm                                   | Renewable food                                        | Next                                             |
+| Pen                                    | Penned herd animals trickle food and breed (no worker) | Built (2026-10-13)                              |
 | Blacksmith                             | Attack/armour upgrades by tag (melee, ranged, armour) | Next (tag upgrades fit our system perfectly)     |
 | Siege Workshop                         | Siege                                                 | Next                                             |
 | Castle                                 | Unique unit, long-range siege, defence                | Next                                             |

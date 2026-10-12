@@ -26,6 +26,7 @@ const MatchLoader := preload("res://scenes/match_loader.gd")
 const CombatFx := preload("res://src/view/combat_fx.gd")
 const Tech := preload("res://src/sim/tech.gd")
 const Market := preload("res://src/sim/market.gd")
+const Pens := preload("res://src/sim/pens.gd")
 const RtsCamera := preload("res://src/view/rts_camera.gd")
 const CommandPanel := preload("res://src/view/command_panel.gd")
 const UiTheme := preload("res://src/view/ui/theme.gd")
@@ -665,8 +666,9 @@ func _play_key(event: InputEventKey) -> bool:
 	if k == KEY_R and placing != "" and world.btypes[Economy.btype_of(world, placing)].gate:
 		gate_along = 1 - gate_along   # turn the gate (on a wall it follows the wall anyway)
 		return true
-	if _selected_workers().size() < _selected_by_owner()[active].size():   # any soldiers in the selection
-		if k == KEY_R:   # soldiers: attack-move (then click where)
+	if _selected_workers().size() < _selected_by_owner()[active].size():   # any soldiers (or our sheep) in the selection
+		var soldiers: bool = _selected_by_owner()[active].any(func(id): return not _is_animal(id) and not world.types[world.units.kind[world.units.index_of(id)]].worker)
+		if k == KEY_R and soldiers:   # soldiers: attack-move (then click where); sheep fight nothing
 			arming_attack = true
 			return true
 		if k == KEY_X:
@@ -839,7 +841,7 @@ func _soldier_stance(ids: Array) -> int:
 	var out := -2
 	for id in ids:
 		var i := world.units.index_of(id)
-		if world.types[world.units.kind[i]].worker:
+		if world.types[world.units.kind[i]].worker or world.types[world.units.kind[i]].has("animal"):
 			continue
 		if out == -2:
 			out = world.units.posture[i]
@@ -876,6 +878,18 @@ func stop_selected() -> void:
 	if not mine.is_empty():
 		world.issue(active, Commands.STOP, {"ids": mine})
 		_say("ack")
+
+
+## The selected workers slaughter the selected sheep: the first now, the rest queued (each
+## carcass is gathered before the next, as the sim's hunters do).
+func slaughter_selected() -> void:
+	var workers := _selected_workers()
+	var herd: Array = _selected_by_owner()[active].filter(_is_animal)
+	if workers.is_empty() or herd.is_empty():
+		return
+	for n in herd.size():
+		world.issue(active, Commands.ATTACK, {"ids": workers, "target": herd[n], "queue": 0 if n == 0 else 1})
+	_say("ack")
 
 
 ## "." cycles through idle workers: selects the next one and centres on it.
@@ -1029,6 +1043,29 @@ func _selected_workers() -> Array:
 	return out
 
 
+## Is this unit (by id) an animal (a sheep of ours, or a wild one)?
+func _is_animal(id: int) -> bool:
+	var i := world.units.index_of(id)
+	return i >= 0 and world.types[world.units.kind[i]].has("animal")
+
+
+## Is building `bid` a finished pen of player p's?
+func _is_pen_of(bid: int, p: int) -> bool:
+	var b := world.buildings.index_of(bid)
+	return b >= 0 and world.buildings.owner[b] == p and world.buildings.done[b] == 1 and not world.btypes[world.buildings.kind[b]].pen.is_empty()
+
+
+## A selected animal's card: what it is, its food, and what to do with it.
+func _animal_info(t: Dictionary, owner: int) -> String:
+	if owner == world.gaia and t.behaviour == "herd":
+		return "%d food. Nobody's yet: walk one of yours up to it to claim it." % t.food
+	if owner == world.gaia:
+		return "%d food, wild. %s" % [t.food, "It bolts when hurt: hunt it with a few workers." if t.behaviour == "flee" else "It fights back: hunt it with a big party."]
+	if owner != active:
+		return "%d food, theirs. Walk one of yours up to it while none of theirs is near to steal it." % t.food
+	return "%d food at once: workers slaughter it where it stands (right-click it).\nOr put it in a pen (right-click the pen) for a little food all the time." % t.food
+
+
 ## Right-click: rally for a selected building; for units gather a resource, help
 ## build your foundation, or move. Ignored while a replay plays.
 func smart_order(pos: Vector2) -> void:
@@ -1050,7 +1087,12 @@ func smart_order(pos: Vector2) -> void:
 	var foe := unit_at(pos)
 	var q := 1 if queueing else 0
 	for p in groups.size():
-		var ids: Array = groups[p]
+		var ids: Array = groups[p].filter(func(id): return not _is_animal(id))
+		var herd: Array = groups[p].filter(_is_animal)
+		if not herd.is_empty() and bid != 0 and _is_pen_of(bid, p):
+			world.issue(p, Commands.PEN, {"ids": herd, "building": bid})   # into our pen
+		elif not herd.is_empty():   # our sheep only ever walk (they take no fighting or work orders)
+			world.issue(p, Commands.MOVE, {"ids": herd, "x": m.x, "y": m.y, "queue": q})
 		if ids.is_empty():
 			continue
 		if attack_move and land.bridge_at(cell) >= 0 and world.bridge_up[land.bridge_at(cell)] == 1 and foe == 0:
@@ -1059,8 +1101,7 @@ func smart_order(pos: Vector2) -> void:
 			world.issue(p, Commands.ATTACK_MOVE, {"ids": ids, "x": m.x, "y": m.y, "queue": q})
 		elif foe != 0 and world.is_enemy(world.units.owner[world.units.index_of(foe)], p):
 			world.issue(p, Commands.ATTACK, {"ids": ids, "target": foe, "queue": q})   # an enemy, or an animal to hunt
-		elif foe != 0 and world.units.owner[world.units.index_of(foe)] == p and world.types[world.units.kind[world.units.index_of(foe)]].has("animal") \
-				and not _selected_workers().is_empty():
+		elif foe != 0 and world.units.owner[world.units.index_of(foe)] == p and _is_animal(foe) and not _selected_workers().is_empty():
 			world.issue(p, Commands.ATTACK, {"ids": ids, "target": foe, "queue": q})   # slaughter one of our sheep for its food
 		elif bid != 0 and world.is_enemy(world.buildings.owner[world.buildings.index_of(bid)], p) and bviews.has(bid) and bviews[bid].visible:
 			world.issue(p, Commands.ATTACK, {"ids": ids, "target": bid, "queue": q})
@@ -1786,7 +1827,7 @@ func _sync_buildings() -> void:
 			view = BuildingArt.new()
 			view.setup(kit, look, bs.cx[b], bs.cy[b], bs.sx[b], bs.sy[b], Color(lib.palettes.teams[bs.owner[b]]))
 			view.set_meta("look", look)
-			layer.add_child(view)
+			(flat if not t.pen.is_empty() else layer).add_child(view)   # a pen lies low, under the sheep standing in it
 			bviews[id] = view
 			_clear_doodads(bs.cx[b], bs.cy[b], bs.sx[b], bs.sy[b])
 		if bs.done[b] == 1 and not view.get_meta("done", false):
@@ -2303,6 +2344,14 @@ func _update_panel() -> void:
 			"portrait": kit.building_icon(_arch(owner), t.id), "buttons": [], "queue": null, "info": ""}
 		if bs.done[b] == 0:
 			c.info = "Being built: %d%%" % (100 * bs.progress[b] / t.build_ticks)
+		elif not t.pen.is_empty():   # a pen: its animals and what they bring in
+			var n: int = mini(Pens.animals(world, b, true).size(), int(t.pen.animals))
+			c.info = "%d of %d animals: %d food a minute.\nTwo or more breed, now and then." % [n, t.pen.animals, n * int(t.pen.food) * 1200 / int(t.pen.food_ticks)]
+			if mine:
+				c.info += "\nRight-click it with sheep selected to put them in."
+				c.buttons.append({"icon": Icons.texture("release"), "text": "Release", "key": "", "cost": "", "enabled": n > 0, "group": "Orders",
+					"tip": "[b]Release[/b]\nThe animals walk out and stand in front of the pen (to slaughter them, or lead them elsewhere).",
+					"action": func(): world.issue(active, Commands.RELEASE, {"building": selected_building})})
 		elif not t.trains.is_empty() or not world.tech.research.filter(func(r): return r.building == t.id).is_empty():
 			var q: Array = bs.queue[b]
 			c.queue = []
@@ -2363,10 +2412,14 @@ func _update_panel() -> void:
 		var ft: Dictionary = world.types[u.kind[first]]
 		var c := {"title": ft.name if mine.size() == 1 else "%d selected" % mine.size(), "team": team, "buttons": [], "queue": null,
 			"portrait": kit.icons.get("%d:%s" % [ft.player, ft.slot]), "hp": [u.hp[first], ft.hp] if mine.size() == 1 else []}
+		var herd: Array = mine.filter(_is_animal)
+		var soldiers: int = mine.size() - herd.size() - _selected_workers().size()
 		if mine.size() == 1 and ft.worker:
 			c.info = ["Idle", "Gathering", "Carrying back", "Building"][u.task[first]]
 			if u.carry[first] > 0:
 				c.info += " (%d %s)" % [u.carry[first], world.resources[u.carry_kind[first] - 1]]
+		elif mine.size() == 1 and ft.has("animal"):
+			c.info = _animal_info(ft, active)
 		elif mine.size() == 1:
 			c.info = UnitCard.text(ft, _foe_types(active), world.combat)
 		else:
@@ -2378,7 +2431,13 @@ func _update_panel() -> void:
 			var kinds := counts.keys()
 			kinds.sort()
 			c.tray = kinds.map(func(k): return {"icon": kit.icons.get("%d:%s" % [world.types[k].player, world.types[k].slot]), "count": counts[k]})
-		if _selected_workers().size() < mine.size():   # soldiers: attack-move and stop
+		if not herd.is_empty() and herd.size() == mine.size():   # only our animals: they walk, or stop
+			c.buttons.append({"icon": Icons.texture("stop"), "text": "Stop", "key": "X", "cost": "", "enabled": true, "group": "Orders",
+				"tip": "[b]Stop[/b]\nThey stand where they are.", "action": stop_selected})
+		if not herd.is_empty() and not _selected_workers().is_empty():   # workers and sheep: the workers slaughter them
+			c.buttons.append({"icon": Icons.texture("slaughter"), "text": "Slaughter", "key": "", "cost": "", "enabled": true, "group": "Orders",
+				"tip": "[b]Slaughter[/b]\nThe selected workers slaughter the selected animals, one at a time, and gather the meat.", "action": slaughter_selected})
+		if soldiers > 0:   # soldiers: attack-move, stop and stances
 			c.buttons.append({"icon": Icons.texture("attack_move"), "text": "Attack-move", "key": "R", "cost": "", "enabled": true, "group": "Orders",
 				"tip": "[b]Attack-move[/b]\nThen click where: they walk there and fight whatever they meet on the way.", "action": func(): arming_attack = true})
 			c.buttons.append({"icon": Icons.texture("stop"), "text": "Stop", "key": "X", "cost": "", "enabled": true, "group": "Orders",
@@ -2435,7 +2494,7 @@ func _update_panel() -> void:
 		var eo := world.units.owner[i]
 		panel.show_content({"title": et.name if eo == world.gaia else "%s, %s" % [et.name, world.races[eo].name], "team": Color(lib.palettes.teams[eo]) if eo != world.gaia else ArtKit.ANIMAL_TEAM, "buttons": [], "queue": null,
 			"portrait": kit.icons.get("%d:%s" % [et.player, et.slot]), "hp": [world.units.hp[i], et.hp],
-			"info": UnitCard.text(et, _foe_types(eo), world.combat)})
+			"info": _animal_info(et, eo) if et.has("animal") else UnitCard.text(et, _foe_types(eo), world.combat)})
 		return
 	panel.show_content({"title": world.races[active].name, "team": team, "portrait": null,
 		"info": "Select units or a building." if vs_ai else "Select units or a building.  Tab switches side.  F6: let the bots play.", "buttons": [], "queue": null})
@@ -2466,9 +2525,15 @@ func _update_cursor() -> void:
 	var enemy: bool = bid != 0 and world.is_enemy(active, world.buildings.owner[world.buildings.index_of(bid)]) \
 		and bviews.has(bid) and bviews[bid].visible   # not over buildings you haven't found
 	var under := unit_at(pos)
-	if under != 0 and world.is_enemy(active, world.units.owner[world.units.index_of(under)]):
-		enemy = true
+	var fighters: bool = _selected_by_owner()[active].any(func(id): return not _is_animal(id))   # sheep fight nothing
+	enemy = enemy and fighters
 	var workers := not _selected_workers().is_empty()
+	if under != 0 and fighters:
+		var uo := world.units.owner[world.units.index_of(under)]
+		if world.is_enemy(active, uo):
+			enemy = true   # an enemy, or a wild animal to hunt
+		elif uo == active and workers and _is_animal(under):
+			enemy = true   # one of our sheep: slaughter it
 	if enemy:
 		cursors.use("attack")
 	elif workers and map.resource_at(cell) != "":

@@ -1,6 +1,6 @@
 {
  "schema": "aow.animals/1",
- "_doc": "Animals: wild ones to hunt and tame ones to herd. Nobody owns them at first (the sim's 'gaia' owner). behaviour: flee (bolts a few tiles when hurt), fight (turns on whoever hurts it), herd (belongs to the first player whose unit comes within claim_tiles; can be led and slaughtered). A dead animal leaves a carcass: food to gather where it fell.",
+ "_doc": "Animals: wild ones to hunt and tame ones to herd. Nobody owns them at first (the sim's 'gaia' owner). behaviour: flee (bolts a few tiles when hurt), fight (turns on whoever hurts it), herd (belongs to the first player whose unit comes within claim_tiles; can be led and slaughtered). A dead animal leaves a carcass: food to gather where it fell. slaughter_damage: every blow on it does at least this much (a worker's 1 would make a sheep a long job); harmless animals only, a boar is a real fight.",
  "claim_tiles": 4,
  "animals": {
   "deer": {
@@ -15,6 +15,7 @@
    "food": 140,
    "behaviour": "flee",
    "flee_tiles": 3,
+   "slaughter_damage": 3,
    "recipe": {
     "slot": "deer",
     "name": "Deer",
@@ -63,6 +64,7 @@
    },
    "food": 100,
    "behaviour": "herd",
+   "slaughter_damage": 3,
    "recipe": {
     "slot": "sheep",
     "name": "Sheep",
