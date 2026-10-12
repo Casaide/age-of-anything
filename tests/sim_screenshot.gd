@@ -34,7 +34,7 @@ func _initialize() -> void:
 	view.set_process_unhandled_input(false)          # a real mouse in the window mustn't change the shot
 	view.camera.set_process_unhandled_input(false)
 	if scene.begins_with("opening"):
-		await _opening(view, int(scene.get_slice(":", 1)))
+		await _opening(view, int(scene.get_slice(":", 1)), float(scene.get_slice(":", 2)) if scene.get_slice_count(":") > 2 else 3.0)
 	elif scene == "tower":
 		await _tower(view)
 	elif scene.begins_with("town"):
@@ -494,7 +494,7 @@ func _tower(view) -> void:
 	view.camera.look_at_point(Iso.to_screen(s[0] + 4500, s[1] + 4500))
 
 
-func _opening(view, at_tick: int) -> void:
+func _opening(view, at_tick: int, zoom := 3.0) -> void:
 	view._set_autoplay(true)
 	view.clock.speed = 16.0
 	while view.world.tick < at_tick - 40:
@@ -504,6 +504,6 @@ func _opening(view, at_tick: int) -> void:
 		await process_frame
 	view.selected_building = view.world.buildings.id[0]
 	var s: Array = view.map.starts[0]
-	view.camera.zoom = Vector2(3.0, 3.0)
+	view.camera.zoom = Vector2(zoom, zoom)
 	view._on_zoom()
 	view.camera.look_at_point(Iso.to_screen(s[0] - 1500, s[1] + 2500))
