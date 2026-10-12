@@ -19,6 +19,9 @@ extends SceneTree
 ## there (use with "ai-": the fog as you play it).
 ## "formation:<tick>": side 0's army walks to the meeting point and stands in its formation.
 ## "siege:<tick>": side 0's melee soldiers attack side 1's Town Center (fog lifted).
+## "garrison[:bastion]": side 0 rings the call to arms (its workers in the Town Center and a
+## Watchtower, the Town Center selected) with an Outpost by, enemy spears coming; ":bastion" with
+## the Bastion research done (the tower a Bastion).
 ## Prefix any scene with "ai-" to see it as in a match against the AI.
 
 const Iso := preload("res://src/view/iso.gd")
@@ -67,6 +70,8 @@ func _initialize() -> void:
 		await _sheep(view, scene.trim_prefix("sheep").trim_prefix(":"))
 	elif scene == "tower":
 		await _tower(view)
+	elif scene.begins_with("garrison"):
+		await _garrison(view, scene.ends_with(":bastion"))
 	elif scene.begins_with("wear"):
 		await _wear(view, int(scene.get_slice(":", 1)))
 	elif scene.begins_with("town"):
@@ -709,6 +714,62 @@ func _tower(view) -> void:
 	for f in 4:
 		await process_frame
 	view.camera.look_at_point(Iso.to_screen(s[0] + 4500, s[1] + 4500))
+
+
+## Garrisons (milestone 12 phase 3): see the scene list at the top.
+func _garrison(view, bastion: bool) -> void:
+	var w = view.world
+	var Economy = load("res://src/sim/economy.gd")
+	var Tech = load("res://src/sim/tech.gd")
+	var Commands = load("res://src/sim/commands.gd")
+	var s: Array = w.map.starts[0]
+	var tc: int = -1
+	for b in w.buildings.count():
+		if tc < 0 and w.buildings.owner[b] == 0:
+			tc = w.buildings.id[b]
+	for put in [["outpost", Vector2i(4, -3)], ["watchtower", Vector2i(-4, 3)]]:
+		var k: int = Economy.btype_of(w, put[0])
+		var at: Vector2i = Vector2i(s[0] / 1000, s[1] / 1000) + put[1]
+		var spot: Vector2i = _free(w, Economy, k, at)
+		var b: int = Economy.place(w, 0, k, spot.x, spot.y)
+		w.buildings.done[b] = 1
+		w.buildings.hp[b] = w.bmods[0][k].hp
+	if bastion:
+		w.ages[0] = 3
+		w.researched[0][Tech.research_index(w, "bastion")] = 1
+		Tech.refresh(w, 0)
+	view.reveal = true
+	w.issue(0, Commands.CALL_TO_ARMS, {"building": tc})
+	view.clock.speed = 4.0
+	for f in 400:
+		await process_frame
+		var n := 0
+		for i in w.units.count():
+			if w.units.owner[i] == 0 and w.types[w.units.kind[i]].worker:
+				n += 1
+		if n == 0:
+			break
+	view.clock.speed = 1.0
+	w.issue(1, Commands.SPAWN, {"slot": "spear", "count": 4, "x": s[0] + 5500, "y": s[1] + 3500})
+	view.selected_building = tc
+	for f in 600:
+		await process_frame
+		if view.fx.shots.size() > 2:
+			break
+	for f in 6:
+		await process_frame
+	view.camera.zoom = Vector2(2.4, 2.4)
+	view._on_zoom()
+	view.camera.look_at_point(Iso.to_screen(s[0] + 500, s[1] + 500))
+
+
+func _free(w, Economy, k: int, at: Vector2i) -> Vector2i:
+	for r in 10:
+		for dy in range(-r, r + 1):
+			for dx in range(-r, r + 1):
+				if maxi(absi(dx), absi(dy)) == r and Economy.can_place(w, 0, k, at.x + dx, at.y + dy):
+					return at + Vector2i(dx, dy)
+	return at
 
 
 ## Living towns (milestone 17): both sides play their opening to the tick, then side 0 is left
