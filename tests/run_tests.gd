@@ -40,6 +40,7 @@ func _init() -> void:
 	_test_prompts(gen, rules)
 	_test_healers(lib, gen, rules)
 	_test_siege(lib, gen, rules.default)
+	_test_swordsmen(lib, gen, rules)
 	_test_composer(lib, gen, rules.default)
 	_test_audio(lib)
 	_test_paths()
@@ -420,6 +421,36 @@ func _test_siege(lib, gen, rules: Dictionary) -> void:
 				"%s: the %s opens in age 3 and costs wood and gold (%s)" % [prompt, role, u.eval.cost])
 	var ram: Dictionary = _unit(gen.generate("romans", rules), "ram").eval
 	check(ram.targets == "buildings" and int(ram.armour.pierce) > int(ram.armour.melee), "the ram hits buildings only, shrugs off arrows, not blows")
+
+
+## The swordsman line at the Barracks (milestone 13): from age 1, a melee weapon that's no spear
+## or lance in every age, a bone club becoming a sword, the culture's own blade where it has one,
+## the line's bonus against spears, skirmishers and buildings; and adding it changed no other
+## line's recipes (own_seed).
+func _test_swordsmen(lib, gen, rules: Dictionary) -> void:
+	for rid in rules:
+		for prompt in PROMPTS:
+			for reroll in 3:
+				var s: Dictionary = _unit(gen.generate(prompt, rules[rid], reroll), "infantry")
+				check(int(s.recipe.tier) == 1 and s.line.size() == 3, "%s/%s: the swordsman line runs ages 1-3" % [rid, prompt])
+				for l in s.line:
+					var tags: Array = lib.part(l.recipe.parts.hand_r).tags
+					check("melee" in tags and not "spear" in tags and not "lance" in tags, "%s/%s: %s holds a blade or a club (%s)" % [rid, prompt, l.recipe.name, l.recipe.parts.hand_r])
+					check(int(l.eval.bonus.get("spear", 0)) > 0 and int(l.eval.bonus.get("skirmish", 0)) > 0 and int(l.eval.bonus.get("building", 0)) > 0,
+						"%s: %s beats spears, skirmishers and buildings" % [prompt, l.recipe.name])
+	var weapons := {"sewer rats": "weapon.cheese_hammer", "romans": "weapon.gladius", "egyptians": "weapon.khopesh",
+		"aztecs": "weapon.macuahuitl", "greeks": "weapon.sword.bronze", "royal humans": "weapon.sword.iron"}
+	for prompt in weapons:
+		var s: Dictionary = _unit(gen.generate(prompt, rules.default), "infantry")
+		check(s.line[-1].recipe.parts.hand_r == weapons[prompt], "%s swordsmen end with %s (%s)" % [prompt, weapons[prompt], s.line[-1].recipe.parts.hand_r])
+	check(_unit(gen.generate("greeks", rules.default), "infantry").recipe.parts.hand_r == "weapon.club.bone", "age 1 swordsmen start with a club")
+	var without: Dictionary = rules.default.duplicate(true)
+	without.roster = without.roster.filter(func(sd): return sd.slot != "infantry")
+	for prompt in PROMPTS:
+		var a: Dictionary = gen.generate(prompt, rules.default)
+		var b: Dictionary = gen.generate(prompt, without)
+		var lines := func(race): return JSON.stringify(race.units.filter(func(u): return u.recipe.slot != "infantry").map(func(u): return u.line.map(func(l): return l.recipe)))
+		check(lines.call(a) == lines.call(b) and a.name == b.name, "'%s': adding the swordsman leaves the other lines' recipes as they were" % prompt)
 
 
 func _test_composer(lib, gen, rules: Dictionary) -> void:

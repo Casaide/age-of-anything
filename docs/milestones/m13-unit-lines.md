@@ -95,6 +95,8 @@ picks), then build, tests, archive pictures.
 ## Checklist
 - [ ] Plan approved by Dominic
 - [ ] 1. Swordsman, raider, scout, mounted archer
+  - [x] Swordsman line at the Barracks, ages 1-3 (2026-10-13)
+  - [ ] Raider, scout, mounted archer
 - [x] 2. Siege combat systems (splash, minimum range, bonus vs buildings, rams for buildings only, bolts through a line; 2026-10-13)
 - [ ] 3. Siege engines (concept round per family)
   - [x] 3a. Concept round SW1: ram, catapult, bolt thrower, five families, two directions (2026-10-13)
@@ -302,6 +304,61 @@ the crew sockets, walking while it rolls, heaving with a ram's blow, falling whe
   siege in the 200-unit script measured 2.75 ms against main's 2.79 the same hour.
 - **Open:** Dominic's look in a match; the engines' sounds reuse the stone and bolt shots and the
   blunt hit; workers don't repair engines yet; garrisoning a ram is milestone 16's.
+
+**The swordsman line (2026-10-13).** Dominic: "start the barrack sword line". Why now: the pricing pass
+(D-120) found the round robin can't balance with four combat slots (large units counter two, archers
+one); a line for archers to beat that beats spears and skirmishers closes the web. The `infantry` slot
+in `data/rules/*.json` is live (tier 1, `own_seed`, so every other line's recipes, and the race's name,
+are as they were: every other line and the name of 306 races, 34 prompts x 3 rules x 3 rerolls,
+checked unchanged, and a run_tests check; the race keys change, as the new line is in them). The Barracks trains it beside the spear; its line upgrades (ages 2 and 3) come from the
+Barracks' `trains` like every line's, and the tech tree page draws it with no new code.
+- Generator: the role needs a `melee` weapon that's no `spear` or `lance` (ROLE_NEEDS / ROLE_EXCLUDES),
+  leaning to blades. Age 1 has only the bone club (and the rats' cheese hammer, their signature, kept
+  through the ages); on the age 2 upgrade a primitive weapon may become a blade (ROLE_KINDS: the club
+  becomes the culture's sword). The khopesh and macuahuitl now take `requires_role: ["large",
+  "infantry"]` (a list, from a single role). Lines by culture (default rules): Clubber, then Swordsman
+  (bronze sword: swamp, forest, hellenic, steppe, spooky, han), Legionary (gladius, when "roman" is
+  asked), Khopesh Warrior (nile), Club Warrior (aztec), Iron Swordsman in age 3 (royal, or anyone
+  asking for knights), Cheesehammer Rat throughout. Names are the weapons' nouns (data).
+- Counters: the slot carries its own `bonus` (rules roster: +3 against `spear`, `skirmish` and
+  `building`, whatever weapon the line holds, so large units with the same swords don't get it) and
+  its `price_points` (3: what the bonus adds to the price, pricing.gd). Archers' bonus against
+  infantry does the rest. The cheese hammer's `price_points` went 8 -> 10 and the iron sword got 8
+  (budget points unchanged, so no race changed): both were the round robin's top outliers.
+- Round robin (`tests/balance.gd`, units more than 20% off the mean): age 2 was 8 of 20 before, 8 of
+  25 now (the swordsmen within 20%: human +18%, beetle +10%, cheese rat +10%, frog +2%); age 3 was 10
+  of 20, 12 of 25 now (cheese rat +34%, human +26% out; iron beetle -8%, frog -8%). Counters won 90%
+  of same-race counter fights before, 80-82% now with three more pairs counted. The rest of the
+  outliers are as before (weak archers, the hoplite and pike cavalry, the giant cheese rat).
+- Mass battles (`tests/mass_battle.gd`, age 2, new match-ups): swords beat spears 8 of 10, skirmishers
+  6 of 10, lose to archers 2 of 10, cavalry 4 of 10; sword+archer v spear+cavalry 6 of 10.
+  `test_sim.gd`'s counter fights add swords v spears and archers v swords (each line's first step):
+  60 of 68 won by the counter; the age 1 club loses to spears for centaur romans and royal knights,
+  and the frogs' clubs beat their archers.
+- AI: the counter-pick (bot.gd `_score`, now in its own `pick`) already weighs a unit's bonuses by
+  the foes it has seen, so seen spears and skirmishers bring swords. Two data knobs in
+  `data/ai.json` military: `pick_bias` (infantry -7), so with nothing seen the Barracks still
+  trains spears as before (the first try, without it, had every bot on swords and broke a bot-vs-bot
+  game and two walled-base checks); and `building_foes`: while the army goes for an enemy
+  building (`_aim`, a wall shutting the way) that many foes of class building count, so the
+  wall-breakers are trained. It's **off (0)**: at 2 a stone ring fell sooner (18:40 against 20:25)
+  but a palisade ring much later (18:10 against 12:00) with its blows spread over many pieces (a
+  new test_ai failure: seven swordsmen by 7:00, then none trained until 13:00, as they're dearer
+  than spears and come out of what it saves for the age); left for the big-map AI work.
+  `tests/test_ai.gd -- flat_test pick` checks the pick in seconds. test_ai fails only main's three
+  known checks (easy strikes early, two shelter checks); before rebasing on the siege work, one
+  bot-vs-bot game (Maximian Cohort v Bog Frogs) ran to the 30-minute cap with no winner, and it
+  ends again now. test_sim: determinism and the counter fights pass; one new failure: on
+  hill_test's crossing, with a seventh group (the swordsmen) the groups' targets shift and one
+  unit gives up stuck 3 tiles short (#44, group 5); it passed before the rebase (newt mounts came
+  in with it), so it's a pathing edge the new layout finds, left for a look.
+- Art: no new parts; `tests/line_lineup.gd` (any line, any age, every culture in 8 facings) shows the
+  swordsmen at 3x: `archive/images/2026-10-13/310-` (age 1), `311-` (age 2), `312-` (age 3). The club,
+  gladius, khopesh, macuahuitl, iron sword and cheese hammer read; the bronze sword is small and dark
+  against bronze armour, and the frog's sword hides behind its body in the front facings (a concept
+  question, not a fix). **Gap:** the iron sword is the only tier-3 blade and it's royal (knight) kit,
+  so swamp, forest, hellenic, steppe and spooky swordsmen get nothing new in age 3 (the upgrade
+  shows "nothing to upgrade"); a generic age-3 blade (or a culture blade each) needs a concept round.
 
 ## Changes from the original plan
 

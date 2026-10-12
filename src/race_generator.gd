@@ -11,9 +11,13 @@ const Rng := preload("res://src/rng.gd")
 const Pricing := preload("res://src/pricing.gd")
 
 const ROLE_NEEDS := {"worker": "worker", "spear": "spear", "skirmisher": "ranged", "archer": "bow", "large": "melee", "healer": "heal",
-	"ram": "ram", "catapult": "catapult", "bolt_thrower": "bolt_thrower"}
-## Tags a role's primary must not have (skirmishers are the non-bow ranged units).
-const ROLE_EXCLUDES := {"skirmisher": ["bow"]}
+	"ram": "ram", "catapult": "catapult", "bolt_thrower": "bolt_thrower", "infantry": "melee"}
+## Tags a role's primary must not have (skirmishers are the non-bow ranged units; the swordsman
+## line holds a blade or a club, never a spear or a lance).
+const ROLE_EXCLUDES := {"skirmisher": ["bow"], "infantry": ["spear", "lance"]}
+## Kinds a line's primitive weapon may give way to on an upgrade, besides its own: the swordsman's
+## age 1 bone club becomes a sword (a cheese hammer isn't primitive, so rats keep theirs).
+const ROLE_KINDS := {"infantry": ["blade"]}
 const ROLE_BIAS := {
 	"worker": {},
 	"spear": {"reach": 1},
@@ -21,6 +25,7 @@ const ROLE_BIAS := {
 	"archer": {},
 	"large": {"charge": 3, "heavy": 2, "lance": 3},
 	"healer": {},
+	"infantry": {"blade": 1},
 }
 ## Signature gear (a culture's kit, cheese hammers...) is only favoured when the prompt,
 ## family or creature asks for it. No cheese hammers for Romans unless someone says cheese.
@@ -324,7 +329,7 @@ func _make_engine(slot_def: Dictionary, ctx: Dictionary) -> Dictionary:
 	var c: Dictionary = lib.creatures[ctx.creature]
 	var take: String = c.get("siege", lib.families[ctx.family].siege)
 	var body: Dictionary = lib.part("siege.%s.%s" % [slot_def.engine, take])
-	var weapons: Array = _cands("hand_r", ctx).filter(func(p): return p.get("requires_role", "") == slot_def.role)
+	var weapons: Array = _cands("hand_r", ctx).filter(func(p): return p.has("requires_role") and _for_role(p, slot_def.role))
 	assert(not weapons.is_empty(), "No engine weapon for %s" % slot_def.role)
 	var weapon: Dictionary = _best(weapons, ctx.tags, {}, ctx.rng)
 	var crew: Dictionary = {"body": ctx.crew.body, "head": ctx.crew.head, "skin": ctx.crew.skin, "parts": ctx.crew.parts.duplicate(), "scale": ctx.crew.scale}
@@ -356,11 +361,16 @@ func _healer_gear(p: Dictionary, tags: Dictionary) -> bool:
 
 
 func _allowed(p: Dictionary, role: String, tags: Dictionary) -> bool:
-	if p.has("requires_role") and p.requires_role != role:
+	if p.has("requires_role") and not _for_role(p, role):
 		return false
 	if p.has("only_if"):
 		return p.only_if.any(func(t): return int(tags.get(t, 0)) > 0)
 	return true
+
+
+## A part's `requires_role`: one role, or a list of them (the khopesh: large and infantry).
+func _for_role(p: Dictionary, role: String) -> bool:
+	return role in (p.requires_role if p.requires_role is Array else [p.requires_role])
 
 
 ## How much the prompt asked for this part (no randomness).
@@ -511,6 +521,8 @@ func _upgrade(prev: Dictionary, slot_def: Dictionary, ctx: Dictionary) -> Dictio
 	for slot in slots:
 		var cur: Dictionary = lib.part(r.parts[slot])
 		var kinds: Array = cur.tags.filter(func(t): return t in KIND_TAGS)
+		if slot == "hand_r" and "primitive" in cur.tags:
+			kinds += ROLE_KINDS.get(role, [])
 		var cands: Array = _cands(slot, ctx).filter(func(p): return int(p.get("tier", 1)) > int(cur.get("tier", 1)) \
 			and _allowed(p, role, unit_tags) and not _off_theme(p, unit_tags) \
 			and (p.tags.any(func(t): return t in kinds) or _want(p, ctx.brief.tags) > 0))   # same kind, or asked for (rats with guns)

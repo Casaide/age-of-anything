@@ -135,7 +135,7 @@
   },
   "barracks": {
    "name": "Barracks",
-   "desc": "Trains your spearmen, the line that holds against riders and big beasts.",
+   "desc": "Trains your foot soldiers: spearmen, who hold against riders and big beasts, and swordsmen, who cut through spearmen and skirmishers and break buildings.",
    "size": 3,
    "hp": 1200,
    "cost": {
@@ -147,7 +147,8 @@
    "house": false,
    "drop_off": [],
    "trains": [
-    "spear"
+    "spear",
+    "infantry"
    ],
    "age": 1,
    "hotkey": "B",
@@ -155,7 +156,7 @@
     "melee": 1,
     "pierce": 7
    },
-   "note": "infantry (the spear line); the Archery Range and Stable train the rest"
+   "note": "infantry (the spear and swordsman lines); the Archery Range and Stable train the rest"
   },
   "farm": {
    "name": "Farm",

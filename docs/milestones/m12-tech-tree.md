@@ -84,7 +84,7 @@ fills it from the race (one creature in its culture's gear, or variants once tho
 | Town Center | Worker (`worker`) | 1+ | - | built | ok |
 | Town Center | Healer (`healer`) | 2-3 | heals nearby wounded / scouts, raiders | built (milestone 13, 2026-10-12; look A in, the pick pending: HL1 sheet) | staff + bag (herbs; cheese for rats, a lily for frogs) |
 | Barracks | Spear (`spear`) | 1-3 | mounted, beasts / ranged, infantry | built (to 3) | ok |
-| Barracks | Swordsman (`infantry`) | 1-3 | buildings, spears, skirmishers / archers | planned | swords, clubs exist |
+| Barracks | Swordsman (`infantry`) | 1-3 | buildings, spears, skirmishers / archers | built (to 3; milestone 13) | club, then the culture's sword |
 | Barracks | Raider (`raider`) | 3 | siege, archers, healers / infantry | planned | light kit |
 | Archery Range | Skirmisher (`skirmisher`) | 2-3 | archers / infantry, mounted | built (to 3) | ok |
 | Archery Range | Archer (`archer`) | 2-3 | infantry / skirmishers, mounted | built (to 3) | ok |

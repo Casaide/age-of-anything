@@ -4,7 +4,9 @@ extends SceneTree
 ## it). For each race of the balance prompts, in one age (unit lines upgraded to it): archers
 ## against cavalry (the large slot), skirmishers and spears; spears and skirmishers against
 ## cavalry; spears with archers against spears with cavalry; a mixed army and spears with
-## archers against all archers. Prints win rates and the value each side has left.
+## archers against all archers; swordsmen (the infantry slot) against spears, skirmishers and cavalry,
+## archers against them, swords with archers against spears with cavalry. Prints win rates and the
+## value each side has left.
 ## Deterministic. Massed archers should be strong but counterable.
 ## Run: godot --headless --path . --script res://tests/mass_battle.gd [-- age [budget] [combat_rule=value ...]]
 
@@ -28,6 +30,11 @@ const MATCHES := [
 	["spear+archer v spear+cavalry", ["spear", "archer"], ["spear", "large"]],
 	["archers v mixed", ["archer"], ["spear", "skirmisher", "large"]],
 	["archers v spear+archer", ["archer"], ["spear", "archer"]],
+	["swords v spears", ["infantry"], ["spear"]],
+	["swords v skirmishers", ["infantry"], ["skirmisher"]],
+	["archers v swords", ["archer"], ["infantry"]],
+	["swords v cavalry", ["infantry"], ["large"]],
+	["sword+archer v spear+cavalry", ["infantry", "archer"], ["spear", "large"]],
 ]
 ## Siege (milestone 13, age 3): engines behind a screen of spears against what they should beat
 ## (crowds of archers and foot) and what should beat them (cavalry).
@@ -155,4 +162,4 @@ static func fight(rules: Dictionary, age: int, budget: int, race: Dictionary, sa
 
 
 static func _rank(slot: String) -> int:
-	return ["large", "ram", "spear", "skirmisher", "archer", "bolt_thrower", "catapult"].find(slot)
+	return ["large", "ram", "infantry", "spear", "skirmisher", "archer", "bolt_thrower", "catapult"].find(slot)

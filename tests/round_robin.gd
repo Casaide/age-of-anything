@@ -9,12 +9,13 @@ const World := preload("res://src/sim/world.gd")
 const Commands := preload("res://src/sim/commands.gd")
 const Tech := preload("res://src/sim/tech.gd")
 
-const SLOTS := ["spear", "skirmisher", "archer", "large"]
+const SLOTS := ["spear", "infantry", "skirmisher", "archer", "large"]
 const BUDGET := 1200
 const LIMIT := 3000
 const FROM := [[11000, 20500], [21000, 20500]]
 ## Within one race, who should beat whom at equal cost (the genre's counters).
-const COUNTERS := [["spear", "large"], ["large", "archer"], ["skirmisher", "archer"], ["archer", "spear"]]
+const COUNTERS := [["spear", "large"], ["large", "archer"], ["skirmisher", "archer"], ["archer", "spear"],
+	["infantry", "spear"], ["infantry", "skirmisher"], ["archer", "infantry"]]
 
 
 static func run(races: Array, rules: Dictionary, age: int) -> Dictionary:

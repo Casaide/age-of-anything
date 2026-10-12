@@ -40,7 +40,8 @@ const STALL_TICKS := 100           # a worker idle this long (5 s) has stalled
 ## Counter fights: [counter, countered, the tag the countered unit needs for this to be
 ## the counter], fought at equal cost by the same race. Where the countered unit lacks the
 ## tag (centaur spearmen are large, not infantry), the relation doesn't apply: skipped.
-const COUNTERS := [["spear", "large", "large"], ["large", "archer", "ranged"], ["archer", "spear", "infantry"], ["skirmisher", "archer", "archer"]]
+const COUNTERS := [["spear", "large", "large"], ["large", "archer", "ranged"], ["archer", "spear", "infantry"], ["skirmisher", "archer", "archer"],
+	["infantry", "spear", "spear"], ["archer", "infantry", "infantry"]]
 const COUNTER_PROMPTS := ["angry swamp frogs with reed spears", "sewer rats with cheese hammers", "centaur romans",
 	"greek hoplites", "royal knights", "viking beetle riders"]
 const FIGHT_BUDGET := 600          # food + wood per side
