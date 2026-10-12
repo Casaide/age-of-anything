@@ -1820,9 +1820,11 @@ func _weapon_spear_wood(c: Dictionary) -> Dictionary:
 func _helm_cap(c: Dictionary) -> Dictionary:
 	var n := Node3D.new()
 	var leather := surf("leather", Color(0.9, 0.82, 0.72), 3.0)
-	n.add_child(dome(Vector3(4.9, 3.6, 4.7), leather, Vector3(0, -3.0, 0)))
-	n.add_child(ring(4.6, 5.3, surf("leather", Color(0.7, 0.6, 0.5), 2.0), Vector3(0, -3.0, 0)))
-	n.add_child(blob(Vector3(0.6, 0.6, 0.6), leather, Vector3(0, 0.7, 0)))
+	# Sits a little high with a brim of the cap's own leather: a low, darker brim ran across the
+	# brows like a headband (Dominic: "the hairline").
+	n.add_child(dome(Vector3(4.9, 3.6, 4.7), leather, Vector3(0, -2.5, 0)))
+	n.add_child(ring(4.6, 5.1, surf("leather", Color(0.84, 0.76, 0.66), 2.0), Vector3(0, -2.5, 0)))
+	n.add_child(blob(Vector3(0.6, 0.6, 0.6), leather, Vector3(0, 1.2, 0)))
 	return {"node": n}
 
 
