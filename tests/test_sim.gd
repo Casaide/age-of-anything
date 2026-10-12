@@ -84,6 +84,7 @@ func _init() -> void:
 	_test_tech(races)
 	_test_research_queue(races)
 	_test_effects(races)
+	_test_university_castle(races)
 	_test_market(races)
 	_test_build_queue(races)
 	_test_builder_moves_on(races)
@@ -1787,6 +1788,127 @@ func _test_effects(races: Array) -> void:
 		if not r.has("line") and not String(r.id).begins_with("test."):
 			check(TechTreeModel.effect_text(r.effects) != "", "effects: %s says what it does (%s)" % [r.id, TechTreeModel.effect_text(r.effects)])
 
+
+## The University's research and the Castle (milestone 12 phases 4 and 5): each effect lands
+## where it says and nowhere else, and the Castle looses a volley of arrows, one at each of the
+## nearest foes in turn.
+func _test_university_castle(races: Array) -> void:
+	var w := World.new(SEED, SimMap.load_id("flat_test"), races, rules_)
+	for r in w.resources.size():
+		w.stock[r][0] = 9000
+	var uk := Economy.btype_of(w, "university")
+	var ck := Economy.btype_of(w, "castle")
+	check(uk >= 0 and ck >= 0, "university/castle: both are built types (not planned)")
+	check(int(w.btypes[uk].age) == 3 and int(w.btypes[ck].age) == 3 and w.btypes[ck].size == 4, "university/castle: age 3; the castle is 4 x 4")
+	var bdata: Dictionary = DataLib.load_json("res://data/buildings.json").buildings
+	check(int(bdata.castle.get("garrison", 0)) > 0 and int(bdata.castle.attack.get("arrows", 1)) > 1, "castle: a garrison and several arrows in data")
+	check(int(bdata.castle.cost.get("stone", 0)) > int(bdata.castle.cost.get("wood", 0)), "castle: stone-heavy")
+	# Research at the University: needs age 3, then it's bought and done there.
+	var s: Array = w.map.starts[0]
+	var ub: int = w.buildings.index_of(_put(w, 0, "university", s[0] / 1000 + 4, s[1] / 1000 + 3))
+	w.ages[0] = 2
+	check(Tech.why_not(w, 0, ub, "stonecutting") == "needs a later age", "university: research needs age 3 (%s)" % Tech.why_not(w, 0, ub, "stonecutting"))
+	w.ages[0] = 3
+	for id in ["stonecutting", "lifting_frames", "slit_windows", "thick_walls", "siege_wrights"]:
+		check(Tech.why_not(w, 0, ub, id) == "", "university: %s can be researched there (%s)" % [id, Tech.why_not(w, 0, ub, id)])
+	var hk := Economy.btype_of(w, "house")
+	var hp_house: int = w.bmods[0][hk].hp
+	var arm_house: PackedInt32Array = w.bmods[0][hk].arm.duplicate()
+	w.issue(0, Commands.RESEARCH, {"building": w.buildings.id[ub], "id": "stonecutting"})
+	var sc := Tech.research_index(w, "stonecutting")
+	while w.tick < 2000 and w.researched[0][sc] == 0:
+		w.step()
+	var melee: int = w.classes.find("melee")
+	var pierce: int = w.classes.find("pierce")
+	check(w.researched[0][sc] == 1, "stonecutting: researched at the University")
+	check(w.bmods[0][hk].hp == hp_house * 110 / 100 and w.bmods[0][hk].arm[melee] == arm_house[melee] + 1 and w.bmods[0][hk].arm[pierce] == arm_house[pierce] + 1,
+		"stonecutting: buildings +10%% HP, +1/+1 armour (house %d -> %d hp)" % [hp_house, w.bmods[0][hk].hp])
+	check(w.bmods[1][hk].hp == hp_house, "stonecutting: ...only the researcher's")
+	# Lifting Frames: workers build 20% faster.
+	var wk: int = w.type_of(0, "worker")
+	_give(w, 0, "lifting_frames")
+	check(w.types[wk].build_pct == 20, "lifting frames: workers build 20%% faster (%d)" % w.types[wk].build_pct)
+	# Thick Walls: walls and gates double, houses don't.
+	var before := {}
+	for id in ["palisade", "palisade_gate", "wall", "stone_gate", "house"]:
+		before[id] = w.bmods[0][Economy.btype_of(w, id)].hp
+	_give(w, 0, "thick_walls")
+	for id in ["palisade", "palisade_gate", "wall", "stone_gate"]:
+		var base_hp: int = w.btypes[Economy.btype_of(w, id)].hp
+		check(w.bmods[0][Economy.btype_of(w, id)].hp == base_hp * 210 / 100, "thick walls (after Stonecutting): %s +100%% HP (%d -> %d)" % [id, before[id], w.bmods[0][Economy.btype_of(w, id)].hp])
+	check(w.bmods[0][hk].hp == before.house, "thick walls: ...houses as they were")
+	# Siege Wrights: +1 range for siege (none yet: a ranged line stands in, tagged siege).
+	var rk := -1
+	for k in w.types.size():
+		if w.types[k].player == 0 and w.types[k].ranged and rk < 0:
+			rk = k
+	var sp: int = w.type_of(0, "spear")
+	var range0: int = int(w.types[rk].eval.range)
+	var sp_range0: int = int(w.types[sp].eval.range)
+	w.types[rk].line = w.types[rk].line.duplicate(true)   # (the race's own line is shared with the other tests)
+	for l in w.types[rk].line:
+		l.eval.tags = l.eval.tags + ["siege"]
+	_give(w, 0, "siege_wrights")
+	check(int(w.types[rk].eval.range) == range0 + 1, "siege wrights: siege +1 range (%d -> %d)" % [range0, int(w.types[rk].eval.range)])
+	check(int(w.types[sp].eval.range) == sp_range0, "siege wrights: ...spears as they were")
+	# The Castle's research: War Drums and the two race slots.
+	var cb: int = w.buildings.index_of(_put(w, 0, "castle", s[0] / 1000 - 2, s[1] / 1000 + 8))
+	for id in ["war_drums", "creature_research", "culture_research"]:
+		check(Tech.why_not(w, 0, cb, id) == "", "castle: %s can be researched there (%s)" % [id, Tech.why_not(w, 0, cb, id)])
+	var hl: int = w.type_of(0, "healer")
+	var train_sp: int = w.types[sp].train_ticks
+	var train_wk: int = w.types[wk].train_ticks
+	var train_hl: int = w.types[hl].train_ticks if hl >= 0 else 0
+	_give(w, 0, "war_drums")
+	check(w.types[sp].train_ticks == train_sp * 70 / 100, "war drums: soldiers train 30%% faster (%d -> %d ticks)" % [train_sp, w.types[sp].train_ticks])
+	check(w.types[wk].train_ticks == train_wk and (hl < 0 or w.types[hl].train_ticks == train_hl), "war drums: ...workers and healers as before")
+	var hp_sp: int = w.types[sp].hp
+	var speed_sp: int = w.types[sp].speed
+	var hp_wk: int = w.types[wk].hp
+	_give(w, 0, "creature_research")
+	_give(w, 0, "culture_research")
+	check(w.types[sp].hp == hp_sp + 5 and w.types[wk].hp == hp_wk, "own research (placeholder): soldiers +5 HP (%d -> %d), workers not" % [hp_sp, w.types[sp].hp])
+	check(w.types[sp].speed == speed_sp * 105 / 100, "own research (placeholder): soldiers 5%% faster (%d -> %d)" % [speed_sp, w.types[sp].speed])
+	# The Castle's arrows: a volley of `arrows`, one at each of the nearest foes in turn.
+	var arrows: int = int(bdata.castle.attack.arrows)
+	for n in [1, arrows + 2]:
+		var g := _bare_world(races)
+		var gid := _put(g, 1, "castle", 14, 14)   # centre (16, 16)
+		g.issue(0, Commands.SPAWN, {"slot": "spear", "count": n, "x": 20500, "y": 16000})
+		var first := []   # the first volley's targets
+		for t in 40:
+			g.step()
+			for e in g.events:
+				if e.type == "hit" and e.by == gid:
+					first.append(e.to)
+			if not first.is_empty():
+				break
+		var distinct := {}
+		for id in first:
+			distinct[id] = true
+		check(first.size() == arrows, "castle: a volley is %d arrows (%d, %d foes)" % [arrows, first.size(), n])
+		check(distinct.size() == mini(n, arrows), "castle: the arrows go to %d different foes (%d foes in reach: %d hit)" % [mini(n, arrows), n, distinct.size()])
+	# Slit Windows: +1 tile of reach for the Castle (and towers, Town Centers).
+	var reach := []
+	for slit in [false, true]:
+		var g := _bare_world(races)
+		var gid := _put(g, 1, "castle", 14, 14)
+		if slit:
+			_give(g, 1, "slit_windows")
+		g.issue(0, Commands.SPAWN, {"slot": "spear", "count": 1, "x": 16000 + 10500, "y": 16000})   # just past 8 tiles (+ half the castle)
+		var shot := 0
+		for t in 60:
+			g.step()
+			for e in g.events:
+				if e.type == "hit" and e.by == gid:
+					shot += 1
+		reach.append(shot)
+	check(reach[0] == 0 and reach[1] > 0, "slit windows: a foe just out of the castle's reach is shot once it has them (%s)" % [reach])
+	var gk := World.new(SEED, SimMap.load_id("flat_test"), races, rules_)
+	_give(gk, 0, "slit_windows")
+	for id in ["watchtower", "castle", "town_center"]:
+		check(Tech.badd(gk, 0, Economy.btype_of(gk, id), "range") == 1, "slit windows: %s +1 range" % id)
+	check(Tech.badd(gk, 0, Economy.btype_of(gk, "house"), "range") == 0, "slit windows: ...houses nothing")
 
 ## Research and the age-up queue with units, the genre's way: in the order clicked, paid when
 ## queued, refunded on cancel, never queued twice.
