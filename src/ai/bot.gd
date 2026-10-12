@@ -396,10 +396,11 @@ func _train(w, workers: Array, count: int) -> void:
 	# builds up more and fights less, but never stops growing (Dominic: not caps).
 	if army_ratio > 0 and guard * 100 >= count * army_ratio * w.ages[player]:
 		return
-	# Saving for the next age: soldiers only from what's over (a building waits its turn), while
-	# nobody is raiding us (an army first, then the age) and, from age 2, once there's a guard
-	# (D-077: an age-up with nobody home invites a raid; age 1's guard trains while the age-up runs).
-	if _saving_age and (guard >= int(cfg.military.guard) or w.ages[player] == 1) and _threats.is_empty():
+	# Saving for the next age (and, building up, for the next building): soldiers only from
+	# what's over, while nobody is raiding us (an army first, then the age) and, from age 2, once
+	# there's a guard (D-077: an age-up with nobody home invites a raid; age 1's guard trains while
+	# the age-up runs).
+	if (_saving_age or build_up) and (guard >= int(cfg.military.guard) or w.ages[player] == 1) and _threats.is_empty():
 		for r in eco.goal.size():
 			reserve[r] = eco.goal[r]
 	var foes := _enemy_tags(w)
