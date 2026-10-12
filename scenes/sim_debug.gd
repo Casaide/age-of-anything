@@ -1063,6 +1063,16 @@ func _play_events() -> void:
 				var side_a := world.units.owner[i] if i >= 0 else -1
 				if side_a == active or _owner_of(e.to) == active:
 					battle_until = world.tick / float(World.TICK_HZ) + 8.0
+		elif e.type == "heal":
+			var healer: Node2D = views.get(e.by)
+			var patient: Node2D = views.get(e.to)
+			if patient == null:
+				continue
+			if healer != null:
+				healer.face_vec(patient.position - healer.position)
+			fx.heal(patient)
+			if _on_screen(patient.position) and patient.visible:
+				audio.play("heal", -6.0)
 		elif e.type == "age":
 			age_ups.append([e.player, e.age, world.tick / 20])
 			if e.player == active:
@@ -1819,7 +1829,7 @@ func _my_research() -> Array:
 
 func _unit_tip(wt: Dictionary) -> String:
 	var lines := []
-	lines.append("Gathers food, wood, stone and gold, and builds." if wt.worker else UnitCard.text(wt, _foe_types(active)))
+	lines.append("Gathers food, wood, stone and gold, and builds." if wt.worker else UnitCard.text(wt, _foe_types(active), world.combat))
 	var ups := []
 	for r in _my_research():
 		if r.effects.any(func(e): return Tech.reaches(e, wt.eval.tags)):
@@ -2121,7 +2131,7 @@ func _update_panel() -> void:
 			if u.carry[first] > 0:
 				c.info += " (%d %s)" % [u.carry[first], world.resources[u.carry_kind[first] - 1]]
 		elif mine.size() == 1:
-			c.info = UnitCard.text(ft, _foe_types(active))
+			c.info = UnitCard.text(ft, _foe_types(active), world.combat)
 		else:
 			c.info = ""
 			var counts := {}
@@ -2188,7 +2198,7 @@ func _update_panel() -> void:
 		var eo := world.units.owner[i]
 		panel.show_content({"title": et.name if eo == world.gaia else "%s, %s" % [et.name, world.races[eo].name], "team": Color(lib.palettes.teams[eo]) if eo != world.gaia else ArtKit.ANIMAL_TEAM, "buttons": [], "queue": null,
 			"portrait": kit.icons.get("%d:%s" % [et.player, et.slot]), "hp": [world.units.hp[i], et.hp],
-			"info": UnitCard.text(et, _foe_types(eo))})
+			"info": UnitCard.text(et, _foe_types(eo), world.combat)})
 		return
 	panel.show_content({"title": world.races[active].name, "team": team, "portrait": null,
 		"info": "Select units or a building." if vs_ai else "Select units or a building.  Tab switches side.  F6: let the bots play.", "buttons": [], "queue": null})

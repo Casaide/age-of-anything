@@ -38,6 +38,7 @@ func _init() -> void:
 	_test_determinism(gen, rules.default)
 	_test_bounds(lib, gen, rules)
 	_test_prompts(gen, rules)
+	_test_healers(lib, gen, rules)
 	_test_composer(lib, gen, rules.default)
 	_test_audio(lib)
 	_test_tech_tree(lib, gen, rules)
@@ -309,6 +310,42 @@ func _test_prompts(gen, rules: Dictionary) -> void:
 	check(_unit(guns, "skirmisher").line[-1].recipe.parts.hand_r == "weapon.musket", "anything-goes rats with guns get muskets once their age comes (%s)" % _unit(guns, "skirmisher").line[-1].recipe.parts.hand_r)
 	var no_guns: Dictionary = gen.generate("rats with guns", d)
 	check(_unit(no_guns, "skirmisher").recipe.parts.hand_r != "weapon.musket", "default rules block muskets")
+
+
+## Every race gets a healer at the Town Center from age 2 (Dominic, 2026-10-12): it heals and
+## never fights, goes light (no shield, no armour, a bag in the off hand), wears its culture's
+## kit (cheese for rats, a lily for frogs), and adding it changed no other line's recipes.
+func _test_healers(lib, gen, rules: Dictionary) -> void:
+	for rid in rules:
+		var r: Dictionary = rules[rid]
+		for prompt in PROMPTS:
+			for reroll in 3:
+				var race: Dictionary = gen.generate(prompt, r, reroll)
+				var h: Dictionary = _unit(race, "healer")
+				check(int(h.recipe.tier) == 2, "%s: the healer opens in age 2" % prompt)
+				for l in h.line:
+					var e: Dictionary = l.eval
+					check(int(e.heal) > 0 and int(e.attack) == 0, "%s/%s: %s heals and has no attack" % [rid, prompt, l.recipe.name])
+					check(int(e.cost.get("gold", 0)) > 0, "%s: a healer costs gold" % l.recipe.name)
+					for slot in l.recipe.parts:
+						var p: Dictionary = lib.part(l.recipe.parts[slot])
+						check(slot != "torso" and not ("shield" in p.tags) and not ("heavy" in p.tags), "%s: %s goes light (%s)" % [prompt, l.recipe.name, p.id])
+						if slot == "hand_l":
+							check("heal" in p.tags, "%s: the healer's off hand holds its bag (%s)" % [prompt, p.id])
+				for u in race.units:
+					if u.recipe.role != "healer":
+						check(int(u.eval.get("heal", 0)) == 0 and not lib.part(u.recipe.parts.hand_r).tags.has("heal"), "%s: only healers heal (%s)" % [prompt, u.recipe.name])
+	check(_unit(gen.generate("sewer rats", rules.default), "healer").recipe.parts.hand_r == "tool.staff.cheese", "rat healers carry a cheese staff")
+	check(_unit(gen.generate("swamp frogs", rules.default), "healer").recipe.parts.hand_r == "tool.staff.lily", "frog healers carry a lily staff")
+	check(_unit(gen.generate("romans", rules.default), "healer").recipe.parts.hand_r == "tool.staff.herbs", "roman healers carry the herb staff")
+	# own_seed: the healer draws from its own stream, so every other line is as it was without it.
+	var without: Dictionary = rules.default.duplicate(true)
+	without.roster = without.roster.filter(func(sd): return sd.slot != "healer")
+	for prompt in PROMPTS:
+		var a: Array = gen.generate(prompt, rules.default).units.filter(func(u): return u.recipe.role != "healer")
+		var b: Array = gen.generate(prompt, without).units
+		check(JSON.stringify(a.map(func(u): return u.line.map(func(l): return l.recipe))) == JSON.stringify(b.map(func(u): return u.line.map(func(l): return l.recipe))),
+			"'%s': adding the healer leaves the other lines' recipes as they were" % prompt)
 
 
 func _test_composer(lib, gen, rules: Dictionary) -> void:

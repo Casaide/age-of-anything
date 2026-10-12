@@ -52,6 +52,15 @@
    "desc": "Beats ranged; weak to spears"
   },
   {
+   "slot": "healer",
+   "role": "healer",
+   "tier": 2,
+   "name": "Healer",
+   "building": "town_center",
+   "desc": "Heals wounded friends nearby; never fights. Weak to scouts and raiders",
+   "own_seed": true
+  },
+  {
    "slot": "infantry",
    "role": "infantry",
    "tier": 1,
@@ -171,7 +180,7 @@
    "last_age": 2
   }
  ],
- "_roster_doc": "each slot is a unit line: its first age (`tier`), the building that trains it, its name on the tech tree page, and `last_age` when it stops before the last age. Slots with \"status\": \"planned\" are only on the page: the generator skips them (milestone 12)",
+ "_roster_doc": "each slot is a unit line: its first age (`tier`), the building that trains it, its name on the tech tree page, and `last_age` when it stops before the last age. Slots with \"status\": \"planned\" are only on the page: the generator skips them (milestone 12). `own_seed`: the line draws from its own random stream (prompt + slot), so adding it leaves every other line's recipes as they were",
  "cost": {
   "base": 60,
   "curve": "pow1.4_ref12",
@@ -210,7 +219,12 @@
   "defend_sight": 3000,
   "leash": 5000,
   "stance_note": "stances (combat.gd): defensive units engage foes within defend_sight (or their reach, if longer) and give up once leash from where they stood, then walk back (leash stays above defend_sight, or they would turn back short of a foe that stands still).",
-  "note": "ticks at 20 Hz; distances in milli-tiles. Damage = max(min_damage, sum over attack classes the target has of max(0, attack - armour))."
+  "note": "ticks at 20 Hz; distances in milli-tiles. Damage = max(min_damage, sum over attack classes the target has of max(0, attack - armour)).",
+  "heal_amount": 3,
+  "heal_reload": 30,
+  "heal_range": 2500,
+  "heal_sight": 6000,
+  "heal_note": "healers (heal.gd): each one heals the most wounded unit of its own team (not itself, not animals, not buildings) within heal_sight, walking up to heal_range (edge to edge) when idle: heal_amount hp (x the unit's heal stat) every heal_reload ticks"
  },
  "movement": {
   "note": "Movement classes (sim_map.gd CLASSES): a unit takes the first class whose tag it has, else ground. Terrains list which classes cross them (terrain.json move).",

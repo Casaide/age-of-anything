@@ -2,8 +2,9 @@ extends Node2D
 ## Combat effects for the game view, played from the sim's events: projectiles
 ## (cosmetic: the damage already landed in the sim), impact sparks, a white hit flash, and units dying
 ## (the body topples over about its feet, darkens where it lies, then goes in a puff
-## of dust; the ground shadow stays flat and fades). Buildings that fall leave a dust cloud. View
-## side only; nothing here feeds back into the sim.
+## of dust; the ground shadow stays flat and fades). Buildings that fall leave a dust cloud. A
+## healed unit warms for a moment and a few pale motes drift up off it. View side only; nothing
+## here feeds back into the sim.
 
 ## How each ranged weapon's shot looks: speed (canvas px a second), arc (height as
 ## a share of the distance), length and width of the drawn shot, colour.
@@ -24,6 +25,10 @@ var sparks: Array = []   # {pos, t, col}
 var ghosts: Array = []   # {node, t, tip}
 var dusts: Array = []    # {pos, t, size}
 var flashes: Array = []  # {node, t} (t < 0: the shot is still flying)
+var heals: Array = []    # {node, t, motes: [[Vector2 offset, rise speed, delay]]}
+const HEAL_TIME := 1.0
+const HEAL_GLOW := 0.35   # a soft brightening, well under a hit's flash
+const HEAL_MOTE := Color("#e4f4c0")
 
 
 ## The shot a weapon's tags call for.
@@ -54,6 +59,16 @@ func flash(view: Node2D, delay := 0.0) -> void:
 	flashes.append({"node": view, "t": -delay})
 
 
+## A unit is healed: it warms up softly and three pale motes rise off its body and fade.
+func heal(view: Node2D) -> void:
+	if heals.any(func(h): return h.node == view and h.t < HEAL_TIME * 0.5):
+		return   # one glow at a time: two healers on one patient don't double it
+	var motes := []
+	for k in 3:
+		motes.append([Vector2(randf_range(-4.0, 4.0), randf_range(-14.0, -6.0)), randf_range(9.0, 14.0), randf_range(0.0, 0.25)])
+	heals.append({"node": view, "t": 0.0, "motes": motes})
+
+
 func spark(at: Vector2, heavy := false) -> void:
 	sparks.append({"pos": at + Vector2(randf_range(-2, 2), randf_range(-2, 2)), "t": 0.0, "big": heavy})
 
@@ -79,6 +94,7 @@ func clear() -> void:
 	ghosts.clear()
 	shots.clear()
 	flashes.clear()
+	heals.clear()
 	sparks.clear()
 	dusts.clear()
 
@@ -95,6 +111,15 @@ func _process(delta: float) -> void:
 		elif f.t >= 0.0:
 			n.visual.modulate.a = 1.0 + FLASH * maxf(0.0, 1.0 - f.t / FLASH_TIME)
 	flashes = flashes.filter(func(f): return f.t < FLASH_TIME)
+	for h in heals:
+		h.t += delta
+		var n = h.node
+		if not is_instance_valid(n) or ghosts.any(func(g): return g.node == n):
+			h.t = HEAL_TIME
+		elif not flashes.any(func(f): return f.node == n and f.t >= 0.0):   # a hit's flash wins
+			var k: float = h.t / HEAL_TIME
+			n.visual.modulate.a = 1.0 + HEAL_GLOW * sin(PI * k * 2.0) if k < 0.5 else 1.0
+	heals = heals.filter(func(h): return h.t < HEAL_TIME)
 	for s in sparks:
 		s.t += delta
 	sparks = sparks.filter(func(s): return s.t < 0.25)
@@ -133,6 +158,18 @@ func _draw() -> void:
 		else:
 			draw_circle(p, st.w, st.col)
 		draw_circle(p + Vector2(0, h * 4.0 * k * (1.0 - k) + 1.0), 0.8, Color(0, 0, 0, 0.25))   # its shadow on the ground
+	for h in heals:
+		var n = h.node
+		if not is_instance_valid(n) or not n.visible:
+			continue
+		for m in h.motes:
+			var t: float = h.t - float(m[2])
+			if t <= 0.0:
+				continue
+			var a := sin(PI * clampf(t / (HEAL_TIME - 0.25), 0.0, 1.0))
+			var p: Vector2 = n.position + m[0] + Vector2(sin(t * 5.0 + float(m[2]) * 20.0) * 1.2, -float(m[1]) * t)
+			draw_circle(p, 1.6, Color(HEAL_MOTE, 0.25 * a))   # a soft halo...
+			draw_circle(p, 0.7, Color(HEAL_MOTE, 0.85 * a))   # ...round a bright core
 	for s in sparks:
 		var f: float = 1.0 - s.t / 0.25
 		var r: float = (4.0 if s.big else 2.5) * (0.5 + f)

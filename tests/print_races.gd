@@ -22,5 +22,5 @@ func _init() -> void:
 			var e: Dictionary = u.eval
 			for l in u.get("line", [{"age": u.recipe.tier, "recipe": u.recipe, "eval": e}]):
 				var le: Dictionary = l.eval
-				print("   age %d %-32s %3dF %3dW  hp %3d atk %2d arm %d/%d rng %d spd %2d  %s" % [l.age, l.recipe.name, le.cost.food, le.cost.wood, le.hp, le.attack, le.armour.melee, le.armour.pierce, le["range"], le.speed, l.recipe.parts.values()])
+				print("   age %d %-32s %3dF %3dW %3dG  hp %3d atk %2d arm %d/%d rng %d spd %2d  %s" % [l.age, l.recipe.name, le.cost.food, le.cost.wood, le.cost.get("gold", 0), le.hp, le.attack, le.armour.melee, le.armour.pierce, le["range"], le.speed, l.recipe.parts.values()])
 	quit()
