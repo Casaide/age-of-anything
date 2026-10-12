@@ -45,6 +45,8 @@ var critters: Array = []     # [{kind, home, p, v, t, air, state}]
 var _critter_towns := {}     # town centre id -> true once its critters are made
 var _town_level := -1.0
 var _queue_len := {}         # building id -> its queue's length last frame (a unit out: the door opens)
+var spent_us := 0          # time spent in update (tests/town_bench.gd reads it)
+var frames := 0
 var enabled := true          # off: the town stands still (tests/town_bench.gd compares)
 
 
@@ -77,14 +79,18 @@ func update(delta: float) -> void:
 		return
 	time += delta
 	var w = host.world
+	var t0 := Time.get_ticks_usec()
 	_deliveries(w)
 	_decay(delta)
 	_workers(w)
 	_buildings(w)
 	_sync_piles(w)
-	_sync_growth(w)
-	_sync_tethers(w)
+	if frames % 15 == 0:   # houses age slowly: a few times a second is plenty
+		_sync_growth(w)
+		_sync_tethers(w)
 	_critters_update(w, delta)
+	spent_us += Time.get_ticks_usec() - t0
+	frames += 1
 	for p in puffs:
 		p.t += delta
 		p.p += p.v * delta

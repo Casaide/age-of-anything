@@ -487,6 +487,7 @@ func _town(view, side: int) -> void:
 ## and its barracks at a half (cracked); shot close.
 func _wear(view, side: int) -> void:
 	await _town(view, side)
+	view.reveal = side != 0   # the other side's town: lift the fog
 	var w = view.world
 	for b in w.buildings.count():
 		var t: Dictionary = w.btypes[w.buildings.kind[b]]
