@@ -132,7 +132,7 @@ static func cmd_attack(w, player: int, a: Dictionary) -> void:
 		return
 	for uid in a.ids:
 		var i: int = w.units.index_of(uid)
-		if i >= 0 and w.units.owner[i] == player and not w.types[w.units.kind[i]].healer:   # healers never fight
+		if i >= 0 and w.units.owner[i] == player and not w.types[w.units.kind[i]].healer and not w.types[w.units.kind[i]].get("harmless", false):   # healers and sheep never fight
 			Economy.clear_task(w, i)
 			w.units.foe[i] = a.target
 			w.units.stance[i] = ORDERED
@@ -149,6 +149,10 @@ static func cmd_attack_move(w, player: int, a: Dictionary) -> void:
 		return
 	var arrive: int = w.ARRIVE_STEP * Fixed.isqrt(slots.size()) - w.ARRIVE_BASE
 	for i in slots:
+		if w.types[w.units.kind[i]].get("harmless", false):
+			clear(w, i)   # a sheep along with the army just walks
+			w.order_move(i, a.x, a.y, arrive, w.next_group)
+			continue
 		Economy.clear_task(w, i)
 		w.units.foe[i] = 0
 		w.units.patient[i] = 0
@@ -167,8 +171,8 @@ static func cmd_stance(w, player: int, a: Dictionary) -> void:
 	var u = w.units
 	for uid in a.ids:
 		var i: int = u.index_of(uid)
-		if i < 0 or u.owner[i] != player:
-			continue
+		if i < 0 or u.owner[i] != player or w.types[u.kind[i]].has("animal"):
+			continue   # animals have no stance
 		u.posture[i] = p
 		if u.stance[i] == AUTO and p == PASSIVE:
 			u.foe[i] = 0
@@ -263,8 +267,8 @@ static func tick(w) -> void:
 		var t: Dictionary = w.types[u.kind[i]]
 		if u.stance[i] == RETURN and u.moving[i] == 0:
 			u.stance[i] = NONE   # back where it stood
-		if t.healer:
-			continue   # healers never fight (heal.gd); an attack-move walks them along with the army
+		if t.healer or t.get("harmless", false):
+			continue   # healers never fight (heal.gd), nor do sheep and deer; an attack-move walks them along with the army
 		var stance: int = u.stance[i]
 		var posture: int = u.posture[i]
 		# Look for a fight: idle soldiers (not workers, not passive) and attack-movers, on their own beat.
@@ -337,7 +341,7 @@ static func tick(w) -> void:
 				u.cooldown[i] = t.reload
 				if j >= 0:
 					var tt: Dictionary = w.types[u.kind[j]]
-					var d := damage(t.atk, tt.arm, tt.cls, int(c.min_damage))
+					var d := damage(t.atk, tt.arm, tt.cls, maxi(int(c.min_damage), tt.get("min_damage", 0)))   # a sheep goes down in a few blows
 					hurt[j] += d
 					hurt_by[j] = u.id[i]
 					w.events.append({"type": "hit", "by": u.id[i], "to": u.id[j], "damage": d, "ranged": t.ranged})
@@ -496,8 +500,8 @@ static func _apply(w, hurt: PackedInt32Array, hurt_by: PackedInt32Array, bhurt: 
 			continue
 		u.hp[j] -= hurt[j]
 		var t: Dictionary = w.types[u.kind[j]]
-		if u.owner[j] == w.gaia:
-			Animals.hurt(w, j, hurt_by[j])   # a deer bolts
+		if t.has("animal"):
+			Animals.hurt(w, j, hurt_by[j])   # a deer bolts, a sheep stands for the knife
 		if u.foe[j] == 0 and (u.stance[j] == NONE or u.stance[j] == RETURN) and u.task[j] == Economy.NONE and not t.worker \
 				and not t.get("harmless", false) and not t.get("healer", false) and u.posture[j] != PASSIVE:
 			_engage(w, j, hurt_by[j])
@@ -518,5 +522,6 @@ static func _apply(w, hurt: PackedInt32Array, hurt_by: PackedInt32Array, bhurt: 
 			w.events.append({"type": "die", "id": bs.id[b], "x": bs.cx[b] * SimMap.TILE + bs.sx[b] * SimMap.TILE / 2, "y": bs.cy[b] * SimMap.TILE + bs.sy[b] * SimMap.TILE / 2,
 				"owner": bs.owner[b], "kind": bs.kind[b], "building": true})
 			Economy.clear_farm(w, b)
+			Economy.Pens.gone(w, b)   # a pen's animals spill out
 			w.map.occupy(bs.footprint(b, w.map.width), 0)
 			bs.remove_at(b)
