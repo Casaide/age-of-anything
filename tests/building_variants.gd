@@ -17,7 +17,7 @@ func _initialize() -> void:
 	var kit := ArtKit.new()
 	root.add_child(kit)
 	await process_frame
-	var h: Array = await kit._hifi()
+	var h: Array = [await kit._hifi_baker(), kit._models]
 	var d: Dictionary = DataLib.load_json("res://data/buildings.json")
 	var archs: Array = ArtKit.HOUSE.keys()
 	archs.sort()

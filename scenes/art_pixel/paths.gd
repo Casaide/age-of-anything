@@ -15,17 +15,30 @@ const REACH := 10.0                                        # tiles: how far a cu
 ## blocked: Callable(t: Vector2) -> bool, for a point in tile coordinates.
 ## owners: [{style, width, hub: Vector2, targets: [Vector2]}]
 ## Returns [{style, width, points: PackedVector2Array}] in tile coordinates.
-static func plan(w: int, h: int, blocked: Callable, owners: Array) -> Array:
+## memo: pass the same Dictionary to every plan of one match and the paths grow instead of being
+## planned afresh: a route already laid (same owner style, hub and target) stays exactly where it
+## is, and only new targets add branches, joining what's there. (Replanning everything with each
+## new building moved roads that had stood for minutes; Dominic: "roads seem to be moving around".)
+static func plan(w: int, h: int, blocked: Callable, owners: Array, memo := {}) -> Array:
 	var gw := w * SUB
 	var gh := h * SUB
-	var used := PackedByteArray()
-	used.resize(gw * gh)
-	var out := []
+	if memo.is_empty():
+		var fresh := PackedByteArray()
+		fresh.resize(gw * gh)
+		memo.used = fresh
+		memo.out = []
+		memo.done = {}
+	var used: PackedByteArray = memo.used
+	var out: Array = memo.out
 	for o in owners:
 		var mine := STYLES.find(o.style) + 1
 		for target in o.targets:
 			if o.hub.distance_to(target) > REACH:
 				continue
+			var key := "%d|%s|%s" % [mine, o.hub, target]
+			if memo.done.has(key):
+				continue   # laid before: it stays put
+			memo.done[key] = true
 			var cells := _route(gw, gh, blocked, used, o.hub, target)
 			# Draw only the new stretches: any existing path (ours or another culture's)
 			# ends a run, keeping one cell of overlap so the two meet. That way every
@@ -43,6 +56,7 @@ static func plan(w: int, h: int, blocked: Callable, owners: Array) -> Array:
 			for c in cells:
 				if used[c] == 0:
 					used[c] = mine
+	memo.used = used   # (a packed array is a value: hand the marks back)
 	return out
 
 
