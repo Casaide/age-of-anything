@@ -105,37 +105,70 @@ static func solve(map: SimMap, source_cells: PackedInt32Array, cutoff := INF, k 
 	return f
 
 
-## A cell opened (walkable now in lane k; nothing closed): lower the costs it shortens. Opening
-## only adds ways, so costs only fall: recompute the cell and its neighbours from their
-## neighbours, then carry any fall outwards (label-correcting, in a FIFO). Moves follow solve's
-## rules (diagonals need both sides open; a blocked source is worked from any side). Cells
-## past a near field's cutoff take a cost but aren't expanded, as in solve. Deterministic: the
-## same cells in the same order. The caller drops the field instead if `cell` is a source.
+## A cell opened (walkable now in lane k; nothing closed): lower the costs it shortens.
 func patch(map: SimMap, cell: int, k := 0) -> void:
+	patch_opened(map, PackedInt32Array([cell]), k)
+
+
+## Cells opened (walkable now in lane k; none of them a source): lower the costs they shorten.
+## Opening only adds ways, so costs only fall: each opened cell and its neighbours take the best
+## cost their neighbours offer (diagonals they now allow included), then the falls spread outwards
+## cheapest first, every cell settled once (Dijkstra from the changed cells). The costs come out as
+## a fresh solve's; where two ways cost the same, `next` may pick the other one. Cells past a near
+## field's cutoff take a cost but aren't expanded, as in solve. Deterministic: the same cells in
+## the same order. Returns the cells settled (the work done), or -1 if that passed `limit`: the
+## field is then half patched and the caller drops it (a solve is cheaper than a big patch).
+func patch_opened(map: SimMap, cells: PackedInt32Array, k := 0, limit := INF) -> int:
+	var w := map.width
+	var walk: PackedByteArray = map.walks[k]
+	var seeds := PackedInt32Array()
+	for cell in cells:
+		var cx := cell % w
+		var cy := cell / w
+		for y in range(maxi(cy - 1, 0), mini(cy + 2, map.height)):
+			for x in range(maxi(cx - 1, 0), mini(cx + 2, w)):
+				var s := y * w + x
+				if walk[s] == 1 and dist[s] != 0 and _relax_from_neighbours(map, walk, s):
+					seeds.append(s)
+	return _spread(map, walk, seeds, limit)
+
+
+## Cells closed (blocked now in lane k; none of them a source): every cell whose way ran
+## through one (or slipped diagonally past one) loses its cost, then takes the best cost its
+## neighbours still offer, spread cheapest first over that region only. Closing only removes
+## ways, so the rest of the field stands. The costs come out as a fresh solve's (within a near
+## field's cutoff). Returns the cells reset and settled (the work done), or -1 past `limit`
+## (the field is then broken: the caller drops it).
+func patch_closed(map: SimMap, cells: PackedInt32Array, k := 0, limit := INF) -> int:
 	var w := map.width
 	var h := map.height
 	var walk: PackedByteArray = map.walks[k]
+	var bad := {}
 	var queue := PackedInt32Array()
-	var cx := cell % w
-	var cy := cell / w
-	for y in range(maxi(cy - 1, 0), mini(cy + 2, h)):
-		for x in range(maxi(cx - 1, 0), mini(cx + 2, w)):
-			var s := y * w + x
-			if walk[s] == 0 or dist[s] == 0:
-				continue
-			for ny in range(maxi(y - 1, 0), mini(y + 2, h)):
-				for nx in range(maxi(x - 1, 0), mini(x + 2, w)):
-					var n := ny * w + nx
-					if n == s or dist[n] >= INF or (dist[n] > max_cost):
-						continue
-					var step := _step(map, walk, n, s)
-					if step > 0 and dist[n] + step < dist[s]:
-						dist[s] = dist[n] + step
-						next[s] = n
-			if dist[s] < INF and dist[s] <= max_cost:
+	for cell in cells:
+		if not bad.has(cell) and dist[cell] < INF:
+			bad[cell] = true
+			queue.append(cell)
+		var cx := cell % w
+		var cy := cell / w
+		for y in range(maxi(cy - 1, 0), mini(cy + 2, h)):
+			for x in range(maxi(cx - 1, 0), mini(cx + 2, w)):
+				var s := y * w + x
+				if bad.has(s) or next[s] < 0:
+					continue
+				var t := next[s]
+				if walk[t] == 0 and dist[t] != 0:
+					pass   # its next step is shut
+				elif walk[s] == 0 or _step(map, walk, t, s) == 0:
+					pass   # shut itself, or a diagonal it took now slips past a blocked corner
+				else:
+					continue
+				bad[s] = true
 				queue.append(s)
 	var head := 0
-	while head < queue.size():
+	while head < queue.size():   # everything downstream: cells whose next is a lost cell
+		if queue.size() > limit:
+			return -1
 		var c: int = queue[head]
 		head += 1
 		var x0 := c % w
@@ -143,15 +176,123 @@ func patch(map: SimMap, cell: int, k := 0) -> void:
 		for ny in range(maxi(y0 - 1, 0), mini(y0 + 2, h)):
 			for nx in range(maxi(x0 - 1, 0), mini(x0 + 2, w)):
 				var n := ny * w + nx
-				if n == c or walk[n] == 0:
-					continue
-				var step := _step(map, walk, c, n)
-				if step > 0 and dist[c] + step < dist[n]:
-					dist[n] = dist[c] + step
-					next[n] = c
-					if dist[n] <= max_cost:
-						queue.append(n)
-		pops += 1
+				if next[n] == c and not bad.has(n):
+					bad[n] = true
+					queue.append(n)
+	for c in queue:
+		dist[c] = INF
+		next[c] = -1
+	var seeds := PackedInt32Array()
+	for c in queue:
+		if walk[c] == 1 and _relax_from_neighbours(map, walk, c):
+			seeds.append(c)
+	var spread := _spread(map, walk, seeds, limit - queue.size())
+	return -1 if spread < 0 else queue.size() + spread
+
+
+## Give cell s the best cost its neighbours offer (those a solve would have expanded: within
+## the cutoff); true if that lowered it.
+func _relax_from_neighbours(map: SimMap, walk: PackedByteArray, s: int) -> bool:
+	var w := map.width
+	var sx := s % w
+	var sy := s / w
+	var lowered := false
+	for ny in range(maxi(sy - 1, 0), mini(sy + 2, map.height)):
+		for nx in range(maxi(sx - 1, 0), mini(sx + 2, w)):
+			var n := ny * w + nx
+			if n == s or dist[n] >= INF or dist[n] > max_cost:
+				continue
+			var step := _step(map, walk, n, s)
+			if step > 0 and dist[n] + step < dist[s]:
+				dist[s] = dist[n] + step
+				next[s] = n
+				lowered = true
+	return lowered
+
+
+## Spread lowered costs from the seeds outwards, cheapest first, each cell expanded once at its
+## final cost, only within the cutoff: solve's loop (a ring of cost buckets), fed the seeds in
+## cost order (ties by cell) as the cost reaches them. Seeds are walkable and never sources, so a
+## diagonal always needs both sides open. Returns the cells expanded, or -1 past `limit`.
+func _spread(map: SimMap, walk: PackedByteArray, seeds: PackedInt32Array, limit: int) -> int:
+	var order := []
+	for c in seeds:
+		if dist[c] <= max_cost:
+			order.append(dist[c] * (1 << 20) + c)
+	if order.is_empty():
+		return 0
+	order.sort()
+	var w := map.width
+	var h := map.height
+	var ring := []
+	for i in RING:
+		ring.append([])
+	var pending := 0
+	var fed := 0
+	var done := 0
+	var cost: int = order[0] >> 20
+	while true:
+		while fed < order.size() and (order[fed] >> 20) == cost:
+			ring[cost % RING].append(order[fed] & ((1 << 20) - 1))
+			pending += 1
+			fed += 1
+		if pending == 0:
+			if fed >= order.size():
+				break
+			cost = order[fed] >> 20   # nothing queued until the next seed: jump to it
+			continue
+		var bucket: Array = ring[cost % RING]
+		for c: int in bucket:
+			pending -= 1
+			if dist[c] != cost:
+				continue   # lowered again since it was queued
+			done += 1
+			if done > limit:
+				return -1
+			var cx := c % w
+			var cy := c / w
+			var up := cy > 0 and walk[c - w] == 1
+			var down := cy < h - 1 and walk[c + w] == 1
+			var left := cx > 0 and walk[c - 1] == 1
+			var right := cx < w - 1 and walk[c + 1] == 1
+			var s := cost + STRAIGHT
+			var d := cost + DIAGONAL
+			var more_s := s <= max_cost
+			var more_d := d <= max_cost
+			var bs: Array = ring[s % RING]
+			var bd: Array = ring[d % RING]
+			var n_ := c - w
+			var e_ := c + 1
+			var s_ := c + w
+			var w_ := c - 1
+			if up and s < dist[n_]:
+				dist[n_] = s; next[n_] = c
+				if more_s: bs.append(n_); pending += 1
+			if right and s < dist[e_]:
+				dist[e_] = s; next[e_] = c
+				if more_s: bs.append(e_); pending += 1
+			if down and s < dist[s_]:
+				dist[s_] = s; next[s_] = c
+				if more_s: bs.append(s_); pending += 1
+			if left and s < dist[w_]:
+				dist[w_] = s; next[w_] = c
+				if more_s: bs.append(w_); pending += 1
+			if up and right and walk[n_ + 1] == 1 and d < dist[n_ + 1]:
+				dist[n_ + 1] = d; next[n_ + 1] = c
+				if more_d: bd.append(n_ + 1); pending += 1
+			if down and right and walk[s_ + 1] == 1 and d < dist[s_ + 1]:
+				dist[s_ + 1] = d; next[s_ + 1] = c
+				if more_d: bd.append(s_ + 1); pending += 1
+			if down and left and walk[s_ - 1] == 1 and d < dist[s_ - 1]:
+				dist[s_ - 1] = d; next[s_ - 1] = c
+				if more_d: bd.append(s_ - 1); pending += 1
+			if up and left and walk[n_ - 1] == 1 and d < dist[n_ - 1]:
+				dist[n_ - 1] = d; next[n_ - 1] = c
+				if more_d: bd.append(n_ - 1); pending += 1
+		bucket.clear()
+		cost += 1
+	pops += done
+	return done
 
 
 ## The cost of the field spreading from c to its neighbour n (n walkable): straight 10,

@@ -67,6 +67,7 @@ var map_hash: int                  # content hash of the file, for replays
 var version := 0
 var fresh := PackedInt32Array()    # cells changed this tick (the World reads and clears it)
 var fresh_closed := PackedByteArray()   # per fresh entry: 1 if some lane lost a walkable cell there (else it only opened)
+var fresh_was := {}                # fresh cell -> PackedByteArray: its walk value per lane before this tick's first change
 var changed := PackedInt32Array()  # cells changed since the view last looked (view clears it)
 var changed_overflow := false      # too many to list: the view should redraw everything
 
@@ -386,6 +387,8 @@ func _refresh(cell: int) -> void:
 	var was := PackedByteArray()
 	for g in walks:
 		was.append(g[cell])
+	if not fresh_was.has(cell):
+		fresh_was[cell] = was
 	var clear: bool = (occupied[cell] == 0 or walk_over[cell] == 1) and cliff[cell] == 0   # buildings and cliffs block, farms don't
 	var ground: bool = terrain_walk[terrain[cell]] or deck[cell] == 1   # a bridge's deck is ground over the water
 	walk[cell] = 1 if ground and clear else 0
