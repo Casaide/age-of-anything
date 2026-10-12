@@ -152,7 +152,7 @@ func show_content(c: Dictionary) -> void:
 	_queue_label.text = str(c.get("queue_title", "Training")).to_upper()
 	_queue_bar.modulate.a = 1.0 if queue != null and not queue.is_empty() else 0.25
 	var sig := "%s|%s|%s|%s|%s|%s" % [c.title, c.team, c.portrait, c.get("tray", []).map(func(t): return "%s%d" % [t.icon, t.count]),
-		c.buttons.map(func(b): return "%s:%s:%s" % [b.get("group", ""), b.text, b.enabled]), queue.map(func(q): return str(q.icon)) if queue != null else "-"]
+		c.buttons.map(func(b): return "%s:%s:%s:%s:%s" % [b.get("group", ""), b.text, b.enabled, b.get("accent", false), b.get("cost", "")]), queue.map(func(q): return str(q.icon)) if queue != null else "-"]
 	if sig == _signature:
 		return
 	_signature = sig
