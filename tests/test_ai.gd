@@ -45,7 +45,13 @@ func _init() -> void:
 		print("\n%d checks, %d failed" % [checks, failures])
 		quit(1 if failures > 0 else 0)
 		return
+	if args.size() > 1 and args[1] == "rams":   # just the rams against stone (a minute)
+		_test_rams(rules, frogs)
+		print("\n%d checks, %d failed" % [checks, failures])
+		quit(1 if failures > 0 else 0)
+		return
 	if args.size() > 1 and args[1] == "walls":   # just the walled-base checks (a few minutes)
+		_test_rams(rules, frogs)
 		_test_walled_base(rules, frogs, rats, "palisade", false)
 		_test_walled_base(rules, frogs, rats, "wall", false)
 		_test_walled_base(rules, frogs, rats, "wall", true)
@@ -96,6 +102,7 @@ func _init() -> void:
 	_test_respond(rules, rats, frogs)
 	_test_shelter(rules, rats, frogs)
 	_test_walled_fords(rules, frogs, rats)
+	_test_rams(rules, frogs)
 	_test_walled_base(rules, frogs, rats, "palisade", false)
 	_test_walled_base(rules, frogs, rats, "wall", false)
 	_test_walled_base(rules, frogs, rats, "wall", true)
@@ -695,6 +702,46 @@ func _test_walled_base(rules: Dictionary, a: Dictionary, b: Dictionary, wall: St
 	else:
 		check(breach >= 0, "%s: it breaks a way through the ring" % title)
 		check(not spread.is_empty() and spread[0] * 2 >= ring_hits, "%s: the blows go on one piece, not nicks on a dozen (%s of %d)" % [title, spread.slice(0, 3), ring_hits])
+
+
+## Rams break walls (milestone 13): three rams against a stone gate and a stone wall piece, then
+## the same cost in each of the race's foot soldiers (spears, swordsmen if it has them): the rams
+## break through several times faster.
+func _test_rams(rules: Dictionary, race: Dictionary) -> void:
+	var times := {}
+	var spent := 0
+	for slot in ["ram", "spear", "large"]:
+		for target in ["stone_gate", "wall"]:
+			var r := rules.duplicate(true)
+			r.economy.start.buildings = []
+			r.economy.start.workers = 0
+			r.animals = false
+			var w := World.new(SEED, SimMap.load_id(map_id), [race, race], r)
+			var k: int = w.type_of(0, slot)
+			var cost := 0
+			for c in w.types[k].cost:
+				cost += c
+			if slot == "ram":
+				spent = cost * 3
+			var n := 3 if slot == "ram" else maxi(1, (spent + cost / 2) / cost)
+			var bk := Economy.btype_of(w, target)
+			var bi := Economy.place(w, 1, bk, 20, 20, 0)
+			w.buildings.done[bi] = 1
+			w.buildings.hp[bi] = w.bmods[1][bk].hp
+			var bid: int = w.buildings.id[bi]
+			w.issue(0, Commands.SPAWN, {"slot": slot, "count": n, "x": 15000, "y": 20500})
+			while w.units.count() < n:
+				w.step()
+			w.issue(0, Commands.ATTACK, {"ids": Array(w.units.id), "target": bid})
+			while w.buildings.index_of(bid) >= 0 and w.tick < 20 * 600:
+				w.step()
+			times["%s:%s" % [slot, target]] = w.tick
+			print("  %d %s (%d resources each) break a %s in %s" % [n, w.types[k].name, cost, target, _clock(w.tick)])
+	for target in ["stone_gate", "wall"]:
+		var ram: int = times["ram:" + target]
+		for slot in ["spear", "large"]:
+			check(ram * 3 <= times["%s:%s" % [slot, target]], "rams break a %s at least 3 times faster than the same cost in %s (%s vs %s)" % [
+				target, slot, _clock(ram), _clock(times["%s:%s" % [slot, target]])])
 
 
 func _clock(tick: int) -> String:

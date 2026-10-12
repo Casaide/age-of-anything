@@ -30,6 +30,8 @@ extends SceneTree
 ## "garrison[:bastion]": side 0 rings the call to arms (its workers in the Town Center and a
 ## Watchtower, the Town Center selected) with an Outpost by, enemy spears coming; ":bastion" with
 ## the Bastion research done (the tower a Bastion).
+## "engines", "ram", "catapult": siege engines rolling out, rams at a stone gate, a catapult
+## volley on a crowd (see _engines).
 ## Prefix any scene with "ai-" to see it as in a match against the AI.
 
 const Iso := preload("res://src/view/iso.gd")
@@ -134,6 +136,8 @@ func _initialize() -> void:
 		await _volley(view, map_id, scene.get_slice(":", 1) if ":" in scene else "large")
 	elif scene.begins_with("formation"):
 		await _formation(view, map_id, int(scene.get_slice(":", 1)))
+	elif scene in ["engines", "ram", "catapult"]:
+		await _engines(view, map_id, scene)
 	elif scene.begins_with("siege"):
 		await _siege(view, int(scene.get_slice(":", 1)))
 	elif scene.begins_with("wonder"):
@@ -638,6 +642,100 @@ func _siege(view, at_tick: int) -> void:
 	view._on_zoom()
 	var bs = w.buildings
 	view.camera.look_at_point(Iso.to_screen((bs.cx[tc] + bs.sx[tc] / 2.0) * 1000.0, (bs.cy[tc] + bs.sy[tc] / 2.0) * 1000.0))
+
+
+## Siege engines (milestone 13). "engines": side 0's ram, catapult and bolt thrower roll out
+## beside a few spears, crews walking. "ram": three rams at side 1's stone gate in a wall line,
+## shot as they strike. "catapult": side 0's catapults throw at a crowd of side 1's spears, shot
+## (frozen) with a stone landing and more in the air.
+func _engines(view, map_id: String, what: String) -> void:
+	var w = view.world
+	var Economy = load("res://src/sim/economy.gd")
+	var meet: Vector2 = MEET[map_id] * 1000.0
+	view.reveal = true
+	while w.units.count() == 0:
+		await process_frame
+	var start: int = w.units.count()
+	var mine := []
+	var look := meet
+	match what:
+		"engines":
+			for q in 3:
+				w.issue(0, "spawn", {"slot": ["ram", "catapult", "bolt_thrower"][q], "count": 1, "x": int(meet.x) - 4000 + q * 1800, "y": int(meet.y) - 1500 + q * 1200})
+			w.issue(0, "spawn", {"slot": "spear", "count": 3, "x": int(meet.x) - 2500, "y": int(meet.y) + 2200})
+			mine = [start, 6]
+		"ram":
+			var wk: int = Economy.btype_of(w, "wall")
+			var gk: int = Economy.btype_of(w, "stone_gate")
+			var gx := int(meet.x / 1000.0) + 2
+			var gy := int(meet.y / 1000.0)
+			for y in range(gy - 5, gy + 6):
+				if w.map.occupied[y * w.map.width + gx] == 0 and w.map.can_build(gx, y, 1):
+					var b: int = Economy.place(w, 1, wk, gx, y)
+					w.buildings.done[b] = 1
+					w.buildings.hp[b] = w.btypes[wk].hp
+			for c in Economy._footprint(w, gx, gy - 1, Economy.dims(w.btypes[gk], 1)):
+				if w.map.occupied[c] != 0:
+					Economy.demolish(w, w.buildings.index_of(w.map.occupied[c]))
+			var g: int = Economy.place(w, 1, gk, gx, gy - 1, 1)
+			w.buildings.done[g] = 1
+			w.buildings.hp[g] = w.btypes[gk].hp
+			w.issue(0, "spawn", {"slot": "ram", "count": 3, "x": gx * 1000 + 4500, "y": int(meet.y)})   # on the camera's side of the wall
+			mine = [start, 3]
+			look = Vector2(gx * 1000.0 + 1500.0, gy * 1000.0 + 500.0)
+		"catapult":
+			for q in 3:
+				w.issue(0, "spawn", {"slot": "catapult", "count": 1, "x": int(meet.x) - 7000, "y": int(meet.y) - 2200 + q * 2200})
+			w.issue(1, "spawn", {"slot": "spear", "count": 16, "x": int(meet.x) + 1500, "y": int(meet.y)})
+			mine = [start, 19]
+			look = meet + Vector2(-2500, 0)
+	while w.units.count() < start + mine[1]:
+		await process_frame
+	var ours := []
+	var theirs := []
+	for i in w.units.count():
+		if not w.types[w.units.kind[i]].worker and not w.types[w.units.kind[i]].has("animal"):
+			(ours if w.units.owner[i] == 0 else theirs).append(w.units.id[i])
+	if not theirs.is_empty():
+		w.issue(1, "stance", {"ids": theirs, "stance": "passive"})
+	match what:
+		"engines":
+			w.issue(0, "move", {"ids": ours, "x": int(meet.x) + 3000, "y": int(meet.y) + 1000})
+		"ram":
+			var gate := -1
+			for b in w.buildings.count():
+				if w.buildings.owner[b] == 1 and w.btypes[w.buildings.kind[b]].gate:
+					gate = w.buildings.id[b]
+			w.issue(0, "attack", {"ids": ours, "target": gate})
+		"catapult":
+			w.issue(0, "attack_move", {"ids": ours, "x": int(meet.x), "y": int(meet.y)})
+	view.camera.zoom = Vector2(3.0, 3.0)
+	view._on_zoom()
+	view.camera.look_at_point(Iso.to_screen(look.x, look.y))
+	match what:
+		"engines":
+			for f in 150:
+				await process_frame
+		"ram":
+			var hits := 0
+			for f in 4000:
+				await process_frame
+				for b in w.buildings.count():
+					if w.btypes[w.buildings.kind[b]].gate and w.buildings.hp[b] < w.btypes[w.buildings.kind[b]].hp * 7 / 10:
+						hits = 1
+				if hits > 0:
+					break
+			for f in 8:
+				await process_frame
+		"catapult":
+			for f in 3000:
+				await process_frame
+				if view.fx.shots.size() >= 1 and view.fx.dusts.size() >= 6:
+					for g in 14:   # the dirt up, the next stones still in the air
+						await process_frame
+					break
+			view.clock.paused = true
+			view.fx.set_process(false)
 
 
 func _battle(view, map_id: String, at_tick: int) -> void:

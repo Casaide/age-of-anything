@@ -17,7 +17,8 @@
    "forest"
   ],
   "architecture": "reed",
-  "gait": "hop"
+  "gait": "hop",
+  "siege": "frog"
  },
  "rat": {
   "voice": "rat",

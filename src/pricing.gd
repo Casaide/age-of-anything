@@ -16,7 +16,7 @@ const MOUNT_MIX := {"food": 70, "wood": 30}
 
 static func evaluate(recipe: Dictionary, lib, rules: Dictionary) -> Dictionary:
 	var body: Dictionary = lib.part(recipe.body)
-	var gear := [lib.part(recipe.head)]
+	var gear := [lib.part(recipe.head)] if recipe.head != "" else []   # an engine has no head of its own
 	for slot in recipe.parts:
 		gear.append(lib.part(recipe.parts[slot]))
 
@@ -30,6 +30,9 @@ static func evaluate(recipe: Dictionary, lib, rules: Dictionary) -> Dictionary:
 	var bonus := {}
 	_add_classes(bonus, body.stats.get("bonus", {}))
 	var damage := "melee"
+	# Siege weapons (milestone 13): their own reload (ticks), a minimum range (tiles), splash and
+	# pass-through (milli-tiles), and what they go for ("buildings": rams). 0 / "": the rules' usual.
+	var weapon := {"reload": 0, "min_range": 0, "splash": 0, "pass": 0, "targets": ""}
 	var tags := {}
 	var points := _price(body)
 	var mix := {}
@@ -47,6 +50,9 @@ static func evaluate(recipe: Dictionary, lib, rules: Dictionary) -> Dictionary:
 		reach = maxi(reach, int(s.get("range", 1)))
 		if s.has("damage"):
 			damage = s.damage
+		for k in weapon:
+			if s.has(k):
+				weapon[k] = s[k] if k == "targets" else int(s[k])
 		_add_classes(bonus, s.get("bonus", {}))
 		for t in p.tags:
 			tags[t] = true
@@ -121,7 +127,7 @@ static func evaluate(recipe: Dictionary, lib, rules: Dictionary) -> Dictionary:
 
 	var tag_list := tags.keys()
 	tag_list.sort()
-	return {
+	var out := {
 		"hp": maxi(1, hp),
 		"attack": 0 if heal > 0 else maxi(1, attack),
 		"heal": heal,
@@ -135,7 +141,10 @@ static func evaluate(recipe: Dictionary, lib, rules: Dictionary) -> Dictionary:
 		"cost": cost,
 		"train_time": maxi(3, (int(c.train_base) * lib.curve(c.train_curve, points) * int(econ.get("train_time_pct", 100)) / 100 + 500) / 1000),
 		"pop": 2 if tags.has("large") else 1,
+		"radius": int(body.stats.get("radius", 0)),   # a body's own size in milli-tiles (engines); 0: by scale
 	}
+	out.merge(weapon)
+	return out
 
 
 ## Sum per-class numbers (armour or bonus), e.g. {"melee": 1, "pierce": 2, "large": 3}.

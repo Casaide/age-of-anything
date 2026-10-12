@@ -46,6 +46,15 @@ map; the code says the details.
    changes. The bake's alpha is hard, so see-through is the view's job: a part with `blur`
    in parts.json (a hummingbird's wings) is drawn at that opacity over the body and flickers.
 
+**Siege engines** (milestone 13, D-119) are one baked part each, `siege.<engine>.<take>` (slot
+`engine` in parts.json; models in `scenes/art_pixel/siege_models.gd`, which `unit_models.gd` hands
+those ids to), baked in 8 facings like a body, in the race's colours (the timber take wears the
+culture's cloth). The crew are not baked in: the recipe carries `crew` (the race's age-1 worker), and
+`UnitView` composes one worker UnitView per crew socket of the facing (`crew<n>_f<k>[_reach|_raise][_in|_top]`:
+turned k facings, the arm hold it keeps, behind the frame or riding on top). Crews walk while the
+engine rolls, heave with a ram's blow, snap with a shot, and fall when it's destroyed. Check them with
+`tests/siege_lineup.gd -- out.png [zoom] ["prompt" ...]` (every take, four facings, a worker for size).
+
 ## Buildings, props, terrain
 
 - **Buildings** (`src/view/art/bake/models.gd`, baked by `src/view/art/bake/baker.gd` via

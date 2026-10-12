@@ -5,7 +5,7 @@ extends RefCounted
 ## there `flight` ticks later, hitting whoever's body is on the spot then (combat.gd _land). State:
 ## hashed with the rest of the World.
 
-enum { LAND, TO, BY, OWNER, DAMAGE, SRC, UP, X, Y, STRIDE }
+enum { LAND, TO, BY, OWNER, DAMAGE, SRC, UP, X, Y, X0, Y0, STRIDE }
 
 var data := PackedInt32Array()
 
@@ -17,8 +17,9 @@ func count() -> int:
 ## Loose a shot: lands at tick `land` on (x, y), meant for `to` (a unit or building id), from `by`
 ## (owned by `owner`), `damage` against the target as aimed. `src`: the shooter's unit type index,
 ## or -1 - its building type for a tower. `up`: the shooter's height step over the target (-1 uphill).
-func add(land: int, to: int, by: int, owner: int, damage: int, src: int, up: int, x: int, y: int) -> void:
-	data.append_array(PackedInt32Array([land, to, by, owner, damage, src, up, x, y]))
+## (x0, y0): where it was loosed from (a bolt goes through what is on its way).
+func add(land: int, to: int, by: int, owner: int, damage: int, src: int, up: int, x: int, y: int, x0: int, y0: int) -> void:
+	data.append_array(PackedInt32Array([land, to, by, owner, damage, src, up, x, y, x0, y0]))
 
 
 ## The shots landing at `tick`, taken out of the air (records in loosing order).

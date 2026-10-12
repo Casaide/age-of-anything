@@ -113,7 +113,8 @@
    "name": "Ram",
    "building": "siege_workshop",
    "desc": "Beats buildings; weak to melee",
-   "status": "planned"
+   "own_seed": true,
+   "engine": "ram"
   },
   {
    "slot": "catapult",
@@ -122,7 +123,8 @@
    "name": "Catapult",
    "building": "siege_workshop",
    "desc": "Beats massed units (splash); weak to mounted",
-   "status": "planned"
+   "own_seed": true,
+   "engine": "catapult"
   },
   {
    "slot": "bolt_thrower",
@@ -131,7 +133,8 @@
    "name": "Bolt Thrower",
    "building": "siege_workshop",
    "desc": "Beats lines of infantry; weak to mounted",
-   "status": "planned"
+   "own_seed": true,
+   "engine": "bolt"
   },
   {
    "slot": "siege_tower",
@@ -181,13 +184,20 @@
    "last_age": 2
   }
  ],
- "_roster_doc": "each slot is a unit line: its first age (`tier`), the building that trains it, its name on the tech tree page, and `last_age` when it stops before the last age. Slots with \"status\": \"planned\" are only on the page: the generator skips them (milestone 12). `upgrades`: false keeps the first unit for every later age (no second tier: the healer). `own_seed`: the line draws from its own random stream (prompt + slot), so adding it leaves every other line's recipes as they were",
+ "_roster_doc": "each slot is a unit line: its first age (`tier`), the building that trains it, its name on the tech tree page, and `last_age` when it stops before the last age. Slots with \"status\": \"planned\" are only on the page: the generator skips them (milestone 12). `upgrades`: false keeps the first unit for every later age (no second tier: the healer). `own_seed`: the line draws from its own random stream (prompt + slot), so adding it leaves every other line's recipes as they were `engine`: a siege line: its body is the engine of that name in the race's take (families.json `siege`, a creature's own `siege` first), crewed by the race's workers",
  "cost": {
   "base": 60,
   "curve": "pow1.4_ref12",
   "train_curve": "pow0.5_ref12",
   "train_base": 20,
-  "roles": {"worker": {"floor": 50, "mix": {"food": 100}}},
+  "roles": {
+   "worker": {
+    "floor": 50,
+    "mix": {
+     "food": 100
+    }
+   }
+  },
   "roles_note": "a role's own price terms (pricing.gd): the total is at least floor (before the creature's cost_pct), and mix replaces the parts' cost_mix"
  },
  "animals": true,
@@ -227,7 +237,9 @@
    "sling": 300,
    "poison": 350,
    "crossbow": 400,
-   "gun": 800
+   "gun": 800,
+   "catapult": 180,
+   "bolt_thrower": 220
   },
   "shot_lead_pct": 0,
   "shot_strays": 0,
@@ -239,7 +251,12 @@
   "heal_reload": 40,
   "heal_range": 2500,
   "heal_sight": 6000,
-  "heal_note": "healers (heal.gd): each one heals the most wounded unit of its own team (not itself, not animals, not buildings) within heal_sight, walking up to heal_range (edge to edge) when idle: heal_amount hp (x the unit's heal stat) every heal_reload ticks"
+  "heal_note": "healers (heal.gd): each one heals the most wounded unit of its own team (not itself, not animals, not buildings) within heal_sight, walking up to heal_range (edge to edge) when idle: heal_amount hp (x the unit's heal stat) every heal_reload ticks",
+  "splash_friend_pct": 50,
+  "splash_note": "splash (catapults, combat.gd): a shot whose weapon has `splash` (milli-tiles) lands on its spot and hurts every unit within it (and enemy buildings), less further out: damage x (splash - gap) / splash, gap from the spot to the body's edge; its target takes it in full if still there, a building always. Friends in the area take splash_friend_pct of it (the genre's stone throwers hurt their own side too). `min_range` (tiles): it can't hit what is closer, and steps back from a foe that comes in. `pass` (milli-tiles, bolt throwers): the shot also hits every foe whose body is on its last `pass` of flight. `reload` (ticks) on a weapon overrides melee_reload / ranged_reload. `targets: buildings` (rams): goes for buildings only.",
+  "heal_not": [
+   "machine"
+  ]
  },
  "movement": {
   "note": "Movement classes (sim_map.gd CLASSES): a unit takes the first class whose tag it has, else ground. Terrains list which classes cross them (terrain.json move).",

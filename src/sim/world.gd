@@ -220,6 +220,8 @@ func _make_type(player: int, u: Dictionary) -> Dictionary:
 	var radius: int = BASE_RADIUS * int(r.scale) / 100
 	if r.has("mount"):
 		radius = maxi(radius, MOUNTED_RADIUS)
+	if int(e.get("radius", 0)) > 0:
+		radius = int(e.radius)   # a body with its own size (siege engines)
 	return {
 		"player": player, "slot": r.slot, "name": r.get("name", r.slot), "recipe": r,
 		"speed": int(e.speed) * SPEED_SCALE, "radius": mini(radius, MAX_RADIUS), "hp": int(e.hp),
