@@ -2,6 +2,7 @@
 
     blender -b --python tools/blender/capybara.py -- assets/models/head_capybara.glb head
     blender -b --python tools/blender/capybara.py -- assets/models/body_capybara.glb body
+    blender -b --python tools/blender/capybara.py -- assets/models/head_capybara_long.glb head long
 
 Built in the game's part units, facing +X, up +Z (glTF turns that into Godot's +X forward, +Y
 up), in the frames of unit_models.gd's capybara parts: the head about 10 long from its neck
@@ -13,7 +14,12 @@ at 30 pixels: a deep blunt muzzle (tall, squarish but soft), the heavy cheek of 
 muscle, small eyes high and far back on a slight brow, small round ears at the back of the
 crown, and nostrils on top of the muzzle's front. The body is a barrel sloping up to a heavy,
 tailless rump, with a short thick neck rising to the head. Materials are named "fur", "nose",
-"eye" and "ear": the game swaps in its own (the race's palette).
+"eye", "ear" (and "face" on a tan-faced variant): the game swaps in its own (the race's palette).
+
+An optional third argument picks a variant (VARIANTS below): cp1 (the default, in play) or the
+rat-mount round's pushed looks (RM1, "push the capybara further, bigger head, need to avoid it
+looking like a bear": Dominic): long (a much longer, flat-topped, brick-shaped head, a short
+neck, the rump well above the shoulders) and long_tan (longer still, with a tan face).
 """
 import sys, math
 import bpy, bmesh
@@ -21,6 +27,7 @@ from mathutils import Vector
 
 args = sys.argv[sys.argv.index("--") + 1:]
 out, part = args[0], args[1]
+variant = args[2] if len(args) > 2 else "cp1"
 bpy.ops.wm.read_factory_settings(use_empty=True)
 
 
@@ -31,6 +38,56 @@ def mat(name, rgb):
 
 
 FUR, NOSE, EYE, EAR = mat("fur", (0.6, 0.42, 0.25)), mat("nose", (0.25, 0.17, 0.12)), mat("eye", (0.05, 0.04, 0.04)), mat("ear", (0.35, 0.24, 0.17))
+FACE = mat("face", (0.75, 0.58, 0.38))
+
+# Head: its front end (the back of the skull is at -1.6), top / jaw / half-width curves along it
+# (t 0 at the back, 1 at the nose), where the cheek, brow, eye and ear sit, a tan mask or not.
+# Body: its ends, top / belly / half-width curves (t 0 at the rump, 1 at the neck).
+VARIANTS = {
+    "cp1": {
+        "x1": 8.4,
+        "top": [(0.0, 1.8), (0.2, 2.5), (0.6, 2.45), (0.9, 2.1), (1.0, 1.9)],
+        "bot": [(0.0, -1.6), (0.25, -3.2), (0.6, -3.4), (0.9, -3.2), (1.0, -2.9)],
+        "half": [(0.0, 2.0), (0.35, 2.6), (0.7, 2.3), (1.0, 2.05)],
+        "cheek": 0.36, "brow": 0.44, "eye": (2.85, 2.25, 1.5), "ear": (-0.1, 1.6, 2.4), "ear_r": (0.55, 0.3, 0.48),
+        "face": False, "bridge": 0.2, "block": 3.0,
+        "x0b": -14.5, "x1b": 14.0,
+        "btop": [(0.0, 15.0), (0.12, 20.6), (0.35, 21.6), (0.7, 20.0), (0.88, 19.2), (1.0, 18.6)],
+        "bbot": [(0.0, 10.5), (0.12, 7.8), (0.45, 6.4), (0.75, 7.4), (0.88, 10.0), (1.0, 12.5)],
+        "bhalf": [(0.0, 4.5), (0.15, 7.8), (0.45, 8.6), (0.75, 7.2), (0.9, 5.4), (1.0, 4.6)],
+    },
+    # A head 12 long and 7 deep: the top flat from the crown to the nose, the muzzle as deep as the skull and
+    # narrower than it is tall (a capybara's brick, not a bear's broad round snout), tiny ears
+    # flat on the back corners, eyes on the top edge. The rump stands well above the shoulders and
+    # the back slopes down to a short neck that holds the head low and forward.
+    "long": {
+        "x1": 10.4,
+        "top": [(0.0, 2.2), (0.12, 2.9), (0.5, 3.0), (0.85, 2.85), (1.0, 2.5)],
+        "bot": [(0.0, -2.2), (0.22, -4.1), (0.5, -4.2), (0.8, -3.9), (1.0, -3.5)],
+        "half": [(0.0, 2.2), (0.3, 2.8), (0.55, 2.35), (0.8, 2.0), (1.0, 1.85)],
+        "cheek": 0.3, "brow": 0.3, "eye": (3.4, 2.45, 2.0), "ear": (-0.6, 1.9, 3.0), "ear_r": (0.9, 0.36, 0.85),
+        "face": False, "bridge": 0.1, "block": 4.0,
+        "x0b": -14.0, "x1b": 12.0,
+        "btop": [(0.0, 16.5), (0.12, 21.6), (0.3, 22.2), (0.6, 20.4), (0.85, 18.4), (1.0, 17.0)],
+        "bbot": [(0.0, 10.5), (0.12, 7.6), (0.45, 6.6), (0.75, 7.6), (0.9, 10.0), (1.0, 11.6)],
+        "bhalf": [(0.0, 4.8), (0.15, 7.6), (0.45, 8.2), (0.75, 7.0), (0.9, 5.2), (1.0, 4.4)],
+    },
+    # Longer still (14), the muzzle squarer and the face tan: the paler mask shows the head's
+    # length from the front and the back, where a dark round face read as a bear.
+    "long_tan": {
+        "x1": 12.4,
+        "top": [(0.0, 2.2), (0.1, 2.95), (0.5, 3.05), (0.88, 3.0), (1.0, 2.7)],
+        "bot": [(0.0, -2.2), (0.2, -4.2), (0.45, -4.4), (0.8, -4.2), (1.0, -3.9)],
+        "half": [(0.0, 2.2), (0.28, 2.8), (0.5, 2.3), (0.8, 2.0), (1.0, 1.9)],
+        "cheek": 0.26, "brow": 0.26, "eye": (3.6, 2.45, 2.05), "ear": (-0.7, 1.9, 3.05), "ear_r": (0.9, 0.36, 0.85),
+        "face": True, "bridge": 0.08, "block": 4.5,
+        "x0b": -14.5, "x1b": 12.0,
+        "btop": [(0.0, 17.0), (0.12, 22.0), (0.28, 22.4), (0.6, 20.4), (0.85, 18.2), (1.0, 16.6)],
+        "bbot": [(0.0, 10.8), (0.12, 7.6), (0.45, 6.6), (0.75, 7.6), (0.9, 10.0), (1.0, 11.4)],
+        "bhalf": [(0.0, 5.0), (0.15, 7.6), (0.45, 8.2), (0.75, 7.0), (0.9, 5.0), (1.0, 4.2)],
+    },
+}
+P = VARIANTS[variant]
 
 
 def smoothstep(a, b, x):
@@ -85,14 +142,14 @@ def ellipsoid(name, r, at, m, segs=16, rings=10):
 
 def head():
     # Lengthwise, t runs 0 at the back of the skull to 1 at the muzzle's front.
-    X0, X1 = -1.6, 8.4
+    X0, X1 = -1.6, P["x1"]
     ob, bm = sphere("head", 56, 36)
     for v in bm.verts:
-        p = blockish(v.co.copy(), 3.0)
+        p = blockish(v.co.copy(), P["block"])
         t = (p.x + 1) / 2
-        top = curve([(0.0, 1.8), (0.2, 2.5), (0.6, 2.45), (0.9, 2.1), (1.0, 1.9)], t)      # a near-flat line, crown to nose
-        bot = curve([(0.0, -1.6), (0.25, -3.2), (0.6, -3.4), (0.9, -3.2), (1.0, -2.9)], t)  # the deep jaw; the muzzle stays deep
-        half = curve([(0.0, 2.0), (0.35, 2.6), (0.7, 2.3), (1.0, 2.05)], t)                 # cheeks wide, muzzle a little narrower
+        top = curve(P["top"], t)    # a near-flat line, crown to nose
+        bot = curve(P["bot"], t)    # the deep jaw; the muzzle stays deep
+        half = curve(P["half"], t)  # cheeks wide, the muzzle narrower
         z = lerp(bot, top, (p.z + 1) / 2)
         y = p.y * half
         x = lerp(X0, X1, t)
@@ -101,32 +158,52 @@ def head():
         q = Vector((x, y, z))
         # The chewing muscle: a heavy rounded cheek low behind the eye.
         for s in (-1, 1):
-            q += Vector((0, 0.5 * s, -0.1)) * bump(Vector((t, p.y, p.z)), Vector((0.36, 0.9 * s, -0.35)), 0.45)
+            q += Vector((0, 0.5 * s, -0.1)) * bump(Vector((t, p.y, p.z)), Vector((P["cheek"], 0.9 * s, -0.35)), 0.45)
             # The brow the eye sits under: a slight rise on the crown's edge.
-            q += Vector((0, 0.15 * s, 0.3)) * bump(Vector((t, p.y, p.z)), Vector((0.44, 0.7 * s, 0.75)), 0.3)
+            q += Vector((0, 0.15 * s, 0.3)) * bump(Vector((t, p.y, p.z)), Vector((P["brow"], 0.7 * s, 0.75)), 0.3)
         # The nose's bridge: a gentle convex rise along the top of the muzzle.
-        q.z += 0.2 * smoothstep(0.55, 0.8, t) * (1 - smoothstep(0.92, 1.0, t)) * smoothstep(0.4, 1.0, p.z)
+        q.z += P["bridge"] * smoothstep(0.55, 0.8, t) * (1 - smoothstep(0.92, 1.0, t)) * smoothstep(0.4, 1.0, p.z)
         v.co = q
+    ob.data.materials.append(FUR)
+    if variant != "cp1":
+        # The pushed heads: the muzzle's whole blunt front bare and dark (a capybara's big
+        # leathery nose), and on long_tan a tan mask on the muzzle's sides and under the jaw.
+        ob.data.materials.append(FACE)
+        ob.data.materials.append(NOSE)
+        for f in bm.faces:
+            c = f.calc_center_median()
+            t = (c.x - X0) / (X1 - X0)
+            if t > 0.95 and c.z > -1.2:
+                f.material_index = 2
+            elif P["face"] and ((t > 0.42 and c.z < 1.0 + 0.7 * smoothstep(0.42, 0.95, t)) or (t > 0.2 and c.z < -2.0)):
+                f.material_index = 1
     bm.to_mesh(ob.data)
     bm.free()
-    ob.data.materials.append(FUR)
+    nx = X1 - 0.3              # the muzzle's front
+    ntop = curve(P["top"], 1.0)
     # The bare nose: a dark pad over the top of the muzzle's front, nearly flush, the nostrils on it.
-    ellipsoid("nose", (0.45, 1.3, 0.8), (8.1, 0, 1.05), NOSE, 20, 12)
+    if variant == "cp1":
+        ellipsoid("nose", (0.45, 1.3, 0.8), (nx, 0, ntop - 0.85), NOSE, 20, 12)
+    else:   # bigger: the pushed heads' broad dark nose, read from the front and the side
+        ellipsoid("nose", (0.7, 1.6, 1.2), (nx - 0.1, 0, ntop - 1.0), NOSE, 20, 12)
     for s in (-1, 1):
-        ellipsoid("nostril", (0.3, 0.22, 0.18), (8.25, 0.6 * s, 1.75), EYE, 10, 6)
+        ellipsoid("nostril", (0.3, 0.22, 0.18), (nx + 0.15, 0.6 * s, ntop - 0.15), EYE, 10, 6)
         # Eyes: small, high and far back, on the side of the head under the brow.
-        ellipsoid("eye", (0.55, 0.35, 0.5), (2.85, 2.25 * s, 1.5), EYE, 12, 8)
+        ex, ey, ez = P["eye"]
+        ellipsoid("eye", (0.55, 0.35, 0.5) if variant == "cp1" else (0.8, 0.5, 0.7), (ex, ey * s, ez), EYE, 12, 8)
         # Ears: small and round, high at the back of the crown, turned a little out.
         ear, bm = sphere("ear", 14, 8)
+        rx, ry, rz = P["ear_r"]
+        ax, ay, az = P["ear"]
         for v in bm.verts:
-            q = Vector((v.co.x * 0.55, v.co.y * 0.3, v.co.z * 0.48))
+            q = Vector((v.co.x * rx, v.co.y * ry, v.co.z * rz))
             q.y += q.z * 0.35 * s   # leaning out
-            v.co = q + Vector((-0.1, 1.6 * s, 2.4))
+            v.co = q + Vector((ax, ay * s, az))
         bm.to_mesh(ear.data)
         bm.free()
         ear.data.materials.append(EAR)
     # The mouth: a short dark line under the nose, splitting the upper lip.
-    ellipsoid("mouth", (0.2, 0.18, 0.7), (8.15, 0, -0.6), NOSE, 8, 6)
+    ellipsoid("mouth", (0.2, 0.18, 0.7), (nx + 0.05, 0, -0.6), NOSE, 8, 6)
 
 
 LOW = 1.8   # the body sits this much lower than the curves say: a capybara's legs are short
@@ -134,14 +211,14 @@ LOW = 1.8   # the body sits this much lower than the curves say: a capybara's le
 
 def body():
     # Lengthwise, t runs 0 at the rump to 1 at the neck's top, where the head joins.
-    X0, X1 = -14.5, 14.0
+    X0, X1 = P["x0b"], P["x1b"]
     ob, bm = sphere("body", 64, 40)
     for v in bm.verts:
         p = blockish(v.co.copy(), 2.25)
         t = (p.x + 1) / 2
-        top = curve([(0.0, 15.0), (0.12, 20.6), (0.35, 21.6), (0.7, 20.0), (0.88, 19.2), (1.0, 18.6)], t)   # the heavy rump high, the back sloping down
-        bot = curve([(0.0, 10.5), (0.12, 7.8), (0.45, 6.4), (0.75, 7.4), (0.88, 10.0), (1.0, 12.5)], t)     # a deep belly, the throat rising
-        half = curve([(0.0, 4.5), (0.15, 7.8), (0.45, 8.6), (0.75, 7.2), (0.9, 5.4), (1.0, 4.6)], t)
+        top = curve(P["btop"], t)    # the heavy rump high, the back sloping down
+        bot = curve(P["bbot"], t)    # a deep belly, the throat rising
+        half = curve(P["bhalf"], t)
         z = lerp(bot, top, (p.z + 1) / 2)
         y = p.y * half * (1.0 - 0.12 * smoothstep(0.2, -1.0, p.z))   # narrower under the belly
         x = lerp(X0, X1, t)
