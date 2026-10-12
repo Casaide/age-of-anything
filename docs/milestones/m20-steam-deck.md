@@ -28,39 +28,53 @@ Dominic (2026-10-13): "Running the app on Steam Deck, and adapting UI for contro
   identical hashes: the backlog's "determinism across macOS and Linux" check happens here for
   free (run `tests/test_sim.gd` on the Deck and compare hashes with the Mac).
 
-## Controller design (the RTS-on-a-pad problem)
+## Controller design: true controller support (Dominic, 2026-10-13)
 
-Principles: one hand points, the other commands; the screen tells you what each button does;
-the game never needs precise clicking; mouse and pad can be mixed, and the UI follows the last
-one used.
+Dominic: "touch screen no; I would go for controller buttons support like the console RTS games:
+you hold a button and it shows a big circle for selecting units. Stuff like that. So true
+controller support. We then need to keep the UI readable, and not getting in the way." Designed
+for the pad first (not a mouse emulated on sticks); the mouse and keyboard game is unchanged.
 
-- **Pointing:** a virtual cursor on the right stick (accelerating, with a slow precision zone)
-  and the right trackpad as a true mouse. Snapping: the cursor sticks gently to units, buildings
-  and resources under it (a magnet radius scaled by zoom), so selecting a single frog is easy.
-- **Camera:** left stick pans (speed by zoom), clicking it centres on the selection; triggers or
-  a held bumper + stick zoom.
-- **Selecting:**
-  - A: select what's under the cursor; hold A and move: a selection box.
-  - Double-tap A: all of that kind on screen.
-  - Quick select by type on the d-pad: idle worker (d-pad down, as the idle button), all
-    soldiers, the Town Center, cycle buildings.
-  - Control groups: hold a back button + d-pad direction to assign, tap to recall (8 groups).
+Principles: a reticle at the screen's centre-ish that the camera and selection work around; one
+button per common job; selection by area, not by precise pointing; menus that come up when held
+and vanish when released; the screen stays the battlefield.
+
+- **The reticle and camera:** the left stick moves the camera (and the reticle with it, as one);
+  the right stick nudges the reticle off centre for fine aim; clicking the left stick centres on
+  the selection; the triggers zoom. The reticle snaps to what's under it (unit, building,
+  resource) so a single target is easy.
+- **Selecting by area (the big circle):**
+  - Tap A: select what's under the reticle (double-tap: all of that kind on screen).
+  - Hold A: a selection circle grows from the reticle while held (and follows it as you move),
+    taking every unit of yours it touches; release to keep them. A short hold selects a squad,
+    a long hold a crowd.
+  - Right bumper: all your soldiers on screen; double-tap: all your soldiers anywhere.
+  - Left bumper: cycle the selection's kinds (only the spears, then only the archers...).
+  - D-pad: idle worker (down), next Town Center / building (up), control groups (hold a back
+    button + d-pad to assign, tap to recall).
 - **Ordering:**
-  - B (or the right trigger): the smart order under the cursor (move, gather, attack, build,
-    reseed...), exactly as right-click does; holding it shows the order before it's given.
-  - Y: attack-move; X: stop.
-  - Shift-queue: hold the left trigger while ordering (as shift).
-- **The command panel:** a radial menu (hold the right bumper): the selection's buttons around a
-  wheel, chosen with the right stick, groups as rings (Train, Research, Build civilian/military).
-  The panel at the bottom still shows everything, with the pad's glyph on each button.
-- **Placing buildings:** the ghost follows the cursor and snaps to the grid; A places, B
-  cancels, a bumper rotates gates; walls drag from A-hold to release.
-- **Menus and lobby:** full focus navigation (d-pad/stick moves focus, A presses, B backs out),
-  the dice on a button (X: roll), the prompt box opens the on-screen keyboard (Steam's, via
-  `DisplayServer.virtual_keyboard_show`) with the dice as the no-typing path.
-- **Prompts:** button glyphs drawn by us (our own art, no platform logos), shown on buttons,
-  tooltips and the opening tips, swapped when the last input changes (pad vs mouse).
-- **Feel:** short rumble on order acknowledged, under attack, age reached (optional, a setting).
+  - X (or right trigger): the smart order at the reticle (move, gather, attack, build, reseed,
+    pen), as right-click does; Y: attack-move; B: back / deselect.
+  - Hold the left trigger while ordering: queue (shift).
+  - Stances, stop and specials on the radial (below).
+- **Radial menus (hold, pick, release):**
+  - Hold the right bumper with a selection: its commands on a wheel (train, research, age up,
+    stances, stop), picked with the right stick, released to choose; groups as tabs on the
+    wheel's rim, switched with the left/right bumpers while held.
+  - With workers selected: the build wheel (civilian / military pages), then the ghost to place.
+  - With nothing selected: a global wheel (find idle workers, select all army, go to Town Center,
+    tech tree, pause).
+- **Placing buildings:** the ghost sits on the reticle and snaps; A places, B cancels, the left
+  bumper turns gates; walls: hold A at one end, move, release.
+- **Menus and lobby:** focus navigation (d-pad/stick moves, A presses, B backs out); X rolls the
+  dice; the prompt box opens the system's on-screen keyboard, with the dice as the no-typing path.
+- **A HUD out of the way:** in pad mode the bottom command panel shrinks to a compact strip (the
+  selection's portrait, health and queue only) because commands live on the radials; it can be
+  hidden entirely with a toggle. Button glyphs (our own art) on everything that has a shortcut,
+  swapped when the last input changes (pad vs mouse). The minimap stays, smaller.
+- **Feel:** a short rumble on order acknowledged, under attack, age reached (a setting).
+
+Touchscreen support is out (Dominic).
 
 ## UI on a 7" screen
 
@@ -68,8 +82,6 @@ one used.
   density 1, so today it would draw at the smallest size; detect the Deck (or a small, close
   screen) and default larger (about 1.4-1.6x of the design size), then check every screen at
   1280 x 800: lobby, HUD, command panel, tooltips, tech tree, loader, end screen.
-- Hit targets at least ~9 mm on the touchscreen if touch is supported (stretch goal: tap to
-  select, drag the minimap).
 - Text: nothing below a readable size at arm's length; the theme's type scale gets a "handheld"
   step.
 
@@ -88,19 +100,17 @@ one used.
 
 ## Plan
 
-1. **Approvals and a first build.** Dominic's yes to the export templates download; a Linux
-  export preset (an `export_presets.cfg` already exists in the working tree, untracked: check
-  whose it is); run the build on the Deck as a non-Steam game (Desktop mode copy, or Steam's
-  "add a non-Steam game"); first impressions and measurements with Steam Input's default
-  desktop layout (trackpad as mouse).
+1. **A first build.** Export templates installed; a Linux preset in Dominic's
+  `export_presets.cfg` with SSH remote deploy; the Deck on SSH with this Mac's key; the build
+  added to Steam as a non-Steam game; first impressions and measurements with Steam Input's
+  default desktop layout.
 2. **Determinism and performance check.** `test_sim` hashes on the Deck vs the Mac; the benches
   above; decide the renderer and the frame-rate target.
-3. **Input layer.** One input map (Godot InputMap actions) for mouse/keyboard and pad, the
-  virtual cursor with snapping, camera on the left stick, last-input detection that switches
-  prompts.
-4. **Selecting and ordering on the pad.** A/B/X/Y, selection box, quick selects, control groups,
-  shift-queue on a trigger, placing buildings and walls.
-5. **The radial command menu** and glyphs on the panel.
+3. **Input layer.** One input map (Godot InputMap actions) for mouse/keyboard and pad,
+  last-input detection that switches between the mouse HUD and the pad HUD.
+4. **Selecting and ordering on the pad.** The reticle, the growing selection circle, quick
+  selects, control groups, the smart order, queueing on a trigger, placing buildings and walls.
+5. **Radial menus** (commands, build, global) and the compact pad HUD; our own button glyphs.
 6. **Menus and lobby** with focus navigation, the dice on X, the on-screen keyboard.
 7. **Handheld UI size** and a 1280 x 800 pass over every screen.
 8. **Performance work** from step 2's numbers; battery and suspend.
@@ -108,21 +118,28 @@ one used.
   pad scheme with mouse emulation), with the trackpad still a mouse.
 10. **Exit check:** Dominic's full match on the Deck, pad only.
 
-## Open questions for Dominic
+## Building for the Deck (answers, 2026-10-13)
 
-1. The export templates download (about 1 GB): yes?
-2. Is there a Deck to test on, and can it reach this Mac (SSH or a shared folder) so agents can
-   copy builds and read logs? Or does Dominic copy builds over and report?
-3. Touchscreen support: in this milestone or later?
-4. A Steam release isn't in scope here (Steamworks, store page, achievements): later.
+- **Export templates:** Dominic installs them from the Godot editor (Editor > Manage Export
+  Templates > Download and Install, for 4.7.2); the export preset he started
+  (`export_presets.cfg`, macOS) gets a Linux/X11 preset next to it.
+- **Getting builds onto the Deck (the usual way):** Desktop Mode on the Deck, set a password
+  (`passwd`) and turn on SSH (`sudo systemctl enable --now sshd`); then from the Mac, builds go
+  over with `scp`/`rsync` and run over `ssh`, logs come back the same way. Godot's Linux export
+  preset has a one-click remote deploy over SSH (Remote Deploy: host, user, key), which runs the
+  game on the Deck straight from the editor. Add the build to Steam once as a non-Steam game so
+  it runs in Game Mode with Steam Input. (Valve's SteamOS devkit client is the heavier
+  alternative; SSH is enough for us.) An SSH key from this Mac on the Deck lets agents copy builds
+  and read logs without a password.
+- **Touchscreen:** no. **Steam release:** later.
 
 ## Checklist
 - [ ] Plan approved by Dominic
 - [ ] 1. Approvals and a first build on the Deck
 - [ ] 2. Determinism and performance check
 - [ ] 3. Input layer
-- [ ] 4. Selecting and ordering on the pad
-- [ ] 5. Radial command menu, glyphs
+- [ ] 4. Reticle, selection circle, ordering on the pad
+- [ ] 5. Radial menus, compact pad HUD, glyphs
 - [ ] 6. Menus and lobby on the pad
 - [ ] 7. Handheld UI size, 1280 x 800 pass
 - [ ] 8. Performance, battery, suspend
