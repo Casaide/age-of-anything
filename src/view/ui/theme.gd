@@ -481,9 +481,14 @@ static func juice(b: BaseButton, click := true) -> void:
 static func juice_all(root: Node) -> void:
 	for n in root.find_children("*", "BaseButton", true, false):
 		juice(n)
-	root.get_tree().node_added.connect(func(n: Node):
-		if n is BaseButton and is_instance_valid(root) and root.is_ancestor_of(n):
-			juice(n))
+	var tree := root.get_tree()
+	var watch := func(n: Node):
+		if n is BaseButton and root.is_ancestor_of(n):
+			juice(n)
+	tree.node_added.connect(watch)
+	# Stop watching when root leaves: a lambda left on the tree after the lobby was freed was
+	# called for every node the match made (14,706 "Lambda capture was freed" errors at start).
+	root.tree_exiting.connect(func(): if tree.node_added.is_connected(watch): tree.node_added.disconnect(watch), CONNECT_ONE_SHOT)
 
 
 static func _pop(c: Control, to: float) -> void:
