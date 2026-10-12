@@ -11,6 +11,7 @@ const PartBaker := preload("res://scenes/art_pixel/part_baker.gd")
 const Baker := preload("res://src/view/art/bake/baker.gd")
 const Models := preload("res://src/view/art/bake/models.gd")
 const PropModels := preload("res://scenes/art_pixel/prop_models.gd")
+const TownProps := preload("res://scenes/art_pixel/town_props.gd")
 const DataLib := preload("res://src/data_lib.gd")
 
 const ART_SCALE := 1.5     # art pixels per canvas unit (a tile is 96 x 48 art pixels)
@@ -20,7 +21,7 @@ const SS := 4              # supersampling for the building and prop bakes
 const HOUSE_SCALE := 1.1   # houses read smaller than the halls (Fable; Dominic: rat house too big)
 const ALONG_Z := "^z"       # bake-name suffix of a gate turned a quarter, for a wall line running along sim y
 ## Parts a worker swaps in by job (see UnitView.set_tool and sim_debug's _tool_for).
-const JOB_PARTS := ["tool.axe", "tool.basket", "tool.hammer", "tool.pick", "load.reeds", "load.stone"]
+const JOB_PARTS := ["tool.axe", "tool.basket", "tool.hammer", "tool.pick", "tool.hoe", "tool.broom", "load.reeds", "load.stone", "load.gold", "load.meat"]
 const ICON_CELL := 160     # screen pixels per unit when rendering portraits   # houses read about 2.5x a footman
 const TOWN := {"thatch": "town_center", "junk": "junk_town_center_small", "stone": "stone_town_center", "tent": "tent_town_center",
 	"reed": "reed_town_center", "mound": "mound_town_center"}
@@ -33,6 +34,8 @@ const DOODADS := {"reeds": 6, "bush": 6, "rock": 6, "quarry": 4, "gold": 4, "car
 ## Resources show how much is left: reeds, bug bushes and quarry stone each have this many stages
 ## (0 whole ... 3 nearly gone: stubble for reeds, a bare brown bush).
 const STAGES := 4
+## Town life (milestone 17): which concept-sheet style each drop-off pile is baked in.
+const PILE_STYLE := {"food": "a", "wood": "a", "stone": "b", "gold": "a"}
 ## A building under construction shows four stages: foundations; the scaffold with what
 ## stands low; the walls; the roof going on. Each keeps the parts whose top (first two)
 ## or middle (last two) is below this fraction of the building's height.
@@ -340,6 +343,7 @@ func bake_props() -> void:
 		return
 	var h: Array = await _hifi()
 	await _bake_doodads(h[0], h[1])
+	await _bake_town(h[0], h[1])
 	h[0].queue_free()
 
 
@@ -404,6 +408,27 @@ func _bake_doodads(baker, models) -> void:
 		flat["crops%d" % v] = props.crops(1100 + v)
 	for v in DOODADS.paddy:
 		flat["paddy%d" % v] = props.paddy(1200 + v)
+	baker.set_ground_shadow(true)
+	await _bake_set(baker, shadowed)
+	baker.set_ground_shadow(false)
+	await _bake_set(baker, flat)
+
+
+## Town life props (milestone 17): drop-off piles by resource in three stages ("pile.food.2"),
+## a house's yard and garden as they grow ("yard2", "garden3"), the stable's tether post.
+func _bake_town(baker, models) -> void:
+	var tp := TownProps.new()
+	tp.models = models
+	var shadowed := {}
+	for kind in TownProps.PILE_KINDS:
+		for st in range(1, TownProps.STAGES + 1):
+			shadowed["pile.%s.%d" % [kind, st]] = tp.pile(kind, st, PILE_STYLE[kind])
+	for st in range(1, TownProps.STAGES + 1):
+		shadowed["yard%d" % st] = tp.yard(st)
+	shadowed["tether_post"] = tp.tether_post()
+	var flat := {}
+	for st in range(1, TownProps.STAGES + 1):
+		flat["garden%d" % st] = tp.garden(st)
 	baker.set_ground_shadow(true)
 	await _bake_set(baker, shadowed)
 	baker.set_ground_shadow(false)

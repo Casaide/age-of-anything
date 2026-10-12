@@ -21,6 +21,15 @@ var bar_at := Vector2.ZERO
 var links := 0            # a wall tile: which neighbours its arms reach (bit k: Models.LINKS[k])
 var _kit
 var _name := ""
+var smoke: CPUParticles2D   # the chimney (null if it has none)
+var working := true       # smoke rises while it's at work (training, research); houses always
+var damage := 0.0         # 0 whole .. 1 nearly down: cracks from DAMAGE_CRACKS, fire from DAMAGE_FIRE
+var _wear: Node2D         # over the body: cracks drawn, fires and their smoke
+var _cracks: Array = []   # [PackedVector2Array] canvas units from the centre, worst first
+var _fires: Array = []    # [CPUParticles2D, CPUParticles2D] flame and smoke per fire
+
+const DAMAGE_CRACKS := 0.3   # milestone 17: cracks show once it has lost this much
+const DAMAGE_FIRE := 0.6     # ...and it burns past this
 
 
 ## A building of sx x sy tiles (a gate is longer than deep) with its top-left on cell (cx, cy).
@@ -55,7 +64,8 @@ func setup(kit, name: String, cx: int, cy: int, sx: int, sy: int, p_team: Color)
 		stages.append(st)
 	bar_at = at + Vector2(0, 6)
 	if info.has("smoke"):
-		live.append(_smoke(at + info.smoke))
+		smoke = _smoke(at + info.smoke)
+		live.append(smoke)
 	if info.has("lantern"):
 		_glow(at + info.lantern, 14.0, Color(1.0, 0.75, 0.35))
 	for p in info.lights:
@@ -98,6 +108,148 @@ func set_state(p_done: bool, p_progress: float) -> void:
 	for g in glows:
 		g.node.visible = done
 	queue_redraw()
+
+
+## Smoke from the chimney only while the building works (milestone 17: you see the town at
+## work). It thins out rather than stopping dead: particles in the air finish rising.
+func set_working(on: bool) -> void:
+	if on == working:
+		return
+	working = on
+	if smoke != null:
+		smoke.emitting = on
+
+
+## Wear from damage (0 whole .. 1 nearly gone): dark cracks across the walls once it's been hit
+## hard, more as it gets worse, then fire and black smoke at a few places on it.
+func set_damage(f: float) -> void:
+	f = clampf(f, 0.0, 1.0)
+	if absf(f - damage) < 0.02 or not done:
+		return
+	damage = f
+	if _wear == null:
+		_wear = Node2D.new()
+		_wear.draw.connect(_draw_wear)
+		add_child(_wear)
+		_cracks = _make_cracks(6)
+		for p in _spots(3, 0.1, 0.45):   # on the roof, where it catches
+			_fires.append([_flames(p), _black_smoke(p)])
+	var burning := damage >= DAMAGE_FIRE
+	for k in _fires.size():
+		var on := burning and k < 1 + int((damage - DAMAGE_FIRE) / (1.0 - DAMAGE_FIRE) * 3.0)
+		_fires[k][0].emitting = on
+		_fires[k][1].emitting = on
+	_wear.queue_redraw()
+
+
+func _draw_wear() -> void:
+	if damage < DAMAGE_CRACKS:
+		return
+	var n := mini(_cracks.size(), 1 + int((damage - DAMAGE_CRACKS) / (1.0 - DAMAGE_CRACKS) * _cracks.size()))
+	var px: float = 1.0 / _kit.ART_SCALE
+	for k in n:
+		var lit := PackedVector2Array()   # a pixel of light along one side: the crack has depth
+		for p in _cracks[k]:
+			lit.append(p + Vector2(px, px * 0.5))
+		_wear.draw_polyline(lit, Color(1, 0.95, 0.85, 0.22), px)
+		_wear.draw_polyline(_cracks[k], Color(0.16, 0.11, 0.07, 0.8), px)
+
+
+## Points on the body's bake that are solid (opaque) in a band of its height (0 top .. 1 bottom),
+## in canvas units from the building's centre. Seeded by the body's name: the same cracks always.
+func _spots(n: int, top: float, bottom: float) -> Array:
+	var b: Dictionary = _kit.bakes[_kit.buildings[_name].body]
+	var img: Image = b.img
+	var used := img.get_used_rect()
+	var rng := RandomNumberGenerator.new()
+	rng.seed = hash(_name) + int(position.x * 7.0 + position.y * 13.0)
+	var out := []
+	var tries := 0
+	while out.size() < n and tries < 400:
+		tries += 1
+		var p := Vector2i(rng.randi_range(used.position.x + used.size.x / 6, used.end.x - used.size.x / 6),
+			rng.randi_range(used.position.y + int(used.size.y * top), used.position.y + int(used.size.y * bottom)))
+		if img.get_pixelv(p).a > 0.9:
+			out.append((Vector2(p) - b.origin) / _kit.ART_SCALE + body.position)
+	return out
+
+
+## Cracks: short jagged lines starting at solid points of the walls, each step kept on the body.
+func _make_cracks(n: int) -> Array:
+	var b: Dictionary = _kit.bakes[_kit.buildings[_name].body]
+	var img: Image = b.img
+	var rng := RandomNumberGenerator.new()
+	rng.seed = hash(_name) + 17
+	var out := []
+	for start in _spots(n, 0.35, 0.85):
+		var line := PackedVector2Array([start])
+		var p: Vector2 = start
+		var dir := Vector2(rng.randf_range(-0.6, 0.6), 1.0).normalized()
+		for step in rng.randi_range(4, 7):
+			p += (dir + Vector2(rng.randf_range(-0.9, 0.9), 0)).normalized() * rng.randf_range(2.5, 4.5)
+			var q := Vector2i(((p - body.position) * _kit.ART_SCALE + b.origin).round())
+			if q.x < 0 or q.y < 0 or q.x >= img.get_width() or q.y >= img.get_height() or img.get_pixelv(q).a < 0.9:
+				break
+			line.append(p)
+		if line.size() >= 3:
+			out.append(line)
+	return out
+
+
+func _flames(at: Vector2) -> CPUParticles2D:
+	var p := CPUParticles2D.new()
+	p.position = at
+	p.amount = 16
+	p.lifetime = 0.8
+	p.direction = Vector2(0, -1)
+	p.spread = 14.0
+	p.initial_velocity_min = 7.0
+	p.initial_velocity_max = 13.0
+	p.gravity = Vector2(0, -8.0)
+	p.emission_shape = CPUParticles2D.EMISSION_SHAPE_SPHERE
+	p.emission_sphere_radius = 3.0
+	p.scale_amount_min = 0.14
+	p.scale_amount_max = 0.24
+	var shrink := Curve.new()
+	shrink.add_point(Vector2(0, 1.0))
+	shrink.add_point(Vector2(1, 0.2))
+	p.scale_amount_curve = shrink
+	var ramp := Gradient.new()
+	ramp.colors = PackedColorArray([Color(1.0, 0.92, 0.5, 1.0), Color(1.0, 0.5, 0.1, 1.0), Color(0.75, 0.15, 0.05, 0.0)])
+	ramp.offsets = PackedFloat32Array([0.0, 0.35, 1.0])
+	p.color_ramp = ramp
+	p.texture = _flame_dot()
+	p.emitting = false
+	_wear.add_child(p)
+	return p
+
+
+func _black_smoke(at: Vector2) -> CPUParticles2D:
+	var p := CPUParticles2D.new()
+	p.position = at + Vector2(0, -5)
+	p.amount = 14
+	p.lifetime = 3.5
+	p.preprocess = 2.0
+	p.direction = Vector2(0.15, -1)
+	p.spread = 14.0
+	p.initial_velocity_min = 6.0
+	p.initial_velocity_max = 10.0
+	p.gravity = Vector2(2.5, -1.5)
+	p.scale_amount_min = 0.16
+	p.scale_amount_max = 0.26
+	var grow := Curve.new()
+	grow.max_value = 3.0   # (a curve stops at 1 unless told otherwise)
+	grow.add_point(Vector2(0, 0.6))
+	grow.add_point(Vector2(1, 2.4))
+	p.scale_amount_curve = grow
+	var fade := Gradient.new()
+	fade.colors = PackedColorArray([Color(0.1, 0.08, 0.07, 0.0), Color(0.12, 0.1, 0.09, 0.75), Color(0.25, 0.24, 0.23, 0.35), Color(0.35, 0.34, 0.33, 0.0)])
+	fade.offsets = PackedFloat32Array([0.0, 0.1, 0.6, 1.0])
+	p.color_ramp = fade
+	p.texture = _flame_dot()
+	p.emitting = false
+	_wear.add_child(p)
+	return p
 
 
 ## Where a shooting building's shots leave from (canvas): a little below the top of its art.
@@ -211,6 +363,23 @@ func _glow(at: Vector2, radius: float, c: Color) -> void:
 
 
 static var _dot_tex: GradientTexture2D
+static var _flame_tex: GradientTexture2D
+
+
+## A flame's dot: solid in the middle with a short soft edge (the smoke's dot is all haze).
+static func _flame_dot() -> GradientTexture2D:
+	if _flame_tex == null:
+		var g := Gradient.new()
+		g.colors = PackedColorArray([Color(1, 1, 1, 1), Color(1, 1, 1, 0.9), Color(1, 1, 1, 0.0)])
+		g.offsets = PackedFloat32Array([0.0, 0.5, 1.0])
+		_flame_tex = GradientTexture2D.new()
+		_flame_tex.gradient = g
+		_flame_tex.fill = GradientTexture2D.FILL_RADIAL
+		_flame_tex.fill_from = Vector2(0.5, 0.5)
+		_flame_tex.fill_to = Vector2(1.0, 0.5)
+		_flame_tex.width = 32
+		_flame_tex.height = 32
+	return _flame_tex
 
 
 static func _dot() -> GradientTexture2D:
