@@ -274,6 +274,8 @@ static func colours_for(lib, skin: String, family: String, team: Color) -> Dicti
 	var sk: Array = lib.palettes.skins[skin]
 	c.skin = Color(sk[0])
 	c.skin2 = Color(sk[1])
+	for i in range(2, sk.size()):   # more colours for a patterned skin (a newt's spots): skin3, skin4...
+		c["skin%d" % (i + 1)] = Color(sk[i])
 	var cloth: Array = lib.families[family].cloth
 	c.cloth = Color(cloth[0])
 	c.cloth2 = Color(cloth[1])

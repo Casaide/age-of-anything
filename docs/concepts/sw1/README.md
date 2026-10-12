@@ -195,6 +195,14 @@ its beetle; the newt and toad are not needed. C's harpoon boat could come back i
 
 ## Round 4: the newt as cavalry, other frog catapults (2026-10-13), waiting on Dominic
 
+**Picked and built (D-122):** the newt is now a real mount (`body.newt`, `head.newt`, `leg.newt` in
+`data/parts.json`, models in `scenes/art_pixel/unit_models.gd`; `newt_concepts.gd` is gone). Its three
+colourings are skins (`newt_fire`, `newt_eft`, `newt_crested` in `data/palettes.json`, extra palette
+colours for spots, rings and the crest); fire is picked twice as often, and the red eft never goes under
+a red frog (`creatures.json` `skin_weights`, `skins_not_under`). `tests/newt_cavalry_sheet.gd` now
+draws the real races (frogs in each skin, a human and a rat on newts, a human on a pony). The notes
+below are the concept round as it was.
+
 Dominic picked round 3's B for the frogs ("swamp beasts, looks great": the snapping turtle ram and
 the toad-borne bolt thrower, D-121) but: "Salamander I'm not 100% sure, I wonder if better for
 cavalry?", and then: "catapult on snail maybe?". Two questions, concepts only.
