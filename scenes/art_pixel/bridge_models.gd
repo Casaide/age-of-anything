@@ -18,10 +18,11 @@ var um := UnitModels.new()
 var rng := RandomNumberGenerator.new()
 
 
-func bridge(seed_value: int, length: int, style := 0, broken := 0) -> Node3D:
+func bridge(seed_value: int, length: int, style := 0, broken := 0, wide := 1) -> Node3D:
 	rng.seed = seed_value
 	var n := Node3D.new()
 	var half := length * 0.5 + 0.45   # onto the banks
+	var width := WIDTH + (wide - 1)   # `wide` tiles across
 	var wood := um.surf("wood_grain", Color(0.78, 0.74, 0.66), 0.6)
 	var dark := um.surf("wood_grain", Color(0.5, 0.47, 0.42), 0.6)
 	var gone := func(x: float) -> bool: return broken == 1 and absf(x) < half - 0.7
@@ -31,9 +32,9 @@ func bridge(seed_value: int, length: int, style := 0, broken := 0) -> Node3D:
 			for k in range(1, length):
 				var x := -length * 0.5 + k
 				if broken == 1 and absf(x) < 0.6:
-					_crib(n, x, 0.6, dark)   # the cribs stand; only their logs went
+					_crib(n, x, 0.6, dark, width)   # the cribs stand; only their logs went
 					continue
-				_crib(n, x, 1.0, dark)
+				_crib(n, x, 1.0, dark, width)
 			var logs := int(half * 2.0 / 0.11)
 			for k in logs:
 				var x := -half + (k + 0.5) * half * 2.0 / logs
@@ -41,14 +42,14 @@ func bridge(seed_value: int, length: int, style := 0, broken := 0) -> Node3D:
 					continue
 				var r := rng.randf_range(0.045, 0.06)
 				var y := DECK + _hump(x, half, 0.0) + r
-				var a := Vector3(x + rng.randf_range(-0.01, 0.01), y, -WIDTH * 0.5 - rng.randf_range(0.0, 0.06))
-				var b := Vector3(x + rng.randf_range(-0.01, 0.01), y, WIDTH * 0.5 + rng.randf_range(0.0, 0.06))
+				var a := Vector3(x + rng.randf_range(-0.01, 0.01), y, -width * 0.5 - rng.randf_range(0.0, 0.06))
+				var b := Vector3(x + rng.randf_range(-0.01, 0.01), y, width * 0.5 + rng.randf_range(0.0, 0.06))
 				n.add_child(um.rod(a, b, r, r * 0.95, wood if k % 3 else dark, true))
 		_:
 			var rise := 0.14 if style == 2 else 0.0
 			# Beams under the deck, end to end.
 			for side in [-1, 1]:
-				var z: float = side * WIDTH * 0.36
+				var z: float = side * width * 0.36
 				var segs := 8
 				for k in segs:
 					var x0 := -half + k * half * 2.0 / segs
@@ -62,11 +63,11 @@ func bridge(seed_value: int, length: int, style := 0, broken := 0) -> Node3D:
 				var top := DECK + _hump(x, half, rise)
 				var stub: bool = gone.call(x)
 				for side in [-1, 1]:
-					var z: float = side * WIDTH * 0.42
+					var z: float = side * width * 0.42
 					var h := (0.12 if stub else top + 0.02) + 0.25
 					n.add_child(um.rod(Vector3(x, -0.1, z), Vector3(x, h - 0.25, z), 0.045, 0.04, dark, true))
 				if not stub and style == 0:
-					n.add_child(um.rod(Vector3(x, -0.1, -WIDTH * 0.42), Vector3(x, top - 0.04, WIDTH * 0.42), 0.02, 0.02, dark, false))
+					n.add_child(um.rod(Vector3(x, -0.1, -width * 0.42), Vector3(x, top - 0.04, width * 0.42), 0.02, 0.02, dark, false))
 			# Planks across.
 			var planks := int(half * 2.0 / 0.085)
 			for k in planks:
@@ -76,7 +77,7 @@ func bridge(seed_value: int, length: int, style := 0, broken := 0) -> Node3D:
 				var y := DECK + _hump(x, half, rise)
 				var p := MeshInstance3D.new()
 				var box := BoxMesh.new()
-				box.size = Vector3(0.075, 0.025, WIDTH + rng.randf_range(-0.04, 0.04))
+				box.size = Vector3(0.075, 0.025, width + rng.randf_range(-0.04, 0.04))
 				p.mesh = box
 				p.material_override = wood if rng.randf() < 0.75 else dark
 				p.position = Vector3(x, y, rng.randf_range(-0.02, 0.02))
@@ -84,7 +85,7 @@ func bridge(seed_value: int, length: int, style := 0, broken := 0) -> Node3D:
 				n.add_child(p)
 			# Rails.
 			for side in [-1, 1]:
-				var z: float = side * WIDTH * 0.47
+				var z: float = side * width * 0.47
 				var posts := length + 2
 				var prev := Vector3.ZERO
 				for k in posts:
@@ -108,7 +109,7 @@ func bridge(seed_value: int, length: int, style := 0, broken := 0) -> Node3D:
 		for k in 4:
 			var p := MeshInstance3D.new()
 			var box := BoxMesh.new()
-			box.size = Vector3(0.075, 0.02, WIDTH * rng.randf_range(0.5, 0.9))
+			box.size = Vector3(0.075, 0.02, width * rng.randf_range(0.5, 0.9))
 			p.mesh = box
 			p.material_override = wood
 			p.position = Vector3(rng.randf_range(-0.8, 0.8), -0.01, rng.randf_range(-0.5, 0.5))
@@ -118,17 +119,17 @@ func bridge(seed_value: int, length: int, style := 0, broken := 0) -> Node3D:
 
 
 ## A log crib filled with stones: a pier for the log bridge.
-func _crib(n: Node3D, x: float, h: float, wood: Material) -> void:
+func _crib(n: Node3D, x: float, h: float, wood: Material, width: float) -> void:
 	var top := (DECK - 0.03) * h
 	var layers := 4
 	for k in layers:
 		var y := -0.15 + k * (top + 0.15) / layers
 		if k % 2 == 0:
-			for z in [-WIDTH * 0.4, WIDTH * 0.4]:
+			for z in [-width * 0.4, width * 0.4]:
 				n.add_child(um.rod(Vector3(x - 0.2, y, z), Vector3(x + 0.2, y, z), 0.035, 0.035, wood, true))
 		else:
 			for dx in [-0.17, 0.17]:
-				n.add_child(um.rod(Vector3(x + dx, y, -WIDTH * 0.45), Vector3(x + dx, y, WIDTH * 0.45), 0.035, 0.035, wood, true))
+				n.add_child(um.rod(Vector3(x + dx, y, -width * 0.45), Vector3(x + dx, y, width * 0.45), 0.035, 0.035, wood, true))
 	var stone := um.surf("rock", Color(0.7, 0.68, 0.6), 0.5)
 	for k in 5:
 		n.add_child(um.blob(Vector3(0.09, 0.06, 0.09), stone, Vector3(x + rng.randf_range(-0.1, 0.1), top - 0.02, rng.randf_range(-0.25, 0.25))))

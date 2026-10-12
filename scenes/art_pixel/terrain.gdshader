@@ -148,8 +148,8 @@ void fragment() {
 
 	vec4 pth = texture(paths, t / map_size);
 	// Worn trails: where units walk often the grass wears to earth (a trail once worn through).
-	float worn = texture(wear, t / map_size).r;
-	pth.r = max(pth.r, smoothstep(0.08, 0.45, worn) * 0.72);
+	float trod = texture(wear, t / map_size).r;
+	pth.r = max(pth.r, smoothstep(0.08, 0.45, trod) * 0.72);
 	// Where path styles meet, the locally strongest surface wins, so seams are ragged.
 	float st_trail = pth.r + (n - 0.5) * 0.45;
 	float st_board = pth.g + (n - 0.5) * 0.12;

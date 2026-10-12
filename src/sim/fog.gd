@@ -24,6 +24,7 @@ static func setup(w) -> void:
 	w.fog_cfg = {"every": int(f.get("every", 4)), "unit": int(f.get("unit", 6)), "worker": int(f.get("worker", 4)),
 		"building": int(f.get("building", 4)), "tower": int(f.get("tower", 8))}
 	w.fog = []
+	w.fog_lit = []
 	w.fog_ground = []
 	w.fog_left = []
 	w.fog_seen = []
@@ -40,6 +41,7 @@ static func setup(w) -> void:
 		w.fog_ground.append(w.map.terrain.duplicate())
 		w.fog_left.append(left.duplicate())
 		w.fog_seen.append({})
+		w.fog_lit.append(PackedInt32Array())
 	_update(w)
 
 
@@ -70,25 +72,38 @@ static func sees_area(w, player: int, cx: int, cy: int, sx: int, sy: int) -> boo
 
 
 static func _update(w) -> void:
+	var by_team := {}   # team -> the first player of it done: allies share sight, so their grids are the same
 	var cfg: Dictionary = w.fog_cfg
 	for p in w.races.size():
+		if by_team.has(w.teams[p]):
+			w.fog[p] = w.fog[by_team[w.teams[p]]].duplicate()   # an ally sees what its team sees
+			w.fog_lit[p] = w.fog_lit[by_team[w.teams[p]]].duplicate()
+			_remember(w, p)
+			continue
+		by_team[w.teams[p]] = p
 		var g: PackedByteArray = w.fog[p]
-		for c in g.size():
-			if g[c] == VISIBLE:
-				g[c] = EXPLORED
+		for c in w.fog_lit[p]:   # what was in sight is explored now (only those cells, not the whole map)
+			g[c] = EXPLORED
+		var lit := PackedInt32Array()
+		var stamped := {}   # cell * 64 + radius: units standing together see the same circle once
 		for i in w.units.count():
 			if w.teams[w.units.owner[i]] == w.teams[p]:
 				var t: Dictionary = w.types[w.units.kind[i]]
 				var r: int = (cfg.worker if t.worker else cfg.unit) + int(t.sight_add)   # research adds sight (Tech.retype)
-				_stamp(w, g, w.units.x[i] / 1000, w.units.y[i] / 1000, r)
+				var key: int = (w.units.y[i] / 1000 * w.map.width + w.units.x[i] / 1000) * 64 + r
+				if stamped.has(key):
+					continue
+				stamped[key] = true
+				_stamp(w, g, lit, w.units.x[i] / 1000, w.units.y[i] / 1000, r)
 		var bs = w.buildings
 		for b in bs.count():
 			if w.teams[bs.owner[b]] == w.teams[p]:
 				var t: Dictionary = w.btypes[bs.kind[b]]
 				var r: int = cfg.tower if t.get("attack", {}).size() > 0 else cfg.building
 				r += int(w.bmods[bs.owner[b]][bs.kind[b]].add.get("sight", 0))   # research (Tech.refresh)
-				_stamp(w, g, bs.cx[b] + bs.sx[b] / 2, bs.cy[b] + bs.sy[b] / 2, r + maxi(bs.sx[b], bs.sy[b]) / 2)
+				_stamp(w, g, lit, bs.cx[b] + bs.sx[b] / 2, bs.cy[b] + bs.sy[b] / 2, r + maxi(bs.sx[b], bs.sy[b]) / 2)
 		w.fog[p] = g
+		w.fog_lit[p] = lit
 		_remember(w, p)
 
 
@@ -119,18 +134,22 @@ static func _remember(w, p: int) -> void:
 		seen.erase(id)
 
 
-static func _stamp(w, g: PackedByteArray, cx: int, cy: int, r: int) -> void:
+## Light a sight circle in grid g; cells newly lit go on `lit` (they turn explored next time).
+static func _stamp(w, g: PackedByteArray, lit: PackedInt32Array, cx: int, cy: int, r: int) -> void:
 	var wd: int = w.map.width
 	var ht: int = w.map.height
 	if _blocked_near(w.map, cx, cy, r):
-		_stamp_los(w.map, g, cx, cy, r)
+		_stamp_los(w.map, g, lit, cx, cy, r)
 		return
 	var offs := _circle(r)
 	for k in range(0, offs.size(), 2):
 		var x := cx + offs[k]
 		var y := cy + offs[k + 1]
 		if x >= 0 and y >= 0 and x < wd and y < ht:
-			g[y * wd + x] = VISIBLE
+			var c := y * wd + x
+			if g[c] != VISIBLE:
+				g[c] = VISIBLE
+				lit.append(c)
 
 
 ## Is there anything that blocks sight (a tree) within r of (cx, cy)? Counted per chunk, so
@@ -148,7 +167,7 @@ static func _blocked_near(m, cx: int, cy: int, r: int) -> bool:
 
 ## The circle with line of sight: a cell is seen if the cell before it on the line from the
 ## centre was seen and doesn't block (the first tree of a forest is seen, not what's behind it).
-static func _stamp_los(m, g: PackedByteArray, cx: int, cy: int, r: int) -> void:
+static func _stamp_los(m, g: PackedByteArray, lit: PackedInt32Array, cx: int, cy: int, r: int) -> void:
 	var rays: Array = _ray_table(r)
 	var offs: PackedInt32Array = rays[0]
 	var par: PackedInt32Array = rays[1]
@@ -166,7 +185,9 @@ static func _stamp_los(m, g: PackedByteArray, cx: int, cy: int, r: int) -> void:
 		if k > 0 and seen[par[k]] != 2:
 			continue
 		var c := y * wd + x
-		g[c] = VISIBLE
+		if g[c] != VISIBLE:
+			g[c] = VISIBLE
+			lit.append(c)
 		seen[k] = 1 if op[c] == 1 and k > 0 else 2
 
 
