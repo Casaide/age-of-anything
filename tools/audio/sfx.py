@@ -4,7 +4,7 @@ normalised. The palette is physical: wood, stone, hide, reed, bronze, breath. No
 """
 import math
 from synth import (RATE, seconds, sine, noise, env, decay, swell, mul, gain, add, mix_into, concat,
-                   lowpass, highpass, bandpass, modal, soft_clip, reverb, trim_tail, delay_start, fade)
+                   lowpass, highpass, bandpass, modal, soft_clip, reverb, trim_tail, delay_start, fade, pulse_train)
 import instruments as I
 
 
@@ -316,6 +316,72 @@ def meadow(rng):
     return fade(out, 0.0, 0.0)
 
 
+def _murmur(rng, dur):
+    """One far-off voice saying something: a buzzy pulse with a wandering pitch through two
+    vowel formants that slide from syllable to syllable, low-passed by the distance. Words
+    can't be made out; it's people somewhere over there."""
+    n = seconds(dur)
+    f0 = rng.uniform(110, 230)
+    contour = [rng.uniform(-0.12, 0.12) for _ in range(6)]
+    src = pulse_train(n, lambda t: f0 * (1.0 + contour[min(5, int(t / dur * 6))] + 0.04 * math.sin(math.tau * 3.0 * t)), 0.35)
+    vowels = [(730, 1090), (270, 2290), (530, 1840), (570, 840), (300, 870)]
+    syl = max(0.12, dur / rng.randint(3, 7))
+    seq = [rng.choice(vowels) for _ in range(int(dur / syl) + 2)]
+    f1 = bandpass(src, lambda t: seq[int(t / syl)][0], 4.0, 1.0)
+    f2 = bandpass(src, lambda t: seq[int(t / syl)][1], 6.0, 0.5)
+    voice = add(f1, f2)
+    beat = [0.35 + 0.65 * abs(math.sin(math.pi * (i / RATE) / syl)) for i in range(n)]   # syllables
+    return lowpass(mul(mul(voice, beat), env(n, 0.05, 0.1, 1.0, 0.15)), 900.0)
+
+
+def _far(buf, g):
+    """Push a sound away: duller and quieter (the room tail comes from the mix's reverb)."""
+    return gain(lowpass(buf, 1800.0), g)
+
+
+def _town(rng, busy):
+    """Twenty-four seconds of a town at work, heard from a little way off; loops. People
+    talking somewhere (a murmur, never words), a mallet on a frame, a log split, a broom, a
+    bucket set down, a door. `busy` has more of everything (the town grows into it)."""
+    dur = 24.0
+    n = seconds(dur)
+    out = gain(lowpass(noise(n, rng), 300.0), 0.05)   # the air of a place with people in it
+    voices = 9 if busy else 4
+    for k in range(voices):
+        talk = _murmur(rng, rng.uniform(0.8, 2.2))
+        mix_into(out, talk, seconds(rng.uniform(0.0, dur)), rng.uniform(0.10, 0.2), wrap=True)
+    knocks = 12 if busy else 5
+    for k in range(knocks):   # someone building: three or four knocks in a run
+        at = rng.uniform(0.0, dur)
+        for r in range(rng.randint(2, 4)):
+            mix_into(out, _far(build(rng), 0.22), seconds(at + r * rng.uniform(0.42, 0.55)), wrap=True)
+    for k in range(4 if busy else 2):   # a log split
+        mix_into(out, _far(chop(rng), 0.18), seconds(rng.uniform(0.0, dur)), wrap=True)
+    for k in range(3 if busy else 1):   # a broom: swish, swish
+        at = rng.uniform(0.0, dur)
+        for r in range(rng.randint(3, 5)):
+            m = seconds(0.32)
+            sw = mul(bandpass(noise(m, rng), lambda t: 2200.0 + 1800.0 * t / 0.32, 0.8), env(m, 0.08, 0.1, 0.6, 0.12))
+            mix_into(out, sw, seconds(at + r * 0.45), 0.10, wrap=True)
+    for k in range(2 if busy else 1):   # a wooden bucket set down
+        m = seconds(0.2)
+        clunk = add(modal(m, [(_j(rng, 210, 250), 30.0, 0.5), (_j(rng, 520, 600), 45.0, 0.3)], rng, 0.0), _thump(rng, 0.08, 160.0, 90.0, 40.0, 0.4))
+        mix_into(out, _far(clunk, 0.3), seconds(rng.uniform(0.0, dur)), wrap=True)
+    if busy:   # a door on its hinge
+        m = seconds(0.6)
+        creak = mul(bandpass(pulse_train(m, lambda t: 90.0 + 60.0 * math.sin(math.pi * t / 0.6), 0.2), 900.0, 3.0), env(m, 0.05, 0.2, 0.7, 0.2))
+        mix_into(out, creak, seconds(rng.uniform(2.0, dur - 2.0)), 0.12, wrap=True)
+    return fade(reverb(out, 0.7, 0.3), 0.0, 0.0)
+
+
+def town_quiet(rng):
+    return _town(rng, False)
+
+
+def town_busy(rng):
+    return _town(rng, True)
+
+
 # name -> (recipe, takes, peak dB). Stings and ambience are one take.
 TABLE = {
     "hit_blade": (hit_blade, 4, -4.0), "hit_blunt": (hit_blunt, 4, -2.0), "hit_pierce": (hit_pierce, 4, -2.0),
@@ -328,5 +394,5 @@ TABLE = {
     "ui_click": (ui_click, 3, -6.0), "ui_tip": (ui_tip, 1, -8.0), "ui_nope": (ui_nope, 1, -5.0),
     "trained": (trained, 1, -4.0), "built": (built, 1, -3.0), "research": (research, 1, -5.0),
     "age": (age, 1, -1.0), "won": (won, 1, -1.0), "lost": (lost, 1, -1.0), "alarm": (alarm, 1, -1.0),
-    "meadow": (meadow, 1, -8.0),
+    "meadow": (meadow, 1, -8.0), "town_quiet": (town_quiet, 1, -12.0), "town_busy": (town_busy, 1, -10.0),
 }
