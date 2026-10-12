@@ -9,6 +9,14 @@ extends RefCounted
 ## max(min_damage, sum over the attack's classes the target belongs to of
 ## max(0, attack - armour)). Hits within a tick land together, so ids don't decide
 ## who strikes first.
+##
+## Shots fly (shots.gd): a ranged attack is loosed at the spot its target stands on (led by its
+## pace, rules shot_lead_pct), its damage worked out then, and lands a flight later (distance over
+## the weapon's shot speed: rules shot_speed, or shot_speeds by weapon tag). It hits the target if
+## its body still covers the spot (within shot_slack), else it falls in the ground (or, with rules
+## shot_strays on, on the nearest other foe of the shooter whose body does: never a friend, never
+## an animal it wasn't meant for). Buildings never dodge. Shooters fighting on their own leave a foe that the shots
+## already on their way will kill, so a volley doesn't all go into one dying unit.
 
 const Fixed := preload("res://src/sim/fixed.gd")
 const SimMap := preload("res://src/sim/sim_map.gd")
@@ -18,6 +26,7 @@ const Animals := preload("res://src/sim/animals.gd")
 const Bridges := preload("res://src/sim/bridges.gd")
 const Garrison := preload("res://src/sim/garrison.gd")
 const Fog := preload("res://src/sim/fog.gd")
+const Shots := preload("res://src/sim/shots.gd")
 
 ## units.stance, what a unit is doing: nothing, an ordered target, a fight it found
 ## itself, an attack-move, or walking back to where it stood (defensive units).
@@ -71,6 +80,7 @@ static func setup(w) -> void:
 			b.atk = _vector(w, {b.attack.damage: int(b.attack.attack)})
 			b.reach = int(b.attack.range) * SimMap.TILE
 			b.reload = int(b.attack.reload)
+			b.shot_speed = int(w.combat.shot_speed)
 		var cls := PackedByteArray()
 		cls.resize(w.classes.size())
 		cls[0] = 1
@@ -101,6 +111,11 @@ static func type_vectors(w, t: Dictionary) -> void:
 		t.reach = int(e["range"]) * SimMap.TILE if ranged else int(c.melee_reach)
 		t.reload = int(c.ranged_reload) if ranged else int(c.melee_reload)
 		t.ranged = ranged
+		t.shot_speed = int(c.shot_speed)
+		for k in e.tags:   # the weapon's own pace (a javelin is slower than an arrow), first tag that has one
+			if c.shot_speeds.has(k):
+				t.shot_speed = int(c.shot_speeds[k])
+				break
 
 
 static func _vector(w, d: Dictionary) -> PackedInt32Array:
@@ -269,6 +284,8 @@ static func tick(w) -> void:
 		if cd[i] > 0:
 			cd[i] -= 1
 	u.cooldown = cd
+	_land(w, hurt, hurt_by, bhurt)
+	var inbound: PackedInt32Array = w.shots.inbound(u)   # damage still in the air, per unit
 	for i in n:
 		var t: Dictionary = w.types[u.kind[i]]
 		if u.stance[i] == RETURN and u.moving[i] == 0:
@@ -346,6 +363,17 @@ static func tick(w) -> void:
 			u.moving[i] = 0
 			if b >= 0:
 				hitters[b] = hitters.get(b, []) + [i]
+			if u.cooldown[i] == 0 and j >= 0 and t.ranged and inbound[j] >= u.hp[j] and u.stance[i] != ORDERED:
+				# Enough already flying at it to kill it: another foe in reach, or hold this shot.
+				var f := _nearest_foe(w, i, t.reach + u.radius[i] + SimMap.TILE / 2, false, engaged, SPREAD, inbound)
+				var fj: int = u.index_of(f) if f != 0 else -1
+				if fj < 0 or _gap(w, i, fj, -1) > t.reach + _height_step(w, i, fj, -1) * int(w.high.reach):
+					continue
+				engaged[j] -= 1
+				engaged[fj] += 1
+				u.foe[i] = f
+				j = fj
+				up = _height_step(w, i, j, -1)
 			if u.cooldown[i] == 0:
 				u.cooldown[i] = t.reload
 				if j >= 0:
@@ -353,16 +381,23 @@ static func tick(w) -> void:
 					var d := damage(t.atk, tt.arm, tt.cls, maxi(int(c.min_damage), tt.get("min_damage", 0)))   # a sheep goes down in a few blows
 					if up < 0:
 						d = uphill(w, d)
-					hurt[j] += d
-					hurt_by[j] = u.id[i]
-					w.events.append({"type": "hit", "by": u.id[i], "to": u.id[j], "damage": d, "ranged": t.ranged})
+					if t.ranged:
+						inbound[j] += d
+						_loose(w, u.id[i], u.owner[i], u.x[i], u.y[i], j, -1, d, u.kind[i], up, t.shot_speed)
+					else:
+						hurt[j] += d
+						hurt_by[j] = u.id[i]
+						w.events.append({"type": "hit", "by": u.id[i], "to": u.id[j], "damage": d, "ranged": false})
 				else:
 					var bt: Dictionary = w.btypes[bs.kind[b]]
 					var d := damage(t.atk, w.bmods[bs.owner[b]][bs.kind[b]].arm, bt.cls, int(c.min_damage))   # armour with research
 					if up < 0:
 						d = uphill(w, d)
-					bhurt[b] += d
-					w.events.append({"type": "hit", "by": u.id[i], "to": bs.id[b], "damage": d, "ranged": t.ranged})
+					if t.ranged:
+						_loose(w, u.id[i], u.owner[i], u.x[i], u.y[i], -1, b, d, u.kind[i], up, t.shot_speed)
+					else:
+						bhurt[b] += d
+						w.events.append({"type": "hit", "by": u.id[i], "to": bs.id[b], "damage": d, "ranged": false})
 		elif u.stance[i] == AUTO and posture == STAND:
 			u.foe[i] = 0   # stand ground: out of reach, let it go
 			u.stance[i] = NONE
@@ -379,7 +414,7 @@ static func tick(w) -> void:
 	besieged.sort()
 	for b in besieged:
 		_surround(w, b, chasers[b], hitters.get(b, []))
-	_towers(w, hurt, hurt_by)
+	_towers(w)
 	_apply(w, hurt, hurt_by, bhurt)
 	for k in brhurt.size():
 		if brhurt[k] > 0:
@@ -390,7 +425,7 @@ static func tick(w) -> void:
 ## nearest enemy units in reach: a volley of the type's arrows (data: the attack block's `arrows`,
 ## default 1) plus one for each unit sheltering inside, one at each of the nearest foes in turn
 ## (round again when there are fewer foes than arrows). Research adds reach (Slit Windows).
-static func _towers(w, hurt: PackedInt32Array, hurt_by: PackedInt32Array) -> void:
+static func _towers(w) -> void:
 	var bs = w.buildings
 	var u = w.units
 	var c: Dictionary = w.combat
@@ -443,10 +478,117 @@ static func _towers(w, hurt: PackedInt32Array, hurt_by: PackedInt32Array) -> voi
 			var dmg := damage(bt.atk, tt.arm, tt.cls, int(c.min_damage))
 			if e[2] < 0:
 				dmg = uphill(w, dmg)
-			hurt[best] += dmg
-			hurt_by[best] = bs.id[b]
-			w.events.append({"type": "hit", "by": bs.id[b], "to": u.id[best], "damage": dmg, "ranged": true, "arrow": k})
+			_loose(w, bs.id[b], bs.owner[b], mx, my, best, -1, dmg, -1 - bs.kind[b], e[2], bt.shot_speed, k)
 		bs.cooldown[b] = bt.reload
+
+
+## Loose a shot from (sx, sy) at unit j (or building b): it flies at the spot the unit stands on,
+## led by rules shot_lead_pct of the way it is walking, and lands a flight later (shots.gd). A
+## "shot" event tells the view where and when; "hit" or "miss" follows on landing.
+static func _loose(w, by: int, owner: int, sx: int, sy: int, j: int, b: int, d: int, src: int, up: int, speed: int, arrow := -1) -> void:
+	var u = w.units
+	var to: int
+	var ax: int
+	var ay: int
+	if j >= 0:
+		to = u.id[j]
+		ax = u.x[j]
+		ay = u.y[j]
+		var lead: int = int(w.combat.shot_lead_pct)
+		if u.moving[j] == 1 and lead > 0:
+			var vx: int = u.wx[j] - ax
+			var vy: int = u.wy[j] - ay
+			var len := Fixed.isqrt(vx * vx + vy * vy)
+			if len > 0:
+				var pace: int = u.pace[j] if u.pace[j] > 0 else u.speed[j]
+				var ahead: int = mini(len, pace * _flight(sx, sy, ax, ay, speed) * lead / 100)
+				ax += vx * ahead / len
+				ay += vy * ahead / len
+	else:
+		var bs = w.buildings
+		to = bs.id[b]
+		ax = bs.cx[b] * SimMap.TILE + bs.sx[b] * SimMap.TILE / 2
+		ay = bs.cy[b] * SimMap.TILE + bs.sy[b] * SimMap.TILE / 2
+	var f := _flight(sx, sy, ax, ay, speed)
+	w.shots.add(w.tick + f, to, by, owner, d, src, up, ax, ay)
+	var e := {"type": "shot", "by": by, "to": to, "x0": sx, "y0": sy, "x": ax, "y": ay, "ticks": f}
+	if arrow >= 0:
+		e["arrow"] = arrow
+	w.events.append(e)
+
+
+## Ticks a shot takes from one spot to another (at least one).
+static func _flight(x0: int, y0: int, x1: int, y1: int, speed: int) -> int:
+	return maxi(1, (Fixed.isqrt(Fixed.dist2(x0, y0, x1, y1)) + speed - 1) / speed)
+
+
+## The shots landing this tick: on the target if its body still covers the spot (buildings always),
+## else on the nearest other foe whose body does (its own damage against that one's armour), else
+## in the ground. In loosing order; damage goes into this tick's hurt like a blow.
+static func _land(w, hurt: PackedInt32Array, hurt_by: PackedInt32Array, bhurt: PackedInt32Array) -> void:
+	if w.shots.count() == 0:
+		return
+	var recs: PackedInt32Array = w.shots.take(w.tick)
+	var u = w.units
+	var slack: int = int(w.combat.shot_slack)
+	for o in range(0, recs.size(), Shots.STRIDE):
+		var to: int = recs[o + Shots.TO]
+		var by: int = recs[o + Shots.BY]
+		var ax: int = recs[o + Shots.X]
+		var ay: int = recs[o + Shots.Y]
+		var d: int = recs[o + Shots.DAMAGE]
+		var j: int = u.index_of(to)
+		var b: int = w.buildings.index_of(to) if j < 0 else -1
+		if b >= 0:   # buildings never dodge
+			bhurt[b] += d
+			w.events.append({"type": "hit", "by": by, "to": to, "damage": d, "ranged": true, "x": ax, "y": ay})
+			continue
+		if j >= 0:
+			var r: int = u.radius[j] + slack
+			if Fixed.dist2(ax, ay, u.x[j], u.y[j]) > r * r:
+				j = -1   # it stepped off the spot
+		if j < 0:   # missed, or its target fell (or went inside) before it landed: anyone else there?
+			j = _stray(w, recs[o + Shots.OWNER], ax, ay, slack) if w.combat.shot_strays == 1 else -1
+			if j >= 0:
+				d = _shot_damage(w, recs[o + Shots.SRC], recs[o + Shots.UP], j)
+		if j >= 0:
+			hurt[j] += d
+			hurt_by[j] = by
+			w.events.append({"type": "hit", "by": by, "to": u.id[j], "damage": d, "ranged": true, "x": ax, "y": ay})
+		else:
+			w.events.append({"type": "miss", "by": by, "to": to, "x": ax, "y": ay})
+
+
+## The foe of `owner` whose body covers (x, y), nearest its centre (lowest slot on ties), not an
+## animal; -1 if none.
+static func _stray(w, owner: int, x: int, y: int, slack: int) -> int:
+	var u = w.units
+	var sp = w.spatial
+	var cx: int = x / SimMap.TILE
+	var cy: int = y / SimMap.TILE
+	var best := -1
+	var best_d := 1 << 40
+	for yy in range(maxi(cy - 1, 0), mini(cy + 2, sp.height)):
+		for xx in range(maxi(cx - 1, 0), mini(cx + 2, sp.width)):
+			var cell: int = yy * sp.width + xx
+			for q in range(sp.start[cell], sp.start[cell + 1]):
+				var k: int = sp.items[q]
+				if not w.is_foe(u.owner[k], owner) or w.types[u.kind[k]].has("animal"):
+					continue
+				var r: int = u.radius[k] + slack
+				var d := Fixed.dist2(x, y, u.x[k], u.y[k])
+				if d <= r * r and (d < best_d or (d == best_d and k < best)):
+					best_d = d
+					best = k
+	return best
+
+
+## A stray's damage against unit j: the shooter type's attack (src >= 0) or a tower's (-1 - type).
+static func _shot_damage(w, src: int, up: int, j: int) -> int:
+	var atk: PackedInt32Array = w.types[src].atk if src >= 0 else w.btypes[-1 - src].atk
+	var tt: Dictionary = w.types[w.units.kind[j]]
+	var d := damage(atk, tt.arm, tt.cls, maxi(int(w.combat.min_damage), tt.get("min_damage", 0)))
+	return uphill(w, d) if up < 0 else d
 
 
 ## High ground (milestone 15): 1 if unit i stands a level above its target (unit j or building
@@ -615,9 +757,10 @@ static func _lost(w, i: int) -> void:
 
 
 ## The best enemy unit within `sight` (centre to centre): nearest, counting each of
-## its current attackers as `spread` further away, lowest id on ties; then, for
-## attack-movers, the nearest enemy building. Returns an id or 0.
-static func _nearest_foe(w, i: int, sight: int, buildings_too: bool, engaged: PackedInt32Array, spread := SPREAD) -> int:
+## its current attackers as `spread` further away, lowest id on ties (skipping those the shots
+## in `inbound` will kill, if given); then, for attack-movers, the nearest enemy building.
+## Returns an id or 0.
+static func _nearest_foe(w, i: int, sight: int, buildings_too: bool, engaged: PackedInt32Array, spread := SPREAD, inbound := PackedInt32Array()) -> int:
 	var u = w.units
 	var sp = w.spatial
 	var me: int = u.owner[i]
@@ -635,6 +778,8 @@ static func _nearest_foe(w, i: int, sight: int, buildings_too: bool, engaged: Pa
 				var j: int = sp.items[k]
 				if not w.is_foe(u.owner[j], me) or w.types[u.kind[j]].has("animal"):
 					continue   # a rival's sheep is stolen by walking up to it, not killed (Dominic)
+				if not inbound.is_empty() and inbound[j] >= u.hp[j]:
+					continue   # as good as dead already: shots on their way will kill it
 				var d2 := Fixed.dist2(u.x[i], u.y[i], u.x[j], u.y[j])
 				if d2 > sight * sight or not Fog.visible(w, me, u.x[j], u.y[j]):
 					continue   # only what its side can see: no going for foes in the fog (Dominic)
