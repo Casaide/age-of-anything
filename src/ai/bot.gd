@@ -57,6 +57,7 @@ var _sheltering := false     # our workers were called to arms
 var _shelter_until := 0      # ... and come out by this tick
 var _shelter_next := 0       # no call to arms again before this tick
 var _saving_age := false     # the goal is the next age (the economy leans on it hard)
+var _aim := 0                # the enemy building the army goes straight for when it knows no Town Center to: the one it marches on, or the wall piece shutting the way (_blocker); 0 for a start spot
 
 
 ## config: data/ai.json as ints (see load_config), or {} to load it. level: a key of
@@ -735,20 +736,49 @@ func _send_home(w, hx: int, hy: int) -> void:
 ## across a ford, a gate) that's least out of the way from home to `target`, or `target` if
 ## there's none. The bot knows the map's crossings as a player knows the map: it goes to knock
 ## on the wall that shuts one, even before it has seen it.
+## Its id is kept in _aim: the army breaks that one piece rather than every one it walks up to.
+## Pieces that open the way when they fall (side by side with our area and the target's) come
+## first: a ring's corner touches the inside only across a corner, so breaking it opens nothing.
+## Then the quickest to break: hit points over the sides our soldiers can hit it from (a long gate
+## takes three times the hitters of a wall tile), which outweighs a walk round the wall.
 func _blocker(w, hx: int, hy: int, target: Vector2i) -> Vector2i:
 	var bs = w.buildings
 	var best := target
 	var best_d := 1 << 62
+	var tarea: int = eco.reach.area_at(w, _aln, target.x, target.y)
+	_aim = 0
 	for b in bs.count():
 		if not w.is_enemy(player, bs.owner[b]) or not eco.reach.reaches_building(w, _aln, _harea, b):
 			continue
 		var x: int = bs.cx[b] * 1000 + bs.sx[b] * 500
 		var y: int = bs.cy[b] * 1000 + bs.sy[b] * 500
 		var d: int = Fixed.isqrt(Fixed.dist2(hx, hy, x, y)) + Fixed.isqrt(Fixed.dist2(x, y, target.x, target.y))
+		var sides := _sides(w, b, _harea)
+		if tarea == 0 or sides == 0 or _sides(w, b, tarea) == 0:
+			d += 1 << 40
+		d += bs.hp[b] * 1000 / maxi(sides, 1)
 		if d < best_d:
 			best_d = d
 			best = Vector2i(x, y)
+			_aim = bs.id[b]
 	return best
+
+
+## How many cells of `area` share a side (not just a corner) with building b's footprint.
+func _sides(w, b: int, area: int) -> int:
+	var lab: PackedInt32Array = eco.reach.labels(w, _aln)
+	var bs = w.buildings
+	var m = w.map
+	var n := 0
+	for y in range(bs.cy[b], bs.cy[b] + bs.sy[b]):
+		for x in [bs.cx[b] - 1, bs.cx[b] + bs.sx[b]]:
+			if x >= 0 and x < m.width and lab[y * m.width + x] == area:
+				n += 1
+	for x in range(bs.cx[b], bs.cx[b] + bs.sx[b]):
+		for y in [bs.cy[b] - 1, bs.cy[b] + bs.sy[b]]:
+			if y >= 0 and y < m.height and lab[y * m.width + x] == area:
+				n += 1
+	return n
 
 
 ## A point our soldiers can get to: the point itself if it's in our area, else the nearest
@@ -828,6 +858,9 @@ func _waves(w, army: Array, hx: int, hy: int) -> void:
 	# chewing through every house on the way.
 	var tc_id := wonder if wonder > 0 else _known_enemy_town(w, hx, hy)   # (a Wonder first)
 	if tc_id <= 0:
+		tc_id = _aim   # the target itself, all together: attack-moving at it, soldiers set on whatever building is nearest
+		# (the enemy's stone wall beside a farm, a dozen wall pieces at once) and chew on that for minutes
+	if tc_id <= 0:
 		w.issue(player, Commands.ATTACK_MOVE, {"ids": ids, "x": target.x, "y": target.y})
 		return
 	# Enough to fight the defenders (two each) attack-move; the rest go straight for the Town Center.
@@ -894,7 +927,7 @@ func _known_enemy_town(w, hx: int, hy: int) -> int:
 
 
 ## Where to attack: the nearest enemy Town Center we've seen, else the nearest enemy building
-## we've seen, else an enemy's starting spot (every player knows where the others start). Ones
+## we've seen but walls, else an enemy's starting spot (every player knows where the others start). Ones
 ## our soldiers can get to come first: with the Town Center behind a walled ford, the wall we've
 ## seen there is the target (it comes down, then the way is open). With nothing in reach, the
 ## caller marches to the nearest bank (_reachable).
@@ -903,7 +936,7 @@ func _enemy_target(w, hx: int, hy: int) -> Vector2i:
 	var wk: int = Economy.btype_of(w, "wonder")
 	var best := Vector2i(-1, -1)
 	var best_d2 := 1 << 62
-	var best_rank := -1   # 2: a Wonder, 1: a Town Center, 0: anything else
+	var best_rank := -2   # 2: a Wonder, 1: a Town Center, 0: anything else, -1: a wall piece or gate
 	var best_ok := false
 	for b in w.buildings.count():
 		var bs = w.buildings
@@ -912,7 +945,7 @@ func _enemy_target(w, hx: int, hy: int) -> Vector2i:
 			continue
 		var x: int = bs.cx[b] * 1000 + bs.sx[b] * 500
 		var y: int = bs.cy[b] * 1000 + bs.sy[b] * 500
-		var rank: int = 2 if wonder else (1 if bs.kind[b] == tc_kind else 0)
+		var rank: int = 2 if wonder else (1 if bs.kind[b] == tc_kind else (-1 if w.btypes[bs.kind[b]].line or w.btypes[bs.kind[b]].gate else 0))
 		var ok: bool = eco.reach.reaches_building(w, _aln, _harea, b)
 		var d2 := Fixed.dist2(hx, hy, x, y)
 		if (ok and not best_ok) or (ok == best_ok and (rank > best_rank or (rank == best_rank and d2 < best_d2))):
@@ -920,7 +953,9 @@ func _enemy_target(w, hx: int, hy: int) -> Vector2i:
 			best_d2 = d2
 			best_rank = rank
 			best_ok = ok
-	if best.x < 0:
+			_aim = bs.id[b] if ok else 0
+	if best_rank < 0:
+		_aim = 0   # (walls seen aren't worth marching on: the way in is broken by _blocker, then on to the start)
 		for p in w.races.size():
 			if w.is_enemy(player, p) and w.defeated[p] == 0 and p < w.map.starts.size():
 				return Vector2i(int(w.map.starts[p][0]), int(w.map.starts[p][1]))
