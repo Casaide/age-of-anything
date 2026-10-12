@@ -11,6 +11,7 @@ const Fixed := preload("res://src/sim/fixed.gd")
 const Tech := preload("res://src/sim/tech.gd")
 const Reach := preload("res://src/ai/reach.gd")
 const Pens := preload("res://src/sim/pens.gd")
+const Garrison := preload("res://src/sim/garrison.gd")
 
 const THINK_EVERY := 20        # ticks (1 s)
 var MIX := {1: {"food": 60, "wood": 40}}   # age -> share of workers per resource (data/ai.json when a full bot runs this)
@@ -29,7 +30,10 @@ const HUNT_PARTY := {"herd": 3, "flee": 3, "fight": 8}      # hunters sent, by a
 const HUNT_WORKERS := {"herd": 0, "flee": 8, "fight": 12}   # workers we need before hunting each
 const PEN_SHEEP := 3           # sheep of ours near home worth a pen for: build one in age 1 (the first are slaughtered meanwhile)
 const BOAR_SOLDIERS := 3       # idle soldiers at home that join a boar party (they lead; workers make up the rest)
+const BOAR_LEAD := 2           # no boar hunt without at least this many of them
 var AGE_WORKERS := 16          # with this many workers, stop training and save for the next age
+var REBALANCE := 0             # ticks between moving one gatherer from a resource we have enough of to one we're short of (0: never)
+const GOAL_SPARE := 100        # a resource counts as saved up once its stock is this much over the goal
 
 var player: int
 var _next_train := 0
@@ -40,6 +44,8 @@ var reach := Reach.new()       # where our workers can walk to (no sending them 
 var wln := 0                   # our workers' lane (movement class and team)
 var home := 0                  # the area round our Town Center (Reach); 0 until the first think
 var held := {}                 # worker id -> tick: kept out of the way until then (the bot pulled it from a fight)
+var goal := PackedInt32Array() # what we're saving for (the next age, a Castle): set by the full bot; empty: nothing
+var _next_rebalance := 0
 
 
 func _init(p_player: int) -> void:
@@ -72,6 +78,7 @@ func think(w) -> void:
 					n[Economy.kind_of(w, "food") - 1] += 1   # hunting: food on the hoof
 				elif w.units.moving[i] == 0 and int(held.get(w.units.id[i], 0)) <= w.tick:
 					idle.append(i)
+	var count: int = workers.size() + sheltered(w)   # (workers sheltering from a raid still count)
 	# Idle hands: back to work on whatever we're shortest of, that they can get to.
 	for i in idle:
 		var area := reach.area_of_unit(w, i)
@@ -93,8 +100,9 @@ func think(w) -> void:
 	_pen(w, tc, workers)
 	_hunt(w, tc, workers)
 	_finish_foundations(w, workers)
+	_rebalance(w, workers, n)
 	# Age up: with enough workers, save up and click it.
-	var saving: bool = w.ages[player] == 1 and workers.size() >= AGE_WORKERS
+	var saving: bool = w.ages[player] == 1 and count >= AGE_WORKERS
 	if saving and not Tech.has_building(w, player, "barracks") and not _building_underway(w):
 		var bk: int = Economy.btype_of(w, "barracks")
 		if w.can_afford(player, w.btypes[bk].cost):
@@ -108,7 +116,7 @@ func think(w) -> void:
 	# Keep the Town Center busy.
 	var worker_type: int = w.type_of(player, "worker")
 	var t: Dictionary = w.types[worker_type]
-	if not saving and w.tick >= _next_train and bs.queue[tc].size() < 2 and workers.size() + bs.queue[tc].size() < MAX_WORKERS \
+	if not saving and w.tick >= _next_train and bs.queue[tc].size() < 2 and count + bs.queue[tc].size() < MAX_WORKERS \
 			and w.can_afford(player, t.cost):
 		w.issue(player, Commands.TRAIN, {"building": bs.id[tc], "slot": "worker"})
 		_next_train = w.tick + TRAIN_COOLDOWN
@@ -271,6 +279,8 @@ func _hunt(w, tc: int, workers: Array) -> void:
 	for want in ["herd", "flee", "fight"]:   # sheep, deer, boar
 		if workers.size() < HUNT_WORKERS[want] or (want == "herd" and penning):
 			continue   # (sheep with a pen to go to are kept)
+		if want == "fight" and guards.size() < BOAR_LEAD:
+			continue   # a boar gores workers that take it on alone (seven in one hunt): soldiers lead
 		var best_d2 := HUNT_RADIUS * HUNT_RADIUS * 1000000
 		for i in u.count():
 			var t: Dictionary = w.types[u.kind[i]]
@@ -339,7 +349,14 @@ func _farms(w, tc: int, workers: Array, n: PackedInt32Array) -> void:
 		if t.has("animal") and (w.units.owner[i] == player or w.units.owner[i] == w.gaia) \
 				and Fixed.dist2(hx, hy, w.units.x[i], w.units.y[i]) <= HUNT_RADIUS * HUNT_RADIUS * 1000000:
 			wild += int(t.food)
-	if farms >= n[food - 1] - wild / WILD_PER_WORKER or w.stock[food - 1][player] >= FARM_BELOW or _building_underway(w) or not w.can_afford(player, ft.cost):
+	# Farmers wanted: those on food now, or the share of workers food should have (with the wild
+	# food gone, nobody gathers food and no farm would ever go up).
+	var mix := shares(w)
+	var total := 0
+	for v in n:
+		total += v
+	var want: int = maxi(n[food - 1], mix[food - 1] * total / _sum(mix))
+	if farms >= want - wild / WILD_PER_WORKER or w.stock[food - 1][player] >= FARM_BELOW or _building_underway(w) or not w.can_afford(player, ft.cost):
 		return
 	var builder := -1
 	for i in workers:
@@ -353,31 +370,131 @@ func _farms(w, tc: int, workers: Array, n: PackedInt32Array) -> void:
 		w.issue(player, Commands.BUILD, {"ids": [w.units.id[builder]], "building": "farm", "cx": spot.x, "cy": spot.y})
 
 
-## The resource (1-based kind) furthest below its share in this age's mix that has some left
-## on the map, or 0. Ties go to the earlier resource.
-func _short_of(w, n: PackedInt32Array, x: int, y: int, area := -1) -> int:
+## This age's mix as a share per resource index.
+func _mix(w) -> PackedInt32Array:
 	var mix: Dictionary = MIX[1]
 	var keys := MIX.keys()
 	keys.sort()
 	for age in keys:
 		if int(age) <= w.ages[player]:
 			mix = MIX[age]
-	var total := 1
+	var out := PackedInt32Array()
+	for res in w.resources:
+		out.append(int(mix.get(res, 0)))
+	return out
+
+
+## The share of workers we want on each resource (by resource index): this age's mix, plus, for
+## the ones the goal still lacks, a hundred more split by how much each lacks (so stone for a
+## Castle comes in an age whose mix has little); the ones saved up for it halved while another
+## still falls short; none on a stock of PLENTY. With nothing left wanted, the plain mix.
+func shares(w) -> PackedInt32Array:
+	var base := _mix(w)
+	var lack := 0   # all the goal still lacks
+	for r in goal.size():
+		lack += maxi(0, goal[r] - w.stock[r][player])
+	var out := base.duplicate()
+	var any := false
+	for r in base.size():
+		var s: int = w.stock[r][player]
+		if r < goal.size() and s < goal[r]:
+			out[r] = base[r] + 100 * (goal[r] - s) / lack
+		elif lack > 0 and (r >= goal.size() or s >= goal[r] + GOAL_SPARE):
+			out[r] = base[r] / 2
+		if s >= PLENTY:
+			out[r] = 0
+		any = any or out[r] > 0
+	return out if any else base
+
+
+## The resource (1-based kind) furthest below its share (shares) that has some left on the map
+## (else by the plain mix), or 0. Ties go to the earlier resource.
+func _short_of(w, n: PackedInt32Array, x: int, y: int, area := -1) -> int:
+	for mix in [shares(w), _mix(w)]:
+		var sum := _sum(mix)
+		var total := 1
+		for v in n:
+			total += v
+		var best := 0
+		var best_gap := -(1 << 62)
+		for r in w.resources.size():
+			if mix[r] <= 0:
+				continue
+			var gap: int = mix[r] * total - n[r] * sum
+			if gap > best_gap and _nearest_resource(w, x, y, r + 1, false, area) >= 0:
+				best_gap = gap
+				best = r + 1
+		if best > 0:
+			return best
+	return 0
+
+
+static func _sum(a: PackedInt32Array) -> int:
+	var t := 0
+	for v in a:
+		t += v
+	return maxi(1, t)
+
+
+## Workers stay where they were sent, so when the shares change (a new age, a stock saved up, a
+## pile grown) one gatherer moves every REBALANCE ticks: from the resource most over its share (by
+## a worker or more) to the one most under it, the over-resource's gatherer nearest the other.
+func _rebalance(w, workers: Array, n: PackedInt32Array) -> void:
+	if REBALANCE <= 0 or w.tick < _next_rebalance:
+		return
+	_next_rebalance = w.tick + REBALANCE
+	var mix := shares(w)
+	var sum := _sum(mix)
+	var total := 0
 	for v in n:
 		total += v
-	var best := 0
-	var best_gap := -(1 << 30)
+	var over := -1
+	var under := -1
+	var most := 0
+	var least := 0
 	for r in w.resources.size():
-		var pct: int = int(mix.get(w.resources[r], 0))
-		if pct <= 0:
+		var gap: int = n[r] * sum - mix[r] * total   # in workers, times sum
+		if gap >= sum and gap > most:
+			most = gap
+			over = r
+		if mix[r] > 0 and -gap >= sum and -gap > least:
+			least = -gap
+			under = r
+	if over < 0 or under < 0:
+		return
+	var u = w.units
+	var tc := _town_center(w)
+	var to := _nearest_resource(w, w.buildings.cx[tc] * 1000 + 1500, w.buildings.cy[tc] * 1000 + 1500, under + 1, true)
+	if to < 0:
+		return
+	var tx: int = (to % w.map.width) * 1000 + 500
+	var ty: int = (to / w.map.width) * 1000 + 500
+	var best := -1
+	var best_d2 := 1 << 62
+	for i in workers:
+		if _ordered.has(u.id[i]) or u.carry_kind[i] != over + 1 or not (u.task[i] == Economy.GATHER or u.task[i] == Economy.RETURN):
 			continue
-		var gap := pct * total - n[r] * 100
-		if w.stock[r][player] >= PLENTY:
-			gap -= 1 << 20   # piling up: the others first
-		if gap > best_gap and _nearest_resource(w, x, y, r + 1, false, area) >= 0:
-			best_gap = gap
-			best = r + 1
-	return best
+		var d2 := Fixed.dist2(u.x[i], u.y[i], tx, ty)
+		if d2 < best_d2:
+			best_d2 = d2
+			best = i
+	if best < 0:
+		return
+	var cell := _nearest_resource(w, u.x[best], u.y[best], under + 1, true, reach.area_of_unit(w, best))
+	if cell >= 0:
+		w.issue(player, Commands.GATHER, {"ids": [u.id[best]], "cell": cell})
+		_ordered[u.id[best]] = true
+
+
+## Our workers sheltering inside buildings (out of the units arrays while a raid passes).
+func sheltered(w) -> int:
+	var n := 0
+	for b in w.buildings.count():
+		if w.buildings.owner[b] == player:
+			for rec in w.buildings.inside[b]:
+				if w.types[rec[Garrison.REC_KIND]].worker:
+					n += 1
+	return n
 
 
 func _town_center(w) -> int:
