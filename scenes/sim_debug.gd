@@ -122,7 +122,8 @@ var rviews := {}            # resource cell -> its prop (reed clump, bug bush)
 var res_cells := {}         # cell -> its prop variant: every cell that held a resource or changed (props come and go here)
 var ghosts := {}            # building id -> BuildingArt: enemy buildings gone out of sight, shown as last seen
 var selected := {}          # unit id -> true
-var selected_building := 0  # building id, or 0
+var selected_building := 0  # building id, or 0: the lead of the selected buildings (its queue and research show)
+var selected_buildings := {} # building id -> true: the lead and every building of its type selected with it
 var selected_resource := -1 # a resource cell clicked to see what's left, or -1
 var active := 0             # the side you're commanding
 var placing := ""           # building type being placed, or ""
@@ -379,6 +380,7 @@ func _attach(w: World, end_tick := -1) -> void:
 	res_cells.clear()
 	selected.clear()
 	selected_building = 0
+	selected_buildings.clear()
 	placing = ""
 	flags.clear()
 	world = w
@@ -579,7 +581,7 @@ func _play_key(event: InputEventKey) -> bool:
 		KEY_Q:
 			train_worker()
 			return true
-		KEY_U:
+		KEY_U:   # research and the age-up go to the lead only: each is once per player
 			if selected_building != 0:
 				world.issue(active, Commands.AGE_UP, {"building": selected_building})
 			return true
@@ -832,6 +834,7 @@ func regen_army(side: int, new_prompt: bool) -> void:
 func _clear_selection() -> void:
 	selected.clear()
 	selected_building = 0
+	selected_buildings.clear()
 	selected_resource = -1
 	placing = ""
 
@@ -853,6 +856,7 @@ func select_at(pos: Vector2, add := false) -> void:
 	var best := unit_at(pos)
 	if best != 0:
 		selected_building = 0
+		selected_buildings.clear()
 		if add and selected.has(best):
 			selected.erase(best)
 		else:
@@ -864,7 +868,15 @@ func select_at(pos: Vector2, add := false) -> void:
 		var bid: int = map.occupied[_cell_at(probe)]
 		if bid != 0:
 			selected.clear()
-			selected_building = bid
+			if add and _same_building_type(bid, selected_building):   # shift-click: add or drop one of the same type
+				if selected_buildings.has(bid):
+					selected_buildings.erase(bid)
+					selected_building = _next_lead()
+				else:
+					selected_buildings[bid] = true
+			else:
+				selected_building = bid
+				selected_buildings = {bid: true}
 			audio.play("ui_click", -4.0)
 			_take_side(world.buildings.owner[world.buildings.index_of(bid)])
 			return
@@ -885,9 +897,15 @@ func select_box(a: Vector2, b: Vector2, add := false) -> void:
 			selected[id] = true
 
 
-## Double-click: every unit of the clicked unit's type and owner that's on screen.
+## Double-click: every unit of the clicked unit's type and owner that's on screen; on a
+## building, every building of its type and owner on screen (finished ones with a finished one,
+## foundations with a foundation), so a row of barracks can be told to train together.
 func select_same_type_on_screen(pos: Vector2, add := false) -> void:
+	var before := _building_group()
 	select_at(pos, false)
+	if selected_building != 0 and selected.is_empty():
+		_select_same_buildings(before if add else [])
+		return
 	if selected.size() != 1:
 		return
 	var i := world.units.index_of(selected.keys()[0])
@@ -904,6 +922,61 @@ func select_same_type_on_screen(pos: Vector2, add := false) -> void:
 		if world.units.kind[j] == kind and world.units.owner[j] == owner and views.has(id) and views[id].visible \
 				and screen.has_point(views[id].position):
 			selected[id] = true
+
+
+func _select_same_buildings(keep: Array) -> void:
+	var bs := world.buildings
+	var lead := selected_building
+	var l := bs.index_of(lead)
+	var screen := Rect2(camera.get_screen_center_position() - get_viewport_rect().size * 0.5 / camera.zoom,
+		get_viewport_rect().size / camera.zoom)
+	for id in keep:
+		if _same_building_type(id, lead):
+			selected_buildings[id] = true
+	for j in bs.count():
+		var id := bs.id[j]
+		if bs.done[j] == bs.done[l] and _same_building_type(id, lead) and bviews.has(id) and bviews[id].visible \
+				and screen.has_point(bviews[id].position):
+			selected_buildings[id] = true
+
+
+## Both buildings stand and have the same type and owner.
+func _same_building_type(a: int, b: int) -> bool:
+	var bs := world.buildings
+	var i := bs.index_of(a)
+	var j := bs.index_of(b)
+	return i >= 0 and j >= 0 and bs.kind[i] == bs.kind[j] and bs.owner[i] == bs.owner[j]
+
+
+## The lowest id among the selected buildings still standing (a new lead), or 0.
+func _next_lead() -> int:
+	var ids := selected_buildings.keys().filter(func(id): return world.buildings.index_of(id) >= 0)
+	ids.sort()
+	return ids[0] if not ids.is_empty() else 0
+
+
+## The selected buildings still standing: the lead first, then the rest by id.
+func _building_group() -> Array:
+	if world.buildings.index_of(selected_building) < 0:
+		return []
+	var out := [selected_building]
+	var ids := selected_buildings.keys()
+	ids.sort()
+	for id in ids:
+		if id != selected_building and world.buildings.index_of(id) >= 0:
+			out.append(id)
+	return out
+
+
+## What a building has to get through: its queue plus the train, research and age-up orders
+## sent to it that haven't run yet (so a fast run of clicks still spreads).
+func _queue_load(bid: int) -> int:
+	var n: int = world.buildings.queue[world.buildings.index_of(bid)].size()
+	for t in range(world.turn(), world.turn() + Commands.DELAY + 1):   # looked up by turn, never iterated
+		for cmd in world.commands.pending.get(t, []):
+			if cmd.type in [Commands.TRAIN, Commands.RESEARCH, Commands.AGE_UP] and cmd.args.building == bid:
+				n += 1
+	return n
 
 
 func select_army(player: int, add := false) -> void:
@@ -954,7 +1027,8 @@ func smart_order(pos: Vector2) -> void:
 	if selected_building != 0:
 		var b := world.buildings.index_of(selected_building)
 		if b >= 0 and world.buildings.owner[b] == active:
-			world.issue(active, Commands.RALLY, {"building": selected_building, "x": m.x, "y": m.y})
+			for bid in _building_group():   # every selected building rallies there
+				world.issue(active, Commands.RALLY, {"building": bid, "x": m.x, "y": m.y})
 			if map.resource_at(cell) != "":   # the sim puts it in the middle of the resource's tile
 				pos = Iso.to_screen((cell % map.width) * SimMap.TILE + SimMap.TILE / 2, (cell / map.width) * SimMap.TILE + SimMap.TILE / 2)
 			flags.append({"pos": pos, "t": 1.0})
@@ -1095,8 +1169,9 @@ func _play_events() -> void:
 			var bv: Node2D = bviews.get(e.id)
 			if bv != null:
 				bviews.erase(e.id)
+				selected_buildings.erase(e.id)
 				if selected_building == e.id:
-					selected_building = 0
+					selected_building = _next_lead()
 				var mem = null if reveal else world.fog_seen[active].get(e.id)
 				if mem != null and not Fog.sees_area(world, active, mem[2], mem[3], mem[4], mem[8]):
 					ghosts[e.id] = bv   # it fell where you can't see: you still see it standing
@@ -1260,11 +1335,31 @@ func _train(building: int, slot: String) -> void:
 		world.issue(active, Commands.TRAIN, {"building": building, "slot": slot})
 
 
+## Train one (five with shift) from the selected buildings: each goes to the least busy
+## finished one with room (the lowest id on a tie), so pressing Train again and again spreads
+## the units over every selected barracks.
+func _train_group(slot: String) -> void:
+	var group := _building_group().filter(func(id):
+		var i := world.buildings.index_of(id)
+		return world.buildings.owner[i] == active and world.buildings.done[i] == 1)
+	for k in (5 if Input.is_key_pressed(KEY_SHIFT) else 1):
+		var best := 0
+		var least := int(world.econ.queue_max)
+		for id in group:
+			var busy := _queue_load(id)
+			if busy < least:
+				best = id
+				least = busy
+		if best == 0:
+			return
+		world.issue(active, Commands.TRAIN, {"building": best, "slot": slot})
+
+
 func train_worker() -> void:
 	var b := world.buildings.index_of(selected_building)
 	if b < 0 or world.buildings.owner[b] != active or not playback.is_empty():
 		return
-	_train(selected_building, "worker")
+	_train_group("worker")
 
 
 func start_placing(building: String) -> void:
@@ -2054,7 +2149,11 @@ func _update_panel() -> void:
 		var owner := bs.owner[b]
 		var t: Dictionary = world.btypes[bs.kind[b]]
 		var mine := owner == active
-		var c := {"title": t.name if owner == active else "%s %s" % [world.races[owner].name, t.name], "team": Color(lib.palettes.teams[owner]), "hp": [bs.hp[b], world.bmods[owner][bs.kind[b]].hp],
+		var group := _building_group()
+		var title: String = t.name if owner == active else "%s %s" % [world.races[owner].name, t.name]
+		if group.size() > 1:
+			title += " \u00d7%d" % group.size()   # "Barracks ×3"
+		var c := {"title": title, "team": Color(lib.palettes.teams[owner]), "hp": [bs.hp[b], world.bmods[owner][bs.kind[b]].hp],
 			"portrait": kit.building_icon(_arch(owner), t.id), "buttons": [], "queue": null, "info": ""}
 		if bs.done[b] == 0:
 			c.info = "Being built: %d%%" % (100 * bs.progress[b] / t.build_ticks)
@@ -2089,6 +2188,13 @@ func _update_panel() -> void:
 				c.info = "Training %s" % head.name
 				if bs.train[b] == 0 and world.pop[owner] + head.pop > world.pop_cap[owner]:
 					c.info += " (needs a house)"
+			var room := q.size() < int(world.econ.queue_max)
+			if group.size() > 1:   # the lead's queue shows; the line says what all of them hold
+				var held := 0
+				for id in group:
+					held += _queue_load(id)
+					room = room or _queue_load(id) < int(world.econ.queue_max)
+				c.info += ("\n" if c.info != "" else "") + "%d selected, %d queued in all" % [group.size(), held]
 			if mine:
 				for slot in t.trains:
 					var tk := world.type_of(active, slot)
@@ -2101,8 +2207,8 @@ func _update_panel() -> void:
 					c.buttons.append({"icon": kit.icons.get("%d:%s" % [active, slot]),
 						"text": (("Train %s (%s)" % [wt.name, _cost_text(wt.cost)]) if ok_age else "%s: needs age %d" % [wt.name, wt.line[0].age]),
 						"tip": _unit_tip(wt), "group": "Train",
-						"key": "Q" if slot == "worker" else "", "cost": _cost_text(wt.cost), "enabled": ok_age and afford and q.size() < int(world.econ.queue_max),
-						"action": func(): _train(selected_building, tslot)})
+						"key": "Q" if slot == "worker" else "", "cost": _cost_text(wt.cost), "enabled": ok_age and afford and room,
+						"action": func(): _train_group(tslot)})
 				_tech_buttons(c, b)
 				if t.id == "market" and bs.done[b] == 1:
 					_market_buttons(c, b)
@@ -2302,9 +2408,9 @@ func _draw_overlay() -> void:
 		var k := clampf(float(u.hp[i]) / float(full), 0.0, 1.0)
 		overlay.draw_rect(Rect2(at, Vector2(bar_w, 2)), Color(0, 0, 0, 0.6))
 		overlay.draw_rect(Rect2(at, Vector2(bar_w * k, 2)), Color(1.0 - k, 0.3 + 0.6 * k, 0.15).lerp(Color.WHITE, 0.1))
-	var b := world.buildings.index_of(selected_building)
-	if b >= 0:
+	for bid in _building_group():
 		var bs := world.buildings
+		var b := bs.index_of(bid)
 		var sx := bs.sx[b] * 1000
 		var sy := bs.sy[b] * 1000
 		var x0 := bs.cx[b] * 1000
