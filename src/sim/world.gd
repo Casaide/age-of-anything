@@ -3,7 +3,7 @@ extends RefCounted
 ## the command stream. Views read it; nothing outside writes to it except
 ## through commands. Same seed + map + races + rules + commands = same hashes.
 ##
-## One tick: commands -> training -> worker jobs -> combat (targets, chasing, hits,
+## One tick: commands -> training -> worker jobs -> healing -> combat (targets, chasing, hits,
 ## deaths) -> map changes drop stale flow fields -> solve queued fields (budgeted)
 ## -> move -> separate -> hash. Combat lives in combat.gd.
 ##
@@ -23,6 +23,7 @@ const SimMap := preload("res://src/sim/sim_map.gd")
 const Flow := preload("res://src/sim/flow.gd")
 const Economy := preload("res://src/sim/economy.gd")
 const Combat := preload("res://src/sim/combat.gd")
+const Heal := preload("res://src/sim/heal.gd")
 const Tech := preload("res://src/sim/tech.gd")
 const Market := preload("res://src/sim/market.gd")
 const Animals := preload("res://src/sim/animals.gd")
@@ -181,6 +182,8 @@ func _make_type(player: int, u: Dictionary) -> Dictionary:
 		"speed": int(e.speed) * SPEED_SCALE, "radius": mini(radius, MAX_RADIUS), "hp": int(e.hp),
 		"pop": int(e.pop), "cost": Economy.cost_vector(resources, e.cost),
 		"train_ticks": int(e.train_time) * TICK_HZ, "worker": "worker" in e.tags, "eval": e,
+		"healer": int(e.get("heal", 0)) > 0,   # heals, never fights (heal.gd); spawns passive
+		"posture": Combat.PASSIVE if int(e.get("heal", 0)) > 0 else Combat.AGGRESSIVE,
 		"mclass": _movement_class(e.tags),
 		"sight_add": 0, "carry_add": 0, "build_pct": 0,   # research on the type (Tech.retype)
 		"line": u.get("line", [{"age": int(r.tier), "recipe": r, "eval": e}]),   # the unit through the ages (age-ups re-price from it)
@@ -287,6 +290,7 @@ func step() -> void:
 	Economy.work(self)
 	Animals.tick(self)
 	spatial.build(units.x, units.y)
+	Heal.tick(self)
 	Combat.tick(self)
 	Match.tick(self)
 	Fog.tick(self)
@@ -344,6 +348,7 @@ func _run(cmd: Dictionary) -> void:
 					y = c.y
 				var slot := units.add(next_id, cmd.player, k, x, y, t.speed, t.radius, t.hp)
 				units.mclass[slot] = t.mclass
+				units.posture[slot] = t.posture
 				next_id += 1
 		Commands.GATHER:
 			_clear_combat(cmd.player, a.ids)
@@ -418,7 +423,7 @@ func _queue_or_clear(cmd: Dictionary) -> Dictionary:
 
 ## Doing something: a job, a move, or a fight.
 func busy(i: int) -> bool:
-	return units.task[i] != Economy.NONE or units.moving[i] == 1 or units.foe[i] != 0
+	return units.task[i] != Economy.NONE or units.moving[i] == 1 or units.foe[i] != 0 or units.patient[i] != 0
 
 
 ## Units that have finished what they were doing take their next queued order.
@@ -917,7 +922,7 @@ func state_hash() -> int:
 		for v in [u.id[i], u.owner[i], u.kind[i], u.x[i], u.y[i], u.tx[i], u.ty[i], u.moving[i],
 				u.arrive[i], u.wx[i], u.wy[i], u.group[i], u.stuck[i], u.prog[i], u.hp[i], u.fkey[i], u.reach[i],
 				u.task[i], u.target[i], u.home[i], u.carry_kind[i], u.carry[i], u.work[i],
-				u.foe[i], u.cooldown[i], u.stance[i], u.posture[i], u.gx[i], u.gy[i], u.amx[i], u.amy[i], u.orders[i].size(), u.mclass[i]]:
+				u.foe[i], u.cooldown[i], u.stance[i], u.posture[i], u.gx[i], u.gy[i], u.amx[i], u.amy[i], u.orders[i].size(), u.mclass[i], u.patient[i]]:
 			h = Fixed.mix(h, v)
 		for o in u.orders[i]:
 			h = Fixed.mix(h, Rng.hash_string(JSON.stringify(o, "", true)))

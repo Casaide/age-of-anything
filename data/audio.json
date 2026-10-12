@@ -25,6 +25,7 @@
     "trained": {"takes": 1, "bus": "Ui", "gap_ms": 400, "voices": 1},
     "built": {"takes": 1, "bus": "Ui", "gap_ms": 400, "voices": 1},
     "research": {"takes": 1, "bus": "Ui", "gap_ms": 400, "voices": 1},
+    "heal": {"takes": 2, "bus": "Sfx", "gap_ms": 600, "voices": 2},
     "age": {"takes": 1, "bus": "Ui", "gap_ms": 1000, "voices": 1},
     "won": {"takes": 1, "bus": "Ui", "gap_ms": 1000, "voices": 1},
     "lost": {"takes": 1, "bus": "Ui", "gap_ms": 1000, "voices": 1},
