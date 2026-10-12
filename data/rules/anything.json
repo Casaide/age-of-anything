@@ -55,6 +55,7 @@
   {
    "slot": "healer",
    "role": "healer",
+   "upgrades": false,
    "tier": 2,
    "name": "Healer",
    "building": "town_center",
@@ -181,7 +182,7 @@
    "last_age": 2
   }
  ],
- "_roster_doc": "each slot is a unit line: its first age (`tier`), the building that trains it, its name on the tech tree page, and `last_age` when it stops before the last age. Slots with \"status\": \"planned\" are only on the page: the generator skips them (milestone 12). `own_seed`: the line draws from its own random stream (prompt + slot), so adding it leaves every other line's recipes as they were",
+ "_roster_doc": "each slot is a unit line: its first age (`tier`), the building that trains it, its name on the tech tree page, and `last_age` when it stops before the last age. Slots with \"status\": \"planned\" are only on the page: the generator skips them (milestone 12). `upgrades`: false keeps the first unit for every later age (no second tier: the healer). `own_seed`: the line draws from its own random stream (prompt + slot), so adding it leaves every other line's recipes as they were",
  "cost": {
   "base": 60,
   "curve": "pow1.4_ref12",
@@ -233,8 +234,8 @@
   "shot_note": "shots fly (combat.gd, shots.gd): milli-tiles a tick, shot_speed for bows, shot_speeds by the weapon's first tag that has one. A shot flies at the spot its target stands on, led by shot_lead_pct of the way it walks during the flight, and hits its target if its body still covers that spot (within shot_slack) when it lands, else the ground; with shot_strays 1 a miss may hit another foe of the shooter on the spot (off: shooting into a charging crowd then wastes shots, and massed archers no longer beat a mixed army at equal cost; tests/mass_battle.gd). Shooters fighting on their own skip a foe the shots in the air will kill.",
   "stance_note": "stances (combat.gd): defensive units engage foes within defend_sight (or their reach, if longer) and give up once leash from where they stood, then walk back (leash stays above defend_sight, or they would turn back short of a foe that stands still).",
   "note": "ticks at 20 Hz; distances in milli-tiles. Damage = max(min_damage, sum over attack classes the target has of max(0, attack - armour)).",
-  "heal_amount": 3,
-  "heal_reload": 30,
+  "heal_amount": 2,
+  "heal_reload": 40,
   "heal_range": 2500,
   "heal_sight": 6000,
   "heal_note": "healers (heal.gd): each one heals the most wounded unit of its own team (not itself, not animals, not buildings) within heal_sight, walking up to heal_range (edge to edge) when idle: heal_amount hp (x the unit's heal stat) every heal_reload ticks"

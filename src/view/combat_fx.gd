@@ -162,10 +162,13 @@ func _draw() -> void:
 	for s in stuck:   # half buried, leaning, fading at the end
 		var st: Dictionary = SHOTS[s.kind]
 		var a: float = clampf((STUCK_TIME - s.t) / 0.6, 0.0, 1.0)
-		var up: Vector2 = Vector2(sin(s.tilt), -cos(s.tilt)) * float(st.len) * 0.6
-		draw_line(s.pos + Vector2(0.6, 0.3), s.pos + Vector2(0.6, 0.3) + Vector2(up.x * 1.4, -up.y * 0.35), Color(0, 0, 0, 0.25 * a), 1.0)   # its shadow
-		draw_line(s.pos, s.pos + up, Color(st.col, a), st.w)
-		draw_circle(s.pos + up, st.w * 0.8, Color(0.85, 0.85, 0.8, a))   # the fletching
+		# Longer, darker and outlined than in flight: small pale shafts vanished into the grass (Dominic).
+		var up: Vector2 = Vector2(sin(s.tilt), -cos(s.tilt)) * float(st.len) * 0.9
+		var w: float = maxf(st.w, 1.4)
+		draw_line(s.pos + Vector2(0.6, 0.3), s.pos + Vector2(0.6, 0.3) + Vector2(up.x * 1.4, -up.y * 0.35), Color(0, 0, 0, 0.3 * a), w)   # its shadow
+		draw_line(s.pos, s.pos + up, Color(0.1, 0.07, 0.04, 0.8 * a), w + 1.2)   # a dark edge
+		draw_line(s.pos, s.pos + up, Color(Color(st.col).darkened(0.35), a), w)
+		draw_circle(s.pos + up, w * 0.9, Color(0.92, 0.9, 0.84, a))   # the fletching
 	for s in shots:
 		var st: Dictionary = SHOTS[s.kind]
 		var k: float = s.t / s.dur
