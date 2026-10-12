@@ -11,6 +11,7 @@ extends Control
 ## bar, not yet dimmed) and the sim keeps running underneath; opened with F2 or the top bar's
 ## button, closed with Esc. From the lobby: a "Tech tree" button on each side's banner.
 ## What it shows comes from src/view/tech_tree_model.gd (checked headless in tests/run_tests.gd).
+## It wears the race's culture (src/view/ui/theme.gd): the panels' frames and crest, the type.
 
 const Model := preload("res://src/view/tech_tree_model.gd")
 const Icons := preload("res://src/view/art/icons.gd")
@@ -19,6 +20,8 @@ const ArtKit := preload("res://src/view/art/art_kit.gd")
 const PartShape := preload("res://src/part_shape.gd")
 const Tech := preload("res://src/sim/tech.gd")
 const Audio := preload("res://src/view/audio.gd")
+const UiTheme := preload("res://src/view/ui/theme.gd")
+const Mat := preload("res://src/view/ui/ui_materials.gd")
 
 signal closed
 
@@ -75,19 +78,24 @@ var _since := 0.0
 func _ready() -> void:
 	set_anchors_preset(Control.PRESET_FULL_RECT)
 	mouse_filter = Control.MOUSE_FILTER_STOP
-	var bg := ColorRect.new()
-	bg.color = BG
+	var bg := TextureRect.new()   # the dark table the lobby sits on
+	bg.texture = Mat.texture("wood", Color("#2a1c12"))
+	bg.stretch_mode = TextureRect.STRETCH_TILE
 	bg.set_anchors_preset(Control.PRESET_FULL_RECT)
 	add_child(bg)
+	var shade := ColorRect.new()
+	shade.color = Color(0, 0, 0, 0.45)
+	shade.set_anchors_preset(Control.PRESET_FULL_RECT)
+	add_child(shade)
 	var margin := MarginContainer.new()
 	margin.set_anchors_preset(Control.PRESET_FULL_RECT)
 	for s in ["left", "right"]:
 		margin.add_theme_constant_override("margin_" + s, 20)
-	margin.add_theme_constant_override("margin_top", 14)
-	margin.add_theme_constant_override("margin_bottom", 16)
+	margin.add_theme_constant_override("margin_top", 12)
+	margin.add_theme_constant_override("margin_bottom", 18)
 	add_child(margin)
 	var col := VBoxContainer.new()
-	col.add_theme_constant_override("separation", 10)
+	col.add_theme_constant_override("separation", 26)   # room for the crests
 	margin.add_child(col)
 	col.add_child(_header())
 	var row := HBoxContainer.new()
@@ -95,6 +103,7 @@ func _ready() -> void:
 	row.size_flags_vertical = Control.SIZE_EXPAND_FILL
 	col.add_child(row)
 	var left := _panel()
+	left.theme_type_variation = "CrestFrame"
 	left.custom_minimum_size.x = SIDE
 	row.add_child(left)
 	var lscroll := ScrollContainer.new()
@@ -132,11 +141,8 @@ func _ready() -> void:
 func _header() -> Control:
 	var head := HBoxContainer.new()
 	head.add_theme_constant_override("separation", 16)
-	_title = Label.new()
-	_title.add_theme_font_size_override("font_size", 28)
-	_title.add_theme_color_override("font_color", GOLD)
-	_title.add_theme_color_override("font_outline_color", Color("#120e0a"))
-	_title.add_theme_constant_override("outline_size", 6)
+	_title = UiTheme.label("", "Title")
+	_title.add_theme_font_size_override("font_size", 36)
 	head.add_child(_title)
 	var gap := Control.new()
 	gap.size_flags_horizontal = Control.SIZE_EXPAND_FILL
@@ -153,23 +159,17 @@ func _header() -> Control:
 		swatch.size_flags_vertical = Control.SIZE_SHRINK_CENTER
 		swatch.mouse_filter = Control.MOUSE_FILTER_IGNORE
 		key.add_child(swatch)
-		key.add_child(_label(item[1], 14, DIM))
+		key.add_child(_label(item[1], 16, DIM))
 		key.set_meta("match_only", item[0] in ["done", "progress", "locked"])
 		head.add_child(key)
 	var mark := HBoxContainer.new()   # race-only research
 	mark.add_theme_constant_override("separation", 6)
-	var m := _label("◆", 14, GOLD)
+	var m := _label("◆", 16, GOLD)
 	mark.add_child(m)
-	mark.add_child(_label("Race's own", 14, DIM))
+	mark.add_child(_label("Race's own", 16, DIM))
 	head.add_child(mark)
-	var close_b := Button.new()
-	close_b.text = "Close (Esc)"
-	close_b.focus_mode = Control.FOCUS_NONE
-	close_b.add_theme_font_size_override("font_size", 16)
-	close_b.add_theme_stylebox_override("normal", _box(Color("#2e2820"), EDGE, 2))
-	close_b.add_theme_stylebox_override("hover", _box(Color("#3a3226"), GOLD, 2))
-	close_b.add_theme_stylebox_override("pressed", _box(Color("#241e18"), GOLD, 2))
-	close_b.add_theme_color_override("font_color", TEXT)
+	var close_b := UiTheme.button("Close (Esc)")
+	close_b.custom_minimum_size = Vector2(150, 46)
 	close_b.pressed.connect(close)
 	head.add_child(close_b)
 	return head
@@ -187,6 +187,9 @@ func open(p_race: Dictionary, p_rules: Dictionary, p_lib, p_kit, p_side: int, p_
 	world = p_world
 	player = p_player
 	model = Model.build(race, rules, lib)
+	var lk := UiTheme.look(race.family)
+	theme = UiTheme.theme(lk, 17)
+	TreeNode.look = lk
 	_title.text = "Tech tree:  %s" % race.name
 	for n in _title.get_parent().get_children():
 		if n.has_meta("match_only"):
@@ -195,7 +198,8 @@ func open(p_race: Dictionary, p_rules: Dictionary, p_lib, p_kit, p_side: int, p_
 	_fill_tree()
 	visible = true
 	_refresh()
-	Audio.of(get_tree()).play("ui_click")
+	UiTheme.arrive(get_child(get_child_count() - 1), 10.0)
+	Audio.of(get_tree()).play("ui_tip")
 
 
 func close() -> void:
@@ -250,12 +254,15 @@ func _fill_race() -> void:
 	for n in _race_box.get_children():
 		n.queue_free()
 	var r: Dictionary = model.race
-	var name := _label(r.name, 26, GOLD, true)
-	name.add_theme_color_override("font_outline_color", Color("#120e0a"))
-	name.add_theme_constant_override("outline_size", 5)
+	_race_box.add_child(_gap(10))
+	var name := UiTheme.label(r.name, "Title", true)
+	name.add_theme_font_size_override("font_size", 32)
 	_race_box.add_child(name)
-	_race_box.add_child(_label("%s, %s culture" % [r.creature, r.culture], 15, DIM, true))
-	_race_box.add_child(_stage())
+	_race_box.add_child(_label("%s  ·  %s culture" % [r.creature, r.culture], 17, DIM, true))
+	var well := PanelContainer.new()
+	well.theme_type_variation = "Well"
+	well.add_child(_stage())
+	_race_box.add_child(well)
 	_section("Bonuses", r.bonuses, "Nothing beyond the usual")
 	_section("Own research", r.own, "None")
 	_section("Lacks", r.lacks, "Nothing")
@@ -267,23 +274,21 @@ func _fill_race() -> void:
 			planned += 1
 		else:
 			built += 1
-	var foot := _label("%d on this tree are in the game; %d more are planned (the blank frames)." % [built, planned], 13, GREY, true)
+	var foot := _label("%d on this tree are in the game; %d more are planned (the blank frames)." % [built, planned], 15, GREY, true)
 	_race_box.add_child(_gap(6))
 	_race_box.add_child(foot)
 
 
 func _section(title: String, lines: Array, empty: String) -> void:
 	_race_box.add_child(_gap(4))
-	var head := _label(title.to_upper(), 13, BRONZE)
+	var head := UiTheme.label(title.to_upper(), "Caption")
+	head.add_theme_font_size_override("font_size", 14)
 	_race_box.add_child(head)
-	var rule := ColorRect.new()
-	rule.color = Color(EDGE, 0.6)
-	rule.custom_minimum_size = Vector2(0, 1)
-	_race_box.add_child(rule)
+	_race_box.add_child(UiTheme.Rule.new(TreeNode.look.get("metal", BRONZE)))
 	if lines.is_empty():
-		_race_box.add_child(_label(empty, 15, GREY, true))
+		_race_box.add_child(_label(empty, 17, GREY, true))
 	for l in lines:
-		_race_box.add_child(_label("•  " + l, 15, TEXT, true))
+		_race_box.add_child(_label("•  " + l, 17, TEXT, true))
 
 
 ## The army idling on a strip of grass, like the lobby's banner.
@@ -706,18 +711,14 @@ func _box(fill: Color, edge: Color, width: int, radius := 4) -> StyleBoxFlat:
 
 func _panel() -> PanelContainer:
 	var p := PanelContainer.new()
-	var b := _box(Color(PANEL, 0.96), EDGE, 2, 6)
-	b.content_margin_left = 14
-	b.content_margin_right = 14
-	b.content_margin_top = 12
-	b.content_margin_bottom = 12
-	p.add_theme_stylebox_override("panel", b)
+	p.theme_type_variation = "Frame"
 	return p
 
 
 ## One node: a framed picture (or an empty frame for planned items) with its name under it.
 ## Its look follows `state`: done (lit gold), progress (a bar), open, locked (dimmed), planned.
 class TreeNode extends Control:
+	static var look := {}   # the page's look (the race's culture)
 	var data: Dictionary
 	var icon: Texture2D
 	var team := Color.WHITE
@@ -754,7 +755,7 @@ class TreeNode extends Control:
 			_name.autowrap_mode = TextServer.AUTOWRAP_WORD   # whole words; a name too long ends in "..."
 			_name.text_overrun_behavior = TextServer.OVERRUN_TRIM_ELLIPSIS
 			_name.max_lines_visible = 2 if data.kind != "building" else 1
-			_name.add_theme_font_size_override("font_size", 13 if data.kind == "building" else 11)
+			_name.add_theme_font_size_override("font_size", 14 if data.kind == "building" else 12)
 			_name.add_theme_constant_override("line_spacing", -3)
 			_name.add_theme_color_override("font_outline_color", Color(0, 0, 0, 0.8))
 			_name.add_theme_constant_override("outline_size", 3)
@@ -769,8 +770,8 @@ class TreeNode extends Control:
 	func _draw() -> void:
 		var f := _frame()
 		var planned: bool = state == "planned"
-		var edge := Color("#6a5a40")
-		var fill := Color("#1e1a14")
+		var edge: Color = look.get("frame_colour", Color("#6a5a40")).darkened(0.1)
+		var fill := Color("#1a140e")
 		var alpha := 1.0
 		match state:
 			"done":
@@ -793,12 +794,17 @@ class TreeNode extends Control:
 					[f.end, f.position + Vector2(0, f.size.y)], [f.position + Vector2(0, f.size.y), f.position]]:
 				draw_dashed_line(side[0], side[1], c, 1.5, 4.0)
 		else:
-			var st := StyleBoxFlat.new()
+			var st := StyleBoxFlat.new()   # a sunk slot with a metal rim, lit on top
 			st.bg_color = fill
 			st.border_color = edge
 			st.set_border_width_all(2 if state in ["done", "progress"] or _hover else 1)
-			st.set_corner_radius_all(4)
+			st.border_width_top += 1
+			st.set_corner_radius_all(3)
+			st.shadow_color = Color(0, 0, 0, 0.45)
+			st.shadow_size = 3
+			st.shadow_offset = Vector2(0, 2)
 			draw_style_box(st, f)
+			draw_line(f.position + Vector2(3, 2), Vector2(f.end.x - 3, f.position.y + 2), Color(0, 0, 0, 0.5), 2.0)
 		if _pic != null:
 			_pic.modulate = Color(1, 1, 1, alpha)
 		if _name != null:
@@ -823,22 +829,5 @@ class TreeNode extends Control:
 			draw_colored_polygon(PackedVector2Array([p + Vector2(0, -5), p + Vector2(5, 0), p + Vector2(0, 5), p + Vector2(-5, 0)]), Color("#f2c94c"))
 
 	func _make_custom_tooltip(for_text: String) -> Object:
-		var card := PanelContainer.new()
-		var style := StyleBoxFlat.new()
-		style.bg_color = Color("#1e1a14", 0.97)
-		style.border_color = Color("#a08858")
-		style.set_border_width_all(2)
-		style.set_corner_radius_all(4)
-		style.set_content_margin_all(10)
-		card.add_theme_stylebox_override("panel", style)
-		var text := RichTextLabel.new()
-		text.bbcode_enabled = true
-		text.fit_content = true
-		text.scroll_active = false
-		text.custom_minimum_size.x = 340
-		text.add_theme_font_size_override("normal_font_size", 14)
-		text.add_theme_font_size_override("bold_font_size", 17)
-		text.add_theme_color_override("default_color", Color("#e8dcc0"))
-		text.text = for_text
-		card.add_child(text)
-		return card
+		var k: float = get_global_transform_with_canvas().get_scale().x   # tooltips are popups outside any scaled root
+		return UiTheme.tip_card(for_text, look if not look.is_empty() else UiTheme.look(""), k)
