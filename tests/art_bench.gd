@@ -21,6 +21,18 @@ func _initialize() -> void:
 			if ps is PartShape:
 				ps.queue_redraw()
 	await _measure("+200 units, atlas off")
+	PartShape.use_atlas = true
+	for v in s.units:
+		for ps in v.find_children("*", "Node2D", true, false):
+			if ps is PartShape:
+				ps.queue_redraw()
+	# Siege engines (milestone 13): each is its baked part plus its crew, composed (a worker
+	# UnitView per crew socket). 60 more, engines only, to see what crews cost.
+	var engines: Array = s.unit_picks.filter(func(p): return s.races[p[0]].units[p[1]].recipe.has("crew"))
+	if not engines.is_empty():
+		s.unit_picks = engines
+		s.spawn_bench(60)
+		await _measure("+60 siege engines with their crews, atlas on (%d units)" % s.units.size())
 	quit()
 
 

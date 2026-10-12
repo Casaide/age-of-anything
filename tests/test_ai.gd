@@ -16,6 +16,7 @@ const EcoBot := preload("res://src/ai/eco_bot.gd")
 const Economy := preload("res://src/sim/economy.gd")
 const Bridges := preload("res://src/sim/bridges.gd")
 const Reach := preload("res://src/ai/reach.gd")
+const Fixed := preload("res://src/sim/fixed.gd")
 
 const SEED := 7
 const LIMIT := 20 * 60 * 30    # 30 minutes: a match must end, however slowly (pacing is a tester metric)
@@ -45,8 +46,9 @@ func _init() -> void:
 		print("\n%d checks, %d failed" % [checks, failures])
 		quit(1 if failures > 0 else 0)
 		return
-	if args.size() > 1 and args[1] == "rams":   # just the rams against stone (a minute)
+	if args.size() > 1 and args[1] == "rams":   # just the siege checks: rams against stone, the bot's engines (a few minutes)
 		_test_rams(rules, frogs)
+		_test_siege_bot(rules, rats, frogs)
 		print("\n%d checks, %d failed" % [checks, failures])
 		quit(1 if failures > 0 else 0)
 		return
@@ -103,6 +105,7 @@ func _init() -> void:
 	_test_shelter(rules, rats, frogs)
 	_test_walled_fords(rules, frogs, rats)
 	_test_rams(rules, frogs)
+	_test_siege_bot(rules, rats, frogs)
 	_test_walled_base(rules, frogs, rats, "palisade", false)
 	_test_walled_base(rules, frogs, rats, "wall", false)
 	_test_walled_base(rules, frogs, rats, "wall", true)
@@ -258,6 +261,59 @@ func _test_age_three(rules: Dictionary, a: Dictionary, b: Dictionary) -> void:
 	print("\n== age 3: %d workers, buildings %s; University/Castle research %s" % [workers, done.keys(), theirs])
 	check(done.has("university") and done.has("castle"), "age 3: the bot builds a University and a Castle")
 	check(theirs.size() >= 2, "age 3: ...and buys at least two of their research (%s)" % [theirs])
+
+
+## Siege (milestone 13, step 8): a bot already in age 3 with resources to spare, against a passive
+## side: once it has a Siege Workshop it keeps a few engines (data: military.siege.max), and its
+## engines strike buildings (rams at gates, walls and towers; catapults at towers).
+func _test_siege_bot(rules: Dictionary, a: Dictionary, b: Dictionary) -> void:
+	var w := World.new(SEED, SimMap.load_id(map_id), [a, b], rules)
+	var cfg: Dictionary = Bot.load_config()
+	for wv in cfg.military.waves:
+		wv.at = int(wv.at) + 600   # ten minutes to build up first (its first waves would otherwise end it)
+	var bots := [Bot.new(0, cfg), EcoBot.new(1)]
+	var most: Dictionary = cfg.military.siege.max
+	w.ages[0] = 3
+	var peak := {}
+	var blows := {}
+	var engine_kinds := {}
+	var rams_out := 0
+	for slot in most:
+		engine_kinds[w.type_of(0, slot)] = slot
+	while w.tick < 20 * 1500 and w.winner < 0:
+		if w.tick % 1200 == 0:
+			for r in w.resources.size():
+				w.stock[r][0] = maxi(w.stock[r][0], 2000)
+		for bot in bots:
+			bot.think(w)
+		w.step()
+		for e in w.events:
+			if e.type == "hit" and w.buildings.index_of(e.to) >= 0:
+				var i: int = w.units.index_of(e.by)
+				if i >= 0 and engine_kinds.has(w.units.kind[i]):
+					blows[engine_kinds[w.units.kind[i]]] = int(blows.get(engine_kinds[w.units.kind[i]], 0)) + 1
+		if w.tick % 100 == 0:
+			var n := {}
+			for i in w.units.count():
+				if engine_kinds.has(w.units.kind[i]):
+					n[engine_kinds[w.units.kind[i]]] = int(n.get(engine_kinds[w.units.kind[i]], 0)) + 1
+			for s in n:
+				if not peak.has(s):
+					print("  first %s at %s" % [s, _clock(w.tick)])
+				peak[s] = maxi(int(peak.get(s, 0)), n[s])
+	for i in w.units.count():
+		if engine_kinds.has(w.units.kind[i]):
+			print("  %s at %d,%d foe %d stance %d moving %d" % [engine_kinds[w.units.kind[i]], w.units.x[i] / 1000, w.units.y[i] / 1000, w.units.foe[i], w.units.stance[i], w.units.moving[i]])
+			if engine_kinds[w.units.kind[i]] == "ram" and Fixed.dist2(w.units.x[i], w.units.y[i], w.map.starts[0][0], w.map.starts[0][1]) > 15000 * 15000:
+				rams_out += 1
+	var shop := -1
+	for k in w.buildings.count():
+		if w.buildings.owner[k] == 0 and w.btypes[w.buildings.kind[k]].id == "siege_workshop":
+			shop = k
+	print("\n== siege bot: winner %d at %s; workshop %s; most engines at once %s; blows on buildings by engines %s" % [w.winner, _clock(w.tick), shop >= 0, peak, blows])
+	check(peak.size() >= 2, "siege: the bot fields engines once it has a workshop (%s)" % [peak])
+	check(peak.keys().all(func(s): return peak[s] <= int(most[s])), "siege: ...a few, never more than its caps (%s of %s)" % [peak, most])
+	check(int(blows.get("ram", 0)) > 0 or rams_out > 0, "siege: its rams go out to the enemy or strike buildings (%d out, blows %s)" % [rams_out, blows])
 
 
 ## Each level left to build up (milestone 12 phase 8): the bot with its attack waves switched

@@ -110,6 +110,11 @@
    "workers": 26
   },
   {
+   "building": "siege_workshop",
+   "age": 3,
+   "workers": 28
+  },
+  {
    "building": "town_center",
    "age": 3,
    "count": 2,
@@ -117,11 +122,6 @@
    "away": 12,
    "workers": 40,
    "builders": 4
-  },
-  {
-   "building": "siege_workshop",
-   "age": 3,
-   "workers": 34
   },
   {
    "building": "market",
