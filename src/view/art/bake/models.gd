@@ -2854,8 +2854,18 @@ func _stake_gate(arch: String, team: Color, open: bool) -> Node3D:
 	return body
 
 
-## Stone Gate, three tiles long (closed and open): two crenellated towers in the culture's
-## stone, an arch-stone span between them with the team banner, iron-banded double doors.
+## Stone Gate, three tiles long (closed and open): a crenellated pier at each end in the
+## culture's stone, where the wall arms meet it; between them a way through as wide as the gate
+## lets its side walk (all three tiles, so nobody walks through stone), under an arch at the
+## front and one at the back with the sky open between (a unit in the gateway shows, rather than
+## vanishing under a roof; no floor is drawn, so the ground shows through); the team banner hung
+## from the front arch, in the middle; iron-banded double doors filling the arch, which swing
+## in flat against the piers.
+const GATE_PIER := 1.27    # the piers' centres: their outer faces flush with the gate's ends
+const GATE_PIER_W := 0.46
+const GATE_ARCH := 1.1    # the arches' undersides
+
+
 func _stone_gate(arch: String, team: Color) -> Dictionary:
 	return {"body": _gatehouse(arch, team, false), "open": _gatehouse(arch, team, true), "anchor": Vector3.ZERO, "lights": [], "team": team}
 
@@ -2865,24 +2875,29 @@ func _gatehouse(arch: String, team: Color, open: bool) -> Node3D:
 	var m: Material = mats.get_mat(WALL_STONE[arch])
 	var wood := mats.get_mat("wood")
 	var iron := Materials.flat(Color("#4a4c50"), 0.5, 0.7)
-	for x in [-1.12, 1.12]:
-		body.add_child(box(Vector3(0.74, 1.16, 0.98), m, Vector3(x, 0.58, 0)))   # a tower, as deep as the wall
-		for mx in [-0.26, 0.26]:
-			for z in [-0.36, 0.36]:
-				body.add_child(box(Vector3(0.18, 0.18, 0.2), m, Vector3(x + mx, 1.25, z)))
-		body.add_child(box(Vector3(0.08, 0.22, 0.03), Materials.flat(Color("#1e1a16"), 1.0), Vector3(x, 0.82, 0.5)))   # an arrow slit
-	body.add_child(box(Vector3(1.52, 0.3, 0.98), m, Vector3(0, 0.95, 0)))   # the span over the way through
-	for x in [-0.5, 0.0, 0.5]:
-		body.add_child(box(Vector3(0.18, 0.16, 0.2), m, Vector3(x, 1.18, 0.36)))
-	body.add_child(box(Vector3(0.42, 0.22, 0.02), cloth(team), Vector3(0, 0.94, 0.5)))   # the banner on the span, over the doors
-	body.add_child(box(Vector3(1.5, 0.02, 0.98), Materials.flat(Color("#2a2420"), 1.0), Vector3(0, 0.01, 0)))   # the dark threshold
+	var top := GATE_ARCH + 0.28
+	for x in [-GATE_PIER, GATE_PIER]:
+		body.add_child(box(Vector3(GATE_PIER_W, top + 0.04, 0.98), m, Vector3(x, (top + 0.04) / 2, 0)))   # a pier, as deep as the gate
+		for z in [-0.34, 0.0, 0.34]:
+			body.add_child(box(Vector3(0.18, 0.18, 0.18), m, Vector3(x, top + 0.13, z)))
+		body.add_child(box(Vector3(0.07, 0.22, 0.03), Materials.flat(Color("#1e1a16"), 1.0), Vector3(x, 0.7, 0.5)))   # an arrow slit
+	var inner := GATE_PIER - GATE_PIER_W / 2   # the piers' inner faces
+	for z in [-0.37, 0.37]:   # the arches, front and back, open to the sky between
+		body.add_child(box(Vector3(2.0 * inner, 0.28, 0.24), m, Vector3(0, GATE_ARCH + 0.14, z)))
+		body.add_child(box(Vector3(2.0 * inner, 0.05, 0.2), mats.get_mat("stone"), Vector3(0, GATE_ARCH + 0.025, z)))   # the arch stones' soffit
+	for x in [-0.45, 0.45]:
+		body.add_child(box(Vector3(0.18, 0.16, 0.18), m, Vector3(x, top + 0.08, 0.37)))
+	# The banner: a rod across the front arch, the team cloth hanging from it over the arch's face.
+	body.add_child(box(Vector3(0.46, 0.03, 0.03), wood, Vector3(0, top - 0.03, 0.51)))
+	body.add_child(box(Vector3(0.36, 0.3, 0.02), cloth(team), Vector3(0, top - 0.19, 0.51)))
+	var leaf_w := inner   # each leaf half the way through
 	for side in [-1, 1]:
 		var leaf := Node3D.new()
-		leaf.position = Vector3(side * 0.74, 0, 0.42)   # in the front of the arch; they swing in
+		leaf.position = Vector3(side * inner, 0, 0.28)   # hinged on the pier just behind the front arch; they swing in
 		leaf.rotation_degrees = Vector3(0, 90 * -side if open else 0, 0)
 		body.add_child(leaf)
-		leaf.add_child(box(Vector3(0.74, 0.8, 0.07), wood, Vector3(-side * 0.37, 0.4, 0)))
-		for y in [0.18, 0.62]:
-			leaf.add_child(box(Vector3(0.74, 0.05, 0.02), iron, Vector3(-side * 0.37, y, 0.045)))
-		leaf.add_child(ball(0.03, iron, Vector3(-side * 0.64, 0.42, 0.05)))   # the ring pull
+		leaf.add_child(box(Vector3(leaf_w, GATE_ARCH - 0.02, 0.07), wood, Vector3(-side * leaf_w / 2, (GATE_ARCH - 0.02) / 2, -0.04)))
+		for y in [0.2, 0.7]:
+			leaf.add_child(box(Vector3(leaf_w, 0.05, 0.02), iron, Vector3(-side * leaf_w / 2, y, 0.005)))
+		leaf.add_child(ball(0.035, iron, Vector3(-side * (leaf_w - 0.14), 0.46, 0.01)))   # the ring pull
 	return body
