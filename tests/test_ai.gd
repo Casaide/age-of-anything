@@ -4,7 +4,7 @@ extends SceneTree
 ## - two bots play a whole match, deterministically (same seed, same winner and hashes);
 ## - surrendering ends the match.
 ## Prints a minute-by-minute timeline of each match.
-## Run: godot --headless --path . --script res://tests/test_ai.gd [-- <map_id> [levels|age3|reach]]   (several minutes; flat_test by default; levels: each level left alone 30 minutes)
+## Run: godot --headless --path . --script res://tests/test_ai.gd [-- <map_id> [levels|age3|reach|walls]]   (several minutes; flat_test by default; levels: each level left alone 30 minutes)
 
 const DataLib := preload("res://src/data_lib.gd")
 const Generator := preload("res://src/race_generator.gd")
@@ -42,6 +42,13 @@ func _init() -> void:
 		return
 	if args.size() > 1 and args[1] == "levels":   # just the per-level build-up checks (a few minutes)
 		_test_levels(rules, frogs, rats)
+		print("\n%d checks, %d failed" % [checks, failures])
+		quit(1 if failures > 0 else 0)
+		return
+	if args.size() > 1 and args[1] == "walls":   # just the walled-base checks (a few minutes)
+		_test_walled_base(rules, frogs, rats, "palisade", false)
+		_test_walled_base(rules, frogs, rats, "wall", false)
+		_test_walled_base(rules, frogs, rats, "wall", true)
 		print("\n%d checks, %d failed" % [checks, failures])
 		quit(1 if failures > 0 else 0)
 		return
@@ -89,6 +96,9 @@ func _init() -> void:
 	_test_respond(rules, rats, frogs)
 	_test_shelter(rules, rats, frogs)
 	_test_walled_fords(rules, frogs, rats)
+	_test_walled_base(rules, frogs, rats, "palisade", false)
+	_test_walled_base(rules, frogs, rats, "wall", false)
+	_test_walled_base(rules, frogs, rats, "wall", true)
 	_test_age_three(rules, frogs, rats)
 
 	var w := World.new(SEED, SimMap.load_id(map_id), [frogs, rats], rules)
@@ -573,6 +583,118 @@ func _test_walled_fords(rules: Dictionary, a: Dictionary, b: Dictionary) -> void
 	check(worst <= 4, "walled fords: no worker stands idle for long (longest %d s)" % (worst * 5))
 	check(w.ages[1] >= 2 and workers >= 20, "walled fords: the bot grows on its own side (age %d, %d workers)" % [w.ages[1], workers])
 	check(wall_hits > 0, "walled fords: its army goes for the walls")
+
+
+## A walled-in base (Dominic, 2026-10-13: "if walls blocking the AI everywhere, will it try to
+## break them? or just pathfinder gets confused and they stop coming?"). On flat_test the passive
+## side's Town Center is ringed by a wall line of `wall` with two of its gates in it (shut to the
+## bot), put up finished at the start. The bot must break a way in and win, its soldiers out at
+## the wall busy (fighting or walking), not standing about. With `gap`, the ring has a three-tile
+## gap on the side facing the bot instead of the south gate: the bot walks in through it and
+## barely touches the wall.
+func _test_walled_base(rules: Dictionary, a: Dictionary, b: Dictionary, wall: String, gap: bool) -> void:
+	var title := "walled base (%s%s)" % [wall, ", gap" if gap else ""]
+	if map_id != "flat_test":
+		print("\n== %s: laid out for flat_test, skipped on %s" % [title, map_id])
+		return
+	var w := World.new(SEED, SimMap.load_id(map_id), [a, b], rules)
+	var lo := Vector2i(5, 3)   # the ring: every cell on its edge is grass or rock
+	var hi := Vector2i(24, 21)
+	var wk := Economy.btype_of(w, wall)
+	var gk := Economy.btype_of(w, "palisade_gate" if wall == "palisade" else "stone_gate")
+	var south := range(12, 15)   # the south side's gate (or gap) cells, x
+	for y in range(lo.y, hi.y + 1):
+		for x in range(lo.x, hi.x + 1):
+			if (x != lo.x and x != hi.x and y != lo.y and y != hi.y) or w.map.occupied[y * w.map.width + x] != 0 or not w.map.can_build(x, y, 1):
+				continue
+			if gap and y == hi.y and x in south:
+				continue
+			var bi := Economy.place(w, 0, wk, x, y)
+			w.buildings.done[bi] = 1
+			w.buildings.hp[bi] = w.bmods[0][wk].hp
+	for g in ([[hi.x, 11, 1]] if gap else [[hi.x, 11, 1], [12, hi.y, 0]]):   # east (along y), south (along x)
+		for c in Economy._footprint(w, g[0], g[1], Economy.dims(w.btypes[gk], g[2])):
+			Economy.demolish(w, w.buildings.index_of(w.map.occupied[c]))
+		var bi := Economy.place(w, 0, gk, g[0], g[1], g[2])
+		w.buildings.done[bi] = 1
+		w.buildings.hp[bi] = w.bmods[0][gk].hp
+	var bot := Bot.new(1)
+	var passive := EcoBot.new(0)
+	var reach := Reach.new()
+	var ln: int = w.lane_base[1]   # the bot's foot soldiers' lane (ground)
+	var s0: Array = w.map.starts[0]
+	var s1: Array = w.map.starts[1]
+	var inside := func(x: int, y: int) -> bool: return x > lo.x * 1000 + 999 and x < hi.x * 1000 and y > lo.y * 1000 + 999 and y < hi.y * 1000
+	check(gap == (reach.area_at(w, ln, s0[0], s0[1]) == reach.area_at(w, ln, s1[0], s1[1])),
+		"%s: the ring %s" % [title, "has its gap" if gap else "shuts the bot out"])
+	var struck := {}       # ring piece id -> blows on it
+	var dealt := 0
+	var ring_hits := 0     # blows on the ring (walls and gates) ...
+	var hits_before_in := -1   # ... up to the first bot soldier inside
+	var first_hit := -1
+	var breach := -1       # when the Town Center came into reach
+	var first_in := -1     # when a bot soldier first stood inside the ring
+	var looks := 0         # 5 s looks at bot soldiers out by the ring (assault on)
+	var idle := 0
+	var stuck := {}        # bot soldier id -> looks in a row standing idle out by the ring
+	var worst := 0
+	while w.tick < 20 * 60 * 30 and w.winner < 0:
+		bot.think(w)
+		passive.think(w)
+		w.step()
+		for e in w.events:
+			if e.type == "hit":
+				var tb: int = w.buildings.index_of(e.to)
+				if tb >= 0 and w.buildings.owner[tb] == 0 and w.buildings.kind[tb] in [wk, gk]:
+					ring_hits += 1
+					struck[e.to] = int(struck.get(e.to, 0)) + 1
+					dealt += int(e.damage)
+					if first_hit < 0:
+						first_hit = w.tick
+		if w.tick % 100 != 0:
+			continue
+		if breach < 0 and not gap and reach.area_at(w, ln, s0[0], s0[1]) == reach.area_at(w, ln, s1[0], s1[1]):
+			breach = w.tick
+		for i in w.units.count():
+			if w.units.owner[i] != 1 or w.types[w.units.kind[i]].worker or w.types[w.units.kind[i]].healer:
+				continue
+			var x: int = w.units.x[i]
+			var y: int = w.units.y[i]
+			if first_in < 0 and inside.call(x, y):
+				first_in = w.tick
+				hits_before_in = ring_hits
+			# Out by the ring (within 6 tiles of its outside), the Town Center not yet in reach.
+			var near: bool = x > (lo.x - 6) * 1000 and x < (hi.x + 7) * 1000 and y > (lo.y - 6) * 1000 and y < (hi.y + 7) * 1000 and not inside.call(x, y)
+			if not near or not bot.assault or (breach >= 0 and not gap):
+				continue
+			var id: int = w.units.id[i]
+			looks += 1
+			var still: bool = w.units.foe[i] == 0 and w.units.moving[i] == 0
+			if still:
+				idle += 1
+			stuck[id] = int(stuck.get(id, 0)) + 1 if still else 0
+			worst = maxi(worst, stuck[id])
+	var hp_left := []
+	for bi in w.buildings.count():
+		if w.buildings.owner[bi] == 0 and w.buildings.kind[bi] == gk:
+			hp_left.append(w.buildings.hp[bi])
+	var spread: Array = struck.values()
+	spread.sort()
+	spread.reverse()
+	print("  blows per ring piece hit (most first) %s, damage dealt %d" % [spread.slice(0, 12), dealt])
+	print("\n== %s: winner %d at %s; first blow on the ring %s, %d blows in all%s; first bot soldier inside %s (%d blows on the ring by then); gates' hp left %s; soldiers out by the ring idle %d of %d looks, longest %d s" % [
+		title, w.winner, _clock(w.tick), _clock(first_hit) if first_hit >= 0 else "never", ring_hits,
+		"" if gap else ", the Town Center in reach from %s" % (_clock(breach) if breach >= 0 else "never"),
+		_clock(first_in) if first_in >= 0 else "never", hits_before_in, hp_left, idle, looks, worst * 5])
+	check(w.winner == 1, "%s: the bot wins (winner %d at %s)" % [title, w.winner, _clock(w.tick)])
+	check(first_in >= 0, "%s: the bot's soldiers get inside the ring" % title)
+	check(looks == 0 or idle * 100 <= looks * 20, "%s: soldiers out by the ring keep at it (idle %d of %d looks)" % [title, idle, looks])
+	check(worst <= 6, "%s: none of them stands about long (longest %d s)" % [title, worst * 5])
+	if gap:
+		check(hits_before_in >= 0 and hits_before_in <= 20, "%s: it walks in through the gap rather than smash the wall (%d blows first)" % [title, hits_before_in])
+	else:
+		check(breach >= 0, "%s: it breaks a way through the ring" % title)
+		check(not spread.is_empty() and spread[0] * 2 >= ring_hits, "%s: the blows go on one piece, not nicks on a dozen (%s of %d)" % [title, spread.slice(0, 3), ring_hits])
 
 
 func _clock(tick: int) -> String:
