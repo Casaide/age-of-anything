@@ -217,6 +217,18 @@
   "acquire_every": 10,
   "defend_sight": 3000,
   "leash": 5000,
+  "shot_speed": 300,
+  "shot_speeds": {
+   "javelin": 250,
+   "sling": 300,
+   "poison": 350,
+   "crossbow": 400,
+   "gun": 800
+  },
+  "shot_lead_pct": 0,
+  "shot_strays": 0,
+  "shot_slack": 50,
+  "shot_note": "shots fly (combat.gd, shots.gd): milli-tiles a tick, shot_speed for bows, shot_speeds by the weapon's first tag that has one. A shot flies at the spot its target stands on, led by shot_lead_pct of the way it walks during the flight, and hits its target if its body still covers that spot (within shot_slack) when it lands, else the ground; with shot_strays 1 a miss may hit another foe of the shooter on the spot (off: shooting into a charging crowd then wastes shots, and massed archers no longer beat a mixed army at equal cost; tests/mass_battle.gd). Shooters fighting on their own skip a foe the shots in the air will kill.",
   "stance_note": "stances (combat.gd): defensive units engage foes within defend_sight (or their reach, if longer) and give up once leash from where they stood, then walk back (leash stays above defend_sight, or they would turn back short of a foe that stands still).",
   "note": "ticks at 20 Hz; distances in milli-tiles. Damage = max(min_damage, sum over attack classes the target has of max(0, attack - armour)).",
   "heal_amount": 3,

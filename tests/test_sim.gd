@@ -101,6 +101,7 @@ func _init() -> void:
 	_test_pen(races)
 	_test_garrison(races)
 	_test_towers(races)
+	_test_shots(races)
 	_test_bot_hunts(races)
 	_test_wonder(races)
 	_test_combat(gen)
@@ -1367,7 +1368,7 @@ func _garrison_run(races: Array, checks_on: bool) -> World:
 			w.step()
 			var n := 0
 			for e in w.events:
-				if e.type == "hit" and e.by == tc_id:
+				if e.type == "shot" and e.by == tc_id:
 					n += 1
 			if n > 0:
 				out.append(n)
@@ -2270,7 +2271,7 @@ func _test_university_castle(races: Array) -> void:
 		for t in 40:
 			g.step()
 			for e in g.events:
-				if e.type == "hit" and e.by == gid:
+				if e.type == "shot" and e.by == gid:
 					first.append(e.to)
 			if not first.is_empty():
 				break
@@ -2694,6 +2695,77 @@ func _test_damage() -> void:
 	check(Combat.damage(atk, PackedInt32Array([2, 4, 0, 3]), large, 1) == 7, "class armour blunts a bonus (3 + 7 - 3)")
 	check(Combat.damage(PackedInt32Array([0, 4, 0, 0]), PackedInt32Array([0, 9, 0, 0]), plain, 1) == 1, "never less than the minimum")
 	check(Combat.damage(PackedInt32Array([0, 6, 0, 0]), PackedInt32Array([9, 0, 0, 0]), plain, 1) == 6, "pierce ignores melee armour")
+
+
+## Shots fly: an arrow lands a flight after it is loosed and only then hurts; one at a target that
+## has stepped off the spot falls in the ground; one at a building always lands.
+func _test_shots(races: Array) -> void:
+	var w := _bare_world(races)
+	var a := _lone(w, 0, "archer", 15000, 20500, "stand")
+	var t := _lone(w, 1, "spear", 19000, 20500, "passive")
+	w.issue(0, Commands.ATTACK, {"ids": [a], "target": t})
+	var shot := {}
+	var fired := 0
+	for k in 200:
+		w.step()
+		for e in w.events:
+			if e.type == "shot" and e.by == a:
+				shot = e
+		if not shot.is_empty():
+			fired = w.tick - 1   # the tick it was loosed in
+			break
+	check(not shot.is_empty() and shot.to == t and shot.ticks > 1, "shots: an archer looses a shot that takes a while to land (%s)" % [shot])
+	check(w.shots.count() == 1, "shots: one in the air (%d)" % w.shots.count())
+	var hp: int = w.units.hp[w.units.index_of(t)]
+	var landed := -1
+	var hit := {}
+	for k in 60:
+		w.step()
+		for e in w.events:
+			if e.type == "hit" and e.by == a:
+				hit = e
+		if not hit.is_empty():
+			landed = w.tick - 1
+			break
+		check(w.units.hp[w.units.index_of(t)] == hp, "shots: no harm before it lands (tick %d)" % w.tick)
+	check(landed == fired + int(shot.get("ticks", 0)), "shots: it lands its flight after loosing (%d, loosed %d, %d ticks)" % [landed, fired, shot.get("ticks", 0)])
+	check(not hit.is_empty() and w.units.hp[w.units.index_of(t)] == hp - int(hit.damage), "shots: a standing target is hit (%s)" % [hit])
+	# The next shot: the target steps a tile and a half aside while it flies.
+	var miss := {}
+	var aside := false
+	var aim := {}
+	for k in 200:
+		w.step()
+		for e in w.events:
+			if e.type == "shot" and e.by == a and not aside:
+				var ti := w.units.index_of(t)
+				w.units.y[ti] += 1500
+				aside = true
+				aim = e
+			elif e.type == "miss" and e.by == a:
+				miss = e
+		if not miss.is_empty():
+			break
+	hp = w.units.hp[w.units.index_of(t)]
+	check(not miss.is_empty() and miss.to == t and miss.x == aim.x and miss.y == aim.y, "shots: a target that stepped away is missed, the shot lands where it stood (%s)" % [miss])
+	check(w.units.hp[w.units.index_of(t)] == hp and w.lost[1] == 0, "shots: a miss does no harm")
+	# A building never dodges.
+	var g := _bare_world(races)
+	var house := _put(g, 1, "house", 18, 20)
+	var hb := g.buildings.index_of(house)
+	var bhp: int = g.buildings.hp[hb]
+	var s2 := _lone(g, 0, "archer", 15000, 20500, "stand")
+	g.issue(0, Commands.ATTACK, {"ids": [s2], "target": house})
+	var shots := 0
+	var hits := 0
+	for k in 300:
+		g.step()
+		for e in g.events:
+			if e.by == s2 and e.type == "shot":
+				shots += 1
+			elif e.by == s2 and e.type == "hit":
+				hits += 1
+	check(hits > 2 and hits >= shots - 1 and g.buildings.hp[g.buildings.index_of(house)] < bhp, "shots: every shot at a house lands (%d of %d)" % [hits, shots])
 
 
 func _bare_world(races: Array) -> World:
