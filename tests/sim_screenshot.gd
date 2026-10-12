@@ -12,6 +12,8 @@ extends SceneTree
 ## "loader[:<fraction>]": the match loader, with the bake cache off so it really bakes; shot once
 ## the bar passes that fraction (default 0.35).
 ## "life:<tick>[:dx:dy]": living towns (idle workers at chores, a damaged house), see _life.
+## "formation:<tick>": side 0's army walks to the meeting point and stands in its formation.
+## "siege:<tick>": side 0's melee soldiers attack side 1's Town Center (fog lifted).
 ## Prefix any scene with "ai-" to see it as in a match against the AI.
 
 const Iso := preload("res://src/view/iso.gd")
@@ -31,7 +33,8 @@ func _initialize() -> void:
 	view.prompts = [args[3], args[4]] if args.size() > 4 else view.DEFAULT_PROMPTS.duplicate()
 	view.map_id = map_id
 	view.vs_ai = vs_ai
-	view.army = scene == "armies" or scene == "card" or scene.begins_with("battle") or scene.begins_with("ageup") or scene == "orders_army"
+	view.army = scene == "armies" or scene == "card" or scene.begins_with("battle") or scene.begins_with("ageup") or scene == "orders_army" \
+		or scene.begins_with("formation") or scene.begins_with("siege")
 	if scene.begins_with("loader"):
 		preload("res://src/view/art/bake_cache.gd").enabled = false
 	root.add_child(view)
@@ -95,6 +98,10 @@ func _initialize() -> void:
 		await _heal(view, scene == "heal:card")
 	elif scene.begins_with("battle"):
 		await _battle(view, map_id, int(scene.get_slice(":", 1)))
+	elif scene.begins_with("formation"):
+		await _formation(view, map_id, int(scene.get_slice(":", 1)))
+	elif scene.begins_with("siege"):
+		await _siege(view, int(scene.get_slice(":", 1)))
 	else:
 		await _armies(view, map_id)
 	for f in 20:
@@ -402,6 +409,57 @@ func _armies(view, map_id: String) -> void:
 	view.camera.zoom = Vector2(3.0, 3.0)
 	view._on_zoom()
 	view.camera.look_at_point(Iso.to_screen(meet.x, meet.y))
+
+
+func _formation(view, map_id: String, at_tick: int) -> void:
+	while view.world.units.count() <= 6:
+		await process_frame
+	var meet: Vector2 = MEET[map_id] * 1000.0
+	var w = view.world
+	var ids := []
+	for i in w.units.count():
+		if w.units.owner[i] == 0 and not w.types[w.units.kind[i]].worker:
+			ids.append(w.units.id[i])
+	w.issue(0, "move", {"ids": ids, "x": int(meet.x), "y": int(meet.y)})
+	view.clock.speed = 8.0
+	while w.tick < at_tick:
+		await process_frame
+	view.clock.speed = 1.0
+	view.select_army(0)
+	view.camera.zoom = Vector2(3.0, 3.0)
+	view._on_zoom()
+	view.camera.look_at_point(Iso.to_screen(meet.x, meet.y))
+
+
+func _siege(view, at_tick: int) -> void:
+	while view.world.units.count() <= 6:
+		await process_frame
+	var w = view.world
+	var tc := -1
+	for b in w.buildings.count():
+		if w.buildings.owner[b] == 1 and tc < 0:
+			tc = b
+	var ids := []
+	for i in w.units.count():
+		var t: Dictionary = w.types[w.units.kind[i]]
+		if w.units.owner[i] == 0 and not t.worker and not t.ranged and not t.healer:
+			ids.append(w.units.id[i])
+	w.issue(0, "attack", {"ids": ids, "target": w.buildings.id[tc]})
+	var away := []   # side 1 looks on from a corner: the shot is about the crowd at the walls
+	for i in w.units.count():
+		if w.units.owner[i] == 1:
+			away.append(w.units.id[i])
+	w.issue(1, "stance", {"ids": away, "stance": "passive"})
+	w.issue(1, "move", {"ids": away, "x": w.map.width * 1000 - 3000, "y": 3000})
+	view.reveal = true
+	view.clock.speed = 8.0
+	while w.tick < at_tick:
+		await process_frame
+	view.clock.speed = 1.0
+	view.camera.zoom = Vector2(3.0, 3.0)
+	view._on_zoom()
+	var bs = w.buildings
+	view.camera.look_at_point(Iso.to_screen((bs.cx[tc] + bs.sx[tc] / 2.0) * 1000.0, (bs.cy[tc] + bs.sy[tc] / 2.0) * 1000.0))
 
 
 func _battle(view, map_id: String, at_tick: int) -> void:
