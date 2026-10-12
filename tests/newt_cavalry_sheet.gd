@@ -1,24 +1,24 @@
 extends SceneTree
-## Concept SW1 round 4 (2026-10-13, D-121): the giant newt as the frogs' cavalry mount, in three
-## colourings, ridden by the frogs' lancer, beside today's frog on a beetle and a human on a pony.
-## The newt is composed by UnitView like any mount (body, head, legs baked apart in 8 facings: the
-## real pipeline); its parts live in scenes/art_pixel/newt_concepts.gd and are put into the loaded
-## data here only (data/ is untouched). Zoom 1.5 is the game's scale. Run (needs a display):
-##   godot --path . --script res://tests/newt_cavalry_sheet.gd -- out_dir [zoom] [sheet,...]
-## sheets: facings (each mount in all 8 facings, a worker for size), walk (a walk cycle in two
+## The giant newt, the frogs' cavalry mount (D-122; concept SW1 round 4, now real parts in
+## unit_models.gd: body.newt, head.newt, leg.newt). The frogs' large unit on a newt in each of its
+## three skins (fire, red eft, crested), a human and a rat riding newts, and a human on a pony
+## for size, as the game composes and bakes them. Zoom 1.5 is the game's scale. Run (needs a display):
+##   godot --path . --audio-driver Dummy --always-on-top --script res://tests/newt_cavalry_sheet.gd -- out_dir [zoom] [sheet,...]
+## sheets: facings (each rider in all 8 facings, a worker for size), walk (a walk cycle in two
 ## facings). Writes <out_dir>/newt_cavalry_<sheet>_<zoom>x.png
 
 const DataLib := preload("res://src/data_lib.gd")
 const Generator := preload("res://src/race_generator.gd")
 const UnitView := preload("res://src/unit_view.gd")
-const PartShape := preload("res://src/part_shape.gd")
-const PartBaker := preload("res://scenes/art_pixel/part_baker.gd")
 const ArtKit := preload("res://src/view/art/art_kit.gd")
-const Newts := preload("res://scenes/art_pixel/newt_concepts.gd")
 
-const PROMPTS := ["romans", "swamp frogs riding beetles"]
-const KINDS := ["fire", "eft", "crested"]
-const LABELS := {"fire": "frog on a newt:\nfire (black, yellow)", "eft": "frog on a newt:\nred eft", "crested": "frog on a newt:\ncrested (olive)"}
+## [label, prompt, newt skin to wear ("" keeps the race's own)]
+const ROWS := [["human on a pony", "romans", ""],
+	["frog on a newt:\nfire", "swamp frogs", "newt_fire"],
+	["frog on a newt:\nred eft", "swamp frogs", "newt_eft"],
+	["frog on a newt:\ncrested", "swamp frogs", "newt_crested"],
+	["human on a newt", "swamp folk", "newt_fire"],
+	["rat on a newt", "rats on newts", "newt_eft"]]
 const CELL := Vector2(92, 64)   # world units per cell
 const SIZE_COL := 0.75
 
@@ -38,37 +38,34 @@ func _initialize() -> void:
 	var gen = Generator.new(lib)
 	var rules = DataLib.load_json("res://data/rules/default.json")
 	var races := []
-	for p in PROMPTS:
-		races.append(gen.generate(p, rules))
+	var rows := []   # [label, large unit, worker]
+	for spec in ROWS:
+		var race: Dictionary = _riding(gen, spec[1], rules, spec[2] != "")
+		var cav := _slot(race, "large")
+		if spec[2] != "":
+			cav.recipe.mount.skin = spec[2]
+		races.append(race)
+		rows.append([spec[0], cav, _slot(race, "worker")])
 	var kit := ArtKit.new()
 	kit.lib = lib
 	root.add_child(kit)
 	await process_frame
 	await kit.prepare_units(races, races.map(func(_r): return team))
-	# Rows: [label, unit dict, worker unit]
-	var human_cav := _slot(races[0], "large")
-	var frog_cav := _slot(races[1], "large")
-	var rows := [["human on a pony", human_cav, _slot(races[0], "worker")],
-		["frog on a beetle\n(today)", frog_cav, _slot(races[1], "worker")]]
-	var pb := PartBaker.new()
-	pb.models = Newts.new()
-	pb.art_scale = ArtKit.ART_SCALE * ArtKit.UNIT_SCALE
-	pb.bands = ArtKit.UNIT_BANDS
-	root.add_child(pb)
-	for kind in KINDS:
-		var u := _newt_unit(frog_cav, kind)
-		var probe := UnitView.new()
-		probe.build(u.recipe, lib, team, u.eval.speed)
-		for ps in probe.find_children("*", "Node2D", true, false):
-			if ps is PartShape and ".newt_" in ps.part_id:
-				await pb.bake(ps.part_id, ps.shapes, ps.colours)
-		probe.free()
-		rows.append([LABELS[kind], u, rows[1][2]])
-	kit.rebuild_atlas()
 	var tag := str(zoom / ArtKit.ART_SCALE).trim_suffix(".0")
 	for sheet in sheets:
 		await _sheet(sheet, rows, zoom, out_dir.path_join("newt_cavalry_%s_%sx.png" % [sheet, tag]))
 	quit()
+
+
+## The first reroll of the prompt whose large unit rides (a newt, when asked).
+func _riding(gen, prompt: String, rules: Dictionary, newt: bool) -> Dictionary:
+	for reroll in 40:
+		var race: Dictionary = gen.generate(prompt, rules, reroll)
+		var cav := _slot(race, "large")
+		if cav.recipe.has("mount") and not cav.recipe.mount.fused and (cav.recipe.mount.creature == "newt") == newt:
+			return race
+	assert(false, "no mounted large unit for '%s'" % prompt)
+	return {}
 
 
 func _slot(race: Dictionary, slot: String) -> Dictionary:
@@ -77,27 +74,6 @@ func _slot(race: Dictionary, slot: String) -> Dictionary:
 			return u
 	assert(false, "no %s unit" % slot)
 	return {}
-
-
-## The frog lancer on a newt: the beetle's data entries borrowed under the newt's ids (only the
-## models differ), a creature for it, the rider's recipe with the mount swapped.
-func _newt_unit(cav: Dictionary, kind: String) -> Dictionary:
-	var body: Dictionary = lib.part("body.beetle").duplicate(true)
-	body.id = "body.newt_" + kind
-	body.legs.part = "leg.newt_" + kind
-	lib.parts[body.id] = body
-	for slot in [["head", "head.beetle"], ["leg", "leg.insect"]]:
-		var p: Dictionary = lib.part(slot[1]).duplicate(true)
-		p.id = "%s.newt_%s" % [slot[0], kind]
-		lib.parts[p.id] = p
-	var mc: Dictionary = lib.creatures["beetle"].duplicate(true)
-	mc.body = body.id
-	mc.mount_body = body.id
-	mc.head = "head.newt_" + kind
-	lib.creatures["newt_" + kind] = mc
-	var u := cav.duplicate(true)
-	u.recipe.mount.creature = "newt_" + kind
-	return u
 
 
 func _unit(world: Node2D, unit: Dictionary, at: Vector2, k: int, walking: bool, phase: float) -> void:
@@ -143,8 +119,8 @@ func _sheet(sheet: String, rows: Array, zoom: float, path: String) -> void:
 	vp.add_child(band)
 	var fs := 14 if zoom > 2 else 10
 	vp.add_child(_label("for size", Vector2(label_w + 8, 6), fs))
-	var title := "frog cavalry on a giant newt: a walk in two facings (four steps each)" if walk \
-		else "frog cavalry on a giant newt: the eight facings, beside the beetle and the pony"
+	var title := "cavalry on a giant newt: a walk in two facings (four steps each)" if walk \
+		else "cavalry on a giant newt: the eight facings, beside a pony"
 	vp.add_child(_label(title, Vector2(label_w + CELL.x * SIZE_COL * zoom + 8, 6), fs))
 	var world := Node2D.new()
 	world.scale = Vector2.ONE * zoom
