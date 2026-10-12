@@ -3029,7 +3029,8 @@
   "id": "load.stone",
   "tags": [
    "load",
-   "job"
+   "job",
+   "shoulder"
   ],
   "shapes": [
    {
@@ -3070,7 +3071,8 @@
   "id": "load.gold",
   "tags": [
    "load",
-   "job"
+   "job",
+   "shoulder"
   ],
   "shapes": [
    {

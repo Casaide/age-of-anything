@@ -118,6 +118,15 @@ func woodpile(at: Vector3, parent: Node3D) -> void:
 
 # ------------------------------------------------------------------ buildings
 
+## A doorway in a wall facing +z, for the view to light when someone goes in or comes out
+## (milestone 17): its bottom-left, bottom-right and top-left corners, from the middle of its
+## foot, and whether it's round (a burrow, a domed hut's door) rather than square.
+func _doorway(foot: Vector3, w: float, h: float, round := false) -> Array:
+	var out := [foot + Vector3(-w / 2, 0, 0), foot + Vector3(w / 2, 0, 0), foot + Vector3(-w / 2, h, 0)]
+	if round:
+		out.append(Vector3.ZERO)   # a fourth point marks it round
+	return out
+
 ## A frog-culture Town Center: stone footing, timber frame on mud daub, stepped
 ## reed thatch, a chimney, barrels, a crate and a woodpile; a team banner and a
 ## dragonfly weathervane as live parts.
@@ -208,7 +217,8 @@ func town_center(team: Color) -> Dictionary:
 		vane.add_child(ball(0.12, Materials.flat(Color("#7fb6c8"), 0.2, 0.3), apex + Vector3(0.05, 0.4, s * 0.1), Vector3(0.5, 0.06, 1.0)))
 	return {"body": body, "anchor": Vector3.ZERO, "banner": banner, "banner_pivot": flag_top,
 		"vane": vane, "vane_pivot": apex, "smoke": chim + Vector3(0, 0.55, 0), "lights": lights,
-		"lantern": Vector3(0.18, base + 0.75, w / 2 + 0.15)}
+		"lantern": Vector3(0.18, base + 0.75, w / 2 + 0.15),
+		"doorway": _doorway(Vector3(-0.15, base, w / 2 + 0.06), 0.46, 0.82)}
 
 
 ## A frog stilt hut: round daub walls on a plank deck over log stilts, a cone of
@@ -384,7 +394,8 @@ func junk_town_center(team: Color, h := 1.05, pitch := 32.0, berm := false, plin
 	vane.add_child(ball(0.07, Materials.flat(Color("#f2c94c"), 0.6), Vector3(0, roof_y + ridge + 0.36, 0)))
 	return {"body": body, "anchor": Vector3.ZERO, "banner": banner, "banner_pivot": flag_top,
 		"vane": vane, "vane_pivot": Vector3(0, roof_y + ridge + 0.04, 0), "smoke": pipe + Vector3(0.32, 0.68, 0), "lights": lights,
-		"lantern": Vector3(0.05, base + 0.8, w / 2 + 0.15)}
+		"lantern": Vector3(0.05, base + 0.8, w / 2 + 0.15),
+		"doorway": _doorway(Vector3(-0.35, base, w / 2 + 0.11), 0.45, 0.7)}
 
 
 ## A rat house: an upturned tin can with a door cut into it, its lid propped on top
@@ -616,7 +627,7 @@ func tent_town_center(team: Color) -> Dictionary:
 	vane.add_child(box(Vector3(0.3, 0.02, 0.02), Materials.flat(Color("#b07a36"), 0.4, 0.7), apex + Vector3(0, 0.28, 0)))
 	return {"body": body, "anchor": Vector3.ZERO, "banner": banner, "banner_pivot": flag_top,
 		"vane": vane, "vane_pivot": apex, "smoke": apex + Vector3(0, 0.1, 0), "lights": [],
-		"lantern": Vector3(-0.15, 0.5, 0.95)}
+		"lantern": Vector3(-0.15, 0.5, 0.95), "doorway": _doorway(Vector3(-0.15, 0.0, 0.94), 0.3, 0.6)}
 
 
 ## A tent-culture house: one felt tent and a woodpile.
@@ -762,7 +773,7 @@ func _barracks(arch: String, team: Color) -> Dictionary:
 		body.add_child(beam(Vector3(-1.1 + k * 0.08, 0.05, 0.25), Vector3(-1.04 + k * 0.08, 0.72, 0.18), 0.012, wood))
 	body.add_child(box(Vector3(0.36, 0.03, 0.05), wood, Vector3(-0.98, 0.5, 0.22)))
 	return {"body": body, "anchor": Vector3.ZERO, "smoke": Vector3(0.6, base + h + rise, -0.75), "lantern": Vector3(-0.3, base + 0.72, 0.2),
-		"lights": lights, "team": team}
+		"lights": lights, "team": team, "doorway": _doorway(Vector3(-0.3, base, -0.55 + d / 2 + 0.05), 0.5, 0.62)}
 
 
 func stable_thatch(team: Color) -> Dictionary:
@@ -992,7 +1003,8 @@ func reed_town_center(team: Color) -> Dictionary:
 	banner.add_child(slab_tri(Vector2(0, 0), Vector2(0.62, -0.22), Vector2(0, -0.5), 0.02, cloth(team)))
 	banner.get_child(banner.get_child_count() - 1).position = flag_top
 	return {"body": body, "anchor": Vector3.ZERO, "banner": banner, "banner_pivot": flag_top,
-		"smoke": Vector3(-0.25, top, -0.25), "lights": [], "lantern": Vector3(-0.25, deck + 0.4, 0.75)}
+		"smoke": Vector3(-0.25, top, -0.25), "lights": [], "lantern": Vector3(-0.25, deck + 0.4, 0.75),
+		"doorway": _doorway(Vector3(-0.25, deck + 0.04, -0.25 + 0.92 + 0.06), 0.92 * 0.42, 0.92 * 0.35 + 0.92 * 0.25 - 0.04, true)}
 
 
 # ------------------------------------------------------------------ bugs: earth mounds, logs, husks
@@ -1061,7 +1073,8 @@ func mound_town_center(team: Color) -> Dictionary:
 	banner.add_child(slab_tri(Vector2(0, 0), Vector2(0.62, -0.22), Vector2(0, -0.5), 0.02, cloth(team)))
 	banner.get_child(banner.get_child_count() - 1).position = flag_top
 	return {"body": body, "anchor": Vector3.ZERO, "banner": banner, "banner_pivot": flag_top,
-		"smoke": Vector3(-0.2, 1.35, -0.2), "lights": [], "lantern": Vector3(0.2, 0.4, 0.95)}
+		"smoke": Vector3(-0.2, 1.35, -0.2), "lights": [], "lantern": Vector3(0.2, 0.4, 0.95),
+		"doorway": _doorway(Vector3(-0.1, 0.26 - 0.2, 0.92), 0.4, 0.4, true)}
 
 
 # ------------------------------------------------------------------ concept options (building sheets)
@@ -1246,6 +1259,7 @@ func junk_town_center_small(team: Color) -> Dictionary:
 	for key in ["banner_pivot", "vane_pivot", "smoke", "lantern"]:
 		spec[key] = Vector3(spec[key].x * k, spec[key].y, spec[key].z * k)
 	spec.lights = spec.lights.map(func(p): return Vector3(p.x * k, p.y, p.z * k))
+	spec.doorway = spec.doorway.map(func(p): return Vector3(p.x * k, p.y, p.z * k))
 	for part in [spec.banner, spec.vane]:
 		part.scale = Vector3(k, 1.0, k)
 	return spec

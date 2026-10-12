@@ -44,6 +44,7 @@ var puffs: Array = []        # [{p, t, v}] dust from builders' blows
 var critters: Array = []     # [{kind, home, p, v, t, air, state}]
 var _critter_towns := {}     # town centre id -> true once its critters are made
 var _town_level := -1.0
+var _queue_len := {}         # building id -> its queue's length last frame (a unit out: the door opens)
 var enabled := true          # off: the town stands still (tests/town_bench.gd compares)
 
 
@@ -65,6 +66,7 @@ func reset() -> void:
 	_idle_since.clear()
 	piles.clear()
 	_born.clear()
+	_queue_len.clear()
 	puffs.clear()
 	critters.clear()
 	_critter_towns.clear()
@@ -109,6 +111,9 @@ func _deliveries(w) -> void:
 			var b: int = w.buildings.index_of(was[3])
 			if b >= 0:
 				var kind: String = w.resources[was[2] - 1]
+				var view = host.bviews.get(was[3])
+				if view != null:
+					view.door_pulse()   # in through the door with it
 				var pile: Dictionary = piles.get(was[3], {})
 				pile[kind] = minf(pile.get(kind, 0.0) + 1.0, PILE_MAX)
 				piles[was[3]] = pile
@@ -330,6 +335,10 @@ func _buildings(w) -> void:
 			continue
 		var t: Dictionary = w.btypes[bs.kind[b]]
 		view.set_working(t.house or not bs.queue[b].is_empty())
+		var n: int = bs.queue[b].size()
+		if n < _queue_len.get(bs.id[b], 0):
+			view.door_pulse()   # trained (or researched): out through the door
+		_queue_len[bs.id[b]] = n
 		if bs.done[b] == 1 and host._memory(b) == null:
 			view.set_damage(1.0 - float(bs.hp[b]) / float(t.hp))
 		if t.house and bs.done[b] == 1 and not _born.has(bs.id[b]):
