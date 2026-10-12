@@ -1630,6 +1630,46 @@ func _load_gold(c: Dictionary) -> Dictionary:
 	return {"node": n}
 
 
+## Meat from a hunt carried home: a haunch over the shoulder, the bone end sticking out.
+func _load_meat(c: Dictionary) -> Dictionary:
+	var n := Node3D.new()
+	var meat := plain(Color("#a8443a"))
+	n.add_child(blob(Vector3(3.6, 2.3, 2.4), meat, Vector3(0.5, 6.5, 0), Vector3(0, 0, 30)))
+	n.add_child(blob(Vector3(2.2, 1.0, 2.0), plain(Color("#e8c8b0")), Vector3(-0.6, 7.8, 0.3), Vector3(0, 0, 30)))   # the fat on top
+	var bone := plain(Color("#f0e8d8"))
+	n.add_child(rod(Vector3(3.2, 7.8, 0), Vector3(6.2, 9.4, 0), 0.55, 0.5, bone))
+	n.add_child(blob(Vector3(0.9, 0.8, 0.9), bone, Vector3(6.4, 9.6, 0)))
+	return {"node": n}
+
+
+## A broom for sweeping round the house (idle chores): a long handle, a bundle of twigs at the foot.
+func _tool_broom(c: Dictionary) -> Dictionary:
+	var n := Node3D.new()
+	var wood := surf("wood_grain", Color.WHITE, 6.0)
+	n.add_child(rod(Vector3(-1.5, 9.0, 0), Vector3(2.5, -7.0, 0), 0.55, 0.55, wood))
+	var twig := surf("reed_stalk", Color(0.85, 0.75, 0.5), 5.0)
+	for k in 7:
+		var z := (k - 3) * 0.55
+		n.add_child(rod(Vector3(2.5, -7.0, z * 0.4), Vector3(3.6 + (k - 3) * 0.35, -11.5, z), 0.4, 0.3, twig, false))
+	n.add_child(ring(0.7, 1.2, surf("leather", Color.WHITE, 2.0), Vector3(2.4, -6.6, 0), Vector3(0, 0, -14)))
+	return {"node": n}
+
+
+## A hoe for tending the rows: a long handle with a flat iron blade turned down at the end.
+func _tool_hoe(c: Dictionary) -> Dictionary:
+	var n := Node3D.new()
+	n.add_child(rod(Vector3(-1, -3.5, 0), Vector3(2.5, 10.5, 0), 0.6, 0.55, surf("wood_grain", Color.WHITE, 6.0)))
+	var blade := MeshInstance3D.new()
+	var bm := BoxMesh.new()
+	bm.size = Vector3(3.6, 0.4, 2.6)
+	blade.mesh = bm
+	blade.material_override = surf("iron", Color.WHITE, 3.0)
+	blade.position = Vector3(4.0, 9.8, 0)
+	blade.rotation.z = -0.5
+	n.add_child(blade)
+	return {"node": n}
+
+
 # ------------------------------------------------------------------ first-age kit for everyone
 
 ## A fire-hardened wooden spear: a plain shaft, the point charred dark.
