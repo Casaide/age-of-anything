@@ -1,4 +1,4 @@
-# Age of Whatever
+# Age of Anything
 
 A classic-style RTS where your civ is whatever you can describe.
 

@@ -1,4 +1,4 @@
-# Age of Whatever
+# Age of Anything
 
 A classic-style 2D RTS where your civ is whatever you can describe. Type "centaur romans" or
 "sewer rats with cheese hammers" and the game builds a race from a parts kit, prices every unit fairly,
@@ -246,7 +246,8 @@ game; everything expressive is ours. In code, data, docs, the archive and commit
   names, or text.
 - Don't write "copy", "clone" or "1:1". Describe what *we* want instead.
 - No third-party franchises in shipped content. Fan mods stay private.
-- The name "Age of Whatever" is a working title; trademark check before any public release.
+- The name "Age of Anything" is a working title (it was "Age of Anything" until 2026-10-12; the folder and
+  repo keep the old name); trademark check before any public release.
 
 ## House style
 
