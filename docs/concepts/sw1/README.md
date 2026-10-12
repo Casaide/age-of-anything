@@ -127,3 +127,68 @@ facing). Catapult and bolt thrower crewed as shown, frog engines grown rather th
 2. Giant beetle: ridden or led.
 3. Size: the engines now stand to their crew (the ram is about two workers long). Right?
 4. Anything to redo before building (the bolt thrower at 1x?).
+
+## Round 3: the frogs (2026-10-13), waiting on Dominic
+
+Dominic on round 2's frog engines: "I think frogs for all are the weakpoint, overusing lilypads and
+stuff, I think need to rethink direction" (D-119). Three new directions, each with a ram, a catapult
+and a bolt thrower, all crewed by the frog worker at true scale (as tall as a human, twice as wide;
+the engines are built at their full size around that crew). No lily pads anywhere. The humans' picked
+engines head every sheet for size. `siege_r3_directions_*` puts every engine of every direction side
+by side in one facing; `siege_r3_<engine>_*` shows three facings. `_3x` close-up, `_1x` game scale.
+
+```sh
+godot --audio-driver Dummy --always-on-top --path . --script res://tests/siege_concept_sheet_r3.gd -- out_dir 4.5   # 3x
+godot --audio-driver Dummy --always-on-top --path . --script res://tests/siege_concept_sheet_r3.gd -- out_dir 1.5   # game scale
+```
+
+**A, reed and clay engineers:** the frogs' own building culture (their reed towns: dark stilt timber,
+golden thatch, wicker walls, daub). Every engine sits on a heavy timber sledge with curled runners.
+- Ram: A-frames of lashed golden reed bundles under a small gabled thatch roof, the log a fat reed
+  bundle tied with dark lashing, its head a fired-clay weight studded with river stones; team cloths
+  hang from the ridge. Two frogs swing it from inside, one shoves at the back.
+- Catapult: reed-bundle uprights and braces, a skein of twisted reed rope between two daub blocks, a
+  tapered reed arm with a wicker cup holding a fired-clay ball; team pad on the crossbar.
+- Bolt thrower: a heavy stock on a lashed timber trestle, bow arms of bent reed bundles, a sharpened
+  reed spear with a fire-hardened point, and a woven wicker mantlet in front with a team cloth on it.
+
+**B, living swamp beasts** (as the forest has its giant beetle):
+- Ram: a giant snapping turtle, high ridged shell with three keels of knobs and a saw-toothed rim, a
+  long neck, a hooked beak under a stone brow plate, a spiked tail. One frog drives from a wicker
+  basket on its back, one walks behind; team cloths drape over the shell.
+- Catapult: a giant newt (black, an orange belly, yellow spots) with a deck strapped to its back
+  carrying a reed-armed catapult; one frog rides behind the arm, one loads from beside it.
+- Bolt thrower: a giant warty toad, gold-eyed, wide-mouthed, a team saddle cloth and a reed-bow bolt
+  thrower on a post on its back; one frog aims from its rump, one loads from beside it.
+
+**C, river engines:** amphibious, so their engines are boats dragged through the shallows, with
+fishing gear for technology.
+- Ram: a planked boat, the log hung from two pairs of crossed punt poles, its head a river stone in a
+  net; eel traps in the stern, a net with cork floats over the side. The crew haul from inside the
+  boat (only their heads show), one shoves at the stern.
+- Catapult: a swing beam on a post in a boat: a wicker basket of river stones raised on the short
+  end, a net of stones lying in the stern on the long end, ready to sling.
+- Bolt thrower: a harpoon thrower on a post at the bow, a barbed bone harpoon, its line coiled in a
+  basket; eel traps and a net.
+
+**What reads at game scale (Claude's look):**
+- A reads best of the three: golden reed against the red (or any) frog skin, so crew and engine part
+  at once; the thatch roof, the stone-headed log, the tall arm with its clay ball and the wicker
+  mantlet each say ram, catapult, bolt thrower in every facing. It looks like it came out of their
+  town, and it sits beside the human engines as the same kind of thing.
+- B: the turtle reads as a turtle and is a strong beast (grey-green and round, nothing like the
+  mahogany, long-horned beetle). The newt reads, the catapult arm stands clear of it. The toad is
+  the weakest: a big brown frog carrying small frogs, and its bow is small against the body.
+- C: the boats read as boats, and the harpoon is the clearest bolt thrower of all three. The swing
+  beam catapult reads as a crane more than a catapult in some facings; boats on dry land are a
+  stretch away from water.
+
+**Claude's recommendation:** **A** for all three engines: it is the frogs' own building culture, the
+most readable at 1x, and matches the crewed timber engines the other families got. Keep the **turtle**
+(B) in mind as a later showpiece, e.g. an age-4 heavy ram or a unique unit, the way the forest has
+its beetle; the newt and toad are not needed. C's harpoon boat could come back if water maps arrive.
+
+**For Dominic to pick:**
+1. A direction (or a mix per engine: e.g. A's catapult and bolt thrower with the turtle as the ram).
+2. The thatch roof over the reed ram: keep it, or open like the others?
+3. Size: the frog engines are about 1.2 to 1.3 times the human ones, to fit their crew. Right?
