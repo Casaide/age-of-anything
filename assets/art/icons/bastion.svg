@@ -1,0 +1,29 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="64" height="64" viewBox="0 0 64 64">
+<!-- Bastion: a round stone tower with battlements, an arrow slit and a pennant. -->
+<defs>
+<linearGradient id="steel" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#f4f6f8"/><stop offset="0.45" stop-color="#b9c0c6"/><stop offset="1" stop-color="#6e767e"/></linearGradient>
+<linearGradient id="iron" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#c4c8cc"/><stop offset="0.5" stop-color="#7c838a"/><stop offset="1" stop-color="#3c4046"/></linearGradient>
+<linearGradient id="bronze" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#ffd8a0"/><stop offset="0.5" stop-color="#c0803c"/><stop offset="1" stop-color="#6a3e14"/></linearGradient>
+<linearGradient id="wood" x1="0" y1="0" x2="1" y2="0"><stop offset="0" stop-color="#c08850"/><stop offset="0.5" stop-color="#8a5a2e"/><stop offset="1" stop-color="#5e3a1a"/></linearGradient>
+<linearGradient id="woodv" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#c08850"/><stop offset="0.5" stop-color="#8a5a2e"/><stop offset="1" stop-color="#5e3a1a"/></linearGradient>
+<linearGradient id="gold" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#ffe9a8"/><stop offset="0.5" stop-color="#d4a640"/><stop offset="1" stop-color="#8a6018"/></linearGradient>
+<linearGradient id="cloth" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#e0503c"/><stop offset="1" stop-color="#8a2a20"/></linearGradient>
+<linearGradient id="linen" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#fbf0d4"/><stop offset="1" stop-color="#c8b080"/></linearGradient>
+<linearGradient id="leather" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#d09060"/><stop offset="0.55" stop-color="#9a5e30"/><stop offset="1" stop-color="#5a3216"/></linearGradient>
+<linearGradient id="stone" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#eee4d0"/><stop offset="0.55" stop-color="#b0a28a"/><stop offset="1" stop-color="#6e6250"/></linearGradient>
+<linearGradient id="hay" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#fff0a0"/><stop offset="0.5" stop-color="#e8c050"/><stop offset="1" stop-color="#a07820"/></linearGradient>
+<linearGradient id="leaf" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#a8d870"/><stop offset="1" stop-color="#4e8428"/></linearGradient>
+<linearGradient id="soil" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#9a6a3c"/><stop offset="1" stop-color="#5a3a1c"/></linearGradient>
+<linearGradient id="blue" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#4a6a96"/><stop offset="1" stop-color="#22324e"/></linearGradient>
+<radialGradient id="glow" cx="0.5" cy="0.45" r="0.6"><stop offset="0" stop-color="#fff2c0" stop-opacity="0.9"/><stop offset="1" stop-color="#fff2c0" stop-opacity="0"/></radialGradient>
+<radialGradient id="flame" cx="0.5" cy="0.7" r="0.6"><stop offset="0" stop-color="#fff8c0"/><stop offset="0.5" stop-color="#ffb030"/><stop offset="1" stop-color="#d04818"/></radialGradient>
+</defs>
+<path d="M32,2 L32,14" stroke="#1c120a" stroke-width="2.4"/>
+<path d="M33,3 L46,6 L33,10 Z" fill="url(#cloth)" stroke="#1c120a" stroke-width="1.6" stroke-linejoin="round"/>
+<path d="M14,22 L14,14 L20,14 L20,18 L26,18 L26,14 L38,14 L38,18 L44,18 L44,14 L50,14 L50,22 Z" fill="url(#stone)" stroke="#1c120a" stroke-width="2" stroke-linejoin="round"/>
+<path d="M12,22 L52,22 L48,28 L16,28 Z" fill="#c8bca6" stroke="#1c120a" stroke-width="2" stroke-linejoin="round"/>
+<path d="M17,28 L47,28 L50,58 Q32,62 14,58 Z" fill="url(#stone)" stroke="#1c120a" stroke-width="2.2" stroke-linejoin="round"/>
+<g stroke="#6e6250" stroke-width="1.3"><path d="M16,36 Q32,38 48,36 M15,45 Q32,47 49,45 M15,53 Q32,55 49,53 M24,28 L24,36 M40,28 L40,36 M30,37 L30,45 M44,37 L44,45 M22,46 L22,54 M36,46 L36,54"/></g>
+<rect x="29.5" y="30" width="5" height="12" rx="2" fill="#2a1a10" stroke="#1c120a" stroke-width="1.4"/>
+<path d="M26,60 L26,51 Q32,45 38,51 L38,60" fill="url(#woodv)" stroke="#1c120a" stroke-width="2"/>
+</svg>

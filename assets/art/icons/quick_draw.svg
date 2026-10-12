@@ -1,0 +1,31 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="64" height="64" viewBox="0 0 64 64">
+<!-- Quick Draw: a drawn bow, the arrow leaving with ghost arrows behind it. -->
+<defs>
+<linearGradient id="steel" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#f4f6f8"/><stop offset="0.45" stop-color="#b9c0c6"/><stop offset="1" stop-color="#6e767e"/></linearGradient>
+<linearGradient id="iron" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#c4c8cc"/><stop offset="0.5" stop-color="#7c838a"/><stop offset="1" stop-color="#3c4046"/></linearGradient>
+<linearGradient id="bronze" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#ffd8a0"/><stop offset="0.5" stop-color="#c0803c"/><stop offset="1" stop-color="#6a3e14"/></linearGradient>
+<linearGradient id="wood" x1="0" y1="0" x2="1" y2="0"><stop offset="0" stop-color="#c08850"/><stop offset="0.5" stop-color="#8a5a2e"/><stop offset="1" stop-color="#5e3a1a"/></linearGradient>
+<linearGradient id="woodv" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#c08850"/><stop offset="0.5" stop-color="#8a5a2e"/><stop offset="1" stop-color="#5e3a1a"/></linearGradient>
+<linearGradient id="gold" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#ffe9a8"/><stop offset="0.5" stop-color="#d4a640"/><stop offset="1" stop-color="#8a6018"/></linearGradient>
+<linearGradient id="cloth" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#e0503c"/><stop offset="1" stop-color="#8a2a20"/></linearGradient>
+<linearGradient id="linen" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#fbf0d4"/><stop offset="1" stop-color="#c8b080"/></linearGradient>
+<linearGradient id="leather" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#d09060"/><stop offset="0.55" stop-color="#9a5e30"/><stop offset="1" stop-color="#5a3216"/></linearGradient>
+<linearGradient id="stone" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#eee4d0"/><stop offset="0.55" stop-color="#b0a28a"/><stop offset="1" stop-color="#6e6250"/></linearGradient>
+<linearGradient id="hay" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#fff0a0"/><stop offset="0.5" stop-color="#e8c050"/><stop offset="1" stop-color="#a07820"/></linearGradient>
+<linearGradient id="leaf" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#a8d870"/><stop offset="1" stop-color="#4e8428"/></linearGradient>
+<linearGradient id="soil" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#9a6a3c"/><stop offset="1" stop-color="#5a3a1c"/></linearGradient>
+<linearGradient id="blue" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#4a6a96"/><stop offset="1" stop-color="#22324e"/></linearGradient>
+<radialGradient id="glow" cx="0.5" cy="0.45" r="0.6"><stop offset="0" stop-color="#fff2c0" stop-opacity="0.9"/><stop offset="1" stop-color="#fff2c0" stop-opacity="0"/></radialGradient>
+<radialGradient id="flame" cx="0.5" cy="0.7" r="0.6"><stop offset="0" stop-color="#fff8c0"/><stop offset="0.5" stop-color="#ffb030"/><stop offset="1" stop-color="#d04818"/></radialGradient>
+</defs>
+<g opacity="0.45" stroke="#f4ecd8" stroke-width="2.4" stroke-linecap="round"><path d="M22,22 L56,22 M22,42 L56,42"/></g>
+<path d="M50,18 L58,22 L50,26 Z M50,38 L58,42 L50,46 Z" fill="#f4ecd8" opacity="0.45"/>
+<path d="M28,4 Q4,32 28,60" fill="none" stroke="#1c120a" stroke-width="7" stroke-linecap="round"/>
+<path d="M28,4 Q4,32 28,60" fill="none" stroke="url(#woodv)" stroke-width="4" stroke-linecap="round"/>
+<path d="M28,4 L44,32 L28,60" fill="none" stroke="#f4ecd8" stroke-width="1.6"/>
+<path d="M14,32 L54,32" stroke="#1c120a" stroke-width="5.4" stroke-linecap="round"/>
+<path d="M14,32 L54,32" stroke="#c08850" stroke-width="2.6" stroke-linecap="round"/>
+<path d="M52,26 L62,32 L52,38 Z" fill="url(#iron)" stroke="#1c120a" stroke-width="2" stroke-linejoin="round"/>
+<path d="M40,32 L46,24 L50,24 L47,32 Z M40,32 L46,40 L50,40 L47,32 Z" fill="url(#cloth)" stroke="#1c120a" stroke-width="1.4" stroke-linejoin="round"/>
+<g stroke="#ffd860" stroke-width="2.4" stroke-linecap="round"><path d="M4,24 L10,24 M2,32 L8,32 M4,40 L10,40"/></g>
+</svg>
