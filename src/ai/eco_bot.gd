@@ -426,15 +426,20 @@ func _nearest_resource(w, x: int, y: int, kind: int, free := false, area := -1) 
 
 
 ## A free size x size spot with a tile of space around it, spiralling out from (cx, cy).
+## A strict pass first (a clear margin round it and its neighbours off resources); if that finds
+## nothing (forests and groves near home: the rats' barracks never went up on Reed Meadow), a
+## looser, wider one that only keeps the building itself off resources.
 func _house_spot(w, cx: int, cy: int, size: int) -> Vector2i:
-	for r in range(3, 14):
-		for dy in range(-r, r + 1):
-			for dx in range(-r, r + 1):
-				if maxi(absi(dx), absi(dy)) != r:
-					continue
-				if w.map.can_build(cx + dx - 1, cy + dy - 1, size + 2) and not _blocks_resource(w, cx + dx - 1, cy + dy - 1, size + 2) \
-						and reach.touches(w, wln, home, cx + dx, cy + dy, size, size):
-					return Vector2i(cx + dx, cy + dy)
+	for strict in [true, false]:
+		for r in range(3, 14 if strict else 22):
+			for dy in range(-r, r + 1):
+				for dx in range(-r, r + 1):
+					if maxi(absi(dx), absi(dy)) != r:
+						continue
+					var ok: bool = w.map.can_build(cx + dx - 1, cy + dy - 1, size + 2) if strict else w.map.can_build(cx + dx, cy + dy, size)
+					if ok and (not strict or not _blocks_resource(w, cx + dx - 1, cy + dy - 1, size + 2)) \
+							and reach.touches(w, wln, home, cx + dx, cy + dy, size, size):
+						return Vector2i(cx + dx, cy + dy)
 	return Vector2i(-1, -1)
 
 
