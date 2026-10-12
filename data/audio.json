@@ -24,6 +24,7 @@
     "ui_hover": {"takes": 2, "bus": "Ui", "gap_ms": 40, "voices": 2},
     "ui_start": {"takes": 1, "bus": "Ui", "gap_ms": 1000, "voices": 1},
     "ui_nope": {"takes": 1, "bus": "Ui", "gap_ms": 300, "voices": 1},
+    "dice_roll": {"takes": 3, "bus": "Ui", "gap_ms": 150, "voices": 2},
     "trained": {"takes": 1, "bus": "Ui", "gap_ms": 400, "voices": 1},
     "built": {"takes": 1, "bus": "Ui", "gap_ms": 400, "voices": 1},
     "research": {"takes": 1, "bus": "Ui", "gap_ms": 400, "voices": 1},
