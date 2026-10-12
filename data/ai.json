@@ -105,7 +105,7 @@
    "count": 2,
    "near": "wood",
    "away": 12,
-   "workers": 32,
+   "workers": 40,
    "builders": 4
   },
   {
@@ -165,7 +165,9 @@
   },
   "shelter": {
    "tiles": 12,
-   "_doc": "a raid within `tiles` of the Town Center by at least the level's `shelter_pop` of enemy population, more than its soldiers at home can answer: call to arms (workers into the Town Center and towers); once quiet, back to work"
+   "seconds": 30,
+   "every": 120,
+   "_doc": "a raid within `tiles` of the Town Center by at least the level's `shelter_pop` of enemy population, more than its soldiers at home can answer: call to arms (workers into the Town Center and towers); back to work once quiet or after `seconds` (the economy stands still inside), and no call again for `every` seconds"
   }
  },
  "research": {
@@ -203,7 +205,7 @@
   "_doc": "a Wonder (bot.gd _wonder): from `age`, with none of its own standing or going up, once its stock of every resource is at least spare_pct percent of the Wonder's cost, it lays one by its Town Center and sends `builders` workers. Every bot also attacks a Wonder it knows of (seen, or finished: everyone hears of that) before anything else, and a finished one at once"
  },
  "levels": {
-  "_doc": "difficulty, as in the genre: easier bots build up more and fight less, but grow all game (no caps, up to the population limit). delay: seconds added to every wave's time; army_pct: the share of each wave's minimum army; army_ratio: soldiers kept (population) as a percent of its workers per age (50: half its workers in age 1, as many in age 2, one and a half in age 3; absent: no limit); wave_pct: the share of its army each wave sends (the rest defend); build_up: research gathering and line upgrades before soldiers; age3_workers: workers before it saves for age 3 (economy.age3_workers otherwise); towers: Watchtowers it raises where it was raided; shelter_pop: the raid (enemy population) that makes it call its workers to arms (absent: never). (Dominic: not caps; less focus on fighting, more building up.)",
+  "_doc": "difficulty, as in the genre: easier bots build up more and fight less, but grow all game (no caps, up to the population limit). delay: seconds added to every wave's time; army_pct: the share of each wave's minimum army; army_ratio: soldiers kept (population) as a percent of its workers per age (50: half its workers in age 1, as many in age 2, one and a half in age 3; absent: no limit); wave_pct: the share of its army each wave sends (the rest defend); build_up: research gathering and line upgrades before soldiers; age3_workers: workers before it saves for age 3 (economy.age3_workers otherwise); towers: Watchtowers it raises where it was raided; shelter_pop: the raid (enemy population) that makes it call its workers to arms (absent: never); all_in: an army this big (population) goes out whole on its wave, home guard and all (absent: never). (Dominic: not caps; less focus on fighting, more building up.)",
   "easy": {
    "delay": 300,
    "army_pct": 50,
@@ -212,7 +214,8 @@
    "build_up": 1,
    "age3_workers": 24,
    "towers": 3,
-   "shelter_pop": 2
+   "shelter_pop": 2,
+   "all_in": 60
   },
   "normal": {
    "delay": 120,
@@ -222,14 +225,16 @@
    "build_up": 1,
    "age3_workers": 26,
    "towers": 2,
-   "shelter_pop": 4
+   "shelter_pop": 4,
+   "all_in": 36
   },
   "hard": {
    "delay": 0,
    "army_pct": 100,
    "age3_workers": 30,
    "towers": 1,
-   "shelter_pop": 8
+   "shelter_pop": 8,
+   "all_in": 24
   }
  }
 }
