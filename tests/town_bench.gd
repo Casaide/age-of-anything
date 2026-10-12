@@ -31,7 +31,11 @@ func _initialize() -> void:
 	print("%d units, %d buildings at tick %d" % [view.world.units.count(), view.world.buildings.count(), view.world.tick])
 	for on in [true, false, true]:
 		view.town.enabled = on
+		view.town.spent_us = 0
+		view.town.frames = 0
 		await _measure(view, "town life %s, sim running" % ("on " if on else "off"))
+		if on:
+			print("    town life's own update: %.3f ms/frame" % (view.town.spent_us / 1000.0 / maxi(1, view.town.frames)))
 	quit()
 
 
