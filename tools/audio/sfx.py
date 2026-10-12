@@ -350,19 +350,25 @@ def alarm(rng):
 # ----------------------------------------------------------------------------- ambience
 
 def meadow(rng):
-    """Twenty seconds of wind over grass with a bird now and then; loops."""
-    n = seconds(20.0)
-    gust = [0.35 + 0.65 * (0.5 + 0.5 * math.sin(math.tau * (0.07 * i / RATE) + 1.0)) * (0.6 + 0.4 * math.sin(math.tau * 0.19 * i / RATE)) for i in range(n)]
-    wind = gain(mul(lowpass(noise(n, rng), lambda t: 250.0 + 250.0 * (0.5 + 0.5 * math.sin(math.tau * 0.07 * t + 1.0))), gust), 1.6)
-    grass = gain(mul(bandpass(noise(n, rng), 3000.0, 0.4), gust), 0.08)
+    """Forty seconds of a soft breeze over grass with a bird now and then; loops. Dominic: the
+    first version (20 s, a 3 kHz grass hiss, a swell every ~5 s) sounded like static, came round
+    too often and too loud. Now: a deep, slow breeze (one long swell in each 20 s half, never
+    silent), the grass a faint rustle well below hiss, sparse birds."""
+    n = seconds(40.0)
+    t_of = lambda i: i / RATE
+    # Two gentle swells per loop (0.05 Hz) and a slower drift (0.025 Hz); whole cycles, so it loops.
+    gust = [0.45 + 0.55 * (0.5 + 0.5 * math.sin(math.tau * 0.05 * t_of(i) + 1.0)) * (0.75 + 0.25 * math.sin(math.tau * 0.025 * t_of(i)))
+        for i in range(n)]
+    wind = gain(mul(lowpass(lowpass(noise(n, rng), lambda t: 140.0 + 120.0 * (0.5 + 0.5 * math.sin(math.tau * 0.05 * t + 1.0))), 400.0), gust), 1.4)
+    grass = gain(mul(lowpass(bandpass(noise(n, rng), 1400.0, 0.5), 2200.0), gust), 0.025)
     out = add(wind, grass)
-    for k in range(5):
-        at = rng.uniform(1.0, 18.0)
-        f0 = rng.uniform(2200, 3600)
-        for c in range(rng.randint(2, 4)):
+    for k in range(4):
+        at = rng.uniform(1.0, 38.0)
+        f0 = rng.uniform(2200, 3400)
+        for c in range(rng.randint(2, 3)):
             m = seconds(0.09)
-            chirp = mul(sine(m, lambda t, f0=f0: f0 + 800.0 * math.sin(math.pi * t / 0.09)), env(m, 0.01, 0.04, 0.5, 0.03))
-            mix_into(out, chirp, seconds(at + c * 0.13), 0.12, wrap=True)
+            chirp = mul(sine(m, lambda t, f0=f0: f0 + 700.0 * math.sin(math.pi * t / 0.09)), env(m, 0.01, 0.04, 0.5, 0.03))
+            mix_into(out, chirp, seconds(at + c * 0.14), 0.08, wrap=True)
     return fade(out, 0.0, 0.0)
 
 
@@ -446,5 +452,5 @@ TABLE = {
     "trained": (trained, 1, -4.0), "built": (built, 1, -3.0), "research": (research, 1, -5.0),
     "heal": (heal, 2, -12.0),
     "age": (age, 1, -1.0), "won": (won, 1, -1.0), "lost": (lost, 1, -1.0), "alarm": (alarm, 1, -1.0),
-    "meadow": (meadow, 1, -8.0), "town_quiet": (town_quiet, 1, -12.0), "town_busy": (town_busy, 1, -10.0),
+    "meadow": (meadow, 1, -14.0), "town_quiet": (town_quiet, 1, -12.0), "town_busy": (town_busy, 1, -10.0),
 }
