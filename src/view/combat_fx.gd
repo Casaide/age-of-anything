@@ -1,6 +1,6 @@
 extends Node2D
 ## Combat effects for the game view, played from the sim's events: projectiles
-## (cosmetic: the damage already landed in the sim), impact sparks, a white hit flash, and units dying
+## (flying as long as the sim's shots do; shots that miss stick in the ground), impact sparks, a white hit flash, and units dying
 ## (the body topples over about its feet, darkens where it lies, then goes in a puff
 ## of dust; the ground shadow stays flat and fades). Buildings that fall leave a dust cloud. A
 ## healed unit warms for a moment and a few pale motes drift up off it. View side only; nothing
@@ -21,6 +21,8 @@ const FLASH_TIME := 0.12
 const FLASH := 1.8     # extra brightness at the flash's peak (the baked art reads modulate alpha as shade)
 
 var shots: Array = []    # {from, to, t, dur, kind}
+var stuck: Array = []    # shots in the ground: {pos, t, kind, tilt}
+const STUCK_TIME := 3.0
 var sparks: Array = []   # {pos, t, col}
 var ghosts: Array = []   # {node, t, tip}
 var dusts: Array = []    # {pos, t, size}
@@ -46,12 +48,22 @@ static func shot_kind(tags: Array) -> String:
 	return "arrow"
 
 
-## A shot flies; returns how long it takes to land.
-func shoot(from: Vector2, to: Vector2, kind: String) -> float:
+## A shot flies, for `dur` seconds (the sim's flight) or, without one, at the weapon's own pace;
+## returns how long it takes to land.
+func shoot(from: Vector2, to: Vector2, kind: String, dur := -1.0) -> float:
 	var s: Dictionary = SHOTS[kind]
-	var dur := maxf(0.08, from.distance_to(to) / s.speed)
+	if dur <= 0.0:
+		dur = maxf(0.08, from.distance_to(to) / s.speed)
 	shots.append({"from": from, "to": to, "t": 0.0, "dur": dur, "kind": kind})
 	return dur
+
+
+## A shot came down in the ground at `at`: a shaft stands in it at a slant for a while (a stone
+## or a ball just kicks up a little dirt).
+func stick(at: Vector2, kind: String) -> void:
+	dusts.append({"pos": at, "t": 0.0, "size": 1.5})
+	if SHOTS[kind].len > 0.0:
+		stuck.append({"pos": at + Vector2(randf_range(-1.5, 1.5), randf_range(-1.0, 1.0)), "t": 0.0, "kind": kind, "tilt": randf_range(-0.6, 0.6)})
 
 
 ## A unit is hit: it flashes white for a moment, after `delay` (a shot's flight).
@@ -93,6 +105,7 @@ func clear() -> void:
 		g.node.queue_free()
 	ghosts.clear()
 	shots.clear()
+	stuck.clear()
 	flashes.clear()
 	heals.clear()
 	sparks.clear()
@@ -103,6 +116,9 @@ func _process(delta: float) -> void:
 	for s in shots:
 		s.t += delta
 	shots = shots.filter(func(s): return s.t < s.dur)
+	for s in stuck:
+		s.t += delta
+	stuck = stuck.filter(func(s): return s.t < STUCK_TIME)
 	for f in flashes:
 		f.t += delta
 		var n = f.node   # untyped: a freed view can't be assigned to a typed Node2D
@@ -143,6 +159,13 @@ func _process(delta: float) -> void:
 
 
 func _draw() -> void:
+	for s in stuck:   # half buried, leaning, fading at the end
+		var st: Dictionary = SHOTS[s.kind]
+		var a: float = clampf((STUCK_TIME - s.t) / 0.6, 0.0, 1.0)
+		var up: Vector2 = Vector2(sin(s.tilt), -cos(s.tilt)) * float(st.len) * 0.6
+		draw_line(s.pos + Vector2(0.6, 0.3), s.pos + Vector2(0.6, 0.3) + Vector2(up.x * 1.4, -up.y * 0.35), Color(0, 0, 0, 0.25 * a), 1.0)   # its shadow
+		draw_line(s.pos, s.pos + up, Color(st.col, a), st.w)
+		draw_circle(s.pos + up, st.w * 0.8, Color(0.85, 0.85, 0.8, a))   # the fletching
 	for s in shots:
 		var st: Dictionary = SHOTS[s.kind]
 		var k: float = s.t / s.dur

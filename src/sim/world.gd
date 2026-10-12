@@ -32,6 +32,7 @@ const Fog := preload("res://src/sim/fog.gd")
 const Bridges := preload("res://src/sim/bridges.gd")
 const Trails := preload("res://src/sim/trails.gd")
 const Garrison := preload("res://src/sim/garrison.gd")
+const Shots := preload("res://src/sim/shots.gd")
 
 const TICK_HZ := 20
 const HASH_EVERY := 30
@@ -95,6 +96,7 @@ var types: Array = []          # unit types, per player per roster slot (see _ma
 var btypes: Array = []         # building types (see Economy.load_btypes)
 var units: Units = Units.new()
 var buildings: Buildings = Buildings.new()
+var shots: Shots = Shots.new()   # shots in flight (shots.gd, combat.gd)
 var spatial: Spatial
 var commands: Commands = Commands.new()
 var history: Array = []        # every command that ran, in run order
@@ -1415,6 +1417,9 @@ func state_hash() -> int:
 	for c in map.resource_cells:
 		h = Fixed.mix(h, map.amount[c])
 	h = Bridges.hash_into(self, h)
+	h = Fixed.mix(h, shots.count())
+	for v in shots.data:
+		h = Fixed.mix(h, v)
 	var worn := 0
 	for c in wear.size():
 		worn += wear[c] * (c % 251 + 1)

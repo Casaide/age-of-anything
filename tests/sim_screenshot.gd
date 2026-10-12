@@ -9,6 +9,8 @@ extends SceneTree
 ## "tower" (side 1's town with enemy spears by its Watchtower; shot with arrows in the air).
 ## "castle" (side 1's Castle and University by its Town Center, enemy spears in the Castle's
 ## reach; shot with a volley in the air).
+## "volley[:<slot>]" (side 0's archers shoot at side 1's charging large units, or that slot;
+## shot with shots in the air and misses stuck in the ground; the sim and the shots frozen).
 ## "heal" (side 0's healers by wounded spearmen, shot mid-heal; "heal:card" with a healer selected).
 ## "look:<x>:<y>[:zoom]" frames a tile with the fog lifted (for art checks).
 ## "pause" the pause menu; "end" / "defeat" the end screen.
@@ -128,6 +130,8 @@ func _initialize() -> void:
 		await _heal(view, scene == "heal:card")
 	elif scene.begins_with("battle"):
 		await _battle(view, map_id, int(scene.get_slice(":", 1)))
+	elif scene.begins_with("volley"):
+		await _volley(view, map_id, scene.get_slice(":", 1) if ":" in scene else "large")
 	elif scene.begins_with("formation"):
 		await _formation(view, map_id, int(scene.get_slice(":", 1)))
 	elif scene.begins_with("siege"):
@@ -663,6 +667,36 @@ func _battle(view, map_id: String, at_tick: int) -> void:
 	if w.units.count() > 0:
 		c /= w.units.count()
 		view.camera.look_at_point(Iso.to_screen(c.x, c.y))
+
+
+## Side 0's archers stand in a block; side 1's `slot` charges them. Frozen (sim and shots) once
+## a volley is in the air and a few misses stand in the ground.
+func _volley(view, map_id: String, slot: String) -> void:
+	var w = view.world
+	var meet: Vector2 = MEET[map_id] * 1000.0
+	view.reveal = true
+	while w.units.count() == 0:
+		await process_frame
+	var start: int = w.units.count()
+	for q in 12:
+		w.issue(0, "spawn", {"slot": "archer", "count": 1, "x": int(meet.x) - 3000 - (q / 4) * 800, "y": int(meet.y) + (q % 4 - 2) * 800})
+	w.issue(1, "spawn", {"slot": slot, "count": 6, "x": int(meet.x) + 6000, "y": int(meet.y)})
+	while w.units.count() < start + 18:
+		await process_frame
+	var ids := []
+	for i in w.units.count():
+		if w.units.owner[i] == 1 and w.types[w.units.kind[i]].slot == slot:
+			ids.append(w.units.id[i])
+	w.issue(1, "attack_move", {"ids": ids, "x": int(meet.x) - 4000, "y": int(meet.y)})
+	view.camera.zoom = Vector2(3.0, 3.0)
+	view._on_zoom()
+	view.camera.look_at_point(Iso.to_screen(meet.x - 500, meet.y))
+	for f in 1200:
+		await process_frame
+		if view.fx.stuck.size() >= 4 and view.fx.shots.size() >= 8:
+			break
+	view.clock.paused = true
+	view.fx.set_process(false)
 
 
 ## Both sides' armies stand by their Town Centers; both age up (twice, up to `to_age`);

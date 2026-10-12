@@ -115,6 +115,7 @@ var hint: Label             # the opening hints (against the AI), one at a time
 var hint_step := 0
 var start_units := 0
 var fx: CombatFx            # projectiles, sparks, deaths (from the sim's events)
+var shot_kinds := {}        # shooter id -> the look of its last shot (a miss sticks in the ground as one)
 var town: TownLife          # the town at work and at rest: piles, chores, smoke, critters, its sound
 var marks: Node2D           # under units: selection rings, move lines, flow arrows
 var layer: Node2D           # units, buildings and resource props, y-sorted
@@ -1250,19 +1251,22 @@ func unit_at(pos: Vector2) -> int:
 
 
 ## Play the sim's hits and deaths as effects: attackers lunge at their target,
-## ranged ones loose a shot, the struck spark; the dead topple (their view leaves
-## the live set, so the usual sync won't just delete it); fallen buildings raise dust.
+## shooters loose a shot that flies as long as the sim's does and lands as a hit or in the
+## ground, the struck spark; the dead topple (their view leaves the live set, so the usual
+## sync won't just delete it); fallen buildings raise dust.
 func _play_events() -> void:
 	for e in clock.take_events():
+		if e.type == "shot":
+			_shot(e)
+			continue
+		if e.type == "miss" or (e.type == "hit" and e.has("x")):
+			_landed(e)   # a shot in flight came down
+			continue
 		if e.type == "hit":
 			var a: Node2D = views.get(e.by)
 			var to := _event_target_pos(e.to)
 			if to != Vector2.INF:
 				_maybe_alert(e, to)
-			var tower: BuildingArt = bviews.get(e.by)
-			if tower != null and to != Vector2.INF:
-				_tower_shot(e, tower, to)   # a watchtower looses: shooters aren't always units
-				continue
 			if a == null or to == Vector2.INF:
 				continue
 			a.face_vec(to - a.position)
@@ -1380,18 +1384,61 @@ func _play_events() -> void:
 
 ## Where a shot or blow lands on a unit (its body) or a building (its middle).
 ## A watchtower's shot: an arrow from near its top, the target flashing when it lands.
-func _tower_shot(e: Dictionary, tower: BuildingArt, to: Vector2) -> void:
-	var k: int = e.get("arrow", 0)   # a volley (one arrow each for those inside): from along the top, landing round the target
-	var spread := Vector2(((k * 5) % 7 - 3) * 2.0, ((k * 3) % 5 - 2) * 1.5)
-	var lands := fx.shoot(tower.loose_at() + spread, to + spread * 0.5, "arrow")
-	var target: Node2D = views.get(e.to)
-	if target != null:
-		fx.flash(target, lands)
-	if _on_screen(to) and tower.visible:
-		audio.play("shoot_arrow", -4.0)
-		audio.play_in("arrow_land", lands, -8.0)
+## A shot loosed (the sim's "shot" event): it flies from the shooter (a unit, or along the top
+## of a tower, a volley spread out) to the spot the sim aimed at, body high, for the sim's
+## flight; its landing comes as a "hit" or a "miss" (_landed).
+func _shot(e: Dictionary) -> void:
+	var tower: BuildingArt = bviews.get(e.by)
+	var a: Node2D = views.get(e.by)
+	var to := _event_target_pos(e.to) if world.buildings.index_of(e.to) >= 0 else Iso.to_ground(e.x, e.y) - Vector2(0, BODY_LIFT)
+	if to == Vector2.INF:
+		return
+	var kind := "arrow"
+	var from: Vector2
+	var seen := false
+	if tower != null:
+		var k: int = e.get("arrow", 0)
+		var spread := Vector2(((k * 5) % 7 - 3) * 2.0, ((k * 3) % 5 - 2) * 1.5)
+		from = tower.loose_at() + spread
+		to += spread * 0.5
+		seen = tower.visible
+	elif a != null:
+		var i := world.units.index_of(e.by)
+		if i >= 0:
+			kind = CombatFx.shot_kind(world.types[world.units.kind[i]].eval.tags)
+		from = _body(a) - Vector2(0, 2)
+		a.face_vec(to - a.position)
+		a.loose()
+		seen = a.visible
+	else:
+		return
+	shot_kinds[e.by] = kind
+	fx.shoot(from, to, kind, e.ticks * SimClock.STEP / maxf(clock.speed, 0.01))
+	if _on_screen(from) and seen:
+		audio.play("shoot_" + kind, -4.0)
 		if _owner_of(e.by) == active or _owner_of(e.to) == active:
 			battle_until = world.tick / float(World.TICK_HZ) + 8.0
+
+
+## A shot came down: on its target (it flashes; the alarm if it's ours), or in the ground,
+## where it sticks for a while.
+func _landed(e: Dictionary) -> void:
+	var spot := Iso.to_ground(e.x, e.y)
+	var seen: bool = reveal or Fog.visible(world, active, e.x, e.y)
+	if e.type == "miss":
+		if seen:
+			fx.stick(spot, shot_kinds.get(e.by, "arrow"))
+			if _on_screen(spot):
+				audio.play("arrow_land", -12.0)
+		return
+	var to := _event_target_pos(e.to)
+	if to != Vector2.INF:
+		_maybe_alert(e, to)
+	var target: Node2D = views.get(e.to)
+	if target != null:
+		fx.flash(target)
+	if seen and _on_screen(spot):
+		audio.play("arrow_land", -8.0)
 
 
 func _event_target_pos(id: int) -> Vector2:
