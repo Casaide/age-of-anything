@@ -184,6 +184,13 @@ still maps the brief onto parts within host rules.
   - Sci-fi "space federation" pack. A space-fleet sci-fi mod is Dominic's personal dream; keep
     official names and likenesses out of shipped content.
 
+### A Bear race (Dominic, 2026-10-13: next to plan once milestone 13 is done; "it'll just be really cool to see")
+A new creature: bears. Not in the data yet. To plan, concept-first: how big a bear soldier is next to a human
+(standing bears are bigger; workers too, so buildings, crews and gear need sizing), body (two legs standing, or
+four with a rider; a bear cavalry mount for other races), head and fur skins, a culture or favoured families
+(forest? northern?), lexicon words (bear, bears, grizzly, panda?, polar?), `giant_ok`, gear fit, its siege
+take and architecture, and pricing (big hp through points, no special case).
+
 ### Eras and themes as a layer (Dominic, 2026-10-13: later; "we're not ready for later ages like that yet")
 
 "Rats with guns" showed that a gun is really an era ask, not just a weapon: under Anything
