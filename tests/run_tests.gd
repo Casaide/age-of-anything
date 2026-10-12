@@ -372,7 +372,20 @@ func _test_healers(lib, gen, rules: Dictionary) -> void:
 						check(int(u.eval.get("heal", 0)) == 0 and not lib.part(u.recipe.parts.hand_r).tags.has("heal"), "%s: only healers heal (%s)" % [prompt, u.recipe.name])
 	check(_unit(gen.generate("sewer rats", rules.default), "healer").recipe.parts.hand_r == "tool.staff.cheese", "rat healers carry a cheese staff")
 	check(_unit(gen.generate("swamp frogs", rules.default), "healer").recipe.parts.hand_r == "tool.staff.lily", "frog healers carry a lily staff")
-	check(_unit(gen.generate("romans", rules.default), "healer").recipe.parts.hand_r == "tool.staff.herbs", "roman healers carry the herb staff")
+	# Every culture its own staff (Dominic, 2026-10-12: "different staffs for each"), from data
+	# (only_if + favour), and the bag to match where it has one.
+	var kits := {"romans": ["tool.staff.laurel", "tool.satchel"], "greeks": ["tool.staff.olive", "tool.satchel.flask"],
+		"royal humans": ["tool.staff.lantern", "tool.satchel"], "mongols": ["tool.staff.horsehair", "tool.satchel.felt"],
+		"spooky spiders": ["tool.staff.candle", "tool.satchel.bottle"], "forest beetles": ["tool.staff.branch", "tool.satchel.leaf"],
+		"egyptians": ["tool.staff.papyrus", "tool.satchel.linen"], "han": ["tool.staff.gourd", "tool.satchel.lacquer"],
+		"aztecs": ["tool.staff.feather", "tool.satchel.woven"]}
+	for prompt in kits:
+		var parts: Dictionary = _unit(gen.generate(prompt, rules.default), "healer").recipe.parts
+		check(parts.hand_r == kits[prompt][0] and parts.get("hand_l", "") == kits[prompt][1], "%s healers carry their culture's kit (%s, %s)" % [prompt, parts.hand_r, parts.get("hand_l", "")])
+	var models = preload("res://scenes/art_pixel/unit_models.gd").new()
+	for id in lib.parts:
+		if "heal" in lib.parts[id].tags:
+			check(models.has(id), "%s has a model" % id)
 	# own_seed: the healer draws from its own stream, so every other line is as it was without it.
 	var without: Dictionary = rules.default.duplicate(true)
 	without.roster = without.roster.filter(func(sd): return sd.slot != "healer")
