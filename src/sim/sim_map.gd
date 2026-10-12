@@ -34,6 +34,7 @@ var terrain_opaque: Array = []     # terrain index -> bool: blocks sight (trees:
 var terrain := PackedByteArray()   # index ty * width + tx
 var walk := PackedByteArray()      # ground: 1 walkable, 0 blocked (terrain or a building)
 var walks: Array = []              # per lane, the same grid (walks[0] matches walk); see lanes below
+var roomy: Array = []              # per lane (made when first asked for: roomy_grid), 1 where the cell and its 8 neighbours are on the map and walkable
 ## Lanes: one walk grid per movement class, for everyone (lanes 0-2), and once a team has a
 ## gate, another three for that team, where its own gates are open (lane = group * 3 + class).
 ## Gates are closed in the shared lanes, so maps without gates keep just the three.
@@ -67,6 +68,7 @@ var map_hash: int                  # content hash of the file, for replays
 var version := 0
 var fresh := PackedInt32Array()    # cells changed this tick (the World reads and clears it)
 var fresh_closed := PackedByteArray()   # per fresh entry: 1 if some lane lost a walkable cell there (else it only opened)
+var fresh_was := {}                # fresh cell -> PackedByteArray: its walk value per lane before this tick's first change
 var changed := PackedInt32Array()  # cells changed since the view last looked (view clears it)
 var changed_overflow := false      # too many to list: the view should redraw everything
 
@@ -234,6 +236,39 @@ func walkable(x: int, y: int, k := 0) -> bool:
 	return walks[k][ty * width + tx] == 1
 
 
+## Lane k's roomy grid (see `roomy`): a straight walk that only passes roomy cells is clear for any
+## body up to half a tile wide, whatever its line (Flow.clear_path's quick answer).
+func roomy_grid(k: int) -> PackedByteArray:
+	while roomy.size() <= k:
+		var g := PackedByteArray()
+		g.resize(width * height)
+		roomy.append(g)
+		for c in g.size():
+			_roomy_cell(roomy.size() - 1, c)
+	return roomy[k]
+
+
+func _roomy_round(k: int, cell: int) -> void:
+	var cx := cell % width
+	var cy := cell / width
+	for y in range(maxi(cy - 1, 0), mini(cy + 2, height)):
+		for x in range(maxi(cx - 1, 0), mini(cx + 2, width)):
+			_roomy_cell(k, y * width + x)
+
+
+func _roomy_cell(k: int, c: int) -> void:
+	var g: PackedByteArray = walks[k]
+	var cx := c % width
+	var cy := c / width
+	var ok := cx > 0 and cy > 0 and cx < width - 1 and cy < height - 1
+	if ok:
+		for y in range(cy - 1, cy + 2):
+			for x in range(cx - 1, cx + 2):
+				if g[y * width + x] == 0:
+					ok = false
+	roomy[k][c] = 1 if ok else 0
+
+
 func cell_walkable(cx: int, cy: int, k := 0) -> bool:
 	return cx >= 0 and cy >= 0 and cx < width and cy < height and walks[k][cy * width + cx] == 1
 
@@ -386,6 +421,8 @@ func _refresh(cell: int) -> void:
 	var was := PackedByteArray()
 	for g in walks:
 		was.append(g[cell])
+	if not fresh_was.has(cell):
+		fresh_was[cell] = was
 	var clear: bool = (occupied[cell] == 0 or walk_over[cell] == 1) and cliff[cell] == 0   # buildings and cliffs block, farms don't
 	var ground: bool = terrain_walk[terrain[cell]] or deck[cell] == 1   # a bridge's deck is ground over the water
 	walk[cell] = 1 if ground and clear else 0
@@ -403,6 +440,9 @@ func _refresh(cell: int) -> void:
 		for k in CLASSES.size():
 			walks[g * CLASSES.size() + k][cell] = 1 if mask & (1 << k) and (k == FLYING or open) else 0
 		walks[g * CLASSES.size()][cell] = 1 if ground and open else 0   # as walks[0] follows walk
+	for k in roomy.size():   # keep the roomy grids made so far in step with this cell
+		if was[k] != walks[k][cell]:
+			_roomy_round(k, cell)
 	version += 1
 	var closed := 0
 	for k in walks.size():

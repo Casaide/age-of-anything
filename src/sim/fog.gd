@@ -1,8 +1,9 @@
 extends RefCounted
 ## Fog of war: per player, a byte per cell: 0 never seen, 1 explored (seen before), 2 visible
 ## now. Allies share sight. Stamped from every unit's and finished building's sight radius (rules.fog,
-## in tiles) as integer circles, every rules.fog.every ticks. Derived from the units and
-## buildings, so it isn't hashed; the AI reads it to play fair, and the view draws it.
+## in tiles) as integer circles, every rules.fog.every ticks: one team at a time, the teams'
+## turns spread over those ticks (two teams: one every other tick), so no tick does them all.
+## Derived from the units and buildings, so it isn't hashed; the AI reads it to play fair, and the view draws it.
 ##
 ## Each player also remembers the map as they last saw it (the genre's remembered state): the
 ## ground per cell (`fog_ground`, a terrain index, and `fog_left`, what was left there) starts as
@@ -28,9 +29,11 @@ static func setup(w) -> void:
 	w.fog_ground = []
 	w.fog_left = []
 	w.fog_seen = []
-	w.fog_watch = {}
+	w.fog_watch = PackedByteArray()
+	w.fog_watch.resize(w.map.width * w.map.height)
+	w.fog_watch_cells = PackedInt32Array()
 	for c in w.map.resource_cells:
-		w.fog_watch[c] = true
+		_watch(w, c)
 	var left := PackedInt32Array()
 	for c in w.map.width * w.map.height:
 		left.append(w.map.left_at(c))
@@ -47,9 +50,30 @@ static func setup(w) -> void:
 
 static func tick(w) -> void:
 	for c in w.map.fresh:   # cells that changed this tick (before the World clears the list)
-		w.fog_watch[c] = true
-	if w.tick % int(w.fog_cfg.every) == 0:
-		_update(w)
+		_watch(w, c)
+	var every: int = w.fog_cfg.every
+	var teams := _teams(w)
+	for k in teams.size():
+		if w.tick % every == k * every / teams.size():   # each team on its own tick of the cycle
+			_update_team(w, teams[k])
+
+
+static func _watch(w, c: int) -> void:
+	if w.fog_watch[c] == 0:
+		w.fog_watch[c] = 1
+		w.fog_watch_cells.append(c)
+
+
+## The players of each team, teams in order of their first player.
+static func _teams(w) -> Array:
+	var out := []
+	var at := {}
+	for p in w.races.size():
+		if not at.has(w.teams[p]):
+			at[w.teams[p]] = out.size()
+			out.append([])
+		out[at[w.teams[p]]].append(p)
+	return out
 
 
 ## Is (x, y) in milli-tiles visible to this player right now?
@@ -72,43 +96,50 @@ static func sees_area(w, player: int, cx: int, cy: int, sx: int, sy: int) -> boo
 
 
 static func _update(w) -> void:
-	var by_team := {}   # team -> the first player of it done: allies share sight, so their grids are the same
+	for team in _teams(w):
+		_update_team(w, team)
+
+
+## Restamp one team's sight. Allies share sight, so they also remember the same: the first
+## player's grid and memory are worked out, the others' copied from it.
+static func _update_team(w, team: Array) -> void:
 	var cfg: Dictionary = w.fog_cfg
-	for p in w.races.size():
-		if by_team.has(w.teams[p]):
-			w.fog[p] = w.fog[by_team[w.teams[p]]].duplicate()   # an ally sees what its team sees
-			w.fog_lit[p] = w.fog_lit[by_team[w.teams[p]]].duplicate()
-			_remember(w, p)
-			continue
-		by_team[w.teams[p]] = p
-		var g: PackedByteArray = w.fog[p]
-		for c in w.fog_lit[p]:   # what was in sight is explored now (only those cells, not the whole map)
-			g[c] = EXPLORED
-		var lit := PackedInt32Array()
-		var stamped := {}   # cell * 64 + radius: units standing together see the same circle once
-		for i in w.units.count():
-			if w.teams[w.units.owner[i]] == w.teams[p]:
-				var t: Dictionary = w.types[w.units.kind[i]]
-				var r: int = (cfg.worker if t.worker else cfg.unit) + int(t.sight_add)   # research adds sight (Tech.retype)
-				if w.map.has_heights:
-					r += w.map.level_at(w.units.x[i], w.units.y[i]) * int(w.high.sight_unit)   # high ground sees further
-				var key: int = (w.units.y[i] / 1000 * w.map.width + w.units.x[i] / 1000) * 64 + r
-				if stamped.has(key):
-					continue
-				stamped[key] = true
-				_stamp(w, g, lit, w.units.x[i] / 1000, w.units.y[i] / 1000, r)
-		var bs = w.buildings
-		for b in bs.count():
-			if w.teams[bs.owner[b]] == w.teams[p] and bs.done[b] == 1:   # a foundation sees nothing: laid in the dark, it stays dark (Dominic)
-				var t: Dictionary = w.btypes[bs.kind[b]]
-				var r: int = t.sight if t.sight > 0 else (cfg.tower if t.attack.size() > 0 and t.arrows > 0 else cfg.building)   # data's own sight, else by kind
-				r += int(w.bmods[bs.owner[b]][bs.kind[b]].add.get("sight", 0))   # research (Tech.refresh)
-				if w.map.has_heights:
-					r += w.map.level[bs.cy[b] * w.map.width + bs.cx[b]] * int(w.high.sight_building)   # a tower on a hill sees further
-				_stamp(w, g, lit, bs.cx[b] + bs.sx[b] / 2, bs.cy[b] + bs.sy[b] / 2, r + maxi(bs.sx[b], bs.sy[b]) / 2)
-		w.fog[p] = g
-		w.fog_lit[p] = lit
-		_remember(w, p)
+	var p: int = team[0]
+	var g: PackedByteArray = w.fog[p]
+	for c in w.fog_lit[p]:   # what was in sight is explored now (only those cells, not the whole map)
+		g[c] = EXPLORED
+	var lit := PackedInt32Array()
+	var stamped := {}   # cell * 64 + radius: units standing together see the same circle once
+	for i in w.units.count():
+		if w.teams[w.units.owner[i]] == w.teams[p]:
+			var t: Dictionary = w.types[w.units.kind[i]]
+			var r: int = (cfg.worker if t.worker else cfg.unit) + int(t.sight_add)   # research adds sight (Tech.retype)
+			if w.map.has_heights:
+				r += w.map.level_at(w.units.x[i], w.units.y[i]) * int(w.high.sight_unit)   # high ground sees further
+			var key: int = (w.units.y[i] / 1000 * w.map.width + w.units.x[i] / 1000) * 64 + r
+			if stamped.has(key):
+				continue
+			stamped[key] = true
+			_stamp(w, g, lit, w.units.x[i] / 1000, w.units.y[i] / 1000, r)
+	var bs = w.buildings
+	for b in bs.count():
+		if w.teams[bs.owner[b]] == w.teams[p] and bs.done[b] == 1:   # a foundation sees nothing: laid in the dark, it stays dark (Dominic)
+			var t: Dictionary = w.btypes[bs.kind[b]]
+			var r: int = t.sight if t.sight > 0 else (cfg.tower if t.attack.size() > 0 and t.arrows > 0 else cfg.building)   # data's own sight, else by kind
+			r += int(w.bmods[bs.owner[b]][bs.kind[b]].add.get("sight", 0))   # research (Tech.refresh)
+			if w.map.has_heights:
+				r += w.map.level[bs.cy[b] * w.map.width + bs.cx[b]] * int(w.high.sight_building)   # a tower on a hill sees further
+			_stamp(w, g, lit, bs.cx[b] + bs.sx[b] / 2, bs.cy[b] + bs.sy[b] / 2, r + maxi(bs.sx[b], bs.sy[b]) / 2)
+	w.fog[p] = g
+	w.fog_lit[p] = lit
+	_remember(w, p)
+	for k in range(1, team.size()):
+		var a: int = team[k]
+		w.fog[a] = g.duplicate()
+		w.fog_lit[a] = lit
+		w.fog_ground[a] = w.fog_ground[p].duplicate()
+		w.fog_left[a] = w.fog_left[p].duplicate()
+		w.fog_seen[a] = w.fog_seen[p].duplicate(true)
 
 
 ## What player p sees now overwrites what they remember: the ground, and enemy buildings
@@ -118,10 +149,20 @@ static func _remember(w, p: int) -> void:
 	var m = w.map
 	var ground: PackedByteArray = w.fog_ground[p]
 	var left: PackedInt32Array = w.fog_left[p]
-	for c in w.fog_watch:   # only cells that hold a resource or ever changed can differ from the map as made
-		if g[c] == VISIBLE:
-			ground[c] = m.terrain[c]
-			left[c] = m.amount[m.pool[c]] if m.pool[c] >= 0 else m.amount[c]
+	# Only cells that hold a resource or ever changed (watched) can differ from the map as made;
+	# of those, the ones in sight: walk whichever list is shorter.
+	var lit: PackedInt32Array = w.fog_lit[p]
+	var watch: PackedByteArray = w.fog_watch
+	if lit.size() < w.fog_watch_cells.size():
+		for c in lit:
+			if watch[c] == 1:
+				ground[c] = m.terrain[c]
+				left[c] = m.amount[m.pool[c]] if m.pool[c] >= 0 else m.amount[c]
+	else:
+		for c in w.fog_watch_cells:
+			if g[c] == VISIBLE:
+				ground[c] = m.terrain[c]
+				left[c] = m.amount[m.pool[c]] if m.pool[c] >= 0 else m.amount[c]
 	w.fog_ground[p] = ground
 	w.fog_left[p] = left
 	var seen: Dictionary = w.fog_seen[p]

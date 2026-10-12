@@ -84,6 +84,7 @@ func _init() -> void:
 	_test_land()
 	_test_hills(races)
 	_test_flow_patch()
+	_test_flow_patch_mixed()
 	_test_tech(races)
 	_test_research_queue(races)
 	_test_effects(races)
@@ -681,6 +682,62 @@ func _test_flow_patch() -> void:
 			if full.dist[full.next[c]] >= full.dist[c]:
 				check(false, "flow patch: next of cell %d goes uphill" % c)
 				break
+
+
+## Fields patched for cells closing and opening together (buildings put up and pulled down,
+## trees felled, over a big map) keep a fresh solve's costs, and every step still leads downhill.
+func _test_flow_patch_mixed() -> void:
+	var m: SimMap = SimMap.load_id("reed_meadow_2v2")
+	var targets := [40 * m.width + 44, 10 * m.width + 12, 70 * m.width + 20]
+	var fs := []
+	for t in targets:
+		fs.append([Flow.solve(m, PackedInt32Array([t])), Flow.INF])
+		fs.append([Flow.solve(m, PackedInt32Array([t]), World.NEAR_CUTOFF), World.NEAR_CUTOFF])
+	var rng := Rng.new(77)
+	var up := []   # footprints standing
+	var bad := 0
+	var work := 0
+	for step in 60:
+		var before: PackedByteArray = m.walks[0].duplicate()
+		for change in 3:
+			var roll := rng.range_int(0, 3 - 1)
+			if roll == 0 or up.is_empty():
+				var cx := 2 + rng.range_int(0, m.width - 6 - 1)
+				var cy := 2 + rng.range_int(0, m.height - 6 - 1)
+				var cells := PackedInt32Array()
+				for y in range(cy, cy + 3):
+					for x in range(cx, cx + 3):
+						var c := y * m.width + x
+						if not c in targets and m.occupied[c] == 0:
+							cells.append(c)
+				m.occupy(cells, 900 + step)
+				up.append(cells)
+			elif roll == 1:
+				m.occupy(up.pop_front(), 0)
+			else:
+				var c: int = m.resource_cells[rng.range_int(0, m.resource_cells.size() - 1)]
+				while m.amount[c] > 0:
+					m.take(c)
+		var opened := PackedInt32Array()
+		var closed := PackedInt32Array()
+		for c in m.width * m.height:
+			if before[c] != m.walks[0][c]:
+				(opened if m.walks[0][c] == 1 else closed).append(c)
+		for e in fs:
+			work += e[0].patch_closed(m, closed) if not closed.is_empty() else 0
+			work += e[0].patch_opened(m, opened) if not opened.is_empty() else 0
+	for k in fs.size():
+		var f = fs[k][0]
+		var cut: int = fs[k][1]
+		var fresh = Flow.solve(m, PackedInt32Array([targets[k / 2]]), cut)
+		for c in m.width * m.height:
+			var a: int = f.dist[c]
+			var b: int = fresh.dist[c]
+			if (a <= cut or b <= cut) and a != b:
+				bad += 1
+			elif a > 0 and a <= cut and f.next[c] >= 0 and f.dist[f.next[c]] >= a:
+				bad += 1
+	check(bad == 0, "flow patch: fields patched through 180 closings and openings on the 2v2 map match fresh solves (%d cells off; %d cells of work)" % [bad, work])
 
 
 # --- farms and placement -------------------------------------------------------

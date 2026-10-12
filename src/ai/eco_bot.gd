@@ -14,6 +14,7 @@ const Pens := preload("res://src/sim/pens.gd")
 const Garrison := preload("res://src/sim/garrison.gd")
 
 const THINK_EVERY := 20        # ticks (1 s)
+const STAGGER := 2             # ticks between one player's think and the next's (no tick thinks for everyone)
 var MIX := {1: {"food": 60, "wood": 40}}   # age -> share of workers per resource (data/ai.json when a full bot runs this)
 var MAX_WORKERS := 30
 const TRAIN_COOLDOWN := 20     # ticks between train orders (commands land two turns later)
@@ -22,7 +23,7 @@ const HOUSE_HEADROOM := 2      # build a house when free pop drops to this
 const FARM_RADIUS := 10        # tiles from the Town Center that count as home for wild food
 const WILD_PER_WORKER := 150   # wild food near home that keeps one food worker off the farms
 const FARM_BELOW := 400        # new farms only while the food stock is below this
-const PLENTY := 1000           # a stock this big takes no new gatherers while another resource is wanted
+var PLENTY := 1000             # a stock this big (beyond the goal) takes no new gatherers while another resource is wanted
 const HUNT_RADIUS := 16        # tiles from the Town Center the bot claims sheep and hunts in
 const CLAIM_COOLDOWN := 200    # ticks between errands to claim a sheep
 const MEAT_LEFT := 40          # a carcass down to this much: time to bring down the next animal
@@ -53,8 +54,13 @@ func _init(p_player: int) -> void:
 	player = p_player
 
 
+## The tick of each second this player's economy thinks on: players one after another.
+func phase() -> int:
+	return player * STAGGER % THINK_EVERY
+
+
 func think(w) -> void:
-	if w.tick % THINK_EVERY != 0:
+	if w.tick % THINK_EVERY != phase():
 		return
 	var tc := _town_center(w)
 	if tc < 0:
@@ -341,11 +347,13 @@ func _farms(w, tc: int, workers: Array, n: PackedInt32Array) -> void:
 	var hx: int = bs.cx[tc] * 1000 + 1500
 	var hy: int = bs.cy[tc] * 1000 + 1500
 	var wild := 0
-	for c in w.map.resource_cells:
-		if w.map.pool[c] >= 0 or w.map.amount[c] <= 0 or Economy.kind_of(w, w.map.resource_at(c)) != food:
+	var m = w.map
+	var kinds := _terrain_kinds(w)
+	for c in m.resource_cells:
+		if m.pool[c] >= 0 or m.amount[c] <= 0 or kinds[m.terrain[c]] != food:
 			continue
-		if Fixed.dist2(hx, hy, (c % w.map.width) * 1000 + 500, (c / w.map.width) * 1000 + 500) <= FARM_RADIUS * FARM_RADIUS * 1000000:
-			wild += w.map.amount[c]
+		if Fixed.dist2(hx, hy, (c % m.width) * 1000 + 500, (c / m.width) * 1000 + 500) <= FARM_RADIUS * FARM_RADIUS * 1000000:
+			wild += m.amount[c]
 	for i in w.units.count():   # and the meat still walking about near home: our sheep, wild deer and boar
 		var t: Dictionary = w.types[w.units.kind[i]]
 		if t.has("animal") and (w.units.owner[i] == player or w.units.owner[i] == w.gaia) \
@@ -404,7 +412,7 @@ func shares(w) -> PackedInt32Array:
 			out[r] = base[r] + push * (goal[r] - s) / lack
 		elif lack > 0 and push >= 100 and (r >= goal.size() or s >= goal[r] + GOAL_SPARE):
 			out[r] = base[r] / 2
-		if s >= PLENTY:
+		if s >= PLENTY and (r >= goal.size() or s >= goal[r]):
 			out[r] = 0
 		any = any or out[r] > 0
 	return out if any else base
@@ -424,7 +432,7 @@ func _short_of(w, n: PackedInt32Array, x: int, y: int, area := -1) -> int:
 			if mix[r] <= 0:
 				continue
 			var gap: int = mix[r] * total - n[r] * sum
-			if gap > best_gap and _nearest_resource(w, x, y, r + 1, false, area) >= 0:
+			if gap > best_gap and _nearest_resource(w, x, y, r + 1, false, area, true) >= 0:
 				best_gap = gap
 				best = r + 1
 		if best > 0:
@@ -543,21 +551,40 @@ func _pick_builder(w, workers: Array) -> int:
 
 ## Nearest cell with that resource left, anywhere on the map our workers in `area` can get to
 ## (-1: the home area; ties: lower cell). `free` passes over farms already worked by as many as they take.
-func _nearest_resource(w, x: int, y: int, kind: int, free := false, area := -1) -> int:
+## `any`: the first such cell found, not the nearest (is there one at all?). The cheap tests go
+## first (kind by terrain, then distance), the reach and farm checks only for a nearer cell.
+func _nearest_resource(w, x: int, y: int, kind: int, free := false, area := -1, any := false) -> int:
 	if area < 0:
 		area = home
+	var m = w.map
+	var kinds := _terrain_kinds(w)
+	var amount: PackedInt32Array = m.amount
+	var terrain: PackedByteArray = m.terrain
+	var wd: int = m.width
 	var best := -1
 	var best_d2 := 1 << 62
-	for c in w.map.resource_cells:
-		if w.map.amount[c] <= 0 or Economy.kind_of(w, w.map.resource_at(c)) != kind or (free and Economy.taken(w, c)):
+	for c in m.resource_cells:
+		if amount[c] <= 0 or kinds[terrain[c]] != kind:
 			continue
-		if not reach.reaches_cell(w, wln, area, c):
+		var dx: int = (c % wd) * 1000 + 500 - x
+		var dy: int = (c / wd) * 1000 + 500 - y
+		var d2 := dx * dx + dy * dy
+		if d2 >= best_d2 or (free and Economy.taken(w, c)) or not reach.reaches_cell(w, wln, area, c):
 			continue
-		var d2 := Fixed.dist2(x, y, (c % w.map.width) * 1000 + 500, (c / w.map.width) * 1000 + 500)
-		if d2 < best_d2:
-			best_d2 = d2
-			best = c
+		best_d2 = d2
+		best = c
+		if any:
+			break
 	return best
+
+
+## The carry kind (1-based resource) each terrain index gives, 0 for none: Economy.kind_of of
+## SimMap.resource_at without the strings, for loops over every resource cell.
+func _terrain_kinds(w) -> PackedInt32Array:
+	var kinds := PackedInt32Array()
+	for t in w.map.terrain_ids.size():
+		kinds.append(w.resources.find(w.map.terrain_resource[t]) + 1)
+	return kinds
 
 
 ## A free size x size spot with a tile of space around it, spiralling out from (cx, cy).
