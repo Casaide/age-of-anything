@@ -99,7 +99,7 @@ static func _update(w) -> void:
 		for b in bs.count():
 			if w.teams[bs.owner[b]] == w.teams[p] and bs.done[b] == 1:   # a foundation sees nothing: laid in the dark, it stays dark (Dominic)
 				var t: Dictionary = w.btypes[bs.kind[b]]
-				var r: int = cfg.tower if t.get("attack", {}).size() > 0 else cfg.building
+				var r: int = t.sight if t.sight > 0 else (cfg.tower if t.attack.size() > 0 and t.arrows > 0 else cfg.building)   # data's own sight, else by kind
 				r += int(w.bmods[bs.owner[b]][bs.kind[b]].add.get("sight", 0))   # research (Tech.refresh)
 				_stamp(w, g, lit, bs.cx[b] + bs.sx[b] / 2, bs.cy[b] + bs.sy[b] / 2, r + maxi(bs.sx[b], bs.sy[b]) / 2)
 		w.fog[p] = g

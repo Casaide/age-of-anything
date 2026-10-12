@@ -21,6 +21,7 @@ const Pens := preload("res://src/sim/pens.gd")
 const Tech := preload("res://src/sim/tech.gd")
 const Fog := preload("res://src/sim/fog.gd")
 const Market := preload("res://src/sim/market.gd")
+const Garrison := preload("res://src/sim/garrison.gd")
 const TechTreeModel := preload("res://src/view/tech_tree_model.gd")
 const BuildingArt := preload("res://src/view/art/building_art.gd")
 
@@ -94,6 +95,8 @@ func _init() -> void:
 	_test_animals(races)
 	_test_sheep_spot(races)
 	_test_pen(races)
+	_test_garrison(races)
+	_test_towers(races)
 	_test_bot_hunts(races)
 	_test_combat(gen)
 
@@ -1143,6 +1146,206 @@ func _test_pen(races: Array) -> void:
 
 ## Somewhere a pen may go near Town Center building tc: the first open 3 x 3 (with a tile of
 ## room round it) west of it, then further out.
+## Garrisons (milestone 12 phase 3): workers go into their Town Center, out of the units arrays
+## (pop still counts them), heal, and each adds an arrow (the Town Center shoots only with people
+## inside); ungarrison brings them back with their ids and health; the call to arms and back to
+## work; a building that falls spills its people out; the same commands give the same hashes.
+func _test_garrison(races: Array) -> void:
+	var a := _garrison_run(races, true)
+	var b := _garrison_run(races, false)
+	check(a.state_hash() == b.state_hash(), "garrison: the same commands give the same state hash")
+
+
+## The garrison checks, run on a fresh world; `checks_on`: make the checks (else just play the same).
+func _garrison_run(races: Array, checks_on: bool) -> World:
+	var w := World.new(SEED, SimMap.load_id("flat_test"), races, rules_)
+	var tc_id: int = w.buildings.id[0]
+	var tc := w.buildings.index_of(tc_id)
+	var s: Array = w.map.starts[0]
+	var workers := []
+	for i in w.units.count():
+		if w.units.owner[i] == 0 and w.types[w.units.kind[i]].worker:
+			workers.append(w.units.id[i])
+	var c := func(ok: bool, what: String) -> void:
+		if checks_on:
+			check(ok, what)
+	# An enemy spearman beside the Town Center, told never to fight.
+	var foe := _spawn_at(w, 1, "spear", s[0] + 2600, s[1])
+	w.issue(1, Commands.STANCE, {"ids": [foe], "stance": "passive"})
+	var shots := func(ticks: int) -> Array:   # hits by the Town Center per volley, over some ticks
+		var out := []
+		for t in ticks:
+			w.step()
+			var n := 0
+			for e in w.events:
+				if e.type == "hit" and e.by == tc_id:
+					n += 1
+			if n > 0:
+				out.append(n)
+		return out
+	c.call(shots.call(120).is_empty(), "garrison: an empty Town Center doesn't shoot")
+	var pop: int = w.pop[0]
+	w.issue(0, Commands.GARRISON, {"ids": workers.slice(0, 3), "building": tc_id})
+	for t in 300:
+		w.step()
+		if w.buildings.inside[tc].size() == 3:
+			break
+	c.call(w.buildings.inside[tc].size() == 3, "garrison: three workers go into the Town Center (%d)" % w.buildings.inside[tc].size())
+	c.call(workers.slice(0, 3).all(func(id): return w.units.index_of(id) < 0), "garrison: those inside are out of the units (no sight, no target)")
+	w.step()
+	c.call(w.pop[0] == pop, "garrison: pop still counts them (%d, was %d)" % [w.pop[0], pop])
+	var volleys: Array = shots.call(200)
+	c.call(not volleys.is_empty() and volleys.all(func(n): return n == 3), "garrison: three inside, three arrows a volley (%s)" % [volleys])
+	# Healing inside: 1 hp every heal_every ticks.
+	var rec: PackedInt32Array = w.buildings.inside[tc][0]
+	rec[Garrison.REC_HP] = 5
+	w.buildings.inside[tc][0] = rec
+	for t in 200:
+		w.step()
+	var healed: int = w.buildings.inside[tc][0][Garrison.REC_HP]
+	c.call(healed >= 5 + 200 / int(w.garrison_cfg.heal_every) - 1, "garrison: those inside heal slowly (5 -> %d)" % healed)
+	# Ungarrison: out again, the same ids and health, beside the Town Center.
+	var hurt_id: int = w.buildings.inside[tc][0][Garrison.REC_ID]
+	w.issue(0, Commands.UNGARRISON, {"building": tc_id})
+	for t in 12:
+		w.step()
+	c.call(w.buildings.inside[tc].is_empty() and workers.slice(0, 3).all(func(id): return w.units.index_of(id) >= 0),
+		"garrison: ungarrison brings everyone out under their own ids")
+	var hi := w.units.index_of(hurt_id)
+	c.call(hi >= 0 and absi(w.units.hp[hi] - healed) <= 1, "garrison: ... with the health they had inside (%d)" % (w.units.hp[hi] if hi >= 0 else -1))
+	var r := Economy._building_rect(w, tc)
+	var gap := maxi(maxi(r.position.x - w.units.x[hi], w.units.x[hi] - r.end.x), maxi(r.position.y - w.units.y[hi], w.units.y[hi] - r.end.y)) if hi >= 0 else 9999
+	c.call(gap < 1500, "garrison: ... standing beside it (%d from its wall)" % gap)
+	# Call to arms: every worker near the Town Center goes in (gathering first, so back to work has a job).
+	var bush := _nearest_resource(w.map, s, "food")
+	var kind := Economy.kind_of(w, "food")
+	w.issue(0, Commands.GATHER, {"ids": workers, "cell": bush})
+	for t in 300:
+		w.step()
+	w.issue(0, Commands.CALL_TO_ARMS, {"building": tc_id})
+	for t in 600:
+		w.step()
+		if w.buildings.inside[tc].size() == workers.size():
+			break
+	c.call(w.buildings.inside[tc].size() == workers.size(), "garrison: the call to arms sends every worker nearby inside (%d of %d)" % [w.buildings.inside[tc].size(), workers.size()])
+	w.issue(0, Commands.BACK_TO_WORK, {})
+	for t in 12:
+		w.step()
+	var back := workers.filter(func(id):
+		var i := w.units.index_of(id)
+		return i >= 0 and (w.units.task[i] == Economy.GATHER or w.units.task[i] == Economy.RETURN) and w.units.carry_kind[i] == kind)
+	c.call(back.size() == workers.size(), "garrison: back to work: every worker out and gathering again (%d of %d)" % [back.size(), workers.size()])
+	# A tower that falls spills its people out (and holds no more than it takes).
+	var more := _spawn_at(w, 0, "worker", s[0] + 3000, s[1] - 3000)
+	for n in 3:
+		workers.append(_spawn_at(w, 0, "worker", s[0] + 3000, s[1] - 3000))
+	workers.append(more)
+	var ts := _free_spot(w, Economy.btype_of(w, "watchtower"), Vector2i(s[0] / 1000 + 5, s[1] / 1000 - 5))
+	var tower := _put(w, 0, "watchtower", ts.x, ts.y)
+	w.issue(0, Commands.GARRISON, {"ids": workers.slice(0, 2), "building": tower})
+	for t in 400:
+		w.step()
+		if w.buildings.inside[w.buildings.index_of(tower)].size() == 2:
+			break
+	var tb := w.buildings.index_of(tower)
+	c.call(w.buildings.inside[tb].size() == 2, "garrison: two workers go into a watchtower (%d)" % w.buildings.inside[tb].size())
+	w.issue(0, Commands.GARRISON, {"ids": workers.slice(2), "building": tower})
+	for t in 400:
+		w.step()
+	tb = w.buildings.index_of(tower)
+	var cap: int = w.btypes[w.buildings.kind[tb]].garrison
+	c.call(w.buildings.inside[tb].size() == cap, "garrison: a watchtower holds %d, no more (%d)" % [cap, w.buildings.inside[tb].size()])
+	var held: Array = w.buildings.inside[tb].map(func(r): return r[Garrison.REC_ID])
+	w.buildings.hp[tb] = 1
+	w.issue(1, Commands.SPAWN, {"slot": "spear", "count": 6, "x": (ts.x + 3) * 1000, "y": ts.y * 1000 + 500})
+	for t in 12:
+		w.step()
+	var killers := []
+	for i in w.units.count():
+		if w.units.owner[i] == 1 and w.types[w.units.kind[i]].slot == "spear":
+			killers.append(w.units.id[i])
+	w.issue(1, Commands.ATTACK, {"ids": killers, "target": tower})
+	for t in 400:
+		w.step()
+		if w.buildings.index_of(tower) < 0:
+			break
+	c.call(w.buildings.index_of(tower) < 0, "garrison: the enemy knocks the tower down")
+	c.call(held.all(func(id): return w.units.index_of(id) >= 0), "garrison: ... and its people spill out alive")
+	return w
+
+
+## Towers (milestone 12 phase 3): the Outpost sees further than a house and doesn't shoot; the
+## Bastion research turns every Watchtower into a Bastion in place, keeping its share of health
+## and its people; after it a Watchtower ordered is a Bastion; a second Town Center from age 3.
+func _test_towers(races: Array) -> void:
+	var w := _bare_world(races)
+	_put(w, 0, "house", 10, 10)
+	w.step()
+	var seen_house := _visible_cells(w, 0)
+	var w2 := _bare_world(races)
+	_put(w2, 0, "outpost", 10, 10)
+	w2.step()
+	check(_visible_cells(w2, 0) > seen_house * 3, "towers: an outpost sees far (%d cells, a house %d)" % [_visible_cells(w2, 0), seen_house])
+	check(w2.btypes[Economy.btype_of(w2, "outpost")].attack.is_empty() and w2.btypes[Economy.btype_of(w2, "outpost")].garrison == 0,
+		"towers: an outpost doesn't shoot, and nobody goes in")
+
+	w = World.new(SEED, SimMap.load_id("flat_test"), races, rules_)
+	for r in w.resources.size():
+		w.stock[r][0] = 5000
+	var s: Array = w.map.starts[0]
+	var wt := Economy.btype_of(w, "watchtower")
+	var bk := Economy.btype_of(w, "bastion")
+	var t1 := _put(w, 0, "watchtower", s[0] / 1000 + 5, s[1] / 1000 - 5)
+	var t2 := _put(w, 1, "watchtower", s[0] / 1000 + 7, s[1] / 1000 - 5)   # the rival's stays a watchtower
+	var b1 := w.buildings.index_of(t1)
+	w.buildings.hp[b1] = w.btypes[wt].hp / 2
+	w.buildings.inside[b1].append(PackedInt32Array([999999, w.type_of(0, "worker"), 10, 0, 0, 0, -1]))
+	_give(w, 0, "bastion")
+	b1 = w.buildings.index_of(t1)
+	check(w.buildings.kind[b1] == bk, "towers: the Bastion research makes the watchtower a bastion where it stands")
+	check(absi(w.buildings.hp[b1] - w.btypes[bk].hp / 2) <= 1, "towers: ... keeping its share of health (%d of %d)" % [w.buildings.hp[b1], w.btypes[bk].hp])
+	check(w.buildings.inside[b1].size() == 1, "towers: ... and the people inside")
+	check(w.buildings.kind[w.buildings.index_of(t2)] == wt, "towers: a rival's watchtower stays one")
+	check(w.btypes[bk].hp > w.btypes[wt].hp and int(w.btypes[bk].attack.attack) > int(w.btypes[wt].attack.attack)
+		and int(w.btypes[bk].attack.range) > int(w.btypes[wt].attack.range), "towers: a bastion has more health, attack and range")
+	w.buildings.inside[b1].clear()
+	w.ages[0] = 3
+	var worker := -1
+	for i in w.units.count():
+		if worker < 0 and w.units.owner[i] == 0 and w.types[w.units.kind[i]].worker:
+			worker = w.units.id[i]
+	var spot := _free_spot(w, bk, Vector2i(s[0] / 1000 - 5, s[1] / 1000 + 5))
+	w.issue(0, Commands.BUILD, {"ids": [worker], "building": "watchtower", "cx": spot.x, "cy": spot.y})
+	for t in 12:
+		w.step()
+	var nb := w.buildings.index_of(w.map.occupied[spot.y * w.map.width + spot.x])
+	check(nb >= 0 and w.buildings.kind[nb] == bk, "towers: after the research a watchtower ordered is a bastion")
+	# More Town Centers: not in age 1 while one stands; from age 3, for wood and stone.
+	var tck := Economy.btype_of(w, "town_center")
+	w.ages[0] = 1
+	check(Economy.why_not_build(w, 0, tck) != "", "towers: no second Town Center in age 1")
+	w.ages[0] = 3
+	check(Economy.why_not_build(w, 0, tck) == "", "towers: a second Town Center from age 3")
+	check(w.btypes[tck].cost[w.resources.find("stone")] > 0 and w.btypes[tck].cost[w.resources.find("wood")] > 0, "towers: it costs wood and stone")
+	var stone: int = w.stock[w.resources.find("stone")][0]
+	var tspot := _free_spot(w, tck, Vector2i(s[0] / 1000 + 6, s[1] / 1000 + 4))
+	w.issue(0, Commands.BUILD, {"ids": [worker], "building": "town_center", "cx": tspot.x, "cy": tspot.y})
+	for t in 12:
+		w.step()
+	check(w.stock[w.resources.find("stone")][0] < stone, "towers: ... and one is laid down, paid in stone")
+
+
+## The open spot for a building of type k nearest `at` (rings outwards), for test setups.
+func _free_spot(w: World, k: int, at: Vector2i) -> Vector2i:
+	for r in 12:
+		for dy in range(-r, r + 1):
+			for dx in range(-r, r + 1):
+				if maxi(absi(dx), absi(dy)) == r and Economy.can_place(w, 0, k, at.x + dx, at.y + dy):
+					return at + Vector2i(dx, dy)
+	assert(false, "No room near %s" % at)
+	return at
+
+
 func _pen_spot(w, tc: int) -> Vector2i:
 	var cx: int = w.buildings.cx[tc]
 	var cy: int = w.buildings.cy[tc]

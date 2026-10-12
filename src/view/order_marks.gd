@@ -114,6 +114,8 @@ static func route(w, i: int) -> Array:
 		out.append({"kind": "build", "id": u.target[i]})
 	elif u.task[i] == Economy.GATHER:
 		out.append({"kind": "gather", "cell": u.target[i]})
+	elif u.task[i] == Economy.GARRISON:   # going inside: marked like a drop-off at the building
+		out.append({"kind": "drop", "id": u.target[i]})
 	elif u.task[i] == Economy.RETURN:
 		out.append({"kind": "drop", "id": u.target[i]})
 		if u.home[i] >= 0:
@@ -135,7 +137,7 @@ static func route(w, i: int) -> Array:
 				out.append({"kind": "plan", "cx": a.cx, "cy": a.cy, "size": w.btypes[Economy.btype_of(w, a.building)].size})
 			Commands.ATTACK:
 				out.append({"kind": "attack", "id": a.target})
-			Commands.DROP_OFF:
+			Commands.DROP_OFF, Commands.GARRISON:
 				out.append({"kind": "drop", "id": a.building})
 	return out
 

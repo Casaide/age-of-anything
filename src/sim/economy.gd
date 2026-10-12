@@ -10,7 +10,7 @@ const Fixed := preload("res://src/sim/fixed.gd")
 const Bridges := preload("res://src/sim/bridges.gd")
 const Pens := preload("res://src/sim/pens.gd")
 
-enum { NONE, GATHER, RETURN, BUILD }
+enum { NONE, GATHER, RETURN, BUILD, GARRISON }   # GARRISON: walking into a building to shelter (garrison.gd)
 
 const REACH := 250                    # milli-tiles between a body's edge and what it works on
 const SEARCH_TILES := 8               # how far a worker looks for more of the same resource
@@ -61,6 +61,8 @@ static func load_btypes(resources: Array) -> Array:
 			"attack": b.get("attack", {}).duplicate(), "gate": bool(b.get("gate", false)),
 			"line": bool(b.get("line", false)), "replaces": b.get("replaces", []).duplicate(),
 			"pen": _pen_ticks(b.get("pen", {})),
+			"garrison": int(b.get("garrison", 0)), "sight": int(b.get("sight", 0)), "more_from_age": int(b.get("more_from_age", 0)),
+			"arrows": int(b.get("attack", {}).get("arrows", 1)),
 		})
 	return out
 
@@ -83,6 +85,20 @@ static func btype_of(w, id: String) -> int:
 		if w.btypes[k].id == id:
 			return k
 	return -1
+
+
+## The building type a player gets when ordering type k: k, or what its research turned it into
+## (tech.json {"building": "watchtower", "becomes": "bastion"}, Tech._upgrade_buildings), following a chain.
+static func upgraded(w, player: int, k: int) -> int:
+	for r in w.tech.research.size():
+		if w.researched[player][r] == 0:
+			continue
+		for fx in w.tech.research[r].effects:
+			if fx.has("becomes") and w.btypes[k].id == fx.building:
+				var to := btype_of(w, fx.becomes)
+				assert(to >= 0, "Research turns %s into unknown building %s" % [fx.building, fx.becomes])
+				return upgraded(w, player, to)
+	return k
 
 
 # ------------------------------------------------------------------ setup
@@ -167,8 +183,9 @@ static func lay_foundation(w, player: int, a: Dictionary) -> int:
 	var k := btype_of(w, a.building)
 	if k < 0:
 		return 0
+	k = upgraded(w, player, k)   # a Watchtower ordered after the Bastion research is a Bastion
 	var t: Dictionary = w.btypes[k]
-	if _own_workers(w, player, a.ids).is_empty() or not w.can_afford(player, t.cost) or w.ages[player] < t.age:
+	if _own_workers(w, player, a.ids).is_empty() or not w.can_afford(player, t.cost) or why_not_build(w, player, k) != "":
 		return 0
 	var along := int(a.get("along", 0))
 	if not can_place(w, player, k, a.cx, a.cy, along):
@@ -178,6 +195,20 @@ static func lay_foundation(w, player: int, a: Dictionary) -> int:
 		if _replaceable(w, player, t, c):
 			demolish(w, w.buildings.index_of(w.map.occupied[c]))   # a gate dropped into a wall takes its place
 	return w.buildings.id[place(w, player, k, a.cx, a.cy, along)]
+
+
+## Why this player can't start a building of type k anywhere just now (its age; another Town
+## Center before `more_from_age`), or "". Cost and place are checked apart.
+static func why_not_build(w, player: int, k: int) -> String:
+	var t: Dictionary = w.btypes[k]
+	if w.ages[player] < t.age:
+		return "needs age %d" % t.age
+	if t.more_from_age > 0 and w.ages[player] < t.more_from_age:
+		var bs = w.buildings
+		for b in bs.count():
+			if bs.owner[b] == player and bs.kind[b] == k:
+				return "another needs age %d" % t.more_from_age
+	return ""
 
 
 ## Can this player put a building of type k here? On open ground as usual, or (a gate) over
@@ -815,6 +846,9 @@ static func update_pop(w) -> void:
 	for i in w.units.count():
 		if w.units.owner[i] != w.gaia:
 			w.pop[w.units.owner[i]] += w.types[w.units.kind[i]].pop
+	for b in w.buildings.count():   # those sheltering inside (garrison.gd) still count
+		for rec in w.buildings.inside[b]:
+			w.pop[w.buildings.owner[b]] += w.types[rec[1]].pop   # Garrison.REC_KIND
 	for b in w.buildings.count():
 		if w.buildings.done[b] == 1:
 			var p: int = w.buildings.owner[b]
@@ -866,6 +900,21 @@ static func _go_to_rally(w, b: int, i: int) -> void:
 static func spawn_at(w, b: int, k: int) -> int:
 	var bs = w.buildings
 	var m = w.map
+	var best := spawn_cell(w, b, k)
+	var t: Dictionary = w.types[k]
+	var i: int = w.units.add(w.next_id, bs.owner[b], k, (best % m.width) * SimMap.TILE + 500,
+		(best / m.width) * SimMap.TILE + 500, t.speed, t.radius, t.hp)
+	w.units.mclass[i] = t.mclass
+	w.units.posture[i] = t.posture
+	w.next_id += 1
+	return i
+
+
+## The walkable cell beside building b nearest its rally point (or its front corner), for a
+## unit of type k coming out of it; -1 when it's walled in and not `strict`.
+static func spawn_cell(w, b: int, k: int, strict := true) -> int:
+	var bs = w.buildings
+	var m = w.map
 	var cx: int = bs.cx[b]
 	var cy: int = bs.cy[b]
 	var sx: int = bs.sx[b]
@@ -883,11 +932,5 @@ static func spawn_at(w, b: int, k: int) -> int:
 			if d2 < best_d2:
 				best_d2 = d2
 				best = y * m.width + x
-	assert(best >= 0, "Building %d is walled in; nowhere to spawn" % bs.id[b])
-	var t: Dictionary = w.types[k]
-	var i: int = w.units.add(w.next_id, bs.owner[b], k, (best % m.width) * SimMap.TILE + 500,
-		(best / m.width) * SimMap.TILE + 500, t.speed, t.radius, t.hp)
-	w.units.mclass[i] = t.mclass
-	w.units.posture[i] = t.posture
-	w.next_id += 1
-	return i
+	assert(best >= 0 or not strict, "Building %d is walled in; nowhere to spawn" % bs.id[b])
+	return best

@@ -17,6 +17,7 @@
    "archery_range",
    "stable",
    "watchtower",
+   "outpost",
    "palisade",
    "palisade_gate",
    "wall",
@@ -41,6 +42,7 @@
   "armoury",
   "market",
   "watchtower",
+  "bastion",
   "wall",
   "stone_gate",
   "siege_workshop",
@@ -66,6 +68,14 @@
  },
  "_workers_doc": "\"workers\": how many workers may work a building's ground at once (Dominic: one farmer per farm, as in the genre); others sent to it go to a farm nobody works, else other food nearby, else wait by it. Left out: no limit",
  "_scale_doc": "a culture's own size for a building type (Dominic: the rats' house and barracks, smaller, D-090)",
+ "garrison": {
+  "heal_every": 20,
+  "call_range": 16,
+  "not": [
+   "large"
+  ]
+ },
+ "_garrison_doc": "units shelter inside a building type with \"garrison\": N (src/sim/garrison.gd): up to N of its owner's units (none with a tag in garrison.not, e.g. riders and giants; workers always fit, centaurs' too), hidden, healed 1 hp every heal_every ticks, seeing nothing beyond the building. A building with an \"attack\" shoots attack.arrows arrows a volley (towers 1; 0: the Town Center only shoots with people inside) plus one per unit inside. Destroyed, it spills them out. The Town Center's call to arms sends its owner's workers within call_range tiles into the nearest building with room. \"sight\": the building's own sight radius in tiles (else the rules' fog.tower for buildings that shoot, fog.building for the rest). \"more_from_age\": a player who already has one may build another only from that age on (Town Centers, age 3). \"upgrade_of\": a building that research turns another into, in place ({\"building\": \"watchtower\", \"becomes\": \"bastion\"} in tech.json); once researched, ordering the old one builds the new",
  "variants": {
   "house": 4
  },
@@ -347,12 +357,13 @@
   },
   "town_center": {
    "name": "Town Center",
-   "desc": "The heart of your town: trains workers, takes in every resource, and is where you age up. Lose it and you lose.",
+   "desc": "The heart of your town: trains workers, takes in every resource, and is where you age up. People inside shoot from it. Lose every one and you lose.",
    "size": 3,
    "hp": 1600,
    "cost": {
     "food": 0,
-    "wood": 275
+    "wood": 275,
+    "stone": 100
    },
    "build_time": 150,
    "pop": 5,
@@ -369,10 +380,19 @@
    ],
    "age": 1,
    "hotkey": "C",
-   "note": "every player starts with one",
+   "note": "every player starts with one (free); more from age 3, for wood and stone; shoots one arrow per unit inside",
    "armour": {
     "melee": 1,
     "pierce": 8
+   },
+   "more_from_age": 3,
+   "garrison": 10,
+   "attack": {
+    "damage": "pierce",
+    "attack": 5,
+    "range": 6,
+    "reload": 40,
+    "arrows": 0
    }
   },
   "wall": {
@@ -401,7 +421,7 @@
   },
   "watchtower": {
    "name": "Watchtower",
-   "desc": "A lookout that shoots the nearest enemy in range and sees far into the fog.",
+   "desc": "A lookout that shoots the nearest enemy in range and sees far into the fog. Each unit inside adds an arrow.",
    "size": 1,
    "hp": 700,
    "cost": {
@@ -424,9 +444,11 @@
     "damage": "pierce",
     "attack": 10,
     "range": 7,
-    "reload": 40
+    "reload": 40,
+    "arrows": 1
    },
-   "note": "shoots the nearest enemy in range"
+   "note": "shoots the nearest enemy in range",
+   "garrison": 4
   },
   "palisade": {
    "name": "Palisade Wall",
@@ -507,10 +529,27 @@
    ]
   },
   "outpost": {
-   "status": "planned",
    "name": "Outpost",
-   "desc": "A cheap lookout post: it sees far but doesn't shoot.",
-   "age": 1
+   "desc": "A cheap lookout post: it sees far into the fog, but it doesn't shoot and nobody fits inside.",
+   "size": 1,
+   "hp": 300,
+   "cost": {
+    "food": 0,
+    "wood": 25
+   },
+   "build_time": 15,
+   "pop": 0,
+   "house": false,
+   "drop_off": [],
+   "trains": [],
+   "age": 1,
+   "hotkey": "",
+   "armour": {
+    "melee": 1,
+    "pierce": 4
+   },
+   "sight": 11,
+   "note": "sight only: no attack, no garrison"
   },
   "siege_workshop": {
    "status": "planned",
@@ -535,6 +574,39 @@
    "name": "Wonder",
    "desc": "A great work of your people. Build it and keep it standing long enough, and you win.",
    "age": 3
+  },
+  "bastion": {
+   "name": "Bastion",
+   "desc": "A stone tower, taller and tougher than a watchtower: it hits harder and further. Each unit inside adds an arrow.",
+   "size": 1,
+   "hp": 1300,
+   "cost": {
+    "food": 0,
+    "wood": 50,
+    "stone": 125
+   },
+   "build_time": 75,
+   "pop": 0,
+   "house": false,
+   "drop_off": [],
+   "trains": [],
+   "age": 3,
+   "hotkey": "T",
+   "armour": {
+    "melee": 3,
+    "pierce": 10
+   },
+   "attack": {
+    "damage": "pierce",
+    "attack": 14,
+    "range": 8,
+    "reload": 36,
+    "arrows": 1
+   },
+   "garrison": 6,
+   "sight": 10,
+   "upgrade_of": "watchtower",
+   "note": "what the Bastion research at the University makes of every Watchtower (in place, keeping its share of health); after it, ordering a Watchtower builds a Bastion"
   }
  }
 }

@@ -22,6 +22,9 @@ extends RefCounted
 ##   {"building": "all", "stat": "sight", "add": 3}   building types ("all" or one id): add:
 ##       BUILDING_ADD; pct: BUILDING_PCT. Kept per player in w.bmods (see refresh).
 ##   {"gather": "wood", "pct": 15}   gathers wood 15% faster (cuts the ticks per unit).
+##   {"building": "watchtower", "becomes": "bastion"}   tower_upgrade: every building of the first
+##       type turns into the second where it stands, keeping its share of health (and of the work
+##       on a foundation); ordering the first builds the second from then on (Economy.upgraded).
 
 const Economy := preload("res://src/sim/economy.gd")
 const Combat := preload("res://src/sim/combat.gd")
@@ -79,6 +82,9 @@ static func load_tech(resources: Array, btypes: Array) -> Dictionary:
 static func _check(fx: Dictionary, id: String) -> void:
 	if fx.has("gather"):
 		assert(fx.has("pct"), "%s: a gather effect needs pct" % id)
+		return
+	if fx.has("becomes"):
+		assert(fx.has("building") and fx.building != "all", "%s: an upgrade names the building it turns" % id)
 		return
 	assert(fx.has("stat") and (fx.has("add") != fx.has("pct")), "%s: an effect needs a stat and an add or a pct" % id)
 	if fx.has("tag"):
@@ -326,7 +332,7 @@ static func refresh(w, player: int) -> void:
 		var bt: Dictionary = w.btypes[k]
 		var m := {"add": {}, "pct": {}}
 		for fx in fxs:
-			if fx.has("building") and (fx.building == "all" or fx.building == bt.id):
+			if fx.has("building") and not fx.has("becomes") and (fx.building == "all" or fx.building == bt.id):
 				var how := "pct" if fx.has("pct") else "add"
 				m[how][fx.stat] = int(m[how].get(fx.stat, 0)) + int(fx[how])
 		m.hp = maxi(1, int(bt.hp) * (100 + int(m.pct.get("hp", 0))) / 100)
@@ -342,6 +348,26 @@ static func refresh(w, player: int) -> void:
 	for b in bs.count():
 		if bs.owner[b] == player and old[bs.kind[b]].hp != mods[bs.kind[b]].hp:
 			bs.hp[b] = maxi(1, bs.hp[b] * mods[bs.kind[b]].hp / old[bs.kind[b]].hp)
+	_upgrade_buildings(w, player)
+
+
+## tower_upgrade: the player's buildings of an upgraded type become the new type where they
+## stand (the same id, footprint, queue and people inside): health keeps its share of the
+## maximum, a foundation its share of the work, a shooter its cooldown.
+static func _upgrade_buildings(w, player: int) -> void:
+	var bs = w.buildings
+	for b in bs.count():
+		if bs.owner[b] != player:
+			continue
+		var k: int = bs.kind[b]
+		var to := Economy.upgraded(w, player, k)
+		if to == k:
+			continue
+		var old_max: int = w.bmods[player][k].hp
+		bs.hp[b] = maxi(1, bs.hp[b] * w.bmods[player][to].hp / old_max)
+		bs.progress[b] = bs.progress[b] * w.btypes[to].build_ticks / maxi(1, w.btypes[k].build_ticks)
+		bs.kind[b] = to
+		w.events.append({"type": "upgraded", "player": player, "building": bs.id[b], "from": k, "to": to})
 
 
 ## The sum of a building effect's adds (or pcts) for a player's building type k.
@@ -420,3 +446,11 @@ static func retype(w, player: int) -> void:
 			if u.kind[i] == k:
 				u.hp[i] = maxi(1, u.hp[i] * t.hp / maxi(1, old_hp))
 				u.speed[i] = t.speed
+		var bs = w.buildings
+		for b in bs.count():   # those sheltering inside keep their share too (garrison.gd records: [id, kind, hp, ...])
+			var recs: Array = bs.inside[b]
+			for n in recs.size():
+				var rec: PackedInt32Array = recs[n]
+				if rec[1] == k:
+					rec[2] = maxi(1, rec[2] * t.hp / maxi(1, old_hp))
+					recs[n] = rec
