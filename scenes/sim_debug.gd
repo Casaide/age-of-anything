@@ -159,6 +159,7 @@ var flat: Node2D             # ground-level art (farms, crops), drawn under the 
 var minimap: Minimap
 var hud_root: Control     # every HUD control lives in here, scaled to the screen's density
 var pages_root: Control   # full-screen pages (the tech tree) over the HUD, scaled the same way
+var pending_stance := {}  # a stance just clicked, shown at once until the sim applies it: {ids, k, until}
 var audio: Node           # the game's one audio node (src/view/audio.gd)
 var battle_until := 0.0   # seconds of match time until the music's battle layer fades out
 var age_ups: Array = []      # [player, age, seconds] this match (for the playtest log)
@@ -848,7 +849,21 @@ func set_stance(stance: String) -> void:
 	var ids: Array = _selected_by_owner()[active].filter(func(id): return not id in workers)
 	if not ids.is_empty():
 		world.issue(active, Commands.STANCE, {"ids": ids, "stance": stance})
+		pending_stance = {"ids": ids, "k": Combat.POSTURES.find(stance), "until": world.tick + 20}
 		_say("ack")
+
+
+## The stance the panel shows: the sim's, or the one just clicked for these soldiers while
+## its command is on the way (it lands a few ticks later; a second at most).
+func _shown_stance(mine: Array) -> int:
+	var now := _soldier_stance(mine)
+	if pending_stance.is_empty():
+		return now
+	if now == pending_stance.k or world.tick > pending_stance.until:
+		pending_stance = {}
+		return now
+	var soldiers := mine.filter(func(id): return not world.types[world.units.kind[world.units.index_of(id)]].worker)
+	return pending_stance.k if soldiers == pending_stance.ids else now
 
 
 func stop_selected() -> void:
@@ -1372,6 +1387,33 @@ func start_placing(building: String) -> void:
 		placing = building
 
 
+## Does the ghost read as placeable, judged only by what the side you command knows? Ground
+## never seen tells nothing (whatever stands there stays hidden: the ghost reads fine), and an
+## enemy building you haven't seen doesn't block it. The sim still refuses a foundation that
+## can't go there.
+func _ghost_ok(k: int, cx: int, cy: int, along: int) -> bool:
+	var truth := Economy.can_place(world, active, k, cx, cy, along)
+	if truth or reveal:
+		return truth
+	var t: Dictionary = world.btypes[k]
+	var d := Economy.dims(t, along)
+	var mc := Economy.builder_class(world, active)
+	var fog: PackedByteArray = world.fog[active]
+	for y in range(cy, cy + d.y):
+		for x in range(cx, cx + d.x):
+			if x < 0 or y < 0 or x >= map.width or y >= map.height:
+				return false
+			var c := y * map.width + x
+			if fog[c] == Fog.UNSEEN or map.can_build(x, y, 1, mc, t.water) or Economy._replaceable(world, active, t, c):
+				continue
+			var b := world.buildings.index_of(map.occupied[c])
+			if b >= 0 and world.is_enemy(active, world.buildings.owner[b]) and fog[c] != Fog.VISIBLE \
+					and not world.fog_seen[active].has(world.buildings.id[b]):
+				continue   # built since you last looked
+			return false
+	return true
+
+
 ## Top-left cell of the footprint the ghost shows at a canvas point (centred on the cursor).
 func _ghost_cell(pos: Vector2) -> Vector2i:
 	var m := Iso.to_milli(pos)
@@ -1853,13 +1895,31 @@ func _tech_buttons(c: Dictionary, b: int) -> void:
 			c.buttons.append({"text": "Age up: %s (%s)" % [age.name, _cost_text(age.cost)], "key": "U", "cost": _cost_text(age.cost),
 				"icon": Icons.texture("age_up"), "tip": _age_tip(age), "group": "Age up", "accent": true,
 				"enabled": why == "", "action": func(): world.issue(active, Commands.AGE_UP, {"building": bid})})
-	for r in world.tech.research:
+	# One slot per track (a line's upgrades, or research that comes `after` another): its next
+	# step only, so age 3's upgrade takes age 2's place once that's done (Dominic). A step being
+	# researched keeps its slot, greyed, until it's done.
+	var shown := {}   # track -> true
+	# Line upgrades first (they go with the Train buttons beside them), then the rest: research a
+	# later age brings joins at the end instead of pushing an upgrade along.
+	var order := range(world.tech.research.size())
+	order = order.filter(func(i): return world.tech.research[i].has("line")) + order.filter(func(i): return not world.tech.research[i].has("line"))
+	for ri in order:
+		var r: Dictionary = world.tech.research[ri]
+		var track := Tech.track_of(world, ri)
+		if shown.has(track) or r.building != world.btypes[bs.kind[b]].id or world.researched[active][ri] == 1:
+			continue
 		var why := Tech.why_not(world, active, b, r.id)
-		if why == "" or why == "can't afford it" or why == "queue full":
+		if why.begins_with("needs ") and why.ends_with(" first"):
+			continue   # a later step: its turn comes
+		if why == "nothing to upgrade":
+			continue   # this age brought the line no new kit: the next upgrade, if any, takes the slot
+		shown[track] = true
+		if why == "" or why == "can't afford it" or why == "queue full" or why == "already being researched":
 			var rid: String = r.id
 			var icon: Texture2D = kit.icons.get("%d:%s" % [active, r.line]) if r.has("line") else Icons.texture(r.id)   # a line upgrade shows its unit
-			c.buttons.append({"text": "%s (%s)" % [_research_name(r), _cost_text(r.cost)], "key": "", "cost": _cost_text(r.cost),
-				"icon": icon, "tip": _research_tip(r), "group": "Research",
+			var busy := why == "already being researched"
+			c.buttons.append({"text": "%s (%s)" % [_research_name(r), _cost_text(r.cost)], "key": "", "cost": "..." if busy else _cost_text(r.cost),
+				"icon": icon, "tip": _research_tip(r) + ("\n[i]Being researched.[/i]" if busy else ""), "group": "Research",
 				"enabled": why == "", "action": func(): world.issue(active, Commands.RESEARCH, {"building": bid, "id": rid})})
 
 
@@ -2287,7 +2347,7 @@ func _update_panel() -> void:
 				"tip": "[b]Attack-move[/b]\nThen click where: they walk there and fight whatever they meet on the way.", "action": func(): arming_attack = true})
 			c.buttons.append({"icon": Icons.texture("stop"), "text": "Stop", "key": "X", "cost": "", "enabled": true, "group": "Orders",
 				"tip": "[b]Stop[/b]\nDrop every order: they stand where they are.", "action": stop_selected})
-			var now := _soldier_stance(mine)
+			var now := _shown_stance(mine)
 			for k in STANCES.size():
 				var stance: String = Combat.POSTURES[k]
 				c.buttons.append({"icon": Icons.texture("stance_" + stance), "text": STANCES[k][0], "key": "", "cost": "ON" if now == k else "", "enabled": true, "group": "Stance", "accent": now == k,
@@ -2473,7 +2533,7 @@ func _draw_overlay() -> void:
 		var d := Economy.dims(world.btypes[Economy.btype_of(world, placing)], along)
 		var ghosts := wall_cells(wall_from, c) if _line(placing) and wall_from.x >= 0 else [c]
 		for g in ghosts:
-			var ok := Economy.can_place(world, active, Economy.btype_of(world, placing), g.x, g.y, along)
+			var ok := _ghost_ok(Economy.btype_of(world, placing), g.x, g.y, along)
 			var x0: int = g.x * 1000
 			var y0: int = g.y * 1000
 			var sx := d.x * 1000

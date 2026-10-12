@@ -1605,6 +1605,11 @@ func _test_tech(races: Array) -> void:
 	w.issue(0, Commands.AGE_UP, {"building": tc})
 	while w.tick < 7000 and w.ages[0] < 3:
 		w.step()
+	var up2 := Tech.research_index(w, "line.spear.2")   # a line's age-3 upgrade waits for its age-2 one (Dominic, 2026-10-13)
+	w.researched[0][up2] = 0
+	check(Tech.why_not(w, 0, barracks, "line.spear.3").begins_with("needs "), "tech: the spears' age-3 upgrade waits for the age-2 one (%s)" % Tech.why_not(w, 0, barracks, "line.spear.3"))
+	w.researched[0][up2] = 1
+	check(Tech.why_not(w, 0, barracks, "line.spear.3") == "", "tech: ...and is there once it's done (%s)" % Tech.why_not(w, 0, barracks, "line.spear.3"))
 	w.issue(0, Commands.RESEARCH, {"building": w.buildings.id[barracks], "id": "line.spear.3"})
 	while w.tick < 9000 and w.researched[0][Tech.research_index(w, "line.spear.3")] == 0:
 		w.step()

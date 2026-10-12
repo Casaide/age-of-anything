@@ -23,7 +23,7 @@ static func screen() -> float:
 ## The player's UI size: a percent of the screen's density, saved between runs (Dominic: the full
 ## density, 2x on a Retina MacBook, was "super big"). Cmd/Ctrl + minus / plus, or the pause menu.
 const SETTINGS := "user://settings.cfg"
-const SIZE_DEFAULT := 60   # Dominic: 100 'super big', 70 'a bit smaller still'
+const SIZE_DEFAULT := 40   # Dominic: 100 "super big", 70 "a bit smaller still", then 40 as the default (2026-10-13)
 const SIZE_MIN := 40
 const SIZE_MAX := 100
 static var _size := -1
