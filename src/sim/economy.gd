@@ -8,6 +8,7 @@ const SimMap := preload("res://src/sim/sim_map.gd")
 const Commands := preload("res://src/sim/commands.gd")
 const Fixed := preload("res://src/sim/fixed.gd")
 const Bridges := preload("res://src/sim/bridges.gd")
+const Pens := preload("res://src/sim/pens.gd")
 
 enum { NONE, GATHER, RETURN, BUILD }
 
@@ -59,8 +60,16 @@ static func load_btypes(resources: Array) -> Array:
 			"trains": b.trains.duplicate(), "age": int(b.age), "armour": b.get("armour", {}).duplicate(),
 			"attack": b.get("attack", {}).duplicate(), "gate": bool(b.get("gate", false)),
 			"line": bool(b.get("line", false)), "replaces": b.get("replaces", []).duplicate(),
+			"pen": _pen_ticks(b.get("pen", {})),
 		})
 	return out
+
+
+## A pen's numbers (pens.gd) as ints, its times in ticks; {} for any other building.
+static func _pen_ticks(p: Dictionary) -> Dictionary:
+	if p.is_empty():
+		return {}
+	return {"animals": int(p.animals), "food": int(p.food), "food_ticks": int(p.food_every) * 20, "breed_ticks": int(p.breed_every) * 20}
 
 
 ## A building type's footprint in cells (x, y): size x size, but a gate is `length` long along
@@ -204,6 +213,7 @@ static func _footprint(w, cx: int, cy: int, d: Vector2i) -> PackedInt32Array:
 
 ## Take a building away without a fight (a wall tile a gate replaces). Its builders stop.
 static func demolish(w, b: int) -> void:
+	Pens.gone(w, b)
 	w.map.occupy(w.buildings.footprint(b, w.map.width), 0)
 	w.buildings.remove_at(b)
 
@@ -530,6 +540,8 @@ static func _build(w, i: int) -> void:
 			bs.hp[b] = max_hp
 			if not t.becomes.is_empty():
 				_become_ground(w, b, i)
+			elif not t.pen.is_empty():
+				Pens.opened(w, b)   # a pen: walked into
 			else:
 				_gather_after_camp(w, b)
 	elif u.moving[i] == 0:

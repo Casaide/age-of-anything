@@ -1414,6 +1414,73 @@ func _armoury(arch: String, team: Color) -> Dictionary:
 		"team": team, "smoke": Vector3(0.55, 1.6, -0.55)}
 
 
+## Pen: a fold for herd animals round a 3 x 3 patch of open ground (the sheep stand inside, so
+## nothing stands in the middle and the fence stays low). Drawn under the units (sim_debug puts
+## it in the flat layer), so a sheep by the back fence stands in front of it. A gap for the gate
+## on the front (+z) face, a team rag on the gate post, a feed trough and a hay heap outside.
+## Three looks were tried (concept_pen_*, archive/images/2026-10-13); each culture takes the one
+## that suits its stuff: woven hurdles for the reed and thatch towns, tin sheets nailed up by the
+## junk-rats, a dry-stone wall for the builders, a packed-earth wall for the mound, and an open
+## corral of rails for the tent people (PEN_LOOK: style, fence material).
+const PEN_LOOK := {"thatch": ["hurdles", "weave"], "reed": ["hurdles", "weave"], "junk": ["hurdles", "tin"],
+	"stone": ["wall", "stone"], "mound": ["wall", "mud"], "tent": ["rails", "wood"]}
+
+
+func _pen(arch: String, team: Color) -> Dictionary:
+	return _pen_look(PEN_LOOK[arch][0], arch, team)
+
+
+func concept_pen_hurdles(team: Color) -> Dictionary:
+	return _pen_look("hurdles", "thatch", team)
+
+
+func concept_pen_rails(team: Color) -> Dictionary:
+	return _pen_look("rails", "thatch", team)
+
+
+func concept_pen_wall(team: Color) -> Dictionary:
+	return _pen_look("wall", "stone", team)
+
+
+func _pen_look(style: String, arch: String, team: Color) -> Dictionary:
+	var body := Node3D.new()
+	var wood := mats.get_mat("wood")
+	var panel: Material = mats.get_mat(PEN_LOOK[arch][1])
+	var half := 1.42
+	var h := 0.24
+	for side in 4:   # front (+z), right (+x), back (-z), left (-x)
+		var along := Vector3(1, 0, 0) if side % 2 == 0 else Vector3(0, 0, 1)
+		var out := Vector3(0, 0, half) if side == 0 else Vector3(half, 0, 0) if side == 1 else Vector3(0, 0, -half) if side == 2 else Vector3(-half, 0, 0)
+		var rot := Vector3(0, 0 if side % 2 == 0 else 90, 0)
+		for k in 3:   # a tile of fence at a time; the front's middle one is the gate
+			var mid := out + along * (k - 1) * (half * 2.0 / 3.0)
+			if side == 0 and k == 1:
+				continue
+			match style:
+				"hurdles":   # a woven panel between two stakes
+					body.add_child(box(Vector3(0.9, h, 0.05), panel, mid + Vector3(0, h * 0.5 + 0.02, 0), rot))
+					for e in [-0.47, 0.47]:
+						body.add_child(cyl(0.025, 0.03, h + 0.1, wood, mid + along * e + Vector3(0, (h + 0.1) * 0.5, 0), Vector3.ZERO, 6))
+				"rails":   # post and two rails
+					for e in [-0.47, 0.47]:
+						body.add_child(cyl(0.03, 0.035, h + 0.06, wood, mid + along * e + Vector3(0, (h + 0.06) * 0.5, 0), Vector3.ZERO, 6))
+					for y in [0.1, 0.21]:
+						body.add_child(box(Vector3(0.96, 0.035, 0.035), wood, mid + Vector3(0, y, 0), rot))
+				"wall":   # a low dry-stone wall, capped
+					body.add_child(box(Vector3(0.98, h * 0.8, 0.16), panel, mid + Vector3(0, h * 0.4, 0), rot))
+					body.add_child(box(Vector3(0.98, 0.04, 0.2), panel, mid + Vector3(0, h * 0.8 + 0.02, 0), rot))
+	var gate_post := Vector3(half / 3.0, 0, half)
+	body.add_child(cyl(0.035, 0.04, h + 0.2, wood, gate_post + Vector3(0, (h + 0.2) * 0.5, 0), Vector3.ZERO, 6))
+	body.add_child(box(Vector3(0.03, 0.16, 0.14), cloth(team), gate_post + Vector3(0.04, h + 0.08, 0.08)))   # a team rag on the gate post
+	if style == "hurdles":   # the gate hurdle, swung open against the fence
+		body.add_child(box(Vector3(0.85, h, 0.05), panel, Vector3(half / 3.0 + 0.1, h * 0.5 + 0.02, half + 0.42), Vector3(0, 80, 0)))
+	# A feed trough against the right fence, outside, and a heap of hay by the gate.
+	body.add_child(box(Vector3(0.16, 0.1, 0.62), wood, Vector3(half + 0.16, 0.06, -0.3)))
+	body.add_child(box(Vector3(0.11, 0.03, 0.56), Materials.flat(Color("#c8b060"), 1.0), Vector3(half + 0.16, 0.115, -0.3)))
+	body.add_child(ball(0.2, mats.get_mat("thatch"), Vector3(-half / 3.0 - 0.1, 0.06, half + 0.32), Vector3(1.3, 0.6, 1.0)))
+	return {"body": body, "anchor": Vector3.ZERO, "lights": [], "team": team}
+
+
 ## Lumber Camp: an open shed over a stack of logs, a chopping block with an axe in it.
 func _lumber_camp(arch: String, team: Color) -> Dictionary:
 	var body := Node3D.new()
