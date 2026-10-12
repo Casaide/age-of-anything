@@ -1047,7 +1047,8 @@ func _test_fog_memory(races: Array) -> void:
 # --- ages and research ----------------------------------------------------------
 
 ## Milestone 7's exit criterion: with the economy bot playing, the age-up lands at
-## minutes 4-6 (ticks 4800-7200) for both frogs and rats.
+## minutes 4-6 for both frogs and rats; 4-7 (ticks 4800-8400) since workers cost at
+## least 50 food (rules.cost.roles), which put the frogs' at ~6:15 (from ~5:30).
 func _test_age_timing(races: Array) -> void:
 	var w := World.new(SEED, SimMap.load_id("flat_test"), races, rules_)
 	var bots := [EcoBot.new(0), EcoBot.new(1)]
@@ -1061,7 +1062,7 @@ func _test_age_timing(races: Array) -> void:
 				at[p] = w.tick
 	for p in 2:
 		print("  age 2: %-18s at %d:%02d (tick %d)" % [w.races[p].name, at[p] / 1200, at[p] % 1200 / 20, at[p]])
-		check(at[p] >= 4800 and at[p] <= 7200, "age-up at minutes 4-6: %s at tick %d" % [w.races[p].name, at[p]])
+		check(at[p] >= 4800 and at[p] <= 8400, "age-up at minutes 4-7: %s at tick %d" % [w.races[p].name, at[p]])
 
 ## Animals: placed by each start and in the wild, nobody's at first; sheep go to the player
 ## who comes near; a deer runs when hurt; a killed animal leaves food the hunters gather.

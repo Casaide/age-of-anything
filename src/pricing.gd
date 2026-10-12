@@ -1,7 +1,9 @@
 extends RefCounted
 ## Recipe -> stats, tags and cost. Balance comes from here: every part carries
 ## points, and cost grows superlinearly with points, so a 10ft spider is
-## possible but expensive. Later this gets a "price by simulated fights" pass.
+## possible but expensive. A part's `price_points` (when it has them) set its price
+## apart from the budget `points` the generator spends. Later this gets a "price by
+## simulated fights" pass.
 ##
 ## Integer maths only. The superlinear cost curve is a fixed-point table
 ## (data/cost_curves.json, made by tests/gen_cost_curve.gd), so costs are
@@ -29,7 +31,7 @@ static func evaluate(recipe: Dictionary, lib, rules: Dictionary) -> Dictionary:
 	_add_classes(bonus, body.stats.get("bonus", {}))
 	var damage := "melee"
 	var tags := {}
-	var points := int(body.points)
+	var points := _price(body)
 	var mix := {}
 	_add_mix(mix, body, DEFAULT_MIX)
 	for t in body.tags:
@@ -48,7 +50,7 @@ static func evaluate(recipe: Dictionary, lib, rules: Dictionary) -> Dictionary:
 		_add_classes(bonus, s.get("bonus", {}))
 		for t in p.tags:
 			tags[t] = true
-		points += int(p.points)
+		points += _price(p)
 		_add_mix(mix, p, DEFAULT_MIX)
 
 	if recipe.has("mount"):
@@ -58,16 +60,18 @@ static func evaluate(recipe: Dictionary, lib, rules: Dictionary) -> Dictionary:
 		_add_classes(armour, ms.get("armour", {}))
 		_add_classes(bonus, ms.get("bonus", {}))
 		speed += int(ms.get("speed", 10)) - int(body.stats.get("speed", 10))
-		points += int(mount_body.points)
+		points += _price(mount_body)
 		_add_mix(mix, mount_body, MOUNT_MIX)
 		for t in mount_body.tags:
 			if t != "mount":
 				tags[t] = true
+		for t in mount_body.get("rider_loses", []):   # the rider's tags the mount takes away: cavalry isn't infantry
+			tags.erase(t)
 		for slot in recipe.mount.parts:
 			var mp: Dictionary = lib.part(recipe.mount.parts[slot])
 			hp += int(mp.stats.get("hp", 0))
 			speed += int(mp.stats.get("speed", 0))
-			points += int(mp.points)
+			points += _price(mp)
 			_add_mix(mix, mp, MOUNT_MIX)
 			for t in mp.tags:
 				tags[t] = true
@@ -92,6 +96,12 @@ static func evaluate(recipe: Dictionary, lib, rules: Dictionary) -> Dictionary:
 	var c: Dictionary = rules.cost
 	var econ: Dictionary = lib.creatures[recipe.creature].get("economy", {})
 	var total: int = (int(c.base) * lib.curve(c.curve, points) + 500) / 1000
+	# A role can have its own price terms (rules.cost.roles): a floor, and a mix that
+	# replaces the parts' own (workers cost food, and at least the floor).
+	var terms: Dictionary = c.get("roles", {}).get(recipe.get("role", ""), {})
+	total = maxi(total, int(terms.get("floor", 0)))
+	if terms.has("mix"):
+		mix = terms.mix.duplicate()
 	total = total * int(econ.get("cost_pct", 100)) / 100
 	# Split the total over the resources in the mix, in the fixed resource order; the last
 	# one used takes the remainder (so food/wood splits come out as they always did).
@@ -139,6 +149,13 @@ static func _add_mix(mix: Dictionary, p: Dictionary, fallback: Dictionary) -> vo
 	var pts := int(p.points)
 	for k in m:
 		mix[k] = int(mix.get(k, 0)) + int(m[k]) * pts
+
+
+## The points a part adds to the price: `price_points` when the part has them (what it is
+## worth in a fight, measured by tests/balance.gd and tests/mass_battle.gd), else its
+## `points` (what the generator's budget spends, so changing a price never changes a race).
+static func _price(p: Dictionary) -> int:
+	return int(p.get("price_points", p.points))
 
 
 static func _round5(n: int) -> int:
