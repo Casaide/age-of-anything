@@ -116,6 +116,9 @@ func build(r: Dictionary, lib, team: Color, speed := 10) -> void:
 		else:
 			seat.position = mount_rig.sockets.get("seat", Vector2(0, -20)) + Vector2(0, 6)
 			seat.scale = Vector2(0.8, 0.8)
+		# A mount may sit some riders smaller (data: creatures.json "rider_scale", percent by rider
+		# creature): a bulky frog dwarfed the hummingbird it rode (Dominic).
+		seat.scale *= float(mc.get("rider_scale", {}).get(r.creature, 100)) / 100.0
 		bob.add_child(seat)
 		seat_node = seat
 		# Every rider shows its near leg down the mount's flank, held still (people had none: Dominic).
