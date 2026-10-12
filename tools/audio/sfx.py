@@ -241,6 +241,14 @@ def built(rng):
     return _rev(add(out, delay_start(I.bell(I.note_hz("A4"), 1.1, rng, 0.8), 0.36)), 0.6, 0.18)
 
 
+def heal(rng):
+    """A healer tends a wound: a soft rustle of herbs and a quiet wooden chime, no fanfare."""
+    n = seconds(0.6)
+    rustle = gain(mul(bandpass(noise(n, rng), _j(rng, 2600, 3200), 0.6), env(n, 0.18, 0.2, 0.3, 0.2)), 0.35)
+    chime = delay_start(I.bell(I.note_hz(rng.choice(["A5", "D6"])), 0.8, rng, 0.35), 0.08)
+    return _rev(add(rustle, chime), 0.6, 0.25)
+
+
 def research(rng):
     """Something learned: a small bronze bell, twice."""
     b = I.bell(I.note_hz("D6"), 1.0, rng, 0.6, wood=False)
@@ -327,6 +335,7 @@ TABLE = {
     "farm_done": (farm_done, 2, -5.0),
     "ui_click": (ui_click, 3, -6.0), "ui_tip": (ui_tip, 1, -8.0), "ui_nope": (ui_nope, 1, -5.0),
     "trained": (trained, 1, -4.0), "built": (built, 1, -3.0), "research": (research, 1, -5.0),
+    "heal": (heal, 2, -12.0),
     "age": (age, 1, -1.0), "won": (won, 1, -1.0), "lost": (lost, 1, -1.0), "alarm": (alarm, 1, -1.0),
     "meadow": (meadow, 1, -8.0),
 }

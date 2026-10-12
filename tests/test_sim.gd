@@ -25,7 +25,7 @@ const BuildingArt := preload("res://src/view/art/building_art.gd")
 const PROMPTS := ["angry swamp frogs with reed spears", "sewer rats with cheese hammers"]
 const SEED := 20261010
 const TICKS := 12000               # 10 minutes at 20 Hz
-const PER_SLOT := 20               # x 5 roster slots x 2 players = 200 units
+const PER_SLOT := 17               # x 6 roster slots (healers too) x 2 players = 204 units
 const ORDERS_EVERY := 10           # turns between each player's orders (2 s)
 const TICK_BUDGET_USEC := 3000
 const CROSS_UNITS := 10            # per roster slot: 50 units, in 5 groups of 10
@@ -258,7 +258,7 @@ func _test_moved(w: World) -> void:
 	check(distinct.size() > w.hashes.size() * 9 / 10, "state keeps changing (%d distinct hashes)" % distinct.size())
 	var start: Dictionary = rules_.economy.start
 	var lost: int = w.lost[0] + w.lost[1]
-	check(w.units.count() + lost == 2 * (5 * PER_SLOT + int(start.workers) + 2), "armies, starting workers and 2 trained each, alive or lost (%d alive, %d lost)" % [w.units.count(), lost])
+	check(w.units.count() + lost == 2 * (w.races[0].units.size() * PER_SLOT + int(start.workers) + 2), "armies, starting workers and 2 trained each, alive or lost (%d alive, %d lost)" % [w.units.count(), lost])
 	check(lost > 0, "the armies fought (%d lost)" % lost)
 	var built := 0
 	for b in w.buildings.count():
@@ -1611,6 +1611,7 @@ func _test_queue_after_build(races: Array, kind: String) -> void:
 # --- combat ---------------------------------------------------------------------
 
 func _test_combat(gen) -> void:
+	_test_heal(gen)
 	_test_damage()
 	_test_idle_fight(gen)
 	_test_spread(gen)
@@ -1636,6 +1637,71 @@ func _test_combat(gen) -> void:
 					print("  counter lost: %s %s vs %s (side %d): %s" % [race.name, pair[0], pair[1], flip, r.note])
 	print("counters: %d of %d equal-cost fights won by the counter (%d%%), %.1f s" % [wins, fights, wins * 100 / fights, (Time.get_ticks_msec() - t0) / 1000.0])
 	check(wins * 100 >= fights * 75, "counters win at least 75%% of equal-cost fights (%d/%d)" % [wins, fights])
+
+
+## Healers (Dominic, 2026-10-12: a healer at the Town Center): one heals a wounded friend in
+## range to full, walks to one further off, never heals an enemy, and never fights, not even
+## when told to or when struck.
+func _test_heal(gen) -> void:
+	var race: Dictionary = gen.generate("romans", rules_)
+	var w := _bare_world([race, race])
+	var healer := _spawn_at(w, 0, "healer", 15000, 20500)
+	var near := _spawn_at(w, 0, "spear", 17000, 20500)
+	var far := _spawn_at(w, 0, "spear", 15000, 25500)   # 5 tiles off: within sight, out of range
+	var foe := _spawn_at(w, 1, "spear", 13500, 21500)
+	w.issue(0, Commands.STANCE, {"ids": [near, far], "stance": "passive"})
+	w.issue(1, Commands.STANCE, {"ids": [foe], "stance": "passive"})
+	var hi := w.units.index_of(healer)
+	check(w.units.posture[hi] == Combat.PASSIVE, "heal: a healer spawns with the no-attack stance")
+	check(int(w.types[w.units.kind[hi]].eval.attack) == 0, "heal: a healer has no attack")
+	w.issue(0, Commands.ATTACK, {"ids": [healer], "target": foe})
+	for t in 8:
+		w.step()
+	var full: int = w.types[w.units.kind[w.units.index_of(near)]].hp
+	for id in [near, far, foe]:
+		w.units.hp[w.units.index_of(id)] = 4
+	var heals := 0
+	var healed := {}
+	var healer_hits := 0
+	var fought := false
+	var near_full_at := -1
+	for t in 2400:
+		w.step()
+		for e in w.events:
+			if e.type == "heal":
+				heals += 1
+				healed[e.to] = true
+			elif e.type == "hit" and e.by == healer:
+				healer_hits += 1
+		fought = fought or w.units.foe[w.units.index_of(healer)] != 0
+		if near_full_at < 0 and w.units.hp[w.units.index_of(near)] == full:
+			near_full_at = t
+	check(near_full_at > 0, "heal: the wounded friend in range is healed to full (tick %d, %d heals)" % [near_full_at, heals])
+	check(w.units.hp[w.units.index_of(far)] == full, "heal: a wounded friend 5 tiles off is walked to and healed (%d/%d hp)" % [w.units.hp[w.units.index_of(far)], full])
+	check(w.units.hp[w.units.index_of(foe)] == 4 and not healed.has(foe), "heal: never an enemy (%d hp)" % w.units.hp[w.units.index_of(foe)])
+	check(not healed.has(healer), "heal: not itself")
+	check(healer_hits == 0 and not fought, "heal: told to attack, it doesn't (%d hits)" % healer_hits)
+	var c: Dictionary = w.combat
+	var per_heal: int = int(c.heal_amount)
+	check(heals <= (full - 4) * 2 / per_heal + 2, "heal: %d hp a heal, no more heals than the wounds need (%d)" % [per_heal, heals])
+	# Struck by an aggressive enemy, it doesn't strike back (and heals nobody who isn't hurt).
+	var w2 := _bare_world([race, race])
+	var h2 := _spawn_at(w2, 0, "healer", 15000, 20500)
+	w2.issue(0, Commands.STANCE, {"ids": [h2], "stance": "aggressive"})
+	var attacker := _spawn_at(w2, 1, "spear", 16500, 20500)
+	var hits_back := 0
+	var heals2 := 0
+	for t in 600:
+		w2.step()
+		for e in w2.events:
+			if e.type == "hit" and e.by == h2:
+				hits_back += 1
+			elif e.type == "heal":
+				heals2 += 1
+	check(w2.units.index_of(h2) < 0, "heal: an enemy spearman kills a lone healer")
+	check(hits_back == 0 and heals2 == 0, "heal: even on aggressive it never fights back (%d hits), and heals no one unhurt or itself (%d)" % [hits_back, heals2])
+	check(w2.units.index_of(attacker) >= 0 and w2.units.hp[w2.units.index_of(attacker)] == w2.types[w2.units.kind[w2.units.index_of(attacker)]].hp,
+		"heal: the attacker is untouched and unhealed")
 
 
 ## The formula: base type, bonuses only against targets with the tag, class armour, the minimum.

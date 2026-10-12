@@ -628,3 +628,87 @@ func _concept_spider_jumper(c: Dictionary) -> Dictionary:
 		hips.append([Vector3(-1.0 - k * 2.0, 9.0, -3.6), k * 1.0 + PI, -1, 1 if k >= 1 else 0])
 	return {"node": n, "sockets": {"head": Vector3(3.0, 17.5, 0), "hand_r": Vector3(6.5, 12.0, 5.0), "hand_l": Vector3(6.5, 12.0, -5.0),
 		"torso": Vector3(1.0, 13.0, 0), "back": Vector3(-5, 13, 0)}, "anchors": hips, "torso_scale": Vector2(0.5, 0.55)}
+
+
+# ------------------------------------------------------------------ HL1: the healer's look (2026-10-12)
+# The Town Center's healer: no weapon, a light kit. Hand-r items are built around the grip at
+# the near hand (held low, like a spear); hand-l items sit where a shield would. No red cross
+# (a protected emblem): healing reads from herbs, bowls, bandages and pale cloth.
+
+# (HERB and LINEN_PALE live in unit_models.gd with the healer kit.)
+
+
+## A: the herbalist. A tall crooked staff with a bundle of herbs tied under the crook.
+func _concept_heal_staff_herbs(c: Dictionary) -> Dictionary:
+	return _tool_staff_herbs(c)   # picked: now in the game (unit_models.gd)
+
+
+## A's satchel: a leather bag, a linen bandage roll under the flap.
+func _concept_heal_satchel(c: Dictionary) -> Dictionary:
+	return _tool_satchel(c)   # picked: now in the game (unit_models.gd)
+
+
+## B: the salve-bearer. A wooden bowl of green salve held out, a bone pestle across it.
+func _concept_heal_bowl(c: Dictionary) -> Dictionary:
+	var n := Node3D.new()
+	var wood := surf("wood_grain", Color(0.95, 0.8, 0.6), 3.0)
+	var bowl := dome(Vector3(3.6, 2.4, 3.6), wood, Vector3(2.0, 0.4, 0.6))
+	bowl.rotation_degrees = Vector3(180, 0, 0)   # upside down: a bowl
+	n.add_child(bowl)
+	n.add_child(cone(3.1, 3.1, 0.4, plain(Color("#7aa848")), Vector3(2.0, 0.2, 0.6)))   # the salve
+	n.add_child(rod(Vector3(0.0, 0.8, -1.0), Vector3(4.6, 2.6, 1.8), 0.45, 0.6, surf("bone", Color.WHITE, 2.0)))
+	return {"node": n}
+
+
+## B's bandages: three linen rolls tied in a bundle.
+func _concept_heal_bandages(c: Dictionary) -> Dictionary:
+	var n := Node3D.new()
+	var linen := plain(LINEN_PALE)
+	for k in 3:
+		n.add_child(cone(1.3, 1.3, 2.6, linen, Vector3(2.6, -1.0 + k * 0.4, 0.2 + k * 2.4), Vector3(0, 0, 90)))
+	n.add_child(_box(Vector3(0.6, 3.0, 7.0), plain(c.team), Vector3(2.6, -0.4, 2.6)))   # a team tie round the rolls
+	return {"node": n}
+
+
+## C: the hooded robe. A pale hood over the head, a team hem round the face.
+func _concept_heal_hood(c: Dictionary) -> Dictionary:
+	var n := Node3D.new()
+	var cloth := surf("cloth", LINEN_PALE, 3.0)
+	n.add_child(dome(Vector3(5.2, 4.4, 5.0), cloth, Vector3(-0.6, -5.0, 0)))
+	n.add_child(blob(Vector3(3.2, 4.6, 4.4), cloth, Vector3(-2.6, -7.6, 0)))   # falls behind to the shoulders
+	n.add_child(blob(Vector3(0.5, 3.0, 4.0), plain(c.team), Vector3(3.2, -6.6, 0)))   # a team hem round the face
+	return {"node": n}
+
+
+## C's staff: a short walking staff, a water gourd hanging from its top on a cord.
+func _concept_heal_gourd_staff(c: Dictionary) -> Dictionary:
+	var n := Node3D.new()
+	var wood := surf("wood_grain", Color(0.8, 0.68, 0.52), 6.0)
+	var a := Vector3(-3, -9, 0)
+	var b := Vector3(4, 21, 0)
+	n.add_child(rod(a, b, 0.8, 0.75, wood))
+	var gourd := plain(Color("#c8a050"))
+	n.add_child(rod(b + Vector3(0.2, -0.4, 0.8), b + Vector3(1.4, -3.6, 1.4), 0.2, 0.2, plain(Color("#6a4a2a")), false))
+	n.add_child(blob(Vector3(1.6, 1.8, 1.6), gourd, b + Vector3(1.6, -5.6, 1.4)))
+	n.add_child(blob(Vector3(1.0, 1.1, 1.0), gourd, b + Vector3(1.5, -3.6, 1.4)))
+	return {"node": n}
+
+
+## D (rats): a crooked stick with a wedge of cheese bound to its top (cheese cures everything).
+func _concept_heal_cheese_staff(c: Dictionary) -> Dictionary:
+	return _tool_staff_cheese(c)   # picked: now in the game (unit_models.gd)
+
+
+## D's poultice sack: a stained cloth sack, knotted, a cheese rind poking out.
+func _concept_heal_poultice_sack(c: Dictionary) -> Dictionary:
+	return _tool_satchel_cheese(c)   # picked: now in the game (unit_models.gd)
+
+
+## E (frogs): a reed staff crowned with a water-lily flower.
+func _concept_heal_lily_staff(c: Dictionary) -> Dictionary:
+	return _tool_staff_lily(c)   # picked: now in the game (unit_models.gd)
+
+
+## E's moss pouch: a lily pad folded over a wad of wet moss, tied with a team cord.
+func _concept_heal_moss_pouch(c: Dictionary) -> Dictionary:
+	return _tool_satchel_moss(c)   # picked: now in the game (unit_models.gd)

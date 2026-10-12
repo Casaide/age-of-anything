@@ -10,7 +10,7 @@ extends RefCounted
 const Rng := preload("res://src/rng.gd")
 const Pricing := preload("res://src/pricing.gd")
 
-const ROLE_NEEDS := {"worker": "worker", "spear": "spear", "skirmisher": "ranged", "archer": "bow", "large": "melee"}
+const ROLE_NEEDS := {"worker": "worker", "spear": "spear", "skirmisher": "ranged", "archer": "bow", "large": "melee", "healer": "heal"}
 ## Tags a role's primary must not have (skirmishers are the non-bow ranged units).
 const ROLE_EXCLUDES := {"skirmisher": ["bow"]}
 const ROLE_BIAS := {
@@ -19,6 +19,7 @@ const ROLE_BIAS := {
 	"skirmisher": {"skirmish": 2},
 	"archer": {},
 	"large": {"charge": 3, "heavy": 2, "lance": 3},
+	"healer": {},
 }
 ## Signature gear (a culture's kit, cheese hammers...) is only favoured when the prompt,
 ## family or creature asks for it. No cheese hammers for Romans unless someone says cheese.
@@ -26,6 +27,10 @@ const SIGNATURE_TAGS := ["roman", "greek", "viking", "cheese", "woodland", "knig
 ## Extra wants for "Heavy" large units (armoured elites instead of giants).
 const HEAVY_BOOST := {"heavy": 3, "armour": 3, "helmet": 2, "shield": 1}   # no "knight": knight kit is the royal culture's signature
 const OPTIONAL_SLOTS := ["hand_l", "head_gear", "torso", "back"]
+## Healers go light (Dominic, 2026-10-12: a healer at the Town Center): a bag in the off hand
+## (parts tagged "heal"), a light hat at most, wings only on a winged race. No armour, no shield.
+const HEALER_SLOTS := ["hand_l", "head_gear", "back"]
+const HEALER_WANTS := {"heal": 3}   # so the healer's bag is always packed
 ## What kind of thing a part is: an upgrade keeps the kind (a cape stays a cape, a
 ## spear stays a spear), so a unit line stays recognisably the same unit.
 const KIND_TAGS := ["spear", "lance", "blade", "blunt", "bow", "sling", "javelin", "poison", "gun", "worker",
@@ -136,17 +141,26 @@ func generate(prompt: String, rules: Dictionary, reroll := 0) -> Dictionary:
 	# depend on the later ones), the same unit upgraded for every later age.
 	var units := []
 	var slots: Array = rules.roster.filter(func(sd): return sd.get("status", "") != "planned")   # planned lines: tech tree page only
+	# A slot with "own_seed" draws from its own stream, so a line added later (the healer)
+	# leaves every other line's recipes as they were.
+	var rngs := []
 	for slot_def in slots:
+		rngs.append(Rng.new(Rng.hash_string("%s|%s|%d|%s" % [normalize(prompt), rules.id, reroll, slot_def.slot])) if slot_def.get("own_seed", false) else rng)
+	for k in slots.size():
+		var slot_def: Dictionary = slots[k]
 		ctx.age = int(slot_def.tier)
+		ctx.rng = rngs[k]
 		var recipe := _make_unit(slot_def, ctx)
 		var first := {"age": ctx.age, "recipe": recipe, "eval": Pricing.evaluate(recipe, lib, rules)}
 		units.append({"recipe": recipe, "eval": first.eval, "line": [first]})
 	for k in units.size():
 		var slot_def: Dictionary = slots[k]
+		ctx.rng = rngs[k]
 		for age in range(int(slot_def.tier) + 1, int(rules.get("ages", 1)) + 1):
 			ctx.age = age
 			var up := _upgrade(units[k].line[-1].recipe, slot_def, ctx)
 			units[k].line.append({"age": age, "recipe": up, "eval": Pricing.evaluate(up, lib, rules)})
+	ctx.rng = rng
 
 	var race := {
 		"schema": "aow.race/1",
@@ -245,6 +259,9 @@ func _make_unit(slot_def: Dictionary, ctx: Dictionary) -> Dictionary:
 		recipe.elite = "heavy"
 		for t in HEAVY_BOOST:
 			unit_tags[t] = int(unit_tags.get(t, 0)) + HEAVY_BOOST[t]
+	if role == "healer":
+		for t in HEALER_WANTS:
+			unit_tags[t] = int(unit_tags.get(t, 0)) + HEALER_WANTS[t]
 	var primary: Dictionary = _best(affordable, unit_tags, ROLE_BIAS[role], rng)
 	recipe.parts.hand_r = primary.id
 	spent += int(primary.points)
@@ -263,7 +280,7 @@ func _make_unit(slot_def: Dictionary, ctx: Dictionary) -> Dictionary:
 	recipe.name = _unit_name(recipe, primary, c)
 
 	# Optional gear: most-wanted slot first, while the budget lasts
-	var slots: Array = WORKER_SLOTS if role == "worker" else OPTIONAL_SLOTS
+	var slots: Array = _gear_slots(role)
 	var picks := []
 	for slot in rng.shuffled(slots):
 		if slot == "hand_l" and primary.get("two_handed", false):
@@ -273,6 +290,8 @@ func _make_unit(slot_def: Dictionary, ctx: Dictionary) -> Dictionary:
 			cands = cands.filter(func(p): return not ("wings" in p.tags))
 		if role == "worker":
 			cands = cands.filter(func(p): return int(p.points) <= 1)
+		if role == "healer":
+			cands = cands.filter(func(p): return _healer_gear(p, unit_tags))
 		# Optional gear can stay empty, so it never goes off theme (no acorn caps on Romans).
 		cands = cands.filter(func(p): return not _off_theme(p, unit_tags))
 		if cands.is_empty():
@@ -288,6 +307,24 @@ func _make_unit(slot_def: Dictionary, ctx: Dictionary) -> Dictionary:
 			recipe.parts[pick.slot] = p.id
 			spent += int(p.points)
 	return recipe
+
+
+## The optional slots a role fills.
+func _gear_slots(role: String) -> Array:
+	return {"worker": WORKER_SLOTS, "healer": HEALER_SLOTS}.get(role, OPTIONAL_SLOTS)
+
+
+## A healer's kit: its bag (heal parts) in the off hand, a light hat (1 point, no crest,
+## horns or heavy), wings only if the race flies. Nothing for fighting.
+func _healer_gear(p: Dictionary, tags: Dictionary) -> bool:
+	match p.slot:
+		"hand_l":
+			return "heal" in p.tags
+		"head_gear":
+			return int(p.points) <= 1 and not p.tags.any(func(t): return t in ["crest", "horns", "heavy"])
+		"back":
+			return "wings" in p.tags and _winged(tags)
+	return false
 
 
 func _allowed(p: Dictionary, role: String, tags: Dictionary) -> bool:
@@ -407,6 +444,9 @@ func _upgrade(prev: Dictionary, slot_def: Dictionary, ctx: Dictionary) -> Dictio
 	if r.get("elite", "") == "heavy":
 		for t in HEAVY_BOOST:
 			unit_tags[t] = int(unit_tags.get(t, 0)) + HEAVY_BOOST[t]
+	if role == "healer":
+		for t in HEALER_WANTS:
+			unit_tags[t] = int(unit_tags.get(t, 0)) + HEALER_WANTS[t]
 	var spent := _recipe_points(r)
 	var ridden: bool = r.has("mount") and not r.mount.fused
 	var slots: Array = r.parts.keys()
@@ -421,6 +461,8 @@ func _upgrade(prev: Dictionary, slot_def: Dictionary, ctx: Dictionary) -> Dictio
 			and (p.tags.any(func(t): return t in kinds) or _want(p, ctx.brief.tags) > 0))   # same kind, or asked for (rats with guns)
 		if role == "worker":   # a worker's hat gets better, but never a war helmet (no crests, horns, heavy)
 			cands = cands.filter(func(p): return int(p.points) <= 2 and not p.tags.any(func(t): return t in ["crest", "horns", "heavy"]))
+		if role == "healer" and slot != "hand_r":
+			cands = cands.filter(func(p): return _healer_gear(p, unit_tags))
 		if slot == "hand_r":
 			var need: String = ROLE_NEEDS[role]
 			var excluded: Array = ROLE_EXCLUDES.get(role, [])
@@ -434,7 +476,7 @@ func _upgrade(prev: Dictionary, slot_def: Dictionary, ctx: Dictionary) -> Dictio
 		if spent - int(cur.points) + int(best.points) <= budget:
 			spent += int(best.points) - int(cur.points)
 			r.parts[slot] = best.id
-	var open_slots: Array = ([] if role == "worker" else OPTIONAL_SLOTS).filter(func(s): return not r.parts.has(s))
+	var open_slots: Array = ([] if role == "worker" else _gear_slots(role)).filter(func(s): return not r.parts.has(s))
 	for slot in open_slots:
 		if slot == "hand_l" and lib.part(r.parts.hand_r).get("two_handed", false):
 			continue
@@ -443,6 +485,8 @@ func _upgrade(prev: Dictionary, slot_def: Dictionary, ctx: Dictionary) -> Dictio
 			cands = cands.filter(func(p): return not ("wings" in p.tags))
 		if role == "worker":
 			cands = cands.filter(func(p): return int(p.points) <= 1)
+		if role == "healer":
+			cands = cands.filter(func(p): return _healer_gear(p, unit_tags))
 		if cands.is_empty():
 			continue
 		var best: Dictionary = _best(cands, unit_tags, {}, rng)

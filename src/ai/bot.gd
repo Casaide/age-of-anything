@@ -5,7 +5,9 @@ extends RefCounted
 ##   (our bonus classes against their tags, minus theirs against ours);
 ## - defence: soldiers at home go for enemies near the Town Center;
 ## - attack waves at set times when the army is big enough, then more every couple of minutes;
-##   units that run out of things to fight go on to the next enemy building.
+##   units that run out of things to fight go on to the next enemy building;
+## - a couple of healers from the Town Center in ages 2-3 (data: military.healers), kept a few
+##   tiles behind the army, on the side towards home; they heal whoever is hurt near them.
 ## Like EcoBot it only reads sim state and issues commands, so it's deterministic.
 
 const EcoBot := preload("res://src/ai/eco_bot.gd")
@@ -89,21 +91,27 @@ func think(w) -> void:
 		return
 	var workers := []
 	var army := []
+	var healers := []
 	for i in w.units.count():
 		if w.units.owner[i] != player:
 			continue
-		if w.types[w.units.kind[i]].worker:
+		var t: Dictionary = w.types[w.units.kind[i]]
+		if t.worker:
 			workers.append(i)
-		elif not w.types[w.units.kind[i]].has("animal"):   # our sheep aren't soldiers
+		elif t.healer:
+			healers.append(i)
+		elif not t.has("animal"):   # our sheep aren't soldiers
 			army.append(i)
 	_build_order(w, tc, workers)
 	_age_three(w, tc, workers)
 	_upgrade_lines(w, workers, army)
 	_train(w, workers)
+	_train_healers(w, tc, army, healers)
 	var home_x: int = w.buildings.cx[tc] * 1000 + 1500
 	var home_y: int = w.buildings.cy[tc] * 1000 + 1500
 	_defend(w, army, home_x, home_y)
 	_waves(w, army, home_x, home_y)
+	_escort(w, army, healers, home_x, home_y)
 
 
 # ------------------------------------------------------------------ buildings
@@ -198,7 +206,7 @@ func _train(w, workers: Array) -> void:
 	reserve.resize(w.resources.size())
 	var guard := 0   # keep a small guard even while saving for an age, like a sensible player
 	for i in w.units.count():
-		if w.units.owner[i] == player and not w.types[w.units.kind[i]].worker:
+		if w.units.owner[i] == player and not w.types[w.units.kind[i]].worker and not w.types[w.units.kind[i]].healer:
 			guard += int(w.types[w.units.kind[i]].pop)
 	# An easier bot keeps its army in proportion to its economy, growing with each age: it
 	# builds up more and fights less, but never stops growing (Dominic: not caps).
@@ -234,6 +242,58 @@ func _train(w, workers: Array) -> void:
 				ok = false
 		if ok:
 			w.issue(player, Commands.TRAIN, {"building": w.buildings.id[b], "slot": best})
+
+
+## Healers from the Town Center once the age allows: one for every `per_army` soldiers, up to
+## the age's cap (data: military.healers), one at a time, when there's enough to spare beyond a worker.
+func _train_healers(w, tc: int, army: Array, healers: Array) -> void:
+	var h: Dictionary = cfg.military.get("healers", {})
+	var k: int = w.type_of(player, "healer")
+	if h.is_empty() or k < 0 or w.ages[player] < int(w.types[k].line[0].age):
+		return
+	var queued: int = w.buildings.queue[tc].count(k)
+	var want: int = mini(int(h["max"].get(str(w.ages[player]), 0)), army.size() / maxi(1, int(h.per_army)))
+	if queued > 0 or healers.size() >= want:
+		return
+	var worker: int = w.type_of(player, "worker")
+	for r in w.resources.size():
+		if w.stock[r][player] < w.types[k].cost[r] + w.types[worker].cost[r]:
+			return
+	w.issue(player, Commands.TRAIN, {"building": w.buildings.id[tc], "slot": "healer"})
+
+
+## Healers follow the army, `behind` tiles back from its middle on the side towards home. Only
+## idle ones (healing no one) more than `follow` tiles from that spot are sent: a healer at work
+## stays with its patient, and one near the spot picks the wounded up on its own.
+func _escort(w, army: Array, healers: Array, hx: int, hy: int) -> void:
+	var h: Dictionary = cfg.military.get("healers", {})
+	if healers.is_empty() or army.is_empty() or w.tick % (int(h.get("every", 3)) * 20) != THINK_EVERY / 2:
+		return
+	# The army that's out (beyond the home guard's reach); with none out, the healers stay home,
+	# where the hurt come back to (and the workers are).
+	var home_r := int(cfg.military.defend_tiles) * 1000
+	var out := army.filter(func(i): return Fixed.dist2(hx, hy, w.units.x[i], w.units.y[i]) > home_r * home_r)
+	var mx := hx
+	var my := hy
+	if out.size() >= 2:
+		var sx := 0
+		var sy := 0
+		for i in out:
+			sx += w.units.x[i]
+			sy += w.units.y[i]
+		mx = sx / out.size()
+		my = sy / out.size()
+	var d := Fixed.isqrt(Fixed.dist2(mx, my, hx, hy))
+	var back: int = mini(int(h.behind) * 1000, d)
+	var tx: int = mx + (hx - mx) * back / maxi(1, d)
+	var ty: int = my + (hy - my) * back / maxi(1, d)
+	var follow: int = int(h.follow) * 1000
+	var ids := []
+	for i in healers:
+		if w.units.patient[i] == 0 and Fixed.dist2(w.units.x[i], w.units.y[i], tx, ty) > follow * follow:
+			ids.append(w.units.id[i])
+	if not ids.is_empty():
+		w.issue(player, Commands.ATTACK_MOVE, {"ids": ids, "x": tx, "y": ty})   # an attack-move: they stop for the wounded on the way
 
 
 ## How many enemy units we can see carry each tag (their army, not workers).
@@ -347,7 +407,7 @@ func _defenders(w, b: int) -> int:
 	var n := 0
 	for i in w.units.count():
 		if w.is_foe(player, w.units.owner[i]) and not w.types[w.units.kind[i]].worker and not w.types[w.units.kind[i]].has("animal") \
-				and Fog.visible(w, player, w.units.x[i], w.units.y[i]) and Fixed.dist2(x, y, w.units.x[i], w.units.y[i]) < r * r:
+				and not w.types[w.units.kind[i]].healer and Fog.visible(w, player, w.units.x[i], w.units.y[i]) and Fixed.dist2(x, y, w.units.x[i], w.units.y[i]) < r * r:
 			n += 1
 	return n
 
