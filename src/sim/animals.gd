@@ -47,18 +47,40 @@ static func type_of(w, id: String) -> int:
 
 
 ## Sheep and boar round each start, deer herds out on the open map (seeded: the same map
-## and seed always give the same animals).
+## and seed always give the same animals). A map may bring its own spawn (same shape); an
+## entry with "size" places herds: one animal on the ring, the rest beside it. On a map with
+## "symmetry": "rotate" the second start gets the first one's animals turned half a turn, and
+## each wild herd gets a twin turned the same way, so both sides find the same meat.
 static func place(w, spawn: Dictionary) -> void:
 	var m = w.map
+	if not m.animals.is_empty():
+		spawn = m.animals
+	var mirror: bool = m.symmetry == "rotate" and m.starts.size() == 2
 	var taken := {}
+	var placed := []   # [kind, cell] for the first start, for its mirror image
 	for p in mini(w.races.size(), m.starts.size()):
+		if mirror and p == 1:
+			for e in placed:
+				var c: int = m.width * m.height - 1 - e[1]
+				if _open(w, c, taken):
+					taken[c] = true
+					_add(w, e[0], c)
+			continue
 		var s: Array = m.starts[p]
 		for entry in spawn.near_start:
 			var k := type_of(w, entry.kind)
+			var herd := int(entry.get("size", 1))
 			for n in int(entry.count):
 				var c: int = _free_cell(w, s[0] / SimMap.TILE, s[1] / SimMap.TILE, int(entry.min), int(entry.max), taken)
-				if c >= 0:
-					_add(w, k, c)
+				if c < 0:
+					continue
+				_add(w, k, c)
+				placed.append([k, c])
+				for h in herd - 1:
+					var b: int = _free_cell(w, c % m.width, c / m.width, 0, 1, taken)
+					if b >= 0:
+						_add(w, k, b)
+						placed.append([k, b])
 	for entry in spawn.wild:
 		var k := type_of(w, entry.kind)
 		for h in int(entry.herds):
@@ -80,6 +102,10 @@ static func place(w, spawn: Dictionary) -> void:
 				var c: int = _free_cell(w, centre % m.width, centre / m.width, 0, 2, taken)
 				if c >= 0:
 					_add(w, k, c)
+					var twin: int = m.width * m.height - 1 - c
+					if mirror and _open(w, twin, taken):
+						taken[twin] = true
+						_add(w, k, twin)
 
 
 static func _open(w, c: int, taken: Dictionary) -> bool:
