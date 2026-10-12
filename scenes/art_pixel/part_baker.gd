@@ -134,7 +134,10 @@ func _bake_model(id: String, colours: Dictionary, bake_key: String, k := 0) -> v
 		key_mat.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
 		key_mat.albedo_color = HOLDOUT
 		for mi in wearer.find_children("*", "MeshInstance3D", true, false):
-			(mi as MeshInstance3D).material_override = key_mat
+			# Surface by surface: material_override on these meshes made the renderer log
+			# 'Parameter "material" is null' hundreds of times per bake (humans, centaurs).
+			for surface in (mi as MeshInstance3D).mesh.get_surface_count():
+				(mi as MeshInstance3D).set_surface_override_material(surface, key_mat)
 		if body.get("front"):
 			body.front.queue_free()
 		holder.add_child(wearer)
