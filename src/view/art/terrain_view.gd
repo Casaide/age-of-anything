@@ -54,6 +54,7 @@ func set_art_px(px: float) -> void:
 var _paths_task := -1
 var _paths_next = null     # owners waiting for their turn
 var _paths_out := []       # [paths image, arc image] from the worker
+var _paths_memo := {}      # the paths laid so far (Paths.plan memo): they stay put, new buildings add branches
 
 
 func set_paths(owners: Array) -> void:
@@ -73,7 +74,7 @@ func _paths_job(owners: Array, walk: PackedByteArray, w: int, h: int) -> void:
 		if walk[int(t.y) * w + int(t.x)] == 0:
 			return true
 		return mask(t).r > 0.3
-	var planned: Array = Paths.plan(w, h, blocked_at, owners)
+	var planned: Array = Paths.plan(w, h, blocked_at, owners, _paths_memo)
 	var m: Array = Paths.mask(w, h, K, planned)
 	var img: Image = m[0]
 	img.convert(Image.FORMAT_RGBAF)

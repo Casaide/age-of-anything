@@ -50,7 +50,7 @@ map; the code says the details.
 
 - **Buildings** (`src/view/art/bake/models.gd`, baked by `src/view/art/bake/baker.gd` via
   `ArtKit._bake_building`): one builder per type dressed in each architecture's kit (walls,
-  frame, roof, base: `KIT`). Baked once per culture, plus four construction stages. Data
+  frame, roof, base: `KIT`; the timber towns stand on timber sills over packed earth, no stone plinths). Baked once per culture, plus four construction stages. Data
   shapes them further (`data/buildings.json`): `scale` per culture and type, `variants` (houses
   bake four looks, turned or mirrored and resized, each building picks one; the model declares
   its `door` (and `window`) direction and a variant only uses turns that keep the door on a wall
@@ -71,7 +71,8 @@ map; the code says the details.
   broadleaf groves by a smooth noise). Stumps stay until something is built there.
 - **Bridges** (`scenes/art_pixel/bridge_models.gd`): neutral timber, no team colour; every size
   the maps use is baked (`ArtKit.bridge_sizes` reads `data/maps`), along sim x and y, standing
-  and broken. Drawn in the flat layer (walked across, under units).
+  and broken, one to a whole frame (`baker.bake_many` asserts every model fits its cell: a long
+  bridge in a third of the frame lost its ends). Drawn in the flat layer (walked across, under units).
 - **Terrain** (`scenes/art_pixel/terrain.gdshader`): one shader paints the ground from blurred
   terrain masks (water depth and sky, swamp, rock, paths); not baked. Rivers draw as water,
   fords as shallows with the bed showing, forest floor like reed-bed ground. Worn trails come

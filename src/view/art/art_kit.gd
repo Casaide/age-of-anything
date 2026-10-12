@@ -301,7 +301,7 @@ func _props_jobs() -> Array:
 	var ids := []
 	# [list, per render, shadow, columns, shadow reach, what the loader says]
 	var groups := [[specs[0], 9, true, 3, 1.0, "Growing the reeds"], [specs[1], 9, false, 3, 1.0, "Growing the reeds"],
-		[specs[2], 4, true, 2, 2.0, "Planting the woods"], [specs[3], 1, true, 3, 1.0, "Building the bridges"]]
+		[specs[2], 4, true, 2, 2.0, "Planting the woods"], [specs[3], 1, true, 1, 1.0, "Building the bridges"]]   # bridges: one to a whole frame (a long one overflows a third)
 	for g in groups:
 		var list: Array = g[0]
 		for first in range(0, list.size(), g[1]):

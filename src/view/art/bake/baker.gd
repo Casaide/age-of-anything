@@ -222,6 +222,11 @@ func bake_many(models: Array, cols := 3) -> Array:
 			m.position = g
 			holder.add_child(m)
 			anchors.append(g)
+			# The model's real extent on screen must fit its cell, or its sides get cut off
+			# (long bridges did): bake big models fewer to a frame.
+			var cell_rect := Rect2(Vector2((k % cols) * cell, (k / cols) * cell), Vector2(cell, cell))
+			var seen := screen_rect(m)
+			assert(cell_rect.encloses(seen), "bake_many: a model (%s px) overflows its %d px cell; use fewer columns" % [seen.size, cell])
 		var shots: Array = await _shoot()
 		for k in batch.size():
 			var r := Rect2i((k % cols) * cell, (k / cols) * cell, cell, cell)
@@ -230,6 +235,23 @@ func bake_many(models: Array, cols := 3) -> Array:
 			holder.remove_child(m)
 			m.queue_free()
 	return out
+
+
+## Where a model (in the holder) lands in the render, in render pixels: every mesh's box corners
+## projected by the camera.
+func screen_rect(model: Node3D) -> Rect2:
+	var r := Rect2()
+	var first := true
+	for mi in model.find_children("*", "MeshInstance3D", true, false):
+		var box: AABB = mi.get_aabb()
+		for c in 8:
+			var p := cam.unproject_position(mi.global_transform * box.get_endpoint(c))
+			if first:
+				r = Rect2(p, Vector2.ZERO)
+				first = false
+			else:
+				r = r.expand(p)
+	return r
 
 
 ## Render what's in the holder: [image, then the shadow passes if they're on]. (One render is
