@@ -7,6 +7,7 @@ extends RefCounted
 const SimMap := preload("res://src/sim/sim_map.gd")
 const Commands := preload("res://src/sim/commands.gd")
 const Fixed := preload("res://src/sim/fixed.gd")
+const Bridges := preload("res://src/sim/bridges.gd")
 
 enum { NONE, GATHER, RETURN, BUILD }
 
@@ -207,6 +208,8 @@ static func demolish(w, b: int) -> void:
 
 
 static func cmd_help_build(w, player: int, a: Dictionary) -> void:
+	if Bridges.cmd_help(w, player, a, _own_workers(w, player, a.ids)):
+		return   # a map bridge: rebuilt by anyone (bridges.gd)
 	var b: int = w.buildings.index_of(a.target)
 	if b < 0 or w.buildings.owner[b] != player or w.buildings.done[b] == 1:
 		return
@@ -490,6 +493,12 @@ static func _build(w, i: int) -> void:
 	var u = w.units
 	var bs = w.buildings
 	var b: int = bs.index_of(u.target[i])
+	if b < 0:
+		var br := Bridges.index_of(w, u.target[i])
+		if br >= 0:
+			if not Bridges.work(w, i, br, _in_reach(w, i, w.bridge_rect[br])):
+				clear_task(w, i)
+			return
 	if b < 0 or bs.done[b] == 1:
 		var nb := _nearby_foundation(w, i) if u.orders[i].is_empty() else -1
 		if nb < 0:
