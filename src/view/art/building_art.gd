@@ -321,21 +321,19 @@ func set_links(p_links: int) -> void:
 static func gate_open(world, b: int) -> bool:
 	var bs = world.buildings
 	var u = world.units
-	var x0: int = bs.cx[b] * 1000
-	var y0: int = bs.cy[b] * 1000
-	var x1: int = x0 + bs.sx[b] * 1000
-	var y1: int = y0 + bs.sy[b] * 1000
 	var friend := false
+	var x0: int = bs.cx[b] * 1000 - GATE_ENEMY_NEAR
+	var y0: int = bs.cy[b] * 1000 - GATE_ENEMY_NEAR
+	var x1: int = (bs.cx[b] + bs.sx[b]) * 1000 + GATE_ENEMY_NEAR
+	var y1: int = (bs.cy[b] + bs.sy[b]) * 1000 + GATE_ENEMY_NEAR
 	for j in u.count():
-		if u.owner[j] == world.gaia:
-			continue
-		var dx: int = maxi(maxi(x0 - u.x[j], 0), u.x[j] - x1)
-		var dy: int = maxi(maxi(y0 - u.y[j], 0), u.y[j] - y1)
-		var d2 := dx * dx + dy * dy
+		if u.owner[j] == world.gaia or u.x[j] < x0 or u.x[j] > x1 or u.y[j] < y0 or u.y[j] > y1:
+			continue   # (far off: no need to measure)
+		var d: int = bs.gap(b, u.x[j], u.y[j])   # to the gate's cells (a diagonal gate's square has open corners)
 		if world.is_enemy(u.owner[j], bs.owner[b]):
-			if d2 < GATE_ENEMY_NEAR * GATE_ENEMY_NEAR:
+			if d < GATE_ENEMY_NEAR:
 				return false
-		elif d2 < GATE_FRIEND_AT * GATE_FRIEND_AT:
+		elif d < GATE_FRIEND_AT:
 			friend = true
 	return friend
 

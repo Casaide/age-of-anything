@@ -134,7 +134,10 @@ static func route(w, i: int) -> Array:
 			Commands.HELP_BUILD:
 				out.append({"kind": "build", "id": a.target})
 			Commands.BUILD:
-				out.append({"kind": "plan", "cx": a.cx, "cy": a.cy, "size": w.btypes[Economy.btype_of(w, a.building)].size})
+				var t: Dictionary = w.btypes[Economy.btype_of(w, a.building)]
+				var along := Economy.along_for(t, int(a.get("along", 0)))
+				var d := Economy.dims(t, along)
+				out.append({"kind": "plan", "cx": a.cx, "cy": a.cy, "size": maxi(d.x, d.y), "sx": d.x, "sy": d.y, "diag": Economy.diag_of(along)})
 			Commands.ATTACK:
 				out.append({"kind": "attack", "id": a.target})
 			Commands.DROP_OFF, Commands.GARRISON:
@@ -151,6 +154,9 @@ func _anchor(s: Dictionary) -> Variant:
 		s.cx = s.cell % w.map.width
 		s.cy = s.cell / w.map.width
 		s.size = 1
+		s.sx = 1
+		s.sy = 1
+		s.diag = 0
 	elif s.has("id"):
 		var b: int = w.buildings.index_of(s.id)
 		if b >= 0:
@@ -159,14 +165,16 @@ func _anchor(s: Dictionary) -> Variant:
 			s.cx = w.buildings.cx[b]
 			s.cy = w.buildings.cy[b]
 			s.size = maxi(w.buildings.sx[b], w.buildings.sy[b])   # a gate's long side
+			s.sx = w.buildings.sx[b]
+			s.sy = w.buildings.sy[b]
+			s.diag = w.buildings.diag[b]   # a diagonal gate: only the cells on its diagonal
 		else:
 			var v: Node2D = d.views.get(s.id)
 			if v == null or not v.visible:
 				return null   # dead, or in the fog
 			s.unit = w.units.index_of(s.id)
 			return v.ground()
-	var half: int = s.size * SimMap.TILE / 2
-	return Iso.to_ground(s.cx * SimMap.TILE + half, s.cy * SimMap.TILE + half)
+	return Iso.to_ground(s.cx * SimMap.TILE + s.sx * SimMap.TILE / 2, s.cy * SimMap.TILE + s.sy * SimMap.TILE / 2)
 
 
 ## A leg's end at a footprint stops at its edge (not across the foundation or the reeds).
@@ -235,17 +243,23 @@ func _ellipse(c: Node2D, at: Vector2, r: float, col: Color, a: float, px: float)
 
 
 ## A footprint's outline (a resource tile's also softly filled), a dark edge under a bright line.
+## A diagonal gate's outline is one per cell, the cells meeting at their corners.
 func _diamond(c: Node2D, s: Dictionary, col: Color, a: float, px: float, fill: bool) -> void:
-	var x0: int = s.cx * SimMap.TILE
-	var y0: int = s.cy * SimMap.TILE
-	var e: int = s.size * SimMap.TILE
-	var up := Vector2(0, Iso.lift(x0 + e / 2, y0 + e / 2))   # on a hill, on its top
-	var pts := PackedVector2Array([Iso.to_screen(x0, y0) - up, Iso.to_screen(x0 + e, y0) - up, Iso.to_screen(x0 + e, y0 + e) - up,
-		Iso.to_screen(x0, y0 + e) - up, Iso.to_screen(x0, y0) - up])
-	if fill:
-		c.draw_colored_polygon(pts.slice(0, 4), Color(col, 0.14 * a))
-	c.draw_polyline(pts, Color(EDGE, 0.6 * a), 3.5 * px)
-	c.draw_polyline(pts, Color(col, a), 2.0 * px)
+	var e := Vector2i(s.sx, s.sy) * SimMap.TILE
+	var tops := [Vector2i(s.cx, s.cy)]
+	if s.diag != 0:
+		e = Vector2i(SimMap.TILE, SimMap.TILE)
+		tops = range(s.sy).map(func(k): return Vector2i(s.cx + (k if s.diag == 1 else s.sx - 1 - k), s.cy + k))
+	for t in tops:
+		var x0: int = t.x * SimMap.TILE
+		var y0: int = t.y * SimMap.TILE
+		var up := Vector2(0, Iso.lift(x0 + e.x / 2, y0 + e.y / 2))   # on a hill, on its top
+		var pts := PackedVector2Array([Iso.to_screen(x0, y0) - up, Iso.to_screen(x0 + e.x, y0) - up, Iso.to_screen(x0 + e.x, y0 + e.y) - up,
+			Iso.to_screen(x0, y0 + e.y) - up, Iso.to_screen(x0, y0) - up])
+		if fill:
+			c.draw_colored_polygon(pts.slice(0, 4), Color(col, 0.14 * a))
+		c.draw_polyline(pts, Color(EDGE, 0.6 * a), 3.5 * px)
+		c.draw_polyline(pts, Color(col, a), 2.0 * px)
 
 
 ## Let go of the pennants (a new match: the atlas they cut from is baked again).

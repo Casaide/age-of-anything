@@ -25,6 +25,9 @@ const UNIT_BANDS := 4      # value bands in unit shading (Pixelize.run; the pain
 const SS := 4              # supersampling for the building and prop bakes
 const HOUSE_SCALE := 1.1   # houses read smaller than the halls (Fable; Dominic: rat house too big)
 const ALONG_Z := "^z"       # bake-name suffix of a gate turned a quarter, for a wall line running along sim y
+## Bake-name suffixes of a gate on a diagonal wall line, by Economy `along`: 2 (x and y grow
+## together: straight down the screen) and 3 (x falls as y grows: across the screen).
+const ALONG := ["", ALONG_Z, "^d", "^a"]
 ## Parts a worker swaps in by job (see UnitView.set_tool and sim_debug's _tool_for).
 const JOB_PARTS := ["tool.axe", "tool.basket", "tool.hammer", "tool.pick", "tool.hoe", "tool.broom", "load.reeds", "load.stone", "load.gold", "load.meat"]
 const LOAD_SLICE_MS := 8   # cache loads per frame, at most this long
@@ -346,8 +349,9 @@ func _building_jobs(races: Array) -> Array:
 				ids.append(_building_job(d, arch, type, looks[age], "@" + str(age)))
 			for v in range(1, int(d.get("variants", {}).get(type, 1))):   # a few of each house, turned and sized apart
 				ids.append(_building_job(d, arch, type, "", "#" + str(v)))
-			if bool(d.buildings[type].get("gate", false)):   # gates face the way their wall runs
-				ids.append(_building_job(d, arch, type, "", ALONG_Z))
+			if bool(d.buildings[type].get("gate", false)):   # gates face the way their wall runs, diagonals too
+				for suffix in ALONG.slice(1):
+					ids.append(_building_job(d, arch, type, "", suffix))
 	return ids
 
 
@@ -466,7 +470,10 @@ func _spec(models, arch: String, type: String, model := "") -> Dictionary:
 ## own scale for a type (data: buildings.json "scale", e.g. the rats' house and barracks), and
 ## a variant's turn or mirror and nudge in size (data: "variants"), so a street of houses varies.
 func _placed(models, arch: String, type: String, model: String, suffix: String) -> Dictionary:
+	var diagonal: bool = suffix in ALONG.slice(2)
+	models.gate_span = 3.0 * (sqrt(2.0) if diagonal else 1.0)   # a diagonal gate runs corner to corner across its square
 	var spec: Dictionary = _spec(models, arch, type, model)
+	models.gate_span = 3.0
 	var d: Dictionary = _buildings_data()
 	var s: float = (HOUSE_SCALE if type == "house" else 1.0) * float(d.get("scale", {}).get(arch, {}).get(type, 1.0))
 	var look := Basis.IDENTITY
@@ -476,6 +483,8 @@ func _placed(models, arch: String, type: String, model: String, suffix: String) 
 		s *= [1.0, 0.94, 1.05, 0.9][v % 4]
 	if suffix == ALONG_Z:
 		look = Basis(Vector3.UP, deg_to_rad(90.0))   # a gate in a line running along sim y
+	elif diagonal:   # model x is sim x, z sim y: an eighth turn lays it along (1, 1) or (1, -1)
+		look = Basis(Vector3.UP, deg_to_rad(-45.0 if suffix == ALONG[2] else 45.0))
 	if s == 1.0 and look == Basis.IDENTITY:
 		return spec
 	var basis := look.scaled(Vector3.ONE * s)
