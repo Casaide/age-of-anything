@@ -355,7 +355,7 @@ func _age_three(w, tc: int, count: int) -> void:
 # ------------------------------------------------------------------ soldiers
 
 ## Line upgrades, as a player would: each building upgrades the lines it trains once the
-## age allows and there's enough to spare for a few soldiers too (twice the cost in stock).
+## age allows (its cost in stock: a better kit beats more of the old one).
 ## A building-up bot also researches gathering, and spends on it first (cost in stock is enough).
 ## Then the rest of the economy research (data: research.economy) and the soldiers' research
 ## (armoury tracks, drums, hay ...) for what it fields: research reaching at least
@@ -389,7 +389,7 @@ func _upgrade_lines(w, army: Array) -> void:
 				continue   # (researched elsewhere: why_not would say "not here")
 			var spare := true
 			for k in r.cost.size():
-				if w.stock[k][player] < r.cost[k] * (1 if build_up else 2) + (0 if old else keep[k]):
+				if w.stock[k][player] < r.cost[k] * (1 if build_up or r.has("line") else 2) + (0 if old else keep[k]):
 					spare = false
 			if spare:
 				w.issue(player, Commands.RESEARCH, {"building": w.buildings.id[b], "id": r.id})
@@ -804,7 +804,7 @@ func _waves(w, army: Array, hx: int, hy: int) -> void:
 	# Reinforcements: once we're attacking, fresh soldiers idling at home go forward in groups.
 	var home := army.filter(func(i): return w.units.foe[i] == 0 and w.units.moving[i] == 0 \
 			and Fixed.dist2(hx, hy, w.units.x[i], w.units.y[i]) <= 4 * home_r * home_r)
-	if home.size() >= REINFORCE and wave_pct >= 100:   # (a partial wave's home guard stays home)
+	if home.size() >= maxi(REINFORCE, need / 2) and wave_pct >= 100:   # (a partial wave's home guard stays home; fresh ones go in groups of half a wave, not a trickle)
 		ids.append_array(home.map(func(i): return w.units.id[i]))
 	for i in army:
 		var on_building: bool = w.units.foe[i] != 0 and w.buildings.index_of(w.units.foe[i]) >= 0
