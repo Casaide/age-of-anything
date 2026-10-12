@@ -82,6 +82,7 @@ func _init() -> void:
 	_test_farms(races)
 	_test_fog_memory(races)
 	_test_land()
+	_test_hills(races)
 	_test_flow_patch()
 	_test_tech(races)
 	_test_research_queue(races)
@@ -519,6 +520,134 @@ func _test_land() -> void:
 		w.step()
 	check(m.terrain_ids[m.terrain[tc]] == "stump" and m.walks[0][tc] == 1 and m.opaque[tc] == 0, "land: the felled tree is a walkable stump that doesn't block sight")
 	check(m.terrain[5 * m.width + 20] == ford, "land: the map has its ford")
+
+
+## On hill_test (milestone 15, high ground): cliffs block walkers but not flyers and can't be
+## built on; walkers climb only by the ramp; shooters reach a level further down a hill and a
+## level less far up it (and hit for less); from below you see a hill's rim, not its top;
+## from on top you see further; the same match twice gives the same hashes.
+func _test_hills(races: Array) -> void:
+	var m0: SimMap = SimMap.load_id("hill_test")
+	var at := func(x: int, y: int) -> int: return y * m0.width + x
+	check(m0.has_heights and m0.level[at.call(15, 9)] == 1 and m0.level[at.call(19, 8)] == 2, "hills: levels load")
+	check(m0.cliff[at.call(13, 9)] == 1 and m0.walks[0][at.call(13, 9)] == 0, "hills: the foot of the west face is a cliff, closed to walkers")
+	check(m0.walks[2][at.call(13, 9)] == 1, "hills: flyers cross the cliff")
+	check(m0.ramp[at.call(13, 12)] == 1 and m0.walks[0][at.call(13, 12)] == 1 and m0.cliff[at.call(13, 12)] == 0, "hills: the ramp is open")
+	check(m0.cliff[at.call(17, 7)] == 1 and m0.cliff[at.call(17, 8)] == 0, "hills: the knoll's face is a cliff, its ramp isn't")
+	check(not m0.can_build(12, 8, 2) and not m0.can_build(13, 11, 1), "hills: nothing built on a cliff or a ramp")
+	check(m0.can_build(15, 12, 2) and not m0.can_build(16, 9, 3), "hills: buildings stand on one level")
+	var flat_hash: int = SimMap.load_id("hill_test").map_hash
+	check(flat_hash == m0.map_hash, "hills: the map hash is stable")
+
+	var bare := rules_.duplicate(true)
+	bare.economy.start.buildings = []
+	bare.economy.start.workers = 0
+	# Climbing: a walker below the west face goes onto the plateau by the ramp, never on a cliff.
+	var w := World.new(SEED, SimMap.load_id("hill_test"), races, bare)
+	var m = w.map
+	var u := _lone(w, 0, "spear", 9500, 6500, "passive")
+	w.issue(0, Commands.MOVE, {"ids": [u], "x": 16500, "y": 6500})
+	var on_cliff := false
+	var by_ramp := false
+	var t0 := w.tick
+	while w.tick < t0 + 1200:
+		w.step()
+		var i := w.units.index_of(u)
+		var c: int = m.cell_of(w.units.x[i], w.units.y[i])
+		on_cliff = on_cliff or m.cliff[c] == 1
+		by_ramp = by_ramp or m.ramp[c] == 1
+		if w.units.moving[i] == 0 and w.tick > t0 + 20:
+			break
+	var p := _at(w, u)
+	check(not on_cliff, "hills: the walker never stands on a cliff")
+	check(by_ramp, "hills: it went up by the ramp")
+	check(m.level_at(p[0], p[1]) == 1 and absi(p[0] - 16500) < 1200, "hills: it got onto the plateau (%d,%d)" % [p[0], p[1]])
+
+	# Sight: from below at (11, 9) the rim (14, 9) is seen, the plateau beyond (16, 9) isn't;
+	# from on top at (16, 9) the low ground 7 tiles off is (sight 6 + 1 for the level).
+	var i := w.units.index_of(u)
+	w.units.x[i] = 11500
+	w.units.y[i] = 9500
+	for t in 8:
+		w.step()
+	check(w.fog[0][at.call(14, 9)] == Fog.VISIBLE, "hills: from below, the rim is seen")
+	check(w.fog[0][at.call(16, 9)] != Fog.VISIBLE, "hills: from below, the top beyond the rim isn't")
+	check(w.fog[0][at.call(11, 15)] == Fog.VISIBLE, "hills: open low ground round it is")
+	w.units.x[i] = 16500
+	w.units.y[i] = 9500
+	for t in 8:
+		w.step()
+	check(w.fog[0][at.call(9, 9)] == Fog.VISIBLE, "hills: from on top you see further (7 tiles)")
+
+	# Range: an archer reaches a level further down, a level less far up; uphill hits are weaker.
+	var arch: Dictionary = {}
+	for k in w.types.size():
+		if w.types[k].player == 0 and w.types[k].slot == "archer":
+			arch = w.types[k]
+	var reach: int = arch.reach
+	var down := _shoot(races, bare, 14800, -(reach + 600))   # archer on top, target below, beyond its flat reach
+	var up := _shoot(races, bare, 12600, reach - 400)        # archer below, target on top, inside its flat reach
+	var flat := _shoot(races, bare, 9500, reach + 600, 16500) # on the low ground, beyond reach
+	check(down.hit and down.far < 200, "hills: shooting down, it hits from %d beyond its reach without moving (moved %d)" % [600, down.far])
+	check(up.hit and up.far > 300, "hills: shooting up, it must close in first (moved %d)" % up.far)
+	check(flat.hit and flat.far > 300, "hills: on the flat, the same gap needs closing (moved %d)" % flat.far)
+	check(up.damage < flat.damage, "hills: an uphill shot hits for less (%d vs %d)" % [up.damage, flat.damage])
+	check(Combat.uphill(w, 8) == 6 and Combat.uphill(w, 1) == 1, "hills: uphill damage is 75%%, at least 1")
+
+	# Determinism: the walkers' crossing onto the plateau, twice.
+	_test_crossing(races, "hill_test")
+	var a := _hill_match(races, bare)
+	var b := _hill_match(races, bare)
+	_same_hashes(a, b, "hill_test fight")
+
+
+## An archer of side 0 at (ax, ay) and a passive spear of side 1 `gap` milli-tiles (edge to
+## edge) off along x; until the first shot lands: did it, how far the archer walked first, how hard.
+func _shoot(races: Array, bare: Dictionary, ax: int, gap: int, ay := 6500) -> Dictionary:
+	var w := World.new(SEED, SimMap.load_id("hill_test"), races, bare)
+	var a := _lone(w, 0, "archer", ax, ay, "aggressive")
+	var ai := w.units.index_of(a)
+	var t := _lone(w, 1, "spear", ax, ay + 4000, "passive")
+	var ti := w.units.index_of(t)
+	ai = w.units.index_of(a)
+	var r: int = w.units.radius[ai] + w.units.radius[ti]
+	w.units.x[ai] = ax
+	w.units.y[ai] = ay
+	w.units.x[ti] = ax + signi(gap) * (absi(gap) + r) if gap < 0 else ax + gap + r
+	w.units.y[ti] = ay
+	w.issue(0, Commands.ATTACK, {"ids": [a], "target": t})
+	var out := {"hit": false, "far": 0, "damage": 0}
+	for k in 400:
+		w.step()
+		ai = w.units.index_of(a)
+		out.far = maxi(out.far, absi(w.units.x[ai] - ax) + absi(w.units.y[ai] - ay))
+		for e in w.events:
+			if e.type == "hit" and e.by == a:
+				out.hit = true
+				out.damage = e.damage
+		if out.hit:
+			break
+	return out
+
+
+## Two small armies fight over the hill's ramp (attack-moves both ways).
+func _hill_match(races: Array, bare: Dictionary) -> World:
+	var w := World.new(SEED, SimMap.load_id("hill_test"), races, bare)
+	w.issue(0, Commands.SPAWN, {"slot": "archer", "count": 4, "x": 6500, "y": 12500})
+	w.issue(0, Commands.SPAWN, {"slot": "spear", "count": 4, "x": 6500, "y": 13500})
+	w.issue(1, Commands.SPAWN, {"slot": "archer", "count": 4, "x": 16500, "y": 12500})
+	w.issue(1, Commands.SPAWN, {"slot": "spear", "count": 4, "x": 16500, "y": 13500})
+	for k in 20:
+		w.step()
+	var mine := []
+	var theirs := []
+	for i in w.units.count():
+		(mine if w.units.owner[i] == 0 else theirs).append(w.units.id[i])
+	w.issue(0, Commands.ATTACK_MOVE, {"ids": mine, "x": 18500, "y": 12500})
+	w.issue(1, Commands.ATTACK_MOVE, {"ids": theirs, "x": 5500, "y": 12500})
+	for k in 1200:
+		w.step()
+	return w
 
 
 ## A field patched for opened cells (trees felled, one by one and side by side) has the same

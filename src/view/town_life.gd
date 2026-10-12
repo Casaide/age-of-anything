@@ -216,9 +216,12 @@ func _sync_sprites(have: Dictionary, want: Dictionary, parent: Node) -> void:
 		if s == null:
 			s = host.kit.sprite(want[k][1])
 			s.set_meta("bake", want[k][1])
+			s.set_meta("offset_y", s.offset.y)
 			parent.add_child(s)
 			have[k] = s
 		s.position = want[k][0]
+		var m := Iso.to_milli(s.position)
+		s.offset.y = s.get_meta("offset_y") - Iso.lift(m.x, m.y) / s.scale.y   # on a hill: raised, sorted on the base plane
 
 
 # ---------------------------------------------------------------- workers and animals
@@ -278,7 +281,7 @@ func _workers(w) -> void:
 		if view.job == "build" and view.struck and view.visible:
 			var at: Vector2 = host._work_point(i)
 			var d: Vector2 = at - view.position
-			var hit: Vector2 = view.position + d.normalized() * minf(10.0, d.length())
+			var hit: Vector2 = view.ground() + d.normalized() * minf(10.0, d.length())
 			for k in 3:
 				puffs.append({"p": hit + Vector2(randf_range(-2, 2), randf_range(-1, 1)), "t": 0.0,
 					"v": Vector2(randf_range(-7, 7), randf_range(-6, -2))})
@@ -426,11 +429,13 @@ func _sync_tethers(w) -> void:
 			var at := Vector2((bs.cx[b] + bs.sx[b]) * 1000 + 350, (bs.cy[b] + bs.sy[b] * 0.5) * 1000)
 			var post: Sprite2D = host.kit.sprite("tether_post")
 			post.position = Iso.to_screen(at.x, at.y)
+			post.offset.y -= Iso.lift(at.x, at.y) / post.scale.y
 			host.layer.add_child(post)
 			var mount := UnitView.new()
 			mount.build(recipe, host.lib, Color(host.lib.palettes.teams[bs.owner[b]]), 6)
 			mount.scale = Vector2.ONE * host.kit.UNIT_SCALE
 			mount.position = Iso.to_screen(at.x + 300, at.y + 250)
+			mount.lift = Iso.lift(at.x + 300, at.y + 250)
 			mount.pose_steps = 4
 			mount.art_px = host.camera.zoom.x * host.kit.UNIT_SCALE
 			host.layer.add_child(mount)
@@ -472,7 +477,7 @@ func _critters_update(w, delta: float) -> void:
 		_critter_towns[bs.id[b]] = true
 		var arch: String = host.lib.architecture(w.races[bs.owner[b]])
 		var kind: String = {"reed": "dragonfly", "junk": "pigeon"}.get(arch, "bird")
-		var home := Iso.to_screen((bs.cx[b] * 2 + bs.sx[b]) * 500, (bs.cy[b] * 2 + bs.sy[b]) * 500)
+		var home := Iso.to_ground((bs.cx[b] * 2 + bs.sx[b]) * 500, (bs.cy[b] * 2 + bs.sy[b]) * 500)
 		for k in CRITTERS_PER_TOWN:
 			var a := k * TAU / CRITTERS_PER_TOWN + randf() * 0.6
 			var r := randf_range(70.0, 130.0)
