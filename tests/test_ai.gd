@@ -4,7 +4,7 @@ extends SceneTree
 ## - two bots play a whole match, deterministically (same seed, same winner and hashes);
 ## - surrendering ends the match.
 ## Prints a minute-by-minute timeline of each match.
-## Run: godot --headless --path . --script res://tests/test_ai.gd [-- <map_id>]   (a minute or two; flat_test by default)
+## Run: godot --headless --path . --script res://tests/test_ai.gd [-- <map_id> [levels|age3|reach]]   (several minutes; flat_test by default; levels: each level left alone 30 minutes)
 
 const DataLib := preload("res://src/data_lib.gd")
 const Generator := preload("res://src/race_generator.gd")
