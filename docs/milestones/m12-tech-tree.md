@@ -107,33 +107,33 @@ Ages are when it opens. Effects use the forms `tech.json` already has (`tag/stat
 
 | Building | Research | Age | Effect | Status |
 |---|---|---|---|---|
-| Town Center | Thick Skins | 1 | workers +15 HP, +1 melee armour | planned |
-| Town Center | Big Pockets | 2 | workers +10% speed, +3 carry | planned |
-| Town Center | Pack Frames | 3 | workers +10% speed, +5 carry | planned |
-| Town Center | Lookouts | 2 | buildings +3 sight | planned |
-| Town Center | Night Lanterns | 3 | buildings +3 sight | planned |
+| Town Center | Thick Skins | 1 | workers +15 HP, +1 melee armour | built (phase 2) |
+| Town Center | Big Pockets | 2 | workers +10% speed, +3 carry | built (phase 2) |
+| Town Center | Pack Frames | 3 | workers +10% speed, +5 carry | built (phase 2) |
+| Town Center | Lookouts | 2 | buildings +3 sight | built (phase 2) |
+| Town Center | Night Lanterns | 3 | buildings +3 sight | built (phase 2) |
 | Mill | Bigger Baskets | 2 | food +15% | built |
 | Mill | Ploughs | 3 | food +15% | built |
-| Mill | Fallow Fields | 3 | farms +50% food | planned |
+| Mill | Fallow Fields | 3 | farms +50% food | built (phase 2) |
 | Lumber Camp | Stone Axes, Saws | 2, 3 | wood +15% each | built |
 | Mining Camp | Iron Picks | 2 | stone, gold +15% | built |
-| Mining Camp | Ore Carts | 3 | stone, gold +15% | planned |
-| Armoury | Melee: Sharp Sticks, Bronze Edges | 2, 3 | melee +1 attack each | Sharp Sticks built (spears only: becomes all melee) |
-| Armoury | Ranged: Hardened Tips, Barbed Heads | 2, 3 | ranged +1 attack each | Hardened Tips built |
-| Armoury | Range: Fletching, Long Shafts | 2, 3 | bows +1 range each | Fletching built |
-| Armoury | Infantry armour: Padded Coats, Ring Mail | 2, 3 | foot melee units +1/+1 | planned |
-| Armoury | Ranged armour: Quilted Vests, Leather Jacks | 2, 3 | ranged units +1/+1 | planned |
-| Armoury | Mount armour: Saddle Blankets, Scale Barding | 2, 3 | mounted +1/+1 | planned |
+| Mining Camp | Ore Carts | 3 | stone, gold +15% | built (phase 2) |
+| Armoury | Melee: Sharp Sticks, Bronze Edges | 2, 3 | melee +1 attack each | built (Bronze Edges after Sharp Sticks) |
+| Armoury | Ranged: Hardened Tips, Barbed Heads | 2, 3 | ranged +1 attack each | built |
+| Armoury | Range: Fletching, Long Shafts | 2, 3 | bows +1 range each | built |
+| Armoury | Infantry armour: Padded Coats, Ring Mail | 2, 3 | foot melee units +1/+1 | built (phase 2) |
+| Armoury | Ranged armour: Quilted Vests, Leather Jacks | 2, 3 | ranged units +1/+1 | built (phase 2) |
+| Armoury | Mount armour: Saddle Blankets, Scale Barding | 2, 3 | mounted +1/+1 | built (phase 2) |
 | Barracks | line upgrades | 2-3 | next kit | built (to 3) |
-| Barracks | Marching Drums | 3 | infantry +10% speed | planned |
+| Barracks | Marching Drums | 3 | infantry +10% speed | built (phase 2) |
 | Barracks | Strong Legs | 2 | frogs only: amphibians +2 speed | built |
 | Archery Range | line upgrades | 2-3 | next kit | built (to 3) |
-| Archery Range | Quick Draw | 3 | ranged reload -15% | planned |
+| Archery Range | Quick Draw | 3 | ranged reload -15% | built (phase 2) |
 | Stable | line upgrades | 2-3 | next kit | built (to 3) |
-| Stable | Hoof Wraps | 2 | mounted +10% speed | planned |
-| Stable | Good Hay | 3 | mounted +20 HP | planned |
+| Stable | Hoof Wraps | 2 | mounted +10% speed | built (phase 2) |
+| Stable | Good Hay | 3 | mounted +20 HP | built (phase 2) |
 | Market | trading | 2 | buy/sell | built |
-| Market | Haggling | 3 | trade fee lower | planned |
+| Market | Haggling | 3 | selling fee 25 -> 15 points | built (phase 2) |
 | Market | Pack Animals | 3 | trade carts +25% speed | planned |
 | University | Stonecutting | 3 | buildings +10% HP, +1/+1 armour | planned |
 | University | Lifting Frames | 3 | build 20% faster | planned |
@@ -228,6 +228,29 @@ buildings), `building_hp_pct` and building armour, `reload_pct`, `bonus_vs` (att
 e.g. buildings), `slow_on_hit`, `tower_upgrade` (replaces a building type), `farm_food_pct`,
 `trade_fee`. Each lands with the first research that needs it.
 
+Built in phase 2 (2026-10-12) as one shape (`src/sim/tech.gd`): a scope, a `stat`, and an `add` or a
+`pct` (the change to that number in percent, signed). Scopes: `tag` (unit types with it, `"all"`
+for every unit; optional `"not": [tags]`, e.g. foot melee = `melee` not `mounted`) or `building`
+(`"all"` or one id). The old `{gather, pct}` stays. The kinds above map to it:
+
+| Kind | As data |
+|---|---|
+| tag/stat/add (incl. armour) | `{"tag": "worker", "stat": "armour.melee", "add": 1}` |
+| `speed_pct` | `{"tag": "mounted", "stat": "speed", "pct": 10}` |
+| `cost_pct`, `train_pct` | `{"tag": "all", "stat": "cost", "pct": -10}`, `stat: "train_time"` |
+| `reload_pct` | `{"tag": "ranged", "stat": "reload", "pct": -15}` |
+| `build_pct` | `{"tag": "worker", "stat": "build_speed", "pct": 20}` |
+| `carry_add`, unit `sight_add` | `{"tag": "worker", "stat": "carry", "add": 3}`, `stat: "sight"` (tiles) |
+| building `sight_add` | `{"building": "all", "stat": "sight", "add": 3}` |
+| `building_hp_pct`, building armour | `{"building": "all", "stat": "hp", "pct": 10}`, `stat: "armour.melee"` add |
+| `farm_food_pct` | `{"building": "farm", "stat": "food", "pct": 50}` (sown and reseeded farms) |
+| `research_pct` | `{"building": "all", "stat": "research_time", "pct": -15}` (not the age-up) |
+| `trade_fee` | `{"building": "market", "stat": "trade_fee", "add": -10}` (points of the selling fee) |
+
+Unit effects are re-applied whenever a type changes (units out and units trained later); building
+effects live per player in `w.bmods` (standing buildings keep their share of health). A research
+with `after` needs that one first (`why_not`: "needs Sharp Sticks first").
+
 ## The tech tree page
 
 `scenes/tech_tree.tscn`, view only. It takes a race and the rules; in a match it also reads the
@@ -320,7 +343,7 @@ Fixed first, as they came in; each ticked when done.
 ## Checklist
 - [x] Plan approved by Dominic (2026-10-11: four ages, split, lacks, Wonder in)
 - [x] 1. Data and the tech tree page (2026-10-11: the tree in `data/` with `"status": "planned"`, loaders skip it, `scenes/tech_tree.tscn` from the lobby banners and in a match on F2 or the top bar's button; T stays the Watchtower's hotkey; checked in `tests/run_tests.gd`, captures with `tests/tech_tree_screenshot.gd`)
-- [ ] 2. Effect kinds, plain research, research icons (age 4 cut 2026-10-12)
+- [x] 2. Effect kinds, plain research, research icons (age 4 cut 2026-10-12; effect kinds and research 2026-10-12, a test per kind in `tests/test_sim.gd`; icons drawn separately; Pack Animals waits for trade carts)
 - [ ] 3. Towers and garrison (walls and gates done 2026-10-11)
 - [ ] 4. University
 - [ ] 5. Castle
@@ -331,6 +354,16 @@ Fixed first, as they came in; each ticked when done.
 - [ ] Archive: pictures taken along the way, journal, decisions, timeline
 
 ## Results
+
+- **Phase 2 (2026-10-12, Claude):** every effect kind as one data shape, a headless check each;
+  21 research made real (Town Center five, Fallow Fields, Ore Carts, the armoury's six tracks to
+  their second step, Marching Drums, Quick Draw, Hoof Wraps, Good Hay, Haggling). Still planned:
+  Pack Animals (trade carts), University, Castle research. The bot buys the economy research in
+  `data/ai.json` (`research.economy`) and the soldiers' research reaching at least 4 of its
+  soldiers, keeping back the next age's cost; it now builds an armoury (after the archery range)
+  and a mill. test_ai: age 2 at the same times as before (4:20-5:49, one slow 8:30 as before),
+  bot match lengths 10:35 / 10:58 / 13:35 (median 10:58; was 13:11). Bots still don't reach age 3
+  in these matches (as before): the age-2 wood economy is phase 8's.
 
 ## Changes from the original plan
 
