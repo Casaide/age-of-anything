@@ -79,6 +79,8 @@ var races: Array               # race dicts, one per player
 var rules: Dictionary          # host rules, as loaded
 var econ: Dictionary           # rules.economy with numbers as ints
 var combat: Dictionary         # rules.combat with numbers as ints
+## High ground (rules.high_ground, milestone 15): what a level up is worth to shooters and sight.
+var high := {}
 var classes: Array = []        # armour/attack class names (see Combat.setup)
 var tech: Dictionary          # ages and research (data/tech.json, see tech.gd)
 var ages := PackedInt32Array()     # per player: the age it's in (1 at the start)
@@ -138,6 +140,8 @@ var bridge_up := PackedByteArray()    # 1 standing, 0 broken
 var bridge_work := PackedInt32Array() # rebuild ticks put in
 var bridge_payer := PackedInt32Array()   # the player who paid for the rebuild under way, or -1
 
+const HIGH_DEFAULTS := {"reach": 1000, "uphill_damage_pct": 75, "sight_unit": 1, "sight_building": 2}
+
 
 ## p_teams: a team id per player; empty means everyone for themselves (team = player).
 func _init(p_seed: int, p_map: SimMap, p_races: Array, p_rules: Dictionary, p_teams := []) -> void:
@@ -154,6 +158,9 @@ func _init(p_seed: int, p_map: SimMap, p_races: Array, p_rules: Dictionary, p_te
 	refresh_lanes()
 	econ = _ints(rules.economy)
 	combat = _ints(rules.combat)
+	high = _ints(rules.get("high_ground", {}))
+	for k in HIGH_DEFAULTS:
+		high[k] = int(high.get(k, HIGH_DEFAULTS[k]))
 	var ts: Dictionary = rules.get("movement", {}).get("terrain_speed", {})
 	for c in SimMap.CLASSES:
 		var row := PackedInt32Array()
