@@ -9,6 +9,7 @@ const Commands := preload("res://src/sim/commands.gd")
 const Fixed := preload("res://src/sim/fixed.gd")
 const Bridges := preload("res://src/sim/bridges.gd")
 const Pens := preload("res://src/sim/pens.gd")
+const Buildings := preload("res://src/sim/buildings.gd")
 
 enum { NONE, GATHER, RETURN, BUILD, GARRISON }   # GARRISON: walking into a building to shelter (garrison.gd)
 
@@ -76,9 +77,23 @@ static func _pen_ticks(p: Dictionary) -> Dictionary:
 
 
 ## A building type's footprint in cells (x, y): size x size, but a gate is `length` long along
-## its wall line, which runs along sim x (along 0) or sim y (along 1).
+## its wall line, which runs along sim x (along 0), sim y (along 1), or a diagonal (along 2: x and y
+## grow together; along 3: x falls as y grows), where it takes `length` cells corner to corner
+## across a `length` square (diag_of, Buildings.cells).
 static func dims(t: Dictionary, along := 0) -> Vector2i:
+	if along >= 2:
+		return Vector2i(t.length, t.length)
 	return Vector2i(t.length, t.size) if along == 0 else Vector2i(t.size, t.length)
+
+
+## Which diagonal a footprint laid `along` takes (Buildings.diag): 0 for a rect.
+static func diag_of(along: int) -> int:
+	return along - 1 if along >= 2 else 0
+
+
+## A BUILD's `along` for type t: only gates turn (0..3); anything else is 0.
+static func along_for(t: Dictionary, along: int) -> int:
+	return along if t.gate and along >= 0 and along <= 3 else 0
 
 
 static func btype_of(w, id: String) -> int:
@@ -146,7 +161,7 @@ static func setup(w) -> void:
 static func place(w, player: int, k: int, cx: int, cy: int, along := 0) -> int:
 	var t: Dictionary = w.btypes[k]
 	var d := dims(t, along)
-	var i: int = w.buildings.add(w.next_id, player, k, cx, cy, d.x, d.y, 1)
+	var i: int = w.buildings.add(w.next_id, player, k, cx, cy, d.x, d.y, 1, diag_of(along))
 	w.next_id += 1
 	w.map.occupy(w.buildings.footprint(i, w.map.width), w.buildings.id[i], w.teams[player] if t.gate else -1)
 	if t.gate:
@@ -188,11 +203,11 @@ static func lay_foundation(w, player: int, a: Dictionary) -> int:
 	var t: Dictionary = w.btypes[k]
 	if _own_workers(w, player, a.ids).is_empty() or not w.can_afford(player, t.cost) or why_not_build(w, player, k) != "":
 		return 0
-	var along := int(a.get("along", 0))
+	var along := along_for(t, int(a.get("along", 0)))
 	if not can_place(w, player, k, a.cx, a.cy, along):
 		return 0
 	w.pay(player, t.cost)
-	for c in _footprint(w, a.cx, a.cy, dims(t, along)):
+	for c in _footprint(w, a.cx, a.cy, dims(t, along), along):
 		if _replaceable(w, player, t, c):
 			demolish(w, w.buildings.index_of(w.map.occupied[c]))   # a gate dropped into a wall takes its place
 	return w.buildings.id[place(w, player, k, a.cx, a.cy, along)]
@@ -218,11 +233,13 @@ static func can_place(w, player: int, k: int, cx: int, cy: int, along := 0) -> b
 	var t: Dictionary = w.btypes[k]
 	var mc := builder_class(w, player)
 	var d := dims(t, along)
-	for y in range(cy, cy + d.y):
-		for x in range(cx, cx + d.x):
-			var ok: bool = w.map.can_build(x, y, 1, mc, t.water)
-			if not ok and not (x >= 0 and y >= 0 and x < w.map.width and y < w.map.height and _replaceable(w, player, t, y * w.map.width + x)):
-				return false
+	if cx < 0 or cy < 0 or cx + d.x > w.map.width or cy + d.y > w.map.height:
+		return false
+	for c in _footprint(w, cx, cy, d, along):
+		var x: int = c % w.map.width
+		var y: int = c / w.map.width
+		if not w.map.can_build(x, y, 1, mc, t.water) and not _replaceable(w, player, t, c):
+			return false
 	return true
 
 
@@ -235,12 +252,9 @@ static func _replaceable(w, player: int, t: Dictionary, c: int) -> bool:
 	return b >= 0 and w.buildings.owner[b] == player and w.btypes[w.buildings.kind[b]].id in t.replaces
 
 
-static func _footprint(w, cx: int, cy: int, d: Vector2i) -> PackedInt32Array:
-	var out := PackedInt32Array()
-	for y in range(cy, cy + d.y):
-		for x in range(cx, cx + d.x):
-			out.append(y * w.map.width + x)
-	return out
+## The cells a footprint of d laid `along` covers (a diagonal gate's, only its diagonal), row by row.
+static func _footprint(w, cx: int, cy: int, d: Vector2i, along := 0) -> PackedInt32Array:
+	return Buildings.cells(cx, cy, d.x, d.y, diag_of(along), w.map.width)
 
 
 ## Take a building away without a fight (a wall tile a gate replaces). Its builders stop.
@@ -756,8 +770,13 @@ static func _cell_rect(w, cell: int) -> Rect2i:
 	return Rect2i(x, y, SimMap.TILE - 1, SimMap.TILE - 1)
 
 
+## The rect a unit works on or attacks building b from: its footprint, or a diagonal gate's middle
+## cell (its square's corners are open ground on either side of the wall; every cell beside the
+## middle one is beside the gate).
 static func _building_rect(w, b: int) -> Rect2i:
 	var bs = w.buildings
+	if bs.diag[b] != 0:
+		return _cell_rect(w, (bs.cy[b] + bs.sy[b] / 2) * w.map.width + bs.cx[b] + bs.sx[b] / 2)
 	return Rect2i(bs.cx[b] * SimMap.TILE, bs.cy[b] * SimMap.TILE, bs.sx[b] * SimMap.TILE - 1, bs.sy[b] * SimMap.TILE - 1)
 
 

@@ -798,6 +798,8 @@ static func _gap(w, i: int, j: int, b: int) -> int:
 		var d := Fixed.isqrt(Fixed.dist2(u.x[i], u.y[i], u.x[j], u.y[j]))
 		return d - u.radius[i] - u.radius[j]
 	var bs = w.buildings
+	if bs.diag[b] != 0:
+		return bs.gap(b, u.x[i], u.y[i]) - u.radius[i]   # to the nearest cell of a diagonal gate
 	var x0: int = bs.cx[b] * SimMap.TILE
 	var y0: int = bs.cy[b] * SimMap.TILE
 	var dx: int = maxi(maxi(x0 - u.x[i], 0), u.x[i] - (x0 + bs.sx[b] * SimMap.TILE))
@@ -976,7 +978,7 @@ static func _nearest_foe(w, i: int, sight: int, buildings_too: bool, engaged: Pa
 	best_d = sight * sight + 1
 	var bs = w.buildings
 	for b in bs.count():
-		if not w.is_enemy(bs.owner[b], me) or not Fog.sees_area(w, me, bs.cx[b], bs.cy[b], bs.sx[b], bs.sy[b]):
+		if not w.is_enemy(bs.owner[b], me) or not Fog.sees_area(w, me, bs.cx[b], bs.cy[b], bs.sx[b], bs.sy[b], bs.diag[b]):
 			continue
 		if near > 0 and _gap(w, i, -1, b) < near - u.radius[i]:
 			continue

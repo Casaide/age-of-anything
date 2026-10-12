@@ -115,7 +115,7 @@ func _initialize() -> void:
 		view.world.winner = view.world.teams[0 if scene == "end" else 1]
 		view._show_pause_menu(true)
 	elif scene.begins_with("gate:"):
-		await _gate(view, scene.get_slice(":", 1), scene.get_slice(":", 2))
+		await _gate(view, scene.get_slice(":", 1), scene.get_slice(":", 2), int(scene.get_slice(":", 3)))
 	elif scene.begins_with("walls"):
 		await _walls(view, scene == "walls:far")
 	elif scene.begins_with("tip"):
@@ -358,33 +358,57 @@ func _walls(view, far := false) -> void:
 
 
 ## A close-up of one gate in a wall line on open ground by side 0's Town Center (flat_test):
-## "gate:<kind>:<state>" with kind "stone" or "palisade", plus "y" for a line along sim y
-## ("stone", "stoney", "palisade", "palisadey"); state "site" (three workers dropped it on the
-## wall with a BUILD click and are building it, shot half done), "open" (finished, a worker
-## walking through) or "shut" (finished, an enemy spearman at it).
-func _gate(view, kind: String, state: String) -> void:
+## "gate:<kind>:<state>[:<along>]" with kind "stone" or "palisade", plus "y" for a line along sim y
+## ("stone", "stoney", "palisade", "palisadey"), or `along` (Economy.dims) 2 or 3 for a diagonal
+## line; state "site" (three workers dropped it on the wall with a BUILD click and are building
+## it, shot half done), "open" (finished, a worker walking through), "shut" (finished, an enemy
+## spearman at it), "wall" (only the wall line, a worker selected and placing the gate over its
+## middle: the ghost shows), or "both" (open, with the enemy spearman standing off beyond it).
+## On a diagonal the walkers start on the far side by the gate (the line's ends are nearer the
+## Town Center than its gate).
+func _gate(view, kind: String, state: String, p_along := 0) -> void:
 	var w = view.world
 	var Economy = load("res://src/sim/economy.gd")
 	view.reveal = true
 	w.ages[0] = 2
-	var along := 1 if kind.ends_with("y") else 0
+	var along := 1 if kind.ends_with("y") else p_along
 	var wall := "wall" if kind.begins_with("stone") else "palisade"
 	var gate := "stone_gate" if kind.begins_with("stone") else "palisade_gate"
-	var a := Vector2i(8, 21) if along == 0 else Vector2i(26, 4)
-	var b := Vector2i(18, 21) if along == 0 else Vector2i(26, 16)
-	var g := Vector2i(12, 21) if along == 0 else Vector2i(26, 9)
+	var a: Vector2i = [Vector2i(8, 21), Vector2i(26, 4), Vector2i(14, 16), Vector2i(30, 13)][along]
+	var b: Vector2i = [Vector2i(18, 21), Vector2i(26, 16), Vector2i(26, 28), Vector2i(20, 23)][along]
+	var g: Vector2i = [Vector2i(12, 21), Vector2i(26, 9), Vector2i(17, 19), Vector2i(24, 17)][along]   # the gate's top-left
 	var k: int = Economy.btype_of(w, wall)
 	for c in view.wall_cells(a, b):
 		var bi: int = Economy.place(w, 0, k, c.x, c.y)
 		w.buildings.done[bi] = 1
 		w.buildings.hp[bi] = w.btypes[k].hp
 	var gk: int = Economy.btype_of(w, gate)
-	var mid := Vector2i(g.x * 1000 + (1500 if along == 0 else 500), g.y * 1000 + (500 if along == 0 else 1500))
-	var side := Vector2i(0, 2500) if along == 0 else Vector2i(2500, 0)   # across the line
+	var dm: Vector2i = Economy.dims(w.btypes[gk], along)
+	var mid := Vector2i(g.x * 1000 + dm.x * 500, g.y * 1000 + dm.y * 500)
+	var side: Vector2i = [Vector2i(0, 2500), Vector2i(2500, 0), Vector2i(-1800, 1800), Vector2i(1800, 1800)][along]   # across the line
 	var ids := []
+	if along >= 2 and state != "site":
+		for n in 3:   # walkers on the near side, a little apart
+			var before: int = w.next_id
+			w.issue(0, "spawn", {"slot": "worker", "count": 1, "x": mid.x - side.x + (n - 1) * side.y / 3, "y": mid.y - side.y - (n - 1) * side.x / 3})
+			while w.next_id == before:
+				await process_frame
+			ids.append(before)
 	for i in w.units.count():
 		if w.units.owner[i] == 0 and w.types[w.units.kind[i]].worker and ids.size() < 3:
 			ids.append(w.units.id[i])
+	if state == "wall":
+		view.selected[ids[0]] = true
+		view.start_placing(gate)
+		view.camera.zoom = Vector2(4.0, 4.0)
+		view._on_zoom()
+		view.camera.look_at_point(Iso.to_screen(mid.x, mid.y))
+		for f in 5:
+			await process_frame
+		root.warp_mouse(view.get_viewport().get_canvas_transform() * Iso.to_screen(mid.x, mid.y))
+		for f in 5:
+			await process_frame
+		return
 	if state == "site":
 		for r in w.stock.size():
 			w.stock[r][0] = 500
@@ -400,15 +424,16 @@ func _gate(view, kind: String, state: String) -> void:
 			await process_frame
 		view.clock.speed = 0.0
 	else:
-		for c in Economy._footprint(w, g.x, g.y, Economy.dims(w.btypes[gk], along)):
+		for c in Economy._footprint(w, g.x, g.y, Economy.dims(w.btypes[gk], along), along):
 			if w.map.occupied[c] != 0:
 				Economy.demolish(w, w.buildings.index_of(w.map.occupied[c]))
 		var gb: int = Economy.place(w, 0, gk, g.x, g.y, along)
 		w.buildings.done[gb] = 1
 		w.buildings.hp[gb] = w.btypes[gk].hp
-		if state == "shut":
-			w.issue(1, "spawn", {"slot": "spear", "count": 1, "x": mid.x + side.x, "y": mid.y + side.y})
-		else:   # the workers walk through, selected (their rings and health bars show)
+		if state == "shut" or state == "both":
+			var far: int = 1 if state == "shut" else 2   # "both": far enough off not to keep it shut
+			w.issue(1, "spawn", {"slot": "spear", "count": 1, "x": mid.x + side.x * far, "y": mid.y + side.y * far})
+		if state != "shut":   # the workers walk through, selected (their rings and health bars show)
 			w.issue(0, "move", {"ids": ids, "x": mid.x + side.x, "y": mid.y + side.y})
 			for id in ids:
 				view.selected[id] = true
@@ -417,10 +442,11 @@ func _gate(view, kind: String, state: String) -> void:
 			var i: int = w.units.index_of(ids[0])
 			if state == "shut" and f > 60:
 				break
-			var off := Vector2i(w.units.x[i] - mid.x, w.units.y[i] - mid.y) if i >= 0 else Vector2i(9999, 9999)
-			if along == 1:
-				off = Vector2i(off.y, off.x)
-			if state == "open" and absi(off.x) < 1500 and off.y > -400 and off.y < 0:   # in the gateway, just short of its middle line
+			var off := Vector2(w.units.x[i] - mid.x, w.units.y[i] - mid.y) if i >= 0 else Vector2(9999, 9999)
+			var n := Vector2(side).normalized()
+			var across := off.dot(n)   # towards where they're going
+			var lengthwise := off.dot(Vector2(n.y, -n.x))
+			if state != "shut" and absf(lengthwise) < 1500 and across > -400 and across < 0:   # in the gateway, just short of its middle line
 				view.clock.speed = 0.0
 				break
 			await process_frame

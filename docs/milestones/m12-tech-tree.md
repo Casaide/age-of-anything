@@ -341,6 +341,7 @@ Fixed first, as they came in; each ticked when done.
 - [x] Soldiers auto-attacked enemy sheep: they ignore animals now; an unguarded rival sheep is stolen by walking up to it
 - [x] Bushes lasted far too long (2,000 food each): 150 now, so farms come early; the bot builds farms as wild food near home runs out (only while food is short) and reseeds them; age-1 gatherer mix 50/50
 - [x] Gates for walls: palisade (age 1), palisade gate, stone gate; gates open for their own team (passability per team)
+- [x] Diagonal gates (2026-10-13, Dominic: "diagonal gates missing?"): a gate dropped on a diagonal wall run lies on it corner to corner (`along` 2 and 3; a building's footprint can be the cells on one diagonal of its square, `Buildings.diag`/`cells`); R turns a gate an eighth; the gatehouses bake on both diagonals (`^d`, `^a`), `gate_span` long; checked in `tests/test_sim.gd` `_test_diagonal_gates`; captures `sim_screenshot.gd` `gate:<kind>:<state>:<along>`, archive 2026-10-13 94-103
 - [x] The UI is too small on a MacBook: the HUD and lobby scale with the screen's density (`src/view/ui_scale.gd`)
 - [x] Command panel: captioned groups (Train, Research, Age up, Orders, Stance, Build), 80 px buttons, the queue in its own well, a slim health bar with its number
 - [x] A rally point set on a resource sits in the middle of its tile

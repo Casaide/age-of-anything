@@ -47,6 +47,7 @@ const Commands := preload("res://src/sim/commands.gd")
 const SimMap := preload("res://src/sim/sim_map.gd")
 const World := preload("res://src/sim/world.gd")
 const Economy := preload("res://src/sim/economy.gd")
+const Buildings := preload("res://src/sim/buildings.gd")
 const Combat := preload("res://src/sim/combat.gd")
 const Replay := preload("res://src/sim/replay.gd")
 const Bot := preload("res://src/ai/bot.gd")
@@ -150,7 +151,7 @@ var selected_resource := -1 # a resource cell clicked to see what's left, or -1
 var active := 0             # the side you're commanding
 var placing := ""           # building type being placed, or ""
 var wall_from := Vector2i(-1, -1)   # where a wall drag started (a cell), while placing walls
-var gate_along := 0                  # which way a gate goes on open ground (0: along sim x, 1: along y; R turns it)
+var gate_along := 0                  # which way a gate goes on open ground (Economy.dims: 0 along sim x, 1 along y, 2 and 3 the diagonals; R turns it)
 var flags: Array = []       # [{pos, t}] recent move targets
 var rally_flag: Sprite2D    # the selected building's rally point (a baked prop), or null
 var order_marks: OrderMarks # selected units' orders, now and shift-queued, as routes of waypoints
@@ -686,7 +687,7 @@ func _play_key(event: InputEventKey) -> bool:
 			toggle_tech_tree()
 			return true
 	if k == KEY_R and placing != "" and world.btypes[Economy.btype_of(world, placing)].gate:
-		gate_along = 1 - gate_along   # turn the gate (on a wall it follows the wall anyway)
+		gate_along = (gate_along + 1) % 4   # turn the gate an eighth (on a wall it follows the wall anyway)
 		return true
 	if _selected_workers().size() < _selected_by_owner()[active].size():   # any soldiers (or our sheep) in the selection
 		var soldiers: bool = _selected_by_owner()[active].any(func(id): return not _is_animal(id) and not world.types[world.units.kind[world.units.index_of(id)]].worker)
@@ -1380,7 +1381,7 @@ func _play_events() -> void:
 				if selected_building == e.id:
 					selected_building = _next_lead()
 				var mem = null if reveal else world.fog_seen[active].get(e.id)
-				if mem != null and not Fog.sees_area(world, active, mem[2], mem[3], mem[4], mem[8]):
+				if mem != null and not Fog.sees_area(world, active, mem[2], mem[3], mem[4], mem[8], mem[9]):
 					ghosts[e.id] = bv   # it fell where you can't see: you still see it standing
 					continue
 				var t: Dictionary = world.btypes[e.kind]
@@ -1662,18 +1663,18 @@ func _ghost_ok(k: int, cx: int, cy: int, along: int) -> bool:
 	var d := Economy.dims(t, along)
 	var mc := Economy.builder_class(world, active)
 	var fog: PackedByteArray = world.fog[active]
-	for y in range(cy, cy + d.y):
-		for x in range(cx, cx + d.x):
-			if x < 0 or y < 0 or x >= map.width or y >= map.height:
-				return false
-			var c := y * map.width + x
-			if fog[c] == Fog.UNSEEN or map.can_build(x, y, 1, mc, t.water) or Economy._replaceable(world, active, t, c):
-				continue
-			var b := world.buildings.index_of(map.occupied[c])
-			if b >= 0 and world.is_enemy(active, world.buildings.owner[b]) and fog[c] != Fog.VISIBLE \
-					and not world.fog_seen[active].has(world.buildings.id[b]):
-				continue   # built since you last looked
-			return false
+	if cx < 0 or cy < 0 or cx + d.x > map.width or cy + d.y > map.height:
+		return false
+	for c in Economy._footprint(world, cx, cy, d, along):
+		var x: int = c % map.width
+		var y: int = c / map.width
+		if fog[c] == Fog.UNSEEN or map.can_build(x, y, 1, mc, t.water) or Economy._replaceable(world, active, t, c):
+			continue
+		var b := world.buildings.index_of(map.occupied[c])
+		if b >= 0 and world.is_enemy(active, world.buildings.owner[b]) and fog[c] != Fog.VISIBLE \
+				and not world.fog_seen[active].has(world.buildings.id[b]):
+			continue   # built since you last looked
+		return false
 	return true
 
 
@@ -1685,7 +1686,8 @@ func _ghost_cell(pos: Vector2) -> Vector2i:
 
 
 ## Which way a gate being placed runs: along the wall under the cursor (walls or gates beside
-## it along sim x, or else along sim y), else the way R last turned it. 0 for other buildings.
+## it along sim x, or else along sim y; with neither, corner to corner on one diagonal or the
+## other), else the way R last turned it. 0 for other buildings.
 func _ghost_along(pos: Vector2) -> int:
 	var t: Dictionary = world.btypes[Economy.btype_of(world, placing)]
 	if not t.gate:
@@ -1696,7 +1698,38 @@ func _ghost_along(pos: Vector2) -> int:
 	var along_y := _walled(c + Vector2i(0, -1)) or _walled(c + Vector2i(0, 1))
 	if along_x != along_y:
 		return 0 if along_x else 1
+	if not along_x:
+		var down := _walled(c + Vector2i(-1, -1)) or _walled(c + Vector2i(1, 1))   # along 2: x and y grow together
+		var across := _walled(c + Vector2i(1, -1)) or _walled(c + Vector2i(-1, 1))   # along 3
+		if down != across:
+			return 2 if down else 3
 	return gate_along
+
+
+## The way building slot b runs, as Economy.dims' `along` (0 for all but gates along y or a diagonal).
+func _along_of(b: int) -> int:
+	var bs := world.buildings
+	if bs.diag[b] != 0:
+		return bs.diag[b] + 1
+	return 1 if bs.sy[b] > bs.sx[b] else 0
+
+
+## The ground outlines of building slot b's footprint, as canvas quads: one for a rect, one per
+## cell for a diagonal gate (its cells meet at their corners).
+func _footprint_quads(cx: int, cy: int, sx: int, sy: int, diag: int) -> Array:
+	var out := []
+	var tops := [Vector2i(cx, cy)]
+	if diag != 0:   # (as Buildings.cells, by coordinates: a ghost may hang off the map's edge)
+		tops = range(sy).map(func(k): return Vector2i(cx + (k if diag == 1 else sx - 1 - k), cy + k))
+	for t in tops:
+		var x0: int = t.x * 1000
+		var y0: int = t.y * 1000
+		var w: int = 1000 if diag != 0 else sx * 1000
+		var h: int = 1000 if diag != 0 else sy * 1000
+		var up := Vector2(0, Iso.lift(x0 + w / 2, y0 + h / 2))   # on a hill, on its top
+		out.append(PackedVector2Array([Iso.to_screen(x0, y0) - up, Iso.to_screen(x0 + w, y0) - up, Iso.to_screen(x0 + w, y0 + h) - up,
+			Iso.to_screen(x0, y0 + h) - up]))
+	return out
 
 
 ## Does a wall or gate stand on this cell?
@@ -2034,7 +2067,7 @@ func _sync_buildings() -> void:
 	for id in bviews.keys():
 		if bs.index_of(id) < 0:
 			var mem = null if reveal else world.fog_seen[active].get(id)
-			if mem != null and not Fog.sees_area(world, active, mem[2], mem[3], mem[4], mem[8]):
+			if mem != null and not Fog.sees_area(world, active, mem[2], mem[3], mem[4], mem[8], mem[9]):
 				ghosts[id] = bviews[id]
 			else:
 				bviews[id].queue_free()
@@ -2046,8 +2079,8 @@ func _sync_buildings() -> void:
 		var mem = _memory(b)   # an enemy's: as you last saw it (its owner's age then, how far built)
 		var look := kit.building_key(lib.architecture(world.races[bs.owner[b]]), t.id, mem[7] if mem != null else world.ages[bs.owner[b]],
 			(id * 7 + bs.cx[b] * 3 + bs.cy[b]) % 4)   # which house variant: steady per building, varied along a street
-		if t.gate and bs.sy[b] > bs.sx[b] and kit.buildings.has(look + ArtKit.ALONG_Z):
-			look += ArtKit.ALONG_Z   # a gate laid along sim y is baked turned that way
+		if t.gate and kit.buildings.has(look + ArtKit.ALONG[_along_of(b)]):
+			look += ArtKit.ALONG[_along_of(b)]   # a gate laid along sim y or a diagonal is baked turned that way
 		if view != null and view.get_meta("look", look) != look:
 			view.queue_free()   # its owner aged up and this building grew with them
 			bviews.erase(id)
@@ -2960,10 +2993,10 @@ func _draw_overlay() -> void:
 		var x0 := bs.cx[b] * 1000
 		var y0 := bs.cy[b] * 1000
 		var up := Vector2(0, Iso.lift(x0 + sx / 2, y0 + sy / 2))   # on a hill, the outline sits on its top
-		var pts := PackedVector2Array([Iso.to_screen(x0, y0) - up, Iso.to_screen(x0 + sx, y0) - up, Iso.to_screen(x0 + sx, y0 + sy) - up,
-			Iso.to_screen(x0, y0 + sy) - up, Iso.to_screen(x0, y0) - up])
-		overlay.draw_polyline(pts, Color(0, 0, 0, 0.6), 4.0 / camera.zoom.x)
-		overlay.draw_polyline(pts, RING, 2.0 / camera.zoom.x)
+		for q in _footprint_quads(bs.cx[b], bs.cy[b], bs.sx[b], bs.sy[b], bs.diag[b]):
+			var pts: PackedVector2Array = q + PackedVector2Array([q[0]])
+			overlay.draw_polyline(pts, Color(0, 0, 0, 0.6), 4.0 / camera.zoom.x)
+			overlay.draw_polyline(pts, RING, 2.0 / camera.zoom.x)
 		if bs.rally_x[b] >= 0:
 			var rp := Iso.to_ground(bs.rally_x[b], bs.rally_y[b])
 			overlay.draw_line(Iso.to_screen(x0 + sx / 2, y0 + sy / 2) - up, rp, Color(RING, 0.4), 1.0 / camera.zoom.x)   # the flag itself is in the marks
@@ -2974,13 +3007,8 @@ func _draw_overlay() -> void:
 		var ghosts := wall_cells(wall_from, c) if _line(placing) and wall_from.x >= 0 else [c]
 		for g in ghosts:
 			var ok := _ghost_ok(Economy.btype_of(world, placing), g.x, g.y, along)
-			var x0: int = g.x * 1000
-			var y0: int = g.y * 1000
-			var sx := d.x * 1000
-			var sy := d.y * 1000
-			var up := Vector2(0, Iso.lift(x0 + sx / 2, y0 + sy / 2))
-			overlay.draw_colored_polygon(PackedVector2Array([Iso.to_screen(x0, y0) - up, Iso.to_screen(x0 + sx, y0) - up,
-				Iso.to_screen(x0 + sx, y0 + sy) - up, Iso.to_screen(x0, y0 + sy) - up]), GOOD if ok else BAD)
+			for q in _footprint_quads(g.x, g.y, d.x, d.y, Economy.diag_of(along)):
+				overlay.draw_colored_polygon(q, GOOD if ok else BAD)
 	if boxing:
 		var r := Rect2(press_world, Vector2.ZERO).expand(get_global_mouse_position())
 		overlay.draw_rect(r, Color(RING, 0.12))
