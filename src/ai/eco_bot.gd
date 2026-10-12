@@ -9,6 +9,7 @@ const Economy := preload("res://src/sim/economy.gd")
 const Commands := preload("res://src/sim/commands.gd")
 const Fixed := preload("res://src/sim/fixed.gd")
 const Tech := preload("res://src/sim/tech.gd")
+const Pens := preload("res://src/sim/pens.gd")
 
 const THINK_EVERY := 20        # ticks (1 s)
 var MIX := {1: {"food": 60, "wood": 40}}   # age -> share of workers per resource (data/ai.json when a full bot runs this)
@@ -25,6 +26,7 @@ const CLAIM_COOLDOWN := 200    # ticks between errands to claim a sheep
 const MEAT_LEFT := 40          # a carcass down to this much: time to bring down the next animal
 const HUNT_PARTY := {"herd": 3, "flee": 3, "fight": 8}      # hunters sent, by animal behaviour: sheep, deer, boar
 const HUNT_WORKERS := {"herd": 0, "flee": 8, "fight": 12}   # workers we need before hunting each
+const PEN_SHEEP := 3           # sheep of ours near home worth a pen for: build one in age 1 (the first are slaughtered meanwhile)
 const BOAR_SOLDIERS := 3       # idle soldiers at home that join a boar party (they lead; workers make up the rest)
 var AGE_WORKERS := 16          # with this many workers, stop training and save for the next age
 
@@ -77,6 +79,7 @@ func think(w) -> void:
 	# Meat first (the orders below then leave these hunters be), and no foundation left alone.
 	_ordered.clear()
 	_herd(w, tc, workers)
+	_pen(w, tc, workers)
 	_hunt(w, tc, workers)
 	_finish_foundations(w, workers)
 	# Age up: with enough workers, save up and click it.
@@ -166,6 +169,52 @@ func _herd(w, tc: int, workers: Array) -> void:
 		_next_claim = w.tick + CLAIM_COOLDOWN
 
 
+## Sheep for the long run (Dominic: penned, they feed you slowly instead of once): with
+## PEN_SHEEP or more of ours near home in age 1 (claimed faster than we slaughter them: the first
+## ones still feed the early game) and no pen, build one; once it stands, our sheep
+## outside it go in (while it has room). A bot with a pen doesn't slaughter its sheep (_hunt).
+func _pen(w, tc: int, workers: Array) -> void:
+	var u = w.units
+	var bs = w.buildings
+	var pen := -1
+	for b in bs.count():
+		if pen < 0 and bs.owner[b] == player and Pens.is_pen(w, b):
+			pen = b
+	if pen < 0:
+		var hx: int = bs.cx[tc] * 1000 + 1500
+		var hy: int = bs.cy[tc] * 1000 + 1500
+		var near := 0
+		for i in u.count():
+			if u.owner[i] == player and w.types[u.kind[i]].get("behaviour", "") == "herd" \
+					and Fixed.dist2(hx, hy, u.x[i], u.y[i]) <= HUNT_RADIUS * HUNT_RADIUS * 1000000:
+				near += 1
+		var k: int = Economy.btype_of(w, "pen")
+		if w.ages[player] == 1 and near >= PEN_SHEEP and w.can_afford(player, w.btypes[k].cost) and not _building_underway(w):
+			var builder := _pick_builder(w, workers)
+			var spot := _house_spot(w, bs.cx[tc] + 1, bs.cy[tc] + 1, w.btypes[k].size)
+			if builder >= 0 and spot.x >= 0:
+				w.issue(player, Commands.BUILD, {"ids": [u.id[builder]], "building": "pen", "cx": spot.x, "cy": spot.y})
+				_ordered[u.id[builder]] = true
+		return
+	if bs.done[pen] == 0:
+		return
+	var heading: Array = Pens.animals(w, pen)
+	var out := []
+	for i in u.count():
+		if u.owner[i] == player and w.types[u.kind[i]].get("behaviour", "") == "herd" and Pens.pen_at(w, i) < 0 and not heading.has(i):
+			out.append(u.id[i])
+	if not out.is_empty() and Pens.room(w, pen):
+		w.issue(player, Commands.PEN, {"ids": out, "building": bs.id[pen]})
+
+
+## Do we have a pen (built or going up)?
+func _has_pen(w) -> bool:
+	for b in w.buildings.count():
+		if w.buildings.owner[b] == player and Pens.is_pen(w, b):
+			return true
+	return false
+
+
 ## Hunting, one animal at a time while nothing else is being hunted or butchered: our own
 ## sheep first (they wait by the Town Center), then deer near home once there are a few
 ## workers, then boar (they fight back) only with a big party, soldiers joining if any are idle
@@ -206,9 +255,10 @@ func _hunt(w, tc: int, workers: Array) -> void:
 				and not w.types[u.kind[i]].healer and u.foe[i] == 0 and u.moving[i] == 0 and Fixed.dist2(hx, hy, u.x[i], u.y[i]) <= near:
 			guards.append(u.id[i])
 	var target := -1
+	var penning := _has_pen(w)
 	for want in ["herd", "flee", "fight"]:   # sheep, deer, boar
-		if workers.size() < HUNT_WORKERS[want]:
-			continue
+		if workers.size() < HUNT_WORKERS[want] or (want == "herd" and penning):
+			continue   # (sheep with a pen to go to are kept)
 		var best_d2 := HUNT_RADIUS * HUNT_RADIUS * 1000000
 		for i in u.count():
 			var t: Dictionary = w.types[u.kind[i]]

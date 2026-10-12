@@ -26,7 +26,9 @@ const TRADE := "trade"             # {building: a market, resource: id, buy: 1 o
 const STOP := "stop"               # {ids}  drop everything: no move, no job, no fight, no queued orders
 const STANCE := "stance"           # {ids, stance: "aggressive" / "defensive" / "stand" / "passive"}  (combat.gd POSTURES)
 const DROP_OFF := "drop_off"       # {ids, building}  workers take what they carry there, then go back to gathering
-const TYPES := [MOVE, SPAWN, GATHER, BUILD, HELP_BUILD, TRAIN, CANCEL, RALLY, ATTACK, ATTACK_MOVE, AGE_UP, RESEARCH, SURRENDER, RESEED, TRADE, STOP, STANCE, DROP_OFF]
+const PEN := "pen"                 # {ids, building}  herd animals go into the player's pen (pens.gd)
+const RELEASE := "release"         # {building}  a pen's animals walk out
+const TYPES := [MOVE, SPAWN, GATHER, BUILD, HELP_BUILD, TRAIN, CANCEL, RALLY, ATTACK, ATTACK_MOVE, AGE_UP, RESEARCH, SURRENDER, RESEED, TRADE, STOP, STANCE, DROP_OFF, PEN, RELEASE]
 ## Unit orders that can be queued: with args.queue = 1, a busy unit keeps the order for
 ## when it's done (shift-queuing); without it, the order replaces the unit's queue.
 const QUEUEABLE := [MOVE, GATHER, BUILD, HELP_BUILD, ATTACK, ATTACK_MOVE, DROP_OFF]

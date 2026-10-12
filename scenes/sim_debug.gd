@@ -26,6 +26,7 @@ const MatchLoader := preload("res://scenes/match_loader.gd")
 const CombatFx := preload("res://src/view/combat_fx.gd")
 const Tech := preload("res://src/sim/tech.gd")
 const Market := preload("res://src/sim/market.gd")
+const Pens := preload("res://src/sim/pens.gd")
 const RtsCamera := preload("res://src/view/rts_camera.gd")
 const CommandPanel := preload("res://src/view/command_panel.gd")
 const UiTheme := preload("res://src/view/ui/theme.gd")
@@ -1017,6 +1018,12 @@ func _is_animal(id: int) -> bool:
 	return i >= 0 and world.types[world.units.kind[i]].has("animal")
 
 
+## Is building `bid` a finished pen of player p's?
+func _is_pen_of(bid: int, p: int) -> bool:
+	var b := world.buildings.index_of(bid)
+	return b >= 0 and world.buildings.owner[b] == p and world.buildings.done[b] == 1 and not world.btypes[world.buildings.kind[b]].pen.is_empty()
+
+
 ## A selected animal's card: what it is, its food, and what to do with it.
 func _animal_info(t: Dictionary, owner: int) -> String:
 	if owner == world.gaia and t.behaviour == "herd":
@@ -1025,7 +1032,7 @@ func _animal_info(t: Dictionary, owner: int) -> String:
 		return "%d food, wild. %s" % [t.food, "It bolts when hurt: hunt it with a few workers." if t.behaviour == "flee" else "It fights back: hunt it with a big party."]
 	if owner != active:
 		return "%d food, theirs. Walk one of yours up to it while none of theirs is near to steal it." % t.food
-	return "%d food. Workers slaughter it where it stands (right-click it); it can be led like a unit." % t.food
+	return "%d food at once: workers slaughter it where it stands (right-click it).\nOr put it in a pen (right-click the pen) for a little food all the time." % t.food
 
 
 ## Right-click: rally for a selected building; for units gather a resource, help
@@ -1051,7 +1058,9 @@ func smart_order(pos: Vector2) -> void:
 	for p in groups.size():
 		var ids: Array = groups[p].filter(func(id): return not _is_animal(id))
 		var herd: Array = groups[p].filter(_is_animal)
-		if not herd.is_empty():   # our sheep only ever walk (they take no fighting or work orders)
+		if not herd.is_empty() and bid != 0 and _is_pen_of(bid, p):
+			world.issue(p, Commands.PEN, {"ids": herd, "building": bid})   # into our pen
+		elif not herd.is_empty():   # our sheep only ever walk (they take no fighting or work orders)
 			world.issue(p, Commands.MOVE, {"ids": herd, "x": m.x, "y": m.y, "queue": q})
 		if ids.is_empty():
 			continue
@@ -1749,7 +1758,7 @@ func _sync_buildings() -> void:
 			view = BuildingArt.new()
 			view.setup(kit, look, bs.cx[b], bs.cy[b], bs.sx[b], bs.sy[b], Color(lib.palettes.teams[bs.owner[b]]))
 			view.set_meta("look", look)
-			layer.add_child(view)
+			(flat if not t.pen.is_empty() else layer).add_child(view)   # a pen lies low, under the sheep standing in it
 			bviews[id] = view
 			_clear_doodads(bs.cx[b], bs.cy[b], bs.sx[b], bs.sy[b])
 		if bs.done[b] == 1 and not view.get_meta("done", false):
@@ -2228,6 +2237,14 @@ func _update_panel() -> void:
 			"portrait": kit.building_icon(_arch(owner), t.id), "buttons": [], "queue": null, "info": ""}
 		if bs.done[b] == 0:
 			c.info = "Being built: %d%%" % (100 * bs.progress[b] / t.build_ticks)
+		elif not t.pen.is_empty():   # a pen: its animals and what they bring in
+			var n: int = mini(Pens.animals(world, b, true).size(), int(t.pen.animals))
+			c.info = "%d of %d animals: %d food a minute.\nTwo or more breed, now and then." % [n, t.pen.animals, n * int(t.pen.food) * 1200 / int(t.pen.food_ticks)]
+			if mine:
+				c.info += "\nRight-click it with sheep selected to put them in."
+				c.buttons.append({"icon": Icons.texture("release"), "text": "Release", "key": "", "cost": "", "enabled": n > 0, "group": "Orders",
+					"tip": "[b]Release[/b]\nThe animals walk out and stand in front of the pen (to slaughter them, or lead them elsewhere).",
+					"action": func(): world.issue(active, Commands.RELEASE, {"building": selected_building})})
 		elif not t.trains.is_empty() or not world.tech.research.filter(func(r): return r.building == t.id).is_empty():
 			var q: Array = bs.queue[b]
 			c.queue = []
