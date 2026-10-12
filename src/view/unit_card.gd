@@ -40,6 +40,13 @@ static func text(t: Dictionary, foes: Array, combat := {}) -> String:
 	return "\n".join(lines)
 
 
+## The card's first two lines only, for the panel: the rest (bonus, strong and weak vs) shows on
+## hover there, so the panel stays one row tall (Dominic).
+static func short(t: Dictionary, combat := {}) -> String:
+	var lines: PackedStringArray = text(t, [], combat).split("\n")
+	return "\n".join(lines.slice(0, 2))
+
+
 ## "Heals 3 hp every 1.5 s, range 2.5" (rules combat heal_*), or a plain line without the rules.
 static func heal_text(e: Dictionary, combat: Dictionary) -> String:
 	if not combat.has("heal_amount"):
