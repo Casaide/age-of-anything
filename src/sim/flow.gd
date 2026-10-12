@@ -105,6 +105,71 @@ static func solve(map: SimMap, source_cells: PackedInt32Array, cutoff := INF, k 
 	return f
 
 
+## A cell opened (walkable now in lane k; nothing closed): lower the costs it shortens. Opening
+## only adds ways, so costs only fall: recompute the cell and its neighbours from their
+## neighbours, then carry any fall outwards (label-correcting, in a FIFO). Moves follow solve's
+## rules (diagonals need both sides open; a blocked source is worked from any side). Cells
+## past a near field's cutoff take a cost but aren't expanded, as in solve. Deterministic: the
+## same cells in the same order. The caller drops the field instead if `cell` is a source.
+func patch(map: SimMap, cell: int, k := 0) -> void:
+	var w := map.width
+	var h := map.height
+	var walk: PackedByteArray = map.walks[k]
+	var queue := PackedInt32Array()
+	var cx := cell % w
+	var cy := cell / w
+	for y in range(maxi(cy - 1, 0), mini(cy + 2, h)):
+		for x in range(maxi(cx - 1, 0), mini(cx + 2, w)):
+			var s := y * w + x
+			if walk[s] == 0 or dist[s] == 0:
+				continue
+			for ny in range(maxi(y - 1, 0), mini(y + 2, h)):
+				for nx in range(maxi(x - 1, 0), mini(x + 2, w)):
+					var n := ny * w + nx
+					if n == s or dist[n] >= INF or (dist[n] > max_cost):
+						continue
+					var step := _step(map, walk, n, s)
+					if step > 0 and dist[n] + step < dist[s]:
+						dist[s] = dist[n] + step
+						next[s] = n
+			if dist[s] < INF and dist[s] <= max_cost:
+				queue.append(s)
+	var head := 0
+	while head < queue.size():
+		var c: int = queue[head]
+		head += 1
+		var x0 := c % w
+		var y0 := c / w
+		for ny in range(maxi(y0 - 1, 0), mini(y0 + 2, h)):
+			for nx in range(maxi(x0 - 1, 0), mini(x0 + 2, w)):
+				var n := ny * w + nx
+				if n == c or walk[n] == 0:
+					continue
+				var step := _step(map, walk, c, n)
+				if step > 0 and dist[c] + step < dist[n]:
+					dist[n] = dist[c] + step
+					next[n] = c
+					if dist[n] <= max_cost:
+						queue.append(n)
+		pops += 1
+
+
+## The cost of the field spreading from c to its neighbour n (n walkable): straight 10,
+## diagonal 14 if both cells beside the corner are open, or always from a blocked source; 0 if
+## the move isn't allowed.
+func _step(map: SimMap, walk: PackedByteArray, c: int, n: int) -> int:
+	var w := map.width
+	var dx := n % w - c % w
+	var dy := n / w - c / w
+	if dx == 0 or dy == 0:
+		return STRAIGHT
+	if walk[c] == 0 and dist[c] == 0:
+		return DIAGONAL   # a blocked source: worked from any cell touching it
+	if walk[c + dx] == 1 and walk[c + dy * w] == 1:
+		return DIAGONAL
+	return 0
+
+
 ## Does a change at `cell` possibly alter this field? Only if the solve reached it or a neighbour.
 func touches(map: SimMap, cell: int) -> bool:
 	var cx := cell % map.width

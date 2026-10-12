@@ -15,6 +15,7 @@ const SimMap := preload("res://src/sim/sim_map.gd")
 const Economy := preload("res://src/sim/economy.gd")
 const Flow := preload("res://src/sim/flow.gd")
 const Animals := preload("res://src/sim/animals.gd")
+const Bridges := preload("res://src/sim/bridges.gd")
 
 ## units.stance, what a unit is doing: nothing, an ordered target, a fight it found
 ## itself, an attack-move, or walking back to where it stood (defensive units).
@@ -220,7 +221,9 @@ static func _is_target(w, id: int, player: int) -> bool:
 	if i >= 0:
 		return w.is_enemy(w.units.owner[i], player) or (w.units.owner[i] == player and w.types[w.units.kind[i]].has("animal"))
 	var b: int = w.buildings.index_of(id)
-	return b >= 0 and w.is_enemy(w.buildings.owner[b], player)
+	if b < 0:
+		return Bridges.is_target(w, id)   # a map bridge: anyone may break it
+	return w.is_enemy(w.buildings.owner[b], player)
 
 
 # ------------------------------------------------------------------ tick
@@ -238,6 +241,8 @@ static func tick(w) -> void:
 	hurt_by.resize(n)
 	var bhurt := PackedInt32Array()
 	bhurt.resize(bs.count())
+	var brhurt := PackedInt32Array()   # per map bridge (bridges.gd)
+	brhurt.resize(w.bridge_id.size())
 	# How many attackers each unit already has (by slot), kept up to date as foes are
 	# picked this tick, so picks spread over the enemy line.
 	var engaged := PackedInt32Array()
@@ -296,6 +301,23 @@ static func tick(w) -> void:
 			continue
 		var j: int = u.index_of(u.foe[i])
 		var b: int = -1 if j >= 0 else bs.index_of(u.foe[i])
+		var br: int = Bridges.index_of(w, u.foe[i]) if j < 0 and b < 0 and w.bridge_id.size() > 0 else -1
+		if br >= 0 and w.bridge_up[br] == 1:   # breaking a bridge: walk up to it and hack away
+			if Bridges.gap(w, i, br) <= t.reach:
+				u.moving[i] = 0
+				if u.cooldown[i] == 0:
+					u.cooldown[i] = t.reload
+					var d := Bridges.damage_from(w, br, t.atk, int(c.min_damage))
+					brhurt[br] += d
+					w.events.append({"type": "hit", "by": u.id[i], "to": u.foe[i], "damage": d, "ranged": t.ranged})
+			elif Bridges.gap(w, i, br) <= Economy.REACH + SimMap.TILE:
+				var r: Rect2i = w.bridge_rect[br]   # close: step straight onto the deck's edge
+				w.order_direct(i, clampi(u.x[i], r.position.x, r.end.x), clampi(u.y[i], r.position.y, r.end.y))
+			else:
+				var key: int = w.building_field(u.foe[i], false, w.lane(i))
+				if u.moving[i] == 0 or u.fkey[i] != key:
+					w.order_reach(i, w.bridge_rect[br], key)
+			continue
 		if j < 0 and b < 0:
 			# An attack-mover whose foe fell takes the next one at once: walking on until its
 			# acquire beat stepped a whole line of shooters forward after every kill.
@@ -336,6 +358,9 @@ static func tick(w) -> void:
 			_chase(w, i, j, b)
 	_towers(w, hurt, hurt_by)
 	_apply(w, hurt, hurt_by, bhurt)
+	for k in brhurt.size():
+		if brhurt[k] > 0:
+			Bridges.hurt(w, k, brhurt[k])
 
 
 ## Finished buildings that attack (watchtowers) shoot the nearest enemy unit in reach.

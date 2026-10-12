@@ -77,6 +77,8 @@ func _init() -> void:
 	_test_movement_classes()
 	_test_farms(races)
 	_test_fog_memory(races)
+	_test_land()
+	_test_flow_patch()
 	_test_tech(races)
 	_test_research_queue(races)
 	_test_effects(races)
@@ -399,6 +401,147 @@ func _test_movement_classes() -> void:
 	var ri := w.units.index_of(rat)
 	check(w.map.terrain[w.map.cell_of(w.units.x[fi], w.units.y[fi])] == shallows, "the frog wades into the shallows")
 	check(w.map.terrain[w.map.cell_of(w.units.x[ri], w.units.y[ri])] != shallows, "the rat stops at the water's edge")
+
+
+# --- the land: trees, rivers, fords, bridges (milestone 15) --------------------------
+
+## On river_test: trees block sight (the first tree is seen, not what's behind it) and
+## movement until felled, then leave a walkable stump; walkers cross the river only at the
+## ford or the bridge, a frog swims it anywhere; a bridge broken by attack is gone for
+## walkers until workers rebuild it (paying wood).
+func _test_land() -> void:
+	var lib = DataLib.new()
+	var gen = Generator.new(lib)
+	var rats: Dictionary = gen.generate(PROMPTS[1], rules_)
+	var frogs: Dictionary = gen.generate(PROMPTS[0], rules_)
+	var bare := rules_.duplicate(true)
+	bare.economy.start.buildings = []
+	bare.economy.start.workers = 0
+	var w := World.new(SEED, SimMap.load_id("river_test"), [rats, frogs], bare, [0, 0])   # allies: nobody fights
+	var m = w.map
+	var tree: int = m.terrain_ids.find("tree")
+	var river: int = m.terrain_ids.find("river")
+	var ford: int = m.terrain_ids.find("ford")
+	check(m.opaque[10 * m.width + 8] == 1, "land: a tree blocks sight")
+	# Sight: a rat west of the forest (x 8-10, y 9-14) sees the first tree, not past the forest.
+	w.issue(0, Commands.SPAWN, {"slot": "spear", "count": 1, "x": 5500, "y": 11500})
+	while w.units.count() < 1:
+		w.step()
+	var rat: int = w.units.id[0]
+	var ri := w.units.index_of(rat)
+	w.units.x[ri] = 5500
+	w.units.y[ri] = 11500
+	for t in 8:
+		w.step()
+	check(w.fog[0][11 * m.width + 8] == Fog.VISIBLE, "land: the first tree of the forest is seen")
+	check(w.fog[0][11 * m.width + 12] != Fog.VISIBLE, "land: the ground behind the forest isn't")
+	check(w.fog[0][8 * m.width + 5] == Fog.VISIBLE, "land: open ground round it is")
+	# Crossing: the rat walks from the west bank to the east; every river cell it stands on is
+	# the ford or the bridge's deck.
+	var cheat := false
+	w.issue(0, Commands.MOVE, {"ids": [rat], "x": 30500, "y": 11500})
+	var t0 := w.tick
+	while w.tick < t0 + 1600:
+		w.step()
+		ri = w.units.index_of(rat)
+		var c: int = m.cell_of(w.units.x[ri], w.units.y[ri])
+		if m.terrain[c] == river and m.deck[c] == 0:
+			cheat = true
+		if w.units.moving[ri] == 0 and w.tick > t0 + 20:
+			break
+	ri = w.units.index_of(rat)
+	check(not cheat, "land: the rat never stands in the river")
+	check(w.units.x[ri] > 26000, "land: the rat got across (x %d)" % w.units.x[ri])
+	# A frog swims straight over.
+	w.issue(1, Commands.SPAWN, {"slot": "spear", "count": 1, "x": 15500, "y": 11500})
+	while w.units.count() < 2:
+		w.step()
+	var frog: int = w.units.id[1]
+	w.issue(1, Commands.MOVE, {"ids": [frog], "x": 25500, "y": 11500})
+	var swam := false
+	t0 = w.tick
+	while w.tick < t0 + 600:
+		w.step()
+		var fi := w.units.index_of(frog)
+		if m.terrain[m.cell_of(w.units.x[fi], w.units.y[fi])] == river:
+			swam = true
+	check(swam, "land: the frog swims the river")
+	check(w.units.x[w.units.index_of(frog)] > 24000, "land: and gets across")
+	# Break the bridge: rats attack it till it falls; then walkers can't use it.
+	var bridge: int = w.bridge_id[0]
+	w.issue(0, Commands.SPAWN, {"slot": "spear", "count": 6, "x": 24500, "y": 16500})
+	while w.units.count() < 8:
+		w.step()
+	var hitters := []
+	for i in w.units.count():
+		if w.units.owner[i] == 0:
+			hitters.append(w.units.id[i])
+	w.issue(0, Commands.ATTACK, {"ids": hitters, "target": bridge})
+	t0 = w.tick
+	while w.tick < t0 + 6000 and w.bridge_up[0] == 1:
+		w.step()
+	check(w.bridge_up[0] == 0, "land: the bridge falls (after %d ticks)" % (w.tick - t0))
+	var deck: int = 16 * m.width + 20
+	check(m.walks[0][deck] == 0, "land: its deck is gone for walkers")
+	check(m.walks[1][deck] == 1, "land: amphibians still swim there")
+	# Rebuild: workers pay and build; the deck is back.
+	w.issue(0, Commands.SPAWN, {"slot": "worker", "count": 2, "x": 24500, "y": 15500})
+	while w.units.count() < 10:
+		w.step()
+	var builders := []
+	for i in w.units.count():
+		if w.units.owner[i] == 0 and w.types[w.units.kind[i]].worker:
+			builders.append(w.units.id[i])
+	var wood: int = w.resources.find("wood")
+	w.stock[wood][0] = 200
+	w.issue(0, Commands.HELP_BUILD, {"ids": builders, "target": bridge})
+	t0 = w.tick
+	while w.tick < t0 + 3000 and w.bridge_up[0] == 0:
+		w.step()
+	check(w.stock[wood][0] == 50, "land: the rebuild cost 150 wood (%d left)" % w.stock[wood][0])
+	check(w.bridge_up[0] == 1 and m.walks[0][deck] == 1, "land: the workers rebuilt the bridge (in %d ticks)" % (w.tick - t0))
+	# Felling: a worker cuts the forest's first tree: wood, a stump, sight and a way through.
+	var tc: int = 11 * m.width + 8
+	m.amount[tc] = 3
+	w.issue(0, Commands.GATHER, {"ids": [builders[0]], "cell": tc})
+	t0 = w.tick
+	while w.tick < t0 + 2000 and m.terrain[tc] == tree:
+		w.step()
+	check(m.terrain_ids[m.terrain[tc]] == "stump" and m.walks[0][tc] == 1 and m.opaque[tc] == 0, "land: the felled tree is a walkable stump that doesn't block sight")
+	check(m.terrain[5 * m.width + 20] == ford, "land: the map has its ford")
+
+
+## A field patched for opened cells (trees felled, one by one and side by side) has the same
+## costs as one solved from scratch on the changed map.
+func _test_flow_patch() -> void:
+	var m: SimMap = SimMap.load_id("river_test")
+	var target: int = 12 * m.width + 4
+	var full = Flow.solve(m, PackedInt32Array([target]))
+	var near = Flow.solve(m, PackedInt32Array([target]), World.NEAR_CUTOFF)
+	var fell := [11 * m.width + 8, 11 * m.width + 9, 12 * m.width + 9, 10 * m.width + 10, 11 * m.width + 10]
+	for c in fell:
+		m.fresh.clear()
+		while m.amount[c] > 0:
+			m.take(c)
+		for f in m.fresh:
+			full.patch(m, f)
+			near.patch(m, f)
+	var fresh = Flow.solve(m, PackedInt32Array([target]))
+	var fresh_near = Flow.solve(m, PackedInt32Array([target]), World.NEAR_CUTOFF)
+	var same := 0
+	var same_near := 0
+	for c in m.width * m.height:
+		if full.dist[c] == fresh.dist[c]:
+			same += 1
+		if (near.dist[c] <= World.NEAR_CUTOFF) == (fresh_near.dist[c] <= World.NEAR_CUTOFF) and (near.dist[c] > World.NEAR_CUTOFF or near.dist[c] == fresh_near.dist[c]):
+			same_near += 1
+	check(same == m.width * m.height, "flow patch: a patched field matches a fresh solve (%d of %d cells)" % [same, m.width * m.height])
+	check(same_near == m.width * m.height, "flow patch: a patched near field matches within its cutoff (%d of %d)" % [same_near, m.width * m.height])
+	for c in m.width * m.height:   # every step leads downhill to the target
+		if full.dist[c] > 0 and full.dist[c] < Flow.INF:
+			if full.dist[full.next[c]] >= full.dist[c]:
+				check(false, "flow patch: next of cell %d goes uphill" % c)
+				break
 
 
 # --- farms and placement -------------------------------------------------------
