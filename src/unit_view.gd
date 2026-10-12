@@ -306,9 +306,9 @@ func _attach(lib, rig: Dictionary, slot: String, part_id: String, colours: Dicti
 		var near: bool = float(rig.depth[socket]) >= -0.5
 		z = (1.6 if slot == "back" else absf(z)) if near else (-3.0 if slot == "back" else -absf(z))
 	if p.has("blur"):
-		# A wing blur (parts.json "blur": its opacity in percent): see-through, over the body in
-		# every facing (a hummingbird's wings beat on both sides at once), and it buzzes.
-		z = 0.5
+		# A wing blur (parts.json "blur": its opacity in percent): see-through, and it buzzes.
+		# Drawn over or under the body like any back part (over it in every facing, the wings
+		# lay across a bird seen from behind as a flat grey plate: Dominic, "what's this?").
 		node.modulate.a = float(p.blur) / 100.0
 		node.set_meta("buzz", true)
 	node.set_meta("z", z)

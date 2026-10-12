@@ -1059,7 +1059,7 @@
   },
   "points": 4,
   "innate": true,
-  "blur": 70,
+  "blur": 55,
   "shapes": [
    {
     "t": "poly",
