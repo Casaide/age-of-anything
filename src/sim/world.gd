@@ -53,6 +53,13 @@ const RETURN_SLACK := 1000     # shoved this far beyond its settle radius, a sto
 const FIELD_CACHE := 12        # flow fields kept per player (oldest dropped first; at least 24)
 const SOLVE_BUDGET := 1500     # flow-field cells settled per tick: one full solve, or a few near ones
 const NEAR_CUTOFF := 160       # cost cutoff for "near" fields (16 tiles): short work trips
+# Places of their own (Dominic's playtest, 2026-10-13: a group's units pushed each other about
+# at the end of a move, workers got stuck on each other, a crowd fought the pathing at a wall).
+const FORM_GAP := 160          # milli-tiles between neighbouring bodies in a formation, or round a building
+const SLOT_ARRIVE := 60        # a unit making for its own place (a formation slot, a spot by a building) stops this close
+const SLOT_SLACK := 400        # shoved this far beyond that, a stopped unit in a formation walks back to its slot
+const SPOT_GAP := 100          # a worker's chosen spot beside its rect: this gap between its body and the rect
+const SPOT_BUSY := 3           # this many spot checks finding no free spot and the worker gives the place up
 
 # Field keys: (target * 4 + kind) * LANES + lane. Cell targets are cells; building targets are ids.
 # A lane is a movement class, and the team for maps with gates (SimMap lanes).
@@ -308,11 +315,14 @@ func step() -> void:
 	Economy.work(self)
 	Animals.tick(self)
 	spatial.build(units.x, units.y)
+	var alive := units.count()
 	Heal.tick(self)
 	Combat.tick(self)
 	Match.tick(self)
 	Fog.tick(self)
 	Trails.tick(self)
+	if units.count() != alive:
+		spatial.build(units.x, units.y)   # the dead are gone: moves look round at who's left (World._spot)
 	_next_orders()
 	_sync_map()
 	_solve_queued()
@@ -334,25 +344,23 @@ func _run(cmd: Dictionary) -> void:
 		cmd = {"turn": cmd.turn, "player": cmd.player, "seq": cmd.seq, "type": Commands.HELP_BUILD,
 			"args": {"ids": a.ids, "target": bid, "queue": 1}}
 		a = cmd.args
+	if (cmd.type == Commands.MOVE or cmd.type == Commands.ATTACK_MOVE) and not a.has("sx"):
+		# A group move: every unit gets its own slot in a formation now, queued or not.
+		a = _formation(cmd.player, a)
+		cmd = {"turn": cmd.turn, "player": cmd.player, "seq": cmd.seq, "type": cmd.type, "args": a}
 	if cmd.type in Commands.QUEUEABLE:
 		a = _queue_or_clear(cmd)
 		if a.ids.is_empty():
 			return
 	match cmd.type:
 		Commands.MOVE:
-			var slots := []
 			for uid in a.ids:
 				var i := units.index_of(uid)
 				if i >= 0 and units.owner[i] == cmd.player:
-					slots.append(i)
-			if slots.is_empty():
-				return
-			var arrive := ARRIVE_STEP * Fixed.isqrt(slots.size()) - ARRIVE_BASE
-			for i in slots:
-				Economy.clear_task(self, i)
-				Combat.clear(self, i)
-				order_move(i, a.x, a.y, arrive, next_group)
-			next_group += 1
+					Economy.clear_task(self, i)
+					Combat.clear(self, i)
+					var s := slot_of(a, uid)
+					order_move(i, s.x, s.y, SLOT_ARRIVE, a.group, a.fx, a.fy, a.pace)
 		Commands.SPAWN:
 			var k := type_of(cmd.player, a.slot)
 			assert(k >= 0, "Player %d has no unit for slot %s" % [cmd.player, a.slot])
@@ -428,14 +436,20 @@ func _queue_or_clear(cmd: Dictionary) -> Dictionary:
 	var a: Dictionary = cmd.args
 	var queued: bool = int(a.get("queue", 0)) == 1
 	var now := []
+	var base := a.duplicate()
+	base.erase("slots")   # each queued copy keeps only its own slot
 	for uid in a.ids:
 		var i := units.index_of(uid)
 		if i < 0 or units.owner[i] != cmd.player:
 			continue
 		if queued and busy(i):
-			var one := a.duplicate()
+			var one := base.duplicate()
 			one.ids = [uid]
 			one.erase("queue")
+			if a.has("slots"):
+				var s := slot_of(a, uid)
+				one.sx = s.x
+				one.sy = s.y
 			units.orders[i].append({"type": cmd.type, "args": one})
 		else:
 			if not queued:
@@ -476,24 +490,179 @@ func _clear_combat(player: int, ids: Array) -> void:
 			Combat.clear(self, i)
 
 
-## Head for a point (snapped to walkable ground) and stop within `arrive`.
-func order_move(i: int, x: int, y: int, arrive: int, group: int) -> void:
-	x = clampi(x, 0, map.width * SimMap.TILE - 1)
-	y = clampi(y, 0, map.height * SimMap.TILE - 1)
-	var cell := map.cell_of(x, y)
+## Head for a point (snapped to walkable ground) and stop within `arrive`. A unit in a group
+## move heads for its own slot but follows the field of the group's centre (fx, fy), so a
+## group shares one field, at the group's pace (its slowest member's speed; 0: its own).
+func order_move(i: int, x: int, y: int, arrive: int, group: int, fx := -1, fy := -1, pace := 0) -> void:
 	var ln := lane(i)
-	if map.walks[ln][cell] == 0:
-		cell = Flow.nearest_walkable(map, cell, ln)
-		var c := Flow.centre(map, cell)
-		x = c.x
-		y = c.y
-	units.tx[i] = x
-	units.ty[i] = y
+	var p := _snap(x, y, ln)
+	var cell := map.cell_of(p.x, p.y)
+	if fx >= 0:
+		var c := _snap(fx, fy, ln)
+		cell = map.cell_of(c.x, c.y)
+	units.tx[i] = p.x
+	units.ty[i] = p.y
 	units.reach[i] = 0
 	units.fkey[i] = cell_field(cell, false, ln)
 	units.arrive[i] = arrive
 	units.group[i] = group
+	units.pace[i] = pace
 	_start(i)
+
+
+## The point clamped to the map, or the centre of the nearest walkable cell in this lane.
+func _snap(x: int, y: int, ln: int) -> Vector2i:
+	x = clampi(x, 0, map.width * SimMap.TILE - 1)
+	y = clampi(y, 0, map.height * SimMap.TILE - 1)
+	var cell := map.cell_of(x, y)
+	if map.walks[ln][cell] == 0:
+		return Flow.centre(map, Flow.nearest_walkable(map, cell, ln))
+	return Vector2i(x, y)
+
+
+## Back on an attack-move after a fight: to its own slot, by the group's field.
+func resume_attack_move(i: int) -> void:
+	var c := Vector2i(units.amx[i], units.amy[i]) if units.amc[i] < 0 else Flow.centre(map, units.amc[i])
+	order_move(i, units.amx[i], units.amy[i], SLOT_ARRIVE, 0, c.x, c.y)
+
+
+## Head for a point of its own beside a rect (a place round a building it attacks), following
+## the rect's field `key` there and stepping round the rect's corners near it (see _plan).
+func order_beside(i: int, x: int, y: int, r: Rect2i, key: int) -> void:
+	units.tx[i] = x
+	units.ty[i] = y
+	units.reach[i] = 2
+	units.rx0[i] = r.position.x
+	units.ry0[i] = r.position.y
+	units.rx1[i] = r.end.x
+	units.ry1[i] = r.end.y
+	units.fkey[i] = key
+	units.arrive[i] = SLOT_ARRIVE
+	units.group[i] = 0
+	units.pace[i] = 0
+	_start(i)
+
+
+## Where unit `uid` goes in a group move's args: its formation slot (or, for an order that was
+## queued, the slot it was given then).
+func slot_of(a: Dictionary, uid) -> Vector2i:
+	if a.has("slots"):
+		return a.slots[int(uid)]
+	return Vector2i(int(a.sx), int(a.sy))
+
+
+## A group move's formation: a box facing the way the group goes, centred on the click, as wide
+## as about twice its depth, neighbours a body's width plus FORM_GAP apart. Melee in the front
+## rows, shooters (and healers) behind. Units are dealt slots by where they are now: the ones
+## furthest ahead take the front rows and, along each row, left to right as they stand, so the
+## group closes up without units crossing. A slot that is blocked, or that can't be walked to
+## in a straight line from the click, moves half-way in, else onto the click. Returns the args
+## with slots (uid -> Vector2i), the group, its centre (fx, fy) and pace (slowest speed).
+func _formation(player: int, a: Dictionary) -> Dictionary:
+	var out := a.duplicate()
+	var idx := []
+	for uid in a.ids:
+		var i := units.index_of(int(uid))
+		if i >= 0 and units.owner[i] == player:
+			idx.append(i)
+	out.group = next_group
+	next_group += 1
+	var x := clampi(int(a.x), 0, map.width * SimMap.TILE - 1)
+	var y := clampi(int(a.y), 0, map.height * SimMap.TILE - 1)
+	out.fx = x
+	out.fy = y
+	out.pace = 0
+	out.slots = {}
+	if idx.is_empty():
+		return out
+	var n := idx.size()
+	var sx := 0
+	var sy := 0
+	var pace := 1 << 30
+	var rmax := 0
+	for i in idx:
+		sx += units.x[i]
+		sy += units.y[i]
+		pace = mini(pace, units.speed[i])
+		rmax = maxi(rmax, units.radius[i])
+	var cx := sx / n
+	var cy := sy / n
+	var dx := x - cx
+	var dy := y - cy
+	var d := Fixed.isqrt(dx * dx + dy * dy)
+	var ux := 0
+	var uy := Fixed.ONE   # standing still: face down the map
+	if d > 0:
+		ux = dx * Fixed.ONE / d
+		uy = dy * Fixed.ONE / d
+	var front := []
+	var back := []
+	for i in idx:
+		var t: Dictionary = types[units.kind[i]]
+		if t.get("ranged", false) or t.get("healer", false):
+			back.append(i)
+		else:
+			front.append(i)
+	var cols := clampi(Fixed.isqrt(2 * n), 1, n)
+	var space := 2 * rmax + FORM_GAP
+	var rows := (front.size() + cols - 1) / cols + (back.size() + cols - 1) / cols
+	var row := 0
+	for part in [front, back]:
+		var ahead := {}
+		for i in part:
+			ahead[i] = (units.x[i] - cx) * ux + (units.y[i] - cy) * uy
+		part.sort_custom(func(p, q): return ahead[p] > ahead[q] or (ahead[p] == ahead[q] and p < q))
+		for first in range(0, part.size(), cols):
+			var line: Array = part.slice(first, first + cols)
+			var side := {}
+			for i in line:
+				side[i] = (units.y[i] - cy) * ux - (units.x[i] - cx) * uy
+			line.sort_custom(func(p, q): return side[p] < side[q] or (side[p] == side[q] and p < q))
+			var k := line.size()
+			var along := (rows - 1) * space / 2 - row * space
+			for c in k:
+				var across := (2 * c - (k - 1)) * space / 2
+				var px := x + (ux * along - uy * across) / Fixed.ONE
+				var py := y + (uy * along + ux * across) / Fixed.ONE
+				out.slots[units.id[line[c]]] = _slot_ok(line[c], px, py, x, y)
+			row += 1
+	if n > 1:
+		out.pace = pace
+	return out
+
+
+## A formation slot unit i can stand in: (px, py) if it's open ground (moved off any wall by
+## the unit's body) and a straight walk from the group's centre reaches it; else half-way in;
+## else the centre itself.
+func _slot_ok(i: int, px: int, py: int, x: int, y: int) -> Vector2i:
+	var ln := lane(i)
+	var c := _snap(x, y, ln)
+	for k in 2:
+		var p := Vector2i(clampi(px, 0, map.width * SimMap.TILE - 1), clampi(py, 0, map.height * SimMap.TILE - 1))
+		if map.walkable(p.x, p.y, ln):
+			p = _off_walls(p.x, p.y, units.radius[i], ln)
+			if Flow.clear_line(map, c.x, c.y, p.x, p.y, ln):
+				return p
+		px = (px + c.x) / 2
+		py = (py + c.y) / 2
+	return c
+
+
+## A point on open ground moved just far enough that a body of radius r there clears the
+## blocked tiles beside it (as _separate keeps bodies off them).
+func _off_walls(x: int, y: int, r: int, ln: int) -> Vector2i:
+	var t := SimMap.TILE
+	var cx := x / t
+	var cy := y / t
+	if x - cx * t < r and not map.cell_walkable(cx - 1, cy, ln):
+		x = cx * t + mini(r, t / 2)
+	elif (cx + 1) * t - x < r and not map.cell_walkable(cx + 1, cy, ln):
+		x = (cx + 1) * t - mini(r, t / 2)
+	if y - cy * t < r and not map.cell_walkable(cx, cy - 1, ln):
+		y = cy * t + mini(r, t / 2)
+	elif (cy + 1) * t - y < r and not map.cell_walkable(cx, cy + 1, ln):
+		y = (cy + 1) * t - mini(r, t / 2)
+	return Vector2i(x, y)
 
 
 ## Head straight for a point with no flow field (the way there is known to be clear).
@@ -527,6 +696,8 @@ func _start(i: int) -> void:
 	units.stuck[i] = 0
 	units.prog[i] = -1
 	var w := _plan(i, units.x[i], units.y[i])
+	if w.x == -3:
+		w = _rect_near(i, units.x[i], units.y[i])
 	units.wx[i] = w.x if w.x >= 0 else units.x[i]
 	units.wy[i] = w.y if w.x >= 0 else units.y[i]
 
@@ -562,6 +733,7 @@ func _move() -> void:
 	var rx1 := units.rx1
 	var ry1 := units.ry1
 	var owners := units.owner
+	var pc := units.pace
 	for i in xs.size():
 		if mv[i] == 0:
 			# Shoved well off its spot by passing units? Walk back (checked on re-plan ticks).
@@ -569,7 +741,7 @@ func _move() -> void:
 			# walking "back" there a step every re-plan crept it towards the foe (Dominic's crossbows).
 			if grp[i] == 0 or units.foe[i] != 0 or st[i] >= STUCK_LIMIT or (tick + ids[i]) % REPLAN_EVERY != 0:
 				continue
-			var back := ar[i] * SETTLE_FACTOR + RETURN_SLACK
+			var back := ar[i] * SETTLE_FACTOR + (SLOT_SLACK if ar[i] == SLOT_ARRIVE else RETURN_SLACK)
 			if Fixed.dist2(xs[i], ys[i], txs[i], tys[i]) <= back * back:
 				continue
 			mv[i] = 1
@@ -590,7 +762,7 @@ func _move() -> void:
 				mv[i] = 0
 				st[i] = 0
 				continue
-		var s := sp[i]
+		var s := sp[i] if pc[i] == 0 else mini(sp[i], pc[i])   # a group keeps to its slowest member's pace
 		var mc := lane_base[owners[i]] + units.mclass[i]   # the walk grid (lane); speed goes by class
 		var here := map.cell_of(x, y)
 		var pct: int = move_pct[units.mclass[i]][map.terrain[here]]
@@ -612,7 +784,7 @@ func _move() -> void:
 					# Can't get there: close enough to a point counts as there; otherwise give up
 					# (a gatherer crowded off its bush takes another tile; see Economy._gather).
 					var near := ar[i] * SETTLE_FACTOR + RETURN_SLACK
-					if rch[i] == 0 and Fixed.dist2(x, y, txs[i], tys[i]) <= near * near:
+					if rch[i] != 1 and Fixed.dist2(x, y, txs[i], tys[i]) <= near * near:
 						st[i] = 0
 					mv[i] = 0
 					continue
@@ -628,6 +800,14 @@ func _move() -> void:
 				base = base - base % 4 + (FIELD_CELL if base % 4 == FIELD_CELL_NEAR else FIELD_BUILDING)
 				units.fkey[i] = base * LANES + key % LANES
 				w = Vector2i(txs[i], tys[i])
+			elif w.x == -3:
+				# Nowhere free round its rect: a few looks like that and it gives the place up
+				# (a gatherer then takes another tile of the clump; see Economy._gather).
+				st[i] += STUCK_LIMIT / SPOT_BUSY
+				if st[i] >= STUCK_LIMIT:
+					mv[i] = 0
+					continue
+				w = _rect_near(i, x, y)
 			elif w.x < 0:
 				mv[i] = 0   # unreachable from here
 				st[i] = STUCK_LIMIT
@@ -637,6 +817,12 @@ func _move() -> void:
 		var dx := wxs[i] - x
 		var dy := wys[i] - y
 		var d := Fixed.isqrt(dx * dx + dy * dy)
+		if d > rs[i] and grp[i] == 0 and units.foe[i] == 0:   # a group in formation walks through its own
+			var v := _sidestep(i, x, y, dx * Fixed.ONE / d, dy * Fixed.ONE / d, s)
+			if v.x != 0 or v.y != 0:
+				dx = v.x
+				dy = v.y
+				d = Fixed.isqrt(dx * dx + dy * dy)
 		var nx := x
 		var ny := y
 		if d > 0:
@@ -658,6 +844,8 @@ func _move() -> void:
 				mv[i] = 0   # give up; the tests count these
 			else:
 				var w := _plan(i, x, y)
+				if w.x == -3:
+					w = _rect_near(i, x, y)
 				wxs[i] = w.x if w.x >= 0 else x
 				wys[i] = w.y if w.x >= 0 else y
 			continue
@@ -669,6 +857,57 @@ func _move() -> void:
 	units.stuck = st
 	units.wx = wxs
 	units.wy = wys
+
+
+## Local avoidance (Dominic, 2026-10-13: "scavengers getting stuck on each other too easily"):
+## a unit on its own (a worker, mostly: a group move has its formation) heading (ux, uy)
+## (scaled by Fixed.ONE) with a standing body just ahead in its way steps half aside, round
+## the side the body isn't on. Walkers are left to separation, which slides them past each
+## other. Positions are the tick's start (units.x), so the order units move in doesn't matter.
+## (0, 0): nothing in the way.
+func _sidestep(i: int, x: int, y: int, ux: int, uy: int, s: int) -> Vector2i:
+	var ox := units.x   # the tick's start: _move writes its own copy
+	var oy := units.y
+	var om := units.moving
+	var orad := units.radius
+	var start := spatial.start
+	var items := spatial.items
+	var sw := spatial.width
+	var cx := x / SimMap.TILE
+	var cy := y / SimMap.TILE
+	var best := -1
+	var best_ahead := 1 << 30
+	var best_side := 0
+	var ri := orad[i]
+	for yy in range(maxi(cy - 1, 0), mini(cy + 2, spatial.height)):
+		for xx in range(maxi(cx - 1, 0), mini(cx + 2, sw)):
+			var c := yy * sw + xx
+			for k in range(start[c], start[c + 1]):
+				var j: int = items[k]
+				if j == i or om[j] == 1:
+					continue   # walkers sort themselves out (separation slides them past)
+				var rx: int = ox[j] - x
+				var ry: int = oy[j] - y
+				var rr: int = ri + orad[j]
+				var ahead := (rx * ux + ry * uy) / Fixed.ONE
+				if ahead <= 0 or ahead > rr + 2 * s or ahead >= best_ahead:
+					continue
+				var side := (rx * uy - ry * ux) / Fixed.ONE   # > 0: j is on our left
+				if side >= rr or side <= -rr:
+					continue
+				if side == 0:
+					side = 1 if (units.id[i] + units.id[j]) % 2 == 0 else -1
+				best = j
+				best_ahead = ahead
+				best_side = side
+	if best < 0:
+		return Vector2i.ZERO
+	# Ahead and half aside, away from it: about 27 degrees off the way.
+	var sgn := 1 if best_side > 0 else -1   # it's on the left: aside to the right (+1), and the other way round
+	var v := Vector2i(ux * 2 - sgn * uy, uy * 2 + sgn * ux)
+	if not map.walkable(x + v.x * s / (2 * Fixed.ONE), y + v.y * s / (2 * Fixed.ONE), lane(i)):
+		return Vector2i.ZERO   # no room that side: on as before
+	return v
 
 
 ## Unit i's next waypoint from (x, y). Point moves aim at the target if the way
@@ -691,10 +930,14 @@ func _plan(i: int, x: int, y: int) -> Vector2i:
 			return Vector2i(-2, -2)
 		return Vector2i(-1, -1)
 	if units.reach[i] == 1:
-		if cost <= Flow.DIAGONAL:
-			return Vector2i(clampi(x, units.rx0[i], units.rx1[i]), clampi(y, units.ry0[i], units.ry1[i]))
+		if cost <= 2 * Flow.DIAGONAL:   # within two cells: make for a free spot before meeting the crowd
+			return _spot(i, x, y)
 	elif cost == 0 or (cost <= DIRECT_COST and units.stuck[i] < STUCK_LIMIT / 2 and Flow.clear_path(map, x, y, tx, ty, units.radius[i], lane(i))):
 		return Vector2i(tx, ty)
+	elif units.reach[i] == 2 and cost <= 4 * Flow.STRAIGHT:
+		var c := _round_corner(i, x, y, tx, ty)   # its place is round the far side of the building
+		if c.x >= 0:
+			return c
 	var best := cell
 	var k: int = f.next[cell]
 	# Half-way to giving up, follow the field a cell at a time (the retry): no shortcuts.
@@ -713,6 +956,101 @@ func _plan(i: int, x: int, y: int) -> Vector2i:
 	return Flow.centre(map, best)
 
 
+## Where a unit beside its rect (a resource tile, a building) steps to: the nearest free spot
+## round the rect (a body's width from it, clear of every stopped unit there), so it walks up to
+## a gap in the crowd instead of pushing into it; the same spot while it stays free. A spot only
+## an idle body stands in comes after free ones (it gets shoved aside). (-3, -3) when every
+## spot has a worker at work in it: the place is crowded.
+func _spot(i: int, x: int, y: int) -> Vector2i:
+	var r := units.radius[i]
+	var ln := lane(i)
+	var x0 := units.rx0[i]
+	var y0 := units.ry0[i]
+	var x1 := units.rx1[i] + 1
+	var y1 := units.ry1[i] + 1
+	var o := r + SPOT_GAP
+	# Stopped bodies round the rect (positions from the start of the tick's moves).
+	var near := []
+	var t := SimMap.TILE
+	for cy in range(maxi((y0 - o) / t - 1, 0), mini((y1 + o) / t + 2, spatial.height)):
+		for cx in range(maxi((x0 - o) / t - 1, 0), mini((x1 + o) / t + 2, spatial.width)):
+			var c := cy * spatial.width + cx
+			for k in range(spatial.start[c], spatial.start[c + 1]):
+				var j: int = spatial.items[k]
+				if j != i and j < units.count() and units.moving[j] == 0:
+					near.append(j)
+	var space := 2 * r + SPOT_GAP / 2
+	var wd := x1 - x0 + 2 * o
+	var ht := y1 - y0 + 2 * o
+	var perim := 2 * (wd + ht)
+	var count := maxi(perim / space, 4)
+	var best := Vector2i(-1, -1)
+	var best_d := 1 << 62
+	for k in count:
+		var along := k * perim / count
+		var p: Vector2i
+		if along < wd:
+			p = Vector2i(x0 - o + along, y0 - o)
+		elif along < wd + ht:
+			p = Vector2i(x1 + o, y0 - o + along - wd)
+		elif along < 2 * wd + ht:
+			p = Vector2i(x1 + o - (along - wd - ht), y1 + o)
+		else:
+			p = Vector2i(x0 - o, y1 + o - (along - 2 * wd - ht))
+		var ex := maxi(maxi(x0 - p.x, 0), p.x - x1)
+		var ey := maxi(maxi(y0 - p.y, 0), p.y - y1)
+		if ex * ex + ey * ey > (r + Economy.REACH - SPOT_GAP / 2) * (r + Economy.REACH - SPOT_GAP / 2) or not map.walkable(p.x, p.y, ln):
+			continue   # round a corner it couldn't work from, or blocked
+		p = _off_walls(p.x, p.y, r, ln)
+		# Free; else only a body standing about there (it gets shoved aside); else a worker at work.
+		var level := 0
+		for j in near:
+			var rr: int = r + units.radius[j] - SPOT_GAP / 2
+			if Fixed.dist2(p.x, p.y, units.x[j], units.y[j]) < rr * rr:
+				if units.task[j] == Economy.GATHER or units.task[j] == Economy.BUILD:
+					level = 2
+					break
+				level = 1
+		if level == 2:
+			continue
+		var d := Fixed.dist2(x, y, p.x, p.y) + level * (1 << 40)
+		if p.x == units.wx[i] and p.y == units.wy[i]:
+			d -= 1 << 39   # keep the spot it was making for
+		if d < best_d:
+			best_d = d
+			best = p
+	if best.x < 0:
+		return Vector2i(-3, -3)   # every spot has a worker at work in it
+	if Flow.clear_path(map, x, y, best.x, best.y, r, ln):
+		return best
+	return _rect_near(i, x, y)   # no straight way to it: in the old way (anywhere in reach will do)
+
+
+## The nearest point of unit i's rect, the old way in when there's no spot to make for.
+func _rect_near(i: int, x: int, y: int) -> Vector2i:
+	return Vector2i(clampi(x, units.rx0[i], units.rx1[i]), clampi(y, units.ry0[i], units.ry1[i]))
+
+
+## A corner of unit i's rect, stood off by a body and a row, to walk round it towards (tx, ty):
+## of the corners it can walk straight to (not the one it's at), the one making the shortest
+## way on. (-1, -1) if none.
+func _round_corner(i: int, x: int, y: int, tx: int, ty: int) -> Vector2i:
+	var e := 3 * units.radius[i] + FORM_GAP
+	var ln := lane(i)
+	var best := Vector2i(-1, -1)
+	var best_d := 1 << 62
+	for c in [Vector2i(units.rx0[i] - e, units.ry0[i] - e), Vector2i(units.rx1[i] + e, units.ry0[i] - e),
+			Vector2i(units.rx1[i] + e, units.ry1[i] + e), Vector2i(units.rx0[i] - e, units.ry1[i] + e)]:
+		var d0 := Fixed.dist2(x, y, c.x, c.y)
+		if d0 < 200 * 200 or not map.walkable(c.x, c.y, ln) or not Flow.clear_path(map, x, y, c.x, c.y, units.radius[i], ln):
+			continue
+		var d := Fixed.isqrt(d0) + Fixed.isqrt(Fixed.dist2(c.x, c.y, tx, ty))
+		if d < best_d:
+			best_d = d
+			best = c
+	return best
+
+
 ## How far unit i still has to go, and how much nearer it should be by the next check: its
 ## field's cost at (x, y) while it follows a solved field (falls a cell per cell walked, detours
 ## included) and a cell's worth; on the last cell, or with no field, the distance to its target
@@ -720,7 +1058,9 @@ func _plan(i: int, x: int, y: int) -> Vector2i:
 func _progress(i: int, x: int, y: int) -> Vector2i:
 	if units.fkey[i] >= 0 and fields.has(units.fkey[i]):
 		var d: int = fields[units.fkey[i]].dist[map.cell_of(x, y)]
-		if d < Flow.INF and d > Flow.DIAGONAL:
+		# A unit making for its own place near the end (a slot off its group's centre, a spot
+		# round a building) goes by the crow: its field's cost no longer falls as it walks.
+		if d < Flow.INF and d > Flow.DIAGONAL and not (d <= DIRECT_COST and units.arrive[i] == SLOT_ARRIVE and units.reach[i] != 1):
 			return Vector2i(d, STRAIGHT_PER_CHECK)
 	return Vector2i(Fixed.isqrt(Fixed.dist2(x, y, units.tx[i], units.ty[i])), units.speed[i] * PROGRESS_EVERY / 4)
 
@@ -831,10 +1171,29 @@ func _separate() -> void:
 	# planted one isn't moved by anyone; the other unit gives way.
 	var planted := PackedByteArray()
 	planted.resize(n)
+	var stood := PackedByteArray()
+	stood.resize(n)
+	for i in n:
+		if mv[i] == 0 and grp[i] > 0 and ar[i] == SLOT_ARRIVE and units.reach[i] == 0:
+			stood[i] = 1
 	var tasks := units.task
+	var foes := units.foe
+	var role := PackedByteArray()   # 1: standing idle (gives way), 2: walking to or from a job
+	role.resize(n)
+	for i in n:
+		if mv[i] == 0 and tasks[i] == Economy.NONE and foes[i] == 0 and stood[i] == 0:
+			role[i] = 1
+		elif mv[i] == 1 and tasks[i] != Economy.NONE:
+			role[i] = 2
 	for i in n:
 		if mv[i] == 0 and (tasks[i] == Economy.GATHER or tasks[i] == Economy.BUILD):
 			planted[i] = 1
+		elif mv[i] == 0 and foes[i] != 0:
+			# So is a unit hitting a building: the crowd round a wall walks round it, never
+			# shoves a hitter out of reach (Dominic: "attacking buildings turns into fighting the pathfinding").
+			var b := buildings.index_of(foes[i])
+			if b >= 0 and Combat._gap(self, i, -1, b) <= types[units.kind[i]].reach + Combat.HOLD:
+				planted[i] = 1
 	for i in n:
 		var cx := cells[i] % w
 		var cy := cells[i] / w
@@ -855,7 +1214,7 @@ func _separate() -> void:
 						continue
 					if grp[i] == grp[j] and grp[i] > 0 and mv[i] != mv[j]:
 						var m := i if mv[i] == 1 else j
-						var near := ar[m] * SETTLE_FACTOR
+						var near := ar[m] * (2 if ar[m] == SLOT_ARRIVE else SETTLE_FACTOR)   # a slot is meant to be stood in
 						if Fixed.dist2(xs[m], ys[m], txs[m], tys[m]) <= near * near:
 							settle[m] = 1
 					var d := Fixed.isqrt(d2)
@@ -868,17 +1227,27 @@ func _separate() -> void:
 					else:
 						ux = dx * Fixed.ONE / d
 						uy = dy * Fixed.ONE / d
-					if planted[i] == 1 and planted[j] == 1:
+					# A unit standing in its formation slot isn't shoved by groupmates still coming
+					# in: they slip past it to their own slots (the gaps are too narrow to walk
+					# round, and shoving the ones already there about looked buggy).
+					if grp[i] == grp[j] and ((stood[i] == 1 and mv[j] == 1) or (stood[j] == 1 and mv[i] == 1)):
+						continue
+					if stood[i] == 1 and stood[j] == 1:
+						continue   # two groups' formations overlapping: no shoving match (and no walking back into it)
+					# A worker on its way to or from a job walks on; anyone standing idle in its way gives way.
+					var hi := planted[i] == 1 or (role[i] == 2 and role[j] == 1)
+					var hj := planted[j] == 1 or (role[j] == 2 and role[i] == 1)
+					if hi and hj:
 						continue
 					var push := (rr - d) / SEPARATION_DIV + 1
 					var px := ux * push / Fixed.ONE
 					var py := uy * push / Fixed.ONE
-					if planted[i] == 0:
-						pushx[i] -= px * (2 if planted[j] == 1 else 1)
-						pushy[i] -= py * (2 if planted[j] == 1 else 1)
-					if planted[j] == 0:
-						pushx[j] += px * (2 if planted[i] == 1 else 1)
-						pushy[j] += py * (2 if planted[i] == 1 else 1)
+					if not hi:
+						pushx[i] -= px * (2 if hj else 1)
+						pushy[i] -= py * (2 if hj else 1)
+					if not hj:
+						pushx[j] += px * (2 if hi else 1)
+						pushy[j] += py * (2 if hi else 1)
 	var t := SimMap.TILE
 	for i in n:
 		if settle[i] == 1:
@@ -972,7 +1341,7 @@ func state_hash() -> int:
 		for v in [u.id[i], u.owner[i], u.kind[i], u.x[i], u.y[i], u.tx[i], u.ty[i], u.moving[i],
 				u.arrive[i], u.wx[i], u.wy[i], u.group[i], u.stuck[i], u.prog[i], u.hp[i], u.fkey[i], u.reach[i],
 				u.task[i], u.target[i], u.home[i], u.carry_kind[i], u.carry[i], u.work[i],
-				u.foe[i], u.cooldown[i], u.stance[i], u.posture[i], u.gx[i], u.gy[i], u.amx[i], u.amy[i], u.orders[i].size(), u.mclass[i], u.patient[i]]:
+				u.foe[i], u.cooldown[i], u.stance[i], u.posture[i], u.gx[i], u.gy[i], u.amx[i], u.amy[i], u.orders[i].size(), u.mclass[i], u.patient[i], u.pace[i], u.amc[i]]:
 			h = Fixed.mix(h, v)
 		for o in u.orders[i]:
 			h = Fixed.mix(h, Rng.hash_string(JSON.stringify(o, "", true)))

@@ -23,7 +23,8 @@ var group := PackedInt32Array()    # move group: one per MOVE command, 0 if neve
 var stuck := PackedInt32Array()    # ticks a move has made no progress (net of pushes; see World._move)
 var prog := PackedInt32Array()     # how far from its target it was at the last progress check (-1: none yet)
 var fkey := PackedInt32Array()     # flow field key being followed (see World.field_key)
-var reach := PackedInt32Array()    # 0: arrive at the point (tx, ty); 1: arrive next to the rect below
+var reach := PackedInt32Array()    # 0: arrive at the point (tx, ty); 1: arrive next to the rect below;
+                                   # 2: arrive at the point (tx, ty), its own place beside the rect (World.order_beside)
 var rx0 := PackedInt32Array()      # target rect (milli-tiles, inclusive) when reach == 1
 var ry0 := PackedInt32Array()
 var rx1 := PackedInt32Array()
@@ -47,6 +48,8 @@ var amx := PackedInt32Array()      # attack-move destination (milli-tiles)
 var amy := PackedInt32Array()
 var mclass := PackedInt32Array()   # movement class (SimMap.CLASSES)
 var patient := PackedInt32Array()  # healers: the unit id being healed (or walked to), or 0 (heal.gd)
+var pace := PackedInt32Array()     # a group move's pace (its slowest member's speed), or 0: own speed
+var amc := PackedInt32Array()      # an attack-move's centre cell (its field), or -1; amx/amy is the unit's own slot
 var orders: Array = []             # per unit: queued orders [{type, args}] (shift-queued), oldest first
 
 
@@ -98,6 +101,8 @@ func add(uid: int, p_owner: int, p_kind: int, p_x: int, p_y: int, p_speed: int, 
 	orders.append([])
 	mclass.append(0)
 	patient.append(0)
+	pace.append(0)
+	amc.append(-1)
 	return id.size() - 1
 
 
@@ -153,6 +158,8 @@ func remove_at(i: int) -> void:
 	orders.remove_at(i)
 	mclass.remove_at(i)
 	patient.remove_at(i)
+	pace.remove_at(i)
+	amc.remove_at(i)
 
 
 func save_prev() -> void:
