@@ -736,3 +736,8 @@ at least 50 before the creature's cost (`rules.cost.roles`); the start is 300 fo
 don't stall (Claude's call, Dominic may overrule). Superseding D-076's single price and refining D-078.
 The equal-cost round robin can't reach ±20% for every unit with four slots (large units counter two,
 archers one); that's a roster design question (a swordsman line?), not a price.
+
+**D-121, 2026-10-13: The frogs' siege is swamp beasts; the newt may become frog cavalry.** Dominic picked
+round 3's B ("swamp beasts, looks great"): the snapping turtle ram and the toad-borne bolt thrower. He's
+not sure of the newt as the catapult carrier and wonders if it suits cavalry better: a concept round
+tries the newt as the frogs' mount and other catapults for the frogs.
