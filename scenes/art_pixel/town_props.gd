@@ -308,23 +308,6 @@ func tether_post() -> Node3D:
 	return n
 
 
-## One tile of the sheep pen's fence, along x: a post at each end and two sagging rails
-## (the town view lays twelve of them round a 3 x 3 pen, leaving a gap for the gate).
-func pen_rail(seed_value := 0) -> Node3D:
-	rng.seed = 7800 + seed_value
-	var n := Node3D.new()
-	var wood := _wood()
-	for x in [-0.5, 0.5]:
-		n.add_child(um.rod(Vector3(x, 0, 0), Vector3(x + rng.randf_range(-0.01, 0.01), 0.2, 0), 0.022, 0.018, wood))
-	for h in [0.08, 0.15]:
-		var a := Vector3(-0.5, h + rng.randf_range(-0.008, 0.008), 0.01)
-		var b := Vector3(0.5, h + rng.randf_range(-0.008, 0.008), 0.01)
-		var mid := (a + b) * 0.5 - Vector3(0, 0.012, 0)   # the rail sags a little
-		n.add_child(um.rod(a, mid, 0.011, 0.011, wood, false))
-		n.add_child(um.rod(mid, b, 0.011, 0.011, wood, false))
-	return n
-
-
 func _box(size: Vector3, m: Material, pos: Vector3) -> MeshInstance3D:
 	var mi := MeshInstance3D.new()
 	var bm := BoxMesh.new()

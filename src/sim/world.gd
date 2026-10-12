@@ -91,7 +91,7 @@ var hashes: Array = []         # [[tick, hash]] every HASH_EVERY ticks
 var next_id := 1               # shared by units and buildings
 var gaia := -1                # the owner of wild animals: one past the last player, on a team of its own
 var claim_tiles := 4          # how close a player's unit must come to claim a herd animal (animals.json)
-var pens := {}                # Town Center id -> [x, y]: the middle of its sheep pen, chosen once (animals.gd)
+var herd_spots := {}          # Town Center id -> [x, y]: where its claimed sheep gather with no pen to go to, chosen once (animals.gd)
 var next_group := 1
 var resources: Array = []      # resource ids in their fixed order (data/resources.json)
 var stock: Array = []          # per resource: PackedInt32Array per player
@@ -402,6 +402,10 @@ func _run(cmd: Dictionary) -> void:
 			Market.cmd_trade(self, cmd.player, a)
 		Commands.STANCE:
 			Combat.cmd_stance(self, cmd.player, a)
+		Commands.PEN:
+			Economy.Pens.cmd_pen(self, cmd.player, a)
+		Commands.RELEASE:
+			Economy.Pens.cmd_release(self, cmd.player, a)
 		Commands.STOP:
 			for uid in a.ids:
 				var i := units.index_of(uid)

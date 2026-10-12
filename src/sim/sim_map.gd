@@ -245,6 +245,13 @@ func make_pool(cells: PackedInt32Array, k: int, total: int) -> void:
 		resource_cells.insert(at, a)
 
 
+## Let these cells of a building be walked across (a pen: animals stand inside), or not.
+func set_walk_over(cells: PackedInt32Array, on: bool) -> void:
+	for c in cells:
+		walk_over[c] = 1 if on else 0
+		_refresh(c)
+
+
 ## Every cell pooled on this anchor, ascending.
 func pool_cells(a: int) -> PackedInt32Array:
 	var out := PackedInt32Array()

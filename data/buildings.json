@@ -4,6 +4,7 @@
   "civilian": [
    "house",
    "farm",
+   "pen",
    "lumber_camp",
    "mill",
    "mining_camp",
@@ -27,6 +28,7 @@
   "town_center",
   "house",
   "farm",
+  "pen",
   "mill",
   "lumber_camp",
   "mining_camp",
@@ -195,6 +197,34 @@
     "pierce": 6
    },
    "water": true
+  },
+  "pen": {
+   "name": "Pen",
+   "desc": "A fold for your herd animals. Penned, they give a little food all the time and breed, instead of a lot of food once. Right-click it with sheep selected to put them in.",
+   "size": 3,
+   "hp": 250,
+   "cost": {
+    "food": 0,
+    "wood": 50
+   },
+   "build_time": 15,
+   "pop": 0,
+   "house": false,
+   "drop_off": [],
+   "trains": [],
+   "age": 1,
+   "hotkey": "",
+   "armour": {
+    "melee": 0,
+    "pierce": 4
+   },
+   "pen": {
+    "animals": 8,
+    "food": 1,
+    "food_every": 4,
+    "breed_every": 180
+   },
+   "note": "walked into once built (animals stand inside it); each penned herd animal, up to pen.animals, adds pen.food food every pen.food_every seconds with no worker (a 100-food sheep pays back in about 7 minutes and keeps going); with two or more inside, a new one is born every pen.breed_every seconds up to the cap. Torn down, its animals spill out (the steal rule applies again)"
   },
   "lumber_camp": {
    "name": "Lumber Camp",
