@@ -297,7 +297,10 @@ Replanned 2026-10-12 after phase 1 and Dominic's playtest fixes. Race bonuses mo
 6. **Siege Workshop, standing.** Built and placeable in every architecture (the Temple was cut, 2026-10-12).
 7. **Wonder.** One per architecture (the culture's showpiece; concept round); build it and hold it
    for N minutes to win, with a countdown everyone sees; the bot attacks a Wonder.
-8. **AI.** `data/ai.json` learns the new research (gathering first, then armoury tracks by its
+8. **AI.** Bots never reach age 3 (checked on Reed Meadow 64, 2026-10-12: 11-18 minute matches,
+   wood near home never runs out, so not the map): they save for age 3 only with a big economy,
+   build a mining camp only at 20 workers (age 3 needs gold), and their attacks end matches first.
+   Fix: plan age 3 (gold income early in age 2, the Stable, save while defending). `data/ai.json` learns the new research (gathering first, then armoury tracks by its
    army), towers and garrisoning when attacked, a University, a Castle; walls stay optional.
 9. **Exit check.** No blank buildings or research on the page; bot-vs-bot reaches age 3 using every
    building; Dominic plays to age 3.

@@ -109,28 +109,47 @@ Effects reuse milestone 12's effect kinds. Ability kinds are a small vocabulary 
 | `scavenge` | kills give a little food | quick wins hurt them |
 | `pack_up` | buildings pack and move (nomads) | raids while packed |
 
-## First draft per creature and culture (for Dominic's picks)
+## The bonuses (final for now: Dominic, 2026-10-12, "bonuses sound good for now")
 
-Each row is an offer; the design round below shows 2-3 options each, Dominic picks.
+Every race gets one group, one creature and one culture bonus (three); if two give the same kind,
+the second takes its alternative. Own research: one from the creature and one from the culture,
+both at the Castle in age 3. Culture mechanics are left out for now (creature mechanics first).
 
-Groups (one bonus each): **bugs** (houses cost less: they dig in), **amphibians** (farms in water,
-have), **rodents** (houses +1 pop, have), **folk** (research 15% faster).
+**Groups**
 
-| Who | Bonus | Own research | Lacks | Mechanic |
+| Group | Creatures | Bonus | Alternative |
+|---|---|---|---|
+| Bugs | beetles, spiders | houses cost 30% less (they dig in) | +5% gather speed |
+| Amphibians | frogs | farms in water (rice paddies) (have) | farms hold 20% more food |
+| Rodents | rats | houses hold 6 instead of 5 (have) | workers carry +2 |
+| Folk | humans, centaurs | research 15% faster | research 10% cheaper |
+
+**Creatures**
+
+| Creature | Bonus | Own research | Lacks | Signature mechanic |
 |---|---|---|---|---|
-| Frogs | amphibious movement (have) | Strong Legs (have) | heavy armour tracks | `leap` (infantry) |
-| Rats | units cheaper and quicker to train (have) | Gnawing Teeth (+attack vs buildings) | Citadel Tower, stone gate | `swarm` + `scavenge` |
-| Humans | workers build 15% faster | Clever Hands (build 25% faster) | nothing (the generalists) | none of their own: their culture's |
-| Spiders | walls cost half | Sticky Silk (ranged hits slow) | mounted lines | `web` |
-| Beetles | +1 pierce armour (shells) | Shell Polish (+1 melee armour) | Quick Draw, mounted archer | `shell` |
-| Centaurs | carry 160% (have), faster | Gallop (mounted +15% speed) | walls (they roam) | `fire_on_move` |
-| Imperial | buildings 10% cheaper | Shield Wall (infantry +2 pierce) | - | `volley` (infantry) |
-| Hellenic | spears +1 melee armour | Long Spears (+reach) | - | `formation` (phalanx) |
-| Steppe | mounted +10% speed | Saddle Bows (+1 range) | stone walls | `pack_up` |
-| Nile | farms +food | Flood Plains (farms on wet ground) | - | (bonus only) |
-| Han | walls and towers stronger | Repeating Bows (reload) | - | (bonus only) |
-| Aztec | kills give gold | Jaguar Pelts (infantry speed) | mounted lines | `scavenge` (gold) |
-| Swamp, Sewer, Forest, Royal, Spooky | one each, to draft | one each | - | - |
+| Frogs | amphibious: swim shallows, faster in swamp (have) | Strong Legs: amphibians +2 speed (have) | Ring Mail | leap (infantry onto ranged units) |
+| Rats | units 30% cheaper, train 20% faster (have) | Gnawing Teeth: +2 attack vs buildings | Bastion, stone gate | swarm + scavenge (kills give a little food) |
+| Humans | workers build 15% faster | Clever Hands: build 25% faster | nothing (generalists) | none (their culture's, later) |
+| Spiders | walls cost half (silk) | Sticky Silk: ranged hits slow | stable lines | web (a slowing patch) |
+| Beetles | every unit +1 pierce armour (shells) | Shell Polish: +1 melee armour | Quick Draw, mounted archer | shell (stop and close up) |
+| Centaurs | carry 160%, faster (have) | Gallop: mounted +15% speed | walls (they roam) | shoot on the move |
+
+**Cultures**
+
+| Culture | Bonus | Own research | Lacks |
+|---|---|---|---|
+| Imperial | buildings 10% cheaper | Shield Wall: infantry +2 pierce armour | - |
+| Hellenic | spears +1 melee armour | Long Spears: spears +1 reach | - |
+| Steppe | mounted +10% speed | Saddle Bows: mounted archers +1 range | stone walls |
+| Nile | farms +20% food | Flood Plains: farms on wet ground | - |
+| Han | walls and towers +20% hit points | Repeating Bows: ranged reload 15% faster | - |
+| Aztec | kills give a little gold | Jaguar Pelts: infantry +10% speed | stable lines |
+| Swamp | no slowdown in swamp or shallows | Bog Poultice: healers heal 30% more | stone walls |
+| Sewer | buildings go up 15% faster (junk) | Rust Spikes: melee +1 vs buildings and siege | Bastion |
+| Forest | wood gathered 10% faster | Woodsmen: workers carry +2 wood | bolt thrower |
+| Royal | heavy cavalry 10% cheaper | Chivalry: mounted +20 hit points | skirmisher's age-3 step |
+| Spooky | units +2 sight | Creeping Dread: enemies near your army move 10% slower | market trade |
 
 ## Plan
 
@@ -157,7 +176,7 @@ have), **rodents** (houses +1 pop, have), **folk** (research 15% faster).
 
 ## Checklist
 - [ ] Plan approved by Dominic
-- [ ] 1. Design round (Dominic's picks)
+- [x] 1. Design round: bonuses, research and lacks agreed (2026-10-12); mechanics' details still to design
 - [ ] 2. Data contract and bonuses
 - [ ] 3. Own research
 - [ ] 4. Lacks

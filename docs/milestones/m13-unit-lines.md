@@ -47,7 +47,8 @@ picks), then build, tests, archive pictures.
    signature words (the generator's showcase: "romans" -> a testudo legionary); no elite step
    (three ages). The sapper (walks up and blows a hole in a wall). The great sling (long-range anti-building,
    packs and unpacks).
-5. **Healers.** The Town Center trains a healer from age 2 (Dominic, 2026-10-12): it heals nearby
+5. **Healers.** (Built 2026-10-12. Dominic: "staffs look good; different staffs for each": every
+   culture gets its own staff and bag, queued after living towns merges.) The Town Center trains a healer from age 2 (Dominic, 2026-10-12): it heals nearby
    wounded friends, never fights; concept round for its look per family. Built early, see the
    milestone 12 notes; the counter is scouts and raiders.
 6. **Trade carts.** Between two of your markets: gold by distance, carts walk the route; the
