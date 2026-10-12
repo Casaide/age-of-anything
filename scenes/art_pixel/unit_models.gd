@@ -1601,7 +1601,7 @@ func _load_reeds(c: Dictionary) -> Dictionary:
 	var n := Node3D.new()
 	var reed := surf("reed_stalk", Color(1.0, 0.92, 0.7), 5.0)
 	var front := Vector3(3.0, 2.0, 0)
-	var back := Vector3(-10.0, -7.0, 0)
+	var back := Vector3(-9.0, -10.0, 0)
 	var axis := (back - front).normalized()
 	var side := axis.cross(Vector3(0, 0, 1)).normalized()
 	for k in 13:
@@ -1621,26 +1621,30 @@ func _load_reeds(c: Dictionary) -> Dictionary:
 	return {"node": n}
 
 
-## A rough block of stone held at the chest.
+## A rough block of stone carried on the shoulder, steadied by the hand up beside it (the
+## body's "raise" hold), sitting behind the head: big enough to read at game size.
 func _load_stone(c: Dictionary) -> Dictionary:
 	var n := Node3D.new()
 	var mi := MeshInstance3D.new()
 	var bm := BoxMesh.new()
-	bm.size = Vector3(5.0, 3.6, 4.0)
+	bm.size = Vector3(6.0, 4.2, 4.6)
 	mi.mesh = bm
-	mi.material_override = surf("rock", Color(0.8, 0.78, 0.72), 3.0)
-	mi.position = Vector3(1.5, 1.0, 0)
-	mi.rotation = Vector3(0.15, 0.4, 0.1)
+	mi.material_override = surf("rock", Color(0.85, 0.82, 0.76), 3.0)
+	mi.position = Vector3(-2.4, -2.0, 0)
+	mi.rotation = Vector3(0.15, 0.4, 0.25)
 	n.add_child(mi)
 	return {"node": n}
 
 
-## Gold ore carried home: a lump of the deposit's dark rock with the gold showing in it.
+## Gold carried home in a sack over the shoulder (the "raise" hold), its neck in the fist and
+## the ore showing at the mouth.
 func _load_gold(c: Dictionary) -> Dictionary:
 	var n := Node3D.new()
-	n.add_child(blob(Vector3(2.6, 1.9, 2.1), surf("rock", Color(0.6, 0.55, 0.5), 3.0), Vector3(1.5, 1.0, 0)))
+	var sack := surf("cloth", Color("#c8b48a"), 3.0)
+	n.add_child(blob(Vector3(3.0, 3.6, 2.8), sack, Vector3(-2.6, -3.6, 0), Vector3(0, 0, -30)))
+	n.add_child(rod(Vector3(0.2, 0.4, 0), Vector3(-1.2, -1.0, 0), 0.8, 1.1, sack))   # the neck, in the hand
 	var gold := plain(Color("#f2c440"))
-	for p in [Vector3(2.8, 2.2, 1.0), Vector3(0.6, 2.4, -0.6), Vector3(2.0, 0.6, 1.8), Vector3(3.6, 1.2, -0.8)]:
+	for p in [Vector3(-1.0, -1.6, 1.4), Vector3(-2.2, -1.2, 1.2), Vector3(-3.4, -2.2, 1.6), Vector3(-1.8, -2.6, 2.2)]:
 		n.add_child(blob(Vector3(0.75, 0.6, 0.7), gold, p))
 	return {"node": n}
 

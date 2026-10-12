@@ -388,6 +388,7 @@ func _rebuild() -> void:
 ## a haunch of meat) is carried with the arm up at the shoulder, the load lying back over it
 ## (the body's "raise" bake), so it never reads as a weapon held out (Dominic: a green sword).
 var carry_hold := ""
+const LOAD_Z := 1.2   # between the body (0) and its near arm (1.5)
 
 
 func set_tool(lib, part_id: String) -> void:
@@ -400,6 +401,16 @@ func set_tool(lib, part_id: String) -> void:
 	weapon.part_id = part_id
 	weapon.setup(p.shapes, weapon.colours)
 	carry_hold = "raise" if "shoulder" in p.tags else ""
+	# A tool is gripped: drawn over the arm. A load is carried: under the near arm (the arm and
+	# hand come over it, holding it to the chest or on the shoulder), not pasted on top of the
+	# arm (Dominic: "on top of his arm, not under it or in the hand").
+	if not weapon.has_meta("tool_z"):
+		weapon.set_meta("tool_z", weapon.get_meta("z", Z_FOR_SLOT.hand_r))
+	var tool_z: float = weapon.get_meta("tool_z")
+	var z: float = (LOAD_Z if tool_z > 0.0 else -LOAD_Z) if "load" in p.tags else tool_z
+	if z != float(weapon.get_meta("z", tool_z)):
+		weapon.set_meta("z", z)
+		_sort_layers(weapon.get_parent())
 
 
 func flourish() -> void:
