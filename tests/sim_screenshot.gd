@@ -5,6 +5,7 @@ extends SceneTree
 ## Scenes: "armies" (both test armies march at each other; the default) or
 ## "opening:<tick>" (both sides autoplay their economy; shot at that tick, over player 1's base),
 ## or "battle:<tick>" (both test armies attack-move at each other; shot mid-fight at that tick).
+## "barracks" (three of side 0's barracks, double-clicked and told to train six spears: they spread two each).
 ## "tower" (side 1's town with enemy spears by its Watchtower; shot with arrows in the air).
 ## "castle" (side 1's Castle and University by its Town Center, enemy spears in the Castle's
 ## reach; shot with a volley in the air).
@@ -81,6 +82,8 @@ func _initialize() -> void:
 		await _castle(view)
 	elif scene.begins_with("wear"):
 		await _wear(view, int(scene.get_slice(":", 1)))
+	elif scene == "barracks":
+		await _barracks(view)
 	elif scene.begins_with("town"):
 		await _town(view, int(scene.get_slice(":", 1)))
 	elif scene.begins_with("ageup"):
@@ -706,6 +709,56 @@ func _wear(view, side: int) -> void:
 		for v in view.bviews.values():
 			v.door_pulse()
 		await process_frame
+
+
+## Three finished barracks of side 0's in a row; a double-click on one selects all three, six
+## Train presses spread two to each, and a right-click rallies them all.
+func _barracks(view) -> void:
+	var w = view.world
+	var Economy = load("res://src/sim/economy.gd")
+	var s: Array = w.map.starts[0]
+	var cx: int = s[0] / 1000
+	var cy: int = s[1] / 1000
+	var k: int = Economy.btype_of(w, "barracks")
+	var n: int = w.btypes[k].size
+	var placed := 0
+	for tries in 40:
+		var bx: int = cx + 3 + (tries % 8) * (n + 1) - 6
+		var by: int = cy + 4 + (tries / 8) * (n + 1)
+		if placed < 3 and w.map.can_build(bx, by, n):
+			var i: int = Economy.place(w, 0, k, bx, by)
+			w.buildings.done[i] = 1
+			w.buildings.hp[i] = w.btypes[k].hp
+			placed += 1
+	assert(placed == 3, "room for three barracks")
+	for r in w.resources.size():
+		w.stock[r][0] = 9999
+	for f in 40:
+		await process_frame
+	var ids := []
+	for i in w.buildings.count():
+		if w.buildings.kind[i] == k:
+			ids.append(w.buildings.id[i])
+	view.camera.zoom = Vector2(2.0, 2.0)
+	view._on_zoom()
+	view.camera.look_at_point(view.bviews[ids[1]].position)
+	for f in 5:
+		await process_frame
+	view.select_same_type_on_screen(view.bviews[ids[0]].position)
+	assert(view._building_group().size() == 3, "double-click selects all three barracks")
+	for t in 6:
+		view._train_group("spear")
+	for id in ids:
+		assert(view._queue_load(id) == 2, "six spears spread two to each barracks")
+	view.smart_order(view.bviews[ids[1]].position + Vector2(0, 90))
+	var sent: int = w.tick
+	while w.tick < sent + 16:   # orders run two turns after they're sent
+		await process_frame
+	for id in ids:
+		var i: int = w.buildings.index_of(id)
+		print("barracks %d: queue %d, rally %d,%d" % [id, w.buildings.queue[i].size(), w.buildings.rally_x[i], w.buildings.rally_y[i]])
+		assert(w.buildings.queue[i].size() == 2 and w.buildings.rally_x[i] >= 0, "each barracks trains two and has the rally")
+	print("barracks: three selected, two spears queued in each, all rallied")
 
 
 ## Side 1's town, and a few of side 0's spears by its Watchtower: shot once the tower's
