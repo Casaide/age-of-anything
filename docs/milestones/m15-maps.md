@@ -1,6 +1,6 @@
 # Milestone 15: Maps and land
 
-**Status:** planned (proposed 2026-10-12; the first phase can start alongside milestones 12-13)
+**Status:** closed for now (2026-10-13, Dominic: "12 and 15 close for now. New maps look great"); the bots-on-big-maps work lands when it finishes
 **Exit criterion:** a finished 1v1 map where a match can run 40 minutes to the last age without the
 economy running dry; a 2v2 map that plays; rivers with fords and bridges, real trees, and high
 ground, all in every architecture's look; the bot plays both maps; tick budget held at the bigger
@@ -62,7 +62,7 @@ a legend into `data/terrain.json` (`data/maps/*.json`), the view builds tiles an
 7. Performance at size, the AI, exit check.
 
 ## Checklist
-- [ ] Plan approved by Dominic
+- [x] Plan approved by Dominic
 - [x] 1. Resource audit, bigger 1v1 (built 2026-10-12; Dominic picked: the 64 is the 1v1, the 88 becomes the 2v2)
 - [x] 2. Trees (built 2026-10-12; concept sheet waiting on Dominic's pick, one look per species in play)
 - [x] 3. Rivers, fords, bridges (built 2026-10-12; bridge look waiting on Dominic's pick)
@@ -70,7 +70,7 @@ a legend into `data/terrain.json` (`data/maps/*.json`), the view builds tiles an
 - [x] 5. High ground (built 2026-10-13; cliff look waiting on Dominic's pick: layered rock in play)
 - [x] 6. 2v2 map, variety maps, lobby teams (variety maps built 2026-10-13: Old Forest, River Delta)
 - [ ] 7. Performance, AI, exit check (performance at size done 2026-10-13, numbers below; the AI and the exit check to come)
-- [ ] Archive: pictures taken along the way, journal, decisions, timeline
+- [x] Archive: pictures taken along the way, journal, decisions, timeline (journals 2026-10-12, 2026-10-13)
 
 ## Results
 

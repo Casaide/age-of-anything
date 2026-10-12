@@ -1,6 +1,6 @@
 # Milestone 17: Living towns
 
-**Status:** built, waiting on Dominic's look (2026-10-12; view-side, ran alongside other milestones)
+**Status:** done (2026-10-13, Dominic: "living town is good")
 **Exit criterion:** a town at 10 minutes looks lived in at a glance, in every architecture, without
 costing gameplay readability or frame time (art bench within budget); Dominic: "the town is alive".
 
@@ -32,14 +32,14 @@ Concepts first: `tests/town_concept_sheet.gd` renders loads (8 facings), chores 
 (two styles of pile); the picks below were built and the sheet stays for Dominic's call.
 
 ## Checklist
-- [ ] Plan approved by Dominic
+- [x] Plan approved by Dominic
 - [x] 1. Work you can see
 - [x] 2. Town folk and animals (but the pen: see below)
 - [x] 3. Buildings at work
 - [x] 4. Wear and growth
 - [x] 5. Town ambience
-- [ ] Dominic: "the town is alive"
-- [ ] Archive: pictures taken along the way (400-407 in archive/images/2026-10-12), journal, decisions, timeline
+- [x] Dominic: "the town is alive" ("living town is good", 2026-10-13)
+- [x] Archive: pictures taken along the way (400-407 in archive/images/2026-10-12), journal, decisions, timeline (journals 2026-10-12, 2026-10-13)
 
 ## Results (2026-10-12, Claude)
 1. **Work you can see.** Loads by resource, all held under the near arm (the hand over them, not

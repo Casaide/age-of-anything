@@ -1,6 +1,6 @@
 # Milestone 12: The full land tech tree (buildings and systems)
 
-**Status:** in progress (plan approved 2026-10-11)
+**Status:** closed for now (2026-10-13, Dominic: "12 and 15 close for now")
 **Exit criterion:** the tech tree page shows every building and research of the plan below with
 no blank (planned) nodes left (the new unit lines are milestone 13's); a bot-vs-bot match reaches
 age 3 and uses every building; tests green; Dominic plays a match to age 3.
@@ -368,8 +368,8 @@ Fixed first, as they came in; each ticked when done.
 - [ ] 6. Siege Workshop standing (Temple cut)
 - [ ] 7. Wonder
 - [x] 8. AI (2026-10-13: ages on time, the content used, levels in data; `test_ai -- <map> levels`, `_test_shelter`; results below. Open: Hard draws with Normal on old_forest)
-- [ ] 9. Exit check
-- [ ] Archive: pictures taken along the way, journal, decisions, timeline
+- [x] 9. Exit check: closed for now by Dominic (2026-10-13)
+- [x] Archive: pictures taken along the way, journal, decisions, timeline (journals 2026-10-12, 2026-10-13)
 
 ## Results
 
