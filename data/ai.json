@@ -28,7 +28,8 @@
   "age3_workers": 26,
   "rebalance_every": 2,
   "build_push": 30,
-  "_doc": "max_workers: per age, the most workers it trains. age_workers: with this many it stops training workers and saves for age 2; age3_workers: with this many in age 2 it saves for age 3 (soldiers and research leave the cost alone until the age-up is clicked; the guard trains while it runs). rebalance_every: seconds between moving one gatherer from the resource most over its share to the one most under. Shares: the mix, leaning to what it saves for (the next age: a hundred shares split by what it lacks, the rest halved; a build step waiting on resources: build_push shares); none on a stock of 1000."
+  "plenty": 600,
+  "_doc": "max_workers: per age, the most workers it trains. age_workers: with this many it stops training workers and saves for age 2; age3_workers: with this many in age 2 it saves for age 3 (soldiers and research leave the cost alone until the age-up is clicked; the guard trains while it runs). rebalance_every: seconds between moving one gatherer from the resource most over its share to the one most under. Shares: the mix, leaning to what it saves for (the next age: a hundred shares split by what it lacks, the rest halved; a build step waiting on resources: build_push shares); none on a stock of `plenty` (more than it saves for)."
  },
  "_doc_mix": "economy.mix: per age, the share of workers on each resource (the bot sends idle and new workers to whatever is furthest below its share, and moves one gatherer at a time over to it)",
  "build_order": [

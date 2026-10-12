@@ -53,6 +53,7 @@ const CORRECT_MAX := 150       # milli-tiles a tick a body is eased off blocked 
 const RETURN_SLACK := 1000     # shoved this far beyond its settle radius, a stopped unit walks back
 const FIELD_CACHE := 12        # flow fields kept per player (oldest dropped first; at least 24)
 const SOLVE_BUDGET := 1500     # flow-field cells settled per tick: one full solve, or a few near ones
+const PATCH_BUDGET := 3000     # flow-field cells settled per tick patching cached fields for map changes (then they're dropped)
 const NEAR_CUTOFF := 160       # cost cutoff for "near" fields (16 tiles): short work trips
 # Places of their own (Dominic's playtest, 2026-10-13: a group's units pushed each other about
 # at the end of a move, workers got stuck on each other, a crowd fought the pathing at a wall).
@@ -124,7 +125,8 @@ var fog_ground: Array = []     # per player: PackedByteArray, the terrain index 
 var fog_left: Array = []       # per player: PackedInt32Array, what was left per cell as they last saw it
 var fog_seen: Array = []       # per player: enemy building id -> its snapshot as last seen (fog.gd)
 var fog_lit: Array = []        # per player: PackedInt32Array, the cells lit at the last update (fog.gd)
-var fog_watch := {}            # cell -> true: cells that held a resource or ever changed (fog.gd)
+var fog_watch := PackedByteArray()        # per cell: 1 if it held a resource or ever changed (fog.gd)
+var fog_watch_cells := PackedInt32Array() # those cells, in the order they were first watched
 var fields := {}               # field key -> Flow; looked up by key, never iterated
 var field_order: Array = []    # cached field keys, oldest first (eviction, invalidation)
 var field_queue: Array = []    # field keys waiting for a solve, in request order
@@ -190,6 +192,7 @@ func _init(p_seed: int, p_map: SimMap, p_races: Array, p_rules: Dictionary, p_te
 	Fog.setup(self)
 	map.fresh.clear()
 	map.fresh_closed.clear()
+	map.fresh_was.clear()
 
 
 static func _ints(v):
@@ -758,6 +761,9 @@ func _move() -> void:
 	var ry1 := units.ry1
 	var owners := units.owner
 	var pc := units.pace
+	var t := SimMap.TILE
+	var mw := map.width
+	var mh := map.height
 	for i in xs.size():
 		if mv[i] == 0:
 			# Shoved well off its spot by passing units? Walk back (checked on re-plan ticks).
@@ -852,12 +858,15 @@ func _move() -> void:
 		if d > 0:
 			nx = x + dx * mini(s, d) / d
 			ny = y + dy * mini(s, d) / d
-		if map.walkable(nx, ny, mc) and (nx / SimMap.TILE == x / SimMap.TILE or ny / SimMap.TILE == y / SimMap.TILE
-				or (map.walkable(nx, y, mc) and map.walkable(x, ny, mc))):
+		var wk: PackedByteArray = map.walks[mc]   # (map.walkable written out: three looks a unit, every tick)
+		var ok_xy := nx >= 0 and ny >= 0 and nx / t < mw and ny / t < mh and wk[ny / t * mw + nx / t] == 1
+		var ok_x := nx >= 0 and y >= 0 and nx / t < mw and y / t < mh and wk[y / t * mw + nx / t] == 1
+		var ok_y := x >= 0 and ny >= 0 and x / t < mw and ny / t < mh and wk[ny / t * mw + x / t] == 1
+		if ok_xy and (nx / t == x / t or ny / t == y / t or (ok_x and ok_y)):
 			pass   # a step into a diagonal neighbour cell needs both cells beside it open: no slipping between two corners
-		elif map.walkable(nx, y, mc):
+		elif ok_x:
 			ny = y
-		elif map.walkable(x, ny, mc):
+		elif ok_y:
 			nx = x
 		else:
 			nx = x
@@ -1129,36 +1138,72 @@ func _solve_queued() -> void:
 			fields.erase(field_order.pop_front())
 
 
-## The map changed this tick (a building placed, a resource used up): drop every
-## cached field a closing change could affect (units re-request what they need); where cells
-## only opened (a tree felled, a bush picked bare, a bridge rebuilt) patch the field instead,
-## unless the cell was one of its sources (Flow.patch). Felling a forest no longer re-solves
-## every field that saw it.
+## The map changed this tick (a building placed, a resource used up, a tree felled, a bridge
+## rebuilt): patch the cached fields the change touches instead of dropping them (Flow.patch_closed
+## and patch_opened: the costs come out as a fresh solve's), newest first while this tick's patch
+## budget lasts (each patch gets at most a quarter of the map's cells); past it, or where a
+## source cell itself changed, the field is dropped (units
+## re-request it and _solve_queued spreads the solves over ticks). Only lanes whose walk grid
+## really changed at a cell count: a building shuts nothing for flyers, a team's gate nothing for
+## that team. Compares each cell's walk values before the tick's first change with now.
 func _sync_map() -> void:
 	if map.fresh.is_empty():
 		return
-	var keep := []
-	for key in field_order:
-		var f = fields[key]
-		var stale := false
-		var opened := PackedInt32Array()
-		for k in map.fresh.size():
-			var c: int = map.fresh[k]
-			if not f.touches(map, c):
+	var cells: Array = map.fresh_was.keys()
+	cells.sort()
+	var opened := {}   # lane -> Array of cells, ascending
+	var closed := {}
+	for c in cells:
+		var was: PackedByteArray = map.fresh_was[c]
+		for k in mini(was.size(), map.walks.size()):   # (a lane made this tick has no fields yet)
+			var now: int = map.walks[k][c]
+			if now == was[k]:
 				continue
-			if map.fresh_closed[k] == 1 or c in f.sources:
-				stale = true
-				break
-			opened.append(c)
+			var into: Dictionary = opened if now == 1 else closed
+			if not into.has(k):
+				into[k] = []
+			into[k].append(c)
+	var budget := PATCH_BUDGET
+	var keep := []
+	for n in range(field_order.size() - 1, -1, -1):
+		var key: int = field_order[n]
+		var f = fields[key]
+		var ln := key % LANES
+		var op := PackedInt32Array()
+		var cl := PackedInt32Array()
+		var stale := false
+		for c in opened.get(ln, []):
+			if f.touches(map, c):
+				stale = stale or c in f.sources
+				op.append(c)
+		for c in closed.get(ln, []):
+			if f.touches(map, c):
+				stale = stale or c in f.sources
+				cl.append(c)
+		if not stale and not (op.is_empty() and cl.is_empty()):
+			# A patch past its share is given up (the field dropped): a big one costs more than a solve.
+			var limit := mini(budget, map.width * map.height / 4)
+			stale = limit <= 0
+			if not stale and not cl.is_empty():
+				var spent: int = f.patch_closed(map, cl, ln, limit)
+				stale = spent < 0
+				budget -= limit if stale else spent
+				limit = mini(budget, limit - maxi(spent, 0))
+			if not stale and not op.is_empty():
+				stale = limit <= 0
+				if not stale:
+					var spent: int = f.patch_opened(map, op, ln, limit)
+					stale = spent < 0
+					budget -= limit if stale else spent
 		if stale:
 			fields.erase(key)
-			continue
-		for c in opened:
-			f.patch(map, c, key % LANES)
-		keep.append(key)
+		else:
+			keep.append(key)
+	keep.reverse()
 	field_order = keep
 	map.fresh.clear()
 	map.fresh_closed.clear()
+	map.fresh_was.clear()
 
 
 # ------------------------------------------------------------------ separation
@@ -1273,11 +1318,18 @@ func _separate() -> void:
 						pushx[j] += px * (2 if hi else 1)
 						pushy[j] += py * (2 if hi else 1)
 	var t := SimMap.TILE
+	var mw := map.width
+	var mh := map.height
+	var owners := units.owner
+	var mcls := units.mclass
 	for i in n:
 		if settle[i] == 1:
 			mv[i] = 0
-		var mc := lane(i)
-		if not map.walkable(xs[i], ys[i], mc):
+		var mc := lane_base[owners[i]] + mcls[i]
+		var wk: PackedByteArray = map.walks[mc]
+		var x0 := xs[i]
+		var y0 := ys[i]
+		if x0 < 0 or y0 < 0 or x0 / t >= mw or y0 / t >= mh or wk[y0 / t * mw + x0 / t] == 0:   # (map.walkable, inline)
 			# Its centre is on blocked ground (a foundation laid on it, or a spawn): step out
 			# to the nearest open neighbour's edge, the least move that makes it walkable;
 			# with no open neighbour (deep in a footprint) the nearest open cell, outright.
@@ -1285,22 +1337,27 @@ func _separate() -> void:
 			xs[i] = p.x
 			ys[i] = p.y
 			continue
-		if pushx[i] != 0 and map.walkable(xs[i] + pushx[i], ys[i], mc):
-			xs[i] += pushx[i]
-		if pushy[i] != 0 and map.walkable(xs[i], ys[i] + pushy[i], mc):
-			ys[i] += pushy[i]
+		if pushx[i] != 0:
+			var nx := x0 + pushx[i]
+			if nx >= 0 and nx / t < mw and wk[y0 / t * mw + nx / t] == 1:
+				xs[i] = nx
+		if pushy[i] != 0:
+			var ny := y0 + pushy[i]
+			if ny >= 0 and ny / t < mh and wk[ny / t * mw + xs[i] / t] == 1:
+				ys[i] = ny
 		# Keep the body (not just the centre) off blocked neighbour tiles, easing it off by at
 		# most CORRECT_MAX a tick: a shove into a wall slides back out, never pops a tile.
 		var cx := xs[i] / t
 		var cy := ys[i] / t
 		var r := rs[i]
-		if xs[i] - cx * t < r and not map.cell_walkable(cx - 1, cy, mc):
+		var c := cy * mw + cx
+		if xs[i] - cx * t < r and (cx == 0 or wk[c - 1] == 0):
 			xs[i] = mini(cx * t + r, xs[i] + CORRECT_MAX)
-		elif (cx + 1) * t - xs[i] < r and not map.cell_walkable(cx + 1, cy, mc):
+		elif (cx + 1) * t - xs[i] < r and (cx + 1 >= mw or wk[c + 1] == 0):
 			xs[i] = maxi((cx + 1) * t - r, xs[i] - CORRECT_MAX)
-		if ys[i] - cy * t < r and not map.cell_walkable(cx, cy - 1, mc):
+		if ys[i] - cy * t < r and (cy == 0 or wk[c - mw] == 0):
 			ys[i] = mini(cy * t + r, ys[i] + CORRECT_MAX)
-		elif (cy + 1) * t - ys[i] < r and not map.cell_walkable(cx, cy + 1, mc):
+		elif (cy + 1) * t - ys[i] < r and (cy + 1 >= mh or wk[c + mw] == 0):
 			ys[i] = maxi((cy + 1) * t - r, ys[i] - CORRECT_MAX)
 	units.x = xs
 	units.y = ys

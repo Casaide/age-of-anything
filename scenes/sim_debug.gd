@@ -134,6 +134,12 @@ var views := {}             # unit id -> UnitView (view side only; never feeds t
 var bviews := {}            # building id -> BuildingArt
 var rviews := {}            # resource cell -> its prop (reed clump, bug bush)
 var res_cells := {}         # cell -> its prop variant: every cell that held a resource or changed (props come and go here)
+var _fading := {}           # resource cells whose prop is fading out (looked at every frame; the rest at the fog's rate)
+var _res_tick := -1000      # the world tick resource props were last all looked at, and for whom
+var _res_reveal := false
+var _res_left := PackedInt32Array()     # per cell: what was left there, as last shown (-1: never looked at)
+var _res_ground := PackedByteArray()    # per cell: the ground (terrain index) as last shown
+var _res_active := -1
 var ghosts := {}            # building id -> BuildingArt: enemy buildings gone out of sight, shown as last seen
 var selected := {}          # unit id -> true
 var sheltered := {}         # unit id -> true: went inside a building (garrison.gd); back out it isn't "trained"
@@ -438,6 +444,9 @@ func _attach(w: World, end_tick := -1) -> void:
 	built_shown = null
 	path_anchors.clear()
 	res_cells.clear()
+	_fading.clear()
+	_res_tick = -1000
+	_res_left = PackedInt32Array()
 	selected.clear()
 	selected_building = 0
 	placing = ""
@@ -1706,6 +1715,7 @@ func _sync_views() -> void:
 	var u := world.units
 	var a := clock.alpha
 	var alive := {}
+	var shown := _shown_rect(160.0)
 	for i in u.count():
 		var id := u.id[i]
 		alive[id] = true
@@ -1726,6 +1736,14 @@ func _sync_views() -> void:
 		view.position = Iso.to_screen(u.px[i] + dx * a, u.py[i] + dy * a)
 		view.lift = Iso.lift(u.px[i] + dx * a, u.py[i] + dy * a)   # on a hill: drawn raised, sorted on the base plane
 		view.walking = dx != 0 or dy != 0
+		# Off screen (or hidden by the fog): no animation, tool or facing work; picked up again
+		# the frame it comes into view.
+		var on := view.visible and shown.has_point(view.position)
+		if view.is_processing() != on:
+			view.set_process(on)
+			view.struck = false   # (a blow lands only in its own _process)
+		if not on:
+			continue
 		if view.struck and WORK_SOUND.has(view.job) and u.owner[i] == active:
 			_sfx_at(WORK_SOUND[view.job], view.position, -8.0)   # the blow you see lands: chop, clink, knock, rustle
 		view.job = town.job_for(i, _job(i))
@@ -1744,6 +1762,13 @@ func _sync_views() -> void:
 			views[id].queue_free()
 			views.erase(id)
 			selected.erase(id)
+
+
+## The part of the canvas on screen, grown by `margin` canvas pixels (a body standing just off
+## the edge still shows its head).
+func _shown_rect(margin: float) -> Rect2:
+	var half: Vector2 = get_viewport_rect().size / camera.zoom * 0.5
+	return Rect2(camera.get_screen_center_position() - half, half * 2.0).grow(margin)
 
 
 const WORK_SOUND := {"chop": "chop", "mine": "mine", "build": "build", "forage": "forage", "till": "forage"}
@@ -1948,16 +1973,40 @@ func _add_resource_view(c: int, kind: String, left: int) -> void:
 ## saw it under the fog. Cells that change (a farm's field, a carcass) join the watched cells.
 func _sync_resources() -> void:
 	var dt := get_process_delta_time()
+	var look := {}   # cells to look at this frame: those just changed, and the props fading out
+	var changed := {}
 	for c in map.changed:
 		if not res_cells.has(c):
 			res_cells[c] = c * 7 + c / map.width
+		look[c] = true
+		changed[c] = true
 	map.changed.clear()
 	map.changed_overflow = false
+	# Every cell only when what you'd see may have moved on: your side's fog (and memory) is
+	# restamped every fog_cfg.every ticks, and the truth (with the fog lifted) is read as often.
+	var full: bool = world.tick - _res_tick >= int(world.fog_cfg.every) or world.tick < _res_tick or reveal != _res_reveal or active != _res_active
+	if full:
+		_res_tick = world.tick
+		_res_reveal = reveal
+		_res_active = active
+		look = res_cells
+	else:
+		for c in _fading:
+			look[c] = true
 	var ground: PackedByteArray = world.fog_ground[active]
 	var seen_left: PackedInt32Array = world.fog_left[active]
-	for c in res_cells:
+	if _res_left.size() != map.width * map.height:
+		_res_left.resize(map.width * map.height)
+		_res_left.fill(-1)
+		_res_ground.resize(map.width * map.height)
+	for c in look:
 		var left: int = map.left_at(c) if reveal else seen_left[c]
-		var kind: String = RESOURCE_PROP.get(map.terrain_ids[map.terrain[c] if reveal else ground[c]], "")
+		var gi: int = map.terrain[c] if reveal else ground[c]
+		if left == _res_left[c] and gi == _res_ground[c] and not changed.has(c) and not _fading.has(c):
+			continue   # seen as it was last time: nothing to do
+		_res_left[c] = left
+		_res_ground[c] = gi
+		var kind: String = RESOURCE_PROP.get(map.terrain_ids[gi], "")
 		if kind == "tree":
 			kind = land.species_at(c)   # the look of the tree from the ground round it
 		elif kind == "" and map.terrain_ids[map.terrain[c]] == "stump" and rviews.has(c):
@@ -1966,6 +2015,7 @@ func _sync_resources() -> void:
 		if h != null and left > 0 and (h.get_meta("res").gone > 0.0 or h.get_meta("res").kind != kind):
 			h.queue_free()   # sown again, or what you see there changed (the fog lifted)
 			rviews.erase(c)
+			_fading.erase(c)
 			h = null
 		if h == null:
 			if left > 0 and kind != "":
@@ -1984,10 +2034,17 @@ func _sync_resources() -> void:
 			var linger := 6.0 if r.kind in ["reeds", "quarry", "gold", "carcass"] else 0.0   # stubble and rubble stay a while
 			if r.kind in ArtKit.TREES and map.occupied[c] == 0:
 				linger = INF   # a felled tree's stump stays (until something's built on it)
+			if is_inf(linger):
+				_fading.erase(c)   # nothing more to do each frame
+				continue
+			_fading[c] = true
 			h.modulate.a = clampf(1.0 - (r.gone - linger) / 1.5, 0.0, 1.0)
 			if h.modulate.a <= 0.0:
 				h.queue_free()
 				rviews.erase(c)
+				_fading.erase(c)
+		else:
+			_fading.erase(c)
 
 
 ## The icon for a tech (a research index or Tech.AGE_UP): a line upgrade shows its unit.
