@@ -12,7 +12,14 @@ import sys, math
 import bpy, bmesh
 from mathutils import Vector
 
-out = sys.argv[sys.argv.index("--") + 1]
+args = sys.argv[sys.argv.index("--") + 1:]
+out = args[0]
+# Face options (for concept sheets): eye=<radius scale> wide=<how much wider than tall>
+# brows=<0 none, else thickness> white=<1: an eye white behind the dark iris>
+opt = {"eye": 1.3, "wide": 1.3, "brows": 1.6, "white": 0, "bx": 4.3}   # the picked look (2026-10-13)
+for a in args[1:]:
+    k, v = a.split("=")
+    opt[k] = float(v)
 bpy.ops.wm.read_factory_settings(use_empty=True)
 
 
@@ -85,14 +92,34 @@ for s in (-1, 1):
     bm.free()
     ear.data.materials.append(SKIN)
 
-# ---- eyes, set in the sockets
+# ---- eyes, set in the sockets (a tiny dark dot read as creepy: Dominic; options are bigger,
+# wider eyes, a white round the iris, and brows over them)
+WHITE = mat("eye_white", (0.9, 0.87, 0.8))
 for s in (-1, 1):
-    eye, bm = sphere("eye", 0.42, 12, 8)
+    r = 0.42 * opt["eye"]
+    if opt["white"]:
+        white, bm = sphere("eye_white", 1.0, 12, 8)
+        for v in bm.verts:
+            v.co = Vector((v.co.x * r * 0.9, v.co.y * r * 1.5 * opt["wide"], v.co.z * r * 0.95)) + Vector((3.75, 1.55 * s, 5.75))
+        bm.to_mesh(white.data)
+        bm.free()
+        white.data.materials.append(WHITE)
+    eye, bm = sphere("eye", 1.0, 12, 8)
     for v in bm.verts:
-        v.co += Vector((3.85, 1.55 * s, 5.75))
+        w = 1.0 if opt["white"] else opt["wide"]
+        v.co = Vector((v.co.x * r, v.co.y * r * w, v.co.z * r)) + Vector((3.85 + (0.12 if opt["white"] else 0), 1.55 * s, 5.75))
     bm.to_mesh(eye.data)
     bm.free()
     eye.data.materials.append(EYE)
+    if opt["brows"] > 0:   # a brow: a flattened hair-coloured bar on the ridge, tilted down at the outer end
+        brow, bm = sphere("brow", 1.0, 12, 8)
+        for v in bm.verts:
+            q = Vector((v.co.x * 0.35, v.co.y * 0.95, v.co.z * 0.22 * opt["brows"]))
+            q.z -= 0.18 * q.y * s   # the outer end lower
+            v.co = q + Vector((opt["bx"], 1.5 * s, 6.55 + 0.1 * opt["eye"]))
+        bm.to_mesh(brow.data)
+        bm.free()
+        brow.data.materials.append(HAIR)
 
 # ---- hair: a cap over the top and back of the skull, a little shaggy
 hair, bm = sphere("hair", 1.0, 40, 24)
