@@ -221,15 +221,21 @@ func _upgrade_lines(w, workers: Array, army: Array) -> void:
 	var at: int = int(cfg.economy.age_workers) if w.ages[player] == 1 else AGE3_WORKERS
 	if workers.size() >= at and not Tech.next_age(w, player).is_empty():
 		keep = Tech.next_age(w, player).cost
+	var wanted := []   # [research, old]: what we'd research, in data order (worked out once, not per building)
+	for r in w.tech.research:
+		var gather: bool = r.effects.any(func(fx): return fx.has("gather"))
+		var old: bool = r.has("line") or (build_up and gather)
+		if old or r.id in cfg.research.economy or r.id in cfg.research.get("buildings", []) or _reach(w, r, fielded) >= int(cfg.research.army_min):
+			wanted.append([r, old])
 	for b in w.buildings.count():
 		if w.buildings.owner[b] != player or w.buildings.queue[b].any(func(e): return e < 0):
 			continue   # one research at a time per building, as before queues held research
-		for r in w.tech.research:
-			var gather: bool = r.effects.any(func(fx): return fx.has("gather"))
-			var old: bool = r.has("line") or (build_up and gather)
-			if not (old or r.id in cfg.research.economy or r.id in cfg.research.get("buildings", []) or _reach(w, r, fielded) >= int(cfg.research.army_min)) \
-					or Tech.why_not(w, player, b, r.id) != "":
-				continue
+		var bt: String = w.btypes[w.buildings.kind[b]].id
+		for e in wanted:
+			var r: Dictionary = e[0]
+			var old: bool = e[1]
+			if r.building != bt or Tech.why_not(w, player, b, r.id) != "":
+				continue   # (researched elsewhere: why_not would say "not here")
 			var spare := true
 			for k in r.cost.size():
 				if w.stock[k][player] < r.cost[k] * (1 if build_up else 2) + (0 if old else keep[k]):
