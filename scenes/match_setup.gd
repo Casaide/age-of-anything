@@ -1,11 +1,13 @@
 extends Control
-## The lobby, the game's front door. A title menu (battle the AI, the Race Lab, quit) leads to
-## the battle setup: two side banners (you and the AI), each with a live preview of the army the
-## prompt makes (baked as in a match, idling on a strip of grass), the prompt with a reroll and
-## presets, the roster with costs and the generator's notes; a map card in the middle drawn from
-## the map's data; and Start. The match runs in the game view with the AI on side 2, and comes
-## back here when it ends. Styled like the in-game command panel (warm dark wood, bronze, gold).
+## The lobby, the game's front door. A title screen (the two rolled armies facing each other on
+## a hill under the title; battle the AI, the Race Lab, quit) leads to the battle setup: two side
+## panels (you and the AI), each wearing its race's culture (src/view/ui/theme.gd: the frame,
+## crest and banner of data/families.json's `ui` block), with the race's name on its banner, its
+## army idling on a lit stage, the dice and the prompt, the roster as cards (portrait, role,
+## cost) and the generator's notes; in the middle a cast "vs", the map card, the AI's level and
+## Start. The match runs in the game view with the AI on side 2 and comes back here when it ends.
 ## Each banner's "Tech tree" button opens that race's tech tree page (scenes/tech_tree.tscn).
+## Everything has a fixed size, so nothing moves when a race or map changes (Dominic).
 ## Run: godot --path . res://scenes/match_setup.tscn
 
 const DataLib := preload("res://src/data_lib.gd")
@@ -15,20 +17,23 @@ const UnitView := preload("res://src/unit_view.gd")
 const Icons := preload("res://src/view/art/icons.gd")
 const Audio := preload("res://src/view/audio.gd")
 const UiScale := preload("res://src/view/ui_scale.gd")
+const UiTheme := preload("res://src/view/ui/theme.gd")
+const Mat := preload("res://src/view/ui/ui_materials.gd")
 
 const MAPS := ["reed_meadow", "reed_meadow_large", "flat_test"]   # real maps; choke_test is a movement test (sim_debug lists it)
+const LEVELS := ["Easy", "Normal", "Hard"]
 
-const BG := Color("#1c1712")
-const PANEL := Color("#2a231b")
-const EDGE := Color("#6a5a40")
-const BRONZE := Color("#a08858")
-const GOLD := Color("#f2c94c")
-const TEXT := Color("#efe4c8")
-const DIM := Color("#b8ad94")
-const GRASS := Color("#4e6e2a")
-const STAGE_H := 190
+const BASE := 20                 # the lobby's body type in UI pixels (Dominic: "text is all too small")
+const DESIGN := Vector2(1600, 950)   # the lobby is laid out for this and scaled to fill the window
+const CENTRE_W := 420
+const BANNER_H := 96
+const STAGE_H := 144
+const CARD_H := 72
+const NOTES_H := 70
+const MENU_STAGE_H := 230
 const STAGE_ZOOM := 2.0          # screen pixels per canvas unit on the preview stage
 const BAKE_AFTER := 0.6          # seconds of no typing before a prompt is re-baked
+const GRASS := Color("#4e6e2a")
 
 var lib
 var gen
@@ -37,13 +42,17 @@ var kit: ArtKit
 var baking := false
 var menu: Control
 var setup: Control
-var sides: Array = []           # per side: {field, reroll, race, name, line, roster, stage, layer, dirty_at}
+var sides: Array = []           # per side: {field, dice, reroll, race, name, line, roster, units, stage, vp, layer, status, dirty_at, team, panel, banner, family}
 var map_index := 0
 var map_name: Label
 var map_pic: TextureRect
 var map_note: Label
-var level_pick: OptionButton
+var level_pick: OptionButton    # kept for the match (its selected index); shown as three buttons
+var level_buttons: Array = []
 var tree_page: Control          # the tech tree page, over everything while open
+var menu_layer: Node2D          # the title screen's hill, both armies on it
+var menu_stage: SubViewportContainer
+var _themes := {}               # family -> Theme (themes are built once per culture)
 
 
 func _ready() -> void:
@@ -57,38 +66,30 @@ func _ready() -> void:
 	kit = ArtKit.new()
 	kit.lib = lib
 	add_child(kit)
-	var bg := ColorRect.new()
-	bg.color = BG
-	bg.set_anchors_preset(Control.PRESET_FULL_RECT)
-	add_child(bg)
-	var vignette := TextureRect.new()   # a soft darkening at the corners, like an old map
-	vignette.texture = _vignette()
-	vignette.set_anchors_preset(Control.PRESET_FULL_RECT)
-	vignette.stretch_mode = TextureRect.STRETCH_SCALE
-	vignette.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	add_child(vignette)
+	theme = _theme("")
+	add_child(_backdrop())
+	level_pick = OptionButton.new()
+	for l in LEVELS:
+		level_pick.add_item(l)
+	level_pick.selected = 0
 	menu = _menu()
 	add_child(menu)
 	setup = _setup()
 	setup.visible = false
 	add_child(setup)
+	UiTheme.juice_all(self)
 	var audio := Audio.of(get_tree())
 	audio.ambience(false)
 	audio.music("lobby")
+	for i in sides.size():   # every side starts rolled (Dominic); the title screen shows the two armies
+		_roll(i)
 
 
-## Cmd/Ctrl + minus / plus: the UI a step smaller or larger (saved).
-func _unhandled_key_input(event: InputEvent) -> void:
-	var d := UiScale.key_step(event)
-	if d != 0:
-		UiScale.step(d)
-		_rescale()
-		get_viewport().set_input_as_handled()
-
-
-## The lobby is all UI: the whole window scales to the screen's density and the player's UI size.
+## The lobby is a designed screen: laid out at DESIGN and scaled to fill the window, at any UI
+## size (the UI-size setting sizes the match's HUD and pages, where room matters).
 func _rescale() -> void:
-	get_window().content_scale_factor = UiScale.factor(get_window(), UiScale.MENU_NEEDS)
+	var px := Vector2(get_window().size)
+	get_window().content_scale_factor = maxf(1.0, minf(px.x / DESIGN.x, px.y / DESIGN.y))
 
 
 func _process(_delta: float) -> void:
@@ -99,42 +100,121 @@ func _process(_delta: float) -> void:
 			_bake(i)
 
 
-# ------------------------------------------------------------------ the title menu
+func _theme(family: String) -> Theme:
+	if not _themes.has(family):
+		_themes[family] = UiTheme.theme(UiTheme.look(family), BASE)
+	return _themes[family]
+
+
+## A dark table under everything: wood, darkening to the corners.
+func _backdrop() -> Control:
+	var root := Control.new()
+	root.set_anchors_preset(Control.PRESET_FULL_RECT)
+	root.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	var wood := TextureRect.new()
+	wood.texture = Mat.texture("wood", Color("#2a1c12"))
+	wood.stretch_mode = TextureRect.STRETCH_TILE
+	wood.set_anchors_preset(Control.PRESET_FULL_RECT)
+	wood.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	root.add_child(wood)
+	var vignette := TextureRect.new()
+	vignette.texture = _vignette()
+	vignette.set_anchors_preset(Control.PRESET_FULL_RECT)
+	vignette.stretch_mode = TextureRect.STRETCH_SCALE
+	vignette.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	root.add_child(vignette)
+	return root
+
+
+# ------------------------------------------------------------------ the title screen
 
 func _menu() -> Control:
-	var root := CenterContainer.new()
+	var root := Control.new()
 	root.set_anchors_preset(Control.PRESET_FULL_RECT)
+	# The hill along the bottom: your army and the AI's, facing each other.
+	menu_stage = SubViewportContainer.new()
+	menu_stage.stretch = true
+	menu_stage.anchor_left = 0.0
+	menu_stage.anchor_right = 1.0
+	menu_stage.anchor_top = 1.0
+	menu_stage.anchor_bottom = 1.0
+	menu_stage.offset_top = -MENU_STAGE_H
+	menu_stage.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	var vp := SubViewport.new()
+	vp.transparent_bg = true
+	vp.canvas_item_default_texture_filter = Viewport.DEFAULT_CANVAS_ITEM_TEXTURE_FILTER_NEAREST
+	menu_stage.add_child(vp)
+	var hill := TextureRect.new()   # turf, rising out of the dark
+	hill.texture = Mat.texture("felt", GRASS.darkened(0.25))
+	hill.stretch_mode = TextureRect.STRETCH_TILE
+	hill.size = Vector2(4000, MENU_STAGE_H)
+	vp.add_child(hill)
+	var fade := TextureRect.new()
+	fade.texture = _hill()
+	fade.size = Vector2(4000, MENU_STAGE_H)
+	fade.stretch_mode = TextureRect.STRETCH_SCALE
+	vp.add_child(fade)
+	menu_layer = Node2D.new()
+	menu_layer.y_sort_enabled = true
+	menu_layer.scale = Vector2.ONE * STAGE_ZOOM
+	vp.add_child(menu_layer)
+	var shade := TextureRect.new()   # the hill's ends in the dark, so the armies stand in a pool of light
+	shade.texture = _side_shade()
+	shade.size = Vector2(4000, MENU_STAGE_H)
+	shade.stretch_mode = TextureRect.STRETCH_SCALE
+	shade.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	vp.add_child(shade)
+	menu_stage.resized.connect(func(): hill.size.x = menu_stage.size.x; fade.size.x = menu_stage.size.x; shade.size.x = menu_stage.size.x; _muster_menu())
+	root.add_child(menu_stage)
+
+	var centre := CenterContainer.new()
+	centre.set_anchors_preset(Control.PRESET_FULL_RECT)
+	centre.offset_bottom = -MENU_STAGE_H * 0.55
+	root.add_child(centre)
 	var col := VBoxContainer.new()
-	col.add_theme_constant_override("separation", 14)
+	col.add_theme_constant_override("separation", 10)
 	col.alignment = BoxContainer.ALIGNMENT_CENTER
-	root.add_child(col)
-	var title := Label.new()
-	title.text = "Age of Whatever"
+	centre.add_child(col)
+	var crest := TextureRect.new()
+	crest.texture = UiTheme.crest_texture(UiTheme.look(""))
+	crest.custom_minimum_size = Vector2(300, 90)
+	crest.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+	crest.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
+	col.add_child(crest)
+	var title := UiTheme.label("Age of Whatever", "Title")
+	title.add_theme_font_size_override("font_size", 104)
+	title.add_theme_constant_override("outline_size", 14)
+	title.add_theme_constant_override("shadow_offset_y", 7)
 	title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	title.add_theme_font_size_override("font_size", 72)
-	title.add_theme_color_override("font_color", GOLD)
-	title.add_theme_color_override("font_outline_color", Color("#3a2a10"))
-	title.add_theme_constant_override("outline_size", 10)
-	title.add_theme_color_override("font_shadow_color", Color(0, 0, 0, 0.6))
-	title.add_theme_constant_override("shadow_offset_y", 5)
 	col.add_child(title)
-	var tag := _label("Your civilisation is whatever you can describe.", 20, DIM)
+	var tag := UiTheme.label("Your civilisation is whatever you can describe.", "Dim")
+	tag.add_theme_font_size_override("font_size", 26)
 	tag.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	col.add_child(tag)
 	var gap := Control.new()
-	gap.custom_minimum_size.y = 36
+	gap.custom_minimum_size.y = 26
 	col.add_child(gap)
+	var plaque := PanelContainer.new()
+	plaque.theme_type_variation = "Frame"
+	plaque.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
+	col.add_child(plaque)
+	var buttons := VBoxContainer.new()
+	buttons.add_theme_constant_override("separation", 14)
+	plaque.add_child(buttons)
 	for item in [["Battle the AI", func(): _open_setup()], ["Race Lab", func(): get_tree().change_scene_to_file("res://scenes/race_lab.tscn")],
 			["Quit", func(): get_tree().quit()]]:
-		var b := _button(item[0], 26, item[0] == "Battle the AI")
-		b.custom_minimum_size = Vector2(360, 64)
+		var primary: bool = item[0] == "Battle the AI"
+		var b := UiTheme.button(item[0], primary)
+		b.custom_minimum_size = Vector2(400, 88 if primary else 62)
+		if not primary:
+			b.add_theme_font_size_override("font_size", 24)
 		b.pressed.connect(item[1])
-		col.add_child(b)
-	var foot := _label("Type \"centaur romans\" or \"sewer rats with cheese hammers\": the game builds the race and prices every unit fairly.", 15, DIM.darkened(0.25), true)
-	foot.custom_minimum_size.x = 560
+		buttons.add_child(b)
+	var foot := UiTheme.label("Type \"centaur romans\" or \"sewer rats with cheese hammers\": the game builds the race and prices every unit fairly.", "Dim", true)
+	foot.custom_minimum_size.x = 640
 	foot.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	var gap2 := Control.new()
-	gap2.custom_minimum_size.y = 28
+	gap2.custom_minimum_size.y = 10
 	col.add_child(gap2)
 	col.add_child(foot)
 	return root
@@ -143,187 +223,332 @@ func _menu() -> Control:
 func _open_setup() -> void:
 	menu.visible = false
 	setup.visible = true
-	for i in sides.size():   # every side starts rolled (Dominic): flick the dice again, or type
-		if sides[i].race.is_empty():
-			_roll(i)
+	UiTheme.arrive(setup.get_child(0))
+	Audio.of(get_tree()).play("ui_tip")
+
+
+## Both armies on the title screen's hill: yours from the left, the AI's from the right.
+func _muster_menu() -> void:
+	if menu_layer == null:
+		return
+	for n in menu_layer.get_children():
+		n.queue_free()
+	var w: float = menu_stage.size.x / STAGE_ZOOM
+	if w <= 0.0 or kit.icons.is_empty():
+		return
+	for i in sides.size():
+		var s: Dictionary = sides[i]
+		if s.race.is_empty():
+			continue
+		var units: Array = s.race.units
+		for k in units.size():
+			var u: Dictionary = units[units.size() - 1 - k]   # the big ones at the front
+			var view := UnitView.new()
+			view.build(u.recipe, lib, s.team, u.eval.speed)
+			view.scale = Vector2.ONE * ArtKit.UNIT_SCALE
+			view.pose_steps = 8
+			view.art_px = ArtKit.ART_SCALE / STAGE_ZOOM
+			var x := w * (0.4 - 0.065 * k) if i == 0 else w * (0.6 + 0.065 * k)
+			view.position = Vector2(x, MENU_STAGE_H / STAGE_ZOOM * (0.62 if k % 2 == 0 else 0.78))
+			view.face(1.0 if i == 0 else -1.0)
+			menu_layer.add_child(view)
 
 
 # ------------------------------------------------------------------ the battle setup
 
 func _setup() -> Control:
+	var root := Control.new()
+	root.set_anchors_preset(Control.PRESET_FULL_RECT)
 	var margin := MarginContainer.new()
 	margin.set_anchors_preset(Control.PRESET_FULL_RECT)
 	for side in ["left", "right"]:
-		margin.add_theme_constant_override("margin_" + side, 40)
-	margin.add_theme_constant_override("margin_top", 28)
-	margin.add_theme_constant_override("margin_bottom", 28)
+		margin.add_theme_constant_override("margin_" + side, 26)
+	margin.add_theme_constant_override("margin_top", 14)
+	margin.add_theme_constant_override("margin_bottom", 22)
+	root.add_child(margin)
 	var col := VBoxContainer.new()
-	col.add_theme_constant_override("separation", 18)
+	col.add_theme_constant_override("separation", 26)   # room for the crests on the panels' top edges
 	margin.add_child(col)
 	var head := HBoxContainer.new()
-	var back := _button("< Menu", 16, false)
-	back.pressed.connect(func(): setup.visible = false; menu.visible = true)
+	head.custom_minimum_size.y = 56
+	var back := UiTheme.button("Menu")
+	back.icon = Icons.texture("back")
+	back.add_theme_constant_override("icon_max_width", 22)
+	back.custom_minimum_size = Vector2(150, 48)
+	back.size_flags_vertical = Control.SIZE_SHRINK_CENTER
+	back.pressed.connect(func(): setup.visible = false; menu.visible = true; UiTheme.arrive(menu))
 	head.add_child(back)
-	var title := _label("  Prepare for battle", 30, GOLD)
+	var title := UiTheme.label("Prepare for Battle", "Title")
+	title.add_theme_font_size_override("font_size", 46)
+	title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	title.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	head.add_child(title)
+	var balance := Control.new()   # the back button's twin, so the title sits in the middle
+	balance.custom_minimum_size.x = 150
+	head.add_child(balance)
 	col.add_child(head)
 	var row := HBoxContainer.new()
-	row.add_theme_constant_override("separation", 24)
+	row.add_theme_constant_override("separation", 22)
 	row.size_flags_vertical = Control.SIZE_EXPAND_FILL
 	col.add_child(row)
 	row.add_child(_side_panel(0, "You"))
 	row.add_child(_centre())
 	row.add_child(_side_panel(1, "The AI"))
-	return margin
+	return root
 
 
-## The middle: the "versus" seal, the map card, and Start.
+## The middle: the cast "vs", the map card, the AI's level, and Start.
 func _centre() -> Control:
 	var col := VBoxContainer.new()
-	col.custom_minimum_size.x = 400   # fixed: a longer map name mustn't push the banners about (Dominic)
-	col.add_theme_constant_override("separation", 16)
-	col.alignment = BoxContainer.ALIGNMENT_CENTER
-	var vs := _label("vs", 54, BRONZE)
-	vs.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	vs.add_theme_color_override("font_outline_color", Color("#120e0a"))
-	vs.add_theme_constant_override("outline_size", 8)
+	col.custom_minimum_size.x = CENTRE_W   # fixed: a longer map name mustn't push the banners about (Dominic)
+	col.add_theme_constant_override("separation", 18)
+	var vs := UiTheme.Medallion.new()
+	vs.lk = UiTheme.look("")
+	vs.custom_minimum_size = Vector2(0, 104)
 	col.add_child(vs)
-	var card := _panel()
+	var card := PanelContainer.new()
+	card.theme_type_variation = "CrestFrame"
 	col.add_child(card)
 	var inner := VBoxContainer.new()
 	inner.add_theme_constant_override("separation", 8)
 	card.add_child(inner)
-	inner.add_child(_label("Battlefield", 14, DIM))
+	var cap := UiTheme.label("BATTLEFIELD", "Caption")
+	cap.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	inner.add_child(cap)
 	var pick := HBoxContainer.new()
-	var prev := _button("<", 18, false)
+	pick.add_theme_constant_override("separation", 8)
+	var prev := UiTheme.button("<")
+	prev.custom_minimum_size = Vector2(46, 46)
 	prev.pressed.connect(func(): _set_map(map_index - 1))
 	pick.add_child(prev)
-	map_name = _label("", 21, TEXT)
+	map_name = UiTheme.label("", "Heading")
 	map_name.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	map_name.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	map_name.clip_text = true
+	map_name.text_overrun_behavior = TextServer.OVERRUN_TRIM_ELLIPSIS
 	pick.add_child(map_name)
-	var next := _button(">", 18, false)
+	var next := UiTheme.button(">")
+	next.custom_minimum_size = Vector2(46, 46)
 	next.pressed.connect(func(): _set_map(map_index + 1))
 	pick.add_child(next)
 	inner.add_child(pick)
+	var well := PanelContainer.new()
+	well.theme_type_variation = "Well"
+	inner.add_child(well)
 	map_pic = TextureRect.new()
-	map_pic.custom_minimum_size = Vector2(360, 200)   # Dominic: the map needs more room
+	map_pic.custom_minimum_size = Vector2(0, 196)   # Dominic: the map needs more room
 	map_pic.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
 	map_pic.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
-	inner.add_child(map_pic)
-	map_note = _label("", 14, DIM)
+	well.add_child(map_pic)
+	map_note = UiTheme.label("", "Dim")
 	map_note.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	inner.add_child(map_note)
 	_set_map(0)
-	var start := _button("Start battle", 28, true)
-	start.custom_minimum_size = Vector2(0, 72)
+	var level := PanelContainer.new()   # how hard the AI plays: three buttons, one lit
+	level.theme_type_variation = "Card"
+	col.add_child(level)
+	var lcol := VBoxContainer.new()
+	lcol.add_theme_constant_override("separation", 6)
+	level.add_child(lcol)
+	var lcap := UiTheme.label("THE AI PLAYS", "Caption")
+	lcap.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	lcol.add_child(lcap)
+	var lrow := HBoxContainer.new()
+	lrow.add_theme_constant_override("separation", 8)
+	lcol.add_child(lrow)
+	var group := ButtonGroup.new()
+	for k in LEVELS.size():
+		var b := UiTheme.button(LEVELS[k])
+		b.toggle_mode = true
+		b.button_group = group
+		b.button_pressed = k == level_pick.selected
+		b.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+		b.custom_minimum_size.y = 46
+		b.toggled.connect(func(on): if on: level_pick.selected = k)
+		lrow.add_child(b)
+		level_buttons.append(b)
+	var spring := Control.new()
+	spring.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	col.add_child(spring)
+	var start := UiTheme.button("Start Battle", true)
+	start.custom_minimum_size = Vector2(0, 100)
+	start.add_theme_font_size_override("font_size", 40)
 	start.pressed.connect(_play)
 	col.add_child(start)
-	var hint := _label("Esc in battle: pause and menu", 13, DIM.darkened(0.2))
+	var breathe := start.create_tween().set_loops()   # Start breathes: the screen's call to arms
+	breathe.set_trans(Tween.TRANS_SINE)
+	breathe.tween_property(start, "self_modulate", Color(1.12, 1.08, 1.0), 1.4)
+	breathe.tween_property(start, "self_modulate", Color.WHITE, 1.4)
+	var hint := UiTheme.label("Esc in battle: pause and menu", "Dim")
 	hint.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	col.add_child(hint)
 	return col
 
 
-## One side's banner: the race's name, its army on a strip of grass, the dice and the prompt,
-## the roster with costs, and the generator's notes.
+## One side's panel, in its race's culture: who it is and the tech tree, the race's banner,
+## its army on a lit stage, the dice and the prompt, the roster as cards, the notes.
 func _side_panel(i: int, who: String) -> Control:
 	var team := Color(lib.palettes.teams[i])
-	var card := _panel(team)
+	var card := PanelContainer.new()
+	card.theme_type_variation = "CrestFrame"
 	card.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	var col := VBoxContainer.new()
-	col.add_theme_constant_override("separation", 10)
+	col.add_theme_constant_override("separation", 9)
 	card.add_child(col)
 	var top := HBoxContainer.new()
-	var whol := _label(who.to_upper(), 14, team.lightened(0.3))
+	top.add_theme_constant_override("separation", 8)
+	var gem := TeamGem.new()   # the side's colour: one quiet mark
+	gem.colour = team
+	gem.custom_minimum_size = Vector2(18, 18)
+	gem.size_flags_vertical = Control.SIZE_SHRINK_CENTER
+	top.add_child(gem)
+	var whol := UiTheme.label(who.to_upper(), "Caption")
+	whol.add_theme_font_size_override("font_size", 17)
 	whol.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	whol.size_flags_vertical = Control.SIZE_SHRINK_CENTER
 	top.add_child(whol)
-	var tree_b := _button("Tech tree", 15, false)
+	var tree_b := UiTheme.button("Tech tree")
+	tree_b.icon = Icons.texture("research")
+	tree_b.add_theme_constant_override("icon_max_width", 22)
+	tree_b.add_theme_font_size_override("font_size", 18)
 	tree_b.tooltip_text = "Everything this race can build, train and research, and its bonuses"
 	tree_b.pressed.connect(func(): _open_tree(i))
 	top.add_child(tree_b)
 	col.add_child(top)
-	var name := _label("", 32, TEXT)
-	col.add_child(name)
-	var line := _label("", 16, DIM)
-	col.add_child(line)
-	# The stage: the army idling on grass.
+	var banner := PanelContainer.new()
+	banner.custom_minimum_size.y = BANNER_H
+	var bcol := VBoxContainer.new()
+	bcol.add_theme_constant_override("separation", -2)
+	banner.add_child(bcol)
+	var name := UiTheme.label("", "Title")
+	name.add_theme_font_size_override("font_size", 42)
+	name.clip_text = true
+	name.text_overrun_behavior = TextServer.OVERRUN_TRIM_ELLIPSIS
+	bcol.add_child(name)
+	var line := UiTheme.label("", "Name")
+	line.add_theme_color_override("font_outline_color", Color(0, 0, 0, 0.7))
+	line.add_theme_constant_override("outline_size", 5)
+	bcol.add_child(line)
+	col.add_child(banner)
+	# The stage: the army idling on grass, lit from above, sunk in the panel.
+	var well := PanelContainer.new()
+	well.theme_type_variation = "Well"
+	well.add_theme_stylebox_override("panel", _stage_well())
+	well.size_flags_vertical = Control.SIZE_EXPAND_FILL   # the stage takes what the window spares
+	col.add_child(well)
 	var stage := SubViewportContainer.new()
 	stage.custom_minimum_size = Vector2(0, STAGE_H)
+	stage.size_flags_vertical = Control.SIZE_EXPAND_FILL
 	stage.stretch = true
 	var vp := SubViewport.new()
 	vp.transparent_bg = false
 	vp.canvas_item_default_texture_filter = Viewport.DEFAULT_CANVAS_ITEM_TEXTURE_FILTER_NEAREST
 	stage.add_child(vp)
-	var ground := ColorRect.new()
-	ground.color = GRASS
+	var ground := TextureRect.new()
+	ground.texture = Mat.texture("felt", GRASS)   # close-cropped turf
+	ground.stretch_mode = TextureRect.STRETCH_TILE
 	ground.size = Vector2(2000, 1000)
 	vp.add_child(ground)
-	var shade := TextureRect.new()   # the grass darkens towards the back, so the army stands forward
-	shade.texture = _ground_shade()
+	var shade := TextureRect.new()   # the grass darkens towards the back and the sides; a pool of light in the middle
+	shade.texture = _stage_light()
 	shade.size = Vector2(2000, STAGE_H)
 	shade.stretch_mode = TextureRect.STRETCH_SCALE
 	vp.add_child(shade)
+	stage.resized.connect(func():
+		shade.size = stage.size
+		if not baking and not kit.icons.is_empty():
+			_muster(i))
 	var layer := Node2D.new()
 	layer.y_sort_enabled = true
 	layer.scale = Vector2.ONE * STAGE_ZOOM
 	vp.add_child(layer)
-	col.add_child(stage)
-	var status := _label("", 13, DIM)
-	col.add_child(status)
+	well.add_child(stage)
+	var status := UiTheme.label("", "Dim")   # over the stage's foot
+	status.add_theme_font_size_override("font_size", 15)
+	status.add_theme_color_override("font_color", Color("#f4ecd4", 0.85))
+	status.add_theme_color_override("font_outline_color", Color(0, 0, 0, 0.8))
+	status.add_theme_constant_override("outline_size", 4)
+	status.size_flags_vertical = Control.SIZE_SHRINK_END
+	status.size_flags_horizontal = Control.SIZE_SHRINK_BEGIN
+	status.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	well.add_child(status)
 	# The dice, then the prompt (Dominic: the dice is the main thing; every side starts rolled,
 	# the box starts empty, no menu of presets).
+	var prompt := HBoxContainer.new()
+	prompt.add_theme_constant_override("separation", 10)
+	col.add_child(prompt)
 	var dice := Button.new()
 	dice.icon = Icons.texture("dice")
 	dice.expand_icon = true
-	dice.custom_minimum_size = Vector2(84, 84)
-	dice.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
+	dice.custom_minimum_size = Vector2(68, 68)
 	dice.focus_mode = Control.FOCUS_NONE
 	dice.tooltip_text = "Roll the dice: a new race (with words in the box, another roll of those words)"
-	dice.add_theme_stylebox_override("normal", _box(Color("#2e2820"), EDGE, 2))
-	dice.add_theme_stylebox_override("hover", _box(Color("#3a3226"), GOLD, 2))
-	dice.add_theme_stylebox_override("pressed", _box(Color("#1e1a14"), GOLD, 2))
-	dice.pressed.connect(func(): Audio.of(get_tree()).play("ui_click"); _roll(i))
-	col.add_child(dice)
+	dice.pressed.connect(func(): _roll(i))
+	UiTheme.juice(dice)
+	prompt.add_child(dice)
 	var field := LineEdit.new()
 	field.placeholder_text = "...or describe your race"
-	field.custom_minimum_size = Vector2(0, 60)
+	field.custom_minimum_size = Vector2(0, 68)
 	field.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	field.alignment = HORIZONTAL_ALIGNMENT_CENTER
-	field.add_theme_font_size_override("font_size", 26)
-	field.add_theme_color_override("font_placeholder_color", Color(DIM, 0.7))
-	field.add_theme_stylebox_override("normal", _box(Color("#16120d"), BRONZE, 2))
-	field.add_theme_stylebox_override("focus", _box(Color("#1c1710"), GOLD, 3))
+	field.add_theme_font_size_override("font_size", 28)
 	field.text_changed.connect(func(_t): sides[i].reroll = 0; _regenerate(i))
 	field.text_submitted.connect(func(_t): _regenerate(i))   # Enter shows the race; only Start starts (Fable)
-	col.add_child(field)
-	if i == 1:   # the AI's banner: how hard it plays
-		var lrow := HBoxContainer.new()
-		lrow.add_theme_constant_override("separation", 8)
-		lrow.add_child(_label("Plays", 15, DIM))
-		level_pick = OptionButton.new()
-		level_pick.add_item("Easy")
-		level_pick.add_item("Normal")
-		level_pick.add_item("Hard")
-		level_pick.selected = 0
-		level_pick.focus_mode = Control.FOCUS_NONE
-		lrow.add_child(level_pick)
-		col.add_child(lrow)
-	var units := VBoxContainer.new()   # one row per unit: its portrait, name and cost (the banner's lower half was empty: Fable)
-	units.add_theme_constant_override("separation", 4)
+	prompt.add_child(field)
+	var units := GridContainer.new()   # the roster as cards: portrait, name, role and cost
+	units.columns = 2
+	units.add_theme_constant_override("h_separation", 10)
+	units.add_theme_constant_override("v_separation", 8)
+	units.custom_minimum_size.y = CARD_H * 3 + 16
 	col.add_child(units)
 	var roster := RichTextLabel.new()   # the generator's notes
 	roster.bbcode_enabled = true
-	roster.fit_content = true
 	roster.scroll_active = false
-	roster.add_theme_font_size_override("normal_font_size", 15)
-	roster.add_theme_color_override("default_color", TEXT)
+	roster.clip_contents = true
+	roster.custom_minimum_size.y = NOTES_H
+	roster.add_theme_font_size_override("normal_font_size", 16)
+	roster.add_theme_font_size_override("italics_font_size", 16)
+	roster.add_theme_constant_override("line_separation", -2)
+	roster.add_theme_color_override("default_color", Color("#e8d8a8"))
 	col.add_child(roster)
-	sides.append({"field": field, "reroll": 0, "rolled": "", "race": {}, "name": name, "line": line, "roster": roster, "units": units,
-		"stage": stage, "vp": vp, "layer": layer, "status": status, "dirty_at": 0.0, "team": team})
+	sides.append({"field": field, "dice": dice, "reroll": 0, "rolled": "", "race": {}, "name": name, "line": line, "roster": roster, "units": units,
+		"stage": stage, "vp": vp, "layer": layer, "status": status, "dirty_at": 0.0, "team": team, "panel": card, "banner": banner, "family": "?"})
 	return card
+
+
+## The side's colour as a small cut gem (the one team mark on its panel).
+class TeamGem extends Control:
+	var colour := Color.WHITE
+
+	func _draw() -> void:
+		var c := size * 0.5
+		var r := minf(size.x, size.y) * 0.5 - 1.0
+		var pts := PackedVector2Array([c + Vector2(0, -r), c + Vector2(r, 0), c + Vector2(0, r), c + Vector2(-r, 0)])
+		draw_colored_polygon(pts, colour.darkened(0.25))
+		draw_colored_polygon(PackedVector2Array([c + Vector2(0, -r), c + Vector2(r, 0), c, c + Vector2(-r, 0)]), colour.lightened(0.15))
+		draw_colored_polygon(PackedVector2Array([c + Vector2(0, -r * 0.6), c + Vector2(r * 0.35, -r * 0.15), c + Vector2(-r * 0.2, -r * 0.1)]), Color(1, 1, 1, 0.5))
+		pts.append(pts[0])
+		draw_polyline(pts, Color(0, 0, 0, 0.7), 1.2, true)
+
+
+## A side's panel takes its race's culture: its theme (frame, crest, buttons, cards) and banner.
+func _dress(i: int) -> void:
+	var s: Dictionary = sides[i]
+	var fam: String = s.race.family
+	if s.family == fam:
+		return
+	s.family = fam
+	s.panel.theme = _theme(fam)
+	s.banner.add_theme_stylebox_override("panel", UiTheme.banner_box(UiTheme.look(fam), s.team))
+
+
+func _stage_well() -> StyleBox:
+	var b: StyleBox = UiTheme.well_box(UiTheme.look(""))
+	b.content_margin_left = 3
+	b.content_margin_right = 3
+	b.content_margin_top = 3
+	b.content_margin_bottom = 3
+	return b
 
 
 ## The words a side's race comes from: what's typed, else what the dice rolled.
@@ -347,7 +572,7 @@ func _roll(i: int) -> void:
 func _random_words() -> String:
 	var creatures := []
 	var cultures := []
-	var kit := []
+	var kit_words := []
 	for w in lib.lexicon:
 		var e: Dictionary = lib.lexicon[w]
 		if e.has("creature") and w.ends_with("s") and lib.creatures.get(e.creature, {}).get("playable", false):
@@ -355,16 +580,16 @@ func _random_words() -> String:
 		elif e.has("family") and not e.has("creature"):
 			cultures.append(w)
 		elif e.keys().size() == 1 and e.has("tags"):
-			kit.append(w)
+			kit_words.append(w)
 	creatures.sort()
 	cultures.sort()
-	kit.sort()
+	kit_words.sort()
 	var words := []
 	if randi() % 3 != 0:
 		words.append(cultures[randi() % cultures.size()])
 	words.append(creatures[randi() % creatures.size()])
 	if randi() % 2 == 0:
-		words.append("with " + kit[randi() % kit.size()])
+		words.append("with " + kit_words[randi() % kit_words.size()])
 	return " ".join(words)
 
 
@@ -373,22 +598,20 @@ func _regenerate(i: int) -> void:
 	var s: Dictionary = sides[i]
 	var race: Dictionary = gen.generate(_prompt(i), rules, s.reroll)
 	s.race = race
+	_dress(i)
 	s.name.text = race.name
-	s.line.text = "%s, %s" % [lib.creatures[race.creature].plural, String(race.family).capitalize()]
-	var lines := []
+	s.line.text = "%s  ·  %s culture" % [lib.creatures[race.creature].plural, String(race.family).capitalize()]
 	for n in s.units.get_children():
+		s.units.remove_child(n)
 		n.queue_free()
 	for u in race.units:
-		var cost := []
-		for r in u.eval.cost:
-			if int(u.eval.cost[r]) > 0:
-				cost.append("%d%s" % [int(u.eval.cost[r]), String(r).substr(0, 1).to_upper()])
-		var age := "" if int(u.recipe.tier) <= 1 else "  [color=#%s]from age %d[/color]" % [DIM.to_html(false), int(u.recipe.tier)]
-		s.units.add_child(_unit_row("[b]%s[/b]   [color=#%s]%s[/color]%s" % [u.recipe.name, DIM.to_html(false), " ".join(cost), age]))
+		s.units.add_child(_unit_card(u))
+	var lines := []
 	for n in race.notes:
-		lines.append("[i][color=#%s]%s[/color][/i]" % [BRONZE.lightened(0.2).to_html(false), n])
+		lines.append("[i]%s[/i]" % n)
 	s.roster.text = "\n".join(lines)
-	s.status.text = "Mustering..."
+	s.roster.tooltip_text = "\n".join(race.notes)
+	s.status.text = "  Mustering..."
 	s.dirty_at = Time.get_ticks_msec() / 1000.0
 
 
@@ -406,6 +629,7 @@ func _bake(i: int) -> void:
 	baking = false
 	for k in sides.size():   # the atlas was rebuilt: every stage redraws from it
 		_muster(k)
+	_muster_menu()
 
 
 func _muster(i: int) -> void:
@@ -414,7 +638,7 @@ func _muster(i: int) -> void:
 		n.queue_free()
 	if s.race.is_empty():
 		return
-	var w: float = s.stage.size.x / STAGE_ZOOM
+	var w: float = maxf(s.stage.size.x, 300.0) / STAGE_ZOOM
 	var units: Array = s.race.units
 	var n := units.size()
 	for k in n:
@@ -425,40 +649,81 @@ func _muster(i: int) -> void:
 		view.pose_steps = 8
 		view.art_px = ArtKit.ART_SCALE / STAGE_ZOOM
 		var x := w * (k + 0.75) / (n + 0.5)
-		view.position = Vector2(x, STAGE_H / STAGE_ZOOM * (0.72 if k % 2 == 0 else 0.86))
+		view.position = Vector2(x, maxf(s.stage.size.y, STAGE_H) / STAGE_ZOOM * (0.66 if k % 2 == 0 else 0.82))
 		view.face(1.0 if i == 0 else -1.0)   # both armies face the middle
 		s.layer.add_child(view)
-	s.status.text = "%d units, every one priced by its parts" % n
+	s.status.text = "  %d units, every one priced by its parts" % n
 	var side := 0   # the portraits: kit.icons is keyed by the side's place among the races baked
 	for k in i:
 		if not sides[k].race.is_empty():
 			side += 1
 	for k in mini(n, s.units.get_child_count()):
-		var pic: TextureRect = s.units.get_child(k).get_child(0)
+		var pic: TextureRect = s.units.get_child(k).find_child("portrait", true, false)
 		pic.texture = kit.icons.get("%d:%s" % [side, units[k].recipe.slot])
 
 
-## A roster row: a framed portrait (filled in once the army is baked) and the unit's line.
-func _unit_row(text: String) -> HBoxContainer:
+## A roster card: the unit's portrait in a well (filled in once the army is baked), its name,
+## its role and cost (numbers with resource icons), what it's for on hover.
+func _unit_card(u: Dictionary) -> Control:
+	var card := PanelContainer.new()
+	card.theme_type_variation = "Card"
+	card.custom_minimum_size = Vector2(0, CARD_H)
+	card.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	var role: Dictionary = {}
+	for r in rules.roster:
+		if r.slot == u.recipe.slot:
+			role = r
+	card.tooltip_text = "%s: %s" % [u.recipe.name, role.get("desc", "")]
 	var row := HBoxContainer.new()
 	row.add_theme_constant_override("separation", 10)
+	card.add_child(row)
+	var well := PanelContainer.new()
+	well.add_theme_stylebox_override("panel", _stage_well())
+	well.custom_minimum_size = Vector2(52, 52)
+	well.size_flags_vertical = Control.SIZE_SHRINK_CENTER
+	row.add_child(well)
 	var pic := TextureRect.new()
-	pic.custom_minimum_size = Vector2(54, 54)
+	pic.name = "portrait"
 	pic.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
 	pic.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
 	pic.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
-	row.add_child(pic)
-	var t := RichTextLabel.new()
-	t.bbcode_enabled = true
-	t.fit_content = true
-	t.scroll_active = false
-	t.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	t.size_flags_vertical = Control.SIZE_SHRINK_CENTER
-	t.add_theme_font_size_override("normal_font_size", 15)
-	t.add_theme_color_override("default_color", TEXT)
-	t.text = text
-	row.add_child(t)
-	return row
+	well.add_child(pic)
+	var col := VBoxContainer.new()
+	col.add_theme_constant_override("separation", 0)
+	col.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	col.size_flags_vertical = Control.SIZE_SHRINK_CENTER
+	row.add_child(col)
+	var tier := int(u.recipe.tier)
+	var what := String(role.get("name", u.recipe.slot.capitalize()))
+	var role_l := UiTheme.label((what + ("  ·  age %d" % tier if tier > 1 else "")).to_upper(), "Caption")
+	role_l.add_theme_font_size_override("font_size", 12)
+	col.add_child(role_l)
+	var name := UiTheme.label(u.recipe.name, "Name")
+	name.add_theme_font_size_override("font_size", 18)
+	name.clip_text = true
+	name.text_overrun_behavior = TextServer.OVERRUN_TRIM_ELLIPSIS
+	col.add_child(name)
+	var facts := HBoxContainer.new()
+	facts.add_theme_constant_override("separation", 3)
+	col.add_child(facts)
+	for r in ["food", "wood", "stone", "gold"]:
+		if int(u.eval.cost.get(r, 0)) <= 0:
+			continue
+		var n := UiTheme.label(str(int(u.eval.cost[r])), "Dim")
+		n.add_theme_font_size_override("font_size", 15)
+		n.add_theme_color_override("font_color", Color("#efe4c8"))
+		facts.add_child(n)
+		var ic := TextureRect.new()
+		ic.texture = Icons.texture("res_" + r)
+		ic.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+		ic.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
+		ic.custom_minimum_size = Vector2(17, 17)
+		ic.size_flags_vertical = Control.SIZE_SHRINK_CENTER
+		facts.add_child(ic)
+		var sp := Control.new()
+		sp.custom_minimum_size.x = 4
+		facts.add_child(sp)
+	return card
 
 
 ## The tech tree page for a side's race: its army and every age of its lines baked first (the
@@ -475,7 +740,7 @@ func _open_tree(i: int) -> void:
 	var arch: String = lib.architecture(s.race)
 	if not kit.buildings.has(arch + ":house"):
 		baking = true
-		s.status.text = "Raising the buildings..."
+		s.status.text = "  Raising the buildings..."
 		await kit.bake_buildings([s.race])
 		kit.rebuild_atlas()
 		baking = false
@@ -495,7 +760,7 @@ func _set_map(k: int) -> void:
 	map_index = posmod(k, MAPS.size())
 	var m: Dictionary = DataLib.load_json("res://data/maps/%s.json" % MAPS[map_index])
 	map_name.text = m.name
-	map_note.text = "%d x %d tiles, %d players" % [int(m.width), int(m.height), m.starts.size()]
+	map_note.text = "%d x %d tiles  ·  %d players" % [int(m.width), int(m.height), m.starts.size()]
 	map_pic.texture = ImageTexture.create_from_image(_map_image(m))
 
 
@@ -518,11 +783,12 @@ func _map_image(m: Dictionary) -> Image:
 	for s in m.starts:
 		var sx := (int(s[0]) - int(s[1]) + h) * px
 		var sy := (int(s[0]) + int(s[1])) * px / 2
-		img.fill_rect(Rect2i(sx - 3, sy - 3, 8, 6), GOLD)
+		img.fill_rect(Rect2i(sx - 3, sy - 3, 8, 6), Color("#f2c94c"))
 	return img
 
 
 func _play() -> void:
+	Audio.of(get_tree()).play("ui_start")
 	var view = load("res://scenes/sim_debug.tscn").instantiate()
 	view.prompts = [_prompt(0), _prompt(1)]
 	view.rerolls = [sides[0].reroll, sides[1].reroll]
@@ -534,83 +800,59 @@ func _play() -> void:
 	queue_free()
 
 
-# ------------------------------------------------------------------ the look
-
-func _label(text: String, size: int, colour: Color, wrap := false) -> Label:
-	var l := Label.new()
-	l.text = text
-	l.add_theme_font_size_override("font_size", size)
-	l.add_theme_color_override("font_color", colour)
-	if wrap:   # only in a column: in a row a wrapping label squeezes to one letter wide
-		l.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-	return l
-
-
-func _box(fill: Color, edge: Color, width: int, radius := 4) -> StyleBoxFlat:
-	var b := StyleBoxFlat.new()
-	b.bg_color = fill
-	b.border_color = edge
-	b.set_border_width_all(width)
-	b.set_corner_radius_all(radius)
-	b.content_margin_left = 12
-	b.content_margin_right = 12
-	b.content_margin_top = 6
-	b.content_margin_bottom = 6
-	return b
-
-
-## A framed panel; with a team colour, its top edge carries it (the side's banner).
-func _panel(team := Color.TRANSPARENT) -> PanelContainer:
-	var p := PanelContainer.new()
-	var b := _box(Color(PANEL, 0.96), EDGE, 2, 6)
-	b.content_margin_left = 18
-	b.content_margin_right = 18
-	b.content_margin_top = 14
-	b.content_margin_bottom = 16
-	if team.a > 0.0:   # the side's colour runs along the top edge of its banner
-		b.border_width_top = 6
-		b.border_color = team.darkened(0.15)
-		b.border_width_left = 1
-		b.border_width_right = 1
-		b.border_width_bottom = 1
-	p.add_theme_stylebox_override("panel", b)
-	return p
-
-
-func _button(text: String, size: int, primary: bool) -> Button:
-	var b := Button.new()
-	b.text = text
-	b.focus_mode = Control.FOCUS_NONE
-	b.add_theme_font_size_override("font_size", size)
-	var fill := Color("#5a3e14") if primary else Color("#2e2820")
-	var edge := GOLD if primary else EDGE
-	b.add_theme_stylebox_override("normal", _box(fill, edge, 2))
-	b.add_theme_stylebox_override("hover", _box(fill.lightened(0.12), GOLD, 2))
-	b.add_theme_stylebox_override("pressed", _box(fill.darkened(0.2), GOLD, 2))
-	b.add_theme_color_override("font_color", GOLD.lightened(0.3) if primary else TEXT)
-	b.add_theme_color_override("font_hover_color", Color.WHITE)
-	b.pressed.connect(func(): Audio.of(get_tree()).play("ui_click"))
-	return b
-
+# ------------------------------------------------------------------ backdrops
 
 func _vignette() -> Texture2D:
 	var g := GradientTexture2D.new()
+	g.width = 256
+	g.height = 256
 	g.fill = GradientTexture2D.FILL_RADIAL
-	g.fill_from = Vector2(0.5, 0.45)
+	g.fill_from = Vector2(0.5, 0.42)
 	g.fill_to = Vector2(1.05, 1.05)
 	var grad := Gradient.new()
-	grad.set_color(0, Color(0, 0, 0, 0))
-	grad.set_color(1, Color(0, 0, 0, 0.55))
+	grad.set_color(0, Color(0, 0, 0, 0.15))
+	grad.set_color(1, Color(0, 0, 0, 0.8))
 	g.gradient = grad
 	return g
 
 
-func _ground_shade() -> Texture2D:
+## The stage's light: dark at the back and the sides, a warm pool where the army stands.
+func _stage_light() -> Texture2D:
 	var g := GradientTexture2D.new()
+	g.width = 256
+	g.height = 128
+	g.fill = GradientTexture2D.FILL_RADIAL
+	g.fill_from = Vector2(0.5, 0.75)
+	g.fill_to = Vector2(1.1, 0.0)
+	var grad := Gradient.new()
+	grad.set_color(0, Color(1.0, 0.92, 0.7, 0.12))
+	grad.set_color(1, Color(0.02, 0.03, 0.0, 0.75))
+	g.gradient = grad
+	return g
+
+
+## The title screen's hill: dark above, the turf coming into the light, darker at the front.
+func _hill() -> Texture2D:
+	var g := GradientTexture2D.new()
+	g.width = 8
+	g.height = 256
 	g.fill_from = Vector2(0.5, 0.0)
 	g.fill_to = Vector2(0.5, 1.0)
 	var grad := Gradient.new()
-	grad.set_color(0, Color(0.05, 0.08, 0.02, 0.55))
-	grad.set_color(1, Color(0, 0, 0, 0))
+	grad.offsets = PackedFloat32Array([0.0, 0.3, 0.55, 1.0])
+	grad.colors = PackedColorArray([Color(0.06, 0.04, 0.03, 1.0), Color(0.06, 0.04, 0.03, 0.55), Color(0, 0, 0, 0.05), Color(0, 0, 0, 0.5)])
+	g.gradient = grad
+	return g
+
+
+func _side_shade() -> Texture2D:
+	var g := GradientTexture2D.new()
+	g.width = 256
+	g.height = 8
+	g.fill_from = Vector2(0.0, 0.5)
+	g.fill_to = Vector2(1.0, 0.5)
+	var grad := Gradient.new()
+	grad.offsets = PackedFloat32Array([0.0, 0.25, 0.75, 1.0])
+	grad.colors = PackedColorArray([Color(0.05, 0.03, 0.02, 0.95), Color(0, 0, 0, 0), Color(0, 0, 0, 0), Color(0.05, 0.03, 0.02, 0.95)])
 	g.gradient = grad
 	return g
