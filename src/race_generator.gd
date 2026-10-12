@@ -134,7 +134,7 @@ func generate(prompt: String, rules: Dictionary, reroll := 0) -> Dictionary:
 
 	var ctx := {
 		"rng": rng, "rules": rules, "brief": brief, "tags": tags,
-		"creature": creature, "family": family, "skin": rng.pick(_skins(c, family)),
+		"creature": creature, "family": family, "skin": rng.pick(_skins(c, family)), "notes": notes,
 	}
 	# Each roster slot is a unit line through the ages (D-057): first the unit at the age
 	# its slot opens, in that age's kit; then, in a second pass (so the first recipes don't
@@ -381,17 +381,27 @@ func _cheapest(cands: Array) -> Dictionary:
 func _choose_mount(ctx: Dictionary, always := false) -> String:
 	var brief: Dictionary = ctx.brief
 	for m in brief.mounts:
-		if m != ctx.creature:
+		if m != ctx.creature and _rides(m, ctx.creature):
 			return m
+		if m != ctx.creature:   # asked for, but it won't carry them (data: "not_ridden_by")
+			var note := "%s won't carry %s, so they go on foot." % [lib.creatures[m].plural, lib.creatures[ctx.creature].plural.to_lower()]
+			if not note in ctx.notes:
+				ctx.notes.append(note)
 	if _winged(ctx.tags):
 		return ""   # a winged race flies; it rides only when asked to (Dominic, D-059)
-	var own: Array = lib.creatures[ctx.creature].get("mounts", [])   # the creature's own (rats ride capybaras)
+	var own: Array = lib.creatures[ctx.creature].get("mounts", []).filter(func(m): return _rides(m, ctx.creature))   # the creature's own (rats ride capybaras)
 	if not own.is_empty() and (always or ctx.rng.chance(85)):
 		return ctx.rng.pick(own)
-	var family_mounts: Array = lib.families[ctx.family].mounts.filter(func(m): return m != ctx.creature)
+	var family_mounts: Array = lib.families[ctx.family].mounts.filter(func(m): return m != ctx.creature and _rides(m, ctx.creature))
 	if family_mounts.is_empty() or not (always or ctx.rng.chance(65)):
 		return ""
 	return ctx.rng.pick(family_mounts)
+
+
+## Will this mount carry this rider? (creatures.json "not_ridden_by": bugs on a hummingbird
+## looked wrong, Dominic.)
+func _rides(mount: String, rider: String) -> bool:
+	return not rider in lib.creatures[mount].get("not_ridden_by", [])
 
 
 ## Did the prompt ask for a winged (flying) race?
