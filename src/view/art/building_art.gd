@@ -28,6 +28,12 @@ var _wear: Node2D         # over the body: cracks drawn, fires and their smoke
 var _cracks: Array = []   # [PackedVector2Array] canvas units from the centre, worst first
 var _fires: Array = []    # [CPUParticles2D, CPUParticles2D] flame and smoke per fire
 
+var _door: Node2D         # over the body: the doorway, lit while someone goes in or out
+var _door_shape := PackedVector2Array()
+var door_open := 0.0      # 0 shut .. 1 open (eased)
+var _door_until := 0.0    # time it stays open to
+
+const DOOR_OPEN_S := 1.6  # a door stays open this long after someone passes
 const DAMAGE_CRACKS := 0.3   # milestone 17: cracks show once it has lost this much
 const DAMAGE_FIRE := 0.6     # ...and it burns past this
 
@@ -83,6 +89,25 @@ func setup(kit, name: String, cx: int, cy: int, sx: int, sy: int, p_team: Color)
 		bs.material = m
 		add_child(bs)
 		live.append(bs)
+	if info.has("doorway"):
+		var c: Array = info.doorway.corners
+		var u: Vector2 = (c[1] - c[0]) * 0.5
+		var v: Vector2 = (c[2] - c[0]) * 0.5
+		var mid: Vector2 = at + c[0] + u + v
+		if info.doorway.round:
+			for k in 14:
+				var a := TAU * k / 14.0
+				_door_shape.append(mid + u * cos(a) - v * sin(a))
+		else:   # square below, an arch on top
+			_door_shape.append(mid - u - v)
+			_door_shape.append(mid + u - v)
+			for k in 7:
+				var a := PI * k / 6.0
+				_door_shape.append(mid + v * 0.5 + u * cos(a) + v * 0.5 * sin(a))
+		_door = Node2D.new()
+		_door.draw.connect(_draw_door)
+		_door.visible = false
+		add_child(_door)
 	if info.has("vane"):
 		vane = Node2D.new()
 		vane.position = at + info.vane_at
@@ -108,6 +133,25 @@ func set_state(p_done: bool, p_progress: float) -> void:
 	for g in glows:
 		g.node.visible = done
 	queue_redraw()
+
+
+## Someone went in or came out: the door opens and the warm inside shows, then it shuts.
+func door_pulse() -> void:
+	if _door != null and done:
+		_door_until = time + DOOR_OPEN_S
+
+
+func _draw_door() -> void:
+	var lo := 1e9
+	var hi := -1e9
+	for p in _door_shape:
+		lo = minf(lo, p.y)
+		hi = maxf(hi, p.y)
+	var cols := PackedColorArray()
+	for p in _door_shape:   # firelight low inside, dark above
+		var f := clampf((p.y - lo) / maxf(hi - lo, 0.001), 0.0, 1.0)
+		cols.append(Color(0.08, 0.05, 0.03).lerp(Color(0.95, 0.6, 0.25), f * 0.8) * Color(1, 1, 1, door_open))
+	_door.draw_polygon(_door_shape, cols)
 
 
 ## Smoke from the chimney only while the building works (milestone 17: you see the town at
@@ -309,6 +353,12 @@ func set_open(p_open: bool) -> void:
 
 func _process(delta: float) -> void:
 	time += delta
+	if _door != null:
+		var want := 1.0 if time < _door_until else 0.0
+		if door_open != want:
+			door_open = move_toward(door_open, want, delta * 5.0)
+			_door.visible = door_open > 0.0
+			_door.queue_redraw()
 	for g in glows:
 		var f := 0.8 + 0.2 * sin(time * 7.0 + g.phase) * sin(time * 2.3 + g.phase * 2.0)
 		g.node.modulate = Color(g.base.r * f, g.base.g * f, g.base.b * f, 1.0)

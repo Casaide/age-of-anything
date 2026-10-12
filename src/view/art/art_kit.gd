@@ -155,6 +155,8 @@ func _placed(models, arch: String, type: String, model: String, suffix: String) 
 		if spec.has(key):
 			spec[key] = basis * spec[key]
 	spec.lights = spec.get("lights", []).map(func(p): return basis * p)
+	if spec.has("doorway"):
+		spec.doorway = spec.doorway.map(func(p): return basis * p)
 	return spec
 
 
@@ -475,6 +477,8 @@ func _bake_building(baker, models, arch: String, type: String, model := "", suff
 	var spec: Dictionary = _placed(models, arch, type, model, suffix)
 	var pts: Array = [Vector3.ZERO, spec.get("smoke", Vector3.ZERO), spec.get("lantern", Vector3.ZERO)]
 	pts.append_array(spec.lights)
+	var door: Array = spec.get("doorway", []).slice(0, 3)
+	pts.append_array(door)
 	baker.set_ground_shadow(true)
 	var body: Dictionary = await baker.bake(spec.body, pts)
 	baker.set_ground_shadow(false)
@@ -487,6 +491,10 @@ func _bake_building(baker, models, arch: String, type: String, model := "", suff
 		info.lantern = local.call(body.points[2])
 	for k in spec.lights.size():
 		info.lights.append(local.call(body.points[3 + k]))
+	if not door.is_empty():   # the doorway's three corners on screen, and whether it's round
+		var at: int = 3 + spec.lights.size()
+		info.doorway = {"corners": [local.call(body.points[at]), local.call(body.points[at + 1]), local.call(body.points[at + 2])],
+			"round": spec.doorway.size() > 3}
 	if spec.has("banner"):
 		var ban: Dictionary = await baker.bake(spec.banner, [Vector3.ZERO])
 		info.banner = {"tex": ban.tex, "origin": ban.points[0]}   # its own wave shader, so outside the atlas

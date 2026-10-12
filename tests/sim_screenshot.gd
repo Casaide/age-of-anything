@@ -494,6 +494,10 @@ func _wear(view, side: int) -> void:
 			w.buildings.hp[b] = t.hp * (20 if t.id == "house" else 55) / 100
 	for f in 200:
 		await process_frame
+	for f in 30:   # and someone at every door, so the doorways show lit
+		for v in view.bviews.values():
+			v.door_pulse()
+		await process_frame
 
 
 ## Side 1's town, and a few of side 0's spears by its Watchtower: shot once the tower's
