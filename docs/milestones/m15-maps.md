@@ -68,7 +68,7 @@ a legend into `data/terrain.json` (`data/maps/*.json`), the view builds tiles an
 - [x] 3. Rivers, fords, bridges (built 2026-10-12; bridge look waiting on Dominic's pick)
 - [x] 4. Worn paths (built 2026-10-12; the speed bonus is off, see the experiment)
 - [x] 5. High ground (built 2026-10-13; cliff look waiting on Dominic's pick: layered rock in play)
-- [ ] 6. 2v2 map, variety maps, lobby teams
+- [x] 6. 2v2 map, variety maps, lobby teams (variety maps built 2026-10-13: Old Forest, River Delta)
 - [ ] 7. Performance, AI, exit check
 - [ ] Archive: pictures taken along the way, journal, decisions, timeline
 
@@ -224,6 +224,57 @@ for 30 s by its own houses and the forest. Both are for the bot pass (phase 7).
 cliff edges are staircases of cells (no rounded or diagonal faces); a farm sown within two cells
 of a plateau's back edge is drawn under the hill's copy of its ground (flat things lie under the
 y-sort); a level is 20 px, subtle when zoomed out: Dominic may want it taller.
+
+### Phase 6: the variety maps (2026-10-13, Claude)
+Two more 1v1 maps from the same parts, each a generator in `tools/maps/` that reuses Reed Meadow's
+checks (rotational symmetry, crossings that split the map, bridges standing on river, heights:
+hills reached only by their ramps). Both are listed in the lobby by name, with the card drawn
+from the map data (200, 205), and in sim_debug's map list.
+- **Old Forest** (`old_forest`, 72 x 72, `tools/maps/old_forest.py`): the map starts as trees and
+  is opened up: a home clearing per base, two hunting glades beside it (deer herds, a boar,
+  bushes), a flank glade on the stream with a lookout hill over its ford (one per side, turned),
+  and the central glade with gold on both banks and a ford in the middle (201, 202). Paths wind;
+  the short way from each base to the centre stops three or four trees short of the glade, so
+  cutting them opens a straight road. A stream from corner to corner with three fords. Pockets of
+  open ground shut in by trees are filled with trees by the generator (no unreachable grass).
+  Per start (16 tiles) F/W/S/G 2020 (+ 4 sheep, a deer herd) / 33900 / 3500 / 6400; contested
+  7680 (bushes, 24 deer, 6 boar) / 208600 / 3500 / 12800; 2764 trees on the map.
+- **River Delta** (`river_delta`, 72 x 72, `tools/maps/river_delta.py`): the river comes in at the
+  north-east and south-west corners and spreads into a marsh of channels round a lagoon of
+  shallows. Each side has a dry bank (base, wood line, groves), and across a side channel two
+  islands of its own (sheep and stone on one, gold and sheep on the other) reached by fords. The
+  main channel splits the map: walkers cross on a bridge by each flank (a dwelling mound beside
+  each, held by the side whose bank it's on), a ford, or the causeway (fords through the lagoon)
+  over the middle island (gold, stone, two sheep) (203, 204, 206). Amphibians swim every channel
+  and wade the lagoon. The generator asserts every piece of dry ground is reached by walkers over
+  the crossings (no swimmers-only island: its animals and resources would be the frogs' alone);
+  ground only reached by cutting reeds is filled with reeds. Per start F/W/S/G 2760 (+ 4 sheep,
+  2 deer herds, a boar) / 16100 / 3500 / 6400; contested 5680 (+ 18 sheep, deer, boar) / 24200 /
+  5600 / 16000; map total wood 56400.
+- **Data:** a map's animal spawn may list `"fixed"` cells (`src/sim/animals.gd`): a glade's deer,
+  an island's sheep, nobody's, each with its half-turned twin on a turned map; placed before the
+  rings round the starts. Both generators assert each one stands on open ground walkers reach.
+
+**Resource audit** (`tests/resource_audit.gd`, 40 minutes, peace and bot vs bot, Frogs vs Rats):
+- Old Forest, peace: ended 31:27 (the "peace" bots fight now: Reed Meadow's peace run ended 25:52
+  the same way, a bot change, not the maps). Near home nothing ran out: at 30:00 wood 28900 /
+  26500 left, stone 3460 / 2200, gold 4100 / 3200; wild food near home gone by ~9 min, then farms.
+- River Delta, peace: ran the full 40 minutes; nothing ran out near home: at 40:00 wood 4300 /
+  4400 left, stone 1470 / 1220, gold 1480 / 3190, food from farms (gathered 13500 / 13250); the
+  contested gold barely touched (15000 of 16000 left). Wood near home is the first to thin (from
+  ~30 minutes the bots cut 400-700 a minute); the marsh reeds (14600 contested) are next.
+- Sim tick averages (machine loaded by other agents' runs): forest peace 2.84 ms, delta peace 3.72 ms.
+
+**Bots** (`test_ai -- <map>`): every match ends with a winner and the bot beats a passive player on
+both maps. Old Forest 29 of 32 (matches 10:03-23:23), River Delta 30 of 32 (10:07-13:48). The two
+age-3 checks (University and Castle, their research) fail on both, and fail on `reed_meadow` too
+with today's bot (`test_ai -- reed_meadow age3`): not the maps. Old Forest also fails "healers
+keep behind the army" (23 of 34 looks, 70% needed): armies strung along forest paths.
+Bot notes for the bot pass: the Frogs bot sits at 17 workers in age 1 until ~9 minutes on Old
+Forest (Rats age at 5:30), and lost the bot-vs-bot match without reaching age 2; bots don't
+cut through the thin woods to open the straight road; no bot uses its amphibians' swimming as a
+route choice beyond what pathing gives them; the causeway fords read close to the lagoon's
+shallows in the view (a look for Dominic).
 
 ## Changes from the original plan
 - 2026-10-12 (Dominic): the 88 x 88 Reed Meadow became the first 2v2 instead of a second 1v1 size.
