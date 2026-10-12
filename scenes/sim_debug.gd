@@ -31,6 +31,8 @@ const RtsCamera := preload("res://src/view/rts_camera.gd")
 const CommandPanel := preload("res://src/view/command_panel.gd")
 const UiTheme := preload("res://src/view/ui/theme.gd")
 const TopBar := preload("res://src/view/top_bar.gd")
+const WonderClock := preload("res://src/view/wonder_clock.gd")
+const Match := preload("res://src/sim/match.gd")
 const UnitCard := preload("res://src/view/unit_card.gd")
 const FogView := preload("res://src/view/fog_view.gd")
 const Minimap := preload("res://src/view/minimap.gd")
@@ -119,6 +121,7 @@ var overlay: Node2D         # over everything: selection box, placement ghost, c
 var hud: Label
 var bar: Label              # the debug line of both sides' stock (not against the AI)
 var top_bar: TopBar
+var wonder_clock: WonderClock   # the Wonder countdowns everyone sees, under the top bar
 var tech_tree: Control      # the tech tree page (F2), over the match while open
 var build_menu: Dictionary = DataLib.load_json("res://data/buildings.json").menu   # a worker's two build pages: civilian, military
 var build_page := ""        # the page a worker's panel shows: "" (pick a page), "civilian" or "military"
@@ -245,6 +248,9 @@ func _ready() -> void:
 	ui.add_child(bar)
 	top_bar = TopBar.new()
 	ui.add_child(top_bar)
+	wonder_clock = WonderClock.new()
+	wonder_clock.position.y = 195   # under the tip strip and the alert line
+	ui.add_child(wonder_clock)
 	panel = CommandPanel.new()
 	panel.anchor_top = 1.0
 	panel.anchor_bottom = 1.0
@@ -1222,13 +1228,27 @@ func _play_events() -> void:
 				elif not e.reseeded and not fighting:
 					alert_at = Iso.to_screen(e.x, e.y)
 					_show_line("Farm worked out: its farmer waits  (Space to look)", Color("#e8d27a"))
+		elif e.type == "wonder":   # a Wonder finished or fallen: everyone hears, wherever it is
+			var who: String = WonderClock.possessive(world.races[e.player].name)
+			var held: int = Match.hold_ticks(world) / World.TICK_HZ
+			if e.x >= 0:
+				alert_at = Iso.to_screen(e.x, e.y)
+				var m := Vector2(e.x / 1000.0, e.y / 1000.0)
+				minimap.ping(m)
+			if e.what == "built":
+				audio.play("age")
+				_show_line("%s Wonder is finished! It wins in %d:%02d unless it falls.  (Space to look)" % [who, held / 60, held % 60],
+					Color("#f2c94c"))
+			else:
+				audio.play("building_fall")
+				_show_line("%s Wonder has fallen!" % who, Color("#ff8a70"))
 		elif e.type == "won":
 			var mine: bool = world.teams[active] == e.team
 			audio.play("won" if mine else "lost")
 			audio.music("off")
 			audio.ambience(false)
 			_log_match(e.team)
-			banner.text = ("Victory!" if mine else "Defeat") + "\n" + ("%s win" % world.races[_first_of_team(e.team)].name)
+			banner.text = ("Victory!" if mine else "Defeat") + "\n" + ("%s win" % world.races[_first_of_team(e.team)].name) + (" (their Wonder stood)" if e.has("wonder") else "")
 			banner.add_theme_color_override("font_color", Color("#f2c94c") if mine else Color("#e07060"))
 			banner.visible = true
 			if vs_ai:
@@ -1579,6 +1599,7 @@ func _process(delta: float) -> void:
 	marks.queue_redraw()
 	overlay.queue_redraw()
 	_update_top_bar()
+	wonder_clock.show_for(world, lib.palettes.teams)
 	_update_hint()
 	if alert_label != null and alert_label.visible and Time.get_ticks_msec() > int(alert_label.get_meta("until", 0)):
 		alert_label.visible = false
@@ -2403,6 +2424,12 @@ func _update_panel() -> void:
 				if t.id == "market" and bs.done[b] == 1:
 					_market_buttons(c, b)
 				c.info += ("\n" if c.info != "" else "") + "Right-click: rally point"
+		elif t.idle_note != "":   # nothing to train or research (yet): say so
+			c.info = t.idle_note
+			var wk: int = world.wonder_ids.find(bs.id[b])
+			if wk >= 0 and Match.hold_ticks(world) > 0:   # a Wonder's countdown, for anyone who looks
+				var secs: int = (Match.ticks_left(world, wk) + 19) / 20
+				c.info = "Stands for %d:%02d more, and %s win." % [secs / 60, secs % 60, "you" if mine else world.races[owner].name]
 		if mine and bs.done[b] == 1 and (not t.becomes.is_empty() or t.id == "mill"):
 			_farm_buttons(c, b, t)
 		panel.show_content(c)
@@ -2457,7 +2484,7 @@ func _update_panel() -> void:
 				build_page = ""
 			if build_page == "":
 				for page in [["civilian", "Civilian", "house", "Houses, farms, camps, the market, the armoury and Town Centers."],
-						["military", "Military", "barracks", "Barracks, ranges, stables, towers, walls and gates."]]:
+						["military", "Military", "barracks", "Barracks, ranges, stables, towers, walls and gates; from age 3 the siege workshop and the Wonder."]]:
 					var pid: String = page[0]
 					c.buttons.append({"icon": kit.building_icon(_arch(active), page[2]), "text": "Build: %s" % page[1], "key": "", "cost": page[1], "enabled": true,
 						"glyph": Icons.texture("glyph/" + page[2]), "group": "Build",

@@ -252,6 +252,11 @@
   }
  },
  "ages": 3,
+ "wonder": {
+  "victory": true,
+  "hold_seconds": 600,
+  "note": "Wonder victory (src/sim/match.gd): a player whose Wonder is finished and stands for hold_seconds wins for their team; victory false turns it off (the Wonder is then just a monument)"
+ },
  "full_tech_tree": true,
  "no_restrictions": false,
  "fog": {

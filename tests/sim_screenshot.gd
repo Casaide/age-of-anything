@@ -19,6 +19,9 @@ extends SceneTree
 ## there (use with "ai-": the fog as you play it).
 ## "formation:<tick>": side 0's army walks to the meeting point and stands in its formation.
 ## "siege:<tick>": side 0's melee soldiers attack side 1's Town Center (fog lifted).
+## "wonder[:workshop|:wonder]": side 0 has a finished Wonder and a Siege Workshop by its Town
+## Center; shot a few seconds after the Wonder is announced (its countdown under the top bar), with
+## the workshop (or the Wonder) selected for its panel.
 ## Prefix any scene with "ai-" to see it as in a match against the AI.
 
 const Iso := preload("res://src/view/iso.gd")
@@ -115,6 +118,8 @@ func _initialize() -> void:
 		await _formation(view, map_id, int(scene.get_slice(":", 1)))
 	elif scene.begins_with("siege"):
 		await _siege(view, int(scene.get_slice(":", 1)))
+	elif scene.begins_with("wonder"):
+		await _wonder(view, scene.get_slice(":", 1) if ":" in scene else "")
 	else:
 		await _armies(view, map_id)
 	for f in 20:
@@ -812,3 +817,28 @@ func _opening(view, at_tick: int, zoom := 3.0) -> void:
 	view.camera.zoom = Vector2(zoom, zoom)
 	view._on_zoom()
 	view.camera.look_at_point(Iso.to_screen(s[0] - 1500, s[1] + 2500))
+
+
+func _wonder(view, pick: String) -> void:
+	var w = view.world
+	var Economy = load("res://src/sim/economy.gd")
+	var s: Array = w.map.starts[0]
+	var made := {}
+	for spec in [["wonder", 3, -7], ["siege_workshop", -6, 3]]:
+		var k: int = Economy.btype_of(w, spec[0])
+		var at := Vector2i(s[0] / 1000 + spec[1], s[1] / 1000 + spec[2])
+		while not Economy.can_place(w, 0, k, at.x, at.y):
+			at.x += 1
+		var b: int = Economy.place(w, 0, k, at.x, at.y)
+		w.buildings.done[b] = 1
+		w.buildings.hp[b] = w.bmods[0][k].hp
+		made[spec[0]] = w.buildings.id[b]
+	view.reveal = true
+	for f in 90:
+		await process_frame
+	if pick != "":
+		view.selected_building = made["siege_workshop" if pick == "workshop" else "wonder"]
+	var b: int = w.buildings.index_of(made.wonder)
+	view.camera.zoom = Vector2(2.0, 2.0)
+	view._on_zoom()
+	view.camera.look_at_point(Iso.to_screen(w.buildings.cx[b] * 1000 - 1000, w.buildings.cy[b] * 1000 + 5000))

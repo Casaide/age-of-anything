@@ -392,7 +392,8 @@ func _town_center(w) -> int:
 ## walled ford doesn't hold every later building back).
 func _building_underway(w) -> bool:
 	for b in w.buildings.count():
-		if w.buildings.owner[b] == player and w.buildings.done[b] == 0 and reach.reaches_building(w, wln, home, b):
+		if w.buildings.owner[b] == player and w.buildings.done[b] == 0 and reach.reaches_building(w, wln, home, b) \
+				and w.btypes[w.buildings.kind[b]].id != "wonder":   # (a Wonder takes minutes: houses and the rest go on meanwhile)
 			return true
 	return false
 

@@ -21,6 +21,7 @@ const Pens := preload("res://src/sim/pens.gd")
 const Tech := preload("res://src/sim/tech.gd")
 const Fog := preload("res://src/sim/fog.gd")
 const Market := preload("res://src/sim/market.gd")
+const Match := preload("res://src/sim/match.gd")
 const TechTreeModel := preload("res://src/view/tech_tree_model.gd")
 const BuildingArt := preload("res://src/view/art/building_art.gd")
 
@@ -95,6 +96,7 @@ func _init() -> void:
 	_test_sheep_spot(races)
 	_test_pen(races)
 	_test_bot_hunts(races)
+	_test_wonder(races)
 	_test_combat(gen)
 
 	var script := _script(map, races)
@@ -2244,6 +2246,97 @@ func _test_teams(gen) -> void:
 	for t in 1500:
 		w.step()
 	check(w.lost[0] + w.lost[1] + w.lost[2] + w.lost[3] > 0, "teams: the two teams fight (%s lost)" % w.lost)
+
+
+## Wonder victory (src/sim/match.gd, rules.wonder): a finished Wonder that stands for the hold
+## time wins for its owner's team, the countdown in the hash; one knocked down stops its
+## countdown (and another starts from the top); with the host switch off it's just a building.
+func _test_wonder(races: Array) -> void:
+	var hold := 30   # seconds, so the test is quick
+	var r := rules_.duplicate(true)
+	r.wonder.hold_seconds = hold
+	# 1. It stands: the countdown wins, not a second early.
+	var w := _wonder_world(races, r)
+	var wid: int = _put_wonder(w, 0)
+	var built := []
+	var won := {}
+	while w.tick < (hold + 3) * 20 and w.winner < 0:
+		w.step()
+		for e in w.events:
+			if e.type == "wonder":
+				built.append(e.what)
+			elif e.type == "won":
+				won = e
+		if w.tick == (hold - 2) * 20:
+			check(w.winner < 0 and w.wonder_ids.size() == 1 and Match.ticks_left(w, 0) > 0,
+				"wonder: no win while the countdown runs (%d ticks left)" % (Match.ticks_left(w, 0) if w.wonder_ids.size() > 0 else -1))
+	check(built == ["built"], "wonder: everyone hears it's finished (%s)" % [built])
+	check(w.winner == w.teams[0] and won.get("wonder", 0) == wid, "wonder: standing %d s wins for its team (winner %d at tick %d)" % [hold, w.winner, w.tick])
+	check(w.tick <= (hold + 2) * 20, "wonder: it wins on time (tick %d)" % w.tick)
+	var again := _wonder_world(races, r)
+	_put_wonder(again, 0)
+	while again.tick < w.tick:
+		again.step()
+	check(again.state_hash() == w.state_hash() and again.winner == w.winner, "wonder: the same match twice, the same hash and winner")
+	# 2. It falls: the countdown stops, and a new one starts from the top.
+	w = _wonder_world(races, r)
+	wid = _put_wonder(w, 0)
+	for t in 10 * 20:
+		w.step()
+	var b := w.buildings.index_of(wid)
+	w.buildings.hp[b] = 40   # nearly down: spearmen finish it
+	w.issue(1, Commands.SPAWN, {"slot": "spear", "count": 6, "x": w.buildings.cx[b] * 1000 - 1500, "y": w.buildings.cy[b] * 1000 + 2500})
+	var spawned := false
+	var fell := false
+	while w.tick < (hold + 10) * 20 and not fell:
+		w.step()
+		if not spawned:
+			var mine := []
+			for i in w.units.count():
+				if w.units.owner[i] == 1 and not w.types[w.units.kind[i]].worker:
+					mine.append(w.units.id[i])
+			if mine.size() == 6:
+				w.issue(1, Commands.ATTACK, {"ids": mine, "target": wid})
+				spawned = true
+		for e in w.events:
+			fell = fell or (e.type == "wonder" and e.what == "fell" and e.id == wid)
+	check(fell and w.buildings.index_of(wid) < 0 and w.wonder_ids.is_empty(), "wonder: knocked down, its countdown stops (tick %d)" % w.tick)
+	var second: int = _put_wonder(w, 0)
+	var started := w.tick
+	while w.tick < started + (hold + 3) * 20 and w.winner < 0:
+		w.step()
+		if w.tick == (hold + 12) * 20:
+			check(w.winner < 0, "wonder: the fallen one's time doesn't count for the next")
+	check(w.winner == w.teams[0] and w.tick - started >= hold * 20, "wonder: a new one counts from the top (won %d s after it went up)" % ((w.tick - started) / 20))
+	check(second != wid, "wonder: (a different building)")
+	# 3. The switch off: no countdown, no win.
+	var off := r.duplicate(true)
+	off.wonder.victory = false
+	w = _wonder_world(races, off)
+	_put_wonder(w, 0)
+	for t in (hold + 5) * 20:
+		w.step()
+	check(w.winner < 0 and w.wonder_ids.is_empty() and Match.hold_ticks(w) == 0, "wonder: with Wonder victory off it never wins")
+
+
+## Two players on flat_test with their Town Centers and no workers to wander about.
+func _wonder_world(races: Array, r: Dictionary) -> World:
+	var rr := r.duplicate(true)
+	rr.economy.start.workers = 0
+	return World.new(SEED, SimMap.load_id("flat_test"), [races[0], races[1]], rr)
+
+
+## A finished Wonder for player p, a few tiles beside their Town Center; its id.
+func _put_wonder(w: World, p: int) -> int:
+	var k := Economy.btype_of(w, "wonder")
+	var s: Array = w.map.starts[p]
+	var at := Vector2i(s[0] / 1000 + 4, s[1] / 1000 - 2)
+	while not w.map.can_build(at.x, at.y, 5):
+		at.y += 1
+	var b := Economy.place(w, p, k, at.x, at.y)
+	w.buildings.done[b] = 1
+	w.buildings.hp[b] = w.bmods[p][k].hp
+	return w.buildings.id[b]
 
 
 ## Units can knock down a Town Center; its ground opens up again.

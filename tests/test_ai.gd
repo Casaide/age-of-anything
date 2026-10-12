@@ -42,6 +42,7 @@ func _init() -> void:
 		quit(1 if failures > 0 else 0)
 		return
 
+	_test_wonder(rules, rats, frogs)
 	for pair in [[frogs, rats], [rats, frogs]]:
 		var r := _play(rules, pair, [Bot.new(0), EcoBot.new(1)], "bot %s vs passive %s" % [pair[0].name, pair[1].name])
 		check(r.winner == 0, "the bot beats a passive %s (winner %d at %s)" % [pair[1].name, r.winner, _clock(r.tick)])
@@ -198,6 +199,62 @@ func _test_easy(rules: Dictionary, a: Dictionary, b: Dictionary) -> void:
 ## trigger a response"). The bot's lone lumber camp far from home, a worker beside it, and a
 ## few enemy soldiers hacking at both: within seconds the bot sends soldiers there, pulls the
 ## worker away, and its soldiers come to blows with the raiders.
+## The Wonder and the bot (data/ai.json "wonder"): an enemy Wonder, finished, is the first thing
+## its soldiers go for (before the Town Center, without waiting for a wave); and a bot rich in
+## age 3 builds one of its own.
+func _test_wonder(rules: Dictionary, a: Dictionary, b: Dictionary) -> void:
+	var w := World.new(SEED, SimMap.load_id(map_id), [a, b], rules)
+	var bot := Bot.new(0)
+	var k := Economy.btype_of(w, "wonder")
+	var tc1: int = -1
+	for i in w.buildings.count():
+		if w.buildings.owner[i] == 1:
+			tc1 = w.buildings.id[i]
+	var s: Array = w.map.starts[1]
+	var spot := Vector2i(-1, -1)   # 5-12 tiles from their Town Center
+	for r in range(5, 13):
+		for dy in range(-r, r + 1):
+			for dx in range(-r, r + 1):
+				if spot.x < 0 and maxi(absi(dx), absi(dy)) == r and Economy.can_place(w, 1, k, s[0] / 1000 + dx, s[1] / 1000 + dy):
+					spot = Vector2i(s[0] / 1000 + dx, s[1] / 1000 + dy)
+	check(spot.x >= 0, "wonder bot: room for their Wonder")
+	var wb := Economy.place(w, 1, k, spot.x, spot.y)
+	w.buildings.done[wb] = 1
+	w.buildings.hp[wb] = w.bmods[1][k].hp
+	var wid: int = w.buildings.id[wb]
+	var s0: Array = w.map.starts[0]
+	w.issue(0, Commands.SPAWN, {"slot": "large", "count": 6, "x": s0[0], "y": s0[1] + 3500})
+	var first := 0
+	var tc_hit := 0
+	while w.tick < 20 * 240 and first == 0:
+		bot.think(w)
+		w.step()
+		for e in w.events:
+			if e.type == "hit" and e.to == wid and first == 0:
+				first = w.tick
+			elif e.type == "hit" and e.to == tc1 and tc_hit == 0:
+				tc_hit = w.tick
+	check(first > 0 and first < 20 * 200, "wonder bot: its soldiers go for a finished enemy Wonder at once (first blow at %s, waves start at %d s)" % [_clock(first), int(bot.cfg.military.waves[0].at)])
+	check(tc_hit == 0, "wonder bot: the Wonder before the Town Center (Town Center hit at %s)" % (_clock(tc_hit) if tc_hit > 0 else "never"))
+	# Rich in age 3: it builds its own.
+	w = World.new(SEED, SimMap.load_id(map_id), [a, b], rules)
+	bot = Bot.new(0)
+	while w.tick < 20 * 60:
+		bot.think(w)
+		w.step()
+	w.ages[0] = 3
+	for r in w.resources.size():
+		w.stock[r][0] = 3000
+	var laid := 0
+	while w.tick < 20 * 120 and laid == 0:
+		bot.think(w)
+		w.step()
+		for i in w.buildings.count():
+			if w.buildings.owner[i] == 0 and w.buildings.kind[i] == k:
+				laid = w.tick
+	check(laid > 0, "wonder bot: rich in age 3, it lays a Wonder (at %s)" % _clock(laid))
+
+
 func _test_respond(rules: Dictionary, a: Dictionary, b: Dictionary) -> void:
 	var w := World.new(SEED, SimMap.load_id(map_id), [a, b], rules)
 	var bot := Bot.new(1)

@@ -20,7 +20,9 @@
    "palisade",
    "palisade_gate",
    "wall",
-   "stone_gate"
+   "stone_gate",
+   "siege_workshop",
+   "wonder"
   ]
  },
  "_menu_doc": "a worker's two build pages (Dominic: civilian and military apart), each in the order its buttons appear (building hotkeys work from either page; hotkeys are avoided where they clash with WASD panning and the debug keys)",
@@ -65,6 +67,7 @@
   }
  },
  "_workers_doc": "\"workers\": how many workers may work a building's ground at once (Dominic: one farmer per farm, as in the genre); others sent to it go to a farm nobody works, else other food nearby, else wait by it. Left out: no limit",
+ "_idle_note_doc": "\"idle_note\": a line the command panel shows for a finished building with nothing to train or research (the Siege Workshop before its engines)",
  "_scale_doc": "a culture's own size for a building type (Dominic: the rats' house and barracks, smaller, D-090)",
  "variants": {
   "house": 4
@@ -513,10 +516,27 @@
    "age": 1
   },
   "siege_workshop": {
-   "status": "planned",
    "name": "Siege Workshop",
-   "desc": "Builds siege engines: rams, catapults, bolt throwers and siege towers.",
-   "age": 3
+   "desc": "A yard of timber frames where siege engines are built: rams, catapults, bolt throwers and siege towers. Siege engines come later; for now it stands ready.",
+   "size": 3,
+   "hp": 1300,
+   "cost": {
+    "food": 0,
+    "wood": 200
+   },
+   "build_time": 50,
+   "pop": 0,
+   "house": false,
+   "drop_off": [],
+   "trains": [],
+   "age": 3,
+   "hotkey": "",
+   "armour": {
+    "melee": 1,
+    "pierce": 7
+   },
+   "note": "trains nothing yet: its engines are milestone 13 (the roster's siege lines name it as their building)",
+   "idle_note": "Siege engines come later."
   },
   "university": {
    "status": "planned",
@@ -531,10 +551,29 @@
    "age": 3
   },
   "wonder": {
-   "status": "planned",
    "name": "Wonder",
-   "desc": "A great work of your people. Build it and keep it standing long enough, and you win.",
-   "age": 3
+   "desc": "A great work of your people. Build it and keep it standing long enough, and your side wins. Everyone sees the countdown.",
+   "size": 5,
+   "hp": 4800,
+   "cost": {
+    "food": 1000,
+    "wood": 1000,
+    "stone": 1000,
+    "gold": 1000
+   },
+   "build_time": 1500,
+   "pop": 0,
+   "house": false,
+   "drop_off": [],
+   "trains": [],
+   "age": 3,
+   "hotkey": "",
+   "armour": {
+    "melee": 8,
+    "pierce": 12
+   },
+   "note": "alternative victory (src/sim/match.gd, host rule \"wonder\"): finished and standing for rules.wonder.hold_seconds, its owner's team wins",
+   "idle_note": "Keep it standing to win."
   }
  }
 }
