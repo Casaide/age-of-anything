@@ -14,6 +14,15 @@ in `data/rules/*.json` with `"status": "planned"`.
 so the new units and the progression can be enjoyed: milestone 15's phase 1 (resource audit, a
 dense 64 x 64 and an 88 x 88 Reed Meadow for Dominic to pick by playing) runs first.
 
+## The line with milestone 16 (sieges), agreed 2026-10-13
+
+13 builds the siege engines as ordinary units that damage things: the ram (hits buildings and
+gates hard, weak to melee), the catapult (splash, minimum range), the bolt thrower, the great
+sling, and the sapper (destroys a building or wall tile outright). 16 builds everything about
+getting over or through walls: breaches as walkable rubble and their repair, walkways and
+garrisoned walls, gatehouses and wall towers, ladders, the siege tower (moved here from 13),
+defenders' tools, and the Fortress and Siege modes. Neither touches the other's systems.
+
 ## Scope
 
 | Building | Lines | New systems |
@@ -21,7 +30,7 @@ dense 64 x 64 and an 88 x 88 Reed Meadow for Dominic to pick by playing) runs fi
 | Barracks | Swordsman (1-3), Raider (3) | none: parts exist (swords, clubs); raider = light, fast |
 | Archery Range | Mounted Archer (3) | none: the generator already makes horse archers |
 | Stable | Scout (2-3), War Beast (3) | big beasts (bodies) |
-| Siege Workshop | Ram, Catapult, Bolt Thrower, Siege Tower (3) | siege bodies; splash, minimum range, attack vs buildings, carrying units over walls |
+| Siege Workshop | Ram, Catapult, Bolt Thrower (3) | siege bodies; splash, minimum range, attack vs buildings (the siege tower moved to milestone 16) |
 | Castle | Unique, Sapper, Great Sling (3) | the unique slot's bigger budget; self-destruct; pack/unpack |
 | Town Center | Healer (2-3) | healing (Dominic, 2026-10-12: the Temple and conversion are cut) |
 | Market | Trade Cart (2) + cart research | trade routes between your markets |
@@ -39,13 +48,13 @@ picks), then build, tests, archive pictures.
    is the one small parts gap.
 2. **Combat systems siege needs.** Splash damage (an area, falling off), a minimum range, an
    attack bonus vs buildings, projectiles that can miss a moving target (so siege is dodgeable),
-   and units that carry others (the siege tower). Headless tests for each.
-3. **Siege, concept round per family.** A ram, catapult, bolt thrower and siege tower in each
+   Headless tests for each. (Carrying units over walls is milestone 16's.)
+3. **Siege, concept round per family.** A ram, catapult and bolt thrower in each
    family's own take (a beetle-drawn ram, a frog catapult on a lily-pad sledge, a rat bottle-cap
    sling, timber engines for humans). Then build them as parts and recipes; Siege Workshop trains.
 4. **Castle units.** The unique unit: a slot with a bigger point budget, picked from the prompt's
    signature words (the generator's showcase: "romans" -> a testudo legionary); no elite step
-   (three ages). The sapper (walks up and blows a hole in a wall). The great sling (long-range anti-building,
+   (three ages). The sapper (walks up and blows up a building or wall tile: a plain kill here; the rubble and breach are milestone 16's). The great sling (long-range anti-building,
    packs and unpacks).
 5. **Healers.** (Built 2026-10-12. Dominic: "staffs look good; different staffs for each": every
    culture gets its own staff and bag, queued after living towns merges.) The Town Center trains a healer from age 2 (Dominic, 2026-10-12): it heals nearby
