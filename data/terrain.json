@@ -83,9 +83,9 @@
    "colour": "#8a8478",
    "colour2": "#7e786c",
    "resource": "stone",
-   "amount": 350,
+   "amount": 450,
    "depleted": "rubble",
-   "note": "a stone deposit: 350 stone per tile; becomes rubble when mined out"
+   "note": "a stone deposit: 450 stone per tile (350 until 2026-10-13: a side's two home deposits now hold 4500, three Castles with walls and towers to spare); becomes rubble when mined out"
   },
   "swamp": {
    "walkable": true,
