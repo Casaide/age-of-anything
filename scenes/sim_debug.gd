@@ -52,6 +52,8 @@ const Combat := preload("res://src/sim/combat.gd")
 const Abilities := preload("res://src/sim/abilities.gd")
 const Replay := preload("res://src/sim/replay.gd")
 const Bot := preload("res://src/ai/bot.gd")
+const WALL_PX := 22.0   # how high a walkway is drawn over the ground (a stone wall's top at 1x)
+const TOWER_TOP := 1.5  # a wall tower's top, as walkways go
 const TechTreeModel := preload("res://src/view/tech_tree_model.gd")
 const TownLife := preload("res://src/view/town_life.gd")
 
@@ -1777,7 +1779,7 @@ func _walled(c: Vector2i) -> bool:
 ## Is building slot b part of a wall line (a wall tile or a gate)?
 func _wall_like(b: int) -> bool:
 	var t: Dictionary = world.btypes[world.buildings.kind[b]]
-	return t.line or t.gate
+	return t.line or t.gate or t.joins
 
 
 func place_at(pos: Vector2, keep := false) -> void:
@@ -1952,7 +1954,7 @@ func _sync_views() -> void:
 		var dx := u.x[i] - u.px[i]
 		var dy := u.y[i] - u.py[i]
 		view.position = Iso.to_screen(u.px[i] + dx * a, u.py[i] + dy * a)
-		view.lift = Iso.lift(u.px[i] + dx * a, u.py[i] + dy * a)   # on a hill: drawn raised, sorted on the base plane
+		view.lift = Iso.lift(u.px[i] + dx * a, u.py[i] + dy * a) + _wall_lift(i)   # on a hill (or a wall): drawn raised, sorted on the base plane
 		view.walking = dx != 0 or dy != 0
 		# Off screen (or hidden by the fog): no animation, tool or facing work; picked up again
 		# the frame it comes into view.
@@ -1980,6 +1982,20 @@ func _sync_views() -> void:
 			views[id].queue_free()
 			views.erase(id)
 			selected.erase(id)
+
+
+## How far up a wall unit i is drawn (walls.gd): the walkway's height on it, part of it while it
+## climbs up or down.
+func _wall_lift(i: int) -> float:
+	var u := world.units
+	var climb := float(world.walk_cfg.climb)
+	if u.perch[i] != 0:
+		var b := world.buildings.index_of(map.occupied[u.perch[i] - 1])
+		var top := WALL_PX * (TOWER_TOP if b >= 0 and world.btypes[world.buildings.kind[b]].joins else 1.0)   # a wall tower stands taller
+		return top * (float(u.wtime[i]) / climb if u.wtime[i] > 0 else 1.0)
+	if u.task[i] == Economy.CLIMB and u.work[i] > 0:
+		return WALL_PX * minf(1.0, float(u.work[i]) / climb)
+	return 0.0
 
 
 ## The part of the canvas on screen, grown by `margin` canvas pixels (a body standing just off

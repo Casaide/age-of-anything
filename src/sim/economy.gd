@@ -12,7 +12,7 @@ const Pens := preload("res://src/sim/pens.gd")
 const Buildings := preload("res://src/sim/buildings.gd")
 const Identity := preload("res://src/identity.gd")
 
-enum { NONE, GATHER, RETURN, BUILD, GARRISON, TRADE }   # GARRISON: walking into a building to shelter (garrison.gd); TRADE: a cart on its route (trade.gd)
+enum { NONE, GATHER, RETURN, BUILD, GARRISON, TRADE, CLIMB, REPAIR }   # GARRISON: walking into a building to shelter (garrison.gd); TRADE: a cart on its route (trade.gd); CLIMB: walking to a way up onto a wall and climbing it (walls.gd); REPAIR: mending a building or an engine (repair.gd)
 
 const REACH := 250                    # milli-tiles between a body's edge and what it works on
 const SEARCH_TILES := 8               # how far a worker looks for more of the same resource
@@ -86,6 +86,8 @@ static func load_btypes(resources: Array) -> Array:
 			"idle_note": b.get("idle_note", ""),
 			"garrison": int(b.get("garrison", 0)), "sight": int(b.get("sight", 0)), "more_from_age": int(b.get("more_from_age", 0)),
 			"arrows": int(b.get("attack", {}).get("arrows", 1)),
+			"walkway": int(b.get("walkway", 0)), "stairs": bool(b.get("stairs", false)), "joins": bool(b.get("joins", false)),   # walls you stand on (walls.gd)
+			"ladder": bool(b.get("ladder", false)),
 		})
 	return out
 
@@ -184,6 +186,11 @@ static func place(w, player: int, k: int, cx: int, cy: int, along := 0) -> int:
 	var d := dims(t, along)
 	var i: int = w.buildings.add(w.next_id, player, k, cx, cy, d.x, d.y, 1, diag_of(along))
 	w.next_id += 1
+	if not w.rubble.is_empty():   # built over a breach: the rubble goes (walls.gd)
+		for c in w.buildings.footprint(i, w.map.width):
+			if w.rubble.has(c):
+				w.map.set_terrain(c, w.rubble[c][0])
+				w.rubble.erase(c)
 	w.map.occupy(w.buildings.footprint(i, w.map.width), w.buildings.id[i], w.teams[player] if t.gate else -1)
 	if t.gate:
 		w.refresh_lanes()   # the team's first gate gives it lanes of its own
@@ -222,16 +229,34 @@ static func lay_foundation(w, player: int, a: Dictionary) -> int:
 		return 0
 	k = upgraded(w, player, k)   # a Watchtower ordered after the Bastion research is a Bastion
 	var t: Dictionary = w.btypes[k]
-	if _own_workers(w, player, a.ids).is_empty() or not w.can_afford(player, bcost(w, player, k)) or why_not_build(w, player, k) != "":
+	if _own_workers(w, player, a.ids).is_empty() or why_not_build(w, player, k) != "":
 		return 0
 	var along := along_for(t, int(a.get("along", 0)))
 	if not can_place(w, player, k, a.cx, a.cy, along):
 		return 0
-	w.pay(player, bcost(w, player, k))
+	var cost: PackedInt32Array = repair_cost(w, player, k, _footprint(w, a.cx, a.cy, dims(t, along), along))
+	if not w.can_afford(player, cost):
+		return 0
+	w.pay(player, cost)
 	for c in _footprint(w, a.cx, a.cy, dims(t, along), along):
 		if _replaceable(w, player, t, c):
 			demolish(w, w.buildings.index_of(w.map.occupied[c]))   # a gate dropped into a wall takes its place
 	return w.buildings.id[place(w, player, k, a.cx, a.cy, along)]
+
+
+## What a building of type k costs this player over these cells: its cost, or, rebuilt over its
+## own breach (every cell rubble of the player's: walls.gd), breach.repair_pct of it.
+static func repair_cost(w, player: int, k: int, cells: PackedInt32Array) -> PackedInt32Array:
+	var cost: PackedInt32Array = bcost(w, player, k)
+	if w.rubble.is_empty() or cells.is_empty():
+		return cost
+	for c in cells:
+		if not w.rubble.has(c) or w.rubble[c][1] != player:
+			return cost
+	var out := PackedInt32Array()
+	for v in cost:
+		out.append(v * int(w.walk_cfg.repair_pct) / 100)
+	return out
 
 
 ## Why this player can't start a building of type k anywhere just now (its age; another Town

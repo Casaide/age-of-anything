@@ -123,6 +123,7 @@ static func _update_team(w, team: Array) -> void:
 	var kind: PackedInt32Array = w.units.kind
 	var xs: PackedInt32Array = w.units.x
 	var ys: PackedInt32Array = w.units.y
+	var perch: PackedInt32Array = w.units.perch
 	var teams: PackedInt32Array = w.teams
 	var team_p: int = teams[p]
 	var types: Array = w.types
@@ -136,6 +137,8 @@ static func _update_team(w, team: Array) -> void:
 			var r: int = (r_worker if t.worker else r_unit) + int(t.eval.get("sight", 0)) + int(t.sight_add)   # the line's own (a scout's: pricing.gd), and research (Tech.retype)
 			if heights:
 				r += w.map.level_at(xs[i], ys[i]) * int(w.high.sight_unit)   # high ground sees further
+			if perch[i] != 0:
+				r += int(w.high.sight_unit)   # so does a unit up on a wall (walls.gd)
 			var key: int = (ys[i] / 1000 * mw + xs[i] / 1000) * 64 + r
 			if stamped.has(key):
 				continue
