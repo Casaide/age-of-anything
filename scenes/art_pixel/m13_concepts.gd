@@ -25,8 +25,9 @@ func _concept_wb1_b_spooky(c: Dictionary) -> Dictionary: return _big_beast(_styl
 
 
 ## A howdah: a railed platform at `at` (its floor's middle), team cloths down both sides; returns the
-## riders' sockets (two on top).
-func howdah(n: Node3D, s: Dictionary, at: Vector3, L: float, W: float) -> Dictionary:
+## riders' sockets (two on top, corner to corner; one in the middle for a big crew, frogs and spiders:
+## two of them sat in each other, placement C1).
+func howdah(n: Node3D, s: Dictionary, at: Vector3, L: float, W: float, riders := 2) -> Dictionary:
 	n.add_child(_box(Vector3(L, 1.4, W), s.dark, at))
 	for x in [-L * 0.5 + 0.6, L * 0.5 - 0.6]:
 		for side in [1, -1]:
@@ -36,7 +37,9 @@ func howdah(n: Node3D, s: Dictionary, at: Vector3, L: float, W: float) -> Dictio
 		n.add_child(_box(Vector3(L * 0.8, 8.0, 0.4), s.team, at + Vector3(0, -4.0, (W * 0.5 + 0.3) * side), Vector3(10 * side, 0, 0)))
 	for x in [-L * 0.5, L * 0.5]:
 		n.add_child(rod(at + Vector3(x, 5.0, -W * 0.5), at + Vector3(x, 5.0, W * 0.5), 0.4, 0.4, s.dark))
-	return {"crew0_f0_top": at + Vector3(L * 0.2, 0.7, W * 0.15), "crew1_f0_top": at + Vector3(-L * 0.25, 0.7, -W * 0.15)}
+	if riders == 1:
+		return {"crew0_f0_top": at + Vector3(0, 0.7, 0)}
+	return {"crew0_f0_top": at + Vector3(L * 0.28, 0.7, W * 0.26), "crew1_f0_top": at + Vector3(-L * 0.28, 0.7, -W * 0.26)}
 
 
 ## Humans: a war elephant, grey and wrinkled, tusks capped in bronze, ears out. a: a howdah with two
@@ -81,11 +84,11 @@ func _elephant(s: Dictionary, with_howdah: bool) -> Dictionary:
 	return {"node": n, "sockets": {"crew0_f0_top": Vector3(17.0, 52.2, 0)}}
 
 
-## Frogs: the giant toad (the bolt thrower's), a howdah on its back with two riders.
+## Frogs: the giant toad (the bolt thrower's), a howdah on its back with a rider (two frogs don't fit).
 func _toad_howdah(s: Dictionary) -> Dictionary:
 	var n := Node3D.new()
 	giant_toad(n, s)
-	var sk := howdah(n, s, Vector3(-4.0, 34.0, 0), 18.0, 16.0)
+	var sk := howdah(n, s, Vector3(-4.0, 34.0, 0), 18.0, 16.0, 1)
 	return {"node": n, "sockets": sk}
 
 
@@ -137,7 +140,7 @@ func _big_beast(s: Dictionary, kind: String, k: float, skin: Color, skin2: Color
 	n.add_child(made[0])
 	var seat: Vector3 = made[1]
 	if with_howdah:
-		return {"node": n, "sockets": howdah(n, s, seat + Vector3(-2.0, 1.0, 0), 18.0, 15.0)}
+		return {"node": n, "sockets": howdah(n, s, seat + Vector3(-2.0, 1.0, 0), 18.0, 15.0, 1 if kind == "spider" else 2)}
 	n.add_child(_box(Vector3(12.0, 0.8, 16.0), s.team, seat + Vector3(0, 0.2, 0)))
 	n.add_child(_box(Vector3(8.0, 1.6, 9.0), s.dark, seat + Vector3(0, 1.0, 0)))
 	return {"node": n, "sockets": {"crew0_f0_top": seat + Vector3(0, 1.9, 0)}}
@@ -298,7 +301,7 @@ func _traction(s: Dictionary) -> Dictionary:
 	n.add_child(_box(Vector3(10.0, 0.4, 3.0), s.team, short.lerp(long, 0.55) + Vector3(0, 1.6, 0), Vector3(0, 0, -27)))
 	var sockets := {}
 	for k in 3:   # the pull ropes, down to the haulers
-		var at := Vector3(24.0 + (k % 2) * 3.0, 0, (k - 1) * 6.5)
+		var at := Vector3(24.0 + (k % 2) * 11.0, 0, (k - 1) * 15.0)   # (at 3 and 6.5 apart the haulers stood in each other: placement C1)
 		n.add_child(rod(short, at + Vector3(-1.0, 13.0, 0), 0.3, 0.3, s.rope, false))
 		sockets["crew%d_f4_raise" % k] = at
 	return {"node": n, "sockets": sockets}

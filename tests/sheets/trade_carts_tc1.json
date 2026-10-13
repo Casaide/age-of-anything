@@ -1,7 +1,7 @@
 {
  "name": "trade_carts_tc1",
  "title": "Trade carts, concept round TC1 (milestone 13): A the race's mount pulls, B the handcart (in play), C each family's own",
- "_doc": "Staged from data/later/trade_carts.json; nothing here is in play but B (the placeholder). Notes: docs/concepts/trade_carts/README.md.",
+ "_doc": "Staged from data/later/trade_carts.json. D-127 picked A (in play: siege_models.gd trade_cart, sheet trade_carts_play), the frogs' cart pulled by a snail; B was the placeholder before it. Notes: docs/concepts/trade_carts/README.md.",
  "stage": [
   "res://data/later/trade_carts.json"
  ],
@@ -10,8 +10,8 @@
   1
  ],
  "cell": [
-  112,
-  74
+  185,
+  124
  ],
  "size": [
   {
@@ -25,7 +25,7 @@
  ],
  "rows": [
   {
-   "label": "romans A\npony pulls",
+   "label": "romans A\npony pulls (picked)",
    "unit": {
     "prompt": "romans",
     "slot": "trader",
@@ -34,13 +34,16 @@
      "body": "concept.tc1_a_timber",
      "haul": {
       "creature": "pony",
-      "skin": "pony_bay"
+      "skin": "pony_bay",
+      "parts": {
+       "torso": "harness.draught"
+      }
      }
     }
    }
   },
   {
-   "label": "romans B\nhandcart (in play)",
+   "label": "romans B\nhandcart (was in play)",
    "unit": {
     "prompt": "romans",
     "slot": "trader",
@@ -60,7 +63,10 @@
      "body": "concept.tc1_c_timber",
      "haul": {
       "creature": "pony",
-      "skin": "pony_grey"
+      "skin": "pony_grey",
+      "parts": {
+       "torso": "harness.draught"
+      }
      }
     }
    }
@@ -75,13 +81,16 @@
      "body": "concept.tc1_a_frog",
      "haul": {
       "creature": "newt",
-      "skin": "newt_fire"
+      "skin": "newt_fire",
+      "parts": {
+       "torso": "harness.draught"
+      }
      }
     }
    }
   },
   {
-   "label": "swamp frogs B\nhandcart (in play)",
+   "label": "swamp frogs B\nhandcart (was in play)",
    "unit": {
     "prompt": "swamp frogs",
     "slot": "trader",
@@ -103,7 +112,7 @@
    }
   },
   {
-   "label": "sewer rats A\ncat pulls",
+   "label": "sewer rats A\ncat pulls (picked)",
    "unit": {
     "prompt": "sewer rats",
     "slot": "trader",
@@ -112,13 +121,16 @@
      "body": "concept.tc1_a_junk",
      "haul": {
       "creature": "cat",
-      "skin": "cat_ginger"
+      "skin": "cat_ginger",
+      "parts": {
+       "torso": "harness.draught"
+      }
      }
     }
    }
   },
   {
-   "label": "sewer rats B\nhandcart (in play)",
+   "label": "sewer rats B\nhandcart (was in play)",
    "unit": {
     "prompt": "sewer rats",
     "slot": "trader",
@@ -140,7 +152,7 @@
    }
   },
   {
-   "label": "forest beetles A\nbeetle pulls",
+   "label": "forest beetles A\nbeetle pulls (picked)",
    "unit": {
     "prompt": "forest beetles",
     "slot": "trader",
@@ -149,13 +161,16 @@
      "body": "concept.tc1_a_forest",
      "haul": {
       "creature": "beetle",
-      "skin": "beetle_stag"
+      "skin": "beetle_stag",
+      "parts": {
+       "torso": "harness.draught"
+      }
      }
     }
    }
   },
   {
-   "label": "forest beetles B\nhandcart (in play)",
+   "label": "forest beetles B\nhandcart (was in play)",
    "unit": {
     "prompt": "forest beetles",
     "slot": "trader",
@@ -177,7 +192,7 @@
    }
   },
   {
-   "label": "spooky spiders A\nspider pulls",
+   "label": "spooky spiders A\nspider pulls (picked)",
    "unit": {
     "prompt": "spooky spiders",
     "slot": "trader",
@@ -186,13 +201,16 @@
      "body": "concept.tc1_a_spooky",
      "haul": {
       "creature": "spider",
-      "skin": "spider_black"
+      "skin": "spider_black",
+      "parts": {
+       "torso": "harness.draught"
+      }
      }
     }
    }
   },
   {
-   "label": "spooky spiders B\nhandcart (in play)",
+   "label": "spooky spiders B\nhandcart (was in play)",
    "unit": {
     "prompt": "spooky spiders",
     "slot": "trader",

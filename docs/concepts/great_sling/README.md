@@ -6,7 +6,9 @@ before it can roll. It wears a **stand-in**: the race's catapult (`siege_models.
 
 Sheets: `gs1_3x.png`, `gs1_1x.png`; archive `archive/images/2026-10-13/426-`, `427-`. Spec
 `tests/sheets/great_sling_gs1.json`, models `scenes/art_pixel/m13_concepts.gd` (GS1), each in every
-siege take's materials (timber, frog, junk, forest, spooky). All rows pass the placement check.
+siege take's materials (timber, frog, junk, forest, spooky). All rows pass the placement check. (2026-10-13,
+under the stronger composite check: A's three haulers stood in each other; they now stand 15 apart,
+staggered. Sheets re-rendered.)
 
 - **A, a traction sling:** a tall A-frame, a long beam cocked high with the sling and stone at its end,
   three crew hauling the pull ropes from the front. Packed: the frame laid on a long wagon, the beam

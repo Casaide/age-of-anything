@@ -376,11 +376,14 @@ func _make_engine(slot_def: Dictionary, ctx: Dictionary) -> Dictionary:
 	var crew: Dictionary = {"body": ctx.crew.body, "head": ctx.crew.head, "skin": ctx.crew.skin, "parts": ctx.crew.parts.duplicate(), "scale": ctx.crew.scale}
 	if ctx.crew.has("mount"):
 		crew.mount = ctx.crew.mount.duplicate(true)   # a centaur's horse half
-	return {
+	var engine := {
 		"slot": slot_def.slot, "role": slot_def.role, "tier": int(slot_def.tier),
 		"creature": ctx.creature, "family": ctx.family, "skin": ctx.skin,
 		"body": body.id, "head": "", "parts": parts, "scale": 100, "name": body.noun, "crew": crew,
 	}
+	if body.has("haul"):   # a beast pulls it (the trade cart, D-127): {creature, skin, parts: its harness}
+		engine.haul = body.haul.duplicate(true)
+	return engine
 
 
 ## Why this race has no such line ("" if it has): rules roster "unless_mounted" names a line that
