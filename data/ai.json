@@ -215,7 +215,6 @@
     "ram": 2,
     "catapult": 2,
     "bolt_thrower": 1,
-    "sapper": 1,
     "great_sling": 1
    },
    "towers_within": 14

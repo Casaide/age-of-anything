@@ -555,8 +555,8 @@ func _test_pick(rules: Dictionary, gen) -> void:
 				check(bot.pick(w, ["large", "scout"], {}) == "large", "pick %s: the Stable's cavalry with nothing seen" % prompt)
 			if age == 2:   # the Castle (milestone 13 step 4): a sapper and a great sling before more unique units; the Market's carts aren't soldiers
 				w.ages[0] = 3
-				var castle := ["unique", "sapper", "great_sling"]
-				check(bot.pick(w, castle, {}) == "sapper", "pick %s: the Castle's sapper first (%s)" % [prompt, bot.pick(w, castle, {})])
+				var castle := ["unique", "great_sling"]   # (the sapper parked, D-128)
+				check(bot.pick(w, castle, {}) == "great_sling", "pick %s: the Castle's great sling first (%s)" % [prompt, bot.pick(w, castle, {})])
 				check(bot.pick(w, ["trader"], {}) == "", "pick %s: trade carts aren't picked as soldiers" % prompt)
 				w.ages[0] = 2
 			if int(bot.cfg.military.building_foes) > 0:   # (off for now: data/ai.json _doc_building_foes)
@@ -1114,7 +1114,7 @@ func _test_walled_base(rules: Dictionary, a: Dictionary, b: Dictionary, wall: St
 func _test_rams(rules: Dictionary, race: Dictionary) -> void:
 	var times := {}
 	var spent := 0
-	for slot in ["ram", "spear", "large", "sapper", "great_sling"]:   # (the Castle's two too, milestone 13 step 4)
+	for slot in ["ram", "spear", "large", "great_sling"]:   # (the Castle's sling too, milestone 13 step 4; the sapper parked)
 		for target in ["stone_gate", "wall"]:
 			var r := rules.duplicate(true)
 			r.economy.start.buildings = []
@@ -1146,7 +1146,6 @@ func _test_rams(rules: Dictionary, race: Dictionary) -> void:
 		for slot in ["spear", "large"]:
 			check(ram * 3 <= times["%s:%s" % [slot, target]], "rams break a %s at least 3 times faster than the same cost in %s (%s vs %s)" % [
 				target, slot, _clock(ram), _clock(times["%s:%s" % [slot, target]])])
-		check(times["sapper:" + target] * 3 <= times["spear:" + target], "sappers break a %s at least 3 times faster than the same cost in spears (%s)" % [target, _clock(times["sapper:" + target])])
 		check(times["great_sling:" + target] < 20 * 600, "great slings break a %s from afar (%s)" % [target, _clock(times["great_sling:" + target])])
 
 
