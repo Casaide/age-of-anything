@@ -61,6 +61,7 @@ var _harea := 0              # the area round our Town Center in that lane
 var _rushed := -(1 << 30)    # the tick we last sent everyone at a finished enemy Wonder
 var _blocked := PackedInt32Array()   # the cost of the build step waiting on resources (what it saves for)
 var _blocked_save := 0       # ... a step's `save`: 1 (the University, the Castle) a building-up bot's soldiers wait for it; 2 (the market) everyone's
+var _blocked_push := 0       # ... and how hard the economy leans to it (a step's `push`, else economy.build_push)
 var _tower_at := Vector2i(-1, -1)    # where a raid was: a Watchtower goes up there once it's quiet
 var _sheltering := false     # our workers were called to arms
 var _shelter_until := 0      # ... and come out by this tick
@@ -210,7 +211,7 @@ func think(w) -> void:
 	var count: int = workers.size() + eco.sheltered(w)
 	_build_order(w, tc, workers, count)
 	eco.goal = _goal(w, count)
-	eco.push = 100 if _saving_age else int(cfg.economy.get("build_push", 30))   # (a building leans gently)
+	eco.push = 100 if _saving_age else (_blocked_push if not _blocked.is_empty() else int(cfg.economy.get("build_push", 30)))   # (a building leans gently, unless its step says otherwise)
 	_age_three(w, tc, count)
 	_wonder(w, tc, workers)
 	_upgrade_lines(w, army)
@@ -280,6 +281,7 @@ func _build_order(w, tc: int, workers: Array, count: int) -> void:
 		if not w.can_afford(player, w.btypes[k].cost):
 			_blocked = w.btypes[k].cost   # what we save for (economy shares; soldiers leave it alone if the step says `save`)
 			_blocked_save = int(step.get("save", 0))
+			_blocked_push = int(step.get("push", cfg.economy.get("build_push", 30)))
 			return
 		var at := Vector2i(w.buildings.cx[tc] + 1, w.buildings.cy[tc] + 1)
 		if step.has("near"):   # a drop-off camp goes by the nearest patch of its resource
@@ -911,7 +913,9 @@ func _tower(w, workers: Array) -> void:
 ## The market (data: economy.trade): while food or wood is under `below`, gold piled past `above`
 ## buys a lot of the lower of them; with less gold than that, the biggest other pile past `above`
 ## sells for gold (food or stone piled up while wood ran dry). One trade every `every` seconds. (A pile nobody spends was holding armies small and
-## matches long: soldiers want food and wood.)
+## matches long: soldiers want food and wood.) What we save for (eco.goal) isn't a pile nobody
+## spends: it's kept back on top of `above` (selling the stone saved for a Castle held its stone
+## under 500 all game, and the Castle never came).
 var _next_trade := 0
 
 func _trade(w) -> void:
@@ -932,17 +936,22 @@ func _trade(w) -> void:
 		var r: int = w.resources.find(res)
 		if w.stock[r][player] < int(t.below) and (low < 0 or w.stock[r][player] < w.stock[low][player]):
 			low = r
-	if low >= 0 and w.stock[g][player] >= int(t.above):
+	if low >= 0 and w.stock[g][player] >= int(t.above) + _saving(g):
 		w.issue(player, Commands.TRADE, {"building": w.buildings.id[mk], "resource": w.resources[low], "buy": 1})
 		return
 	if low < 0:
 		return
 	var most := -1   # food or wood short and not gold enough to buy it: sell the biggest pile (over `above`) for gold
 	for r in w.resources.size():
-		if r != g and w.stock[r][player] >= int(t.above) and (most < 0 or w.stock[r][player] > w.stock[most][player]):
+		if r != g and w.stock[r][player] >= int(t.above) + _saving(r) and (most < 0 or w.stock[r][player] > w.stock[most][player]):
 			most = r
 	if most >= 0:
 		w.issue(player, Commands.TRADE, {"building": w.buildings.id[mk], "resource": w.resources[most], "buy": 0})
+
+
+## How much of resource r we're saving for (eco.goal), or 0.
+func _saving(r: int) -> int:
+	return eco.goal[r] if r < eco.goal.size() else 0
 
 
 ## Quiet again: soldiers sent to a raid, standing about far from home with nothing to fight, walk

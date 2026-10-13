@@ -9,14 +9,14 @@
    "2": {
     "food": 45,
     "wood": 30,
-    "gold": 20,
-    "stone": 5
+    "gold": 15,
+    "stone": 10
    },
    "3": {
     "food": 40,
     "wood": 25,
-    "gold": 20,
-    "stone": 15
+    "gold": 15,
+    "stone": 20
    }
   },
   "max_workers": {
@@ -89,12 +89,6 @@
    "save": 1
   },
   {
-   "building": "market",
-   "age": 2,
-   "workers": 22,
-   "save": 2
-  },
-  {
    "building": "watchtower",
    "age": 2,
    "near": "gold",
@@ -108,23 +102,31 @@
    "guard": 1
   },
   {
-   "building": "barracks",
-   "age": 2,
-   "workers": 26
-  },
-  {
    "building": "university",
    "age": 3,
    "workers": 22,
    "builders": 3,
-   "save": 1
+   "save": 1,
+   "push": 70
   },
   {
    "building": "castle",
    "age": 3,
    "workers": 24,
    "builders": 6,
-   "save": 1
+   "save": 1,
+   "push": 70
+  },
+  {
+   "building": "market",
+   "age": 2,
+   "workers": 22,
+   "save": 2
+  },
+  {
+   "building": "barracks",
+   "age": 2,
+   "workers": 26
   },
   {
    "building": "siege_workshop",
@@ -148,7 +150,7 @@
    "workers": 36
   }
  ],
- "_doc_build_order": "each step: a building, from `age`, once it has `workers`; `near` lays it by the nearest patch of that resource (`away`: at least that many tiles from the Town Center); `builders`: workers sent (2 by default); `count`: how many of that building the step wants in all (default: one more than the steps before it). `save`: a building-up level's soldiers leave its cost alone while it waits (the buildings the ages and the content need, not the extra ones); 2: every level's do (the market: it turns piles nobody spends into the wood and food soldiers need). Steps go in order; a later age's step doesn't hold up this age's. A step it can't afford yet is what it saves for (economy shares). `expand_workers`: the workers it waits for instead on a big map or once home runs thin (expand.town). `own_side`: `near` only by patches nearer us than the enemy (ground we can hold). `guard`: only a level that guards its crossing (levels.guard_crossing) takes this step, once it has been on the back foot (the enemy army it remembers outnumbering its own by land.defend_pct), and lays it on the key crossing (land; where there's no room for it there, by the Town Center).",
+ "_doc_build_order": "each step: a building, from `age`, once it has `workers`; `near` lays it by the nearest patch of that resource (`away`: at least that many tiles from the Town Center); `builders`: workers sent (2 by default); `count`: how many of that building the step wants in all (default: one more than the steps before it). `save`: a building-up level's soldiers leave its cost alone while it waits (the buildings the ages and the content need, not the extra ones); 2: every level's do (the market: it turns piles nobody spends into the wood and food soldiers need). Steps go in order; a later age's step doesn't hold up this age's. A step it can't afford yet is what it saves for (economy shares). `expand_workers`: the workers it waits for instead on a big map or once home runs thin (expand.town). `own_side`: `near` only by patches nearer us than the enemy (ground we can hold). `guard`: only a level that guards its crossing (levels.guard_crossing) takes this step, once it has been on the back foot (the enemy army it remembers outnumbering its own by land.defend_pct), and lays it on the key crossing (land; where there's no room for it there, by the Town Center). `push`: how hard the economy leans to the step while it waits on resources (economy.build_push by default): the University and the Castle lean harder, so age 3's buildings don't wait on a gentle trickle of wood and stone.",
  "military": {
   "queue": 2,
   "defend_tiles": 10,
