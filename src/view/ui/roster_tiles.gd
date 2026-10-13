@@ -1,4 +1,5 @@
 extends VBoxContainer
+## (Unused since 2026-10-13: the lobby no longer bakes every portrait up front; see docs/backlog.md.)
 ## A race's roster as small portrait tiles grouped by the building that trains them (Town
 ## Center, Barracks, Archery Range, Stable, Siege Workshop, Castle), each group under a small
 ## caption: the early buildings on one row, the late ones (age 3 and on: siege, castle) on the

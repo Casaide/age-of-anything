@@ -3,8 +3,8 @@ extends Control
 ## a hill under the title; battle the AI, the Race Lab, quit) leads to the battle setup: two side
 ## panels (you and the AI), each wearing its race's culture (src/view/ui/theme.gd: the frame,
 ## crest and banner of data/families.json's `ui` block), with the race's name on its banner, its
-## army idling on a lit stage, the dice and the prompt, the roster as small portraits grouped
-## by building (src/view/ui/roster_tiles.gd: the unit's card on hover), one line of bonuses,
+## army idling on a lit stage, the dice and the prompt, the roster as a line of its lines' names
+## (every line age by age on hover; the portraits and unit cards are on the tech tree page), one line of bonuses,
 ## lacks and notes (src/view/ui/trait_strip.gd: the lists on hover); in the middle a cast "vs", the map card, the AI's level and
 ## Start. The match runs in the game view with the AI on side 2 and comes back here when it ends.
 ## Each banner's "Tech tree" button opens that race's tech tree page (scenes/tech_tree.tscn).
@@ -25,7 +25,6 @@ const Mat := preload("res://src/view/ui/ui_materials.gd")
 const DiceButton := preload("res://src/view/loaders/dice_button.gd")
 const ForgeVeil := preload("res://src/view/loaders/forge_veil.gd")
 const LoaderStyle := preload("res://src/view/loaders/loader_style.gd")
-const RosterTiles := preload("res://src/view/ui/roster_tiles.gd")
 const TraitStrip := preload("res://src/view/ui/trait_strip.gd")
 const TreeModel := preload("res://src/view/tech_tree_model.gd")
 
@@ -254,13 +253,13 @@ func _muster_menu() -> void:
 	for n in menu_layer.get_children():
 		n.queue_free()
 	var w: float = menu_stage.size.x / MENU_ZOOM
-	if w <= 0.0 or kit.icons.is_empty():
+	if w <= 0.0:
 		return
 	for i in sides.size():
 		var s: Dictionary = sides[i]
-		if s.race.is_empty():
+		if not _stood(s):
 			continue
-		var units: Array = s.race.units
+		var units: Array = _stage_pick(s.race.units, STAGE_MAX)   # the few the stage bakes (not the whole roster)
 		for k in units.size():
 			var u: Dictionary = units[units.size() - 1 - k]   # the big ones at the front
 			var view := UnitView.new()
@@ -565,7 +564,7 @@ func _side_panel(i: int, who: String, compact := false) -> Control:
 	vp.add_child(shade)
 	stage.resized.connect(func():
 		shade.size = stage.size
-		if not baking and not kit.icons.is_empty():
+		if i < sides.size():
 			_muster(i))
 	var layer := Node2D.new()
 	layer.y_sort_enabled = true
@@ -610,7 +609,12 @@ func _side_panel(i: int, who: String, compact := false) -> Control:
 	field.text_changed.connect(func(_t): sides[i].reroll = 0; _regenerate(i))
 	field.text_submitted.connect(func(_t): _regenerate(i))   # Enter shows the race; only Start starts (Fable)
 	prompt.add_child(field)
-	var units := RosterTiles.new(compact)   # the roster: portraits grouped by building, the unit's card on hover
+	var units := UiTheme.label("", "Dim", true)   # the roster in words: its lines' names (the portraits and cards are on the tech tree page)
+	units.add_theme_font_size_override("font_size", 15 if compact else 17)
+	units.max_lines_visible = 1 if compact else 2
+	units.text_overrun_behavior = TextServer.OVERRUN_TRIM_ELLIPSIS
+	units.custom_minimum_size.y = 22 if compact else 48
+	units.mouse_filter = Control.MOUSE_FILTER_STOP   # (the whole list on hover)
 	col.add_child(units)
 	var roster := TraitStrip.new(compact)   # bonuses, own research, lacks, notes: one line, the lists on hover
 	if compact:   # on the banner (two panels a column: the stage needs the height)
@@ -625,7 +629,7 @@ func _side_panel(i: int, who: String, compact := false) -> Control:
 		col.add_child(roster)
 	sides.append({"field": field, "dice": dice, "reroll": 0, "rolled": "", "race": {}, "name": name, "line": line, "roster": roster, "units": units,
 		"stage": stage, "vp": vp, "layer": layer, "status": status, "dirty_at": 0.0, "team": team, "panel": card, "banner": banner, "family": "?",
-		"level": 0, "side_team": i, "compact": compact, "veil": veil, "forging": false})
+		"level": 0, "side_team": i, "compact": compact, "veil": veil, "forging": false, "gen": 0, "baked_gen": -1})
 	return card
 
 
@@ -714,8 +718,10 @@ func _regenerate(i: int) -> void:
 	_dress(i)
 	s.name.text = race.name
 	s.line.text = "%s  ·  %s culture" % [lib.creatures[race.creature].plural, String(race.family).capitalize()]
-	s.units.look = UiTheme.look(race.family)
-	s.units.show_race(race, rules)
+	s.units.text = _lines_text(race)
+	s.units.tooltip_text = _lines_card(race)
+	s.gen += 1   # a new race: its stage waits for its bake
+	kit.cancel_warm()   # the old race's background bake stops (warmed again once every stage stands)
 	show_traits(i, _traits(race))
 	s.banner.tooltip_text = "\n".join(race.notes)
 	s.status.text = "  Forging the army..."
@@ -742,36 +748,43 @@ func _fade_army(s: Dictionary, to: float, secs: float) -> void:
 	s.tween.tween_property(s.layer, "modulate:a", to, secs)
 
 
-## Bake a side's army (the kit skips parts it has) and stand it on the stage.
-func _bake(_i: int) -> void:
+## Bake only what a side's stage shows (the few _stage_pick stands up, at their first age; the kit
+## skips parts it has) and stand them up; the other sides are left alone (Dominic: "it shouldn't
+## generate more than needed straight away"). Once no side is waiting, the rest warms up behind
+## (kit.warm, lowest priority): every age of every line, the portraits, the buildings and props,
+## so the tech tree page and a match start find them done.
+func _bake(i: int) -> void:
 	baking = true
+	var s: Dictionary = sides[i]
+	var gen: int = s.gen
 	var t0 := Time.get_ticks_msec()
-	var races := []
-	var teams := []
-	for s in sides:
-		if not s.race.is_empty():
-			races.append(s.race)
-			teams.append(s.team)
-	await kit.prepare_units(races, teams)
-	await kit.bake_icons(races, teams)
-	print("Lobby bake: %d ms" % (Time.get_ticks_msec() - t0))
+	var picks := _stage_pick(s.race.units, STAGE_MAX)
+	await kit.bake_steps(picks.map(func(u): return {"recipe": u.recipe, "eval": u.eval}))
+	print("Lobby bake: %d ms (%s: %d units for the stage)" % [Time.get_ticks_msec() - t0, s.race.name, picks.size()])
 	baking = false
-	for k in sides.size():   # the atlas was rebuilt: every stage redraws from it
-		_muster(k)
+	if s.gen == gen:   # (typed or rolled again meanwhile: it's dirty, and baked next)
+		s.baked_gen = gen
+	_muster(i)
 	_muster_menu()
-	if races.size() == sides.size() and sides.all(func(s): return s.dirty_at == 0.0):
-		kit.warm(races)   # while the players choose, bake the match's buildings and props
+	if sides.all(func(x): return _stood(x)):
+		kit.warm(sides.map(func(x): return x.race), sides.map(func(x): return x.team))
+
+
+## A side's army is baked and standing (not waiting on a new race's bake).
+func _stood(s: Dictionary) -> bool:
+	return not s.race.is_empty() and s.baked_gen == s.gen and s.dirty_at == 0.0
 
 
 ## The few that show off a race on the stage, a line each, in this order while there's room (the
 ## whole roster, siege and all, crowded into a heap: Dominic, "we squeeze too much, be selective").
 const STAGE_ROLES := ["spear", "infantry", "archer", "large", "skirmisher", "worker", "catapult", "healer"]
+const STAGE_MAX := 6   # the most a stage shows (a wide one): what the lobby bakes for it up front
 
 
 static func _stage_pick(units: Array, room: int) -> Array:
 	var out := []
 	for role in STAGE_ROLES:
-		if out.size() >= clampi(room, 3, 6):
+		if out.size() >= clampi(room, 3, STAGE_MAX):
 			break
 		for u in units:
 			if u.recipe.get("role", "") == role:
@@ -782,14 +795,10 @@ static func _stage_pick(units: Array, room: int) -> Array:
 
 func _muster(i: int) -> void:
 	var s: Dictionary = sides[i]
-	if s.dirty_at > 0.0:   # its new race isn't baked yet: the old army stays under the veil, redrawn from the new atlas
-		for ps in s.layer.find_children("*", "Node2D", true, false):
-			ps.queue_redraw()
+	if not _stood(s):   # its new race isn't baked yet: the old army stays under the veil
 		return
 	for n in s.layer.get_children():
 		n.queue_free()
-	if s.race.is_empty():
-		return
 	var zoom := 3.0 if s.stage.size.y >= STAGE_H * 1.45 else STAGE_ZOOM   # a tall stage (a big window) shows the army bigger, in whole pixels
 	s.layer.scale = Vector2.ONE * zoom
 	var w: float = maxf(s.stage.size.x, 300.0) / zoom
@@ -810,17 +819,38 @@ func _muster(i: int) -> void:
 		view.face(1.0 if i == 0 else -1.0)   # both armies face the middle
 		s.layer.add_child(view)
 	s.status.text = "  %d units, every one priced by its parts" % all.size()
-	if s.forging and s.dirty_at == 0.0:   # the new army is ready: the veil lifts and it fades in
+	if s.forging:   # the new army is ready: the veil lifts and it fades in
 		s.forging = false
 		s.dice.busy = false
 		s.veil.hide_veil()
 		s.layer.modulate.a = 0.0
 		_fade_army(s, 1.0, LoaderStyle.ARMY_FADE)
-	var side := 0   # the portraits: kit.icons is keyed by the side's place among the races baked
-	for k in i:
-		if not sides[k].race.is_empty():
-			side += 1
-	s.units.set_portraits(func(slot): return kit.icons.get("%d:%s" % [side, slot]))   # every line's portrait (not just the few on the stage)
+
+
+## The roster in a line of words: each line's name at its first age, the creature's noun left off
+## when most share it ("Spearbearer, Archer, Heavy Lancer..." for "Spearbearer Centaur"...).
+static func _lines_text(race: Dictionary) -> String:
+	var last := {}
+	for u in race.units:
+		for w in Array(String(u.recipe.name).split(" ")).filter(func(x): return x.length() > 2):   # (each word once a name; not "on", "a")
+			last[w] = last.get(w, 0) + 1
+	var common := ""
+	for w in last:
+		if last[w] * 2 >= race.units.size() and (common == "" or last[w] > last[common]):
+			common = w
+	var names := []
+	for u in race.units:
+		var words := Array(String(u.recipe.name).split(" ")).filter(func(w): return w != common)
+		names.append(" ".join(words) if not words.is_empty() else u.recipe.name)
+	return "%d lines: %s" % [names.size(), ", ".join(names)]
+
+
+## The roster on hover: every line, age by age (the portraits and cards are on the tech tree page).
+static func _lines_card(race: Dictionary) -> String:
+	var rows := []
+	for u in race.units:
+		rows.append(" > ".join(u.get("line", [u]).map(func(l): return "%s (age %d)" % [l.recipe.name, int(l.get("age", u.recipe.get("tier", 1)))])))
+	return "\n".join(rows) + "\n\nTech tree: every line's portraits and cards"
 
 
 ## A race's traits in words, as the strip's groups: what it's better at, its own research,
@@ -842,26 +872,13 @@ func show_traits(i: int, groups: Array) -> void:
 	sides[i].roster.show_traits(groups)
 
 
-## The tech tree page for a side's race: its army and every age of its lines baked first (the
-## portraits), and its culture's buildings (the lobby doesn't bake them otherwise).
+## The tech tree page for a side's race. It opens at once; what it shows that isn't baked yet
+## (every age of every line and their portraits, the culture's buildings) it bakes under its
+## own loader, whether the lobby's background warm-up got there first or not.
 func _open_tree(i: int) -> void:
 	var s: Dictionary = sides[i]
 	if s.race.is_empty():
 		return
-	while baking:
-		await get_tree().process_frame
-	if s.dirty_at > 0.0:
-		s.dirty_at = 0.0
-		await _bake(i)
-	var arch: String = lib.architecture(s.race)
-	if not kit.buildings.has(arch + ":house"):
-		baking = true
-		s.status.text = "  Raising the buildings..."
-		await kit.bake_buildings([s.race])
-		kit.rebuild_atlas()
-		baking = false
-		for k in sides.size():   # the atlas was rebuilt: every stage redraws from it
-			_muster(k)
 	if tree_page == null:
 		tree_page = load("res://scenes/tech_tree.tscn").instantiate()
 		add_child(tree_page)

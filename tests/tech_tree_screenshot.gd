@@ -1,7 +1,8 @@
 extends SceneTree
 ## Captures the tech tree page: from the lobby (a side's banner button) or in a match.
 ## Run (needs a display):
-##   godot --path . --script res://tests/tech_tree_screenshot.gd -- out.png [lobby|match:<seconds>] ["prompt A" "prompt B"] [scroll px] [node key]
+##   godot --path . --script res://tests/tech_tree_screenshot.gd -- out.png [lobby|loader[:<frames>]|match:<seconds>] ["prompt A" "prompt B"] [scroll px] [node key]
+## "loader": opened from the lobby as soon as the stages stand, shot while its loader is up.
 ## A node key (e.g. "u:spear@2", "r:fletching", "b:castle") hovers that node to show its card.
 ## "match:<seconds>": two bots play that long (stepped as fast as it goes), then player 1's page opens.
 
@@ -15,7 +16,7 @@ func _initialize() -> void:
 	var prompts: Array = [args[2], args[3]] if args.size() > 3 else []
 	var scroll := int(args[4]) if args.size() > 4 else 0
 	var page: Control
-	if mode == "lobby":
+	if mode == "lobby" or mode.begins_with("loader"):
 		var lobby = load("res://scenes/match_setup.tscn").instantiate()
 		root.add_child(lobby)
 		for f in 5:
@@ -26,8 +27,20 @@ func _initialize() -> void:
 		lobby._open_setup()
 		lobby._regenerate(0)
 		lobby._regenerate(1)
+		while lobby.baking or lobby.sides.any(func(s): return not lobby._stood(s)):   # the stages first, as a player would
+			await process_frame
 		await lobby._open_tree(0)
 		page = lobby.tree_page
+		if mode.begins_with("loader"):   # the page's loader, that many frames in (default 30)
+			for f in (int(mode.get_slice(":", 1)) if ":" in mode else 30):
+				await process_frame
+			root.get_texture().get_image().save_png(out)
+			print("saved ", out)
+			quit()
+			return
+		while page.is_loading():
+			await process_frame
+		await create_timer(0.8).timeout   # (the loader fades out)
 	else:
 		var view = load("res://scenes/sim_debug.tscn").instantiate()
 		if not prompts.is_empty():
