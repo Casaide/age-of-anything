@@ -10603,7 +10603,7 @@
    "gold": 50
   },
   "placeholder": true,
-  "note": "the sapper's charge (milestone 13 step 4): it walks up to a building and blows up with its first blow (combat.gd _blast): its damage on everything within `blast` milli-tiles (less further out; friends at splash_friend_pct), a wall, palisade or gate under it destroyed outright (`blast_line_pct` of its hit points), and the sapper with it. A PLACEHOLDER look (the worker's sack, scenes/art_pixel/unit_models.gd _tool_charge) until Dominic picks from concept round SG1 (docs/concepts/sapper/)",
+  "note": "the sapper's charge (milestone 13 step 4): it walks up to a building and blows up with its first blow (combat.gd _blast): its damage on everything within `blast` milli-tiles (less further out; friends at splash_friend_pct), a wall, palisade or gate under it destroyed outright (`blast_line_pct` of its hit points), and the sapper with it. A PLACEHOLDER look (the worker's sack, scenes/art_pixel/unit_models.gd _tool_charge) until Dominic picks from concept round SP1 (docs/concepts/sapper/)",
   "shapes": [
    {
     "t": "ellipse",

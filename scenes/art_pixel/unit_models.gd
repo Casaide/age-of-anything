@@ -2306,8 +2306,8 @@ func _tool_sack(c: Dictionary) -> Dictionary:
 	return {"node": n}
 
 
-## The sapper's charge: a PLACEHOLDER, the worker's sack, until Dominic picks from concept round SG1
-## (docs/concepts/sapper/; options in scenes/art_pixel/sapper_concepts.gd).
+## The sapper's charge: a PLACEHOLDER, the worker's sack, until Dominic picks from concept round SP1
+## (docs/concepts/sapper/; options in scenes/art_pixel/m13_concepts.gd).
 func _tool_charge(c: Dictionary) -> Dictionary:
 	return _scaled(_tool_sack(c), 0.5)   # (smaller: at full size it cut through a beetle's head and a spider's legs in the blow)
 
