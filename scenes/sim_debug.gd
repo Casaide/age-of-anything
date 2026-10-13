@@ -54,7 +54,7 @@ const Replay := preload("res://src/sim/replay.gd")
 const Bot := preload("res://src/ai/bot.gd")
 const Walls := preload("res://src/sim/walls.gd")
 const Repair := preload("res://src/sim/repair.gd")
-const WALL_PX := 28.2   # a stone wall's walkway over the ground at 1x (ArtKit walk_px: Models.WALK_H.wall), for a climb
+const WALL_PX: float = Models.WALK_H.wall * ArtKit.WALK_PX_PER_UNIT   # a stone wall's walkway over the ground at 1x (as ArtKit walk_px), for a climb
 const TechTreeModel := preload("res://src/view/tech_tree_model.gd")
 const TownLife := preload("res://src/view/town_life.gd")
 
@@ -2016,7 +2016,8 @@ func _wall_lift(i: int) -> float:
 	var climb := float(world.walk_cfg.climb)
 	if u.perch[i] != 0:
 		var bv := _perch_view(i)
-		var top := bv.walk_px if bv != null and bv.walk_px > 0.0 else WALL_PX   # the piece's own walkway: a tower's and a gatehouse's stand taller
+		var at := Vector2(u.x[i], u.y[i]) / 1000.0
+		var top := bv.walk_at(at) if bv != null and bv.walk_px > 0.0 else WALL_PX   # the piece's own walkway: a tower's (and a gatehouse's towers') stand taller
 		return top * (float(u.wtime[i]) / climb if u.wtime[i] > 0 else 1.0)
 	if u.task[i] == Economy.CLIMB and u.work[i] > 0:
 		return WALL_PX * minf(1.0, float(u.work[i]) / climb)
@@ -2037,7 +2038,7 @@ func _perch_sort(i: int, y: float) -> float:
 	var bv := _perch_view(i)
 	if bv == null or bv.front == null:
 		return 0.0
-	return BuildingArt.perch_sort_y(bv.position.y, y) - y
+	return bv.perch_sort_at(Vector2(world.units.x[i], world.units.y[i]) / 1000.0, y) - y
 
 
 ## The part of the canvas on screen, grown by `margin` canvas pixels (a body standing just off

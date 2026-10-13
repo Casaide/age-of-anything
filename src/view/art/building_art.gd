@@ -27,7 +27,16 @@ var front: Node2D
 var front_body: Sprite2D
 var front_open: Sprite2D
 var walk_px := 0.0        # how high units on its walkway are drawn (canvas px over its base), 0: none
+var walk_tower_px := 0.0  # a gatehouse: how high on its flanking towers (0: none)...
+var walk_tower_from := 0.0   # ...past this far (tiles) from its middle along it
+var walk_axis := Vector2.RIGHT   # the way it runs (sim tiles, unit length)
+var walk_centre := Vector2.ZERO  # its footprint's middle (sim tiles)
+## A gatehouse's towers lower on screen than its middle (ArtKit _bake_gate_parts): [{node, front, at}],
+## each a pair of nodes of their own beside this one in the y-sorted layer, sorted on the tower's middle.
+var parts: Array = []
 const PERCH_SORT_PX := 1.0
+## A gate's way along, by its bake suffix (ArtKit.ALONG: none, ^z, ^d, ^a), in sim tiles.
+const WALK_AXES := [Vector2(1, 0), Vector2(0, 1), Vector2(0.70710678, 0.70710678), Vector2(0.70710678, -0.70710678)]
 const FRONT_SORT_PX := 2.0
 var _kit
 var _name := ""
@@ -83,6 +92,10 @@ func setup(kit, name: String, cx: int, cy: int, sx: int, sy: int, p_team: Color)
 		stages.append(st)
 	bar_at = at + Vector2(0, 6)
 	walk_px = float(info.get("walk_px", 0.0))
+	walk_tower_px = float(info.get("walk_tower_px", 0.0))
+	walk_tower_from = float(info.get("walk_tower_from", 0.0))
+	walk_centre = Vector2(cx + sx * 0.5, cy + sy * 0.5)
+	walk_axis = WALK_AXES[["z", "d", "a"].find(name.get_slice("^", 1)) + 1] if "^" in name else Vector2.RIGHT
 	if info.has("front") or info.has("open_front") or info.has("arms_front"):
 		front = Node2D.new()
 		front.position = centre + Vector2(0, FRONT_SORT_PX)
@@ -99,6 +112,20 @@ func setup(kit, name: String, cx: int, cy: int, sx: int, sy: int, p_team: Color)
 			front.add_child(front_open)
 		visibility_changed.connect(func(): front.visible = visible)
 		tree_entered.connect(func(): get_parent().add_child.call_deferred(front))
+	for pt in info.get("parts", []):
+		var dy: float = Iso.to_screen(pt.at.x * 1000.0, pt.at.y * 1000.0).y
+		var pair := []
+		for k in 2:
+			var n := Node2D.new()
+			n.position = centre + Vector2(0, dy + (FRONT_SORT_PX if k == 1 else 0.0))
+			var s: Sprite2D = kit.sprite(pt.front if k == 1 else pt.body)
+			s.position = at - Vector2(0, dy + (FRONT_SORT_PX if k == 1 else 0.0))
+			s.self_modulate = body.self_modulate
+			n.add_child(s)
+			pair.append(n)
+		parts.append({"node": pair[0], "front": pair[1], "at": pt.at})
+		visibility_changed.connect(func(): _show_front())
+		tree_entered.connect(func(): for n in pair: get_parent().add_child.call_deferred(n))
 	if info.has("smoke"):
 		smoke = _smoke(at + info.smoke)
 		live.append(smoke)
@@ -366,6 +393,24 @@ static func links_of(on: Callable) -> int:
 
 ## The sort y of a unit up on a walkway piece sorted at `piece_y`, the unit at screen y `unit_y`: just
 ## after the piece and before its near merlons (front), units on one piece kept in their order.
+## How high a unit up on this piece at sim (x, y) (tiles) stands: on a gatehouse's towers or its
+## walk over the passage, elsewhere the piece's walkway.
+func walk_at(at: Vector2) -> float:
+	if walk_tower_px > 0.0 and absf((at - walk_centre).dot(walk_axis)) >= walk_tower_from:
+		return walk_tower_px
+	return walk_px
+
+
+## The sort y of a unit up on this piece at sim (x, y) (tiles), at screen y `unit_y` (perch_sort_y): on a
+## gatehouse tower with a layer of its own, after that tower and before its near parts.
+func perch_sort_at(at: Vector2, unit_y: float) -> float:
+	if walk_tower_px > 0.0 and absf((at - walk_centre).dot(walk_axis)) >= walk_tower_from:
+		for pt in parts:
+			if (at - walk_centre).dot(pt.at) > 0.0:
+				return perch_sort_y(pt.node.position.y, unit_y)
+	return perch_sort_y(position.y, unit_y)
+
+
 static func perch_sort_y(piece_y: float, unit_y: float) -> float:
 	return piece_y + PERCH_SORT_PX + clampf((unit_y - piece_y) / 64.0, -0.45, 0.45)
 
@@ -408,8 +453,12 @@ func set_open(p_open: bool) -> void:
 	_show_front()
 
 
-## The front layer shows with the look it belongs to (shut or open), once the building is done.
+## The front layer shows with the look it belongs to (shut or open), once the building is done; a
+## gatehouse's tower layers once it's done.
 func _show_front() -> void:
+	for pt in parts:
+		pt.node.visible = done and visible
+		pt.front.visible = done and visible
 	if front_body != null:
 		front_body.visible = body.visible
 	if front_open != null:
@@ -419,6 +468,11 @@ func _show_front() -> void:
 func _notification(what: int) -> void:
 	if what == NOTIFICATION_PREDELETE and front != null and is_instance_valid(front):
 		front.queue_free()
+	if what == NOTIFICATION_PREDELETE:
+		for pt in parts:
+			for key in ["node", "front"]:
+				if is_instance_valid(pt[key]):
+					pt[key].queue_free()
 
 
 func _process(delta: float) -> void:

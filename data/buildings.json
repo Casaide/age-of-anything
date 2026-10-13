@@ -87,7 +87,7 @@
  },
  "_garrison_doc": "units shelter inside a building type with \"garrison\": N (src/sim/garrison.gd): up to N of its owner's units (none with a tag in garrison.not, e.g. riders and giants; workers always fit, centaurs' too), hidden, healed 1 hp every heal_every ticks, seeing nothing beyond the building. A building with an \"attack\" shoots attack.arrows arrows a volley (towers 1; 0: the Town Center only shoots with people inside) plus one per unit inside. Destroyed, it spills them out. The Town Center's call to arms sends its owner's workers within call_range tiles into the nearest building with room. \"sight\": the building's own sight radius in tiles (else the rules' fog.tower for buildings that shoot, fog.building for the rest). \"more_from_age\": a player who already has one may build another only from that age on (Town Centers, age 3). \"upgrade_of\": a building that research turns another into, in place ({\"building\": \"watchtower\", \"becomes\": \"bastion\"} in tech.json); once researched, ordering the old one builds the new",
  "walkway": {
-  "climb": 2,
+  "climb": 3,
   "fall_damage": 10,
   "speed_pct": 80,
   "not": [
