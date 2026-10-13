@@ -405,7 +405,7 @@ func _test_siege_bot(rules: Dictionary, a: Dictionary, b: Dictionary) -> void:
 
 ## Each level left to build up (milestone 12 phase 8): the bot with its attack waves switched
 ## off, against a passive side, for 30 minutes. Reports when it reaches each age, what it has
-## built and researched by 20 minutes, and its army; checks the targets: age 2 by 6 minutes
+## built and researched by 20 minutes, and its army; checks the targets: age 2 by 8 minutes
 ## (Normal, Hard), age 3 by 16 minutes (Easy, Normal), and by 20 minutes a University, a Castle
 ## and a tower (Easy, Normal) and some research; by 30 minutes Normal has an army still growing.
 func _test_levels(rules: Dictionary, a: Dictionary, b: Dictionary, levels := ["easy", "normal", "hard"]) -> void:
@@ -451,7 +451,7 @@ func _test_levels(rules: Dictionary, a: Dictionary, b: Dictionary, levels := ["e
 		print("\n== %s, left alone: age 2 at %s, age 3 at %s; by 20:00 built %s; research by 20:00 (%d) %s; army pop at 10/20/30 min %s/%s/%s" % [
 			level, _clock(a2) if a2 >= 0 else "-", _clock(a3) if a3 >= 0 else "-", built20, bought.size(), bought, army.get(10, 0), army.get(20, 0), army.get(30, 0)])
 		if level != "easy":
-			check(a2 >= 0 and a2 <= 20 * 60 * 6, "%s: age 2 by 6:00 (%s)" % [level, _clock(a2)])
+			check(a2 >= 0 and a2 <= 20 * 60 * 8, "%s: age 2 by 8:00 (%s)" % [level, _clock(a2)])   # 8, not 6: workers at 50 food, soldiers at 1.7x and an early scout put age 2 at 6:45-7:30 for a 15-20 minute match (Dominic, 2026-10-13)
 		if level != "hard":
 			check(a3 >= 0 and a3 <= 20 * 60 * 16, "%s: age 3 by 16:00 (%s)" % [level, _clock(a3)])
 			check(built20.has("university") and built20.has("castle"), "%s: a University and a Castle by 20:00" % level)
