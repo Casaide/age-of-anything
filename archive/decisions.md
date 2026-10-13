@@ -775,3 +775,7 @@ real character: a named champion with a personality that shows ("Ratty the Gnawe
 not a dressed-up soldier. War beasts: not the capybara for rats (doesn't fit); a war boar, but bigger; spiders get a
 tarantula on its own, not a spider riding a spider. The great sling (traction trebuchet) gets bigger and sturdier,
 siege-weight, not thin. No carried charge for the sapper (its look stays plain).
+
+**D-128, 2026-10-13: The sapper is parked.** Dominic: "remove the sapper unit, not needed." Its roster slot is set to
+planned (the generator skips it), the Castle trains the unique unit and the great sling, the bot no longer keeps one;
+the code, model and test stay, and the backlog says how to bring it back.

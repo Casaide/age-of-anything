@@ -184,6 +184,11 @@ still maps the brief onto parts within host rules.
   - Sci-fi "space federation" pack. A space-fleet sci-fi mod is Dominic's personal dream; keep
     official names and likenesses out of shipped content.
 
+### The sapper (parked 2026-10-13, Dominic: "remove the sapper unit, not needed")
+Built in milestone 13 (Castle, age 3: walks up to a building and blows up with it; a wall tile or house in one blast,
+a Town Center in three). Parked: its roster slot is `"status": "planned"`, the Castle doesn't train it, the bot doesn't
+want it; the blast code (`combat.gd _blast`), its model and its sim test stay for later.
+
 ### A Bear race (Dominic, 2026-10-13: next to plan once milestone 13 is done; "it'll just be really cool to see")
 A new creature: bears. Not in the data yet. To plan, concept-first: how big a bear soldier is next to a human
 (standing bears are bigger; workers too, so buildings, crews and gear need sizing), body (two legs standing, or

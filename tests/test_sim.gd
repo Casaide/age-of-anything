@@ -3206,6 +3206,9 @@ func _test_sapper_sling(races: Array) -> void:
 			left = t
 	check(left >= int(w.types[k].pack), "great sling: it packs up (%d ticks) before it rolls (%d)" % [w.types[k].pack, left])
 	# The sapper and a stone wall: one blast takes a tile out, the next one is hurt, the sapper is gone.
+	# (The sapper is parked, D-128: its slot is planned, so there's none to test until it comes back.)
+	if w.type_of(0, "sapper") < 0:
+		return
 	var s := _bare_world(races)
 	var walls := []
 	for y in range(18, 25):

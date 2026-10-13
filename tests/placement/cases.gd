@@ -18,7 +18,7 @@ const PROMPTS := ["romans", "swamp frogs", "sewer rats", "forest beetles", "spoo
 ## every unique theme in data/uniques.json, a foot scout, the steppe raider on its pony; the sapper, trade cart and great sling.
 const LINE_PROMPTS := ["greeks", "royal humans", "mongols", "aztecs", "egyptians", "han", "sewer rats with cheese hammers",
 	"tiny vikings", "swamp humans", "forest humans", "sewer humans", "spooky humans"]
-const NEW_LINES := ["scout", "mounted_archer", "unique", "large", "sapper", "trader", "great_sling"]   # (and the cavalry, which rides the same mounts; the sapper in every culture's cap, the cart and the great sling of every take)
+const NEW_LINES := ["scout", "mounted_archer", "unique", "large", "trader", "great_sling"]   # (and the cavalry, which rides the same mounts; the sapper in every culture's cap, the cart and the great sling of every take)
 ## Riders (a race's spear unit, put on each mount) and the mounts.
 const RIDERS := ["romans", "swamp frogs", "sewer rats", "spooky spiders", "forest beetles"]
 const MOUNTS := ["pony", "beetle", "spider", "capybara", "newt", "hummingbird", "cat"]
