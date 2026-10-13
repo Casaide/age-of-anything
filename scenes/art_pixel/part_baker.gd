@@ -29,6 +29,13 @@ var cam: Camera3D
 var key: DirectionalLight3D
 var holder: Node3D
 var models := UnitModels.new()
+static var prof := {}    # phase -> usec spent, summed over every bake (tests/bake_profile.gd reports it)
+
+
+static func _lap(phase: String, t0: int) -> int:
+	var now := Time.get_ticks_usec()
+	prof[phase] = prof.get(phase, 0) + now - t0
+	return now
 
 
 func _init() -> void:
@@ -81,11 +88,7 @@ func bake(id: String, shapes: Array, colours: Dictionary) -> void:
 	if PartShape.baked.has(key):
 		return
 	if models.has(id):
-		var base := azimuth
-		for k in facings:   # all eight directions, none mirrored (Dominic: 8 baked facings)
-			azimuth = base + FACING_STEP * k
-			await _bake_model(id, colours, key + PartShape.facing_suffix(k), k)
-		azimuth = base
+		await _bake_model(id, colours, key)
 		return
 	cam.basis = Basis.IDENTITY
 	self.key.basis = Basis.looking_at(Vector3(0.55, -0.7, -1.0).normalized(), Vector3.UP)
@@ -153,16 +156,19 @@ func _members_front(model: Node3D, sockets: Dictionary, names: Array, view: Vect
 	return out
 
 
-## A hand-built model, seen three-quarter; its sockets come along, projected into 2D part units.
-func _bake_model(id: String, colours: Dictionary, bake_key: String, k := 0) -> void:
-	var rig_id := id + PartShape.facing_suffix(k)
+## A hand-built model in all its facings; its sockets come along, projected into 2D part units.
+## The model (and the body that cuts or wears it) is built once and the camera goes round it: each
+## facing's lit render (and its near-arm layer), then for a part cut by its body each facing's cut
+## mask; then every facing is cut, pixelized and kept. (It was built again for every facing, and
+## the cut ran pixel by pixel in GDScript: most of a cold unit bake.)
+func _bake_model(id: String, colours: Dictionary, bake_key: String) -> void:
+	var tl := Time.get_ticks_usec()
 	var spec: Dictionary = models.build(id, colours)
 	var model: Node3D = spec.node
 	var front: Node3D = spec.get("front")
 	var wearer: Node3D = null
 	var pivot := Vector3.ZERO   # where the sprite's origin is (a cut leg's hip, a cut head's socket)
 	var joins := false          # a cut head joined to its neck (the body's spec carries a "seam")
-	var seam_img: Image = null  # where the part meets another of the unit's parts: no outline there
 	var seam: Node3D = null     # a body's head in place, held out of the body (spec.seam_head)
 	var join := Vector3.ZERO    # where the neck joins the head (the body's "join" socket) and how far round it
 	var join_r := 0.0           # the seam reaches (spec.seam_r): elsewhere a head in front of the chest keeps its outline
@@ -218,82 +224,15 @@ func _bake_model(id: String, colours: Dictionary, bake_key: String, k := 0) -> v
 	var box := _aabb(model)
 	if wearer:
 		box = box.merge(_aabb(wearer))
-	if front:
+	if front:   # the near arm: its own layer, rendered alone after the rest in each facing
 		holder.add_child(front)
 		box = box.merge(_aabb(front))
-		holder.remove_child(front)
+		front.visible = false
 	var r := box.size.length() * 0.5 + 2.0
 	var px := art_scale * SS
 	size = Vector2i.ONE * ceili(2.0 * r * px)
 	cam.keep_aspect = Camera3D.KEEP_HEIGHT
 	cam.size = 2.0 * r
-	var az := deg_to_rad(azimuth)
-	var el := deg_to_rad(elevation)
-	var view := Vector3(sin(az) * cos(el), sin(el), cos(az) * cos(el))
-	cam.basis = Basis.looking_at(-view, Vector3.UP)
-	cam.position = box.get_center() + view * 150.0   # close enough for the shadow range
-	# Light from the viewer's upper left, a little in front.
-	key.basis = Basis.looking_at(cam.basis * Vector3(0.55, -0.75, -1.0).normalized(), Vector3.UP)
-	await _render()
-	var img := get_texture().get_image()
-	if at != "":
-		# The cut: the part in white over its body in black, unlit, then only the white is kept
-		# (not a key colour, which a green frog's own leg could match).
-		_hold_out(model, Color.WHITE)
-		_hold_out(wearer, Color.BLACK)
-		key.shadow_enabled = false
-		await _render()
-		key.shadow_enabled = true
-		var mask := get_texture().get_image()
-		var jc := cam.unproject_position(join)
-		if joins:
-			seam_img = Image.create(img.get_width(), img.get_height(), false, Image.FORMAT_L8)
-		for y in img.get_height():
-			for x in img.get_width():
-				var mc := mask.get_pixel(x, y)
-				if mc.r < 0.5:
-					img.set_pixel(x, y, Color(0, 0, 0, 0))
-					if joins and mc.a > 0.5 and jc.distance_to(Vector2(x, y)) <= join_r * px:
-						seam_img.set_pixel(x, y, Color.WHITE)
-		holder.remove_child(wearer)
-		wearer.queue_free()
-	elif wearer:
-		_cut_holdout(img)
-		holder.remove_child(wearer)
-		wearer.queue_free()
-	elif seam:
-		# The cut, as for a cut part: the body in white over its head in black, only the white kept.
-		_hold_out(model, Color.WHITE)
-		_hold_out(seam, Color.BLACK)
-		key.shadow_enabled = false
-		await _render()
-		key.shadow_enabled = true
-		var mask := get_texture().get_image()
-		var jc := cam.unproject_position(join)
-		seam_img = Image.create(img.get_width(), img.get_height(), false, Image.FORMAT_L8)
-		for y in img.get_height():
-			for x in img.get_width():
-				var mc := mask.get_pixel(x, y)
-				if mc.r < 0.5:
-					img.set_pixel(x, y, Color(0, 0, 0, 0))
-					if mc.a > 0.5 and jc.distance_to(Vector2(x, y)) <= join_r * px:
-						seam_img.set_pixel(x, y, Color.WHITE)
-		holder.remove_child(seam)
-		seam.queue_free()
-	var front_img: Image = null
-	if front:
-		# The near arm is its own layer, so it gets its own outline over the body.
-		model.visible = false
-		holder.add_child(front)
-		await _render()
-		front_img = get_texture().get_image()
-		holder.remove_child(front)
-		front.queue_free()
-		model.visible = true
-	var zero := cam.unproject_position(Vector3.ZERO)   # the model's origin: sockets are relative to it
-	var to2d := func(p: Vector3) -> Vector2: return (cam.unproject_position(p) - zero) / px
-	var origin := cam.unproject_position(pivot)   # the sprite's origin (a cut part's hip or neck; else the model's)
-	var flat := Vector3(view.x, 0.0, view.z).normalized()   # towards the camera, along the ground
 	if spec.has("sockets") and spec.sockets.has("seat") and not spec.sockets.has("girth"):
 		# The girth: the bottom of the barrel under the seat, where a rider's leg reaches down to.
 		var seat: Vector3 = spec.sockets.seat
@@ -308,34 +247,116 @@ func _bake_model(id: String, colours: Dictionary, bake_key: String, k := 0) -> v
 			if b.position.x <= seat.x and b.end.x >= seat.x and b.position.z <= 0.0 and b.end.z >= 0.0:
 				low = minf(low, b.position.y)
 		spec.sockets["girth"] = Vector3(seat.x, low, 0.0)
-	if spec.has("sockets"):
-		var rig := {"sockets": {}, "depth": {}}
-		for s in spec.sockets:
-			rig.sockets[s] = to2d.call(spec.sockets[s])
-			rig.depth[s] = spec.sockets[s].dot(flat)   # > 0: nearer the camera than the body's middle
-		# An engine's members beside it (crew, haulers; not those inside its frame or riding on top) are
-		# drawn over it or under it by which is in front where they overlap on screen, not by the socket's
-		# depth alone (a centaur crew's torso rose in front of a ram's roof drawn under it: placement C4).
-		var members: Array = spec.sockets.keys().filter(func(s): return (s.begins_with("crew") or s.begins_with("haul")) and not s.ends_with("_in") and not s.ends_with("_top"))
-		if not members.is_empty():
-			rig["front"] = _members_front(model, spec.sockets, members, view)
-		# Which way the model's front (+x) points on screen in this facing, to pick facings by.
-		rig.dir = (cam.unproject_position(Vector3(20, 0, 0)) - zero).normalized()
-		if spec.has("anchors"):   # a leg on the camera's side of the body is the near leg
-			rig.anchors = spec.anchors.map(func(a): var v: Vector2 = to2d.call(a[0]); return [v.x, v.y, a[1],
-				a[2] if k == 0 else (1 if a[0].dot(flat) > 0.0 else -1), a[3] if a.size() > 3 else 0, a[4] if a.size() > 4 else false,
-				a[0].z * flat.z > 0.0])   # a[4]: a hind leg (its body's legs.hind part); [6]: its side of the body faces the camera
-		if spec.has("torso_scale"):
-			rig.torso_scale = spec.torso_scale
-		if spec.has("gear_scale"):
-			rig.gear_scale = spec.gear_scale
-		if spec.has("carry"):
-			rig.carry = spec.carry
-		if spec.has("legs_under"):
-			rig.legs_under = spec.legs_under
-		PartShape.rigs[rig_id] = rig
-	holder.remove_child(model)
-	model.queue_free()
+	var base := azimuth
+	var shots := []   # per facing: {img, front_img, mask, origin, jc}
+	tl = _lap("build", tl)
+	for k in facings:   # all eight directions, none mirrored (Dominic: 8 baked facings)
+		azimuth = base + FACING_STEP * k
+		var view := _aim(box)
+		await _render()
+		tl = _lap("render", tl)
+		var shot := {"img": get_texture().get_image()}
+		tl = _lap("readback", tl)
+		if front:   # the near arm alone, so it gets its own outline over the body
+			for n in [model, wearer, seam]:
+				if n:
+					n.visible = false
+			front.visible = true
+			await _render()
+			shot.front_img = get_texture().get_image()
+			front.visible = false
+			for n in [model, wearer, seam]:
+				if n:
+					n.visible = true
+			tl = _lap("render", tl)
+		shot.origin = cam.unproject_position(pivot)   # the sprite's origin (a cut part's hip or neck; else the model's)
+		shot.jc = cam.unproject_position(join)
+		if spec.has("sockets"):
+			PartShape.rigs[id + PartShape.facing_suffix(k)] = _rig(spec, model, view, k, px)
+		shots.append(shot)
+		tl = _lap("rig", tl)
+	var cut := at != "" or seam != null
+	if cut:
+		# The cut: the part in white over what hides it (its body, or a body's head) in black, unlit;
+		# only the white is kept (not a key colour, which a green frog's own leg could match).
+		_hold_out(model, Color.WHITE)
+		_hold_out(wearer if at != "" else seam, Color.BLACK)
+		key.shadow_enabled = false
+		for k in facings:
+			azimuth = base + FACING_STEP * k
+			_aim(box)
+			await _render()
+			tl = _lap("render cut", tl)
+			shots[k].mask = get_texture().get_image()
+			tl = _lap("readback", tl)
+		key.shadow_enabled = true
+	azimuth = base
+	for n in [model, wearer, seam, front]:
+		if n:
+			holder.remove_child(n)
+			n.queue_free()
+	for k in facings:
+		var shot: Dictionary = shots[k]
+		var img: Image = shot.img
+		var seam_img: Image = null  # where the part meets another of the unit's parts: no outline there
+		if cut:
+			if joins or seam != null:
+				seam_img = _seam_mask(shot.mask, shot.jc, join_r * px)
+			img = _keep_white(img, shot.mask)
+		elif wearer:
+			_cut_holdout(img)
+		tl = _lap("cut loop", tl)
+		_finish(img, shot.get("front_img"), seam_img, shot.origin, bake_key + PartShape.facing_suffix(k), id + PartShape.facing_suffix(k))
+		tl = _lap("pixelize", tl)
+
+
+## Point the camera at the model from this facing (azimuth) and height, the key light from the
+## viewer's upper left, a little in front. Returns the direction towards the camera.
+func _aim(box: AABB) -> Vector3:
+	var az := deg_to_rad(azimuth)
+	var el := deg_to_rad(elevation)
+	var view := Vector3(sin(az) * cos(el), sin(el), cos(az) * cos(el))
+	cam.basis = Basis.looking_at(-view, Vector3.UP)
+	cam.position = box.get_center() + view * 150.0   # close enough for the shadow range
+	key.basis = Basis.looking_at(cam.basis * Vector3(0.55, -0.75, -1.0).normalized(), Vector3.UP)
+	return view
+
+
+## A facing's rig: the model's sockets on screen (part units from its origin) and how deep each is.
+func _rig(spec: Dictionary, model: Node3D, view: Vector3, k: int, px: float) -> Dictionary:
+	var zero := cam.unproject_position(Vector3.ZERO)   # the model's origin: sockets are relative to it
+	var to2d := func(p: Vector3) -> Vector2: return (cam.unproject_position(p) - zero) / px
+	var flat := Vector3(view.x, 0.0, view.z).normalized()   # towards the camera, along the ground
+	var rig := {"sockets": {}, "depth": {}}
+	for s in spec.sockets:
+		rig.sockets[s] = to2d.call(spec.sockets[s])
+		rig.depth[s] = spec.sockets[s].dot(flat)   # > 0: nearer the camera than the body's middle
+	# An engine's members beside it (crew, haulers; not those inside its frame or riding on top) are
+	# drawn over it or under it by which is in front where they overlap on screen, not by the socket's
+	# depth alone (a centaur crew's torso rose in front of a ram's roof drawn under it: placement C4).
+	var members: Array = spec.sockets.keys().filter(func(s): return (s.begins_with("crew") or s.begins_with("haul")) and not s.ends_with("_in") and not s.ends_with("_top"))
+	if not members.is_empty():
+		rig["front"] = _members_front(model, spec.sockets, members, view)
+	# Which way the model's front (+x) points on screen in this facing, to pick facings by.
+	rig.dir = (cam.unproject_position(Vector3(20, 0, 0)) - zero).normalized()
+	if spec.has("anchors"):   # a leg on the camera's side of the body is the near leg
+		rig.anchors = spec.anchors.map(func(a): var v: Vector2 = to2d.call(a[0]); return [v.x, v.y, a[1],
+			a[2] if k == 0 else (1 if a[0].dot(flat) > 0.0 else -1), a[3] if a.size() > 3 else 0, a[4] if a.size() > 4 else false,
+			a[0].z * flat.z > 0.0])   # a[4]: a hind leg (its body's legs.hind part); [6]: its side of the body faces the camera
+	if spec.has("torso_scale"):
+		rig.torso_scale = spec.torso_scale
+	if spec.has("gear_scale"):
+		rig.gear_scale = spec.gear_scale
+	if spec.has("carry"):
+		rig.carry = spec.carry
+	if spec.has("legs_under"):
+		rig.legs_under = spec.legs_under
+	return rig
+
+
+## One facing's sprite from its render: cropped, pixelized (with its near-arm layer), kept in
+## PartShape.baked with where the drawn part reaches furthest from its grip.
+func _finish(img: Image, front_img: Image, seam_img: Image, origin: Vector2, bake_key: String, rig_id: String) -> void:
 	var used := img.get_used_rect()
 	if front_img:
 		used = used.merge(front_img.get_used_rect())
@@ -354,13 +375,54 @@ func _bake_model(id: String, colours: Dictionary, bake_key: String, k := 0) -> v
 	# so a body with no arms can lay it couched whatever way it was modelled.
 	var o: Vector2 = PartShape.baked[bake_key].origin
 	var tip := Vector2.ZERO
-	for y in pix.get_height():
-		for x in pix.get_width():
-			if pix.get_pixel(x, y).a > 0.9 and (Vector2(x, y) - o).length() > tip.length():
-				tip = Vector2(x, y) - o
+	var data := pix.get_data()
+	var w := pix.get_width()
+	for i in range(3, data.size(), 4):
+		if data[i] > 229:   # (alpha over 0.9)
+			var d := Vector2((i / 4) % w, (i / 4) / w) - o
+			if d.length() > tip.length():
+				tip = d
 	if not PartShape.rigs.has(rig_id):
 		PartShape.rigs[rig_id] = {}
 	PartShape.rigs[rig_id]["tip"] = tip / art_scale
+
+
+## The render with only what the cut mask shows white (r >= 0.5) kept, the rest cleared: done by
+## the engine (the mask thresholded, its red and green read as luminance and alpha, a masked blit),
+## not pixel by pixel.
+static func _keep_white(img: Image, mask: Image) -> Image:
+	var out := Image.create(img.get_width(), img.get_height(), false, img.get_format())
+	var m: Image = mask.duplicate()
+	m.convert(Image.FORMAT_RG8)
+	var white := Image.create_from_data(m.get_width(), m.get_height(), false, Image.FORMAT_LA8, m.get_data()).get_used_rect()
+	if white.size == Vector2i.ZERO:
+		return out   # the body hides it all in this facing
+	var crop := mask.get_region(white)   # the rest works on the part's own box (the render holds its whole body)
+	crop.convert(Image.FORMAT_RGBA8)
+	crop.adjust_bcs(1.0, 1000.0, 1.0)   # each channel to 0 or 1 at 0.5
+	crop.convert(Image.FORMAT_RG8)
+	var la := Image.create_from_data(crop.get_width(), crop.get_height(), false, Image.FORMAT_LA8, crop.get_data())
+	out.blit_rect_mask(img.get_region(white), la, Rect2i(Vector2i.ZERO, white.size), white.position)
+	return out
+
+
+## Where a cut part meets what cuts it, near the join (within reach px of jc): the mask's black
+## (the body or head over it), white in an L8 image the size of the render.
+static func _seam_mask(mask: Image, jc: Vector2, reach: float) -> Image:
+	var w := mask.get_width()
+	var h := mask.get_height()
+	var out := Image.create(w, h, false, Image.FORMAT_L8)
+	var m: Image = mask.duplicate()
+	m.convert(Image.FORMAT_RGBA8)
+	var d := m.get_data()
+	var lo := Vector2i((jc - Vector2.ONE * reach).floor()).clamp(Vector2i.ZERO, Vector2i(w, h))
+	var hi := Vector2i((jc + Vector2.ONE * (reach + 1.0)).ceil()).clamp(Vector2i.ZERO, Vector2i(w, h))
+	for y in range(lo.y, hi.y):
+		for x in range(lo.x, hi.x):
+			var i := (y * w + x) * 4
+			if d[i] < 128 and d[i + 3] >= 128 and jc.distance_to(Vector2(x, y)) <= reach:
+				out.set_pixel(x, y, Color.WHITE)
+	return out
 
 
 static func _aabb(n: Node3D) -> AABB:
@@ -501,11 +563,16 @@ static func _hold_out(body: Node3D, colour := HOLDOUT) -> void:
 
 
 static func _cut_holdout(img: Image) -> void:
-	for y in img.get_height():
-		for x in img.get_width():
-			var c := img.get_pixel(x, y)
-			if c.a > 0.0 and c.g > 0.55 and c.g > c.r * 1.8 and c.g > c.b * 1.8:
-				img.set_pixel(x, y, Color(0, 0, 0, 0))
+	img.convert(Image.FORMAT_RGBA8)
+	var d := img.get_data()
+	for i in range(0, d.size(), 4):
+		var g := d[i + 1]
+		if d[i + 3] > 0 and g > 140 and g > d[i] * 1.8 and g > d[i + 2] * 1.8:   # (green over 0.55, well above red and blue)
+			d[i] = 0
+			d[i + 1] = 0
+			d[i + 2] = 0
+			d[i + 3] = 0
+	img.set_data(img.get_width(), img.get_height(), false, Image.FORMAT_RGBA8, d)
 
 
 ## Render this viewport once (BakeClock: drawn on demand, even while the window is hidden).

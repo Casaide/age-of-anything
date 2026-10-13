@@ -10,7 +10,7 @@ extends RefCounted
 
 const TEX_DIR := "res://assets/art/textures/"
 
-var tex_cache := {}
+static var tex_cache := {}   # shared by every baker (each used to rasterise the SVGs again)
 var hold := "low"   # the body being built: how its near hand holds the weapon (see arm_pose)
 
 

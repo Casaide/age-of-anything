@@ -336,12 +336,26 @@ one look of one building (with its stages and extra parts), nine props to a rend
   `user://bake_cache/<version>/`, the version a hash of the bake code, models, textures and art
   data: change any of them and everything bakes fresh. A race or culture seen before loads in
   milliseconds.
-- **Early.** The lobby's `ArtKit` bakes the armies, then warms up the props and both cultures'
-  buildings in the background (`ArtKit.warm`), and hands itself to the match.
+- **Only what's on screen first.** The lobby bakes just the few units a side's stage shows, at
+  their first age (`ArtKit.bake_steps`), for the side that changed only; parts draw from their
+  own textures until a match builds the atlas. Once every stage stands, the rest warms up behind
+  anything asked for up front (`ArtKit.warm`, cancelled when a prompt changes): every age of every
+  line, the portraits, the animals, props and buildings. The kit then goes to the match.
+- **Portraits once.** `ArtKit` paints a portrait once per recipe and team; a side rerolled
+  repaints only its own.
+- **The tech tree page** bakes what it shows and isn't ready yet (`ArtKit.bake_tree`: every line's
+  ages, their portraits, the culture's buildings) under its own loader (the forge veil and a bar).
 - **The match loader** (`scenes/match_loader.gd`) shows `ArtKit.progress()`, the share of the
-  asked-for jobs done, weighted by their renders.
+  asked-for jobs done, weighted by their renders. A job asked for twice runs once, so what the
+  lobby warmed only loads (or is already there).
+- **A modelled part is built once** and the camera goes round it for its eight facings; a cut part
+  then renders its eight cut masks, and the cut is an engine blit (`PartBaker._keep_white`), not a
+  pixel loop.
 
 `tests/art_bake_time.gd -- cold|warm|off` times a match start (two races, all their buildings).
+`tests/bake_profile.gd -- "prompt" [workers]` profiles a cold unit bake: time by kind of part, the
+slowest jobs, the baker's phases. `tests/lobby_bake_time.gd` times the lobby (both stages, a
+reroll, the tech tree, a match start) with no unit part loading from the cache.
 
 ## Checking art
 
