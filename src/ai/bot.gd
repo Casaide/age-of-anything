@@ -836,6 +836,14 @@ func _respond(w, tc: int, army: Array, workers: Array, hx: int, hy: int) -> void
 		raiders.append(at)
 		var i: int = w.units.index_of(id)
 		strength += int(w.types[w.units.kind[i]].pop) if i >= 0 else 4   # a tower counts like a few
+	# Their friends in sight round it are the same raid, blows struck yet or not (the ones held in
+	# duels with our workers hadn't, so a raid of six read as three and the call came late).
+	var trouble := TROUBLE_TILES * TROUBLE_TILES * 1000000
+	for i in w.units.count():
+		if w.is_foe(player, w.units.owner[i]) and not w.types[w.units.kind[i]].worker and not _threats.has(w.units.id[i]) \
+				and Fixed.dist2(w.units.x[i], w.units.y[i], f.x, f.y) <= trouble and Fog.visible(w, player, w.units.x[i], w.units.y[i]):
+			raiders.append(Vector2i(w.units.x[i], w.units.y[i]))
+			strength += int(w.types[w.units.kind[i]].pop)
 	var d := Fixed.isqrt(Fixed.dist2(f.x, f.y, hx, hy))
 	# A raid on the outskirts (a camp, workers at a far patch): a tower goes up there once it's quiet.
 	var tw: Dictionary = cfg.military.get("towers", {})

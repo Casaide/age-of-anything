@@ -162,7 +162,7 @@ static func _resume(w, i: int) -> void:
 	var kind := Economy.kind_of(w, w.map.resource_at(home))
 	if kind <= 0:
 		kind = u.carry_kind[i]
-		home = Economy.nearest_resource(w, u.x[i], u.y[i], kind, i) if kind > 0 else -1
+		home = Economy.nearest_resource(w, u.x[i], u.y[i], kind, i, false, false, true) if kind > 0 else -1
 	if home >= 0:
 		Economy.start_gather(w, i, home, kind)
 

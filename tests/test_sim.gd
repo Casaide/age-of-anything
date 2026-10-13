@@ -108,6 +108,9 @@ func _init() -> void:
 		"market": func(): _test_market(races),
 		"build_queue": func(): _test_build_queue(races),
 		"builder_moves_on": func(): _test_builder_moves_on(races),
+		"builder_back_to_work": func(): _test_builder_back_to_work(races),
+		"no_dark_picks": func(): _test_no_dark_picks(races),
+		"wood_spots": func(): _test_wood_spots(races),
 		"gates": func(): _test_gates(races),
 		"diagonal_wall": func(): _test_diagonal_wall(races),
 		"diagonal_gates": func(): _test_diagonal_gates(races),
@@ -1726,6 +1729,158 @@ func _test_builder_moves_on(races: Array) -> void:
 		if houses.size() == 2 and houses[0] == 1 and houses[1] == 1:
 			break
 	check(houses.size() == 2 and houses[0] == 1 and houses[1] == 1, "builders: done with one house, the builder goes on to finish the foundation nearby (%s)" % [houses])
+
+
+## Builders never wander off (Dominic: "one of my builders disappeared into the fog of war"): a
+## gatherer sent to build goes back to what it gathered when done, not to a foundation of yours
+## across the map; a builder with nothing to go back to stays by its building.
+func _test_builder_back_to_work(races: Array) -> void:
+	var w := World.new(SEED, SimMap.load_id("flat_test"), races, rules_)
+	w.stock[w.resources.find("wood")][0] = 1000
+	var ws := []
+	for i in w.units.count():
+		if w.units.owner[i] == 0 and w.types[w.units.kind[i]].worker:
+			ws.append(w.units.id[i])
+	var s: Array = w.map.starts[0]
+	var wood := Economy.kind_of(w, "wood")
+	var a: int = w.units.index_of(ws[0])
+	var tree := Economy.nearest_resource(w, w.units.x[a], w.units.y[a], wood, a)
+	w.issue(0, Commands.GATHER, {"ids": [ws[0]], "cell": tree})
+	for t in 200:
+		w.step()
+	a = w.units.index_of(ws[0])
+	var home: int = w.units.home[a]
+	check(home >= 0 and w.units.task[a] in [Economy.GATHER, Economy.RETURN], "builders: a woodcutter at work before building (task %d)" % w.units.task[a])
+	var hk := Economy.btype_of(w, "house")
+	var near := Vector2i(-1, -1)   # a house near the woodcutter's tree
+	var tx: int = home % w.map.width
+	var ty: int = home / w.map.width
+	for r in range(2, 7):
+		for dy in range(-r, r + 1):
+			for dx in range(-r, r + 1):
+				if near.x < 0 and Economy.can_place(w, 0, hk, tx + dx, ty + dy):
+					near = Vector2i(tx + dx, ty + dy)
+	var far := Vector2i(-1, -1)    # and one beyond NEXT_BUILD_TILES of it
+	for r in range(Economy.NEXT_BUILD_TILES + 3, Economy.NEXT_BUILD_TILES + 9):
+		for dx in [-r, r]:
+			if far.x < 0 and Economy.can_place(w, 0, hk, near.x + dx, near.y):
+				far = Vector2i(near.x + dx, near.y)
+	check(near.x >= 0 and far.x >= 0, "builders: room for the test's houses")
+	w.issue(0, Commands.BUILD, {"ids": [ws[0]], "building": "house", "cx": near.x, "cy": near.y})
+	w.issue(0, Commands.BUILD, {"ids": [ws[1]], "building": "house", "cx": far.x, "cy": far.y})
+	for t in 16:
+		w.step()
+	w.issue(0, Commands.MOVE, {"ids": [ws[1]], "x": s[0], "y": s[1]})   # walks off: the far house stays a foundation
+	var done := false
+	for t in 2000:
+		w.step()
+		done = _house_done(w, near)
+		if done:
+			break
+	for t in 40:
+		w.step()
+	a = w.units.index_of(ws[0])
+	check(done, "builders: the house near the woodcutter goes up")
+	check(w.units.task[a] in [Economy.GATHER, Economy.RETURN] and w.units.carry_kind[a] == wood,
+		"builders: done, the woodcutter goes back to its wood (task %d), not to the foundation %d tiles off" % [w.units.task[a], absi(far.x - near.x)])
+	# A builder with nothing gathered before, done far from any foundation: it stays by the building.
+	w.issue(0, Commands.STOP, {"ids": [ws[2]]})
+	for t in 12:
+		w.step()
+	var spot2 := Vector2i(-1, -1)
+	for dy in range(-8, 9):
+		for dx in range(-8, 9):
+			if spot2.x < 0 and absi(dx) + absi(dy) >= 4 and absi(s[0] / 1000 + dx - far.x) > Economy.NEXT_BUILD_TILES + 2 \
+					and Economy.can_place(w, 0, hk, s[0] / 1000 + dx, s[1] / 1000 + dy):
+				spot2 = Vector2i(s[0] / 1000 + dx, s[1] / 1000 + dy)
+	w.issue(0, Commands.BUILD, {"ids": [ws[2]], "building": "house", "cx": spot2.x, "cy": spot2.y})
+	var finished := -1
+	for t in 2500:
+		w.step()
+		if finished < 0 and _house_done(w, spot2):
+			finished = w.tick
+		elif finished >= 0 and w.tick > finished + 200:
+			break
+	var c: int = w.units.index_of(ws[2])
+	var d: int = Fixed.isqrt(Fixed.dist2(w.units.x[c], w.units.y[c], spot2.x * 1000 + 1000, spot2.y * 1000 + 1000))
+	check(finished >= 0 and w.units.task[c] == Economy.NONE and d < 3000,
+		"builders: with nothing to go back to and no foundation near, it stays by the building (task %d, %d milli-tiles off)" % [w.units.task[c], d])
+
+
+func _house_done(w: World, at: Vector2i) -> bool:
+	for b in w.buildings.count():
+		if w.buildings.owner[b] == 0 and w.buildings.cx[b] == at.x and w.buildings.cy[b] == at.y:
+			return w.buildings.done[b] == 1
+	return false
+
+
+## A worker's own picks (another tree when its tree falls, the nearest wood after a camp) are
+## only ever tiles its owner has seen: it never walks off into the unexplored on its own.
+func _test_no_dark_picks(races: Array) -> void:
+	var w := World.new(SEED, SimMap.load_id("flat_test"), races, rules_)
+	var wi := -1
+	for i in w.units.count():
+		if wi < 0 and w.units.owner[i] == 0 and w.types[w.units.kind[i]].worker:
+			wi = i
+	var wood := Economy.kind_of(w, "wood")
+	var x: int = w.units.x[wi]
+	var y: int = w.units.y[wi]
+	var seen := Economy.nearest_resource(w, x, y, wood, wi, false, false, true)
+	check(seen >= 0 and w.fog[0][seen] != 0, "dark picks: the nearest wood a worker picks is on explored ground")
+	var anywhere := Economy.nearest_resource(w, x, y, wood)
+	for c in w.map.width * w.map.height:   # forget everything
+		w.fog[0][c] = 0
+	var got := Economy.nearest_resource(w, x, y, wood, wi, false, false, true)
+	check(got == -1, "dark picks: with nothing explored, no wood is picked (%d)" % got)
+	check(anywhere >= 0 and Economy.nearest_resource(w, x, y, wood, wi) == anywhere, "dark picks: ... while a pick near where it was sent may still be there (the player sent it)")
+
+
+## Woodcutters stand at the forest edge, a tree and a side spot each (Dominic: three on one spot,
+## one reaching for a tree behind another): sent together to one tree, they spread along the edge,
+## each beside its own tree on open ground, never at a tree with no open side.
+func _test_wood_spots(races: Array) -> void:
+	var w := World.new(SEED, SimMap.load_id("old_forest"), races, rules_)
+	var worker: int = w.type_of(0, "worker")
+	var ids := []
+	while ids.size() < 7:
+		ids = []
+		for i in w.units.count():
+			if w.units.owner[i] == 0 and w.types[w.units.kind[i]].worker:
+				ids.append(w.units.id[i])
+		if ids.size() < 7:
+			Economy.spawn_at(w, 0, worker)
+	var m := w.map
+	var tree := 13 * m.width + 29   # the west edge of the wood east of the start
+	check(m.resource_at(tree) == "wood", "wood spots: the test's tree is a tree (%s)" % m.resource_at(tree))
+	w.issue(0, Commands.GATHER, {"ids": ids, "cell": tree})
+	var bad := 0
+	var shared := 0
+	var at_work := 0
+	for t in 1200:
+		w.step()
+		if t < 300 or t % 20 != 0:
+			continue
+		var held := {}
+		for id in ids:
+			var i: int = w.units.index_of(id)
+			var h: int = w.units.home[i]
+			if h < 0 or w.units.task[i] != Economy.GATHER:
+				continue
+			var open := false
+			for k in [[0, -1], [1, 0], [0, 1], [-1, 0]]:
+				open = open or m.cell_walkable(h % m.width + k[0], h / m.width + k[1], w.lane(i))
+			if not open or w.units.gspot[i] % 2 == 1:
+				bad += 1   # a tree with no open side, or a corner spot: reaching past a tree
+			var key: int = h * 8 + w.units.gspot[i]
+			if w.units.gspot[i] >= 0 and held.has(key):
+				shared += 1
+			held[key] = true
+			if w.units.moving[i] == 0:
+				at_work += 1
+	var got: int = w.gathered[w.resources.find("wood")][0]
+	check(bad == 0, "wood spots: woodcutters only work trees with an open side, from a side (%d bad samples)" % bad)
+	check(shared == 0, "wood spots: no two woodcutters hold the same spot (%d)" % shared)
+	check(at_work > 0 and got >= 60, "wood spots: they get to work (%d samples) and wood comes in (%d)" % [at_work, got])
 
 
 ## A long shift-queue of builds (a dragged wall) all goes up: taking the next order from a

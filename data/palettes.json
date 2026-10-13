@@ -5,16 +5,16 @@
    "#c8e6a0"
   ],
   "frog_blue": [
-   "#3f8fd2",
-   "#a8d4f5"
+   "#2f9fa6",
+   "#a8e0e0"
   ],
   "toad_brown": [
    "#8a7a4a",
    "#c8b88a"
   ],
   "poison_red": [
-   "#d84b3a",
-   "#f2a08a"
+   "#d4357a",
+   "#f4a8c8"
   ],
   "rat_grey": [
    "#8a8a8a",
@@ -103,8 +103,8 @@
    "#2e2b26"
   ],
   "newt_eft": [
-   "#d0582a",
-   "#f0a448",
+   "#e8862a",
+   "#f6b860",
    "#d42a1a",
    "#1e1410"
   ],
@@ -166,5 +166,5 @@
   "#e8c33a",
   "#8a4fd0"
  ],
- "_skins_doc": "skin palettes: [main, second] and, for patterned skins, more (skin3, skin4...: a newt's spots, the rings round them (none when the main colour), a fifth colour for a crest)"
+ "_skins_doc": "skin palettes: [main, second] and, for patterned skins, more (skin3, skin4...: a newt's spots, the rings round them (none when the main colour), a fifth colour for a crest). A main colour never reads as a team colour (CIE76 distance 30+ from every one, tests/run_tests.gd): a red frog on the blue side looked like the enemy (Dominic, 2026-10-13), so poison_red is raspberry, frog_blue teal, newt_eft orange"
 }
