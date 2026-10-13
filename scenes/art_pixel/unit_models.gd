@@ -50,7 +50,14 @@ static func _is_engine(id: String) -> bool:
 
 ## Body armour modelled for one body in that body's space (tools/blender/human_armour.py:
 ## armour_<kind>_<creature>.glb), or {} to fit the generic model at bake time.
+## A draught harness has no model off its wearer: it's always fitted on the beast (fitted below).
+func _harness_draught(_c: Dictionary) -> Dictionary:
+	return {"node": Node3D.new()}
+
+
 func fitted(armour_id: String, body_id: String, colours: Dictionary) -> Dictionary:
+	if armour_id.begins_with("harness."):   # a draught harness, fitted on its beast (siege_models.gd)
+		return _siege().harness_fitted(armour_id, body_id, colours)
 	var kind := armour_id.trim_prefix("armour.")
 	var name := "armour_%s_%s" % [kind, body_id.trim_prefix("body.")]
 	if not FileAccess.file_exists("res://assets/models/%s.glb" % name):

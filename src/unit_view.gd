@@ -185,7 +185,7 @@ func build(r: Dictionary, lib, team: Color, speed := 10) -> void:
 		if pb.has("legs") and pb.legs.has("gait"):
 			gait = gait.duplicate()
 			gait.merge(pb.legs.gait, true)
-		_idle_poses = pb.get("idle_poses", [])
+		_idle_poses = pb.get("idle_poses", []) if int(r.get("idle", 1)) != 0 else []   # (a beast in harness stands in its traces)
 	if _sit_after < 0.0 and not _idle_poses.is_empty():
 		_sit_after = noise.randf_range(SIT_AFTER.x, SIT_AFTER.y)
 	idle_wait = noise.randf_range(1.0, 5.0)
@@ -233,17 +233,21 @@ func _build_engine(r: Dictionary, lib, team: Color, colours: Dictionary, speed: 
 	var rig: Dictionary = PartShape.rigs.get(r.body + PartShape.facing_suffix(facing_k), PartShape.rigs.get(r.body, {}))
 	var sockets: Dictionary = rig.get("sockets", {})
 	var depth: Dictionary = rig.get("depth", {})
-	# A crew member too big for the frame (a centaur) takes the "_wide" sockets beside it, not "_in".
-	var wide: bool = r.crew.has("mount")
-	var names: Array = sockets.keys().filter(func(s): return s.begins_with("crew") and not s.ends_with("_wide" if not wide else "_in"))
+	# Its crew (the race's workers) and the beasts hauling it (the recipe's `haul`), in one depth order:
+	# the members on the camera's side over the engine, the rest under it, the nearest drawn last (a
+	# handler beside a trade cart's cat drew under the cat in every facing: Dominic, TC1).
+	var names: Array = engine_sockets(r, sockets)
 	names.sort_custom(func(a, b): return float(depth[a]) < float(depth[b]) or (depth[a] == depth[b] and a < b))
-	var cr: Dictionary = r.crew.duplicate(true)
-	cr.merge({"creature": r.creature, "family": r.family, "slot": "worker", "role": "worker", "tier": 1, "name": ""})
+	var cr := crew_recipe(r)
+	var hr := haul_recipe(lib, r) if r.has("haul") else {}
 	for n in names.size():
 		var name: String = names[n]
+		var hauls: bool = name.begins_with("haul")
 		var face := facing_k
 		var hold := "low"
-		var z := 1.0 if float(depth[name]) > 0.0 else -1.0
+		# Over the engine or under it: by which is in front where they overlap on screen (the bake's
+		# "front", part_baker._members_front), else by the socket's depth.
+		var z := 1.0 if rig.get("front", {}).get(name, float(depth[name]) > 0.0) else -1.0
 		var top := false
 		for t in name.split("_"):
 			if t.begins_with("f") and t.length() == 2:
@@ -257,35 +261,43 @@ func _build_engine(r: Dictionary, lib, team: Color, colours: Dictionary, speed: 
 				top = true
 		var v = get_script().new()
 		v.facing_k = face
-		v.build(cr, lib, team, speed)
+		v.build(hr if hauls else cr, lib, team, speed)
 		v.position = sockets[name]
 		v.set_meta("z", z + n * 0.01)   # the same layer: nearest the camera last
-		v.rest_hold = hold
-		v.set_hold(hold)
-		v.phase = 0.7 * n
+		if not hauls:
+			v.rest_hold = hold
+			v.set_hold(hold)
+		v.phase = 0.4 if hauls else 0.7 * n
 		bob.add_child(v)
-		crew.append({"view": v, "top": top})
-	# A beast pulling it (the recipe's `haul`: {creature, skin}, a trade cart's pony): the bare
-	# creature, walking, on each "haul<n>_f<k>" socket, layered by the socket's depth like the crew.
+		crew.append({"view": v, "top": top, "socket": name})
+
+
+## The sockets an engine's members stand on: its crew's ("crew<n>_f<k>[_reach|_raise][_in|_top]"; a
+## crew member too big for the frame, a centaur, takes the "_wide" ones beside it, not "_in") and the
+## beasts hauling it ("haul<n>_f<k>"). The placement check composes the same (tests/placement/composite_3d.gd).
+static func engine_sockets(r: Dictionary, sockets: Dictionary) -> Array:
+	var wide: bool = r.crew.has("mount")
+	# A "_wide" socket stands in for its namesake ("crew0_f0_reach_in", "crew2_f0_reach") for such a crew.
+	var out: Array = sockets.keys().filter(func(s): return s.begins_with("crew") and (s.ends_with("_wide") == wide or (wide and not sockets.has(s.trim_suffix("_in") + "_wide") and not s.ends_with("_in"))))
 	if r.has("haul"):
-		var hc: Dictionary = lib.creatures[r.haul.creature]
-		var hr := {"slot": "beast", "role": "beast", "tier": 1, "creature": r.haul.creature, "family": r.family, "skin": r.haul.skin,
-			"body": hc.get("mount_body", hc.body), "head": hc.head, "parts": {}, "scale": 100, "name": ""}
-		var hauls: Array = sockets.keys().filter(func(s): return s.begins_with("haul"))
-		hauls.sort()
-		for name in hauls:
-			var face := facing_k
-			for t in name.split("_"):
-				if t.begins_with("f") and t.length() == 2:
-					face = (facing_k + int(t.substr(1))) % FACINGS
-			var v = get_script().new()
-			v.facing_k = face
-			v.build(hr, lib, team, speed)
-			v.position = sockets[name]
-			v.set_meta("z", (1.0 if float(depth[name]) > 0.0 else -1.0) + 0.005)
-			v.phase = 0.4
-			bob.add_child(v)
-			crew.append({"view": v, "top": false})
+		out += sockets.keys().filter(func(s): return s.begins_with("haul"))
+	return out
+
+
+## An engine's crew member: the race's age-1 worker (the recipe's `crew`).
+static func crew_recipe(r: Dictionary) -> Dictionary:
+	var cr: Dictionary = r.crew.duplicate(true)
+	cr.merge({"creature": r.creature, "family": r.family, "slot": "worker", "role": "worker", "tier": 1, "name": ""})
+	return cr
+
+
+## The beast hauling an engine (the recipe's `haul`: {creature, skin, parts?}): the bare creature, on
+## its mount body if it has one, wearing what the haul names (a draught harness, {"torso": "harness.draught"}).
+## It never sits down in its traces ("idle": 0: no idle poses).
+static func haul_recipe(lib, r: Dictionary) -> Dictionary:
+	var hc: Dictionary = lib.creatures[r.haul.creature]
+	return {"slot": "beast", "role": "beast", "tier": 1, "creature": r.haul.creature, "family": r.family, "skin": r.haul.skin,
+		"body": hc.get("mount_body", hc.body), "head": hc.head, "parts": r.haul.get("parts", {}).duplicate(true), "scale": 100, "name": "", "idle": 0}
 
 
 ## An engine's frame: it rolls (a little rock while it moves, none of a walker's bob), its crew
@@ -598,6 +610,37 @@ func _rebuild() -> void:
 	set_hold(hold)
 
 
+## Pushing a load home (D-127: the rats push the scrap barrow with stone, the handcart with gold;
+## creatures.json push_home): set_tool("push:<engine part>") makes the view that engine with the unit
+## as its crew (an engine composite, checked whole by the placement check), any other tool turns it
+## back. Only once the engine is baked (else it carries as before: nothing shows magenta).
+var _own_recipe := {}   # the unit's own recipe while it pushes
+
+
+func _push(engine_id: String) -> void:
+	if engine_id == "":
+		_built[0] = _own_recipe
+		_own_recipe = {}
+	elif not PartShape.rigs.has(engine_id + PartShape.facing_suffix(facing_k)) and not PartShape.rigs.has(engine_id):
+		return
+	elif _own_recipe.is_empty():
+		_own_recipe = _built[0]
+		_built[0] = push_recipe(_own_recipe, engine_id)
+	elif _built[0].body != engine_id:
+		_built[0] = push_recipe(_own_recipe, engine_id)
+	else:
+		return
+	_rebuild()
+
+
+## A worker pushing an engine home: the engine, the worker its crew, its hands on the handles.
+static func push_recipe(r: Dictionary, engine_id: String) -> Dictionary:
+	var crew := {"body": r.body, "head": r.head, "skin": r.skin, "parts": r.parts.duplicate(), "scale": r.get("scale", 100)}
+	crew.parts.erase("hand_r")
+	return {"slot": r.slot, "role": r.get("role", r.slot), "tier": r.get("tier", 1), "creature": r.creature, "family": r.family, "skin": r.skin,
+		"body": engine_id, "head": "", "parts": {}, "scale": 100, "name": r.get("name", ""), "crew": crew}
+
+
 ## Swap what the hand holds (a worker's tool for the job, or the load it carries home),
 ## if that part is baked. Job tools are held low; a load tagged "shoulder" (a bundle of reeds,
 ## a haunch of meat) is carried with the arm up at the shoulder, the load lying back over it
@@ -607,6 +650,11 @@ const LOAD_Z := 1.2   # between the body (0) and its near arm (1.5)
 
 
 func set_tool(lib, part_id: String) -> void:
+	if part_id.begins_with("push:"):
+		_push(part_id.substr(5))
+		return
+	if not _own_recipe.is_empty():
+		_push("")   # home: the barrow is left, the worker carries on as itself
 	if weapon == null or harnessed or weapon.part_id == part_id:
 		return
 	var p: Dictionary = lib.part(part_id)
@@ -687,6 +735,17 @@ func set_hold(hold: String) -> void:
 	if weapon != null:
 		weapon.position = rig.sockets.hand_r if hold != "low" and rig.has("sockets") and rig.sockets.has("hand_r") else _hand_rest
 		weapon_rest = weapon.position
+		# Over or under the body by where the hand is in this hold, as _attach does for the body's own:
+		# a tool wound up high facing away is on the camera's side, and drew under the body (the
+		# placement check on the catapult and great sling crews, 2026-10-13).
+		if facing_k != 0 and not harnessed and rig.has("depth") and rig.depth.has("hand_r"):
+			var side := 1.0 if float(rig.depth.hand_r) >= -0.5 else -1.0
+			var tool_z: float = weapon.get_meta("tool_z", weapon.get_meta("z", Z_FOR_SLOT.hand_r))
+			weapon.set_meta("tool_z", absf(tool_z) * side)
+			var cur: float = weapon.get_meta("z", tool_z)
+			if absf(cur) * side != cur:
+				weapon.set_meta("z", absf(cur) * side)   # (a load keeps its LOAD_Z, a tool its own)
+				_sort_layers(weapon.get_parent())
 
 
 ## A pose on top of the animation, for concept sheets: kneel (0..1: the front legs fold and

@@ -1,0 +1,18 @@
+{
+ "name": "rat_push_home",
+ "title": "Rats carrying stone and gold home (D-127): in their arms before, pushing the scrap barrow and the handcart now",
+ "_doc": "The worker as the game draws it carrying home (set hand_r: the load it held before D-127), and pushing (push: UnitView.push_recipe, creatures.json push_home).",
+ "zooms": [3, 1],
+ "cell": [90, 64],
+ "size": [{"prompt": "sewer rats", "slot": "worker"}],
+ "rows": [
+  {"label": "sewer rats\nstone, carried\n(before)", "expect": ["A3 no cutting through"], "unit": {"prompt": "sewer rats", "slot": "worker", "set": {"parts": {"hand_r": "load.stone"}}}},
+  {"label": "sewer rats\nstone, pushed\nin the scrap barrow", "unit": {"prompt": "sewer rats", "slot": "worker", "push": "siege.barrow.junk"}},
+  {"label": "sewer rats\ngold, carried\n(before)", "unit": {"prompt": "sewer rats", "slot": "worker", "set": {"parts": {"hand_r": "load.gold"}}}},
+  {"label": "sewer rats\ngold, pushed\nin the handcart", "unit": {"prompt": "sewer rats", "slot": "worker", "push": "siege.handcart.junk"}}
+ ],
+ "sheets": [
+  {"name": "four", "title": "four facings", "columns": [{"facing": 0, "label": "f0 right"}, {"facing": 2, "label": "f2 towards"}, {"facing": 5, "label": "f5"}, {"facing": 6, "label": "f6 away"}]},
+  {"name": "walk", "title": "walking, facing 0 and 5", "columns": "walk:0,5"}
+ ]
+}

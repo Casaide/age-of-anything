@@ -21,6 +21,7 @@ const UnitModels := preload("res://scenes/art_pixel/unit_models.gd")
 const PartBaker := preload("res://scenes/art_pixel/part_baker.gd")
 const Rig3D := preload("res://tests/placement/rig3d.gd")
 const Geom := preload("res://tests/placement/geom.gd")
+const Composite2D := preload("res://tests/placement/composite_2d.gd")
 
 ## Poses: [name, walking, phase].
 const POSES := [["stand", false, 0.0], ["walk0", true, 0.0], ["walk1", true, 2.1], ["walk2", true, 4.2]]
@@ -83,13 +84,11 @@ func check_case(holder: Node2D, label: String, u: Dictionary, tweak := Callable(
 		if u.recipe.has("mount"):
 			var mc: Dictionary = lib.creatures[u.recipe.mount.creature]
 			walker = mc.get("fused_body", mc.body) if u.recipe.mount.fused else mc.get("mount_body", mc.body)
-		for bp in lib.part(walker).get("idle_poses", []):
+		for bp in (lib.part(walker).get("idle_poses", []) if int(u.recipe.get("idle", 1)) != 0 else []):
 			poses.append([bp, false, 0.0, bp])
 	for k in 8:
 		var stand := {}
 		for pose in poses:
-			if pose[1] and u.recipe.has("crew"):
-				continue   # an engine rolls; its crew's walk is a worker's, checked with the workers
 			var v = UnitView.new()
 			v.facing_k = k
 			if pose.size() > 3:
@@ -107,9 +106,16 @@ func check_case(holder: Node2D, label: String, u: Dictionary, tweak := Callable(
 				tweak.call(v, pose[0])
 				v._sort_layers(v)
 			if u.recipe.has("crew"):
-				_check_crew(v, label, "f%d" % k)
+				if not pose[1]:
+					_check_crew(v, label, "f%d" % k)
+				# The engine, its crew and haulers as a whole: each member checked as a unit, standing and
+				# walking; who draws over whom against the 3D truth (tests/placement/composite_2d.gd).
+				await Composite2D.check_engine_view(self, v, label, k, u, stand, pose)
 			else:
 				await _check_view(v, label, "f%d %s" % [k, pose[0]], k, u, stand)
+				if pose[1]:
+					Composite2D.walk_legs(self, v, label, "f%d %s" % [k, pose[0]], u, float(pose[2]))
+				Composite2D.coverage(self, v, label, "f%d %s" % [k, pose[0]])
 			holder.remove_child(v)
 			v.free()
 	rig3d.clear()
@@ -317,7 +323,7 @@ func _check_view(v, label: String, view: String, k: int, u: Dictionary, stand: D
 func _anchor_near(parts: Array, leg: int, rest: Vector2, k: int) -> bool:
 	var root: Node = parts[leg].node.get_parent()
 	for c in root.get_children():
-		if c is PartShape and not c.front and lib.part(c.part_id.get_slice("@", 0)).slot == "body":
+		if c is PartShape and not c.front and lib.part(c.part_id.get_slice("~", 0).get_slice("@", 0)).slot == "body":
 			var rig: Dictionary = PartShape.rigs.get(c.part_id + PartShape.facing_suffix(k), PartShape.rigs.get(c.part_id, {}))
 			var anchors: Array = rig.get("anchors", lib.part(c.part_id.get_slice("@", 0)).get("legs", {}).get("anchors", []))
 			for a in anchors:
@@ -700,7 +706,7 @@ func _check_crew(v, label: String, view: String) -> void:
 			if (s.begins_with("crew") or s.begins_with("haul")) and rig.sockets[s].distance_to(c.view.position) < 0.01:
 				name = s   # (a hauling beast's too: a trade cart's pony, UnitView._build_engine)
 		var over: bool = c.view.get_index() > engine.get_index()
-		var want: bool = float(rig.depth[name]) > 0.0
+		var want: bool = rig.get("front", {}).get(name, float(rig.depth[name]) > 0.0)   # (which is in front where they overlap: part_baker._members_front)
 		if name.ends_with("_in"):
 			want = false
 		elif name.ends_with("_top"):

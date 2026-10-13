@@ -50,6 +50,7 @@ static func run(lib) -> Array:
 			"human in a leather cap", ["A2 an open cap clear of the brow"],
 			func(g): g.rig.overrides["helm.cap"] = func(c): return _old_cap(g.rig.models, c), func(g): g.rig.overrides.erase("helm.cap"), human],
 	]
+	list += composite_fixtures(cases)
 	var ok := true
 	var lines := []
 	for f in list:
@@ -99,3 +100,31 @@ static func _swap_kit(name: String, changes: Dictionary) -> void:
 		return
 	_kept_kit[name] = CreatureKit.kits[name]
 	CreatureKit.kits[name] = CreatureKit._merge(_kept_kit[name], changes)
+
+
+## Composites put back (tests/placement/composite_3d.gd): TC1 A for rats as Dominic saw it ("this is
+## bugged, did the tests not catch it?"): the cart's rope traces from a swingletree to points in the air
+## by the cat's chest, no harness on the cat, the cart floating behind (cart_concepts.gd a_v1). (The
+## rat "inside the cat" was the layering, not the 3D: fixtures_2d.gd puts that back.)
+const TC1_RATS := "composite: sewer rats tc1_a_junk hauled by a cat"
+
+
+static func composite_fixtures(cases: Dictionary) -> Array:
+	var u: Dictionary = cases[TC1_RATS]
+	var carts = UnitModels.extra.filter(func(e): return e.has_method("a_v1"))[0]
+	var keep: Dictionary = u.recipe.haul.parts.duplicate()
+	return [
+		["TC1 A for rats as first drawn (the traces loose lines to the air by the cat's chest, no harness, the cart floating behind)",
+			TC1_RATS, ["C2 a hauler wears its harness", "C2 a hauler's hitches on the cart", "C3 no loose ends"],
+			func(g): _put(g, u, func(c): return carts.a_v1("junk", c), {}),
+			func(g): _put(g, u, null, keep), {}],
+	]
+
+
+## The cart's model put back (or today's: build null) and the cat's harness (parts).
+static func _put(g, u: Dictionary, build: Variant, parts: Dictionary) -> void:
+	if build == null:
+		g.rig.overrides.erase("concept.tc1_a_junk")
+	else:
+		g.rig.overrides["concept.tc1_a_junk"] = build
+	u.recipe.haul.parts = parts.duplicate()
