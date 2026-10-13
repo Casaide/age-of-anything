@@ -29,7 +29,12 @@
   "rebalance_every": 2,
   "build_push": 30,
   "plenty": 600,
-  "_doc": "max_workers: per age, the most workers it trains. age_workers: with this many it stops training workers and saves for age 2; age3_workers: with this many in age 2 it saves for age 3 (soldiers and research leave the cost alone until the age-up is clicked; the guard trains while it runs). rebalance_every: seconds between moving one gatherer from the resource most over its share to the one most under. Shares: the mix, leaning to what it saves for (the next age: a hundred shares split by what it lacks, the rest halved; a build step waiting on resources: build_push shares); none on a stock of `plenty` (more than it saves for)."
+  "_doc": "max_workers: per age, the most workers it trains. age_workers: with this many it stops training workers and saves for age 2; age3_workers: with this many in age 2 it saves for age 3 (soldiers and research leave the cost alone until the age-up is clicked; the guard trains while it runs). rebalance_every: seconds between moving one gatherer from the resource most over its share to the one most under. Shares: the mix, leaning to what it saves for (the next age: a hundred shares split by what it lacks, the rest halved; a build step waiting on resources: build_push shares); none on a stock of `plenty` (more than it saves for). trade (bot.gd _trade): with a market, gold over `above` buys a lot of the lower of food and wood while it's under `below`; with gold under `below` too, the biggest other pile over `above` is sold; one trade every `every` seconds.",
+  "trade": {
+   "every": 5,
+   "above": 500,
+   "below": 200
+  }
  },
  "_doc_mix": "economy.mix: per age, the share of workers on each resource (the bot sends idle and new workers to whatever is furthest below its share, and moves one gatherer at a time over to it)",
  "build_order": [
@@ -84,11 +89,23 @@
    "save": 1
   },
   {
+   "building": "market",
+   "age": 2,
+   "workers": 22,
+   "save": 2
+  },
+  {
    "building": "watchtower",
    "age": 2,
    "near": "gold",
    "workers": 22,
    "save": 1
+  },
+  {
+   "building": "watchtower",
+   "age": 2,
+   "workers": 24,
+   "guard": 1
   },
   {
    "building": "university",
@@ -121,12 +138,9 @@
    "near": "wood",
    "away": 12,
    "workers": 40,
-   "builders": 4
-  },
-  {
-   "building": "market",
-   "age": 2,
-   "workers": 34
+   "builders": 4,
+   "expand_workers": 30,
+   "own_side": 1
   },
   {
    "building": "stable",
@@ -134,7 +148,7 @@
    "workers": 36
   }
  ],
- "_doc_build_order": "each step: a building, from `age`, once it has `workers`; `near` lays it by the nearest patch of that resource (`away`: at least that many tiles from the Town Center); `builders`: workers sent (2 by default); `count`: how many of that building the step wants in all (default: one more than the steps before it). `save`: a building-up level's soldiers leave its cost alone while it waits (the buildings the ages and the content need, not the extra ones). Steps go in order; a later age's step doesn't hold up this age's. A step it can't afford yet is what it saves for (economy shares).",
+ "_doc_build_order": "each step: a building, from `age`, once it has `workers`; `near` lays it by the nearest patch of that resource (`away`: at least that many tiles from the Town Center); `builders`: workers sent (2 by default); `count`: how many of that building the step wants in all (default: one more than the steps before it). `save`: a building-up level's soldiers leave its cost alone while it waits (the buildings the ages and the content need, not the extra ones); 2: every level's do (the market: it turns piles nobody spends into the wood and food soldiers need). Steps go in order; a later age's step doesn't hold up this age's. A step it can't afford yet is what it saves for (economy shares). `expand_workers`: the workers it waits for instead on a big map or once home runs thin (expand.town). `own_side`: `near` only by patches nearer us than the enemy (ground we can hold). `guard`: only a level that guards its crossing (levels.guard_crossing) takes this step, once it has been on the back foot (the enemy army it remembers outnumbering its own by land.defend_pct), and lays it on the key crossing (land; where there's no room for it there, by the Town Center).",
  "military": {
   "queue": 2,
   "defend_tiles": 10,
@@ -193,7 +207,22 @@
    },
    "towers_within": 14
   },
-  "_doc_siege": "siege (Siege Workshop, age 3): the bot keeps at most max of each engine (out and queued); on its regroup beats its rams go for the nearest enemy gate, wall or tower it can see (else any building), its catapults for a tower within towers_within tiles of them, else they keep with the army"
+  "_doc_siege": "siege (Siege Workshop, age 3): the bot keeps at most max of each engine (out and queued); on its regroup beats its rams go for the nearest enemy gate, wall or tower it can see (else any building), its catapults for a tower within towers_within tiles of them, else they keep with the army",
+  "raid_targets": [
+   "lumber_camp",
+   "mining_camp",
+   "mill",
+   "farm",
+   "pen",
+   "market"
+  ],
+  "raid_safe": 2,
+  "raid_min": 4,
+  "_doc_raids": "A level with `raids` (levels) sends each wave and push at the enemy's economy first: the buildings of raid_targets it remembers (fog memory) that stand out of reach of their shooting buildings (by raid_safe tiles more), in up to `raids` groups of at least raid_min, nearest first; with none left, the Town Center as before.",
+  "contain_pop": 30,
+  "contain_gap": 3,
+  "_doc_contain": "contain_pop, contain_gap: an army smaller than contain_pop (population) doesn't storm a Town Center under the enemy's towers, Castle or Town Center arrows (fog memory): it waits on its way in, contain_gap tiles out of their reach, and goes in once it's that big (bot.gd _contain_point). dominant_pct: an army this many percent of the enemy army it remembers (or more) skips raids and goes for the Town Centers (waiting first if it's under contain_pop).",
+  "dominant_pct": 250
  },
  "research": {
   "_doc": "Besides line upgrades (and gathering, for building-up levels): the economy research it buys (economy, then buildings: the University's, Bastion once it has a tower), and the soldiers' research it buys once that research reaches at least army_min of its soldiers (the armoury track for what it fields). Both keep back what it's saving for (the next age, a blocked build step) once it has the workers to age up.",
@@ -230,7 +259,7 @@
   "_doc": "a Wonder (bot.gd _wonder): from `age`, with none of its own standing or going up, once its stock of every resource is at least spare_pct percent of the Wonder's cost, it lays one by its Town Center and sends `builders` workers. Every bot also attacks a Wonder it knows of (seen, or finished: everyone hears of that) before anything else, and a finished one at once"
  },
  "levels": {
-  "_doc": "difficulty, as in the genre: easier bots build up more and fight less, but grow all game (no caps, up to the population limit). delay: seconds added to every wave's time; army_pct: the share of each wave's minimum army; army_ratio: soldiers kept (population) as a percent of its workers per age (50: half its workers in age 1, as many in age 2, one and a half in age 3; absent: no limit); wave_pct: the share of its army each wave sends (the rest defend); build_up: research gathering and line upgrades before soldiers; age3_workers: workers before it saves for age 3 (economy.age3_workers otherwise); towers: Watchtowers it raises where it was raided; shelter_pop: the raid (enemy population) that makes it call its workers to arms (absent: never); all_in: an army this big (population) goes out whole on its wave, home guard and all (absent: never). (Dominic: not caps; less focus on fighting, more building up.)",
+  "_doc": "difficulty, as in the genre: easier bots build up more and fight less, but grow all game (no caps, up to the population limit). delay: seconds added to every wave's time; army_pct: the share of each wave's minimum army; army_ratio: soldiers kept (population) as a percent of its workers per age (50: half its workers in age 1, as many in age 2, one and a half in age 3; absent: no limit); wave_pct: the share of its army each wave sends (the rest defend); build_up: research gathering and line upgrades before soldiers; age3_workers: workers before it saves for age 3 (economy.age3_workers otherwise); towers: Watchtowers it raises where it was raided; shelter_pop: the raid (enemy population) that makes it call its workers to arms (absent: never); all_in: an army this big (population) goes out whole on its wave, home guard and all (absent: never). (Dominic: not caps; less focus on fighting, more building up.) guard_crossing: 1 puts a Watchtower on the key crossing (land). raids: waves and pushes go for the enemy's economy outside tower range first, in up to this many groups (military.raid_targets), from raid_from seconds (Normal: a long match's way out of a stand-off; Hard: from the start).",
   "easy": {
    "delay": 300,
    "army_pct": 50,
@@ -240,7 +269,8 @@
    "age3_workers": 24,
    "towers": 3,
    "shelter_pop": 2,
-   "all_in": 60
+   "all_in": 60,
+   "guard_crossing": 1
   },
   "normal": {
    "delay": 120,
@@ -251,7 +281,10 @@
    "age3_workers": 26,
    "towers": 2,
    "shelter_pop": 4,
-   "all_in": 36
+   "all_in": 36,
+   "guard_crossing": 1,
+   "raids": 2,
+   "raid_from": 1200
   },
   "hard": {
    "delay": 0,
@@ -259,7 +292,96 @@
    "age3_workers": 30,
    "towers": 1,
    "shelter_pop": 8,
-   "all_in": 24
+   "all_in": 24,
+   "guard_crossing": 0,
+   "raids": 3,
+   "build_up": 1
   }
+ },
+ "scout": {
+  "worker_at": 9,
+  "worker_before": 240,
+  "worker_seconds": 150,
+  "soldier_age": 2,
+  "soldier_army": 6,
+  "soldier_seconds": 120,
+  "every": 300,
+  "enemy_tiles": 7,
+  "points": 6,
+  "memory": 180,
+  "_doc": "src/ai/scout.gd. A worker tours once it has worker_at workers (before worker_before seconds) for up to worker_seconds: round the enemy's start at enemy_tiles, then up to `points` crossings and the middle, nearest next; then back to work. From soldier_age, with an army of soldier_army, the fastest idle soldier at home tours every `every` seconds (soldier_seconds at most). Hit, a scout runs home. Enemy soldiers seen are remembered `memory` seconds (counter-picks read the memory)."
+ },
+ "land": {
+  "study_every": 2,
+  "search_cells": 1200,
+  "our_every": 20,
+  "their_every": 30,
+  "bridge_every": 30,
+  "detour_every": 20,
+  "flank_every": 40,
+  "flank_apart": 5,
+  "flank_pct": 60,
+  "flank_share": 40,
+  "flank_min": 6,
+  "detour_pct": 50,
+  "under_fire": 60,
+  "target_tiles": 10,
+  "cut_pct": 30,
+  "mend_pct": 20,
+  "defend_pct": 130,
+  "cut_enemy": 6,
+  "breakers": 6,
+  "guard_tiles": 6,
+  "guard_range": 24,
+  "hills": {
+   "every_check": 2,
+   "army": 3,
+   "near": 10,
+   "tiles": 5,
+   "every": 10
+  },
+  "road": {
+   "max": 2,
+   "workers": 16,
+   "every": 120,
+   "tree": 25,
+   "save": 5,
+   "pct": 10,
+   "trees": 6,
+   "fellers": 3,
+   "far": 12,
+   "side_pct": 100,
+   "camp": 4
+  },
+  "_doc": "src/ai/land.gd. One study (a whole-map route search, search_cells cells settled a think: a few thinks each on the big maps) every study_every seconds, each kept fresh: our way (every our_every s), their way (their_every: its crossing is the key crossing), each bridge (bridge_every: a broken one that makes our way to their start mend_pct shorter, or is the only way, is mended by two workers; a standing one whose loss makes their way cut_pct longer is broken by `breakers` melee soldiers once they field cut_enemy population, when we swim or they outnumber us by defend_pct), a detour round enemy fire over our way: archers on a hill, and the towers it remembers that don't stand within target_tiles of the target (each cell under fire costs under_fire more; taken if no more than detour_pct longer), an amphibious flank kept flank_apart cells off our way (no more than flank_pct longer; flank_share percent of a wave of flank_min or more goes that way). guard_tiles, guard_range: a level that guards lays the build order's `guard` Watchtower within guard_tiles of where their way leaves the key crossing on our side, if that's within guard_range tiles of home (if there's room; else where the step says). hills: ranged soldiers with `army` enemy soldiers within `near` tiles step up to higher ground within `tiles` (every `every` s each; looked at every every_check s). road: up to `max` roads, studied every `every` s once there are `workers`: trees at `tree` per cell (open ground 10), the cell beyond `far` tiles (steps across and down) whose way gets shortest, if by `save` tiles and `pct` percent, with no more than `trees` trees, all on our side (distance squared to home under side_pct percent of that to the enemy's start): `fellers` workers fell them, from a lumber camp they lay by it if nothing of ours takes wood within `camp` tiles."
+ },
+ "expand": {
+  "camps": {
+   "food": "mill",
+   "gold": "mining_camp",
+   "stone": "mining_camp",
+   "wood": "lumber_camp"
+  },
+  "camp_every": 45,
+  "camp_tiles": 7,
+  "camp_workers": 3,
+  "camp_builders": 2,
+  "guard_tiles": 18,
+  "post_tiles": 5,
+  "post_every": 10,
+  "escort_workers": 4,
+  "escort_age": 2,
+  "escort_army": 10,
+  "escort": 3,
+  "posts": 2,
+  "town": {
+   "big_map": 80,
+   "thin": {
+    "tiles": 16,
+    "wood": 1500,
+    "gold": 600
+   }
+  },
+  "_doc": "src/ai/expand.gd. camps: per resource the drop-off it builds by far gatherers: with camp_workers or more gathering over camp_tiles from any drop-off of theirs, one goes up by them (camp_builders of them build it; one look every camp_every s). Escorts: a knot of escort_workers gatherers (within post_tiles of each other) beyond guard_tiles from the Town Center gets `escort` soldiers posted (from escort_age, with an army of escort_army; up to `posts` posts; looked at every post_every s). town: the second Town Center's step waits for its expand_workers instead on a map big_map tiles wide or more, or once less than thin.<resource> is left within thin.tiles."
  }
 }
