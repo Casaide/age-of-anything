@@ -241,6 +241,13 @@ func _unit_jobs(races: Array) -> Array:
 				if ps is PartShape and ps.part_id != "":
 					ids.append(_part_job(ps.part_id, ps.shapes, ps.colours))
 			probe.free()
+			if u.recipe.has("mount") and not u.recipe.mount.get("fused", false):
+				# A rider shows the leg on the flank facing the camera: the probe (facing 0) shows one
+				# side, so a rider whose legs bake at each hip has every hip's leg asked for (the far
+				# flank's went unbaked: the placement check, "every part drawn is baked").
+				var rider_colours := UnitView.colours_for(lib, u.recipe.skin, u.recipe.family, ANIMAL_TEAM)
+				for id in UnitView.leg_parts(lib, u.recipe.body):
+					ids.append(_part_job(id, lib.part(id.get_slice("~", 0)).shapes, rider_colours))
 			if not UnitView.pose_parts(lib, u.recipe).is_empty():   # a body's idle poses and posed walk (a cat)
 				var mount_skin: String = u.recipe.mount.skin if u.recipe.has("mount") else u.recipe.skin
 				var pose_colours := UnitView.colours_for(lib, mount_skin, u.recipe.family, ANIMAL_TEAM)
