@@ -54,6 +54,12 @@ var amc := PackedInt32Array()      # an attack-move's centre cell (its field), o
 var route := PackedInt32Array()    # trade carts: the home market's id (target is the far one; trade.gd), or 0
 var ready := PackedInt32Array()    # packing engines (the great sling): ticks stood unpacking (>= its unpack: set up),
                                    # or below 0 while packing up (counts up to 0; World._pack)
+# Walls you stand on (walls.gd). Cells are stored + 1, so 0 means none.
+var perch := PackedInt32Array()    # the walkway cell it stands on, + 1 (0: on the ground)
+var wgoal := PackedInt32Array()    # on a wall: the walkway cell it is walking to, + 1; climbing (Economy.CLIMB): where it goes once up
+var wnext := PackedInt32Array()    # on a wall: the next cell on its way, + 1
+var wexit := PackedInt32Array()    # on a wall: the way down it is leaving by (a building or siege tower id), or 0
+var wtime := PackedInt32Array()    # on a wall: ticks left climbing down at its way down, or 0
 var changes := 0                   # bumped on every add, insert and removal (World.step rebuilds its buckets)
 var orders: Array = []             # per unit: queued orders [{type, args}] (shift-queued), oldest first
 
@@ -124,6 +130,11 @@ func _put(at: int, uid: int, p_owner: int, p_kind: int, p_x: int, p_y: int, p_sp
 	amc.insert(at, -1)
 	route.insert(at, 0)
 	ready.insert(at, 0)
+	perch.insert(at, 0)
+	wgoal.insert(at, 0)
+	wnext.insert(at, 0)
+	wexit.insert(at, 0)
+	wtime.insert(at, 0)
 	return at
 
 
@@ -185,6 +196,11 @@ func remove_at(i: int) -> void:
 	amc.remove_at(i)
 	route.remove_at(i)
 	ready.remove_at(i)
+	perch.remove_at(i)
+	wgoal.remove_at(i)
+	wnext.remove_at(i)
+	wexit.remove_at(i)
+	wtime.remove_at(i)
 
 
 func save_prev() -> void:

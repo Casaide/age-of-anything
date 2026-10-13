@@ -35,6 +35,7 @@ const Abilities := preload("res://src/sim/abilities.gd")
 const Garrison := preload("res://src/sim/garrison.gd")
 const Shots := preload("res://src/sim/shots.gd")
 const Trade := preload("res://src/sim/trade.gd")
+const Walls := preload("res://src/sim/walls.gd")
 
 const TICK_HZ := 20
 const HASH_EVERY := 30
@@ -161,6 +162,10 @@ var field_queue: Array = []    # field keys waiting for a solve, in request orde
 var bridge_cfg: Dictionary     # data/bridges.json, as vectors (bridges.gd)
 var trail_cfg: Dictionary      # rules.trails as ints (trails.gd)
 var garrison_cfg: Dictionary   # buildings.json garrison: heal_every, call_range, not (garrison.gd)
+var walk_cfg: Dictionary       # buildings.json walkway and breach, as ints (walls.gd)
+var wall_cache := {}           # walkway cell -> its network's steps from it, for this tick (walls.gd); derived
+var wall_cache_tick := -1
+var rubble := {}               # breach cell -> [terrain it was, owner, building type, x, y, along] (walls.gd)
 var wear := PackedByteArray()  # per cell: how worn the ground is by walkers (trails.gd)
 var bridge_id := PackedInt32Array()   # per map bridge: its id (from next_id), and the rest of its state (bridges.gd)
 var bridge_cells: Array = []          # PackedInt32Array of its deck cells
@@ -210,6 +215,7 @@ func _init(p_seed: int, p_map: SimMap, p_races: Array, p_rules: Dictionary, p_te
 	Combat.setup(self)
 	Tech.setup(self)
 	Garrison.setup(self)
+	Walls.setup(self)
 	Market.setup(self)
 	Economy.setup(self)
 	lost.append(0)   # gaia's
@@ -367,6 +373,7 @@ func step() -> void:
 	Trade.tick(self)
 	_pack()
 	Garrison.tick(self)
+	Walls.tick(self)
 	Animals.tick(self)
 	spatial.build(units.x, units.y)
 	var alive := units.changes
@@ -427,6 +434,11 @@ func _run(cmd: Dictionary) -> void:
 		cmd = {"turn": cmd.turn, "player": cmd.player, "seq": cmd.seq, "type": Commands.HELP_BUILD,
 			"args": {"ids": a.ids, "target": bid, "queue": 1}}
 		a = cmd.args
+	if cmd.type in WALL_ORDERS and a.has("ids"):
+		a = _wall_orders(cmd)   # onto a wall, up to a foe on one, or down off one first (walls.gd)
+		if a.ids.is_empty():
+			return
+		cmd = {"turn": cmd.turn, "player": cmd.player, "seq": cmd.seq, "type": cmd.type, "args": a}
 	if (cmd.type == Commands.MOVE or cmd.type == Commands.ATTACK_MOVE) and not a.has("sx"):
 		# A group move: every unit gets its own slot in a formation now, queued or not.
 		a = _formation(cmd.player, a)
@@ -521,9 +533,85 @@ func _run(cmd: Dictionary) -> void:
 					Combat.clear(self, i)
 					units.orders[i].clear()
 					units.moving[i] = 0
+					Walls.stop(self, i)
 
 
 # ------------------------------------------------------------------ orders
+
+## Unit orders that meet walls you stand on (walls.gd).
+const WALL_ORDERS := [Commands.MOVE, Commands.ATTACK, Commands.ATTACK_MOVE, Commands.GATHER, Commands.BUILD, Commands.HELP_BUILD,
+	Commands.DROP_OFF, Commands.GARRISON, Commands.PEN, Commands.RESEED]
+
+
+## Walls you stand on, before an order runs: a MOVE onto a walkway sends those who may climb up
+## there (walls.gd); an ATTACK on a foe up on a wall sends melee who may climb up to it, then at it;
+## a unit up on a wall given anything else climbs down first (the order waits in its queue). Those
+## dealt with here leave the order's ids; the rest go on as usual. Shift-queued orders for busy
+## units are left alone (they come back here when their turn comes).
+func _wall_orders(cmd: Dictionary) -> Dictionary:
+	var a: Dictionary = cmd.args.duplicate()
+	var queued: bool = int(a.get("queue", 0)) == 1
+	var p: int = cmd.player
+	var now := []
+	for uid in a.ids:
+		var i := units.index_of(uid)
+		if i >= 0 and units.owner[i] == p and not (queued and busy(i)):
+			now.append(uid)
+	var done := {}
+	if cmd.type == Commands.MOVE:
+		var goal := Walls.walkway_at(self, int(a.get("sx", a.x)), int(a.get("sy", a.y)))
+		if goal >= 0:
+			for uid in Walls.order_onto(self, p, now, goal):
+				done[uid] = true
+				if not queued:
+					units.orders[units.index_of(uid)].clear()
+	var foe := units.index_of(a.target) if cmd.type == Commands.ATTACK else -1
+	if foe >= 0 and units.perch[foe] != 0:
+		var climbers := now.filter(func(uid): return units.perch[units.index_of(uid)] == 0 and not types[units.kind[units.index_of(uid)]].ranged)
+		for uid in Walls.order_onto(self, p, climbers, units.perch[foe] - 1):
+			done[uid] = true
+			units.orders[units.index_of(uid)] = [{"type": Commands.ATTACK, "args": {"ids": [uid], "target": a.target}}]
+	for uid in now:
+		var i := units.index_of(uid)
+		if done.has(uid) or units.perch[i] == 0:
+			continue
+		if cmd.type == Commands.ATTACK and (types[units.kind[i]].ranged or (foe >= 0 and units.perch[foe] != 0
+				and Walls.dist_from(self, units.perch[i] - 1).has(units.perch[foe] - 1))):
+			continue   # it shoots from up here, or fights along the walkway
+		done[uid] = true
+		var at := _order_point(cmd.type, a)
+		if at.x < 0 or not Walls.leave(self, i, at.x, at.y):
+			continue   # no way down from here: it stays
+		if not queued:
+			units.orders[i].clear()
+		if cmd.type != Commands.MOVE:   # (a move is where it walks once down)
+			var one := a.duplicate()
+			one.ids = [uid]
+			one.erase("queue")
+			units.orders[i].push_front({"type": cmd.type, "args": one})
+	if not done.is_empty():
+		a.ids = a.ids.filter(func(uid): return not done.has(uid))
+	return a
+
+
+## Where an order sends a unit (milli-tiles), for climbing down towards it; (-1, -1) if nowhere.
+func _order_point(type: String, a: Dictionary) -> Vector2i:
+	match type:
+		Commands.MOVE, Commands.ATTACK_MOVE:
+			return Vector2i(int(a.get("sx", a.x)), int(a.get("sy", a.y)))
+		Commands.GATHER:
+			return Flow.centre(map, int(a.cell))
+		Commands.BUILD:
+			return Vector2i(int(a.cx) * SimMap.TILE + SimMap.TILE / 2, int(a.cy) * SimMap.TILE + SimMap.TILE / 2)
+	var id: int = int(a.get("target", a.get("building", 0)))
+	var j := units.index_of(id)
+	if j >= 0:
+		return Vector2i(units.x[j], units.y[j])
+	var b := buildings.index_of(id)
+	if b >= 0:
+		return Vector2i(buildings.cx[b] * SimMap.TILE + buildings.sx[b] * SimMap.TILE / 2, buildings.cy[b] * SimMap.TILE + buildings.sy[b] * SimMap.TILE / 2)
+	return Vector2i(-1, -1)
+
 
 ## Shift-queuing. A queued order goes into each busy unit's own queue and runs now
 ## for idle ones; a plain order empties the queues of the units it's for. Returns the
@@ -558,7 +646,7 @@ func _queue_or_clear(cmd: Dictionary) -> Dictionary:
 
 ## Doing something: a job, a move, or a fight.
 func busy(i: int) -> bool:
-	return units.task[i] != Economy.NONE or units.moving[i] == 1 or units.foe[i] != 0 or units.patient[i] != 0
+	return units.task[i] != Economy.NONE or units.moving[i] == 1 or units.foe[i] != 0 or units.patient[i] != 0 or Walls.busy(self, i)
 
 
 ## Units that have finished what they were doing take their next queued order.
@@ -592,6 +680,8 @@ func _clear_combat(player: int, ids: Array) -> void:
 ## group shares one field, at the group's pace (its slowest member's speed; 0: its own).
 ## `near`: a near field (a short walk, as to a worker's gather spot).
 func order_move(i: int, x: int, y: int, arrive: int, group: int, fx := -1, fy := -1, pace := 0, near := false) -> void:
+	if units.perch[i] != 0:
+		return   # on a wall: it walks the walkway (walls.gd), never the ground
 	var ln := lane(i)
 	var p := _snap(x, y, ln)
 	var cell := map.cell_of(p.x, p.y)
@@ -627,6 +717,8 @@ func resume_attack_move(i: int) -> void:
 ## Head for a point of its own beside a rect (a place round a building it attacks), following
 ## the rect's field `key` there and stepping round the rect's corners near it (see _plan).
 func order_beside(i: int, x: int, y: int, r: Rect2i, key: int) -> void:
+	if units.perch[i] != 0:
+		return   # on a wall: it walks the walkway (walls.gd), never the ground
 	units.tx[i] = x
 	units.ty[i] = y
 	units.reach[i] = 2
@@ -765,6 +857,8 @@ func _off_walls(x: int, y: int, r: int, ln: int) -> Vector2i:
 
 ## Head straight for a point with no flow field (the way there is known to be clear).
 func order_direct(i: int, x: int, y: int) -> void:
+	if units.perch[i] != 0:
+		return   # on a wall: it walks the walkway (walls.gd), never the ground
 	units.tx[i] = x
 	units.ty[i] = y
 	units.reach[i] = 0
@@ -776,6 +870,8 @@ func order_direct(i: int, x: int, y: int) -> void:
 
 ## Head for "next to" a rect of milli-tiles (inclusive), following field `key`.
 func order_reach(i: int, r: Rect2i, key: int) -> void:
+	if units.perch[i] != 0:
+		return   # on a wall: it walks the walkway (walls.gd), never the ground
 	units.tx[i] = r.position.x + r.size.x / 2
 	units.ty[i] = r.position.y + r.size.y / 2
 	units.reach[i] = 1
@@ -1537,7 +1633,10 @@ func _separate() -> void:
 	# Each pair once: a unit's own tile (slots after it) and the four tiles after it (right, and
 	# the row below), so every pair of neighbouring tiles is looked at from one side only. The
 	# pair's sums don't depend on which side found it (i is the lower slot, as before).
+	var pr := units.perch   # units on walls stand apart from the crowd below (walls.gd)
 	for u in n:
+		if pr[u] != 0:
+			continue
 		var cx := cells[u] % w
 		var cy := cells[u] / w
 		var xu := xs[u]
@@ -1551,7 +1650,7 @@ func _separate() -> void:
 			var c := ny * w + nx
 			for k in range(start[c], ends[c]):
 				var v := items[k]
-				if q == 0 and v <= u:
+				if (q == 0 and v <= u) or pr[v] != 0:
 					continue
 				var rr := ru + rs[v]
 				var dx := xs[v] - xu
@@ -1626,6 +1725,8 @@ func _separate() -> void:
 	for i in n:
 		if settle[i] == 1:
 			mv[i] = 0
+		if pr[i] != 0:
+			continue
 		var mc := lane_base[owners[i]] + mcls[i]
 		var wk: PackedByteArray = map.walks[mc]
 		var x0 := xs[i]
@@ -1717,6 +1818,7 @@ func state_hash() -> int:
 		h = Fixed.mix(h, map.amount[c])
 	h = Bridges.hash_into(self, h)
 	h = Abilities.hash_into(self, h)
+	h = Walls.hash_into(self, h)
 	h = Fixed.mix(h, shots.count())
 	for v in shots.data:
 		h = Fixed.mix(h, v)

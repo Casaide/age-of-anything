@@ -54,7 +54,7 @@ const FIGHT_FROM := [[11000, 20500], [21000, 20500]]   # open ground on flat_tes
 ## "@@ ms.<part>"; the three plays of the scripted match apart, about 25-50 s each).
 const GROUPS := [
 	["scenarios_a", "crossing_flat", "opening", "gates", "diagonal_gates", "pen", "combat"],
-	["scenarios_b", "fixed", "command_order", "source_lint", "flow", "crossing_choke", "crossing_engines", "age_timing", "queue", "movement_classes", "farms", "fog_memory", "land", "hills", "flow_patch", "flow_patch_mixed", "tech", "research_queue", "effects", "university_castle", "market", "build_queue", "builder_moves_on", "diagonal_wall", "camp_gather", "drop_off", "animals", "sheep_spot", "garrison", "towers", "shots", "engines", "trade", "sapper_sling", "bot_hunts", "wonder"],
+	["scenarios_b", "fixed", "command_order", "source_lint", "flow", "crossing_choke", "crossing_engines", "age_timing", "queue", "movement_classes", "farms", "fog_memory", "land", "hills", "flow_patch", "flow_patch_mixed", "tech", "research_queue", "effects", "university_castle", "market", "build_queue", "builder_moves_on", "diagonal_wall", "camp_gather", "drop_off", "animals", "sheep_spot", "garrison", "towers", "shots", "engines", "trade", "sapper_sling", "bot_hunts", "wonder", "walls"],
 	["match", "match"], ["match_b", "match_b"], ["match_flipped", "match_flipped"],
 ]
 
@@ -124,6 +124,7 @@ func _init() -> void:
 		"sapper_sling": func(): _test_sapper_sling(races),
 		"bot_hunts": func(): _test_bot_hunts(races),
 		"wonder": func(): _test_wonder(races),
+		"walls": func(): _test_walls(races),
 		"combat": func(): _test_combat(gen),
 		"match": func(): _test_match(map, races, lib, rules),
 		"match_b": func(): _test_match_b(map, races),
@@ -3951,3 +3952,149 @@ func _report_timing(t: Dictionary) -> void:
 		t.units, s.size(), avg / 1000.0, sorted[s.size() / 2] / 1000.0,
 		sorted[s.size() * 99 / 100] / 1000.0, sorted[-1] / 1000.0])
 	check(avg <= TICK_BUDGET_USEC, "average tick within %d us (got %d)" % [TICK_BUDGET_USEC, avg])
+
+
+# --- walls you stand on (milestone 16) ---------------------------------------
+
+## Walls you stand on: the frogs (player 0) in a stone ring round their start with gatehouses north
+## and south and wall towers; archers sent onto the east wall climb up by a way up and spread over
+## its standing places; up there they aren't pushed about, shoot a tile further, and melee below
+## can't touch them; sent into the town they climb down; a wall tile knocked down becomes rubble
+## (those on it fall) that a worker rebuilds for less. Run twice: the same hash.
+func _test_walls(races: Array) -> void:
+	var a := _walls_run(races, true)
+	var b := _walls_run(races, false)
+	check(a.state_hash() == b.state_hash(), "walls: the same commands give the same state hash")
+
+
+const Fortify := preload("res://src/sim/fortify.gd")
+const Walls := preload("res://src/sim/walls.gd")
+
+
+func _walls_run(races: Array, checks_on: bool) -> World:
+	var w := World.new(SEED, SimMap.load_id("flat_test"), races, rules_)
+	for p in 2:
+		w.ages[p] = 3
+		Tech.retype(w, p)
+		Tech.refresh(w, p)
+	var c := func(ok: bool, what: String) -> void:
+		if checks_on:
+			check(ok, what)
+	var ring := Fortify.ring(w, 0, 12, 12, 6, {"wall": "wall", "gate": "stone_gate", "tower": "wall_tower", "tower_every": 4, "gates": ["n", "s"]})
+	c.call(ring.size() > 30, "walls: a ring goes up (%d pieces)" % ring.size())
+	var tk := Economy.btype_of(w, "wall_tower")
+	c.call(Economy.can_place(w, 0, tk, 18, 9) and not Economy.can_place(w, 1, tk, 18, 9), "walls: a wall tower drops onto its owner's wall tile")
+	var archers := _spawn_n(w, "archer", 6, 12500, 12500)
+	var east := Vector2i(18500, 8500)
+	w.issue(0, Commands.MOVE, {"ids": archers, "x": east.x, "y": east.y})
+	var up := func() -> int:
+		var n := 0
+		for id in archers:
+			var i := w.units.index_of(id)
+			if i >= 0 and w.units.perch[i] != 0 and w.units.wgoal[i] == 0:
+				n += 1
+		return n
+	var climbed := false
+	for t in 900:
+		w.step()
+		for e in w.events:
+			if e.type == "climb" and e.up:
+				climbed = true
+		if up.call() == archers.size():
+			break
+	c.call(climbed and up.call() == archers.size(), "walls: six archers climb onto the east wall (%d up)" % up.call())
+	var per := {}
+	var on_walk := true
+	for id in archers:
+		var i := w.units.index_of(id)
+		var cell: int = w.units.perch[i] - 1
+		per[cell] = int(per.get(cell, 0)) + 1
+		on_walk = on_walk and Walls.places(w, cell) > 0 and w.map.cell_of(w.units.x[i], w.units.y[i]) == cell
+		on_walk = on_walk and absi(w.units.x[i] / 1000 - 18) <= 1
+	c.call(on_walk, "walls: they stand on walkway cells of the east wall")
+	c.call(per.keys().all(func(k): return per[k] <= Walls.places(w, k)), "walls: no more on a cell than its places (%s)" % [per])
+	# Still up there (once on their places): nobody shoves them about.
+	for t in 40:
+		w.step()
+	var at := {}
+	for id in archers:
+		var i := w.units.index_of(id)
+		at[id] = Vector2i(w.units.x[i], w.units.y[i])
+	for t in 40:
+		w.step()
+	c.call(archers.all(func(id): var i := w.units.index_of(id); return Vector2i(w.units.x[i], w.units.y[i]) == at[id]), "walls: up there they stand still")
+	# A foe a tile beyond an archer's reach, out in the field east of the wall: shot from up there.
+	var a0 := w.units.index_of(archers[0])
+	var t0: Dictionary = w.types[w.units.kind[a0]]
+	var dummy := _lone(w, 1, "spear", w.units.x[a0] + t0.reach + 700 + w.units.radius[a0] + 300, w.units.y[a0], "passive")
+	var far_shot := false
+	for t in 200:
+		w.step()
+		for e in w.events:
+			if e.type == "shot" and e.to == dummy and e.by in archers:
+				far_shot = true
+	c.call(far_shot, "walls: from the wall an archer reaches a tile further")
+	# Spears under the wall can't hit those on it.
+	var spears := []
+	for k in 4:
+		spears.append(_lone(w, 1, "spear", 19700, 7000 + k * 600, "aggressive"))
+	var melee_hits := 0
+	for t in 300:
+		w.step()
+		for e in w.events:
+			if e.type == "hit" and e.to in archers and e.by in spears:
+				melee_hits += 1
+	c.call(melee_hits == 0, "walls: spears below can't reach those on the wall (%d hits)" % melee_hits)
+	for id in spears + [dummy]:
+		var i := w.units.index_of(id)
+		if i >= 0:
+			w.issue(1, Commands.STOP, {"ids": [id]})
+	# Down into the town.
+	var stay: int = archers[5]
+	w.issue(0, Commands.MOVE, {"ids": archers.slice(0, 5), "x": 12500, "y": 12000})
+	for t in 900:
+		w.step()
+		if archers.slice(0, 5).all(func(id): var i := w.units.index_of(id); return i < 0 or (w.units.perch[i] == 0 and w.units.moving[i] == 0)):
+			break
+	var inside := 0
+	for id in archers.slice(0, 5):
+		var i := w.units.index_of(id)
+		if i >= 0 and w.units.perch[i] == 0 and w.units.x[i] > 6999 and w.units.x[i] < 18000 and w.units.y[i] > 6999 and w.units.y[i] < 18000:
+			inside += 1
+	c.call(inside == 5, "walls: sent into the town, they climb down inside (%d of 5)" % inside)
+	# A wall tile knocked down: rubble, and the one standing on it falls.
+	var si := w.units.index_of(stay)
+	var cell: int = w.units.perch[si] - 1
+	var b := w.buildings.index_of(w.map.occupied[cell])
+	var bhurt := PackedInt32Array()
+	bhurt.resize(w.buildings.count())
+	bhurt[b] = 99999
+	var hurt := PackedInt32Array()
+	hurt.resize(w.units.count())
+	Combat._apply(w, hurt, hurt.duplicate(), bhurt)
+	var fell := false
+	for t in 3:
+		w.step()
+		for e in w.events:
+			if e.type == "fall" and e.id == stay:
+				fell = true
+	si = w.units.index_of(stay)
+	c.call(fell and si >= 0 and w.units.perch[si] == 0, "walls: the archer on a fallen wall tile falls (and lives)")
+	c.call(w.map.terrain_at(cell) == "wall_rubble" and w.map.walk[cell] == 1 and w.rubble.has(cell), "walls: a fallen wall tile is walkable rubble")
+	var rebuild := Walls.rebuild_of(w, 0, cell)
+	c.call(rebuild.get("building", "") == "wall", "walls: its owner may rebuild the wall there")
+	var worker := _spawn_at(w, 0, "worker", 16500, 12500)
+	w.stock[w.resources.find("stone")][0] = 100
+	var stone: int = w.stock[w.resources.find("stone")][0]
+	w.issue(0, Commands.BUILD, {"ids": [worker], "building": "wall", "cx": cell % w.map.width, "cy": cell / w.map.width})
+	for t in 600:
+		w.step()
+		var nb := w.buildings.index_of(w.map.occupied[cell])
+		if nb >= 0 and w.buildings.done[nb] == 1:
+			break
+	var paid: int = stone - w.stock[w.resources.find("stone")][0]
+	var full: int = w.btypes[Economy.btype_of(w, "wall")].cost[w.resources.find("stone")]
+	c.call(paid == full * int(w.walk_cfg.repair_pct) / 100, "walls: rebuilding a breach costs %d%% (%d of %d stone)" % [w.walk_cfg.repair_pct, paid, full])
+	var nb2 := w.buildings.index_of(w.map.occupied[cell])
+	c.call(nb2 >= 0 and w.buildings.done[nb2] == 1 and w.map.terrain_at(cell) != "wall_rubble" and not w.rubble.has(cell), "walls: the breach is walled up again, the rubble gone")
+	return w
