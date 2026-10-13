@@ -139,11 +139,12 @@ static func _update_team(w, team: Array) -> void:
 				r += w.map.level_at(xs[i], ys[i]) * int(w.high.sight_unit)   # high ground sees further
 			if perch[i] != 0:
 				r += int(w.high.sight_unit)   # so does a unit up on a wall (walls.gd)
-			var key: int = (ys[i] / 1000 * mw + xs[i] / 1000) * 64 + r
+			var high: bool = int(t.mclass) == 2   # a flyer sees over the treetops, as a tower does
+			var key: int = ((ys[i] / 1000 * mw + xs[i] / 1000) * 64 + r) * 2 + (1 if high else 0)
 			if stamped.has(key):
 				continue
 			stamped[key] = true
-			_stamp(w, g, lit, xs[i] / 1000, ys[i] / 1000, r)
+			_stamp(w, g, lit, xs[i] / 1000, ys[i] / 1000, r, high)
 	var bs = w.buildings
 	for b in bs.count():
 		if w.teams[bs.owner[b]] == w.teams[p] and bs.done[b] == 1:   # a foundation sees nothing: laid in the dark, it stays dark (Dominic)
@@ -152,7 +153,9 @@ static func _update_team(w, team: Array) -> void:
 			r += int(w.bmods[bs.owner[b]][bs.kind[b]].add.get("sight", 0))   # research (Tech.refresh)
 			if w.map.has_heights:
 				r += w.map.level[bs.cy[b] * w.map.width + bs.cx[b]] * int(w.high.sight_building)   # a tower on a hill sees further
-			_stamp(w, g, lit, bs.cx[b] + bs.sx[b] / 2, bs.cy[b] + bs.sy[b] / 2, r + maxi(bs.sx[b], bs.sy[b]) / 2)
+			# A tower stands above the treetops (data: "sees_over_trees"): only hills block it (Dominic:
+			# a watchtower in a forest saw no further than the trees round it).
+			_stamp(w, g, lit, bs.cx[b] + bs.sx[b] / 2, bs.cy[b] + bs.sy[b] / 2, r + maxi(bs.sx[b], bs.sy[b]) / 2, t.get("sees_over_trees", false))
 	w.fog[p] = g
 	w.fog_lit[p] = lit
 	_remember(w, p)
@@ -203,23 +206,23 @@ static func _remember(w, p: int) -> void:
 
 
 ## Light a sight circle in grid g; cells newly lit go on `lit` (they turn explored next time).
-static func _stamp(w, g: PackedByteArray, lit: PackedInt32Array, cx: int, cy: int, r: int) -> void:
+static func _stamp(w, g: PackedByteArray, lit: PackedInt32Array, cx: int, cy: int, r: int, over_trees := false) -> void:
 	var wd: int = w.map.width
 	var ht: int = w.map.height
 	var v: int = w.map.level[cy * wd + cx]
-	if _blocked_near(w.map, cx, cy, r, v):
+	if _blocked_near(w.map, cx, cy, r, v, over_trees):
 		# What a circle with trees or hills in it sees depends only on the ground, so it's kept
 		# (per centre and radius) until something that blocks sight changes: workers at a bush
 		# and buildings see the same cells update after update.
 		if w.fog_sight_version != w.map.opaque_version:
 			w.fog_sight.clear()
 			w.fog_sight_version = w.map.opaque_version
-		var key := (cy * wd + cx) * 64 + r
+		var key := ((cy * wd + cx) * 64 + r) * 2 + (1 if over_trees else 0)
 		var cells: PackedInt32Array
 		if w.fog_sight.has(key):
 			cells = w.fog_sight[key]
 		else:
-			cells = _sight_los(w.map, cx, cy, r, v)
+			cells = _sight_los(w.map, cx, cy, r, v, over_trees)
 			w.fog_sight[key] = cells
 		for c in cells:
 			if g[c] != VISIBLE:
@@ -241,13 +244,13 @@ static func _stamp(w, g: PackedByteArray, lit: PackedInt32Array, cx: int, cy: in
 ## Is there anything that blocks sight (a tree, or ground higher than the viewer's level v)
 ## within r of (cx, cy)? Counted per chunk, so open country costs a few lookups and the plain
 ## stamp runs.
-static func _blocked_near(m, cx: int, cy: int, r: int, v: int) -> bool:
+static func _blocked_near(m, cx: int, cy: int, r: int, v: int, over_trees := false) -> bool:
 	var C: int = m.CHUNK
 	var cw: int = (m.width + C - 1) / C
 	var ch: int = (m.height + C - 1) / C
 	for y in range(maxi(cy - r, 0) / C, mini((cy + r) / C, ch - 1) + 1):
 		for x in range(maxi(cx - r, 0) / C, mini((cx + r) / C, cw - 1) + 1):
-			if m.opaque_chunks[y * cw + x] > 0 or m.level_chunks[y * cw + x] > v:
+			if (m.opaque_chunks[y * cw + x] > 0 and not over_trees) or m.level_chunks[y * cw + x] > v:
 				return true
 	return false
 
@@ -256,7 +259,7 @@ static func _blocked_near(m, cx: int, cy: int, r: int, v: int) -> bool:
 ## centre was seen and doesn't block (the first tree of a forest is seen, not what's behind it).
 ## Ground higher than the viewer's level v blocks like a tree: from below you see a hill's rim,
 ## not what stands on it beyond the edge. The cells seen, nearest ring first.
-static func _sight_los(m, cx: int, cy: int, r: int, v: int) -> PackedInt32Array:
+static func _sight_los(m, cx: int, cy: int, r: int, v: int, over_trees := false) -> PackedInt32Array:
 	var rays: Array = _ray_table(r)
 	var offs: PackedInt32Array = rays[0]
 	var par: PackedInt32Array = rays[1]
@@ -277,7 +280,7 @@ static func _sight_los(m, cx: int, cy: int, r: int, v: int) -> PackedInt32Array:
 			continue
 		var c := y * wd + x
 		out.append(c)
-		seen[k] = 1 if (op[c] == 1 or lv[c] > v) and k > 0 else 2
+		seen[k] = 1 if ((op[c] == 1 and not over_trees) or lv[c] > v) and k > 0 else 2
 	return out
 
 
