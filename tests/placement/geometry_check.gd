@@ -545,3 +545,22 @@ func _check_engine(label: String, r: Dictionary) -> void:
 				crew_vox[q] = true
 		var share := float(Geom.shared(crew_vox, ev)) / maxf(crew_vox.size(), 1)
 		note("A3 crew not cut through their engine", label, name, share > 0.12, "%.2f of the crew member inside the engine" % share)
+	if not r.has("haul"):
+		return
+	# A beast hauling it (a trade cart's pony: the recipe's haul, sockets haul<n>): on the ground, its
+	# body clear of the cart (traces and shafts beside it, not through it).
+	var hc: Dictionary = lib.creatures[r.haul.creature]
+	var hr := {"slot": "beast", "role": "beast", "tier": 1, "creature": r.haul.creature, "family": r.family, "skin": r.haul.skin,
+		"body": hc.get("mount_body", hc.body), "head": hc.head, "parts": {}, "scale": 100, "name": ""}
+	for name in es.get("sockets", {}):
+		if not name.begins_with("haul"):
+			continue
+		var at: Vector3 = es.sockets[name]
+		note("A2 crew stand on the ground", label, name, absf(at.y) > GROUND_TOL, "socket at height %.1f" % at.y)
+		var a: Dictionary = rig.unit(hr, {})
+		var vox := {}
+		for p in a.pieces:
+			for q in Geom.voxels(p.node, Transform3D(Basis.IDENTITY, at) * p.xf):
+				vox[q] = true
+		var share := float(Geom.shared(vox, ev)) / maxf(vox.size(), 1)
+		note("A3 crew not cut through their engine", label, name, share > 0.08, "%.2f of the hauling beast inside the cart" % share)

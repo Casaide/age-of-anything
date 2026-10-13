@@ -1,0 +1,205 @@
+{
+ "name": "great_sling_gs1",
+ "title": "The great sling, concept round GS1 (milestone 13 step 4): set up and packed",
+ "stage": [
+  "res://data/later/m13_concepts.json"
+ ],
+ "zooms": [
+  3,
+  1
+ ],
+ "cell": [
+  120,
+  80
+ ],
+ "size": [
+  {
+   "prompt": "romans",
+   "slot": "worker"
+  },
+  {
+   "prompt": "romans",
+   "slot": "catapult",
+   "age": 3
+  }
+ ],
+ "rows": [
+  {
+   "label": "romans A traction sling,\ncrew hauling",
+   "h": 1.35,
+   "unit": {
+    "prompt": "romans",
+    "slot": "great_sling",
+    "age": 3,
+    "set": {
+     "body": "concept.gs1_a_timber"
+    }
+   }
+  },
+  {
+   "label": "swamp frogs A traction sling,\ncrew hauling",
+   "h": 1.35,
+   "unit": {
+    "prompt": "swamp frogs",
+    "slot": "great_sling",
+    "age": 3,
+    "set": {
+     "body": "concept.gs1_a_frog"
+    }
+   }
+  },
+  {
+   "label": "sewer rats A traction sling,\ncrew hauling",
+   "h": 1.35,
+   "unit": {
+    "prompt": "sewer rats",
+    "slot": "great_sling",
+    "age": 3,
+    "set": {
+     "body": "concept.gs1_a_junk"
+    }
+   }
+  },
+  {
+   "label": "forest beetles A traction sling,\ncrew hauling",
+   "h": 1.35,
+   "unit": {
+    "prompt": "forest beetles",
+    "slot": "great_sling",
+    "age": 3,
+    "set": {
+     "body": "concept.gs1_a_forest"
+    }
+   }
+  },
+  {
+   "label": "spooky spiders A traction sling,\ncrew hauling",
+   "h": 1.35,
+   "unit": {
+    "prompt": "spooky spiders",
+    "slot": "great_sling",
+    "age": 3,
+    "set": {
+     "body": "concept.gs1_a_spooky"
+    }
+   }
+  },
+  {
+   "label": "romans A\npacked to march",
+   "h": 1.35,
+   "unit": {
+    "prompt": "romans",
+    "slot": "great_sling",
+    "age": 3,
+    "set": {
+     "body": "concept.gs1_a_packed_timber"
+    }
+   }
+  },
+  {
+   "label": "romans B counterweight,\nwound down",
+   "h": 1.35,
+   "unit": {
+    "prompt": "romans",
+    "slot": "great_sling",
+    "age": 3,
+    "set": {
+     "body": "concept.gs1_b_timber"
+    }
+   }
+  },
+  {
+   "label": "swamp frogs B counterweight,\nwound down",
+   "h": 1.35,
+   "unit": {
+    "prompt": "swamp frogs",
+    "slot": "great_sling",
+    "age": 3,
+    "set": {
+     "body": "concept.gs1_b_frog"
+    }
+   }
+  },
+  {
+   "label": "sewer rats B counterweight,\nwound down",
+   "h": 1.35,
+   "unit": {
+    "prompt": "sewer rats",
+    "slot": "great_sling",
+    "age": 3,
+    "set": {
+     "body": "concept.gs1_b_junk"
+    }
+   }
+  },
+  {
+   "label": "forest beetles B counterweight,\nwound down",
+   "h": 1.35,
+   "unit": {
+    "prompt": "forest beetles",
+    "slot": "great_sling",
+    "age": 3,
+    "set": {
+     "body": "concept.gs1_b_forest"
+    }
+   }
+  },
+  {
+   "label": "spooky spiders B counterweight,\nwound down",
+   "h": 1.35,
+   "unit": {
+    "prompt": "spooky spiders",
+    "slot": "great_sling",
+    "age": 3,
+    "set": {
+     "body": "concept.gs1_b_spooky"
+    }
+   }
+  },
+  {
+   "label": "romans B\npacked to march",
+   "h": 1.35,
+   "unit": {
+    "prompt": "romans",
+    "slot": "great_sling",
+    "age": 3,
+    "set": {
+     "body": "concept.gs1_b_packed_timber"
+    }
+   }
+  },
+  {
+   "label": "romans: the stand-in\nin play (catapult)",
+   "h": 1.35,
+   "unit": {
+    "prompt": "romans",
+    "slot": "great_sling",
+    "age": 3
+   }
+  }
+ ],
+ "sheets": [
+  {
+   "name": "four",
+   "title": "four facings",
+   "columns": [
+    {
+     "facing": 0,
+     "label": "f0 right"
+    },
+    {
+     "facing": 2,
+     "label": "f2 towards"
+    },
+    {
+     "facing": 5,
+     "label": "f5"
+    },
+    {
+     "facing": 6,
+     "label": "f6 away"
+    }
+   ]
+  }
+ ]
+}
