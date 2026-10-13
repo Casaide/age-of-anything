@@ -49,6 +49,7 @@ const World := preload("res://src/sim/world.gd")
 const Economy := preload("res://src/sim/economy.gd")
 const Buildings := preload("res://src/sim/buildings.gd")
 const Combat := preload("res://src/sim/combat.gd")
+const Abilities := preload("res://src/sim/abilities.gd")
 const Replay := preload("res://src/sim/replay.gd")
 const Bot := preload("res://src/ai/bot.gd")
 const TechTreeModel := preload("res://src/view/tech_tree_model.gd")
@@ -105,6 +106,7 @@ var palette: ColorRect      # optional whole-frame palette pass (P)
 var attack_move := false    # the order being given is an attack-move
 var queueing := false       # the order being given is shift-queued
 var arming_attack := false  # R was pressed: the next left click attack-moves there
+var arming_ability := false # the race's ability button was pressed: the next left click uses it there (abilities.gd)
 var groups := {}            # control group number -> [unit ids]
 var last_group := -1
 var last_group_at := 0
@@ -600,6 +602,12 @@ func _unhandled_input(event: InputEvent) -> void:
 				smart_order(get_global_mouse_position())
 				attack_move = false
 				arming_attack = false
+			return
+		if arming_ability:   # the ability button then a click: the race's ability there
+			if event.pressed:
+				var m := Iso.pick(get_global_mouse_position())
+				world.issue(active, Commands.ABILITY, {"ids": selected.duplicate(), "x": m.x, "y": m.y})
+				arming_ability = false
 			return
 		if placing != "" and _line(placing):   # walls and gates are dragged: press at one end, release at the other
 			if event.pressed:
@@ -2788,6 +2796,14 @@ func _update_panel() -> void:
 		if soldiers > 0:   # soldiers: attack-move, stop and stances
 			c.buttons.append({"icon": Icons.texture("attack_move"), "text": "Attack-move", "key": "R", "cost": "", "enabled": true, "group": "Orders",
 				"tip": "[b]Attack-move[/b]\nThen click where: they walk there and fight whatever they meet on the way.", "action": func(): arming_attack = true})
+			var ab: Dictionary = Abilities.of(world, active)
+			var users := mine.filter(func(id): return Abilities.can_use(world, world.units.kind[world.units.index_of(id)]))
+			if not users.is_empty():   # the race's ability (milestone 14): ready on the first that's ready, else its wait
+				var wait: int = users.map(func(id): return Abilities.wait(world, world.units.index_of(id))).min()
+				c.buttons.append({"icon": Icons.texture("creature_research"), "text": ab.name, "key": "", "cost": "" if wait == 0 else "%ds" % ((wait + 19) / 20),
+					"enabled": wait == 0, "group": "Orders",
+					"tip": "[b]%s[/b]\n%s\nThen click where (within %d tiles). Again in %d s." % [ab.name, ab.desc, int(ab.range) / 1000, int(ab.cooldown) / 20],
+					"action": func(): arming_ability = true})
 			c.buttons.append({"icon": Icons.texture("stop"), "text": "Stop", "key": "X", "cost": "", "enabled": true, "group": "Orders",
 				"tip": "[b]Stop[/b]\nDrop every order: they stand where they are.", "action": stop_selected})
 			var now := _shown_stance(mine)
@@ -2956,6 +2972,7 @@ func _draw_marks() -> void:
 		return
 	if show_flow:
 		_draw_flow()
+	_draw_webs()
 	var u := world.units
 	for id in selected:
 		var i := u.index_of(id)
@@ -2970,6 +2987,22 @@ func _draw_marks() -> void:
 	for f in flags:
 		marks.draw_set_transform(f.pos, 0.0, Vector2(1.0, 0.5))
 		marks.draw_circle(Vector2.ZERO, 10.0 * f.t, Color(RING, f.t))
+		marks.draw_set_transform(Vector2.ZERO)
+
+
+## Webs on the ground (abilities.gd): a placeholder mark, pale rings and spokes on the ground,
+## fading as it wears off, until the web's look has its concept round (D-080).
+func _draw_webs() -> void:
+	var webs: PackedInt32Array = world.webs
+	for n in range(0, webs.size(), Abilities.WEB):
+		var left := clampf(float(webs[n + 4] - world.tick) / 100.0, 0.25, 1.0)
+		var col := Color(0.92, 0.92, 0.86, 0.55 * left)
+		var r: float = webs[n + 3] * Iso.RADIUS_PX
+		marks.draw_set_transform(Iso.to_ground(webs[n + 1], webs[n + 2]), 0.0, Vector2(1.0, 0.5))
+		for ring in [0.35, 0.7, 1.0]:
+			marks.draw_arc(Vector2.ZERO, r * ring, 0.0, TAU, 28, col, 1.5 / camera.zoom.x)
+		for k in 8:
+			marks.draw_line(Vector2.ZERO, Vector2.from_angle(TAU * k / 8.0) * r, col, 1.2 / camera.zoom.x)
 		marks.draw_set_transform(Vector2.ZERO)
 
 

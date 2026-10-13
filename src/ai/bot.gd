@@ -38,6 +38,7 @@ const Scout := preload("res://src/ai/scout.gd")
 const Land := preload("res://src/ai/land.gd")
 const Expand := preload("res://src/ai/expand.gd")
 const Trade := preload("res://src/sim/trade.gd")
+const AbilityAi := preload("res://src/ai/ability_ai.gd")
 
 const THINK_EVERY := 20     # ticks (1 s), offset from EcoBot's think by half a second (and per player: _phase)
 const BUILD_COOLDOWN := 200
@@ -245,6 +246,7 @@ func think(w) -> void:
 	_off_walls(w, field, home_x, home_y)
 	_siege(w, field, home_x, home_y)
 	_escort(w, field, healers, home_x, home_y)
+	AbilityAi.think(w, player, army)   # the race's ability (spiders' webs), milestone 14
 
 
 ## Our soldiers' movement class (the spear's), for routes before there's an army.

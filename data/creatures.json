@@ -166,6 +166,22 @@
   "lacks": [
    "stable"
   ],
+  "ability": {
+   "kind": "web",
+   "name": "Web",
+   "desc": "Throw a sticky web: enemies in it move at half speed for 15 seconds. Shoot over it, or go round.",
+   "tag": "arachnid",
+   "not": [
+    "worker",
+    "heal"
+   ],
+   "range": 5000,
+   "cooldown": 600,
+   "radius": 1500,
+   "lasts": 300,
+   "slow_pct": 50,
+   "hotkey": "W"
+  },
   "body": "body.spider",
   "head": "head.spider",
   "playable": true,

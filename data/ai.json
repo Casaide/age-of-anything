@@ -253,7 +253,10 @@
    "ore_carts",
    "fallow_fields",
    "pack_frames",
-   "lookouts"
+   "lookouts",
+   "clever_hands",
+   "woodsmen",
+   "bog_poultice"
   ],
   "buildings": [
    "lifting_frames",
