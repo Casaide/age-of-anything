@@ -239,7 +239,7 @@ both at the Castle in age 3. Culture mechanics are left out for now (creature me
   as before within a fight or two.
 - **Heroes:** concept round HR1, `docs/concepts/heroes/` (three looks on five races, placement passes);
   waiting on Dominic's pick.
-- **Pictures:** `archive/images/2026-10-13/407-410` (the page's bonuses; spiders' lacks crossed out,
+- **Pictures:** `archive/images/2026-10-13/428-431` (the page's bonuses; spiders' lacks crossed out,
   with the "Needs a Stable" they couldn't meet; the lobby's traits line; heroes HR1).
 - **Not done yet:** leap, shell, swarm/scavenge and shoot-on-the-move; the web's look; culture
   abilities; the lobby's roster tiles still show lines a race lacks (spiders' Heavy and Scout).
