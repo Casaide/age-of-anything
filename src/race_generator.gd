@@ -11,14 +11,13 @@ const Rng := preload("res://src/rng.gd")
 const Pricing := preload("res://src/pricing.gd")
 
 const ROLE_NEEDS := {"worker": "worker", "spear": "spear", "skirmisher": "ranged", "archer": "bow", "large": "melee", "healer": "heal",
-	"ram": "ram", "catapult": "catapult", "bolt_thrower": "bolt_thrower", "infantry": "melee", "scout": "melee", "mounted_archer": "bow"}
+	"ram": "ram", "catapult": "catapult", "bolt_thrower": "bolt_thrower", "infantry": "melee"}
 ## Tags a role's primary must not have (skirmishers are the non-bow ranged units; the swordsman
 ## line holds a blade or a club, never a spear or a lance).
-## The scout holds a light weapon: no spear or lance (that would make it anti-cavalry), nothing heavy.
-const ROLE_EXCLUDES := {"skirmisher": ["bow"], "infantry": ["spear", "lance"], "scout": ["spear", "lance", "heavy"]}
+const ROLE_EXCLUDES := {"skirmisher": ["bow"], "infantry": ["spear", "lance"]}
 ## Kinds a line's primitive weapon may give way to on an upgrade, besides its own: the swordsman's
 ## age 1 bone club becomes a sword (a cheese hammer isn't primitive, so rats keep theirs).
-const ROLE_KINDS := {"infantry": ["blade"], "scout": ["blade"]}
+const ROLE_KINDS := {"infantry": ["blade"]}
 const ROLE_BIAS := {
 	"worker": {},
 	"spear": {"reach": 1},
@@ -27,13 +26,7 @@ const ROLE_BIAS := {
 	"large": {"charge": 3, "heavy": 2, "lance": 3},
 	"healer": {},
 	"infantry": {"blade": 1},
-	"scout": {"blade": 1, "light": 2},
-	"mounted_archer": {},
 }
-## Lines that go light (the scout): no heavy kit, nothing over LIGHT_POINTS, in any age. A unique
-## unit whose theme says "light" (the raiders) goes the same way.
-const LIGHT_ROLES := ["scout"]
-const LIGHT_POINTS := 2
 ## Signature gear (a culture's kit, cheese hammers...) is only favoured when the prompt,
 ## family or creature asks for it. No cheese hammers for Romans unless someone says cheese.
 const SIGNATURE_TAGS := ["roman", "greek", "viking", "cheese", "woodland", "knight", "bat", "crossbow", "junk", "saucepan", "nile", "han", "aztec"]   # woodland: acorn caps, leaves, bark (swamp/forest); knight: iron helm, kite, mail (royal); bat wings (spooky/sewer); crossbows (royal, sewer rats); junk: bottle caps (sewer); saucepan: only when asked (ww2)
@@ -43,9 +36,6 @@ const OPTIONAL_SLOTS := ["hand_l", "head_gear", "torso", "back"]
 ## Healers go light (Dominic, 2026-10-12: a healer at the Town Center): a bag in the off hand
 ## (parts tagged "heal"), a light hat at most, wings only on a winged race. No armour, no shield.
 const HEALER_SLOTS := ["hand_l", "head_gear", "back"]
-## Scouts ride light: a cap and a jerkin at most (no shield, banner or cape to pay for); a winged
-## race's scouts keep their wings (the back slot holds nothing else for them: _light).
-const SCOUT_SLOTS := ["head_gear", "torso", "back"]
 const HEALER_WANTS := {"heal": 3}   # so the healer's bag is always packed
 ## What kind of thing a part is: an upgrade keeps the kind (a cape stays a cape, a
 ## spear stays a spear), so a unit line stays recognisably the same unit.
@@ -162,19 +152,11 @@ func generate(prompt: String, rules: Dictionary, reroll := 0) -> Dictionary:
 	var rngs := []
 	for slot_def in slots:
 		rngs.append(Rng.new(Rng.hash_string("%s|%s|%d|%s" % [normalize(prompt), rules.id, reroll, slot_def.slot])) if slot_def.get("own_seed", false) else rng)
-	var lacks := []   # lines this race doesn't have (a mounted archer with nothing to ride)
 	for k in slots.size():
 		var slot_def: Dictionary = slots[k]
 		ctx.age = int(slot_def.tier)
 		ctx.rng = rngs[k]
-		var why := _lacks(slot_def, units, ctx)
-		var recipe := {} if why != "" else _make_unit(slot_def, ctx)
-		if recipe.is_empty():   # (or _make_unit found no mount for a line that must ride)
-			why = why if why != "" else "nothing will carry them"
-			lacks.append(slot_def.slot)
-			notes.append("No %s line: %s." % [slot_def.name, why])
-			units.append({})
-			continue
+		var recipe := _make_unit(slot_def, ctx)
 		if slot_def.slot == "worker":
 			ctx.crew = recipe   # siege engines are crewed by the race's own workers
 		var first := {"age": ctx.age, "recipe": recipe, "eval": Pricing.evaluate(recipe, lib, rules)}
@@ -182,8 +164,6 @@ func generate(prompt: String, rules: Dictionary, reroll := 0) -> Dictionary:
 	for k in units.size():
 		var slot_def: Dictionary = slots[k]
 		ctx.rng = rngs[k]
-		if units[k].is_empty():
-			continue
 		for age in range(int(slot_def.tier) + 1, int(rules.get("ages", 1)) + 1):
 			ctx.age = age
 			# A line that doesn't upgrade (rules "upgrades": false, the healer: Dominic) stays as
@@ -191,7 +171,6 @@ func generate(prompt: String, rules: Dictionary, reroll := 0) -> Dictionary:
 			var up: Dictionary = units[k].line[-1].recipe if not slot_def.get("upgrades", true) else _upgrade(units[k].line[-1].recipe, slot_def, ctx)
 			units[k].line.append({"age": age, "recipe": up, "eval": Pricing.evaluate(up, lib, rules)})
 	ctx.rng = rng
-	units = units.filter(func(u): return not u.is_empty())
 
 	var race := {
 		"schema": "aow.race/1",
@@ -203,7 +182,6 @@ func generate(prompt: String, rules: Dictionary, reroll := 0) -> Dictionary:
 		"family": family,
 		"notes": notes,
 		"units": units,
-		"lacks": lacks,   # derived (the slots left out), not in the key
 		"economy": c.get("economy", {}).duplicate(),   # race-wide modifiers; derived, not in the key
 	}
 	race.key = race_key(race)
@@ -231,8 +209,6 @@ func _race_name(rng, c: Dictionary, family: String) -> String:
 func _make_unit(slot_def: Dictionary, ctx: Dictionary) -> Dictionary:
 	if slot_def.has("engine"):
 		return _make_engine(slot_def, ctx)
-	if slot_def.role == "unique":
-		return _make_unique(slot_def, ctx)
 	var rng = ctx.rng
 	var rules: Dictionary = ctx.rules
 	var brief: Dictionary = ctx.brief
@@ -273,13 +249,6 @@ func _make_unit(slot_def: Dictionary, ctx: Dictionary) -> Dictionary:
 			spent += Pricing.GIANT_POINTS
 		else:
 			heavy = true
-	elif slot_def.has("mount"):   # a line that rides (rules roster "mount"): the scout, the mounted archer
-		var mount := _choose_mount(ctx, true)
-		if mount != "":
-			recipe.mount = _mount_for(mount, false, rng, brief, ctx.skin)
-			spent += _mount_points(recipe.mount)
-		elif slot_def.mount == "always":
-			return {}   # nothing to ride (Aztec folk, spooky spiders, a winged race): the race lacks this line
 	elif role == "archer" and int(ctx.tags.get("mounted", 0)) >= 2:
 		var mount := _choose_mount(ctx)
 		if mount != "":
@@ -320,8 +289,6 @@ func _make_unit(slot_def: Dictionary, ctx: Dictionary) -> Dictionary:
 			if spent + int(w.points) <= budget:
 				recipe.mount.parts.back = w.id
 				spent += int(w.points)
-	if slot_def.has("noun"):
-		recipe.noun = slot_def.noun   # the line's own noun over the weapon's (a Scout, whatever it holds)
 	recipe.name = _unit_name(recipe, primary, c)
 
 	# Optional gear: most-wanted slot first, while the budget lasts
@@ -330,15 +297,13 @@ func _make_unit(slot_def: Dictionary, ctx: Dictionary) -> Dictionary:
 	for slot in rng.shuffled(slots):
 		if slot == "hand_l" and primary.get("two_handed", false):
 			continue
-		var cands: Array = _cands(slot, ctx).filter(func(p): return _allowed(p, role, unit_tags) and _fits_mount(p, recipe))
+		var cands: Array = _cands(slot, ctx).filter(func(p): return _allowed(p, role, unit_tags))
 		if ridden and not _winged(unit_tags):
 			cands = cands.filter(func(p): return not ("wings" in p.tags))
 		if role == "worker":
 			cands = cands.filter(func(p): return int(p.points) <= 1)
 		if role == "healer":
 			cands = cands.filter(func(p): return _healer_gear(p, unit_tags))
-		if role in LIGHT_ROLES:
-			cands = cands.filter(_light)
 		# Optional gear can stay empty, so it never goes off theme (no acorn caps on Romans).
 		cands = cands.filter(func(p): return not _off_theme(p, unit_tags))
 		if cands.is_empty():
@@ -377,128 +342,9 @@ func _make_engine(slot_def: Dictionary, ctx: Dictionary) -> Dictionary:
 	}
 
 
-## Why this race has no such line ("" if it has): rules roster "unless_mounted" names a line that
-## already rides for it (a centaur's or a horse people's archers are mounted archers already);
-## "needs_hands": a creature that carries its weapons in a harness (creatures.json "harness":
-## beetles, spiders) can't draw a bow while clinging to a mount.
-func _lacks(slot_def: Dictionary, units: Array, ctx: Dictionary) -> String:
-	if slot_def.get("needs_hands", false) and lib.creatures[ctx.creature].get("harness", false):
-		return "the %s have no hands to draw a bow on a mount" % lib.creatures[ctx.creature].plural.to_lower()
-	var other: String = slot_def.get("unless_mounted", "")
-	for u in units:
-		if not u.is_empty() and u.recipe.slot == other and u.recipe.has("mount"):
-			return "the %s ride already as %ss" % [lib.creatures[ctx.creature].plural.to_lower(), String(other)]
-	return ""
-
-
-## Can a rider on this recipe's mount wear the part? (parts.json "not_ridden_on": a cloth cape hangs
-## through a pony's back: the placement check, A3.)
-func _fits_mount(p: Dictionary, recipe: Dictionary) -> bool:
-	return not (recipe.has("mount") and not recipe.mount.fused and recipe.mount.creature in p.get("not_ridden_on", []))
-
-
-## Light kit (scouts, raider themes): nothing heavy, nothing over LIGHT_POINTS; on the back only a
-## winged race's wings (only_if keeps them to winged races), no cape or banner.
-func _light(p: Dictionary) -> bool:
-	if p.slot == "back":
-		return "wings" in p.tags
-	return not "heavy" in p.tags and int(p.points) <= LIGHT_POINTS
-
-
-## The race's unique unit (the Castle, milestone 13 step 4): its theme (data/uniques.json) is the one
-## the prompt asked for most by its `asked` tags (romans -> the testudo, cheese -> the Big Cheese,
-## even on frogs), else the creature's own `unique`, else its culture's (families.json).
-func _unique_theme(ctx: Dictionary) -> String:
-	var best := ""
-	var best_n := 0
-	var ids: Array = lib.uniques.keys()
-	ids.sort()
-	for id in ids:
-		var n := 0
-		for t in lib.uniques[id].get("asked", []):
-			n += int(ctx.brief.tags.get(t, 0))
-		if n > best_n:
-			best_n = n
-			best = id
-	if best != "":
-		return best
-	return lib.creatures[ctx.creature].get("unique", lib.families[ctx.family].unique)
-
-
-## A unique unit: the theme's role picks its weapon (its `parts` first: the signature kit, where the
-## age and era allow), the theme's `wants` lean its gear, `mount` "ride" puts it on the race's mount,
-## `giant` makes it a giant where that reads (giant_ok), `light` keeps it light. A bigger budget
-## (rules roster `budget_add`); priced like everything else, plus the theme's stats and price_points
-## (pricing.gd reads them through the recipe's `unique`).
-func _make_unique(slot_def: Dictionary, ctx: Dictionary) -> Dictionary:
-	var id := _unique_theme(ctx)
-	var th: Dictionary = lib.uniques[id]
-	var rng = ctx.rng
-	var role: String = th.role
-	var budget := int(ctx.rules.budget[str(ctx.age)]) + int(slot_def.get("budget_add", 0))
-	var c: Dictionary = lib.creatures[ctx.creature]
-	var recipe := {
-		"slot": slot_def.slot, "role": slot_def.role, "unique": id, "tier": int(slot_def.tier),
-		"creature": ctx.creature, "family": ctx.family, "skin": ctx.skin,
-		"body": c.body, "head": c.head, "parts": {}, "scale": 100,
-	}
-	var spent := int(lib.part(c.body).points)
-	var unit_tags: Dictionary = ctx.tags.duplicate()
-	for t in th.get("wants", {}):
-		unit_tags[t] = int(unit_tags.get(t, 0)) + int(th.wants[t])
-	if c.has("fused_mount"):
-		recipe.mount = _mount_for(c.fused_mount, true, rng, ctx.brief, ctx.skin)
-	elif th.get("mount", "") == "ride":
-		var mount := _choose_mount(ctx, true)
-		if mount != "":
-			recipe.mount = _mount_for(mount, false, rng, ctx.brief, ctx.skin)
-	if recipe.has("mount"):
-		spent += _mount_points(recipe.mount)
-	elif th.get("giant", false) and c.get("giant_ok", true):
-		recipe.scale = GIANT_SCALE
-		spent += Pricing.GIANT_POINTS
-	if ctx.brief.body_size == "tiny" and recipe.scale == 100:
-		recipe.scale = TINY_SCALE   # tiny vikings' raiders are tiny too
-	var ok := func(p: Dictionary) -> bool: return not th.get("light", false) or _light(p)
-	for pid in th.get("parts", []):   # the signature kit, where the age and era allow it
-		var p: Dictionary = lib.part(pid)
-		if recipe.parts.has(p.slot) or int(p.get("tier", 1)) > int(ctx.age) or not lib.era_ok(p, ctx.rules.era):
-			continue
-		if p.slot == "hand_l" and recipe.parts.has("hand_r") and lib.part(recipe.parts.hand_r).get("two_handed", false):
-			continue
-		recipe.parts[p.slot] = pid
-		spent += int(p.points)
-	if not recipe.parts.has("hand_r"):
-		var need: String = ROLE_NEEDS[role]
-		var excluded: Array = ROLE_EXCLUDES.get(role, [])
-		var options: Array = _cands("hand_r", ctx).filter(func(p): return need in p.tags and not p.tags.any(func(t): return t in excluded) \
-			and _allowed(p, role, unit_tags) and not (th.get("light", false) and "heavy" in p.tags))
-		var affordable := options.filter(func(p): return spent + int(p.points) <= budget)
-		var primary: Dictionary = _best(affordable if not affordable.is_empty() else [_cheapest(options)], unit_tags, ROLE_BIAS[role], rng)
-		recipe.parts.hand_r = primary.id
-		spent += int(primary.points)
-	var ridden: bool = recipe.has("mount") and not recipe.mount.fused
-	for slot in OPTIONAL_SLOTS:
-		if recipe.parts.has(slot) or (slot == "hand_l" and lib.part(recipe.parts.hand_r).get("two_handed", false)):
-			continue
-		var cands: Array = _cands(slot, ctx).filter(func(p): return _allowed(p, role, unit_tags) and not _off_theme(p, unit_tags) and ok.call(p) \
-			and not (ridden and "wings" in p.tags and not _winged(unit_tags)) and _fits_mount(p, recipe))
-		cands = cands.filter(func(p): return spent + int(p.points) <= budget)
-		if cands.is_empty():
-			continue
-		var best: Dictionary = _best(cands, unit_tags, ROLE_BIAS[role], rng)
-		if _want(best, unit_tags) > 0 or rng.chance(45):
-			recipe.parts[slot] = best.id
-			spent += int(best.points)
-	# Its name is the theme's: alone for folk and for the creatures it belongs to (`own`), else the creature's
-	# noun first ("Frog Testudo Guard").
-	recipe.name = th.noun if c.noun == "Folk" or ctx.creature in th.get("own", []) else "%s %s" % [c.noun, th.noun]
-	return recipe
-
-
 ## The optional slots a role fills.
 func _gear_slots(role: String) -> Array:
-	return {"worker": WORKER_SLOTS, "healer": HEALER_SLOTS, "scout": SCOUT_SLOTS}.get(role, OPTIONAL_SLOTS)
+	return {"worker": WORKER_SLOTS, "healer": HEALER_SLOTS}.get(role, OPTIONAL_SLOTS)
 
 
 ## A healer's kit: its bag (heal parts) in the off hand, a light hat (1 point, no crest,
@@ -683,15 +529,13 @@ func _upgrade(prev: Dictionary, slot_def: Dictionary, ctx: Dictionary) -> Dictio
 		if slot == "hand_r" and "primitive" in cur.tags:
 			kinds += ROLE_KINDS.get(role, [])
 		var cands: Array = _cands(slot, ctx).filter(func(p): return int(p.get("tier", 1)) > int(cur.get("tier", 1)) \
-			and _allowed(p, role, unit_tags) and not _off_theme(p, unit_tags) and _fits_mount(p, r) \
+			and _allowed(p, role, unit_tags) and not _off_theme(p, unit_tags) \
 			and (p.tags.any(func(t): return t in kinds) or p.get("replaces", []).any(func(t): return t in kinds) \
 				or _want(p, ctx.brief.tags) > 0))   # same kind (or a part that `replaces` it: the frogs' mace after their sword), or asked for (rats with guns)
 		if role == "worker":   # a worker's hat gets better, but never a war helmet (no crests, horns, heavy)
 			cands = cands.filter(func(p): return int(p.points) <= 2 and not p.tags.any(func(t): return t in ["crest", "horns", "heavy"]))
 		if role == "healer" and slot != "hand_r":
 			cands = cands.filter(func(p): return _healer_gear(p, unit_tags))
-		if role in LIGHT_ROLES and slot != "hand_r":
-			cands = cands.filter(_light)
 		if slot == "hand_r":
 			var need: String = ROLE_NEEDS[role]
 			var excluded: Array = ROLE_EXCLUDES.get(role, [])
@@ -714,15 +558,13 @@ func _upgrade(prev: Dictionary, slot_def: Dictionary, ctx: Dictionary) -> Dictio
 	for slot in open_slots:
 		if slot == "hand_l" and lib.part(r.parts.hand_r).get("two_handed", false):
 			continue
-		var cands: Array = _cands(slot, ctx).filter(func(p): return _allowed(p, role, unit_tags) and not _off_theme(p, unit_tags) and _fits_mount(p, r))
+		var cands: Array = _cands(slot, ctx).filter(func(p): return _allowed(p, role, unit_tags) and not _off_theme(p, unit_tags))
 		if ridden or role == "worker":
 			cands = cands.filter(func(p): return not ("wings" in p.tags))
 		if role == "worker":
 			cands = cands.filter(func(p): return int(p.points) <= 1)
 		if role == "healer":
 			cands = cands.filter(func(p): return _healer_gear(p, unit_tags))
-		if role in LIGHT_ROLES:
-			cands = cands.filter(_light)
 		if cands.is_empty():
 			continue
 		var best: Dictionary = _best(cands, unit_tags, {}, rng)
@@ -769,7 +611,7 @@ func _recipe_points(r: Dictionary) -> int:
 
 
 func _unit_name(recipe: Dictionary, primary: Dictionary, c: Dictionary) -> String:
-	var noun: String = recipe.get("noun", primary.noun)
+	var noun: String = primary.noun
 	var who: String = c.noun
 	var name := noun if who == "Folk" else "%s %s" % [noun, who]
 	if recipe.scale >= GIANT_SCALE:

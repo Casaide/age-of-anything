@@ -46,7 +46,6 @@ func _init() -> void:
 	_test_healers(lib, gen, rules)
 	_test_siege(lib, gen, rules.default)
 	_test_swordsmen(lib, gen, rules)
-	_test_new_lines(lib, gen, rules)
 	_test_composer(lib, gen, rules.default)
 	_test_audio(lib)
 	_test_paths()
@@ -277,14 +276,14 @@ func _test_bounds(lib, gen, rules: Dictionary) -> void:
 		for prompt in PROMPTS:
 			for reroll in 6:
 				var race: Dictionary = gen.generate(prompt, r, reroll)
-				check(race.units.size() + race.lacks.size() == r.roster.filter(func(sd): return sd.get("status", "") != "planned").size(), "roster size %s/%s" % [rid, prompt])
+				check(race.units.size() == r.roster.filter(func(sd): return sd.get("status", "") != "planned").size(), "roster size %s/%s" % [rid, prompt])
 				for u in race.units:
 					var rec: Dictionary = u.recipe
 					for slot in rec.parts:
 						var p: Dictionary = lib.part(rec.parts[slot])
 						check(DataLib.era_ok(p, r.era), "%s: %s allowed in %s" % [rec.name, p.id, rid])
 						check(p.slot == slot, "%s in matching slot" % p.id)
-					var need: String = Generator.ROLE_NEEDS[lib.uniques[rec.unique].role if rec.has("unique") else rec.role]
+					var need: String = Generator.ROLE_NEEDS[rec.role]
 					check(need in lib.part(rec.parts.hand_r).tags, "%s primary has %s" % [rec.name, need])
 					check(u.eval.cost.food + u.eval.cost.wood > 0, "%s has a cost" % rec.name)
 					if rec.role == "skirmisher":
@@ -483,66 +482,6 @@ func _test_swordsmen(lib, gen, rules: Dictionary) -> void:
 		var b: Dictionary = gen.generate(prompt, without)
 		var lines := func(race): return JSON.stringify(race.units.filter(func(u): return u.recipe.slot != "infantry").map(func(u): return u.line.map(func(l): return l.recipe)))
 		check(lines.call(a) == lines.call(b) and a.name == b.name, "'%s': adding the swordsman leaves the other lines' recipes as they were" % prompt)
-
-
-## The scout (Stable), the mounted archer (Archery Range) and the unique unit (Castle), milestone 13:
-## scouts light, fast and far-sighted, on foot where nothing carries them; mounted archers ride a bow,
-## and a race lacks them when its archers already ride or nothing carries them; the unique unit's
-## theme from the prompt, the creature or the culture (data/uniques.json); and adding the three changed
-## no other line's recipes, nor the race's name (own_seed).
-func _test_new_lines(lib, gen, rules: Dictionary) -> void:
-	var prompts: Array = PROMPTS + ["romans", "aztecs", "spooky spiders", "mongols", "swamp frogs", "sewer rats", "egyptians", "han", "forest beetles"]
-	for rid in rules:
-		for prompt in prompts:
-			for reroll in 2:
-				var race: Dictionary = gen.generate(prompt, rules[rid], reroll)
-				var spear: Dictionary = _unit(race, "spear")
-				var s: Dictionary = _unit(race, "scout")
-				check(int(s.recipe.tier) == 2 and s.line.size() == 2, "%s/%s: the scout line runs ages 2-3" % [rid, prompt])
-				for l in s.line:
-					var w: Array = lib.part(l.recipe.parts.hand_r).tags
-					check("melee" in w and not w.any(func(t): return t in ["spear", "lance", "heavy"]), "%s: %s holds a light weapon (%s)" % [prompt, l.recipe.name, l.recipe.parts.hand_r])
-					for slot in l.recipe.parts:
-						var p: Dictionary = lib.part(l.recipe.parts[slot])
-						check(slot == "hand_r" or "wings" in p.tags or (not "heavy" in p.tags and int(p.points) <= 2), "%s: %s goes light (%s)" % [prompt, l.recipe.name, p.id])
-					check(int(l.eval.sight) > 0 and int(l.eval.bonus.get("skirmish", 0)) > 0, "%s: %s sees far and beats skirmishers" % [prompt, l.recipe.name])
-				check(int(s.eval.speed) > int(spear.eval.speed), "%s: the scout (%d) outruns the spear (%d)" % [prompt, int(s.eval.speed), int(spear.eval.speed)])
-				var ma: Array = race.units.filter(func(u): return u.recipe.slot == "mounted_archer")
-				var archer: Dictionary = _unit(race, "archer")
-				check(ma.is_empty() == ("mounted_archer" in race.lacks), "%s: a missing mounted archer is listed as lacking" % prompt)
-				if not ma.is_empty():
-					check(ma[0].recipe.has("mount") and "bow" in lib.part(ma[0].recipe.parts.hand_r).tags and "mounted" in ma[0].eval.tags \
-						and not "infantry" in ma[0].eval.tags, "%s: %s rides with a bow, not infantry" % [prompt, ma[0].recipe.name])
-				else:
-					check(archer.recipe.has("mount") or not s.recipe.has("mount") or lib.creatures[race.creature].get("harness", false), "%s: no mounted archers only when its archers ride, nothing carries it, or it has no hands" % prompt)
-				var un: Dictionary = _unit(race, "unique")
-				check(int(un.recipe.tier) == 3 and un.line.size() == 1 and lib.uniques.has(un.recipe.unique), "%s: one unique unit in age 3 (%s)" % [prompt, un.recipe.name])
-				var need: String = Generator.ROLE_NEEDS[lib.uniques[un.recipe.unique].role]
-				check(need in lib.part(un.recipe.parts.hand_r).tags, "%s: %s holds its theme's weapon" % [prompt, un.recipe.name])
-	var d: Dictionary = rules.default
-	check(_unit(gen.generate("centaur romans", d), "archer").recipe.has("mount") and "mounted_archer" in gen.generate("centaur romans", d).lacks, "centaurs' archers are their mounted archers")
-	check("mounted_archer" in gen.generate("aztecs", d).lacks and not _unit(gen.generate("aztecs", d), "scout").recipe.has("mount"), "aztecs: no mounted archers, scouts on foot")
-	check(_unit(gen.generate("greeks", d), "mounted_archer").recipe.mount.creature == "pony", "greeks' mounted archers ride ponies")
-	var themes := {"romans": "testudo", "roman frogs": "testudo", "sewer rats": "gutter_raider", "sewer rats with cheese hammers": "big_cheese",
-		"greeks": "phalanx", "aztecs": "obsidian", "swamp frogs": "bullfrog", "mongols": "steppe_raider", "royal knights": "sworn_knight",
-		"spooky beetle knights": "sworn_knight", "egyptians": "nile_bowguard", "han": "repeater", "tiny vikings": "horned_raider",
-		"forest beetles": "stag_colossus", "spooky spiders": "web_lurker"}
-	for prompt in themes:
-		var got: String = _unit(gen.generate(prompt, d), "unique").recipe.unique
-		check(got == themes[prompt], "%s: unique theme %s (%s)" % [prompt, themes[prompt], got])
-	check(int(_unit(gen.generate("swamp frogs", d), "unique").recipe.scale) >= Generator.GIANT_SCALE, "the Great Bullfrog is a giant")
-	check(_unit(gen.generate("mongols", d), "unique").recipe.has("mount"), "the Steppe Raider rides")
-	var testudo: Dictionary = _unit(gen.generate("romans", d), "unique")
-	check(testudo.recipe.parts.hand_l == "shield.scutum" and int(testudo.eval.armour.pierce) >= 7, "the Testudo Guard locks its scutum")
-	for rid in rules:
-		var without: Dictionary = rules[rid].duplicate(true)
-		without.roster = without.roster.filter(func(sd): return not sd.slot in ["scout", "mounted_archer", "unique"])
-		for prompt in prompts:
-			for reroll in 2:
-				var a: Dictionary = gen.generate(prompt, rules[rid], reroll)
-				var b: Dictionary = gen.generate(prompt, without, reroll)
-				var lines := func(race): return JSON.stringify(race.units.filter(func(u): return not u.recipe.slot in ["scout", "mounted_archer", "unique"]).map(func(u): return u.line.map(func(l): return l.recipe)))
-				check(lines.call(a) == lines.call(b) and a.name == b.name, "%s/'%s': the new lines leave the others' recipes and the name as they were" % [rid, prompt])
 
 
 func _test_composer(lib, gen, rules: Dictionary) -> void:

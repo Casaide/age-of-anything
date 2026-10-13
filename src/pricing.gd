@@ -84,30 +84,10 @@ static func evaluate(recipe: Dictionary, lib, rules: Dictionary) -> Dictionary:
 		tags["mounted"] = true
 		tags["large"] = true
 
-	# The line's own counters and stats (rules roster "bonus" and "stats": the swordsman's counters, the
-	# scout's pace and sight; "stats_on_foot" for one with nothing to ride), whatever it holds, and a
-	# unique unit's theme (data/uniques.json), each with the price_points they add.
-	var extra := []
-	for sd in rules.roster:
+	for sd in rules.roster:   # the line's own counters (rules roster "bonus": the swordsman's), whatever it holds, and their price
 		if sd.slot == recipe.get("slot", ""):
-			extra.append(sd)
-			if not recipe.has("mount") and sd.has("stats_on_foot"):
-				extra.append({"stats": sd.stats_on_foot})
-	if recipe.has("unique"):
-		extra.append(lib.uniques[recipe.unique])
-	var sight := 0   # tiles over the rules' unit sight (fog.gd)
-	for x in extra:
-		_add_classes(bonus, x.get("bonus", {}))
-		points += int(x.get("price_points", 0))
-		var st: Dictionary = x.get("stats", {})
-		_add_classes(armour, st.get("armour", {}))
-		hp += int(st.get("hp", 0))
-		attack += int(st.get("attack", 0))
-		speed += int(st.get("speed", 0))
-		reach += int(st.get("range", 0))
-		sight += int(st.get("sight", 0))
-		if st.has("reload"):
-			weapon.reload = int(st.reload)
+			_add_classes(bonus, sd.get("bonus", {}))
+			points += int(sd.get("price_points", 0))
 
 	var scale := int(recipe.scale)
 	if scale >= 140:
@@ -167,8 +147,7 @@ static func evaluate(recipe: Dictionary, lib, rules: Dictionary) -> Dictionary:
 		"cost": cost,
 		"train_time": maxi(3, (int(c.train_base) * lib.curve(c.train_curve, points) * int(econ.get("train_time_pct", 100)) / 100 + 500) / 1000),
 		"pop": 2 if tags.has("large") else 1,
-		"radius": int(body.stats.get("radius", 0)),
-		"sight": sight,   # a body's own size in milli-tiles (engines); 0: by scale
+		"radius": int(body.stats.get("radius", 0)),   # a body's own size in milli-tiles (engines); 0: by scale
 	}
 	out.merge(weapon)
 	return out

@@ -4103,7 +4103,6 @@
  },
  {
   "id": "helm.iron",
-  "face": "covered",
   "slot": "head_gear",
   "tags": [
    "helmet",
@@ -4814,8 +4813,6 @@
  },
  {
   "id": "cape.cloth",
-  "not_ridden_on": ["pony", "beetle"],
-  "_not_ridden_on_doc": "mounts whose riders don't wear it: a cloth cape hung through the pony's and the beetle's back (the placement check, A3)",
   "slot": "back",
   "tags": [
    "cape",
@@ -6676,7 +6673,6 @@
    }
   ],
   "id": "helm.aztec_eagle",
-  "face": "covered",
   "tags": [
    "helmet",
    "aztec",
@@ -6914,11 +6910,7 @@
    "wood": 60
   },
   "tier": 2,
-  "requires_role": [
-   "large",
-   "infantry",
-   "scout"
-  ],
+  "requires_role": ["large", "infantry"],
   "note": "the sickle sword",
   "favour": 5
  },
@@ -6972,11 +6964,7 @@
    "wood": 60
   },
   "tier": 2,
-  "requires_role": [
-   "large",
-   "infantry",
-   "scout"
-  ],
+  "requires_role": ["large", "infantry"],
   "note": "a wooden club edged with obsidian",
   "favour": 5
  },
