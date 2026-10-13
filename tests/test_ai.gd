@@ -4,7 +4,7 @@ extends SceneTree
 ## - two bots play a whole match, deterministically (same seed, same winner and hashes);
 ## - surrendering ends the match.
 ## Prints a minute-by-minute timeline of each match.
-## Run: godot --headless --path . --script res://tests/test_ai.gd [-- <map_id> [levels|age3|reach|walls]]   (several minutes; flat_test by default; levels: each level left alone 30 minutes)
+## Run: godot --headless --path . --script res://tests/test_ai.gd [-- <map_id> [levels|age3|reach|walls|rams|pick|land|hills]]   (several minutes; flat_test by default; levels: each level left alone 30 minutes)
 
 const DataLib := preload("res://src/data_lib.gd")
 const Generator := preload("res://src/race_generator.gd")
@@ -65,6 +65,17 @@ func _init() -> void:
 		print("\n%d checks, %d failed" % [checks, failures])
 		quit(1 if failures > 0 else 0)
 		return
+	if args.size() > 1 and args[1] == "hills":   # just the high-ground and crossing-guard scenarios
+		_test_hills(rules, frogs, rats)
+		_test_guard(rules, frogs, rats)
+		print("\n%d checks, %d failed" % [checks, failures])
+		quit(1 if failures > 0 else 0)
+		return
+	if args.size() > 1 and args[1] == "land":   # just the land checks: scouting, roads, camps, crossings (a few minutes)
+		_test_land(rules, frogs, rats)
+		print("\n%d checks, %d failed" % [checks, failures])
+		quit(1 if failures > 0 else 0)
+		return
 	if args.size() > 1 and args[1] == "reach":   # just the raid and walled-ford checks (a couple of minutes)
 		_test_respond(rules, rats, frogs)
 		_test_shelter(rules, rats, frogs)
@@ -116,6 +127,7 @@ func _init() -> void:
 	_test_walled_base(rules, frogs, rats, "wall", false)
 	_test_walled_base(rules, frogs, rats, "wall", true)
 	_test_age_three(rules, frogs, rats)
+	_test_land(rules, frogs, rats)
 
 	var w := World.new(SEED, SimMap.load_id(map_id), [frogs, rats], rules)
 	w.issue(1, Commands.SURRENDER, {})
@@ -146,7 +158,7 @@ func _play(rules: Dictionary, races: Array, bots: Array, title: String, quiet :=
 				if hi >= 0:
 					medics.heals[w.units.owner[hi]] += 1
 		if w.tick % 100 == 0:
-			_watch_healers(w, medics)
+			_watch_healers(w, medics, bots)
 		for p in 2:
 			if aged[p] < 0 and w.ages[p] >= 2:
 				aged[p] = w.tick
@@ -180,7 +192,8 @@ func _play(rules: Dictionary, races: Array, bots: Array, title: String, quiet :=
 
 ## Healers: the most each side had, and whether they keep behind their army: when soldiers are
 ## out (3 or more over 10 tiles from home), the healers' middle is nearer home than theirs.
-func _watch_healers(w: World, medics: Dictionary) -> void:
+## Soldiers posted with far gatherers (a bot's escorts) aren't the army the healers follow.
+func _watch_healers(w: World, medics: Dictionary, bots: Array) -> void:
 	for p in 2:
 		var home: Array = w.map.starts[p]
 		var n := [0, 0]
@@ -188,6 +201,8 @@ func _watch_healers(w: World, medics: Dictionary) -> void:
 		for i in w.units.count():
 			var t: Dictionary = w.types[w.units.kind[i]]
 			if w.units.owner[i] != p or t.worker or t.has("animal"):
+				continue
+			if "expand" in bots[p] and bots[p].expand.escorts.has(w.units.id[i]):
 				continue
 			var k := 1 if t.healer else 0
 			var dist := isqrt_tiles(w.units.x[i] - int(home[0]), w.units.y[i] - int(home[1]))
@@ -634,6 +649,7 @@ func _test_walled_fords(rules: Dictionary, a: Dictionary, b: Dictionary) -> void
 	var looks := 0
 	var cut_off := 0
 	var wall_hits := 0
+	var mended := -1
 	while w.tick < 20 * 60 * 12 and w.winner < 0:
 		bot.think(w)
 		passive.think(w)
@@ -643,6 +659,8 @@ func _test_walled_fords(rules: Dictionary, a: Dictionary, b: Dictionary) -> void
 				var tb: int = w.buildings.index_of(e.to)
 				if tb >= 0 and w.buildings.kind[tb] == wk and w.buildings.owner[tb] == 0:
 					wall_hits += 1
+		if mended < 0 and w.bridge_up.has(1):
+			mended = w.tick
 		if w.tick % 100 != 0 or w.tick < 1200:
 			continue
 		var home: int = reach.area_at(w, ln, s1[0], s1[1])
@@ -652,8 +670,8 @@ func _test_walled_fords(rules: Dictionary, a: Dictionary, b: Dictionary) -> void
 			var id: int = w.units.id[i]
 			looks += 1
 			var idle: bool = w.units.task[i] == 0 and w.units.moving[i] == 0 and w.units.foe[i] == 0
-			if w.units.task[i] == 3 and w.units.target[i] == far_id:
-				stranded += 1
+			if w.units.task[i] == 3 and w.units.target[i] == far_id and mended < 0:
+				stranded += 1   # (once the bridge is mended, the far side is in reach again)
 			idle_for[id] = int(idle_for.get(id, 0)) + 1 if idle else 0
 			worst = maxi(worst, idle_for[id])
 			if idle:
@@ -672,15 +690,176 @@ func _test_walled_fords(rules: Dictionary, a: Dictionary, b: Dictionary) -> void
 			blds += 1
 			if w.buildings.kind[bi] == bk and w.buildings.done[bi] == 1:
 				barracks += 1
-	print("\n== walled fords (%s): at %s the bot has %d workers, %d buildings, age %d; idle %d of %d worker looks, longest idle %d s; workers sent to the cut-off foundation %d looks; barracks built %d; new foundations it can't reach %d; blows on the walls %d" % [
-		map_id, _clock(w.tick), workers, blds, w.ages[1], idle_looks, looks, worst * 5, stranded, barracks, cut_off, wall_hits])
+	print("\n== walled fords (%s): at %s the bot has %d workers, %d buildings, age %d; idle %d of %d worker looks, longest idle %d s; workers sent to the cut-off foundation %d looks; barracks built %d; new foundations it can't reach %d; blows on the walls %d; a bridge mended %s" % [
+		map_id, _clock(w.tick), workers, blds, w.ages[1], idle_looks, looks, worst * 5, stranded, barracks, cut_off, wall_hits, _clock(mended) if mended >= 0 else "never"])
 	check(cut_off == 0, "walled fords: the bot lays no foundation it can't reach")
 	check(stranded == 0, "walled fords: nobody is sent to the foundation over the river (%d looks)" % stranded)
 	check(barracks >= 1, "walled fords: it builds a barracks on its own side instead")
 	check(idle_looks * 100 <= looks * 5, "walled fords: its workers keep working (idle %d of %d looks)" % [idle_looks, looks])
 	check(worst <= 4, "walled fords: no worker stands idle for long (longest %d s)" % (worst * 5))
-	check(w.ages[1] >= 2 and workers >= 20, "walled fords: the bot grows on its own side (age %d, %d workers)" % [w.ages[1], workers])
-	check(wall_hits > 0, "walled fords: its army goes for the walls")
+	check(w.ages[1] >= 2 and (workers >= 20 or w.winner == w.teams[1]), "walled fords: the bot grows on its own side (age %d, %d workers; or wins first)" % [w.ages[1], workers])
+	check(wall_hits > 0 or mended >= 0, "walled fords: its army goes for the walls (or over a bridge it mended)")
+	if map_id == "reed_meadow" and Economy.builder_class(w, 1) == 0:   # (its bridge is the only other way over; on the delta one bridge alone leads to walled islands)
+		check(mended >= 0, "walled fords: it mends a broken bridge, its only way over (milestone 15 phase 7)")
+
+
+## The land (milestone 15 phase 7): an early scout tours and sees round the enemy's start; then a
+## Normal bot match (frogs against rats) to the end, reporting what each bot did with the land:
+## scout tours, roads felled, camps by far gatherers, escorts, the key crossing guarded, bridges
+## mended and broken, hills taken, flanks and detours, raids. Checks what the map calls for.
+func _test_land(rules: Dictionary, a: Dictionary, b: Dictionary) -> void:
+	var w := World.new(SEED, SimMap.load_id(map_id), [b, a], rules)
+	var bot := Bot.new(0)
+	var passive := EcoBot.new(1)
+	while w.tick < 20 * 60 * 4:
+		bot.think(w)
+		passive.think(w)
+		w.step()
+	var s1: Array = w.map.starts[1]
+	var seen := 0
+	var cells := 0
+	for dy in range(-8, 9):
+		for dx in range(-8, 9):
+			var x: int = s1[0] / 1000 + dx
+			var y: int = s1[1] / 1000 + dy
+			if x >= 0 and y >= 0 and x < w.map.width and y < w.map.height:
+				cells += 1
+				if w.fog[0][y * w.map.width + x] != 0:
+					seen += 1
+	print("\n== land (%s): scout tours %d by 4:00, ground round the enemy start seen %d of %d cells" % [map_id, bot.scout.tours, seen, cells])
+	check(bot.scout.tours >= 1, "land: a scout tours early")
+	check(seen * 100 >= cells * 25, "land: ...and sees round the enemy's start (%d of %d cells)" % [seen, cells])
+	# A whole Normal match: what the bots did with the land.
+	w = World.new(SEED, SimMap.load_id(map_id), [a, b], rules)
+	var bots := [Bot.new(0), Bot.new(1)]
+	while w.tick < LIMIT and w.winner < 0:
+		for bt in bots:
+			bt.think(w)
+		w.step()
+	var did := {}
+	for p in 2:
+		var bt = bots[p]
+		var line := {"tours": bt.scout.tours, "roads": bt.land.roads, "key": bt.land.key}
+		line.merge(bt.land.stats)
+		line.merge(bt.expand.stats)
+		print("   P%d %s: %s" % [p, [a, b][p].name, line])
+		for k in line:
+			if typeof(line[k]) == TYPE_INT and k != "key":
+				did[k] = int(did.get(k, 0)) + line[k]
+	print("   match: winner %d at %s" % [w.winner, _clock(w.tick)])
+	var camps: int = did.get("lumber_camp", 0) + did.get("mining_camp", 0) + did.get("mill", 0)
+	check(camps >= 1, "land: camps go up by far gatherers (%d)" % camps)
+	if map_id == "old_forest":
+		check(did.get("roads", 0) >= 1, "land: a road is felled through the thin woods (%d trees)" % did.get("road_trees", 0))
+	check(w.winner >= 0, "land: the match ends (%s)" % _clock(w.tick))
+	_test_guard(rules, a, b)
+	_test_hills(rules, a, b)
+
+
+## A level that guards (Normal), on the back foot (set: here the placement is the point), left to
+## build up against a passive side (its stock topped up from 6:00), puts a Watchtower on the key
+## crossing (the one the enemy's way to it uses) by 16 minutes.
+func _test_guard(rules: Dictionary, a: Dictionary, b: Dictionary) -> void:
+	var cfg: Dictionary = Bot.load_config()
+	for wv in cfg.military.waves:
+		wv.at = 1 << 20
+	var w := World.new(SEED, SimMap.load_id(map_id), [a, b], rules)
+	var bot := Bot.new(0, cfg)
+	bot._on_back_foot = true   # (it guards its crossing when it's on the back foot: here, from the start)
+	var passive := EcoBot.new(1)
+	while w.tick < 20 * 60 * 16:
+		if w.tick % 1200 == 0 and w.tick >= 20 * 60 * 6:   # (its placement is the point, not the economy: topped up from 6:00)
+			for r in w.resources.size():
+				w.stock[r][0] = maxi(w.stock[r][0], 1000)
+		bot.think(w)
+		passive.think(w)
+		w.step()
+	var side: int = bot.land.key_side
+	var s0: Array = w.map.starts[0]
+	if bot.land.key < 0 or maxi(absi(side % w.map.width - s0[0] / 1000), absi(side / w.map.width - s0[1] / 1000)) > int(cfg.land.guard_range):
+		print("\n== guard: no key crossing near home on the enemy's way here (%s), skipped" % map_id)
+		return
+	var near := 99
+	for k in w.buildings.count():
+		var id: String = w.btypes[w.buildings.kind[k]].id
+		if w.buildings.owner[k] == 0 and (id == "watchtower" or id == "bastion"):
+			near = mini(near, maxi(absi(w.buildings.cx[k] - side % w.map.width), absi(w.buildings.cy[k] - side / w.map.width)))
+	print("\n== guard (%s): key crossing %s, our side at (%d, %d); nearest tower of ours %d tiles from it" % [map_id, bot.land.crossings(w)[bot.land.key][0], side % w.map.width, side / w.map.width, near])
+	check(near <= int(cfg.land.guard_tiles), "guard: a Watchtower stands on the key crossing (%d tiles)" % near)
+
+
+## High ground: four of our archers a few steps from a ramp up a hill, enemy soldiers coming at
+## them: the bot sends the archers up (they end above the ground they stood on).
+func _test_hills(rules: Dictionary, a: Dictionary, b: Dictionary) -> void:
+	var w := World.new(SEED, SimMap.load_id(map_id), [a, b], rules)
+	var m = w.map
+	if not m.has_heights:
+		return
+	var bot := Bot.new(0)
+	# By a ramp up from level 0: the archers 3 steps from its foot, the enemy 8 (walkers' ground,
+	# in sight); the enemy stands 6 s, then comes on.
+	var walk: PackedByteArray = m.walks[0]
+	var foot := -1
+	var far := -1
+	for c in m.width * m.height:
+		if foot >= 0 or m.ramp[c] == 0 or m.level[c] != 0:
+			continue
+		var steps := {c: 0}
+		var queue := [c]
+		var head := 0
+		var f := -1
+		var e := -1
+		while head < queue.size():
+			var at: int = queue[head]
+			head += 1
+			if steps[at] == 3 and f < 0:
+				f = at
+			if steps[at] == 8 and e < 0:
+				e = at
+			for d in [1, -1, m.width, -m.width]:
+				var n: int = at + d
+				if n >= 0 and n < walk.size() and walk[n] == 1 and m.level[n] == 0 and m.ramp[n] == 0 and not steps.has(n) and absi(n % m.width - at % m.width) <= 1:
+					steps[n] = steps[at] + 1
+					queue.append(n)
+		if f >= 0 and e >= 0:
+			foot = f
+			far = e
+	if foot < 0:
+		print("\n== hills: no ramp with open ground before it on %s, skipped" % map_id)
+		return
+	var fx: int = foot % m.width * 1000 + 500
+	var fy: int = foot / m.width * 1000 + 500
+	var ex: int = far % m.width * 1000 + 500
+	var ey: int = far / m.width * 1000 + 500
+	w.issue(0, Commands.SPAWN, {"slot": "archer", "count": 4, "x": fx, "y": fy})
+	w.issue(1, Commands.SPAWN, {"slot": "spear", "count": 4, "x": ex, "y": ey})
+	for t in 12:
+		bot.think(w)
+		w.step()
+	var ours := []
+	var theirs := []
+	for i in w.units.count():
+		if w.units.owner[i] == 0 and w.types[w.units.kind[i]].slot == "archer":
+			ours.append(w.units.id[i])
+		elif w.units.owner[i] == 1 and w.types[w.units.kind[i]].slot == "spear":
+			theirs.append(w.units.id[i])
+	w.issue(1, Commands.STANCE, {"ids": theirs, "stance": "stand"})   # (they wait, then come on)
+	var below := ours.filter(func(id): return m.level_at(w.units.x[w.units.index_of(id)], w.units.y[w.units.index_of(id)]) == 0).size()
+	var up := 0
+	while w.tick < 20 * 25:
+		if w.tick == 20 * 6:
+			w.issue(1, Commands.ATTACK_MOVE, {"ids": theirs, "x": fx, "y": fy})
+		bot.think(w)
+		w.step()
+		up = 0
+		for id in ours:
+			var i: int = w.units.index_of(id)
+			if i >= 0 and m.level_at(w.units.x[i], w.units.y[i]) >= 1:
+				up += 1
+		if up >= 2:
+			break
+	print("\n== hills (%s): archers at (%d, %d) by a hill; %d of 4 up on it at %s; hill orders %d" % [map_id, foot % m.width, foot / m.width, up, _clock(w.tick), bot.land.stats.get("hill", 0)])
+	check(below == 4 and up >= 2, "hills: archers meeting an army climb the hill beside them (%d of 4 below, %d up)" % [below, up])
 
 
 ## A walled-in base (Dominic, 2026-10-13: "if walls blocking the AI everywhere, will it try to
