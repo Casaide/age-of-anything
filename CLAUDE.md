@@ -155,6 +155,7 @@ godot --path . --script res://tests/art_screenshot.gd -- /tmp/art  # capture it 
 godot --path . --script res://tests/art_crop.gd -- /tmp/c.png 6.5 9 ["prompt A" "prompt B"]   # 3x close-up at a tile
 godot --path . --script res://tests/art_bench.gd                    # draw calls + frame time, 200+ units
 godot --path . --script res://tests/unit_lineup.gd -- /tmp/units.png ["prompt A" "prompt B"]   # both rosters as pixel art, 4x
+godot --path . --audio-driver Dummy --always-on-top --script res://tests/layer_check.gd   # layering rules on every body, mount, rider, facing, walk; exit 1 on a FAIL
 godot --path . --script res://tests/healer_lineup.gd -- /tmp/healers.png [zoom] [family,...]   # every culture's healer in 8 facings
 godot --path . --script res://tests/siege_lineup.gd -- /tmp/siege.png [zoom] ["prompt" ...]     # each race's crewed siege engines, four facings
 python3 tools/audio/render.py [sfx|voices|music|<name>...]       # re-render the sounds into assets/audio (~15 s)
@@ -214,7 +215,8 @@ Units are 3D parts (built in code, or scripted in Blender: `tools/blender/`, `.g
 `assets/models/`) baked to pixel sprites in **8 facings** in one atlas, recoloured by a team-mask
 shader; worn armour bakes on its wearer; props and buildings are realistic bakes. The full pipeline
 is in `docs/rendering.md`. New art goes concept-first (options, Dominic picks, then build; D-080),
-and every change gets looked at close up before it's shown.
+and every change gets looked at close up before it's shown. Unit art changes must pass
+`tests/layer_check.gd` (the layering rules in `docs/rendering.md`) before they're shown.
 
 ## The archive (keep it up to date)
 
