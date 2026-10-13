@@ -1196,6 +1196,256 @@ func _leg_capybara_long_tan(c: Dictionary) -> Dictionary:
 	return _leg_capybara_long(c)
 
 
+# ------------------------------------------------------------------ cat (concept C2, not in play)
+# The alley cat again (Dominic on RM1's C: "tail is good, just legs and body a bit unclear. I think
+# you've almost tried to force it to horse skeleton. Needs to be more naturally a cat, including
+# sitting when idle."). A long, low body (tools/blender/big_cat.py "lean"), the head low and
+# forward, and a cat's legs: the hind leg in three bones with the hock high above the paw, the
+# foreleg straight from elbow to wrist with the shoulder blade riding over the back. The legs
+# can't bend on one sprite, so each leg is baked posed: "leg.cat@w<i>_<n>" is step i of an n-step
+# walk (a cat's four-beat walk; UnitView picks the step, data/later/cat_mount.json `legs.poses`),
+# "@sit1" and "@sit" (and the body "body.cat@sit1", "@sit") the cat sitting down when idle
+# (`idle_poses`). The coat is the skin palette: skin (fur), skin2 (stripes), skin3 (chest, belly,
+# muzzle and paws), so a ginger tabby and a black-and-white cat are palette entries.
+# Its data waits in data/later/cat_mount.json (the rats keep the capybara until Dominic picks).
+
+const CAT_K := 1.25            # the whole cat, after modelling (pony length, lower)
+const CAT_HEAD_K := 1.3        # its head, inside that
+const CAT_DROP := 1.0          # the modelled body (big_cat.py "lean") sits this much lower: low-slung
+const CAT_HIP := Vector3(-8.0, 13.5 - CAT_DROP, 0)
+const CAT_SHOULDER := Vector3(8.5, 12.5 - CAT_DROP, 0)
+const CAT_LEG_Z := 3.0
+const CAT_HEAD_AT := Vector3(15.2, 15.2 - CAT_DROP, 0)
+const CAT_SEAT := Vector3(-2.0, 19.3 - CAT_DROP, 0)   # behind the shoulders, on a small saddle
+const CAT_SIT := {"sit": [34.0, 3.8], "sit1": [16.0, 8.5]}   # body pitch (degrees, nose up), hip height
+const CAT_HIND := [5.4, 5.9, 4.3]   # femur, tibia, metatarsus (the hock is the joint above the paw)
+const CAT_FORE := [5.0, 5.5, 1.4]   # humerus, forearm, the short pastern to the paw
+const CAT_PAD := 0.75              # the paw's centre above the ground
+const CAT_STRIDE := 7.5
+const CAT_STANCE := 0.62           # a walk: each paw is down most of the time
+const CAT_SCAPULA := Vector2(-1.4, 5.6)   # the shoulder blade's top, from the shoulder joint
+const CAT_EYE := Color("#c8c23a")
+const CAT_NOSE := Color("#c88080")
+
+
+## How the body is placed for a pose: pitched up about the hips and lowered (sitting), or as built.
+static func _cat_xf(pose: String) -> Transform3D:
+	if not CAT_SIT.has(pose):
+		return Transform3D.IDENTITY
+	var s: Array = CAT_SIT[pose]
+	var hip := Vector3(CAT_HIP.x, float(s[1]), 0)
+	return Transform3D(Basis(Vector3(0, 0, 1), deg_to_rad(float(s[0]))), hip) * Transform3D(Basis.IDENTITY, -CAT_HIP)
+
+
+func _cat_coat(c: Dictionary) -> Dictionary:
+	var pale: Color = c.get("skin3", Color("#e8e2d6"))
+	return {"fur": surf("hide", c.skin, 4.0), "stripe": surf("hide", c.skin2, 4.0), "pale": surf("hide", pale, 4.0),
+		"nose": plain(CAT_NOSE), "eye": plain(INK), "iris": plain(CAT_EYE), "ear_in": plain(CAT_NOSE.lightened(0.2))}
+
+
+## The body in a pose ("" standing, "sit1" sitting down, "sit"); sockets and hips follow it.
+func _body_cat(c: Dictionary) -> Dictionary:
+	var pose := "" if hold == "low" else hold
+	var xf := _cat_xf(pose)
+	var n := Node3D.new()
+	var inner := Node3D.new()
+	inner.transform = xf
+	n.add_child(inner)
+	var low := Node3D.new()   # the body as modelled, lowered onto the legs
+	low.position.y = -CAT_DROP
+	inner.add_child(low)
+	var m := _cat_coat(c)
+	low.add_child(glb("body_cat_lean", m))
+	_cat_saddle(low, c, CAT_SEAT.x, CAT_SEAT.y + CAT_DROP - 1.4, 4.1, Vector3(2.6, 13.2, 0), 4.9, 4.9, 6.0, 2.6)
+	if pose == "sit":
+		# Sitting: the tail down behind and round the near side, its tip over the forepaws.
+		var b := xf * Vector3(-12.6, 14.6 - CAT_DROP, 0)
+		var paw := (xf * CAT_SHOULDER).x + 0.9
+		_cat_tail(n, [b, b + Vector3(-0.8, -2.6, 0.8), Vector3(b.x - 0.6, 1.2, 3.2), Vector3(b.x + 2.6, 1.0, 4.8),
+			Vector3(paw - 6.5, 1.0, 5.2), Vector3(paw - 3.0, 1.1, 4.9), Vector3(paw - 1.2, 2.0, 4.3)],
+			1.35, 0.95, m.fur, m.stripe)
+	elif pose == "sit1":
+		_cat_tail(low, [Vector3(-12.4, 15.0, 0), Vector3(-15.4, 14.0, 0.2), Vector3(-17.8, 11.0, 0.5), Vector3(-18.6, 7.4, 0.8),
+			Vector3(-18.0, 4.6, 1.0)], 1.6, 1.1, m.fur, m.stripe)
+	else:
+		# The hook: up from the rump and over at the tip (RM1's tail, kept: Dominic).
+		_cat_tail(low, [Vector3(-12.4, 15.2, 0), Vector3(-15.2, 18.8, 0), Vector3(-16.6, 23.4, 0.3), Vector3(-16.2, 27.6, 0.5),
+			Vector3(-14.5, 30.0, 0.6), Vector3(-12.6, 30.2, 0.6)], 1.6, 1.1, m.fur, m.stripe)
+	var seat := CAT_SEAT
+	var sockets := {"head": CAT_HEAD_AT, "hand_r": seat + Vector3(5, -6, 5.0), "hand_l": seat + Vector3(4, -6, -5.0),
+		"torso": Vector3(0, seat.y - 5, 0), "back": seat + Vector3(-7, -1.5, 0), "seat": seat, "wings": seat + Vector3(7, -1.5, 0)}
+	for k in sockets:
+		sockets[k] = xf * sockets[k]
+	# A cat walks in four beats, one paw at a time (near hind, near fore, far hind, far fore).
+	var z := Vector3(0, 0, CAT_LEG_Z)
+	var anchors := [[xf * (CAT_SHOULDER + z), PI * 1.5, 1, 0, false], [xf * (CAT_HIP + z), 0.0, 1, 0, true],
+		[xf * (CAT_SHOULDER - z), PI * 0.5, -1, 0, false], [xf * (CAT_HIP - z), PI, -1, 0, true]]
+	return _scaled({"node": n, "sockets": sockets, "anchors": anchors, "torso_scale": Vector2(1.3, 1.0), "carry": "harness"}, CAT_K)
+
+
+## A round head with big ears (the near one notched), a short muzzle in a leather muzzle strap.
+func _head_cat(c: Dictionary) -> Dictionary:
+	var root := Node3D.new()
+	var n := glb("head_cat_lean", _cat_coat(c))
+	n.rotation_degrees.z = -4
+	n.scale = Vector3.ONE * CAT_HEAD_K
+	root.add_child(n)
+	_cat_bridle(root, c, Vector3(4.6, -0.4, 0) * CAT_HEAD_K, 1.8 * CAT_HEAD_K, Vector3(-0.3, 1.2, 0) * CAT_HEAD_K, 3.35 * CAT_HEAD_K, -4)
+	var white := plain(Color(c.get("skin3", Color("#e8e2d6"))).lightened(0.3))
+	var q := Basis(Vector3(0, 0, 1), deg_to_rad(-4))
+	for s in [1, -1]:   # whiskers, out from the muzzle pads
+		for w in [-0.5, 0.0, 0.5]:
+			var a := Vector3(4.9, -0.7 + w * 0.5, 1.2 * s)
+			root.add_child(rod(q * a * CAT_HEAD_K, q * (a + Vector3(1.2, w, 2.4 * s)) * CAT_HEAD_K, 0.09, 0.06, white, false))
+	return _scaled({"node": root, "sockets": {"top": Vector3(1.6, 4.2, 0) * CAT_HEAD_K}}, CAT_K)
+
+
+func _leg_cat(c: Dictionary) -> Dictionary:
+	return _cat_leg(c, false)
+
+
+func _leg_cat_hind(c: Dictionary) -> Dictionary:
+	return _cat_leg(c, true)
+
+
+## One leg in the pose `hold` names, from its hip (or shoulder) joint at the origin.
+func _cat_leg(c: Dictionary, hind: bool) -> Dictionary:
+	var j := cat_joints(hind, "" if hold == "low" else hold)
+	var n := Node3D.new()
+	var fur := surf("hide", c.skin, 4.0)   # (no tabby bars on the legs: they cut them into pieces)
+	var pale := surf("hide", c.get("skin3", Color("#e8e2d6")), 4.0)
+	var sock := surf("hide", c.get("skin4", c.skin), 4.0)   # a fourth coat colour: stockings (a black-and-white cat)
+	if hind:
+		# A big thigh from inside the haunch to the knee, the shin back to the high hock, the
+		# long thin metatarsus down to a small round paw.
+		n.add_child(rod(Vector3(0.4, 2.4, 0), _v3(j.knee), 3.9, 2.4, fur))
+		n.add_child(rod(_v3(j.knee), _v3(j.hock), 2.0, 1.1, fur))
+		n.add_child(rod(_v3(j.hock), _v3(j.paw), 1.05, 0.9, sock))
+	else:
+		# The shoulder blade (it rides up over the back as the leg takes the weight), the upper
+		# arm back to the elbow, the forearm straight down to the wrist, a short pastern.
+		n.add_child(rod(Vector3.ZERO, _v3(j.scapula), 2.4, 1.4, fur))
+		n.add_child(rod(Vector3.ZERO, _v3(j.elbow), 2.6, 1.7, sock))
+		n.add_child(rod(_v3(j.elbow), _v3(j.wrist), 1.55, 1.1, sock))
+		n.add_child(rod(_v3(j.wrist), _v3(j.paw), 1.0, 0.95, pale))
+	var toe: Vector2 = j.toe
+	n.add_child(blob(Vector3(1.5, 0.75, 1.3), pale, _v3(j.paw + toe * 0.45), Vector3(0, 0, rad_to_deg(toe.angle()))))
+	return _scaled({"node": n}, CAT_K)
+
+
+static func _v3(p: Vector2) -> Vector3:
+	return Vector3(p.x, p.y, 0)
+
+
+## Where a leg's joints are in a pose (part units, up is +y, the hip or shoulder at the origin):
+## "" standing, "w<i>_<n>" step i of an n-step walk, "sit1", "sit". The walk moves the paw back
+## along the ground while it's down (CAT_STANCE of the cycle) and lifts it forward, curled, the
+## rest; the bones follow by two-bone IK (the knee bends forward, the elbow back).
+static func cat_joints(hind: bool, pose: String) -> Dictionary:
+	var h: float = CAT_HIP.y if hind else CAT_SHOULDER.y
+	var lift := 0.0
+	var x := -0.5 if hind else 0.6
+	var tilt := 18.0 if hind else 4.0   # degrees: the hock behind the paw / the wrist over it
+	var down := 0.0   # stance progress (the shoulder blade rises mid-stance)
+	if pose.begins_with("w"):
+		var nums := pose.substr(1).split("_")
+		var p := float(nums[0]) / float(nums[1])
+		var x0 := x
+		if p < CAT_STANCE:
+			var s := p / CAT_STANCE
+			x = x0 + CAT_STRIDE * (0.5 - s)
+			tilt = lerpf(8.0, 38.0, s) if hind else lerpf(-4.0, 22.0, s)
+			down = sin(s * PI)
+		else:
+			var q := (p - CAT_STANCE) / (1.0 - CAT_STANCE)
+			x = x0 + CAT_STRIDE * (smoothstep(0.0, 1.0, q) - 0.5)
+			lift = 2.4 * sin(q * PI)
+			tilt = (lerpf(38.0, 8.0, q) + 22.0 * sin(q * PI)) if hind else (lerpf(22.0, -4.0, q) + 60.0 * sin(q * PI))
+	elif CAT_SIT.has(pose):
+		var xf := _cat_xf(pose)
+		h = float(CAT_SIT[pose][1]) if hind else (xf * CAT_SHOULDER).y
+		if hind:
+			if pose == "sit":   # folded flat: the hock on the ground, the paw forward under the knee
+				var hk := Vector2(-0.8, -h + 0.9)
+				var pw := Vector2(3.6, -h + CAT_PAD)
+				return {"hock": hk, "paw": pw, "knee": _ik(Vector2.ZERO, hk, CAT_HIND[0], CAT_HIND[1], 1.0), "toe": Vector2.RIGHT}
+			x = 1.2
+			tilt = 48.0
+		else:
+			x = 0.9
+			tilt = 2.0
+	var paw := Vector2(x, -h + CAT_PAD + lift)
+	var r := deg_to_rad(tilt)
+	if hind:
+		var hock := paw + Vector2(-sin(r), cos(r)) * float(CAT_HIND[2])
+		var reach: float = CAT_HIND[0] + CAT_HIND[1] - 0.05
+		if hock.length() > reach:   # out of reach: the paw comes up off the ground a little
+			var fix := hock.normalized() * reach - hock
+			hock += fix
+			paw += fix
+		return {"hock": hock, "paw": paw, "knee": _ik(Vector2.ZERO, hock, CAT_HIND[0], CAT_HIND[1], 1.0),
+			"toe": Vector2(cos(r * 0.5), -sin(r * 0.5)) if lift > 0.0 else Vector2.RIGHT}
+	var wrist := paw + Vector2(sin(r), cos(r)) * float(CAT_FORE[2])
+	var reach2: float = CAT_FORE[0] + CAT_FORE[1] - 0.05
+	if wrist.length() > reach2:
+		var fix2 := wrist.normalized() * reach2 - wrist
+		wrist += fix2
+		paw += fix2
+	var scap := CAT_SCAPULA + Vector2(-0.25 * (x - 0.6), 0.9 * down)
+	if CAT_SIT.has(pose):
+		scap = CAT_SCAPULA.rotated(deg_to_rad(float(CAT_SIT[pose][0])))
+	var toe := Vector2.RIGHT
+	if lift > 0.0:   # a lifted paw curls back under the wrist
+		toe = (paw - wrist).normalized().rotated(PI * 0.5)
+		if toe.x < -0.2:
+			toe = Vector2.RIGHT
+	return {"wrist": wrist, "paw": paw, "elbow": _ik(Vector2.ZERO, wrist, CAT_FORE[0], CAT_FORE[1], -1.0), "scapula": scap, "toe": toe}
+
+
+## Two-bone IK in a plane: the middle joint for bones l1, l2 from a to b, bending to `side`
+## (+1: forward of the line from a to b when it points down; -1: behind it).
+static func _ik(a: Vector2, b: Vector2, l1: float, l2: float, side: float) -> Vector2:
+	var d := b - a
+	var l := clampf(d.length(), 0.01, l1 + l2 - 0.01)
+	var u := d.normalized()
+	var along := (l1 * l1 - l2 * l2 + l * l) / (2.0 * l)
+	var h := sqrt(maxf(0.0, l1 * l1 - along * along))
+	return a + u * along + Vector2(-u.y, u.x) * h * side
+
+
+## The cats' tack (RM1's cat in rat_mount_concepts.gd, and C2's): a saddle cloth in the team's colour with a pale border, a leather saddle on it, a girth.
+func _cat_saddle(n: Node3D, c: Dictionary, x: float, y: float, half: float, girth_c: Vector3, ry: float, rz: float, length := 9.0, drop := 4.4) -> void:
+	var cloth := plain(c.team)
+	var trim := surf("cloth", Color("#e8e0d0"), 3.0)
+	n.add_child(_box(Vector3(length, 0.7, half * 1.7), cloth, Vector3(x, y, 0)))
+	for side in [1, -1]:
+		n.add_child(_box(Vector3(length, drop, 0.5), cloth, Vector3(x, y - drop * 0.5 - 0.2, (half * 0.85) * side), Vector3(10 * side, 0, 0)))
+		n.add_child(_box(Vector3(length + 0.2, 0.7, 0.6), trim, Vector3(x, y - drop - 0.1, (half * 0.85 + 0.35) * side), Vector3(10 * side, 0, 0)))
+	n.add_child(_box(Vector3(minf(5.5, length - 1.5), 1.2, half * 1.2), surf("leather", Color(0.7, 0.5, 0.35), 3.0), Vector3(x, y + 0.8, 0)))   # the saddle
+	harness(n, girth_c, ry, rz, girth_c + Vector3(-1, -1, rz + 0.4), girth_c + Vector3(-1, -1, -rz - 0.4))
+
+
+## A tail as a chain of rods along `pts`, ringed dark every other segment.
+func _cat_tail(n: Node3D, pts: Array, r0: float, r1: float, fur: Material, dark: Material, tip_dark := true) -> void:
+	var count := pts.size() - 1
+	for k in count:
+		var ra := lerpf(r0, r1, float(k) / count)
+		var rb := lerpf(r0, r1, float(k + 1) / count)
+		var m := dark if (k % 2 == 1 or (tip_dark and k == count - 1)) else fur
+		n.add_child(rod(pts[k], pts[k + 1], ra, rb, m))
+
+
+## A muzzle strap round the snout, a headstall behind the eyes, its brow band in team colour.
+func _cat_bridle(n: Node3D, c: Dictionary, snout: Vector3, sr: float, crown: Vector3, cr: float, tilt: float) -> void:
+	var leather := surf("leather", Color(0.55, 0.4, 0.28), 2.0)
+	var q := Basis(Vector3(0, 0, 1), deg_to_rad(tilt))
+	n.add_child(ring(sr * 0.92, sr * 1.08, leather, q * snout, Vector3(0, 0, 90 + tilt), Vector3(1, 1.4, 1)))
+	n.add_child(ring(cr * 0.9, cr * 1.04, leather, q * crown, Vector3(0, 0, 70 + tilt), Vector3(1, 1.6, 1)))
+	n.add_child(rod(q * (snout + Vector3(-0.6, sr * 0.6, 0)), q * (crown + Vector3(1.6, cr * 0.7, 0)), 0.3, 0.3, leather))
+	n.add_child(blob(Vector3(0.5, 0.5, 0.5), surf("bronze", Color.WHITE, 2.0), q * (snout + Vector3(-0.8, 0, sr * 1.02))))   # the ring the rein ties to
+
+
+
 # ------------------------------------------------------------------ hummingbird (forest cavalry, HB1)
 # A big hummingbird ridden like a horse (Dominic, 2026-10-13): it hovers (the view bobs it and
 # keeps it off the ground), nose up, slim, a forked tail, iridescent plumage (skin) with a

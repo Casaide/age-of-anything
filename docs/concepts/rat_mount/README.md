@@ -80,3 +80,65 @@ suits better.
 None of the four reads as a bear. A, B and C avoid every bear cue: no rounded snout, no big round
 ears, no shoulder hump, no round mass. D has small round ears, but the stripes and the long low tail
 settle it.
+
+## C2: the alley cat again (2026-10-13)
+
+Dominic on C: "I'm leaning towards it, tail is good, just legs and body a bit unclear. I think
+you've almost tried to force it to horse skeleton. Needs to be more naturally a cat, including
+sitting when idle."
+
+| Sheet | |
+|---|---|
+| `cat_c2_facings_3x.png`, `cat_c2_facings_game_scale.png` | standing, 8 facings: the pony, C (before), C2 ginger tabby, C2 black and white |
+| `cat_c2_walk_3x.png` | the cheese-hammer rider walking in three facings, four steps each |
+| `cat_c2_walk_cycle_3x.png` | all eight baked walk steps, side on |
+| `cat_c2_sit_3x.png`, `cat_c2_sit_game_scale.png` | the idle sit in 8 facings |
+
+More in `archive/images/2026-10-13/340-348` (the sitting-down step, the walk at 1x, a coat debug).
+Re-render with `tests/cat_mount_sheet.gd -- out_dir [zoom] [facings,walk,sit,sit1,cycle] [cat_ginger,cat_tuxedo,cat_grey]`.
+
+**The body.** A new Blender body (`tools/blender/big_cat.py` `lean`): longer and lower than C, the
+loin a little arched, a deep chest, a tucked waist. It sits on short legs (about half its height
+shows under the chest). A short neck carries the head low and forward, below the line of the back.
+The head is rounder, with a shorter muzzle and bigger ears; the near ear is still notched, and there
+are whiskers. The rider sits behind the shoulders on a smaller saddle cloth, and the hooked tail is kept.
+
+**The legs.** These are a cat's legs, not a horse's:
+- the hind leg has three bones: a big thigh, the shin going back, and a long metatarsus, with the
+  hock (the "backward knee") high above a small round paw
+- the foreleg runs straight from elbow to wrist, then a short pastern
+- the shoulder blade is part of the foreleg, so it rides up over the back while that leg takes the weight
+
+One sprite can't bend, so each leg is baked posed: eight walk steps per leg, worked out by two-bone
+IK from a paw path. Each paw is down for 62% of the cycle. The footfalls go near hind, near fore, far
+hind, far fore: a four-beat walk, with the body low and level and the head steady. This is data on
+the body (`legs.poses`, `legs.hind`, `legs.gait`), not a special case in the code: see
+`docs/rendering.md`.
+
+**Sitting when idle.** After 3-6 seconds standing still with nothing to do, the cat sits down in two
+steps (`idle_poses: ["sit1", "sit"]`). The haunches go down, the hind legs fold flat, the forelegs
+stand straight, the chest comes up and the head stays level. The tail curls forward round the near
+side towards the forepaws, and the rider sits upright, lower and further back. The cat stands up at
+once when it has to walk, fight or work. Each pose is the body baked whole, and only the view
+changes: the sim is untouched.
+
+**The coats.** Each coat is a palette entry (skin = fur, skin2 = stripes, skin3 = chest, belly,
+muzzle and paws, skin4 = stockings):
+- **Ginger tabby:** reads clearly on the green, much better than the grey.
+- **Black and white:** white bib, chest, forelegs, hind stockings and chin, so it reads as a
+  tuxedo cat and not a black blob.
+- **Grey tabby:** C's grey, kept as a third option.
+
+**In play?** No. The rats keep the capybara. The cat is built in the real pipeline:
+- models: the cat section of `scenes/art_pixel/unit_models.gd`
+- poses: UnitView, with the extra bakes added in `art_kit`
+- data: `data/later/cat_mount.json`, which holds the parts, the creature and the coats
+
+Switching is a data change: move those entries into `data/` and set the rats' `mounts` to `["cat"]`.
+Its stats are the capybara's until it is priced.
+
+**What could still improve:**
+- The sit is a pop between two poses, about a fifth of a second each, not an animation.
+- In some facings the folded hind leg pokes out behind the rump.
+- From the front and back the sitting cat is mostly hidden behind the rider.
+- The near shoulder blade shows as a soft bump, but at 1x it is only a pixel.

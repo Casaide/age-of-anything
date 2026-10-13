@@ -163,3 +163,13 @@ godot --path . --script res://tests/sim_screenshot.gd -- out.png flat_test ai-lo
 bake but keeps the classic view's layering, so from behind it draws the near arm across the back
 (a false alarm Dominic caught). `facing_sheet.gd -- out.png "prompt" 8 <unit index>` shows one
 unit's real 8 facings close up. Bodies whose clothes hang over the hips set `legs_under`.
+
+**Legs that bend, and resting poses (C2, the cat).** A leg is normally one sprite swung about its hip.
+A body can instead bake its legs posed: `legs.poses: n` bakes each leg as `"<leg>@w<i>_<n>"`, step i of
+an n-step walk, and UnitView shows the step for where the leg is in its cycle (the anchor phases set the
+footfall order); `legs.hind` gives the hind legs their own part (a hock), marked by `true` as a hip
+anchor's last element; `legs.gait` overrides the walk's cadence, bob and rock. `idle_poses` (e.g.
+`["sit1", "sit"]`) are whole-body poses baked as `"<body>@<pose>"` with their own sockets and hips (and
+the legs as `"<leg>@<pose>"`): the view steps down through them when the unit has stood still a few
+seconds and back up when it moves (a rebuild, like turning). The model reads the pose from `hold`.
+`UnitView.pose_parts()` lists the extra bakes; `art_kit` bakes them with the rest.
