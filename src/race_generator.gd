@@ -368,6 +368,11 @@ func _allowed(p: Dictionary, role: String, tags: Dictionary) -> bool:
 	return true
 
 
+## The race's own part (favoured and of its creature or culture) or one the prompt asked for.
+func _own(p: Dictionary, ctx: Dictionary) -> bool:
+	return (p.has("favour") and p.tags.any(func(t): return t in _affinity)) or _want(p, ctx.brief.tags) > 0
+
+
 ## A part's `requires_role`: one role, or a list of them (the khopesh: large and infantry).
 func _for_role(p: Dictionary, role: String) -> bool:
 	return role in (p.requires_role if p.requires_role is Array else [p.requires_role])
@@ -525,7 +530,8 @@ func _upgrade(prev: Dictionary, slot_def: Dictionary, ctx: Dictionary) -> Dictio
 			kinds += ROLE_KINDS.get(role, [])
 		var cands: Array = _cands(slot, ctx).filter(func(p): return int(p.get("tier", 1)) > int(cur.get("tier", 1)) \
 			and _allowed(p, role, unit_tags) and not _off_theme(p, unit_tags) \
-			and (p.tags.any(func(t): return t in kinds) or _want(p, ctx.brief.tags) > 0))   # same kind, or asked for (rats with guns)
+			and (p.tags.any(func(t): return t in kinds) or p.get("replaces", []).any(func(t): return t in kinds) \
+				or _want(p, ctx.brief.tags) > 0))   # same kind (or a part that `replaces` it: the frogs' mace after their sword), or asked for (rats with guns)
 		if role == "worker":   # a worker's hat gets better, but never a war helmet (no crests, horns, heavy)
 			cands = cands.filter(func(p): return int(p.points) <= 2 and not p.tags.any(func(t): return t in ["crest", "horns", "heavy"]))
 		if role == "healer" and slot != "hand_r":
@@ -534,6 +540,11 @@ func _upgrade(prev: Dictionary, slot_def: Dictionary, ctx: Dictionary) -> Dictio
 			var need: String = ROLE_NEEDS[role]
 			var excluded: Array = ROLE_EXCLUDES.get(role, [])
 			cands = cands.filter(func(p): return need in p.tags and not p.tags.any(func(t): return t in excluded))
+			# A `fallback` weapon (the plain iron sword) is only the way up for a weapon with no
+			# other, and never replaces the culture's own or one that was asked for (the khopesh).
+			var others: Array = cands.filter(func(p): return not p.get("fallback", false))
+			if not others.is_empty() or _own(cur, ctx):
+				cands = others
 		if cands.is_empty():
 			continue
 		var keep := {}

@@ -33,6 +33,15 @@ static func all(lib, lines := true) -> Array:
 				var s: Dictionary = steps[i]
 				if s.recipe.hash() != u.recipe.hash():
 					cases.append(["%s %s age %d" % [p, u.recipe.slot, s.get("age", i + 1)], {"recipe": s.recipe, "eval": s.eval}])
+	# The swordsman's age-3 kit (D-125) for the cultures PROMPTS leaves out (the frogs' mace, the
+	# beetles' chitin blade and the spiders' hook come in with their races above), and the plain
+	# iron sword, the fallback, which royal humans get under the bronze rules (no royal iron there).
+	var swords := [["greeks", rules], ["mongols", rules], ["han", rules], ["royal humans", DataLib.load_json("res://data/rules/bronze.json")]]
+	for s in swords:
+		var line: Array = slot(gen.generate(s[0], s[1]), "infantry").line
+		for l in line:
+			if int(l.age) >= 2:
+				cases.append(["%s swordsman age %d%s" % [s[0], l.age, " (bronze rules)" if s[1] != rules else ""], {"recipe": l.recipe, "eval": l.eval}])
 	for p in RIDERS:
 		var spear: Dictionary = slot(gen.generate(p, rules), "spear")
 		for m in MOUNTS:

@@ -24,18 +24,21 @@ const FAMILIES := ["hellenic", "steppe", "han", "swamp", "forest", "spooky"]
 ## Per family: [label, {slot: concept part}] for options A and B.
 const OPTIONS := {
 	"hellenic": [["A  iron kopis", {"hand_r": "weapon.s3_kopis"}],
-		["B  long xiphos\n+ Attic helmet, high crest", {"hand_r": "weapon.s3_xiphos", "head_gear": "helm.s3_attic"}]],
+		["B  long xiphos\n+ Attic helmet, high crest", {"hand_r": "weapon.sword.xiphos", "head_gear": "helm.attic"}]],
 	"steppe": [["A  long sabre\n(team tassel)", {"hand_r": "weapon.s3_sabre"}],
-		["B  flared heavy sabre\n+ spiked helm, mail", {"hand_r": "weapon.s3_flared", "head_gear": "helm.s3_spike"}]],
+		["B  flared heavy sabre\n+ spiked helm, mail", {"hand_r": "weapon.sword.flared_sabre", "head_gear": "helm.steppe_spike"}]],
 	"han": [["A  jian\n(straight, team tassel)", {"hand_r": "weapon.s3_jian"}],
-		["B  dao\n(broad, ring pommel)", {"hand_r": "weapon.s3_dao"}]],
+		["B  dao\n(broad, ring pommel)", {"hand_r": "weapon.sword.dao"}]],
 	"swamp": [["A  reed saw\n(obsidian teeth)", {"hand_r": "weapon.s3_reed_saw"}],
-		["B  river-stone mace", {"hand_r": "weapon.s3_stone_mace"}]],
-	"forest": [["A  chitin-edged blade", {"hand_r": "weapon.s3_chitin_blade"}],
+		["B  river-stone mace", {"hand_r": "weapon.mace.river_stone"}]],
+	"forest": [["A  chitin-edged blade", {"hand_r": "weapon.sword.chitin"}],
 		["B  thorn sword", {"hand_r": "weapon.s3_thorn"}]],
 	"spooky": [["A  bone scythe-sword", {"hand_r": "weapon.s3_bone_scythe"}],
-		["B  hooked sickle blade\n(silk grip)", {"hand_r": "weapon.s3_hook"}]],
+		["B  hooked sickle blade\n(silk grip)", {"hand_r": "weapon.sword.hook"}]],
 }
+## The picks now in play (D-125): their models are in unit_models.gd, which the concepts extend.
+const PICKED := ["weapon.sword.xiphos", "helm.attic", "weapon.sword.flared_sabre", "helm.steppe_spike", "weapon.sword.dao",
+	"weapon.mace.river_stone", "weapon.sword.chitin", "weapon.sword.hook"]
 const CELL := Vector2(46, 62)   # world units per cell
 const EXTRA := [[6, 0.22, "wind-up"], [6, 0.62, "blow"]]   # [facing, attack phase, label]
 
@@ -91,7 +94,7 @@ func _initialize() -> void:
 			var probe := UnitView.new()
 			probe.build(row[1].recipe, lib, team, row[1].eval.speed)
 			for ps in probe.find_children("*", "Node2D", true, false):
-				if ps is PartShape and ".s3_" in ps.part_id:
+				if ps is PartShape and (".s3_" in ps.part_id or ps.part_id in PICKED):
 					await pb.bake(ps.part_id, ps.shapes, ps.colours)
 			probe.free()
 	kit.rebuild_atlas()
@@ -111,6 +114,8 @@ func _register() -> void:
 		for o in OPTIONS[fam]:
 			for slot in o[1]:
 				var id: String = o[1][slot]
+				if lib.parts.has(id):
+					continue   # a pick now in play (D-125): its own data entry
 				var base := "weapon.sword.bronze" if slot == "hand_r" else "helm.bronze"
 				var p: Dictionary = lib.part(base).duplicate(true)
 				p.id = id
