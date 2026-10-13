@@ -39,7 +39,9 @@ extends SceneTree
 const Iso := preload("res://src/view/iso.gd")
 
 const MEET := {"flat_test": Vector2(23.5, 33.5), "choke_test": Vector2(30.5, 16.5), "reed_meadow": Vector2(22.5, 26.5), "reed_meadow_2v2": Vector2(30.5, 36.5), "old_forest": Vector2(32.5, 32.5), "river_delta": Vector2(28.5, 31.5)}   # tiles
-const SHOOT_AT_TICK := {"flat_test": 1100, "choke_test": 700, "reed_meadow": 1100, "reed_meadow_2v2": 1300, "old_forest": 1300, "river_delta": 1300}
+const FAST := 4.0   # how much faster than real time the loader fades out
+const FADE_TICKS := 15   # ticks the world runs during that fade at real time (0.75 s): the scenes start there
+const SHOOT_AT_TICK :={"flat_test": 1100, "choke_test": 700, "reed_meadow": 1100, "reed_meadow_2v2": 1300, "old_forest": 1300, "river_delta": 1300}
 
 
 func _initialize() -> void:
@@ -68,8 +70,26 @@ func _initialize() -> void:
 		print("saved ", out, " at ", view.loader.shown)
 		quit()
 		return
+	# Fast forward to the shot, the same every run: the world held still while the loader fades
+	# out (at FAST times), then frames as fast as they come with the sim stepped per frame (its
+	# speed in ticks a frame: commands the scene gives land on the same tick whatever the frame
+	# rate); real time again for the last frames before the shot.
+	var max_fps := Engine.max_fps
+	var vsync := DisplayServer.window_get_vsync_mode()
+	while view.clock == null:   # (made in its _ready, before the art is made and the world is up)
+		await process_frame
+	view.clock.hold = true
+	Engine.time_scale = FAST
+	Engine.max_fps = 0
+	DisplayServer.window_set_vsync_mode(DisplayServer.VSYNC_DISABLED)
 	while view.world == null or view.is_loading():   # the art bakes first, the loader fades out
 		await process_frame
+	Engine.time_scale = 1.0
+	view.clock.hold = false
+	view.clock.frame_steps = 1
+	while view.world.tick < FADE_TICKS:   # as far as the world gets while the loader fades in real time
+		await process_frame
+	var t_loaded := Time.get_ticks_msec()
 	view.camera.edge_scroll = false
 	view.set_process_unhandled_input(false)          # a real mouse in the window mustn't change the shot
 	view.camera.set_process_unhandled_input(false)
@@ -148,10 +168,14 @@ func _initialize() -> void:
 		await _wonder(view, scene.get_slice(":", 1) if ":" in scene else "")
 	else:
 		await _armies(view, map_id)
+	view.clock.frame_steps = 0
+	Engine.max_fps = max_fps
+	DisplayServer.window_set_vsync_mode(vsync)
 	for f in 20:
 		await process_frame
 	root.get_texture().get_image().save_png(out)
-	print("saved ", out, " at tick ", view.world.tick)
+	print("saved ", out, " at tick ", view.world.tick, " (%.1f s: loading %.1f s, the scene %.1f s)" % [
+		Time.get_ticks_msec() / 1000.0, t_loaded / 1000.0, (Time.get_ticks_msec() - t_loaded) / 1000.0])
 	quit()
 
 

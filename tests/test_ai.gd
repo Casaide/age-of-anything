@@ -4,7 +4,8 @@ extends SceneTree
 ## - two bots play a whole match, deterministically (same seed, same winner and hashes);
 ## - surrendering ends the match.
 ## Prints a minute-by-minute timeline of each match.
-## Run: godot --headless --path . --script res://tests/test_ai.gd [-- <map_id> [levels|age3|reach|walls|rams|pick|land|hills]]   (several minutes; flat_test by default; levels: each level left alone 30 minutes)
+## Run: godot --headless --path . --script res://tests/test_ai.gd [-- [map_id] [quick|slow|serial|piece:<name>|levels|age3|reach|walls|rams|pick|land|hills] [jobs=N]]
+## (flat_test by default; the pieces run side by side, one Godot process each; levels: each level left alone 30 minutes)
 
 const DataLib := preload("res://src/data_lib.gd")
 const Generator := preload("res://src/race_generator.gd")
@@ -17,126 +18,185 @@ const Economy := preload("res://src/sim/economy.gd")
 const Bridges := preload("res://src/sim/bridges.gd")
 const Reach := preload("res://src/ai/reach.gd")
 const Fixed := preload("res://src/sim/fixed.gd")
+const Par := preload("res://tests/par.gd")
 
 const SEED := 7
 const LIMIT := 20 * 60 * 30    # 30 minutes: a match must end, however slowly (pacing is a tester metric)
 
+## The pieces, each one process when run side by side: name -> [tier, rough seconds alone].
+## Quick: scenario checks (a few minutes of sim each). Slow: whole bot-vs-bot matches.
+const PIECES := {
+	"pick": ["quick", 1], "wonder": ["quick", 5], "respond": ["quick", 5], "shelter": ["quick", 5],
+	"walled_fords": ["quick", 5], "rams": ["quick", 10], "hills": ["quick", 5], "guard": ["quick", 30],
+	"age3": ["quick", 40], "surrender": ["quick", 1], "easy": ["quick", 40], "siege_bot": ["quick", 60],
+	"passive_frogs": ["slow", 120], "passive_rats": ["slow", 120], "bvb": ["slow", 200], "bvb_again": ["slow", 200],
+	"centaurs_frogs": ["slow", 200], "rats_centaurs": ["slow", 200], "hard": ["slow", 200],
+	"walled_palisade": ["slow", 200], "walled_wall": ["slow", 200], "walled_gap": ["slow", 200], "land": ["slow", 200],
+}
+## The older single-purpose modes, as pieces.
+const MODES := {
+	"age3": ["age3"], "levels": ["levels_easy", "levels_normal", "levels_hard"], "rams": ["rams", "siege_bot"],
+	"walls": ["rams", "walled_palisade", "walled_wall", "walled_gap"], "pick": ["pick"], "hills": ["hills", "guard"],
+	"land": ["land", "guard", "hills"], "reach": ["respond", "shelter", "walled_fords"],
+}
+
 var failures := 0
 var checks := 0
 var map_id := "flat_test"
+var piece := ""
+var stats := {}   # piece -> {key: value}, what the combined checks need (printed as "@@ key json")
 
 
+## Run: test_ai.gd [-- [map_id] [mode] [jobs=N]]. Modes: none (every piece, side by side), quick,
+## slow, serial (every piece in this process, one after another), piece:<name> (one piece), or
+## one of MODES. Side by side, each piece's log is printed in order, then the combined checks.
 func _init() -> void:
-	var args := OS.get_cmdline_user_args()
-	if args.size() > 0:
-		map_id = args[0]
+	var args := Par.plain(OS.get_cmdline_user_args())
+	if args.size() > 0 and FileAccess.file_exists("res://data/maps/%s.json" % args[0]):
+		map_id = args.pop_front()
+	var mode: String = args[0] if args.size() > 0 else ""
 	print("map: ", map_id)
-	var lib = DataLib.new()
-	var gen = Generator.new(lib)
-	var rules = DataLib.load_json("res://data/rules/default.json")
-	var frogs: Dictionary = gen.generate("angry swamp frogs with reed spears", rules)
-	var rats: Dictionary = gen.generate("sewer rats with cheese hammers", rules)
-	if args.size() > 1 and args[1] == "age3":   # just the age-3 buildings check
-		_test_age_three(rules, frogs, rats)
+	if mode.begins_with("piece:") or mode == "serial":
+		var names: Array = [mode.trim_prefix("piece:")] if mode != "serial" else PIECES.keys()
+		var t0 := Time.get_ticks_msec()
+		_setup()
+		for name in names:
+			_run_piece(name)
+		if mode == "serial":
+			_combine(stats)
+		print("\n(%d s)" % ((Time.get_ticks_msec() - t0) / 1000))
 		print("\n%d checks, %d failed" % [checks, failures])
 		quit(1 if failures > 0 else 0)
 		return
-	if args.size() > 1 and args[1] == "levels":   # just the per-level build-up checks (a few minutes)
-		_test_levels(rules, frogs, rats)
-		print("\n%d checks, %d failed" % [checks, failures])
-		quit(1 if failures > 0 else 0)
-		return
-	if args.size() > 1 and args[1] == "rams":   # just the siege checks: rams against stone, the bot's engines (a few minutes)
-		_test_rams(rules, frogs)
-		_test_siege_bot(rules, rats, frogs)
-		print("\n%d checks, %d failed" % [checks, failures])
-		quit(1 if failures > 0 else 0)
-		return
-	if args.size() > 1 and args[1] == "walls":   # just the walled-base checks (a few minutes)
-		_test_rams(rules, frogs)
-		_test_walled_base(rules, frogs, rats, "palisade", false)
-		_test_walled_base(rules, frogs, rats, "wall", false)
-		_test_walled_base(rules, frogs, rats, "wall", true)
-		print("\n%d checks, %d failed" % [checks, failures])
-		quit(1 if failures > 0 else 0)
-		return
-	if args.size() > 1 and args[1] == "pick":   # just the counter-pick checks (seconds)
-		_test_pick(rules, gen)
-		print("\n%d checks, %d failed" % [checks, failures])
-		quit(1 if failures > 0 else 0)
-		return
-	if args.size() > 1 and args[1] == "hills":   # just the high-ground and crossing-guard scenarios
-		_test_hills(rules, frogs, rats)
-		_test_guard(rules, frogs, rats)
-		print("\n%d checks, %d failed" % [checks, failures])
-		quit(1 if failures > 0 else 0)
-		return
-	if args.size() > 1 and args[1] == "land":   # just the land checks: scouting, roads, camps, crossings (a few minutes)
-		_test_land(rules, frogs, rats)
-		print("\n%d checks, %d failed" % [checks, failures])
-		quit(1 if failures > 0 else 0)
-		return
-	if args.size() > 1 and args[1] == "reach":   # just the raid and walled-ford checks (a couple of minutes)
-		_test_respond(rules, rats, frogs)
-		_test_shelter(rules, rats, frogs)
-		_test_walled_fords(rules, frogs, rats)
-		print("\n%d checks, %d failed" % [checks, failures])
-		quit(1 if failures > 0 else 0)
-		return
-
-	_test_pick(rules, gen)
-	_test_wonder(rules, rats, frogs)
-	for pair in [[frogs, rats], [rats, frogs]]:
-		var r := _play(rules, pair, [Bot.new(0), EcoBot.new(1)], "bot %s vs passive %s" % [pair[0].name, pair[1].name])
-		check(r.winner == 0, "the bot beats a passive %s (winner %d at %s)" % [pair[1].name, r.winner, _clock(r.tick)])
-
-	var a := _play(rules, [frogs, rats], [Bot.new(0), Bot.new(1)], "bot vs bot")
-	var b := _play(rules, [frogs, rats], [Bot.new(0), Bot.new(1)], "bot vs bot, again", true)
-	check(a.hashes == b.hashes and a.winner == b.winner, "bot vs bot is deterministic")
-	check(a.winner >= 0, "bot vs bot ends with a winner (%d at %s)" % [a.winner, _clock(a.tick)])
-	# Healers (Dominic, 2026-10-12): a couple from age 2, kept behind the army, and they heal.
-	var m: Dictionary = a.medics
-	check(m.most.max() >= 1 and m.most.max() <= 3, "the bots train a couple of healers (most %s)" % [m.most])
-	check(m.samples == 0 or m.behind * 100 >= m.samples * 70, "healers keep behind the army (%d of %d looks)" % [m.behind, m.samples])
-
-	# Whole matches end: no stalemates between bots, whatever the races.
-	var centaurs: Dictionary = gen.generate("centaur romans", rules)
-	var lengths := [a.tick]
-	var heals: int = a.medics.heals[0] + a.medics.heals[1]
-	for pair in [[centaurs, frogs], [rats, centaurs]]:
-		var r := _play(rules, pair, [Bot.new(0), Bot.new(1)], "bot %s vs bot %s" % [pair[0].name, pair[1].name])
-		check(r.winner >= 0, "%s vs %s ends with a winner" % [pair[0].name, pair[1].name])
-		lengths.append(r.tick)
-		heals += r.medics.heals[0] + r.medics.heals[1]
-	check(heals > 0, "the bots' healers heal someone in their matches (%d heals)" % heals)
-	lengths.sort()
-	# Pacing is a tester metric (milestone 10); bot vs bot is a guide, so it's reported, not
-	# enforced. It was 10:50 before workers got one price, about 12 minutes after.
-	print("\nbot match lengths %s, median %s (target for players: 9-12 minutes)" % [lengths.map(_clock), _clock(lengths[1])])
-
-	_test_easy(rules, rats, frogs)
-	var hard := _play(rules, [rats, frogs], [Bot.new(0, {}, "hard"), Bot.new(1)], "hard bot %s vs normal bot %s" % [rats.name, frogs.name])
-	check(hard.winner == 0, "hard beats normal (winner %d at %s)" % [hard.winner, _clock(hard.tick)])
-
-	_test_respond(rules, rats, frogs)
-	_test_shelter(rules, rats, frogs)
-	_test_walled_fords(rules, frogs, rats)
-	_test_rams(rules, frogs)
-	_test_siege_bot(rules, rats, frogs)
-	_test_walled_base(rules, frogs, rats, "palisade", false)
-	_test_walled_base(rules, frogs, rats, "wall", false)
-	_test_walled_base(rules, frogs, rats, "wall", true)
-	_test_age_three(rules, frogs, rats)
-	_test_land(rules, frogs, rats)
-
-	var w := World.new(SEED, SimMap.load_id(map_id), [frogs, rats], rules)
-	w.issue(1, Commands.SURRENDER, {})
-	for k in 40:
-		w.step()
-	check(w.defeated[1] > 0 and w.winner == 0, "surrendering ends the match")
-
+	var results := Par.run(jobs(mode, map_id), Par.jobs_wanted(OS.get_cmdline_user_args()))
+	Par.print_logs(results)
+	var all := {}
+	for r in results:
+		checks += maxi(0, r.checks)
+		failures += maxi(0, r.failed) + (0 if Par.ok(r) or r.failed > 0 else 1)
+		all[r.name.trim_prefix("ai/")] = r.stats
+	_combine(all)
+	print("\n== pieces")
+	for r in results:
+		print("  %-20s %6.1fs  %s" % [r.name, r.secs, Par.summary(r)])
+		for f in r.fails:
+			print("    ", f)
 	print("\n%d checks, %d failed" % [checks, failures])
 	quit(1 if failures > 0 else 0)
+
+
+## The jobs for a mode ("" for every piece; quick; slow; one of MODES) on a map.
+static func jobs(mode: String, map: String) -> Array:
+	var names: Array
+	if mode == "":
+		names = PIECES.keys()
+	elif mode == "quick" or mode == "slow":
+		names = PIECES.keys().filter(func(k): return PIECES[k][0] == mode)
+	else:
+		assert(MODES.has(mode), "test_ai: unknown mode %s" % mode)
+		names = MODES[mode]
+	return names.map(func(k): return Par.job("ai/" + k, "res://tests/test_ai.gd", [map, "piece:" + k], PIECES.get(k, ["", 300])[1]))
+
+
+var gen
+var rules: Dictionary
+var frogs: Dictionary
+var rats: Dictionary
+
+
+func _setup() -> void:
+	gen = Generator.new(DataLib.new())
+	rules = DataLib.load_json("res://data/rules/default.json")
+	frogs = gen.generate("angry swamp frogs with reed spears", rules)
+	rats = gen.generate("sewer rats with cheese hammers", rules)
+
+
+func _run_piece(name: String) -> void:
+	piece = name
+	match name:
+		"pick": _test_pick(rules, gen)
+		"wonder": _test_wonder(rules, rats, frogs)
+		"passive_frogs", "passive_rats":
+			var pair := [frogs, rats] if name == "passive_frogs" else [rats, frogs]
+			var r := _play(rules, pair, [Bot.new(0), EcoBot.new(1)], "bot %s vs passive %s" % [pair[0].name, pair[1].name])
+			check(r.winner == 0, "the bot beats a passive %s (winner %d at %s)" % [pair[1].name, r.winner, _clock(r.tick)])
+		"bvb":
+			var a := _play(rules, [frogs, rats], [Bot.new(0), Bot.new(1)], "bot vs bot")
+			check(a.winner >= 0, "bot vs bot ends with a winner (%d at %s)" % [a.winner, _clock(a.tick)])
+			# Healers (Dominic, 2026-10-12): a couple from age 2, kept behind the army, and they heal.
+			var m: Dictionary = a.medics
+			check(m.most.max() >= 1 and m.most.max() <= 3, "the bots train a couple of healers (most %s)" % [m.most])
+			check(m.samples == 0 or m.behind * 100 >= m.samples * 70, "healers keep behind the army (%d of %d looks)" % [m.behind, m.samples])
+			_match_stats(a)
+		"bvb_again":   # the same match again (in its own process when side by side): same hashes, same winner
+			_match_stats(_play(rules, [frogs, rats], [Bot.new(0), Bot.new(1)], "bot vs bot, again", true))
+		"centaurs_frogs", "rats_centaurs":
+			# Whole matches end: no stalemates between bots, whatever the races.
+			var centaurs: Dictionary = gen.generate("centaur romans", rules)
+			var pair := [centaurs, frogs] if name == "centaurs_frogs" else [rats, centaurs]
+			var r := _play(rules, pair, [Bot.new(0), Bot.new(1)], "bot %s vs bot %s" % [pair[0].name, pair[1].name])
+			check(r.winner >= 0, "%s vs %s ends with a winner" % [pair[0].name, pair[1].name])
+			_match_stats(r)
+		"easy": _test_easy(rules, rats, frogs)
+		"hard":
+			var hard := _play(rules, [rats, frogs], [Bot.new(0, {}, "hard"), Bot.new(1)], "hard bot %s vs normal bot %s" % [rats.name, frogs.name])
+			check(hard.winner == 0, "hard beats normal (winner %d at %s)" % [hard.winner, _clock(hard.tick)])
+		"respond": _test_respond(rules, rats, frogs)
+		"shelter": _test_shelter(rules, rats, frogs)
+		"walled_fords": _test_walled_fords(rules, frogs, rats)
+		"rams": _test_rams(rules, frogs)
+		"siege_bot": _test_siege_bot(rules, rats, frogs)
+		"walled_palisade": _test_walled_base(rules, frogs, rats, "palisade", false)
+		"walled_wall": _test_walled_base(rules, frogs, rats, "wall", false)
+		"walled_gap": _test_walled_base(rules, frogs, rats, "wall", true)
+		"age3": _test_age_three(rules, frogs, rats)
+		"land": _test_land(rules, frogs, rats)
+		"guard": _test_guard(rules, frogs, rats)
+		"hills": _test_hills(rules, frogs, rats)
+		"levels_easy", "levels_normal", "levels_hard": _test_levels(rules, frogs, rats, [name.trim_prefix("levels_")])
+		"surrender":
+			var w := World.new(SEED, SimMap.load_id(map_id), [frogs, rats], rules)
+			w.issue(1, Commands.SURRENDER, {})
+			for k in 40:
+				w.step()
+			check(w.defeated[1] > 0 and w.winner == 0, "surrendering ends the match")
+		_: assert(false, "test_ai: no piece %s" % name)
+
+
+## What the combined checks need from a bot-vs-bot match.
+func _match_stats(r: Dictionary) -> void:
+	stat("winner", r.winner)
+	stat("tick", r.tick)
+	stat("hashes", [r.hashes.size(), str(r.hashes).hash()])
+	stat("heals", r.medics.heals[0] + r.medics.heals[1])
+
+
+func stat(key: String, value) -> void:
+	if not stats.has(piece):
+		stats[piece] = {}
+	stats[piece][key] = value
+	print("@@ %s %s" % [key, JSON.stringify(value)])
+
+
+## The checks across pieces: the same match twice is the same; the bots' healers heal someone
+## over their matches; the match lengths (reported).
+func _combine(all: Dictionary) -> void:
+	if all.has("bvb") and all.has("bvb_again"):
+		var a: Dictionary = all.bvb
+		var b: Dictionary = all.bvb_again
+		check(a.hashes == b.hashes and a.winner == b.winner, "bot vs bot is deterministic")
+	var matches := ["bvb", "centaurs_frogs", "rats_centaurs"]
+	if matches.all(func(k): return all.has(k)):
+		var heals := 0
+		var lengths := []
+		for k in matches:
+			heals += int(all[k].heals)
+			lengths.append(int(all[k].tick))
+		check(heals > 0, "the bots' healers heal someone in their matches (%d heals)" % heals)
+		lengths.sort()
+		# Pacing is a tester metric (milestone 10); bot vs bot is a guide, so it's reported, not
+		# enforced. It was 10:50 before workers got one price, about 12 minutes after.
+		print("\nbot match lengths %s, median %s (target for players: 9-12 minutes)" % [lengths.map(_clock), _clock(lengths[1])])
 
 
 func _play(rules: Dictionary, races: Array, bots: Array, title: String, quiet := false) -> Dictionary:
@@ -342,8 +402,8 @@ func _test_siege_bot(rules: Dictionary, a: Dictionary, b: Dictionary) -> void:
 ## built and researched by 20 minutes, and its army; checks the targets: age 2 by 6 minutes
 ## (Normal, Hard), age 3 by 16 minutes (Easy, Normal), and by 20 minutes a University, a Castle
 ## and a tower (Easy, Normal) and some research; by 30 minutes Normal has an army still growing.
-func _test_levels(rules: Dictionary, a: Dictionary, b: Dictionary) -> void:
-	for level in ["easy", "normal", "hard"]:
+func _test_levels(rules: Dictionary, a: Dictionary, b: Dictionary, levels := ["easy", "normal", "hard"]) -> void:
+	for level in levels:
 		var cfg: Dictionary = Bot.load_config()
 		for wv in cfg.military.waves:
 			wv.at = 1 << 20   # no attacks: building up alone
@@ -752,8 +812,6 @@ func _test_land(rules: Dictionary, a: Dictionary, b: Dictionary) -> void:
 	if map_id == "old_forest":
 		check(did.get("roads", 0) >= 1, "land: a road is felled through the thin woods (%d trees)" % did.get("road_trees", 0))
 	check(w.winner >= 0, "land: the match ends (%s)" % _clock(w.tick))
-	_test_guard(rules, a, b)
-	_test_hills(rules, a, b)
 
 
 ## A level that guards (Normal), on the back foot (set: here the placement is the point), left to

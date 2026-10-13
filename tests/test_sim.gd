@@ -1,7 +1,8 @@
 extends SceneTree
 ## Determinism and speed checks for the sim. Slower than run_tests.gd (about a
 ## minute): it plays a scripted 10-minute, 200-unit match several times.
-## Run: godot --headless --path . --script res://tests/test_sim.gd
+## Run: godot --headless --path . --script res://tests/test_sim.gd [-- serial | part:<name>[,<name>...] | jobs=N]
+## (by default its parts run side by side in a few processes, see GROUPS)
 
 const DataLib := preload("res://src/data_lib.gd")
 const Generator := preload("res://src/race_generator.gd")
@@ -25,6 +26,7 @@ const Match := preload("res://src/sim/match.gd")
 const Garrison := preload("res://src/sim/garrison.gd")
 const TechTreeModel := preload("res://src/view/tech_tree_model.gd")
 const BuildingArt := preload("res://src/view/art/building_art.gd")
+const Par := preload("res://tests/par.gd")
 
 const PROMPTS := ["angry swamp frogs with reed spears", "sewer rats with cheese hammers"]
 const SEED := 20261010
@@ -47,6 +49,14 @@ const COUNTER_PROMPTS := ["angry swamp frogs with reed spears", "sewer rats with
 const FIGHT_BUDGET := 600          # food + wood per side
 const FIGHT_LIMIT := 3000          # ticks (2.5 minutes)
 const FIGHT_FROM := [[11000, 20500], [21000, 20500]]   # open ground on flat_test, 10 tiles apart
+
+## The parts in each process when run side by side ([name, parts...], by their time alone from
+## "@@ ms.<part>"; the three plays of the scripted match apart, about 25-50 s each).
+const GROUPS := [
+	["scenarios_a", "crossing_flat", "opening", "gates", "diagonal_gates", "pen", "combat"],
+	["scenarios_b", "fixed", "command_order", "source_lint", "flow", "crossing_choke", "crossing_engines", "age_timing", "queue", "movement_classes", "farms", "fog_memory", "land", "hills", "flow_patch", "flow_patch_mixed", "tech", "research_queue", "effects", "university_castle", "market", "build_queue", "builder_moves_on", "diagonal_wall", "camp_gather", "drop_off", "animals", "sheep_spot", "garrison", "towers", "shots", "engines", "bot_hunts", "wonder"],
+	["match", "match"], ["match_b", "match_b"], ["match_flipped", "match_flipped"],
+]
 
 ## Banned in src/sim/: floats, float maths, engine randomness, wall clocks, Nodes.
 const BANNED := [
@@ -71,59 +81,105 @@ func _init() -> void:
 	var map: SimMap = SimMap.load_id("flat_test")   # for reading only; every World loads its own
 	rules_ = rules
 
-	_test_fixed()
-	_test_command_order()
-	_test_source_lint()
-	_test_flow(map)
-	_test_crossing(races, "flat_test")
-	_test_crossing(races, "choke_test")
-	for m in ["flat_test", "choke_test", "hill_test"]:
-		_test_crossing(races, m, true)
-	_test_opening(races)
-	_test_age_timing(races)
-	_test_queue(races)
-	_test_movement_classes()
-	_test_farms(races)
-	_test_fog_memory(races)
-	_test_land()
-	_test_hills(races)
-	_test_flow_patch()
-	_test_flow_patch_mixed()
-	_test_tech(races)
-	_test_research_queue(races)
-	_test_effects(races)
-	_test_university_castle(races)
-	_test_market(races)
-	_test_build_queue(races)
-	_test_builder_moves_on(races)
-	_test_gates(races)
-	_test_diagonal_wall(races)
-	_test_diagonal_gates(races)
-	_test_camp_gather(races)
-	_test_drop_off(races)
-	_test_animals(races)
-	_test_sheep_spot(races)
-	_test_pen(races)
-	_test_garrison(races)
-	_test_towers(races)
-	_test_shots(races)
-	_test_engines(races)
-	_test_bot_hunts(races)
-	_test_wonder(races)
-	_test_combat(gen)
+	var parts := {
+		"fixed": func(): _test_fixed(),
+		"command_order": func(): _test_command_order(),
+		"source_lint": func(): _test_source_lint(),
+		"flow": func(): _test_flow(map),
+		"crossing_flat": func(): _test_crossing(races, "flat_test"),
+		"crossing_choke": func(): _test_crossing(races, "choke_test"),
+		"crossing_engines": func():
+			for m in ["flat_test", "choke_test", "hill_test"]:
+				_test_crossing(races, m, true),
+		"opening": func(): _test_opening(races),
+		"age_timing": func(): _test_age_timing(races),
+		"queue": func(): _test_queue(races),
+		"movement_classes": func(): _test_movement_classes(),
+		"farms": func(): _test_farms(races),
+		"fog_memory": func(): _test_fog_memory(races),
+		"land": func(): _test_land(),
+		"hills": func(): _test_hills(races),
+		"flow_patch": func(): _test_flow_patch(),
+		"flow_patch_mixed": func(): _test_flow_patch_mixed(),
+		"tech": func(): _test_tech(races),
+		"research_queue": func(): _test_research_queue(races),
+		"effects": func(): _test_effects(races),
+		"university_castle": func(): _test_university_castle(races),
+		"market": func(): _test_market(races),
+		"build_queue": func(): _test_build_queue(races),
+		"builder_moves_on": func(): _test_builder_moves_on(races),
+		"gates": func(): _test_gates(races),
+		"diagonal_wall": func(): _test_diagonal_wall(races),
+		"diagonal_gates": func(): _test_diagonal_gates(races),
+		"camp_gather": func(): _test_camp_gather(races),
+		"drop_off": func(): _test_drop_off(races),
+		"animals": func(): _test_animals(races),
+		"sheep_spot": func(): _test_sheep_spot(races),
+		"pen": func(): _test_pen(races),
+		"garrison": func(): _test_garrison(races),
+		"towers": func(): _test_towers(races),
+		"shots": func(): _test_shots(races),
+		"engines": func(): _test_engines(races),
+		"bot_hunts": func(): _test_bot_hunts(races),
+		"wonder": func(): _test_wonder(races),
+		"combat": func(): _test_combat(gen),
+		"match": func(): _test_match(map, races, lib, rules),
+		"match_b": func(): _test_match_b(map, races),
+		"match_flipped": func(): _test_match_flipped(map, races, lib, rules),
+	}
+	var args := Par.plain(OS.get_cmdline_user_args())
+	var mode: String = args[0] if args.size() > 0 else ""
+	if mode == "serial" or mode.begins_with("part:"):
+		var names: Array = parts.keys() if not mode.begins_with("part:") else Array(mode.trim_prefix("part:").split(","))
+		for name in names:
+			var t0 := Time.get_ticks_msec()
+			part = name
+			parts[name].call()
+			print("@@ ms.%s %d" % [name, Time.get_ticks_msec() - t0])
+		_combine(stats)
+	else:
+		assert(mode == "", "test_sim: unknown mode %s" % mode)
+		var results := Par.run(jobs(), Par.jobs_wanted(OS.get_cmdline_user_args()))
+		Par.print_logs(results)
+		var all := {}
+		for r in results:
+			checks += maxi(0, r.checks)
+			failures += maxi(0, r.failed) + (0 if Par.ok(r) or r.failed > 0 else 1)
+			for name in r.args[0].trim_prefix("part:").split(","):
+				all[name] = r.stats
+		_combine(all)
+		print("\n== parts")
+		for r in results:
+			print("  %-16s %6.1fs  %s" % [r.name, r.secs, Par.summary(r)])
+			for f in r.fails:
+				print("    ", f)
+	print("\n%d checks, %d failed" % [checks, failures])
+	quit(1 if failures > 0 else 0)
 
+
+## The scripted 10-minute, 200-unit match: played twice (same hashes), then with every race dict
+## rebuilt in reversed key order and the commands shuffled; replays, float leaks, tick time.
+func _test_match(map: SimMap, races: Array, lib, rules: Dictionary) -> void:
 	var script := _script(map, races)
 	print("script: %d commands over %d ticks" % [script.size(), TICKS])
-
 	var timing := {}
 	var a := _play(map, races, script, false, timing)
-	var b := _play(map, races, script, false, {})
 	check(a.hashes.size() == TICKS / World.HASH_EVERY, "a checkpoint every %d ticks" % World.HASH_EVERY)
-	_same_hashes(a, b, "second run")
 	_test_moved(a)
+	_test_replay(a, lib)
+	_test_float_leaks(a, script)
+	_report_timing(timing)
+	_stat("hashes", a.hashes)
 
-	# Dictionary-order leaks: every race dict rebuilt with reversed key order,
-	# stats re-priced from the reversed recipes, commands queued in shuffled order.
+
+## The same match again (its hashes go to _combine: the same as the first run's).
+func _test_match_b(map: SimMap, races: Array) -> void:
+	_stat("hashes", _play(map, races, _script(map, races), false, {}).hashes)
+
+
+## Dictionary-order leaks: every race dict rebuilt with reversed key order, stats re-priced from
+## the reversed recipes, commands queued in shuffled order (its hashes go to _combine).
+func _test_match_flipped(map: SimMap, races: Array, lib, rules: Dictionary) -> void:
 	var flipped := []
 	for r in races:
 		var fr = _reversed(r)
@@ -132,14 +188,42 @@ func _init() -> void:
 			check(e == r.units[i].eval, "pricing ignores key order (%s)" % r.units[i].recipe.name)
 			fr.units[i].eval = e
 		flipped.append(fr)
-	_same_hashes(a, _play(map, flipped, script, true, {}), "reversed dicts + shuffled commands")
+	_stat("hashes", _play(map, flipped, _script(map, races), true, {}).hashes)
 
-	_test_replay(a, lib)
-	_test_float_leaks(a, script)
-	_report_timing(timing)
 
-	print("\n%d checks, %d failed" % [checks, failures])
-	quit(1 if failures > 0 else 0)
+var stats := {}   # part -> {key: value} (printed as "@@ key json" for a parent run)
+var part := ""
+
+
+func _stat(key: String, value) -> void:
+	if not stats.has(part):
+		stats[part] = {}
+	stats[part][key] = value
+	print("@@ %s %s" % [key, JSON.stringify(value)])
+
+
+## The checks across parts: the match played again, and flipped, gives the same hashes.
+func _combine(all: Dictionary) -> void:
+	if not all.has("match"):
+		return
+	var a: Array = all.match.hashes
+	for k in [["match_b", "second run"], ["match_flipped", "reversed dicts + shuffled commands"]]:
+		if not all.has(k[0]):
+			continue
+		var b: Array = all[k[0]].hashes
+		var n := mini(a.size(), b.size())
+		var differs := -1
+		for i in n:
+			if int(a[i][1]) != int(b[i][1]) or int(a[i][0]) != int(b[i][0]):
+				differs = int(a[i][0])
+				break
+		check(differs < 0 and n == a.size() and n == b.size(), "%s: same hashes, same number of checkpoints (first differs at tick %d; %d and %d checkpoints)" % [k[1], differs, a.size(), b.size()])
+		print("%s: %d checkpoints match" % [k[1], n] if differs < 0 else "%s: hash differs at tick %d" % [k[1], differs])
+
+
+## The pieces when run side by side (the default): groups of parts of about the same length.
+static func jobs() -> Array:
+	return GROUPS.map(func(g): return Par.job("sim/" + g[0], "res://tests/test_sim.gd", ["part:" + ",".join(g.slice(1))], 50 if g[0] == "match" else 25))
 
 
 func check(ok: bool, what: String) -> void:

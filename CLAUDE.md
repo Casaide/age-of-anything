@@ -136,12 +136,16 @@ tools/audio/     the sound synth (pure Python): synth, instruments, sfx and voic
 Godot on this Mac: `/Applications/Godot.app/Contents/MacOS/Godot` (alias it as `godot`).
 
 ```sh
-godot --headless --path . --script res://tests/run_tests.gd        # must print "0 failed"
+tests/batch.sh                                                     # the whole batch side by side, a table, exit 1 on a failure (~3 min)
+tests/batch.sh --quick                                             # the fast subset: run_tests, test_sim, test_ai quick, placement 3d (~1 min)
+godot --headless --path . --script res://tests/run_tests.gd        # must print "0 failed" (~5 s; "-- placement" adds the 3D placement check)
 godot --headless --path . --script res://tests/print_races.gd -- "centaur romans" "flying greeks with wings"
 godot --path . --script res://tests/screenshot.gd -- /tmp/lab.png "prompt A" "prompt B"
-godot --headless --path . --script res://tests/test_sim.gd         # sim determinism + tick time (~45 s)
-godot --headless --path . --script res://tests/test_ai.gd          # the AI beats a passive player; bot vs bot (~2 min)
-godot --headless --path . --script res://tests/balance.gd -- 2     # equal-cost round robin in age 2: win rates, outliers
+godot --headless --path . --script res://tests/test_sim.gd         # sim determinism + tick time, its parts side by side (~1 min; "-- serial" in one process)
+godot --headless --path . --script res://tests/test_ai.gd -- [map] [quick|slow|piece:<name>|walls|...]   # the AI: scenario checks (quick, ~30 s) and whole bot matches (slow), side by side
+godot --headless --path . --script res://tests/test_2v2.gd         # four bots, one 2v2 match (~2.5 min: one process, the batch's longest piece)
+godot --headless --path . --script res://tests/balance.gd -- 2     # equal-cost round robin in age 2: win rates, outliers (fights side by side)
+godot --headless --path . --script res://tests/mass_battle.gd -- 2 # 30 v 30 mixed armies at equal cost (each match side by side)
 godot --headless --path . --script res://tests/resource_audit.gd -- reed_meadow   # resources per start, 40-minute bot economies (~3 min)
 python3 tools/maps/reed_meadow.py                                  # rebuild the Reed Meadow maps (64 and 88) from one layout
 godot --headless --path . --script res://tests/path_audit.gd -- 8  # pathing diagnostic: give-ups, snaps, jitter, treading, with examples
@@ -156,7 +160,7 @@ godot --path . --script res://tests/art_crop.gd -- /tmp/c.png 6.5 9 ["prompt A" 
 godot --path . --script res://tests/art_bench.gd                    # draw calls + frame time, 200+ units
 godot --path . --script res://tests/unit_lineup.gd -- /tmp/units.png ["prompt A" "prompt B"]   # both rosters as pixel art, 4x
 godot --path . --audio-driver Dummy --always-on-top --script res://tests/placement_check.gd -- [filter] [3d|2d]   # placement + layering on every unit, pose, facing, and the bug fixtures (~2 min); must pass before a unit change is shown
-godot --headless --path . --script res://tests/geometry_check.gd -- [filter]   # its 3D half alone, headless (~35 s; also in run_tests)
+godot --headless --path . --script res://tests/geometry_check.gd -- [filter]   # its 3D half alone, headless (~35 s; also run_tests -- placement)
 godot --path . --audio-driver Dummy --always-on-top --script res://tests/placement_shot.gd -- /tmp/p.png 5 "frog on newt_fire"   # a placement case in 8 facings
 godot --path . --script res://tests/healer_lineup.gd -- /tmp/healers.png [zoom] [family,...]   # every culture's healer in 8 facings
 godot --path . --script res://tests/siege_lineup.gd -- /tmp/siege.png [zoom] ["prompt" ...]     # each race's crewed siege engines, four facings
@@ -172,8 +176,15 @@ Windowed test and capture runs (screenshots, sheets, benches) play the game's so
 `--audio-driver Dummy` so they're silent (Dominic), and `--always-on-top` so a covered window
 doesn't crawl.
 
-Run the tests after every change to `data/` or `src/`, and `test_sim.gd` after every change to
-`src/sim/` or pricing. Look at a screenshot after visual changes. After a change to `tools/audio/`,
+**Testing rhythm** (Dominic: iteration must stay fast). While working, the quick checks: `run_tests`
+after every change to `data/` or `src/`, the piece you're touching (`test_ai.gd -- piece:<name>`,
+`test_sim.gd -- part:<name>`, `placement_check.gd -- <filter>`), or `tests/batch.sh --quick`.
+After a set of changes, the whole batch once, in the background (`tests/batch.sh`), not the slow
+suites over and over. The test scripts run their independent pieces in parallel Godot processes
+(`tests/par.gd`; `jobs=N` or `AOA_JOBS` to change how many, performance cores - 1 by default);
+each piece is its own seeded sim, so results match a serial run. Logs: the path the batch prints.
+The tick-time check in test_sim measures wall time: on a machine busy with other runs it can fail.
+Look at a screenshot after visual changes. After a change to `tools/audio/`,
 re-render and commit the files in `assets/audio/` with it (the game plays files, not recipes).
 
 ## Rules that matter
