@@ -62,7 +62,7 @@ const FORM_GAP := 160          # milli-tiles between neighbouring bodies in a fo
 const SLOT_ARRIVE := 60        # a unit making for its own place (a formation slot, a spot by a building) stops this close
 const SLOT_SLACK := 400        # shoved this far beyond that, a stopped unit in a formation walks back to its slot
 const SPOT_GAP := 100          # a worker's chosen spot beside its rect: this gap between its body and the rect
-const SPOT_BUSY := 3           # this many spot checks finding no free spot and the worker gives the place up
+const SPOT_BUSY := 3          # this many spot checks finding no free spot and the worker gives the place up
 
 # Field keys: (target * 4 + kind) * LANES + lane. Cell targets are cells; building targets are ids.
 # A lane is a movement class, and the team for maps with gates (SimMap lanes).
@@ -854,7 +854,7 @@ func _move() -> void:
 		var dx := wxs[i] - x
 		var dy := wys[i] - y
 		var d := Fixed.isqrt(dx * dx + dy * dy)
-		if d > rs[i] and grp[i] == 0 and units.foe[i] == 0:   # a group in formation walks through its own
+		if d > rs[i] and units.foe[i] == 0:   # (a group in formation passes through its own: _sidestep)
 			var v := _sidestep(i, x, y, dx * Fixed.ONE / d, dy * Fixed.ONE / d, s)
 			if v.x != 0 or v.y != 0:
 				dx = v.x
@@ -900,11 +900,15 @@ func _move() -> void:
 
 
 ## Local avoidance (Dominic, 2026-10-13: "scavengers getting stuck on each other too easily"):
-## a unit on its own (a worker, mostly: a group move has its formation) heading (ux, uy)
-## (scaled by Fixed.ONE) with a standing body just ahead in its way steps half aside, round
-## the side the body isn't on. Walkers are left to separation, which slides them past each
-## other. Positions are the tick's start (units.x), so the order units move in doesn't matter.
-## (0, 0): nothing in the way.
+## a unit heading (ux, uy) (scaled by Fixed.ONE) with a standing body just ahead in its way
+## steps half aside, round the side the body isn't on; a walker of its side coming the other
+## way it passes keeping to the right (nose to nose they stalled, worst along a cliff or a
+## wall). Walkers going its way are left to separation, which slides them past each other.
+## A unit in a group move passes its own group (they part for it) and dodges only its own
+## side (enemies are met, not dodged): another group already standing in its formation across
+## a narrow way (the plateau on hill_test) was a wall it shoved at until it gave up three
+## tiles short. Positions and waypoints are the tick's start (_move writes its own copies), so
+## the order units move in doesn't matter. (0, 0): nothing in the way.
 func _sidestep(i: int, x: int, y: int, ux: int, uy: int, s: int) -> Vector2i:
 	var ox := units.x   # the tick's start: _move writes its own copy
 	var oy := units.y
@@ -919,23 +923,47 @@ func _sidestep(i: int, x: int, y: int, ux: int, uy: int, s: int) -> Vector2i:
 	var best_ahead := 1 << 30
 	var best_side := 0
 	var ri := orad[i]
-	for yy in range(maxi(cy - 1, 0), mini(cy + 2, spatial.height)):
-		for xx in range(maxi(cx - 1, 0), mini(cx + 2, sw)):
+	var og := units.group
+	var gi: int = og[i]
+	var oo := units.owner
+	var oi: int = oo[i]
+	var wxs := units.wx   # where walkers are heading
+	var wys := units.wy
+	# Only the cells ahead: heading well east (or west, north, south), the column (row) behind
+	# seldom holds a body in the way, and skipping it saves a third of the looking.
+	var x0 := cx if ux > Fixed.ONE / 2 else cx - 1
+	var x1 := cx if ux < -Fixed.ONE / 2 else cx + 1
+	var y0 := cy if uy > Fixed.ONE / 2 else cy - 1
+	var y1 := cy if uy < -Fixed.ONE / 2 else cy + 1
+	for yy in range(maxi(y0, 0), mini(y1 + 1, spatial.height)):
+		for xx in range(maxi(x0, 0), mini(x1 + 1, sw)):
 			var c := yy * sw + xx
 			for k in range(start[c], start[c + 1]):
 				var j: int = items[k]
-				if j == i or om[j] == 1:
-					continue   # walkers sort themselves out (separation slides them past)
+				if j == i or (gi > 0 and (og[j] == gi or oo[j] != oi)):
+					continue   # groupmates part for each other; a group's units dodge only their own side
+				var head_on := false
+				if om[j] == 1:
+					if oo[j] != oi:
+						continue
+					# A walker going our way is left to separation (it slides past); one coming at us
+					# is passed keeping to the right, both of us (shoved nose to nose they stalled,
+					# worst along a cliff or a wall, where separation can't slide them apart).
+					if (wxs[j] - ox[j]) * ux + (wys[j] - oy[j]) * uy >= 0:
+						continue
+					head_on = true
 				var rx: int = ox[j] - x
 				var ry: int = oy[j] - y
 				var rr: int = ri + orad[j]
 				var ahead := (rx * ux + ry * uy) / Fixed.ONE
-				if ahead <= 0 or ahead > rr + 2 * s or ahead >= best_ahead:
+				if ahead <= 0 or ahead > rr + (4 if head_on else 2) * s or ahead >= best_ahead:
 					continue
 				var side := (rx * uy - ry * ux) / Fixed.ONE   # > 0: j is on our left
 				if side >= rr or side <= -rr:
 					continue
-				if side == 0:
+				if head_on:
+					side = 1   # aside to the right, whichever side it's on
+				elif side == 0:
 					side = 1 if (units.id[i] + units.id[j]) % 2 == 0 else -1
 				best = j
 				best_ahead = ahead
@@ -1317,12 +1345,13 @@ func _separate() -> void:
 	var tasks := units.task
 	var foes := units.foe
 	var owners := units.owner
+	var gsp := units.gspot
 	var role := PackedByteArray()   # 1: standing idle (gives way), 2: walking to or from a job, 3: one passing through (below)
 	role.resize(n)
 	for i in n:
 		if mv[i] == 0 and tasks[i] == Economy.NONE and foes[i] == 0 and stood[i] == 0:
 			role[i] = 1
-		elif mv[i] == 1 and units.gspot[i] >= 0 and (tasks[i] == Economy.GATHER or tasks[i] == Economy.RETURN):
+		elif mv[i] == 1 and gsp[i] >= 0 and (tasks[i] == Economy.GATHER or tasks[i] == Economy.RETURN):
 			role[i] = 3   # making for its own gather spot, or carrying home from it: it won't stop in the crowd
 		elif mv[i] == 1 and tasks[i] != Economy.NONE:
 			role[i] = 2
@@ -1376,8 +1405,13 @@ func _separate() -> void:
 					if stood[i] == 1 and stood[j] == 1:
 						continue   # two groups' formations overlapping: no shoving match (and no walking back into it)
 					# A worker on its way to or from a job walks on; anyone standing idle in its way gives way.
-					var hi := planted[i] == 1 or (role[i] >= 2 and role[j] == 1)
-					var hj := planted[j] == 1 or (role[j] >= 2 and role[i] == 1)
+					# So does a unit standing in its formation for one of its side's other groups walking
+					# through (it walks back to its slot after): two groups' formations filling a narrow way
+					# (the plateau on hill_test) made a wall the later group shoved at until it gave up.
+					var hi := planted[i] == 1 or (role[i] >= 2 and role[j] == 1) \
+							or (stood[j] == 1 and mv[i] == 1 and grp[i] > 0 and grp[i] != grp[j] and owners[i] == owners[j])
+					var hj := planted[j] == 1 or (role[j] >= 2 and role[i] == 1) \
+							or (stood[i] == 1 and mv[j] == 1 and grp[j] > 0 and grp[j] != grp[i] and owners[i] == owners[j])
 					if hi and hj:
 						continue
 					# One of the side's own at work and a gatherer making for its spot or carrying home
