@@ -53,7 +53,10 @@ culture's cloth). The crew are not baked in: the recipe carries `crew` (the race
 `UnitView` composes one worker UnitView per crew socket of the facing (`crew<n>_f<k>[_reach|_raise][_in|_top]`:
 turned k facings, the arm hold it keeps, behind the frame or riding on top). Crews walk while the
 engine rolls, heave with a ram's blow, snap with a shot, and fall when it's destroyed. Check them with
-`tests/siege_lineup.gd -- out.png [zoom] ["prompt" ...]` (every take, four facings, a worker for size).
+`tests/siege_lineup.gd -- out.png [zoom] ["prompt" ...]` (every take, four facings, a worker for size;
+`SIEGE_FACINGS=8` for all eight). The human (timber) ram is covered: a pitched roof of lashed hides on
+corner posts, open at the sides so the crew show under the eaves (`TIMBER_RAM_ROOF`: "hides", "planks"
+or "" for the open ram); its two "in" crew stand one each side of the log so one always shows.
 
 ## Buildings, props, terrain
 

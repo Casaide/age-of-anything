@@ -3,6 +3,7 @@ extends SceneTree
 ## bolt thrower in four facings, crewed by its own workers, with a worker beside for size. One row
 ## per engine. Zoom 1.5 is the game's scale. Run (needs a display):
 ##   godot --audio-driver Dummy --always-on-top --path . --script res://tests/siege_lineup.gd -- out.png [zoom] ["prompt" ...]
+## SIEGE_FACINGS=8 in the environment draws all eight facings (the layering check).
 
 const DataLib := preload("res://src/data_lib.gd")
 const Generator := preload("res://src/race_generator.gd")
@@ -10,13 +11,16 @@ const ArtKit := preload("res://src/view/art/art_kit.gd")
 const UnitView := preload("res://src/unit_view.gd")
 
 const PROMPTS := ["romans", "sewer rats", "forest beetles", "spooky spiders", "swamp frogs"]
-const FACINGS := [0, 2, 5, 6]
+const FOUR := [0, 2, 5, 6]
+var FACINGS: Array = FOUR
 const CELL := Vector2(84, 70)   # world units per cell (at zoom 1)
 const LABEL_W := 150.0
 
 
 func _initialize() -> void:
 	await process_frame
+	if OS.get_environment("SIEGE_FACINGS") == "8":
+		FACINGS = range(8)
 	var args := OS.get_cmdline_user_args()
 	var out: String = args[0]
 	var zoom := float(args[1]) if args.size() > 1 else 3.0
