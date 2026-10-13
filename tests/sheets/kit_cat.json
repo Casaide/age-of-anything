@@ -1,0 +1,21 @@
+{
+ "name": "kit_cat",
+ "title": "The alley cat rebuilt through the creature kit",
+ "_doc": "Row 1 is the game's cat (hand-built: unit_models.gd's cat section). Row 2 is the same cat from data/creature_kit.json 'kitcat': the kit's skeleton, legs, poses and sockets under the cat's modelled body and head. Row 3 is 'kitcat_built': the kit's own primitive body and head too. Same rider (the rats' age-2 crossbow rider), same coat.",
+ "stage": ["res://data/creature_kit.json"],
+ "zooms": [3, 1],
+ "cell": [66, 62],
+ "size": [{"prompt": "sewer rats", "slot": "worker"}],
+ "rows": [
+  {"label": "game cat (hand-built)", "unit": {"prompt": "sewer rats", "slot": "mounted_archer", "age": 2, "mount": {"creature": "cat", "skin": "cat_ginger"}}},
+  {"label": "kit cat\n(kit skeleton,\nmodelled body/head)", "unit": {"prompt": "sewer rats", "slot": "mounted_archer", "age": 2, "mount": {"creature": "kitcat", "skin": "cat_ginger"}}},
+  {"label": "kit cat, built\n(all from the kit)", "unit": {"prompt": "sewer rats", "slot": "mounted_archer", "age": 2, "mount": {"creature": "kitcat_built", "skin": "cat_ginger"}}},
+  {"label": "kit cat, built,\ntuxedo, no rider", "unit": {"creature": "kitcat_built", "skin": "cat_tuxedo", "mount_body": true}}
+ ],
+ "sheets": [
+  {"name": "facings", "title": "standing, 8 facings", "columns": "facings"},
+  {"name": "cycle", "title": "the eight baked walk steps, one facing", "columns": "cycle:7"},
+  {"name": "sit", "title": "idle: sitting (8 facings)", "columns": "idle"},
+  {"name": "sit1", "title": "sitting down, step 1", "columns": "idle:sit1"}
+ ]
+}

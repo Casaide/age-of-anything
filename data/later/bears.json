@@ -1,0 +1,148 @@
+{
+ "schema": "aow.later/1",
+ "_doc": "Bears, concept round B1 (2026-10-13): staged here until Dominic picks (D-080: concept-first). Nothing in the game loads this file; tests/sheet.gd and the placement check's cases stage it (CreatureKit.stage). Dominic's direction: bears as a race on two legs, armoured, dignified and intelligent like the Greeks (the smarter counterpart to the rats); rideable on four legs by some races; some bigger still on two legs: polar or old bears, a natural giant line. Built with the creature kit (scenes/art_pixel/creature_kit.gd): three builds of the biped (brown with the shoulder hump and a dished face, black 'moon bear' with big ears, a straight tan muzzle and a pale chest crescent, polar with a long neck and a long roman-nosed head), one quadruped mount, the bronze helmet with ear cups (scenes/art_pixel/bear_concepts.gd). Sheets and options: docs/concepts/bears/. To put bears in play: move the kits into data/creature_kit.json, the parts into data/parts.json, the creatures, skins and words into their files (DataLib would then complete kit parts), and price them (big hp through points, no special case).",
+ "models": ["res://scenes/art_pixel/bear_concepts.gd"],
+ "kits": {
+  "bear_brown": {
+   "posture": "biped",
+   "parts": {"body": "body.bear", "head": "head.bear", "leg": "leg.bear"},
+   "scale": 1.2,
+   "fur": "hide", "fur_units": 4.0,
+   "hip": [-0.4, 11.5],
+   "leg_z": 3.2,
+   "pad": 0.6,
+   "lean": 8.0,
+   "armour_pad": 1.3,
+   "body": {
+    "pelvis": {"at": [-0.6, 13.4], "r": [5.0, 4.8, 5.2]},
+    "belly": {"at": [0.6, 16.0], "r": [5.4, 5.0, 5.5]},
+    "chest": {"at": [0.4, 19.8], "r": [5.0, 5.4, 5.6]},
+    "hump": {"at": [-2.0, 23.0], "r": [3.4, 2.4, 4.0]}
+   },
+   "neck": {"from": [0.6, 22.6], "to": [1.8, 25.6], "r": [3.4, 3.0]},
+   "tail": {"stub": {"at": [-5.2, 13.0], "r": [1.3, 1.2, 1.2]}},
+   "arm": {"shoulder": [0.4, 22.6, 4.6], "elbow": [1.0, -4.4, 1.4], "hand": [6.2, 16.6, 6.0], "hand_l": [7.0, 19.8, -6.8],
+    "r": [[2.1, 1.9], [1.8, 1.5]], "paw": [1.8, 1.6, 1.6]},
+   "leg": {"bones": [5.6, 5.2], "r": [[2.6, 2.1], [2.0, 1.6]], "foot": 4.2, "heel": 1.1, "ankle": 1.6, "foot_r": [1.1, 1.5], "foot_h": 0.5, "x": 0.4},
+   "walk": {"stride": 6.0, "stance": 0.6, "lift": 1.6, "steps": 8, "toe_off": 25.0, "gait": {"swing": 0.0, "cadence": 0.9, "bob": 0.0, "rock": 0.02}},
+   "idle": {"ease": {"forward": 0.8, "out": 1.2}},
+   "kerchief": true,
+   "head": {
+    "k": 1.15, "top": [0.4, 9.8], "gear_scale": 0.9,
+    "skull": {"at": [0.6, 4.4], "r": [4.4, 4.0, 4.3]},
+    "cheeks": {"at": [1.6, 2.7], "r": [3.2, 2.6, 4.0]},
+    "stop": {"at": [3.4, 5.4], "r": [1.6, 1.3, 1.5]},
+    "muzzle": {"from": [3.4, 3.0], "to": [7.4, 2.3], "r": [2.4, 1.7], "mat": "pale"},
+    "nose": {"r": [1.0, 0.85, 1.2], "colour": "#1c1614"},
+    "eyes": {"look": [0.85, 0.15, 0.5], "r": 0.5},
+    "brow": {"at": [0.1, 0.55, 0], "r": [0.8, 0.4, 0.8]},
+    "ears": {"shape": "round", "at": [-0.6, 7.6, 2.9], "size": [0.8, 1.5, 1.4], "lean": -10.0, "inner": "#3a2a24"}
+   }
+  },
+  "bear_black": {
+   "base": "bear_brown",
+   "parts": {"body": "body.bear_black", "head": "head.bear_black", "leg": "leg.bear_black"},
+   "scale": 1.15,
+   "body": {
+    "pelvis": {"at": [-0.6, 13.4], "r": [4.6, 4.6, 4.8]},
+    "belly": {"at": [0.6, 16.0], "r": [4.9, 4.8, 5.0]},
+    "chest": {"at": [0.5, 19.8], "r": [4.7, 5.3, 5.2]},
+    "hump": null,
+    "patches": [{"at": [4.7, 21.2, 0], "r": [1.0, 1.3, 3.4], "rot": -18.0, "mat": "pale"}]
+   },
+   "arm": {"shoulder": [0.4, 22.6, 4.3], "hand_l": [6.8, 19.8, -6.4]},
+   "head": {
+    "stop": null,
+    "skull": {"at": [0.6, 4.4], "r": [4.2, 3.9, 4.1]},
+    "muzzle": {"from": [3.2, 3.2], "to": [7.6, 2.5], "r": [2.2, 1.6], "mat": "pale"},
+    "ears": {"shape": "round", "at": [-0.4, 7.6, 3.0], "size": [0.8, 1.9, 1.7], "lean": -6.0}
+   }
+  },
+  "bear_polar": {
+   "base": "bear_brown",
+   "parts": {"body": "body.bear_polar", "head": "head.bear_polar", "leg": "leg.bear_polar"},
+   "scale": 1.25,
+   "lean": 11.0,
+   "body": {
+    "pelvis": {"at": [-0.8, 13.4], "r": [5.0, 4.8, 5.0]},
+    "belly": {"at": [0.4, 16.4], "r": [5.2, 5.4, 5.2]},
+    "chest": {"at": [0.4, 20.2], "r": [4.8, 5.4, 5.2]},
+    "hump": null
+   },
+   "neck": {"from": [0.8, 22.6], "to": [3.0, 26.4], "r": [3.2, 2.6]},
+   "arm": {"shoulder": [0.4, 22.8, 4.4], "hand_l": [7.0, 19.8, -6.6], "dark_paws": false},
+   "head": {
+    "stop": null,
+    "skull": {"at": [0.6, 4.2], "r": [4.0, 3.6, 3.8]},
+    "cheeks": {"at": [1.4, 2.6], "r": [2.8, 2.3, 3.4]},
+    "muzzle": {"from": [3.0, 3.0], "to": [8.6, 2.2], "r": [2.2, 1.5], "mat": "fur", "bridge": {"at": [5.4, 3.9], "r": [2.6, 1.0, 1.4]}},
+    "ears": {"shape": "round", "at": [-0.8, 7.0, 2.7], "size": [0.6, 1.0, 1.0], "lean": -10.0}
+   }
+  },
+  "bear_mount": {
+   "posture": "quadruped",
+   "parts": {"body": "body.bear_mount", "head": "head.bear", "leg": "leg.bear_mount", "hind": "leg.bear_mount_hind"},
+   "scale": 1.3,
+   "fur": "hide", "fur_units": 4.0,
+   "shoulder": [7.5, 12.0],
+   "hip": [-7.5, 12.5],
+   "leg_z": 3.4,
+   "pad": 1.0,
+   "body": {
+    "chest": {"at": [5.4, 14.6], "r": [6.4, 5.4, 4.8]},
+    "waist": {"at": [-0.4, 14.4], "r": [8.0, 5.0, 5.0]},
+    "rump": {"at": [-6.6, 14.6], "r": [5.4, 5.0, 4.6]},
+    "hump": {"at": [6.0, 19.2], "r": [3.6, 2.2, 3.6]}
+   },
+   "neck": {"from": [9.0, 16.0], "to": [13.6, 15.6], "r": [3.8, 3.2]},
+   "tail": {"stub": {"at": [-11.8, 16.0], "r": [1.3, 1.1, 1.2]}},
+   "tack": {"saddle": 0.8, "cloth": {"length": 7.0, "drop": 3.4, "below": 1.2}},
+   "fore": {"bones": [6.2, 5.6, 2.6], "r": [[3.0, 2.0], [3.2, 2.4], [2.4, 2.0], [1.9, 1.0]], "mats": ["fur", "fur", "fur", "fur"],
+    "paw": [2.0, 1.0, 1.8], "paw_mat": "fur", "claws": true, "x": 1.2, "tilt": -72.0, "walk_tilt": [-72.0, -40.0], "swing_tilt": 20.0, "scapula": [-1.2, 5.2]},
+   "hind": {"bones": [6.4, 6.0, 3.8], "r": [[3.4, 2.4], [2.3, 1.8], [1.8, 1.0]], "mats": ["fur", "fur", "fur"],
+    "paw": [2.0, 1.0, 1.8], "paw_mat": "fur", "claws": true, "x": 0.4, "tilt": 76.0, "walk_tilt": [78.0, 45.0], "swing_tilt": -15.0},
+   "walk": {"stride": 7.0, "stance": 0.62, "lift": 2.0, "steps": 8, "phases": [1.5, 0.0, 0.5, 1.0],
+    "gait": {"swing": 0.0, "cadence": 1.2, "bob": 0.4, "rock": 0.02}},
+   "sit": {"order": ["sit1", "sit2", "sit"], "fore": [1.4, -60.0], "poses": {
+    "sit1": {"pitch": 6.0, "hip_y": 11.2, "hind": [1.2, 76.0]},
+    "sit2": {"pitch": 13.0, "hip_y": 9.4, "hind": [2.0, 76.0]},
+    "sit": {"pitch": 20.0, "hip_y": 6.6, "fold": {"hock": [-1.0, 1.9], "paw": 4.6, "out": 1.8}}}},
+   "stance": {"poses": {"sit": {"drop": 0.4}}}
+  }
+ },
+ "parts": [
+  {"id": "body.bear", "kit": "bear_brown", "slot": "body", "noun": "Bear", "points": 6, "tags": ["infantry", "beast"],
+   "stats": {"hp": 46, "speed": 10, "armour": {"melee": 1, "pierce": 0}}, "note": "concept B1: the brown bear on two legs (a shoulder hump, a dished face)"},
+  {"id": "body.bear_black", "kit": "bear_black", "slot": "body", "noun": "Bear", "points": 5, "tags": ["infantry", "beast"],
+   "stats": {"hp": 40, "speed": 11, "armour": {"melee": 1, "pierce": 0}}, "note": "concept B1: the black 'moon' bear on two legs (slimmer, big ears, a tan muzzle, a pale chest crescent)"},
+  {"id": "body.bear_polar", "kit": "bear_polar", "slot": "body", "noun": "Bear", "points": 6, "tags": ["infantry", "beast"],
+   "stats": {"hp": 48, "speed": 10, "armour": {"melee": 1, "pierce": 0}}, "note": "concept B1: the polar bear on two legs (a long neck, a long roman-nosed head)"},
+  {"id": "body.bear_mount", "kit": "bear_mount", "slot": "body", "noun": "Bear", "points": 12, "price_points": 13, "rider_loses": ["infantry"],
+   "tags": ["beast", "mount", "large"], "stats": {"hp": 70, "speed": 13, "armour": {"melee": 1, "pierce": 1}},
+   "note": "concept B1: a bear on four legs, saddled for a rider"},
+  {"id": "helm.bear_crest", "slot": "head_gear", "tags": ["helmet", "crest", "hellenic"], "stats": {"armour": {"melee": 1, "pierce": 1}}, "points": 2, "era": ["bronze", "medieval"], "tier": 1,
+   "only_if": ["bear"], "note": "concept B1: a bronze helmet made for a bear's head: ear cups over the ears, cheek guards behind the eyes, a tall team crest on a stand",
+   "shapes": [{"t": "circle", "c": [0, -3], "r": 4, "ch": "skin"}]}
+ ],
+ "creatures": {
+  "bear": {"voice": "capybara", "noun": "Bear", "plural": "Bears", "body": "body.bear", "mount_body": "body.bear_mount", "head": "head.bear",
+   "playable": true, "mount": true, "giant_ok": true, "skins": ["bear_brown", "bear_grizzled"], "families": ["hellenic", "forest"],
+   "_doc": "two legs as a race, four as a mount (mount_body); giant_ok: the large line is a giant bear (an old grizzled one, or a polar bear)"},
+  "bear_black": {"voice": "capybara", "noun": "Bear", "plural": "Bears", "body": "body.bear_black", "mount_body": "body.bear_mount", "head": "head.bear_black",
+   "playable": true, "mount": true, "giant_ok": true, "skins": ["bear_black"], "families": ["hellenic", "forest"]},
+  "bear_polar": {"voice": "capybara", "noun": "Bear", "plural": "Bears", "body": "body.bear_polar", "mount_body": "body.bear_mount", "head": "head.bear_polar",
+   "playable": true, "mount": true, "giant_ok": true, "skins": ["bear_polar"], "families": ["hellenic", "forest"]}
+ },
+ "skins": {
+  "bear_brown": ["#6b4528", "#3a2416", "#9c7450"],
+  "bear_black": ["#2a2420", "#16110e", "#b08a5e"],
+  "bear_polar": ["#ebe5d4", "#8a8478", "#f5f1e6"],
+  "bear_grizzled": ["#7e6a52", "#3e3022", "#cdbb9c"]
+ },
+ "words": {
+  "bear": {"creature": "bear"},
+  "bears": {"creature": "bear"},
+  "grizzly": {"creature": "bear"},
+  "polar": {"creature": "bear_polar"}
+ }
+}

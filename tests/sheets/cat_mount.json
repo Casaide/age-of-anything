@@ -1,0 +1,28 @@
+{
+ "name": "cat_mount",
+ "title": "The rats' alley cat (C2, D-124)",
+ "_doc": "Ported from tests/cat_mount_sheet.gd: a human on a pony for size, then the cat in its coats under the rats' crossbow rider (the cheese-hammer rider in the right-hand columns).",
+ "zooms": [3, 1],
+ "cell": [66, 64],
+ "size": [{"prompt": "sewer rats", "slot": "worker"}],
+ "rows": [
+  {"label": "human on a pony", "unit": {"prompt": "romans", "slot": "large", "age": 2}},
+  {"label": "alley cat,\nginger tabby", "unit": {"prompt": "sewer rats", "slot": "mounted_archer", "age": 2, "mount": {"creature": "cat", "skin": "cat_ginger"}},
+   "other": {"prompt": "sewer rats", "slot": "large", "age": 2, "mount": {"creature": "cat", "skin": "cat_ginger"}}},
+  {"label": "alley cat,\nblack and white", "unit": {"prompt": "sewer rats", "slot": "mounted_archer", "age": 2, "mount": {"creature": "cat", "skin": "cat_tuxedo"}},
+   "other": {"prompt": "sewer rats", "slot": "large", "age": 2, "mount": {"creature": "cat", "skin": "cat_tuxedo"}}},
+  {"label": "alley cat,\ngrey tabby", "unit": {"prompt": "sewer rats", "slot": "mounted_archer", "age": 2, "mount": {"creature": "cat", "skin": "cat_grey"}},
+   "other": {"prompt": "sewer rats", "slot": "large", "age": 2, "mount": {"creature": "cat", "skin": "cat_grey"}}}
+ ],
+ "sheets": [
+  {"name": "facings", "title": "standing, 8 facings; the cheese-hammer rider on the right", "columns": [
+   {"facing": 0, "label": "f0 right"}, {"facing": 1, "label": "f1"}, {"facing": 2, "label": "f2 towards"}, {"facing": 3, "label": "f3"},
+   {"facing": 4, "label": "f4 left"}, {"facing": 5, "label": "f5"}, {"facing": 6, "label": "f6 away"}, {"facing": 7, "label": "f7"},
+   {"facing": 1, "other": true, "label": "f1 hammer"}, {"facing": 7, "other": true, "label": "f7 hammer"}]},
+  {"name": "walk", "title": "walking, three facings, four steps each", "columns": "walk:0,2,5"},
+  {"name": "cycle", "title": "every baked step of the walk, side on", "columns": "cycle:7"},
+  {"name": "sit", "title": "idle: the cat sits (the pony stands)", "columns": "idle"},
+  {"name": "sit1", "title": "sitting down, step 1 of 3", "columns": "idle:sit1"},
+  {"name": "sit2", "title": "sitting down, step 2 of 3", "columns": "idle:sit2"}
+ ]
+}
