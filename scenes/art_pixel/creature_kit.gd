@@ -21,6 +21,7 @@ extends RefCounted
 ## Coordinates: part units, x forward, y up, z towards the near side; the ground is y = 0.
 
 const DataLib := preload("res://src/data_lib.gd")
+const Identity := preload("res://src/identity.gd")
 
 static var kits := {}       # kit name -> its parameters (bases merged in)
 static var part_kit := {}   # part id -> [kit name, role]: "body", "head", "leg", "hind"
@@ -53,6 +54,7 @@ static func stage(lib, path: String) -> void:
 		lib.parts[q.id] = q
 	for id in d.get("creatures", {}):
 		lib.creatures[id] = d.creatures[id]
+		Identity.files().creatures[id] = d.creatures[id]   # (a race's bonuses come from creatures.json on disk: a staged race's from here)
 	for s in d.get("skins", {}):
 		lib.palettes.skins[s] = d.skins[s]
 	for w in d.get("words", {}):

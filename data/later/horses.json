@@ -653,6 +653,10 @@
  ],
  "creatures": {
   "pony_classic": {
+   "not_ridden_by": [
+    "beetle"
+   ],
+   "_not_ridden_by_doc": "beetles don't ride horses (Dominic, 2026-10-13): they ride beetles, or spiders and newts by culture",
    "voice": "pony",
    "noun": "Pony",
    "plural": "Ponies",
@@ -672,6 +676,10 @@
    ]
   },
   "pony_h1": {
+   "not_ridden_by": [
+    "beetle"
+   ],
+   "_not_ridden_by_doc": "beetles don't ride horses (Dominic, 2026-10-13): they ride beetles, or spiders and newts by culture",
    "voice": "pony",
    "noun": "Pony",
    "plural": "Ponies",
@@ -691,6 +699,10 @@
    ]
   },
   "pony_h2": {
+   "not_ridden_by": [
+    "beetle"
+   ],
+   "_not_ridden_by_doc": "beetles don't ride horses (Dominic, 2026-10-13): they ride beetles, or spiders and newts by culture",
    "voice": "pony",
    "noun": "Pony",
    "plural": "Ponies",
