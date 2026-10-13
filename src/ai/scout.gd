@@ -74,18 +74,12 @@ func think(w, bot, workers: Array, army: Array, hx: int, hy: int) -> void:
 			return
 		_start(w, bot, _free_worker(w, bot, workers, hx, hy), true, hx, hy)
 		return
-	# A unit of the scout line (milestone 13) tours as soon as there is one, army or not; else, with an
-	# army of soldier_army, the fastest idle soldier near home (lowest id on ties).
-	var has_scout := army.any(func(i): return w.types[w.units.kind[i]].slot == "scout")
-	if w.ages[bot.player] < int(cfg.soldier_age) or not bot._threats.is_empty() or (army.size() < int(cfg.soldier_army) and not has_scout):
+	if w.ages[bot.player] < int(cfg.soldier_age) or not bot._threats.is_empty() or army.size() < int(cfg.soldier_army):
 		return
 	var best := -1
-	for i in army:
+	for i in army:   # the fastest idle soldier near home (lowest id on ties)
 		if w.units.foe[i] != 0 or w.units.moving[i] != 0 or Fixed.dist2(hx, hy, w.units.x[i], w.units.y[i]) > 400 * 1000000 \
 				or w.types[w.units.kind[i]].has("animal"):
-			continue
-		var a_scout: bool = w.types[w.units.kind[i]].slot == "scout"
-		if has_scout and not a_scout:
 			continue
 		if best < 0 or w.types[w.units.kind[i]].speed > w.types[w.units.kind[best]].speed:
 			best = i

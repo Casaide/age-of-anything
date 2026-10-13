@@ -52,12 +52,6 @@ static func build(race: Dictionary, rules: Dictionary, lib) -> Dictionary:
 			# From the age the line can first be trained: its slot's age, or its building's if later
 			# (the ranged lines are generated from age 1 but the Archery Range opens in age 2).
 			var from := maxi(int(sd.tier), int(b.age))
-			if not line_planned and sd.slot in race.get("lacks", []):   # this race has no such line (centaurs' archers already ride): one crossed-out node
-				groups.append([{"key": "u:%s@%d" % [sd.slot, from], "kind": "unit", "id": sd.slot, "slot": sd.slot,
-					"name": sd.get("name", String(sd.slot).capitalize()), "line_name": sd.get("name", ""), "desc": sd.get("desc", ""), "age": from,
-					"status": "built", "lacks": true, "col": col, "building": id, "first": true, "tier": int(sd.tier),
-					"early_kit": "", "step": {}, "cost": {}}])
-				continue
 			var prev_recipe = null
 			for age in range(from, int(sd.get("last_age", last_age)) + 1):
 				var step: Dictionary = _step(unit, age)
@@ -67,13 +61,10 @@ static func build(race: Dictionary, rules: Dictionary, lib) -> Dictionary:
 				if not planned:
 					prev_recipe = step.recipe
 				var name: String = sd.get("name", String(sd.slot).capitalize())
-				var desc: String = sd.get("desc", "")
 				if not step.is_empty():
 					name = step.recipe.get("name", name)
-					if step.recipe.has("unique"):   # the race's unique unit says what its theme does (data/uniques.json)
-						desc = lib.uniques[step.recipe.unique].desc
 				group.append({"key": "u:%s@%d" % [sd.slot, age], "kind": "unit", "id": sd.slot, "slot": sd.slot,
-					"name": name, "line_name": sd.get("name", name), "desc": desc, "age": age,
+					"name": name, "line_name": sd.get("name", name), "desc": sd.get("desc", ""), "age": age,
 					"status": PLANNED if planned else "built", "col": col, "building": id, "first": age == from, "tier": int(sd.tier),
 					"early_kit": _step(unit, int(sd.tier)).get("recipe", {}).get("name", "") if age == from and from > int(sd.tier) else "",
 					"step": step, "cost": step.get("eval", {}).get("cost", {}) if not planned else {}})
@@ -249,9 +240,6 @@ static func _race_panel(race: Dictionary, rules: Dictionary, lib, tdata: Diction
 			own.append(r.name)
 		else:
 			lacks.append(r.name)
-	for sd in rules.roster:   # unit lines it has none of (nothing carries it, or its archers already ride)
-		if sd.slot in race.get("lacks", []):
-			lacks.append("%s line" % sd.name)
 	# Movement: the class each unit gets (rules.movement.classes, first tag that matches).
 	var classes := {}   # class -> [unit names]
 	for u in race.units:

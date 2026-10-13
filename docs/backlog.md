@@ -224,13 +224,6 @@ exact data entries) and listed in `docs/milestones/m12-tech-tree.md` ("Postponed
 Temple"): the Shiny Age and fourth line steps, the fourth steps of the research tracks, the
 Temple with mystics (conversion) and their six research. Bring back by moving the entries home.
 
-### A generic Raider line (cut 2026-10-13, Dominic: "Raider isn't really a thing, sounds race specific like a castle unit")
-
-The planned Barracks line (fast light infantry, age 3) is kept in `data/later/raider_line.json`.
-Raiders live on as unique-unit themes at the Castle (`data/uniques.json`: the steppe raider, the
-gutter raider for rats, the horned raider for vikings, the gloom stalker). Bring the line back by
-moving the entry home, if a race-neutral raider is ever wanted.
-
 ### Gates (moved from milestone 11, 2026-10-11; moved into milestone 12 phase 4, 2026-10-11)
 
 Walls block everyone today; leave a gap. A gate lets its own team through and nobody else, which

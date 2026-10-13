@@ -112,8 +112,9 @@ func _camps(w, bot, workers: Array) -> void:
 ## post with fewer than half its gatherers left is given up (they rejoin the army).
 func _escort(w, bot, workers: Array, army: Array, hx: int, hy: int) -> void:
 	var u = w.units
-	for id in escorts.keys():
-		if u.index_of(id) < 0:
+	for id in escorts.keys():   # gone, or hacking at an enemy building (a wall by the far wood): back to the army
+		var i: int = u.index_of(id)
+		if i < 0 or (u.foe[i] != 0 and w.buildings.index_of(u.foe[i]) >= 0):
 			escorts.erase(id)
 	if w.tick < _next_post:
 		return
@@ -148,7 +149,7 @@ func _escort(w, bot, workers: Array, army: Array, hx: int, hy: int) -> void:
 		var most := 0
 		for c in out:
 			var at := Vector2i(c % w.map.width * 1000 + 500, c / w.map.width * 1000 + 500)
-			if posts.keys().any(func(p): return Fixed.dist2(p.x, p.y, at.x, at.y) <= 4 * r * r):
+			if posts.keys().any(func(p): return Fixed.dist2(p.x, p.y, at.x, at.y) <= 4 * r * r) or _by_enemy(w, bot, at, r):
 				continue
 			var n := out.filter(func(d): return Fixed.dist2(at.x, at.y, d % w.map.width * 1000 + 500, d / w.map.width * 1000 + 500) <= r * r).size()
 			if n > most or (n == most and c < best):
@@ -158,8 +159,10 @@ func _escort(w, bot, workers: Array, army: Array, hx: int, hy: int) -> void:
 			var at := Vector2i(best % w.map.width * 1000 + 500, best / w.map.width * 1000 + 500)
 			var pool := []
 			for i in army:
-				if u.foe[i] != 0 or escorts.has(u.id[i]) or Fixed.dist2(hx, hy, u.x[i], u.y[i]) > 400 * 1000000:
-					continue
+				var t: Dictionary = w.types[u.kind[i]]
+				if u.foe[i] != 0 or escorts.has(u.id[i]) or Fixed.dist2(hx, hy, u.x[i], u.y[i]) > 400 * 1000000 \
+						or t.get("buildings_only", false) or t.get("splash", 0) > 0:
+					continue   # (an engine guards nobody)
 				pool.append([Fixed.dist2(at.x, at.y, u.x[i], u.y[i]), u.id[i]])
 			pool.sort_custom(func(a, b): return a[0] < b[0] or (a[0] == b[0] and a[1] < b[1]))
 			for e in pool.slice(0, int(cfg.escort)):
@@ -179,6 +182,17 @@ func _escort(w, bot, workers: Array, army: Array, hx: int, hy: int) -> void:
 			back[p].append(id)
 	for p in back:
 		w.issue(bot.player, Commands.ATTACK_MOVE, {"ids": back[p], "x": p.x, "y": p.y})
+
+
+## Is an enemy building we remember (fog memory) within r of this spot? A post there would only
+## chew on it (their wall beside the wood), not guard anyone.
+static func _by_enemy(w, bot, at: Vector2i, r: int) -> bool:
+	var seen: Dictionary = w.fog_seen[bot.player]
+	for id in seen:   # (any one is enough: the order doesn't matter)
+		var s: PackedInt32Array = seen[id]
+		if w.is_enemy(bot.player, s[1]) and Fixed.dist2(at.x, at.y, s[2] * 1000 + s[4] * 500, s[3] * 1000 + s[8] * 500) <= r * r:
+			return true
+	return false
 
 
 ## Does the second Town Center come early: on a big map (big_map tiles wide or more), or once

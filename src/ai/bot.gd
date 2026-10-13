@@ -194,7 +194,6 @@ func think(w) -> void:
 	var workers := []
 	var army := []
 	var healers := []
-	var scouts := 0   # scout-line units we have: the bot keeps military.scouts.keep (Scout tours with one)
 	for i in w.units.count():
 		if w.units.owner[i] != player:
 			continue
@@ -205,8 +204,6 @@ func think(w) -> void:
 			healers.append(i)
 		elif not t.has("animal"):   # our sheep aren't soldiers
 			army.append(i)
-			if t.slot == "scout":
-				scouts += 1
 	var count: int = workers.size() + eco.sheltered(w)
 	_build_order(w, tc, workers, count)
 	eco.goal = _goal(w, count)
@@ -214,7 +211,6 @@ func think(w) -> void:
 	_age_three(w, tc, count)
 	_wonder(w, tc, workers)
 	_upgrade_lines(w, army)
-	_train_scout(w, scouts)
 	_train(w, workers, count)
 	_train_healers(w, tc, army, healers)
 	var home_x: int = w.buildings.cx[tc] * 1000 + 1500
@@ -236,6 +232,7 @@ func think(w) -> void:
 	_tower(w, at_work)
 	_trade(w)
 	_waves(w, field, home_x, home_y)
+	_off_walls(w, field, home_x, home_y)
 	_siege(w, field, home_x, home_y)
 	_escort(w, field, healers, home_x, home_y)
 
@@ -627,23 +624,6 @@ func _affords(w, cost: PackedInt32Array, reserve: PackedInt32Array) -> bool:
 		if w.stock[r][player] < cost[r] + reserve[r]:
 			return false
 	return true
-
-
-## A scout from the Stable as soon as there is one and we have none (military.scouts.keep), ahead of
-## the counter-pick: Scout's soldier tours take it before any other soldier, and what it sees is what
-## the counter-pick reads.
-func _train_scout(w, scouts: int) -> void:
-	var k: int = w.type_of(player, "scout")
-	if k < 0 or scouts >= int(cfg.military.scouts.keep) or w.ages[player] < int(w.types[k].line[0].age) or not w.can_afford(player, w.types[k].cost):
-		return
-	for b in w.buildings.count():
-		if w.buildings.owner[b] == player and k in w.buildings.queue[b]:
-			return   # one on the way
-	for b in w.buildings.count():
-		if w.buildings.owner[b] == player and w.buildings.done[b] == 1 and "scout" in w.btypes[w.buildings.kind[b]].trains \
-				and w.buildings.queue[b].size() < int(cfg.military.queue):
-			w.issue(player, Commands.TRAIN, {"building": w.buildings.id[b], "slot": "scout"})
-			return
 
 
 ## Healers from the Town Center once the age allows: one for every `per_army` soldiers, up to
@@ -1124,6 +1104,31 @@ func _waves(w, army: Array, hx: int, hy: int) -> void:
 		w.issue(player, Commands.ATTACK_MOVE, {"ids": ids.slice(0, fighters), "x": target.x, "y": target.y})
 	if fighters < ids.size():
 		w.issue(player, Commands.ATTACK, {"ids": ids.slice(fighters), "target": tc_id})
+
+
+## Soldiers out on an attack caught on an enemy wall or gate piece that isn't what they go for
+## (attack-moving past a wall, or waiting out of tower reach beside one, they take up the piece
+## next to them) are put on the target at once, every think rather than at the next regroup: the
+## Town Center we can get to, else _aim (the one piece we break, or the building we march on). The
+## blows go on one piece, not nicks on a dozen. Engines are left alone (_siege sends rams at walls).
+func _off_walls(w, army: Array, hx: int, hy: int) -> void:
+	if not assault:
+		return
+	var to := _known_enemy_town(w, hx, hy)
+	if to <= 0:
+		to = _aim
+	if to <= 0:
+		return
+	var ids := []
+	for i in army:
+		var t: Dictionary = w.types[w.units.kind[i]]
+		if t.get("buildings_only", false) or t.get("splash", 0) > 0:
+			continue
+		var b: int = w.buildings.index_of(w.units.foe[i])
+		if b >= 0 and w.units.foe[i] != to and (w.btypes[w.buildings.kind[b]].line or w.btypes[w.buildings.kind[b]].gate):
+			ids.append(w.units.id[i])
+	if not ids.is_empty():
+		w.issue(player, Commands.ATTACK, {"ids": ids, "target": to})
 
 
 ## A wave goes out: a raiding level at the enemy's economy (_raid), else to the target: part of
