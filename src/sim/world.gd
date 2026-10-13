@@ -37,6 +37,7 @@ const Shots := preload("res://src/sim/shots.gd")
 const Trade := preload("res://src/sim/trade.gd")
 const Walls := preload("res://src/sim/walls.gd")
 const Repair := preload("res://src/sim/repair.gd")
+const Modes := preload("res://src/sim/modes.gd")
 
 const TICK_HZ := 20
 const HASH_EVERY := 30
@@ -168,6 +169,8 @@ var repair_cfg: Dictionary     # buildings.json repair: speed_pct, cost_pct (rep
 var wall_cache := {}           # walkway cell -> its network's steps from it, for this tick (walls.gd); derived
 var wall_cache_tick := -1
 var rubble := {}               # breach cell -> [terrain it was, owner, building type, x, y, along] (walls.gd)
+var mode := ""                 # the game mode (rules.mode, data/modes.json; "": the usual match), modes.gd
+var mode_cfg := {}             # its data, numbers as ints
 var pour_at := {}              # gatehouse or wall tower id -> the tick it may pour again (combat.gd _pour)
 var wear := PackedByteArray()  # per cell: how worn the ground is by walkers (trails.gd)
 var bridge_id := PackedInt32Array()   # per map bridge: its id (from next_id), and the rest of its state (bridges.gd)
@@ -222,6 +225,7 @@ func _init(p_seed: int, p_map: SimMap, p_races: Array, p_rules: Dictionary, p_te
 	Repair.setup(self)
 	Market.setup(self)
 	Economy.setup(self)
+	Modes.setup(self)
 	lost.append(0)   # gaia's
 	if bool(rules.get("animals", false)):   # a host rule (on by default); some tests turn it off
 		Animals.place(self, animals.spawn)

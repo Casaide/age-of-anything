@@ -9,6 +9,7 @@ extends RefCounted
 ## starts from the top. Every player hears of a Wonder finished and of one fallen (events
 ## "wonder"), so the countdown is no secret: the view shows it to all, and the bots go for it.
 
+const Modes := preload("res://src/sim/modes.gd")
 const Economy := preload("res://src/sim/economy.gd")
 
 const CHECK_EVERY := 20   # ticks
@@ -36,6 +37,8 @@ static func cmd_surrender(w, player: int) -> void:
 static func tick(w) -> void:
 	if w.winner >= 0 or w.tick % CHECK_EVERY != 0:
 		return
+	if not w.mode_cfg.is_empty():
+		Modes.tick(w)   # the game mode's own win rules (modes.gd)
 	var tc := Economy.btype_of(w, "town_center")
 	for p in w.races.size():
 		if w.defeated[p] == 0 and w.started_with_town[p] == 1 and _towns(w, p, tc) == 0:

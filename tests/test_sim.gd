@@ -54,7 +54,7 @@ const FIGHT_FROM := [[11000, 20500], [21000, 20500]]   # open ground on flat_tes
 ## "@@ ms.<part>"; the three plays of the scripted match apart, about 25-50 s each).
 const GROUPS := [
 	["scenarios_a", "crossing_flat", "opening", "gates", "diagonal_gates", "pen", "combat"],
-	["scenarios_b", "fixed", "command_order", "source_lint", "flow", "crossing_choke", "crossing_engines", "age_timing", "queue", "movement_classes", "farms", "fog_memory", "land", "hills", "flow_patch", "flow_patch_mixed", "tech", "research_queue", "effects", "university_castle", "market", "build_queue", "builder_moves_on", "diagonal_wall", "camp_gather", "drop_off", "animals", "sheep_spot", "garrison", "towers", "shots", "engines", "trade", "sapper_sling", "bot_hunts", "wonder", "walls", "siege_ways"],
+	["scenarios_b", "fixed", "command_order", "source_lint", "flow", "crossing_choke", "crossing_engines", "age_timing", "queue", "movement_classes", "farms", "fog_memory", "land", "hills", "flow_patch", "flow_patch_mixed", "tech", "research_queue", "effects", "university_castle", "market", "build_queue", "builder_moves_on", "diagonal_wall", "camp_gather", "drop_off", "animals", "sheep_spot", "garrison", "towers", "shots", "engines", "trade", "sapper_sling", "bot_hunts", "wonder", "walls", "siege_ways", "modes"],
 	["match", "match"], ["match_b", "match_b"], ["match_flipped", "match_flipped"],
 ]
 
@@ -126,6 +126,7 @@ func _init() -> void:
 		"wonder": func(): _test_wonder(races),
 		"walls": func(): _test_walls(races),
 		"siege_ways": func(): _test_siege_ways(races),
+		"modes": func(): _test_modes(races),
 		"combat": func(): _test_combat(gen),
 		"match": func(): _test_match(map, races, lib, rules),
 		"match_b": func(): _test_match_b(map, races),
@@ -3971,6 +3972,7 @@ func _test_walls(races: Array) -> void:
 const Fortify := preload("res://src/sim/fortify.gd")
 const Walls := preload("res://src/sim/walls.gd")
 const Repair := preload("res://src/sim/repair.gd")
+const Modes := preload("res://src/sim/modes.gd")
 
 
 func _walls_run(races: Array, checks_on: bool) -> World:
@@ -4246,3 +4248,54 @@ func _ways_run(races: Array, checks_on: bool) -> World:
 				scalded += int(e.damage)
 	c.call(pours >= 2 and scalded > 0, "siege ways: a manned gatehouse pours on the ram at its gate (%d pours, %d damage)" % [pours, scalded])
 	return w
+
+
+## Game modes (milestone 16, src/sim/modes.gd) on Siege Vale. Fortress: both sides in age 2 behind
+## a stone ring with their garrison up on it, the stockpile set. Siege: player 0 walled in age 3,
+## player 1 with an army and engines and no town; the attackers are out when the hold timer runs
+## out (the defenders win), or when they've nothing left. The same setup twice: the same hash.
+func _test_modes(races: Array) -> void:
+	var walled := func(w: World, p: int) -> int:
+		var n := 0
+		for b in w.buildings.count():
+			if w.buildings.owner[b] == p and w.btypes[w.buildings.kind[b]].walkway > 0:
+				n += 1
+		return n
+	var up := func(w: World, p: int) -> int:
+		var n := 0
+		for i in w.units.count():
+			if w.units.owner[i] == p and w.units.perch[i] != 0:
+				n += 1
+		return n
+	var fr := rules_.duplicate(true)
+	fr.mode = "fortress"
+	var f := World.new(SEED, SimMap.load_id("siege_vale"), races, fr)
+	var fm: Dictionary = Modes.load_modes().fortress
+	for p in 2:
+		check(f.ages[p] == 2 and walled.call(f, p) >= 50, "modes: Fortress walls side %d in, in age 2 (%d pieces)" % [p, walled.call(f, p)])
+		check(up.call(f, p) == int(fm.garrison.archer) + int(fm.garrison.skirmisher), "modes: Fortress garrison side %d up on its wall (%d)" % [p, up.call(f, p)])
+		check(f.stock[f.resources.find("stone")][p] == int(fm.stock.stone), "modes: Fortress stockpile")
+	var sr := rules_.duplicate(true)
+	sr.mode = "siege"
+	var s := World.new(SEED, SimMap.load_id("siege_vale"), races, sr)
+	var s2 := World.new(SEED, SimMap.load_id("siege_vale"), races, sr)
+	check(s.state_hash() == s2.state_hash(), "modes: the same mode sets up the same")
+	check(s.started_with_town[0] == 1 and s.started_with_town[1] == 0 and walled.call(s, 0) >= 50 and walled.call(s, 1) == 0, "modes: Siege walls the defenders in, the attackers have no town")
+	var engines := 0
+	for i in s.units.count():
+		if s.units.owner[i] == 1 and s.types[s.units.kind[i]].slot in ["ram", "catapult", "siege_tower"]:
+			engines += 1
+	check(engines >= 5 and s.ages[1] == 3, "modes: the attackers bring engines (%d)" % engines)
+	for t in 60:
+		s.step()
+	check(s.winner < 0 and s.defeated[1] == 0, "modes: an attacker with an army is in the game")
+	s.tick = int(s.mode_cfg.hold_minutes) * 1200 - 40
+	for t in 80:
+		s.step()
+	check(s.winner == s.teams[0], "modes: the defenders win when the hold timer runs out")
+	for i in range(s2.units.count() - 1, -1, -1):
+		if s2.units.owner[i] == 1:
+			s2.units.remove_at(i)
+	for t in 40:
+		s2.step()
+	check(s2.winner == s2.teams[0], "modes: an attacker with nothing left is out")

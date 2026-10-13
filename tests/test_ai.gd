@@ -35,7 +35,7 @@ const PIECES := {
 	"age3": ["quick", 40], "surrender": ["quick", 1], "easy": ["quick", 40], "siege_bot": ["quick", 60], "trade_bot": ["quick", 20], "walls_bot": ["quick", 20],
 	"passive_frogs": ["slow", 120], "passive_rats": ["slow", 120], "bvb": ["slow", 200], "bvb_again": ["slow", 200],
 	"centaurs_frogs": ["slow", 200], "rats_centaurs": ["slow", 200], "hard": ["slow", 200],
-	"walled_palisade": ["slow", 200], "walled_wall": ["slow", 200], "walled_gap": ["slow", 200], "land": ["slow", 200],
+	"walled_palisade": ["slow", 200], "walled_wall": ["slow", 200], "walled_gap": ["slow", 200], "land": ["slow", 200], "siege_mode": ["slow", 120],
 }
 ## The older single-purpose modes, as pieces.
 const MODES := {
@@ -152,6 +152,7 @@ func _run_piece(name: String) -> void:
 		"siege_bot": _test_siege_bot(rules, rats, frogs)
 		"trade_bot": _test_trade_bot(rules, frogs, rats)
 		"walls_bot": _test_walls_bot(rules, rats, frogs)
+		"siege_mode": _test_siege_mode(rules, frogs, rats)
 		"walled_palisade": _test_walled_base(rules, frogs, rats, "palisade", false)
 		"walled_wall": _test_walled_base(rules, frogs, rats, "wall", false)
 		"walled_gap": _test_walled_base(rules, frogs, rats, "wall", true)
@@ -1236,3 +1237,28 @@ func _test_walls_bot(rules: Dictionary, a: Dictionary, b: Dictionary) -> void:
 	print("== walls bot: the tower docked at %s; at most %d swordsmen up at once, %d inside" % [_clock(docked) if docked >= 0 else "never", most_up, inside])
 	check(docked >= 0, "walls bot: its siege tower docks on the enemy wall")
 	check(most_up >= 3 and inside >= 3, "walls bot: swordsmen go over the wall by the tower and into the town (%d up, %d inside)" % [most_up, inside])
+
+
+## The Siege mode (milestone 16) bot against bot on Siege Vale: player 0 holds the walled town,
+## player 1 attacks with its army and engines. The match ends (a winner inside the hold time, or the
+## defenders when it runs out), the defenders man their walls, the attackers make breaches.
+func _test_siege_mode(rules: Dictionary, a: Dictionary, b: Dictionary) -> void:
+	var r := rules.duplicate(true)
+	r.mode = "siege"
+	var w := World.new(SEED, SimMap.load_id("siege_vale"), [a, b], r)
+	var bots := [Bot.new(0), Bot.new(1)]
+	var most_up := 0
+	while w.tick < 20 * 60 * 21 and w.winner < 0:
+		for bot in bots:
+			bot.think(w)
+		w.step()
+		if w.tick % 100 == 0:
+			var up := 0
+			for i in w.units.count():
+				if w.units.owner[i] == 0 and w.units.perch[i] != 0:
+					up += 1
+			most_up = maxi(most_up, up)
+	print("\n== siege mode (%s holds, %s attacks): winner %d at %s; at most %d defenders up, %d breach cells" % [a.name, b.name, w.winner, _clock(w.tick), most_up, w.rubble.size()])
+	check(w.winner >= 0, "siege mode: the match ends")
+	check(most_up >= 6, "siege mode: the defenders man their walls (%d up)" % most_up)
+	check(w.rubble.size() > 0, "siege mode: the attackers make breaches")
