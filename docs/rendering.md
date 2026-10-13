@@ -342,6 +342,10 @@ their bones and the lowest bone's `tilt`. From the numbers it makes:
 - the part's data (`CreatureKit.complete`): sockets and anchors in 2D, cut legs (and a cut head on
   four legs), the posed walk, the gait, idle poses and stance. A kit part's data anchors are the
   model's hips by construction.
+- a mount's own head: a kit can take its head from another kit (`head_of`) and change only what it
+  names (the bear mount carries the biped's head pitched nose-down, low on a short neck). A creature
+  names it as `mount_head`, which UnitView and the placement rig use under a rider (falling back to
+  `head`). A sitting pose can raise the head on its neck (`sit.poses.<pose>.head`).
 
 Kits live in `data/creature_kit.json` (`kits`; `_params_doc` lists every parameter; a kit can
 extend another with `base`, and a `null` removes a volume). A body part with `"kit": "<name>"` is
@@ -378,7 +382,8 @@ failing row in red with the rules it broke, and exits 1 on a failure.
 godot --path . --audio-driver Dummy --always-on-top --script res://tests/sheet.gd -- tests/sheets/bears_b1.json out_dir [sheet,...] [zoom,...] [nocheck]
 ```
 
-Specs so far: `bears_b1` (round B1), `kit_cat` (the kit against the game's cat), and ports of
+Specs so far: `bears_b1` (round B1), `bears_b2` (round B2, with each B1 row rebuilt as a kit
+variant: a prompt unit or a mount can name `kit` + `params`), `kit_cat` (the kit against the game's cat), and ports of
 `cat_mount_sheet.gd` (`cat_mount`), `siege_lineup.gd` (`siege_lineup`) and `line_lineup.gd`
 (`line_lineup`). **New art rounds write a spec, not a script.** Once their rounds are closed, the
 sheet tool covers what these one-off scripts drew, and they can go: `anim_concept_sheet.gd`,

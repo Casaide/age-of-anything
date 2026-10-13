@@ -23,3 +23,26 @@ func _helm_bear_crest(c: Dictionary) -> Dictionary:
 	n.add_child(rod(Vector3(-0.2, 1.0, 0), Vector3(-0.5, 4.0, 0), 0.55, 0.55, bronze))   # the crest stand
 	crest(n, c.team, Vector3(-1.5, 4.4, 0), 13.0, 7.0)
 	return {"node": n}
+
+
+## Round B2: an open-faced bronze cap for a bear, so the small soldiers show more bear. A shallower
+## bowl set a little back (the brow, eyes and the whole face bare), no cheek guards, the bear's own
+## round ears standing out through holes in the bowl (fur in the wearer's coat, each in a bronze
+## collar), a short neck guard and the same tall team crest.
+func _helm_bear_open(c: Dictionary) -> Dictionary:
+	var n := Node3D.new()
+	var bronze := surf("bronze", Color.WHITE, 3.0)
+	var bright := surf("bronze", Color(1.15, 1.1, 0.95), 2.0)
+	var fur := surf("hide", c.skin, 4.0)
+	var ear_in := plain(Color("#3a2a24"))
+	n.add_child(dome(Vector3(4.8, 4.2, 4.7), bronze, Vector3(-0.4, -3.2, 0)))
+	n.add_child(ring(4.6, 5.1, bright, Vector3(-0.4, -3.1, 0)))   # the brow band
+	for side in [1, -1]:
+		var at := Vector3(-0.9, 1.0, 3.5 * side)
+		n.add_child(blob(Vector3(1.6, 0.5, 1.5), bright, at + Vector3(0, -1.2, 0), Vector3(22 * side, 0, 0)))   # the ear hole's collar
+		n.add_child(blob(Vector3(1.3, 2.0, 1.7), fur, at, Vector3(22 * side, 0, -10)))   # the ear, out through it
+		n.add_child(blob(Vector3(0.6, 1.25, 1.0), ear_in, at + Vector3(0.75, 0.0, 0.15 * side), Vector3(22 * side, 0, -10)))
+	n.add_child(blob(Vector3(2.6, 2.2, 4.2), bronze, Vector3(-3.6, -4.8, 0)))   # the neck guard
+	n.add_child(rod(Vector3(-0.4, 1.0, 0), Vector3(-0.7, 4.0, 0), 0.55, 0.55, bronze))   # the crest stand
+	crest(n, c.team, Vector3(-1.7, 4.4, 0), 13.0, 7.0)
+	return {"node": n}

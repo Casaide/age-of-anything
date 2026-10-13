@@ -111,7 +111,8 @@ func build(r: Dictionary, lib, team: Color, speed := 10) -> void:
 		# A fused mount (a centaur's horse half) has its own body, without a neck.
 		var mount_body: String = mc.get("fused_body", mc.body) if m.fused else mc.get("mount_body", mc.body)
 		_pose_body = mount_body
-		var mount_rig := _make_rig(lib, mount_body, "" if m.fused else mc.head, mount_colours, bob, true)
+		# A mount may carry its head differently from the creature on its own legs (data: "mount_head").
+		var mount_rig := _make_rig(lib, mount_body, "" if m.fused else mc.get("mount_head", mc.head), mount_colours, bob, true)
 		_facing_body = mount_body
 		for slot in m.parts:
 			_attach(lib, mount_rig, slot, m.parts[slot], mount_colours)
@@ -1227,7 +1228,7 @@ static func pose_parts(lib, r: Dictionary) -> Array:
 	if r.has("mount"):
 		var mc: Dictionary = lib.creatures[r.mount.creature]
 		body_id = mc.get("fused_body", mc.body) if r.mount.fused else mc.get("mount_body", mc.body)
-		head_id = "" if r.mount.fused else mc.head
+		head_id = "" if r.mount.fused else mc.get("mount_head", mc.head)
 	var body: Dictionary = lib.part(body_id)
 	if not body.has("legs"):
 		return []
