@@ -164,8 +164,10 @@
    "tier": 3,
    "name": "Siege Tower",
    "building": "siege_workshop",
-   "desc": "Carries units over walls",
-   "status": "planned"
+   "short": "Tower",
+   "desc": "Pushed up to an enemy wall, it lets your foot soldiers onto the wall walk; doesn't fight",
+   "own_seed": true,
+   "engine": "tower"
   },
   {
    "slot": "unique",

@@ -2889,6 +2889,21 @@ func _wall_tower(arch: String, team: Color) -> Dictionary:
 	return {"body": body, "anchor": Vector3.ZERO, "lights": [], "team": team}
 
 
+## Siege Ladder (milestone 16). PLACEHOLDER until Dominic picks a look: two rails and rungs
+## standing almost upright (the sim doesn't say which way its wall is yet), a team rag tied on.
+func _ladder(arch: String, team: Color) -> Dictionary:
+	var body := Node3D.new()
+	var wood := mats.get_mat("wood")
+	var h := 1.05
+	for z in [-0.14, 0.14]:
+		body.add_child(box(Vector3(0.05, h, 0.05), wood, Vector3(-0.08, h / 2, z), Vector3(0, 0, -10)))
+	for k in 7:
+		var y := 0.1 + k * 0.14
+		body.add_child(box(Vector3(0.03, 0.03, 0.3), wood, Vector3(-0.08 - y * 0.17, y, 0)))
+	body.add_child(box(Vector3(0.02, 0.14, 0.1), cloth(team), Vector3(-0.2, 0.86, 0.17)))
+	return {"body": body, "anchor": Vector3.ZERO, "lights": [], "team": team}
+
+
 func _stone_gate(arch: String, team: Color) -> Dictionary:
 	return {"body": _gatehouse(arch, team, false), "open": _gatehouse(arch, team, true), "anchor": Vector3.ZERO, "lights": [], "team": team}
 

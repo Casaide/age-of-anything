@@ -36,7 +36,7 @@ static func setup(w) -> void:
 	var br: Dictionary = d.get("breach", {})
 	w.walk_cfg = {"climb": int(c.get("climb", 2)) * w.TICK_HZ, "fall": int(c.get("fall_damage", 10)), "speed_pct": int(c.get("speed_pct", 80)),
 		"not": c.get("not", []).duplicate(), "rubble": w.map.terrain_ids.find(br.get("terrain", "")), "from": br.get("from", []).duplicate(),
-		"repair_pct": int(br.get("repair_pct", 100))}
+		"repair_pct": int(br.get("repair_pct", 100)), "push": int(c.get("push", 2))}
 
 
 # ------------------------------------------------------------------ the walkway
@@ -496,6 +496,7 @@ static func tick(w) -> void:
 				u.wgoal[i] = 0
 			else:
 				_approach(w, i, acc)
+	_push_ladders(w)
 	var held := {}       # walkway cell -> units on it or making for it (_held), worked out when a cell is found full
 	var settled := {}   # cell -> units settled there so far this tick (ascending ids)
 	for i in n:
@@ -536,6 +537,39 @@ static func tick(w) -> void:
 		var s := spot(w, c, mini(k, p - 1), p)
 		if _toward(w, i, s.x, s.y):
 			u.wnext[i] = k + 1
+
+
+## Defenders push ladders off: a finished ladder whose walkway cell has a defender settled on it
+## (a unit up there whose team the wall is, not the ladder's) and no attacker loses walkway.push hp
+## a tick; at none it falls (a "die" event, like a building knocked down).
+static func _push_ladders(w) -> void:
+	var bs = w.buildings
+	var u = w.units
+	var push: int = int(w.walk_cfg.push)
+	for b in range(bs.count() - 1, -1, -1):
+		if not w.btypes[bs.kind[b]].ladder or bs.done[b] == 0:
+			continue
+		var top := ladder_top(w, bs.cy[b] * w.map.width + bs.cx[b])
+		if top < 0:
+			continue
+		var team: int = w.teams[bs.owner[b]]
+		var defenders := 0
+		var attackers := 0
+		for i in u.count():
+			if u.perch[i] == top + 1:
+				if w.teams[u.owner[i]] == team:
+					attackers += 1
+				elif u.wgoal[i] == 0:
+					defenders += 1
+		if defenders == 0 or attackers > 0:
+			continue
+		bs.hp[b] -= push * defenders
+		if bs.hp[b] <= 0:
+			w.events.append({"type": "die", "id": bs.id[b], "x": bs.cx[b] * SimMap.TILE + SimMap.TILE / 2, "y": bs.cy[b] * SimMap.TILE + SimMap.TILE / 2,
+				"owner": bs.owner[b], "kind": bs.kind[b], "building": true, "pushed": true})
+			breach(w, b)
+			w.map.occupy(bs.footprint(b, w.map.width), 0)
+			bs.remove_at(b)
 
 
 ## Units standing on (or making for) each walkway cell, leaving out the slots in `except`.
@@ -675,6 +709,8 @@ static func _fall(w, i: int) -> void:
 static func breach(w, b: int) -> void:
 	var bs = w.buildings
 	var bt: Dictionary = w.btypes[bs.kind[b]]
+	if bt.ladder:
+		w.map.set_walk_over(bs.footprint(b, w.map.width), false)
 	var rub: int = w.walk_cfg.rubble
 	if rub < 0 or not bt.id in w.walk_cfg.from or bs.done[b] == 0:
 		return
