@@ -435,6 +435,19 @@ static func _landing(w, i: int, acc: int, top: int, x: int, y: int) -> int:
 	return best
 
 
+## Put unit i straight up on walkway cell c, settled (a mode's garrison at the start: modes.gd).
+static func set_on(w, i: int, c: int) -> void:
+	var u = w.units
+	_off_wall_fields(w, i)
+	u.perch[i] = c + 1
+	var p := _centre(w, c)
+	u.x[i] = p.x
+	u.y[i] = p.y
+	u.px[i] = p.x
+	u.py[i] = p.y
+	u.moving[i] = 0
+
+
 ## Units on their way up or along a wall (or climbing down) count as busy for queued orders.
 static func busy(w, i: int) -> bool:
 	return w.units.perch[i] != 0 and (w.units.wgoal[i] != 0 or w.units.wtime[i] != 0)

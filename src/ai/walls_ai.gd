@@ -96,6 +96,42 @@ static func storm(w, bot, army: Array, target: Vector2i) -> void:
 		w.issue(bot.player, Commands.ATTACK_MOVE, {"ids": ids, "x": target.x, "y": target.y, "queue": 1})   # once up: down their stairs and on
 
 
+## A side with no town (the Siege mode's attackers, modes.gd): every few seconds the whole army is
+## on the attack at the enemy's Town Center (else its start): rams at the walls and gates (the
+## bot's own _siege), siege towers over the wall (storm), everyone else idle attack-moves on.
+static func besiege(w, bot) -> void:
+	var c: Dictionary = bot.cfg.military.get("walls", {})
+	if c.is_empty() or w.tick % (int(c.every) * 20) != bot._phase():
+		return
+	var army := []
+	for i in w.units.count():
+		if w.units.owner[i] == bot.player and not w.types[w.units.kind[i]].worker and not w.types[w.units.kind[i]].has("animal"):
+			army.append(i)
+	if army.is_empty():
+		return
+	var s: Array = w.map.starts[bot.player]
+	var hx: int = s[0]
+	var hy: int = s[1]
+	bot._aln = w.lane(army[0])
+	bot._harea = bot.eco.reach.area_at(w, bot._aln, hx, hy)
+	bot.assault = true
+	var target: Vector2i = bot._enemy_target(w, hx, hy)
+	if target.x < 0:
+		return
+	bot._siege(w, army, hx, hy)
+	storm(w, bot, army, target)
+	var go := []
+	for i in army:
+		var t: Dictionary = w.types[w.units.kind[i]]
+		if t.get("buildings_only", false) or t.get("docks", false) or w.units.perch[i] != 0 or w.units.task[i] != Economy.NONE:
+			continue
+		if w.units.foe[i] == 0 and w.units.moving[i] == 0 and w.units.orders[i].is_empty():
+			go.append(w.units.id[i])
+	if not go.is_empty():
+		var to: Vector2i = bot._reachable(w, target)
+		w.issue(bot.player, Commands.ATTACK_MOVE, {"ids": go, "x": to.x, "y": to.y})
+
+
 ## Finished walkway cells of the player's (mine) or of its enemies' that it can see, ascending.
 static func _walkway_cells(w, player: int, mine: bool) -> Array:
 	var out := []

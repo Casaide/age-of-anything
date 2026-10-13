@@ -1,0 +1,92 @@
+{
+ "schema": "aow.modes/1",
+ "_doc": "game modes (milestone 16, src/sim/modes.gd), the first of the match rules (milestone 18): the host's rules carry `mode` (an id here; none or standard: the usual match), applied at World setup after the usual start. A mode gives every side (or, with defend/attack, the defending team: player 0's, and the rest) a start: age (the ages up to it are given), stock (resources set, not added), town (false: no Town Center or starting workers; such a side is out once it has nothing left), workers (more workers by the Town Center), walls (a finished ring round its start: Fortify, src/sim/fortify.gd: radius, wall, gate, tower, tower_every, gates), garrison (soldiers by slot, put up on the walkway facing the nearest enemy start), army (soldiers and engines by slot, by its start). hold_minutes (defend/attack): the defenders win when it runs out",
+ "modes": {
+  "standard": {
+   "name": "Standard",
+   "desc": "The usual match: a Town Center and a few workers each."
+  },
+  "fortress": {
+   "name": "Fortress",
+   "desc": "Every side starts in age 2 behind a stone ring with gatehouses and wall towers, archers on the walls and a fat stockpile for siege. Break in, hold out.",
+   "age": 2,
+   "stock": {
+    "food": 900,
+    "wood": 900,
+    "stone": 600,
+    "gold": 500
+   },
+   "workers": 6,
+   "walls": {
+    "radius": 9,
+    "wall": "wall",
+    "gate": "stone_gate",
+    "tower": "wall_tower",
+    "tower_every": 6,
+    "gates": [
+     "n",
+     "e",
+     "s",
+     "w"
+    ]
+   },
+   "garrison": {
+    "archer": 4,
+    "skirmisher": 2
+   }
+  },
+  "siege": {
+   "name": "Siege",
+   "desc": "The first side holds a walled town in age 3; the others come with an army and engines but no town. Take the Town Center, or hold out for 20 minutes.",
+   "hold_minutes": 20,
+   "defend": {
+    "age": 3,
+    "stock": {
+     "food": 800,
+     "wood": 800,
+     "stone": 600,
+     "gold": 500
+    },
+    "workers": 10,
+    "walls": {
+     "radius": 10,
+     "wall": "wall",
+     "gate": "stone_gate",
+     "tower": "wall_tower",
+     "tower_every": 8,
+     "gates": [
+      "n",
+      "e",
+      "s",
+      "w"
+     ]
+    },
+    "garrison": {
+     "archer": 5,
+     "skirmisher": 3,
+     "spear": 4
+    }
+   },
+   "attack": {
+    "age": 3,
+    "town": false,
+    "stock": {
+     "food": 600,
+     "wood": 800,
+     "stone": 0,
+     "gold": 400
+    },
+    "workers": 4,
+    "army": {
+     "infantry": 28,
+     "spear": 14,
+     "archer": 16,
+     "large": 10,
+     "ram": 6,
+     "catapult": 4,
+     "siege_tower": 3
+    }
+   }
+  }
+ }
+}
