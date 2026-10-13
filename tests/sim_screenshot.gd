@@ -39,6 +39,10 @@ extends SceneTree
 ## "walkway[:breach|:climb][:zoom]" (milestone 16): a stone ring round side 0's Town Center (gatehouses,
 ## wall towers), its archers up on the east and south walls, enemy spears below; ":breach" with two
 ## tiles of the south wall knocked down to rubble; ":climb" shot while the archers climb.
+## "walljoins[:zoom]" (milestone 16, the walls' join fixtures): on open ground (flat_test, cells 36-50 by
+## 30-44) a straight stone wall with a wall tower in it and a gatehouse at its end, an L with a tower on
+## its corner, a T, a diagonal run with a tower and a diagonal gatehouse; archers up on the straight and
+## diagonal walkways, one on each tower. Every join and draw-order case of the walls in one frame.
 ## Prefix any scene with "ai-" to see it as in a match against the AI.
 
 const Iso := preload("res://src/view/iso.gd")
@@ -145,6 +149,8 @@ func _initialize() -> void:
 		await _gate(view, scene.get_slice(":", 1), scene.get_slice(":", 2), int(scene.get_slice(":", 3)))
 	elif scene.begins_with("walkway"):
 		await _walkway(view, scene.get_slice(":", 1), float(scene.get_slice(":", 2)) if scene.get_slice_count(":") > 2 else 2.5)
+	elif scene.begins_with("walljoins"):
+		await _walljoins(view, float(scene.get_slice(":", 1)) if scene.get_slice_count(":") > 1 else 2.0)
 	elif scene.begins_with("walls"):
 		await _walls(view, scene == "walls:far")
 	elif scene.begins_with("tip"):
@@ -473,6 +479,50 @@ func _walkway(view, variant: String, z: float) -> void:
 		load("res://src/sim/combat.gd")._apply(w, hurt, hurt.duplicate(), bhurt)
 		for f in 60:
 			await process_frame
+
+
+func _walljoins(view, z: float) -> void:
+	var w = view.world
+	var Economy = load("res://src/sim/economy.gd")
+	var Walls = load("res://src/sim/walls.gd")
+	var Tech = load("res://src/sim/tech.gd")
+	view.reveal = true
+	w.ages[0] = 3
+	Tech.retype(w, 0)
+	Tech.refresh(w, 0)
+	var put := func(type: String, x: int, y: int, along := 0) -> void:
+		var k: int = Economy.btype_of(w, type)
+		for c in Economy._footprint(w, x, y, Economy.dims(w.btypes[k], along), along):
+			if w.map.occupied[c] != 0:
+				Economy.demolish(w, w.buildings.index_of(w.map.occupied[c]))
+		var b: int = Economy.place(w, 0, k, x, y, along)
+		w.buildings.done[b] = 1
+		w.buildings.progress[b] = w.btypes[k].build_ticks
+		w.buildings.hp[b] = w.bmods[0][k].hp
+	for line in [[Vector2i(36, 31), Vector2i(46, 31)], [Vector2i(36, 34), Vector2i(36, 43)], [Vector2i(36, 43), Vector2i(46, 43)],
+			[Vector2i(44, 39), Vector2i(44, 42)], [Vector2i(39, 33), Vector2i(46, 40)]]:
+		for c in view.wall_cells(line[0], line[1]):
+			if w.map.occupied[c.y * w.map.width + c.x] == 0:
+				put.call("wall", c.x, c.y)
+	put.call("stone_gate", 47, 31, 0)
+	put.call("stone_gate", 47, 41, 2)
+	for t in [Vector2i(41, 31), Vector2i(36, 43), Vector2i(42, 36)]:
+		put.call("wall_tower", t.x, t.y)
+	var before: int = w.next_id
+	var posts := [Vector2i(37, 31), Vector2i(38, 31), Vector2i(39, 31), Vector2i(40, 31), Vector2i(41, 31), Vector2i(43, 31), Vector2i(45, 31),
+		Vector2i(40, 34), Vector2i(41, 35), Vector2i(42, 36), Vector2i(43, 37), Vector2i(45, 39), Vector2i(36, 38), Vector2i(36, 43), Vector2i(39, 43)]
+	w.issue(0, "spawn", {"slot": "archer", "count": posts.size(), "x": 40500, "y": 38500})
+	for f in 8:
+		await process_frame
+	for n in posts.size():
+		var i: int = w.units.index_of(before + n)
+		if i >= 0:
+			Walls.set_on(w, i, posts[n].y * w.map.width + posts[n].x)
+	view.camera.zoom = Vector2(z, z)
+	view._on_zoom()
+	view.camera.look_at_point(Iso.to_screen(42000, 37000))
+	for f in 40:
+		await process_frame
 
 
 ## A close-up of one gate in a wall line on open ground by side 0's Town Center (flat_test):

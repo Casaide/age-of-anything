@@ -54,8 +54,7 @@ const Replay := preload("res://src/sim/replay.gd")
 const Bot := preload("res://src/ai/bot.gd")
 const Walls := preload("res://src/sim/walls.gd")
 const Repair := preload("res://src/sim/repair.gd")
-const WALL_PX := 22.0   # how high a walkway is drawn over the ground (a stone wall's top at 1x)
-const TOWER_TOP := 1.5  # a wall tower's top, as walkways go
+const WALL_PX := 28.2   # a stone wall's walkway over the ground at 1x (ArtKit walk_px: Models.WALK_H.wall), for a climb
 const TechTreeModel := preload("res://src/view/tech_tree_model.gd")
 const TownLife := preload("res://src/view/town_life.gd")
 
@@ -1978,7 +1977,9 @@ func _sync_views() -> void:
 		var dx := u.x[i] - u.px[i]
 		var dy := u.y[i] - u.py[i]
 		view.position = Iso.to_screen(u.px[i] + dx * a, u.py[i] + dy * a)
-		view.lift = Iso.lift(u.px[i] + dx * a, u.py[i] + dy * a) + _wall_lift(i)   # on a hill (or a wall): drawn raised, sorted on the base plane
+		var perch_dy := _perch_sort(i, view.position.y)   # up on a wall: sorted between the wall and its near merlons
+		view.position.y += perch_dy
+		view.lift = Iso.lift(u.px[i] + dx * a, u.py[i] + dy * a) + _wall_lift(i) + perch_dy   # on a hill (or a wall): drawn raised, sorted on the base plane
 		view.walking = dx != 0 or dy != 0
 		# Off screen (or hidden by the fog): no animation, tool or facing work; picked up again
 		# the frame it comes into view.
@@ -2014,12 +2015,29 @@ func _wall_lift(i: int) -> float:
 	var u := world.units
 	var climb := float(world.walk_cfg.climb)
 	if u.perch[i] != 0:
-		var b := world.buildings.index_of(map.occupied[u.perch[i] - 1])
-		var top := WALL_PX * (TOWER_TOP if b >= 0 and world.btypes[world.buildings.kind[b]].joins else 1.0)   # a wall tower stands taller
+		var bv := _perch_view(i)
+		var top := bv.walk_px if bv != null and bv.walk_px > 0.0 else WALL_PX   # the piece's own walkway: a tower's and a gatehouse's stand taller
 		return top * (float(u.wtime[i]) / climb if u.wtime[i] > 0 else 1.0)
 	if u.task[i] == Economy.CLIMB and u.work[i] > 0:
 		return WALL_PX * minf(1.0, float(u.work[i]) / climb)
 	return 0.0
+
+
+## The view of the wall piece unit i stands on (null if it isn't up on one, or it isn't drawn).
+func _perch_view(i: int) -> BuildingArt:
+	if world.units.perch[i] == 0:
+		return null
+	return bviews.get(map.occupied[world.units.perch[i] - 1])
+
+
+## How far to move unit i's sort point (canvas y at screen y `y`) so a unit up on a wall sorts just
+## after the piece it stands on and before that piece's near merlons (BuildingArt front): drawn on the
+## stone, between the merlons. Units on one piece keep their order among themselves. 0 off a wall.
+func _perch_sort(i: int, y: float) -> float:
+	var bv := _perch_view(i)
+	if bv == null or bv.front == null:
+		return 0.0
+	return BuildingArt.perch_sort_y(bv.position.y, y) - y
 
 
 ## The part of the canvas on screen, grown by `margin` canvas pixels (a body standing just off
@@ -2126,15 +2144,7 @@ func _links(b: int) -> int:
 			return false
 		var o := bs.index_of(map.occupied[y * map.width + x])
 		return o >= 0 and o != b and bs.done[o] == 1 and _wall_like(o)
-	var out := 0
-	for k in Models.LINKS.size():
-		var d: Vector2i = Models.LINKS[k]
-		if not on.call(d):
-			continue
-		if d.x != 0 and d.y != 0 and (on.call(Vector2i(d.x, 0)) or on.call(Vector2i(0, d.y))):
-			continue
-		out |= 1 << k
-	return out
+	return BuildingArt.links_of(on)
 
 
 func _sync_buildings() -> void:

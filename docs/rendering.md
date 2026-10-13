@@ -260,6 +260,14 @@ Head gear with `"face": "sealed"` (a closed helmet) is exempt from the eyes-in-s
   Walls and gates are one tile each. A gate's model returns its closed `body` and an `open`
   one, both baked; it also bakes a quarter turn (`^z`) for wall lines running along sim y, and
   the view picks the turn from its neighbours and shows it open while a friendly unit is at it.
+  **Walls you stand on** (milestone 16): a walkway piece's walkway height is `Models.WALK_H` (model units;
+  `ArtKit` gives it as `walk_px`, canvas px), and units up on it are lifted by it, so they stand on the stone.
+  Its merlons are made with `Models.merlon`; the ones on the camera's side of the wall's line bake as a
+  separate front layer (`ArtKit.front_split`; walls compose it per link set like the body), drawn by a node
+  of its own beside the building in the y-sorted layer, `BuildingArt.FRONT_SORT_PX` below the piece; units on
+  the piece sort between the two (`BuildingArt.perch_sort_y`), so defenders stand between the merlons. Wall
+  arms meet a joined piece's faces (a wall tower fills its tile). Check joins with
+  `tests/wall_join_check.gd` (below).
 - **Props** (`scenes/art_pixel/prop_models.gd`): bushes, reeds, boulders, quarry stone and
   gold, carcasses, crops, the rally flag; resources bake in used-up stages.
 - **Trees** (`scenes/art_pixel/tree_models.gd`, milestone 15): broadleaf, pine and swamp trees,
@@ -346,6 +354,17 @@ godot --path . --audio-driver Dummy --always-on-top --script res://tests/placeme
 godot --headless --path . --script res://tests/geometry_check.gd -- [filter] [all] [time]     # the 3D half alone, headless (~35 s)
 godot --path . --audio-driver Dummy --always-on-top --script res://tests/layer_check.gd -- [filter] [metrics]   # the 2D half alone
 godot --path . --audio-driver Dummy --always-on-top --script res://tests/placement_shot.gd -- out.png 5 "frog on newt_fire" ["label" ...] [walk:2.1]   # look at a flagged case in 8 facings
+```
+
+Walls, gates and wall towers have their own check (a measurement, not a look): it bakes each fixture
+(runs, corners, a T, diagonals, gatehouses, towers, units up top) once in 3D with an id colour per piece
+and compares it with the game's own sprites laid out in the game's draw order; overlaps, gaps, joins that
+don't meet and hidden, floating or sunk units fail with pixel counts (`debug`: truth | game | difference in
+/tmp/wall_join_<n>.png; `legacy`: units as drawn before the 2026-10-13 fix, to see the fixtures catch it):
+
+```sh
+godot --path . --audio-driver Dummy --always-on-top --script res://tests/wall_join_check.gd -- [filter] [arch] [debug] [legacy]
+godot --path . --audio-driver Dummy --always-on-top --script res://tests/sim_screenshot.gd -- out.png flat_test walljoins:5 "romans" "sewer rats"   # the same joins in the game
 ```
 
 `metrics` prints the measurement behind each 2D failure (3D failures always carry theirs), `debug`
