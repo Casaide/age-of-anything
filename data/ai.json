@@ -215,11 +215,18 @@
     "ram": 2,
     "catapult": 2,
     "bolt_thrower": 1,
-    "great_sling": 1
+    "great_sling": 1,
+    "siege_tower": 1
    },
    "towers_within": 14
   },
   "_doc_siege": "siege (Siege Workshop and Castle, age 3): the bot keeps at most max of each engine (out and queued; the Castle's sappers and great sling too); on its regroup beats its rams and sappers go for the nearest enemy gate, wall or tower it can see (else any building), its catapults and great slings for a tower within towers_within tiles of them, else they keep with the army",
+  "walls": {
+   "every": 5,
+   "man_pct": 60,
+   "climb_tiles": 12
+  },
+  "_doc_walls": "walls you stand on (milestone 16, src/ai/walls_ai.gd), every `every` seconds: with walkway walls of its own and no attack out, the bot keeps up to man_pct of its shooters at home up on the wall nearest the nearest enemy it sees (else the side facing the enemy); attacking, its siege tower is pushed to the nearest enemy walkway and, once docked, takes the foot soldiers within climb_tiles of it up and over (down the enemy's stairs at the target). The siege tower is one of military.siege.max",
   "raid_targets": [
    "lumber_camp",
    "mining_camp",

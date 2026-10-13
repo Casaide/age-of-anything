@@ -28,6 +28,7 @@ const Economy := preload("res://src/sim/economy.gd")
 ## The 8 ways from a cell: orthogonal first (paths prefer straight steps).
 const N8 := [Vector2i(1, 0), Vector2i(0, 1), Vector2i(-1, 0), Vector2i(0, -1), Vector2i(1, 1), Vector2i(-1, 1), Vector2i(-1, -1), Vector2i(1, -1)]
 const DOCK := 1600   # a siege tower stopped with its centre this close to a walkway cell's centre is docked there
+const AWAY := 40000  # a way down whose landing has no straight walk to the destination counts this much further (milli-tiles)
 
 
 static func setup(w) -> void:
@@ -382,6 +383,8 @@ static func leave(w, i: int, x: int, y: int) -> bool:
 			continue
 		var p := _centre(w, land)
 		var d: int = Fixed.isqrt(Fixed.dist2(p.x, p.y, x, y)) + int(net.get(e[1], 0)) * SimMap.TILE
+		if not Flow.clear_line(w.map, p.x, p.y, x, y, w.lane(i)):
+			d += AWAY   # a wall (or anything) between the landing and where it's going: the wrong side, likely
 		if d < best_d:
 			best_d = d
 			best = e[0]

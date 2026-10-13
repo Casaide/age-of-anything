@@ -19,6 +19,10 @@ const Bridges := preload("res://src/sim/bridges.gd")
 const Reach := preload("res://src/ai/reach.gd")
 const Fixed := preload("res://src/sim/fixed.gd")
 const Par := preload("res://tests/par.gd")
+const Fortify := preload("res://src/sim/fortify.gd")
+const Walls := preload("res://src/sim/walls.gd")
+const WallsAi := preload("res://src/ai/walls_ai.gd")
+const Tech := preload("res://src/sim/tech.gd")
 
 const SEED := 7
 const LIMIT := 20 * 60 * 30    # 30 minutes: a match must end, however slowly (pacing is a tester metric)
@@ -28,7 +32,7 @@ const LIMIT := 20 * 60 * 30    # 30 minutes: a match must end, however slowly (p
 const PIECES := {
 	"pick": ["quick", 1], "wonder": ["quick", 5], "respond": ["quick", 5], "shelter": ["quick", 5],
 	"walled_fords": ["quick", 5], "rams": ["quick", 10], "hills": ["quick", 5], "guard": ["quick", 30],
-	"age3": ["quick", 40], "surrender": ["quick", 1], "easy": ["quick", 40], "siege_bot": ["quick", 60], "trade_bot": ["quick", 20],
+	"age3": ["quick", 40], "surrender": ["quick", 1], "easy": ["quick", 40], "siege_bot": ["quick", 60], "trade_bot": ["quick", 20], "walls_bot": ["quick", 20],
 	"passive_frogs": ["slow", 120], "passive_rats": ["slow", 120], "bvb": ["slow", 200], "bvb_again": ["slow", 200],
 	"centaurs_frogs": ["slow", 200], "rats_centaurs": ["slow", 200], "hard": ["slow", 200],
 	"walled_palisade": ["slow", 200], "walled_wall": ["slow", 200], "walled_gap": ["slow", 200], "land": ["slow", 200],
@@ -36,7 +40,7 @@ const PIECES := {
 ## The older single-purpose modes, as pieces.
 const MODES := {
 	"age3": ["age3"], "levels": ["levels_easy", "levels_normal", "levels_hard"], "rams": ["rams", "siege_bot"],
-	"walls": ["rams", "walled_palisade", "walled_wall", "walled_gap"], "pick": ["pick"], "hills": ["hills", "guard"],
+	"walls": ["rams", "walled_palisade", "walled_wall", "walled_gap", "walls_bot"], "pick": ["pick"], "hills": ["hills", "guard"],
 	"land": ["land", "guard", "hills"], "reach": ["respond", "shelter", "walled_fords"],
 }
 
@@ -147,6 +151,7 @@ func _run_piece(name: String) -> void:
 		"rams": _test_rams(rules, frogs)
 		"siege_bot": _test_siege_bot(rules, rats, frogs)
 		"trade_bot": _test_trade_bot(rules, frogs, rats)
+		"walls_bot": _test_walls_bot(rules, rats, frogs)
 		"walled_palisade": _test_walled_base(rules, frogs, rats, "palisade", false)
 		"walled_wall": _test_walled_base(rules, frogs, rats, "wall", false)
 		"walled_gap": _test_walled_base(rules, frogs, rats, "wall", true)
@@ -1158,3 +1163,76 @@ func check(ok: bool, what: String) -> void:
 	if not ok:
 		failures += 1
 		print("FAIL: ", what)
+
+
+## Walls you stand on and the bot (milestone 16, src/ai/walls_ai.gd). Manning: the bot (player 0)
+## in a stone ring with shooters at home sends most of them up onto the wall facing enemy spears
+## standing outside. Storming: a bot attacking a walled town pushes its siege tower to the wall
+## and, once docked, its swordsmen go up through it and down the defenders' stairs inside.
+func _test_walls_bot(rules: Dictionary, a: Dictionary, b: Dictionary) -> void:
+	if map_id != "flat_test":
+		print("\n== walls bot: laid out for flat_test, skipped on %s" % map_id)
+		return
+	var r := rules.duplicate(true)
+	r.animals = false
+	var w := World.new(SEED, SimMap.load_id(map_id), [a, b], r)
+	for p in 2:
+		w.ages[p] = 3
+		Tech.retype(w, p)
+		Tech.refresh(w, p)
+	var s0: Array = w.map.starts[0]
+	Fortify.ring(w, 0, s0[0] / 1000, s0[1] / 1000, 7, {"wall": "wall", "gate": "stone_gate", "tower": "", "gates": ["n", "e", "s", "w"]})
+	var before: int = w.next_id
+	w.issue(0, Commands.SPAWN, {"slot": "archer", "count": 10, "x": s0[0] + 2000, "y": s0[1] + 2000})
+	w.issue(1, Commands.SPAWN, {"slot": "spear", "count": 6, "x": s0[0] + 13000, "y": s0[1] + 13000})
+	var bot := Bot.new(0)
+	var up := 0
+	while w.tick < 20 * 60:
+		bot.think(w)
+		w.step()
+	for i in w.units.count():
+		if w.units.owner[i] == 0 and w.units.perch[i] != 0:
+			up += 1
+	print("\n== walls bot: %d of 10 shooters up on the wall after a minute" % up)
+	check(up >= 4, "walls bot: the bot mans its wall facing the enemy (%d of 10 up)" % up)
+	# Storming: player 1's swordsmen and a siege tower by the ring's south-east, attacking.
+	var w2 := World.new(SEED, SimMap.load_id(map_id), [a, b], r)
+	for p in 2:
+		w2.ages[p] = 3
+		Tech.retype(w2, p)
+		Tech.refresh(w2, p)
+	Fortify.ring(w2, 0, s0[0] / 1000, s0[1] / 1000, 7, {"wall": "wall", "gate": "stone_gate", "tower": "", "gates": ["n", "w"]})
+	var first: int = w2.next_id
+	w2.issue(1, Commands.SPAWN, {"slot": "infantry", "count": 8, "x": s0[0] + 11000, "y": s0[1] + 4000})
+	w2.issue(1, Commands.SPAWN, {"slot": "siege_tower", "count": 1, "x": s0[0] + 11000, "y": s0[1] + 2000})
+	for t in 12:
+		w2.step()
+	var attacker := Bot.new(1)
+	attacker.assault = true
+	var target := Vector2i(s0[0], s0[1] + 3500)
+	var docked := -1
+	var most_up := 0
+	var inside := 0
+	while w2.tick < 20 * 150:
+		var army := []
+		for i in w2.units.count():
+			if w2.units.owner[i] == 1:
+				army.append(i)
+		WallsAi.storm(w2, attacker, army, target)
+		w2.step()
+		var n := 0
+		var ins := 0
+		for i in w2.units.count():
+			if w2.units.owner[i] != 1:
+				continue
+			if w2.units.perch[i] != 0:
+				n += 1
+			elif absi(w2.units.x[i] - s0[0]) < 6500 and absi(w2.units.y[i] - s0[1]) < 6500:
+				ins += 1
+			if docked < 0 and w2.types[w2.units.kind[i]].get("docks", false) and Walls.docked_at(w2, i) >= 0:
+				docked = w2.tick
+		most_up = maxi(most_up, n)
+		inside = maxi(inside, ins)
+	print("== walls bot: the tower docked at %s; at most %d swordsmen up at once, %d inside" % [_clock(docked) if docked >= 0 else "never", most_up, inside])
+	check(docked >= 0, "walls bot: its siege tower docks on the enemy wall")
+	check(most_up >= 3 and inside >= 3, "walls bot: swordsmen go over the wall by the tower and into the town (%d up, %d inside)" % [most_up, inside])
