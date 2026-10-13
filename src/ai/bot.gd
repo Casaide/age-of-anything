@@ -194,6 +194,7 @@ func think(w) -> void:
 		return
 	var tc: int = eco._town_center(w)
 	if tc < 0:
+		WallsAi.besiege(w, self)   # no town (the Siege mode's attackers): all on the attack
 		return
 	var workers := []
 	var army := []
@@ -881,8 +882,8 @@ func _respond(w, tc: int, army: Array, workers: Array, hx: int, hy: int) -> void
 	var home_r := 2 * int(cfg.military.defend_tiles) * 1000
 	var cands := []
 	for i in army:
-		if (w.units.foe[i] != 0 and w.units.index_of(w.units.foe[i]) >= 0) or land.is_climbing(w, i):
-			continue   # fighting someone already (or taking a hill)
+		if (w.units.foe[i] != 0 and w.units.index_of(w.units.foe[i]) >= 0) or land.is_climbing(w, i) or w.units.perch[i] != 0:
+			continue   # fighting someone already (or taking a hill, or up on our wall: it shoots from there)
 		var d2 := Fixed.dist2(w.units.x[i], w.units.y[i], f.x, f.y)
 		if Fixed.dist2(w.units.x[i], w.units.y[i], hx, hy) > home_r * home_r and d2 > RESPOND_TILES * RESPOND_TILES * 1000000:
 			continue

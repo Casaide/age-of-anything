@@ -57,6 +57,9 @@ var map_name: Label
 var map_pic: TextureRect
 var map_name_fs := 0            # the map name's heading size; a long name is fitted below it
 var map_note: Label
+var MODES := _modes()         # the game modes (data/modes.json), Standard first
+var mode_index := 0
+var mode_name: Label
 var map_data: Dictionary        # the map picked (its starts say how many players)
 var level_card: Control         # 1v1: how hard the AI plays (in a team game each AI panel has its own)
 var level_buttons: Array = []
@@ -412,6 +415,22 @@ func _centre() -> Control:
 	map_note = UiTheme.label("", "Dim")
 	map_note.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	inner.add_child(map_note)
+	var mode_pick := HBoxContainer.new()   # the game mode (milestone 16): Standard, Fortress, Siege
+	mode_pick.add_theme_constant_override("separation", 8)
+	var mprev := UiTheme.button("<")
+	mprev.custom_minimum_size = Vector2(36, 36)
+	mprev.pressed.connect(func(): _set_mode(mode_index - 1))
+	mode_pick.add_child(mprev)
+	mode_name = UiTheme.label("")
+	mode_name.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	mode_name.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	mode_pick.add_child(mode_name)
+	var mnext := UiTheme.button(">")
+	mnext.custom_minimum_size = Vector2(36, 36)
+	mnext.pressed.connect(func(): _set_mode(mode_index + 1))
+	mode_pick.add_child(mnext)
+	inner.add_child(mode_pick)
+	_set_mode(0)
 	var spare := Control.new()   # and the AI's level and Start stay at the foot, level with the side panels
 	spare.size_flags_vertical = Control.SIZE_EXPAND_FILL
 	col.add_child(spare)
@@ -862,6 +881,21 @@ static func _maps() -> Array:
 	return ids
 
 
+## The game modes in data/modes.json: [id, name, desc], Standard first, the rest as listed.
+static func _modes() -> Array:
+	var d: Dictionary = DataLib.load_json("res://data/modes.json").modes
+	var out := []
+	for id in d:
+		out.append([id, d[id].name, d[id].get("desc", "")])
+	return out
+
+
+func _set_mode(k: int) -> void:
+	mode_index = posmod(k, MODES.size())
+	mode_name.text = "Mode: %s" % MODES[mode_index][1]
+	mode_name.tooltip_text = MODES[mode_index][2]
+
+
 func _set_map(k: int) -> void:
 	map_index = posmod(k, MAPS.size())
 	var m: Dictionary = DataLib.load_json("res://data/maps/%s.json" % MAPS[map_index])
@@ -926,6 +960,7 @@ func _play() -> void:
 	view.ai_levels = sides.map(func(s): return LEVELS[s.level].to_lower())
 	view.ai_levels[0] = ""   # you
 	view.map_id = MAPS[map_index]
+	view.mode = MODES[mode_index][0] if MODES[mode_index][0] != "standard" else ""
 	view.vs_ai = true
 	view.ai_level = view.ai_levels[1]
 	remove_child(kit)   # the match takes the kit with everything baked here (and the warm-up still going)

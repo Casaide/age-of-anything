@@ -170,6 +170,7 @@ var army := false           # also spawn a test army per side (F7 toggles and re
 var ai_level := "normal"    # easy, normal or hard (data/ai.json levels; picked in the lobby)
 var ai_levels: Array = []   # per player in a match against the AI: its level, "" for you (player 0); empty: every other player at ai_level
 var player_teams: Array = [] # per player: its team (allies share one); empty: everyone for themselves
+var mode := ""                # the game mode (data/modes.json, picked in the lobby; "": the usual match), set on the rules
 var vs_ai := false          # side 2 is played by the AI (set by the match setup screen)
 var banner: Label           # victory / defeat
 var pause_menu: Control     # Esc against the AI: resume, surrender, back to the menu
@@ -345,7 +346,11 @@ func start_live(race_prompts: Array) -> void:
 	for k in race_prompts.size():
 		races.append(gen.generate(race_prompts[k], rules, rerolls[k] if k < rerolls.size() else 0))
 	await _bake(races)
-	_attach(World.new(SEED, map, races, rules, player_teams))
+	var match_rules := rules
+	if mode != "":   # the game mode is one of the match's rules (src/sim/modes.gd)
+		match_rules = rules.duplicate(true)
+		match_rules.mode = mode
+	_attach(World.new(SEED, map, races, match_rules, player_teams))
 	_loaded()
 	playback = {}
 	audio.music_age(world.ages[active])
