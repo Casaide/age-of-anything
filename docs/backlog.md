@@ -302,6 +302,10 @@ gets from it (units, ages, upkeep), and how the AI values a resource it doesn't 
   long matches; night / swamp / sewer ambience by map or architecture; voices by size and
   culture (a giant croaks lower, a Roman says a word); a "can't" bark; volume sliders.
 - **Tutorial and campaign:** a scenario editor (the classic RTS longevity lever), then a campaign.
+- The lobby's roster portrait tiles (`src/view/ui/roster_tiles.gd`, kept, unused) left the side
+  panels on 2026-10-13: their portraits meant baking every unit and age before an army showed
+  (Dominic: the cards only on the tech tree). The panel shows a line of the lines' names. If they
+  come back, fill them from the background warm-up's portraits, never ahead of the stage.
 - More creature architecture (2026-10-11): spiders' silk tents strung between stalks (they share
   the bugs' mounds for now); timber lodges for beavers and bears once they exist.
 

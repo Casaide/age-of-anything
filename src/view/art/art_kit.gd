@@ -79,6 +79,9 @@ var _dirty := false         # something was baked or loaded since the atlas was 
 var _models                 # the building and prop models (Models), shared by the bakers
 var _unit_models := UnitModels.new()   # which parts are modelled (eight facings) rather than flat
 var _bdata := {}            # data/buildings.json (_buildings_data)
+var _icon_cache := {}       # recipe + team -> Texture2D: a portrait already painted (a side rerolled repaints only its own)
+var _warm_gen := 0          # bumped by each warm-up: a later one cancels the last one's portraits
+var tree_track: Array = []  # the jobs a tech tree page's bake waits on (tree_progress())
 
 signal units_ready          # prepare(): every unit part is baked and in the atlas
 signal atlas_rebuilt        # the atlas texture was replaced: anything drawn from it should redraw
@@ -113,22 +116,79 @@ func prepare(races: Array, teams: Array) -> void:
 	print("Art kit: ", report)
 
 
-## Bake the animals, the props and these races' buildings in the background (the lobby, while
-## players choose), so a match start finds them done. Drops the last warm-up's pending work.
-func warm(races: Array) -> void:
-	var ids: Array = _unit_jobs([animal_race()]) + _props_jobs() + _building_jobs(races)
+## Bake in the background, behind anything asked for up front (the lobby, while players choose),
+## so the tech tree and a match start find it done: every age of these races' unit lines, the
+## animals, the props and these races' buildings, then the portraits (teams: each race's colour;
+## none: no portraits). Drops the last warm-up's pending work (a prompt changed: its old race).
+func warm(races: Array, teams := []) -> void:
+	var unit_ids := _unit_jobs(races)
+	var ids: Array = unit_ids + _unit_jobs([animal_race()]) + _props_jobs() + _building_jobs(races)
 	for kind in _queue:
 		_queue[kind] = _queue[kind].filter(func(id): return _front.has(id) or id in ids or not _warming.has(id))
 	_warming = {}
 	for id in ids:
 		_warming[id] = true
 	_ask(ids, false)
+	_warm_gen += 1
+	if not teams.is_empty():
+		_warm_icons(races, teams, unit_ids, _warm_gen)
+
+
+## Stop the warm-up: its pending jobs leave the queue (those under way finish; anything asked for
+## up front stays) and its portraits aren't painted.
+func cancel_warm() -> void:
+	_warm_gen += 1
+	for kind in _queue:
+		_queue[kind] = _queue[kind].filter(func(id): return _front.has(id) or not _warming.has(id))
+	_warming = {}
+
+
+## The warm-up's portraits, once its races' parts are baked (unless a later warm-up came first).
+func _warm_icons(races: Array, teams: Array, unit_ids: Array, gen: int) -> void:
+	while unit_ids.any(func(id): return not _jobs[id].done):
+		if gen != _warm_gen:
+			return
+		await get_tree().process_frame
+	if gen == _warm_gen:
+		await bake_icons(races, teams)
+
+
+## What one race's tech tree page needs, up front: every age of its lines, their portraits (as
+## kit.icons "side:slot@age"), its culture's buildings.
+func bake_tree(race: Dictionary, side: int, team: Color) -> void:
+	var ids: Array = _unit_jobs([race]) + _building_jobs([race])
+	tree_track = ids
+	_ask(ids, true)
+	await _await_jobs(ids)
+	PartShape.bake_flat("unit_shadow", UnitView.SHADOW_SHAPES, UnitView.SHADOW_COLOURS, ART_SCALE * UNIT_SCALE)
+	await _icons(_icon_list([race], [team], [side]))
+	tree_track = []
+
+
+## How far the tech tree page's bake is (0..1; 1 when there's none).
+func tree_progress() -> float:
+	var p := progress(tree_track)
+	return 1.0 if p.y <= 0.0 else p.x / p.y
+
+
+## Is everything this race's tech tree page shows ready for this side: every portrait of its lines
+## and its culture's buildings?
+func tree_ready(race: Dictionary, side: int) -> bool:
+	if not buildings.has(lib.architecture(race) + ":house"):
+		return false
+	for u in race.units:
+		if not icons.has("%d:%s" % [side, u.recipe.slot]):
+			return false
+		for l in u.get("line", []):
+			if not icons.has("%d:%s@%d" % [side, u.recipe.slot, int(l.age)]):
+				return false
+	return true
 
 
 ## How far the tracked work is: Vector2(done, total) in estimated renders (a loader's bar).
-func progress() -> Vector2:
+func progress(ids := track) -> Vector2:
 	var p := Vector2.ZERO
-	for id in track:
+	for id in ids:
 		var j: Dictionary = _jobs[id]
 		p.y += j.weight
 		if j.done:
@@ -228,58 +288,75 @@ func _work(kind: String) -> void:
 ## A unit-part job for each part these races' units are drawn with (every age of every line,
 ## the workers' tools, loads and work holds), each once.
 func _unit_jobs(races: Array) -> Array:
-	var ids := []
+	var units := []
 	for race in races:
-		var steps := []
 		for u in race.units:   # every age of every unit line: ageing up never waits on a bake
-			for l in u.get("line", [{"recipe": u.recipe, "eval": u.eval}]):
-				steps.append(l)
-				# An engine's members are composed on its sockets, which come with its bake: probed
-				# before it, the engine shows none, so its crew and haulers are asked for as units (a
-				# trade cart's cat went unbaked: the placement check, "every part drawn is baked").
-				if l.recipe.has("crew"):
-					steps.append({"recipe": UnitView.crew_recipe(l.recipe), "eval": l.eval})
-				if l.recipe.has("haul"):
-					steps.append({"recipe": UnitView.haul_recipe(lib, l.recipe), "eval": l.eval})
-				# What a worker pushes home (D-127, creatures.json push_home: the rats' barrow and handcart).
-				if l.recipe.slot == "worker":
-					var pushes: Dictionary = lib.creatures.get(l.recipe.get("creature", ""), {}).get("push_home", {})
-					for res in pushes:
-						steps.append({"recipe": UnitView.push_recipe(l.recipe, pushes[res]), "eval": l.eval})
-		for u in steps:
-			var probe := UnitView.new()
-			probe.build(u.recipe, lib, ANIMAL_TEAM, u.eval.speed)   # parts bake in the team key: any team will do
-			for ps in probe.find_children("*", "Node2D", true, false):
-				if ps is PartShape and ps.part_id != "":
-					ids.append(_part_job(ps.part_id, ps.shapes, ps.colours))
-			probe.free()
-			if u.recipe.has("mount") and not u.recipe.mount.get("fused", false):
-				# A rider shows the leg on the flank facing the camera: the probe (facing 0) shows one
-				# side, so a rider whose legs bake at each hip has every hip's leg asked for (the far
-				# flank's went unbaked: the placement check, "every part drawn is baked").
-				var rider_colours := UnitView.colours_for(lib, u.recipe.skin, u.recipe.family, ANIMAL_TEAM)
-				for id in UnitView.leg_parts(lib, u.recipe.body):
-					ids.append(_part_job(id, lib.part(id.get_slice("~", 0)).shapes, rider_colours))
-			if not UnitView.pose_parts(lib, u.recipe).is_empty():   # a body's idle poses and posed walk (a cat)
-				var mount_skin: String = u.recipe.mount.skin if u.recipe.has("mount") else u.recipe.skin
-				var pose_colours := UnitView.colours_for(lib, mount_skin, u.recipe.family, ANIMAL_TEAM)
-				for pp in UnitView.pose_parts(lib, u.recipe):
-					ids.append(_part_job(pp[0], pp[1], pose_colours))
-			var colours := UnitView.colours_for(lib, u.recipe.skin, u.recipe.family, ANIMAL_TEAM)
-			if u.recipe.slot == "worker":
-				# Workers change tools for the job and carry their load home in their hands.
-				for id in JOB_PARTS:
-					ids.append(_part_job(id, lib.part(id).shapes, colours))
-			# Every body with arms is baked in the work holds too (raised, reaching): workers
-			# swing their tools with them (D-105) and soldiers their weapons (D-106).
-			var rides: bool = u.recipe.has("mount") and not u.recipe.mount.get("fused", false)
-			if not rides and not u.recipe.has("crew") and PartShape.rigs.get(u.recipe.body, {}).get("carry", "") != "harness":   # (an engine's crew are the workers)
-				var holds: Array = UnitView.WORK_HOLDS.duplicate()
-				var hand: String = u.recipe.parts.get("hand_r", "")
-				if hand != "" and ("spear" in lib.part(hand).tags or "lance" in lib.part(hand).tags):
-					holds += UnitView.ATTACK_HOLDS   # spear carriers thrust (D-106)
-				for h in holds:
-					ids.append(_part_job(u.recipe.body + "@" + h, lib.part(u.recipe.body).shapes, colours))
+			units.append_array(u.get("line", [{"recipe": u.recipe, "eval": u.eval}]))
+	return _steps_jobs(units)
+
+
+## Only these units ({recipe, eval}: e.g. the few a lobby stage shows, at their first age), up
+## front; returns when they can be drawn (from their own textures: the atlas isn't rebuilt).
+func bake_steps(units: Array) -> void:
+	var ids := _steps_jobs(units)
+	_ask(ids, true)
+	await _await_jobs(ids)
+	PartShape.bake_flat("unit_shadow", UnitView.SHADOW_SHAPES, UnitView.SHADOW_COLOURS, ART_SCALE * UNIT_SCALE)
+
+
+## The part jobs for these units ({recipe, eval}) with an engine's crew and haulers and what a
+## worker pushes home, each part once.
+func _steps_jobs(units: Array) -> Array:
+	var ids := []
+	var steps := []
+	for l in units:
+		steps.append(l)
+		# An engine's members are composed on its sockets, which come with its bake: probed
+		# before it, the engine shows none, so its crew and haulers are asked for as units (a
+		# trade cart's cat went unbaked: the placement check, "every part drawn is baked").
+		if l.recipe.has("crew"):
+			steps.append({"recipe": UnitView.crew_recipe(l.recipe), "eval": l.eval})
+		if l.recipe.has("haul"):
+			steps.append({"recipe": UnitView.haul_recipe(lib, l.recipe), "eval": l.eval})
+		# What a worker pushes home (D-127, creatures.json push_home: the rats' barrow and handcart).
+		if l.recipe.slot == "worker":
+			var pushes: Dictionary = lib.creatures.get(l.recipe.get("creature", ""), {}).get("push_home", {})
+			for res in pushes:
+				steps.append({"recipe": UnitView.push_recipe(l.recipe, pushes[res]), "eval": l.eval})
+	for u in steps:
+		var probe := UnitView.new()
+		probe.build(u.recipe, lib, ANIMAL_TEAM, u.eval.speed)   # parts bake in the team key: any team will do
+		for ps in probe.find_children("*", "Node2D", true, false):
+			if ps is PartShape and ps.part_id != "" and ps.part_id != "unit_shadow":   # (the shadow is drawn flat: bake_flat)
+				ids.append(_part_job(ps.part_id, ps.shapes, ps.colours))
+		probe.free()
+		if u.recipe.has("mount") and not u.recipe.mount.get("fused", false):
+			# A rider shows the leg on the flank facing the camera: the probe (facing 0) shows one
+			# side, so a rider whose legs bake at each hip has every hip's leg asked for (the far
+			# flank's went unbaked: the placement check, "every part drawn is baked").
+			var rider_colours := UnitView.colours_for(lib, u.recipe.skin, u.recipe.family, ANIMAL_TEAM)
+			for id in UnitView.leg_parts(lib, u.recipe.body):
+				ids.append(_part_job(id, lib.part(id.get_slice("~", 0)).shapes, rider_colours))
+		if not UnitView.pose_parts(lib, u.recipe).is_empty():   # a body's idle poses and posed walk (a cat)
+			var mount_skin: String = u.recipe.mount.skin if u.recipe.has("mount") else u.recipe.skin
+			var pose_colours := UnitView.colours_for(lib, mount_skin, u.recipe.family, ANIMAL_TEAM)
+			for pp in UnitView.pose_parts(lib, u.recipe):
+				ids.append(_part_job(pp[0], pp[1], pose_colours))
+		var colours := UnitView.colours_for(lib, u.recipe.skin, u.recipe.family, ANIMAL_TEAM)
+		if u.recipe.slot == "worker":
+			# Workers change tools for the job and carry their load home in their hands.
+			for id in JOB_PARTS:
+				ids.append(_part_job(id, lib.part(id).shapes, colours))
+		# Every body with arms is baked in the work holds too (raised, reaching): workers
+		# swing their tools with them (D-105) and soldiers their weapons (D-106).
+		var rides: bool = u.recipe.has("mount") and not u.recipe.mount.get("fused", false)
+		if not rides and not u.recipe.has("crew") and PartShape.rigs.get(u.recipe.body, {}).get("carry", "") != "harness":   # (an engine's crew are the workers)
+			var holds: Array = UnitView.WORK_HOLDS.duplicate()
+			var hand: String = u.recipe.parts.get("hand_r", "")
+			if hand != "" and ("spear" in lib.part(hand).tags or "lance" in lib.part(hand).tags):
+				holds += UnitView.ATTACK_HOLDS   # spear carriers thrust (D-106)
+			for h in holds:
+				ids.append(_part_job(u.recipe.body + "@" + h, lib.part(u.recipe.body).shapes, colours))
 	var seen := {}
 	var out := []
 	for id in ids:
@@ -432,13 +509,45 @@ func _hifi_baker() -> Node:
 ## UnitView (its baked parts, in its team colour) rendered in one SubViewport at two
 ## screen pixels per art pixel, cropped square. Needs the atlas built. Keys: "side:slot" (the
 ## line's first step) and "side:slot@age" for every step (the tech tree page shows each).
+## Each portrait is painted once per recipe and team (_icon_cache): baking again after one side
+## changed paints only that side's new ones.
 func bake_icons(races: Array, teams: Array) -> void:
-	var list := []   # [side, unit or line step, key]
-	for side in races.size():
-		for u in races[side].units:
-			list.append([side, u, "%d:%s" % [side, u.recipe.slot]])
+	await _icons(_icon_list(races, teams, range(races.size())))
+
+
+## [team, unit or line step, icon key] for every line and step of these races (sides: their keys').
+func _icon_list(races: Array, teams: Array, sides: Array) -> Array:
+	var list := []
+	for k in races.size():
+		var side: int = sides[k]
+		for u in races[k].units:
+			list.append([teams[k], u, "%d:%s" % [side, u.recipe.slot]])
 			for l in u.get("line", []):
-				list.append([side, l, "%d:%s@%d" % [side, u.recipe.slot, int(l.age)]])
+				list.append([teams[k], l, "%d:%s@%d" % [side, u.recipe.slot, int(l.age)]])
+	return list
+
+
+static func _icon_key(recipe: Dictionary, team: Color) -> String:
+	return "%s|%s" % [team.to_html(false), var_to_str(recipe).md5_text()]
+
+
+## Portraits for a list from _icon_list: those not painted yet are painted (each recipe and team
+## once), then every key gets its picture.
+func _icons(all: Array) -> void:
+	var todo := []
+	var asked := {}
+	for e in all:
+		var ck := _icon_key(e[1].recipe, e[0])
+		if not _icon_cache.has(ck) and not asked.has(ck):
+			asked[ck] = true
+			todo.append(e)
+	if not todo.is_empty():
+		await _paint_icons(todo)
+	for e in all:
+		icons[e[2]] = _icon_cache[_icon_key(e[1].recipe, e[0])]
+
+
+func _paint_icons(list: Array) -> void:
 	var cols := 6
 	var vp := SubViewport.new()
 	vp.transparent_bg = true
@@ -450,7 +559,7 @@ func bake_icons(races: Array, teams: Array) -> void:
 	for k in list.size():
 		var u: Dictionary = list[k][1]
 		var view := UnitView.new()
-		view.build(u.recipe, lib, teams[list[k][0]], u.eval.speed)
+		view.build(u.recipe, lib, list[k][0], u.eval.speed)
 		view.scale = Vector2.ONE * UNIT_SCALE * zoom
 		view.position = Vector2(k % cols + 0.5, k / cols + 0.8) * ICON_CELL
 		view.set_process(false)       # a still pose
@@ -465,7 +574,7 @@ func bake_icons(races: Array, teams: Array) -> void:
 		var side := maxi(used.size.x, used.size.y) + 4
 		var sq := Image.create(side, side, false, Image.FORMAT_RGBA8)
 		sq.blit_rect(cell, used, Vector2i((side - used.size.x) / 2, side - used.size.y - 2))
-		icons[list[k][2]] = ImageTexture.create_from_image(sq)
+		_icon_cache[_icon_key(list[k][1].recipe, list[k][0])] = ImageTexture.create_from_image(sq)
 	vp.queue_free()
 
 
@@ -575,13 +684,21 @@ func building_key(arch: String, type: String, age: int, pick := 0) -> String:
 ## A building's picture for a button: its finished bake, from the atlas.
 ## Cached: the command panel rebuilds its buttons when its content changes, and a new texture
 ## every frame made it rebuild every frame, so clicks never landed.
+## Baked since the atlas was last built (the lobby's tech tree doesn't rebuild it): its own texture.
 func building_icon(arch: String, type: String) -> Texture2D:
 	var key := "%s:%s" % [arch, type]
-	var at: AtlasTexture = _building_icons.get(key)
+	var name: String = buildings[key].get("icon", buildings[key].body)
+	var tex: Texture2D = _building_icons.get(key)
+	if not regions.has(name) or PartShape.atlas == null:
+		if not tex is ImageTexture:
+			tex = ImageTexture.create_from_image(bakes[name].img)
+			_building_icons[key] = tex
+		return tex
+	var at := tex as AtlasTexture
 	if at == null or at.atlas != PartShape.atlas:
 		at = AtlasTexture.new()
 		at.atlas = PartShape.atlas
-		at.region = regions[buildings[key].get("icon", buildings[key].body)]
+		at.region = regions[name]
 		_building_icons[key] = at
 	return at
 

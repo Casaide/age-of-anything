@@ -22,6 +22,8 @@ const Tech := preload("res://src/sim/tech.gd")
 const Audio := preload("res://src/view/audio.gd")
 const UiTheme := preload("res://src/view/ui/theme.gd")
 const Mat := preload("res://src/view/ui/ui_materials.gd")
+const ForgeVeil := preload("res://src/view/loaders/forge_veil.gd")
+const LoaderStyle := preload("res://src/view/loaders/loader_style.gd")
 
 signal closed
 
@@ -73,6 +75,12 @@ var _race_box: VBoxContainer
 var _title: Label
 var _drag_from := Vector2.INF
 var _since := 0.0
+var _content: Control           # everything under the loader
+var _veil: ForgeVeil            # the loader: the forge veil with words, and a bar
+var _bar: Control
+var _loading := false
+var _shown := 0.0               # the bar's fill as drawn
+var _opened := 0                # counts opens and closes: a bake that finishes after either is ignored
 
 
 func _ready() -> void:
@@ -135,7 +143,29 @@ func _ready() -> void:
 	_canvas.gui_input.connect(_canvas_input)
 	_canvas.mouse_default_cursor_shape = Control.CURSOR_DRAG
 	_scroll.add_child(_canvas)
+	_content = margin
+	# The loader (the game's forge veil and a bar), over the race panel and the tree while what
+	# the page shows is baked.
+	_veil = ForgeVeil.new()
+	_veil.offset_top = 90   # (the title and the key stay clear)
+	add_child(_veil)
+	_bar = Control.new()
+	_bar.set_anchors_preset(Control.PRESET_CENTER)
+	_bar.custom_minimum_size = Vector2(420, 16)
+	_bar.position = Vector2(-210, 34)
+	_bar.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	_bar.draw.connect(_draw_bar)
+	_bar.visible = false
+	_veil.add_child(_bar)
 	visible = false
+
+
+func _draw_bar() -> void:
+	var r := Rect2(Vector2.ZERO, _bar.size)
+	_bar.draw_style_box(LoaderStyle.box(LoaderStyle.TROUGH, LoaderStyle.EDGE, 2, 8), r)
+	var inner := r.grow(-3)
+	if _shown > 0.0:
+		_bar.draw_rect(Rect2(inner.position, Vector2(inner.size.x * _shown, inner.size.y)), LoaderStyle.GOLD.darkened(0.2))
 
 
 func _header() -> Control:
@@ -194,18 +224,47 @@ func open(p_race: Dictionary, p_rules: Dictionary, p_lib, p_kit, p_side: int, p_
 	for n in _title.get_parent().get_children():
 		if n.has_meta("match_only"):
 			n.visible = world != null or not n.get_meta("match_only")
+	_opened += 1
+	var me := _opened
+	visible = true
+	UiTheme.arrive(_content, 10.0)
+	Audio.of(get_tree()).play("ui_tip")
+	if kit != null and not kit.tree_ready(race, side):
+		# Not all baked yet (the lobby bakes only its stages up front, the rest behind): the tree's
+		# layout at once under the loader, then its portraits, the army and the buildings.
+		for n in _race_box.get_children():
+			n.queue_free()
+		_fill_tree()
+		_refresh()
+		_loading = true
+		_shown = 0.0
+		_veil.show_veil("Painting the portraits...")
+		_bar.visible = true
+		await kit.bake_tree(race, side, team)
+		if me != _opened:   # closed, or opened on another race, meanwhile
+			return
+		_loading = false
+		_veil.hide_veil()
+		_bar.visible = false
 	_fill_race()
 	_fill_tree()
-	visible = true
 	_refresh()
-	UiTheme.arrive(get_child(get_child_count() - 1), 10.0)
-	Audio.of(get_tree()).play("ui_tip")
+
+
+## The page is waiting on its bake (its loader is up).
+func is_loading() -> bool:
+	return _loading
 
 
 func close() -> void:
 	if not visible:
 		return
 	visible = false
+	_opened += 1
+	if _loading:   # (the bake goes on in the kit; reopened, the page waits for it again)
+		_loading = false
+		_veil.hide_veil()
+		_bar.visible = false
 	for n in _race_box.get_children():   # the idling army stops with the page
 		n.queue_free()
 	closed.emit()
@@ -232,6 +291,11 @@ func _input(event: InputEvent) -> void:
 func _process(delta: float) -> void:
 	if not visible:
 		return
+	if _loading:   # the loader's bar glides up to the bake's real progress, never past it
+		var real: float = kit.tree_progress()
+		_shown = minf(real, _shown + delta * 1.5) if real > _shown else real
+		_veil.words.text = "Painting the portraits...  %d%%" % roundi(_shown * 100.0)
+		_bar.queue_redraw()
 	_rail_inner.position.y = -_scroll.scroll_vertical
 	_since += delta
 	if world != null and _since > 0.25:   # the match goes on: what's researched, under way, open

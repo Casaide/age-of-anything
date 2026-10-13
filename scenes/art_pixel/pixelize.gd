@@ -54,15 +54,21 @@ static func run(img: Image, factor: int, outline := true, bands := 0, seam: Imag
 		out[i + 2] = c[2]
 		out[i + 3] = c[3]
 	if bands > 0:
+		# The value (the brightest channel) snaps to a band; scaling all three channels by the
+		# same factor keeps hue and saturation (as a round trip through HSV did, much slower).
 		for i in range(0, w * h * 4, 4):
 			if out[i + 3] != 255:
 				continue
-			var c := Color8(out[i], out[i + 1], out[i + 2])
-			var v := clampf(roundf(c.v * bands) / bands, 0.08, 1.0)
-			var q := Color.from_hsv(c.h, c.s, v)
-			out[i] = q.r8
-			out[i + 1] = q.g8
-			out[i + 2] = q.b8
+			var mx := maxi(out[i], maxi(out[i + 1], out[i + 2]))
+			if mx == 0:
+				out[i] = 20   # black lifts to the darkest band (0.08)
+				out[i + 1] = 20
+				out[i + 2] = 20
+				continue
+			var f := clampf(roundf(mx * bands / 255.0) / bands, 0.08, 1.0) * 255.0 / mx
+			out[i] = mini(255, roundi(out[i] * f))
+			out[i + 1] = mini(255, roundi(out[i + 1] * f))
+			out[i + 2] = mini(255, roundi(out[i + 2] * f))
 	if not joined.is_empty():
 		# Grow a pixel into the seam (the two parts' bakes sit on slightly different pixel grids, so
 		# without it the ground shows through a line between them).

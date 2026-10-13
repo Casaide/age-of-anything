@@ -24,7 +24,13 @@ const ATLAS_PAD := 2
 
 static var atlas: Texture2D = null      # all baked parts in one texture (after build_atlas)
 static var use_atlas := true            # benchmark switch
-static var team_material: ShaderMaterial = null
+static var team_material: ShaderMaterial = _team_mat()   # (made up front: parts draw before any atlas, from their own textures)
+
+
+static func _team_mat() -> ShaderMaterial:
+	var m := ShaderMaterial.new()
+	m.shader = load("res://src/team_mask.gdshader")
+	return m
 
 ## part id -> {sockets: {name: Vector2}, anchors: [[x, y, phase, z]], torso_scale: Vector2}
 ## for parts baked from hand-built models: their sockets as seen by the bake camera.
@@ -44,6 +50,8 @@ static func team_neutral(colour_map: Dictionary) -> Dictionary:
 ## (no 3D needed): unit shadows, so they live in the atlas with everything else.
 static func bake_flat(id: String, shape_list: Array, colour_map: Dictionary, art_scale: float) -> void:
 	var key := bake_key(id, shape_list, team_neutral(colour_map))
+	if baked.has(key):
+		return   # (made again, its old texture was freed under parts drawing it outside the atlas: white boxes)
 	var e: Dictionary = shape_list[0]
 	var c := v2(e.c)
 	var r := v2(e.r) * art_scale
@@ -91,9 +99,6 @@ static func build_atlas(extras := {}) -> Dictionary:
 		else:
 			regions[k.trim_prefix("extra:")] = Rect2(at, src.get_size())
 	atlas = ImageTexture.create_from_image(img)
-	if team_material == null:
-		team_material = ShaderMaterial.new()
-		team_material.shader = load("res://src/team_mask.gdshader")
 	return regions
 
 

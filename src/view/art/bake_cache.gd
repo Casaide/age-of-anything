@@ -20,6 +20,7 @@ const SOURCES := ["res://src/view/art/art_kit.gd", "res://src/view/art/bake/", "
 	"res://assets/models/", "res://assets/art/textures/"]
 
 static var enabled := true    # tests switch it off to time a cold bake
+static var cold_parts := false   # tests: unit parts never load (they render, as for a race never seen); the rest still does
 static var _version := ""
 static var _mods := []        # the mods in use when _version was made (their files are in it too)
 const Mods := preload("res://src/mods.gd")
@@ -75,7 +76,7 @@ static func path(key: String) -> String:
 
 
 static func has(key: String) -> bool:
-	return enabled and FileAccess.file_exists(path(key))
+	return enabled and not (cold_parts and key.begins_with("part|")) and FileAccess.file_exists(path(key))
 
 
 static func read(key: String) -> Dictionary:
