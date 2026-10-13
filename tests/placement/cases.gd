@@ -108,6 +108,7 @@ static func kit_cases(lib) -> Array:
 const BEAR_CASES := [
 	["brown bear spear", "bear greeks", "spear", {"skin": "bear_brown", "parts": {"hand_r": "weapon.dory", "hand_l": "shield.hoplon", "torso": "armour.bronze", "head_gear": "helm.bear_crest"}}],
 	["brown bear stock helm", "bear greeks", "spear", {"skin": "bear_brown", "parts": {"hand_r": "weapon.dory", "hand_l": "shield.hoplon", "torso": "armour.bronze", "head_gear": "helm.bronze"}}],
+	["brown bear open helm", "bear greeks", "spear", {"skin": "bear_brown", "parts": {"hand_r": "weapon.dory", "hand_l": "shield.hoplon", "torso": "armour.bronze", "head_gear": "helm.bear_open"}}],
 	["brown bear worker", "bear greeks", "worker", {"skin": "bear_brown"}],
 	["brown bear infantry", "bear greeks", "infantry", {"skin": "bear_brown"}],
 	["black bear spear", "bear greeks", "spear", {"creature": "bear_black", "body": "body.bear_black", "head": "head.bear_black", "skin": "bear_black", "parts": {"hand_r": "weapon.dory", "hand_l": "shield.hoplon", "torso": "armour.bronze", "head_gear": "helm.bear_crest"}}],
