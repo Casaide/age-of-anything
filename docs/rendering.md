@@ -43,8 +43,13 @@ map; the code says the details.
      in place on it, the body as the holdout (a second, flat render masks it): the sprite keeps only
      what the body doesn't hide, its origin at the hip or neck so it still swings and turns there.
      For bodies whose hips sit inside them (a newt's sprawl, a horse's thighs, a frog's haunches)
-     and beasts whose head goes behind the rump facing away. Today: newt, pony (and the centaur's
-     horse half), capybara, frog, boar, sheep.
+     and beasts whose head goes behind the rump facing away; and every body whose leg isn't the same
+     on both sides (one sprite can't be a mirrored leg). Each hip's leg is turned to its own side
+     (`UnitModels.leg_basis`: legs are modelled for the near side pointing forward; a far hip's leg is
+     mirrored across the body, a flipped rear hip's fore and aft, and an anchor's 6th value fans it out,
+     a spider's legs). Today: newt, pony (and the centaur's horse half), capybara, frog, boar, sheep,
+     rat, spider, both beetles (the mount's head too). A body's parts.json anchors are its model's hips
+     one for one (they're what's drawn before the bake, and which legs get baked).
 3. **Pixelize** (`scenes/art_pixel/pixelize.gd`): down to art pixels, value posterised into
    painted bands (`ArtKit.UNIT_BANDS`: the paint-over look) and a dark outline.
 4. **Team colour**: parts bake in a magenta team key; `src/team_mask.gdshader` swaps it for the
@@ -55,10 +60,72 @@ map; the code says the details.
    the facing that best fits its movement on screen, with hysteresis, and rebuilds when it
    changes. The bake's alpha is hard, so see-through is the view's job: a part with `blur`
    in parts.json (a hummingbird's wings) is drawn at that opacity over the body and flickers.
+   Walking, the body rides on its lowest foot (`UnitView._planted`, from the leg sprites' soles: no
+   foot through the ground, none floating mid-stride). A rider's hips (its body's `sit` socket, else
+   the middle of its hips) go on its mount's `seat`; it shows the leg on the flank facing the camera
+   (the bake's anchors carry which side faces it), stretched down to the mount's `girth` (the baker
+   finds it under the seat) unless it rides folded (`creatures.json rider_legs`).
+
+## Placement rules
+
+**No unit, mount, gear or pose change is shown until `tests/placement_check.gd` passes** (Dominic,
+2026-10-13, after the newt's legs folded up facing left passed the layering check). It measures,
+it doesn't look; every unit of eight races at every age of its line, every rider on every mount,
+winged mounts, every newt skin, the animals and the siege crews (`tests/placement/cases.gd`).
+
+**3D** (`tests/placement/geometry_check.gd`, headless, also in `run_tests.gd`): each unit is put
+together from its models as UnitView composes it (`tests/placement/rig3d.gd`: legs at their hips
+turned by `leg_basis`, head on its socket, gear on its sockets, worn armour fitted as the bake fits
+it, a rider's hips on its mount's seat) in every pose the game draws: standing, the swings it goes
+through (a worker's tool wound up and landing, a melee blow, a spear's thrust levelled and driven
+forward; ranged units only loose), and the walk at 8 phases. Meshes are read in world space and
+voxelized on a 0.5-unit grid (`tests/placement/geom.gd`: primitives filled exactly, modelled meshes
+by ray parity; decals left out). One part unit is 1.275 art pixels at game size.
+
+- **A1 ground**: standing, every foot within 1 unit of the ground; nothing below -1; the centre of
+  mass within 3 units of the feet's support polygon (`legs.stance.support`). Walking (the body rides
+  on its lowest foot, as UnitView does), a foot within 1 unit of the ground and none below -1.
+- **A2 attachment**: a leg's or head's joint touches its body (or is within 1 unit of it) and isn't
+  buried more than 4 deep (`legs.stance.bury`); at least half of a leg (`legs.stance.inside`) or head
+  is outside its body (a leg under a skirt shows 3 units below the hem); a held item's grip within
+  1 unit of the hand; head gear on the head, leaving every eye in sight (nothing within 3 units out
+  along its look) and, on a head with a modelled brow, an open cap's lowest edge over the eyes at
+  least 0.5 above the brow (face guards say `"face": "covered"`); back gear touching the back; worn
+  armour at most 25% more than 1.5 units off its body, its middle within 1.5 of the middle of the
+  body inside it; a rider's seat within 1.5 of its mount's back, at most 30% of the rider inside the
+  mount; siege crews on the ground (or something to stand on just under a riding one), at most 12% of
+  a crew member inside its engine (too big for the frame, it takes the `_wide` sockets beside it);
+  a body whose leg isn't the same on both sides bakes its legs at each hip; data anchors = model hips.
+- **A3 interpenetration**: pieces not jointed share at most 12 voxels + 3% of the smaller; jointed
+  ones only within 4 units (or 45% of the child's reach) of the joint (armour against what hangs from
+  the body, outside the body; a rider's held item against its mount; a blowgun at the lips); a leg or
+  head comes out of its body in one piece (12 voxels + 3% of strays: a leg through the body and out
+  of its back is two pieces).
+- **A4 stance** (`legs.stance` in parts.json): a standing leg's drop (hip to foot) at least 60% of its
+  reach (`drop`: not folded up), its foot out to its own side of its hip by `sprawl` (-2 to 6 units:
+  a far leg's foot under the belly fails).
+
+**2D** (`tests/placement/projection_check.gd`, needs the bakes): every unit composed by UnitView in
+all 8 facings, standing and at three walk phases, each part's sprite laid onto a grid in the unit's
+space in draw order. The layering rules below, every part drawn has its bake, and:
+
+- **B5 ground**: standing, each weight-bearing leg's lowest pixel within 2 px of its foot's ground
+  point (the 3D sole projected by the bake camera); a near leg (on the flank facing the camera and
+  the camera's side of the middle) has its own foot in sight in the 3D truth. Walking, the lowest
+  foot within 2 px of the standing ground line.
+- **B6 visibility**: the 3D truth (the body's model, each hip its own leg part turned as baked, the
+  head on its socket, in flat colours from the bake camera) matches the unit's legs one for one; legs
+  and head show where it shows them (rule 2 below); a rider shows the leg on the flank facing the
+  camera, and a person's reaches at least 80% of the way from the seat to the girth (a clinging or
+  folded-legged rider's, `creatures.json rider_legs`, at least onto the flank).
+
+**Fixtures** (`tests/placement/fixtures_3d.gd`, `fixtures_2d.gd`): every placement bug Dominic caught,
+put back (an old anchor, lean, model, rule or z), must fail its rule, and the unit as it is now must
+pass it. A fixture that stops failing is a check gone blind: the run fails.
 
 ## Layering rules
 
-Every composed unit obeys these; `tests/layer_check.gd` checks them on the drawn pixels, for every
+Every composed unit obeys these; `tests/placement_check.gd` checks them on the drawn pixels, for every
 body, every mount with and without riders, the animals and the siege crews, in all 8 facings,
 standing and at three walk phases (see Checking art). Draw order is child order by the `z` meta
 (`_sort_layers`), never `z_index`. "Depth" is a socket's bake depth in that facing (> 0: nearer the
@@ -193,16 +260,21 @@ one look of one building (with its stages and extra parts), nine props to a rend
 
 ## Checking art
 
-**Run the layering check first** (needs a window; about 25 s cold, a few seconds warm): every
-rule above, PASS/FAIL per rule and unit, exit 1 on any failure. Art changes must pass it before
-they're shown.
+**Run the placement check first** (needs a window; about 2 minutes cold, a little over 1 warm):
+every placement and layering rule above and the fixtures, FAIL lines with their measurements, exit 1
+on any failure. Unit, mount, gear and pose changes must pass it before they're shown.
 
 ```sh
-godot --path . --audio-driver Dummy --always-on-top --script res://tests/layer_check.gd -- [filter] [metrics] [looks] [debug]
+godot --path . --audio-driver Dummy --always-on-top --script res://tests/placement_check.gd -- [filter] [3d|2d] [metrics] [debug] [nofixtures]
+godot --headless --path . --script res://tests/geometry_check.gd -- [filter] [all] [time]     # the 3D half alone, headless (~35 s)
+godot --path . --audio-driver Dummy --always-on-top --script res://tests/layer_check.gd -- [filter] [metrics]   # the 2D half alone
+godot --path . --audio-driver Dummy --always-on-top --script res://tests/placement_shot.gd -- out.png 5 "frog on newt_fire" ["label" ...] [walk:2.1]   # look at a flagged case in 8 facings
 ```
 
-`metrics` prints the measurement behind each failure, `looks` adds every capybara look, `debug`
-writes the 3D truth beside the composed unit for each standing view.
+`metrics` prints the measurement behind each 2D failure (3D failures always carry theirs), `debug`
+writes the 3D truth beside the composed unit for each standing view (/tmp/placement_*.png). A filter
+matches case labels ("sewer rats", "on newt", "animal"); add a new body, mount or gear to a race in
+`tests/placement/cases.gd` if none of the races there uses it.
 
 Look at every change before showing it (Dominic catches floating parts, wrong layering and odd
 shapes at once). Close up and at game size:

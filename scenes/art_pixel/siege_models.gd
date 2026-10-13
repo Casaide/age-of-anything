@@ -34,9 +34,17 @@ func build(id: String, colours: Dictionary) -> Dictionary:
 	var p := id.split(".")
 	var key := "%s.%s" % [p[1], p[2]]
 	var s := _style(STAND_IN.get(key, TAKE_STYLE[p[2]]), colours)
-	if OWN.has(key):
-		return call(OWN[key], s, colours)
-	return _scaled(call("_%s_c" % p[1], s, colours), ROUND2_SCALE.c[p[1]])
+	var spec: Dictionary = call(OWN[key], s, colours) if OWN.has(key) else _scaled(call("_%s_c" % p[1], s, colours), ROUND2_SCALE.c[p[1]])
+	# A crew too big for the frame (a centaur's horse half went through a ram's posts: the placement
+	# check) works it from beside it: each "_in" socket has a "_wide" one out past the engine's side.
+	for name in spec.get("sockets", {}).keys():
+		if name.ends_with("_in"):
+			var at: Vector3 = spec.sockets[name]
+			spec.sockets[name.trim_suffix("_in") + "_wide"] = Vector3(at.x, at.y, (1.0 if at.z > 0.0 else -1.0) * WIDE_CREW)
+	return spec
+
+
+const WIDE_CREW := 17.0   # how far out from the middle a crew too big for the frame stands
 
 
 ## An engine in play: "siege.<engine>.<take>" (three parts; the concepts' ids have four).
@@ -1354,7 +1362,7 @@ func _bolt_beast(s: Dictionary, c: Dictionary) -> Dictionary:
 	var top := 33.0
 	n.add_child(_box(Vector3(20.0, 0.8, 24.0), s.team, Vector3(-4.0, top - 1.0, 0), Vector3(0, 0, 10)))
 	post_bolt(n, s, top, -2.0)
-	return {"node": n, "sockets": {"crew0_f0_reach_top": Vector3(-20.0, 27.0, 0), "crew1_f0_reach": Vector3(-6.0, 0, -30.0)}}
+	return {"node": n, "sockets": {"crew0_f0_reach_top": Vector3(-20.0, 25.2, 0), "crew1_f0_reach": Vector3(-6.0, 0, -30.0)}}   # (at 27 the rider stood 1.8 over the toad's back)
 
 
 ## A reed-bow bolt thrower on a short post standing on a pad at height `top`, the post at x0.
