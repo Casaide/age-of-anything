@@ -126,6 +126,10 @@ static func type_vectors(w, t: Dictionary) -> void:
 		t.splash = int(e.get("splash", 0))
 		t.pass_len = int(e.get("pass", 0))
 		t.buildings_only = e.get("targets", "") == "buildings"
+		t.unpack = int(e.get("unpack", 0))   # the great sling: ticks standing before it throws (World._pack)
+		t.pack = int(e.get("pack", 0))
+		t.blast = int(e.get("blast", 0))     # the sapper: its blow blows it up (_blast)
+		t.blast_line = int(e.get("blast_line_pct", 0))
 		t.no_heal = e.tags.any(func(k): return k in c.get("heal_not", []))
 
 
@@ -181,7 +185,8 @@ static func cmd_attack_move(w, player: int, a: Dictionary) -> void:
 	for i in slots:
 		var s: Vector2i = w.slot_of(a, w.units.id[i])
 		if w.types[w.units.kind[i]].get("harmless", false):
-			clear(w, i)   # a sheep along with the army just walks to its place
+			clear(w, i)   # a sheep (or a trade cart) along with the army just walks to its place
+			Economy.clear_task(w, i)
 			w.order_move(i, s.x, s.y, w.SLOT_ARRIVE, a.group, a.fx, a.fy, a.pace)
 			continue
 		Economy.clear_task(w, i)
@@ -428,6 +433,8 @@ static func tick(w) -> void:
 			u.moving[i] = 0
 			if b >= 0:
 				hitters[b] = hitters.get(b, []) + [i]
+			if t.unpack > 0 and u.ready[i] < t.unpack:
+				continue   # still unpacking (World._pack): it throws once it's set up
 			if u.cooldown[i] == 0 and j >= 0 and t.ranged and inbound[j] >= u.hp[j] and u.stance[i] != ORDERED:
 				# Enough already flying at it to kill it: another foe in reach, or hold this shot.
 				var f := _nearest_foe(w, i, t.reach + u.radius[i] + SimMap.TILE / 2, false, engaged, SPREAD, inbound, _near(w, i, t))
@@ -460,6 +467,8 @@ static func tick(w) -> void:
 						d = uphill(w, d)
 					if t.ranged:
 						_loose(w, u.id[i], u.owner[i], u.x[i], u.y[i], -1, b, d, u.kind[i], up, t.shot_speed)
+					elif t.blast > 0:
+						_blast(w, i, b, d, hurt, hurt_by, bhurt)   # the sapper's charge goes off, and the sapper with it
 					else:
 						bhurt[b] += d
 						w.events.append({"type": "hit", "by": u.id[i], "to": bs.id[b], "damage": d, "ranged": false})
@@ -694,6 +703,66 @@ static func _splash(w, recs: PackedInt32Array, o: int, b: int, hurt: PackedInt32
 
 
 const MAX_BODY := 500   # the biggest body's radius (World.MAX_RADIUS): how far round a spot to look
+
+
+## A sapper's charge goes off (a weapon with `blast`, milli-tiles) against building b: b takes the
+## blow (`d`), or, a wall, palisade or gate, `blast_line_pct` of its hit points if that's more
+## (a tile blown out); every other building within the blast of the sapper takes d less further
+## out (its own side's too, at splash_friend_pct); every unit within takes the charge's damage
+## against its own armour, the same way (animals none); the sapper itself is killed. One "blast"
+## event for the view, a "hit" per victim.
+static func _blast(w, i: int, b: int, d: int, hurt: PackedInt32Array, hurt_by: PackedInt32Array, bhurt: PackedInt32Array) -> void:
+	var u = w.units
+	var bs = w.buildings
+	var sp = w.spatial
+	var t: Dictionary = w.types[u.kind[i]]
+	var by: int = u.id[i]
+	var owner: int = u.owner[i]
+	var x: int = u.x[i]
+	var y: int = u.y[i]
+	var r: int = t.blast
+	var friend_pct := int(w.combat.get("splash_friend_pct", 100))
+	w.events.append({"type": "blast", "by": by, "x": x, "y": y, "r": r})
+	for k in bs.count():
+		var gx: int = maxi(maxi(bs.cx[k] * SimMap.TILE - x, 0), x - (bs.cx[k] + bs.sx[k]) * SimMap.TILE)
+		var gy: int = maxi(maxi(bs.cy[k] * SimMap.TILE - y, 0), y - (bs.cy[k] + bs.sy[k]) * SimMap.TILE)
+		var gap := Fixed.isqrt(gx * gx + gy * gy)
+		if k != b and gap >= r:
+			continue
+		var bt: Dictionary = w.btypes[bs.kind[k]]
+		var dk: int = d if k == b else damage(t.atk, w.bmods[bs.owner[k]][bs.kind[k]].arm, bt.cls, int(w.combat.min_damage)) * (r - gap) / r
+		if k == b and (bt.line or bt.gate):
+			dk = maxi(dk, w.bmods[bs.owner[k]][bs.kind[k]].hp * t.blast_line / 100)
+		if not w.is_enemy(owner, bs.owner[k]):
+			dk = dk * friend_pct / 100
+		if dk <= 0:
+			continue
+		bhurt[k] += dk
+		w.events.append({"type": "hit", "by": by, "to": bs.id[k], "damage": dk, "ranged": false, "x": x, "y": y, "splash": true})
+	var reach: int = (r + MAX_BODY) / SimMap.TILE + 1
+	var cx: int = x / SimMap.TILE
+	var cy: int = y / SimMap.TILE
+	for yy in range(maxi(cy - reach, 0), mini(cy + reach + 1, sp.height)):
+		for xx in range(maxi(cx - reach, 0), mini(cx + reach + 1, sp.width)):
+			var cell: int = yy * sp.width + xx
+			for q in range(sp.start[cell], sp.end[cell]):
+				var k: int = sp.items[q]
+				if k == i or u.owner[k] == w.gaia or w.types[u.kind[k]].has("animal"):
+					continue
+				var gap: int = maxi(0, Fixed.isqrt(Fixed.dist2(x, y, u.x[k], u.y[k])) - u.radius[k])
+				if gap >= r:
+					continue
+				var tt: Dictionary = w.types[u.kind[k]]
+				var dk := damage(t.atk, tt.arm, tt.cls, maxi(int(w.combat.min_damage), tt.get("min_damage", 0))) * (r - gap) / r
+				if not w.is_enemy(owner, u.owner[k]):
+					dk = dk * friend_pct / 100
+				if dk <= 0:
+					continue
+				hurt[k] += dk
+				hurt_by[k] = by
+				w.events.append({"type": "hit", "by": by, "to": u.id[k], "damage": dk, "ranged": false, "x": x, "y": y, "splash": true})
+	hurt[i] += u.hp[i]   # spent
+	hurt_by[i] = by
 
 
 ## A bolt (a weapon with `pass`, milli-tiles) goes through what's in its way: every foe of the

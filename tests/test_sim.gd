@@ -54,7 +54,7 @@ const FIGHT_FROM := [[11000, 20500], [21000, 20500]]   # open ground on flat_tes
 ## "@@ ms.<part>"; the three plays of the scripted match apart, about 25-50 s each).
 const GROUPS := [
 	["scenarios_a", "crossing_flat", "opening", "gates", "diagonal_gates", "pen", "combat"],
-	["scenarios_b", "fixed", "command_order", "source_lint", "flow", "crossing_choke", "crossing_engines", "age_timing", "queue", "movement_classes", "farms", "fog_memory", "land", "hills", "flow_patch", "flow_patch_mixed", "tech", "research_queue", "effects", "university_castle", "market", "build_queue", "builder_moves_on", "diagonal_wall", "camp_gather", "drop_off", "animals", "sheep_spot", "garrison", "towers", "shots", "engines", "bot_hunts", "wonder"],
+	["scenarios_b", "fixed", "command_order", "source_lint", "flow", "crossing_choke", "crossing_engines", "age_timing", "queue", "movement_classes", "farms", "fog_memory", "land", "hills", "flow_patch", "flow_patch_mixed", "tech", "research_queue", "effects", "university_castle", "market", "build_queue", "builder_moves_on", "diagonal_wall", "camp_gather", "drop_off", "animals", "sheep_spot", "garrison", "towers", "shots", "engines", "trade", "sapper_sling", "bot_hunts", "wonder"],
 	["match", "match"], ["match_b", "match_b"], ["match_flipped", "match_flipped"],
 ]
 
@@ -120,6 +120,8 @@ func _init() -> void:
 		"towers": func(): _test_towers(races),
 		"shots": func(): _test_shots(races),
 		"engines": func(): _test_engines(races),
+		"trade": func(): _test_trade(races),
+		"sapper_sling": func(): _test_sapper_sling(races),
 		"bot_hunts": func(): _test_bot_hunts(races),
 		"wonder": func(): _test_wonder(races),
 		"combat": func(): _test_combat(gen),
@@ -3094,6 +3096,169 @@ func _test_engines(races: Array) -> void:
 	check(struck.size() == 3, "bolt thrower: a bolt goes through a line of three (%d hit)" % struck.size())
 
 
+## Trade carts (milestone 13 step 6, trade.gd): a cart sent from its market to another 30 tiles off
+## walks there, loads the trip's gold and is paid on coming home; gold per trip grows faster than the
+## distance; markets too close, unfinished or an enemy's aren't traded with; one killed on the way
+## home loses its load; it carries on round after round.
+func _test_trade(races: Array) -> void:
+	var Trade = load("res://src/sim/trade.gd")
+	var w := _bare_world(races)
+	var g: int = w.resources.find("gold")
+	var home := _put(w, 0, "market", 12, 30)
+	var far := _put(w, 0, "market", 42, 30)
+	var hb := w.buildings.index_of(home)
+	var fb := w.buildings.index_of(far)
+	var d: int = Trade.tiles(w, hb, fb)
+	var pay: int = Trade.trip_gold(w, hb, fb)
+	check(d == 30 and pay == 30 * 30 / 50 + 30 * 50 / 100, "trade: 30 tiles apart, a round trip pays d*d/50 + d/2 = %d (%d tiles)" % [pay, d])
+	var near := _put(w, 0, "market", 24, 30)
+	check(Trade.trip_gold(w, hb, w.buildings.index_of(near)) * 30 < pay * 12 , "trade: half as far pays well under half as much")
+	check(Trade.why_not(w, 0, hb, w.buildings.index_of(near)) != "", "trade: markets 12 tiles apart are too close")
+	var cart := _spawn_at(w, 0, "trader", 15500, 31500)
+	var k: int = w.type_of(0, "trader")
+	check(w.types[k].trader and w.types[k].harmless and w.types[k].posture == Combat.PASSIVE, "trade: carts are traders, harmless and passive")
+	var gold: int = w.stock[g][0]
+	w.issue(0, Commands.ROUTE, {"ids": [cart], "building": far})
+	var loaded := -1
+	var paid := -1
+	for t in 3000:
+		w.step()
+		for e in w.events:
+			if e.type == "trade" and e.id == cart:
+				if e.has("load"):
+					loaded = w.tick
+				elif e.has("paid") and paid < 0:
+					paid = w.tick
+		if paid >= 0:
+			break
+	check(loaded > 0 and paid > loaded, "trade: the cart loads at the far market (%d) and is paid at home (%d)" % [loaded, paid])
+	check(w.stock[g][0] == gold + pay, "trade: one round trip brings home %d gold (%d)" % [pay, w.stock[g][0] - gold])
+	check(paid > 20 * 2 * 25 and paid < 20 * 2 * 60, "trade: a 60-tile round trip at a cart's pace takes about a minute (%d ticks)" % paid)
+	var ci := w.units.index_of(cart)
+	check(ci >= 0 and w.units.task[ci] == Economy.TRADE and w.units.work[ci] == Trade.OUT, "trade: it sets out again")
+	# A second round, then kill it on its way home: the load is lost.
+	for t in 3000:
+		w.step()
+		ci = w.units.index_of(cart)
+		if w.units.carry[ci] > 0 and w.units.work[ci] == Trade.HOME:
+			break
+	gold = w.stock[g][0]
+	w.units.hp[ci] = 1
+	var foe := _spawn_at(w, 1, "spear", w.units.x[ci], w.units.y[ci])
+	w.issue(1, Commands.ATTACK, {"ids": [foe], "target": cart})
+	for t in 400:
+		w.step()
+		if w.units.index_of(cart) < 0:
+			break
+	check(w.units.index_of(cart) < 0 and w.stock[g][0] == gold, "trade: a cart killed on its way home loses its load")
+	# Unfinished and enemy markets aren't traded with.
+	var e := _bare_world(races)
+	var eh := _put(e, 0, "market", 12, 30)
+	var ef := _put(e, 1, "market", 42, 30)
+	var c2 := _spawn_at(e, 0, "trader", 15500, 31500)
+	e.issue(0, Commands.ROUTE, {"ids": [c2], "building": ef})
+	for t in 40:
+		e.step()
+	check(e.units.task[e.units.index_of(c2)] == Economy.NONE, "trade: no route to an enemy's market")
+	var a := World.new(SEED, SimMap.load_id("flat_test"), races, _bare_rules(), [0, 0])
+	_put(a, 0, "market", 12, 30)
+	var af := _put(a, 1, "market", 42, 30)
+	var c3 := _spawn_at(a, 0, "trader", 15500, 31500)
+	a.issue(0, Commands.ROUTE, {"ids": [c3], "building": af})
+	for t in 40:
+		a.step()
+	check(a.units.task[a.units.index_of(c3)] == Economy.TRADE, "trade: an ally's market is traded with")
+	var cart_eval: Dictionary = w.types[k].eval
+	check(int(cart_eval.cost.gold) > 0 and int(cart_eval.cost.wood) > 0 and int(cart_eval.pop) == 1, "trade: a cart costs wood and gold, 1 pop (%s)" % [cart_eval.cost])
+
+
+## The great sling (milestone 13 step 4): buildings only, from 12 tiles; it unpacks for a while
+## after it stops before its first throw, and packs up before it can move again.
+## The sapper: it walks up to a building and blows up, a stone wall tile outright, the wall beside
+## it hurt, itself gone; a house goes in one blast.
+func _test_sapper_sling(races: Array) -> void:
+	var w := _bare_world(races)
+	var k: int = w.type_of(0, "great_sling")
+	var house := _put(w, 1, "house", 30, 20)
+	var sl := _lone(w, 0, "great_sling", 15000, 21000, "aggressive")
+	var guard := _lone(w, 1, "spear", 26000, 21000, "passive")
+	w.issue(0, Commands.ATTACK, {"ids": [sl], "target": house})
+	var stopped := -1
+	var thrown := -1
+	var at_guard := false
+	for t in 1200:
+		w.step()
+		var i := w.units.index_of(sl)
+		if stopped < 0 and w.units.moving[i] == 0 and w.units.ready[i] == 1:
+			stopped = w.tick
+		for e in w.events:
+			if e.type == "shot" and e.by == sl:
+				thrown = w.tick if thrown < 0 else thrown
+				at_guard = at_guard or e.to == guard
+		if thrown >= 0:
+			break
+	var ti := w.units.index_of(sl)
+	var reach: int = Combat._gap(w, ti, -1, w.buildings.index_of(house))
+	check(thrown > 0 and stopped > 0 and thrown - stopped >= int(w.types[k].unpack) - 1, "great sling: it stops, unpacks (%d ticks) and throws (stopped %d, threw %d)" % [w.types[k].unpack, stopped, thrown])
+	check(reach > 8000 and not at_guard, "great sling: throws at the house from %d milli-tiles, never at the soldier" % reach)
+	var x0: int = w.units.x[ti]
+	w.issue(0, Commands.MOVE, {"ids": [sl], "x": 8000, "y": 21000})
+	var left := -1
+	for t in 200:
+		w.step()
+		if left < 0 and w.units.x[w.units.index_of(sl)] != x0:
+			left = t
+	check(left >= int(w.types[k].pack), "great sling: it packs up (%d ticks) before it rolls (%d)" % [w.types[k].pack, left])
+	# The sapper and a stone wall: one blast takes a tile out, the next one is hurt, the sapper is gone.
+	var s := _bare_world(races)
+	var walls := []
+	for y in range(18, 25):
+		walls.append(_put(s, 1, "wall", 24, y))
+	var sp := _lone(s, 0, "sapper", 18000, 21500, "aggressive")
+	s.issue(0, Commands.ATTACK, {"ids": [sp], "target": walls[3]})
+	var blast := false
+	for t in 800:
+		s.step()
+		for e in s.events:
+			blast = blast or (e.type == "blast" and e.by == sp)
+		if blast:
+			break
+	for t in 3:
+		s.step()
+	var next := s.buildings.index_of(walls[2])
+	check(blast and s.buildings.index_of(walls[3]) < 0, "sapper: one blast takes a stone wall tile out")
+	check(next >= 0 and s.buildings.hp[next] < s.btypes[s.buildings.kind[next]].hp, "sapper: the wall beside it is hurt too")
+	check(s.units.index_of(sp) < 0, "sapper: it goes up with its charge")
+	var h := _bare_world(races)
+	var hs := _put(h, 1, "house", 24, 20)
+	var sp2 := _lone(h, 0, "sapper", 18000, 21000, "aggressive")
+	h.issue(0, Commands.ATTACK, {"ids": [sp2], "target": hs})
+	for t in 800:
+		h.step()
+		if h.buildings.index_of(hs) < 0:
+			break
+	check(h.buildings.index_of(hs) < 0 and h.units.index_of(sp2) < 0, "sapper: a house goes in one blast")
+	var tc := _put(h, 1, "town_center", 24, 26)
+	var tb := h.buildings.index_of(tc)
+	var sp3 := _lone(h, 0, "sapper", 18000, 27000, "aggressive")
+	h.issue(0, Commands.ATTACK, {"ids": [sp3], "target": tc})
+	for t in 800:
+		h.step()
+		if h.units.index_of(sp3) < 0:
+			break
+	tb = h.buildings.index_of(tc)
+	var left_hp: int = h.buildings.hp[tb] if tb >= 0 else 0
+	var full: int = h.btypes[h.buildings.kind[tb]].hp if tb >= 0 else 1
+	check(tb >= 0 and left_hp * 100 / full >= 40 and left_hp * 100 / full <= 75, "sapper: a Town Center loses a good share but stands (%d of %d hp left)" % [left_hp, full])
+
+
+func _bare_rules() -> Dictionary:
+	var bare := rules_.duplicate(true)
+	bare.economy.start.buildings = []
+	bare.economy.start.workers = 0
+	return bare
+
+
 func _bare_world(races: Array) -> World:
 	var bare := rules_.duplicate(true)
 	bare.economy.start.buildings = []
@@ -3625,6 +3790,9 @@ func _test_crossing(races: Array, map_id: String, engines := false) -> void:
 	for t in 200:
 		w.step()
 	check(not 1 in w.units.moving, "%s: still settled 10 s later (no endless jostling)" % map_id)
+	for i in w.units.count():
+		if w.units.moving[i] == 1:
+			print("  moving: #%d %s at %d,%d target %d,%d group %d stuck %d" % [w.units.id[i], w.types[w.units.kind[i]].slot, w.units.x[i], w.units.y[i], w.units.tx[i], w.units.ty[i], w.units.group[i], w.units.stuck[i]])
 	var gave_up := 0
 	var far := 0
 	for i in w.units.count():

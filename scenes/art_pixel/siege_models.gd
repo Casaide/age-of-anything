@@ -22,6 +22,9 @@ const OWN := {"ram.forest": "_ram_ridden", "ram.frog": "_ram_beast", "catapult.f
 ## A take whose engine isn't picked yet builds another take's look (the frogs wheeled out the timber
 ## catapult until D-122).
 const STAND_IN := {}
+## An engine whose own look isn't picked yet wears another engine's (milestone 13): the great sling
+## the take's catapult, until Dominic picks from concept round GS1 (docs/concepts/great_sling/).
+const ENGINE_STAND_IN := {"sling": "catapult"}
 
 
 func has(id: String) -> bool:
@@ -32,7 +35,10 @@ func build(id: String, colours: Dictionary) -> Dictionary:
 	if not _engine_id(id):
 		return super.build(id, colours)
 	var p := id.split(".")
-	var key := "%s.%s" % [p[1], p[2]]
+	if p[1] == "cart":   # the trade cart: a placeholder handcart for every take until TC1 is picked
+		return _cart_placeholder(_style(TAKE_STYLE[p[2]], colours), colours)
+	var key := "%s.%s" % [ENGINE_STAND_IN.get(p[1], p[1]), p[2]]
+	p[1] = ENGINE_STAND_IN.get(p[1], p[1])
 	var s := _style(STAND_IN.get(key, TAKE_STYLE[p[2]]), colours)
 	var spec: Dictionary = call(OWN[key], s, colours) if OWN.has(key) else _scaled(call("_%s_c" % p[1], s, colours), ROUND2_SCALE.c[p[1]])
 	# A crew too big for the frame (a centaur's horse half went through a ram's posts: the placement
@@ -1672,3 +1678,52 @@ func _catapult_haul(s: Dictionary, c: Dictionary) -> Dictionary:
 	for k in cat.sockets:
 		sockets[k] = cat.sockets[k] + Vector3(back, 0, 0)
 	return {"node": n, "sockets": sockets}
+
+
+# ================================================================== the trade cart (milestone 13 step 6)
+# A PLACEHOLDER look, the same for every take, until Dominic picks from concept round TC1
+# (docs/concepts/trade_carts/, models in scenes/art_pixel/cart_concepts.gd): a plain two-wheeled
+# timber handcart with a load of crates, sacks and a jar under a team cloth, the race's worker
+# pushing it from behind (crew socket). Frogs' carts are grown for the bigger frog worker.
+
+func _cart_placeholder(s: Dictionary, c: Dictionary) -> Dictionary:
+	var spec := handcart(s, c)
+	return _scaled(spec, 1.25) if s.fam == "frog" else spec
+
+
+## A two-wheeled handcart, its handles back to the pusher (socket crew0, reaching), loaded.
+func handcart(s: Dictionary, c: Dictionary) -> Dictionary:
+	var n := Node3D.new()
+	var wr := 6.5
+	var y := wr + 1.6   # the bed's floor
+	for side in [1, -1]:
+		wheel(n, Vector3(2.0, wr, 8.6 * side), wr, 1.6, s)
+	n.add_child(rod(Vector3(2.0, wr, -9.6), Vector3(2.0, wr, 9.6), 0.6, 0.6, s.dark, false))
+	var plank := surf("wood_grain", Color.WHITE, 8.0)
+	n.add_child(_box(Vector3(22.0, 1.2, 13.0), plank, Vector3(2.0, y, 0)))
+	for side in [1, -1]:
+		n.add_child(_box(Vector3(22.0, 3.6, 0.8), plank, Vector3(2.0, y + 2.3, 6.3 * side)))
+	for x in [-8.6, 12.6]:
+		n.add_child(_box(Vector3(0.8, 3.6, 13.0), plank, Vector3(x, y + 2.3, 0)))
+	for side in [1, -1]:   # the handles, back and up to the pusher's hands; a prop leg under each
+		n.add_child(beam(Vector3(-8.0, y + 0.5, 4.6 * side), Vector3(-18.5, y + 3.6, 4.6 * side), 1.0, 1.0, s.dark))
+		n.add_child(rod(Vector3(-7.0, y, 4.6 * side), Vector3(-7.6, 0.4, 4.6 * side), 0.45, 0.45, s.dark))
+	cart_load(n, s, Vector3(2.0, y, 0))
+	return {"node": n, "sockets": {"crew0_f0_reach": Vector3(-24.5, 0, 0)}}
+
+
+## Trade goods on a cart's bed (its floor's middle at `at`): two crates, sacks, a tall jar; a team
+## cloth over the big crate.
+func cart_load(n: Node3D, s: Dictionary, at: Vector3) -> void:
+	var plank := surf("wood_grain", Color.WHITE, 8.0)
+	n.add_child(_box(Vector3(7.5, 6.0, 7.5), s.dark, at + Vector3(4.5, 3.6, 1.8)))
+	n.add_child(_box(Vector3(8.2, 0.5, 8.2), s.team, at + Vector3(4.5, 6.9, 1.8)))
+	for side in [1, -1]:
+		n.add_child(_box(Vector3(5.0, 3.2, 0.4), s.team, at + Vector3(4.5, 5.2, 1.8 + 4.0 * side)))
+	n.add_child(_box(Vector3(5.0, 4.0, 5.0), plank, at + Vector3(-5.0, 2.6, -3.0), Vector3(0, 20, 0)))
+	var sack := surf("cloth", Color("#c8b48a"), 3.0)
+	n.add_child(blob(Vector3(3.2, 2.4, 2.6), sack, at + Vector3(-5.5, 2.6, 3.4)))
+	n.add_child(blob(Vector3(2.8, 2.2, 2.4), sack, at + Vector3(-2.5, 5.6, -2.6)))
+	var jar := surf("bld_daub", Color(1.05, 0.62, 0.42), 6.0)
+	n.add_child(cone(1.2, 2.6, 5.5, jar, at + Vector3(7.5, 3.0, -4.0)))
+	n.add_child(cone(0.8, 1.2, 1.2, jar, at + Vector3(7.5, 6.2, -4.0)))

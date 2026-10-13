@@ -1209,6 +1209,8 @@ func smart_order(pos: Vector2) -> void:
 			world.issue(p, Commands.HELP_BUILD, {"ids": ids, "target": world.bridge_id[land.bridge_at(cell)], "queue": q})   # rebuild a broken bridge
 		elif bid != 0 and _is_foundation_of(bid, p):
 			world.issue(p, Commands.HELP_BUILD, {"ids": ids, "target": bid, "queue": q})
+		elif bid != 0 and _trade_market(bid, p, ids):
+			world.issue(p, Commands.ROUTE, {"ids": ids, "building": bid})   # trade carts: trade with that market (trade.gd)
 		elif bid != 0 and _drop_off_kind(bid, p, ids) != "":
 			world.issue(p, Commands.DROP_OFF, {"ids": ids, "building": bid, "queue": q})   # take what they carry in
 		elif bid != 0 and map.pool[cell] >= 0 and world.buildings.owner[world.buildings.index_of(bid)] == p:
@@ -1266,7 +1268,18 @@ func _play_events() -> void:
 				var at := Iso.to_ground(e.x, e.y)
 				fx.splash(at, float(e.r) * Iso.RADIUS_PX)
 				if _on_screen(at):
-					audio.play("hit_blunt", -2.0)
+					audio.play("catapult_impact", -2.0)
+			continue
+		if e.type == "blast":   # a sapper's charge goes off (combat.gd _blast): dirt and a bang
+			if reveal or Fog.visible(world, active, e.x, e.y):
+				var at := Iso.to_ground(e.x, e.y)
+				fx.splash(at, float(e.r) * Iso.RADIUS_PX)
+				if _on_screen(at):
+					audio.play("blast")
+			continue
+		if e.type == "trade":   # a trade cart of ours home with its gold (trade.gd)
+			if e.has("paid") and _owner_of(e.id) == active:
+				audio.play("trade_paid", -6.0)
 			continue
 		if e.type == "miss" or (e.type == "hit" and e.has("x")):
 			_landed(e)   # a shot in flight came down
@@ -1446,7 +1459,7 @@ func _landed(e: Dictionary) -> void:
 	var target: Node2D = views.get(e.to)
 	if target != null:
 		fx.flash(target)
-	if seen and _on_screen(spot):
+	if seen and _on_screen(spot) and not e.get("splash", false):   # (a stone's or a blast's victims: its one sound was played)
 		audio.play("arrow_land", -8.0)
 
 
@@ -1469,6 +1482,18 @@ func _can_garrison(bid: int, p: int, ids: Array) -> bool:
 	return ids.any(func(id):
 		var i := world.units.index_of(id)
 		return i >= 0 and Garrison.can_hold(world, b, i))
+
+
+## Is `bid` a finished market of p's or an ally's, and are trade carts among these units? (A
+## right-click sends them trading with it: trade.gd picks their home market.)
+func _trade_market(bid: int, p: int, ids: Array) -> bool:
+	var b := world.buildings.index_of(bid)
+	if b < 0 or world.buildings.done[b] == 0 or world.is_enemy(world.buildings.owner[b], p) \
+			or world.btypes[world.buildings.kind[b]].id != "market":
+		return false
+	return ids.any(func(id):
+		var i := world.units.index_of(id)
+		return i >= 0 and world.types[world.units.kind[i]].get("trader", false))
 
 
 ## What the first of these units carrying something building `bid` (p's, finished) takes in
@@ -1872,6 +1897,8 @@ func _say(kind: String, owner := -1, volume_db := 0.0) -> void:
 
 ## Which blow a melee attacker lands, from its weapon's tags.
 static func _blow_sound(tags: Array) -> String:
+	if "ram" in tags:
+		return "ram_hit"   # the log on the wall, the frame creaking (tools/audio/sfx.py)
 	if "blade" in tags:
 		return "hit_blade"
 	if "blunt" in tags:

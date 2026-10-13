@@ -2306,6 +2306,12 @@ func _tool_sack(c: Dictionary) -> Dictionary:
 	return {"node": n}
 
 
+## The sapper's charge: a PLACEHOLDER, the worker's sack, until Dominic picks from concept round SG1
+## (docs/concepts/sapper/; options in scenes/art_pixel/sapper_concepts.gd).
+func _tool_charge(c: Dictionary) -> Dictionary:
+	return _scaled(_tool_sack(c), 0.5)   # (smaller: at full size it cut through a beetle's head and a spider's legs in the blow)
+
+
 # ------------------------------------------------------------------ shields
 
 const SHIELD_FACE := Vector3(1.0, 0.1, 0.45)

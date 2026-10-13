@@ -51,6 +51,9 @@ var mclass := PackedInt32Array()   # movement class (SimMap.CLASSES)
 var patient := PackedInt32Array()  # healers: the unit id being healed (or walked to), or 0 (heal.gd)
 var pace := PackedInt32Array()     # a group move's pace (its slowest member's speed), or 0: own speed
 var amc := PackedInt32Array()      # an attack-move's centre cell (its field), or -1; amx/amy is the unit's own slot
+var route := PackedInt32Array()    # trade carts: the home market's id (target is the far one; trade.gd), or 0
+var ready := PackedInt32Array()    # packing engines (the great sling): ticks stood unpacking (>= its unpack: set up),
+                                   # or below 0 while packing up (counts up to 0; World._pack)
 var changes := 0                   # bumped on every add, insert and removal (World.step rebuilds its buckets)
 var orders: Array = []             # per unit: queued orders [{type, args}] (shift-queued), oldest first
 
@@ -119,6 +122,8 @@ func _put(at: int, uid: int, p_owner: int, p_kind: int, p_x: int, p_y: int, p_sp
 	patient.insert(at, 0)
 	pace.insert(at, 0)
 	amc.insert(at, -1)
+	route.insert(at, 0)
+	ready.insert(at, 0)
 	return at
 
 
@@ -178,6 +183,8 @@ func remove_at(i: int) -> void:
 	patient.remove_at(i)
 	pace.remove_at(i)
 	amc.remove_at(i)
+	route.remove_at(i)
+	ready.remove_at(i)
 
 
 func save_prev() -> void:

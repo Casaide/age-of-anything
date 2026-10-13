@@ -11,7 +11,8 @@ const Rng := preload("res://src/rng.gd")
 const Pricing := preload("res://src/pricing.gd")
 
 const ROLE_NEEDS := {"worker": "worker", "spear": "spear", "skirmisher": "ranged", "archer": "bow", "large": "melee", "healer": "heal",
-	"ram": "ram", "catapult": "catapult", "bolt_thrower": "bolt_thrower", "infantry": "melee", "scout": "melee", "mounted_archer": "bow"}
+	"ram": "ram", "catapult": "catapult", "bolt_thrower": "bolt_thrower", "infantry": "melee", "scout": "melee", "mounted_archer": "bow",
+	"sapper": "sapper", "great_sling": "great_sling"}
 ## Tags a role's primary must not have (skirmishers are the non-bow ranged units; the swordsman
 ## line holds a blade or a club, never a spear or a lance).
 ## The scout holds a light weapon: no spear or lance (that would make it anti-cavalry), nothing heavy.
@@ -29,10 +30,11 @@ const ROLE_BIAS := {
 	"infantry": {"blade": 1},
 	"scout": {"blade": 1, "light": 2},
 	"mounted_archer": {},
+	"sapper": {},
 }
 ## Lines that go light (the scout): no heavy kit, nothing over LIGHT_POINTS, in any age. A unique
 ## unit whose theme says "light" (the raiders) goes the same way.
-const LIGHT_ROLES := ["scout"]
+const LIGHT_ROLES := ["scout", "sapper"]
 const LIGHT_POINTS := 2
 ## Signature gear (a culture's kit, cheese hammers...) is only favoured when the prompt,
 ## family or creature asks for it. No cheese hammers for Romans unless someone says cheese.
@@ -47,6 +49,8 @@ const HEALER_SLOTS := ["hand_l", "head_gear", "back"]
 ## race's scouts keep their wings (the back slot holds nothing else for them: _light).
 const SCOUT_SLOTS := ["head_gear", "torso", "back"]
 const HEALER_WANTS := {"heal": 3}   # so the healer's bag is always packed
+## Sappers carry their charge and a cap at most: they're spent in one blow (milestone 13).
+const SAPPER_SLOTS := ["head_gear"]
 ## What kind of thing a part is: an upgrade keeps the kind (a cape stays a cape, a
 ## spear stays a spear), so a unit line stays recognisably the same unit.
 const KIND_TAGS := ["spear", "lance", "blade", "blunt", "bow", "sling", "javelin", "poison", "gun", "worker",
@@ -359,21 +363,24 @@ func _make_unit(slot_def: Dictionary, ctx: Dictionary) -> Dictionary:
 ## A siege engine (milestone 13, D-119): the engine of its slot in the race's take (a creature's
 ## own `siege` take first, else its culture's: families.json), its weapon the engine part made for
 ## the role, crewed by the race's workers (the age-1 worker's recipe, drawn on the model's crew
-## sockets). Engines aren't kitted out from the budget: the engine is the unit.
+## sockets). Engines aren't kitted out from the budget: the engine is the unit. A line with
+## `armed`: false (the trade cart) has no weapon part.
 func _make_engine(slot_def: Dictionary, ctx: Dictionary) -> Dictionary:
 	var c: Dictionary = lib.creatures[ctx.creature]
 	var take: String = c.get("siege", lib.families[ctx.family].siege)
 	var body: Dictionary = lib.part("siege.%s.%s" % [slot_def.engine, take])
-	var weapons: Array = _cands("hand_r", ctx).filter(func(p): return p.has("requires_role") and _for_role(p, slot_def.role))
-	assert(not weapons.is_empty(), "No engine weapon for %s" % slot_def.role)
-	var weapon: Dictionary = _best(weapons, ctx.tags, {}, ctx.rng)
+	var parts := {}
+	if slot_def.get("armed", true):
+		var weapons: Array = _cands("hand_r", ctx).filter(func(p): return p.has("requires_role") and _for_role(p, slot_def.role))
+		assert(not weapons.is_empty(), "No engine weapon for %s" % slot_def.role)
+		parts.hand_r = _best(weapons, ctx.tags, {}, ctx.rng).id
 	var crew: Dictionary = {"body": ctx.crew.body, "head": ctx.crew.head, "skin": ctx.crew.skin, "parts": ctx.crew.parts.duplicate(), "scale": ctx.crew.scale}
 	if ctx.crew.has("mount"):
 		crew.mount = ctx.crew.mount.duplicate(true)   # a centaur's horse half
 	return {
 		"slot": slot_def.slot, "role": slot_def.role, "tier": int(slot_def.tier),
 		"creature": ctx.creature, "family": ctx.family, "skin": ctx.skin,
-		"body": body.id, "head": "", "parts": {"hand_r": weapon.id}, "scale": 100, "name": body.noun, "crew": crew,
+		"body": body.id, "head": "", "parts": parts, "scale": 100, "name": body.noun, "crew": crew,
 	}
 
 
@@ -498,7 +505,7 @@ func _make_unique(slot_def: Dictionary, ctx: Dictionary) -> Dictionary:
 
 ## The optional slots a role fills.
 func _gear_slots(role: String) -> Array:
-	return {"worker": WORKER_SLOTS, "healer": HEALER_SLOTS, "scout": SCOUT_SLOTS}.get(role, OPTIONAL_SLOTS)
+	return {"worker": WORKER_SLOTS, "healer": HEALER_SLOTS, "scout": SCOUT_SLOTS, "sapper": SAPPER_SLOTS}.get(role, OPTIONAL_SLOTS)
 
 
 ## A healer's kit: its bag (heal parts) in the off hand, a light hat (1 point, no crest,

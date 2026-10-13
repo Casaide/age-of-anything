@@ -11,7 +11,7 @@ const Bridges := preload("res://src/sim/bridges.gd")
 const Pens := preload("res://src/sim/pens.gd")
 const Buildings := preload("res://src/sim/buildings.gd")
 
-enum { NONE, GATHER, RETURN, BUILD, GARRISON }   # GARRISON: walking into a building to shelter (garrison.gd)
+enum { NONE, GATHER, RETURN, BUILD, GARRISON, TRADE }   # GARRISON: walking into a building to shelter (garrison.gd); TRADE: a cart on its route (trade.gd)
 
 const REACH := 250                    # milli-tiles between a body's edge and what it works on
 const SEARCH_TILES := 8               # how far a worker looks for more of the same resource

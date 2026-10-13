@@ -77,7 +77,8 @@
   "heal_every": 20,
   "call_range": 16,
   "not": [
-   "large"
+   "large",
+   "cart"
   ]
  },
  "_garrison_doc": "units shelter inside a building type with \"garrison\": N (src/sim/garrison.gd): up to N of its owner's units (none with a tag in garrison.not, e.g. riders and giants; workers always fit, centaurs' too), hidden, healed 1 hp every heal_every ticks, seeing nothing beyond the building. A building with an \"attack\" shoots attack.arrows arrows a volley (towers 1; 0: the Town Center only shoots with people inside) plus one per unit inside. Destroyed, it spills them out. The Town Center's call to arms sends its owner's workers within call_range tiles into the nearest building with room. \"sight\": the building's own sight radius in tiles (else the rules' fog.tower for buildings that shoot, fog.building for the rest). \"more_from_age\": a player who already has one may build another only from that age on (Town Centers, age 3). \"upgrade_of\": a building that research turns another into, in place ({\"building\": \"watchtower\", \"becomes\": \"bastion\"} in tech.json); once researched, ordering the old one builds the new",
@@ -280,14 +281,16 @@
    "pop": 0,
    "house": false,
    "drop_off": [],
-   "trains": [],
+   "trains": [
+    "trader"
+   ],
    "age": 2,
    "hotkey": "J",
    "armour": {
     "melee": 1,
     "pierce": 7
    },
-   "note": "trade: buy/sell with gold, shared prices"
+   "note": "trade: buy/sell with gold, shared prices; trains trade carts (src/sim/trade.gd: gold by the distance to another market of yours or an ally's)"
   },
   "mill": {
    "name": "Mill",
@@ -623,7 +626,9 @@
    "house": false,
    "drop_off": [],
    "trains": [
-    "unique"
+    "unique",
+    "sapper",
+    "great_sling"
    ],
    "age": 3,
    "hotkey": "",
@@ -639,7 +644,7 @@
     "arrows": 4
    },
    "garrison": 20,
-   "note": "shoots `arrows` arrows a volley, each at the next-nearest foe (src/sim/combat.gd _towers); garrison: how many units shelter inside (the garrison system, milestone 12 phase 3); trains nothing yet (unique unit, sapper and great sling are milestone 13)"
+   "note": "shoots `arrows` arrows a volley, each at the next-nearest foe (src/sim/combat.gd _towers); garrison: how many units shelter inside (the garrison system, milestone 12 phase 3); trains the unique unit, the sapper and the great sling (milestone 13)"
   },
   "wonder": {
    "name": "Wonder",

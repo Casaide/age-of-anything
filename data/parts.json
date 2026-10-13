@@ -10013,5 +10013,610 @@
   "tags": [],
   "stats": {},
   "points": 0
+ },
+ {
+  "id": "siege.cart.timber",
+  "slot": "engine",
+  "noun": "Trade Cart",
+  "points": 16,
+  "tags": [
+   "trade",
+   "cart",
+   "machine"
+  ],
+  "stats": {
+   "hp": 70,
+   "speed": 10,
+   "armour": {
+    "melee": 0,
+    "pierce": 3
+   },
+   "radius": 420
+  },
+  "shapes": [
+   {
+    "t": "poly",
+    "p": [
+     [
+      -16,
+      -22
+     ],
+     [
+      16,
+      -22
+     ],
+     [
+      16,
+      0
+     ],
+     [
+      -16,
+      0
+     ]
+    ],
+    "ch": "wood"
+   }
+  ],
+  "cost_mix": {
+   "food": 0,
+   "wood": 65,
+   "gold": 35
+  },
+  "placeholder": true,
+  "note": "a trade cart (milestone 13 step 6; src/sim/trade.gd): a PLACEHOLDER look until Dominic picks from concept round TC1 (docs/concepts/trade_carts/): a plain timber handcart, the race's worker pushing it, the same for every take; never fights"
+ },
+{
+  "id": "siege.cart.junk",
+  "slot": "engine",
+  "noun": "Trade Cart",
+  "points": 16,
+  "tags": [
+   "trade",
+   "cart",
+   "machine"
+  ],
+  "stats": {
+   "hp": 70,
+   "speed": 10,
+   "armour": {
+    "melee": 0,
+    "pierce": 3
+   },
+   "radius": 420
+  },
+  "shapes": [
+   {
+    "t": "poly",
+    "p": [
+     [
+      -16,
+      -22
+     ],
+     [
+      16,
+      -22
+     ],
+     [
+      16,
+      0
+     ],
+     [
+      -16,
+      0
+     ]
+    ],
+    "ch": "wood"
+   }
+  ],
+  "cost_mix": {
+   "food": 0,
+   "wood": 65,
+   "gold": 35
+  },
+  "placeholder": true,
+  "note": "a trade cart (milestone 13 step 6; src/sim/trade.gd): a PLACEHOLDER look until Dominic picks from concept round TC1 (docs/concepts/trade_carts/): a plain timber handcart, the race's worker pushing it, the same for every take; never fights"
+ },
+{
+  "id": "siege.cart.forest",
+  "slot": "engine",
+  "noun": "Trade Cart",
+  "points": 16,
+  "tags": [
+   "trade",
+   "cart",
+   "machine"
+  ],
+  "stats": {
+   "hp": 70,
+   "speed": 10,
+   "armour": {
+    "melee": 0,
+    "pierce": 3
+   },
+   "radius": 420
+  },
+  "shapes": [
+   {
+    "t": "poly",
+    "p": [
+     [
+      -16,
+      -22
+     ],
+     [
+      16,
+      -22
+     ],
+     [
+      16,
+      0
+     ],
+     [
+      -16,
+      0
+     ]
+    ],
+    "ch": "wood"
+   }
+  ],
+  "cost_mix": {
+   "food": 0,
+   "wood": 65,
+   "gold": 35
+  },
+  "placeholder": true,
+  "note": "a trade cart (milestone 13 step 6; src/sim/trade.gd): a PLACEHOLDER look until Dominic picks from concept round TC1 (docs/concepts/trade_carts/): a plain timber handcart, the race's worker pushing it, the same for every take; never fights"
+ },
+{
+  "id": "siege.cart.spooky",
+  "slot": "engine",
+  "noun": "Trade Cart",
+  "points": 16,
+  "tags": [
+   "trade",
+   "cart",
+   "machine"
+  ],
+  "stats": {
+   "hp": 70,
+   "speed": 10,
+   "armour": {
+    "melee": 0,
+    "pierce": 3
+   },
+   "radius": 420
+  },
+  "shapes": [
+   {
+    "t": "poly",
+    "p": [
+     [
+      -16,
+      -22
+     ],
+     [
+      16,
+      -22
+     ],
+     [
+      16,
+      0
+     ],
+     [
+      -16,
+      0
+     ]
+    ],
+    "ch": "wood"
+   }
+  ],
+  "cost_mix": {
+   "food": 0,
+   "wood": 65,
+   "gold": 35
+  },
+  "placeholder": true,
+  "note": "a trade cart (milestone 13 step 6; src/sim/trade.gd): a PLACEHOLDER look until Dominic picks from concept round TC1 (docs/concepts/trade_carts/): a plain timber handcart, the race's worker pushing it, the same for every take; never fights"
+ },
+{
+  "id": "siege.cart.frog",
+  "slot": "engine",
+  "noun": "Trade Cart",
+  "points": 16,
+  "tags": [
+   "trade",
+   "cart",
+   "machine"
+  ],
+  "stats": {
+   "hp": 70,
+   "speed": 10,
+   "armour": {
+    "melee": 0,
+    "pierce": 3
+   },
+   "radius": 420
+  },
+  "shapes": [
+   {
+    "t": "poly",
+    "p": [
+     [
+      -16,
+      -22
+     ],
+     [
+      16,
+      -22
+     ],
+     [
+      16,
+      0
+     ],
+     [
+      -16,
+      0
+     ]
+    ],
+    "ch": "wood"
+   }
+  ],
+  "cost_mix": {
+   "food": 0,
+   "wood": 65,
+   "gold": 35
+  },
+  "placeholder": true,
+  "note": "a trade cart (milestone 13 step 6; src/sim/trade.gd): a PLACEHOLDER look until Dominic picks from concept round TC1 (docs/concepts/trade_carts/): a plain timber handcart, the race's worker pushing it, the same for every take; never fights"
+ },
+{
+  "id": "siege.sling.timber",
+  "slot": "engine",
+  "noun": "Great Sling",
+  "points": 24,
+  "tags": [
+   "siege",
+   "large",
+   "machine"
+  ],
+  "stats": {
+   "hp": 80,
+   "speed": 7,
+   "armour": {
+    "melee": 0,
+    "pierce": 6
+   },
+   "radius": 420
+  },
+  "shapes": [
+   {
+    "t": "poly",
+    "p": [
+     [
+      -16,
+      -22
+     ],
+     [
+      16,
+      -22
+     ],
+     [
+      16,
+      0
+     ],
+     [
+      -16,
+      0
+     ]
+    ],
+    "ch": "wood"
+   }
+  ],
+  "cost_mix": {
+   "food": 0,
+   "wood": 60,
+   "gold": 40
+  },
+  "placeholder": true,
+  "note": "the great sling (milestone 13 step 4): long-range anti-building engine that unpacks before it shoots and packs before it moves; a STAND-IN look (the take's catapult, siege_models.gd STAND_IN) until Dominic picks from concept round GS1 (docs/concepts/great_sling/)"
+ },
+{
+  "id": "siege.sling.junk",
+  "slot": "engine",
+  "noun": "Great Sling",
+  "points": 24,
+  "tags": [
+   "siege",
+   "large",
+   "machine"
+  ],
+  "stats": {
+   "hp": 80,
+   "speed": 7,
+   "armour": {
+    "melee": 0,
+    "pierce": 6
+   },
+   "radius": 420
+  },
+  "shapes": [
+   {
+    "t": "poly",
+    "p": [
+     [
+      -16,
+      -22
+     ],
+     [
+      16,
+      -22
+     ],
+     [
+      16,
+      0
+     ],
+     [
+      -16,
+      0
+     ]
+    ],
+    "ch": "wood"
+   }
+  ],
+  "cost_mix": {
+   "food": 0,
+   "wood": 60,
+   "gold": 40
+  },
+  "placeholder": true,
+  "note": "the great sling (milestone 13 step 4): long-range anti-building engine that unpacks before it shoots and packs before it moves; a STAND-IN look (the take's catapult, siege_models.gd STAND_IN) until Dominic picks from concept round GS1 (docs/concepts/great_sling/)"
+ },
+{
+  "id": "siege.sling.forest",
+  "slot": "engine",
+  "noun": "Great Sling",
+  "points": 24,
+  "tags": [
+   "siege",
+   "large",
+   "machine"
+  ],
+  "stats": {
+   "hp": 80,
+   "speed": 7,
+   "armour": {
+    "melee": 0,
+    "pierce": 6
+   },
+   "radius": 420
+  },
+  "shapes": [
+   {
+    "t": "poly",
+    "p": [
+     [
+      -16,
+      -22
+     ],
+     [
+      16,
+      -22
+     ],
+     [
+      16,
+      0
+     ],
+     [
+      -16,
+      0
+     ]
+    ],
+    "ch": "wood"
+   }
+  ],
+  "cost_mix": {
+   "food": 0,
+   "wood": 60,
+   "gold": 40
+  },
+  "placeholder": true,
+  "note": "the great sling (milestone 13 step 4): long-range anti-building engine that unpacks before it shoots and packs before it moves; a STAND-IN look (the take's catapult, siege_models.gd STAND_IN) until Dominic picks from concept round GS1 (docs/concepts/great_sling/)"
+ },
+{
+  "id": "siege.sling.spooky",
+  "slot": "engine",
+  "noun": "Great Sling",
+  "points": 24,
+  "tags": [
+   "siege",
+   "large",
+   "machine"
+  ],
+  "stats": {
+   "hp": 80,
+   "speed": 7,
+   "armour": {
+    "melee": 0,
+    "pierce": 6
+   },
+   "radius": 420
+  },
+  "shapes": [
+   {
+    "t": "poly",
+    "p": [
+     [
+      -16,
+      -22
+     ],
+     [
+      16,
+      -22
+     ],
+     [
+      16,
+      0
+     ],
+     [
+      -16,
+      0
+     ]
+    ],
+    "ch": "wood"
+   }
+  ],
+  "cost_mix": {
+   "food": 0,
+   "wood": 60,
+   "gold": 40
+  },
+  "placeholder": true,
+  "note": "the great sling (milestone 13 step 4): long-range anti-building engine that unpacks before it shoots and packs before it moves; a STAND-IN look (the take's catapult, siege_models.gd STAND_IN) until Dominic picks from concept round GS1 (docs/concepts/great_sling/)"
+ },
+{
+  "id": "siege.sling.frog",
+  "slot": "engine",
+  "noun": "Great Sling",
+  "points": 24,
+  "tags": [
+   "siege",
+   "large",
+   "beast"
+  ],
+  "stats": {
+   "hp": 110,
+   "speed": 7,
+   "armour": {
+    "melee": 1,
+    "pierce": 8
+   },
+   "radius": 420
+  },
+  "shapes": [
+   {
+    "t": "poly",
+    "p": [
+     [
+      -16,
+      -22
+     ],
+     [
+      16,
+      -22
+     ],
+     [
+      16,
+      0
+     ],
+     [
+      -16,
+      0
+     ]
+    ],
+    "ch": "wood"
+   }
+  ],
+  "cost_mix": {
+   "food": 30,
+   "wood": 40,
+   "gold": 30
+  },
+  "placeholder": true,
+  "note": "the great sling (milestone 13 step 4): long-range anti-building engine that unpacks before it shoots and packs before it moves; a STAND-IN look (the take's catapult, siege_models.gd STAND_IN) until Dominic picks from concept round GS1 (docs/concepts/great_sling/)"
+ },
+{
+  "id": "engine.sling",
+  "slot": "hand_r",
+  "noun": "Great Sling",
+  "points": 16,
+  "tags": [
+   "siege",
+   "great_sling",
+   "ranged"
+  ],
+  "stats": {
+   "attack": 8,
+   "damage": "melee",
+   "range": 12,
+   "min_range": 4,
+   "splash": 700,
+   "bonus": {
+    "building": 55
+   },
+   "reload": 160,
+   "targets": "buildings",
+   "unpack": 60,
+   "pack": 40
+  },
+  "requires_role": "great_sling",
+  "tier": 3,
+  "cost_mix": {
+   "food": 0,
+   "wood": 50,
+   "gold": 50
+  },
+  "note": "the great sling's throw: buildings only (targets), from 12 tiles (range), none inside 4 (min_range), a small splash; `unpack`: ticks standing still before the first throw, `pack`: ticks packing up before it can move (combat.gd, world.gd _pack)",
+  "shapes": [
+   {
+    "t": "line",
+    "p": [
+     [
+      0,
+      0
+     ],
+     [
+      8,
+      0
+     ]
+    ],
+    "w": 1.5,
+    "ch": "wood"
+   }
+  ]
+ },
+{
+  "id": "tool.charge",
+  "slot": "hand_r",
+  "noun": "Sapper",
+  "points": 6,
+  "price_points": 10,
+  "tags": [
+   "sapper",
+   "blast"
+  ],
+  "stats": {
+   "attack": 20,
+   "damage": "melee",
+   "bonus": {
+    "building": 600
+   },
+   "reload": 20,
+   "targets": "buildings",
+   "blast": 1500,
+   "blast_line_pct": 100
+  },
+  "requires_role": "sapper",
+  "tier": 3,
+  "cost_mix": {
+   "food": 50,
+   "wood": 0,
+   "gold": 50
+  },
+  "placeholder": true,
+  "note": "the sapper's charge (milestone 13 step 4): it walks up to a building and blows up with its first blow (combat.gd _blast): its damage on everything within `blast` milli-tiles (less further out; friends at splash_friend_pct), a wall, palisade or gate under it destroyed outright (`blast_line_pct` of its hit points), and the sapper with it. A PLACEHOLDER look (the worker's sack, scenes/art_pixel/unit_models.gd _tool_charge) until Dominic picks from concept round SG1 (docs/concepts/sapper/)",
+  "shapes": [
+   {
+    "t": "ellipse",
+    "c": [
+     0,
+     2
+    ],
+    "r": [
+     4,
+     5
+    ],
+    "ch": "cloth2"
+   }
+  ]
  }
 ]

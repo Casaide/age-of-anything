@@ -37,6 +37,7 @@ const Fog := preload("res://src/sim/fog.gd")
 const Scout := preload("res://src/ai/scout.gd")
 const Land := preload("res://src/ai/land.gd")
 const Expand := preload("res://src/ai/expand.gd")
+const Trade := preload("res://src/sim/trade.gd")
 
 const THINK_EVERY := 20     # ticks (1 s), offset from EcoBot's think by half a second (and per player: _phase)
 const BUILD_COOLDOWN := 200
@@ -195,6 +196,7 @@ func think(w) -> void:
 	var workers := []
 	var army := []
 	var healers := []
+	var carts := []
 	var scouts := 0   # scout-line units we have: the bot keeps military.scouts.keep (Scout tours with one)
 	for i in w.units.count():
 		if w.units.owner[i] != player:
@@ -204,6 +206,8 @@ func think(w) -> void:
 			workers.append(i)
 		elif t.healer:
 			healers.append(i)
+		elif t.get("trader", false):
+			carts.append(i)   # trade carts aren't soldiers (_trade_carts)
 		elif not t.has("animal"):   # our sheep aren't soldiers
 			army.append(i)
 			if t.slot == "scout":
@@ -236,6 +240,7 @@ func think(w) -> void:
 	_respond(w, tc, army.filter(func(i): return w.units.id[i] != scout.id), at_work, home_x, home_y)
 	_tower(w, at_work)
 	_trade(w)
+	_trade_carts(w, carts, at_work)
 	_waves(w, field, home_x, home_y)
 	_off_walls(w, field, home_x, home_y)
 	_siege(w, field, home_x, home_y)
@@ -505,7 +510,7 @@ func _train(w, workers: Array, count: int) -> void:
 	var guard := 0   # keep a small guard even while saving for an age, like a sensible player
 	for i in w.units.count():
 		if w.units.owner[i] == player and not w.types[w.units.kind[i]].worker and not w.types[w.units.kind[i]].healer \
-				and not w.types[w.units.kind[i]].has("animal"):
+				and not w.types[w.units.kind[i]].has("animal") and not w.types[w.units.kind[i]].get("trader", false):
 			guard += int(w.types[w.units.kind[i]].pop)
 	# An easier bot keeps its army in proportion to its economy, growing with each age: it
 	# builds up more and fights less, but never stops growing (Dominic: not caps).
@@ -554,9 +559,10 @@ func _fielded(w, k: int) -> int:
 
 
 ## Engines go round: the one we have fewest of next, ties in military.siege.max's order (a ram
-## first: it's what opens a walled town).
+## first: it's what opens a walled town). Below its max an engine comes before a soldier trained in
+## the same building (the Castle's sapper and great sling before more unique units).
 func _siege_score(w, slot: String, k: int) -> int:
-	return -_fielded(w, k) * 100 - cfg.military.siege.max.keys().find(slot)
+	return 1000 - _fielded(w, k) * 100 - cfg.military.siege.max.keys().find(slot)
 
 
 ## Engines on the regroup beat, while attacking: rams go for the nearest enemy gate, wall or tower
@@ -612,8 +618,8 @@ func pick(w, trains: Array, foes: Dictionary, reserve := PackedInt32Array()) -> 
 	var best_score := -(1 << 30)
 	for slot in trains:
 		var k: int = w.type_of(player, slot)
-		if k < 0 or w.ages[player] < int(w.types[k].line[0].age) or _enough(w, slot, k):
-			continue
+		if k < 0 or w.ages[player] < int(w.types[k].line[0].age) or _enough(w, slot, k) or w.types[k].get("trader", false):
+			continue   # (trade carts aren't picked as soldiers: _trade_carts)
 		if not reserve.is_empty() and not _affords(w, w.types[k].cost, reserve):
 			continue   # (one short of wood shouldn't stop a building whose other line uses the gold piled up)
 		var s := _siege_score(w, slot, k) if cfg.military.get("siege", {}).get("max", {}).has(slot) \
@@ -949,6 +955,90 @@ func _trade(w) -> void:
 		w.issue(player, Commands.TRADE, {"building": w.buildings.id[mk], "resource": w.resources[most], "buy": 0})
 
 
+## Trade carts (milestone 13 step 8; data: economy.carts): with two markets far enough apart to trade
+## (ours, or one of ours and an ally's: the farthest such pair, Trade.why_not), idle carts go on the
+## route from our end, and more are trained there one at a time, up to `max`, from what's over beyond
+## what we save for. With no such pair, a second Town Center far enough from our only market gets a
+## market beside it (`second_market`). Every `every` seconds, from age `age`.
+func _trade_carts(w, carts: Array, workers: Array) -> void:
+	var c: Dictionary = cfg.economy.get("carts", {})
+	if c.is_empty() or w.ages[player] < int(c.age) or w.tick % (int(c.every) * 20) != _phase():
+		return
+	var k: int = w.type_of(player, "trader")
+	if k < 0:
+		return
+	var pair := _trade_pair(w)
+	if pair.is_empty():
+		if int(c.get("second_market", 0)) == 1:
+			_second_market(w, workers)
+		return
+	var idle := []
+	for i in carts:
+		if w.units.task[i] != Economy.TRADE:
+			idle.append(w.units.id[i])
+	if not idle.is_empty():
+		w.issue(player, Commands.ROUTE, {"ids": idle, "building": w.buildings.id[pair[1]]})
+	var home: int = pair[0]
+	if _fielded(w, k) >= int(c.max) or not w.buildings.queue[home].is_empty() or _saving_age or not _threats.is_empty():
+		return
+	var reserve := PackedInt32Array()
+	reserve.resize(w.resources.size())
+	for r in reserve.size():
+		reserve[r] = _saving(r)
+	if _affords(w, w.types[k].cost, reserve):
+		w.issue(player, Commands.TRAIN, {"building": w.buildings.id[home], "slot": "trader"})
+
+
+## [our market, the far market] (building slots): the farthest pair our carts may trade between,
+## or [] if there's none.
+func _trade_pair(w) -> Array:
+	var bs = w.buildings
+	var best := []
+	var best_d := -1
+	for a in bs.count():
+		if bs.owner[a] != player or bs.done[a] == 0 or w.btypes[bs.kind[a]].id != "market":
+			continue
+		for b in bs.count():
+			if b == a or bs.done[b] == 0 or w.btypes[bs.kind[b]].id != "market" or Trade.why_not(w, player, a, b) != "":
+				continue
+			var d: int = Trade.tiles(w, a, b)
+			if d > best_d:
+				best_d = d
+				best = [a, b]
+	return best
+
+
+## One market of ours, two Town Centers: a second market by the Town Center farthest from it, if
+## that's far enough to trade (rules economy.trade.min_tiles, a few tiles more for the spot).
+func _second_market(w, workers: Array) -> void:
+	var bs = w.buildings
+	var mk := Economy.btype_of(w, "market")
+	var ours := []
+	for b in bs.count():
+		if bs.owner[b] == player and bs.kind[b] == mk:
+			ours.append(b)
+	if ours.size() != 1 or bs.done[ours[0]] == 0 or w.tick < _next_build or not w.can_afford(player, w.btypes[mk].cost) or _saving_age:
+		return
+	var far := -1
+	var far_d := int(w.econ.trade.min_tiles) + 4
+	for b in bs.count():
+		if bs.owner[b] == player and bs.done[b] == 1 and w.btypes[bs.kind[b]].id == "town_center":
+			var d: int = Trade.tiles(w, ours[0], b)
+			if d >= far_d:
+				far = b
+				far_d = d
+	if far < 0:
+		return
+	var spot: Vector2i = eco._house_spot(w, bs.cx[far] + 1, bs.cy[far] + 1, w.btypes[mk].size)
+	if spot.x < 0:
+		return
+	var builders := _nearest_workers(w, workers, spot.x * 1000, spot.y * 1000, 2)
+	if builders.is_empty():
+		return
+	w.issue(player, Commands.BUILD, {"ids": builders, "building": "market", "cx": spot.x, "cy": spot.y})
+	_next_build = w.tick + BUILD_COOLDOWN
+
+
 ## How much of resource r we're saving for (eco.goal), or 0.
 func _saving(r: int) -> int:
 	return eco.goal[r] if r < eco.goal.size() else 0
@@ -1197,7 +1287,7 @@ func _dominant(w, idx: Array) -> bool:
 	for i in w.units.count():
 		var t: Dictionary = w.types[w.units.kind[i]]
 		if w.units.owner[i] != player and w.units.owner[i] != w.gaia and not w.is_enemy(player, w.units.owner[i]) \
-				and not t.worker and not t.healer and not t.has("animal"):
+				and not t.worker and not t.healer and not t.has("animal") and not t.get("trader", false):
 			with += int(t.pop)
 	return ours >= _repeat_min(w) and with * 100 >= maxi(1, theirs) * int(cfg.military.dominant_pct)
 
@@ -1330,7 +1420,7 @@ func _defenders(w, b: int) -> int:
 	var n := 0
 	for i in w.units.count():
 		if w.is_foe(player, w.units.owner[i]) and not w.types[w.units.kind[i]].worker and not w.types[w.units.kind[i]].has("animal") \
-				and not w.types[w.units.kind[i]].healer and Fog.visible(w, player, w.units.x[i], w.units.y[i]) and Fixed.dist2(x, y, w.units.x[i], w.units.y[i]) < r * r:
+				and not w.types[w.units.kind[i]].healer and not w.types[w.units.kind[i]].get("trader", false) and Fog.visible(w, player, w.units.x[i], w.units.y[i]) and Fixed.dist2(x, y, w.units.x[i], w.units.y[i]) < r * r:
 			n += 1
 	return n
 
