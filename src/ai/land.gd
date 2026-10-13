@@ -586,8 +586,8 @@ func _road_camp(w, bot) -> void:
 			want = PackedInt32Array()
 			return
 	var k: int = Economy.btype_of(w, "lumber_camp")
-	if not w.can_afford(bot.player, w.btypes[k].cost):
-		want = w.btypes[k].cost   # (soldiers leave it alone till it's laid: Bot._train)
+	if not w.can_afford(bot.player, Economy.bcost(w, bot.player, k)):
+		want = Economy.bcost(w, bot.player, k)   # (soldiers leave it alone till it's laid: Bot._train)
 		return
 	if w.tick < _camp_next:
 		return

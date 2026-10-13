@@ -112,7 +112,7 @@ func think(w) -> void:
 	var saving: bool = w.ages[player] == 1 and count >= AGE_WORKERS
 	if saving and not Tech.has_building(w, player, "barracks") and not _building_underway(w):
 		var bk: int = Economy.btype_of(w, "barracks")
-		if w.can_afford(player, w.btypes[bk].cost):
+		if w.can_afford(player, Economy.bcost(w, player, bk)):
 			var spot := _house_spot(w, bs.cx[tc] + 1, bs.cy[tc] + 1, w.btypes[bk].size)
 			var builders := workers.filter(func(i): return not _ordered.has(w.units.id[i])).slice(0, 3).map(func(i): return w.units.id[i])
 			if spot.x >= 0:
@@ -132,7 +132,7 @@ func think(w) -> void:
 	var queued_pop: int = bs.queue[tc].filter(func(e): return e >= 0).size() * t.pop   # units, not the age-up
 	if w.tick >= _next_house and w.pop_cap[player] < int(w.econ.pop_max) \
 			and w.pop[player] + queued_pop + HOUSE_HEADROOM >= w.pop_cap[player] \
-			and w.can_afford(player, w.btypes[house].cost) \
+			and w.can_afford(player, Economy.bcost(w, player, house)) \
 			and not _building_underway(w):
 		var builder := _pick_builder(w, workers)
 		var spot := _house_spot(w, bs.cx[tc] + 1, bs.cy[tc] + 1, w.btypes[house].size)
@@ -217,7 +217,7 @@ func _pen(w, tc: int, workers: Array) -> void:
 				near += 1
 		var k: int = Economy.btype_of(w, "pen")
 		var ageing: bool = push >= 100 and not goal.is_empty()   # (its wood waits while the full bot saves for the age)
-		if w.ages[player] <= 2 and not ageing and near >= PEN_SHEEP and w.can_afford(player, w.btypes[k].cost) and not _building_underway(w):
+		if w.ages[player] <= 2 and not ageing and near >= PEN_SHEEP and w.can_afford(player, Economy.bcost(w, player, k)) and not _building_underway(w):
 			var builder := _pick_builder(w, workers)
 			var spot := _house_spot(w, bs.cx[tc] + 1, bs.cy[tc] + 1, w.btypes[k].size)
 			if builder >= 0 and spot.x >= 0:

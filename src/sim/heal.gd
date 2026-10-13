@@ -67,7 +67,7 @@ static func tick(w) -> void:
 				u.cooldown[i] = maxi(u.cooldown[i], int(c.heal_reload))
 			elif u.cooldown[i] == 0:
 				u.cooldown[i] = int(c.heal_reload)
-				var amount: int = int(c.heal_amount) * int(t.eval.heal)
+				var amount: int = int(c.heal_amount) * int(t.eval.heal) * (100 + int(t.heal_pct)) / 100   # (Bog Poultice: Tech.retype)
 				heals[j] += amount
 				w.events.append({"type": "heal", "by": u.id[i], "to": u.id[j], "amount": amount})
 		elif u.posture[i] == Combat.STAND or gap > int(c.heal_sight) + 2 * SimMap.TILE:

@@ -9,6 +9,8 @@ extends RefCounted
 ## (data/cost_curves.json, made by tests/gen_cost_curve.gd), so costs are
 ## bit-exact on every machine. Stats are never part of the race key.
 
+const Identity := preload("res://src/identity.gd")
+
 const GIANT_POINTS := 6
 const DEFAULT_MIX := {"food": 50, "wood": 50}
 const MOUNT_MIX := {"food": 70, "wood": 30}
@@ -126,8 +128,37 @@ static func evaluate(recipe: Dictionary, lib, rules: Dictionary) -> Dictionary:
 		points = maxi(1, points - 1)
 		tags["tiny"] = true
 
+	# The race's bonuses on unit stats (milestone 14, src/identity.gd: from its creature's group, its
+	# creature and its culture), before the price: each bonus that reaches the unit adds its price_points.
+	var cost_pct := 0
+	var train_pct := 0
+	var stats := {"hp": hp, "attack": attack, "speed": speed, "range": reach}
+	var tags_now: Array = tags.keys()
+	for b in Identity.of(recipe.creature, recipe.family).bonuses:
+		var hit := false
+		for fx in b.effects:
+			if not Identity.priced(fx) or not Identity.reaches(fx, tags_now):
+				continue
+			hit = true
+			if fx.has("pct"):
+				match fx.stat:
+					"cost": cost_pct += int(fx.pct)
+					"train_time": train_pct += int(fx.pct)
+					"speed": stats.speed = int(stats.speed) * (100 + int(fx.pct)) / 100
+			elif fx.stat.begins_with("armour."):
+				_add_classes(armour, {fx.stat.trim_prefix("armour."): int(fx.add)})
+			elif fx.stat.begins_with("bonus."):
+				_add_classes(bonus, {fx.stat.trim_prefix("bonus."): int(fx.add)})
+			else:
+				stats[fx.stat] = int(stats[fx.stat]) + int(fx.add)
+		if hit:
+			points += int(b.price_points)
+	hp = stats.hp
+	attack = stats.attack
+	speed = stats.speed
+	reach = stats["range"]
+
 	var c: Dictionary = rules.cost
-	var econ: Dictionary = lib.creatures[recipe.creature].get("economy", {})
 	var total: int = (int(c.base) * lib.curve(c.curve, points) + 500) / 1000
 	# A role can have its own price terms (rules.cost.roles): a pct of the base price, a floor, and a mix that
 	# replaces the parts' own (workers cost food, and at least the floor).
@@ -136,7 +167,7 @@ static func evaluate(recipe: Dictionary, lib, rules: Dictionary) -> Dictionary:
 	total = maxi(total, int(terms.get("floor", 0)))
 	if terms.has("mix"):
 		mix = terms.mix.duplicate()
-	total = total * int(econ.get("cost_pct", 100)) / 100
+	total = total * (100 + cost_pct) / 100
 	# Split the total over the resources in the mix, in the fixed resource order; the last
 	# one used takes the remainder (so food/wood splits come out as they always did).
 	var mix_total := 0
@@ -167,7 +198,7 @@ static func evaluate(recipe: Dictionary, lib, rules: Dictionary) -> Dictionary:
 		"tags": tag_list,
 		"points": points,
 		"cost": cost,
-		"train_time": maxi(3, (int(c.train_base) * lib.curve(c.train_curve, points) * int(econ.get("train_time_pct", 100)) / 100 + 500) / 1000),
+		"train_time": maxi(3, (int(c.train_base) * lib.curve(c.train_curve, points) * (100 + train_pct) / 100 + 500) / 1000),
 		"pop": 2 if tags.has("large") else 1,
 		"radius": int(body.stats.get("radius", 0)),
 		"sight": sight,   # a body's own size in milli-tiles (engines); 0: by scale

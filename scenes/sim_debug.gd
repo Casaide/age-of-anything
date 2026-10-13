@@ -2388,8 +2388,8 @@ func _effect_text(effects: Array) -> String:
 ## Research this player's race can do (the tech tree's culture layer, D-070).
 func _my_research() -> Array:
 	var race: Dictionary = world.races[active]
-	return world.tech.research.filter(func(r): return r.only.is_empty() or bool(world.rules.get("full_tech_tree", false)) \
-		or race.creature in r.only or race.family in r.only)
+	return world.tech.research.filter(func(r): return not Tech.lacks(world, active, r.id) and (r.only.is_empty() or bool(world.rules.get("full_tech_tree", false)) \
+		or race.creature in r.only or race.family in r.only))   # (and not what the race lacks: milestone 14)
 
 
 func _unit_tip(wt: Dictionary) -> String:
@@ -2725,7 +2725,7 @@ func _update_panel() -> void:
 			if mine:
 				for slot in t.trains:
 					var tk := world.type_of(active, slot)
-					if tk < 0:
+					if tk < 0 or Economy.lacks(world, active, slot):
 						continue
 					var wt: Dictionary = world.types[tk]
 					var ok_age: bool = world.ages[active] >= int(wt.line[0].age)
@@ -2811,15 +2811,15 @@ func _update_panel() -> void:
 				for id in build_menu[build_page]:
 					var bk := Economy.upgraded(world, active, Economy.btype_of(world, id))   # a Watchtower after the Bastion research: a Bastion
 					var t: Dictionary = world.btypes[bk]
-					if world.ages[active] < t.age:
+					if world.ages[active] < t.age or Economy.lacks(world, active, t.id):   # (not in this race's tree: milestone 14)
 						continue
 					var why := Economy.why_not_build(world, active, bk)   # another Town Center: from age 3
-					var afford: bool = world.can_afford(active, t.cost)
+					var afford: bool = world.can_afford(active, Economy.bcost(world, active, bk))
 					var bid: String = id
-					c.buttons.append({"icon": kit.building_icon(_arch(active), t.id), "text": "Build %s (%s)" % [t.name, _cost_text(t.cost)] if why == "" else "%s: %s" % [t.name, why],
+					c.buttons.append({"icon": kit.building_icon(_arch(active), t.id), "text": "Build %s (%s)" % [t.name, _cost_text(Economy.bcost(world, active, bk))] if why == "" else "%s: %s" % [t.name, why],
 						"tip": _building_tip(t) + ("" if why == "" else "\n[color=#e07060]%s %s[/color]" % [t.name.capitalize(), why]),
 						"glyph": Icons.texture("glyph/" + t.id), "group": build_page.capitalize(),   # what it's for, the same in every culture
-						"key": t.hotkey, "cost": _cost_text(t.cost), "enabled": afford and why == "", "action": func(): start_placing(bid)})
+						"key": t.hotkey, "cost": _cost_text(Economy.bcost(world, active, bk)), "enabled": afford and why == "", "action": func(): start_placing(bid)})
 				c.buttons.append({"icon": Icons.texture("back"), "text": "Back", "key": "Esc", "cost": "", "enabled": true, "group": " ",
 					"tip": "[b]Back[/b]\nTo the civilian and military pages.", "action": func(): build_page = ""})
 		if placing != "":

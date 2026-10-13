@@ -1,6 +1,6 @@
 {
  "schema": "aow.tech/1",
- "note": "Ages and researches. An age-up moves the player's units to the next step of their unit lines (new kit, re-priced). Research effects add to stats of units with a tag (the blacksmith kind, a small visual tell only, D-057). Milestone 7 fills in the content and the buildings. Anything with \"status\": \"planned\" (milestone 12) is only drawn on the tech tree page (a blank frame, its name in grey): the sim skips it. Planned research names its effect in words (`effect`). Research may follow another (`after`: it needs that one first, and the page joins them). Effects take one shape (see src/sim/tech.gd): a scope (`tag` with optional `not`, or `building`), a `stat`, and an `add` or a `pct` (the change in percent); or the older {gather, pct}.",
+ "note": "Ages and researches. An age-up moves the player's units to the next step of their unit lines (new kit, re-priced). Research effects add to stats of units with a tag (the blacksmith kind, a small visual tell only, D-057). Milestone 7 fills in the content and the buildings. Anything with \"status\": \"planned\" (milestone 12) is only drawn on the tech tree page (a blank frame, its name in grey): the sim skips it. Planned research names its effect in words (`effect`). Research may follow another (`after`: it needs that one first, and the page joins them). Effects take one shape (see src/sim/tech.gd): a scope (`tag` with optional `not`, or `building`), a `stat`, and an `add` or a `pct` (the change in percent); or the older {gather, pct}. A creature's or culture's own research (milestone 14) has `own` (\"creature\" or \"culture\"): only the creatures and cultures whose `research` names it get it (src/identity.gd).",
  "ages": [
   {
    "age": 1,
@@ -73,9 +73,6 @@
    "time": 40,
    "building": "barracks",
    "age": 2,
-   "only": [
-    "frog"
-   ],
    "effects": [
     {
      "tag": "amphibious",
@@ -83,7 +80,8 @@
      "add": 2
     }
    ],
-   "note": "frogs only (a tech-tree layer, D-070): +2 speed for amphibians; lifted by the host's full_tech_tree rule"
+   "note": "the frogs' own research (milestone 14: creatures.json frog `research`), kept at the Barracks in age 2 where it was; lifted for everyone by the host's full_tech_tree rule",
+   "own": "creature"
   },
   {
    "id": "fletching",
@@ -850,9 +848,9 @@
    "note": "reaches the siege lines by their `siege` tag; not rams (melee)"
   },
   {
-   "id": "creature_research",
-   "name": "Creature's Own Way",
-   "desc": "Your creature's own trick, learned at the Castle. Until each creature has its own (milestone 14), a hardy one: soldiers +5 HP.",
+   "id": "gnawing_teeth",
+   "name": "Gnawing Teeth",
+   "desc": "Teeth that never stop growing: soldiers chew through walls and doors.",
    "cost": {
     "food": 200,
     "gold": 150
@@ -860,23 +858,25 @@
    "time": 50,
    "building": "castle",
    "age": 3,
+   "own": "creature",
+   "icon": "creature_research",
    "effects": [
     {
      "tag": "all",
      "not": [
       "worker",
-      "heal"
+      "heal",
+      "siege"
      ],
-     "stat": "hp",
-     "add": 5
+     "stat": "bonus.building",
+     "add": 2
     }
-   ],
-   "note": "the race's creature research slot (milestone 14 fills it from the creature: Gnawing Teeth, Shell Polish...); until then this generic placeholder so it can be bought"
+   ]
   },
   {
-   "id": "culture_research",
-   "name": "Culture's Own Way",
-   "desc": "Your culture's own trick, learned at the Castle. Until each culture has its own (milestone 14), a drilled one: soldiers 5% faster.",
+   "id": "clever_hands",
+   "name": "Clever Hands",
+   "desc": "Clever hands and a plumb line: workers build 25% faster.",
    "cost": {
     "food": 200,
     "gold": 150
@@ -884,18 +884,338 @@
    "time": 50,
    "building": "castle",
    "age": 3,
+   "own": "creature",
+   "icon": "creature_research",
+   "effects": [
+    {
+     "tag": "worker",
+     "stat": "build_speed",
+     "pct": 25
+    }
+   ]
+  },
+  {
+   "id": "sticky_silk",
+   "name": "Sticky Silk",
+   "desc": "Silk on every shot: ranged hits slow the target for a few seconds.",
+   "cost": {
+    "food": 200,
+    "gold": 150
+   },
+   "time": 50,
+   "building": "castle",
+   "age": 3,
+   "own": "creature",
+   "icon": "creature_research",
+   "effects": [
+    {
+     "tag": "ranged",
+     "not": [
+      "siege"
+     ],
+     "stat": "slow_on_hit",
+     "add": 60
+    }
+   ]
+  },
+  {
+   "id": "shell_polish",
+   "name": "Shell Polish",
+   "desc": "Polished shells turn blades: every unit +1 melee armour.",
+   "cost": {
+    "food": 200,
+    "gold": 150
+   },
+   "time": 50,
+   "building": "castle",
+   "age": 3,
+   "own": "creature",
+   "icon": "creature_research",
    "effects": [
     {
      "tag": "all",
+     "not": [
+      "siege"
+     ],
+     "stat": "armour.melee",
+     "add": 1
+    }
+   ]
+  },
+  {
+   "id": "gallop",
+   "name": "Gallop",
+   "desc": "Long legs at full stretch: mounted units 15% faster.",
+   "cost": {
+    "food": 200,
+    "gold": 150
+   },
+   "time": 50,
+   "building": "castle",
+   "age": 3,
+   "own": "creature",
+   "icon": "creature_research",
+   "effects": [
+    {
+     "tag": "mounted",
+     "not": [
+      "worker"
+     ],
+     "stat": "speed",
+     "pct": 15
+    }
+   ]
+  },
+  {
+   "id": "shield_wall",
+   "name": "Shield Wall",
+   "desc": "Shields locked: infantry +2 pierce armour.",
+   "cost": {
+    "food": 200,
+    "gold": 150
+   },
+   "time": 50,
+   "building": "castle",
+   "age": 3,
+   "own": "culture",
+   "icon": "culture_research",
+   "effects": [
+    {
+     "tag": "infantry",
+     "not": [
+      "worker",
+      "heal"
+     ],
+     "stat": "armour.pierce",
+     "add": 2
+    }
+   ]
+  },
+  {
+   "id": "long_spears",
+   "name": "Long Spears",
+   "desc": "Longer shafts: spears strike from further off.",
+   "cost": {
+    "food": 200,
+    "gold": 150
+   },
+   "time": 50,
+   "building": "castle",
+   "age": 3,
+   "own": "culture",
+   "icon": "culture_research",
+   "effects": [
+    {
+     "tag": "spear",
+     "stat": "reach",
+     "add": 350
+    }
+   ]
+  },
+  {
+   "id": "saddle_bows",
+   "name": "Saddle Bows",
+   "desc": "Short, strong bows for the saddle: mounted shooters +1 range.",
+   "cost": {
+    "food": 200,
+    "gold": 150
+   },
+   "time": 50,
+   "building": "castle",
+   "age": 3,
+   "own": "culture",
+   "icon": "culture_research",
+   "effects": [
+    {
+     "tag": "ranged",
+     "and": [
+      "mounted"
+     ],
+     "not": [
+      "siege"
+     ],
+     "stat": "range",
+     "add": 1
+    }
+   ]
+  },
+  {
+   "id": "flood_plains",
+   "name": "Flood Plains",
+   "desc": "Farms on wet ground, where the river floods.",
+   "cost": {
+    "food": 200,
+    "gold": 150
+   },
+   "time": 50,
+   "building": "castle",
+   "age": 3,
+   "own": "culture",
+   "icon": "culture_research",
+   "effects": [],
+   "status": "planned",
+   "note": "needs farms on wet ground (a placement rule); planned until then",
+   "effect": "Farms on wet ground (swamp and shallows)"
+  },
+  {
+   "id": "repeating_bows",
+   "name": "Repeating Bows",
+   "desc": "A magazine of bolts: ranged units reload 15% faster.",
+   "cost": {
+    "food": 200,
+    "gold": 150
+   },
+   "time": 50,
+   "building": "castle",
+   "age": 3,
+   "own": "culture",
+   "icon": "culture_research",
+   "effects": [
+    {
+     "tag": "ranged",
+     "not": [
+      "siege"
+     ],
+     "stat": "reload",
+     "pct": -15
+    }
+   ]
+  },
+  {
+   "id": "jaguar_pelts",
+   "name": "Jaguar Pelts",
+   "desc": "Light pelts for the charge: infantry 10% faster.",
+   "cost": {
+    "food": 200,
+    "gold": 150
+   },
+   "time": 50,
+   "building": "castle",
+   "age": 3,
+   "own": "culture",
+   "icon": "culture_research",
+   "effects": [
+    {
+     "tag": "infantry",
      "not": [
       "worker",
       "heal"
      ],
      "stat": "speed",
-     "pct": 5
+     "pct": 10
     }
-   ],
-   "note": "the race's culture research slot (milestone 14 fills it from the culture: Shield Wall, Long Spears...); until then this generic placeholder so it can be bought"
+   ]
+  },
+  {
+   "id": "bog_poultice",
+   "name": "Bog Poultice",
+   "desc": "Moss and mud on every wound: healers heal 30% more.",
+   "cost": {
+    "food": 200,
+    "gold": 150
+   },
+   "time": 50,
+   "building": "castle",
+   "age": 3,
+   "own": "culture",
+   "icon": "culture_research",
+   "effects": [
+    {
+     "tag": "heal",
+     "stat": "heal",
+     "pct": 30
+    }
+   ]
+  },
+  {
+   "id": "rust_spikes",
+   "name": "Rust Spikes",
+   "desc": "Rusty spikes on everything: melee units +1 attack against buildings and siege.",
+   "cost": {
+    "food": 200,
+    "gold": 150
+   },
+   "time": 50,
+   "building": "castle",
+   "age": 3,
+   "own": "culture",
+   "icon": "culture_research",
+   "effects": [
+    {
+     "tag": "melee",
+     "stat": "bonus.building",
+     "add": 1
+    },
+    {
+     "tag": "melee",
+     "stat": "bonus.siege",
+     "add": 1
+    }
+   ]
+  },
+  {
+   "id": "woodsmen",
+   "name": "Woodsmen",
+   "desc": "Woodsmen's slings: workers carry +2.",
+   "cost": {
+    "food": 200,
+    "gold": 150
+   },
+   "time": 50,
+   "building": "castle",
+   "age": 3,
+   "own": "culture",
+   "icon": "culture_research",
+   "effects": [
+    {
+     "tag": "worker",
+     "stat": "carry",
+     "add": 2
+    }
+   ]
+  },
+  {
+   "id": "chivalry",
+   "name": "Chivalry",
+   "desc": "Knights in their pride: mounted units +20 hit points.",
+   "cost": {
+    "food": 200,
+    "gold": 150
+   },
+   "time": 50,
+   "building": "castle",
+   "age": 3,
+   "own": "culture",
+   "icon": "culture_research",
+   "effects": [
+    {
+     "tag": "mounted",
+     "not": [
+      "worker",
+      "heal"
+     ],
+     "stat": "hp",
+     "add": 20
+    }
+   ]
+  },
+  {
+   "id": "creeping_dread",
+   "name": "Creeping Dread",
+   "desc": "Enemies near your army move 10% slower.",
+   "cost": {
+    "food": 200,
+    "gold": 150
+   },
+   "time": 50,
+   "building": "castle",
+   "age": 3,
+   "own": "culture",
+   "icon": "culture_research",
+   "effects": [],
+   "status": "planned",
+   "note": "needs an aura (milestone 14 phase 6); planned until then",
+   "effect": "Enemies near your army move 10% slower"
   },
   {
    "id": "war_drums",

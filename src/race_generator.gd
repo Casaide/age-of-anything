@@ -207,8 +207,7 @@ func generate(prompt: String, rules: Dictionary, reroll := 0) -> Dictionary:
 		"family": family,
 		"notes": notes,
 		"units": units,
-		"lacks": lacks,   # derived (the slots left out), not in the key
-		"economy": c.get("economy", {}).duplicate(),   # race-wide modifiers; derived, not in the key
+		"lacks": lacks,   # derived (the slots left out), not in the key; what its creature and culture lack: src/identity.gd
 	}
 	race.key = race_key(race)
 	return race

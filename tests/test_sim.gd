@@ -1730,26 +1730,26 @@ func _test_builder_moves_on(races: Array) -> void:
 func _test_build_queue(races: Array) -> void:
 	var w := World.new(SEED, SimMap.load_id("flat_test"), races, rules_)
 	w.stock[w.resources.find("stone")][0] = 500
-	w.ages[0] = 2   # stone walls come with age 2
+	w.ages[0] = 2   # (a palisade: the swamp folk build no stone walls, milestone 14)
 	var ids := []
 	for i in w.units.count():
 		if w.units.owner[i] == 0:
 			ids.append(w.units.id[i])
 	var s: Array = w.map.starts[0]
 	for k in 7:
-		w.issue(0, Commands.BUILD, {"ids": ids, "building": "wall", "cx": s[0] / 1000 + 3, "cy": s[1] / 1000 - 3 + k, "queue": 1 if k > 0 else 0})
+		w.issue(0, Commands.BUILD, {"ids": ids, "building": "palisade", "cx": s[0] / 1000 + 3, "cy": s[1] / 1000 - 3 + k, "queue": 1 if k > 0 else 0})
 	for t in 16:   # past the command delay: every queued foundation is down already, so you see the plan
 		w.step()
 	var laid := 0
 	for b in w.buildings.count():
-		if w.btypes[w.buildings.kind[b]].id == "wall":
+		if w.btypes[w.buildings.kind[b]].id == "palisade":
 			laid += 1
 	check(laid == 7, "shift-queued builds: all 7 foundations are laid at once (%d)" % laid)
 	for t in 3000:
 		w.step()
 	var done := 0
 	for b in w.buildings.count():
-		if w.btypes[w.buildings.kind[b]].id == "wall":
+		if w.btypes[w.buildings.kind[b]].id == "palisade":
 			done += w.buildings.done[b]
 	check(done == 7, "shift-queued builds: all 7 walls of a line go up (%d)" % done)
 
@@ -2238,7 +2238,7 @@ func _test_effects(races: Array) -> void:
 			break
 	check(w.types[wk].speed == speed0 * 110 / 100 and w.units.speed[wi] == w.types[wk].speed, "effects: Big Pockets makes workers 10%% faster, those out too (%d -> %d)" % [speed0, w.types[wk].speed])
 	check(w.types[wk].carry_add == 3, "effects: Big Pockets adds 3 to what a worker carries")
-	var carry_max: int = int(w.econ.carry) * int(w.races[0].economy.get("carry_pct", 100)) / 100 + 3
+	var carry_max: int = int(w.econ.carry) + int(w.types[wk].carry_add)
 	var wid: int = w.units.id[wi]
 	w.issue(0, Commands.GATHER, {"ids": [wid], "cell": _nearest_resource(w.map, s, "wood")})
 	var most := 0
@@ -2461,8 +2461,9 @@ func _test_university_castle(races: Array) -> void:
 	check(int(w.types[sp].eval.range) == sp_range0, "siege wrights: ...spears as they were")
 	# The Castle's research: War Drums and the two race slots.
 	var cb: int = w.buildings.index_of(_put(w, 0, "castle", s[0] / 1000 - 2, s[1] / 1000 + 8))
-	for id in ["war_drums", "creature_research", "culture_research"]:
+	for id in ["war_drums", "bog_poultice"]:   # (player 0 is swamp frogs: the swamp's own research is at the Castle, milestone 14)
 		check(Tech.why_not(w, 0, cb, id) == "", "castle: %s can be researched there (%s)" % [id, Tech.why_not(w, 0, cb, id)])
+	check(Tech.why_not(w, 0, cb, "gnawing_teeth") == Tech.NOT_IN_TREE, "castle: ...not another race's own (the rats' Gnawing Teeth)")
 	var hl: int = w.type_of(0, "healer")
 	var train_sp: int = w.types[sp].train_ticks
 	var train_wk: int = w.types[wk].train_ticks
@@ -2470,13 +2471,8 @@ func _test_university_castle(races: Array) -> void:
 	_give(w, 0, "war_drums")
 	check(w.types[sp].train_ticks == train_sp * 70 / 100, "war drums: soldiers train 30%% faster (%d -> %d ticks)" % [train_sp, w.types[sp].train_ticks])
 	check(w.types[wk].train_ticks == train_wk and (hl < 0 or w.types[hl].train_ticks == train_hl), "war drums: ...workers and healers as before")
-	var hp_sp: int = w.types[sp].hp
-	var speed_sp: int = w.types[sp].speed
-	var hp_wk: int = w.types[wk].hp
-	_give(w, 0, "creature_research")
-	_give(w, 0, "culture_research")
-	check(w.types[sp].hp == hp_sp + 5 and w.types[wk].hp == hp_wk, "own research (placeholder): soldiers +5 HP (%d -> %d), workers not" % [hp_sp, w.types[sp].hp])
-	check(w.types[sp].speed == speed_sp * 105 / 100, "own research (placeholder): soldiers 5%% faster (%d -> %d)" % [speed_sp, w.types[sp].speed])
+	_give(w, 0, "bog_poultice")
+	check(hl < 0 or w.types[hl].heal_pct == 30, "own research: Bog Poultice, healers heal 30%% more (%d)" % (w.types[hl].heal_pct if hl >= 0 else 0))
 	# The Castle's arrows: a volley of `arrows`, one at each of the nearest foes in turn.
 	var arrows: int = int(bdata.castle.attack.arrows)
 	for n in [1, arrows + 2]:
