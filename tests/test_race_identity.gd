@@ -125,6 +125,15 @@ func _test_lacks() -> void:
 	w.researched[1][Tech.research_index(w, "line.skirmisher.2")] = 1
 	check(Tech.why_not(w, 1, ar, "line.skirmisher.3") == Tech.NOT_IN_TREE, "royal: no skirmisher age-3 step (%s)" % Tech.why_not(w, 1, ar, "line.skirmisher.3"))
 	check(Tech.why_not(w, 1, ar, "line.archer.3") != Tech.NOT_IN_TREE, "royal: ...other line upgrades as usual (%s)" % Tech.why_not(w, 1, ar, "line.archer.3"))
+	# Age 3 asks for a Stable; a race without one needs an Archery Range instead.
+	var a2 := _world(["spooky spiders", "royal humans"])
+	for p in 2:
+		a2.ages[p] = 2
+		for r in a2.resources.size():
+			a2.stock[r][p] = 5000
+	check(Tech.why_not(a2, 0, 0, "").begins_with("needs"), "spiders: age 3 needs something first (%s)" % Tech.why_not(a2, 0, 0, ""))
+	_put(a2, 0, "archery_range", a2.map.starts[0][0] / 1000 + 4, a2.map.starts[0][1] / 1000 + 4)
+	check(Tech.why_not(a2, 0, 0, "") == "", "spiders: ...an Archery Range opens age 3, as they have no Stable (%s)" % Tech.why_not(a2, 0, 0, ""))
 	# A lacked line can't be trained even with its building standing (the full tree off).
 	var free := rules.duplicate(true)
 	free.full_tech_tree = true
