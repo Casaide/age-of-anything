@@ -16,8 +16,11 @@ const SHOTS := {
 	"dart": {"speed": 650.0, "arc": 0.04, "len": 4.0, "w": 0.8, "col": Color("#2a2a20")},
 	"ball": {"speed": 900.0, "arc": 0.02, "len": 0.0, "w": 1.8, "col": Color("#303030")},
 	# Siege (milestone 13): a catapult's stone, lobbed high and heavy; a bolt thrower's long bolt.
-	"boulder": {"speed": 260.0, "arc": 0.42, "len": 0.0, "w": 4.2, "col": Color("#8f8a7c"), "sound": "shoot_stone"},
-	"siege_bolt": {"speed": 420.0, "arc": 0.1, "len": 13.0, "w": 1.9, "col": Color("#a89a7c"), "sound": "shoot_bolt"},
+	# Their own sounds (tools/audio/sfx.py): the arm slamming its crossbar, the bow arms' snap.
+	"boulder": {"speed": 260.0, "arc": 0.42, "len": 0.0, "w": 4.2, "col": Color("#8f8a7c"), "sound": "catapult_release"},
+	"siege_bolt": {"speed": 420.0, "arc": 0.1, "len": 13.0, "w": 1.9, "col": Color("#a89a7c"), "sound": "bolt_release"},
+	# The great sling's stone: bigger, higher, from much further off.
+	"sling_stone": {"speed": 240.0, "arc": 0.5, "len": 0.0, "w": 5.0, "col": Color("#8f8a7c"), "sound": "sling_release"},
 }
 const DIE_TIME := 2.2
 const FLASH_TIME := 0.12
@@ -38,6 +41,8 @@ const HEAL_MOTE := Color("#e4f4c0")
 
 ## The shot a weapon's tags call for.
 static func shot_kind(tags: Array) -> String:
+	if "great_sling" in tags:
+		return "sling_stone"
 	if "catapult" in tags:
 		return "boulder"
 	if "bolt_thrower" in tags:
