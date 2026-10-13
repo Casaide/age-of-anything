@@ -19,7 +19,7 @@ const PROMPTS := ["romans", "swamp frogs", "sewer rats", "forest beetles", "spoo
 ## every unique theme in data/uniques.json, a foot scout, the steppe raider on its pony; the sapper, trade cart and great sling.
 const LINE_PROMPTS := ["greeks", "royal humans", "mongols", "aztecs", "egyptians", "han", "sewer rats with cheese hammers",
 	"tiny vikings", "swamp humans", "forest humans", "sewer humans", "spooky humans"]
-const NEW_LINES := ["scout", "mounted_archer", "unique", "large", "trader", "great_sling"]   # (and the cavalry, which rides the same mounts; the sapper in every culture's cap, the cart and the great sling of every take)
+const NEW_LINES := ["scout", "mounted_archer", "unique", "large", "trader", "great_sling", "war_beast"]   # (and the cavalry, which rides the same mounts; the sapper in every culture's cap, the cart and the great sling of every take, every war beast with its riders)
 ## Riders (a race's spear unit, put on each mount) and the mounts.
 const RIDERS := ["romans", "swamp frogs", "sewer rats", "spooky spiders", "forest beetles"]
 const MOUNTS := ["pony", "beetle", "spider", "capybara", "newt", "hummingbird", "cat"]
@@ -103,6 +103,14 @@ static func composite_cases(lib) -> Array:
 		r.body = c[1]
 		r.haul = {"creature": c[2], "skin": c[3], "parts": {"torso": "harness.draught"}}
 		cases.append(["composite: %s %s hauled by a %s" % [c[0], c[1].trim_prefix("concept."), c[2]], {"recipe": r, "eval": step.eval}])
+	# In play: the great sling packed on its wagon while it moves (D-129, UnitView.set_packed), every take that has it.
+	for p in ["romans", "sewer rats", "forest beetles", "spooky spiders", "centaur romans"]:
+		var u: Dictionary = slot(gen.generate(p, rules), "great_sling")
+		var packed: String = lib.part(u.recipe.body).get("packed", "")
+		if packed != "":
+			var r: Dictionary = u.recipe.duplicate(true)
+			r.body = packed
+			cases.append(["composite: %s great sling packed" % p, {"recipe": r, "eval": u.eval}])
 	# In play: what a worker pushes home (D-127: the rats' scrap barrow with stone, handcart with gold).
 	for p in ["sewer rats", "sewer rats with cheese hammers"]:
 		var w: Dictionary = slot(gen.generate(p, rules), "worker")

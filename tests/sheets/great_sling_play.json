@@ -1,0 +1,21 @@
+{
+ "name": "great_sling_play",
+ "title": "The great sling in play (D-129): GS2 in every take, packed on its wagon while it moves; the frogs' stand-in until FS1",
+ "_doc": "The great sling as the game draws it (siege_models.gd _great_sling, _great_packed): six haulers in two files by the pull ropes, a loader at the stones; a centaur crew hauls two abreast further out. The frogs keep their snail catapult as a stand-in until Dominic picks from FS1.",
+ "zooms": [3, 1],
+ "cell": [160, 100],
+ "size": [{"prompt": "romans", "slot": "worker"}, {"prompt": "romans", "slot": "catapult", "age": 3}],
+ "rows": [
+  {"label": "romans (timber)", "h": 1.3, "unit": {"prompt": "romans", "slot": "great_sling", "age": 3}},
+  {"label": "romans: packed\nto move", "h": 1.0, "unit": {"prompt": "romans", "slot": "great_sling", "age": 3, "set": {"body": "siege.sling_packed.timber"}}},
+  {"label": "sewer rats (junk)", "h": 1.3, "unit": {"prompt": "sewer rats", "slot": "great_sling", "age": 3}},
+  {"label": "forest beetles", "h": 1.3, "unit": {"prompt": "forest beetles", "slot": "great_sling", "age": 3}},
+  {"label": "spooky spiders", "h": 1.3, "unit": {"prompt": "spooky spiders", "slot": "great_sling", "age": 3}},
+  {"label": "centaur romans:\ntwo haulers abreast", "h": 1.3, "unit": {"prompt": "centaur romans", "slot": "great_sling", "age": 3}},
+  {"label": "swamp frogs:\nstand-in (snail\ncatapult) until FS1", "h": 1.3, "unit": {"prompt": "swamp frogs", "slot": "great_sling", "age": 3}}
+ ],
+ "sheets": [
+  {"name": "four", "title": "four facings", "columns": [
+   {"facing": 0, "label": "f0 right"}, {"facing": 2, "label": "f2 towards"}, {"facing": 5, "label": "f5"}, {"facing": 6, "label": "f6 away"}]}
+ ]
+}

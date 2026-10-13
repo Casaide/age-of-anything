@@ -91,3 +91,26 @@ clearest "big and unlike anything else" of the two; the mantis if you'd rather h
 1. The picks per family (A or B), or another beast?
 2. The boar: howdah (two riders) or barded with one?
 3. Still one baked body (like the siege beasts), or walking beasts (each a creature-kit mount: more work)?
+
+
+---
+
+# In play (D-129, 2026-10-13)
+
+Dominic picked: the elephant with a howdah for humans (WB1 A), the war boar for rats (WB2: "looks amazing"),
+the giant tarantula alone for spiders (WB2 A, but "too single-colour"), the heron for frogs, the mantis for beetles.
+
+Built (`siege_models.gd` BEAST, parts `siege.beast.<kind>`): the `war_beast` roster slot is live (Stable, age 3), an
+engine line (`engine: "beast"`, `take: "war_beast"`): the beast is the race creature's `war_beast` (creatures.json),
+else its culture's (families.json): humans and centaurs the elephant, rats the boar, spiders the tarantula, frogs the
+heron, beetles the mantis; the timber cultures default to the elephant, sewer the boar, spooky the tarantula, swamp the
+heron, forest the mantis. Its riders are the race's own spearmen at age 3 (roster `crew: "spear"`, `crew_drop: ["back"]`:
+wings, capes and banners stowed in the howdah); a centaur race's riders walk beside the elephant (the `_wide` sockets).
+- **Boar:** the howdah version (two rats), not the barded one: two riders read as more unit at game scale, and the
+  howdah matches the elephant's.
+- **Tarantula:** its back patterned: a rust-red rump with pale chevrons and pale bands across it, a pale-rimmed straw
+  carapace with dark rays, pale hair tufts on the rump and legs, a pale band on each shin; the orange knees kept.
+- The elephant's two riders stand side by side across the howdah (corner to corner they lined up in one facing and
+  drew in the wrong order: placement C4).
+
+Sheets: `tests/sheets/war_beasts_play.json`; archive `630-`, `631-`, in a match `634-`. All rows pass the placement check.

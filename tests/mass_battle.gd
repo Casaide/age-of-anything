@@ -9,7 +9,7 @@ extends SceneTree
 ## against what they beat and what beats them; in age 3 the unique unit against its race's lines. Prints win rates and the
 ## value each side has left.
 ## Deterministic. Massed archers should be strong but counterable.
-## Run: godot --headless --path . --script res://tests/mass_battle.gd [-- age [budget] [combat_rule=value ...] [serial] [jobs=N]]
+## Run: godot --headless --path . --script res://tests/mass_battle.gd [-- age [budget] [combat_rule=value ...] [serial] [jobs=N] [beasts]]
 ## (each match in its own process, side by side, unless "serial")
 
 const DataLib := preload("res://src/data_lib.gd")
@@ -66,6 +66,17 @@ const SIEGE_MATCHES := [
 	["catapults v cavalry", ["catapult"], ["large"]],
 	["bolt throwers v cavalry", ["bolt_thrower"], ["large"]],
 ]
+## War beasts (milestone 13 step 7, D-129, age 3): big, slow and tough; they should beat foot soldiers
+## (swords, archers) and lose to spears, skirmishers and bolt throwers at equal cost.
+const BEAST_MATCHES := [
+	["beasts v swords", ["war_beast"], ["infantry"]],
+	["beasts v archers", ["war_beast"], ["archer"]],
+	["beasts v cavalry", ["war_beast"], ["large"]],
+	["spears v beasts", ["spear"], ["war_beast"]],
+	["skirmishers v beasts", ["skirmisher"], ["war_beast"]],
+	["bolt+spear v beasts", ["bolt_thrower", "spear"], ["war_beast"]],
+	["beast+archer v spear+archer", ["war_beast", "archer"], ["spear", "archer"]],
+]
 const LIMIT := 4000   # ticks (3:20)
 const FRONT := [22000, 42000]   # x of each side's front line; the map is 64 tiles square
 const MID_Y := 32000
@@ -79,14 +90,18 @@ func _init() -> void:
 	var args := all_args.filter(func(a): return not a.begins_with("match:") and a != "serial")
 	var age := int(args[0]) if args.size() > 0 else 2
 	var budget := int(args[1]) if args.size() > 1 else 1500
-	var matches: Array = MATCHES + (SIEGE_MATCHES + UNIQUE_MATCHES if age >= 3 else [])
+	var matches: Array = MATCHES + (SIEGE_MATCHES + UNIQUE_MATCHES + BEAST_MATCHES if age >= 3 else [])
+	var beasts := all_args.has("beasts")   # just the war beasts' matches (tuning their price_points)
+	if beasts:
+		matches = BEAST_MATCHES
+		args = args.filter(func(a): return a != "beasts")
 	var t0 := Time.get_ticks_msec()
 	if only.is_empty():
 		for arg in args.slice(2):
 			print("trying combat.%s = %s" % [arg.get_slice("=", 0), arg.get_slice("=", 1)])
 		print("Mass battles, age %d, budget %d a side, each fought both ways round" % [age, budget])
 	if only.is_empty() and not serial:   # each match in its own process, side by side; printed in order
-		var jobs := range(matches.size()).map(func(k): return Par.job("mass/%d" % k, "res://tests/mass_battle.gd", args + ["match:%d" % k]))
+		var jobs := range(matches.size()).map(func(k): return Par.job("mass/%d" % k, "res://tests/mass_battle.gd", args + (["beasts"] if beasts else []) + ["match:%d" % k]))
 		for r in Par.run(jobs, Par.jobs_wanted(OS.get_cmdline_user_args()), true):
 			assert(r.code == 0, "mass_battle: %s failed, see %s" % [r.name, r.log])
 			print("\n" + FileAccess.get_file_as_string(r.log).trim_prefix(FileAccess.get_file_as_string(r.log).get_slice("\n", 0)).strip_edges())

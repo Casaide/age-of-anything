@@ -66,3 +66,42 @@ it moves and packs (a second baked part swapped when it's set up).
 1. Big enough and sturdy enough now?
 2. Frogs: the standing frame (A), or a beast again (B on the turtle)?
 3. Packed and set up as two looks (a small view change), or one look always?
+
+
+---
+
+# In play (D-129, 2026-10-13)
+
+Dominic: GS2 is "much better". Built: the siege-weight traction sling for timber, junk, forest and spooky
+(`siege_models.gd` _great_sling, `siege.sling.<take>`), and the packed wagon while it isn't set up
+(`siege.sling_packed.<take>`, the body part's `packed`; `UnitView.set_packed`, from the sim's `units.ready`).
+The six haulers stand in two files beside two pull ropes that run from the crossbar to stakes in the ground (the
+haulers in two ranks stood in each other: placement C1); a centaur crew hauls two abreast further out (`_wide`, the
+rest `_narrow`). The frogs keep their snail catapult as a stand-in (ENGINE_STAND_IN) until they pick from FS1.
+Sheets: `tests/sheets/great_sling_play.json`; archive `632-`, `633-`, in a match `634-`.
+
+
+# FS1: the frogs' great sling (2026-10-13)
+
+Dominic on GS2's frogs: "the tortoise one is wrong, and the plain one probably too boring". Three swamp ideas that
+repeat none of their beasts (the turtle ram, snail catapult, toad bolt thrower, heron war beast, newt cavalry).
+
+Sheets: `fs1_3x.png`, `fs1_1x.png`; archive `635-`, `636-`. Spec `tests/sheets/great_sling_fs1.json` (size references:
+a frog worker, the frogs' snail catapult that stands in now, the humans' great sling as played), models
+`scenes/art_pixel/m13_concepts.gd` (FS1), staged from `data/later/m13_concepts.json`. All rows pass the placement check.
+
+- **A, the bullfrog leaper:** a counterweight sling the other way round from the traction one: its long arm down in
+  front with the pouch on the ground, the short arm up high behind with a padded landing pad, and a giant olive
+  bullfrog (yellow throat, gold eyes) crouched on a reed tower behind it, about to leap onto the pad and fling the
+  stone. Two frogs load the pouch, one minds the tower.
+- **B, the stilt sling:** the GS2 frame smaller on a long deck up on bundled-reed stilts over a sledge (a swamp
+  house on the move); the pull ropes run to cleats at the deck's front, four frogs hauling up on the deck, a loader
+  at the stones below.
+- **C, the crayfish winder:** the GS2 frame hauled down by a giant crayfish (WB2's, unused there) gripping the two
+  pull ropes in its claws and backing away; a frog rides it, another loads.
+
+What I see at game scale: A is the most frog and the funniest, and the tower and the bullfrog make it read as tall as
+GS2; it's busy from behind. B reads as a deck of frogs more than a sling (frogs are big next to a smaller frame).
+C is the longest thing in the game and splits into two things at 1x, though the crayfish is a strong read.
+
+**Claude's recommendation:** A (the bullfrog leaper). **Question for Dominic:** A, B or C (or another idea)?

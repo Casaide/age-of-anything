@@ -295,8 +295,10 @@ func _build_engine(r: Dictionary, lib, team: Color, colours: Dictionary, speed: 
 ## beasts hauling it ("haul<n>_f<k>"). The placement check composes the same (tests/placement/composite_3d.gd).
 static func engine_sockets(r: Dictionary, sockets: Dictionary) -> Array:
 	var wide: bool = r.crew.has("mount")
-	# A "_wide" socket stands in for its namesake ("crew0_f0_reach_in", "crew2_f0_reach") for such a crew.
-	var out: Array = sockets.keys().filter(func(s): return s.begins_with("crew") and (s.ends_with("_wide") == wide or (wide and not sockets.has(s.trim_suffix("_in") + "_wide") and not s.ends_with("_in"))))
+	# A "_wide" socket stands in for its namesake ("crew0_f0_reach_in", "crew2_f0_reach"; a war beast's rider
+	# "crew0_f0_top", D-129) for such a crew.
+	# A "_narrow" one is only for a crew that fits a tight file (the great sling's haulers): such a crew leaves it out.
+	var out: Array = sockets.keys().filter(func(s): return s.begins_with("crew") and not (wide and s.ends_with("_narrow")) and (s.ends_with("_wide") == wide or (wide and not sockets.has(s.trim_suffix("_in").trim_suffix("_top") + "_wide") and not s.ends_with("_in"))))
 	if r.has("haul"):
 		out += sockets.keys().filter(func(s): return s.begins_with("haul"))
 	return out
@@ -648,6 +650,32 @@ func _push(engine_id: String) -> void:
 		_built[0] = push_recipe(_own_recipe, engine_id)
 	else:
 		return
+	_rebuild()
+
+
+## Packed to move (the great sling, D-129): an engine whose body part names a `packed` look (parts.json:
+## "siege.sling_packed.<take>", the frame on its wagon) shows it while it isn't set up (the sim's
+## units.ready under its unpack: rolling, packing or unpacking), its own look once it is. Only once the
+## packed look is baked (else it stays as it is: nothing shows magenta).
+var _set_up_body := ""   # the engine's own body while it shows packed
+
+
+func set_packed(on: bool) -> void:
+	var r: Dictionary = _built[0]
+	var lib = _built[1]
+	var to := ""
+	if on and _set_up_body == "":
+		to = lib.part(r.body).get("packed", "")
+		if to == "" or not (PartShape.rigs.has(to + PartShape.facing_suffix(facing_k)) or PartShape.rigs.has(to)):
+			return
+		_set_up_body = r.body
+	elif not on and _set_up_body != "":
+		to = _set_up_body
+		_set_up_body = ""
+	else:
+		return
+	_built[0] = r.duplicate()
+	_built[0].body = to
 	_rebuild()
 
 

@@ -1,0 +1,16 @@
+{
+ "_doc": "What siege engines throw, as the view draws it (src/view/combat_fx.gd; Dominic: 'the rocks they throw look really bad'). An engine's body part names its look (parts.json `shot`: the catapult's take, the great sling's the same thing bigger, the bolt thrower's bolt). Each look: `part` the baked sprite (parts.json shot.*, modelled in scenes/art_pixel/siege_models.gd shot_model, baked in 8 facings with the engine), `spin` facings a second it tumbles through in flight (0: it flies nose first, drawn in the facing nearest its heading), `shadow` the ground shadow's radius (canvas px, at the ground; it shrinks and fades as the shot climbs), `impact` what it does where it lands: bounce (hops on once and rolls to a stop, then sinks away), break (bursts into `bits` pieces of its colour), stick (stands in the ground), `debris` the colour of the chunks and dust it throws up, `bits` how many. The dust ring over the area it hurts comes from the sim's splash radius (combat_fx.splash). View only: nothing here touches the sim.",
+ "looks": {
+  "boulder": {"part": "shot.boulder", "spin": 10, "shadow": 3.2, "impact": "bounce", "debris": "#8a8274", "bits": 6},
+  "boulder_big": {"part": "shot.boulder_big", "spin": 6, "shadow": 5.0, "impact": "bounce", "debris": "#8a8274", "bits": 9},
+  "cheese": {"part": "shot.cheese", "spin": 12, "shadow": 3.0, "impact": "break", "debris": "#e8c050", "bits": 7},
+  "cheese_big": {"part": "shot.cheese_big", "spin": 7, "shadow": 4.8, "impact": "break", "debris": "#e8c050", "bits": 10},
+  "acorn": {"part": "shot.acorn", "spin": 11, "shadow": 3.0, "impact": "bounce", "debris": "#7a5030", "bits": 6},
+  "acorn_big": {"part": "shot.acorn_big", "spin": 6, "shadow": 4.8, "impact": "bounce", "debris": "#7a5030", "bits": 9},
+  "bone": {"part": "shot.bone", "spin": 12, "shadow": 3.0, "impact": "break", "debris": "#e6dcc4", "bits": 7},
+  "bone_big": {"part": "shot.bone_big", "spin": 7, "shadow": 4.8, "impact": "break", "debris": "#e6dcc4", "bits": 10},
+  "clay": {"part": "shot.clay", "spin": 10, "shadow": 3.0, "impact": "break", "debris": "#c8704c", "bits": 8},
+  "clay_big": {"part": "shot.clay_big", "spin": 6, "shadow": 4.8, "impact": "break", "debris": "#c8704c", "bits": 11},
+  "bolt": {"part": "shot.bolt", "spin": 0, "shadow": 2.0, "impact": "stick", "debris": "#8a7a60", "bits": 3}
+ }
+}
