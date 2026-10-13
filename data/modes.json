@@ -78,10 +78,10 @@
     },
     "workers": 4,
     "army": {
-     "infantry": 28,
-     "spear": 14,
-     "archer": 16,
-     "large": 10,
+     "infantry": 26,
+     "spear": 13,
+     "archer": 15,
+     "large": 9,
      "ram": 6,
      "catapult": 4,
      "siege_tower": 3
