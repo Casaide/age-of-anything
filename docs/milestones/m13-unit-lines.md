@@ -110,6 +110,8 @@ picks), then build, tests, archive pictures.
   - [x] The newt built as the frogs' cavalry mount (D-122): `body/head/leg.newt` in data and
     `unit_models.gd`, three skins, amphibious, the swamp family's and the frogs' own mount (2026-10-13)
 - [ ] Swordsman age-3 kit for every culture (Dominic, 2026-10-13: "need age 3"; concept round running)
+  - [x] Concept round S3: two options each for hellenic, steppe, han, swamp, forest, spooky (2026-10-13)
+  - [ ] Dominic's pick, then build it
 - [ ] Rat mount: the long-head capybara (in play) or the alley cat (iterating: a real cat body, sits when idle); the tiger for another culture?
 - [ ] Siege engine sounds (they reuse shot and hit sounds); the swordsmen's raid mode for the bot (built, off)
 - [ ] Check bugs (swamp beetles, spiders) riding newts; "frogs riding beetles" now gives newts
@@ -363,6 +365,21 @@ Barracks' `trains` like every line's, and the tech tree page draws it with no ne
   question, not a fix). **Gap:** the iron sword is the only tier-3 blade and it's royal (knight) kit,
   so swamp, forest, hellenic, steppe and spooky swordsmen get nothing new in age 3 (the upgrade
   shows "nothing to upgrade"); a generic age-3 blade (or a culture blade each) needs a concept round.
+
+**Swordsman age 3, concept round S3 (2026-10-13).** Dominic: "Swords looking great, need age 3." The
+swamp, forest, hellenic, steppe and spooky swordsmen are the same unit in ages 2 and 3, and han's only
+gets a helmet (imperial, nile, aztec and sewer step up through armour or helmets). Two options each,
+modelled in `scenes/art_pixel/sword3_concepts.gd` and baked through the real part pipeline in the
+swordsman's hold, on the culture's swordsman beside its age-2 self in 8 facings plus a wind-up and a
+blow (`tests/sword3_concept_sheet.gd`; nothing in play, no race changed): hellenic A iron kopis, B long
+xiphos + Attic helmet with a high crest; steppe A long sabre, B flared heavy sabre + spiked helmet with
+mail; han A jian, B dao; swamp A reed saw with obsidian teeth, B river-stone mace; forest A
+chitin-edged blade, B thorn sword; spooky A bone scythe-sword, B hooked sickle blade. Polished steel
+needed a pale tint to outshine bronze at game scale. Claude recommends hellenic B, steppe B, han B,
+swamp B, forest A, spooky B (the helmets change the silhouette from every side; slim blades and the
+bone curve vanish at 1x), plus a generic age-3 blade for cultures without one. Pictures
+`archive/images/2026-10-13/330-` (all, game scale) and `331-` to `336-` (3x per culture); notes in
+`docs/concepts/sword3/README.md`.
 
 ## Changes from the original plan
 
