@@ -2904,6 +2904,80 @@ func _ladder(arch: String, team: Color) -> Dictionary:
 	return {"body": body, "anchor": Vector3.ZERO, "lights": [], "team": team}
 
 
+# Milestone 16 concept round W1 (tests/building_sheet.gd looks, nothing in play but the
+# placeholders above): wall towers, ladders and a breach's rubble, each in a few directions.
+
+## Wall tower looks: "squat" (the placeholder), "drum" (a round tower standing proud of the wall,
+## a conical cap), "hoard" (a taller square tower with a timber hoarding round its top, a roof).
+func _wall_tower_look(name: String, arch: String, team: Color) -> Dictionary:
+	if name == "squat":
+		return _wall_tower(arch, team)
+	var body := Node3D.new()
+	var m: Material = mats.get_mat(WALL_STONE[arch])
+	var wood := mats.get_mat("wood")
+	var dark := Materials.flat(Color("#1e1a16"), 1.0)
+	if name == "drum":
+		var h := 1.35
+		body.add_child(cyl(0.46, 0.5, h, m, Vector3(0, h / 2, 0), Vector3.ZERO, 14))
+		for k in 8:
+			var a := TAU * k / 8.0
+			body.add_child(box(Vector3(0.14, 0.16, 0.14), m, Vector3(cos(a) * 0.4, h + 0.08, sin(a) * 0.4)))
+		body.add_child(box(Vector3(0.03, 0.24, 0.07), dark, Vector3(0.49, 0.8, 0.0)))
+		body.add_child(box(Vector3(0.07, 0.24, 0.03), dark, Vector3(0.0, 0.8, 0.49)))
+		body.add_child(box(Vector3(0.22, 0.3, 0.02), cloth(team), Vector3(-0.15, h - 0.25, 0.47)))
+	else:
+		var h := 1.55
+		body.add_child(box(Vector3(0.8, h, 0.8), m, Vector3(0, h / 2, 0)))
+		body.add_child(box(Vector3(1.02, 0.34, 1.02), wood, Vector3(0, h + 0.1, 0)))   # the hoarding
+		for x in [-0.45, 0.45]:
+			for z in [-0.45, 0.45]:
+				body.add_child(box(Vector3(0.05, 0.4, 0.05), wood, Vector3(x, h - 0.12, z)))
+		var roof: Material = mats.get_mat("terracotta" if KIT.get(arch, {}).get("roof", "") == "tiles" else KIT.get(arch, {}).get("roof", "thatch"))
+		body.add_child(cyl(0.0, 0.78, 0.5, roof, Vector3(0, h + 0.52, 0), Vector3(0, 45, 0), 4))
+		body.add_child(box(Vector3(0.07, 0.24, 0.03), dark, Vector3(0, 0.8, 0.41)))
+		body.add_child(box(Vector3(0.24, 0.32, 0.02), cloth(team), Vector3(0.2, h - 0.15, 0.52)))
+	return {"body": body, "anchor": Vector3.ZERO, "lights": [], "team": team}
+
+
+## Ladder looks: "plain" (the placeholder), "hooked" (heavier, iron hooks at the top to bite the
+## parapet, a rope), "mantlet" (the ladder carried up behind a wicker screen on two legs).
+func _ladder_look(name: String, arch: String, team: Color) -> Dictionary:
+	if name == "plain":
+		return _ladder(arch, team)
+	var spec := _ladder(arch, team)
+	var body: Node3D = spec.body
+	var iron := Materials.flat(Color("#4a4c50"), 0.5, 0.7)
+	if name == "hooked":
+		for z in [-0.14, 0.14]:
+			body.add_child(box(Vector3(0.12, 0.03, 0.03), iron, Vector3(-0.3, 1.04, z)))
+			body.add_child(box(Vector3(0.03, 0.08, 0.03), iron, Vector3(-0.36, 1.0, z)))
+		body.add_child(cyl(0.012, 0.012, 0.9, Materials.flat(Color("#c8b48a"), 0.9), Vector3(0.1, 0.5, 0.2), Vector3(0, 0, 20), 5))
+	else:
+		var wicker := mats.get_mat("weave")
+		body.add_child(box(Vector3(0.06, 0.62, 0.62), wicker, Vector3(0.28, 0.36, 0), Vector3(0, 0, -8)))
+		for z in [-0.26, 0.26]:
+			body.add_child(box(Vector3(0.04, 0.5, 0.04), mats.get_mat("wood"), Vector3(0.42, 0.22, z), Vector3(0, 0, 25)))
+	return spec
+
+
+## A breach's rubble: "heap" (a low spill of the wall's stones across the gap), "stub" (the wall's
+## broken foot standing a little, stones fallen either side).
+func _wall_rubble_look(name: String, arch: String, team: Color) -> Dictionary:
+	var body := Node3D.new()
+	var m: Material = mats.get_mat(WALL_STONE[arch])
+	rng.seed = 1600
+	if name == "stub":
+		body.add_child(box(Vector3(0.6, 0.22, 0.5), m, Vector3(0, 0.11, 0)))
+		body.add_child(box(Vector3(0.3, 0.16, 0.3), m, Vector3(0.12, 0.3, -0.05), Vector3(0, 20, 8)))
+	for k in (9 if name == "heap" else 6):
+		var at := Vector3(rng.randf_range(-0.42, 0.42), 0.05, rng.randf_range(-0.42, 0.42))
+		var sz := rng.randf_range(0.1, 0.2)
+		body.add_child(box(Vector3(sz, sz * 0.7, sz), m, at + Vector3(0, sz * 0.3, 0), Vector3(rng.randf_range(-20, 20), rng.randf_range(0, 90), rng.randf_range(-20, 20))))
+	if name == "heap":
+		body.add_child(box(Vector3(0.7, 0.1, 0.6), m, Vector3(0, 0.04, 0), Vector3(0, 10, 0)))
+	return {"body": body, "anchor": Vector3.ZERO, "lights": [], "team": team}
+
+
 func _stone_gate(arch: String, team: Color) -> Dictionary:
 	return {"body": _gatehouse(arch, team, false), "open": _gatehouse(arch, team, true), "anchor": Vector3.ZERO, "lights": [], "team": team}
 
