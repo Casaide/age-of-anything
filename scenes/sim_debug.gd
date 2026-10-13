@@ -1303,6 +1303,13 @@ func _play_events() -> void:
 			if e.has("paid") and _owner_of(e.id) == active:
 				audio.play("trade_paid", -6.0)
 			continue
+		if e.type == "pour":   # the defenders' tools (hot oil, scalding cheese...): a burst at the gate's foot
+			if reveal or Fog.visible(world, active, e.x, e.y):
+				var at := Iso.to_ground(e.x, e.y)
+				fx.splash(at, 1.4 * SimMap.TILE * Iso.RADIUS_PX)
+				if _on_screen(at):
+					audio.play("hit_blunt", -4.0)
+			continue
 		if e.type == "miss" or (e.type == "hit" and e.has("x")):
 			_landed(e)   # a shot in flight came down
 			continue

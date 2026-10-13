@@ -572,6 +572,18 @@ static func _push_ladders(w) -> void:
 			bs.remove_at(b)
 
 
+## Units of a building's own team settled on each walkway cell (cell -> count): who mans what.
+static func manned(w) -> Dictionary:
+	var u = w.units
+	var out := {}
+	for i in u.count():
+		if u.perch[i] != 0 and u.wgoal[i] == 0 and u.wtime[i] == 0:
+			var c: int = u.perch[i] - 1
+			if team_at(w, c) == w.teams[u.owner[i]]:
+				out[c] = int(out.get(c, 0)) + 1
+	return out
+
+
 ## Units standing on (or making for) each walkway cell, leaving out the slots in `except`.
 static func _held(w, except: Array) -> Dictionary:
 	var u = w.units
@@ -765,6 +777,11 @@ static func hash_into(w, h: int) -> int:
 		if u.perch[i] != 0 or u.wgoal[i] != 0:
 			for v in [u.id[i], u.perch[i], u.wgoal[i], u.wnext[i], u.wexit[i], u.wtime[i]]:
 				h = Fixed.mix(h, v)
+	if not w.pour_at.is_empty():
+		var ids: Array = w.pour_at.keys()
+		ids.sort()
+		for id in ids:
+			h = Fixed.mix(Fixed.mix(h, id), w.pour_at[id])
 	if not w.rubble.is_empty():
 		var cells: Array = w.rubble.keys()
 		cells.sort()

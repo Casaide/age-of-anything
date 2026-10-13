@@ -88,7 +88,15 @@ static func load_btypes(resources: Array) -> Array:
 			"arrows": int(b.get("attack", {}).get("arrows", 1)),
 			"walkway": int(b.get("walkway", 0)), "stairs": bool(b.get("stairs", false)), "joins": bool(b.get("joins", false)),   # walls you stand on (walls.gd)
 			"ladder": bool(b.get("ladder", false)),
+			"pour": _ints_of(b.get("pour", {})),   # the defenders' tools (combat.gd _pour)
 		})
+	return out
+
+
+static func _ints_of(d: Dictionary) -> Dictionary:
+	var out := {}
+	for k in d:
+		out[k] = int(d[k])
 	return out
 
 

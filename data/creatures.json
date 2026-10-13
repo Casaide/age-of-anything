@@ -35,6 +35,7 @@
   "architecture": "reed",
   "gait": "hop",
   "siege": "frog",
+  "pour": "boiling swamp water",
   "mounts": [
    "newt"
   ],
@@ -82,6 +83,7 @@
    "sewer",
    "forest"
   ],
+  "pour": "scalding cheese",
   "mounts": [
    "cat"
   ],

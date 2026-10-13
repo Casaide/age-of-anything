@@ -85,6 +85,8 @@ static func setup(w) -> void:
 			b.reach = int(b.attack.range) * SimMap.TILE
 			b.reload = int(b.attack.reload)
 			b.shot_speed = int(w.combat.shot_speed)
+		if not b.pour.is_empty():   # the defenders' tools (_pour)
+			b.pour_atk = _vector(w, {"melee": int(b.pour.damage)})
 		var cls := PackedByteArray()
 		cls.resize(w.classes.size())
 		cls[0] = 1
@@ -505,6 +507,7 @@ static func tick(w) -> void:
 	for b in besieged:
 		_surround(w, b, chasers[b], hitters.get(b, []))
 	_towers(w)
+	_pour(w, hurt, hurt_by)
 	_apply(w, hurt, hurt_by, bhurt)
 	for k in brhurt.size():
 		if brhurt[k] > 0:
@@ -570,6 +573,59 @@ static func _towers(w) -> void:
 				dmg = uphill(w, dmg)
 			_loose(w, bs.id[b], bs.owner[b], mx, my, best, -1, dmg, -1 - bs.kind[b], e[2], bt.shot_speed, k)
 		bs.cooldown[b] = bt.reload
+
+
+## The defenders' tools (milestone 16): a finished gatehouse or wall tower with a "pour" that one of
+## its side is settled on (manned: walls.gd) pours on every enemy on the ground (not up on a wall,
+## not an animal) within pour.reach tiles of it, every pour.reload ticks: pour.damage melee against
+## each one's armour. One "pour" event for the view (each culture names its own: families.json pour).
+static func _pour(w, hurt: PackedInt32Array, hurt_by: PackedInt32Array) -> void:
+	var bs = w.buildings
+	var u = w.units
+	var crew := {}
+	var looked := false
+	for b in bs.count():
+		var bt: Dictionary = w.btypes[bs.kind[b]]
+		if bt.pour.is_empty() or bs.done[b] == 0 or int(w.pour_at.get(bs.id[b], 0)) > w.tick:
+			continue
+		if not looked:
+			var any := false
+			for i in u.count():
+				if u.perch[i] != 0:
+					any = true
+					break
+			if not any:
+				return   # nobody up on any wall: nothing is manned
+			crew = Walls.manned(w)
+			looked = true
+		var on := false
+		for c in bs.footprint(b, w.map.width):
+			if crew.has(c):
+				on = true
+				break
+		if not on:
+			continue
+		var reach: int = int(bt.pour.reach) * SimMap.TILE
+		var x0: int = bs.cx[b] * SimMap.TILE - reach
+		var y0: int = bs.cy[b] * SimMap.TILE - reach
+		var x1: int = (bs.cx[b] + bs.sx[b]) * SimMap.TILE + reach
+		var y1: int = (bs.cy[b] + bs.sy[b]) * SimMap.TILE + reach
+		var hit := false
+		for j in u.count():
+			if u.x[j] < x0 or u.x[j] >= x1 or u.y[j] < y0 or u.y[j] >= y1 or u.perch[j] != 0 or not w.is_foe(u.owner[j], bs.owner[b]):
+				continue
+			var tt: Dictionary = w.types[u.kind[j]]
+			if tt.has("animal"):
+				continue
+			var d := damage(bt.pour_atk, tt.arm, tt.cls, int(w.combat.min_damage))
+			hurt[j] += d
+			hurt_by[j] = bs.id[b]
+			hit = true
+			w.events.append({"type": "hit", "by": bs.id[b], "to": u.id[j], "damage": d, "ranged": false, "pour": true})
+		if hit:
+			w.pour_at[bs.id[b]] = w.tick + int(bt.pour.reload)
+			w.events.append({"type": "pour", "building": bs.id[b], "owner": bs.owner[b],
+				"x": bs.cx[b] * SimMap.TILE + bs.sx[b] * SimMap.TILE / 2, "y": bs.cy[b] * SimMap.TILE + bs.sy[b] * SimMap.TILE / 2})
 
 
 ## Loose a shot from (sx, sy) at unit j (or building b): it flies at the spot the unit stands on,

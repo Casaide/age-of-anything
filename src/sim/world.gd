@@ -168,6 +168,7 @@ var repair_cfg: Dictionary     # buildings.json repair: speed_pct, cost_pct (rep
 var wall_cache := {}           # walkway cell -> its network's steps from it, for this tick (walls.gd); derived
 var wall_cache_tick := -1
 var rubble := {}               # breach cell -> [terrain it was, owner, building type, x, y, along] (walls.gd)
+var pour_at := {}              # gatehouse or wall tower id -> the tick it may pour again (combat.gd _pour)
 var wear := PackedByteArray()  # per cell: how worn the ground is by walkers (trails.gd)
 var bridge_id := PackedInt32Array()   # per map bridge: its id (from next_id), and the rest of its state (bridges.gd)
 var bridge_cells: Array = []          # PackedInt32Array of its deck cells

@@ -73,6 +73,7 @@
    "banner": "ragged"
   },
   "siege": "timber",
+  "pour": "boiling swamp water",
   "unique": "bog_lurker"
  },
  "sewer": {
@@ -149,6 +150,7 @@
    "banner": "notched"
   },
   "siege": "junk",
+  "pour": "scalding sewage",
   "unique": "scrap_brute"
  },
  "forest": {
@@ -224,6 +226,7 @@
    "banner": "notched"
   },
   "siege": "forest",
+  "pour": "boiling sap",
   "unique": "moss_warden"
  },
  "imperial": {
@@ -297,6 +300,7 @@
    "banner": "fringe"
   },
   "siege": "timber",
+  "pour": "hot oil",
   "unique": "testudo"
  },
  "hellenic": {
@@ -372,6 +376,7 @@
    "banner": "pointed"
   },
   "siege": "timber",
+  "pour": "red-hot sand",
   "unique": "phalanx"
  },
  "royal": {
@@ -442,6 +447,7 @@
    "banner": "fringe"
   },
   "siege": "timber",
+  "pour": "boiling pitch",
   "unique": "sworn_knight"
  },
  "steppe": {
@@ -527,6 +533,7 @@
    "banner": "tongues"
   },
   "siege": "timber",
+  "pour": "hot oil",
   "unique": "steppe_raider"
  },
  "spooky": {
@@ -592,6 +599,7 @@
    "banner": "ragged"
   },
   "siege": "spooky",
+  "pour": "boiling tar",
   "unique": "gloom_stalker"
  },
  "nile": {
@@ -668,6 +676,7 @@
    "banner": "pointed"
   },
   "siege": "timber",
+  "pour": "red-hot sand",
   "unique": "nile_bowguard"
  },
  "han": {
@@ -742,6 +751,7 @@
    "banner": "swallowtail"
   },
   "siege": "timber",
+  "pour": "boiling oil",
   "unique": "repeater"
  },
  "aztec": {
@@ -812,6 +822,7 @@
    "banner": "scalloped"
   },
   "siege": "timber",
+  "pour": "hot ash",
   "unique": "obsidian"
  }
 }
