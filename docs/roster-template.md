@@ -70,7 +70,7 @@ Legend:
 | Light scout cavalry (2 tiers) | `scout`              | fast mount, light weapon     | beats skirmishers, healers, workers, siege; sees far; weak to spears | 2   | **Built** (m13); on foot where nothing carries the race |
 | Heavy cavalry (3 tiers)       | `large`              | mount or Heavy/Giant + melee | beats archers, skirmishers; weak to spears, anti-cavalry, mystics | 3   | **MVP** (as the age-2 unit) |
 | Anti-cavalry mount            | `anti_cavalry_mount` | mount + bonus vs mounted     | beats cavalry; weak to spears, infantry                           | 3   | Later                       |
-| War beast                     | `war_beast`          | giant creature or huge mount | tanky vs buildings and infantry; weak to spears, mystics          | 3   | Later                       |
+| War beast                     | `war_beast`          | giant creature or huge mount | tanky vs buildings and infantry; weak to spears, mystics          | 3   | Next: concept round WB1 (m13) |
 | Light lancer                  | `lancer`             | mount + reach                | beats ranged; weak to spears                                      | 3   | Later                       |
 
 ### Siege Workshop
@@ -89,7 +89,7 @@ Legend:
 | ----------------------- | ----------- | --------------------------------------------------------- | ------------------------------------------------------------- | --- | --------------------- |
 | Unique unit             | `unique`    | the race's signature (prompt-driven, bigger point budget) | A theme from `data/uniques.json`: asked for, else the creature's, else the culture's; raiders (steppe, gutter rats, vikings, gloom) are themes | 3   | **Built** (m13)       |
 | Long-range siege engine | `trebuchet` | long-range anti-building siege                            | Packs/unpacks                                                 | 4   | Later (**parts gap**) |
-| Sapper                  | `sapper`    | suicide anti-building                                     | Frogs with fireworks                                          | 3   | Later                 |
+| Sapper                  | `sapper`    | suicide anti-building                                     | Frogs with fireworks                                          | 3   | **Built** (m13; charge look: SP1) |
 
 ### Temple
 
@@ -115,7 +115,7 @@ Naval craft are bodies too: lily-pad rafts for frogs, bottle boats for rats.
 
 | Line       | Slot     | Notes                             | Status |
 | ---------- | -------- | --------------------------------- | ------ |
-| Trade cart | `trader` | Needs gold and multi-market trade | Later  |
+| Trade cart | `trader` | Needs gold and multi-market trade | **Built** (m13; look: TC1) |
 
 ## Variety: every army must look varied (Dominic, 2026-10-11)
 

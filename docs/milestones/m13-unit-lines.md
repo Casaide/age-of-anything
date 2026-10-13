@@ -1,6 +1,6 @@
 # Milestone 13: Unit lines
 
-**Status:** in progress (2026-10-13): siege engines built (step 3b), steps 2 and 8 (siege part) done
+**Status:** in progress (2026-10-13): siege engines built (step 3b), steps 2 and 8 (siege part) done; trade carts, the sapper and the great sling in play with placeholder looks, concept rounds TC1, WB1, SP1, GS1 waiting on Dominic
 **Exit criterion:** the tech tree page shows no blank nodes for land; every line trains, fights by
 its counters, and the AI uses it; a balance round robin at ages 2 and 3 with no line more than 20%
 off at equal cost; Dominic plays a match using siege and healers.
@@ -117,17 +117,28 @@ picks), then build, tests, archive pictures.
   - [x] Dominic's pick (D-125), built into play with a plain iron sword as the fallback (2026-10-13)
   - [ ] Dominic's look in a match
 - [ ] Rat mount: the long-head capybara (in play) or the alley cat (iterating: a real cat body, sits when idle); the tiger for another culture?
-- [ ] Siege engine sounds (they reuse shot and hit sounds); the swordsmen's raid mode for the bot (built, off)
+- [x] Siege engine sounds (2026-10-13: ram, catapult release and impact, bolt thrower, great sling, sapper blast, coins)
+- [x] The swordsmen's raid mode for the bot (`building_foes` 2, switched on 2026-10-13; see Results)
 - [ ] Check bugs (swamp beetles, spiders) riding newts; "frogs riding beetles" now gives newts
 - [ ] 4. Unique unit, sapper, great sling
   - [x] The unique unit: themes in `data/uniques.json` (17, raiders among them), from existing parts (2026-10-13)
   - [ ] Dominic's look at the themes; concept round for the new parts each wants (list in Results)
-  - [ ] Sapper, great sling
+  - [x] Sapper, great sling: built and in play (2026-10-13), placeholder looks
+  - [x] Concept rounds SP1 (the sapper's charge) and GS1 (the great sling) (2026-10-13)
+  - [ ] Dominic's picks (SP1, GS1), then build the looks
 - [x] 5. Healers (built 2026-10-12; the look is a pick pending: HL1 concept sheet, look A in game)
 - [ ] 6. Trade carts
+  - [x] Mechanics, data, AI, Pack Animals, a placeholder look (2026-10-13)
+  - [x] Concept round TC1 (2026-10-13)
+  - [ ] Dominic's pick, then build the look
 - [ ] 7. War beasts
-- [ ] 8. AI (siege part done 2026-10-13: a few engines, rams at gates, walls and towers, catapults at towers)
+  - [x] Concept round WB1 (2026-10-13)
+  - [ ] Dominic's pick, then build (the slot stays `planned` until then)
+- [ ] 8. AI (siege part done 2026-10-13: a few engines, rams at gates, walls and towers, catapults at towers; trade carts, the sapper and the great sling 2026-10-13; war beasts wait)
 - [ ] 9. Balance and exit check
+  - [x] Round robin and mass battles at ages 2 and 3 with every line (2026-10-13; see Results)
+  - [ ] A design change for the structural outliers (proposal for Dominic in Results)
+  - [ ] Dominic's match
 - [ ] Archive: pictures taken along the way, journal, decisions, timeline
 
 ## Results
@@ -589,6 +600,120 @@ cavalry, the Archery Range the mounted archer, the Castle the unique unit (`data
 - **Open:** Dominic's look at the themes and the concept round for their parts. The rats' mounted
   archer on a cat at age 3 (+30%), and mounted archers against skirmishers at age 3. The scout and
   mounted archer sounds reuse the cavalry's.
+
+**Trade carts, the sapper and the great sling (2026-10-13; steps 4 and 6, step 8's part).** Three
+roster slots go live in `data/rules/*.json` (`own_seed`, so every other line and the race's name stay as
+they were; run_tests checks that). Their looks are placeholders until Dominic picks from the concept
+rounds below; the mechanics are done.
+- **Trade cart** (Market, age 2; `trader`, an engine line with `armed: false`: no weapon, its crew the
+  race's worker). `siege.cart.<take>` parts (tags `trade`, `cart`, `machine`; 95 wood, 55 gold, 1 pop,
+  speed 10, 70 hp). `src/sim/trade.gd`: command ROUTE (right-click a finished market of yours or an
+  ally's): the cart takes its route from its nearest own market there and back for good (units.task
+  TRADE, target the far market, units.route the home one, work out or home); it loads `d*d/50 + d/2`
+  gold at the far end (rules economy.trade: min_tiles 20, sq_div 50, lin_pct 50; d tiles between the
+  markets' middles: 30 tiles 33 gold in about 55 s, 50 tiles 75) and is paid on reaching home; killed
+  on the way it loses the load; the far market gone, it goes home and stops. Carts are harmless and
+  passive (never fight, never picked as soldiers), stay out of towers (garrison.not), and Pack Animals
+  (Market, age 3, +25% speed on `trade`) is live. Unit card: "Trades: right-click a far market".
+- **Sapper** (Castle, age 3; role `sapper`): the race's light kit (SAPPER_SLOTS: a cap at most) and
+  `tool.charge` (attack 20, +600 vs buildings, `targets: buildings`, `blast` 1500, `blast_line_pct` 100).
+  Its first blow is a blast (combat.gd `_blast`): the building takes the blow, a wall, palisade or gate
+  tile its whole hp, every other building and unit within 1.5 tiles the charge's damage less further
+  out (friends at splash_friend_pct), and the sapper dies. A stone wall tile goes in one, a house in one,
+  a Town Center loses 39% (three sappers), a castle about an eighth. 125-135 resources (price_points 10).
+  The breach (rubble you can walk) is milestone 16's.
+- **Great sling** (Castle, age 3; `engine: "sling"`, its take's catapult as a stand-in look,
+  siege_models.gd ENGINE_STAND_IN): `engine.sling` throws at buildings only from 12 tiles (none inside 4),
+  a small splash, every 8 s; `unpack` 60 ticks (3 s) standing before its first throw, `pack` 40 (2 s)
+  before it can roll (units.ready, World._pack: its speed held at 0 and its stuck count kept at 0 while
+  it packs). 325 resources (roles pct 60, like the other engines).
+- **Numbers** (`tests/test_ai.gd -- piece:rams`, the same cost as three rams): six frog sappers break a
+  stone gate in 0:04 and a wall in 0:03 (rams 0:30 and 0:26, spears 3:51 and 6:19); two great slings
+  break them in 2:04 and 1:48 from out of reach.
+- **AI:** `_trade_carts` (data economy.carts: from age 2, every 10 s, up to 6): the farthest market pair
+  it may trade on (ours, or ours and an ally's), idle carts sent on it, one trained at a time from what's
+  over; with no pair, a second market by a far second Town Center. A bot with two markets 28 tiles apart
+  ran six carts and brought home 464 gold in its first five minutes (`test_ai -- piece:trade_bot`).
+  The Castle trains a sapper and a great sling before more unique units (military.siege.max sapper 1,
+  great_sling 1; an engine under its max now scores 1000 up, so it comes before a soldier from the same
+  building); on regroup beats sappers go for gates, walls and towers like rams, the sling for towers.
+  Carts are kept out of every soldier count (army, guard, scouting memory, allied strength, threats).
+- **Movement fix the new line found:** with an eleventh foot line (the sapper) test_sim's choke crossing
+  never settled: a unit of one group standing in its slot and one of the next walking back into its own
+  overlapping slot knocked each other off by turns. They no longer shove each other (`_separate`, like
+  two standing in overlapping slots); all crossings pass.
+- **Tests:** test_sim `trade` (12 checks: the formula, too close, enemy and allied markets, the round
+  trip, the load lost, the price) and `sapper_sling` (8: unpacks then throws, never at soldiers, packs
+  before rolling; a wall tile out, the one beside hurt, the sapper gone; a house in one; a Town Center
+  stands); test_ai `trade_bot`, the Castle's pick, the sapper and great sling in `rams`; placement cases
+  add the three lines in every LINE_PROMPTS culture (11,202 checks, 0 failed).
+
+**Concept rounds (2026-10-13), waiting on Dominic.** All drawn with the sheet tool, every row passing the
+placement check; notes, recommendations and questions in each README.
+- **TC1 trade carts** (`docs/concepts/trade_carts/`, `archive/images/2026-10-13/420-`, `421-`): A the
+  race's own mount pulls a two-wheeled cart (a new composing feature: the recipe's `haul`, the real mount
+  walking on the cart's `haul0` socket, placement-checked), B the handcart in play, C each family's own
+  (covered wagon behind two ponies, a giant snail with panniers, a scrap barrow, a ball of goods rolled
+  dung-beetle style, a silk bundle on a bone sledge). Claude: A, the snail for frogs.
+- **WB1 war beasts** (`docs/concepts/war_beasts/`, `422-`, `423-`): an elephant (howdah, or armoured),
+  the giant toad (howdah, or thorned bark), a giant capybara or a war boar, a giant stag beetle (or the
+  ram's rhino beetle), a tarantula or a black widow. Claude: elephant with howdah, capybara, black widow;
+  frogs and beetles need a beast unlike their siege beasts. The slot stays planned.
+- **SP1 the sapper's charge** (`docs/concepts/sapper/`, `424-`, `425-`): a fire pot, a satchel charge, and
+  per family reed rockets, a lamp-oil can, a bombardier's gland, an egg-sac bomb. None reads in the hand
+  at game scale; Claude suggests a round 2 with the charge on the back.
+- **GS1 the great sling** (`docs/concepts/great_sling/`, `426-`, `427-`): a traction sling (tall A-frame,
+  crew hauling ropes) or a counterweight sling, each packed on a wagon. Claude: the traction sling, with
+  the packed look while it moves.
+
+**Siege engine sounds (2026-10-13).** Their own recipes in `tools/audio/sfx.py`, rendered into
+`assets/audio/sfx/` and listed in `data/audio.json`: `ram_hit` (creak, thud, crack, grit, settle),
+`catapult_release` and `catapult_impact`, `bolt_release` (double snap, cord twang, heavy whoosh),
+`sling_release`, the sapper's `blast`, and `trade_paid` (coins, your carts only). Engines' shot kinds
+use them (combat_fx), the ram's blow is `ram_hit`, a stone's splash `catapult_impact`; a stone's or a
+blast's victims no longer each play an arrow landing. See `docs/audio.md`. Nobody has listened yet.
+
+**The swordsman raid mode, on (2026-10-13).** `data/ai.json` military.building_foes 0 -> 2. With the bots
+saving better since D-120 and the stone and market fix, every test_ai piece passes with it on, and the
+walled bases fall sooner or about the same: palisade ring 17:44 (off: 18:20; the Town Center in reach
+13:30 against 15:55), stone ring 19:23 (19:46), a ring with a gap 11:52 (10:47), bot against bot 19:41
+(20:13). The stall that kept it off (seven swordsmen by 7:00, then none until 13:00) didn't come back.
+
+**Balance, step 9 (2026-10-13).** `tests/balance.gd` at ages 2 and 3 with every line that fights units
+(the round robin's: spear, swordsman, skirmisher, archer, cavalry, scout, mounted archer, and the unique
+unit at age 3; rams, sappers and great slings hit only buildings, carts and healers don't fight, the
+catapult and bolt thrower are in the mass battles): **age 2: 20 of 33 units more than 20% off the mean,
+counters won 83%; age 3: 18 of 38, 81%** (the same as before: the new lines don't fight in it).
+- Weak everywhere: archers (age 2: centaur archer -57%, newt archer -57%, beetle and frog archers -48%,
+  pony archer -24%; age 3: -51% to -28%), slingers (-30%; the beetle's -63% at age 3).
+- Strong everywhere: spear-armed riders (age 2: beetle lancer on a spider +65%, spear centaur +38%,
+  hoplite on a pony +38%, lance centaur +32%, newt spear +26%; age 3: pike centaur +42%, pike on a pony
+  +36%), and the rats' spear and giant (+53%, +46%).
+- Mass battles (1500 a side): ages 2 and 3 as before for the soldiers (swords beat spears 8 of 10, lose
+  to archers 2 of 10; mounted archers beat swords and archers 6 of 6). Siege at age 3 is now strong at
+  equal cost: catapult+spear beat archers 8 of 10 and spear+archer 7 of 10 (was 1 of 10), bolt+spear
+  beat spears and spear+cavalry 9 of 10, bolt throwers alone split with cavalry 5 of 10 (was 2 of 10).
+  That's D-125 (soldiers 1.7x, engines kept at their price), not this work. Unique units: beat archers
+  6 of 10, split with swords, lose to spears 6, cavalry 8 and spear+archer 7 of 10.
+- **Why prices can't fix the two structural outliers.** A spear on a mount gets both the mount's hp and
+  speed and the spear's bonus against `large`, and half the round robin's lines are now large (cavalry,
+  scouts, mounted archers, riders): price it up and it still beats every rider it meets, just fewer of
+  them. Archers have the reverse problem: their bonus is against `infantry`, and mounts drop the rider's
+  infantry tag (D-120), so of eight lines only the swordsman (and the skirmisher, which beats them)
+  is their prey; price them down and they still lose every fight against the five lines that counter
+  them. Both moves have been tried (the newt's price, D-120's point prices) and moved the spread around.
+- **Proposal for Dominic (not made):** (1) a braced spear counts on foot only: the spear's bonus
+  against `large` goes when its holder rides (data: a part field such as `bonus_on_foot`, read by
+  pricing like `rider_loses`); a mounted spear is then a plain lancer, and the large slot's lance keeps
+  its charge. (2) archers get the genre's prey back: their bonus also against `spear` (foot spears are
+  infantry in the genre), or a range step (+1) so they get a second volley in before melee closes. With
+  (1) and (2) the round robin should come down to the price-fixable spread; I'd re-run it and re-price
+  then. (3) Separately: engines may want their price back up after D-125 (roles pct 60 -> 75?), as
+  catapult+spear now beats spear+archer.
+
+**Open (2026-10-13):** Dominic's picks for TC1, WB1, SP1 and GS1, and then their looks; war beasts' data
+and generator role once a beast is picked; the design change above; an engine-rolling sound; the great
+sling showing packed and set-up looks (units.ready is there for the view).
 
 ## Changes from the original plan
 

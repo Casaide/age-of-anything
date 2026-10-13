@@ -91,15 +91,15 @@ fills it from the race (one creature in its culture's gear, or variants once tho
 | Archery Range | Mounted Archer (`mounted_archer`) | 2-3 | infantry / skirmishers, spears, cavalry | built (milestone 13, 2026-10-13; a race whose archers already ride, or with nothing to ride, lacks it) | the race's mount + a bow |
 | Stable | Scout (`scout`) | 2-3 | skirmishers, healers, workers, siege; sees far / spears, any real soldier | built (milestone 13, 2026-10-13; on foot where nothing carries the race) | the race's mount + a light weapon, light kit |
 | Stable | Heavy (`large`) | 2-3 | ranged / spears | built (to 3) | ok |
-| Stable | War Beast (`war_beast`) | 3 | buildings, infantry / spears | planned | **gap**: big beasts |
+| Stable | War Beast (`war_beast`) | 3 | buildings, infantry / spears | planned (concepts WB1) | **gap**: big beasts |
 | Siege Workshop | Ram (`ram`) | 3 | buildings / melee | planned | **gap** |
 | Siege Workshop | Catapult (`catapult`) | 3 | massed units, splash / mounted | planned | **gap** |
 | Siege Workshop | Bolt Thrower (`bolt_thrower`) | 3 | infantry lines / mounted | planned | **gap** |
 | Siege Workshop | Siege Tower (`siege_tower`) | 3 | carries units over walls | planned | **gap** |
 | Castle | Unique (`unique`) | 3 | the race's signature (a theme from `data/uniques.json`: asked for, else creature, else culture) | built (milestone 13, 2026-10-13) | existing parts in a signature combination; new parts concept-first |
-| Castle | Sapper (`sapper`) | 3 | buildings, walls (blows up) | planned | small: a satchel |
-| Castle | Great Sling (`great_sling`) | 3 | buildings at long range; packs/unpacks | planned | **gap** |
-| Market | Trade Cart (`trader`) | 2 | gold by distance between your markets | planned | **gap**: cart |
+| Castle | Sapper (`sapper`) | 3 | buildings, walls (blows up) | built (m13) | placeholder charge; SP1 |
+| Castle | Great Sling (`great_sling`) | 3 | buildings at long range; packs/unpacks | built (m13) | stand-in look (catapult); GS1 |
+| Market | Trade Cart (`trader`) | 2 | gold by distance between your markets | built (m13) | placeholder cart; TC1 |
 
 Siege bodies are the creature's own take (a beetle-drawn ram, a frog catapult on a lily-pad
 sledge, a rat's bottle-cap sling): one concept round per family.
@@ -138,7 +138,7 @@ Ages are when it opens. Effects use the forms `tech.json` already has (`tag/stat
 | Stable | Good Hay | 3 | mounted +20 HP | built (phase 2) |
 | Market | trading | 2 | buy/sell | built |
 | Market | Haggling | 3 | selling fee 25 -> 15 points | built (phase 2) |
-| Market | Pack Animals | 3 | trade carts +25% speed | planned |
+| Market | Pack Animals | 3 | trade carts +25% speed | built (m13) |
 | University | Stonecutting | 3 | buildings +10% HP, +1/+1 armour | planned |
 | University | Lifting Frames | 3 | build 20% faster | planned |
 | University | Bastion | 3 | Watchtowers become Bastions (hp, attack) | built (phase 3: `tower_upgrade`; researchable once the University stands) |
