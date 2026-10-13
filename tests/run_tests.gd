@@ -327,6 +327,10 @@ func _test_data(lib) -> void:
 			check(lib.palettes.skins.has(s), "creature %s skin %s exists" % [id, s])
 		for f in c.families:
 			check(lib.families.has(f), "creature %s family %s exists" % [id, f])
+		for s in c.skins:   # a skin never reads as a team colour (a red frog on the blue side looked like the enemy: Dominic)
+			for t in lib.palettes.teams:
+				var d := _lab_distance(Color(lib.palettes.skins[s][0]), Color(t))
+				check(d >= SKIN_TEAM_GAP, "creature %s skin %s is no team colour (%s: distance %d, needs %d)" % [id, s, t, d, SKIN_TEAM_GAP])
 	for w in lib.lexicon:
 		var e: Dictionary = lib.lexicon[w]
 		if e.has("creature"):
@@ -354,6 +358,25 @@ func _test_data(lib) -> void:
 		if l[1].has("ornament"):
 			check(FileAccess.file_exists("res://assets/art/ui/crest_%s.svg" % l[1].ornament), "%s: crest %s exists" % [l[0], l[1].ornament])
 	check(ui.directions.has(ui.direction), "the UI direction in use exists")
+
+
+const SKIN_TEAM_GAP := 30   # CIE76 distance between a skin's main colour and every team colour
+
+
+## CIE76 distance between two colours (sRGB, D65).
+static func _lab_distance(a: Color, b: Color) -> float:
+	var la := _lab(a)
+	var lb := _lab(b)
+	return la.distance_to(lb)
+
+
+static func _lab(c: Color) -> Vector3:
+	var l := c.srgb_to_linear()
+	var x := (0.4124 * l.r + 0.3576 * l.g + 0.1805 * l.b) / 0.95047
+	var y := 0.2126 * l.r + 0.7152 * l.g + 0.0722 * l.b
+	var z := (0.0193 * l.r + 0.1192 * l.g + 0.9505 * l.b) / 1.08883
+	var f := func(t: float) -> float: return pow(t, 1.0 / 3.0) if t > 0.008856 else 7.787 * t + 16.0 / 116.0
+	return Vector3(116.0 * f.call(y) - 16.0, 500.0 * (f.call(x) - f.call(y)), 200.0 * (f.call(y) - f.call(z)))
 
 
 func _test_determinism(gen, rules: Dictionary) -> void:

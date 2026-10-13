@@ -1,6 +1,6 @@
 {
  "schema": "aow.resources/1",
- "note": "Resources in a fixed order (stock arrays, costs and carried loads are indexed by it). Add new ones at the end. spots: gatherers stand at their own spots round a tile, as a formation does (economy.gd; food only so far: tried on reeds, the wood rate fell)",
+ "note": "Resources in a fixed order (stock arrays, costs and carried loads are indexed by it). Add new ones at the end. spots: gatherers stand at their own spots round a tile, as a formation does (economy.gd): true, all eight round a tile (a bush, a rock); sides, only the four sides, on open ground: a woodcutter stands at the forest edge facing its own tree, never reaching past one tree for another (Dominic, 2026-10-13)",
  "resources": [
   {
    "id": "food",
@@ -13,19 +13,22 @@
    "id": "wood",
    "name": "Wood",
    "short": "W",
-   "colour": "#a07a4a"
+   "colour": "#a07a4a",
+   "spots": "sides"
   },
   {
    "id": "stone",
    "name": "Stone",
    "short": "S",
-   "colour": "#9a9a90"
+   "colour": "#9a9a90",
+   "spots": true
   },
   {
    "id": "gold",
    "name": "Gold",
    "short": "G",
-   "colour": "#e8c040"
+   "colour": "#e8c040",
+   "spots": true
   }
  ]
 }

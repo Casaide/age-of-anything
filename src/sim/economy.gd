@@ -19,7 +19,8 @@ const SEARCH_TILES := 8               # how far a worker looks for more of the s
 const SPREAD_TILES := 2               # sent to a busy tile, a worker takes a quieter one this close
 const BUSY_COST := 4000000            # one more gatherer on a tile weighs like 2 tiles of distance
 const GIVE_UP := 60                   # mirrors World.STUCK_LIMIT
-const NEXT_BUILD_TILES := 8            # a builder done with nothing queued goes on to your foundations this close
+const NEXT_BUILD_TILES := 5            # a builder done with nothing queued goes on to your foundations this close
+const BACK_TO_WORK_TILES := 10         # ... else back to what it gathered before, if that's this close (else it stays by the building)
 const WAIT_TICKS := 20                 # a worker waiting by a full farm looks again this often
 # Gather spots (Dominic, 2026-10-13: "food gathering needs to be more organised like with the unit
 # formations"): a tile of a resource with "spots" (data/resources.json; food: bushes and carcasses,
@@ -27,7 +28,12 @@ const WAIT_TICKS := 20                 # a worker waiting by a full farm looks a
 # one while it works the tile (carrying home included), walks to it and stands there, so a crowd
 # spreads round the bush instead of heaping up on the near side. Held spots are derived (home +
 # gspot of everyone gathering or carrying), so leaving, dying or a new order frees them.
+# Wood (data "spots": "sides") offers only the four side spots, on open ground: a woodcutter stands
+# at the forest edge facing its own tree, and woodcutters spread along the edge, a tree each
+# (Dominic, 2026-10-13: three on one spot, "trying to reach one further back?"). Stone and gold
+# offer all eight. A spotted tile with no open ground beside it is never picked (a tree behind trees).
 const SPOTS := 8
+const SIDES := 2                       # gather_spots value for "sides" (1: all eight)
 const SPOT_GAP := 100                  # between a body and its tile at an edge spot (World.SPOT_GAP)
 const SPOT_NEAR := 150                 # a gatherer this close to its spot (or stopped in reach) is at work
 const SPOT_DX := [0, 1, 1, 1, 0, -1, -1, -1]
@@ -39,9 +45,10 @@ static func load_resources() -> Array:
 	return _resource_data().map(func(r): return r.id)
 
 
-## Per resource, in order: 1 if its gatherers stand at spots round a tile (its "spots").
+## Per resource, in order: 1 if its gatherers stand at spots round a tile (its "spots": true),
+## SIDES if only at the four sides ("sides"), 0 if anywhere in reach.
 static func load_gather_spots() -> PackedByteArray:
-	return PackedByteArray(_resource_data().map(func(r): return 1 if bool(r.get("spots", false)) else 0))
+	return PackedByteArray(_resource_data().map(func(r): return SIDES if r.get("spots", false) is String and r.spots == "sides" else (1 if r.get("spots", false) == true else 0)))
 
 
 static func _resource_data() -> Array:
@@ -512,11 +519,14 @@ static func taken(w, cell: int, i := -1) -> bool:
 	return n >= limit
 
 
+## Worker i builds `bid`. A gatherer keeps its `home` (what it gathered) to go back to after.
 static func start_build(w, i: int, bid: int) -> void:
 	var u = w.units
+	if u.task[i] != GATHER and u.task[i] != RETURN:
+		u.home[i] = -1
 	u.task[i] = BUILD
 	u.target[i] = bid
-	u.home[i] = -1
+	u.gspot[i] = -1
 	u.work[i] = 0
 	_approach_building(w, i, w.buildings.index_of(bid))
 
@@ -554,9 +564,9 @@ static func _gather(w, i: int, carry_max: int) -> void:
 		_fallow(w, i, cell, kind)
 		return
 	if kind_of(w, w.map.resource_at(cell)) != kind:
-		var more := nearest_resource(w, u.x[i], u.y[i], kind, i, false, true)
+		var more := nearest_resource(w, u.x[i], u.y[i], kind, i, false, true, true)
 		if more < 0:
-			more = nearest_resource(w, u.x[i], u.y[i], kind, i)
+			more = nearest_resource(w, u.x[i], u.y[i], kind, i, false, false, true)
 		if more >= 0:
 			u.target[i] = more
 			u.home[i] = more
@@ -672,11 +682,11 @@ static func _build(w, i: int) -> void:
 			return
 	if b < 0 or bs.done[b] == 1:
 		var nb := _nearby_foundation(w, i) if u.orders[i].is_empty() else -1
-		if nb < 0:
-			clear_task(w, i)
-			return
-		u.target[i] = bs.id[nb]   # on to the next unfinished building nearby, as the genre's builders do (Dominic)
-		_approach_building(w, i, nb)
+		if nb >= 0:
+			u.target[i] = bs.id[nb]   # on to the next unfinished building nearby, as the genre's builders do (Dominic)
+			_approach_building(w, i, nb)
+		elif not u.orders[i].is_empty() or not _back_to_work(w, i):
+			clear_task(w, i)   # stays by the building: never off into the dark (Dominic: a builder vanished into the fog)
 		return
 	if _in_reach(w, i, _building_rect(w, b)):
 		u.moving[i] = 0
@@ -706,21 +716,48 @@ static func _build(w, i: int) -> void:
 			_approach_building(w, i, b)
 
 
-## The nearest unfinished building of the worker's owner within NEXT_BUILD_TILES of it (lowest
-## index on ties), or -1.
+## The nearest unfinished building of the worker's owner within NEXT_BUILD_TILES of it, on
+## ground its owner has explored (lowest index on ties), or -1.
 static func _nearby_foundation(w, i: int) -> int:
 	var u = w.units
 	var bs = w.buildings
 	var best := -1
 	var best_d2: int = NEXT_BUILD_TILES * NEXT_BUILD_TILES * SimMap.TILE * SimMap.TILE + 1
 	for b in bs.count():
-		if bs.owner[b] != u.owner[i] or bs.done[b] == 1:
+		if bs.owner[b] != u.owner[i] or bs.done[b] == 1 or not _explored(w, u.owner[i], (bs.cy[b] + bs.sy[b] / 2) * w.map.width + bs.cx[b] + bs.sx[b] / 2):
 			continue
 		var d2 := Fixed.dist2(u.x[i], u.y[i], bs.cx[b] * SimMap.TILE + bs.sx[b] * SimMap.TILE / 2, bs.cy[b] * SimMap.TILE + bs.sy[b] * SimMap.TILE / 2)
 		if d2 < best_d2:
 			best_d2 = d2
 			best = b
 	return best
+
+
+## A builder done (nothing queued, no foundation near): back to the resource it gathered before
+## building (its `home`; another tile of it near there if that one's used up) when that's within
+## BACK_TO_WORK_TILES of it. Whether it went.
+static func _back_to_work(w, i: int) -> bool:
+	var u = w.units
+	var h: int = u.home[i]
+	var kind: int = u.carry_kind[i]
+	if h < 0 or kind <= 0:
+		return false
+	var hx: int = (h % w.map.width) * SimMap.TILE + SimMap.TILE / 2
+	var hy: int = (h / w.map.width) * SimMap.TILE + SimMap.TILE / 2
+	var far := BACK_TO_WORK_TILES * SimMap.TILE
+	if Fixed.dist2(u.x[i], u.y[i], hx, hy) > far * far:
+		return false
+	if kind_of(w, w.map.resource_at(h)) != kind or w.map.amount[h] <= 0:
+		h = nearest_resource(w, hx, hy, kind, i, false, false, true)
+		if h < 0:
+			return false
+	start_gather(w, i, h, kind)
+	return true
+
+
+## Has this player ever seen cell c? (Automatic choices never send a worker into the unknown.)
+static func _explored(w, player: int, c: int) -> bool:
+	return player >= w.fog.size() or w.fog[player][c] != 0
 
 
 ## A finished camp (a building taking in some resources, not all, like a mill or lumber
@@ -744,7 +781,7 @@ static func _gather_after_camp(w, b: int) -> void:
 		var best_kind := 0
 		var best_d2 := 1 << 62
 		for kind in kinds:   # the nearest of any of them (a mining camp: stone or gold)
-			var c := nearest_resource(w, u.x[j], u.y[j], kind, j)
+			var c := nearest_resource(w, u.x[j], u.y[j], kind, j, false, false, true)
 			if c < 0:
 				continue
 			var d2 := Fixed.dist2(u.x[j], u.y[j], (c % w.map.width) * SimMap.TILE + 500, (c / w.map.width) * SimMap.TILE + 500)
@@ -844,7 +881,7 @@ static func _fallow(w, i: int, cell: int, kind: int) -> void:
 	u.work[i] = 0
 	if w.auto_reseed[u.owner[i]] == 1 and reseed(w, farm_at(w, cell, u.owner[i])):
 		return   # crops again: back to work next tick
-	var other := nearest_resource(w, u.x[i], u.y[i], kind, i, true)
+	var other := nearest_resource(w, u.x[i], u.y[i], kind, i, true, false, true)
 	if other >= 0:
 		start_gather(w, i, other, kind)
 
@@ -885,7 +922,27 @@ static func spotted(w, cell: int) -> bool:
 	if w.map.pool[cell] >= 0:
 		return false
 	var k := kind_of(w, w.map.resource_at(cell))
-	return k > 0 and w.gather_spots[k - 1] == 1
+	return k > 0 and w.gather_spots[k - 1] != 0
+
+
+## Only the four side spots round this tile (a tree: "spots": "sides")?
+static func _sides_only(w, cell: int) -> bool:
+	var k := kind_of(w, w.map.resource_at(cell))
+	return k > 0 and w.gather_spots[k - 1] == SIDES
+
+
+## Is there open ground to stand on beside this spotted tile (a side, or for an eight-spot
+## resource a corner too) in unit i's lane (lane 0 without one)? A tree with trees all round
+## it can't be worked: only the forest's edge can.
+static func _open(w, cell: int, i := -1) -> bool:
+	var ln: int = w.lane(i) if i >= 0 else 0
+	var x: int = cell % w.map.width
+	var y: int = cell / w.map.width
+	var step := 2 if _sides_only(w, cell) else 1
+	for k in range(0, SPOTS, step):
+		if w.map.cell_walkable(x + SPOT_DX[k], y + SPOT_DY[k], ln):
+			return true
+	return false
 
 
 ## Where worker i stands at spot k round resource tile `cell`: off the middle of an edge, or off
@@ -959,7 +1016,7 @@ static func free_spot(w, i: int, cell: int) -> int:
 	var held := _held_near(w, cell, i)
 	var best := -1
 	var best_d := 1 << 62
-	for k in SPOTS:
+	for k in range(0, SPOTS, 2 if _sides_only(w, cell) else 1):
 		var p := spot_at(w, i, cell, k)
 		if p.x < 0 or _crowded(w, i, p, held):
 			continue
@@ -1019,6 +1076,8 @@ static func least_busy(w, cell: int, kind: int, except := -1, i := -1) -> int:
 			var c: int = yy * m.width + xx
 			if c == except or m.amount[c] <= 0 or kind_of(w, m.resource_at(c)) != kind or taken(w, c, i):
 				continue
+			if spotted(w, c) and not _open(w, c, i):
+				continue   # no ground beside it to stand on
 			var score: int = int(busy.get(c, 0)) * BUSY_COST + Fixed.dist2(cx * 1000, cy * 1000, xx * 1000, yy * 1000)
 			if i >= 0 and busy.has(c) and spotted(w, c) and free_spot(w, i, c) < 0:
 				score += 1 << 40   # no room round it: only if no tile near has any
@@ -1029,9 +1088,11 @@ static func least_busy(w, cell: int, kind: int, except := -1, i := -1) -> int:
 
 
 ## The nearest cell with this resource within SEARCH_TILES, or -1. Ties go to the lower cell.
-## With a worker i, farms full without it are passed over; `farms` keeps to farms; `roomy`
+## Spotted tiles with no open ground beside them are passed over. With a worker i, farms full
+## without it are too, and with `seen` tiles its owner has never explored (a worker's own pick, away
+## from where it was sent: it never wanders off into the dark on its own); `farms` keeps to farms; `roomy`
 ## keeps to tiles with a free spot round them for it (tiles without spots, as farms, count as roomy).
-static func nearest_resource(w, x: int, y: int, kind: int, i := -1, farms := false, roomy := false) -> int:
+static func nearest_resource(w, x: int, y: int, kind: int, i := -1, farms := false, roomy := false, seen := false) -> int:
 	var m = w.map
 	var cx: int = x / SimMap.TILE
 	var cy: int = y / SimMap.TILE
@@ -1040,11 +1101,12 @@ static func nearest_resource(w, x: int, y: int, kind: int, i := -1, farms := fal
 	for yy in range(maxi(cy - SEARCH_TILES, 0), mini(cy + SEARCH_TILES + 1, m.height)):
 		for xx in range(maxi(cx - SEARCH_TILES, 0), mini(cx + SEARCH_TILES + 1, m.width)):
 			var c: int = yy * m.width + xx
-			if m.amount[c] <= 0 or kind_of(w, m.resource_at(c)) != kind or (farms and m.pool[c] < 0) \
-					or (i >= 0 and taken(w, c, i)):
+			if m.amount[c] <= 0 or kind_of(w, m.resource_at(c)) != kind or (farms and m.pool[c] < 0):
 				continue
 			var d2 := Fixed.dist2(x, y, xx * SimMap.TILE + 500, yy * SimMap.TILE + 500)
-			if d2 >= best_d2 or (roomy and spotted(w, c) and free_spot(w, i, c) < 0):
+			if d2 >= best_d2 or (i >= 0 and taken(w, c, i)) or (seen and not _explored(w, w.units.owner[i], c)) or (spotted(w, c) and not _open(w, c, i)):
+				continue   # (`seen`: only ground its owner has explored; a tile with ground beside it to stand on)
+			if roomy and spotted(w, c) and free_spot(w, i, c) < 0:
 				continue   # (roomy: a tile with a free spot round it)
 			best_d2 = d2
 			best = c
