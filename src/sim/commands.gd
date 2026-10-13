@@ -35,11 +35,12 @@ const CALL_TO_ARMS := "call_to_arms"   # {building}  workers near that Town Cent
 const BACK_TO_WORK := "back_to_work"   # {}  sheltering workers come out and go back to what they gathered
 const ROUTE := "route"             # {ids, building: a market}  trade carts trade between their nearest market and that one (trade.gd)
 const ABILITY := "ability"         # {ids, x, y}  the race's ability at a spot (abilities.gd): the first of them that's ready and in range uses it
+const REPAIR := "repair"           # {ids, target: building or siege engine id}  workers mend their side's damaged building or engine (repair.gd)
 const TYPES := [MOVE, SPAWN, GATHER, BUILD, HELP_BUILD, TRAIN, CANCEL, RALLY, ATTACK, ATTACK_MOVE, AGE_UP, RESEARCH, SURRENDER, RESEED, TRADE, STOP, STANCE, DROP_OFF, AUTO_RESEED, PEN, RELEASE,
-	GARRISON, UNGARRISON, CALL_TO_ARMS, BACK_TO_WORK, ROUTE, ABILITY]
+	GARRISON, UNGARRISON, CALL_TO_ARMS, BACK_TO_WORK, ROUTE, ABILITY, REPAIR]
 ## Unit orders that can be queued: with args.queue = 1, a busy unit keeps the order for
 ## when it's done (shift-queuing); without it, the order replaces the unit's queue.
-const QUEUEABLE := [MOVE, GATHER, BUILD, HELP_BUILD, ATTACK, ATTACK_MOVE, DROP_OFF, GARRISON]
+const QUEUEABLE := [MOVE, GATHER, BUILD, HELP_BUILD, ATTACK, ATTACK_MOVE, DROP_OFF, GARRISON, REPAIR]
 
 var pending := {}            # run turn -> [commands]; looked up by key, never iterated
 var next_seq := {}           # player -> next seq; looked up by key, never iterated
