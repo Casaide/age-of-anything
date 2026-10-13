@@ -8,6 +8,7 @@ extends RefCounted
 const DataLib := preload("res://src/data_lib.gd")
 const Generator := preload("res://src/race_generator.gd")
 const ArtKit := preload("res://src/view/art/art_kit.gd")
+const CreatureKit := preload("res://scenes/art_pixel/creature_kit.gd")
 
 ## Races whose every unit is checked (between them: every playable body, every hold, back parts,
 ## wings, a fused centaur, siege crews).
@@ -70,7 +71,50 @@ static func all(lib, lines := true) -> Array:
 	var animals: Dictionary = ArtKit.animal_race()
 	for u in animals.units:
 		cases.append(["animal %s" % u.recipe.body, u])
+	cases += kit_cases(lib)
 	return cases
+
+
+## Creature-kit creatures (scenes/art_pixel/creature_kit.gd), staged from their data files: the cat
+## rebuilt through the kit under a rat, and the bear concepts (data/later/bears.json: bipeds of three
+## builds, a worker, the giant, the mount under a human and a rat). Placement holds by construction.
+const KIT_FILES := ["res://data/creature_kit.json", "res://data/later/bears.json"]
+
+
+static func kit_cases(lib) -> Array:
+	for f in KIT_FILES:
+		CreatureKit.stage(lib, f)
+	var gen = Generator.new(lib)
+	var rules = DataLib.load_json("res://data/rules/default.json")
+	var cases := []
+	var rat: Dictionary = slot(gen.generate("sewer rats", rules), "spear")
+	for m in ["kitcat", "kitcat_built"]:
+		cases.append(["kit: rat on %s" % m, ride(rat, m, lib.creatures[m].skins[0], {})])
+	for b in BEAR_CASES:
+		var race: Dictionary = gen.generate(b[1], rules)
+		var u: Dictionary = slot(race, b[2]).duplicate(true)
+		u.recipe.merge(b[3], true)
+		u.erase("line")   # (else its age line, not the overridden recipe, is what bakes)
+		cases.append(["kit: " + b[0], u])
+	var human: Dictionary = slot(gen.generate("romans", rules), "spear")
+	for skin in lib.creatures.bear.skins:
+		cases.append(["kit: human on bear %s" % skin, ride(human, "bear", skin, {})])
+	cases.append(["kit: rat on bear", ride(rat, "bear", "bear_brown", {})])
+	cases.append(["kit: human on black bear", ride(human, "bear_black", "bear_black", {})])
+	return cases
+
+
+## [label, prompt, slot, recipe overrides]: the bear concepts' units (docs/concepts/bears).
+const BEAR_CASES := [
+	["brown bear spear", "bear greeks", "spear", {"skin": "bear_brown", "parts": {"hand_r": "weapon.dory", "hand_l": "shield.hoplon", "torso": "armour.bronze", "head_gear": "helm.bear_crest"}}],
+	["brown bear stock helm", "bear greeks", "spear", {"skin": "bear_brown", "parts": {"hand_r": "weapon.dory", "hand_l": "shield.hoplon", "torso": "armour.bronze", "head_gear": "helm.bronze"}}],
+	["brown bear worker", "bear greeks", "worker", {"skin": "bear_brown"}],
+	["brown bear infantry", "bear greeks", "infantry", {"skin": "bear_brown"}],
+	["black bear spear", "bear greeks", "spear", {"creature": "bear_black", "body": "body.bear_black", "head": "head.bear_black", "skin": "bear_black", "parts": {"hand_r": "weapon.dory", "hand_l": "shield.hoplon", "torso": "armour.bronze", "head_gear": "helm.bear_crest"}}],
+	["polar bear spear", "bear greeks", "spear", {"creature": "bear_polar", "body": "body.bear_polar", "head": "head.bear_polar", "skin": "bear_polar", "parts": {"hand_r": "weapon.dory", "hand_l": "shield.hoplon", "torso": "armour.bronze", "head_gear": "helm.bear_crest"}}],
+	["giant polar bear", "giant bear greeks", "large", {"creature": "bear_polar", "body": "body.bear_polar", "head": "head.bear_polar", "skin": "bear_polar", "parts": {"hand_r": "weapon.dory", "hand_l": "shield.hoplon", "torso": "armour.bronze", "head_gear": "helm.bear_crest"}}],
+	["giant old bear", "giant bear greeks", "large", {"skin": "bear_grizzled", "parts": {"hand_r": "weapon.sword.xiphos", "torso": "armour.bronze", "head_gear": "helm.bear_crest"}}],
+]
 
 
 static func slot(race: Dictionary, s: String) -> Dictionary:

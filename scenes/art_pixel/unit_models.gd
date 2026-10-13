@@ -19,7 +19,18 @@ var hold := "low"   # the body being built: how its near hand holds the weapon (
 func has(id: String) -> bool:
 	if _is_engine(id):
 		return _siege().has(id)
-	return has_method("_" + id.get_slice("~", 0).get_slice("@", 0).replace(".", "_"))
+	var base := id.get_slice("~", 0).get_slice("@", 0)
+	if CreatureKit.has_part(base):
+		return true
+	var fn := "_" + base.replace(".", "_")
+	return has_method(fn) or extra.any(func(e): return e.has_method(fn))
+
+
+## Creature-kit parts (scenes/art_pixel/creature_kit.gd: a skeleton in data) and concept model files
+## staged by tests and sheets (data/later/*.json "models": e.g. a bear's helmet) build here too.
+const CreatureKit := preload("res://scenes/art_pixel/creature_kit.gd")
+static var extra := []   # instances of unit_models subclasses with more parts (CreatureKit.stage adds them)
+var _kit = null
 
 
 ## Siege engines ("siege.<engine>.<take>") are modelled in siege_models.gd (which builds on this
@@ -85,7 +96,18 @@ func build(id: String, colours: Dictionary) -> Dictionary:
 		return _siege().build(id, colours)
 	var own := id.get_slice("~", 0)   # (what follows "~" is the body it's baked on or cut by)
 	hold = own.get_slice("@", 1) if "@" in own else "low"   # a cut leg keeps its pose: "leg.cat@w3_8~body.cat^1"
-	return call("_" + id.get_slice("~", 0).get_slice("@", 0).replace(".", "_"), colours)
+	var base := own.get_slice("@", 0)
+	if CreatureKit.has_part(base):
+		if _kit == null:
+			_kit = CreatureKit.new()
+		return _kit.build(self, base, colours)
+	var fn := "_" + base.replace(".", "_")
+	if not has_method(fn):
+		for e in extra:
+			if e.has_method(fn):
+				e.hold = hold
+				return e.call(fn, colours)
+	return call(fn, colours)
 
 
 ## The near arm's elbow and hand for the body's hold, from its shoulder, its resting
