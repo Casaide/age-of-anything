@@ -17,7 +17,7 @@
   {"label": "C  swamp frogs:\nlarge line (giant)", "h": 1.35, "unit": {"prompt": "swamp frogs", "slot": "large", "age": 3, "set": {"scale": 140}, "add_parts": {"back": "cape.leaf"}}},
   {"label": "A  forest beetles:\nchampion", "unit": {"prompt": "forest beetles", "slot": "infantry", "age": 3, "set": {"scale": 125}, "add_parts": {"back": "cape.leaf"}}},
   {"label": "B  forest beetles:\nstandard bearer", "unit": {"prompt": "forest beetles", "slot": "infantry", "age": 3, "set": {"scale": 115}, "add_parts": {"back": "banner.team"}}},
-  {"label": "C  forest beetles:\nlarge line (rides\na horse at age 3)", "h": 1.2, "unit": {"prompt": "forest beetles", "slot": "large", "age": 3, "set": {"scale": 110}, "add_parts": {"back": "cape.leaf"}}},
+  {"label": "C  forest beetles:\nmounted (beetle)", "h": 1.2, "unit": {"prompt": "forest beetles", "slot": "large", "age": 3, "set": {"scale": 110}, "add_parts": {"back": "cape.leaf"}}},
   {"label": "A  aztec humans:\nchampion", "unit": {"prompt": "aztec humans", "slot": "infantry", "age": 3, "set": {"scale": 125}, "add_parts": {"back": "cape.cloth"}}},
   {"label": "B  aztec humans:\nstandard bearer", "unit": {"prompt": "aztec humans", "slot": "infantry", "age": 3, "set": {"scale": 115}, "add_parts": {"back": "banner.team"}}},
   {"label": "C  aztec humans:\nheavy (no mount)", "h": 1.2, "unit": {"prompt": "aztec humans", "slot": "large", "age": 3, "set": {"scale": 110}, "add_parts": {"back": "cape.cloth"}}}

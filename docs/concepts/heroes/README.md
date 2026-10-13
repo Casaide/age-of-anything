@@ -16,8 +16,8 @@ and `heroes_h1_facings_1x.png` (game scale). Every row passes the placement chec
 Things the round shows:
 - A cape on a horse cuts through the horse's back (the placement check catches it: A3), so a mounted
   hero needs a cape cut for riders, or a banner on a pole instead.
-- Forest beetles' age-3 large line rides a white horse: odd for a bug race; a hero should ride the
-  creature's own mount (the beetle) or none.
+- A mounted beetle reads small at game scale (rider and beetle both low and dark): a beetle hero
+  needs the banner or a bigger mount to stand out.
 - Size alone (A) reads as "a big unit", not "the hero". Something only heroes carry (a banner, a
   crest, a glow ring under them) would read better.
 
