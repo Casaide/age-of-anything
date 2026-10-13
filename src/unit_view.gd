@@ -107,6 +107,7 @@ func build(r: Dictionary, lib, team: Color, speed := 10) -> void:
 		var mount_colours := colours_for(lib, m.skin, r.family, team)
 		# A fused mount (a centaur's horse half) has its own body, without a neck.
 		var mount_body: String = mc.get("fused_body", mc.body) if m.fused else mc.get("mount_body", mc.body)
+		_pose_body = mount_body
 		var mount_rig := _make_rig(lib, mount_body, "" if m.fused else mc.head, mount_colours, bob, true)
 		_facing_body = mount_body
 		for slot in m.parts:
@@ -140,6 +141,7 @@ func build(r: Dictionary, lib, team: Color, speed := 10) -> void:
 			_attach(lib, rider, slot, r.parts[slot], colours)
 		flying = m.parts.has("back") and "flying" in lib.part(m.parts.back).tags
 	else:
+		_pose_body = r.body
 		var rig := _make_rig(lib, r.body, r.head, colours, bob, true, r.parts.get("hand_r", ""))
 		_facing_body = r.body + _hold_suffix
 		for slot in r.parts:
@@ -158,6 +160,17 @@ func build(r: Dictionary, lib, team: Color, speed := 10) -> void:
 	if r.has("crew"):
 		shadow.scale = Vector2.ONE * float(lib.part(r.body).stats.get("radius", 300)) / ENGINE_SHADOW
 		gait = {"swing": 0.0, "cadence": 1.0, "bob": 0.0, "rock": 0.012, "rock_rate": 3.0}
+	_idle_poses = []
+	if _pose_body != "" and not flying:
+		# A body can walk its own way (parts.json legs.gait: a cat's low, level walk) and rest
+		# in its own poses when it stands still a while (idle_poses: a cat sits down).
+		var pb: Dictionary = lib.part(_pose_body)
+		if pb.has("legs") and pb.legs.has("gait"):
+			gait = gait.duplicate()
+			gait.merge(pb.legs.gait, true)
+		_idle_poses = pb.get("idle_poses", [])
+	if _sit_after < 0.0 and not _idle_poses.is_empty():
+		_sit_after = noise.randf_range(SIT_AFTER.x, SIT_AFTER.y)
 	idle_wait = noise.randf_range(1.0, 5.0)
 	_sort_layers(self)
 	_face(facing)
@@ -307,9 +320,12 @@ func _make_rig(lib, body_id: String, head_id: String, colours: Dictionary, paren
 	var body: Dictionary = lib.part(body_id)
 	var root := Node2D.new()
 	parent.add_child(root)
+	# A body in one of its baked poses (a cat sitting) is a part of its own, "<body>@<pose>",
+	# with its own sockets and hips, and its legs posed to match ("<leg>@<pose>").
+	var pose := "@" + body_pose if body_pose != "" and body_id == _pose_body else ""
 	# Baked parts from hand-built models bring their own sockets (projected by the bake camera).
-	var rig: Dictionary = PartShape.rigs.get(body_id + _hold_suffix + PartShape.facing_suffix(facing_k),
-		PartShape.rigs.get(body_id + _hold_suffix, {}))
+	var rig: Dictionary = PartShape.rigs.get(body_id + _hold_suffix + pose + PartShape.facing_suffix(facing_k),
+		PartShape.rigs.get(body_id + _hold_suffix + pose, {}))
 	var sockets := {}
 	for k in body.sockets:
 		sockets[k] = PartShape.v2(body.sockets[k])
@@ -317,12 +333,16 @@ func _make_rig(lib, body_id: String, head_id: String, colours: Dictionary, paren
 		sockets = rig.sockets.duplicate()
 
 	if with_legs and body.has("legs"):
-		var leg_part: Dictionary = lib.part(body.legs.part)
 		for a in rig.get("anchors", body.legs.anchors):
 			if _clinging and float(a[3]) < 0.0:
 				continue   # a riding creature's far legs are hidden behind its mount
+			# A body may give its hind legs their own part (legs.hind: a cat's hock), and bake its
+			# legs posed (legs.poses: steps of a walk) instead of swinging one stiff sprite.
+			var hind: bool = a.size() > 5 and bool(a[5])
+			var leg_id: String = body.legs.get("hind", body.legs.part) if hind else body.legs.part
+			var leg_part: Dictionary = lib.part(leg_id)
 			var leg := _shape()
-			leg.part_id = body.legs.part
+			leg.part_id = leg_id + pose
 			leg.facing = facing_k
 			leg.setup(leg_part.shapes, colours)
 			leg.position = Vector2(float(a[0]), float(a[1]))
@@ -335,10 +355,11 @@ func _make_rig(lib, body_id: String, head_id: String, colours: Dictionary, paren
 			if rig.has("anchors") and float(a[3]) < 0.0:
 				leg.shade = 0.78   # the far leg sits in shadow
 			root.add_child(leg)
-			legs.append({"node": leg, "phase": float(a[2]), "cling": _clinging, "reach": _cling_reach if _clinging else 1.0, "rest": leg.position})
+			legs.append({"node": leg, "phase": float(a[2]), "cling": _clinging, "reach": _cling_reach if _clinging else 1.0, "rest": leg.position,
+				"base": leg_id + pose, "walk_id": leg_id, "steps": int(body.legs.get("poses", 0)) if pose == "" else 0})
 
 	var body_node := _shape()
-	body_node.part_id = body_id + _hold_suffix
+	body_node.part_id = body_id + _hold_suffix + pose
 	body_node.facing = facing_k
 	body_node.setup(body.shapes, colours)
 	root.add_child(body_node)
@@ -638,6 +659,7 @@ func _process(delta: float) -> void:
 	struck = false
 	if area.has_area():
 		_wander(delta)
+	_pose_tick(delta)
 
 	# Stepped (pixel-art) mode: a few poses per cycle and whole pixels, not smooth motion.
 	var stepped := pose_steps > 0
@@ -656,6 +678,14 @@ func _process(delta: float) -> void:
 		for leg in legs:
 			leg.node.rotation = 0.35 if leg.cling else sin(ph + leg.phase) * gait.swing * stride
 			leg.node.scale.y = leg.reach
+			if leg.steps > 0:
+				# Posed legs: the walk's step for where this leg is in its cycle (baked 3D poses).
+				var id: String = leg.base
+				if walking:
+					id = "%s@w%d_%d" % [leg.walk_id, int(fposmod((phase + leg.phase) / TAU, 1.0) * leg.steps) % leg.steps, leg.steps]
+				if id != leg.node.part_id:
+					leg.node.part_id = id
+					leg.node.queue_redraw()
 		var hover := 0.0
 		if flying:
 			hover = -9.0 + sin(t * 3.0) * 2.0
@@ -1057,6 +1087,69 @@ func _kneel(_delta: float) -> void:
 	if seat_node != null:
 		seat_node.rotation = -0.4 * kneel
 		seat_node.position.x = seat_node.get_meta("rest_x", seat_node.position.x) - 1.5 * kneel
+
+
+## Resting poses (concept C2, the cat: "including sitting when idle", Dominic): a body with
+## `idle_poses` in parts.json (["sit1", "sit"]) goes down through them, a step at a time, once it
+## has stood still a few seconds, and comes back up through them the moment it has to move, fight
+## or work. Each pose is the body baked whole in it ("<body>@sit", its sockets and hips moved, so
+## the rider sits where the saddle went) with its legs baked to match; changing pose rebuilds the
+## view, like turning to another facing. View only: the sim never knows.
+var body_pose := ""         # "" standing, else one of the body's idle_poses (set before build for a sheet)
+var _pose_body := ""        # the body that takes the poses (the mount's, when ridden)
+var _idle_poses: Array = []
+var _still := 0.0           # how long it has stood still with nothing to do
+var _sit_after := -1.0      # how long it waits before it sits (each unit its own, 3-6 s)
+var _pose_t := 0.0          # since the last pose step
+const SIT_AFTER := Vector2(3.0, 6.0)
+const POSE_DOWN := 0.22     # seconds per step going down; getting up is quicker
+const POSE_UP := 0.08
+
+
+func _pose_tick(delta: float) -> void:
+	if _idle_poses.is_empty():
+		return
+	var busy := walking or attack_t > 0.0 or dying or job != ""
+	_still = 0.0 if busy else _still + delta
+	var steps: Array = [""] + _idle_poses
+	var now := steps.find(body_pose)
+	var want := steps.size() - 1 if _still >= _sit_after else 0
+	_pose_t += delta
+	if now == want:
+		_pose_t = 0.0
+		return
+	if _pose_t < (POSE_DOWN if want > now else POSE_UP) and not (busy and now == steps.size() - 1):
+		return   # (rising from the full pose starts at once)
+	_pose_t = 0.0
+	body_pose = steps[now + (1 if want > now else -1)]
+	_rebuild()
+
+
+## The extra parts a recipe is drawn with beyond what one build shows: its body's idle poses
+## and its legs in them, and the steps of a posed walk (art_kit bakes these with the rest).
+static func pose_parts(lib, r: Dictionary) -> Array:
+	if r.has("crew"):
+		return []
+	var body_id: String = r.body
+	if r.has("mount"):
+		var mc: Dictionary = lib.creatures[r.mount.creature]
+		body_id = mc.get("fused_body", mc.body) if r.mount.fused else mc.get("mount_body", mc.body)
+	var body: Dictionary = lib.part(body_id)
+	if not body.has("legs"):
+		return []
+	var leg_ids := [body.legs.part]
+	if body.legs.has("hind"):
+		leg_ids.append(body.legs.hind)
+	var out := []
+	for pose in body.get("idle_poses", []):
+		out.append([body_id + "@" + pose, body.shapes])
+		for id in leg_ids:
+			out.append([id + "@" + pose, lib.part(id).shapes])
+	var n := int(body.legs.get("poses", 0))
+	for id in leg_ids:
+		for i in n:
+			out.append(["%s@w%d_%d" % [id, i, n], lib.part(id).shapes])
+	return out
 
 
 ## Now and then, standing still, a unit fidgets: shifts its weight, looks up and
