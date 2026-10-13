@@ -408,7 +408,7 @@ func _make_rig(lib, body_id: String, head_id: String, colours: Dictionary, paren
 				if low > 0.0:
 					reach = clampf(_girth_drop / (low * cos(CLING_TURN)), 1.0, 2.6)
 			legs.append({"node": leg, "phase": float(a[2]), "cling": _clinging, "reach": reach, "rest": leg.position,
-				"base": leg_id + pose, "walk_id": leg_id, "steps": int(body.legs.get("poses", 0)) if pose == "" else 0})
+				"base": leg_id + pose, "walk_id": leg_id, "cut": "~%s^%d" % [body_id, i] if cut else "", "steps": int(body.legs.get("poses", 0)) if pose == "" else 0})
 
 	var body_node := _shape()
 	body_node.part_id = body_id + _hold_suffix + pose
@@ -435,7 +435,7 @@ func _make_rig(lib, body_id: String, head_id: String, colours: Dictionary, paren
 	if head_id != "":
 		var head: Dictionary = lib.part(head_id)
 		var head_node := _shape()
-		head_node.part_id = head_id + ("~%s^head" % body_id if "head" in body.get("cut", []) else "")   # cut by its body (as legs)
+		head_node.part_id = head_id + ("~%s%s^head" % [body_id, pose] if "head" in body.get("cut", []) else "")   # cut by its body (as legs; a sitting cat's by its sitting body)
 		head_node.facing = facing_k
 		head_node.setup(head.shapes, colours)
 		head_node.position = sockets.head
@@ -732,9 +732,9 @@ func _process(delta: float) -> void:
 			leg.node.scale.y = leg.reach
 			if leg.steps > 0:
 				# Posed legs: the walk's step for where this leg is in its cycle (baked 3D poses).
-				var id: String = leg.base
+				var id: String = leg.base + leg.cut   # (a leg cut by its body: "leg.cat@w3_8~body.cat^1")
 				if walking:
-					id = "%s@w%d_%d" % [leg.walk_id, int(fposmod((phase + leg.phase) / TAU, 1.0) * leg.steps) % leg.steps, leg.steps]
+					id = "%s@w%d_%d%s" % [leg.walk_id, int(fposmod((phase + leg.phase) / TAU, 1.0) * leg.steps) % leg.steps, leg.steps, leg.cut]
 				if id != leg.node.part_id:
 					leg.node.part_id = id
 					leg.node.queue_redraw()
@@ -805,7 +805,7 @@ func _planted() -> Variant:
 			continue
 		var n: PartShape = leg.node
 		var now: Variant = n.bake_of()
-		var rest: Variant = n.bake_of(leg.base) if leg.steps > 0 else now
+		var rest: Variant = n.bake_of(leg.base + leg.cut) if leg.steps > 0 else now
 		if now == null or rest == null:
 			return null
 		var t := Transform2D(n.rotation, n.scale, 0.0, n.position)
@@ -1223,24 +1223,38 @@ static func pose_parts(lib, r: Dictionary) -> Array:
 	if r.has("crew"):
 		return []
 	var body_id: String = r.body
+	var head_id: String = r.head
 	if r.has("mount"):
 		var mc: Dictionary = lib.creatures[r.mount.creature]
 		body_id = mc.get("fused_body", mc.body) if r.mount.fused else mc.get("mount_body", mc.body)
+		head_id = "" if r.mount.fused else mc.head
 	var body: Dictionary = lib.part(body_id)
 	if not body.has("legs"):
 		return []
-	var leg_ids := [body.legs.part]
-	if body.legs.has("hind"):
-		leg_ids.append(body.legs.hind)
+	# Each leg as _compose draws it: [leg id, what follows the pose] (a leg cut by its body is a
+	# bake of its own per hip, "leg.cat@w3_8~body.cat^1"; the body's posed rig keeps the anchor order).
+	var cut: bool = "legs" in body.get("cut", [])
+	var legs := []
+	for i in body.legs.anchors.size():
+		var a: Array = body.legs.anchors[i]
+		var id: String = body.legs.get("hind", body.legs.part) if a.size() > 5 and bool(a[5]) else body.legs.part
+		var leg := [id, i]
+		if not cut:
+			if legs.any(func(l): return l[0] == id):
+				continue
+			leg[1] = -1
+		legs.append(leg)
 	var out := []
 	for pose in body.get("idle_poses", []):
 		out.append([body_id + "@" + pose, body.shapes])
-		for id in leg_ids:
-			out.append([id + "@" + pose, lib.part(id).shapes])
+		if head_id != "" and "head" in body.get("cut", []):   # a cut head is cut by the body in that pose
+			out.append(["%s~%s@%s^head" % [head_id, body_id, pose], lib.part(head_id).shapes])
+		for l in legs:
+			out.append([l[0] + "@" + pose + ("~%s@%s^%d" % [body_id, pose, l[1]] if cut else ""), lib.part(l[0]).shapes])
 	var n := int(body.legs.get("poses", 0))
-	for id in leg_ids:
+	for l in legs:
 		for i in n:
-			out.append(["%s@w%d_%d" % [id, i, n], lib.part(id).shapes])
+			out.append(["%s@w%d_%d%s" % [l[0], i, n, "~%s^%d" % [body_id, l[1]] if cut else ""], lib.part(l[0]).shapes])
 	return out
 
 

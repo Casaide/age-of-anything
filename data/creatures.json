@@ -49,9 +49,9 @@
    "note": "cheap swarm that breeds fast"
   },
   "mounts": [
-   "capybara"
+   "cat"
   ],
-  "_mounts_doc": "the creature's own mounts, ridden before the family's (Dominic picked the capybara as the rats' large unit, RB1)"
+  "_mounts_doc": "the creature's own mounts, ridden before the family's (rats ride alley cats, Dominic D-124; the capybara, RB1's pick, is still there for anyone who asks for it by name)"
  },
  "human": {
   "voice": "human",
@@ -168,6 +168,29 @@
   "skins": [
    "capybara"
   ],
+  "families": [
+   "sewer"
+  ]
+ },
+ "cat": {
+  "voice": "capybara",
+  "noun": "Cat",
+  "plural": "Cats",
+  "body": "body.cat",
+  "head": "head.cat",
+  "playable": false,
+  "mount": true,
+  "skins": [
+   "cat_ginger",
+   "cat_tuxedo",
+   "cat_grey"
+  ],
+  "skins_not_under": {
+   "cat_grey": [
+    "rat_grey"
+   ]
+  },
+  "_skins_not_under_doc": "a grey tabby under a grey rat reads as one grey blob at game scale (like the red eft under a red frog, D-122)",
   "families": [
    "sewer"
   ]

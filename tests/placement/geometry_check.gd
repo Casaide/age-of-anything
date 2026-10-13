@@ -104,6 +104,14 @@ func check(label: String, u: Dictionary) -> void:
 		_check_walk(label, "walk %d" % i, a)
 		if i % 2 == 0:
 			_check_pose(label, "walk %d" % i, a, false)
+	# A body that rests in its own poses when it stands still (parts.json idle_poses: a cat sits
+	# down in steps) is checked in each, as standing: every foot down, the weight over the feet.
+	var walker_body: String = r.body
+	if r.has("mount"):
+		var mc: Dictionary = lib.creatures[r.mount.creature]
+		walker_body = mc.get("fused_body", mc.body) if r.mount.fused else mc.get("mount_body", mc.body)
+	for bp in lib.part(walker_body).get("idle_poses", []):
+		_check_pose(label, bp, rig.unit(r, {"body_pose": bp}), true)
 	rig.clear()
 	if _vox_cache.size() > 600:
 		_vox_cache.clear()   # (kept across units: a mount's body and legs voxelize once for all its riders)
@@ -143,6 +151,10 @@ func _check_pose(label: String, view: String, a: Dictionary, standing: bool) -> 
 		return
 	var body_id: String = body.id.get_slice("@", 0)
 	var st := _stance(body_id)
+	if a.get("body_pose", "") != "":
+		# A resting pose may relax the stance (legs.stance.poses: a sitting cat's hind legs fold flat).
+		st = st.duplicate()
+		st.merge(st.get("poses", {}).get(a.body_pose, {}), true)
 	if standing and not legs.is_empty() and not a.flying:
 		# A1: every foot on the ground; nothing below it; the weight over the feet.
 		var feet := []

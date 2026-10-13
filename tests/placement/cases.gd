@@ -1,7 +1,7 @@
 extends RefCounted
 ## The units the placement checks cover (tests/placement_check.gd, tests/layer_check.gd): every unit
 ## of these races at every age of its line (so every body, head, leg, hold and piece of gear in
-## play), every rider on every mount, winged mounts, every newt skin, the animals and the siege
+## play), every rider on every mount, winged mounts, every newt skin and cat coat, the animals and the siege
 ## engines with their crews. [label, unit] pairs; a unit is {recipe, eval}.
 
 const DataLib := preload("res://src/data_lib.gd")
@@ -14,7 +14,7 @@ const PROMPTS := ["romans", "swamp frogs", "sewer rats", "forest beetles", "spoo
 	"flying greeks with wings", "centaur romans", "winged frogs"]
 ## Riders (a race's spear unit, put on each mount) and the mounts.
 const RIDERS := ["romans", "swamp frogs", "sewer rats", "spooky spiders", "forest beetles"]
-const MOUNTS := ["pony", "beetle", "spider", "capybara", "newt", "hummingbird"]
+const MOUNTS := ["pony", "beetle", "spider", "capybara", "newt", "hummingbird", "cat"]
 
 
 ## lines: also every later age of each unit line (their own armour, helmets, weapons).
@@ -52,6 +52,9 @@ static func all(lib, lines := true) -> Array:
 	var frog: Dictionary = slot(gen.generate("swamp frogs", rules), "spear")
 	for skin in lib.creatures.newt.skins:   # every newt (the crested ones carry a crest)
 		cases.append(["frog on %s" % skin, ride(frog, "newt", skin, {})])
+	var rat: Dictionary = slot(gen.generate("sewer rats", rules), "spear")
+	for skin in lib.creatures.cat.skins:   # every cat coat under the rats (D-124; it sits when idle)
+		cases.append(["rat on %s" % skin, ride(rat, "cat", skin, {})])
 	var animals: Dictionary = ArtKit.animal_race()
 	for u in animals.units:
 		cases.append(["animal %s" % u.recipe.body, u])

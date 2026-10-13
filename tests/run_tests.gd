@@ -495,19 +495,18 @@ func _test_composer(lib, gen, rules: Dictionary) -> void:
 	_test_cat_poses(gen, rules)
 
 
-## Concept C2's cat (data/later/cat_mount.json, not in play): its walk picks baked leg steps, and
-## standing still it sits down through its idle poses and gets up again when it moves (view only).
+## The rats' alley cat (C2, D-124): rats ride cats, a capybara only when asked for; its walk picks
+## baked leg steps, and standing still it sits down through its idle poses and gets up again when
+## it moves (view only).
 func _test_cat_poses(gen, rules: Dictionary) -> void:
 	var lib = DataLib.new()
-	var later: Dictionary = DataLib.load_json("res://data/later/cat_mount.json")
-	for p in later.parts:
-		lib.parts[p.id] = p
-	lib.creatures.merge(later.creatures)
-	lib.palettes.skins.merge(later.skins)
-	var u: Dictionary = _unit(gen.generate("sewer rats with crossbows", rules), "large").duplicate(true)
-	u.recipe.mount.creature = "cat"
-	u.recipe.mount.skin = "cat_tuxedo"
-	check(UnitView.pose_parts(lib, u.recipe).size() == 2 * 3 + 2 * 8, "cat: its sit poses and 8 walk steps per leg to bake")
+	var u: Dictionary = _unit(gen.generate("sewer rats with crossbows", rules), "large")
+	check(u.recipe.has("mount") and u.recipe.mount.creature == "cat", "rats ride cats (D-124)")
+	var capy: Dictionary = _unit(gen.generate("sewer rats riding capybaras", rules), "large")
+	check(capy.recipe.has("mount") and capy.recipe.mount.creature == "capybara", "a capybara when asked for")
+	var asked: Dictionary = _unit(gen.generate("romans on cats", rules), "large")
+	check(asked.recipe.has("mount") and asked.recipe.mount.creature == "cat", "'cats' asks for the cat mount")
+	check(UnitView.pose_parts(lib, u.recipe).size() == 3 * (1 + 1 + 4) + 4 * 8, "cat: its three sit poses (body, head and four cut legs each) and 8 walk steps per cut leg to bake")
 	var view = UnitView.new()
 	view.build(u.recipe, lib, Color.BLUE, u.eval.speed)
 	view.walking = true
@@ -518,7 +517,7 @@ func _test_cat_poses(gen, rules: Dictionary) -> void:
 	for f in 40:
 		view._process(0.25)
 	check(view.body_pose == "sit", "cat: sits after standing still (%s)" % view.body_pose)
-	check(view.legs.filter(func(l): return l.node.part_id.begins_with("leg.cat")).all(func(l): return l.node.part_id.ends_with("@sit")), "cat: its legs sit too")
+	check(view.legs.filter(func(l): return l.node.part_id.begins_with("leg.cat")).all(func(l): return l.node.part_id == l.node.part_id.get_slice("~", 0) + "~body.cat@sit^" + l.node.part_id.get_slice("^", 1) and l.node.part_id.get_slice("~", 0).ends_with("@sit")), "cat: its legs sit too (cut by the sitting body)")
 	view.walking = true
 	for f in 4:
 		view._process(0.1)

@@ -76,13 +76,24 @@ func clear_caches() -> void:
 ## Composes one unit in every facing and pose and checks it. tweak (fixtures): called with each view
 ## after it's composed, to put an old configuration back.
 func check_case(holder: Node2D, label: String, u: Dictionary, tweak := Callable()) -> void:
+	# A body that rests in its own poses when idle (parts.json idle_poses: a cat sits) is drawn in each.
+	var poses := POSES.duplicate()
+	if not u.recipe.has("crew"):
+		var walker: String = u.recipe.body
+		if u.recipe.has("mount"):
+			var mc: Dictionary = lib.creatures[u.recipe.mount.creature]
+			walker = mc.get("fused_body", mc.body) if u.recipe.mount.fused else mc.get("mount_body", mc.body)
+		for bp in lib.part(walker).get("idle_poses", []):
+			poses.append([bp, false, 0.0, bp])
 	for k in 8:
 		var stand := {}
-		for pose in POSES:
+		for pose in poses:
 			if pose[1] and u.recipe.has("crew"):
 				continue   # an engine rolls; its crew's walk is a worker's, checked with the workers
 			var v = UnitView.new()
 			v.facing_k = k
+			if pose.size() > 3:
+				v.body_pose = pose[3]
 			v.build(u.recipe, lib, _team, u.eval.speed)
 			v.idle_wait = 1000.0
 			holder.add_child(v)
@@ -90,6 +101,8 @@ func check_case(holder: Node2D, label: String, u: Dictionary, tweak := Callable(
 			v.phase = pose[2]
 			v._process(0.0)
 			v.walking = false
+			if pose.size() > 3:
+				v.set_process(false)   # (held in its resting pose: left running, it gets up while the truth renders)
 			if tweak.is_valid():
 				tweak.call(v, pose[0])
 				v._sort_layers(v)
@@ -237,7 +250,7 @@ func _check_view(v, label: String, view: String, k: int, u: Dictionary, stand: D
 				note("legs under a skirt", label, view, i > body)
 		var heads := _find(parts, rig, "head")
 		# Legs and head show where the 3D model shows them (the body's own bake of them together).
-		if rig != "rider" and view.ends_with("stand"):
+		if rig != "rider" and (view.ends_with("stand") or v.body_pose != ""):   # (a resting pose stands too)
 			await _check_model(v, parts, rig, body, label, view, k, u, stand)
 		elif rig != "rider" and not stand.is_empty() and stand.has(rig):
 			_check_walk(v, parts, rig, label, view, stand[rig])
@@ -294,7 +307,7 @@ func _check_view(v, label: String, view: String, k: int, u: Dictionary, stand: D
 		note("rider over the mount", label, view, bad > 0, "%d px" % bad)
 		for i in _find(parts, "rider", "leg"):
 			note("rider's near leg over the mount's flank", label, view, i < mb[0])
-		if view.ends_with("stand"):
+		if view.ends_with("stand") or v.body_pose != "":
 			_check_rider_leg(v, parts, mb[0], label, view, k, u)
 
 
@@ -392,7 +405,7 @@ func _check_model(v, parts: Array, rig: String, body: int, label: String, view: 
 	if rig != walker or v.flying:
 		return
 	var cam := camera(k)
-	var a3: Dictionary = rig3d.unit(u.recipe, {})
+	var a3: Dictionary = rig3d.unit(u.recipe, {"body_pose": v.body_pose})
 	var s: float = ArtKit.ART_SCALE * ArtKit.UNIT_SCALE
 	var lows := {}
 	var n := 0

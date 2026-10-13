@@ -1521,6 +1521,30 @@
     "mounted": 1
    }
   },
+  "cat": {
+   "mount": "cat",
+   "tags": {
+    "mounted": 1
+   }
+  },
+  "cats": {
+   "mount": "cat",
+   "tags": {
+    "mounted": 1
+   }
+  },
+  "alley": {
+   "mount": "cat",
+   "tags": {
+    "mounted": 1
+   }
+  },
+  "alleycat": {
+   "mount": "cat",
+   "tags": {
+    "mounted": 1
+   }
+  },
   "hummingbird": {
    "mount": "hummingbird",
    "tags": {
