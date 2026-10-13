@@ -28,7 +28,7 @@ const LIMIT := 20 * 60 * 30    # 30 minutes: a match must end, however slowly (p
 const PIECES := {
 	"pick": ["quick", 1], "wonder": ["quick", 5], "respond": ["quick", 5], "shelter": ["quick", 5],
 	"walled_fords": ["quick", 5], "rams": ["quick", 10], "hills": ["quick", 5], "guard": ["quick", 30],
-	"age3": ["quick", 40], "surrender": ["quick", 1], "easy": ["quick", 40], "siege_bot": ["quick", 60],
+	"age3": ["quick", 40], "surrender": ["quick", 1], "easy": ["quick", 40], "siege_bot": ["quick", 60], "trade_bot": ["quick", 20],
 	"passive_frogs": ["slow", 120], "passive_rats": ["slow", 120], "bvb": ["slow", 200], "bvb_again": ["slow", 200],
 	"centaurs_frogs": ["slow", 200], "rats_centaurs": ["slow", 200], "hard": ["slow", 200],
 	"walled_palisade": ["slow", 200], "walled_wall": ["slow", 200], "walled_gap": ["slow", 200], "land": ["slow", 200],
@@ -146,6 +146,7 @@ func _run_piece(name: String) -> void:
 		"walled_fords": _test_walled_fords(rules, frogs, rats)
 		"rams": _test_rams(rules, frogs)
 		"siege_bot": _test_siege_bot(rules, rats, frogs)
+		"trade_bot": _test_trade_bot(rules, frogs, rats)
 		"walled_palisade": _test_walled_base(rules, frogs, rats, "palisade", false)
 		"walled_wall": _test_walled_base(rules, frogs, rats, "wall", false)
 		"walled_gap": _test_walled_base(rules, frogs, rats, "wall", true)
@@ -403,6 +404,63 @@ func _test_siege_bot(rules: Dictionary, a: Dictionary, b: Dictionary) -> void:
 	check(int(blows.get("ram", 0)) > 0 or rams_out > 0, "siege: its rams go out to the enemy or strike buildings (%d out, blows %s)" % [rams_out, blows])
 
 
+## Trade (milestone 13 step 8): a bot in age 2 with two markets of its own far enough apart trains
+## a few trade carts (data: economy.carts) and keeps them on the route, and they bring gold home;
+## they never join its army.
+func _test_trade_bot(rules: Dictionary, a: Dictionary, b: Dictionary) -> void:
+	var w := World.new(SEED, SimMap.load_id(map_id), [a, b], rules)
+	var cfg: Dictionary = Bot.load_config()
+	for wv in cfg.military.waves:
+		wv.at = 1 << 20   # no attacks: trading alone
+	var bots := [Bot.new(0, cfg), EcoBot.new(1)]
+	w.ages[0] = 2
+	var mk := Economy.btype_of(w, "market")
+	var s: Array = w.map.starts[0]
+	var placed := []
+	for want in [Vector2i(s[0] / 1000 + 4, s[1] / 1000 - 2), Vector2i(s[0] / 1000 + 4, s[1] / 1000 + 24), Vector2i(s[0] / 1000 + 24, s[1] / 1000)]:
+		if placed.size() == 2:
+			break
+		for r in 8:
+			var at := Vector2i(-1, -1)
+			for dy in range(-r, r + 1):
+				for dx in range(-r, r + 1):
+					if at.x < 0 and Economy.can_place(w, 0, mk, want.x + dx, want.y + dy):
+						at = want + Vector2i(dx, dy)
+			if at.x >= 0:
+				var mb := Economy.place(w, 0, mk, at.x, at.y)
+				w.buildings.done[mb] = 1
+				w.buildings.hp[mb] = w.btypes[mk].hp
+				placed.append(mb)
+				break
+	var k: int = w.type_of(0, "trader")
+	var paid := 0
+	var most := 0
+	var in_army := false
+	while w.tick < 20 * 300:
+		if w.tick % 600 == 0:
+			for r in w.resources.size():
+				w.stock[r][0] = maxi(w.stock[r][0], 1500)
+		for bot in bots:
+			bot.think(w)
+		w.step()
+		for e in w.events:
+			if e.type == "trade" and e.has("paid"):
+				paid += int(e.paid)
+		if w.tick % 100 == 0:
+			var n := 0
+			for i in w.units.count():
+				if w.units.owner[i] == 0 and w.units.kind[i] == k:
+					n += 1
+					in_army = in_army or w.units.stance[i] == load("res://src/sim/combat.gd").ATTACK_MOVE
+			most = maxi(most, n)
+	var Trade = load("res://src/sim/trade.gd")
+	var apart: int = Trade.tiles(w, placed[0], placed[1]) if placed.size() == 2 else 0
+	print("\n== trade bot: markets %d tiles apart; most carts at once %d; gold brought home in 5 minutes %d" % [apart, most, paid])
+	check(placed.size() == 2 and apart >= int(rules.economy.trade.min_tiles), "trade bot: two markets far enough apart (%d tiles)" % apart)
+	check(most >= 3 and most <= int(cfg.economy.carts.max), "trade bot: it trains a few carts, no more than its cap (%d)" % most)
+	check(paid > 0 and not in_army, "trade bot: its carts bring gold home (%d) and never march with the army" % paid)
+
+
 ## Each level left to build up (milestone 12 phase 8): the bot with its attack waves switched
 ## off, against a passive side, for 30 minutes. Reports when it reaches each age, what it has
 ## built and researched by 20 minutes, and its army; checks the targets: age 2 by 8 minutes
@@ -495,6 +553,12 @@ func _test_pick(rules: Dictionary, gen) -> void:
 				check(bot.pick(w, range_lines, seen.infantry) == "mounted_archer", "pick %s: mounted archers against swordsmen" % prompt)
 				check(bot.pick(w, range_lines, seen.spear) != "mounted_archer", "pick %s: no mounted archers against spears" % prompt)
 				check(bot.pick(w, ["large", "scout"], {}) == "large", "pick %s: the Stable's cavalry with nothing seen" % prompt)
+			if age == 2:   # the Castle (milestone 13 step 4): a sapper and a great sling before more unique units; the Market's carts aren't soldiers
+				w.ages[0] = 3
+				var castle := ["unique", "sapper", "great_sling"]
+				check(bot.pick(w, castle, {}) == "sapper", "pick %s: the Castle's sapper first (%s)" % [prompt, bot.pick(w, castle, {})])
+				check(bot.pick(w, ["trader"], {}) == "", "pick %s: trade carts aren't picked as soldiers" % prompt)
+				w.ages[0] = 2
 			if int(bot.cfg.military.building_foes) > 0:   # (off for now: data/ai.json _doc_building_foes)
 				bot._aim = 1
 				check(bot.pick(w, barracks, bot._enemy_tags(w)) == "infantry", "pick %s age %d: swords for a wall in the way" % [prompt, age])

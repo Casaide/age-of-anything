@@ -33,6 +33,7 @@ const Bridges := preload("res://src/sim/bridges.gd")
 const Trails := preload("res://src/sim/trails.gd")
 const Garrison := preload("res://src/sim/garrison.gd")
 const Shots := preload("res://src/sim/shots.gd")
+const Trade := preload("res://src/sim/trade.gd")
 
 const TICK_HZ := 20
 const HASH_EVERY := 30
@@ -248,7 +249,9 @@ func _make_type(player: int, u: Dictionary) -> Dictionary:
 		"pop": int(e.pop), "cost": Economy.cost_vector(resources, e.cost),
 		"train_ticks": int(e.train_time) * TICK_HZ, "worker": "worker" in e.tags, "eval": e,
 		"healer": int(e.get("heal", 0)) > 0,   # heals, never fights (heal.gd); spawns passive
-		"posture": Combat.PASSIVE if int(e.get("heal", 0)) > 0 else Combat.AGGRESSIVE,
+		"trader": "trade" in e.tags,   # a trade cart (trade.gd): never fights, as harmless as a sheep
+		"harmless": "trade" in e.tags,
+		"posture": Combat.PASSIVE if int(e.get("heal", 0)) > 0 or "trade" in e.tags else Combat.AGGRESSIVE,
 		"mclass": _movement_class(e.tags),
 		"sight_add": 0, "carry_add": 0, "build_pct": 0,   # research on the type (Tech.retype)
 		"line": u.get("line", [{"age": int(r.tier), "recipe": r, "eval": e}]),   # the unit through the ages (age-ups re-price from it)
@@ -353,6 +356,8 @@ func step() -> void:
 	Economy.train(self)
 	Tech.tick(self)
 	Economy.work(self)
+	Trade.tick(self)
+	_pack()
 	Garrison.tick(self)
 	Animals.tick(self)
 	spatial.build(units.x, units.y)
@@ -373,6 +378,34 @@ func step() -> void:
 	tick += 1
 	if tick % HASH_EVERY == 0:
 		hashes.append([tick, state_hash()])
+
+
+## Engines that pack and unpack (the great sling: its weapon's `unpack` and `pack`, in ticks). Standing
+## still it unpacks, units.ready counting up to its unpack (then it may throw: combat.gd); told to
+## move once set up, it packs up first, ready going to -pack and counting back up to 0 while it stands
+## (its speed held at 0, its stuck count too: packing isn't being stuck); then it rolls, ready 0. One
+## moved before it was set up just stops unpacking.
+func _pack() -> void:
+	var u := units
+	for i in u.count():
+		var t: Dictionary = types[u.kind[i]]
+		if t.unpack == 0:
+			continue
+		var r: int = u.ready[i]
+		if r < 0:
+			r += 1
+			u.speed[i] = 0 if r < 0 else int(t.speed)
+			u.stuck[i] = 0
+			u.prog[i] = -1
+		elif u.moving[i] == 1:
+			if r >= t.unpack and t.pack > 0:
+				r = -t.pack
+				u.speed[i] = 0
+			else:
+				r = 0
+		else:
+			r = mini(r + 1, t.unpack)
+		u.ready[i] = r
 
 
 func _run(cmd: Dictionary) -> void:
@@ -467,6 +500,8 @@ func _run(cmd: Dictionary) -> void:
 			Garrison.cmd_call_to_arms(self, cmd.player, a)
 		Commands.BACK_TO_WORK:
 			Garrison.cmd_back_to_work(self, cmd.player, a)
+		Commands.ROUTE:
+			Trade.cmd_route(self, cmd.player, a)
 		Commands.STOP:
 			for uid in a.ids:
 				var i := units.index_of(uid)
@@ -1540,6 +1575,8 @@ func _separate() -> void:
 					continue
 				if stood[i] == 1 and stood[j] == 1:
 					continue   # two groups' formations overlapping: no shoving match (and no walking back into it)
+				if owners[i] == owners[j] and grp[i] != grp[j] and ((stood[i] == 1 and yields[j] == 1 and mv[j] == 1) or (stood[j] == 1 and yields[i] == 1 and mv[i] == 1)):
+					continue   # ...nor between one in its slot and one of the other group walking back into its own (they knocked each other off overlapping slots for good: test_sim's choke crossing with an eleventh group)
 				# A worker on its way to or from a job walks on; anyone standing idle in its way gives way.
 				# So does a unit standing in its formation for one of its side's other groups walking
 				# through (it walks back to its slot after): two groups' formations filling a narrow way
@@ -1676,7 +1713,7 @@ func state_hash() -> int:
 		for v in [u.id[i], u.owner[i], u.kind[i], u.x[i], u.y[i], u.tx[i], u.ty[i], u.moving[i],
 				u.arrive[i], u.wx[i], u.wy[i], u.group[i], u.stuck[i], u.prog[i], u.hp[i], u.fkey[i], u.reach[i],
 				u.task[i], u.target[i], u.home[i], u.gspot[i], u.carry_kind[i], u.carry[i], u.work[i],
-				u.foe[i], u.cooldown[i], u.stance[i], u.posture[i], u.gx[i], u.gy[i], u.amx[i], u.amy[i], u.orders[i].size(), u.mclass[i], u.patient[i], u.pace[i], u.amc[i]]:
+				u.foe[i], u.cooldown[i], u.stance[i], u.posture[i], u.gx[i], u.gy[i], u.amx[i], u.amy[i], u.orders[i].size(), u.mclass[i], u.patient[i], u.pace[i], u.amc[i], u.route[i], u.ready[i]]:
 			h = Fixed.mix(h, v)
 		for o in u.orders[i]:
 			h = Fixed.mix(h, Rng.hash_string(JSON.stringify(o, "", true)))

@@ -34,6 +34,13 @@
    "every": 5,
    "above": 500,
    "below": 200
+  },
+  "carts": {
+   "age": 2,
+   "every": 10,
+   "max": 6,
+   "second_market": 1,
+   "_doc": "trade carts (bot.gd _trade_carts): from age `age`, every `every` seconds: with two markets far enough apart to trade (ours, or ours and an ally's: the farthest pair), idle carts go on the route and more are trained at our end, one at a time, up to `max`, from what's over beyond what it saves for; second_market 1: with no such pair, a second Town Center far enough from our only market gets a market beside it"
   }
  },
  "_doc_mix": "economy.mix: per age, the share of workers on each resource (the bot sends idle and new workers to whatever is furthest below its share, and moves one gatherer at a time over to it)",
@@ -207,11 +214,13 @@
    "max": {
     "ram": 2,
     "catapult": 2,
-    "bolt_thrower": 1
+    "bolt_thrower": 1,
+    "sapper": 1,
+    "great_sling": 1
    },
    "towers_within": 14
   },
-  "_doc_siege": "siege (Siege Workshop, age 3): the bot keeps at most max of each engine (out and queued); on its regroup beats its rams go for the nearest enemy gate, wall or tower it can see (else any building), its catapults for a tower within towers_within tiles of them, else they keep with the army",
+  "_doc_siege": "siege (Siege Workshop and Castle, age 3): the bot keeps at most max of each engine (out and queued; the Castle's sappers and great sling too); on its regroup beats its rams and sappers go for the nearest enemy gate, wall or tower it can see (else any building), its catapults and great slings for a tower within towers_within tiles of them, else they keep with the army",
   "raid_targets": [
    "lumber_camp",
    "mining_camp",

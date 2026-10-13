@@ -692,12 +692,22 @@
   },
   {
    "id": "pack_animals",
-   "status": "planned",
    "name": "Pack Animals",
-   "desc": "Something stronger pulls the carts.",
+   "desc": "Something stronger pulls the carts: trade carts 25% faster.",
+   "cost": {
+    "food": 200,
+    "gold": 100
+   },
+   "time": 40,
    "building": "market",
    "age": 3,
-   "effect": "Trade carts +25% speed"
+   "effects": [
+    {
+     "tag": "trade",
+     "stat": "speed",
+     "pct": 25
+    }
+   ]
   },
   {
    "id": "stonecutting",

@@ -15,10 +15,10 @@ const CreatureKit := preload("res://scenes/art_pixel/creature_kit.gd")
 const PROMPTS := ["romans", "swamp frogs", "sewer rats", "forest beetles", "spooky spiders",
 	"flying greeks with wings", "centaur romans", "winged frogs"]
 ## More races for milestone 13's new lines only (scouts, mounted archers, unique units): with PROMPTS,
-## every unique theme in data/uniques.json, a foot scout, the steppe raider on its pony.
+## every unique theme in data/uniques.json, a foot scout, the steppe raider on its pony; the sapper, trade cart and great sling.
 const LINE_PROMPTS := ["greeks", "royal humans", "mongols", "aztecs", "egyptians", "han", "sewer rats with cheese hammers",
 	"tiny vikings", "swamp humans", "forest humans", "sewer humans", "spooky humans"]
-const NEW_LINES := ["scout", "mounted_archer", "unique", "large"]   # (and the cavalry, which rides the same mounts)
+const NEW_LINES := ["scout", "mounted_archer", "unique", "large", "sapper", "trader", "great_sling"]   # (and the cavalry, which rides the same mounts; the sapper in every culture's cap, the cart and the great sling of every take)
 ## Riders (a race's spear unit, put on each mount) and the mounts.
 const RIDERS := ["romans", "swamp frogs", "sewer rats", "spooky spiders", "forest beetles"]
 const MOUNTS := ["pony", "beetle", "spider", "capybara", "newt", "hummingbird", "cat"]
