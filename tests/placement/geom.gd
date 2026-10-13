@@ -135,8 +135,11 @@ static func _scan(lo: Vector3i, hi: Vector3i, inv: Transform3D, out: Dictionary,
 					out[key(i, j, k)] = true
 
 
-## Ray parity along +y through each voxel column's centre: crossings sorted, filled in pairs.
+## Ray parity along +y through each voxel column's centre: crossings sorted, filled in pairs. The
+## crossings of all a mesh's surfaces count together: a modelled object painted in several materials
+## (a cat's tabby coat) comes as one surface per material, none of them closed on its own.
 static func _parity(m: Mesh, t: Transform3D, out: Dictionary) -> void:
+	var cols := {}   # column key -> PackedFloat32Array of y crossings (in voxel units)
 	for s in m.get_surface_count():
 		var arr: Array = arrays(m, s)
 		var vs: PackedVector3Array = arr[Mesh.ARRAY_VERTEX]
@@ -146,7 +149,6 @@ static func _parity(m: Mesh, t: Transform3D, out: Dictionary) -> void:
 		for i in vs.size():
 			w[i] = t * vs[i] / RES
 		var tri_count := idx.size() / 3 if idx.size() > 0 else vs.size() / 3
-		var cols := {}   # column key -> PackedFloat32Array of y crossings (in voxel units)
 		for f in tri_count:
 			var a: Vector3 = w[idx[f * 3]] if idx.size() > 0 else w[f * 3]
 			var b: Vector3 = w[idx[f * 3 + 1]] if idx.size() > 0 else w[f * 3 + 1]
@@ -175,18 +177,18 @@ static func _parity(m: Mesh, t: Transform3D, out: Dictionary) -> void:
 					if not cols.has(ck):
 						cols[ck] = PackedFloat32Array()
 					cols[ck].append(y)
-		for ck in cols:
-			var ys: PackedFloat32Array = cols[ck]
-			ys.sort()
-			var v := unkey(ck)
-			if ys.size() % 2 == 1:
-				for y in ys:
-					out[key(v.x, floori(y), v.z)] = true
-				continue
-			for p in range(0, ys.size(), 2):
-				for j in range(floori(ys[p]), floori(ys[p + 1]) + 1):
-					if j + 0.5 >= ys[p] - 0.5 and j + 0.5 <= ys[p + 1] + 0.5:
-						out[key(v.x, j, v.z)] = true
+	for ck in cols:
+		var ys: PackedFloat32Array = cols[ck]
+		ys.sort()
+		var v := unkey(ck)
+		if ys.size() % 2 == 1:
+			for y in ys:
+				out[key(v.x, floori(y), v.z)] = true
+			continue
+		for p in range(0, ys.size(), 2):
+			for j in range(floori(ys[p]), floori(ys[p + 1]) + 1):
+				if j + 0.5 >= ys[p] - 0.5 and j + 0.5 <= ys[p + 1] + 0.5:
+					out[key(v.x, j, v.z)] = true
 
 
 ## Signed area weight of (px, pz) against edge a->b, in the triangle's winding (>= 0 inside).

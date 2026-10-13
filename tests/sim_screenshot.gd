@@ -22,7 +22,9 @@ extends SceneTree
 ## line's age-2 upgrade is done, so its age-3 one has taken the slot).
 ## "fogplace": placing a house over ground never seen; "fogfound": a house's foundation laid
 ## there (use with "ai-": the fog as you play it).
-## "formation:<tick>": side 0's army walks to the meeting point and stands in its formation.
+## "formation:<tick>[:<seconds>]": side 0's army walks to the meeting point and stands in its formation
+## (shot that many seconds after the camera gets there: views off screen don't animate, so a cat
+## only starts its wait to sit down once it's in view).
 ## "siege:<tick>": side 0's melee soldiers attack side 1's Town Center (fog lifted).
 ## "wonder[:workshop|:wonder]": side 0 has a finished Wonder and a Siege Workshop by its Town
 ## Center; shot a few seconds after the Wonder is announced (its countdown under the top bar), with
@@ -157,7 +159,7 @@ func _initialize() -> void:
 	elif scene.begins_with("volley"):
 		await _volley(view, map_id, scene.get_slice(":", 1) if ":" in scene else "large")
 	elif scene.begins_with("formation"):
-		await _formation(view, map_id, int(scene.get_slice(":", 1)))
+		await _formation(view, map_id, int(scene.get_slice(":", 1)), float(scene.get_slice(":", 2)) if scene.count(":") > 1 else 0.0)
 	elif scene in ["engines", "ram", "catapult"]:
 		await _engines(view, map_id, scene)
 	elif scene.begins_with("siege"):
@@ -687,7 +689,7 @@ func _armies(view, map_id: String) -> void:
 	view.camera.look_at_point(Iso.to_screen(meet.x, meet.y))
 
 
-func _formation(view, map_id: String, at_tick: int) -> void:
+func _formation(view, map_id: String, at_tick: int, wait := 0.0) -> void:
 	while view.world.units.count() <= 6:
 		await process_frame
 	var meet: Vector2 = MEET[map_id] * 1000.0
@@ -705,6 +707,8 @@ func _formation(view, map_id: String, at_tick: int) -> void:
 	view.camera.zoom = Vector2(3.0, 3.0)
 	view._on_zoom()
 	view.camera.look_at_point(Iso.to_screen(meet.x, meet.y))
+	if wait > 0.0:
+		await create_timer(wait).timeout
 
 
 func _siege(view, at_tick: int) -> void:

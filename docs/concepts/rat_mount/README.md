@@ -129,7 +129,8 @@ muzzle and paws, skin4 = stockings):
   tuxedo cat and not a black blob.
 - **Grey tabby:** C's grey, kept as a third option.
 
-**In play?** No. The rats keep the capybara. The cat is built in the real pipeline:
+**In play?** Yes, since D-124 (Dominic: "Cats are great, just hind looks a little too big"): see the
+update at the end. Before that, the rats kept the capybara. The cat is built in the real pipeline:
 - models: the cat section of `scenes/art_pixel/unit_models.gd`
 - poses: UnitView, with the extra bakes added in `art_kit`
 - data: `data/later/cat_mount.json`, which holds the parts, the creature and the coats
@@ -142,3 +143,23 @@ Its stats are the capybara's until it is priced.
 - In some facings the folded hind leg pokes out behind the rump.
 - From the front and back the sitting cat is mostly hidden behind the rider.
 - The near shoulder blade shows as a soft bump, but at 1x it is only a pixel.
+
+## In play (D-124, 2026-10-13)
+
+Rats ride cats. The cat's data moved from `data/later/cat_mount.json` (now just a note) into `data/`:
+the parts, the creature, the coats, and the words cat, cats, alley and alleycat. The rats' `mounts` is
+`["cat"]`. The capybara is still a mount for anyone who asks for it by name. A grey tabby is never
+picked under a grey rat, because the two read as one grey blob.
+
+- **Hindquarters:** the rump, haunch and loin are lower and narrower, and the thigh and shin are
+  thinner. The hips are narrower than the chest, and the rump stands only a little higher than the withers.
+- **Sitting:** it now sits down in three steps (`sit1`, `sit2`, `sit`). The lump behind the rump was the
+  sitting tail, going back and under the ground; the tail now drops straight to the ground and curls
+  forward. The folded hind foot lies out beside the haunch, so it shows. On the way down, the tail rests on the ground.
+- **Layering:** the legs and the head are cut by the body (`"cut": ["legs", "head"]`), with walk steps and
+  resting poses included. The placement check covers every coat, the rats riding it, the walk steps and
+  the three resting poses.
+- **Stats:** quick and light. hp 44 (the capybara has 55), speed 15, armour 0/2, `price_points` 12 like
+  the pony. On a cat, a rat crossbow rider has 66 hp; on a capybara it has 77.
+
+Pictures: `archive/images/2026-10-13/371-382`.

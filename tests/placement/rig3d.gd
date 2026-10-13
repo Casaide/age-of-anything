@@ -42,11 +42,12 @@ func clear() -> void:
 	_spec_cache.clear()
 
 
-## pose: {"hold": "" (the unit's own) or a hold, "walk": phase or -1.0 standing}
+## pose: {"hold": "" (the unit's own) or a hold, "walk": phase or -1.0 standing, "body_pose": "" or
+## one of the walking body's idle_poses (a cat sitting: "body.cat@sit" with its legs "@sit")}
 ## Returns {"pieces": [...], "walker": rig name of what stands on the ground, "gait": {...}}.
 ## A piece: {name, kind, rig, node, xf, joint (world), parent (piece name or ""), side (+1 near, -1 far), anchor}
 func unit(r: Dictionary, pose: Dictionary) -> Dictionary:
-	var out := {"pieces": [], "flying": false}
+	var out := {"pieces": [], "flying": false, "body_pose": pose.get("body_pose", "")}
 	var colours := UnitView.colours_for(lib, r.skin, r.family, Color.MAGENTA)
 	var walk: float = pose.get("walk", -1.0)
 	if r.has("mount"):
@@ -57,7 +58,7 @@ func unit(r: Dictionary, pose: Dictionary) -> Dictionary:
 		var g := _gait(mbody, false)
 		out.gait = g
 		var lift := _bob(g, walk)
-		var mrig := _rig(out, "mount", mbody, "" if m.fused else mc.head, "", mcol, Transform3D(Basis.IDENTITY, Vector3(0, lift, 0)), true, walk, g)
+		var mrig := _rig(out, "mount", mbody, "" if m.fused else mc.head, "", mcol, Transform3D(Basis.IDENTITY, Vector3(0, lift, 0)), true, walk, g, out.body_pose)
 		for slot in m.parts:
 			if slot == "back" and "flying" in lib.part(m.parts.back).tags:
 				out.flying = true   # (a pegasus's wings sit at the withers in 2D only)
@@ -88,7 +89,7 @@ func unit(r: Dictionary, pose: Dictionary) -> Dictionary:
 			g = {"hop": true, "swing": 0.0, "bob": 0.0}
 		out.gait = g
 		var lift := _bob(g, walk)
-		var rig := _rig(out, "main", r.body, r.head, _hold(r, pose), colours, Transform3D(Basis.IDENTITY, Vector3(0, lift, 0)), true, walk, g)
+		var rig := _rig(out, "main", r.body, r.head, _hold(r, pose), colours, Transform3D(Basis.IDENTITY, Vector3(0, lift, 0)), true, walk, g, out.body_pose)
 		for slot in r.parts:
 			_gear(out, rig, slot, r.parts[slot], colours, pose)
 		out.walker = "main"
@@ -146,8 +147,10 @@ static func swing(g: Dictionary, walk: float, leg_phase: float) -> float:
 	return -sin(walk + leg_phase) * float(g.swing)
 
 
-func _rig(out: Dictionary, rig: String, body_id: String, head_id: String, hold: String, colours: Dictionary, xf: Transform3D, with_legs: bool, walk: float, g: Dictionary) -> Dictionary:
+func _rig(out: Dictionary, rig: String, body_id: String, head_id: String, hold: String, colours: Dictionary, xf: Transform3D, with_legs: bool, walk: float, g: Dictionary, body_pose := "") -> Dictionary:
 	var model_id := body_id + ("" if hold == "low" or hold == "" else "@" + hold)
+	if body_pose != "":
+		model_id = body_id + "@" + body_pose   # a resting pose is the whole body baked in it
 	if not models.has(body_id):
 		return {"sockets": {}, "xf": xf, "body": body_id, "modelled": false}
 	var bs := spec(model_id, colours)
@@ -169,11 +172,19 @@ func _rig(out: Dictionary, rig: String, body_id: String, head_id: String, hold: 
 			var leg_id: String = body.legs.get("hind", body.legs.part) if hind else body.legs.part
 			if not models.has(leg_id):
 				continue
-			var ls := spec(leg_id, colours)
+			# Posed legs (parts.json legs.poses: a cat's walk baked in steps; its legs in a resting pose)
+			# are the step UnitView picks for this phase (UnitView._walk).
+			var n_steps := int(body.legs.get("poses", 0))
+			var leg_model := leg_id
+			if body_pose != "":
+				leg_model = leg_id + "@" + body_pose
+			elif n_steps > 0 and walk >= 0.0:
+				leg_model = "%s@w%d_%d" % [leg_id, int(fposmod((walk + float(a[1])) / TAU, 1.0) * n_steps) % n_steps, n_steps]
+			var ls := spec(leg_model, colours)
 			var basis: Basis = UnitModels.leg_basis(a, cut)
 			var turn := Basis(Vector3(0, 0, 1), swing(g, walk, float(a[1])))
 			var lxf := xf * Transform3D(turn * basis, a[0])
-			out.pieces.append({"name": "%s:leg%d" % [rig, i], "kind": "leg", "rig": rig, "id": leg_id, "node": ls.node, "geo": ls._key, "xf": lxf,
+			out.pieces.append({"name": "%s:leg%d" % [rig, i], "kind": "leg", "rig": rig, "id": leg_model, "node": ls.node, "geo": ls._key, "xf": lxf,
 				"joint": xf * a[0], "parent": bname, "side": 1 if float(a[0].z) > 0.0 else -1, "anchor": i, "hip": a[0], "flip": a.size() > 3 and int(a[3]) == 1})
 	var gear_scale := 1.0
 	if head_id != "" and models.has(head_id) and sockets.has("head"):

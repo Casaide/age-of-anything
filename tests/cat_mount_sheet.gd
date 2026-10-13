@@ -3,12 +3,12 @@ extends SceneTree
 ## "tail is good, just legs and body a bit unclear ... Needs to be more naturally a cat, including
 ## sitting when idle"). Rows: a human on a pony for size, RM1's cat (C, before), then the new cat in
 ## its coats, each ridden by the rats' crossbow rider (the cheese-hammer rider in the last columns).
-## The new cat is the real pipeline: its data is data/later/cat_mount.json, put into the loaded data
-## here only (data/ is untouched), composed by UnitView, every part and pose baked in 8 facings.
+## The new cat is the real pipeline: its data is in data/ (the rats' mount since D-124, its hindquarters
+## made smaller), composed by UnitView, every part and pose baked in 8 facings.
 ## Zoom 1.5 is the game's scale. Run (needs a display):
 ##   godot --path . --script res://tests/cat_mount_sheet.gd -- out_dir [zoom] [sheet,...] [coat,...]
 ## sheets: facings (standing, 8 facings), walk (the hammer rider walking, 3 facings x 4 steps),
-##   sit (the idle sit, 8 facings), sit1 (the step on the way down), cycle (every step of the walk, side on).
+##   sit (the idle sit, 8 facings), sit1 and sit2 (the steps on the way down), cycle (every step of the walk, side on).
 ## coats: cat_ginger, cat_tuxedo, cat_grey (default: ginger and tuxedo).
 ## Writes <out_dir>/cat_mount_<sheet>_<zoom>x.png
 
@@ -40,11 +40,6 @@ func _initialize() -> void:
 	var coats: Array = Array(args[3].split(",")) if args.size() > 3 else ["cat_ginger", "cat_tuxedo"]
 	DirAccess.make_dir_recursive_absolute(out_dir)
 	lib = DataLib.new()
-	var later: Dictionary = DataLib.load_json("res://data/later/cat_mount.json")
-	for p in later.parts:
-		lib.parts[p.id] = p
-	lib.creatures.merge(later.creatures)
-	lib.palettes.skins.merge(later.skins)
 	team = Color(lib.palettes.teams[0])
 	var gen = Generator.new(lib)
 	var rules = DataLib.load_json("res://data/rules/default.json")
@@ -110,7 +105,7 @@ func _find(steps: Array, weapon: String) -> Dictionary:
 	return {}
 
 
-## The rider on the cat from data/later (the real pipeline: only the recipe's mount changes).
+## The rider on the cat in a given coat (the real pipeline: only the recipe's mount changes).
 func _cat(rider: Dictionary, coat: String) -> Dictionary:
 	var u := rider.duplicate(true)
 	u.recipe.mount.creature = "cat"
@@ -168,7 +163,7 @@ func _sheet(sheet: String, rows: Array, zoom: float, path: String) -> void:
 		for f in 8:
 			cols.append([7, true, f * PI * 0.25, true, ""])
 	else:
-		var pose := sheet if sheet in ["sit", "sit1"] else ""
+		var pose := sheet if sheet in ["sit", "sit1", "sit2"] else ""
 		for k in 8:
 			cols.append([k, false, 0.0, false, pose])
 		for k in [1, 7]:
@@ -200,7 +195,8 @@ func _sheet(sheet: String, rows: Array, zoom: float, path: String) -> void:
 	var title: String = {"walk": "walking: the cheese-hammer rider in three facings, four steps each (a cat's four-beat walk)",
 		"cycle": "walking: the eight baked steps of the walk, one facing",
 		"sit": "idle: the cat sits (the pony and RM1's cat stand); the crossbow rider in 8 facings, the cheese-hammer rider on the right",
-		"sit1": "sitting down (the step between standing and sitting, a fifth of a second); the crossbow rider in 8 facings",
+		"sit1": "sitting down, step 1 of 3 (a fifth of a second each); the crossbow rider in 8 facings",
+		"sit2": "sitting down, step 2 of 3 (a fifth of a second each); the crossbow rider in 8 facings",
 		"facings": "standing: the crossbow rider in the eight facings; the cheese-hammer rider on the right"}[sheet]
 	vp.add_child(_label(title, Vector2(label_w + CELL.x * SIZE_COL * zoom + 8, 6), fs))
 	var world := Node2D.new()
