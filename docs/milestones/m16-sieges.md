@@ -83,6 +83,48 @@ both. Breaches are terrain (wall_rubble) with a record of what stood there, so t
 view need nothing new. Modes are a `mode` on the host rules (data/modes.json, src/sim/modes.gd), the
 first piece of milestone 18's contract; the lobby picks it.
 
+## Walls for sieges: what we take from castle-building games (2026-10-13, Claude)
+
+Dominic, having seen the milestone: the siege towers are too small, and the walls are "a bit buggy and
+overlappy, and not really big enough for what we're aiming for": learn from castle-building games and
+others, "less like the classic first-generation look". What makes a wall read as a fortification in the
+games built around castles, and what it means for us:
+
+- **Mass first.** A real curtain is thick: the walkway on top is wide enough to walk two abreast, with a
+  parapet on the outside and often a low one on the town side, so the top reads as a road, not a ridge. In
+  those games the wall is commonly two or more tiles deep, and you see soldiers walking along it and
+  standing at the crenels. Ours is a 0.54-tile ridge 0.72 high: a man and a bit. It reads as a garden wall
+  next to a house.
+- **Height you can measure.** The wall is several times a man's height, and the eye measures it by the
+  people on it and by details that repeat at a known size: crenels, arrow loops, string courses, a battered
+  foot. Ours had no cues but merlons.
+- **Merlons with men between them.** Tall crenellations (half a man high) with defenders visible in the gaps
+  are the single strongest "this is a castle wall" signal. It needs the art to put the near merlons in
+  front of the defenders and the far ones behind them.
+- **Towers that rise well above the walls**, round or square, standing proud of the wall face so they can
+  shoot along it, with a crown (corbels, a wider fighting top) and often a roof or a timber hoarding. They
+  are where stairs come up: the wall walk is reached from towers and gatehouses, which is also how our sim
+  already works (`stairs`).
+- **The gatehouse is the strongest piece**: two towers either side of a deep passage, a block over it with
+  the wall walk across, a portcullis and leaves, drop holes over the arch (our pour has its home here).
+  Ours is a pier at each end of an open arch.
+- **Clean joins.** Corners, T junctions and towers join without seams or doubled stone; diagonal stretches
+  run between towers rather than stepping. The joins are the model's, not stacked sprites fighting.
+- **Height that matters.** Ladders and siege towers are sized against the wall top; a siege tower is
+  clearly taller than the wall, a storey or two, with a gangway that drops onto the walk. Being up there is
+  an advantage (reach, sight, safety from melee), which our high-ground rules already give.
+- **Damage you can read.** Whole, cracked, holed, breached to a rubble heap you can walk over; a breach
+  is obvious at a glance and so is a repaired stretch.
+- **Culture in the material, not the shape.** The same strong silhouette in dressed stone, brick, timber or
+  earth; a palisade stays the cheap, light early wall.
+
+**How it maps to us.** The grid stays: walls are buildings on cells, a walkway is places on cells
+(walls.gd), ways up are buildings with `stairs`. A thicker wall is a wider footprint, a taller one only a
+bigger model and a bigger walkway lift, a tower a bigger building that joins the line. The art keeps the
+classic pipeline (each piece baked from 3D), but the pieces must join as the 3D does: the join check
+below compares our composed sprites with one 3D bake of the same layout. The options, their sim
+implications and the questions for Dominic are in `docs/concepts/m16/README.md` (round W2).
+
 ## Checklist
 - [ ] Plan approved by Dominic
 - [x] 1. Measure and set the budget (measured 2026-10-13; the number is a proposal for Dominic, below)
@@ -95,7 +137,13 @@ first piece of milestone 18's contract; the lobby picks it.
 - [x] 5. Defenders' tools, readability (pour built; readability partly: units drawn up on the wall, the pour's burst; outlines behind walls and wall damage states not yet)
 - [x] 6. AI (mans walls, siege towers over the wall, a townless besieger for the Siege mode; ladders not used by the bot yet)
 - [x] 7. Game modes (Fortress, Siege), showcase map, balance (Siege 2-2 over four bot matches), exit check (Dominic's "Romans besiege the rats" still to play)
-- [ ] Archive: pictures taken along the way (430-432, 455-456 on 2026-10-13), journal, decisions, timeline (left to the main session)
+- [x] Walls round 2 (Dominic, after seeing the milestone: "the siege towers are too small... walls... a bit buggy and
+  overlappy, and not really big enough... less like the classic first-generation look"): research below, the bugs
+  found and fixed with a join check (`tests/wall_join_check.gd`), concept round W2 (`docs/concepts/m16/README.md`)
+  - [ ] Dominic's pick of the W2 direction (A thick, B tall, C per culture), then the sim and art build
+- [x] Siege and Fortress fill the gap (Dominic: "just in siege mode we fill the gap"): every side can build and repair
+  walls, gates, wall towers and ladders in those modes whatever its race lacks (`lift_lacks`)
+- [ ] Archive: pictures taken along the way (430-432, 455-456, 560-568 on 2026-10-13), journal, decisions, timeline (left to the main session)
 
 ## Results
 
@@ -178,7 +226,57 @@ rats/Romans and frogs/Greeks: defenders 2, attackers 2 (7:58 to 13:45, 14 to 30 
 notch smaller army and the defenders win 3 of 4, a notch bigger and the attackers do. `tests/test_sim.gd` parts walls, siege_ways, modes; `tests/test_ai.gd` pieces
 walls_bot (quick), siege_mode (slow).
 
+**The walls' bugs (walls round 2, 2026-10-13).** Found with a join fixture in the game
+(`sim_screenshot.gd -- out.png flat_test walljoins:5`: a straight run with a tower, an L with a tower on its
+corner, a T, a diagonal with a tower, gatehouses along x and on a diagonal, archers on every kind of piece)
+and measured by `tests/wall_join_check.gd` (below). Fixed:
+1. Units on a walkway were drawn 22 px up on every piece, but a wall's top is 28 px up, a wall tower's 49 and a
+   gatehouse's 54: they were sunk into the stone (on towers and gatehouses only a head showed). Each piece now
+   says how high its walkway is (`Models.WALK_H`, `ArtKit` `walk_px`) and units stand on it.
+2. A unit on a wall sorted on its own point, level with or before the piece under it, so the piece drew over its
+   legs (worst on diagonals; on a gatehouse's far end it vanished into the gate, which sorts by its middle). Units
+   up on a piece now sort just after it (`BuildingArt.perch_sort_y`).
+3. There was no "between the merlons": a unit was over or under a whole piece. The near merlons of a walkway
+   piece now bake as a front layer, a node of its own sorted just after the units on that piece
+   (`ArtKit.front_split`, `BuildingArt.front`): defenders stand between merlons, legs hidden by the ones in
+   front.
+4. The wall tower was 0.86 tiles wide: a 0.07-tile gap showed where the wall arms met it. It fills its tile now.
+5. The merlons had no beat: two on the post's corners (off the arms' faces), one on the edge the arm owned, so
+   pairs and wide gaps alternated along a line. One merlon each face halfway along each arm now: an even
+   rhythm across tile edges.
+6. The gatehouse's piers had a merlon on the walkway's line (in the way, and neither in front of the units nor
+   behind); the post stood 0.08 higher than its arms (a bump every tile). Both gone.
+Pictures 560 (before), 561 (after), 562 (the check's truth, the old composition, the difference).
+Not fixed (they depend on the redesign, W2): the gatehouse has no floor over its passage (open to the sky so a
+unit in the gateway shows; units on its middle stand on air: the check reports it as known); a gatehouse on a
+diagonal seen end-on reads as a hollow shaft; towers barely rise over the wall (1.25 against 0.72) and the
+siege tower's top (0.83) is hardly over the wall's; the rubble is the terrain's colour only (W1's pick).
+A risk to watch, not seen in the fixtures: a 3-tile gate sorts by its middle, so a ground unit right beside its
+far end could draw under it; per-tile pieces (as in every W2 option) avoid it.
+
+**The join check.** `tests/wall_join_check.gd -- [filter] [arch] [debug] [legacy]` (needs a window, ~1 minute):
+twelve fixtures (straight runs with towers along x and y, both corners, a T, both diagonals, gatehouses along
+x, y and the diagonal, a gatehouse between towers, units up on each). Per fixture it bakes the 3D truth once
+(every piece's model with its arms, units' stand-ins at the walkway height, one id colour each) and lays out
+the game's own sprites (wall looks, bodies, front layers) in the game's draw order, and compares the two id
+maps past a pixel's slack at edges: any pair of pieces where one is drawn over the other wrongly, a piece
+where the truth has none, a unit hidden, floating or sunk, fails with its pixel count. It also checks that
+joined pieces meet (solid stone within 0.02 of each join: the tower gap passed the id check, because the
+truth had the gap too) and each walkway's height against its model's top. `legacy` lays the units out as
+before the fix: every fixture fails (picture 562); with the fix all pass.
+
+**Siege and Fortress fill the gap.** Dominic: "Siege mode we need to ensure everyone has walls", then "just in
+siege mode we fill the gap": race lacks stay in normal matches; in Fortress and Siege the mode's `lift_lacks`
+(data/modes.json: palisade, palisade gate, stone wall, gatehouse, wall tower, ladder) lets every side build
+and repair them, defenders and attackers alike (the attackers can wall a camp). A race only mends what it can
+build (`Repair.can_mend`). `tests/test_sim.gd -- part:modes`: the centaurs (who lack walls) can't build or mend
+a stone wall in a normal match, can in both modes, rebuild a breach, and a later normal match's centaurs still
+lack them (the lift is a copy per side). The rings themselves (`Fortify.ring`) were always put up whatever the
+race.
+
 **Open.**
+- Dominic: the W2 pick (thick, tall, per culture; `docs/concepts/m16/README.md`), which sets the wall's
+  footprint, the tower and gatehouse sizes and the siege tower's height.
 - Dominic: the budget number; the picks (W1 wall tower, ladder, rubble; T1 siege tower); playing
   "Romans besiege the rats" (Siege mode, Siege Vale).
 - Fortress bot vs bot stalls: four 22-minute matches on Siege Vale, no breach, about 45 units a side
