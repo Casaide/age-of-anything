@@ -514,14 +514,23 @@ cavalry, the Archery Range the mounted archer, the Castle the unique unit (`data
   off the mean). The old lines alone (the round robin with the new lines left out)
   are out 11 of 25 at age 2 and 14 of 25 at age 3. With the new lines: 18 of 33 at age 2 and
   21 of 38 at age 3. Counters won 83% and 85% of same-race counter fights (80% and 82% before).
-  - Prices tuned: mounted archer `price_points` -3, scout -2; Big Cheese 20 (from +42% to -2%), Great Bullfrog 7
-    (+14%), Sworn Knight 7 (+26% at 5; 7 not yet re-run).
-  - Measured before the rats rode cats (D-124, merged after): the rat scout and mounted archer need a re-check.
-  - Still out: frogs on newts. Their archer is weak (-57%, cost 235) while their spear cavalry is
-    strong (+26%), so it's the newt's stats, not one line's price. The rat and beetle-on-spider scouts
-    sit at +26%, the pony, newt and centaur scouts at -24 to -28%: mount prices, not the scout's. And
-    the cheese rats' swordsman and giant, as before.
-- **Mass battles** (`tests/mass_battle.gd`, 1500 a side, ages 2 and 3, new matches):
+  - Prices tuned: mounted archer `price_points` -3, scout -2; Big Cheese 20 (from +42% to -2%), Great Bullfrog 5,
+    Sworn Knight 7.
+  - **Re-run after the movement fix and the rats riding cats** (both change fights): 20 of 33 out at
+    age 2, 18 of 38 at age 3; counters 83% and 81%. The rats on cats: scout +8% (age 2) and +4%
+    (age 3), mounted archer +14% and +30% (the one new-line rat outlier; the cat's price is the
+    cat branch's). Great Bullfrog +14%, Big Cheese +4%, Beetle Sworn Knight -8%.
+  - **The newt is not the cause** of the frogs' spread: frog archers are weak on foot too (-48% at
+    age 2, like the beetles' -48%), and frog spear cavalry is strong the way every spear-armed rider
+    is (pony hoplites +38%, centaur spears +38%). Pricing the newt like the pony (`price_points` 15 to 12)
+    lifted the newt archer from -57% to -36% but the spear cavalry from +26% to +44%, so the newt
+    stays as it is. The weak archers and the strong spear riders are the old outliers, not a mount's.
+  - The rest out are as before: weak archers and slingers, pike and lance riders, the cheese rats'
+    swordsman and giant.
+- **Mass battles** (`tests/mass_battle.gd`, 1500 a side, ages 2 and 3, new matches; at age 3 after the
+  movement fix mounted archers beat spears 4 of 6 and skirmishers beat them only 2 of 6, so they are
+  on the strong side there; scouts and unique units as below, unique units a little weaker, 2 of 10
+  against cavalry):
   - mounted archers beat swords 6 of 6 and archers 6 of 6, split with spears (3 of 6 at age 2, lose
     4 of 6 at age 3), lose to cavalry 4 of 6 and to skirmishers at age 2 (4 of 6; even at age 3);
   - scouts beat skirmishers and archers 10 of 10 and lose to spears and cavalry 10 of 10;
@@ -563,15 +572,23 @@ cavalry, the Archery Range the mounted archer, the Castle the unique unit (`data
   theme picks, and that the other lines and names are unchanged); placement 0 failed (and
   `tests/placement_check.gd` in full: 9,724 checks, 0 failed, fixtures all caught); test_ai quick fails only main's known
   "easy strikes before 8 minutes".
-  - test_sim's 200-unit match and its crossings now share a fixed number of units over the race's
-    lines (`PER_PLAYER` 99, `CROSS_TOTAL` 70), so more lines don't mean more load. The tick, run on
-    its own: 2.14 ms with the new lines against main's 2.54 ms the same hour (fewer units; per unit
-    about the same).
-  - **Still failing:** the crossings. With ten lines (three of them mounted, so more big bodies) one
-    unit gives up stuck on flat_test and three on hill_test (main passes with seven). It's a pathing
-    edge, like the one the swordsman found on hill_test, left for a look.
-- **Open:** Dominic's look at the themes and the concept round for their parts. The newt's stats.
-  The crossing give-ups above. The scout and mounted archer sounds reuse the cavalry's.
+  - test_sim's scripted match shares about 200 units over the race's lines (`PER_PLAYER` 99), since
+    its tick budget is for a match that size. The tick, part:match on its own, back to back: 2.04 ms
+    (158 units at the end) against main's 2.96 ms (194).
+  - **The crossings, fixed in the movement code** (the new lines, three mounted and a giant, made the
+    fault show: 100 units in ten groups, as main's test spawns them):
+    - a unit walking back into its slot now gives way to its side's other groups, as one standing in
+      it does (`_separate` yields). It had walked straight back into the passer: a returning
+      cavalryman and a passing mounted archer shoved nose to nose until the passer gave up;
+    - no ground gained in a moving queue, or while giving way near its slot, isn't stuck (`_queued`,
+      `_passed`). The tenth group through choke_test's gap waited longer than the patience, and a
+      spearman shoved off his slot by eight groups gave up two tiles from home;
+    - one that gave up walking back and stands by its slot again isn't counted stuck.
+
+    All three crossings pass with main's test unchanged (ten of each line). test_sim: 656 checks, 0 failed.
+- **Open:** Dominic's look at the themes and the concept round for their parts. The rats' mounted
+  archer on a cat at age 3 (+30%), and mounted archers against skirmishers at age 3. The scout and
+  mounted archer sounds reuse the cavalry's.
 
 ## Changes from the original plan
 
