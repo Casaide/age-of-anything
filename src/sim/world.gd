@@ -271,10 +271,9 @@ func _make_type(player: int, u: Dictionary) -> Dictionary:
 		"train_ticks": int(e.train_time) * TICK_HZ, "worker": "worker" in e.tags, "eval": e,
 		"healer": int(e.get("heal", 0)) > 0,   # heals, never fights (heal.gd); spawns passive
 		"trader": "trade" in e.tags,   # a trade cart (trade.gd): never fights, as harmless as a sheep
-		"harmless": "trade" in e.tags,
+		"harmless": "trade" in e.tags or e.get("targets", "") == "none",   # never fights (a trade cart; a siege tower, walls.gd): walks along with an attack-move
 		"posture": Combat.PASSIVE if int(e.get("heal", 0)) > 0 or "trade" in e.tags else Combat.AGGRESSIVE,
 		"mclass": _movement_class(e.tags),
-		"harmless": e.get("targets", "") == "none",   # never fights (a siege tower): walks along with an attack-move
 		"docks": "docks" in e.tags,                    # a siege tower: stopped by an enemy wall, a way up for its side (walls.gd)
 		"sight_add": 0, "carry_add": 0, "build_pct": 0,   # research on the type (Tech.retype)
 		"heal_pct": 0, "kill_gold": 0, "wade": 0, "slow_on_hit": 0,   # (and the race's bonuses, milestone 14)
