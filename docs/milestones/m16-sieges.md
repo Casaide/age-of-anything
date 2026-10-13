@@ -138,7 +138,8 @@ higher on a tower). Pictures 430 (archers on the walkway), 431 (a breach, the ar
 rebuild the piece for 40% (data `breach.repair_pct`); anything built over rubble clears it. Repair
 (`src/sim/repair.gd`, Commands.REPAIR): workers mend damaged buildings and machine siege engines (not
 the frogs' beasts: healers mend those) at half the build pace for half the price, paid a twentieth at
-a time. Rams, catapults and m13's sapper make breaches through the usual building death.
+a time. Rams, catapults, the great sling and soldiers make breaches through the usual building death
+(the sapper is parked, D-128: nothing here depends on it).
 
 **Ladders and siege towers (step 4).** The Siege Ladder (age 2, 25 wood, 60 hp): a worker raises it
 on open ground beside an enemy walkway; it's walked over and is a way up for its side; a defender
