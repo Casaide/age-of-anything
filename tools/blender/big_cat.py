@@ -148,12 +148,15 @@ def body():
         BOT = [(0.0, 15.0), (0.15, 12.6), (0.45, 13.0), (0.78, 10.6), (1.0, 13.5)]
         HALF = [(0.0, 4.6), (0.15, 7.2), (0.45, 6.4), (0.75, 7.4), (1.0, 5.6)]
     elif LEAN:
-        # t = (x + 13) / 25: the rump end, the thigh, the loin's arch, the waist, behind the
+        # t = (x + 12.4) / 24.4: the rump end, the thigh, the loin's arch, the waist, behind the
         # withers, the withers, the front of the chest.
-        X0, X1 = -13.0, 12.0
-        TOP = [(0.0, 14.8), (0.12, 17.2), (0.28, 18.0), (0.52, 17.4), (0.68, 17.1), (0.84, 17.6), (1.0, 15.4)]
-        BOT = [(0.0, 12.4), (0.12, 10.6), (0.30, 12.9), (0.52, 11.8), (0.68, 9.4), (0.84, 8.4), (1.0, 10.8)]
-        HALF = [(0.0, 3.0), (0.12, 4.4), (0.28, 3.5), (0.52, 4.1), (0.68, 4.8), (0.84, 4.8), (1.0, 3.6)]
+        # (Dominic, D-124: "just hind looks a little too big": the rump, haunch and loin made
+        # leaner and lower, narrower hips than the chest, the top of the rump only a little above
+        # the withers.)
+        X0, X1 = -12.4, 12.0
+        TOP = [(0.0, 14.4), (0.12, 16.2), (0.32, 17.5), (0.52, 17.3), (0.68, 17.1), (0.84, 17.6), (1.0, 15.4)]
+        BOT = [(0.0, 12.9), (0.12, 11.9), (0.30, 13.0), (0.52, 12.0), (0.68, 9.4), (0.84, 8.4), (1.0, 10.8)]
+        HALF = [(0.0, 2.3), (0.12, 3.3), (0.28, 3.0), (0.52, 3.6), (0.68, 4.6), (0.84, 4.8), (1.0, 3.6)]
     else:
         X0, X1 = -13.0, 11.0
         TOP = [(0.0, 16.0), (0.15, 19.9), (0.45, 19.1), (0.8, 20.1), (1.0, 18.9)]   # hips and shoulders, a slight dip between

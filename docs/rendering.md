@@ -299,7 +299,17 @@ A body can instead bake its legs posed: `legs.poses: n` bakes each leg as `"<leg
 an n-step walk, and UnitView shows the step for where the leg is in its cycle (the anchor phases set the
 footfall order); `legs.hind` gives the hind legs their own part (a hock), marked by `true` as a hip
 anchor's last element; `legs.gait` overrides the walk's cadence, bob and rock. `idle_poses` (e.g.
-`["sit1", "sit"]`) are whole-body poses baked as `"<body>@<pose>"` with their own sockets and hips (and
-the legs as `"<leg>@<pose>"`): the view steps down through them when the unit has stood still a few
-seconds and back up when it moves (a rebuild, like turning). The model reads the pose from `hold`.
-`UnitView.pose_parts()` lists the extra bakes; `art_kit` bakes them with the rest.
+`["sit1", "sit2", "sit"]`) are whole-body poses baked as `"<body>@<pose>"` with their own sockets and hips
+(and the legs as `"<leg>@<pose>"`): the view steps down through them when the unit has stood still a few
+seconds and back up when it moves (a rebuild, like turning). The model reads the pose from `hold`, also
+for a cut part (`"leg.cat@w3_8~body.cat^1"`, `"head.cat~body.cat@sit^head"`: a cut head is cut by the body
+in its pose). `UnitView.pose_parts()` lists the extra bakes; `art_kit` bakes them with the rest. The
+placement check covers both: the walk at its baked steps, and each resting pose as standing
+(`legs.stance.poses` may relax the stance in one: a sitting cat's folded hind legs drop less).
+
+The cat is the rats' mount (D-124). Its body is `tools/blender/big_cat.py` `lean` (re-run it after a
+change: `blender -b --python tools/blender/big_cat.py -- assets/models/body_cat_lean.glb body lean`);
+its legs, tail, tack and poses are the cat section of `unit_models.gd`. Dominic thought the back end
+too big, so the rump, haunch and thighs were made leaner, the hips narrower than the chest, and the top
+of the rump only slightly higher than the withers. Sheets: `tests/cat_mount_sheet.gd -- out_dir [zoom]
+[facings,walk,sit,sit1,sit2,cycle] [cat_ginger,cat_tuxedo,cat_grey]`.
