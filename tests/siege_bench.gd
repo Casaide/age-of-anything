@@ -24,6 +24,7 @@ const Fog := preload("res://src/sim/fog.gd")
 const Trails := preload("res://src/sim/trails.gd")
 const Fortify := preload("res://src/sim/fortify.gd")
 const Walls := preload("res://src/sim/walls.gd")
+const Repair := preload("res://src/sim/repair.gd")
 const Fixed := preload("res://src/sim/fixed.gd")
 
 const SEED := 20261016
@@ -93,6 +94,7 @@ func _initialize() -> void:
 		Tech.tick(w)
 		marks.append(Time.get_ticks_usec())
 		Economy.work(w)
+		Repair.tick(w)
 		marks.append(Time.get_ticks_usec())
 		Garrison.tick(w)
 		marks.append(Time.get_ticks_usec())
