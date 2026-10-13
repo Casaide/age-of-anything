@@ -1,0 +1,215 @@
+{
+ "name": "heroes_hr2_humans",
+ "title": "Heroes, concept round HR2: named champions (one per human culture)",
+ "_doc": "Heroes, concept round HR2 (D-127, Dominic: 'they don't look unique, they need real character to stand out'). Each hero is a signature from data/later/heroes.json (hero_signatures: parts over the race's age-3 swordsman, a size, a temper) with the name tests/hero_names.gd gives that race with that look. The first column is the race's own age-3 swordsman for comparison. Models: scenes/art_pixel/hero_concepts.gd. Notes: docs/concepts/heroes/README.md.",
+ "stage": [
+  "res://data/later/heroes.json"
+ ],
+ "zooms": [
+  3,
+  1
+ ],
+ "cell": [
+  84,
+  96
+ ],
+ "rows": [
+  {
+   "label": "Lucius the Unbothered\nHas never once hurried. The cloak\ndrags because he lets it.\n(romans)",
+   "h": 1.35,
+   "unit": {
+    "prompt": "romans",
+    "slot": "infantry",
+    "age": 3,
+    "set": {
+     "scale": 120
+    },
+    "add_parts": {
+     "head_gear": "hero.helm_transverse",
+     "back": "hero.cape_long"
+    }
+   },
+   "other": {
+    "prompt": "romans",
+    "slot": "infantry",
+    "age": 3
+   }
+  },
+  {
+   "label": "Thalia the Lion-Skinned\nWrestled the lion. Kept the coat.\nTells everyone.\n(greeks)",
+   "h": 1.35,
+   "unit": {
+    "prompt": "greeks",
+    "slot": "infantry",
+    "age": 3,
+    "set": {
+     "scale": 120
+    },
+    "add_parts": {
+     "head_gear": "hero.lion_hood",
+     "back": "hero.lion_pelt"
+    }
+   },
+   "other": {
+    "prompt": "greeks",
+    "slot": "infantry",
+    "age": 3
+   }
+  },
+  {
+   "label": "Percival of the Many Feathers\nLate to every battle: the plumes\ntake an hour.\n(noble humans)",
+   "h": 1.35,
+   "unit": {
+    "prompt": "noble humans",
+    "slot": "infantry",
+    "age": 3,
+    "set": {
+     "scale": 120
+    },
+    "add_parts": {
+     "head_gear": "hero.helm_plume",
+     "back": "hero.cape_heraldic"
+    }
+   },
+   "other": {
+    "prompt": "noble humans",
+    "slot": "infantry",
+    "age": 3
+   }
+  },
+  {
+   "label": "Khan Temur the Far-Rider\nRaised by wolves, or says so; the\nwolves have not commented.\n(mongols)",
+   "h": 1.35,
+   "unit": {
+    "prompt": "mongols",
+    "slot": "infantry",
+    "age": 3,
+    "set": {
+     "scale": 120
+    },
+    "add_parts": {
+     "head_gear": "hero.wolf_hat",
+     "back": "hero.horsetail_standard"
+    }
+   },
+   "other": {
+    "prompt": "mongols",
+    "slot": "infantry",
+    "age": 3
+   }
+  },
+  {
+   "label": "Pharaoh Sethi Beloved of Cats\nThe cat is in charge. Everyone\nknows. Nobody says.\n(egyptians)",
+   "h": 1.35,
+   "unit": {
+    "prompt": "egyptians",
+    "slot": "infantry",
+    "age": 3,
+    "set": {
+     "scale": 120
+    },
+    "add_parts": {
+     "head_gear": "hero.double_crown",
+     "back": "hero.cat_pet"
+    }
+   },
+   "other": {
+    "prompt": "egyptians",
+    "slot": "infantry",
+    "age": 3
+   }
+  },
+  {
+   "label": "Champion Lin the Unmoved\nHas not changed expression since\nthe last dynasty.\n(han chinese)",
+   "h": 1.35,
+   "unit": {
+    "prompt": "han chinese",
+    "slot": "infantry",
+    "age": 3,
+    "set": {
+     "scale": 120
+    },
+    "add_parts": {
+     "hand_r": "hero.guandao",
+     "back": "hero.back_flags"
+    }
+   },
+   "other": {
+    "prompt": "han chinese",
+    "slot": "infantry",
+    "age": 3
+   }
+  },
+  {
+   "label": "Xochitl Jaguar-Heart\nFights in a jaguar's mouth under a\nsunrise of feathers. Subtle he is\nnot.\n(aztecs)",
+   "h": 1.35,
+   "unit": {
+    "prompt": "aztecs",
+    "slot": "infantry",
+    "age": 3,
+    "set": {
+     "scale": 120
+    },
+    "add_parts": {
+     "head_gear": "hero.jaguar_helm",
+     "back": "hero.quetzal_fan"
+    }
+   },
+   "other": {
+    "prompt": "aztecs",
+    "slot": "infantry",
+    "age": 3
+   }
+  }
+ ],
+ "sheets": [
+  {
+   "name": "facings",
+   "title": "beside their soldier, 8 facings and idle",
+   "columns": [
+    {
+     "facing": 1,
+     "other": true,
+     "label": "their soldier"
+    },
+    {
+     "facing": 0,
+     "label": "f0 right"
+    },
+    {
+     "facing": 1,
+     "label": "f1"
+    },
+    {
+     "facing": 2,
+     "label": "f2 towards"
+    },
+    {
+     "facing": 3,
+     "label": "f3"
+    },
+    {
+     "facing": 4,
+     "label": "f4 left"
+    },
+    {
+     "facing": 5,
+     "label": "f5"
+    },
+    {
+     "facing": 6,
+     "label": "f6 away"
+    },
+    {
+     "facing": 7,
+     "label": "f7"
+    },
+    {
+     "facing": 1,
+     "pose": "idle",
+     "label": "idle (f1)"
+    }
+   ]
+  }
+ ]
+}

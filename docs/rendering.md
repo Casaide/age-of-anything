@@ -412,7 +412,7 @@ godot --path . --audio-driver Dummy --always-on-top --script res://tests/sheet.g
 
 Specs so far: `bears_b1` (round B1), `bears_b2` (round B2, with each B1 row rebuilt as a kit
 variant: a prompt unit or a mount can name `kit` + `params`), `kit_cat` (the kit against the game's cat),
-milestone 13's `trade_carts_tc1`, `war_beasts_wb1`, `sapper_sp1`, `great_sling_gs1` (concept files staged
+milestone 13's `trade_carts_tc1`, `war_beasts_wb1` and `_wb2`, `sapper_sp1`, `great_sling_gs1` and `_gs2`, the heroes' `heroes_hr2_*` (D-127: named champions; `tests/hero_names.gd` prints the names the naming contract in `data/later/heroes.json` gives a race) (concept files staged
 from `data/later/`; a staged concept model file must be listed in `bake_cache.gd` SOURCES, or a stale
 bake of it is reused; concept hand parts carry `only_if: ["concept_only"]` so the generator never
 picks them for a staged race), and ports of
