@@ -627,7 +627,6 @@
    "drop_off": [],
    "trains": [
     "unique",
-    "sapper",
     "great_sling"
    ],
    "age": 3,
@@ -644,7 +643,7 @@
     "arrows": 4
    },
    "garrison": 20,
-   "note": "shoots `arrows` arrows a volley, each at the next-nearest foe (src/sim/combat.gd _towers); garrison: how many units shelter inside (the garrison system, milestone 12 phase 3); trains the unique unit, the sapper and the great sling (milestone 13)"
+   "note": "shoots `arrows` arrows a volley, each at the next-nearest foe (src/sim/combat.gd _towers); garrison: how many units shelter inside (the garrison system, milestone 12 phase 3); trains the unique unit and the great sling (milestone 13; the sapper parked)"
   },
   "wonder": {
    "name": "Wonder",

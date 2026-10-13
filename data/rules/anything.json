@@ -184,6 +184,8 @@
   {
    "slot": "sapper",
    "role": "sapper",
+   "status": "planned",
+   "_status_note": "parked (Dominic, 2026-10-13: \"remove the sapper unit, not needed\"); the blast code in combat.gd and its test stay for later",
    "tier": 3,
    "name": "Sapper",
    "building": "castle",
