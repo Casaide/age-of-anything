@@ -779,3 +779,9 @@ siege-weight, not thin. No carried charge for the sapper (its look stays plain).
 **D-128, 2026-10-13: The sapper is parked.** Dominic: "remove the sapper unit, not needed." Its roster slot is set to
 planned (the generator skips it), the Castle trains the unique unit and the great sling, the bot no longer keeps one;
 the code, model and test stay, and the backlog says how to bring it back.
+
+**D-129, 2026-10-13: War beasts, the great sling, carts and barrows picked.** Dominic: war beasts: the war boar for the
+rats ("looks amazing"), the giant tarantula for the spiders (its back needs more texture: too single-colour), the heron
+for the frogs, the praying mantis for the beetles, the elephant for humans. The siege-weight great sling (GS2) is
+"much better"; the frogs' take is open (the turtle-mounted one is wrong, the plain one too boring: another round). The
+rats' wheelbarrows and the hauled trade carts are "perfect". Heroes: liked (HR2); a pick to come.
