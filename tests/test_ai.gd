@@ -1114,7 +1114,7 @@ func _test_walled_base(rules: Dictionary, a: Dictionary, b: Dictionary, wall: St
 func _test_rams(rules: Dictionary, race: Dictionary) -> void:
 	var times := {}
 	var spent := 0
-	for slot in ["ram", "spear", "large"]:
+	for slot in ["ram", "spear", "large", "sapper", "great_sling"]:   # (the Castle's two too, milestone 13 step 4)
 		for target in ["stone_gate", "wall"]:
 			var r := rules.duplicate(true)
 			r.economy.start.buildings = []
@@ -1146,6 +1146,8 @@ func _test_rams(rules: Dictionary, race: Dictionary) -> void:
 		for slot in ["spear", "large"]:
 			check(ram * 3 <= times["%s:%s" % [slot, target]], "rams break a %s at least 3 times faster than the same cost in %s (%s vs %s)" % [
 				target, slot, _clock(ram), _clock(times["%s:%s" % [slot, target]])])
+		check(times["sapper:" + target] * 3 <= times["spear:" + target], "sappers break a %s at least 3 times faster than the same cost in spears (%s)" % [target, _clock(times["sapper:" + target])])
+		check(times["great_sling:" + target] < 20 * 600, "great slings break a %s from afar (%s)" % [target, _clock(times["great_sling:" + target])])
 
 
 func _clock(tick: int) -> String:
