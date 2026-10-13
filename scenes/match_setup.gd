@@ -805,7 +805,7 @@ func _muster(i: int) -> void:
 
 
 ## A race's traits in words, as the strip's groups: what it's better at, its own research,
-## what it lacks, the generator's notes (data/bonuses.json via the tech tree's race panel).
+## what it lacks, the generator's notes (src/identity.gd via the tech tree's race panel).
 func _traits(race: Dictionary) -> Array:
 	if _tech.is_empty():
 		_tech = DataLib.load_json("res://data/tech.json")
