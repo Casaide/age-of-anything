@@ -45,3 +45,47 @@ tag so spears beat it; 3 pop.
 3. Should they move (walking legs, as mounts do) or stay one baked body like the siege beasts? Walking
    means each beast becomes a mount body (creature-kit work, like the bears); static is how the turtle,
    snail and giant beetle engines work now.
+
+
+---
+
+# WB2: war beasts, round 2 (2026-10-13)
+
+Dominic on WB1 (D-127): "we're focusing on capybara too much, doesn't really fit. Boar is better but maybe
+too small. Spider riding a spider seems pointless, better just a tarantula." The elephant (humans A) stays.
+
+Sheets: `wb2_3x.png`, `wb2_1x.png`; archive `archive/images/2026-10-13/486-`, `487-`. Spec
+`tests/sheets/war_beasts_wb2.json` (size references: a worker, a pony rider, a spider rider), models
+`scenes/art_pixel/m13_concepts.gd` (WB2), staged from `data/later/m13_concepts.json`. All rows pass the
+placement check. Built as before: one baked body, its people on the deck (shown as workers; in play the
+race's soldiers).
+
+| Family | A | B |
+|---|---|---|
+| Humans | the war elephant with a howdah (WB1 A, kept) | |
+| Rats | a **war boar** about twice the pony's height at the shoulder: a front-heavy hump, thin legs, a long wedge of a head, big tusks, a grizzled crest of bristles, rusted scrap riveted on its flanks; a pallet howdah chained on, two rats | the same boar barded in scrap: a plate cover, a face plate with a pipe spike, one rider, a scrap standard |
+| Spiders | a **giant tarantula, alone**: legs across about 80 (the spider mount's about 30), furred, orange-banded knees, fangs, a glinting eye cluster; a silk-and-bone harness, a team banner with a skull finial; nobody rides it | the same with a small crew of two in a basket on its back |
+| Frogs | a **giant crayfish**: red-brown plates, two great claws up and open, long feelers; a howdah, two frogs | a **giant grey heron** (the frogs' oldest enemy, broken to the saddle): stilt legs, an S of a neck, a dagger beak; one frog |
+| Forest beetles | a **giant praying mantis**: leaf-green, spiked arms folded, the long neck up; one beetle | a **giant centipede**: long and low, yellow legs down its length, a long deck, two beetles |
+
+None of the frogs' or beetles' new beasts repeats their siege beasts (turtle, snail, toad; the rhinoceros beetle).
+
+What I see at game scale:
+- The boar now reads as big (much bigger than the pony, close to the elephant's body) and as a boar from the
+  side (tusks, hump, wedge head). From behind it's a brown barrel; the bristle crest could be bolder.
+- The tarantula is the strongest new read: the legs make it the widest thing on the sheet, the orange knees
+  carry at 1x. A (banner) is cleaner; B's crew is small on it and brings back the spider-on-spider look.
+- The crayfish reads by its claws in every facing; the frogs on top cover its back (as on the toad).
+- The heron is the tallest beast and unmistakable, and the joke lands; it's thin, so it looks fragile for a
+  tank unit.
+- The mantis is a striking silhouette but slight; the centipede reads as "long", and from the front it's a
+  stack of riders.
+
+**Claude's recommendation:** humans the elephant (kept); rats A (boar with the howdah); spiders A (tarantula
+alone with its banner); frogs A (crayfish: armoured and clawed, reads as a tank); beetles B (centipede: the
+clearest "big and unlike anything else" of the two; the mantis if you'd rather have the silhouette).
+
+**Questions for Dominic:**
+1. The picks per family (A or B), or another beast?
+2. The boar: howdah (two riders) or barded with one?
+3. Still one baked body (like the siege beasts), or walking beasts (each a creature-kit mount: more work)?
