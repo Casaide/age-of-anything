@@ -1,0 +1,26 @@
+{
+ "name": "horse_h1",
+ "title": "Horses, concept round H1: the pony's head before (classic) beside two reworked heads on an arched, maned neck (h1 built, h2 sculpted: now the game's)",
+ "_doc": "Dominic (2026-10-13): \"horses heads need a real re-work\". h1 and h2 (data/later/horses.json; scenes/art_pixel/unit_models.gd 'The reworked horse'; tools/blender/horse.py) share the new neck (deep at the base, arched along the crest, a mane from the poll into the withers, narrowing to the throat latch and running into the head, joined without a line), the small upright ears, the forelock and the bridle; h1's head is built from shapes, h2's is one sculpted surface. UnitModels.pony_look switches the game's pony. Notes: docs/concepts/horses/README.md.",
+ "stage": ["res://data/later/horses.json"],
+ "zooms": [3, 1],
+ "cell": [64, 72],
+ "size": [{"prompt": "romans", "slot": "worker"}],
+ "rows": [
+  {"label": "classic (before)\na Roman (a rat right)", "unit": {"prompt": "romans", "slot": "spear", "mount": {"creature": "pony_classic"}}, "other": {"prompt": "sewer rats", "slot": "spear", "mount": {"creature": "pony_classic"}}},
+  {"label": "H1 built head\na Roman (a rat right)", "unit": {"prompt": "romans", "slot": "spear", "mount": {"creature": "pony_h1"}}, "other": {"prompt": "sewer rats", "slot": "spear", "mount": {"creature": "pony_h1"}}},
+  {"label": "H2 sculpted head (now in play)\na Roman (a rat right)", "unit": {"prompt": "romans", "slot": "spear", "mount": {"creature": "pony_h2"}}, "other": {"prompt": "sewer rats", "slot": "spear", "mount": {"creature": "pony_h2"}}},
+  {"label": "classic, bare", "unit": {"creature": "pony_classic", "mount_body": true}},
+  {"label": "H1, bare", "unit": {"creature": "pony_h1", "mount_body": true}},
+  {"label": "H2, bare", "unit": {"creature": "pony_h2", "mount_body": true}},
+  {"label": "H2, grey coat", "unit": {"prompt": "mongols", "slot": "scout", "mount": {"creature": "pony_h2", "skin": "pony_grey"}}},
+  {"label": "H2, dun coat", "unit": {"creature": "pony_h2", "mount_body": true, "skin": "pony_dun"}}
+ ],
+ "sheets": [
+  {"name": "facings", "title": "standing, 8 facings (the rat rider in the last two)", "columns": [
+   {"facing": 0, "label": "f0 right"}, {"facing": 1, "label": "f1"}, {"facing": 2, "label": "f2 towards"}, {"facing": 3, "label": "f3"},
+   {"facing": 4, "label": "f4 left"}, {"facing": 5, "label": "f5"}, {"facing": 6, "label": "f6 away"}, {"facing": 7, "label": "f7"},
+   {"facing": 1, "other": true, "label": "f1 (right col.)"}, {"facing": 7, "other": true, "label": "f7 (right col.)"}]},
+  {"name": "walk", "title": "walking: four of the eight steps in three facings", "columns": "walk:1,3,7"}
+ ]
+}

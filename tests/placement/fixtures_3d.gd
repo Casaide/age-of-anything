@@ -8,6 +8,13 @@ extends RefCounted
 const GeometryCheck := preload("res://tests/placement/geometry_check.gd")
 const Cases := preload("res://tests/placement/cases.gd")
 const UnitModels := preload("res://scenes/art_pixel/unit_models.gd")
+const CreatureKit := preload("res://scenes/art_pixel/creature_kit.gd")
+
+## The bear mount's neck in round B2 (data/later/bears.json before B3): short, sloping down from the
+## hump to a head set on it, a step between them ("mounted bears I think have broken neck still").
+const B2_BEAR_NECK := {"neck": {"from": [9.0, 17.0], "to": [13.0, 12.4], "r": [4.0, 3.4], "into": null},
+	"sit": {"poses": {"sit2": {"head": [-1.6, 4.4]}, "sit": {"head": [-2.0, 5.0]}}}}
+static var _kept_kit := {}
 
 
 ## [ok, lines]: ok when every fixture failed its rule and passed its control.
@@ -36,6 +43,9 @@ static func run(lib) -> Array:
 		["a beetle's legs as one sprite for every hip (far feet under the belly, rear legs facing forward)",
 			"rat on beetle", ["A2 one-sided legs baked at each hip", "A4 feet out to their own side"],
 			func(g): g.lib.parts["body.beetle"].cut = g.lib.parts["body.beetle"].cut.filter(func(c): return c != "legs"), func(g): g.lib.parts["body.beetle"].cut.append("legs"), {}],
+		["the bear mount's head on a short neck below the hump, a notch between them (round B2: \"broken neck\")",
+			"kit: human on bear bear_brown", ["A2 head joins the neck without a notch"],
+			func(_g): _swap_kit("bear_mount", B2_BEAR_NECK), func(_g): _swap_kit("bear_mount", {}), {}],
 		["the leather cap's brim across the brows like a headband (the cap before it sat higher)",
 			"human in a leather cap", ["A2 an open cap clear of the brow"],
 			func(g): g.rig.overrides["helm.cap"] = func(c): return _old_cap(g.rig.models, c), func(g): g.rig.overrides.erase("helm.cap"), human],
@@ -80,3 +90,12 @@ static func _old_cap(m, c: Dictionary) -> Dictionary:
 	n.add_child(m.ring(4.6, 5.3, m.surf("leather", Color(0.7, 0.6, 0.5), 2.0), Vector3(0, -3.0, 0)))
 	n.add_child(m.blob(Vector3(0.6, 0.6, 0.6), leather, Vector3(0, 0.7, 0)))
 	return {"node": n}
+
+
+## Put a kit's earlier numbers back (changes merged over it), or restore it ({}).
+static func _swap_kit(name: String, changes: Dictionary) -> void:
+	if changes.is_empty():
+		CreatureKit.kits[name] = _kept_kit[name]
+		return
+	_kept_kit[name] = CreatureKit.kits[name]
+	CreatureKit.kits[name] = CreatureKit._merge(_kept_kit[name], changes)

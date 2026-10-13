@@ -8,6 +8,9 @@ extends RefCounted
 ##      a leg and a head mostly outside the body; head gear on the head; worn armour round the body's
 ##      torso, not off it; a rider's seat on its mount's back; siege crews on the ground or the deck.
 ##   A3 interpenetration: pieces that aren't jointed don't share volume; jointed ones only near the joint.
+##   A2 head join (four or more legs): the top line from the withers to the head runs without a notch:
+##      the side silhouette's top over that stretch dips no more than HEAD_NOTCH below the lower of
+##      the highest points on either side of it (a gap between the skull and the neck is a dip too).
 ##   A4 stance (data: parts.json legs.stance): a standing leg reaches down, not folded up, and its
 ##      foot is out to its own side by the body's sprawl.
 ## Results are {rule|case: [failing views]}, like tests/layer_check.gd.
@@ -33,6 +36,8 @@ const DROP := 0.6            # a standing leg's drop (hip to foot) is at least t
 const SPRAWL := [-2.0, 6.0]  # a standing foot this far out to its own side of its hip (data: legs.stance.sprawl)
 const WALK_PHASES := 8
 const BROW_CLEAR := 0.5      # an open cap's lowest edge over the eyes at least this above the brow
+const HEAD_NOTCH := 1.0      # the top line from the withers to the head dips at most this (data: legs.stance.notch)
+const NOTCH_SPIKE := 3         # ...after spikes narrower than this many voxel columns are levelled
 const EYE_CLEAR := 3.0       # nothing of the head gear this far out in front of an eye
 
 var lib
@@ -221,7 +226,78 @@ func _check_pose(label: String, view: String, a: Dictionary, standing: bool) -> 
 					what = p.name
 		note("A1 nothing below the ground", label, view, lowest < -GROUND_TOL, "%s at %.2f" % [what, lowest])
 	_check_attachment(label, view, a, st)
+	_check_head_join(label, view, a, st)
 	_check_overlap(label, view, a)
+
+
+## A2 head join (Dominic on the bear mount, round B2: "mounted bears I think have broken neck still";
+## the head sat low and forward with a step between the shoulder hump and the back of the skull). On
+## a beast of four or more legs whose head is ahead of its fore legs, the side silhouette's top line
+## (body and head together, the highest voxel of each column along x) from the withers (the fore hips)
+## and a little behind them, to the head's middle must not dip: no column more than HEAD_NOTCH below the lower of the highest
+## points behind and ahead of it (water standing in the notch). A thick neck flowing from the withers
+## into the skull passes; a head set on a thin neck below the withers' line, or floating off it, fails.
+func _check_head_join(label: String, view: String, a: Dictionary, st: Dictionary) -> void:
+	var legs := _legs(a)
+	var head := _by(a, a.walker + ":head")
+	var body := _by(a, a.walker + ":body")
+	if legs.size() < 4 or head.is_empty() or body.is_empty():
+		return
+	var hv := _vox(head)
+	var fore := -INF
+	var hind := INF
+	for l in legs:
+		fore = maxf(fore, l.joint.x)
+		hind = minf(hind, l.joint.x)
+	var withers := fore - 0.25 * (fore - hind)   # (a hump or the withers can rise behind the fore hips)
+	var hx := 0.0
+	for q in hv:
+		hx += Geom.centre(q).x
+	hx /= maxf(hv.size(), 1)
+	if hx <= fore + 1.0:
+		return
+	var top := {}
+	for cells in [_vox(body), hv]:
+		for q in cells:
+			var c := Geom.unkey(q)
+			if c.x >= floori(withers / Geom.RES) and c.x <= floori(hx / Geom.RES):
+				top[c.x] = maxi(int(top.get(c.x, -100000)), c.y)
+	var i0 := floori(withers / Geom.RES)
+	var i1 := floori(hx / Geom.RES)
+	var n := i1 - i0 + 1
+	var t := []
+	for i in n:
+		t.append(int(top.get(i0 + i, -100000)))
+	# Thin spikes (an ear's tip, a strap's buckle, a crest's spine) are no shoulder for the water to
+	# stand against: open the profile by NOTCH_SPIKE columns first.
+	var opened := []
+	for i in n:
+		var m := -100000
+		for j in range(maxi(0, i - NOTCH_SPIKE + 1), i + 1):
+			if j + NOTCH_SPIKE <= n:
+				var w := 100000
+				for q in range(j, j + NOTCH_SPIKE):
+					w = mini(w, t[q])
+				m = maxi(m, w)
+		opened.append(m if m > -100000 else t[i])
+	t = opened
+	var left := t.duplicate()
+	var right := t.duplicate()
+	for i in range(1, n):
+		left[i] = maxi(left[i], left[i - 1])
+	for i in range(n - 2, -1, -1):
+		right[i] = maxi(right[i], right[i + 1])
+	var worst := 0
+	var at := 0
+	for i in n:
+		var d: int = mini(left[i], right[i]) - t[i]
+		if d > worst:
+			worst = d
+			at = i
+	var depth := minf(worst * Geom.RES, 99.0)
+	var tol := float(st.get("notch", HEAD_NOTCH))
+	note("A2 head joins the neck without a notch", label, view, depth > tol,
+		"the top line dips %.1f between the withers (x %.1f) and the head (x %.1f), at x %.1f; %.1f allowed" % [depth, withers, hx, (i0 + at + 0.5) * Geom.RES, tol])
 
 
 ## A1 while walking: one foot planted at every phase, none through the ground.

@@ -970,7 +970,24 @@ func _pony_anchors() -> Array:
 		[Vector3(7.0, y, -3.4), PI, -1, 0], [Vector3(-10.0, y, -3.4), 0.0, -1, 0]]
 
 
+## The pony's look (2026-10-13, Dominic: "horses heads need a real re-work"; tests/sheets/horse_h1.json
+## shows them side by side): classic (a round-ended rod of a face on a straight neck), h1 (a built
+## horse head: broad round jowl, a long wedge of a face narrowing to the muzzle, nostrils, small
+## upright ears, the eye high on the side, on an arched, maned neck that runs into the head) and h2
+## (the same neck and tack, the head sculpted in Blender: tools/blender/horse.py).
+const PONY_LOOKS := ["classic", "h1", "h2"]
+static var pony_look := "h2"   # (Claude, round H1: the sculpted head reads best; "classic" puts the old one back)
+
+
 func _body_pony(c: Dictionary) -> Dictionary:
+	return _body_pony_classic(c) if pony_look == "classic" else _horse_body(c, "head.pony")
+
+
+func _head_pony(c: Dictionary) -> Dictionary:
+	return call("_head_pony_" + pony_look, c)
+
+
+func _body_pony_classic(c: Dictionary) -> Dictionary:
 	var n := Node3D.new()
 	var lift := Node3D.new()
 	lift.position.y = PONY_LIFT
@@ -1010,7 +1027,7 @@ func _body_pony_fused(c: Dictionary) -> Dictionary:
 		"anchors": _pony_anchors(), "torso_scale": Vector2(1.3, 1.0)}
 
 
-func _head_pony(c: Dictionary) -> Dictionary:
+func _head_pony_classic(c: Dictionary) -> Dictionary:
 	var root := Node3D.new()
 	var n := Node3D.new()
 	n.scale = Vector3.ONE * 1.25
@@ -1030,6 +1047,128 @@ func _head_pony(c: Dictionary) -> Dictionary:
 	n.add_child(ring(2.5, 3.0, surf("leather", Color.WHITE, 3.0), Vector3(5.4, -3.2, 0), Vector3(0, 0, ang)))
 	n.add_child(ring(2.5, 3.0, plain(c.team), Vector3(1.4, 0.4, 0), Vector3(0, 0, ang)))   # browband
 	return {"node": root, "sockets": {"top": Vector3(0.5, 2.6, 0) * 1.25}}
+
+
+# The reworked horse (h1, h2). The neck: deep at the base (withers to the point of the chest),
+# arched along the crest, narrowing to the throat latch where the head sets on; flat-sided (deeper
+# than it is wide); a mane along the crest from the poll into the withers. Built as cross-sections
+# between its top line and its throat line, running into the back of the head (the head held out of
+# the body's bake, so they join without a line, as the creature kit's neck.into).
+const HORSE_TOP := [Vector3(5.6, 25.4, 0), Vector3(9.8, 33.4, 0), Vector3(15.0, 35.6, 0)]   # withers, crest, poll (a bezier)
+const HORSE_THROAT := [Vector3(12.4, 17.0, 0), Vector3(15.6, 24.0, 0), Vector3(17.0, 30.6, 0)]   # chest point, throat, latch
+const HORSE_HEAD := Vector3(16.2, 33.0, 0)   # the head socket: between the poll and the throat latch (before the lift)
+const HORSE_TILT := -52.0                    # the head's pitch: nose down and forward
+const HORSE_HEAD_K := 1.2                    # the head's size (its frame is about 13 long before this)
+
+
+static func _bez(p: Array, t: float) -> Vector3:
+	return p[0].lerp(p[1], t).lerp(p[1].lerp(p[2], t), t)
+
+
+func _horse_body(c: Dictionary, head_id: String) -> Dictionary:
+	var n := Node3D.new()
+	var lift := Node3D.new()
+	lift.position.y = PONY_LIFT
+	n.add_child(lift)
+	_pony_barrel(lift, c)
+	var hide := surf("hide", c.skin, 6.0)
+	var mane := surf("mane", c.skin2.darkened(0.35), 3.0)
+	for i in 9:
+		var t := i / 8.0
+		var top := _bez(HORSE_TOP, t)
+		var low := _bez(HORSE_THROAT, t)
+		var across := top - low
+		var r := Vector3(2.8, across.length() * 0.5 + 0.2, lerpf(4.4, 2.5, t))
+		lift.add_child(blob(r, hide, (top + low) * 0.5, Vector3(0, 0, rad_to_deg(atan2(across.y, across.x)) - 90.0)))
+	for i in 12:   # the mane: along the crest, lying a little to the near side, into the withers
+		var t := 0.04 + i / 11.0 * 0.96
+		var a := _bez(HORSE_TOP, t)
+		var b := _bez(HORSE_TOP, minf(t + 0.1, 1.0))
+		var d := (b - a).normalized()
+		var up := Vector3(-d.y, d.x, 0)
+		lift.add_child(blob(Vector3(1.6, 1.3, 1.0), mane, a + up * 0.6 + Vector3(0, 0, 0.4), Vector3(0, 0, rad_to_deg(atan2(d.y, d.x)))))
+	harness(lift, Vector3(4, 19, 0), 7.0, 6.3, Vector3(3, 18, 6.4), Vector3(3, 18, -6.4))
+	return {"node": n, "sockets": _lifted({
+		"head": HORSE_HEAD, "hand_r": Vector3(3, 18, 6.9), "hand_l": Vector3(3, 18, -6.9),
+		"torso": Vector3(0, 19, 0), "back": Vector3(-8, 24, 0), "seat": Vector3(-1, 25.8, 0),
+		"wings": Vector3(7.5, 25.5, 0), "join": HORSE_HEAD}),
+		"anchors": _pony_anchors(), "torso_scale": Vector2(1.3, 1.0), "carry": "harness", "seam_head": head_id, "seam_r": 4.5}
+
+
+## The reworked heads' top line: the forehead and the nose one straight line (head frame).
+static func _horse_top(x: float) -> float:
+	return 3.0 - 0.17 * (x - 1.0)
+
+
+## H1: a horse head built from shapes, along +x from the socket, then pitched by HORSE_TILT: the
+## broad flat forehead and the round jowl at the back, a long wedge of a face whose top runs straight
+## from the forehead down the nose, narrowing to a soft muzzle with nostrils and a chin; the jaw's
+## edge; the eye high on the side under a brow; small upright pointed ears; the forelock; the tack.
+func _head_pony_h1(c: Dictionary) -> Dictionary:
+	var root := Node3D.new()
+	var n := Node3D.new()
+	n.rotation_degrees.z = HORSE_TILT
+	n.scale = Vector3.ONE * HORSE_HEAD_K
+	root.add_child(n)
+	var hide := surf("hide", c.skin, 5.0)
+	var muzzle := surf("hide", c.skin.darkened(0.25), 4.0)
+	var ink := plain(Color("#1a1210"))
+	n.add_child(blob(Vector3(2.4, 2.1, 2.2), hide, Vector3(1.0, 0.9, 0)))   # the cranium, the forehead broad
+	n.add_child(blob(Vector3(2.7, 2.4, 2.15), hide, Vector3(1.3, -1.0, 0)))   # the jowl: big, round, flat-sided
+	for f in [[4.4, 2.2, 1.95, 1.75], [6.6, 2.0, 1.7, 1.5], [8.6, 1.7, 1.5, 1.35]]:   # the face, narrowing
+		n.add_child(blob(Vector3(f[1], f[2], f[3]), hide, Vector3(f[0], _horse_top(f[0]) - f[2], 0)))
+	n.add_child(blob(Vector3(1.55, 1.55, 1.45), muzzle, Vector3(10.0, _horse_top(10.0) - 1.5, 0)))   # the muzzle, soft, a little flared
+	n.add_child(blob(Vector3(1.2, 0.7, 1.0), muzzle, Vector3(9.5, _horse_top(9.5) - 3.0, 0)))   # the chin
+	n.add_child(rod(Vector3(1.4, -3.0, 0), Vector3(8.6, _horse_top(8.6) - 3.0, 0), 1.0, 0.75, hide))   # the jaw's lower edge
+	for side in [1, -1]:
+		n.add_child(blob(Vector3(0.32, 0.5, 0.28), ink, Vector3(11.3, _horse_top(11.3) - 1.2, 0.85 * side)))   # a nostril
+		var eye: MeshInstance3D = blob(Vector3(0.5, 0.45, 0.4), ink, Vector3(3.1, 1.6, 1.95 * side))
+		eye.mesh.resource_name = "eye"
+		n.add_child(eye)
+		var brow: MeshInstance3D = blob(Vector3(0.8, 0.35, 0.6), hide, Vector3(3.1, 2.15, 1.85 * side))
+		brow.mesh.resource_name = "brow"
+		n.add_child(brow)
+	n.add_child(rod(Vector3(10.4, _horse_top(10.4) - 2.4, 0), Vector3(11.4, _horse_top(11.4) - 2.3, 0), 0.15, 0.12, ink, false))   # the mouth
+	_horse_ears(n, c)
+	return {"node": root, "sockets": {"top": Basis(Vector3(0, 0, 1), deg_to_rad(HORSE_TILT)) * Vector3(1.0, 3.2, 0) * HORSE_HEAD_K}}
+
+
+## What both reworked heads share (head frame): small pointed ears, upright in the world (turned back
+## against the head's pitch), a little apart; the forelock; the bridle (a noseband round the face, a
+## team browband under the ears, a cheek strap between them).
+func _horse_ears(n: Node3D, c: Dictionary) -> void:
+	var hide := surf("hide", c.skin, 5.0)
+	var leather := surf("leather", Color.WHITE, 3.0)
+	for side in [1, -1]:
+		n.add_child(cone(0.0, 0.7, 2.5, hide, Vector3(0.0, 3.4, 1.05 * side), Vector3(-10 * side, 0, -HORSE_TILT - 8.0)))
+		n.add_child(cone(0.0, 0.4, 1.8, plain(c.skin.darkened(0.45)), Vector3(0.12, 3.35, 1.15 * side), Vector3(-10 * side, 0, -HORSE_TILT - 8.0)))
+		n.add_child(rod(Vector3(1.0, 0.6, 2.25 * side), Vector3(7.4, _horse_top(7.4) - 1.8, 1.75 * side), 0.2, 0.2, leather))   # the cheek strap
+	n.add_child(blob(Vector3(1.5, 0.75, 1.0), surf("mane", c.skin2.darkened(0.35), 3.0), Vector3(1.8, 3.1, 0), Vector3(0, 0, -15)))   # the forelock
+	n.add_child(ring(1.9, 2.3, leather, Vector3(7.6, _horse_top(7.6) - 1.65, 0), Vector3(0, 0, 90), Vector3(1, 1, 0.92)))   # the noseband
+	n.add_child(ring(2.2, 2.6, plain(c.team), Vector3(0.6, 1.0, 0), Vector3(0, 0, 80), Vector3(1, 1.05, 1.02)))   # the browband
+
+
+## H2: the head sculpted in Blender (tools/blender/horse.py: one lofted surface, jowl to muzzle, with
+## the nostrils, the chin and the jaw's edge in it), the ears, forelock and tack as H1's.
+func _head_pony_h2(c: Dictionary) -> Dictionary:
+	var root := Node3D.new()
+	var n := Node3D.new()
+	n.rotation_degrees.z = HORSE_TILT
+	n.scale = Vector3.ONE * HORSE_HEAD_K
+	root.add_child(n)
+	var ink := plain(Color("#1a1210"))
+	n.add_child(glb("head_horse", {"hide": surf("hide", c.skin, 5.0), "muzzle": surf("hide", c.skin.darkened(0.25), 4.0), "nostril": ink, "eye": ink}))
+	_horse_ears(n, c)
+	return {"node": root, "sockets": {"top": Basis(Vector3(0, 0, 1), deg_to_rad(HORSE_TILT)) * Vector3(1.0, 3.2, 0) * HORSE_HEAD_K}}
+
+
+## The concept ids (data/later/horses.json): each look's body beside the game's pony.
+func _body_pony_h1(c: Dictionary) -> Dictionary:
+	return _horse_body(c, "head.pony_h1")
+
+
+func _body_pony_h2(c: Dictionary) -> Dictionary:
+	return _horse_body(c, "head.pony_h2")
 
 
 func _leg_hoof(c: Dictionary) -> Dictionary:
@@ -1058,6 +1197,7 @@ func _leg_hoof(c: Dictionary) -> Dictionary:
 const CAPYBARA_LOOKS := ["box", "soft", "sculpt", "full", "long", "long_tan"]
 static var capybara_look := "long"   # the recommendation (RM1, over CP1's full); Dominic to confirm
 const CAPYBARA_LONG_HEAD := 1.35
+const CAPYBARA_NECK := [Vector3(4.0, 14.5, 0), Vector3(-2.0, 1.4, 0), 3.5, 3.0]   # the long bodies' neck: from, end (from the head socket), radii
 const CAPYBARA_HEAD := 1.25   # the reworked heads' scale: a capybara's head is a third of its length
 
 
@@ -1221,10 +1361,18 @@ func _capybara_long_mats(c: Dictionary) -> Dictionary:
 
 func _capybara_long_body(kind: String, c: Dictionary, head: Vector3, seat_y: float) -> Dictionary:
 	var n := Node3D.new()
-	n.add_child(glb("body_capybara_" + kind, _capybara_long_mats(c)))
+	var mats := _capybara_long_mats(c)
+	n.add_child(glb("body_capybara_" + kind, mats))
+	# The neck (2026-10-13, the head-join rule: the top line dipped 2 units between the shoulders and the
+	# big head, so the head sat on the body like a separate brick): one thick mass from the shoulders
+	# into the back of the skull, the head held out of the body's bake so they join without a line.
+	n.add_child(rod(CAPYBARA_NECK[0], head + CAPYBARA_NECK[1], CAPYBARA_NECK[2], CAPYBARA_NECK[3], mats.fur))
 	_capybara_towel(n, c, seat_y - 1.4, 8.0)
 	var r := _capybara_rig(head, seat_y)
 	r["node"] = n
+	r["seam_head"] = "head.capybara"
+	r["seam_r"] = 4.0
+	r.sockets["join"] = head + CAPYBARA_NECK[1]
 	return r
 
 
