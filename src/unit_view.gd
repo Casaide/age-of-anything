@@ -778,8 +778,10 @@ func _process(delta: float) -> void:
 		back_node.scale = Vector2(rs, rs * (1.0 + 0.1 * f))
 
 	if stepped:
-		# Breathe by a pixel, not by stretching the sprite (stretched pixels shimmer).
-		bob.position.y -= (1.0 / maxf(art_px, 1.0)) if fmod(t, 1.6) < 0.8 and stride == 0.0 and job == "" else 0.0
+		# Breathe by a pixel, not by stretching the sprite (stretched pixels shimmer): a short lift
+		# now and then (0.5 s in every 4 s, each unit at its own moment). Up for half of every 1.6 s,
+		# every unit standing about looked to bounce gently (Dominic).
+		bob.position.y -= (1.0 / maxf(art_px, 1.0)) if fmod(t, 4.0) < 0.5 and stride == 0.0 and job == "" else 0.0
 	else:
 		var breath := 1.0 + sin(time * 2.4) * 0.03
 		for b in breathing:
