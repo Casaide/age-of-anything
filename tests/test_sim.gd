@@ -126,7 +126,7 @@ func _init() -> void:
 		"wonder": func(): _test_wonder(races),
 		"walls": func(): _test_walls(races),
 		"siege_ways": func(): _test_siege_ways(races),
-		"modes": func(): _test_modes(races),
+		"modes": func(): _test_modes(races, gen),
 		"combat": func(): _test_combat(gen),
 		"match": func(): _test_match(map, races, lib, rules),
 		"match_b": func(): _test_match_b(map, races),
@@ -4254,7 +4254,7 @@ func _ways_run(races: Array, checks_on: bool) -> World:
 ## a stone ring with their garrison up on it, the stockpile set. Siege: player 0 walled in age 3,
 ## player 1 with an army and engines and no town; the attackers are out when the hold timer runs
 ## out (the defenders win), or when they've nothing left. The same setup twice: the same hash.
-func _test_modes(races: Array) -> void:
+func _test_modes(races: Array, gen) -> void:
 	var walled := func(w: World, p: int) -> int:
 		var n := 0
 		for b in w.buildings.count():
@@ -4299,3 +4299,49 @@ func _test_modes(races: Array) -> void:
 	for t in 40:
 		s2.step()
 	check(s2.winner == s2.teams[0], "modes: an attacker with nothing left is out")
+	_test_modes_lift_lacks(gen)
+
+
+## The modes fill the gap (Dominic, 2026-10-13: "just in siege mode we fill the gap"): a race that
+## lacks walls (the centaurs) can't build or mend them in a normal match; in Siege and Fortress
+## every side can (data/modes.json lift_lacks), defenders and attackers alike, and rebuild a breach.
+func _test_modes_lift_lacks(gen) -> void:
+	var centaurs: Dictionary = gen.generate("centaur romans", rules_)
+	var both := [centaurs, centaurs]
+	var std := World.new(SEED, SimMap.load_id("siege_vale"), both, rules_)
+	var ids := ["wall", "stone_gate", "wall_tower", "palisade"]
+	check(Economy.lacks(std, 0, "wall"), "modes: the centaurs lack stone walls in a normal match (the case this tests)")
+	for id in ["wall", "stone_gate", "palisade"]:   # (what the centaurs lack; a wall tower drops onto a wall they can't build)
+		check(Economy.why_not_build(std, 0, Economy.btype_of(std, id)) == "not in this race's tech tree", "modes: no %s for centaurs in a normal match" % id)
+	var wk := Economy.btype_of(std, "wall")
+	var nb := Fortify._put(std, 0, wk, 5, 5, 0)   # (one handed to them all the same)
+	var bi := std.buildings.index_of(nb)
+	std.buildings.hp[bi] -= 100
+	check(not Repair.can_mend(std, 0, nb), "modes: centaurs can't mend a stone wall in a normal match")
+	for mode in ["siege", "fortress"]:
+		var r := rules_.duplicate(true)
+		r.mode = mode
+		var w := World.new(SEED, SimMap.load_id("siege_vale"), both, r)
+		for p in 2:
+			for id in ids:
+				check(Economy.why_not_build(w, p, Economy.btype_of(w, id)) == "", "modes: %s side %d (centaurs) may build a %s" % [mode, p, id])
+		var wall := -1
+		for b in w.buildings.count():
+			if w.buildings.owner[b] == 0 and w.btypes[w.buildings.kind[b]].id == "wall":
+				wall = b
+				break
+		check(wall >= 0, "modes: %s walls the centaurs in" % mode)
+		var id: int = w.buildings.id[wall]
+		w.buildings.hp[wall] -= 100
+		check(Repair.can_mend(w, 0, id), "modes: %s centaurs may mend their stone wall" % mode)
+		var cell: int = w.buildings.cy[wall] * w.map.width + w.buildings.cx[wall]
+		var bhurt := PackedInt32Array()
+		bhurt.resize(w.buildings.count())
+		bhurt[wall] = 99999
+		var hurt := PackedInt32Array()
+		hurt.resize(w.units.count())
+		Combat._apply(w, hurt, hurt.duplicate(), bhurt)
+		w.step()
+		check(Walls.rebuild_of(w, 0, cell).get("building", "") == "wall", "modes: %s centaurs may rebuild a breach in their wall" % mode)
+	var after := World.new(SEED, SimMap.load_id("siege_vale"), both, rules_)
+	check(Economy.lacks(after, 0, "wall"), "modes: a mode's lift doesn't reach a later normal match's centaurs (Identity's shared copy untouched)")
