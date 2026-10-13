@@ -6,7 +6,8 @@ extends "res://scenes/art_pixel/unit_models.gd"
 ##   take    timber (every human culture, trimmed in its cloth), junk (the rats' sewer junk at
 ##           human scale), forest (bark and acorns; the ram a giant beetle, ridden), spooky (dark
 ##           wood and bone): families.json `siege` says whose
-## Picked (D-119): the open ram crewed (the forest's: the ridden giant beetle), the arm-and-cup
+## Picked (D-119): the open ram crewed (the forest's: the ridden giant beetle; the timber take's
+## now roofed with hides, TIMBER_RAM_ROOF), the arm-and-cup
 ## catapult and the carriage bolt thrower, crewed; the crew are the race's own workers, drawn by
 ## UnitView on the sockets "crew<n>_f<k>[_reach|_raise][_in|_top]" (see ROUND2_SCALE's note).
 ## Same frame as the unit parts: part units, x forward, y up, z towards the viewer's side,
@@ -659,11 +660,119 @@ func junk_log(n: Node3D, s: Dictionary, x0: float, x1: float, y: float, r: float
 ## from pipes, chains and scrap. Two of the crew swing the log from inside the frame, a third
 ## shoves at the back.
 func _ram_c(s: Dictionary, c: Dictionary) -> Dictionary:
-	var spec: Dictionary = _ram_b(s, c) if s.fam != "junk" else _ram_c_junk(s, c)
+	var spec: Dictionary
+	if s.fam == "junk":
+		spec = _ram_c_junk(s, c)
+	elif s.fam == "timber" and TIMBER_RAM_ROOF != "":
+		spec = _ram_covered(s, c, TIMBER_RAM_ROOF)
+	else:
+		spec = _ram_b(s, c)
 	var L := 42.0
 	spec.sockets = {"crew0_f0_reach_in": Vector3(-L * 0.3, 0, -2.5), "crew1_f0_reach_in": Vector3(L * 0.1, 0, -2.5),
 		"crew2_f0_reach": Vector3(-L * 0.5 - 5.0, 0, 5.0)}
+	if s.fam == "timber" and TIMBER_RAM_ROOF != "":   # under a roof: one each side of the log, so one always shows
+		spec.sockets.crew0_f0_reach_in = Vector3(-L * 0.3, 0, 3.0)
+		spec.sockets.crew1_f0_reach_in = Vector3(L * 0.1, 0, -3.0)
 	return spec
+
+
+## The human (timber) ram's roof (Dominic: "needs a roof to be more traditional"): "hides" wet
+## hides lashed over a ridge pole, "planks" a plank roof with a short hide skirt, "" the open ram.
+const TIMBER_RAM_ROOF := "hides"
+
+
+## The covered ram: corner posts on the wheeled frame carry a pitched roof (hides or planks), the
+## log hung from the ridge beam under it, iron head out the front. The sides stay open from the
+## rails to the eaves so the crew show underneath swinging the log; a team cloth over the ridge.
+func _ram_covered(s: Dictionary, c: Dictionary, roof: String) -> Dictionary:
+	var n := Node3D.new()
+	var L := 42.0
+	var W := 12.0
+	var wr := 4.2
+	var base := wr + 1.0
+	var eave := 23.0           # the top plates: the crew stand under them
+	var ridge := 30.5
+	var px := L * 0.36         # the posts, front and back
+	undercarriage(n, s, L, W, wr)
+	for side in [1, -1]:
+		var z: float = W * 0.5 * side
+		n.add_child(beam(Vector3(-L * 0.5, base, z), Vector3(L * 0.5, base, z), 1.4, 1.4, s.dark))   # the rails
+		n.add_child(beam(Vector3(-px - 1.5, eave, z), Vector3(px + 1.5, eave, z), 1.2, 1.2, s.dark))   # the top plates
+		for x in [-px, px]:
+			n.add_child(beam(Vector3(x, base, z), Vector3(x, eave, z), 1.2, 1.2, s.wood))   # the posts
+		n.add_child(rod(Vector3(-px, base + 0.5, z), Vector3(0.0, eave - 0.5, z), 0.4, 0.4, s.wood, false))   # a brace
+	for x in [-px, px]:   # the gables: a tie beam, a king post, rafters up to the ridge
+		n.add_child(beam(Vector3(x, eave, -W * 0.5), Vector3(x, eave, W * 0.5), 1.2, 1.2, s.dark))
+		n.add_child(beam(Vector3(x, eave, 0), Vector3(x, ridge, 0), 1.0, 1.0, s.wood))
+		for side in [1, -1]:
+			n.add_child(rod(Vector3(x, eave - 0.6, (W * 0.5 + 1.6) * side), Vector3(x, ridge, 0), 0.55, 0.5, s.wood, false))
+	var rx := px + 3.5         # the roof's half length (a little over the gables)
+	n.add_child(beam(Vector3(-rx, ridge, 0), Vector3(rx, ridge, 0), 1.3, 1.3, s.dark))
+	var y := 17.0              # the log, hung from the ridge beam
+	for x in [-L * 0.25, L * 0.25]:
+		n.add_child(rod(Vector3(x, ridge, 0), Vector3(x, y + 2.0, 0), 0.35, 0.35, s.rope, false))
+	ram_log(n, s, -L * 0.55, L * 0.5 + 8.0, y, 3.0)
+	var ze := W * 0.5 + 1.8    # the eaves' overhang
+	var ye := eave - 0.6
+	if roof == "hides":
+		_hide_roof(n, s, rx, ridge, ze, ye)
+	else:
+		_plank_roof(n, s, rx, ridge, ze, ye)
+	# A team cloth laid over the ridge, short, near the back.
+	var a := atan2(ridge - ye, ze)
+	for side in [1, -1]:
+		var d := 2.8
+		var at := Vector3(-rx * 0.35, ridge + 0.75 - sin(a) * d * 0.5, cos(a) * d * 0.5 * side)
+		n.add_child(_box(Vector3(7.0, 0.35, d), s.team, at, Vector3(rad_to_deg(a) * side, 0, 0)))
+	return {"node": n, "sockets": {}}
+
+
+## One slope of a roof: a box `len` long (along x) from the ridge down to the eave at z = ze*side.
+func _slope(m: Material, x: float, len: float, ridge: float, ze: float, ye: float, side: int, thick: float, lift := 0.0) -> MeshInstance3D:
+	var a := atan2(ridge - ye, ze)
+	var d := Vector2(ze, ridge - ye).length()
+	var mid := Vector3(x, (ridge + ye) * 0.5 + lift, ze * 0.5 * side)
+	return _box(Vector3(len, thick, d), m, mid, Vector3(rad_to_deg(a) * side, 0, 0))
+
+
+## Wet hides lashed over the rafters: big skins in three browns, each laid a little askew so
+## their edges overlap unevenly and hang ragged below the eave, held down by ropes thrown over the
+## ridge and tied off at the eaves (zigzag lashing), and a rope along each slope.
+func _hide_roof(n: Node3D, s: Dictionary, rx: float, ridge: float, ze: float, ye: float) -> void:
+	var hides := [surf("hide", Color(0.6, 0.44, 0.31), 6.0), s.roof, surf("hide", Color(0.48, 0.34, 0.24), 6.0)]
+	var lash := plain(Color("#3e2e20"))
+	var count := 3
+	var w := rx * 2.0 / count
+	for side in [1, -1]:
+		var o := 1 if side < 0 else 0
+		for k in count:
+			var x := -rx + w * (k + 0.5) + (0.8 if (k + o) % 2 == 0 else -0.6)
+			var drop: float = [0.4, 1.4, 0.8][(k + o) % 3]   # the skins hang unevenly
+			var hide := _slope(hides[(k + o) % 3], x, w + 2.2, ridge + 0.5, ze + drop * 0.5, ye - drop, side, 0.5, 0.15 * ((k + o) % 2))
+			hide.rotation_degrees.y = [4.0, -3.0, 5.0][(k + o) % 3]
+			n.add_child(hide)
+		for k in count * 2 + 1:   # the lashing zigzags from the ridge to the eave pegs
+			var x0 := -rx + w * 0.5 * k
+			var x1 := x0 + (w * 0.5 if k % 2 == 0 else -w * 0.5)
+			if absf(x1) > rx + 0.1:
+				continue
+			n.add_child(rod(Vector3(x0, ridge + 1.0, 0), Vector3(x1, ye - 0.4, (ze + 0.4) * side), 0.3, 0.3, lash, false))
+		var p := Vector3(0, ridge + 1.0 + (ye - ridge) * 0.55, ze * 0.55 * side)
+		n.add_child(rod(p - Vector3(rx + 0.3, 0, 0), p + Vector3(rx + 0.3, 0, 0), 0.3, 0.3, lash, false))
+
+
+## A plank roof: boards ridge to eave in two woods, battens along it, and a short hide skirt.
+func _plank_roof(n: Node3D, s: Dictionary, rx: float, ridge: float, ze: float, ye: float) -> void:
+	var count := 10
+	var w := rx * 2.0 / count
+	for side in [1, -1]:
+		for k in count:
+			var m: Material = s.wood if (k + (1 if side < 0 else 0)) % 3 != 0 else s.dark
+			n.add_child(_slope(m, -rx + w * (k + 0.5), w - 0.25, ridge + 0.4, ze, ye, side, 0.6, 0.1 * (k % 2)))
+		for t in [0.3, 0.8]:
+			var p := Vector3(0, ridge + 0.9 + (ye - ridge) * t, ze * t * side)
+			n.add_child(beam(p - Vector3(rx, 0, 0), p + Vector3(rx, 0, 0), 0.6, 0.5, s.dark))
+		n.add_child(_box(Vector3(rx * 2.0, 2.6, 0.35), s.roof, Vector3(0, ye - 1.3, (ze + 0.1) * side), Vector3(-8 * side, 0, 0)))   # the hide skirt
 
 
 func _ram_c_junk(s: Dictionary, c: Dictionary) -> Dictionary:
