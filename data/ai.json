@@ -172,10 +172,12 @@
   "_doc_waves": "waves: set times and the army (population) each needs; then one every repeat_every seconds once the army is repeat_min_army (per age: a Town Center full of workers wants a bigger wave). Soldiers left out in the field under half a wave come home to join the next one.",
   "guard": 4,
   "pick_bias": {
-   "infantry": -7
+   "infantry": -7,
+   "scout": -5,
+   "mounted_archer": -6
   },
   "building_foes": 0,
-  "_doc_pick_bias": "the counter-pick (bot.gd _train: the unit whose attack, hp/10 and bonuses times the foes seen with that class score best, less the bonuses foes have against it) adds this per slot: with nothing seen the Barracks trains spears, as before the swordsman (even the rats, whose swordsman swings a cheese hammer); a few seen spears or skirmishers (the swordsman's bonus) tip it to swords (tests/test_ai.gd pick)",
+  "_doc_pick_bias": "the counter-pick (bot.gd _train: the unit whose attack, hp/10 and bonuses times the foes seen with that class score best, less the bonuses foes have against it) adds this per slot: with nothing seen the Barracks trains spears, as before the swordsman (even the rats, whose swordsman swings a cheese hammer); a few seen spears or skirmishers (the swordsman's bonus) tip it to swords (tests/test_ai.gd pick); the Stable's scouts (-5) only for a few seen healers or skirmishers with no cavalry of ours to hand (the scout for looking is trained apart: scouts), the Range's mounted archers (-6) once three or so foot soldiers are seen and few spears (their bonus against infantry outweighs it), archers otherwise",
   "_doc_building_foes": "while the army goes for an enemy building (bot.gd _aim: a wall shutting the way), the counter-pick counts this many foes of class building, so the line with a bonus against buildings (the swordsman's) is trained for the raid. Off (0) for now: at 2 a stone ring fell sooner (18:40 against 20:25) but a palisade ring much later (18:10 against 12:00), its blows spread over many pieces (tests/test_ai.gd walls): the bot fielded seven swordsmen by 7:00 and trained no more until 13:00 (dearer than spears, out of what it saves for the age), so the assault stalled; worth a look with the big-map AI work",
   "healers": {
    "per_army": 5,
@@ -222,7 +224,11 @@
   "contain_pop": 30,
   "contain_gap": 3,
   "_doc_contain": "contain_pop, contain_gap: an army smaller than contain_pop (population) doesn't storm a Town Center under the enemy's towers, Castle or Town Center arrows (fog memory): it waits on its way in, contain_gap tiles out of their reach, and goes in once it's that big, or once it brings a siege engine (bot.gd _contain_point). dominant_pct: an army this many percent of the enemy army it remembers (or more) skips raids and goes for the Town Centers (waiting first if it's under contain_pop).",
-  "dominant_pct": 250
+  "dominant_pct": 250,
+  "scouts": {
+   "keep": 1
+  },
+  "_doc_scouts": "scouts (Stable, from age 2): the bot keeps `keep` units of the scout line, trained ahead of the counter-pick (bot.gd _train_scout); Scout's soldier tours (src/ai/scout.gd) take a scout-line unit before any other soldier, without waiting for an army; more scouts the counter-pick trains fight with the army"
  },
  "research": {
   "_doc": "Besides line upgrades (and gathering, for building-up levels): the economy research it buys (economy, then buildings: the University's, Bastion once it has a tower), and the soldiers' research it buys once that research reaches at least army_min of its soldiers (the armoury track for what it fields). Both keep back what it's saving for (the next age, a blocked build step) once it has the workers to age up.",
@@ -309,7 +315,7 @@
   "enemy_tiles": 7,
   "points": 6,
   "memory": 180,
-  "_doc": "src/ai/scout.gd. A worker tours once it has worker_at workers (before worker_before seconds) for up to worker_seconds: round the enemy's start at enemy_tiles, then up to `points` crossings and the middle, nearest next; then back to work. From soldier_age, with an army of soldier_army, the fastest idle soldier at home tours every `every` seconds (soldier_seconds at most). Hit, a scout runs home. Enemy soldiers seen are remembered `memory` seconds (counter-picks read the memory)."
+  "_doc": "src/ai/scout.gd. A worker tours once it has worker_at workers (before worker_before seconds) for up to worker_seconds: round the enemy's start at enemy_tiles, then up to `points` crossings and the middle, nearest next; then back to work. From soldier_age, with an army of soldier_army, the fastest idle soldier at home tours every `every` seconds (soldier_seconds at most). Hit, a scout runs home. Enemy soldiers seen are remembered `memory` seconds (counter-picks read the memory). A unit of the scout line (milestone 13), once there is one, is the soldier that tours, army or not."
  },
  "land": {
   "study_every": 2,

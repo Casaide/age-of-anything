@@ -461,7 +461,7 @@ func _test_levels(rules: Dictionary, a: Dictionary, b: Dictionary, levels := ["e
 ## worker away, and its soldiers come to blows with the raiders.
 ## The Barracks' counter-pick (milestone 13, the swordsman line): spears with nothing seen, and
 ## against cavalry; swords against spears and skirmishers, and (with military.building_foes on)
-## while the army goes for a wall.
+## while the army goes for a wall. The Range's: mounted archers against swordsmen only.
 func _test_pick(rules: Dictionary, gen) -> void:
 	for prompt in ["greeks", "swamp frogs", "sewer rats", "egyptians"]:
 		var race: Dictionary = gen.generate(prompt, rules)
@@ -471,7 +471,7 @@ func _test_pick(rules: Dictionary, gen) -> void:
 			var bot := Bot.new(0)
 			var barracks := ["spear", "infantry"]
 			var seen := {}
-			for slot in ["spear", "skirmisher", "large"]:   # the foes' tags, as _enemy_tags counts them, for 4 of one line
+			for slot in ["spear", "skirmisher", "large", "infantry"]:   # the foes' tags, as _enemy_tags counts them, for 4 of one line
 				var e: Dictionary = w.types[w.type_of(1, slot)].eval
 				var tags := {}
 				for t in e.tags:
@@ -483,6 +483,12 @@ func _test_pick(rules: Dictionary, gen) -> void:
 			check(bot.pick(w, barracks, seen.large) == "spear", "pick %s age %d: spears against cavalry" % [prompt, age])
 			check(bot.pick(w, barracks, seen.spear) == "infantry", "pick %s age %d: swords against spears" % [prompt, age])
 			check(bot.pick(w, barracks, seen.skirmisher) == "infantry", "pick %s age %d: swords against skirmishers" % [prompt, age])
+			if age == 2:   # the Range and the Stable (milestone 13): mounted archers against swordsmen, not spears; no scouts by default
+				var range_lines := ["skirmisher", "archer", "mounted_archer"]
+				check(bot.pick(w, range_lines, {}) != "mounted_archer", "pick %s: archers, not mounted archers, with nothing seen" % prompt)
+				check(bot.pick(w, range_lines, seen.infantry) == "mounted_archer", "pick %s: mounted archers against swordsmen" % prompt)
+				check(bot.pick(w, range_lines, seen.spear) != "mounted_archer", "pick %s: no mounted archers against spears" % prompt)
+				check(bot.pick(w, ["large", "scout"], {}) == "large", "pick %s: the Stable's cavalry with nothing seen" % prompt)
 			if int(bot.cfg.military.building_foes) > 0:   # (off for now: data/ai.json _doc_building_foes)
 				bot._aim = 1
 				check(bot.pick(w, barracks, bot._enemy_tags(w)) == "infantry", "pick %s age %d: swords for a wall in the way" % [prompt, age])

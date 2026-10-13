@@ -133,7 +133,7 @@ static func _update_team(w, team: Array) -> void:
 	for i in xs.size():
 		if teams[owner[i]] == team_p:
 			var t: Dictionary = types[kind[i]]
-			var r: int = (r_worker if t.worker else r_unit) + int(t.sight_add)   # research adds sight (Tech.retype)
+			var r: int = (r_worker if t.worker else r_unit) + int(t.eval.get("sight", 0)) + int(t.sight_add)   # the line's own (a scout's: pricing.gd), and research (Tech.retype)
 			if heights:
 				r += w.map.level_at(xs[i], ys[i]) * int(w.high.sight_unit)   # high ground sees further
 			var key: int = (ys[i] / 1000 * mw + xs[i] / 1000) * 64 + r

@@ -147,7 +147,7 @@ camera than the body's middle); "near" is depth >= 0.5, "far" depth < -0.5.
    than 80% of the body's pixels (a whole copy is 100%).
 6. **Back parts** (capes, quivers, banners, wings): behind the body when the back socket is far
    (the unit faces the camera), over it when near (it walks away). A mount's wings at its withers:
-   over its back unless the withers are far (then the rump hides their roots), always under the rider.
+   over its back unless the withers are far (then the rump hides their roots), always under the rider. A wing blur (a hummingbird's own wings, parts.json `blur`) draws like any back part instead.
 7. **What the hands hold**: in a near hand, over the body; in a near or middle hand, at least 3
    pixels show in every facing and pose (a weapon never vanishes). A far hand's shield may hide.
 8. **Riders**: no mount part (body, legs, head, wings) draws over any rider part; the rider's near

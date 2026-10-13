@@ -5,7 +5,8 @@ extends SceneTree
 ## against cavalry (the large slot), skirmishers and spears; spears and skirmishers against
 ## cavalry; spears with archers against spears with cavalry; a mixed army and spears with
 ## archers against all archers; swordsmen (the infantry slot) against spears, skirmishers and cavalry,
-## archers against them, swords with archers against spears with cavalry. Prints win rates and the
+## archers against them, swords with archers against spears with cavalry; mounted archers and scouts
+## against what they beat and what beats them; in age 3 the unique unit against its race's lines. Prints win rates and the
 ## value each side has left.
 ## Deterministic. Massed archers should be strong but counterable.
 ## Run: godot --headless --path . --script res://tests/mass_battle.gd [-- age [budget] [combat_rule=value ...] [serial] [jobs=N]]
@@ -37,6 +38,23 @@ const MATCHES := [
 	["archers v swords", ["archer"], ["infantry"]],
 	["swords v cavalry", ["infantry"], ["large"]],
 	["sword+archer v spear+cavalry", ["infantry", "archer"], ["spear", "large"]],
+	["horse archers v swords", ["mounted_archer"], ["infantry"]],
+	["horse archers v spears", ["mounted_archer"], ["spear"]],
+	["skirmishers v horse archers", ["skirmisher"], ["mounted_archer"]],
+	["cavalry v horse archers", ["large"], ["mounted_archer"]],
+	["horse archers v archers", ["mounted_archer"], ["archer"]],
+	["scouts v skirmishers", ["scout"], ["skirmisher"]],
+	["scouts v archers", ["scout"], ["archer"]],
+	["spears v scouts", ["spear"], ["scout"]],
+	["cavalry v scouts", ["large"], ["scout"]],
+]
+## The Castle's unique unit (age 3) against the lines of its own race, at equal cost.
+const UNIQUE_MATCHES := [
+	["unique v spears", ["unique"], ["spear"]],
+	["unique v swords", ["unique"], ["infantry"]],
+	["unique v archers", ["unique"], ["archer"]],
+	["unique v cavalry", ["unique"], ["large"]],
+	["unique v spear+archer", ["unique"], ["spear", "archer"]],
 ]
 ## Siege (milestone 13, age 3): engines behind a screen of spears against what they should beat
 ## (crowds of archers and foot) and what should beat them (cavalry).
@@ -61,7 +79,7 @@ func _init() -> void:
 	var args := all_args.filter(func(a): return not a.begins_with("match:") and a != "serial")
 	var age := int(args[0]) if args.size() > 0 else 2
 	var budget := int(args[1]) if args.size() > 1 else 1500
-	var matches: Array = MATCHES + (SIEGE_MATCHES if age >= 3 else [])
+	var matches: Array = MATCHES + (SIEGE_MATCHES + UNIQUE_MATCHES if age >= 3 else [])
 	var t0 := Time.get_ticks_msec()
 	if only.is_empty():
 		for arg in args.slice(2):
@@ -91,6 +109,8 @@ func _init() -> void:
 		var fights := 0
 		var rows := []
 		for r in races:
+			if not (m[1] + m[2]).all(func(slot): return RoundRobin.has_line(r, slot)):
+				continue   # (the race lacks a line: centaurs have no mounted archers)
 			var rw := 0
 			var counts := ""
 			for swap in 2:
@@ -107,7 +127,7 @@ func _init() -> void:
 				rows.append("    %-26s %s  %s  left %3d%% v %3d%%  (%ds)  shots %d, %d%% missed" % [r.name.left(26), counts,
 					"A" if res.result > 0 else ("B" if res.result < 0 else "="), res.left_pct[0], res.left_pct[1], res.ticks / 20,
 					res.shots, res.missed * 100 / maxi(1, res.shots)])
-		print("\n%-30s A wins %2d of %d (B %d)   value left: A %3d%%  B %3d%%" % [m[0], wins, fights, losses, left_a / fights, left_b / fights])
+		print("\n%-30s A wins %2d of %d (B %d)   value left: A %3d%%  B %3d%%" % [m[0], wins, fights, losses, left_a / maxi(1, fights), left_b / maxi(1, fights)])
 		for row in rows:
 			print(row)
 	if only.is_empty():
@@ -181,4 +201,4 @@ static func fight(rules: Dictionary, age: int, budget: int, race: Dictionary, sa
 
 
 static func _rank(slot: String) -> int:
-	return ["large", "ram", "infantry", "spear", "skirmisher", "archer", "bolt_thrower", "catapult"].find(slot)
+	return ["large", "ram", "unique", "scout", "infantry", "spear", "skirmisher", "mounted_archer", "archer", "bolt_thrower", "catapult"].find(slot)
