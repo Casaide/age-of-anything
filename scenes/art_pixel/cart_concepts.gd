@@ -4,16 +4,17 @@ extends "res://scenes/art_pixel/siege_models.gd"
 ## is in play (the game shows the placeholder handcart, siege_models.gd _cart_placeholder, until
 ## Dominic picks). Notes and questions: docs/concepts/trade_carts/README.md.
 ## Part ids "concept.tc1_<option>_<take>" (method "_concept_tc1_<option>_<take>"):
-##   a      the race's own mount pulls a two-wheeled cart on traces (the recipe's `haul`: UnitView
-##          draws the bare creature walking on the "haul0" socket), a worker leads it alongside
-##   b      the handcart in play now, pushed by a worker
+##   a      the race's own mount pulls a two-wheeled cart (the recipe's `haul`: UnitView draws the bare
+##          creature walking on the "haul0" socket) in a draught harness, the cart's shafts on its
+##          traces' ends; a worker leads it at its head
+##   b      the handcart that was in play until D-127, pushed by a worker
 ##   c      each family its own: timber a covered wagon behind two ponies; frog a giant snail with
 ##          panniers, a frog riding; junk a scrap barrow; forest a ball of goods rolled by a beetle;
 ##          spooky a silk-wrapped bundle on a bone sledge, dragged by a spider
 ## Same frame as the engines: x forward, y up, z towards the viewer's side, standing on y = 0.
 
-## Where each mount stands in front of the cart (its socket's x) and where its chest is from there
-## (the traces run to it, beside the body, not through it).
+## Round TC1 as first drawn (a_v1, kept for the placement fixture): where each mount stood in front of
+## the cart (its socket's x), where its chest was from there (the rope traces ran to it), the handler.
 const BEASTS := {
 	"pony": {"x": 38.0, "chest": Vector3(9.0, 18.0, 8.0), "lead": 15.0},
 	"newt": {"x": 44.0, "chest": Vector3(11.0, 9.0, 11.0), "lead": 20.0},
@@ -36,7 +37,7 @@ func _concept_tc1_b_frog(c: Dictionary) -> Dictionary: return _cart_placeholder(
 func _concept_tc1_b_junk(c: Dictionary) -> Dictionary: return _cart_placeholder(_style("junk", c), c)
 func _concept_tc1_b_forest(c: Dictionary) -> Dictionary: return _cart_placeholder(_style("forest", c), c)
 func _concept_tc1_b_spooky(c: Dictionary) -> Dictionary: return _cart_placeholder(_style("spooky", c), c)
-func _concept_tc1_c_timber(c: Dictionary) -> Dictionary: return _wagon(_style("timber", c))
+func _concept_tc1_c_timber(c: Dictionary) -> Dictionary: return _wagon(_style("timber", c), c)
 func _concept_tc1_c_frog(c: Dictionary) -> Dictionary: return _snail_packs(_style("frog", c))
 func _concept_tc1_c_junk(c: Dictionary) -> Dictionary: return _barrow(_style("junk", c))
 func _concept_tc1_c_forest(c: Dictionary) -> Dictionary: return _goods_ball(_style("forest", c))
@@ -45,9 +46,16 @@ func _concept_tc1_c_spooky(c: Dictionary) -> Dictionary: return _silk_sledge(_st
 
 # ------------------------------------------------------------------ A: the race's mount pulls
 
-## A two-wheeled cart, its bed loaded, traces from its front corners forward to the beast's chest;
-## the beast on "haul0", a worker leading it on the near side ("crew0_f0").
+## The cart in play since D-127 (siege_models.gd hauled_cart), drawn here with each take's own mount
+## (the frogs' newt, its cart drawn bigger: in play the frogs' snail pulls theirs).
 func _a(take: String, c: Dictionary) -> Dictionary:
+	return hauled_cart(TAKE_BEAST[take], _style(take, c), c, 1.25 if take == "frog" else 1.0)
+
+
+## TC1 A as first drawn (2026-10-13), kept so the placement fixture can put it back and must fail it
+## (Dominic: "this is bugged, did the tests not catch it?"): rope traces from a swingletree to points in
+## the air by the beast's chest, no harness, the cart floating behind, the handler in the cat's flank.
+func a_v1(take: String, c: Dictionary) -> Dictionary:
 	var s := _style(take, c)
 	var b: Dictionary = BEASTS[TAKE_BEAST[take]]
 	var n := Node3D.new()
@@ -77,7 +85,10 @@ func _a(take: String, c: Dictionary) -> Dictionary:
 
 ## Timber: a covered wagon on four wheels, hooped canvas with a team stripe, goods at the tail; two
 ## ponies side by side on traces, the driver on the bench.
-func _wagon(s: Dictionary) -> Dictionary:
+const WAGON_POLE := 6.0   # the pole from the wagon's front to the evener bar behind the ponies
+
+
+func _wagon(s: Dictionary, c: Dictionary) -> Dictionary:
 	var n := Node3D.new()
 	var wr := 6.0
 	var y := wr + 2.0
@@ -103,12 +114,23 @@ func _wagon(s: Dictionary) -> Dictionary:
 		n.add_child(_box(Vector3(24.0, 2.0, 0.4), s.team, Vector3(-3.0, y + 6.0, 7.75 * side)))
 	n.add_child(_box(Vector3(2.0, 6.0, 1.0), s.dark, Vector3(12.5, y + 3.0, 0)))   # the bench's back
 	n.add_child(_box(Vector3(4.0, 0.8, 12.0), plank, Vector3(13.0, y + 3.4, 0)))   # the bench
-	# A pole forward between the ponies, a crossbar at their chests, traces to each.
-	n.add_child(rod(Vector3(16.0, y, 0), Vector3(50.0, 15.0, 0), 0.7, 0.6, s.dark))
-	for side in [1, -1]:
-		n.add_child(rod(Vector3(16.0, y + 0.5, 6.0 * side), Vector3(46.0, 17.0, 16.5 * side), 0.35, 0.35, s.rope, false))
-		n.add_child(rod(Vector3(16.0, y + 0.5, 6.0 * side), Vector3(46.0, 17.0, 1.5 * side), 0.35, 0.35, s.rope, false))
-	return {"node": n, "sockets": {"haul0_f0": Vector3(37.0, 0, 9.0), "haul1_f0": Vector3(37.0, 0, -9.0), "crew0_f0_reach_top": Vector3(12.5, y + 3.8, 0)}}
+	# The ponies wear draught harness (as A); a pole forward from the wagon to an evener bar behind
+	# them, a short rope from the bar to each trace end (the hitches: placement check C2).
+	var lay := harness_layout(BEAST_BODY.pony, c)
+	var te: Vector3 = lay.ends[0]
+	var hx := 16.0 + WAGON_POLE + 3.0   # the hitches' x: the bar 3 behind them
+	var sockets := {"crew0_f0_reach_top": Vector3(12.5, y + 3.8, 0)}
+	var bar := hx - 3.0
+	n.add_child(beam(Vector3(16.0, y, 0), Vector3(bar, te.y, 0), 1.2, 1.2, s.dark))
+	n.add_child(beam(Vector3(bar, te.y, -(9.0 + te.z) - 0.5), Vector3(bar, te.y, 9.0 + te.z + 0.5), 1.2, 1.2, s.dark))
+	for i in 2:
+		var pz := 9.0 if i == 0 else -9.0
+		sockets["haul%d_f0" % i] = Vector3(hx - te.x, 0, pz)
+		for side in [1, -1]:
+			var hitch := Vector3(hx, te.y, pz + te.z * side)
+			n.add_child(rod(Vector3(bar, te.y, hitch.z), hitch, 0.4, 0.4, s.rope))
+			sockets["hitch%d_%s" % [i, "near" if side > 0 else "far"]] = hitch
+	return {"node": n, "sockets": sockets}
 
 
 ## Frogs: a smaller giant snail (the catapult's kin) with wicker panniers of goods slung over its
@@ -129,24 +151,10 @@ func _snail_packs(s: Dictionary) -> Dictionary:
 	return {"node": n, "sockets": {"crew0_f0_reach_top": Vector3(x0 - 2.0, top + 0.2, 0)}}
 
 
-## Rats: a barrow of sewer scrap at human scale (D-116): one big wheel in front, a pipe frame, a
-## crate, a barrel and a wheel of cheese, two pipe handles back to the rat pushing it.
+## Rats: a barrow of sewer scrap at human scale (D-116), loaded with goods (siege_models.gd scrap_barrow:
+## since D-127 the rats push it home with stone).
 func _barrow(s: Dictionary) -> Dictionary:
-	var n := Node3D.new()
-	var wr := 6.0
-	wheel(n, Vector3(13.0, wr, 0), wr, 2.0, s)
-	var y := 9.0
-	for side in [1, -1]:   # the pipe frame from the axle back to the handles, legs under it
-		n.add_child(rod(Vector3(13.0, wr, 1.8 * side), Vector3(-6.0, y, 5.5 * side), 0.7, 0.7, s.pipe))
-		n.add_child(rod(Vector3(-6.0, y, 5.5 * side), Vector3(-18.0, y + 3.0, 5.0 * side), 0.7, 0.7, s.pipe))
-		n.add_child(rod(Vector3(-4.0, y, 5.5 * side), Vector3(-5.0, 0.4, 5.5 * side), 0.6, 0.6, s.pipe))
-	n.add_child(_box(Vector3(20.0, 1.0, 12.0), s.wood2, Vector3(2.0, y + 0.5, 0)))   # mismatched planks
-	n.add_child(_box(Vector3(6.0, 5.0, 6.0), s.wood, Vector3(-2.0, y + 3.5, 2.5)))   # a crate
-	n.add_child(cone(2.6, 2.6, 6.0, s.plate, Vector3(6.0, y + 4.0, -2.5)))   # a barrel of rusted plate
-	n.add_child(ring(2.4, 2.8, s.metal, Vector3(6.0, y + 5.5, -2.5)))
-	n.add_child(cone(3.2, 3.2, 2.2, s.ammo, Vector3(2.0, y + 2.0, -3.0), Vector3(0, 0, 0), 14))   # a wheel of cheese
-	n.add_child(_box(Vector3(6.4, 0.4, 6.4), s.team, Vector3(-2.0, y + 6.2, 2.5)))
-	return {"node": n, "sockets": {"crew0_f0_reach": Vector3(-24.0, 0, 0)}}
+	return scrap_barrow(s, "goods")
 
 
 ## Forest beetles: the dung beetle's way, goods packed into a ball of earth bound with twine and
@@ -178,10 +186,13 @@ func _silk_sledge(s: Dictionary) -> Dictionary:
 		n.add_child(rod(Vector3(10.0, 1.0, 5.5 * side), Vector3(14.0, 4.0, 5.5 * side), 0.9, 0.6, s.metal))
 	for x in [-9.0, -1.0, 7.0]:
 		n.add_child(rod(Vector3(x, 1.8, -6.5), Vector3(x, 1.8, 6.5), 0.7, 0.7, s.wood))
+	n.add_child(rod(Vector3(14.0, 4.0, -5.5), Vector3(14.0, 4.0, 5.5), 0.6, 0.6, s.metal))   # a bone across the runners' tips, the drag line tied to it (it began in the air: C3)
 	var silk := surf("cloth", Color("#ece8f2"), 2.0)
 	n.add_child(blob(Vector3(11.0, 7.0, 6.5), silk, Vector3(-1.0, 8.5, 0)))
 	for k in 6:   # strands wound round it
 		n.add_child(ring(6.4, 6.9, plain(Color("#d8d2e4")), Vector3(-9.0 + k * 3.2, 8.5, 0), Vector3(90, 90, 0), Vector3(1, 1.05, 1)))
 	n.add_child(_box(Vector3(8.0, 0.4, 7.2), s.team, Vector3(-1.0, 15.4, 0)))
-	n.add_child(rod(Vector3(14.0, 4.0, 0), Vector3(26.0, 8.0, 0), 0.2, 0.2, silk, false))   # the drag line
+	var line := surf("cloth", Color("#ece8f2"), 2.0)
+	line.set_meta("rope", true)   # tied at both ends (the placement check, C3)
+	n.add_child(rod(Vector3(14.0, 4.0, 0), Vector3(26.0, 8.0, 0), 0.2, 0.2, line, false))   # the drag line
 	return {"node": n, "sockets": {"crew0_f0": Vector3(30.0, 0, 0)}}

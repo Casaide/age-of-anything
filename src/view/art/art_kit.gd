@@ -234,6 +234,18 @@ func _unit_jobs(races: Array) -> Array:
 		for u in race.units:   # every age of every unit line: ageing up never waits on a bake
 			for l in u.get("line", [{"recipe": u.recipe, "eval": u.eval}]):
 				steps.append(l)
+				# An engine's members are composed on its sockets, which come with its bake: probed
+				# before it, the engine shows none, so its crew and haulers are asked for as units (a
+				# trade cart's cat went unbaked: the placement check, "every part drawn is baked").
+				if l.recipe.has("crew"):
+					steps.append({"recipe": UnitView.crew_recipe(l.recipe), "eval": l.eval})
+				if l.recipe.has("haul"):
+					steps.append({"recipe": UnitView.haul_recipe(lib, l.recipe), "eval": l.eval})
+				# What a worker pushes home (D-127, creatures.json push_home: the rats' barrow and handcart).
+				if l.recipe.slot == "worker":
+					var pushes: Dictionary = lib.creatures.get(l.recipe.get("creature", ""), {}).get("push_home", {})
+					for res in pushes:
+						steps.append({"recipe": UnitView.push_recipe(l.recipe, pushes[res]), "eval": l.eval})
 		for u in steps:
 			var probe := UnitView.new()
 			probe.build(u.recipe, lib, ANIMAL_TEAM, u.eval.speed)   # parts bake in the team key: any team will do

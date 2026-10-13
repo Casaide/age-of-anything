@@ -17,6 +17,7 @@ extends RefCounted
 
 const Geom := preload("res://tests/placement/geom.gd")
 const Rig3D := preload("res://tests/placement/rig3d.gd")
+const Composite3D := preload("res://tests/placement/composite_3d.gd")
 const UnitView := preload("res://src/unit_view.gd")
 
 ## Tolerances (part units; one part unit is 1.275 art pixels at game size).
@@ -75,7 +76,12 @@ func poses(r: Dictionary) -> Array:
 		return out
 	var hand: String = r.parts.get("hand_r", "")
 	var tags: Array = lib.part(hand).tags if hand != "" else []
-	if r.get("slot", "") == "worker":
+	if r.get("slot", "") == "worker" and "gather" in tags:
+		# A gatherer's own tool (a basket, a sack) only forages: reaching down, tipped 0.3 at most
+		# (UnitView._work); the blows are swung with the job's tool (an axe, a pick). Swung like an axe,
+		# a basket went through a human's body: a pose the game never draws (2026-10-13).
+		out += [["work forage", "reach", 0.3, false]]
+	elif r.get("slot", "") == "worker":
 		out += [["work wound up", "raise", -1.2, false], ["work blow", "reach", 0.9, false]]
 	elif "ranged" in tags or r.get("slot", "") in ["archer", "skirmisher", "healer"]:
 		pass
@@ -115,7 +121,7 @@ func check(label: String, u: Dictionary) -> void:
 	if r.has("mount"):
 		var mc: Dictionary = lib.creatures[r.mount.creature]
 		walker_body = mc.get("fused_body", mc.body) if r.mount.fused else mc.get("mount_body", mc.body)
-	for bp in lib.part(walker_body).get("idle_poses", []):
+	for bp in (lib.part(walker_body).get("idle_poses", []) if int(r.get("idle", 1)) != 0 else []):
 		_check_pose(label, bp, rig.unit(r, {"body_pose": bp}), true)
 	rig.clear()
 	if _vox_cache.size() > 600:
@@ -387,7 +393,10 @@ func _check_attachment(label: String, view: String, a: Dictionary, st: Dictionar
 				var d := Geom.depth(pv, p.joint, 8.0)
 				note("A2 back gear on the back", label, view, d > ATTACH_GAP + 1.0 and Geom.shared(_vox(p), pv) == 0, "%s %.1f off the back, not touching it" % [p.name, d])
 			"armour":
-				_check_armour(label, view, p, parent)
+				if p.get("harness", false):
+					Composite3D.harness_on_body(self, label, view, p, parent)   # (not body armour: its own rule)
+				else:
+					_check_armour(label, view, p, parent)
 	# A rider sits on its mount's back: not sunk into it, not floating over it.
 	var rb := _by(a, "rider:body")
 	var mb := _by(a, "mount:body")
@@ -586,9 +595,8 @@ func _check_engine(label: String, r: Dictionary) -> void:
 	var ev := Geom.voxels(es.node, Transform3D.IDENTITY)
 	var cr: Dictionary = r.crew.duplicate(true)
 	cr.merge({"creature": r.creature, "family": r.family, "slot": "worker", "role": "worker", "tier": 1, "name": ""})
-	var wide: bool = r.crew.has("mount")
-	for name in es.get("sockets", {}):
-		if not name.begins_with("crew") or name.ends_with("_wide" if not wide else "_in"):
+	for name in UnitView.engine_sockets(r, es.get("sockets", {})):   # (the sockets UnitView composes crew on)
+		if not name.begins_with("crew"):
 			continue
 		var at: Vector3 = es.sockets[name]
 		if name.ends_with("_top"):
@@ -621,22 +629,9 @@ func _check_engine(label: String, r: Dictionary) -> void:
 				crew_vox[q] = true
 		var share := float(Geom.shared(crew_vox, ev)) / maxf(crew_vox.size(), 1)
 		note("A3 crew not cut through their engine", label, name, share > 0.12, "%.2f of the crew member inside the engine" % share)
-	if not r.has("haul"):
-		return
-	# A beast hauling it (a trade cart's pony: the recipe's haul, sockets haul<n>): on the ground, its
-	# body clear of the cart (traces and shafts beside it, not through it).
-	var hc: Dictionary = lib.creatures[r.haul.creature]
-	var hr := {"slot": "beast", "role": "beast", "tier": 1, "creature": r.haul.creature, "family": r.family, "skin": r.haul.skin,
-		"body": hc.get("mount_body", hc.body), "head": hc.head, "parts": {}, "scale": 100, "name": ""}
 	for name in es.get("sockets", {}):
-		if not name.begins_with("haul"):
-			continue
-		var at: Vector3 = es.sockets[name]
-		note("A2 crew stand on the ground", label, name, absf(at.y) > GROUND_TOL, "socket at height %.1f" % at.y)
-		var a: Dictionary = rig.unit(hr, {})
-		var vox := {}
-		for p in a.pieces:
-			for q in Geom.voxels(p.node, Transform3D(Basis.IDENTITY, at) * p.xf):
-				vox[q] = true
-		var share := float(Geom.shared(vox, ev)) / maxf(vox.size(), 1)
-		note("A3 crew not cut through their engine", label, name, share > 0.08, "%.2f of the hauling beast inside the cart" % share)
+		if name.begins_with("haul"):   # a beast hauling it (a trade cart's pony) stands on the ground
+			note("A2 crew stand on the ground", label, name, absf(es.sockets[name].y) > GROUND_TOL, "socket at height %.1f" % es.sockets[name].y)
+	# The engine, its crew and haulers as a whole (members apart, walking too; a hauler's harness on the
+	# cart's shafts; no loose ends; each member checked as a unit): tests/placement/composite_3d.gd.
+	Composite3D.check(self, label, r)
