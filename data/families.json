@@ -8,6 +8,35 @@
    "newt"
   ],
   "adjective": "Bog",
+  "bonuses": [
+   {
+    "text": "No slowdown in swamp, shallows or fords",
+    "kind": "terrain",
+    "effects": [
+     {
+      "tag": "all",
+      "stat": "wade",
+      "add": 1
+     }
+    ],
+    "alt": {
+     "text": "Food gathered 10% faster (foragers)",
+     "effects": [
+      {
+       "gather": "food",
+       "pct": 10
+      }
+     ]
+    }
+   }
+  ],
+  "research": [
+   "bog_poultice"
+  ],
+  "lacks": [
+   "wall",
+   "stone_gate"
+  ],
   "prefixes": [
    "Bog",
    "Mire",
@@ -56,6 +85,34 @@
    "spider"
   ],
   "adjective": "Gutter",
+  "bonuses": [
+   {
+    "text": "Buildings go up 15% faster (junk)",
+    "effects": [
+     {
+      "tag": "worker",
+      "stat": "build_speed",
+      "pct": 15
+     }
+    ],
+    "alt": {
+     "text": "Buildings +10% hit points (junk piled on)",
+     "effects": [
+      {
+       "building": "all",
+       "stat": "hp",
+       "pct": 10
+      }
+     ]
+    }
+   }
+  ],
+  "research": [
+   "rust_spikes"
+  ],
+  "lacks": [
+   "bastion"
+  ],
   "prefixes": [
    "Gutter",
    "Drain",
@@ -105,6 +162,32 @@
    "hummingbird"
   ],
   "adjective": "Moss",
+  "bonuses": [
+   {
+    "text": "Wood gathered 10% faster",
+    "effects": [
+     {
+      "gather": "wood",
+      "pct": 10
+     }
+    ],
+    "alt": {
+     "text": "Food gathered 10% faster",
+     "effects": [
+      {
+       "gather": "food",
+       "pct": 10
+      }
+     ]
+    }
+   }
+  ],
+  "research": [
+   "woodsmen"
+  ],
+  "lacks": [
+   "bolt_thrower"
+  ],
   "prefixes": [
    "Oak",
    "Moss",
@@ -152,6 +235,32 @@
    "pony"
   ],
   "adjective": "Imperial",
+  "bonuses": [
+   {
+    "text": "Buildings 10% cheaper",
+    "effects": [
+     {
+      "building": "all",
+      "stat": "cost",
+      "pct": -10
+     }
+    ],
+    "alt": {
+     "text": "Buildings +10% hit points",
+     "effects": [
+      {
+       "building": "all",
+       "stat": "hp",
+       "pct": 10
+      }
+     ]
+    }
+   }
+  ],
+  "research": [
+   "shield_wall"
+  ],
+  "lacks": [],
   "prefixes": [
    "Aurelian",
    "Maximian",
@@ -199,6 +308,34 @@
    "pony"
   ],
   "adjective": "Hellenic",
+  "bonuses": [
+   {
+    "text": "Spears +1 melee armour",
+    "effects": [
+     {
+      "tag": "spear",
+      "stat": "armour.melee",
+      "add": 1
+     }
+    ],
+    "price_points": 1,
+    "alt": {
+     "text": "Spears +10 hit points",
+     "effects": [
+      {
+       "tag": "spear",
+       "stat": "hp",
+       "add": 10
+      }
+     ],
+     "price_points": 1
+    }
+   }
+  ],
+  "research": [
+   "long_spears"
+  ],
+  "lacks": [],
   "prefixes": [
    "Thessalian",
    "Myrmidon",
@@ -246,6 +383,29 @@
    "pony"
   ],
   "adjective": "Royal",
+  "bonuses": [
+   {
+    "text": "Cavalry 10% cheaper",
+    "effects": [
+     {
+      "tag": "mounted",
+      "not": [
+       "ranged",
+       "worker",
+       "heal"
+      ],
+      "stat": "cost",
+      "pct": -10
+     }
+    ]
+   }
+  ],
+  "research": [
+   "chivalry"
+  ],
+  "lacks": [
+   "line.skirmisher.3"
+  ],
   "prefixes": [
    "Crown",
    "Lion",
@@ -293,6 +453,43 @@
    "pony"
   ],
   "adjective": "Steppe",
+  "bonuses": [
+   {
+    "text": "Mounted units 10% faster",
+    "effects": [
+     {
+      "tag": "mounted",
+      "not": [
+       "worker"
+      ],
+      "stat": "speed",
+      "pct": 10
+     }
+    ],
+    "price_points": 1,
+    "alt": {
+     "text": "Mounted units +10 hit points",
+     "effects": [
+      {
+       "tag": "mounted",
+       "not": [
+        "worker"
+       ],
+       "stat": "hp",
+       "add": 10
+      }
+     ],
+     "price_points": 1
+    }
+   }
+  ],
+  "research": [
+   "saddle_bows"
+  ],
+  "lacks": [
+   "wall",
+   "stone_gate"
+  ],
   "prefixes": [
    "Khan",
    "Wind",
@@ -341,6 +538,24 @@
    "spider"
   ],
   "adjective": "Gloom",
+  "bonuses": [
+   {
+    "text": "Units +2 sight",
+    "effects": [
+     {
+      "tag": "all",
+      "stat": "sight",
+      "add": 2
+     }
+    ]
+   }
+  ],
+  "research": [
+   "creeping_dread"
+  ],
+  "lacks": [
+   "trade"
+  ],
   "prefixes": [
    "Gloom",
    "Web",
@@ -392,6 +607,31 @@
    "pony"
   ],
   "adjective": "Nile",
+  "bonuses": [
+   {
+    "text": "Farms hold 20% more food",
+    "effects": [
+     {
+      "building": "farm",
+      "stat": "food",
+      "pct": 20
+     }
+    ],
+    "alt": {
+     "text": "Food gathered 10% faster",
+     "effects": [
+      {
+       "gather": "food",
+       "pct": 10
+      }
+     ]
+    }
+   }
+  ],
+  "research": [
+   "flood_plains"
+  ],
+  "lacks": [],
   "prefixes": [
    "Theban",
    "Memphite",
@@ -443,6 +683,29 @@
    "pony"
   ],
   "adjective": "Han",
+  "bonuses": [
+   {
+    "text": "Walls and towers +20% hit points",
+    "effects": [
+     {
+      "building": [
+       "palisade",
+       "palisade_gate",
+       "wall",
+       "stone_gate",
+       "watchtower",
+       "bastion"
+      ],
+      "stat": "hp",
+      "pct": 20
+     }
+    ]
+   }
+  ],
+  "research": [
+   "repeating_bows"
+  ],
+  "lacks": [],
   "prefixes": [
    "Jade",
    "Yellow River",
@@ -492,6 +755,27 @@
   ],
   "mounts": [],
   "adjective": "Mexica",
+  "bonuses": [
+   {
+    "text": "Every kill brings in 5 gold",
+    "effects": [
+     {
+      "tag": "all",
+      "not": [
+       "worker"
+      ],
+      "stat": "kill_gold",
+      "add": 5
+     }
+    ]
+   }
+  ],
+  "research": [
+   "jaguar_pelts"
+  ],
+  "lacks": [
+   "stable"
+  ],
   "prefixes": [
    "Eagle",
    "Jaguar",

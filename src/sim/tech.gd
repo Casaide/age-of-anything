@@ -27,16 +27,28 @@ extends RefCounted
 ##       type turns into the second where it stands, keeping its share of health (and of the work
 ##       on a foundation); ordering the first builds the second from then on (Economy.upgraded).
 
+##
+## A race's bonuses (milestone 14, src/identity.gd) that pricing doesn't put in its units' evals
+## work like research it was born with: they come first in every sum (_effects), from setup on.
+## Its own research (a creature's or culture's, tech.json `own`) is open only to the creatures and
+## cultures that name it; what it lacks (research, buildings, lines, "trade") stays shut, unless
+## the host's full_tech_tree rule.
+
 const Economy := preload("res://src/sim/economy.gd")
 const Combat := preload("res://src/sim/combat.gd")
+const Identity := preload("res://src/identity.gd")
 
 const AGE_UP := -2     # a queue entry (and tech index) meaning: age up
 const RESEARCH := -3   # queue entry for research r is RESEARCH - r; unit types are >= 0
+const NOT_IN_TREE := "not in this race's tech tree"
 
-const UNIT_EXTRA := ["sight", "carry"]                                   # unit adds outside the eval
-const UNIT_PCT := ["speed", "reload", "cost", "train_time", "build_speed"]
-const BUILDING_ADD := ["sight", "armour.melee", "armour.pierce", "trade_fee", "range"]   # trade_fee: points of the market's fee
-const BUILDING_PCT := ["hp", "food", "research_time"]                    # food: a farm's pool, sown or reseeded
+## Unit adds outside the eval: sight (tiles), carry, kill_gold (gold to the owner for each kill),
+## wade (1: no terrain slows it), reach (milli-tiles on a melee reach), slow_on_hit (ticks its hits slow
+## the target: Abilities.SLOW_PCT).
+const UNIT_EXTRA := ["sight", "carry", "kill_gold", "wade", "reach", "slow_on_hit"]
+const UNIT_PCT := ["speed", "reload", "cost", "train_time", "build_speed", "carry", "heal"]   # carry: of the rules' carry
+const BUILDING_ADD := ["sight", "armour.melee", "armour.pierce", "trade_fee", "range", "pop"]   # trade_fee: points of the market's fee
+const BUILDING_PCT := ["hp", "food", "research_time", "cost", "research_cost"]   # food: a farm's pool, sown or reseeded; research_cost: research there
 
 
 static func load_tech(resources: Array, btypes: Array) -> Dictionary:
@@ -47,12 +59,14 @@ static func load_tech(resources: Array, btypes: Array) -> Dictionary:
 		ages.append({"age": int(a.age), "name": a.name, "desc": a.get("desc", ""), "cost": Economy.cost_vector(resources, a.cost),
 			"ticks": int(a.time) * 20, "building": a.building, "requires": a.get("requires", []).duplicate()})
 	var research := []
+	var owners := Identity.owners()   # a creature's or culture's own research: only theirs
 	for r in d.research.filter(_built):
 		for fx in r.effects:
 			_check(fx, r.id)
+		assert(not r.has("own") or owners.has(r.id), "%s is somebody's own research, but no creature or culture names it" % r.id)
 		research.append({"id": r.id, "name": r.name, "desc": r.get("desc", ""), "cost": Economy.cost_vector(resources, r.cost),
 			"ticks": int(r.time) * 20, "building": r.building, "age": int(r.age), "effects": r.effects.duplicate(true),
-			"only": r.get("only", []).duplicate(), "after": r.get("after", "")})
+			"only": r.get("only", owners.get(r.id, [])).duplicate(), "after": r.get("after", ""), "own": r.get("own", "")})
 	# Line upgrades: one per trained line (not workers) per later age, where the line trains.
 	var ups: Dictionary = d.get("line_upgrades", {})
 	for bt in btypes:
@@ -108,7 +122,28 @@ static func setup(w) -> void:
 		w.researched.append(done)
 		w.gather_ticks.append(PackedInt32Array())
 		w.bmods.append([])
+		var ident: Dictionary = Identity.of(w.races[p].creature, w.races[p].family).duplicate()
+		ident.fx = Identity.sim_effects(ident)
+		w.ident.append(ident)
 		refresh(w, p)
+		retype(w, p)   # the race's bonuses on its units (sight, carry, ...) from the start
+
+
+## Does this player's race lack that (a research, building, line or "trade")? (Identity.lacks)
+static func lacks(w, player: int, id: String) -> bool:
+	return Identity.lacks(w.ident[player], id, w.rules)
+
+
+## What research (an item of w.tech.research) costs this player at a building type (research_cost).
+static func cost_of(w, player: int, item: Dictionary) -> PackedInt32Array:
+	var k := Economy.btype_of(w, item.building)
+	var pct := bpct(w, player, k, "research_cost") if k >= 0 else 0
+	if pct == 0:
+		return item.cost
+	var cost: PackedInt32Array = item.cost.duplicate()
+	for c in cost.size():
+		cost[c] = cost[c] * (100 + pct) / 100
+	return cost
 
 
 ## The next age's entry for a player, or {} at the last age.
@@ -160,7 +195,9 @@ static func item_of(w, player: int, t: int) -> Dictionary:
 
 ## What a queue entry cost (a cancel refunds it).
 static func entry_cost(w, player: int, e: int) -> PackedInt32Array:
-	return w.types[e].cost if e >= 0 else item_of(w, player, tech_of(e)).cost
+	if e >= 0:
+		return w.types[e].cost
+	return next_age(w, player).cost if tech_of(e) == AGE_UP else cost_of(w, player, w.tech.research[tech_of(e)])
 
 
 ## How long building b's head-of-queue tech takes, in ticks (its train[b] counts up to it), or 0
@@ -218,14 +255,16 @@ static func why_not(w, player: int, b: int, id: String) -> String:
 		var race: Dictionary = w.races[player]
 		if not item.only.is_empty() and not bool(w.rules.get("full_tech_tree", false)) \
 				and not (race.creature in item.only or race.family in item.only):
-			return "not in this race's tech tree"
+			return NOT_IN_TREE
+		if lacks(w, player, id):
+			return NOT_IN_TREE   # milestone 14: what the race lacks (beetles have no Quick Draw)
 		if queued(w, player, r):
 			return "already being researched"
 	if item.building != bt:
 		return "not here"
 	if bs.queue[b].size() >= int(w.econ.queue_max):
 		return "queue full"
-	if not w.can_afford(player, item.cost):
+	if not w.can_afford(player, item.cost if id == "" else cost_of(w, player, item)):
 		return "can't afford it"
 	return ""
 
@@ -284,7 +323,7 @@ static func cmd_research(w, player: int, a: Dictionary) -> void:
 	if why_not(w, player, b, a.id) != "":
 		return
 	var r := research_index(w, a.id)
-	w.pay(player, w.tech.research[r].cost)
+	w.pay(player, cost_of(w, player, w.tech.research[r]))
 	w.buildings.queue[b].append(entry(r))
 
 
@@ -387,9 +426,10 @@ static func bpct(w, player: int, k: int, stat: String) -> int:
 	return int(w.bmods[player][k].pct.get(stat, 0))
 
 
-## Every effect of every research this player has, in research order.
+## Every effect of the race's bonuses the sim applies, then of every research this player has, in
+## research order.
 static func _effects(w, player: int) -> Array:
-	var out := []
+	var out: Array = w.ident[player].fx.duplicate()
 	for r in w.tech.research.size():
 		if w.researched[player][r] == 1:
 			out.append_array(w.tech.research[r].effects)
@@ -398,12 +438,7 @@ static func _effects(w, player: int) -> Array:
 
 ## Does a unit effect reach a type with these tags?
 static func reaches(fx: Dictionary, tags: Array) -> bool:
-	if not fx.has("tag") or not (fx.tag == "all" or fx.tag in tags):
-		return false
-	for t in fx.get("not", []):
-		if t in tags:
-			return false
-	return true
+	return Identity.reaches(fx, tags)
 
 
 static func _upgraded(w, player: int, slot: String, age: int) -> bool:
@@ -448,7 +483,13 @@ static func retype(w, player: int) -> void:
 		t.cost = cost
 		t.build_pct = int(pct.get("build_speed", 0))
 		t.sight_add = int(add.get("sight", 0))
-		t.carry_add = int(add.get("carry", 0))
+		t.carry_add = int(add.get("carry", 0)) + int(w.econ.carry) * int(pct.get("carry", 0)) / 100
+		t.heal_pct = int(pct.get("heal", 0))
+		t.kill_gold = int(add.get("kill_gold", 0))
+		t.wade = int(add.get("wade", 0))
+		t.slow_on_hit = int(add.get("slow_on_hit", 0))
+		if not t.ranged:
+			t.reach += int(add.get("reach", 0))
 		var u = w.units
 		for i in u.count():
 			if u.kind[i] == k:

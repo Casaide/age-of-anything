@@ -3,6 +3,20 @@
   "voice": "frog",
   "noun": "Frog",
   "plural": "Frogs",
+  "group": "amphibians",
+  "bonuses": [
+   {
+    "text": "Amphibious: swim the shallows, quicker in the swamp",
+    "kind": "terrain",
+    "effects": []
+   }
+  ],
+  "research": [
+   "frog_leap"
+  ],
+  "lacks": [
+   "ring_mail"
+  ],
   "body": "body.frog",
   "head": "head.frog",
   "rider_legs": "folded",
@@ -31,6 +45,31 @@
   "voice": "rat",
   "noun": "Rat",
   "plural": "Rats",
+  "group": "rodents",
+  "bonuses": [
+   {
+    "text": "Units 30% cheaper and train 20% faster (a swarm that breeds fast)",
+    "effects": [
+     {
+      "tag": "all",
+      "stat": "cost",
+      "pct": -30
+     },
+     {
+      "tag": "all",
+      "stat": "train_time",
+      "pct": -20
+     }
+    ]
+   }
+  ],
+  "research": [
+   "gnawing_teeth"
+  ],
+  "lacks": [
+   "bastion",
+   "stone_gate"
+  ],
   "body": "body.rat",
   "head": "head.rat",
   "playable": true,
@@ -43,12 +82,6 @@
    "sewer",
    "forest"
   ],
-  "economy": {
-   "cost_pct": 70,
-   "train_time_pct": 80,
-   "house_pop": 6,
-   "note": "cheap swarm that breeds fast"
-  },
   "mounts": [
    "cat"
   ],
@@ -60,6 +93,33 @@
   "voice": "human",
   "noun": "Folk",
   "plural": "Humans",
+  "group": "folk",
+  "bonuses": [
+   {
+    "text": "Workers build 15% faster",
+    "effects": [
+     {
+      "tag": "worker",
+      "stat": "build_speed",
+      "pct": 15
+     }
+    ],
+    "alt": {
+     "text": "Workers carry +2",
+     "effects": [
+      {
+       "tag": "worker",
+       "stat": "carry",
+       "add": 2
+      }
+     ]
+    }
+   }
+  ],
+  "research": [
+   "clever_hands"
+  ],
+  "lacks": [],
   "body": "body.human",
   "head": "head.human",
   "playable": true,
@@ -82,6 +142,30 @@
   "voice": "spider",
   "noun": "Spider",
   "plural": "Spiders",
+  "group": "bugs",
+  "bonuses": [
+   {
+    "text": "Walls and gates cost half (silk)",
+    "effects": [
+     {
+      "building": [
+       "palisade",
+       "palisade_gate",
+       "wall",
+       "stone_gate"
+      ],
+      "stat": "cost",
+      "pct": -50
+     }
+    ]
+   }
+  ],
+  "research": [
+   "sticky_silk"
+  ],
+  "lacks": [
+   "stable"
+  ],
   "body": "body.spider",
   "head": "head.spider",
   "playable": true,
@@ -104,6 +188,30 @@
   "voice": "beetle",
   "noun": "Beetle",
   "plural": "Beetles",
+  "group": "bugs",
+  "bonuses": [
+   {
+    "text": "Hard shells: every unit +1 pierce armour",
+    "effects": [
+     {
+      "tag": "all",
+      "not": [
+       "siege"
+      ],
+      "stat": "armour.pierce",
+      "add": 1
+     }
+    ],
+    "price_points": 1
+   }
+  ],
+  "research": [
+   "shell_polish"
+  ],
+  "lacks": [
+   "quick_draw",
+   "mounted_archer"
+  ],
   "body": "body.beetle_rear",
   "mount_body": "body.beetle",
   "head": "head.beetle",
@@ -149,6 +257,28 @@
   "voice": "centaur",
   "noun": "Centaur",
   "plural": "Centaurs",
+  "group": "folk",
+  "bonuses": [
+   {
+    "text": "A horse's back: workers carry 60% more (and centaurs are quick)",
+    "effects": [
+     {
+      "tag": "worker",
+      "stat": "carry",
+      "pct": 60
+     }
+    ]
+   }
+  ],
+  "research": [
+   "gallop"
+  ],
+  "lacks": [
+   "palisade",
+   "palisade_gate",
+   "wall",
+   "stone_gate"
+  ],
   "body": "body.human",
   "head": "head.human",
   "playable": true,
@@ -163,11 +293,7 @@
    "forest",
    "steppe"
   ],
-  "giant_ok": false,
-  "economy": {
-   "carry_pct": 160,
-   "note": "a horse's back: carries much more each trip (and is faster and tougher), so its workers cost more"
-  }
+  "giant_ok": false
  },
  "capybara": {
   "voice": "capybara",

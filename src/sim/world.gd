@@ -95,6 +95,7 @@ var researched: Array = []         # per player: PackedByteArray over tech.resea
 var market_price := PackedInt32Array()   # gold per lot of each resource, shared by everyone (market.gd)
 var gather_ticks: Array = []       # per player: ticks per unit of each resource gathered (research cuts them)
 var bmods: Array = []              # per player, per building type: research on it {add, pct, hp, arm} (Tech.refresh)
+var ident: Array = []              # per player: the race's bonuses, own research and lacks (src/identity.gd; Tech.setup); derived from data
 var move_pct: Array = []       # per movement class, per terrain index: speed percent (rules.movement)
 var events: Array = []         # this tick's hits and deaths, for views (not state, not hashed)
 var types: Array = []          # unit types, per player per roster slot (see _make_type)
@@ -254,6 +255,7 @@ func _make_type(player: int, u: Dictionary) -> Dictionary:
 		"posture": Combat.PASSIVE if int(e.get("heal", 0)) > 0 or "trade" in e.tags else Combat.AGGRESSIVE,
 		"mclass": _movement_class(e.tags),
 		"sight_add": 0, "carry_add": 0, "build_pct": 0,   # research on the type (Tech.retype)
+		"heal_pct": 0, "kill_gold": 0, "wade": 0, "slow_on_hit": 0,   # (and the race's bonuses, milestone 14)
 		"line": u.get("line", [{"age": int(r.tier), "recipe": r, "eval": e}]),   # the unit through the ages (age-ups re-price from it)
 	}
 
@@ -879,6 +881,8 @@ func _move() -> void:
 		var mc := lane_base[owners[i]] + mci   # the walk grid (lane); speed goes by class
 		var here := map.cell_of(x, y)
 		var pct: int = move_pct[mci][terr[here]]
+		if pct < 100 and types[units.kind[i]].wade > 0:
+			pct = 100   # the swamp folk's bonus: no terrain slows them (Tech.retype)
 		if pct != 100:
 			s = s * pct / 100   # amphibians are quicker in the swamp (rules.movement.terrain_speed)
 		if trails_on and mci != SimMap.FLYING:
