@@ -263,31 +263,44 @@ func _muster_if_shown() -> void:
 		_muster()
 
 
-## Both armies on the stage: each side's roster in two ranks, facing the other side.
+## A few that show each army off, facing the other side, one rank each (the whole roster twice, siege
+## and all, in two ranks was too busy: Dominic).
+const STAGE_ROLES := ["spear", "infantry", "archer", "large", "catapult"]
+
+
+static func _pick(units: Array) -> Array:
+	var out := []
+	for role in STAGE_ROLES:
+		for u in units:
+			if u.recipe.get("role", "") == role:
+				out.append(u)
+				break
+	return out
+
+
 func _muster() -> void:
 	for n in layer.get_children():
 		n.queue_free()
 	var w: float = stage.size.x / zoom
 	var h: float = holder.custom_minimum_size.y / zoom
 	for k in races.size():
-		var units: Array = races[k].units
+		var units := _pick(races[k].units)
 		var n := units.size()
-		for rank in 2:
-			for i in n:
-				var u: Dictionary = units[i]
-				var view := UnitView.new()
-				view.build(u.recipe, lib, teams[k], u.eval.speed)
-				view.scale = Vector2.ONE * ArtKit.UNIT_SCALE
-				view.pose_steps = 8
-				view.art_px = ArtKit.ART_SCALE / zoom
-				# Each rank in roster order from the far edge to the middle: the big ones nearest the foe.
-				var along := (i + 0.5 + rank * 0.5) / (n + 0.5)   # 0 far edge .. 1 the middle
-				var x := w * (0.06 + 0.37 * along)
-				view.position = Vector2(x if k == 0 else w - x, h * (0.5 + 0.28 * rank + 0.05 * (i % 2)))
-				view.face(1.0 if k == 0 else -1.0)
-				view.modulate.a = 0.0
-				layer.add_child(view)
-				view.create_tween().tween_property(view, "modulate:a", 1.0, 0.35).set_delay(0.03 * i + 0.1 * rank)
+		for i in n:
+			var u: Dictionary = units[i]
+			var view := UnitView.new()
+			view.build(u.recipe, lib, teams[k], u.eval.speed)
+			view.scale = Vector2.ONE * ArtKit.UNIT_SCALE
+			view.pose_steps = 8
+			view.art_px = ArtKit.ART_SCALE / zoom
+			# In order from the far edge to the middle: the big ones nearest the foe.
+			var along := (i + 0.5) / float(n)   # 0 far edge .. 1 the middle
+			var x := w * (0.07 + 0.36 * along)
+			view.position = Vector2(x if k == 0 else w - x, h * (0.6 + 0.12 * (i % 2)))
+			view.face(1.0 if k == 0 else -1.0)
+			view.modulate.a = 0.0
+			layer.add_child(view)
+			view.create_tween().tween_property(view, "modulate:a", 1.0, 0.35).set_delay(0.06 * i)
 	veil.hide_veil()
 
 
