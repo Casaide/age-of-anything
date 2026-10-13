@@ -8,7 +8,7 @@
   "shoulder, hip": "joint positions [x, y] (quadruped: fore and hind leg roots; biped: the pelvis)",
   "leg_z": "the legs' half spacing across the body",
   "body": "torso volumes {at, r, mat, rot} named chest, waist, rump, belly, pelvis, hump (upright for a biped), patches (markings), or mesh (+ drop) for a modelled torso over the same skeleton",
-  "neck": "{from, to, r}: to is the head socket",
+  "neck": "{from, to, r, into}: to is the head socket; into (a point in the head's frame, in the back of the skull) makes the neck one mass running into the head, the head held out of the body's bake so they join without a line (the bear mount, B3)",
   "fore, hind (quadruped)": "bones (hind: femur, tibia, metatarsus; fore: humerus, forearm, pastern), r per bone [top, end], mats, paw size, x (the paw's rest place under the joint), tilt (the lowest bone from upright, degrees: a digitigrade hock about 18, a plantigrade sole about 75), walk_tilt [start, end of stance], swing_tilt, scapula (fore), claws",
   "leg (biped)": "bones [thigh, shin], r, foot (length), heel (behind the ankle), ankle (height), foot_r, x",
   "arm (biped)": "shoulder (upright, near side), elbow (from the shoulder), hand and hand_l (the near hand's rest, the shield hand), r per bone, paw; the near arm is the front layer, posed for the hold by unit_models.arm_pose",
@@ -67,6 +67,7 @@
     "rump": {"at": [-7.4, 13.8], "r": [4.6, 3.7, 3.4]},
     "patches": [{"at": [9.8, 12.8, 0], "r": [2.6, 3.0, 3.0], "mat": "pale"}, {"at": [-1.0, 11.6, 0], "r": [6.0, 1.9, 2.6], "mat": "pale"}]
    },
+   "neck": {"r": [3.0, 2.6], "into": [-0.9, 1.2], "_doc": "the neck runs into the back of the skull (the head-join rule: the head sat on a thin neck a notch below the withers' line)"},
    "sit": {"poses": {"sit": {"fold": {"out": 2.2}}}},
    "head": {"mesh": null, "k": 1.2, "tilt": -4.0, "top": [1.6, 4.2],
     "skull": {"at": [0.2, 1.1], "r": [2.9, 2.7, 2.9]},

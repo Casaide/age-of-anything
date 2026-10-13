@@ -117,6 +117,16 @@ func _bake_model(id: String, colours: Dictionary, bake_key: String, k := 0) -> v
 	var front: Node3D = spec.get("front")
 	var wearer: Node3D = null
 	var pivot := Vector3.ZERO   # where the sprite's origin is (a cut leg's hip, a cut head's socket)
+	var joins := false          # a cut head joined to its neck (the body's spec carries a "seam")
+	var seam_img: Image = null  # where the part meets another of the unit's parts: no outline there
+	var seam: Node3D = null     # a body's head in place, held out of the body (spec.seam_head)
+	var join := Vector3.ZERO    # where the neck joins the head (the body's "join" socket) and how far round it
+	var join_r := 0.0           # the seam reaches (spec.seam_r): elsewhere a head in front of the chest keeps its outline
+	if spec.has("seam_head") and not "~" in id:
+		seam = models.build(spec.seam_head, colours).node
+		seam.position = spec.sockets.head
+		join = spec.sockets.join
+		join_r = float(spec.seam_r)
 	var at := id.get_slice("~", 1).get_slice("^", 1) if "^" in id else ""
 	if at != "":
 		# A leg or head cut by its body ("leg.newt~body.newt^2": the body's anchor 2, "head.pony~body.pony^head"):
@@ -125,6 +135,10 @@ func _bake_model(id: String, colours: Dictionary, bake_key: String, k := 0) -> v
 		# origin stays at the hip or the neck, so it swings and turns from there.
 		var body: Dictionary = models.build(id.get_slice("~", 1).get_slice("^", 0), colours)
 		wearer = body.node
+		joins = at == "head" and body.has("seam_head")   # (a head its neck runs into: no outline where the body hides it)
+		if joins:
+			join = body.sockets.join
+			join_r = float(body.seam_r)
 		pivot = body.sockets.head if at == "head" else body.anchors[int(at)][0]
 		model.position = pivot
 		if at != "head":
@@ -153,6 +167,10 @@ func _bake_model(id: String, colours: Dictionary, bake_key: String, k := 0) -> v
 		holder.add_child(wearer)
 		spec.erase("sockets")
 	holder.add_child(model)
+	if seam:
+		# A body whose neck runs into its head (the creature kit's neck.into): the head in place, cut
+		# out below, so the body keeps only what the head doesn't hide and isn't outlined against it.
+		holder.add_child(seam)
 	var box := _aabb(model)
 	if wearer:
 		box = box.merge(_aabb(wearer))
@@ -183,16 +201,41 @@ func _bake_model(id: String, colours: Dictionary, bake_key: String, k := 0) -> v
 		await _render()
 		key.shadow_enabled = true
 		var mask := get_texture().get_image()
+		var jc := cam.unproject_position(join)
+		if joins:
+			seam_img = Image.create(img.get_width(), img.get_height(), false, Image.FORMAT_L8)
 		for y in img.get_height():
 			for x in img.get_width():
-				if mask.get_pixel(x, y).r < 0.5:
+				var mc := mask.get_pixel(x, y)
+				if mc.r < 0.5:
 					img.set_pixel(x, y, Color(0, 0, 0, 0))
+					if joins and mc.a > 0.5 and jc.distance_to(Vector2(x, y)) <= join_r * px:
+						seam_img.set_pixel(x, y, Color.WHITE)
 		holder.remove_child(wearer)
 		wearer.queue_free()
 	elif wearer:
 		_cut_holdout(img)
 		holder.remove_child(wearer)
 		wearer.queue_free()
+	elif seam:
+		# The cut, as for a cut part: the body in white over its head in black, only the white kept.
+		_hold_out(model, Color.WHITE)
+		_hold_out(seam, Color.BLACK)
+		key.shadow_enabled = false
+		await _render()
+		key.shadow_enabled = true
+		var mask := get_texture().get_image()
+		var jc := cam.unproject_position(join)
+		seam_img = Image.create(img.get_width(), img.get_height(), false, Image.FORMAT_L8)
+		for y in img.get_height():
+			for x in img.get_width():
+				var mc := mask.get_pixel(x, y)
+				if mc.r < 0.5:
+					img.set_pixel(x, y, Color(0, 0, 0, 0))
+					if mc.a > 0.5 and jc.distance_to(Vector2(x, y)) <= join_r * px:
+						seam_img.set_pixel(x, y, Color.WHITE)
+		holder.remove_child(seam)
+		seam.queue_free()
 	var front_img: Image = null
 	if front:
 		# The near arm is its own layer, so it gets its own outline over the body.
@@ -248,7 +291,7 @@ func _bake_model(id: String, colours: Dictionary, bake_key: String, k := 0) -> v
 		used = used.merge(front_img.get_used_rect())
 	used = used.grow(SS * 2).intersection(Rect2i(Vector2i.ZERO, img.get_size()))
 	used.position = used.position / SS * SS
-	var pix := Pixelize.run(img.get_region(used), SS, outlined, bands)
+	var pix := Pixelize.run(img.get_region(used), SS, outlined, bands, seam_img.get_region(used) if seam_img else null)
 	if front_img:
 		# Stored as its own sprite: UnitView layers it above torso armour.
 		var top := Pixelize.run(front_img.get_region(used), SS, outlined, bands)

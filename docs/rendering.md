@@ -98,6 +98,13 @@ by ray parity; decals left out). One part unit is 1.275 art pixels at game size.
   a beast hauling it (a trade cart's pony on a `haul<n>` socket, the recipe's `haul`) on the ground
   and at most 8% inside the cart;
   a body whose leg isn't the same on both sides bakes its legs at each hip; data anchors = model hips.
+  **Head join** (four or more legs, the head ahead of the fore legs; Dominic on the bear mount, B2:
+  "mounted bears I think have broken neck still"): the side silhouette's top line, body and head
+  together, from a quarter of the way back from the fore hips to the head's middle, dips at most 1
+  unit (`legs.stance.notch`) below the lower of its highest points either side (thin spikes, an
+  ear's tip or a buckle, levelled first). A head set low on a thin neck with a step behind the skull,
+  or floating off it, fails; a neck flowing from the withers into the skull passes. The fixture
+  rebuilds B2's bear mount and must fail it.
 - **A3 interpenetration**: pieces not jointed share at most 12 voxels + 3% of the smaller; jointed
   ones only within 4 units (or 45% of the child's reach) of the joint (armour against what hangs from
   the body, outside the body; a rider's held item against its mount; a blowgun at the lips); a leg or
@@ -309,6 +316,15 @@ in its pose). `UnitView.pose_parts()` lists the extra bakes; `art_kit` bakes the
 placement check covers both: the walk at its baked steps, and each resting pose as standing
 (`legs.stance.poses` may relax the stance in one: a sitting cat's folded hind legs drop less).
 
+**The horse** (round H1, 2026-10-13; Dominic: "horses heads need a real re-work"): `UnitModels.pony_look`
+picks the pony's look: `classic` (the head before: a round-ended rod of a face on a straight neck),
+`h1` (a head built from shapes) or `h2` (in play: the head sculpted in Blender, `tools/blender/horse.py`
+-> `assets/models/head_horse.glb`). h1 and h2 share the new neck (deep at the base, arched along
+the crest, flat-sided, a mane from the poll into the withers, narrowing to the throat latch and
+running into the head without a line), the small upright ears, the forelock and the bridle. The
+centaur's horse half has no head, so it is unchanged. Sheet: `tests/sheets/horse_h1.json`
+(`data/later/horses.json` stages each look under its own ids).
+
 The cat is the rats' mount (D-124). Its body is `tools/blender/big_cat.py` `lean` (re-run it after a
 change: `blender -b --python tools/blender/big_cat.py -- assets/models/body_cat_lean.glb body lean`);
 its legs, tail, tack and poses are the cat section of `unit_models.gd`. Dominic thought the back end
@@ -345,7 +361,15 @@ their bones and the lowest bone's `tilt`. From the numbers it makes:
   four legs), the posed walk, the gait, idle poses and stance. A kit part's data anchors are the
   model's hips by construction.
 - a mount's own head: a kit can take its head from another kit (`head_of`) and change only what it
-  names (the bear mount carries the biped's head pitched nose-down, low on a short neck). A creature
+  names (the bear mount carries the biped's head pitched nose-down, low on a short neck).
+- a neck that runs into the head (`neck.into`: a point in the head's frame, in the back of the
+  skull; round B3): the neck is one thick mass from the withers into the skull wherever the head
+  sits and however it's pitched (sitting too), and the bakes join head and neck without a line: the
+  body is baked with its head in place held out of it, the cut head is cut by the body as before,
+  and neither is outlined along the other within `seam_r` of the join (the body's `join` socket);
+  each grows a pixel into the seam, since their bakes sit on slightly different pixel grids
+  (`part_baker.gd`, `pixelize.gd`'s `seam`). Any hand-built body can do the same (`seam_head`,
+  `seam_r`, a `join` socket): the capybara and the reworked pony do. A creature
   names it as `mount_head`, which UnitView and the placement rig use under a rider (falling back to
   `head`). A sitting pose can raise the head on its neck (`sit.poses.<pose>.head`).
 
@@ -378,7 +402,9 @@ replaces the per-round scripts. A spec gives:
 
 It bakes through ArtKit and the bake cache, lays out a labelled sheet per spec sheet and zoom, and
 runs the placement checks (3D and 2D) on every unit it shows. It prints PASS/FAIL per row, frames a
-failing row in red with the rules it broke, and exits 1 on a failure.
+failing row in red with the rules it broke, and exits 1 on a failure. A row can `expect` to fail
+named rules (an earlier round beside its fix, failing the rule written for it): it passes when it
+fails exactly those, and says so.
 
 ```sh
 godot --path . --audio-driver Dummy --always-on-top --script res://tests/sheet.gd -- tests/sheets/bears_b1.json out_dir [sheet,...] [zoom,...] [nocheck]

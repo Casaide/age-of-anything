@@ -453,6 +453,8 @@ func build(m, id: String, colours: Dictionary) -> Dictionary:
 			spec = _head(m, k, colours)
 		_:
 			spec = _quad_leg(m, k, colours, kr[1] == "hind", pose) if quad(k) else _biped_leg(m, k, colours, pose)
+	if spec.has("seam_r"):
+		spec.seam_r *= float(k.get("scale", 1.0))
 	return m._scaled(spec, float(k.get("scale", 1.0)))
 
 
@@ -469,7 +471,7 @@ func _coat(m, k: Dictionary, c: Dictionary) -> Dictionary:
 
 
 ## The torso's volumes as blobs (or the modelled mesh named in `body.mesh`, lowered by `body.drop`).
-func _torso(m, k: Dictionary, mats: Dictionary, into: Node3D, turn: Callable, lift := Vector3.ZERO) -> void:
+func _torso(m, k: Dictionary, mats: Dictionary, into: Node3D, turn: Callable, lift := Vector3.ZERO, pose_basis := Basis.IDENTITY) -> void:
 	if k.body.get("mesh") != null:
 		var low := Node3D.new()
 		low.position.y = -float(k.body.get("drop", 0.0))
@@ -483,7 +485,23 @@ func _torso(m, k: Dictionary, mats: Dictionary, into: Node3D, turn: Callable, li
 		into.add_child(m.blob(_v3(patch.r), mats[patch.get("mat", "pale")], turn.call(_v3(patch.at)), Vector3(0, 0, float(patch.get("rot", 0.0)))))
 	if k.has("neck"):
 		var nk: Dictionary = k.neck
-		into.add_child(m.rod(turn.call(_v3(nk.from)), turn.call(_v3(nk.to) + lift) + Vector3(-0.4, -0.6, 0), float(nk.r[0]), float(nk.r[1]), mats.fur))
+		into.add_child(m.rod(turn.call(_v3(nk.from)), neck_end(k, lift, pose_basis), float(nk.r[0]), float(nk.r[1]), mats.fur))
+
+
+## Where the neck ends (the body's frame, before the pose turns it). A neck that runs into the head
+## (`neck.into`: a point in the head's frame, in the back of the skull) ends there, wherever the head
+## sits and however it's pitched, so the neck is one mass from the withers into the skull and the
+## head (cut by the body) shows only in front of it: no notch at the join (Dominic on the bear
+## mount, B2: "mounted bears I think have broken neck still"). Otherwise it ends just under the head
+## socket.
+static func neck_end(k: Dictionary, lift := Vector3.ZERO, pose_basis := Basis.IDENTITY) -> Vector3:
+	var nk: Dictionary = k.neck
+	var at := _v3(nk.to) + lift
+	if nk.get("into") == null:
+		return at + Vector3(-0.4, -0.6, 0)
+	var h: Dictionary = k.get("head", {})
+	var local := Basis(Vector3(0, 0, 1), deg_to_rad(float(h.get("tilt", 0.0)))) * (_v3(nk.into) * float(h.get("k", 1.0)))
+	return at + pose_basis.inverse() * local
 
 
 func _tail(m, k: Dictionary, mats: Dictionary, into: Node3D, xf: Transform3D, pose: String) -> void:
@@ -525,7 +543,7 @@ func _quad_body(m, k: Dictionary, c: Dictionary, pose: String) -> Dictionary:
 	inner.transform = xf
 	n.add_child(inner)
 	var mats := _coat(m, k, c)
-	_torso(m, k, mats, inner, func(p): return p, head_lift(k, pose))
+	_torso(m, k, mats, inner, func(p): return p, head_lift(k, pose), xf.basis)
 	_tail(m, k, mats, n if pose != "" else inner, xf if pose != "" else Transform3D.IDENTITY, pose)
 	var tack: Dictionary = k.get("tack", {})
 	if tack.has("cloth"):
@@ -536,7 +554,12 @@ func _quad_body(m, k: Dictionary, c: Dictionary, pose: String) -> Dictionary:
 		m._cat_saddle(inner, c, seat.x, seat.y - float(cl.get("below", 1.4)), float(cl.get("half", half * 0.85)), girth,
 			float(cl.get("ry", (top_at(k, girth.x) - bottom_at(k, girth.x)) * 0.5 + 0.2)), float(cl.get("rz", half_width_at(k, girth.x) + 0.2)),
 			float(cl.get("length", 6.0)), float(cl.get("drop", 2.6)))
-	return {"node": n, "sockets": sk.sockets, "anchors": sk.anchors, "torso_scale": Vector2(1.3, 1.0), "carry": "harness"}
+	var spec := {"node": n, "sockets": sk.sockets, "anchors": sk.anchors, "torso_scale": Vector2(1.3, 1.0), "carry": "harness"}
+	if k.has("head") and k.neck.get("into") != null:
+		spec.seam_head = k.parts.head   # (the bake holds the head out of the body: no line at the join)
+		spec.sockets.join = xf * neck_end(k, head_lift(k, pose), xf.basis)
+		spec.seam_r = float(k.neck.r[1]) * 1.6   # (scaled with the kit in build())
+	return spec
 
 
 func _biped_body(m, k: Dictionary, c: Dictionary, pose: String) -> Dictionary:

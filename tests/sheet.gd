@@ -16,7 +16,9 @@ extends SceneTree
 ##   cell                 [w, h] world units per cell at the game's scale (a row may set "h": a multiplier)
 ##   rules                "default" (data/rules/<id>.json) for every prompt
 ##   size                 size references, drawn standing (facing 0) at the left of every row: unit refs
-##   rows                 [{label, unit, other?, h?}] or {each: {prompt: [...], slot: [...]}, age?, label?}
+##   rows                 [{label, unit, other?, h?, expect?}] or {each: {prompt: [...], slot: [...]}, age?, label?}
+##                        expect: rules the row must fail (an earlier round beside its fix, failing the
+##                          rule written for it); it passes when it fails those and nothing else
 ##   sheets               [{name, title?, columns}]: columns is a list of column objects or a shorthand:
 ##                          "facings" (8, standing), "idle" (8, in the row's last idle pose),
 ##                          "idle:<pose>" (8, in that pose), "walk:<k>,<k>" (4 steps per facing),
@@ -98,13 +100,25 @@ func _initialize() -> void:
 	var verdicts := {}
 	if check:
 		verdicts = await _check(rows, kit)
+	# A row may expect to fail named rules ("expect": an earlier round shown beside the fix, failing the
+	# rule written for it): it passes when it fails those and nothing else, and says so.
+	var expected := {}
+	for r in rows:
+		if check and r.size() > 4 and not r[4].is_empty():
+			var v: Array = verdicts.get(r[0], [])
+			var rest := v.filter(func(f): return not r[4].has(f.get_slice(" (", 0)))
+			for rule in r[4]:
+				if not v.any(func(f): return f.get_slice(" (", 0) == rule):
+					rest.append("expected to fail %s, but passes it" % rule)
+			verdicts[r[0]] = rest
+			expected[r[0]] = r[4]
 	var bad := 0
 	for r in rows:
 		var v: Array = verdicts.get(r[0], [])
 		if not check or r[1].has("part"):
 			print("  -   %s" % r[0].replace("\n", " "))
 		elif v.is_empty():
-			print("PASS  %s" % r[0].replace("\n", " "))
+			print("PASS  %s%s" % [r[0].replace("\n", " "), " (fails %s, as expected)" % ", ".join(expected[r[0]]) if expected.has(r[0]) else ""])
 		else:
 			bad += 1
 			print("FAIL  %s: %s" % [r[0].replace("\n", " "), "; ".join(v)])
@@ -113,7 +127,7 @@ func _initialize() -> void:
 			continue
 		for z in zooms:
 			var path := out_dir.path_join("%s_%s_%sx.png" % [spec.get("name", spec_path.get_file().get_basename()), sh.name, str(z).trim_suffix(".0")])
-			await _sheet(sh, rows, size_units, float(z) * ArtKit.ART_SCALE, verdicts, path)
+			await _sheet(sh, rows, size_units, float(z) * ArtKit.ART_SCALE, verdicts, path, expected)
 	print("sheet: %d rows, %d failed placement" % [rows.size(), bad])
 	quit(1 if bad > 0 else 0)
 
@@ -134,7 +148,7 @@ func _rows() -> Array:
 					out.append([r.get("label", "{prompt}\n{name}").format({"prompt": p, "slot": s, "name": u.recipe.get("name", "")}), u, null, float(r.get("h", 1.0))])
 			continue
 		var u := _unit(r.unit)
-		out.append([r.label, u, _unit(r.other) if r.has("other") else null, float(r.get("h", 1.0))])
+		out.append([r.label, u, _unit(r.other) if r.has("other") else null, float(r.get("h", 1.0)), r.get("expect", [])])
 	return out
 
 
@@ -318,7 +332,7 @@ func _columns(sh: Dictionary) -> Array:
 	return out
 
 
-func _sheet(sh: Dictionary, rows: Array, size_units: Array, zoom: float, verdicts: Dictionary, path: String) -> void:
+func _sheet(sh: Dictionary, rows: Array, size_units: Array, zoom: float, verdicts: Dictionary, path: String, expected := {}) -> void:
 	var cols := _columns(sh)
 	var cell := Vector2(spec.get("cell", [66, 64])[0], spec.get("cell", [66, 64])[1])
 	var size_w := cell.x * 0.75 * size_units.size()
@@ -371,8 +385,10 @@ func _sheet(sh: Dictionary, rows: Array, size_units: Array, zoom: float, verdict
 		vp.add_child(_label(row[0], Vector2(8, y + h * 0.3), fs))
 		if not verdicts.is_empty() and not row[1].has("part"):
 			var verdict := "placement: PASS" if fails.is_empty() else "placement: FAIL\n" + "\n".join(fails.map(func(f): return f.get_slice(" (", 0)))
+			if fails.is_empty() and expected.has(row[0]):
+				verdict = "placement: fails, as expected:\n" + "\n".join(expected[row[0]])
 			var vl := _label(verdict, Vector2(8, y + h * 0.3 + (fs + 4) * (row[0].count("\n") + 1.2)), fs - 3 if big else fs - 2)
-			vl.add_theme_color_override("font_color", Color("#c8f0a0") if fails.is_empty() else Color("#ffb0a0"))
+			vl.add_theme_color_override("font_color", (Color("#f0d890") if expected.has(row[0]) else Color("#c8f0a0")) if fails.is_empty() else Color("#ffb0a0"))
 			vp.add_child(vl)
 		var base_y := (y + h * 0.82) / zoom
 		for i in size_units.size():
