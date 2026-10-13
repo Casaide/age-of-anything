@@ -94,7 +94,9 @@ by ray parity; decals left out). One part unit is 1.275 art pixels at game size.
   armour at most 25% more than 1.5 units off its body, its middle within 1.5 of the middle of the
   body inside it; a rider's seat within 1.5 of its mount's back, at most 30% of the rider inside the
   mount; siege crews on the ground (or something to stand on just under a riding one), at most 12% of
-  a crew member inside its engine (too big for the frame, it takes the `_wide` sockets beside it);
+  a crew member inside its engine (too big for the frame, it takes the `_wide` sockets beside it),
+  a beast hauling it (a trade cart's pony on a `haul<n>` socket, the recipe's `haul`) on the ground
+  and at most 8% inside the cart;
   a body whose leg isn't the same on both sides bakes its legs at each hip; data anchors = model hips.
 - **A3 interpenetration**: pieces not jointed share at most 12 voxels + 3% of the smaller; jointed
   ones only within 4 units (or 45% of the child's reach) of the joint (armour against what hangs from
@@ -383,7 +385,11 @@ godot --path . --audio-driver Dummy --always-on-top --script res://tests/sheet.g
 ```
 
 Specs so far: `bears_b1` (round B1), `bears_b2` (round B2, with each B1 row rebuilt as a kit
-variant: a prompt unit or a mount can name `kit` + `params`), `kit_cat` (the kit against the game's cat), and ports of
+variant: a prompt unit or a mount can name `kit` + `params`), `kit_cat` (the kit against the game's cat),
+milestone 13's `trade_carts_tc1`, `war_beasts_wb1`, `sapper_sp1`, `great_sling_gs1` (concept files staged
+from `data/later/`; a staged concept model file must be listed in `bake_cache.gd` SOURCES, or a stale
+bake of it is reused; concept hand parts carry `only_if: ["concept_only"]` so the generator never
+picks them for a staged race), and ports of
 `cat_mount_sheet.gd` (`cat_mount`), `siege_lineup.gd` (`siege_lineup`) and `line_lineup.gd`
 (`line_lineup`). **New art rounds write a spec, not a script.** Once their rounds are closed, the
 sheet tool covers what these one-off scripts drew, and they can go: `anim_concept_sheet.gd`,

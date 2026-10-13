@@ -185,9 +185,9 @@
    "scout": -5,
    "mounted_archer": -6
   },
-  "building_foes": 0,
+  "building_foes": 2,
   "_doc_pick_bias": "the counter-pick (bot.gd _train: the unit whose attack, hp/10 and bonuses times the foes seen with that class score best, less the bonuses foes have against it) adds this per slot: with nothing seen the Barracks trains spears, as before the swordsman (even the rats, whose swordsman swings a cheese hammer); a few seen spears or skirmishers (the swordsman's bonus) tip it to swords (tests/test_ai.gd pick); the Stable's scouts (-5) only for a few seen healers or skirmishers with no cavalry of ours to hand (the scout for looking is trained apart: scouts), the Range's mounted archers (-6) once three or so foot soldiers are seen and few spears (their bonus against infantry outweighs it), archers otherwise",
-  "_doc_building_foes": "while the army goes for an enemy building (bot.gd _aim: a wall shutting the way), the counter-pick counts this many foes of class building, so the line with a bonus against buildings (the swordsman's) is trained for the raid. Off (0) for now: at 2 a stone ring fell sooner (18:40 against 20:25) but a palisade ring much later (18:10 against 12:00), its blows spread over many pieces (tests/test_ai.gd walls): the bot fielded seven swordsmen by 7:00 and trained no more until 13:00 (dearer than spears, out of what it saves for the age), so the assault stalled; worth a look with the big-map AI work",
+  "_doc_building_foes": "while the army goes for an enemy building (bot.gd _aim: a wall shutting the way), the counter-pick counts this many foes of class building, so the line with a bonus against buildings (the swordsman's) is trained for the raid. On (2) since 2026-10-13: with the bots saving better (D-120 prices, the stone and market fix) a palisade ring falls at 17:44 against 18:20 off (the Town Center in reach at 13:30 against 15:55), a stone ring at 19:23 against 19:46, a ring with a gap at 11:52 against 10:47, bot against bot 19:41 against 20:13, and every test_ai piece passes (the stall it caused before, seven swordsmen by 7:00 then none until 13:00, is gone). First tried 2026-10-13 and left off then.",
   "healers": {
    "per_army": 5,
    "max": {

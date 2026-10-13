@@ -103,6 +103,14 @@ carries on from the lobby into the match. The match view (`scenes/sim_debug.gd`)
 
 - blows by the attacker's weapon tag (`blade`, `blunt`, else pierce), shots by the projectile
   kind (`CombatFx.shot_kind`), the arrow landing when the view's shot lands;
+- siege engines their own (milestone 13, 2026-10-13): `ram_hit` (the frame creaks as the log swings
+  back, a huge dull thud with a woody crack and grit, the frame settling), `catapult_release` (the
+  skein's groan, the arm slamming its padded crossbar, the stone's air) and `catapult_impact` on its
+  splash, `bolt_release` (the bow arms' double snap, the thick cord's twang, a heavy whoosh),
+  `sling_release` (the great sling's whirl, the loop slipping free, the frame lurching), `blast` (the
+  sapper's fire pot: a crack, a shaking thump, a roar of fire, debris, flames crackling down), and
+  `trade_paid` (coins into a chest when a cart of yours comes home). A stone's or a blast's victims
+  don't each play an arrow landing: the one impact covers them;
 - a body's fall plus the creature's cry; a building's collapse;
 - chop / mine / build / forage timed to the blow in the worker's animation, positional;
 - the creature's `select` and `ack` for your own units; a token click for buildings and rally;
@@ -117,6 +125,7 @@ carries on from the lobby into the match. The match view (`scenes/sim_debug.gd`)
 
 ## Known gaps and next steps
 
+- An engine rolling has no sound of its own yet (a creak on a loop while it moves).
 - **Nobody has listened yet.** Every sound was checked by numbers and spectrograms, not ears.
   The creature voices are the experimental part: synthetic throats may read as cheap. Dominic
   listens first; recipes are small, so a bad one is a quick change.
