@@ -31,11 +31,10 @@ const Par := preload("res://tests/par.gd")
 const PROMPTS := ["angry swamp frogs with reed spears", "sewer rats with cheese hammers"]
 const SEED := 20261010
 const TICKS := 12000               # 10 minutes at 20 Hz
-const PER_PLAYER := 99             # soldiers a side, shared over its roster slots (healers and siege too): about 200 units
+const PER_PLAYER := 99             # soldiers a side, shared over its roster slots (healers and siege too): about 200 units, however many lines
 const ORDERS_EVERY := 10           # turns between each player's orders (2 s)
 const TICK_BUDGET_USEC := 3000
-const CROSS_UNITS := 10            # in groups of 10...
-const CROSS_TOTAL := 70            # ...about 70 units, shared over the race's foot and horse lines
+const CROSS_UNITS := 10            # per roster slot: 60 units, in 6 groups of 10
 const CROSS_ENGINES := 3           # siege engines cross on their own: three of each, one slow, big-bodied group
 const CROSS_LIMIT := 2400          # ticks (2 minutes) to get everyone across
 const OPENING_TICKS := 3600        # the 3-minute opening
@@ -247,7 +246,7 @@ func _script(map: SimMap, races: Array) -> Array:
 	var seq := [0, 0]
 	var start: Dictionary = rules_.economy.start
 	var setup_ids: int = start.buildings.size() + int(start.workers)
-	var per_slot: int = PER_PLAYER / races[0].units.size()   # (more lines, fewer of each: the load stays the same)
+	var per_slot: int = PER_PLAYER / races[0].units.size()   # (more lines, fewer of each: the tick budget is for about 200 units)
 	var per_player: int = per_slot * races[0].units.size()
 	var army_first: int = 1 + races.size() * setup_ids
 	var cmd := func(turn: int, p: int, type: String, args: Dictionary) -> void:
@@ -3601,9 +3600,9 @@ func _test_crossing(races: Array, map_id: String, engines := false) -> void:
 	var w := World.new(SEED, map, races, bare)
 	var src: Array = map.starts[0]
 	var dst: Array = map.starts[1]
-	var lines: Array = races[0].units.filter(func(u): return u.recipe.has("crew") == engines)
-	for u in lines:   # the foot and horse lines (CROSS_TOTAL shared over them), or (engines) the siege engines on their own
-		w.issue(0, Commands.SPAWN, {"slot": u.recipe.slot, "count": CROSS_ENGINES if engines else maxi(1, CROSS_TOTAL / lines.size()), "x": src[0], "y": src[1]})
+	for u in races[0].units:   # the foot and horse lines, or (engines) the siege engines on their own
+		if u.recipe.has("crew") == engines:
+			w.issue(0, Commands.SPAWN, {"slot": u.recipe.slot, "count": CROSS_ENGINES if engines else CROSS_UNITS, "x": src[0], "y": src[1]})
 	while w.units.count() == 0:
 		w.step()
 	var ids := Array(w.units.id)

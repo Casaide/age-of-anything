@@ -63,6 +63,8 @@ const SEP_DY := [0, 0, 1, 1, 1]
 const FORM_GAP := 160          # milli-tiles between neighbouring bodies in a formation, or round a building
 const SLOT_ARRIVE := 60        # a unit making for its own place (a formation slot, a spot by a building) stops this close
 const SLOT_SLACK := 400        # shoved this far beyond that, a stopped unit in a formation walks back to its slot
+const QUEUE_GAP := 300         # a unit of its side walking its way this close ahead (body to body): it's in a queue, not stuck (_queued)
+const RETURN_YIELD := 2000     # walking back into its slot from this close, a unit gives way to its side's other groups passing (_separate)
 const SPOT_GAP := 100          # a worker's chosen spot beside its rect: this gap between its body and the rect
 const SPOT_BUSY := 3          # this many spot checks finding no free spot and the worker gives the place up
 
@@ -97,6 +99,7 @@ var events: Array = []         # this tick's hits and deaths, for views (not sta
 var types: Array = []          # unit types, per player per roster slot (see _make_type)
 var btypes: Array = []         # building types (see Economy.load_btypes)
 var units: Units = Units.new()
+var _ost := PackedInt32Array()  # units.stuck at the tick's start (_queued)
 var _ox := PackedInt32Array()   # units.x, .y, .moving as they were when the tick's moves began (_move, _sidestep)
 var _oy := PackedInt32Array()
 var _om := PackedInt32Array()
@@ -794,6 +797,7 @@ func _move() -> void:
 	_ox = units.x
 	_oy = units.y
 	_om = units.moving
+	_ost = units.stuck
 	_owx = units.wx
 	_owy = units.wy
 	_orad = units.radius
@@ -807,10 +811,15 @@ func _move() -> void:
 			# Shoved well off its spot by passing units? Walk back (checked on re-plan ticks).
 			# Not while fighting: a stopped shooter's tx is still its (attack-)move's end, and
 			# walking "back" there a step every re-plan crept it towards the foe (Dominic's crossbows).
-			if grp[i] == 0 or foes[i] != 0 or st[i] >= STUCK_LIMIT or (tick + ids[i]) % REPLAN_EVERY != 0:
+			if grp[i] == 0 or foes[i] != 0 or (tick + ids[i]) % REPLAN_EVERY != 0:
 				continue
 			var back := ar[i] * SETTLE_FACTOR + (SLOT_SLACK if ar[i] == SLOT_ARRIVE else RETURN_SLACK)
 			if Fixed.dist2(xs[i], ys[i], txs[i], tys[i]) <= back * back:
+				# Home after all: one that gave up walking back (other groups passing kept shoving it
+				# off, as it gives way to them: _separate) and stands by its slot now isn't stuck.
+				st[i] = 0
+				continue
+			if st[i] >= STUCK_LIMIT:
 				continue
 			mv[i] = 1
 		var x := xs[i]
@@ -845,7 +854,9 @@ func _move() -> void:
 			# field (its cost falls by a cell per cell walked, detours included), else as the
 			# crow flies. No ground gained in two seconds counts as half a give-up.
 			var p := _progress(i, x, y)
-			if units.prog[i] >= 0 and p.x > units.prog[i] - p.y:
+			if units.prog[i] >= 0 and p.x > units.prog[i] - p.y and grp[i] > 0 and rch[i] == 0 and (_queued(i, x, y) or _passed(i, x, y)):
+				pass   # in a queue that's moving (its side walking its way just ahead), or giving way to its side's other groups going through: it waits its turn
+			elif units.prog[i] >= 0 and p.x > units.prog[i] - p.y:
 				# A group queued at a gap waits its turn (patient); a worker crowded off its
 				# bush, or a sheep wedged by a builder, is better off trying elsewhere soon.
 				st[i] += STUCK_LIMIT / (6 if grp[i] > 0 and rch[i] == 0 else 2)
@@ -933,6 +944,7 @@ func _move() -> void:
 	_ox = none
 	_oy = none
 	_om = none
+	_ost = none
 	_owx = none
 	_owy = none
 	_orad = none
@@ -941,6 +953,65 @@ func _move() -> void:
 	_sstart = none
 	_send = none
 	_sitems = none
+
+
+## Is unit i in a moving queue: a unit of its side walking its way (heading within a right angle
+## of i's) just ahead of it and gaining ground (not stuck at its last progress look), in the tick's
+## start state? Then no ground gained isn't stuck: the tenth
+## group through a gap waited longer than the patience (a giant at the back of the queue on
+## choke_test gave up). A queue whose head can't go on stops moving, and then the rest give up as before.
+func _queued(i: int, x: int, y: int) -> bool:
+	var ux := _owx[i] - x
+	var uy := _owy[i] - y
+	var near := units.arrive[i] * SETTLE_FACTOR + RETURN_SLACK
+	if (ux == 0 and uy == 0) or Fixed.dist2(x, y, units.tx[i], units.ty[i]) <= near * near:
+		return false   # (arriving: the crowd at its place is no queue; close counts as there, as before)
+	var sw := spatial.width
+	var cx := x / SimMap.TILE
+	var cy := y / SimMap.TILE
+	var oi: int = _oo[i]
+	var ri: int = _orad[i]
+	for yy in range(maxi(cy - 1, 0), mini(cy + 2, spatial.height)):
+		for xx in range(maxi(cx - 1, 0), mini(cx + 2, sw)):
+			var c := yy * sw + xx
+			for k in range(_sstart[c], _send[c]):
+				var j: int = _sitems[k]
+				if j == i or _om[j] == 0 or _oo[j] != oi or (units.tx[j] == units.tx[i] and units.ty[j] == units.ty[i]):
+					continue   # (ones making for the very same point jostle round it: no queue)
+				var rx: int = _ox[j] - x
+				var ry: int = _oy[j] - y
+				var reach: int = ri + _orad[j] + QUEUE_GAP
+				if rx * ux + ry * uy <= 0 or rx * rx + ry * ry > reach * reach:
+					continue   # behind or beside, or not close
+				if _ost[j] == 0 and (_owx[j] - _ox[j]) * ux + (_owy[j] - _oy[j]) * uy > 0:
+					return true   # ahead, going our way, and gaining ground at its last look (the queue moves)
+	return false
+
+
+## Is unit i walking back into its formation slot (within RETURN_YIELD) while one of its side's
+## other groups walks through it? It gives way to them (_separate), so no ground gained isn't stuck:
+## eight groups through a gap shoved a spearman off its slot for longer than the patience, and it
+## gave up two tiles from home.
+func _passed(i: int, x: int, y: int) -> bool:
+	if units.arrive[i] != SLOT_ARRIVE or Fixed.dist2(x, y, units.tx[i], units.ty[i]) > RETURN_YIELD * RETURN_YIELD:
+		return false
+	var sw := spatial.width
+	var cx := x / SimMap.TILE
+	var cy := y / SimMap.TILE
+	var oi: int = _oo[i]
+	var gi: int = _og[i]
+	var ri: int = _orad[i]
+	for yy in range(maxi(cy - 1, 0), mini(cy + 2, spatial.height)):
+		for xx in range(maxi(cx - 1, 0), mini(cx + 2, sw)):
+			var c := yy * sw + xx
+			for k in range(_sstart[c], _send[c]):
+				var j: int = _sitems[k]
+				if j == i or _om[j] == 0 or _oo[j] != oi or _og[j] == gi or _og[j] == 0:
+					continue
+				var reach: int = ri + _orad[j] + QUEUE_GAP
+				if Fixed.dist2(_ox[j], _oy[j], x, y) <= reach * reach:
+					return true
+	return false
 
 
 ## Local avoidance (Dominic, 2026-10-13: "scavengers getting stuck on each other too easily"):
@@ -1377,9 +1448,20 @@ func _separate() -> void:
 	var stood := PackedByteArray()
 	stood.resize(n)
 	var rch := units.reach
+	# Who gives way to one of its side's other groups walking through: a unit standing in its
+	# formation slot, and one walking the last stretch back into it (shoved off by a passer, it
+	# walked straight back into the passer's way: two big riders, a returner and a passer, shoved
+	# nose to nose for ten seconds until the passer gave up, five tiles short; test_sim crossings).
+	var yields := PackedByteArray()
+	yields.resize(n)
+	var foes0 := units.foe
 	for i in n:
-		if mv[i] == 0 and grp[i] > 0 and ar[i] == SLOT_ARRIVE and rch[i] == 0:
-			stood[i] = 1
+		if grp[i] > 0 and ar[i] == SLOT_ARRIVE and rch[i] == 0:
+			if mv[i] == 0:
+				stood[i] = 1
+				yields[i] = 1
+			elif foes0[i] == 0 and Fixed.dist2(xs[i], ys[i], txs[i], tys[i]) <= RETURN_YIELD * RETURN_YIELD:
+				yields[i] = 1
 	var tasks := units.task
 	var foes := units.foe
 	var owners := units.owner
@@ -1463,9 +1545,9 @@ func _separate() -> void:
 				# through (it walks back to its slot after): two groups' formations filling a narrow way
 				# (the plateau on hill_test) made a wall the later group shoved at until it gave up.
 				var hi := planted[i] == 1 or (role[i] >= 2 and role[j] == 1) \
-						or (stood[j] == 1 and mv[i] == 1 and grp[i] > 0 and grp[i] != grp[j] and owners[i] == owners[j])
+						or (yields[j] == 1 and mv[i] == 1 and grp[i] > 0 and grp[i] != grp[j] and owners[i] == owners[j])
 				var hj := planted[j] == 1 or (role[j] >= 2 and role[i] == 1) \
-						or (stood[i] == 1 and mv[j] == 1 and grp[j] > 0 and grp[j] != grp[i] and owners[i] == owners[j])
+						or (yields[i] == 1 and mv[j] == 1 and grp[j] > 0 and grp[j] != grp[i] and owners[i] == owners[j])
 				if hi and hj:
 					continue
 				# One of the side's own at work and a gatherer making for its spot or carrying home
