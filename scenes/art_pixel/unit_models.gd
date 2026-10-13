@@ -2036,6 +2036,203 @@ func _weapon_gladius(c: Dictionary) -> Dictionary:
 		Vector3(2, 11, 0), surf("iron", Color.WHITE, 3.0), surf("bronze", Color.WHITE, 2.0))}
 
 
+# ------------------------------------------------------------------ the swordsman's age-3 kit (S3, D-125)
+# Dominic's picks from concept round S3 (docs/concepts/sword3/README.md): one weapon per culture
+# (and a helmet for hellenic and steppe), held in the swordsman's "low" hold like every sword: the
+# origin is the grip, the blade runs along SWORD3_TIP. Each is longer, brighter or heavier than
+# the age-2 bronze sword (14.4 long, 1.5 wide, dull bronze), so the step reads at game scale.
+
+const SWORD3_TIP := Vector3(3, 14, 0)   # the bronze sword's line (the hold is the same)
+
+
+## A blade outline bent along a curve: `length` along +x, the centre line rising `sag` (towards
+## the back of the hand: a sabre's curve) at the tip, half-width w(t) from `widths` sampled at
+## t = 0..1. `edge` 0 = both edges round the centre line; 1 = the spine stays on the centre line
+## (a single-edged blade, the edge on -y).
+func curved(length: float, sag: float, widths: Array, edge := 0.0, steps := 14) -> Array:
+	var top := []
+	var bottom := []
+	for i in steps + 1:
+		var t := float(i) / steps
+		var w: float = _sample(widths, t)
+		var cy := sag * t * t
+		var x := length * t
+		top.append(Vector2(x, cy + w * (1.0 - edge)))
+		bottom.append(Vector2(x, cy - w * (1.0 + edge)))
+	bottom.reverse()
+	if top[-1].distance_to(bottom[0]) < 0.05:
+		bottom.pop_front()
+	return top + bottom
+
+
+func _sample(ws: Array, t: float) -> float:
+	var f := t * (ws.size() - 1)
+	var i := mini(int(f), ws.size() - 2)
+	return lerpf(ws[i], ws[i + 1], f - i)
+
+
+## The grip end the age-3 weapons share: a wrapped grip down the line from the hand and a pommel.
+func grip(n: Node3D, d: Vector3, wrap: Material, pommel: Material, length := 3.0) -> void:
+	n.add_child(rod(Vector3.ZERO, -d * length, 0.6, 0.6, wrap, false))
+	n.add_child(blob(Vector3(0.95, 0.95, 0.95), pommel, -d * (length + 0.6)))
+
+
+## A tassel hanging from the pommel (team cloth): it swings out behind the hand.
+func tassel(n: Node3D, d: Vector3, m: Material, length := 3.0) -> void:
+	var at := -d * 3.8
+	n.add_child(rod(at, at + Vector3(-1.2, -length, 0.4), 0.45, 0.8, m))
+	n.add_child(blob(Vector3(0.7, 1.2, 0.7), m, at + Vector3(-1.3, -length - 0.6, 0.4)))
+
+
+## Polished steel: the iron texture's grain over a pale tint, a little sheen (the plain iron
+## tint bakes dark grey at game scale, as dark as the bronze it should outshine).
+func _bright_iron(units := 3.0) -> StandardMaterial3D:
+	var m := surf("iron", Color(2.2, 2.25, 2.4), units)
+	m.metallic_specular = 0.7
+	m.roughness = 0.55
+	return m
+
+
+## The fallback: the iron sword's blade in polished steel, iron fittings (no royal kit).
+func _weapon_sword_iron_plain(c: Dictionary) -> Dictionary:
+	return {"node": _sword([Vector2(0, -1.1), Vector2(13.5, -0.9), Vector2(15.4, 0), Vector2(13.5, 0.9), Vector2(0, 1.1)],
+		Vector3(3, 15, 0), _bright_iron(), surf("iron", Color.WHITE, 3.0))}
+
+
+## Hellenic: a long leaf-bladed iron xiphos (worn with the Attic helmet).
+func _weapon_sword_xiphos(c: Dictionary) -> Dictionary:
+	var pts := [Vector2(0, -0.9), Vector2(5, -1.0), Vector2(11.5, -1.9), Vector2(15.5, -1.2), Vector2(18.2, 0),
+		Vector2(15.5, 1.2), Vector2(11.5, 1.9), Vector2(5, 1.0), Vector2(0, 0.9)]
+	return {"node": _sword(pts, SWORD3_TIP, _bright_iron(), surf("bronze", Color(1.2, 1.1, 0.85), 2.0))}
+
+
+## The Attic helmet: polished bronze, an open face with a brow peak, cheek pieces, and a tall
+## crest held high on a stand in the team colour, so the age-3 Greek stands a head taller.
+func _helm_attic(c: Dictionary) -> Dictionary:
+	var n := Node3D.new()
+	var bronze := surf("bronze", Color(1.2, 1.1, 0.85), 2.0)
+	n.add_child(dome(Vector3(5.0, 5.0, 4.8), bronze, Vector3(0, -3.6, 0)))
+	n.add_child(ring(4.8, 5.5, surf("bronze", Color(1.35, 1.25, 1.0), 2.0), Vector3(0, -3.5, 0)))
+	n.add_child(blob(Vector3(2.0, 0.5, 4.0), bronze, Vector3(4.4, -2.6, 0), Vector3(0, 0, -12)))   # the brow peak
+	for side in [1, -1]:
+		n.add_child(blob(Vector3(2.0, 2.8, 0.6), bronze, Vector3(2.0, -6.0, 4.4 * side), Vector3(0, 0, 10)))
+	n.add_child(blob(Vector3(2.8, 3.0, 4.4), bronze, Vector3(-2.8, -5.8, 0)))
+	n.add_child(rod(Vector3(0, 1.0, 0), Vector3(-0.4, 4.2, 0), 0.55, 0.55, bronze))   # the crest stand
+	crest(n, c.team, Vector3(-1.4, 4.6, 0), 14.0, 8.0)
+	_lift(n, 0.8)   # the brow peak clear of a human's brows (placement A2): the concept sat it too low
+	return {"node": n}
+
+
+## Raise a built piece of head gear by `dy` (every child: the parts and their crest).
+func _lift(n: Node3D, dy: float) -> void:
+	for ch in n.get_children():
+		ch.position.y += dy
+
+
+## Steppe: a heavier curved sword that flares wide before the point (a back-edge at the tip),
+## a brass cross-guard (worn with the spiked helmet).
+func _weapon_sword_flared_sabre(c: Dictionary) -> Dictionary:
+	var n := Node3D.new()
+	var d := SWORD3_TIP.normalized()
+	var ang := atan2(d.y, d.x)
+	n.add_child(blade(curved(17.0, 3.2, [1.1, 1.1, 1.2, 1.9, 2.0, 0.0], 0.3), 0.6, _bright_iron(), Vector3.ZERO, ang))
+	var across := Vector3(-d.y, d.x, 0)
+	var brass := surf("bronze", Color(1.2, 1.1, 0.8), 2.0)
+	n.add_child(rod(-across * 2.8, across * 2.8, 0.6, 0.6, brass))
+	grip(n, d, surf("leather", Color.WHITE, 2.0), brass)
+	return {"node": n}
+
+
+## The steppe helmet: a tall iron cone with a spike and a team tuft, a mail curtain round the neck.
+func _helm_steppe_spike(c: Dictionary) -> Dictionary:
+	var n := Node3D.new()
+	var iron := surf("iron", Color(0.85, 0.85, 0.9), 3.0)   # brighter baked as a white blob
+	n.add_child(cone(0.7, 5.1, 6.0, iron, Vector3(0, 0.1, 0)))
+	n.add_child(ring(4.9, 5.6, surf("bronze", Color.WHITE, 2.0), Vector3(0, -2.8, 0)))
+	n.add_child(rod(Vector3(0, 2.9, 0), Vector3(0, 6.0, 0), 0.7, 0.25, surf("bronze", Color(1.2, 1.1, 0.85), 2.0)))   # the spike
+	# The tuft streams back from the spike's foot (standing up beside it, it ran into a banner's flag).
+	n.add_child(blob(Vector3(1.1, 2.8, 1.1), plain(c.team), Vector3(-2.0, 3.0, 0), Vector3(0, 0, 60)))
+	var mail := surf("mail", Color(0.7, 0.7, 0.75), 2.0)
+	# The mail neck guard at the sides and back quarters (the concept's all-round curtain hung over
+	# the brows; one straight behind ran into a banner's pole).
+	for a in [PI * 0.55, PI * 0.78, PI * 1.22, PI * 1.45]:
+		n.add_child(blob(Vector3(1.9, 2.6, 0.45), mail, Vector3(cos(a) * 5.0 - 0.6, -4.4, sin(a) * 5.0), Vector3(0, -rad_to_deg(a), 0)))
+	return {"node": n}
+
+
+## Swamp: a heavy river-stone mace: a pale driftwood haft and a big smooth grey stone lashed on.
+func _weapon_mace_river_stone(c: Dictionary) -> Dictionary:
+	var n := Node3D.new()
+	var d := SWORD3_TIP.normalized()
+	var deg := rad_to_deg(atan2(d.y, d.x))
+	n.add_child(rod(-d * 2.5, d * 12.5, 0.7, 0.9, surf("wood_grain", Color(1.15, 1.05, 0.9), 3.0)))
+	n.add_child(blob(Vector3(3.0, 2.3, 2.4), surf("rock", Color(0.95, 0.95, 0.92), 2.5), d * 13.0 + Vector3(0.6, 0, 0), Vector3(0, 0, deg)))
+	var cord := surf("cloth", Color("#8a7a4a"), 2.0)
+	for k in 2:   # the lashings round stone and haft
+		n.add_child(ring(2.1, 2.5, cord, d * (11.6 + k * 2.6) + Vector3(0.4, 0, 0), Vector3(90, 0, deg - 90), Vector3(1.0, 1.0, 1.1)))
+	n.add_child(ring(0.8, 1.2, cord, -d * 0.4, Vector3(0, 0, deg - 90)))
+	return {"node": n}
+
+
+## Forest: a chitin-edged blade: a dark heartwood blade with overlapping shards of bright
+## green-blue beetle shell along both edges, a shell guard.
+func _weapon_sword_chitin(c: Dictionary) -> Dictionary:
+	var n := Node3D.new()
+	var d := SWORD3_TIP.normalized()
+	var ang := atan2(d.y, d.x)
+	n.add_child(blade(curved(16.5, 0.0, [1.0, 1.3, 1.3, 1.0, 0.0]), 0.8, surf("wood_grain", Color(0.6, 0.45, 0.32), 3.0), Vector3.ZERO, ang))
+	var shell := surf("chitin", Color("#4fd0a0"), 2.0)
+	var across := Vector3(-d.y, d.x, 0)
+	for k in 6:
+		var t := 2.0 + k * 2.4
+		var w := 1.3 if k < 4 else 1.3 - (k - 3) * 0.4
+		for side in [1, -1]:
+			n.add_child(blade([Vector2(-1.4, 0), Vector2(0, -0.8), Vector2(1.6, 0), Vector2(0, 0.8)], 0.5, shell,
+				d * t + across * side * w, ang + 0.25 * side))
+	n.add_child(blade([Vector2(0, -1.0), Vector2(3.0, 0), Vector2(0, 1.0)], 0.6, shell, d * 16.0, ang))   # the point
+	n.add_child(blob(Vector3(1.2, 3.2, 1.6), shell, Vector3.ZERO, Vector3(0, 0, rad_to_deg(ang))))   # the guard
+	grip(n, d, surf("leather", Color.WHITE, 2.0), shell)
+	return {"node": n}
+
+
+## Spooky: a hooked sickle blade: pale silvered iron, straight for most of its length, then a big
+## hook curling forward; the grip wound in white web silk.
+func _weapon_sword_hook(c: Dictionary) -> Dictionary:
+	var n := Node3D.new()
+	var d := SWORD3_TIP.normalized()
+	var ang := atan2(d.y, d.x)
+	var steel := _bright_iron(2.5)
+	var pts := [Vector2(0, -0.9), Vector2(11, -1.1), Vector2(14, -1.6), Vector2(16.4, -0.6), Vector2(17.4, 1.6), Vector2(16.4, 3.8),
+		Vector2(14.2, 4.8), Vector2(13.4, 3.8), Vector2(15.0, 2.6), Vector2(15.2, 1.0), Vector2(13.6, 0.4), Vector2(11, 0.9), Vector2(0, 0.9)]
+	for i in pts.size():   # the hook forward (the blade's -y is the front)
+		pts[i] = Vector2(pts[i].x, -pts[i].y)
+	pts.reverse()
+	n.add_child(blade(pts, 0.6, steel, Vector3.ZERO, ang))
+	var silk := surf("cloth", Color("#f2f0ea"), 2.0)
+	for k in 4:
+		n.add_child(ring(0.55, 0.95, silk, -d * (0.4 + k * 0.7), Vector3(0, 0, rad_to_deg(ang) - 90)))
+	n.add_child(blob(Vector3(1.0, 1.0, 1.0), steel, -d * 3.4))
+	var across := Vector3(-d.y, d.x, 0)
+	n.add_child(rod(-across * 2.2, across * 2.2, 0.5, 0.5, steel))
+	return {"node": n}
+
+
+## Han: the dao: a broad single-edged sabre, curving gently and widest near the tip, a disc
+## guard, a ring pommel with a crimson cloth.
+func _weapon_sword_dao(c: Dictionary) -> Dictionary:
+	var n := Node3D.new()
+	var d := SWORD3_TIP.normalized()
+	var ang := atan2(d.y, d.x)
+	n.add_child(blade(curved(16.5, 1.8, [1.1, 1.3, 1.6, 2.0, 1.6, 0.0], 0.5), 0.6, _bright_iron(), Vector3.ZERO, ang))
+	var bronze := surf("bronze", Color(1.2, 1.1, 0.85), 2.0)
+	n.add_child(cone(1.8, 1.8, 0.5, bronze, Vector3.ZERO, Vector3(0, 0, rad_to_deg(ang) - 90)))
+	n.add_child(rod(Vector3.ZERO, -d * 3.4, 0.6, 0.6, surf("cloth", Color("#3a2a20"), 2.0), false))
+	n.add_child(ring(0.7, 1.2, bronze, -d * 4.4, Vector3(90, 0, rad_to_deg(ang) - 90)))   # the ring pommel
+	var red := surf("cloth", c.crimson, 2.0)
+	n.add_child(rod(-d * 4.6, -d * 4.6 + Vector3(-1.4, -3.2, 0.4), 0.4, 1.0, red))
+	return {"node": n}
+
+
 func _weapon_bow_short(c: Dictionary) -> Dictionary:
 	var n := Node3D.new()
 	# Pale wood, thick limbs and a bright string: it has to stand out against dark armour
@@ -2155,6 +2352,7 @@ func _helm_bronze(c: Dictionary) -> Dictionary:
 		n.add_child(blob(Vector3(1.5, 2.4, 0.5), bronze, Vector3(2.0, -5.4, 4.3 * side)))
 	n.add_child(rod(Vector3(0, 0.8, 0), Vector3(0, 2.0, 0), 0.5, 0.5, bronze))
 	crest(n, c.team, Vector3(-0.3, 1.6, 0), 8.0, 4.0)
+	_lift(n, 0.85)   # its rim clear of a human's brows (placement A2: it sat on them, -0.18)
 	return {"node": n}
 
 
@@ -2716,6 +2914,7 @@ func _helm_han_lamellar(c: Dictionary) -> Dictionary:
 		n.add_child(blob(Vector3(1.6, 2.4, 0.4), iron, Vector3(cos(a) * 5.0 - 0.6, -4.8, sin(a) * 5.0), Vector3(0, -rad_to_deg(a), 0)))
 	n.add_child(rod(Vector3(-0.2, 1.4, 0), Vector3(-0.2, 3.0, 0), 0.3, 0.3, iron))
 	n.add_child(blob(Vector3(1.4, 2.0, 1.4), plain(Color("#c8302a")), Vector3(-0.6, 3.6, 0)))   # the red tassel
+	_lift(n, 0.15)   # the rim clear of the brows (placement A2: 0.47 of 0.5)
 	return {"node": n}
 
 
