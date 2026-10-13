@@ -954,6 +954,99 @@ func _tower_c(s: Dictionary, c: Dictionary) -> Dictionary:
 	return {"node": n, "sockets": {"crew0_f0_reach": Vector3(-L * 0.5 - 5.0, 0, -4.5), "crew1_f0_reach": Vector3(-L * 0.5 - 5.0, 0, 4.5)}}
 
 
+# ------------------------------------------------------------------ siege tower concepts (milestone 16)
+
+## Round T1's directions for the siege tower (concept ids "siege.tower.<dir>.<family>"):
+## hide (the placeholder in play: hides on three sides), open (a bare timber frame, its ladder and a
+## climber showing, crew pushing), belfry (taller, plank-clad, the gangway let down, four pushing),
+## beast (the frogs' way: a reed tower lashed on a snapping turtle).
+const ROUND5 := ["hide", "open", "belfry", "beast"]
+
+
+func _tower_hide(s: Dictionary, c: Dictionary) -> Dictionary:
+	return _tower_c(s, c)
+
+
+func _tower_open(s: Dictionary, c: Dictionary) -> Dictionary:
+	var n := Node3D.new()
+	var L := 24.0
+	var W := 20.0
+	undercarriage(n, s, L, W, 4.0)
+	var base := 5.2
+	var top := 46.0
+	for x in [-L * 0.45, L * 0.45]:
+		for z in [-W * 0.45, W * 0.45]:
+			n.add_child(beam(Vector3(x, base, z), Vector3(x * 0.88, top, z * 0.88), 1.6, 1.6, s.wood))
+	for y in [base, base + 13.0, base + 27.0, top]:
+		var k: float = 1.0 - (y - base) / (top - base) * 0.12
+		for z in [-W * 0.45 * k, W * 0.45 * k]:
+			n.add_child(beam(Vector3(-L * 0.45 * k, y, z), Vector3(L * 0.45 * k, y, z), 1.1, 1.1, s.dark))
+		for x in [-L * 0.45 * k, L * 0.45 * k]:
+			n.add_child(beam(Vector3(x, y, -W * 0.45 * k), Vector3(x, y, W * 0.45 * k), 1.1, 1.1, s.dark))
+	for side in [1, -1]:   # cross braces on the open sides
+		n.add_child(rod(Vector3(-L * 0.45, base, W * 0.45 * side), Vector3(L * 0.4, base + 27.0, W * 0.4 * side), 0.5, 0.5, s.dark, false))
+	# The ladder inside, from the floor to the deck.
+	for z in [-2.5, 2.5]:
+		n.add_child(rod(Vector3(-L * 0.25, base, z), Vector3(-L * 0.05, top, z), 0.4, 0.4, s.wood, false))
+	for k in 9:
+		var t := (k + 0.5) / 9.0
+		n.add_child(rod(Vector3(-L * 0.25 + L * 0.2 * t, base + (top - base) * t, -2.5), Vector3(-L * 0.25 + L * 0.2 * t, base + (top - base) * t, 2.5), 0.3, 0.3, s.wood, false))
+	n.add_child(_box(Vector3(L * 0.84, 1.0, W * 0.84), s.dark, Vector3(0, top, 0)))
+	var hide: Material = s.get("roof", s.wood)
+	n.add_child(_box(Vector3(0.6, 9.0, W * 0.8), hide, Vector3(L * 0.42, top + 4.5, 0)))   # a hide screen at the front of the deck
+	pennant(n, s, Vector3(-L * 0.35, top + 1.0, -W * 0.35), 12.0, 5.0)
+	return {"node": n, "sockets": {"crew0_f0_reach": Vector3(-L * 0.5 - 5.0, 0, -4.5), "crew1_f0_reach": Vector3(-L * 0.5 - 5.0, 0, 4.5),
+		"crew2_f0_raise_in": Vector3(-L * 0.14, base + 18.0, 0)}}
+
+
+func _tower_belfry(s: Dictionary, c: Dictionary) -> Dictionary:
+	var n := Node3D.new()
+	var L := 30.0
+	var W := 22.0
+	undercarriage(n, s, L, W, 4.4)
+	var base := 5.6
+	var top := 56.0
+	var plank: Material = s.get("wood2", s.wood)
+	for x in [-L * 0.45, L * 0.45]:
+		for z in [-W * 0.45, W * 0.45]:
+			n.add_child(beam(Vector3(x, base, z), Vector3(x * 0.8, top, z * 0.8), 1.8, 1.8, s.dark))
+	var mid := (base + top) * 0.5
+	for side in [1, -1]:   # plank sides, tapering: two courses
+		n.add_child(_box(Vector3(L * 0.86, (top - base) * 0.5, 0.7), plank, Vector3(0, base + (top - base) * 0.25, W * 0.44 * side)))
+		n.add_child(_box(Vector3(L * 0.72, (top - base) * 0.5, 0.7), plank, Vector3(0, mid + (top - base) * 0.25, W * 0.37 * side)))
+	n.add_child(_box(Vector3(0.7, (top - base) * 0.5, W * 0.86), plank, Vector3(L * 0.43, base + (top - base) * 0.25, 0)))
+	n.add_child(_box(Vector3(0.7, (top - base) * 0.5, W * 0.74), plank, Vector3(L * 0.36, mid + (top - base) * 0.25, 0)))
+	n.add_child(_box(Vector3(L * 0.74, 1.0, W * 0.78), s.dark, Vector3(0, top, 0)))
+	for k in 5:   # merlons along the deck's front and sides
+		n.add_child(_box(Vector3(2.4, 3.0, 2.4), s.wood, Vector3(L * 0.34, top + 1.5, -W * 0.34 + k * W * 0.17)))
+	# The gangway let down, out over the front.
+	n.add_child(_box(Vector3(14.0, 0.8, W * 0.5), s.wood, Vector3(L * 0.36 + 7.0, top - 2.0, 0), Vector3(0, 0, -12)))
+	for z in [-W * 0.24, W * 0.24]:
+		n.add_child(rod(Vector3(L * 0.36 + 13.0, top - 3.4, z), Vector3(L * 0.2, top + 8.0, z), 0.3, 0.3, s.rope, false))
+	n.add_child(_box(Vector3(0.6, 12.0, 8.0), s.team, Vector3(L * 0.37, mid, 0)))   # a team banner hung on its face
+	pennant(n, s, Vector3(-L * 0.3, top + 1.0, -W * 0.3), 14.0, 6.0)
+	return {"node": n, "sockets": {"crew0_f0_reach": Vector3(-L * 0.5 - 5.0, 0, -7.0), "crew1_f0_reach": Vector3(-L * 0.5 - 5.0, 0, 0.0),
+		"crew2_f0_reach": Vector3(-L * 0.5 - 5.0, 0, 7.0), "crew3_f0_reach": Vector3(-L * 0.3, 0, W * 0.5 + 5.0)}}
+
+
+func _tower_beast(s: Dictionary, c: Dictionary) -> Dictionary:
+	var n := Node3D.new()
+	var deck := snapping_turtle(n, s)
+	var reed: Material = s.get("reed", s.wood)
+	var lash: Material = s.get("lash", s.rope)
+	var h := 30.0
+	for x in [-14.0, 6.0]:
+		for z in [-8.0, 8.0]:
+			n.add_child(rod(Vector3(x, deck - 2.0, z), Vector3(x * 0.85, deck + h, z * 0.85), 1.4, 1.2, reed))
+	for y in [deck + 8.0, deck + 18.0]:
+		for z in [-7.5, 7.5]:
+			n.add_child(rod(Vector3(-13.0, y, z), Vector3(6.0, y, z), 0.5, 0.5, lash, false))
+	n.add_child(_box(Vector3(22.0, 1.0, 17.0), s.wicker if s.has("wicker") else s.wood, Vector3(-4.0, deck + h, 0)))
+	n.add_child(_box(Vector3(1.0, 7.0, 15.0), s.wicker if s.has("wicker") else s.wood, Vector3(6.0, deck + h + 3.5, 0)))
+	pennant(n, s, Vector3(-13.0, deck + h + 1.0, -6.0), 12.0, 4.0)
+	return {"node": n, "sockets": {"crew0_f0_reach_top": Vector3(-4.0, deck + h + 0.5, 0.0), "crew1_f0_reach": Vector3(-46.0, 0, 22.0)}}
+
+
 func _bolt_c_junk(s: Dictionary, c: Dictionary) -> Dictionary:
 	var n := Node3D.new()
 	var wr := 5.0
