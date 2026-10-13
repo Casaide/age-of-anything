@@ -194,6 +194,7 @@ func think(w) -> void:
 	var workers := []
 	var army := []
 	var healers := []
+	var scouts := 0   # scout-line units we have: the bot keeps military.scouts.keep (Scout tours with one)
 	for i in w.units.count():
 		if w.units.owner[i] != player:
 			continue
@@ -204,6 +205,8 @@ func think(w) -> void:
 			healers.append(i)
 		elif not t.has("animal"):   # our sheep aren't soldiers
 			army.append(i)
+			if t.slot == "scout":
+				scouts += 1
 	var count: int = workers.size() + eco.sheltered(w)
 	_build_order(w, tc, workers, count)
 	eco.goal = _goal(w, count)
@@ -211,6 +214,7 @@ func think(w) -> void:
 	_age_three(w, tc, count)
 	_wonder(w, tc, workers)
 	_upgrade_lines(w, army)
+	_train_scout(w, scouts)
 	_train(w, workers, count)
 	_train_healers(w, tc, army, healers)
 	var home_x: int = w.buildings.cx[tc] * 1000 + 1500
@@ -623,6 +627,23 @@ func _affords(w, cost: PackedInt32Array, reserve: PackedInt32Array) -> bool:
 		if w.stock[r][player] < cost[r] + reserve[r]:
 			return false
 	return true
+
+
+## A scout from the Stable as soon as there is one and we have none (military.scouts.keep), ahead of
+## the counter-pick: Scout's soldier tours take it before any other soldier, and what it sees is what
+## the counter-pick reads.
+func _train_scout(w, scouts: int) -> void:
+	var k: int = w.type_of(player, "scout")
+	if k < 0 or scouts >= int(cfg.military.scouts.keep) or w.ages[player] < int(w.types[k].line[0].age) or not w.can_afford(player, w.types[k].cost):
+		return
+	for b in w.buildings.count():
+		if w.buildings.owner[b] == player and k in w.buildings.queue[b]:
+			return   # one on the way
+	for b in w.buildings.count():
+		if w.buildings.owner[b] == player and w.buildings.done[b] == 1 and "scout" in w.btypes[w.buildings.kind[b]].trains \
+				and w.buildings.queue[b].size() < int(cfg.military.queue):
+			w.issue(player, Commands.TRAIN, {"building": w.buildings.id[b], "slot": "scout"})
+			return
 
 
 ## Healers from the Town Center once the age allows: one for every `per_army` soldiers, up to

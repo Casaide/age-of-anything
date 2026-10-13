@@ -3,7 +3,7 @@ extends SceneTree
 ## one age's step: the tool for checking that a line's weapons and holds read at game scale
 ## (tests/healer_lineup.gd is the healer's). Run (needs a display):
 ##   godot --path . --script res://tests/line_lineup.gd -- out.png [slot] [age] [zoom] [family,family...]
-## e.g. -- /tmp/swords2.png infantry 2 3
+## e.g. -- /tmp/swords2.png infantry 2 3   (a race that lacks the line gets no row)
 
 const DataLib := preload("res://src/data_lib.gd")
 const Generator := preload("res://src/race_generator.gd")
@@ -33,7 +33,11 @@ func _initialize() -> void:
 		if not fam in only:
 			continue
 		var race: Dictionary = gen.generate(PROMPTS[fam], rules)
-		var u: Dictionary = race.units.filter(func(x): return x.recipe.slot == slot)[0]
+		var found: Array = race.units.filter(func(x): return x.recipe.slot == slot)
+		if found.is_empty():   # the race lacks the line (Aztecs have no mounted archers)
+			print("%-9s %-16s (no %s line)" % [fam, PROMPTS[fam], slot])
+			continue
+		var u: Dictionary = found[0]
 		var step: Dictionary = u.line[0]
 		for l in u.line:
 			if int(l.age) <= age:
