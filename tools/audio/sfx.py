@@ -128,6 +128,117 @@ def shoot_ball(rng):
     return soft_clip(add(bang, boom, delay_start(hiss, 0.05)), 1.8)
 
 
+# ----------------------------------------------------------------------------- siege engines (milestone 13)
+# Big timber machines: every sound has weight first (a low body), then the material on top
+# (timber knocks, rope, iron fittings). Nothing metallic beyond a fitting; no booms but the sapper's.
+
+def _creak(rng, dur, f0, f1, g=1.0):
+    """A timber joint or a rope under load: a slow buzzy stick-slip (a pulse train sliding in pitch)
+    through a wood resonance, swelling and dying."""
+    n = seconds(dur)
+    src = pulse_train(n, lambda t: f0 + (f1 - f0) * (t / dur) + 6.0 * math.sin(math.tau * 7.0 * t), 0.18)
+    body = add(bandpass(src, _j(rng, 650, 850), 3.5), gain(bandpass(src, _j(rng, 1500, 1900), 5.0), 0.5))
+    return gain(mul(body, env(n, dur * 0.3, dur * 0.4, 0.4, dur * 0.25)), g)
+
+
+def ram_hit(rng):
+    """The ram's blow: the frame creaks as the log swings back, then a huge dull thud of timber on
+    a wall (a falling low body, a woody crack, grit off the stones), the log's own boom ringing a
+    moment, the frame creaking as it settles."""
+    swing = _creak(rng, 0.32, _j(rng, 55, 70), _j(rng, 90, 110), 0.45)
+    thud = _thump(rng, 0.55, _j(rng, 95, 115), 38.0, 9.0, 1.5)
+    crack = _burst(rng, 0.06, _j(rng, 600, 900), 0.8, 70.0, 2.0)
+    log = modal(seconds(0.4), [(_j(rng, 72, 82), 9.0, 0.6), (_j(rng, 190, 215), 16.0, 0.3), (_j(rng, 410, 450), 28.0, 0.15)], rng, 0.0)
+    grit = _burst(rng, 0.35, _j(rng, 1800, 2600), 0.5, 12.0, 0.45)
+    settle = _creak(rng, 0.4, _j(rng, 100, 120), _j(rng, 60, 75), 0.3)
+    hit = add(thud, crack, log, delay_start(grit, 0.02))
+    return soft_clip(add(swing, delay_start(hit, 0.3), delay_start(settle, 0.55)), 1.4)
+
+
+def catapult_release(rng):
+    """The catapult looses: the skein lets go with a rope's groan, the arm slams into its padded
+    crossbar (a heavy wooden knock with a thick low body), the whole frame jolts, and the stone's
+    air goes up and away."""
+    groan = _creak(rng, 0.14, _j(rng, 120, 140), _j(rng, 200, 240), 0.35)
+    slam = add(_burst(rng, 0.03, _j(rng, 900, 1300), 0.9, 140.0, 1.1),
+               modal(seconds(0.3), [(_j(rng, 150, 170), 18.0, 0.7), (_j(rng, 330, 370), 30.0, 0.35), (_j(rng, 720, 800), 55.0, 0.15)], rng, 0.0),
+               _thump(rng, 0.35, _j(rng, 120, 140), 50.0, 14.0, 1.2))
+    rattle = _burst(rng, 0.12, _j(rng, 1200, 1600), 1.0, 30.0, 0.25)
+    whoosh = _whoosh(rng, 0.45, _j(rng, 300, 380), _j(rng, 900, 1200), 0.6)
+    return soft_clip(add(groan, delay_start(slam, 0.11), delay_start(rattle, 0.14), delay_start(whoosh, 0.13)), 1.3)
+
+
+def catapult_impact(rng):
+    """A thrown stone comes down: a deep thud into the ground, earth and gravel thrown about (a
+    spray of small crackles over a dull rumble), a stone or two skittering."""
+    thud = _thump(rng, 0.45, _j(rng, 80, 100), 34.0, 10.0, 1.6)
+    burst = _burst(rng, 0.08, _j(rng, 450, 750), 0.7, 50.0, 1.8)
+    n = seconds(0.7)
+    earth = gain(mul(lowpass(noise(n, rng), 700.0), env(n, 0.01, 0.25, 0.25, 0.3)), 0.7)
+    out = add(thud, burst, earth)
+    for k in range(rng.randint(7, 11)):
+        mix_into(out, _burst(rng, 0.02, _j(rng, 1500, 3500), 1.4, 260.0, _j(rng, 0.25, 0.6)), seconds(_j(rng, 0.03, 0.5)))
+    return soft_clip(out, 1.5)
+
+
+def bolt_release(rng):
+    """The bolt thrower snaps: a hard double crack of the bow arms hitting their stops, the thick
+    cord's twang (a low plucked note dying fast), the stock's knock, then the bolt's heavy whoosh,
+    lower and thicker than an arrow's."""
+    snap = add(_burst(rng, 0.012, _j(rng, 2500, 3500), 0.8, 450.0, 1.3),
+               delay_start(_burst(rng, 0.01, _j(rng, 2000, 3000), 0.8, 500.0, 0.9), _j(rng, 0.008, 0.016)))
+    cord = gain(I.pluck(_j(rng, 95, 115), 0.25, rng, 1.0, 0.8, 0.985), 0.9)
+    knock = add(modal(seconds(0.12), [(_j(rng, 240, 280), 40.0, 0.5), (_j(rng, 560, 640), 70.0, 0.25)], rng, 0.0),
+                _thump(rng, 0.12, 160.0, 80.0, 40.0, 0.6))
+    flight = _flight(rng, 0.42, _j(rng, 1600, 1900), _j(rng, 700, 850), 1.5, 0.25)
+    return add(snap, cord, knock, delay_start(flight, 0.015))
+
+
+def sling_release(rng):
+    """The great sling throws: the long arm's rope sling whirls round once (a deep sweeping 'whum'),
+    a crack as the sling's loop slips free, the counterweight's frame lurching (a big wooden knock),
+    and the stone's slow rush away."""
+    n = seconds(0.55)
+    whum = mul(bandpass(noise(n, rng), lambda t: 180.0 + 500.0 * (t / 0.55), 1.4), swell(n, 0.4, 0.12))
+    loop = _burst(rng, 0.015, _j(rng, 1800, 2400), 0.9, 380.0, 0.9)
+    lurch = add(modal(seconds(0.4), [(_j(rng, 110, 125), 12.0, 0.7), (_j(rng, 260, 290), 22.0, 0.3)], rng, 0.0),
+                _thump(rng, 0.4, 100.0, 40.0, 10.0, 1.2), _creak(rng, 0.35, 70.0, 50.0, 0.4))
+    rush = _whoosh(rng, 0.6, _j(rng, 250, 320), _j(rng, 700, 900), 0.6)
+    return soft_clip(add(gain(whum, 1.1), delay_start(loop, 0.5), delay_start(lurch, 0.52), delay_start(rush, 0.52)), 1.3)
+
+
+def blast(rng):
+    """The sapper's charge goes off (a fire pot of pitch and powder, not a cannon): a sharp crack, a
+    deep thump that shakes, a roar of fire sucking air, timber and stone thrown about, then flames
+    crackling down."""
+    crack = _burst(rng, 0.02, _j(rng, 1200, 1800), 0.5, 200.0, 1.6)
+    thump = _thump(rng, 0.8, _j(rng, 80, 95), 28.0, 5.0, 1.8)
+    n = seconds(1.2)
+    roar = gain(mul(lowpass(noise(n, rng), lambda t: 900.0 - 600.0 * min(1.0, t / 1.2)), env(n, 0.02, 0.5, 0.3, 0.5)), 1.4)
+    out = add(crack, thump, roar)
+    for k in range(rng.randint(10, 14)):   # debris
+        mix_into(out, _burst(rng, 0.03, _j(rng, 700, 2600), 1.3, 150.0, _j(rng, 0.2, 0.5)), seconds(_j(rng, 0.05, 0.8)))
+    for k in range(rng.randint(8, 12)):   # flames crackling down
+        mix_into(out, _burst(rng, 0.008, _j(rng, 2500, 5000), 1.0, 600.0, _j(rng, 0.08, 0.2)), seconds(_j(rng, 0.4, 1.5)))
+    return soft_clip(reverb(out, 0.7, 0.25), 1.6)
+
+
+def trade_paid(rng):
+    """A cart home with its gold: a few coins poured into a chest (bright little rings, each with a
+    click), a lid's soft knock."""
+    out = []
+    t = 0.0
+    for k in range(rng.randint(5, 8)):
+        f = _j(rng, 3200, 4600)
+        coin = add(_burst(rng, 0.004, _j(rng, 6000, 8000), 0.7, 900.0, 0.7),
+                   modal(seconds(0.18), [(f, 22.0, 0.4), (f * _j(rng, 1.42, 1.5), 30.0, 0.25), (f * _j(rng, 2.1, 2.3), 40.0, 0.12)], rng, 0.0))
+        mix_into(out, gain(coin, _j(rng, 0.5, 1.0)), seconds(t))
+        t += _j(rng, 0.03, 0.08)
+    lid = add(modal(seconds(0.12), [(_j(rng, 230, 260), 40.0, 0.5), (_j(rng, 520, 580), 60.0, 0.2)], rng, 0.0), _thump(rng, 0.08, 150.0, 90.0, 40.0, 0.4))
+    mix_into(out, lid, seconds(t + 0.1))
+    return _rev(out, 0.4, 0.15)
+
+
 # ----------------------------------------------------------------------------- deaths
 
 def fall(rng):
@@ -444,6 +555,9 @@ TABLE = {
     "arrow_land": (arrow_land, 3, -4.0),
     "shoot_arrow": (shoot_arrow, 3, -3.0), "shoot_bolt": (shoot_bolt, 2, -2.0), "shoot_javelin": (shoot_javelin, 2, -3.0),
     "shoot_stone": (shoot_stone, 2, -3.0), "shoot_dart": (shoot_dart, 2, -6.0), "shoot_ball": (shoot_ball, 2, -1.0),
+    "ram_hit": (ram_hit, 3, -1.5), "catapult_release": (catapult_release, 2, -2.0), "catapult_impact": (catapult_impact, 3, -1.5),
+    "bolt_release": (bolt_release, 2, -2.0), "sling_release": (sling_release, 2, -2.0), "blast": (blast, 2, -1.0),
+    "trade_paid": (trade_paid, 2, -10.0),
     "fall": (fall, 3, -3.0), "building_fall": (building_fall, 2, -1.0),
     "chop": (chop, 4, -3.0), "mine": (mine, 4, -3.0), "build": (build, 4, -3.0), "forage": (forage, 4, -6.0),
     "farm_done": (farm_done, 2, -5.0),
