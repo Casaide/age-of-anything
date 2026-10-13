@@ -14,6 +14,8 @@ static func text(t: Dictionary, foes: Array, combat := {}) -> String:
 	var lines := ["Attack %d %s%s    HP %d" % [int(e.attack), e.damage, reach, int(e.hp)]]
 	if int(e.get("heal", 0)) > 0:
 		lines = [heal_text(e, combat) + "    HP %d" % int(e.hp), "Never fights"]
+	if "trade" in e.tags:   # a trade cart (trade.gd)
+		lines = ["Trades: right-click a far market    HP %d" % int(e.hp), "Never fights; more gold the further it goes"]
 	var siege := siege_text(e)
 	if siege != "":
 		lines.append(siege)
@@ -71,8 +73,12 @@ static func siege_text(e: Dictionary) -> String:
 		bits.append("Goes through a line")
 	if int(e.get("min_range", 0)) > 0:
 		bits.append("Not within %d tiles" % int(e.min_range))
-	if int(e.get("reload", 0)) > 0:
+	if int(e.get("reload", 0)) > 0 and int(e.get("blast", 0)) == 0:
 		bits.append("Every %s s" % _tenths(int(e.reload) / 2))
+	if int(e.get("unpack", 0)) > 0:
+		bits.append("Unpacks %s s, packs %s s" % [_tenths(int(e.unpack) / 2), _tenths(int(e.get("pack", 0)) / 2)])
+	if int(e.get("blast", 0)) > 0:
+		bits.append("Blows up: %s tiles round, itself too; a wall tile outright" % _tenths(int(e.blast) / 100))
 	return ", ".join(bits)
 
 

@@ -32,7 +32,9 @@ static func evaluate(recipe: Dictionary, lib, rules: Dictionary) -> Dictionary:
 	var damage := "melee"
 	# Siege weapons (milestone 13): their own reload (ticks), a minimum range (tiles), splash and
 	# pass-through (milli-tiles), and what they go for ("buildings": rams). 0 / "": the rules' usual.
-	var weapon := {"reload": 0, "min_range": 0, "splash": 0, "pass": 0, "targets": ""}
+	# The great sling unpacks (ticks standing before it throws) and packs (ticks before it moves);
+	# the sapper's charge blasts (milli-tiles round it, a wall's share of hp it takes outright).
+	var weapon := {"reload": 0, "min_range": 0, "splash": 0, "pass": 0, "targets": "", "unpack": 0, "pack": 0, "blast": 0, "blast_line_pct": 0}
 	var tags := {}
 	var points := _price(body)
 	var mix := {}

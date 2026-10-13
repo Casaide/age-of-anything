@@ -265,6 +265,27 @@ func _build_engine(r: Dictionary, lib, team: Color, colours: Dictionary, speed: 
 		v.phase = 0.7 * n
 		bob.add_child(v)
 		crew.append({"view": v, "top": top})
+	# A beast pulling it (the recipe's `haul`: {creature, skin}, a trade cart's pony): the bare
+	# creature, walking, on each "haul<n>_f<k>" socket, layered by the socket's depth like the crew.
+	if r.has("haul"):
+		var hc: Dictionary = lib.creatures[r.haul.creature]
+		var hr := {"slot": "beast", "role": "beast", "tier": 1, "creature": r.haul.creature, "family": r.family, "skin": r.haul.skin,
+			"body": hc.get("mount_body", hc.body), "head": hc.head, "parts": {}, "scale": 100, "name": ""}
+		var hauls: Array = sockets.keys().filter(func(s): return s.begins_with("haul"))
+		hauls.sort()
+		for name in hauls:
+			var face := facing_k
+			for t in name.split("_"):
+				if t.begins_with("f") and t.length() == 2:
+					face = (facing_k + int(t.substr(1))) % FACINGS
+			var v = get_script().new()
+			v.facing_k = face
+			v.build(hr, lib, team, speed)
+			v.position = sockets[name]
+			v.set_meta("z", (1.0 if float(depth[name]) > 0.0 else -1.0) + 0.005)
+			v.phase = 0.4
+			bob.add_child(v)
+			crew.append({"view": v, "top": false})
 
 
 ## An engine's frame: it rolls (a little rock while it moves, none of a walker's bob), its crew

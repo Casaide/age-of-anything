@@ -33,8 +33,9 @@ const GARRISON := "garrison"       # {ids, building}  units go inside their own 
 const UNGARRISON := "ungarrison"   # {building}  everyone inside comes out
 const CALL_TO_ARMS := "call_to_arms"   # {building}  workers near that Town Center go inside the nearest buildings with room
 const BACK_TO_WORK := "back_to_work"   # {}  sheltering workers come out and go back to what they gathered
+const ROUTE := "route"             # {ids, building: a market}  trade carts trade between their nearest market and that one (trade.gd)
 const TYPES := [MOVE, SPAWN, GATHER, BUILD, HELP_BUILD, TRAIN, CANCEL, RALLY, ATTACK, ATTACK_MOVE, AGE_UP, RESEARCH, SURRENDER, RESEED, TRADE, STOP, STANCE, DROP_OFF, AUTO_RESEED, PEN, RELEASE,
-	GARRISON, UNGARRISON, CALL_TO_ARMS, BACK_TO_WORK]
+	GARRISON, UNGARRISON, CALL_TO_ARMS, BACK_TO_WORK, ROUTE]
 ## Unit orders that can be queued: with args.queue = 1, a busy unit keeps the order for
 ## when it's done (shift-queuing); without it, the order replaces the unit's queue.
 const QUEUEABLE := [MOVE, GATHER, BUILD, HELP_BUILD, ATTACK, ATTACK_MOVE, DROP_OFF, GARRISON]

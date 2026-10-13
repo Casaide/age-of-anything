@@ -42,7 +42,7 @@ func remember(w, player: int) -> void:
 		if not w.is_foe(player, u.owner[i]) or not Fog.visible(w, player, u.x[i], u.y[i]):
 			continue
 		var t: Dictionary = w.types[u.kind[i]]
-		if t.worker or t.has("animal") or t.healer:
+		if t.worker or t.has("animal") or t.healer or t.get("trader", false):
 			continue
 		seen[u.id[i]] = [u.kind[i], w.tick, u.x[i], u.y[i]]
 	var old := []

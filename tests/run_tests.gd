@@ -284,6 +284,9 @@ func _test_bounds(lib, gen, rules: Dictionary) -> void:
 						var p: Dictionary = lib.part(rec.parts[slot])
 						check(DataLib.era_ok(p, r.era), "%s: %s allowed in %s" % [rec.name, p.id, rid])
 						check(p.slot == slot, "%s in matching slot" % p.id)
+					if rec.role == "trader":   # an unarmed engine line (rules `armed`: false): no weapon at all
+						check(rec.parts.is_empty() and rec.has("crew"), "%s: a trade cart carries no weapon, its crew pushes" % rec.name)
+						continue
 					var need: String = Generator.ROLE_NEEDS[lib.uniques[rec.unique].role if rec.has("unique") else rec.role]
 					check(need in lib.part(rec.parts.hand_r).tags, "%s primary has %s" % [rec.name, need])
 					check(u.eval.cost.food + u.eval.cost.wood > 0, "%s has a cost" % rec.name)
@@ -354,7 +357,7 @@ func _test_prompts(gen, rules: Dictionary) -> void:
 			for rid in ["default", "bronze"]:
 				var r: Dictionary = gen.generate(prompt, rules[rid], reroll)
 				for u in r.units:
-					check(u.recipe.parts.hand_r != "weapon.cheese_hammer", "no cheese hammers for %s unless asked" % prompt)
+					check(u.recipe.parts.get("hand_r", "") != "weapon.cheese_hammer", "no cheese hammers for %s unless asked" % prompt)
 					check(u.recipe.scale < Generator.GIANT_SCALE, "no giant %s unless asked" % prompt)
 	var open := d.duplicate(true)
 	open.no_restrictions = true
@@ -395,7 +398,7 @@ func _test_healers(lib, gen, rules: Dictionary) -> void:
 							check("heal" in p.tags, "%s: the healer's off hand holds its bag (%s)" % [prompt, p.id])
 				for u in race.units:
 					if u.recipe.role != "healer":
-						check(int(u.eval.get("heal", 0)) == 0 and not lib.part(u.recipe.parts.hand_r).tags.has("heal"), "%s: only healers heal (%s)" % [prompt, u.recipe.name])
+						check(int(u.eval.get("heal", 0)) == 0 and not (u.recipe.parts.has("hand_r") and lib.part(u.recipe.parts.hand_r).tags.has("heal")), "%s: only healers heal (%s)" % [prompt, u.recipe.name])
 	check(_unit(gen.generate("sewer rats", rules.default), "healer").recipe.parts.hand_r == "tool.staff.cheese", "rat healers carry a cheese staff")
 	check(_unit(gen.generate("swamp frogs", rules.default), "healer").recipe.parts.hand_r == "tool.staff.lily", "frog healers carry a lily staff")
 	# Every culture its own staff (Dominic, 2026-10-12: "different staffs for each"), from data

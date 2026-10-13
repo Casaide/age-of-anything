@@ -280,7 +280,7 @@ func _hunt(w, tc: int, workers: Array) -> void:
 	var guards := []   # idle soldiers at home: they join a boar hunt (it fights back)
 	for i in u.count():
 		if u.owner[i] == player and not w.types[u.kind[i]].worker and not w.types[u.kind[i]].has("animal") \
-				and not w.types[u.kind[i]].healer and u.foe[i] == 0 and u.moving[i] == 0 and Fixed.dist2(hx, hy, u.x[i], u.y[i]) <= near:
+				and not w.types[u.kind[i]].healer and not w.types[u.kind[i]].get("trader", false) and u.foe[i] == 0 and u.moving[i] == 0 and Fixed.dist2(hx, hy, u.x[i], u.y[i]) <= near:
 			guards.append(u.id[i])
 	var target := -1
 	var penning := _has_pen(w)
