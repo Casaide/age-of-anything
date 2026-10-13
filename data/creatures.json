@@ -113,6 +113,10 @@
    "beetle_stag",
    "beetle_jade"
   ],
+  "mounts": [
+   "pony"
+  ],
+  "_mounts_doc": "beetles ride horses (Dominic, 2026-10-13), not spiders, newts or beetles: their own culture's mount comes second",
   "families": [
    "forest",
    "swamp"
