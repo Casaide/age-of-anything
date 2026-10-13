@@ -31,7 +31,7 @@ const Par := preload("res://tests/par.gd")
 const PROMPTS := ["angry swamp frogs with reed spears", "sewer rats with cheese hammers"]
 const SEED := 20261010
 const TICKS := 12000               # 10 minutes at 20 Hz
-const PER_SLOT := 11               # x 9 roster slots (healers and siege too) x 2 players = 198 units
+const PER_PLAYER := 99             # soldiers a side, shared over its roster slots (healers and siege too): about 200 units, however many lines
 const ORDERS_EVERY := 10           # turns between each player's orders (2 s)
 const TICK_BUDGET_USEC := 3000
 const CROSS_UNITS := 10            # per roster slot: 60 units, in 6 groups of 10
@@ -246,7 +246,8 @@ func _script(map: SimMap, races: Array) -> Array:
 	var seq := [0, 0]
 	var start: Dictionary = rules_.economy.start
 	var setup_ids: int = start.buildings.size() + int(start.workers)
-	var per_player: int = PER_SLOT * races[0].units.size()
+	var per_slot: int = PER_PLAYER / races[0].units.size()   # (more lines, fewer of each: the tick budget is for about 200 units)
+	var per_player: int = per_slot * races[0].units.size()
 	var army_first: int = 1 + races.size() * setup_ids
 	var cmd := func(turn: int, p: int, type: String, args: Dictionary) -> void:
 		out.append({"turn": turn, "player": p, "seq": seq[p], "type": type, "args": args})
@@ -266,7 +267,7 @@ func _script(map: SimMap, races: Array) -> Array:
 	# The armies arrive at 30 s, then march about.
 	for p in races.size():
 		for u in races[p].units:
-			cmd.call(150, p, Commands.SPAWN, {"slot": u.recipe.slot, "count": PER_SLOT, "x": map.starts[p][0], "y": map.starts[p][1]})
+			cmd.call(150, p, Commands.SPAWN, {"slot": u.recipe.slot, "count": per_slot, "x": map.starts[p][0], "y": map.starts[p][1]})
 	# A quarter of each army on each stance, so replays and hashes cover them.
 	for p in races.size():
 		var first := army_first + p * per_player
@@ -363,7 +364,7 @@ func _test_moved(w: World) -> void:
 	check(distinct.size() > w.hashes.size() * 9 / 10, "state keeps changing (%d distinct hashes)" % distinct.size())
 	var start: Dictionary = rules_.economy.start
 	var lost: int = w.lost[0] + w.lost[1]
-	check(w.units.count() + lost == 2 * (w.races[0].units.size() * PER_SLOT + int(start.workers) + 2), "armies, starting workers and 2 trained each, alive or lost (%d alive, %d lost)" % [w.units.count(), lost])
+	check(w.units.count() + lost == 2 * (w.races[0].units.size() * (PER_PLAYER / w.races[0].units.size()) + int(start.workers) + 2), "armies, starting workers and 2 trained each, alive or lost (%d alive, %d lost)" % [w.units.count(), lost])
 	check(lost > 0, "the armies fought (%d lost)" % lost)
 	var built := 0
 	for b in w.buildings.count():

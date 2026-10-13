@@ -1,7 +1,8 @@
 extends RefCounted
 ## The units the placement checks cover (tests/placement_check.gd, tests/layer_check.gd): every unit
 ## of these races at every age of its line (so every body, head, leg, hold and piece of gear in
-## play), every rider on every mount, winged mounts, every newt skin and cat coat, the animals and the siege
+## play), the scouts, mounted archers and unique units of more races (every unique theme), every rider on
+## every mount, winged mounts, every newt skin and cat coat, the animals and the siege
 ## engines with their crews. [label, unit] pairs; a unit is {recipe, eval}.
 
 const DataLib := preload("res://src/data_lib.gd")
@@ -12,6 +13,11 @@ const ArtKit := preload("res://src/view/art/art_kit.gd")
 ## wings, a fused centaur, siege crews).
 const PROMPTS := ["romans", "swamp frogs", "sewer rats", "forest beetles", "spooky spiders",
 	"flying greeks with wings", "centaur romans", "winged frogs"]
+## More races for milestone 13's new lines only (scouts, mounted archers, unique units): with PROMPTS,
+## every unique theme in data/uniques.json, a foot scout, the steppe raider on its pony.
+const LINE_PROMPTS := ["greeks", "royal humans", "mongols", "aztecs", "egyptians", "han", "sewer rats with cheese hammers",
+	"tiny vikings", "swamp humans", "forest humans", "sewer humans", "spooky humans"]
+const NEW_LINES := ["scout", "mounted_archer", "unique", "large"]   # (and the cavalry, which rides the same mounts)
 ## Riders (a race's spear unit, put on each mount) and the mounts.
 const RIDERS := ["romans", "swamp frogs", "sewer rats", "spooky spiders", "forest beetles"]
 const MOUNTS := ["pony", "beetle", "spider", "capybara", "newt", "hummingbird", "cat"]
@@ -42,6 +48,12 @@ static func all(lib, lines := true) -> Array:
 		for l in line:
 			if int(l.age) >= 2:
 				cases.append(["%s swordsman age %d%s" % [s[0], l.age, " (bronze rules)" if s[1] != rules else ""], {"recipe": l.recipe, "eval": l.eval}])
+	for p in LINE_PROMPTS:
+		for u in gen.generate(p, rules).units:
+			if u.recipe.slot in NEW_LINES:
+				cases.append(["%s %s" % [p, u.recipe.slot], u])
+				if lines and u.line.size() > 1 and u.line[-1].recipe.hash() != u.recipe.hash():
+					cases.append(["%s %s age %d" % [p, u.recipe.slot, u.line[-1].age], {"recipe": u.line[-1].recipe, "eval": u.line[-1].eval}])
 	for p in RIDERS:
 		var spear: Dictionary = slot(gen.generate(p, rules), "spear")
 		for m in MOUNTS:

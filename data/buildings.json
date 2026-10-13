@@ -101,7 +101,8 @@
    "drop_off": [],
    "trains": [
     "skirmisher",
-    "archer"
+    "archer",
+    "mounted_archer"
    ],
    "age": 2,
    "hotkey": "E",
@@ -351,7 +352,8 @@
    "house": false,
    "drop_off": [],
    "trains": [
-    "large"
+    "large",
+    "scout"
    ],
    "age": 2,
    "hotkey": "Z",
@@ -620,7 +622,9 @@
    "pop": 10,
    "house": false,
    "drop_off": [],
-   "trains": [],
+   "trains": [
+    "unique"
+   ],
    "age": 3,
    "hotkey": "",
    "armour": {
