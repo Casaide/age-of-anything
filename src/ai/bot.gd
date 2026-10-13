@@ -547,10 +547,10 @@ func _train(w, workers: Array, count: int) -> void:
 			w.issue(player, Commands.TRAIN, {"building": w.buildings.id[b], "slot": best})
 
 
-## A line the bot keeps only a few of (data: military.siege.max: a few engines) and has them all,
+## A line the bot keeps only a few of (data: military.siege.max: a few engines; military.most: war beasts) and has them all,
 ## out or queued.
 func _enough(w, slot: String, k: int) -> bool:
-	var most: Dictionary = cfg.military.get("siege", {}).get("max", {})
+	var most: Dictionary = cfg.military.get("siege", {}).get("max", {}).merged(cfg.military.get("most", {}))   # (engines, and lines kept to a few: war beasts)
 	return most.has(slot) and _fielded(w, k) >= int(most[slot])
 
 

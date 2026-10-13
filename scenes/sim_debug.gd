@@ -217,6 +217,7 @@ func _ready() -> void:
 	town.setup(self)
 	add_child(town)
 	fx = CombatFx.new()
+	fx.lib = lib   # (siege shots' baked sprites: data/siege_shots.json)
 	add_child(fx)
 	fog_view = FogView.new()
 	add_child(fog_view)
@@ -1329,9 +1330,11 @@ func _play_events() -> void:
 			if e.ranged:
 				var i := world.units.index_of(e.by)
 				var kind := "arrow"
+				var look := ""
 				if i >= 0:
 					kind = CombatFx.shot_kind(world.types[world.units.kind[i]].eval.tags)
-				lands = fx.shoot(_body(a) - Vector2(0, 2), to, kind)
+					look = CombatFx.shot_look(lib, world.types[world.units.kind[i]].recipe)
+				lands = fx.shoot(_body(a) - Vector2(0, 2), to, kind, -1.0, look)
 				a.loose()
 			else:
 				a.flourish()
@@ -1449,6 +1452,7 @@ func _shot(e: Dictionary) -> void:
 	if to == Vector2.INF:
 		return
 	var kind := "arrow"
+	var look := ""   # a siege engine's baked shot (data/siege_shots.json)
 	var from: Vector2
 	var seen := false
 	if tower != null:
@@ -1461,6 +1465,7 @@ func _shot(e: Dictionary) -> void:
 		var i := world.units.index_of(e.by)
 		if i >= 0:
 			kind = CombatFx.shot_kind(world.types[world.units.kind[i]].eval.tags)
+			look = CombatFx.shot_look(lib, world.types[world.units.kind[i]].recipe)
 		from = _body(a) - Vector2(0, 2)
 		a.face_vec(to - a.position)
 		a.loose()
@@ -1468,7 +1473,7 @@ func _shot(e: Dictionary) -> void:
 	else:
 		return
 	shot_kinds[e.by] = kind
-	fx.shoot(from, to, kind, e.ticks * SimClock.STEP / maxf(clock.speed, 0.01))
+	fx.shoot(from, to, kind, e.ticks * SimClock.STEP / maxf(clock.speed, 0.01), look)
 	if _on_screen(from) and seen:
 		audio.play(CombatFx.shot_sound(kind), -4.0)
 		if _owner_of(e.by) == active or _owner_of(e.to) == active:
@@ -1981,6 +1986,8 @@ func _sync_views() -> void:
 		view.position.y += perch_dy
 		view.lift = Iso.lift(u.px[i] + dx * a, u.py[i] + dy * a) + _wall_lift(i) + perch_dy   # on a hill (or a wall): drawn raised, sorted on the base plane
 		view.walking = dx != 0 or dy != 0
+		if int(world.types[u.kind[i]].unpack) > 0:   # the great sling: on its wagon until it's set up (D-129)
+			view.set_packed(u.ready[i] < int(world.types[u.kind[i]].unpack))
 		# Off screen (or hidden by the fog): no animation, tool or facing work; picked up again
 		# the frame it comes into view.
 		var on := view.visible and shown.has_point(view.position)

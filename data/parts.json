@@ -8482,6 +8482,7 @@
   "id": "siege.catapult.timber",
   "slot": "engine",
   "noun": "Catapult",
+  "shot": "boulder",
   "points": 22,
   "tags": [
    "siege",
@@ -8532,6 +8533,7 @@
   "id": "siege.catapult.junk",
   "slot": "engine",
   "noun": "Catapult",
+  "shot": "cheese",
   "points": 22,
   "tags": [
    "siege",
@@ -8582,6 +8584,7 @@
   "id": "siege.catapult.forest",
   "slot": "engine",
   "noun": "Catapult",
+  "shot": "acorn",
   "points": 22,
   "tags": [
    "siege",
@@ -8632,6 +8635,7 @@
   "id": "siege.catapult.spooky",
   "slot": "engine",
   "noun": "Catapult",
+  "shot": "bone",
   "points": 22,
   "tags": [
    "siege",
@@ -8682,6 +8686,7 @@
   "id": "siege.catapult.frog",
   "slot": "engine",
   "noun": "Snail Catapult",
+  "shot": "clay",
   "points": 22,
   "tags": [
    "siege",
@@ -8732,6 +8737,7 @@
   "id": "siege.bolt.timber",
   "slot": "engine",
   "noun": "Bolt Thrower",
+  "shot": "bolt",
   "points": 15,
   "tags": [
    "siege",
@@ -8782,6 +8788,7 @@
   "id": "siege.bolt.junk",
   "slot": "engine",
   "noun": "Bolt Thrower",
+  "shot": "bolt",
   "points": 15,
   "tags": [
    "siege",
@@ -8832,6 +8839,7 @@
   "id": "siege.bolt.forest",
   "slot": "engine",
   "noun": "Bolt Thrower",
+  "shot": "bolt",
   "points": 15,
   "tags": [
    "siege",
@@ -8882,6 +8890,7 @@
   "id": "siege.bolt.spooky",
   "slot": "engine",
   "noun": "Bolt Thrower",
+  "shot": "bolt",
   "points": 15,
   "tags": [
    "siege",
@@ -8932,6 +8941,7 @@
   "id": "siege.bolt.frog",
   "slot": "engine",
   "noun": "Toad Bolt Thrower",
+  "shot": "bolt",
   "points": 15,
   "tags": [
    "siege",
@@ -10562,6 +10572,7 @@
   "id": "siege.sling.timber",
   "slot": "engine",
   "noun": "Great Sling",
+  "shot": "boulder_big",
   "points": 24,
   "tags": [
    "siege",
@@ -10606,13 +10617,14 @@
    "wood": 60,
    "gold": 40
   },
-  "placeholder": true,
-  "note": "the great sling (milestone 13 step 4): long-range anti-building engine that unpacks before it shoots and packs before it moves; a STAND-IN look (the take's catapult, siege_models.gd STAND_IN) until Dominic picks from concept round GS1 (docs/concepts/great_sling/)"
+  "packed": "siege.sling_packed.timber",
+  "note": "the great sling (milestone 13 step 4; D-129, concept round GS2): a siege-weight traction trebuchet, squared timbers on long sills, an iron-banded arm, six haulers on the pull ropes and a loader at the stone pile (siege_models.gd _great_sling); unpacks before it shoots and packs before it moves, showing `packed` (the frame on its wagon) until it's set up (UnitView.set_packed)"
  },
 {
   "id": "siege.sling.junk",
   "slot": "engine",
   "noun": "Great Sling",
+  "shot": "cheese_big",
   "points": 24,
   "tags": [
    "siege",
@@ -10657,13 +10669,14 @@
    "wood": 60,
    "gold": 40
   },
-  "placeholder": true,
-  "note": "the great sling (milestone 13 step 4): long-range anti-building engine that unpacks before it shoots and packs before it moves; a STAND-IN look (the take's catapult, siege_models.gd STAND_IN) until Dominic picks from concept round GS1 (docs/concepts/great_sling/)"
+  "packed": "siege.sling_packed.junk",
+  "note": "the great sling (milestone 13 step 4; D-129, concept round GS2): a siege-weight traction trebuchet, squared timbers on long sills, an iron-banded arm, six haulers on the pull ropes and a loader at the stone pile (siege_models.gd _great_sling); unpacks before it shoots and packs before it moves, showing `packed` (the frame on its wagon) until it's set up (UnitView.set_packed)"
  },
 {
   "id": "siege.sling.forest",
   "slot": "engine",
   "noun": "Great Sling",
+  "shot": "acorn_big",
   "points": 24,
   "tags": [
    "siege",
@@ -10708,13 +10721,14 @@
    "wood": 60,
    "gold": 40
   },
-  "placeholder": true,
-  "note": "the great sling (milestone 13 step 4): long-range anti-building engine that unpacks before it shoots and packs before it moves; a STAND-IN look (the take's catapult, siege_models.gd STAND_IN) until Dominic picks from concept round GS1 (docs/concepts/great_sling/)"
+  "packed": "siege.sling_packed.forest",
+  "note": "the great sling (milestone 13 step 4; D-129, concept round GS2): a siege-weight traction trebuchet, squared timbers on long sills, an iron-banded arm, six haulers on the pull ropes and a loader at the stone pile (siege_models.gd _great_sling); unpacks before it shoots and packs before it moves, showing `packed` (the frame on its wagon) until it's set up (UnitView.set_packed)"
  },
 {
   "id": "siege.sling.spooky",
   "slot": "engine",
   "noun": "Great Sling",
+  "shot": "bone_big",
   "points": 24,
   "tags": [
    "siege",
@@ -10759,13 +10773,14 @@
    "wood": 60,
    "gold": 40
   },
-  "placeholder": true,
-  "note": "the great sling (milestone 13 step 4): long-range anti-building engine that unpacks before it shoots and packs before it moves; a STAND-IN look (the take's catapult, siege_models.gd STAND_IN) until Dominic picks from concept round GS1 (docs/concepts/great_sling/)"
+  "packed": "siege.sling_packed.spooky",
+  "note": "the great sling (milestone 13 step 4; D-129, concept round GS2): a siege-weight traction trebuchet, squared timbers on long sills, an iron-banded arm, six haulers on the pull ropes and a loader at the stone pile (siege_models.gd _great_sling); unpacks before it shoots and packs before it moves, showing `packed` (the frame on its wagon) until it's set up (UnitView.set_packed)"
  },
 {
   "id": "siege.sling.frog",
   "slot": "engine",
   "noun": "Great Sling",
+  "shot": "clay_big",
   "points": 24,
   "tags": [
    "siege",
@@ -10811,7 +10826,7 @@
    "gold": 30
   },
   "placeholder": true,
-  "note": "the great sling (milestone 13 step 4): long-range anti-building engine that unpacks before it shoots and packs before it moves; a STAND-IN look (the take's catapult, siege_models.gd STAND_IN) until Dominic picks from concept round GS1 (docs/concepts/great_sling/)"
+  "note": "the great sling (milestone 13 step 4): long-range anti-building engine that unpacks before it shoots and packs before it moves; the frogs' wears a STAND-IN look (their snail catapult, siege_models.gd ENGINE_STAND_IN) until Dominic picks from concept round FS1 (docs/concepts/great_sling/; D-129: GS2's frog takes were wrong or too plain)"
  },
 {
   "id": "engine.sling",
@@ -10908,6 +10923,27 @@
    }
   ]
  },
+ {"id": "siege.sling_packed.timber", "slot": "engine", "noun": "Great Sling", "points": 0, "tags": ["machine"], "only_if": ["engine_only"], "stats": {"hp": 1, "speed": 7, "armour": {"melee": 0, "pierce": 0}, "radius": 420}, "shapes": [{"t": "poly", "p": [[-16, -22], [16, -22], [16, 0], [-16, 0]], "ch": "wood"}], "note": "D-129: the great sling packed to move, its frame and arm on a long heavy wagon, two crew beside (siege_models.gd _great_packed). View only: shown while the sling isn't set up (siege.sling.<take> packed, UnitView.set_packed)."},
+ {"id": "siege.sling_packed.junk", "slot": "engine", "noun": "Great Sling", "points": 0, "tags": ["machine"], "only_if": ["engine_only"], "stats": {"hp": 1, "speed": 7, "armour": {"melee": 0, "pierce": 0}, "radius": 420}, "shapes": [{"t": "poly", "p": [[-16, -22], [16, -22], [16, 0], [-16, 0]], "ch": "wood"}], "note": "D-129: the great sling packed to move, its frame and arm on a long heavy wagon, two crew beside (siege_models.gd _great_packed). View only: shown while the sling isn't set up (siege.sling.<take> packed, UnitView.set_packed)."},
+ {"id": "siege.sling_packed.forest", "slot": "engine", "noun": "Great Sling", "points": 0, "tags": ["machine"], "only_if": ["engine_only"], "stats": {"hp": 1, "speed": 7, "armour": {"melee": 0, "pierce": 0}, "radius": 420}, "shapes": [{"t": "poly", "p": [[-16, -22], [16, -22], [16, 0], [-16, 0]], "ch": "wood"}], "note": "D-129: the great sling packed to move, its frame and arm on a long heavy wagon, two crew beside (siege_models.gd _great_packed). View only: shown while the sling isn't set up (siege.sling.<take> packed, UnitView.set_packed)."},
+ {"id": "siege.sling_packed.spooky", "slot": "engine", "noun": "Great Sling", "points": 0, "tags": ["machine"], "only_if": ["engine_only"], "stats": {"hp": 1, "speed": 7, "armour": {"melee": 0, "pierce": 0}, "radius": 420}, "shapes": [{"t": "poly", "p": [[-16, -22], [16, -22], [16, 0], [-16, 0]], "ch": "wood"}], "note": "D-129: the great sling packed to move, its frame and arm on a long heavy wagon, two crew beside (siege_models.gd _great_packed). View only: shown while the sling isn't set up (siege.sling.<take> packed, UnitView.set_packed)."},
+ {"id": "siege.beast.elephant", "slot": "engine", "noun": "War Elephant", "points": 20, "tags": ["war_beast", "large", "beast"], "stats": {"hp": 170, "speed": 9, "armour": {"melee": 1, "pierce": 5}, "radius": 460}, "shapes": [{"t": "poly", "p": [[-20, -40], [20, -40], [20, 0], [-20, 0]], "ch": "wood"}], "cost_mix": {"food": 60, "wood": 0, "gold": 40}, "note": "a war beast (milestone 13 step 7, D-129): the humans' war elephant (WB1 A): grey and wrinkled, bronze-capped tusks, a howdah in the culture's cloth, two riders. One baked body (siege_models.gd BEAST), its riders the race's own soldiers on its crew sockets (rules roster war_beast: crew); alive, so it heals and costs food. Which creature or culture gets it: creatures.json / families.json war_beast."},
+ {"id": "siege.beast.boar", "slot": "engine", "noun": "War Boar", "points": 20, "tags": ["war_beast", "large", "beast"], "stats": {"hp": 170, "speed": 9, "armour": {"melee": 1, "pierce": 5}, "radius": 460}, "shapes": [{"t": "poly", "p": [[-20, -40], [20, -40], [20, 0], [-20, 0]], "ch": "wood"}], "cost_mix": {"food": 60, "wood": 0, "gold": 40}, "note": "a war beast (milestone 13 step 7, D-129): the rats' war boar (WB2 A, the howdah: two riders read as more unit than the barded one with one): twice a pony's height, a bristle crest, tusks, rusted scrap riveted on its flanks, a junk pallet howdah chained on. One baked body (siege_models.gd BEAST), its riders the race's own soldiers on its crew sockets (rules roster war_beast: crew); alive, so it heals and costs food. Which creature or culture gets it: creatures.json / families.json war_beast."},
+ {"id": "siege.beast.tarantula", "slot": "engine", "noun": "Giant Tarantula", "points": 20, "tags": ["war_beast", "large", "beast"], "stats": {"hp": 170, "speed": 9, "armour": {"melee": 1, "pierce": 5}, "radius": 460}, "shapes": [{"t": "poly", "p": [[-20, -40], [20, -40], [20, 0], [-20, 0]], "ch": "wood"}], "cost_mix": {"food": 60, "wood": 0, "gold": 40}, "note": "a war beast (milestone 13 step 7, D-129): the spiders' giant tarantula (WB2 A): alone, nobody rides it; a silk-and-bone harness and the team banner on its back; its back patterned (D-129: a pale-rimmed carapace with dark rays, pale chevrons and hair tufts), the orange knees kept. One baked body (siege_models.gd BEAST), its riders the race's own soldiers on its crew sockets (rules roster war_beast: crew); alive, so it heals and costs food. Which creature or culture gets it: creatures.json / families.json war_beast."},
+ {"id": "siege.beast.heron", "slot": "engine", "noun": "War Heron", "points": 20, "tags": ["war_beast", "large", "beast"], "stats": {"hp": 170, "speed": 9, "armour": {"melee": 1, "pierce": 5}, "radius": 460}, "shapes": [{"t": "poly", "p": [[-20, -40], [20, -40], [20, 0], [-20, 0]], "ch": "wood"}], "cost_mix": {"food": 60, "wood": 0, "gold": 40}, "note": "a war beast (milestone 13 step 7, D-129): the frogs' war heron (WB2 B): their oldest enemy broken to the saddle, stilt legs, an S of a neck, a dagger beak, one rider. One baked body (siege_models.gd BEAST), its riders the race's own soldiers on its crew sockets (rules roster war_beast: crew); alive, so it heals and costs food. Which creature or culture gets it: creatures.json / families.json war_beast."},
+ {"id": "siege.beast.mantis", "slot": "engine", "noun": "War Mantis", "points": 20, "tags": ["war_beast", "large", "beast"], "stats": {"hp": 170, "speed": 9, "armour": {"melee": 1, "pierce": 5}, "radius": 460}, "shapes": [{"t": "poly", "p": [[-20, -40], [20, -40], [20, 0], [-20, 0]], "ch": "wood"}], "cost_mix": {"food": 60, "wood": 0, "gold": 40}, "note": "a war beast (milestone 13 step 7, D-129): the forest beetles' giant praying mantis (WB2 A): leaf-green, spiked arms folded, the long neck up, one rider. One baked body (siege_models.gd BEAST), its riders the race's own soldiers on its crew sockets (rules roster war_beast: crew); alive, so it heals and costs food. Which creature or culture gets it: creatures.json / families.json war_beast."},
+ {"id": "engine.beast", "slot": "hand_r", "noun": "War Beast", "points": 10, "tags": ["war_beast", "trample"], "stats": {"attack": 10, "damage": "melee", "bonus": {"infantry": 4, "building": 12}, "reload": 30}, "requires_role": "war_beast", "tier": 3, "cost_mix": {"food": 60, "wood": 0, "gold": 40}, "note": "a war beast's blow (tusks, claws, beak, a trampling foot; D-129): heavy and slow, hard on foot soldiers and buildings (bonus); the riders are for show", "shapes": [{"t": "line", "p": [[0, 0], [8, 0]], "w": 1.5, "ch": "wood"}]},
+ {"id": "shot.boulder", "slot": "shot", "noun": "Boulder", "points": 0, "tags": ["shot"], "only_if": ["engine_only"], "stats": {}, "shapes": [{"t": "ellipse", "c": [0, 0], "r": [3, 3], "ch": "stone"}], "note": "what a siege engine throws (data/siege_shots.json; siege_models.gd shot_model): baked like a part, drawn in flight by src/view/combat_fx.gd. View only."},
+ {"id": "shot.boulder_big", "slot": "shot", "noun": "Boulder", "points": 0, "tags": ["shot"], "only_if": ["engine_only"], "stats": {}, "shapes": [{"t": "ellipse", "c": [0, 0], "r": [3, 3], "ch": "stone"}], "note": "what a siege engine throws (data/siege_shots.json; siege_models.gd shot_model): baked like a part, drawn in flight by src/view/combat_fx.gd. View only."},
+ {"id": "shot.cheese", "slot": "shot", "noun": "Cheese", "points": 0, "tags": ["shot"], "only_if": ["engine_only"], "stats": {}, "shapes": [{"t": "ellipse", "c": [0, 0], "r": [3, 3], "ch": "stone"}], "note": "what a siege engine throws (data/siege_shots.json; siege_models.gd shot_model): baked like a part, drawn in flight by src/view/combat_fx.gd. View only."},
+ {"id": "shot.cheese_big", "slot": "shot", "noun": "Cheese", "points": 0, "tags": ["shot"], "only_if": ["engine_only"], "stats": {}, "shapes": [{"t": "ellipse", "c": [0, 0], "r": [3, 3], "ch": "stone"}], "note": "what a siege engine throws (data/siege_shots.json; siege_models.gd shot_model): baked like a part, drawn in flight by src/view/combat_fx.gd. View only."},
+ {"id": "shot.acorn", "slot": "shot", "noun": "Acorn", "points": 0, "tags": ["shot"], "only_if": ["engine_only"], "stats": {}, "shapes": [{"t": "ellipse", "c": [0, 0], "r": [3, 3], "ch": "stone"}], "note": "what a siege engine throws (data/siege_shots.json; siege_models.gd shot_model): baked like a part, drawn in flight by src/view/combat_fx.gd. View only."},
+ {"id": "shot.acorn_big", "slot": "shot", "noun": "Acorn", "points": 0, "tags": ["shot"], "only_if": ["engine_only"], "stats": {}, "shapes": [{"t": "ellipse", "c": [0, 0], "r": [3, 3], "ch": "stone"}], "note": "what a siege engine throws (data/siege_shots.json; siege_models.gd shot_model): baked like a part, drawn in flight by src/view/combat_fx.gd. View only."},
+ {"id": "shot.bone", "slot": "shot", "noun": "Bone", "points": 0, "tags": ["shot"], "only_if": ["engine_only"], "stats": {}, "shapes": [{"t": "ellipse", "c": [0, 0], "r": [3, 3], "ch": "stone"}], "note": "what a siege engine throws (data/siege_shots.json; siege_models.gd shot_model): baked like a part, drawn in flight by src/view/combat_fx.gd. View only."},
+ {"id": "shot.bone_big", "slot": "shot", "noun": "Bone", "points": 0, "tags": ["shot"], "only_if": ["engine_only"], "stats": {}, "shapes": [{"t": "ellipse", "c": [0, 0], "r": [3, 3], "ch": "stone"}], "note": "what a siege engine throws (data/siege_shots.json; siege_models.gd shot_model): baked like a part, drawn in flight by src/view/combat_fx.gd. View only."},
+ {"id": "shot.clay", "slot": "shot", "noun": "Clay", "points": 0, "tags": ["shot"], "only_if": ["engine_only"], "stats": {}, "shapes": [{"t": "ellipse", "c": [0, 0], "r": [3, 3], "ch": "stone"}], "note": "what a siege engine throws (data/siege_shots.json; siege_models.gd shot_model): baked like a part, drawn in flight by src/view/combat_fx.gd. View only."},
+ {"id": "shot.clay_big", "slot": "shot", "noun": "Clay", "points": 0, "tags": ["shot"], "only_if": ["engine_only"], "stats": {}, "shapes": [{"t": "ellipse", "c": [0, 0], "r": [3, 3], "ch": "stone"}], "note": "what a siege engine throws (data/siege_shots.json; siege_models.gd shot_model): baked like a part, drawn in flight by src/view/combat_fx.gd. View only."},
+ {"id": "shot.bolt", "slot": "shot", "noun": "Bolt", "points": 0, "tags": ["shot"], "only_if": ["engine_only"], "stats": {}, "shapes": [{"t": "line", "p": [[-9, 0], [9, 0]], "w": 1, "ch": "stone"}], "note": "the bolt thrower's bolt (data/siege_shots.json; siege_models.gd shot_bolt): baked in 8 facings, drawn in flight by the facing nearest its heading. View only."},
  {"id": "harness.draught", "slot": "torso", "noun": "Draught Harness", "points": 0, "tags": ["harness"], "only_if": ["engine_only"], "stats": {}, "shapes": [{"t": "line", "p": [[-12, -14], [12, -14]], "w": 1, "ch": "wood"}], "note": "D-127: what the beast hauling a trade cart wears (the cart part's haul.parts). Fitted on its body by scenes/art_pixel/siege_models.gd harness_fitted: a breast band, two back bands, a trace down each flank past the rump (sockets trace_near / trace_far = the cart's hitch<n>_near / _far; the placement check C2 holds them together). only_if engine_only: never picked for a unit."},
  {"id": "siege.barrow.junk", "slot": "engine", "noun": "Scrap Barrow", "points": 0, "tags": ["machine", "pushed"], "only_if": ["engine_only"], "stats": {"hp": 1, "speed": 10, "armour": {"melee": 0, "pierce": 0}, "radius": 260}, "shapes": [{"t": "poly", "p": [[-12, -14], [12, -14], [12, 0], [-12, 0]], "ch": "wood"}], "note": "D-127: what a rat worker pushes home with stone (creatures.json push_home; siege_models.gd scrap_barrow, heaped with rubble). View only: the sim's worker carries as before."},
  {"id": "siege.handcart.junk", "slot": "engine", "noun": "Handcart", "points": 0, "tags": ["machine", "pushed"], "only_if": ["engine_only"], "stats": {"hp": 1, "speed": 10, "armour": {"melee": 0, "pierce": 0}, "radius": 260}, "shapes": [{"t": "poly", "p": [[-12, -14], [12, -14], [12, 0], [-12, 0]], "ch": "wood"}], "note": "D-127: what a rat worker pushes home with gold (creatures.json push_home; siege_models.gd handcart with sacks of ore). View only: the sim's worker carries as before."}

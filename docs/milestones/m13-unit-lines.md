@@ -1,6 +1,6 @@
 # Milestone 13: Unit lines
 
-**Status:** in progress (2026-10-13): siege engines built (step 3b), steps 2 and 8 (siege part) done; trade carts, the sapper and the great sling in play with placeholder looks, concept rounds TC1, WB1, SP1, GS1 waiting on Dominic
+**Status:** in progress (2026-10-13): siege engines built (step 3b), steps 2 and 8 (siege part) done; trade carts in play; war beasts and the GS2 great sling in play (D-129), siege shots baked; concept round FS1 (the frogs' great sling) waiting on Dominic
 **Exit criterion:** the tech tree page shows no blank nodes for land; every line trains, fights by
 its counters, and the AI uses it; a balance round robin at ages 2 and 3 with no line more than 20%
 off at equal cost; Dominic plays a match using siege and healers.
@@ -125,7 +125,10 @@ picks), then build, tests, archive pictures.
   - [ ] Dominic's look at the themes; concept round for the new parts each wants (list in Results)
   - [x] Sapper, great sling: built and in play (2026-10-13), placeholder looks
   - [x] Concept rounds SP1 (the sapper's charge) and GS1 (the great sling) (2026-10-13)
-  - [ ] Dominic's picks (SP1, GS1), then build the looks
+  - [x] Dominic's picks: GS2's siege-weight traction sling (D-129); the sapper parked (D-128)
+  - [x] The great sling's look in play for timber, junk, forest and spooky, packed on its wagon while it moves (2026-10-13)
+  - [x] Concept round FS1: the frogs' great sling (bullfrog leaper, stilt sling, crayfish winder) (2026-10-13)
+  - [ ] Dominic's pick from FS1 (the frogs keep their snail catapult as a stand-in until then)
 - [x] 5. Healers (built 2026-10-12; the look is a pick pending: HL1 concept sheet, look A in game)
 - [ ] 6. Trade carts
   - [x] Mechanics, data, AI, Pack Animals, a placeholder look (2026-10-13)
@@ -133,8 +136,11 @@ picks), then build, tests, archive pictures.
   - [ ] Dominic's pick, then build the look
 - [ ] 7. War beasts
   - [x] Concept round WB1 (2026-10-13)
-  - [ ] Dominic's pick, then build (the slot stays `planned` until then)
-- [ ] 8. AI (siege part done 2026-10-13: a few engines, rams at gates, walls and towers, catapults at towers; trade carts, the sapper and the great sling 2026-10-13; war beasts wait)
+  - [x] Concept round WB2 (2026-10-13); Dominic's picks (D-129)
+  - [x] Built: the `war_beast` line in play (Stable, age 3), elephant, war boar, tarantula, heron, mantis, riders the race's spearmen; priced, balanced (2026-10-13)
+  - [ ] Dominic's look in a match
+- [ ] 8. AI (siege part done 2026-10-13: a few engines, rams at gates, walls and towers, catapults at towers; trade carts, the sapper and the great sling 2026-10-13; war beasts by the counter-pick, at most 4, 2026-10-13)
+- [x] Siege shots drawn as baked art (Dominic: "the rocks they throw look really bad"; 2026-10-13)
 - [ ] 9. Balance and exit check
   - [x] Round robin and mass battles at ages 2 and 3 with every line (2026-10-13; see Results)
   - [ ] A design change for the structural outliers (proposal for Dominic in Results)
@@ -711,7 +717,50 @@ counters won 83%; age 3: 18 of 38, 81%** (the same as before: the new lines don'
   then. (3) Separately: engines may want their price back up after D-125 (roles pct 60 -> 75?), as
   catapult+spear now beats spear+archer.
 
-**Open (2026-10-13):** Dominic's picks for TC1, WB1, SP1 and GS1, and then their looks; war beasts' data
+**War beasts, the great sling's look, siege shots (2026-10-13; D-129).**
+- **War beasts** (step 7): the `war_beast` roster slot is live in `data/rules/*.json` (Stable, age 3, `own_seed`, no
+  upgrades), an engine line: `engine: "beast"`, `take: "war_beast"` (the generator reads the creature's, else the
+  culture's, `war_beast` field instead of `siege`: creatures.json humans and centaurs the elephant, rats the boar,
+  spiders the tarantula, frogs the heron, beetles the mantis; families.json gives every culture one too), `crew:
+  "spear"` (its riders are the race's spear line as it is at age 3, drawn as spearmen, not workers) and `crew_drop:
+  ["back"]` (wings, capes, banners stowed). Parts `siege.beast.<kind>` (tags war_beast, large, beast; hp 170, speed 9,
+  armour 1/5, food and gold) and the blow `engine.beast` (attack 10, melee, +4 vs infantry, +12 vs buildings, every
+  1.5 s). The tarantula has nobody on it; a centaur race's riders walk beside the elephant (`_wide` sockets, which
+  `UnitView.engine_sockets` now also offers for `_top` ones). The skirmisher line gets `bonus: {war_beast: 8}` (no
+  price: only war beasts carry the tag); spears beat it by their bonus against `large`, bolt throwers likewise.
+  The Stable trains it (data/buildings.json). Models: `siege_models.gd` BEAST (moved from `m13_concepts.gd`).
+- **Price and balance** (`tests/mass_battle.gd -- 3 [budget] beasts`, new BEAST_MATCHES, also in every age-3 run):
+  first try (hp 260, attack 12, no price_points, ~360 resources) won everything, spears 0 of 10. Now hp 170, attack 10,
+  roster `price_points` 8: a war beast costs 500 (300 food, 200 gold). At 3000 a side: beasts beat swords 7 of 10 and
+  archers 8 of 10, lose to spears 0 of 10, skirmishers 2 of 10, bolt+spear 0 of 10, cavalry 2 of 10; beast+archer
+  beat spear+archer 6 of 10. At 1500 (three beasts a side, lumpy): swords 9, archers 8, cavalry 4, spears 4 of 10
+  for the beasts, skirmishers 6, bolt+spear 2 for the beasts (value left favours the counters each time).
+- **AI**: picked by the counter-pick like any soldier (`pick_bias` war_beast -30: only once it has seen a crowd of foot
+  soldiers or buildings to break and few spears or skirmishers), at most 4 out and queued (`military.most`, read by
+  bot.gd `_enough` with siege.max). test_ai passes but `walled_palisade`'s spread check, which fails the same on main.
+- **Great sling** (step 4): GS2 in play for timber, junk, forest and spooky (`siege_models.gd` _great_sling, OWN), the
+  frogs' keeps the snail catapult (ENGINE_STAND_IN `sling.frog`). The haulers stand in two files beside two pull ropes
+  run to stakes in the ground (in GS2's two ranks they stood in each other, and the ropes ended at a worker's hand
+  height, loose for a centaur: placement C1, C3); a centaur crew hauls two abreast further out (`_wide`; the files'
+  other places are `_narrow`, left out for such a crew). Packed: the body part's `packed` ("siege.sling_packed.<take>",
+  GS2's wagon) is shown while the sling isn't set up (`UnitView.set_packed` from `units.ready`; baked with it in
+  art_kit). part_baker's members-front: a member drawn over the engine but behind a nearer member that's drawn under
+  it goes under too (a file of haulers in a diagonal view drew in the wrong order: C4).
+- **FS1** (`docs/concepts/great_sling/`, `635-`, `636-`): the frogs' great sling, three ideas; Claude: A, the bullfrog leaper.
+- **Siege shots** (Dominic: "the rocks they throw look really bad"): an engine's body part names what it throws
+  (`shot`), `data/siege_shots.json` the look: a baked sprite (`shot.<look>`, `siege_models.gd` shot_model: a rough
+  boulder with a pale chipped face and moss, a cheese wedge with holes and rind, an acorn, a silk-bound ball of bones
+  and a skull, a corded clay pot, and the bolt: an ash shaft, iron head, three vanes), the great sling's the same
+  bigger; tumbling through its 8 baked facings in flight (the bolt nose first, pitched along the arc), a ground shadow
+  tracking under the arc that shrinks and fades as it climbs, and an impact: chunks of its colour thrown up and falling
+  back, the stone bouncing on and rolling to a stop (boulder, acorn) or bursting into pieces (cheese, bones, clay),
+  over the splash's dust ring. `combat_fx.gd`, drawn from the part bakes; mods' flight styles (main's `Mods.shots`)
+  untouched. `tests/shot_sheet.gd` draws before and after (`637-`); in a match `638-`.
+- **Placement:** cases add the war beast in every LINE_PROMPTS culture and the packed sling of every take; a new 3D rule,
+  A1 the engine stands on the ground (not floating, pressed in at most 4: it caught the elephant's legs 3 under the
+  ground; the riderless tarantula had no rule at all); the snail catapult's tail lifted out of the ground.
+
+**Open (2026-10-13):** Dominic's pick from FS1; his look at the war beasts and the great sling in a match; war beasts against cavalry (2 of 10 at 3000: the genre's elephants beat horse, ours don't; a bonus vs mounted if he wants it). Earlier: Dominic's picks for TC1, WB1, SP1 and GS1, and then their looks; war beasts' data
 and generator role once a beast is picked; the design change above; an engine-rolling sound; the great
 sling showing packed and set-up looks (units.ready is there for the view).
 

@@ -1,7 +1,8 @@
 extends "res://scenes/art_pixel/siege_models.gd"
 ## Milestone 13 concept rounds (D-080: options first), staged by data/later/m13_concepts.json and drawn
-## by tests/sheets/{war_beasts_wb1,sapper_sp1,great_sling_gs1,war_beasts_wb2,great_sling_gs2}.json. Nothing here is in play: the
-## sapper holds a placeholder charge, the great sling wears the catapult, war beasts aren't built.
+## by tests/sheets/{war_beasts_wb1,sapper_sp1,great_sling_gs1,war_beasts_wb2,great_sling_gs2,great_sling_fs1}.json. The picks
+## (D-129: the howdah elephant, the war boar, the tarantula, the heron, the mantis, GS2's sling and its wagon) moved to
+## siege_models.gd and are in play from there; these wrappers keep drawing the rounds as they were shown.
 ## Notes and questions: docs/concepts/{war_beasts,sapper,great_sling}/README.md.
 ##   WB1  war beasts, two options a family, as one baked body with riders on top (the race's own
 ##        people on "crew<n>_top" sockets, as on the siege beasts): concept.wb1_<opt>_<take>
@@ -10,6 +11,7 @@ extends "res://scenes/art_pixel/siege_models.gd"
 ##   WB2  war beasts round 2 (D-127): the rats' war boar, the spiders' tarantula alone, a crayfish and a
 ##        heron for the frogs, a mantis and a centipede for the beetles: concept.wb2_<beast>
 ##   GS2  the great sling round 2 (D-127), siege-weight, every take: concept.gs2_<take>
+##   FS1  the frogs' great sling (D-129): a bullfrog leaper, a stilt sling, a crayfish winder: concept.fs1_<a|b|c>
 ## Same frame as the engines: x forward, y up, z towards the viewer's side, standing on y = 0.
 
 
@@ -25,66 +27,6 @@ func _concept_wb1_a_forest(c: Dictionary) -> Dictionary: return _stag(_style("fo
 func _concept_wb1_b_forest(c: Dictionary) -> Dictionary: return _rhino(_style("forest", c))
 func _concept_wb1_a_spooky(c: Dictionary) -> Dictionary: return _big_beast(_style("spooky", c), "spider", 2.1, Color("#4a3628"), Color("#c87a3a"), true)
 func _concept_wb1_b_spooky(c: Dictionary) -> Dictionary: return _big_beast(_style("spooky", c), "spider", 2.1, Color("#22202a"), Color("#8a2a2a"), false)
-
-
-## A howdah: a railed platform at `at` (its floor's middle), team cloths down both sides; returns the
-## riders' sockets (two on top, corner to corner; one in the middle for a big crew, frogs and spiders:
-## two of them sat in each other, placement C1).
-func howdah(n: Node3D, s: Dictionary, at: Vector3, L: float, W: float, riders := 2) -> Dictionary:
-	n.add_child(_box(Vector3(L, 1.4, W), s.dark, at))
-	for x in [-L * 0.5 + 0.6, L * 0.5 - 0.6]:
-		for side in [1, -1]:
-			n.add_child(rod(at + Vector3(x, 0, W * 0.5 * side), at + Vector3(x, 5.0, W * 0.5 * side), 0.45, 0.45, s.dark))
-	for side in [1, -1]:
-		n.add_child(rod(at + Vector3(-L * 0.5, 5.0, W * 0.5 * side), at + Vector3(L * 0.5, 5.0, W * 0.5 * side), 0.4, 0.4, s.dark))
-		n.add_child(_box(Vector3(L * 0.8, 8.0, 0.4), s.team, at + Vector3(0, -4.0, (W * 0.5 + 0.3) * side), Vector3(10 * side, 0, 0)))
-	for x in [-L * 0.5, L * 0.5]:
-		n.add_child(rod(at + Vector3(x, 5.0, -W * 0.5), at + Vector3(x, 5.0, W * 0.5), 0.4, 0.4, s.dark))
-	if riders == 1:
-		return {"crew0_f0_top": at + Vector3(0, 0.7, 0)}
-	return {"crew0_f0_top": at + Vector3(L * 0.28, 0.7, W * 0.26), "crew1_f0_top": at + Vector3(-L * 0.28, 0.7, -W * 0.26)}
-
-
-## Humans: a war elephant, grey and wrinkled, tusks capped in bronze, ears out. a: a howdah with two
-## riders; b: armoured (a team-trimmed caparison, a brow plate), one rider on its neck.
-func _elephant(s: Dictionary, with_howdah: bool) -> Dictionary:
-	var n := Node3D.new()
-	var hide := surf("hide", Color(0.62, 0.6, 0.58), 6.0)
-	var dark := surf("hide", Color(0.45, 0.43, 0.42), 6.0)
-	var ivory := plain(Color("#ece2c8"))
-	var bronze := surf("bronze", Color.WHITE, 3.0)
-	for leg in [[13.0, 1], [-13.0, 1]]:
-		for side in [1, -1]:
-			var x: float = leg[0] + (2.0 if side > 0 else -1.0)
-			n.add_child(rod(Vector3(x, 30.0, 8.5 * side), Vector3(x, 2.0, 9.0 * side), 5.6, 5.0, hide))
-			n.add_child(cone(5.6, 5.8, 2.4, dark, Vector3(x, 1.2, 9.0 * side)))   # the foot
-	n.add_child(blob(Vector3(26.0, 16.0, 14.5), hide, Vector3(0, 36.0, 0)))
-	n.add_child(blob(Vector3(10.0, 12.0, 12.0), hide, Vector3(18.0, 40.0, 0)))   # the shoulders
-	n.add_child(blob(Vector3(10.0, 10.5, 9.5), hide, Vector3(28.0, 41.0, 0)))   # the head
-	n.add_child(blob(Vector3(5.0, 4.0, 8.0), dark, Vector3(30.0, 49.0, 0)))   # the brow
-	var trunk := [Vector3(35.0, 38.0, 0), Vector3(39.0, 30.0, 0), Vector3(40.5, 20.0, 0), Vector3(40.0, 11.0, 0), Vector3(42.5, 6.0, 0)]
-	var tr := [4.2, 3.4, 2.8, 2.2, 1.6]
-	for k in range(1, trunk.size()):
-		n.add_child(rod(trunk[k - 1], trunk[k], tr[k - 1], tr[k], hide))
-	for side in [1, -1]:
-		var ear := cone(9.5, 9.5, 0.8, dark, Vector3(23.0, 42.0, 11.0 * side), Vector3(90, 0, 0), 20)
-		ear.scale = Vector3(0.8, 1.0, 1.15)
-		n.add_child(ear)
-		n.add_child(rod(Vector3(34.0, 34.0, 4.0 * side), Vector3(43.0, 30.0, 6.0 * side), 1.4, 0.7, ivory))   # tusks
-		n.add_child(cone(0.4, 1.2, 2.2, bronze, Vector3(43.5, 29.8, 6.1 * side), Vector3(0, 0, -75)))
-		n.add_child(blob(Vector3(1.1, 1.1, 0.8), plain(Color("#1a1412")), Vector3(32.5, 44.0, 6.8 * side)))
-	n.add_child(rod(Vector3(-25.0, 38.0, 0), Vector3(-29.0, 22.0, 0), 1.0, 0.6, hide))   # the tail
-	if with_howdah:
-		var sk := howdah(n, s, Vector3(-3.0, 52.5, 0), 22.0, 18.0)
-		n.add_child(_box(Vector3(26.0, 0.6, 30.0), s.trim, Vector3(-3.0, 51.6, 0)))   # a saddle cloth in the culture's colour
-		return {"node": n, "sockets": sk}
-	# Armoured: a caparison down its flanks (team border), a bronze brow plate, a rider on the neck.
-	for side in [1, -1]:
-		n.add_child(_box(Vector3(30.0, 13.0, 0.5), s.trim, Vector3(-1.0, 40.0, 15.0 * side), Vector3(8 * side, 0, 0)))
-		n.add_child(_box(Vector3(30.0, 1.8, 0.6), s.team, Vector3(-1.0, 33.5, 15.9 * side), Vector3(8 * side, 0, 0)))
-	n.add_child(dome(Vector3(5.5, 3.0, 8.5), bronze, Vector3(30.5, 49.5, 0)))
-	n.add_child(_box(Vector3(10.0, 1.0, 12.0), s.dark, Vector3(17.0, 51.5, 0)))
-	return {"node": n, "sockets": {"crew0_f0_top": Vector3(17.0, 52.2, 0)}}
 
 
 ## Frogs: the giant toad (the bolt thrower's), a howdah on its back with a rider (two frogs don't fit).
@@ -370,153 +312,19 @@ func _concept_wb2_mantis(c: Dictionary) -> Dictionary: return _mantis(_style("fo
 func _concept_wb2_centipede(c: Dictionary) -> Dictionary: return _centipede(_style("forest", c))
 
 
-## A chain of rods through `pts`, radii `r` (one per point).
-func limb(n: Node3D, pts: Array, r: Array, m: Material) -> void:
-	for k in range(1, pts.size()):
-		n.add_child(rod(pts[k - 1], pts[k], r[k - 1], r[k], m))
-
-
-## A deck for riders: planks with their top at `at`, rails at the corners, the team cloth down both
-## sides. Returns its top height.
-func deck(n: Node3D, s: Dictionary, at: Vector3, L: float, W: float, cloth := 7.0) -> float:
-	n.add_child(_box(Vector3(L, 1.6, W), s.dark, at + Vector3(0, -0.8, 0)))
-	for side in [1, -1]:
-		n.add_child(_box(Vector3(L * 0.8, cloth, 0.4), s.team, at + Vector3(0, -cloth * 0.5 - 0.6, (W * 0.5 + 0.4) * side), Vector3(10 * side, 0, 0)))
-		for x in [-L * 0.5 + 0.6, L * 0.5 - 0.6]:
-			n.add_child(rod(at + Vector3(x, 0, W * 0.5 * side), at + Vector3(x, 4.5, W * 0.5 * side), 0.45, 0.45, s.dark))
-		n.add_child(rod(at + Vector3(-L * 0.5, 4.5, W * 0.5 * side), at + Vector3(L * 0.5, 4.5, W * 0.5 * side), 0.4, 0.4, s.dark))
-	return at.y
-
-
-## Rats: a war boar the size of a cart horse and then some (shoulder ~48 against the pony's ~24): a
-## crest of bristles along the spine, a long wedge of a head, tusks curving up, plates of rusted scrap
-## riveted over its flanks. a: a junk howdah, two rats; b: barded in plate, a spiked face plate, one
-## rider and a scrap standard.
-func _war_boar(s: Dictionary, with_howdah: bool) -> Dictionary:
-	var n := Node3D.new()
-	var fur := surf("rat_fur", Color(0.42, 0.33, 0.27), 5.0)
-	var dark := surf("rat_fur", Color(0.26, 0.21, 0.18), 4.0)
-	var bristle := surf("mane", Color(0.78, 0.68, 0.54), 3.0)   # grizzled, pale against the coat
-	var hoof := plain(Color("#1e1814"))
-	var ivory := plain(Color("#f0e6cc"))
-	var snout := surf("skin", Color(0.62, 0.45, 0.4), 4.0)
-	# Front-heavy on thin legs: the shoulders tower over a smaller rump, the legs taper to trotters.
-	for leg in [[18.0, 1.0], [-19.0, -1.0]]:
-		for side in [1, -1]:
-			var x: float = leg[0]
-			limb(n, [Vector3(x, 28.0, 9.0 * side), Vector3(x + 2.5 * leg[1], 12.0, 9.5 * side), Vector3(x + 1.0, 2.6, 9.5 * side)], [6.0, 3.2, 2.3], fur if x > 0 else dark)
-			n.add_child(cone(1.8, 2.6, 2.8, hoof, Vector3(x + 1.5, 1.4, 9.5 * side)))
-	n.add_child(blob(Vector3(26.0, 13.0, 13.0), fur, Vector3(-4.0, 30.0, 0)))   # the barrel
-	n.add_child(blob(Vector3(16.0, 18.0, 15.0), fur, Vector3(12.0, 34.0, 0)))   # the shoulders' hump
-	n.add_child(blob(Vector3(11.0, 10.0, 10.0), dark, Vector3(-20.0, 30.0, 0)))   # the rump
-	# The head: a long wedge forward and a little down, the snout's disc, great tusks up out of the jaw.
-	n.add_child(blob(Vector3(15.0, 10.5, 10.0), fur, Vector3(30.0, 31.0, 0), Vector3(0, 0, -14)))
-	n.add_child(rod(Vector3(37.0, 28.0, 0), Vector3(51.0, 22.0, 0), 7.0, 4.6, fur))
-	n.add_child(cone(4.8, 4.8, 1.6, snout, Vector3(52.0, 21.6, 0), Vector3(0, 0, -68), 16))
-	for side in [1, -1]:
-		n.add_child(blob(Vector3(0.7, 0.9, 0.6), hoof, Vector3(52.8, 22.0, 1.8 * side)))
-		limb(n, [Vector3(45.0, 21.0, 4.5 * side), Vector3(51.0, 22.5, 8.5 * side), Vector3(54.5, 29.0, 9.5 * side), Vector3(52.0, 34.0, 8.5 * side)], [2.3, 1.9, 1.2, 0.4], ivory)
-		n.add_child(blob(Vector3(1.3, 1.1, 0.9), plain(Color("#120c08")), Vector3(37.5, 33.0, 7.0 * side)))
-		n.add_child(blob(Vector3(0.45, 0.45, 0.4), plain(Color("#d8a040")), Vector3(38.3, 33.4, 7.7 * side)))
-		n.add_child(cone(0.4, 3.2, 7.0, dark, Vector3(27.0, 42.0, 6.0 * side), Vector3(25 * side, 0, 20), 8))   # an ear
-	# The bristles: a tall ragged crest over the neck and shoulders, shorter down the spine.
-	for k in 14:
-		var x := 28.0 - k * 4.0
-		var top := 34.0 + 18.0 * sqrt(maxf(0.0, 1.0 - pow((x - 12.0) / 17.0, 2))) if x > -3.0 else 30.0 + 13.0 * sqrt(maxf(0.0, 1.0 - pow((x + 4.0) / 26.0, 2)))
-		if x > 24.0:
-			top = 40.0
-		var h := (11.0 if x > 4.0 else 6.0) + (k % 3) * 1.5
-		n.add_child(cone(0.2, 2.6, h, bristle, Vector3(x, top + h * 0.3, ((k % 2) - 0.5) * 1.6), Vector3(0, 0, 32), 6))
-	limb(n, [Vector3(-30.0, 34.0, 0), Vector3(-33.0, 27.0, 0), Vector3(-32.0, 22.0, 0)], [1.0, 0.7, 0.5], dark)   # the tail
-	n.add_child(blob(Vector3(1.2, 2.4, 1.2), bristle, Vector3(-32.0, 21.0, 0)))
-	# Rusted scrap riveted over the flanks.
-	for side in [1, -1]:
-		for k in 3:
-			var at := Vector3(10.0 - k * 11.0, 31.0 - absf(k - 0.5) * 1.0, (14.2 - absf(k - 1) * 0.6) * side)
-			n.add_child(_box(Vector3(10.5, 12.0, 0.8), s.plate if k != 1 else s.plate2, at, Vector3(8 * side, 0, 4 - k * 4)))
-			for r in [[-4.0, 5.0], [4.0, 5.0], [-4.0, -5.0], [4.0, -5.0]]:
-				n.add_child(blob(Vector3.ONE * 0.6, s.rivet, at + Vector3(r[0], r[1], 0.6 * side)))
-	var sockets := {}
-	if with_howdah:
-		# A junk howdah: a pallet deck lashed on with chain, rails, the team cloth.
-		var y := deck(n, s, Vector3(-6.0, 46.5, 0), 22.0, 18.0)
-		n.add_child(_box(Vector3(26.0, 0.8, 28.0), s.wood2, Vector3(-6.0, 45.3, 0)))
-		for side in [1, -1]:
-			chain(n, Vector3(-6.0, 45.0, 14.0 * side), Vector3(-6.0, 22.0, 12.5 * side), s.metal)
-		pennant(n, s, Vector3(-16.4, y, -8.0), 14.0, 4.5)
-		sockets = {"crew0_f0_top": Vector3(-0.5, y + 0.7, 3.0), "crew1_f0_top": Vector3(-11.0, y + 0.7, -3.0)}
-	else:
-		# Barded: a plate cover over the back, a face plate on the brow with a pipe spike, one rider on
-		# a pad over the hump and a scrap standard behind him.
-		n.add_child(dome(Vector3(18.0, 4.0, 15.0), s.plate, Vector3(-6.0, 42.5, 0)))
-		n.add_child(dome(Vector3(8.0, 4.5, 9.0), s.plate2, Vector3(32.0, 38.5, 0)))
-		n.add_child(cone(0.3, 1.8, 8.0, s.pipe, Vector3(34.5, 44.5, 0), Vector3(0, 0, -35), 10))
-		n.add_child(_box(Vector3(12.0, 1.6, 12.0), s.team, Vector3(9.0, 52.4, 0)))
-		n.add_child(_box(Vector3(9.0, 1.4, 9.0), s.dark, Vector3(9.0, 53.6, 0)))
-		n.add_child(rod(Vector3(-8.0, 46.0, 0), Vector3(-8.0, 70.0, 0), 0.6, 0.5, s.pipe))
-		n.add_child(slab([Vector2(0, 0), Vector2(-10, -1), Vector2(-9, -6), Vector2(-11, -11), Vector2(0, -10)], 0.4, s.team, Vector3(-8.2, 69.0, 0)))
-		sockets = {"crew0_f0_top": Vector3(9.0, 54.3, 0)}
-	return {"node": n, "sockets": sockets}
-
-
-## Spiders: a giant tarantula (legs across ~80 against the spider mount's ~30): a furred carapace and a
-## heavy abdomen, eight thick legs with orange-banded knees, fangs and pedipalps, an eye cluster that
-## glints. Nobody rides it. a: alone, a silk-and-bone harness and the team banner on its back; b: a
-## small crew of two in a basket on its back.
-func _tarantula(s: Dictionary, with_crew: bool) -> Dictionary:
-	var n := Node3D.new()
-	var fur := surf("rat_fur", Color(0.28, 0.24, 0.24), 4.0)
-	var dark := surf("rat_fur", Color(0.17, 0.15, 0.16), 3.5)
-	var band := surf("rat_fur", Color(0.95, 0.55, 0.25), 3.0)
-	var fang := plain(Color("#141012"))
-	var eye := plain(Color("#0c0a0e"))
-	eye.roughness = 0.15
-	eye.metallic_specular = 0.9
-	var C := Vector3(12.0, 18.0, 0)   # the carapace
-	var A := Vector3(-16.0, 22.0, 0)   # the abdomen
-	# Legs: four a side, the front pair reaching forward, the back pair back; knees high, feet wide.
-	var legs := [[22.0, 30.0, 50.0], [16.0, 14.0, 20.0], [9.0, -2.0, -12.0], [3.0, -14.0, -34.0]]
-	for leg in legs:
-		for side in [1, -1]:
-			var hip := Vector3(leg[0], 17.0, 9.0 * side)
-			var knee := Vector3(leg[0] + (leg[1] - leg[0]) * 0.55, 34.0, 24.0 * side)
-			var ankle := Vector3(leg[0] + (leg[2] - leg[0]) * 0.85, 12.0, 36.0 * side)
-			var foot := Vector3(leg[2], 0.8, 39.0 * side)
-			limb(n, [hip, knee], [3.4, 3.0], fur)
-			n.add_child(blob(Vector3(3.2, 3.2, 3.2), band, knee))
-			limb(n, [knee, ankle, foot], [2.8, 2.2, 1.4], dark)
-	n.add_child(blob(Vector3(15.0, 8.0, 13.0), fur, C))
-	n.add_child(blob(Vector3(19.0, 14.0, 16.0), fur, A, Vector3(0, 0, -10)))
-	n.add_child(blob(Vector3(10.0, 6.0, 9.0), dark, A + Vector3(-12.0, -1.0, 0)))   # (the furred tip)
-	for side in [1, -1]:   # chelicerae and fangs, pedipalps out front
-		n.add_child(blob(Vector3(4.0, 5.0, 3.0), dark, Vector3(26.0, 14.0, 3.4 * side), Vector3(0, 0, -20)))
-		n.add_child(cone(0.1, 1.2, 5.0, fang, Vector3(28.5, 9.0, 3.0 * side), Vector3(0, 0, -15), 8))
-		limb(n, [Vector3(24.0, 15.0, 6.0 * side), Vector3(32.0, 18.0, 9.0 * side), Vector3(36.0, 6.0, 10.0 * side)], [1.8, 1.6, 1.4], fur)
-	for k in 8:   # the eyes, a cluster on a turret at the carapace's front
-		var a := TAU * k / 8.0
-		n.add_child(blob(Vector3.ONE * (1.1 if k % 2 == 0 else 0.7), eye, Vector3(21.0 + cos(a) * 1.8, 25.5 + sin(a) * 0.8, sin(a) * 2.6)))
-	var sockets := {}
-	var top := A + Vector3(2.0, 13.6, 0)
-	# A harness: a silk band round the abdomen, bone toggles, the team cloth over its back.
-	n.add_child(ring(0.9, 1.0, surf("cloth", Color("#d8d2e4"), 3.0), A, Vector3(0, 0, 80), Vector3(17.0, 3.0, 17.0)))
-	for side in [1, -1]:
-		n.add_child(_box(Vector3(14.0, 9.0, 0.4), s.team, A + Vector3(2.0, 3.0, 15.0 * side), Vector3(30 * side, 0, 0)))
-		n.add_child(blob(Vector3(1.2, 1.2, 1.2), s.metal, A + Vector3(2.0, 9.0, 13.5 * side)))
-	if with_crew:
-		var y := deck(n, s, top + Vector3(0, 1.4, 0), 18.0, 14.0, 4.0)
-		sockets = {"crew0_f0_top": Vector3(top.x + 4.5, y + 0.7, 2.5), "crew1_f0_top": Vector3(top.x - 4.5, y + 0.7, -2.5)}
-	else:
-		n.add_child(_box(Vector3(10.0, 1.4, 12.0), s.dark, top))
-		n.add_child(rod(top, top + Vector3(-2.0, 30.0, 0), 0.6, 0.5, s.wood))
-		n.add_child(blob(Vector3(1.6, 2.0, 1.6), s.metal, top + Vector3(-2.0, 31.2, 0)))   # a skull finial
-		n.add_child(slab([Vector2(0, 0), Vector2(-12, 0), Vector2(-12, -10), Vector2(-9, -8), Vector2(-6, -11), Vector2(-3, -8), Vector2(0, -10)], 0.4, s.team, top + Vector3(-2.2, 29.0, 0)))
-	return {"node": n, "sockets": sockets}
-
-
 ## Frogs: a giant crayfish from the swamp's mud, red-brown and armoured, two great claws held up and
 ## out; a howdah on its carapace, two frogs. Nothing like a frog, a turtle, a snail or a toad.
 func _crayfish(s: Dictionary) -> Dictionary:
 	var n := Node3D.new()
+	crayfish_body(n, s)
+	var y := deck(n, s, Vector3(2.0, 27.5, 0), 18.0, 16.0)
+	n.add_child(_box(Vector3(22.0, 0.6, 24.0), s.wicker, Vector3(2.0, 26.4, 0)))
+	pennant(n, s, Vector3(-6.4, y, -7.0), 12.0, 4.0)
+	return {"node": n, "sockets": {"crew0_f0_top": Vector3(6.5, y + 0.7, 2.5), "crew1_f0_top": Vector3(-3.0, y + 0.7, -3.0)}}
+
+
+## The giant crayfish alone (WB2 A's, FS1 C's winder): red-brown plates, claws up and open, feelers.
+func crayfish_body(n: Node3D, s: Dictionary) -> void:
 	var shell := surf("chitin", Color("#8a3a22"), 5.0)
 	shell.roughness = 0.5
 	var dark := surf("chitin", Color("#5a2416"), 4.0)
@@ -544,75 +352,6 @@ func _crayfish(s: Dictionary) -> Dictionary:
 			n.add_child(blob(Vector3.ONE * 0.7, pale, Vector3(36.0 + t * 2.0, 29.5, 17.0 * side)))   # the claw's knobs
 		limb(n, [Vector3(26.0, 18.0, 3.0 * side), Vector3(40.0, 30.0, 10.0 * side), Vector3(52.0, 36.0, 14.0 * side)], [0.6, 0.4, 0.2], dark)   # antennae
 		n.add_child(blob(Vector3(1.4, 1.4, 1.4), plain(Color("#0c0806")), Vector3(23.0, 20.0, 4.0 * side)))   # eyes on stalks
-	var y := deck(n, s, Vector3(2.0, 27.5, 0), 18.0, 16.0)
-	n.add_child(_box(Vector3(22.0, 0.6, 24.0), s.wicker, Vector3(2.0, 26.4, 0)))
-	pennant(n, s, Vector3(-6.4, y, -7.0), 12.0, 4.0)
-	return {"node": n, "sockets": {"crew0_f0_top": Vector3(6.5, y + 0.7, 2.5), "crew1_f0_top": Vector3(-3.0, y + 0.7, -3.0)}}
-
-
-## Frogs, b: a giant grey heron, the frogs' oldest enemy, broken to the saddle: long legs, an S of a
-## neck, a dagger of a beak, a black crest; one frog in a saddle between its wings.
-func _heron(s: Dictionary) -> Dictionary:
-	var n := Node3D.new()
-	var grey := surf("hide", Color(0.72, 0.74, 0.78), 6.0)
-	var dark := plain(Color("#3a3c44"))
-	var white := surf("hide", Color(0.95, 0.95, 0.93), 6.0)
-	var leg := plain(Color("#8a7a4a"))
-	var beak := plain(Color("#c8a040"))
-	for side in [1, -1]:
-		limb(n, [Vector3(0.0, 40.0, 5.0 * side), Vector3(2.0, 26.0, 6.0 * side), Vector3(-2.0, 12.0, 6.0 * side), Vector3(0.0, 1.0, 6.5 * side)], [2.4, 1.3, 1.2, 1.0], leg)
-		for t in 3:
-			n.add_child(rod(Vector3(0.0, 0.8, 6.5 * side), Vector3(6.0, 0.6, (6.5 + (t - 1) * 3.0) * side), 0.6, 0.4, leg))
-		n.add_child(rod(Vector3(0.0, 0.8, 6.5 * side), Vector3(-4.0, 0.6, 6.5 * side), 0.6, 0.4, leg))
-	n.add_child(blob(Vector3(17.0, 9.5, 10.0), grey, Vector3(-2.0, 46.0, 0), Vector3(0, 0, 12)))   # the body
-	for side in [1, -1]:   # folded wings, darker at the tips, crossing over the tail
-		n.add_child(blob(Vector3(17.0, 6.0, 3.0), grey, Vector3(-5.0, 47.0, 8.5 * side), Vector3(0, 0, 14)))
-		n.add_child(blob(Vector3(10.0, 3.0, 2.4), dark, Vector3(-17.0, 43.5, 7.0 * side), Vector3(0, 0, 20)))
-	limb(n, [Vector3(10.0, 50.0, 0), Vector3(16.0, 58.0, 0), Vector3(12.0, 66.0, 0), Vector3(16.0, 74.0, 0)], [4.0, 3.0, 2.8, 2.8], white)
-	n.add_child(blob(Vector3(4.6, 3.6, 3.4), white, Vector3(18.0, 75.0, 0)))
-	n.add_child(cone(0.2, 1.8, 14.0, beak, Vector3(28.0, 74.0, 0), Vector3(0, 0, -93), 10))
-	limb(n, [Vector3(15.0, 77.0, 0), Vector3(6.0, 79.0, 0), Vector3(0.0, 77.0, 0)], [1.0, 0.7, 0.3], dark)   # the crest
-	for side in [1, -1]:
-		n.add_child(blob(Vector3(0.9, 0.9, 0.6), plain(Color("#d8b020")), Vector3(20.0, 76.0, 3.0 * side)))
-		n.add_child(rod(Vector3(17.0, 75.5, 3.4 * side), Vector3(22.0, 75.0, 2.4 * side), 0.4, 0.3, dark))
-	n.add_child(_box(Vector3(11.0, 0.8, 18.0), s.team, Vector3(-3.0, 55.0, 0), Vector3(0, 0, 8)))
-	n.add_child(_box(Vector3(8.0, 1.6, 9.0), s.dark, Vector3(-3.0, 56.0, 0)))
-	return {"node": n, "sockets": {"crew0_f0_top": Vector3(-3.0, 56.8, 0)}}
-
-
-## Forest beetles: a giant praying mantis, leaf-green, its raptorial arms folded and spiked, the long
-## neck up, wings folded along its abdomen; one beetle in a saddle on its back. A tall thin shape no
-## other beast in the game has.
-func _mantis(s: Dictionary) -> Dictionary:
-	var n := Node3D.new()
-	var green := surf("chitin", Color("#6a9a3a"), 5.0)
-	green.roughness = 0.5
-	var dark := surf("chitin", Color("#4a7028"), 4.0)
-	var wing := surf("leaf", Color(0.75, 0.9, 0.55), 10.0)
-	var spike := plain(Color("#2a3a14"))
-	for leg in [[2.0, 12.0], [-6.0, -16.0]]:   # two pairs of walking legs, long and thin
-		for side in [1, -1]:
-			limb(n, [Vector3(leg[0], 22.0, 4.0 * side), Vector3(leg[0] + (leg[1] - leg[0]) * 0.4, 34.0, 18.0 * side), Vector3(leg[1], 0.8, 24.0 * side)], [1.8, 1.4, 0.8], dark)
-	n.add_child(blob(Vector3(22.0, 6.5, 7.5), green, Vector3(-20.0, 26.0, 0), Vector3(0, 0, 10)))   # the abdomen
-	for side in [1, -1]:
-		n.add_child(blob(Vector3(20.0, 2.0, 5.0), wing, Vector3(-18.0, 31.0, 3.0 * side), Vector3(0, 0, 10)))
-	n.add_child(blob(Vector3(7.0, 5.0, 6.0), green, Vector3(0.0, 23.0, 0)))   # the thorax
-	limb(n, [Vector3(4.0, 24.0, 0), Vector3(16.0, 42.0, 0)], [3.4, 2.6], green)   # the long prothorax
-	n.add_child(blob(Vector3(3.6, 4.0, 5.6), green, Vector3(19.0, 46.0, 0)))   # the head
-	for side in [1, -1]:
-		n.add_child(blob(Vector3(2.4, 2.6, 2.2), plain(Color("#c8d870")), Vector3(19.5, 48.0, 5.0 * side)))
-		limb(n, [Vector3(20.0, 49.0, 1.5 * side), Vector3(26.0, 58.0, 5.0 * side), Vector3(32.0, 62.0, 8.0 * side)], [0.5, 0.35, 0.2], dark)
-		# The raptorial arms: coxa down and forward, femur back up, spiked, the tibia folded under.
-		var cox := Vector3(13.0, 37.0, 3.5 * side)
-		var elbow := Vector3(20.0, 26.0, 6.0 * side)
-		var wrist := Vector3(25.0, 40.0, 6.5 * side)
-		limb(n, [cox, elbow, wrist], [2.2, 2.4, 1.8], green)
-		limb(n, [wrist, Vector3(22.0, 31.0, 7.0 * side)], [1.6, 0.6], dark)
-		for t in 4:
-			n.add_child(cone(0.1, 0.5, 2.4, spike, elbow.lerp(wrist, 0.2 + t * 0.2) + Vector3(-1.4, 0, 0), Vector3(0, 0, 70), 6))
-	n.add_child(_box(Vector3(12.0, 0.8, 16.0), s.team, Vector3(-8.0, 31.0, 0), Vector3(0, 0, 8)))
-	n.add_child(_box(Vector3(9.0, 1.6, 8.0), s.dark, Vector3(-8.0, 32.2, 0), Vector3(0, 0, 8)))
-	return {"node": n, "sockets": {"crew0_f0_top": Vector3(-8.0, 33.4, 0)}}
 
 
 ## Forest beetles, b: a giant centipede, long and low, banded red-brown, yellow legs down its whole
@@ -655,68 +394,6 @@ func _concept_gs2_frog_turtle(c: Dictionary) -> Dictionary: return _sling_turtle
 func _concept_gs2_packed_timber(c: Dictionary) -> Dictionary: return _great_packed(_style("timber", c))
 
 
-## The frame and arm on its sills at y = `base` (0, or a deck), `k` times the size; returns the short
-## end (where the pull ropes hang) and the long end.
-func sling_frame(n: Node3D, s: Dictionary, base := 0.0, k := 1.0) -> Array:
-	var T := 4.2 * k   # the timbers
-	var top := base + 50.0 * k
-	var L := 28.0 * k
-	var W := 15.0 * k
-	for side in [1, -1]:
-		n.add_child(beam(Vector3(-L, base + T * 0.5, W * side), Vector3(L, base + T * 0.5, W * side), T, T, s.dark))   # the sills
-		n.add_child(beam(Vector3(-16.0 * k, base + T, W * side), Vector3(0, top, 7.0 * k * side), T * 0.9, T * 0.9, s.wood))   # the tower's legs
-		n.add_child(beam(Vector3(16.0 * k, base + T, W * side), Vector3(0, top, 7.0 * k * side), T * 0.9, T * 0.9, s.wood))
-		n.add_child(beam(Vector3(-8.0 * k, base + 25.0 * k, 11.0 * k * side), Vector3(8.0 * k, base + 25.0 * k, 11.0 * k * side), T * 0.7, T * 0.7, s.dark))   # the cross tie
-		n.add_child(beam(Vector3(-L + 2.0 * k, base + T, W * side), Vector3(-9.0 * k, base + 30.0 * k, 10.0 * k * side), T * 0.7, T * 0.7, s.dark))   # raking struts
-		n.add_child(beam(Vector3(L - 2.0 * k, base + T, W * side), Vector3(9.0 * k, base + 30.0 * k, 10.0 * k * side), T * 0.7, T * 0.7, s.dark))
-		n.add_child(_box(Vector3(T + 1.2, 2.2 * k, T + 1.2), s.metal, Vector3(0, top - 1.0 * k, 7.0 * k * side)))   # the bearing caps
-	for x in [-L + 2.0 * k, 0.0, L - 2.0 * k]:
-		n.add_child(beam(Vector3(x, base + T * 1.5, -W - 2.0 * k), Vector3(x, base + T * 1.5, W + 2.0 * k), T, T, s.dark))
-	n.add_child(rod(Vector3(0, top, -10.0 * k), Vector3(0, top, 10.0 * k), 1.8 * k, 1.8 * k, s.metal, false))   # the axle
-	# The arm, cocked: the short end forward and down, the long end back and high; thick at the axle,
-	# tapering, bound with iron.
-	var short := Vector3(18.0 * k, top - 10.0 * k, 0)
-	var long := Vector3(-48.0 * k, top + 26.0 * k, 0)
-	var mid := short.lerp(long, 0.3)
-	n.add_child(beam(short, mid, 5.4 * k, 5.4 * k, s.wood))
-	n.add_child(beam(mid, long, 3.6 * k, 3.6 * k, s.wood))
-	var ang := rad_to_deg((long - short).angle_to(Vector3.RIGHT))
-	for t in [0.08, 0.22, 0.42, 0.62]:
-		n.add_child(ring(2.2 * k, 3.4 * k, s.metal, short.lerp(long, t), Vector3(0, 0, 90 + ang)))
-	n.add_child(_box(Vector3(14.0 * k, 0.6, 5.8 * k), s.team, short.lerp(long, 0.48) + Vector3(0, 2.4 * k, 0), Vector3(0, 0, ang)))
-	# The sling: two cords from the long end down to a big pouch with a boulder in it.
-	var pouch := long + Vector3(-3.0, -20.0, 0) * k
-	for z in [1.2, -1.2]:
-		n.add_child(rod(long, pouch + Vector3(0, 1.0, z) * k, 0.35, 0.35, s.rope, false))
-	n.add_child(blob(Vector3(3.6, 2.4, 3.6) * k, surf("leather", Color.WHITE, 2.0), pouch))
-	n.add_child(blob(Vector3.ONE * 3.2 * k, s.ammo, pouch + Vector3(0, 1.4, 0) * k))
-	# A crossbar at the short end, the pull ropes hanging from it.
-	n.add_child(rod(short + Vector3(0, -2.0, -8.0) * k, short + Vector3(0, -2.0, 8.0) * k, 1.0 * k, 1.0 * k, s.dark))
-	return [short + Vector3(0, -2.0, 0) * k, long]
-
-
-## On its sills: six haulers in two ranks in front, one loader at the stone pile behind.
-func _great_sling(s: Dictionary) -> Dictionary:
-	var n := Node3D.new()
-	var ends := sling_frame(n, s)
-	var short: Vector3 = ends[0]
-	var sockets := {}
-	for k in 6:
-		var at := Vector3(36.0 + (k / 3) * 12.0, 0, (k % 3 - 1) * 11.0 + (k / 3) * 4.0)
-		n.add_child(rod(short + Vector3(0, 0, clampf(at.z, -7.0, 7.0)), at + Vector3(-1.0, 13.0, 0), 0.4, 0.4, s.rope, false))
-		sockets["crew%d_f4_raise" % k] = at
-	for k in 7:   # the stone pile
-		var a := k * 2.4
-		n.add_child(blob(Vector3.ONE * (2.8 - (k % 3) * 0.4), s.ammo, Vector3(-36.0 + cos(a) * 3.5, 2.4 + (1.6 if k == 6 else 0.0), 22.0 + sin(a) * 3.0)))
-	sockets["crew6_f6_reach"] = Vector3(-36.0, 0, 13.0)
-	pennant(n, s, Vector3(0, 51.0, -10.0), 12.0, 5.0)
-	if s.fam == "junk":   # patched with rusted plate, chain braces
-		for side in [1, -1]:
-			patch(n, s, Vector3(-8.0, 14.0, 15.6 * side), Vector2(7.0, 9.0), Vector3(0, 0, 32), s.plate)
-			chain(n, Vector3(-26.0, 4.0, 15.0 * side), Vector3(0, 48.0, 7.0 * side), s.metal)
-	return {"node": n, "sockets": sockets}
-
-
 ## The frogs, b: the same sling smaller on a deck lashed to the ram's snapping turtle; three frogs on
 ## the deck haul down on the ropes, one walks beside.
 func _sling_turtle(s: Dictionary) -> Dictionary:
@@ -737,18 +414,139 @@ func _sling_turtle(s: Dictionary) -> Dictionary:
 	return {"node": n, "sockets": sockets}
 
 
-## Packed to march: the frame's timbers and the arm laid on a long, heavy wagon, the sling and ropes
-## coiled, two crew walking beside.
-func _great_packed(s: Dictionary) -> Dictionary:
+
+# ================================================================== FS1: the frogs' great sling
+# D-129 (Dominic): GS2's frogs: "the tortoise one is wrong, and the plain one probably too boring". Three swamp
+# ideas that repeat none of their beasts so far (the turtle ram, the snail catapult, the toad bolt thrower, the
+# heron war beast, newt cavalry). Until Dominic picks, the frogs' great sling in play wears their snail catapult.
+#   A  the bullfrog leaper: a counterweight sling whose weight is a giant bullfrog, crouched on a reed
+#      tower behind it, leaping down onto the padded short arm to fling the stone
+#   B  the stilt sling: the GS2 frame smaller on a deck high on bundled-reed stilts over a sledge (a swamp
+#      house on the move), four haulers up on the deck, a loader below
+#   C  the crayfish winder: the GS2 frame hauled down by a giant crayfish gripping the pull ropes in its
+#      claws, a frog driving it from its back, a loader at the stones
+
+func _concept_fs1_a(c: Dictionary) -> Dictionary: return _fs1_bullfrog(_style("frog", c))
+func _concept_fs1_b(c: Dictionary) -> Dictionary: return _fs1_stilts(_style("frog", c))
+func _concept_fs1_c(c: Dictionary) -> Dictionary: return _fs1_crayfish(_style("frog", c))
+
+
+## A giant bullfrog crouched, facing +x, its feet on y = 0 at `at`: olive back, yellow throat, gold eyes,
+## the brown eardrum, hind legs folded high to spring.
+func bullfrog(n: Node3D, at: Vector3, k := 1.0) -> void:
+	var skin := surf("frog_skin", Color("#6a8a3a"), 6.0)
+	skin.roughness = 0.45
+	var dark := surf("frog_skin", Color("#3e5a24"), 5.0)
+	var throat := surf("frog_belly", Color("#e0c860"), 5.0)
+	var b := Node3D.new()
+	b.position = at
+	b.scale = Vector3.ONE * k
+	n.add_child(b)
+	b.add_child(blob(Vector3(13.0, 8.5, 10.5), skin, Vector3(-2.0, 9.5, 0), Vector3(0, 0, 22)))   # the back, sloping up to the head
+	b.add_child(blob(Vector3(9.0, 4.5, 8.0), throat, Vector3(4.0, 6.0, 0), Vector3(0, 0, 22)))
+	b.add_child(blob(Vector3(8.5, 6.0, 9.5), skin, Vector3(9.0, 13.5, 0)))   # the head
+	b.add_child(blob(Vector3(7.0, 3.2, 8.4), throat, Vector3(10.0, 10.0, 0)))   # the throat
+	b.add_child(rod(Vector3(16.6, 12.0, -6.0), Vector3(17.4, 12.0, 0), 0.4, 0.4, plain(INK)))   # the wide mouth
+	b.add_child(rod(Vector3(17.4, 12.0, 0), Vector3(16.6, 12.0, 6.0), 0.4, 0.4, plain(INK)))
+	for side in [1, -1]:
+		b.add_child(blob(Vector3(2.8, 2.8, 2.6), skin, Vector3(10.0, 19.0, 5.0 * side)))   # the eyes
+		b.add_child(blob(Vector3(1.6, 1.6, 1.2), plain(Color("#d8a830")), Vector3(11.6, 19.6, 6.0 * side)))
+		b.add_child(blob(Vector3(0.5, 0.9, 0.4), plain(Color("#140c06")), Vector3(12.8, 19.8, 6.6 * side)))
+		b.add_child(cone(2.2, 2.2, 0.5, plain(Color("#7a5a30")), Vector3(5.0, 15.0, 8.4 * side), Vector3(90, 0, 0), 14))   # the eardrum
+		b.add_child(blob(Vector3(11.0, 6.0, 4.5), dark, Vector3(-8.0, 6.5, 9.5 * side), Vector3(0, 0, 25)))   # a folded hind leg
+		b.add_child(rod(Vector3(-2.0, 1.0, 11.5 * side), Vector3(8.0, 0.8, 13.0 * side), 1.8, 1.2, dark))   # its long foot
+		b.add_child(rod(Vector3(8.0, 10.0, 6.0 * side), Vector3(12.0, 0.8, 8.5 * side), 2.0, 1.5, skin))   # a front leg
+		for t in 4:
+			b.add_child(rod(Vector3(12.0, 0.8, 8.5 * side), Vector3(15.0, 0.6, (8.5 + (t - 1.5) * 1.4) * side), 0.6, 0.45, skin))
+	for t in 10:   # dark blotches over the back
+		var a := t * 2.39996
+		b.add_child(blob(Vector3(2.4, 0.8, 1.8), dark, Vector3(-4.0 + cos(a) * 7.0, 15.0 + sin(a * 0.5) * 1.5, sin(a) * 6.0)))
+
+
+## A: the counterweight sling worked by a bullfrog. The arm the other way from the traction sling: its long
+## end down in front with the pouch on the ground, its short end up high behind with a padded landing pad;
+## a reed tower behind it, the bullfrog crouched on top to leap onto the pad. Two frogs load the pouch, one
+## minds the tower.
+func _fs1_bullfrog(s: Dictionary) -> Dictionary:
 	var n := Node3D.new()
-	undercarriage(n, s, 54.0, 20.0, 6.0)
-	n.add_child(_box(Vector3(58.0, 2.4, 20.0), s.dark, Vector3(0, 12.0, 0)))
-	for z in [-7.0, 0.0, 7.0]:
-		n.add_child(beam(Vector3(-26.0, 15.4, z), Vector3(26.0, 15.4, z), 4.2, 4.2, s.wood))
-	n.add_child(beam(Vector3(-34.0, 20.0, 0), Vector3(34.0, 20.0, 0), 5.0, 5.0, s.wood))
-	for t in [-20.0, 0.0, 20.0]:
-		n.add_child(ring(2.6, 3.8, s.metal, Vector3(t, 20.0, 0), Vector3(0, 0, 90)))
-	n.add_child(ring(2.4, 3.6, s.rope, Vector3(-14.0, 23.2, 0)))
-	n.add_child(ring(2.4, 3.6, s.rope, Vector3(12.0, 23.2, 0)))
-	n.add_child(_box(Vector3(18.0, 0.5, 21.0), s.team, Vector3(0, 13.4, 0)))
-	return {"node": n, "sockets": {"crew0_f0": Vector3(8.0, 0, 18.0), "crew1_f0": Vector3(-14.0, 0, -18.0)}}
+	var k := 0.9
+	var top := sling_towers(n, s, 0.0, k)
+	var short := Vector3(-15.0, top + 15.0, 0)
+	var long := Vector3(40.0, 10.0, 0)
+	sling_arm(n, s, short, long, k, Vector3(6.0, -5.0, 0))
+	n.add_child(_box(Vector3(13.0, 2.0, 13.0), s.wicker, short + Vector3(-1.0, 2.2, 0)))   # the landing pad
+	n.add_child(_box(Vector3(11.0, 0.6, 11.0), s.team, short + Vector3(-1.0, 3.5, 0)))
+	# The tower: four bundled reed posts, braced, a plank top.
+	var tx := -40.0
+	var th := 62.0
+	for x in [tx - 6.0, tx + 6.0]:
+		for z in [-6.0, 6.0]:
+			bundle(n, Vector3(x, 0, z), Vector3(x, th, z * 0.9), 1.6, s, 4, 1.3)
+	for y in [20.0, 42.0]:
+		for z in [-6.0, 6.0]:
+			n.add_child(rod(Vector3(tx - 6.0, y, z), Vector3(tx + 6.0, y + 8.0, z), 0.6, 0.6, s.lash))
+	n.add_child(_box(Vector3(16.0, 2.0, 16.0), s.plank, Vector3(tx, th + 1.0, 0)))
+	bullfrog(n, Vector3(tx - 2.0, th + 2.0, 0), 1.05)
+	for kk in 5:   # stones by the pouch
+		var a := kk * 2.4
+		n.add_child(blob(Vector3.ONE * (2.6 - (kk % 3) * 0.4), s.ammo, Vector3(52.0 + cos(a) * 3.0, 2.2, 20.0 + sin(a) * 2.6)))
+	pennant(n, s, Vector3(tx + 6.0, th + 2.0, -6.0), 12.0, 4.5)
+	return {"node": n, "sockets": {"crew0_f4_reach": Vector3(58.0, 0, 11.0), "crew1_f4_reach": Vector3(52.0, 0, -13.0), "crew2_f0": Vector3(-24.0, 0, 20.0)}}
+
+
+## B: the stilt sling. A sledge on the ground, bundled-reed stilts up to a long deck, the GS2 frame smaller on
+## it; the pull ropes run down to cleats at the deck's front, four frogs hauling beside them up on the deck,
+## one loading from the stones on the ground behind.
+func _fs1_stilts(s: Dictionary) -> Dictionary:
+	var n := Node3D.new()
+	var dy := 34.0
+	sledge(n, s, 84.0, 32.0, 9.0)
+	for x in [-24.0, 9.0, 42.0]:
+		for z in [-13.0, 13.0]:
+			bundle(n, Vector3(x, 3.6, z), Vector3(x, dy - 1.5, z), 1.8, s, 3, 1.5)
+		n.add_child(rod(Vector3(x, 6.0, -13.0), Vector3(x, dy - 3.0, 13.0), 0.6, 0.6, s.lash))   # cross lashing
+		n.add_child(rod(Vector3(x, 6.0, 13.0), Vector3(x, dy - 3.0, -13.0), 0.6, 0.6, s.lash))
+	n.add_child(_box(Vector3(84.0, 2.0, 32.0), s.plank, Vector3(9.0, dy - 1.0, 0)))
+	for side in [1, -1]:
+		n.add_child(_box(Vector3(66.0, 6.0, 0.4), s.team, Vector3(9.0, dy - 4.5, 16.4 * side)))
+	var ends := sling_frame(n, s, dy, 0.7)
+	var short: Vector3 = ends[0]
+	var sockets := {}
+	for side in [1, -1]:
+		var cleat := Vector3(48.0, dy, 4.0 * side)
+		n.add_child(rod(short + Vector3(0, 0, 5.0 * side), cleat + Vector3(0, 1.2, 0), 0.4, 0.4, s.rope, false))
+		n.add_child(_box(Vector3(3.0, 2.4, 2.0), s.dark, cleat + Vector3(0, 1.2, 0)))
+	for kk in 4:
+		var side := 1.0 if kk < 2 else -1.0
+		sockets["crew%d_f4_raise_top" % kk] = Vector3(20.0 + (kk % 2) * 21.0, dy + 0.1, 11.0 * side)
+	for kk in 6:
+		var a := kk * 2.4
+		n.add_child(blob(Vector3.ONE * (2.6 - (kk % 3) * 0.4), s.ammo, Vector3(-40.0 + cos(a) * 3.0, 2.2, 24.0 + sin(a) * 2.6)))
+	sockets["crew4_f6_reach"] = Vector3(-40.0, 0, 15.0)
+	return {"node": n, "sockets": sockets}
+
+
+## C: the crayfish winder. The GS2 frame a little smaller, its pull ropes run forward to a giant crayfish
+## that grips them in its claws and backs away to haul the arm down; a frog rides it, another loads from
+## the stones behind the frame.
+func _fs1_crayfish(s: Dictionary) -> Dictionary:
+	var n := Node3D.new()
+	var k := 0.85
+	var ends := sling_frame(n, s, 0.0, k)
+	var short: Vector3 = ends[0]
+	var cray := Node3D.new()
+	var xf := Transform3D(Basis(Vector3.UP, PI).scaled(Vector3.ONE * 0.8), Vector3(84.0, 0, 0))
+	cray.transform = xf
+	crayfish_body(cray, s)
+	n.add_child(cray)
+	for side in [1, -1]:   # each rope from the crossbar into a claw (between its fingers)
+		var claw: Vector3 = xf * Vector3(46.0, 26.5, 17.0 * side)
+		n.add_child(rod(short + Vector3(0, 0, 6.0 * side), claw, 0.45, 0.45, s.rope, false))
+	var seat: Vector3 = xf * Vector3(4.0, 26.0, 0)
+	n.add_child(_box(Vector3(9.0, 1.4, 10.0), s.team, seat + Vector3(0, 0.2, 0)))
+	n.add_child(_box(Vector3(7.0, 1.2, 7.0), s.wicker, seat + Vector3(0, 1.4, 0)))
+	for kk in 7:
+		var a := kk * 2.4
+		n.add_child(blob(Vector3.ONE * (2.6 - (kk % 3) * 0.4), s.ammo, Vector3(-32.0 + cos(a) * 3.2, 2.2, 20.0 + sin(a) * 2.8)))
+	pennant(n, s, Vector3(0, 43.0, -9.0), 11.0, 4.5)
+	return {"node": n, "sockets": {"crew0_f4_top": seat + Vector3(0, 2.1, 0), "crew1_f6_reach": Vector3(-32.0, 0, 11.0)}}

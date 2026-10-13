@@ -48,7 +48,7 @@ func _siege():
 
 
 static func _is_engine(id: String) -> bool:
-	return id.begins_with("siege.") and id.count(".") == 2
+	return (id.begins_with("siege.") and id.count(".") == 2) or id.begins_with("shot.")   # (and what engines throw: siege_models.gd)
 
 
 ## Body armour modelled for one body in that body's space (tools/blender/human_armour.py:

@@ -21,6 +21,7 @@ const Composite3D := preload("res://tests/placement/composite_3d.gd")
 const UnitView := preload("res://src/unit_view.gd")
 
 ## Tolerances (part units; one part unit is 1.275 art pixels at game size).
+const ENGINE_SINK := 4.0     # an engine (a beast's belly) pressed into the ground at most this deep
 const GROUND_TOL := 1.0      # a foot within this of the ground plane; nothing deeper than this below it
 const SUPPORT_SLACK := 3.0   # the centre of mass within this of the feet's support polygon
 const ATTACH_GAP := 1.0      # a joint at most this far outside its parent's surface (floating)
@@ -597,6 +598,13 @@ func _check_engine(label: String, r: Dictionary) -> void:
 	var ev := Geom.voxels(es.node, Transform3D.IDENTITY)
 	var cr: Dictionary = r.crew.duplicate(true)
 	cr.merge({"creature": r.creature, "family": r.family, "slot": "worker", "role": "worker", "tier": 1, "name": ""})
+	# The engine itself (a war beast with nobody on it too, D-129: the tarantula) stands on the ground:
+	# its lowest point (a wheel, a runner, a foot) on the ground plane, not floating; a soft belly or foot
+	# may press into it a little (the frogs' turtle, snail and toad), never sink deep.
+	var low := INF
+	for q in ev:
+		low = minf(low, Geom.unkey(q).y * Geom.RES)
+	note("A1 the engine stands on the ground", label, r.body, low > GROUND_TOL + Geom.RES or low < -ENGINE_SINK, "its lowest point at %.1f" % low)
 	for name in UnitView.engine_sockets(r, es.get("sockets", {})):   # (the sockets UnitView composes crew on)
 		if not name.begins_with("crew"):
 			continue

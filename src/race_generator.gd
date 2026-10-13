@@ -12,7 +12,7 @@ const Pricing := preload("res://src/pricing.gd")
 
 const ROLE_NEEDS := {"worker": "worker", "spear": "spear", "skirmisher": "ranged", "archer": "bow", "large": "melee", "healer": "heal",
 	"ram": "ram", "catapult": "catapult", "bolt_thrower": "bolt_thrower", "siege_tower": "docks", "infantry": "melee", "scout": "melee", "mounted_archer": "bow",
-	"sapper": "sapper", "great_sling": "great_sling"}
+	"sapper": "sapper", "great_sling": "great_sling", "war_beast": "war_beast"}
 ## Tags a role's primary must not have (skirmishers are the non-bow ranged units; the swordsman
 ## line holds a blade or a club, never a spear or a lance).
 ## The scout holds a light weapon: no spear or lance (that would make it anti-cavalry), nothing heavy.
@@ -154,7 +154,7 @@ func generate(prompt: String, rules: Dictionary, reroll := 0) -> Dictionary:
 
 	var ctx := {
 		"rng": rng, "rules": rules, "brief": brief, "tags": tags,
-		"creature": creature, "family": family, "skin": rng.pick(_skins(c, family)), "notes": notes,
+		"creature": creature, "family": family, "skin": rng.pick(_skins(c, family)), "notes": notes, "firsts": {},
 	}
 	# Each roster slot is a unit line through the ages (D-057): first the unit at the age
 	# its slot opens, in that age's kit; then, in a second pass (so the first recipes don't
@@ -181,6 +181,7 @@ func generate(prompt: String, rules: Dictionary, reroll := 0) -> Dictionary:
 			continue
 		if slot_def.slot == "worker":
 			ctx.crew = recipe   # siege engines are crewed by the race's own workers
+		ctx.firsts[slot_def.slot] = recipe   # (a war beast's riders: the spear line's unit)
 		var first := {"age": ctx.age, "recipe": recipe, "eval": Pricing.evaluate(recipe, lib, rules)}
 		units.append({"recipe": recipe, "eval": first.eval, "line": [first]})
 	for k in units.size():
@@ -195,6 +196,23 @@ func generate(prompt: String, rules: Dictionary, reroll := 0) -> Dictionary:
 			var up: Dictionary = units[k].line[-1].recipe if not slot_def.get("upgrades", true) else _upgrade(units[k].line[-1].recipe, slot_def, ctx)
 			units[k].line.append({"age": age, "recipe": up, "eval": Pricing.evaluate(up, lib, rules)})
 	ctx.rng = rng
+	# An engine crewed by another line (rules roster `crew`: the war beast's riders, the spear line) carries
+	# that line's unit as it is at the engine's first age (an age-3 beast, age-3 spearmen), in every age.
+	for k in units.size():
+		var cs: String = slots[k].get("crew", "")
+		if units[k].is_empty() or cs == "":
+			continue
+		for j in units.size():
+			if not units[j].is_empty() and slots[j].slot == cs:
+				var by: Dictionary = units[j].line[0].recipe
+				for l in units[j].line:
+					if int(l.age) <= int(slots[k].tier):
+						by = l.recipe
+				var crew := _crew_from(by, true)
+				for slot in slots[k].get("crew_drop", []):   # what riders stow (wings, capes, banners in a howdah)
+					crew.parts.erase(slot)
+				for l in units[k].line:
+					l.recipe.crew = crew.duplicate(true)
 	units = units.filter(func(u): return not u.is_empty())
 
 	var race := {
@@ -370,16 +388,15 @@ func _make_unit(slot_def: Dictionary, ctx: Dictionary) -> Dictionary:
 ## `armed`: false (the trade cart) has no weapon part.
 func _make_engine(slot_def: Dictionary, ctx: Dictionary) -> Dictionary:
 	var c: Dictionary = lib.creatures[ctx.creature]
-	var take: String = c.get("siege", lib.families[ctx.family].siege)
+	var field: String = slot_def.get("take", "siege")   # (the war beast's: `war_beast`)
+	var take: String = c.get(field, lib.families[ctx.family][field])
 	var body: Dictionary = lib.part("siege.%s.%s" % [slot_def.engine, take])
 	var parts := {}
 	if slot_def.get("armed", true):
 		var weapons: Array = _cands("hand_r", ctx).filter(func(p): return p.has("requires_role") and _for_role(p, slot_def.role))
 		assert(not weapons.is_empty(), "No engine weapon for %s" % slot_def.role)
 		parts.hand_r = _best(weapons, ctx.tags, {}, ctx.rng).id
-	var crew: Dictionary = {"body": ctx.crew.body, "head": ctx.crew.head, "skin": ctx.crew.skin, "parts": ctx.crew.parts.duplicate(), "scale": ctx.crew.scale}
-	if ctx.crew.has("mount"):
-		crew.mount = ctx.crew.mount.duplicate(true)   # a centaur's horse half
+	var crew := _crew_from(ctx.firsts.get(slot_def.get("crew", "worker"), ctx.crew), slot_def.has("crew"))
 	var engine := {
 		"slot": slot_def.slot, "role": slot_def.role, "tier": int(slot_def.tier),
 		"creature": ctx.creature, "family": ctx.family, "skin": ctx.skin,
@@ -388,6 +405,17 @@ func _make_engine(slot_def: Dictionary, ctx: Dictionary) -> Dictionary:
 	if body.has("haul"):   # a beast pulls it (the trade cart, D-127): {creature, skin, parts: its harness}
 		engine.haul = body.haul.duplicate(true)
 	return engine
+
+
+## An engine's crew member from a unit's recipe: its body, head, skin, kit and size (and a centaur's horse
+## half); `as_itself`: it keeps its line (a war beast's riding spearmen are drawn as spearmen, not workers).
+func _crew_from(r: Dictionary, as_itself: bool) -> Dictionary:
+	var crew: Dictionary = {"body": r.body, "head": r.head, "skin": r.skin, "parts": r.parts.duplicate(), "scale": r.scale}
+	if r.has("mount"):
+		crew.mount = r.mount.duplicate(true)   # a centaur's horse half
+	if as_itself:
+		crew.merge({"slot": r.slot, "role": r.role, "tier": int(r.tier), "name": r.get("name", "")})
+	return crew
 
 
 ## Why this race has no such line ("" if it has): rules roster "unless_mounted" names a line that

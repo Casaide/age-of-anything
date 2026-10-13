@@ -73,6 +73,7 @@
    "banner": "ragged"
   },
   "siege": "timber",
+  "war_beast": "heron",
   "pour": "boiling swamp water",
   "unique": "bog_lurker"
  },
@@ -150,6 +151,7 @@
    "banner": "notched"
   },
   "siege": "junk",
+  "war_beast": "boar",
   "pour": "scalding sewage",
   "unique": "scrap_brute"
  },
@@ -226,6 +228,7 @@
    "banner": "notched"
   },
   "siege": "forest",
+  "war_beast": "mantis",
   "pour": "boiling sap",
   "unique": "moss_warden"
  },
@@ -300,6 +303,7 @@
    "banner": "fringe"
   },
   "siege": "timber",
+  "war_beast": "elephant",
   "pour": "hot oil",
   "unique": "testudo"
  },
@@ -376,6 +380,7 @@
    "banner": "pointed"
   },
   "siege": "timber",
+  "war_beast": "elephant",
   "pour": "red-hot sand",
   "unique": "phalanx"
  },
@@ -447,6 +452,7 @@
    "banner": "fringe"
   },
   "siege": "timber",
+  "war_beast": "elephant",
   "pour": "boiling pitch",
   "unique": "sworn_knight"
  },
@@ -533,6 +539,7 @@
    "banner": "tongues"
   },
   "siege": "timber",
+  "war_beast": "elephant",
   "pour": "hot oil",
   "unique": "steppe_raider"
  },
@@ -599,6 +606,7 @@
    "banner": "ragged"
   },
   "siege": "spooky",
+  "war_beast": "tarantula",
   "pour": "boiling tar",
   "unique": "gloom_stalker"
  },
@@ -676,6 +684,7 @@
    "banner": "pointed"
   },
   "siege": "timber",
+  "war_beast": "elephant",
   "pour": "red-hot sand",
   "unique": "nile_bowguard"
  },
@@ -751,6 +760,7 @@
    "banner": "swallowtail"
   },
   "siege": "timber",
+  "war_beast": "elephant",
   "pour": "boiling oil",
   "unique": "repeater"
  },
@@ -822,6 +832,7 @@
    "banner": "scalloped"
   },
   "siege": "timber",
+  "war_beast": "elephant",
   "pour": "hot ash",
   "unique": "obsidian"
  }

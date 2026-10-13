@@ -7,6 +7,7 @@ extends Node
 
 const PartShape := preload("res://src/part_shape.gd")
 const UnitView := preload("res://src/unit_view.gd")
+const CombatFx := preload("res://src/view/combat_fx.gd")
 const PartBaker := preload("res://scenes/art_pixel/part_baker.gd")
 const Baker := preload("res://src/view/art/bake/baker.gd")
 const Models := preload("res://src/view/art/bake/models.gd")
@@ -316,6 +317,15 @@ func _steps_jobs(units: Array) -> Array:
 		# trade cart's cat went unbaked: the placement check, "every part drawn is baked").
 		if l.recipe.has("crew"):
 			steps.append({"recipe": UnitView.crew_recipe(l.recipe), "eval": l.eval})
+			var packed: String = lib.part(l.recipe.body).get("packed", "")
+			if packed != "":   # the great sling on its wagon (UnitView.set_packed, D-129)
+				var pr: Dictionary = l.recipe.duplicate()
+				pr.body = packed
+				steps.append({"recipe": pr, "eval": l.eval})
+			var shot: String = lib.part(l.recipe.body).get("shot", "")
+			if shot != "":   # what it throws (data/siege_shots.json), drawn in flight by combat_fx.gd
+				var sp: String = CombatFx.look(shot).part
+				ids.append(_part_job(sp, lib.part(sp).shapes, UnitView.colours_for(lib, l.recipe.skin, l.recipe.family, ANIMAL_TEAM)))
 		if l.recipe.has("haul"):
 			steps.append({"recipe": UnitView.haul_recipe(lib, l.recipe), "eval": l.eval})
 		# What a worker pushes home (D-127, creatures.json push_home: the rats' barrow and handcart).
