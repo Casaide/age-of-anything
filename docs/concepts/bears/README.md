@@ -75,11 +75,16 @@ model (`helm.bear_open_2`, `_3`, `helm.bear_crest_3`), and the bear tags favour 
 bear lines keep their own helmets through the ages instead of switching to the stock Greek ones.
 The one exception is the hellenic unique unit, which keeps its theme's Corinthian helmet.
 
+**Bonuses.** Since milestone 14 every race needs bonuses, and the staged bears had none, so every
+check that staged them logged errors. As placeholders, the bears are folk (research faster: the
+clever ones) and have thick fur (+4 hp a unit, priced through points), until bears go in play.
+
 ### Questions for Dominic (B3)
 
 1. Does the mounted bear's neck read right now, from the side and from the back?
 2. Should the helmets differ by age as well as by rank (the same model for now), or is the step from
    cap to ear cups enough?
+3. The bears' bonuses: folk and thick fur as placeholders, or something of their own?
 
 ## Round B2 (2026-10-13): short muzzles, the mount's head low
 
