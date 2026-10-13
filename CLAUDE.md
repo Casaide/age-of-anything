@@ -127,6 +127,10 @@ assets/art/textures/  texture art authored by Claude (SVG), mapped onto unit mod
 assets/audio/    every sound and music stem, rendered by tools/audio/render.py (see docs/audio.md)
 scenes/sim_debug.* the playable debug match: select, smart right-click, panel (Q/H/C), Tab side, F6 autoplay,
                    F3 flow, F5/F9 replays, G regen army
+mods/            mods (milestone 21, docs/modding.md): folders of more data/ + models; scifi_test is the example.
+                 Loaded only when asked (AOW_MODS=id). mods_private/ is gitignored: fan pieces, never committed
+src/mods.gd      finds, checks and merges mods (load order); DataLib.load_rules(id) gives rules with mods
+tools/mods/      new_mod.py (scaffold a mod), pack.py (zip it)
 tests/           headless checks and dev tools (see Commands)
 tools/blender/   bpy scripts that model parts (blender -b --python ...); output .glb in assets/models/
 tools/ui/        crests.py: writes the culture crests (assets/art/ui/crest_*.svg)
@@ -174,6 +178,8 @@ godot --path . --audio-driver Dummy --always-on-top --script res://tests/siege_t
 python3 tools/maps/siege_vale.py                                   # rebuild Siege Vale, the siege showcase map
 python3 tools/audio/render.py [sfx|voices|music|<name>...]       # re-render the sounds into assets/audio (~15 s)
 python3 tools/audio/check.py assets/audio/sfx/chop_*.wav          # length, peak, RMS, pitch guess; afplay to listen
+godot --headless --path . --script res://tests/mod_check.gd -- scifi_test   # load a mod (or say why not) + 3D placement on its units
+python3 tools/mods/new_mod.py <id> [--era <tag>] [--private]       # scaffold a mod (docs/modding.md); tools/mods/pack.py <id> zips it
 godot --path .                                                     # run the game (match setup; Race Lab from there)
 ```
 

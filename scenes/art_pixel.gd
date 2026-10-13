@@ -104,7 +104,7 @@ func _ready() -> void:
 
 func _build() -> void:
 	var gen = Generator.new(lib)
-	var rules = DataLib.load_json("res://data/rules/default.json")
+	var rules = DataLib.load_rules("default")
 	if prompts.is_empty():
 		var args := OS.get_cmdline_user_args()
 		prompts = [args[0], args[1]] if args.size() > 1 and not args[0].ends_with(".png") and not args[0].begins_with("/") else PROMPTS.duplicate()

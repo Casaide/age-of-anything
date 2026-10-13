@@ -9,7 +9,7 @@ const Generator := preload("res://src/race_generator.gd")
 func _init() -> void:
 	var lib = DataLib.new()
 	var gen = Generator.new(lib)
-	var rules = DataLib.load_json("res://data/rules/default.json")
+	var rules = DataLib.load_rules(OS.get_environment("AOW_RULES") if OS.get_environment("AOW_RULES") != "" else "default")   # (AOW_RULES=anything; AOW_MODS=scifi_test: src/mods.gd)
 	var prompts := OS.get_cmdline_user_args()
 	if prompts.is_empty():
 		prompts = ["angry swamp frogs with reed spears", "sewer rats with cheese hammers", "centaur romans", "flying greeks with wings"]

@@ -22,6 +22,8 @@ func has(id: String) -> bool:
 	var base := id.get_slice("~", 0).get_slice("@", 0)
 	if CreatureKit.has_part(base):
 		return true
+	if Mods.glb_parts.has(base):
+		return true
 	var fn := "_" + base.replace(".", "_")
 	return has_method(fn) or extra.any(func(e): return e.has_method(fn))
 
@@ -29,7 +31,8 @@ func has(id: String) -> bool:
 ## Creature-kit parts (scenes/art_pixel/creature_kit.gd: a skeleton in data) and concept model files
 ## staged by tests and sheets (data/later/*.json "models": e.g. a bear's helmet) build here too.
 const CreatureKit := preload("res://scenes/art_pixel/creature_kit.gd")
-static var extra := []   # instances of unit_models subclasses with more parts (CreatureKit.stage adds them)
+static var extra := []   # instances of unit_models subclasses with more parts (CreatureKit.stage adds them; so do mods)
+const Mods := preload("res://src/mods.gd")   # (a mod's part may be a .glb: Mods.glb_parts)
 var _kit = null
 
 
@@ -108,6 +111,8 @@ func build(id: String, colours: Dictionary) -> Dictionary:
 		if _kit == null:
 			_kit = CreatureKit.new()
 		return _kit.build(self, base, colours)
+	if Mods.glb_parts.has(base):
+		return {"node": glb_file(Mods.glb_parts[base], mod_materials(Mods.glb_parts[base], colours))}
 	var fn := "_" + base.replace(".", "_")
 	if not has_method(fn):
 		for e in extra:
@@ -156,10 +161,12 @@ func arm_pose(sh: Vector3, elbow: Vector3, hand: Vector3, head: Vector3) -> Arra
 
 # ------------------------------------------------------------------ materials
 
+## A texture by name (assets/art/textures/<name>.svg), or by its path without ".svg" (a mod's own:
+## "res://mods/<id>/textures/<name>"; mod_tex() in a mod's model script makes the path).
 func tex(name: String) -> Texture2D:
 	if not tex_cache.has(name):
 		var img := Image.new()
-		img.load_svg_from_string(FileAccess.get_file_as_string(TEX_DIR + name + ".svg"), 1.0)
+		img.load_svg_from_string(FileAccess.get_file_as_string((name if "://" in name else TEX_DIR + name) + ".svg"), 1.0)
 		img.generate_mipmaps()
 		tex_cache[name] = ImageTexture.create_from_image(img)
 	return tex_cache[name]
@@ -2973,7 +2980,13 @@ static var _glb_cache := {}
 
 ## A .glb from assets/models as a fresh Node3D, each material named in `mats` replaced.
 func glb(name: String, mats: Dictionary) -> Node3D:
-	var path := "res://assets/models/%s.glb" % name
+	return glb_file("res://assets/models/%s.glb" % name, mats)
+
+
+## A modelled part from any .glb (a mod's: res://mods/<id>/models/..., user://mods/...), its named
+## materials swapped for ours (mats: material name -> Material).
+func glb_file(path: String, mats: Dictionary) -> Node3D:
+	var name := path
 	if not _glb_cache.has(name):
 		var doc := GLTFDocument.new()
 		var state := GLTFState.new()
@@ -2995,6 +3008,26 @@ func glb(name: String, mats: Dictionary) -> Node3D:
 			if mats.has(key):
 				m.set_surface_override_material(k, mats[key])
 	return n
+
+
+## The game's materials for a mod's .glb, by the names of its materials: team, skin, skin2, cloth, cloth2
+## (the unit's colours), glow_<hex> (lit, unshaded), or a texture's name (assets/art/textures:
+## iron, bronze, leather, wood_grain, cloth...); any other keeps the .glb's own.
+func mod_materials(path: String, c: Dictionary) -> Dictionary:
+	var out := {}
+	var doc := GLTFDocument.new()
+	var state := GLTFState.new()
+	var err := doc.append_from_file(path, state)
+	assert(err == OK, "Can't load %s" % path)
+	for m in state.get_materials():
+		var n: String = m.resource_name
+		if n in ["team", "skin", "skin2", "cloth", "cloth2"]:
+			out[n] = surf("cloth", c[n], 3.0) if n.begins_with("cloth") else plain(c[n])
+		elif n.begins_with("glow_"):
+			out[n] = glow(Color(n.trim_prefix("glow_")))
+		elif FileAccess.file_exists(TEX_DIR + n + ".svg"):
+			out[n] = surf(n, Color.WHITE, 3.0)
+	return out
 
 
 # ------------------------------------------------------------------ the Nile, Han and Aztec kits (GC1, Dominic's pick)

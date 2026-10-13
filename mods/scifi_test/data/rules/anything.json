@@ -1,0 +1,4 @@
+{
+ "_doc": "Anything goes lets the future in: the scifi era joins its eras (\"+era\" appends to the list). The parts still only come when the prompt asks for them (only_if: scifi).",
+ "+era": ["scifi"]
+}

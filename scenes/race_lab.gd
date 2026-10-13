@@ -47,7 +47,7 @@ func _ready() -> void:
 	lib = DataLib.new()
 	gen = Generator.new(lib)
 	for id in RULE_IDS:
-		rules_list.append(DataLib.load_json("res://data/rules/%s.json" % id))
+		rules_list.append(DataLib.load_rules(id))
 	_build_ui()
 	kit = ArtKit.new()
 	kit.lib = lib

@@ -15,6 +15,7 @@ const Cases := preload("res://tests/placement/cases.gd")
 const GeometryCheck := preload("res://tests/placement/geometry_check.gd")
 const GeometryRun := preload("res://tests/geometry_check.gd")
 const Fixtures3D := preload("res://tests/placement/fixtures_3d.gd")
+const CombatFx := preload("res://src/view/combat_fx.gd")
 
 const PROMPTS := [
 	"angry swamp frogs with reed spears",
@@ -55,6 +56,7 @@ func _init() -> void:
 	_test_tech_tree(lib, gen, rules)
 	_test_identity(lib, gen, rules.default)
 	_test_scripts_parse()
+	_test_mods(lib, rules)
 	if "placement" in OS.get_cmdline_user_args():   # (the batch runs it as placement_check.gd 3d, side by side)
 		_test_placement(lib)
 
@@ -75,6 +77,44 @@ func _test_placement(lib) -> void:
 	var fx: Array = Fixtures3D.run(lib)
 	for line in fx[1]:
 		check(line.begins_with("PASS"), "placement " + line.replace("\n", " "))
+
+
+## Milestone 21's mods (src/mods.gd): the example mod merges in load order, its parts only come when
+## asked for and allowed, the race key holds the mod set (and a race without mods keeps its key),
+## its .glb part builds, and every broken fixture in tests/mods is refused with its reason.
+func _test_mods(base_lib, rules: Dictionary) -> void:
+	var Mods = DataLib.Mods
+	var UnitModels = load("res://scenes/art_pixel/unit_models.gd")
+	var plain_key: String = Generator.new(base_lib).generate("future soldiers", rules.anything).key
+	check(not base_lib.parts.has("weapon.pulse_rifle") or not Mods.active.is_empty(), "mods: none used unless asked for")
+	check(Mods.use(["scifi_test"]) == ["scifi_test"], "mods: the example mod loads (%s)" % Mods.refused)
+	var lib = DataLib.new()
+	var gen = Generator.new(lib)
+	var anything: Dictionary = DataLib.load_rules("anything")
+	check("scifi" in anything.era and not "scifi" in DataLib.load_rules("bronze").era, "mods: the rules overlay opens the scifi era where it says")
+	var race: Dictionary = gen.generate("future soldiers", anything)
+	var sk: Dictionary = race.units.filter(func(u): return u.recipe.slot == "skirmisher")[0]
+	check(sk.recipe.parts.hand_r == "weapon.pulse_rifle", "mods: future soldiers carry the pulse rifle (%s)" % sk.recipe.parts.hand_r)
+	check(sk.line[-1].recipe.parts.get("head_gear", "") in ["", "helm.visor_sealed"], "mods: an era pack's helmet only gives way to its own (upgrade_within)")
+	check(race.get("mods", []) == Mods.signature() and race.key != plain_key, "mods: the race key holds the mod set")
+	check(gen.generate("future soldiers", anything).key == race.key, "mods: the same prompt gives the same key with the mod")
+	check(Mods.missing(race).is_empty() and Mods.missing({"mods": ["other@1#x"]}) == ["other@1#x"], "mods: a race made with mods we don't have is spotted")
+	var romans: Dictionary = gen.generate("romans", rules.default)
+	check(not romans.units.any(func(u): return u.line.any(func(l): return l.recipe.parts.values().any(func(id): return lib.parts[id].has("only_if") and "scifi" in lib.parts[id].only_if))), "mods: nobody gets future kit unasked")
+	var bronze: Dictionary = gen.generate("future soldiers", DataLib.load_rules("bronze"))
+	check(bronze.notes.any(func(n): return "future" in n.to_lower()), "mods: a host without the era says so (a note)")
+	var buckler: Dictionary = UnitModels.new().build("shield.arc_buckler", UnitView.colours_for(lib, "human_tan", "imperial", Color.RED))
+	check(UnitModels.new().has("shield.arc_buckler") and buckler.node.find_children("*", "MeshInstance3D", true, false).size() > 0, "mods: a .glb part builds")
+	buckler.node.free()
+	check(CombatFx.shot_kind(sk.eval.tags) == "pulse", "mods: the pulse rifle fires the mod's shot")
+	Mods.test_roots = ["res://tests/mods"]
+	var bad := ["no_model", "bad_era", "needs_other", "future_game", "bad_file", "clash"]
+	check(Mods.use(bad + ["scifi_test"]) == ["scifi_test"], "mods: broken mods refused, a good one beside them still loads")
+	for id in bad:
+		check(Mods.refused.has(id), "mods: %s refused (%s)" % [id, Mods.refused.get(id, "not refused")])
+	Mods.test_roots = []
+	Mods.use([])
+	check(Generator.new(DataLib.new()).generate("future soldiers", rules.anything).key == plain_key, "mods: off again, the race is as before")
 
 
 ## Milestone 14's race identity (src/identity.gd): every playable creature with every culture mixes
