@@ -456,6 +456,30 @@ chaotic and a small change moves a match by minutes, so a draw can come back.
 - `sim_profile`: the bots' share rose with longer, bigger matches (Reed Meadow 0.16 -> 0.31 ms a
   tick on average before the rebase); the worst bot think is ~5 ms with the searches sliced.
 
+### Stone for Castles (2026-10-13, Claude; Dominic: "should be enough stone for a few castles in a 1v1")
+**Supply.** A stone tile holds 450 (was 350; `data/terrain.json`), layouts unchanged. Per side within
+16 tiles, two deposits 6-10 tiles from the Town Center: 4500 (was 3500) on every map; contested
+4500 / 4500 / 7200 / 13500 (Reed Meadow / Old Forest / River Delta / the 2v2; was 3500 / 3500 /
+5600 / 10500). The budget a side should be able to raise from home alone: three Castles 1950, a
+stone wall ring round a base (~90 tiles at 5, four gates) ~550, four towers and the Bastion
+research ~700, University, a second Town Center, Stonecutting and Thick Walls ~400: ~3600, with the
+rest of the 4500 for walking losses and a contested pile on top. On main the rats' home stone ran
+out at 23-24 minutes in the Old Forest and River Delta peace audits; now none runs out by 30.
+**Gathering.** The bots had stone; they lost it and the time. (1) The market sold it: food or wood
+under 200 with gold under 500 sold the biggest pile over 500, which in age 3 was the stone saved
+for the Castle, so stone sat at 450-500 all game. The bot now keeps what it saves for (its goal)
+on top of `above` before selling or buying. (2) The age-2 extras (the market, the second
+Barracks) waited in the order before the University, so age 3 opened by paying for them; the
+University and the Castle now come before them (a later age's step is skipped in age 2, so the
+extras still go up there when they can). (3) A blocked step leaned on the economy at
+`build_push` 30, a trickle; steps may carry their own `push` (University, Castle: 70). (4) The mix
+holds a little more stone (age 2: 10, age 3: 20; gold 20 -> 15 in both, its pile sat at 400-500).
+**Checks** (`test_ai -- <map> levels`): University and Castle by 20:00 for Easy and Normal (checked)
+and Hard (built) on Reed Meadow, Old Forest, River Delta and the 2v2 (before: Easy and Normal
+missed on all three 1v1 maps); age 2 and age 3 times unchanged (the age-2-by-6:00 failures were
+there before). Full test_ai on the three 1v1 maps: every match has a winner within 26 minutes,
+Hard beats Normal; Old Forest's healers and shelter failures are on main too.
+
 ## Changes from the original plan
 - 2026-10-12 (Dominic): the 88 x 88 Reed Meadow became the first 2v2 instead of a second 1v1 size.
 - Bridges are one neutral timber look, not one per culture (they belong to nobody); amphibians

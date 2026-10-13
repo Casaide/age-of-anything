@@ -39,7 +39,7 @@ ROOT = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)
 LEGEND = {".": "grass", ",": "swamp", '"': "reeds", "#": "rock", "~": "water",
           "b": "bugbush", "s": "stone", "w": "shallows", "g": "gold",
           "T": "tree", "R": "river", "f": "ford"}
-AMOUNT = {"b": ("food", 150), '"': ("wood", 100), "s": ("stone", 350), "g": ("gold", 800), "T": ("wood", 100)}
+AMOUNT = {"b": ("food", 150), '"': ("wood", 100), "s": ("stone", 450), "g": ("gold", 800), "T": ("wood", 100)}
 
 # Animals per start (sim: src/sim/animals.gd). "size" places a herd: one animal on the ring,
 # the rest beside it. On a map with "symmetry": "rotate" the south-east start gets the mirror
