@@ -6,6 +6,7 @@ extends RefCounted
 var parts := {}       # id -> part dict
 var creatures := {}   # id -> creature dict
 var families := {}    # id -> family dict
+var uniques := {}     # unique-unit theme id -> theme (data/uniques.json, the Castle's unique units)
 var palettes := {}    # skins, materials, teams
 var lexicon := {}     # word -> entry
 var stopwords := {}   # word -> true
@@ -25,6 +26,7 @@ func _init(root := "res://data") -> void:
 		parts[p.id] = p
 	creatures = load_json(root + "/creatures.json")
 	families = load_json(root + "/families.json")
+	uniques = load_json(root + "/uniques.json").themes
 	palettes = load_json(root + "/palettes.json")
 	var lex = load_json(root + "/lexicon.json")
 	lexicon = lex.words

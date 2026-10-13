@@ -1,0 +1,15 @@
+{
+ "schema": "aow.later/1",
+ "_doc": "Postponed, not thrown away (Dominic, 2026-10-13: \"Raider isn't really a thing, sounds race specific like a castle unit\"). The generic Raider line at the Barracks as it stood in data/rules/*.json (planned, never built). Raiders became unique-unit themes instead (data/uniques.json: steppe_raider, gutter_raider, horned_raider, gloom_stalker). Nothing loads this file.",
+ "roster": [
+  {
+   "slot": "raider",
+   "role": "raider",
+   "tier": 3,
+   "name": "Raider",
+   "building": "barracks",
+   "desc": "Beats siege, archers and healers; weak to infantry",
+   "status": "planned"
+  }
+ ]
+}

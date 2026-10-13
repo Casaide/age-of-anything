@@ -1,0 +1,394 @@
+{
+ "schema": "aow.uniques/1",
+ "_doc": "The Castle's unique units (milestone 13 step 4): one per race, a theme chosen by race_generator.gd _unique_theme: the theme whose `asked` tags the prompt asked for most (romans -> testudo, cheese -> big_cheese, even for frogs), else the creature's `unique` (creatures.json), else its culture's (families.json). A theme: `role` (which weapon it needs, as that line's: infantry = a blade or club, spear, archer = a bow, skirmisher = non-bow ranged), `parts` (its signature kit, taken first where the age and era allow; hand_r first), `wants` (tags its other gear leans to), `mount` \"ride\" (on the race's mount, if it has one), `giant` (a giant, where the creature reads well giant), `light` (no heavy kit: the raiders), `stats` (added on top: hp, attack, speed, range, sight in tiles, armour, reload in ticks), `bonus` (attack bonus by class), `price_points` (what the stats and bonus add to its price; the cost curve does the rest), `noun` (its name; the creature's noun goes first unless it's folk or one of the theme's `own` creatures), `desc` (one line for the tech tree page and the card). No new parts: each theme is a distinctive combination of existing ones; the parts each would want are listed in docs/milestones/m13-unit-lines.md (concept-first, D-080).",
+ "themes": {
+  "testudo": {
+   "asked": [
+    "roman"
+   ],
+   "role": "infantry",
+   "parts": [
+    "weapon.gladius",
+    "shield.scutum",
+    "armour.lorica",
+    "helm.galea"
+   ],
+   "wants": {
+    "roman": 3,
+    "shield": 3,
+    "armour": 2
+   },
+   "stats": {
+    "armour": {
+     "pierce": 3
+    }
+   },
+   "price_points": 3,
+   "noun": "Testudo Guard",
+   "desc": "Locked shields: shrugs off arrows (+3 pierce armour); slow, and swords still cut it"
+  },
+  "phalanx": {
+   "asked": [
+    "greek",
+    "phalanx"
+   ],
+   "role": "spear",
+   "parts": [
+    "weapon.dory",
+    "shield.hoplon",
+    "helm.corinthian",
+    "armour.bronze"
+   ],
+   "wants": {
+    "greek": 3,
+    "shield": 2
+   },
+   "stats": {
+    "armour": {
+     "melee": 2
+    }
+   },
+   "price_points": 2,
+   "noun": "Phalanx Guard",
+   "desc": "A wall of bronze spears: holds riders and swordsmen (+2 melee armour); arrows still find it"
+  },
+  "sworn_knight": {
+   "asked": [
+    "knight"
+   ],
+   "role": "infantry",
+   "parts": [
+    "weapon.sword.iron",
+    "shield.kite",
+    "armour.mail",
+    "helm.iron",
+    "cape.cloth"
+   ],
+   "wants": {
+    "knight": 3,
+    "heavy": 2
+   },
+   "stats": {
+    "hp": 20
+   },
+   "price_points": 7,
+   "noun": "Sworn Knight",
+   "desc": "A knight on foot in iron and mail: very hard to kill (+20 HP); slow"
+  },
+  "steppe_raider": {
+   "role": "infantry",
+   "mount": "ride",
+   "light": true,
+   "parts": [
+    "shield.round",
+    "helm.cap"
+   ],
+   "wants": {
+    "light": 2
+   },
+   "stats": {
+    "speed": 3
+   },
+   "bonus": {
+    "worker": 4,
+    "heal": 4,
+    "siege": 4,
+    "building": 3
+   },
+   "price_points": 4,
+   "noun": "Steppe Raider",
+   "desc": "A fast, light rider for raids: workers, healers, engines and buildings; spears and archers stop it"
+  },
+  "gutter_raider": {
+   "role": "infantry",
+   "light": true,
+   "parts": [
+    "helm.thimble"
+   ],
+   "wants": {
+    "sneaky": 3,
+    "light": 2
+   },
+   "stats": {
+    "speed": 3,
+    "attack": 1
+   },
+   "bonus": {
+    "worker": 4,
+    "heal": 4,
+    "siege": 4,
+    "building": 3
+   },
+   "price_points": 4,
+   "noun": "Gutter Raider",
+   "desc": "Quick, light raiders out of the drains: workers, healers, engines and buildings; any real soldier beats them",
+   "own": [
+    "rat"
+   ]
+  },
+  "big_cheese": {
+   "asked": [
+    "cheese"
+   ],
+   "role": "infantry",
+   "parts": [
+    "weapon.cheese_hammer",
+    "armour.sardine",
+    "helm.spoon",
+    "banner.team"
+   ],
+   "wants": {
+    "cheese": 3,
+    "heavy": 2
+   },
+   "stats": {
+    "hp": 20,
+    "attack": 2
+   },
+   "bonus": {
+    "building": 4
+   },
+   "price_points": 20,
+   "noun": "Big Cheese",
+   "desc": "The biggest hammer of cheese, in tin armour: breaks buildings and lines (+20 HP); slow, and archers wear it down",
+   "own": [
+    "rat"
+   ]
+  },
+  "bullfrog": {
+   "role": "infantry",
+   "giant": true,
+   "wants": {
+    "swamp": 2
+   },
+   "bonus": {
+    "infantry": 3
+   },
+   "price_points": 5,
+   "noun": "Great Bullfrog",
+   "desc": "A giant bullfrog that flattens foot soldiers (bonus vs infantry); spears bring it down",
+   "own": [
+    "frog"
+   ]
+  },
+  "web_lurker": {
+   "role": "skirmisher",
+   "light": true,
+   "wants": {
+    "sneaky": 2
+   },
+   "stats": {
+    "speed": 2,
+    "sight": 3
+   },
+   "bonus": {
+    "large": 4
+   },
+   "price_points": 3,
+   "noun": "Web Lurker",
+   "desc": "A quick spitter that waits in the brush for riders and beasts (bonus vs large, +3 sight); swordsmen chase it off",
+   "own": [
+    "spider"
+   ]
+  },
+  "stag_colossus": {
+   "role": "infantry",
+   "giant": true,
+   "wants": {
+    "heavy": 2,
+    "armour": 2
+   },
+   "stats": {
+    "armour": {
+     "melee": 2
+    }
+   },
+   "price_points": 2,
+   "noun": "Stag Colossus",
+   "desc": "A giant stag beetle in bark plates: shrugs off blows (+2 melee armour); spears bring it down",
+   "own": [
+    "beetle"
+   ]
+  },
+  "nile_bowguard": {
+   "asked": [
+    "egyptian"
+   ],
+   "role": "archer",
+   "parts": [
+    "weapon.bow.short",
+    "helm.nile_headcloth",
+    "armour.leather"
+   ],
+   "wants": {
+    "nile": 3
+   },
+   "stats": {
+    "range": 1,
+    "armour": {
+     "pierce": 1
+    }
+   },
+   "price_points": 3,
+   "noun": "Bowguard",
+   "desc": "Picked archers of the river: shoot further (+1 range, +1 pierce armour); skirmishers and riders catch them"
+  },
+  "repeater": {
+   "asked": [
+    "chinese"
+   ],
+   "role": "archer",
+   "parts": [
+    "weapon.crossbow",
+    "helm.han_lamellar",
+    "armour.leather"
+   ],
+   "wants": {
+    "han": 3,
+    "crossbow": 3
+   },
+   "stats": {
+    "attack": -2,
+    "reload": 12
+   },
+   "price_points": 3,
+   "noun": "Repeater Guard",
+   "desc": "A crossbow with a magazine: light bolts, very fast; armour soaks them, skirmishers beat them"
+  },
+  "obsidian": {
+   "asked": [
+    "aztec"
+   ],
+   "role": "infantry",
+   "parts": [
+    "weapon.macuahuitl",
+    "shield.chimalli",
+    "helm.aztec_eagle",
+    "banner.team"
+   ],
+   "wants": {
+    "aztec": 3
+   },
+   "stats": {
+    "speed": 2
+   },
+   "bonus": {
+    "infantry": 3
+   },
+   "price_points": 3,
+   "noun": "Obsidian Champion",
+   "desc": "A fast champion with an obsidian-edged club: cuts down foot soldiers (bonus vs infantry); archers wear it down"
+  },
+  "horned_raider": {
+   "asked": [
+    "viking"
+   ],
+   "role": "infantry",
+   "light": true,
+   "parts": [
+    "shield.round",
+    "helm.horned"
+   ],
+   "wants": {
+    "viking": 3
+   },
+   "stats": {
+    "speed": 2,
+    "attack": 2
+   },
+   "bonus": {
+    "building": 3,
+    "worker": 3
+   },
+   "price_points": 3,
+   "noun": "Horned Raider",
+   "desc": "Light, quick raiders off the boats: hit hard, burn buildings, chase workers; archers and riders beat them"
+  },
+  "bog_lurker": {
+   "role": "skirmisher",
+   "light": true,
+   "parts": [
+    "weapon.blowgun",
+    "cape.leaf",
+    "hat.leaf"
+   ],
+   "wants": {
+    "swamp": 2,
+    "sneaky": 2
+   },
+   "stats": {
+    "speed": 2,
+    "sight": 2
+   },
+   "bonus": {
+    "infantry": 2
+   },
+   "price_points": 3,
+   "noun": "Bog Lurker",
+   "desc": "Quick blowgunners in leaf cloaks: see far, sting foot soldiers (+2 sight, bonus vs infantry); riders run them down"
+  },
+  "moss_warden": {
+   "role": "archer",
+   "parts": [
+    "weapon.bow.short",
+    "cape.leaf",
+    "armour.bark",
+    "helm.acorn"
+   ],
+   "wants": {
+    "forest": 3,
+    "woodland": 2
+   },
+   "stats": {
+    "range": 1,
+    "sight": 3
+   },
+   "price_points": 3,
+   "noun": "Moss Warden",
+   "desc": "Woodland archers who see and shoot further (+1 range, +3 sight); skirmishers and riders catch them"
+  },
+  "scrap_brute": {
+   "role": "infantry",
+   "parts": [
+    "weapon.club.bone",
+    "shield.bottlecap",
+    "armour.bottlecap",
+    "helm.tin_cap"
+   ],
+   "wants": {
+    "junk": 3,
+    "sewer": 2
+   },
+   "stats": {
+    "hp": 15
+   },
+   "bonus": {
+    "building": 4
+   },
+   "price_points": 3,
+   "noun": "Scrap Brute",
+   "desc": "A bruiser in riveted junk: breaks buildings and soaks blows (+15 HP); archers wear it down"
+  },
+  "gloom_stalker": {
+   "role": "infantry",
+   "light": true,
+   "wants": {
+    "spooky": 3,
+    "sneaky": 2
+   },
+   "stats": {
+    "speed": 3,
+    "attack": 2,
+    "sight": 2
+   },
+   "bonus": {
+    "heal": 4,
+    "archer": 3,
+    "worker": 3
+   },
+   "price_points": 4,
+   "noun": "Gloom Stalker",
+   "desc": "Quick things from the dark: fall on archers, healers and workers (+2 sight); spears and real soldiers beat them"
+  }
+ }
+}
