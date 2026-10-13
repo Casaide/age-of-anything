@@ -4230,4 +4230,19 @@ func _ways_run(races: Array, checks_on: bool) -> World:
 		if i >= 0 and w.units.perch[i] == 0 and w.units.x[i] > 6999 and w.units.x[i] < 18000 and w.units.y[i] > 6999 and w.units.y[i] < 18000:
 			inside += 1
 	c.call(inside == swords.size(), "siege ways: sent into the town, they come down the frogs' stairs inside (%d of %d)" % [inside, swords.size()])
+	# The defenders' tools: a frog on the north gatehouse pours on a rat ram at the gate.
+	var guard := _lone(w, 0, "spear", 12500, 9500, "stand")
+	w.issue(0, Commands.MOVE, {"ids": [guard], "x": 12500, "y": 6500})
+	var ram := _lone(w, 1, "ram", 12500, 3000, "passive")
+	w.issue(1, Commands.ATTACK, {"ids": [ram], "target": w.map.occupied[6 * w.map.width + 12]})
+	var pours := 0
+	var scalded := 0
+	for t in 600:
+		w.step()
+		for e in w.events:
+			if e.type == "pour":
+				pours += 1
+			if e.type == "hit" and e.get("pour", false) and e.to == ram:
+				scalded += int(e.damage)
+	c.call(pours >= 2 and scalded > 0, "siege ways: a manned gatehouse pours on the ram at its gate (%d pours, %d damage)" % [pours, scalded])
 	return w
