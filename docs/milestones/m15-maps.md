@@ -69,7 +69,7 @@ a legend into `data/terrain.json` (`data/maps/*.json`), the view builds tiles an
 - [x] 4. Worn paths (built 2026-10-12; the speed bonus is off, see the experiment)
 - [x] 5. High ground (built 2026-10-13; cliff look waiting on Dominic's pick: layered rock in play)
 - [x] 6. 2v2 map, variety maps, lobby teams (variety maps built 2026-10-13: Old Forest, River Delta)
-- [ ] 7. Performance, AI, exit check (performance at size done 2026-10-13, numbers below; the AI and the exit check to come)
+- [ ] 7. Performance, AI, exit check (performance at size done 2026-10-13; the AI done 2026-10-13, numbers below; the exit check to come)
 - [x] Archive: pictures taken along the way, journal, decisions, timeline (journals 2026-10-12, 2026-10-13)
 
 ## Results
@@ -327,6 +327,119 @@ loaded (main 3.35 ms in the same minutes, 17% more); no quiet machine was to be 
 margin on a quiet one is still to confirm (test_sim's own check passed at 2.82 ms loaded). Proposal: keep 3 ms average at 200 units and allow 5 ms at 400 units for sieges (movement,
 separation and fog grow with the units; bots excluded, as each runs on one machine), p99 under 10 ms
 on Dominic's Mac, checked on a weaker machine before release.
+
+### Phase 7, the bots on the new land (2026-10-13, Claude)
+All of it is the bot playing like a player: commands only, from what it sees and remembers; data
+in `data/ai.json` (new sections `scout`, `land`, `expand`; `economy.trade`; `military.raid_*`,
+`contain_*`, `dominant_pct`; `levels.*.guard_crossing`, `raids`, `raid_from`). Four new scripts
+beside `bot.gd`:
+- **`src/ai/routes.gd`**: a whole-map route search for the bots (a bucket-ring Dijkstra like the
+  flow fields', 8 neighbours, diagonals only between cells that are really open), priced per cell:
+  slow ground dearer (a ford for walkers), and the extras a player weighs: trees it could fell, a
+  broken bridge as if mended, ground under enemy fire, the main route (for a flank). 3.5 ms a
+  whole search on 72 x 72, 9 ms on 88 x 88: a study runs as a `Routes.Search` sliced over thinks
+  (1200 cells a think, `land.search_cells`), so no tick spends a whole search.
+- **`src/ai/scout.gd`: scouting and memory.** A worker tours once the bot has 9 workers (150 s at
+  most): round the enemy start at 7 tiles (facing us, and a sixth of a turn each way), then up to 6
+  crossings and the middle, nearest next, home and back to work; from age 2 the fastest idle
+  soldier at home tours every 5 minutes. Hit, a scout runs home. By 4:00 the bot has seen 157-176 of
+  the 289 cells round the enemy start. The fog keeps the ground and the enemy buildings
+  (`fog_seen`); the scout remembers the enemy soldiers it saw for 3 minutes (where, and what), and
+  counter-picks, raids, detours and "who's stronger" read that memory, not just what's in sight
+  this second. A Town Center on a map start counts as known (every player knows the starts): a
+  scout that saw only an outlying camp turned the first wave from the Town Center to the camp
+  (frogs vs passive on Reed Meadow: 9:01 -> 20:22, fixed).
+- **`src/ai/land.gd`: crossings, roads, bridges, hills, flanks.** Fords in clumps and the bridges
+  are the crossings. One "study" (a search) every 2 s at most, each kept fresh on its own clock:
+  *our way* to the wave target and to the enemy start (20 s), *their way* to us on the enemy's lane
+  (30 s; the crossing on it is the **key crossing**), each bridge (30 s), a detour, a flank, a road.
+  - **Bridges.** A broken bridge whose mending makes our way to their start 20% shorter, or is the
+    only way, is mended by the two nearest workers when no enemy soldier is near it (walled-fords
+    check on Reed Meadow: mended at 0:42, and the bot won over it). A standing bridge whose loss
+    makes *their* way 30% longer (or cuts it) is broken by up to 6 melee soldiers idle at home,
+    once they field 6 population, when we swim (amphibians lose nothing) or they outnumber us by
+    30%; one broken on purpose isn't mended while there's another way. In the test matches the
+    condition never came up: the fords lie close to the bridges on all three maps.
+  - **Guarding the crossing.** A level that guards (Easy, Normal), once it has been on the back
+    foot (the army it remembers outnumbering its own by 30%), takes one more build step: a
+    Watchtower at 24 workers within 5 tiles of where their way leaves the key crossing on our side,
+    if that's within 24 tiles of home (a spot search of its own: the house spot's margins off resources find nothing by a ford in
+    the woods). Scenario check (`test_ai -- <map> hills`): 2 tiles from it on Reed Meadow and Old Forest (the delta's key crossing is out by
+    the enemy: skipped).
+  - **Roads through thin woods.** Two searches from the side of home facing the middle (walking;
+    trees at 2.5 times open ground), trees on our side of the map only: the cell beyond 12 tiles
+    with the biggest saving, at least 5 tiles and 10%, with 1-6 trees on the way, gives the road.
+    Three wood gatherers fell exactly those trees (each its own, nearest first), from a lumber camp
+    they lay by the road when nothing of ours takes wood within 4 tiles (kept 2 tiles off the road:
+    the first one shut it). Up to two roads a match, from 16 workers. Old Forest: 3 trees in the
+    north corridor (a 6-7 tile saving; the cut by the enemy's side of the middle saves more but is
+    theirs to cut); Reed Meadow 2-4 trees (20-24 tiles in all), River Delta 3 (26).
+  - **Hills.** Ranged soldiers with 3+ enemy soldiers within 10 tiles step up (a plain move: an
+    attack-move stopped to shoot at the foot) to the nearest higher ground within 10 steps, no
+    lower than the enemy stands; defence and raid answers leave a climbing shooter be. Scenario
+    check: 4 archers 3 steps from a ramp, 4 spears coming: 2+ up in 1-4 s on all three maps; 1-28
+    hill orders a side in the test matches.
+  - **Detours round fire.** Remembered enemy shooters on a hill above our way, and remembered
+    towers (not the ones by the target: those are what the wave is for), price the cells under them;
+    a way round no more than 50% longer gives the wave a waypoint (queued attack-moves). 7-9 waves
+    a match took one in the delta and meadow test matches.
+  - **Amphibious flank.** For an amphibious army, a second way kept 5 cells off the main one, no
+    more than 60% longer: 40% of a wave of 6+ goes that way (through the channels on the delta).
+- **`src/ai/expand.gd`: reaching out.** Camps follow the workers: 3+ gatherers of a resource
+  working over 7 tiles from any drop-off of theirs get a camp (a mill for food) by the middle of
+  them, one look every 45 s, not while saving for an age; a camp it can't pay for is held back from
+  the soldiers (the Hard rats on Old Forest sat at 0-40 wood for minutes, 25 wood gatherers walking
+  9-10 tiles). Escorts: a knot of 4+ gatherers beyond 18 tiles gets 3 soldiers posted (age 2, an
+  army of 10+, two posts), out of the waves. The second Town Center's step waits for 30 workers
+  instead of 40 on a big map (80 wide: the 2v2) or once home runs thin (under 1500 wood or 600 gold
+  within 16 tiles), laid on our side (nearer us than them by a fifth).
+- **Finishing (the Old Forest draw).** Hard vs Normal drew there because Hard bled small waves
+  into towers and a Castle and fell behind. Now: a raiding level (`raids`: Hard 3 groups from the
+  start, Normal 2 from 20 minutes) sends its waves at the enemy's economy first, the camps, mills,
+  farms, pens and markets it remembers out of reach of their shooting buildings; an army under 30
+  population doesn't storm a Town Center under towers or a Castle but waits on its way in, out of
+  their reach (contain), and storms it once it's 30; an army that with its allies' is 2.5 times the
+  enemy army it remembers skips the raids and goes for the Town Centers with everyone out there not
+  fighting a soldier (no more chewing through houses; two bots against a last one finish it
+  together). Each building trains the best counter it can pay for now (one short of wood no longer
+  stops a building whose other line uses the gold piled up). Hard researches gathering and line upgrades first too (`build_up`:
+  it fell behind on the economy). The market trades (`economy.trade`): while food or wood is under
+  200, gold over 500 buys a lot of the lower one; with gold short too, the biggest pile over 500
+  sells (bots sat on 600 gold, stone or food with no wood and armies of 5-15); the market comes at
+  22 workers in age 2 and every level's soldiers leave its cost alone (`save: 2`): at 26 minutes,
+  behind the Castle in the build order, it came too late to matter. No caps anywhere.
+- **Fixes on the way.** Camps, mills and (for the build order) houses no longer hold up the build
+  order: it waited minutes on far houses (the age-3 check failed on that, not on the content).
+  Healers follow the middle of the army's rear half (a wave split by a flank pulled them forward).
+  The flow-field cache is 24 fields a player (was 12): a bot working camps, posts and scouts at once
+  thrashed 12 (fields solved in 15 minutes of Reed Meadow 6587 -> 2689; ~60 KB a field on 88 x 88).
+- **Tests.** `test_ai -- <map> land` (also in the full run): an early scout sees round the enemy
+  start; a Normal match reports what each bot did (tours, roads, camps, posts, hills, raids,
+  guards, flanks, detours) and checks camps go up, a road is felled on Old Forest, the match ends;
+  then the guard and hill scenarios (`-- <map> hills` runs just those). The walled-fords check
+  takes a mended bridge as a way over (and checks the mend on Reed Meadow, where the bridge is the
+  only other way); the healer check leaves posted escorts out of "the army".
+
+**Numbers** (`test_ai -- <map>`, seed 7; before = main at c0658e1, after = this branch; machine
+loaded by other agents' runs throughout, so times are comparative only):
+
+| | Reed Meadow before / after | Old Forest before / after | River Delta before / after |
+|---|---|---|---|
+| test_ai checks | 35/35 / 42/42 | 34/35 (Hard drew Normal) / 42/42 | 35/35 / 40/40 |
+| bot vs bot (3 matches) | 20:35, 24:23, 28:08 / 15:57, 22:44, 26:22 | 9:09, 15:49, 26:26 / 19:57, 20:05, 22:22 | 16:29, 24:18, 26:08 / 14:19, 14:34, 24:06 |
+| Hard vs Normal | Hard 10:06 / Hard 22:44 | draw at 30:00 / Hard 23:42 | Hard 12:05 / Hard 25:27 |
+| bot vs passive (frogs, rats) | 9:01, 8:20 / 21:17, 17:59 | 22:39, 15:30 / 22:23, 23:36 | 19:09, 11:08 / 21:29, 16:30 |
+| levels left alone (age 3 E/N/H) | 14:15, 15:12, 15:13 (m12) / 11:53, 11:41, 11:59 | 13:02, 13:22, 16:35, 3 checks failed / 11:58, 13:13, 13:50, 1 failed (Easy's Castle) | - / 12:31, 12:17, 12:59 |
+
+Every bot match ends inside the 30-minute limit on all three maps. The 2v2 (`test_2v2`, 45-minute
+limit) ended 15:03 before and 27:43 after (a bot left alone behind its Castle had held out to
+37-45 minutes until teammates counted each other in "stronger than them"). Bot matches against a
+passive side got slower: the bot now scouts and raids the economy first, contains outside towers
+and only storms with 30 population. `sim_profile` (same minutes, loaded machine): the bots' share
+of a tick on Reed Meadow 0.16 -> 0.31 ms on average, the 2v2 0.54 -> 0.90 ms (longer matches with
+more units: 157 vs 88 units at the end on Reed Meadow); the worst bot think 9.8 -> ~5 ms after the
+searches were sliced (a whole search was 7-10 ms). test_sim 2.955 ms with main's 2.952 in the
+same minutes (both under its 3 ms budget).
 
 ## Changes from the original plan
 - 2026-10-12 (Dominic): the 88 x 88 Reed Meadow became the first 2v2 instead of a second 1v1 size.
