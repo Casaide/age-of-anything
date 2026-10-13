@@ -64,13 +64,13 @@ func _cost(w: World, p: int, id: String, res: String) -> int:
 
 
 ## Building bonuses: bugs' cheap houses, spiders' cheap walls, imperial buildings, Han walls,
-## rodents' bigger houses, forest wood, folk research.
+## rodents' bigger houses, beetles' wood, folk research.
 func _test_buildings() -> void:
 	var w := _world(["forest beetles", "sewer rats"])
 	check(w.races[0].creature == "beetle" and w.races[0].family == "forest", "the prompt gives forest beetles (%s/%s)" % [w.races[0].creature, w.races[0].family])
 	check(_cost(w, 0, "house", "wood") == 21 and _cost(w, 1, "house", "wood") == 30, "bugs: houses cost 30%% less (%d, rats %d)" % [_cost(w, 0, "house", "wood"), _cost(w, 1, "house", "wood")])
 	var wood := w.resources.find("wood")
-	check(w.gather_ticks[0][wood] == int(w.econ.gather_ticks.wood) * 90 / 100, "forest: wood gathered 10%% faster (%d ticks)" % w.gather_ticks[0][wood])
+	check(w.gather_ticks[0][wood] == int(w.econ.gather_ticks.wood) * 85 / 100, "beetles: wood gathered 15%% faster (bark borers; the forest's wood bonus takes its alt) (%d ticks)" % w.gather_ticks[0][wood])
 	# Rodents: a house holds 6.
 	var cap0: int = w.pop_cap[1]
 	_put(w, 1, "house", w.map.starts[1][0] / 1000 + 4, w.map.starts[1][1] / 1000 + 4)
@@ -103,7 +103,18 @@ func _test_units() -> void:
 	check(sw.types[sw.type_of(0, "spear")].wade == 1, "swamp folk: no slowdown in the swamp or fords")
 	check(sw.types[sw.type_of(1, "spear")].wade == 0, "swamp frogs: amphibious already, so the swamp's bonus takes its alt")
 	var food := sw.resources.find("food")
-	check(sw.gather_ticks[1][food] == int(sw.econ.gather_ticks.food) * 90 / 100, "swamp frogs: ...food gathered 10%% faster (%d)" % sw.gather_ticks[1][food])
+	check(Tech.bpct(sw, 1, Economy.btype_of(sw, "farm"), "food") == 20, "swamp frogs: ...farms hold 20% more food (rich mud)")
+	check(sw.gather_ticks[1][food] == int(sw.econ.gather_ticks.food) * 80 / 100, "frogs: food gathered 20%% faster (%d)" % sw.gather_ticks[1][food])
+	# Team bonuses reach allies (the Nile's granary: 100 more food at the start, for an ally too, not a foe).
+	var nile_races := ["nile humans", "imperial humans", "imperial humans", "forest humans"].map(func(pr): return gen.generate(pr, rules))
+	var tw := World.new(SEED, SimMap.load_id("reed_meadow_2v2"), nile_races, rules, [0, 0, 1, 1])
+	var start_food := int(rules.economy.start.food)
+	check(tw.stock[food][0] == start_food + 100 and tw.stock[food][1] == start_food + 100 and tw.stock[food][2] == start_food,
+		"team: the Nile's granary feeds its ally, not its foes (%d %d %d)" % [tw.stock[food][0], tw.stock[food][1], tw.stock[food][2]])
+	var farm := Economy.btype_of(tw, "farm")
+	check(Tech.bpct(tw, 0, farm, "food") == 30 and Tech.bpct(tw, 1, farm, "food") == 10 and Tech.bpct(tw, 3, farm, "food") == 10,
+		"team: imperial granaries (farms +10%) for themselves and their allies, on top of the Nile's own +20%")
+	check(Tech.bpct(tw, 0, Economy.btype_of(tw, "town_center"), "age_time") == -20, "nile: ages advance 20% faster")
 	var rat: Dictionary = gen.generate("forest rats", rules)
 	var hum: Dictionary = plain
 	check(int(rat.units[1].eval.cost.food) + int(rat.units[1].eval.cost.wood) < int(hum.units[1].eval.cost.food) + int(hum.units[1].eval.cost.wood), "rats: units cheaper")

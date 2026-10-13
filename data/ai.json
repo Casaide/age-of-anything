@@ -7,8 +7,8 @@
     "wood": 55
    },
    "2": {
-    "food": 45,
-    "wood": 30,
+    "food": 40,
+    "wood": 35,
     "gold": 15,
     "stone": 10
    },
@@ -180,6 +180,11 @@
   },
   "_doc_waves": "waves: set times and the army (population) each needs; then one every repeat_every seconds once the army is repeat_min_army (per age: a Town Center full of workers wants a bigger wave). Soldiers left out in the field under half a wave come home to join the next one.",
   "guard": 4,
+  "army_floor": {
+   "pct": 25,
+   "from": 10,
+   "_doc": "bot.gd _army_floor: once it has `from` workers, no new worker while its soldiers (population) are under pct percent of its workers: dear soldiers (centaurs') get bought instead of a 75-food worker every time"
+  },
   "pick_bias": {
    "infantry": -7,
    "scout": -5,

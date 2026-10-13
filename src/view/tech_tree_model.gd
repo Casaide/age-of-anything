@@ -179,6 +179,10 @@ static func effect_text(effects: Array) -> String:
 			out.append("%s gathered %d%% faster" % [String(e.gather).capitalize(), int(e.pct)])
 			last = ""
 			continue
+		if e.has("start"):
+			out.append("%+d %s at the start" % [int(e.add), e.start])
+			last = ""
+			continue
 		if e.has("becomes"):   # tower_upgrade
 			out.append("%ss become %ss" % [String(e.building).capitalize(), String(e.becomes).capitalize()])
 			last = ""
@@ -218,6 +222,7 @@ static func _phrase(stat: String, n: int, pct: bool) -> String:
 			"reload": return "reload %d%% %s" % [a, "faster" if n < 0 else "slower"]
 			"train_time": return "train %d%% %s" % [a, "faster" if n < 0 else "slower"]
 			"research_time": return "research %d%% %s" % [a, "faster" if n < 0 else "slower"]
+			"age_time": return "advance ages %d%% %s" % [a, "faster" if n < 0 else "slower"]
 			"build_speed": return "build %d%% %s" % [a, "faster" if n > 0 else "slower"]
 			"cost": return "%d%% %s" % [a, "cheaper" if n < 0 else "dearer"]
 			"food": return "hold %d%% %s food" % [a, "more" if n > 0 else "less"]

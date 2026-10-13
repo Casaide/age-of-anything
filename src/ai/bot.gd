@@ -133,6 +133,25 @@ func _init(p_player: int, config := {}, level := "normal") -> void:
 	next_wave_tick = int(cfg.military.waves[0].at) * 20
 
 
+## Workers wait while the army is under its floor (military.army_floor: `pct` of the workers, in
+## population, once there are `from` workers and a building that trains soldiers), so a race whose
+## soldiers are dear (centaurs) doesn't spend every 75 food on another worker and meet the first
+## wave with nobody (the Town Center trains the next worker once a soldier is out).
+func _army_floor(w, army: Array, count: int) -> void:
+	var f: Dictionary = cfg.military.get("army_floor", {})
+	var pop := 0
+	for i in army:
+		pop += int(w.types[w.units.kind[i]].pop)
+	eco.hold = false
+	if f.is_empty() or count < int(f.from) or pop * 100 >= count * int(f.pct):
+		return
+	for b in w.buildings.count():   # (only with somewhere to train soldiers: no Barracks yet, no wait)
+		if w.buildings.owner[b] == player and w.buildings.done[b] == 1 and not w.btypes[w.buildings.kind[b]].trains.is_empty() \
+				and not "worker" in w.btypes[w.buildings.kind[b]].trains:
+			eco.hold = true
+			return
+
+
 ## The army (population) a repeat wave needs in this age (military.repeat_min_army: one number,
 ## or one per age: a Town Center full of workers and a tower or two want a bigger wave in age 3).
 func _repeat_min(w) -> int:
@@ -216,6 +235,7 @@ func think(w) -> void:
 			if t.slot == "scout":
 				scouts += 1
 	var count: int = workers.size() + eco.sheltered(w)
+	_army_floor(w, army, count)
 	_build_order(w, tc, workers, count)
 	eco.goal = _goal(w, count)
 	eco.push = 100 if _saving_age else (_blocked_push if not _blocked.is_empty() else int(cfg.economy.get("build_push", 30)))   # (a building leans gently, unless its step says otherwise)

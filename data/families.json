@@ -20,14 +20,39 @@
      }
     ],
     "alt": {
-     "text": "Food gathered 10% faster (foragers)",
+     "text": "Rich mud: farms hold 20% more food",
      "effects": [
       {
-       "gather": "food",
-       "pct": 10
+       "building": "farm",
+       "stat": "food",
+       "pct": 20
       }
      ]
     }
+   },
+   {
+    "text": "Reed mills: Mill and farms 25% cheaper",
+    "effects": [
+     {
+      "building": [
+       "mill",
+       "farm"
+      ],
+      "stat": "cost",
+      "pct": -25
+     }
+    ]
+   },
+   {
+    "text": "Marsh lookouts: buildings +2 sight (allies' too)",
+    "team": true,
+    "effects": [
+     {
+      "building": "all",
+      "stat": "sight",
+      "add": 2
+     }
+    ]
    }
   ],
   "research": [
@@ -107,6 +132,30 @@
       }
      ]
     }
+   },
+   {
+    "text": "Scrap towers: Watchtowers 25% cheaper",
+    "effects": [
+     {
+      "building": [
+       "watchtower",
+       "bastion"
+      ],
+      "stat": "cost",
+      "pct": -25
+     }
+    ]
+   },
+   {
+    "text": "Black market: the market's fee 5 points lower (allies' too)",
+    "team": true,
+    "effects": [
+     {
+      "building": "market",
+      "stat": "trade_fee",
+      "add": -5
+     }
+    ]
    }
   ],
   "research": [
@@ -184,6 +233,39 @@
       }
      ]
     }
+   },
+   {
+    "text": "Woodland archers: bowmen +1 range",
+    "effects": [
+     {
+      "tag": "bow",
+      "stat": "range",
+      "add": 1
+     }
+    ],
+    "price_points": 1,
+    "alt": {
+     "text": "Woodland archers: bowmen +5 hit points",
+     "effects": [
+      {
+       "tag": "bow",
+       "stat": "hp",
+       "add": 5
+      }
+     ],
+     "price_points": 1
+    }
+   },
+   {
+    "text": "Forest lore: Lumber Camps 25% cheaper (allies' too)",
+    "team": true,
+    "effects": [
+     {
+      "building": "lumber_camp",
+      "stat": "cost",
+      "pct": -25
+     }
+    ]
    }
   ],
   "research": [
@@ -256,6 +338,41 @@
      "effects": [
       {
        "building": "all",
+       "stat": "hp",
+       "pct": 10
+      }
+     ]
+    }
+   },
+   {
+    "text": "Drilled legions: foot soldiers train 20% faster",
+    "effects": [
+     {
+      "tag": "melee",
+      "not": [
+       "mounted",
+       "worker"
+      ],
+      "stat": "train_time",
+      "pct": -20
+     }
+    ]
+   },
+   {
+    "text": "Granaries: farms hold 10% more food (allies' too)",
+    "team": true,
+    "effects": [
+     {
+      "building": "farm",
+      "stat": "food",
+      "pct": 10
+     }
+    ],
+    "alt": {
+     "text": "Census: houses +10% hit points (allies' too)",
+     "effects": [
+      {
+       "building": "house",
        "stat": "hp",
        "pct": 10
       }
@@ -338,6 +455,27 @@
      ],
      "price_points": 1
     }
+   },
+   {
+    "text": "Drill yards: research at the Barracks 30% cheaper",
+    "effects": [
+     {
+      "building": "barracks",
+      "stat": "research_cost",
+      "pct": -30
+     }
+    ]
+   },
+   {
+    "text": "Agora: Market 25% cheaper (allies' too)",
+    "team": true,
+    "effects": [
+     {
+      "building": "market",
+      "stat": "cost",
+      "pct": -25
+     }
+    ]
    }
   ],
   "research": [
@@ -406,6 +544,32 @@
       ],
       "stat": "cost",
       "pct": -10
+     }
+    ]
+   },
+   {
+    "text": "Knightly training: cavalry trains 20% faster",
+    "effects": [
+     {
+      "tag": "mounted",
+      "not": [
+       "ranged",
+       "worker",
+       "heal"
+      ],
+      "stat": "train_time",
+      "pct": -20
+     }
+    ]
+   },
+   {
+    "text": "Heralds: units +1 sight (allies' too)",
+    "team": true,
+    "effects": [
+     {
+      "tag": "all",
+      "stat": "sight",
+      "add": 1
      }
     ]
    }
@@ -493,6 +657,42 @@
      ],
      "price_points": 1
     }
+   },
+   {
+    "text": "Horse archers: mounted archers 10% cheaper",
+    "effects": [
+     {
+      "tag": "mounted",
+      "and": [
+       "ranged"
+      ],
+      "not": [
+       "worker"
+      ],
+      "stat": "cost",
+      "pct": -10
+     }
+    ]
+   },
+   {
+    "text": "Herds: food gathered 5% faster (allies' too)",
+    "team": true,
+    "effects": [
+     {
+      "gather": "food",
+      "pct": 5
+     }
+    ],
+    "alt": {
+     "text": "Outriders: units +1 sight (allies' too)",
+     "effects": [
+      {
+       "tag": "all",
+       "stat": "sight",
+       "add": 1
+      }
+     ]
+    }
    }
   ],
   "research": [
@@ -560,6 +760,35 @@
       "tag": "all",
       "stat": "sight",
       "add": 2
+     }
+    ]
+   },
+   {
+    "text": "Night archers: foot archers and skirmishers train 20% faster",
+    "effects": [
+     {
+      "tag": "ranged",
+      "not": [
+       "mounted",
+       "worker",
+       "siege"
+      ],
+      "stat": "train_time",
+      "pct": -20
+     }
+    ]
+   },
+   {
+    "text": "Night watch: Watchtowers +1 range (allies' too)",
+    "team": true,
+    "effects": [
+     {
+      "building": [
+       "watchtower",
+       "bastion"
+      ],
+      "stat": "range",
+      "add": 1
      }
     ]
    }
@@ -642,6 +871,26 @@
       }
      ]
     }
+   },
+   {
+    "text": "Monuments: ages advance 20% faster",
+    "effects": [
+     {
+      "building": "town_center",
+      "stat": "age_time",
+      "pct": -20
+     }
+    ]
+   },
+   {
+    "text": "Granary of the river: 100 more food at the start (allies' too)",
+    "team": true,
+    "effects": [
+     {
+      "start": "food",
+      "add": 100
+     }
+    ]
    }
   ],
   "research": [
@@ -718,6 +967,37 @@
       "pct": 20
      }
     ]
+   },
+   {
+    "text": "Paper and ink: research 10% cheaper",
+    "effects": [
+     {
+      "building": "all",
+      "stat": "research_cost",
+      "pct": -10
+     }
+    ],
+    "alt": {
+     "text": "Printed manuals: research at the Archery Range 30% cheaper",
+     "effects": [
+      {
+       "building": "archery_range",
+       "stat": "research_cost",
+       "pct": -30
+      }
+     ]
+    }
+   },
+   {
+    "text": "Grain stores: Mill 25% cheaper (allies' too)",
+    "team": true,
+    "effects": [
+     {
+      "building": "mill",
+      "stat": "cost",
+      "pct": -25
+     }
+    ]
    }
   ],
   "research": [
@@ -786,6 +1066,32 @@
       ],
       "stat": "kill_gold",
       "add": 5
+     }
+    ]
+   },
+   {
+    "text": "Obsidian edges: foot melee +1 attack",
+    "effects": [
+     {
+      "tag": "melee",
+      "not": [
+       "mounted",
+       "worker"
+      ],
+      "stat": "attack",
+      "add": 1
+     }
+    ],
+    "price_points": 1
+   },
+   {
+    "text": "Flower wars: healers heal 15% more (allies' too)",
+    "team": true,
+    "effects": [
+     {
+      "tag": "heal",
+      "stat": "heal",
+      "pct": 15
      }
     ]
    }

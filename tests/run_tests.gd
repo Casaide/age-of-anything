@@ -118,7 +118,7 @@ func _test_mods(base_lib, rules: Dictionary) -> void:
 
 
 ## Milestone 14's race identity (src/identity.gd): every playable creature with every culture mixes
-## three bonuses, one per layer, no kind twice; every effect has the research shape; own research
+## six bonuses (group 1, creature 2, culture 3 with a team one), no kind twice; every effect has the research shape; own research
 ## and lacks name real things; a race's identity comes from its creature and culture alone (the
 ## recipes and race key don't see it), and its stat bonuses are paid for.
 func _test_identity(lib, gen, rules: Dictionary) -> void:
@@ -133,7 +133,7 @@ func _test_identity(lib, gen, rules: Dictionary) -> void:
 	for cid in lib.creature_ids("playable"):
 		for fid in fams:
 			var ident := Identity.of(cid, fid)
-			check(ident.bonuses.size() == 3, "identity %s/%s: three bonuses (%d)" % [cid, fid, ident.bonuses.size()])
+			check(ident.bonuses.size() == 6, "identity %s/%s: six bonuses (%d)" % [cid, fid, ident.bonuses.size()])
 			var kinds := {}
 			for b in ident.bonuses:
 				kinds[Identity.kind_of(b)] = true
