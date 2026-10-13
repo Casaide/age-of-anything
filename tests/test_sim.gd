@@ -3958,14 +3958,15 @@ func _report_timing(t: Dictionary) -> void:
 
 # --- walls you stand on (milestone 16) ---------------------------------------
 
-## Walls you stand on: the frogs (player 0) in a stone ring round their start with gatehouses north
+## Walls you stand on: the rats (player 0) in a stone ring round their start with gatehouses north
 ## and south and wall towers; archers sent onto the east wall climb up by a way up and spread over
 ## its standing places; up there they aren't pushed about, shoot a tile further, and melee below
 ## can't touch them; sent into the town they climb down; a wall tile knocked down becomes rubble
 ## (those on it fall) that a worker rebuilds for less. Run twice: the same hash.
 func _test_walls(races: Array) -> void:
-	var a := _walls_run(races, true)
-	var b := _walls_run(races, false)
+	var rats_first := [races[1], races[0]]   # (the frogs build no stone walls of their own: milestone 14's lacks)
+	var a := _walls_run(rats_first, true)
+	var b := _walls_run(rats_first, false)
 	check(a.state_hash() == b.state_hash(), "walls: the same commands give the same state hash")
 
 
@@ -4030,12 +4031,12 @@ func _walls_run(races: Array, checks_on: bool) -> World:
 	# A foe a tile beyond an archer's reach, out in the field east of the wall: shot from up there.
 	var a0 := w.units.index_of(archers[0])
 	var t0: Dictionary = w.types[w.units.kind[a0]]
-	var dummy := _lone(w, 1, "spear", w.units.x[a0] + t0.reach + 700 + w.units.radius[a0] + 300, w.units.y[a0], "passive")
-	var far_shot := false
+	w.issue(1, Commands.SPAWN, {"slot": "spear", "count": 1, "x": w.units.x[a0] + t0.reach + 700 + w.units.radius[a0] + 300, "y": w.units.y[a0]})
+	var far_shot := false   # a shot from up on the wall at a foe further off than the archer's reach on the ground
 	for t in 200:
 		w.step()
 		for e in w.events:
-			if e.type == "shot" and e.to == dummy and e.by in archers:
+			if e.type == "shot" and e.by in archers and Fixed.isqrt(Fixed.dist2(e.x0, e.y0, e.x, e.y)) > t0.reach + 2 * w.units.radius[a0] + 200:
 				far_shot = true
 	c.call(far_shot, "walls: from the wall an archer reaches a tile further")
 	# Spears under the wall can't hit those on it.
@@ -4049,7 +4050,7 @@ func _walls_run(races: Array, checks_on: bool) -> World:
 			if e.type == "hit" and e.to in archers and e.by in spears:
 				melee_hits += 1
 	c.call(melee_hits == 0, "walls: spears below can't reach those on the wall (%d hits)" % melee_hits)
-	for id in spears + [dummy]:
+	for id in spears:
 		var i := w.units.index_of(id)
 		if i >= 0:
 			w.issue(1, Commands.STOP, {"ids": [id]})
@@ -4114,16 +4115,15 @@ func _walls_run(races: Array, checks_on: bool) -> World:
 	c.call(w.buildings.hp[wb] == full_hp, "walls: a worker mends a damaged wall (%d of %d hp)" % [w.buildings.hp[wb], full_hp])
 	c.call(w.stock[w.resources.find("stone")][0] < stone or full * int(w.repair_cfg.cost_pct) / 100 / 20 == 0, "walls: mending costs a little stone")
 	# The frogs' ram is a beast (healers mend it, not carpenters); the rats' is a machine their workers mend.
-	var turtle := _lone(w, 0, "ram", 16500, 13500, "passive")
+	var turtle := _lone(w, 1, "ram", 40500, 40500, "passive")
 	w.units.hp[w.units.index_of(turtle)] = 40
-	c.call(not Repair.can_mend(w, 0, turtle), "walls: a beast ram isn't for mending")
-	var ram := _lone(w, 1, "ram", 40500, 40500, "passive")
-	var rat := _lone(w, 1, "worker", 42500, 40500, "passive")
+	c.call(not Repair.can_mend(w, 1, turtle), "walls: a beast ram isn't for mending")
+	var ram := _lone(w, 0, "ram", 16500, 13500, "passive")
 	var ri := w.units.index_of(ram)
 	w.units.hp[ri] = 40
-	w.stock[w.resources.find("wood")][1] = 500
-	w.stock[w.resources.find("gold")][1] = 500
-	w.issue(1, Commands.REPAIR, {"ids": [rat], "target": ram})
+	w.stock[w.resources.find("wood")][0] = 500
+	w.stock[w.resources.find("gold")][0] = 500
+	w.issue(0, Commands.REPAIR, {"ids": [worker], "target": ram})
 	for t in 600:
 		w.step()
 	ri = w.units.index_of(ram)

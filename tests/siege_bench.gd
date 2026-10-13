@@ -25,6 +25,8 @@ const Trails := preload("res://src/sim/trails.gd")
 const Fortify := preload("res://src/sim/fortify.gd")
 const Walls := preload("res://src/sim/walls.gd")
 const Repair := preload("res://src/sim/repair.gd")
+const Trade := preload("res://src/sim/trade.gd")
+const Abilities := preload("res://src/sim/abilities.gd")
 const Fixed := preload("res://src/sim/fixed.gd")
 
 const SEED := 20261016
@@ -94,6 +96,8 @@ func _initialize() -> void:
 		Tech.tick(w)
 		marks.append(Time.get_ticks_usec())
 		Economy.work(w)
+		Trade.tick(w)
+		w._pack()
 		Repair.tick(w)
 		marks.append(Time.get_ticks_usec())
 		Garrison.tick(w)
@@ -114,6 +118,7 @@ func _initialize() -> void:
 		Fog.tick(w)
 		marks.append(Time.get_ticks_usec())
 		Trails.tick(w)
+		Abilities.tick(w)
 		if w.units.changes != alive:
 			w.spatial.build(w.units.x, w.units.y)
 		marks.append(Time.get_ticks_usec())
