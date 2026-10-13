@@ -85,6 +85,10 @@ func _initialize() -> void:
 			var cr: Dictionary = u.recipe.crew.duplicate(true)
 			cr.merge({"creature": u.recipe.creature, "family": u.recipe.family, "slot": "worker", "role": "worker", "tier": 1, "name": ""})
 			units.append({"recipe": cr, "eval": {"speed": 10}})
+		if u.recipe.has("haul"):   # and the beast hauling it (a trade cart's pony)
+			var hc: Dictionary = lib.creatures[u.recipe.haul.creature]
+			units.append({"recipe": {"slot": "beast", "role": "beast", "tier": 1, "creature": u.recipe.haul.creature, "family": u.recipe.family,
+				"skin": u.recipe.haul.skin, "body": hc.get("mount_body", hc.body), "head": hc.head, "parts": {}, "scale": 100, "name": ""}, "eval": {"speed": 10}})
 	await kit.prepare_units([{"units": units}], [team])
 	for r in rows:
 		for u in [r[1], r[2]]:

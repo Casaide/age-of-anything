@@ -697,8 +697,8 @@ func _check_crew(v, label: String, view: String) -> void:
 	for c in v.crew:
 		var name := ""
 		for s in rig.get("sockets", {}):
-			if s.begins_with("crew") and rig.sockets[s].distance_to(c.view.position) < 0.01:
-				name = s
+			if (s.begins_with("crew") or s.begins_with("haul")) and rig.sockets[s].distance_to(c.view.position) < 0.01:
+				name = s   # (a hauling beast's too: a trade cart's pony, UnitView._build_engine)
 		var over: bool = c.view.get_index() > engine.get_index()
 		var want: bool = float(rig.depth[name]) > 0.0
 		if name.ends_with("_in"):

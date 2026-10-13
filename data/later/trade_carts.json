@@ -1,0 +1,744 @@
+{
+ "schema": "aow.later/1",
+ "_doc": "Trade carts, concept round TC1 (milestone 13 step 6, 2026-10-13): staged here until Dominic picks (D-080: concept-first). Nothing in the game loads this file; tests/sheets/trade_carts_tc1.json stages it. Models: scenes/art_pixel/cart_concepts.gd. A: the race's own mount pulls a two-wheeled cart (recipe `haul`, UnitView draws the creature walking on the haul0 socket), a worker leads; B: the handcart in play now (a placeholder); C: each family's own. To put a pick in play: move its builder into siege_models.gd as `siege.cart.<take>` (and for A, have the generator put the race's mount in the cart recipe's `haul`). Notes: docs/concepts/trade_carts/README.md.",
+ "models": [
+  "res://scenes/art_pixel/cart_concepts.gd"
+ ],
+ "parts": [
+  {
+   "id": "concept.tc1_a_timber",
+   "slot": "engine",
+   "noun": "Trade Cart",
+   "points": 16,
+   "tags": [
+    "trade",
+    "cart",
+    "machine"
+   ],
+   "stats": {
+    "hp": 70,
+    "speed": 10,
+    "armour": {
+     "melee": 0,
+     "pierce": 3
+    },
+    "radius": 420
+   },
+   "shapes": [
+    {
+     "t": "poly",
+     "p": [
+      [
+       -16,
+       -22
+      ],
+      [
+       16,
+       -22
+      ],
+      [
+       16,
+       0
+      ],
+      [
+       -16,
+       0
+      ]
+     ],
+     "ch": "wood"
+    }
+   ],
+   "cost_mix": {
+    "food": 0,
+    "wood": 65,
+    "gold": 35
+   }
+  },
+  {
+   "id": "concept.tc1_b_timber",
+   "slot": "engine",
+   "noun": "Trade Cart",
+   "points": 16,
+   "tags": [
+    "trade",
+    "cart",
+    "machine"
+   ],
+   "stats": {
+    "hp": 70,
+    "speed": 10,
+    "armour": {
+     "melee": 0,
+     "pierce": 3
+    },
+    "radius": 420
+   },
+   "shapes": [
+    {
+     "t": "poly",
+     "p": [
+      [
+       -16,
+       -22
+      ],
+      [
+       16,
+       -22
+      ],
+      [
+       16,
+       0
+      ],
+      [
+       -16,
+       0
+      ]
+     ],
+     "ch": "wood"
+    }
+   ],
+   "cost_mix": {
+    "food": 0,
+    "wood": 65,
+    "gold": 35
+   }
+  },
+  {
+   "id": "concept.tc1_c_timber",
+   "slot": "engine",
+   "noun": "Trade Cart",
+   "points": 16,
+   "tags": [
+    "trade",
+    "cart",
+    "machine"
+   ],
+   "stats": {
+    "hp": 70,
+    "speed": 10,
+    "armour": {
+     "melee": 0,
+     "pierce": 3
+    },
+    "radius": 420
+   },
+   "shapes": [
+    {
+     "t": "poly",
+     "p": [
+      [
+       -16,
+       -22
+      ],
+      [
+       16,
+       -22
+      ],
+      [
+       16,
+       0
+      ],
+      [
+       -16,
+       0
+      ]
+     ],
+     "ch": "wood"
+    }
+   ],
+   "cost_mix": {
+    "food": 0,
+    "wood": 65,
+    "gold": 35
+   }
+  },
+  {
+   "id": "concept.tc1_a_frog",
+   "slot": "engine",
+   "noun": "Trade Cart",
+   "points": 16,
+   "tags": [
+    "trade",
+    "cart",
+    "machine"
+   ],
+   "stats": {
+    "hp": 70,
+    "speed": 10,
+    "armour": {
+     "melee": 0,
+     "pierce": 3
+    },
+    "radius": 420
+   },
+   "shapes": [
+    {
+     "t": "poly",
+     "p": [
+      [
+       -16,
+       -22
+      ],
+      [
+       16,
+       -22
+      ],
+      [
+       16,
+       0
+      ],
+      [
+       -16,
+       0
+      ]
+     ],
+     "ch": "wood"
+    }
+   ],
+   "cost_mix": {
+    "food": 0,
+    "wood": 65,
+    "gold": 35
+   }
+  },
+  {
+   "id": "concept.tc1_b_frog",
+   "slot": "engine",
+   "noun": "Trade Cart",
+   "points": 16,
+   "tags": [
+    "trade",
+    "cart",
+    "machine"
+   ],
+   "stats": {
+    "hp": 70,
+    "speed": 10,
+    "armour": {
+     "melee": 0,
+     "pierce": 3
+    },
+    "radius": 420
+   },
+   "shapes": [
+    {
+     "t": "poly",
+     "p": [
+      [
+       -16,
+       -22
+      ],
+      [
+       16,
+       -22
+      ],
+      [
+       16,
+       0
+      ],
+      [
+       -16,
+       0
+      ]
+     ],
+     "ch": "wood"
+    }
+   ],
+   "cost_mix": {
+    "food": 0,
+    "wood": 65,
+    "gold": 35
+   }
+  },
+  {
+   "id": "concept.tc1_c_frog",
+   "slot": "engine",
+   "noun": "Trade Cart",
+   "points": 16,
+   "tags": [
+    "trade",
+    "cart",
+    "machine"
+   ],
+   "stats": {
+    "hp": 70,
+    "speed": 10,
+    "armour": {
+     "melee": 0,
+     "pierce": 3
+    },
+    "radius": 420
+   },
+   "shapes": [
+    {
+     "t": "poly",
+     "p": [
+      [
+       -16,
+       -22
+      ],
+      [
+       16,
+       -22
+      ],
+      [
+       16,
+       0
+      ],
+      [
+       -16,
+       0
+      ]
+     ],
+     "ch": "wood"
+    }
+   ],
+   "cost_mix": {
+    "food": 0,
+    "wood": 65,
+    "gold": 35
+   }
+  },
+  {
+   "id": "concept.tc1_a_junk",
+   "slot": "engine",
+   "noun": "Trade Cart",
+   "points": 16,
+   "tags": [
+    "trade",
+    "cart",
+    "machine"
+   ],
+   "stats": {
+    "hp": 70,
+    "speed": 10,
+    "armour": {
+     "melee": 0,
+     "pierce": 3
+    },
+    "radius": 420
+   },
+   "shapes": [
+    {
+     "t": "poly",
+     "p": [
+      [
+       -16,
+       -22
+      ],
+      [
+       16,
+       -22
+      ],
+      [
+       16,
+       0
+      ],
+      [
+       -16,
+       0
+      ]
+     ],
+     "ch": "wood"
+    }
+   ],
+   "cost_mix": {
+    "food": 0,
+    "wood": 65,
+    "gold": 35
+   }
+  },
+  {
+   "id": "concept.tc1_b_junk",
+   "slot": "engine",
+   "noun": "Trade Cart",
+   "points": 16,
+   "tags": [
+    "trade",
+    "cart",
+    "machine"
+   ],
+   "stats": {
+    "hp": 70,
+    "speed": 10,
+    "armour": {
+     "melee": 0,
+     "pierce": 3
+    },
+    "radius": 420
+   },
+   "shapes": [
+    {
+     "t": "poly",
+     "p": [
+      [
+       -16,
+       -22
+      ],
+      [
+       16,
+       -22
+      ],
+      [
+       16,
+       0
+      ],
+      [
+       -16,
+       0
+      ]
+     ],
+     "ch": "wood"
+    }
+   ],
+   "cost_mix": {
+    "food": 0,
+    "wood": 65,
+    "gold": 35
+   }
+  },
+  {
+   "id": "concept.tc1_c_junk",
+   "slot": "engine",
+   "noun": "Trade Cart",
+   "points": 16,
+   "tags": [
+    "trade",
+    "cart",
+    "machine"
+   ],
+   "stats": {
+    "hp": 70,
+    "speed": 10,
+    "armour": {
+     "melee": 0,
+     "pierce": 3
+    },
+    "radius": 420
+   },
+   "shapes": [
+    {
+     "t": "poly",
+     "p": [
+      [
+       -16,
+       -22
+      ],
+      [
+       16,
+       -22
+      ],
+      [
+       16,
+       0
+      ],
+      [
+       -16,
+       0
+      ]
+     ],
+     "ch": "wood"
+    }
+   ],
+   "cost_mix": {
+    "food": 0,
+    "wood": 65,
+    "gold": 35
+   }
+  },
+  {
+   "id": "concept.tc1_a_forest",
+   "slot": "engine",
+   "noun": "Trade Cart",
+   "points": 16,
+   "tags": [
+    "trade",
+    "cart",
+    "machine"
+   ],
+   "stats": {
+    "hp": 70,
+    "speed": 10,
+    "armour": {
+     "melee": 0,
+     "pierce": 3
+    },
+    "radius": 420
+   },
+   "shapes": [
+    {
+     "t": "poly",
+     "p": [
+      [
+       -16,
+       -22
+      ],
+      [
+       16,
+       -22
+      ],
+      [
+       16,
+       0
+      ],
+      [
+       -16,
+       0
+      ]
+     ],
+     "ch": "wood"
+    }
+   ],
+   "cost_mix": {
+    "food": 0,
+    "wood": 65,
+    "gold": 35
+   }
+  },
+  {
+   "id": "concept.tc1_b_forest",
+   "slot": "engine",
+   "noun": "Trade Cart",
+   "points": 16,
+   "tags": [
+    "trade",
+    "cart",
+    "machine"
+   ],
+   "stats": {
+    "hp": 70,
+    "speed": 10,
+    "armour": {
+     "melee": 0,
+     "pierce": 3
+    },
+    "radius": 420
+   },
+   "shapes": [
+    {
+     "t": "poly",
+     "p": [
+      [
+       -16,
+       -22
+      ],
+      [
+       16,
+       -22
+      ],
+      [
+       16,
+       0
+      ],
+      [
+       -16,
+       0
+      ]
+     ],
+     "ch": "wood"
+    }
+   ],
+   "cost_mix": {
+    "food": 0,
+    "wood": 65,
+    "gold": 35
+   }
+  },
+  {
+   "id": "concept.tc1_c_forest",
+   "slot": "engine",
+   "noun": "Trade Cart",
+   "points": 16,
+   "tags": [
+    "trade",
+    "cart",
+    "machine"
+   ],
+   "stats": {
+    "hp": 70,
+    "speed": 10,
+    "armour": {
+     "melee": 0,
+     "pierce": 3
+    },
+    "radius": 420
+   },
+   "shapes": [
+    {
+     "t": "poly",
+     "p": [
+      [
+       -16,
+       -22
+      ],
+      [
+       16,
+       -22
+      ],
+      [
+       16,
+       0
+      ],
+      [
+       -16,
+       0
+      ]
+     ],
+     "ch": "wood"
+    }
+   ],
+   "cost_mix": {
+    "food": 0,
+    "wood": 65,
+    "gold": 35
+   }
+  },
+  {
+   "id": "concept.tc1_a_spooky",
+   "slot": "engine",
+   "noun": "Trade Cart",
+   "points": 16,
+   "tags": [
+    "trade",
+    "cart",
+    "machine"
+   ],
+   "stats": {
+    "hp": 70,
+    "speed": 10,
+    "armour": {
+     "melee": 0,
+     "pierce": 3
+    },
+    "radius": 420
+   },
+   "shapes": [
+    {
+     "t": "poly",
+     "p": [
+      [
+       -16,
+       -22
+      ],
+      [
+       16,
+       -22
+      ],
+      [
+       16,
+       0
+      ],
+      [
+       -16,
+       0
+      ]
+     ],
+     "ch": "wood"
+    }
+   ],
+   "cost_mix": {
+    "food": 0,
+    "wood": 65,
+    "gold": 35
+   }
+  },
+  {
+   "id": "concept.tc1_b_spooky",
+   "slot": "engine",
+   "noun": "Trade Cart",
+   "points": 16,
+   "tags": [
+    "trade",
+    "cart",
+    "machine"
+   ],
+   "stats": {
+    "hp": 70,
+    "speed": 10,
+    "armour": {
+     "melee": 0,
+     "pierce": 3
+    },
+    "radius": 420
+   },
+   "shapes": [
+    {
+     "t": "poly",
+     "p": [
+      [
+       -16,
+       -22
+      ],
+      [
+       16,
+       -22
+      ],
+      [
+       16,
+       0
+      ],
+      [
+       -16,
+       0
+      ]
+     ],
+     "ch": "wood"
+    }
+   ],
+   "cost_mix": {
+    "food": 0,
+    "wood": 65,
+    "gold": 35
+   }
+  },
+  {
+   "id": "concept.tc1_c_spooky",
+   "slot": "engine",
+   "noun": "Trade Cart",
+   "points": 16,
+   "tags": [
+    "trade",
+    "cart",
+    "machine"
+   ],
+   "stats": {
+    "hp": 70,
+    "speed": 10,
+    "armour": {
+     "melee": 0,
+     "pierce": 3
+    },
+    "radius": 420
+   },
+   "shapes": [
+    {
+     "t": "poly",
+     "p": [
+      [
+       -16,
+       -22
+      ],
+      [
+       16,
+       -22
+      ],
+      [
+       16,
+       0
+      ],
+      [
+       -16,
+       0
+      ]
+     ],
+     "ch": "wood"
+    }
+   ],
+   "cost_mix": {
+    "food": 0,
+    "wood": 65,
+    "gold": 35
+   }
+  }
+ ]
+}
