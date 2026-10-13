@@ -9,15 +9,13 @@ const World := preload("res://src/sim/world.gd")
 const Commands := preload("res://src/sim/commands.gd")
 const Tech := preload("res://src/sim/tech.gd")
 
-const SLOTS := ["spear", "infantry", "skirmisher", "archer", "large", "scout", "mounted_archer"]
-const SLOTS_AGE3 := ["unique"]   # lines that open in age 3 (the Castle's unique unit)
+const SLOTS := ["spear", "infantry", "skirmisher", "archer", "large"]
 const BUDGET := 1200
 const LIMIT := 3000
 const FROM := [[11000, 20500], [21000, 20500]]
 ## Within one race, who should beat whom at equal cost (the genre's counters).
 const COUNTERS := [["spear", "large"], ["large", "archer"], ["skirmisher", "archer"], ["archer", "spear"],
-	["infantry", "spear"], ["infantry", "skirmisher"], ["archer", "infantry"],
-	["mounted_archer", "infantry"], ["skirmisher", "mounted_archer"], ["spear", "mounted_archer"], ["scout", "skirmisher"], ["spear", "scout"]]
+	["infantry", "spear"], ["infantry", "skirmisher"], ["archer", "infantry"]]
 
 
 static func run(races: Array, rules: Dictionary, age: int) -> Dictionary:
@@ -28,9 +26,8 @@ static func run(races: Array, rules: Dictionary, age: int) -> Dictionary:
 static func units_of(races: Array, age: int) -> Array:
 	var units := []
 	for r in races:
-		for slot in SLOTS + (SLOTS_AGE3 if age >= 3 else []):
-			if has_line(r, slot):   # (a race may lack a line: centaurs have no mounted archers)
-				units.append([r, slot, "%s (%s)" % [recipe_at(r, slot, age).recipe.name, r.name]])
+		for slot in SLOTS:
+			units.append([r, slot, "%s (%s)" % [recipe_at(r, slot, age).recipe.name, r.name]])
 	return units
 
 
@@ -133,10 +130,6 @@ static func in_age(w, p: int, age: int) -> void:
 
 static func name_of(race: Dictionary, slot: String) -> String:
 	return unit_of(race, slot).recipe.name
-
-
-static func has_line(race: Dictionary, slot: String) -> bool:
-	return race.units.any(func(u): return u.recipe.slot == slot)
 
 
 static func unit_of(race: Dictionary, slot: String) -> Dictionary:

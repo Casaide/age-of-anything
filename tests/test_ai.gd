@@ -288,6 +288,8 @@ func _test_easy(rules: Dictionary, a: Dictionary, b: Dictionary) -> void:
 	var passive := EcoBot.new(1)
 	var most := 0
 	var first_loss := -1
+	var home := Vector2i(int(w.map.starts[0][0]), int(w.map.starts[0][1]))
+	var theirs := Vector2i(int(w.map.starts[1][0]), int(w.map.starts[1][1]))
 	while w.tick < 20 * 60 * 14 and w.winner < 0:
 		bot.think(w)
 		passive.think(w)
@@ -298,8 +300,11 @@ func _test_easy(rules: Dictionary, a: Dictionary, b: Dictionary) -> void:
 				army += int(w.types[w.units.kind[i]].pop)
 		if w.tick <= 20 * 60 * 10:   # the first ten minutes, where Easy used to overrun a player reaching age 2
 			most = maxi(most, army)
-		for e in w.events:   # a loss to the bot (one of its units close by), not to a boar the passive side hunted
-			if first_loss < 0 and e.type == "die" and e.owner == 1 and not e.building:
+		for e in w.events:   # a loss to the bot (one of its units close by), not to a boar the passive side hunted,
+			# and on the passive side's half of the map: its food gatherers walk to the bushes by the
+			# bot's Town Center once theirs run out (from about 5:00 on flat_test, new ones all the way
+			# to 8:00) and the bot's home guard picks them off on its own side; that's defence, not a strike
+			if first_loss < 0 and e.type == "die" and e.owner == 1 and not e.building and Fixed.dist2(e.x, e.y, theirs.x, theirs.y) < Fixed.dist2(e.x, e.y, home.x, home.y):
 				for i in w.units.count():
 					if w.units.owner[i] == 0 and absi(w.units.x[i] - e.x) + absi(w.units.y[i] - e.y) < 8000:
 						first_loss = w.tick
@@ -352,6 +357,7 @@ func _test_siege_bot(rules: Dictionary, a: Dictionary, b: Dictionary) -> void:
 	var cfg: Dictionary = Bot.load_config()
 	for wv in cfg.military.waves:
 		wv.at = int(wv.at) + 600   # ten minutes to build up first (its first waves would otherwise end it)
+	cfg.wonder = {}   # no Wonder: topped up to 2000 of everything it builds one and wins by it at 16:19 on Old Forest, before its first wave (16:00) has marched; it passed there only while a ram could be posted as an escort and wander out
 	var bots := [Bot.new(0, cfg), EcoBot.new(1)]
 	var most: Dictionary = cfg.military.siege.max
 	w.ages[0] = 3
@@ -461,7 +467,7 @@ func _test_levels(rules: Dictionary, a: Dictionary, b: Dictionary, levels := ["e
 ## worker away, and its soldiers come to blows with the raiders.
 ## The Barracks' counter-pick (milestone 13, the swordsman line): spears with nothing seen, and
 ## against cavalry; swords against spears and skirmishers, and (with military.building_foes on)
-## while the army goes for a wall. The Range's: mounted archers against swordsmen only.
+## while the army goes for a wall.
 func _test_pick(rules: Dictionary, gen) -> void:
 	for prompt in ["greeks", "swamp frogs", "sewer rats", "egyptians"]:
 		var race: Dictionary = gen.generate(prompt, rules)
@@ -471,7 +477,7 @@ func _test_pick(rules: Dictionary, gen) -> void:
 			var bot := Bot.new(0)
 			var barracks := ["spear", "infantry"]
 			var seen := {}
-			for slot in ["spear", "skirmisher", "large", "infantry"]:   # the foes' tags, as _enemy_tags counts them, for 4 of one line
+			for slot in ["spear", "skirmisher", "large"]:   # the foes' tags, as _enemy_tags counts them, for 4 of one line
 				var e: Dictionary = w.types[w.type_of(1, slot)].eval
 				var tags := {}
 				for t in e.tags:
@@ -483,12 +489,6 @@ func _test_pick(rules: Dictionary, gen) -> void:
 			check(bot.pick(w, barracks, seen.large) == "spear", "pick %s age %d: spears against cavalry" % [prompt, age])
 			check(bot.pick(w, barracks, seen.spear) == "infantry", "pick %s age %d: swords against spears" % [prompt, age])
 			check(bot.pick(w, barracks, seen.skirmisher) == "infantry", "pick %s age %d: swords against skirmishers" % [prompt, age])
-			if age == 2:   # the Range and the Stable (milestone 13): mounted archers against swordsmen, not spears; no scouts by default
-				var range_lines := ["skirmisher", "archer", "mounted_archer"]
-				check(bot.pick(w, range_lines, {}) != "mounted_archer", "pick %s: archers, not mounted archers, with nothing seen" % prompt)
-				check(bot.pick(w, range_lines, seen.infantry) == "mounted_archer", "pick %s: mounted archers against swordsmen" % prompt)
-				check(bot.pick(w, range_lines, seen.spear) != "mounted_archer", "pick %s: no mounted archers against spears" % prompt)
-				check(bot.pick(w, ["large", "scout"], {}) == "large", "pick %s: the Stable's cavalry with nothing seen" % prompt)
 			if int(bot.cfg.military.building_foes) > 0:   # (off for now: data/ai.json _doc_building_foes)
 				bot._aim = 1
 				check(bot.pick(w, barracks, bot._enemy_tags(w)) == "infantry", "pick %s age %d: swords for a wall in the way" % [prompt, age])

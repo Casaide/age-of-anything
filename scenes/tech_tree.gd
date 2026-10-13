@@ -610,9 +610,7 @@ func _tip(n: Dictionary) -> String:
 				lines.append("HP %d  Attack %d  Armour %d/%d  Range %d  Speed %d" % [int(e.hp), int(e.attack),
 					int(e.armour.get("melee", 0)), int(e.armour.get("pierce", 0)), int(e.range), int(e.speed)])
 			var where := _bname(n.building)
-			if n.get("lacks", false):
-				lines.append("[color=#%s]Not in this race's tree (see its notes)[/color]" % NEED.to_html(false))
-			elif n.first:
+			if n.first:
 				lines.append(_dim("Trained at the %s from age %d" % [where, n.age]))
 				if n.early_kit != "":   # generated from an earlier age than its building opens
 					lines.append(_dim("Trains first in its age-%d kit (%s); the line upgrade here gives this one" % [n.tier, n.early_kit]))

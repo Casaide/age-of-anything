@@ -52,7 +52,7 @@ Legend:
 | ------------------------ | ----------------- | ------------------------------ | ----------------------------------------------- | --- | ----------------------- |
 | Swordsman line (3 tiers) | `infantry`        | melee, not spear (blade/blunt) | buildings, spears, skirmishers; weak to archers | 1   | **Built** (m13)         |
 | Spear line (3 tiers)     | `spear`           | spear                          | beats large/mounted; weak to archers, infantry  | 2   | **MVP**                 |
-| ~~Fast light infantry~~  | ~~`raider`~~      | -                              | cut as a line: raiders are unique-unit themes (Castle) | -   | Cut (Dominic, 2026-10-13); `data/later/raider_line.json` |
+| Fast light infantry      | `raider_infantry` | fast melee infantry            | beats mystics, siege, archers; weak to infantry | 2   | Later (family-specific) |
 
 ### Archery Range (ranged)
 
@@ -60,14 +60,14 @@ Legend:
 | ------------------------- | ---------------- | --------------- | --------------------------------------------------- | --- | -------------------------------------------- |
 | Archer line (3 tiers)     | `archer`         | bow             | beats infantry; weak to skirmishers, cavalry, siege | 2   | **MVP**                                      |
 | Skirmisher line (2 tiers) | `skirmisher`     | ranged, not bow | beats archers; weak to infantry, cavalry            | 2   | **MVP**                                      |
-| Mounted archer line       | `mounted_archer` | bow + mount     | beats infantry; weak to skirmishers, spears, cavalry | 2   | **Built** (m13); lacked by races whose archers already ride or with nothing to ride |
+| Mounted archer line       | `mounted_archer` | bow + mount     | hit-and-run vs infantry; weak to skirmishers        | 3   | Next (generator already makes horse archers) |
 | Gunner                    | `gunner`         | gun             | beats infantry                                      | 4   | Later (gunpowder era)                        |
 
 ### Stable (mounts and beasts)
 
 | Line                          | Slot                 | Role / needs                 | Beats / weak to                                                   | Age | Status                      |
 | ----------------------------- | -------------------- | ---------------------------- | ----------------------------------------------------------------- | --- | --------------------------- |
-| Light scout cavalry (2 tiers) | `scout`              | fast mount, light weapon     | beats skirmishers, healers, workers, siege; sees far; weak to spears | 2   | **Built** (m13); on foot where nothing carries the race |
+| Light scout cavalry (3 tiers) | `scout`              | fast mount, light weapon     | beats mystics, siege, archers; weak to spears                     | 2   | Next                        |
 | Heavy cavalry (3 tiers)       | `large`              | mount or Heavy/Giant + melee | beats archers, skirmishers; weak to spears, anti-cavalry, mystics | 3   | **MVP** (as the age-2 unit) |
 | Anti-cavalry mount            | `anti_cavalry_mount` | mount + bonus vs mounted     | beats cavalry; weak to spears, infantry                           | 3   | Later                       |
 | War beast                     | `war_beast`          | giant creature or huge mount | tanky vs buildings and infantry; weak to spears, mystics          | 3   | Later                       |
@@ -87,7 +87,7 @@ Legend:
 
 | Line                    | Slot        | Role / needs                                              | Notes                                                         | Age | Status                |
 | ----------------------- | ----------- | --------------------------------------------------------- | ------------------------------------------------------------- | --- | --------------------- |
-| Unique unit             | `unique`    | the race's signature (prompt-driven, bigger point budget) | A theme from `data/uniques.json`: asked for, else the creature's, else the culture's; raiders (steppe, gutter rats, vikings, gloom) are themes | 3   | **Built** (m13)       |
+| Unique unit (+ elite)   | `unique`    | the race's signature (prompt-driven, bigger point budget) | The generator's showcase slot: "the thing this race is about" | 3   | Next                  |
 | Long-range siege engine | `trebuchet` | long-range anti-building siege                            | Packs/unpacks                                                 | 4   | Later (**parts gap**) |
 | Sapper                  | `sapper`    | suicide anti-building                                     | Frogs with fireworks                                          | 3   | Later                 |
 

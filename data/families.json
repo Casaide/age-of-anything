@@ -43,8 +43,7 @@
    "ornament": "reeds",
    "banner": "ragged"
   },
-  "siege": "timber",
-  "unique": "bog_lurker"
+  "siege": "timber"
  },
  "sewer": {
   "cloth": [
@@ -91,8 +90,7 @@
    "ornament": "rivets",
    "banner": "notched"
   },
-  "siege": "junk",
-  "unique": "scrap_brute"
+  "siege": "junk"
  },
  "forest": {
   "cloth": [
@@ -140,8 +138,7 @@
    "ornament": "leaves",
    "banner": "notched"
   },
-  "siege": "forest",
-  "unique": "moss_warden"
+  "siege": "forest"
  },
  "imperial": {
   "cloth": [
@@ -187,8 +184,7 @@
    "ornament": "laurel",
    "banner": "fringe"
   },
-  "siege": "timber",
-  "unique": "testudo"
+  "siege": "timber"
  },
  "hellenic": {
   "cloth": [
@@ -234,8 +230,7 @@
    "ornament": "meander",
    "banner": "pointed"
   },
-  "siege": "timber",
-  "unique": "phalanx"
+  "siege": "timber"
  },
  "royal": {
   "cloth": [
@@ -281,8 +276,7 @@
    "ornament": "crown",
    "banner": "fringe"
   },
-  "siege": "timber",
-  "unique": "sworn_knight"
+  "siege": "timber"
  },
  "steppe": {
   "cloth": [
@@ -329,8 +323,7 @@
    "ornament": "stitch",
    "banner": "tongues"
   },
-  "siege": "timber",
-  "unique": "steppe_raider"
+  "siege": "timber"
  },
  "spooky": {
   "cloth": [
@@ -376,8 +369,7 @@
    "ornament": "bones",
    "banner": "ragged"
   },
-  "siege": "spooky",
-  "unique": "gloom_stalker"
+  "siege": "spooky"
  },
  "nile": {
   "skins": [
@@ -427,8 +419,7 @@
    "ornament": "lotus",
    "banner": "pointed"
   },
-  "siege": "timber",
-  "unique": "nile_bowguard"
+  "siege": "timber"
  },
  "han": {
   "skins": [
@@ -478,8 +469,7 @@
    "ornament": "cloud",
    "banner": "swallowtail"
   },
-  "siege": "timber",
-  "unique": "repeater"
+  "siege": "timber"
  },
  "aztec": {
   "skins": [
@@ -527,7 +517,6 @@
    "ornament": "step",
    "banner": "scalloped"
   },
-  "siege": "timber",
-  "unique": "obsidian"
+  "siege": "timber"
  }
 }

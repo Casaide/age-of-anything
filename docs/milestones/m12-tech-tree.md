@@ -85,18 +85,18 @@ fills it from the race (one creature in its culture's gear, or variants once tho
 | Town Center | Healer (`healer`) | 2-3 | heals nearby wounded / scouts, raiders | built (milestone 13, 2026-10-12; look A in, the pick pending: HL1 sheet) | staff + bag (herbs; cheese for rats, a lily for frogs) |
 | Barracks | Spear (`spear`) | 1-3 | mounted, beasts / ranged, infantry | built (to 3) | ok |
 | Barracks | Swordsman (`infantry`) | 1-3 | buildings, spears, skirmishers / archers | built (to 3; milestone 13) | club, then the culture's sword |
-| ~~Barracks~~ | ~~Raider (`raider`)~~ | - | cut as a line (Dominic, 2026-10-13: "sounds race specific like a castle unit"): raiders are unique-unit themes now | in `data/later/raider_line.json` | - |
+| Barracks | Raider (`raider`) | 3 | siege, archers, healers / infantry | planned | light kit |
 | Archery Range | Skirmisher (`skirmisher`) | 2-3 | archers / infantry, mounted | built (to 3) | ok |
 | Archery Range | Archer (`archer`) | 2-3 | infantry / skirmishers, mounted | built (to 3) | ok |
-| Archery Range | Mounted Archer (`mounted_archer`) | 2-3 | infantry / skirmishers, spears, cavalry | built (milestone 13, 2026-10-13; a race whose archers already ride, or with nothing to ride, lacks it) | the race's mount + a bow |
-| Stable | Scout (`scout`) | 2-3 | skirmishers, healers, workers, siege; sees far / spears, any real soldier | built (milestone 13, 2026-10-13; on foot where nothing carries the race) | the race's mount + a light weapon, light kit |
+| Archery Range | Mounted Archer (`mounted_archer`) | 3 | infantry, hit and run / skirmishers | planned | generator makes them already |
+| Stable | Scout (`scout`) | 2-3 | siege, archers, healers, raids / spears | planned | light mount gear |
 | Stable | Heavy (`large`) | 2-3 | ranged / spears | built (to 3) | ok |
 | Stable | War Beast (`war_beast`) | 3 | buildings, infantry / spears | planned | **gap**: big beasts |
 | Siege Workshop | Ram (`ram`) | 3 | buildings / melee | planned | **gap** |
 | Siege Workshop | Catapult (`catapult`) | 3 | massed units, splash / mounted | planned | **gap** |
 | Siege Workshop | Bolt Thrower (`bolt_thrower`) | 3 | infantry lines / mounted | planned | **gap** |
 | Siege Workshop | Siege Tower (`siege_tower`) | 3 | carries units over walls | planned | **gap** |
-| Castle | Unique (`unique`) | 3 | the race's signature (a theme from `data/uniques.json`: asked for, else creature, else culture) | built (milestone 13, 2026-10-13) | existing parts in a signature combination; new parts concept-first |
+| Castle | Unique (`unique`) | 3 | the race's signature (bigger budget) | planned | from the prompt |
 | Castle | Sapper (`sapper`) | 3 | buildings, walls (blows up) | planned | small: a satchel |
 | Castle | Great Sling (`great_sling`) | 3 | buildings at long range; packs/unpacks | planned | **gap** |
 | Market | Trade Cart (`trader`) | 2 | gold by distance between your markets | planned | **gap**: cart |

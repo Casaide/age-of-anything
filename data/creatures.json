@@ -24,8 +24,7 @@
   "mounts": [
    "newt"
   ],
-  "_mounts_doc": "frogs ride giant newts (Dominic, D-122), in the forest too; the swamp's family mount is the newt as well, so swamp frogs never ride beetles",
-  "unique": "bullfrog"
+  "_mounts_doc": "frogs ride giant newts (Dominic, D-122), in the forest too; the swamp's family mount is the newt as well, so swamp frogs never ride beetles"
  },
  "rat": {
   "voice": "rat",
@@ -52,9 +51,7 @@
   "mounts": [
    "cat"
   ],
-  "_mounts_doc": "the creature's own mounts, ridden before the family's (rats ride alley cats, Dominic D-124; the capybara, RB1's pick, is still there for anyone who asks for it by name)",
-  "unique": "gutter_raider",
-  "_unique_doc": "the creature's own unique unit theme (data/uniques.json), ahead of its culture's; a theme the prompt asked for (cheese -> the Big Cheese) comes first"
+  "_mounts_doc": "the creature's own mounts, ridden before the family's (rats ride alley cats, Dominic D-124; the capybara, RB1's pick, is still there for anyone who asks for it by name)"
  },
  "human": {
   "voice": "human",
@@ -78,7 +75,6 @@
   "giant_ok": false
  },
  "spider": {
-  "harness": true,
   "voice": "spider",
   "noun": "Spider",
   "plural": "Spiders",
@@ -95,12 +91,9 @@
    "spooky",
    "forest"
   ],
-  "architecture": "mound",
-  "unique": "web_lurker"
+  "architecture": "mound"
  },
  "beetle": {
-  "harness": true,
-  "_harness_doc": "carries its weapons in a harness, no hands (its rig's carry \"harness\"): it clings to a mount and can't draw a bow there, so no mounted archer line (rules roster needs_hands)",
   "voice": "beetle",
   "noun": "Beetle",
   "plural": "Beetles",
@@ -118,8 +111,7 @@
    "swamp"
   ],
   "architecture": "mound",
-  "_mount_body_doc": "beetle soldiers rear up (BG1); ridden beetles keep the horizontal body",
-  "unique": "stag_colossus"
+  "_mount_body_doc": "beetle soldiers rear up (BG1); ridden beetles keep the horizontal body"
  },
  "pony": {
   "voice": "pony",
