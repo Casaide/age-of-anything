@@ -746,3 +746,7 @@ tries the newt as the frogs' mount and other catapults for the frogs.
 newts look amazing". The frogs' siege is three beasts: the snapping turtle ram, the snail catapult, the toad
 bolt thrower. Frog cavalry rides a giant newt instead of a beetle (the beetle stays the forest's); all three
 colourings are kept as the newt's skins (fire as the usual one; the red eft not under red-skinned frogs).
+
+**D-123, 2026-10-13: No generic Raider line; raiders are a castle unique-unit theme.** Dominic: "Raider isn't
+really a thing, sounds race specific like a castle unit." The Barracks trains spears and swordsmen; fast
+light raiders become one of the themes a race's Castle unique unit can take (chosen by data, like the others).
