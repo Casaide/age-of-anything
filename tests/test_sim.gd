@@ -54,7 +54,7 @@ const FIGHT_FROM := [[11000, 20500], [21000, 20500]]   # open ground on flat_tes
 ## "@@ ms.<part>"; the three plays of the scripted match apart, about 25-50 s each).
 const GROUPS := [
 	["scenarios_a", "crossing_flat", "opening", "gates", "diagonal_gates", "pen", "combat"],
-	["scenarios_b", "fixed", "command_order", "source_lint", "flow", "crossing_choke", "crossing_engines", "age_timing", "queue", "movement_classes", "farms", "fog_memory", "land", "hills", "flow_patch", "flow_patch_mixed", "tech", "research_queue", "effects", "university_castle", "market", "build_queue", "builder_moves_on", "diagonal_wall", "camp_gather", "drop_off", "animals", "sheep_spot", "garrison", "towers", "shots", "engines", "trade", "sapper_sling", "bot_hunts", "wonder", "walls"],
+	["scenarios_b", "fixed", "command_order", "source_lint", "flow", "crossing_choke", "crossing_engines", "age_timing", "queue", "movement_classes", "farms", "fog_memory", "land", "hills", "flow_patch", "flow_patch_mixed", "tech", "research_queue", "effects", "university_castle", "market", "build_queue", "builder_moves_on", "diagonal_wall", "camp_gather", "drop_off", "animals", "sheep_spot", "garrison", "towers", "shots", "engines", "trade", "sapper_sling", "bot_hunts", "wonder", "walls", "siege_ways"],
 	["match", "match"], ["match_b", "match_b"], ["match_flipped", "match_flipped"],
 ]
 
@@ -125,6 +125,7 @@ func _init() -> void:
 		"bot_hunts": func(): _test_bot_hunts(races),
 		"wonder": func(): _test_wonder(races),
 		"walls": func(): _test_walls(races),
+		"siege_ways": func(): _test_siege_ways(races),
 		"combat": func(): _test_combat(gen),
 		"match": func(): _test_match(map, races, lib, rules),
 		"match_b": func(): _test_match_b(map, races),
@@ -4125,4 +4126,108 @@ func _walls_run(races: Array, checks_on: bool) -> World:
 		w.step()
 	ri = w.units.index_of(ram)
 	c.call(w.units.hp[ri] > 60, "walls: a worker mends a machine ram (40 -> %d hp)" % w.units.hp[ri])
+	return w
+
+
+## Ways over a wall (milestone 16): the rats (player 1) besiege the frogs' stone ring (gatehouses, no wall towers). A rat worker
+## raises a ladder against the east wall (only against an enemy walkway); rat spears climb it onto
+## the frogs' wall; a frog archer settling at its top with no rat there pushes it off. A siege
+## tower pushed up to the south wall docks; rat swordsmen climb through it, and sent into the town
+## they come down the frogs' own stairs inside. Twice: the same hash.
+func _test_siege_ways(races: Array) -> void:
+	var a := _ways_run(races, true)
+	var b := _ways_run(races, false)
+	check(a.state_hash() == b.state_hash(), "siege ways: the same commands give the same state hash")
+
+
+func _ways_run(races: Array, checks_on: bool) -> World:
+	var w := World.new(SEED, SimMap.load_id("flat_test"), races, rules_)
+	for p in 2:
+		w.ages[p] = 3
+		Tech.retype(w, p)
+		Tech.refresh(w, p)
+		w.stock[w.resources.find("wood")][p] = 2000
+		w.stock[w.resources.find("gold")][p] = 2000
+	var c := func(ok: bool, what: String) -> void:
+		if checks_on:
+			check(ok, what)
+	Fortify.ring(w, 0, 12, 12, 6, {"wall": "wall", "gate": "stone_gate", "tower": "", "gates": ["n", "s"]})   # (no wall towers: they would shoot the rats)
+	var lk := Economy.btype_of(w, "ladder")
+	c.call(Economy.can_place(w, 1, lk, 19, 9) and not Economy.can_place(w, 0, lk, 19, 9) and not Economy.can_place(w, 1, lk, 21, 9),
+		"siege ways: a ladder goes only against an enemy wall")
+	var rat := _lone(w, 1, "worker", 22500, 9500, "passive")
+	w.issue(1, Commands.BUILD, {"ids": [rat], "building": "ladder", "cx": 19, "cy": 9})
+	var ladder := 0
+	for t in 600:
+		w.step()
+		var b := w.buildings.index_of(w.map.occupied[9 * w.map.width + 19])
+		if b >= 0 and w.buildings.done[b] == 1:
+			ladder = w.buildings.id[b]
+			break
+	c.call(ladder != 0 and w.map.walk[9 * w.map.width + 19] == 1, "siege ways: the ladder goes up (walked over at the wall's foot)")
+	var spears := []
+	for k in 3:
+		spears.append(_lone(w, 1, "spear", 23500, 8500 + k * 700, "stand"))
+	w.issue(1, Commands.MOVE, {"ids": spears, "x": 18500, "y": 9500})
+	var up := func(ids: Array) -> int:
+		var n := 0
+		for id in ids:
+			var i := w.units.index_of(id)
+			if i >= 0 and w.units.perch[i] != 0:
+				n += 1
+		return n
+	for t in 600:
+		w.step()
+		if up.call(spears) == spears.size():
+			break
+	c.call(up.call(spears) == spears.size(), "siege ways: rat spears climb the ladder onto the frogs' wall (%d up)" % up.call(spears))
+	# Down off the wall again by their ladder, then a frog archer takes the ladder's top: pushed off.
+	w.issue(1, Commands.MOVE, {"ids": spears, "x": 23500, "y": 9500})
+	for t in 400:
+		w.step()
+		if up.call(spears) == 0:
+			break
+	c.call(up.call(spears) == 0, "siege ways: they climb down their ladder")
+	var archer := _lone(w, 0, "archer", 15500, 9500, "stand")
+	w.issue(0, Commands.MOVE, {"ids": [archer], "x": 18500, "y": 9500})
+	var pushed := false
+	for t in 600:
+		w.step()
+		for e in w.events:
+			if e.type == "die" and e.id == ladder:
+				pushed = true
+		if pushed:
+			break
+	c.call(pushed and w.map.walk[9 * w.map.width + 19] == 1 and w.map.walk_over[9 * w.map.width + 19] == 0, "siege ways: a defender at its top pushes the ladder off")
+	# A siege tower up to the south wall; swordsmen go up through it and down into the town.
+	var tower := _lone(w, 1, "siege_tower", 15500, 23500, "passive")
+	w.issue(1, Commands.MOVE, {"ids": [tower], "x": 15500, "y": 18500})
+	var docked := false
+	for t in 600:
+		w.step()
+		var ti := w.units.index_of(tower)
+		if Walls.docked_at(w, ti) >= 0:
+			docked = true
+			break
+	c.call(docked, "siege ways: the siege tower docks against the south wall")
+	var swords := []
+	for k in 3:
+		swords.append(_lone(w, 1, "infantry", 14500 + k * 700, 24500, "stand"))
+	w.issue(1, Commands.MOVE, {"ids": swords, "x": 15500, "y": 18500})
+	for t in 600:
+		w.step()
+		if up.call(swords) == swords.size():
+			break
+	c.call(up.call(swords) == swords.size(), "siege ways: swordsmen climb through the tower onto the wall (%d up)" % up.call(swords))
+	w.issue(1, Commands.MOVE, {"ids": swords, "x": 11500, "y": 14500})
+	for t in 900:
+		w.step()
+		if up.call(swords) == 0:
+			break
+	var inside := 0
+	for id in swords:
+		var i := w.units.index_of(id)
+		if i >= 0 and w.units.perch[i] == 0 and w.units.x[i] > 6999 and w.units.x[i] < 18000 and w.units.y[i] > 6999 and w.units.y[i] < 18000:
+			inside += 1
+	c.call(inside == swords.size(), "siege ways: sent into the town, they come down the frogs' stairs inside (%d of %d)" % [inside, swords.size()])
 	return w

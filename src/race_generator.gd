@@ -11,7 +11,7 @@ const Rng := preload("res://src/rng.gd")
 const Pricing := preload("res://src/pricing.gd")
 
 const ROLE_NEEDS := {"worker": "worker", "spear": "spear", "skirmisher": "ranged", "archer": "bow", "large": "melee", "healer": "heal",
-	"ram": "ram", "catapult": "catapult", "bolt_thrower": "bolt_thrower", "infantry": "melee", "scout": "melee", "mounted_archer": "bow",
+	"ram": "ram", "catapult": "catapult", "bolt_thrower": "bolt_thrower", "siege_tower": "docks", "infantry": "melee", "scout": "melee", "mounted_archer": "bow",
 	"sapper": "sapper", "great_sling": "great_sling"}
 ## Tags a role's primary must not have (skirmishers are the non-bow ranged units; the swordsman
 ## line holds a blade or a club, never a spear or a lance).

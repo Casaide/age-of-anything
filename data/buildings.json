@@ -25,6 +25,7 @@
    "wall",
    "stone_gate",
    "wall_tower",
+   "ladder",
    "siege_workshop",
    "wonder"
   ]
@@ -51,6 +52,7 @@
   "wall",
   "stone_gate",
   "wall_tower",
+  "ladder",
   "siege_workshop",
   "university",
   "castle",
@@ -91,7 +93,8 @@
   "not": [
    "large",
    "siege"
-  ]
+  ],
+  "push": 2
  },
  "_walkway_doc": "walls you stand on (milestone 16, src/sim/walls.gd): a building type with \"walkway\": N has N standing places per cell on top once built (stone walls, gatehouses, wall towers; palisades have none). Foot units (none with a tag in walkway.not, no workers, no flyers) ordered onto a wall walk to a way up (\"stairs\": a gatehouse or wall tower of their own team, or their side's ladder or docked siege tower), take `climb` seconds to climb, then walk along the walkway (8-way over connected walkway cells of one team) at speed_pct of their speed. On a wall a unit is a level up (rules.high_ground: shooters reach further, shots up at it fall short, it sees further), melee from the ground can't reach it, and it doesn't chase; ordered anywhere else it walks to the nearest way down (any stairs on the walkway, or its side's ladders and towers) and climbs down. If the cell under it stops being a walkway (destroyed, torn down) it falls: fall_damage, never below 1 hp. \"joins\": wall arms reach it like a gate (wall towers)",
  "breach": {
@@ -608,6 +611,29 @@
    "stairs": true,
    "note": "milestone 16: placed into a stone wall line like a gate (it takes the wall tile's place); its walkway holds 3 and its stairs lead up; the look is a marked placeholder until Dominic picks a concept"
   },
+  "ladder": {
+   "name": "Siege Ladder",
+   "desc": "A ladder raised against an enemy stone wall: your foot soldiers climb it onto the wall walk. Defenders standing at its top push it off.",
+   "size": 1,
+   "hp": 60,
+   "cost": {
+    "food": 0,
+    "wood": 25
+   },
+   "build_time": 6,
+   "pop": 0,
+   "house": false,
+   "drop_off": [],
+   "trains": [],
+   "age": 2,
+   "hotkey": "",
+   "armour": {
+    "melee": 0,
+    "pierce": 2
+   },
+   "ladder": true,
+   "note": "milestone 16 (walls.gd): only on open ground beside an enemy walkway (stone wall, gatehouse, wall tower), walked over like a farm; a way up for its side onto the walkway it leans on; a defender standing on that cell with no attacker beside pushes it off (walkway.push hp a tick). The look is a marked placeholder"
+  },
   "outpost": {
    "name": "Outpost",
    "desc": "A cheap lookout post: it sees far into the fog, but it doesn't shoot and nobody fits inside.",
@@ -647,7 +673,8 @@
    "trains": [
     "ram",
     "catapult",
-    "bolt_thrower"
+    "bolt_thrower",
+    "siege_tower"
    ],
    "age": 3,
    "hotkey": "",
@@ -655,7 +682,7 @@
     "melee": 1,
     "pierce": 7
    },
-   "note": "trains the siege lines (milestone 13); the siege tower is milestone 16's"
+   "note": "trains the siege lines (milestone 13) and the siege tower (milestone 16)"
   },
   "university": {
    "name": "University",

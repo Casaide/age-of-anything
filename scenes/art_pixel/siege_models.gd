@@ -65,7 +65,7 @@ const DARK_WOOD := Color(0.45, 0.38, 0.36)
 ## Crew socket names carry how the crew member stands: "crew<n>_f<k>[_reach|_raise][_in|_top]":
 ## f<k> turns them k facings from the engine's, reach/raise is the arm hold, "in" draws them
 ## behind the engine (inside its frame), "top" over it (riding).
-const ROUND2_SCALE := {"c": {"ram": 1.5, "catapult": 1.8, "bolt": 2.1},
+const ROUND2_SCALE := {"c": {"ram": 1.5, "catapult": 1.8, "bolt": 2.1, "tower": 1.0},
 	"shed": {"ram": 1.45}, "ridden": {"ram": 1.0}, "led": {"ram": 1.0}, "mount": {"ram": 1.0}}
 
 
@@ -915,6 +915,43 @@ func _bolt_c(s: Dictionary, c: Dictionary) -> Dictionary:
 	var spec: Dictionary = _bolt_a(s, c) if s.fam != "junk" else _bolt_c_junk(s, c)
 	spec.sockets = {"crew0_f0_reach": Vector3(-19.0, 0, 3.5), "crew1_f0_reach": Vector3(-13.0, 0, -9.5)}
 	return spec
+
+
+## The siege tower (milestone 16). PLACEHOLDER for every take until Dominic picks a concept: a
+## timber tower on four wheels, hide-hung on three sides, its top a wall's height and a bit (a
+## stone wall's walk is about 40 up), a gangway raised against the front, the team's pennant on
+## top; two of the race's workers push at the open back.
+func _tower_c(s: Dictionary, c: Dictionary) -> Dictionary:
+	var n := Node3D.new()
+	var L := 26.0
+	var W := 20.0
+	var wr := 4.0
+	undercarriage(n, s, L, W, wr)
+	var base := wr + 1.2
+	var top := 46.0
+	for x in [-L * 0.45, L * 0.45]:
+		for z in [-W * 0.45, W * 0.45]:
+			n.add_child(beam(Vector3(x, base, z), Vector3(x * 0.9, top, z * 0.9), 1.6, 1.6, s.wood))
+	for y in [base, base + 14.0, base + 28.0, top]:   # the floors' frames
+		var k: float = 1.0 - (y - base) / (top - base) * 0.1
+		for z in [-W * 0.45 * k, W * 0.45 * k]:
+			n.add_child(beam(Vector3(-L * 0.45 * k, y, z), Vector3(L * 0.45 * k, y, z), 1.2, 1.2, s.dark))
+		for x in [-L * 0.45 * k, L * 0.45 * k]:
+			n.add_child(beam(Vector3(x, y, -W * 0.45 * k), Vector3(x, y, W * 0.45 * k), 1.2, 1.2, s.dark))
+	var hide: Material = s.get("roof", s.wood)
+	var mid := (base + top) * 0.5
+	for z in [-W * 0.43, W * 0.43]:   # the hides down both sides and the front
+		n.add_child(_box(Vector3(L * 0.84, top - base - 4.0, 0.5), hide, Vector3(0, mid, z)))
+	n.add_child(_box(Vector3(0.5, top - base - 4.0, W * 0.84), hide, Vector3(L * 0.43, mid, 0)))
+	n.add_child(_box(Vector3(L * 0.86, 1.0, W * 0.86), s.dark, Vector3(0, top, 0)))   # the top deck
+	for z in [-W * 0.4, W * 0.4]:   # its parapet
+		n.add_child(_box(Vector3(L * 0.8, 3.0, 0.8), s.wood, Vector3(0, top + 1.5, z)))
+	# The gangway, raised: hinged at the deck's front.
+	n.add_child(_box(Vector3(1.0, 16.0, W * 0.6), s.wood, Vector3(L * 0.5 + 1.0, top + 6.0, 0)))
+	for z in [-W * 0.3, W * 0.3]:
+		n.add_child(rod(Vector3(L * 0.5 + 1.0, top + 13.0, z), Vector3(-L * 0.2, top + 2.0, z), 0.3, 0.3, s.rope, false))
+	pennant(n, s, Vector3(-L * 0.35, top + 1.0, -W * 0.35), 12.0, 5.0)
+	return {"node": n, "sockets": {"crew0_f0_reach": Vector3(-L * 0.5 - 5.0, 0, -4.5), "crew1_f0_reach": Vector3(-L * 0.5 - 5.0, 0, 4.5)}}
 
 
 func _bolt_c_junk(s: Dictionary, c: Dictionary) -> Dictionary:

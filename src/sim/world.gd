@@ -269,6 +269,8 @@ func _make_type(player: int, u: Dictionary) -> Dictionary:
 		"harmless": "trade" in e.tags,
 		"posture": Combat.PASSIVE if int(e.get("heal", 0)) > 0 or "trade" in e.tags else Combat.AGGRESSIVE,
 		"mclass": _movement_class(e.tags),
+		"harmless": e.get("targets", "") == "none",   # never fights (a siege tower): walks along with an attack-move
+		"docks": "docks" in e.tags,                    # a siege tower: stopped by an enemy wall, a way up for its side (walls.gd)
 		"sight_add": 0, "carry_add": 0, "build_pct": 0,   # research on the type (Tech.retype)
 		"heal_pct": 0, "kill_gold": 0, "wade": 0, "slow_on_hit": 0,   # (and the race's bonuses, milestone 14)
 		"line": u.get("line", [{"age": int(r.tier), "recipe": r, "eval": e}]),   # the unit through the ages (age-ups re-price from it)

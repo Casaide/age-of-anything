@@ -192,6 +192,8 @@ static func place(w, player: int, k: int, cx: int, cy: int, along := 0) -> int:
 				w.map.set_terrain(c, w.rubble[c][0])
 				w.rubble.erase(c)
 	w.map.occupy(w.buildings.footprint(i, w.map.width), w.buildings.id[i], w.teams[player] if t.gate else -1)
+	if t.ladder:
+		w.map.set_walk_over(w.buildings.footprint(i, w.map.width), true)   # walked over at the wall's foot (walls.gd)
 	if t.gate:
 		w.refresh_lanes()   # the team's first gate gives it lanes of its own
 	return i
@@ -306,7 +308,23 @@ static func can_place(w, player: int, k: int, cx: int, cy: int, along := 0) -> b
 		var y: int = c / w.map.width
 		if not w.map.can_build(x, y, 1, mc, t.water) and not _replaceable(w, player, t, c):
 			return false
+	if t.ladder and not _against_enemy_wall(w, player, cy * w.map.width + cx):
+		return false   # a ladder only leans on an enemy walkway (walls.gd)
 	return true
+
+
+## Is cell c beside (N E S W) a finished walkway cell of an enemy of `player` (a ladder's place)?
+static func _against_enemy_wall(w, player: int, c: int) -> bool:
+	var mw: int = w.map.width
+	for n in [Vector2i(0, -1), Vector2i(1, 0), Vector2i(0, 1), Vector2i(-1, 0)]:
+		var x: int = c % mw + n.x
+		var y: int = c / mw + n.y
+		if x < 0 or y < 0 or x >= mw or y >= w.map.height:
+			continue
+		var b: int = w.buildings.index_of(w.map.occupied[y * mw + x])
+		if b >= 0 and w.buildings.done[b] == 1 and w.btypes[w.buildings.kind[b]].walkway > 0 and w.is_enemy(w.buildings.owner[b], player):
+			return true
+	return false
 
 
 ## Does a building of type t, placed by this player, take the place of what stands on cell c?
