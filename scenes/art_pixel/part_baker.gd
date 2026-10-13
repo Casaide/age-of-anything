@@ -116,7 +116,21 @@ func _bake_model(id: String, colours: Dictionary, bake_key: String, k := 0) -> v
 	var model: Node3D = spec.node
 	var front: Node3D = spec.get("front")
 	var wearer: Node3D = null
-	if "~" in id:
+	var pivot := Vector3.ZERO   # where the sprite's origin is (a cut leg's hip, a cut head's socket)
+	var at := id.get_slice("~", 1).get_slice("^", 1) if "^" in id else ""
+	if at != "":
+		# A leg or head cut by its body ("leg.newt~body.newt^2": the body's anchor 2, "head.pony~body.pony^head"):
+		# put on where the body wears it, the body there as the holdout, so the sprite keeps only what
+		# the body doesn't hide (a newt's hip inside its flank; a horse's head behind its rump). Its
+		# origin stays at the hip or the neck, so it swings and turns from there.
+		var body: Dictionary = models.build(id.get_slice("~", 1).get_slice("^", 0), colours)
+		wearer = body.node
+		pivot = body.sockets.head if at == "head" else body.anchors[int(at)][0]
+		model.position = pivot
+		if body.get("front"):
+			body.front.queue_free()
+		holder.add_child(wearer)
+	elif "~" in id:
 		# Body armour baked on its wearer: put on at the body's torso, scaled and tilted to it,
 		# with the body there as a flat key colour that's cut out afterwards. So the armour
 		# wraps the body, and the parts the body hides stay hidden, in every facing.
@@ -131,14 +145,7 @@ func _bake_model(id: String, colours: Dictionary, bake_key: String, k := 0) -> v
 			model.position = body.sockets.torso
 			model.scale = body.get("torso_fit", Vector3(ts.x, ts.y, ts.x))
 			model.rotation_degrees.z = float(body.get("torso_tilt", 0.0))
-		var key_mat := StandardMaterial3D.new()
-		key_mat.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
-		key_mat.albedo_color = HOLDOUT
-		for mi in wearer.find_children("*", "MeshInstance3D", true, false):
-			# Surface by surface: material_override on these meshes made the renderer log
-			# 'Parameter "material" is null' hundreds of times per bake (humans, centaurs).
-			for surface in (mi as MeshInstance3D).mesh.get_surface_count():
-				(mi as MeshInstance3D).set_surface_override_material(surface, key_mat)
+		_hold_out(wearer)   # (built bodies used to keep their own colours here: the armour carried a whole body)
 		if body.get("front"):
 			body.front.queue_free()
 		holder.add_child(wearer)
@@ -165,7 +172,22 @@ func _bake_model(id: String, colours: Dictionary, bake_key: String, k := 0) -> v
 	key.basis = Basis.looking_at(cam.basis * Vector3(0.55, -0.75, -1.0).normalized(), Vector3.UP)
 	await _render()
 	var img := get_texture().get_image()
-	if wearer:
+	if at != "":
+		# The cut: the part in white over its body in black, unlit, then only the white is kept
+		# (not a key colour, which a green frog's own leg could match).
+		_hold_out(model, Color.WHITE)
+		_hold_out(wearer, Color.BLACK)
+		key.shadow_enabled = false
+		await _render()
+		key.shadow_enabled = true
+		var mask := get_texture().get_image()
+		for y in img.get_height():
+			for x in img.get_width():
+				if mask.get_pixel(x, y).r < 0.5:
+					img.set_pixel(x, y, Color(0, 0, 0, 0))
+		holder.remove_child(wearer)
+		wearer.queue_free()
+	elif wearer:
 		_cut_holdout(img)
 		holder.remove_child(wearer)
 		wearer.queue_free()
@@ -179,8 +201,9 @@ func _bake_model(id: String, colours: Dictionary, bake_key: String, k := 0) -> v
 		holder.remove_child(front)
 		front.queue_free()
 		model.visible = true
-	var origin := cam.unproject_position(Vector3.ZERO)
-	var to2d := func(p: Vector3) -> Vector2: return (cam.unproject_position(p) - origin) / px
+	var zero := cam.unproject_position(Vector3.ZERO)   # the model's origin: sockets are relative to it
+	var to2d := func(p: Vector3) -> Vector2: return (cam.unproject_position(p) - zero) / px
+	var origin := cam.unproject_position(pivot)   # the sprite's origin (a cut part's hip or neck; else the model's)
 	var flat := Vector3(view.x, 0.0, view.z).normalized()   # towards the camera, along the ground
 	if spec.has("sockets"):
 		var rig := {"sockets": {}, "depth": {}}
@@ -188,7 +211,7 @@ func _bake_model(id: String, colours: Dictionary, bake_key: String, k := 0) -> v
 			rig.sockets[s] = to2d.call(spec.sockets[s])
 			rig.depth[s] = spec.sockets[s].dot(flat)   # > 0: nearer the camera than the body's middle
 		# Which way the model's front (+x) points on screen in this facing, to pick facings by.
-		rig.dir = (cam.unproject_position(Vector3(20, 0, 0)) - origin).normalized()
+		rig.dir = (cam.unproject_position(Vector3(20, 0, 0)) - zero).normalized()
 		if spec.has("anchors"):   # a leg on the camera's side of the body is the near leg
 			rig.anchors = spec.anchors.map(func(a): var v: Vector2 = to2d.call(a[0]); return [v.x, v.y, a[1],
 				a[2] if k == 0 else (1 if a[0].dot(flat) > 0.0 else -1), a[3] if a.size() > 3 else 0, a[4] if a.size() > 4 else false])   # a[4]: a hind leg (its body's legs.hind part)
@@ -352,6 +375,21 @@ func _shape3d(s: Dictionary, colours: Dictionary, i: int) -> Node3D:
 
 
 ## Make the holdout colour (and the edge pixels mostly made of it) transparent.
+## Paint a body as the flat holdout key. Surface by surface on modelled (.glb) meshes:
+## material_override there made the renderer log 'Parameter "material" is null' hundreds of times
+## per bake (humans, centaurs); built meshes carry a material_override, which wins, so it's replaced.
+static func _hold_out(body: Node3D, colour := HOLDOUT) -> void:
+	var key_mat := StandardMaterial3D.new()
+	key_mat.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
+	key_mat.albedo_color = colour
+	for mi in body.find_children("*", "MeshInstance3D", true, false):
+		if (mi as MeshInstance3D).material_override != null:
+			(mi as MeshInstance3D).material_override = key_mat
+		else:
+			for surface in (mi as MeshInstance3D).mesh.get_surface_count():
+				(mi as MeshInstance3D).set_surface_override_material(surface, key_mat)
+
+
 static func _cut_holdout(img: Image) -> void:
 	for y in img.get_height():
 		for x in img.get_width():
