@@ -887,8 +887,8 @@ func _tower(w, workers: Array) -> void:
 
 
 ## The market (data: economy.trade): while food or wood is under `below`, gold piled past `above`
-## buys a lot of the lower of them; with gold short too, the biggest other pile past `above` sells
-## for gold (food piled up while wood ran dry on Old Forest). One trade every `every` seconds. (A pile nobody spends was holding armies small and
+## buys a lot of the lower of them; with less gold than that, the biggest other pile past `above`
+## sells for gold (food or stone piled up while wood ran dry). One trade every `every` seconds. (A pile nobody spends was holding armies small and
 ## matches long: soldiers want food and wood.)
 var _next_trade := 0
 
@@ -913,9 +913,9 @@ func _trade(w) -> void:
 	if low >= 0 and w.stock[g][player] >= int(t.above):
 		w.issue(player, Commands.TRADE, {"building": w.buildings.id[mk], "resource": w.resources[low], "buy": 1})
 		return
-	if low < 0 or w.stock[g][player] >= int(t.below):
+	if low < 0:
 		return
-	var most := -1   # gold short and food or wood short: sell the biggest pile (over `above`) for gold
+	var most := -1   # food or wood short and not gold enough to buy it: sell the biggest pile (over `above`) for gold
 	for r in w.resources.size():
 		if r != g and w.stock[r][player] >= int(t.above) and (most < 0 or w.stock[r][player] > w.stock[most][player]):
 			most = r
@@ -1080,7 +1080,7 @@ func _waves(w, army: Array, hx: int, hy: int) -> void:
 	# Too few to storm a Town Center under towers and a Castle: wait out of their reach on the way
 	# in (contain), and storm it once the army is big enough.
 	var hold := _contain_point(w, target)
-	if wonder <= 0 and hold.x >= 0 and _pop(w, army) < int(m.contain_pop):
+	if wonder <= 0 and hold.x >= 0 and _pop(w, army) < int(m.contain_pop) and not _has_siege(w, army):
 		w.issue(player, Commands.ATTACK_MOVE, {"ids": ids, "x": hold.x, "y": hold.y})
 		return
 	# With the field clear, go for the Town Center itself (that ends the match) rather than
@@ -1114,7 +1114,7 @@ func _send(w, ids: Array, target: Vector2i, may_raid: bool, hx: int, hy: int) ->
 	if raids > 0 and w.tick >= raid_from and may_raid and not strong and _raid(w, ids, hx, hy):
 		return
 	var hold := _contain_point(w, target)
-	if may_raid and hold.x >= 0 and _pop(w, idx) < int(cfg.military.contain_pop):
+	if may_raid and hold.x >= 0 and _pop(w, idx) < int(cfg.military.contain_pop) and not _has_siege(w, idx):
 		target = hold   # (too few to storm it: wait out of reach)
 	var lc: Dictionary = cfg.land
 	var main := ids.duplicate()
@@ -1144,6 +1144,17 @@ func _dominant(w, idx: Array) -> bool:
 				and not t.worker and not t.healer and not t.has("animal"):
 			with += int(t.pop)
 	return ours >= _repeat_min(w) and with * 100 >= maxi(1, theirs) * int(cfg.military.dominant_pct)
+
+
+## Do these soldiers of ours (indexes) bring a siege engine (a ram, a thrower)? Then towers and a
+## Castle are theirs to break: no waiting out of reach.
+func _has_siege(w, idx: Array) -> bool:
+	for i in idx:
+		if i >= 0:
+			var t: Dictionary = w.types[w.units.kind[i]]
+			if t.get("buildings_only", false) or t.get("splash", 0) > 0:
+				return true
+	return false
 
 
 ## Our soldiers' population (indexes into the units arrays).

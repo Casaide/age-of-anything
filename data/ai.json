@@ -29,7 +29,7 @@
   "rebalance_every": 2,
   "build_push": 30,
   "plenty": 600,
-  "_doc": "max_workers: per age, the most workers it trains. age_workers: with this many it stops training workers and saves for age 2; age3_workers: with this many in age 2 it saves for age 3 (soldiers and research leave the cost alone until the age-up is clicked; the guard trains while it runs). rebalance_every: seconds between moving one gatherer from the resource most over its share to the one most under. Shares: the mix, leaning to what it saves for (the next age: a hundred shares split by what it lacks, the rest halved; a build step waiting on resources: build_push shares); none on a stock of `plenty` (more than it saves for). trade (bot.gd _trade): with a market, gold over `above` buys a lot of the lower of food and wood while it's under `below`; with gold under `below` too, the biggest other pile over `above` is sold; one trade every `every` seconds.",
+  "_doc": "max_workers: per age, the most workers it trains. age_workers: with this many it stops training workers and saves for age 2; age3_workers: with this many in age 2 it saves for age 3 (soldiers and research leave the cost alone until the age-up is clicked; the guard trains while it runs). rebalance_every: seconds between moving one gatherer from the resource most over its share to the one most under. Shares: the mix, leaning to what it saves for (the next age: a hundred shares split by what it lacks, the rest halved; a build step waiting on resources: build_push shares); none on a stock of `plenty` (more than it saves for). trade (bot.gd _trade): with a market, gold over `above` buys a lot of the lower of food and wood while it's under `below`; with less gold than `above`, the biggest other pile over `above` is sold; one trade every `every` seconds.",
   "trade": {
    "every": 5,
    "above": 500,
@@ -108,6 +108,11 @@
    "guard": 1
   },
   {
+   "building": "barracks",
+   "age": 2,
+   "workers": 26
+  },
+  {
    "building": "university",
    "age": 3,
    "workers": 22,
@@ -120,11 +125,6 @@
    "workers": 24,
    "builders": 6,
    "save": 1
-  },
-  {
-   "building": "barracks",
-   "age": 2,
-   "workers": 26
   },
   {
    "building": "siege_workshop",
@@ -221,7 +221,7 @@
   "_doc_raids": "A level with `raids` (levels) sends each wave and push at the enemy's economy first: the buildings of raid_targets it remembers (fog memory) that stand out of reach of their shooting buildings (by raid_safe tiles more), in up to `raids` groups of at least raid_min, nearest first; with none left, the Town Center as before.",
   "contain_pop": 30,
   "contain_gap": 3,
-  "_doc_contain": "contain_pop, contain_gap: an army smaller than contain_pop (population) doesn't storm a Town Center under the enemy's towers, Castle or Town Center arrows (fog memory): it waits on its way in, contain_gap tiles out of their reach, and goes in once it's that big (bot.gd _contain_point). dominant_pct: an army this many percent of the enemy army it remembers (or more) skips raids and goes for the Town Centers (waiting first if it's under contain_pop).",
+  "_doc_contain": "contain_pop, contain_gap: an army smaller than contain_pop (population) doesn't storm a Town Center under the enemy's towers, Castle or Town Center arrows (fog memory): it waits on its way in, contain_gap tiles out of their reach, and goes in once it's that big, or once it brings a siege engine (bot.gd _contain_point). dominant_pct: an army this many percent of the enemy army it remembers (or more) skips raids and goes for the Town Centers (waiting first if it's under contain_pop).",
   "dominant_pct": 250
  },
  "research": {
