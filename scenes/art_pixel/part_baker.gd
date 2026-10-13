@@ -127,6 +127,8 @@ func _bake_model(id: String, colours: Dictionary, bake_key: String, k := 0) -> v
 		wearer = body.node
 		pivot = body.sockets.head if at == "head" else body.anchors[int(at)][0]
 		model.position = pivot
+		if at != "head":
+			model.basis = UnitModels.leg_basis(body.anchors[int(at)], true) * model.basis   # turned to its own side
 		if body.get("front"):
 			body.front.queue_free()
 		holder.add_child(wearer)
@@ -205,6 +207,20 @@ func _bake_model(id: String, colours: Dictionary, bake_key: String, k := 0) -> v
 	var to2d := func(p: Vector3) -> Vector2: return (cam.unproject_position(p) - zero) / px
 	var origin := cam.unproject_position(pivot)   # the sprite's origin (a cut part's hip or neck; else the model's)
 	var flat := Vector3(view.x, 0.0, view.z).normalized()   # towards the camera, along the ground
+	if spec.has("sockets") and spec.sockets.has("seat") and not spec.sockets.has("girth"):
+		# The girth: the bottom of the barrel under the seat, where a rider's leg reaches down to.
+		var seat: Vector3 = spec.sockets.seat
+		var low := seat.y
+		for mi in model.find_children("*", "MeshInstance3D", true, false):
+			var t := Transform3D()
+			var p: Node = mi
+			while p != model:
+				t = (p as Node3D).transform * t
+				p = p.get_parent()
+			var b: AABB = model.transform * t * mi.get_aabb()
+			if b.position.x <= seat.x and b.end.x >= seat.x and b.position.z <= 0.0 and b.end.z >= 0.0:
+				low = minf(low, b.position.y)
+		spec.sockets["girth"] = Vector3(seat.x, low, 0.0)
 	if spec.has("sockets"):
 		var rig := {"sockets": {}, "depth": {}}
 		for s in spec.sockets:
@@ -214,7 +230,8 @@ func _bake_model(id: String, colours: Dictionary, bake_key: String, k := 0) -> v
 		rig.dir = (cam.unproject_position(Vector3(20, 0, 0)) - zero).normalized()
 		if spec.has("anchors"):   # a leg on the camera's side of the body is the near leg
 			rig.anchors = spec.anchors.map(func(a): var v: Vector2 = to2d.call(a[0]); return [v.x, v.y, a[1],
-				a[2] if k == 0 else (1 if a[0].dot(flat) > 0.0 else -1), a[3] if a.size() > 3 else 0, a[4] if a.size() > 4 else false])   # a[4]: a hind leg (its body's legs.hind part)
+				a[2] if k == 0 else (1 if a[0].dot(flat) > 0.0 else -1), a[3] if a.size() > 3 else 0, a[4] if a.size() > 4 else false,
+				a[0].z * flat.z > 0.0])   # a[4]: a hind leg (its body's legs.hind part); [6]: its side of the body faces the camera
 		if spec.has("torso_scale"):
 			rig.torso_scale = spec.torso_scale
 		if spec.has("gear_scale"):

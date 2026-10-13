@@ -8,6 +8,10 @@ const UnitView := preload("res://src/unit_view.gd")
 const TreeModel := preload("res://src/view/tech_tree_model.gd")
 const Economy := preload("res://src/sim/economy.gd")
 const Tech := preload("res://src/sim/tech.gd")
+const Cases := preload("res://tests/placement/cases.gd")
+const GeometryCheck := preload("res://tests/placement/geometry_check.gd")
+const GeometryRun := preload("res://tests/geometry_check.gd")
+const Fixtures3D := preload("res://tests/placement/fixtures_3d.gd")
 
 const PROMPTS := [
 	"angry swamp frogs with reed spears",
@@ -46,9 +50,25 @@ func _init() -> void:
 	_test_paths()
 	_test_tech_tree(lib, gen, rules)
 	_test_scripts_parse()
+	_test_placement(lib)
 
 	print("\n%d checks, %d failed" % [checks, failures])
 	quit(1 if failures > 0 else 0)
+
+
+## The 3D placement check (tests/placement/geometry_check.gd, docs/rendering.md "Placement rules"):
+## every unit, mount, rider, animal and crew in every pose, on its meshes, and the fixtures of the
+## bugs it must catch. The 2D half needs a window: tests/placement_check.gd runs both.
+func _test_placement(lib) -> void:
+	var g = GeometryCheck.new(lib)
+	g.metrics = true
+	GeometryRun.run(g, Cases.all(lib))
+	for key in g.order:
+		var fails: Array = g.results[key]
+		check(fails.is_empty(), "placement %s: %s" % [key.replace("|", ": "), "" if fails.is_empty() else fails[0]])
+	var fx: Array = Fixtures3D.run(lib)
+	for line in fx[1]:
+		check(line.begins_with("PASS"), "placement " + line.replace("\n", " "))
 
 
 ## Every game and view script loads (a parse error in a scene script otherwise only shows when
