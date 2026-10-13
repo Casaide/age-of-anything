@@ -27,11 +27,11 @@ defenders' tools, and the Fortress and Siege modes. Neither touches the other's 
 
 | Building | Lines | New systems |
 |---|---|---|
-| Barracks | Swordsman (1-3), Raider (3) | none: parts exist (swords, clubs); raider = light, fast |
-| Archery Range | Mounted Archer (3) | none: the generator already makes horse archers |
-| Stable | Scout (2-3), War Beast (3) | big beasts (bodies) |
+| Barracks | Swordsman (1-3) | none: parts exist (swords, clubs) |
+| Archery Range | Mounted Archer (2-3) | none: the race's mount and a bow |
+| Stable | Scout (2-3), War Beast (3) | sight per unit (scouts); big beasts (bodies) |
 | Siege Workshop | Ram, Catapult, Bolt Thrower (3) | siege bodies; splash, minimum range, attack vs buildings (the siege tower moved to milestone 16) |
-| Castle | Unique, Sapper, Great Sling (3) | the unique slot's bigger budget; self-destruct; pack/unpack |
+| Castle | Unique, Sapper, Great Sling (3) | unique themes in data (raiders are one kind, D-123); self-destruct; pack/unpack |
 | Town Center | Healer (2-3) | healing (Dominic, 2026-10-12: the Temple and conversion are cut) |
 | Market | Trade Cart (2) + cart research | trade routes between your markets |
 
@@ -63,7 +63,8 @@ ahead of step 1, in this order; the other steps keep their plan below.
 Each phase: concept round first where there's new art (D-080: 3-5 options at game scale, Dominic
 picks), then build, tests, archive pictures.
 
-1. **Lines from parts we have.** Swordsman, Raider, Scout, Mounted Archer: roster slots go live,
+1. **Lines from parts we have.** Swordsman, Scout, Mounted Archer (the Raider line is cut, D-123:
+   raiders are unique-unit themes, step 4): roster slots go live,
    the generator's role needs and biases (`src/race_generator.gd` ROLE_NEEDS / ROLE_BIAS), counter
    tags, pricing check in `tests/balance.gd`, the bot's counter-picks learn them. Light scout gear
    is the one small parts gap.
@@ -76,7 +77,8 @@ picks), then build, tests, archive pictures.
    sling, timber engines for humans). Then build them as parts and recipes; Siege Workshop trains.
 4. **Castle units.** The unique unit: a slot with a bigger point budget, picked from the prompt's
    signature words (the generator's showcase: "romans" -> a testudo legionary); no elite step
-   (three ages). The sapper (walks up and blows up a building or wall tile: a plain kill here; the rubble and breach are milestone 16's). The great sling (long-range anti-building,
+   (three ages). Fast light raiders are one kind of theme (steppe, gutter rats, vikings, gloom;
+   Dominic, D-123: "Raider isn't really a thing, sounds race specific like a castle unit"). The sapper (walks up and blows up a building or wall tile: a plain kill here; the rubble and breach are milestone 16's). The great sling (long-range anti-building,
    packs and unpacks).
 5. **Healers.** (Built 2026-10-12. Dominic: "staffs look good; different staffs for each": every
    culture gets its own staff and bag, queued after living towns merges.) The Town Center trains a healer from age 2 (Dominic, 2026-10-12): it heals nearby
@@ -94,9 +96,10 @@ picks), then build, tests, archive pictures.
 
 ## Checklist
 - [ ] Plan approved by Dominic
-- [ ] 1. Swordsman, raider, scout, mounted archer
+- [x] 1. Swordsman, scout, mounted archer (2026-10-13)
   - [x] Swordsman line at the Barracks, ages 1-3 (2026-10-13)
-  - [ ] Raider, scout, mounted archer
+  - [x] Scout line at the Stable and mounted archer line at the Archery Range, ages 2-3 (2026-10-13)
+  - [x] ~~Raider~~: cut as a line (Dominic, D-123); raiders are unique themes (step 4)
 - [x] 2. Siege combat systems (splash, minimum range, bonus vs buildings, rams for buildings only, bolts through a line; 2026-10-13)
 - [ ] 3. Siege engines (concept round per family)
   - [x] 3a. Concept round SW1: ram, catapult, bolt thrower, five families, two directions (2026-10-13)
@@ -117,6 +120,9 @@ picks), then build, tests, archive pictures.
 - [ ] Siege engine sounds (they reuse shot and hit sounds); the swordsmen's raid mode for the bot (built, off)
 - [ ] Check bugs (swamp beetles, spiders) riding newts; "frogs riding beetles" now gives newts
 - [ ] 4. Unique unit, sapper, great sling
+  - [x] The unique unit: themes in `data/uniques.json` (17, raiders among them), from existing parts (2026-10-13)
+  - [ ] Dominic's look at the themes; concept round for the new parts each wants (list in Results)
+  - [ ] Sapper, great sling
 - [x] 5. Healers (built 2026-10-12; the look is a pick pending: HL1 concept sheet, look A in game)
 - [ ] 6. Trade carts
 - [ ] 7. War beasts
@@ -421,8 +427,174 @@ forest A, spooky B, plus a plain iron sword as the fallback. In play:
   (hellenic, steppe, han at 5x), `361-` (swamp, forest, spooky at 5x). Every blade is the brightest thing
   on its unit; the Attic crest is team blue against a team banner, so it reads best on units without
   one; the steppe tuft is small; the chitin shards show teal in the side facings.
+**Scouts, mounted archers and the unique unit (2026-10-13).** Dominic: "We're also missing the rest of
+the units. Horse archers (archery range), scout (stable), castle special units." Three roster slots go
+live in `data/rules/*.json`, each with its own random stream (`own_seed`). The other lines' recipes
+and the race's name stay as they were (run_tests checks this over 20 prompts x 3 rules x 2 rerolls).
+The race keys change, because the new lines are part of them. The Stable trains the scout beside the
+cavalry, the Archery Range the mounted archer, the Castle the unique unit (`data/buildings.json`).
+- **Scout** (Stable, ages 2-3). It rides the race's mount (rules `mount: "prefer"`). Where nothing
+  carries the race it goes on foot: Aztec folk, spooky spiders, winged races (who keep their wings).
+  - Kit: a light weapon (melee, no spear, lance or heavy kit: ROLE_EXCLUDES), plus a cap and a jerkin
+    at most (`SCOUT_SLOTS`, `_light`: nothing heavy, nothing over 2 points).
+  - The slot carries its numbers (rules `stats`): speed +3, attack -2, **sight +4 tiles**, +2 more
+    speed on foot (`stats_on_foot`), and a bonus against skirmishers, workers and healers. The mount
+    already gives +4 against siege.
+  - Sight is data now: pricing outputs `sight` and the fog adds it (`fog.gd`). Its name is the
+    slot's noun ("Scout on a Pony", "Scout Frog on a Newt").
+- **Mounted archer** (Archery Range, ages 2-3; it opens in age 2, not 3, so the line has an upgrade).
+  A bow on the race's mount, +2 against infantry (rules `bonus`). Mounts drop the rider's infantry tag
+  (D-120), so archers' bonus doesn't touch it, while skirmishers (+6 against archers) and spears
+  (against large) do. A race **lacks** the line in three cases:
+  - its archers already ride (`unless_mounted: "archer"`): centaurs, whose archer is their mounted
+    archer (so no duplicate), and horse peoples whose prompt mounts the archers (mongols);
+  - nothing carries it (`mount: "always"`);
+  - it has no hands (`needs_hands`; creatures.json `harness`: beetles and spiders cling to a mount
+    and can't draw a bow there, which the placement check caught as a bow through the pony's neck).
+
+  A lacked line is listed in `race.lacks` with a note ("No Mounted Archer line: the centaurs ride
+  already as archers."). The tech tree page draws it crossed out and lists it under Lacks.
+- **The unique unit** (Castle, age 3, one step), with 10 points over the age's budget
+  (`budget_add`). Its **theme** comes from `data/uniques.json`. Choice order, all data: the theme the
+  prompt asked for most by its `asked` tags (romans -> testudo, "cheese" -> Big Cheese, "viking" ->
+  horned raider, even on frogs: "roman frogs" give a Frog Testudo Guard), else the creature's
+  `unique` (creatures.json: rats, frogs, spiders, beetles), else the culture's (families.json).
+  - A theme sets: a `role` (which weapon it needs), signature `parts` (taken first where the age and
+    era allow), `wants` (what its other gear leans to), `mount: "ride"`, `giant` (where giant_ok),
+    `light`, `stats` and `bonus`, and `price_points` (what they add to its price; the cost curve does
+    the rest), a `noun` and a one-line `desc` (the tech tree page's card).
+  - No new parts: existing ones in a signature combination.
+  - **Raiders are themes, not a line** (D-123): the Steppe Raider (a fast light rider with a bonus
+    against workers, healers, engines and buildings), the Gutter Raider (the rats' own), the Horned
+    Raider (asked "viking") and the Gloom Stalker. The planned Barracks slot is kept in
+    `data/later/raider_line.json`.
+
+| Theme | Whose | Role | Kit and numbers |
+|---|---|---|---|
+| Testudo Guard | imperial, asked "roman" | infantry | gladius, scutum, lorica, galea; +3 pierce armour |
+| Phalanx Guard | hellenic, asked "greek" | spear | dory, hoplon, Corinthian, bronze; +2 melee armour |
+| Sworn Knight | royal, asked "knight" | infantry | iron sword, kite, mail, iron helm, cape; +20 HP |
+| Steppe Raider | steppe | infantry, rides, light | round shield, cap; speed +3; bonus vs workers, healers, siege, buildings |
+| Bowguard | nile, asked "egyptian" | archer | bow, headcloth, leather; +1 range, +1 pierce armour |
+| Repeater Guard | han, asked "chinese" | archer | crossbow, lamellar helm; attack -2, reload 12 ticks (2.5x) |
+| Obsidian Champion | aztec | infantry | macuahuitl, chimalli, eagle helm, banner; speed +2, bonus vs infantry |
+| Bog Lurker | swamp | skirmisher, light | blowgun, leaf cape and hat; speed +2, sight +2, bonus vs infantry |
+| Moss Warden | forest | archer | bow, leaf cape, bark, acorn; +1 range, +3 sight |
+| Scrap Brute | sewer | infantry | club, bottle-cap shield and armour, tin cap; +15 HP, bonus vs buildings |
+| Gloom Stalker | spooky | infantry, light | speed +3, attack +2, sight +2; bonus vs healers, archers, workers |
+| Gutter Raider | rats | infantry, light | thimble; speed +3, attack +1; bonus vs workers, healers, siege, buildings |
+| Big Cheese | asked "cheese" | infantry | cheese hammer, sardine armour, spoon helm, banner; +20 HP, +2 attack |
+| Great Bullfrog | frogs | infantry, giant | a giant frog; bonus vs infantry |
+| Web Lurker | spiders | skirmisher, light | speed +2, sight +3; bonus vs large (riders and beasts) |
+| Stag Colossus | beetles | infantry, giant | a giant beetle in bark; +2 melee armour |
+| Horned Raider | asked "viking" | infantry, light | round shield, horned helm; speed +2, attack +2; bonus vs buildings, workers |
+
+- **AI.** Main's bots now scout (`src/ai/scout.gd`: a worker early, then the fastest idle soldier).
+  - `_train_scout` keeps one scout-line unit (`military.scouts.keep`), trained before the
+    counter-pick, and Scout's soldier tours take a scout-line unit first, without waiting for an army.
+  - `pick_bias` keeps the old defaults: the Stable's cavalry, the Range's archers (scout -5, mounted
+    archer -6). Seen swordsmen bring mounted archers; seen spears don't (`tests/test_ai.gd pick`).
+  - The Castle trains unique units through the same pick.
+- **Placement** (`tests/placement_check.gd`, both halves). The cases cover the new lines of 12 more
+  races (`tests/placement/cases.gd` LINE_PROMPTS: every unique theme, a foot scout, the steppe raider
+  on its pony), plus their cavalry. The wider cover found old placement faults in parts already in
+  play, now fixed:
+  - helmets low on the brow: bronze and horned helms, khat, Nile bronze, Han lamellar and Aztec
+    quilted cap, each raised (`_lift`);
+  - the iron helm's nasal and the eagle helm's beak are face guards (`"face": "covered"`);
+  - a cloth cape hung through a pony's and a beetle's back: `cape.cloth` gets
+    `not_ridden_on: ["pony", "beetle"]`, read by the generator, so such riders now pick other gear;
+  - a banner's pole cut through the Han lamellar neck guard and the Nile headcloth: both drawn closer
+    in;
+  - a hummingbird's own wing blur was held to the withers-wings rule. Dominic had it drawn like any
+    back part ("a flat grey plate" from behind), so the 2D rule now skips wing blurs.
+
+  9,320 checks, 0 failed, fixtures all caught.
+- **Balance** (`tests/balance.gd`, equal cost, after main's 1.7x soldier prices; units more than 20%
+  off the mean). The old lines alone (the round robin with the new lines left out)
+  are out 11 of 25 at age 2 and 14 of 25 at age 3. With the new lines: 18 of 33 at age 2 and
+  21 of 38 at age 3. Counters won 83% and 85% of same-race counter fights (80% and 82% before).
+  - Prices tuned: mounted archer `price_points` -3, scout -2; Big Cheese 20 (from +42% to -2%), Great Bullfrog 5,
+    Sworn Knight 7.
+  - **Re-run after the movement fix and the rats riding cats** (both change fights): 20 of 33 out at
+    age 2, 18 of 38 at age 3; counters 83% and 81%. The rats on cats: scout +8% (age 2) and +4%
+    (age 3), mounted archer +14% and +30% (the one new-line rat outlier; the cat's price is the
+    cat branch's). Great Bullfrog +14%, Big Cheese +4%, Beetle Sworn Knight -8%.
+  - **The newt is not the cause** of the frogs' spread: frog archers are weak on foot too (-48% at
+    age 2, like the beetles' -48%), and frog spear cavalry is strong the way every spear-armed rider
+    is (pony hoplites +38%, centaur spears +38%). Pricing the newt like the pony (`price_points` 15 to 12)
+    lifted the newt archer from -57% to -36% but the spear cavalry from +26% to +44%, so the newt
+    stays as it is. The weak archers and the strong spear riders are the old outliers, not a mount's.
+  - The rest out are as before: weak archers and slingers, pike and lance riders, the cheese rats'
+    swordsman and giant.
+- **Mass battles** (`tests/mass_battle.gd`, 1500 a side, ages 2 and 3, new matches; at age 3 after the
+  movement fix mounted archers beat spears 4 of 6 and skirmishers beat them only 2 of 6, so they are
+  on the strong side there; scouts and unique units as below, unique units a little weaker, 2 of 10
+  against cavalry):
+  - mounted archers beat swords 6 of 6 and archers 6 of 6, split with spears (3 of 6 at age 2, lose
+    4 of 6 at age 3), lose to cavalry 4 of 6 and to skirmishers at age 2 (4 of 6; even at age 3);
+  - scouts beat skirmishers and archers 10 of 10 and lose to spears and cavalry 10 of 10;
+  - unique units against their own race's lines: beat swords 6 of 10 and archers 6 of 10, lose to
+    spears 6 of 10, cavalry 7 of 10 and spear+archer 7 of 10. Strong in the right fights, not a
+    must-build.
+- Pictures: `archive/images/2026-10-13/383-` (scouts, age 2, rats on cats), `384-` (mounted archers, age 2),
+  `385-` (unique units), every culture in 8 facings at 3x (`tests/line_lineup.gd`, which now skips a
+  race that lacks the line).
+- **New parts each unique unit would want** (concept-first, D-080; nothing built, all of these use
+  existing parts today):
+  - Testudo Guard: a tall curved tower shield that locks with its neighbours, a crested centurion
+    helm; a formation pose (shields raised) would sell the testudo.
+  - Phalanx Guard: a long sarissa-length spear, a crested Attic helm with cheek guards, greaves.
+  - Sworn Knight: a great helm (flat-topped, closed), a surcoat in the team colour over the mail, a
+    long sword.
+  - Steppe Raider: a curved sabre, a fur-trimmed cap, a lasso or saddle bags; a smaller, shaggier
+    steppe pony.
+  - Bowguard: a long self bow taller than the archer, a quiver on the hip, a linen kilt with a team
+    sash.
+  - Repeater Guard: a magazine crossbow (a box on top, a lever), a lacquered cuirass.
+  - Obsidian Champion: an animal-skin war suit (a feathered or spotted body suit with the head as a
+    hood), a feathered back-banner.
+  - Bog Lurker: a reed-mat ghillie cloak, a long reed blowgun, a dart pouch.
+  - Moss Warden: a mossy hood and cloak, a longbow of bent branch, antler or twig trims.
+  - Scrap Brute: a riveted scrap-iron cuirass from the sewer's junk at human scale (D-116), a pipe or
+    chain flail, a grate shield.
+  - Gloom Stalker: a hooded tattered cloak, a hooked blade or a sickle, pale face paint.
+  - Gutter Raider: a short cleaver or a hook, a patched leather hood, a sack of loot on the back.
+  - Big Cheese: a giant wheel-of-cheese hammer (bigger than the line's), a cheese-rind crown, a cape
+    of cloth like a cheese wrap.
+  - Great Bullfrog: no gear needed beyond scale; perhaps a lily-crown or warpaint stripes (avoiding
+    more lily pads, D-119).
+  - Web Lurker: a web-sling (a silk bag of stones), a silk shroud; a spitting pose.
+  - Stag Colossus: oversized stag mandibles as its weapon (no held sword), a bark-and-iron carapace
+    cap like the forest ram's.
+  - Horned Raider: a bearded axe, a round shield with a boss and a painted rim, a fur cloak.
+- **Tests.** `tests/batch.sh --quick`: run_tests 36,079 checks, 0 failed (the new lines' rules, the
+  theme picks, and that the other lines and names are unchanged); placement 0 failed (and
+  `tests/placement_check.gd` in full: 9,724 checks, 0 failed, fixtures all caught); test_ai quick fails only main's known
+  "easy strikes before 8 minutes".
+  - test_sim's scripted match shares about 200 units over the race's lines (`PER_PLAYER` 99), since
+    its tick budget is for a match that size. The tick, part:match on its own, back to back: 2.04 ms
+    (158 units at the end) against main's 2.96 ms (194).
+  - **The crossings, fixed in the movement code** (the new lines, three mounted and a giant, made the
+    fault show: 100 units in ten groups, as main's test spawns them):
+    - a unit walking back into its slot now gives way to its side's other groups, as one standing in
+      it does (`_separate` yields). It had walked straight back into the passer: a returning
+      cavalryman and a passing mounted archer shoved nose to nose until the passer gave up;
+    - no ground gained in a moving queue, or while giving way near its slot, isn't stuck (`_queued`,
+      `_passed`). The tenth group through choke_test's gap waited longer than the patience, and a
+      spearman shoved off his slot by eight groups gave up two tiles from home;
+    - one that gave up walking back and stands by its slot again isn't counted stuck.
+
+    All three crossings pass with main's test unchanged (ten of each line). test_sim: 656 checks, 0 failed.
+- **Open:** Dominic's look at the themes and the concept round for their parts. The rats' mounted
+  archer on a cat at age 3 (+30%), and mounted archers against skirmishers at age 3. The scout and
+  mounted archer sounds reuse the cavalry's.
 
 ## Changes from the original plan
+
+- 2026-10-13: no generic Raider line (Dominic, D-123); raiders are unique-unit themes. The planned
+  slot is kept in `data/later/raider_line.json`. The mounted archer opens in age 2, not 3, so the line
+  has an upgrade step.
 
 - 2026-10-13: siege first (Dominic: "why we not done siege yet?"), ahead of step 1. Step 2 shrinks
   to splash, minimum range and the bonus vs buildings: projectiles that can miss are built

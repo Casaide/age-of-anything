@@ -78,22 +78,20 @@
    "price_points": 3
   },
   {
-   "slot": "raider",
-   "role": "raider",
-   "tier": 3,
-   "name": "Raider",
-   "building": "barracks",
-   "desc": "Beats siege, archers and healers; weak to infantry",
-   "status": "planned"
-  },
-  {
    "slot": "mounted_archer",
    "role": "mounted_archer",
-   "tier": 3,
+   "tier": 2,
    "name": "Mounted Archer",
    "building": "archery_range",
-   "desc": "Beats infantry, hits and runs; weak to skirmishers",
-   "status": "planned"
+   "desc": "A bow on horseback: beats infantry and slow units; weak to skirmishers, spears and cavalry",
+   "own_seed": true,
+   "mount": "always",
+   "unless_mounted": "archer",
+   "needs_hands": true,
+   "bonus": {
+    "infantry": 2
+   },
+   "price_points": -3
   },
   {
    "slot": "scout",
@@ -101,8 +99,24 @@
    "tier": 2,
    "name": "Scout",
    "building": "stable",
-   "desc": "Beats siege, archers and healers, raids; weak to spears",
-   "status": "planned"
+   "desc": "Fast, light and far-sighted: finds the enemy, catches skirmishers, engines, healers and workers; weak in a real fight, spears beat it",
+   "own_seed": true,
+   "mount": "prefer",
+   "stats": {
+    "speed": 3,
+    "attack": -2,
+    "sight": 4
+   },
+   "stats_on_foot": {
+    "speed": 2
+   },
+   "bonus": {
+    "skirmish": 3,
+    "worker": 3,
+    "heal": 4
+   },
+   "price_points": -2,
+   "noun": "Scout"
   },
   {
    "slot": "war_beast",
@@ -158,8 +172,10 @@
    "tier": 3,
    "name": "Unique Unit",
    "building": "castle",
-   "desc": "The race's signature, from the prompt (a bigger budget); elite in age 4",
-   "status": "planned"
+   "desc": "The race's signature (data/uniques.json): the theme the prompt asked for, else its creature's or culture's; a bigger budget",
+   "own_seed": true,
+   "upgrades": false,
+   "budget_add": 10
   },
   {
    "slot": "sapper",
@@ -191,7 +207,7 @@
    "last_age": 2
   }
  ],
- "_roster_doc": "each slot is a unit line: its first age (`tier`), the building that trains it, its name on the tech tree page, and `last_age` when it stops before the last age. Slots with \"status\": \"planned\" are only on the page: the generator skips them (milestone 12). `upgrades`: false keeps the first unit for every later age (no second tier: the healer). `own_seed`: the line draws from its own random stream (prompt + slot), so adding it leaves every other line's recipes as they were. `engine`: a siege line: its body is the engine of that name in the race's take (families.json `siege`, a creature's own `siege` first), crewed by the race's workers. `bonus`: attack bonus by class that the line gets whatever it holds (the swordsman's counters: spears, skirmishers, buildings; pricing.gd), and `price_points`: what that bonus adds to the line's price points",
+ "_roster_doc": "each slot is a unit line: its first age (`tier`), the building that trains it, its name on the tech tree page, and `last_age` when it stops before the last age. Slots with \"status\": \"planned\" are only on the page: the generator skips them (milestone 12). `upgrades`: false keeps the first unit for every later age (no second tier: the healer). `own_seed`: the line draws from its own random stream (prompt + slot), so adding it leaves every other line's recipes as they were. `engine`: a siege line: its body is the engine of that name in the race's take (families.json `siege`, a creature's own `siege` first), crewed by the race's workers. `bonus`: attack bonus by class that the line gets whatever it holds (the swordsman's counters: spears, skirmishers, buildings; pricing.gd), and `price_points`: what that bonus adds to the line's price points. `mount`: the line rides the race's mount (\"always\": a race with nothing to ride lacks the line; \"prefer\": it goes on foot), `unless_mounted`: the race lacks the line when that other line already rides (a centaur's archers are mounted archers), `stats` (hp, attack, speed, range, sight in tiles, armour) added to the line whatever it holds, `stats_on_foot` on top for one with no mount; `budget_add`: points over the age's budget (the unique unit), `noun`: the line's own name over its weapon's (the Scout), `needs_hands`: a creature with a harness for hands (creatures.json) lacks the line",
  "cost": {
   "base": 100,
   "curve": "pow1.4_ref12",
