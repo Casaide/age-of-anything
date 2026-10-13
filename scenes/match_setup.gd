@@ -3,8 +3,9 @@ extends Control
 ## a hill under the title; battle the AI, the Race Lab, quit) leads to the battle setup: two side
 ## panels (you and the AI), each wearing its race's culture (src/view/ui/theme.gd: the frame,
 ## crest and banner of data/families.json's `ui` block), with the race's name on its banner, its
-## army idling on a lit stage, the dice and the prompt, the roster as cards (portrait, role,
-## cost) and the generator's notes; in the middle a cast "vs", the map card, the AI's level and
+## army idling on a lit stage, the dice and the prompt, the roster as small portraits grouped
+## by building (src/view/ui/roster_tiles.gd: the unit's card on hover), one line of bonuses,
+## lacks and notes (src/view/ui/trait_strip.gd: the lists on hover); in the middle a cast "vs", the map card, the AI's level and
 ## Start. The match runs in the game view with the AI on side 2 and comes back here when it ends.
 ## Each banner's "Tech tree" button opens that race's tech tree page (scenes/tech_tree.tscn).
 ## Everything has a fixed size, so nothing moves when a race or map changes (Dominic).
@@ -24,6 +25,9 @@ const Mat := preload("res://src/view/ui/ui_materials.gd")
 const DiceButton := preload("res://src/view/loaders/dice_button.gd")
 const ForgeVeil := preload("res://src/view/loaders/forge_veil.gd")
 const LoaderStyle := preload("res://src/view/loaders/loader_style.gd")
+const RosterTiles := preload("res://src/view/ui/roster_tiles.gd")
+const TraitStrip := preload("res://src/view/ui/trait_strip.gd")
+const TreeModel := preload("res://src/view/tech_tree_model.gd")
 
 const NOT_MAPS := ["choke_test", "river_test", "hill_test"]   # test maps (sim_debug lists them)
 var MAPS := _maps()   # every map in data/maps: the real ones first (by name), the test maps last
@@ -34,8 +38,6 @@ const DESIGN := Vector2(1600, 950)   # the lobby is laid out for this and scaled
 const CENTRE_W := 420
 const BANNER_H := 96
 const STAGE_H := 144
-const CARD_H := 72
-const NOTES_H := 70
 const MENU_STAGE_H := 270
 const MENU_ZOOM := 3.0           # the title screen's armies, bigger
 const STAGE_ZOOM := 2.0          # screen pixels per canvas unit on the preview stage
@@ -64,6 +66,7 @@ var tree_page: Control          # the tech tree page, over everything while open
 var menu_layer: Node2D          # the title screen's hill, both armies on it
 var menu_stage: SubViewportContainer
 var _themes := {}               # family -> Theme (themes are built once per culture)
+var _tech: Dictionary           # data/tech.json (the bonuses, own research and lacks in words)
 
 
 func _ready() -> void:
@@ -341,7 +344,7 @@ func _build_sides(n: int) -> void:
 	var compact := n > 2
 	for i in n:
 		var t := _team_of(i, n)
-		var who := "You" if i == 0 else ("Your ally (AI)" if t == _team_of(0, n) else "The AI")
+		var who := "You" if i == 0 else ("Ally (AI)" if t == _team_of(0, n) else "The AI")
 		var panel := _side_panel(i, who, compact)
 		sides[i].side_team = t
 		(left_col if t == _team_of(0, n) else right_col).add_child(panel)
@@ -452,9 +455,10 @@ func _centre() -> Control:
 
 
 ## One side's panel, in its race's culture: who it is and the tech tree, the race's banner,
-## its army on a lit stage, the dice and the prompt, the roster as cards, the notes. Compact (a
-## team game, two panels a column): a smaller banner and stage, the roster as portraits (their
-## names and costs on hover), the notes on the banner's hover, an AI's level in its top row.
+## its army on a lit stage, the dice and the prompt, the roster as portrait tiles grouped by
+## building, a line of bonuses, lacks and notes. Compact (a team game, two panels a column): a
+## smaller banner (the traits line on it), stage and tiles (no captions), an AI's level in its top row. The
+## roster and the line are kept small so the stage gets the height (Dominic: "taking up too much space").
 func _side_panel(i: int, who: String, compact := false) -> Control:
 	var team := Color(lib.palettes.teams[i])
 	var card := PanelContainer.new()
@@ -462,7 +466,7 @@ func _side_panel(i: int, who: String, compact := false) -> Control:
 	card.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	card.size_flags_vertical = Control.SIZE_EXPAND_FILL   # two to a column share it; the stages take the slack
 	var col := VBoxContainer.new()
-	col.add_theme_constant_override("separation", 9)
+	col.add_theme_constant_override("separation", 6 if compact else 9)
 	card.add_child(col)
 	var top := HBoxContainer.new()
 	top.add_theme_constant_override("separation", 8)
@@ -474,6 +478,9 @@ func _side_panel(i: int, who: String, compact := false) -> Control:
 	var whol := UiTheme.label(who.to_upper(), "Caption")
 	whol.add_theme_font_size_override("font_size", 17)
 	whol.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	whol.clip_text = true   # (a team panel's top row is full: it mustn't widen its column past the other)
+	whol.text_overrun_behavior = TextServer.OVERRUN_TRIM_ELLIPSIS
+	whol.custom_minimum_size.x = 40
 	whol.size_flags_vertical = Control.SIZE_SHRINK_CENTER
 	top.add_child(whol)
 	if compact and i > 0:   # this AI's level, in its own panel
@@ -496,7 +503,7 @@ func _side_panel(i: int, who: String, compact := false) -> Control:
 	top.add_child(tree_b)
 	col.add_child(top)
 	var banner := PanelContainer.new()
-	banner.custom_minimum_size.y = 72 if compact else BANNER_H
+	banner.custom_minimum_size.y = 62 if compact else BANNER_H
 	var bcol := VBoxContainer.new()
 	bcol.add_theme_constant_override("separation", -2)
 	banner.add_child(bcol)
@@ -508,7 +515,10 @@ func _side_panel(i: int, who: String, compact := false) -> Control:
 	var line := UiTheme.label("", "Name")
 	line.add_theme_color_override("font_outline_color", Color(0, 0, 0, 0.7))
 	line.add_theme_constant_override("outline_size", 5)
-	bcol.add_child(line)
+	var line_row := HBoxContainer.new()   # compact: the traits line rides here, beside the creature and culture
+	line_row.add_theme_constant_override("separation", 14)
+	line_row.add_child(line)
+	bcol.add_child(line_row)
 	col.add_child(banner)
 	# The stage: the army idling on grass, lit from above, sunk in the panel.
 	var well := PanelContainer.new()
@@ -517,7 +527,7 @@ func _side_panel(i: int, who: String, compact := false) -> Control:
 	well.size_flags_vertical = Control.SIZE_EXPAND_FILL   # the stage takes what the window spares
 	col.add_child(well)
 	var stage := SubViewportContainer.new()
-	stage.custom_minimum_size = Vector2(0, 84 if compact else STAGE_H)
+	stage.custom_minimum_size = Vector2(0, 60 if compact else STAGE_H)
 	stage.size_flags_vertical = Control.SIZE_EXPAND_FILL
 	stage.stretch = true
 	var vp := SubViewport.new()
@@ -566,7 +576,7 @@ func _side_panel(i: int, who: String, compact := false) -> Control:
 	prompt.add_theme_constant_override("separation", 10)
 	col.add_child(prompt)
 	var dice := DiceButton.new()   # tumbles when thrown, rocks until the race is made
-	dice.custom_minimum_size = Vector2.ONE * (54 if compact else 68)
+	dice.custom_minimum_size = Vector2.ONE * (48 if compact else 68)
 	dice.focus_mode = Control.FOCUS_NONE
 	dice.tooltip_text = "Roll the dice: a new race (with words in the box, another roll of those words)"
 	dice.pressed.connect(func(): dice.tumble(); _roll(i))
@@ -574,30 +584,26 @@ func _side_panel(i: int, who: String, compact := false) -> Control:
 	prompt.add_child(dice)
 	var field := LineEdit.new()
 	field.placeholder_text = "...or describe your race"
-	field.custom_minimum_size = Vector2(0, 54 if compact else 68)
+	field.custom_minimum_size = Vector2(0, 48 if compact else 68)
 	field.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	field.alignment = HORIZONTAL_ALIGNMENT_CENTER
 	field.add_theme_font_size_override("font_size", 22 if compact else 28)
 	field.text_changed.connect(func(_t): sides[i].reroll = 0; _regenerate(i))
 	field.text_submitted.connect(func(_t): _regenerate(i))   # Enter shows the race; only Start starts (Fable)
 	prompt.add_child(field)
-	var units := GridContainer.new()   # the roster as cards: portrait, name, role and cost
-	units.columns = 6 if compact else 2
-	units.add_theme_constant_override("h_separation", 8 if compact else 10)
-	units.add_theme_constant_override("v_separation", 8)
-	units.custom_minimum_size.y = 54 if compact else CARD_H * 3 + 16
+	var units := RosterTiles.new(compact)   # the roster: portraits grouped by building, the unit's card on hover
 	col.add_child(units)
-	var roster := RichTextLabel.new()   # the generator's notes
-	roster.bbcode_enabled = true
-	roster.scroll_active = false
-	roster.clip_contents = true
-	roster.custom_minimum_size.y = NOTES_H
-	roster.add_theme_font_size_override("normal_font_size", 16)
-	roster.add_theme_font_size_override("italics_font_size", 16)
-	roster.add_theme_constant_override("line_separation", -2)
-	roster.add_theme_color_override("default_color", Color("#e8d8a8"))
-	col.add_child(roster)
-	roster.visible = not compact
+	var roster := TraitStrip.new(compact)   # bonuses, own research, lacks, notes: one line, the lists on hover
+	if compact:   # on the banner (two panels a column: the stage needs the height)
+		var hold := Control.new()   # it takes the room the line leaves, never widening the panel
+		hold.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+		hold.custom_minimum_size.y = roster.custom_minimum_size.y
+		hold.clip_contents = true
+		roster.set_anchors_preset(Control.PRESET_FULL_RECT)
+		hold.add_child(roster)
+		line_row.add_child(hold)
+	else:
+		col.add_child(roster)
 	sides.append({"field": field, "dice": dice, "reroll": 0, "rolled": "", "race": {}, "name": name, "line": line, "roster": roster, "units": units,
 		"stage": stage, "vp": vp, "layer": layer, "status": status, "dirty_at": 0.0, "team": team, "panel": card, "banner": banner, "family": "?",
 		"level": 0, "side_team": i, "compact": compact, "veil": veil, "forging": false})
@@ -689,16 +695,9 @@ func _regenerate(i: int) -> void:
 	_dress(i)
 	s.name.text = race.name
 	s.line.text = "%s  ·  %s culture" % [lib.creatures[race.creature].plural, String(race.family).capitalize()]
-	for n in s.units.get_children():
-		s.units.remove_child(n)
-		n.queue_free()
-	for u in race.units:
-		s.units.add_child(_unit_chip(u) if s.compact else _unit_card(u))
-	var lines := []
-	for n in race.notes:
-		lines.append("[i]%s[/i]" % n)
-	s.roster.text = "\n".join(lines)
-	s.roster.tooltip_text = "\n".join(race.notes)
+	s.units.look = UiTheme.look(race.family)
+	s.units.show_race(race, rules)
+	show_traits(i, _traits(race))
 	s.banner.tooltip_text = "\n".join(race.notes)
 	s.status.text = "  Forging the army..."
 	s.dirty_at = Time.get_ticks_msec() / 1000.0
@@ -786,7 +785,9 @@ func _muster(i: int) -> void:
 		view.pose_steps = 8
 		view.art_px = ArtKit.ART_SCALE / zoom
 		var x := w * (k + 0.75) / (n + 0.5)
-		view.position = Vector2(x, maxf(s.stage.size.y, STAGE_H) / zoom * (0.62 if k % 2 == 0 else 0.8))
+		var h: float = s.stage.size.y / zoom
+		var feet := (0.62 if k % 2 == 0 else 0.8) if h >= 40.0 else 0.92   # a low stage (a team game at a big UI size): one line, feet at its foot
+		view.position = Vector2(x, h * feet)
 		view.face(1.0 if i == 0 else -1.0)   # both armies face the middle
 		s.layer.add_child(view)
 	s.status.text = "  %d units, every one priced by its parts" % all.size()
@@ -800,96 +801,26 @@ func _muster(i: int) -> void:
 	for k in i:
 		if not sides[k].race.is_empty():
 			side += 1
-	for k in mini(all.size(), s.units.get_child_count()):   # every card, in roster order (not the few on the stage)
-		var pic: TextureRect = s.units.get_child(k).find_child("portrait", true, false)
-		pic.texture = kit.icons["%d:%s" % [side, all[k].recipe.slot]]
+	s.units.set_portraits(func(slot): return kit.icons.get("%d:%s" % [side, slot]))   # every line's portrait (not just the few on the stage)
 
 
-## A team game's roster entry: the portrait alone in a well; name, role and cost on hover.
-func _unit_chip(u: Dictionary) -> Control:
-	var well := PanelContainer.new()
-	well.add_theme_stylebox_override("panel", _stage_well())
-	well.custom_minimum_size = Vector2(54, 54)
-	var role: Dictionary = {}
-	for r in rules.roster:
-		if r.slot == u.recipe.slot:
-			role = r
-	var cost := []
-	for r in ["food", "wood", "stone", "gold"]:
-		if int(u.eval.cost.get(r, 0)) > 0:
-			cost.append("%d %s" % [int(u.eval.cost[r]), r])
-	well.tooltip_text = "%s (%s)\n%s\n%s" % [u.recipe.name, role.get("name", u.recipe.slot), ", ".join(cost), role.get("desc", "")]
-	var pic := TextureRect.new()
-	pic.name = "portrait"
-	pic.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
-	pic.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
-	pic.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
-	well.add_child(pic)
-	return well
+## A race's traits in words, as the strip's groups: what it's better at, its own research,
+## what it lacks, the generator's notes (data/bonuses.json via the tech tree's race panel).
+func _traits(race: Dictionary) -> Array:
+	if _tech.is_empty():
+		_tech = DataLib.load_json("res://data/tech.json")
+	var p: Dictionary = TreeModel._race_panel(race, rules, lib, _tech)
+	return [{"title": "Bonuses", "one": "bonus", "lines": p.bonuses, "kind": "bonus"},
+		{"title": "Own research", "one": "own research", "lines": p.own, "kind": "own"},
+		{"title": "Lacks", "one": "lack", "lines": p.lacks, "kind": "lack"},
+		{"title": "Notes", "one": "note", "lines": race.notes, "kind": "note"}]
 
 
-## A roster card: the unit's portrait in a well (filled in once the army is baked), its name,
-## its role and cost (numbers with resource icons), what it's for on hover.
-func _unit_card(u: Dictionary) -> Control:
-	var card := PanelContainer.new()
-	card.theme_type_variation = "Card"
-	card.custom_minimum_size = Vector2(0, CARD_H)
-	card.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	var role: Dictionary = {}
-	for r in rules.roster:
-		if r.slot == u.recipe.slot:
-			role = r
-	card.tooltip_text = "%s: %s" % [u.recipe.name, role.get("desc", "")]
-	var row := HBoxContainer.new()
-	row.add_theme_constant_override("separation", 10)
-	card.add_child(row)
-	var well := PanelContainer.new()
-	well.add_theme_stylebox_override("panel", _stage_well())
-	well.custom_minimum_size = Vector2(52, 52)
-	well.size_flags_vertical = Control.SIZE_SHRINK_CENTER
-	row.add_child(well)
-	var pic := TextureRect.new()
-	pic.name = "portrait"
-	pic.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
-	pic.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
-	pic.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
-	well.add_child(pic)
-	var col := VBoxContainer.new()
-	col.add_theme_constant_override("separation", 0)
-	col.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	col.size_flags_vertical = Control.SIZE_SHRINK_CENTER
-	row.add_child(col)
-	var tier := int(u.recipe.tier)
-	var what := String(role.get("name", u.recipe.slot.capitalize()))
-	var role_l := UiTheme.label((what + ("  ·  age %d" % tier if tier > 1 else "")).to_upper(), "Caption")
-	role_l.add_theme_font_size_override("font_size", 12)
-	col.add_child(role_l)
-	var name := UiTheme.label(u.recipe.name, "Name")
-	name.add_theme_font_size_override("font_size", 18)
-	name.clip_text = true
-	name.text_overrun_behavior = TextServer.OVERRUN_TRIM_ELLIPSIS
-	col.add_child(name)
-	var facts := HBoxContainer.new()
-	facts.add_theme_constant_override("separation", 3)
-	col.add_child(facts)
-	for r in ["food", "wood", "stone", "gold"]:
-		if int(u.eval.cost.get(r, 0)) <= 0:
-			continue
-		var n := UiTheme.label(str(int(u.eval.cost[r])), "Dim")
-		n.add_theme_font_size_override("font_size", 15)
-		n.add_theme_color_override("font_color", Color("#efe4c8"))
-		facts.add_child(n)
-		var ic := TextureRect.new()
-		ic.texture = Icons.texture("res_" + r)
-		ic.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
-		ic.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
-		ic.custom_minimum_size = Vector2(17, 17)
-		ic.size_flags_vertical = Control.SIZE_SHRINK_CENTER
-		facts.add_child(ic)
-		var sp := Control.new()
-		sp.custom_minimum_size.x = 4
-		facts.add_child(sp)
-	return card
+## A side's traits line: groups of {title, one, lines, kind} (see src/view/ui/trait_strip.gd).
+## Kept as one call so more can join it (a hero, milestone 14: one more group).
+func show_traits(i: int, groups: Array) -> void:
+	sides[i].roster.look = UiTheme.look(sides[i].race.family)
+	sides[i].roster.show_traits(groups)
 
 
 ## The tech tree page for a side's race: its army and every age of its lines baked first (the
