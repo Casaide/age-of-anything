@@ -31,7 +31,7 @@ const ALONG := ["", ALONG_Z, "^d", "^a"]
 ## Parts a worker swaps in by job (see UnitView.set_tool and sim_debug's _tool_for).
 const JOB_PARTS := ["tool.axe", "tool.basket", "tool.hammer", "tool.pick", "tool.hoe", "tool.broom", "load.reeds", "load.stone", "load.gold", "load.meat"]
 const LOAD_SLICE_MS := 8   # cache loads per frame, at most this long
-const ICON_CELL := 160    # screen pixels per unit when rendering portraits   # houses read about 2.5x a footman
+const ICON_CELL := 240    # screen pixels per unit when rendering portraits; each is clipped to its cell (a frog on a newt overran 160 into its neighbours' portraits)   # houses read about 2.5x a footman
 const TOWN := {"thatch": "town_center", "junk": "junk_town_center_small", "stone": "stone_town_center", "tent": "tent_town_center",
 	"reed": "reed_town_center", "mound": "mound_town_center"}
 const HOUSE := {"thatch": "stilt_house", "junk": "tin_can_house", "stone": "villa_house", "tent": "tent_house",
@@ -548,7 +548,7 @@ func _icons(all: Array) -> void:
 
 
 func _paint_icons(list: Array) -> void:
-	var cols := 6
+	var cols := 8
 	var vp := SubViewport.new()
 	vp.transparent_bg = true
 	vp.size = Vector2i(cols, ceili(list.size() / float(cols))) * ICON_CELL
@@ -561,21 +561,78 @@ func _paint_icons(list: Array) -> void:
 		var view := UnitView.new()
 		view.build(u.recipe, lib, list[k][0], u.eval.speed)
 		view.scale = Vector2.ONE * UNIT_SCALE * zoom
-		view.position = Vector2(k % cols + 0.5, k / cols + 0.8) * ICON_CELL
+		view.position = Vector2(0.5, 0.8) * ICON_CELL
 		view.set_process(false)       # a still pose
 		view.get_child(0).visible = false   # no ground shadow
-		vp.add_child(view)
+		var hold := Control.new()     # its own cell: a big unit is cut at the edge, never drawn into its neighbour's
+		hold.clip_contents = true
+		hold.position = Vector2(k % cols, k / cols) * ICON_CELL
+		hold.size = Vector2.ONE * ICON_CELL
+		hold.add_child(view)
+		vp.add_child(hold)
 	await get_tree().process_frame   # the views draw themselves (a deferred call) before the render
 	await BakeClock.render(vp)
 	var img := vp.get_texture().get_image()
 	for k in list.size():
 		var cell := img.get_region(Rect2i(Vector2i(k % cols, k / cols) * ICON_CELL, Vector2i.ONE * ICON_CELL))
-		var used := cell.get_used_rect()
-		var side := maxi(used.size.x, used.size.y) + 4
-		var sq := Image.create(side, side, false, Image.FORMAT_RGBA8)
-		sq.blit_rect(cell, used, Vector2i((side - used.size.x) / 2, side - used.size.y - 2))
-		_icon_cache[_icon_key(list[k][1].recipe, list[k][0])] = ImageTexture.create_from_image(sq)
+		_icon_cache[_icon_key(list[k][1].recipe, list[k][0])] = ImageTexture.create_from_image(frame_icon(cell))
 	vp.queue_free()
+
+
+const ICON_THIN := 5        # a row or column with fewer opaque pixels than this is a pole, a lance or a tail
+const ICON_MARGIN := 0.12   # the body's share of room left round it in a portrait (each side)
+const ICON_MIN := 54        # the least portrait side in render pixels: a small unit isn't blown up past readability
+const ICON_WIDE := 0.65     # a long body (a newt, a ram) is framed on this share of its length: its ends are cut, not the whole shrunk
+
+## A unit's portrait cut from its render: a square framed on its body (Dominic: "why size
+## difference?": a lance, a banner pole or a long tail made the whole box, so cavalry and
+## standard bearers came out tiny next to a spearman). The body is what's left when rows and
+## columns with only a thin pole, lance or tail in them are trimmed off the edges; the square is
+## that, with a consistent margin, feet near the bottom; what sticks out past it is cut, as a
+## portrait crops (and a long body is framed on ICON_WIDE of its length, round its weight). Never
+## smaller than ICON_MIN, so a worker reads at about a spearman's size.
+static func frame_icon(cell: Image) -> Image:
+	var used := cell.get_used_rect()
+	if used.size.x == 0:
+		return Image.create(4, 4, false, Image.FORMAT_RGBA8)
+	var rows := PackedInt32Array()
+	rows.resize(cell.get_height())
+	var colsn := PackedInt32Array()
+	colsn.resize(cell.get_width())
+	for y in range(used.position.y, used.end.y):
+		for x in range(used.position.x, used.end.x):
+			if cell.get_pixel(x, y).a > 0.1:
+				rows[y] += 1
+				colsn[x] += 1
+	var y0 := used.position.y
+	var y1 := used.end.y - 1
+	var x0 := used.position.x
+	var x1 := used.end.x - 1
+	while y0 < y1 and rows[y0] < ICON_THIN:
+		y0 += 1
+	while y1 > y0 and rows[y1] < ICON_THIN:
+		y1 -= 1
+	while x0 < x1 and colsn[x0] < ICON_THIN:
+		x0 += 1
+	while x1 > x0 and colsn[x1] < ICON_THIN:
+		x1 -= 1
+	var body := Rect2i(x0, y0, x1 - x0 + 1, y1 - y0 + 1)
+	var side := maxi(roundi(maxf(body.size.y, body.size.x * ICON_WIDE) * (1.0 + 2.0 * ICON_MARGIN)), ICON_MIN)
+	# Across, centred on the body's weight (a rider on a long mount, not the middle of mount and
+	# tail); lowered if need be so its feet (the used rect's foot) stay in.
+	var sum := 0
+	var mass := 0
+	for x in range(body.position.x, body.end.x):
+		sum += x * colsn[x]
+		mass += colsn[x]
+	var mid: int = sum / maxi(mass, 1)
+	mid = clampi(mid, body.position.x + side / 2, body.end.x - side / 2) if side < body.size.x else body.position.x + body.size.x / 2
+	var src := Rect2i(mid - side / 2, body.position.y - (side - body.size.y) / 2, side, side)
+	src.position.y = maxi(src.position.y, mini(used.end.y + 2 - side, body.position.y))
+	var sq := Image.create(side, side, false, Image.FORMAT_RGBA8)
+	var clip := src.intersection(Rect2i(Vector2i.ZERO, cell.get_size()))
+	sq.blit_rect(cell, clip, clip.position - src.position)
+	return sq
 
 
 ## The model function for a building type in an architecture (farms are the same everywhere).
