@@ -16,6 +16,9 @@ extends SceneTree
 ## rising well above, a twin-towered gatehouse), "b" tall (a 1-tile curtain as tall again, square towers
 ## with timber hoardings and roofs, a square twin gatehouse), "c" per culture (option a's shape in the
 ## rats' brick and scrap, and the frogs' earth rampart with a stake breastwork and mud drum towers).
+## Round W3 (D-130): "b80", "b90" lay the pieces in play (Models) at 80% and 90% of B's height, with a
+## gatehouse on a diagonal too and the game's own siege tower and ladder; "keep_now" after the options
+## takes "now" from <out_dir>/walls_w2_now_1x.png (rendered before the pieces changed).
 ## Writes <out_dir>/walls_w2_<option>_1x.png (the game's scale) and _3x.png, and walls_w2_sheet_1x.png.
 ## Run (needs a display):
 ##   godot --path . --audio-driver Dummy --always-on-top --script res://tests/wall_concepts.gd -- out_dir [option,...]
@@ -30,7 +33,7 @@ const Materials := preload("res://src/view/art/bake/materials.gd")
 const BuildingArt := preload("res://src/view/art/building_art.gd")
 
 const BG := Color("#56782e")
-const RENDER := 6144      # the bake's frame (supersampled 4x): a corner is about 20 tiles across the screen
+const RENDER := 7168      # the bake's frame (supersampled 4x): a corner and its diagonal, about 24 tiles across the screen
 
 ## The styles. depth: wall thickness (tiles); walk: walkway height; merlon: [height, width, beat];
 ## inner: the town side's parapet ("low", "merlons", "none"); tower: [shape, size, height, roof]; gate:
@@ -39,6 +42,11 @@ const RENDER := 6144      # the bake's frame (supersampled 4x): a corner is abou
 const OPTIONS := {
 	"now": {"title": "now: the walls in play (after today's fixes), the siege tower in play",
 		"real": true, "walk": 0.72, "siege_tower": 0.83},
+	# Walls round 3 (D-130: B, scaled down 10-20%, the gates built in): the pieces in play (Models), all
+	# heights times `rescale` (Models.wall_rescale: the models are B at 80%), the siege tower and ladder
+	# with them, a gatehouse on a straight run and one on a diagonal.
+	"b80": {"title": "B at 80%: walk 1.36, towers 2.32 (in play)", "real": true, "round3": true, "rescale": 1.0, "walk": 1.36},
+	"b90": {"title": "B at 90%: walk 1.53, towers 2.61", "real": true, "round3": true, "rescale": 1.125, "walk": 1.53},
 	"a": {"title": "A  thick: 2-tile curtain, parapets both sides, round towers, twin-tower gate",
 		"stone": "stone", "depth": 2.0, "walk": 1.5, "merlon": [0.32, 0.26, 0.5], "inner": "low",
 		"tower": ["round", 2.4, 2.6, ""], "gate": ["round", 2.2, 2.0, 2.4], "corner": true},
@@ -77,6 +85,7 @@ func _initialize() -> void:
 	var args := OS.get_cmdline_user_args()
 	var out_dir: String = args[0]
 	var only: Array = Array(args[1].split(",")) if args.size() > 1 else OPTIONS.keys()
+	var keep_now := "keep_now" in args   # "now" from <out_dir>/walls_w2_now_1x.png (rendered before the models changed)
 	DirAccess.make_dir_recursive_absolute(out_dir)
 	lib = DataLib.new()
 	gen = Generator.new(lib)
@@ -107,15 +116,21 @@ func _initialize() -> void:
 		var o: Dictionary = OPTIONS[id]
 		races.def = races[o.get("def", "romans")]
 		races.att = races[o.get("att", "sewer rats")]
+		if id == "now" and keep_now:
+			shots.append([o.title, Image.load_from_file(out_dir.path_join("walls_w2_now_1x.png"))])
+			continue
 		var scene := Node3D.new()
 		var walk: float = o.walk
-		if o.get("real", false):
+		models.wall_rescale = o.get("rescale", 1.0)
+		if o.get("round3", false):
+			_round3_walls(scene, o)
+		elif o.get("real", false):
 			_real_walls(scene)
 		else:
 			_walls(scene, o)
 		_people(scene, o, walk)
 		_siege(scene, o, walk)
-		scene.position = Vector3(3.5, 0, 5.0)   # the corner's middle on the bake's origin
+		scene.position = Vector3(2.25, 0, 6.25) if o.get("round3", false) else Vector3(3.5, 0, 5.0)   # the corner's middle on the bake's origin (round 3: and the diagonal)
 		baker.set_ground_shadow(true)
 		baker.shadow_reach = 0.25
 		var b: Dictionary = await baker.bake(scene, [Vector3.ZERO])
@@ -127,6 +142,7 @@ func _initialize() -> void:
 		three.save_png(out_dir.path_join("walls_w2_%s_3x.png" % id))
 		shots.append([o.title, one])
 		print("saved walls_w2_%s" % id)
+		models.wall_rescale = 1.0
 	if shots.size() > 1:
 		await _sheet(shots, out_dir.path_join("walls_w2_sheet_1x.png"))
 	quit()
@@ -155,6 +171,45 @@ func _real_walls(scene: Node3D) -> void:
 			g.body.position = Vector3(c.x + 0.5, 0, c.y + 0.5)
 			_team_cloth(g.body)
 			scene.add_child(g.body)
+			continue
+		var spec: Dictionary = kit._placed(models, "stone", t, "", "")
+		var holder := Node3D.new()
+		holder.position = Vector3(c.x + 0.5, 0, c.y + 0.5)
+		holder.add_child(spec.body)
+		if spec.has("arms"):
+			var links := BuildingArt.links_of(func(d: Vector2i) -> bool: return at.has(c + d))
+			for k in spec.arms.size():
+				if links & (1 << k):
+					holder.add_child(spec.arms[k])
+		_team_cloth(holder)
+		scene.add_child(holder)
+
+
+## Walls round 3: the pieces in play laid as the game lays them, the corner of "now" plus a diagonal run
+## on from run B's far tower across the screen with a gatehouse in it and a tower at its end.
+func _round3_walls(scene: Node3D, o: Dictionary) -> void:
+	var at := {}
+	for x in range(-12, 0):
+		at[Vector2i(x, -1)] = "wall"
+	for z in range(-8, 0):
+		at[Vector2i(-1, z)] = "wall"
+	for c in [Vector2i(-1, -1), Vector2i(-12, -1), Vector2i(-1, -8), Vector2i(-4, -1), Vector2i(5, -14)]:
+		at[c] = "wall_tower"
+	for c in [Vector2i(0, -9), Vector2i(4, -13)]:
+		at[c] = "wall"
+	var gates := [[Vector2i(-8, -1), 0, [Vector2i(-8, -1), Vector2i(-7, -1), Vector2i(-6, -1)]],
+		[Vector2i(1, -12), 3, [Vector2i(3, -12), Vector2i(2, -11), Vector2i(1, -10)]]]   # [top-left, along, cells]
+	for g in gates:
+		for c in g[2]:
+			at[c] = "gate"
+		var spec: Dictionary = kit._placed(models, "stone", "stone_gate", "", ArtKit.ALONG[g[1]])
+		var size := Vector2(3, 1) if g[1] == 0 else Vector2(3, 3)
+		spec.body.position = Vector3(g[0].x + size.x / 2, 0, g[0].y + size.y / 2)
+		_team_cloth(spec.body)
+		scene.add_child(spec.body)
+	for c in at:
+		var t: String = at[c]
+		if t == "gate":
 			continue
 		var spec: Dictionary = kit._placed(models, "stone", t, "", "")
 		var holder := Node3D.new()
@@ -417,6 +472,9 @@ func _gatehouse(scene: Node3D, o: Dictionary, at: Vector3) -> void:
 ## Defenders up on the walkway (and a tower top), attackers at the foot. Positions on the walkway: near
 ## the outer parapet, so the merlons in front cover their legs.
 func _people(scene: Node3D, o: Dictionary, walk: float) -> void:
+	if o.get("round3", false):
+		_people3(scene, o, walk)
+		return
 	var D: float = o.get("depth", 0.54) if not o.get("real", false) else 0.54
 	var zf := -0.42 - (0.25 if o.get("rampart", false) else 0.0)   # run A: by the outer parapet (the rampart: behind its stakes)
 	var xf := zf
@@ -443,14 +501,39 @@ func _people(scene: Node3D, o: Dictionary, walk: float) -> void:
 		_put(scene, races.att, "infantry", 5, Vector3(p.x, 0, p.y), team_att)
 
 
+## Round 3's people, on the standing places the sim gives (on the wall's line): archers along both runs,
+## on the corner tower, on the straight gatehouse's walk and its tower, the diagonal gatehouse's walk and
+## tower; attackers at the gate, at the foot and at the ladder; a few at the foot inside for scale.
+func _people3(scene: Node3D, o: Dictionary, walk: float) -> void:
+	var th: float = Models.WALK_H.wall_tower * o.rescale
+	for x in [-11.25, -9.25, -5.25, -2.75, -2.25]:
+		_put(scene, races.def, "archer", 3, Vector3(x, walk, -0.5), team_def)
+	for z in [-6.75, -5.25, -3.25, -2.25]:
+		_put(scene, races.def, "archer" if int(z) % 2 == 0 else "skirmisher", 1, Vector3(-0.5, walk, z), team_def)
+	_put(scene, races.def, "archer", 2, Vector3(-0.5, th, -0.5), team_def)
+	_put(scene, races.def, "archer", 2, Vector3(-3.5, th, -0.5), team_def)
+	_put(scene, races.def, "spear", 2, Vector3(GATE_X + 0.25, walk, -0.5), team_def)
+	_put(scene, races.def, "archer", 3, Vector3(GATE_X - 1.25, th, -0.5), team_def)
+	var dc := Vector3(2.5, 0, -10.5)
+	var dl := Vector3(0.70710678, 0, -0.70710678)
+	_put(scene, races.def, "archer", 3, dc + dl * 0.25 + Vector3(0, walk, 0), team_def)
+	_put(scene, races.def, "archer", 3, dc + dl * 1.66 + Vector3(0, th, 0), team_def)
+	for p in [Vector2(-9.0, -2.4), Vector2(-5.6, -2.8), Vector2(-2.4, -3.6)]:   # inside, on the ground
+		_put(scene, races.def, "spear", 2, Vector3(p.x, 0, p.y), team_def)
+	for p in [Vector2(GATE_X - 0.6, 1.4), Vector2(GATE_X + 0.4, 1.7), Vector2(GATE_X - 0.1, 2.3), Vector2(-8.6, 1.2), Vector2(-3.9, 1.5)]:
+		_put(scene, races.att, "spear" if int(p.x) % 2 == 0 else "infantry", 7, Vector3(p.x, 0, p.y), team_att)
+	for p in [Vector2(1.6, LADDER_Z + 0.7), Vector2(2.0, LADDER_Z - 0.6)]:
+		_put(scene, races.att, "infantry", 5, Vector3(p.x, 0, p.y), team_att)
+
+
 ## Stand one unit of `race`'s line `slot` in the scene, facing `k` (0 right .. 2 towards .. 6 away),
 ## its feet at `at`: the game's own art on an upright card (it turns to face the camera about the
 ## vertical only, stretched by 1/cos 30 so it shows at its true size) with a soft shadow under it.
-func _put(scene: Node3D, race: Dictionary, slot: String, k: int, at: Vector3, team: Color) -> void:
+func _put(scene: Node3D, race: Dictionary, slot: String, k: int, at: Vector3, team: Color, zoom := 1.0) -> void:
 	var u := _unit_art(race, slot, k, team)
 	var s := Sprite3D.new()
 	s.texture = ImageTexture.create_from_image(u.img)
-	s.pixel_size = 1.0 / (Baker.PX_PER_UNIT * UNIT_ZOOM)
+	s.pixel_size = zoom / (Baker.PX_PER_UNIT * UNIT_ZOOM)
 	s.centered = true
 	s.offset = Vector2(0, u.foot.y - u.img.get_height() / 2.0)   # (y up: the feet onto the node)
 	s.offset.x = u.img.get_width() / 2.0 - u.foot.x
@@ -490,7 +573,7 @@ func _unit_art(race: Dictionary, slot: String, k: int, team: Color) -> Dictionar
 
 ## Every unit art the scenes use: [side, slot, facing].
 const ART := [["def", "archer", 3], ["def", "archer", 1], ["def", "archer", 2], ["def", "skirmisher", 1], ["def", "spear", 2],
-	["att", "spear", 7], ["att", "infantry", 7], ["att", "infantry", 5]]
+	["att", "spear", 7], ["att", "infantry", 7], ["att", "infantry", 5], ["att", "siege_tower", 7]]
 
 func _render_units() -> void:
 	for a in ART:
@@ -513,7 +596,7 @@ func _render_unit(race: Dictionary, slot: String, k: int, team: Color) -> void:
 	var found: Array = race.units.filter(func(x): return x.recipe.slot == slot)
 	var step: Dictionary = found[0].line[mini(1, found[0].line.size() - 1)]
 	var vp := SubViewport.new()
-	vp.size = Vector2i(480, 480)
+	vp.size = Vector2i(1024, 1024)   # (room for a siege tower)
 	vp.transparent_bg = true
 	vp.canvas_item_default_texture_filter = Viewport.DEFAULT_CANVAS_ITEM_TEXTURE_FILTER_NEAREST
 	vp.render_target_update_mode = SubViewport.UPDATE_ALWAYS
@@ -522,7 +605,7 @@ func _render_unit(race: Dictionary, slot: String, k: int, team: Color) -> void:
 	v.facing_k = k
 	v.build(step.recipe, lib, team, step.eval.get("speed", 10))
 	v.scale = Vector2.ONE * ArtKit.UNIT_SCALE * UNIT_ZOOM
-	var foot := Vector2(240, 400)
+	var foot := Vector2(512, 900)
 	v.position = foot
 	v.idle_wait = 1000.0
 	vp.add_child(v)
@@ -544,6 +627,14 @@ func _render_unit(race: Dictionary, slot: String, k: int, team: Color) -> void:
 ## storey; hides on its sides, a fighting top), attackers on its top and gangway; a ladder against run B
 ## with a climber on it.
 func _siege(scene: Node3D, o: Dictionary, walk: float) -> void:
+	if o.get("round3", false):   # the game's own siege tower (its art at the rescale) and ladder, docked and raised
+		_put(scene, races.att, "siege_tower", 7, Vector3(TOWER_SIEGE_X + 0.3, 0, 0.75), team_att, o.rescale)
+		var lad: Dictionary = kit._placed(models, "stone", "ladder", "", "")
+		lad.body.position = Vector3(0.5, 0, LADDER_Z)
+		_team_cloth(lad.body)
+		scene.add_child(lad.body)
+		_put(scene, races.att, "infantry", 5, Vector3(0.5 - 0.62 * 0.5 + 0.1, walk * 0.5, LADDER_Z), team_att)
+		return
 	var real: bool = o.get("real", false)
 	var D: float = 0.54 if real else o.depth
 	var face := 0.0 if real else 0.0   # run A's outer face: z = 0 (real walls: the tile's edge, the wall's face at -0.23)

@@ -168,7 +168,7 @@ over 50 ms (one 20 Hz tick), checked on a weaker machine before release. What to
 it's tight: combat's target search for idle units (a slower beat while nothing is near), then
 separation only near movers.
 
-**Walls you stand on (step 2).** `src/sim/walls.gd`; data `walkway` in data/buildings.json (climb 2 s,
+**Walls you stand on (step 2).** `src/sim/walls.gd`; data `walkway` in data/buildings.json (climb 2 s, 3 s since walls round 3,
 fall 10 hp, 80% speed on the walkway, riders, giants and engines can't climb). Stone walls hold 2 a
 tile, the stone gatehouse 2 a tile and has stairs, the new Wall Tower (age 2, 25 wood 60 stone,
 1800 hp, shoots, holds 3 inside and 3 on top, has stairs) drops onto a wall tile like a gate (it
@@ -253,17 +253,64 @@ diagonal seen end-on reads as a hollow shaft; towers barely rise over the wall (
 siege tower's top (0.83) is hardly over the wall's; the rubble is the terrain's colour only (W1's pick).
 A risk to watch, not seen in the fixtures: a 3-tile gate sorts by its middle, so a ground unit right beside its
 far end could draw under it; per-tile pieces (as in every W2 option) avoid it.
+(Walls round 3, below, fixed the floor, the end-on shaft, the towers' and the siege tower's heights.)
 
 **The join check.** `tests/wall_join_check.gd -- [filter] [arch] [debug] [legacy]` (needs a window, ~1 minute):
-twelve fixtures (straight runs with towers along x and y, both corners, a T, both diagonals, gatehouses along
-x, y and the diagonal, a gatehouse between towers, units up on each). Per fixture it bakes the 3D truth once
+fourteen fixtures (straight runs with towers along x and y, both corners, a T, both diagonals, gatehouses along
+x, y and both diagonals, the gatehouse's floor with units across the passage, a gatehouse between towers, units
+up on each, on the sim's standing places: a fixture unit may sit anywhere in its cell). Per fixture it bakes the 3D truth once
 (every piece's model with its arms, units' stand-ins at the walkway height, one id colour each) and lays out
 the game's own sprites (wall looks, bodies, front layers) in the game's draw order, and compares the two id
 maps past a pixel's slack at edges: any pair of pieces where one is drawn over the other wrongly, a piece
 where the truth has none, a unit hidden, floating or sunk, fails with its pixel count. It also checks that
 joined pieces meet (solid stone within 0.02 of each join: the tower gap passed the id check, because the
 truth had the gap too) and each walkway's height against its model's top. `legacy` lays the units out as
-before the fix: every fixture fails (picture 562); with the fix all pass.
+before the fix: every fixture fails (picture 562); with the fix all pass. Run it per culture (`junk`, `reed`,
+`mound`, `tent`, `thatch`): the materials change the shapes (stakes for merlons on earth walls).
+
+**Walls round 3 (2026-10-13, D-130: W2 B scaled down, the gates built in).** Dominic picked W2 B (the tall
+curtain, square towers with hoardings and roofs): "thick is too thick. It might be all a little too big, needs to
+scale down 10-20%. Units look tiny now, not sure it'll play well. And the gates are confusing, not built into the
+walls correctly." First a confirmation sheet (`tests/wall_concepts.gd -- out now,b80,b90 keep_now`, picture 581):
+today's walls beside the pieces in play at 80% and 90% of B's height (`Models.wall_rescale`), units on the walk,
+the towers, both gatehouses and the ground, the game's own siege tower and ladder. **Picked: 80% (Claude)**: the
+walk at 1.36 (about two men: an archer reads head and shoulders over the parapet at game scale) and towers at
+2.32 plus their roofs (a storey over the walk); at 90% the towers and roofs start to dominate the screen, a tile
+of wall hides about 8 more pixels of the town behind it per tile than at 80%, and units read smaller against it
+(Dominic's worry); 80% is still nearly twice today's wall. Built (`src/view/art/bake/models.gd`):
+- **The curtain**: one tile thick in the sim as before, drawn 0.72 thick (it was 0.54), 1.36 high, a walk of
+  flags (planks on earth) between parapets, a merlon each face per half tile, a battered plinth along both feet,
+  an arrow loop a tile. Footprints don't change, so the rings on Siege Vale and `Fortify.ring` stay as they are.
+- **Wall towers**: fill their tile, 2.32 high, a corbel band, arrow loops, and on top the hoarding (a timber
+  gallery round the floor, shooting windows) and a hipped roof on corner posts, eaves high enough that units on
+  the floor show under them (`_tower_top`). Hoardings are part of the base look (simple; no research).
+- **The gatehouse, built into the wall**: the curtain runs straight through it as thick and as high, its walk
+  goes on over the passage on a floor (the known "no floor" report is gone), parapets and merlons in the wall's
+  beat; two flanking towers (0.6 along the line, 1.1 across it, proud of both faces) with the wall tower's
+  height, hoarding and roof, their outer faces on the gate's ends where the wall arms meet them; the leaves in
+  the wall line, flush with its faces (they swing in); a machicolation over the arch on both faces, the banner
+  on the front. On a diagonal the same, corner to corner. Units on the gatehouse stand on the walk over the
+  passage, or past `Models.gate_tower_from` on the towers (ArtKit `walk_tower_px`, `BuildingArt.walk_at`).
+- **Per culture (C's idea, cheap)**: stone with terracotta roofs; the rats brick with tin hoardings and tin roofs;
+  reed and mound rammed earth with a stake breastwork (`_crenel`), plank walks, wicker hoardings and thatch; the
+  palisade stays light.
+- **Drawing order**: the roofs and the near hoarding go in the front layer (a unit up on a tower stands under
+  its roof: any roof it overlaps on screen is in front of it). A gatehouse's tower that stands lower on screen
+  than its middle (the right one along x, the lower along y, the near one on the down-screen diagonal) gets a
+  layer of its own sorted on its middle (`ArtKit._bake_gate_parts`, `BuildingArt.parts`, `perch_sort_at`): a
+  tower straight down the screen hides the walk behind it, and units on it stand between it and its roof.
+- **Siege tower and ladder**: the siege tower (placeholder, `siege_models.gd _tower_c`) has three storeys, the
+  gangway's floor at the walk's height and the fighting top a storey over it (2.2 model units: clearly over the
+  walk, under the towers' roofs), the gangway raised against its front, its ropes tied to the top's parapet, the
+  two pushing workers apart: the 13 placement failures (C1 crew apart, C3 ropes tied) pass. The ladder runs from
+  its tile's middle to just over the walk on the next tile's wall face.
+- **Sim**: climb 3 s (was 2: the wall is nearly twice as high). Nothing else changes (footprints, places,
+  docking within 1.6 tiles all hold).
+Pictures 580 (before, in play), 581 (the confirmation sheet), 582-583 (80% and 90% at 3x), 584-586 (in play: stone,
+the rats' brick and tin, the frogs' earth and thatch). Checks: `wall_join_check.gd` passes every fixture in all
+six cultures (`legacy` still fails them all), `placement_check.gd` passes, the quick batch passes but for the
+tick time (the machine was loaded: 11 ms against main's ~3 on a quiet one; the walls' change doesn't touch the
+sim tick).
 
 **Siege and Fortress fill the gap.** Dominic: "Siege mode we need to ensure everyone has walls", then "just in
 siege mode we fill the gap": race lacks stay in normal matches; in Fortress and Siege the mode's `lift_lacks`
@@ -275,8 +322,8 @@ lack them (the lift is a copy per side). The rings themselves (`Fortify.ring`) w
 race.
 
 **Open.**
-- Dominic: the W2 pick (thick, tall, per culture; `docs/concepts/m16/README.md`), which sets the wall's
-  footprint, the tower and gatehouse sizes and the siege tower's height.
+- Dominic: a look at walls round 3 (B at 80%, the gatehouse built in; pictures 581-586), and whether the
+  hoardings should become a research instead of the base look.
 - Dominic: the budget number; the picks (W1 wall tower, ladder, rubble; T1 siege tower); playing
   "Romans besiege the rats" (Siege mode, Siege Vale).
 - Fortress bot vs bot stalls: four 22-minute matches on Siege Vale, no breach, about 45 units a side

@@ -5,6 +5,28 @@
 | T1 | `siege_tower_t1.png`, `siege_tower_t1_sets.png` | siege tower directions (hide, open frame, belfry, the frogs' turtle) |
 | W1 | `walls_w1.png` | wall tower, ladder and rubble looks |
 | W2 | `walls_w2_sheet.png`, `walls_w2_*_3x.png` | bigger walls for sieges (below) |
+| W3 | `walls_w3_sheet.png`, `walls_w3_b80_3x.png`, `walls_w3_b90_3x.png` | B at 80% and 90%, the gatehouse built in: confirmation, then built (below) |
+
+## Round W3 (2026-10-13): B, scaled down, the gates built in (D-130)
+
+Dominic picked B with changes: "thick is too thick. It might be all a little too big, needs to scale down
+10-20%. Units look tiny now, not sure it'll play well. And the gates are confusing, not built into the walls
+correctly." The sheet shows the pieces as they are now in play (not concept builds): today's walls (rendered
+before the change), then the new ones at 80% and 90% of B's height, the game's own siege tower and ladder with
+them, a gatehouse on a straight run and one on a diagonal. The gatehouse is now part of the wall: the curtain
+runs through it as thick and high, its walk goes on over the passage on a floor between the parapets, the
+leaves sit in the wall line flush with its faces, and two flanking towers (the wall tower's height, hoarding and
+roof) stand on its ends where the wall arms meet them.
+
+**Picked and built: 80% (Claude).** Walk 1.36 (about two men), towers 2.32 plus roofs: units read on the walk
+and under the tower roofs at game scale, and the wall hides less of the town than at 90%, where the towers and
+roofs crowd the screen. Footprints are unchanged (1-tile curtain, 1-tile towers, 3-tile gatehouse), so the
+modes' rings on Siege Vale stay as they were. Details and checks: `docs/milestones/m16-sieges.md`, "Walls round 3".
+
+Re-render with:
+`godot --path . --audio-driver Dummy --always-on-top --script res://tests/wall_concepts.gd -- out_dir now,b80,b90 keep_now`
+(`keep_now` reads `out_dir/walls_w2_now_1x.png` rendered before the change; the "now" option itself now draws
+the new pieces.)
 
 ## Round W2 (2026-10-13): walls for sieges
 

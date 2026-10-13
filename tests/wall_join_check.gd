@@ -26,7 +26,8 @@ const Baker := preload("res://src/view/art/bake/baker.gd")
 const Iso := preload("res://src/view/iso.gd")
 
 ## Pieces: [type, x, y] or ["stone_gate", x, y, along] (Economy.dims: 0 along x, 1 along y, 2 the
-## (1, 1) diagonal, 3 the (1, -1) one); units: cells up on the walkway. `expect`: fixtures written for a
+## (1, 1) diagonal, 3 the (1, -1) one); units: cells up on the walkway, [x, y] at the cell's middle or
+## [x, y, fx, fy] at that point of it (the sim's standing places: walls.gd spot). `expect`: fixtures written for a
 ## bug not fixed yet (the design round decides): they report, but don't fail the run.
 const FIXTURES := [
 	{"name": "straight run along x, a tower in it", "pieces": [["wall", 0, 0], ["wall", 1, 0], ["wall_tower", 2, 0], ["wall", 3, 0], ["wall", 4, 0]],
@@ -46,17 +47,22 @@ const FIXTURES := [
 	{"name": "diagonal across the screen", "pieces": [["wall", 0, 4], ["wall", 1, 3], ["wall", 2, 2], ["wall", 3, 1], ["wall", 4, 0]],
 		"units": [[1, 3], [2, 2], [3, 1]]},
 	{"name": "gatehouse along x", "pieces": [["wall", 0, 0], ["stone_gate", 1, 0, 0], ["wall", 4, 0]],
-		"units": [[0, 0], [1, 0], [3, 0]]},
+		"units": [[0, 0], [1, 0], [2, 0], [3, 0, 0.25, 0.5]]},
 	{"name": "gatehouse along y", "pieces": [["wall", 0, 0], ["stone_gate", 0, 1, 1], ["wall", 0, 4]],
-		"units": [[0, 0], [0, 1], [0, 3]]},
+		"units": [[0, 0], [0, 1], [0, 2], [0, 3, 0.5, 0.25]]},
 	{"name": "gatehouse on the down-screen diagonal", "pieces": [["wall", 0, 0], ["stone_gate", 1, 1, 2], ["wall", 4, 4]],
-		"units": [[0, 0], [1, 1], [3, 3]]},
+		"units": [[0, 0], [1, 1, 0.323, 0.323], [2, 2], [3, 3, 0.323, 0.323]]},
+	{"name": "gatehouse on the across diagonal", "pieces": [["wall", 4, 0], ["stone_gate", 1, 1, 3], ["wall", 0, 4]],
+		"units": [[4, 0], [3, 1, 0.677, 0.323], [2, 2], [1, 3, 0.677, 0.323]]},
+	{"name": "gatehouse floor over the passage, units across it", "pieces": [["wall", 0, 0], ["stone_gate", 1, 0, 0], ["wall", 4, 0]],
+		"units": [[2, 0, 0.25, 0.5], [2, 0], [2, 0, 0.75, 0.5], [3, 0, 0.25, 0.5]]},
 	{"name": "gatehouse beside a tower", "pieces": [["wall_tower", 0, 0], ["stone_gate", 1, 0, 0], ["wall_tower", 4, 0], ["wall", 5, 0]],
 		"units": [[0, 0], [2, 0], [4, 0]]},
 ]
 
-## Walkways whose model doesn't have the floor yet, waiting on the design round: reported, not failed.
-const KNOWN_HEIGHTS := {"stone_gate": "no floor over the passage (open to the sky so a unit in the gateway shows): units on its middle stand on air between the arches; the W2 gatehouse"}
+## Walkways whose model doesn't have the floor yet, waiting on a design round: reported, not failed.
+## (Empty since walls round 3: the gatehouse has its floor over the passage.)
+const KNOWN_HEIGHTS := {}
 
 ## One colour per id (0 is the background).
 const IDS := [Color("#000000"), Color("#ff0000"), Color("#00ff00"), Color("#0000ff"), Color("#ffff00"), Color("#ff00ff"), Color("#00ffff"),
@@ -125,19 +131,26 @@ func _check_heights() -> void:
 			"  (known: %s)" % KNOWN_HEIGHTS[t] if known else ""])
 		if not ok and not known:
 			failures += 1
+		if t == "stone_gate":   # its flanking towers' floors: the wall tower's height
+			for x in [-1.5 + Models.GATE_TOWER_W / 2, 1.5 - Models.GATE_TOWER_W / 2]:
+				var tt := _floor_top(spec.body, Transform3D.IDENTITY, Vector2(x, 0))
+				var tok: bool = absf(tt - Models.WALK_H.wall_tower) < 0.011
+				print("%s height: stone_gate tower at x %.1f walkway %.2f, model top %.2f" % ["PASS" if tok else "FAIL", x, Models.WALK_H.wall_tower, tt])
+				if not tok:
+					failures += 1
 		_free_spec(spec)
 
 
-func _floor_top(node: Node3D, parent: Transform3D) -> float:
+func _floor_top(node: Node3D, parent: Transform3D, at := Vector2.ZERO) -> float:
 	var t := parent * node.transform
 	var top := -1.0
-	if node is MeshInstance3D and not node.has_meta("parapet") and node.visible:
+	if node is MeshInstance3D and not node.has_meta("parapet") and not node.has_meta("roof") and node.visible:
 		var box: AABB = t * (node as MeshInstance3D).get_aabb()
-		if box.position.x <= 0.0 and box.end.x >= 0.0 and box.position.z <= 0.0 and box.end.z >= 0.0:
+		if box.position.x <= at.x and box.end.x >= at.x and box.position.z <= at.y and box.end.z >= at.y:
 			top = box.end.y
 	for c in node.get_children():
 		if c is Node3D:
-			top = maxf(top, _floor_top(c, t))
+			top = maxf(top, _floor_top(c, t, at))
 	return top
 
 
@@ -198,10 +211,11 @@ func _check(f: Dictionary, n: int, debug: bool) -> void:
 		var c := Vector2i(u[0], u[1])
 		var i: int = at[c]
 		var id := 1 + pieces.size() + units.size()
-		units.append([c, i, id])
-		var g := Vector3(c.x + 0.5 - mid.x, 0, c.y + 0.5 - mid.y)
+		var sim := Vector2(c.x + (u[2] if u.size() > 2 else 0.5), c.y + (u[3] if u.size() > 3 else 0.5))   # sim tiles
+		units.append([c, i, id, sim])
+		var g := Vector3(sim.x - mid.x, 0, sim.y - mid.y)
 		var stand := _unit_box(IDS[id])
-		stand.position = g + Vector3(0, Models.WALK_H[pieces[i].type] + UNIT_BOX.y / 2, 0)
+		stand.position = g + Vector3(0, _walk_h(pieces[i], sim) + UNIT_BOX.y / 2, 0)
 		scene.add_child(stand)
 		anchors.append(g)
 	_flat_env(true)
@@ -224,18 +238,25 @@ func _check(f: Dictionary, n: int, debug: bool) -> void:
 		draws.append([sort_y, i, look.img, screen - look.origin, 1 + i])
 		if look.has("front_img"):
 			draws.append([sort_y + (0.0 if legacy else BuildingArt.FRONT_SORT_PX), i, look.front_img, screen - look.front_origin, 1 + i])
-	var walk := func(i: int) -> float:
+		for pt in look.get("parts", []):   # a gatehouse's towers with layers of their own, sorted on their middles
+			var dy: float = Iso.to_screen(pt.at.x * 1000.0, pt.at.y * 1000.0).y
+			draws.append([sort_y + dy, i, pt.img, screen - pt.origin, 1 + i])
+			draws.append([sort_y + dy + BuildingArt.FRONT_SORT_PX, i, pt.front_img, screen - pt.front_origin, 1 + i])
+	var walk := func(i: int, sim: Vector2) -> float:
 		if legacy:
 			return 33.0 if pieces[i].type == "wall_tower" else 22.0
-		return float(kit.buildings[_name(pieces[i])].walk_px)
+		var bv := _view(pieces[i], 0.0)   # the game's own rule for how high a unit stands on this piece here
+		var px: float = bv.walk_at(sim)
+		_free_view(bv)
+		return px
 	var pimg: Image = (proxy.tex as Texture2D).get_image()
 	pimg.convert(Image.FORMAT_RGBA8)
 	var foot: Vector2 = proxy.points[1]   # the stand-in's feet in its own bake
 	for k in units.size():
 		var i: int = units[k][1]
 		var ground: Vector2 = truth_bake.points[pieces.size() + k]
-		var sort_y := ground.y / ArtKit.ART_SCALE if legacy else BuildingArt.perch_sort_y(truth_bake.points[i].y / ArtKit.ART_SCALE, ground.y / ArtKit.ART_SCALE)
-		var feet := ground - Vector2(0, walk.call(i) * ArtKit.ART_SCALE)
+		var sort_y := ground.y / ArtKit.ART_SCALE if legacy else _perch_sort(pieces[i], truth_bake.points[i].y / ArtKit.ART_SCALE, units[k][3], ground.y / ArtKit.ART_SCALE)
+		var feet := ground - Vector2(0, walk.call(i, units[k][3]) * ArtKit.ART_SCALE)
 		draws.append([sort_y, 1000 + k, pimg, feet - foot, units[k][2]])
 	draws.sort_custom(func(a, b): return a[0] < b[0] or (a[0] == b[0] and a[1] < b[1]))
 	var composed := PackedByteArray()
@@ -276,7 +297,8 @@ func _check(f: Dictionary, n: int, debug: bool) -> void:
 		if id <= pieces.size():
 			var p: Dictionary = pieces[id - 1]
 			return "%s(%d,%d)" % [p.type, p.cx, p.cy]
-		return "unit(%d,%d)" % [units[id - 1 - pieces.size()][0].x, units[id - 1 - pieces.size()][0].y]
+		var us: Vector2 = units[id - 1 - pieces.size()][3]
+		return "unit(%.2f,%.2f)" % [us.x, us.y]
 	var lines := []
 	for b in bad.slice(0, 4):
 		var ids: PackedStringArray = String(b[1]).split(">")
@@ -416,6 +438,49 @@ func _model(p: Dictionary, at: Dictionary) -> Node3D:
 	return node
 
 
+## A stand-in for the game's view of piece p (BuildingArt's walkway fields and tower layers, as setup
+## makes them), sorted at canvas y `sort_y`: for its rules on where units up on it stand and sort.
+func _view(p: Dictionary, sort_y: float) -> BuildingArt:
+	var bv := BuildingArt.new()
+	var info: Dictionary = kit.buildings[_name(p)]
+	bv.position = Vector2(0, sort_y)
+	bv.walk_px = float(info.walk_px)
+	bv.walk_tower_px = float(info.get("walk_tower_px", 0.0))
+	bv.walk_tower_from = float(info.get("walk_tower_from", 0.0))
+	bv.walk_centre = Vector2(p.cx + p.sx * 0.5, p.cy + p.sy * 0.5)
+	bv.walk_axis = BuildingArt.WALK_AXES[p.along]
+	for pt in info.get("parts", []):
+		var n := Node2D.new()
+		n.position = Vector2(0, sort_y + Iso.to_screen(pt.at.x * 1000.0, pt.at.y * 1000.0).y)
+		bv.parts.append({"node": n, "front": null, "at": pt.at})
+	return bv
+
+
+func _free_view(bv: BuildingArt) -> void:
+	for pt in bv.parts:
+		pt.node.free()
+	bv.parts.clear()
+	bv.free()
+
+
+func _perch_sort(p: Dictionary, piece_y: float, sim: Vector2, unit_y: float) -> float:
+	var bv := _view(p, piece_y)
+	var y: float = bv.perch_sort_at(sim, unit_y)
+	_free_view(bv)
+	return y
+
+
+## How high a unit stands on piece p at sim point `sim` in the 3D truth: its type's walkway, or on a
+## gatehouse past its towers' start, the towers' floor.
+func _walk_h(p: Dictionary, sim: Vector2) -> float:
+	if p.type == "stone_gate":
+		var span := 3.0 * (sqrt(2.0) if p.along >= 2 else 1.0)
+		var d := absf((sim - Vector2(p.cx + p.sx * 0.5, p.cy + p.sy * 0.5)).dot(BuildingArt.WALK_AXES[p.along]))
+		if d >= Models.gate_tower_from(span):
+			return Models.WALK_H.wall_tower
+	return Models.WALK_H[p.type]
+
+
 func _links(p: Dictionary, at: Dictionary) -> int:
 	var me: Vector2i = p.cells[0]
 	return BuildingArt.links_of(func(d: Vector2i) -> bool: return at.has(me + d) and at[me + d] != at[me])
@@ -445,6 +510,13 @@ func _look(p: Dictionary, at: Dictionary) -> Dictionary:
 		if out.has(key):
 			out[key] = (out[key] as Image).duplicate()
 			out[key].convert(Image.FORMAT_RGBA8)
+	out.parts = []
+	for pt in info.get("parts", []):
+		var a: Image = (kit.bakes[pt.body].img as Image).duplicate()
+		var b: Image = (kit.bakes[pt.front].img as Image).duplicate()
+		a.convert(Image.FORMAT_RGBA8)
+		b.convert(Image.FORMAT_RGBA8)
+		out.parts.append({"img": a, "origin": kit.bakes[pt.body].origin, "front_img": b, "front_origin": kit.bakes[pt.front].origin, "at": pt.at})
 	return out
 
 
