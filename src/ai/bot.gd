@@ -19,7 +19,13 @@ extends RefCounted
 ##   building it needs, else the build step waiting on resources) steers the economy's shares
 ##   (EcoBot.shares, a gatherer moved at a time) and holds back soldiers and research;
 ## - a Watchtower where it was raided, a call to arms for a big raid on the Town Center (for a
-##   while, then back to work), and per level (data: levels) how hard it builds up and fights.
+##   while, then back to work), and per level (data: levels) how hard it builds up and fights;
+## - the land (milestone 15 phase 7): a scout early and now and then, and a memory of the enemy
+##   army it saw (src/ai/scout.gd); routes, crossings, roads through thin woods, bridges mended
+##   and broken, hills held, amphibious flanks (src/ai/land.gd); camps that follow the workers,
+##   escorts for far gatherers and an earlier second Town Center on big maps (src/ai/expand.gd);
+##   a level that raids (data: levels.raids) goes for the economy outside tower range first,
+##   in several groups.
 ## Like EcoBot it only reads sim state and issues commands, so it's deterministic.
 
 const EcoBot := preload("res://src/ai/eco_bot.gd")
@@ -28,6 +34,9 @@ const Commands := preload("res://src/sim/commands.gd")
 const Fixed := preload("res://src/sim/fixed.gd")
 const Tech := preload("res://src/sim/tech.gd")
 const Fog := preload("res://src/sim/fog.gd")
+const Scout := preload("res://src/ai/scout.gd")
+const Land := preload("res://src/ai/land.gd")
+const Expand := preload("res://src/ai/expand.gd")
 
 const THINK_EVERY := 20     # ticks (1 s), offset from EcoBot's think by half a second (and per player: _phase)
 const BUILD_COOLDOWN := 200
@@ -51,13 +60,18 @@ var _aln := 0                # our soldiers' lane (Reach)
 var _harea := 0              # the area round our Town Center in that lane
 var _rushed := -(1 << 30)    # the tick we last sent everyone at a finished enemy Wonder
 var _blocked := PackedInt32Array()   # the cost of the build step waiting on resources (what it saves for)
-var _blocked_save := false   # ... a step marked `save` (the University, the Castle): a building-up bot's soldiers wait for it
+var _blocked_save := 0       # ... a step's `save`: 1 (the University, the Castle) a building-up bot's soldiers wait for it; 2 (the market) everyone's
 var _tower_at := Vector2i(-1, -1)    # where a raid was: a Watchtower goes up there once it's quiet
 var _sheltering := false     # our workers were called to arms
 var _shelter_until := 0      # ... and come out by this tick
 var _shelter_next := 0       # no call to arms again before this tick
 var _saving_age := false     # the goal is the next age (the economy leans on it hard)
 var _aim := 0                # the enemy building the army goes straight for when it knows no Town Center to: the one it marches on, or the wall piece shutting the way (_blocker); 0 for a start spot
+var scout                    # Scout: tours and the memory of the enemy army
+var land                     # Land: routes, crossings, roads, bridges, hills
+var expand                   # Expand: camps, escorts, the second Town Center
+var _target := Vector2i(-1, -1)   # where the waves go (worked out every think)
+var _on_back_foot := false   # the enemy army we remember outnumbers ours (Land._defending): defend the crossing
 
 
 ## config: data/ai.json as ints (see load_config), or {} to load it. level: a key of
@@ -69,6 +83,9 @@ var age3_workers := 26   # workers before it saves for age 3
 var towers := 0       # Watchtowers it raises where it was raided
 var all_in := 0       # an army this big (population) goes out whole, home guard and all (0: never)
 var shelter_pop := 0  # a raid this big (enemy population) by the Town Center calls the workers to arms (0: never)
+var guard_crossing := false   # a Watchtower on the key crossing (Land.guard_spot) from age 2
+var raids := 0        # attack in this many groups, at the enemy's economy outside tower range first (0: the old way)
+var raid_from := 0    # ... from this tick on
 
 
 func _init(p_player: int, config := {}, level := "normal") -> void:
@@ -95,7 +112,13 @@ func _init(p_player: int, config := {}, level := "normal") -> void:
 		towers = int(l.get("towers", 0))
 		shelter_pop = int(l.get("shelter_pop", 0))
 		all_in = int(l.get("all_in", 0))
+		guard_crossing = int(l.get("guard_crossing", 0)) == 1
+		raids = int(l.get("raids", 0))
+		raid_from = int(l.get("raid_from", 0)) * 20
 	eco = EcoBot.new(p_player)
+	scout = Scout.new(cfg.scout)
+	land = Land.new(cfg.land)
+	expand = Expand.new(cfg.expand)
 	eco.MIX = {}
 	for age in cfg.economy.mix:
 		eco.MIX[int(age)] = cfg.economy.mix[age]
@@ -160,6 +183,7 @@ func think(w) -> void:
 	if w.defeated[player] != 0 or w.winner >= 0:
 		return
 	_note_hits(w)
+	scout.forget_dead(w)
 	eco.MAX_WORKERS = _max_workers(w.ages[player])
 	eco.think(w)
 	if w.tick % THINK_EVERY != _phase():
@@ -191,20 +215,37 @@ func think(w) -> void:
 	_train_healers(w, tc, army, healers)
 	var home_x: int = w.buildings.cx[tc] * 1000 + 1500
 	var home_y: int = w.buildings.cy[tc] * 1000 + 1500
-	_aln = w.lane(army[0]) if not army.is_empty() else w.lane_base[player]
+	_aln = w.lane(army[0]) if not army.is_empty() else w.lane_base[player] + _army_class(w)
 	_harea = eco.reach.area_at(w, _aln, home_x, home_y)
-	_defend(w, army, home_x, home_y)
-	_respond(w, tc, army, workers, home_x, home_y)
-	_tower(w, workers)
-	_waves(w, army, home_x, home_y)
-	_siege(w, army, home_x, home_y)
-	_escort(w, army, healers, home_x, home_y)
+	# The field army: not the scout out on its tour, not the escorts posted with far gatherers.
+	var field := army.filter(func(i): return w.units.id[i] != scout.id and not expand.escorts.has(w.units.id[i]) and not land.breaking(w, i))
+	var at_work := workers.filter(func(i): return w.units.id[i] != scout.id)
+	scout.remember(w, player)
+	_on_back_foot = _on_back_foot or land._defending(w, self, field)   # (once guarded, the step stays wanted)
+	scout.think(w, self, at_work, field, home_x, home_y)
+	_target = _wave_target(w, home_x, home_y)
+	land.target = _target
+	land.think(w, self, at_work, field, home_x, home_y)
+	expand.think(w, self, tc, at_work, field, home_x, home_y)
+	_defend(w, field, home_x, home_y)
+	_respond(w, tc, army.filter(func(i): return w.units.id[i] != scout.id), at_work, home_x, home_y)
+	_tower(w, at_work)
+	_trade(w)
+	_waves(w, field, home_x, home_y)
+	_siege(w, field, home_x, home_y)
+	_escort(w, field, healers, home_x, home_y)
+
+
+## Our soldiers' movement class (the spear's), for routes before there's an army.
+func _army_class(w) -> int:
+	var k: int = w.type_of(player, "spear")
+	return w.types[k].mclass if k >= 0 else 0
 
 
 # ------------------------------------------------------------------ buildings
 
 func _build_order(w, tc: int, workers: Array, count: int) -> void:
-	if w.tick < _next_build or eco._building_underway(w):
+	if w.tick < _next_build or eco._building_underway(w, false):
 		return
 	_blocked = PackedInt32Array()
 	var have := {}
@@ -223,25 +264,54 @@ func _build_order(w, tc: int, workers: Array, count: int) -> void:
 			continue
 		if w.ages[player] < int(step.get("age", 1)):
 			continue   # a later age's step (the University, the Castle) doesn't hold up this age's
-		if count < int(step.workers) or workers.is_empty():
+		if int(step.get("guard", 0)) == 1 and not (guard_crossing and _on_back_foot):
+			continue   # (a step for the levels that guard their crossing, when they're on the back foot)
+		var need := int(step.workers)
+		if step.has("expand_workers") and expand.wants_town(w, w.buildings.cx[tc] * 1000 + 1500, w.buildings.cy[tc] * 1000 + 1500):
+			need = int(step.expand_workers)   # (a big map, or home running thin: reach out sooner)
+		if count < need or workers.is_empty():
 			return   # the order is an order: wait for this step before the next
 		var k: int = Economy.btype_of(w, id)
 		if not w.can_afford(player, w.btypes[k].cost):
 			_blocked = w.btypes[k].cost   # what we save for (economy shares; soldiers leave it alone if the step says `save`)
-			_blocked_save = int(step.get("save", 0)) == 1
+			_blocked_save = int(step.get("save", 0))
 			return
 		var at := Vector2i(w.buildings.cx[tc] + 1, w.buildings.cy[tc] + 1)
 		if step.has("near"):   # a drop-off camp goes by the nearest patch of its resource
-			var cell: int = _patch(w, at, w.resources.find(step.near) + 1, int(step.get("away", 0)))
+			var cell: int = _patch(w, at, w.resources.find(step.near) + 1, int(step.get("away", 0)), int(step.get("own_side", 0)) == 1)
 			if cell >= 0:
 				at = Vector2i(cell % w.map.width, cell / w.map.width)
 		var spot: Vector2i = eco._house_spot(w, at.x, at.y, w.btypes[k].size)
+		var guard: Vector2i = land.guard_spot(w, self) if guard_crossing and int(step.get("guard", 0)) == 1 else Vector2i(-1, -1)
+		if guard.x >= 0:   # a guarding level puts this tower on the key crossing (Land), if there's room
+			var by: Vector2i = _spot_near(w, guard, w.btypes[k].size, int(cfg.land.guard_tiles) - 1)
+			if by.x >= 0:
+				spot = by
+				land.count("guard")
 		if spot.x < 0:
 			return
 		var builders := _nearest_workers(w, workers, spot.x * 1000, spot.y * 1000, int(step.get("builders", 2)))
 		w.issue(player, Commands.BUILD, {"ids": builders, "building": id, "cx": spot.x, "cy": spot.y})
 		_next_build = w.tick + BUILD_COOLDOWN
 		return
+
+
+## The nearest free spot for a size x size building within r tiles of `at` (rings out from it) that
+## our workers can get to and that seals nothing in (a tower by a ford in the woods: the house
+## spot's margins off resources find nothing there), two tiles off the cells of `avoid`; or (-1, -1).
+func _spot_near(w, at: Vector2i, size: int, r: int, avoid := PackedInt32Array()) -> Vector2i:
+	for d in r + 1:
+		for dy in range(-d, d + 1):
+			for dx in range(-d, d + 1):
+				if maxi(absi(dx), absi(dy)) != d:
+					continue
+				var x: int = at.x + dx
+				var y: int = at.y + dy
+				if Array(avoid).any(func(c): return c % w.map.width >= x - 2 and c % w.map.width <= x + size + 1 and c / w.map.width >= y - 2 and c / w.map.width <= y + size + 1):
+					continue   # (keep two tiles off these: a camp by a road mustn't shut the road)
+				if w.map.can_build(x, y, size) and eco.reach.touches(w, eco.wln, eco.home, x, y, size, size) and not eco._seals(w, x, y, size):
+					return Vector2i(x, y)
+	return Vector2i(-1, -1)
 
 
 ## The building type a research turns into this one (tech.json `becomes`: a Watchtower for a
@@ -275,7 +345,8 @@ func _towers_up(w) -> int:
 
 ## The nearest cell of that resource (1-based kind) our workers can get to, at least `away`
 ## tiles from `at` (a second Town Center goes out by the resources further off), or -1.
-func _patch(w, at: Vector2i, kind: int, away: int) -> int:
+## `own_side`: only patches nearer us than any enemy start (by a fifth): ground we can hold.
+func _patch(w, at: Vector2i, kind: int, away: int, own_side := false) -> int:
 	if away <= 0:
 		return eco._nearest_resource(w, at.x * 1000, at.y * 1000, kind)
 	var best := -1
@@ -284,10 +355,25 @@ func _patch(w, at: Vector2i, kind: int, away: int) -> int:
 		if w.map.amount[c] <= 0 or Economy.kind_of(w, w.map.resource_at(c)) != kind:
 			continue
 		var d2 := Fixed.dist2(at.x, at.y, c % w.map.width, c / w.map.width)
+		if own_side and not _ours(w, at, c):
+			continue
 		if d2 >= away * away and d2 < best_d2 and eco.reach.reaches_cell(w, eco.wln, eco.home, c):
 			best_d2 = d2
 			best = c
 	return best
+
+
+## Is this cell on our side: nearer `at` (our Town Center, in tiles) than any live enemy's start, by a fifth?
+func _ours(w, at: Vector2i, c: int) -> bool:
+	var x: int = c % w.map.width
+	var y: int = c / w.map.width
+	var mine := Fixed.dist2(at.x, at.y, x, y)
+	for p in w.races.size():
+		if w.is_enemy(player, p) and w.defeated[p] == 0 and p < w.map.starts.size():
+			var theirs := Fixed.dist2(int(w.map.starts[p][0]) / 1000, int(w.map.starts[p][1]) / 1000, x, y)
+			if mine * 144 > theirs * 100:   # (distances squared: 1.2 squared)
+				return false
+	return true
 
 
 ## Up to `n` of our workers' ids, nearest a point (ties: lower id), not counting ones kept from work.
@@ -422,9 +508,13 @@ func _train(w, workers: Array, count: int) -> void:
 	# what's over, while nobody is raiding us (an army first, then the age) and, from age 2, once
 	# there's a guard (D-077: an age-up with nobody home invites a raid; age 1's guard trains while
 	# the age-up runs).
-	if (_saving_age or (build_up and _blocked_save and eco.goal == _blocked)) and (guard >= int(cfg.military.guard) or w.ages[player] == 1) and _threats.is_empty():
+	if (_saving_age or (((build_up and _blocked_save >= 1) or _blocked_save >= 2) and eco.goal == _blocked)) and (guard >= int(cfg.military.guard) or w.ages[player] == 1) and _threats.is_empty():
 		for r in eco.goal.size():
 			reserve[r] = eco.goal[r]
+	for r in expand.want.size():   # a camp the far gatherers need comes before another soldier
+		reserve[r] += expand.want[r]
+	for r in land.want.size():     # ... and the road's
+		reserve[r] += land.want[r]
 	var foes := _enemy_tags(w)
 	for b in w.buildings.count():
 		if w.buildings.owner[b] != player or w.buildings.done[b] == 0 or Tech.head(w, b) != -1:
@@ -432,15 +522,8 @@ func _train(w, workers: Array, count: int) -> void:
 		var bt: Dictionary = w.btypes[w.buildings.kind[b]]
 		if bt.trains.is_empty() or "worker" in bt.trains or w.buildings.queue[b].size() >= int(cfg.military.queue):
 			continue
-		var best := pick(w, bt.trains, foes)
-		if best == "":
-			continue
-		var cost: PackedInt32Array = w.types[w.type_of(player, best)].cost
-		var ok := true
-		for r in cost.size():
-			if w.stock[r][player] < cost[r] + reserve[r]:
-				ok = false
-		if ok:
+		var best := pick(w, bt.trains, foes, reserve)   # (the best counter we can pay for now)
+		if best != "":
 			w.issue(player, Commands.TRAIN, {"building": w.buildings.id[b], "slot": best})
 
 
@@ -517,19 +600,29 @@ func _siege(w, army: Array, hx: int, hy: int) -> void:
 
 ## Which of a building's lines to train against these foes (_enemy_tags): the best _score plus the
 ## slot's military.pick_bias (engines go round instead, _siege_score); "" if none is open yet.
-func pick(w, trains: Array, foes: Dictionary) -> String:
+func pick(w, trains: Array, foes: Dictionary, reserve := PackedInt32Array()) -> String:
 	var best := ""
 	var best_score := -(1 << 30)
 	for slot in trains:
 		var k: int = w.type_of(player, slot)
 		if k < 0 or w.ages[player] < int(w.types[k].line[0].age) or _enough(w, slot, k):
 			continue
+		if not reserve.is_empty() and not _affords(w, w.types[k].cost, reserve):
+			continue   # (one short of wood shouldn't stop a building whose other line uses the gold piled up)
 		var s := _siege_score(w, slot, k) if cfg.military.get("siege", {}).get("max", {}).has(slot) \
 			else _score(w.types[k], foes) + int(cfg.military.pick_bias.get(slot, 0))
 		if s > best_score:
 			best_score = s
 			best = slot
 	return best
+
+
+## Do we have this cost to spare beyond `reserve`?
+func _affords(w, cost: PackedInt32Array, reserve: PackedInt32Array) -> bool:
+	for r in cost.size():
+		if w.stock[r][player] < cost[r] + reserve[r]:
+			return false
+	return true
 
 
 ## Healers from the Town Center once the age allows: one for every `per_army` soldiers, up to
@@ -550,8 +643,8 @@ func _train_healers(w, tc: int, army: Array, healers: Array) -> void:
 	w.issue(player, Commands.TRAIN, {"building": w.buildings.id[tc], "slot": "healer"})
 
 
-## Healers follow the army, `behind` tiles back from its middle on the side towards home. Only
-## idle ones (healing no one) more than `follow` tiles from that spot are sent: a healer at work
+## Healers follow the army, `behind` tiles back from the middle of its rear half, on the side
+## towards home. Only idle ones (healing no one) more than `follow` tiles from that spot are sent: a healer at work
 ## stays with its patient, and one near the spot picks the wounded up on its own.
 func _escort(w, army: Array, healers: Array, hx: int, hy: int) -> void:
 	var h: Dictionary = cfg.military.get("healers", {})
@@ -563,14 +656,17 @@ func _escort(w, army: Array, healers: Array, hx: int, hy: int) -> void:
 	var out := army.filter(func(i): return Fixed.dist2(hx, hy, w.units.x[i], w.units.y[i]) > home_r * home_r)
 	var mx := hx
 	var my := hy
-	if out.size() >= 2:
+	if out.size() >= 2:   # the middle of its rear half (a wave split by a flank, or strung along a forest path, is followed from behind)
+		var by := out.map(func(i): return [Fixed.dist2(hx, hy, w.units.x[i], w.units.y[i]), w.units.id[i], i])
+		by.sort_custom(func(a, b): return a[0] < b[0] or (a[0] == b[0] and a[1] < b[1]))
+		var rear := by.slice(0, (by.size() + 1) / 2)
 		var sx := 0
 		var sy := 0
-		for i in out:
-			sx += w.units.x[i]
-			sy += w.units.y[i]
-		mx = sx / out.size()
-		my = sy / out.size()
+		for e in rear:
+			sx += w.units.x[e[2]]
+			sy += w.units.y[e[2]]
+		mx = sx / rear.size()
+		my = sy / rear.size()
 	var d := Fixed.isqrt(Fixed.dist2(mx, my, hx, hy))
 	var back: int = mini(int(h.behind) * 1000, d)
 	var tx: int = mx + (hx - mx) * back / maxi(1, d)
@@ -584,15 +680,11 @@ func _escort(w, army: Array, healers: Array, hx: int, hy: int) -> void:
 		w.issue(player, Commands.ATTACK_MOVE, {"ids": ids, "x": tx, "y": ty})   # an attack-move: they stop for the wounded on the way
 
 
-## How many enemy units we can see carry each tag (their army, not workers).
+## How many enemy soldiers we see or remember (the scout's memory) carry each tag.
 func _enemy_tags(w) -> Dictionary:
 	var tags := {}
-	for i in w.units.count():
-		if not w.is_foe(player, w.units.owner[i]) or not Fog.visible(w, player, w.units.x[i], w.units.y[i]):
-			continue
-		var t: Dictionary = w.types[w.units.kind[i]]
-		if t.worker or t.has("animal"):
-			continue
+	for s in scout.soldiers():   # (in sight now, or seen in the last scout.memory seconds)
+		var t: Dictionary = w.types[s[0]]
 		for tag in t.eval.tags:
 			tags[tag] = tags.get(tag, 0) + 1
 		for c in t.eval.bonus:   # remember what they're good against, keyed apart
@@ -632,8 +724,8 @@ func _defend(w, army: Array, hx: int, hy: int) -> void:
 		return
 	var ids := []
 	for i in army:
-		if w.units.foe[i] == 0 and Fixed.dist2(hx, hy, w.units.x[i], w.units.y[i]) < 4 * r * r:
-			ids.append(w.units.id[i])
+		if w.units.foe[i] == 0 and Fixed.dist2(hx, hy, w.units.x[i], w.units.y[i]) < 4 * r * r and not land.is_climbing(w, i):
+			ids.append(w.units.id[i])   # (shooters on their way up a hill hold it instead)
 	if not ids.is_empty():
 		var to := _reachable(w, Vector2i(w.units.x[intruder], w.units.y[intruder]))
 		w.issue(player, Commands.ATTACK_MOVE, {"ids": ids, "x": to.x, "y": to.y})
@@ -751,8 +843,8 @@ func _respond(w, tc: int, army: Array, workers: Array, hx: int, hy: int) -> void
 	var home_r := 2 * int(cfg.military.defend_tiles) * 1000
 	var cands := []
 	for i in army:
-		if w.units.foe[i] != 0 and w.units.index_of(w.units.foe[i]) >= 0:
-			continue   # fighting someone already
+		if (w.units.foe[i] != 0 and w.units.index_of(w.units.foe[i]) >= 0) or land.is_climbing(w, i):
+			continue   # fighting someone already (or taking a hill)
 		var d2 := Fixed.dist2(w.units.x[i], w.units.y[i], f.x, f.y)
 		if Fixed.dist2(w.units.x[i], w.units.y[i], hx, hy) > home_r * home_r and d2 > RESPOND_TILES * RESPOND_TILES * 1000000:
 			continue
@@ -792,6 +884,43 @@ func _tower(w, workers: Array) -> void:
 	var builders := _nearest_workers(w, workers, spot.x * 1000, spot.y * 1000, 2)
 	w.issue(player, Commands.BUILD, {"ids": builders, "building": "watchtower", "cx": spot.x, "cy": spot.y})
 	_next_build = w.tick + BUILD_COOLDOWN
+
+
+## The market (data: economy.trade): while food or wood is under `below`, gold piled past `above`
+## buys a lot of the lower of them; with less gold than that, the biggest other pile past `above`
+## sells for gold (food or stone piled up while wood ran dry). One trade every `every` seconds. (A pile nobody spends was holding armies small and
+## matches long: soldiers want food and wood.)
+var _next_trade := 0
+
+func _trade(w) -> void:
+	var t: Dictionary = cfg.economy.get("trade", {})
+	if t.is_empty() or w.tick < _next_trade:
+		return
+	var mk := -1
+	for b in w.buildings.count():
+		if w.buildings.owner[b] == player and w.buildings.done[b] == 1 and w.btypes[w.buildings.kind[b]].id == "market":
+			mk = b
+			break
+	if mk < 0:
+		return
+	_next_trade = w.tick + int(t.every) * 20
+	var g: int = w.resources.find("gold")
+	var low := -1
+	for res in ["food", "wood"]:
+		var r: int = w.resources.find(res)
+		if w.stock[r][player] < int(t.below) and (low < 0 or w.stock[r][player] < w.stock[low][player]):
+			low = r
+	if low >= 0 and w.stock[g][player] >= int(t.above):
+		w.issue(player, Commands.TRADE, {"building": w.buildings.id[mk], "resource": w.resources[low], "buy": 1})
+		return
+	if low < 0:
+		return
+	var most := -1   # food or wood short and not gold enough to buy it: sell the biggest pile (over `above`) for gold
+	for r in w.resources.size():
+		if r != g and w.stock[r][player] >= int(t.above) and (most < 0 or w.stock[r][player] > w.stock[most][player]):
+			most = r
+	if most >= 0:
+		w.issue(player, Commands.TRADE, {"building": w.buildings.id[mk], "resource": w.resources[most], "buy": 0})
 
 
 ## Quiet again: soldiers sent to a raid, standing about far from home with nothing to fight, walk
@@ -872,15 +1001,23 @@ func _reachable(w, at: Vector2i) -> Vector2i:
 	return near if near.x >= 0 else at
 
 
+## Where the waves go: the enemy target (_enemy_target), the wall that shuts the way to it if
+## it's out of reach, a point we can get to; (-1, -1) if there's nothing.
+func _wave_target(w, hx: int, hy: int) -> Vector2i:
+	var target := _enemy_target(w, hx, hy)
+	if target.x < 0:
+		return target
+	if _harea != 0 and eco.reach.area_at(w, _aln, target.x, target.y) != _harea:
+		target = _blocker(w, hx, hy, target)
+	return _reachable(w, target)
+
+
 func _waves(w, army: Array, hx: int, hy: int) -> void:
 	var m: Dictionary = cfg.military
 	var wonder := _known_enemy_wonder(w, hx, hy)
-	var target := _enemy_target(w, hx, hy)
+	var target := _target
 	if target.x < 0:
 		return
-	if _harea != 0 and eco.reach.area_at(w, _aln, target.x, target.y) != _harea:
-		target = _blocker(w, hx, hy, target)
-	target = _reachable(w, target)
 	var waves: Array = m.waves
 	var need: int = int(waves[wave].min_army) if wave < waves.size() else _repeat_min(w)
 	var strength := 0   # army size in population, so big units count for what they cost
@@ -902,7 +1039,7 @@ func _waves(w, army: Array, hx: int, hy: int) -> void:
 			keep = 0   # a big army goes all in: a guard at home only spreads it thin against castles and towers
 		var sent: Array = away + at_home.slice(0, maxi(0, at_home.size() - keep))
 		if not sent.is_empty():
-			w.issue(player, Commands.ATTACK_MOVE, {"ids": sent.map(func(i): return w.units.id[i]), "x": target.x, "y": target.y})
+			_send(w, sent.map(func(i): return w.units.id[i]), target, wonder <= 0, hx, hy)
 		assault = true
 		wave += 1
 		next_wave_tick = int(waves[wave].at) * 20 if wave < waves.size() else w.tick + int(m.repeat_every) * 20
@@ -936,6 +1073,16 @@ func _waves(w, army: Array, hx: int, hy: int) -> void:
 		if not back.is_empty():
 			w.issue(player, Commands.ATTACK_MOVE, {"ids": back, "x": hx, "y": hy})
 		return
+	# A raiding level goes for the economy outside tower range first, in groups.
+	var strong := _dominant(w, army)   # (far stronger than what they field: straight for the Town Center)
+	if raids > 0 and w.tick >= raid_from and wonder <= 0 and not strong and _raid(w, ids, hx, hy):
+		return
+	# Too few to storm a Town Center under towers and a Castle: wait out of their reach on the way
+	# in (contain), and storm it once the army is big enough.
+	var hold := _contain_point(w, target)
+	if wonder <= 0 and hold.x >= 0 and _pop(w, army) < int(m.contain_pop) and not _has_siege(w, army):
+		w.issue(player, Commands.ATTACK_MOVE, {"ids": ids, "x": hold.x, "y": hold.y})
+		return
 	# With the field clear, go for the Town Center itself (that ends the match) rather than
 	# chewing through every house on the way.
 	var tc_id := wonder if wonder > 0 else _known_enemy_town(w, hx, hy)   # (a Wonder first)
@@ -945,12 +1092,176 @@ func _waves(w, army: Array, hx: int, hy: int) -> void:
 	if tc_id <= 0:
 		w.issue(player, Commands.ATTACK_MOVE, {"ids": ids, "x": target.x, "y": target.y})
 		return
+	if strong:   # everyone out there not fighting a soldier, not just the idle: no more chewing through houses
+		for i in army:
+			var id: int = w.units.id[i]
+			if not ids.has(id) and w.units.index_of(w.units.foe[i]) < 0 and Fixed.dist2(hx, hy, w.units.x[i], w.units.y[i]) > 4 * home_r * home_r:
+				ids.append(id)
 	# Enough to fight the defenders (two each) attack-move; the rest go straight for the Town Center.
 	var fighters := mini(ids.size(), 2 * _defenders(w, w.buildings.index_of(tc_id)))
 	if fighters > 0:
 		w.issue(player, Commands.ATTACK_MOVE, {"ids": ids.slice(0, fighters), "x": target.x, "y": target.y})
 	if fighters < ids.size():
 		w.issue(player, Commands.ATTACK, {"ids": ids.slice(fighters), "target": tc_id})
+
+
+## A wave goes out: a raiding level at the enemy's economy (_raid), else to the target: part of
+## an amphibious army by the flank Land found (through the channels), the rest by the detour round
+## archers on a hill if there's one, then on to the target (queued attack-moves).
+func _send(w, ids: Array, target: Vector2i, may_raid: bool, hx: int, hy: int) -> void:
+	var idx := ids.map(func(id): return w.units.index_of(id))
+	var strong := _dominant(w, idx)
+	if raids > 0 and w.tick >= raid_from and may_raid and not strong and _raid(w, ids, hx, hy):
+		return
+	var hold := _contain_point(w, target)
+	if may_raid and hold.x >= 0 and _pop(w, idx) < int(cfg.military.contain_pop) and not _has_siege(w, idx):
+		target = hold   # (too few to storm it: wait out of reach)
+	var lc: Dictionary = cfg.land
+	var main := ids.duplicate()
+	if land.flank.x >= 0 and ids.size() >= int(lc.flank_min):
+		var n: int = ids.size() * int(lc.flank_share) / 100
+		var flankers := ids.slice(ids.size() - n)
+		main = ids.slice(0, ids.size() - n)
+		_via(w, flankers, land.flank, target)
+		land.count("flank")
+	_via(w, main, land.detour, target)
+	if land.detour.x >= 0:
+		land.count("detour")
+
+
+## Are these soldiers of ours (indexes) a wave (the age's repeat wave), and with our allies' armies
+## military.dominant_pct percent of the enemy army we remember, or more? Then raids and waiting are over: the Town
+## Centers end the match (still waiting out of reach of towers and a Castle till it's contain_pop).
+func _dominant(w, idx: Array) -> bool:
+	var theirs := 0
+	for e in scout.soldiers():
+		theirs += int(w.types[e[0]].pop)
+	var ours := _pop(w, idx)
+	var with := ours   # (and our allies' armies: two of us against one finish it together)
+	for i in w.units.count():
+		var t: Dictionary = w.types[w.units.kind[i]]
+		if w.units.owner[i] != player and w.units.owner[i] != w.gaia and not w.is_enemy(player, w.units.owner[i]) \
+				and not t.worker and not t.healer and not t.has("animal"):
+			with += int(t.pop)
+	return ours >= _repeat_min(w) and with * 100 >= maxi(1, theirs) * int(cfg.military.dominant_pct)
+
+
+## Do these soldiers of ours (indexes) bring a siege engine (a ram, a thrower)? Then towers and a
+## Castle are theirs to break: no waiting out of reach.
+func _has_siege(w, idx: Array) -> bool:
+	for i in idx:
+		if i >= 0:
+			var t: Dictionary = w.types[w.units.kind[i]]
+			if t.get("buildings_only", false) or t.get("splash", 0) > 0:
+				return true
+	return false
+
+
+## Our soldiers' population (indexes into the units arrays).
+func _pop(w, idx: Array) -> int:
+	var n := 0
+	for i in idx:
+		if i >= 0:
+			n += int(w.types[w.units.kind[i]].pop)
+	return n
+
+
+## Where to wait for a bigger army when `target` stands under the enemy's shooting buildings we
+## remember (fog memory: towers, a Castle, the Town Center): the last cell of our way in (Land's
+## path) out of their reach by military.contain_gap tiles. (-1, -1) when nothing shoots over the
+## target or we have no way in.
+func _contain_point(w, target: Vector2i) -> Vector2i:
+	var path: PackedInt32Array = land.our_path
+	if path.is_empty() or target.x < 0:
+		return Vector2i(-1, -1)
+	var seen: Dictionary = w.fog_seen[player]
+	var ids: Array = seen.keys()
+	ids.sort()
+	var gap: int = int(cfg.military.contain_gap)
+	var shooters := []   # [x, y, reach] in tiles, the ones over the target
+	for id in ids:
+		var s: PackedInt32Array = seen[id]
+		var t: Dictionary = w.btypes[s[0]]
+		if not w.is_enemy(player, s[1]) or t.attack.is_empty() or s[5] == 0:
+			continue
+		var x: int = s[2] + s[4] / 2
+		var y: int = s[3] + s[8] / 2
+		var r: int = int(t.attack.range) + maxi(s[4], s[8]) / 2 + gap
+		if (x - target.x / 1000) * (x - target.x / 1000) + (y - target.y / 1000) * (y - target.y / 1000) <= r * r:
+			shooters.append([x, y, r])
+	if shooters.is_empty():
+		return Vector2i(-1, -1)
+	var m = w.map
+	for n in range(path.size() - 1, -1, -1):
+		var cx: int = path[n] % m.width
+		var cy: int = path[n] / m.width
+		if not shooters.any(func(e): return (cx - e[0]) * (cx - e[0]) + (cy - e[1]) * (cy - e[1]) <= e[2] * e[2]):
+			return Vector2i(cx * 1000 + 500, cy * 1000 + 500)
+	return Vector2i(-1, -1)
+
+
+## Attack-move `ids` to `target`, by way of `via` first unless it's (-1, -1).
+func _via(w, ids: Array, via: Vector2i, target: Vector2i) -> void:
+	if ids.is_empty():
+		return
+	if via.x < 0:
+		w.issue(player, Commands.ATTACK_MOVE, {"ids": ids, "x": target.x, "y": target.y})
+		return
+	w.issue(player, Commands.ATTACK_MOVE, {"ids": ids, "x": via.x, "y": via.y})
+	w.issue(player, Commands.ATTACK_MOVE, {"ids": ids, "x": target.x, "y": target.y, "queue": 1})
+
+
+## Raid the economy: the enemy's camps, mills, farms and pens we remember (fog memory: as last
+## seen) outside reach of their shooting buildings (raid_safe tiles more), that we can get to,
+## nearest us first; `ids` split into up to `raids` groups of at least raid_min, one per target.
+## False if there's nothing like that to raid (the caller goes for the Town Center).
+func _raid(w, ids: Array, hx: int, hy: int) -> bool:
+	var targets := _eco_targets(w, hx, hy)
+	if targets.is_empty() or ids.is_empty():
+		return false
+	var groups: int = clampi(ids.size() / maxi(1, int(cfg.military.raid_min)), 1, mini(raids, targets.size()))
+	var sorted := ids.duplicate()
+	sorted.sort()
+	for g in groups:
+		var part := []
+		for n in sorted.size():
+			if n % groups == g:
+				part.append(sorted[n])
+		var at: Vector2i = targets[g]
+		w.issue(player, Commands.ATTACK_MOVE, {"ids": part, "x": at.x, "y": at.y})
+	land.count("raid")
+	return true
+
+
+## The enemy economy worth raiding, nearest us first: remembered buildings of the kinds in
+## military.raid_targets, not within reach (+ raid_safe tiles) of a remembered shooting building,
+## that our soldiers can get to. Their middles, in milli-tiles.
+func _eco_targets(w, hx: int, hy: int) -> Array:
+	var seen: Dictionary = w.fog_seen[player]
+	var ids: Array = seen.keys()
+	ids.sort()
+	var kinds: Array = cfg.military.raid_targets
+	var safe: int = int(cfg.military.raid_safe)
+	var shooters := []   # [x, y, reach] in tiles
+	for id in ids:
+		var s: PackedInt32Array = seen[id]
+		var t: Dictionary = w.btypes[s[0]]
+		if w.is_enemy(player, s[1]) and not t.attack.is_empty():
+			shooters.append([s[2] + s[4] / 2, s[3] + s[8] / 2, int(t.attack.range) + safe])
+	var out := []
+	for id in ids:
+		var s: PackedInt32Array = seen[id]
+		if not w.is_enemy(player, s[1]) or not w.btypes[s[0]].id in kinds:
+			continue
+		var x: int = s[2] + s[4] / 2
+		var y: int = s[3] + s[8] / 2
+		if shooters.any(func(e): return (e[0] - x) * (e[0] - x) + (e[1] - y) * (e[1] - y) <= e[2] * e[2]):
+			continue
+		if not eco.reach.touches(w, _aln, _harea, s[2], s[3], s[4], s[8]):
+			continue
+		out.append([Fixed.dist2(hx, hy, x * 1000 + 500, y * 1000 + 500), id, Vector2i(x * 1000 + 500, y * 1000 + 500)])
+	out.sort_custom(func(a, b): return a[0] < b[0] or (a[0] == b[0] and a[1] < b[1]))
+	return out.map(func(e): return e[2])
 
 
 ## How many enemy soldiers we can see near this building (they need fighting: a unit told to
@@ -991,6 +1302,21 @@ func _known_enemy_wonder(w, hx: int, hy: int) -> int:
 	return best
 
 
+## Do we know of enemy building b: its ground explored, or it's a Town Center on a start (every
+## player knows where the others start, so a scout that saw only the outskirts doesn't turn the
+## army from the Town Center to a camp it happened to see)?
+func _known(w, b: int) -> bool:
+	var bs = w.buildings
+	if Fog.explored(w, player, bs.cx[b], bs.cy[b]):
+		return true
+	if bs.kind[b] != Economy.btype_of(w, "town_center"):
+		return false
+	for s in w.map.starts:
+		if absi(int(s[0]) / 1000 - bs.cx[b] - 1) <= 2 and absi(int(s[1]) / 1000 - bs.cy[b] - 1) <= 2:
+			return true
+	return false
+
+
 ## The id of the nearest enemy Town Center we've seen, or 0.
 func _known_enemy_town(w, hx: int, hy: int) -> int:
 	var tc_kind: int = Economy.btype_of(w, "town_center")
@@ -1023,7 +1349,7 @@ func _enemy_target(w, hx: int, hy: int) -> Vector2i:
 	for b in w.buildings.count():
 		var bs = w.buildings
 		var wonder: bool = bs.kind[b] == wk
-		if not w.is_enemy(player, bs.owner[b]) or not (Fog.explored(w, player, bs.cx[b], bs.cy[b]) or (wonder and _knows_wonder(w, b))):
+		if not w.is_enemy(player, bs.owner[b]) or not (_known(w, b) or (wonder and _knows_wonder(w, b))):
 			continue
 		var x: int = bs.cx[b] * 1000 + bs.sx[b] * 500
 		var y: int = bs.cy[b] * 1000 + bs.sy[b] * 500
