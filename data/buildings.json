@@ -96,7 +96,7 @@
   ],
   "push": 2
  },
- "_walkway_doc": "walls you stand on (milestone 16, src/sim/walls.gd): a building type with \"walkway\": N has N standing places per cell on top once built (stone walls, gatehouses, wall towers; palisades have none). Foot units (none with a tag in walkway.not, no workers, no flyers) ordered onto a wall walk to a way up (\"stairs\": a gatehouse or wall tower of their own team, or their side's ladder or docked siege tower), take `climb` seconds to climb, then walk along the walkway (8-way over connected walkway cells of one team) at speed_pct of their speed. On a wall a unit is a level up (rules.high_ground: shooters reach further, shots up at it fall short, it sees further), melee from the ground can't reach it, and it doesn't chase; ordered anywhere else it walks to the nearest way down (any stairs on the walkway, or its side's ladders and towers) and climbs down. If the cell under it stops being a walkway (destroyed, torn down) it falls: fall_damage, never below 1 hp. \"joins\": wall arms reach it like a gate (wall towers)",
+ "_walkway_doc": "walls you stand on (milestone 16, src/sim/walls.gd): a building type with \"walkway\": N has N standing places per cell on top once built (stone walls, gatehouses, wall towers; palisades have none). Foot units (none with a tag in walkway.not, no workers, no flyers) ordered onto a wall walk to a way up (\"stairs\": a gatehouse or wall tower of their own team, or their side's ladder or docked siege tower), take `climb` seconds to climb, then walk along the walkway (8-way over connected walkway cells of one team) at speed_pct of their speed. On a wall a unit is a level up (rules.high_ground: shooters reach further, shots up at it fall short, it sees further), melee from the ground can't reach it, and it doesn't chase; ordered anywhere else it walks to the nearest way down (any stairs on the walkway, or its side's ladders and towers) and climbs down. If the cell under it stops being a walkway (destroyed, torn down) it falls: fall_damage, never below 1 hp. \"joins\": wall arms reach it like a gate (wall towers). \"pour\" (gatehouses, wall towers: the defenders' tools): manned (one of its side settled on its walkway) it pours on every enemy on the ground within `reach` tiles of it every `reload` ticks: `damage` melee against each one's armour (rams and other melee-armour-light things at the gate suffer most); each culture's name for it is families.json \"pour\" (a creature's own \"pour\" first: the rats' scalding cheese)",
  "breach": {
   "terrain": "wall_rubble",
   "from": [
@@ -572,7 +572,12 @@
     "wall"
    ],
    "walkway": 2,
-   "stairs": true
+   "stairs": true,
+   "pour": {
+    "damage": 14,
+    "reload": 100,
+    "reach": 1
+   }
   },
   "wall_tower": {
    "name": "Wall Tower",
@@ -609,7 +614,12 @@
    "joins": true,
    "walkway": 3,
    "stairs": true,
-   "note": "milestone 16: placed into a stone wall line like a gate (it takes the wall tile's place); its walkway holds 3 and its stairs lead up; the look is a marked placeholder until Dominic picks a concept"
+   "note": "milestone 16: placed into a stone wall line like a gate (it takes the wall tile's place); its walkway holds 3 and its stairs lead up; the look is a marked placeholder until Dominic picks a concept",
+   "pour": {
+    "damage": 14,
+    "reload": 100,
+    "reach": 1
+   }
   },
   "ladder": {
    "name": "Siege Ladder",
