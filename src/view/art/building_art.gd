@@ -5,6 +5,7 @@ extends Node2D
 ## walls, roof) with a progress bar; the live parts start once it's done.
 
 const Iso := preload("res://src/view/iso.gd")
+const Models := preload("res://src/view/art/bake/models.gd")
 
 var body: Sprite2D
 var open_body: Sprite2D   # a gate's open look (null for other buildings)
@@ -19,6 +20,15 @@ var done := true
 var time := 0.0
 var bar_at := Vector2.ZERO
 var links := 0            # a wall tile: which neighbours its arms reach (bit k: Models.LINKS[k])
+## A walkway's near merlons (ArtKit front layer): a node of its own beside this one in the y-sorted
+## layer, sorted FRONT_SORT_PX lower, so units up on the walkway (sorted between: PERCH_SORT_PX) draw
+## over the wall and under the merlons in front of them. Null for buildings without a walkway.
+var front: Node2D
+var front_body: Sprite2D
+var front_open: Sprite2D
+var walk_px := 0.0        # how high units on its walkway are drawn (canvas px over its base), 0: none
+const PERCH_SORT_PX := 1.0
+const FRONT_SORT_PX := 2.0
 var _kit
 var _name := ""
 var smoke: CPUParticles2D   # the chimney (null if it has none)
@@ -72,6 +82,23 @@ func setup(kit, name: String, cx: int, cy: int, sx: int, sy: int, p_team: Color)
 		add_child(st)
 		stages.append(st)
 	bar_at = at + Vector2(0, 6)
+	walk_px = float(info.get("walk_px", 0.0))
+	if info.has("front") or info.has("open_front") or info.has("arms_front"):
+		front = Node2D.new()
+		front.position = centre + Vector2(0, FRONT_SORT_PX)
+		if info.has("front") or info.has("arms_front"):
+			front_body = kit.sprite(info.front) if info.has("front") else Sprite2D.new()
+			front_body.position = at - Vector2(0, FRONT_SORT_PX)
+			front_body.self_modulate = body.self_modulate
+			front.add_child(front_body)
+		if info.has("open_front"):
+			front_open = kit.sprite(info.open_front)
+			front_open.position = at - Vector2(0, FRONT_SORT_PX)
+			front_open.self_modulate = body.self_modulate
+			front_open.visible = false
+			front.add_child(front_open)
+		visibility_changed.connect(func(): front.visible = visible)
+		tree_entered.connect(func(): get_parent().add_child.call_deferred(front))
 	if info.has("smoke"):
 		smoke = _smoke(at + info.smoke)
 		live.append(smoke)
@@ -129,6 +156,7 @@ func set_state(p_done: bool, p_progress: float) -> void:
 	body.visible = done and not (open and open_body != null)
 	if open_body:
 		open_body.visible = done and open
+	_show_front()
 	for k in stages.size():
 		stages[k].visible = k == shown
 	for n in live:
@@ -313,6 +341,33 @@ func set_links(p_links: int) -> void:
 	var look: Dictionary = _kit.wall_look(_name, links)
 	body.texture = look.tex
 	body.offset = -look.origin
+	if front_body != null:
+		front_body.texture = look.get("front_tex")
+		front_body.offset = -look.get("front_origin", Vector2.ZERO)
+		front_body.scale = body.scale
+		front_body.material = body.material
+
+
+## Which wall neighbours a wall tile's arms reach (bit k: Models.LINKS[k]), `on(d)` telling whether
+## the tile at offset d is a finished wall, gate or wall tower: every one beside it, and corner to
+## corner only where no wall beside both closes the corner already (an L turns at its corner tile
+## rather than cutting across it). The game (sim_debug) and the walls' join check share it.
+static func links_of(on: Callable) -> int:
+	var out := 0
+	for k in Models.LINKS.size():
+		var d: Vector2i = Models.LINKS[k]
+		if not on.call(d):
+			continue
+		if d.x != 0 and d.y != 0 and (on.call(Vector2i(d.x, 0)) or on.call(Vector2i(0, d.y))):
+			continue
+		out |= 1 << k
+	return out
+
+
+## The sort y of a unit up on a walkway piece sorted at `piece_y`, the unit at screen y `unit_y`: just
+## after the piece and before its near merlons (front), units on one piece kept in their order.
+static func perch_sort_y(piece_y: float, unit_y: float) -> float:
+	return piece_y + PERCH_SORT_PX + clampf((unit_y - piece_y) / 64.0, -0.45, 0.45)
 
 
 ## Should gate b show open? While one of its owner's team (not an animal, not an enemy) is at it,
@@ -350,6 +405,20 @@ func set_open(p_open: bool) -> void:
 	open = p_open
 	body.visible = done and not open
 	open_body.visible = done and open
+	_show_front()
+
+
+## The front layer shows with the look it belongs to (shut or open), once the building is done.
+func _show_front() -> void:
+	if front_body != null:
+		front_body.visible = body.visible
+	if front_open != null:
+		front_open.visible = open_body.visible
+
+
+func _notification(what: int) -> void:
+	if what == NOTIFICATION_PREDELETE and front != null and is_instance_valid(front):
+		front.queue_free()
 
 
 func _process(delta: float) -> void:

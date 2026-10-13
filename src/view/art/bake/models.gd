@@ -2663,6 +2663,22 @@ func _books(body: Node3D, at: Vector3) -> void:
 # diagonal (ArtKit: an eighth turn) they run corner to corner across their square, `gate_span` long,
 # so their ends meet the diagonal wall arms on the cells' corners.
 
+## How high units on a walkway stand (model units over the ground), per building type: the top of the
+## wall, of the wall tower, of the gatehouse's piers and arches. The view lifts units on a wall by
+## this (ArtKit walk_px), so they stand on the stone, not sunk into it (they were drawn 22 px up on
+## every piece while a wall's top is 28 px up, a tower's 49, a gatehouse's 54).
+const WALK_H := {"wall": 0.72, "wall_tower": 1.25, "stone_gate": 1.4}
+
+## A merlon: a box tagged as parapet. ArtKit splits the merlons on a piece's near side (towards the
+## camera) into a front layer drawn over the units on the walkway, so they stand between the merlons.
+## `along`: the wall's direction at this merlon in the piece's own space (none for a post or tower:
+## then it's in front when it's on the near side of the piece's middle).
+func merlon(size: Vector3, mat: Material, pos: Vector3, along := Vector3.ZERO) -> MeshInstance3D:
+	var mi := box(size, mat, pos)
+	mi.set_meta("parapet", along)
+	return mi
+
+
 const LINKS := [Vector2i(1, 0), Vector2i(1, 1), Vector2i(0, 1), Vector2i(-1, 1), Vector2i(-1, 0), Vector2i(-1, -1), Vector2i(0, -1), Vector2i(1, -1)]
 
 ## What a culture builds its stone wall of: dressed stone, brick and scrap for the junk-rats,
@@ -2706,11 +2722,9 @@ func _wall(arch: String, team: Color) -> Dictionary:
 func _stone_post(arch: String) -> Node3D:
 	var body := Node3D.new()
 	var m: Material = mats.get_mat(WALL_STONE[arch])
-	body.add_child(box(Vector3(0.62, 0.8, 0.62), m, Vector3(0, 0.4, 0)))
-	for x in [-1, 1]:
-		for z in [-1, 1]:
-			body.add_child(box(Vector3(0.17, 0.16, 0.17), m, Vector3(x * 0.22, 0.88, z * 0.22)))
-	return body
+	# As high as the arms (the walkway is level: units on it stand at WALK_H.wall), a little wider.
+	body.add_child(box(Vector3(0.62, WALK_H.wall, 0.62), m, Vector3(0, WALK_H.wall / 2, 0)))
+	return body   # (no merlons of its own: the arms carry them, so they keep the line's beat)
 
 
 func _stone_arm(arch: String, k: int) -> Node3D:
@@ -2718,13 +2732,12 @@ func _stone_arm(arch: String, k: int) -> Node3D:
 	var body: Node3D = a[0]
 	var l: float = a[1]
 	var m: Material = mats.get_mat(WALL_STONE[arch])
-	body.add_child(box(Vector3(l, 0.72, 0.54), m, Vector3(l / 2, 0.36, 0)))
-	var merlons := [l] if owns(k) else []
-	if l > 0.6:
-		merlons.append(l * 0.55)   # a diagonal is longer: one more between
-	for t in merlons:
-		for z in [-0.18, 0.18]:
-			body.add_child(box(Vector3(0.17, 0.16, 0.17), m, Vector3(t, 0.8, z)))
+	body.add_child(box(Vector3(l, WALK_H.wall, 0.54), m, Vector3(l / 2, WALK_H.wall / 2, 0)))
+	# One merlon each face halfway along the arm: an even beat of merlon and gap along a line, across
+	# tile edges too (they were at the post's corners and on the owned edge: pairs and wide gaps, and
+	# the post's stood off the arms' faces).
+	for z in [-0.18, 0.18]:
+		body.add_child(merlon(Vector3(0.2, 0.16, 0.17), m, Vector3(l / 2, WALK_H.wall + 0.08, z), Vector3.RIGHT))
 	rng.seed = 93 + k
 	if arch == "junk" and k == 5:   # a tin patch nailed over the brick (one arm only: on every tile it reads as windows)
 		body.add_child(box(Vector3(0.26, 0.24, 0.02), mats.get_mat("tin"), Vector3(l * 0.5, 0.4, 0.28), Vector3(0, 0, 6)))
@@ -2874,18 +2887,21 @@ const GATE_ARCH := 1.1    # the arches' undersides
 ## Wall Tower (milestone 16). PLACEHOLDER until Dominic picks a look from the concept round: a
 ## squat square tower of the culture's wall stone, half again the wall's height, crenellated, an
 ## arrow slit and a team rag; the wall's arms reach it like a gate's.
+const TOWER_W := 1.0   # a wall tower fills its tile (at 0.86 a gap showed between it and the wall arms meeting it)
+
+
 func _wall_tower(arch: String, team: Color) -> Dictionary:
 	var body := Node3D.new()
 	var m: Material = mats.get_mat(WALL_STONE[arch])
-	var h := 1.25
-	body.add_child(box(Vector3(0.86, h, 0.86), m, Vector3(0, h / 2, 0)))
+	var h: float = WALK_H.wall_tower
+	body.add_child(box(Vector3(TOWER_W, h, TOWER_W), m, Vector3(0, h / 2, 0)))   # the whole tile: the wall arms meet its faces
 	for x in [-1, 0, 1]:
 		for z in [-1, 0, 1]:
 			if x != 0 or z != 0:
-				body.add_child(box(Vector3(0.18, 0.18, 0.18), m, Vector3(x * 0.34, h + 0.09, z * 0.34)))
-	for side in [Vector3(0, 0.78, 0.44), Vector3(0.44, 0.78, 0)]:
+				body.add_child(merlon(Vector3(0.18, 0.18, 0.18), m, Vector3(x * (TOWER_W / 2 - 0.09), h + 0.09, z * (TOWER_W / 2 - 0.09))))
+	for side in [Vector3(0, 0.78, TOWER_W / 2 + 0.01), Vector3(TOWER_W / 2 + 0.01, 0.78, 0)]:
 		body.add_child(box(Vector3(0.07 if side.z != 0.0 else 0.03, 0.24, 0.03 if side.z != 0.0 else 0.07), Materials.flat(Color("#1e1a16"), 1.0), side))   # arrow slits
-	body.add_child(box(Vector3(0.24, 0.3, 0.02), cloth(team), Vector3(-0.18, h - 0.22, 0.44)))   # a team rag hung over the parapet
+	body.add_child(box(Vector3(0.24, 0.3, 0.02), cloth(team), Vector3(-0.18, h - 0.22, TOWER_W / 2 + 0.01)))   # a team rag hung over the parapet
 	return {"body": body, "anchor": Vector3.ZERO, "lights": [], "team": team}
 
 
@@ -2991,15 +3007,15 @@ func _gatehouse(arch: String, team: Color, open: bool) -> Node3D:
 	var pier := gate_span / 2.0 - GATE_PIER
 	for x in [-pier, pier]:
 		body.add_child(box(Vector3(GATE_PIER_W, top + 0.04, 0.98), m, Vector3(x, (top + 0.04) / 2, 0)))   # a pier, as deep as the gate
-		for z in [-0.34, 0.0, 0.34]:
-			body.add_child(box(Vector3(0.18, 0.18, 0.18), m, Vector3(x, top + 0.13, z)))
+		for z in [-0.34, 0.34]:   # (none on the walkway's line: it blocked the way along, and is neither in front of the units nor behind)
+			body.add_child(merlon(Vector3(0.18, 0.18, 0.18), m, Vector3(x, top + 0.13, z), Vector3.RIGHT))
 		body.add_child(box(Vector3(0.07, 0.22, 0.03), Materials.flat(Color("#1e1a16"), 1.0), Vector3(x, 0.7, 0.5)))   # an arrow slit
 	var inner := pier - GATE_PIER_W / 2   # the piers' inner faces
 	for z in [-0.37, 0.37]:   # the arches, front and back, open to the sky between
 		body.add_child(box(Vector3(2.0 * inner, 0.28, 0.24), m, Vector3(0, GATE_ARCH + 0.14, z)))
 		body.add_child(box(Vector3(2.0 * inner, 0.05, 0.2), mats.get_mat("stone"), Vector3(0, GATE_ARCH + 0.025, z)))   # the arch stones' soffit
 	for x in [-0.45, 0.45]:
-		body.add_child(box(Vector3(0.18, 0.16, 0.18), m, Vector3(x, top + 0.08, 0.37)))
+		body.add_child(merlon(Vector3(0.18, 0.16, 0.18), m, Vector3(x, top + 0.08, 0.37), Vector3.RIGHT))
 	# The banner: a rod across the front arch, the team cloth hanging from it over the arch's face.
 	body.add_child(box(Vector3(0.46, 0.03, 0.03), wood, Vector3(0, top - 0.03, 0.51)))
 	body.add_child(box(Vector3(0.36, 0.3, 0.02), cloth(team), Vector3(0, top - 0.19, 0.51)))
