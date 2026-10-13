@@ -53,6 +53,7 @@ var sides: Array = []           # per side: {field, dice, reroll, race, name, li
 var map_index := 0
 var map_name: Label
 var map_pic: TextureRect
+var map_name_fs := 0            # the map name's heading size; a long name is fitted below it
 var map_note: Label
 var map_data: Dictionary        # the map picked (its starts say how many players)
 var level_card: Control         # 1v1: how hard the AI plays (in a team game each AI panel has its own)
@@ -367,9 +368,11 @@ func _centre() -> Control:
 	vs.lk = UiTheme.look("")
 	vs.custom_minimum_size = Vector2(0, 104)
 	col.add_child(vs)
+	var above := Control.new()   # the map card, as tall as its map, sits in the middle of what a tall window spares (not an empty well under the map: Dominic)
+	above.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	col.add_child(above)
 	var card := PanelContainer.new()
 	card.theme_type_variation = "CrestFrame"
-	card.size_flags_vertical = Control.SIZE_EXPAND_FILL
 	col.add_child(card)
 	var inner := VBoxContainer.new()
 	inner.add_theme_constant_override("separation", 8)
@@ -388,6 +391,7 @@ func _centre() -> Control:
 	map_name.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	map_name.clip_text = true
 	map_name.text_overrun_behavior = TextServer.OVERRUN_TRIM_ELLIPSIS
+	map_name.resized.connect(_fit_map_name)
 	pick.add_child(map_name)
 	var next := UiTheme.button(">")
 	next.custom_minimum_size = Vector2(46, 46)
@@ -396,16 +400,18 @@ func _centre() -> Control:
 	inner.add_child(pick)
 	var well := PanelContainer.new()
 	well.theme_type_variation = "Well"
-	well.size_flags_vertical = Control.SIZE_EXPAND_FILL   # the map takes the room a tall window spares
 	inner.add_child(well)
-	map_pic = TextureRect.new()
-	map_pic.custom_minimum_size = Vector2(0, 196)   # Dominic: the map needs more room
+	map_pic = TextureRect.new()   # the map fills the well's width, the well as tall as the map's diamond
 	map_pic.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
-	map_pic.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+	map_pic.expand_mode = TextureRect.EXPAND_FIT_HEIGHT_PROPORTIONAL
+	map_pic.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
 	well.add_child(map_pic)
 	map_note = UiTheme.label("", "Dim")
 	map_note.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	inner.add_child(map_note)
+	var spare := Control.new()   # and the AI's level and Start stay at the foot, level with the side panels
+	spare.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	col.add_child(spare)
 	var level := PanelContainer.new()   # how hard the AI plays: three buttons, one lit
 	level.theme_type_variation = "Card"
 	level_card = level
@@ -794,9 +800,9 @@ func _muster(i: int) -> void:
 	for k in i:
 		if not sides[k].race.is_empty():
 			side += 1
-	for k in mini(n, s.units.get_child_count()):
+	for k in mini(all.size(), s.units.get_child_count()):   # every card, in roster order (not the few on the stage)
 		var pic: TextureRect = s.units.get_child(k).find_child("portrait", true, false)
-		pic.texture = kit.icons.get("%d:%s" % [side, units[k].recipe.slot])
+		pic.texture = kit.icons["%d:%s" % [side, all[k].recipe.slot]]
 
 
 ## A team game's roster entry: the portrait alone in a well; name, role and cost on hover.
@@ -932,16 +938,27 @@ func _set_map(k: int) -> void:
 	if m.starts.size() != sides.size():
 		_build_sides(m.starts.size())
 	map_name.text = m.name
-	map_name.remove_theme_font_size_override("font_size")
-	var room: float = map_name.size.x
-	var f: Font = map_name.get_theme_font("font")
-	var fs: int = map_name.get_theme_font_size("font_size")
-	while room > 0.0 and fs > 16 and f.get_string_size(m.name, HORIZONTAL_ALIGNMENT_LEFT, -1, fs).x > room:
-		fs -= 2   # a long name ("Reed Meadow (2v2)") gets a smaller size, not an ellipsis (Dominic)
-	map_name.add_theme_font_size_override("font_size", fs)
+	_fit_map_name()
 	var n: int = m.starts.size()
 	map_note.text = "%d x %d tiles  ·  %s" % [int(m.width), int(m.height), "1 v 1" if n == 2 else "%d v %d" % [n / 2, n - n / 2]]
 	map_pic.texture = ImageTexture.create_from_image(_map_image(m))
+
+
+## A long name ("Reed Meadow (2v2)") gets a smaller size, not an ellipsis (Dominic). Fitted again
+## when the label is laid out: the first map is named before the setup screen has its size, which
+## left "Old Forest" in the smallest type.
+func _fit_map_name() -> void:
+	if not map_name.is_inside_tree():
+		return   # no theme yet (the setup screen is still being built); it fits when it's laid out
+	if map_name_fs == 0:
+		map_name_fs = map_name.get_theme_font_size("font_size")   # the heading's own size, before any fitting
+	var room: float = map_name.size.x
+	var f: Font = map_name.get_theme_font("font")
+	var fs := map_name_fs
+	while room > 0.0 and fs > 16 and f.get_string_size(map_name.text, HORIZONTAL_ALIGNMENT_LEFT, -1, fs).x > room:
+		fs -= 2
+	if fs != map_name.get_theme_font_size("font_size"):   # (setting it resizes the label, which calls this again)
+		map_name.add_theme_font_size_override("font_size", fs)
 
 
 ## The map as a small isometric diamond, coloured from data/terrain.json, start spots marked.
