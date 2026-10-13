@@ -1,0 +1,65 @@
+{
+ "schema": "aow.groups/1",
+ "note": "Milestone 14: a race's bonuses are mixed from three layers, its creature's group (creatures.json `group`), its creature and its culture (families.json), one bonus each (src/identity.gd). A bonus is {text, effects, alt?, kind?, price_points?}: effects in the research shape (D-111, src/sim/tech.gd); when a later layer's bonus is the same kind as an earlier one (the same scope and stat, or the same `kind`), it takes its `alt`. Unit stat effects (add to hp, attack, armour, range, speed, bonus.*, or pct of speed, cost, train_time) are applied by pricing.gd before the price, and the bonus's `price_points` go on every unit it reaches (cost is the balancer); the rest (buildings, gathering, carry, sight, ...) by the sim at setup. A bonus with no effects says something the race already has from elsewhere (movement classes).",
+ "groups": {
+  "bugs": {
+   "name": "Bugs",
+   "bonuses": [
+    {
+     "text": "Houses cost 30% less (they dig in)",
+     "effects": [{"building": "house", "stat": "cost", "pct": -30}],
+     "alt": {
+      "text": "Gather 5% faster",
+      "effects": [{"gather": "food", "pct": 5}, {"gather": "wood", "pct": 5}, {"gather": "stone", "pct": 5}, {"gather": "gold", "pct": 5}]
+     }
+    }
+   ]
+  },
+  "amphibians": {
+   "name": "Amphibians",
+   "bonuses": [
+    {
+     "text": "Farms in water: rice paddies in the shallows",
+     "kind": "paddies",
+     "effects": [],
+     "alt": {
+      "text": "Farms hold 20% more food",
+      "effects": [{"building": "farm", "stat": "food", "pct": 20}]
+     }
+    }
+   ]
+  },
+  "rodents": {
+   "name": "Rodents",
+   "bonuses": [
+    {
+     "text": "Houses hold 6 instead of 5",
+     "effects": [{"building": "house", "stat": "pop", "add": 1}],
+     "alt": {
+      "text": "Workers carry +2",
+      "effects": [{"tag": "worker", "stat": "carry", "add": 2}]
+     }
+    }
+   ]
+  },
+  "folk": {
+   "name": "Folk",
+   "bonuses": [
+    {
+     "text": "Research 15% faster",
+     "effects": [{"building": "all", "stat": "research_time", "pct": -15}],
+     "alt": {
+      "text": "Research 10% cheaper",
+      "effects": [{"building": "all", "stat": "research_cost", "pct": -10}]
+     }
+    }
+   ]
+  }
+ },
+ "movement": {
+  "note": "How the tech tree page says how a race's units move (the class each unit gets from rules.movement).",
+  "ground": "Walks on land",
+  "amphibious": "Amphibious: wades through swamp and shallows (faster in the swamp) and farms rice paddies in the water",
+  "flying": "Flying: over water, cliffs and walls"
+ }
+}

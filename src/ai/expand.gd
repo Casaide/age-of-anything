@@ -95,8 +95,8 @@ func _camps(w, bot, workers: Array) -> void:
 		var spot: Vector2i = bot.eco._house_spot(w, mid % w.map.width, mid / w.map.width, w.btypes[k].size)
 		if spot.x < 0 or _walk(w, drops, spot.y * w.map.width + spot.x) <= int(cfg.camp_tiles) / 2:
 			continue   # (no room, or it'd stand by a drop-off we have)
-		if not w.can_afford(bot.player, w.btypes[k].cost):
-			want = w.btypes[k].cost   # soldiers leave its cost alone till it's laid (Bot._train)
+		if not w.can_afford(bot.player, Economy.bcost(w, bot.player, k)):
+			want = Economy.bcost(w, bot.player, k)   # soldiers leave its cost alone till it's laid (Bot._train)
 			_next_camp = w.tick + 100
 			return
 		far.sort_custom(func(a, b): return Fixed.dist2(a[0] % w.map.width, a[0] / w.map.width, spot.x, spot.y) < Fixed.dist2(b[0] % w.map.width, b[0] / w.map.width, spot.x, spot.y) \

@@ -10,6 +10,7 @@ const Fixed := preload("res://src/sim/fixed.gd")
 const Bridges := preload("res://src/sim/bridges.gd")
 const Pens := preload("res://src/sim/pens.gd")
 const Buildings := preload("res://src/sim/buildings.gd")
+const Identity := preload("res://src/identity.gd")
 
 enum { NONE, GATHER, RETURN, BUILD, GARRISON, TRADE }   # GARRISON: walking into a building to shelter (garrison.gd); TRADE: a cart on its route (trade.gd)
 
@@ -221,12 +222,12 @@ static func lay_foundation(w, player: int, a: Dictionary) -> int:
 		return 0
 	k = upgraded(w, player, k)   # a Watchtower ordered after the Bastion research is a Bastion
 	var t: Dictionary = w.btypes[k]
-	if _own_workers(w, player, a.ids).is_empty() or not w.can_afford(player, t.cost) or why_not_build(w, player, k) != "":
+	if _own_workers(w, player, a.ids).is_empty() or not w.can_afford(player, bcost(w, player, k)) or why_not_build(w, player, k) != "":
 		return 0
 	var along := along_for(t, int(a.get("along", 0)))
 	if not can_place(w, player, k, a.cx, a.cy, along):
 		return 0
-	w.pay(player, t.cost)
+	w.pay(player, bcost(w, player, k))
 	for c in _footprint(w, a.cx, a.cy, dims(t, along), along):
 		if _replaceable(w, player, t, c):
 			demolish(w, w.buildings.index_of(w.map.occupied[c]))   # a gate dropped into a wall takes its place
@@ -237,6 +238,8 @@ static func lay_foundation(w, player: int, a: Dictionary) -> int:
 ## Center before `more_from_age`), or "". Cost and place are checked apart.
 static func why_not_build(w, player: int, k: int) -> String:
 	var t: Dictionary = w.btypes[k]
+	if lacks(w, player, t.id):
+		return "not in this race's tech tree"   # milestone 14: centaurs build no walls
 	if w.ages[player] < t.age:
 		return "needs age %d" % t.age
 	if t.more_from_age > 0 and w.ages[player] < t.more_from_age:
@@ -245,6 +248,24 @@ static func why_not_build(w, player: int, k: int) -> String:
 			if bs.owner[b] == player and bs.kind[b] == k:
 				return "another needs age %d" % t.more_from_age
 	return ""
+
+
+## What a building of type k costs this player: its price, less the race's and research's
+## building `cost` pct (bugs' houses, spiders' walls: Tech.refresh).
+static func bcost(w, player: int, k: int) -> PackedInt32Array:
+	var pct := int(w.bmods[player][k].pct.get("cost", 0))
+	if pct == 0:
+		return w.btypes[k].cost
+	var cost: PackedInt32Array = w.btypes[k].cost.duplicate()
+	for r in cost.size():
+		cost[r] = cost[r] * (100 + pct) / 100
+	return cost
+
+
+## Does this player's race lack that building, line (slot) or "trade"? (src/identity.gd; lifted by
+## the host's full_tech_tree rule.)
+static func lacks(w, player: int, id: String) -> bool:
+	return Identity.lacks(w.ident[player], id, w.rules)
 
 
 ## Can this player put a building of type k here? On open ground as usual, or (a gate) over
@@ -332,7 +353,7 @@ static func cmd_train(w, player: int, a: Dictionary) -> void:
 	if not a.slot in w.btypes[w.buildings.kind[b]].trains:
 		return
 	var k: int = w.type_of(player, a.slot)
-	if k < 0 or w.buildings.queue[b].size() >= int(w.econ.queue_max):
+	if k < 0 or w.buildings.queue[b].size() >= int(w.econ.queue_max) or lacks(w, player, a.slot):
 		return
 	var t: Dictionary = w.types[k]
 	if not w.can_afford(player, t.cost) or w.ages[player] < int(t.line[0].age):
@@ -461,13 +482,10 @@ static func clear_task(w, i: int) -> void:
 ## One tick of every worker's job. Runs before movement, so it sees start-of-tick positions.
 static func work(w) -> void:
 	var u = w.units
-	var carry_max := PackedInt32Array()   # per player: a creature's economy can carry more (centaurs) or less
-	for p in w.races.size():
-		carry_max.append(int(w.econ.carry) * int(w.races[p].economy.get("carry_pct", 100)) / 100)
 	for i in u.count():
 		match u.task[i]:
 			GATHER:
-				_gather(w, i, carry_max[u.owner[i]] + int(w.types[u.kind[i]].carry_add))   # research adds to it (Tech.retype)
+				_gather(w, i, int(w.econ.carry) + int(w.types[u.kind[i]].carry_add))   # research and race bonuses add to it (Tech.retype: centaurs carry 60% more)
 			RETURN:
 				_return(w, i)
 			BUILD:
@@ -1019,8 +1037,8 @@ static func update_pop(w) -> void:
 			var p: int = w.buildings.owner[b]
 			var t: Dictionary = w.btypes[w.buildings.kind[b]]
 			var add: int = t.pop
-			if t.house:
-				add = int(w.races[p].economy.get("house_pop", t.pop))
+			if add > 0:
+				add += int(w.bmods[p][w.buildings.kind[b]].add.get("pop", 0))   # (rodents' houses hold 6: Tech.refresh)
 			w.pop_cap[p] += add
 	for p in w.races.size():
 		w.pop_cap[p] = mini(w.pop_cap[p], int(w.econ.pop_max))

@@ -3,6 +3,8 @@ extends RefCounted
 ## pushes a price up and selling pushes it down, so a flooded market pays less (the genre's
 ## way). Prices are gold per lot; selling pays less than buying costs. Integers only.
 
+const Identity := preload("res://src/identity.gd")
+
 const LOT := 100           # goods per trade
 const START := 100         # gold per lot at the start
 const STEP := 5            # a trade moves the price this much
@@ -34,6 +36,8 @@ static func why_not(w, player: int, b: int, r: int, buy: bool) -> String:
 	if b < 0 or w.buildings.owner[b] != player or w.buildings.done[b] == 0 \
 			or w.btypes[w.buildings.kind[b]].id != "market":
 		return "needs a finished market"
+	if Identity.lacks(w.ident[player], Identity.TRADE, w.rules):
+		return "not in this race's tech tree"   # milestone 14: spooky folk don't haggle
 	if r < 0 or w.resources[r] == "gold":
 		return "gold isn't traded"
 	var g: int = w.resources.find("gold")

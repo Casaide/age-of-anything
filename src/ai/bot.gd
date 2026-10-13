@@ -270,6 +270,8 @@ func _build_order(w, tc: int, workers: Array, count: int) -> void:
 	var wanted := {}
 	for step in cfg.build_order:
 		var id: String = step.building
+		if Economy.lacks(w, player, id):
+			continue   # not in our race's tree (spiders have no Stable): the order goes on without it
 		wanted[id] = int(step.get("count", wanted.get(id, 0) + 1))
 		if have.get(id, 0) >= wanted[id]:
 			continue
@@ -283,8 +285,8 @@ func _build_order(w, tc: int, workers: Array, count: int) -> void:
 		if count < need or workers.is_empty():
 			return   # the order is an order: wait for this step before the next
 		var k: int = Economy.btype_of(w, id)
-		if not w.can_afford(player, w.btypes[k].cost):
-			_blocked = w.btypes[k].cost   # what we save for (economy shares; soldiers leave it alone if the step says `save`)
+		if not w.can_afford(player, Economy.bcost(w, player, k)):
+			_blocked = Economy.bcost(w, player, k)   # what we save for (economy shares; soldiers leave it alone if the step says `save`)
 			_blocked_save = int(step.get("save", 0))
 			_blocked_push = int(step.get("push", cfg.economy.get("build_push", 30)))
 			return
@@ -409,7 +411,7 @@ func _goal(w, count: int) -> PackedInt32Array:
 		var cost: PackedInt32Array = next.cost.duplicate()
 		for need in next.requires:   # and the building the age needs, if it isn't up or going up
 			if not _has_any(w, need):
-				var bc: PackedInt32Array = w.btypes[Economy.btype_of(w, need)].cost
+				var bc: PackedInt32Array = Economy.bcost(w, player, Economy.btype_of(w, need))
 				for r in cost.size():
 					cost[r] += bc[r]
 		_saving_age = true
@@ -417,7 +419,7 @@ func _goal(w, count: int) -> PackedInt32Array:
 	if not _blocked.is_empty():
 		return _blocked
 	if _tower_at.x >= 0 and _towers_up(w) < towers:
-		return w.btypes[Economy.btype_of(w, "watchtower")].cost
+		return Economy.bcost(w, player, Economy.btype_of(w, "watchtower"))
 	return PackedInt32Array()
 
 
@@ -431,7 +433,7 @@ func _wonder(w, tc: int, workers: Array) -> void:
 	for b in w.buildings.count():
 		if w.buildings.owner[b] == player and w.buildings.kind[b] == k:
 			return
-	var cost: PackedInt32Array = w.btypes[k].cost
+	var cost: PackedInt32Array = Economy.bcost(w, player, k)
 	for r in cost.size():
 		if w.stock[r][player] < cost[r] * int(c.spare_pct) / 100:
 			return
@@ -618,8 +620,9 @@ func pick(w, trains: Array, foes: Dictionary, reserve := PackedInt32Array()) -> 
 	var best_score := -(1 << 30)
 	for slot in trains:
 		var k: int = w.type_of(player, slot)
-		if k < 0 or w.ages[player] < int(w.types[k].line[0].age) or _enough(w, slot, k) or w.types[k].get("trader", false):
-			continue   # (trade carts aren't picked as soldiers: _trade_carts)
+		if k < 0 or w.ages[player] < int(w.types[k].line[0].age) or _enough(w, slot, k) or w.types[k].get("trader", false) \
+				or Economy.lacks(w, player, slot):
+			continue   # (trade carts aren't picked as soldiers: _trade_carts; nor what the race lacks: milestone 14)
 		if not reserve.is_empty() and not _affords(w, w.types[k].cost, reserve):
 			continue   # (one short of wood shouldn't stop a building whose other line uses the gold piled up)
 		var s := _siege_score(w, slot, k) if cfg.military.get("siege", {}).get("max", {}).has(slot) \
@@ -905,7 +908,7 @@ func _tower(w, workers: Array) -> void:
 		_tower_at = Vector2i(-1, -1)
 		return
 	var k: int = Economy.btype_of(w, "watchtower")
-	if eco._building_underway(w) or not w.can_afford(player, w.btypes[k].cost) or workers.is_empty():
+	if eco._building_underway(w) or not w.can_afford(player, Economy.bcost(w, player, k)) or workers.is_empty():
 		return
 	var spot: Vector2i = eco._house_spot(w, _tower_at.x / 1000, _tower_at.y / 1000, w.btypes[k].size)
 	_tower_at = Vector2i(-1, -1)
@@ -926,7 +929,7 @@ var _next_trade := 0
 
 func _trade(w) -> void:
 	var t: Dictionary = cfg.economy.get("trade", {})
-	if t.is_empty() or w.tick < _next_trade:
+	if t.is_empty() or w.tick < _next_trade or Economy.lacks(w, player, "trade"):
 		return
 	var mk := -1
 	for b in w.buildings.count():

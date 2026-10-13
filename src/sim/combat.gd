@@ -1060,6 +1060,21 @@ static func _nearest_foe(w, i: int, sight: int, buildings_too: bool, engaged: Pa
 	return best
 
 
+## Kills that pay (a race bonus, Tech.retype `kill_gold`: Aztec kills bring in gold): the killer's
+## owner gets its type's gold for each enemy unit (not animals) its last blow killed this tick,
+## if the killer is still about. In slot order, before anyone is removed.
+static func _bounties(w, hurt: PackedInt32Array, hurt_by: PackedInt32Array) -> void:
+	var u = w.units
+	var gold: int = w.resources.find("gold")
+	for j in hurt.size():
+		if hurt[j] == 0 or u.hp[j] > 0 or w.types[u.kind[j]].has("animal"):
+			continue
+		var k: int = u.index_of(hurt_by[j])
+		if k < 0 or int(w.types[u.kind[k]].kill_gold) == 0 or not w.is_foe(u.owner[k], u.owner[j]):
+			continue
+		w.stock[gold][u.owner[k]] += int(w.types[u.kind[k]].kill_gold)
+
+
 ## Land this tick's hits together, then remove the dead (units by descending slot,
 ## so slots stay valid while removing). Units hit while idle (or walking back) turn on
 ## the attacker, unless passive.
@@ -1075,6 +1090,7 @@ static func _apply(w, hurt: PackedInt32Array, hurt_by: PackedInt32Array, bhurt: 
 		if u.foe[j] == 0 and (u.stance[j] == NONE or u.stance[j] == RETURN) and u.task[j] == Economy.NONE and not t.worker \
 				and not t.get("harmless", false) and not t.get("healer", false) and not t.get("buildings_only", false) and u.posture[j] != PASSIVE:
 			_engage(w, j, hurt_by[j])
+	_bounties(w, hurt, hurt_by)
 	for j in range(hurt.size() - 1, -1, -1):
 		if u.hp[j] <= 0:
 			w.events.append({"type": "die", "id": u.id[j], "x": u.x[j], "y": u.y[j], "owner": u.owner[j], "kind": u.kind[j], "building": false})

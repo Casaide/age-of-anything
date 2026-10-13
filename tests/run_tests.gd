@@ -7,6 +7,8 @@ const DataLib := preload("res://src/data_lib.gd")
 const Generator := preload("res://src/race_generator.gd")
 const UnitView := preload("res://src/unit_view.gd")
 const TreeModel := preload("res://src/view/tech_tree_model.gd")
+const Identity := preload("res://src/identity.gd")
+const Pricing := preload("res://src/pricing.gd")
 const Economy := preload("res://src/sim/economy.gd")
 const Tech := preload("res://src/sim/tech.gd")
 const Cases := preload("res://tests/placement/cases.gd")
@@ -51,6 +53,7 @@ func _init() -> void:
 	_test_audio(lib)
 	_test_paths()
 	_test_tech_tree(lib, gen, rules)
+	_test_identity(lib, gen, rules.default)
 	_test_scripts_parse()
 	if "placement" in OS.get_cmdline_user_args():   # (the batch runs it as placement_check.gd 3d, side by side)
 		_test_placement(lib)
@@ -72,6 +75,59 @@ func _test_placement(lib) -> void:
 	var fx: Array = Fixtures3D.run(lib)
 	for line in fx[1]:
 		check(line.begins_with("PASS"), "placement " + line.replace("\n", " "))
+
+
+## Milestone 14's race identity (src/identity.gd): every playable creature with every culture mixes
+## three bonuses, one per layer, no kind twice; every effect has the research shape; own research
+## and lacks name real things; a race's identity comes from its creature and culture alone (the
+## recipes and race key don't see it), and its stat bonuses are paid for.
+func _test_identity(lib, gen, rules: Dictionary) -> void:
+	var tdata: Dictionary = DataLib.load_json("res://data/tech.json")
+	var bdata: Dictionary = DataLib.load_json("res://data/buildings.json").buildings
+	var research := {}
+	for r in tdata.research:
+		research[r.id] = r
+	var slots: Array = rules.roster.map(func(sd): return sd.slot)
+	var fams: Array = lib.families.keys()
+	fams.sort()
+	for cid in lib.creature_ids("playable"):
+		for fid in fams:
+			var ident := Identity.of(cid, fid)
+			check(ident.bonuses.size() == 3, "identity %s/%s: three bonuses (%d)" % [cid, fid, ident.bonuses.size()])
+			var kinds := {}
+			for b in ident.bonuses:
+				kinds[Identity.kind_of(b)] = true
+				for fx in b.effects:
+					Tech._check(fx, "%s/%s bonus" % [cid, fid])   # (asserts on a bad shape)
+				var priced: bool = b.effects.any(func(fx): return Identity.priced(fx) and not fx.stat in ["cost", "train_time"])
+				check(priced == (b.price_points > 0), "identity %s/%s: \"%s\" is paid for if it adds to unit stats" % [cid, fid, b.text])
+			check(kinds.size() == ident.bonuses.size(), "identity %s/%s: no kind of bonus twice" % [cid, fid])
+	for src in [lib.creatures, lib.families]:
+		for id in src:
+			var layer := "creature" if src == lib.creatures else "culture"
+			for r in src[id].get("research", []):
+				check(research.has(r) and research[r].get("own", "") == layer, "identity: %s's own research %s is a %s research in tech.json" % [id, r, layer])
+			for l in src[id].get("lacks", []):
+				var known: bool = research.has(l) or bdata.has(l) or l in slots or l == Identity.TRADE
+				if l.begins_with("line."):
+					known = l.split(".")[1] in slots
+				check(known, "identity: %s lacks something real (%s)" % [id, l])
+	# Same creature and culture, any prompt: the same identity; the race key never sees it.
+	var a: Dictionary = gen.generate("hellenic beetles", rules)
+	var b: Dictionary = gen.generate("hellenic beetles with big shields", rules, 3)
+	check(Identity.of(a.creature, a.family) == Identity.of(b.creature, b.family), "identity: from creature and culture alone")
+	var copy: Dictionary = a.duplicate(true)
+	for u in copy.units:
+		for l in u.line:
+			l.eval.armour.pierce = 99
+	check(Generator.race_key(copy) == a.key, "identity: the race key hashes recipes, not the stats bonuses change")
+	# Beetles' shells: +1 pierce armour on every unit, paid for (a point on the price).
+	var bt: Dictionary = gen.generate("hellenic beetles", rules)
+	var spear: Dictionary = bt.units.filter(func(u): return u.recipe.slot == "spear")[0]
+	var plain: Dictionary = Pricing.evaluate(spear.recipe.merged({"family": "forest"}, true), lib, rules)   # (forest: no spear bonus)
+	check(int(spear.eval.armour.pierce) == int(plain.armour.pierce) and int(spear.eval.armour.melee) == int(plain.armour.melee) + 1,
+		"identity: hellenic spears +1 melee armour on the eval (%d vs %d)" % [int(spear.eval.armour.melee), int(plain.armour.melee)])
+	check(int(spear.eval.points) == int(plain.points) + 1, "identity: ...and pay a point for it")
 
 
 ## Every game and view script loads (a parse error in a scene script otherwise only shows when
@@ -173,7 +229,9 @@ func _test_tech_tree(lib, gen, rules: Dictionary) -> void:
 			for id in bdata.buildings:
 				check(seen.has("b:" + id), "tree: building %s is on the page" % id)
 			for id in research:
-				check(seen.has("r:" + id), "tree: research %s is on the page" % id)
+				var others: bool = research[id].has("own") and not race.is_empty() and not bool(r.get("full_tech_tree", false)) \
+					and not id in Identity.of(race.creature, race.family).research   # another race's own research: not on this race's page
+				check(seen.has("r:" + id) != others, "tree: research %s is on the page%s" % [id, " (not: another race's own)" if others else ""])
 			for sd in r.roster:
 				check(bdata.buildings.has(sd.get("building", "")), "roster %s names a building (%s)" % [sd.slot, rid])
 				var first := maxi(int(sd.tier), int(bdata.buildings[sd.building].age))   # trained once its building stands

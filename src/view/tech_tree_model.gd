@@ -6,9 +6,13 @@ extends RefCounted
 ## straight down through the ages. Items marked "status": "planned" come too: the page draws
 ## them as blank frames. With a race, line steps carry its own unit names, research only some
 ## races get is marked (or crossed out for the others), and the race's bonuses are put in words
-## (data/bonuses.json). See docs/milestones/m12-tech-tree.md, "The tech tree page".
+## with where each came from (milestone 14, src/identity.gd: its group, creature and culture).
+## Other races' own research (tech.json `own`) is left off a race's page; what the race lacks
+## (research, buildings, lines, a line's step) is crossed out. See docs/milestones/m12-tech-tree.md,
+## "The tech tree page", and m14-race-identity.md.
 
 const DataLib := preload("res://src/data_lib.gd")
+const Identity := preload("res://src/identity.gd")
 
 const PLANNED := "planned"
 
@@ -18,6 +22,8 @@ static func build(race: Dictionary, rules: Dictionary, lib) -> Dictionary:
 	var bdata: Dictionary = DataLib.load_json("res://data/buildings.json")
 	var tdata: Dictionary = DataLib.load_json("res://data/tech.json")
 	var full_tree := bool(rules.get("full_tech_tree", false))
+	var ident: Dictionary = {} if race.is_empty() else Identity.of(race.creature, race.family)
+	var owners := Identity.owners()
 	var ages := []
 	for a in tdata.ages:
 		ages.append({"age": int(a.age), "name": a.name, "desc": a.get("desc", ""), "status": a.get("status", "built"),
@@ -39,7 +45,7 @@ static func build(race: Dictionary, rules: Dictionary, lib) -> Dictionary:
 		var col := columns.size()
 		var bnode := {"key": "b:" + id, "kind": "building", "id": id, "name": b.name, "desc": b.get("desc", ""),
 			"age": int(b.age), "status": b.get("status", "built"), "col": col, "lane": -1, "cost": b.get("cost", {}),
-			"building": id, "hotkey": b.get("hotkey", "")}
+			"building": id, "hotkey": b.get("hotkey", ""), "lacks": not ident.is_empty() and Identity.lacks(ident, id, rules)}
 		nodes.append(bnode)
 		var groups := []   # each a list of nodes that must share a lane (top to bottom)
 		# Unit lines this building trains (rules roster), one node per age step.
@@ -52,7 +58,8 @@ static func build(race: Dictionary, rules: Dictionary, lib) -> Dictionary:
 			# From the age the line can first be trained: its slot's age, or its building's if later
 			# (the ranged lines are generated from age 1 but the Archery Range opens in age 2).
 			var from := maxi(int(sd.tier), int(b.age))
-			if not line_planned and sd.slot in race.get("lacks", []):   # this race has no such line (centaurs' archers already ride): one crossed-out node
+			var lacked: bool = not ident.is_empty() and Identity.lacks(ident, sd.slot, rules)   # its creature or culture lacks it (beetles' mounted archers)
+			if not line_planned and (sd.slot in race.get("lacks", []) or lacked):   # this race has no such line (centaurs' archers already ride): one crossed-out node
 				groups.append([{"key": "u:%s@%d" % [sd.slot, from], "kind": "unit", "id": sd.slot, "slot": sd.slot,
 					"name": sd.get("name", String(sd.slot).capitalize()), "line_name": sd.get("name", ""), "desc": sd.get("desc", ""), "age": from,
 					"status": "built", "lacks": true, "col": col, "building": id, "first": true, "tier": int(sd.tier),
@@ -76,12 +83,13 @@ static func build(race: Dictionary, rules: Dictionary, lib) -> Dictionary:
 					"name": name, "line_name": sd.get("name", name), "desc": desc, "age": age,
 					"status": PLANNED if planned else "built", "col": col, "building": id, "first": age == from, "tier": int(sd.tier),
 					"early_kit": _step(unit, int(sd.tier)).get("recipe", {}).get("name", "") if age == from and from > int(sd.tier) else "",
-					"step": step, "cost": step.get("eval", {}).get("cost", {}) if not planned else {}})
+					"step": step, "cost": step.get("eval", {}).get("cost", {}) if not planned else {},
+					"lacks": not ident.is_empty() and age > from and Identity.lacks(ident, "line.%s.%d" % [sd.slot, age], rules)})   # (royals' skirmishers stop at age 2)
 			for k in range(1, group.size()):
 				joins.append([group[k - 1].key, group[k].key])
 			groups.append(group)
 		# Research here: tracks (joined by `after`) in one lane, the rest one node each.
-		var here: Array = tdata.research.filter(func(r): return r.building == id)
+		var here: Array = tdata.research.filter(func(r): return r.building == id and _shown(r, race, ident, full_tree))
 		var by_id := {}
 		for r in here:
 			by_id[r.id] = r
@@ -93,7 +101,7 @@ static func build(race: Dictionary, rules: Dictionary, lib) -> Dictionary:
 			var cur = r
 			while cur != null:
 				done[cur.id] = true
-				group.append(_research_node(cur, col, race, full_tree))
+				group.append(_research_node(cur, col, race, full_tree, ident, owners.get(cur.id, []), rules))
 				var nxt = null
 				for r2 in here:
 					if r2.get("after", "") == cur.id:
@@ -120,10 +128,17 @@ static func build(race: Dictionary, rules: Dictionary, lib) -> Dictionary:
 	return {"ages": ages, "columns": columns, "nodes": nodes, "joins": joins, "race": _race_panel(race, rules, lib, tdata)}
 
 
-static func _research_node(r: Dictionary, col: int, race: Dictionary, full_tree: bool) -> Dictionary:
-	var only: Array = r.get("only", [])
+## Is this research on the page? Another race's own research isn't on a race's page (the plain
+## tree, and the full tech tree, show them all).
+static func _shown(r: Dictionary, race: Dictionary, ident: Dictionary, full_tree: bool) -> bool:
+	return not r.has("own") or race.is_empty() or full_tree or r.id in ident.research
+
+
+static func _research_node(r: Dictionary, col: int, race: Dictionary, full_tree: bool, ident: Dictionary, owned: Array, rules: Dictionary) -> Dictionary:
+	var only: Array = r.get("only", owned)   # (a creature's or culture's own research: those that name it)
 	var lacks: bool = not only.is_empty() and not race.is_empty() and not full_tree \
 		and not (race.creature in only or race.family in only)
+	lacks = lacks or (not ident.is_empty() and Identity.lacks(ident, r.id, rules))   # what the race lacks (frogs: Ring Mail)
 	return {"key": "r:" + r.id, "kind": "research", "id": r.id, "name": r.name, "desc": r.get("desc", ""),
 		"age": int(r.age), "status": r.get("status", "built"), "col": col, "building": r.building, "cost": r.get("cost", {}),
 		"effect": r.get("effect", effect_text(r.get("effects", []))), "icon": r.get("icon", r.id),
@@ -222,36 +237,9 @@ static func _phrase(stat: String, n: int, pct: bool) -> String:
 static func _race_panel(race: Dictionary, rules: Dictionary, lib, tdata: Dictionary) -> Dictionary:
 	if race.is_empty():
 		return {}
-	var words: Dictionary = DataLib.load_json("res://data/bonuses.json")
 	var c: Dictionary = lib.creatures[race.creature]
-	var bonuses := []
-	var econ: Dictionary = race.get("economy", {})
-	var keys: Array = words.economy.keys()
-	for key in keys:   # data order: the file says them in the order they read best
-		if not econ.has(key):
-			continue
-		var v := int(econ[key])
-		var base := 100
-		if key == "house_pop":
-			base = _house_pop()
-		if v == base:
-			continue
-		var text: String = words.economy[key]["more" if v > base else "less"]
-		bonuses.append(text.format({"n": absi(v - base), "v": v, "base": base}))
-	var own := []
-	var lacks := []
-	var full_tree := bool(rules.get("full_tech_tree", false))
-	for r in tdata.research:
-		var only: Array = r.get("only", [])
-		if only.is_empty() or r.get("status", "") == PLANNED:
-			continue
-		if full_tree or race.creature in only or race.family in only:
-			own.append(r.name)
-		else:
-			lacks.append(r.name)
-	for sd in rules.roster:   # unit lines it has none of (nothing carries it, or its archers already ride)
-		if sd.slot in race.get("lacks", []):
-			lacks.append("%s line" % sd.name)
+	var words: Dictionary = DataLib.load_json("res://data/groups.json").movement
+	var id_text := identity_text(race, rules, tdata)
 	# Movement: the class each unit gets (rules.movement.classes, first tag that matches).
 	var classes := {}   # class -> [unit names]
 	for u in race.units:
@@ -267,11 +255,54 @@ static func _race_panel(race: Dictionary, rules: Dictionary, lib, tdata: Diction
 	var names: Array = classes.keys()
 	names.sort()
 	for cls in names:
-		var text: String = words.movement.get(cls, String(cls).capitalize())
+		var text: String = words.get(cls, String(cls).capitalize())
 		moves.append(text if names.size() == 1 else "%s (%s)" % [text, ", ".join(classes[cls])])
 	return {"name": race.name, "creature": c.plural, "culture": String(race.family).capitalize(),
-		"bonuses": bonuses, "own": own, "lacks": lacks, "moves": moves, "units": race.units}
+		"bonuses": id_text.bonuses, "own": id_text.own, "lacks": id_text.lacks, "moves": moves, "units": race.units}
 
 
-static func _house_pop() -> int:
-	return int(DataLib.load_json("res://data/buildings.json").buildings.house.pop)
+## A race's identity in words (the tech tree page's panel and the lobby's card): {bonuses: ["Houses
+## cost 30% less (they dig in) (Bugs)", ...], own: ["Shell Polish: ..."], lacks: ["Quick Draw", ...]}.
+static func identity_text(race: Dictionary, rules: Dictionary, tdata := {}) -> Dictionary:
+	if tdata.is_empty():
+		tdata = DataLib.load_json("res://data/tech.json")
+	var bdata: Dictionary = DataLib.load_json("res://data/buildings.json").buildings
+	var ident := Identity.of(race.creature, race.family)
+	var full_tree := bool(rules.get("full_tech_tree", false))
+	var research := {}
+	for r in tdata.research:
+		research[r.id] = r
+	var bonuses := []
+	for b in ident.bonuses:
+		bonuses.append("%s (%s)" % [b.text, b.from])
+	var own := []
+	for id in ident.research:
+		var r: Dictionary = research[id]
+		own.append("%s: %s%s" % [r.name, r.desc, " (planned)" if r.get("status", "") == PLANNED else ""])
+	var lacks := []
+	if not full_tree:
+		for id in ident.lacks:
+			if research.has(id):
+				lacks.append(research[id].name)
+			elif bdata.has(id):
+				lacks.append(bdata[id].name + (" (and what it trains)" if not bdata[id].get("trains", []).is_empty() else ""))
+			elif id == Identity.TRADE:
+				lacks.append("Market trade (buying and selling)")
+			elif id.begins_with("line."):
+				var parts: PackedStringArray = id.split(".")
+				lacks.append("%s's age-%s step" % [_slot_name(rules, parts[1]), parts[2]])
+			else:
+				lacks.append("%s line" % _slot_name(rules, id))
+	for sd in rules.roster:   # unit lines it has none of (nothing carries it, or its archers already ride)
+		if sd.slot in race.get("lacks", []) and not ("%s line" % sd.name) in lacks:
+			lacks.append("%s line" % sd.name)
+	return {"bonuses": bonuses, "own": own, "lacks": lacks}
+
+
+static func _slot_name(rules: Dictionary, slot: String) -> String:
+	for sd in rules.roster:
+		if sd.slot == slot:
+			return sd.get("name", slot.capitalize())
+	return slot.capitalize()
+
+
