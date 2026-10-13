@@ -137,6 +137,29 @@ static func points(list: Array) -> PackedVector2Array:
 	return out
 
 
+## This part's bake in its facing as it would draw (another id's: `id`), or null.
+func bake_of(id := "") -> Variant:
+	var key := bake_key(part_id if id == "" else id, shapes, team_neutral(colours))
+	if facing != 0 and baked.has(key + facing_suffix(facing)):
+		key += facing_suffix(facing)
+	return baked.get(front_key(key) if front else key)
+
+
+## The bottom of a bake's opaque pixels, column by column, in part units from its origin (where a
+## leg's foot meets the ground: UnitView keeps the lowest on it as the legs swing).
+static func soles(b: Dictionary) -> PackedVector2Array:
+	if not b.has("soles"):
+		var img: Image = b.img
+		var out := PackedVector2Array()
+		for x in img.get_width():
+			for y in range(img.get_height() - 1, -1, -1):
+				if img.get_pixel(x, y).a > 0.5:
+					out.append((Vector2(x + 0.5, y + 1.0) - b.origin) / b.scale)
+					break
+		b["soles"] = out
+	return b.soles
+
+
 func _draw() -> void:
 	var key := bake_key(part_id, shapes, team_neutral(colours))
 	if facing != 0 and baked.has(key + facing_suffix(facing)):
