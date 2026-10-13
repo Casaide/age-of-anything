@@ -73,8 +73,8 @@ don't need.
 ## Checklist
 - [ ] Plan approved by Dominic
 - [ ] 1. Measure and set the budget
-- [ ] 2. Walkways, gatehouses, wall towers
-- [ ] 3. Rams, breaches, repair
+- [ ] 2. Walkways, gatehouses, wall towers (Dominic, 2026-10-13: "full siege with walkable walls etc")
+- [ ] 3. Rams, breaches, repair (walls and breaches; workers repairing siege engines too)
 - [ ] 4. Ladders, siege towers
 - [ ] 5. Defenders' tools, readability
 - [ ] 6. AI
