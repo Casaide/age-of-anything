@@ -522,11 +522,15 @@ func _town_center(w) -> int:
 
 
 ## A foundation of ours waiting to be built, one our workers can get to (one cut off by a
-## walled ford doesn't hold every later building back).
-func _building_underway(w) -> bool:
+## walled ford doesn't hold every later building back). A Wonder takes minutes (houses and the
+## rest go on meanwhile); farms and camps go up apart, by the workers they serve; `houses`: a
+## house going up counts (the full bot's build order passes false: it waited minutes on far houses).
+func _building_underway(w, houses := true) -> bool:
 	for b in w.buildings.count():
-		if w.buildings.owner[b] == player and w.buildings.done[b] == 0 and reach.reaches_building(w, wln, home, b) \
-				and not w.btypes[w.buildings.kind[b]].id in ["wonder", "farm"]:   # (a Wonder takes minutes: houses and the rest go on meanwhile; farms go up apart)
+		if w.buildings.owner[b] != player or w.buildings.done[b] == 1 or not reach.reaches_building(w, wln, home, b):
+			continue
+		var id: String = w.btypes[w.buildings.kind[b]].id
+		if not id in ["wonder", "farm", "lumber_camp", "mining_camp", "mill"] and (houses or id != "house"):
 			return true
 	return false
 
