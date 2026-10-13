@@ -2364,7 +2364,7 @@ func _helm_bronze(c: Dictionary) -> Dictionary:
 		n.add_child(blob(Vector3(1.5, 2.4, 0.5), bronze, Vector3(2.0, -5.4, 4.3 * side)))
 	n.add_child(rod(Vector3(0, 0.8, 0), Vector3(0, 2.0, 0), 0.5, 0.5, bronze))
 	crest(n, c.team, Vector3(-0.3, 1.6, 0), 8.0, 4.0)
-	_lift(n, 0.85)   # its rim clear of a human's brows (placement A2: it sat on them, -0.18)
+	_lift(n, 1.05)   # its rim clear of the brow (placement check, A2)
 	return {"node": n}
 
 
@@ -2390,6 +2390,7 @@ func _helm_horned(c: Dictionary) -> Dictionary:
 		var r := [1.4, 1.1, 0.7, 0.3]
 		for k in range(1, pts.size()):
 			n.add_child(rod(pts[k - 1], pts[k], r[k - 1], r[k], bone))
+	_lift(n, 1.05)   # its rim clear of the brow (placement check, A2)
 	return {"node": n}
 
 
@@ -2829,6 +2830,7 @@ func _helm_nile_khat(c: Dictionary) -> Dictionary:
 	n.add_child(dome(Vector3(5.1, 3.6, 5.0), linen, Vector3(-0.2, -3.0, 0)))
 	n.add_child(blob(Vector3(2.2, 2.6, 2.4), linen, Vector3(-4.6, -3.6, 0), Vector3(0, 0, 25)))   # the gathered tail
 	n.add_child(ring(4.9, 5.3, surf("cloth", Color("#c8b890"), 2.0), Vector3(0.1, -3.0, 0)))
+	_lift(n, 0.20)   # its rim clear of the brow (placement check, A2)
 	return {"node": n}
 
 
@@ -2845,7 +2847,7 @@ func _helm_nile_headcloth(c: Dictionary) -> Dictionary:
 	for side in [1, -1]:   # the lappets
 		n.add_child(blob(Vector3(1.6, 4.6, 1.1), linen, Vector3(0.6, -6.6, 4.6 * side), Vector3(15 * side, 0, 0)))
 		n.add_child(blob(Vector3(1.65, 0.6, 1.15), team, Vector3(0.6, -7.6, 4.7 * side), Vector3(15 * side, 0, 0)))
-	n.add_child(blob(Vector3(2.4, 4.0, 3.6), linen, Vector3(-4.4, -5.2, 0)))   # the cloth behind
+	n.add_child(blob(Vector3(2.0, 4.0, 3.6), linen, Vector3(-3.9, -5.2, 0)))   # the cloth behind (close in: a banner's pole cut through it)
 	return {"node": n}
 
 
@@ -2859,6 +2861,7 @@ func _helm_nile_bronze(c: Dictionary) -> Dictionary:
 		n.add_child(blob(Vector3(1.8, 2.6, 0.5), bronze, Vector3(1.6, -4.6, 4.6 * side)))
 	n.add_child(blob(Vector3(2.0, 2.4, 3.6), surf("cloth", LINEN, 3.0), Vector3(-4.2, -4.6, 0)))
 	n.add_child(ring(5.0, 5.5, plain(c.team), Vector3(-0.2, -3.0, 0)))
+	_lift(n, 0.20)   # its rim clear of the brow (placement check, A2)
 	return {"node": n}
 
 
@@ -2923,10 +2926,10 @@ func _helm_han_lamellar(c: Dictionary) -> Dictionary:
 		n.add_child(rod(Vector3(cos(a) * 5.25 - 0.2, -3.0, sin(a) * 5.25), Vector3(cos(a) * 1.4 - 0.2, 1.4, sin(a) * 1.4), 0.22, 0.15, plain(Color("#3a3a40"))))
 	for k in 5:   # the neck guard: lames hanging behind and at the sides only
 		var a := PI * 0.55 + PI * 0.9 * k / 4.0
-		n.add_child(blob(Vector3(1.6, 2.4, 0.4), iron, Vector3(cos(a) * 5.0 - 0.6, -4.8, sin(a) * 5.0), Vector3(0, -rad_to_deg(a), 0)))
+		n.add_child(blob(Vector3(1.6, 2.4, 0.4), iron, Vector3(cos(a) * 4.7 - 0.4, -4.8, sin(a) * 4.7), Vector3(0, -rad_to_deg(a), 0)))   # (close in: a banner's pole behind cut through them)
 	n.add_child(rod(Vector3(-0.2, 1.4, 0), Vector3(-0.2, 3.0, 0), 0.3, 0.3, iron))
 	n.add_child(blob(Vector3(1.4, 2.0, 1.4), plain(Color("#c8302a")), Vector3(-0.6, 3.6, 0)))   # the red tassel
-	_lift(n, 0.15)   # the rim clear of the brows (placement A2: 0.47 of 0.5)
+	_lift(n, 0.25)   # its rim clear of the brow (placement check, A2)
 	return {"node": n}
 
 
@@ -2987,6 +2990,7 @@ func _helm_aztec_quilted(c: Dictionary) -> Dictionary:
 		var z := -2.0 + k * 1.0
 		n.add_child(blob(Vector3(0.5, 3.0, 0.7), plain(greens[k]), Vector3(-3.2, 1.6, z), Vector3(z * 6.0, 0, 20)))
 	n.add_child(ring(4.9, 5.4, plain(c.team), Vector3(-0.2, -3.0, 0)))
+	_lift(n, 0.10)   # its rim clear of the brow (placement check, A2)
 	return {"node": n}
 
 

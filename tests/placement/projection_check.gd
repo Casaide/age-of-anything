@@ -257,9 +257,11 @@ func _check_view(v, label: String, view: String, k: int, u: Dictionary, stand: D
 		# Back parts: behind the body when the back faces away from the camera, over it when it faces it.
 		for i in _find(parts, rig, "back"):
 			var d := float(depth.get("wings" if rig == "mount" and depth.has("wings") else "back", 0.0))
-			if rig == "mount":
+			if rig == "mount" and not lib.parts.get(parts[i].id.get_slice("~", 0).get_slice("@", 0), {}).has("blur"):
 				# A mount's wings rise from its withers: over its back, unless the withers are turned
-				# away (then the rump hides their roots); under the rider always.
+				# away (then the rump hides their roots); under the rider always. A wing blur (a
+				# hummingbird's own, parts.json "blur") draws like any back part instead (Dominic: over it
+				# in every facing it read as a flat grey plate from behind; unit_view.gd _attach).
 				note("a mount's wings over its back, behind it turned away", label, view, (i > body) != (k == 0 or d >= -0.5))
 				var rider := _find(parts, "rider", "body")
 				note("a mount's wings under the rider", label, view, not rider.is_empty() and i > rider[0])
