@@ -767,3 +767,11 @@ The tiger concept stays in the repo, unused.
 the rest to Claude: the open-faced helmet (the bear's ears out) for line soldiers, the ear-cup helmet for the giants
 and elites (a visible step up), and the polar bear's neck shortened a little so it reads as a bear, not a long-necked
 animal. The mounted bear's neck still reads broken; it gets fixed (and a placement rule for it) before bears go in play.
+
+**D-127, 2026-10-13: Picks from the milestone 13-14 concept rounds.** Dominic: the new (sculpted) horse head and the
+bear mount (B3) stay. Trade carts: the race's own beast pulls a cart; for frogs a snail pulls it. Rats' scrap barrow
+and handcart become what rat workers push when they carry stone and gold home. Heroes (HR1) are a good start but need
+real character: a named champion with a personality that shows ("Ratty the Gnawer", "Ratty the 10000th of his name"),
+not a dressed-up soldier. War beasts: not the capybara for rats (doesn't fit); a war boar, but bigger; spiders get a
+tarantula on its own, not a spider riding a spider. The great sling (traction trebuchet) gets bigger and sturdier,
+siege-weight, not thin. No carried charge for the sapper (its look stays plain).
