@@ -236,6 +236,16 @@ as the crew (`town_life.gd tool_for` gives `push:<engine>`, `UnitView.push_recip
 again. View only: the sim's worker carries as before. The placement check has each as a composite
 (`cases.gd composite_cases`); `tests/sheets/rat_push_home.json` shows them beside the old carry.
 
+## Mods
+
+A mod's parts (milestone 21, `docs/modding.md`) bake like the game's: its model script extends
+`unit_models.gd` and is added to `UnitModels.extra`, or a part names a `.glb` in the mod
+(`UnitModels.glb_file`, materials by name: `mod_materials`); its textures load by path
+(`tex("res://mods/<id>/textures/<name>")`). The bake cache's version hashes every file of the mods in
+use. Mod units are placement cases (`tests/placement/cases.gd` `mod_cases`, labels "mod <id>: ...")
+when the mod is in use (`AOW_MODS=<id>`), and `tests/mod_check.gd -- <id>` runs the 3D half on them.
+Head gear with `"face": "sealed"` (a closed helmet) is exempt from the eyes-in-sight rule.
+
 ## Buildings, props, terrain
 
 - **Buildings** (`src/view/art/bake/models.gd`, baked by `src/view/art/bake/baker.gd` via

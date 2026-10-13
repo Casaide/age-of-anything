@@ -84,7 +84,7 @@ static func load_terrain() -> Dictionary:
 
 
 static func load_id(map_id: String) -> RefCounted:
-	var d = JSON.parse_string(FileAccess.get_file_as_string("res://data/maps/%s.json" % map_id))
+	var d = JSON.parse_string(FileAccess.get_file_as_string(load("res://src/mods.gd").data_path("maps/%s.json" % map_id)))   # (a mod may add or replace a map)
 	assert(d != null, "Bad or missing map: %s" % map_id)
 	assert(d.schema == SCHEMA and d.id == map_id, "Map %s: wrong schema or id" % map_id)
 	var types := load_terrain()

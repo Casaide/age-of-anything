@@ -21,17 +21,22 @@ const SOURCES := ["res://src/view/art/art_kit.gd", "res://src/view/art/bake/", "
 
 static var enabled := true    # tests switch it off to time a cold bake
 static var _version := ""
+static var _mods := []        # the mods in use when _version was made (their files are in it too)
+const Mods := preload("res://src/mods.gd")
 
 
 ## The version folder for this build of the look (computed once, old folders dropped).
 static func folder() -> String:
-	if _version == "":
+	if _version == "" or _mods != Mods.signature():
+		_mods = Mods.signature()
 		var ctx := HashingContext.new()
 		ctx.start(HashingContext.HASH_MD5)
 		ctx.update(("%d|%s" % [FORMAT, Engine.get_version_info().string]).to_utf8_buffer())
 		for src in SOURCES:
 			for path in _files(src):
 				ctx.update((path + FileAccess.get_md5(path)).to_utf8_buffer())
+		for path in Mods.files():   # a mod's models, textures and data (src/mods.gd)
+			ctx.update((path + FileAccess.get_md5(path)).to_utf8_buffer())
 		_version = ctx.finish().hex_encode().substr(0, 16)
 		DirAccess.make_dir_recursive_absolute(ROOT + "/" + _version)
 		var stamp := FileAccess.open(ROOT + "/" + _version + "/used", FileAccess.WRITE)   # when this version was last used

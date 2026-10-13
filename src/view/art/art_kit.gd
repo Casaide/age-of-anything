@@ -800,11 +800,8 @@ static func bridge_name(length: int, along: int, broken: int, wide := 1) -> Stri
 ## side (along y when square), reading data/maps (data first: a new map's bridges just bake).
 static func bridge_sizes() -> Array:
 	var out := []
-	var dir := DirAccess.open("res://data/maps")
-	var files := Array(dir.get_files()).filter(func(f): return f.ends_with(".json"))
-	files.sort()
-	for f in files:
-		var d: Dictionary = DataLib.load_json("res://data/maps/" + f)
+	for id in DataLib.Mods.map_ids():   # (the mods' maps too)
+		var d: Dictionary = DataLib.load_json(DataLib.Mods.data_path("maps/%s.json" % id))
 		for r in d.get("bridges", []):
 			var sx := int(r[2]) - int(r[0]) + 1
 			var sy := int(r[3]) - int(r[1]) + 1

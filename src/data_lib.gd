@@ -13,6 +13,9 @@ var stopwords := {}   # word -> true
 var curves := {}      # cost curve id -> PackedInt32Array of per-mille multipliers by points
 var resources: Array = []   # resource ids in their fixed order (data/resources.json)
 var resource_info: Array = []   # the same order: {id, name, short, colour}
+var mods: Array = []   # the mods merged in, "id@version#hash" in load order (src/mods.gd; the race key holds them)
+
+const Mods := preload("res://src/mods.gd")
 
 
 static func load_json(path: String):
@@ -21,7 +24,8 @@ static func load_json(path: String):
 	return data
 
 
-func _init(root := "res://data") -> void:
+## with_mods: the mods in use (src/mods.gd) merged over the game's data, in load order.
+func _init(root := "res://data", with_mods := true) -> void:
 	for p in load_json(root + "/parts.json"):
 		parts[p.id] = p
 	creatures = load_json(root + "/creatures.json")
@@ -38,6 +42,13 @@ func _init(root := "res://data") -> void:
 	var cc: Dictionary = load_json(root + "/cost_curves.json")
 	for id in cc:
 		curves[id] = PackedInt32Array(cc[id].permille)
+	if with_mods:
+		Mods.apply(self)
+
+
+## A host rule (data/rules/<id>.json) with the mods' changes to it.
+static func load_rules(id: String) -> Dictionary:
+	return Mods.rules(id)
 
 
 func part(id: String) -> Dictionary:

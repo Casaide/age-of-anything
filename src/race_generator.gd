@@ -209,6 +209,8 @@ func generate(prompt: String, rules: Dictionary, reroll := 0) -> Dictionary:
 		"units": units,
 		"lacks": lacks,   # derived (the slots left out), not in the key; what its creature and culture lack: src/identity.gd
 	}
+	if not lib.mods.is_empty():
+		race.mods = lib.mods.duplicate()   # made with mods (src/mods.gd): a peer needs the same ones (in the key)
 	race.key = race_key(race)
 	return race
 
@@ -219,6 +221,8 @@ static func race_key(race: Dictionary) -> String:
 		"schema": race.schema, "name": race.name, "creature": race.creature, "family": race.family,
 		"recipes": race.units.map(func(u): return u.line.map(func(l): return l.recipe) if u.has("line") else [u.recipe]),
 	}
+	if race.has("mods"):   # (only then: a race made without mods keeps the key it always had)
+		shareable.mods = race.mods
 	return JSON.stringify(shareable, "", true).sha256_text()
 
 
@@ -695,6 +699,8 @@ func _upgrade(prev: Dictionary, slot_def: Dictionary, ctx: Dictionary) -> Dictio
 			and _allowed(p, role, unit_tags) and not _off_theme(p, unit_tags) and _fits_mount(p, r) \
 			and (p.tags.any(func(t): return t in kinds) or p.get("replaces", []).any(func(t): return t in kinds) \
 				or _want(p, ctx.brief.tags) > 0))   # same kind (or a part that `replaces` it: the frogs' mace after their sword), or asked for (rats with guns)
+		if cur.has("upgrade_within"):   # (parts.json: an era pack's kit gives way only to more of its own: no bronze helmet over a sealed visor)
+			cands = cands.filter(func(p): return cur.upgrade_within in p.tags)
 		if role == "worker":   # a worker's hat gets better, but never a war helmet (no crests, horns, heavy)
 			cands = cands.filter(func(p): return int(p.points) <= 2 and not p.tags.any(func(t): return t in ["crest", "horns", "heavy"]))
 		if role == "healer" and slot != "hand_r":

@@ -1,0 +1,7 @@
+{
+ "id": "no_model",
+ "name": "no_model",
+ "version": "0.1.0",
+ "game_version": "0.21",
+ "description": "A refusal fixture (tests/run_tests.gd _test_mods): this mod must be refused."
+}

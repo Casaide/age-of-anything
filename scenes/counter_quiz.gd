@@ -54,7 +54,7 @@ func _ready() -> void:
 		at = int(args[2]) if args.size() > 2 else 0   # which question to capture
 	lib = DataLib.new()
 	gen = Generator.new(lib)
-	rules = DataLib.load_json("res://data/rules/default.json")
+	rules = DataLib.load_rules("default")
 	var box := SubViewportContainer.new()
 	box.set_anchors_preset(Control.PRESET_FULL_RECT)
 	box.stretch = true

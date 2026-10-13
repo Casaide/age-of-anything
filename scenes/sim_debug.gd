@@ -196,7 +196,7 @@ var boxing := false
 func _ready() -> void:
 	lib = DataLib.new()
 	gen = Generator.new(lib)
-	rules = DataLib.load_json("res://data/rules/default.json")
+	rules = DataLib.load_rules("default")
 
 	clock = SimClock.new()
 	add_child(clock)

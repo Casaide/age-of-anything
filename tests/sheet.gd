@@ -12,6 +12,7 @@ extends SceneTree
 ## The spec (JSON; every key but rows and sheets optional):
 ##   name, title          the file stem and the sheet's heading
 ##   stage                data files staged into the lib first (CreatureKit.stage): kits, later/ creatures
+##   mods                 mods used for the sheet (src/mods.gd: ids, e.g. ["scifi_test"]); else AOW_MODS
 ##   zooms                [3, 1]: times the game's scale
 ##   cell                 [w, h] world units per cell at the game's scale (a row may set "h": a multiplier)
 ##   rules                "default" (data/rules/<id>.json) for every prompt
@@ -22,7 +23,8 @@ extends SceneTree
 ##   sheets               [{name, title?, columns}]: columns is a list of column objects or a shorthand:
 ##                          "facings" (8, standing), "idle" (8, in the row's last idle pose),
 ##                          "idle:<pose>" (8, in that pose), "walk:<k>,<k>" (4 steps per facing),
-##                          "cycle:<k>" (8 steps in one facing), "holds:<h>,<h>" (2 facings per hold)
+##                          "cycle:<k>" (8 steps in one facing), "holds:<h>,<h>" (2 facings per hold),
+##                          "shots" (8 facings loosing a shot, the shot drawn in flight: CombatFx's look for the weapon)
 ##                        a column object: {facing, pose: stand|walk|hold|<idle pose>, step, steps, hold, other, label}
 ## A unit ref: {prompt, slot, age?, set?: recipe fields, add_parts?: {slot: part} over its own kit, mount?: {creature, skin, parts?}, push?: engine part (the unit pushing it home: UnitView.push_recipe), rules?}
 ##   or {creature, skin?, mount_body?: true, set?} (the bare creature, no gear)
@@ -38,6 +40,7 @@ const UnitView := preload("res://src/unit_view.gd")
 const PartShape := preload("res://src/part_shape.gd")
 const PartBaker := preload("res://scenes/art_pixel/part_baker.gd")
 const CreatureKit := preload("res://scenes/art_pixel/creature_kit.gd")
+const CombatFx := preload("res://src/view/combat_fx.gd")
 const GeometryCheck := preload("res://tests/placement/geometry_check.gd")
 const ProjectionCheck := preload("res://tests/placement/projection_check.gd")
 const ScriptErrors := preload("res://tests/placement/script_errors.gd")
@@ -66,6 +69,8 @@ func _initialize() -> void:
 	var zooms: Array = Array(args[3].split(",")).map(func(z): return float(z)) if args.size() > 3 and args[3] != "all" else spec.get("zooms", [3, 1])
 	var check: bool = not "nocheck" in args
 	DirAccess.make_dir_recursive_absolute(out_dir)
+	if spec.has("mods"):
+		DataLib.Mods.use(spec.mods)
 	lib = DataLib.new()
 	for f in spec.get("stage", []):
 		CreatureKit.stage(lib, f)
@@ -162,7 +167,7 @@ func _rows() -> Array:
 func _race(prompt: String, rules_id: String) -> Dictionary:
 	var key := prompt + "|" + rules_id
 	if not _races.has(key):
-		_races[key] = gen.generate(prompt, DataLib.load_json("res://data/rules/%s.json" % rules_id))
+		_races[key] = gen.generate(prompt, DataLib.load_rules(rules_id))
 	return _races[key]
 
 
@@ -348,6 +353,9 @@ func _columns(sh: Dictionary) -> Array:
 		"cycle":
 			for st in 8:
 				out.append([int(tail), "walk", st, 8, "", false, "step %d" % st])
+		"shots":
+			for k in 8:
+				out.append([k, "loose", 0, 8, "", false, FACING_NAMES[k] + " firing"])
 		"holds":
 			for h in tail.split(","):
 				for k in [0, 1]:
@@ -456,6 +464,19 @@ func _draw(world: Node2D, u: Dictionary, at: Vector2, col: Array) -> void:
 	v._process(0.0)
 	if pose == "hold" and col[4] != "":
 		v.set_hold(col[4])
+	if pose == "loose":   # the shot leaves: the snap of the release, and the shot a little way out
+		v.loose()
+		v._process(0.06)
+		if v.weapon != null and "ranged" in u.eval.get("tags", []):
+			var fx := CombatFx.new()
+			world.add_child(fx)
+			var rig: Dictionary = PartShape.rigs.get(v._facing_body + PartShape.facing_suffix(col[0]), {})
+			var dir: Vector2 = rig.get("dir", Vector2.RIGHT)   # (the way the bake faces on screen)
+			var from := world.to_local(v.weapon.global_position) + dir.normalized() * 9.0
+			fx.shoot(from, from + dir.normalized() * 60.0, CombatFx.shot_kind(u.eval.tags), 1.0)
+			fx.shots[0].t = 0.2
+			fx.set_process(false)
+			fx.queue_redraw()
 	v.set_process(false)
 
 

@@ -1,0 +1,16 @@
+[
+ {
+  "id": "weapon.steam_club",
+  "slot": "hand_r",
+  "tags": [
+   "melee"
+  ],
+  "stats": {
+   "attack": 1
+  },
+  "points": 1,
+  "era": [
+   "steam"
+  ]
+ }
+]
