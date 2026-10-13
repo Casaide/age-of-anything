@@ -96,7 +96,7 @@ by ray parity; decals left out). One part unit is 1.275 art pixels at game size.
   mount; siege crews on the ground (or something to stand on just under a riding one), at most 12% of
   a crew member inside its engine (too big for the frame, it takes the `_wide` sockets beside it),
   a beast hauling it (a trade cart's pony on a `haul<n>` socket, the recipe's `haul`) on the ground
-  and at most 8% inside the cart;
+  (the rest of a composite: see Composites below);
   a body whose leg isn't the same on both sides bakes its legs at each hip; data anchors = model hips.
   **Head join** (four or more legs, the head ahead of the fore legs; Dominic on the bear mount, B2:
   "mounted bears I think have broken neck still"): the side silhouette's top line, body and head
@@ -127,6 +127,44 @@ space in draw order. The layering rules below, every part drawn has its bake, an
   and head show where it shows them (rule 2 below); a rider shows the leg on the flank facing the
   camera, and a person's reaches at least 80% of the way from the seat to the girth (a clinging or
   folded-legged rider's, `creatures.json rider_legs`, at least onto the flank).
+
+**Composites** (2026-10-13, after TC1 A for rats passed every check while broken: Dominic, "this is
+bugged, did the tests not catch it?"). A composite is more than one body drawn as one unit: an engine
+with its crew (`crew`) and the beasts hauling it (`haul`), and a rider on its mount (the seat and
+"rider over the mount" rules above). Until then an engine was checked as the engine, each crew member
+only for how much of it sat inside the engine, standing: the members never against each other, never
+walking, a hauler never as a unit, the traces and the cart's attachment not at all; and in 2D only
+whether each member was over or under the engine. So the cat drew over the rat beside it in every
+facing (its layer was its side's plus a little, over every crew member there), the traces ended in the
+air by its chest and the cart floated behind. Now (`tests/placement/composite_3d.gd`, `composite_2d.gd`;
+members composed as UnitView composes them, `UnitView.engine_sockets`, `crew_recipe`, `haul_recipe`):
+- **C1 members apart** (3D, standing and at every walk step; crew riding on top don't walk): no member
+  inside another beyond contact (12 voxels + 3% of the smaller); a hauler not inside its cart but within
+  3 units of a hitch (where the harness meets the shafts); crew in their engine at most 12% (they grip it).
+- **C2 hitched**: every `haul<n>` socket has `hitch<n>_near` and `hitch<n>_far` on the engine's solid (its
+  shafts reach them); the hauler wears a harness (a torso part tagged `harness`) whose trace ends
+  (`trace_near`, `trace_far` sockets) are on those hitches, within 1.5 units standing and 2.5 walking (the
+  beast rides on its planted foot, the cart doesn't); the harness hugs the hauler (at most 10% of it more
+  than 1.5 off its body, the trace tails behind the rump aside).
+- **C3 no loose ends**: every rope of an engine (traces, lashings, guy ropes, drag lines: a rod whose
+  material carries the `rope` meta, `siege_models.gd _style`) ends on something at both ends: the rest of
+  the engine, a member, or the ground. (A pole's tip, an antenna or a goad may end in the air.)
+- **C4 depth order** (2D, every facing standing): the whole composite rendered in 3D from the bake camera,
+  a flat colour per member, says who is in front; where it shows a member, no other member's sprite is
+  drawn over it (6 px or 8% slack). UnitView layers crew and haulers in one depth order. Known limit:
+  crew inside a frame (`_in`) draw behind the whole engine sprite (rule 10), so its far posts cover them
+  too; C4 leaves the engine against `_in` crew out (splitting an engine into near and far layers would fix it).
+- **Members as units**: each member is checked with the unit rules (A1 to A4 in 3D; layering, B5, B6 in
+  2D), standing and walking, under the composite's label. A beast in harness never sits (`"idle": 0`).
+- **B6 walk steps** (every unit): walking, each hip's leg is drawn, in the walk step the 3D rig has for
+  that phase, one for one.
+- **No silent passes**: every sprite in a view belongs to the unit, a member the checks composed, or the
+  engine ("every drawn part is checked"); a script error inside a check fails the run
+  (`tests/placement/script_errors.gd`: it used to abort the check quietly and read as a pass); the sheet
+  tool fails a row no rule ran on, in 3D or in 2D.
+
+The concept composites are in `cases.gd` (`composite_cases`: TC1 A for every family and the covered wagon,
+staged from `data/later/trade_carts.json`).
 
 **Fixtures** (`tests/placement/fixtures_3d.gd`, `fixtures_2d.gd`): every placement bug Dominic caught,
 put back (an old anchor, lean, model, rule or z), must fail its rule, and the unit as it is now must
@@ -163,8 +201,10 @@ camera than the body's middle); "near" is depth >= 0.5, "far" depth < -0.5.
    leg draws over the mount's flank.
 9. **Team cloth never covers the face**: on a head facing the camera, at most 30% of its pixels
    under team-colour pixels of later parts (head gear aside).
-10. **Siege crews by socket**: `_in` behind the engine, `_top` over it, the rest by the socket's
-    depth sign.
+10. **Siege crews by socket**: `_in` behind the engine, `_top` over it, the rest (crew and haulers
+    beside it) over or under it by which is in front where they overlap on screen (the bake's `front`,
+    `part_baker._members_front`: the engine's meshes sampled against a column up the member), else by
+    the socket's depth sign; the members among themselves by depth, the nearest last.
 
 **Siege engines** (milestone 13, D-119) are one baked part each, `siege.<engine>.<take>` (slot
 `engine` in parts.json; models in `scenes/art_pixel/siege_models.gd`, which `unit_models.gd` hands
@@ -177,6 +217,24 @@ engine rolls, heave with a ram's blow, snap with a shot, and fall when it's dest
 `SIEGE_FACINGS=8` for all eight). The human (timber) ram is covered: a pitched roof of lashed hides on
 corner posts, open at the sides so the crew show under the eaves (`TIMBER_RAM_ROOF`: "hides", "planks"
 or "" for the open ram); its two "in" crew stand one each side of the log so one always shows.
+
+**Haulers** (the recipe's `haul`: `{creature, skin, parts}`, from the engine part's `haul` in parts.json;
+the trade cart since D-127): UnitView composes the bare creature on each `haul<n>_f<k>` socket
+(`UnitView.haul_recipe`: its mount body, never sitting), in one depth order with the crew. It wears
+`harness.draught` (`parts: {"torso": ...}`), which `siege_models.gd harness_fitted` builds on its body from
+the body's model (a breast band, two back bands, a trace down each flank past the rump) and bakes like worn
+armour; the cart's shafts end where the traces end (sockets `hitch<n>_near/_far` = the haul socket + the
+harness's `trace_near/_far`). The placement check holds them together (C2 above). The trade cart
+(`siege_models.gd trade_cart`): the take's beast pulls it (`CART_BEAST`, the same creature as the part's
+`haul`: pony, cat, beetle, spider), the frogs' a small snail baked in with the cart (`_cart_snail`), a worker
+leading at the beast's head. ArtKit asks for an engine's crew and haulers as units: probed before the
+engine's bake, the engine has no sockets yet, so its members were never baked.
+
+**Pushed home** (D-127): a worker whose creature has `push_home` (creatures.json: the rats, stone in the
+scrap barrow, gold in the handcart) is drawn, while it carries that load home, as that engine with itself
+as the crew (`town_life.gd tool_for` gives `push:<engine>`, `UnitView.push_recipe`); home, it is itself
+again. View only: the sim's worker carries as before. The placement check has each as a composite
+(`cases.gd composite_cases`); `tests/sheets/rat_push_home.json` shows them beside the old carry.
 
 ## Buildings, props, terrain
 
@@ -401,8 +459,11 @@ replaces the per-round scripts. A spec gives:
 - size references, zooms and labels
 
 It bakes through ArtKit and the bake cache, lays out a labelled sheet per spec sheet and zoom, and
-runs the placement checks (3D and 2D) on every unit it shows. It prints PASS/FAIL per row, frames a
-failing row in red with the rules it broke, and exits 1 on a failure. A row can `expect` to fail
+runs the placement checks (3D and 2D) on every unit it shows, a composite (an engine, its crew, the
+beasts hauling it) as a whole with each member as a unit. It prints PASS/FAIL per row, frames a
+failing row in red with the rules it broke, and exits 1 on a failure. A row no rule ran on (in 3D or
+2D), or any script error inside the checks, fails: no silent passes (TC1 A passed while its beast,
+handler and traces were never checked). A row can `expect` to fail
 named rules (an earlier round beside its fix, failing the rule written for it): it passes when it
 fails exactly those, and says so.
 
@@ -415,7 +476,8 @@ variant: a prompt unit or a mount can name `kit` + `params`), `kit_cat` (the kit
 milestone 13's `trade_carts_tc1`, `war_beasts_wb1` and `_wb2`, `sapper_sp1`, `great_sling_gs1` and `_gs2`, the heroes' `heroes_hr2_*` (D-127: named champions; `tests/hero_names.gd` prints the names the naming contract in `data/later/heroes.json` gives a race) (concept files staged
 from `data/later/`; a staged concept model file must be listed in `bake_cache.gd` SOURCES, or a stale
 bake of it is reused; concept hand parts carry `only_if: ["concept_only"]` so the generator never
-picks them for a staged race), and ports of
+picks them for a staged race), `trade_carts_play` and `rat_push_home` (D-127 in play; a unit ref may
+name `push`: the unit pushing that engine, `UnitView.push_recipe`), and ports of
 `cat_mount_sheet.gd` (`cat_mount`), `siege_lineup.gd` (`siege_lineup`) and `line_lineup.gd`
 (`line_lineup`). **New art rounds write a spec, not a script.** Once their rounds are closed, the
 sheet tool covers what these one-off scripts drew, and they can go: `anim_concept_sheet.gd`,

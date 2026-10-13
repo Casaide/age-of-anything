@@ -231,7 +231,7 @@ func _gear(out: Dictionary, rig: Dictionary, slot: String, part_id: String, colo
 			var b := Basis.from_euler(Vector3(0, 0, deg_to_rad(float(bs.get("torso_tilt", 0.0))))) * Basis.from_scale(fit)
 			axf = xf * Transform3D(b, bs.sockets.torso)
 		out.pieces.append({"name": r + ":armour", "kind": "armour", "rig": r, "id": part_id, "node": node, "geo": part_id + "~" + rig.body + ("|fitted" if not fitted.is_empty() else ""), "xf": axf,
-			"joint": xf * rig.spec.sockets.torso, "parent": r + ":body", "side": 0})
+			"joint": xf * rig.spec.sockets.torso, "parent": r + ":body", "side": 0, "sockets": fitted.get("sockets", {}), "harness": "harness" in lib.part(part_id).get("tags", [])})   # (a draught harness: its trace ends)
 		return
 	if not rig.sockets.has(sock) or not models.has(part_id):
 		return

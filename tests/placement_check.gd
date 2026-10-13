@@ -23,6 +23,7 @@ const ProjectionCheck := preload("res://tests/placement/projection_check.gd")
 const Fixtures3D := preload("res://tests/placement/fixtures_3d.gd")
 const Fixtures2D := preload("res://tests/placement/fixtures_2d.gd")
 const GeometryRun := preload("res://tests/geometry_check.gd")
+const ScriptErrors := preload("res://tests/placement/script_errors.gd")
 
 
 func _initialize() -> void:
@@ -40,6 +41,8 @@ func _initialize() -> void:
 	var checks := 0
 	var fixtures_ok := true
 	var t0 := Time.get_ticks_msec()
+	var errors = ScriptErrors.new()   # a script error inside a check is a failure, never a pass
+	OS.add_logger(errors)
 	if do3:
 		var g = GeometryCheck.new(lib)
 		g.metrics = true
@@ -94,5 +97,9 @@ func _initialize() -> void:
 			fixtures_ok = fixtures_ok and fx[0]
 			for line in fx[1]:
 				print(line)
+	OS.remove_logger(errors)
+	if errors.count > 0:
+		print("FAIL the checks hit %d script errors, the first: %s" % [errors.count, errors.first])
+		failed += 1
 	print("placement: %d checks, %d failed, fixtures %s (%.1f s)" % [checks, failed, "all caught" if fixtures_ok else "BROKEN", (Time.get_ticks_msec() - t0) / 1000.0])
 	quit(1 if failed > 0 or not fixtures_ok else 0)

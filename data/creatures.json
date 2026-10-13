@@ -44,6 +44,8 @@
  },
  "rat": {
   "voice": "rat",
+  "push_home": {"stone": "siege.barrow.junk", "gold": "siege.handcart.junk"},
+  "_push_home_doc": "D-127: a worker carrying this load home pushes this engine (the scrap barrow, the handcart) instead of holding it (src/view/town_life.gd tool_for, UnitView.push_recipe)",
   "noun": "Rat",
   "plural": "Rats",
   "group": "rodents",
