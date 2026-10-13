@@ -2446,7 +2446,7 @@ func _building_tip(t: Dictionary) -> String:
 func _age_tip(age: Dictionary) -> String:
 	var lines := [age.desc, "[color=%s]Takes %d s at the %s[/color]" % [TIP_DIM, age.ticks / 20, _bname(age.building)]]
 	var needs := []
-	for need in age.requires:
+	for need in Tech.requires(world, active, age):   # (a race without the building: its stand-in, milestone 14)
 		if not Tech.has_building(world, active, need):
 			needs.append("a " + _bname(need))
 	var unlocks := []

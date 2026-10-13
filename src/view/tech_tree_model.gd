@@ -27,7 +27,8 @@ static func build(race: Dictionary, rules: Dictionary, lib) -> Dictionary:
 	var ages := []
 	for a in tdata.ages:
 		ages.append({"age": int(a.age), "name": a.name, "desc": a.get("desc", ""), "status": a.get("status", "built"),
-			"cost": a.get("cost", {}), "building": a.building, "requires": a.get("requires", []),
+			"cost": a.get("cost", {}), "building": a.building,
+			"requires": a.get("requires", []).map(func(id): return a.requires_else[id] if not ident.is_empty() and Identity.lacks(ident, id, rules) else id),   # (no Stable: its stand-in)
 			"requires_text": a.get("requires_text", "")})
 	var last_age: int = ages[-1].age
 

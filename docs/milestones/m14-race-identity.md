@@ -1,6 +1,6 @@
 # Milestone 14: Race identity and heroes (asymmetric play)
 
-**Status:** planned (design round can run alongside milestones 12-13)
+**Status:** in progress (2026-10-13: bonuses, own research, lacks, the ability system with the web, the AI; heroes waiting on a concept pick)
 **Exit criterion:** every playable creature and every culture has its bonuses, its own research,
 what it lacks, and one signature mechanic, all as data and all shown on the tech tree page; each
 mechanic has a counter and a headless test; the bot uses its race's mechanic; a round robin of
@@ -177,14 +177,14 @@ both at the Castle in age 3. Culture mechanics are left out for now (creature me
 ## Checklist
 - [ ] Plan approved by Dominic
 - [x] 1. Design round: bonuses, research and lacks agreed (2026-10-12); mechanics' details still to design
-- [ ] 2. Data contract and bonuses
-- [ ] 3. Own research
-- [ ] 4. Lacks
-- [ ] 5. Ability system
-- [ ] 6. Mechanics
-- [ ] 7. AI
-- [ ] 8. Balance and the lobby card
-- [ ] 9. Heroes (generated champion, aura, revive; concept round)
+- [x] 2. Data contract and bonuses (2026-10-13: `data/groups.json`, creatures' and cultures' `bonuses`/`research`/`lacks`, `src/identity.gd`; race keys unchanged)
+- [x] 3. Own research (2026-10-13: 14 live at the Castle, Strong Legs stays at the Barracks; Flood Plains and Creeping Dread planned)
+- [x] 4. Lacks (2026-10-13: research, buildings, lines, a line's step, market trade; crossed out on the page; the bot skips them)
+- [x] 5. Ability system (2026-10-13: `src/sim/abilities.gd`, the ABILITY command, a panel button; the web; placeholder mark on the ground)
+- [ ] 6. Mechanics (the web only so far; leap, shell, swarm/scavenge, shoot on the move to come; the web's look needs a concept round)
+- [x] 7. AI (2026-10-13: webs on the nearest foes, own research bought; bonuses are stats)
+- [ ] 8. Balance and the lobby card (lobby card done; the race round robin is off the 60% target: rats and centaurs, see Results)
+- [ ] 9. Heroes (generated champion, aura, revive; concept round HR1 done 2026-10-13, waiting on Dominic's pick)
 - [ ] A new creature: bears (two legs, armoured, dignified, "the smarter version compared to rats"; rideable for some races; bigger polar or older bears; see the backlog entry). Dominic: plan once milestone 13 is done
   - [x] Concept round B1 (2026-10-13): three builds (brown, black, polar), the worker, the mount, the giants, built with the creature kit, all passing placement (`docs/concepts/bears/`, data staged in `data/later/bears.json`). Waiting on Dominic's pick.
 - [ ] 10. Exit check
@@ -192,7 +192,62 @@ both at the Castle in age 3. Culture mechanics are left out for now (creature me
 
 ## Results
 
+**Phases 2-5, 7, 8 (part) and 9's concept round (2026-10-13, Claude):**
+- **Data:** `data/groups.json` (the four groups' bonuses and alternatives; the movement words that
+  were in `data/bonuses.json`, now gone), `group`/`bonuses`/`research`/`lacks` on the six playable
+  creatures and the eleven cultures, the spiders' `ability`. `src/identity.gd` mixes them: one bonus
+  per layer, a doubled kind (same scope and stat, or the same `kind`) takes its `alt`. Every creature
+  with every culture resolves to three bonuses (checked in `tests/run_tests.gd`).
+- **Applied:** unit stat bonuses go into the eval before the price, with the bonus's `price_points`
+  (beetles' shells, hellenic spears, steppe riders pay a point); cost and train-time bonuses there too
+  (rats, royal cavalry). The rest work like research the race was born with (`Tech._effects`): building
+  cost (new `cost` pct: bugs' houses, spiders' walls, imperial buildings), house `pop` (rodents), carry
+  pct (centaurs), research time, farm food, wall hp, gathering, sight, `kill_gold` (Aztec), `wade`
+  (swamp folk), `reach` (Long Spears), heal pct (Bog Poultice), `slow_on_hit` (Sticky Silk). The
+  creatures' old `economy` blocks moved in; **race keys unchanged** (426 prompt/rules/reroll keys
+  compared before and after; a test checks the key ignores stats).
+- **Own research:** 14 live at the Castle in age 3 (Strong Legs stays at the Barracks in age 2, as
+  it was); Flood Plains (farms on wet ground) and Creeping Dread (an aura) planned. A race's page shows
+  only its own; the plain tree and the full tech tree show all.
+- **Lacks:** research, buildings (and the lines they train), lines, a line's step
+  (`line.skirmisher.3`) and `trade`; refused in the sim, crossed out on the page, skipped by the bot's
+  build order, counter-pick and market. Age 3 asks for a Stable; a race without one needs an Archery
+  Range instead (`requires_else`, found when the page said spiders needed a Stable they can't build).
+- **Abilities:** `src/sim/abilities.gd`, the ABILITY command, per-unit cooldowns and webs in the state
+  hash, a panel button in the match. The **web** (spiders): a slowing patch (half speed, 15 s, 5-tile
+  throw, 30 s cooldown) that wears off; counter: shoot over it or go round. Its look on the ground is a
+  placeholder mark until a concept round. The bot throws webs on the nearest enemy soldiers.
+- **AI:** bonuses are stats; own research comes through the usual research rules (worker ones listed
+  in `data/ai.json`); webs 25-270 a match.
+- **Lobby and page:** bonuses ("Houses cost 30% less (they dig in) (Bugs)"), own research and lacks on
+  the tech tree page's race panel and the lobby's traits line.
+- **Balance** (`tests/race_matches.gd -- reed_meadow`, bot vs bot, both seatings, 35-minute limit):
+
+  | Race | before m14 (main) | with m14 | with rats 20% cheaper |
+  |---|---|---|---|
+  | swamp frogs | 30% | 30% | 30% |
+  | sewer rats | 100% | 90% | 70% |
+  | imperial humans | 40% | 40% | 50% |
+  | spooky spiders | 40% | 60% | 60% |
+  | forest beetles | 20% | 20% | 20% |
+  | steppe centaurs | 0% | 0% | 0% |
+
+  The spread was there before the bonuses (rats' cheap swarm; centaurs' workers cost 150 food, three
+  times anyone's). Claude cut the rats' discount from 30% to 20% (data, easy to put back); centaurs
+  need a pricing call (D-120's worker price) for Dominic. `balance.gd -- 2`: 18 of 33 units off the
+  mean by >20% (main: 20), counters won 79% (83%); `-- 3`: 21 of 38 (18), 79% (81%); `mass_battle -- 2`
+  as before within a fight or two.
+- **Heroes:** concept round HR1, `docs/concepts/heroes/` (three looks on five races, placement passes);
+  waiting on Dominic's pick.
+
 ## Changes from the original plan
+
+- Strong Legs stays at the Barracks in age 2 (the plan put own research at the Castle in age 3).
+- Spiders and Aztecs lack the Stable itself ("stable lines"), so they have no Heavy line at all;
+  watch it in the round robin (spiders still do well with webs).
+- Rats' units 20% cheaper, not 30% (balance, Claude; Dominic to confirm).
+- Alternatives were only agreed for groups; Claude wrote alts for the creatures and cultures that can
+  double up (swamp after frogs: food gathered faster; sewer after humans: buildings +10% hp; and more).
 
 ## Links
 - `m12-tech-tree.md` "Race bonuses" (the first draft) and "New effect kinds"

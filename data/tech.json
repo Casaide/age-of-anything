@@ -38,7 +38,11 @@
    "building": "town_center",
    "requires": [
     "stable"
-   ]
+   ],
+   "requires_else": {
+    "stable": "archery_range"
+   },
+   "_requires_else_doc": "a race that lacks a building the age needs (milestone 14: spiders and Aztecs have no Stable) needs this one instead"
   }
  ],
  "research": [

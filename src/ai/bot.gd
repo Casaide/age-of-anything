@@ -411,7 +411,7 @@ func _goal(w, count: int) -> PackedInt32Array:
 	var at: int = int(cfg.economy.age_workers) if w.ages[player] == 1 else age3_workers
 	if not next.is_empty() and count >= at and not Tech.queued(w, player, Tech.AGE_UP):
 		var cost: PackedInt32Array = next.cost.duplicate()
-		for need in next.requires:   # and the building the age needs, if it isn't up or going up
+		for need in Tech.requires(w, player, next):   # and the building the age needs, if it isn't up or going up
 			if not _has_any(w, need):
 				var bc: PackedInt32Array = Economy.bcost(w, player, Economy.btype_of(w, need))
 				for r in cost.size():

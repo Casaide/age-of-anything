@@ -57,7 +57,8 @@ static func load_tech(resources: Array, btypes: Array) -> Dictionary:
 	var ages := []
 	for a in d.ages.filter(_built):   # planned ages and research are only on the tech tree page
 		ages.append({"age": int(a.age), "name": a.name, "desc": a.get("desc", ""), "cost": Economy.cost_vector(resources, a.cost),
-			"ticks": int(a.time) * 20, "building": a.building, "requires": a.get("requires", []).duplicate()})
+			"ticks": int(a.time) * 20, "building": a.building, "requires": a.get("requires", []).duplicate(),
+			"requires_else": a.get("requires_else", {}).duplicate()})
 	var research := []
 	var owners := Identity.owners()   # a creature's or culture's own research: only theirs
 	for r in d.research.filter(_built):
@@ -132,6 +133,19 @@ static func setup(w) -> void:
 ## Does this player's race lack that (a research, building, line or "trade")? (Identity.lacks)
 static func lacks(w, player: int, id: String) -> bool:
 	return Identity.lacks(w.ident[player], id, w.rules)
+
+
+## The buildings an age (an item of w.tech.ages) needs first, for this player: one its race lacks
+## gives way to the age's `requires_else` for it (no Stable: an Archery Range).
+static func requires(w, player: int, age: Dictionary) -> Array:
+	var out := []
+	for need in age.requires:
+		if Economy.lacks(w, player, need):
+			assert(age.requires_else.has(need), "Age %d needs a %s some races lack, and names nothing else" % [age.age, need])
+			out.append(age.requires_else[need])
+		else:
+			out.append(need)
+	return out
 
 
 ## What research (an item of w.tech.research) costs this player at a building type (research_cost).
@@ -228,7 +242,7 @@ static func why_not(w, player: int, b: int, id: String) -> String:
 			return "not here"   # first: a missing requirement made every building offer the age-up
 		if queued(w, player, AGE_UP):
 			return "already ageing up"
-		for need in item.requires:   # the genre's pacing: an age-up needs a building of this age first
+		for need in requires(w, player, item):   # the genre's pacing: an age-up needs a building of this age first
 			if not has_building(w, player, need):
 				return "needs a %s" % need
 	else:
