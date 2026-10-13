@@ -14,6 +14,7 @@ const Tech := preload("res://src/sim/tech.gd")
 const Market := preload("res://src/sim/market.gd")
 const Combat := preload("res://src/sim/combat.gd")
 const Identity := preload("res://src/identity.gd")
+const Abilities := preload("res://src/sim/abilities.gd")
 
 const SEED := 20261013
 
@@ -33,6 +34,7 @@ func _init() -> void:
 	_test_lacks()
 	_test_own_research()
 	_test_kills()
+	_test_web()
 	print("\n%d checks, %d failed" % [checks, failures])
 	quit(1 if failures > 0 else 0)
 
@@ -190,6 +192,99 @@ func _test_kills() -> void:
 	for t in 400:
 		w.step()
 	check(w.lost[1] == 1 and w.stock[gold][0] == g0 + 5, "aztec: a kill brought in 5 gold (lost %d, gold %d -> %d)" % [w.lost[1], g0, w.stock[gold][0]])
+
+
+## Spiders' web: a slowing patch where it's thrown, in range, once per cooldown; it wears off;
+## the counter: shooters outside it aren't slowed, and it's gone in 15 s. Deterministic.
+func _test_web() -> void:
+	var bare := rules.duplicate(true)
+	bare.economy.start.buildings = []
+	bare.economy.start.workers = 0
+	var w := _world(["forest spiders", "forest humans"], bare)
+	var ab: Dictionary = w.ident[0].ability
+	check(ab.get("kind", "") == "web", "spiders: their ability is the web")
+	check(w.ident[1].ability.is_empty(), "humans: no ability (their culture's, later)")
+	var sp := w.type_of(0, "spear")
+	check(Abilities.can_use(w, sp) and not Abilities.can_use(w, w.type_of(0, "worker")), "web: spider soldiers throw it, workers not")
+	var caster: int = _spawn(w, 0, "spear", 10000, 20000, 1)[0]
+	var walker: int = _spawn(w, 1, "spear", 14500, 14000, 1)[0]
+	var free: int = _spawn(w, 1, "spear", 26000, 14000, 1)[0]
+	w.issue(0, Commands.STANCE, {"ids": [caster], "stance": "passive"})
+	w.issue(1, Commands.STANCE, {"ids": [walker, free], "stance": "passive"})
+	w.issue(0, Commands.ABILITY, {"ids": [caster], "x": 30000, "y": 20000})   # out of range: nothing
+	for t in 12:
+		w.step()
+	check(w.webs.is_empty(), "web: not past its range")
+	w.issue(0, Commands.ABILITY, {"ids": [caster], "x": 14000, "y": 20000})
+	for t in 12:
+		w.step()
+	check(w.webs.size() == Abilities.WEB, "web: thrown where asked (%d)" % (w.webs.size() / Abilities.WEB))
+	w.issue(0, Commands.ABILITY, {"ids": [caster], "x": 13000, "y": 20000})
+	for t in 12:
+		w.step()
+	check(w.webs.size() == Abilities.WEB, "web: one per cooldown")
+	w.issue(1, Commands.MOVE, {"ids": [walker], "x": 14500, "y": 26000})   # straight through the web
+	w.issue(1, Commands.MOVE, {"ids": [free], "x": 26000, "y": 26000})     # the same walk in the open
+	var i: int = w.units.index_of(walker)
+	var slowed := false
+	for t in 120:
+		w.step()
+		slowed = slowed or w.slow_now.has(walker)
+	var dw: int = w.units.y[w.units.index_of(walker)] - 14000
+	var df := _walk_without_web()
+	check(slowed and dw < df * 90 / 100, "web: an enemy walking through it is slowed (%d vs %d milli-tiles without the web)" % [dw, df])
+	check(not w.slow_now.has(caster), "web: never its own side")
+	for t in int(ab.lasts):
+		w.step()
+	check(w.webs.is_empty(), "web: wears off")
+	# Sticky Silk (the spiders' own research): their shots slow what they hit.
+	var s := _world(["forest spiders", "forest humans"], bare)
+	s.researched[0][Tech.research_index(s, "sticky_silk")] = 1
+	Tech.retype(s, 0)
+	check(s.types[s.type_of(0, "archer")].slow_on_hit > 0 and s.types[s.type_of(0, "spear")].slow_on_hit == 0, "sticky silk: on the shooters only")
+	var arch: Array = _spawn(s, 0, "archer", 10000, 20000, 2)
+	var tgt: int = _spawn(s, 1, "spear", 14000, 20000, 1)[0]
+	s.issue(1, Commands.STANCE, {"ids": [tgt], "stance": "passive"})
+	s.issue(0, Commands.ATTACK, {"ids": arch, "target": tgt})
+	var stuck := false
+	for t in 300:
+		s.step()
+		stuck = stuck or s.slowed.has(tgt)
+	check(stuck, "sticky silk: a hit slows the target")
+	# The same commands, the same world: the same hashes.
+	var a := _web_run()
+	var b := _web_run()
+	check(a == b and not a.is_empty(), "web: deterministic (%d checkpoints)" % a.size())
+
+
+## The same walk (as in _test_web) with no web: how far it gets in 120 ticks.
+func _walk_without_web() -> int:
+	var bare := rules.duplicate(true)
+	bare.economy.start.buildings = []
+	bare.economy.start.workers = 0
+	var w := _world(["forest spiders", "forest humans"], bare)
+	var walker: int = _spawn(w, 1, "spear", 14500, 14000, 1)[0]
+	w.issue(1, Commands.STANCE, {"ids": [walker], "stance": "passive"})
+	for t in 36:
+		w.step()
+	w.issue(1, Commands.MOVE, {"ids": [walker], "x": 14500, "y": 26000})
+	for t in 120:
+		w.step()
+	return w.units.y[w.units.index_of(walker)] - 14000
+
+
+func _web_run() -> Array:
+	var bare := rules.duplicate(true)
+	bare.economy.start.buildings = []
+	bare.economy.start.workers = 0
+	var w := _world(["forest spiders", "forest humans"], bare)
+	var c: Array = _spawn(w, 0, "spear", 10000, 20000, 3)
+	var e: Array = _spawn(w, 1, "spear", 16000, 20000, 3)
+	w.issue(0, Commands.ABILITY, {"ids": c, "x": 15000, "y": 20000})
+	w.issue(1, Commands.ATTACK_MOVE, {"ids": e, "x": 9000, "y": 20000})
+	for t in 600:
+		w.step()
+	return w.hashes
 
 
 ## Put n units of a slot for player p at (x, y) (the SPAWN command); their ids.

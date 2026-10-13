@@ -94,6 +94,7 @@ src/
   data_lib.gd      loads data/, era filtering, stable candidate lists
   race_generator.gd  prompt -> brief -> race (recipes) ; race_key()
   pricing.gd       recipe -> stats, tags, cost, train time, pop
+  identity.gd      a race's bonuses, own research, lacks and ability, from group + creature + culture (m14)
   unit_view.gd     composer + procedural animation (recipe -> Node2D on sockets)
   part_shape.gd    draws one part's baked sprite from the atlas (a missing bake shows magenta)
   team_mask.gdshader  recolours the baked team key per unit (team colour arrives in self_modulate)
@@ -108,6 +109,7 @@ src/
     flow.gd          flow fields (multi-source integer Dijkstra, optional cutoff), line of sight
     buildings.gd     buildings as parallel arrays sorted by id (ids shared with units)
     economy.gd       setup, worker jobs (gather/carry/drop off/build), training, pop, economy commands
+    abilities.gd     race abilities (a kind + data: the spiders' web), the ABILITY command, slowing
   ai/              players that issue commands like a person (deterministic, lint-checked)
     eco_bot.gd       plays an opening: trains workers, 60/40 food/wood, houses, idle workers
     replay.gd        record / JSON / rebuild / verify
@@ -144,7 +146,9 @@ godot --path . --script res://tests/screenshot.gd -- /tmp/lab.png "prompt A" "pr
 godot --headless --path . --script res://tests/test_sim.gd         # sim determinism + tick time, its parts side by side (~1 min; "-- serial" in one process)
 godot --headless --path . --script res://tests/test_ai.gd -- [map] [quick|slow|piece:<name>|walls|...]   # the AI: scenario checks (quick, ~30 s) and whole bot matches (slow), side by side
 godot --headless --path . --script res://tests/test_2v2.gd         # four bots, one 2v2 match (~2.5 min: one process, the batch's longest piece)
-godot --headless --path . --script res://tests/balance.gd -- 2     # equal-cost round robin in age 2: win rates, outliers (fights side by side)
+godot --headless --path . --script res://tests/balance.gd -- 2     # equal-cost round robin in age 2: win rates, outliers
+godot --headless --path . --script res://tests/test_race_identity.gd   # race bonuses, own research, lacks, the web ability in the sim
+godot --headless --path . --script res://tests/race_matches.gd -- reed_meadow   # bot-vs-bot round robin of races: win rates (~10 min) (fights side by side)
 godot --headless --path . --script res://tests/mass_battle.gd -- 2 # 30 v 30 mixed armies at equal cost (each match side by side)
 godot --headless --path . --script res://tests/resource_audit.gd -- reed_meadow   # resources per start, 40-minute bot economies (~3 min)
 python3 tools/maps/reed_meadow.py                                  # rebuild the Reed Meadow maps (64 and 88) from one layout

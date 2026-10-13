@@ -87,7 +87,8 @@ static func of(creature: String, family: String, d := {}) -> Dictionary:
 					slots.append(s)
 		elif not "." in id and id != TRADE:
 			slots.append(id)   # (anything else that isn't a building or research the checks resolve as a slot)
-	var out := {"bonuses": bonuses, "research": research, "lacks": lacks, "lacks_slots": slots}
+	var out := {"bonuses": bonuses, "research": research, "lacks": lacks, "lacks_slots": slots,
+		"ability": c.get("ability", {})}   # the race's signature ability (src/sim/abilities.gd): its creature's, for now
 	_cache[key] = out
 	return out
 
