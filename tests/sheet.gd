@@ -22,7 +22,7 @@ extends SceneTree
 ##                          "idle:<pose>" (8, in that pose), "walk:<k>,<k>" (4 steps per facing),
 ##                          "cycle:<k>" (8 steps in one facing), "holds:<h>,<h>" (2 facings per hold)
 ##                        a column object: {facing, pose: stand|walk|hold|<idle pose>, step, steps, hold, other, label}
-## A unit ref: {prompt, slot, age?, set?: recipe fields, mount?: {creature, skin, parts?}, rules?}
+## A unit ref: {prompt, slot, age?, set?: recipe fields, add_parts?: {slot: part} over its own kit, mount?: {creature, skin, parts?}, rules?}
 ##   or {creature, skin?, mount_body?: true, set?} (the bare creature, no gear)
 ##   or {kit, params, creature, skin?, mount_body?} (a creature-kit creature with its kit's parameters changed)
 ##   a prompt ref or a mount may also name {kit, params} (a mount also its creature): the race's unit,
@@ -181,6 +181,8 @@ func _unit(ref: Dictionary) -> Dictionary:
 		u.recipe.creature = vc
 		u.recipe.body = lib.creatures[vc].body
 		u.recipe.head = lib.creatures[vc].head
+	if ref.has("add_parts"):   # parts put on over the unit's own kit (the rest of its kit stays)
+		u.recipe.parts.merge(ref.add_parts, true)
 	if ref.has("mount"):
 		var m: Dictionary = ref.mount
 		var mcid: String = _variant(m.merged({"mount_body": true})) if m.has("kit") else m.creature
