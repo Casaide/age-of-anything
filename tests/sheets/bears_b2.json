@@ -1,0 +1,1209 @@
+{
+ "name": "bears_b2",
+ "title": "Bears, concept round B2: shorter muzzles, the mount's head low (B1 above each B2)",
+ "_doc": "Dominic on B1 (2026-10-13): the big armoured bear and its helmet work; the riding bears have a weird neck and the snouts are very long. B2 (data/later/bears.json) shortens every muzzle and carries the mount's head low on a short neck; each B1 row rebuilds the B1 numbers as a kit variant (params), so before and after come from one file. Notes: docs/concepts/bears/README.md.",
+ "stage": [
+  "res://data/later/bears.json"
+ ],
+ "zooms": [
+  3,
+  1
+ ],
+ "cell": [
+  70,
+  76
+ ],
+ "size": [
+  {
+   "prompt": "romans",
+   "slot": "worker"
+  },
+  {
+   "prompt": "sewer rats",
+   "slot": "worker"
+  },
+  {
+   "prompt": "swamp frogs",
+   "slot": "worker"
+  }
+ ],
+ "rows": [
+  {
+   "label": "B1  A brown hoplite",
+   "unit": {
+    "prompt": "bear greeks",
+    "slot": "spear",
+    "set": {
+     "skin": "bear_brown",
+     "parts": {
+      "hand_r": "weapon.dory",
+      "hand_l": "shield.hoplon",
+      "torso": "armour.bronze",
+      "head_gear": "helm.bear_crest"
+     }
+    },
+    "kit": "bear_brown",
+    "creature": "bear",
+    "params": {
+     "head": {
+      "k": 1.15,
+      "top": [
+       0.4,
+       9.8
+      ],
+      "gear_scale": 0.9,
+      "skull": {
+       "at": [
+        0.6,
+        4.4
+       ],
+       "r": [
+        4.4,
+        4.0,
+        4.3
+       ]
+      },
+      "cheeks": {
+       "at": [
+        1.6,
+        2.7
+       ],
+       "r": [
+        3.2,
+        2.6,
+        4.0
+       ]
+      },
+      "stop": {
+       "at": [
+        3.4,
+        5.4
+       ],
+       "r": [
+        1.6,
+        1.3,
+        1.5
+       ]
+      },
+      "muzzle": {
+       "from": [
+        3.4,
+        3.0
+       ],
+       "to": [
+        7.4,
+        2.3
+       ],
+       "r": [
+        2.4,
+        1.7
+       ],
+       "mat": "pale"
+      },
+      "nose": {
+       "r": [
+        1.0,
+        0.85,
+        1.2
+       ],
+       "colour": "#1c1614"
+      },
+      "eyes": {
+       "look": [
+        0.85,
+        0.15,
+        0.5
+       ],
+       "r": 0.5
+      },
+      "brow": {
+       "at": [
+        0.1,
+        0.55,
+        0
+       ],
+       "r": [
+        0.8,
+        0.4,
+        0.8
+       ]
+      },
+      "ears": {
+       "shape": "round",
+       "at": [
+        -0.6,
+        7.6,
+        2.9
+       ],
+       "size": [
+        0.8,
+        1.5,
+        1.4
+       ],
+       "lean": -10.0,
+       "inner": "#3a2a24"
+      }
+     }
+    }
+   }
+  },
+  {
+   "label": "B2  A brown hoplite",
+   "unit": {
+    "prompt": "bear greeks",
+    "slot": "spear",
+    "set": {
+     "skin": "bear_brown",
+     "parts": {
+      "hand_r": "weapon.dory",
+      "hand_l": "shield.hoplon",
+      "torso": "armour.bronze",
+      "head_gear": "helm.bear_crest"
+     }
+    }
+   }
+  },
+  {
+   "label": "B2  A brown, open-faced\nhelmet (ears out)",
+   "unit": {
+    "prompt": "bear greeks",
+    "slot": "spear",
+    "set": {
+     "skin": "bear_brown",
+     "parts": {
+      "hand_r": "weapon.dory",
+      "hand_l": "shield.hoplon",
+      "torso": "armour.bronze",
+      "head_gear": "helm.bear_open"
+     }
+    }
+   }
+  },
+  {
+   "label": "B1  B black 'moon' bear",
+   "unit": {
+    "prompt": "bear greeks",
+    "slot": "spear",
+    "set": {
+     "creature": "bear_black",
+     "body": "body.bear_black",
+     "head": "head.bear_black",
+     "skin": "bear_black",
+     "parts": {
+      "hand_r": "weapon.dory",
+      "hand_l": "shield.hoplon",
+      "torso": "armour.bronze",
+      "head_gear": "helm.bear_crest"
+     }
+    },
+    "kit": "bear_black",
+    "creature": "bear_black",
+    "params": {
+     "head": {
+      "k": 1.15,
+      "top": [
+       0.4,
+       9.8
+      ],
+      "gear_scale": 0.9,
+      "skull": {
+       "at": [
+        0.6,
+        4.4
+       ],
+       "r": [
+        4.2,
+        3.9,
+        4.1
+       ]
+      },
+      "cheeks": {
+       "at": [
+        1.6,
+        2.7
+       ],
+       "r": [
+        3.2,
+        2.6,
+        4.0
+       ]
+      },
+      "stop": null,
+      "muzzle": {
+       "from": [
+        3.2,
+        3.2
+       ],
+       "to": [
+        7.6,
+        2.5
+       ],
+       "r": [
+        2.2,
+        1.6
+       ],
+       "mat": "pale"
+      },
+      "nose": {
+       "r": [
+        1.0,
+        0.85,
+        1.2
+       ],
+       "colour": "#1c1614"
+      },
+      "eyes": {
+       "look": [
+        0.85,
+        0.15,
+        0.5
+       ],
+       "r": 0.5
+      },
+      "brow": {
+       "at": [
+        0.1,
+        0.55,
+        0
+       ],
+       "r": [
+        0.8,
+        0.4,
+        0.8
+       ]
+      },
+      "ears": {
+       "shape": "round",
+       "at": [
+        -0.4,
+        7.6,
+        3.0
+       ],
+       "size": [
+        0.8,
+        1.9,
+        1.7
+       ],
+       "lean": -6.0,
+       "inner": "#3a2a24"
+      }
+     }
+    }
+   }
+  },
+  {
+   "label": "B2  B black 'moon' bear",
+   "unit": {
+    "prompt": "bear greeks",
+    "slot": "spear",
+    "set": {
+     "creature": "bear_black",
+     "body": "body.bear_black",
+     "head": "head.bear_black",
+     "skin": "bear_black",
+     "parts": {
+      "hand_r": "weapon.dory",
+      "hand_l": "shield.hoplon",
+      "torso": "armour.bronze",
+      "head_gear": "helm.bear_crest"
+     }
+    }
+   }
+  },
+  {
+   "label": "B1  C polar bear",
+   "unit": {
+    "prompt": "bear greeks",
+    "slot": "spear",
+    "set": {
+     "creature": "bear_polar",
+     "body": "body.bear_polar",
+     "head": "head.bear_polar",
+     "skin": "bear_polar",
+     "parts": {
+      "hand_r": "weapon.dory",
+      "hand_l": "shield.hoplon",
+      "torso": "armour.bronze",
+      "head_gear": "helm.bear_crest"
+     }
+    },
+    "kit": "bear_polar",
+    "creature": "bear_polar",
+    "params": {
+     "head": {
+      "k": 1.15,
+      "top": [
+       0.4,
+       9.8
+      ],
+      "gear_scale": 0.9,
+      "skull": {
+       "at": [
+        0.6,
+        4.2
+       ],
+       "r": [
+        4.0,
+        3.6,
+        3.8
+       ]
+      },
+      "cheeks": {
+       "at": [
+        1.4,
+        2.6
+       ],
+       "r": [
+        2.8,
+        2.3,
+        3.4
+       ]
+      },
+      "stop": null,
+      "muzzle": {
+       "from": [
+        3.0,
+        3.0
+       ],
+       "to": [
+        8.6,
+        2.2
+       ],
+       "r": [
+        2.2,
+        1.5
+       ],
+       "mat": "fur",
+       "bridge": {
+        "at": [
+         5.4,
+         3.9
+        ],
+        "r": [
+         2.6,
+         1.0,
+         1.4
+        ]
+       }
+      },
+      "nose": {
+       "r": [
+        1.0,
+        0.85,
+        1.2
+       ],
+       "colour": "#1c1614"
+      },
+      "eyes": {
+       "look": [
+        0.85,
+        0.15,
+        0.5
+       ],
+       "r": 0.5
+      },
+      "brow": {
+       "at": [
+        0.1,
+        0.55,
+        0
+       ],
+       "r": [
+        0.8,
+        0.4,
+        0.8
+       ]
+      },
+      "ears": {
+       "shape": "round",
+       "at": [
+        -0.8,
+        7.0,
+        2.7
+       ],
+       "size": [
+        0.6,
+        1.0,
+        1.0
+       ],
+       "lean": -10.0,
+       "inner": "#3a2a24"
+      }
+     }
+    }
+   }
+  },
+  {
+   "label": "B2  C polar bear",
+   "unit": {
+    "prompt": "bear greeks",
+    "slot": "spear",
+    "set": {
+     "creature": "bear_polar",
+     "body": "body.bear_polar",
+     "head": "head.bear_polar",
+     "skin": "bear_polar",
+     "parts": {
+      "hand_r": "weapon.dory",
+      "hand_l": "shield.hoplon",
+      "torso": "armour.bronze",
+      "head_gear": "helm.bear_crest"
+     }
+    }
+   }
+  },
+  {
+   "label": "B1  worker (brown)",
+   "unit": {
+    "prompt": "bear greeks",
+    "slot": "worker",
+    "set": {
+     "skin": "bear_brown"
+    },
+    "kit": "bear_brown",
+    "creature": "bear",
+    "params": {
+     "head": {
+      "k": 1.15,
+      "top": [
+       0.4,
+       9.8
+      ],
+      "gear_scale": 0.9,
+      "skull": {
+       "at": [
+        0.6,
+        4.4
+       ],
+       "r": [
+        4.4,
+        4.0,
+        4.3
+       ]
+      },
+      "cheeks": {
+       "at": [
+        1.6,
+        2.7
+       ],
+       "r": [
+        3.2,
+        2.6,
+        4.0
+       ]
+      },
+      "stop": {
+       "at": [
+        3.4,
+        5.4
+       ],
+       "r": [
+        1.6,
+        1.3,
+        1.5
+       ]
+      },
+      "muzzle": {
+       "from": [
+        3.4,
+        3.0
+       ],
+       "to": [
+        7.4,
+        2.3
+       ],
+       "r": [
+        2.4,
+        1.7
+       ],
+       "mat": "pale"
+      },
+      "nose": {
+       "r": [
+        1.0,
+        0.85,
+        1.2
+       ],
+       "colour": "#1c1614"
+      },
+      "eyes": {
+       "look": [
+        0.85,
+        0.15,
+        0.5
+       ],
+       "r": 0.5
+      },
+      "brow": {
+       "at": [
+        0.1,
+        0.55,
+        0
+       ],
+       "r": [
+        0.8,
+        0.4,
+        0.8
+       ]
+      },
+      "ears": {
+       "shape": "round",
+       "at": [
+        -0.6,
+        7.6,
+        2.9
+       ],
+       "size": [
+        0.8,
+        1.5,
+        1.4
+       ],
+       "lean": -10.0,
+       "inner": "#3a2a24"
+      }
+     }
+    }
+   }
+  },
+  {
+   "label": "B2  worker (brown)",
+   "unit": {
+    "prompt": "bear greeks",
+    "slot": "worker",
+    "set": {
+     "skin": "bear_brown"
+    }
+   }
+  },
+  {
+   "label": "B1  mount: a Roman\n(a rat on the right)",
+   "unit": {
+    "prompt": "romans",
+    "slot": "spear",
+    "mount": {
+     "kit": "bear_mount",
+     "creature": "bear",
+     "skin": "bear_brown",
+     "params": {
+      "head": {
+       "k": 1.0615,
+       "top": [
+        0.4,
+        9.8
+       ],
+       "gear_scale": 0.9,
+       "skull": {
+        "at": [
+         0.6,
+         4.4
+        ],
+        "r": [
+         4.4,
+         4.0,
+         4.3
+        ]
+       },
+       "cheeks": {
+        "at": [
+         1.6,
+         2.7
+        ],
+        "r": [
+         3.2,
+         2.6,
+         4.0
+        ]
+       },
+       "stop": {
+        "at": [
+         3.4,
+         5.4
+        ],
+        "r": [
+         1.6,
+         1.3,
+         1.5
+        ]
+       },
+       "muzzle": {
+        "from": [
+         3.4,
+         3.0
+        ],
+        "to": [
+         7.4,
+         2.3
+        ],
+        "r": [
+         2.4,
+         1.7
+        ],
+        "mat": "pale"
+       },
+       "nose": {
+        "r": [
+         1.0,
+         0.85,
+         1.2
+        ],
+        "colour": "#1c1614"
+       },
+       "eyes": {
+        "look": [
+         0.85,
+         0.15,
+         0.5
+        ],
+        "r": 0.5
+       },
+       "brow": {
+        "at": [
+         0.1,
+         0.55,
+         0
+        ],
+        "r": [
+         0.8,
+         0.4,
+         0.8
+        ]
+       },
+       "ears": {
+        "shape": "round",
+        "at": [
+         -0.6,
+         7.6,
+         2.9
+        ],
+        "size": [
+         0.8,
+         1.5,
+         1.4
+        ],
+        "lean": -10.0,
+        "inner": "#3a2a24"
+       },
+       "tilt": 0.0
+      },
+      "neck": {
+       "from": [
+        9.0,
+        16.0
+       ],
+       "to": [
+        13.6,
+        15.6
+       ],
+       "r": [
+        3.8,
+        3.2
+       ]
+      }
+     }
+    }
+   },
+   "other": {
+    "prompt": "sewer rats",
+    "slot": "spear",
+    "mount": {
+     "kit": "bear_mount",
+     "creature": "bear",
+     "skin": "bear_brown",
+     "params": {
+      "head": {
+       "k": 1.0615,
+       "top": [
+        0.4,
+        9.8
+       ],
+       "gear_scale": 0.9,
+       "skull": {
+        "at": [
+         0.6,
+         4.4
+        ],
+        "r": [
+         4.4,
+         4.0,
+         4.3
+        ]
+       },
+       "cheeks": {
+        "at": [
+         1.6,
+         2.7
+        ],
+        "r": [
+         3.2,
+         2.6,
+         4.0
+        ]
+       },
+       "stop": {
+        "at": [
+         3.4,
+         5.4
+        ],
+        "r": [
+         1.6,
+         1.3,
+         1.5
+        ]
+       },
+       "muzzle": {
+        "from": [
+         3.4,
+         3.0
+        ],
+        "to": [
+         7.4,
+         2.3
+        ],
+        "r": [
+         2.4,
+         1.7
+        ],
+        "mat": "pale"
+       },
+       "nose": {
+        "r": [
+         1.0,
+         0.85,
+         1.2
+        ],
+        "colour": "#1c1614"
+       },
+       "eyes": {
+        "look": [
+         0.85,
+         0.15,
+         0.5
+        ],
+        "r": 0.5
+       },
+       "brow": {
+        "at": [
+         0.1,
+         0.55,
+         0
+        ],
+        "r": [
+         0.8,
+         0.4,
+         0.8
+        ]
+       },
+       "ears": {
+        "shape": "round",
+        "at": [
+         -0.6,
+         7.6,
+         2.9
+        ],
+        "size": [
+         0.8,
+         1.5,
+         1.4
+        ],
+        "lean": -10.0,
+        "inner": "#3a2a24"
+       },
+       "tilt": 0.0
+      },
+      "neck": {
+       "from": [
+        9.0,
+        16.0
+       ],
+       "to": [
+        13.6,
+        15.6
+       ],
+       "r": [
+        3.8,
+        3.2
+       ]
+      }
+     }
+    }
+   }
+  },
+  {
+   "label": "B2  mount: a Roman\n(head low, short neck)",
+   "unit": {
+    "prompt": "romans",
+    "slot": "spear",
+    "mount": {
+     "creature": "bear",
+     "skin": "bear_brown"
+    }
+   },
+   "other": {
+    "prompt": "sewer rats",
+    "slot": "spear",
+    "mount": {
+     "creature": "bear",
+     "skin": "bear_brown"
+    }
+   }
+  },
+  {
+   "label": "B2  mount, black\n(a rat on the right)",
+   "unit": {
+    "prompt": "romans",
+    "slot": "spear",
+    "mount": {
+     "creature": "bear_black",
+     "skin": "bear_black"
+    }
+   },
+   "other": {
+    "prompt": "sewer rats",
+    "slot": "spear",
+    "mount": {
+     "creature": "bear_black",
+     "skin": "bear_black"
+    }
+   }
+  },
+  {
+   "label": "B1  giant: polar (x1.5)",
+   "unit": {
+    "prompt": "giant bear greeks",
+    "slot": "large",
+    "set": {
+     "creature": "bear_polar",
+     "body": "body.bear_polar",
+     "head": "head.bear_polar",
+     "skin": "bear_polar",
+     "parts": {
+      "hand_r": "weapon.dory",
+      "hand_l": "shield.hoplon",
+      "torso": "armour.bronze",
+      "head_gear": "helm.bear_crest"
+     }
+    },
+    "kit": "bear_polar",
+    "creature": "bear_polar",
+    "params": {
+     "head": {
+      "k": 1.15,
+      "top": [
+       0.4,
+       9.8
+      ],
+      "gear_scale": 0.9,
+      "skull": {
+       "at": [
+        0.6,
+        4.2
+       ],
+       "r": [
+        4.0,
+        3.6,
+        3.8
+       ]
+      },
+      "cheeks": {
+       "at": [
+        1.4,
+        2.6
+       ],
+       "r": [
+        2.8,
+        2.3,
+        3.4
+       ]
+      },
+      "stop": null,
+      "muzzle": {
+       "from": [
+        3.0,
+        3.0
+       ],
+       "to": [
+        8.6,
+        2.2
+       ],
+       "r": [
+        2.2,
+        1.5
+       ],
+       "mat": "fur",
+       "bridge": {
+        "at": [
+         5.4,
+         3.9
+        ],
+        "r": [
+         2.6,
+         1.0,
+         1.4
+        ]
+       }
+      },
+      "nose": {
+       "r": [
+        1.0,
+        0.85,
+        1.2
+       ],
+       "colour": "#1c1614"
+      },
+      "eyes": {
+       "look": [
+        0.85,
+        0.15,
+        0.5
+       ],
+       "r": 0.5
+      },
+      "brow": {
+       "at": [
+        0.1,
+        0.55,
+        0
+       ],
+       "r": [
+        0.8,
+        0.4,
+        0.8
+       ]
+      },
+      "ears": {
+       "shape": "round",
+       "at": [
+        -0.8,
+        7.0,
+        2.7
+       ],
+       "size": [
+        0.6,
+        1.0,
+        1.0
+       ],
+       "lean": -10.0,
+       "inner": "#3a2a24"
+      }
+     }
+    }
+   },
+   "h": 1.45
+  },
+  {
+   "label": "B2  giant: polar (x1.5)",
+   "unit": {
+    "prompt": "giant bear greeks",
+    "slot": "large",
+    "set": {
+     "creature": "bear_polar",
+     "body": "body.bear_polar",
+     "head": "head.bear_polar",
+     "skin": "bear_polar",
+     "parts": {
+      "hand_r": "weapon.dory",
+      "hand_l": "shield.hoplon",
+      "torso": "armour.bronze",
+      "head_gear": "helm.bear_crest"
+     }
+    }
+   },
+   "h": 1.45
+  },
+  {
+   "label": "B1  giant: old grizzled\nbear (x1.5)",
+   "unit": {
+    "prompt": "giant bear greeks",
+    "slot": "large",
+    "set": {
+     "skin": "bear_grizzled",
+     "parts": {
+      "hand_r": "weapon.sword.xiphos",
+      "torso": "armour.bronze",
+      "head_gear": "helm.bear_crest"
+     }
+    },
+    "kit": "bear_brown",
+    "creature": "bear",
+    "params": {
+     "head": {
+      "k": 1.15,
+      "top": [
+       0.4,
+       9.8
+      ],
+      "gear_scale": 0.9,
+      "skull": {
+       "at": [
+        0.6,
+        4.4
+       ],
+       "r": [
+        4.4,
+        4.0,
+        4.3
+       ]
+      },
+      "cheeks": {
+       "at": [
+        1.6,
+        2.7
+       ],
+       "r": [
+        3.2,
+        2.6,
+        4.0
+       ]
+      },
+      "stop": {
+       "at": [
+        3.4,
+        5.4
+       ],
+       "r": [
+        1.6,
+        1.3,
+        1.5
+       ]
+      },
+      "muzzle": {
+       "from": [
+        3.4,
+        3.0
+       ],
+       "to": [
+        7.4,
+        2.3
+       ],
+       "r": [
+        2.4,
+        1.7
+       ],
+       "mat": "pale"
+      },
+      "nose": {
+       "r": [
+        1.0,
+        0.85,
+        1.2
+       ],
+       "colour": "#1c1614"
+      },
+      "eyes": {
+       "look": [
+        0.85,
+        0.15,
+        0.5
+       ],
+       "r": 0.5
+      },
+      "brow": {
+       "at": [
+        0.1,
+        0.55,
+        0
+       ],
+       "r": [
+        0.8,
+        0.4,
+        0.8
+       ]
+      },
+      "ears": {
+       "shape": "round",
+       "at": [
+        -0.6,
+        7.6,
+        2.9
+       ],
+       "size": [
+        0.8,
+        1.5,
+        1.4
+       ],
+       "lean": -10.0,
+       "inner": "#3a2a24"
+      }
+     }
+    }
+   },
+   "h": 1.45
+  },
+  {
+   "label": "B2  giant: old grizzled\nbear (x1.5)",
+   "unit": {
+    "prompt": "giant bear greeks",
+    "slot": "large",
+    "set": {
+     "skin": "bear_grizzled",
+     "parts": {
+      "hand_r": "weapon.sword.xiphos",
+      "torso": "armour.bronze",
+      "head_gear": "helm.bear_crest"
+     }
+    }
+   },
+   "h": 1.45
+  }
+ ],
+ "sheets": [
+  {
+   "name": "facings",
+   "title": "standing, 8 facings (the rat rider in the last two)",
+   "columns": [
+    {
+     "facing": 0,
+     "label": "f0 right"
+    },
+    {
+     "facing": 1,
+     "label": "f1"
+    },
+    {
+     "facing": 2,
+     "label": "f2 towards"
+    },
+    {
+     "facing": 3,
+     "label": "f3"
+    },
+    {
+     "facing": 4,
+     "label": "f4 left"
+    },
+    {
+     "facing": 5,
+     "label": "f5"
+    },
+    {
+     "facing": 6,
+     "label": "f6 away"
+    },
+    {
+     "facing": 7,
+     "label": "f7"
+    },
+    {
+     "facing": 1,
+     "other": true,
+     "label": "f1 (right col.)"
+    },
+    {
+     "facing": 7,
+     "other": true,
+     "label": "f7 (right col.)"
+    }
+   ]
+  },
+  {
+   "name": "walk",
+   "title": "walking: four of the eight baked steps in three facings",
+   "columns": "walk:1,2,7"
+  },
+  {
+   "name": "idle",
+   "title": "idle: the bipeds stand at ease, the mount sits (8 facings)",
+   "columns": "idle"
+  }
+ ]
+}

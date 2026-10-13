@@ -64,12 +64,17 @@ static func stage(lib, path: String) -> void:
 
 
 ## A kit with its base merged under it (deep: a variant changes only what it names).
+## A kit can also take its head from another kit ("head_of"), changing only what its own "head" names:
+## a mount carries the head of the creature on two legs, pitched down (bears, round B2).
 static func _resolved(name: String, all: Dictionary) -> Dictionary:
 	var k: Dictionary = all[name] if all.has(name) else kits[name]
-	if not k.has("base"):
-		return k.duplicate(true)
-	var out := _merge(_resolved(k.base, all), k)
-	out.erase("base")
+	var out: Dictionary = k.duplicate(true)
+	if k.has("base"):
+		out = _merge(_resolved(k.base, all), k)
+		out.erase("base")
+	if k.has("head_of"):
+		out.head = _merge(_resolved(k.head_of, all).head, k.get("head", {}))
+		out.erase("head_of")
 	return out
 
 
@@ -173,7 +178,7 @@ static func _quad_skeleton(k: Dictionary, pose: String) -> Dictionary:
 	var hr: Array = s.get("hand", [3.0, mid_y - seat.y])
 	var hz: float = float(hr[2]) if hr.size() > 2 else half
 	var sockets := {
-		"head": _v3(k.neck.to),
+		"head": _v3(k.neck.to) + head_lift(k, pose),
 		"seat": seat,
 		"girth": _v3(s.girth) if s.has("girth") else Vector3(seat.x, bottom_at(k, seat.x) + 1.0, 0),
 		"hand_r": seat + Vector3(float(hr[0]), float(hr[1]), hz),
@@ -190,6 +195,13 @@ static func _quad_skeleton(k: Dictionary, pose: String) -> Dictionary:
 	var anchors := [[xf * (sh + z), PI * float(ph[0]), 1, 0, false], [xf * (hip + z), PI * float(ph[1]), 1, 0, true],
 		[xf * (sh - z), PI * float(ph[2]), -1, 0, false], [xf * (hip - z), PI * float(ph[3]), -1, 0, true]]
 	return {"sockets": sockets, "anchors": anchors, "xf": xf}
+
+
+## How far a sitting pose raises the head on its neck (in the body's frame): a mount that carries its
+## head low walking lifts it as it sits up (`sit.poses.<pose>.head`, [dx, dy]).
+static func head_lift(k: Dictionary, pose: String) -> Vector3:
+	var sp: Dictionary = k.get("sit", {}).get("poses", {}).get(pose, {})
+	return _v3(sp.get("head", [0.0, 0.0]))
 
 
 ## How a sitting pose places the body: pitched up about the hips and lowered (identity standing).
@@ -457,7 +469,7 @@ func _coat(m, k: Dictionary, c: Dictionary) -> Dictionary:
 
 
 ## The torso's volumes as blobs (or the modelled mesh named in `body.mesh`, lowered by `body.drop`).
-func _torso(m, k: Dictionary, mats: Dictionary, into: Node3D, turn: Callable) -> void:
+func _torso(m, k: Dictionary, mats: Dictionary, into: Node3D, turn: Callable, lift := Vector3.ZERO) -> void:
 	if k.body.get("mesh") != null:
 		var low := Node3D.new()
 		low.position.y = -float(k.body.get("drop", 0.0))
@@ -471,7 +483,7 @@ func _torso(m, k: Dictionary, mats: Dictionary, into: Node3D, turn: Callable) ->
 		into.add_child(m.blob(_v3(patch.r), mats[patch.get("mat", "pale")], turn.call(_v3(patch.at)), Vector3(0, 0, float(patch.get("rot", 0.0)))))
 	if k.has("neck"):
 		var nk: Dictionary = k.neck
-		into.add_child(m.rod(turn.call(_v3(nk.from)), turn.call(_v3(nk.to)) + Vector3(-0.4, -0.6, 0), float(nk.r[0]), float(nk.r[1]), mats.fur))
+		into.add_child(m.rod(turn.call(_v3(nk.from)), turn.call(_v3(nk.to) + lift) + Vector3(-0.4, -0.6, 0), float(nk.r[0]), float(nk.r[1]), mats.fur))
 
 
 func _tail(m, k: Dictionary, mats: Dictionary, into: Node3D, xf: Transform3D, pose: String) -> void:
@@ -513,7 +525,7 @@ func _quad_body(m, k: Dictionary, c: Dictionary, pose: String) -> Dictionary:
 	inner.transform = xf
 	n.add_child(inner)
 	var mats := _coat(m, k, c)
-	_torso(m, k, mats, inner, func(p): return p)
+	_torso(m, k, mats, inner, func(p): return p, head_lift(k, pose))
 	_tail(m, k, mats, n if pose != "" else inner, xf if pose != "" else Transform3D.IDENTITY, pose)
 	var tack: Dictionary = k.get("tack", {})
 	if tack.has("cloth"):

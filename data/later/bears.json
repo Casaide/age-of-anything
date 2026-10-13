@@ -1,6 +1,6 @@
 {
  "schema": "aow.later/1",
- "_doc": "Bears, concept round B1 (2026-10-13): staged here until Dominic picks (D-080: concept-first). Nothing in the game loads this file; tests/sheet.gd and the placement check's cases stage it (CreatureKit.stage). Dominic's direction: bears as a race on two legs, armoured, dignified and intelligent like the Greeks (the smarter counterpart to the rats); rideable on four legs by some races; some bigger still on two legs: polar or old bears, a natural giant line. Built with the creature kit (scenes/art_pixel/creature_kit.gd): three builds of the biped (brown with the shoulder hump and a dished face, black 'moon bear' with big ears, a straight tan muzzle and a pale chest crescent, polar with a long neck and a long roman-nosed head), one quadruped mount, the bronze helmet with ear cups (scenes/art_pixel/bear_concepts.gd). Sheets and options: docs/concepts/bears/. To put bears in play: move the kits into data/creature_kit.json, the parts into data/parts.json, the creatures, skins and words into their files (DataLib would then complete kit parts), and price them (big hp through points, no special case).",
+ "_doc": "Bears, concept round B1 (2026-10-13): staged here until Dominic picks (D-080: concept-first). Nothing in the game loads this file; tests/sheet.gd and the placement check's cases stage it (CreatureKit.stage). Dominic's direction: bears as a race on two legs, armoured, dignified and intelligent like the Greeks (the smarter counterpart to the rats); rideable on four legs by some races; some bigger still on two legs: polar or old bears, a natural giant line. Built with the creature kit (scenes/art_pixel/creature_kit.gd): three builds of the biped (brown with the shoulder hump and a dished face, black 'moon bear' with big ears, a straight tan muzzle and a pale chest crescent, polar with a long neck and a long roman-nosed head), one quadruped mount, the bronze helmet with ear cups (scenes/art_pixel/bear_concepts.gd). Round B2 (2026-10-13, after Dominic: the giant and its helmet work; the riders' bears have a weird neck and every snout is far too long): every muzzle shortened to a short, broad, blunt one under a rounder skull (the polar's a little longer), the mount carries its own head (mount_head: the biped's, via the kit's head_of, pitched nose-down) low on a short thick neck sloping down from the hump, lifted as it sits (sit.poses.*.head), and an open-faced helmet with the ears out (helm.bear_open). B1's numbers live on as kit variants in tests/sheets/bears_b2.json. Sheets and options: docs/concepts/bears/. To put bears in play: move the kits into data/creature_kit.json, the parts into data/parts.json, the creatures, skins and words into their files (DataLib would then complete kit parts), and price them (big hp through points, no special case).",
  "models": ["res://scenes/art_pixel/bear_concepts.gd"],
  "kits": {
   "bear_brown": {
@@ -29,14 +29,14 @@
    "kerchief": true,
    "head": {
     "k": 1.15, "top": [0.4, 9.8], "gear_scale": 0.9,
-    "skull": {"at": [0.6, 4.4], "r": [4.4, 4.0, 4.3]},
-    "cheeks": {"at": [1.6, 2.7], "r": [3.2, 2.6, 4.0]},
-    "stop": {"at": [3.4, 5.4], "r": [1.6, 1.3, 1.5]},
-    "muzzle": {"from": [3.4, 3.0], "to": [7.4, 2.3], "r": [2.4, 1.7], "mat": "pale"},
-    "nose": {"r": [1.0, 0.85, 1.2], "colour": "#1c1614"},
+    "skull": {"at": [0.5, 4.5], "r": [4.5, 4.2, 4.4]},
+    "cheeks": {"at": [1.8, 2.8], "r": [3.3, 2.7, 4.2]},
+    "stop": {"at": [3.3, 5.5], "r": [1.5, 1.2, 1.6]},
+    "muzzle": {"from": [3.3, 3.0], "to": [5.3, 2.5], "r": [2.6, 2.2], "mat": "pale"},
+    "nose": {"r": [1.0, 0.85, 1.25], "colour": "#1c1614"},
     "eyes": {"look": [0.85, 0.15, 0.5], "r": 0.5},
     "brow": {"at": [0.1, 0.55, 0], "r": [0.8, 0.4, 0.8]},
-    "ears": {"shape": "round", "at": [-0.6, 7.6, 2.9], "size": [0.8, 1.5, 1.4], "lean": -10.0, "inner": "#3a2a24"}
+    "ears": {"shape": "round", "at": [-0.6, 7.8, 2.9], "size": [0.9, 1.5, 1.4], "lean": -10.0, "inner": "#3a2a24"}
    }
   },
   "bear_black": {
@@ -53,9 +53,9 @@
    "arm": {"shoulder": [0.4, 22.6, 4.3], "hand_l": [6.8, 19.8, -6.4]},
    "head": {
     "stop": null,
-    "skull": {"at": [0.6, 4.4], "r": [4.2, 3.9, 4.1]},
-    "muzzle": {"from": [3.2, 3.2], "to": [7.6, 2.5], "r": [2.2, 1.6], "mat": "pale"},
-    "ears": {"shape": "round", "at": [-0.4, 7.6, 3.0], "size": [0.8, 1.9, 1.7], "lean": -6.0}
+    "skull": {"at": [0.6, 4.4], "r": [4.3, 4.0, 4.2]},
+    "muzzle": {"from": [3.1, 3.0], "to": [5.2, 2.6], "r": [2.4, 2.0], "mat": "pale"},
+    "ears": {"shape": "round", "at": [-0.4, 7.6, 3.0], "size": [0.8, 1.7, 1.5], "lean": -6.0}
    }
   },
   "bear_polar": {
@@ -73,15 +73,17 @@
    "arm": {"shoulder": [0.4, 22.8, 4.4], "hand_l": [7.0, 19.8, -6.6], "dark_paws": false},
    "head": {
     "stop": null,
-    "skull": {"at": [0.6, 4.2], "r": [4.0, 3.6, 3.8]},
-    "cheeks": {"at": [1.4, 2.6], "r": [2.8, 2.3, 3.4]},
-    "muzzle": {"from": [3.0, 3.0], "to": [8.6, 2.2], "r": [2.2, 1.5], "mat": "fur", "bridge": {"at": [5.4, 3.9], "r": [2.6, 1.0, 1.4]}},
+    "skull": {"at": [0.6, 4.3], "r": [4.2, 3.8, 4.0]},
+    "cheeks": {"at": [1.5, 2.6], "r": [3.0, 2.4, 3.6]},
+    "muzzle": {"from": [3.0, 3.0], "to": [6.3, 2.4], "r": [2.3, 1.8], "mat": "fur", "bridge": {"at": [4.5, 3.9], "r": [2.2, 1.0, 1.4]}},
     "ears": {"shape": "round", "at": [-0.8, 7.0, 2.7], "size": [0.6, 1.0, 1.0], "lean": -10.0}
    }
   },
   "bear_mount": {
    "posture": "quadruped",
-   "parts": {"body": "body.bear_mount", "head": "head.bear", "leg": "leg.bear_mount", "hind": "leg.bear_mount_hind"},
+   "parts": {"body": "body.bear_mount", "head": "head.bear_mount", "leg": "leg.bear_mount", "hind": "leg.bear_mount_hind"},
+   "head_of": "bear_brown",
+   "head": {"k": 1.0615, "tilt": -22.0, "_doc": "B2: the biped's head (k keeps its size under the mount's scale 1.3), carried low and pitched nose-down"},
    "scale": 1.3,
    "fur": "hide", "fur_units": 4.0,
    "shoulder": [7.5, 12.0],
@@ -94,7 +96,7 @@
     "rump": {"at": [-6.6, 14.6], "r": [5.4, 5.0, 4.6]},
     "hump": {"at": [6.0, 19.2], "r": [3.6, 2.2, 3.6]}
    },
-   "neck": {"from": [9.0, 16.0], "to": [13.6, 15.6], "r": [3.8, 3.2]},
+   "neck": {"from": [9.0, 17.0], "to": [13.0, 12.4], "r": [4.0, 3.4], "_doc": "B2: short and thick, sloping forward-down from the hump (B1 ran level to 15.6 and the head sat high above it)"},
    "tail": {"stub": {"at": [-11.8, 16.0], "r": [1.3, 1.1, 1.2]}},
    "tack": {"saddle": 0.8, "cloth": {"length": 7.0, "drop": 3.4, "below": 1.2}},
    "fore": {"bones": [6.2, 5.6, 2.6], "r": [[3.0, 2.0], [3.2, 2.4], [2.4, 2.0], [1.9, 1.0]], "mats": ["fur", "fur", "fur", "fur"],
@@ -104,9 +106,9 @@
    "walk": {"stride": 7.0, "stance": 0.62, "lift": 2.0, "steps": 8, "phases": [1.5, 0.0, 0.5, 1.0],
     "gait": {"swing": 0.0, "cadence": 1.2, "bob": 0.4, "rock": 0.02}},
    "sit": {"order": ["sit1", "sit2", "sit"], "fore": [1.4, -60.0], "poses": {
-    "sit1": {"pitch": 6.0, "hip_y": 11.2, "hind": [1.2, 76.0]},
-    "sit2": {"pitch": 13.0, "hip_y": 9.4, "hind": [2.0, 76.0]},
-    "sit": {"pitch": 20.0, "hip_y": 6.6, "fold": {"hock": [-1.0, 1.9], "paw": 4.6, "out": 1.8}}}},
+    "sit1": {"pitch": 6.0, "hip_y": 11.2, "hind": [1.2, 76.0], "head": [-0.6, 2.0]},
+    "sit2": {"pitch": 13.0, "hip_y": 9.4, "hind": [2.0, 76.0], "head": [-1.6, 4.4]},
+    "sit": {"pitch": 20.0, "hip_y": 6.6, "fold": {"hock": [-1.0, 1.9], "paw": 4.6, "out": 1.8}, "head": [-2.0, 5.0]}}},
    "stance": {"poses": {"sit": {"drop": 0.4}}}
   }
  },
@@ -122,15 +124,18 @@
    "note": "concept B1: a bear on four legs, saddled for a rider"},
   {"id": "helm.bear_crest", "slot": "head_gear", "tags": ["helmet", "crest", "hellenic"], "stats": {"armour": {"melee": 1, "pierce": 1}}, "points": 2, "era": ["bronze", "medieval"], "tier": 1,
    "only_if": ["bear"], "note": "concept B1: a bronze helmet made for a bear's head: ear cups over the ears, cheek guards behind the eyes, a tall team crest on a stand",
+   "shapes": [{"t": "circle", "c": [0, -3], "r": 4, "ch": "skin"}]},
+  {"id": "helm.bear_open", "slot": "head_gear", "tags": ["helmet", "crest", "hellenic"], "stats": {"armour": {"melee": 1, "pierce": 0}}, "points": 1, "era": ["bronze", "medieval"], "tier": 1,
+   "only_if": ["bear"], "requires_role": "spear", "note": "concept B2 (spear only while it's a concept, so workers don't pick it up as a hat): an open-faced bronze cap for a bear: the ears come out through holes, no cheek guards, the face and brow bare, the same tall team crest (more bear showing on the small soldiers)",
    "shapes": [{"t": "circle", "c": [0, -3], "r": 4, "ch": "skin"}]}
  ],
  "creatures": {
-  "bear": {"voice": "capybara", "noun": "Bear", "plural": "Bears", "body": "body.bear", "mount_body": "body.bear_mount", "head": "head.bear",
+  "bear": {"voice": "capybara", "noun": "Bear", "plural": "Bears", "body": "body.bear", "mount_body": "body.bear_mount", "mount_head": "head.bear_mount", "head": "head.bear",
    "playable": true, "mount": true, "giant_ok": true, "skins": ["bear_brown", "bear_grizzled"], "families": ["hellenic", "forest"],
-   "_doc": "two legs as a race, four as a mount (mount_body); giant_ok: the large line is a giant bear (an old grizzled one, or a polar bear)"},
-  "bear_black": {"voice": "capybara", "noun": "Bear", "plural": "Bears", "body": "body.bear_black", "mount_body": "body.bear_mount", "head": "head.bear_black",
+   "_doc": "two legs as a race, four as a mount (mount_body, and mount_head: the head carried low on four legs); giant_ok: the large line is a giant bear (an old grizzled one, or a polar bear)"},
+  "bear_black": {"voice": "capybara", "noun": "Bear", "plural": "Bears", "body": "body.bear_black", "mount_body": "body.bear_mount", "mount_head": "head.bear_mount", "head": "head.bear_black",
    "playable": true, "mount": true, "giant_ok": true, "skins": ["bear_black"], "families": ["hellenic", "forest"]},
-  "bear_polar": {"voice": "capybara", "noun": "Bear", "plural": "Bears", "body": "body.bear_polar", "mount_body": "body.bear_mount", "head": "head.bear_polar",
+  "bear_polar": {"voice": "capybara", "noun": "Bear", "plural": "Bears", "body": "body.bear_polar", "mount_body": "body.bear_mount", "mount_head": "head.bear_mount", "head": "head.bear_polar",
    "playable": true, "mount": true, "giant_ok": true, "skins": ["bear_polar"], "families": ["hellenic", "forest"]}
  },
  "skins": {

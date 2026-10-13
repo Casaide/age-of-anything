@@ -58,7 +58,7 @@ func unit(r: Dictionary, pose: Dictionary) -> Dictionary:
 		var g := _gait(mbody, false)
 		out.gait = g
 		var lift := _bob(g, walk)
-		var mrig := _rig(out, "mount", mbody, "" if m.fused else mc.head, "", mcol, Transform3D(Basis.IDENTITY, Vector3(0, lift, 0)), true, walk, g, out.body_pose)
+		var mrig := _rig(out, "mount", mbody, "" if m.fused else mc.get("mount_head", mc.head), "", mcol, Transform3D(Basis.IDENTITY, Vector3(0, lift, 0)), true, walk, g, out.body_pose)
 		for slot in m.parts:
 			if slot == "back" and "flying" in lib.part(m.parts.back).tags:
 				out.flying = true   # (a pegasus's wings sit at the withers in 2D only)

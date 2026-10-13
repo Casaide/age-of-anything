@@ -480,7 +480,7 @@ func _mount_recipe(race: Dictionary) -> Dictionary:
 		var r: Dictionary = u.recipe
 		if r.slot == "large" and r.has("mount") and not r.mount.get("fused", false):
 			var mc: Dictionary = host.lib.creatures[r.mount.creature]
-			return {"slot": "mount", "name": "", "body": mc.get("mount_body", mc.body), "head": mc.head, "parts": {},
+			return {"slot": "mount", "name": "", "body": mc.get("mount_body", mc.body), "head": mc.get("mount_head", mc.head), "parts": {},
 				"scale": 100, "skin": r.mount.skin, "family": r.family, "creature": r.mount.creature}
 	return {}
 

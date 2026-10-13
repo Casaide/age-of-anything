@@ -13,9 +13,10 @@
   "leg (biped)": "bones [thigh, shin], r, foot (length), heel (behind the ankle), ankle (height), foot_r, x",
   "arm (biped)": "shoulder (upright, near side), elbow (from the shoulder), hand and hand_l (the near hand's rest, the shield hand), r per bone, paw; the near arm is the front layer, posed for the hold by unit_models.arm_pose",
   "walk": "stride, stance (share of the cycle a foot is down), lift, steps (baked per leg), phases (quadruped footfall order, x PI), toe_off (biped), gait (UnitView's cadence, bob, rock)",
-  "sit (quadruped)": "order (the idle poses, going down) and poses {pitch, hip_y, hind [x, tilt] or fold {hock, paw, out}}, fore [x, tilt]",
+  "sit (quadruped)": "order (the idle poses, going down) and poses {pitch, hip_y, hind [x, tilt] or fold {hock, paw, out}, head [dx, dy] (the head raised on its neck)}, fore [x, tilt]",
   "idle (biped)": "idle poses {forward, out, pitch} moving the feet only (the torso stays, so worn armour still fits)",
-  "head": "skull, cheeks, stop, muzzle {from, to, r, bridge}, nose, eyes {look, r, iris}, brow, ears {shape round|point, at, size}, whiskers, bridle, top, gear_scale, k (its scale), tilt; or mesh",
+  "head": "skull, cheeks, stop, muzzle {from, to, r, bridge}, nose, eyes {look, r, iris}, brow, ears {shape round|point, at, size}, whiskers, bridle, top, gear_scale, k (its scale), tilt (degrees, nose up +); or mesh",
+  "head_of": "take the head from another kit, changing only what this kit's head names (a mount carrying the biped's head pitched down)",
   "tack": "saddle (seat height over the back), cloth (a saddle cloth and girth for a mount)",
   "sockets": "overrides of what the skeleton derives (seat, girth, hand, torso, back, wings)",
   "stance": "legs.stance for the placement check (relaxed per idle pose)"

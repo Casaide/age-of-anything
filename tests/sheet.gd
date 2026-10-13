@@ -25,6 +25,8 @@ extends SceneTree
 ## A unit ref: {prompt, slot, age?, set?: recipe fields, mount?: {creature, skin, parts?}, rules?}
 ##   or {creature, skin?, mount_body?: true, set?} (the bare creature, no gear)
 ##   or {kit, params, creature, skin?, mount_body?} (a creature-kit creature with its kit's parameters changed)
+##   a prompt ref or a mount may also name {kit, params} (a mount also its creature): the race's unit,
+##   or its mount, on that kit variant (an earlier round's numbers beside the current ones)
 ##   or {part, skin?, family?} (one baked part alone; no placement check).
 
 const DataLib := preload("res://src/data_lib.gd")
@@ -164,15 +166,22 @@ func _unit(ref: Dictionary) -> Dictionary:
 		if ref.has("kit"):
 			cid = _variant(ref)
 		var c: Dictionary = lib.creatures[cid]
-		var body: String = c.get("mount_body", c.body) if ref.get("mount_body", false) else c.body
+		var mb: bool = ref.get("mount_body", false)
+		var body: String = c.get("mount_body", c.body) if mb else c.body
 		u = {"recipe": {"slot": "beast", "role": "beast", "tier": 1, "creature": cid, "family": c.families[0], "skin": ref.get("skin", c.skins[0]),
-			"body": body, "head": c.head, "parts": {}, "scale": 100, "name": c.noun}, "eval": {"speed": 10}}
+			"body": body, "head": c.get("mount_head", c.head) if mb else c.head, "parts": {}, "scale": 100, "name": c.noun}, "eval": {"speed": 10}}
 	if ref.has("set"):
 		u.recipe.merge(ref.set, true)
+	if ref.has("prompt") and ref.has("kit"):   # the race's unit on a kit variant of its creature
+		var vc := _variant(ref)
+		u.recipe.creature = vc
+		u.recipe.body = lib.creatures[vc].body
+		u.recipe.head = lib.creatures[vc].head
 	if ref.has("mount"):
 		var m: Dictionary = ref.mount
-		var mc: Dictionary = lib.creatures[m.creature]
-		u.recipe.mount = {"creature": m.creature, "fused": false, "parts": m.get("parts", {}), "skin": m.get("skin", mc.skins[0])}
+		var mcid: String = _variant(m.merged({"mount_body": true})) if m.has("kit") else m.creature
+		var mc: Dictionary = lib.creatures[mcid]
+		u.recipe.mount = {"creature": mcid, "fused": false, "parts": m.get("parts", {}), "skin": m.get("skin", mc.skins[0])}
 	return u
 
 
@@ -198,7 +207,7 @@ func _variant(ref: Dictionary) -> String:
 	var c: Dictionary = lib.creatures[ref.creature].duplicate(true)
 	c[("mount_body" if ref.get("mount_body", false) else "body")] = body.id
 	if k.has("head") and base.has("head"):
-		c.head = k.parts.head
+		c[("mount_head" if ref.get("mount_body", false) else "head")] = k.parts.head
 	lib.creatures[ref.creature + tag] = c
 	_variants[sig] = ref.creature + tag
 	return ref.creature + tag
