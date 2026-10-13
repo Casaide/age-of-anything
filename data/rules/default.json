@@ -249,12 +249,14 @@
    },
    "worker": {
     "floor": 50,
+    "ceiling": 75,
+    "pop": 1,
     "mix": {
      "food": 100
     }
    }
   },
-  "roles_note": "a role's own price terms (pricing.gd): pct of the base price (soldiers went from base 60 to 100, about 1.7x, D-125; siege engines kept at 60%), then the total is at least floor (before the creature's cost_pct), and mix replaces the parts' cost_mix"
+  "roles_note": "a role's own price terms (pricing.gd): pct of the base price (soldiers went from base 60 to 100, about 1.7x, D-125; siege engines kept at 60%), then the total is at least floor and at most ceiling (before the creature's cost_pct: workers 50-75 food, a centaur's the dearest, D-078), pop sets the role's population (workers 1, even on a horse's body), and mix replaces the parts' cost_mix"
  },
  "animals": true,
  "economy": {

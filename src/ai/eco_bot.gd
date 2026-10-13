@@ -32,6 +32,7 @@ const HUNT_WORKERS := {"herd": 0, "flee": 8, "fight": 12}   # workers we need be
 const PEN_SHEEP := 3           # sheep of ours near home worth a pen for: build one in age 1 (the first are slaughtered meanwhile)
 const BOAR_SOLDIERS := 3       # idle soldiers at home that join a boar party (they lead; workers make up the rest)
 const BOAR_LEAD := 2           # no boar hunt without at least this many of them
+var hold := false              # the full bot's army is under its floor (bot.gd _army_floor): no new workers until it isn't
 var AGE_WORKERS := 16          # with this many workers, stop training and save for the next age
 var REBALANCE := 0             # ticks between moving one gatherer from a resource we have enough of to one we're short of (0: never)
 const GOAL_SPARE := 100        # a resource counts as saved up once its stock is this much over the goal
@@ -123,7 +124,7 @@ func think(w) -> void:
 	# Keep the Town Center busy.
 	var worker_type: int = w.type_of(player, "worker")
 	var t: Dictionary = w.types[worker_type]
-	if not saving and w.tick >= _next_train and bs.queue[tc].size() < 2 and count + bs.queue[tc].size() < MAX_WORKERS \
+	if not saving and not hold and w.tick >= _next_train and bs.queue[tc].size() < 2 and count + bs.queue[tc].size() < MAX_WORKERS \
 			and w.can_afford(player, t.cost):
 		w.issue(player, Commands.TRAIN, {"building": bs.id[tc], "slot": "worker"})
 		_next_train = w.tick + TRAIN_COOLDOWN

@@ -4,7 +4,9 @@ extends RefCounted
 ## (families.json). Derived from the creature and culture alone, never from the recipes, so race
 ## keys don't change. Deterministic: fixed layer order, data order inside a layer.
 ##
-## Bonuses: one from each layer (a creature with no group gives two of its own). A later layer's
+## Bonuses (expanded 2026-10-13 to the genre's level of difference): one from the group, two
+## from the creature (three with no group), three from the culture, one of them a team bonus
+## (`team`: its effects reach allies too, Tech.setup; never a priced unit stat). A later layer's
 ## bonus of a kind the race already has (the same scope and stat in its effects, or the same
 ## `kind`) takes its `alt`, so no race doubles up. Effects are research effects (D-111,
 ## src/sim/tech.gd). Unit stat effects that live in a unit's eval are "priced": pricing.gd adds
@@ -58,9 +60,9 @@ static func of(creature: String, family: String, d := {}) -> Dictionary:
 		var g: Dictionary = d.groups[group]
 		assert(g.bonuses.size() == 1, "Group %s needs one bonus" % group)
 		layers.append(["group", g.name, g.bonuses])
-	assert(c.get("bonuses", []).size() == (1 if group != "" else 2), "Creature %s needs %s bonus(es)" % [creature, "one" if group != "" else "two"])
+	assert(c.get("bonuses", []).size() == (2 if group != "" else 3), "Creature %s needs %s bonuses" % [creature, "two" if group != "" else "three"])
 	layers.append(["creature", c.plural, c.bonuses])
-	assert(f.get("bonuses", []).size() == 1, "Culture %s needs one bonus" % family)
+	assert(f.get("bonuses", []).size() == 3 and f.bonuses.filter(func(b): return b.get("team", false)).size() == 1, "Culture %s needs three bonuses, one for the team" % family)
 	layers.append(["culture", String(family).capitalize(), f.bonuses])
 	var bonuses := []
 	var kinds := {}
@@ -72,8 +74,10 @@ static func of(creature: String, family: String, d := {}) -> Dictionary:
 				pick = b.alt
 			assert(not kinds.has(kind_of(pick)), "%s's alt \"%s\" doubles another too" % [layer[1], pick.text])
 			kinds[kind_of(pick)] = true
+			var team: bool = b.get("team", false)
+			assert(not team or not pick.get("effects", []).any(func(fx): return priced(fx)), "%s's team bonus \"%s\" can't be a priced unit stat" % [layer[1], pick.text])
 			bonuses.append({"from": layer[1], "layer": layer[0], "text": pick.text, "effects": pick.get("effects", []), "kind": kind_of(pick),
-				"price_points": int(pick.get("price_points", 0))})
+				"price_points": int(pick.get("price_points", 0)), "team": team})
 	var research: Array = c.get("research", []) + f.get("research", [])
 	var lacks := []
 	for id in c.get("lacks", []) + f.get("lacks", []):
@@ -101,6 +105,8 @@ static func kind_of(b: Dictionary) -> String:
 	for fx in b.get("effects", []):
 		if fx.has("gather"):
 			parts.append("gather:%s" % fx.gather)
+		elif fx.has("start"):
+			parts.append("start:%s" % fx.start)
 		elif fx.has("tag"):
 			parts.append("tag:%s/%s" % [fx.tag, fx.stat])
 		else:
@@ -125,6 +131,15 @@ static func sim_effects(ident: Dictionary) -> Array:
 		for fx in b.effects:
 			if not priced(fx):
 				out.append(fx)
+	return out
+
+
+## The effects of a race's team bonuses (they reach its allies too: Tech.setup).
+static func team_effects(ident: Dictionary) -> Array:
+	var out := []
+	for b in ident.bonuses:
+		if b.team:
+			out.append_array(b.effects)
 	return out
 
 

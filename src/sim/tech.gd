@@ -23,6 +23,7 @@ extends RefCounted
 ##       ids): add: BUILDING_ADD; pct: BUILDING_PCT. Kept per player in w.bmods (see refresh).
 ##       range: a shooting building's reach in tiles (Slit Windows).
 ##   {"gather": "wood", "pct": 15}   gathers wood 15% faster (cuts the ticks per unit).
+##   {"start": "food", "add": 100}   100 more food at the start (race bonuses only: Economy.setup).
 ##   {"building": "watchtower", "becomes": "bastion"}   tower_upgrade: every building of the first
 ##       type turns into the second where it stands, keeping its share of health (and of the work
 ##       on a foundation); ordering the first builds the second from then on (Economy.upgraded).
@@ -32,7 +33,7 @@ extends RefCounted
 ## work like research it was born with: they come first in every sum (_effects), from setup on.
 ## Its own research (a creature's or culture's, tech.json `own`) is open only to the creatures and
 ## cultures that name it; what it lacks (research, buildings, lines, "trade") stays shut, unless
-## the host's full_tech_tree rule.
+## the host's full_tech_tree rule. A team bonus (a culture's `team`) works for its allies too.
 
 const Economy := preload("res://src/sim/economy.gd")
 const Combat := preload("res://src/sim/combat.gd")
@@ -48,7 +49,7 @@ const NOT_IN_TREE := "not in this race's tech tree"
 const UNIT_EXTRA := ["sight", "carry", "kill_gold", "wade", "reach", "slow_on_hit"]
 const UNIT_PCT := ["speed", "reload", "cost", "train_time", "build_speed", "carry", "heal"]   # carry: of the rules' carry
 const BUILDING_ADD := ["sight", "armour.melee", "armour.pierce", "trade_fee", "range", "pop"]   # trade_fee: points of the market's fee
-const BUILDING_PCT := ["hp", "food", "research_time", "cost", "research_cost"]   # food: a farm's pool, sown or reseeded; research_cost: research there
+const BUILDING_PCT := ["hp", "food", "research_time", "cost", "research_cost", "age_time"]   # food: a farm's pool, sown or reseeded; research_cost: research there; age_time: the age-up there
 
 
 static func load_tech(resources: Array, btypes: Array) -> Dictionary:
@@ -102,6 +103,9 @@ static func _check(fx: Dictionary, id: String) -> void:
 	if fx.has("becomes"):
 		assert(fx.has("building") and fx.building != "all", "%s: an upgrade names the building it turns" % id)
 		return
+	if fx.has("start"):
+		assert(fx.has("add") and fx.start is String, "%s: a start effect names a resource and an add" % id)
+		return
 	assert(fx.has("stat") and (fx.has("add") != fx.has("pct")), "%s: an effect needs a stat and an add or a pct" % id)
 	if fx.has("tag"):
 		assert(not fx.has("pct") or fx.stat in UNIT_PCT, "%s: no unit pct for %s" % [id, fx.stat])
@@ -126,6 +130,10 @@ static func setup(w) -> void:
 		var ident: Dictionary = Identity.of(w.races[p].creature, w.races[p].family).duplicate()
 		ident.fx = Identity.sim_effects(ident)
 		w.ident.append(ident)
+	for p in w.races.size():   # team bonuses reach allies too (in player order)
+		for q in w.races.size():
+			if q != p and w.teams[q] == w.teams[p]:
+				w.ident[p].fx = w.ident[p].fx + Identity.team_effects(w.ident[q])
 		refresh(w, p)
 		retype(w, p)   # the race's bonuses on its units (sight, carry, ...) from the start
 
@@ -222,8 +230,7 @@ static func head_ticks(w, b: int) -> int:
 		return 0
 	var p: int = w.buildings.owner[b]
 	var ticks := int(item_of(w, p, t).ticks)
-	if t != AGE_UP:
-		ticks = ticks * (100 + bpct(w, p, w.buildings.kind[b], "research_time")) / 100
+	ticks = ticks * (100 + bpct(w, p, w.buildings.kind[b], "research_time" if t != AGE_UP else "age_time")) / 100
 	return maxi(1, ticks)
 
 

@@ -64,7 +64,9 @@ static func evaluate(recipe: Dictionary, lib, rules: Dictionary) -> Dictionary:
 		_add_mix(mix, p, DEFAULT_MIX)
 
 	if recipe.has("mount"):
-		var mount_body: Dictionary = lib.part(lib.creatures[recipe.mount.creature].get("mount_body", lib.creatures[recipe.mount.creature].body))
+		var mc: Dictionary = lib.creatures[recipe.mount.creature]
+		# A fused mount (a centaur's horse half) is priced as its own body (fused_body), as it's drawn (unit_view.gd).
+		var mount_body: Dictionary = lib.part(mc.get("fused_body", mc.body) if recipe.mount.get("fused", false) else mc.get("mount_body", mc.body))
 		var ms: Dictionary = mount_body.stats
 		hp += int(ms.get("hp", 0))
 		_add_classes(armour, ms.get("armour", {}))
@@ -86,7 +88,8 @@ static func evaluate(recipe: Dictionary, lib, rules: Dictionary) -> Dictionary:
 			for t in mp.tags:
 				tags[t] = true
 		tags["mounted"] = true
-		tags["large"] = true
+		if mount_body.get("large", true):   # (a centaur's own horse half isn't a big beast under a rider: body.pony_fused)
+			tags["large"] = true
 
 	# The line's own counters and stats (rules roster "bonus" and "stats": the swordsman's counters, the
 	# scout's pace and sight; "stats_on_foot" for one with nothing to ride), whatever it holds, and a
@@ -160,11 +163,13 @@ static func evaluate(recipe: Dictionary, lib, rules: Dictionary) -> Dictionary:
 
 	var c: Dictionary = rules.cost
 	var total: int = (int(c.base) * lib.curve(c.curve, points) + 500) / 1000
-	# A role can have its own price terms (rules.cost.roles): a pct of the base price, a floor, and a mix that
-	# replaces the parts' own (workers cost food, and at least the floor).
+	# A role can have its own price terms (rules.cost.roles): a pct of the base price, a floor and a ceiling,
+	# and a mix that replaces the parts' own (workers cost food, between the floor and the ceiling).
 	var terms: Dictionary = c.get("roles", {}).get(recipe.get("role", ""), {})
 	total = total * int(terms.get("pct", 100)) / 100   # a role priced off the common base (siege kept where it was)
 	total = maxi(total, int(terms.get("floor", 0)))
+	if terms.has("ceiling"):
+		total = mini(total, int(terms.ceiling))   # a big body's worker (a centaur) dearer, not a horseman's price (D-078)
 	if terms.has("mix"):
 		mix = terms.mix.duplicate()
 	total = total * (100 + cost_pct) / 100
@@ -199,7 +204,7 @@ static func evaluate(recipe: Dictionary, lib, rules: Dictionary) -> Dictionary:
 		"points": points,
 		"cost": cost,
 		"train_time": maxi(3, (int(c.train_base) * lib.curve(c.train_curve, points) * (100 + train_pct) / 100 + 500) / 1000),
-		"pop": 2 if tags.has("large") else 1,
+		"pop": int(terms.get("pop", 2 if tags.has("large") else 1)),   # a role can set its own (a worker is one head, even a centaur)
 		"radius": int(body.stats.get("radius", 0)),
 		"sight": sight,   # a body's own size in milli-tiles (engines); 0: by scale
 	}

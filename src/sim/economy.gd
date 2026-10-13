@@ -168,6 +168,10 @@ static func setup(w) -> void:
 			g.append(0)
 		w.stock.append(s)
 		w.gathered.append(g)
+	for p in w.races.size():   # race bonuses with more at the start (the Nile's granary, an ally's too)
+		for fx in w.ident[p].fx:
+			if fx.has("start"):
+				w.stock[w.resources.find(fx.start)][p] += int(fx.add)
 	for p in w.races.size():
 		w.pop.append(0)
 		w.pop_cap.append(0)

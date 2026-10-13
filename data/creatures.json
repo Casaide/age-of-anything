@@ -10,6 +10,25 @@
     "text": "Amphibious: swim the shallows, quicker in the swamp",
     "kind": "terrain",
     "effects": []
+   },
+   {
+    "text": "Long tongues: food gathered 20% faster",
+    "effects": [
+     {
+      "gather": "food",
+      "pct": 20
+     }
+    ],
+    "alt": {
+     "text": "Long legs: workers carry +2",
+     "effects": [
+      {
+       "tag": "worker",
+       "stat": "carry",
+       "add": 2
+      }
+     ]
+    }
    }
   ],
   "research": [
@@ -46,19 +65,22 @@
  "rat": {
   "war_beast": "boar",
   "voice": "rat",
-  "push_home": {"stone": "siege.barrow.junk", "gold": "siege.handcart.junk"},
+  "push_home": {
+   "stone": "siege.barrow.junk",
+   "gold": "siege.handcart.junk"
+  },
   "_push_home_doc": "D-127: a worker carrying this load home pushes this engine (the scrap barrow, the handcart) instead of holding it (src/view/town_life.gd tool_for, UnitView.push_recipe)",
   "noun": "Rat",
   "plural": "Rats",
   "group": "rodents",
   "bonuses": [
    {
-    "text": "Units 20% cheaper and train 20% faster (a swarm that breeds fast)",
+    "text": "Units 10% cheaper and train 20% faster (a swarm that breeds fast)",
     "effects": [
      {
       "tag": "all",
       "stat": "cost",
-      "pct": -20
+      "pct": -10
      },
      {
       "tag": "all",
@@ -66,6 +88,28 @@
       "pct": -20
      }
     ]
+   },
+   {
+    "text": "Burrowers: stone and gold mined 10% faster",
+    "effects": [
+     {
+      "gather": "stone",
+      "pct": 10
+     },
+     {
+      "gather": "gold",
+      "pct": 10
+     }
+    ],
+    "alt": {
+     "text": "Nibblers: food gathered 5% faster",
+     "effects": [
+      {
+       "gather": "food",
+       "pct": 5
+      }
+     ]
+    }
    }
   ],
   "research": [
@@ -121,6 +165,24 @@
       }
      ]
     }
+   },
+   {
+    "text": "Prospectors: gold mined 15% faster",
+    "effects": [
+     {
+      "gather": "gold",
+      "pct": 15
+     }
+    ],
+    "alt": {
+     "text": "Quarrymen: stone mined 15% faster",
+     "effects": [
+      {
+       "gather": "stone",
+       "pct": 15
+      }
+     ]
+    }
    }
   ],
   "research": [
@@ -166,6 +228,33 @@
       "pct": -50
      }
     ]
+   },
+   {
+    "text": "Silk-spun camps: Lumber Camp, Mining Camp and Mill cost 25% less",
+    "effects": [
+     {
+      "building": [
+       "lumber_camp",
+       "mining_camp",
+       "mill"
+      ],
+      "stat": "cost",
+      "pct": -25
+     }
+    ],
+    "alt": {
+     "text": "Silk-bound towers: Watchtowers +20% hit points",
+     "effects": [
+      {
+       "building": [
+        "watchtower",
+        "bastion"
+       ],
+       "stat": "hp",
+       "pct": 20
+      }
+     ]
+    }
    }
   ],
   "research": [
@@ -184,7 +273,7 @@
     "heal"
    ],
    "range": 5000,
-   "cooldown": 600,
+   "cooldown": 900,
    "radius": 1500,
    "lasts": 300,
    "slow_pct": 50,
@@ -228,6 +317,24 @@
      }
     ],
     "price_points": 1
+   },
+   {
+    "text": "Bark borers: wood gathered 15% faster",
+    "effects": [
+     {
+      "gather": "wood",
+      "pct": 15
+     }
+    ],
+    "alt": {
+     "text": "Diggers: stone mined 20% faster",
+     "effects": [
+      {
+       "gather": "stone",
+       "pct": 20
+      }
+     ]
+    }
    }
   ],
   "research": [
@@ -294,6 +401,29 @@
       "pct": 60
      }
     ]
+   },
+   {
+    "text": "Foragers on the move: food gathered 15% faster, and 100 more food at the start",
+    "effects": [
+     {
+      "gather": "food",
+      "pct": 15
+     },
+     {
+      "start": "food",
+      "add": 100
+     }
+    ],
+    "alt": {
+     "text": "Grazing lands: farms hold 20% more food",
+     "effects": [
+      {
+       "building": "farm",
+       "stat": "food",
+       "pct": 20
+      }
+     ]
+    }
    }
   ],
   "research": [

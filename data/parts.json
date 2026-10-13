@@ -94,6 +94,7 @@
   "cut": ["legs"],
   "noun": "Rat",
   "points": 2,
+  "price_points": 3,
   "tags": [
    "infantry",
    "swarm"
@@ -289,6 +290,7 @@
   "cut": ["legs"],
   "noun": "Spider",
   "points": 6,
+  "price_points": 7,
   "rider_loses": [
    "infantry"
   ],
@@ -1295,6 +1297,11 @@
   "noun": "Pony",
   "cut": ["legs"],
   "points": 9,
+  "price_points": 11,
+  "cost_mix": {"food": 50, "wood": 50},
+  "large": false,
+  "large_note": "a centaur is one body, not a rider on a big beast: mounted (cavalry, quick), but not large (one place in a house, and spears' bonus against large beasts doesn't reach it)",
+  "cost_mix_note": "a centaur's horse half is its own body, priced like a body (half food, half wood), not a ridden mount that eats (70/30)",
   "rider_loses": [
    "infantry"
   ],
