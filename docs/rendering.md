@@ -525,7 +525,7 @@ godot --path . --audio-driver Dummy --always-on-top --script res://tests/sheet.g
 
 Specs so far: `bears_b1` (round B1), `bears_b2` (round B2, with each B1 row rebuilt as a kit
 variant: a prompt unit or a mount can name `kit` + `params`), `kit_cat` (the kit against the game's cat),
-milestone 13's `trade_carts_tc1`, `war_beasts_wb1` and `_wb2`, `sapper_sp1`, `great_sling_gs1` and `_gs2`, the heroes' `heroes_hr2_*` (D-127: named champions; `tests/hero_names.gd` prints the names the naming contract in `data/later/heroes.json` gives a race) (concept files staged
+milestone 13's `trade_carts_tc1`, `war_beasts_wb1` and `_wb2`, `sapper_sp1`, `great_sling_gs1`, `_gs2` and `_fs1` (the frogs' great sling), the in-play `war_beasts_play` and `great_sling_play` (D-129), the heroes' `heroes_hr2_*` (D-127: named champions; `tests/hero_names.gd` prints the names the naming contract in `data/later/heroes.json` gives a race) (concept files staged
 from `data/later/`; a staged concept model file must be listed in `bake_cache.gd` SOURCES, or a stale
 bake of it is reused; concept hand parts carry `only_if: ["concept_only"]` so the generator never
 picks them for a staged race), `trade_carts_play` and `rat_push_home` (D-127 in play; a unit ref may
@@ -543,3 +543,13 @@ These stay, because they draw what the tool doesn't:
 - `town_concept_sheet.gd`, `building_sheet.gd`: buildings and props
 - `ui_sheet.gd`, `cursor_sheet.gd`: UI
 - `anim_fight_sheet.gd`: attack and death frames in time
+
+## Siege shots (2026-10-13)
+
+What engines throw is baked art, not drawn shapes (Dominic: "the rocks they throw look really bad"). An engine's body
+part names its look (parts.json `shot`), `data/siege_shots.json` describes it: the sprite (`shot.<look>`, modelled in
+`scenes/art_pixel/siege_models.gd` shot_model and baked in 8 facings with the engine's other parts by
+`art_kit._unit_jobs`), its spin (facings a second it tumbles through; 0 flies nose first, the facing nearest its
+heading, pitched a little along the arc), its ground shadow and its impact (bounce, break, stick; chunks in its
+colour). `src/view/combat_fx.gd` draws them; until a look is baked the old flat shape shows. Check with
+`tests/shot_sheet.gd` (before and after, impacts at three moments).

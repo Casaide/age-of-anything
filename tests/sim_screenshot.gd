@@ -33,7 +33,8 @@ extends SceneTree
 ## Watchtower, the Town Center selected) with an Outpost by, enemy spears coming; ":bastion" with
 ## the Bastion research done (the tower a Bastion).
 ## "engines", "ram", "catapult": siege engines rolling out, rams at a stone gate, a catapult
-## volley on a crowd (see _engines).
+## volley on a crowd (see _engines). "beasts" (D-129): each side's war beasts walking at the other
+## and its great sling: one set up and throwing, one rolling on its wagon (packed).
 ## "gather:<tick>[:hunt]" (Reed Meadow): twelve of side 0's workers sent to one bug bush of the
 ## clump by its Town Center, a mill beside it (":hunt": six on a carcass south of it); shot at that tick.
 ## "walkway[:breach|:climb][:zoom]" (milestone 16): a stone ring round side 0's Town Center (gatehouses,
@@ -171,7 +172,7 @@ func _initialize() -> void:
 		await _volley(view, map_id, scene.get_slice(":", 1) if ":" in scene else "large")
 	elif scene.begins_with("formation"):
 		await _formation(view, map_id, int(scene.get_slice(":", 1)), float(scene.get_slice(":", 2)) if scene.count(":") > 1 else 0.0)
-	elif scene in ["engines", "ram", "catapult"]:
+	elif scene in ["engines", "ram", "catapult", "beasts"]:
 		await _engines(view, map_id, scene)
 	elif scene.begins_with("siege"):
 		await _siege(view, int(scene.get_slice(":", 1)))
@@ -879,6 +880,13 @@ func _engines(view, map_id: String, what: String) -> void:
 			w.issue(0, "spawn", {"slot": "ram", "count": 3, "x": gx * 1000 + 4500, "y": int(meet.y)})   # on the camera's side of the wall
 			mine = [start, 3]
 			look = Vector2(gx * 1000.0 + 1500.0, gy * 1000.0 + 500.0)
+		"beasts":
+			for p in 2:
+				var sx := int(meet.x) + (-3500 if p == 0 else 3500)
+				w.issue(p, "spawn", {"slot": "war_beast", "count": 2, "x": sx, "y": int(meet.y) - 1500})
+				w.issue(p, "spawn", {"slot": "great_sling", "count": 1, "x": sx + (-2500 if p == 0 else 2500), "y": int(meet.y) + 2500})
+				w.issue(p, "spawn", {"slot": "great_sling", "count": 1, "x": sx, "y": int(meet.y) + 1200})
+			mine = [start, 8]
 		"catapult":
 			for q in 3:
 				w.issue(0, "spawn", {"slot": "catapult", "count": 1, "x": int(meet.x) - 7000, "y": int(meet.y) - 2200 + q * 2200})
@@ -892,7 +900,7 @@ func _engines(view, map_id: String, what: String) -> void:
 	for i in w.units.count():
 		if not w.types[w.units.kind[i]].worker and not w.types[w.units.kind[i]].has("animal"):
 			(ours if w.units.owner[i] == 0 else theirs).append(w.units.id[i])
-	if not theirs.is_empty():
+	if not theirs.is_empty() and what != "beasts":
 		w.issue(1, "stance", {"ids": theirs, "stance": "passive"})
 	match what:
 		"engines":
@@ -905,12 +913,25 @@ func _engines(view, map_id: String, what: String) -> void:
 			w.issue(0, "attack", {"ids": ours, "target": gate})
 		"catapult":
 			w.issue(0, "attack_move", {"ids": ours, "x": int(meet.x), "y": int(meet.y)})
+		"beasts":   # the beasts and one sling of each side roll on (the sling on its wagon); the other sling stands, sets up
+			for p in 2:
+				var ids := []
+				for i in w.units.count():
+					if w.units.owner[i] == p and w.types[w.units.kind[i]].slot in ["war_beast", "great_sling"] and not w.types[w.units.kind[i]].worker:
+						if w.types[w.units.kind[i]].slot == "war_beast" or absi(w.units.y[i] - (int(meet.y) + 1200)) < 400:
+							ids.append(w.units.id[i])
+				w.issue(p, "move", {"ids": ids, "x": int(meet.x) + (1500 if p == 0 else -1500), "y": int(meet.y)})
 	view.camera.zoom = Vector2(3.0, 3.0)
 	view._on_zoom()
 	view.camera.look_at_point(Iso.to_screen(look.x, look.y))
 	match what:
 		"engines":
 			for f in 150:
+				await process_frame
+		"beasts":
+			view.camera.zoom = Vector2(2.4, 2.4)
+			view._on_zoom()
+			for f in 130:
 				await process_frame
 		"ram":
 			var hits := 0

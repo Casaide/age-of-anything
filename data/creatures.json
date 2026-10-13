@@ -1,5 +1,6 @@
 {
  "frog": {
+  "war_beast": "heron",
   "voice": "frog",
   "noun": "Frog",
   "plural": "Frogs",
@@ -43,6 +44,7 @@
   "unique": "bullfrog"
  },
  "rat": {
+  "war_beast": "boar",
   "voice": "rat",
   "push_home": {"stone": "siege.barrow.junk", "gold": "siege.handcart.junk"},
   "_push_home_doc": "D-127: a worker carrying this load home pushes this engine (the scrap barrow, the handcart) instead of holding it (src/view/town_life.gd tool_for, UnitView.push_recipe)",
@@ -94,6 +96,7 @@
   "_unique_doc": "the creature's own unique unit theme (data/uniques.json), ahead of its culture's; a theme the prompt asked for (cheese -> the Big Cheese) comes first"
  },
  "human": {
+  "war_beast": "elephant",
   "voice": "human",
   "noun": "Folk",
   "plural": "Humans",
@@ -142,6 +145,7 @@
   "giant_ok": false
  },
  "spider": {
+  "war_beast": "tarantula",
   "harness": true,
   "voice": "spider",
   "noun": "Spider",
@@ -203,6 +207,7 @@
   "unique": "web_lurker"
  },
  "beetle": {
+  "war_beast": "mantis",
   "harness": true,
   "_harness_doc": "carries its weapons in a harness, no hands (its rig's carry \"harness\"): it clings to a mount and can't draw a bow there, so no mounted archer line (rules roster needs_hands)",
   "voice": "beetle",
@@ -274,6 +279,7 @@
   ]
  },
  "centaur": {
+  "war_beast": "elephant",
   "voice": "centaur",
   "noun": "Centaur",
   "plural": "Centaurs",

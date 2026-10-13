@@ -1,0 +1,18 @@
+{
+ "name": "great_sling_fs1",
+ "title": "The frogs' great sling, concept round FS1 (D-129): a bullfrog leaper, a stilt sling, a crayfish winder",
+ "_doc": "Dominic on GS2's frogs: 'the tortoise one is wrong, and the plain one probably too boring'. Three swamp ideas that repeat none of their beasts (turtle ram, snail catapult, toad bolt thrower, heron war beast, newt cavalry). Size references: a frog worker, the frogs' snail catapult (their great sling's stand-in in play), the humans' great sling as played (GS2). Models: scenes/art_pixel/m13_concepts.gd (FS1), staged from data/later/m13_concepts.json. Notes: docs/concepts/great_sling/README.md.",
+ "stage": ["res://data/later/m13_concepts.json"],
+ "zooms": [3, 1],
+ "cell": [210, 110],
+ "size": [{"prompt": "swamp frogs", "slot": "worker"}, {"prompt": "swamp frogs", "slot": "great_sling", "age": 3}, {"prompt": "romans", "slot": "great_sling", "age": 3}],
+ "rows": [
+  {"label": "swamp frogs A:\nthe bullfrog leaper,\na counterweight sling,\nthe bullfrog its weight", "h": 1.3, "unit": {"prompt": "swamp frogs", "slot": "great_sling", "age": 3, "set": {"body": "concept.fs1_a"}}},
+  {"label": "swamp frogs B:\nthe stilt sling, a deck\non reed stilts over\na sledge", "h": 1.3, "unit": {"prompt": "swamp frogs", "slot": "great_sling", "age": 3, "set": {"body": "concept.fs1_b"}}},
+  {"label": "swamp frogs C:\nthe crayfish winder,\nthe ropes in its claws", "h": 1.6, "unit": {"prompt": "swamp frogs", "slot": "great_sling", "age": 3, "set": {"body": "concept.fs1_c"}}}
+ ],
+ "sheets": [
+  {"name": "four", "title": "four facings", "columns": [
+   {"facing": 0, "label": "f0 right"}, {"facing": 2, "label": "f2 towards"}, {"facing": 5, "label": "f5"}, {"facing": 6, "label": "f6 away"}]}
+ ]
+}

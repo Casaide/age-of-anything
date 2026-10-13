@@ -139,6 +139,7 @@ func _members_front(model: Node3D, sockets: Dictionary, names: Array, view: Vect
 					var q: Vector3 = t * (box.position + box.size * Vector3(float(i) / n.x, float(j) / n.y, float(l) / n.z))
 					pts.append(Vector3(q.dot(right), q.dot(up), q.dot(view)))
 	var out := {}
+	var apart := []   # members the engine is neither in front of nor behind
 	for name in names:
 		var nearer := 0
 		var farther := 0
@@ -153,6 +154,24 @@ func _members_front(model: Node3D, sockets: Dictionary, names: Array, view: Vect
 					elif q.z < dc - 1.0:
 						farther += 1
 		out[name] = nearer <= farther if nearer + farther > 0 else sockets[name].dot(Vector3(view.x, 0, view.z)) > 0.0
+		if nearer + farther == 0:
+			apart.append(name)
+	# A member nowhere in front of or behind the engine goes under it all the same when one nearer the
+	# camera than it does: else it's drawn over that nearer member (the great sling's file of haulers,
+	# lined up in a diagonal view, the first partly behind the frame: placement C4).
+	# The same for one drawn over the engine where a member nearer the camera that's drawn under it covers
+	# it on screen: under, with that member (a member counts for more than the frame's edge behind it).
+	var order := names.duplicate()   # nearest the camera first, so it carries on down a file
+	order.sort_custom(func(a, b): return sockets[a].dot(view) > sockets[b].dot(view))
+	for name in order:
+		if not out[name]:
+			continue
+		var d: float = sockets[name].dot(view)
+		var sc := Vector2(sockets[name].dot(right), sockets[name].dot(up))
+		for other in names:
+			var so := Vector2(sockets[other].dot(right), sockets[other].dot(up))
+			if not out[other] and sockets[other].dot(view) > d and (name in apart or (absf(so.x - sc.x) < MEMBER_HALF.x * 2.0 and absf(so.y - sc.y) < MEMBER_COLUMN[-1])):
+				out[name] = false
 	return out
 
 

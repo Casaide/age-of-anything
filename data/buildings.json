@@ -388,7 +388,8 @@
    "drop_off": [],
    "trains": [
     "large",
-    "scout"
+    "scout",
+    "war_beast"
    ],
    "age": 2,
    "hotkey": "Z",
