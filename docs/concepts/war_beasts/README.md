@@ -8,15 +8,17 @@ Sheets: `wb1_3x.png`, `wb1_1x.png`; archive `archive/images/2026-10-13/422-`, `4
 `tests/sheets/war_beasts_wb1.json`, models `scenes/art_pixel/m13_concepts.gd`, staged from
 `data/later/m13_concepts.json`. Drawn like the siege beasts (one baked body, its people on top on
 sockets); the riders on the sheet are workers, in play they'd be the race's soldiers. All rows pass the
-placement check.
+placement check. (2026-10-13, under the stronger composite check: the two riders in a howdah stood in
+each other on every beast; they now sit corner to corner, and the frogs' toad and the spiders' tarantula
+carry one rider in the middle, as two frogs or two spiders don't fit. Sheets re-rendered.)
 
 | Family | A | B |
 |---|---|---|
 | Humans | war elephant with a howdah, two riders | armoured elephant: a caparison in the culture's cloth, bronze brow plate, one rider on its neck |
-| Frogs | the giant toad (the bolt thrower's) with a howdah | the giant toad in thorned bark plates, one rider |
+| Frogs | the giant toad (the bolt thrower's) with a howdah, one rider | the giant toad in thorned bark plates, one rider |
 | Rats | a giant capybara with a howdah | a war boar, one rider |
 | Forest beetles | a giant stag beetle (great jaws), a howdah | the ram's rhinoceros beetle (for comparison) |
-| Spooky spiders | a tarantula with a howdah | a black widow (red hourglass), one rider |
+| Spooky spiders | a tarantula with a howdah, one rider | a black widow (red hourglass), one rider |
 
 What I see at game scale:
 - The elephant is the strongest read on the sheet in every facing; the howdah version reads as "a lot

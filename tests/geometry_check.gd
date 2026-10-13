@@ -40,7 +40,7 @@ static func run(g, cases: Array, timed := false) -> int:
 	var seen := {}
 	for c in cases:
 		var r: Dictionary = c[1].recipe
-		var sig := JSON.stringify([r.body, r.get("head", ""), r.parts, r.get("mount", {}), r.get("crew", {}), r.get("slot", ""), r.skin], "", true)
+		var sig := JSON.stringify([r.body, r.get("head", ""), r.parts, r.get("mount", {}), r.get("crew", {}), r.get("haul", {}), r.get("slot", ""), r.skin], "", true)
 		if seen.has(sig):
 			continue
 		seen[sig] = true

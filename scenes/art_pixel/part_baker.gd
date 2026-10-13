@@ -109,6 +109,50 @@ func bake(id: String, shapes: Array, colours: Dictionary) -> void:
 	PartShape.baked[key] = {"img": pix, "tex": ImageTexture.create_from_image(pix), "origin": origin, "scale": art_scale}
 
 
+const MEMBER_COLUMN := [3.0, 8.0, 13.0, 18.0]   # a member standing on its socket: points up its middle...
+const MEMBER_HALF := Vector2(4.0, 2.5)           # ...each as wide and tall as this on screen (part units)
+
+
+## For each member socket: true when the member stands in front of most of the engine it overlaps on
+## screen. The engine is sampled through its meshes' boxes on a 2-unit grid (a box's corners alone
+## would weigh a roof like a bolt).
+func _members_front(model: Node3D, sockets: Dictionary, names: Array, view: Vector3) -> Dictionary:
+	var right := Vector3.UP.cross(view).normalized()
+	var up := view.cross(right)
+	var pts := []   # [screen x, screen y, depth]
+	for mi in model.find_children("*", "MeshInstance3D", true, false):
+		if not (mi as MeshInstance3D).visible or (mi as MeshInstance3D).mesh == null:
+			continue
+		var t := (mi as Node3D).transform
+		var p: Node = mi.get_parent()
+		while p != null and p != model.get_parent():
+			t = (p as Node3D).transform * t
+			p = p.get_parent()
+		var box: AABB = (mi as MeshInstance3D).mesh.get_aabb()
+		var n := Vector3i((box.size / 2.0).ceil()).max(Vector3i.ONE)
+		for i in n.x + 1:
+			for j in n.y + 1:
+				for l in n.z + 1:
+					var q: Vector3 = t * (box.position + box.size * Vector3(float(i) / n.x, float(j) / n.y, float(l) / n.z))
+					pts.append(Vector3(q.dot(right), q.dot(up), q.dot(view)))
+	var out := {}
+	for name in names:
+		var nearer := 0
+		var farther := 0
+		for h in MEMBER_COLUMN:
+			var c: Vector3 = sockets[name] + Vector3(0, h, 0)
+			var sc := Vector2(c.dot(right), c.dot(up))
+			var dc := c.dot(view)
+			for q in pts:
+				if absf(q.x - sc.x) < MEMBER_HALF.x and absf(q.y - sc.y) < MEMBER_HALF.y:
+					if q.z > dc + 1.0:
+						nearer += 1
+					elif q.z < dc - 1.0:
+						farther += 1
+		out[name] = nearer <= farther if nearer + farther > 0 else sockets[name].dot(Vector3(view.x, 0, view.z)) > 0.0
+	return out
+
+
 ## A hand-built model, seen three-quarter; its sockets come along, projected into 2D part units.
 func _bake_model(id: String, colours: Dictionary, bake_key: String, k := 0) -> void:
 	var rig_id := id + PartShape.facing_suffix(k)
@@ -269,6 +313,12 @@ func _bake_model(id: String, colours: Dictionary, bake_key: String, k := 0) -> v
 		for s in spec.sockets:
 			rig.sockets[s] = to2d.call(spec.sockets[s])
 			rig.depth[s] = spec.sockets[s].dot(flat)   # > 0: nearer the camera than the body's middle
+		# An engine's members beside it (crew, haulers; not those inside its frame or riding on top) are
+		# drawn over it or under it by which is in front where they overlap on screen, not by the socket's
+		# depth alone (a centaur crew's torso rose in front of a ram's roof drawn under it: placement C4).
+		var members: Array = spec.sockets.keys().filter(func(s): return (s.begins_with("crew") or s.begins_with("haul")) and not s.ends_with("_in") and not s.ends_with("_top"))
+		if not members.is_empty():
+			rig["front"] = _members_front(model, spec.sockets, members, view)
 		# Which way the model's front (+x) points on screen in this facing, to pick facings by.
 		rig.dir = (cam.unproject_position(Vector3(20, 0, 0)) - zero).normalized()
 		if spec.has("anchors"):   # a leg on the camera's side of the body is the near leg

@@ -24,7 +24,7 @@ extends SceneTree
 ##                          "idle:<pose>" (8, in that pose), "walk:<k>,<k>" (4 steps per facing),
 ##                          "cycle:<k>" (8 steps in one facing), "holds:<h>,<h>" (2 facings per hold)
 ##                        a column object: {facing, pose: stand|walk|hold|<idle pose>, step, steps, hold, other, label}
-## A unit ref: {prompt, slot, age?, set?: recipe fields, add_parts?: {slot: part} over its own kit, mount?: {creature, skin, parts?}, rules?}
+## A unit ref: {prompt, slot, age?, set?: recipe fields, add_parts?: {slot: part} over its own kit, mount?: {creature, skin, parts?}, push?: engine part (the unit pushing it home: UnitView.push_recipe), rules?}
 ##   or {creature, skin?, mount_body?: true, set?} (the bare creature, no gear)
 ##   or {kit, params, creature, skin?, mount_body?} (a creature-kit creature with its kit's parameters changed)
 ##   a prompt ref or a mount may also name {kit, params} (a mount also its creature): the race's unit,
@@ -40,6 +40,7 @@ const PartBaker := preload("res://scenes/art_pixel/part_baker.gd")
 const CreatureKit := preload("res://scenes/art_pixel/creature_kit.gd")
 const GeometryCheck := preload("res://tests/placement/geometry_check.gd")
 const ProjectionCheck := preload("res://tests/placement/projection_check.gd")
+const ScriptErrors := preload("res://tests/placement/script_errors.gd")
 
 const BG := Color("#56782e")
 const FACING_NAMES := ["f0 right", "f1", "f2 towards", "f3", "f4 left", "f5", "f6 away", "f7"]
@@ -50,6 +51,7 @@ var spec: Dictionary
 var team: Color
 var _races := {}
 var _variants := {}
+var _checked := false   # the placement check ran to the end
 
 
 func _initialize() -> void:
@@ -84,13 +86,9 @@ func _initialize() -> void:
 	units += size_units.filter(func(u): return not u.has("part"))
 	for u in units.duplicate():
 		if u.recipe.has("crew"):   # a siege engine's crew are its race's workers: bake them too
-			var cr: Dictionary = u.recipe.crew.duplicate(true)
-			cr.merge({"creature": u.recipe.creature, "family": u.recipe.family, "slot": "worker", "role": "worker", "tier": 1, "name": ""})
-			units.append({"recipe": cr, "eval": {"speed": 10}})
-		if u.recipe.has("haul"):   # and the beast hauling it (a trade cart's pony)
-			var hc: Dictionary = lib.creatures[u.recipe.haul.creature]
-			units.append({"recipe": {"slot": "beast", "role": "beast", "tier": 1, "creature": u.recipe.haul.creature, "family": u.recipe.family,
-				"skin": u.recipe.haul.skin, "body": hc.get("mount_body", hc.body), "head": hc.head, "parts": {}, "scale": 100, "name": ""}, "eval": {"speed": 10}})
+			units.append({"recipe": UnitView.crew_recipe(u.recipe), "eval": {"speed": 10}})
+		if u.recipe.has("haul"):   # and the beast hauling it in its harness (a trade cart's pony)
+			units.append({"recipe": UnitView.haul_recipe(lib, u.recipe), "eval": {"speed": 10}})
 	await kit.prepare_units([{"units": units}], [team])
 	for r in rows:
 		for u in [r[1], r[2]]:
@@ -99,7 +97,16 @@ func _initialize() -> void:
 	kit.rebuild_atlas()
 	var verdicts := {}
 	if check:
-		verdicts = await _check(rows, kit)
+		var errors = ScriptErrors.new()
+		OS.add_logger(errors)
+		var got: Variant = await _check(rows, kit)
+		OS.remove_logger(errors)
+		if not _checked or errors.count > 0:   # a script error inside the checks: every row fails, nothing passes silently
+			print("sheet: %d script errors in the placement check, the first: %s" % [errors.count, errors.first])
+			for r in rows:
+				verdicts[r[0]] = (got.get(r[0], []) if got is Dictionary else []) + ["the placement check hit %d script errors" % errors.count]
+		else:
+			verdicts = got
 	# A row may expect to fail named rules ("expect": an earlier round shown beside the fix, failing the
 	# rule written for it): it passes when it fails those and nothing else, and says so.
 	var expected := {}
@@ -190,6 +197,8 @@ func _unit(ref: Dictionary) -> Dictionary:
 			"body": body, "head": c.get("mount_head", c.head) if mb else c.head, "parts": {}, "scale": 100, "name": c.noun}, "eval": {"speed": 10}}
 	if ref.has("set"):
 		u.recipe.merge(ref.set, true)
+	if ref.has("push"):   # the unit pushing an engine home (D-127: a rat's barrow), as UnitView.push_recipe
+		u.recipe = UnitView.push_recipe(u.recipe, ref.push)
 	if ref.has("prompt") and ref.has("kit"):   # the race's unit on a kit variant of its creature
 		var vc := _variant(ref)
 		u.recipe.creature = vc
@@ -285,6 +294,19 @@ func _check(rows: Array, kit) -> Dictionary:
 			if not out.has(row):
 				out[row] = []
 			out[row].append("%s (%d views: %s)" % [parts[0], fails.size(), ", ".join(fails.slice(0, 2))])
+	# No silent passes: a unit the checks ran no rule on (in 3D or in 2D) fails its row.
+	var covered := {}
+	for res in [[g.order, "3D"], [pc.order, "2D"]]:
+		for key in res[0]:
+			covered[key.get_slice("|", 1) + "|" + res[1]] = true
+	for lab in owner:
+		if owner[lab] == "":
+			continue
+		for half in ["3D", "2D"]:
+			if not covered.has(lab + "|" + half):
+				if not out.has(owner[lab]):
+					out[owner[lab]] = []
+				out[owner[lab]].append("not covered by the placement check (%s: no rule ran on it)" % half)
 	# A unit shown on several rows (the same recipe) carries its verdict to each.
 	for r in rows:
 		for i in 2:
@@ -296,6 +318,7 @@ func _check(rows: Array, kit) -> Dictionary:
 					out[r[0]] = out.get(r[0], []) + out[owner[first]]
 	pc.queue_free()
 	holder.queue_free()
+	_checked = true
 	return out
 
 

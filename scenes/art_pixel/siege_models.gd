@@ -35,8 +35,10 @@ func build(id: String, colours: Dictionary) -> Dictionary:
 	if not _engine_id(id):
 		return super.build(id, colours)
 	var p := id.split(".")
-	if p[1] == "cart":   # the trade cart: a placeholder handcart for every take until TC1 is picked
-		return _cart_placeholder(_style(TAKE_STYLE[p[2]], colours), colours)
+	if p[1] == "cart":   # the trade cart (D-127): the take's beast pulls it, the frogs' snail
+		return trade_cart(p[2], colours)
+	if p[1] in ["barrow", "handcart"]:   # what a worker pushes home with stone or gold (D-127: the rats)
+		return pushed_home(p[1], _style(TAKE_STYLE[p[2]], colours), colours)
 	var key := "%s.%s" % [ENGINE_STAND_IN.get(p[1], p[1]), p[2]]
 	p[1] = ENGINE_STAND_IN.get(p[1], p[1])
 	var s := _style(STAND_IN.get(key, TAKE_STYLE[p[2]]), colours)
@@ -138,6 +140,9 @@ func _style(fam: String, c: Dictionary) -> Dictionary:
 			s.trim = s.metal
 			s.roof = s.plate
 			s.ammo = surf("cheese", Color.WHITE, 4.0)
+	for k in ["rope", "lash"]:   # ropes are tied at both ends (the placement check, C3: no loose ends)
+		if s.has(k):
+			s[k].set_meta("rope", true)
 	return s
 
 
@@ -683,10 +688,14 @@ func _ram_c(s: Dictionary, c: Dictionary) -> Dictionary:
 		spec = _ram_b(s, c)
 	var L := 42.0
 	spec.sockets = {"crew0_f0_reach_in": Vector3(-L * 0.3, 0, -2.5), "crew1_f0_reach_in": Vector3(L * 0.1, 0, -2.5),
-		"crew2_f0_reach": Vector3(-L * 0.5 - 5.0, 0, 5.0)}
+		"crew2_f0_reach": Vector3(-L * 0.5 - 5.0, 0, 5.0),
+		"crew2_f0_reach_wide": Vector3(-L * 0.5 - 12.0, 0, 5.0)}   # (a centaur's torso rose in front of the roof's eave at the back: placement C4)
 	if s.fam == "timber" and TIMBER_RAM_ROOF != "":   # under a roof: one each side of the log, so one always shows
 		spec.sockets.crew0_f0_reach_in = Vector3(-L * 0.3, 0, 3.0)
 		spec.sockets.crew1_f0_reach_in = Vector3(L * 0.1, 0, -3.0)
+	elif s.fam == "junk":   # the pipe frame is narrower at the log: walking, the rats' legs went into it at 2.5 (C1)
+		spec.sockets.crew0_f0_reach_in.z = -3.2
+		spec.sockets.crew1_f0_reach_in.z = -3.2
 	return spec
 
 
@@ -1153,7 +1162,7 @@ func _ram_ridden(s: Dictionary, c: Dictionary) -> Dictionary:
 	for side in [1, -1]:   # the team cloth over both sides, and a little banner at the back
 		b.add_child(_box(Vector3(12, 6.5, 0.4), s.team, Vector3(-6, deck - 3.0, 8.4 * side), Vector3(16 * side, 0, 0)))
 	pennant(b, s, Vector3(-16.5, deck, -6.5), 11.0, 3.6)
-	return {"node": n, "sockets": {"crew0_f0_reach_top": Vector3(0.5, deck + 0.7 - BEETLE_DROP, 1.5), "crew1_f0_top": Vector3(-11.5, deck + 0.7 - BEETLE_DROP, -2.0)}}
+	return {"node": n, "sockets": {"crew0_f0_reach_top": Vector3(1.5, deck + 0.7 - BEETLE_DROP, 2.5), "crew1_f0_top": Vector3(-13.0, deck + 0.7 - BEETLE_DROP, -3.0)}}   # (14 apart: at 12 the two beetles stood in each other, C1)
 
 
 ## For size on the sheet: a cavalry beetle as the game builds it (body, head, legs), unridden.
@@ -1742,7 +1751,7 @@ func _catapult_snail(s: Dictionary, c: Dictionary) -> Dictionary:
 	for x in [x0 - 15.0, x0 + 9.0]:   # crossbars, roped down to the foot on both sides
 		n.add_child(beam(Vector3(x, d - 2.4, -10.5), Vector3(x, d - 2.4, 10.5), 2.4, 2.4, s.wood))
 		for side in [1, -1]:
-			n.add_child(rod(Vector3(x, d - 2.4, 10.0 * side), Vector3(x * 1.3, 7.0, 13.0 * side), 0.45, 0.45, s.rope, false))
+			n.add_child(rod(Vector3(x, d - 2.4, 10.0 * side), Vector3(x * 1.3, 7.0, (13.0 if x > 0.0 else 7.0) * side), 0.45, 0.45, s.rope, false))   # (behind, the foot narrows to its tail: at 13 the ropes ended in the air, C3)
 	n.add_child(_box(Vector3(30.4, 2.4, 1.2), s.team, Vector3(x0 - 3.0, d - 1.0, 9.9)))   # team cloth along the deck's edges
 	n.add_child(_box(Vector3(30.4, 2.4, 1.2), s.team, Vector3(x0 - 3.0, d - 1.0, -9.9)))
 	deck_catapult(n, s, d, x0, 32.0)
@@ -1821,8 +1830,9 @@ func _cart_placeholder(s: Dictionary, c: Dictionary) -> Dictionary:
 	return _scaled(spec, 1.25) if s.fam == "frog" else spec
 
 
-## A two-wheeled handcart, its handles back to the pusher (socket crew0, reaching), loaded.
-func handcart(s: Dictionary, c: Dictionary) -> Dictionary:
+## A two-wheeled handcart, its handles back to the pusher (socket crew0, reaching), loaded with trade
+## goods (or empty: a load of its own goes on, pushed_home).
+func handcart(s: Dictionary, c: Dictionary, loaded := true) -> Dictionary:
 	var n := Node3D.new()
 	var wr := 6.5
 	var y := wr + 1.6   # the bed's floor
@@ -1838,7 +1848,8 @@ func handcart(s: Dictionary, c: Dictionary) -> Dictionary:
 	for side in [1, -1]:   # the handles, back and up to the pusher's hands; a prop leg under each
 		n.add_child(beam(Vector3(-8.0, y + 0.5, 4.6 * side), Vector3(-18.5, y + 3.6, 4.6 * side), 1.0, 1.0, s.dark))
 		n.add_child(rod(Vector3(-7.0, y, 4.6 * side), Vector3(-7.6, 0.4, 4.6 * side), 0.45, 0.45, s.dark))
-	cart_load(n, s, Vector3(2.0, y, 0))
+	if loaded:
+		cart_load(n, s, Vector3(2.0, y, 0))
 	return {"node": n, "sockets": {"crew0_f0_reach": Vector3(-24.5, 0, 0)}}
 
 
@@ -1857,3 +1868,311 @@ func cart_load(n: Node3D, s: Dictionary, at: Vector3) -> void:
 	var jar := surf("bld_daub", Color(1.05, 0.62, 0.42), 6.0)
 	n.add_child(cone(1.2, 2.6, 5.5, jar, at + Vector3(7.5, 3.0, -4.0)))
 	n.add_child(cone(0.8, 1.2, 1.2, jar, at + Vector3(7.5, 6.2, -4.0)))
+
+
+# ------------------------------------------------------------------ the trade cart (D-127)
+
+## The trade cart in play (D-127, Dominic: "the race's own beast pulls a cart; for frogs a snail pulls
+## it"; picked from concept round TC1, docs/concepts/trade_carts/): a two-wheeled cart pulled by the
+## take's beast in its draught harness (the recipe's `haul`, from parts.json siege.cart.<take>), the
+## frogs' by a snail built into the cart (no legs to walk: one baked part), a worker leading it.
+## CART_BEAST must name the creature parts.json gives the cart's haul (the placement check, C2, holds
+## the shafts to its harness).
+const CART_BEAST := {"timber": "pony", "junk": "cat", "forest": "beetle", "spooky": "spider"}
+
+
+func trade_cart(take: String, c: Dictionary) -> Dictionary:
+	var s := _style(TAKE_STYLE[take], c)
+	return _cart_snail(s, c) if take == "frog" else hauled_cart(CART_BEAST[take], s, c)
+
+
+## A two-wheeled cart, its bed loaded, its two shafts forward to the beast's harness (the beast on
+## "haul0" wears `harness.draught`, the recipe's haul.parts): each shaft ends where a trace ends
+## (sockets hitch0_near / hitch0_far = the haul socket + the harness's trace_near / trace_far), and
+## the placement check holds them together in every walk step (C2). A worker leads the beast at its
+## head on the near side ("crew0_f0"), clear of its flank and the shafts.
+## (Round TC1 as first drawn is kept for the placement fixture that must fail it: cart_concepts.gd a_v1.)
+const SHAFT := 8.0        # the shafts' length from the cart's front to the hitch (x)
+const CART_FRONT := 12.4  # the cart's front board (x), where the shafts start
+const LEAD_GAP := 6.0     # the handler's middle this far out from the harness on the near side...
+const LEAD_AHEAD := 16.0  # ...and this far ahead of its chest, at its head (beside the chest it stood in front of the beast in the three-quarter view)
+const LEAD_LEGS := {"spider": 9.0, "newt": 3.0}   # ...and further out past legs that sprawl wide
+const HITCH_DROP := {"newt": -1.2}   # the hitch this far under the standing trace end (over it: the newt rises as it strides; C2 walking)
+
+
+## beast: the hauling creature (BEAST_BODY); k: the cart drawn this much bigger (the beast isn't).
+func hauled_cart(beast: String, s: Dictionary, c: Dictionary, k := 1.0) -> Dictionary:
+	var lay := harness_layout(BEAST_BODY[beast], c)
+	var te: Vector3 = lay.ends[0] / k   # the near trace end, from the beast's socket, in the cart's frame
+	var n := Node3D.new()
+	var y := cart_body(n, s)
+	var haul := Vector3(CART_FRONT + SHAFT - te.x, 0, 0)
+	var sockets := {"haul0_f0": haul}
+	for side in [1, -1]:   # the shafts, from the front corners forward to the trace ends
+		var hitch := haul + Vector3(te.x, te.y - float(HITCH_DROP.get(beast, 0.0)) / k, te.z * side)
+		n.add_child(beam(Vector3(CART_FRONT - 1.0, y + 1.0, 6.3 * side), hitch, 1.0, 1.0, s.dark))
+		sockets["hitch0_%s" % ("near" if side > 0 else "far")] = hitch
+	sockets["crew0_f0"] = haul + Vector3((lay.front_x + LEAD_AHEAD) / k, 0, (lay.half_width + LEAD_GAP + float(LEAD_LEGS.get(beast, 0.0))) / k)
+	return _scaled({"node": n, "sockets": sockets}, k)
+
+
+## The cart itself: two wheels, a loaded bed, a prop at the back; returns the bed's floor height.
+func cart_body(n: Node3D, s: Dictionary) -> float:
+	var wr := 6.5
+	var y := wr + 1.6
+	for side in [1, -1]:
+		wheel(n, Vector3(0.0, wr, 8.6 * side), wr, 1.6, s)
+	n.add_child(rod(Vector3(0.0, wr, -9.6), Vector3(0.0, wr, 9.6), 0.6, 0.6, s.dark, false))
+	var plank: Material = surf("wood_grain", Color.WHITE, 8.0) if s.fam != "spooky" else s.wood
+	n.add_child(_box(Vector3(24.0, 1.2, 13.0), plank, Vector3(0.0, y, 0)))
+	for side in [1, -1]:
+		n.add_child(_box(Vector3(24.0, 3.6, 0.8), plank, Vector3(0.0, y + 2.3, 6.3 * side)))
+	for x in [-11.6, 11.6]:
+		n.add_child(_box(Vector3(0.8, 3.6, 13.0), plank, Vector3(x, y + 2.3, 0)))
+	cart_load(n, s, Vector3(0.0, y, 0))
+	n.add_child(rod(Vector3(-11.0, y, 0), Vector3(-13.0, 0.3, 0), 0.5, 0.5, s.dark))   # a prop at the back
+	return y
+
+
+## The frogs' cart (D-127: "for frogs a snail pulls it"): a small giant snail (the catapult's kin)
+## in front, a padded band over its foot behind the shell, the cart's shafts lashed to the band each
+## side; a frog walks at the snail's head. The snail is part of the cart's bake (it has no legs to
+## walk), the whole drawn bigger like the frogs' handcart.
+const SNAIL_K := 0.55      # the snail's size against the catapult's
+const SNAIL_BAND_X := -24.0   # the band round its foot, behind the shell (the snail's own frame)
+
+
+func _cart_snail(s: Dictionary, c: Dictionary) -> Dictionary:
+	var n := Node3D.new()
+	var y := cart_body(n, s)
+	var beast := Node3D.new()
+	beast.scale = Vector3.ONE * SNAIL_K
+	var at := CART_FRONT + SHAFT + (-SNAIL_BAND_X + 3.0) * SNAIL_K   # the band SHAFT ahead of the cart's front
+	beast.position = Vector3(at, 0, 0)
+	n.add_child(beast)
+	swamp_snail(beast, s)
+	# The band over the foot: the foot's cross-section there (its blob: 38 x 5.5 x 12.5 round (-2, 5, 0)),
+	# a little out from it, from one side over the top to the other.
+	var f := sqrt(1.0 - pow((SNAIL_BAND_X + 2.0) / 38.0, 2.0))
+	var pad := surf("leather", Color(0.42, 0.27, 0.16), 3.0)
+	var pts := []
+	for i in 9:
+		var a := PI * i / 8.0
+		pts.append(Vector3(SNAIL_BAND_X, 5.0 + (5.5 * f + 0.6) * sin(a), (12.5 * f + 0.6) * cos(a)) * SNAIL_K + beast.position)
+	for i in 8:
+		n.add_child(rod(pts[i], pts[i + 1], 0.55, 0.55, pad))
+	var sockets := {}
+	for side in [1, -1]:   # the shafts, to the band's ends low on each side of the foot
+		var end: Vector3 = pts[0 if side > 0 else 8]
+		n.add_child(beam(Vector3(CART_FRONT - 1.0, y + 1.0, 6.3 * side), end, 1.0, 1.0, s.dark))
+		n.add_child(blob(Vector3.ONE * 0.9, surf("bronze", Color.WHITE, 3.0), end))
+	sockets["crew0_f0"] = Vector3(at + 50.0 * SNAIL_K, 0, 12.5 * SNAIL_K + LEAD_GAP + 7.0)   # at its head, out past the feelers
+	return _scaled({"node": n, "sockets": sockets}, 1.25)
+
+
+# ------------------------------------------------------------------ the draught harness
+
+## The body each hauler wears its harness on (UnitView.haul_recipe: the creature's mount body if any).
+const BEAST_BODY := {"pony": "body.pony", "newt": "body.newt", "cat": "body.cat", "beetle": "body.beetle", "spider": "body.spider"}
+const HARNESS_GAP := 0.5    # the straps this far off the hide
+const TRACE_TAIL := 2.5     # the traces run this far behind the rump, where the shafts take them
+var _layouts := {}   # body id -> its harness layout (the shape doesn't change with the colours)
+
+
+## A draught harness (TC1 A, after Dominic's "this is bugged": the traces were loose lines and the
+## cart floated behind): worn by the beast hauling (the haul's parts {"torso": "harness.draught"}),
+## fitted on its body like worn armour (baked on it with the body cut out, so the far side hides):
+## a band round the barrel at chest height (breast band in front, breeching behind), a band over
+## the back behind the forelegs and one over the loins holding it up, and a trace along each flank
+## from the band back past the rump. The trace ends are its sockets (trace_near, trace_far: the
+## cart's hitches).
+## (UnitModels.fitted hands it here; it has no model of its own off its wearer.)
+func harness_fitted(part_id: String, body_id: String, c: Dictionary) -> Dictionary:
+	assert(part_id == "harness.draught", "no harness %s" % part_id)
+	var lay := harness_layout(body_id, c)
+	var n := Node3D.new()
+	var leather := surf("leather", Color(0.42, 0.27, 0.16), 3.0)   # dark, to read on a ginger cat or a bay pony
+	for loop in [lay.band] + lay.backs + lay.traces:
+		for i in loop.size() - 1:
+			n.add_child(rod(loop[i], loop[i + 1], 0.55, 0.55, leather))
+	var brass := surf("bronze", Color.WHITE, 3.0)
+	for t in lay.traces:
+		n.add_child(blob(Vector3.ONE * 0.85, brass, t[0]))   # a ring where each trace leaves the band
+		n.add_child(blob(Vector3.ONE * 0.85, brass, t[-1]))   # and one at its end, on the shaft
+	return {"node": n, "sockets": {"trace_near": lay.ends[0], "trace_far": lay.ends[1]}}
+
+
+## Where a body's harness goes, measured on its model (body only: the legs hang below the band):
+## {band: closed loop at chest height, backs: [loops over the back], trace_from, ends: [near, far],
+## half_width, front_x}.
+func harness_layout(body_id: String, c: Dictionary) -> Dictionary:
+	if _layouts.has(body_id):
+		return _layouts[body_id]
+	var b: Dictionary = super.build(body_id, c)   # (the body's model: unit_models.gd, not an engine)
+	var pts := _cloud(b.node)
+	var anchors: Array = b.get("anchors", [])
+	b.node.free()
+	if b.get("front") != null:
+		b.front.free()
+	var fore := []
+	var hind := []
+	var hip_y := -INF
+	for a in anchors:
+		(hind if a.size() > 4 and bool(a[4]) else fore).append(float(a[0].x))
+		hip_y = maxf(hip_y, float(a[0].y))
+	var xf: float = fore.reduce(func(m, x): return maxf(m, x), -INF) if not fore.is_empty() else 0.0
+	var xh: float = hind.reduce(func(m, x): return minf(m, x), INF) if not hind.is_empty() else xf - 10.0
+	var xm := (xf + xh) * 0.5
+	# Chest height: a little over halfway up the barrel at its middle, and over the hips.
+	var lo := INF
+	var hi := -INF
+	for p in pts:
+		if absf(p.x - xm) < 1.5:
+			lo = minf(lo, p.y)
+			hi = maxf(hi, p.y)
+	var y := lo + 0.55 * (hi - lo)
+	if hip_y + 1.0 < hi - 1.0:
+		y = maxf(y, hip_y + 1.0)
+	# The breast band: round the front half of the barrel, flank to flank.
+	var band := _contour(pts, Vector3(xm, y, 0), Vector3.UP, 0.0, PI, 12)
+	var half := 0.0
+	var front := -INF
+	for p in band:
+		half = maxf(half, absf(p.z))
+		front = maxf(front, p.x)
+	# The rump: the back of the barrel at band height (a tail, narrow, doesn't count: a newt's runs on).
+	var rear := xh
+	for p in pts:
+		if absf(p.y - y) < 1.5 and absf(p.z) >= 0.4 * half:
+			rear = minf(rear, p.x)
+	var backs := []
+	for x in [xf - 2.5, xh + 2.5]:
+		backs.append(_contour(pts, Vector3(x, y, 0), Vector3.RIGHT, 0.0, PI, 9))
+	# The traces: from the band's ends back along each flank, hugging it, and on past the rump.
+	var traces := [[band[0]], [band[-1]]]
+	var x := xm - 2.0
+	while x > rear + 1.0:
+		var w := 0.0
+		for p in pts:
+			if absf(p.y - y) < 1.0 and absf(p.x - x) < 0.8:
+				w = maxf(w, absf(p.z))
+		if w > 0.0:
+			traces[0].append(Vector3(x, y, w + HARNESS_GAP))
+			traces[1].append(Vector3(x, y, -w - HARNESS_GAP))
+		x -= 2.0
+	var ends := [Vector3(rear - TRACE_TAIL, y, traces[0][-1].z), Vector3(rear - TRACE_TAIL, y, traces[1][-1].z)]
+	traces[0].append(ends[0])
+	traces[1].append(ends[1])
+	_layouts[body_id] = {"band": band, "backs": backs, "traces": traces, "ends": ends, "half_width": half, "front_x": front}
+	return _layouts[body_id]
+
+
+## A loop hugging the model's points round `centre`: in the plane across `axis` (UP: a horizontal
+## band, its points within a unit of that height; RIGHT: over the back, within a unit of that x),
+## from angle a0 to a1 in n steps, each the farthest point in its direction plus HARNESS_GAP.
+func _contour(pts: PackedVector3Array, centre: Vector3, axis: Vector3, a0: float, a1: float, n: int) -> Array:
+	var bins := []
+	bins.resize(n + 1)
+	bins.fill(0.0)
+	var step := (a1 - a0) / float(n)
+	for p in pts:
+		var d := p - centre
+		var u: float
+		var v: float
+		if axis == Vector3.UP:
+			if absf(d.y) > 1.0:
+				continue
+			u = d.z   # angle 0 on the near side (+z), round by the front (+x)
+			v = d.x
+		else:
+			if absf(d.x) > 1.0 or d.y < -1.0:
+				continue
+			u = d.z   # angle 0 on the near side, over the top
+			v = d.y
+		var ang := fposmod(atan2(v, u) - a0, TAU)
+		var i := roundi(ang / step)
+		if i >= 0 and i <= n:
+			bins[i] = maxf(bins[i], Vector2(u, v).length())
+	for i in n + 1:   # empty directions take their neighbours' reach
+		if bins[i] == 0.0:
+			bins[i] = maxf(bins[maxi(i - 1, 0)], bins[mini(i + 1, n)])
+	var out := []
+	for i in n + 1:
+		var ang := a0 + step * i
+		var r: float = bins[i] + HARNESS_GAP
+		var u := cos(ang) * r
+		var v := sin(ang) * r
+		out.append(centre + (Vector3(v, 0, u) if axis == Vector3.UP else Vector3(0, v, u)))
+	return out
+
+
+## Every mesh vertex under n, in n's parent's space.
+static func _cloud(n: Node3D) -> PackedVector3Array:
+	var out := PackedVector3Array()
+	_cloud_into(n, n.transform, out)
+	return out
+
+
+static func _cloud_into(n: Node, t: Transform3D, out: PackedVector3Array) -> void:
+	if n is MeshInstance3D and (n as MeshInstance3D).mesh != null:
+		var m: Mesh = (n as MeshInstance3D).mesh
+		for s in m.get_surface_count():
+			var arr: Array = (m as PrimitiveMesh).get_mesh_arrays() if m is PrimitiveMesh else m.surface_get_arrays(s)
+			for v in arr[Mesh.ARRAY_VERTEX]:
+				out.append(t * v)
+	for c in n.get_children():
+		if c is Node3D:
+			_cloud_into(c, t * (c as Node3D).transform, out)
+
+
+# ------------------------------------------------------------------ pushed home (D-127)
+
+## What a worker pushes home with its load (D-127, Dominic: "the rats' scrap barrow and handcart
+## become what rat workers push when they carry stone and gold home"; creatures.json push_home,
+## UnitView.push_recipe: the worker is the engine's crew): "barrow" the scrap barrow (one wheel, a
+## pipe frame) heaped with rubble, "handcart" the two-wheeled handcart with sacks of gold ore.
+func pushed_home(kind: String, s: Dictionary, c: Dictionary) -> Dictionary:
+	if kind == "barrow":
+		return scrap_barrow(s, "stone")
+	var spec := handcart(s, c, false)
+	gold_load(spec.node, s, Vector3(2.0, 8.1, 0))
+	return spec
+
+
+## The rats' scrap barrow at human scale (D-116): one big wheel in front, a pipe frame, mismatched
+## planks, two pipe handles back to the rat pushing it; heaped with `load` ("goods": a crate, a barrel
+## and a wheel of cheese, TC1 C; "stone": rubble).
+func scrap_barrow(s: Dictionary, load: String) -> Dictionary:
+	var n := Node3D.new()
+	var wr := 6.0
+	wheel(n, Vector3(13.0, wr, 0), wr, 2.0, s)
+	var y := 9.0
+	for side in [1, -1]:   # the pipe frame from the axle back to the handles, legs under it
+		n.add_child(rod(Vector3(13.0, wr, 1.8 * side), Vector3(-6.0, y, 5.5 * side), 0.7, 0.7, s.pipe))
+		n.add_child(rod(Vector3(-6.0, y, 5.5 * side), Vector3(-18.0, y + 3.0, 5.0 * side), 0.7, 0.7, s.pipe))
+		n.add_child(rod(Vector3(-4.0, y, 5.5 * side), Vector3(-5.0, 0.4, 5.5 * side), 0.6, 0.6, s.pipe))
+	n.add_child(_box(Vector3(20.0, 1.0, 12.0), s.wood2, Vector3(2.0, y + 0.5, 0)))   # mismatched planks
+	if load == "stone":
+		var rock := surf("rock", Color(0.85, 0.82, 0.76), 3.0)
+		for b in [[Vector3(-2.0, y + 3.0, 2.0), Vector3(3.6, 2.4, 3.0)], [Vector3(4.0, y + 2.8, -1.5), Vector3(3.2, 2.2, 3.4)],
+				[Vector3(1.0, y + 5.0, 0.0), Vector3(2.8, 2.0, 2.6)], [Vector3(8.0, y + 2.2, 2.4), Vector3(2.4, 1.8, 2.2)]]:
+			n.add_child(blob(b[1], rock, b[0], Vector3(0, b[0].x * 11.0, 12)))
+		n.add_child(_box(Vector3(5.0, 0.4, 5.0), s.team, Vector3(-4.0, y + 1.2, -3.6), Vector3(0, 20, 8)))   # a team rag over the side
+	else:
+		n.add_child(_box(Vector3(6.0, 5.0, 6.0), s.wood, Vector3(-2.0, y + 3.5, 2.5)))   # a crate
+		n.add_child(cone(2.6, 2.6, 6.0, s.plate, Vector3(6.0, y + 4.0, -2.5)))   # a barrel of rusted plate
+		n.add_child(ring(2.4, 2.8, s.metal, Vector3(6.0, y + 5.5, -2.5)))
+		n.add_child(cone(3.2, 3.2, 2.2, s.ammo, Vector3(2.0, y + 2.0, -3.0), Vector3(0, 0, 0), 14))   # a wheel of cheese
+		n.add_child(_box(Vector3(6.4, 0.4, 6.4), s.team, Vector3(-2.0, y + 6.2, 2.5)))
+	return {"node": n, "sockets": {"crew0_f0_reach": Vector3(-24.0, 0, 0)}}
+
+
+## Sacks of gold ore on a cart's bed (its floor's middle at `at`), nuggets at their mouths.
+func gold_load(n: Node3D, s: Dictionary, at: Vector3) -> void:
+	var sack := surf("cloth", Color("#c8b48a"), 3.0)
+	var gold := plain(Color("#f2c440"))
+	for b in [Vector3(-3.0, 2.6, 2.2), Vector3(3.0, 2.4, -2.0), Vector3(0.0, 4.6, 0.4)]:
+		n.add_child(blob(Vector3(3.2, 2.6, 3.0), sack, at + b))
+		for k in 3:
+			n.add_child(blob(Vector3(0.8, 0.65, 0.75), gold, at + b + Vector3(-0.8 + k * 0.8, 2.3, 0.6 - k * 0.5)))
+	n.add_child(_box(Vector3(5.0, 0.4, 4.0), s.team, at + Vector3(4.5, 1.0, 3.4)))
