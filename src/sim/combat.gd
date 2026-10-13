@@ -672,7 +672,7 @@ static func _splash(w, recs: PackedInt32Array, o: int, b: int, hurt: PackedInt32
 					continue
 				hurt[k] += d
 				hurt_by[k] = by
-				w.events.append({"type": "hit", "by": by, "to": u.id[k], "damage": d, "ranged": true, "x": x, "y": y})
+				w.events.append({"type": "hit", "by": by, "to": u.id[k], "damage": d, "ranged": true, "x": x, "y": y, "splash": true})
 	var bs = w.buildings
 	for k in bs.count():
 		if k != b and not w.is_enemy(owner, bs.owner[k]):
