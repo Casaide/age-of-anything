@@ -762,3 +762,8 @@ prices (rules.cost.roles pct 60). The age-3 swordsman kit (S3): hellenic B (long
 (heavy sabre, spiked helmet), han B (dao), swamp B (river-stone mace), forest A (chitin blade), spooky B (hooked
 sickle), plus a plain iron sword as the fallback; built once the placement checks are in (unit work is paused).
 The tiger concept stays in the repo, unused.
+
+**D-126, 2026-10-13: Bear heads picked; helmets by rank.** Dominic: "the snouts look perfect" (round B2) and left
+the rest to Claude: the open-faced helmet (the bear's ears out) for line soldiers, the ear-cup helmet for the giants
+and elites (a visible step up), and the polar bear's neck shortened a little so it reads as a bear, not a long-necked
+animal. The mounted bear's neck still reads broken; it gets fixed (and a placement rule for it) before bears go in play.
