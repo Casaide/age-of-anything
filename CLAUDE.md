@@ -83,6 +83,7 @@ data/            the data contract; mods are just more of this
   lexicon.json     word -> creature/mount/family/tags/size; out-of-era words + playful notes
   rules/*.json     host rules: era bounds, point budgets, roster template, cost/train curves, economy
   cost_curves.json fixed-point cost curves (per-mille by points), written by tests/gen_cost_curve.gd
+  creature_kit.json creature-kit skeletons (scenes/art_pixel/creature_kit.gd); data/later/ holds staged, unplayed data (bears)
   terrain.json     terrain types: walkable, colours, resource + amount + what it turns into when used up
   audio.json       buses, every sound's takes / bus / gap / voices, the music mixes by age
   ui.json          the UI's directions (materials, colours, crest, banner cut) and which one is in use
@@ -158,6 +159,7 @@ godot --path . --script res://tests/art_screenshot.gd -- /tmp/art  # capture it 
 godot --path . --script res://tests/art_crop.gd -- /tmp/c.png 6.5 9 ["prompt A" "prompt B"]   # 3x close-up at a tile
 godot --path . --script res://tests/art_bench.gd                    # draw calls + frame time, 200+ units
 godot --path . --script res://tests/unit_lineup.gd -- /tmp/units.png ["prompt A" "prompt B"]   # both rosters as pixel art, 4x
+godot --path . --audio-driver Dummy --always-on-top --script res://tests/sheet.gd -- tests/sheets/bears_b1.json /tmp/out [sheet,...] [zoom,...]   # any concept or lineup sheet from a spec, placement PASS/FAIL per row
 godot --path . --audio-driver Dummy --always-on-top --script res://tests/placement_check.gd -- [filter] [3d|2d]   # placement + layering on every unit, pose, facing, and the bug fixtures (~2 min); must pass before a unit change is shown
 godot --headless --path . --script res://tests/geometry_check.gd -- [filter]   # its 3D half alone, headless (~35 s; also run_tests -- placement)
 godot --path . --audio-driver Dummy --always-on-top --script res://tests/placement_shot.gd -- /tmp/p.png 5 "frog on newt_fire"   # a placement case in 8 facings
@@ -227,7 +229,10 @@ Units are 3D parts (built in code, or scripted in Blender: `tools/blender/`, `.g
 `assets/models/`) baked to pixel sprites in **8 facings** in one atlas, recoloured by a team-mask
 shader; worn armour bakes on its wearer; props and buildings are realistic bakes. The full pipeline
 is in `docs/rendering.md`. New art goes concept-first (options, Dominic picks, then build; D-080),
-and every change gets looked at close up before it's shown. **No unit, mount, gear or pose change is
+and every change gets looked at close up before it's shown.
+New rounds write a sheet spec (`tests/sheets/*.json`, drawn by `tests/sheet.gd`), not a new script;
+new creatures start in the creature kit (`scenes/art_pixel/creature_kit.gd`, kits in `data/creature_kit.json`,
+unplayed ones staged in `data/later/`). Both are in `docs/rendering.md`. **No unit, mount, gear or pose change is
 shown until `tests/placement_check.gd` passes** (Dominic, 2026-10-13): numeric checks of ground
 contact, attachment, interpenetration, stance, feet, visibility and layering in 3D and in every facing,
 plus a fixture for every placement bug he caught (`docs/rendering.md`, "Placement rules"). A new body,

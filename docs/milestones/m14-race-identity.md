@@ -186,6 +186,7 @@ both at the Castle in age 3. Culture mechanics are left out for now (creature me
 - [ ] 8. Balance and the lobby card
 - [ ] 9. Heroes (generated champion, aura, revive; concept round)
 - [ ] A new creature: bears (two legs, armoured, dignified, "the smarter version compared to rats"; rideable for some races; bigger polar or older bears; see the backlog entry). Dominic: plan once milestone 13 is done
+  - [x] Concept round B1 (2026-10-13): three builds (brown, black, polar), the worker, the mount, the giants, built with the creature kit, all passing placement (`docs/concepts/bears/`, data staged in `data/later/bears.json`). Waiting on Dominic's pick.
 - [ ] 10. Exit check
 - [ ] Archive: pictures taken along the way, journal, decisions, timeline
 

@@ -1,0 +1,15 @@
+{
+ "name": "line_lineup",
+ "title": "The swordsman line at age 2, every culture",
+ "_doc": "Ported from tests/line_lineup.gd (slot infantry, age 2): change the slot and age for another line.",
+ "zooms": [3, 1],
+ "cell": [62, 58],
+ "rows": [
+  {"each": {"prompt": ["swamp frogs", "sewer rats", "forest beetles", "romans", "greeks", "royal humans", "mongols", "spooky spiders", "egyptians", "han", "aztecs"], "slot": ["infantry"]}, "age": 2,
+   "label": "{prompt}\n{name}"}
+ ],
+ "sheets": [
+  {"name": "facings", "title": "8 facings", "columns": "facings"},
+  {"name": "holds", "title": "the blow: wound up and landing", "columns": "holds:raise,reach"}
+ ]
+}

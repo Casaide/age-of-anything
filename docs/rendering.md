@@ -313,3 +313,82 @@ its legs, tail, tack and poses are the cat section of `unit_models.gd`. Dominic 
 too big, so the rump, haunch and thighs were made leaner, the hips narrower than the chest, and the top
 of the rump only slightly higher than the withers. Sheets: `tests/cat_mount_sheet.gd -- out_dir [zoom]
 [facings,walk,sit,sit1,sit2,cycle] [cat_ginger,cat_tuxedo,cat_grey]`.
+
+## The creature kit
+
+`scenes/art_pixel/creature_kit.gd` (2026-10-13; Dominic: "start the creature kit and concept sheet
+tool, bear first") builds a creature from a parametric skeleton in data instead of a hand-built model:
+- a **quadruped**: shoulder and hip joints on a spine, each fore leg shoulder blade, humerus, forearm
+  and pastern, each hind leg femur, tibia and metatarsus;
+- or a **biped**: hips, a torso leaning `lean` degrees about them, shoulders, elbows, hands, thighs,
+  shins and feet.
+
+Feet are plantigrade (the sole lies flat: bears) or digitigrade (the hock stands high: cats) by
+their bones and the lowest bone's `tilt`. From the numbers it makes:
+- the body: named torso volumes (chest, waist, rump, belly, pelvis, hump), markings, a neck, a tail
+  (a chain, a stub, or tucked round when sitting), the tack, and a biped's arms. The near arm is in
+  the front layer, posed for the hold by `unit_models.arm_pose`. A body can also be a modelled mesh
+  over the same skeleton (`body.mesh`).
+- every leg in every pose: standing, each step of the walk (`legs.poses`, two-bone IK from where the
+  paw or foot goes, the knee forward and the elbow back), and the idle poses. A quadruped sits down
+  in steps (the body pitched about its hips). A biped's idle moves only its feet, so worn armour
+  baked on the standing body still fits.
+- the head: skull, cheeks, the stop, muzzle and roman bridge, nose, eyes (named, for the placement
+  check) under a modelled brow, round or pointed ears, whiskers, and a bridle for a mount. A head can
+  also be a mesh.
+- the sockets: head, seat and girth (from the top and bottom of the volumes under the seat), harness
+  hands, torso, back and wings; a biped's hands; `torso_fit` for worn armour (from the chest);
+  `gear_scale`.
+- the part's data (`CreatureKit.complete`): sockets and anchors in 2D, cut legs (and a cut head on
+  four legs), the posed walk, the gait, idle poses and stance. A kit part's data anchors are the
+  model's hips by construction.
+
+Kits live in `data/creature_kit.json` (`kits`; `_params_doc` lists every parameter; a kit can
+extend another with `base`, and a `null` removes a volume). A body part with `"kit": "<name>"` is
+completed from its kit when a data file is staged (`CreatureKit.stage(lib, path)`), which also adds
+the file's creatures, skins, words and concept model files (`models`). `unit_models.gd` builds any
+kit part (`CreatureKit.has_part`) and any part from a staged model file (`UnitModels.extra`).
+**Nothing in `data/parts.json` uses a kit yet:** only tests and sheets stage these files. To put a
+kit creature in play, move its kit and parts into the game's data and have `DataLib` complete kit
+parts on load.
+
+**The cat through the kit** (`kitcat`, `kitcat_built`): `kitcat` is the cat's modelled body and head
+on the kit's skeleton, legs, poses and sockets. Side by side with the game's cat, no difference shows in any facing,
+walk step or sitting pose (`archive/images/2026-10-13/392`, `393`), so the skeleton reproduces the
+hand-built cat. `kitcat_built` makes the body and head from the kit's primitives too. It reads as a
+cat but is blockier than the modelled one, so the game's cat stays as it is. The kit's job is new
+creatures (bears first: `data/later/bears.json`, `docs/concepts/bears/`). Kit creatures are in
+`tests/placement/cases.gd` (`kit_cases`, labels "kit: ...") and pass both halves of the check.
+
+## The sheet tool
+
+`tests/sheet.gd` draws every concept and lineup sheet from a small spec (`tests/sheets/*.json`) and
+replaces the per-round scripts. A spec gives:
+- rows: a unit from a prompt, slot and age (with recipe overrides, a mount, a rider on the right);
+  a bare creature or its mount body; a creature-kit creature with changed parameters; one part alone;
+  or every prompt x slot (`each`, for lineups and siege engines)
+- columns: 8 facings; walk steps; a cycle; idle poses; holds
+- size references, zooms and labels
+
+It bakes through ArtKit and the bake cache, lays out a labelled sheet per spec sheet and zoom, and
+runs the placement checks (3D and 2D) on every unit it shows. It prints PASS/FAIL per row, frames a
+failing row in red with the rules it broke, and exits 1 on a failure.
+
+```sh
+godot --path . --audio-driver Dummy --always-on-top --script res://tests/sheet.gd -- tests/sheets/bears_b1.json out_dir [sheet,...] [zoom,...] [nocheck]
+```
+
+Specs so far: `bears_b1` (round B1), `kit_cat` (the kit against the game's cat), and ports of
+`cat_mount_sheet.gd` (`cat_mount`), `siege_lineup.gd` (`siege_lineup`) and `line_lineup.gd`
+(`line_lineup`). **New art rounds write a spec, not a script.** Once their rounds are closed, the
+sheet tool covers what these one-off scripts drew, and they can go: `anim_concept_sheet.gd`,
+`anim_concept_sheet2.gd`, `capybara_sheet.gd`, `cat_mount_sheet.gd`, `newt_cavalry_sheet.gd`,
+`rat_mount_sheet.gd`, `siege_concept_sheet.gd` and its `_r2`, `_r3`, `_r4`, `sword3_concept_sheet.gd`,
+`line_lineup.gd`, `siege_lineup.gd`, `unit_lineup.gd`, `healer_lineup.gd` and `facing_sheet.gd`
+(a `facings` sheet).
+
+These stay, because they draw what the tool doesn't:
+- `concept_sheet.gd`: gear swapped by socket on one unit, `az=`
+- `town_concept_sheet.gd`, `building_sheet.gd`: buildings and props
+- `ui_sheet.gd`, `cursor_sheet.gd`: UI
+- `anim_fight_sheet.gd`: attack and death frames in time

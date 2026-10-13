@@ -1,0 +1,15 @@
+{
+ "name": "siege_lineup",
+ "title": "Siege engines in play (milestone 13)",
+ "_doc": "Ported from tests/siege_lineup.gd: each race's ram, catapult and bolt thrower, crewed by its workers.",
+ "zooms": [3, 1],
+ "cell": [84, 70],
+ "size": [{"prompt": "romans", "slot": "worker"}, {"prompt": "sewer rats", "slot": "worker"}],
+ "rows": [
+  {"each": {"prompt": ["romans", "sewer rats", "forest beetles", "spooky spiders", "swamp frogs"], "slot": ["ram", "catapult", "bolt_thrower"]}, "age": 3}
+ ],
+ "sheets": [
+  {"name": "four", "title": "four facings", "columns": [{"facing": 0, "label": "f0"}, {"facing": 2, "label": "f2"}, {"facing": 5, "label": "f5"}, {"facing": 6, "label": "f6"}]},
+  {"name": "facings", "title": "all eight facings", "columns": "facings"}
+ ]
+}
