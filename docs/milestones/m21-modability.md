@@ -252,3 +252,10 @@ as a layer" (an era per race, every role re-kitted, buildings by era), which sta
 
 - `docs/modding.md` (how to make one), `src/mods.gd`, `mods/scifi_test/`, `tests/mod_check.gd`,
   `tools/mods/`, `docs/backlog.md` §7 Community parts and §8 Eras and themes as a layer.
+
+## Parked (Dominic, 2026-10-13, D-130)
+The example sci-fi mod is fun "as a later age for fun via a setting", but it isn't what he wanted to see: a wholly new
+concept and race (not our units in the future), with real lasers only, no melee and no bows (the example still let
+bows and blades through). Parked as it is; when it comes back: a new creature/race of its own, a laser-only roster
+(the generator's sci-fi era bounds must keep out every non-laser weapon and melee role), and an optional future age
+behind a setting. The loader, checks and tooling stay.
