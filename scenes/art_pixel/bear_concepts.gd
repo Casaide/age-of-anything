@@ -46,3 +46,17 @@ func _helm_bear_open(c: Dictionary) -> Dictionary:
 	n.add_child(rod(Vector3(-0.4, 1.0, 0), Vector3(-0.7, 4.0, 0), 0.55, 0.55, bronze))   # the crest stand
 	crest(n, c.team, Vector3(-1.7, 4.4, 0), 13.0, 7.0)
 	return {"node": n}
+
+
+## Round B3 (D-126: helmets by rank): the same two helmets at the later ages, so a bear line keeps
+## its own helmet as it ages (better armour in the data, the same model).
+func _helm_bear_open_2(c: Dictionary) -> Dictionary:
+	return _helm_bear_open(c)
+
+
+func _helm_bear_open_3(c: Dictionary) -> Dictionary:
+	return _helm_bear_open(c)
+
+
+func _helm_bear_crest_3(c: Dictionary) -> Dictionary:
+	return _helm_bear_crest(c)

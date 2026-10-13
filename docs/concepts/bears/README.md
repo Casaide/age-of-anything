@@ -1,4 +1,4 @@
-# Bears (concept rounds B1 and B2, 2026-10-13)
+# Bears (concept rounds B1, B2 and B3, 2026-10-13)
 
 Dominic's direction: bears as a race on two legs, armoured, more like the Greeks: dignified and
 intelligent, the smarter counterpart to the rats. Some races can ride them on four legs. Some bears
@@ -25,6 +25,61 @@ Each B1 sheet puts a Roman worker, a rat worker and a frog worker at the left fo
 
 Re-render with:
 `godot --path . --audio-driver Dummy --always-on-top --script res://tests/sheet.gd -- tests/sheets/bears_b1.json out_dir`
+
+## Round B3 (2026-10-13): the mount's neck runs into its head; helmets by rank
+
+Dominic on B2: "the snouts look perfect", but "mounted bears I think have broken neck still". On the
+B2 mount the head was a separate block sitting low and forward, with a step between the shoulder hump
+and the back of the skull: no neck mass joined them, so it read as a head bent off at an angle. He
+left the rest to Claude (D-126).
+
+B3 is drawn from `tests/sheets/bears_b3.json`. The B2 rows rebuild B2's numbers as kit variants and
+are marked to fail the new head-join rule (the sheet says "fails, as expected"); every B3 row passes
+the placement check, 3D and 2D.
+
+| Sheet | |
+|---|---|
+| `archive/images/2026-10-13/440-bears-b3-mount-neck-into-skull-vs-b2-facings-3x.png`, `441-...-game-scale.png` | standing, 8 facings, B2 above each B3; the polar before and after; the generated line soldier and giant |
+| `442-bears-b3-vs-b2-walk-3x.png`, `443-...-game-scale.png` | four walk steps in three facings |
+| `444-bears-b3-vs-b2-sit-head-raised-3x.png`, `445-...-game-scale.png` | idle: the mount sitting with its head raised, the bipeds at ease |
+
+Re-render with:
+`godot --path . --audio-driver Dummy --always-on-top --script res://tests/sheet.gd -- tests/sheets/bears_b3.json out_dir`
+
+**The mount's neck.** The neck is now one thick mass, as wide as the head, from the top of the hump
+forward and down into the back of the skull (the kit's new `neck.into`: the neck ends at a point in
+the head's frame, wherever the head sits). The top line runs hump, neck, crown, muzzle without a
+notch, and the throat runs from the chest to the jaw. The head is baked with the body holding it out
+and neither is outlined along the other at the join, so in every facing the head grows out of the
+neck instead of sitting on it as a block. It still sits low, at or just under the hump. Sitting, the
+head rises on the neck (a little less far back than B2's, so the neck mass doesn't bury the head's
+joint); the walk is unchanged, and the rider still sits behind the hump. Brown and black.
+
+**The rule.** The placement check now measures head joins on beasts of four or more legs ("A2 head
+joins the neck without a notch", `docs/rendering.md`): the side silhouette's top line from the
+withers to the head may dip at most 1 unit. B2's mount dips 1.5 standing and 2 walking; a fixture
+puts it back and must fail. Run on every quadruped in the check, it also caught the capybara, whose
+big head sat a notch above its shoulders (2 units). It now has the same kind of neck mass into the
+back of the head, joined without a line (`446-capybara-head-on-a-notch-before-head-join-rule.png`,
+`447-capybara-neck-into-the-head-after.png`). It also caught the kit cat built from primitives, a
+comparison not in play, which got a thicker neck into its skull. The pony, newt, cat, beetle,
+spider, deer, boar and sheep passed as they were.
+
+**The polar bear's neck** is a little shorter and thicker (D-126), so it reads as a bear rather than
+a long-necked animal. Its head sits about half a unit lower and closer to the shoulders.
+
+**Helmets by rank (D-126).** The open-faced cap with the ears out is the line soldiers' helmet
+(spear, infantry, skirmisher, archer, mounted archer, scout). The ear-cup helmet is for the giants
+and elites (large, unique). Each now comes in later-age versions with better armour and the same
+model (`helm.bear_open_2`, `_3`, `helm.bear_crest_3`), and the bear tags favour them. Generated,
+bear lines keep their own helmets through the ages instead of switching to the stock Greek ones.
+The one exception is the hellenic unique unit, which keeps its theme's Corinthian helmet.
+
+### Questions for Dominic (B3)
+
+1. Does the mounted bear's neck read right now, from the side and from the back?
+2. Should the helmets differ by age as well as by rank (the same model for now), or is the step from
+   cap to ear cups enough?
 
 ## Round B2 (2026-10-13): short muzzles, the mount's head low
 

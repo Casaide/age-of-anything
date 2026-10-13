@@ -1,0 +1,713 @@
+{
+ "schema": "aow.later/1",
+ "_doc": "Horses, concept round H1 (2026-10-13; Dominic: \"horses heads need a real re-work\"): the pony's looks staged side by side (classic: the head before; h1, h2: the reworked ones; the game's pony now wears h2), for tests/sheets/horse_h1.json (nothing in the game loads this file). h1: a horse head built from shapes; h2: the head sculpted in Blender (tools/blender/horse.py, assets/models/head_horse.glb); both on the same arched, maned neck that runs into the head, with the same ears, forelock and bridle (scenes/art_pixel/unit_models.gd, 'The reworked horse'). The game's pony switches look with UnitModels.pony_look (classic, h1, h2). Notes: docs/concepts/horses/README.md.",
+ "parts": [
+  {
+   "id": "body.pony_classic",
+   "slot": "body",
+   "noun": "Pony",
+   "cut": [
+    "legs",
+    "head"
+   ],
+   "points": 9,
+   "price_points": 12,
+   "rider_loses": [
+    "infantry"
+   ],
+   "tags": [
+    "beast",
+    "mount",
+    "fast"
+   ],
+   "stats": {
+    "hp": 45,
+    "speed": 16,
+    "armour": {
+     "melee": 0,
+     "pierce": 3
+    },
+    "bonus": {
+     "ranged": 3,
+     "siege": 4
+    }
+   },
+   "shapes": [
+    {
+     "t": "line",
+     "p": [
+      [
+       -13,
+       -20
+      ],
+      [
+       -18,
+       -12
+      ]
+     ],
+     "w": 3,
+     "ch": "skin2"
+    },
+    {
+     "t": "ellipse",
+     "c": [
+      0,
+      -19
+     ],
+     "r": [
+      14,
+      7
+     ],
+     "ch": "skin"
+    },
+    {
+     "t": "poly",
+     "p": [
+      [
+       7,
+       -22
+      ],
+      [
+       13,
+       -33
+      ],
+      [
+       18,
+       -30
+      ],
+      [
+       13,
+       -18
+      ]
+     ],
+     "ch": "skin"
+    },
+    {
+     "t": "line",
+     "p": [
+      [
+       8,
+       -24
+      ],
+      [
+       13,
+       -34
+      ]
+     ],
+     "w": 2,
+     "ch": "skin2"
+    }
+   ],
+   "sockets": {
+    "head": [
+     16,
+     -32
+    ],
+    "hand_r": [
+     10,
+     -18
+    ],
+    "hand_l": [
+     8,
+     -18
+    ],
+    "torso": [
+     0,
+     -19
+    ],
+    "back": [
+     -8,
+     -22
+    ],
+    "seat": [
+     -1,
+     -25
+    ]
+   },
+   "torso_scale": [
+    1.8,
+    1.0
+   ],
+   "legs": {
+    "part": "leg.hoof",
+    "anchors": [
+     [
+      9,
+      -13,
+      0,
+      1,
+      0
+     ],
+     [
+      -9,
+      -13,
+      3.14,
+      1,
+      0
+     ],
+     [
+      7,
+      -13,
+      3.14,
+      -1,
+      0
+     ],
+     [
+      -11,
+      -13,
+      0,
+      -1,
+      0
+     ]
+    ]
+   },
+   "note": "concept H1: the pony body as it was before round H1 (classic)"
+  },
+  {
+   "id": "head.pony_classic",
+   "slot": "head",
+   "sockets": {
+    "top": [
+     1,
+     -4
+    ]
+   },
+   "shapes": [
+    {
+     "t": "poly",
+     "p": [
+      [
+       0,
+       -4
+      ],
+      [
+       1,
+       -8
+      ],
+      [
+       2,
+       -4
+      ]
+     ],
+     "ch": "skin2"
+    },
+    {
+     "t": "ellipse",
+     "c": [
+      3,
+      -1
+     ],
+     "r": [
+      6,
+      3.5
+     ],
+     "ch": "skin"
+    },
+    {
+     "t": "circle",
+     "c": [
+      3,
+      -2
+     ],
+     "r": 0.9,
+     "ch": "eye"
+    }
+   ],
+   "tags": [],
+   "stats": {},
+   "points": 0,
+   "note": "concept H1: the pony head as it was before round H1 (classic)"
+  },
+  {
+   "id": "body.pony_h1",
+   "slot": "body",
+   "noun": "Pony",
+   "cut": [
+    "legs",
+    "head"
+   ],
+   "points": 9,
+   "price_points": 12,
+   "rider_loses": [
+    "infantry"
+   ],
+   "tags": [
+    "beast",
+    "mount",
+    "fast"
+   ],
+   "stats": {
+    "hp": 45,
+    "speed": 16,
+    "armour": {
+     "melee": 0,
+     "pierce": 3
+    },
+    "bonus": {
+     "ranged": 3,
+     "siege": 4
+    }
+   },
+   "shapes": [
+    {
+     "t": "line",
+     "p": [
+      [
+       -13,
+       -20
+      ],
+      [
+       -18,
+       -12
+      ]
+     ],
+     "w": 3,
+     "ch": "skin2"
+    },
+    {
+     "t": "ellipse",
+     "c": [
+      0,
+      -19
+     ],
+     "r": [
+      14,
+      7
+     ],
+     "ch": "skin"
+    },
+    {
+     "t": "poly",
+     "p": [
+      [
+       7,
+       -22
+      ],
+      [
+       13,
+       -33
+      ],
+      [
+       18,
+       -30
+      ],
+      [
+       13,
+       -18
+      ]
+     ],
+     "ch": "skin"
+    },
+    {
+     "t": "line",
+     "p": [
+      [
+       8,
+       -24
+      ],
+      [
+       13,
+       -34
+      ]
+     ],
+     "w": 2,
+     "ch": "skin2"
+    }
+   ],
+   "sockets": {
+    "head": [
+     16,
+     -32
+    ],
+    "hand_r": [
+     10,
+     -18
+    ],
+    "hand_l": [
+     8,
+     -18
+    ],
+    "torso": [
+     0,
+     -19
+    ],
+    "back": [
+     -8,
+     -22
+    ],
+    "seat": [
+     -1,
+     -25
+    ]
+   },
+   "torso_scale": [
+    1.8,
+    1.0
+   ],
+   "legs": {
+    "part": "leg.hoof",
+    "anchors": [
+     [
+      9,
+      -13,
+      0,
+      1,
+      0
+     ],
+     [
+      -9,
+      -13,
+      3.14,
+      1,
+      0
+     ],
+     [
+      7,
+      -13,
+      3.14,
+      -1,
+      0
+     ],
+     [
+      -11,
+      -13,
+      0,
+      -1,
+      0
+     ]
+    ]
+   },
+   "note": "concept H1: the pony body with the reworked neck (h1)"
+  },
+  {
+   "id": "head.pony_h1",
+   "slot": "head",
+   "sockets": {
+    "top": [
+     1,
+     -4
+    ]
+   },
+   "shapes": [
+    {
+     "t": "poly",
+     "p": [
+      [
+       0,
+       -4
+      ],
+      [
+       1,
+       -8
+      ],
+      [
+       2,
+       -4
+      ]
+     ],
+     "ch": "skin2"
+    },
+    {
+     "t": "ellipse",
+     "c": [
+      3,
+      -1
+     ],
+     "r": [
+      6,
+      3.5
+     ],
+     "ch": "skin"
+    },
+    {
+     "t": "circle",
+     "c": [
+      3,
+      -2
+     ],
+     "r": 0.9,
+     "ch": "eye"
+    }
+   ],
+   "tags": [],
+   "stats": {},
+   "points": 0,
+   "note": "concept H1: the reworked horse head (h1)"
+  },
+  {
+   "id": "body.pony_h2",
+   "slot": "body",
+   "noun": "Pony",
+   "cut": [
+    "legs",
+    "head"
+   ],
+   "points": 9,
+   "price_points": 12,
+   "rider_loses": [
+    "infantry"
+   ],
+   "tags": [
+    "beast",
+    "mount",
+    "fast"
+   ],
+   "stats": {
+    "hp": 45,
+    "speed": 16,
+    "armour": {
+     "melee": 0,
+     "pierce": 3
+    },
+    "bonus": {
+     "ranged": 3,
+     "siege": 4
+    }
+   },
+   "shapes": [
+    {
+     "t": "line",
+     "p": [
+      [
+       -13,
+       -20
+      ],
+      [
+       -18,
+       -12
+      ]
+     ],
+     "w": 3,
+     "ch": "skin2"
+    },
+    {
+     "t": "ellipse",
+     "c": [
+      0,
+      -19
+     ],
+     "r": [
+      14,
+      7
+     ],
+     "ch": "skin"
+    },
+    {
+     "t": "poly",
+     "p": [
+      [
+       7,
+       -22
+      ],
+      [
+       13,
+       -33
+      ],
+      [
+       18,
+       -30
+      ],
+      [
+       13,
+       -18
+      ]
+     ],
+     "ch": "skin"
+    },
+    {
+     "t": "line",
+     "p": [
+      [
+       8,
+       -24
+      ],
+      [
+       13,
+       -34
+      ]
+     ],
+     "w": 2,
+     "ch": "skin2"
+    }
+   ],
+   "sockets": {
+    "head": [
+     16,
+     -32
+    ],
+    "hand_r": [
+     10,
+     -18
+    ],
+    "hand_l": [
+     8,
+     -18
+    ],
+    "torso": [
+     0,
+     -19
+    ],
+    "back": [
+     -8,
+     -22
+    ],
+    "seat": [
+     -1,
+     -25
+    ]
+   },
+   "torso_scale": [
+    1.8,
+    1.0
+   ],
+   "legs": {
+    "part": "leg.hoof",
+    "anchors": [
+     [
+      9,
+      -13,
+      0,
+      1,
+      0
+     ],
+     [
+      -9,
+      -13,
+      3.14,
+      1,
+      0
+     ],
+     [
+      7,
+      -13,
+      3.14,
+      -1,
+      0
+     ],
+     [
+      -11,
+      -13,
+      0,
+      -1,
+      0
+     ]
+    ]
+   },
+   "note": "concept H1: the pony body with the reworked neck (h2)"
+  },
+  {
+   "id": "head.pony_h2",
+   "slot": "head",
+   "sockets": {
+    "top": [
+     1,
+     -4
+    ]
+   },
+   "shapes": [
+    {
+     "t": "poly",
+     "p": [
+      [
+       0,
+       -4
+      ],
+      [
+       1,
+       -8
+      ],
+      [
+       2,
+       -4
+      ]
+     ],
+     "ch": "skin2"
+    },
+    {
+     "t": "ellipse",
+     "c": [
+      3,
+      -1
+     ],
+     "r": [
+      6,
+      3.5
+     ],
+     "ch": "skin"
+    },
+    {
+     "t": "circle",
+     "c": [
+      3,
+      -2
+     ],
+     "r": 0.9,
+     "ch": "eye"
+    }
+   ],
+   "tags": [],
+   "stats": {},
+   "points": 0,
+   "note": "concept H1: the reworked horse head (h2)"
+  }
+ ],
+ "creatures": {
+  "pony_classic": {
+   "voice": "pony",
+   "noun": "Pony",
+   "plural": "Ponies",
+   "body": "body.pony_classic",
+   "head": "head.pony_classic",
+   "playable": false,
+   "mount": true,
+   "skins": [
+    "pony_bay",
+    "pony_grey",
+    "pony_dun",
+    "pony_white"
+   ],
+   "families": [
+    "steppe",
+    "royal"
+   ]
+  },
+  "pony_h1": {
+   "voice": "pony",
+   "noun": "Pony",
+   "plural": "Ponies",
+   "body": "body.pony_h1",
+   "head": "head.pony_h1",
+   "playable": false,
+   "mount": true,
+   "skins": [
+    "pony_bay",
+    "pony_grey",
+    "pony_dun",
+    "pony_white"
+   ],
+   "families": [
+    "steppe",
+    "royal"
+   ]
+  },
+  "pony_h2": {
+   "voice": "pony",
+   "noun": "Pony",
+   "plural": "Ponies",
+   "body": "body.pony_h2",
+   "head": "head.pony_h2",
+   "playable": false,
+   "mount": true,
+   "skins": [
+    "pony_bay",
+    "pony_grey",
+    "pony_dun",
+    "pony_white"
+   ],
+   "families": [
+    "steppe",
+    "royal"
+   ]
+  }
+ }
+}
