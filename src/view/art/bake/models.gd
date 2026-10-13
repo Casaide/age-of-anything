@@ -2664,19 +2664,118 @@ func _books(body: Node3D, at: Vector3) -> void:
 # so their ends meet the diagonal wall arms on the cells' corners.
 
 ## How high units on a walkway stand (model units over the ground), per building type: the top of the
-## wall, of the wall tower, of the gatehouse's piers and arches. The view lifts units on a wall by
-## this (ArtKit walk_px), so they stand on the stone, not sunk into it (they were drawn 22 px up on
-## every piece while a wall's top is 28 px up, a tower's 49, a gatehouse's 54).
-const WALK_H := {"wall": 0.72, "wall_tower": 1.25, "stone_gate": 1.4}
+## wall, of the wall tower (its fighting floor, inside the hoarding), of the gatehouse's walk over the
+## passage (its flanking towers' floors are the wall tower's: GATE_TOWER_W). The view lifts units on a
+## wall by this (ArtKit walk_px). Walls round 3 (D-130, W2 B at 80%): the tall curtain, about two men
+## high (it was 0.72, 1.25 and 1.4: units sank in, then towers barely rose over the wall).
+const WALK_H := {"wall": 1.36, "wall_tower": 2.32, "stone_gate": 1.36}
+## Every wall height times this (1: the heights above). Only the concept sheets change it
+## (tests/wall_concepts.gd: W2 B at 80% and 90%).
+var wall_rescale := 1.0
+const WALL_D := 0.72        # the curtain's thickness (of its tile's 1.0: room for two abreast on the walk)
+const TOWER_W := 1.0        # a wall tower fills its tile (at 0.86 a gap showed between it and the wall arms meeting it)
+const HOARD_H := 0.3        # a tower's hoarding: the timber gallery round its floor, this high
+const HOARD_POST := 0.8     # the posts from the floor up to the roof's eaves (units on top show under them)
+## The gatehouse's flanking towers: this long along the wall line, this deep across it (proud of both
+## faces), rising to the wall tower's floor. Units on a gatehouse past gate_tower_from() from its
+## middle stand on the towers.
+const GATE_TOWER_W := 0.6
+const GATE_TOWER_D := 1.1
+const GATE_ARCH := 0.95     # the passage's height under the walk
+
+
+static func gate_tower_from(span: float) -> float:
+	return span / 2.0 - GATE_TOWER_W
+
+
+func _wh(type: String) -> float:
+	return WALK_H[type] * wall_rescale
+
 
 ## A merlon: a box tagged as parapet. ArtKit splits the merlons on a piece's near side (towards the
 ## camera) into a front layer drawn over the units on the walkway, so they stand between the merlons.
 ## `along`: the wall's direction at this merlon in the piece's own space (none for a post or tower:
-## then it's in front when it's on the near side of the piece's middle).
-func merlon(size: Vector3, mat: Material, pos: Vector3, along := Vector3.ZERO) -> MeshInstance3D:
-	var mi := box(size, mat, pos)
+## then it's in front when it's on the near side of the piece's middle, or of `about` when given: a
+## point in the same space, a gatehouse tower's middle).
+func merlon(size: Vector3, mat: Material, pos: Vector3, along := Vector3.ZERO, about = null) -> MeshInstance3D:
+	return parapet(box(size, mat, pos), along, about)
+
+
+## Tag any mesh as parapet (see merlon).
+func parapet(mi: MeshInstance3D, along := Vector3.ZERO, about = null) -> MeshInstance3D:
 	mi.set_meta("parapet", along)
+	if about != null:
+		mi.set_meta("about", about)
 	return mi
+
+
+## One crenel's worth of parapet in the culture's way, `size` (w, h, d) standing on `pos` (its foot):
+## a stone or brick merlon, or for the earth walls (reed, mound) a pair of sharpened stakes: the frogs'
+## and bugs' breastwork.
+func _crenel(body: Node3D, arch: String, m: Material, size: Vector3, pos: Vector3, along := Vector3.ZERO, about = null) -> void:
+	if WALL_STONE[arch] != "mud":
+		body.add_child(merlon(size, m, pos + Vector3(0, size.y / 2, 0), along, about))
+		return
+	var wood := mats.get_mat("wood")
+	var dir := along if along.length() > 0.001 else Vector3.RIGHT
+	for s in [-1, 1]:
+		var h: float = size.y * (1.25 if s < 0 else 1.1)
+		var p: Vector3 = pos + dir * (s * size.x * 0.25)
+		body.add_child(parapet(cyl(0.04, 0.045, h, wood, p + Vector3(0, h / 2, 0), Vector3.ZERO, 7), along, about))
+		body.add_child(parapet(cyl(0.0, 0.04, 0.08, wood, p + Vector3(0, h + 0.04, 0), Vector3.ZERO, 7), along, about))
+
+
+## What a culture roofs and hangs its towers' hoardings with: [roof, hoarding].
+func _tower_dress(arch: String) -> Array:
+	match arch:
+		"stone":
+			return ["terracotta", "wood"]
+		"junk":
+			return ["tin", "tin"]
+		"tent":
+			return ["felt", "wood"]
+		"reed", "mound":
+			return ["thatch", "weave"]
+	return ["thatch", "wood"]
+
+
+## A tower's top, w x d, its floor at h, about `at` (in body's space): the hoarding (a timber gallery
+## round the floor's edge, shooting windows), posts at its corners carrying the roof (a hipped pyramid
+## in the culture's roof; its eaves high enough that units on the floor show under them). The gallery
+## and posts are tagged parapet about the tower's middle (the near ones draw over units up there); the
+## roof is tagged "roof" (not a floor: the join check's height test skips it).
+func _tower_top(body: Node3D, arch: String, at: Vector3, w: float, d: float, h: float) -> void:
+	var dress := _tower_dress(arch)
+	var hoard: Material = mats.get_mat(dress[1])
+	var wood := mats.get_mat("wood")
+	var dark := Materials.flat(Color("#1e1a16"), 1.0)
+	var about: Vector3 = at + Vector3(0, h, 0)
+	var t := 0.05
+	for side in [-1, 1]:   # the gallery: walls along x (z faces) and along z (x faces)
+		body.add_child(parapet(box(Vector3(w + 0.02, HOARD_H, t), hoard, at + Vector3(0, h + HOARD_H / 2, side * (d / 2 - t / 2 + 0.01))), Vector3.ZERO, about))
+		body.add_child(parapet(box(Vector3(t, HOARD_H, d + 0.02), hoard, at + Vector3(side * (w / 2 - t / 2 + 0.01), h + HOARD_H / 2, 0)), Vector3.ZERO, about))
+		body.add_child(parapet(box(Vector3(minf(0.14, w * 0.3), 0.09, 0.01), dark, at + Vector3(0, h + HOARD_H * 0.55, side * (d / 2 + 0.016))), Vector3.ZERO, about))
+		body.add_child(parapet(box(Vector3(0.01, 0.09, minf(0.14, d * 0.3)), dark, at + Vector3(side * (w / 2 + 0.016), h + HOARD_H * 0.55, 0)), Vector3.ZERO, about))
+	for x in [-1, 1]:   # the corner posts up to the eaves
+		for z in [-1, 1]:
+			body.add_child(parapet(box(Vector3(0.06, HOARD_POST, 0.06), wood, at + Vector3(x * (w / 2 - 0.03), h + HOARD_POST / 2, z * (d / 2 - 0.03))), Vector3.ZERO, about))
+	var eave := h + HOARD_POST
+	for side in [-1, 1]:   # the wall plates the roof sits on
+		body.add_child(_roof_tag(box(Vector3(w + 0.04, 0.05, 0.05), wood, at + Vector3(0, eave, side * (d / 2 - 0.03))), about - Vector3(5, 0, 5)))
+		body.add_child(_roof_tag(box(Vector3(0.05, 0.05, d + 0.04), wood, at + Vector3(side * (w / 2 - 0.03), eave, 0)), about - Vector3(5, 0, 5)))
+	var rise := maxf(w, d) * 0.5
+	var holder := Node3D.new()   # a square pyramid (a four-sided cone turned an eighth) stretched to w x d
+	holder.position = at + Vector3(0, eave + 0.025 + rise / 2, 0)
+	holder.scale = Vector3((w + 0.12) / 1.4142, 1.0, (d + 0.12) / 1.4142)
+	body.add_child(holder)
+	holder.add_child(_roof_tag(cyl(0.0, 1.0, rise, mats.get_mat(dress[0]), Vector3.ZERO, Vector3(0, 45, 0), 4), Vector3(-1, 0, -1)))
+
+
+func _roof_tag(mi: MeshInstance3D, about = null) -> MeshInstance3D:
+	mi.set_meta("roof", true)
+	# (and parapet: anything of the roof a unit up there overlaps on screen is in front of it, since the
+	# unit stands under it, so the whole roof goes in the front layer)
+	return parapet(mi, Vector3.ZERO, about)
 
 
 const LINKS := [Vector2i(1, 0), Vector2i(1, 1), Vector2i(0, 1), Vector2i(-1, 1), Vector2i(-1, 0), Vector2i(-1, -1), Vector2i(0, -1), Vector2i(1, -1)]
@@ -2713,17 +2812,24 @@ func _wall_spec(post: Callable, arm: Callable, team: Color) -> Dictionary:
 	return {"body": post.call(), "arms": arms, "icon": icon, "anchor": Vector3.ZERO, "lights": [], "team": team}
 
 
-## Stone Wall: a squat pier with a merlon on each corner, and arms of crenellated block wall
-## in the culture's stone.
+## Stone Wall: the tall curtain (W2 B, D-130): a pier as thick as the wall, and arms of crenellated
+## wall in the culture's stone (brick for the rats, rammed earth with a stake breastwork for reed and
+## mound), a walk of flags (planks on earth) along the top, a battered plinth along both feet.
 func _wall(arch: String, team: Color) -> Dictionary:
 	return _wall_spec(func(): return _stone_post(arch), func(k): return _stone_arm(arch, k), team)
+
+
+func _walk_mat(arch: String) -> Material:
+	return mats.get_mat("stone" if WALL_STONE[arch] != "mud" else "wood")
 
 
 func _stone_post(arch: String) -> Node3D:
 	var body := Node3D.new()
 	var m: Material = mats.get_mat(WALL_STONE[arch])
-	# As high as the arms (the walkway is level: units on it stand at WALK_H.wall), a little wider.
-	body.add_child(box(Vector3(0.62, WALK_H.wall, 0.62), m, Vector3(0, WALK_H.wall / 2, 0)))
+	var h := _wh("wall")
+	# As high and as thick as the arms (the walkway is level: units on it stand at WALK_H.wall).
+	body.add_child(box(Vector3(WALL_D, h, WALL_D), m, Vector3(0, h / 2, 0)))
+	body.add_child(box(Vector3(WALL_D - 0.24, 0.01, WALL_D - 0.24), _walk_mat(arch), Vector3(0, h + 0.003, 0)))
 	return body   # (no merlons of its own: the arms carry them, so they keep the line's beat)
 
 
@@ -2732,19 +2838,30 @@ func _stone_arm(arch: String, k: int) -> Node3D:
 	var body: Node3D = a[0]
 	var l: float = a[1]
 	var m: Material = mats.get_mat(WALL_STONE[arch])
-	body.add_child(box(Vector3(l, WALK_H.wall, 0.54), m, Vector3(l / 2, WALK_H.wall / 2, 0)))
-	# One merlon each face halfway along the arm: an even beat of merlon and gap along a line, across
-	# tile edges too (they were at the post's corners and on the owned edge: pairs and wide gaps, and
-	# the post's stood off the arms' faces).
-	for z in [-0.18, 0.18]:
-		body.add_child(merlon(Vector3(0.2, 0.16, 0.17), m, Vector3(l / 2, WALK_H.wall + 0.08, z), Vector3.RIGHT))
+	var h := _wh("wall")
+	var mud: bool = WALL_STONE[arch] == "mud"
+	body.add_child(box(Vector3(l, h, WALL_D), m, Vector3(l / 2, h / 2, 0)))
+	body.add_child(box(Vector3(l, 0.01, WALL_D - 0.24), _walk_mat(arch), Vector3(l / 2, h + 0.003, 0)))   # the walk
+	for z in [-1, 1]:
+		# A battered plinth along each foot, so the wall sits on the ground.
+		body.add_child(box(Vector3(l, 0.16, 0.06), m, Vector3(l / 2, 0.08, z * (WALL_D / 2 + 0.03))))
+		# The parapet: a low wall along each edge (a rail on the earth walls' stakes), one merlon each
+		# face halfway along the arm: an even beat of merlon and gap along a line, across tile edges too.
+		if not mud:
+			body.add_child(merlon(Vector3(l, 0.08, 0.12), m, Vector3(l / 2, h + 0.04, z * (WALL_D / 2 - 0.06)), Vector3.RIGHT))
+		else:
+			body.add_child(merlon(Vector3(l, 0.03, 0.03), mats.get_mat("wood"), Vector3(l / 2, h + 0.15, z * (WALL_D / 2 - 0.06)), Vector3.RIGHT))
+		_crenel(body, arch, m, Vector3(0.18, 0.24, 0.12), Vector3(l / 2, h, z * (WALL_D / 2 - 0.06)), Vector3.RIGHT)
 	rng.seed = 93 + k
 	if arch == "junk" and k == 5:   # a tin patch nailed over the brick (one arm only: on every tile it reads as windows)
-		body.add_child(box(Vector3(0.26, 0.24, 0.02), mats.get_mat("tin"), Vector3(l * 0.5, 0.4, 0.28), Vector3(0, 0, 6)))
-	elif arch in ["reed", "mound"]:   # field stones pressed into the earth
+		body.add_child(box(Vector3(0.3, 0.3, 0.02), mats.get_mat("tin"), Vector3(l * 0.5, h * 0.45, WALL_D / 2 + 0.01), Vector3(0, 0, 6)))
+	elif mud:   # field stones pressed into the earth
 		for n in 2:
 			var side := 1 if n == 0 else -1
-			body.add_child(ball(0.07, mats.get_mat("stone"), Vector3(rng.randf_range(0.1, l - 0.1), rng.randf_range(0.12, 0.6), 0.27 * side), Vector3(1.2, 0.8, 0.6)))
+			body.add_child(ball(0.08, mats.get_mat("stone"), Vector3(rng.randf_range(0.1, l - 0.1), rng.randf_range(0.2, h - 0.25), (WALL_D / 2) * side), Vector3(1.2, 0.8, 0.6)))
+	elif k == 0:   # an arrow loop down each face, once a tile: the height reads
+		for z in [-1, 1]:
+			body.add_child(box(Vector3(0.05, 0.28, 0.02), Materials.flat(Color("#1e1a16"), 1.0), Vector3(l * 0.5, h * 0.55, z * (WALL_D / 2 + 0.005))))
 	return body
 
 
@@ -2872,51 +2989,41 @@ func _stake_gate(arch: String, team: Color, open: bool) -> Node3D:
 	return body
 
 
-## Stone Gate, three tiles long (closed and open): a crenellated pier at each end in the
-## culture's stone, where the wall arms meet it; between them a way through as wide as the gate
-## lets its side walk (all three tiles, so nobody walks through stone), under an arch at the
-## front and one at the back with the sky open between (a unit in the gateway shows, rather than
-## vanishing under a roof; no floor is drawn, so the ground shows through); the team banner hung
-## from the front arch, in the middle; iron-banded double doors filling the arch, which swing
-## in flat against the piers.
-const GATE_PIER := 0.23    # the piers' centres in from the gate's ends: their outer faces flush with them
-const GATE_PIER_W := 0.46
-const GATE_ARCH := 1.1    # the arches' undersides
-
-
-## Wall Tower (milestone 16). PLACEHOLDER until Dominic picks a look from the concept round: a
-## squat square tower of the culture's wall stone, half again the wall's height, crenellated, an
-## arrow slit and a team rag; the wall's arms reach it like a gate's.
-const TOWER_W := 1.0   # a wall tower fills its tile (at 0.86 a gap showed between it and the wall arms meeting it)
-
-
+## Wall Tower (milestone 16; walls round 3, W2 B, D-130): a square tower filling its tile (the wall's
+## arms meet its faces), rising a storey over the walk, a corbel band, arrow loops, and on top the
+## hoarding and a hipped roof on corner posts in the culture's materials (_tower_top); units on top
+## stand on its floor inside the hoarding, under the eaves.
 func _wall_tower(arch: String, team: Color) -> Dictionary:
 	var body := Node3D.new()
 	var m: Material = mats.get_mat(WALL_STONE[arch])
-	var h: float = WALK_H.wall_tower
+	var h := _wh("wall_tower")
+	var dark := Materials.flat(Color("#1e1a16"), 1.0)
 	body.add_child(box(Vector3(TOWER_W, h, TOWER_W), m, Vector3(0, h / 2, 0)))   # the whole tile: the wall arms meet its faces
-	for x in [-1, 0, 1]:
-		for z in [-1, 0, 1]:
-			if x != 0 or z != 0:
-				body.add_child(merlon(Vector3(0.18, 0.18, 0.18), m, Vector3(x * (TOWER_W / 2 - 0.09), h + 0.09, z * (TOWER_W / 2 - 0.09))))
-	for side in [Vector3(0, 0.78, TOWER_W / 2 + 0.01), Vector3(TOWER_W / 2 + 0.01, 0.78, 0)]:
-		body.add_child(box(Vector3(0.07 if side.z != 0.0 else 0.03, 0.24, 0.03 if side.z != 0.0 else 0.07), Materials.flat(Color("#1e1a16"), 1.0), side))   # arrow slits
-	body.add_child(box(Vector3(0.24, 0.3, 0.02), cloth(team), Vector3(-0.18, h - 0.22, TOWER_W / 2 + 0.01)))   # a team rag hung over the parapet
+	body.add_child(box(Vector3(TOWER_W - 0.2, 0.01, TOWER_W - 0.2), _walk_mat(arch), Vector3(0, h + 0.003, 0)))   # its floor
+	body.add_child(box(Vector3(TOWER_W + 0.04, 0.1, TOWER_W + 0.04), m, Vector3(0, h - 0.07, 0)))   # a corbel band under the hoarding
+	for y in [h * 0.32, h * 0.62]:   # arrow loops on the two faces towards the camera
+		body.add_child(box(Vector3(0.06, 0.26, 0.02), dark, Vector3(0, y, TOWER_W / 2 + 0.005)))
+		body.add_child(box(Vector3(0.02, 0.26, 0.06), dark, Vector3(TOWER_W / 2 + 0.005, y, 0)))
+	body.add_child(box(Vector3(0.26, 0.36, 0.02), cloth(team), Vector3(-0.2, h - 0.34, TOWER_W / 2 + 0.03)))   # a team rag hung under the hoarding
+	_tower_top(body, arch, Vector3.ZERO, TOWER_W, TOWER_W, h)
 	return {"body": body, "anchor": Vector3.ZERO, "lights": [], "team": team}
 
 
 ## Siege Ladder (milestone 16). PLACEHOLDER until Dominic picks a look: two rails and rungs
-## standing almost upright (the sim doesn't say which way its wall is yet), a team rag tied on.
+## from its tile's middle up to just over the walk (walls round 3: the taller curtain), leaning towards
+## -x so its head rests on the face of a wall in the next tile that way (the sim doesn't say which way
+## its wall is yet), a team rag tied on.
 func _ladder(arch: String, team: Color) -> Dictionary:
 	var body := Node3D.new()
 	var wood := mats.get_mat("wood")
-	var h := 1.05
+	var h := _wh("wall") + 0.2
+	var head := Vector3(-(1.0 - WALL_D / 2.0 - 0.02), h, 0.0)   # on the next tile's wall face
 	for z in [-0.14, 0.14]:
-		body.add_child(box(Vector3(0.05, h, 0.05), wood, Vector3(-0.08, h / 2, z), Vector3(0, 0, -10)))
-	for k in 7:
-		var y := 0.1 + k * 0.14
-		body.add_child(box(Vector3(0.03, 0.03, 0.3), wood, Vector3(-0.08 - y * 0.17, y, 0)))
-	body.add_child(box(Vector3(0.02, 0.14, 0.1), cloth(team), Vector3(-0.2, 0.86, 0.17)))
+		body.add_child(beam(Vector3(0, 0, z), head + Vector3(0, 0, z), 0.03, wood, 6))
+	var rungs := int(h / 0.14)
+	for k in range(1, rungs + 1):
+		body.add_child(box(Vector3(0.03, 0.03, 0.3), wood, head * (float(k) / (rungs + 1))))
+	body.add_child(box(Vector3(0.02, 0.14, 0.1), cloth(team), head * 0.8 + Vector3(0, 0, 0.17)))
 	return {"body": body, "anchor": Vector3.ZERO, "lights": [], "team": team}
 
 
@@ -2998,35 +3105,84 @@ func _stone_gate(arch: String, team: Color) -> Dictionary:
 	return {"body": _gatehouse(arch, team, false), "open": _gatehouse(arch, team, true), "anchor": Vector3.ZERO, "lights": [], "team": team}
 
 
+## Stone Gate (walls round 3, W2 B, D-130: built into the wall). Three tiles long along x (turned for
+## other lines; corner to corner on a diagonal, `gate_span` long). The curtain runs straight through
+## it, as thick and as high: its walk goes on over the passage on a floor, between the parapets, so the
+## wall line reads unbroken. At each end a flanking tower, GATE_TOWER_W along the line and GATE_TOWER_D
+## across it (proud of both faces), its outer face on the gate's end where the wall arms meet it, rising
+## to the wall tower's floor with the same hoarding and roof. Between them the passage under the walk,
+## GATE_ARCH high, the iron-banded leaves in the wall line flush with its faces (they swing in when
+## open), the drop holes of a machicolation over the arch on both faces, the team banner on the front.
+## The towers' near halves are tagged parapet (along the line): they draw over units up on the walk
+## next to them.
 func _gatehouse(arch: String, team: Color, open: bool) -> Node3D:
 	var body := Node3D.new()
 	var m: Material = mats.get_mat(WALL_STONE[arch])
 	var wood := mats.get_mat("wood")
 	var iron := Materials.flat(Color("#4a4c50"), 0.5, 0.7)
-	var top := GATE_ARCH + 0.28
-	var pier := gate_span / 2.0 - GATE_PIER
-	for x in [-pier, pier]:
-		body.add_child(box(Vector3(GATE_PIER_W, top + 0.04, 0.98), m, Vector3(x, (top + 0.04) / 2, 0)))   # a pier, as deep as the gate
-		for z in [-0.34, 0.34]:   # (none on the walkway's line: it blocked the way along, and is neither in front of the units nor behind)
-			body.add_child(merlon(Vector3(0.18, 0.18, 0.18), m, Vector3(x, top + 0.13, z), Vector3.RIGHT))
-		body.add_child(box(Vector3(0.07, 0.22, 0.03), Materials.flat(Color("#1e1a16"), 1.0), Vector3(x, 0.7, 0.5)))   # an arrow slit
-	var inner := pier - GATE_PIER_W / 2   # the piers' inner faces
-	for z in [-0.37, 0.37]:   # the arches, front and back, open to the sky between
-		body.add_child(box(Vector3(2.0 * inner, 0.28, 0.24), m, Vector3(0, GATE_ARCH + 0.14, z)))
-		body.add_child(box(Vector3(2.0 * inner, 0.05, 0.2), mats.get_mat("stone"), Vector3(0, GATE_ARCH + 0.025, z)))   # the arch stones' soffit
-	for x in [-0.45, 0.45]:
-		body.add_child(merlon(Vector3(0.18, 0.16, 0.18), m, Vector3(x, top + 0.08, 0.37), Vector3.RIGHT))
-	# The banner: a rod across the front arch, the team cloth hanging from it over the arch's face.
-	body.add_child(box(Vector3(0.46, 0.03, 0.03), wood, Vector3(0, top - 0.03, 0.51)))
-	body.add_child(box(Vector3(0.36, 0.3, 0.02), cloth(team), Vector3(0, top - 0.19, 0.51)))
-	var leaf_w := inner   # each leaf half the way through
+	var dark := Materials.flat(Color("#1e1a16"), 1.0)
+	var mud: bool = WALL_STONE[arch] == "mud"
+	var h := _wh("stone_gate")
+	var ht := _wh("wall_tower")
+	var half := gate_span / 2.0
+	var inner := half - GATE_TOWER_W   # the passage's half width, the towers' inner faces
+	var arch_h := GATE_ARCH * wall_rescale
+	# The curtain over the passage: from the arch's head up to the walk, as thick as the wall.
+	body.add_child(box(Vector3(2.0 * inner, h - arch_h, WALL_D), m, Vector3(0, (arch_h + h) / 2, 0)))
+	body.add_child(box(Vector3(2.0 * inner, 0.01, WALL_D - 0.24), _walk_mat(arch), Vector3(0, h + 0.003, 0)))   # the walk's floor over the passage
+	for z in [-1, 1]:
+		body.add_child(box(Vector3(2.0 * inner, 0.05, 0.04), mats.get_mat("stone") if not mud else wood, Vector3(0, arch_h + 0.025, z * (WALL_D / 2 - 0.02))))   # the lintel's soffit
+		# The parapet on both faces, the wall's beat: a low wall (a rail on earth) and a merlon each half tile.
+		if not mud:
+			body.add_child(merlon(Vector3(2.0 * inner, 0.08, 0.12), m, Vector3(0, h + 0.04, z * (WALL_D / 2 - 0.06)), Vector3.RIGHT))
+		else:
+			body.add_child(merlon(Vector3(2.0 * inner, 0.03, 0.03), wood, Vector3(0, h + 0.15, z * (WALL_D / 2 - 0.06)), Vector3.RIGHT))
+		var n := maxi(2, int(round(2.0 * inner / 0.5)))
+		for k in n:
+			_crenel(body, arch, m, Vector3(0.18, 0.24, 0.12), Vector3(-inner + (k + 0.5) * 2.0 * inner / n, h, z * (WALL_D / 2 - 0.06)), Vector3.RIGHT)
+		# The machicolation: corbels under a gallery strip, proud of the face over the arch, drop holes between.
+		body.add_child(box(Vector3(2.0 * inner - 0.1, 0.08, 0.08), m, Vector3(0, h - 0.1, z * (WALL_D / 2 + 0.04))))
+		for k in n * 2:
+			body.add_child(box(Vector3(0.06, 0.12, 0.07), m, Vector3(-inner + 0.05 + (k + 0.5) * (2.0 * inner - 0.1) / (n * 2), h - 0.2, z * (WALL_D / 2 + 0.035))))
+	# The flanking towers: a core in the wall's line, and its proud halves before and behind.
+	var tl := GATE_TOWER_W
+	var proud := (GATE_TOWER_D - WALL_D) / 2.0
+	for side in [-1, 1]:
+		var cx: float = side * (half - tl / 2.0)
+		var tower := Node3D.new()   # a part of its own: ArtKit bakes it apart and the view sorts it on its own middle
+		tower.set_meta("gate_part", side)
+		tower.set_meta("gate_centre", Vector3(cx, 0, 0))
+		body.add_child(tower)
+		_gate_tower(tower, arch, cx, tl, ht, proud, m, dark)
+	# The banner on the front, over the arch, under the machicolation.
+	body.add_child(box(Vector3(0.46, 0.03, 0.03), wood, Vector3(0, h - 0.27, WALL_D / 2 + 0.03)))
+	body.add_child(box(Vector3(0.36, 0.3, 0.02), cloth(team), Vector3(0, h - 0.43, WALL_D / 2 + 0.03)))
+	# The leaves, in the wall line: their faces just inside its front face (a reveal of a few hundredths),
+	# hinged on the towers; open, they swing in, back towards the town.
+	var leaf_w := inner
+	var leaf_z := WALL_D / 2 - 0.08
 	for side in [-1, 1]:
 		var leaf := Node3D.new()
-		leaf.position = Vector3(side * inner, 0, 0.28)   # hinged on the pier just behind the front arch; they swing in
+		leaf.position = Vector3(side * inner, 0, leaf_z)
 		leaf.rotation_degrees = Vector3(0, 90 * -side if open else 0, 0)
 		body.add_child(leaf)
-		leaf.add_child(box(Vector3(leaf_w, GATE_ARCH - 0.02, 0.07), wood, Vector3(-side * leaf_w / 2, (GATE_ARCH - 0.02) / 2, -0.04)))
-		for y in [0.2, 0.7]:
+		leaf.add_child(box(Vector3(leaf_w, arch_h - 0.02, 0.08), wood, Vector3(-side * leaf_w / 2, (arch_h - 0.02) / 2, -0.04)))
+		for y in [arch_h * 0.2, arch_h * 0.7]:
 			leaf.add_child(box(Vector3(leaf_w, 0.05, 0.02), iron, Vector3(-side * leaf_w / 2, y, 0.005)))
-		leaf.add_child(ball(0.035, iron, Vector3(-side * (leaf_w - 0.14), 0.46, 0.01)))   # the ring pull
+		leaf.add_child(ball(0.035, iron, Vector3(-side * (leaf_w - 0.14), arch_h * 0.46, 0.01)))   # the ring pull
 	return body
+
+
+## One of a gatehouse's flanking towers, into `body` (its own node), its middle at x = cx: a core in the
+## wall's line and its proud halves before and behind (the near one tagged parapet along the line: it
+## draws over units on the walk beside it), its floor, a corbel band, arrow loops, the hoarding and roof.
+func _gate_tower(body: Node3D, arch: String, cx: float, tl: float, ht: float, proud: float, m: Material, dark: Material) -> void:
+	body.add_child(box(Vector3(tl, ht, WALL_D), m, Vector3(cx, ht / 2, 0)))
+	body.add_child(merlon(Vector3(tl, ht, proud), m, Vector3(cx, ht / 2, WALL_D / 2 + proud / 2), Vector3.RIGHT))   # the near half: over units on the walk beside it
+	body.add_child(box(Vector3(tl, ht, proud), m, Vector3(cx, ht / 2, -WALL_D / 2 - proud / 2)))
+	body.add_child(box(Vector3(tl - 0.2, 0.01, GATE_TOWER_D - 0.2), _walk_mat(arch), Vector3(cx, ht + 0.003, 0)))   # its floor
+	body.add_child(merlon(Vector3(tl + 0.04, 0.1, 0.02 + proud), m, Vector3(cx, ht - 0.07, WALL_D / 2 + proud / 2 + 0.02), Vector3.RIGHT))   # the corbel band, near
+	body.add_child(box(Vector3(tl + 0.04, 0.1, WALL_D + proud + 0.02), m, Vector3(cx, ht - 0.07, -proud / 2 - 0.01)))
+	for y in [ht * 0.3, ht * 0.62]:   # arrow loops on the tower's front and its inner face
+		body.add_child(merlon(Vector3(0.06, 0.24, 0.02), dark, Vector3(cx, y, GATE_TOWER_D / 2 + 0.005), Vector3.RIGHT))
+	_tower_top(body, arch, Vector3(cx, 0, 0), tl, GATE_TOWER_D, ht)

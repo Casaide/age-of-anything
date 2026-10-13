@@ -926,41 +926,58 @@ func _bolt_c(s: Dictionary, c: Dictionary) -> Dictionary:
 	return spec
 
 
-## The siege tower (milestone 16). PLACEHOLDER for every take until Dominic picks a concept: a
-## timber tower on four wheels, hide-hung on three sides, its top a wall's height and a bit (a
-## stone wall's walk is about 40 up), a gangway raised against the front, the team's pennant on
-## top; two of the race's workers push at the open back.
+## The siege tower (milestone 16; walls round 3, D-130: sized to the tall curtain). PLACEHOLDER for
+## every take until Dominic picks a concept: a timber tower on four wheels, hide-hung on three sides,
+## three storeys: the gangway's floor at the wall walk's height (WALL_WALK: Models.WALK_H.wall in part
+## units, a stone wall's walk being 1.36 model units up), the fighting top a storey over it, so it stands
+## clearly taller than the wall; the gangway raised against the front, hinged at the walk's height, its
+## ropes tied to the top's parapet; the team's pennant on top; two of the race's workers push at the
+## open back, apart.
+const PART_PER_MODEL := 55.0   # part units per building model unit (a soldier about 35: two-thirds of one)
+const WALL_WALK := 1.36 * PART_PER_MODEL
+
+
 func _tower_c(s: Dictionary, c: Dictionary) -> Dictionary:
 	var n := Node3D.new()
-	var L := 26.0
-	var W := 20.0
-	var wr := 4.0
+	var L := 34.0
+	var W := 26.0
+	var wr := 4.6
 	undercarriage(n, s, L, W, wr)
 	var base := wr + 1.2
-	var top := 46.0
+	var deck := WALL_WALK + 1.0          # the gangway's floor, level with the walk
+	var top := deck + 0.8 * PART_PER_MODEL   # the fighting top: a storey over the walk
+	var taper := func(y: float) -> float: return 1.0 - (y - base) / (top - base) * 0.12
 	for x in [-L * 0.45, L * 0.45]:
 		for z in [-W * 0.45, W * 0.45]:
-			n.add_child(beam(Vector3(x, base, z), Vector3(x * 0.9, top, z * 0.9), 1.6, 1.6, s.wood))
-	for y in [base, base + 14.0, base + 28.0, top]:   # the floors' frames
-		var k: float = 1.0 - (y - base) / (top - base) * 0.1
+			n.add_child(beam(Vector3(x, base, z), Vector3(x * taper.call(top), top, z * taper.call(top)), 2.0, 2.0, s.wood))
+	for y in [base, (base + deck) * 0.5, deck, top]:   # the floors' frames
+		var k: float = taper.call(y)
 		for z in [-W * 0.45 * k, W * 0.45 * k]:
-			n.add_child(beam(Vector3(-L * 0.45 * k, y, z), Vector3(L * 0.45 * k, y, z), 1.2, 1.2, s.dark))
+			n.add_child(beam(Vector3(-L * 0.45 * k, y, z), Vector3(L * 0.45 * k, y, z), 1.4, 1.4, s.dark))
 		for x in [-L * 0.45 * k, L * 0.45 * k]:
-			n.add_child(beam(Vector3(x, y, -W * 0.45 * k), Vector3(x, y, W * 0.45 * k), 1.2, 1.2, s.dark))
+			n.add_child(beam(Vector3(x, y, -W * 0.45 * k), Vector3(x, y, W * 0.45 * k), 1.4, 1.4, s.dark))
 	var hide: Material = s.get("roof", s.wood)
-	var mid := (base + top) * 0.5
-	for z in [-W * 0.43, W * 0.43]:   # the hides down both sides and the front
-		n.add_child(_box(Vector3(L * 0.84, top - base - 4.0, 0.5), hide, Vector3(0, mid, z)))
-	n.add_child(_box(Vector3(0.5, top - base - 4.0, W * 0.84), hide, Vector3(L * 0.43, mid, 0)))
-	n.add_child(_box(Vector3(L * 0.86, 1.0, W * 0.86), s.dark, Vector3(0, top, 0)))   # the top deck
-	for z in [-W * 0.4, W * 0.4]:   # its parapet
-		n.add_child(_box(Vector3(L * 0.8, 3.0, 0.8), s.wood, Vector3(0, top + 1.5, z)))
-	# The gangway, raised: hinged at the deck's front.
-	n.add_child(_box(Vector3(1.0, 16.0, W * 0.6), s.wood, Vector3(L * 0.5 + 1.0, top + 6.0, 0)))
-	for z in [-W * 0.3, W * 0.3]:
-		n.add_child(rod(Vector3(L * 0.5 + 1.0, top + 13.0, z), Vector3(-L * 0.2, top + 2.0, z), 0.3, 0.3, s.rope, false))
-	pennant(n, s, Vector3(-L * 0.35, top + 1.0, -W * 0.35), 12.0, 5.0)
-	return {"node": n, "sockets": {"crew0_f0_reach": Vector3(-L * 0.5 - 5.0, 0, -4.5), "crew1_f0_reach": Vector3(-L * 0.5 - 5.0, 0, 4.5)}}
+	for lo_hi in [[base + 2.0, deck - 1.0], [deck + 1.0, top - 1.0]]:   # hides down both sides and the front, a storey at a time
+		var y0: float = lo_hi[0]
+		var y1: float = lo_hi[1]
+		var k: float = taper.call((y0 + y1) * 0.5)
+		for z in [-W * 0.43 * k, W * 0.43 * k]:
+			n.add_child(_box(Vector3(L * 0.84 * k, y1 - y0, 0.5), hide, Vector3(0, (y0 + y1) * 0.5, z)))
+		n.add_child(_box(Vector3(0.5, y1 - y0, W * 0.84 * k), hide, Vector3(L * 0.43 * k, (y0 + y1) * 0.5, 0)))
+	var kt: float = taper.call(top)
+	n.add_child(_box(Vector3(L * 0.86 * kt, 1.2, W * 0.86 * kt), s.dark, Vector3(0, top, 0)))   # the top deck
+	for z in [-W * 0.4 * kt, W * 0.4 * kt]:   # its parapet
+		n.add_child(_box(Vector3(L * 0.8 * kt, 4.0, 1.0), s.wood, Vector3(0, top + 2.0, z)))
+	n.add_child(_box(Vector3(1.0, 4.0, W * 0.8 * kt), s.wood, Vector3(L * 0.4 * kt, top + 2.0, 0)))
+	# The gangway, raised: hinged at the walk's height on the front, standing up against the hides.
+	var kd: float = taper.call(deck)
+	var gx := L * 0.45 * kd + 1.4
+	var g_len := 30.0
+	n.add_child(_box(Vector3(1.2, g_len, W * 0.6), s.wood, Vector3(gx, deck + g_len * 0.5, 0)))
+	for z in [-W * 0.26, W * 0.26]:   # its ropes, from its head back to the top's front parapet
+		n.add_child(rod(Vector3(gx, deck + g_len - 1.0, z), Vector3(L * 0.4 * kt, top + 3.0, z), 0.3, 0.3, s.rope, false))
+	pennant(n, s, Vector3(-L * 0.35 * kt, top + 1.0, -W * 0.35 * kt), 14.0, 6.0)
+	return {"node": n, "sockets": {"crew0_f0_reach": Vector3(-L * 0.5 - 9.0, 0, -10.0), "crew1_f0_reach": Vector3(-L * 0.5 - 15.0, 0, 10.0)}}
 
 
 # ------------------------------------------------------------------ siege tower concepts (milestone 16)

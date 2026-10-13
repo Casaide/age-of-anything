@@ -794,6 +794,9 @@ static func front_split(root: Node3D, front_only: bool) -> int:
 		var front := false
 		if node.has_meta("parapet"):
 			var p := Vector3(t.origin.x, 0, t.origin.z)
+			if node.has_meta("about"):   # measured from a point of its own (a gatehouse tower's middle), not the piece's
+				var o: Vector3 = (t * node.transform.affine_inverse()) * (node.get_meta("about") as Vector3)
+				p -= Vector3(o.x, 0, o.z)
 			var along: Vector3 = t.basis * (node.get_meta("parapet") as Vector3)
 			along.y = 0
 			if along.length() > 0.001:
@@ -811,6 +814,66 @@ func _bake_front(baker, node: Node3D) -> Dictionary:
 	front_split(node, true)
 	var f: Dictionary = await baker.bake(node, [Vector3.ZERO])
 	return {"img": (f.tex as Texture2D).get_image(), "origin": f.points[0]}
+
+
+## A gatehouse's flanking towers (Models: nodes tagged "gate_part") that stand lower on screen than its
+## middle (the right one along x, the lower one along y, the near one on the down-screen diagonal) get
+## a layer of their own, sorted on the tower's middle: the tower again (its body, lit and shadowed as in
+## the whole: the rest of the gate casts shadows only) and its near parts (hoarding, posts, roof) alone.
+## They draw over units up on the rest of the gate that they hide (a tower straight down the screen
+## hides the walk behind it), and units on the tower stand between the two (BuildingArt.perch_sort_at).
+## info.parts: [{body, front, at}], at: the tower's middle from the gate's (sim tiles).
+func _bake_gate_parts(baker, models, arch: String, type: String, model: String, suffix: String, name: String, made: Dictionary, info: Dictionary) -> void:
+	var probe: Dictionary = _placed(models, arch, type, model, suffix)
+	var tags := []
+	for part in probe.body.find_children("*", "Node3D", true, false):
+		if part.has_meta("gate_part"):
+			var c: Vector3 = _to_root(part, probe.body) * (part.get_meta("gate_centre") as Vector3)
+			if c.x + c.z > 0.3:
+				tags.append([int(part.get_meta("gate_part")), Vector2(c.x, c.z)])
+	probe.body.free()
+	probe.open.free()
+	info.parts = []
+	for tg in tags:
+		var key := "%s:tower%d" % [name, tg[0]]
+		var whole: Dictionary = _placed(models, arch, type, model, suffix)
+		front_split(whole.body, false)
+		for mi in whole.body.find_children("*", "MeshInstance3D", true, false):
+			if _part_of(mi) != tg[0]:
+				(mi as MeshInstance3D).cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_SHADOWS_ONLY
+		var b: Dictionary = await baker.bake(whole.body, [Vector3.ZERO])
+		whole.open.free()
+		made[key] = {"img": (b.tex as Texture2D).get_image(), "origin": b.points[0]}
+		var fr: Dictionary = _placed(models, arch, type, model, suffix)
+		front_split(fr.body, true)
+		for mi in fr.body.find_children("*", "MeshInstance3D", true, false):
+			if _part_of(mi) != tg[0]:
+				mi.visible = false
+		var f: Dictionary = await baker.bake(fr.body, [Vector3.ZERO])
+		fr.open.free()
+		made[key + ":front"] = {"img": (f.tex as Texture2D).get_image(), "origin": f.points[0]}
+		var sc := float(_buildings_data().get("scale", {}).get(arch, {}).get(type, 1.0))
+		info.parts.append({"body": key, "front": key + ":front", "at": tg[1] * sc})
+
+
+## The gate part (Models "gate_part": a tower's side) a mesh belongs to, 0 for none.
+static func _part_of(node: Node) -> int:
+	var n := node
+	while n != null:
+		if n.has_meta("gate_part"):
+			return int(n.get_meta("gate_part"))
+		n = n.get_parent()
+	return 0
+
+
+## Node's transform into root's space.
+static func _to_root(node: Node3D, root: Node3D) -> Transform3D:
+	var t := Transform3D.IDENTITY
+	var n: Node = node
+	while n != null and n != root:
+		t = (n as Node3D).transform * t
+		n = n.get_parent()
+	return (root.transform if n == root else Transform3D.IDENTITY) * t
 
 
 ## The animals (data/animals.json) as one more "race" to bake: their recipes, never a player's.
@@ -1007,6 +1070,9 @@ func _bake_building(baker, models, arch: String, type: String, model := "", suff
 	if Models.WALK_H.has(type):   # units on its walkway stand this high (canvas px), on the stone
 		var sc := float(_buildings_data().get("scale", {}).get(arch, {}).get(type, 1.0))
 		info.walk_px = Models.WALK_H[type] * sc * WALK_PX_PER_UNIT
+		if spec.has("open") and type == "stone_gate":   # its flanking towers: units past this far along it from its middle stand on them
+			info.walk_tower_px = Models.WALK_H.wall_tower * sc * WALK_PX_PER_UNIT
+			info.walk_tower_from = Models.gate_tower_from(3.0 * (sqrt(2.0) if suffix in ALONG.slice(2) else 1.0)) * sc
 	if fronts > 0:
 		made[name + ":front"] = await _bake_front(baker, _placed(models, arch, type, model, suffix).body)
 		info.front = name + ":front"
@@ -1033,6 +1099,7 @@ func _bake_building(baker, models, arch: String, type: String, model := "", suff
 		if open_fronts > 0:
 			made[name + ":open:front"] = await _bake_front(baker, _placed(models, arch, type, model, suffix).open)
 			info.open_front = name + ":open:front"
+		await _bake_gate_parts(baker, models, arch, type, model, suffix, name, made, info)
 	if spec.has("arms"):   # a wall: an arm towards each of the eight neighbours (Models.LINKS), and a run for its picture
 		baker.set_ground_shadow(true)
 		info.arms = []
@@ -1041,7 +1108,7 @@ func _bake_building(baker, models, arch: String, type: String, model := "", suff
 		for k in spec.arms.size():
 			if front_split(spec.arms[k], false) > 0:
 				with_front.append(k)
-		var out: Array = await baker.bake_many(spec.arms + [spec.icon])   # all nine in one render: small, and a render is most of a bake
+		var out: Array = await baker.bake_many(spec.arms + [spec.icon], 2)   # four to a render (a render is most of a bake): the tall curtain overflows a third of the frame
 		for k in spec.arms.size():
 			made["%s:arm%d" % [name, k]] = {"img": (out[k].tex as Texture2D).get_image(), "origin": out[k].points[0]}
 			info.arms.append("%s:arm%d" % [name, k])
@@ -1055,7 +1122,7 @@ func _bake_building(baker, models, arch: String, type: String, model := "", suff
 			for k in with_front:
 				front_split(again.arms[k], true)
 				alone.append(again.arms[k])
-			var fo: Array = await baker.bake_many(alone)
+			var fo: Array = await baker.bake_many(alone, 2)
 			for n in with_front.size():
 				var k: int = with_front[n]
 				made["%s:arm%d:front" % [name, k]] = {"img": (fo[n].tex as Texture2D).get_image(), "origin": fo[n].points[0]}
