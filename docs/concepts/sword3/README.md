@@ -1,4 +1,4 @@
-# S3: the swordsman's age-3 kit (2026-10-13), waiting on Dominic
+# S3: the swordsman's age-3 kit (2026-10-13): picked (D-125) and built
 
 Dominic: "Swords looking great, need age 3." The swordsman line (Barracks, slot `infantry`) has an
 age-3 weapon only for royal races and knight prompts (`weapon.sword.iron`, tagged `knight`/`royal`).
@@ -81,3 +81,11 @@ sword minus its `knight`/`royal` tags, or a plain steel longsword), so no cultur
 To build a pick: the part entries in `data/parts.json` (tier 3, `blade`, the family's tag with
 `only_if`/`favour` like the healer staffs, `price_points` like the iron sword's 8), the model moved
 into `unit_models.gd`, then the round robin at age 3.
+
+## Built (2026-10-13)
+
+Dominic picked hellenic B, steppe B, han B, swamp B, forest A, spooky B and a plain iron sword as the
+fallback (D-125). They are in play: parts in `data/parts.json`, models in `scenes/art_pixel/unit_models.gd`
+(the options not picked stay in `sword3_concepts.gd`). The mace keeps `blunt` and follows the sword through
+a new `replaces` field; the helmets were lifted clear of a human's brows for the placement check. Results
+and pictures (`359-` to `361-`) are in `docs/milestones/m13-unit-lines.md`.

@@ -109,9 +109,10 @@ picks), then build, tests, archive pictures.
   - [ ] Dominic's look in a match
   - [x] The newt built as the frogs' cavalry mount (D-122): `body/head/leg.newt` in data and
     `unit_models.gd`, three skins, amphibious, the swamp family's and the frogs' own mount (2026-10-13)
-- [ ] Swordsman age-3 kit for every culture (Dominic, 2026-10-13: "need age 3"; concept round running)
+- [x] Swordsman age-3 kit for every culture (Dominic, 2026-10-13: "need age 3")
   - [x] Concept round S3: two options each for hellenic, steppe, han, swamp, forest, spooky (2026-10-13)
-  - [ ] Dominic's pick, then build it
+  - [x] Dominic's pick (D-125), built into play with a plain iron sword as the fallback (2026-10-13)
+  - [ ] Dominic's look in a match
 - [ ] Rat mount: the long-head capybara (in play) or the alley cat (iterating: a real cat body, sits when idle); the tiger for another culture?
 - [ ] Siege engine sounds (they reuse shot and hit sounds); the swordsmen's raid mode for the bot (built, off)
 - [ ] Check bugs (swamp beetles, spiders) riding newts; "frogs riding beetles" now gives newts
@@ -380,6 +381,46 @@ swamp B, forest A, spooky B (the helmets change the silhouette from every side; 
 bone curve vanish at 1x), plus a generic age-3 blade for cultures without one. Pictures
 `archive/images/2026-10-13/330-` (all, game scale) and `331-` to `336-` (3x per culture); notes in
 `docs/concepts/sword3/README.md`.
+
+**Swordsman age 3, built (2026-10-13).** Dominic picked (D-125) hellenic B, steppe B, han B, swamp B,
+forest A, spooky B, plus a plain iron sword as the fallback. In play:
+- Data (`data/parts.json`, tier 3, `requires_role: ["infantry"]`, `only_if` + `favour` the culture's
+  tag like the healer staffs, attack 8 against the bronze sword's 7, points 6, `price_points` 8 like the
+  iron sword): `weapon.sword.xiphos` + `helm.attic` (hellenic, "Xiphos Swordsman"),
+  `weapon.sword.flared_sabre` + `helm.steppe_spike` ("Sabreman"), `weapon.sword.dao` ("Dao Swordsman"),
+  `weapon.mace.river_stone` ("Maceman Frog", +2 vs buildings), `weapon.sword.chitin` ("Chitin
+  Swordsman"), `weapon.sword.hook` ("Hookblade"), `weapon.sword.iron_plain` (the fallback, "Iron
+  Swordsman"). The helmets are tier 3 and share the `helmet` kind, so the upgrade swaps the age-2
+  helmet for them (armour 2/1, points 3).
+- **The mace and the kind rule:** the mace stays `blunt` (it sounds and counts as a club) and carries
+  a new field, `"replaces": ["blade"]`: on an upgrade a part may take the place of the kinds it lists,
+  besides its own. Tagging it `blade` would have lied to everything else that reads tags; widening the
+  swordsman's upgrade to every blunt weapon would have let any club in.
+- **The fallback:** a new field `"fallback": true`. Such a weapon is only the upgrade's choice when
+  there is no other, and never over the race's own weapon (favoured and of its creature or culture) or
+  one the prompt asked for, so the khopesh, macuahuitl and gladius stay. It shows up under the bronze
+  rules for royal humans and royal frogs (the royal iron sword is medieval) and for tiny vikings.
+- Other lines unchanged: every other line's recipes and the race name of 396 races (44 prompts x 3
+  rules x 3 rerolls) are as before; 269 swordsman lines changed. The only age-3 steps left the same as
+  age 2 are rats keeping their cheese hammer with a full budget (as before).
+- Models: the picks and the helpers (`curved`, `grip`, `tassel`, `_bright_iron`) moved from
+  `scenes/art_pixel/sword3_concepts.gd` into `unit_models.gd`, with the brightened steel; the options
+  not picked stay in the concept file. Placement (tests/placement/cases.gd now has the greek, steppe and
+  han swordsmen in ages 2-3 and royal humans under the bronze rules) found four helmets low on a human's
+  brows: the Attic and spiked helmets (as modelled for the concept) and two already in play, `helm.bronze`
+  (the steppe and royal age-2 swordsmen) and the han lamellar. All lifted (`_lift`); the spiked helmet's
+  all-round mail curtain became a guard at the sides and back quarters, its tuft streams back from the
+  spike's foot (upright, it ran into a banner's flag).
+- Round robin age 3 (`tests/balance.gd -- 3`): 12 of 25 units more than 20% off the mean (main: 14);
+  the new swordsmen all +18% (Xiphos Swordsman, Hookblade Beetle, Maceman Frog), the Iron Swordsman
+  Beetle's +26% gone; counters won 80% of same-race counter fights (main 82%). `price_points` 9 moved no
+  win rate, so it stays 8. Mass battles age 3 (`tests/mass_battle.gd -- 3`): swords beat spears 8 of 10
+  (as main), skirmishers 7 of 10 (main 9), lose to archers 2 of 10 (as main), to cavalry 6 of 10 (as
+  main); every other match-up the same as main.
+- Pictures: `archive/images/2026-10-13/359-` (every culture's age-3 swordsman, 8 facings, 3x), `360-`
+  (hellenic, steppe, han at 5x), `361-` (swamp, forest, spooky at 5x). Every blade is the brightest thing
+  on its unit; the Attic crest is team blue against a team banner, so it reads best on units without
+  one; the steppe tuft is small; the chitin shards show teal in the side facings.
 
 ## Changes from the original plan
 

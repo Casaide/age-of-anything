@@ -459,10 +459,19 @@ func _test_swordsmen(lib, gen, rules: Dictionary) -> void:
 					check(int(l.eval.bonus.get("spear", 0)) > 0 and int(l.eval.bonus.get("skirmish", 0)) > 0 and int(l.eval.bonus.get("building", 0)) > 0,
 						"%s: %s beats spears, skirmishers and buildings" % [prompt, l.recipe.name])
 	var weapons := {"sewer rats": "weapon.cheese_hammer", "romans": "weapon.gladius", "egyptians": "weapon.khopesh",
-		"aztecs": "weapon.macuahuitl", "greeks": "weapon.sword.bronze", "royal humans": "weapon.sword.iron"}
+		"aztecs": "weapon.macuahuitl", "greeks": "weapon.sword.xiphos", "royal humans": "weapon.sword.iron",
+		"mongols": "weapon.sword.flared_sabre", "han": "weapon.sword.dao", "swamp frogs": "weapon.mace.river_stone",
+		"forest beetles": "weapon.sword.chitin", "spooky spiders": "weapon.sword.hook"}
 	for prompt in weapons:
 		var s: Dictionary = _unit(gen.generate(prompt, rules.default), "infantry")
 		check(s.line[-1].recipe.parts.hand_r == weapons[prompt], "%s swordsmen end with %s (%s)" % [prompt, weapons[prompt], s.line[-1].recipe.parts.hand_r])
+	# The age-3 kit (D-125): the helmets come with it; the plain iron sword is the fallback, for a
+	# blade with no other way up (royal humans under the bronze rules), never over a culture's own.
+	check(_unit(gen.generate("greeks", rules.default), "infantry").line[-1].recipe.parts.head_gear == "helm.attic", "greek swordsmen wear the Attic helmet in age 3")
+	check(_unit(gen.generate("mongols", rules.default), "infantry").line[-1].recipe.parts.head_gear == "helm.steppe_spike", "steppe swordsmen wear the spiked helmet in age 3")
+	check(_unit(gen.generate("royal humans", rules.bronze), "infantry").line[-1].recipe.parts.hand_r == "weapon.sword.iron_plain", "royal humans under the bronze rules fall back on the plain iron sword")
+	for prompt in ["egyptians", "aztecs", "romans"]:
+		check(_unit(gen.generate(prompt, rules.bronze), "infantry").line[-1].recipe.parts.hand_r != "weapon.sword.iron_plain", "%s keep their own blade in age 3" % prompt)
 	check(_unit(gen.generate("greeks", rules.default), "infantry").recipe.parts.hand_r == "weapon.club.bone", "age 1 swordsmen start with a club")
 	var without: Dictionary = rules.default.duplicate(true)
 	without.roster = without.roster.filter(func(sd): return sd.slot != "infantry")
