@@ -420,26 +420,41 @@ beside `bot.gd`:
   takes a mended bridge as a way over (and checks the mend on Reed Meadow, where the bridge is the
   only other way); the healer check leaves posted escorts out of "the army".
 
-**Numbers** (`test_ai -- <map>`, seed 7; before = main at c0658e1, after = this branch; machine
-loaded by other agents' runs throughout, so times are comparative only):
+**After the rebase onto main** (siege engines, the swordsman line, pricing D-120, the wall-breaking
+fix): `pick()` takes what we save for and gives the best counter we can pay for now; an army that
+brings a siege engine doesn't wait out of reach (towers are the engines' to break); the second
+Barracks comes before the University (armies were too small to finish evenly matched games); the
+market sells the biggest pile whenever food or wood is short and gold is under 500.
 
-| | Reed Meadow before / after | Old Forest before / after | River Delta before / after |
+**Numbers** (`test_ai -- <map>`, seed 7; main = main at the rebase, this branch after it; the
+machine was loaded by other agents' runs throughout, so times compare only within a row):
+
+| | Reed Meadow main / this | Old Forest main / this | River Delta main / this |
 |---|---|---|---|
-| test_ai checks | 35/35 / 42/42 | 34/35 (Hard drew Normal) / 42/42 | 35/35 / 40/40 |
-| bot vs bot (3 matches) | 20:35, 24:23, 28:08 / 15:57, 22:44, 26:22 | 9:09, 15:49, 26:26 / 19:57, 20:05, 22:22 | 16:29, 24:18, 26:08 / 14:19, 14:34, 24:06 |
-| Hard vs Normal | Hard 10:06 / Hard 22:44 | draw at 30:00 / Hard 23:42 | Hard 12:05 / Hard 25:27 |
-| bot vs passive (frogs, rats) | 9:01, 8:20 / 21:17, 17:59 | 22:39, 15:30 / 22:23, 23:36 | 19:09, 11:08 / 21:29, 16:30 |
-| levels left alone (age 3 E/N/H) | 14:15, 15:12, 15:13 (m12) / 11:53, 11:41, 11:59 | 13:02, 13:22, 16:35, 3 checks failed / 11:58, 13:13, 13:50, 1 failed (Easy's Castle) | - / 12:31, 12:17, 12:59 |
+| test_ai checks | 72/74 (Cohort-Frogs draw, siege check) / 81/81 | 73/74 / 81/81 | 74/74 / 79/79 |
+| bot vs bot (3 matches) | 9:32, 25:52, draw / 16:16, 16:43, 21:34 | 14:23, 23:02, 28:44 / 22:21, 25:31, 26:55 | 9:56, 24:14, 28:24 / 20:59, 26:09, 29:11 |
+| Hard vs Normal | Hard 12:37 / Hard 20:58 | Hard 12:10 / Hard 28:33 | Hard 17:07 / Hard 17:28 |
+| levels (age 2, age 3 for Normal) | 5:55, 14:25, all pass / 7:06, 14:29, 4 fail | 6:15, 15:24, 2 fail / 6:14, 14:16, 4 fail | - / 7:33, 15:09, 4 fail |
+| 2v2 (`test_2v2`) | main 21:26 / this 26:07 | | |
 
-Every bot match ends inside the 30-minute limit on all three maps. The 2v2 (`test_2v2`, 45-minute
-limit) ended 15:03 before and 27:43 after (a bot left alone behind its Castle had held out to
-37-45 minutes until teammates counted each other in "stronger than them"). Bot matches against a
-passive side got slower: the bot now scouts and raids the economy first, contains outside towers
-and only storms with 30 population. `sim_profile` (same minutes, loaded machine): the bots' share
-of a tick on Reed Meadow 0.16 -> 0.31 ms on average, the 2v2 0.54 -> 0.90 ms (longer matches with
-more units: 157 vs 88 units at the end on Reed Meadow); the worst bot think 9.8 -> ~5 ms after the
-searches were sliced (a whole search was 7-10 ms). test_sim 2.955 ms with main's 2.952 in the
-same minutes (both under its 3 ms budget).
+Before the rebase (main at c0658e1) Hard vs Normal drew on Old Forest at 30:00; the siege engines
+main gained since break that stand-off on their own (Hard 12:10), and on this branch Hard wins it
+too. Every 1v1 bot match ends inside the 30-minute limit on all three maps (the slowest 29:11);
+main itself draws Cohort vs Frogs on Reed Meadow. Margins are thin: bot-vs-bot outcomes are
+chaotic and a small change moves a match by minutes, so a draw can come back.
+
+**Not met / open:**
+- `test_ai -- <map> levels`: this branch reaches age 2 at 6:14-7:33 left alone (main 5:55-6:15)
+  and misses "University and Castle by 20:00" for Easy and Normal (the second Barracks now comes
+  first). The age-2 difference starts as a 10-food wobble at 2:30 (any change to who walks where
+  shifts it) and grows; not tracked down to one cause. To revisit with the economy, not here.
+- `test_2v2` "teammates never hit each other" fails (4-8 hits): catapult stones hurt friends by the
+  sim's rule (`splash_friend_pct`, main's siege work); the check predates siege.
+- `test_sim` hill_test (one walker gives up) fails on main as well; the 3 ms tick check fails under
+  load on both.
+- Bridges are never broken in the test matches (the condition never comes up on these maps).
+- `sim_profile`: the bots' share rose with longer, bigger matches (Reed Meadow 0.16 -> 0.31 ms a
+  tick on average before the rebase); the worst bot think is ~5 ms with the searches sliced.
 
 ## Changes from the original plan
 - 2026-10-12 (Dominic): the 88 x 88 Reed Meadow became the first 2v2 instead of a second 1v1 size.
