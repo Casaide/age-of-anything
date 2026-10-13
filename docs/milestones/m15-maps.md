@@ -230,7 +230,8 @@ Two more 1v1 maps from the same parts, each a generator in `tools/maps/` that re
 checks (rotational symmetry, crossings that split the map, bridges standing on river, heights:
 hills reached only by their ramps). Both are listed in the lobby by name, with the card drawn
 from the map data (200, 205), and in sim_debug's map list.
-- **Old Forest** (`old_forest`, 72 x 72, `tools/maps/old_forest.py`): the map starts as trees and
+- **Old Forest** (`old_forest`, 72 x 72, `tools/maps/old_forest.py`; opened up later the same
+  day, see "Old Forest opened up" below; numbers here are the first version's): the map starts as trees and
   is opened up: a home clearing per base, two hunting glades beside it (deer herds, a boar,
   bushes), a flank glade on the stream with a lookout hill over its ford (one per side, turned),
   and the central glade with gold on both banks and a ford in the middle (201, 202). Paths wind;
@@ -480,10 +481,55 @@ missed on all three 1v1 maps); age 2 and age 3 times unchanged (the age-2-by-6:0
 there before). Full test_ai on the three 1v1 maps: every match has a winner within 26 minutes,
 Hard beats Normal; Old Forest's healers and shelter failures are on main too.
 
+### Old Forest opened up (2026-10-13, Claude; Dominic: "the tree map has a little much trees, really struggle to build by end game, even early game is a squeeze")
+`tools/maps/old_forest.py`, regenerated. The woods stay walls between glades; there is just more
+room inside them. Trees 2764 -> 2060 (53% -> 40% of the map, 56% -> 42% inside the rock border):
+the top of the asked 35-40%, chosen so the walls between glades stay three or more trees thick.
+- **Home**: a clearing of radius 13 (small edge waves, so it never pinches in on the base),
+  centred two tiles toward the middle from the start, with a lobe along each map edge toward the
+  hunting glades. Open ground toward the middle runs ~15 tiles from the Town Center, 11-12 toward
+  the edges, where a woodline stays behind the base; the corner's wood comes in to ~7 tiles behind
+  the Town Center (without it the first lumber camps walked so far that both sides aged later).
+  Open tiles within 16 of a start 378 -> 511 (of 743), within 14: 362 -> 455, within 12:
+  339 -> 360; trees within 16: 339 -> 206 (wood near home 33900 -> 20600).
+- **Glades**: the hunting glades are bigger (7.5 x 6.5, room for a second Town Center), the flank
+  glade on the stream too (its ford and lookout hill moved with it), the central glade radius
+  8 -> 12. Paths 3-5 tiles wide (were 2-3). No isolated clumps inside clearings.
+- **Woods painted back** (a new `WOODS` list, drawn after the clearings, before the paths): a belt
+  three trees thick on the diagonal between home and the centre, so the short way still stops
+  three trees short of the glade; the long way round now joins the north deer track, and the
+  bots fell that road again (5 trees, 8-10 tiles saved; a first draft with a shorter way round
+  saved too little and the land check's road failed).
+- Both sides equal: the half turn is asserted by the generator, the counts are identical per start.
+
+**Before / after** (Frogs vs Rats, `resource_audit`, 40 minutes):
+- Per start (16 tiles) F/W/S/G 2020 / 33900 -> 20600 / 4500 / 6400; contested wood 208600 ->
+  164000; map wood 276400 -> 205200. Nothing ran out near home in bot vs bot or bot vs passive.
+- Peace: before ended 23:11 (the peace bots fight), after ran to 39:29, the Rats gathering
+  24089 / 19272 / 7291 / 6358; near home their stone ran out at 28:00 and gold at 38:30 (by 30:00
+  they had built a Castle, University, Siege Workshop, second Town Center, 21
+  houses and 14 farms in the home clearing); the contested stone and gold are still there. Wood near home did not
+  run out (10200 left at 30:00).
+- Bot vs bot 26:01 -> 22:13 (the Rats win both; the Frogs bot's age-1 stall is the known bot issue).
+- Room (a probe calling the bots' own `_house_spot` every 5 minutes, peace): before, no strict spot
+  (a tile of margin, off resources) for a size-3 building within 13 tiles of the Town Center from
+  the first 5 minutes; at 15-20 minutes the next Castle-size spot was 19 tiles out. After: strict
+  spots up to ~10 minutes, and the next Castle-size spot 12-13 tiles out at 20-30 minutes. Houses
+  beyond 13 tiles: none either way (the fallback went to farther spots for the big buildings).
+
+**test_ai -- old_forest slow** (19 checks, 0 failed; before 19 / 0): bot vs passive 26:03 / 20:03
+-> 26:34 / 19:51, bot vs bot 26:01 -> 22:13, Cohort-Frogs 27:09 -> 26:50, Rats-Cohort 25:08 ->
+23:14, Hard beats Normal 27:31 -> 25:24, siege mode 13:35 both. Every match ends inside 30 minutes.
+Pictures: 620 (the old map, tiles; rings at 11 and 16 round each start), 621 (the Frogs' base at
+20:00 on it), 622 (the opened map), 623 (the Frogs' base at 18:00), 624 (the Rats' base at 20:00
+with its Castle, room left in the clearing, the felled road in the belt below).
+
 ## Changes from the original plan
 - 2026-10-12 (Dominic): the 88 x 88 Reed Meadow became the first 2v2 instead of a second 1v1 size.
 - Bridges are one neutral timber look, not one per culture (they belong to nobody); amphibians
   swim the river anywhere (no shallows band needed).
+- 2026-10-13 (Dominic): Old Forest opened up, 53% -> 40% trees, a home clearing big enough for an
+  end-game base (see "Old Forest opened up").
 
 ## Links
 - `m16-sieges.md` (walls and high ground meet there), `m14-race-identity.md` (land-shaping as race abilities)
