@@ -114,7 +114,7 @@ static func _most_wounded(w, i: int, sight: int, tending: PackedInt32Array) -> i
 	for yy in range(maxi(cy - r, 0), mini(cy + r + 1, sp.height)):
 		for xx in range(maxi(cx - r, 0), mini(cx + r + 1, sp.width)):
 			var cell: int = yy * sp.width + xx
-			for k in range(sp.start[cell], sp.start[cell + 1]):
+			for k in range(sp.start[cell], sp.end[cell]):
 				var j: int = sp.items[k]
 				if not _wounded(w, i, j):
 					continue

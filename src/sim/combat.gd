@@ -520,7 +520,7 @@ static func _towers(w) -> void:
 		for yy in range(maxi(ty - tr, 0), mini(ty + tr + 1, sp.height)):
 			for xx in range(maxi(tx - tr, 0), mini(tx + tr + 1, sp.width)):
 				var cell: int = yy * sp.width + xx
-				for q in range(sp.start[cell], sp.start[cell + 1]):
+				for q in range(sp.start[cell], sp.end[cell]):
 					var j: int = sp.items[q]
 					if not w.is_foe(u.owner[j], bs.owner[b]):
 						continue
@@ -654,7 +654,7 @@ static func _splash(w, recs: PackedInt32Array, o: int, b: int, hurt: PackedInt32
 	for yy in range(maxi(cy - reach, 0), mini(cy + reach + 1, sp.height)):
 		for xx in range(maxi(cx - reach, 0), mini(cx + reach + 1, sp.width)):
 			var cell: int = yy * sp.width + xx
-			for q in range(sp.start[cell], sp.start[cell + 1]):
+			for q in range(sp.start[cell], sp.end[cell]):
 				var k: int = sp.items[q]
 				if u.id[k] == by or u.owner[k] == w.gaia or w.types[u.kind[k]].has("animal"):
 					continue
@@ -722,7 +722,7 @@ static func _pass_through(w, recs: PackedInt32Array, o: int, aimed: int, hurt: P
 	for yy in range(maxi(lo.y, 0), mini(hi.y + 1, sp.height)):
 		for xx in range(maxi(lo.x, 0), mini(hi.x + 1, sp.width)):
 			var cell: int = yy * sp.width + xx
-			for q in range(sp.start[cell], sp.start[cell + 1]):
+			for q in range(sp.start[cell], sp.end[cell]):
 				var k: int = sp.items[q]
 				if k == aimed or u.id[k] == recs[o + Shots.TO] or not w.is_foe(u.owner[k], owner) or w.types[u.kind[k]].has("animal"):
 					continue
@@ -754,7 +754,7 @@ static func _stray(w, owner: int, x: int, y: int, slack: int) -> int:
 	for yy in range(maxi(cy - 1, 0), mini(cy + 2, sp.height)):
 		for xx in range(maxi(cx - 1, 0), mini(cx + 2, sp.width)):
 			var cell: int = yy * sp.width + xx
-			for q in range(sp.start[cell], sp.start[cell + 1]):
+			for q in range(sp.start[cell], sp.end[cell]):
 				var k: int = sp.items[q]
 				if not w.is_foe(u.owner[k], owner) or w.types[u.kind[k]].has("animal"):
 					continue
@@ -960,7 +960,7 @@ static func _nearest_foe(w, i: int, sight: int, buildings_too: bool, engaged: Pa
 	for yy in (range(maxi(cy - r, 0), mini(cy + r + 1, sp.height)) if units_too else []):
 		for xx in range(maxi(cx - r, 0), mini(cx + r + 1, sp.width)):
 			var cell: int = yy * sp.width + xx
-			for k in range(sp.start[cell], sp.start[cell + 1]):
+			for k in range(sp.start[cell], sp.end[cell]):
 				var j: int = sp.items[k]
 				if not w.is_foe(u.owner[j], me) or w.types[u.kind[j]].has("animal"):
 					continue   # a rival's sheep is stolen by walking up to it, not killed (Dominic)

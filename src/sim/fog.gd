@@ -19,6 +19,7 @@ const EXPLORED := 1
 const VISIBLE := 2
 
 static var _circles := {}   # radius -> PackedInt32Array of (dx, dy) pairs
+static var _span_rows := {}   # radius -> PackedInt32Array of (dy, first dx, last dx) rows
 static var _rays := {}      # radius -> [offsets (dx, dy) pairs, nearest ring first; parent index per offset]
 
 
@@ -118,17 +119,28 @@ static func _update_team(w, team: Array) -> void:
 		g[c] = EXPLORED
 	var lit := PackedInt32Array()
 	var stamped := {}   # cell * 64 + radius: units standing together see the same circle once
-	for i in w.units.count():
-		if w.teams[w.units.owner[i]] == w.teams[p]:
-			var t: Dictionary = w.types[w.units.kind[i]]
-			var r: int = (cfg.worker if t.worker else cfg.unit) + int(t.sight_add)   # research adds sight (Tech.retype)
-			if w.map.has_heights:
-				r += w.map.level_at(w.units.x[i], w.units.y[i]) * int(w.high.sight_unit)   # high ground sees further
-			var key: int = (w.units.y[i] / 1000 * w.map.width + w.units.x[i] / 1000) * 64 + r
+	var owner: PackedInt32Array = w.units.owner
+	var kind: PackedInt32Array = w.units.kind
+	var xs: PackedInt32Array = w.units.x
+	var ys: PackedInt32Array = w.units.y
+	var teams: PackedInt32Array = w.teams
+	var team_p: int = teams[p]
+	var types: Array = w.types
+	var heights: bool = w.map.has_heights
+	var mw: int = w.map.width
+	var r_worker: int = cfg.worker
+	var r_unit: int = cfg.unit
+	for i in xs.size():
+		if teams[owner[i]] == team_p:
+			var t: Dictionary = types[kind[i]]
+			var r: int = (r_worker if t.worker else r_unit) + int(t.sight_add)   # research adds sight (Tech.retype)
+			if heights:
+				r += w.map.level_at(xs[i], ys[i]) * int(w.high.sight_unit)   # high ground sees further
+			var key: int = (ys[i] / 1000 * mw + xs[i] / 1000) * 64 + r
 			if stamped.has(key):
 				continue
 			stamped[key] = true
-			_stamp(w, g, lit, w.units.x[i] / 1000, w.units.y[i] / 1000, r)
+			_stamp(w, g, lit, xs[i] / 1000, ys[i] / 1000, r)
 	var bs = w.buildings
 	for b in bs.count():
 		if w.teams[bs.owner[b]] == w.teams[p] and bs.done[b] == 1:   # a foundation sees nothing: laid in the dark, it stays dark (Dominic)
@@ -193,14 +205,31 @@ static func _stamp(w, g: PackedByteArray, lit: PackedInt32Array, cx: int, cy: in
 	var ht: int = w.map.height
 	var v: int = w.map.level[cy * wd + cx]
 	if _blocked_near(w.map, cx, cy, r, v):
-		_stamp_los(w.map, g, lit, cx, cy, r, v)
+		# What a circle with trees or hills in it sees depends only on the ground, so it's kept
+		# (per centre and radius) until something that blocks sight changes: workers at a bush
+		# and buildings see the same cells update after update.
+		if w.fog_sight_version != w.map.opaque_version:
+			w.fog_sight.clear()
+			w.fog_sight_version = w.map.opaque_version
+		var key := (cy * wd + cx) * 64 + r
+		var cells: PackedInt32Array
+		if w.fog_sight.has(key):
+			cells = w.fog_sight[key]
+		else:
+			cells = _sight_los(w.map, cx, cy, r, v)
+			w.fog_sight[key] = cells
+		for c in cells:
+			if g[c] != VISIBLE:
+				g[c] = VISIBLE
+				lit.append(c)
 		return
-	var offs := _circle(r)
-	for k in range(0, offs.size(), 2):
-		var x := cx + offs[k]
-		var y := cy + offs[k + 1]
-		if x >= 0 and y >= 0 and x < wd and y < ht:
-			var c := y * wd + x
+	var spans := _spans(r)   # row by row, as _circle's order (the cells lit go on `lit` in the same order)
+	for k in range(0, spans.size(), 3):
+		var y := cy + spans[k]
+		if y < 0 or y >= ht:
+			continue
+		var row := y * wd
+		for c in range(row + maxi(cx + spans[k + 1], 0), row + mini(cx + spans[k + 2], wd - 1) + 1):
 			if g[c] != VISIBLE:
 				g[c] = VISIBLE
 				lit.append(c)
@@ -223,8 +252,8 @@ static func _blocked_near(m, cx: int, cy: int, r: int, v: int) -> bool:
 ## The circle with line of sight: a cell is seen if the cell before it on the line from the
 ## centre was seen and doesn't block (the first tree of a forest is seen, not what's behind it).
 ## Ground higher than the viewer's level v blocks like a tree: from below you see a hill's rim,
-## not what stands on it beyond the edge.
-static func _stamp_los(m, g: PackedByteArray, lit: PackedInt32Array, cx: int, cy: int, r: int, v: int) -> void:
+## not what stands on it beyond the edge. The cells seen, nearest ring first.
+static func _sight_los(m, cx: int, cy: int, r: int, v: int) -> PackedInt32Array:
 	var rays: Array = _ray_table(r)
 	var offs: PackedInt32Array = rays[0]
 	var par: PackedInt32Array = rays[1]
@@ -233,6 +262,7 @@ static func _stamp_los(m, g: PackedByteArray, lit: PackedInt32Array, cx: int, cy
 	var op: PackedByteArray = m.opaque
 	var lv: PackedByteArray = m.level
 	var n := par.size()
+	var out := PackedInt32Array()
 	var seen := PackedByteArray()   # per offset: 1 seen, 2 seen and sight carries on past it
 	seen.resize(n)
 	for k in n:
@@ -243,10 +273,9 @@ static func _stamp_los(m, g: PackedByteArray, lit: PackedInt32Array, cx: int, cy
 		if k > 0 and seen[par[k]] != 2:
 			continue
 		var c := y * wd + x
-		if g[c] != VISIBLE:
-			g[c] = VISIBLE
-			lit.append(c)
+		out.append(c)
 		seen[k] = 1 if (op[c] == 1 or lv[c] > v) and k > 0 else 2
+	return out
 
 
 ## Offsets of the sight circle ordered ring by ring (Chebyshev distance), each with the index
@@ -282,6 +311,23 @@ static func _ray_table(r: int) -> Array:
 
 static func _round_div(a: int, b: int) -> int:
 	return (a * 2 + (b if a >= 0 else -b)) / (2 * b)
+
+
+## The sight circle as rows: (dy, first dx, last dx) per row, top row first.
+static func _spans(r: int) -> PackedInt32Array:
+	if not _span_rows.has(r):
+		var out := PackedInt32Array()
+		for dy in range(-r, r + 1):
+			var first := 1 << 30
+			var last := -(1 << 30)
+			for dx in range(-r, r + 1):
+				if dx * dx + dy * dy <= r * r + r:
+					first = mini(first, dx)
+					last = maxi(last, dx)
+			if first <= last:
+				out.append_array([dy, first, last])
+		_span_rows[r] = out
+	return _span_rows[r]
 
 
 static func _circle(r: int) -> PackedInt32Array:
