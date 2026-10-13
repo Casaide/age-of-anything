@@ -14,6 +14,11 @@ var paused := false
 var speed := 1.0               # playback multiplier for watching replays
 var stop_at := -1              # stop stepping at this tick (end of a replay); -1 runs forever
 var bots: Array = []           # players run by a bot: each thinks (issues commands) before every tick
+## Capture tools (tests/sim_screenshot.gd): > 0 steps exactly `speed` x this many ticks a frame,
+## whatever the frame time (frame-locked, so as fast as frames come and the same every run);
+## `hold` keeps the world still meanwhile (the loader fading out).
+var frame_steps := 0
+var hold := false
 var alpha := 0.0
 var events: Array = []         # the world's events from every tick since the view last took them
 var tick_usec := 0             # cost of the last tick
@@ -23,11 +28,14 @@ var _acc := 0.0
 
 
 func _process(delta: float) -> void:
-	if world == null or paused:
+	if world == null or paused or hold:
 		return
 	_acc += delta * speed
 	var n := 0
 	var cap := MAX_CATCH_UP * maxi(1, int(speed))
+	if frame_steps > 0:
+		_acc = roundi(speed * frame_steps) * STEP + STEP * 0.5
+		cap = roundi(speed * frame_steps)
 	while _acc >= STEP and n < cap and world.tick != stop_at:
 		for bot in bots:
 			bot.think(world)

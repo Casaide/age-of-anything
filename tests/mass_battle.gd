@@ -8,7 +8,8 @@ extends SceneTree
 ## archers against them, swords with archers against spears with cavalry. Prints win rates and the
 ## value each side has left.
 ## Deterministic. Massed archers should be strong but counterable.
-## Run: godot --headless --path . --script res://tests/mass_battle.gd [-- age [budget] [combat_rule=value ...]]
+## Run: godot --headless --path . --script res://tests/mass_battle.gd [-- age [budget] [combat_rule=value ...] [serial] [jobs=N]]
+## (each match in its own process, side by side, unless "serial")
 
 const DataLib := preload("res://src/data_lib.gd")
 const Generator := preload("res://src/race_generator.gd")
@@ -17,6 +18,7 @@ const World := preload("res://src/sim/world.gd")
 const Commands := preload("res://src/sim/commands.gd")
 const Tech := preload("res://src/sim/tech.gd")
 const RoundRobin := preload("res://tests/round_robin.gd")
+const Par := preload("res://tests/par.gd")
 
 const RACES := ["angry swamp frogs with reed spears", "sewer rats with cheese hammers", "centaur romans",
 	"greek hoplites", "spooky beetle knights"]
@@ -53,19 +55,35 @@ const GAP := 900     # between bodies in the starting blocks
 
 
 func _init() -> void:
-	var args := OS.get_cmdline_user_args()
+	var all_args := Par.plain(OS.get_cmdline_user_args())
+	var only := all_args.filter(func(a): return a.begins_with("match:"))   # match:<k>: just that match (a child)
+	var serial := all_args.has("serial")
+	var args := all_args.filter(func(a): return not a.begins_with("match:") and a != "serial")
 	var age := int(args[0]) if args.size() > 0 else 2
 	var budget := int(args[1]) if args.size() > 1 else 1500
+	var matches: Array = MATCHES + (SIEGE_MATCHES if age >= 3 else [])
+	var t0 := Time.get_ticks_msec()
+	if only.is_empty():
+		for arg in args.slice(2):
+			print("trying combat.%s = %s" % [arg.get_slice("=", 0), arg.get_slice("=", 1)])
+		print("Mass battles, age %d, budget %d a side, each fought both ways round" % [age, budget])
+	if only.is_empty() and not serial:   # each match in its own process, side by side; printed in order
+		var jobs := range(matches.size()).map(func(k): return Par.job("mass/%d" % k, "res://tests/mass_battle.gd", args + ["match:%d" % k]))
+		for r in Par.run(jobs, Par.jobs_wanted(OS.get_cmdline_user_args()), true):
+			assert(r.code == 0, "mass_battle: %s failed, see %s" % [r.name, r.log])
+			print("\n" + FileAccess.get_file_as_string(r.log).trim_prefix(FileAccess.get_file_as_string(r.log).get_slice("\n", 0)).strip_edges())
+		print("\n(%d s)" % ((Time.get_ticks_msec() - t0) / 1000))
+		quit()
+		return
 	var lib = DataLib.new()
 	var gen = Generator.new(lib)
 	var rules = DataLib.load_json("res://data/rules/default.json")
 	for arg in args.slice(2):
 		rules.combat[arg.get_slice("=", 0)] = int(arg.get_slice("=", 1))
-		print("trying combat.%s = %s" % [arg.get_slice("=", 0), arg.get_slice("=", 1)])
 	var races := RACES.map(func(p): return gen.generate(p, rules))
-	var t0 := Time.get_ticks_msec()
-	print("Mass battles, age %d, budget %d a side, each fought both ways round" % [age, budget])
-	for m in MATCHES + (SIEGE_MATCHES if age >= 3 else []):
+	if not only.is_empty():
+		matches = [matches[int(only[0].trim_prefix("match:"))]]
+	for m in matches:
 		var wins := 0
 		var losses := 0
 		var left_a := 0
@@ -92,7 +110,8 @@ func _init() -> void:
 		print("\n%-30s A wins %2d of %d (B %d)   value left: A %3d%%  B %3d%%" % [m[0], wins, fights, losses, left_a / fights, left_b / fights])
 		for row in rows:
 			print(row)
-	print("\n(%d s)" % ((Time.get_ticks_msec() - t0) / 1000))
+	if only.is_empty():
+		print("\n(%d s)" % ((Time.get_ticks_msec() - t0) / 1000))
 	quit()
 
 

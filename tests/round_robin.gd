@@ -19,10 +19,35 @@ const COUNTERS := [["spear", "large"], ["large", "archer"], ["skirmisher", "arch
 
 
 static func run(races: Array, rules: Dictionary, age: int) -> Dictionary:
+	return tally(races, age, fights(races, rules, age))
+
+
+## The soldiers in the round robin: [race, slot, label] each.
+static func units_of(races: Array, age: int) -> Array:
 	var units := []
 	for r in races:
 		for slot in SLOTS:
 			units.append([r, slot, "%s (%s)" % [recipe_at(r, slot, age).recipe.name, r.name]])
+	return units
+
+
+## The fights' results ("a,b" -> +1/-1/0): every pair, or every `parts`-th pair from `part` (so
+## processes can share the round robin; their results merge into one dictionary).
+static func fights(races: Array, rules: Dictionary, age: int, part := 0, parts := 1) -> Dictionary:
+	var units := units_of(races, age)
+	var out := {}
+	var k := 0
+	for a in units.size():
+		for b in range(a + 1, units.size()):
+			if k % parts == part:
+				out["%d,%d" % [a, b]] = fight(rules, age, units[a], units[b])
+			k += 1
+	return out
+
+
+## Win rates and counter wins from every pair's result.
+static func tally(races: Array, age: int, results: Dictionary) -> Dictionary:
+	var units := units_of(races, age)
 	var wins := []
 	var played := []
 	wins.resize(units.size())
@@ -33,7 +58,7 @@ static func run(races: Array, rules: Dictionary, age: int) -> Dictionary:
 	var counter_fights := 0
 	for a in units.size():
 		for b in range(a + 1, units.size()):
-			var r := fight(rules, age, units[a], units[b])
+			var r := int(results["%d,%d" % [a, b]])
 			if units[a][0] == units[b][0]:
 				for pair in COUNTERS:
 					if [units[a][1], units[b][1]] == pair or [units[b][1], units[a][1]] == pair:
