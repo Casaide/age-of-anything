@@ -27,6 +27,7 @@ const ForgeVeil := preload("res://src/view/loaders/forge_veil.gd")
 const LoaderStyle := preload("res://src/view/loaders/loader_style.gd")
 const TraitStrip := preload("res://src/view/ui/trait_strip.gd")
 const TreeModel := preload("res://src/view/tech_tree_model.gd")
+const Identity := preload("res://src/identity.gd")
 
 const NOT_MAPS := ["choke_test", "river_test", "hill_test"]   # test maps (sim_debug lists them)
 var MAPS := _maps()   # every map in data/maps: the real ones first (by name), the test maps last
@@ -609,12 +610,15 @@ func _side_panel(i: int, who: String, compact := false) -> Control:
 	field.text_changed.connect(func(_t): sides[i].reroll = 0; _regenerate(i))
 	field.text_submitted.connect(func(_t): _regenerate(i))   # Enter shows the race; only Start starts (Fable)
 	prompt.add_child(field)
-	var units := UiTheme.label("", "Dim", true)   # the roster in words: its lines' names (the portraits and cards are on the tech tree page)
-	units.add_theme_font_size_override("font_size", 15 if compact else 17)
-	units.max_lines_visible = 1 if compact else 2
-	units.text_overrun_behavior = TextServer.OVERRUN_TRIM_ELLIPSIS
+	var units := RichTextLabel.new()   # the roster in words: its lines' names (the portraits and cards are on the tech tree page); lacked lines struck through
+	units.bbcode_enabled = true
+	units.scroll_active = false
+	units.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	units.add_theme_font_override("normal_font", UiTheme.text_font())
+	units.add_theme_font_size_override("normal_font_size", 15 if compact else 17)
 	units.custom_minimum_size.y = 22 if compact else 48
-	units.mouse_filter = Control.MOUSE_FILTER_STOP   # (the whole list on hover)
+	units.clip_contents = true   # (one or two lines; the whole list on hover)
+	units.mouse_filter = Control.MOUSE_FILTER_STOP
 	col.add_child(units)
 	var roster := TraitStrip.new(compact)   # bonuses, own research, lacks, notes: one line, the lists on hover
 	if compact:   # on the banner (two panels a column: the stage needs the height)
@@ -718,8 +722,9 @@ func _regenerate(i: int) -> void:
 	_dress(i)
 	s.name.text = race.name
 	s.line.text = "%s  ·  %s culture" % [lib.creatures[race.creature].plural, String(race.family).capitalize()]
-	s.units.text = _lines_text(race)
-	s.units.tooltip_text = _lines_card(race)
+	s.units.add_theme_color_override("default_color", s.units.get_theme_color("font_color", "Dim"))
+	s.units.text = _lines_text(race, rules)
+	s.units.tooltip_text = _lines_card(race, rules)
 	s.gen += 1   # a new race: its stage waits for its bake
 	kit.cancel_warm()   # the old race's background bake stops (warmed again once every stage stands)
 	show_traits(i, _traits(race))
@@ -827,9 +832,11 @@ func _muster(i: int) -> void:
 		_fade_army(s, 1.0, LoaderStyle.ARMY_FADE)
 
 
-## The roster in a line of words: each line's name at its first age, the creature's noun left off
-## when most share it ("Spearbearer, Archer, Heavy Lancer..." for "Spearbearer Centaur"...).
-static func _lines_text(race: Dictionary) -> String:
+## The roster in a line of words (BBCode): each line's name at its first age, the creature's noun
+## left off when most share it ("Spearbearer, Archer, Heavy Lancer..." for "Spearbearer Centaur"...);
+## a line the race lacks (spiders: no Stable, so no Heavy or Scout) struck through, as the tech
+## tree page crosses it out, and not counted.
+static func _lines_text(race: Dictionary, rules: Dictionary) -> String:
 	var last := {}
 	for u in race.units:
 		for w in Array(String(u.recipe.name).split(" ")).filter(func(x): return x.length() > 2):   # (each word once a name; not "on", "a")
@@ -839,16 +846,42 @@ static func _lines_text(race: Dictionary) -> String:
 		if last[w] * 2 >= race.units.size() and (common == "" or last[w] > last[common]):
 			common = w
 	var names := []
+	var have := 0
+	var ident := Identity.of(race.creature, race.family)
 	for u in race.units:
 		var words := Array(String(u.recipe.name).split(" ")).filter(func(w): return w != common)
-		names.append(" ".join(words) if not words.is_empty() else u.recipe.name)
-	return "%d lines: %s" % [names.size(), ", ".join(names)]
+		var n: String = " ".join(words) if not words.is_empty() else u.recipe.name
+		if Identity.lacks(ident, u.recipe.slot, rules):
+			names.append("[color=#e88a70][s]%s[/s][/color]" % n)
+		else:
+			names.append(n)
+			have += 1
+	return "%d lines: %s" % [have, ", ".join(names)]
+
+
+## Why a race has no such line, from whichever of its creature and culture lacks it (the line
+## itself, or the building that trains it): "Spiders have no Stable"; "" if it has it.
+static func _lack_reason(race: Dictionary, slot: String, rules: Dictionary) -> String:
+	if not Identity.lacks(Identity.of(race.creature, race.family), slot, rules):
+		return ""
+	var d := Identity.files()
+	for src in [[d.creatures[race.creature], String(d.creatures[race.creature].plural)], [d.families[race.family], String(race.family).capitalize() + " folk"]]:
+		for id in src[0].get("lacks", []):
+			if id == slot:
+				return "%s have no such line" % src[1]
+			if d.buildings.has(id) and slot in d.buildings[id].get("trains", []):
+				return "%s have no %s" % [src[1], d.buildings[id].name]
+	return "not in this race's tree"
 
 
 ## The roster on hover: every line, age by age (the portraits and cards are on the tech tree page).
-static func _lines_card(race: Dictionary) -> String:
+static func _lines_card(race: Dictionary, rules: Dictionary) -> String:
 	var rows := []
 	for u in race.units:
+		var why := _lack_reason(race, u.recipe.slot, rules)
+		if why != "":
+			rows.append("%s: not in this race's tree (%s)" % [u.recipe.name, why])
+			continue
 		rows.append(" > ".join(u.get("line", [u]).map(func(l): return "%s (age %d)" % [l.recipe.name, int(l.get("age", u.recipe.get("tier", 1)))])))
 	return "\n".join(rows) + "\n\nTech tree: every line's portraits and cards"
 

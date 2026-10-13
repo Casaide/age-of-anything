@@ -151,6 +151,75 @@ both at the Castle in age 3. Culture mechanics are left out for now (creature me
 | Royal | heavy cavalry 10% cheaper | Chivalry: mounted +20 hit points | skirmisher's age-3 step |
 | Spooky | units +2 sight | Creeping Dread: enemies near your army move 10% slower | market trade |
 
+## More bonuses: six per race (Dominic, 2026-10-13)
+
+Dominic: "we're not doing enough on the race bonuses. Simple things like chopping wood faster, or
+mining faster. Look at the genre regarding symmetric or asymmetric: the classic games are symmetric
+and there are still sizeable race differences."
+
+**What the genre does.** The classic games share one tech tree and one unit roster (symmetric), and
+make each civilisation feel different with about five or six small bonuses on top: one or two to the
+economy (a resource gathered faster, cheaper drop-off camps, farms that last longer, extra food at
+the start), one or two to its army (a line cheaper, faster to train, or a little tougher), something
+for its buildings (cheaper houses, sturdier walls, faster building), a team bonus that also helps its
+allies, plus a unique unit and a couple of its own techs, and a few holes in the tree. No single
+bonus decides a match; together they decide how you want to play. We already have the shared tree,
+own research, the unique unit and lacks; what was thin was the bonuses (three per race).
+
+**The rule now** (src/identity.gd): the group gives one bonus, the creature two (three with no
+group), the culture three, one of them a **team bonus** (`team`: its effects reach the race's allies
+too; never a priced unit stat, since pricing doesn't know the allies). Six per race. As before, a
+later layer's bonus of a kind the race already has takes its `alt`, so nothing doubles; every
+creature with every culture is checked (tests/run_tests.gd). The creatures' bonuses lean to the
+economy and the body (what the animal is good at); the cultures' to the army, buildings and the team
+(what the people are good at). Each resource now has a race that's good at it: food (frogs,
+centaurs), wood (beetles, forest), stone and gold (rats), gold (humans).
+
+New effect shapes (the D-111 research shape, src/sim/tech.gd): `{"start": "food", "add": 100}`
+(more at the start, set in Economy.setup) and the building pct `age_time` (the age-up at that
+building, Tech.head_ticks).
+
+**Groups** (unchanged: one each)
+
+| Group | Bonus | Alternative | What it says |
+|---|---|---|---|
+| Bugs | houses cost 30% less | gather 5% faster | they dig in rather than build |
+| Amphibians | farms in water (rice paddies) | farms hold 20% more food | they live in the shallows |
+| Rodents | houses hold 6 | workers carry +2 | they pack in |
+| Folk | research 15% faster | research 10% cheaper | the tool-using thinkers |
+
+**Creatures** (the m14 bonus, then the new one; alternatives for when a culture's doubles it)
+
+| Creature | Bonus 1 | Bonus 2 (new) | Alternative to 2 | What it says |
+|---|---|---|---|---|
+| Frogs | amphibious | Long tongues: food gathered 20% faster | workers carry +2 | they snap up food |
+| Rats | units 10% cheaper (was 20%), train 20% faster | Burrowers: stone and gold mined 10% faster | food gathered 5% faster | a swarm that burrows for treasure |
+| Humans | workers build 15% faster | Prospectors: gold mined 15% faster | stone mined 15% faster | generalists who dig for gold |
+| Spiders | walls and gates cost half (silk) | Silk-spun camps: Lumber Camp, Mining Camp and Mill cost 25% less | Watchtowers +20% HP | they spin what others build |
+| Beetles | every unit +1 pierce armour (shells) | Bark borers: wood gathered 15% faster | stone mined 20% faster | armoured wood-borers |
+| Centaurs | workers carry 60% more | Foragers on the move: food gathered 15% faster, +100 food at the start | farms hold 20% more food | grazers on a horse's back |
+
+**Cultures** (the m14 bonus, a new one, and a team bonus)
+
+| Culture | Bonus 1 | Bonus 2 (new) | Team bonus (new, allies too) | What it says |
+|---|---|---|---|---|
+| Imperial | buildings 10% cheaper | Drilled legions: foot soldiers train 20% faster | Granaries: farms hold 10% more food (alt: houses +10% HP) | an empire of builders and drilled foot |
+| Hellenic | spears +1 melee armour | Drill yards: Barracks research 30% cheaper | Agora: Market 25% cheaper | the phalanx and the marketplace |
+| Steppe | mounted +10% speed | Horse archers: mounted archers 10% cheaper | Herds: food gathered 5% faster (alt: units +1 sight) | riders who live off their herds |
+| Nile | farms hold 20% more food | Monuments: ages advance 20% faster | Granary of the river: +100 food at the start | the river's harvest builds monuments |
+| Han | walls and towers +20% HP | Paper and ink: research 10% cheaper (alt: Archery Range research 30% cheaper) | Grain stores: Mill 25% cheaper | walls, books and grain |
+| Aztec | kills bring in 5 gold | Obsidian edges: foot melee +1 attack | Flower wars: healers heal 15% more | warriors who take captives |
+| Swamp | no slowdown in swamp or shallows (alt: farms hold 20% more food) | Reed mills: Mill and farms 25% cheaper | Marsh lookouts: buildings +2 sight | marsh folk who farm the mud |
+| Sewer | buildings go up 15% faster (alt: buildings +10% HP) | Scrap towers: Watchtowers 25% cheaper | Black market: market fee 5 points lower | junk builders and fences |
+| Forest | wood gathered 10% faster (alt: food 10% faster) | Woodland archers: bowmen +1 range (alt: +5 HP) | Forest lore: Lumber Camps 25% cheaper | woodsmen and bowmen |
+| Royal | cavalry 10% cheaper | Knightly training: cavalry trains 20% faster | Heralds: units +1 sight | knights |
+| Spooky | units +2 sight | Night archers: foot archers and skirmishers train 20% faster | Night watch: Watchtowers +1 range | they shoot from the dark |
+
+So a race reads like the genre's civ cards, for example **steppe centaurs**: research 15% faster
+(Folk); workers carry 60% more, food gathered 15% faster and 100 more food at the start (Centaurs); mounted 10% faster, mounted
+archers 10% cheaper, and allies' units +1 sight (Steppe; the herds' food doubles the centaurs', so
+it takes its alt); plus Gallop and Saddle Bows at the Castle, and no walls.
+
 ## Plan
 
 1. **Design round** (concept-first, D-080, but for rules): a page per creature and culture with
@@ -183,7 +252,7 @@ both at the Castle in age 3. Culture mechanics are left out for now (creature me
 - [x] 5. Ability system (2026-10-13: `src/sim/abilities.gd`, the ABILITY command, a panel button; the web; placeholder mark on the ground)
 - [ ] 6. Mechanics (the web only so far; leap, shell, swarm/scavenge, shoot on the move to come; the web's look needs a concept round)
 - [x] 7. AI (2026-10-13: webs on the nearest foes, own research bought; bonuses are stats)
-- [ ] 8. Balance and the lobby card (lobby card done; the race round robin is off the 60% target: rats and centaurs, see Results)
+- [ ] 8. Balance and the lobby card (lobby card done; six bonuses a race and a balance pass 2026-10-14: every race 33-68% over two maps, frogs and rats at the edges, see Results)
 - [ ] 9. Heroes (generated champion, aura, revive; concept round HR1 done 2026-10-13, waiting on Dominic's pick)
 - [ ] A new creature: bears (two legs, armoured, dignified, "the smarter version compared to rats"; rideable for some races; bigger polar or older bears; see the backlog entry). Dominic: plan once milestone 13 is done
   - [x] Concept round B1 (2026-10-13): three builds (brown, black, polar), the worker, the mount, the giants, built with the creature kit, all passing placement (`docs/concepts/bears/`, data staged in `data/later/bears.json`). Waiting on Dominic's pick.
@@ -215,7 +284,7 @@ both at the Castle in age 3. Culture mechanics are left out for now (creature me
   Range instead (`requires_else`, found when the page said spiders needed a Stable they can't build).
 - **Abilities:** `src/sim/abilities.gd`, the ABILITY command, per-unit cooldowns and webs in the state
   hash, a panel button in the match. The **web** (spiders): a slowing patch (half speed, 15 s, 5-tile
-  throw, 30 s cooldown) that wears off; counter: shoot over it or go round. Its look on the ground is a
+  throw, 30 s cooldown, 45 s since 2026-10-14) that wears off; counter: shoot over it or go round. Its look on the ground is a
   placeholder mark until a concept round. The bot throws webs on the nearest enemy soldiers.
 - **AI:** bonuses are stats; own research comes through the usual research rules (worker ones listed
   in `data/ai.json`); webs 25-270 a match.
@@ -242,14 +311,58 @@ both at the Castle in age 3. Culture mechanics are left out for now (creature me
 - **Pictures:** `archive/images/2026-10-13/428-431` (the page's bonuses; spiders' lacks crossed out,
   with the "Needs a Stable" they couldn't meet; the lobby's traits line; heroes HR1).
 - **Not done yet:** leap, shell, swarm/scavenge and shoot-on-the-move; the web's look; culture
-  abilities; the lobby's roster tiles still show lines a race lacks (spiders' Heavy and Scout).
+  abilities.
+
+**Six bonuses, centaur prices, lacks in the lobby, balance pass (2026-10-13/14, Claude):**
+- **Six bonuses per race** (Dominic: "we're not doing enough on the race bonuses"): see "More
+  bonuses" above. New effect shapes `start` and `age_time`; team bonuses (`team`) reach allies
+  (Tech.setup), checked in tests/test_race_identity.gd on the 2v2 map (the Nile's granary feeds its
+  ally, not its foes). Every creature with every culture mixes six with no kind twice
+  (tests/run_tests.gd); race keys unchanged (bonuses never touch recipes).
+- **Centaur workers 75 food**, not 150: the worker role's price terms got a `ceiling` (75, beside the
+  floor of 50) and `pop` (a worker takes one place, even on a horse's body), rules.cost.roles. The
+  150 wasn't the cost multiplier: pricing priced a centaur's horse half as a ridden pony (12 points,
+  70/30 food/wood); it now prices the fused body it draws (`fused_body`, body.pony_fused: 9 points,
+  priced at 11, half food, half wood). And a centaur isn't a rider on a big beast: the fused body
+  has `large: false`, so centaurs are mounted (cavalry: fast, rider loses infantry) but take one
+  place and spears' bonus against large doesn't reach them. That was the step that moved centaurs
+  off 0%; Dominic may prefer them large (then they need cheaper units or bigger houses).
+- **Lacks in the lobby:** the lobby's roster is now a line of words (the bake rework); a lacked line
+  is struck through in red and not counted ("13 lines: ... ~~Giant Lancer~~ ... ~~Scout~~"), its row on
+  hover says why ("not in this race's tree (Spiders have no Stable)"). Picture 639 (archive/images/2026-10-13).
+- **Balance** (`tests/race_matches.gd`, both seatings; win share with a draw as half; reed_meadow
+  and old_forest, 20 matches a race):
+
+  | Race | main (reed, wins) | now: reed W-D-L | now: old forest W-D-L | now: share of 20 |
+  |---|---|---|---|---|
+  | swamp frogs | 40% | 0-6-4 | 3-1-6 | 33% |
+  | sewer rats | 90% | 3-5-2 | 8-0-2 | 68% |
+  | imperial humans | 50% | 3-4-3 | 2-2-6 | 40% |
+  | spooky spiders | 40% (old forest 60-80%) | 5-2-3 | 6-0-4 | 60% |
+  | forest beetles | 30% | 3-5-2 | 1-2-7 | 38% |
+  | steppe centaurs | 0% | 3-4-3 | 7-1-2 | 63% |
+
+  The levers, all data: rats' units 10% cheaper (was 20%) and the rat body priced at 3 points (its
+  speed 13 was cheap); the spider body priced at 7 (it was a 6-point body with armour and a bonus
+  against ranged) and the web's cooldown 45 s (was 30; every spider throws its own); centaurs as
+  above; the bot (data/ai.json): `military.army_floor` (no new worker while the soldiers are under
+  25% of the workers, once there's a Barracks: centaurs met the first wave with nobody) and age 2's
+  mix 40/35 food/wood (was 45/30: every race piled food and ran out of wood in age 2). Draws went up
+  (16 of 60; reed 13 of 30, main 5): the bots trade evenly more often; worth a look when the 35-minute
+  limit or the wave sizes are next tuned. One seed per match, so a race moves 10-20 points between
+  runs; the reed-only numbers swing more than the two-map share.
+  `balance.gd -- 2`: 19 of 33 units off the mean by >20% (main 18), counters 79% (79%); `-- 3`: 21 of
+  38, 81%; `mass_battle -- 2` as main within a fight (spears beat the centaurs' cavalry 8 of 10, was
+  10: they're no longer large).
 
 ## Changes from the original plan
 
 - Strong Legs stays at the Barracks in age 2 (the plan put own research at the Castle in age 3).
 - Spiders and Aztecs lack the Stable itself ("stable lines"), so they have no Heavy line at all;
   watch it in the round robin (spiders still do well with webs).
-- Rats' units 20% cheaper, not 30% (balance, Claude; Dominic to confirm).
+- Rats' units 20% cheaper, not 30% (balance, Claude; Dominic to confirm); then 10% (2026-10-14, with the rat body priced at 3 points).
+- Six bonuses a race instead of three (Dominic, 2026-10-13), with a team bonus per culture.
+- Centaurs are mounted but not large (one place, no spear bonus against them): Claude's balance call, for Dominic to confirm.
 - Alternatives were only agreed for groups; Claude wrote alts for the creatures and cultures that can
   double up (swamp after frogs: food gathered faster; sewer after humans: buildings +10% hp; and more).
 

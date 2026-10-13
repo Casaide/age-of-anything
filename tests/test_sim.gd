@@ -1575,7 +1575,7 @@ func _test_towers(races: Array) -> void:
 	var w2 := _bare_world(races)
 	_put(w2, 0, "outpost", 10, 10)
 	w2.step()
-	check(_visible_cells(w2, 0) > seen_house * 3, "towers: an outpost sees far (%d cells, a house %d)" % [_visible_cells(w2, 0), seen_house])
+	check(_visible_cells(w2, 0) > seen_house * 5 / 2, "towers: an outpost sees far (%d cells, a house %d; swamp frogs' buildings see 2 further)" % [_visible_cells(w2, 0), seen_house])
 	check(w2.btypes[Economy.btype_of(w2, "outpost")].attack.is_empty() and w2.btypes[Economy.btype_of(w2, "outpost")].garrison == 0,
 		"towers: an outpost doesn't shoot, and nobody goes in")
 
@@ -2516,8 +2516,9 @@ func _test_effects(races: Array) -> void:
 	var fk := Economy.btype_of(w, "farm")
 	var food0: int = w.btypes[fk].food
 	check(Economy.farm_food(w, 1, fk) == food0, "effects: farms hold %d food without Fallow Fields" % food0)
+	var race_pct := Tech.bpct(w, 0, fk, "food")   # (player 0's race may have a farm bonus of its own: swamp frogs' rich mud)
 	_give(w, 0, "fallow_fields")
-	check(Economy.farm_food(w, 0, fk) == food0 * 150 / 100, "effects: Fallow Fields: farms hold 50%% more (%d)" % Economy.farm_food(w, 0, fk))
+	check(Economy.farm_food(w, 0, fk) == food0 * (150 + race_pct) / 100, "effects: Fallow Fields: farms hold 50%% more (%d)" % Economy.farm_food(w, 0, fk))
 	var fw := World.new(SEED, SimMap.load_id("flat_test"), races, rules_)
 	fw.stock[1][0] = 1000
 	_give(fw, 0, "fallow_fields")
@@ -2534,20 +2535,20 @@ func _test_effects(races: Array) -> void:
 	var cell: int = fcy * fw.map.width + fcx
 	while fw.tick < 1600 and fw.map.pool[cell] < 0:
 		fw.step()
-	check(fw.map.left_at(cell) >= food0 * 150 / 100 - 5, "effects: a farm sown after Fallow Fields holds %d (%d)" % [food0 * 150 / 100, fw.map.left_at(cell)])
+	check(fw.map.left_at(cell) >= food0 * (150 + race_pct) / 100 - 5, "effects: a farm sown after Fallow Fields holds %d (%d)" % [food0 * (150 + race_pct) / 100, fw.map.left_at(cell)])
 	fw.map.amount[fw.map.pool[cell]] = 1
 	while fw.tick < 3000 and fw.map.left_at(cell) > 0:
 		fw.step()
 	fw.issue(0, Commands.RESEED, {"ids": [farmer], "building": fw.map.occupied[cell]})
 	for t in 12:
 		fw.step()
-	check(fw.map.left_at(cell) >= food0 * 150 / 100 - 5, "effects: ...and so does a reseeded one (%d)" % fw.map.left_at(cell))
+	check(fw.map.left_at(cell) >= food0 * (150 + race_pct) / 100 - 5, "effects: ...and so does a reseeded one (%d)" % fw.map.left_at(cell))
 	# Trade fee: Haggling, selling pays more for the player who has it.
 	var f: int = w.resources.find("food")
-	var sell0 := Market.quote(w, 1, f, false)
+	var sell0 := Market.quote(w, 0, f, false)   # (a race may have a fee bonus of its own: sewer rats' black market)
 	_give(w, 0, "haggling")
-	check(Market.quote(w, 0, f, false) == w.market_price[f] * 85 / 100 and sell0 == w.market_price[f] * 75 / 100,
-		"effects: Haggling cuts the fee from 25 to 15 points (sells for %d, not %d)" % [Market.quote(w, 0, f, false), sell0])
+	check(Market.quote(w, 0, f, false) == sell0 + w.market_price[f] * 10 / 100,
+		"effects: Haggling cuts the fee by 10 points (sells for %d, not %d)" % [Market.quote(w, 0, f, false), sell0])
 	check(Market.quote(w, 0, f, true) == Market.quote(w, 1, f, true), "effects: ...buying costs the same")
 	# Every built research's effects say something in words.
 	for r in w.tech.research:
