@@ -25,6 +25,8 @@ const Composite2D := preload("res://tests/placement/composite_2d.gd")
 
 ## Poses: [name, walking, phase].
 const POSES := [["stand", false, 0.0], ["walk0", true, 0.0], ["walk1", true, 2.1], ["walk2", true, 4.2]]
+## A hopper's walk on the ground (UnitView.HOP_KEYS): deep in its crouch, squashed on landing.
+const HOP_POSES := [["hop_crouch", true, 0.2 * TAU], ["hop_land", true, 0.82 * TAU]]
 
 ## Thresholds (art pixels). Tolerant of a pixel or two of outline, strict enough for a leg on a back.
 const MODEL_SLACK := 6         # pixels a leg or head may differ from the 3D model by (the outline, rounding)...
@@ -79,6 +81,8 @@ func clear_caches() -> void:
 func check_case(holder: Node2D, label: String, u: Dictionary, tweak := Callable()) -> void:
 	# A body that rests in its own poses when idle (parts.json idle_poses: a cat sits) is drawn in each.
 	var poses := POSES.duplicate()
+	if not u.recipe.has("crew") and not u.recipe.has("mount") and lib.creatures.get(u.recipe.get("creature", ""), {}).get("gait", "") == "hop":
+		poses += HOP_POSES   # a hopper on the ground: crouched to leap, squashed landing (B5 holds there)
 	if not u.recipe.has("crew"):
 		var walker: String = u.recipe.body
 		if u.recipe.has("mount"):
@@ -464,7 +468,7 @@ func _check_model(v, parts: Array, rig: String, body: int, label: String, view: 
 
 ## B5 walking: the lowest foot stays on the standing ground line, and no foot goes below it.
 func _check_walk(v, parts: Array, rig: String, label: String, view: String, lows: Dictionary) -> void:
-	if v.flying or v.gait.get("hop", false) or lows.is_empty():
+	if v.flying or (v.gait.get("hop", false) and not v.hop_grounded()) or lows.is_empty():
 		return
 	var ref := -INF
 	for i in lows:

@@ -34,7 +34,25 @@ const CLING_TURN := 0.35  # a rider's leg swings forward this much down the flan
 var _clinging := false    # building a riding creature: legs that hug the mount    # "@hold" on the body being built (its arm posed for its weapon)
 var harnessed := false    # no arms: gear rides on a harness, work is done with the whole body
 const COUCH := Vector2(1.0, -0.3)   # a couched weapon points forward, a little up
-const HOP_HEIGHT := 7.0   # part units: how high a hopper leaves the ground
+const HOP_HEIGHT := 9.0   # part units: how high a hopper leaves the ground
+## A hop (2026-10-13; Dominic: the frogs "glide along the ground too much"): node units of ground covered
+## per hop at scale 1 (measured on the ground: a hop towards the camera is as long as one across; a bigger
+## frog hops further). The cycle: crouch on the ground until HOP_UP, in the air until
+## HOP_DOWN, then the landing on the ground; the frog is drawn ahead of or behind its sim position
+## (_hop_off) so it stays planted on the ground and covers the ground in the air.
+const HOP_LENGTH := 40.0
+const HOP_UP := 0.25
+const HOP_DOWN := 0.75
+## The legs through a hop: [cycle point, leg squash (1: standing), foot shift along the facing (in leg
+## lengths; < 0: back)]: crouch, hold, push (legs flung back, long), tuck, reach for the ground, touch
+## down, squash, stand. The feet move only in the air; the body rides on its lowest foot.
+const HOP_KEYS := [[0.0, 1.0, 0.0], [0.15, 0.7, 0.0], [HOP_UP, 0.7, 0.0], [0.36, 1.15, -0.7], [0.52, 0.75, -0.25],
+	[0.66, 0.9, 0.3], [HOP_DOWN, 1.0, 0.0], [0.82, 0.72, 0.0], [1.0, 1.0, 0.0]]
+var _hop_off := Vector2.ZERO    # node units: where the hopper is drawn, from its node
+var _hop_aim := Vector2.ZERO    # a whole hop the way it last moved, on screen (node units)
+var _hop_last := Vector2.INF    # its node's position last frame
+var _hop_rate := 0.0            # hops a second while it last moved (to finish a hop when it stops)
+const HOP_SETTLE := 25.0        # node units a second: stopped after landing, it eases back onto its node
 const WITHERS_DROP := Vector2(2.0, 5.0)    # part units: wings on a mount start at its shoulders...
 const WITHERS_TILT := -0.5                 # ...and lie back along it, folded, clear of the rider
 const WITHERS_SCALE := 2.0                 # a horse's wings are a horse's size (Dominic)
@@ -799,13 +817,17 @@ func _process(delta: float) -> void:
 	var t := floorf(time * STEP_FPS) / STEP_FPS if stepped else time
 	var stride := 1.0 if walking else 0.0
 	bob.position.x = 0.0   # a lunge, a kneel or a release pushes it this frame; nothing carries over
-	if walking:
+	var hops: bool = gait.get("hop", false)
+	if hops:
+		_hop_advance(delta)
+		stride = 1.0 if walking or phase != 0.0 else 0.0   # (finishing its hop when it stops)
+	elif walking:
 		phase += delta * speed_px * 0.25 * gait.cadence
 	var ph := phase
 	if stepped:
 		var step := TAU / pose_steps
 		ph = floorf(phase / step) * step
-	if gait.get("hop", false):
+	if hops:
 		_hop(ph, stride)
 	else:
 		for leg in legs:
@@ -867,11 +889,11 @@ func _process(delta: float) -> void:
 		set_hold(rest)
 	_kneel(delta)
 	_apply_concept()
-	visual.position = _die_offset - Vector2(0, lift)
-	_shadow.position.y = -lift
+	visual.position = _die_offset - Vector2(0, lift) + _hop_off
+	_shadow.position = _hop_off - Vector2(0, lift)
 	if stepped and art_px > 0.0:
 		# Sit on whole art pixels: offset the drawing so its global position snaps.
-		var g := global_position - Vector2(0, lift) * global_transform.get_scale().y
+		var g := global_position + (_hop_off - Vector2(0, lift)) * global_transform.get_scale().y
 		var px := 1.0 / art_px
 		var snapped := Vector2(roundf(g.x / px) * px, roundf(g.y / px) * px)
 		visual.position += (snapped - g) / maxf(global_transform.get_scale().x, 0.0001)
@@ -879,8 +901,9 @@ func _process(delta: float) -> void:
 
 ## How far to move the body so its lowest foot stays where it stands while the legs swing (the
 ## walk rides on its planted foot: no foot through the ground, none floating; the placement check,
-## B5): the lowest sole now against the lowest standing. Null before the legs are baked.
-func _planted() -> Variant:
+## B5): the lowest sole now against the lowest standing (full_length: standing on legs not squashed,
+## for a hopper's crouch). Null before the legs are baked.
+func _planted(full_length := false) -> Variant:
 	var rest_low := -INF
 	var now_low := -INF
 	for leg in legs:
@@ -892,7 +915,7 @@ func _planted() -> Variant:
 		if now == null or rest == null:
 			return null
 		var t := Transform2D(n.rotation, n.scale, 0.0, n.position)
-		var t0 := Transform2D(0.0, n.scale, 0.0, n.position)
+		var t0 := Transform2D(0.0, Vector2(n.scale.x, leg.reach) if full_length else n.scale, 0.0, n.position)
 		for p in PartShape.soles(now):
 			now_low = maxf(now_low, (t * p).y)
 		for p in PartShape.soles(rest):
@@ -1003,27 +1026,133 @@ func _hip_height() -> float:
 	return h
 
 
-## A hop per cycle: push off (legs kick back), an arc through the air with the nose up then
-## down, and a little squash on landing; at rest, sitting still.
+## A hop per cycle (HOP_KEYS): a crouch, the push (legs flung back), a tuck in the air with the nose up
+## then down, legs reaching for the ground, and a squash on landing. The legs bend by squashing (the
+## body riding down on its lowest foot, so the feet stay put) and swing only in the air; their feet
+## move along the facing's screen direction (sideways by turning, up or down the screen by length).
 func _hop(ph: float, stride: float) -> void:
-	var p := fposmod(ph / TAU, 1.0)
-	var air := 0.6   # the share of the cycle spent in the air
-	var lift := 0.0
-	var kick := 0.0
-	var tilt := 0.0
-	var squash := 0.0
-	if stride > 0.0:
-		if p < air:
-			var q := p / air
-			lift = sin(q * PI) * HOP_HEIGHT
-			kick = -0.7 * sin(minf(q * 2.0, 1.0) * PI * 0.5) * (1.0 - q)   # legs flung back, then tucked
-			tilt = -0.18 * cos(q * PI)   # nose up on the way up, down on the way in
-		else:
-			squash = sin((p - air) / (1.0 - air) * PI) * 1.2
+	var p := fposmod(ph / TAU, 1.0) if stride > 0.0 else 0.0
+	var s := 1.0
+	var d := 0.0
+	for i in range(1, HOP_KEYS.size()):
+		if p <= HOP_KEYS[i][0]:
+			var a: Array = HOP_KEYS[i - 1]
+			var b: Array = HOP_KEYS[i]
+			var w := smoothstep(a[0], b[0], p)
+			s = lerpf(a[1], b[1], w)
+			d = lerpf(a[2], b[2], w)
+			break
+	var fwd := _forward()
+	# Every foot comes up by the same amount as the legs bend (the body rides down by it, so none
+	# lifts off nor sinks): a leg reaching further below its hip squashes less.
+	var depth := 0.0
+	var reach := {}
 	for leg in legs:
-		leg.node.rotation = kick
-	bob.position.y = -lift + squash
+		var b: Variant = leg.node.bake_of()
+		var low := 0.0
+		if b != null:
+			for q in PartShape.soles(b):
+				low = maxf(low, q.y)
+		reach[leg.node] = low * leg.reach
+		depth = maxf(depth, low * leg.reach)
+	for leg in legs:
+		var h: float = reach[leg.node]
+		var k := maxf(1.0 - (1.0 - s) * depth / h, 0.2) if h > 0.0 else s
+		leg.node.rotation = -asin(clampf(d * fwd.x, -0.9, 0.9))
+		leg.node.scale.y = leg.reach * (k + d * fwd.y)
+	var lift := 0.0
+	var tilt := 0.0
+	if p > HOP_UP and p < HOP_DOWN:
+		var q := (p - HOP_UP) / (HOP_DOWN - HOP_UP)
+		lift = sin(q * PI) * HOP_HEIGHT
+		tilt = -0.2 * sin(q * TAU) * fwd.x   # nose up on the way up, down on the way in
+	var plant: Variant = _planted(true)
+	bob.position.y = (plant if plant != null else 0.0) - lift
 	bob.rotation = tilt
+
+
+## How far through the hop's forward travel at cycle point p: none while it crouches, all of it once
+## landed; in the air smoothly between (stepped: at the pose shown, so a held pose doesn't slide).
+func _hop_f(p: float) -> float:
+	if pose_steps > 0:
+		p = floorf(p * pose_steps) / pose_steps
+	var q := clampf((p - HOP_UP) / (HOP_DOWN - HOP_UP), 0.0, 1.0)
+	return lerpf(q, q * q * (3.0 - 2.0 * q), 0.5)
+
+
+## Moves a hopper through its cycle by the ground its node covered (a hop every HOP_LENGTH, so the hop
+## matches the sim's speed whatever it is), and where it's drawn: on the ground it stays put while the
+## node moves on (_hop_off takes the node's move back); in the air it catches up and passes it, to
+## the offset D (f(p) - p) along its way, which averages out over a hop (no drift). Whatever is left
+## over (a turn, a stop, a hop resumed) is made up in the next air time, never on the ground. Stopped,
+## it finishes its hop and lands where its node is (a crouch just begun straightens up instead).
+## Moving in place (a sheet, a crew member on its engine) it hops on the spot.
+func _hop_advance(delta: float) -> void:
+	var D := HOP_LENGTH * sqrt(unit_scale)
+	var m := Vector2.ZERO
+	if _hop_last != Vector2.INF:
+		m = (position - _hop_last) / maxf(scale.x, 0.0001)
+	_hop_last = position
+	var ground := Vector2(m.x, m.y * 2.0).length()   # the distance on the ground (the screen squashes y by half)
+	if ground > D:   # a jump (placed, back on screen): no hop across it
+		m = Vector2.ZERO
+		ground = 0.0
+		_hop_off = Vector2.ZERO
+	var p0 := fposmod(phase / TAU, 1.0)
+	var moving := walking and ground > 0.0
+	var dp := 0.0
+	if moving:
+		dp = ground / D
+		_hop_aim = m / dp   # a whole hop this way, on screen
+		_hop_rate = dp / delta if delta > 0.0 else _hop_rate
+	elif walking:
+		dp = delta * speed_px / D
+	elif p0 != 0.0:
+		dp = delta * (_hop_rate if _hop_rate > 0.0 else speed_px / D)
+		if p0 < HOP_UP and _hop_off.length() < 1.0:
+			# Stopped while crouching, nothing to make up: straighten up again.
+			_hop_off = _hop_off.move_toward(Vector2.ZERO, HOP_SETTLE * unit_scale * delta)
+			phase = maxf(p0 - dp, 0.0) * TAU
+			return
+	var p1 := p0 + dp
+	var f0 := _hop_f(p0)
+	var f1 := _hop_f(p1) if p1 < 1.0 else 1.0 + _hop_f(p1 - 1.0)
+	var aim := _hop_aim if moving else Vector2.ZERO   # (in place or stopping: it lands on its node)
+	var c := _hop_bias()
+	if f1 > f0 and f0 < 1.0:
+		var left := _hop_off - aim * (f0 - p0 + c)
+		_hop_off = aim * (f1 - p1 + c) + left * (1.0 - minf(f1, 1.0)) / (1.0 - f0)
+	elif moving:
+		_hop_off -= m
+	elif not walking and (f0 >= 1.0 or p0 == 0.0):
+		_hop_off = _hop_off.move_toward(Vector2.ZERO, HOP_SETTLE * unit_scale * delta)   # stopped after landing
+	if not walking and p1 >= 1.0:
+		p1 = 0.0   # landed: standing (still easing onto its node, if it came down beside it)
+	phase = fposmod(p1, 1.0) * TAU
+
+
+## The hop's offset averages out to nothing over a hop: D (f(p) - p) does when f is symmetric (smooth
+## poses); the stepped f lags a little, made up by this constant share of a hop.
+var _hop_bias_for := -1
+var _hop_bias_v := 0.0
+
+
+func _hop_bias() -> float:
+	if _hop_bias_for != pose_steps:
+		var sum := 0.0
+		for i in 1000:
+			var p := (i + 0.5) / 1000.0
+			sum += p - _hop_f(p)
+		_hop_bias_for = pose_steps
+		_hop_bias_v = sum / 1000.0
+	return _hop_bias_v
+
+
+## Whether a hopper's feet are on the ground at this point of its hop (crouching or landed; the
+## placement check holds them to the ground line then).
+func hop_grounded() -> bool:
+	var p := fposmod(phase / TAU, 1.0)
+	return _hop_f(p) <= 0.0 or _hop_f(p) >= 1.0
 
 
 ## How a body walks, by its number of legs: bipeds stride long and bob twice a
