@@ -39,6 +39,7 @@ const Land := preload("res://src/ai/land.gd")
 const Expand := preload("res://src/ai/expand.gd")
 const Trade := preload("res://src/sim/trade.gd")
 const AbilityAi := preload("res://src/ai/ability_ai.gd")
+const WallsAi := preload("res://src/ai/walls_ai.gd")
 
 const THINK_EVERY := 20     # ticks (1 s), offset from EcoBot's think by half a second (and per player: _phase)
 const BUILD_COOLDOWN := 200
@@ -238,6 +239,7 @@ func think(w) -> void:
 	land.think(w, self, at_work, field, home_x, home_y)
 	expand.think(w, self, tc, at_work, field, home_x, home_y)
 	_defend(w, field, home_x, home_y)
+	WallsAi.man(w, self, field, home_x, home_y)
 	_respond(w, tc, army.filter(func(i): return w.units.id[i] != scout.id), at_work, home_x, home_y)
 	_tower(w, at_work)
 	_trade(w)
@@ -245,6 +247,7 @@ func think(w) -> void:
 	_waves(w, field, home_x, home_y)
 	_off_walls(w, field, home_x, home_y)
 	_siege(w, field, home_x, home_y)
+	WallsAi.storm(w, self, field, _target)
 	_escort(w, field, healers, home_x, home_y)
 	AbilityAi.think(w, player, army)   # the race's ability (spiders' webs), milestone 14
 
@@ -759,7 +762,7 @@ func _defend(w, army: Array, hx: int, hy: int) -> void:
 		return
 	var ids := []
 	for i in army:
-		if w.units.foe[i] == 0 and Fixed.dist2(hx, hy, w.units.x[i], w.units.y[i]) < 4 * r * r and not land.is_climbing(w, i):
+		if w.units.foe[i] == 0 and Fixed.dist2(hx, hy, w.units.x[i], w.units.y[i]) < 4 * r * r and not land.is_climbing(w, i) and w.units.perch[i] == 0:
 			ids.append(w.units.id[i])   # (shooters on their way up a hill hold it instead)
 	if not ids.is_empty():
 		var to := _reachable(w, Vector2i(w.units.x[intruder], w.units.y[intruder]))
