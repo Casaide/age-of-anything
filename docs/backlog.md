@@ -217,6 +217,13 @@ era, then culture, then creature, and buildings by era (the biggest art cost). T
 below plug into it: gunpowder first (Napoleonic-ish), steampunk as the first theme. After
 milestone 13 at the earliest.
 
+### Sieges, left after milestone 16's first pass (2026-10-13, Claude)
+- The bot's assault on a full ring (Fortress bot vs bot stalls: no breach in 22 minutes); the bot raising ladders.
+- Infantry carrying ladders (workers raise them now); the siege tower carrying units inside.
+- Readability: outlines behind tall walls, wall damage states, the pour's name on screen, its own effect.
+- Ladders and the siege tower in the bot's counter-reading and the balance round robin.
+- The rest of milestone 18's match rules on the `mode` contract.
+
 ### Battle mode (Dominic, 2026-10-12: "not just yet, but write it down")
 
 A custom battle: no economy, set armies by points, fight ("10 frog knights vs 100 sewer rats").
