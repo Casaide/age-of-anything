@@ -48,6 +48,37 @@ func fitted(armour_id: String, body_id: String, colours: Dictionary) -> Dictiona
 	return {"node": glb(name, {kind: main, "trim": surf("leather", Color("#5a3a20"), 3.0)})}
 
 
+## How a leg model sits at its hip (anchor [hip, phase, side, flip, hind]). Legs are modelled for
+## the near side (+z) pointing forward: a leg on the far side (hip z < 0) is mirrored across the
+## body (its sprawl goes out to its own side, not under the belly), and a flipped rear leg is
+## mirrored fore and aft. Legs baked at each hip (parts.json "cut": ["legs"]) bake in this turn;
+## uncut legs are one sprite, flipped in 2D, so only legs the same on both sides may be uncut
+## (the placement check, A2 "one-sided legs baked at each hip").
+static var mirror_legs := true   # the placement check's fixtures turn it off to show the newt as it was
+
+
+static func leg_basis(a: Array, cut: bool) -> Basis:
+	var flip := a.size() > 3 and int(a[3]) == 1
+	if not mirror_legs:
+		return Basis.IDENTITY
+	if not cut:
+		return Basis.from_scale(Vector3(-1, 1, 1)) if flip else Basis.IDENTITY
+	var side := -1.0 if float(a[0].z) < 0.0 else 1.0
+	var fan := Basis(Vector3.UP, deg_to_rad(float(a[5])) * -side) if a.size() > 5 else Basis.IDENTITY   # a[5]: turned out (degrees, + forward)
+	return fan * Basis.from_scale(Vector3(-1.0 if flip else 1.0, 1.0, side))
+
+
+## Where a body sits on a saddle: its "sit" socket, else the middle of its hips (a rider's hips go
+## on its mount's seat: UnitView.build, the placement check).
+static func hips(spec: Dictionary) -> Vector3:
+	if spec.get("sockets", {}).has("sit"):
+		return spec.sockets.sit
+	var sum := Vector3.ZERO
+	for a in spec.get("anchors", []):
+		sum += a[0]
+	return sum / maxf(1.0, spec.get("anchors", []).size())
+
+
 ## {node: Node3D, sockets: {name: Vector3}, anchors: [[Vector3 hip, phase, z]]}
 func build(id: String, colours: Dictionary) -> Dictionary:
 	if _is_engine(id):
@@ -63,28 +94,31 @@ func build(id: String, colours: Dictionary) -> Dictionary:
 ## blowgun at the lips), overhead (a sling whirled above), draw (a bow at arm's length),
 ## shoulder (a pike), aim (a crossbow or musket held forward).
 const INK := Color("#2a1a12")
+const REACH_FLOOR := 8.0   # a reaching hand comes no lower than this (part units, before a body's scale)
 
 
 func arm_pose(sh: Vector3, elbow: Vector3, hand: Vector3, head: Vector3) -> Array:
 	var z := sh.z
 	match hold:
-		"throw":
-			return [sh + Vector3(1.0, 3.5, 1.8), sh + Vector3(-2.5, 9.0, 0.8)]
+		"throw":   # (hands out to the side of the head: nearer, the arm and javelin went through it)
+			return [sh + Vector3(1.0, 3.5, 2.2), sh + Vector3(-2.5, 9.0, 2.4)]
 		"mouth":
 			var at := Vector3(head.x + 6.0, head.y + 1.0, z * 0.45)
 			return [Vector3(sh.x + 4.5, sh.y - 3.5, z + 1.2), at]
 		"overhead":
-			return [sh + Vector3(1.5, 4.5, 1.2), sh + Vector3(0.5, 9.0, 0.0)]
+			return [sh + Vector3(1.5, 4.5, 2.0), sh + Vector3(0.5, 9.0, 2.2)]
 		"draw":
-			return [sh + Vector3(4.5, -0.4, 1.0), sh + Vector3(9.5, -0.5, 0.8)]
+			return [sh + Vector3(4.5, 0.2, 1.0), sh + Vector3(9.5, 0.6, 0.8)]   # (at shoulder height: lower, a frog's bow went into the ground)
 		"shoulder":
-			return [sh + Vector3(2.0, -4.5, 1.8), sh + Vector3(3.5, -2.0, 1.4)]
+			return [sh + Vector3(2.0, -4.5, 2.2), sh + Vector3(3.5, -2.0, 2.4)]   # (out from the flank: nearer, the pike's butt went through a frog's body)
 		"aim":
 			return [sh + Vector3(3.0, -3.0, 1.4), sh + Vector3(7.5, -1.0, 0.6)]
 		"reach":   # work poses (animation concepts, 2026-10-12): the hand out and down to the work...
-			return [sh + Vector3(3.5, -3.0, 1.3), sh + Vector3(6.5, -6.5, 1.0)]
-		"raise":   # ...and wound up high behind the shoulder, the tool about to come down
-			return [sh + Vector3(-1.0, 3.5, 1.6), sh + Vector3(-2.5, 8.0, 1.1)]
+			var to := sh + Vector3(6.5, -6.5, 1.8)   # (out from the hip: nearer, the tool's handle went through it)
+			to.y = maxf(to.y, REACH_FLOOR)   # (a frog's low shoulders drove the tool into the ground)
+			return [sh + Vector3(3.5, -3.0, 1.3), to]
+		"raise":   # ...and wound up high behind the shoulder, the tool about to come down (out beside the head)
+			return [sh + Vector3(-1.0, 3.5, 2.2), sh + Vector3(-2.5, 8.0, 2.6)]
 		"thrust":  # a spear driven straight forward at chest height (D-106; Dominic: rats "just tap")
 			return [sh + Vector3(4.0, -0.5, 1.4), sh + Vector3(9.0, -1.0, 0.9)]
 	return [elbow, hand]
@@ -141,6 +175,7 @@ func decal(name: String, w: float, h: float, pos: Vector3, facing: Vector3, lit 
 	var mi := MeshInstance3D.new()
 	mi.mesh = q
 	mi.material_override = m
+	mi.set_meta("decal", name)   # (the placement check finds eyes by it)
 	mi.position = pos
 	var f := facing.normalized()
 	var u := up if absf(f.dot(up)) < 0.95 else Vector3.FORWARD
@@ -293,9 +328,9 @@ func _body_frog_built(c: Dictionary) -> Dictionary:
 		var into: Node3D = front if side == 1 else n
 		var sh := Vector3(4.2, 11.0, 4.6 * side)
 		var elbow := Vector3(6.0, 6.5, 5.6 * side)
-		var hand := Vector3(8.0, 1.2, 5.4 * side)
+		var hand := Vector3(8.0, 1.2, 5.4) if side == 1 else Vector3(8.0, 4.5, -5.4)
 		if side == 1:
-			var pose := arm_pose(sh, elbow, Vector3(8.5, 8.5, 5.4), Vector3(7.0, 14.0, 0))
+			var pose := arm_pose(sh, elbow, Vector3(8.5, 8.5, 7.8), Vector3(8.4, 13.5, 0))   # (hand out from the flank: at z 5.4 a lance's butt ran through it)   # (the "head" a blowgun is held 6 in front of: the wide mouth's front; the head socket put it inside the head)
 			elbow = pose[0]
 			hand = pose[1]
 			near_hand = hand
@@ -304,8 +339,8 @@ func _body_frog_built(c: Dictionary) -> Dictionary:
 		_frog_hand(into, hand, Vector3(1, -0.15, 0) if side == -1 else Vector3(0.8, 0.5, 0), m[0], m[1])
 	kerchief(front, c, Vector3(5.0, 12.2, 0), 3.2, 40)
 	return {"node": n, "front": front, "sockets": {
-		"head": Vector3(7.0, 14.0, 0), "hand_r": near_hand, "hand_l": Vector3(8.0, 1.2, -5.4),
-		"torso": Vector3(1.0, 10.0, 0), "back": Vector3(-4.5, 13.0, 0)},
+		"head": Vector3(6.6, 13.5, 0), "hand_r": near_hand, "hand_l": Vector3(8.0, 4.5, -5.4),   # (head at 7, 14 sat a unit off the body; the far hand at 1.2 put a staff a unit into the ground)
+		"torso": Vector3(1.0, 10.0, 0), "back": Vector3(-4.5, 13.0, 0), "sit": Vector3(-0.5, 3.6, 0)},
 		"anchors": [[Vector3(-4.5, 6.0, -5.2), 0.0, -1], [Vector3(-4.5, 6.0, 5.2), PI, 1]],
 		"torso_scale": Vector2(0.75, 0.6)}
 
@@ -459,13 +494,19 @@ func slab(points: Array, thick: float, m: Material, pos := Vector3.ZERO) -> Mesh
 
 # ------------------------------------------------------------------ rat
 
+static var rat_hunch := 15.0   # degrees the rat's body leans forward (the placement check's fixtures set -15: as it was)
+const RAT_HAND_L := Vector3(8.3, 18.5, -4.6)   # the shield hand, up at the chest (lower, a riding rat's shield went into its mount)
+
+
 func _body_rat(c: Dictionary) -> Dictionary:
 	var n := Node3D.new()
 	var fur := surf("rat_fur", c.skin, 7.0)
 	var pink := surf("frog_belly", c.skin2, 6.0)
 	# Lean and hunched (Dominic: "less fat"): a narrow body tilted forward, the belly showing in front.
-	n.add_child(blob(Vector3(5.4, 10.4, 5.0), fur, Vector3(0.2, 15, 0), Vector3(0, 0, 15)))
-	n.add_child(blob(Vector3(3.4, 7.0, 3.6), pink, Vector3(2.6, 13.6, 0.4), Vector3(0, 0, 15)))
+	# (Forward is -15 about z: until 2026-10-13 it was +15, leaning back, so the head on its socket
+	# floated ahead of the shoulders with a gap at the neck and the body read as a lump behind it.)
+	n.add_child(blob(Vector3(5.4, 10.4, 5.0), fur, Vector3(0.2, 15, 0), Vector3(0, 0, -rat_hunch)))
+	n.add_child(blob(Vector3(3.4, 7.0, 3.6), pink, Vector3(2.6, 13.6, 0.4), Vector3(0, 0, -rat_hunch)))
 	# A long tail curling behind, thinning to a point.
 	var pts := [Vector3(-5, 7, 0), Vector3(-11, 4.5, 1.5), Vector3(-16.5, 5.5, 2.5), Vector3(-19.5, 9.5, 3.0), Vector3(-19, 14, 3.0), Vector3(-16.5, 16, 2.5)]
 	for k in range(1, pts.size()):
@@ -474,9 +515,9 @@ func _body_rat(c: Dictionary) -> Dictionary:
 	var front := Node3D.new()
 	for side in [1, -1]:
 		var into: Node3D = front if side == 1 else n
-		var sh := Vector3(3.6, 19.5, 4.4 * side)
-		var elbow := Vector3(5, 16.5, 5.8 * side)
-		var hand := Vector3(8, 15.5, 4.6 * side) if side == 1 else Vector3(7.5, 16.5, -4.2)
+		var sh := Vector3(5.6, 19.5, 4.4 * side)   # at the hunched chest's front (on the leaning-back body they sat at 3.6)
+		var elbow := Vector3(6.6, 16.5, 5.8 * side)
+		var hand := Vector3(8.6, 15.5, 4.6 * side) if side == 1 else RAT_HAND_L
 		if side == 1:
 			var pose := arm_pose(sh, elbow, hand, Vector3(4, 24.5, 0))
 			elbow = pose[0]
@@ -487,10 +528,10 @@ func _body_rat(c: Dictionary) -> Dictionary:
 		into.add_child(blob(Vector3(1.7, 1.4, 1.7), pink, hand))
 	kerchief(front, c, Vector3(3.2, 22.2, 0), 3.0, 15)   # a small scarf at the neck (a big one read as a bib)
 	return {"node": n, "front": front, "sockets": {
-		"head": Vector3(4, 24.5, 0), "hand_r": near_hand, "hand_l": Vector3(7.5, 16.5, -4.2),
-		"torso": Vector3(2.2, 17.5, 0), "back": Vector3(-4.5, 19, 0)},
-		"anchors": [[Vector3(-0.5, 6.0, -3.2), 0.0, -1], [Vector3(-0.5, 6.0, 3.2), PI, 1]],
-		"torso_scale": Vector2(0.58, 0.74), "torso_tilt": 15.0,   # armour leans with the hunch
+		"head": Vector3(4, 24.5, 0), "hand_r": near_hand, "hand_l": RAT_HAND_L,
+		"torso": Vector3(1.4, 17.5, 0), "back": Vector3(-5.2, 19.5, 0)},   # (the hunched back slopes out below: a cape at -3.6 hung into it)
+		"anchors": [[Vector3(-0.5, 7.0, -3.2), 0.0, -1], [Vector3(-0.5, 7.0, 3.2), PI, 1]],   # (at 6 the hips hung under the belly, the feet a unit into the ground)
+		"torso_scale": Vector2(0.58, 0.74), "torso_tilt": -rat_hunch,   # armour leans with the hunch
 		"torso_fit": Vector3(0.7, 0.76, 0.6)}   # armour (built ~1.6x) a little bigger than the body all round, so it wraps it
 
 
@@ -590,6 +631,9 @@ func _shield_bottlecap(c: Dictionary) -> Dictionary:
 ## Reared up (SG1, Dominic's pick): the abdomen low behind, the front body raised, the front
 ## pair of legs used as arms to hold the weapon and shield, six legs to walk on. A saddle cloth
 ## on the abdomen for a rider when it's ridden.
+const SPIDER_FAN := [45.0, -60.0, -30.0]   # degrees each pair of legs turns out from straight across (front, middle, back)
+
+
 func _body_spider(c: Dictionary) -> Dictionary:
 	var n := Node3D.new()
 	var hair := surf("rat_fur", c.skin, 6.0)
@@ -598,19 +642,22 @@ func _body_spider(c: Dictionary) -> Dictionary:
 	n.add_child(blob(Vector3(5.0, 1.0, 5.4), plain(c.team), Vector3(-8.0, 15.2, 0), Vector3(0, 0, 10)))   # team saddle cloth on its back
 	n.add_child(blob(Vector3(4.2, 6.0, 4.6), front, Vector3(1.5, 14.5, 0), Vector3(0, 0, -30)))   # the front body, reared up
 	var limb := surf("rat_fur", c.skin, 4.0)
-	var hand_r := Vector3(6.5, 13.5, 5.2)
-	var hand_l := Vector3(6.5, 13.5, -5.2)
+	var hand_r := Vector3(7.0, 17.5, 5.2)   # (held up, clear of the first walking pair: at 13.5 a lance ran through its thigh)
+	var hand_l := Vector3(7.0, 17.5, -5.2)
 	for side in [1, -1]:   # the front legs, used as arms
-		var elbow := Vector3(5.5, 16.5, 6.0 * side)
+		var elbow := Vector3(5.5, 19.0, 6.0 * side)
 		n.add_child(rod(Vector3(2.5, 18.0, 3.5 * side), elbow, 1.0, 0.85, limb))
 		n.add_child(rod(elbow, hand_r if side == 1 else hand_l, 0.85, 0.6, limb))
 	var hips := []
-	var xs := [0.5, -2.5, -5.5]
+	var xs := [0.5, -2.5, -6.5]   # (the back pair at -5.5 crossed the middle pair's thighs)
 	for k in 3:
-		hips.append([Vector3(xs[k], 9.5, 3.5), k * 1.0, 1, 1 if k >= 1 else 0])
-		hips.append([Vector3(xs[k], 9.5, -3.5), k * 1.0 + PI, -1, 1 if k >= 1 else 0])
+		# Fanned out round the body (a spider's legs radiate: side by side, the back ones crossed),
+		# hips up in the body (at 9.5 the feet were a unit into the ground).
+		hips.append([Vector3(xs[k], 10.5, 3.5), k * 1.0, 1, 1 if k >= 1 else 0, false, SPIDER_FAN[k]])
+		hips.append([Vector3(xs[k], 10.5, -3.5), k * 1.0 + PI, -1, 1 if k >= 1 else 0, false, SPIDER_FAN[k]])
 	return {"node": n, "sockets": {"head": Vector3(3.5, 20.0, 0), "hand_r": hand_r, "hand_l": hand_l,
-		"torso": Vector3(1.5, 14.5, 0), "back": Vector3(-7, 14, 0), "seat": Vector3(-8.0, 16.5, 0), "wings": Vector3(-1.0, 17.0, 0)},
+		"torso": Vector3(1.5, 14.5, 0), "back": Vector3(-14.5, 14.5, 0), "seat": Vector3(-8.0, 16.5, 0), "wings": Vector3(-1.0, 17.0, 0),   # (back at the rump's end: at (-7, 14) a cape hung down through the abdomen)
+		"sit": Vector3(-4.0, 4.5, 0)},
 		"anchors": hips, "torso_scale": Vector2(0.5, 0.6)}
 
 
@@ -767,6 +814,9 @@ func crest(n: Node3D, tint: Color, pos: Vector3, length: float, height: float) -
 
 # ------------------------------------------------------------------ human
 
+const HUMAN_HAND_L := Vector3(5.5, 20.5, -4.8)   # the shield hand, forearm up (at hip height, 17.2, a rider's shield went into its horse)
+
+
 func _body_human(c: Dictionary) -> Dictionary:
 	var n := Node3D.new()
 	# The tunic is the team colour, as the genre does; the culture shows in sleeves and trim.
@@ -791,7 +841,7 @@ func _body_human(c: Dictionary) -> Dictionary:
 		var into: Node3D = front if side == 1 else n
 		var sh := Vector3(0.3, 22.9, 4.4 * side)   # shoulders in a little (Dominic: too big)
 		var elbow := Vector3(1.4, 18.4, 5.8 * side)
-		var hand := Vector3(6.0, 16.2, 5.6) if side == 1 else Vector3(5.5, 17.2, -4.8)
+		var hand := Vector3(6.0, 16.2, 5.6) if side == 1 else HUMAN_HAND_L
 		if side == 1:
 			var pose := arm_pose(sh, elbow, hand, Vector3(0.6, 27, 0))
 			elbow = pose[0]
@@ -803,7 +853,7 @@ func _body_human(c: Dictionary) -> Dictionary:
 		into.add_child(blob(Vector3(1.5, 1.6, 1.3), skin, hand))
 	# (No scarf: the tunic is already the team colour, and a scarf ring hid the neck: Dominic.)
 	return {"node": n, "front": front, "sockets": {
-		"head": Vector3(0.6, 25.6, 0), "hand_r": near_hand, "hand_l": Vector3(5.5, 17.2, -4.8),   # head low: a short neck (Dominic)
+		"head": Vector3(0.6, 25.6, 0), "hand_r": near_hand, "hand_l": HUMAN_HAND_L,   # head low: a short neck (Dominic)
 		"torso": Vector3(0.0, 19.4, 0), "back": Vector3(-4.2, 22, 0)},   # the chest's middle (lower, the jerkin bulged out of the belly from the front)
 		"anchors": [[Vector3(-2.3, 11.0, -2.4), 0.0, -1], [Vector3(2.0, 11.0, 2.4), PI, 1]],
 		"torso_scale": Vector2(0.66, 0.82),
@@ -892,8 +942,9 @@ func harness(n: Node3D, centre: Vector3, ry: float, rz: float, hand_r: Vector3, 
 
 func _pony_anchors() -> Array:
 	var y := 14.0 + PONY_LIFT
-	return [[Vector3(8.5, y, 4.0), 0.0, 1, 0], [Vector3(-9.5, y, 4.0), PI, 1, 0],
-		[Vector3(7.0, y, -4.0), PI, -1, 0], [Vector3(-11.0, y, -4.0), 0.0, -1, 0]]
+	# (Hips a little in from the flanks: at z 4 they hung a unit under the chest and rump.)
+	return [[Vector3(8.5, y, 3.4), 0.0, 1, 0], [Vector3(-9.5, y, 3.4), PI, 1, 0],
+		[Vector3(7.0, y, -3.4), PI, -1, 0], [Vector3(-10.0, y, -3.4), 0.0, -1, 0]]
 
 
 func _body_pony(c: Dictionary) -> Dictionary:
@@ -1568,7 +1619,7 @@ func _body_deer(c: Dictionary) -> Dictionary:
 	n.add_child(rod(Vector3(6.5, 18.5, 0), Vector3(10.5, 25, 0), 2.4, 1.7, coat))   # the neck, up
 	n.add_child(blob(Vector3(1.6, 1.9, 1.2), plain(Color("#f2ece0")), Vector3(-9.0, 18.6, 0)))   # a white tail
 	return {"node": n, "sockets": {"head": Vector3(10.8, 25.5, 0), "torso": Vector3(0, 17, 0), "back": Vector3(-5, 21, 0)},
-		"anchors": _four_legs(6.0, -6.5, 13.5, 2.6), "carry": "harness"}
+		"anchors": _four_legs(5.5, -5.5, 14.2, 2.2), "carry": "harness"}   # (at x -7.5, z 2.6 the far hind hip was outside the body)
 
 
 func _head_deer(c: Dictionary) -> Dictionary:
@@ -1690,7 +1741,7 @@ func _body_beetle_rear(c: Dictionary) -> Dictionary:
 	n.add_child(blob(Vector3(4.2, 7.0, 5.4), plate, Vector3(2.5, 16, 0), Vector3(0, 0, -18)))   # pronotum, up like a chest
 	n.add_child(blob(Vector3(4.0, 1.0, 5.6), plain(c.team), Vector3(-4.5, 14.0, 0), Vector3(0, 0, 12)))   # a team band across the wing cases
 	var front := Node3D.new()
-	var hand_r := Vector3(7.5, 13.5, 5.6)
+	var hand_r := Vector3(7.5, 13.5, 7.0)   # (out by the near legs: at 5.6 a spear's butt struck the front knee)
 	var pose := arm_pose(Vector3(3.5, 18, 4), Vector3(6, 15.5, 6), hand_r, Vector3(4, 22.5, 0))
 	front.add_child(rod(Vector3(3.5, 18, 4), pose[0], 0.95, 0.8, limb))
 	front.add_child(rod(pose[0], pose[1], 0.8, 0.6, limb))
@@ -1717,7 +1768,7 @@ func _body_beetle(c: Dictionary) -> Dictionary:
 	# A team-colour cloth over the back (a saddle blanket when ridden).
 	n.add_child(blob(Vector3(5.0, 1.2, 6.6), plain(c.team), Vector3(-1.5, 20.0, 0), Vector3(0, 0, -6)))
 	var hips := [[Vector3(10, 9.5, 6.0), 0.0, 1, 0], [Vector3(2, 9.5, 6.5), 2.1, 1, 0], [Vector3(-7, 9.5, 6.0), 4.2, 1, 1],
-		[Vector3(11, 10, -6.0), 3.14, -1, 0], [Vector3(3, 10, -6.5), 5.2, -1, 0], [Vector3(-6, 10, -6.0), 1.0, -1, 1]]
+		[Vector3(11, 9.5, -6.0), 3.14, -1, 0], [Vector3(3, 9.5, -6.5), 5.2, -1, 0], [Vector3(-6, 9.5, -6.0), 1.0, -1, 1]]
 	harness(n, Vector3(4, 13.5, 0), 7.2, 8.0, Vector3(4, 13.5, 8.0), Vector3(3, 13.5, -8.0))
 	return {"node": n, "sockets": {
 		"head": Vector3(16, 12.5, 0), "hand_r": Vector3(4, 13.5, 8.6), "hand_l": Vector3(3, 13.5, -8.6),
@@ -1762,7 +1813,7 @@ func _leg_insect(c: Dictionary) -> Dictionary:
 # belly, skin3 the spots, skin4 a ring round each spot (none when it is the back's colour), and a
 # fifth colour (skin5) means a jagged crest in it: fire, red eft and crested newts.
 
-const NEWT_SEAT := 19.0   # the saddle's top, before NEWT_SCALE (about the beetle's 21.5 after it)
+const NEWT_SEAT := 17.2   # the saddle cloth's top, before NEWT_SCALE (a rider's hips go here; at 19 they floated over it)
 const NEWT_SCALE := 1.2   # grown so a big frog sits on it, not over it
 
 

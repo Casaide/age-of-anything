@@ -28,6 +28,9 @@ var weapon_rest := Vector2.ZERO
 var weapon_rot := 0.0     # at rest: couched forward on a harness, else upright
 var _hold_suffix := ""
 var _cling_reach := 1.0   # how far a rider's leg stretches down its mount's flank
+var rider_reach := 1.7    # a person riding: how far its leg stretches (to its mount's girth)
+var _girth_drop := 0.0    # ...from its hips to the girth, in its own units (0: not known)
+const CLING_TURN := 0.35  # a rider's leg swings forward this much down the flank
 var _clinging := false    # building a riding creature: legs that hug the mount    # "@hold" on the body being built (its arm posed for its weapon)
 var harnessed := false    # no arms: gear rides on a harness, work is done with the whole body
 const COUCH := Vector2(1.0, -0.3)   # a couched weapon points forward, a little up
@@ -128,12 +131,25 @@ func build(r: Dictionary, lib, team: Color, speed := 10) -> void:
 		# A mount may sit some riders smaller (data: creatures.json "rider_scale", percent by rider
 		# creature): a bulky frog dwarfed the hummingbird it rode (Dominic).
 		seat.scale *= float(mc.get("rider_scale", {}).get(r.creature, 100)) / 100.0
+		if not m.fused:
+			# The rider's hips (its "sit" socket, else the middle of its hip anchors) on the seat, so
+			# every rider sits on the back whatever its build (a fixed drop sank a crouched frog into
+			# its mount and floated others over it: the placement check, A2 "the seat on its mount's back").
+			var hips: Variant = sit_point(r, lib)
+			if hips != null:
+				seat.position = mount_rig.sockets.get("seat", Vector2(0, -20)) - (hips as Vector2) * seat.scale
+				var girth: Variant = mount_rig.sockets.get("girth")
+				if girth != null and not _clinging and hips.y < 0.0 and lib.creatures.get(r.creature, {}).get("rider_legs", "") != "folded":
+					# A person's leg reaches down the barrel to the girth whatever the mount's size and
+					# its own (a fixed stretch left a rat's or a frog's at mid-flank: the placement check).
+					_girth_drop = ((girth as Vector2).y - mount_rig.sockets.seat.y) / seat.scale.y
+					rider_reach = clampf(_girth_drop / (-hips.y * cos(CLING_TURN)), 1.0, 2.6)
 		bob.add_child(seat)
 		seat_node = seat
 		# Every rider shows its near leg down the mount's flank, held still (people had none: Dominic).
 		# A person's leg reaches down the barrel to the girth, longer than its standing stride
 		# (at the seat's scale it ended at the horse's spine: "tiny legs", Dominic).
-		_cling_reach = 1.0 if _clinging else 1.7
+		_cling_reach = 1.0 if _clinging or lib.creatures.get(r.creature, {}).get("rider_legs", "") == "folded" else rider_reach
 		_clinging = not m.fused
 		var rider := _make_rig(lib, r.body, r.head, colours, seat, _clinging, r.parts.get("hand_r", ""))
 		_clinging = false
@@ -176,6 +192,23 @@ func build(r: Dictionary, lib, team: Color, speed := 10) -> void:
 	_face(facing)
 
 
+## Where a rider's body sits on a saddle in this facing (UnitModels.hips, projected): its "sit"
+## socket, else the middle of its hips; null before its body is baked.
+func sit_point(r: Dictionary, lib) -> Variant:
+	var hold := hold_for(lib.part(r.parts.hand_r).tags) if r.parts.has("hand_r") else "low"
+	var id: String = r.body + ("" if hold == "low" else "@" + hold)
+	var rig: Dictionary = PartShape.rigs.get(id + PartShape.facing_suffix(facing_k), {})
+	if rig.get("sockets", {}).has("sit"):
+		return rig.sockets.sit
+	var anchors: Array = rig.get("anchors", [])
+	if anchors.is_empty():
+		return null
+	var sum := Vector2.ZERO
+	for a in anchors:
+		sum += Vector2(float(a[0]), float(a[1]))
+	return sum / anchors.size()
+
+
 ## A siege engine (milestone 13, D-118/D-119): the engine is one baked part in its facings (the
 ## recipe's body), and its crew are the race's own workers (the recipe's `crew`), each a UnitView of
 ## its own on the engine's crew sockets for this facing. A socket's name says how its crew member
@@ -199,7 +232,9 @@ func _build_engine(r: Dictionary, lib, team: Color, colours: Dictionary, speed: 
 	var rig: Dictionary = PartShape.rigs.get(r.body + PartShape.facing_suffix(facing_k), PartShape.rigs.get(r.body, {}))
 	var sockets: Dictionary = rig.get("sockets", {})
 	var depth: Dictionary = rig.get("depth", {})
-	var names: Array = sockets.keys().filter(func(s): return s.begins_with("crew"))
+	# A crew member too big for the frame (a centaur) takes the "_wide" sockets beside it, not "_in".
+	var wide: bool = r.crew.has("mount")
+	var names: Array = sockets.keys().filter(func(s): return s.begins_with("crew") and not s.ends_with("_wide" if not wide else "_in"))
 	names.sort_custom(func(a, b): return float(depth[a]) < float(depth[b]) or (depth[a] == depth[b] and a < b))
 	var cr: Dictionary = r.crew.duplicate(true)
 	cr.merge({"creature": r.creature, "family": r.family, "slot": "worker", "role": "worker", "tier": 1, "name": ""})
@@ -337,8 +372,9 @@ func _make_rig(lib, body_id: String, head_id: String, colours: Dictionary, paren
 		var cut: bool = "legs" in body.get("cut", [])
 		for i in anchors.size():
 			var a: Array = anchors[i]
-			if _clinging and float(a[3]) < 0.0:
-				continue   # a riding creature's far legs are hidden behind its mount
+			if _clinging and (not bool(a[6]) if a.size() > 6 else float(a[3]) < 0.0):
+				continue   # a rider shows the leg on the flank that faces the camera (by its side, not by
+				# how near its hip is: a leg a step ahead counted as near from the far side, Dominic)
 			# A body may give its hind legs their own part (legs.hind: a cat's hock), and bake its
 			# legs posed (legs.poses: steps of a walk) instead of swinging one stiff sprite.
 			var hind: bool = a.size() > 5 and bool(a[5])
@@ -358,12 +394,20 @@ func _make_rig(lib, body_id: String, head_id: String, colours: Dictionary, paren
 			leg.set_meta("z", -1 if under and float(a[3]) > 0.0 else (1 if float(a[3]) > 0.0 else -2))
 			if cut:
 				leg.set_meta("z", 1 if float(a[3]) > 0.0 else 0.5)
-			if a.size() > 4 and int(a[4]) == 1:
-				leg.scale.x = -1.0
+			if a.size() > 4 and int(a[4]) == 1 and not cut:
+				leg.scale.x = -1.0   # (a leg baked at its hip is already turned: UnitModels.leg_basis)
 			if rig.has("anchors") and float(a[3]) < 0.0:
 				leg.shade = 0.78   # the far leg sits in shadow
 			root.add_child(leg)
-			legs.append({"node": leg, "phase": float(a[2]), "cling": _clinging, "reach": _cling_reach if _clinging else 1.0, "rest": leg.position,
+			var reach := _cling_reach if _clinging else 1.0
+			if _clinging and _girth_drop > 0.0 and _cling_reach > 1.0 and leg.bake_of() != null:
+				# Stretched by what its sprite shows (a leg cut by its body shows less than its hip's height).
+				var low := 0.0
+				for p in PartShape.soles(leg.bake_of()):
+					low = maxf(low, p.y)
+				if low > 0.0:
+					reach = clampf(_girth_drop / (low * cos(CLING_TURN)), 1.0, 2.6)
+			legs.append({"node": leg, "phase": float(a[2]), "cling": _clinging, "reach": reach, "rest": leg.position,
 				"base": leg_id + pose, "walk_id": leg_id, "steps": int(body.legs.get("poses", 0)) if pose == "" else 0})
 
 	var body_node := _shape()
@@ -684,7 +728,7 @@ func _process(delta: float) -> void:
 		_hop(ph, stride)
 	else:
 		for leg in legs:
-			leg.node.rotation = 0.35 if leg.cling else sin(ph + leg.phase) * gait.swing * stride
+			leg.node.rotation = CLING_TURN if leg.cling else sin(ph + leg.phase) * gait.swing * stride
 			leg.node.scale.y = leg.reach
 			if leg.steps > 0:
 				# Posed legs: the walk's step for where this leg is in its cycle (baked 3D poses).
@@ -697,7 +741,8 @@ func _process(delta: float) -> void:
 		var hover := 0.0
 		if flying:
 			hover = -9.0 + sin(t * 3.0) * 2.0
-		bob.position.y = hover - absf(sin(ph)) * gait.bob * stride
+		var plant: Variant = _planted() if stride > 0.0 and not flying else 0.0
+		bob.position.y = hover + (plant if plant != null else -absf(sin(ph)) * gait.bob * stride)
 		bob.rotation = sin(ph * gait.rock_rate) * gait.rock * stride
 	if head_node:
 		head_node.rotation = 0.0
@@ -747,6 +792,31 @@ func _process(delta: float) -> void:
 		var px := 1.0 / art_px
 		var snapped := Vector2(roundf(g.x / px) * px, roundf(g.y / px) * px)
 		visual.position += (snapped - g) / maxf(global_transform.get_scale().x, 0.0001)
+
+
+## How far to move the body so its lowest foot stays where it stands while the legs swing (the
+## walk rides on its planted foot: no foot through the ground, none floating; the placement check,
+## B5): the lowest sole now against the lowest standing. Null before the legs are baked.
+func _planted() -> Variant:
+	var rest_low := -INF
+	var now_low := -INF
+	for leg in legs:
+		if leg.cling:
+			continue
+		var n: PartShape = leg.node
+		var now: Variant = n.bake_of()
+		var rest: Variant = n.bake_of(leg.base) if leg.steps > 0 else now
+		if now == null or rest == null:
+			return null
+		var t := Transform2D(n.rotation, n.scale, 0.0, n.position)
+		var t0 := Transform2D(0.0, n.scale, 0.0, n.position)
+		for p in PartShape.soles(now):
+			now_low = maxf(now_low, (t * p).y)
+		for p in PartShape.soles(rest):
+			rest_low = maxf(rest_low, (t0 * p).y)
+	if now_low == -INF:
+		return null
+	return rest_low - now_low
 
 
 ## A blow (T1): the body lunges forward and the near leg steps; the arm swings through its
@@ -1135,6 +1205,20 @@ func _pose_tick(delta: float) -> void:
 
 ## The extra parts a recipe is drawn with beyond what one build shows: its body's idle poses
 ## and its legs in them, and the steps of a posed walk (art_kit bakes these with the rest).
+## Every leg a body draws, one per hip for a body whose legs bake at each hip ("cut").
+static func leg_parts(lib, body_id: String) -> Array:
+	var body: Dictionary = lib.part(body_id)
+	if not body.has("legs"):
+		return []
+	var out := []
+	for i in body.legs.anchors.size():
+		var a: Array = body.legs.anchors[i]
+		var hind: bool = a.size() > 5 and bool(a[5])
+		var leg_id: String = body.legs.get("hind", body.legs.part) if hind else body.legs.part
+		out.append(leg_id + ("~%s^%d" % [body_id, i] if "legs" in body.get("cut", []) else ""))
+	return out
+
+
 static func pose_parts(lib, r: Dictionary) -> Array:
 	if r.has("crew"):
 		return []

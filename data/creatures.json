@@ -5,6 +5,8 @@
   "plural": "Frogs",
   "body": "body.frog",
   "head": "head.frog",
+  "rider_legs": "folded",
+  "_rider_legs_doc": "folded: rides with its legs folded against the flank, as it sits (not stretched down to the girth like a person's)",
   "playable": true,
   "skins": [
    "frog_green",
