@@ -192,11 +192,15 @@
  ],
  "_roster_doc": "each slot is a unit line: its first age (`tier`), the building that trains it, its name on the tech tree page, and `last_age` when it stops before the last age. Slots with \"status\": \"planned\" are only on the page: the generator skips them (milestone 12). `upgrades`: false keeps the first unit for every later age (no second tier: the healer). `own_seed`: the line draws from its own random stream (prompt + slot), so adding it leaves every other line's recipes as they were. `engine`: a siege line: its body is the engine of that name in the race's take (families.json `siege`, a creature's own `siege` first), crewed by the race's workers. `bonus`: attack bonus by class that the line gets whatever it holds (the swordsman's counters: spears, skirmishers, buildings; pricing.gd), and `price_points`: what that bonus adds to the line's price points",
  "cost": {
-  "base": 60,
+  "base": 100,
   "curve": "pow1.4_ref12",
   "train_curve": "pow0.5_ref12",
   "train_base": 20,
   "roles": {
+   "ram": {"pct": 60},
+   "catapult": {"pct": 60},
+   "bolt_thrower": {"pct": 60},
+   "siege_tower": {"pct": 60},
    "worker": {
     "floor": 50,
     "mix": {
@@ -204,7 +208,7 @@
     }
    }
   },
-  "roles_note": "a role's own price terms (pricing.gd): the total is at least floor (before the creature's cost_pct), and mix replaces the parts' cost_mix"
+  "roles_note": "a role's own price terms (pricing.gd): pct of the base price (soldiers went from base 60 to 100, about 1.7x, D-125; siege engines kept at 60%), then the total is at least floor (before the creature's cost_pct), and mix replaces the parts' cost_mix"
  },
  "animals": true,
  "economy": {
