@@ -10,7 +10,7 @@ extends RefCounted
 ## Bump to throw every cache away by hand (e.g. after an engine upgrade that renders differently).
 const FORMAT := 1
 const ROOT := "user://bake_cache"
-const KEEP := 3       # versions kept on disk
+const KEEP := 12      # versions kept on disk (a few MB each; several checkouts and worktrees share user://, so few would evict each other)
 ## What the baked look comes from. Folders are hashed file by file (sorted).
 const SOURCES := ["res://src/view/art/art_kit.gd", "res://src/view/art/bake/", "res://scenes/art_pixel/part_baker.gd",
 	"res://scenes/art_pixel/pixelize.gd", "res://scenes/art_pixel/prop_models.gd", "res://scenes/art_pixel/unit_models.gd", "res://scenes/art_pixel/siege_models.gd", "res://scenes/art_pixel/tree_models.gd", "res://scenes/art_pixel/bridge_models.gd", "res://scenes/art_pixel/town_props.gd",

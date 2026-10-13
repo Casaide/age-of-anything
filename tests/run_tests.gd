@@ -1,6 +1,7 @@
 extends SceneTree
 ## Headless checks for the race generator and composer.
-## Run: godot --headless --path . --script res://tests/run_tests.gd
+## Run: godot --headless --path . --script res://tests/run_tests.gd [-- placement]
+## The 3D placement check (~40 s) only with "placement"; tests/batch.sh runs it (placement_check.gd 3d).
 
 const DataLib := preload("res://src/data_lib.gd")
 const Generator := preload("res://src/race_generator.gd")
@@ -50,7 +51,8 @@ func _init() -> void:
 	_test_paths()
 	_test_tech_tree(lib, gen, rules)
 	_test_scripts_parse()
-	_test_placement(lib)
+	if "placement" in OS.get_cmdline_user_args():   # (the batch runs it as placement_check.gd 3d, side by side)
+		_test_placement(lib)
 
 	print("\n%d checks, %d failed" % [checks, failures])
 	quit(1 if failures > 0 else 0)

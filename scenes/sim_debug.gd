@@ -233,10 +233,7 @@ func _ready() -> void:
 	palette.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	var pm := ShaderMaterial.new()
 	pm.shader = load("res://src/view/art/palette_screen.gdshader")
-	var pal: Image = ArtKit.palette(lib)
-	pm.set_shader_parameter("palette", ImageTexture.create_from_image(pal))
-	pm.set_shader_parameter("count", pal.get_width())
-	palette.material = pm
+	palette.material = pm   # (its palette is made when P first shows it)
 	palette.visible = false
 	post.add_child(palette)
 
@@ -720,6 +717,10 @@ func _debug_key(event: InputEventKey) -> void:
 		KEY_F3:
 			show_flow = not show_flow
 		KEY_P:
+			if palette.material.get_shader_parameter("palette") == null:   # made the first time it's shown (it takes seconds)
+				var pal: Image = ArtKit.palette(lib)
+				palette.material.set_shader_parameter("palette", ImageTexture.create_from_image(pal))
+				palette.material.set_shader_parameter("count", pal.get_width())
 			palette.visible = not palette.visible
 		KEY_F5:
 			Replay.save(Replay.record(world), REPLAY_PATH)
