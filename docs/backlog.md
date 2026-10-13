@@ -114,7 +114,9 @@ still maps the brief onto parts within host rules.
 - An in-game part editor built on the same primitives (dome, brim, crest, plume, strap, visor...).
 - Parts shared by key, with popular ones promoted into the official library.
 - Moderation and IP policy for shared content (people will immediately make famous film franchise civs).
-  Decentralised distribution still needs a stance.
+  Decentralised distribution still needs a stance. (2026-10-13: mods and their IP stance are milestone 21,
+  `docs/milestones/m21-modability.md`: official content original, franchise mods the players' own and
+  private; a player-facing policy page before any public sharing.)
 
 ## 8. Game content
 

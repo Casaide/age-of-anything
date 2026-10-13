@@ -1,0 +1,13 @@
+[
+ {
+  "id": "weapon.gladius",
+  "slot": "hand_r",
+  "tags": [
+   "melee"
+  ],
+  "stats": {
+   "attack": 1
+  },
+  "points": 1
+ }
+]

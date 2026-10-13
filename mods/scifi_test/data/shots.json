@@ -1,0 +1,4 @@
+{
+ "_doc": "A pulse rifle's shot: a short bolt of light, flat and fast, with a halo; it doesn't stick in the ground. Called for by the weapon's 'energy' tag.",
+ "pulse": {"tag": "energy", "speed": 980, "arc": 0.0, "len": 8, "w": 1.6, "col": "#d8fbff", "glow": "#38c8ff", "sticks": false, "sound": "shoot_ball"}
+}

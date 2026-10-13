@@ -430,6 +430,8 @@ func _check_brow(label: String, view: String, gear: Dictionary, head: Dictionary
 	for q in hv:
 		mid += Geom.centre(q)
 	mid /= maxf(hv.size(), 1)
+	if lib.part(gear.id).get("face", "") == "sealed":
+		return   # a sealed helmet (a mod's visor helmet, milestone 21): the whole face is behind it, by design
 	var covered := 0
 	for e in eyes:
 		var c: Vector3 = e.get_center()

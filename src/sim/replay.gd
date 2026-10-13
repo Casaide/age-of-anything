@@ -94,13 +94,13 @@ static func build_world(rep: Dictionary, lib: DataLib) -> World:
 	var gen := Generator.new(lib)
 	var races := []
 	for r in rep.races:
-		var rules = DataLib.load_json("res://data/rules/%s.json" % r.rules)
+		var rules = DataLib.load_rules(r.rules)
 		var race: Dictionary = gen.generate(r.prompt, rules, r.reroll)
 		assert(race.key == r.key, "Race '%s' regenerated with key %s, replay has %s" % [r.prompt, race.key, r.key])
 		races.append(race)
 	var map: SimMap = SimMap.load_id(rep.map)
 	assert(map.map_hash == rep.map_hash, "Map %s has changed since the replay was recorded" % rep.map)
-	var rules = rep.rules_data if rep.has("rules_data") else DataLib.load_json("res://data/rules/%s.json" % rep.rules)
+	var rules = rep.rules_data if rep.has("rules_data") else DataLib.load_rules(rep.rules)
 	assert(rules_hash(rules) == rep.rules_hash, "Rules %s have changed since the replay was recorded" % rep.rules)
 	var world := World.new(rep.seed, map, races, rules, rep.get("teams", []))
 	for cmd in rep.commands:

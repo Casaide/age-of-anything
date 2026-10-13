@@ -39,8 +39,31 @@ const HEAL_GLOW := 0.35   # a soft brightening, well under a hit's flash
 const HEAL_MOTE := Color("#e4f4c0")
 
 
-## The shot a weapon's tags call for.
+const Mods := preload("res://src/mods.gd")
+
+
+## A shot's look: the game's (SHOTS) or one a mod adds (its shots.json: a "tag" that calls for it,
+## colours as "#rrggbb", "glow": a soft halo round it, "sticks": false for a bolt of light).
+static func style(kind: String) -> Dictionary:
+	if not Mods.shots.has(kind):
+		return SHOTS[kind]
+	var s: Dictionary = Mods.shots[kind].duplicate()
+	s.col = Color(s.col)
+	for key in ["arc", "len", "w"]:
+		s[key] = float(s.get(key, 0.0))
+	s.speed = float(s.speed)
+	if s.has("glow"):
+		s.glow = Color(s.glow)
+	return s
+
+
+## The shot a weapon's tags call for (a mod's look first, by its tag, in sorted order).
 static func shot_kind(tags: Array) -> String:
+	var mod_kinds := Mods.shots.keys()
+	mod_kinds.sort()
+	for k in mod_kinds:
+		if Mods.shots[k].tag in tags:
+			return k
 	if "great_sling" in tags:
 		return "sling_stone"
 	if "catapult" in tags:
@@ -62,7 +85,7 @@ static func shot_kind(tags: Array) -> String:
 
 ## The sound a shot of this kind makes as it leaves (its own "shoot_<kind>", or one it shares).
 static func shot_sound(kind: String) -> String:
-	return SHOTS[kind].get("sound", "shoot_" + kind)
+	return style(kind).get("sound", "shoot_" + kind)
 
 
 ## A catapult's stone lands: a burst of dirt over the area it hurts (radius in canvas px), a
@@ -79,7 +102,7 @@ func splash(at: Vector2, r: float) -> void:
 ## A shot flies, for `dur` seconds (the sim's flight) or, without one, at the weapon's own pace;
 ## returns how long it takes to land.
 func shoot(from: Vector2, to: Vector2, kind: String, dur := -1.0) -> float:
-	var s: Dictionary = SHOTS[kind]
+	var s: Dictionary = style(kind)
 	if dur <= 0.0:
 		dur = maxf(0.08, from.distance_to(to) / s.speed)
 	shots.append({"from": from, "to": to, "t": 0.0, "dur": dur, "kind": kind})
@@ -90,7 +113,8 @@ func shoot(from: Vector2, to: Vector2, kind: String, dur := -1.0) -> float:
 ## or a ball just kicks up a little dirt).
 func stick(at: Vector2, kind: String) -> void:
 	dusts.append({"pos": at, "t": 0.0, "size": 1.5})
-	if SHOTS[kind].len > 0.0:
+	var st := style(kind)
+	if st.len > 0.0 and st.get("sticks", true):
 		stuck.append({"pos": at + Vector2(randf_range(-1.5, 1.5), randf_range(-1.0, 1.0)), "t": 0.0, "kind": kind, "tilt": randf_range(-0.6, 0.6)})
 
 
@@ -188,7 +212,7 @@ func _process(delta: float) -> void:
 
 func _draw() -> void:
 	for s in stuck:   # half buried, leaning, fading at the end
-		var st: Dictionary = SHOTS[s.kind]
+		var st: Dictionary = style(s.kind)
 		var a: float = clampf((STUCK_TIME - s.t) / 0.6, 0.0, 1.0)
 		# Longer, darker and outlined than in flight: small pale shafts vanished into the grass (Dominic).
 		var up: Vector2 = Vector2(sin(s.tilt), -cos(s.tilt)) * float(st.len) * 0.9
@@ -198,7 +222,7 @@ func _draw() -> void:
 		draw_line(s.pos, s.pos + up, Color(Color(st.col).darkened(0.35), a), w)
 		draw_circle(s.pos + up, w * 0.9, Color(0.92, 0.9, 0.84, a))   # the fletching
 	for s in shots:
-		var st: Dictionary = SHOTS[s.kind]
+		var st: Dictionary = style(s.kind)
 		var k: float = s.t / s.dur
 		var from: Vector2 = s.from
 		var to: Vector2 = s.to
@@ -207,6 +231,8 @@ func _draw() -> void:
 		var k2 := minf(k + 0.03, 1.0)
 		var ahead := from.lerp(to, k2) - Vector2(0, h * 4.0 * k2 * (1.0 - k2))
 		var dir := (ahead - p).normalized()
+		if st.has("glow"):   # a bolt of light: a soft halo under its core
+			draw_line(p - dir * st.len * 0.6, p + dir * st.len * 0.6, Color(st.glow, 0.35), st.w * 2.2)
 		if st.len > 0.0:
 			draw_line(p - dir * st.len * 0.5, p + dir * st.len * 0.5, st.col, st.w)
 		else:

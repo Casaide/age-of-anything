@@ -79,7 +79,7 @@ func _ready() -> void:
 	set_anchors_preset(Control.PRESET_FULL_RECT)
 	lib = DataLib.new()
 	gen = Generator.new(lib)
-	rules = DataLib.load_json("res://data/rules/default.json")
+	rules = DataLib.load_rules("default")
 	kit = ArtKit.new()
 	kit.lib = lib
 	add_child(kit)

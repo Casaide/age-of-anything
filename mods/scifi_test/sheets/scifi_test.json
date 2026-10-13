@@ -1,0 +1,24 @@
+{
+ "name": "scifi_test",
+ "title": "Mod scifi_test: future soldiers beside a human spearman and a Roman legionary",
+ "_doc": "The scifi_test mod's sheet (milestone 21). Run: godot --path . --audio-driver Dummy --always-on-top --script res://tests/sheet.gd -- mods/scifi_test/sheets/scifi_test.json out_dir",
+ "mods": ["scifi_test"],
+ "rules": "anything",
+ "zooms": [3, 1],
+ "cell": [70, 60],
+ "size": [{"prompt": "romans", "slot": "spear"}, {"prompt": "romans", "slot": "infantry", "age": 2}],
+ "rows": [
+  {"label": "future soldiers\nPulse Trooper (age 2)", "unit": {"prompt": "future soldiers", "slot": "skirmisher", "age": 2}},
+  {"label": "future soldiers\nHeavy Pulse Trooper (age 3)", "unit": {"prompt": "future soldiers", "slot": "skirmisher", "age": 3}},
+  {"label": "future soldiers\nBlade Trooper (age 2)", "unit": {"prompt": "future soldiers", "slot": "infantry", "age": 2}},
+  {"label": "space marines\nSpearbearer (age 1)", "unit": {"prompt": "space marines", "slot": "spear"}},
+  {"label": "sewer rats from the future\nPulse Trooper Rat", "unit": {"prompt": "sewer rats from the future", "slot": "skirmisher", "age": 2}},
+  {"label": "romans: Spearbearer\n(for scale)", "unit": {"prompt": "romans", "slot": "spear"}},
+  {"label": "romans: Legionary\n(for scale)", "unit": {"prompt": "romans", "slot": "infantry", "age": 2}}
+ ],
+ "sheets": [
+  {"name": "facings", "title": "8 facings, standing", "columns": "facings"},
+  {"name": "walk", "title": "walking (facings 1 and 3)", "columns": "walk:1,3"},
+  {"name": "firing", "title": "firing: the release and the pulse bolt", "columns": "shots"}
+ ]
+}

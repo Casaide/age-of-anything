@@ -26,6 +26,7 @@ along the way. The overview table lives in `../mvp-plan.md` §3; these files hol
 | 18 | [Match rules](m18-match-rules.md) | planned (small, any time) |
 | 19 | [UI that feels like the game](m19-ui.md) | in progress (theme, loaders, lobby done) |
 | 20 | [Steam Deck and controllers](m20-steam-deck.md) | planned |
+| 21 | [Modability](m21-modability.md) | in progress (loader MVP, example mod, agent tooling done) |
 | - | [Art pass](art-pass.md) | direction chosen, vertical slice done |
 | - | [Art and UI track](art-ui-track.md) | A1 = milestone 5; later stages run alongside milestones 7-10 |
 | - | [Networking](networking.md) | planned (after the demo) |

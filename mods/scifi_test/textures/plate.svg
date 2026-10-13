@@ -1,0 +1,18 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="128" height="128" viewBox="0 0 128 128">
+<!-- Armour plate (scifi_test mod, original): a pale moulded surface with faint panel seams and scuffs; tileable. -->
+<rect width="128" height="128" fill="#d6dadf"/>
+<rect x="0" y="0" width="128" height="64" fill="#dde1e6"/>
+<rect x="0" y="63" width="128" height="2" fill="#a9b0b8"/>
+<rect x="0" y="127" width="128" height="1" fill="#a9b0b8"/>
+<rect x="63" y="0" width="2" height="64" fill="#a9b0b8"/>
+<rect x="30" y="64" width="2" height="64" fill="#a9b0b8"/>
+<rect x="95" y="64" width="2" height="64" fill="#a9b0b8"/>
+<circle cx="8" cy="8" r="1.6" fill="#9aa1a9"/>
+<circle cx="56" cy="8" r="1.6" fill="#9aa1a9"/>
+<circle cx="72" cy="56" r="1.6" fill="#9aa1a9"/>
+<circle cx="38" cy="72" r="1.6" fill="#9aa1a9"/>
+<circle cx="104" cy="120" r="1.6" fill="#9aa1a9"/>
+<path d="M14 30 l18 3 M80 22 l10 -2 M48 96 l14 4 M104 84 l9 2" stroke="#bfc5cc" stroke-width="1.2"/>
+<rect x="0" y="0" width="128" height="6" fill="#e9ecef" opacity="0.6"/>
+<rect x="0" y="66" width="128" height="5" fill="#e9ecef" opacity="0.5"/>
+</svg>

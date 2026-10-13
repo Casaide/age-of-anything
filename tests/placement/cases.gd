@@ -74,6 +74,7 @@ static func all(lib, lines := true) -> Array:
 		cases.append(["animal %s" % u.recipe.body, u])
 	cases += kit_cases(lib)
 	cases += composite_cases(lib)
+	cases += mod_cases(lib)
 	return cases
 
 
@@ -109,6 +110,27 @@ static func composite_cases(lib) -> Array:
 		for res in pushes:
 			cases.append(["composite: %s worker pushing %s home" % [p, res], {"recipe": UnitView.push_recipe(w.recipe, pushes[res]), "eval": w.eval}])
 	return cases
+
+
+## The mods in use (src/mods.gd; AOW_MODS=scifi_test): every unit, at every age of its line, of each
+## prompt the mod's manifest lists under "check" (under its rules) that wears or holds one of the mod's
+## parts (the rest is the game's own kit, checked above), labelled "mod <id>: ...".
+static func mod_cases(lib) -> Array:
+	var gen = Generator.new(lib)
+	var out := []
+	for rec in DataLib.Mods.active:
+		var chk: Dictionary = rec.manifest.get("check", {})
+		var rules = DataLib.load_rules(chk.get("rules", "default"))
+		var own: Array = rec.data.get("parts.json", []).map(func(q): return q.id)
+		for p in chk.get("prompts", []):
+			for u in gen.generate(p, rules).units:
+				var seen := {}
+				for s in u.get("line", [{"recipe": u.recipe, "eval": u.eval}]):
+					var sig := JSON.stringify(s.recipe.parts, "", true)
+					if not seen.has(sig) and s.recipe.parts.values().any(func(id): return id in own):
+						seen[sig] = true
+						out.append(["mod %s: %s %s age %d" % [rec.id, p, s.recipe.slot, int(s.recipe.get("age", s.recipe.tier))], {"recipe": s.recipe, "eval": s.eval}])
+	return out
 
 
 ## Creature-kit creatures (scenes/art_pixel/creature_kit.gd), staged from their data files: the cat

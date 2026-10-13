@@ -1,0 +1,13 @@
+[
+ {
+  "id": "weapon.nothing_here",
+  "slot": "hand_r",
+  "tags": [
+   "melee"
+  ],
+  "stats": {
+   "attack": 1
+  },
+  "points": 1
+ }
+]
