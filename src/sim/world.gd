@@ -36,6 +36,7 @@ const Garrison := preload("res://src/sim/garrison.gd")
 const Shots := preload("res://src/sim/shots.gd")
 const Trade := preload("res://src/sim/trade.gd")
 const Walls := preload("res://src/sim/walls.gd")
+const Repair := preload("res://src/sim/repair.gd")
 
 const TICK_HZ := 20
 const HASH_EVERY := 30
@@ -163,6 +164,7 @@ var bridge_cfg: Dictionary     # data/bridges.json, as vectors (bridges.gd)
 var trail_cfg: Dictionary      # rules.trails as ints (trails.gd)
 var garrison_cfg: Dictionary   # buildings.json garrison: heal_every, call_range, not (garrison.gd)
 var walk_cfg: Dictionary       # buildings.json walkway and breach, as ints (walls.gd)
+var repair_cfg: Dictionary     # buildings.json repair: speed_pct, cost_pct (repair.gd)
 var wall_cache := {}           # walkway cell -> its network's steps from it, for this tick (walls.gd); derived
 var wall_cache_tick := -1
 var rubble := {}               # breach cell -> [terrain it was, owner, building type, x, y, along] (walls.gd)
@@ -216,6 +218,7 @@ func _init(p_seed: int, p_map: SimMap, p_races: Array, p_rules: Dictionary, p_te
 	Tech.setup(self)
 	Garrison.setup(self)
 	Walls.setup(self)
+	Repair.setup(self)
 	Market.setup(self)
 	Economy.setup(self)
 	lost.append(0)   # gaia's
@@ -372,6 +375,7 @@ func step() -> void:
 	Economy.work(self)
 	Trade.tick(self)
 	_pack()
+	Repair.tick(self)
 	Garrison.tick(self)
 	Walls.tick(self)
 	Animals.tick(self)
@@ -515,6 +519,9 @@ func _run(cmd: Dictionary) -> void:
 		Commands.GARRISON:
 			_clear_combat(cmd.player, a.ids)
 			Garrison.cmd_garrison(self, cmd.player, a)
+		Commands.REPAIR:
+			_clear_combat(cmd.player, a.ids)
+			Repair.cmd_repair(self, cmd.player, a)
 		Commands.UNGARRISON:
 			Garrison.cmd_ungarrison(self, cmd.player, a)
 		Commands.CALL_TO_ARMS:
@@ -540,7 +547,7 @@ func _run(cmd: Dictionary) -> void:
 
 ## Unit orders that meet walls you stand on (walls.gd).
 const WALL_ORDERS := [Commands.MOVE, Commands.ATTACK, Commands.ATTACK_MOVE, Commands.GATHER, Commands.BUILD, Commands.HELP_BUILD,
-	Commands.DROP_OFF, Commands.GARRISON, Commands.PEN, Commands.RESEED]
+	Commands.DROP_OFF, Commands.GARRISON, Commands.PEN, Commands.RESEED, Commands.REPAIR]
 
 
 ## Walls you stand on, before an order runs: a MOVE onto a walkway sends those who may climb up

@@ -3969,6 +3969,7 @@ func _test_walls(races: Array) -> void:
 
 const Fortify := preload("res://src/sim/fortify.gd")
 const Walls := preload("res://src/sim/walls.gd")
+const Repair := preload("res://src/sim/repair.gd")
 
 
 func _walls_run(races: Array, checks_on: bool) -> World:
@@ -4097,4 +4098,31 @@ func _walls_run(races: Array, checks_on: bool) -> World:
 	c.call(paid == full * int(w.walk_cfg.repair_pct) / 100, "walls: rebuilding a breach costs %d%% (%d of %d stone)" % [w.walk_cfg.repair_pct, paid, full])
 	var nb2 := w.buildings.index_of(w.map.occupied[cell])
 	c.call(nb2 >= 0 and w.buildings.done[nb2] == 1 and w.map.terrain_at(cell) != "wall_rubble" and not w.rubble.has(cell), "walls: the breach is walled up again, the rubble gone")
+	# Repair: a wall at half health mended by the worker (paying some stone), and a ram.
+	var wb: int = w.buildings.index_of(w.map.occupied[cell + w.map.width])
+	var full_hp: int = w.bmods[0][w.buildings.kind[wb]].hp
+	w.buildings.hp[wb] = full_hp / 2
+	stone = w.stock[w.resources.find("stone")][0]
+	w.issue(0, Commands.REPAIR, {"ids": [worker], "target": w.buildings.id[wb]})
+	for t in 2400:
+		w.step()
+		if w.buildings.hp[wb] >= full_hp:
+			break
+	c.call(w.buildings.hp[wb] == full_hp, "walls: a worker mends a damaged wall (%d of %d hp)" % [w.buildings.hp[wb], full_hp])
+	c.call(w.stock[w.resources.find("stone")][0] < stone or full * int(w.repair_cfg.cost_pct) / 100 / 20 == 0, "walls: mending costs a little stone")
+	# The frogs' ram is a beast (healers mend it, not carpenters); the rats' is a machine their workers mend.
+	var turtle := _lone(w, 0, "ram", 16500, 13500, "passive")
+	w.units.hp[w.units.index_of(turtle)] = 40
+	c.call(not Repair.can_mend(w, 0, turtle), "walls: a beast ram isn't for mending")
+	var ram := _lone(w, 1, "ram", 40500, 40500, "passive")
+	var rat := _lone(w, 1, "worker", 42500, 40500, "passive")
+	var ri := w.units.index_of(ram)
+	w.units.hp[ri] = 40
+	w.stock[w.resources.find("wood")][1] = 500
+	w.stock[w.resources.find("gold")][1] = 500
+	w.issue(1, Commands.REPAIR, {"ids": [rat], "target": ram})
+	for t in 600:
+		w.step()
+	ri = w.units.index_of(ram)
+	c.call(w.units.hp[ri] > 60, "walls: a worker mends a machine ram (40 -> %d hp)" % w.units.hp[ri])
 	return w

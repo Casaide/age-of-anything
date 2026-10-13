@@ -52,6 +52,8 @@ const Combat := preload("res://src/sim/combat.gd")
 const Abilities := preload("res://src/sim/abilities.gd")
 const Replay := preload("res://src/sim/replay.gd")
 const Bot := preload("res://src/ai/bot.gd")
+const Walls := preload("res://src/sim/walls.gd")
+const Repair := preload("res://src/sim/repair.gd")
 const WALL_PX := 22.0   # how high a walkway is drawn over the ground (a stone wall's top at 1x)
 const TOWER_TOP := 1.5  # a wall tower's top, as walkways go
 const TechTreeModel := preload("res://src/view/tech_tree_model.gd")
@@ -1217,6 +1219,16 @@ func smart_order(pos: Vector2) -> void:
 			world.issue(p, Commands.GATHER, {"ids": ids, "cell": cell, "queue": q})
 		elif land.bridge_at(cell) >= 0 and world.bridge_up[land.bridge_at(cell)] == 0 and not _selected_workers().is_empty():
 			world.issue(p, Commands.HELP_BUILD, {"ids": ids, "target": world.bridge_id[land.bridge_at(cell)], "queue": q})   # rebuild a broken bridge
+		elif foe != 0 and not _selected_workers().is_empty() and Repair.can_mend(world, p, foe):
+			world.issue(p, Commands.REPAIR, {"ids": ids, "target": foe, "queue": q})   # mend our siege engine
+		elif bid == 0 and not _selected_workers().is_empty() and not Walls.rebuild_of(world, p, cell).is_empty():
+			var r := Walls.rebuild_of(world, p, cell)   # wall up our breach again
+			world.issue(p, Commands.BUILD, {"ids": ids, "building": r.building, "cx": r.cx, "cy": r.cy, "along": r.along, "queue": q})
+		elif bid != 0 and not _selected_workers().is_empty() and Repair.can_mend(world, p, bid):
+			world.issue(p, Commands.REPAIR, {"ids": ids, "target": bid, "queue": q})   # mend our damaged building
+		elif bid != 0 and Walls.places(world, cell) > 0 and world.teams[world.buildings.owner[world.buildings.index_of(bid)]] == world.teams[p] \
+				and _selected_workers().is_empty():
+			world.issue(p, Commands.MOVE, {"ids": ids, "x": m.x, "y": m.y, "queue": q})   # up onto our wall (walls.gd: those who can't climb walk to it)
 		elif bid != 0 and _is_foundation_of(bid, p):
 			world.issue(p, Commands.HELP_BUILD, {"ids": ids, "target": bid, "queue": q})
 		elif bid != 0 and _trade_market(bid, p, ids):

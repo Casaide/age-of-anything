@@ -106,6 +106,11 @@
   "repair_pct": 40
  },
  "_breach_doc": "breaches (milestone 16, src/sim/walls.gd): a wall piece of a type in `from` destroyed leaves its cells as `terrain` (walkable rubble) belonging to its owner; a worker of that player ordered onto the rubble rebuilds the piece that stood there for repair_pct of its cost. Anything built on rubble clears it",
+ "repair": {
+  "speed_pct": 50,
+  "cost_pct": 50
+ },
+ "_repair_doc": "repair (milestone 16, src/sim/repair.gd): a worker mends its side's damaged building or siege engine at speed_pct of the pace it was built (or trained), paying cost_pct of its price over a whole mend, a twentieth at a time",
  "variants": {
   "house": 4
  },
