@@ -27,6 +27,7 @@ const Bridges := preload("res://src/sim/bridges.gd")
 const Garrison := preload("res://src/sim/garrison.gd")
 const Fog := preload("res://src/sim/fog.gd")
 const Shots := preload("res://src/sim/shots.gd")
+const Abilities := preload("res://src/sim/abilities.gd")
 
 ## units.stance, what a unit is doing: nothing, an ordered target, a fight it found
 ## itself, an attack-move, or walking back to where it stood (defensive units).
@@ -1063,10 +1064,15 @@ static func _nearest_foe(w, i: int, sight: int, buildings_too: bool, engaged: Pa
 ## Kills that pay (a race bonus, Tech.retype `kill_gold`: Aztec kills bring in gold): the killer's
 ## owner gets its type's gold for each enemy unit (not animals) its last blow killed this tick,
 ## if the killer is still about. In slot order, before anyone is removed.
+## (Sticky hits too: a unit hit by a type with `slow_on_hit`, Sticky Silk, is slowed: Abilities.stick.)
 static func _bounties(w, hurt: PackedInt32Array, hurt_by: PackedInt32Array) -> void:
 	var u = w.units
 	var gold: int = w.resources.find("gold")
 	for j in hurt.size():
+		if hurt[j] > 0 and u.hp[j] > 0:
+			var by: int = u.index_of(hurt_by[j])
+			if by >= 0 and int(w.types[u.kind[by]].slow_on_hit) > 0:
+				Abilities.stick(w, j, int(w.types[u.kind[by]].slow_on_hit))
 		if hurt[j] == 0 or u.hp[j] > 0 or w.types[u.kind[j]].has("animal"):
 			continue
 		var k: int = u.index_of(hurt_by[j])
