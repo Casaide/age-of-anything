@@ -38,6 +38,7 @@ static func run(pc, holder: Node2D, lib, kit) -> Array:
 		["newt legs folded up off the ground facing left (the legs not turned to their side: Dominic)",
 			"frog on newt_fire", ["B5 a near foot in sight", "B5 standing feet on the ground"], "unturned", Callable()],
 	]
+	list += composite_fixtures()
 	await pc.bake(kit, list.map(func(f): return cases[f[1]]))
 	var ok := true
 	var lines := []
@@ -184,3 +185,38 @@ static func _armour_with_body(v) -> void:
 static func _old_bob(v, pose: String) -> void:
 	if pose.begins_with("walk"):
 		v.bob.position.y = -absf(sin(v.phase)) * float(v.gait.bob)
+
+
+## Composites put back (tests/placement/composite_2d.gd): TC1 A for rats as Dominic saw it ("this is
+## bugged, did the tests not catch it?"): the hauler's layer was its side's plus a little, over every crew
+## member on that side, so the rat leading the cat drew under the cat and stood inside it.
+static func composite_fixtures() -> Array:
+	return [
+		["the rat leading TC1 A's cat drawn under the cat (the hauler layered over every crew member on its side)",
+			"composite: sewer rats tc1_a_junk hauled by a cat", ["C4 composite members drawn in depth order"], "", func(v, _pose): _hauler_over_crew(v)],
+		["the hauling cat's near hind leg gone in its walk (a member's walk steps were never checked, nor baked)",
+			"composite: sewer rats tc1_a_junk hauled by a cat", ["B6 every hip's leg in every walk step"], "", func(v, pose): _hauler_hind_leg_gone(v, pose)],
+	]
+
+
+## The layers as UnitView first gave them (round TC1): crew by their own order, a hauler over them all.
+static func _hauler_over_crew(v) -> void:
+	var n := 0
+	for c in v.crew:
+		var side := 1.0 if float(c.view.get_meta("z", 0.0)) > 0.0 else -1.0
+		if c.socket.begins_with("haul"):
+			c.view.set_meta("z", side + 0.005)
+		else:
+			c.view.set_meta("z", side + n * 0.01)
+			n += 1
+
+
+## The hauler's near hind leg not drawn while it walks.
+static func _hauler_hind_leg_gone(v, pose: String) -> void:
+	if not pose.begins_with("walk"):
+		return
+	for c in v.crew:
+		if c.socket.begins_with("haul"):
+			for leg in c.view.legs:
+				if leg.walk_id.ends_with("_hind") and leg.node.get_meta("z", 0) > 0.6:
+					leg.node.visible = false

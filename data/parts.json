@@ -10352,8 +10352,8 @@
    "wood": 65,
    "gold": 35
   },
-  "placeholder": true,
-  "note": "a trade cart (milestone 13 step 6; src/sim/trade.gd): a PLACEHOLDER look until Dominic picks from concept round TC1 (docs/concepts/trade_carts/): a plain timber handcart, the race's worker pushing it, the same for every take; never fights"
+  "haul": {"creature": "pony", "skin": "pony_bay", "parts": {"torso": "harness.draught"}},
+  "note": "a trade cart (milestone 13 step 6; src/sim/trade.gd; D-127, from concept round TC1 A): a two-wheeled cart, its shafts on the draught harness of the pony pulling it (haul: UnitView draws it walking on the cart's haul0 socket; siege_models.gd hauled_cart; CART_BEAST names the same creature), a worker leading it; never fights"
  },
 {
   "id": "siege.cart.junk",
@@ -10403,8 +10403,8 @@
    "wood": 65,
    "gold": 35
   },
-  "placeholder": true,
-  "note": "a trade cart (milestone 13 step 6; src/sim/trade.gd): a PLACEHOLDER look until Dominic picks from concept round TC1 (docs/concepts/trade_carts/): a plain timber handcart, the race's worker pushing it, the same for every take; never fights"
+  "haul": {"creature": "cat", "skin": "cat_ginger", "parts": {"torso": "harness.draught"}},
+  "note": "a trade cart (milestone 13 step 6; src/sim/trade.gd; D-127, from concept round TC1 A): a two-wheeled cart, its shafts on the draught harness of the cat pulling it (haul: UnitView draws it walking on the cart's haul0 socket; siege_models.gd hauled_cart; CART_BEAST names the same creature), a worker leading it; never fights"
  },
 {
   "id": "siege.cart.forest",
@@ -10454,8 +10454,8 @@
    "wood": 65,
    "gold": 35
   },
-  "placeholder": true,
-  "note": "a trade cart (milestone 13 step 6; src/sim/trade.gd): a PLACEHOLDER look until Dominic picks from concept round TC1 (docs/concepts/trade_carts/): a plain timber handcart, the race's worker pushing it, the same for every take; never fights"
+  "haul": {"creature": "beetle", "skin": "beetle_stag", "parts": {"torso": "harness.draught"}},
+  "note": "a trade cart (milestone 13 step 6; src/sim/trade.gd; D-127, from concept round TC1 A): a two-wheeled cart, its shafts on the draught harness of the beetle pulling it (haul: UnitView draws it walking on the cart's haul0 socket; siege_models.gd hauled_cart; CART_BEAST names the same creature), a worker leading it; never fights"
  },
 {
   "id": "siege.cart.spooky",
@@ -10505,8 +10505,8 @@
    "wood": 65,
    "gold": 35
   },
-  "placeholder": true,
-  "note": "a trade cart (milestone 13 step 6; src/sim/trade.gd): a PLACEHOLDER look until Dominic picks from concept round TC1 (docs/concepts/trade_carts/): a plain timber handcart, the race's worker pushing it, the same for every take; never fights"
+  "haul": {"creature": "spider", "skin": "spider_black", "parts": {"torso": "harness.draught"}},
+  "note": "a trade cart (milestone 13 step 6; src/sim/trade.gd; D-127, from concept round TC1 A): a two-wheeled cart, its shafts on the draught harness of the spider pulling it (haul: UnitView draws it walking on the cart's haul0 socket; siege_models.gd hauled_cart; CART_BEAST names the same creature), a worker leading it; never fights"
  },
 {
   "id": "siege.cart.frog",
@@ -10556,8 +10556,7 @@
    "wood": 65,
    "gold": 35
   },
-  "placeholder": true,
-  "note": "a trade cart (milestone 13 step 6; src/sim/trade.gd): a PLACEHOLDER look until Dominic picks from concept round TC1 (docs/concepts/trade_carts/): a plain timber handcart, the race's worker pushing it, the same for every take; never fights"
+  "note": "a trade cart (milestone 13 step 6; src/sim/trade.gd; D-127: for frogs a snail pulls it): a two-wheeled cart, its shafts lashed to a band over the foot of a small giant snail baked in with it (siege_models.gd _cart_snail), a frog leading it; never fights"
  },
 {
   "id": "siege.sling.timber",
@@ -10908,5 +10907,8 @@
     "ch": "cloth2"
    }
   ]
- }
+ },
+ {"id": "harness.draught", "slot": "torso", "noun": "Draught Harness", "points": 0, "tags": ["harness"], "only_if": ["engine_only"], "stats": {}, "shapes": [{"t": "line", "p": [[-12, -14], [12, -14]], "w": 1, "ch": "wood"}], "note": "D-127: what the beast hauling a trade cart wears (the cart part's haul.parts). Fitted on its body by scenes/art_pixel/siege_models.gd harness_fitted: a breast band, two back bands, a trace down each flank past the rump (sockets trace_near / trace_far = the cart's hitch<n>_near / _far; the placement check C2 holds them together). only_if engine_only: never picked for a unit."},
+ {"id": "siege.barrow.junk", "slot": "engine", "noun": "Scrap Barrow", "points": 0, "tags": ["machine", "pushed"], "only_if": ["engine_only"], "stats": {"hp": 1, "speed": 10, "armour": {"melee": 0, "pierce": 0}, "radius": 260}, "shapes": [{"t": "poly", "p": [[-12, -14], [12, -14], [12, 0], [-12, 0]], "ch": "wood"}], "note": "D-127: what a rat worker pushes home with stone (creatures.json push_home; siege_models.gd scrap_barrow, heaped with rubble). View only: the sim's worker carries as before."},
+ {"id": "siege.handcart.junk", "slot": "engine", "noun": "Handcart", "points": 0, "tags": ["machine", "pushed"], "only_if": ["engine_only"], "stats": {"hp": 1, "speed": 10, "armour": {"melee": 0, "pierce": 0}, "radius": 260}, "shapes": [{"t": "poly", "p": [[-12, -14], [12, -14], [12, 0], [-12, 0]], "ch": "wood"}], "note": "D-127: what a rat worker pushes home with gold (creatures.json push_home; siege_models.gd handcart with sacks of ore). View only: the sim's worker carries as before."}
 ]

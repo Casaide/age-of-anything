@@ -9,6 +9,7 @@ const DataLib := preload("res://src/data_lib.gd")
 const Generator := preload("res://src/race_generator.gd")
 const ArtKit := preload("res://src/view/art/art_kit.gd")
 const CreatureKit := preload("res://scenes/art_pixel/creature_kit.gd")
+const UnitView := preload("res://src/unit_view.gd")
 
 ## Races whose every unit is checked (between them: every playable body, every hold, back parts,
 ## wings, a fused centaur, siege crews).
@@ -72,6 +73,41 @@ static func all(lib, lines := true) -> Array:
 	for u in animals.units:
 		cases.append(["animal %s" % u.recipe.body, u])
 	cases += kit_cases(lib)
+	cases += composite_cases(lib)
+	return cases
+
+
+## Concept composites (staged from data/later/): the trade carts of round TC1 whose beasts haul them,
+## each in its draught harness, a handler beside it (A, every family) and the covered wagon (two ponies,
+## a driver on top). Dominic caught TC1 A for rats ("this is bugged, did the tests not catch it?"): its
+## fixtures (fixtures_3d.gd, fixtures_2d.gd) put that cart back. Labels "composite: ...".
+const COMPOSITE_FILES := ["res://data/later/trade_carts.json"]
+const COMPOSITE_CASES := [
+	["romans", "concept.tc1_a_timber", "pony", "pony_bay"], ["swamp frogs", "concept.tc1_a_frog", "newt", "newt_fire"],
+	["sewer rats", "concept.tc1_a_junk", "cat", "cat_ginger"], ["forest beetles", "concept.tc1_a_forest", "beetle", "beetle_stag"],
+	["spooky spiders", "concept.tc1_a_spooky", "spider", "spider_black"], ["romans", "concept.tc1_c_timber", "pony", "pony_grey"],
+]
+
+
+static func composite_cases(lib) -> Array:
+	for f in COMPOSITE_FILES:
+		CreatureKit.stage(lib, f)
+	var gen = Generator.new(lib)
+	var rules = DataLib.load_json("res://data/rules/default.json")
+	var cases := []
+	for c in COMPOSITE_CASES:
+		var u: Dictionary = slot(gen.generate(c[0], rules), "trader")
+		var step: Dictionary = u.line[-1] if u.line.size() > 1 else {"recipe": u.recipe, "eval": u.eval}
+		var r: Dictionary = step.recipe.duplicate(true)
+		r.body = c[1]
+		r.haul = {"creature": c[2], "skin": c[3], "parts": {"torso": "harness.draught"}}
+		cases.append(["composite: %s %s hauled by a %s" % [c[0], c[1].trim_prefix("concept."), c[2]], {"recipe": r, "eval": step.eval}])
+	# In play: what a worker pushes home (D-127: the rats' scrap barrow with stone, handcart with gold).
+	for p in ["sewer rats", "sewer rats with cheese hammers"]:
+		var w: Dictionary = slot(gen.generate(p, rules), "worker")
+		var pushes: Dictionary = lib.creatures[w.recipe.creature].get("push_home", {})
+		for res in pushes:
+			cases.append(["composite: %s worker pushing %s home" % [p, res], {"recipe": UnitView.push_recipe(w.recipe, pushes[res]), "eval": w.eval}])
 	return cases
 
 

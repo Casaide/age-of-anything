@@ -259,6 +259,11 @@ func tool_for(i: int, tool: String) -> String:
 	var u = w.units
 	if u.task[i] == Economy.RETURN and u.carry[i] > 0 and _ground(w, i) == "carcass":
 		return "load.meat"
+	if u.task[i] == Economy.RETURN and u.carry[i] > 0 and u.carry_kind[i] > 0:
+		# Some push their load home (D-127: the rats' scrap barrow with stone, the handcart with gold).
+		var push: String = host.lib.creatures[w.types[u.kind[i]].recipe.creature].get("push_home", {}).get(w.resources[u.carry_kind[i] - 1], "")
+		if push != "":
+			return "push:" + push
 	if u.task[i] == Economy.GATHER and _ground(w, i) in ["field", "paddy"]:
 		return "tool.hoe"
 	if chores.get(u.id[i], "") == "sweep":
