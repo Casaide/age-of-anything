@@ -28,6 +28,7 @@ const Garrison := preload("res://src/sim/garrison.gd")
 const Fog := preload("res://src/sim/fog.gd")
 const Shots := preload("res://src/sim/shots.gd")
 const Abilities := preload("res://src/sim/abilities.gd")
+const Walls := preload("res://src/sim/walls.gd")
 
 ## units.stance, what a unit is doing: nothing, an ordered target, a fight it found
 ## itself, an attack-move, or walking back to where it stood (defensive units).
@@ -230,6 +231,8 @@ static func _engage(w, i: int, foe: int) -> void:
 ## How far a unit with this stance looks for a fight on its own (centre to centre).
 static func _look(w, i: int, t: Dictionary) -> int:
 	var c: Dictionary = w.combat
+	if w.units.perch[i] != 0:   # up on a wall it never chases: only what it reaches from there (a level up)
+		return t.reach + w.units.radius[i] + SimMap.TILE / 2 + (int(w.high.reach) if t.ranged else SimMap.TILE)
 	match w.units.posture[i]:
 		DEFENSIVE:
 			return maxi(int(c.defend_sight), t.reach + w.units.radius[i] + SimMap.TILE / 2)
@@ -425,6 +428,9 @@ static func tick(w) -> void:
 			else:
 				_lost(w, i)
 			continue
+		if j >= 0 and not t.ranged and (u.perch[i] != 0) != (u.perch[j] != 0):
+			_lost(w, i)   # melee can't reach up onto a wall, nor down off one (walls.gd)
+			continue
 		var gap := _gap(w, i, j, b)
 		var up := _height_step(w, i, j, b) if t.ranged else 0   # high ground: shooters reach further down, less far up
 		if t.min_range > 0 and gap < t.min_range:
@@ -473,6 +479,15 @@ static func tick(w) -> void:
 					else:
 						bhurt[b] += d
 						w.events.append({"type": "hit", "by": u.id[i], "to": bs.id[b], "damage": d, "ranged": false})
+		elif u.perch[i] != 0:
+			if j >= 0 and u.perch[j] != 0 and not t.ranged and Walls.dist_from(w, u.perch[i] - 1).has(u.perch[j] - 1):
+				if u.wgoal[i] != u.perch[j] and u.wtime[i] == 0:
+					Walls._walk(w, i, u.perch[j] - 1)   # along the walkway to the foe up here
+					u.foe[i] = u.id[j]
+					u.stance[i] = AUTO
+			else:
+				u.foe[i] = 0   # up on a wall: out of reach, let it go (it never chases off the wall)
+				u.stance[i] = NONE
 		elif u.stance[i] == AUTO and posture == STAND:
 			u.foe[i] = 0   # stand ground: out of reach, let it go
 			u.stance[i] = NONE
@@ -846,13 +861,15 @@ static func _shot_damage(w, src: int, up: int, j: int) -> int:
 
 ## High ground (milestone 15): 1 if unit i stands a level above its target (unit j or building
 ## b), -1 if below, 0 on the level or on a flat map. A ramp counts as its foot.
+## A unit up on a wall (walls.gd) stands a level above the ground it's on.
 static func _height_step(w, i: int, j: int, b: int) -> int:
 	var m = w.map
-	if not m.has_heights:
-		return 0
 	var u = w.units
-	var at: int = m.level_at(u.x[i], u.y[i])
-	var to: int = m.level_at(u.x[j], u.y[j]) if j >= 0 else m.level[w.buildings.cy[b] * m.width + w.buildings.cx[b]]
+	var at: int = 1 if u.perch[i] != 0 else 0
+	var to: int = 1 if j >= 0 and u.perch[j] != 0 else 0
+	if m.has_heights:
+		at += m.level_at(u.x[i], u.y[i])
+		to += m.level_at(u.x[j], u.y[j]) if j >= 0 else m.level[w.buildings.cy[b] * m.width + w.buildings.cx[b]]
 	return signi(at - to)
 
 
@@ -1027,6 +1044,8 @@ static func _nearest_foe(w, i: int, sight: int, buildings_too: bool, engaged: Pa
 	var r := sight / SimMap.TILE + 1
 	var cx: int = u.x[i] / SimMap.TILE
 	var cy: int = u.y[i] / SimMap.TILE
+	var pr: PackedInt32Array = u.perch
+	var level := -1 if w.types[u.kind[i]].ranged else (1 if pr[i] != 0 else 0)   # melee: only foes up on a wall if it is, and only the ground if not
 	for yy in (range(maxi(cy - r, 0), mini(cy + r + 1, sp.height)) if units_too else []):
 		for xx in range(maxi(cx - r, 0), mini(cx + r + 1, sp.width)):
 			var cell: int = yy * sp.width + xx
@@ -1034,6 +1053,8 @@ static func _nearest_foe(w, i: int, sight: int, buildings_too: bool, engaged: Pa
 				var j: int = sp.items[k]
 				if not w.is_foe(u.owner[j], me) or w.types[u.kind[j]].has("animal"):
 					continue   # a rival's sheep is stolen by walking up to it, not killed (Dominic)
+				if level >= 0 and (1 if pr[j] != 0 else 0) != level:
+					continue
 				if not inbound.is_empty() and inbound[j] >= u.hp[j]:
 					continue   # as good as dead already: shots on their way will kill it
 				var d2 := Fixed.dist2(u.x[i], u.y[i], u.x[j], u.y[j])
@@ -1043,7 +1064,7 @@ static func _nearest_foe(w, i: int, sight: int, buildings_too: bool, engaged: Pa
 				if d < best_d or (d == best_d and u.id[j] < best):
 					best_d = d
 					best = u.id[j]
-	if best != 0 or not buildings_too:
+	if best != 0 or not buildings_too or pr[i] != 0:
 		return best
 	best_d = sight * sight + 1
 	var bs = w.buildings
@@ -1116,5 +1137,6 @@ static func _apply(w, hurt: PackedInt32Array, hurt_by: PackedInt32Array, bhurt: 
 			Economy.clear_farm(w, b)
 			Economy.Pens.gone(w, b)   # a pen's animals spill out
 			Garrison.spill(w, b)      # and so do the people sheltering inside
+			Walls.breach(w, b)        # a wall piece leaves rubble (those up on it fall next tick)
 			w.map.occupy(bs.footprint(b, w.map.width), 0)
 			bs.remove_at(b)

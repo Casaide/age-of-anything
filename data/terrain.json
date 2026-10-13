@@ -159,6 +159,12 @@
    "colour": "#4a8084",
    "colour2": "#44787c",
    "note": "a ford: shallow river water anyone can wade (slowly: rules.movement.terrain_speed); amphibians quicker"
+  },
+  "wall_rubble": {
+   "walkable": true,
+   "colour": "#6a665c",
+   "colour2": "#625e54",
+   "note": "a breach (milestone 16): the rubble of a fallen wall piece; anyone walks over it; its owner's workers rebuild the wall on it (buildings.json breach)"
   }
  }
 }

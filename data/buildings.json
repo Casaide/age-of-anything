@@ -24,6 +24,7 @@
    "palisade_gate",
    "wall",
    "stone_gate",
+   "wall_tower",
    "siege_workshop",
    "wonder"
   ]
@@ -49,6 +50,7 @@
   "bastion",
   "wall",
   "stone_gate",
+  "wall_tower",
   "siege_workshop",
   "university",
   "castle",
@@ -82,6 +84,28 @@
   ]
  },
  "_garrison_doc": "units shelter inside a building type with \"garrison\": N (src/sim/garrison.gd): up to N of its owner's units (none with a tag in garrison.not, e.g. riders and giants; workers always fit, centaurs' too), hidden, healed 1 hp every heal_every ticks, seeing nothing beyond the building. A building with an \"attack\" shoots attack.arrows arrows a volley (towers 1; 0: the Town Center only shoots with people inside) plus one per unit inside. Destroyed, it spills them out. The Town Center's call to arms sends its owner's workers within call_range tiles into the nearest building with room. \"sight\": the building's own sight radius in tiles (else the rules' fog.tower for buildings that shoot, fog.building for the rest). \"more_from_age\": a player who already has one may build another only from that age on (Town Centers, age 3). \"upgrade_of\": a building that research turns another into, in place ({\"building\": \"watchtower\", \"becomes\": \"bastion\"} in tech.json); once researched, ordering the old one builds the new",
+ "walkway": {
+  "climb": 2,
+  "fall_damage": 10,
+  "speed_pct": 80,
+  "not": [
+   "large",
+   "siege"
+  ]
+ },
+ "_walkway_doc": "walls you stand on (milestone 16, src/sim/walls.gd): a building type with \"walkway\": N has N standing places per cell on top once built (stone walls, gatehouses, wall towers; palisades have none). Foot units (none with a tag in walkway.not, no workers, no flyers) ordered onto a wall walk to a way up (\"stairs\": a gatehouse or wall tower of their own team, or their side's ladder or docked siege tower), take `climb` seconds to climb, then walk along the walkway (8-way over connected walkway cells of one team) at speed_pct of their speed. On a wall a unit is a level up (rules.high_ground: shooters reach further, shots up at it fall short, it sees further), melee from the ground can't reach it, and it doesn't chase; ordered anywhere else it walks to the nearest way down (any stairs on the walkway, or its side's ladders and towers) and climbs down. If the cell under it stops being a walkway (destroyed, torn down) it falls: fall_damage, never below 1 hp. \"joins\": wall arms reach it like a gate (wall towers)",
+ "breach": {
+  "terrain": "wall_rubble",
+  "from": [
+   "wall",
+   "palisade",
+   "wall_tower",
+   "stone_gate",
+   "palisade_gate"
+  ],
+  "repair_pct": 40
+ },
+ "_breach_doc": "breaches (milestone 16, src/sim/walls.gd): a wall piece of a type in `from` destroyed leaves its cells as `terrain` (walkable rubble) belonging to its owner; a worker of that player ordered onto the rubble rebuilds the piece that stood there for repair_pct of its cost. Anything built on rubble clears it",
  "variants": {
   "house": 4
  },
@@ -428,7 +452,8 @@
     "pierce": 10
    },
    "note": "dragged in lines; flyers go over",
-   "line": true
+   "line": true,
+   "walkway": 2
   },
   "watchtower": {
    "name": "Watchtower",
@@ -537,7 +562,46 @@
    "length": 3,
    "replaces": [
     "wall"
-   ]
+   ],
+   "walkway": 2,
+   "stairs": true
+  },
+  "wall_tower": {
+   "name": "Wall Tower",
+   "desc": "A stone tower set into a wall line: drop it on your stone wall (or raise it alone and wall up to it). It shoots, shelters a few, and its stairs lead up onto the wall walk.",
+   "size": 1,
+   "hp": 1800,
+   "cost": {
+    "food": 0,
+    "wood": 25,
+    "stone": 60
+   },
+   "build_time": 40,
+   "pop": 0,
+   "house": false,
+   "drop_off": [],
+   "trains": [],
+   "age": 2,
+   "hotkey": "",
+   "armour": {
+    "melee": 6,
+    "pierce": 10
+   },
+   "attack": {
+    "damage": "pierce",
+    "attack": 8,
+    "range": 7,
+    "reload": 40,
+    "arrows": 1
+   },
+   "garrison": 3,
+   "replaces": [
+    "wall"
+   ],
+   "joins": true,
+   "walkway": 3,
+   "stairs": true,
+   "note": "milestone 16: placed into a stone wall line like a gate (it takes the wall tile's place); its walkway holds 3 and its stairs lead up; the look is a marked placeholder until Dominic picks a concept"
   },
   "outpost": {
    "name": "Outpost",

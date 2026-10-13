@@ -36,6 +36,9 @@ extends SceneTree
 ## volley on a crowd (see _engines).
 ## "gather:<tick>[:hunt]" (Reed Meadow): twelve of side 0's workers sent to one bug bush of the
 ## clump by its Town Center, a mill beside it (":hunt": six on a carcass south of it); shot at that tick.
+## "walkway[:breach|:climb][:zoom]" (milestone 16): a stone ring round side 0's Town Center (gatehouses,
+## wall towers), its archers up on the east and south walls, enemy spears below; ":breach" with two
+## tiles of the south wall knocked down to rubble; ":climb" shot while the archers climb.
 ## Prefix any scene with "ai-" to see it as in a match against the AI.
 
 const Iso := preload("res://src/view/iso.gd")
@@ -140,6 +143,8 @@ func _initialize() -> void:
 		view._show_pause_menu(true)
 	elif scene.begins_with("gate:"):
 		await _gate(view, scene.get_slice(":", 1), scene.get_slice(":", 2), int(scene.get_slice(":", 3)))
+	elif scene.begins_with("walkway"):
+		await _walkway(view, scene.get_slice(":", 1), float(scene.get_slice(":", 2)) if scene.get_slice_count(":") > 2 else 2.5)
 	elif scene.begins_with("walls"):
 		await _walls(view, scene == "walls:far")
 	elif scene.begins_with("tip"):
@@ -425,6 +430,49 @@ func _walls(view, far := false) -> void:
 		if i >= 0 and w.units.x[i] > 16000 and w.units.x[i] < 16800:
 			break
 		await process_frame
+
+
+## Walls you stand on: a stone ring (Fortify) round side 0's Town Center, archers sent up onto its
+## east and south walls, enemy spears outside; the camera on the south-east corner.
+func _walkway(view, variant: String, z: float) -> void:
+	var w = view.world
+	var Fortify = load("res://src/sim/fortify.gd")
+	var Tech = load("res://src/sim/tech.gd")
+	view.reveal = true
+	for p in 2:
+		w.ages[p] = 3
+		Tech.retype(w, p)
+		Tech.refresh(w, p)
+	var s: Array = w.map.starts[0]
+	var cx: int = s[0] / 1000
+	var cy: int = s[1] / 1000
+	Fortify.ring(w, 0, cx, cy, 7, {"wall": "wall", "gate": "stone_gate", "tower": "wall_tower", "tower_every": 5, "gates": ["n", "e", "s", "w"]})
+	var before: int = w.next_id
+	w.issue(0, "spawn", {"slot": "archer", "count": 14, "x": s[0] + 2500, "y": s[1] + 2500})
+	w.issue(1, "spawn", {"slot": "spear", "count": 6, "x": s[0] + 10500, "y": s[1] + 9500})
+	for f in 12:
+		await process_frame
+	var ids := range(before, before + 14)
+	w.issue(0, "move", {"ids": ids.slice(0, 7), "x": s[0] + 7000, "y": s[1] + 4000})
+	w.issue(0, "move", {"ids": ids.slice(7), "x": s[0] + 4000, "y": s[1] + 7000})
+	view.camera.zoom = Vector2(z, z)
+	view._on_zoom()
+	view.camera.look_at_point(Iso.to_screen(s[0] + 6000, s[1] + 6000))
+	var frames := 60 if variant == "climb" else 520
+	for f in frames:
+		await process_frame
+	if variant == "breach":
+		var bhurt := PackedInt32Array()
+		bhurt.resize(w.buildings.count())
+		for c in [(cy + 7) * w.map.width + cx + 4, (cy + 7) * w.map.width + cx + 5]:
+			var b: int = w.buildings.index_of(w.map.occupied[c])
+			if b >= 0:
+				bhurt[b] = 99999
+		var hurt := PackedInt32Array()
+		hurt.resize(w.units.count())
+		load("res://src/sim/combat.gd")._apply(w, hurt, hurt.duplicate(), bhurt)
+		for f in 60:
+			await process_frame
 
 
 ## A close-up of one gate in a wall line on open ground by side 0's Town Center (flat_test):

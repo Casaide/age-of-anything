@@ -2871,6 +2871,24 @@ const GATE_PIER_W := 0.46
 const GATE_ARCH := 1.1    # the arches' undersides
 
 
+## Wall Tower (milestone 16). PLACEHOLDER until Dominic picks a look from the concept round: a
+## squat square tower of the culture's wall stone, half again the wall's height, crenellated, an
+## arrow slit and a team rag; the wall's arms reach it like a gate's.
+func _wall_tower(arch: String, team: Color) -> Dictionary:
+	var body := Node3D.new()
+	var m: Material = mats.get_mat(WALL_STONE[arch])
+	var h := 1.25
+	body.add_child(box(Vector3(0.86, h, 0.86), m, Vector3(0, h / 2, 0)))
+	for x in [-1, 0, 1]:
+		for z in [-1, 0, 1]:
+			if x != 0 or z != 0:
+				body.add_child(box(Vector3(0.18, 0.18, 0.18), m, Vector3(x * 0.34, h + 0.09, z * 0.34)))
+	for side in [Vector3(0, 0.78, 0.44), Vector3(0.44, 0.78, 0)]:
+		body.add_child(box(Vector3(0.07 if side.z != 0.0 else 0.03, 0.24, 0.03 if side.z != 0.0 else 0.07), Materials.flat(Color("#1e1a16"), 1.0), side))   # arrow slits
+	body.add_child(box(Vector3(0.24, 0.3, 0.02), cloth(team), Vector3(-0.18, h - 0.22, 0.44)))   # a team rag hung over the parapet
+	return {"body": body, "anchor": Vector3.ZERO, "lights": [], "team": team}
+
+
 func _stone_gate(arch: String, team: Color) -> Dictionary:
 	return {"body": _gatehouse(arch, team, false), "open": _gatehouse(arch, team, true), "anchor": Vector3.ZERO, "lights": [], "team": team}
 
