@@ -843,7 +843,8 @@
     {
      "tag": "siege",
      "not": [
-      "ram"
+      "ram",
+      "docks"
      ],
      "stat": "range",
      "add": 1

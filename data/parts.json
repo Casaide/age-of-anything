@@ -8979,6 +8979,256 @@
   "note": "the frogs' bolt thrower (D-121, round 3's B): a reed-bow bolt thrower saddled on a giant toad, a frog aiming from its rump and one loading beside; alive"
  },
  {
+  "id": "siege.tower.timber",
+  "slot": "engine",
+  "noun": "Siege Tower",
+  "points": 18,
+  "tags": [
+   "siege",
+   "large",
+   "machine"
+  ],
+  "stats": {
+   "hp": 280,
+   "speed": 6,
+   "armour": {
+    "melee": 2,
+    "pierce": 16
+   },
+   "radius": 480
+  },
+  "shapes": [
+   {
+    "t": "poly",
+    "p": [
+     [
+      -22,
+      -26
+     ],
+     [
+      22,
+      -26
+     ],
+     [
+      22,
+      0
+     ],
+     [
+      -22,
+      0
+     ]
+    ],
+    "ch": "wood"
+   }
+  ],
+  "cost_mix": {
+   "food": 0,
+   "wood": 80,
+   "gold": 20
+  },
+  "note": "milestone 16: a wheeled tower pushed up to an enemy stone wall; stopped beside it, it's docked: its side's foot soldiers climb through it onto the wall walk (walls.gd). The model is a marked placeholder (one for every take) until Dominic picks a concept"
+ },
+ {
+  "id": "siege.tower.junk",
+  "slot": "engine",
+  "noun": "Siege Tower",
+  "points": 18,
+  "tags": [
+   "siege",
+   "large",
+   "machine"
+  ],
+  "stats": {
+   "hp": 280,
+   "speed": 6,
+   "armour": {
+    "melee": 2,
+    "pierce": 16
+   },
+   "radius": 480
+  },
+  "shapes": [
+   {
+    "t": "poly",
+    "p": [
+     [
+      -22,
+      -26
+     ],
+     [
+      22,
+      -26
+     ],
+     [
+      22,
+      0
+     ],
+     [
+      -22,
+      0
+     ]
+    ],
+    "ch": "wood"
+   }
+  ],
+  "cost_mix": {
+   "food": 0,
+   "wood": 80,
+   "gold": 20
+  },
+  "note": "milestone 16: a wheeled tower pushed up to an enemy stone wall; stopped beside it, it's docked: its side's foot soldiers climb through it onto the wall walk (walls.gd). The model is a marked placeholder (one for every take) until Dominic picks a concept"
+ },
+ {
+  "id": "siege.tower.forest",
+  "slot": "engine",
+  "noun": "Siege Tower",
+  "points": 18,
+  "tags": [
+   "siege",
+   "large",
+   "machine"
+  ],
+  "stats": {
+   "hp": 280,
+   "speed": 6,
+   "armour": {
+    "melee": 2,
+    "pierce": 16
+   },
+   "radius": 480
+  },
+  "shapes": [
+   {
+    "t": "poly",
+    "p": [
+     [
+      -22,
+      -26
+     ],
+     [
+      22,
+      -26
+     ],
+     [
+      22,
+      0
+     ],
+     [
+      -22,
+      0
+     ]
+    ],
+    "ch": "wood"
+   }
+  ],
+  "cost_mix": {
+   "food": 0,
+   "wood": 80,
+   "gold": 20
+  },
+  "note": "milestone 16: a wheeled tower pushed up to an enemy stone wall; stopped beside it, it's docked: its side's foot soldiers climb through it onto the wall walk (walls.gd). The model is a marked placeholder (one for every take) until Dominic picks a concept"
+ },
+ {
+  "id": "siege.tower.spooky",
+  "slot": "engine",
+  "noun": "Siege Tower",
+  "points": 18,
+  "tags": [
+   "siege",
+   "large",
+   "machine"
+  ],
+  "stats": {
+   "hp": 280,
+   "speed": 6,
+   "armour": {
+    "melee": 2,
+    "pierce": 16
+   },
+   "radius": 480
+  },
+  "shapes": [
+   {
+    "t": "poly",
+    "p": [
+     [
+      -22,
+      -26
+     ],
+     [
+      22,
+      -26
+     ],
+     [
+      22,
+      0
+     ],
+     [
+      -22,
+      0
+     ]
+    ],
+    "ch": "wood"
+   }
+  ],
+  "cost_mix": {
+   "food": 0,
+   "wood": 80,
+   "gold": 20
+  },
+  "note": "milestone 16: a wheeled tower pushed up to an enemy stone wall; stopped beside it, it's docked: its side's foot soldiers climb through it onto the wall walk (walls.gd). The model is a marked placeholder (one for every take) until Dominic picks a concept"
+ },
+ {
+  "id": "siege.tower.frog",
+  "slot": "engine",
+  "noun": "Siege Tower",
+  "points": 18,
+  "tags": [
+   "siege",
+   "large",
+   "machine"
+  ],
+  "stats": {
+   "hp": 280,
+   "speed": 6,
+   "armour": {
+    "melee": 2,
+    "pierce": 16
+   },
+   "radius": 480
+  },
+  "shapes": [
+   {
+    "t": "poly",
+    "p": [
+     [
+      -22,
+      -26
+     ],
+     [
+      22,
+      -26
+     ],
+     [
+      22,
+      0
+     ],
+     [
+      -22,
+      0
+     ]
+    ],
+    "ch": "wood"
+   }
+  ],
+  "cost_mix": {
+   "food": 0,
+   "wood": 80,
+   "gold": 20
+  },
+  "note": "milestone 16: a wheeled tower pushed up to an enemy stone wall; stopped beside it, it's docked: its side's foot soldiers climb through it onto the wall walk (walls.gd). The model is a marked placeholder (one for every take) until Dominic picks a concept"
+ },
+ {
   "id": "engine.ram",
   "slot": "hand_r",
   "noun": "Ram",
@@ -9004,6 +9254,46 @@
    "gold": 40
   },
   "note": "the ram's head (or the beetle's horn): hits buildings only (targets), very hard (bonus vs the building class), once every 3 s (reload, ticks)",
+  "shapes": [
+   {
+    "t": "line",
+    "p": [
+     [
+      0,
+      0
+     ],
+     [
+      8,
+      0
+     ]
+    ],
+    "w": 1.5,
+    "ch": "wood"
+   }
+  ]
+ },
+ {
+  "id": "engine.tower",
+  "slot": "hand_r",
+  "noun": "Siege Tower",
+  "points": 6,
+  "tags": [
+   "siege",
+   "docks"
+  ],
+  "stats": {
+   "attack": 0,
+   "damage": "melee",
+   "targets": "none"
+  },
+  "requires_role": "siege_tower",
+  "tier": 3,
+  "cost_mix": {
+   "food": 0,
+   "wood": 80,
+   "gold": 20
+  },
+  "note": "the siege tower's gangway: it doesn't fight (targets none); `docks`: stopped by an enemy wall it's a way up for its side (walls.gd)",
   "shapes": [
    {
     "t": "line",
