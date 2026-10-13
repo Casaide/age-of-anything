@@ -1,0 +1,379 @@
+{
+ "schema": "aow.later/1",
+ "_doc": "The alley cat as the rats' mount (concept C2, 2026-10-13; Dominic on RM1's cat: \"Needs to be more naturally a cat, including sitting when idle\"). Not in play: the rats keep the capybara until Dominic picks. Nothing loads this file except tests/cat_mount_sheet.gd. The models are in scenes/art_pixel/unit_models.gd (the cat section) and tools/blender/big_cat.py (\"lean\"). To ride it: add these parts to data/parts.json, the creature to data/creatures.json, the skins to data/palettes.json, and set the rat creature's \"mounts\" to [\"cat\"]. The 2D shapes are the capybara's (socket reference only: the game draws the baked models).",
+ "parts": [
+  {
+   "id": "body.cat",
+   "slot": "body",
+   "noun": "Cat",
+   "points": 10,
+   "price_points": 13,
+   "rider_loses": [
+    "infantry"
+   ],
+   "tags": [
+    "beast",
+    "feline",
+    "mount",
+    "sewer"
+   ],
+   "stats": {
+    "hp": 55,
+    "speed": 13,
+    "armour": {
+     "melee": 1,
+     "pierce": 2
+    },
+    "bonus": {
+     "ranged": 2,
+     "siege": 4
+    }
+   },
+   "shapes": [
+    {
+     "t": "line",
+     "p": [
+      [
+       -13,
+       -20
+      ],
+      [
+       -18,
+       -12
+      ]
+     ],
+     "w": 3,
+     "ch": "skin2"
+    },
+    {
+     "t": "ellipse",
+     "c": [
+      0,
+      -19
+     ],
+     "r": [
+      14,
+      7
+     ],
+     "ch": "skin"
+    },
+    {
+     "t": "poly",
+     "p": [
+      [
+       7,
+       -22
+      ],
+      [
+       13,
+       -33
+      ],
+      [
+       18,
+       -30
+      ],
+      [
+       13,
+       -18
+      ]
+     ],
+     "ch": "skin"
+    },
+    {
+     "t": "line",
+     "p": [
+      [
+       8,
+       -24
+      ],
+      [
+       13,
+       -34
+      ]
+     ],
+     "w": 2,
+     "ch": "skin2"
+    }
+   ],
+   "sockets": {
+    "head": [
+     16,
+     -32
+    ],
+    "hand_r": [
+     10,
+     -18
+    ],
+    "hand_l": [
+     8,
+     -18
+    ],
+    "torso": [
+     0,
+     -19
+    ],
+    "back": [
+     -8,
+     -22
+    ],
+    "seat": [
+     -1,
+     -25
+    ]
+   },
+   "torso_scale": [
+    1.8,
+    1.0
+   ],
+   "legs": {
+    "part": "leg.cat",
+    "hind": "leg.cat_hind",
+    "anchors": [
+     [
+      8,
+      -7,
+      4.71,
+      1,
+      0,
+      false
+     ],
+     [
+      -8,
+      -7,
+      0,
+      1,
+      0,
+      true
+     ],
+     [
+      7,
+      -7,
+      1.57,
+      -1,
+      0,
+      false
+     ],
+     [
+      -9,
+      -7,
+      3.14,
+      -1,
+      0,
+      true
+     ]
+    ],
+    "poses": 8,
+    "gait": {
+     "swing": 0.0,
+     "cadence": 1.8,
+     "bob": 0.3,
+     "rock": 0.0
+    },
+    "_doc": "hind: the hind legs' own part (a hock); anchors[5]: true on a hind leg. poses: the walk is baked in this many steps per leg (\"leg.cat@w<i>_<n>\"), not swung. gait: overrides the four-legged walk (low, level, quick short steps)"
+   },
+   "note": "a sewer alley cat (concept C2): stats are the capybara's until it is priced",
+   "idle_poses": [
+    "sit1",
+    "sit"
+   ],
+   "_idle_poses_doc": "baked whole-body poses it goes down through when it stands still a while (\"body.cat@sit\"), and back up through when it moves"
+  },
+  {
+   "id": "head.cat",
+   "slot": "head",
+   "sockets": {
+    "top": [
+     1,
+     -4
+    ]
+   },
+   "shapes": [
+    {
+     "t": "poly",
+     "p": [
+      [
+       0,
+       -4
+      ],
+      [
+       1,
+       -8
+      ],
+      [
+       2,
+       -4
+      ]
+     ],
+     "ch": "skin2"
+    },
+    {
+     "t": "ellipse",
+     "c": [
+      3,
+      -1
+     ],
+     "r": [
+      6,
+      3.5
+     ],
+     "ch": "skin"
+    },
+    {
+     "t": "circle",
+     "c": [
+      3,
+      -2
+     ],
+     "r": 0.9,
+     "ch": "eye"
+    }
+   ],
+   "tags": [],
+   "stats": {},
+   "points": 0
+  },
+  {
+   "id": "leg.cat",
+   "slot": "leg",
+   "shapes": [
+    {
+     "t": "poly",
+     "p": [
+      [
+       -1.5,
+       0
+      ],
+      [
+       1.5,
+       0
+      ],
+      [
+       1.5,
+       11
+      ],
+      [
+       -1.5,
+       11
+      ]
+     ],
+     "ch": "skin"
+    },
+    {
+     "t": "poly",
+     "p": [
+      [
+       -2,
+       11
+      ],
+      [
+       2,
+       11
+      ],
+      [
+       2,
+       13
+      ],
+      [
+       -2,
+       13
+      ]
+     ],
+     "ch": "eye"
+    }
+   ],
+   "tags": [],
+   "stats": {},
+   "points": 0
+  },
+  {
+   "id": "leg.cat_hind",
+   "slot": "leg",
+   "shapes": [
+    {
+     "t": "poly",
+     "p": [
+      [
+       -1.5,
+       0
+      ],
+      [
+       1.5,
+       0
+      ],
+      [
+       1.5,
+       11
+      ],
+      [
+       -1.5,
+       11
+      ]
+     ],
+     "ch": "skin"
+    },
+    {
+     "t": "poly",
+     "p": [
+      [
+       -2,
+       11
+      ],
+      [
+       2,
+       11
+      ],
+      [
+       2,
+       13
+      ],
+      [
+       -2,
+       13
+      ]
+     ],
+     "ch": "eye"
+    }
+   ],
+   "tags": [],
+   "stats": {},
+   "points": 0
+  }
+ ],
+ "creatures": {
+  "cat": {
+   "voice": "capybara",
+   "noun": "Cat",
+   "plural": "Cats",
+   "body": "body.cat",
+   "head": "head.cat",
+   "playable": false,
+   "mount": true,
+   "skins": [
+    "cat_ginger",
+    "cat_tuxedo",
+    "cat_grey"
+   ],
+   "families": [
+    "sewer"
+   ]
+  }
+ },
+ "skins": {
+  "cat_ginger": [
+   "#d8883c",
+   "#6a2c0c",
+   "#f2e4c8"
+  ],
+  "cat_tuxedo": [
+   "#2a2522",
+   "#1a1614",
+   "#f2eee6",
+   "#f2eee6"
+  ],
+  "cat_grey": [
+   "#a8a398",
+   "#2c2824",
+   "#e8e2d6"
+  ]
+ }
+}

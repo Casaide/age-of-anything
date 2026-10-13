@@ -17,6 +17,14 @@ cat    a scruffy sewer alley cat: lean, deep-chested, tucked waist; a round skul
        stripes, a dark line down the spine, the tabby's M on the brow, a pale chest
 tiger  heavier and longer, a broad head with a ruff of cheek fur and a longer muzzle, small
        rounded ears; bold dark stripes on orange, white cheeks, muzzle and belly
+lean   the alley cat again (C2, Dominic on C: "I think you've almost tried to force it to horse
+       skeleton. Needs to be more naturally a cat"): a long, supple, low-slung body, the loin
+       arched a little, a deep chest and a tucked waist, a short neck carrying the head low and
+       forward; the head rounder, the muzzle shorter, the ears bigger. Legs and tail are built in
+       the game (scenes/art_pixel/unit_models.gd, the cat section), posed and baked per frame.
+       Hips at (-8, 13.5), shoulders at (8.5, 12.5) (x, z).
+
+    blender -b --python tools/blender/big_cat.py -- assets/models/body_cat_lean.glb body lean
 """
 import sys, math
 import bpy, bmesh
@@ -26,6 +34,7 @@ args = sys.argv[sys.argv.index("--") + 1:]
 out, part, kind = args[0], args[1], args[2]
 bpy.ops.wm.read_factory_settings(use_empty=True)
 TIGER = kind == "tiger"
+LEAN = kind == "lean"
 
 
 def mat(name, rgb):
@@ -108,7 +117,7 @@ def tube(name, a, b, ra, rb, paint, segs=32, rings=20):
 # ------------------------------------------------------------------ the coat
 
 PERIOD = 4.6 if TIGER else 4.4   # stripe spacing along the body
-WIDTH = 0.42 if TIGER else 0.3  # how much of each period is dark (higher: thinner stripes)
+WIDTH = 0.42 if TIGER else (0.0 if LEAN else 0.3)  # how much of each period is dark (higher: thinner stripes)
 
 
 def stripes(c, wobble=1.0):
@@ -123,7 +132,7 @@ def body_paint(top_at, bot_at):
     def paint(c, n):
         top, bot = top_at(c.x), bot_at(c.x)
         h = (c.z - bot) / max(0.1, top - bot)   # 0 at the belly, 1 on the spine
-        if h < (0.34 if TIGER else 0.26):
+        if h < (0.34 if TIGER else 0.26) or (LEAN and c.x > 0.0 and h < 0.3 + 0.045 * c.x):   # (C2: up the chest)
             return 2   # pale belly
         if not TIGER and abs(c.y) < 1.0 and h > 0.8:
             return 1   # the tabby's dark line down the spine
@@ -138,6 +147,13 @@ def body():
         TOP = [(0.0, 19.0), (0.15, 23.0), (0.45, 22.2), (0.8, 23.4), (1.0, 22.0)]
         BOT = [(0.0, 15.0), (0.15, 12.6), (0.45, 13.0), (0.78, 10.6), (1.0, 13.5)]
         HALF = [(0.0, 4.6), (0.15, 7.2), (0.45, 6.4), (0.75, 7.4), (1.0, 5.6)]
+    elif LEAN:
+        # t = (x + 13) / 25: the rump end, the thigh, the loin's arch, the waist, behind the
+        # withers, the withers, the front of the chest.
+        X0, X1 = -13.0, 12.0
+        TOP = [(0.0, 14.8), (0.12, 17.2), (0.28, 18.0), (0.52, 17.4), (0.68, 17.1), (0.84, 17.6), (1.0, 15.4)]
+        BOT = [(0.0, 12.4), (0.12, 10.6), (0.30, 12.9), (0.52, 11.8), (0.68, 9.4), (0.84, 8.4), (1.0, 10.8)]
+        HALF = [(0.0, 3.0), (0.12, 4.4), (0.28, 3.5), (0.52, 4.1), (0.68, 4.8), (0.84, 4.8), (1.0, 3.6)]
     else:
         X0, X1 = -13.0, 11.0
         TOP = [(0.0, 16.0), (0.15, 19.9), (0.45, 19.1), (0.8, 20.1), (1.0, 18.9)]   # hips and shoulders, a slight dip between
@@ -154,11 +170,13 @@ def body():
     finish(ob, bm, COAT, body_paint(lambda x: curve(TOP, tx(x)), lambda x: curve(BOT, tx(x))))
     # The neck, up and forward from the chest to the head; its throat pale.
     def neck_paint(c, n):
-        if n.z < -0.35 and n.x > -0.2:
+        if (n.z < -0.35 and n.x > -0.2) or (LEAN and n.x > 0.2 and n.z < 0.3):   # the throat (C2: a bib down the chest)
             return 2
         return 1 if stripes(c, 1.6) and n.z > -0.1 else 0
     if TIGER:
         tube("neck", (10.0, 0, 18.5), (15.6, 0, 22.0), 5.6, 4.6, neck_paint)
+    elif LEAN:
+        tube("neck", (9.5, 0, 14.2), (14.2, 0, 15.2), 3.9, 3.2, neck_paint)   # short, carried low and forward
     else:
         tube("neck", (8.5, 0, 16.6), (13.0, 0, 19.6), 4.0, 3.3, neck_paint)
 
@@ -170,6 +188,9 @@ def head():
     if TIGER:
         skull_c, skull_r = Vector((2.4, 0, 1.0)), (3.9, 3.9, 3.4)
         muz_c, muz_r = Vector((6.0, 0, -0.6)), (2.6, 2.4, 2.0)
+    elif LEAN:
+        skull_c, skull_r = Vector((2.0, 0, 1.2)), (3.3, 3.4, 3.2)
+        muz_c, muz_r = Vector((4.3, 0, -0.4)), (1.2, 1.8, 1.25)
     else:
         skull_c, skull_r = Vector((2.0, 0, 1.2)), (3.3, 3.3, 3.1)
         muz_c, muz_r = Vector((4.5, 0, -0.3)), (1.3, 1.8, 1.3)
@@ -217,7 +238,7 @@ def ear(s, skull_c, skull_r):
         h, w, d = 2.0, 1.6, 0.6
     else:
         base = skull_c + Vector((-0.2, skull_r[1] * 0.55 * s, skull_r[2] * 0.72))
-        h, w, d = 5.0, 2.5, 0.6
+        h, w, d = (5.6, 2.9, 0.6) if LEAN else (5.0, 2.5, 0.6)
     notched = not TIGER and s == -1   # the near ear (Blender -y is the game's +z, towards the viewer)
     ob, bm = sphere("ear", 20, 12)
     for v in bm.verts:
