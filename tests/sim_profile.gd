@@ -5,7 +5,7 @@ extends SceneTree
 ## state hash at the end (two branches playing the same match must agree where behaviour didn't change).
 ## Milestone 15's tick-budget checks.
 ## Run: godot --headless --path . --script res://tests/sim_profile.gd -- [map_id] [minutes] [peace]
-## The map "test_sim" plays test_sim.gd's timed match instead (flat_test, two armies of 102
+## The map "test_sim" plays test_sim.gd's timed match instead (flat_test, two armies of 99
 ## marching about by script, no bots): the 3 ms budget's own benchmark.
 
 const DataLib := preload("res://src/data_lib.gd")
@@ -29,7 +29,7 @@ const Fixed := preload("res://src/sim/fixed.gd")
 const PROMPTS := ["angry swamp frogs with reed spears", "sewer rats with cheese hammers"]
 const SEED := 20261010
 const TICKS := 12000
-const PER_SLOT := 17
+const PER_SLOT := 11
 const ORDERS_EVERY := 10
 
 var rules_: Dictionary

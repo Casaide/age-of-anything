@@ -368,15 +368,38 @@ static func clear_line(map: SimMap, ax: int, ay: int, bx: int, by: int, k := 0) 
 ## either side of it must all stay on walkable ground, so a waypoint never cuts a corner the
 ## body can't pass (the centre could, the shoulders couldn't; the clamp then shoved it back).
 static func clear_path(map: SimMap, ax: int, ay: int, bx: int, by: int, r: int, k := 0) -> bool:
+	var room: PackedByteArray = map.roomy_grid(k)
+	var w := map.width
+	var h := map.height
+	if ax >= 0 and ay >= 0 and bx >= 0 and by >= 0 and ax < w * TILE and bx < w * TILE and ay < h * TILE and by < h * TILE \
+			and _open_box(map.tight_grid(k), map.room_cw, mini(ax, bx) / TILE, mini(ay, by) / TILE, maxi(ax, bx) / TILE, maxi(ay, by) / TILE):
+		return true
+	return _clear_walk(map.walks[k], room, w, h, ax, ay, bx, by, r)
+
+
+## Is every cell in the box (cx0, cy0)-(cx1, cy1) roomy, as far as the blocks round it tell?
+## (`tight`: cells short of room per SimMap.ROOM_CHUNK block.) Every sample of a straight walk
+## lies in the box of cells between its ends, so an open box means a clear walk: the same answer
+## as _clear_walk in a few lookups instead of a few dozen samples.
+static func _open_box(tight: PackedInt32Array, cw: int, cx0: int, cy0: int, cx1: int, cy1: int) -> bool:
+	var rc := SimMap.ROOM_CHUNK
+	var xb0 := cx0 / rc
+	var xb1 := cx1 / rc
+	for yb in range(cy0 / rc, cy1 / rc + 1):
+		var row := yb * cw
+		for xb in range(xb0, xb1 + 1):
+			if tight[row + xb] != 0:
+				return false
+	return true
+
+
+## clear_path's walk, sample by sample (grids passed in: the planner asks several lines at once).
+static func _clear_walk(walk: PackedByteArray, room: PackedByteArray, w: int, h: int, ax: int, ay: int, bx: int, by: int, r: int) -> bool:
 	var dx := bx - ax
 	var dy := by - ay
 	var len := maxi(1, Fixed.isqrt(dx * dx + dy * dy))
 	var ox := -dy * r / len
 	var oy := dx * r / len
-	var walk: PackedByteArray = map.walks[k]
-	var room: PackedByteArray = map.roomy_grid(k)
-	var w := map.width
-	var h := map.height
 	var steps := maxi(absi(dx), absi(dy)) / LINE_STEP + 1
 	var px := ax
 	var py := ay
@@ -415,6 +438,49 @@ static func clear_path(map: SimMap, ax: int, ay: int, bx: int, by: int, r: int, 
 		px = x
 		py = y
 	return true
+
+
+## The furthest of the next `n` cells down field f from `cell` that a body of radius r at (x, y)
+## walks to in a straight line (clear_path), each one only if all before it were: `cell` itself
+## if not even the first. If the walk reached a source cell (dist 0) of the field, -2 - the cell it
+## stopped at (the last clear one before the source). One call
+## for the planner's look down the field (World._plan), the grids looked up once.
+static func ahead(map: SimMap, f: RefCounted, cell: int, x: int, y: int, n: int, r: int, k: int) -> int:
+	var room: PackedByteArray = map.roomy_grid(k)
+	var walk: PackedByteArray = map.walks[k]
+	var tight: PackedInt32Array = map.tight_grid(k)
+	var cw: int = map.room_cw
+	var w := map.width
+	var h := map.height
+	var dist: PackedInt32Array = f.dist
+	var nxt: PackedInt32Array = f.next
+	var inside := x >= 0 and y >= 0 and x < w * TILE and y < h * TILE
+	var cx0 := x / TILE
+	var cy0 := y / TILE
+	var cx1 := cx0
+	var cy1 := cy0
+	var best := cell
+	var c: int = nxt[cell]
+	for step in n:
+		if c < 0:
+			break
+		if dist[c] == 0:
+			return -2 - best
+		var gx := c % w
+		var gy := c / w
+		# (The box of every line so far holds this one's: open, and this line is clear too.)
+		cx0 = mini(cx0, gx)
+		cy0 = mini(cy0, gy)
+		cx1 = maxi(cx1, gx)
+		cy1 = maxi(cy1, gy)
+		var clear := inside and _open_box(tight, cw, cx0, cy0, cx1, cy1)
+		if not clear and inside:   # its own box, then
+			clear = _open_box(tight, cw, mini(x / TILE, gx), mini(y / TILE, gy), maxi(x / TILE, gx), maxi(y / TILE, gy))
+		if not clear and not _clear_walk(walk, room, w, h, x, y, gx * TILE + TILE / 2, gy * TILE + TILE / 2, r):
+			break
+		best = c
+		c = nxt[c]
+	return best
 
 
 static func _blocked(walk: PackedByteArray, w: int, h: int, x: int, y: int) -> bool:

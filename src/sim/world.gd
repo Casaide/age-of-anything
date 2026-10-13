@@ -56,6 +56,8 @@ const FIELD_CACHE := 12        # flow fields kept per player (oldest dropped fir
 const SOLVE_BUDGET := 1500     # flow-field cells settled per tick: one full solve, or a few near ones
 const PATCH_BUDGET := 3000     # flow-field cells settled per tick patching cached fields for map changes (then they're dropped)
 const NEAR_CUTOFF := 160       # cost cutoff for "near" fields (16 tiles): short work trips
+const SEP_DX := [0, 1, -1, 0, 1]   # _separate's tiles round a unit's: its own, then the four after it
+const SEP_DY := [0, 0, 1, 1, 1]
 # Places of their own (Dominic's playtest, 2026-10-13: a group's units pushed each other about
 # at the end of a move, workers got stuck on each other, a crowd fought the pathing at a wall).
 const FORM_GAP := 160          # milli-tiles between neighbouring bodies in a formation, or round a building
@@ -95,6 +97,17 @@ var events: Array = []         # this tick's hits and deaths, for views (not sta
 var types: Array = []          # unit types, per player per roster slot (see _make_type)
 var btypes: Array = []         # building types (see Economy.load_btypes)
 var units: Units = Units.new()
+var _ox := PackedInt32Array()   # units.x, .y, .moving as they were when the tick's moves began (_move, _sidestep)
+var _oy := PackedInt32Array()
+var _om := PackedInt32Array()
+var _owx := PackedInt32Array()  # and the rest _sidestep reads, looked up once a tick
+var _owy := PackedInt32Array()
+var _orad := PackedInt32Array()
+var _og := PackedInt32Array()
+var _oo := PackedInt32Array()
+var _sstart := PackedInt32Array()
+var _send := PackedInt32Array()
+var _sitems := PackedInt32Array()
 var buildings: Buildings = Buildings.new()
 var shots: Shots = Shots.new()   # shots in flight (shots.gd, combat.gd)
 var spatial: Spatial
@@ -130,6 +143,8 @@ var fog_seen: Array = []       # per player: enemy building id -> its snapshot a
 var fog_lit: Array = []        # per player: PackedInt32Array, the cells lit at the last update (fog.gd)
 var fog_watch := PackedByteArray()        # per cell: 1 if it held a resource or ever changed (fog.gd)
 var fog_watch_cells := PackedInt32Array() # those cells, in the order they were first watched
+var fog_sight := {}            # (cell * 64 + radius) -> PackedInt32Array: the cells a sight circle with line of sight sees (fog.gd); derived
+var fog_sight_version := -1    # map.opaque_version that fog_sight was worked out for
 var fields := {}               # field key -> Flow; looked up by key, never iterated
 var field_order: Array = []    # cached field keys, oldest first (eviction, invalidation)
 var field_queue: Array = []    # field keys waiting for a solve, in request order
@@ -768,15 +783,31 @@ func _move() -> void:
 	var ry1 := units.ry1
 	var owners := units.owner
 	var pc := units.pace
+	var foes := units.foe
+	var mcls := units.mclass
 	var t := SimMap.TILE
 	var mw := map.width
 	var mh := map.height
+	var terr := map.terrain
+	var trails_on: bool = trail_cfg.speed_pct != 0
+	# The tick's start, for _sidestep (the copies above are written as units move; these aren't).
+	_ox = units.x
+	_oy = units.y
+	_om = units.moving
+	_owx = units.wx
+	_owy = units.wy
+	_orad = units.radius
+	_og = units.group
+	_oo = units.owner
+	_sstart = spatial.start
+	_send = spatial.end
+	_sitems = spatial.items
 	for i in xs.size():
 		if mv[i] == 0:
 			# Shoved well off its spot by passing units? Walk back (checked on re-plan ticks).
 			# Not while fighting: a stopped shooter's tx is still its (attack-)move's end, and
 			# walking "back" there a step every re-plan crept it towards the foe (Dominic's crossbows).
-			if grp[i] == 0 or units.foe[i] != 0 or st[i] >= STUCK_LIMIT or (tick + ids[i]) % REPLAN_EVERY != 0:
+			if grp[i] == 0 or foes[i] != 0 or st[i] >= STUCK_LIMIT or (tick + ids[i]) % REPLAN_EVERY != 0:
 				continue
 			var back := ar[i] * SETTLE_FACTOR + (SLOT_SLACK if ar[i] == SLOT_ARRIVE else RETURN_SLACK)
 			if Fixed.dist2(xs[i], ys[i], txs[i], tys[i]) <= back * back:
@@ -800,14 +831,15 @@ func _move() -> void:
 				st[i] = 0
 				continue
 		var s := sp[i] if pc[i] == 0 else mini(sp[i], pc[i])   # a group keeps to its slowest member's pace
-		var mc := lane_base[owners[i]] + units.mclass[i]   # the walk grid (lane); speed goes by class
+		var mci := mcls[i]
+		var mc := lane_base[owners[i]] + mci   # the walk grid (lane); speed goes by class
 		var here := map.cell_of(x, y)
-		var pct: int = move_pct[units.mclass[i]][map.terrain[here]]
+		var pct: int = move_pct[mci][terr[here]]
 		if pct != 100:
 			s = s * pct / 100   # amphibians are quicker in the swamp (rules.movement.terrain_speed)
-		if trail_cfg.speed_pct != 0 and units.mclass[i] != SimMap.FLYING:
+		if trails_on and mci != SimMap.FLYING:
 			s = s * Trails.speed_pct(self, here) / 100   # quicker on a worn trail (rules.trails, off by default)
-		if (tick + ids[i]) % PROGRESS_EVERY == 0 and units.foe[i] == 0:
+		if (tick + ids[i]) % PROGRESS_EVERY == 0 and foes[i] == 0:
 			# Net progress, after the pushes: a unit that walks into a planted worker or a wall
 			# and is shoved straight back moves every tick but gets nowhere. Measured along the
 			# field (its cost falls by a cell per cell walked, detours included), else as the
@@ -854,7 +886,7 @@ func _move() -> void:
 		var dx := wxs[i] - x
 		var dy := wys[i] - y
 		var d := Fixed.isqrt(dx * dx + dy * dy)
-		if d > rs[i] and units.foe[i] == 0:   # (a group in formation passes through its own: _sidestep)
+		if d > rs[i] and foes[i] == 0:   # (a group in formation passes through its own: _sidestep)
 			var v := _sidestep(i, x, y, dx * Fixed.ONE / d, dy * Fixed.ONE / d, s)
 			if v.x != 0 or v.y != 0:
 				dx = v.x
@@ -897,6 +929,18 @@ func _move() -> void:
 	units.stuck = st
 	units.wx = wxs
 	units.wy = wys
+	var none := PackedInt32Array()   # let go of the tick's start (held, they'd cost a copy at the next write)
+	_ox = none
+	_oy = none
+	_om = none
+	_owx = none
+	_owy = none
+	_orad = none
+	_og = none
+	_oo = none
+	_sstart = none
+	_send = none
+	_sitems = none
 
 
 ## Local avoidance (Dominic, 2026-10-13: "scavengers getting stuck on each other too easily"):
@@ -910,12 +954,13 @@ func _move() -> void:
 ## tiles short. Positions and waypoints are the tick's start (_move writes its own copies), so
 ## the order units move in doesn't matter. (0, 0): nothing in the way.
 func _sidestep(i: int, x: int, y: int, ux: int, uy: int, s: int) -> Vector2i:
-	var ox := units.x   # the tick's start: _move writes its own copy
-	var oy := units.y
-	var om := units.moving
-	var orad := units.radius
-	var start := spatial.start
-	var items := spatial.items
+	var ox := _ox   # the tick's start: _move writes its own copy
+	var oy := _oy
+	var om := _om
+	var orad := _orad
+	var start := _sstart
+	var ends := _send
+	var items := _sitems
 	var sw := spatial.width
 	var cx := x / SimMap.TILE
 	var cy := y / SimMap.TILE
@@ -923,12 +968,12 @@ func _sidestep(i: int, x: int, y: int, ux: int, uy: int, s: int) -> Vector2i:
 	var best_ahead := 1 << 30
 	var best_side := 0
 	var ri := orad[i]
-	var og := units.group
+	var og := _og
 	var gi: int = og[i]
-	var oo := units.owner
+	var oo := _oo
 	var oi: int = oo[i]
-	var wxs := units.wx   # where walkers are heading
-	var wys := units.wy
+	var wxs := _owx   # where walkers are heading
+	var wys := _owy
 	# Only the cells ahead: heading well east (or west, north, south), the column (row) behind
 	# seldom holds a body in the way, and skipping it saves a third of the looking.
 	var x0 := cx if ux > Fixed.ONE / 2 else cx - 1
@@ -938,7 +983,7 @@ func _sidestep(i: int, x: int, y: int, ux: int, uy: int, s: int) -> Vector2i:
 	for yy in range(maxi(y0, 0), mini(y1 + 1, spatial.height)):
 		for xx in range(maxi(x0, 0), mini(x1 + 1, sw)):
 			var c := yy * sw + xx
-			for k in range(start[c], start[c + 1]):
+			for k in range(start[c], ends[c]):
 				var j: int = items[k]
 				if j == i or (gi > 0 and (og[j] == gi or oo[j] != oi)):
 					continue   # groupmates part for each other; a group's units dodge only their own side
@@ -1006,21 +1051,12 @@ func _plan(i: int, x: int, y: int) -> Vector2i:
 		var c := _round_corner(i, x, y, tx, ty)   # its place is round the far side of the building
 		if c.x >= 0:
 			return c
-	var best := cell
-	var k: int = f.next[cell]
 	# Half-way to giving up, follow the field a cell at a time (the retry): no shortcuts.
-	for step in (1 if units.stuck[i] >= STUCK_LIMIT / 2 else LOOKAHEAD):
-		if k < 0:
-			break
-		if f.dist[k] == 0:
-			if units.reach[i] == 0:
-				return Vector2i(tx, ty)   # the next cell is the target's
-			break
-		var c := Flow.centre(map, k)
-		if not Flow.clear_path(map, x, y, c.x, c.y, units.radius[i], lane(i)):
-			break
-		best = k
-		k = f.next[k]
+	var best := Flow.ahead(map, f, cell, x, y, 1 if units.stuck[i] >= STUCK_LIMIT / 2 else LOOKAHEAD, units.radius[i], lane(i))
+	if best < 0:
+		if units.reach[i] == 0:
+			return Vector2i(tx, ty)   # the next cell is the target's
+		best = -2 - best
 	return Flow.centre(map, best)
 
 
@@ -1043,7 +1079,7 @@ func _spot(i: int, x: int, y: int) -> Vector2i:
 	for cy in range(maxi((y0 - o) / t - 1, 0), mini((y1 + o) / t + 2, spatial.height)):
 		for cx in range(maxi((x0 - o) / t - 1, 0), mini((x1 + o) / t + 2, spatial.width)):
 			var c := cy * spatial.width + cx
-			for k in range(spatial.start[c], spatial.start[c + 1]):
+			for k in range(spatial.start[c], spatial.end[c]):
 				var j: int = spatial.items[k]
 				if j != i and j < units.count() and units.moving[j] == 0:
 					near.append(j)
@@ -1324,6 +1360,7 @@ func _separate() -> void:
 	var settle := PackedByteArray()
 	settle.resize(n)
 	var start := spatial.start
+	var ends := spatial.end
 	var items := spatial.items
 	var cells := spatial.cell
 	var w := spatial.width
@@ -1339,8 +1376,9 @@ func _separate() -> void:
 	planted.resize(n)
 	var stood := PackedByteArray()
 	stood.resize(n)
+	var rch := units.reach
 	for i in n:
-		if mv[i] == 0 and grp[i] > 0 and ar[i] == SLOT_ARRIVE and units.reach[i] == 0:
+		if mv[i] == 0 and grp[i] > 0 and ar[i] == SLOT_ARRIVE and rch[i] == 0:
 			stood[i] = 1
 	var tasks := units.task
 	var foes := units.foe
@@ -1364,73 +1402,89 @@ func _separate() -> void:
 			var b := buildings.index_of(foes[i])
 			if b >= 0 and Combat._gap(self, i, -1, b) <= types[units.kind[i]].reach + Combat.HOLD:
 				planted[i] = 1
-	for i in n:
-		var cx := cells[i] % w
-		var cy := cells[i] / w
-		for yy in range(maxi(cy - 1, 0), mini(cy + 2, h)):
-			for xx in range(maxi(cx - 1, 0), mini(cx + 2, w)):
-				var c := yy * w + xx
-				for k in range(start[c], start[c + 1]):
-					var j := items[k]
-					if j <= i:
-						continue
-					var rr := rs[i] + rs[j]
-					var dx := xs[j] - xs[i]
-					var dy := ys[j] - ys[i]
-					if dx >= rr or dx <= -rr or dy >= rr or dy <= -rr:
-						continue
-					var d2 := dx * dx + dy * dy
-					if d2 >= rr * rr:
-						continue
-					if grp[i] == grp[j] and grp[i] > 0 and mv[i] != mv[j]:
-						var m := i if mv[i] == 1 else j
-						var near := ar[m] * (2 if ar[m] == SLOT_ARRIVE else SETTLE_FACTOR)   # a slot is meant to be stood in
-						if Fixed.dist2(xs[m], ys[m], txs[m], tys[m]) <= near * near:
-							settle[m] = 1
-					var d := Fixed.isqrt(d2)
-					var ux: int
-					var uy: int
-					if d == 0:
-						var ang := (ids[i] * 31 + ids[j] * 17) & 255
-						ux = Fixed.cos_a(ang)
-						uy = Fixed.sin_a(ang)
-					else:
-						ux = dx * Fixed.ONE / d
-						uy = dy * Fixed.ONE / d
-					# A unit standing in its formation slot isn't shoved by groupmates still coming
-					# in: they slip past it to their own slots (the gaps are too narrow to walk
-					# round, and shoving the ones already there about looked buggy).
-					if grp[i] == grp[j] and ((stood[i] == 1 and mv[j] == 1) or (stood[j] == 1 and mv[i] == 1)):
-						continue
-					if stood[i] == 1 and stood[j] == 1:
-						continue   # two groups' formations overlapping: no shoving match (and no walking back into it)
-					# A worker on its way to or from a job walks on; anyone standing idle in its way gives way.
-					# So does a unit standing in its formation for one of its side's other groups walking
-					# through (it walks back to its slot after): two groups' formations filling a narrow way
-					# (the plateau on hill_test) made a wall the later group shoved at until it gave up.
-					var hi := planted[i] == 1 or (role[i] >= 2 and role[j] == 1) \
-							or (stood[j] == 1 and mv[i] == 1 and grp[i] > 0 and grp[i] != grp[j] and owners[i] == owners[j])
-					var hj := planted[j] == 1 or (role[j] >= 2 and role[i] == 1) \
-							or (stood[i] == 1 and mv[j] == 1 and grp[j] > 0 and grp[j] != grp[i] and owners[i] == owners[j])
-					if hi and hj:
-						continue
-					# One of the side's own at work and a gatherer making for its spot or carrying home
-					# from it (role 3: it won't stop here): the walker slips past (stepping round standing
-					# bodies as it comes, _sidestep), overlapping for a moment at most. (Workers without
-					# spots, woodcutters, are still shoved: let through, they stacked up in the woodlines.) Shoved off a gatherer's back it bounced to and fro (the jitter round
-					# the bushes and the drop-off); easing it round at half the give was worse still
-					# (hunters gave up on their carcass, a quarter less food).
-					if owners[i] == owners[j] and ((planted[i] == 1 and role[j] == 3) or (planted[j] == 1 and role[i] == 3)):
-						continue
-					var push := (rr - d) / SEPARATION_DIV + 1
-					var px := ux * push / Fixed.ONE
-					var py := uy * push / Fixed.ONE
-					if not hi:
-						pushx[i] -= px * (2 if hj else 1)
-						pushy[i] -= py * (2 if hj else 1)
-					if not hj:
-						pushx[j] += px * (2 if hi else 1)
-						pushy[j] += py * (2 if hi else 1)
+	# Each pair once: a unit's own tile (slots after it) and the four tiles after it (right, and
+	# the row below), so every pair of neighbouring tiles is looked at from one side only. The
+	# pair's sums don't depend on which side found it (i is the lower slot, as before).
+	for u in n:
+		var cx := cells[u] % w
+		var cy := cells[u] / w
+		var xu := xs[u]
+		var yu := ys[u]
+		var ru := rs[u]
+		for q in 5:
+			var nx: int = cx + SEP_DX[q]
+			var ny: int = cy + SEP_DY[q]
+			if nx < 0 or nx >= w or ny >= h:
+				continue
+			var c := ny * w + nx
+			for k in range(start[c], ends[c]):
+				var v := items[k]
+				if q == 0 and v <= u:
+					continue
+				var rr := ru + rs[v]
+				var dx := xs[v] - xu
+				var dy := ys[v] - yu
+				if dx >= rr or dx <= -rr or dy >= rr or dy <= -rr:
+					continue
+				var d2 := dx * dx + dy * dy
+				if d2 >= rr * rr:
+					continue
+				var i := u
+				var j := v
+				if v < u:
+					i = v
+					j = u
+					dx = -dx
+					dy = -dy
+				if grp[i] == grp[j] and grp[i] > 0 and mv[i] != mv[j]:
+					var m := i if mv[i] == 1 else j
+					var near := ar[m] * (2 if ar[m] == SLOT_ARRIVE else SETTLE_FACTOR)   # a slot is meant to be stood in
+					if Fixed.dist2(xs[m], ys[m], txs[m], tys[m]) <= near * near:
+						settle[m] = 1
+				var d := Fixed.isqrt(d2)
+				var ux: int
+				var uy: int
+				if d == 0:
+					var ang := (ids[i] * 31 + ids[j] * 17) & 255
+					ux = Fixed.cos_a(ang)
+					uy = Fixed.sin_a(ang)
+				else:
+					ux = dx * Fixed.ONE / d
+					uy = dy * Fixed.ONE / d
+				# A unit standing in its formation slot isn't shoved by groupmates still coming
+				# in: they slip past it to their own slots (the gaps are too narrow to walk
+				# round, and shoving the ones already there about looked buggy).
+				if grp[i] == grp[j] and ((stood[i] == 1 and mv[j] == 1) or (stood[j] == 1 and mv[i] == 1)):
+					continue
+				if stood[i] == 1 and stood[j] == 1:
+					continue   # two groups' formations overlapping: no shoving match (and no walking back into it)
+				# A worker on its way to or from a job walks on; anyone standing idle in its way gives way.
+				# So does a unit standing in its formation for one of its side's other groups walking
+				# through (it walks back to its slot after): two groups' formations filling a narrow way
+				# (the plateau on hill_test) made a wall the later group shoved at until it gave up.
+				var hi := planted[i] == 1 or (role[i] >= 2 and role[j] == 1) \
+						or (stood[j] == 1 and mv[i] == 1 and grp[i] > 0 and grp[i] != grp[j] and owners[i] == owners[j])
+				var hj := planted[j] == 1 or (role[j] >= 2 and role[i] == 1) \
+						or (stood[i] == 1 and mv[j] == 1 and grp[j] > 0 and grp[j] != grp[i] and owners[i] == owners[j])
+				if hi and hj:
+					continue
+				# One of the side's own at work and a gatherer making for its spot or carrying home
+				# from it (role 3: it won't stop here): the walker slips past (stepping round standing
+				# bodies as it comes, _sidestep), overlapping for a moment at most. (Workers without
+				# spots, woodcutters, are still shoved: let through, they stacked up in the woodlines.) Shoved off a gatherer's back it bounced to and fro (the jitter round
+				# the bushes and the drop-off); easing it round at half the give was worse still
+				# (hunters gave up on their carcass, a quarter less food).
+				if owners[i] == owners[j] and ((planted[i] == 1 and role[j] == 3) or (planted[j] == 1 and role[i] == 3)):
+					continue
+				var push := (rr - d) / SEPARATION_DIV + 1
+				var px := ux * push / Fixed.ONE
+				var py := uy * push / Fixed.ONE
+				if not hi:
+					pushx[i] -= px * (2 if hj else 1)
+					pushy[i] -= py * (2 if hj else 1)
+				if not hj:
+					pushx[j] += px * (2 if hi else 1)
+					pushy[j] += py * (2 if hi else 1)
 	var t := SimMap.TILE
 	var mw := map.width
 	var mh := map.height

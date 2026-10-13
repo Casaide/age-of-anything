@@ -38,12 +38,31 @@ static func cos_a(angle: int) -> int:
 
 
 ## Floor of the square root, for n >= 0.
+## Newton's steps from a power of two at or above the root (its half bit length, found in five
+## halvings): about half the steps of starting from n. (A constant assert message: a formatted
+## one is built on every call, and this runs thousands of times a tick.)
 static func isqrt(n: int) -> int:
-	assert(n >= 0, "isqrt of negative %d" % n)
+	assert(n >= 0, "isqrt of a negative number")
 	if n < 2:
 		return n
-	var x := n
-	var y := (x + 1) >> 1
+	var m := n
+	var b := 1
+	if m >= 1 << 32:
+		m >>= 32
+		b += 16
+	if m >= 1 << 16:
+		m >>= 16
+		b += 8
+	if m >= 1 << 8:
+		m >>= 8
+		b += 4
+	if m >= 1 << 4:
+		m >>= 4
+		b += 2
+	if m >= 1 << 2:
+		b += 1
+	var x := 1 << b   # n < 4^b, so the root is under x
+	var y := (x + n / x) >> 1
 	while y < x:
 		x = y
 		y = (x + n / x) >> 1
