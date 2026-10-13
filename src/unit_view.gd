@@ -333,7 +333,10 @@ func _make_rig(lib, body_id: String, head_id: String, colours: Dictionary, paren
 		sockets = rig.sockets.duplicate()
 
 	if with_legs and body.has("legs"):
-		for a in rig.get("anchors", body.legs.anchors):
+		var anchors: Array = rig.get("anchors", body.legs.anchors)
+		var cut: bool = "legs" in body.get("cut", [])
+		for i in anchors.size():
+			var a: Array = anchors[i]
 			if _clinging and float(a[3]) < 0.0:
 				continue   # a riding creature's far legs are hidden behind its mount
 			# A body may give its hind legs their own part (legs.hind: a cat's hock), and bake its
@@ -342,7 +345,10 @@ func _make_rig(lib, body_id: String, head_id: String, colours: Dictionary, paren
 			var leg_id: String = body.legs.get("hind", body.legs.part) if hind else body.legs.part
 			var leg_part: Dictionary = lib.part(leg_id)
 			var leg := _shape()
-			leg.part_id = leg_id + pose
+			# A body whose legs go into it (parts.json "cut": a newt's hips sit inside its flanks) has
+			# each leg baked cut by it, at its own hip: only what the body doesn't hide is left, so
+			# every leg draws over the body (the far ones under the near ones).
+			leg.part_id = leg_id + pose + ("~%s%s^%d" % [body_id, pose, i] if cut else "")
 			leg.facing = facing_k
 			leg.setup(leg_part.shapes, colours)
 			leg.position = Vector2(float(a[0]), float(a[1]))
@@ -350,6 +356,8 @@ func _make_rig(lib, body_id: String, head_id: String, colours: Dictionary, paren
 			# near leg draws over the belly, as on a horse.
 			var under: bool = rig.get("legs_under", false)
 			leg.set_meta("z", -1 if under and float(a[3]) > 0.0 else (1 if float(a[3]) > 0.0 else -2))
+			if cut:
+				leg.set_meta("z", 1 if float(a[3]) > 0.0 else 0.5)
 			if a.size() > 4 and int(a[4]) == 1:
 				leg.scale.x = -1.0
 			if rig.has("anchors") and float(a[3]) < 0.0:
@@ -383,14 +391,14 @@ func _make_rig(lib, body_id: String, head_id: String, colours: Dictionary, paren
 	if head_id != "":
 		var head: Dictionary = lib.part(head_id)
 		var head_node := _shape()
-		head_node.part_id = head_id
+		head_node.part_id = head_id + ("~%s^head" % body_id if "head" in body.get("cut", []) else "")   # cut by its body (as legs)
 		head_node.facing = facing_k
 		head_node.setup(head.shapes, colours)
 		head_node.position = sockets.head
 		head_node.set_meta("z", 2)
 		root.add_child(head_node)
 		self.head_node = head_node
-		var head_rig: Dictionary = PartShape.rigs.get(head_id + PartShape.facing_suffix(facing_k), PartShape.rigs.get(head_id, {}))
+		var head_rig: Dictionary = PartShape.rigs.get(head_node.part_id + PartShape.facing_suffix(facing_k), PartShape.rigs.get(head_node.part_id, {}))
 		sockets["top"] = sockets.head + (head_rig.sockets.top if head_rig.has("sockets") else PartShape.v2(head.sockets.top))
 		gear_scale = float(head_rig.get("gear_scale", 1.0))
 

@@ -35,6 +35,16 @@ map; the code says the details.
    - **Worn armour** (torso slot) is baked on its wearer (`armour.leather~body.rat`): put on at
      the body's 3D torso socket, scaled by `torso_fit`, with the body rendered as a flat green
      holdout and cut out, so the armour wraps the body and hides where the body hides it.
+     (Every body is painted as the holdout, built ones too: until 2026-10-13 the built bodies kept
+     their colours, so every frog, rat, beetle and spider's armour carried a whole copy of its
+     body, in the skin of whichever unit baked it first.)
+   - **Cut legs and heads**: a body listed with `"cut": ["legs"]` / `["head"]` in parts.json bakes
+     each leg (`leg.newt~body.newt^2`: at the body's anchor 2) or its head (`head.pony~body.pony^head`)
+     in place on it, the body as the holdout (a second, flat render masks it): the sprite keeps only
+     what the body doesn't hide, its origin at the hip or neck so it still swings and turns there.
+     For bodies whose hips sit inside them (a newt's sprawl, a horse's thighs, a frog's haunches)
+     and beasts whose head goes behind the rump facing away. Today: newt, pony (and the centaur's
+     horse half), capybara, frog, boar, sheep.
 3. **Pixelize** (`scenes/art_pixel/pixelize.gd`): down to art pixels, value posterised into
    painted bands (`ArtKit.UNIT_BANDS`: the paint-over look) and a dark outline.
 4. **Team colour**: parts bake in a magenta team key; `src/team_mask.gdshader` swaps it for the
@@ -45,6 +55,40 @@ map; the code says the details.
    the facing that best fits its movement on screen, with hysteresis, and rebuilds when it
    changes. The bake's alpha is hard, so see-through is the view's job: a part with `blur`
    in parts.json (a hummingbird's wings) is drawn at that opacity over the body and flickers.
+
+## Layering rules
+
+Every composed unit obeys these; `tests/layer_check.gd` checks them on the drawn pixels, for every
+body, every mount with and without riders, the animals and the siege crews, in all 8 facings,
+standing and at three walk phases (see Checking art). Draw order is child order by the `z` meta
+(`_sort_layers`), never `z_index`. "Depth" is a socket's bake depth in that facing (> 0: nearer the
+camera than the body's middle); "near" is depth >= 0.5, "far" depth < -0.5.
+
+1. **Shadow first**: the unit's shadow draws under every part.
+2. **Legs and head show where the 3D model shows them.** The body's model with its legs at their
+   hips and its head on its socket, rendered in flat colours from the same camera, is the truth: a
+   leg or head never draws over the body where the model's body is in front of it, and the body
+   never covers a leg or head the model shows (slack: 6 pixels or 8% of the part, for the outline
+   and rounding). A plain leg sprite drawn over the body shows its whole top, so a body whose hips
+   sit inside it bakes cut legs (above); likewise a head that goes behind the body.
+3. **Far legs behind the body** (z -2), unless cut (then 0.5: over the body, under the near legs).
+   Near legs over it (z 1), or under it where clothes hang over the hips (`legs_under`, z -1).
+4. **The near arm** (a body's `front` layer) draws over the body and its worn armour (1.5), under
+   the head; behind the body (-1) when the facing turns that side away. (Known limit, not checked:
+   a raised arm can't pass in front of the face.)
+5. **Worn armour holds no body**: baked on its body with the body cut out, it never covers more
+   than 80% of the body's pixels (a whole copy is 100%).
+6. **Back parts** (capes, quivers, banners, wings): behind the body when the back socket is far
+   (the unit faces the camera), over it when near (it walks away). A mount's wings at its withers:
+   over its back unless the withers are far (then the rump hides their roots), always under the rider.
+7. **What the hands hold**: in a near hand, over the body; in a near or middle hand, at least 3
+   pixels show in every facing and pose (a weapon never vanishes). A far hand's shield may hide.
+8. **Riders**: no mount part (body, legs, head, wings) draws over any rider part; the rider's near
+   leg draws over the mount's flank.
+9. **Team cloth never covers the face**: on a head facing the camera, at most 30% of its pixels
+   under team-colour pixels of later parts (head gear aside).
+10. **Siege crews by socket**: `_in` behind the engine, `_top` over it, the rest by the socket's
+    depth sign.
 
 **Siege engines** (milestone 13, D-119) are one baked part each, `siege.<engine>.<take>` (slot
 `engine` in parts.json; models in `scenes/art_pixel/siege_models.gd`, which `unit_models.gd` hands
@@ -148,6 +192,17 @@ one look of one building (with its stages and extra parts), nine props to a rend
 `tests/art_bake_time.gd -- cold|warm|off` times a match start (two races, all their buildings).
 
 ## Checking art
+
+**Run the layering check first** (needs a window; about 25 s cold, a few seconds warm): every
+rule above, PASS/FAIL per rule and unit, exit 1 on any failure. Art changes must pass it before
+they're shown.
+
+```sh
+godot --path . --audio-driver Dummy --always-on-top --script res://tests/layer_check.gd -- [filter] [metrics] [looks] [debug]
+```
+
+`metrics` prints the measurement behind each failure, `looks` adds every capybara look, `debug`
+writes the 3D truth beside the composed unit for each standing view.
 
 Look at every change before showing it (Dominic catches floating parts, wrong layering and odd
 shapes at once). Close up and at game size:
