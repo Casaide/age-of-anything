@@ -24,6 +24,7 @@ func _initialize() -> void:
 			_suite("test_ai slow", "res://tests/test_ai.gd", ["slow", "jobs=%d" % share], 120, share),
 			_suite("test_2v2", "res://tests/test_2v2.gd", [], 150),
 			_suite("placement 2d", "res://tests/placement_check.gd", ["2d"], 60, 1, true),
+			_suite("hop", "res://tests/hop_check.gd", [], 15, 1, true),
 			_suite("balance age 2", "res://tests/balance.gd", ["2", "jobs=%d" % share], 30, share),
 			_suite("balance age 3", "res://tests/balance.gd", ["3", "jobs=%d" % share], 30, share),
 			_suite("mass_battle", "res://tests/mass_battle.gd", ["2", "jobs=%d" % share], 30, share),

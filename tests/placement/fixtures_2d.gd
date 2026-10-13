@@ -26,7 +26,7 @@ static func run(pc, holder: Node2D, lib, kit) -> Array:
 		["legs drawn over the body (the far legs on top)",
 			"animal body.deer", ["far legs behind the body"], "", func(v, _pose): _far_legs_over(v)],
 		["the frog's sword hidden behind its body facing forward",
-			"swamp frogs infantry age 2", ["weapons and shields show"], "", func(v, _pose): _weapon_under(v)],
+			"swamp frogs infantry age 2", ["weapons and shields show"], "", func(v, pose): _weapon_under(v, pose)],
 		["worn armour carrying a whole copy of its body (the body not cut out of the armour's bake)",
 			"sewer rats spear age 2", ["worn armour holds no body"], "", func(v, _pose): _armour_with_body(v)],
 		["a walk whose body rose as its legs spread (the feet off the ground mid-stride)",
@@ -147,9 +147,11 @@ static func _far_legs_over(v) -> void:
 			leg.node.set_meta("z", 1)
 
 
-static func _weapon_under(v) -> void:
+static func _weapon_under(v, pose := "") -> void:
 	if v.weapon != null:
 		v.weapon.set_meta("z", -4)
+	if pose == "walk0" and v.gait.get("hop", false):
+		v.bob.rotation = -0.18   # the hop as it was then: nose up at the start of a hop (before 2026-10-13)
 
 
 ## Puts the body's own pixels into its worn armour's sprite, as the bake did before the body was
