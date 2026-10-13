@@ -107,9 +107,10 @@ static func evaluate(recipe: Dictionary, lib, rules: Dictionary) -> Dictionary:
 	var c: Dictionary = rules.cost
 	var econ: Dictionary = lib.creatures[recipe.creature].get("economy", {})
 	var total: int = (int(c.base) * lib.curve(c.curve, points) + 500) / 1000
-	# A role can have its own price terms (rules.cost.roles): a floor, and a mix that
+	# A role can have its own price terms (rules.cost.roles): a pct of the base price, a floor, and a mix that
 	# replaces the parts' own (workers cost food, and at least the floor).
 	var terms: Dictionary = c.get("roles", {}).get(recipe.get("role", ""), {})
+	total = total * int(terms.get("pct", 100)) / 100   # a role priced off the common base (siege kept where it was)
 	total = maxi(total, int(terms.get("floor", 0)))
 	if terms.has("mix"):
 		mix = terms.mix.duplicate()

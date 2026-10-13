@@ -754,3 +754,11 @@ light raiders become one of the themes a race's Castle unique unit can take (cho
 **D-124, 2026-10-13: Rats ride cats.** Dominic: "Cats are great, just hind looks a little too big." The reworked
 alley cat (C2: a real cat body, four-beat walk, sits when idle; ginger, black-and-white and grey coats) becomes
 the rats' mount, its hindquarters made smaller. The capybara stays in the game as a mount anyone can ask for.
+
+**D-125, 2026-10-13: Soldiers cost about 1.7x; age-3 sword picks; the tiger dropped for now.** Dominic: "yes raise
+soldier prices, your sword picks. Tiger we can drop for now." The cost base goes from 60 to 100 (an age-1 spearman
+35 -> 55, about a worker and a bit, as in the genre); workers keep their 50-food floor and siege engines keep their
+prices (rules.cost.roles pct 60). The age-3 swordsman kit (S3): hellenic B (long xiphos, Attic helmet), steppe B
+(heavy sabre, spiked helmet), han B (dao), swamp B (river-stone mace), forest A (chitin blade), spooky B (hooked
+sickle), plus a plain iron sword as the fallback; built once the placement checks are in (unit work is paused).
+The tiger concept stays in the repo, unused.
