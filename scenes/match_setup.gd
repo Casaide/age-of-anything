@@ -739,6 +739,23 @@ func _bake(_i: int) -> void:
 		kit.warm(races)   # while the players choose, bake the match's buildings and props
 
 
+## The few that show off a race on the stage, a line each, in this order while there's room (the
+## whole roster, siege and all, crowded into a heap: Dominic, "we squeeze too much, be selective").
+const STAGE_ROLES := ["spear", "infantry", "archer", "large", "skirmisher", "worker", "catapult", "healer"]
+
+
+static func _stage_pick(units: Array, room: int) -> Array:
+	var out := []
+	for role in STAGE_ROLES:
+		if out.size() >= clampi(room, 3, 6):
+			break
+		for u in units:
+			if u.recipe.get("role", "") == role:
+				out.append(u)
+				break
+	return out
+
+
 func _muster(i: int) -> void:
 	var s: Dictionary = sides[i]
 	if s.dirty_at > 0.0:   # its new race isn't baked yet: the old army stays under the veil, redrawn from the new atlas
@@ -752,7 +769,8 @@ func _muster(i: int) -> void:
 	var zoom := 3.0 if s.stage.size.y >= STAGE_H * 1.45 else STAGE_ZOOM   # a tall stage (a big window) shows the army bigger, in whole pixels
 	s.layer.scale = Vector2.ONE * zoom
 	var w: float = maxf(s.stage.size.x, 300.0) / zoom
-	var units: Array = s.race.units
+	var all: Array = s.race.units
+	var units := _stage_pick(all, int(w / 46.0))
 	var n := units.size()
 	for k in n:
 		var u: Dictionary = units[k]
@@ -765,7 +783,7 @@ func _muster(i: int) -> void:
 		view.position = Vector2(x, maxf(s.stage.size.y, STAGE_H) / zoom * (0.62 if k % 2 == 0 else 0.8))
 		view.face(1.0 if i == 0 else -1.0)   # both armies face the middle
 		s.layer.add_child(view)
-	s.status.text = "  %d units, every one priced by its parts" % n
+	s.status.text = "  %d units, every one priced by its parts" % all.size()
 	if s.forging and s.dirty_at == 0.0:   # the new army is ready: the veil lifts and it fades in
 		s.forging = false
 		s.dice.busy = false
