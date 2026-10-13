@@ -191,7 +191,7 @@ func _bake_model(id: String, colours: Dictionary, bake_key: String, k := 0) -> v
 		rig.dir = (cam.unproject_position(Vector3(20, 0, 0)) - origin).normalized()
 		if spec.has("anchors"):   # a leg on the camera's side of the body is the near leg
 			rig.anchors = spec.anchors.map(func(a): var v: Vector2 = to2d.call(a[0]); return [v.x, v.y, a[1],
-				a[2] if k == 0 else (1 if a[0].dot(flat) > 0.0 else -1), a[3] if a.size() > 3 else 0])
+				a[2] if k == 0 else (1 if a[0].dot(flat) > 0.0 else -1), a[3] if a.size() > 3 else 0, a[4] if a.size() > 4 else false])   # a[4]: a hind leg (its body's legs.hind part)
 		if spec.has("torso_scale"):
 			rig.torso_scale = spec.torso_scale
 		if spec.has("gear_scale"):

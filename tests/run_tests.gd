@@ -461,6 +461,38 @@ func _test_composer(lib, gen, rules: Dictionary) -> void:
 			view.build(u.recipe, lib, Color.BLUE, u.eval.speed)
 			check(view.get_child_count() >= 2, "composed %s" % u.recipe.name)
 			view.free()
+	_test_cat_poses(gen, rules)
+
+
+## Concept C2's cat (data/later/cat_mount.json, not in play): its walk picks baked leg steps, and
+## standing still it sits down through its idle poses and gets up again when it moves (view only).
+func _test_cat_poses(gen, rules: Dictionary) -> void:
+	var lib = DataLib.new()
+	var later: Dictionary = DataLib.load_json("res://data/later/cat_mount.json")
+	for p in later.parts:
+		lib.parts[p.id] = p
+	lib.creatures.merge(later.creatures)
+	lib.palettes.skins.merge(later.skins)
+	var u: Dictionary = _unit(gen.generate("sewer rats with crossbows", rules), "large").duplicate(true)
+	u.recipe.mount.creature = "cat"
+	u.recipe.mount.skin = "cat_tuxedo"
+	check(UnitView.pose_parts(lib, u.recipe).size() == 2 * 3 + 2 * 8, "cat: its sit poses and 8 walk steps per leg to bake")
+	var view = UnitView.new()
+	view.build(u.recipe, lib, Color.BLUE, u.eval.speed)
+	view.walking = true
+	for f in 5:
+		view._process(0.05)
+	check(view.legs.any(func(l): return "@w" in l.node.part_id), "cat: walking shows baked walk steps")
+	view.walking = false
+	for f in 40:
+		view._process(0.25)
+	check(view.body_pose == "sit", "cat: sits after standing still (%s)" % view.body_pose)
+	check(view.legs.filter(func(l): return l.node.part_id.begins_with("leg.cat")).all(func(l): return l.node.part_id.ends_with("@sit")), "cat: its legs sit too")
+	view.walking = true
+	for f in 4:
+		view._process(0.1)
+	check(view.body_pose == "", "cat: stands up to walk (%s)" % view.body_pose)
+	view.free()
 
 
 func _unit(race: Dictionary, role: String) -> Dictionary:
