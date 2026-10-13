@@ -241,6 +241,11 @@ func _unit_jobs(races: Array) -> Array:
 				if ps is PartShape and ps.part_id != "":
 					ids.append(_part_job(ps.part_id, ps.shapes, ps.colours))
 			probe.free()
+			if not UnitView.pose_parts(lib, u.recipe).is_empty():   # a body's idle poses and posed walk (a cat)
+				var mount_skin: String = u.recipe.mount.skin if u.recipe.has("mount") else u.recipe.skin
+				var pose_colours := UnitView.colours_for(lib, mount_skin, u.recipe.family, ANIMAL_TEAM)
+				for pp in UnitView.pose_parts(lib, u.recipe):
+					ids.append(_part_job(pp[0], pp[1], pose_colours))
 			var colours := UnitView.colours_for(lib, u.recipe.skin, u.recipe.family, ANIMAL_TEAM)
 			if u.recipe.slot == "worker":
 				# Workers change tools for the job and carry their load home in their hands.

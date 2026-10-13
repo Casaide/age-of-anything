@@ -6,7 +6,8 @@ extends "res://scenes/art_pixel/unit_models.gd"
 ## like any mount: a body with a seat, a head on its "head" socket, four legs on its anchors.
 ##   capy_long      the capybara pushed: a much longer brick of a head, flat on top, the rump high
 ##   capy_long_tan  longer still, carried level, a tan face (tools/blender/capybara.py variants)
-##   cat            a scruffy sewer alley cat, muzzled and harnessed (tools/blender/big_cat.py)
+##   cat            a scruffy sewer alley cat, muzzled and harnessed (tools/blender/big_cat.py); its
+##                  saddle, tail and bridle helpers moved to unit_models.gd for the C2 cat (`cat`)
 ##   tiger          a tiger (the same script), for the rats or for another culture later
 
 const CAPY_RED := Color("#a65f36")   # a capybara's reddish brown (the palette's is a duller brown)
@@ -61,28 +62,6 @@ func _cat_mats(p: Dictionary) -> Dictionary:
 		"nose": plain(p.nose), "eye": plain(INK), "iris": plain(p.iris), "ear_in": plain(p.nose.lightened(0.2))}
 
 
-## A saddle cloth in the team's colour with a pale border, a leather saddle on it, a girth.
-func _cat_saddle(n: Node3D, c: Dictionary, x: float, y: float, half: float, girth_c: Vector3, ry: float, rz: float) -> void:
-	var cloth := plain(c.team)
-	var trim := surf("cloth", Color("#e8e0d0"), 3.0)
-	n.add_child(_box(Vector3(9.0, 0.7, half * 1.7), cloth, Vector3(x, y, 0)))
-	for side in [1, -1]:
-		n.add_child(_box(Vector3(9.0, 4.4, 0.5), cloth, Vector3(x, y - 2.4, (half * 0.85) * side), Vector3(10 * side, 0, 0)))
-		n.add_child(_box(Vector3(9.2, 0.7, 0.6), trim, Vector3(x, y - 4.5, (half * 0.85 + 0.35) * side), Vector3(10 * side, 0, 0)))
-	n.add_child(_box(Vector3(5.5, 1.2, half * 1.2), surf("leather", Color(0.7, 0.5, 0.35), 3.0), Vector3(x, y + 0.8, 0)))   # the saddle
-	harness(n, girth_c, ry, rz, girth_c + Vector3(-1, -1, rz + 0.4), girth_c + Vector3(-1, -1, -rz - 0.4))
-
-
-## A tail as a chain of rods along `pts`, ringed dark every other segment.
-func _cat_tail(n: Node3D, pts: Array, r0: float, r1: float, fur: Material, dark: Material, tip_dark := true) -> void:
-	var count := pts.size() - 1
-	for k in count:
-		var ra := lerpf(r0, r1, float(k) / count)
-		var rb := lerpf(r0, r1, float(k + 1) / count)
-		var m := dark if (k % 2 == 1 or (tip_dark and k == count - 1)) else fur
-		n.add_child(rod(pts[k], pts[k + 1], ra, rb, m))
-
-
 func _cat_rig(head: Vector3, seat: Vector3, front: float, back: float, hip_y: float, z: float) -> Dictionary:
 	return {"sockets": {
 		"head": head, "hand_r": seat + Vector3(5, -6, 5.0), "hand_l": seat + Vector3(4, -6, -5.0),
@@ -112,16 +91,6 @@ func _head_rm_cat(c: Dictionary) -> Dictionary:
 	root.add_child(n)
 	_cat_bridle(root, c, Vector3(4.9, -0.3, 0) * CAT_HEAD, 1.85 * CAT_HEAD, Vector3(-0.3, 1.2, 0) * CAT_HEAD, 3.3 * CAT_HEAD, -8)
 	return _scaled({"node": root, "sockets": {"top": Vector3(1.6, 4.0, 0) * CAT_HEAD}}, CAT_SCALE)
-
-
-## A muzzle strap round the snout, a headstall behind the eyes, its brow band in team colour.
-func _cat_bridle(n: Node3D, c: Dictionary, snout: Vector3, sr: float, crown: Vector3, cr: float, tilt: float) -> void:
-	var leather := surf("leather", Color(0.55, 0.4, 0.28), 2.0)
-	var q := Basis(Vector3(0, 0, 1), deg_to_rad(tilt))
-	n.add_child(ring(sr * 0.92, sr * 1.08, leather, q * snout, Vector3(0, 0, 90 + tilt), Vector3(1, 1.4, 1)))
-	n.add_child(ring(cr * 0.9, cr * 1.04, leather, q * crown, Vector3(0, 0, 70 + tilt), Vector3(1, 1.6, 1)))
-	n.add_child(rod(q * (snout + Vector3(-0.6, sr * 0.6, 0)), q * (crown + Vector3(1.6, cr * 0.7, 0)), 0.3, 0.3, leather))
-	n.add_child(blob(Vector3(0.5, 0.5, 0.5), surf("bronze", Color.WHITE, 2.0), q * (snout + Vector3(-0.8, 0, sr * 1.02))))   # the ring the rein ties to
 
 
 ## Long slim legs: a thigh, a long shin, a white-socked paw.
