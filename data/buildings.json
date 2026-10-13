@@ -464,6 +464,7 @@
    "walkway": 2
   },
   "watchtower": {
+   "sees_over_trees": true,
    "name": "Watchtower",
    "desc": "A lookout that shoots the nearest enemy in range and sees far into the fog. Each unit inside adds an arrow.",
    "size": 1,
@@ -545,6 +546,7 @@
    ]
   },
   "stone_gate": {
+   "sees_over_trees": true,
    "name": "Stone Gate",
    "desc": "A stone gatehouse three tiles long: drop it on your stone wall and it follows the line (on open ground, R turns it). It opens for your side and stays shut to everyone else.",
    "size": 1,
@@ -580,6 +582,7 @@
    }
   },
   "wall_tower": {
+   "sees_over_trees": true,
    "name": "Wall Tower",
    "desc": "A stone tower set into a wall line: drop it on your stone wall (or raise it alone and wall up to it). It shoots, shelters a few, and its stairs lead up onto the wall walk.",
    "size": 1,
@@ -645,6 +648,7 @@
    "note": "milestone 16 (walls.gd): only on open ground beside an enemy walkway (stone wall, gatehouse, wall tower), walked over like a farm; a way up for its side onto the walkway it leans on; a defender standing on that cell with no attacker beside pushes it off (walkway.push hp a tick). The look is a marked placeholder"
   },
   "outpost": {
+   "sees_over_trees": true,
    "name": "Outpost",
    "desc": "A cheap lookout post: it sees far into the fog, but it doesn't shoot and nobody fits inside.",
    "size": 1,
@@ -718,6 +722,7 @@
    "note": "building, tower, wall and siege research (milestone 12 phase 4)"
   },
   "castle": {
+   "sees_over_trees": true,
    "name": "Castle",
    "desc": "A stone fortress that looses a volley of arrows at every enemy in reach and shelters your soldiers. Its own research: War Drums and your race's two tricks.",
    "size": 4,
@@ -777,6 +782,7 @@
    "idle_note": "Keep it standing to win."
   },
   "bastion": {
+   "sees_over_trees": true,
    "name": "Bastion",
    "desc": "A stone tower, taller and tougher than a watchtower: it hits harder and further. Each unit inside adds an arrow.",
    "size": 1,
