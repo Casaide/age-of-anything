@@ -1,6 +1,6 @@
 {
  "schema": "aow.modes/1",
- "_doc": "game modes (milestone 16, src/sim/modes.gd), the first of the match rules (milestone 18): the host's rules carry `mode` (an id here; none or standard: the usual match), applied at World setup after the usual start. A mode gives every side (or, with defend/attack, the defending team: player 0's, and the rest) a start: age (the ages up to it are given), stock (resources set, not added), town (false: no Town Center or starting workers; such a side is out once it has nothing left), workers (more workers by the Town Center), walls (a finished ring round its start: Fortify, src/sim/fortify.gd: radius, wall, gate, tower, tower_every, gates), garrison (soldiers by slot, put up on the walkway facing the nearest enemy start), army (soldiers and engines by slot, by its start). hold_minutes (defend/attack): the defenders win when it runs out",
+ "_doc": "game modes (milestone 16, src/sim/modes.gd), the first of the match rules (milestone 18): the host's rules carry `mode` (an id here; none or standard: the usual match), applied at World setup after the usual start. A mode gives every side (or, with defend/attack, the defending team: player 0's, and the rest) a start: age (the ages up to it are given), stock (resources set, not added), town (false: no Town Center or starting workers; such a side is out once it has nothing left), workers (more workers by the Town Center), walls (a finished ring round its start: Fortify, src/sim/fortify.gd: radius, wall, gate, tower, tower_every, gates), garrison (soldiers by slot, put up on the walkway facing the nearest enemy start), army (soldiers and engines by slot, by its start). hold_minutes (defend/attack): the defenders win when it runs out. lift_lacks: buildings every side may build and repair in this mode whatever its race lacks in a normal match (the walls: Dominic, 2026-10-13)",
  "modes": {
   "standard": {
    "name": "Standard",
@@ -9,6 +9,14 @@
   "fortress": {
    "name": "Fortress",
    "desc": "Every side starts in age 2 behind a stone ring with gatehouses and wall towers, archers on the walls and a fat stockpile for siege. Break in, hold out.",
+   "lift_lacks": [
+    "palisade",
+    "palisade_gate",
+    "wall",
+    "stone_gate",
+    "wall_tower",
+    "ladder"
+   ],
    "age": 2,
    "stock": {
     "food": 900,
@@ -39,6 +47,14 @@
    "name": "Siege",
    "desc": "The first side holds a walled town in age 3; the others come with an army and engines but no town. Take the Town Center, or hold out for 20 minutes.",
    "hold_minutes": 20,
+   "lift_lacks": [
+    "palisade",
+    "palisade_gate",
+    "wall",
+    "stone_gate",
+    "wall_tower",
+    "ladder"
+   ],
    "defend": {
     "age": 3,
     "stock": {

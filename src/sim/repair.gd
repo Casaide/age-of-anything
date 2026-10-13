@@ -19,13 +19,14 @@ static func setup(w) -> void:
 	w.repair_cfg = {"speed_pct": int(r.get("speed_pct", 50)), "cost_pct": int(r.get("cost_pct", 50))}
 
 
-## Can `player`'s workers mend this (a building or unit id): theirs, finished, hurt, and (a unit)
-## a machine?
+## Can `player`'s workers mend this (a building or unit id): theirs, finished, hurt, a building its
+## race builds (milestone 14's lacks; a mode may lift them: Modes lift_lacks), and (a unit) a machine?
 static func can_mend(w, player: int, id: int) -> bool:
 	var b: int = w.buildings.index_of(id)
 	if b >= 0:
 		var bs = w.buildings
-		return bs.owner[b] == player and bs.done[b] == 1 and bs.hp[b] < w.bmods[player][bs.kind[b]].hp
+		return bs.owner[b] == player and bs.done[b] == 1 and bs.hp[b] < w.bmods[player][bs.kind[b]].hp \
+			and not Economy.lacks(w, player, w.btypes[bs.kind[b]].id)
 	var j: int = w.units.index_of(id)
 	if j < 0 or w.units.owner[j] != player:
 		return false

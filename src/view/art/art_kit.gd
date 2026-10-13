@@ -597,11 +597,27 @@ func wall_look(name: String, links: int) -> Dictionary:
 	var info: Dictionary = buildings[name]
 	var under := []
 	var over := []
+	var front := []   # the near merlons of the same pieces, in the same order: drawn over units on the walkway
 	for k in Models.LINKS.size():
 		if links & (1 << k):
 			var d: Vector2i = Models.LINKS[k]
-			(under if d.x + d.y <= 0 else over).append(info.arms[k])
-	var pieces: Array = under + [info.body] + over
+			(under if d.x + d.y <= 0 else over).append(k)
+	for k in under + [-1] + over:
+		var f: String = info.get("front", "") if k < 0 else info.get("arms_front", [])[k] if info.has("arms_front") else ""
+		if f != "":
+			front.append(f)
+	var look := _compose(under.map(func(k): return info.arms[k]) + [info.body] + over.map(func(k): return info.arms[k]))
+	if not front.is_empty():
+		var f := _compose(front)
+		look.front_tex = f.tex
+		look.front_origin = f.origin
+	_wall_looks[key] = look
+	return look
+
+
+## Lay baked pieces (names, bottom first) on one image, all anchored on the same point: every
+## piece's ground shadow first, the darkest wins where they overlap, then the art. {tex, origin}.
+func _compose(pieces: Array) -> Dictionary:
 	var lo := Vector2i(1 << 20, 1 << 20)
 	var hi := -lo
 	for p in pieces:
@@ -636,9 +652,48 @@ func wall_look(name: String, links: int) -> Dictionary:
 					out[o + 1] = src[s + 1]
 					out[o + 2] = src[s + 2]
 					out[o + 3] = a
-	var look := {"tex": ImageTexture.create_from_image(Image.create_from_data(w, h, false, Image.FORMAT_RGBA8, out)), "origin": Vector2(-lo)}
-	_wall_looks[key] = look
-	return look
+	return {"tex": ImageTexture.create_from_image(Image.create_from_data(w, h, false, Image.FORMAT_RGBA8, out)), "origin": Vector2(-lo)}
+
+
+## Canvas px a model unit of height rises on screen: the bake camera looks down 30 degrees.
+const WALK_PX_PER_UNIT := Baker.PX_PER_UNIT * 0.8660254
+
+## A walkway's near merlons (Models.merlon) on `root`: hide them (front_only false: the body's bake)
+## or show only them (true: the front layer's bake). A merlon is near when it stands on the camera's
+## side of its wall's line (or of the piece's middle, for a post or tower): sim x + y larger. Returns
+## how many there are.
+static func front_split(root: Node3D, front_only: bool) -> int:
+	var n := 0
+	var stack := [[root, root.transform]]
+	while not stack.is_empty():
+		var top: Array = stack.pop_back()
+		var node: Node3D = top[0]
+		var t: Transform3D = top[1]
+		for c in node.get_children():
+			if c is Node3D:
+				stack.append([c, t * (c as Node3D).transform])
+		if not node is MeshInstance3D:
+			continue
+		var front := false
+		if node.has_meta("parapet"):
+			var p := Vector3(t.origin.x, 0, t.origin.z)
+			var along: Vector3 = t.basis * (node.get_meta("parapet") as Vector3)
+			along.y = 0
+			if along.length() > 0.001:
+				along = along.normalized()
+				p -= along * p.dot(along)   # off the wall's line through the piece's middle
+			front = p.x + p.z > 0.04
+		if front:
+			n += 1
+		node.visible = front if front_only else not front
+	return n
+
+
+## The front layer of a walkway piece: only its near merlons, baked without a shadow. {img, origin}.
+func _bake_front(baker, node: Node3D) -> Dictionary:
+	front_split(node, true)
+	var f: Dictionary = await baker.bake(node, [Vector3.ZERO])
+	return {"img": (f.tex as Texture2D).get_image(), "origin": f.points[0]}
 
 
 ## The animals (data/animals.json) as one more "race" to bake: their recipes, never a player's.
@@ -825,12 +880,19 @@ func _bake_building(baker, models, arch: String, type: String, model := "", suff
 	pts.append_array(spec.lights)
 	var door: Array = spec.get("doorway", []).slice(0, 3)
 	pts.append_array(door)
+	var fronts := front_split(spec.body, false)   # a walkway's near merlons go in a layer of their own
 	baker.set_ground_shadow(true)
 	var body: Dictionary = await baker.bake(spec.body, pts)
 	baker.set_ground_shadow(false)
 	made[name] = {"img": (body.tex as Texture2D).get_image(), "origin": body.points[0]}
 	var local := func(p: Vector2) -> Vector2: return (p - body.points[0]) / ART_SCALE
 	var info := {"body": name, "lights": []}
+	if Models.WALK_H.has(type):   # units on its walkway stand this high (canvas px), on the stone
+		var sc := float(_buildings_data().get("scale", {}).get(arch, {}).get(type, 1.0))
+		info.walk_px = Models.WALK_H[type] * sc * WALK_PX_PER_UNIT
+	if fronts > 0:
+		made[name + ":front"] = await _bake_front(baker, _placed(models, arch, type, model, suffix).body)
+		info.front = name + ":front"
 	if spec.has("smoke"):
 		info.smoke = local.call(body.points[1])
 	if spec.has("lantern"):
@@ -845,21 +907,47 @@ func _bake_building(baker, models, arch: String, type: String, model := "", suff
 		var ban: Dictionary = await baker.bake(spec.banner, [Vector3.ZERO])
 		info.banner = {"tex": ban.tex, "origin": ban.points[0]}   # its own wave shader, so outside the atlas
 	if spec.has("open"):   # a gate: its open look, shown while a friend goes through (shadowed like the shut one)
+		var open_fronts := front_split(spec.open, false)
 		baker.set_ground_shadow(true)
 		var op: Dictionary = await baker.bake(spec.open, [Vector3.ZERO])
 		baker.set_ground_shadow(false)
 		made[name + ":open"] = {"img": (op.tex as Texture2D).get_image(), "origin": op.points[0]}
 		info.open = name + ":open"
+		if open_fronts > 0:
+			made[name + ":open:front"] = await _bake_front(baker, _placed(models, arch, type, model, suffix).open)
+			info.open_front = name + ":open:front"
 	if spec.has("arms"):   # a wall: an arm towards each of the eight neighbours (Models.LINKS), and a run for its picture
 		baker.set_ground_shadow(true)
 		info.arms = []
+		info.arms_front = []
+		var with_front := []
+		for k in spec.arms.size():
+			if front_split(spec.arms[k], false) > 0:
+				with_front.append(k)
 		var out: Array = await baker.bake_many(spec.arms + [spec.icon])   # all nine in one render: small, and a render is most of a bake
 		for k in spec.arms.size():
 			made["%s:arm%d" % [name, k]] = {"img": (out[k].tex as Texture2D).get_image(), "origin": out[k].points[0]}
 			info.arms.append("%s:arm%d" % [name, k])
+			info.arms_front.append("")
 		made[name + ":icon"] = {"img": (out[-1].tex as Texture2D).get_image(), "origin": out[-1].points[0]}
 		info.icon = name + ":icon"
 		baker.set_ground_shadow(false)
+		if not with_front.is_empty():   # the arms' near merlons, alone (no shadow: the arm's bake has it)
+			var again: Dictionary = _placed(models, arch, type, model, suffix)
+			var alone := []
+			for k in with_front:
+				front_split(again.arms[k], true)
+				alone.append(again.arms[k])
+			var fo: Array = await baker.bake_many(alone)
+			for n in with_front.size():
+				var k: int = with_front[n]
+				made["%s:arm%d:front" % [name, k]] = {"img": (fo[n].tex as Texture2D).get_image(), "origin": fo[n].points[0]}
+				info.arms_front[k] = "%s:arm%d:front" % [name, k]
+			for n in again.arms.size():
+				if not n in with_front:
+					again.arms[n].free()
+			again.body.free()
+			again.icon.free()
 	if spec.has("vane"):
 		var vane: Dictionary = await baker.bake(spec.vane, [Vector3.ZERO, spec.vane_pivot])
 		made[name + ":vane"] = {"img": (vane.tex as Texture2D).get_image(), "origin": vane.points[1]}
