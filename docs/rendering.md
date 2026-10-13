@@ -65,6 +65,15 @@ map; the code says the details.
    the middle of its hips) go on its mount's `seat`; it shows the leg on the flank facing the camera
    (the bake's anchors carry which side faces it), stretched down to the mount's `girth` (the baker
    finds it under the seat) unless it rides folded (`creatures.json rider_legs`).
+   A hopper (`creatures.json gait: "hop"`, the frogs) hops by the ground its node covers (one hop per
+   `UnitView.HOP_LENGTH` of ground, so at the sim's speed whatever it is): it crouches, pushes off with its
+   legs flung back, tucks, reaches for the ground and squashes on landing, its legs bending by squashing
+   (each foot rising by the same amount, the body riding down on them) and swinging only in the air. It is
+   drawn ahead of or behind its node (`_hop_off`) so it stays planted on the ground while the node moves on
+   and covers the ground in the air; over a hop that averages out on the node (selection and bars stay
+   put). Turns and stops are made up in the air; stopped, it finishes its hop and lands on its node.
+   `tests/hop_check.gd` measures it (planted feet within an art pixel, the average on the node, every facing,
+   smooth and stepped); `tests/hop_sheet.gd` draws it frame by frame. Riders don't hop (their mount walks).
 
 ## Placement rules
 
