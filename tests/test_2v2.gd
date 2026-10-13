@@ -32,6 +32,7 @@ func _init() -> void:
 	for p in 4:
 		bots.append(Bot.new(p))
 	var friendly := 0
+	var splashed := 0
 	var across := 0
 	var kills := [0, 0]   # units each team killed
 	var us := 0
@@ -50,7 +51,9 @@ func _init() -> void:
 				var a := _team_of(w, e.by)
 				var b := _team_of(w, e.to)
 				if a >= 0 and b >= 0:
-					if a == b:
+					if a == b and e.get("splash", false):
+						splashed += 1   # a catapult's stone hurts its own side too (rules splash_friend_pct)
+					elif a == b:
 						friendly += 1
 					else:
 						across += 1
@@ -71,7 +74,7 @@ func _init() -> void:
 			print(line)
 	print("ended at %s, winner team %d; units killed by team 0: %d, by team 1: %d; hits across teams %d, between teammates %d; tick %.2f ms avg, %.1f worst" % [
 		_clock(w.tick), w.winner, kills[0], kills[1], across, friendly, us / 1000.0 / maxi(1, w.tick), worst / 1000.0])
-	check(friendly == 0, "teammates never hit each other (%d hits)" % friendly)
+	check(friendly == 0, "teammates never strike each other, splash aside (%d blows; %d splashed)" % [friendly, splashed])
 	check(across > 0 and kills[0] > 0 and kills[1] > 0, "the teams fight each other (%d hits)" % across)
 	check(w.winner >= 0, "the 2v2 ends with a winner (team %d at %s)" % [w.winner, _clock(w.tick)])
 	print("\n%d checks, %d failed" % [checks, failures])
