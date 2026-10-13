@@ -109,6 +109,10 @@ picks), then build, tests, archive pictures.
   - [ ] Dominic's look in a match
   - [x] The newt built as the frogs' cavalry mount (D-122): `body/head/leg.newt` in data and
     `unit_models.gd`, three skins, amphibious, the swamp family's and the frogs' own mount (2026-10-13)
+- [ ] Swordsman age-3 kit for every culture (Dominic, 2026-10-13: "need age 3"; concept round running)
+- [ ] Rat mount: the long-head capybara (in play) or the alley cat (iterating: a real cat body, sits when idle); the tiger for another culture?
+- [ ] Siege engine sounds (they reuse shot and hit sounds); the swordsmen's raid mode for the bot (built, off)
+- [ ] Check bugs (swamp beetles, spiders) riding newts; "frogs riding beetles" now gives newts
 - [ ] 4. Unique unit, sapper, great sling
 - [x] 5. Healers (built 2026-10-12; the look is a pick pending: HL1 concept sheet, look A in game)
 - [ ] 6. Trade carts
