@@ -12,6 +12,7 @@ const Rng := preload("res://src/rng.gd")
 
 const TILE := 1000
 const CHUNK := 8
+const ROOM_CHUNK := 2              # cells a side of a block counted in `tight` (Flow.clear_path's quickest answer)
 const SCHEMA := "aow.map/2"
 
 var id: String
@@ -35,6 +36,8 @@ var terrain := PackedByteArray()   # index ty * width + tx
 var walk := PackedByteArray()      # ground: 1 walkable, 0 blocked (terrain or a building)
 var walks: Array = []              # per lane, the same grid (walks[0] matches walk); see lanes below
 var roomy: Array = []              # per lane (made when first asked for: roomy_grid), 1 where the cell and its 8 neighbours are on the map and walkable
+var tight: Array = []              # per lane, alongside roomy: cells not roomy per ROOM_CHUNK x ROOM_CHUNK block (PackedInt32Array)
+var room_cw := 0                   # blocks across (tight)
 ## Lanes: one walk grid per movement class, for everyone (lanes 0-2), and once a team has a
 ## gate, another three for that team, where its own gates are open (lane = group * 3 + class).
 ## Gates are closed in the shared lanes, so maps without gates keep just the three.
@@ -47,6 +50,7 @@ var walk_over := PackedByteArray() # 1 where a building may be walked across (fa
 var deck := PackedByteArray()      # 1 where a standing bridge spans the water: ground and amphibians walk it (bridges.gd)
 var opaque := PackedByteArray()    # 1 where the cell blocks sight (a tree), for fog.gd
 var opaque_chunks := PackedInt32Array()   # opaque cells per CHUNK x CHUNK block, so sight skips open country
+var opaque_version := 0            # bumped whenever a cell starts or stops blocking sight (fog.gd's kept sight circles)
 ## High ground (milestone 15): a level per cell, 0-3, from the map's optional `heights` rows
 ## (digits; a ramp is a letter: `a` climbs from 0 to 1, `b` from 1 to 2, `c` from 2 to 3). A
 ## cell lower than a neighbour it has no ramp to is a cliff: the foot of the step, where the
@@ -242,10 +246,20 @@ func roomy_grid(k: int) -> PackedByteArray:
 	while roomy.size() <= k:
 		var g := PackedByteArray()
 		g.resize(width * height)
+		g.fill(2)   # (not yet worked out: _roomy_cell counts every cell's first answer into `tight`)
 		roomy.append(g)
+		room_cw = (width + ROOM_CHUNK - 1) / ROOM_CHUNK
+		var t := PackedInt32Array()
+		t.resize(room_cw * ((height + ROOM_CHUNK - 1) / ROOM_CHUNK))
+		tight.append(t)
 		for c in g.size():
 			_roomy_cell(roomy.size() - 1, c)
 	return roomy[k]
+
+
+## Lane k's count of cells not roomy per block (`tight`); roomy_grid(k) first.
+func tight_grid(k: int) -> PackedInt32Array:
+	return tight[k]
 
 
 func _roomy_round(k: int, cell: int) -> void:
@@ -266,7 +280,16 @@ func _roomy_cell(k: int, c: int) -> void:
 			for x in range(cx - 1, cx + 2):
 				if g[y * width + x] == 0:
 					ok = false
-	roomy[k][c] = 1 if ok else 0
+	var v := 1 if ok else 0
+	var was: int = roomy[k][c]
+	if was == v:
+		return
+	roomy[k][c] = v
+	var b := (cy / ROOM_CHUNK) * room_cw + cx / ROOM_CHUNK
+	if v == 0:
+		tight[k][b] += 1
+	elif was == 0:
+		tight[k][b] -= 1
 
 
 func cell_walkable(cx: int, cy: int, k := 0) -> bool:
@@ -431,6 +454,7 @@ func _refresh(cell: int) -> void:
 	if op != opaque[cell]:
 		opaque_chunks[chunk_of(cell)] += op - opaque[cell]
 		opaque[cell] = op
+		opaque_version += 1
 	for k in CLASSES.size():
 		# Buildings block everyone but flyers.
 		walks[k][cell] = 1 if mask & (1 << k) and (k == FLYING or clear) else 0
