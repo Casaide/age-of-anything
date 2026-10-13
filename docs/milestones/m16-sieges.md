@@ -1,6 +1,8 @@
 # Milestone 16: Sieges (and the first game modes)
 
-**Status:** planned (proposed 2026-10-12; after milestone 13's siege engines)
+**Status:** in progress (started 2026-10-13, Dominic: "start milestone 16", "including full siege with
+walkable walls etc"): every step built to a first version; art waits on concept picks; the budget
+waits on Dominic's word
 **Exit criterion:** a walled town can be held and taken: defenders on the walls, attackers with
 rams, ladders or siege towers, sappers and catapults making breaches; it reads clearly on screen;
 neither side's win is a foregone conclusion at equal cost; the bot defends and assaults walls;
@@ -70,20 +72,128 @@ don't need.
 7. Game modes: Fortress and Siege (attack/defend) in the lobby, prebuilt walls per culture and
    map; a siege showcase map; balance; exit check.
 
+**Refined with what's built (2026-10-13, Claude).** Walls are one building per tile (walls.gd needs no
+new map layer): a walkway is a per-cell place count on a building type (`walkway`), a way up is a
+building with `stairs` (the stone gate, now the gatehouse, and the new wall tower), a ladder (a
+walk-over building against an enemy walkway) or a docked siege tower (a unit with `docks`). A unit on
+a wall stays in the units arrays (seen, hit, selected) with `perch` set; movement and separation skip
+it, the walkway is walked by its own small path (breadth first over the network, cached per tick).
+High ground's rules give the height (combat.gd _height_step, fog.gd), so a wall on a hill counts
+both. Breaches are terrain (wall_rubble) with a record of what stood there, so the flow fields and the
+view need nothing new. Modes are a `mode` on the host rules (data/modes.json, src/sim/modes.gd), the
+first piece of milestone 18's contract; the lobby picks it.
+
 ## Checklist
 - [ ] Plan approved by Dominic
-- [ ] 1. Measure and set the budget
-- [ ] 2. Walkways, gatehouses, wall towers (Dominic, 2026-10-13: "full siege with walkable walls etc")
-- [ ] 3. Rams, breaches, repair (walls and breaches; workers repairing siege engines too)
-- [ ] 4. Ladders, siege towers
-- [ ] 5. Defenders' tools, readability
-- [ ] 6. AI
-- [ ] 7. Game modes (Fortress, Siege), showcase map, balance, exit check
-- [ ] Archive: pictures taken along the way, journal, decisions, timeline
+- [x] 1. Measure and set the budget (measured 2026-10-13; the number is a proposal for Dominic, below)
+- [x] 2. Walkways, gatehouses, wall towers (Dominic, 2026-10-13: "full siege with walkable walls etc")
+  - [ ] Dominic's pick of the wall tower look (concept W1: squat, drum, hoard; the squat one is in as a placeholder)
+- [x] 3. Rams, breaches, repair (walls and breaches; workers repairing siege engines too)
+  - [ ] Dominic's pick of the rubble look (W1: heap, stub; in play it's the terrain's colour only)
+- [x] 4. Ladders, siege towers
+  - [ ] Dominic's pick of the siege tower (concept T1: hide, open frame, belfry, the frogs' turtle; "hide" is in as a placeholder) and the ladder (W1: plain, hooked, mantlet)
+- [x] 5. Defenders' tools, readability (pour built; readability partly: units drawn up on the wall, the pour's burst; outlines behind walls and wall damage states not yet)
+- [x] 6. AI (mans walls, siege towers over the wall, a townless besieger for the Siege mode; ladders not used by the bot yet)
+- [x] 7. Game modes (Fortress, Siege), showcase map, balance (Siege 2-2 over four bot matches), exit check (Dominic's "Romans besiege the rats" still to play)
+- [ ] Archive: pictures taken along the way (430-432, 455-456 on 2026-10-13), journal, decisions, timeline (left to the main session)
 
 ## Results
 
+**The tick budget (step 1).** `tests/siege_bench.gd -- <per side> <minutes>`: the rats in a stone
+ring (gatehouses on four sides, wall towers) round their Town Center on flat_test, archers and
+skirmishers sent up on the walls, the Romans marching on it with rams, catapults, siege towers and
+a big army, attack-moving every 20 s. Measured on Dominic's Mac with other sessions running (load
+6-26); the 200-unit reference (`sim_profile.gd -- test_sim`, 2.75 ms on a quiet machine) measured in
+the same minute to scale by:
+
+| run | reference | siege avg | ticks with 300+ units | worst |
+|---|---|---|---|---|
+| 200 a side (368 units), no walkways yet | 4.66 ms | 6.97 ms | 9.24 ms | 66 ms |
+| 200 a side, walkways in | 3.40 ms | 4.45 ms | 7.31 ms (~5.9 quiet) | 44 ms |
+| 250 a side (458 units), walkways in | 3.40 ms | 6.18 ms | 8.98 ms (~7.3 quiet) | 41 ms |
+
+Combat is half the siege tick (2.3 ms of 4.4: idle soldiers looking for foes, towers' volleys),
+separation next (0.7 ms; crowds at a gate), the walls' own tick 0.3 ms (80 on the walls).
+**Proposed budget (Claude; Dominic decides, then a D-number):** keep 3 ms average for 200 units
+(the everyday match); for a big siege, 8 ms average with 400-450 units on Dominic's Mac and no tick
+over 50 ms (one 20 Hz tick), checked on a weaker machine before release. What to optimise first if
+it's tight: combat's target search for idle units (a slower beat while nothing is near), then
+separation only near movers.
+
+**Walls you stand on (step 2).** `src/sim/walls.gd`; data `walkway` in data/buildings.json (climb 2 s,
+fall 10 hp, 80% speed on the walkway, riders, giants and engines can't climb). Stone walls hold 2 a
+tile, the stone gatehouse 2 a tile and has stairs, the new Wall Tower (age 2, 25 wood 60 stone,
+1800 hp, shoots, holds 3 inside and 3 on top, has stairs) drops onto a wall tile like a gate (it
+`replaces` the wall). Units ordered onto a wall (right-click your wall) walk to the nearest way up,
+climb, and spread over the nearest places (a group fills the wall outward); up there they are a level
+up (+1 tile reach for shooters, 75% damage from shots fired up at them, +1 sight), melee below can't
+reach them nor they it, and they don't chase. Ordered anywhere else they walk to the best way down
+(on the destination's side) and climb down; anything else (gather, attack a building...) waits in
+their queue until they're down. A wall tile destroyed under them: they fall (10 hp, never killed).
+Melee on the walkway fight each other along it. Drawn raised on the wall (sim_debug `_wall_lift`;
+higher on a tower). Pictures 430 (archers on the walkway), 431 (a breach, the archers fallen).
+
+**Breaches and repair (step 3).** A destroyed wall, palisade, gate or tower leaves its cells as
+`wall_rubble` terrain owned by its player (walls.gd breach, w.rubble); workers right-clicking it
+rebuild the piece for 40% (data `breach.repair_pct`); anything built over rubble clears it. Repair
+(`src/sim/repair.gd`, Commands.REPAIR): workers mend damaged buildings and machine siege engines (not
+the frogs' beasts: healers mend those) at half the build pace for half the price, paid a twentieth at
+a time. Rams, catapults and m13's sapper make breaches through the usual building death.
+
+**Ladders and siege towers (step 4).** The Siege Ladder (age 2, 25 wood, 60 hp): a worker raises it
+on open ground beside an enemy walkway; it's walked over and is a way up for its side; a defender
+settled on its top cell with no attacker there pushes it off (2 hp a tick each). The Siege Tower
+(Siege Workshop, every race, roster slot `siege_tower`, engine part `siege.tower.<take>`, never
+fights: weapon `targets: none`, tag `docks`): stopped within 1.6 tiles of an enemy walkway cell it's
+docked, and its side's foot soldiers ordered onto that wall climb through it. Climbers on the enemy's
+wall come down the enemy's own gatehouse and tower stairs into the town. The model is a marked
+placeholder (picture 432). `tests/placement_check.gd -- siege_tower`: 22 checks pass.
+
+**Defenders' tools (step 5).** A gatehouse or wall tower with one of its side settled on top pours on
+every enemy on the ground within a tile, every 5 s: 14 melee against armour (a ram's melee armour is 0:
+it suffers most). Each culture names it (families.json `pour`: hot oil, red-hot sand, boiling pitch,
+boiling sap, boiling tar, hot ash...; creatures.json: the rats' scalding cheese, the frogs' boiling
+swamp water); the view shows a burst at the gate. The name isn't shown in the UI yet.
+
+**AI (step 6).** `src/ai/walls_ai.gd`, data `military.walls` in ai.json: with walkway walls the bot
+keeps up to 60% of its shooters at home up on the wall nearest the nearest enemy it sees (its defence
+and raid response leave them up there); it trains one siege tower (military.siege.max), pushes it to
+the nearest enemy wall when attacking and, once docked, sends the foot soldiers within 12 tiles up
+and over (a queued attack-move takes them down the enemy's stairs); a side with no town (Siege's
+attackers) puts its whole army on the attack (rams at the walls, towers over, the rest attack-moving).
+`tests/test_ai.gd -- piece:walls_bot` (6 of 10 shooters up in a minute; the tower docks at 0:06, 8 up,
+8 inside) and `piece:siege_mode`.
+
+**Game modes (step 7).** data/modes.json, src/sim/modes.gd; the lobby's map card has a Mode row
+(Standard, Fortress, Siege). Fortress: every side in age 2 behind a stone ring (radius 9, gatehouses
+on four sides, a wall tower every 6 tiles), 4 archers and 2 skirmishers up on the wall facing the
+enemy, a stockpile. Siege: player 0's team holds a ring (radius 10) in age 3 with a garrison; the
+others start townless in age 3 with an army (28 swordsmen, 14 spears, 16 archers, 10 heavy, 6 rams, 4
+catapults, 3 siege towers) and 4 workers; the defenders win after 20 minutes, the attackers are out
+when they have nothing left. **Siege Vale** (`tools/maps/siege_vale.py`, 72 x 64): the west start in a
+clear round so its ring stands whole (rings follow the land and leave gaps at trees and stone, so on
+the forest maps they're patchy), the east an open camp. Bot vs bot Siege on Siege Vale, both orders of
+rats/Romans and frogs/Greeks: defenders 2, attackers 2 (6:44 to 10:28); before the last army bump the
+defenders won 3 of 4. `tests/test_sim.gd` parts walls, siege_ways, modes; `tests/test_ai.gd` pieces
+walls_bot (quick), siege_mode (slow).
+
+**Open.**
+- Dominic: the budget number; the picks (W1 wall tower, ladder, rubble; T1 siege tower); playing
+  "Romans besiege the rats" (Siege mode, Siege Vale).
+- Fortress bot vs bot stalls: four 22-minute matches on Siege Vale, no breach, about 45 units a side
+  (the bots' waves don't take on a ring with every gate shut; a human plays it fine). The bot's
+  assault against a full ring is the next AI step.
+- The bot doesn't raise ladders; infantry can't carry one (workers raise them).
+- Readability: outlines behind tall walls, wall damage states (cracks), the pour's name and a better
+  pour effect, the rubble's own look (W1).
+- The siege tower doesn't carry units inside; units climb through it once it's docked.
+- Ladders and the siege tower aren't in the bot's counter-reading or the balance round robin.
+
 ## Changes from the original plan
+- Gatehouse: the stone gate is the gatehouse (stairs and a walkway), no new building.
+- Ladders are a building a worker raises (not carried by infantry) for now.
+- The siege tower is a way up while docked, not a carrier.
+- The match rules contract is only `mode` so far (milestone 18 builds the rest on it).
 
 ## Links
 - `m13-unit-lines.md` (rams, catapults, sappers; the siege tower is this milestone's), `m15-maps.md` (high ground),

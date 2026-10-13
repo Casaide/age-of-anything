@@ -170,6 +170,9 @@ godot --headless --path . --script res://tests/geometry_check.gd -- [filter]   #
 godot --path . --audio-driver Dummy --always-on-top --script res://tests/placement_shot.gd -- /tmp/p.png 5 "frog on newt_fire"   # a placement case in 8 facings
 godot --path . --script res://tests/healer_lineup.gd -- /tmp/healers.png [zoom] [family,...]   # every culture's healer in 8 facings
 godot --path . --script res://tests/siege_lineup.gd -- /tmp/siege.png [zoom] ["prompt" ...]     # each race's crewed siege engines, four facings
+godot --headless --path . --script res://tests/siege_bench.gd -- 200 3   # the siege tick budget: a walled town stormed, 400 units, per-system times (m16)
+godot --path . --audio-driver Dummy --always-on-top --script res://tests/siege_tower_sheet.gd -- /tmp/out 3   # siege tower concepts (T1)
+python3 tools/maps/siege_vale.py                                   # rebuild Siege Vale, the siege showcase map
 python3 tools/audio/render.py [sfx|voices|music|<name>...]       # re-render the sounds into assets/audio (~15 s)
 python3 tools/audio/check.py assets/audio/sfx/chop_*.wav          # length, peak, RMS, pitch guess; afplay to listen
 godot --path .                                                     # run the game (match setup; Race Lab from there)
