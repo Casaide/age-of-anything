@@ -48,12 +48,12 @@
   "group": "rodents",
   "bonuses": [
    {
-    "text": "Units 30% cheaper and train 20% faster (a swarm that breeds fast)",
+    "text": "Units 20% cheaper and train 20% faster (a swarm that breeds fast)",
     "effects": [
      {
       "tag": "all",
       "stat": "cost",
-      "pct": -30
+      "pct": -20
      },
      {
       "tag": "all",
