@@ -785,3 +785,10 @@ rats ("looks amazing"), the giant tarantula for the spiders (its back needs more
 for the frogs, the praying mantis for the beetles, the elephant for humans. The siege-weight great sling (GS2) is
 "much better"; the frogs' take is open (the turtle-mounted one is wrong, the plain one too boring: another round). The
 rats' wheelbarrows and the hauled trade carts are "perfect". Heroes: liked (HR2); a pick to come.
+
+**D-130, 2026-10-13: Walls go tall (W2 B), scaled down; the sci-fi mod is parked.** Dominic: the tall curtain looks
+better ("thick is too thick"), but everything is a little too big: scale it down 10-20% so units don't look tiny
+beside it and it still plays; the gates must be built into the walls properly (they read as confusing). The sci-fi
+example mod is fun as a later, optional age by a setting, but parked: what he wanted to see was a wholly new
+concept and race, not our units in the future, with real lasers only and no melee or bows. Milestone 21 keeps the
+loader and tooling; the sci-fi content waits.
