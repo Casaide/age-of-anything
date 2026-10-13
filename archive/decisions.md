@@ -750,3 +750,7 @@ colourings are kept as the newt's skins (fire as the usual one; the red eft not 
 **D-123, 2026-10-13: No generic Raider line; raiders are a castle unique-unit theme.** Dominic: "Raider isn't
 really a thing, sounds race specific like a castle unit." The Barracks trains spears and swordsmen; fast
 light raiders become one of the themes a race's Castle unique unit can take (chosen by data, like the others).
+
+**D-124, 2026-10-13: Rats ride cats.** Dominic: "Cats are great, just hind looks a little too big." The reworked
+alley cat (C2: a real cat body, four-beat walk, sits when idle; ginger, black-and-white and grey coats) becomes
+the rats' mount, its hindquarters made smaller. The capybara stays in the game as a mount anyone can ask for.
