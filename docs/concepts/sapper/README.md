@@ -28,3 +28,10 @@ rather keep it in the hand, A (the fire pot) reads best thanks to its flame.
 1. In the hand (A/B/C) or a round 2 on the back?
 2. Family takes (C) or one charge for everyone?
 3. How strong: a Town Center in three sappers feels right? (data: `tool.charge` bonus vs buildings 600)
+
+## Parked (D-127, D-128, 2026-10-13)
+
+Dominic: no carried charge, and then (the correction) no sapper at all for now: the unit is parked (D-128:
+its slot back to `planned`, the Castle and the bot no longer make it). Round SP1 above is history; there is
+no round 2 on the back. If the sapper comes back, its look stays plain (the race's light kit, nothing
+carried), and the options here (`concept.sp1_*` in `data/later/m13_concepts.json`) stay staged, unused.

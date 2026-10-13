@@ -1,0 +1,24 @@
+{
+ "name": "war_beasts_wb2",
+ "title": "War beasts, concept round WB2 (D-127): a war boar, a tarantula alone, new beasts for frogs and beetles; the elephant kept",
+ "_doc": "Dominic on WB1: 'we're focusing on capybara too much, doesn't really fit. Boar is better but maybe too small. Spider riding a spider seems pointless, better just a tarantula.' Size references: a worker, a pony rider (romans large), a spider rider (spooky spiders large). Models: scenes/art_pixel/m13_concepts.gd (WB2), staged from data/later/m13_concepts.json. Notes: docs/concepts/war_beasts/README.md.",
+ "stage": ["res://data/later/m13_concepts.json"],
+ "zooms": [3, 1],
+ "cell": [150, 96],
+ "size": [{"prompt": "romans", "slot": "worker"}, {"prompt": "romans", "slot": "large"}, {"prompt": "spooky spiders", "slot": "large"}],
+ "rows": [
+  {"label": "romans: war elephant,\nhowdah (WB1 A, kept)", "h": 1.25, "unit": {"prompt": "romans", "slot": "ram", "age": 3, "set": {"body": "concept.wb1_a_timber", "name": "War Beast"}}},
+  {"label": "sewer rats A\nwar boar, junk howdah,\ntwo riders", "h": 1.25, "unit": {"prompt": "sewer rats", "slot": "ram", "age": 3, "set": {"body": "concept.wb2_boar_howdah", "name": "War Beast"}}},
+  {"label": "sewer rats B\nwar boar barded in\nscrap, one rider,\na standard", "h": 1.25, "unit": {"prompt": "sewer rats", "slot": "ram", "age": 3, "set": {"body": "concept.wb2_boar_armoured", "name": "War Beast"}}},
+  {"label": "spooky spiders A\ngiant tarantula alone,\nharness and banner", "h": 1.25, "unit": {"prompt": "spooky spiders", "slot": "ram", "age": 3, "set": {"body": "concept.wb2_tarantula", "name": "War Beast"}}},
+  {"label": "spooky spiders B\ngiant tarantula,\na crew of two\nin a basket", "h": 1.25, "unit": {"prompt": "spooky spiders", "slot": "ram", "age": 3, "set": {"body": "concept.wb2_tarantula_crew", "name": "War Beast"}}},
+  {"label": "swamp frogs A\ngiant crayfish,\nhowdah, two riders", "h": 1.25, "unit": {"prompt": "swamp frogs", "slot": "ram", "age": 3, "set": {"body": "concept.wb2_crayfish", "name": "War Beast"}}},
+  {"label": "swamp frogs B\ngiant heron (their\nold enemy), one rider", "h": 1.25, "unit": {"prompt": "swamp frogs", "slot": "ram", "age": 3, "set": {"body": "concept.wb2_heron", "name": "War Beast"}}},
+  {"label": "forest beetles A\ngiant mantis,\none rider", "h": 1.25, "unit": {"prompt": "forest beetles", "slot": "ram", "age": 3, "set": {"body": "concept.wb2_mantis", "name": "War Beast"}}},
+  {"label": "forest beetles B\ngiant centipede,\nlong deck, two riders", "h": 1.25, "unit": {"prompt": "forest beetles", "slot": "ram", "age": 3, "set": {"body": "concept.wb2_centipede", "name": "War Beast"}}}
+ ],
+ "sheets": [
+  {"name": "four", "title": "four facings", "columns": [
+   {"facing": 0, "label": "f0 right"}, {"facing": 2, "label": "f2 towards"}, {"facing": 5, "label": "f5"}, {"facing": 6, "label": "f6 away"}]}
+ ]
+}
