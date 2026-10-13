@@ -166,6 +166,7 @@ godot --headless --path . --script res://tests/gen_cost_curve.gd   # regenerate 
 godot --path . res://scenes/art_pixel.tscn                         # pixel-art candidate (Z zoom, P palette)
 godot --path . --script res://tests/art_screenshot.gd -- /tmp/art  # capture it at 1x/2x/3x
 godot --path . --script res://tests/art_crop.gd -- /tmp/c.png 6.5 9 ["prompt A" "prompt B"]   # 3x close-up at a tile
+godot --path . --script res://tests/wall_join_check.gd -- [filter]   # walls: composed sprites vs one 3D bake per join fixture (exit 1 on overlaps, gaps, sunk units)
 godot --path . --script res://tests/art_bench.gd                    # draw calls + frame time, 200+ units
 godot --path . --script res://tests/unit_lineup.gd -- /tmp/units.png ["prompt A" "prompt B"]   # both rosters as pixel art, 4x
 godot --path . --audio-driver Dummy --always-on-top --script res://tests/sheet.gd -- tests/sheets/bears_b1.json /tmp/out [sheet,...] [zoom,...]   # any concept or lineup sheet from a spec, placement PASS/FAIL per row

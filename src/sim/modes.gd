@@ -34,10 +34,24 @@ static func setup(w) -> void:
 	assert(modes.has(id), "Unknown mode %s" % id)
 	w.mode = id
 	w.mode_cfg = _ints(modes[id])
+	_lift_lacks(w, w.mode_cfg.get("lift_lacks", []))
 	for p in w.races.size():
 		if p >= w.map.starts.size():
 			continue
 		_start(w, p, side_of(w, p))
+
+
+## The mode fills the gap (Dominic, 2026-10-13: "just in siege mode we fill the gap"): every side
+## can build and repair what the mode lists (walls, gates, wall towers) whatever its race lacks in a
+## normal match. Each side's identity is its own copy (Identity.of shares one per race).
+static func _lift_lacks(w, ids: Array) -> void:
+	if ids.is_empty():
+		return
+	for p in w.ident.size():
+		var ident: Dictionary = w.ident[p].duplicate(true)
+		for id in ids:
+			ident.lacks.erase(id)
+		w.ident[p] = ident
 
 
 ## A side's start in the mode: the mode itself, or its defend / attack part.
