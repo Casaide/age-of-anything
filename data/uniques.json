@@ -164,7 +164,7 @@
    "bonus": {
     "infantry": 3
    },
-   "price_points": 7,
+   "price_points": 5,
    "noun": "Great Bullfrog",
    "desc": "A giant bullfrog that flattens foot soldiers (bonus vs infantry); spears bring it down",
    "own": [
