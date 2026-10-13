@@ -446,8 +446,8 @@ func _run(cmd: Dictionary) -> void:
 		a = cmd.args
 	if cmd.type in WALL_ORDERS and a.has("ids"):
 		a = _wall_orders(cmd)   # onto a wall, up to a foe on one, or down off one first (walls.gd)
-		if a.ids.is_empty():
-			return
+		if a.ids.is_empty() and not cmd.args.ids.is_empty():
+			return   # (every unit dealt with there; an order for nobody, like a farm's reseed, still runs)
 		cmd = {"turn": cmd.turn, "player": cmd.player, "seq": cmd.seq, "type": cmd.type, "args": a}
 	if (cmd.type == Commands.MOVE or cmd.type == Commands.ATTACK_MOVE) and not a.has("sx"):
 		# A group move: every unit gets its own slot in a formation now, queued or not.

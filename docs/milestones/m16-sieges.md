@@ -168,13 +168,13 @@ attackers) puts its whole army on the attack (rams at the walls, towers over, th
 (Standard, Fortress, Siege). Fortress: every side in age 2 behind a stone ring (radius 9, gatehouses
 on four sides, a wall tower every 6 tiles), 4 archers and 2 skirmishers up on the wall facing the
 enemy, a stockpile. Siege: player 0's team holds a ring (radius 10) in age 3 with a garrison; the
-others start townless in age 3 with an army (28 swordsmen, 14 spears, 16 archers, 10 heavy, 6 rams, 4
+others start townless in age 3 with an army (26 swordsmen, 13 spears, 15 archers, 9 heavy, 6 rams, 4
 catapults, 3 siege towers) and 4 workers; the defenders win after 20 minutes, the attackers are out
 when they have nothing left. **Siege Vale** (`tools/maps/siege_vale.py`, 72 x 64): the west start in a
 clear round so its ring stands whole (rings follow the land and leave gaps at trees and stone, so on
 the forest maps they're patchy), the east an open camp. Bot vs bot Siege on Siege Vale, both orders of
-rats/Romans and frogs/Greeks: defenders 2, attackers 2 (6:44 to 10:28); before the last army bump the
-defenders won 3 of 4. `tests/test_sim.gd` parts walls, siege_ways, modes; `tests/test_ai.gd` pieces
+rats/Romans and frogs/Greeks: defenders 2, attackers 2 (7:58 to 13:45, 14 to 30 breach cells); a
+notch smaller army and the defenders win 3 of 4, a notch bigger and the attackers do. `tests/test_sim.gd` parts walls, siege_ways, modes; `tests/test_ai.gd` pieces
 walls_bot (quick), siege_mode (slow).
 
 **Open.**

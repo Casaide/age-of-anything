@@ -770,8 +770,8 @@ static func rebuild_of(w, player: int, c: int) -> Dictionary:
 	if not w.rubble.has(c):
 		return {}
 	var rec: PackedInt32Array = w.rubble[c]
-	if rec[1] != player:
-		return {}
+	if rec[1] != player or Economy.why_not_build(w, player, rec[2]) != "":
+		return {}   # (not its rubble, or a piece its race doesn't build: milestone 14's lacks)
 	return {"building": w.btypes[rec[2]].id, "cx": rec[3], "cy": rec[4], "along": rec[5]}
 
 
