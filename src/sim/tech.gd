@@ -38,6 +38,7 @@ extends RefCounted
 const Economy := preload("res://src/sim/economy.gd")
 const Combat := preload("res://src/sim/combat.gd")
 const Identity := preload("res://src/identity.gd")
+const Heroes := preload("res://src/sim/heroes.gd")
 
 const AGE_UP := -2     # a queue entry (and tech index) meaning: age up
 const RESEARCH := -3   # queue entry for research r is RESEARCH - r; unit types are >= 0
@@ -218,7 +219,7 @@ static func item_of(w, player: int, t: int) -> Dictionary:
 ## What a queue entry cost (a cancel refunds it).
 static func entry_cost(w, player: int, e: int) -> PackedInt32Array:
 	if e >= 0:
-		return w.types[e].cost
+		return Heroes.cost(w, player, e)   # a unit's price (a revived hero's share of it)
 	return next_age(w, player).cost if tech_of(e) == AGE_UP else cost_of(w, player, w.tech.research[tech_of(e)])
 
 
@@ -476,7 +477,7 @@ static func retype(w, player: int) -> void:
 			continue
 		var step: Dictionary = t.line[0]
 		for l in t.line:
-			if l.age <= w.ages[player] and (l.age == t.line[0].age or t.worker or _upgraded(w, player, t.slot, l.age)):
+			if l.age <= w.ages[player] and (l.age == t.line[0].age or t.worker or t.hero or _upgraded(w, player, t.slot, l.age)):   # (workers and the hero grow with the age)
 				step = l
 		var old_hp: int = t.hp
 		var e: Dictionary = step.eval.duplicate(true)

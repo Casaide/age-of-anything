@@ -25,6 +25,8 @@ func has(id: String) -> bool:
 	if Mods.glb_parts.has(base):
 		return true
 	var fn := "_" + base.replace(".", "_")
+	if base.begins_with("hero.") and not has_method(fn):
+		return _heroes().has_method(fn)   # a hero's signature gear (hero_models.gd)
 	return has_method(fn) or extra.any(func(e): return e.has_method(fn))
 
 
@@ -45,6 +47,16 @@ func _siege():
 	if _siege_models == null:
 		_siege_models = load("res://scenes/art_pixel/siege_models.gd").new()
 	return _siege_models
+
+
+## Heroes' signature gear ("hero.*", milestone 14) is modelled in hero_models.gd, loaded when first asked for.
+var _hero_models = null
+
+
+func _heroes():
+	if _hero_models == null:
+		_hero_models = load("res://scenes/art_pixel/hero_models.gd").new()
+	return _hero_models
 
 
 static func _is_engine(id: String) -> bool:
@@ -114,6 +126,10 @@ func build(id: String, colours: Dictionary) -> Dictionary:
 	if Mods.glb_parts.has(base):
 		return {"node": glb_file(Mods.glb_parts[base], mod_materials(Mods.glb_parts[base], colours))}
 	var fn := "_" + base.replace(".", "_")
+	if base.begins_with("hero.") and not has_method(fn):
+		var hm = _heroes()
+		hm.hold = hold
+		return hm.call(fn, colours)
 	if not has_method(fn):
 		for e in extra:
 			if e.has_method(fn):

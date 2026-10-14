@@ -400,7 +400,7 @@ static func hold_for(tags: Array) -> String:
 		return "aim"
 	if "bow" in tags:
 		return "draw"
-	if "spear" in tags and "heavy" in tags:
+	if ("spear" in tags and "heavy" in tags) or "shouldered" in tags:   # (a pike; a hero's anchor or guandao)
 		return "shoulder"
 	return "low"
 
