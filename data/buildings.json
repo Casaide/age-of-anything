@@ -420,7 +420,8 @@
    ],
    "trains": [
     "worker",
-    "healer"
+    "healer",
+    "hero"
    ],
    "age": 1,
    "hotkey": "C",

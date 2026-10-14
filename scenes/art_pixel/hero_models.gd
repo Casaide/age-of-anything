@@ -1,12 +1,13 @@
 extends "res://scenes/art_pixel/unit_models.gd"
-## Hero concepts, round HR2 (2026-10-13; D-127, Dominic: "they don't look unique, they need real
-## character to stand out. Imagine a rat like 'Ratty the Gnawer' or 'Ratty the 10000th of his name'").
-## Signature gear for named champions, staged with data/later/heroes.json (its "models"), shown by
-## tests/sheets/heroes_hr2_*.json. Nothing here is in play. Notes: docs/concepts/heroes/README.md.
+## Heroes' signature gear (milestone 14 step 9; HR2's characters, D-127, D-131), in play: the parts
+## "hero.*" (data/parts.json, only_if hero_only) that data/heroes.json's signatures put on over a
+## race's swordsman. unit_models.gd builds them from here (loaded when first asked for, like siege
+## engines). Concept notes: docs/concepts/heroes/README.md.
 ## Frames as the game's gear: head gear on the head's "top" socket (the skull's dome about y -3.8,
 ## radius 5; scaled by the head's gear_scale), back gear from the back socket (down is -y, behind is
 ## -x), held items with the grip at the origin ("low": the business end up and forward; "shoulder":
-## up and back over the shoulder, as the pike), shields built flat and turned by SHIELD_FACE.
+## up and back over the shoulder, as the pike: parts tagged "shouldered"), shields built flat and
+## turned by SHIELD_FACE.
 
 
 func gold(k := 1.0) -> StandardMaterial3D:
