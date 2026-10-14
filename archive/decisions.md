@@ -792,3 +792,10 @@ beside it and it still plays; the gates must be built into the walls properly (t
 example mod is fun as a later, optional age by a setting, but parked: what he wanted to see was a wholly new
 concept and race, not our units in the future, with real lasers only and no melee or bows. Milestone 21 keeps the
 loader and tooling; the sci-fi content waits.
+
+**D-131, 2026-10-14: The bullfrog leaper; Claude's calls on the rest.** Dominic: the frogs' great sling is FS1 A, the
+bullfrog leaping onto the counterweight ("fun!"); "rest as you choose". Claude's calls: war beasts get a bonus against
+mounted units (the genre's beasts break cavalry; spears and skirmishers stay their counters); centaurs stay not-large
+(fast cavalry, one population place); the new skins stay (raspberry and teal frogs, the orange eft); tower hoardings
+stay part of the base look. Heroes: all of HR2's characters are built, as a pool: each race gets one, picked from its
+creature's and culture's characters by the race key.
