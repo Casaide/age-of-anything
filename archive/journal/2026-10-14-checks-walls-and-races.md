@@ -16,7 +16,8 @@ A long stretch of playtest notes turned into work for parallel agents, merged in
   bodies baked through a per-pixel loop.
 - **Unit lines.** Swordsmen (ages 1-3, Dominic's age-3 picks), scouts, horse archers, 17 castle unique-unit themes,
   trade carts pulled by each race's beast (a snail for frogs), rats pushing barrows home with stone and gold, war beasts
-  (elephant, war boar, tarantula, heron, mantis), the siege-weight great sling, proper siege shots. The sapper was built
+  (elephant, war boar, tarantula, heron, mantis; they now beat cavalry), the siege-weight great sling (for frogs a
+  bullfrog leaper that jumps on the arm to throw), proper siege shots. The sapper was built
   and then parked ("not needed"); raiders became a unique-unit theme.
 - **Creatures and art.** Rats ride cats (with a real cat walk and a sit), frogs ride newts, beetles never ride horses,
   a sculpted horse head, the creature kit and one concept-sheet tool, bears in three rounds (concepts only), frogs that
