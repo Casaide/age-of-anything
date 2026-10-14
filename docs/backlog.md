@@ -186,6 +186,12 @@ still maps the brief onto parts within host rules.
   - Sci-fi "space federation" pack. A space-fleet sci-fi mod is Dominic's personal dream; keep
     official names and likenesses out of shipped content.
 
+### Heroes (paused 2026-10-14, Dominic: "lets pause that for now")
+Built far on branch `worktree-agent-a9d1dff318f813a60` (commit 82995ae, WIP, not merged): all 21 HR2 characters as a
+pool, one per race from the race key; data, generator, sim (aura, heal, revive), bot, models. What's left is listed at
+the top of step 9 in docs/milestones/m14-race-identity.md (on that branch): the Town Center button, a crown/name plate,
+the tech tree and lobby, a sound, placement cases and the fix pass, balance, pictures, the full test runs.
+
 ### The sapper (parked 2026-10-13, Dominic: "remove the sapper unit, not needed")
 Built in milestone 13 (Castle, age 3: walks up to a building and blows up with it; a wall tile or house in one blast,
 a Town Center in three). Parked: its roster slot is `"status": "planned"`, the Castle doesn't train it, the bot doesn't
