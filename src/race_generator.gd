@@ -9,6 +9,7 @@ extends RefCounted
 
 const Rng := preload("res://src/rng.gd")
 const Pricing := preload("res://src/pricing.gd")
+const Heroes := preload("res://src/heroes.gd")
 
 const ROLE_NEEDS := {"worker": "worker", "spear": "spear", "skirmisher": "ranged", "archer": "bow", "large": "melee", "healer": "heal",
 	"ram": "ram", "catapult": "catapult", "bolt_thrower": "bolt_thrower", "siege_tower": "docks", "infantry": "melee", "scout": "melee", "mounted_archer": "bow",
@@ -160,7 +161,7 @@ func generate(prompt: String, rules: Dictionary, reroll := 0) -> Dictionary:
 	# its slot opens, in that age's kit; then, in a second pass (so the first recipes don't
 	# depend on the later ones), the same unit upgraded for every later age.
 	var units := []
-	var slots: Array = rules.roster.filter(func(sd): return sd.get("status", "") != "planned")   # planned lines: tech tree page only
+	var slots: Array = rules.roster.filter(func(sd): return sd.get("status", "") != "planned" and sd.role != "hero")   # planned lines: tech tree page only; the hero: after the key (src/heroes.gd)
 	# A slot with "own_seed" draws from its own stream, so a line added later (the healer)
 	# leaves every other line's recipes as they were.
 	var rngs := []
@@ -230,14 +231,21 @@ func generate(prompt: String, rules: Dictionary, reroll := 0) -> Dictionary:
 	if not lib.mods.is_empty():
 		race.mods = lib.mods.duplicate()   # made with mods (src/mods.gd): a peer needs the same ones (in the key)
 	race.key = race_key(race)
+	# The race's hero (src/heroes.gd): derived from the key, so not in it; the last of its units.
+	var hero := Heroes.make(lib, race, rules)
+	if not hero.is_empty():
+		race.units.append(hero)
+		race.hero = Heroes.info(lib, race)
 	return race
 
 
-## Hash of the shareable content only (names + recipes), not derived stats.
+## Hash of the shareable content only (names + recipes), not derived stats nor the hero (derived from
+## this key: src/heroes.gd).
 static func race_key(race: Dictionary) -> String:
+	var units: Array = race.units.filter(func(u): return u.recipe.slot != "hero")
 	var shareable := {
 		"schema": race.schema, "name": race.name, "creature": race.creature, "family": race.family,
-		"recipes": race.units.map(func(u): return u.line.map(func(l): return l.recipe) if u.has("line") else [u.recipe]),
+		"recipes": units.map(func(u): return u.line.map(func(l): return l.recipe) if u.has("line") else [u.recipe]),
 	}
 	if race.has("mods"):   # (only then: a race made without mods keeps the key it always had)
 		shareable.mods = race.mods
