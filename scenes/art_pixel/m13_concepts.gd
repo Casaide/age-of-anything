@@ -418,7 +418,7 @@ func _sling_turtle(s: Dictionary) -> Dictionary:
 # ================================================================== FS1: the frogs' great sling
 # D-129 (Dominic): GS2's frogs: "the tortoise one is wrong, and the plain one probably too boring". Three swamp
 # ideas that repeat none of their beasts so far (the turtle ram, the snail catapult, the toad bolt thrower, the
-# heron war beast, newt cavalry). Until Dominic picks, the frogs' great sling in play wears their snail catapult.
+# heron war beast, newt cavalry). D-131: Dominic picked A; it is in play from siege_models.gd (_frog_sling).
 #   A  the bullfrog leaper: a counterweight sling whose weight is a giant bullfrog, crouched on a reed
 #      tower behind it, leaping down onto the padded short arm to fling the stone
 #   B  the stilt sling: the GS2 frame smaller on a deck high on bundled-reed stilts over a sledge (a swamp
@@ -431,36 +431,7 @@ func _concept_fs1_b(c: Dictionary) -> Dictionary: return _fs1_stilts(_style("fro
 func _concept_fs1_c(c: Dictionary) -> Dictionary: return _fs1_crayfish(_style("frog", c))
 
 
-## A giant bullfrog crouched, facing +x, its feet on y = 0 at `at`: olive back, yellow throat, gold eyes,
-## the brown eardrum, hind legs folded high to spring.
-func bullfrog(n: Node3D, at: Vector3, k := 1.0) -> void:
-	var skin := surf("frog_skin", Color("#6a8a3a"), 6.0)
-	skin.roughness = 0.45
-	var dark := surf("frog_skin", Color("#3e5a24"), 5.0)
-	var throat := surf("frog_belly", Color("#e0c860"), 5.0)
-	var b := Node3D.new()
-	b.position = at
-	b.scale = Vector3.ONE * k
-	n.add_child(b)
-	b.add_child(blob(Vector3(13.0, 8.5, 10.5), skin, Vector3(-2.0, 9.5, 0), Vector3(0, 0, 22)))   # the back, sloping up to the head
-	b.add_child(blob(Vector3(9.0, 4.5, 8.0), throat, Vector3(4.0, 6.0, 0), Vector3(0, 0, 22)))
-	b.add_child(blob(Vector3(8.5, 6.0, 9.5), skin, Vector3(9.0, 13.5, 0)))   # the head
-	b.add_child(blob(Vector3(7.0, 3.2, 8.4), throat, Vector3(10.0, 10.0, 0)))   # the throat
-	b.add_child(rod(Vector3(16.6, 12.0, -6.0), Vector3(17.4, 12.0, 0), 0.4, 0.4, plain(INK)))   # the wide mouth
-	b.add_child(rod(Vector3(17.4, 12.0, 0), Vector3(16.6, 12.0, 6.0), 0.4, 0.4, plain(INK)))
-	for side in [1, -1]:
-		b.add_child(blob(Vector3(2.8, 2.8, 2.6), skin, Vector3(10.0, 19.0, 5.0 * side)))   # the eyes
-		b.add_child(blob(Vector3(1.6, 1.6, 1.2), plain(Color("#d8a830")), Vector3(11.6, 19.6, 6.0 * side)))
-		b.add_child(blob(Vector3(0.5, 0.9, 0.4), plain(Color("#140c06")), Vector3(12.8, 19.8, 6.6 * side)))
-		b.add_child(cone(2.2, 2.2, 0.5, plain(Color("#7a5a30")), Vector3(5.0, 15.0, 8.4 * side), Vector3(90, 0, 0), 14))   # the eardrum
-		b.add_child(blob(Vector3(11.0, 6.0, 4.5), dark, Vector3(-8.0, 6.5, 9.5 * side), Vector3(0, 0, 25)))   # a folded hind leg
-		b.add_child(rod(Vector3(-2.0, 1.0, 11.5 * side), Vector3(8.0, 0.8, 13.0 * side), 1.8, 1.2, dark))   # its long foot
-		b.add_child(rod(Vector3(8.0, 10.0, 6.0 * side), Vector3(12.0, 0.8, 8.5 * side), 2.0, 1.5, skin))   # a front leg
-		for t in 4:
-			b.add_child(rod(Vector3(12.0, 0.8, 8.5 * side), Vector3(15.0, 0.6, (8.5 + (t - 1.5) * 1.4) * side), 0.6, 0.45, skin))
-	for t in 10:   # dark blotches over the back
-		var a := t * 2.39996
-		b.add_child(blob(Vector3(2.4, 0.8, 1.8), dark, Vector3(-4.0 + cos(a) * 7.0, 15.0 + sin(a * 0.5) * 1.5, sin(a) * 6.0)))
+## The giant bullfrog itself is siege_models.gd bullfrog() (in play since D-131).
 
 
 ## A: the counterweight sling worked by a bullfrog. The arm the other way from the traction sling: its long

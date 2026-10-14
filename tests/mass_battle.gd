@@ -87,14 +87,13 @@ func _init() -> void:
 	var all_args := Par.plain(OS.get_cmdline_user_args())
 	var only := all_args.filter(func(a): return a.begins_with("match:"))   # match:<k>: just that match (a child)
 	var serial := all_args.has("serial")
-	var args := all_args.filter(func(a): return not a.begins_with("match:") and a != "serial")
+	var args := all_args.filter(func(a): return not a.begins_with("match:") and a != "serial" and a != "beasts")   # ("3 beasts" read "beasts" as a budget of 0: one unit a side)
 	var age := int(args[0]) if args.size() > 0 else 2
 	var budget := int(args[1]) if args.size() > 1 else 1500
 	var matches: Array = MATCHES + (SIEGE_MATCHES + UNIQUE_MATCHES + BEAST_MATCHES if age >= 3 else [])
 	var beasts := all_args.has("beasts")   # just the war beasts' matches (tuning their price_points)
 	if beasts:
 		matches = BEAST_MATCHES
-		args = args.filter(func(a): return a != "beasts")
 	var t0 := Time.get_ticks_msec()
 	if only.is_empty():
 		for arg in args.slice(2):

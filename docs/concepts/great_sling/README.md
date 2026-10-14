@@ -105,3 +105,21 @@ GS2; it's busy from behind. B reads as a deck of frogs more than a sling (frogs 
 C is the longest thing in the game and splits into two things at 1x, though the crayfish is a strong read.
 
 **Claude's recommendation:** A (the bullfrog leaper). **Question for Dominic:** A, B or C (or another idea)?
+
+
+# FS1 A in play (D-131, 2026-10-14)
+
+Dominic: the bullfrog leaper ("fun!"). Built for the frogs (`siege_models.gd` _frog_sling, `siege.sling.frog`), the
+snail catapult stand-in gone: the counterweight sling with its long arm down in front and the loaded pouch on the
+ground, the padded short arm up behind, the giant bullfrog crouched on the reed tower; a loader at the pouch with clay
+pots and river stones, two haulers on the re-cocking rope to a stake ahead, one frog minding the tower. It throws the
+big corded clay pot (`shot.clay_big`).
+
+- **Packed** (`siege.sling_packed.frog`, _frog_packed): the tower's reed posts, the timbers and the arm lashed on a
+  heavy sledge, which the bullfrog hauls in a breast band; two frogs beside.
+- **The throw** (`siege.sling_throw.frog`, the part's `throw`): the bullfrog landed on the pad, the arm swung through,
+  the sling whipped up empty, the rope slipped off and coiled by its stake; shown for 0.9 s after each shot
+  (`UnitView.loose`), then back to the set-up look.
+
+Sheets: `tests/sheets/great_sling_play.json` (frog rows: set up, throwing, packed); archive `640-` (3x), `641-` (1x),
+throwing in a match `642-`. All rows pass the placement check (composites), in every facing.

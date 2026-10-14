@@ -20,7 +20,8 @@ const TAKE_STYLE := {"timber": "timber", "junk": "junk", "forest": "forest", "sp
 ## D-122): a snapping turtle ram, a giant snail carrying the reed catapult, a toad-borne bolt thrower.
 const OWN := {"ram.forest": "_ram_ridden", "ram.frog": "_ram_beast", "catapult.frog": "_catapult_snail", "bolt.frog": "_bolt_beast",
 	"sling.timber": "_sling_in_play", "sling.junk": "_sling_in_play", "sling.forest": "_sling_in_play", "sling.spooky": "_sling_in_play",
-	"sling_packed.timber": "_packed_in_play", "sling_packed.junk": "_packed_in_play", "sling_packed.forest": "_packed_in_play", "sling_packed.spooky": "_packed_in_play"}
+	"sling_packed.timber": "_packed_in_play", "sling_packed.junk": "_packed_in_play", "sling_packed.forest": "_packed_in_play", "sling_packed.spooky": "_packed_in_play",
+	"sling.frog": "_frog_sling_in_play", "sling_throw.frog": "_frog_throw_in_play", "sling_packed.frog": "_frog_packed_in_play"}
 ## War beasts in play (D-129): "siege.beast.<kind>" -> its builder and the materials of its howdah or harness.
 ## Which creature or culture gets which: creatures.json / families.json `war_beast`.
 const BEAST := {"elephant": "_beast_elephant", "boar": "_beast_boar", "tarantula": "_beast_tarantula", "heron": "_beast_heron", "mantis": "_beast_mantis"}
@@ -29,9 +30,8 @@ const BEAST_STYLE := {"elephant": "timber", "boar": "junk", "tarantula": "spooky
 ## catapult until D-122).
 const STAND_IN := {}
 ## An engine whose own look isn't picked yet wears another engine's ("<engine>.<take>" -> engine): the frogs'
-## great sling their snail catapult, until Dominic picks from concept round FS1 (docs/concepts/great_sling/;
-## everyone else's is GS2, D-129).
-const ENGINE_STAND_IN := {"sling.frog": "catapult"}
+## great sling wore their snail catapult until D-131 (FS1 A, the bullfrog leaper: _frog_sling).
+const ENGINE_STAND_IN := {}
 
 
 func has(id: String) -> bool:
@@ -2522,7 +2522,7 @@ func sling_towers(n: Node3D, s: Dictionary, base := 0.0, k := 1.0) -> float:
 
 ## The arm from its short end to its long end (through the axle): thick at the short end, tapering,
 ## bound with iron, a team cloth; the sling's two cords from the long end to a big pouch with a stone.
-func sling_arm(n: Node3D, s: Dictionary, short: Vector3, long: Vector3, k := 1.0, pouch_drop := Vector3(-3.0, -20.0, 0)) -> Vector3:
+func sling_arm(n: Node3D, s: Dictionary, short: Vector3, long: Vector3, k := 1.0, pouch_drop := Vector3(-3.0, -20.0, 0), loaded := true) -> Vector3:
 	var mid := short.lerp(long, 0.3)
 	n.add_child(beam(short, mid, 5.4 * k, 5.4 * k, s.wood))
 	n.add_child(beam(mid, long, 3.6 * k, 3.6 * k, s.wood))
@@ -2535,7 +2535,8 @@ func sling_arm(n: Node3D, s: Dictionary, short: Vector3, long: Vector3, k := 1.0
 	for z in [1.2, -1.2]:
 		n.add_child(rod(long, pouch + Vector3(0, 1.0, z) * k, 0.35, 0.35, s.rope, false))
 	n.add_child(blob(Vector3(3.6, 2.4, 3.6) * k, surf("leather", Color.WHITE, 2.0), pouch))
-	n.add_child(blob(Vector3.ONE * 3.2 * k, s.ammo, pouch + Vector3(0, 1.4, 0) * k))
+	if loaded:
+		n.add_child(blob(Vector3.ONE * 3.2 * k, s.ammo, pouch + Vector3(0, 1.4, 0) * k))
 	return pouch
 
 
@@ -2589,6 +2590,127 @@ func _great_packed(s: Dictionary) -> Dictionary:
 	n.add_child(ring(2.4, 3.6, s.rope, Vector3(12.0, 23.2, 0)))
 	n.add_child(_box(Vector3(18.0, 0.5, 21.0), s.team, Vector3(0, 13.4, 0)))
 	return {"node": n, "sockets": {"crew0_f0": Vector3(8.0, 0, 18.0), "crew1_f0": Vector3(-14.0, 0, -18.0)}}
+
+
+# ------------------------------------------------------------------ the frogs' great sling (D-131: FS1 A, the bullfrog leaper)
+
+## A giant bullfrog crouched, facing +x, its feet on y = 0 at `at`: olive back, yellow throat, gold eyes,
+## the brown eardrum, hind legs folded high to spring.
+func bullfrog(n: Node3D, at: Vector3, k := 1.0) -> void:
+	var skin := surf("frog_skin", Color("#6a8a3a"), 6.0)
+	skin.roughness = 0.45
+	var dark := surf("frog_skin", Color("#3e5a24"), 5.0)
+	var throat := surf("frog_belly", Color("#e0c860"), 5.0)
+	var b := Node3D.new()
+	b.position = at
+	b.scale = Vector3.ONE * k
+	n.add_child(b)
+	b.add_child(blob(Vector3(13.0, 8.5, 10.5), skin, Vector3(-2.0, 9.5, 0), Vector3(0, 0, 22)))   # the back, sloping up to the head
+	b.add_child(blob(Vector3(9.0, 4.5, 8.0), throat, Vector3(4.0, 6.0, 0), Vector3(0, 0, 22)))
+	b.add_child(blob(Vector3(8.5, 6.0, 9.5), skin, Vector3(9.0, 13.5, 0)))   # the head
+	b.add_child(blob(Vector3(7.0, 3.2, 8.4), throat, Vector3(10.0, 10.0, 0)))   # the throat
+	b.add_child(rod(Vector3(16.6, 12.0, -6.0), Vector3(17.4, 12.0, 0), 0.4, 0.4, plain(INK)))   # the wide mouth
+	b.add_child(rod(Vector3(17.4, 12.0, 0), Vector3(16.6, 12.0, 6.0), 0.4, 0.4, plain(INK)))
+	for side in [1, -1]:
+		b.add_child(blob(Vector3(2.8, 2.8, 2.6), skin, Vector3(10.0, 19.0, 5.0 * side)))   # the eyes
+		b.add_child(blob(Vector3(1.6, 1.6, 1.2), plain(Color("#d8a830")), Vector3(11.6, 19.6, 6.0 * side)))
+		b.add_child(blob(Vector3(0.5, 0.9, 0.4), plain(Color("#140c06")), Vector3(12.8, 19.8, 6.6 * side)))
+		b.add_child(cone(2.2, 2.2, 0.5, plain(Color("#7a5a30")), Vector3(5.0, 15.0, 8.4 * side), Vector3(90, 0, 0), 14))   # the eardrum
+		b.add_child(blob(Vector3(11.0, 6.0, 4.5), dark, Vector3(-8.0, 6.5, 9.5 * side), Vector3(0, 0, 25)))   # a folded hind leg
+		b.add_child(rod(Vector3(-2.0, 1.0, 11.5 * side), Vector3(8.0, 0.8, 13.0 * side), 1.8, 1.2, dark))   # its long foot
+		b.add_child(rod(Vector3(8.0, 10.0, 6.0 * side), Vector3(12.0, 0.8, 8.5 * side), 2.0, 1.5, skin))   # a front leg
+		for t in 4:
+			b.add_child(rod(Vector3(12.0, 0.8, 8.5 * side), Vector3(15.0, 0.6, (8.5 + (t - 1.5) * 1.4) * side), 0.6, 0.45, skin))
+	for t in 10:   # dark blotches over the back
+		var a := t * 2.39996
+		b.add_child(blob(Vector3(2.4, 0.8, 1.8), dark, Vector3(-4.0 + cos(a) * 7.0, 15.0 + sin(a * 0.5) * 1.5, sin(a) * 6.0)))
+
+
+const FROG_SLING_K := 0.9        # the frame against GS2's
+const FROG_TOWER := Vector3(-48.0, 62.0, 6.0)   # the reed tower: its middle (x), its plank top (y), its posts' half spread (x and z)
+const FROG_HAUL_STAKE := Vector3(106.0, 0, -7.0)   # where the re-cocking rope is staked ahead
+## The arm's two ends about the axle: cocked (the long end down in front, the pouch on the ground, the short end
+## and its pad up high behind) and thrown (swung through: the short end down behind with the bullfrog on it, the
+## long end high in front, the sling whipped over it, empty).
+const FROG_ARM := {"cocked": [Vector2(-15.0, 15.0), Vector2(40.0, -35.0)], "thrown": [Vector2(-12.2, -14.6), Vector2(34.7, 41.4)]}
+
+
+## The frogs' great sling: a counterweight sling the other way round from the traction one, worked by a giant
+## bullfrog. Set up (`thrown` false): the long arm down in front with the loaded pouch on the ground, the short arm
+## up high behind with a padded landing pad, the bullfrog crouched on a reed tower behind it about to leap. Thrown:
+## the bullfrog landed on the pad, the arm swung through, the sling whipped up and empty (UnitView shows it for a
+## moment after each shot: the part's `throw`). Crew: a loader at the pouch with the stones beside it, two haulers on
+## the re-cocking rope (from the long end to a stake ahead), one minding the tower.
+func _frog_sling(s: Dictionary, thrown := false) -> Dictionary:
+	var n := Node3D.new()
+	var k := FROG_SLING_K
+	var top := sling_towers(n, s, 0.0, k)
+	var ends: Array = FROG_ARM["thrown" if thrown else "cocked"]
+	var short := Vector3(ends[0].x, top + ends[0].y, 0)
+	var long := Vector3(ends[1].x, top + ends[1].y, 0)
+	sling_arm(n, s, short, long, k, Vector3(14.0, 10.0, 0) if thrown else Vector3(6.0, -5.0, 0), not thrown)
+	# The landing pad, pinned level on the short end (it swings on the pin as the arm goes over).
+	n.add_child(_box(Vector3(13.0, 2.0, 13.0), s.wicker, short + Vector3(-1.0, 2.2, 0)))
+	n.add_child(_box(Vector3(11.0, 0.6, 11.0), s.team, short + Vector3(-1.0, 3.5, 0)))
+	# The tower: four bundled reed posts, braced, a plank top.
+	var T := FROG_TOWER
+	for x in [T.x - T.z, T.x + T.z]:
+		for z in [-T.z, T.z]:
+			bundle(n, Vector3(x, 0, z), Vector3(x, T.y, z * 0.9), 1.6, s, 4, 1.3)
+	for y in [20.0, 42.0]:
+		for z in [-T.z, T.z]:
+			n.add_child(rod(Vector3(T.x - T.z, y, z), Vector3(T.x + T.z, y + 8.0, z), 0.6, 0.6, s.lash))
+	n.add_child(_box(Vector3(16.0, 2.0, 16.0), s.plank, Vector3(T.x, T.y + 1.0, 0)))
+	if thrown:   # landed on the pad
+		bullfrog(n, short + Vector3(-9.0, 3.8, 0), 1.0)
+	else:
+		bullfrog(n, Vector3(T.x - 2.0, T.y + 2.0, 0), 1.05)
+	# The re-cocking rope, from the long end down to a stake ahead (tied at both ends whoever hauls); its loop slips
+	# off the arm as it throws, and lies coiled by the stake till the haulers hook it back on.
+	if thrown:
+		n.add_child(ring(1.8, 3.0, s.rope, FROG_HAUL_STAKE + Vector3(-4.0, 0.6, 0), Vector3.ZERO, Vector3(1.0, 1.4, 1.0)))
+	else:
+		n.add_child(rod(long + Vector3(0, 0, -1.5), FROG_HAUL_STAKE + Vector3(0, 1.5, 0), 0.4, 0.4, s.rope, false))
+	n.add_child(cone(0.25, 0.9, 5.0, s.dark, FROG_HAUL_STAKE + Vector3(0, 1.5, 0), Vector3(0, 0, -20), 8))
+	for kk in 5:   # the stones by the pouch: clay pots and river stones
+		var a := kk * 2.4
+		n.add_child(blob(Vector3.ONE * (2.6 - (kk % 3) * 0.4), s.ammo if kk % 2 == 0 else s.stone, Vector3(60.0 + cos(a) * 3.0, 2.2, 24.0 + sin(a) * 2.6)))
+	pennant(n, s, Vector3(T.x + T.z, T.y + 2.0, -T.z), 12.0, 4.5)
+	return {"node": n, "sockets": {"crew0_f4_reach": Vector3(54.0, 0, 13.0), "crew1_f4_raise": Vector3(68.0, 0, -17.0),
+		"crew2_f4_raise": Vector3(89.0, 0, -17.0), "crew3_f0": Vector3(-26.0, 0, 22.0)}}
+
+
+## Packed to move: the tower's reed bundles, the frame's timbers and the arm lashed along a heavy sledge, the pad
+## on top, the rope coiled; the bullfrog hauls it in a breast band, its traces tied to the runners' curled fronts;
+## two frogs walk beside.
+func _frog_packed(s: Dictionary) -> Dictionary:
+	var n := Node3D.new()
+	var L := 64.0
+	var W := 24.0
+	var x0 := -8.0
+	sledge(n, s, L, W, x0)
+	for z in [-7.5, -2.5, 2.5, 7.5]:   # the tower's posts, laid down
+		bundle(n, Vector3(x0 - 28.0, 5.6, z), Vector3(x0 + 22.0, 5.6, z), 1.8, s, 4, 1.6)
+	for z in [-5.0, 5.0]:   # the frame's timbers over them
+		n.add_child(beam(Vector3(x0 - 24.0, 9.6, z), Vector3(x0 + 20.0, 9.6, z), 3.8, 3.8, s.dark))
+	n.add_child(beam(Vector3(x0 - 30.0, 13.8, 0), Vector3(x0 + 26.0, 13.8, 0), 4.6, 4.6, s.wood))   # the arm
+	for x in [x0 - 18.0, x0, x0 + 16.0]:   # lashed down
+		n.add_child(ring(2.4, 3.4, s.lash, Vector3(x, 13.8, 0), Vector3(0, 0, 90)))
+		n.add_child(rod(Vector3(x, 3.2, -W * 0.5 - 0.4), Vector3(x, 11.0, -6.0), 0.35, 0.35, s.lash))
+		n.add_child(rod(Vector3(x, 3.2, W * 0.5 + 0.4), Vector3(x, 11.0, 6.0), 0.35, 0.35, s.lash))
+	n.add_child(_box(Vector3(12.0, 2.0, 12.0), s.wicker, Vector3(x0 - 20.0, 17.2, 0)))   # the pad
+	n.add_child(_box(Vector3(10.0, 0.6, 10.0), s.team, Vector3(x0 - 20.0, 18.5, 0)))
+	n.add_child(ring(2.4, 3.6, s.rope, Vector3(x0 + 8.0, 17.0, 0)))
+	# The bullfrog in front, in a breast band; the traces from the runners' curled fronts to the band.
+	var bx := x0 + L * 0.5 + 24.0
+	var bk := 0.9
+	bullfrog(n, Vector3(bx, 0, 0), bk)
+	var band_at := Vector3(bx, 10.0 * bk, 0)
+	n.add_child(ring(10.6 * bk, 11.6 * bk, s.lash, band_at, Vector3(0, 0, 90), Vector3(0.86, 1.0, 1.0)))
+	for side in [1, -1]:
+		n.add_child(rod(Vector3(x0 + L * 0.5, 6.0, W * 0.5 * side), band_at + Vector3(0, 0, 11.1 * bk * side), 0.4, 0.4, s.rope, false))
+	pennant(n, s, Vector3(x0 - 34.0, 3.2, -W * 0.5), 14.0, 4.5)
+	return {"node": n, "sockets": {"crew0_f0": Vector3(x0 + 6.0, 0, 21.0), "crew1_f0": Vector3(x0 - 18.0, 0, -21.0)}}
 
 
 ## The tarantula's markings (D-129, Dominic: its back was "too single-colour"): a pale rim round the carapace
@@ -2657,6 +2779,9 @@ func _beast_heron(s: Dictionary) -> Dictionary: return _heron(s)
 func _beast_mantis(s: Dictionary) -> Dictionary: return _mantis(s)
 func _sling_in_play(s: Dictionary, _c: Dictionary) -> Dictionary: return _great_sling(s)
 func _packed_in_play(s: Dictionary, _c: Dictionary) -> Dictionary: return _great_packed(s)
+func _frog_sling_in_play(s: Dictionary, _c: Dictionary) -> Dictionary: return _frog_sling(s)
+func _frog_throw_in_play(s: Dictionary, _c: Dictionary) -> Dictionary: return _frog_sling(s, true)
+func _frog_packed_in_play(s: Dictionary, _c: Dictionary) -> Dictionary: return _frog_packed(s)
 
 
 const BESIDE_GAP := 11.0   # a member walking beside a war beast: this far out past its widest point (a centaur's half width and some)
