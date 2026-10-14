@@ -103,14 +103,16 @@ static func composite_cases(lib) -> Array:
 		r.body = c[1]
 		r.haul = {"creature": c[2], "skin": c[3], "parts": {"torso": "harness.draught"}}
 		cases.append(["composite: %s %s hauled by a %s" % [c[0], c[1].trim_prefix("concept."), c[2]], {"recipe": r, "eval": step.eval}])
-	# In play: the great sling packed on its wagon while it moves (D-129, UnitView.set_packed), every take that has it.
-	for p in ["romans", "sewer rats", "forest beetles", "spooky spiders", "centaur romans"]:
+	# In play: the great sling packed on its wagon while it moves (D-129, UnitView.set_packed), every take that has it,
+	# and the frogs' as it throws (D-131, UnitView.loose: the bullfrog landed on the pad).
+	for p in ["romans", "sewer rats", "forest beetles", "spooky spiders", "centaur romans", "swamp frogs", "winged frogs"]:
 		var u: Dictionary = slot(gen.generate(p, rules), "great_sling")
-		var packed: String = lib.part(u.recipe.body).get("packed", "")
-		if packed != "":
-			var r: Dictionary = u.recipe.duplicate(true)
-			r.body = packed
-			cases.append(["composite: %s great sling packed" % p, {"recipe": r, "eval": u.eval}])
+		for look in ["packed", "throw"]:
+			var shown: String = lib.part(u.recipe.body).get(look, "")
+			if shown != "":
+				var r: Dictionary = u.recipe.duplicate(true)
+				r.body = shown
+				cases.append(["composite: %s great sling %s" % [p, "packed" if look == "packed" else "throwing"], {"recipe": r, "eval": u.eval}])
 	# In play: what a worker pushes home (D-127: the rats' scrap barrow with stone, handcart with gold).
 	for p in ["sewer rats", "sewer rats with cheese hammers"]:
 		var w: Dictionary = slot(gen.generate(p, rules), "worker")

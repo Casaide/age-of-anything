@@ -1,6 +1,6 @@
 # Milestone 13: Unit lines
 
-**Status:** in progress (2026-10-13): siege engines built (step 3b), steps 2 and 8 (siege part) done; trade carts in play; war beasts and the GS2 great sling in play (D-129), siege shots baked; concept round FS1 (the frogs' great sling) waiting on Dominic
+**Status:** in progress (2026-10-13): siege engines built (step 3b), steps 2 and 8 (siege part) done; trade carts in play; war beasts and the GS2 great sling in play (D-129), siege shots baked; the frogs' great sling is FS1 A, the bullfrog leaper, in play with a throw (D-131); war beasts break cavalry (D-131)
 **Exit criterion:** the tech tree page shows no blank nodes for land; every line trains, fights by
 its counters, and the AI uses it; a balance round robin at ages 2 and 3 with no line more than 20%
 off at equal cost; Dominic plays a match using siege and healers.
@@ -128,7 +128,7 @@ picks), then build, tests, archive pictures.
   - [x] Dominic's picks: GS2's siege-weight traction sling (D-129); the sapper parked (D-128)
   - [x] The great sling's look in play for timber, junk, forest and spooky, packed on its wagon while it moves (2026-10-13)
   - [x] Concept round FS1: the frogs' great sling (bullfrog leaper, stilt sling, crayfish winder) (2026-10-13)
-  - [ ] Dominic's pick from FS1 (the frogs keep their snail catapult as a stand-in until then)
+  - [x] Dominic's pick from FS1: A, the bullfrog leaper (D-131); built and in play, packed on a sledge the bullfrog hauls, a throw shown after each shot (2026-10-14)
 - [x] 5. Healers (built 2026-10-12; the look is a pick pending: HL1 concept sheet, look A in game)
 - [ ] 6. Trade carts
   - [x] Mechanics, data, AI, Pack Animals, a placeholder look (2026-10-13)
@@ -138,6 +138,7 @@ picks), then build, tests, archive pictures.
   - [x] Concept round WB1 (2026-10-13)
   - [x] Concept round WB2 (2026-10-13); Dominic's picks (D-129)
   - [x] Built: the `war_beast` line in play (Stable, age 3), elephant, war boar, tarantula, heron, mantis, riders the race's spearmen; priced, balanced (2026-10-13)
+  - [x] A bonus against mounted units (D-131), priced (2026-10-14)
   - [ ] Dominic's look in a match
 - [ ] 8. AI (siege part done 2026-10-13: a few engines, rams at gates, walls and towers, catapults at towers; trade carts, the sapper and the great sling 2026-10-13; war beasts by the counter-pick, at most 4, 2026-10-13)
 - [x] Siege shots drawn as baked art (Dominic: "the rocks they throw look really bad"; 2026-10-13)
@@ -760,7 +761,45 @@ counters won 83%; age 3: 18 of 38, 81%** (the same as before: the new lines don'
   A1 the engine stands on the ground (not floating, pressed in at most 4: it caught the elephant's legs 3 under the
   ground; the riderless tarantula had no rule at all); the snail catapult's tail lifted out of the ground.
 
-**Open (2026-10-13):** Dominic's pick from FS1; his look at the war beasts and the great sling in a match; war beasts against cavalry (2 of 10 at 3000: the genre's elephants beat horse, ours don't; a bonus vs mounted if he wants it). Earlier: Dominic's picks for TC1, WB1, SP1 and GS1, and then their looks; war beasts' data
+**The bullfrog leaper in play; war beasts break cavalry (2026-10-14; D-131).**
+- **The frogs' great sling** (FS1 A): `siege_models.gd` _frog_sling (OWN `sling.frog`; ENGINE_STAND_IN is empty now, the
+  snail catapult stand-in gone; `bullfrog()` moved there from `m13_concepts.gd`): the counterweight sling at 0.9 of GS2's
+  frame, the long arm down in front with a loaded pouch on the ground, the short arm up behind with a wicker landing pad
+  in team cloth, the reed tower behind (four bundled posts, lashed braces, a plank top, a pennant) with the giant olive
+  bullfrog crouched on it. Crew (the race's frog workers): a loader at the pouch with a pile of clay pots and river
+  stones, two haulers on the re-cocking rope (from the arm's long end to a stake ahead), one minding the tower. Its shot
+  stays `clay_big` (the corded clay pot, 2.3 against the catapult's 1.4). Stats as before (hp 110, armour 1/8, food in
+  its cost: the bullfrog is alive); `placeholder` dropped.
+- **Packed** (`siege.sling_packed.frog`, _frog_packed): the tower's reed posts, the frame's timbers and the arm lashed
+  along a heavy sledge, the pad on top, a coil of rope; the bullfrog hauls it in a breast band, the traces tied to the
+  runners' curled fronts; two frogs walk beside.
+- **The throw** (`siege.sling_throw.frog`, the body part's new `throw`): the bullfrog landed on the pad, the arm swung
+  through (the long end high in front, the sling whipped over it, empty), the re-cocking rope slipped off and coiled
+  by its stake. `UnitView.loose` shows it for 0.9 s after each shot (`_throw`, like `set_packed` a swap of the baked
+  body, only once it's baked; packing up straight after a throw goes back to the set-up look first). art_kit bakes it
+  with the packed look. The pad hangs level on its pin in both poses.
+- **Placement:** the haulers stood 14 apart and in each other (C1: frogs are wide), now 21; in the throw's f4 the loader
+  drew over the nearer hauler (C4: the rope rising past the hauler made it "behind the engine"), fixed by moving the
+  haulers out and letting the rope slip off as it throws. Cases add the frogs' and the winged frogs' packed and
+  throwing slings. Full placement_check passes. Sheet `tests/sheets/great_sling_play.json` (frog rows: set up,
+  throwing, packed), `640-` (3x), `641-` (1x); in a match `642-` (`tests/sim_screenshot.gd ... flat_test sling
+  "swamp frogs" "romans"`, a new scene: one sling throwing at houses, one rolling by on its sledge).
+- **War beasts against cavalry** (D-131, Claude: the genre's beasts break cavalry; spears and skirmishers stay their
+  counters): `engine.beast` gets `bonus: {mounted: 12}` and `price_points` 12 (its points stay 10): a war beast now
+  costs 540 (325 food, 215 gold) against 500. `tests/mass_battle.gd -- 3 [budget] beasts` (the `beasts` word no longer
+  reads as a budget of 0 when the budget is left out), before -> after:
+  at 3000 a side, beasts v cavalry 2 -> 6 of 10 (one draw; value left 8% -> 57%), v swords 8 -> 10, v archers 8 -> 8;
+  spears v beasts 10 -> 10, skirmishers v beasts 8 -> 6, bolt+spear v beasts 10 -> 10; beast+archer v spear+archer
+  6 -> 7. At 1500 (three beasts a side, many fights to the time limit): cavalry 4 -> 9 for the beasts, spears 6 -> 4,
+  skirmishers 5 -> 4 for the counters. The counters' only losses that moved are the centaurs' (Maximian Cohort): their
+  spears and skirmishers are mounted, so a beast breaks them too; every other race's spear and skirmisher fights are
+  unchanged. Tried: +6 at 12 points (cavalry 5 of 10 at 3000), +8 at 13, +10 at 14 (the price rise took a beast off
+  each side, cancelling the bonus). Many 1500 fights still end at the time limit with both sides standing (beasts
+  and their counters not closing), an old quirk of the beasts' matches. `balance.gd -- 3` has no engines or beasts in
+  its round robin, so it is unchanged (21 of 38 units more than 20% off the mean, counters 81%, as on main).
+
+**Open (2026-10-14):** Dominic's look at the bullfrog leaper (and its throw) and the war beasts in a match; the centaurs'
+spears and skirmishers losing to war beasts (they are cavalry) if he wants it otherwise. Earlier (2026-10-13): Earlier: Dominic's picks for TC1, WB1, SP1 and GS1, and then their looks; war beasts' data
 and generator role once a beast is picked; the design change above; an engine-rolling sound; the great
 sling showing packed and set-up looks (units.ready is there for the view).
 

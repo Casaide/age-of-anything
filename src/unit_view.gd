@@ -325,6 +325,8 @@ static func haul_recipe(lib, r: Dictionary) -> Dictionary:
 ## settles when destroyed (its crew fall, each in its own way).
 func _engine_process(delta: float) -> void:
 	time += delta
+	if _thrown_from != "":
+		_throw_process(delta)
 	bob.position = Vector2.ZERO
 	bob.rotation = sin(time * gait.rock_rate * 3.0) * gait.rock if walking else 0.0
 	for c in crew:
@@ -661,6 +663,11 @@ var _set_up_body := ""   # the engine's own body while it shows packed
 
 
 func set_packed(on: bool) -> void:
+	if on and _thrown_from != "":   # (packing up straight after a throw: back to its own look first)
+		_built[0] = _built[0].duplicate()
+		_built[0].body = _thrown_from
+		_thrown_from = ""
+		_throw_t = 0.0
 	var r: Dictionary = _built[0]
 	var lib = _built[1]
 	var to := ""
@@ -677,6 +684,38 @@ func set_packed(on: bool) -> void:
 	_built[0] = r.duplicate()
 	_built[0].body = to
 	_rebuild()
+
+
+## Throwing (the frogs' great sling, D-131): an engine whose body part names a `throw` look (parts.json:
+## "siege.sling_throw.frog", the bullfrog landed on the pad and the arm swung through) shows it for THROW_TIME
+## after a shot leaves, then its own look again. Only once the throw look is baked.
+const THROW_TIME := 0.9
+var _throw_t := 0.0
+var _thrown_from := ""   # the engine's own body while it shows its throw
+
+
+func _throw() -> void:
+	if _thrown_from != "":
+		_throw_t = THROW_TIME
+		return
+	var r: Dictionary = _built[0]
+	var to: String = _built[1].part(r.body).get("throw", "")
+	if to == "" or not (PartShape.rigs.has(to + PartShape.facing_suffix(facing_k)) or PartShape.rigs.has(to)):
+		return
+	_thrown_from = r.body
+	_throw_t = THROW_TIME
+	_built[0] = r.duplicate()
+	_built[0].body = to
+	_rebuild()
+
+
+func _throw_process(delta: float) -> void:
+	_throw_t -= delta
+	if _throw_t <= 0.0:
+		_built[0] = _built[0].duplicate()
+		_built[0].body = _thrown_from
+		_thrown_from = ""
+		_rebuild()
 
 
 ## A worker pushing an engine home: the engine, the worker its crew, its hands on the handles.
@@ -732,6 +771,8 @@ func flourish() -> void:
 
 ## A shot leaves: the archer snaps forward on the release (R1, D-106).
 func loose() -> void:
+	if _built.size() > 0 and _built[0].has("crew"):
+		_throw()
 	attack_t = 0.35
 	_attack_kind = "loose"
 	for c in crew:

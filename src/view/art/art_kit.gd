@@ -317,11 +317,12 @@ func _steps_jobs(units: Array) -> Array:
 		# trade cart's cat went unbaked: the placement check, "every part drawn is baked").
 		if l.recipe.has("crew"):
 			steps.append({"recipe": UnitView.crew_recipe(l.recipe), "eval": l.eval})
-			var packed: String = lib.part(l.recipe.body).get("packed", "")
-			if packed != "":   # the great sling on its wagon (UnitView.set_packed, D-129)
-				var pr: Dictionary = l.recipe.duplicate()
-				pr.body = packed
-				steps.append({"recipe": pr, "eval": l.eval})
+			for look in ["packed", "throw"]:   # the great sling on its wagon (UnitView.set_packed, D-129), the frogs' as it throws (UnitView.loose, D-131)
+				var shown: String = lib.part(l.recipe.body).get(look, "")
+				if shown != "":
+					var pr: Dictionary = l.recipe.duplicate()
+					pr.body = shown
+					steps.append({"recipe": pr, "eval": l.eval})
 			var shot: String = lib.part(l.recipe.body).get("shot", "")
 			if shot != "":   # what it throws (data/siege_shots.json), drawn in flight by combat_fx.gd
 				var sp: String = CombatFx.look(shot).part
