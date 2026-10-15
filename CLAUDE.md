@@ -69,6 +69,9 @@ move it to `docs/backlog.md` rather than deleting it.
 - **Closed for now (milestones 12 and 15): the land tech tree and maps.** Three ages, walls, gates, towers, castle,
   research as data, the tech tree page; big maps, high ground, bridges, fords (Dominic, 2026-10-13).
 - **Done (milestone 17): living towns** ("living town is good"). **Milestone 19 (UI):** the timber look approved.
+- **In progress (milestone 20): Steam Deck and controllers.** The pad controls are built (D-132): `src/view/pad_mode.gd`
+  (last input wins, menu focus), `pad_play.gd` (reticle, selection circle, orders), `pad_wheel.gd` (tap A on what you command: the
+  panel's buttons on a ring; D-133). First Deck run done; next: steps 7-9 (fit, speed, Steam Input). See `docs/milestones/m20-steam-deck.md`.
 - **In progress (milestone 13): unit lines, siege first.** Crewed engines per family (D-116 to D-119); shots fly
   and can miss (`src/sim/shots.gd`). See `docs/milestones/m13-unit-lines.md`.
 
@@ -160,6 +163,7 @@ python3 tools/maps/reed_meadow.py                                  # rebuild the
 godot --headless --path . --script res://tests/path_audit.gd -- 8  # pathing diagnostic: give-ups, snaps, jitter, treading, with examples
 godot --path . res://scenes/match_setup.tscn                       # pick races and play vs the AI (the main scene)
 godot --path . --script res://tests/sim_screenshot.gd -- /tmp/sim.png [map_id] [armies|opening:<tick>] ["prompt A" "prompt B"]
+godot --path . --audio-driver Dummy --always-on-top --script res://tests/pad_check.gd -- /tmp/pad   # a match played by a fake pad: 25 checks + pictures (exit 1 on a failure)
 godot --path . res://scenes/sim_debug.tscn                         # run the sim debug view
 godot --path . res://scenes/counter_quiz.tscn                      # blind counter quiz (milestone 4 exit check)
 godot --headless --path . --script res://tests/gen_cost_curve.gd   # regenerate data/cost_curves.json

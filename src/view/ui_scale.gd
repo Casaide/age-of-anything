@@ -60,10 +60,13 @@ static func key_step(event: InputEvent) -> int:
 
 
 ## The UI scale for a window: the screen's density times the player's UI size, but no bigger than
-## lets `needs` fit, never below 1.
+## lets `needs` fit. Never below 1 where the layout fits at 1; on a window smaller than the layout
+## (the Steam Deck's 1280 x 800), as big as fits, so nothing runs off the screen (Dominic: on the
+## Deck the Start button was off the bottom).
 static func factor(win: Window, needs: Vector2) -> float:
 	var px := Vector2(win.size)
-	return maxf(1.0, minf(screen() * size_pct() / 100.0, minf(px.x / needs.x, px.y / needs.y)))
+	var fit := minf(px.x / needs.x, px.y / needs.y)
+	return maxf(minf(1.0, fit), minf(screen() * size_pct() / 100.0, fit))
 
 
 ## Once per run: a window opened at the design size on a dense screen is a quarter of the size

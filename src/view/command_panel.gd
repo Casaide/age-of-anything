@@ -47,6 +47,11 @@ var _queue_bar: ProgressBar
 var _hp_fills := {}
 var _signature := ""
 var _team := Color.WHITE
+var content := {}       # what show_content was last given (the pad's wheel shows its buttons)
+var compact := false:   # pad mode: the orders live on the wheel, so the panel keeps who and the queue
+	set(v):
+		compact = v
+		_signature = ""
 
 
 func _ready() -> void:
@@ -135,6 +140,7 @@ func _ready() -> void:
 ## Buttons sharing a `group` (its caption: "Train", "Research", "Build"...) sit together, groups
 ## in the order they first appear; `accent` gives a button a gold edge (the age-up).
 func show_content(c: Dictionary) -> void:
+	content = c
 	_title.text = c.title
 	_team = c.team
 	_info.text = c.info
@@ -154,7 +160,7 @@ func show_content(c: Dictionary) -> void:
 	_queue_bar.value = c.get("progress", 0.0)
 	_queue_label.text = str(c.get("queue_title", "Training")).to_upper()
 	_queue_bar.modulate.a = 1.0 if queue != null and not queue.is_empty() else 0.25
-	var sig := "%s|%s|%s|%s|%s|%s" % [c.title, c.team, c.portrait, c.get("tray", []).map(func(t): return "%s%d" % [t.icon, t.count]),
+	var sig := "%s|%s|%s|%s|%s|%s|%s" % [compact, c.title, c.team, c.portrait, c.get("tray", []).map(func(t): return "%s%d" % [t.icon, t.count]),
 		c.buttons.map(func(b): return "%s:%s:%s:%s:%s" % [b.get("group", ""), b.text, b.enabled, b.get("accent", false), b.get("cost", "")]), queue.map(func(q): return str(q.icon)) if queue != null else "-"]
 	if sig == _signature:
 		return
@@ -181,9 +187,10 @@ func show_content(c: Dictionary) -> void:
 		if i > 0:
 			_actions.add_child(_groove(false))
 		_actions.add_child(_group(order[i], groups[order[i]]))
-	_actions.visible = not order.is_empty()
-	_split_who.visible = not order.is_empty() or queue != null
-	_split_queue.visible = not order.is_empty() and queue != null
+	var acts := not order.is_empty() and not compact
+	_actions.visible = acts
+	_split_who.visible = acts or queue != null
+	_split_queue.visible = acts and queue != null
 	if queue != null:
 		var first := _queue_slot(queue[0] if not queue.is_empty() else {}, true)
 		_queue.add_child(first)
@@ -277,6 +284,11 @@ class TipButton extends Button:
 
 	func _make_custom_tooltip(for_text: String) -> Object:
 		return UiTheme.tip_card(for_text, look if not look.is_empty() else UiTheme.look(""), ui_scale)
+
+
+## One of the panel's buttons, made for somewhere else (the pad's wheel).
+func make_button(b: Dictionary) -> Button:
+	return _button(b)
 
 
 func _button(b: Dictionary) -> Button:

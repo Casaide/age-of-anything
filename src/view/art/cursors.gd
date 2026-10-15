@@ -49,6 +49,16 @@ func _svg(name: String, s: float) -> Image:
 	return img
 
 
+## The cursor's art as a texture (the pad's reticle shows it beside itself).
+func texture(name: String) -> Texture2D:
+	if not _textures.has(name):
+		_textures[name] = ImageTexture.create_from_image(images[name])
+	return _textures[name]
+
+
+var _textures := {}
+
+
 func use(name: String) -> void:
 	if name == current:
 		return

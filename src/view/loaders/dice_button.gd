@@ -20,7 +20,7 @@ var _rock := 0.0
 
 
 func _init() -> void:
-	focus_mode = Control.FOCUS_NONE
+	focus_mode = Control.FOCUS_ALL   # the pad reaches it by focus (milestone 20)
 	face = TextureRect.new()
 	face.texture = Icons.texture("dice")
 	face.expand_mode = TextureRect.EXPAND_IGNORE_SIZE

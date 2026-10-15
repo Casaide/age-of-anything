@@ -14,6 +14,7 @@ extends Control
 ## It wears the race's culture (src/view/ui/theme.gd): the panels' frames and crest, the type.
 
 const Model := preload("res://src/view/tech_tree_model.gd")
+const PadMode := preload("res://src/view/pad_mode.gd")
 const Icons := preload("res://src/view/art/icons.gd")
 const UnitView := preload("res://src/unit_view.gd")
 const ArtKit := preload("res://src/view/art/art_kit.gd")
@@ -71,6 +72,7 @@ var _canvas: Control
 var _rail: Control
 var _rail_inner: Control
 var _scroll: ScrollContainer
+var _pad_scroll := Vector2.ZERO   # the sticks' scroll not yet a whole pixel
 var _race_box: VBoxContainer
 var _title: Label
 var _drag_from := Vector2.INF
@@ -256,7 +258,11 @@ func is_loading() -> bool:
 	return _loading
 
 
+var closed_frame := -1   # the frame it last closed (a pad's B that closed it does nothing else)
+
+
 func close() -> void:
+	closed_frame = Engine.get_process_frames()
 	if not visible:
 		return
 	visible = false
@@ -291,6 +297,16 @@ func _input(event: InputEvent) -> void:
 func _process(delta: float) -> void:
 	if not visible:
 		return
+	var pad := PadMode.of(get_tree())
+	if pad.on:   # the pad: B (or Menu) closes the page, the sticks scroll it
+		if pad.pressed(JOY_BUTTON_B) or pad.pressed(JOY_BUTTON_START):
+			close()
+			return
+		_pad_scroll += (pad.stick(false) + pad.stick(true)) * 1400.0 * delta
+		var step := Vector2i(_pad_scroll)
+		_pad_scroll -= Vector2(step)
+		_scroll.scroll_horizontal += step.x
+		_scroll.scroll_vertical += step.y
 	if _loading:   # the loader's bar glides up to the bake's real progress, never past it
 		var real: float = kit.tree_progress()
 		_shown = minf(real, _shown + delta * 1.5) if real > _shown else real

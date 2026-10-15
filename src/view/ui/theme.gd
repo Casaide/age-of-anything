@@ -220,6 +220,19 @@ static func field_box(lk: Dictionary, focus: bool) -> StyleBox:
 	return _margins(b, 14, 8)
 
 
+## Where the pad's focus is: a lit rim in the accent, just outside the button.
+static func focus_box(lk: Dictionary) -> StyleBox:
+	var b := StyleBoxFlat.new()
+	b.draw_center = false
+	b.border_color = Color(lk.accent, 0.95)
+	b.set_border_width_all(3)
+	b.set_corner_radius_all(5)
+	b.set_expand_margin_all(4)
+	b.shadow_color = Color(lk.accent, 0.35)
+	b.shadow_size = 6
+	return b
+
+
 ## A tooltip card: dark, a metal rim.
 static func tip_box(lk: Dictionary, k := 1.0) -> StyleBox:
 	var b := _box(lk)
@@ -329,7 +342,7 @@ static func theme(lk: Dictionary, base := 20) -> Theme:
 		for state in ["normal", "hover", "pressed", "disabled"]:
 			t.set_stylebox(state, kind, button_box(lk, state, primary))
 		t.set_stylebox("hover_pressed", kind, button_box(lk, "pressed", primary))
-		t.set_stylebox("focus", kind, StyleBoxEmpty.new())
+		t.set_stylebox("focus", kind, focus_box(lk))   # shown only when a pad or the keys moved the focus there
 		t.set_font("font", kind, display_font() if primary else text_font(true))
 		t.set_font_size("font_size", kind, roundi(base * (1.55 if primary else 1.0)))
 		var fc: Color = lk.title if primary else text
@@ -453,7 +466,7 @@ static func label(text: String, kind := "", wrap := false) -> Label:
 static func button(text: String, primary := false) -> Button:
 	var b := Button.new()
 	b.text = text
-	b.focus_mode = Control.FOCUS_NONE
+	b.focus_mode = Control.FOCUS_ALL   # a pad walks the menus by focus (milestone 20)
 	if primary:
 		b.theme_type_variation = "PrimaryButton"
 	juice(b)
@@ -471,6 +484,11 @@ static func juice(b: BaseButton, click := true) -> void:
 		Audio.of(b.get_tree()).play("ui_hover")
 		_pop(b, 1.035))
 	b.mouse_exited.connect(func(): _pop(b, 1.0))
+	b.focus_entered.connect(func():   # the pad's hover: the same tick and lift
+		if b.is_inside_tree() and b.has_focus(true):
+			Audio.of(b.get_tree()).play("ui_hover")
+			_pop(b, 1.035))
+	b.focus_exited.connect(func(): _pop(b, 1.0))
 	b.button_down.connect(func(): _pop(b, 0.97))
 	b.button_up.connect(func(): _pop(b, 1.035 if b.is_hovered() else 1.0))
 	if click:
