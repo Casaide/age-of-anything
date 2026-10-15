@@ -57,6 +57,8 @@ const Repair := preload("res://src/sim/repair.gd")
 const WALL_PX: float = Models.WALK_H.wall * ArtKit.WALK_PX_PER_UNIT   # a stone wall's walkway over the ground at 1x (as ArtKit walk_px), for a climb
 const TechTreeModel := preload("res://src/view/tech_tree_model.gd")
 const TownLife := preload("res://src/view/town_life.gd")
+const PadPlay := preload("res://src/view/pad_play.gd")
+const PadMode := preload("res://src/view/pad_mode.gd")
 
 const MAP_IDS := ["flat_test", "choke_test", "reed_meadow", "reed_meadow_2v2", "old_forest", "river_delta", "river_test"]
 const SEED := 1
@@ -137,6 +139,7 @@ var _build_page_for := ""   # the selection it was opened for; a new selection s
 var show_debug := true      # the debug lines (F1); off by default against the AI
 var panel: CommandPanel
 var cursors: Cursors
+var pad_play: PadPlay       # the battlefield on a pad: reticle, selection circle, wheel (milestone 20)
 var views := {}             # unit id -> UnitView (view side only; never feeds the sim)
 var bviews := {}            # building id -> BuildingArt
 var rviews := {}            # resource cell -> its prop (reed clump, bug bush)
@@ -298,6 +301,9 @@ func _ready() -> void:
 	pages_root.add_child(tech_tree)
 	_fit_hud()
 	cursors = Cursors.new(DisplayServer.screen_get_scale())
+	pad_play = PadPlay.new()
+	add_child(pad_play)
+	pad_play.setup(self)
 
 	if prompts.is_empty():
 		var args := OS.get_cmdline_user_args()
@@ -770,6 +776,11 @@ const HINTS := [
 	"Select a worker and right-click a bush, reeds or stone to gather.",
 	"Build a House (select a worker, press H) before your population fills up: every unit needs room.",
 ]
+const PAD_HINTS := [   # the same three on a pad
+	"D-pad up: your Town Center. Tap A on it for its commands, point at the worker, A to train.",
+	"D-pad down: an idle worker. Aim at a bush, reeds or stone and press X to gather.",
+	"Build a House (tap A on a selected worker, Build: Civilian, House, A to place) before your population fills up.",
+]
 
 func _update_hint() -> void:
 	if not vs_ai or hint_step >= HINTS.size() or world.winner >= 0:
@@ -812,7 +823,7 @@ func _update_hint() -> void:
 		audio.play("ui_tip")
 	hint.visible = hint_step < HINTS.size()
 	if hint.visible:
-		hint.text = "Tip %d of 3:  %s" % [hint_step + 1, HINTS[hint_step]]
+		hint.text = "Tip %d of 3:  %s" % [hint_step + 1, (PAD_HINTS if PadMode.of(get_tree()).on else HINTS)[hint_step]]
 
 
 ## Under attack: the first enemy blow on one of ours out of view sounds a horn, pings the
@@ -834,7 +845,8 @@ func _maybe_alert(e: Dictionary, to: Vector2) -> void:
 	battle_until = now + 8.0
 	var m := Iso.to_milli(to)
 	minimap.ping(Vector2(m.x / 1000.0, m.y / 1000.0))
-	_show_line("Under attack!  (Space to look)", Color("#ff8a70"))
+	_show_line("Under attack!  (%s to look)" % ("View" if PadMode.of(get_tree()).on else "Space"), Color("#ff8a70"))
+	PadMode.of(get_tree()).rumble(0.5, 0.7, 0.35)
 
 
 ## A line at the top of the screen for three seconds (under attack, a farm worked out).
@@ -979,6 +991,11 @@ func _clear_selection() -> void:
 
 func _body(view: Node2D) -> Vector2:
 	return view.ground() - Vector2(0, BODY_LIFT)
+
+
+## Where the player points: the mouse, or the pad's reticle in pad mode.
+func _pointer() -> Vector2:
+	return pad_play.pointer() if pad_play != null and pad_play.live() else get_global_mouse_position()
 
 
 func _cell_at(pos: Vector2) -> int:
@@ -1587,12 +1604,15 @@ func _show_pause_menu(on: bool) -> void:
 	if pause_menu == null:
 		pause_menu = _make_pause_menu()
 		banner.get_parent().add_child(pause_menu)
+		PadMode.of(get_tree()).menus.append(pause_menu)   # a pad walks it by focus
 	var over: bool = world.winner >= 0
 	pause_menu.visible = on
 	var box: Control = pause_menu.get_node("card/box")
 	box.get_node("resume").visible = not over
 	box.get_node("surrender").visible = not over
+	box.get_node("tree").visible = not over
 	var back: Button = box.get_node("menu")   # when it's over, the way back is the call to action
+	pause_menu.set_meta("pad_first", back if over else box.get_node("resume"))   # where a pad's focus starts
 	back.theme_type_variation = "PrimaryButton" if over else ""
 	back.custom_minimum_size.y = 64 if over else 50
 	back.add_theme_font_size_override("font_size", 26 if over else 19)
@@ -1666,6 +1686,7 @@ func _make_pause_menu() -> Control:
 	for item in [["resume", "Resume", func(): _show_pause_menu(false)],
 			["music", "Music: on", func(): _toggle_music()],
 			["ui", "UI size: %d%%  (larger)" % UiScale.size_pct(), func(): _ui_size_cycle()],
+			["tree", "Tech tree", func(): _show_pause_menu(false); toggle_tech_tree()],
 			["surrender", "Surrender", func(): _confirm_surrender()],
 			["menu", "Back to the menu", func(): get_tree().paused = false; get_tree().change_scene_to_file("res://scenes/match_setup.tscn")]]:
 		var b := UiTheme.button(item[1], item[0] == "resume")
@@ -1677,9 +1698,14 @@ func _make_pause_menu() -> Control:
 	return shade
 
 
+## Shift held (the pad: LB): five at a time.
+func _many() -> bool:
+	return Input.is_key_pressed(KEY_SHIFT) or (PadMode.of(get_tree()).on and PadMode.of(get_tree()).held(JOY_BUTTON_LEFT_SHOULDER))
+
+
 ## Train one (five with shift held, as far as the queue has room).
 func _train(building: int, slot: String) -> void:
-	for k in (5 if Input.is_key_pressed(KEY_SHIFT) else 1):
+	for k in (5 if _many() else 1):
 		world.issue(active, Commands.TRAIN, {"building": building, "slot": slot})
 
 
@@ -1690,7 +1716,7 @@ func _train_group(slot: String) -> void:
 	var group := _building_group().filter(func(id):
 		var i := world.buildings.index_of(id)
 		return world.buildings.owner[i] == active and world.buildings.done[i] == 1)
-	for k in (5 if Input.is_key_pressed(KEY_SHIFT) else 1):
+	for k in (5 if _many() else 1):
 		var best := 0
 		var least := int(world.econ.queue_max)
 		for id in group:
@@ -2714,7 +2740,7 @@ func _hud_text() -> String:
 		"Q train worker   H house   C town center   WASD/edges/middle-drag pan   wheel zoom   space pause   [ ] speed",
 		"F1 hide this   F3 flow   F5 save replay   F9 play replay   F6 autoplay   F10 surrender   V reveal fog   F7 test armies   M map   R restart   G/shift+G/ctrl+G regen army",
 	]
-	var cell := _cell_at(get_global_mouse_position())
+	var cell := _cell_at(_pointer())
 	if map.resource_at(cell) != "":
 		lines.append("%s: %d %s left" % [map.terrain_at(cell), map.amount[cell], map.resource_at(cell)])
 	return "\n".join(lines)
@@ -2897,7 +2923,8 @@ func _update_panel() -> void:
 				c.buttons.append({"icon": Icons.texture("back"), "text": "Back", "key": "Esc", "cost": "", "enabled": true, "group": " ",
 					"tip": "[b]Back[/b]\nTo the civilian and military pages.", "action": func(): build_page = ""})
 		if placing != "":
-			c.info = "Placing: left-click to build, shift keeps placing, right-click/Esc cancels"
+			c.info = "Placing: A builds, hold LB to keep placing, B cancels" if PadMode.of(get_tree()).on \
+				else "Placing: left-click to build, shift keeps placing, right-click/Esc cancels"
 		panel.show_content(c)
 		return
 	if selected_resource >= 0:
@@ -2979,20 +3006,25 @@ func _arch(player: int) -> String:
 
 ## The cursor shows what a right-click would do for the selection.
 func _update_cursor() -> void:
+	if PadMode.of(get_tree()).on:
+		return   # the mouse is hidden; the reticle shows the same art (pad_play.gd)
 	if baking or world == null or placing != "" or get_viewport().gui_get_hovered_control() != null:
 		cursors.use("pointer")
 		return
+	cursors.use(_cursor_kind(get_global_mouse_position()))
+
+
+## What a right-click (the pad's X) would do at pos, as a cursor's name.
+func _cursor_kind(pos: Vector2) -> String:
+	if placing != "":
+		return "pointer"
 	if arming_attack:
-		cursors.use("attack")
-		return
-	var pos := get_global_mouse_position()
+		return "attack"
 	var b := world.buildings.index_of(selected_building)
 	if b >= 0:
-		cursors.use("pointer")   # right-click sets the rally point; the genre doesn't need a special cursor for it
-		return
+		return "pointer"   # right-click sets the rally point; the genre doesn't need a special cursor for it
 	if _selected_by_owner()[active].is_empty():
-		cursors.use("pointer")
-		return
+		return "pointer"
 	var cell := _cell_at(pos)
 	var bid: int = map.occupied[cell]
 	var enemy: bool = bid != 0 and world.is_enemy(active, world.buildings.owner[world.buildings.index_of(bid)]) \
@@ -3008,19 +3040,19 @@ func _update_cursor() -> void:
 		elif uo == active and workers and _is_animal(under):
 			enemy = true   # one of our sheep: slaughter it
 	if enemy:
-		cursors.use("attack")
+		return "attack"
 	elif workers and map.resource_at(cell) != "":
-		cursors.use({"food": "forage", "wood": "chop", "stone": "mine", "gold": "mine"}.get(map.resource_at(cell), "chop"))
+		return {"food": "forage", "wood": "chop", "stone": "mine", "gold": "mine"}.get(map.resource_at(cell), "chop")
 	elif workers and bid != 0 and _is_foundation_of(bid, active):
-		cursors.use("build")
+		return "build"
 	elif workers and bid != 0 and map.pool[cell] >= 0 and world.buildings.owner[world.buildings.index_of(bid)] == active:
-		cursors.use("build")   # a worked-out farm of ours: right-click reseeds it (Dominic: it showed the plain cursor)
+		return "build"   # a worked-out farm of ours: right-click reseeds it (Dominic: it showed the plain cursor)
 	elif workers and bid != 0 and _drop_off_kind(bid, active, _selected_workers()) != "":
 		# taking it in: the carried resource's tool (there's no drop-off cursor art yet)
 		var kind := _drop_off_kind(bid, active, _selected_workers())
-		cursors.use({"food": "forage", "wood": "chop", "stone": "mine", "gold": "mine"}.get(kind, "move"))
+		return {"food": "forage", "wood": "chop", "stone": "mine", "gold": "mine"}.get(kind, "move")
 	else:
-		cursors.use("move")
+		return "move"
 
 
 # ------------------------------------------------------------------ drawing
@@ -3120,8 +3152,8 @@ func _draw_overlay() -> void:
 			var rp := Iso.to_ground(bs.rally_x[b], bs.rally_y[b])
 			overlay.draw_line(Iso.to_screen(x0 + sx / 2, y0 + sy / 2) - up, rp, Color(RING, 0.4), 1.0 / camera.zoom.x)   # the flag itself is in the marks
 	if placing != "":
-		var c := _ghost_cell(get_global_mouse_position())
-		var along := _ghost_along(get_global_mouse_position())
+		var c := _ghost_cell(_pointer())
+		var along := _ghost_along(_pointer())
 		var d := Economy.dims(world.btypes[Economy.btype_of(world, placing)], along)
 		var ghosts := wall_cells(wall_from, c) if _line(placing) and wall_from.x >= 0 else [c]
 		for g in ghosts:
@@ -3132,3 +3164,4 @@ func _draw_overlay() -> void:
 		var r := Rect2(press_world, Vector2.ZERO).expand(get_global_mouse_position())
 		overlay.draw_rect(r, Color(RING, 0.12))
 		overlay.draw_rect(r, RING, false, 1.0 / camera.zoom.x)
+	pad_play.draw(overlay)

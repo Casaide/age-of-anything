@@ -3,6 +3,7 @@ extends SceneTree
 ## Run (needs a display): godot --path . --script res://tests/lobby_screenshot.gd -- out.png [menu|setup|setup:<map_id>|forging[:<frames>]] ["prompt A" "prompt B"]
 ## forging: once both armies stand, throws your side's dice and shoots that many frames later
 ## (default 10): the die mid-tumble, the old army dimmed under the forge veil.
+## AOA_PAD=1 in the environment: as a pad sees it (pad mode on, the focus where it starts).
 ## start[:<frames>]: presses Start and shoots the match loader that many frames later (default 6).
 
 func _initialize() -> void:
@@ -48,6 +49,12 @@ func _initialize() -> void:
 		lobby._roll(0)
 		for f in (int(args[1].get_slice(":", 1)) if ":" in args[1] else 10):
 			await process_frame
+	if OS.get_environment("AOA_PAD") != "":   # as a pad sees it: focus where it starts (AOA_PAD=1)
+		var pad = load("res://src/view/pad_mode.gd").of(self)
+		pad.set_on(true)
+		for f in 10:
+			await process_frame
+		print("pad focus: ", lobby.get_viewport().gui_get_focus_owner())
 	if lobby.setup.visible:   # does it fit? (the lobby is laid out for match_setup.gd's DESIGN)
 		print("side panel needs ", lobby.sides[0].panel.get_combined_minimum_size(), ", the screen is ", lobby.get_viewport_rect().size)
 	root.get_texture().get_image().save_png(args[0])
