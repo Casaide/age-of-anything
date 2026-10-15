@@ -14,6 +14,7 @@ extends Control
 ## Run: godot --path . res://scenes/match_setup.tscn
 
 const DataLib := preload("res://src/data_lib.gd")
+const PadMode := preload("res://src/view/pad_mode.gd")
 const Generator := preload("res://src/race_generator.gd")
 const ArtKit := preload("res://src/view/art/art_kit.gd")
 const UnitView := preload("res://src/unit_view.gd")
@@ -65,6 +66,7 @@ var level_card: Control         # 1v1: how hard the AI plays (in a team game eac
 var level_buttons: Array = []
 var left_col: VBoxContainer     # your team's panels
 var right_col: VBoxContainer    # the other team's
+var start_button: Button        # where a pad's focus starts on the battle setup
 var tree_page: Control          # the tech tree page, over everything while open
 var menu_layer: Node2D          # the title screen's hill, both armies on it
 var menu_stage: SubViewportContainer
@@ -88,9 +90,11 @@ func _ready() -> void:
 	menu = _menu()
 	add_child(menu)
 	setup = _setup()
+	setup.set_meta("pad_first", start_button)   # a pad starts on Start Battle
 	setup.visible = false
 	add_child(setup)
 	UiTheme.juice_all(self)
+	PadMode.of(get_tree()).menus.append_array([menu, setup])   # a pad walks them by focus (milestone 20)
 	var audio := Audio.of(get_tree())
 	audio.ambience(false)
 	audio.music("lobby")
@@ -102,7 +106,9 @@ func _ready() -> void:
 func _rescale() -> void:
 	var px := Vector2(get_window().size)
 	var fill := minf(px.x / DESIGN.x, px.y / DESIGN.y)
-	get_window().content_scale_factor = maxf(1.0, fill * (0.6 + 0.4 * UiScale.size_pct() / 100.0))
+	# Never below 1 where it fits at 1; on a smaller window (the Steam Deck's 1280 x 800) the whole
+	# design fits on screen (Dominic: the Start button was off the bottom).
+	get_window().content_scale_factor = maxf(minf(1.0, fill), fill * (0.6 + 0.4 * UiScale.size_pct() / 100.0))
 
 
 ## Cmd/Ctrl + minus / plus: the UI a step smaller or larger (saved).
@@ -115,11 +121,34 @@ func _unhandled_key_input(event: InputEvent) -> void:
 
 
 func _process(_delta: float) -> void:
+	_pad()
 	var now := Time.get_ticks_msec() / 1000.0
 	for i in sides.size():
 		if sides[i].dirty_at > 0.0 and now - sides[i].dirty_at > BAKE_AFTER and not baking:
 			sides[i].dirty_at = 0.0
 			_bake(i)
+
+
+## The pad's shortcuts on the battle setup (focus does the rest): X rolls the dice of the panel
+## the focus is in (yours when it's elsewhere), Menu starts the battle, B goes back to the title.
+func _pad() -> void:
+	var pad := PadMode.of(get_tree())
+	if not pad.on or not setup.visible or (tree_page != null and (tree_page.visible or tree_page.closed_frame == Engine.get_process_frames())):
+		return
+	if pad.pressed(JOY_BUTTON_X):
+		var focus := get_viewport().gui_get_focus_owner()
+		var k := 0
+		for i in sides.size():
+			if focus != null and sides[i].panel.is_ancestor_of(focus):
+				k = i
+		sides[k].dice.tumble()
+		_roll(k)
+	elif pad.pressed(JOY_BUTTON_START):
+		_play()
+	elif pad.pressed(JOY_BUTTON_B) and not get_viewport().gui_get_focus_owner() is LineEdit:
+		setup.visible = false
+		menu.visible = true
+		UiTheme.arrive(menu)
 
 
 func _theme(family: String) -> Theme:
@@ -462,6 +491,7 @@ func _centre() -> Control:
 	start.custom_minimum_size = Vector2(0, 100)
 	start.add_theme_font_size_override("font_size", 40)
 	start.pressed.connect(_play)
+	start_button = start
 	col.add_child(start)
 	var breathe := start.create_tween().set_loops()   # Start breathes: the screen's call to arms
 	breathe.set_trans(Tween.TRANS_SINE)
@@ -470,6 +500,11 @@ func _centre() -> Control:
 	var hint := UiTheme.label("Esc in battle: pause and menu", "Dim")
 	hint.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	col.add_child(hint)
+	var pad := PadMode.of(get_tree())
+	var say := func(on: bool): hint.text = "X: roll the dice  ·  Menu: start  ·  B: back" if on else "Esc in battle: pause and menu"
+	pad.changed.connect(say)
+	hint.tree_exiting.connect(func(): pad.changed.disconnect(say), CONNECT_ONE_SHOT)   # the pad node outlives the lobby
+	say.call(pad.on)
 	return col
 
 
@@ -596,7 +631,6 @@ func _side_panel(i: int, who: String, compact := false) -> Control:
 	col.add_child(prompt)
 	var dice := DiceButton.new()   # tumbles when thrown, rocks until the race is made
 	dice.custom_minimum_size = Vector2.ONE * (48 if compact else 68)
-	dice.focus_mode = Control.FOCUS_NONE
 	dice.tooltip_text = "Roll the dice: a new race (with words in the box, another roll of those words)"
 	dice.pressed.connect(func(): dice.tumble(); _roll(i))
 	UiTheme.juice(dice)

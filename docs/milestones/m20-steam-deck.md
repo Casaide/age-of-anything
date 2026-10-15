@@ -1,6 +1,6 @@
 # Milestone 20: Steam Deck and controllers
 
-**Status:** planned (proposed 2026-10-13)
+**Status:** in progress: the controls built (steps 3-6, 2026-10-15); the Deck build next
 **Exit criterion:** a full match against the AI, from the menu to the end screen, played on a
 Steam Deck with its controls only (no mouse or keyboard), at a steady 60 fps (or a locked 40-45
 with the Deck's frame limiter, if 60 can't hold), readable at 1280 x 800 on the 7" screen, the
@@ -133,14 +133,56 @@ Touchscreen support is out (Dominic).
   and read logs without a password.
 - **Touchscreen:** no. **Steam release:** later.
 
+## The controls pass (steps 3-6, 2026-10-15)
+
+Dominic: "lets get this ready to play on steam deck. Do a clean pass over the controls so we can
+use it with a controller. We'll get it onto a steam deck afterwards." So steps 3-6 come first,
+on the Mac with any pad; the build and the measurements (1, 2) follow on the Deck.
+
+Where the design above had two jobs on one button, the pass settles them (Claude):
+- **Triggers zoom** (LT out, RT in); **the queue modifier is a held LB** (LB tapped still cycles
+  the kinds). A held LB also adds to the selection (with A) and trains five (on the wheel).
+- **Control groups on the d-pad's left and right** (tap: recall, again quickly: go there; hold:
+  store). The Deck's back buttons reach Godot only if Steam Input maps them, so nothing needs them.
+- **View (the small left button): to the last alert. Menu: pause.** The tech tree is on the
+  global wheel (nothing selected) and in the pause menu's place for the mouse game (F2).
+- **The wheel shows the command panel's own buttons** (same pictures, costs, enabled state,
+  tooltips), so a new button in the panel is on the pad for free; in pad mode the panel keeps
+  only who's selected and the queue. A held RB opens it; pick with either stick; release to
+  choose, or A to choose and keep it open (A five times: five workers); LB turns its pages.
+- One small layer, `src/view/pad_mode.gd`: last input wins (a pad press or stick shows the pad
+  HUD and hides the mouse; the mouse or a key brings the mouse game back), the pad's A and B
+  added to the UI's accept and cancel, focus put into whatever menu is up, the Steam keyboard on
+  A in a text box (Linux), rumble. The battlefield's pad play is `src/view/pad_play.gd`.
+
+| Pad | On the battlefield |
+|---|---|
+| Left stick / L3 | pan (the reticle rides along) / centre on the selection |
+| Right stick / R3 | nudge the reticle (at the rim it pans) / reticle back to the middle |
+| A | tap: select; on your building, or a unit you have selected: its wheel; double-tap: all that kind on screen; hold: the selection circle grows and sweeps |
+| X | the smart order (move, gather, attack, build, rally...) |
+| Y | attack-move |
+| B | back: cancel placing or an armed order, close the wheel, leave a build page, deselect |
+| RB | soldiers on screen; twice: every soldier |
+| LB | tap: cycle the selection's kinds (turn a gate while placing); hold: queue / add |
+| LT / RT | zoom out / in |
+| D-pad | down: idle worker; up: next Town Center; left/right: groups 1 and 2 (hold to store) |
+| View / Menu | last alert / pause (the tech tree is in the pause menu) |
+| On the wheel | either stick points (the camera holds still), A chooses (it stays up: A five times trains five), LB turns pages, B closes |
+
+**Changed on the Deck (D-133, 2026-10-15):** holding RB while steering with a stick was uncomfortable and moved
+the camera too (Dominic). The wheel now opens with a tap of A on what you command, the console RTS way, and the camera
+holds still under it. The global wheel is gone (its jobs are on the d-pad, View, and the pause menu).
+
 ## Checklist
 - [ ] Plan approved by Dominic
 - [ ] 1. Approvals and a first build on the Deck
 - [ ] 2. Determinism and performance check
-- [ ] 3. Input layer
-- [ ] 4. Reticle, selection circle, ordering on the pad
-- [ ] 5. Radial menus, compact pad HUD, glyphs
-- [ ] 6. Menus and lobby on the pad
+- [x] 3. Input layer (`src/view/pad_mode.gd`)
+- [x] 4. Reticle, selection circle, ordering on the pad (`src/view/pad_play.gd`)
+- [x] 5. Radial menus, compact pad HUD, glyphs (`src/view/pad_wheel.gd`, `src/view/pad_glyph.gd`; glyphs on the
+  hint strip and the wheel, not yet on the panel's buttons)
+- [x] 6. Menus and lobby on the pad (focus everywhere; the lobby's X/Menu/B; the tech tree's sticks)
 - [ ] 7. Handheld UI size, 1280 x 800 pass
 - [ ] 8. Performance, battery, suspend
 - [ ] 9. Steam Input default layout
@@ -148,6 +190,18 @@ Touchscreen support is out (Dominic).
 - [ ] Archive: pictures taken along the way, journal, decisions, timeline
 
 ## Results
+
+- **2026-10-15, first time on the Deck** (Dominic): the hold-A circle "worked really well". Fixed from that run: the UI
+  didn't fit 1280 x 800 (Start Battle was off the bottom: the UI never scaled below its design size; now it fits the
+  window); art, icons and sound were missing (the game reads its SVG, WAV and GLB files raw, but the editor had
+  imported them, so the export packed only the imported copies: every asset is now "keep" in its .import); menus
+  didn't take the pad (they also take arrows and Enter now, and the log says which pads the game sees); the wheel
+  moved to tap A (D-133). The army bake is slow on the Deck's CPU: step 8.
+
+- **2026-10-15, the controls:** `tests/pad_check.gd` plays a match with a fake pad: 21 checks pass (the d-pad's Town
+  Center, two workers from the wheel, the circle taking only your units, X gathering, a house from the build wheel,
+  LB's one kind, the pause menu's focus). Not yet felt with a real pad in hand: Dominic's first go is the real check.
+  The mouse game is unchanged (the panel, cursors and keys only change while the pad is in use).
 
 ## Changes from the original plan
 

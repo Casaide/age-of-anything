@@ -799,3 +799,21 @@ mounted units (the genre's beasts break cavalry; spears and skirmishers stay the
 (fast cavalry, one population place); the new skins stay (raspberry and teal frogs, the orange eft); tower hoardings
 stay part of the base look. Heroes: all of HR2's characters are built, as a pool: each race gets one, picked from its
 creature's and culture's characters by the race key.
+
+**D-132, 2026-10-15: The pad's controls, settled (Claude).** Dominic asked for "a clean pass over the controls so we
+can use it with a controller" before the Steam Deck build. Milestone 20's design gave some buttons two jobs; Claude
+settled them: the triggers zoom (LT out, RT in); a held LB is the modifier (queue orders, add to the selection, train
+five) while a tapped LB still cycles the selection's kinds; control groups 1 and 2 sit on the d-pad's sides (tap to
+recall, hold to store), since the Deck's back buttons reach the game only if Steam Input maps them; View goes to the
+last alert, Menu pauses. The wheel shows the command panel's own buttons rather than its own list, so anything the
+panel gains is on the pad too, and in pad mode the panel keeps only who's selected and the queue. The last input used
+decides the mode, so the trackpad (a mouse) and the sticks mix freely. The table is in docs/milestones/m20-steam-deck.md.
+
+**D-133, 2026-10-15: The pad's wheel opens with A (supersedes D-132's hold-RB wheel).** Dominic, after the first go on
+the Steam Deck: holding RB while picking with a stick was uncomfortable, and the stick that picked also moved the
+camera; "just copy" the classic console RTS: open the menu with A, no camera move. The hold-A circle stays (it "worked
+really well"), so the wheel opens with a tap of A on your own building (it selects it and opens its wheel at once) or
+on a unit you already have selected (Claude). On the wheel the camera holds still, A chooses and the wheel stays up
+for more, B closes, LB turns pages; it closes itself once there's something to aim (a building, an armed order) or
+after an order or stance. RB is only "your soldiers" now; the global wheel is gone, the tech tree moved into the pause
+menu. Also from that run: every asset the game reads raw (SVG, WAV, GLB, TTF) is imported as "keep", so exports carry it.
