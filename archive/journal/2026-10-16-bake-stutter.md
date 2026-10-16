@@ -30,6 +30,12 @@ pixels by a few levels; HEAD differs from itself too).
   so a portrait's pose (and its crop) depended on how long the loader's frames took.
 - A war beast's body was built 32 times per race, once for each leg of each walk step.
 
+- Quitting mid-bake crashed the exported build (signal 11, found by the Deck-build session: 3 to 5 crashes in 10
+  cold quits; the code before D-143 quit cleanly 10 of 10). A bake now waits for budget between building a model
+  and putting it in the tree, so models built but not yet placed were never freed; and a bake waiting on a frame
+  was woken during shutdown and went on building with freed nodes. Now `BakeClock` frees what it built that never
+  reached the tree, waits for its worker tasks, and once the game quits its waits never return. 16 cold quits clean.
+
 ## Not done (follow-ups)
 - The worst frames left are the GPU's: forcing a 2048 px building frame with 8x MSAA and ambient occlusion
   (20 to 60 ms, more the first time a material is drawn). Four building bakers also hold ~1 GB of render targets.

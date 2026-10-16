@@ -40,7 +40,6 @@ static func _lap(phase: String, t0: int) -> int:
 
 
 func _init() -> void:
-	models.ready_all()   # (made here, on the main thread: the bakes build on a worker thread)
 	transparent_bg = true
 	own_world_3d = true
 	msaa_3d = Viewport.MSAA_4X
@@ -346,7 +345,8 @@ func _body(name: String, colours: Dictionary) -> Dictionary:
 func _notification(what: int) -> void:
 	if what == NOTIFICATION_PREDELETE:
 		for b in _bodies.values():
-			b.node.free()
+			if is_instance_valid(b.node):   # (BakeClock frees them first when the game quits)
+				b.node.free()
 
 
 ## Point the camera at the model from this facing (azimuth) and height, the key light from the
