@@ -72,8 +72,8 @@ move it to `docs/backlog.md` rather than deleting it.
 - **In progress (milestone 20): Steam Deck and controllers.** The pad controls are built (D-132): `src/view/pad_mode.gd`
   (last input wins, menu focus), `pad_play.gd` (reticle, selection circle, orders), `pad_wheel.gd` (tap A on what you command: the
   panel's buttons on a ring; D-133). First Deck run done; next: steps 7-9 (fit, speed, Steam Input). See `docs/milestones/m20-steam-deck.md`.
-- **Built (save and load, D-140, D-141):** `src/save_game.gd` (a snapshot of the World and bots; saves from older builds
-  load too), Save/Load in the pause menu and lobby (`src/view/ui/saves_page.gd`). See `docs/milestones/save-load.md`.
+- **Built (save and load, D-140 to D-142):** `src/save_game.gd` (a snapshot of the World and bots; saves from older builds
+  load too, on the new stats while the data tables line up), Save/Load in the pause menu and lobby (`src/view/ui/saves_page.gd`). See `docs/milestones/save-load.md`.
 - **In progress (milestone 13): unit lines, siege first.** Crewed engines per family (D-116 to D-119); shots fly
   and can miss (`src/sim/shots.gd`). See `docs/milestones/m13-unit-lines.md`.
 

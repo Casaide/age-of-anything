@@ -4037,8 +4037,9 @@ func _test_save_load(lib, gen) -> void:
 	check(SaveGame.problem(rep, lib) == "", "the save loads in this version")
 	var ld := SaveGame.begin(rep, lib)
 	var unit_ids: PackedInt32Array = rep.snapshot.world.units.id.duplicate()
+	var world_types_hp: Array = ld.world.types.map(func(t): return t.hp)   # (this build's stats, as at the save)
 	var load_ms := Time.get_ticks_msec() - t0
-	check(ld.same and ld.changed.is_empty(), "this build's save loads as it was (changed: %s)" % [ld.changed])
+	check(ld.same and ld.changed.is_empty() and ld.migrated, "this build's save loads as it was, on this build's stats (changed: %s)" % [ld.changed])
 	var b: World = ld.world
 	var you_b := EcoBot.new(0)
 	while b.tick < TO:
@@ -4049,6 +4050,29 @@ func _test_save_load(lib, gen) -> void:
 	check(b.state_hash() == world.state_hash(), "and ends at the same state")
 
 	check(rep.snapshot.world.units.id == unit_ids, "playing on from a save leaves the save as it was")
+
+	# A save from a build with other stats: the match goes on with this build's, every unit keeping
+	# its share of health; one whose tables no longer line up keeps its own.
+	var weak := rep.duplicate(true)
+	for t in weak.snapshot.world.types:
+		t.hp = maxi(1, t.hp / 2)
+	for bt in weak.snapshot.world.btypes:
+		bt.hp = maxi(1, bt.hp / 2)
+	var ld_w := SaveGame.begin(weak, lib)
+	var ww: World = ld_w.world
+	var su: Dictionary = weak.snapshot.world.units
+	var share_ok := true
+	for i in ww.units.count():
+		var k: int = ww.units.kind[i]
+		if ww.types[k].player != ww.gaia and absi(ww.units.hp[i] * 100 / ww.types[k].hp - su.hp[i] * 100 / weak.snapshot.world.types[k].hp) > 4:
+			share_ok = false
+	check(ld_w.migrated and ww.types.size() == ld.world.types.size(), "a save from a build with other stats migrates")
+	check(range(ww.types.size()).all(func(k): return ww.types[k].hp == world_types_hp[k]), "its unit types take this build's health")
+	check(share_ok, "its units keep their share of health")
+	var frozen := rep.duplicate(true)
+	frozen.snapshot.world.btypes.pop_back()   # a building this build added: the tables don't line up
+	var ld_f := SaveGame.begin(frozen, lib)
+	check(not ld_f.migrated and ld_f.world.btypes.size() == frozen.snapshot.world.btypes.size(), "one whose tables no longer line up keeps its own")
 
 	# A save from an older build: a unit field, a world variable and a bot variable it didn't have
 	# yet, one it had that this build dropped, a data key this build added, and a class it replaced.
