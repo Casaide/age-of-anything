@@ -49,7 +49,7 @@ func build(id: String, colours: Dictionary) -> Dictionary:
 	if p[1] in ["barrow", "handcart"]:   # what a worker pushes home with stone or gold (D-127: the rats)
 		return pushed_home(p[1], _style(TAKE_STYLE[p[2]], colours), colours)
 	if p[1] == "beast":   # a war beast (D-129): its riders on top, or beside it for a crew too big to ride
-		return _beside(call(BEAST[p[2]], _style(BEAST_STYLE[p[2]], colours)))
+		return _beside(call(BEAST[p[2]], _style(BEAST_STYLE[p[2]], colours)), p[2], colours)
 	var engine: String = ENGINE_STAND_IN.get("%s.%s" % [p[1], p[2]], p[1])
 	var key := "%s.%s" % [engine, p[2]]
 	p[1] = engine
@@ -2234,44 +2234,87 @@ func howdah(n: Node3D, s: Dictionary, at: Vector3, L: float, W: float, riders :=
 
 ## Humans: a war elephant, grey and wrinkled, tusks capped in bronze, ears out. a: a howdah with two
 ## riders; b: armoured (a team-trimmed caparison, a brow plate), one rider on its neck.
-func _elephant(s: Dictionary, with_howdah: bool) -> Dictionary:
+## play (in play, 2026-10-16): the body alone, its legs and head baked apart (cut at each hip and at the
+## neck: "leg.beast_elephant", "head.beast_elephant") so it walks and swings its tusks (UnitView._beast).
+func _elephant(s: Dictionary, with_howdah: bool, play := false) -> Dictionary:
 	var n := Node3D.new()
-	var hide := surf("hide", Color(0.62, 0.6, 0.58), 6.0)
-	var dark := surf("hide", Color(0.45, 0.43, 0.42), 6.0)
-	var ivory := plain(Color("#ece2c8"))
-	var bronze := surf("bronze", Color.WHITE, 3.0)
+	var m := _elephant_mats()
+	var hips := []
 	for leg in [[13.0, 1], [-13.0, 1]]:
 		for side in [1, -1]:
 			var x: float = leg[0] + (2.0 if side > 0 else -1.0)
-			n.add_child(rod(Vector3(x, 30.0, 8.5 * side), Vector3(x, 5.0, 9.0 * side), 5.6, 5.0, hide))
-			n.add_child(cone(5.6, 5.8, 2.4, dark, Vector3(x, 1.2, 9.0 * side)))   # the foot
-	n.add_child(blob(Vector3(26.0, 16.0, 14.5), hide, Vector3(0, 36.0, 0)))
-	n.add_child(blob(Vector3(10.0, 12.0, 12.0), hide, Vector3(18.0, 40.0, 0)))   # the shoulders
-	n.add_child(blob(Vector3(10.0, 10.5, 9.5), hide, Vector3(28.0, 41.0, 0)))   # the head
-	n.add_child(blob(Vector3(5.0, 4.0, 8.0), dark, Vector3(30.0, 49.0, 0)))   # the brow
+			var hip := Vector3(x, 30.0, 8.5 * side)
+			if play:
+				hips.append(hip)
+			else:
+				elephant_leg(n, hip, side, m)
+	n.add_child(blob(Vector3(26.0, 16.0, 14.5), m.hide, Vector3(0, 36.0, 0)))
+	n.add_child(blob(Vector3(12.0, 13.0, 12.0), m.hide, Vector3(18.0, 40.0, 0)))   # the shoulders
+	if not play:
+		elephant_head(n, ELEPHANT_NECK, m)
+	n.add_child(rod(Vector3(-25.0, 38.0, 0), Vector3(-29.0, 22.0, 0), 1.0, 0.6, m.hide))   # the tail
+	var out := {"node": n}
+	if with_howdah:
+		out.sockets = howdah(n, s, Vector3(-3.0, 52.5, 0), 22.0, 18.0)
+		n.add_child(_box(Vector3(26.0, 0.6, 30.0), s.trim, Vector3(-3.0, 51.6, 0)))   # a saddle cloth in the culture's colour
+	else:
+		# Armoured: a caparison down its flanks (team border), a bronze brow plate, a rider on the neck.
+		for side in [1, -1]:
+			n.add_child(_box(Vector3(30.0, 13.0, 0.5), s.trim, Vector3(-1.0, 40.0, 15.0 * side), Vector3(8 * side, 0, 0)))
+			n.add_child(_box(Vector3(30.0, 1.8, 0.6), s.team, Vector3(-1.0, 33.5, 15.9 * side), Vector3(8 * side, 0, 0)))
+		n.add_child(dome(Vector3(5.5, 3.0, 8.5), m.bronze, Vector3(30.5, 49.5, 0)))
+		n.add_child(_box(Vector3(10.0, 1.0, 12.0), s.dark, Vector3(17.0, 51.5, 0)))
+		out.sockets = {"crew0_f0_top": Vector3(17.0, 52.2, 0)}
+	if play:
+		out.sockets.head = ELEPHANT_NECK
+		out.anchors = beast_hips(hips)
+	return out
+
+
+const ELEPHANT_NECK := Vector3(28.5, 42.0, 0)   # where its head turns (in play: the head's origin)
+
+
+func _elephant_mats() -> Dictionary:
+	return {"hide": surf("hide", Color(0.62, 0.6, 0.58), 6.0), "dark": surf("hide", Color(0.45, 0.43, 0.42), 6.0),
+		"ivory": plain(Color("#ece2c8")), "bronze": surf("bronze", Color.WHITE, 3.0)}
+
+
+## A pillar of a leg from its hip down to its round foot, on the `side` flank (+1 near, -1 far).
+func elephant_leg(n: Node3D, hip: Vector3, side: float, m: Dictionary) -> void:
+	n.add_child(rod(hip, hip + Vector3(0, -25.0, 0.5 * side), 5.6, 5.0, m.hide))
+	n.add_child(cone(5.6, 5.8, 2.4, m.dark, hip + Vector3(0, -28.8, 0.5 * side)))   # the foot
+	for t in 3:   # toenails, pale, round the front of the foot
+		var a := deg_to_rad(-40.0 + t * 40.0)
+		n.add_child(blob(Vector3(1.2, 1.0, 1.0), m.ivory, hip + Vector3(5.2 * cos(a), -28.6, 0.5 * side + 5.2 * sin(a))))
+
+
+## The head, its neck's turning point at `at`: brow, trunk, ears out, bronze-capped tusks, eyes.
+func elephant_head(n: Node3D, at: Vector3, m: Dictionary) -> void:
+	var o := at - ELEPHANT_NECK
+	n.add_child(blob(Vector3(10.0, 10.5, 9.5), m.hide, o + Vector3(28.0, 41.0, 0)))   # the head
+	n.add_child(blob(Vector3(5.0, 4.0, 8.0), m.dark, o + Vector3(30.0, 49.0, 0)))   # the brow
 	var trunk := [Vector3(35.0, 38.0, 0), Vector3(39.0, 30.0, 0), Vector3(40.5, 20.0, 0), Vector3(40.0, 11.0, 0), Vector3(42.5, 6.0, 0)]
 	var tr := [4.2, 3.4, 2.8, 2.2, 1.6]
 	for k in range(1, trunk.size()):
-		n.add_child(rod(trunk[k - 1], trunk[k], tr[k - 1], tr[k], hide))
+		n.add_child(rod(o + trunk[k - 1], o + trunk[k], tr[k - 1], tr[k], m.hide))
 	for side in [1, -1]:
-		var ear := cone(9.5, 9.5, 0.8, dark, Vector3(23.0, 42.0, 11.0 * side), Vector3(90, 0, 0), 20)
+		var ear := cone(9.5, 9.5, 0.8, m.dark, o + Vector3(24.0, 42.0, 9.0 * side), Vector3(90, 0, 0), 20)   # (on the head's sides: at 11 out they floated off it)
 		ear.scale = Vector3(0.8, 1.0, 1.15)
 		n.add_child(ear)
-		n.add_child(rod(Vector3(34.0, 34.0, 4.0 * side), Vector3(43.0, 30.0, 6.0 * side), 1.4, 0.7, ivory))   # tusks
-		n.add_child(cone(0.4, 1.2, 2.2, bronze, Vector3(43.5, 29.8, 6.1 * side), Vector3(0, 0, -75)))
-		n.add_child(blob(Vector3(1.1, 1.1, 0.8), plain(Color("#1a1412")), Vector3(32.5, 44.0, 6.8 * side)))
-	n.add_child(rod(Vector3(-25.0, 38.0, 0), Vector3(-29.0, 22.0, 0), 1.0, 0.6, hide))   # the tail
-	if with_howdah:
-		var sk := howdah(n, s, Vector3(-3.0, 52.5, 0), 22.0, 18.0)
-		n.add_child(_box(Vector3(26.0, 0.6, 30.0), s.trim, Vector3(-3.0, 51.6, 0)))   # a saddle cloth in the culture's colour
-		return {"node": n, "sockets": sk}
-	# Armoured: a caparison down its flanks (team border), a bronze brow plate, a rider on the neck.
-	for side in [1, -1]:
-		n.add_child(_box(Vector3(30.0, 13.0, 0.5), s.trim, Vector3(-1.0, 40.0, 15.0 * side), Vector3(8 * side, 0, 0)))
-		n.add_child(_box(Vector3(30.0, 1.8, 0.6), s.team, Vector3(-1.0, 33.5, 15.9 * side), Vector3(8 * side, 0, 0)))
-	n.add_child(dome(Vector3(5.5, 3.0, 8.5), bronze, Vector3(30.5, 49.5, 0)))
-	n.add_child(_box(Vector3(10.0, 1.0, 12.0), s.dark, Vector3(17.0, 51.5, 0)))
-	return {"node": n, "sockets": {"crew0_f0_top": Vector3(17.0, 52.2, 0)}}
+		n.add_child(rod(o + Vector3(34.0, 34.0, 4.0 * side), o + Vector3(43.0, 30.0, 6.0 * side), 1.4, 0.7, m.ivory))   # tusks
+		n.add_child(cone(0.4, 1.2, 2.2, m.bronze, o + Vector3(43.5, 29.8, 6.1 * side), Vector3(0, 0, -75)))
+		n.add_child(blob(Vector3(1.1, 1.1, 0.8), plain(Color("#1a1412")), o + Vector3(32.5, 44.0, 6.8 * side)))
+
+
+## A beast's four hips (front near, back near, front far, back far: as given) as part anchors,
+## [hip, walk phase, side, flip, hind, fan]: the diagonal pairs step together.
+static func beast_hips(hips: Array, hind := false) -> Array:
+	var out := []
+	for h in hips:
+		var front: bool = h.x > 0.0
+		var near: bool = h.z > 0.0
+		out.append([h, 0.0 if front == near else PI, 1 if near else -1, 0, hind and not front])
+	return out
 
 
 ## A chain of rods through `pts`, radii `r` (one per point).
@@ -2296,33 +2339,25 @@ func deck(n: Node3D, s: Dictionary, at: Vector3, L: float, W: float, cloth := 7.
 ## crest of bristles along the spine, a long wedge of a head, tusks curving up, plates of rusted scrap
 ## riveted over its flanks. a: a junk howdah, two rats; b: barded in plate, a spiked face plate, one
 ## rider and a scrap standard.
-func _war_boar(s: Dictionary, with_howdah: bool) -> Dictionary:
+func _war_boar(s: Dictionary, with_howdah: bool, play := false) -> Dictionary:
 	var n := Node3D.new()
-	var fur := surf("rat_fur", Color(0.42, 0.33, 0.27), 5.0)
-	var dark := surf("rat_fur", Color(0.26, 0.21, 0.18), 4.0)
-	var bristle := surf("mane", Color(0.78, 0.68, 0.54), 3.0)   # grizzled, pale against the coat
-	var hoof := plain(Color("#1e1814"))
-	var ivory := plain(Color("#f0e6cc"))
-	var snout := surf("skin", Color(0.62, 0.45, 0.4), 4.0)
+	var m := _boar_mats()
 	# Front-heavy on thin legs: the shoulders tower over a smaller rump, the legs taper to trotters.
-	for leg in [[18.0, 1.0], [-19.0, -1.0]]:
+	var hips := []
+	for x in [18.0, -19.0]:
 		for side in [1, -1]:
-			var x: float = leg[0]
-			limb(n, [Vector3(x, 28.0, 9.0 * side), Vector3(x + 2.5 * leg[1], 12.0, 9.5 * side), Vector3(x + 1.0, 2.6, 9.5 * side)], [6.0, 3.2, 2.3], fur if x > 0 else dark)
-			n.add_child(cone(1.8, 2.6, 2.8, hoof, Vector3(x + 1.5, 1.4, 9.5 * side)))
-	n.add_child(blob(Vector3(26.0, 13.0, 13.0), fur, Vector3(-4.0, 30.0, 0)))   # the barrel
-	n.add_child(blob(Vector3(16.0, 18.0, 15.0), fur, Vector3(12.0, 34.0, 0)))   # the shoulders' hump
-	n.add_child(blob(Vector3(11.0, 10.0, 10.0), dark, Vector3(-20.0, 30.0, 0)))   # the rump
-	# The head: a long wedge forward and a little down, the snout's disc, great tusks up out of the jaw.
-	n.add_child(blob(Vector3(15.0, 10.5, 10.0), fur, Vector3(30.0, 31.0, 0), Vector3(0, 0, -14)))
-	n.add_child(rod(Vector3(37.0, 28.0, 0), Vector3(51.0, 22.0, 0), 7.0, 4.6, fur))
-	n.add_child(cone(4.8, 4.8, 1.6, snout, Vector3(52.0, 21.6, 0), Vector3(0, 0, -68), 16))
-	for side in [1, -1]:
-		n.add_child(blob(Vector3(0.7, 0.9, 0.6), hoof, Vector3(52.8, 22.0, 1.8 * side)))
-		limb(n, [Vector3(45.0, 21.0, 4.5 * side), Vector3(51.0, 22.5, 8.5 * side), Vector3(54.5, 29.0, 9.5 * side), Vector3(52.0, 34.0, 8.5 * side)], [2.3, 1.9, 1.2, 0.4], ivory)
-		n.add_child(blob(Vector3(1.3, 1.1, 0.9), plain(Color("#120c08")), Vector3(37.5, 33.0, 7.0 * side)))
-		n.add_child(blob(Vector3(0.45, 0.45, 0.4), plain(Color("#d8a040")), Vector3(38.3, 33.4, 7.7 * side)))
-		n.add_child(cone(0.4, 3.2, 7.0, dark, Vector3(27.0, 42.0, 6.0 * side), Vector3(25 * side, 0, 20), 8))   # an ear
+			if play:   # (the fore hips back a little: at 18 the thighs ran into the head, baked apart)
+				hips.append(Vector3(x - (4.0 if x > 0.0 else 0.0), 28.0, (11.0 if x > 0.0 else 9.5) * side))   # (and out on the hump's side: at 9.5 they sat 4 deep)
+			else:
+				boar_leg(n, Vector3(x, 28.0, 9.0 * side), side, x > 0.0, m)
+	n.add_child(blob(Vector3(26.0, 13.0, 13.0), m.fur, Vector3(-4.0, 30.0, 0)))   # the barrel
+	n.add_child(blob(Vector3(16.0, 18.0, 15.0), m.fur, Vector3(12.0, 34.0, 0)))   # the shoulders' hump
+	n.add_child(blob(Vector3(11.0, 10.0, 10.0), m.dark, Vector3(-20.0, 30.0, 0)))   # the rump
+	if not play:
+		boar_head(n, BOAR_NECK, m)
+	var fur: Material = m.fur
+	var dark: Material = m.dark
+	var bristle: Material = m.bristle
 	# The bristles: a tall ragged crest over the neck and shoulders, shorter down the spine.
 	for k in 14:
 		var x := 28.0 - k * 4.0
@@ -2360,7 +2395,42 @@ func _war_boar(s: Dictionary, with_howdah: bool) -> Dictionary:
 		n.add_child(rod(Vector3(-8.0, 46.0, 0), Vector3(-8.0, 70.0, 0), 0.6, 0.5, s.pipe))
 		n.add_child(slab([Vector2(0, 0), Vector2(-10, -1), Vector2(-9, -6), Vector2(-11, -11), Vector2(0, -10)], 0.4, s.team, Vector3(-8.2, 69.0, 0)))
 		sockets = {"crew0_f0_top": Vector3(9.0, 54.3, 0)}
+	if play:
+		sockets.head = BOAR_NECK
+		return {"node": n, "sockets": sockets, "anchors": beast_hips(hips, true)}
 	return {"node": n, "sockets": sockets}
+
+
+const BOAR_NECK := Vector3(24.0, 32.0, 0)   # where its head turns (in play: the head's origin)
+
+
+func _boar_mats() -> Dictionary:
+	return {"fur": surf("rat_fur", Color(0.42, 0.33, 0.27), 5.0), "dark": surf("rat_fur", Color(0.26, 0.21, 0.18), 4.0),
+		"bristle": surf("mane", Color(0.78, 0.68, 0.54), 3.0),   # grizzled, pale against the coat
+		"hoof": plain(Color("#1e1814")), "ivory": plain(Color("#f0e6cc")), "snout": surf("skin", Color(0.62, 0.45, 0.4), 4.0)}
+
+
+## A leg from its hip to its trotter, on the `side` flank: the fore legs' knees forward, in the coat's
+## colour, the hind legs' hocks back, darker.
+func boar_leg(n: Node3D, hip: Vector3, side: float, fore: bool, m: Dictionary) -> void:
+	var d := 1.0 if fore else -1.0
+	limb(n, [hip, hip + Vector3(2.5 * d, -16.0, 0.5 * side), hip + Vector3(1.0, -25.4, 0.5 * side)], [6.0, 3.2, 2.3], m.fur if fore else m.dark)
+	n.add_child(cone(1.8, 2.6, 2.8, m.hoof, hip + Vector3(1.5, -26.6, 0.5 * side)))
+
+
+## The head, its neck's turning point at `at`: a long wedge forward and a little down, the snout's disc,
+## great tusks up out of the jaw, small eyes, ears.
+func boar_head(n: Node3D, at: Vector3, m: Dictionary) -> void:
+	var o := at - BOAR_NECK
+	n.add_child(blob(Vector3(13.0, 10.5, 9.0), m.fur, o + Vector3(32.0, 31.0, 0), Vector3(0, 0, -14)))
+	n.add_child(rod(o + Vector3(37.0, 28.0, 0), o + Vector3(51.0, 22.0, 0), 7.0, 4.6, m.fur))
+	n.add_child(cone(4.8, 4.8, 1.6, m.snout, o + Vector3(52.0, 21.6, 0), Vector3(0, 0, -68), 16))
+	for side in [1, -1]:
+		n.add_child(blob(Vector3(0.7, 0.9, 0.6), m.hoof, o + Vector3(52.8, 22.0, 1.8 * side)))
+		limb(n, [o + Vector3(45.0, 21.0, 4.5 * side), o + Vector3(51.0, 22.5, 8.5 * side), o + Vector3(54.5, 29.0, 9.5 * side), o + Vector3(52.0, 34.0, 8.5 * side)], [2.3, 1.9, 1.2, 0.4], m.ivory)
+		n.add_child(blob(Vector3(1.3, 1.1, 0.9), plain(Color("#120c08")), o + Vector3(37.5, 33.0, 7.0 * side)))
+		n.add_child(blob(Vector3(0.45, 0.45, 0.4), plain(Color("#d8a040")), o + Vector3(38.3, 33.4, 7.7 * side)))
+		n.add_child(cone(0.4, 3.2, 7.0, m.dark, o + Vector3(27.0, 42.0, 6.0 * side), Vector3(25 * side, 0, 20), 8))   # an ear
 
 
 ## Spiders: a giant tarantula (legs across ~80 against the spider mount's ~30): a furred carapace and a
@@ -2368,12 +2438,14 @@ func _war_boar(s: Dictionary, with_howdah: bool) -> Dictionary:
 ## glints. Nobody rides it. a: alone, a silk-and-bone harness and the team banner on its back; b: a
 ## small crew of two in a basket on its back. `patterned` (in play, D-129: "too single-colour"): a pale rim
 ## and dark rays on a lighter carapace, pale chevrons down the abdomen, tufts of pale hair on its back and legs.
-func _tarantula(s: Dictionary, with_crew: bool, patterned := false) -> Dictionary:
+## play (in play, 2026-10-16): the legs and the jaws (chelicerae, fangs, pedipalps) baked apart, cut at each
+## hip and at the mouth ("leg.beast_tarantula": one leg straight out, fanned forward or back at its hip by
+## TARANTULA_FAN; "head.beast_tarantula"), so it scuttles and bites (UnitView._beast).
+func _tarantula(s: Dictionary, with_crew: bool, patterned := false, play := false) -> Dictionary:
 	var n := Node3D.new()
 	var fur := surf("rat_fur", Color(0.28, 0.24, 0.24), 4.0)
 	var dark := surf("rat_fur", Color(0.17, 0.15, 0.16), 3.5)
 	var band := surf("rat_fur", Color(0.95, 0.55, 0.25), 3.0)
-	var fang := plain(Color("#141012"))
 	var eye := plain(Color("#0c0a0e"))
 	eye.roughness = 0.15
 	eye.metallic_specular = 0.9
@@ -2381,7 +2453,14 @@ func _tarantula(s: Dictionary, with_crew: bool, patterned := false) -> Dictionar
 	var A := Vector3(-16.0, 22.0, 0)   # the abdomen
 	# Legs: four a side, the front pair reaching forward, the back pair back; knees high, feet wide.
 	var legs := [[22.0, 30.0, 50.0], [16.0, 14.0, 20.0], [9.0, -2.0, -12.0], [3.0, -14.0, -34.0]]
-	for leg in legs:
+	var hips := []
+	for i in legs.size():
+		for side in [1, -1]:
+			# Alternating tetrapods: the near flank's 1st and 3rd step with the far flank's 2nd and 4th.
+			# A wave down each flank, front to back, the far flank half a cycle behind (adjacent legs a quarter
+			# apart: in step with each other, the back pairs fanned close crossed). Hips on the carapace's rim.
+			hips.append([Vector3(legs[i][0], 17.0, TARANTULA_HIP_Z[i] * side), PI * 0.5 * i + (0.0 if side > 0 else PI), side, 0, false, TARANTULA_FAN[i]])
+	for leg in ([] if play else legs):
 		for side in [1, -1]:
 			var hip := Vector3(leg[0], 17.0, 9.0 * side)
 			var knee := Vector3(leg[0] + (leg[1] - leg[0]) * 0.55, 34.0, 24.0 * side)
@@ -2394,15 +2473,13 @@ func _tarantula(s: Dictionary, with_crew: bool, patterned := false) -> Dictionar
 	var coat := surf("rat_fur", Color(0.5, 0.27, 0.18), 4.0) if patterned else fur   # (patterned: a rust-red rump, the legs stay black)
 	n.add_child(blob(Vector3(19.0, 14.0, 16.0), coat, A, Vector3(0, 0, -10)))
 	n.add_child(blob(Vector3(10.0, 6.0, 9.0), dark, A + Vector3(-12.0, -1.0, 0)))   # (the furred tip)
-	for side in [1, -1]:   # chelicerae and fangs, pedipalps out front
-		n.add_child(blob(Vector3(4.0, 5.0, 3.0), dark, Vector3(26.0, 14.0, 3.4 * side), Vector3(0, 0, -20)))
-		n.add_child(cone(0.1, 1.2, 5.0, fang, Vector3(28.5, 9.0, 3.0 * side), Vector3(0, 0, -15), 8))
-		limb(n, [Vector3(24.0, 15.0, 6.0 * side), Vector3(32.0, 18.0, 9.0 * side), Vector3(36.0, 6.0, 10.0 * side)], [1.8, 1.6, 1.4], fur)
+	if not play:
+		tarantula_jaws(n, TARANTULA_MOUTH, fur, dark)
 	for k in 8:   # the eyes, a cluster on a turret at the carapace's front
 		var a := TAU * k / 8.0
 		n.add_child(blob(Vector3.ONE * (1.1 if k % 2 == 0 else 0.7), eye, Vector3(21.0 + cos(a) * 1.8, 25.5 + sin(a) * 0.8, sin(a) * 2.6)))
 	if patterned:
-		tarantula_pattern(n, C, A, legs)
+		tarantula_pattern(n, C, A, [] if play else legs)
 	var sockets := {}
 	var top := A + Vector3(2.0, 13.6, 0)
 	# A harness: a silk band round the abdomen, bone toggles, the team cloth over its back.
@@ -2418,72 +2495,168 @@ func _tarantula(s: Dictionary, with_crew: bool, patterned := false) -> Dictionar
 		n.add_child(rod(top, top + Vector3(-2.0, 30.0, 0), 0.6, 0.5, s.wood))
 		n.add_child(blob(Vector3(1.6, 2.0, 1.6), s.metal, top + Vector3(-2.0, 31.2, 0)))   # a skull finial
 		n.add_child(slab([Vector2(0, 0), Vector2(-12, 0), Vector2(-12, -10), Vector2(-9, -8), Vector2(-6, -11), Vector2(-3, -8), Vector2(0, -10)], 0.4, s.team, top + Vector3(-2.2, 29.0, 0)))
+	if play:
+		sockets.head = TARANTULA_MOUTH
+		return {"node": n, "sockets": sockets, "anchors": hips}
 	return {"node": n, "sockets": sockets}
+
+
+const TARANTULA_MOUTH := Vector3(23.0, 15.0, 0)   # where its jaws hinge (in play: the head's origin)
+## How far each pair of legs (front to back) turns from straight out (degrees, + back: UnitModels.leg_basis):
+## where _tarantula's feet were, 50, 20, -12 and -34 along it.
+const TARANTULA_FAN := [-45.0, -12.0, 25.0, 55.0]
+const TARANTULA_HIP_Z := [9.0, 11.5, 11.5, 9.5]   # each pair's hips out on the carapace's rim (at 9 the middle ones sat 4 deep)
+
+
+## The chelicerae with their fangs and the pedipalps out front, hinged at `at`.
+func tarantula_jaws(n: Node3D, at: Vector3, fur: Material, dark: Material) -> void:
+	var o := at - TARANTULA_MOUTH
+	var fang := plain(Color("#141012"))
+	n.add_child(blob(Vector3(3.0, 3.0, 6.5), dark, o + Vector3(24.0, 14.5, 0)))   # the mouth, the jaws and palps hinged on it
+	for side in [1, -1]:
+		n.add_child(blob(Vector3(4.0, 5.0, 3.0), dark, o + Vector3(26.0, 14.0, 3.4 * side), Vector3(0, 0, -20)))
+		n.add_child(cone(0.1, 1.2, 5.0, fang, o + Vector3(28.5, 9.0, 3.0 * side), Vector3(0, 0, -15), 8))
+		limb(n, [o + Vector3(24.0, 15.0, 6.0 * side), o + Vector3(32.0, 18.0, 9.0 * side), o + Vector3(36.0, 6.0, 10.0 * side)], [1.8, 1.6, 1.4], fur)
+
+
+## One leg in play, from its hip at the origin straight out to the near side (+z) and down: the furred
+## thigh up to the orange knee, the shin and foot dark; its pale tufts and shin band (the patterned coat).
+func _leg_beast_tarantula(_c: Dictionary) -> Dictionary:
+	var n := Node3D.new()
+	var fur := surf("rat_fur", Color(0.28, 0.24, 0.24), 4.0)
+	var dark := surf("rat_fur", Color(0.17, 0.15, 0.16), 3.5)
+	var band := surf("rat_fur", Color(0.95, 0.55, 0.25), 3.0)
+	var pale := plain(Color("#e6d2a4"))
+	var knee := Vector3(0, 17.0, 15.0)
+	var ankle := Vector3(0, -5.0, 27.0)
+	limb(n, [Vector3.ZERO, knee], [3.4, 3.0], fur)
+	n.add_child(blob(Vector3(3.2, 3.2, 3.2), band, knee))
+	limb(n, [knee, ankle, Vector3(0, -16.2, 30.0)], [2.8, 2.2, 1.4], dark)
+	for t in [0.35, 0.65]:
+		var at: Vector3 = knee * t
+		n.add_child(rod(at + Vector3(0, 2.6, 0), at + Vector3(-0.6, 5.4, 0.8), 0.6, 0.1, pale))
+	n.add_child(blob(Vector3(2.7, 2.7, 2.7), pale, knee.lerp(ankle, 0.45)))
+	return {"node": n}
+
+
+func _head_beast_tarantula(_c: Dictionary) -> Dictionary:
+	var n := Node3D.new()
+	tarantula_jaws(n, Vector3.ZERO, surf("rat_fur", Color(0.28, 0.24, 0.24), 4.0), surf("rat_fur", Color(0.17, 0.15, 0.16), 3.5))
+	return {"node": n, "sockets": {"top": Vector3(6.0, 4.0, 0)}}
 
 
 ## Frogs, b: a giant grey heron, the frogs' oldest enemy, broken to the saddle: long legs, an S of a
 ## neck, a dagger of a beak, a black crest; one frog in a saddle between its wings.
-func _heron(s: Dictionary) -> Dictionary:
+## play (in play, 2026-10-16): the legs and the neck with its head baked apart, cut at each hip and where the
+## neck leaves the body ("leg.beast_heron", "head.beast_heron"), so it strides and stabs (UnitView._beast).
+func _heron(s: Dictionary, play := false) -> Dictionary:
 	var n := Node3D.new()
 	var grey := surf("hide", Color(0.72, 0.74, 0.78), 6.0)
 	var dark := plain(Color("#3a3c44"))
-	var white := surf("hide", Color(0.95, 0.95, 0.93), 6.0)
-	var leg := plain(Color("#8a7a4a"))
-	var beak := plain(Color("#c8a040"))
+	var hips := []
 	for side in [1, -1]:
-		limb(n, [Vector3(0.0, 40.0, 5.0 * side), Vector3(2.0, 26.0, 6.0 * side), Vector3(-2.0, 12.0, 6.0 * side), Vector3(0.0, 1.0, 6.5 * side)], [2.4, 1.3, 1.2, 1.0], leg)
-		for t in 3:
-			n.add_child(rod(Vector3(0.0, 0.8, 6.5 * side), Vector3(6.0, 0.6, (6.5 + (t - 1) * 3.0) * side), 0.6, 0.4, leg))
-		n.add_child(rod(Vector3(0.0, 0.8, 6.5 * side), Vector3(-4.0, 0.6, 6.5 * side), 0.6, 0.4, leg))
+		if play:
+			hips.append([Vector3(0.0, 40.0, 5.0 * side), 0.0 if side > 0 else PI, side, 0])
+		else:
+			heron_leg(n, Vector3(0.0, 40.0, 5.0 * side), side)
 	n.add_child(blob(Vector3(17.0, 9.5, 10.0), grey, Vector3(-2.0, 46.0, 0), Vector3(0, 0, 12)))   # the body
 	for side in [1, -1]:   # folded wings, darker at the tips, crossing over the tail
 		n.add_child(blob(Vector3(17.0, 6.0, 3.0), grey, Vector3(-5.0, 47.0, 8.5 * side), Vector3(0, 0, 14)))
 		n.add_child(blob(Vector3(10.0, 3.0, 2.4), dark, Vector3(-17.0, 43.5, 7.0 * side), Vector3(0, 0, 20)))
-	limb(n, [Vector3(10.0, 50.0, 0), Vector3(16.0, 58.0, 0), Vector3(12.0, 66.0, 0), Vector3(16.0, 74.0, 0)], [4.0, 3.0, 2.8, 2.8], white)
-	n.add_child(blob(Vector3(4.6, 3.6, 3.4), white, Vector3(18.0, 75.0, 0)))
-	n.add_child(cone(0.2, 1.8, 14.0, beak, Vector3(28.0, 74.0, 0), Vector3(0, 0, -93), 10))
-	limb(n, [Vector3(15.0, 77.0, 0), Vector3(6.0, 79.0, 0), Vector3(0.0, 77.0, 0)], [1.0, 0.7, 0.3], dark)   # the crest
-	for side in [1, -1]:
-		n.add_child(blob(Vector3(0.9, 0.9, 0.6), plain(Color("#d8b020")), Vector3(20.0, 76.0, 3.0 * side)))
-		n.add_child(rod(Vector3(17.0, 75.5, 3.4 * side), Vector3(22.0, 75.0, 2.4 * side), 0.4, 0.3, dark))
+	if not play:
+		heron_neck(n, HERON_NECK)
 	n.add_child(_box(Vector3(11.0, 0.8, 18.0), s.team, Vector3(-7.0, 55.0, 0), Vector3(0, 0, 8)))
 	n.add_child(_box(Vector3(8.0, 1.6, 9.0), s.dark, Vector3(-7.0, 56.0, 0)))
-	return {"node": n, "sockets": {"crew0_f0_top": Vector3(-7.0, 56.8, 0)}}
+	var out := {"node": n, "sockets": {"crew0_f0_top": Vector3(-7.0, 56.8, 0)}}
+	if play:
+		out.sockets.head = HERON_NECK
+		out.anchors = hips
+	return out
+
+
+const HERON_NECK := Vector3(12.5, 52.0, 0)   # where the neck leaves the body (in play: the head's origin)
+
+
+## A stilt of a leg from its hip, the knee (the heel) bent back, three toes forward and one back.
+func heron_leg(n: Node3D, hip: Vector3, side: float) -> void:
+	var leg := plain(Color("#8a7a4a"))
+	limb(n, [hip, hip + Vector3(2.0, -14.0, 1.0 * side), hip + Vector3(-2.0, -28.0, 1.0 * side), hip + Vector3(0.0, -39.0, 1.5 * side)], [2.4, 1.3, 1.2, 1.0], leg)
+	var foot := hip + Vector3(0.0, -39.2, 1.5 * side)
+	for t in 3:
+		n.add_child(rod(foot, hip + Vector3(6.0, -39.4, (1.5 + (t - 1) * 3.0) * side), 0.6, 0.4, leg))
+	n.add_child(rod(foot, hip + Vector3(-4.0, -39.4, 1.5 * side), 0.6, 0.4, leg))
+
+
+## The S of a neck from where it leaves the body (`at`), the head, the dagger of a beak, the black crest.
+func heron_neck(n: Node3D, at: Vector3) -> void:
+	var o := at - HERON_NECK
+	var white := surf("hide", Color(0.95, 0.95, 0.93), 6.0)
+	var dark := plain(Color("#3a3c44"))
+	limb(n, [o + Vector3(10.0, 50.0, 0), o + Vector3(16.0, 58.0, 0), o + Vector3(12.0, 66.0, 0), o + Vector3(16.0, 74.0, 0)], [4.0, 3.0, 2.8, 2.8], white)
+	n.add_child(blob(Vector3(4.6, 3.6, 3.4), white, o + Vector3(18.0, 75.0, 0)))
+	n.add_child(cone(0.2, 1.8, 14.0, plain(Color("#c8a040")), o + Vector3(28.0, 74.0, 0), Vector3(0, 0, -93), 10))
+	limb(n, [o + Vector3(15.0, 77.0, 0), o + Vector3(6.0, 79.0, 0), o + Vector3(0.0, 77.0, 0)], [1.0, 0.7, 0.3], dark)   # the crest
+	for side in [1, -1]:
+		n.add_child(blob(Vector3(0.9, 0.9, 0.6), plain(Color("#d8b020")), o + Vector3(20.0, 76.0, 3.0 * side)))
+		n.add_child(rod(o + Vector3(17.0, 75.5, 3.4 * side), o + Vector3(22.0, 75.0, 2.4 * side), 0.4, 0.3, dark))
 
 
 ## Forest beetles: a giant praying mantis, leaf-green, its raptorial arms folded and spiked, the long
 ## neck up, wings folded along its abdomen; one beetle in a saddle on its back. A tall thin shape no
 ## other beast in the game has.
-func _mantis(s: Dictionary) -> Dictionary:
+## play (in play, 2026-10-16): the four walking legs and the fore body (the long prothorax, the head, the
+## raptorial arms) baked apart, cut at each hip and at the thorax ("leg.beast_mantis": one leg straight
+## out, fanned forward or back by MANTIS_FAN; "head.beast_mantis"), so it walks and strikes (UnitView._beast).
+func _mantis(s: Dictionary, play := false) -> Dictionary:
 	var n := Node3D.new()
 	var green := surf("chitin", Color("#6a9a3a"), 5.0)
 	green.roughness = 0.5
 	var dark := surf("chitin", Color("#4a7028"), 4.0)
 	var wing := surf("leaf", Color(0.75, 0.9, 0.55), 10.0)
-	var spike := plain(Color("#2a3a14"))
+	var hips := []
 	for leg in [[2.0, 12.0], [-6.0, -16.0]]:   # two pairs of walking legs, long and thin
 		for side in [1, -1]:
-			limb(n, [Vector3(leg[0], 22.0, 4.0 * side), Vector3(leg[0] + (leg[1] - leg[0]) * 0.4, 34.0, 18.0 * side), Vector3(leg[1], 0.8, 24.0 * side)], [1.8, 1.4, 0.8], dark)
+			if play:
+				var fore: bool = leg[0] > 0.0
+				hips.append([Vector3(leg[0], 22.0, 4.0 * side), 0.0 if fore == (side > 0) else PI, side, 0, false, MANTIS_FAN[0 if fore else 1]])
+			else:
+				limb(n, [Vector3(leg[0], 22.0, 4.0 * side), Vector3(leg[0] + (leg[1] - leg[0]) * 0.4, 34.0, 18.0 * side), Vector3(leg[1], 0.8, 24.0 * side)], [1.8, 1.4, 0.8], dark)
 	n.add_child(blob(Vector3(22.0, 6.5, 7.5), green, Vector3(-20.0, 26.0, 0), Vector3(0, 0, 10)))   # the abdomen
 	for side in [1, -1]:
 		n.add_child(blob(Vector3(20.0, 2.0, 5.0), wing, Vector3(-18.0, 31.0, 3.0 * side), Vector3(0, 0, 10)))
 	n.add_child(blob(Vector3(7.0, 5.0, 6.0), green, Vector3(0.0, 23.0, 0)))   # the thorax
-	limb(n, [Vector3(4.0, 24.0, 0), Vector3(16.0, 42.0, 0)], [3.4, 2.6], green)   # the long prothorax
-	n.add_child(blob(Vector3(3.6, 4.0, 5.6), green, Vector3(19.0, 46.0, 0)))   # the head
-	for side in [1, -1]:
-		n.add_child(blob(Vector3(2.4, 2.6, 2.2), plain(Color("#c8d870")), Vector3(19.5, 48.0, 5.0 * side)))
-		limb(n, [Vector3(20.0, 49.0, 1.5 * side), Vector3(26.0, 58.0, 5.0 * side), Vector3(32.0, 62.0, 8.0 * side)], [0.5, 0.35, 0.2], dark)
-		# The raptorial arms: coxa down and forward, femur back up, spiked, the tibia folded under.
-		var cox := Vector3(13.0, 37.0, 3.5 * side)
-		var elbow := Vector3(20.0, 26.0, 6.0 * side)
-		var wrist := Vector3(25.0, 40.0, 6.5 * side)
-		limb(n, [cox, elbow, wrist], [2.2, 2.4, 1.8], green)
-		limb(n, [wrist, Vector3(22.0, 31.0, 7.0 * side)], [1.6, 0.6], dark)
-		for t in 4:
-			n.add_child(cone(0.1, 0.5, 2.4, spike, elbow.lerp(wrist, 0.2 + t * 0.2) + Vector3(-1.4, 0, 0), Vector3(0, 0, 70), 6))
+	if not play:
+		mantis_fore(n, MANTIS_NECK, green, dark)
 	n.add_child(_box(Vector3(12.0, 0.8, 16.0), s.team, Vector3(-8.0, 31.0, 0), Vector3(0, 0, 8)))
 	n.add_child(_box(Vector3(9.0, 1.6, 8.0), s.dark, Vector3(-8.0, 32.2, 0), Vector3(0, 0, 8)))
-	return {"node": n, "sockets": {"crew0_f0_top": Vector3(-8.0, 33.4, 0)}}
+	var out := {"node": n, "sockets": {"crew0_f0_top": Vector3(-8.0, 33.4, 0)}}
+	if play:
+		out.sockets.head = MANTIS_NECK
+		out.anchors = hips
+	return out
+
+
+const MANTIS_NECK := Vector3(4.0, 24.0, 0)   # where the prothorax leaves the thorax (in play: the head's origin)
+const MANTIS_FAN := [-27.0, 27.0]   # the walking legs turned forward (the fore pair) and back from straight out
+
+
+## The fore body from the thorax (`at`): the long prothorax up, the head with its big eyes and antennae,
+## the raptorial arms (coxa down and forward, femur back up, spiked, the tibia folded under).
+func mantis_fore(n: Node3D, at: Vector3, green: Material, dark: Material) -> void:
+	var o := at - MANTIS_NECK
+	var spike := plain(Color("#2a3a14"))
+	limb(n, [o + Vector3(4.0, 24.0, 0), o + Vector3(16.0, 42.0, 0)], [3.4, 2.6], green)   # the long prothorax
+	n.add_child(blob(Vector3(3.6, 4.0, 5.6), green, o + Vector3(19.0, 46.0, 0)))   # the head
+	for side in [1, -1]:
+		n.add_child(blob(Vector3(2.4, 2.6, 2.2), plain(Color("#c8d870")), o + Vector3(19.5, 48.0, 5.0 * side)))
+		limb(n, [o + Vector3(20.0, 49.0, 1.5 * side), o + Vector3(26.0, 58.0, 5.0 * side), o + Vector3(32.0, 62.0, 8.0 * side)], [0.5, 0.35, 0.2], dark)
+		var cox := o + Vector3(13.0, 37.0, 3.5 * side)
+		var elbow := o + Vector3(20.0, 26.0, 6.0 * side)
+		var wrist := o + Vector3(25.0, 40.0, 6.5 * side)
+		limb(n, [cox, elbow, wrist], [2.2, 2.4, 1.8], green)
+		limb(n, [wrist, o + Vector3(22.0, 31.0, 7.0 * side)], [1.6, 0.6], dark)
+		for t in 4:
+			n.add_child(cone(0.1, 0.5, 2.4, spike, elbow.lerp(wrist, 0.2 + t * 0.2) + Vector3(-1.4, 0, 0), Vector3(0, 0, 70), 6))
 
 
 ## The frame and arm on its sills at y = `base` (0, or a deck), `k` times the size; returns the short
@@ -2772,11 +2945,54 @@ func tarantula_pattern(n: Node3D, C: Vector3, A: Vector3, legs: Array) -> void:
 
 # ------------------------------------------------------------------ in play (D-129)
 
-func _beast_elephant(s: Dictionary) -> Dictionary: return _elephant(s, true)
-func _beast_boar(s: Dictionary) -> Dictionary: return _war_boar(s, true)
-func _beast_tarantula(s: Dictionary) -> Dictionary: return _tarantula(s, false, true)
-func _beast_heron(s: Dictionary) -> Dictionary: return _heron(s)
-func _beast_mantis(s: Dictionary) -> Dictionary: return _mantis(s)
+func _beast_elephant(s: Dictionary) -> Dictionary: return _elephant(s, true, true)
+func _beast_boar(s: Dictionary) -> Dictionary: return _war_boar(s, true, true)
+func _beast_tarantula(s: Dictionary) -> Dictionary: return _tarantula(s, false, true, true)
+func _beast_heron(s: Dictionary) -> Dictionary: return _heron(s, true)
+func _beast_mantis(s: Dictionary) -> Dictionary: return _mantis(s, true)
+
+# A war beast's legs and head in play, baked cut by its body (parts.json siege.beast.<kind>: "cut", "legs",
+# "beast": {"head"}): each leg built for the near side from its hip at the origin (UnitModels.leg_basis turns
+# it to its own), each head from its turning point. UnitModels builds them here (UnitModels.build).
+func _leg_beast_elephant(_c: Dictionary) -> Dictionary:
+	var n := Node3D.new()
+	elephant_leg(n, Vector3.ZERO, 1.0, _elephant_mats())
+	return {"node": n}
+func _head_beast_elephant(_c: Dictionary) -> Dictionary:
+	var n := Node3D.new()
+	elephant_head(n, Vector3.ZERO, _elephant_mats())
+	return {"node": n, "sockets": {"top": Vector3(6.0, 9.0, 0)}}
+func _leg_beast_boar(_c: Dictionary) -> Dictionary:
+	var n := Node3D.new()
+	boar_leg(n, Vector3.ZERO, 1.0, true, _boar_mats())
+	return {"node": n}
+func _leg_beast_boar_hind(_c: Dictionary) -> Dictionary:
+	var n := Node3D.new()
+	boar_leg(n, Vector3.ZERO, 1.0, false, _boar_mats())
+	return {"node": n}
+func _head_beast_boar(_c: Dictionary) -> Dictionary:
+	var n := Node3D.new()
+	boar_head(n, Vector3.ZERO, _boar_mats())
+	return {"node": n, "sockets": {"top": Vector3(6.0, 10.0, 0)}}
+func _leg_beast_heron(_c: Dictionary) -> Dictionary:
+	var n := Node3D.new()
+	heron_leg(n, Vector3.ZERO, 1.0)
+	return {"node": n}
+func _head_beast_heron(_c: Dictionary) -> Dictionary:
+	var n := Node3D.new()
+	heron_neck(n, Vector3.ZERO)
+	return {"node": n, "sockets": {"top": Vector3(10.0, 29.0, 0)}}
+## A walking leg, from its hip at the origin straight out to the near side (+z): up to a high knee, down to the foot.
+func _leg_beast_mantis(_c: Dictionary) -> Dictionary:
+	var n := Node3D.new()
+	limb(n, [Vector3.ZERO, Vector3(0, 12.0, 14.0), Vector3(0, -21.2, 20.0)], [1.8, 1.4, 0.8], surf("chitin", Color("#4a7028"), 4.0))
+	return {"node": n}
+func _head_beast_mantis(_c: Dictionary) -> Dictionary:
+	var n := Node3D.new()
+	var green := surf("chitin", Color("#6a9a3a"), 5.0)
+	green.roughness = 0.5
+	mantis_fore(n, Vector3.ZERO, green, surf("chitin", Color("#4a7028"), 4.0))
+	return {"node": n, "sockets": {"top": Vector3(15.0, 24.0, 0)}}
 func _sling_in_play(s: Dictionary, _c: Dictionary) -> Dictionary: return _great_sling(s)
 func _packed_in_play(s: Dictionary, _c: Dictionary) -> Dictionary: return _great_packed(s)
 func _frog_sling_in_play(s: Dictionary, _c: Dictionary) -> Dictionary: return _frog_sling(s)
@@ -2790,10 +3006,17 @@ const BESIDE_GAP := 11.0   # a member walking beside a war beast: this far out p
 ## A war beast's riders ride on top ("crew<n>_f0_top"); a crew too big to ride (a centaur: its horse half)
 ## walks beside it instead, on the "crew<n>_f0_wide" sockets this adds on the ground, out past the beast's
 ## widest point on the side its rider sat (the second of a pair on the far side). UnitView.engine_sockets.
-func _beside(spec: Dictionary) -> Dictionary:
+## Its legs (baked apart in play) count: a leg part per hip, turned to its own side, put on for the measure.
+func _beside(spec: Dictionary, kind: String, colours: Dictionary) -> Dictionary:
 	var zmax := 0.0
 	for q in _cloud(spec.node):
 		zmax = maxf(zmax, absf(q.z))
+	for a in spec.get("anchors", []):
+		var leg: Node3D = call("_leg_beast_%s%s" % [kind, "_hind" if a.size() > 4 and a[4] else ""], colours).node
+		leg.transform = Transform3D(leg_basis(a, true), a[0])
+		for q in _cloud(leg):
+			zmax = maxf(zmax, absf(q.z))   # (_cloud puts the leg on: its own transform)
+		leg.free()
 	var k := 0
 	var names: Array = spec.sockets.keys()
 	names.sort()

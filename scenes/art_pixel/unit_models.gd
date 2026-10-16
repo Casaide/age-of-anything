@@ -25,7 +25,7 @@ func has(id: String) -> bool:
 	if Mods.glb_parts.has(base):
 		return true
 	var fn := "_" + base.replace(".", "_")
-	return has_method(fn) or extra.any(func(e): return e.has_method(fn))
+	return has_method(fn) or extra.any(func(e): return e.has_method(fn)) or (base.begins_with("leg.beast_") or base.begins_with("head.beast_")) and _siege().has_method(fn)
 
 
 ## Creature-kit parts (scenes/art_pixel/creature_kit.gd: a skeleton in data) and concept model files
@@ -114,6 +114,8 @@ func build(id: String, colours: Dictionary) -> Dictionary:
 	if Mods.glb_parts.has(base):
 		return {"node": glb_file(Mods.glb_parts[base], mod_materials(Mods.glb_parts[base], colours))}
 	var fn := "_" + base.replace(".", "_")
+	if not has_method(fn) and (base.begins_with("leg.beast_") or base.begins_with("head.beast_")):
+		return _siege().call(fn, colours)   # a war beast's legs and head (siege_models.gd: they share its builders)
 	if not has_method(fn):
 		for e in extra:
 			if e.has_method(fn):

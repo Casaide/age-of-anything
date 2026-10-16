@@ -98,6 +98,8 @@ func check(label: String, u: Dictionary) -> void:
 	if r.has("crew"):
 		_check_engine(label, r)
 		rig.clear()
+		if lib.part(r.body).has("legs"):   # a war beast walks: its body, legs and head as any creature's
+			check(label, {"recipe": UnitView.beast_recipe(lib, r), "eval": u.eval})
 		return
 	# The data's 2D anchors (drawn before the body is baked, and the count of legs asked to bake) are
 	# the model's hips, one for one.
@@ -595,7 +597,7 @@ static func _v(v: Vector3) -> String:
 func _check_engine(label: String, r: Dictionary) -> void:
 	var colours := UnitView.colours_for(lib, r.skin, r.family, Color.MAGENTA)
 	var es: Dictionary = rig.spec(r.body, colours)
-	var ev := Geom.voxels(es.node, Transform3D.IDENTITY)
+	var ev := Composite3D.whole(lib, rig, r, es)
 	var cr: Dictionary = r.crew.duplicate(true)
 	cr.merge({"creature": r.creature, "family": r.family, "slot": "worker", "role": "worker", "tier": 1, "name": ""})
 	# The engine itself (a war beast with nobody on it too, D-129: the tarantula) stands on the ground:
@@ -604,7 +606,8 @@ func _check_engine(label: String, r: Dictionary) -> void:
 	var low := INF
 	for q in ev:
 		low = minf(low, Geom.unkey(q).y * Geom.RES)
-	note("A1 the engine stands on the ground", label, r.body, low > GROUND_TOL + Geom.RES or low < -ENGINE_SINK, "its lowest point at %.1f" % low)
+	if not lib.part(r.body).has("legs"):   # (a war beast's body stands on its legs, baked apart: checked as a creature's)
+		note("A1 the engine stands on the ground", label, r.body, low > GROUND_TOL + Geom.RES or low < -ENGINE_SINK, "its lowest point at %.1f" % low)
 	for name in UnitView.engine_sockets(r, es.get("sockets", {})):   # (the sockets UnitView composes crew on)
 		if not name.begins_with("crew"):
 			continue
