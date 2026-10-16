@@ -194,7 +194,8 @@ func build(r: Dictionary, lib, team: Color, speed := 10) -> void:
 		gait = {"hop": true, "swing": 0.0, "cadence": 0.55, "bob": 0.0, "rock": 0.0, "rock_rate": 1.0}
 	if r.has("crew"):
 		shadow.scale = Vector2.ONE * float(lib.part(r.body).stats.get("radius", 300)) / ENGINE_SHADOW
-		gait = {"swing": 0.0, "cadence": 1.0, "bob": 0.0, "rock": 0.012, "rock_rate": 3.0}
+		if legs.is_empty():
+			gait = {"swing": 0.0, "cadence": 1.0, "bob": 0.0, "rock": 0.012, "rock_rate": 3.0}
 	_idle_poses = []
 	if _pose_body != "" and not flying:
 		# A body can walk its own way (parts.json legs.gait: a cat's low, level walk) and rest
@@ -241,13 +242,19 @@ const ENGINE_SHADOW := 210.0   # an engine's shadow: its radius (milli-tiles) ov
 
 func _build_engine(r: Dictionary, lib, team: Color, colours: Dictionary, speed: int) -> void:
 	var part: Dictionary = lib.part(r.body)
-	var engine := _shape()
-	engine.part_id = r.body
-	engine.facing = facing_k
-	engine.setup(part.shapes, colours)
-	bob.add_child(engine)
-	_body_nodes.append(engine)
 	_facing_body = r.body
+	if part.has("legs"):
+		# A war beast (2026-10-16): a creature, not a cart: its body, its legs at each hip and its head on its
+		# neck, baked cut by the body (parts.json "cut"), composed as any creature's; it walks (_beast_walk).
+		_pose_body = r.body
+		_make_rig(lib, r.body, part.beast.head, colours, bob, true)
+	else:
+		var engine := _shape()
+		engine.part_id = r.body
+		engine.facing = facing_k
+		engine.setup(part.shapes, colours)
+		bob.add_child(engine)
+		_body_nodes.append(engine)
 	var rig: Dictionary = PartShape.rigs.get(r.body + PartShape.facing_suffix(facing_k), PartShape.rigs.get(r.body, {}))
 	var sockets: Dictionary = rig.get("sockets", {})
 	var depth: Dictionary = rig.get("depth", {})
@@ -288,6 +295,14 @@ func _build_engine(r: Dictionary, lib, team: Color, colours: Dictionary, speed: 
 		v.phase = 0.4 if hauls else 0.7 * n
 		bob.add_child(v)
 		crew.append({"view": v, "top": top, "socket": name})
+	if head_node:
+		# A beast's head among its riders by depth: over those behind it (a heron's neck in front of its
+		# frog, coming towards you), under those in front (going away), always over its own body.
+		var at := names.filter(func(m): return float(depth[m]) < float(depth.get("head", 0.0))).size()
+		head_node.get_parent().remove_child(head_node)
+		head_node.set_meta("z", 1.0 + at * 0.01 - 0.005)
+		bob.add_child(head_node)
+		_beast_head_rest = head_node.position
 
 
 ## The sockets an engine's members stand on: its crew's ("crew<n>_f<k>[_reach|_raise][_in|_top]"; a
@@ -311,6 +326,13 @@ static func crew_recipe(r: Dictionary) -> Dictionary:
 	return cr
 
 
+## A war beast on its own, without its riders: the creature its engine part is (parts.json "legs", "beast":
+## its body, legs and head), as a unit the placement check walks like any creature (feet, legs, stance).
+static func beast_recipe(lib, r: Dictionary) -> Dictionary:
+	return {"slot": "beast", "role": "beast", "tier": 1, "creature": "", "family": r.family, "skin": r.skin,
+		"body": r.body, "head": lib.part(r.body).beast.head, "parts": {}, "scale": 100, "name": "", "idle": 0}
+
+
 ## The beast hauling an engine (the recipe's `haul`: {creature, skin, parts?}): the bare creature, on
 ## its mount body if it has one, wearing what the haul names (a draught harness, {"torso": "harness.draught"}).
 ## It never sits down in its traces ("idle": 0: no idle poses).
@@ -324,6 +346,9 @@ static func haul_recipe(lib, r: Dictionary) -> Dictionary:
 ## walk with it; a blow is the whole engine lunging at the wall, a shot a kick back; it sags and
 ## settles when destroyed (its crew fall, each in its own way).
 func _engine_process(delta: float) -> void:
+	if not legs.is_empty():
+		_beast(delta)
+		return
 	time += delta
 	if _thrown_from != "":
 		_throw_process(delta)
@@ -347,6 +372,205 @@ func _engine_process(delta: float) -> void:
 		var px := 1.0 / art_px
 		var snapped := Vector2(roundf(g.x / px) * px, roundf(g.y / px) * px)
 		visual.position += (snapped - g) / maxf(global_transform.get_scale().x, 0.0001)
+
+
+## A war beast (2026-10-16; Dominic: "the elephant has no walk"): it walks on its legs like any creature
+## (each swings about its hip, the body riding on its planted foot, its riders with it), strikes in its own
+## way and falls like a creature (parts.json siege.beast.<kind> "beast": attack, fall). Its riders thrust
+## with it (flourish) and fall off it (die), each in its own way.
+const BEAST_STRIKE := 0.6   # seconds a beast's blow takes: wound up, the strike lands at BEAST_HIT, recovering
+const BEAST_HIT := 0.35
+var _beast_head_rest := Vector2.ZERO
+
+
+func _beast(delta: float) -> void:
+	time += delta
+	var stepped := pose_steps > 0
+	var t := floorf(time * STEP_FPS) / STEP_FPS if stepped else time
+	for c in crew:
+		c.view.walking = walking and not c.top
+	if walking:
+		phase += delta * speed_px * 0.25 * gait.cadence
+	var ph := phase
+	if stepped:
+		ph = floorf(phase / (TAU / pose_steps)) * (TAU / pose_steps)
+	var stride := 1.0 if walking else 0.0
+	for leg in legs:
+		leg.node.rotation = sin(ph + leg.phase) * gait.swing * stride
+		leg.node.scale.y = 1.0
+	var plant: Variant = _planted() if stride > 0.0 else 0.0
+	bob.position = Vector2(0.0, plant if plant != null else -absf(sin(ph)) * gait.bob * stride)
+	bob.rotation = sin(ph * gait.rock_rate) * gait.rock * stride
+	if head_node:
+		head_node.position = _beast_head_rest
+		# The head nods with its steps walking, and sways a little standing (a trunk, a neck, the jaws).
+		head_node.rotation = (sin(ph * 2.0) * 0.04 if walking else sin(t * 0.9) * 0.025) * _sgn()
+	_die_offset = Vector2.ZERO
+	visual.rotation = 0.0
+	var b: Dictionary = recipe_part().beast
+	if dying:
+		die_t += delta
+		_beast_fall(b.fall, die_t)
+	elif attack_t > 0.0:
+		attack_t -= delta
+		var a := 1.0 - maxf(attack_t, 0.0) / BEAST_STRIKE
+		if stepped:
+			a = floorf(a * 8.0) / 8.0
+		_beast_attack(b.attack, a)
+	visual.position = _die_offset - Vector2(0, lift)
+	_shadow.position.y = -lift
+	if stepped and art_px > 0.0:
+		var g := global_position - Vector2(0, lift) * global_transform.get_scale().y
+		var px := 1.0 / art_px
+		var snapped := Vector2(roundf(g.x / px) * px, roundf(g.y / px) * px)
+		visual.position += (snapped - g) / maxf(global_transform.get_scale().x, 0.0001)
+
+
+func recipe_part() -> Dictionary:
+	return _built[1].part(recipe.body)
+
+
+## Which way "forward" turns on screen: +1 facing right, -1 left (a nose-up pitch turns the other way).
+func _sgn() -> float:
+	var f := _forward()
+	return 1.0 if f.x >= 0.0 else -1.0
+
+
+## The body pitched nose up by `angle` (radians) about the ground under its hind hips (rearing: the hind feet
+## stay put; about a point behind them they lifted off), seen side on as a turn, end on as the front rising
+## by `rise` times its length.
+func _pitch(angle: float, rise := 0.6) -> void:
+	var f := _forward()
+	var rot := -angle * _sgn() * absf(f.x)
+	var back := 0.0
+	var front := 0.0
+	for leg in legs:
+		back = minf(back, (leg.rest as Vector2).dot(f))
+		front = maxf(front, (leg.rest as Vector2).dot(f))
+	var p := Vector2((f * back).x, 0.0)
+	bob.position += p - p.rotated(rot) + Vector2(0.0, -angle * (front - back) * absf(f.y) * rise)
+	bob.rotation += rot
+
+
+## Legs ahead of the body's middle (along its facing) lifted forward by `turn` (the hind ones by `hind`).
+func _lift_legs(turn: float, hind := 0.0) -> void:
+	var f := _forward()
+	for leg in legs:
+		var fore: bool = leg.rest.dot(f) > 0.0
+		leg.node.rotation += -(turn if fore else hind) * _sgn() * maxf(absf(f.x), 0.3)
+
+
+## The strike's curve: wound up (+1) by BEAST_HIT, driven through past rest (-1) quickly, settling back (0).
+static func _strike_curve(a: float) -> float:
+	if a < BEAST_HIT:
+		return sin(a / BEAST_HIT * PI * 0.5)
+	if a < BEAST_HIT + 0.15:
+		return lerpf(1.0, -1.0, smoothstep(0.0, 1.0, (a - BEAST_HIT) / 0.15))
+	return lerpf(-1.0, 0.0, smoothstep(0.0, 1.0, (a - BEAST_HIT - 0.15) / (0.85 - BEAST_HIT)))
+
+
+## A beast's blow, by kind: tusks (rears, forefeet up, trunk high; stamps down and sweeps the tusks through),
+## gore (head low, a step back; charges and tosses its tusks up), bite (rears its fore legs; drops onto the
+## target, jaws driven in), stab (the neck drawn back; the beak darts out and down), strike (the raptorial
+## arms cocked high; they snap out and down).
+func _beast_attack(kind: String, a: float) -> void:
+	var k := _strike_curve(a)
+	var up := maxf(k, 0.0)     # wound up
+	var out := maxf(-k, 0.0)   # driven through
+	var f := _forward()
+	var sg := _sgn()
+	var hd := Vector2.ZERO
+	var hr := 0.0
+	match kind:
+		"tusks":
+			_pitch(0.2 * up - 0.05 * out)
+			_lift_legs(0.55 * up)
+			bob.position += f * 7.0 * out
+			hr = -0.4 * up + 0.45 * out
+			hd = f * 5.0 * out
+		"gore":
+			_pitch(-0.06 * up + 0.08 * out)
+			bob.position += f * (-3.0 * up + 10.0 * out)
+			_lift_legs(-0.15 * up + 0.3 * out, 0.25 * out)
+			hr = 0.3 * up - 0.55 * out
+			hd = f * 4.0 * out + Vector2(0.0, 3.0 * up)
+		"bite":
+			_pitch(0.16 * up - 0.04 * out)
+			_lift_legs(0.7 * up)
+			bob.position += f * 5.0 * out
+			hr = -0.3 * up + 0.4 * out
+			hd = f * 6.0 * out + Vector2(0.0, 2.0 * out)
+		"stab":
+			_pitch(0.05 * up - 0.1 * out)
+			bob.position += f * 2.0 * out
+			hr = -0.4 * up + 0.75 * out   # (the neck turns on its root: slid out, it came off the body)
+			hd = -f * 1.5 * up + (f * 2.5 + Vector2(0.0, 1.5)) * out
+		"strike":
+			_pitch(0.1 * up - 0.06 * out)
+			bob.position += f * 4.0 * out
+			hr = -0.35 * up + 0.8 * out
+			hd = -f * 1.0 * up + f * 2.5 * out
+	if head_node:
+		head_node.rotation += hr * sg * maxf(absf(f.x), 0.35)
+		head_node.position += hd
+
+
+## A beast's fall, by kind: side (the knees buckle, it sinks, then goes over on its side, heavily, and
+## settles), curl (the body drops onto its belly, the legs curl up over it and twitch), topple (a long-legged
+## bird: the legs fold, it pitches forward and goes over, the neck down), fold (the legs give way all round,
+## the body sinks flat and the fore body droops to the ground).
+func _beast_fall(kind: String, t: float) -> void:
+	var sg := _sgn()
+	var h := _hip_height()
+	var sink := smoothstep(0.0, 0.35, t)
+	# Its riders are thrown clear (over the side it goes down on, as it goes), landing on the ground beside it.
+	var fly := smoothstep(0.15, 0.75, t)
+	for c in crew:
+		if c.has("thrown_from"):
+			var to := Vector2(c.thrown_from.x + die_tip * (absf(c.thrown_from.y) * 1.2 + 14.0), 4.0)   # (as far as they sat high: past its back as it lies)
+			c.view.position = (c.thrown_from as Vector2).lerp(to, fly) + Vector2(0.0, -sin(fly * PI) * 10.0)
+	match kind:
+		"side":
+			for leg in legs:
+				leg.node.scale.y = 1.0 - 0.25 * sink
+			bob.position.y += h * 0.22 * sink
+			var e := clampf((t - 0.3) / 0.55, 0.0, 1.0)
+			e = e * e   # slow to start, then all at once
+			var settle := 0.07 * sin(clampf((t - 0.85) / 0.3, 0.0, 1.0) * PI)
+			bob.rotation += die_tip * (1.4 * e - settle)
+			for leg in legs:   # legs go limp as it lands
+				leg.node.rotation += die_tip * 0.35 * e * (1.0 if leg.phase < PI * 0.5 else -0.6)
+			if head_node:
+				head_node.rotation += 0.35 * sink * sg
+		"curl":
+			bob.position.y += h * 0.75 * sink
+			var c := smoothstep(0.15, 0.65, t)
+			var twitch := sin(t * 38.0) * 0.12 * clampf((t - 0.6) / 0.1, 0.0, 1.0) * (1.0 - clampf((t - 0.95) / 0.25, 0.0, 1.0))
+			for leg in legs:
+				var outward: float = signf(leg.node.position.x) if absf(leg.node.position.x) > 1.0 else sg
+				leg.node.rotation = -outward * (1.15 * c + twitch)
+				leg.node.scale.y = 1.0 - 0.45 * c
+			if head_node:
+				head_node.rotation += 0.4 * sink * sg
+			bob.rotation += die_tip * 0.08 * c
+		"topple":
+			for leg in legs:
+				leg.node.scale.y = 1.0 - 0.45 * sink
+				leg.node.rotation += (0.5 if leg.phase < 1.0 else -0.4) * sink * sg
+			bob.position.y += h * 0.4 * sink
+			_pitch(-0.25 * sink)
+			var e := clampf((t - 0.3) / 0.45, 0.0, 1.0)
+			bob.rotation += die_tip * 1.35 * e * e
+			if head_node:
+				head_node.rotation += 0.9 * smoothstep(0.1, 0.7, t) * sg
+		"fold":
+			for leg in legs:
+				leg.node.scale.y = 1.0 - 0.6 * sink
+				leg.node.rotation += signf(leg.node.position.x if absf(leg.node.position.x) > 1.0 else sg) * 0.5 * sink
+			bob.position.y += h * 0.55 * sink
+			if head_node:
+				head_node.rotation += 0.8 * smoothstep(0.15, 0.7, t) * sg
+			bob.rotation += die_tip * 0.2 * smoothstep(0.3, 0.8, t)
 
 
 ## Parts are layered by child order (their "z" meta), not z_index: z_index is global,
@@ -474,7 +698,7 @@ func _make_rig(lib, body_id: String, head_id: String, colours: Dictionary, paren
 	breathing.append(body_node)
 	if body_id == recipe.body:
 		_body_nodes.append(body_node)
-	if rig.get("front", false):
+	if rig.get("front", false) is bool and rig.get("front", false):   # (an engine's "front" is its members': part_baker._rig)
 		# The body's near arm, drawn above torso armour and below what the hands hold.
 		var arm := _shape()
 		arm.part_id = body_id + _hold_suffix
@@ -763,7 +987,7 @@ func set_tool(lib, part_id: String) -> void:
 
 ## A melee blow lands: the lunge (T1, D-106).
 func flourish() -> void:
-	attack_t = 0.35
+	attack_t = BEAST_STRIKE if recipe.has("crew") and not legs.is_empty() else 0.35
 	_attack_kind = "blow"
 	for c in crew:
 		c.view.flourish()   # the crew heave with it
@@ -789,6 +1013,13 @@ func die(tip: float) -> void:
 	job = ""
 	attack_t = 0.0
 	for c in crew:
+		if c.top and not legs.is_empty():
+			# A war beast's riders come off it (_beast_fall), out of its body's turn.
+			var at: Vector2 = c.view.position + bob.position
+			c.view.get_parent().remove_child(c.view)
+			visual.add_child(c.view)   # (out of the body's turn, still in what combat_fx fades)
+			c.view.position = at
+			c["thrown_from"] = at
 		c.view.die(-tip if c.view.position.x < 0.0 else tip)
 
 

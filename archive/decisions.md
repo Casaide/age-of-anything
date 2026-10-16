@@ -817,3 +817,13 @@ on a unit you already have selected (Claude). On the wheel the camera holds stil
 for more, B closes, LB turns pages; it closes itself once there's something to aim (a building, an armed order) or
 after an order or stance. RB is only "your soldiers" now; the global wheel is gone, the tech tree moved into the pause
 menu. Also from that run: every asset the game reads raw (SVG, WAV, GLB, TTF) is imported as "keep", so exports carry it.
+
+**D-134, 2026-10-16: War beasts are creatures, not carts (Claude).** Dominic saw the war elephant slide with no leg
+movement. Each beast was one rigid sprite moved like a siege engine (a rock, a whole-body lunge, a cart's tip-over). Now
+its legs bake per hip and its head at its neck, cut by its body, as on the mounts, and UnitView walks it like any creature
+with its riders on its back. Its blow and fall are data (parts.json `beast`): the elephant rears and stamps its tusks
+through, the boar lowers its head and gores, the tarantula rears and bites, the heron draws its neck back and stabs, the
+mantis snaps its arms out. It falls like a creature: the elephant and boar go over on their side, the tarantula curls,
+the heron topples, the mantis folds flat, and its riders are thrown clear. The concept rounds' models stay whole. The
+placement check now also walks each beast on its own (feet, legs, stance in every step); the notch rule reads a howdah
+as a shoulder, so the elephant and boar get 2.5 and the mantis (no neck) 9 in their stance data.

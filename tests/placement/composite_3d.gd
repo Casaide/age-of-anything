@@ -62,13 +62,23 @@ static func members(lib, r: Dictionary, sockets: Dictionary) -> Array:
 	return out
 
 
+## The engine's voxels, standing: a war beast's with its legs at its hips and its head on its neck (baked apart).
+static func whole(lib, rig, r: Dictionary, es: Dictionary) -> Dictionary:
+	var ev := Geom.voxels(es.node, Transform3D.IDENTITY)
+	if lib.part(r.body).has("legs"):
+		for p in rig.unit(UnitView.beast_recipe(lib, r), {}).pieces:
+			if p.kind != "body":
+				ev.merge(Geom.voxels(p.node, p.xf))
+	return ev
+
+
 ## Runs the composite rules on an engine recipe, into g's results.
 static func check(g, label: String, r: Dictionary) -> void:
 	var lib = g.lib
 	var rig = g.rig
 	var colours := UnitView.colours_for(lib, r.skin, r.family, Color.MAGENTA)
 	var es: Dictionary = rig.spec(r.body, colours)
-	var ev := Geom.voxels(es.node, Transform3D.IDENTITY)
+	var ev := whole(g.lib, rig, r, es)
 	var sockets: Dictionary = es.get("sockets", {})
 	var ms := members(lib, r, sockets)
 	_loose_ends(g, label, es, ev, ms)

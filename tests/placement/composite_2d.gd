@@ -107,6 +107,16 @@ static func depth_order(pc, v, label: String, view: String, k: int, u: Dictionar
 	var e: Node3D = es.node.duplicate()
 	pc._paint(e, IDS[0])
 	model.add_child(e)
+	if lib.part(r.body).has("legs"):   # a war beast's legs and head, baked apart: the beast's too
+		for p in pc.rig3d.unit(UnitView.beast_recipe(lib, r), {}).pieces:
+			if p.kind == "body":
+				continue
+			var wrap := Node3D.new()
+			wrap.transform = p.xf
+			var d: Node3D = p.node.duplicate()
+			pc._paint(d, IDS[0])
+			wrap.add_child(d)
+			model.add_child(wrap)
 	for i in ms.size():
 		var m: Dictionary = ms[i]
 		var a: Dictionary = pc.rig3d.unit(m.recipe, {"hold": m.hold})

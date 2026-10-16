@@ -139,6 +139,14 @@ picks), then build, tests, archive pictures.
   - [x] Concept round WB2 (2026-10-13); Dominic's picks (D-129)
   - [x] Built: the `war_beast` line in play (Stable, age 3), elephant, war boar, tarantula, heron, mantis, riders the race's spearmen; priced, balanced (2026-10-13)
   - [x] A bonus against mounted units (D-131), priced (2026-10-14)
+  - [x] Real motion (2026-10-16, D-134; Dominic: the elephant has no walk, some views look wrong): every facing was
+    there (no blank or magenta one, `archive/images/2026-10-16/01-`); the beasts slid as one rigid sprite (`02-`).
+    Now legs bake per hip and the head at its neck (siege_models.gd: the body alone in play, `leg.beast_<kind>`,
+    `head.beast_<kind>`); they walk on their planted foot (the elephant and boar on four legs, the tarantula in a
+    wave down each flank, the heron striding, the mantis on its four thin legs), strike their own way (tusks, gore,
+    bite, stab, strike) and fall like creatures, throwing their riders clear. Sheet:
+    `tests/sheets/war_beasts_anim.json` (facings, walk, cycle, strike, fall; the sheet tool's new `strike:<k>` and
+    `fall:<k>` columns). Placement passes, with each beast also walked on its own.
   - [ ] Dominic's look in a match
 - [ ] 8. AI (siege part done 2026-10-13: a few engines, rams at gates, walls and towers, catapults at towers; trade carts, the sapper and the great sling 2026-10-13; war beasts by the counter-pick, at most 4, 2026-10-13)
 - [x] Siege shots drawn as baked art (Dominic: "the rocks they throw look really bad"; 2026-10-13)

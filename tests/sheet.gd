@@ -24,7 +24,8 @@ extends SceneTree
 ##                          "facings" (8, standing), "idle" (8, in the row's last idle pose),
 ##                          "idle:<pose>" (8, in that pose), "walk:<k>,<k>" (4 steps per facing),
 ##                          "cycle:<k>" (8 steps in one facing), "holds:<h>,<h>" (2 facings per hold),
-##                          "shots" (8 facings loosing a shot, the shot drawn in flight: CombatFx's look for the weapon)
+##                          "shots" (8 facings loosing a shot, the shot drawn in flight: CombatFx's look for the weapon),
+##                          "strike:<k>" (a melee blow in facing k, frame by frame: flourish), "fall:<k>" (its death: die)
 ##                        a column object: {facing, pose: stand|walk|hold|<idle pose>, step, steps, hold, other, label}
 ## A unit ref: {prompt, slot, age?, set?: recipe fields, add_parts?: {slot: part} over its own kit, mount?: {creature, skin, parts?}, push?: engine part (the unit pushing it home: UnitView.push_recipe), rules?}
 ##   or {creature, skin?, mount_body?: true, set?} (the bare creature, no gear)
@@ -46,6 +47,8 @@ const ProjectionCheck := preload("res://tests/placement/projection_check.gd")
 const ScriptErrors := preload("res://tests/placement/script_errors.gd")
 
 const BG := Color("#56782e")
+const STRIKE_MS := [0, 120, 210, 280, 340, 450]   # frames of a blow (UnitView.flourish: a war beast's lasts 0.6 s, lands at 0.21)
+const FALL_MS := [0, 200, 400, 600, 850, 1200]    # frames of a death (UnitView.die; combat_fx fades it from 0.6 s, not drawn here)
 const FACING_NAMES := ["f0 right", "f1", "f2 towards", "f3", "f4 left", "f5", "f6 away", "f7"]
 
 var lib
@@ -353,6 +356,9 @@ func _columns(sh: Dictionary) -> Array:
 		"cycle":
 			for st in 8:
 				out.append([int(tail), "walk", st, 8, "", false, "step %d" % st])
+		"strike", "fall":   # a blow (flourish) or the death (die) in one facing, frames at these milliseconds
+			for ms in (STRIKE_MS if head == "strike" else FALL_MS):
+				out.append([int(tail), head, ms, 1000, "", false, "%s %.2f s" % [head, ms / 1000.0]])
 		"shots":
 			for k in 8:
 				out.append([k, "loose", 0, 8, "", false, FACING_NAMES[k] + " firing"])
@@ -464,6 +470,17 @@ func _draw(world: Node2D, u: Dictionary, at: Vector2, col: Array) -> void:
 	v._process(0.0)
 	if pose == "hold" and col[4] != "":
 		v.set_hold(col[4])
+	if pose in ["strike", "fall"]:   # played through the game's own path, in 60ths of a second, riders and all
+		if pose == "strike":
+			v.flourish()
+		else:
+			v.die(1.0)
+		var members: Array = v.crew.map(func(c): return c.view)
+		for i in roundi(col[2] * 0.06):
+			for m in [v] + members:
+				m._process(1.0 / 60.0)
+		for m in members:
+			m.set_process(false)
 	if pose == "loose":   # the shot leaves: the snap of the release, and the shot a little way out
 		v.loose()
 		v._process(0.06)

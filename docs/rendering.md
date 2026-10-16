@@ -50,6 +50,14 @@ map; the code says the details.
      a spider's legs). Today: newt, pony (and the centaur's horse half), capybara, frog, boar, sheep,
      rat, spider, both beetles (the mount's head too). A body's parts.json anchors are its model's hips
      one for one (they're what's drawn before the bake, and which legs get baked).
+   - **War beasts** (2026-10-16) are engines that are creatures: `siege.beast.<kind>` in parts.json has
+     `cut`, `legs` (its gait and stance too) and `beast` (`head`, `attack`, `fall`), and siege_models.gd
+     builds the body alone in play, the legs (`leg.beast_<kind>`, one per hip; the tarantula's and
+     mantis's one straight-out leg fanned by the anchor) and the head (`head.beast_<kind>`, from its
+     neck) apart; unit_models.gd hands those ids to siege_models. UnitView composes it as a creature
+     under its riders (`_build_engine`), walks it on its planted foot and plays the kind's blow and fall
+     (`_beast`); its head is ordered among the riders by depth. The placement check walks the beast
+     on its own (`UnitView.beast_recipe`) as well as checking it with its riders.
 3. **Pixelize** (`scenes/art_pixel/pixelize.gd`): down to art pixels, value posterised into
    painted bands (`ArtKit.UNIT_BANDS`: the paint-over look) and a dark outline.
 4. **Team colour**: parts bake in a magenta team key; `src/team_mask.gdshader` swaps it for the
