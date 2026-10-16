@@ -1,14 +1,62 @@
 {
  "schema": "aow.heroes/1",
- "_doc": "Heroes (milestone 14 step 9; D-127, D-131: HR2's characters as a pool). Each race gets one hero, picked by src/heroes.gd from the signatures naming its creature or its culture, by its race key (src/rng.gd), with a generated name. The hero is derived from the race key (like its stats), so it isn't part of the key. Its recipe is the race's swordsman of each age from the hero line's first age (rules roster `hero`), with the signature's `parts` put on (the parts they replace stay in the recipe's `kit`: priced, not drawn) at the signature's `scale` (percent; a hero's size is its look: the roster's `size_is_look`). Its strength is the roster line's stats and price_points (the cost curve does the rest). `aura`: {text, effects}: research effects (D-111 shape, tag/stat/add: attack, armour.melee, armour.pierce) on the hero's friends (its team) within rules.aura_tiles, never on itself. Rules: aura_tiles; regen_every (ticks per hit point it heals while hurt); revive_ticks (after it falls, before it can be trained again at the Town Center); revive_pct (of its cost, a revival's price). Sim: src/sim/heroes.gd. Concepts: docs/concepts/heroes/README.md.",
+ "_doc": "Heroes (milestone 14 step 9; D-127, D-131: HR2's characters as a pool). D-136 (Dominic, 2026-10-16: all of them, so each race has some variety): each race gets every signature naming its creature or its culture (src/heroes.gd), sorted by id; one with fewer than rules.min_heroes is topped up from its culture's `kin` (the kindred cultures' signatures, in the kin list's order). Each gets a generated name from its race key (src/rng.gd). The heroes are derived from the race key (like its stats), so they aren't part of the key. Its recipe is the race's swordsman of each age from the hero line's first age (rules roster `hero`), with the signature's `parts` put on (the parts they replace stay in the recipe's `kit`: priced, not drawn) at the signature's `scale` (percent; a hero's size is its look: the roster's `size_is_look`). Its strength is the roster line's stats and price_points (the cost curve does the rest). `aura`: {text, effects}: research effects (D-111 shape, tag/stat/add: attack, armour.melee, armour.pierce) on the hero's friends (its team) within rules.aura_tiles, never on itself. Rules: aura_tiles; regen_every (ticks per hit point it heals while hurt); revive_ticks (after it falls, before it can be trained again at the Town Center); revive_pct (of its cost, a revival's price); min_heroes (a race with fewer of its own is topped up from its culture's kin). In play (D-136): each hero is trained once at the Town Center and only one of each is ever out (a fallen one revived the same way); a race's heroes may all be out together; their auras don't add up: a friend in reach of several takes the strongest of each stat. Sim: src/sim/heroes.gd. Concepts: docs/concepts/heroes/README.md.",
  "rules": {
   "aura_tiles": 5,
   "regen_every": 20,
   "revive_ticks": 1200,
-  "revive_pct": 60
+  "revive_pct": 60,
+  "min_heroes": 3
+ },
+ "_doc_kin": "kin: culture -> kindred cultures, nearest first. A race whose creature and culture give it fewer than rules.min_heroes heroes (humans, ponies, capybaras, cats, newts, hummingbirds: only their culture's one) takes the kindred cultures' heroes in this order until it has enough.",
+ "kin": {
+  "hellenic": [
+   "imperial",
+   "nile"
+  ],
+  "imperial": [
+   "hellenic",
+   "royal"
+  ],
+  "royal": [
+   "imperial",
+   "forest"
+  ],
+  "forest": [
+   "royal",
+   "steppe"
+  ],
+  "steppe": [
+   "han",
+   "forest"
+  ],
+  "han": [
+   "steppe",
+   "imperial"
+  ],
+  "nile": [
+   "hellenic",
+   "aztec"
+  ],
+  "aztec": [
+   "nile",
+   "swamp"
+  ],
+  "swamp": [
+   "aztec",
+   "sewer"
+  ],
+  "sewer": [
+   "swamp",
+   "spooky"
+  ],
+  "spooky": [
+   "sewer",
+   "royal"
+  ]
  },
  "hero_names": {
-  "_doc": "A race's hero name: every pick by src/rng.gd seeded from FNV-1a(race key + '|hero'), from lists in file order (signatures sorted by id), so every peer names it the same and a reroll renames it. The name: the creature's list and the culture's together. The epithet or nickname: the signature's own, so the name matches the look (the Gnawer wears the gnawed crown). The title: the signature's titles if it has them, else the creature's and culture's (kept neutral). The format: one of the signature's formats. A mod adds a creature or culture by adding its lists here, a hero by adding a signature.",
+  "_doc": "A race's hero name: every pick by src/rng.gd seeded from FNV-1a(race key + '|hero|' + signature id), each hero its own draw, from lists in file order (signatures sorted by id), so every peer names it the same and a reroll renames it. The name: the creature's list and the culture's together. The epithet or nickname: the signature's own, so the name matches the look (the Gnawer wears the gnawed crown). The title: the signature's titles if it has them, else the creature's and culture's (kept neutral). The format: one of the signature's formats. A mod adds a creature or culture by adding its lists here, a hero by adding a signature.",
   "formats": {
    "named": "{name} {epithet}",
    "titled": "{title} {name} {epithet}",

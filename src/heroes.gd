@@ -1,10 +1,12 @@
 extends RefCounted
-## A race's hero (milestone 14 step 9; D-127, D-131: HR2's characters as a pool). Each race gets one:
-## a signature (data/heroes.json hero_signatures: a look, a temper, an aura) picked from those naming
-## its creature or its culture, and a name made from the creature's and culture's name lists and the
-## signature's epithets, every pick by src/rng.gd seeded from the race key. The hero is derived from
-## the key (and the data), like a unit's stats, so it is not part of the key: every existing race keeps
-## its key and every other line's recipes, and a reroll gives a new hero.
+## A race's heroes (milestone 14 step 9; D-127, D-131: HR2's characters as a pool; D-136: all of them).
+## Each race gets every signature (data/heroes.json hero_signatures: a look, a temper, an aura) naming
+## its creature or its culture; one with fewer than rules.min_heroes is topped up from its culture's
+## `kin` (the kindred cultures' signatures, in the kin list's order), so every race has a few. Each
+## hero's name is made from the creature's and culture's name lists and the signature's epithets, by
+## src/rng.gd seeded from the race key and the signature. The heroes are derived from the key (and the
+## data), like a unit's stats, so they are not part of the key: every existing race keeps its key and
+## every other line's recipes, and a reroll renames them.
 ##
 ## The hero's line: the race's swordsman (else its spearman) of each age from the hero line's first
 ## age (rules roster role "hero"), with the signature's parts put on; the parts they replace stay in
@@ -17,7 +19,7 @@ const Pricing := preload("res://src/pricing.gd")
 const BASE_SLOTS := ["infantry", "spear"]   # the line a hero is dressed over, first found
 
 
-## The signatures a race may have: those naming its creature or its culture, sorted by id.
+## The signatures naming a creature or a culture, sorted by id.
 static func signatures_for(heroes: Dictionary, creature: String, family: String) -> Array:
 	var out := []
 	for id in heroes.hero_signatures:
@@ -28,17 +30,20 @@ static func signatures_for(heroes: Dictionary, creature: String, family: String)
 	return out
 
 
-## A race's hero: {signature, name}, or {} with no signature for its creature or culture. `force`
-## names the signature (sheets show each look a race could have, each with the name it would carry).
-static func pick(heroes: Dictionary, key: String, creature: String, family: String, force := "") -> Dictionary:
-	var sigs := signatures_for(heroes, creature, family)
-	if sigs.is_empty() and force == "":
-		return {}
-	var rng = Rng.new(Rng.hash_string(key + "|hero"))
-	var sid: String = rng.pick(sigs) if not sigs.is_empty() else force
-	if force != "" and force != sid:   # (another look than the race's own: its own draw)
-		sid = force
-		rng = Rng.new(Rng.hash_string(key + "|hero|" + force))
+## A race's heroes, in order: its creature's and culture's signatures (sorted by id), then, while it has
+## fewer than rules.min_heroes, its culture's kin's (each kindred culture's signatures, sorted, in turn).
+static func roster_for(heroes: Dictionary, creature: String, family: String) -> Array:
+	var out := signatures_for(heroes, creature, family)
+	for kin in heroes.kin.get(family, []):
+		for sid in signatures_for(heroes, "", kin):
+			if out.size() < int(heroes.rules.min_heroes) and not sid in out:
+				out.append(sid)
+	return out
+
+
+## A hero's name {signature, name} as the race with this key calls it: each signature its own draw.
+static func pick(heroes: Dictionary, key: String, creature: String, family: String, sid: String) -> Dictionary:
+	var rng = Rng.new(Rng.hash_string(key + "|hero|" + sid))
 	var s: Dictionary = heroes.hero_signatures[sid]
 	var n: Dictionary = heroes.hero_names
 	var pool: Array = n.creatures.get(creature, {}).get("names", []) + n.families.get(family, {}).get("names", [])
@@ -50,32 +55,33 @@ static func pick(heroes: Dictionary, key: String, creature: String, family: Stri
 	return {"signature": sid, "name": name.strip_edges()}
 
 
-## The race's hero as a unit line {recipe, eval, line}, or {} (no hero line in the rules, no
-## signature for the race, no line to dress). Called once the race key is set.
-static func make(lib, race: Dictionary, rules: Dictionary) -> Dictionary:
+## The race's heroes as unit lines [{recipe, eval, line}] in roster_for's order, or [] (no hero line
+## in the rules, no line to dress). Called once the race key is set.
+static func make(lib, race: Dictionary, rules: Dictionary) -> Array:
 	var sd := slot_def(rules)
 	if sd.is_empty():
-		return {}
-	var h := pick(lib.heroes, race.key, race.creature, race.family)
-	if h.is_empty():
-		return {}
+		return []
 	var base: Dictionary = {}
 	for slot in BASE_SLOTS:
 		for u in race.units:
 			if base.is_empty() and u.recipe.slot == slot:
 				base = u
 	if base.is_empty():
-		return {}
-	var s: Dictionary = lib.heroes.hero_signatures[h.signature]
-	var line := []
-	for age in range(int(sd.tier), int(rules.get("ages", 1)) + 1):
-		var step: Dictionary = base.line[0]
-		for l in base.line:
-			if int(l.age) <= age:
-				step = l
-		var r := dress(step.recipe, h.signature, s, h.name, int(sd.tier))
-		line.append({"age": age, "recipe": r, "eval": Pricing.evaluate(r, lib, rules)})
-	return {"recipe": line[0].recipe, "eval": line[0].eval, "line": line}
+		return []
+	var out := []
+	for sid in roster_for(lib.heroes, race.creature, race.family):
+		var h := pick(lib.heroes, race.key, race.creature, race.family, sid)
+		var s: Dictionary = lib.heroes.hero_signatures[sid]
+		var line := []
+		for age in range(int(sd.tier), int(rules.get("ages", 1)) + 1):
+			var step: Dictionary = base.line[0]
+			for l in base.line:
+				if int(l.age) <= age:
+					step = l
+			var r := dress(step.recipe, sid, s, h.name, int(sd.tier))
+			line.append({"age": age, "recipe": r, "eval": Pricing.evaluate(r, lib, rules)})
+		out.append({"recipe": line[0].recipe, "eval": line[0].eval, "line": line})
+	return out
 
 
 ## A unit's recipe dressed as the hero: the signature's parts on (the replaced ones kept in `kit`),
@@ -109,10 +115,11 @@ static func slot_def(rules: Dictionary) -> Dictionary:
 	return {}
 
 
-## What the views show of a race's hero: {signature, name, temper, aura (its line)} ({} with none).
-static func info(lib, race: Dictionary) -> Dictionary:
+## What the views show of a race's heroes: [{signature, name, temper, aura (its line)}] in order.
+static func info(lib, race: Dictionary) -> Array:
+	var out := []
 	for u in race.units:
 		if u.recipe.slot == "hero":
 			var s: Dictionary = lib.heroes.hero_signatures[u.recipe.hero]
-			return {"signature": u.recipe.hero, "name": u.recipe.name, "temper": s.temper, "aura": s.aura.text}
-	return {}
+			out.append({"signature": u.recipe.hero, "name": u.recipe.name, "temper": s.temper, "aura": s.aura.text})
+	return out

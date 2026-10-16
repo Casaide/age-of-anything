@@ -231,15 +231,15 @@ func generate(prompt: String, rules: Dictionary, reroll := 0) -> Dictionary:
 	if not lib.mods.is_empty():
 		race.mods = lib.mods.duplicate()   # made with mods (src/mods.gd): a peer needs the same ones (in the key)
 	race.key = race_key(race)
-	# The race's hero (src/heroes.gd): derived from the key, so not in it; the last of its units.
-	var hero := Heroes.make(lib, race, rules)
-	if not hero.is_empty():
-		race.units.append(hero)
-		race.hero = Heroes.info(lib, race)
+	# The race's heroes (src/heroes.gd): derived from the key, so not in it; the last of its units.
+	var heroes := Heroes.make(lib, race, rules)
+	if not heroes.is_empty():
+		race.units.append_array(heroes)
+		race.heroes = Heroes.info(lib, race)
 	return race
 
 
-## Hash of the shareable content only (names + recipes), not derived stats nor the hero (derived from
+## Hash of the shareable content only (names + recipes), not derived stats nor the heroes (derived from
 ## this key: src/heroes.gd).
 static func race_key(race: Dictionary) -> String:
 	var units: Array = race.units.filter(func(u): return u.recipe.slot != "hero")
