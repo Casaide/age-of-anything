@@ -398,6 +398,13 @@ func _beast(delta: float) -> void:
 	for leg in legs:
 		leg.node.rotation = sin(ph + leg.phase) * gait.swing * stride
 		leg.node.scale.y = 1.0
+		if leg.steps > 0:   # jointed legs: the baked walk step for where this leg is in its cycle (knees bend)
+			var id: String = leg.base + leg.cut
+			if walking:
+				id = "%s@w%d_%d%s" % [leg.walk_id, int(fposmod((ph + leg.phase) / TAU, 1.0) * leg.steps) % leg.steps, leg.steps, leg.cut]
+			if id != leg.node.part_id:
+				leg.node.part_id = id
+				leg.node.queue_redraw()
 	var plant: Variant = _planted() if stride > 0.0 else 0.0
 	bob.position = Vector2(0.0, plant if plant != null else -absf(sin(ph)) * gait.bob * stride)
 	bob.rotation = sin(ph * gait.rock_rate) * gait.rock * stride
@@ -1732,10 +1739,10 @@ static func leg_parts(lib, body_id: String) -> Array:
 
 
 static func pose_parts(lib, r: Dictionary) -> Array:
-	if r.has("crew"):
+	if r.has("crew") and not lib.part(r.body).has("legs"):
 		return []
 	var body_id: String = r.body
-	var head_id: String = r.head
+	var head_id: String = lib.part(r.body).beast.head if r.has("crew") else r.head   # (a war beast walks in posed steps)
 	if r.has("mount"):
 		var mc: Dictionary = lib.creatures[r.mount.creature]
 		body_id = mc.get("fused_body", mc.body) if r.mount.fused else mc.get("mount_body", mc.body)

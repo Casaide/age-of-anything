@@ -2527,11 +2527,14 @@ func _leg_beast_tarantula(_c: Dictionary) -> Dictionary:
 	var dark := surf("rat_fur", Color(0.17, 0.15, 0.16), 3.5)
 	var band := surf("rat_fur", Color(0.95, 0.55, 0.25), 3.0)
 	var pale := plain(Color("#e6d2a4"))
-	var knee := Vector3(0, 17.0, 15.0)
-	var ankle := Vector3(0, -5.0, 27.0)
+	var st := beast_step(10.0, 6.0, 0.5)   # (posed per walk step: the knee rises as the foot lifts)
+	var j := ik3(Vector3.ZERO, Vector3(st.x, -16.2 + st.y, 30.0), 22.7, 36.4, Vector3.UP)
+	var knee: Vector3 = j[0]
+	var foot: Vector3 = j[1]
+	var ankle := knee.lerp(foot, 0.66) + Vector3(0, 0, 1.5)
 	limb(n, [Vector3.ZERO, knee], [3.4, 3.0], fur)
 	n.add_child(blob(Vector3(3.2, 3.2, 3.2), band, knee))
-	limb(n, [knee, ankle, Vector3(0, -16.2, 30.0)], [2.8, 2.2, 1.4], dark)
+	limb(n, [knee, ankle, foot], [2.8, 2.2, 1.4], dark)
 	for t in [0.35, 0.65]:
 		var at: Vector3 = knee * t
 		n.add_child(rod(at + Vector3(0, 2.6, 0), at + Vector3(-0.6, 5.4, 0.8), 0.6, 0.1, pale))
@@ -2954,45 +2957,117 @@ func _beast_mantis(s: Dictionary) -> Dictionary: return _mantis(s, true)
 # A war beast's legs and head in play, baked cut by its body (parts.json siege.beast.<kind>: "cut", "legs",
 # "beast": {"head"}): each leg built for the near side from its hip at the origin (UnitModels.leg_basis turns
 # it to its own), each head from its turning point. UnitModels builds them here (UnitModels.build).
-func _leg_beast_elephant(_c: Dictionary) -> Dictionary:
-	var n := Node3D.new()
-	elephant_leg(n, Vector3.ZERO, 1.0, _elephant_mats())
-	return {"node": n}
 func _head_beast_elephant(_c: Dictionary) -> Dictionary:
 	var n := Node3D.new()
 	elephant_head(n, Vector3.ZERO, _elephant_mats())
 	return {"node": n, "sockets": {"top": Vector3(6.0, 9.0, 0)}}
-func _leg_beast_boar(_c: Dictionary) -> Dictionary:
-	var n := Node3D.new()
-	boar_leg(n, Vector3.ZERO, 1.0, true, _boar_mats())
-	return {"node": n}
-func _leg_beast_boar_hind(_c: Dictionary) -> Dictionary:
-	var n := Node3D.new()
-	boar_leg(n, Vector3.ZERO, 1.0, false, _boar_mats())
-	return {"node": n}
 func _head_beast_boar(_c: Dictionary) -> Dictionary:
 	var n := Node3D.new()
 	boar_head(n, Vector3.ZERO, _boar_mats())
 	return {"node": n, "sockets": {"top": Vector3(6.0, 10.0, 0)}}
-func _leg_beast_heron(_c: Dictionary) -> Dictionary:
-	var n := Node3D.new()
-	heron_leg(n, Vector3.ZERO, 1.0)
-	return {"node": n}
 func _head_beast_heron(_c: Dictionary) -> Dictionary:
 	var n := Node3D.new()
 	heron_neck(n, Vector3.ZERO)
 	return {"node": n, "sockets": {"top": Vector3(10.0, 29.0, 0)}}
-## A walking leg, from its hip at the origin straight out to the near side (+z): up to a high knee, down to the foot.
-func _leg_beast_mantis(_c: Dictionary) -> Dictionary:
-	var n := Node3D.new()
-	limb(n, [Vector3.ZERO, Vector3(0, 12.0, 14.0), Vector3(0, -21.2, 20.0)], [1.8, 1.4, 0.8], surf("chitin", Color("#4a7028"), 4.0))
-	return {"node": n}
 func _head_beast_mantis(_c: Dictionary) -> Dictionary:
 	var n := Node3D.new()
 	var green := surf("chitin", Color("#6a9a3a"), 5.0)
 	green.roughness = 0.5
 	mantis_fore(n, Vector3.ZERO, green, surf("chitin", Color("#4a7028"), 4.0))
 	return {"node": n, "sockets": {"top": Vector3(15.0, 24.0, 0)}}
+
+# ------------------------------------------------------------------ war beasts' legs in play: jointed, posed per walk step
+# Each leg is built in the pose `hold` names: standing ("low"), or "w<i>_<n>", step i of an n-step walk (parts.json
+# legs.poses; UnitView shows the step for where each leg is in its cycle, like the cat's). The foot goes back along the
+# ground while it bears weight and is lifted and swung forward the rest of the cycle; the knee follows by two-bone IK.
+
+## Where the foot is in this walk step, from where it stands: [forward, up].
+func beast_step(stride: float, lift: float, stance := 0.6) -> Vector2:
+	if not hold.begins_with("w"):
+		return Vector2.ZERO
+	var nums := hold.substr(1).split("_")
+	var p := float(nums[0]) / float(nums[1])
+	if p < stance:
+		return Vector2(stride * (0.5 - p / stance), 0.0)
+	var q := (p - stance) / (1.0 - stance)
+	return Vector2(stride * (smoothstep(0.0, 1.0, q) - 0.5), lift * sin(q * PI))
+
+
+## Two-bone IK in 3D: [the middle joint, the end] for bones l1 and l2 from `a` towards `b`, the joint bending
+## towards `bend`; out of reach, the end comes as far as the bones go.
+static func ik3(a: Vector3, b: Vector3, l1: float, l2: float, bend: Vector3) -> Array:
+	var d := b - a
+	var l := clampf(d.length(), 0.01, l1 + l2 - 0.02)
+	var u := d.normalized()
+	var along := (l1 * l1 - l2 * l2 + l * l) / (2.0 * l)
+	var h := sqrt(maxf(0.0, l1 * l1 - along * along))
+	var nrm := (bend - u * bend.dot(u)).normalized()
+	return [a + u * along + nrm * h, a + u * l]
+
+
+## The elephant's pillar of a leg: thigh and shin (the knee, or the fore leg's wrist, bending forward as it
+## steps), the round foot with pale toenails.
+func _leg_beast_elephant(_c: Dictionary) -> Dictionary:
+	var n := Node3D.new()
+	var m := _elephant_mats()
+	var st := beast_step(13.0, 4.5)
+	var j := ik3(Vector3.ZERO, Vector3(st.x, -27.6 + st.y, 0.5), 14.0, 14.0, Vector3.RIGHT)
+	var knee: Vector3 = j[0]
+	var ankle: Vector3 = j[1]
+	n.add_child(rod(Vector3.ZERO, knee, 5.6, 5.3, m.hide))
+	n.add_child(blob(Vector3.ONE * 5.3, m.hide, knee))
+	n.add_child(rod(knee, ankle, 5.3, 5.0, m.hide, false))   # (flat into the foot: a round end went through the ground)
+	n.add_child(cone(5.6, 5.8, 2.4, m.dark, ankle + Vector3(0, -1.2, 0)))   # the foot
+	for t in 3:   # toenails, pale, round the front of the foot
+		var a := deg_to_rad(-40.0 + t * 40.0)
+		n.add_child(blob(Vector3(1.2, 1.0, 1.0), m.ivory, ankle + Vector3(5.2 * cos(a), -1.0, 5.2 * sin(a))))
+	return {"node": n}
+
+
+## The boar's leg: the fore knee forward, the hind hock back, a trotter.
+func _boar_leg_posed(fore: bool) -> Dictionary:
+	var n := Node3D.new()
+	var m := _boar_mats()
+	var st := beast_step(12.0, 5.0)
+	var j := ik3(Vector3.ZERO, Vector3(1.0 + st.x, -25.4 + st.y, 0.5), 16.2, 9.6, Vector3.RIGHT * (1.0 if fore else -1.0))
+	var foot: Vector3 = j[1]
+	limb(n, [Vector3.ZERO, j[0], foot], [6.0, 3.2, 2.3], m.fur if fore else m.dark)
+	n.add_child(cone(1.8, 2.6, 2.8, m.hoof, foot + Vector3(0.5, -1.2, 0)))
+	return {"node": n}
+func _leg_beast_boar(_c: Dictionary) -> Dictionary: return _boar_leg_posed(true)
+func _leg_beast_boar_hind(_c: Dictionary) -> Dictionary: return _boar_leg_posed(false)
+
+
+## The heron's stilt: thigh down to the knee (forward), the shin back to the heel, the long tarsus to the
+## foot; the foot flat with three toes forward and one back on the ground, folding back and curling as it lifts.
+func _leg_beast_heron(_c: Dictionary) -> Dictionary:
+	var n := Node3D.new()
+	var leg := plain(Color("#8a7a4a"))
+	var st := beast_step(18.0, 7.0, 0.55)
+	var k := st.y / 7.0   # how far up the swing it is
+	var foot := Vector3(st.x, -39.0 + st.y, 1.5)
+	var a := atan2(-2.0, 11.0) - 0.75 * k   # the tarsus leaning back, more as the foot folds
+	var heel := foot + Vector3(sin(a) * 11.18, cos(a) * 11.18, -0.5)
+	var j := ik3(Vector3.ZERO, heel, 14.14, 14.56, Vector3.RIGHT)
+	heel = j[1]
+	foot = heel - Vector3(sin(a) * 11.18, cos(a) * 11.18, -0.5)
+	limb(n, [Vector3.ZERO, j[0], heel, foot], [2.4, 1.3, 1.2, 1.0], leg)
+	var curl := -0.9 * k
+	for t in 3:
+		n.add_child(rod(foot, foot + Vector3(6.0 * cos(curl), 6.0 * sin(curl) - 0.2, (t - 1) * 3.0), 0.6, 0.4, leg))
+	n.add_child(rod(foot, foot + Vector3(-4.0 * cos(curl * 0.5), -0.2 - 2.0 * k, 0), 0.6, 0.4, leg))
+	return {"node": n}
+
+
+## The mantis's walking leg, from its hip straight out to the near side (+z): up to a high knee, down to the foot.
+func _leg_beast_mantis(_c: Dictionary) -> Dictionary:
+	var n := Node3D.new()
+	var st := beast_step(10.0, 5.0, 0.55)
+	var j := ik3(Vector3.ZERO, Vector3(st.x, -21.2 + st.y, 20.0), 18.4, 33.7, Vector3.UP)
+	limb(n, [Vector3.ZERO, j[0], j[1]], [1.8, 1.4, 0.8], surf("chitin", Color("#4a7028"), 4.0))
+	return {"node": n}
+
+
 func _sling_in_play(s: Dictionary, _c: Dictionary) -> Dictionary: return _great_sling(s)
 func _packed_in_play(s: Dictionary, _c: Dictionary) -> Dictionary: return _great_packed(s)
 func _frog_sling_in_play(s: Dictionary, _c: Dictionary) -> Dictionary: return _frog_sling(s)
@@ -3011,6 +3086,7 @@ func _beside(spec: Dictionary, kind: String, colours: Dictionary) -> Dictionary:
 	var zmax := 0.0
 	for q in _cloud(spec.node):
 		zmax = maxf(zmax, absf(q.z))
+	hold = "low"   # (standing: the last leg built may have been a walk step)
 	for a in spec.get("anchors", []):
 		var leg: Node3D = call("_leg_beast_%s%s" % [kind, "_hind" if a.size() > 4 and a[4] else ""], colours).node
 		leg.transform = Transform3D(leg_basis(a, true), a[0])

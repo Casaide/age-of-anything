@@ -827,3 +827,10 @@ mantis snaps its arms out. It falls like a creature: the elephant and boar go ov
 the heron topples, the mantis folds flat, and its riders are thrown clear. The concept rounds' models stay whole. The
 placement check now also walks each beast on its own (feet, legs, stance in every step); the notch rule reads a howdah
 as a shoulder, so the elephant and boar get 2.5 and the mantis (no neck) 9 in their stance data.
+
+**D-135, 2026-10-16: War beasts' legs bend (Dominic).** After the first walking beasts (D-134, stiff legs swung from
+the hip), Dominic: "bent knees are required for sure". Each beast's leg is now jointed and baked in 8 walk steps
+(parts.json `legs.poses`, as the cat's): the foot goes back along the ground while it bears weight, then lifts and
+swings forward, and the knee follows by two-bone IK (siege_models.gd `beast_step`, `ik3`). The elephant's knee and
+wrist bend forward, the boar's fore knee forward and hind hock back, the heron's knee forward and heel back with the
+foot folding as it lifts, and the tarantula's and mantis's high knees rise. The stiff swing is off (`gait.swing` 0).

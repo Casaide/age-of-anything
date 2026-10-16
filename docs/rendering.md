@@ -52,7 +52,8 @@ map; the code says the details.
      one for one (they're what's drawn before the bake, and which legs get baked).
    - **War beasts** (2026-10-16) are engines that are creatures: `siege.beast.<kind>` in parts.json has
      `cut`, `legs` (its gait and stance too) and `beast` (`head`, `attack`, `fall`), and siege_models.gd
-     builds the body alone in play, the legs (`leg.beast_<kind>`, one per hip; the tarantula's and
+     builds the body alone in play, the legs (`leg.beast_<kind>`, one per hip, jointed and baked in 8 walk
+     steps like the cat's: `beast_step` moves the foot, `ik3` bends the knee; the tarantula's and
      mantis's one straight-out leg fanned by the anchor) and the head (`head.beast_<kind>`, from its
      neck) apart; unit_models.gd hands those ids to siege_models. UnitView composes it as a creature
      under its riders (`_build_engine`), walks it on its planted foot and plays the kind's blow and fall

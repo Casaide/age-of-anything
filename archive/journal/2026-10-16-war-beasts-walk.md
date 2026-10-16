@@ -31,8 +31,17 @@ what read as "wrong".
   The placement check now also walks each beast on its own (`UnitView.beast_recipe`), and the composite's depth truth
   and crew-overlap checks include its legs and head.
 
+- **Bent knees.** Dominic, on the first version: "bent knees are required for sure". The legs had been stiff sprites
+  swung from the hip. Now each leg is jointed and baked in 8 walk steps, as the cat's are: the foot goes back along
+  the ground while it bears weight, then lifts and swings forward, and two-bone IK puts the knee where it must be.
+  The elephant's knee and wrist flex forward, the boar's fore knee goes forward and its hind hock back. The heron's
+  knee goes forward and its heel back, its foot folding and toes curling as it lifts. The spiders' and mantis's high
+  knees rise as each foot comes up. The first try put the elephant's shin through the ground: the rounded end of the
+  rod reached 2.6 below its foot. The check caught it at once.
+
 ## Decisions
 - D-134 (Claude): war beasts are creatures, not carts: legs per hip, a head at the neck, a blow and a fall of their own.
+- D-135 (Dominic): bent knees, required; jointed legs baked per walk step.
 
 ## Pictures
 - `01-war-beasts-before-facings.png`: all eight facings as they were (all present).
@@ -44,12 +53,12 @@ what read as "wrong".
   entirely at the stab.
 - `05-bug-riders-upright-on-fallen-elephant.png`: the elephant lies on its side and its two legionaries stand bolt
   upright on it: they toppled backwards just as far as it rolled forwards.
-- `06-` to `10-`: the result (facings, walk cycle, strikes in facings 0 and 3, falls side on and going away); `11-` in a match (the elephants and boars walking in).
+- `06-` to `10-`: the result (facings, walk cycle, strikes in facings 0 and 3, falls side on and going away); `11-` in a match (the elephants and boars walking in);
+  `12-`, `13-`, `13b-`: the bent-knee walk cycle (the five side on; the elephant and boar, then the heron, close up).
 
 ## Funny moments
 - The legionaries standing to attention on a dead elephant (`05-`).
 - The heron's first stab threw its whole neck a body length ahead, beak first, like a javelin.
 
 ## Ideas parked
-- Bent legs while walking (`legs.poses`: an elephant's knee, a heron's backward heel) instead of stiff legs swinging.
 - An elephant's trumpet with the tusk swing; ears flapping when it stands.
