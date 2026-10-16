@@ -258,6 +258,8 @@ func _menu() -> Control:
 		if not primary:
 			b.add_theme_font_size_override("font_size", 24)
 		b.pressed.connect(item[1])
+		b.focus_neighbor_left = NodePath(".")   # a pad's left and right stay put: the list runs up and down
+		b.focus_neighbor_right = NodePath(".")
 		buttons.add_child(b)
 	var foot := UiTheme.label("Type \"centaur romans\" or \"sewer rats with cheese hammers\": the game builds the race and prices every unit fairly.", "Dim", true)
 	foot.custom_minimum_size.x = 640
