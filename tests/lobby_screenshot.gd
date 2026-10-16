@@ -51,6 +51,7 @@ func _initialize() -> void:
 			await process_frame
 	if OS.get_environment("AOA_PAD") != "":   # as a pad sees it: focus where it starts (AOA_PAD=1)
 		var pad = load("res://src/view/pad_mode.gd").of(self)
+		pad.fake = {"buttons": {}}   # a pad with nothing pressed: the real mouse over the window doesn't switch back
 		pad.set_on(true)
 		for f in 10:
 			await process_frame

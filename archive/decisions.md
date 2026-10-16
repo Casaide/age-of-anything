@@ -818,7 +818,17 @@ for more, B closes, LB turns pages; it closes itself once there's something to a
 after an order or stance. RB is only "your soldiers" now; the global wheel is gone, the tech tree moved into the pause
 menu. Also from that run: every asset the game reads raw (SVG, WAV, GLB, TTF) is imported as "keep", so exports carry it.
 
-**D-134, 2026-10-16: War beasts are creatures, not carts (Claude).** Dominic saw the war elephant slide with no leg
+**D-134, 2026-10-15: A first tap on a building only selects it.** Dominic: "tap is a little confusing, because I tap a
+building to see build progress, and it opens the build panel too." Buildings now work like units (refines D-133): a tap
+selects, a tap on what's already selected opens its wheel.
+
+**D-135, 2026-10-16: No double tap on the pad's A.** Dominic: tapping a unit for its build menu kept selecting all of
+that kind; "double tap is very sensitive". Tap, then tap again, is how a selection's wheel opens (D-134), so the double
+tap could never be told apart from it. "All of these on screen" is now the first button on a unit's wheel. Also: the
+mouse takes over from the pad only after a real swipe (80 px within 0.4 s) or a click, and the menus keep their focus
+when it does (on the Deck the stick's focus kept jumping back to the top button).
+
+**D-136, 2026-10-16: War beasts are creatures, not carts (Claude).** Dominic saw the war elephant slide with no leg
 movement. Each beast was one rigid sprite moved like a siege engine (a rock, a whole-body lunge, a cart's tip-over). Now
 its legs bake per hip and its head at its neck, cut by its body, as on the mounts, and UnitView walks it like any creature
 with its riders on its back. Its blow and fall are data (parts.json `beast`): the elephant rears and stamps its tusks
@@ -828,9 +838,10 @@ the heron topples, the mantis folds flat, and its riders are thrown clear. The c
 placement check now also walks each beast on its own (feet, legs, stance in every step); the notch rule reads a howdah
 as a shoulder, so the elephant and boar get 2.5 and the mantis (no neck) 9 in their stance data.
 
-**D-135, 2026-10-16: War beasts' legs bend (Dominic).** After the first walking beasts (D-134, stiff legs swung from
+**D-137, 2026-10-16: War beasts' legs bend (Dominic).** After the first walking beasts (D-136, stiff legs swung from
 the hip), Dominic: "bent knees are required for sure". Each beast's leg is now jointed and baked in 8 walk steps
 (parts.json `legs.poses`, as the cat's): the foot goes back along the ground while it bears weight, then lifts and
 swings forward, and the knee follows by two-bone IK (siege_models.gd `beast_step`, `ik3`). The elephant's knee and
 wrist bend forward, the boar's fore knee forward and hind hock back, the heron's knee forward and heel back with the
 foot folding as it lifts, and the tarantula's and mantis's high knees rise. The stiff swing is off (`gait.swing` 0).
+||||||| 992498b

@@ -139,7 +139,7 @@ picks), then build, tests, archive pictures.
   - [x] Concept round WB2 (2026-10-13); Dominic's picks (D-129)
   - [x] Built: the `war_beast` line in play (Stable, age 3), elephant, war boar, tarantula, heron, mantis, riders the race's spearmen; priced, balanced (2026-10-13)
   - [x] A bonus against mounted units (D-131), priced (2026-10-14)
-  - [x] Real motion (2026-10-16, D-134; Dominic: the elephant has no walk, some views look wrong): every facing was
+  - [x] Real motion (2026-10-16, D-136; Dominic: the elephant has no walk, some views look wrong): every facing was
     there (no blank or magenta one, `archive/images/2026-10-16/01-`); the beasts slid as one rigid sprite (`02-`).
     Now legs bake per hip and the head at its neck (siege_models.gd: the body alone in play, `leg.beast_<kind>`,
     `head.beast_<kind>`); they walk on their planted foot (the elephant and boar on four legs, the tarantula in a
@@ -147,7 +147,7 @@ picks), then build, tests, archive pictures.
     bite, stab, strike) and fall like creatures, throwing their riders clear. Sheet:
     `tests/sheets/war_beasts_anim.json` (facings, walk, cycle, strike, fall; the sheet tool's new `strike:<k>` and
     `fall:<k>` columns). Placement passes, with each beast also walked on its own.
-  - [x] Bent knees (Dominic: "bent knees are required for sure"; D-135): every beast's leg jointed and baked in 8
+  - [x] Bent knees (Dominic: "bent knees are required for sure"; D-137): every beast's leg jointed and baked in 8
     walk steps (`legs.poses`), the knee by two-bone IK as the foot steps back along the ground and swings forward
     lifted (`12-`, `13-`).
   - [ ] Dominic's look in a match

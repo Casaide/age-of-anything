@@ -40,8 +40,8 @@ what read as "wrong".
   rod reached 2.6 below its foot. The check caught it at once.
 
 ## Decisions
-- D-134 (Claude): war beasts are creatures, not carts: legs per hip, a head at the neck, a blow and a fall of their own.
-- D-135 (Dominic): bent knees, required; jointed legs baked per walk step.
+- D-136 (Claude): war beasts are creatures, not carts: legs per hip, a head at the neck, a blow and a fall of their own.
+- D-137 (Dominic): bent knees, required; jointed legs baked per walk step.
 
 ## Pictures
 - `01-war-beasts-before-facings.png`: all eight facings as they were (all present).
