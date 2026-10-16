@@ -2348,7 +2348,7 @@ func _war_boar(s: Dictionary, with_howdah: bool) -> Dictionary:
 		for side in [1, -1]:
 			chain(n, Vector3(-6.0, 45.0, 14.0 * side), Vector3(-6.0, 22.0, 12.5 * side), s.metal)
 		pennant(n, s, Vector3(-16.4, y, -8.0), 14.0, 4.5)
-		sockets = {"crew0_f0_top": Vector3(-0.5, y + 0.7, 3.0), "crew1_f0_top": Vector3(-11.0, y + 0.7, -3.0)}
+		sockets = {"crew0_f0_top": Vector3(0.0, y + 0.7, 3.0), "crew1_f0_top": Vector3(-11.5, y + 0.7, -3.0)}   # (11.5 apart: at 10.5 two armoured rats stood in each other, C1)
 	else:
 		# Barded: a plate cover over the back, a face plate on the brow with a pipe spike, one rider on
 		# a pad over the hump and a scrap standard behind him.
