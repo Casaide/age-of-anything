@@ -53,7 +53,12 @@ static func folder() -> String:
 
 static func _files(src: String) -> Array:
 	if not src.ends_with("/"):
-		return [src]
+		# An exported build has no .gd sources, only their compiled .gdc: hash that. (Hashing the
+		# missing source gave "", so every build shared one version and a new build read the last
+		# one's entries in an old shape: the Deck, 2026-10-16.)
+		var path := src if FileAccess.file_exists(src) else src + "c"
+		assert(FileAccess.file_exists(path), "bake cache: no file for " + src)
+		return [path]
 	var out := []
 	for f in DirAccess.get_files_at(src):
 		if not f.ends_with(".import") and not f.ends_with(".uid"):
