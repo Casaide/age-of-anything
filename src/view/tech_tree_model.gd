@@ -66,6 +66,15 @@ static func build(race: Dictionary, rules: Dictionary, lib) -> Dictionary:
 					"status": "built", "lacks": true, "col": col, "building": id, "first": true, "tier": int(sd.tier),
 					"early_kit": "", "step": {}, "cost": {}}])
 				continue
+			if sd.get("role", "") == "hero" and not unit.is_empty():   # the race's heroes (D-138): one node each, where they're first trained
+				for u in race.units.filter(func(x): return x.recipe.slot == sd.slot):
+					var hs: Dictionary = lib.heroes.hero_signatures[u.recipe.hero]
+					var st: Dictionary = _step(u, from)
+					groups.append([{"key": "u:%s.%s@%d" % [sd.slot, u.recipe.hero, from], "kind": "unit", "id": sd.slot, "slot": sd.slot, "hero": u.recipe.hero,
+						"name": u.recipe.name, "line_name": sd.get("name", ""), "desc": "%s\nAura: %s" % [hs.temper, hs.aura.text], "age": from,
+						"status": "built", "lacks": false, "col": col, "building": id, "first": true, "tier": int(sd.tier),
+						"early_kit": "", "step": st, "cost": st.eval.cost}])
+				continue
 			var prev_recipe = null
 			for age in range(from, int(sd.get("last_age", last_age)) + 1):
 				var step: Dictionary = _step(unit, age)

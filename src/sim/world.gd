@@ -32,6 +32,7 @@ const Fog := preload("res://src/sim/fog.gd")
 const Bridges := preload("res://src/sim/bridges.gd")
 const Trails := preload("res://src/sim/trails.gd")
 const Abilities := preload("res://src/sim/abilities.gd")
+const Heroes := preload("res://src/sim/heroes.gd")
 const Garrison := preload("res://src/sim/garrison.gd")
 const Shots := preload("res://src/sim/shots.gd")
 const Trade := preload("res://src/sim/trade.gd")
@@ -104,6 +105,11 @@ var webs := PackedInt32Array()     # race abilities (abilities.gd): webs on the 
 var ability_ready := {}            # unit id -> the tick it may use its ability again
 var slowed := {}                   # unit id -> the tick a sticky hit wears off
 var slow_now := {}                 # unit id -> its speed pct this tick (webs, sticky hits); derived each tick
+var hero_id := PackedInt32Array()      # per unit type: its living hero's unit id (sheltering too), 0 with none (heroes.gd)
+var hero_fell := PackedInt32Array()    # per unit type: the tick + 1 its hero last fell, 0 if never
+var hero_types := PackedInt32Array()   # the unit types that are heroes, in order (derived at setup)
+var hero_cfg := {}                     # data/heroes.json rules as ints (heroes.gd)
+var aura_now := PackedInt32Array()     # per unit slot: the heroes' auras on it this tick (heroes.gd); derived each tick
 var move_pct: Array = []       # per movement class, per terrain index: speed percent (rules.movement)
 var events: Array = []         # this tick's hits and deaths, for views (not state, not hashed)
 var types: Array = []          # unit types, per player per roster slot (see _make_type)
@@ -233,6 +239,7 @@ func _init(p_seed: int, p_map: SimMap, p_races: Array, p_rules: Dictionary, p_te
 	Bridges.setup(self)
 	Trails.setup(self)
 	Abilities.setup(self)
+	Heroes.setup(self)
 	Fog.setup(self)
 	map.fresh.clear()
 	map.fresh_closed.clear()
@@ -278,6 +285,7 @@ func _make_type(player: int, u: Dictionary) -> Dictionary:
 		"sight_add": 0, "carry_add": 0, "build_pct": 0,   # research on the type (Tech.retype)
 		"heal_pct": 0, "kill_gold": 0, "wade": 0, "slow_on_hit": 0,   # (and the race's bonuses, milestone 14)
 		"line": u.get("line", [{"age": int(r.tier), "recipe": r, "eval": e}]),   # the unit through the ages (age-ups re-price from it)
+		"hero": r.has("hero"), "aura": [],   # the race's hero (heroes.gd): one at a time, its aura on its friends
 	}
 
 
@@ -352,7 +360,14 @@ func _movement_class(tags: Array) -> int:
 	return 0
 
 
-## Unit type index for a player's roster slot, or -1.
+## The unit type a TRAIN or SPAWN means: its slot's, the hero it names on the hero line (heroes.gd).
+func type_for(player: int, a: Dictionary) -> int:
+	if a.slot == "hero":
+		return Heroes.type_of(self, player, a.get("hero", ""))
+	return type_of(player, a.slot)
+
+
+## Unit type index for a player's roster slot, or -1 (the hero line: its first hero).
 func type_of(player: int, slot: String) -> int:
 	for k in types.size():
 		if types[k].player == player and types[k].slot == slot:
@@ -389,6 +404,7 @@ func step() -> void:
 	var alive := units.changes
 	Heal.tick(self)
 	Combat.tick(self)
+	Heroes.tick(self)
 	Match.tick(self)
 	Fog.tick(self)
 	Trails.tick(self)
@@ -467,7 +483,7 @@ func _run(cmd: Dictionary) -> void:
 					var s := slot_of(a, uid)
 					order_move(i, s.x, s.y, SLOT_ARRIVE, a.group, a.fx, a.fy, a.pace)
 		Commands.SPAWN:
-			var k := type_of(cmd.player, a.slot)
+			var k := type_for(cmd.player, a)
 			assert(k >= 0, "Player %d has no unit for slot %s" % [cmd.player, a.slot])
 			var t: Dictionary = types[k]
 			for n in a.count:
@@ -482,6 +498,8 @@ func _run(cmd: Dictionary) -> void:
 				units.mclass[slot] = t.mclass
 				units.posture[slot] = t.posture
 				next_id += 1
+				if t.hero and hero_id[k] == 0:
+					Heroes.spawned(self, slot)   # (a spawned hero is that hero, if it isn't out already)
 		Commands.GATHER:
 			_clear_combat(cmd.player, a.ids)
 			Economy.cmd_gather(self, cmd.player, a)
@@ -1831,6 +1849,7 @@ func state_hash() -> int:
 		h = Fixed.mix(h, map.amount[c])
 	h = Bridges.hash_into(self, h)
 	h = Abilities.hash_into(self, h)
+	h = Heroes.hash_into(self, h)
 	h = Walls.hash_into(self, h)
 	h = Fixed.mix(h, shots.count())
 	for v in shots.data:

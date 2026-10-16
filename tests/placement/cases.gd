@@ -3,13 +3,16 @@ extends RefCounted
 ## of these races at every age of its line (so every body, head, leg, hold and piece of gear in
 ## play), the scouts, mounted archers and unique units of more races (every unique theme), every rider on
 ## every mount, winged mounts, every newt skin and cat coat, the animals and the siege
-## engines with their crews. [label, unit] pairs; a unit is {recipe, eval}.
+## engines with their crews, and every hero look on every playable body it can come to (hero_cases).
+## [label, unit] pairs; a unit is {recipe, eval}.
 
 const DataLib := preload("res://src/data_lib.gd")
 const Generator := preload("res://src/race_generator.gd")
 const ArtKit := preload("res://src/view/art/art_kit.gd")
 const CreatureKit := preload("res://scenes/art_pixel/creature_kit.gd")
 const UnitView := preload("res://src/unit_view.gd")
+const Heroes := preload("res://src/heroes.gd")
+const Pricing := preload("res://src/pricing.gd")
 
 ## Races whose every unit is checked (between them: every playable body, every hold, back parts,
 ## wings, a fused centaur, siege crews).
@@ -33,14 +36,15 @@ static func all(lib, lines := true) -> Array:
 	for p in PROMPTS:
 		var race: Dictionary = gen.generate(p, rules)
 		for u in race.units:
-			cases.append(["%s %s" % [p, u.recipe.slot], u])
+			var lk := Heroes.line_key(u.recipe)   # (a race's heroes share the hero line: each by its signature)
+			cases.append(["%s %s" % [p, lk], u])
 			if not lines:
 				continue
 			var steps: Array = u.get("line", [])
 			for i in range(1, steps.size()):
 				var s: Dictionary = steps[i]
 				if s.recipe.hash() != u.recipe.hash():
-					cases.append(["%s %s age %d" % [p, u.recipe.slot, s.get("age", i + 1)], {"recipe": s.recipe, "eval": s.eval}])
+					cases.append(["%s %s age %d" % [p, lk, s.get("age", i + 1)], {"recipe": s.recipe, "eval": s.eval}])
 	# The swordsman's age-3 kit (D-125) for the cultures PROMPTS leaves out (the frogs' mace, the
 	# beetles' chitin blade and the spiders' hook come in with their races above), and the plain
 	# iron sword, the fallback, which royal humans get under the bronze rules (no royal iron there).
@@ -72,10 +76,40 @@ static func all(lib, lines := true) -> Array:
 	var animals: Dictionary = ArtKit.animal_race()
 	for u in animals.units:
 		cases.append(["animal %s" % u.recipe.body, u])
+	cases += hero_cases(lib, gen, rules)
 	cases += kit_cases(lib)
 	cases += composite_cases(lib)
 	cases += mod_cases(lib)
 	return cases
+
+
+## Heroes (D-138): any culture's hero can come to any playable creature, and a creature's own to it,
+## so every such look is checked over that creature's age-3 swordsman (the hero's last step) from its
+## race in PROMPTS (HERO_BASE: kit already checked above), its replaced kit kept as in play
+## (src/heroes.gd dress). Labels "hero: <creature> as <signature>".
+const HERO_BASE := {"frog": "swamp frogs", "rat": "sewer rats", "human": "romans", "spider": "spooky spiders",
+	"beetle": "forest beetles", "centaur": "centaur romans"}
+
+
+static func hero_cases(lib, gen, rules: Dictionary) -> Array:
+	var out := []
+	var sigs: Array = lib.heroes.hero_signatures.keys()
+	sigs.sort()
+	var in_play: Dictionary = DataLib.load_json("res://data/creatures.json")   # (not creatures staged from data/later/: the bears)
+	for cid in lib.creature_ids("playable"):
+		if not in_play.has(cid):
+			continue
+		assert(HERO_BASE.has(cid), "hero cases: a race in PROMPTS for %s (HERO_BASE)" % cid)
+		var race: Dictionary = gen.generate(HERO_BASE[cid], rules)
+		var sword: Dictionary = slot(race, "infantry")
+		var step: Dictionary = sword.line[-1]
+		for sid in sigs:
+			var s: Dictionary = lib.heroes.hero_signatures[sid]
+			if not (cid in s.who.get("creature", []) or not s.who.get("family", []).is_empty()):
+				continue
+			var r := Heroes.dress(step.recipe, sid, s, sid, int(Heroes.slot_def(rules).tier))
+			out.append(["hero: %s as %s" % [cid, sid], {"recipe": r, "eval": Pricing.evaluate(r, lib, rules)}])   # (its own tags: how it holds its weapon)
+	return out
 
 
 ## Concept composites (staged from data/later/): the trade carts of round TC1 whose beasts haul them,

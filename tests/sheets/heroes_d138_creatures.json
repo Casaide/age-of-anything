@@ -1,0 +1,71 @@
+{
+ "name": "heroes_d138_creatures",
+ "title": "Heroes in play (D-138): every race has all its heroes, the creatures",
+ "_doc": "Milestone 14 step 9, D-138 (Dominic, 2026-10-16: 'heroes i thought we'd do all of them, so each race has some variety'): each race's every hero (src/heroes.gd roster_for: its creature's and culture's signatures, topped up from its culture's kin to three) at age 3, as the game dresses them (the signature's per-creature fit included). Rows from the sheet tool's each/heroes.",
+ "zooms": [
+  2,
+  1
+ ],
+ "cell": [
+  72,
+  88
+ ],
+ "rows": [
+  {
+   "each": {
+    "prompt": [
+     "swamp frogs",
+     "sewer rats",
+     "spooky spiders",
+     "forest beetles",
+     "centaur romans"
+    ],
+    "slot": [
+     "heroes"
+    ]
+   },
+   "age": 3,
+   "h": 1.3,
+   "label": "{name}\n({prompt})"
+  }
+ ],
+ "sheets": [
+  {
+   "name": "lineup",
+   "title": "age 3, standing in five facings, walking and idle",
+   "columns": [
+    {
+     "facing": 1,
+     "label": "f1"
+    },
+    {
+     "facing": 2,
+     "label": "f2 towards"
+    },
+    {
+     "facing": 3,
+     "label": "f3"
+    },
+    {
+     "facing": 5,
+     "label": "f5"
+    },
+    {
+     "facing": 6,
+     "label": "f6 away"
+    },
+    {
+     "facing": 1,
+     "pose": "walk",
+     "step": 2,
+     "label": "walk"
+    },
+    {
+     "facing": 1,
+     "pose": "idle",
+     "label": "idle"
+    }
+   ]
+  }
+ ]
+}
