@@ -874,3 +874,12 @@ hash (about 0.1 s); if it doesn't fit the build, the replay plays forward instea
 differently goes on from where its re-run got to and says so. Bots' own commands aren't stored. A new file per save
 (`user://saves`), none overwritten or deleted, until Dominic picks slots, autosave and what happens to old saves
 after an update (docs/milestones/save-load.md).
+
+**D-141, 2026-10-16: Saves survive game updates without replaying (refines D-140).** Dominic: "we just keep them all
+for now. After game updates needs real though, replaying is bad." So loading never replays: a save loads from its
+snapshot whatever build made it. The races, rules and data tables (unit types, buildings, tech, the bots' config) keep
+the save's values, so an old match goes on under the rules it was started with, and gain any key a later build added
+(lists of dicts pair up by id or slot). A variable a later build added keeps its constructor's value; units and
+buildings pad their per-unit arrays to their count, and a class whose new variable needs better calls `after_load
+(missing)`; a variable a build dropped is ignored. A save needs only its map's file. The replay stays in the save for
+watching back. Every save is kept (Claude's call on the details: no slots, no autosave yet).

@@ -1,6 +1,6 @@
 # Save and load
 
-**Status:** built 2026-10-16 (Dominic asked for it mid-session during milestone 20); waiting on his choices below
+**Status:** built 2026-10-16 (Dominic asked for it mid-session during milestone 20); saves survive updates (D-141)
 **Exit criterion:** save mid-match, quit, load, and the match goes on with the same state hash as a match that
 never stopped (a headless test proves it), and the screens work with a mouse and with a pad.
 
@@ -26,10 +26,11 @@ Two ways were weighed:
 start (every constructor runs with its real arguments), pours the snapshot over it and checks the state hash: about
 0.1 s whatever the match's length. If the snapshot doesn't fit the build (a sim or AI variable came or went, or the
 hash is off), it falls back to (a) and plays the match forward, with a "Catching up" note; a build whose sim plays
-differently goes on from wherever the re-run got to and says so in a line on screen.
+differently goes on from wherever the re-run got to and says so in a line on screen. *(Superseded the same day by
+D-141: no fallback; a snapshot from any build loads. See "After game updates".)*
 
 - `src/save_game.gd`: `record` / `save` / `load_file` / `list` / `problem` (a race, map or rules that no longer
-  rebuild) / `begin` (snapshot or start over) / `run` (play forward in budgeted slices) / `drift`.
+  rebuild) / `begin` (the snapshot poured over a fresh match) / `merge`.
   It lives outside `src/sim/` because it reads the wall clock to slice a re-run across frames.
 - Bots' own commands are not stored (they give them again on a re-run); a person's are, including ones issued
   but not yet run. Bot seats record the player's next seq when the bot took over, so commands from before (a
@@ -37,7 +38,7 @@ differently goes on from wherever the re-run got to and says so in a line on scr
 - What the screen needs back rides along in the save's `view`: the side you command, the lobby's choices (prompts,
   rerolls, teams, AI levels, map, mode), race names for the list, the camera, control groups, the tip step.
 - Files: `user://saves/<date>_<time>.save`, a zstd-compressed Godot binary variant (about 400 KB at 4 minutes).
-  A new file every save; nothing is overwritten or deleted.
+  A new file every save; nothing is overwritten or deleted (Dominic: "we just keep them all for now").
 - Screens: the pause menu gets **Save game** (it says "Saved (m:ss in)") and **Load game**; the lobby's title menu
   gets **Load game**. Both open the saves page (`src/view/ui/saves_page.gd`): the newest 8, one line each (races,
   map, time in, when saved); one this build can't rebuild says why and greys out. A pad walks it by focus, B
@@ -53,15 +54,32 @@ differently goes on from wherever the re-run got to and says so in a line on scr
       still waiting, loaded both ways, played on 3 more minutes: hashes identical to a match never stopped)
 - [x] Pause menu Save game / Load game, lobby Load game, the saves page
 - [x] Windowed check through the screens with a mouse and a pad: `tests/save_check.gd`
-- [ ] Dominic's choices (below)
+- [x] Dominic: keep every save; saves must survive updates without replaying (D-141)
 - [ ] Try it on the Deck
 - [x] Archive
 
-## Open for Dominic
+## After game updates (D-141)
 
-- **Slots or a list?** Built: a new save each time, newest first, none deleted. Alternatives: a few fixed slots
-  that overwrite, or a delete button on the list.
-- **Autosave?** Not built. Could save every few minutes and on quitting to the menu, keeping the last one or two.
-- **Saves across game updates?** Built: a save keeps loading as long as its races, map and rules rebuild the same;
-  after a sim change it re-runs the match (slow) and may go its own way. The other choice is to refuse saves from
-  another version outright.
+Dominic: "we just keep them all for now. After game updates needs real though, replaying is bad." So the replay
+fallback is gone: a save always loads from its snapshot, whatever build made it.
+
+- The world is built fresh from the save's own races (merged over this build's regeneration of the same prompt, so
+  new fields appear) and rules (merged over this build's rules file), then the snapshot is poured over it.
+- Data tables (`SaveGame.DATA`: the World's unit types, buildings, tech, rules and configs, the bots' `cfg`) are
+  merged: the save's values win, keys only this build has come in. An old match keeps its old balance.
+- A variable added since keeps its constructor's value; units and buildings pad per-unit arrays to their count (0,
+  or [] for lists). **When you add a per-unit field whose new-unit value isn't 0, or any variable whose fresh value
+  is wrong mid-match, give that class `func after_load(missing: Array)`.** A variable dropped since is ignored; one
+  whose type changed keeps this build's value; a sub-object whose class was replaced keeps this build's object.
+- A load says what changed (`ld.changed`) and whether the state hash is the saved one (`ld.same`, always true for
+  this build's saves).
+- Test: `test_sim.gd -- part:save_load` fakes an older build's save (a unit field and world and bot variables
+  missing, one extra, a data key missing, a class replaced) and plays it on a minute with its bot.
+
+Size: about 380 KB at 5 minutes and 550-570 KB at 20-25 minutes (zstd; the snapshot is ~3 MB raw, mostly per-cell
+map and fog arrays, and the command history is the part that grows). Saving takes 25-55 ms.
+
+## Still open
+
+- **Autosave:** not built. Could save on quitting to the menu and every few minutes.
+- **A delete button** for the saves page, once the list gets long.
