@@ -214,6 +214,8 @@ func _gear(out: Dictionary, rig: Dictionary, slot: String, part_id: String, colo
 	var sock: String = UnitView.SOCKET_FOR_SLOT[slot]
 	if slot == "back" and "drape" in lib.part(part_id).tags and rig.sockets.has("drape"):
 		sock = "drape"   # (UnitView._attach: a cape hangs from the body's drape socket)
+	if slot == "back" and "banner" in lib.part(part_id).tags and not "hero" in lib.part(part_id).tags and rig.sockets.has("banner"):
+		sock = "banner"   # (UnitView._attach: a banner on the body's banner socket)
 	var r: String = rig.rig
 	var xf: Transform3D = rig.xf
 	if slot == "torso":
