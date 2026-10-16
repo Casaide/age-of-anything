@@ -30,7 +30,7 @@ func _initialize() -> void:
 	var steps := 0
 	for u in race.units:
 		steps += u.get("line", [1]).size()
-	var ids: Array = kit._unit_jobs([race])
+	var ids: Array = await kit._unit_jobs([race])
 	print("%s: %d lines, %d line steps, %d part jobs" % [race.name, race.units.size(), steps, ids.size()])
 	var t0 := Time.get_ticks_msec()
 	if workers > 1:

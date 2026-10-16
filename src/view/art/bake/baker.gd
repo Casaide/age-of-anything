@@ -116,7 +116,7 @@ func _shadow_passes(model: Node3D) -> Array:
 	var ssao := env.ssao_enabled
 	env.ssao_enabled = false
 	await _render()
-	var mask := get_texture().get_image()
+	var mask := await BakeClock.read(self)
 	sun.visible = false
 	env.ambient_light_energy = 1.0
 	env.ambient_light_color = Color.WHITE
@@ -126,7 +126,7 @@ func _shadow_passes(model: Node3D) -> Array:
 	env.ssao_radius = 0.45
 	env.ssao_intensity = 6.0
 	await _render()
-	var occl := get_texture().get_image()
+	var occl := await BakeClock.read(self)
 	sun.visible = true
 	env.ssao_radius = ssao_r
 	env.ssao_intensity = ssao_i
@@ -187,9 +187,10 @@ static func _paint_shadows(art: Image, mask: Image, occl: Image) -> void:
 
 
 ## Render `model` (centred on its anchor at the world origin) and return
-## {"tex": ImageTexture, "points": [Vector2]} where points are the given 3D
-## points projected into the cropped image (in baked pixels).
+## {"tex": ImageTexture, "img": its Image (pixel mode), "points": [Vector2]} where points are the
+## given 3D points projected into the cropped image (in baked pixels).
 func bake(model: Node3D, points: Array) -> Dictionary:
+	await BakeClock.breathe()
 	holder.add_child(model)
 	cam.position = Vector3(0, 0.6, 0) + cam.transform.basis.z * 30.0
 	var shots: Array = await _shoot()
@@ -197,7 +198,8 @@ func bake(model: Node3D, points: Array) -> Dictionary:
 	holder.remove_child(model)
 	model.queue_free()
 	var img: Image = shots[0]
-	return _cut(shots, Rect2i(Vector2i.ZERO, img.get_size()), projected)
+	var area := Rect2i(Vector2i.ZERO, img.get_size())
+	return (await _cut_all(shots, [[area, projected]]))[0]
 
 
 ## Pixel mode: bake several small models (props) in one render, each in its own cell
@@ -206,6 +208,7 @@ func bake(model: Node3D, points: Array) -> Dictionary:
 func bake_many(models: Array, cols := 3) -> Array:
 	assert(pixel_factor > 0)
 	cam.position = Vector3(0, 0.6, 0) + cam.transform.basis.z * 30.0
+	await BakeClock.breathe()
 	var out := []
 	var cell := PIXEL_SIZE / cols
 	var per := cols * cols
@@ -220,6 +223,7 @@ func bake_many(models: Array, cols := 3) -> Array:
 			var g := o + d * (-o.y / d.y)
 			var m: Node3D = batch[k]
 			m.position = g
+			await BakeClock.breathe()   # (a model entering the tree is main-thread work: one at a time)
 			holder.add_child(m)
 			anchors.append(g)
 			# The model's real extent on screen must fit its cell, or its sides get cut off
@@ -228,10 +232,12 @@ func bake_many(models: Array, cols := 3) -> Array:
 			var seen := screen_rect(m)
 			assert(cell_rect.encloses(seen), "bake_many: a model (%s px) overflows its %d px cell; use fewer columns" % [seen.size, cell])
 		var shots: Array = await _shoot()
+		var cuts := []
 		for k in batch.size():
-			var r := Rect2i((k % cols) * cell, (k / cols) * cell, cell, cell)
-			out.append(_cut(shots, r, [cam.unproject_position(anchors[k])]))
+			cuts.append([Rect2i((k % cols) * cell, (k / cols) * cell, cell, cell), [cam.unproject_position(anchors[k])]])
+		out.append_array(await _cut_all(shots, cuts))
 		for m in batch:
+			await BakeClock.breathe()
 			holder.remove_child(m)
 			m.queue_free()
 	return out
@@ -258,38 +264,56 @@ func screen_rect(model: Node3D) -> Rect2:
 ## enough: BakeClock brings every transform up to date before it draws.)
 func _shoot() -> Array:
 	await _render()
-	var shots := [get_texture().get_image()]
+	var shots := [await BakeClock.read(self)]
 	if pixel_factor > 0 and shadow_on:
 		shots.append_array(await _shadow_passes(holder))
 	return shots
 
 
+## Cut each [area, projected points] out of a render (_cut; in pixel mode on a worker thread,
+## the frames going on meanwhile), each as {tex, img, points}.
+func _cut_all(shots: Array, cuts: Array) -> Array:
+	var pf := pixel_factor
+	var ol := outline
+	var reach := shadow_reach
+	var work := func(): return cuts.map(func(c): return _cut(shots, c[0], c[1], pf, ol, reach))
+	var made: Array
+	if pf > 0:
+		made = await BakeClock.off_thread(work)
+	else:
+		made = work.call()
+	for m in made:
+		m.tex = ImageTexture.create_from_image(m.img)
+		if pf == 0:
+			m.erase("img")
+	return made
+
+
 ## Crop one model out of a render (within `area`), pixelize it in pixel mode and
 ## paint its shadows. Points come in render pixels and go out in the sprite's pixels.
-func _cut(shots: Array, area: Rect2i, projected: Array) -> Dictionary:
+## Images only (it runs on a worker thread): {img, points}.
+static func _cut(shots: Array, area: Rect2i, projected: Array, factor: int, outlined: bool, reach: float) -> Dictionary:
 	var img: Image = shots[0]
 	var whole := area == Rect2i(Vector2i.ZERO, img.get_size())
 	var used := img.get_used_rect() if whole else img.get_region(area).get_used_rect()   # no copy of the whole render
 	used.position += area.position
 	used = used.grow(4).intersection(area)
-	if pixel_factor > 0:
+	if factor > 0:
 		if shots.size() > 1:   # room for the shadows: they fall to the lower right
 			var g := maxi(used.size.x, used.size.y) / 2
-			used = used.grow_individual(g / 8, g / 8, int(g * shadow_reach), int(g / 2 * shadow_reach)).intersection(area)
-		used.position = used.position / pixel_factor * pixel_factor   # keep the pixel grid aligned
-		var f := float(pixel_factor)
-		var art := Pixelize.run(img.get_region(used), pixel_factor, outline)
+			used = used.grow_individual(g / 8, g / 8, int(g * reach), int(g / 2 * reach)).intersection(area)
+		used.position = used.position / factor * factor   # keep the pixel grid aligned
+		var f := float(factor)
+		var art := Pixelize.run(img.get_region(used), factor, outlined)
 		if shots.size() > 1:
 			_paint_shadows(art, shots[1].get_region(used), shots[2].get_region(used))
 		var keep := art.get_used_rect().grow(1).intersection(Rect2i(Vector2i.ZERO, art.get_size()))
 		var shift := Vector2(used.position) / f + Vector2(keep.position)
-		return {"tex": ImageTexture.create_from_image(art.get_region(keep)),
-			"points": projected.map(func(p): return p / f - shift)}
+		return {"img": art.get_region(keep), "points": projected.map(func(p): return p / f - shift)}
 	var crop := img.get_region(used)
 	crop.fix_alpha_edges()
 	crop.generate_mipmaps()
-	return {"tex": ImageTexture.create_from_image(crop),
-		"points": projected.map(func(p): return p - Vector2(used.position))}
+	return {"img": crop, "points": projected.map(func(p): return p - Vector2(used.position))}
 
 
 ## Render this viewport once (BakeClock: drawn on demand, even while the window is hidden).
