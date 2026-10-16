@@ -191,7 +191,8 @@ func _wheel() -> bool:
 
 
 ## Open the selection's wheel (if it has any buttons), a worker's at the top of its build pages
-## (Dominic: closed on Civilian without choosing, the next open was stuck on Civilian).
+## (Dominic: closed on Civilian without choosing, the next open was stuck on Civilian), on its Build
+## page when its buttons take more than one (Dominic: it opened on Orders every time, LB to get to Build).
 func open_wheel() -> void:
 	game.build_page = ""
 	game._update_panel()
@@ -199,6 +200,7 @@ func open_wheel() -> void:
 		return
 	wheel.look = UiTheme.look(game.hud_family if game.hud_family != "?" else "")
 	wheel.show_buttons(_wheel_items())
+	wheel.turn_to("Build")
 	game.audio.play("ui_tip")
 
 
