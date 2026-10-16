@@ -1,0 +1,97 @@
+{
+ "name": "war_beasts_anim",
+ "title": "War beasts in motion (m13 step 7): every facing, the walk, the blow, the fall",
+ "_doc": "Each family's war beast as the game draws it, in all 8 facings and walking (Dominic, 2026-10-16: the elephant has no walk and some views look wrong). Riders are the race's age-3 spearmen.",
+ "zooms": [
+  2,
+  1
+ ],
+ "cell": [
+  150,
+  100
+ ],
+ "rows": [
+  {
+   "label": "romans:\nwar elephant",
+   "h": 1.25,
+   "unit": {
+    "prompt": "romans",
+    "slot": "war_beast",
+    "age": 3
+   }
+  },
+  {
+   "label": "sewer rats:\nwar boar",
+   "h": 1.25,
+   "unit": {
+    "prompt": "sewer rats",
+    "slot": "war_beast",
+    "age": 3
+   }
+  },
+  {
+   "label": "spooky spiders:\ngiant tarantula",
+   "h": 1.25,
+   "unit": {
+    "prompt": "spooky spiders",
+    "slot": "war_beast",
+    "age": 3
+   }
+  },
+  {
+   "label": "swamp frogs:\nwar heron",
+   "h": 1.25,
+   "unit": {
+    "prompt": "swamp frogs",
+    "slot": "war_beast",
+    "age": 3
+   }
+  },
+  {
+   "label": "forest beetles:\nwar mantis",
+   "h": 1.25,
+   "unit": {
+    "prompt": "forest beetles",
+    "slot": "war_beast",
+    "age": 3
+   }
+  }
+ ],
+ "sheets": [
+  {
+   "name": "facings",
+   "title": "eight facings, standing",
+   "columns": "facings"
+  },
+  {
+   "name": "walk",
+   "title": "walking: four steps in facings 1 and 5",
+   "columns": "walk:1,5"
+  },
+  {
+   "name": "cycle",
+   "title": "a whole walk cycle in facing 0 (side on)",
+   "columns": "cycle:0"
+  },
+  {
+   "name": "strike",
+   "title": "a blow in facing 0: wound up, landing at 0.21 s, recovering",
+   "columns": "strike:0"
+  },
+  {
+   "name": "strike3",
+   "title": "a blow in facing 3 (towards, left)",
+   "columns": "strike:3"
+  },
+  {
+   "name": "fall",
+   "title": "the fall in facing 0 (the riders fall off; the game fades it from 0.6 s)",
+   "columns": "fall:0"
+  },
+  {
+   "name": "fall5",
+   "title": "the fall in facing 5 (away, right)",
+   "columns": "fall:5"
+  }
+ ]
+}

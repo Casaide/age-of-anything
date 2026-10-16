@@ -123,6 +123,8 @@ func check_case(holder: Node2D, label: String, u: Dictionary, tweak := Callable(
 			holder.remove_child(v)
 			v.free()
 	rig3d.clear()
+	if u.recipe.has("crew") and lib.part(u.recipe.body).has("legs"):   # a war beast walks: its legs and head as any creature's
+		await check_case(holder, label, {"recipe": UnitView.beast_recipe(lib, u.recipe), "eval": u.eval}, tweak)
 
 
 ## Every PartShape the unit draws, in draw order, with its role and its pixels.
@@ -699,10 +701,9 @@ func _paint(n: Node, colour: Color) -> void:
 
 ## Siege crews by socket: "_in" behind the engine, "_top" over it, the rest by the socket's depth.
 func _check_crew(v, label: String, view: String) -> void:
-	var engine: Node = null
-	for c in v.bob.get_children():
-		if c is PartShape:
-			engine = c
+	var engine: Node = v._body_nodes[0]   # (the engine's sprite, or a war beast's rig: its body, legs; its head is ordered with the crew)
+	while engine.get_parent() != v.bob:
+		engine = engine.get_parent()
 	var rig: Dictionary = PartShape.rigs.get(v.recipe.body + PartShape.facing_suffix(v.facing_k), {})
 	for c in v.crew:
 		var name := ""
