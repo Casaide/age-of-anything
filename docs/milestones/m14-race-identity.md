@@ -365,6 +365,37 @@ it takes its alt); plus Gallop and Saddle Bows at the Castle, and no walls.
   38, 81%; `mass_battle -- 2` as main within a fight (spears beat the centaurs' cavalry 8 of 10, was
   10: they're no longer large).
 
+### Heroes (step 9, 2026-10-16, D-136)
+`godot --headless --path . --script res://tests/mass_battle.gd -- 2 heroes` (and `-- 3 heroes`): side A fields all of
+its race's heroes once plus soldiers for the rest, side B soldiers at the same cost (3000 a side), each fought both
+ways round, five races. Final settings: 300% hit points, 130% attack, no armour bonus, 30 price points, 1 hp every 3 s.
+
+Age 2:
+```
+heroes+spears v spears         A wins 10 of 10 (B 0)   value left: A  73%  B  31%
+heroes+swords v swords         A wins  9 of 10 (B 1)   value left: A  68%  B  44%
+heroes+archers v archers       A wins  5 of 10 (B 5)   value left: A  38%  B  52%
+heroes+swords v spear+archer   A wins  5 of 10 (B 5)   value left: A  44%  B  46%
+heroes+spears v cavalry        A wins 10 of 10 (B 0)   value left: A  84%  B  16%
+heroes+archers v swords        A wins  9 of 10 (B 1)   value left: A  84%  B  26%
+```
+Age 3:
+```
+heroes+spears v spears         A wins 10 of 10 (B 0)   value left: A  81%  B  40%
+heroes+swords v swords         A wins 10 of 10 (B 0)   value left: A  81%  B  37%
+heroes+archers v archers       A wins  6 of 10 (B 4)   value left: A  59%  B  45%
+heroes+swords v spear+archer   A wins  6 of 10 (B 4)   value left: A  57%  B  43%
+heroes+spears v cavalry        A wins  9 of 10 (B 1)   value left: A  75%  B  39%
+heroes+archers v swords        A wins 10 of 10 (B 0)   value left: A  86%  B  26%
+```
+Reading them: the clean mirrors (archers, spear+archer) are even; "heroes+spears v spears" and "v cavalry" lean A
+by the counters (a hero is a swordsman underneath, swords beat spears; spears beat cavalry), and a plain hero priced as
+a swordsman already won 7 of 10 in the sword mirror on its auras alone, so the auras are worth a little more than
+nothing. The harness ends many fights at 200 s with both sides standing and calls them by value left, which flatters a
+hero that heals and outlives its escort (raising the price raised A's "value left"); the earlier flat stats (+120 hp,
++4 attack, +2/+2) won 60 of 60 with ~95% left. Bot matches: the bots save for their next hero and field 2 or 3
+(test_ai bvb checks a bot fields several).
+
 ## Changes from the original plan
 
 - Strong Legs stays at the Barracks in age 2 (the plan put own research at the Castle in age 3).
