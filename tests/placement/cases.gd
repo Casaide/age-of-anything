@@ -16,7 +16,7 @@ const Pricing := preload("res://src/pricing.gd")
 
 ## Races whose every unit is checked (between them: every playable body, every hold, back parts,
 ## wings, a fused centaur, siege crews).
-const PROMPTS := ["romans", "swamp frogs", "sewer rats", "forest beetles", "spooky spiders",
+const PROMPTS := ["romans", "swamp frogs", "sewer rats", "rats", "forest beetles", "spooky spiders",
 	"flying greeks with wings", "centaur romans", "winged frogs"]
 ## More races for milestone 13's new lines only (scouts, mounted archers, unique units): with PROMPTS,
 ## every unique theme in data/uniques.json, a foot scout, the steppe raider on its pony; the sapper, trade cart and great sling.
