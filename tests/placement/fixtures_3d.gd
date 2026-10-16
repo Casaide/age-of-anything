@@ -33,7 +33,7 @@ static func run(lib) -> Array:
 			func(_g): UnitModels.rat_hunch = -15.0, func(_g): UnitModels.rat_hunch = 15.0, {}],
 		["the rat's head on its armour, both in front of the body (the body leaning back out of its bottle-cap armour)",
 			"sewer rats spear age 2", ["A2 worn armour centred on the torso", "A2 worn armour on its body"],
-			func(_g): UnitModels.rat_hunch = -15.0, func(_g): UnitModels.rat_hunch = 15.0, {}],
+			_rat_leaning_out, _rat_as_now, {}],
 		["a walk whose body rose as its legs spread (no foot on the ground mid-stride)",
 			"romans spear", ["A1 walking, a foot planted"],
 			func(g): g.rig.old_bob = true, func(g): g.rig.old_bob = false, {}],
@@ -128,3 +128,14 @@ static func _put(g, u: Dictionary, build: Variant, parts: Dictionary) -> void:
 	else:
 		g.rig.overrides["concept.tc1_a_junk"] = build
 	u.recipe.haul.parts = parts.duplicate()
+
+
+## The rat leaning back out of its armour as it was: the body's hunch reversed, the armour where it sat then.
+static func _rat_leaning_out(_g) -> void:
+	UnitModels.rat_hunch = -15.0
+	UnitModels.rat_torso_x = 1.4
+
+
+static func _rat_as_now(_g) -> void:
+	UnitModels.rat_hunch = 15.0
+	UnitModels.rat_torso_x = 0.8
