@@ -106,6 +106,7 @@ func _initialize() -> void:
 			kit.bakes.merge(e.bakes, true)
 			kit.buildings["%s:%s%s" % [arch, t, suffix]] = e.info
 	_check_heights()
+	_check_game_sprites()
 	var n := 0
 	for f in FIXTURES:
 		n += 1
@@ -436,6 +437,33 @@ func _model(p: Dictionary, at: Dictionary) -> Node3D:
 		node = holder
 	_free_spec(spec)
 	return node
+
+
+## The game's own wall sprites (BuildingArt) for a tile in each line direction, against the look this
+## check composes from: the near merlons' layer must land where the look puts it. (The fixtures below
+## lay the looks out themselves, so they never saw the game's layer drawn centred: half a sprite up and
+## left, which put a y-run's near merlons on its far edge and left its near edge bare: Dominic.)
+func _check_game_sprites() -> void:
+	kit.rebuild_atlas()
+	var name := arch + ":wall"
+	for links in [17, 68, 34, 136]:   # along x, along y, the two diagonals
+		var look: Dictionary = kit.wall_look(name, links)
+		var bv := BuildingArt.new()
+		bv.setup(kit, name, 0, 0, 1, 1, Color.WHITE)
+		bv.set_links(links)
+		var ok: bool = not bv.body.centered and bv.body.offset == -look.origin
+		if look.has("front_tex"):
+			var fb: Sprite2D = bv.front_body
+			# Where each layer's anchor lands, from the building's own position (front is a sibling node).
+			var body_at: Vector2 = bv.position + bv.body.position + bv.body.offset * bv.body.scale + look.origin * bv.body.scale
+			var front_at: Vector2 = bv.front.position + fb.position + fb.offset * fb.scale + look.front_origin * fb.scale
+			ok = ok and not fb.centered and fb.texture == look.front_tex and body_at.distance_to(front_at) < 0.01
+		print("%s game sprites, links %d" % ["PASS" if ok else "FAIL", links])
+		if not ok:
+			failures += 1
+		if bv.front != null:
+			bv.front.free()
+		bv.free()
 
 
 ## A stand-in for the game's view of piece p (BuildingArt's walkway fields and tower layers, as setup

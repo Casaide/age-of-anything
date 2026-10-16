@@ -20,6 +20,9 @@ var visual: Node2D        # flipped for facing
 ## on the ground's base plane so the y-sort orders it with the hills (Iso.lift).
 var lift := 0.0
 var _shadow: Node2D
+var _ground_shadow := Vector2.ZERO   # the shadow's scale on the ground (set_perched keeps it)
+var _perched := false
+const PERCH_SHADOW := 0.45   # a shadow's size up on a wall's walkway: it stays on the stone
 var bob: Node2D           # moves up/down while walking or hovering
 var legs: Array = []      # [{node, phase}]
 var breathing: Array = []
@@ -108,6 +111,8 @@ func build(r: Dictionary, lib, team: Color, speed := 10) -> void:
 	unit_scale = float(r.scale) / 100.0
 	speed_px = float(speed) * 3.0
 
+	_perched = false   # (a new shadow at its ground size: set_perched shrinks it again if it's up on a wall)
+	_ground_shadow = Vector2.ZERO
 	var shadow := PartShape.new()
 	shadow.part_id = "unit_shadow"
 	shadow.setup(SHADOW_SHAPES, SHADOW_COLOURS)
@@ -237,6 +242,17 @@ func sit_point(r: Dictionary, lib) -> Variant:
 ## how near the camera the socket is. Crew walk while the engine moves (not those riding on top).
 var crew: Array = []      # [{view, top}]
 var rest_hold := "low"    # the hold a unit goes back to between blows and jobs (a crew member's own)
+## Up on a wall's walkway (or down from it): the shadow shrinks to the walk, so it doesn't stick out
+## over the edge past the merlons (a ground-sized one did: Dominic).
+func set_perched(on: bool) -> void:
+	if on == _perched:
+		return
+	if _ground_shadow == Vector2.ZERO:
+		_ground_shadow = _shadow.scale
+	_perched = on
+	_shadow.scale = _ground_shadow * (PERCH_SHADOW if on else 1.0)
+
+
 const ENGINE_SHADOW := 210.0   # an engine's shadow: its radius (milli-tiles) over this, times the unit's
 
 
