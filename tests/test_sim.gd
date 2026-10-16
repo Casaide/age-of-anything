@@ -13,6 +13,8 @@ const Commands := preload("res://src/sim/commands.gd")
 const SimMap := preload("res://src/sim/sim_map.gd")
 const World := preload("res://src/sim/world.gd")
 const Replay := preload("res://src/sim/replay.gd")
+const SaveGame := preload("res://src/save_game.gd")
+const Bot := preload("res://src/ai/bot.gd")
 const Flow := preload("res://src/sim/flow.gd")
 const Economy := preload("res://src/sim/economy.gd")
 const EcoBot := preload("res://src/ai/eco_bot.gd")
@@ -55,7 +57,7 @@ const FIGHT_FROM := [[11000, 20500], [21000, 20500]]   # open ground on flat_tes
 const GROUPS := [
 	["scenarios_a", "crossing_flat", "opening", "gates", "diagonal_gates", "pen", "combat"],
 	["scenarios_b", "fixed", "command_order", "source_lint", "flow", "crossing_choke", "crossing_engines", "age_timing", "queue", "movement_classes", "farms", "fog_memory", "land", "hills", "flow_patch", "flow_patch_mixed", "tech", "research_queue", "effects", "university_castle", "market", "build_queue", "builder_moves_on", "diagonal_wall", "camp_gather", "drop_off", "animals", "sheep_spot", "garrison", "towers", "shots", "engines", "trade", "sapper_sling", "bot_hunts", "wonder", "walls", "siege_ways", "modes"],
-	["match", "match"], ["match_b", "match_b"], ["match_flipped", "match_flipped"],
+	["match", "match"], ["match_b", "match_b"], ["save_load", "save_load"], ["match_flipped", "match_flipped"],
 ]
 
 ## Banned in src/sim/: floats, float maths, engine randomness, wall clocks, Nodes.
@@ -131,6 +133,7 @@ func _init() -> void:
 		"siege_ways": func(): _test_siege_ways(races),
 		"modes": func(): _test_modes(races, gen),
 		"combat": func(): _test_combat(gen),
+		"save_load": func(): _test_save_load(lib, gen),
 		"match": func(): _test_match(map, races, lib, rules),
 		"match_b": func(): _test_match_b(map, races),
 		"match_flipped": func(): _test_match_flipped(map, races, lib, rules),
@@ -3992,6 +3995,73 @@ func _test_flow(map: SimMap) -> void:
 			far += 1
 	check(far == 0 and near.pops < a.pops / 2, "a near field stops at its cutoff (%d of %d cells)" % [near.pops, a.pops])
 	print("flow field solve, %dx%d: %.2f ms full, %.2f ms within 16 tiles" % [map.width, map.height, us / 1000.0, near_us / 1000.0])
+
+
+# --- save and load ------------------------------------------------------------
+
+## A match against two bots, saved at 4 minutes (a person's order still waiting to run), written
+## to JSON, loaded (re-run headless to the saved tick) and played on to 7 minutes: the same
+## hashes as the match never stopped, so the bots came back as they were (D-140).
+func _test_save_load(lib, gen) -> void:
+	const AT := 4800
+	const TO := 8400
+	var rules = DataLib.load_rules("default")
+	var races := []
+	for p in PROMPTS:
+		races.append(gen.generate(p, rules))
+	var world := World.new(SEED, SimMap.load_id("reed_meadow"), races, rules)
+	var seats := [{"player": 1, "level": "hard", "from_seq": world.commands.next_seq.get(1, 0)}]
+	var you := EcoBot.new(0)   # "you": what it orders is stored like a person's clicks
+	var bot := Bot.new(1, {}, "hard")
+	while world.tick < AT:
+		you.think(world)
+		bot.think(world)
+		world.step()
+	var tc: int = world.buildings.id[0]
+	world.issue(0, Commands.RALLY, {"building": tc, "x": 9000, "y": 9000})   # issued, not run yet
+	var t0 := Time.get_ticks_msec()
+	var path := "user://test_saves/save_load.save"
+	SaveGame.save(SaveGame.record(world, seats, [bot], {"active": 0}), path)
+	var save_ms := Time.get_ticks_msec() - t0
+	var you_after := EcoBot.new(0)   # after the save "you" plays on the same way in both matches
+	while world.tick < TO:
+		you_after.think(world)
+		bot.think(world)
+		world.step()
+
+	t0 = Time.get_ticks_msec()
+	var rep := SaveGame.load_file(path)
+	var bytes := FileAccess.get_file_as_bytes(path).size()
+	DirAccess.remove_absolute(path)
+	check(rep.commands.all(func(c): return c.player == 0), "a save keeps your orders, not the bot's")
+	check(SaveGame.problem(rep, lib) == "", "the save rebuilds in this version")
+	var fast := SaveGame.begin(rep, lib)
+	var load_ms := Time.get_ticks_msec() - t0
+	check(fast.fast, "the snapshot fits: the match is back at once")
+	var odd_rep := rep.duplicate(true)
+	odd_rep.snapshot.world.units["a_variable_gone_since"] = 1   # a build where a sim variable came or went
+	check(not SaveGame.begin(odd_rep, lib).fast, "a snapshot that doesn't fit the build isn't used")
+	var slow_rep := rep.duplicate()
+	slow_rep.erase("snapshot")   # a save whose snapshot doesn't fit: the match plays forward from its start
+	var slow := SaveGame.begin(slow_rep, lib)
+	check(not slow.fast and slow.world.tick == 0, "without a snapshot it starts over")
+	t0 = Time.get_ticks_msec()
+	while not SaveGame.run(slow, 20000):
+		pass
+	var rerun_ms := Time.get_ticks_msec() - t0
+	for ld in [fast, slow]:
+		var how := "snapshot" if ld.fast else "re-run"
+		check(SaveGame.drift(ld) == -1, "%s: the loaded match is at the saved state" % how)
+		var b: World = ld.world
+		var you_b := EcoBot.new(0)
+		while b.tick < TO:
+			you_b.think(b)
+			ld.bots[0].think(b)
+			b.step()
+		check(b.hashes == world.hashes, "%s: played on from the save, the match matches one never stopped" % how)
+		check(b.state_hash() == world.state_hash(), "%s: and ends at the same state" % how)
+	check(world.units.count() > 40, "it was a real match (%d units)" % world.units.count())
+	print("save/load: %d KB, %d commands; save %d ms, load %d ms; re-running %d ticks %d ms" % [bytes / 1024, rep.commands.size(), save_ms, load_ms, AT, rerun_ms])
 
 
 # --- replay -------------------------------------------------------------------

@@ -862,3 +862,15 @@ hard to click on them to open it using A", so both ways open a selection's wheel
 for 0.3 s wherever the reticle is. Claude's call on the details: the wheel stays up once RB is let go, so nothing is
 steered while holding a shoulder button (D-133's complaint), and a quick RB stays "your soldiers" (it now acts on
 release). A worker's wheel also always opens at the top of its build pages.
+
+**D-140, 2026-10-16: Saving a match: a snapshot, with the replay to fall back on (Claude; Dominic asked for save/load).**
+Nothing had been decided about saving (the MVP plan cut it: "replays cover it"). Two ways were weighed: a save as a
+replay up to now, loaded by playing the match forward headless (small and exact, but the sim step costs 2 to 6 ms a
+tick late in a bot match, so a 20-minute match would take about 100 s to load on the Mac), or the World's state
+written out. A probe of the World's and the bots' object graph found only ints, packed arrays, data dicts and a few
+Vector2i, no callables, Nodes or shared objects, so a save is a generic snapshot (every script variable, sub-objects
+and all) plus the replay. Loading builds the match as at its start, pours the snapshot over it and checks the state
+hash (about 0.1 s); if it doesn't fit the build, the replay plays forward instead, and a build whose sim plays
+differently goes on from where its re-run got to and says so. Bots' own commands aren't stored. A new file per save
+(`user://saves`), none overwritten or deleted, until Dominic picks slots, autosave and what happens to old saves
+after an update (docs/milestones/save-load.md).
