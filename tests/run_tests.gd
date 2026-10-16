@@ -162,7 +162,7 @@ func _test_heroes(lib, gen, rules: Dictionary) -> void:
 				var fid: String = s.fit[cid][slot]
 				check(s.parts.has(slot) and (fid == "" or (lib.parts.has(fid) and lib.part(fid).slot == slot)), "heroes: %s's fit for %s: a %s part in place of its own (%s)" % [sid, cid, slot, fid])
 		check(s.aura.effects.size() > 0 and s.aura.text != "", "heroes: %s has an aura" % sid)
-	for prompt in ["sewer rats with cheese hammers", "romans", "spooky spiders", "centaur romans", "egyptians", "swamp frogs", "forest beetles"]:
+	for prompt in ["sewer rats with cheese hammers", "romans", "spooky spiders", "centaur romans", "egyptians", "swamp frogs", "forest beetles", "swamp humans", "sewer humans"]:
 		for reroll in 2:
 			var race: Dictionary = gen.generate(prompt, rules.default, reroll)
 			var heroes: Array = race.units.filter(func(u): return u.recipe.slot == "hero")
@@ -175,6 +175,10 @@ func _test_heroes(lib, gen, rules: Dictionary) -> void:
 			for h in race.heroes:
 				names[h.name] = true
 			check(names.size() == race.heroes.size(), "heroes: '%s': each its own name (%s)" % [prompt, race.heroes.map(func(h): return h.name)])
+			var firsts := {}
+			for h in race.heroes:
+				firsts[h.name.get_slice(" ", 0)] = true
+			check(firsts.size() == race.heroes.size(), "heroes: '%s': no two share a first name (%s)" % [prompt, race.heroes.map(func(h): return h.name)])
 			var sword: Dictionary = race.units.filter(func(u): return u.recipe.slot == "infantry")[0]
 			for hero in heroes:
 				var s: Dictionary = lib.heroes.hero_signatures[hero.recipe.hero]
@@ -187,7 +191,7 @@ func _test_heroes(lib, gen, rules: Dictionary) -> void:
 						check(lib.part(r.kit[slot]).slot == slot and not lib.part(r.kit[slot]).has("only_if") or not "hero_only" in lib.part(r.kit[slot]).get("only_if", []), "heroes: '%s' keeps its %s kit" % [prompt, slot])
 					var sw: Dictionary = sword.line.filter(func(x): return int(x.age) <= int(l.age))[-1]
 					var total := func(c: Dictionary) -> int: return c.values().reduce(func(a, b): return a + b, 0)
-					check(int(l.eval.hp) >= int(sw.eval.hp) + 100 and total.call(l.eval.cost) * 2 > total.call(sw.eval.cost) * 3, "heroes: '%s' age %d: tougher and dearer than its swordsman (%d hp, %d)" % [prompt, l.age, l.eval.hp, total.call(l.eval.cost)])
+					check(int(l.eval.hp) >= int(sw.eval.hp) * 2 and total.call(l.eval.cost) * 2 > total.call(sw.eval.cost) * 3, "heroes: '%s' age %d: tougher and dearer than its swordsman (%d hp, %d)" % [prompt, l.age, l.eval.hp, total.call(l.eval.cost)])
 					check(not "giant" in l.eval.tags, "heroes: '%s': its size is its look, not a giant's" % prompt)
 	for prompt in PROMPTS:
 		for u in gen.generate(prompt, rules.default).units:

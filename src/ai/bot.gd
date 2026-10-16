@@ -76,6 +76,7 @@ var scout                    # Scout: tours and the memory of the enemy army
 var land                     # Land: routes, crossings, roads, bridges, hills
 var expand                   # Expand: camps, escorts, the second Town Center
 var _target := Vector2i(-1, -1)   # where the waves go (worked out every think)
+var _hero_want := PackedInt32Array()   # the next hero's price while we save for it (_hero): soldiers leave it alone (_train)
 var _resting := {}          # unit id -> true: our heroes that walked home to heal (_hero): out of the field army until well
 var _on_back_foot := false   # the enemy army we remember outnumbers ours (Land._defending): defend the crossing
 
@@ -558,6 +559,8 @@ func _train(w, workers: Array, count: int) -> void:
 		reserve[r] += expand.want[r]
 	for r in land.want.size():     # ... and the road's
 		reserve[r] += land.want[r]
+	for r in _hero_want.size():    # ... and the next hero's (_hero)
+		reserve[r] += _hero_want[r]
 	var foes := _enemy_tags(w)
 	for b in w.buildings.count():
 		if w.buildings.owner[b] != player or w.buildings.done[b] == 0 or Tech.head(w, b) != -1:
@@ -717,15 +720,14 @@ func _hero(w, tc: int, army: Array, workers: Array, hx: int, hy: int) -> void:
 		return
 	var out := ks.filter(func(k): return Heroes.why_not(w, player, k) in ["out already", "on the way"]).size()
 	var k: int = Heroes.type_of(w, player)
+	_hero_want = PackedInt32Array()
 	if Heroes.why_not(w, player, k) == "" and w.ages[player] >= int(w.types[k].line[0].age) and army.size() >= int(h.army) + out * int(h.more) \
 			and w.buildings.queue[tc].size() < int(cfg.military.queue):
 		var cost := Heroes.cost(w, player, k)
-		var worker: int = w.type_of(player, "worker")
-		var spare := true
-		for r in w.resources.size():
-			spare = spare and w.stock[r][player] >= cost[r] + w.types[worker].cost[r]
-		if spare:
+		if _affords(w, cost, w.types[w.type_of(player, "worker")].cost):
 			w.issue(player, Commands.TRAIN, {"building": w.buildings.id[tc], "slot": "hero", "hero": w.types[k].recipe.hero})
+		elif _threats.is_empty():
+			_hero_want = cost   # saved for: the soldiers leave its price alone (_train)
 	var home_r := int(cfg.military.defend_tiles) * 1000
 	var still := {}
 	for hk in ks:

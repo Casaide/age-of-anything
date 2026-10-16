@@ -81,6 +81,7 @@ const FIGURE_W := 14.0
 const DRAG_START_PX := 6.0   # screen pixels before a left press becomes a box
 const RING := Color("#f2e9c9")
 const HERO_GOLD := Color("#e6b84a")   # a hero's crown and name plate
+const HERO_CROWN_LIFT := 7.0           # a hero's crown over its head's socket (head and hat), in part units
 ## The stance buttons, in Combat.POSTURES order: [label, tooltip].
 const STANCES := [
 	["Aggressive", "Go for any foe in sight and keep chasing it. The usual stance."],
@@ -3179,7 +3180,11 @@ func _draw_heroes() -> void:
 		var view: Node2D = views.get(hid) if hid != 0 else null
 		if view == null or not view.visible or world.units.index_of(hid) < 0:
 			continue
-		overlay.draw_set_transform(view.ground() - Vector2(0, _bar_lift(k) + 1.0), 0.0, inv)   # (one unit: one screen pixel)
+		var top: Vector2 = view.ground() - Vector2(0, _bar_lift(k) + 1.0)
+		if view.head_node != null:   # just over its head and hat (a crouched frog's head is far under a standing man's)
+			var hn: Node2D = view.head_node
+			top = Vector2(view.ground().x, overlay.to_local(hn.global_position).y - HERO_CROWN_LIFT * hn.global_transform.get_scale().y)
+		overlay.draw_set_transform(top, 0.0, inv)   # (one unit: one screen pixel)
 		var crown := PackedVector2Array([Vector2(-9, 0), Vector2(9, 0), Vector2(10, -11), Vector2(4.5, -5), Vector2(0, -13), Vector2(-4.5, -5), Vector2(-10, -11)])
 		overlay.draw_colored_polygon(crown, HERO_GOLD)
 		overlay.draw_polyline(crown + PackedVector2Array([crown[0]]), Color(0.18, 0.1, 0.02, 0.9), 2.0)

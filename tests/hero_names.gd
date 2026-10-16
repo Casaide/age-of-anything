@@ -18,9 +18,7 @@ func _init() -> void:
 	var rules = DataLib.load_rules("default")
 	for p in OS.get_cmdline_user_args():
 		var race: Dictionary = gen.generate(p, rules)
-		var sigs := Heroes.roster_for(lib.heroes, race.creature, race.family)
 		print("\n== \"%s\"  %s/%s  key %s" % [p, race.creature, race.family, race.key.substr(0, 12)])
-		for sid in sigs:
-			var s: Dictionary = lib.heroes.hero_signatures[sid]
-			print("   %-12s %s  %s  (%s)" % [sid, Heroes.pick(lib.heroes, race.key, race.creature, race.family, sid).name, s.temper, s.aura.text])
+		for h in race.get("heroes", []):
+			print("   %-12s %s  %s  (%s)" % [h.signature, h.name, h.temper, h.aura])
 	quit()
