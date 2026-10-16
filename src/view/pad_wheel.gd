@@ -79,6 +79,16 @@ func close() -> void:
 	hot = -1
 
 
+## Turn to the page of this group, if there is one (a worker's wheel opens on its Build page).
+func turn_to(group: String) -> void:
+	for k in pages.size():
+		if pages[k][0] == group and k != page:
+			page = k
+			hot = -1
+			_build()
+			return
+
+
 func turn_page(by := 1) -> void:
 	if pages.size() > 1:
 		page = posmod(page + by, pages.size())
