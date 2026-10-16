@@ -214,14 +214,39 @@ func _pick() -> void:
 		wheel.close()
 
 
-## The wheel's buttons: the panel's, for what you have selected (nothing for a foe's).
+## The wheel's buttons: the panel's, for what you have selected (nothing for a foe's); for units,
+## first "all of these on screen" (the mouse's double-click; on the pad a double tap of A kept
+## catching the tap-tap that opens the wheel).
 func _wheel_items() -> Array:
 	var mine: Array = game._selected_by_owner()[game.active]
 	var own_building: bool = game.selected_building != 0 and game.world.buildings.index_of(game.selected_building) >= 0 \
 		and game.world.buildings.owner[game.world.buildings.index_of(game.selected_building)] == game.active
-	if not mine.is_empty() or own_building:
+	if not mine.is_empty():
+		var w = game.world
+		var t: Dictionary = w.types[w.units.kind[w.units.index_of(mine[0])]]
+		var all := {"icon": game.kit.icons.get("%d:%s" % [t.player, t.slot]), "text": "All on screen", "key": "", "cost": "",
+			"enabled": true, "group": "Orders", "tip": "[b]All on screen[/b]\nEvery unit of yours on screen of the kinds selected.",
+			"action": _all_kinds_on_screen}
+		return [all] + game.panel.content.get("buttons", [])
+	if own_building:
 		return game.panel.content.get("buttons", [])
 	return []
+
+
+## Every unit of yours on screen of the kinds now selected.
+func _all_kinds_on_screen() -> void:
+	var w = game.world
+	var kinds := {}
+	for id in game._selected_by_owner()[game.active]:
+		kinds[w.units.kind[w.units.index_of(id)]] = true
+	var view := Rect2(game.camera.get_screen_center_position() - game.get_viewport_rect().size * 0.5 / game.camera.zoom,
+		game.get_viewport_rect().size / game.camera.zoom)
+	for i in w.units.count():
+		var id: int = w.units.id[i]
+		if w.units.owner[i] == game.active and kinds.has(w.units.kind[i]) and game.views.has(id) and game.views[id].visible \
+				and view.has_point(game.views[id].position):
+			game.selected[id] = true
+	game._say("select", game.active)
 
 
 ## A: tap to select, double-tap for all of that kind on screen, hold for the circle. While
@@ -239,13 +264,8 @@ func _select(delta: float) -> void:
 	if game.placing != "":
 		_place(a, add)
 		return
-	if pad.pressed(a):
+	if pad.pressed(a):   # (no double tap: tap, then tap again, is how a selection's wheel opens; Dominic)
 		sweep = {}
-		if Time.get_ticks_msec() - int(_tap_at.get(a, -100000)) < DOUBLE * 1000.0:
-			game.select_same_type_on_screen(pointer(), add)
-			_tap_at[a] = -100000
-			circle = -1.0   # this press is spent
-			return
 		circle = 0.0
 	if pad.held(a) and circle >= 0.0 and pad.held_for(a) >= TAP:
 		var vp: Vector2 = game.get_viewport_rect().size
@@ -256,12 +276,12 @@ func _select(delta: float) -> void:
 			_end_circle(true, add)
 		elif circle == 0.0:
 			_tap(add)
-			_tap_at[a] = Time.get_ticks_msec()
 		circle = 0.0
 
 
-## Tap A: on a unit you already have selected, its wheel; on your own building, select it and
-## open its wheel at once (the console RTS way: the base's menu is one press away); else select.
+## Tap A: select what's under the reticle; tap again on what's already selected (a unit of the
+## selection, or the selected building of yours) for its wheel. The first tap only selects, so
+## a building's progress can be looked at without its commands coming up (Dominic).
 func _tap(add: bool) -> void:
 	var p := pointer()
 	var u: int = game.unit_at(p)
@@ -269,9 +289,11 @@ func _tap(add: bool) -> void:
 	if u != 0 and not add and game.selected.has(u) and w.units.owner[w.units.index_of(u)] == game.active:
 		open_wheel()
 		return
+	var before: int = game.selected_building
 	game.select_at(p, add)
 	var b: int = w.buildings.index_of(game.selected_building)
-	if u == 0 and not add and b >= 0 and w.buildings.owner[b] == game.active and game.selected.is_empty():
+	if u == 0 and not add and before != 0 and game.selected_building == before and b >= 0 \
+			and w.buildings.owner[b] == game.active and game.selected.is_empty():
 		open_wheel()
 
 
