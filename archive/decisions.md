@@ -856,3 +856,9 @@ swordsman (three times the hit points, a third more attack, no armour bonus) for
 every three seconds. Art: every hero look must pass placement on every body it can come to, so bodies may declare a
 `drape` socket and scale for hanging capes, and a hero may wear a low-slung variant of its hat, or keep its race's own
 weapon, on a creature it doesn't fit (`fit` in data/heroes.json).
+
+**D-139, 2026-10-16: Hold RB for the wheel too (refines D-133).** Dominic, from the Deck: "when a unit is walking its
+hard to click on them to open it using A", so both ways open a selection's wheel: tap A on it (D-133/D-134), or hold RB
+for 0.3 s wherever the reticle is. Claude's call on the details: the wheel stays up once RB is let go, so nothing is
+steered while holding a shoulder button (D-133's complaint), and a quick RB stays "your soldiers" (it now acts on
+release). A worker's wheel also always opens at the top of its build pages.

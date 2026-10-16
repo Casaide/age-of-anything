@@ -163,7 +163,7 @@ Where the design above had two jobs on one button, the pass settles them (Claude
 | X | the smart order (move, gather, attack, build, rally...) |
 | Y | attack-move |
 | B | back: cancel placing or an armed order, close the wheel, leave a build page, deselect |
-| RB | soldiers on screen; twice: every soldier |
+| RB | tap: soldiers on screen (twice: every soldier); hold: the selection's wheel (stays up when let go; D-139) |
 | LB | tap: cycle the selection's kinds (turn a gate while placing); hold: queue / add |
 | LT / RT | zoom out / in |
 | D-pad | down: idle worker; up: next Town Center; left/right: groups 1 and 2 (hold to store) |
@@ -174,6 +174,11 @@ Where the design above had two jobs on one button, the pass settles them (Claude
 the camera too (Dominic). The wheel now opens with a tap of A on what you command, the console RTS way, and the camera
 holds still under it. A first tap on a building only selects it (Dominic: tapping to see its progress
 opened the build wheel too); a tap on it once selected opens the wheel. The global wheel is gone (its jobs are on the d-pad, View, and the pause menu).
+
+**Changed again (D-139, 2026-10-16):** a walking unit is hard to tap with A (Dominic), so a held RB (0.3 s) opens the
+selection's wheel as well, wherever the reticle is; the wheel stays up once RB is let go (no steering while holding,
+D-133's complaint). A quick RB is still "your soldiers". Also: a worker's wheel always opens at the top of its build
+pages (closed on Civilian without choosing, it used to stay there).
 
 ## Checklist
 - [ ] Plan approved by Dominic
