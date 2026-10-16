@@ -1858,7 +1858,7 @@ func _hero_buttons(c: Dictionary, room: bool) -> void:
 		elif why != "":
 			text = "%s: %s" % [wt.name, why]
 		var sid: String = wt.recipe.hero
-		c.buttons.append({"icon": kit.icons.get("%d:%s" % [active, HeroLine.line_key(wt.recipe)]), "text": text,
+		c.buttons.append({"icon": _type_icon(wt), "text": text,
 			"tip": _unit_tip(wt), "group": "Heroes", "key": "", "cost": _cost_text(cost),
 			"enabled": ok_age and why == "" and world.can_afford(active, cost) and room,
 			"action": func(): world.issue(active, Commands.TRAIN, {"building": selected_building, "slot": "hero", "hero": sid})})
@@ -2502,11 +2502,27 @@ func _sync_resources() -> void:
 			_fading.erase(c)
 
 
-## The icon for a tech (a research index or Tech.AGE_UP): a line upgrade shows its unit.
+## The icon for a tech (a research index or Tech.AGE_UP): a line upgrade shows the unit it gives.
 func _tech_icon(player: int, t: int, item: Dictionary) -> Texture2D:
 	if t == Tech.AGE_UP:
 		return Icons.texture("age_up")
-	return kit.icons.get("%d:%s" % [player, item.line]) if item.has("line") else Icons.texture(item.id)
+	return _upgrade_icon(player, item) if item.has("line") else Icons.texture(item.id)
+
+
+## A line upgrade's button: the portrait of the step it gives, in a gold frame (Dominic: it showed
+## the line as it is, the same picture as the Train button beside it).
+func _upgrade_icon(player: int, r: Dictionary) -> Texture2D:
+	return kit.upgrade_icon(kit.icons.get("%d:%s@%d" % [player, r.line, int(r.line_age)], kit.icons.get("%d:%s" % [player, r.line])))
+
+
+## A unit type's portrait as it is now: its line's current step (an upgraded line shows its new
+## look; the line's first step showed on every button, upgraded or not).
+func _type_icon(t: Dictionary) -> Texture2D:
+	var lk := HeroLine.line_key(t.recipe)
+	for l in t.line:
+		if l.recipe == t.recipe:
+			return kit.icons.get("%d:%s@%d" % [t.player, lk, int(l.age)], kit.icons.get("%d:%s" % [t.player, lk]))
+	return kit.icons.get("%d:%s" % [t.player, lk])
 
 
 ## Age-up and research buttons for a building (from data/tech.json), and what it's doing.
@@ -2541,7 +2557,7 @@ func _tech_buttons(c: Dictionary, b: int) -> void:
 		shown[track] = true
 		if why == "" or why == "can't afford it" or why == "queue full" or why == "already being researched":
 			var rid: String = r.id
-			var icon: Texture2D = kit.icons.get("%d:%s" % [active, r.line]) if r.has("line") else Icons.texture(r.id)   # a line upgrade shows its unit
+			var icon: Texture2D = _upgrade_icon(active, r) if r.has("line") else Icons.texture(r.id)   # a line upgrade shows the unit it gives
 			var busy := why == "already being researched"
 			c.buttons.append({"text": "%s (%s)" % [_research_name(r), _cost_text(r.cost)], "key": "", "cost": "..." if busy else _cost_text(r.cost),
 				"icon": icon, "tip": _research_tip(r) + ("\n[i]Being researched.[/i]" if busy else ""), "group": "Research",
@@ -2718,7 +2734,7 @@ func _research_tip(r: Dictionary) -> String:
 		if not steps.is_empty():
 			var a: Dictionary = steps[0].eval
 			var b: Dictionary = steps[1].eval
-			lines.append("[color=%s]Becomes: %s[/color]" % [TIP_GOOD, steps[1].recipe.get("name", "")])
+			lines.append("[color=%s]Every %s you have, and all you train, becomes a %s.[/color]" % [TIP_GOOD, steps[0].recipe.get("name", ""), steps[1].recipe.get("name", "")])
 			lines.append("[color=%s]%s[/color]" % [TIP_GOOD, "\n".join(_step_changes(a, b))])
 		return _tip(_research_name(r), r.cost, lines, needs)
 	return _tip(r.name, r.cost, [r.desc, "[color=%s]%s[/color]" % [TIP_GOOD, _effect_text(r.effects)]], needs)
@@ -2753,7 +2769,7 @@ func _research_name(r: Dictionary) -> String:
 	if not r.has("line"):
 		return r.name
 	var steps := _line_steps(r)
-	return ("Upgrade to %s" % steps[1].recipe.get("name", r.name)) if not steps.is_empty() else r.name
+	return ("Upgrade: %s -> %s" % [steps[0].recipe.get("name", ""), steps[1].recipe.get("name", r.name)]) if not steps.is_empty() else r.name
 
 
 func _make_view(kind: int, owner: int) -> UnitView:
@@ -2947,7 +2963,7 @@ func _update_panel() -> void:
 				var tt := Tech.tech_of(q[n])
 				if tt == -1:
 					var qt: Dictionary = world.types[q[n]]
-					slot_icon = kit.icons.get("%d:%s" % [qt.player, HeroLine.line_key(qt.recipe)])
+					slot_icon = _type_icon(qt)
 					slot_name = qt.name
 				else:
 					var it: Dictionary = Tech.item_of(world, owner, tt)
@@ -2986,7 +3002,7 @@ func _update_panel() -> void:
 					var ok_age: bool = world.ages[active] >= int(wt.line[0].age)
 					var afford: bool = world.can_afford(active, wt.cost)
 					var tslot: String = slot
-					c.buttons.append({"icon": kit.icons.get("%d:%s" % [active, slot]),
+					c.buttons.append({"icon": _type_icon(wt),
 						"text": (("Train %s (%s)" % [wt.name, _cost_text(wt.cost)]) if ok_age else "%s: needs age %d" % [wt.name, wt.line[0].age]),
 						"tip": _unit_tip(wt), "group": "Train",
 						"key": "Q" if slot == "worker" else "", "cost": _cost_text(wt.cost), "enabled": ok_age and afford and room,
@@ -3013,7 +3029,7 @@ func _update_panel() -> void:
 		var first := u.index_of(mine[0])
 		var ft: Dictionary = world.types[u.kind[first]]
 		var c := {"title": ft.name if mine.size() == 1 else "%d selected" % mine.size(), "team": team, "buttons": [], "queue": null,
-			"portrait": kit.icons.get("%d:%s" % [ft.player, HeroLine.line_key(ft.recipe)]), "hp": [u.hp[first], ft.hp] if mine.size() == 1 else []}
+			"portrait": _type_icon(ft), "hp": [u.hp[first], ft.hp] if mine.size() == 1 else []}
 		var herd: Array = mine.filter(_is_animal)
 		var soldiers: int = mine.size() - herd.size() - _selected_workers().size()
 		if mine.size() == 1 and ft.worker:
@@ -3033,7 +3049,7 @@ func _update_panel() -> void:
 				counts[k] = counts.get(k, 0) + 1
 			var kinds := counts.keys()
 			kinds.sort()
-			c.tray = kinds.map(func(k): return {"icon": kit.icons.get("%d:%s" % [world.types[k].player, HeroLine.line_key(world.types[k].recipe)]), "count": counts[k]})
+			c.tray = kinds.map(func(k): return {"icon": _type_icon(world.types[k]), "count": counts[k]})
 		if not herd.is_empty() and herd.size() == mine.size():   # only our animals: they walk, or stop
 			c.buttons.append({"icon": Icons.texture("stop"), "text": "Stop", "key": "X", "cost": "", "enabled": true, "group": "Orders",
 				"tip": "[b]Stop[/b]\nThey stand where they are.", "action": stop_selected})
@@ -3107,7 +3123,7 @@ func _update_panel() -> void:
 		var et: Dictionary = world.types[world.units.kind[i]]
 		var eo := world.units.owner[i]
 		panel.show_content({"title": et.name if eo == world.gaia else "%s, %s" % [et.name, world.races[eo].name], "team": Color(lib.palettes.teams[eo]) if eo != world.gaia else ArtKit.ANIMAL_TEAM, "buttons": [], "queue": null,
-			"portrait": kit.icons.get("%d:%s" % [et.player, HeroLine.line_key(et.recipe)]), "hp": [world.units.hp[i], et.hp],
+			"portrait": _type_icon(et), "hp": [world.units.hp[i], et.hp],
 			"info": _animal_info(et, eo) if et.has("animal") else UnitCard.short(et, world.combat),
 			"hint": "" if et.has("animal") else UnitCard.text(et, _foe_types(eo), world.combat)})
 		return
