@@ -41,18 +41,26 @@ static func roster_for(heroes: Dictionary, creature: String, family: String) -> 
 	return out
 
 
-## A hero's name {signature, name} as the race with this key calls it: each signature its own draw.
-static func pick(heroes: Dictionary, key: String, creature: String, family: String, sid: String) -> Dictionary:
+## A hero's name {signature, name, given} as the race with this key calls it: each signature its own
+## draw; its given name not one of `taken` (the race's heroes before it) while the lists have others.
+static func pick(heroes: Dictionary, key: String, creature: String, family: String, sid: String, taken := []) -> Dictionary:
 	var rng = Rng.new(Rng.hash_string(key + "|hero|" + sid))
 	var s: Dictionary = heroes.hero_signatures[sid]
 	var n: Dictionary = heroes.hero_names
 	var pool: Array = n.creatures.get(creature, {}).get("names", []) + n.families.get(family, {}).get("names", [])
+	var free: Array = pool.filter(func(x): return not x in taken)
+	if free.is_empty():   # (the race's lists used up: a name from the hero's own culture, a kindred hero's home)
+		for f in s.who.get("family", []):
+			free += n.families.get(f, {}).get("names", []).filter(func(x): return not x in taken and not x in free)
+	if not free.is_empty():
+		pool = free
 	var titles: Array = s.get("titles", n.creatures.get(creature, {}).get("titles", []) + n.families.get(family, {}).get("titles", []))
 	var fmt: String = n.formats[rng.pick(s.formats)]
 	var any := func(a: Array) -> String: return rng.pick(a) if not a.is_empty() else ""
-	var name: String = fmt.format({"name": any.call(pool), "epithet": any.call(s.epithets), "nickname": any.call(s.get("nicknames", [])),
+	var given: String = any.call(pool)
+	var name: String = fmt.format({"name": given, "epithet": any.call(s.epithets), "nickname": any.call(s.get("nicknames", [])),
 		"title": any.call(titles), "ordinal": rng.pick(n.ordinals)})
-	return {"signature": sid, "name": name.strip_edges()}
+	return {"signature": sid, "name": name.strip_edges(), "given": given if "{name}" in fmt else ""}
 
 
 ## The race's heroes as unit lines [{recipe, eval, line}] in roster_for's order, or [] (no hero line
@@ -69,8 +77,10 @@ static func make(lib, race: Dictionary, rules: Dictionary) -> Array:
 	if base.is_empty():
 		return []
 	var out := []
+	var taken := []
 	for sid in roster_for(lib.heroes, race.creature, race.family):
-		var h := pick(lib.heroes, race.key, race.creature, race.family, sid)
+		var h := pick(lib.heroes, race.key, race.creature, race.family, sid, taken)
+		taken.append(h.given)
 		var s: Dictionary = lib.heroes.hero_signatures[sid]
 		var line := []
 		for age in range(int(sd.tier), int(rules.get("ages", 1)) + 1):
