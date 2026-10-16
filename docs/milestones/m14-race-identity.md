@@ -253,7 +253,17 @@ it takes its alt); plus Gallop and Saddle Bows at the Castle, and no walls.
 - [ ] 6. Mechanics (the web only so far; leap, shell, swarm/scavenge, shoot on the move to come; the web's look needs a concept round)
 - [x] 7. AI (2026-10-13: webs on the nearest foes, own research bought; bonuses are stats)
 - [ ] 8. Balance and the lobby card (lobby card done; six bonuses a race and a balance pass 2026-10-14: every race 33-68% over two maps, frogs and rats at the edges, see Results)
-- [ ] 9. Heroes (generated champion, aura, revive; concept round HR1 done 2026-10-13, waiting on Dominic's pick)
+- [x] 9. Heroes (generated champion, aura, revive; concept round HR1 done 2026-10-13; D-131: all of HR2's characters as a pool; D-138: every race gets all of its pool's heroes)
+  - WIP 2026-10-14 (Claude): `data/heroes.json` (names, 21 signatures with auras, rules), hero parts in `data/parts.json` (only_if hero_only), a `hero` roster line (age 2, Town Center), `src/heroes.gd` (derived from the race key, not in it), `src/sim/heroes.gd` (aura, regen, revive), the bot, models in `scenes/art_pixel/hero_models.gd`, the unit card's temper and aura, `tests/test_heroes.gd`.
+  - Resumed 2026-10-16 (Dominic: "heroes i thought we'd do all of them, so each race has some variety"), finished on branch `heroes-all` (Claude). **The rule (D-138):**
+    - A race gets every signature naming its creature or its culture (sorted by id); one with fewer than `rules.min_heroes` (3) is topped up from its culture's `kin` (heroes.json: two kindred cultures each, nearest first). In the base game that tops up humans (one culture hero each), spooky spiders and forest beetles; every playable race has 3 or 4 heroes.
+    - Each hero is its own unit type on the hero line (TRAIN/SPAWN name it: args `hero`). Each is trained once at the Town Center from age 2; one of each is ever out (queued, alive or sheltering); all of a race's heroes may be out together. A fallen one is revived at the Town Center after 60 s for 60% of its price.
+    - Auras don't add up: a friend near several heroes takes the strongest of each stat (+1 attack, +1 melee, +1 pierce at most).
+    - Names: each hero its own draw from the race key and its signature; a race's heroes never share a given name (a kindred hero borrows one from its own culture when the race's lists run out).
+  - **Done 2026-10-16:** the Town Center's Heroes group (a button per hero: Train / Revive with its price, or why not: out already, on the way, revives in N s); a small gold crown over each hero in the field, its name while selected; the tech tree page (a node per hero, temper and aura) and the lobby (a Heroes group in the traits strip, "N lines; 3 heroes"); sounds `hero_up` and `hero_fell` (tools/audio/sfx.py, rendered, keep imports) with an alert line (yours, and a foe's you saw fall); the bot saves for its next hero and fields another every 3 soldiers (`data/ai.json` military.hero.more), a hurt one walks home to heal.
+  - **Placement:** `tests/placement/cases.gd` hero_cases: every hero look on every playable body it can come to (any culture's on any creature), age 3, plus every PROMPTS race's own heroes at every age. The fix pass: a body may declare a `drape` socket and a `drape_scale` (frog, rat, spider, rearing beetle) for back pieces tagged `drape` (the long capes, the lion pelt, the moss mantle), applied by UnitView and the 3D check alike; low-slung hat variants (`hero.*_low`: nothing hanging behind the head, a size smaller, set back) and a per-creature `fit` in heroes.json (a variant, or "" to keep the race's own weapon where a shouldered one would cut a spider's legs); a look with no back piece stows the swordsman's banner or cape in its kit; the Unkillable's roach moved to the far shoulder, the heraldic cape flares back. `placement_check.gd` passes in full (19724 checks).
+  - **Balance:** flat stats made a 22 hp rat's hero five times its swordsman and a centaur's twice, so the line now uses `stats_pct` (pricing.gd: 300% hit points, 130% attack), no armour bonus, 30 price points (a rat's hero about 665, a centaur's 885), healing 1 hp every 3 s. `tests/mass_battle.gd -- 2 heroes` (all of a race's heroes plus soldiers against soldiers at equal cost, twice the budget): see Results.
+  - Pictures: `archive/images/2026-10-16/` (lineup sheets, the match, the Town Center's buttons). The Regicide rule stays for milestone 18.
 - [ ] A new creature: bears (two legs, armoured, dignified, "the smarter version compared to rats"; rideable for some races; bigger polar or older bears; see the backlog entry). Dominic: plan once milestone 13 is done
   - [x] Concept round B1 (2026-10-13): three builds (brown, black, polar), the worker, the mount, the giants, built with the creature kit, all passing placement (`docs/concepts/bears/`, data staged in `data/later/bears.json`). Waiting on Dominic's pick.
 - [ ] 10. Exit check
@@ -354,6 +364,37 @@ it takes its alt); plus Gallop and Saddle Bows at the Castle, and no walls.
   `balance.gd -- 2`: 19 of 33 units off the mean by >20% (main 18), counters 79% (79%); `-- 3`: 21 of
   38, 81%; `mass_battle -- 2` as main within a fight (spears beat the centaurs' cavalry 8 of 10, was
   10: they're no longer large).
+
+### Heroes (step 9, 2026-10-16, D-138)
+`godot --headless --path . --script res://tests/mass_battle.gd -- 2 heroes` (and `-- 3 heroes`): side A fields all of
+its race's heroes once plus soldiers for the rest, side B soldiers at the same cost (3000 a side), each fought both
+ways round, five races. Final settings: 300% hit points, 130% attack, no armour bonus, 30 price points, 1 hp every 3 s.
+
+Age 2:
+```
+heroes+spears v spears         A wins 10 of 10 (B 0)   value left: A  73%  B  31%
+heroes+swords v swords         A wins  9 of 10 (B 1)   value left: A  68%  B  44%
+heroes+archers v archers       A wins  5 of 10 (B 5)   value left: A  38%  B  52%
+heroes+swords v spear+archer   A wins  5 of 10 (B 5)   value left: A  44%  B  46%
+heroes+spears v cavalry        A wins 10 of 10 (B 0)   value left: A  84%  B  16%
+heroes+archers v swords        A wins  9 of 10 (B 1)   value left: A  84%  B  26%
+```
+Age 3:
+```
+heroes+spears v spears         A wins 10 of 10 (B 0)   value left: A  81%  B  40%
+heroes+swords v swords         A wins 10 of 10 (B 0)   value left: A  81%  B  37%
+heroes+archers v archers       A wins  6 of 10 (B 4)   value left: A  59%  B  45%
+heroes+swords v spear+archer   A wins  6 of 10 (B 4)   value left: A  57%  B  43%
+heroes+spears v cavalry        A wins  9 of 10 (B 1)   value left: A  75%  B  39%
+heroes+archers v swords        A wins 10 of 10 (B 0)   value left: A  86%  B  26%
+```
+Reading them: the clean mirrors (archers, spear+archer) are even; "heroes+spears v spears" and "v cavalry" lean A
+by the counters (a hero is a swordsman underneath, swords beat spears; spears beat cavalry), and a plain hero priced as
+a swordsman already won 7 of 10 in the sword mirror on its auras alone, so the auras are worth a little more than
+nothing. The harness ends many fights at 200 s with both sides standing and calls them by value left, which flatters a
+hero that heals and outlives its escort (raising the price raised A's "value left"); the earlier flat stats (+120 hp,
++4 attack, +2/+2) won 60 of 60 with ~95% left. Bot matches: the bots save for their next hero and field 2 or 3
+(test_ai bvb checks a bot fields several).
 
 ## Changes from the original plan
 

@@ -9,7 +9,8 @@ extends SceneTree
 ## against what they beat and what beats them; in age 3 the unique unit against its race's lines. Prints win rates and the
 ## value each side has left.
 ## Deterministic. Massed archers should be strong but counterable.
-## Run: godot --headless --path . --script res://tests/mass_battle.gd [-- age [budget] [combat_rule=value ...] [serial] [jobs=N] [beasts]]
+## Heroes (age 2 and on): all of a race's heroes and soldiers against soldiers ("heroes": just those).
+## Run: godot --headless --path . --script res://tests/mass_battle.gd [-- age [budget] [combat_rule=value ...] [serial] [jobs=N] [beasts] [heroes]]
 ## (each match in its own process, side by side, unless "serial")
 
 const DataLib := preload("res://src/data_lib.gd")
@@ -20,6 +21,7 @@ const Commands := preload("res://src/sim/commands.gd")
 const Tech := preload("res://src/sim/tech.gd")
 const RoundRobin := preload("res://tests/round_robin.gd")
 const Par := preload("res://tests/par.gd")
+const Heroes := preload("res://src/sim/heroes.gd")
 
 const RACES := ["angry swamp frogs with reed spears", "sewer rats with cheese hammers", "centaur romans",
 	"greek hoplites", "spooky beetle knights"]
@@ -77,6 +79,18 @@ const BEAST_MATCHES := [
 	["bolt+spear v beasts", ["bolt_thrower", "spear"], ["war_beast"]],
 	["beast+archer v spear+archer", ["war_beast", "archer"], ["spear", "archer"]],
 ]
+## Heroes (milestone 14 step 9, D-138; age 2 and on): every hero of the race once (their auras on
+## the soldiers round them), the rest of the budget in soldiers, against soldiers at equal cost (twice
+## the budget: a race's heroes together cost about the usual budget). A hero line priced fairly wins
+## about half.
+const HERO_MATCHES := [
+	["heroes+spears v spears", ["hero", "spear"], ["spear"]],
+	["heroes+swords v swords", ["hero", "infantry"], ["infantry"]],
+	["heroes+archers v archers", ["hero", "archer"], ["archer"]],
+	["heroes+swords v spear+archer", ["hero", "infantry"], ["spear", "archer"]],
+	["heroes+spears v cavalry", ["hero", "spear"], ["large"]],
+	["heroes+archers v swords", ["hero", "archer"], ["infantry"]],
+]
 const LIMIT := 4000   # ticks (3:20)
 const FRONT := [22000, 42000]   # x of each side's front line; the map is 64 tiles square
 const MID_Y := 32000
@@ -87,20 +101,22 @@ func _init() -> void:
 	var all_args := Par.plain(OS.get_cmdline_user_args())
 	var only := all_args.filter(func(a): return a.begins_with("match:"))   # match:<k>: just that match (a child)
 	var serial := all_args.has("serial")
-	var args := all_args.filter(func(a): return not a.begins_with("match:") and a != "serial" and a != "beasts")   # ("3 beasts" read "beasts" as a budget of 0: one unit a side)
+	var args := all_args.filter(func(a): return not a.begins_with("match:") and not a in ["serial", "beasts", "heroes"])   # ("3 beasts" read "beasts" as a budget of 0: one unit a side)
 	var age := int(args[0]) if args.size() > 0 else 2
 	var budget := int(args[1]) if args.size() > 1 else 1500
-	var matches: Array = MATCHES + (SIEGE_MATCHES + UNIQUE_MATCHES + BEAST_MATCHES if age >= 3 else [])
+	var matches: Array = MATCHES + (HERO_MATCHES if age >= 2 else []) + (SIEGE_MATCHES + UNIQUE_MATCHES + BEAST_MATCHES if age >= 3 else [])
 	var beasts := all_args.has("beasts")   # just the war beasts' matches (tuning their price_points)
 	if beasts:
 		matches = BEAST_MATCHES
+	if all_args.has("heroes"):   # just the heroes' matches (tuning the hero line's price_points)
+		matches = HERO_MATCHES
 	var t0 := Time.get_ticks_msec()
 	if only.is_empty():
 		for arg in args.slice(2):
 			print("trying combat.%s = %s" % [arg.get_slice("=", 0), arg.get_slice("=", 1)])
 		print("Mass battles, age %d, budget %d a side, each fought both ways round" % [age, budget])
 	if only.is_empty() and not serial:   # each match in its own process, side by side; printed in order
-		var jobs := range(matches.size()).map(func(k): return Par.job("mass/%d" % k, "res://tests/mass_battle.gd", args + (["beasts"] if beasts else []) + ["match:%d" % k]))
+		var jobs := range(matches.size()).map(func(k): return Par.job("mass/%d" % k, "res://tests/mass_battle.gd", args + (["beasts"] if beasts else []) + (["heroes"] if all_args.has("heroes") else []) + ["match:%d" % k]))
 		for r in Par.run(jobs, Par.jobs_wanted(OS.get_cmdline_user_args()), true):
 			assert(r.code == 0, "mass_battle: %s failed, see %s" % [r.name, r.log])
 			print("\n" + FileAccess.get_file_as_string(r.log).trim_prefix(FileAccess.get_file_as_string(r.log).get_slice("\n", 0)).strip_edges())
@@ -128,7 +144,7 @@ func _init() -> void:
 			var rw := 0
 			var counts := ""
 			for swap in 2:
-				var res := fight(rules, age, budget, r, m[1], m[2], swap == 1)
+				var res := fight(rules, age, budget * (2 if "hero" in m[1] + m[2] else 1), r, m[1], m[2], swap == 1)
 				fights += 1
 				left_a += res.left_pct[0]
 				left_b += res.left_pct[1]
@@ -138,9 +154,9 @@ func _init() -> void:
 				elif res.result < 0:
 					losses += 1
 				counts = "%d v %d" % [res.n[0], res.n[1]]
-				rows.append("    %-26s %s  %s  left %3d%% v %3d%%  (%ds)  shots %d, %d%% missed" % [r.name.left(26), counts,
+				rows.append("    %-26s %s  %s  left %3d%% v %3d%%  (%ds)  shots %d, %d%% missed  value %d v %d" % [r.name.left(26), counts,
 					"A" if res.result > 0 else ("B" if res.result < 0 else "="), res.left_pct[0], res.left_pct[1], res.ticks / 20,
-					res.shots, res.missed * 100 / maxi(1, res.shots)])
+					res.shots, res.missed * 100 / maxi(1, res.shots), res.total[0], res.total[1]])
 		print("\n%-30s A wins %2d of %d (B %d)   value left: A %3d%%  B %3d%%" % [m[0], wins, fights, losses, left_a / maxi(1, fights), left_b / maxi(1, fights)])
 		for row in rows:
 			print(row)
@@ -171,13 +187,27 @@ static func fight(rules: Dictionary, age: int, budget: int, race: Dictionary, sa
 		# Melee in front, shooters behind: the order the slots are listed in, the cheap blocks first.
 		var order := slots.duplicate()
 		order.sort_custom(func(x, y): return _rank(x) < _rank(y))
+		var spent := 0
 		for slot in order:
+			if slot == "hero":   # every hero of the race, once (one of each is all a player may have)
+				for hk in Heroes.types_of(w, p):
+					var hc := 0
+					for v in w.types[hk].cost:
+						hc += v
+					cost[hk] = hc
+					w.issue(p, Commands.SPAWN, {"slot": "hero", "hero": w.types[hk].recipe.hero, "count": 1, "x": FRONT[p] - dir * row * GAP, "y": MID_Y + (n[p] % 8 - 4) * GAP + GAP / 2})
+					spent += hc
+					total[p] += hc
+					n[p] += 1
+				row += 1
+				continue
 			var k: int = w.type_of(p, slot)
 			var c := 0
 			for v in w.types[k].cost:
 				c += v
 			cost[k] = c
-			var count := maxi(1, (budget / slots.size() + c / 2) / c)
+			var lines: int = slots.size() - (1 if "hero" in slots else 0)
+			var count := maxi(1, ((budget - spent) / lines + c / 2) / c)
 			for q in count:
 				var x: int = FRONT[p] - dir * (row + q / 8) * GAP
 				var y: int = MID_Y + (q % 8 - 4) * GAP + GAP / 2
@@ -211,7 +241,8 @@ static func fight(rules: Dictionary, age: int, budget: int, race: Dictionary, sa
 			break
 	var a := 1 if swap else 0
 	var pct := [left[a] * 100 / total[a], left[1 - a] * 100 / total[1 - a]]
-	return {"result": 1 if pct[0] > pct[1] else (-1 if pct[1] > pct[0] else 0), "n": [n[a], n[1 - a]], "left_pct": pct, "ticks": w.tick, "shots": shots, "missed": missed}
+	return {"result": 1 if pct[0] > pct[1] else (-1 if pct[1] > pct[0] else 0), "n": [n[a], n[1 - a]], "left_pct": pct, "ticks": w.tick, "shots": shots, "missed": missed,
+		"total": [total[a], total[1 - a]]}
 
 
 static func _rank(slot: String) -> int:

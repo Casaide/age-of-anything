@@ -4,6 +4,7 @@ extends RefCounted
 ## a foe is listed when one side's bonus classes match the other's tags.
 
 const MAX_NAMES := 3
+const Heroes := preload("res://src/sim/heroes.gd")
 
 
 ## t: a unit type (world.types entry, or anything with name + eval); foes: the enemy's types;
@@ -42,6 +43,10 @@ static func text(t: Dictionary, foes: Array, combat := {}) -> String:
 		lines.append("Strong vs: " + _names(strong))
 	if not weak.is_empty():
 		lines.append("Weak vs: " + _names(weak))
+	if t.has("recipe") and t.recipe.has("hero"):   # a hero (milestone 14): its temper first, its aura after the stats
+		var s: Dictionary = Heroes.data().hero_signatures[t.recipe.hero]
+		lines.push_front(s.temper)
+		lines.insert(2, "Aura: " + s.aura.text)
 	return "\n".join(lines)
 
 

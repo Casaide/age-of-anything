@@ -21,6 +21,8 @@ static func evaluate(recipe: Dictionary, lib, rules: Dictionary) -> Dictionary:
 	var gear := [lib.part(recipe.head)] if recipe.head != "" else []   # an engine has no head of its own
 	for slot in recipe.parts:
 		gear.append(lib.part(recipe.parts[slot]))
+	for slot in recipe.get("kit", {}):   # a hero's kit under its look (src/heroes.gd): priced and fought with, not drawn
+		gear.append(lib.part(recipe.kit[slot]))
 
 	var hp := int(body.stats.get("hp", 0))
 	var armour := {"melee": 0, "pierce": 0}   # armour per class (see rules.combat)
@@ -95,8 +97,10 @@ static func evaluate(recipe: Dictionary, lib, rules: Dictionary) -> Dictionary:
 	# scout's pace and sight; "stats_on_foot" for one with nothing to ride), whatever it holds, and a
 	# unique unit's theme (data/uniques.json), each with the price_points they add.
 	var extra := []
+	var look_only := false   # (the hero line: its size is its look, not a giant's body)
 	for sd in rules.roster:
 		if sd.slot == recipe.get("slot", ""):
+			look_only = sd.get("size_is_look", false)
 			extra.append(sd)
 			if not recipe.has("mount") and sd.has("stats_on_foot"):
 				extra.append({"stats": sd.stats_on_foot})
@@ -115,8 +119,12 @@ static func evaluate(recipe: Dictionary, lib, rules: Dictionary) -> Dictionary:
 		sight += int(st.get("sight", 0))
 		if st.has("reload"):
 			weapon.reload = int(st.reload)
+	for x in extra:   # `stats_pct`: hit points and attack in percent of what the unit has by then (the hero line: as tough for a rat as for a centaur)
+		var sp: Dictionary = x.get("stats_pct", {})
+		hp = hp * int(sp.get("hp", 100)) / 100
+		attack = attack * int(sp.get("attack", 100)) / 100
 
-	var scale := int(recipe.scale)
+	var scale := 100 if look_only else int(recipe.scale)
 	if scale >= 140:
 		hp *= 2
 		attack += 3

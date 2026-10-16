@@ -1,12 +1,39 @@
 extends "res://scenes/art_pixel/unit_models.gd"
-## Hero concepts, round HR2 (2026-10-13; D-127, Dominic: "they don't look unique, they need real
-## character to stand out. Imagine a rat like 'Ratty the Gnawer' or 'Ratty the 10000th of his name'").
-## Signature gear for named champions, staged with data/later/heroes.json (its "models"), shown by
-## tests/sheets/heroes_hr2_*.json. Nothing here is in play. Notes: docs/concepts/heroes/README.md.
+## Heroes' signature gear (milestone 14 step 9; HR2's characters, D-127, D-131), in play: the parts
+## "hero.*" (data/parts.json, only_if hero_only) that data/heroes.json's signatures put on over a
+## race's swordsman. unit_models.gd builds them from here (loaded when first asked for, like siege
+## engines). Concept notes: docs/concepts/heroes/README.md.
 ## Frames as the game's gear: head gear on the head's "top" socket (the skull's dome about y -3.8,
 ## radius 5; scaled by the head's gear_scale), back gear from the back socket (down is -y, behind is
 ## -x), held items with the grip at the origin ("low": the business end up and forward; "shoulder":
-## up and back over the shoulder, as the pike), shields built flat and turned by SHIELD_FACE.
+## up and back over the shoulder, as the pike: parts tagged "shouldered"), shields built flat and
+## turned by SHIELD_FACE.
+## Low-slung variants ("hero.<hat>_low", D-138): the same hat for a head that sits low in its shoulders
+## or wears its eyes on top (frogs, beetles, spiders: data/heroes.json signature `fit`), with nothing
+## hanging down behind or beside the head (a mane, a pelt, cheek guards) and set a little higher and
+## further back, a size smaller (`low` while one builds).
+
+var low := false
+const LOW_K := 0.8   # a low-slung hat's size (a spider's eyes ring the top of its head)
+
+
+## A low-slung variant of hat `fn`: built with `low` set, then raised and set back.
+func _low(fn: String, c: Dictionary) -> Dictionary:
+	low = true
+	var out: Dictionary = call(fn, c)
+	low = false
+	for ch in out.node.get_children():
+		ch.position = ch.position * LOW_K + Vector3(-2.0, 1.0, 0)
+		ch.scale *= LOW_K
+	return out
+
+
+func _hero_lion_hood_low(c: Dictionary) -> Dictionary: return _low("_hero_lion_hood", c)
+func _hero_wolf_hat_low(c: Dictionary) -> Dictionary: return _low("_hero_wolf_hat", c)
+func _hero_jaguar_helm_low(c: Dictionary) -> Dictionary: return _low("_hero_jaguar_helm", c)
+func _hero_helm_transverse_low(c: Dictionary) -> Dictionary: return _low("_hero_helm_transverse", c)
+func _hero_tricorn_low(c: Dictionary) -> Dictionary: return _low("_hero_tricorn", c)
+func _hero_top_hat_low(c: Dictionary) -> Dictionary: return _low("_hero_top_hat", c)
 
 
 func gold(k := 1.0) -> StandardMaterial3D:
@@ -71,7 +98,9 @@ func _hero_tricorn(c: Dictionary) -> Dictionary:
 		n.add_child(_box(Vector3(1.0, 3.2, 7.6), felt, at, Vector3(0, -rad_to_deg(a), 18)))
 	n.add_child(ring(4.5, 5.2, plain(Color("#e8e0cc")), Vector3(0.2, -2.4, 0), Vector3(0, 0, -8)))   # the bandage
 	n.add_child(blob(Vector3(0.8, 0.8, 0.6), plain(Color("#a02020")), Vector3(1.5, -2.2, 5.0)))
-	n.add_child(blob(Vector3(0.8, 2.6, 0.6), plain(Color("#e8e0cc")), Vector3(-4.0, -3.4, 2.6), Vector3(0, 0, 20)))   # its knot's tail
+	if not low:
+		n.add_child(blob(Vector3(0.8, 2.6, 0.6), plain(Color("#e8e0cc")), Vector3(-4.0, -3.4, 2.6), Vector3(0, 0, 20)))   # its knot's tail
+	_lift(n, 0.25)   # its brims clear of the brow (placement check, A2)
 	return {"node": n}
 
 
@@ -111,9 +140,10 @@ func _hero_helm_transverse(c: Dictionary) -> Dictionary:
 	var bronze := gold(0.9)
 	n.add_child(dome(Vector3(5.0, 5.0, 4.8), iron, Vector3(0, -3.8, 0)))
 	n.add_child(ring(4.8, 5.4, bronze, Vector3(0.3, -2.8, 0)))
-	n.add_child(blob(Vector3(3.0, 0.6, 5.0), iron, Vector3(-4.0, -4.2, 0), Vector3(0, 0, -25)))
-	for side in [1, -1]:
-		n.add_child(blob(Vector3(1.6, 2.6, 0.5), iron, Vector3(2.0, -5.6, 4.3 * side)))
+	if not low:   # the neck guard and cheek pieces
+		n.add_child(blob(Vector3(3.0, 0.6, 5.0), iron, Vector3(-4.0, -4.2, 0), Vector3(0, 0, -25)))
+		for side in [1, -1]:
+			n.add_child(blob(Vector3(1.6, 2.6, 0.5), iron, Vector3(2.0, -5.6, 4.3 * side)))
 	n.add_child(_box(Vector3(1.0, 1.6, 9.0), bronze, Vector3(-0.2, 1.4, 0)))
 	n.add_child(decal("plume", 22.0, 9.0, Vector3(-0.2, 6.6, 0), Vector3(1, 0, 0), true, Vector3.UP, c.crimson))
 	n.add_child(decal("plume", 22.0, 9.0, Vector3(-0.4, 6.6, 0), Vector3(-1, 0, 0), true, Vector3.UP, c.crimson))
@@ -127,13 +157,14 @@ func _hero_lion_hood(c: Dictionary) -> Dictionary:
 	var pelt := surf("hide", Color(0.95, 0.72, 0.42), 5.0)
 	var mane := surf("mane", Color(0.62, 0.4, 0.22), 3.0)
 	n.add_child(dome(Vector3(5.6, 5.6, 5.4), pelt, Vector3(-0.4, -3.4, 0)))
-	n.add_child(blob(Vector3(4.0, 2.2, 3.6), pelt, Vector3(4.2, -1.0, 0)))   # the lion's muzzle over the brow
-	n.add_child(blob(Vector3(1.4, 1.0, 2.0), plain(Color("#3a2418")), Vector3(7.8, -1.2, 0)))
+	var jaw := Vector3(1.0, 1.8, 0) if low else Vector3.ZERO   # (low: the jaw up off eyes worn on top of the head)
+	n.add_child(blob(Vector3(4.0, 2.2, 3.6), pelt, Vector3(4.2, -1.0, 0) + jaw))   # the lion's muzzle over the brow
+	n.add_child(blob(Vector3(1.4, 1.0, 2.0), plain(Color("#3a2418")), Vector3(7.8, -1.2, 0) + jaw))
 	for side in [1, -1]:
-		n.add_child(cone(0.1, 0.6, 2.0, plain(Color("#f0ead8")), Vector3(6.4, -2.6, 1.6 * side), Vector3(0, 0, 180), 6))   # fangs
+		n.add_child(cone(0.1, 0.6, 2.0, plain(Color("#f0ead8")), Vector3(6.4, -2.6, 1.6 * side) + jaw, Vector3(0, 0, 180), 6))   # fangs
 		n.add_child(blob(Vector3(1.2, 1.4, 0.7), pelt, Vector3(0.5, 2.2, 3.6 * side)))   # its ears
 		n.add_child(blob(Vector3(0.6, 0.4, 0.5), plain(Color("#c89020")), Vector3(5.6, 0.6, 2.2 * side)))
-	for k in 9:   # the mane, down the back of the head
+	for k in (0 if low else 9):   # the mane, down the back of the head
 		var a := PI * 0.6 + k * PI * 0.1
 		n.add_child(blob(Vector3(2.6, 4.0, 2.4), mane, Vector3(cos(a) * 5.4 - 0.6, -4.2, sin(a) * 5.4)))
 	_lift(n, 0.4)   # the lion's jaw clear of the brow (placement check, A2)
@@ -161,12 +192,14 @@ func _hero_wolf_hat(c: Dictionary) -> Dictionary:
 	var fur := surf("rat_fur", Color(0.62, 0.6, 0.58), 4.0)
 	var dark := surf("rat_fur", Color(0.35, 0.33, 0.32), 4.0)
 	n.add_child(dome(Vector3(5.4, 5.0, 5.2), fur, Vector3(-0.4, -3.0, 0)))
-	n.add_child(rod(Vector3(2.5, 0.0, 0), Vector3(8.0, -0.8, 0), 2.4, 1.3, fur))   # the snout over the brow
-	n.add_child(blob(Vector3(0.9, 0.7, 0.9), plain(Color("#1a1412")), Vector3(8.8, -0.6, 0)))
+	var jaw := Vector3(0.6, 1.6, 0) if low else Vector3.ZERO   # (low: the snout up off eyes worn on top of the head)
+	n.add_child(rod(Vector3(2.5, 0.0, 0) + jaw, Vector3(8.0, -0.8, 0) + jaw, 2.4, 1.3, fur))   # the snout over the brow
+	n.add_child(blob(Vector3(0.9, 0.7, 0.9), plain(Color("#1a1412")), Vector3(8.8, -0.6, 0) + jaw))
 	for side in [1, -1]:
 		n.add_child(cone(0.1, 1.5, 3.6, dark, Vector3(0.6, 2.8, 2.4 * side), Vector3(10 * side, 0, -8), 6))
 		n.add_child(blob(Vector3(0.5, 0.4, 0.4), plain(Color("#e0c040")), Vector3(4.2, 0.9, 1.8 * side)))
-	n.add_child(blob(Vector3(2.6, 4.0, 3.8), fur, Vector3(-4.0, -5.0, 0), Vector3(0, 0, -12)))   # the pelt down the back
+	if not low:
+		n.add_child(blob(Vector3(2.6, 4.0, 3.8), fur, Vector3(-4.0, -5.0, 0), Vector3(0, 0, -12)))   # the pelt down the back
 	return {"node": n}
 
 
@@ -190,13 +223,15 @@ func _hero_jaguar_helm(c: Dictionary) -> Dictionary:
 	var pelt := surf("hide", Color(1.0, 0.75, 0.32), 4.0)
 	var spot := plain(Color("#2a1c12"))
 	n.add_child(dome(Vector3(5.6, 5.4, 5.4), pelt, Vector3(-0.4, -3.2, 0)))
-	n.add_child(blob(Vector3(4.2, 2.6, 4.2), pelt, Vector3(4.0, -0.8, 0)))   # the upper jaw over the brow
-	n.add_child(blob(Vector3(1.4, 1.0, 2.0), spot, Vector3(8.0, -0.4, 0)))
+	var jaw := Vector3(1.0, 1.8, 0) if low else Vector3.ZERO   # (low: the jaw up off eyes worn on top of the head)
+	n.add_child(blob(Vector3(4.2, 2.6, 4.2), pelt, Vector3(4.0, -0.8, 0) + jaw))   # the upper jaw over the brow
+	n.add_child(blob(Vector3(1.4, 1.0, 2.0), spot, Vector3(8.0, -0.4, 0) + jaw))
 	for side in [1, -1]:
-		n.add_child(cone(0.1, 0.7, 2.6, plain(Color("#f4eedc")), Vector3(6.6, -2.8, 2.2 * side), Vector3(0, 0, 180), 6))
+		n.add_child(cone(0.1, 0.7, 2.6, plain(Color("#f4eedc")), Vector3(6.6, -2.8, 2.2 * side) + jaw, Vector3(0, 0, 180), 6))
 		n.add_child(blob(Vector3(1.2, 1.3, 0.7), pelt, Vector3(-0.2, 2.4, 3.6 * side)))
 		n.add_child(blob(Vector3(0.6, 0.5, 0.5), plain(Color("#d8c020")), Vector3(5.6, 1.0, 2.4 * side)))
-		n.add_child(blob(Vector3(2.4, 4.2, 1.2), pelt, Vector3(1.0, -8.6, 5.0 * side), Vector3(0, 0, 10)))   # the jaw's sides down the cheeks
+		if not low:
+			n.add_child(blob(Vector3(2.4, 4.2, 1.2), pelt, Vector3(1.0, -8.6, 5.0 * side), Vector3(0, 0, 10)))   # the jaw's sides down the cheeks
 	for k in 12:
 		var a := k * 2.39996
 		n.add_child(blob(Vector3.ONE * 0.55, spot, on_surface(Vector3(-0.4, -3.2, 0), Vector3(5.6, 5.4, 5.4), Vector3(cos(a) * 0.8 - 0.3, 0.4 + fmod(k * 0.37, 0.6), sin(a)), 0.05)))
@@ -223,7 +258,7 @@ func _hero_top_hat(c: Dictionary) -> Dictionary:
 	var felt := surf("bld_felt", Color(0.16, 0.15, 0.17), 3.0)
 	var w := Node3D.new()
 	w.rotation_degrees = Vector3(8, 0, -8)
-	w.scale = Vector3.ONE * 1.4   # (a spider's head is small: at 1x it read as a speck)
+	w.scale = Vector3.ONE * (1.1 if low else 1.4)   # (a spider's head is small: at 1x it read as a speck; low: under a beetle's raised cane)
 	w.position = Vector3(-3.2, 1.2, 0)   # (set back behind the eyes on top: over them, it hid four of eight)
 	n.add_child(w)
 	w.add_child(cone(5.6, 5.6, 0.6, felt, Vector3(0, -0.4, 0), Vector3.ZERO, 24))   # the brim
@@ -315,9 +350,10 @@ func _hero_roach_pet(c: Dictionary) -> Dictionary:
 	var n := root
 	var shell := surf("chitin", Color("#6a3a1a"), 3.0)
 	shell.roughness = 0.3
-	n.add_child(rod(Vector3(-1.0, -4.0, 0), Vector3(1.0, 3.4, 4.0), 0.4, 0.4, surf("leather", Color.WHITE, 2.0)))   # the strap
-	n.add_child(blob(Vector3(2.4, 0.8, 2.0), surf("leather", Color.WHITE, 2.0), Vector3(1.0, 3.6, 4.4)))   # its saddle pad
-	var at := Vector3(1.0, 4.6, 4.4)
+	# (on the far shoulder: the cleaver rides the near one)
+	n.add_child(rod(Vector3(-1.0, -4.0, 0), Vector3(1.0, 3.4, -4.0), 0.4, 0.4, surf("leather", Color.WHITE, 2.0)))   # the strap
+	n.add_child(blob(Vector3(2.4, 0.8, 2.0), surf("leather", Color.WHITE, 2.0), Vector3(1.0, 3.6, -4.4)))   # its saddle pad
+	var at := Vector3(1.0, 4.6, -4.4)
 	var big := Node3D.new()   # (a cockroach the size of a cat: smaller, nobody saw Gerald)
 	big.position = at
 	big.scale = Vector3.ONE * 1.5
@@ -396,7 +432,8 @@ func _hero_cape_heraldic(c: Dictionary) -> Dictionary:
 	for side in [1, -1]:
 		for half in 2:
 			var top := 1.0 if half == 0 else -7.0
-			var pts := [Vector2(2, top), Vector2(2.5, top - 1), Vector2(0.5 - half * 1.5, top - 8.5), Vector2(-4.5 - half * 3.0, top - 9), Vector2(-4 - half * 1.5, top - 1)]
+			var back := half * 1.5   # (the lower quarters flare back as it falls, clear of a crouched body's haunches)
+			var pts := [Vector2(2 - back, top), Vector2(2.5 - back, top - 1), Vector2(0.5 - half * 1.5 - back * 2.0, top - 8.5), Vector2(-4.5 - half * 3.0 - back * 2.0, top - 9), Vector2(-4 - half * 1.5 - back, top - 1)]
 			var panel := slab(pts, 0.6, team if (half + (side + 1) / 2) % 2 == 0 else gold_cloth)
 			panel.position = Vector3(0, 0, 3.0 * side)
 			panel.rotation_degrees = Vector3(0, -10 * side, 0)

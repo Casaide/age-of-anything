@@ -874,17 +874,18 @@ func _muster(i: int) -> void:
 ## tree page crosses it out, and not counted.
 static func _lines_text(race: Dictionary, rules: Dictionary) -> String:
 	var last := {}
-	for u in race.units:
+	var units: Array = race.units.filter(func(u): return u.recipe.slot != "hero")   # (the heroes: their own group in the traits)
+	for u in units:
 		for w in Array(String(u.recipe.name).split(" ")).filter(func(x): return x.length() > 2):   # (each word once a name; not "on", "a")
 			last[w] = last.get(w, 0) + 1
 	var common := ""
 	for w in last:
-		if last[w] * 2 >= race.units.size() and (common == "" or last[w] > last[common]):
+		if last[w] * 2 >= units.size() and (common == "" or last[w] > last[common]):
 			common = w
 	var names := []
 	var have := 0
 	var ident := Identity.of(race.creature, race.family)
-	for u in race.units:
+	for u in units:
 		var words := Array(String(u.recipe.name).split(" ")).filter(func(w): return w != common)
 		var n: String = " ".join(words) if not words.is_empty() else u.recipe.name
 		if Identity.lacks(ident, u.recipe.slot, rules):
@@ -892,7 +893,8 @@ static func _lines_text(race: Dictionary, rules: Dictionary) -> String:
 		else:
 			names.append(n)
 			have += 1
-	return "%d lines: %s" % [have, ", ".join(names)]
+	var heroes: int = race.units.size() - units.size()
+	return "%d lines: %s" % [have, ", ".join(names)] + ("; %d heroes" % heroes if heroes > 1 else "; a hero" if heroes == 1 else "")
 
 
 ## Why a race has no such line, from whichever of its creature and culture lacks it (the line
@@ -918,6 +920,9 @@ static func _lines_card(race: Dictionary, rules: Dictionary) -> String:
 		if why != "":
 			rows.append("%s: not in this race's tree (%s)" % [u.recipe.name, why])
 			continue
+		if u.recipe.slot == "hero":
+			rows.append("Hero: %s (age %d, Town Center)" % [u.recipe.name, int(u.recipe.tier)])
+			continue
 		rows.append(" > ".join(u.get("line", [u]).map(func(l): return "%s (age %d)" % [l.recipe.name, int(l.get("age", u.recipe.get("tier", 1)))])))
 	return "\n".join(rows) + "\n\nTech tree: every line's portraits and cards"
 
@@ -931,11 +936,12 @@ func _traits(race: Dictionary) -> Array:
 	return [{"title": "Bonuses", "one": "bonus", "lines": p.bonuses, "kind": "bonus"},
 		{"title": "Own research", "one": "own research", "lines": p.own, "kind": "own"},
 		{"title": "Lacks", "one": "lack", "lines": p.lacks, "kind": "lack"},
+		{"title": "Heroes", "one": "hero", "lines": race.get("heroes", []).map(func(h): return "%s: %s (%s)" % [h.name, h.temper, h.aura]), "kind": "hero"},
 		{"title": "Notes", "one": "note", "lines": race.notes, "kind": "note"}]
 
 
 ## A side's traits line: groups of {title, one, lines, kind} (see src/view/ui/trait_strip.gd).
-## Kept as one call so more can join it (a hero, milestone 14: one more group).
+## Kept as one call so more can join it (the heroes joined as a group, milestone 14).
 func show_traits(i: int, groups: Array) -> void:
 	sides[i].roster.look = UiTheme.look(sides[i].race.family)
 	sides[i].roster.show_traits(groups)

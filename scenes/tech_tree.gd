@@ -499,7 +499,8 @@ func _icon(n: Dictionary) -> Texture2D:
 		"unit":
 			if kit == null:
 				return null
-			return kit.icons.get("%d:%s@%d" % [side, n.slot, n.age], kit.icons.get("%d:%s" % [side, n.slot]))
+			var lk: String = n.slot + ("." + n.hero if n.has("hero") else "")   # (each hero its own portrait: src/heroes.gd line_key)
+			return kit.icons.get("%d:%s@%d" % [side, lk, n.age], kit.icons.get("%d:%s" % [side, lk]))
 		"research":
 			return Icons.texture(n.icon)
 	return null

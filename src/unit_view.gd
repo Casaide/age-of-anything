@@ -631,7 +631,7 @@ static func hold_for(tags: Array) -> String:
 		return "aim"
 	if "bow" in tags:
 		return "draw"
-	if "spear" in tags and "heavy" in tags:
+	if ("spear" in tags and "heavy" in tags) or "shouldered" in tags:   # (a pike; a hero's anchor or guandao)
 		return "shoulder"
 	return "low"
 
@@ -735,6 +735,7 @@ func _make_rig(lib, body_id: String, head_id: String, colours: Dictionary, paren
 
 	var torso_scale: Vector2 = rig.get("torso_scale", PartShape.v2(body.get("torso_scale", [1, 1])))
 	return {"root": root, "sockets": sockets, "torso_scale": torso_scale, "carry": rig.get("carry", ""), "gear_scale": gear_scale,
+		"drape_scale": float(body.get("drape_scale", 100)) / 100.0,
 		"depth": rig.get("depth", {}), "body": body_id, "modelled": rig.has("sockets")}
 
 
@@ -746,6 +747,8 @@ func _attach(lib, rig: Dictionary, slot: String, part_id: String, colours: Dicti
 	var withers: bool = slot == "back" and "flying" in p.tags and rig.sockets.has("wings")
 	if withers:
 		socket = "wings"
+	if slot == "back" and "drape" in p.tags and rig.sockets.has("drape"):
+		socket = "drape"   # a hanging cape or pelt from where the body's model says it hangs clear (its "drape" socket)
 	if not rig.sockets.has(socket):
 		return
 	var node := _shape()
@@ -779,6 +782,8 @@ func _attach(lib, rig: Dictionary, slot: String, part_id: String, colours: Dicti
 		node.scale = rig.torso_scale
 	elif slot == "head_gear":
 		node.scale = Vector2.ONE * rig.gear_scale   # head gear sized to the head that wears it
+	elif slot == "back" and "drape" in p.tags:
+		node.scale = Vector2.ONE * rig.drape_scale   # a hanging cape or pelt sized to the back it hangs from (parts.json drape_scale)
 	rig.root.add_child(node)
 	if rig.carry == "harness" and slot == "hand_r":
 		# No arms: the weapon lies couched in its holder, pointing forward (a tool just leans).

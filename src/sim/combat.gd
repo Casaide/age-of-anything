@@ -29,6 +29,7 @@ const Fog := preload("res://src/sim/fog.gd")
 const Shots := preload("res://src/sim/shots.gd")
 const Abilities := preload("res://src/sim/abilities.gd")
 const Walls := preload("res://src/sim/walls.gd")
+const Heroes := preload("res://src/sim/heroes.gd")
 
 ## units.stance, what a unit is doing: nothing, an ordered target, a fight it found
 ## itself, an attack-move, or walking back to where it stood (defensive units).
@@ -356,6 +357,7 @@ static func tick(w) -> void:
 			cd[i] -= 1
 	u.cooldown = cd
 	_land(w, hurt, hurt_by, bhurt)
+	var aura := Heroes.auras(w)   # the heroes' auras this tick (heroes.gd): on blows, shots and tower arrows
 	var inbound: PackedInt32Array = w.shots.inbound(u)   # damage still in the air, per unit
 	for i in n:
 		var t: Dictionary = w.types[u.kind[i]]
@@ -460,6 +462,7 @@ static func tick(w) -> void:
 				if j >= 0:
 					var tt: Dictionary = w.types[u.kind[j]]
 					var d := damage(t.atk, tt.arm, tt.cls, maxi(int(c.min_damage), tt.get("min_damage", 0)))   # a sheep goes down in a few blows
+					d = Heroes.boost(aura, i, j, t.eval.damage, d, maxi(int(c.min_damage), tt.get("min_damage", 0)))
 					if up < 0:
 						d = uphill(w, d)
 					if t.ranged:
@@ -472,6 +475,7 @@ static func tick(w) -> void:
 				else:
 					var bt: Dictionary = w.btypes[bs.kind[b]]
 					var d := damage(t.atk, w.bmods[bs.owner[b]][bs.kind[b]].arm, bt.cls, int(c.min_damage))   # armour with research
+					d = Heroes.boost(aura, i, -1, t.eval.damage, d, int(c.min_damage))
 					if up < 0:
 						d = uphill(w, d)
 					if t.ranged:
@@ -506,7 +510,7 @@ static func tick(w) -> void:
 	besieged.sort()
 	for b in besieged:
 		_surround(w, b, chasers[b], hitters.get(b, []))
-	_towers(w)
+	_towers(w, aura)
 	_pour(w, hurt, hurt_by)
 	_apply(w, hurt, hurt_by, bhurt)
 	for k in brhurt.size():
@@ -518,7 +522,7 @@ static func tick(w) -> void:
 ## nearest enemy units in reach: a volley of the type's arrows (data: the attack block's `arrows`,
 ## default 1) plus one for each unit sheltering inside, one at each of the nearest foes in turn
 ## (round again when there are fewer foes than arrows). Research adds reach (Slit Windows).
-static func _towers(w) -> void:
+static func _towers(w, aura := PackedInt32Array()) -> void:
 	var bs = w.buildings
 	var u = w.units
 	var c: Dictionary = w.combat
@@ -568,7 +572,7 @@ static func _towers(w) -> void:
 			var e: Array = near[k % near.size()]
 			var best: int = e[1]
 			var tt: Dictionary = w.types[u.kind[best]]
-			var dmg := damage(bt.atk, tt.arm, tt.cls, int(c.min_damage))
+			var dmg := Heroes.boost(aura, -1, best, bt.attack.damage, damage(bt.atk, tt.arm, tt.cls, int(c.min_damage)), int(c.min_damage))
 			if e[2] < 0:
 				dmg = uphill(w, dmg)
 			_loose(w, bs.id[b], bs.owner[b], mx, my, best, -1, dmg, -1 - bs.kind[b], e[2], bt.shot_speed, k)
