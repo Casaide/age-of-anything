@@ -102,3 +102,4 @@ One line per moment worth remembering. Newest at the bottom.
 - **2026-10-16:** Forest rats in the placement checks: armour centred on rats (every armour sat forward), a rat's banner carried higher, the war boar's riders apart, a sitting cat's seat raised for archers.
 - **2026-10-16:** The pad: hold RB opens the selection's wheel as well as tapping A on it (D-139); a worker's wheel opens at the top of its build pages. A new Deck build with heroes and war beasts.
 - **2026-10-16:** Save and load (D-140): Save game and Load game in the pause menu, Load game in the lobby, a saves page that works with a pad; a save is a snapshot of the world and the bots (loads in ~0.1 s) with the replay to fall back on; a loaded match plays on hash-identical to one never stopped.
+- **2026-10-16:** White boxes on a second match (Deck): the part atlas held every race ever baked and outgrew the GPU's 16384 px; a match now keeps only its own parts, and the atlas is 4096 wide.

@@ -19,8 +19,9 @@ var shade := 1.0:       # extra darkening (the far leg sits in shadow)
 static var baked := {}
 ## The team colour every part is baked in, swapped for the real team at draw time.
 const TEAM_KEY := Color(1, 0, 1)
-const ATLAS_WIDTH := 2048
+const ATLAS_WIDTH := 4096   # (2048 made one match's atlas over 11000 px tall, near the GPU's limit)
 const ATLAS_PAD := 2
+const ATLAS_MAX := 16384   # the tallest texture the GPU takes (the Deck's, a Mac's): taller uploads nothing, and every part draws white
 
 static var atlas: Texture2D = null      # all baked parts in one texture (after build_atlas)
 static var use_atlas := true            # benchmark switch
@@ -88,6 +89,7 @@ static func build_atlas(extras := {}) -> Dictionary:
 		places[k] = Vector2i(x, y)
 		x += sz.x
 		row_h = maxi(row_h, sz.y)
+	assert(y + row_h <= ATLAS_MAX, "atlas %d px tall: more parts than one texture holds (ArtKit._keep_parts keeps a match to its own)" % (y + row_h))
 	var img := Image.create(ATLAS_WIDTH, y + row_h, false, Image.FORMAT_RGBA8)
 	var regions := {}
 	for k in keys:
