@@ -135,6 +135,17 @@ func _run() -> void:
 	pad.fake.right = Vector2.ZERO
 	await _frames(3)
 	_check(view.pad_play.wheel.visible and view.build_page == "civilian", "A on Build: Civilian: its page on the wheel")
+	# Closed there with B, the next tap opens the worker's wheel at the top again (Dominic: it stayed on Civilian).
+	await _tap(JOY_BUTTON_B)
+	_check(not view.pad_play.wheel.visible, "B closes the wheel on the civilian page")
+	await _tap(JOY_BUTTON_A)
+	items = view.pad_play.wheel.pages[view.pad_play.wheel.page][1]
+	_check(view.pad_play.wheel.visible and view.build_page == "" and items.map(func(b): return b.text).has("Build: Civilian"), "opened again: the build pages' top, not the civilian page")
+	k = items.map(func(b): return b.text).find("Build: Civilian")
+	await _point(k, items.size())
+	await _tap(JOY_BUTTON_A)
+	pad.fake.right = Vector2.ZERO
+	await _frames(3)
 	items = view.pad_play.wheel.pages[view.pad_play.wheel.page][1]
 	k = -1
 	for n in items.size():
