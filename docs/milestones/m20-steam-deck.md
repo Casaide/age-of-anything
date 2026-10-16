@@ -159,7 +159,7 @@ Where the design above had two jobs on one button, the pass settles them (Claude
 |---|---|
 | Left stick / L3 | pan (the reticle rides along) / centre on the selection |
 | Right stick / R3 | nudge the reticle (at the rim it pans) / reticle back to the middle |
-| A | tap: select; on your building, or a unit you have selected: its wheel; double-tap: all that kind on screen; hold: the selection circle grows and sweeps |
+| A | tap: select; again on what's selected (your building, a unit of the selection): its wheel; hold: the selection circle grows and sweeps (all of a kind on screen: the first button on a unit's wheel) |
 | X | the smart order (move, gather, attack, build, rally...) |
 | Y | attack-move |
 | B | back: cancel placing or an armed order, close the wheel, leave a build page, deselect |
@@ -172,7 +172,8 @@ Where the design above had two jobs on one button, the pass settles them (Claude
 
 **Changed on the Deck (D-133, 2026-10-15):** holding RB while steering with a stick was uncomfortable and moved
 the camera too (Dominic). The wheel now opens with a tap of A on what you command, the console RTS way, and the camera
-holds still under it. The global wheel is gone (its jobs are on the d-pad, View, and the pause menu).
+holds still under it. A first tap on a building only selects it (Dominic: tapping to see its progress
+opened the build wheel too); a tap on it once selected opens the wheel. The global wheel is gone (its jobs are on the d-pad, View, and the pause menu).
 
 ## Checklist
 - [ ] Plan approved by Dominic
@@ -197,6 +198,7 @@ holds still under it. The global wheel is gone (its jobs are on the d-pad, View,
   imported them, so the export packed only the imported copies: every asset is now "keep" in its .import); menus
   didn't take the pad (they also take arrows and Enter now, and the log says which pads the game sees); the wheel
   moved to tap A (D-133). The army bake is slow on the Deck's CPU: step 8.
+- **2026-10-15, the second build on the Deck** (art, sound, the tap-A wheel): Dominic: "works really nicely now".
 
 - **2026-10-15, the controls:** `tests/pad_check.gd` plays a match with a fake pad: 21 checks pass (the d-pad's Town
   Center, two workers from the wheel, the circle taking only your units, X gathering, a house from the build wheel,

@@ -69,13 +69,20 @@ static func factor(win: Window, needs: Vector2) -> float:
 	return maxf(minf(1.0, fit), minf(screen() * size_pct() / 100.0, fit))
 
 
-## Once per run: a window opened at the design size on a dense screen is a quarter of the size
-## it should be (1600 x 900 physical pixels is half a MacBook's width). Grow it to the design
+## Once per run: on a screen too small for it, fullscreen. Else a window opened at the design size
+## on a dense screen is a quarter of the size it should be (1600 x 900 physical pixels is half a MacBook's width). Grow it to the design
 ## size in UI pixels, within the screen, centred.
 static func fit_window(win: Window) -> void:
 	if win.has_meta("ui_fitted") or win.mode != Window.MODE_WINDOWED or win.size != Vector2i(DESIGN):
 		return
 	win.set_meta("ui_fitted", true)
+	# A screen smaller than the window (the Steam Deck's 1280 x 800), or the Deck itself (Steam sets
+	# SteamDeck=1): fullscreen at the screen's own pixels. A 1600 x 900 window there was shrunk to
+	# fit by the compositor, and everything came out fuzzy (Dominic).
+	var screen_px := DisplayServer.screen_get_size(win.current_screen)
+	if screen_px.x < win.size.x or screen_px.y < win.size.y or OS.get_environment("SteamDeck") == "1":
+		win.mode = Window.MODE_FULLSCREEN
+		return
 	var s := screen()
 	if s <= 1.0:
 		return

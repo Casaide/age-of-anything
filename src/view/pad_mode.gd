@@ -10,7 +10,9 @@ signal changed(on: bool)   # pad mode turned on or off
 
 const STICK_DEAD := 0.22     # stick travel ignored (pads rest a little off centre)
 const WAKE := 0.5            # stick travel that counts as using the pad
-const MOUSE_WAKE_PX := 6.0   # mouse travel that brings the mouse back (the Deck's trackpad is a mouse)
+const MOUSE_WAKE_PX := 80.0  # mouse travel, within MOUSE_WAKE_S, that brings the mouse back (the Deck's trackpad is a
+const MOUSE_WAKE_S := 0.4    # mouse): a brush of the pad or the cursor moved by the system doesn't (Dominic: the stick's
+                             # focus kept jumping back to the top button)
 const BUTTONS := [JOY_BUTTON_A, JOY_BUTTON_B, JOY_BUTTON_X, JOY_BUTTON_Y, JOY_BUTTON_BACK, JOY_BUTTON_START,
 	JOY_BUTTON_LEFT_STICK, JOY_BUTTON_RIGHT_STICK, JOY_BUTTON_LEFT_SHOULDER, JOY_BUTTON_RIGHT_SHOULDER,
 	JOY_BUTTON_DPAD_UP, JOY_BUTTON_DPAD_DOWN, JOY_BUTTON_DPAD_LEFT, JOY_BUTTON_DPAD_RIGHT]
@@ -24,6 +26,8 @@ var menus: Array = []        # Controls that take focus when up (the last visibl
 var _down := {}              # button -> held this frame
 var _was := {}               # button -> held last frame
 var _since := {}             # button -> seconds since it went down
+var _travel := 0.0           # mouse travel lately (MOUSE_WAKE_PX)
+var _travel_at := 0.0
 var fake = null              # tests (tests/pad_check.gd): {buttons: {button: true}, left, right: Vector2}; real pads ignored
 
 
@@ -68,8 +72,14 @@ func _input(event: InputEvent) -> void:
 		_maybe_keyboard(event)
 	elif event is InputEventJoypadMotion and absf(event.axis_value) > WAKE:
 		_set_on(true)
-	elif event is InputEventMouseMotion and event.relative.length() > MOUSE_WAKE_PX:
-		_set_on(false)
+	elif event is InputEventMouseMotion:
+		var now := Time.get_ticks_msec() / 1000.0
+		if now - _travel_at > MOUSE_WAKE_S:
+			_travel = 0.0
+		_travel_at = now
+		_travel += event.relative.length()
+		if _travel > MOUSE_WAKE_PX:
+			_set_on(false)
 	elif (event is InputEventMouseButton or event is InputEventKey) and event.pressed:
 		_set_on(false)
 	# Arrows, Enter or a pad in a menu with nothing focused: focus its first button, so the menus
@@ -90,8 +100,7 @@ func _set_on(v: bool) -> void:
 		return
 	on = v
 	Input.mouse_mode = Input.MOUSE_MODE_HIDDEN if on else Input.MOUSE_MODE_VISIBLE
-	if not on and get_viewport().gui_get_focus_owner() is BaseButton:
-		get_viewport().gui_release_focus()   # the focus ring is the pad's; the mouse doesn't need it
+	_travel = 0.0
 	changed.emit(on)
 
 
