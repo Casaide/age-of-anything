@@ -105,8 +105,9 @@ var webs := PackedInt32Array()     # race abilities (abilities.gd): webs on the 
 var ability_ready := {}            # unit id -> the tick it may use its ability again
 var slowed := {}                   # unit id -> the tick a sticky hit wears off
 var slow_now := {}                 # unit id -> its speed pct this tick (webs, sticky hits); derived each tick
-var hero_id := PackedInt32Array()      # per player: its living hero's unit id (sheltering too), 0 with none (heroes.gd)
-var hero_fell := PackedInt32Array()    # per player: the tick + 1 its hero last fell, 0 if never
+var hero_id := PackedInt32Array()      # per unit type: its living hero's unit id (sheltering too), 0 with none (heroes.gd)
+var hero_fell := PackedInt32Array()    # per unit type: the tick + 1 its hero last fell, 0 if never
+var hero_types := PackedInt32Array()   # the unit types that are heroes, in order (derived at setup)
 var hero_cfg := {}                     # data/heroes.json rules as ints (heroes.gd)
 var aura_now := PackedInt32Array()     # per unit slot: the heroes' auras on it this tick (heroes.gd); derived each tick
 var move_pct: Array = []       # per movement class, per terrain index: speed percent (rules.movement)
@@ -359,7 +360,14 @@ func _movement_class(tags: Array) -> int:
 	return 0
 
 
-## Unit type index for a player's roster slot, or -1.
+## The unit type a TRAIN or SPAWN means: its slot's, the hero it names on the hero line (heroes.gd).
+func type_for(player: int, a: Dictionary) -> int:
+	if a.slot == "hero":
+		return Heroes.type_of(self, player, a.get("hero", ""))
+	return type_of(player, a.slot)
+
+
+## Unit type index for a player's roster slot, or -1 (the hero line: its first hero).
 func type_of(player: int, slot: String) -> int:
 	for k in types.size():
 		if types[k].player == player and types[k].slot == slot:
@@ -475,7 +483,7 @@ func _run(cmd: Dictionary) -> void:
 					var s := slot_of(a, uid)
 					order_move(i, s.x, s.y, SLOT_ARRIVE, a.group, a.fx, a.fy, a.pace)
 		Commands.SPAWN:
-			var k := type_of(cmd.player, a.slot)
+			var k := type_for(cmd.player, a)
 			assert(k >= 0, "Player %d has no unit for slot %s" % [cmd.player, a.slot])
 			var t: Dictionary = types[k]
 			for n in a.count:
@@ -490,8 +498,8 @@ func _run(cmd: Dictionary) -> void:
 				units.mclass[slot] = t.mclass
 				units.posture[slot] = t.posture
 				next_id += 1
-				if t.hero and hero_id[cmd.player] == 0:
-					Heroes.spawned(self, slot)   # (a spawned hero is the player's hero, if it has none out)
+				if t.hero and hero_id[k] == 0:
+					Heroes.spawned(self, slot)   # (a spawned hero is that hero, if it isn't out already)
 		Commands.GATHER:
 			_clear_combat(cmd.player, a.ids)
 			Economy.cmd_gather(self, cmd.player, a)
