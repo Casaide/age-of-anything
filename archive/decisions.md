@@ -817,3 +817,13 @@ on a unit you already have selected (Claude). On the wheel the camera holds stil
 for more, B closes, LB turns pages; it closes itself once there's something to aim (a building, an armed order) or
 after an order or stance. RB is only "your soldiers" now; the global wheel is gone, the tech tree moved into the pause
 menu. Also from that run: every asset the game reads raw (SVG, WAV, GLB, TTF) is imported as "keep", so exports carry it.
+
+**D-134, 2026-10-15: A first tap on a building only selects it.** Dominic: "tap is a little confusing, because I tap a
+building to see build progress, and it opens the build panel too." Buildings now work like units (refines D-133): a tap
+selects, a tap on what's already selected opens its wheel.
+
+**D-135, 2026-10-16: No double tap on the pad's A.** Dominic: tapping a unit for its build menu kept selecting all of
+that kind; "double tap is very sensitive". Tap, then tap again, is how a selection's wheel opens (D-134), so the double
+tap could never be told apart from it. "All of these on screen" is now the first button on a unit's wheel. Also: the
+mouse takes over from the pad only after a real swipe (80 px within 0.4 s) or a click, and the menus keep their focus
+when it does (on the Deck the stick's focus kept jumping back to the top button).
