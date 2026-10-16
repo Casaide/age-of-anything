@@ -4,8 +4,11 @@ extends RefCounted
 ## callables). Loading builds the match as at its start, so every constructor runs, then pours the
 ## snapshot over it: about 0.1 s however long the match ran. It never replays the match.
 ## A save from another build still loads:
-## - the races, the rules and the data tables built from data files (unit types, buildings, tech,
-##   the bots' config: DATA) keep the save's values, and gain any key this build added;
+## - stats come from this build (D-142): the races as it generates them, its rules and data tables
+##   (unit types, buildings, tech, the bots' config: DATA), each player's types and buildings worked
+##   out again from the research the save has. That needs the tables to line up with the save's
+##   (`_layout`); when they don't (a building or research added, a race that generates otherwise),
+##   the save keeps its own races, rules and tables, gaining any key this build added;
 ## - a variable this build added keeps the value its constructor gave it; units and buildings pad
 ##   their per-unit arrays to their count (0, or [] for lists); a class whose new variable needs
 ##   something better says so in `after_load(missing)`;
@@ -20,6 +23,7 @@ const SimMap := preload("res://src/sim/sim_map.gd")
 const World := preload("res://src/sim/world.gd")
 const Replay := preload("res://src/sim/replay.gd")
 const Bot := preload("res://src/ai/bot.gd")
+const Tech := preload("res://src/sim/tech.gd")
 
 const SCHEMA := "aow.save/1"
 static var dir := "user://saves"   # (tests/save_check.gd points it elsewhere)
@@ -96,31 +100,86 @@ static func problem(rep: Dictionary, _lib: DataLib) -> String:
 	return ""
 
 
-## The match as it was saved: {world, bots, rep, same, changed}. same: the state hash is the saved
-## one (a save from this build always is); changed: the variables a build changed since, by path.
+## The match as it was saved: {world, bots, rep, same, changed, migrated}. same: the state hash is
+## the saved one (a save from this build always is); changed: the variables a build changed since,
+## by path; migrated: it plays on with this build's stats (else with its own, frozen).
 static func begin(rep: Dictionary, lib: DataLib) -> Dictionary:
+	var ld := _build(rep, lib, true)
+	if not ld.migrated:
+		ld = _build(rep, lib, false)
+	return ld
+
+
+## Migrating: the races as this build generates them (their keys must match), this build's rules
+## (the save's host choices, e.g. the mode, kept), every data table as this build makes it, then
+## each player's unit types and building stats worked out again from those and the research the
+## save has, its units and buildings keeping their share of health (Tech.retype, Tech.refresh).
+## Possible while the tables line up: the same rosters, buildings, research, resources and armour
+## classes, in the same order (units, buildings and research point into them by place).
+## Frozen: the save's own races, rules and tables, with any key this build added.
+static func _build(rep: Dictionary, lib: DataLib, migrate: bool) -> Dictionary:
 	var snap: Dictionary = rep.snapshot
 	var gen := Generator.new(lib)
 	var races := []
 	for i in rep.races.size():
 		var r: Dictionary = rep.races[i]
 		var saved: Dictionary = snap.world.races[i]
-		if FileAccess.file_exists("res://data/rules/%s.json" % r.rules):   # this build's take, for any field it added
-			saved = merge(gen.generate(r.prompt, DataLib.load_rules(r.rules), r.reroll), saved)
-		races.append(saved)
+		var now := {}
+		if FileAccess.file_exists("res://data/rules/%s.json" % r.rules):
+			now = gen.generate(r.prompt, DataLib.load_rules(r.rules), r.reroll)
+		if migrate:
+			if now.is_empty() or now.key != r.key:
+				return {"migrated": false}
+			races.append(now)
+		else:
+			races.append(saved if now.is_empty() else merge(now, saved))
 	var rules = rep.rules_data
 	if FileAccess.file_exists("res://data/rules/%s.json" % rep.rules):
-		rules = merge(DataLib.load_rules(rep.rules), rules)
+		var file = DataLib.load_rules(rep.rules)
+		rules = merge(rules, file) if migrate else merge(file, rules)
 	var world := World.new(rep.seed, SimMap.load_id(rep.map), races, rules, rep.teams)
+	if migrate and _layout(world) != _layout(snap.world):
+		return {"migrated": false}
 	var bots := []
 	for s in rep.bots:
 		bots.append(Bot.new(s.player, {}, s.level))
 	_changed = []
+	_keep_data = migrate
 	_pour(world, snap.world, "world")
 	for i in bots.size():
 		_pour(bots[i], snap.bots[i], "bot%d" % i)
+	_keep_data = false
 	assert(world.tick == rep.ticks, "the snapshot is at the saved tick")
-	return {"world": world, "bots": bots, "rep": rep, "same": world.state_hash() == rep.hash, "changed": _changed.duplicate()}
+	if migrate:
+		_restat(world, snap.world.types)
+	return {"world": world, "bots": bots, "rep": rep, "same": world.state_hash() == rep.hash, "changed": _changed.duplicate(), "migrated": migrate}
+
+
+## What units, buildings and research point into by place: the tables' entries in order.
+static func _layout(w) -> Array:
+	return [w.types.map(func(t): return [t.player, t.slot, t.get("animal", ""), t.hero]), w.btypes.map(func(b): return b.id),
+		w.tech.research.map(func(r): return r.id), w.tech.ages.size(), w.resources, w.classes]
+
+
+## Stats from this build's tables for a match poured from a save: each player's types and buildings
+## again from its research; animals (no research) by hand. Health keeps its share of the maximum.
+static func _restat(w, saved_types: Array) -> void:
+	for k in w.types.size():   # (retype scales units from the type's health before: the save's)
+		var now_hp: int = w.types[k].hp
+		w.types[k].hp = int(saved_types[k].hp)
+		if w.types[k].player == w.gaia:
+			w.types[k].hp = now_hp
+			for i in w.units.count():
+				if w.units.kind[i] == k:
+					w.units.hp[i] = maxi(1, w.units.hp[i] * now_hp / maxi(1, int(saved_types[k].hp)))
+					w.units.speed[i] = w.types[k].speed if w.units.speed[i] > 0 else 0
+	var held: PackedInt32Array = w.units.speed.duplicate()   # engines packing or unpacking stand at speed 0 (World._pack): they still do
+	for p in w.races.size():
+		Tech.retype(w, p)
+		Tech.refresh(w, p)
+	for i in w.units.count():
+		if held[i] == 0:
+			w.units.speed[i] = 0
 
 
 # ------------------------------------------------------------------ the snapshot
@@ -156,6 +215,7 @@ const DATA := {
 }
 
 static var _changed: Array = []   # what a load found changed, by path ("world.units.wtime: new")
+static var _keep_data := false    # migrating: the data tables stay as this build made them
 
 
 ## Pour an encoded object's variables into obj, then let it fix up what the save didn't have.
@@ -173,6 +233,8 @@ static func _pour(obj: Object, enc: Dictionary, path: String) -> void:
 			_changed.append("%s.%s: new" % [path, name])
 			continue
 		var cur = obj.get(name)
+		if name in data and _keep_data:
+			continue
 		var v = merge(cur, enc[name]) if name in data else _decode(cur, enc[name], "%s.%s" % [path, name])
 		if declared[name] != TYPE_NIL and typeof(v) != declared[name]:
 			missing.append(name)   # its type changed: this build's value stays

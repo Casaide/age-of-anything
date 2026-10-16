@@ -104,3 +104,4 @@ One line per moment worth remembering. Newest at the bottom.
 - **2026-10-16:** Save and load (D-140): Save game and Load game in the pause menu, Load game in the lobby, a saves page that works with a pad; a save is a snapshot of the world and the bots (loads in ~0.1 s) with the replay to fall back on; a loaded match plays on hash-identical to one never stopped.
 - **2026-10-16:** White boxes on a second match (Deck): the part atlas held every race ever baked and outgrew the GPU's 16384 px; a match now keeps only its own parts, and the atlas is 4096 wide.
 - **2026-10-16:** Saves survive game updates without replaying (D-141, Dominic): data merged, new variables padded or fixed by `after_load`; every save kept (~0.4-0.6 MB each).
+- **2026-10-16:** A loaded save plays on with this build's stats, units keeping their share of health; one whose buildings or research changed loads on its own (D-142, Dominic).

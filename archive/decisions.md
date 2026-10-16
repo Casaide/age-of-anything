@@ -883,3 +883,14 @@ the save's values, so an old match goes on under the rules it was started with, 
 buildings pad their per-unit arrays to their count, and a class whose new variable needs better calls `after_load
 (missing)`; a variable a build dropped is ignored. A save needs only its map's file. The replay stays in the save for
 watching back. Every save is kept (Claude's call on the details: no slots, no autosave yet).
+
+**D-142, 2026-10-16: A loaded save plays on with this build's stats (refines D-141).** Dominic: "if we're not
+replaying, then seems we could migrate a save if not totally too old, because updated stats aren't something the save
+should worry about." So a save keeps the state (where everything is, what's built, stock, ages, research done) and
+takes the stats from the build loading it: the races as it generates them, its rules (the save's host choices, such as
+the mode, kept), its data tables, then every player's unit types and building stats worked out again from the
+research the save has, units and buildings keeping their share of health. Claude's call on "too old": units,
+buildings and research point into those tables by place, so this needs them to line up with the save's (the same
+rosters, buildings, research, resources and armour classes, in the same order); when they don't (a building or
+research added or removed, a race prompt that generates differently), the save loads frozen on its own stats as in
+D-141. Remapping by id so those migrate too is a possible next step.

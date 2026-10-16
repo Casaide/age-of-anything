@@ -23,6 +23,10 @@ before; the MVP plan had cut it because "replays cover it".
   needs real though, replaying is bad." The replay fallback went; a save from any build loads from its snapshot
   (D-141): data tables merged (the save's values, plus keys a later build added), new variables keep their
   constructor's values, per-unit arrays padded, an `after_load` hook for the rest, dropped variables ignored.
+- **New stats for old saves** (D-142). Dominic: "updated stats aren't something the save should worry about." A
+  loaded save now takes this build's races, rules and data and works each player's unit types and buildings out again
+  from its research (the same `Tech.retype` / `Tech.refresh` a game mode uses), health keeping its share. Only while
+  the tables still line up; after a new building or research it loads frozen on its own stats.
 - **Sizes:** 380 KB at 5 minutes, 570 KB at 20, written in 25-55 ms.
 
 ## Pictures
@@ -33,6 +37,7 @@ before; the MVP plan had cut it because "replays cover it".
 ## Decisions
 - D-140: snapshot + replay fallback; a new file per save.
 - D-141 (Dominic): keep every save; saves survive updates without replaying.
+- D-142 (Dominic's idea, Claude's line on "too old"): loaded saves take the new stats while the tables line up.
 
 ## Funny moments / bugs
 - B on the saves page closed the page during input, then the battlefield's pad code saw the same B a moment later
