@@ -147,6 +147,9 @@ picks), then build, tests, archive pictures.
     bite, stab, strike) and fall like creatures, throwing their riders clear. Sheet:
     `tests/sheets/war_beasts_anim.json` (facings, walk, cycle, strike, fall; the sheet tool's new `strike:<k>` and
     `fall:<k>` columns). Placement passes, with each beast also walked on its own.
+  - [x] Bent knees (Dominic: "bent knees are required for sure"; D-135): every beast's leg jointed and baked in 8
+    walk steps (`legs.poses`), the knee by two-bone IK as the foot steps back along the ground and swings forward
+    lifted (`12-`, `13-`).
   - [ ] Dominic's look in a match
 - [ ] 8. AI (siege part done 2026-10-13: a few engines, rams at gates, walls and towers, catapults at towers; trade carts, the sapper and the great sling 2026-10-13; war beasts by the counter-pick, at most 4, 2026-10-13)
 - [x] Siege shots drawn as baked art (Dominic: "the rocks they throw look really bad"; 2026-10-13)
