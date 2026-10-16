@@ -2163,6 +2163,7 @@ func _sync_views() -> void:
 		var perch_dy := _perch_sort(i, view.position.y)   # up on a wall: sorted between the wall and its near merlons
 		view.position.y += perch_dy
 		view.lift = Iso.lift(u.px[i] + dx * a, u.py[i] + dy * a) + _wall_lift(i) + perch_dy   # on a hill (or a wall): drawn raised, sorted on the base plane
+		view.set_perched(u.perch[i] != 0)
 		view.walking = dx != 0 or dy != 0
 		if int(world.types[u.kind[i]].unpack) > 0:   # the great sling: on its wagon until it's set up (D-129)
 			view.set_packed(u.ready[i] < int(world.types[u.kind[i]].unpack))

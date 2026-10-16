@@ -101,6 +101,7 @@ func setup(kit, name: String, cx: int, cy: int, sx: int, sy: int, p_team: Color)
 		front.position = centre + Vector2(0, FRONT_SORT_PX)
 		if info.has("front") or info.has("arms_front"):
 			front_body = kit.sprite(info.front) if info.has("front") else Sprite2D.new()
+			front_body.centered = false   # (a wall's, filled in by set_links: centred, its near merlons sat half a sprite up and left, on the far edge of a wall running along y)
 			front_body.position = at - Vector2(0, FRONT_SORT_PX)
 			front_body.self_modulate = body.self_modulate
 			front.add_child(front_body)
