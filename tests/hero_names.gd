@@ -1,7 +1,7 @@
 extends SceneTree
 ## Hero names (milestone 14 step 9; HR2's naming contract, in play since 2026-10-14): data/heroes.json
 ## (hero_names, hero_signatures) run on real races through src/heroes.gd. For each prompt: the race key
-## and every hero the race gets (D-136: its creature's and culture's, topped up from its culture's kin),
+## and every hero the race gets (D-138: its creature's and culture's, topped up from its culture's kin),
 ## each with its name, temper and aura. Deterministic: src/rng.gd seeded from the race key. Run:
 ##   godot --headless --path . --script res://tests/hero_names.gd -- "sewer rats" "romans" ...
 

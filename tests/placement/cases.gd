@@ -83,7 +83,7 @@ static func all(lib, lines := true) -> Array:
 	return cases
 
 
-## Heroes (D-136): any culture's hero can come to any playable creature, and a creature's own to it,
+## Heroes (D-138): any culture's hero can come to any playable creature, and a creature's own to it,
 ## so every such look is checked over that creature's age-3 swordsman (the hero's last step) from its
 ## race in PROMPTS (HERO_BASE: kit already checked above), its replaced kit kept as in play
 ## (src/heroes.gd dress). Labels "hero: <creature> as <signature>".

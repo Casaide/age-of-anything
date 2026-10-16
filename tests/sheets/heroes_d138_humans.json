@@ -1,7 +1,7 @@
 {
- "name": "heroes_d136_humans",
- "title": "Heroes in play (D-136): every race has all its heroes, the human cultures",
- "_doc": "Milestone 14 step 9, D-136 (Dominic, 2026-10-16: 'heroes i thought we'd do all of them, so each race has some variety'): each race's every hero (src/heroes.gd roster_for: its creature's and culture's signatures, topped up from its culture's kin to three) at age 3, as the game dresses them (the signature's per-creature fit included). Rows from the sheet tool's each/heroes.",
+ "name": "heroes_d138_humans",
+ "title": "Heroes in play (D-138): every race has all its heroes, the human cultures",
+ "_doc": "Milestone 14 step 9, D-138 (Dominic, 2026-10-16: 'heroes i thought we'd do all of them, so each race has some variety'): each race's every hero (src/heroes.gd roster_for: its creature's and culture's signatures, topped up from its culture's kin to three) at age 3, as the game dresses them (the signature's per-creature fit included). Rows from the sheet tool's each/heroes.",
  "zooms": [
   2,
   1

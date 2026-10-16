@@ -1,5 +1,5 @@
 extends RefCounted
-## A race's heroes (milestone 14 step 9; D-127, D-131: HR2's characters as a pool; D-136: all of them).
+## A race's heroes (milestone 14 step 9; D-127, D-131: HR2's characters as a pool; D-138: all of them).
 ## Each race gets every signature (data/heroes.json hero_signatures: a look, a temper, an aura) naming
 ## its creature or its culture; one with fewer than rules.min_heroes is topped up from its culture's
 ## `kin` (the kindred cultures' signatures, in the kin list's order), so every race has a few. Each
@@ -96,7 +96,7 @@ static func make(lib, race: Dictionary, rules: Dictionary) -> Array:
 
 ## A unit's recipe dressed as the hero: the signature's parts on (the replaced ones kept in `kit`),
 ## its scale, the hero's slot, role and name. A look with no back piece stows the swordsman's back
-## gear (a banner, a cape) in the kit too: the hero's hat or weapon is its silhouette (D-136).
+## gear (a banner, a cape) in the kit too: the hero's hat or weapon is its silhouette (D-138).
 static func dress(recipe: Dictionary, sid: String, s: Dictionary, name: String, tier: int) -> Dictionary:
 	var r: Dictionary = recipe.duplicate(true)
 	r.slot = "hero"

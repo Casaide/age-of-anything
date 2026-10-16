@@ -123,7 +123,7 @@ func _test_mods(base_lib, rules: Dictionary) -> void:
 ## six bonuses (group 1, creature 2, culture 3 with a team one), no kind twice; every effect has the research shape; own research
 ## and lacks name real things; a race's identity comes from its creature and culture alone (the
 ## recipes and race key don't see it), and its stat bonuses are paid for.
-## Heroes (milestone 14 step 9, src/heroes.gd, data/heroes.json; D-136): every playable creature with
+## Heroes (milestone 14 step 9, src/heroes.gd, data/heroes.json; D-138): every playable creature with
 ## every culture has at least rules.min_heroes, its own creature's and culture's all among them, none
 ## twice; every signature is someone's; each name carries its signature's epithet or nickname; the
 ## heroes are derived from the key (not in it), the same every time, dressed over the swordsman with
@@ -354,7 +354,7 @@ func _test_tech_tree(lib, gen, rules: Dictionary) -> void:
 			for sd in r.roster:
 				check(bdata.buildings.has(sd.get("building", "")), "roster %s names a building (%s)" % [sd.slot, rid])
 				var first := maxi(int(sd.tier), int(bdata.buildings[sd.building].age))   # trained once its building stands
-				var heroes: Array = race.get("heroes", []) if sd.role == "hero" else []   # (each hero its own node, D-136)
+				var heroes: Array = race.get("heroes", []) if sd.role == "hero" else []   # (each hero its own node, D-138)
 				check(seen.has("u:%s@%d" % [sd.slot, first]) if heroes.is_empty() else heroes.all(func(h): return seen.has("u:%s.%s@%d" % [sd.slot, h.signature, first])),
 					"tree: line %s is on the page (%s)" % [sd.slot, rid])
 				if sd.get("status", "") != "planned":
