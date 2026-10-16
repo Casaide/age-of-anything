@@ -1,14 +1,17 @@
 extends SceneTree
 ## Unit portrait concepts (2026-10-16; Dominic: "unit icons are too zoomed out, hard to tell what's
 ## what", and the line upgrade's button looks just like the Train button beside it). For a few races,
-## every unit's portrait as the panel shows it (80 px), framed four ways:
+## every unit's portrait as the panel shows it (80 px), framed three ways:
 ##   today  ArtKit.frame_icon: the whole body, a margin round it
 ##   A      a bust: head, chest and the weapon in hand fill the square (a rider: the rider and the
 ##          mount's head)
-##   B      today's frame with a badge in the corner: the unit's own weapon (its baked sprite)
-##   C      the bust and the badge
-## and a row of line upgrades: today (the line's current portrait, as the Train button) beside the
-## proposal (the next step's portrait, a gold up-arrow, the age it brings).
+##   D      the bust with a drawn role glyph in the corner (assets/art/icons/glyph/role_*.svg: spear,
+##          sword, bow, sling, horse, staff; round 1's badge of the unit's own weapon read as a line)
+## and its military lines' upgrade buttons: today (the line's current portrait, as the Train button)
+## beside three proposals (round 1's arrow on the bust was "a bit bland": Dominic):
+##   U1  a gold frame, a big arrow, pips for the age it brings
+##   U2  before and after: the step it leaves small and faded in a corner, an arrow to the new bust
+##   U3  a gold glow behind the new bust, rank chevrons for the age
 ## Run (needs a display):
 ##   godot --path . --audio-driver Dummy --always-on-top --script res://tests/icon_concepts.gd -- out.png ["prompt" ...]
 
@@ -22,6 +25,9 @@ const BakeClock := preload("res://src/view/art/bake/bake_clock.gd")
 const SHOW := 80            # the panel's button, in screen pixels
 const GAP := 10
 const LABEL_W := 120
+const GLYPH := 30           # a role glyph's size on a portrait
+const GOLD := Color("#e8b84a")
+const DARK := Color("#2a2018")
 const SLOTS := ["worker", "spear", "infantry", "skirmisher", "archer", "large", "scout", "mounted_archer", "healer"]
 const BUST := 0.62          # the share of the body's height a bust frames (from the top)
 
@@ -44,7 +50,7 @@ func _initialize() -> void:
 	await kit.bake_units(races)
 	kit.rebuild_atlas()
 	var team := Color(lib.palettes.teams[0])
-	var blocks := []   # [race name, [[slot, cells: {today, A, B, C}]], upgrade pairs]
+	var blocks := []   # [race name, [[slot, cells: {today, A, D}]], upgrade pairs]
 	for race in races:
 		var units := []
 		for slot in SLOTS:
@@ -56,18 +62,21 @@ func _initialize() -> void:
 		var row := []
 		for k in units.size():
 			var cell: Image = cells[k]
-			var badge := _weapon(lib, units[k].recipe, team)
+			var glyph := _glyph(_role_glyph(lib, units[k].recipe))
 			row.append([str(units[k].recipe.get("role", units[k].recipe.get("slot", "?"))),
-				{"today": ArtKit.frame_icon(cell), "A": bust(cell), "B": _badged(ArtKit.frame_icon(cell), badge), "C": _badged(bust(cell), badge)}])
-		# Line upgrades: the first step a line has after age 1 or 2, today and proposed.
+				{"today": ArtKit.frame_icon(cell), "A": bust(cell), "D": _badged(bust(cell), glyph)}])
+		# Line upgrades: a military line's first step after its first, today and three proposals.
 		var ups := []
 		for u in units:
 			var line: Array = u.get("line", [])
-			if line.size() < 2:
+			if line.size() < 2 or str(u.recipe.get("role", "")) in ["worker", "healer"]:
 				continue
 			var pair: Array = await _paint(kit, lib, [line[0].recipe, line[1].recipe], team)
-			ups.append([str(u.recipe.get("role", "?")), ArtKit.frame_icon(pair[0]), _upgrade(bust(pair[1]), int(line[1].age))])
-			if ups.size() >= 4:
+			var age := int(line[1].age)
+			var old := ArtKit.frame_icon(pair[0])
+			var new := bust(pair[1])
+			ups.append([str(u.recipe.get("role", "?")), old, _u1(new, age), _u2(new, old), _u3(new, age)])
+			if ups.size() >= 2:
 				break
 		blocks.append([race.name, row, ups])
 	await _sheet(blocks, out)
@@ -144,61 +153,128 @@ static func bust(cell: Image) -> Image:
 	return sq
 
 
-## The unit's weapon as baked (facing 0), or null.
-func _weapon(lib, recipe: Dictionary, team: Color) -> Image:
+## Which role glyph a unit wears: by its weapon's tags; a rider with a lance or a blade, the horse.
+func _role_glyph(lib, recipe: Dictionary) -> String:
 	var id: String = recipe.get("parts", {}).get("hand_r", "")
-	if id == "":
+	var tags: Array = lib.part(id).get("tags", []) if id != "" else []
+	var rides: bool = recipe.has("mount") and not recipe.mount.get("fused", false)   # (a centaur is its own horse: it goes by its weapon)
+	if recipe.get("role", "") == "worker":
+		return ""
+	if "heal" in tags or "staff" in tags:
+		return "staff"
+	if "bow" in tags:
+		return "bow"
+	if "ranged" in tags:
+		return "sling"
+	if rides and ("lance" in tags or not "spear" in tags):
+		return "horse"
+	if "spear" in tags or "reach" in tags:
+		return "spear"
+	if "melee" in tags:
+		return "sword"
+	return ""
+
+
+static func _glyph(name: String) -> Image:
+	if name == "":
 		return null
-	var view := UnitView.new()
-	view.build(recipe, lib, team, 10)
-	var img: Image = null
-	for ps in view.find_children("*", "Node2D", true, false):
-		if ps is PartShape and ps.part_id == id:
-			var b = ps.bake_of()
-			if b != null:
-				img = (b.img as Image).duplicate()
-			break
-	view.free()
+	var img := Image.new()
+	img.load_svg_from_string(FileAccess.get_file_as_string("res://assets/art/icons/glyph/role_%s.svg" % name), GLYPH / 32.0)
+	img.convert(Image.FORMAT_RGBA8)
 	return img
 
 
-## A portrait at SHOW px with the weapon badge in its lower right: a dark disc, the weapon on it.
-static func _badged(icon: Image, weapon: Image) -> Image:
+## A portrait at SHOW px with this glyph in its lower right.
+static func _badged(icon: Image, glyph: Image) -> Image:
 	var out := _sized(icon)
-	if weapon == null:
-		return out
-	var r := 15
-	var c := Vector2i(SHOW - r - 3, SHOW - r - 3)
-	_disc(out, c, r + 2, Color("#e2c47a"))
-	_disc(out, c, r, Color("#2a2018"))
-	var w: Image = weapon.duplicate()
-	w.convert(Image.FORMAT_RGBA8)
-	var used: Rect2i = w.get_used_rect()
-	w = w.get_region(used)
-	var k := float(r * 2 - 6) / maxf(w.get_width(), w.get_height())
-	w.resize(maxi(1, roundi(w.get_width() * k)), maxi(1, roundi(w.get_height() * k)), Image.INTERPOLATE_NEAREST)
-	out.blend_rect(w, Rect2i(Vector2i.ZERO, w.get_size()), c - w.get_size() / 2)
+	if glyph != null:
+		out.blend_rect(glyph, Rect2i(Vector2i.ZERO, glyph.get_size()), Vector2i(SHOW - GLYPH - 2, SHOW - GLYPH - 2))
 	return out
 
 
-## The proposed upgrade button: the next step's bust, a gold up-arrow, the age (II, III).
-static func _upgrade(icon: Image, age: int) -> Image:
+## U1: a gold frame, a big arrow at the top left, a pip per age at the top right.
+static func _u1(icon: Image, age: int) -> Image:
 	var out := _sized(icon)
-	var gold := Color("#e8b84a")
-	var dark := Color("#2a2018")
-	for y in 22:   # the arrow, top left: a dark edge, gold inside
-		for x in 26:
-			var head := y < 13 and absi(x - 13) <= y
-			var shaft := y >= 13 and absi(x - 13) <= 5
-			if head or shaft:
-				out.set_pixel(x + 3, y + 3, dark)
-	for y in range(1, 21):
-		for x in range(1, 25):
-			var head := y < 13 and absi(x - 13) <= y - 2
-			var shaft := y >= 13 and y < 20 and absi(x - 13) <= 3
-			if head or shaft:
-				out.set_pixel(x + 3, y + 3, gold)
+	for t in 4:
+		var c := GOLD.darkened(0.25) if t == 0 or t == 3 else GOLD
+		for x in range(t, SHOW - t):
+			out.set_pixel(x, t, c)
+			out.set_pixel(x, SHOW - 1 - t, c)
+		for y in range(t, SHOW - t):
+			out.set_pixel(t, y, c)
+			out.set_pixel(SHOW - 1 - t, y, c)
+	_arrow(out, Vector2i(6, 6), 1.2)
+	for k in age:
+		_diamond(out, Vector2i(SHOW - 12 - k * 11, 11), 5)
 	return out
+
+
+## U2: the step it leaves small and faded in the lower left, an arrow up to the new bust.
+static func _u2(icon: Image, old: Image) -> Image:
+	var out := _sized(icon)
+	var s := 34
+	var small: Image = old.duplicate()
+	small.convert(Image.FORMAT_RGBA8)
+	small.resize(s, s, Image.INTERPOLATE_NEAREST)
+	for y in s:
+		for x in s:
+			var c := small.get_pixel(x, y)
+			var g := c.get_luminance()
+			small.set_pixel(x, y, Color(g, g, g, c.a * 0.85))
+	var at := Vector2i(2, SHOW - s - 2)
+	for y in range(-2, s + 2):   # a dark box under it, a gold rim
+		for x in range(-2, s + 2):
+			var rim := x < 0 or y < 0 or x >= s or y >= s
+			out.set_pixel(at.x + x, at.y + y, GOLD if rim else DARK)
+	out.blend_rect(small, Rect2i(0, 0, s, s), at)
+	_arrow(out, Vector2i(s - 2, SHOW - s - 26), 0.9)
+	return out
+
+
+## U3: a gold glow behind the new bust, a chevron per age in the lower right.
+static func _u3(icon: Image, age: int) -> Image:
+	var out := Image.create(SHOW, SHOW, false, Image.FORMAT_RGBA8)
+	var c := Vector2(SHOW * 0.5, SHOW * 0.45)
+	for y in SHOW:
+		for x in SHOW:
+			var d := Vector2(x, y).distance_to(c) / (SHOW * 0.6)
+			var a := clampf(1.0 - d, 0.0, 1.0)
+			out.set_pixel(x, y, Color(GOLD.r, GOLD.g * 0.9, GOLD.b * 0.5, a * a * 0.85))
+	var b := _sized(icon)
+	out.blend_rect(b, Rect2i(0, 0, SHOW, SHOW), Vector2i.ZERO)
+	for k in age:   # chevrons stacked upward
+		_chevron(out, Vector2i(SHOW - 18, SHOW - 10 - k * 8))
+	return out
+
+
+## A gold up-arrow, dark-edged, its top left at `at`, scaled.
+static func _arrow(img: Image, at: Vector2i, k: float) -> void:
+	var w := roundi(26 * k)
+	var h := roundi(22 * k)
+	for pass_ in 2:
+		var grow := 2 if pass_ == 0 else 0
+		for y in h:
+			for x in w:
+				var mid := w / 2
+				var head := y < h * 0.6 and absi(x - mid) <= y + grow - (0 if pass_ == 0 else 2)
+				var shaft := y >= h * 0.6 and absi(x - mid) <= roundi(w * 0.2) + (grow / 2) and y < h - (0 if pass_ == 0 else 1)
+				if head or shaft:
+					img.set_pixel(at.x + x, at.y + y, DARK if pass_ == 0 else GOLD)
+
+
+static func _diamond(img: Image, c: Vector2i, r: int) -> void:
+	for y in range(-r - 1, r + 2):
+		for x in range(-r - 1, r + 2):
+			var d := absi(x) + absi(y)
+			if d <= r + 1:
+				img.set_pixel(c.x + x, c.y + y, DARK if d > r - 1 else GOLD)
+
+
+static func _chevron(img: Image, at: Vector2i) -> void:
+	for x in range(-9, 10):
+		var y := 6 - absi(x) * 6 / 9
+		for t in range(-2, 3):
+			img.set_pixel(at.x + x, at.y + y + t, DARK if absi(t) == 2 else GOLD)
 
 
 static func _sized(icon: Image) -> Image:
@@ -223,7 +299,8 @@ func _sheet(blocks: Array, out: String) -> void:
 	var w := LABEL_W + cols * (SHOW + GAP) + GAP
 	var h := 60
 	for b in blocks:
-		h += 40 + 4 * (SHOW + GAP) + 30 + (SHOW + GAP + 24) + 20
+		h += 40 + 3 * (SHOW + GAP) + 30 + (SHOW + GAP + 24) + 20
+	h += 120   # the glyphs, large
 	var vp := SubViewport.new()
 	vp.size = Vector2i(w, h)
 	vp.render_target_update_mode = SubViewport.UPDATE_DISABLED
@@ -235,13 +312,25 @@ func _sheet(blocks: Array, out: String) -> void:
 	bg.color = Color("#1d1813")
 	bg.size = vp.size
 	page.add_child(bg)
-	_label(page, "Unit portraits: today, A bust, B badge, C bust + badge; line upgrades today vs proposed (80 px, the panel's size)", Vector2(GAP, 14), 18)
+	_label(page, "Unit portraits, round 2: today, A bust, D bust + role glyph; upgrade buttons U1-U3 (80 px, the panel's size)", Vector2(GAP, 14), 18)
 	var y := 60
+	_label(page, "role glyphs", Vector2(GAP, y + 30), 16)
+	var gx := LABEL_W
+	for g in ["spear", "sword", "bow", "sling", "horse", "staff"]:
+		var big := Image.new()
+		big.load_svg_from_string(FileAccess.get_file_as_string("res://assets/art/icons/glyph/role_%s.svg" % g), 2.5)
+		var t := TextureRect.new()
+		t.texture = ImageTexture.create_from_image(big)
+		t.position = Vector2(gx, y)
+		page.add_child(t)
+		_label(page, g, Vector2(gx + 18, y + 84), 12, Color(1, 1, 1, 0.6))
+		gx += 110
+	y += 120
 	for b in blocks:
 		_label(page, b[0], Vector2(GAP, y), 20, Color("#e8b84a"))
 		y += 40
-		for opt in ["today", "A", "B", "C"]:
-			_label(page, {"today": "today", "A": "A  bust", "B": "B  badge", "C": "C  both"}[opt], Vector2(GAP, y + SHOW / 2 - 10), 16)
+		for opt in ["today", "A", "D"]:
+			_label(page, {"today": "today", "A": "A  bust", "D": "D  bust + glyph"}[opt], Vector2(GAP, y + SHOW / 2 - 10), 16)
 			for k in b[1].size():
 				var x: int = LABEL_W + k * (SHOW + GAP)
 				_cell(page, b[1][k][1][opt], Vector2(x, y))
@@ -251,10 +340,10 @@ func _sheet(blocks: Array, out: String) -> void:
 		y += 30
 		_label(page, "upgrades", Vector2(GAP, y + SHOW / 2 - 10), 16)
 		for k in b[2].size():
-			var x: int = LABEL_W + k * 2 * (SHOW + GAP)
-			_label(page, "%s: today | proposed" % b[2][k][0], Vector2(x, y - 18), 12, Color(1, 1, 1, 0.6))
-			_cell(page, b[2][k][1], Vector2(x, y))
-			_cell(page, b[2][k][2], Vector2(x + SHOW + GAP, y))
+			var x: int = LABEL_W + k * 4 * (SHOW + GAP) + k * 30
+			_label(page, "%s:  today | U1 frame | U2 before-after | U3 glow" % b[2][k][0], Vector2(x, y - 18), 12, Color(1, 1, 1, 0.6))
+			for v in 4:
+				_cell(page, b[2][k][1 + v], Vector2(x + v * (SHOW + GAP), y))
 		y += SHOW + GAP + 24 + 20
 	await process_frame
 	await BakeClock.render(vp)

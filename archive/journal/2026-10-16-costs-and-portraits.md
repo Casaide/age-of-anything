@@ -20,5 +20,12 @@ ways at the panel's 80 px: today, A a bust (head, chest, the weapon in hand), B 
 weapon as a badge, C both; and the line upgrade's button today beside a proposal (the next step's bust, a gold
 up-arrow). The bust reads far better; the weapon badge is a line at that size (a drawn role glyph would read).
 
+**Round 2** (Dominic: a drawn role glyph on the bust; the upgrade "feels a bit bland"). Six role glyphs drawn as SVGs
+in the building glyphs' style (`assets/art/icons/glyph/role_*.svg`: spear, sword, bow, sling, horse, staff), picked
+by the weapon's tags (a rider with a lance or blade: the horse; a centaur is its own horse and goes by its weapon;
+workers none). Three upgrade buttons: U1 a gold frame, a big arrow, a pip per age; U2 before and after (the old
+step small and faded in a corner, an arrow to the new bust); U3 a gold glow behind the new bust, rank chevrons.
+
 ## Pictures
 - `22-unit-portrait-concepts-today-bust-badge.png`: the concept sheet, four races.
+- `23-unit-portrait-concepts-round2-glyphs-upgrades.png`: round 2, the role glyphs and three upgrade buttons.
