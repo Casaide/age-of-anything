@@ -1047,7 +1047,9 @@ func _test_walled_base(rules: Dictionary, a: Dictionary, b: Dictionary, wall: St
 		var bi := Economy.place(w, 0, gk, g[0], g[1], g[2])
 		w.buildings.done[bi] = 1
 		w.buildings.hp[bi] = w.bmods[0][gk].hp
-	var bot := Bot.new(1)
+	var cfg: Dictionary = Bot.load_config()
+	cfg.military.erase("hero")   # no heroes (D-136): with them the battle's timing shifts and its archers nick a second piece (palisade: 70 of 162 blows on one)
+	var bot := Bot.new(1, cfg)
 	var passive := EcoBot.new(0)
 	var reach := Reach.new()
 	var ln: int = w.lane_base[1]   # the bot's foot soldiers' lane (ground)
