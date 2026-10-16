@@ -393,7 +393,8 @@ func _body_frog_built(c: Dictionary) -> Dictionary:
 	kerchief(front, c, Vector3(5.0, 12.2, 0), 3.2, 40)
 	return {"node": n, "front": front, "sockets": {
 		"head": Vector3(6.6, 13.5, 0), "hand_r": near_hand, "hand_l": Vector3(8.0, 4.5, -5.4),   # (head at 7, 14 sat a unit off the body; the far hand at 1.2 put a staff a unit into the ground)
-		"torso": Vector3(1.0, 10.0, 0), "back": Vector3(-4.5, 13.0, 0), "sit": Vector3(-0.5, 3.6, 0)},
+		"torso": Vector3(1.0, 10.0, 0), "back": Vector3(-4.5, 13.0, 0), "sit": Vector3(-0.5, 3.6, 0),
+		"drape": Vector3(-7.5, 12.5, 0)},   # (a hero's cape hangs from behind the hunched shoulders, clear of the haunches)
 		"anchors": [[Vector3(-4.5, 6.0, -5.2), 0.0, -1], [Vector3(-4.5, 6.0, 5.2), PI, 1]],
 		"torso_scale": Vector2(0.75, 0.6)}
 
@@ -1959,7 +1960,8 @@ func _body_beetle_rear(c: Dictionary) -> Dictionary:
 	front.add_child(rod(pose[0], pose[1], 0.8, 0.6, limb))
 	n.add_child(rod(Vector3(3.5, 18, -4), Vector3(6.5, 14.5, -6), 0.95, 0.75, limb))   # the far arm
 	return {"node": n, "front": front, "sockets": {"head": Vector3(4, 22.5, 0), "hand_r": pose[1], "hand_l": Vector3(6.5, 14.5, -6),
-		"torso": Vector3(2.5, 16, 0), "back": Vector3(-6, 14, 0)},
+		"torso": Vector3(2.5, 16, 0), "back": Vector3(-6, 14, 0),
+		"drape": Vector3(-10.5, 12.5, 0)},   # (a hero's cape hangs from behind the shell, clear of the abdomen)
 		"anchors": [[Vector3(0.5, 8.0, 3.2), 0.0, 1, 0], [Vector3(-6.0, 8.0, 3.2), PI, 1, 1],
 			[Vector3(0.5, 8.0, -3.2), PI, -1, 0], [Vector3(-6.0, 8.0, -3.2), 0.0, -1, 1]],
 		"torso_scale": Vector2(0.55, 0.65)}
