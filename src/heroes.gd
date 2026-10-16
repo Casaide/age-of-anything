@@ -85,7 +85,8 @@ static func make(lib, race: Dictionary, rules: Dictionary) -> Array:
 
 
 ## A unit's recipe dressed as the hero: the signature's parts on (the replaced ones kept in `kit`),
-## its scale, the hero's slot, role and name.
+## its scale, the hero's slot, role and name. A look with no back piece stows the swordsman's back
+## gear (a banner, a cape) in the kit too: the hero's hat or weapon is its silhouette (D-136).
 static func dress(recipe: Dictionary, sid: String, s: Dictionary, name: String, tier: int) -> Dictionary:
 	var r: Dictionary = recipe.duplicate(true)
 	r.slot = "hero"
@@ -95,16 +96,39 @@ static func dress(recipe: Dictionary, sid: String, s: Dictionary, name: String, 
 	r.name = name
 	r.erase("noun")
 	var kit := {}
-	var slots: Array = s.parts.keys()
+	var parts := parts_on(s, String(r.creature))
+	var slots: Array = parts.keys()
 	slots.sort()
 	for slot in slots:
 		if r.parts.has(slot):
 			kit[slot] = r.parts[slot]
-		r.parts[slot] = s.parts[slot]
+		r.parts[slot] = parts[slot]
+	if r.parts.has("back") and not parts.has("back"):
+		kit.back = r.parts.back
+		r.parts.erase("back")
 	if not kit.is_empty():
 		r.kit = kit
 	r.scale = int(r.scale) * int(s.scale) / 100
 	return r
+
+
+## A signature's parts on a creature: its own, with its `fit` for that creature over them (a part in
+## place of one, "" to keep the race's own there).
+static func parts_on(s: Dictionary, creature: String) -> Dictionary:
+	var out: Dictionary = s.parts.duplicate()
+	var fit: Dictionary = s.get("fit", {}).get(creature, {})
+	for slot in fit:
+		if fit[slot] == "":
+			out.erase(slot)
+		else:
+			out[slot] = fit[slot]
+	return out
+
+
+## A unit line's key in the views (portraits, the panel's icons): its slot; a hero's slot and
+## signature ("hero.widow"), since a race's heroes share the hero line.
+static func line_key(recipe: Dictionary) -> String:
+	return "%s.%s" % [recipe.slot, recipe.hero] if recipe.has("hero") else String(recipe.slot)
 
 
 ## The rules' hero line ({} if the rules have none).
