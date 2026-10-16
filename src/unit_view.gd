@@ -749,6 +749,8 @@ func _attach(lib, rig: Dictionary, slot: String, part_id: String, colours: Dicti
 		socket = "wings"
 	if slot == "back" and "drape" in p.tags and rig.sockets.has("drape"):
 		socket = "drape"   # a hanging cape or pelt from where the body's model says it hangs clear (its "drape" socket)
+	if slot == "back" and "banner" in p.tags and not "hero" in p.tags and rig.sockets.has("banner"):   # (a hero's back pieces are fitted to the back itself)
+		socket = "banner"   # a banner pole where the body's model carries one (a rat's, higher than its low back)
 	if not rig.sockets.has(socket):
 		return
 	var node := _shape()
