@@ -29,6 +29,7 @@ const LoaderStyle := preload("res://src/view/loaders/loader_style.gd")
 const TraitStrip := preload("res://src/view/ui/trait_strip.gd")
 const TreeModel := preload("res://src/view/tech_tree_model.gd")
 const Identity := preload("res://src/identity.gd")
+const SavesPage := preload("res://src/view/ui/saves_page.gd")
 
 const NOT_MAPS := ["choke_test", "river_test", "hill_test"]   # test maps (sim_debug lists them)
 var MAPS := _maps()   # every map in data/maps: the real ones first (by name), the test maps last
@@ -68,6 +69,7 @@ var left_col: VBoxContainer     # your team's panels
 var right_col: VBoxContainer    # the other team's
 var start_button: Button        # where a pad's focus starts on the battle setup
 var tree_page: Control          # the tech tree page, over everything while open
+var saves_page: Control         # Load game: the saved matches (src/view/ui/saves_page.gd)
 var menu_layer: Node2D          # the title screen's hill, both armies on it
 var menu_stage: SubViewportContainer
 var _themes := {}               # family -> Theme (themes are built once per culture)
@@ -250,7 +252,7 @@ func _menu() -> Control:
 	var buttons := VBoxContainer.new()
 	buttons.add_theme_constant_override("separation", 14)
 	plaque.add_child(buttons)
-	for item in [["Battle the AI", func(): _open_setup()], ["Race Lab", func(): get_tree().change_scene_to_file("res://scenes/race_lab.tscn")],
+	for item in [["Battle the AI", func(): _open_setup()], ["Load game", func(): _open_saves()], ["Race Lab", func(): get_tree().change_scene_to_file("res://scenes/race_lab.tscn")],
 			["Quit", func(): get_tree().quit()]]:
 		var primary: bool = item[0] == "Battle the AI"
 		var b := UiTheme.button(item[0], primary)
@@ -269,6 +271,31 @@ func _menu() -> Control:
 	col.add_child(gap2)
 	col.add_child(foot)
 	return root
+
+
+## Load game: the saved matches over the title menu; picking one plays on from it.
+func _open_saves() -> void:
+	if saves_page == null:
+		saves_page = SavesPage.new(lib, UiTheme.look("").metal)
+		add_child(saves_page)
+		PadMode.of(get_tree()).menus.append(saves_page)
+		saves_page.chosen.connect(_play_saved)
+		saves_page.closed.connect(func(): menu.visible = true; UiTheme.arrive(menu))
+	menu.visible = false
+	saves_page.open()
+
+
+func _play_saved(rep: Dictionary) -> void:
+	Audio.of(get_tree()).play("ui_start")
+	while baking:
+		await get_tree().process_frame
+	var view = load("res://scenes/sim_debug.tscn").instantiate()
+	view.use_save(rep)
+	remove_child(kit)   # the match takes the kit, as a new battle does
+	view.kit = kit
+	get_tree().root.add_child(view)
+	get_tree().current_scene = view
+	queue_free()
 
 
 func _open_setup() -> void:

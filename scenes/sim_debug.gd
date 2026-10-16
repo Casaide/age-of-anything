@@ -53,6 +53,8 @@ const Buildings := preload("res://src/sim/buildings.gd")
 const Combat := preload("res://src/sim/combat.gd")
 const Abilities := preload("res://src/sim/abilities.gd")
 const Replay := preload("res://src/sim/replay.gd")
+const SaveGame := preload("res://src/save_game.gd")
+const SavesPage := preload("res://src/view/ui/saves_page.gd")
 const Bot := preload("res://src/ai/bot.gd")
 const Walls := preload("res://src/sim/walls.gd")
 const Repair := preload("res://src/sim/repair.gd")
@@ -180,6 +182,10 @@ var mode := ""                # the game mode (data/modes.json, picked in the lo
 var vs_ai := false          # side 2 is played by the AI (set by the match setup screen)
 var banner: Label           # victory / defeat
 var pause_menu: Control     # Esc against the AI: resume, surrender, back to the menu
+var saves_page: Control     # the pause menu's Load: the saved matches (src/view/ui/saves_page.gd)
+var bot_seats: Array = []   # [{player, level, from_seq, at}] the bots playing (for a save: src/save_game.gd)
+var load_save := {}         # a saved match to play on from (set before adding to the tree, as the prompts)
+var loaded_at: Array = []   # [tick, state hash] the saved match came back at (tests/save_check.gd)
 var hud_family := "?"       # whose culture the HUD wears (the side you command)
 var hud_themes := {}        # family -> the HUD's Theme
 var fog_view: FogView
@@ -314,7 +320,10 @@ func _ready() -> void:
 		prompts = DEFAULT_PROMPTS.duplicate()
 		for i in mini(args.size(), 2):
 			prompts[i] = args[i]
-	start_live(prompts)
+	if load_save.is_empty():
+		start_live(prompts)
+	else:
+		start_saved(load_save)
 
 
 ## The HUD's scale for this window, and its root sized to the window in UI pixels. Its theme is
@@ -384,6 +393,82 @@ func start_replay(rep: Dictionary) -> void:
 	_loaded()
 	playback = rep
 	clock.bots = []
+
+
+## Set up to play on from a saved match (before adding to the tree): the lobby's choices as they were.
+func use_save(rep: Dictionary) -> void:
+	var v: Dictionary = rep.view
+	load_save = rep
+	prompts = v.prompts
+	rerolls = v.rerolls
+	player_teams = v.player_teams
+	ai_levels = v.ai_levels
+	ai_level = v.ai_level
+	map_id = rep.map
+	mode = v.mode
+	vs_ai = v.vs_ai
+
+
+## Play on from a saved match (src/save_game.gd): the snapshot poured over a fresh world, or, when
+## it doesn't fit this build, the match played forward from its start to the saved tick.
+func start_saved(rep: Dictionary) -> void:
+	if baking:
+		return
+	map_id = rep.map
+	var ld := SaveGame.begin(rep, lib)
+	await _bake(ld.world.races)
+	if not ld.fast:
+		print("The save's snapshot doesn't fit this version: playing the match forward to tick %d" % rep.ticks)
+		while not SaveGame.run(ld, 12000):
+			if loader != null and loader.has_method("set_note"):
+				loader.set_note("Catching up: %d%%" % roundi(100 * SaveGame.progress(ld)))
+			await get_tree().process_frame
+	_attach(ld.world)
+	loaded_at = [world.tick, world.state_hash()]
+	_loaded()
+	playback = {}
+	var v: Dictionary = rep.view
+	active = v.active
+	hint_step = v.hint_step
+	for k in v.groups:
+		groups[int(k)] = v.groups[k].filter(func(id): return world.units.has(id))
+	autoplay = false
+	clock.bots = ld.bots
+	bot_seats = rep.bots.duplicate(true)
+	audio.music_age(world.ages[active])
+	audio.ambience(true)
+	camera.look_at_point(Vector2(v.camera[0], v.camera[1]))
+	var drift := SaveGame.drift(ld)
+	if drift >= 0:
+		var secs := drift / World.TICK_HZ
+		_show_line("This save comes from another version: the match went its own way from %d:%02d." % [secs / 60, secs % 60], Color("#f2c94c"))
+
+
+## Save the match as it stands (the pause menu's Save game): a new file each time.
+func save_game() -> String:
+	var path := SaveGame.new_path()
+	var at := camera.get_screen_center_position()
+	var keep_groups := {}
+	for k in groups:
+		keep_groups[k] = groups[k].duplicate()
+	SaveGame.save(SaveGame.record(world, bot_seats, clock.bots, {
+		"active": active, "prompts": prompts, "rerolls": rerolls, "player_teams": player_teams, "ai_levels": ai_levels,
+		"ai_level": ai_level, "map_id": map.id, "mode": mode, "vs_ai": vs_ai, "names": world.races.map(func(r): return r.name),
+		"hint_step": hint_step, "groups": keep_groups, "camera": [at.x, at.y]}), path)
+	print("Saved the match: ", ProjectSettings.globalize_path(path))
+	return path
+
+
+## Leave this match for a saved one: a fresh match screen takes the kit (what's baked stays).
+func load_game(rep: Dictionary) -> void:
+	get_tree().paused = false
+	var view = load("res://scenes/sim_debug.tscn").instantiate()
+	view.use_save(rep)
+	remove_child(kit)
+	view.kit = kit
+	get_tree().root.add_child(view)
+	get_tree().current_scene = view
+	queue_free()
 
 
 ## Bake the art for these races (only what isn't baked yet). The first match shows the match
@@ -594,14 +679,21 @@ func _set_autoplay(on: bool) -> void:
 	autoplay = on
 	if not playback.is_empty():
 		clock.bots = []
+		bot_seats = []
 	elif on:
-		clock.bots = range(world.races.size()).map(func(p): return Bot.new(p))   # watch the AIs play
+		_seat_bots(range(world.races.size()).map(func(p): return [p, "normal"]))   # watch the AIs play
 	else:
-		clock.bots = []
+		var seats := []
 		if vs_ai:   # a bot for every player but you, each at its own level
 			for p in range(1, world.races.size()):
-				var lv: String = ai_levels[p] if p < ai_levels.size() and ai_levels[p] != "" else ai_level
-				clock.bots.append(Bot.new(p, {}, lv))
+				seats.append([p, ai_levels[p] if p < ai_levels.size() and ai_levels[p] != "" else ai_level])
+		_seat_bots(seats)
+
+
+## Bots for these [player, level]s, and their seats for a save (src/save_game.gd).
+func _seat_bots(seats: Array) -> void:
+	clock.bots = seats.map(func(s): return Bot.new(s[0], {}, s[1]))
+	bot_seats = seats.map(func(s): return {"player": s[0], "level": s[1], "from_seq": world.commands.next_seq.get(s[0], 0), "at": world.tick})
 
 
 # ------------------------------------------------------------------ input
@@ -1621,10 +1713,15 @@ func _show_pause_menu(on: bool) -> void:
 		PadMode.of(get_tree()).menus.append(pause_menu)   # a pad walks it by focus
 	var over: bool = world.winner >= 0
 	pause_menu.visible = on
+	pause_menu.get_node("card").visible = true
+	if saves_page != null:
+		saves_page.visible = false
 	var box: Control = pause_menu.get_node("card/box")
 	box.get_node("resume").visible = not over
 	box.get_node("surrender").visible = not over
 	box.get_node("tree").visible = not over
+	box.get_node("save").visible = not over and playback.is_empty()
+	box.get_node("save").text = "Save game"
 	var back: Button = box.get_node("menu")   # when it's over, the way back is the call to action
 	pause_menu.set_meta("pad_first", back if over else box.get_node("resume"))   # where a pad's focus starts
 	back.theme_type_variation = "PrimaryButton" if over else ""
@@ -1653,6 +1750,32 @@ func _show_pause_menu(on: bool) -> void:
 	if on:
 		UiTheme.arrive(pause_menu.get_node("card"), 10.0)
 		audio.play("ui_tip")
+
+
+## The pause menu's Save game: saved at once, the button says so.
+func _save_from_menu() -> void:
+	save_game()
+	var secs := world.tick / World.TICK_HZ
+	pause_menu.get_node("card/box/save").text = "Saved  (%d:%02d in)" % [secs / 60, secs % 60]
+	audio.play("ui_tip")
+
+
+## The pause menu's Load game: the saved matches over it; picking one leaves this match for it.
+func _open_saves() -> void:
+	if saves_page == null:
+		saves_page = SavesPage.new(lib, UiTheme.look(hud_family).metal)
+		pause_menu.get_parent().add_child(saves_page)
+		PadMode.of(get_tree()).menus.append(saves_page)   # over the pause menu, so a pad's focus goes here
+		saves_page.chosen.connect(load_game)
+		saves_page.closed.connect(_saves_closed)
+	pause_menu.get_node("card").visible = false   # the menu stays up under it (the match stays paused)
+	saves_page.open()
+
+
+func _saves_closed() -> void:
+	pause_menu.get_node("card").visible = true
+	if PadMode.of(get_tree()).on:
+		(pause_menu.get_meta("pad_first") as Control).grab_focus()
 
 
 ## Surrender asks once more: the first click turns the button into "Click again to give up".
@@ -1700,6 +1823,8 @@ func _make_pause_menu() -> Control:
 	for item in [["resume", "Resume", func(): _show_pause_menu(false)],
 			["music", "Music: on", func(): _toggle_music()],
 			["ui", "UI size: %d%%  (larger)" % UiScale.size_pct(), func(): _ui_size_cycle()],
+			["save", "Save game", func(): _save_from_menu()],
+			["load", "Load game", func(): _open_saves()],
 			["tree", "Tech tree", func(): _show_pause_menu(false); toggle_tech_tree()],
 			["surrender", "Surrender", func(): _confirm_surrender()],
 			["menu", "Back to the menu", func(): get_tree().paused = false; get_tree().change_scene_to_file("res://scenes/match_setup.tscn")]]:

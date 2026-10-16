@@ -30,6 +30,7 @@ along the way. The overview table lives in `../mvp-plan.md` §3; these files hol
 | - | [Art pass](art-pass.md) | direction chosen, vertical slice done |
 | - | [Art and UI track](art-ui-track.md) | A1 = milestone 5; later stages run alongside milestones 7-10 |
 | - | [Networking](networking.md) | planned (after the demo) |
+| - | [Save and load](save-load.md) | built 2026-10-16; Dominic's choices open |
 
 ## How to use these
 
