@@ -26,3 +26,10 @@ the atlas shows white. The new match was fast because its art really was baked a
 
 ## Funny moments
 - "Starts really fast" was the clue: the art was all baked, it just couldn't be drawn.
+
+## Later: exported builds shared one bake-cache version
+Making the next Deck build, the exported pack threw `Invalid access to property or key 'bakes'` while
+loading cached buildings. The cache's version is a hash of the files the look comes from, but an export ships
+`.gdc` (compiled scripts) and no `.gd`, so every script hashed as empty: every build shared one version, and a new
+build read entries an older build wrote in an older shape (the bake rework changed them). Now a missing `.gd`
+hashes its `.gdc` and asserts if neither exists. The Deck's cache from earlier builds is simply ignored.
