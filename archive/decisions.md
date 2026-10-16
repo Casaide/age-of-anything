@@ -917,3 +917,12 @@ stays the cheap counter); cloth, leather and leaves are food. Totals don't chang
 carries gold (bots mine none before age 2; the rats' thimble and bottle-cap shield are scrap, not metal). The bots'
 gold share in ages 2 and 3 goes from 15 to 25 percent (data/ai.json). A spear is now 40-50F 25-45W in age 1; an
 age-2 swordsman 60F 25W 80G; an archer wood and gold with a little food for the body.
+
+**D-145, 2026-10-16: Unit portraits are busts with a role glyph; a line upgrade shows what it gives.** Dominic,
+from two concept rounds (pictures 22, 23) and how the genre's games do it. A unit's portrait frames its head,
+chest and the weapon in hand (`ArtKit.bust_icon`; engines and carts keep the whole-body frame) with a drawn role
+glyph in the corner (`assets/art/icons/glyph/role_*.svg`: spear, sword, bow, sling, horse, staff, by the weapon's
+tags; a rider with a lance or blade the horse; workers none). A line upgrade's button shows the portrait of the step
+it gives, in a gold frame, named "Upgrade: X -> Y", its tooltip saying every X you have and all you train becomes
+a Y (it showed the line as it was: the same picture as the Train button beside it). Train buttons, the queue, the
+unit card and the selection tray show a line's current step (they showed its first step, upgraded or not).

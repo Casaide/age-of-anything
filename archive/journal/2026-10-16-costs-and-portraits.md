@@ -26,6 +26,13 @@ by the weapon's tags (a rider with a lance or blade: the horse; a centaur is its
 workers none). Three upgrade buttons: U1 a gold frame, a big arrow, a pip per age; U2 before and after (the old
 step small and faded in a corner, an arrow to the new bust); U3 a gold glow behind the new bust, rank chevrons.
 
+**Built (D-145).** Dominic asked how other games show upgrades: the button shows what you'll get, and the tooltip
+says "upgrade X to Y". So: busts with the role glyph everywhere a portrait shows, the line upgrade's button the next
+step's bust in a gold frame, "Upgrade: X -> Y". On the way: the Train buttons and the unit card showed a line's
+first step even after it was upgraded; they show its current step now.
+
 ## Pictures
 - `22-unit-portrait-concepts-today-bust-badge.png`: the concept sheet, four races.
 - `23-unit-portrait-concepts-round2-glyphs-upgrades.png`: round 2, the role glyphs and three upgrade buttons.
+- `24-panel-bust-portraits-glyphs-upgrades-gold.png`: the Barracks in age 2 as built: Train (spear, sword) and
+  their upgrades in gold frames.

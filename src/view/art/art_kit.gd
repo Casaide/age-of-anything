@@ -630,7 +630,12 @@ func _paint_icons(list: Array) -> void:
 	var img := await BakeClock.read(vp)
 	for k in list.size():
 		var cell := img.get_region(Rect2i(Vector2i(k % cols, k / cols) * ICON_CELL, Vector2i.ONE * ICON_CELL))
-		_icon_cache[_icon_key(list[k][1].recipe, list[k][0])] = ImageTexture.create_from_image(frame_icon(cell))
+		var recipe: Dictionary = list[k][1].recipe
+		var engine: bool = recipe.has("crew")   # an engine or a cart isn't a figure: framed whole, no glyph
+		var icon := frame_icon(cell) if engine else bust_icon(cell)
+		if not engine:
+			_glyph_on(icon, role_glyph(lib, recipe))
+		_icon_cache[_icon_key(recipe, list[k][0])] = ImageTexture.create_from_image(icon)
 	vp.queue_free()
 
 
@@ -688,6 +693,106 @@ static func frame_icon(cell: Image) -> Image:
 	var clip := src.intersection(Rect2i(Vector2i.ZERO, cell.get_size()))
 	sq.blit_rect(cell, clip, clip.position - src.position)
 	return sq
+
+
+const ICON_BUST := 0.62     # a bust frames this share of the body's height, from the top
+const ICON_GLYPH := 0.375   # a role glyph's side, as a share of the portrait's
+
+
+## A unit's portrait as a bust (Dominic: whole-body portraits were "too zoomed out, hard to tell
+## what's what"): the body (rows with only a thin pole, lance or tail trimmed, as frame_icon does)
+## framed on its top ICON_BUST, square, centred across on that part's weight: head, chest and the
+## weapon in hand; a rider and the mount's head.
+static func bust_icon(cell: Image) -> Image:
+	var used := cell.get_used_rect()
+	if used.size.x == 0:
+		return Image.create(4, 4, false, Image.FORMAT_RGBA8)
+	var rows := PackedInt32Array()
+	rows.resize(cell.get_height())
+	for y in range(used.position.y, used.end.y):
+		for x in range(used.position.x, used.end.x):
+			if cell.get_pixel(x, y).a > 0.1:
+				rows[y] += 1
+	var y0 := used.position.y
+	while y0 < used.end.y - 1 and rows[y0] < ICON_THIN:
+		y0 += 1
+	var y1 := used.end.y - 1
+	while y1 > y0 and rows[y1] < ICON_THIN:
+		y1 -= 1
+	var side := maxi(roundi((y1 - y0 + 1) * ICON_BUST * 1.1), ICON_MIN)
+	var sum := 0
+	var mass := 0
+	for y in range(y0, mini(y0 + side, cell.get_height())):
+		for x in range(used.position.x, used.end.x):
+			if cell.get_pixel(x, y).a > 0.1:
+				sum += x
+				mass += 1
+	var src := Rect2i(sum / maxi(mass, 1) - side / 2, y0 - roundi(side * 0.06), side, side)
+	var sq := Image.create(side, side, false, Image.FORMAT_RGBA8)
+	var clip := src.intersection(Rect2i(Vector2i.ZERO, cell.get_size()))
+	sq.blit_rect(cell, clip, clip.position - src.position)
+	return sq
+
+
+## A unit's role glyph (assets/art/icons/glyph/role_<name>.svg): by its weapon's tags; a rider
+## with a lance or a blade, the horse (a centaur is its own horse: it goes by its weapon); a
+## worker, none.
+static func role_glyph(p_lib, recipe: Dictionary) -> String:
+	if recipe.get("role", "") == "worker":
+		return ""
+	var id: String = recipe.get("parts", {}).get("hand_r", "")
+	var tags: Array = p_lib.part(id).get("tags", []) if id != "" else []
+	var rides: bool = recipe.has("mount") and not recipe.mount.get("fused", false)
+	if "heal" in tags or "staff" in tags:
+		return "staff"
+	if "bow" in tags:
+		return "bow"
+	if "ranged" in tags:
+		return "sling"
+	if rides and ("lance" in tags or not "spear" in tags):
+		return "horse"
+	if "spear" in tags or "reach" in tags:
+		return "spear"
+	if "melee" in tags:
+		return "sword"
+	return ""
+
+
+## Lay a role glyph in a portrait's lower right corner (none: leave it).
+static func _glyph_on(icon: Image, name: String) -> void:
+	if name == "":
+		return
+	var side := icon.get_width()
+	var g := Image.new()
+	g.load_svg_from_string(FileAccess.get_file_as_string("res://assets/art/icons/glyph/role_%s.svg" % name), side * ICON_GLYPH / 32.0)
+	g.convert(Image.FORMAT_RGBA8)
+	var at := Vector2i(side, side) - g.get_size() - Vector2i.ONE * maxi(1, side / 40)
+	icon.blend_rect(g, Rect2i(Vector2i.ZERO, g.get_size()), at)
+
+
+var _upgrade_icons := {}   # portrait -> its line-upgrade button look
+
+
+## A line upgrade's button: the portrait of the step it gives, in a gold frame (as the genre does:
+## the button shows what you'll get; ours showed the line as it is, so it looked like Train).
+func upgrade_icon(tex: Texture2D) -> Texture2D:
+	if tex == null:
+		return null
+	if not _upgrade_icons.has(tex):
+		var img: Image = tex.get_image()
+		img.convert(Image.FORMAT_RGBA8)
+		var side := img.get_width()
+		var t := maxi(2, side / 20)   # the frame's thickness
+		var gold := Color("#e8b84a")
+		for k in t:
+			var c := gold.darkened(0.3) if k == 0 or k == t - 1 else gold
+			for i in range(k, side - k):
+				img.set_pixel(i, k, c)
+				img.set_pixel(i, side - 1 - k, c)
+				img.set_pixel(k, i, c)
+				img.set_pixel(side - 1 - k, i, c)
+		_upgrade_icons[tex] = ImageTexture.create_from_image(img)
+	return _upgrade_icons[tex]
 
 
 ## The model function for a building type in an architecture (farms are the same everywhere).
