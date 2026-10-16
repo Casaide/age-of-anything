@@ -19,6 +19,8 @@ const BUTTONS := [JOY_BUTTON_A, JOY_BUTTON_B, JOY_BUTTON_X, JOY_BUTTON_Y, JOY_BU
 const LT := 100   # the triggers, read as buttons past half travel
 const RT := 101
 
+const PadGlyph := preload("res://src/view/pad_glyph.gd")
+
 static var instance: Node = null
 
 var on := false
@@ -28,6 +30,7 @@ var _was := {}               # button -> held last frame
 var _since := {}             # button -> seconds since it went down
 var _travel := 0.0           # mouse travel lately (MOUSE_WAKE_PX)
 var _travel_at := 0.0
+var _prompt: Control         # the A badge beside the focused button, so it's clear what's picked and how to press it
 var fake = null              # tests (tests/pad_check.gd): {buttons: {button: true}, left, right: Vector2}; real pads ignored
 
 
@@ -41,6 +44,12 @@ static func of(tree: SceneTree) -> Node:
 
 func _init() -> void:
 	process_mode = Node.PROCESS_MODE_ALWAYS
+	var top := CanvasLayer.new()
+	top.layer = 120   # over every menu and page
+	add_child(top)
+	_prompt = PadGlyph.make("A", 30)
+	_prompt.visible = false
+	top.add_child(_prompt)
 	process_priority = -100   # buttons are read before any screen looks at them
 	# The menus' accept and cancel on the pad (Godot's defaults give the pad only the arrows).
 	for pair in [["ui_accept", JOY_BUTTON_A], ["ui_cancel", JOY_BUTTON_B]]:
@@ -123,6 +132,27 @@ func _process(delta: float) -> void:
 		_since[b] = 0.0 if pressed(b) else _since.get(b, 0.0) + delta
 	if on:
 		_focus_menu()
+	_place_prompt()
+
+
+## The console way: the focused button gets the A badge on its right (inside a wide button's right
+## end; beside a small one, or on its left at the screen's edge), sized to the button. Only in pad mode, only for things A presses.
+func _place_prompt() -> void:
+	var f := get_viewport().gui_get_focus_owner()
+	_prompt.visible = on and f != null and f.is_visible_in_tree() and (f is BaseButton or f is LineEdit) \
+		and not (f is BaseButton and f.disabled)
+	if not _prompt.visible:
+		return
+	var r := f.get_global_rect()
+	var h := clampf(r.size.y * 0.55, 22.0, 40.0)
+	_prompt.size = Vector2(h, h)
+	var x := r.end.x + 10.0   # a small button (<, >, the dice): beside it, on the right (Dominic)
+	if r.size.x >= 4.0 * h:
+		x = r.end.x - h * 1.45   # a wide one: inside its right end (its words are centred), clear of its neighbours
+	elif x + h > get_viewport().get_visible_rect().size.x - 4.0:
+		x = r.position.x - h - 10.0   # at the screen's right edge: on its left
+	_prompt.position = Vector2(x, r.get_center().y - h * 0.5)
+	_prompt.queue_redraw()
 
 
 ## Held now.
