@@ -186,8 +186,10 @@ func _wheel() -> bool:
 	return true
 
 
-## Open the selection's wheel (if it has any buttons).
+## Open the selection's wheel (if it has any buttons), a worker's at the top of its build pages
+## (Dominic: closed on Civilian without choosing, the next open was stuck on Civilian).
 func open_wheel() -> void:
+	game.build_page = ""
 	game._update_panel()
 	if _wheel_items().is_empty():
 		return
