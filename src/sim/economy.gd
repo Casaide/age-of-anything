@@ -415,15 +415,15 @@ static func cmd_train(w, player: int, a: Dictionary) -> void:
 		return
 	if not a.slot in w.btypes[w.buildings.kind[b]].trains:
 		return
-	var k: int = w.type_of(player, a.slot)
+	var k: int = w.type_for(player, a)   # (the hero line: the hero named, heroes.gd)
 	if k < 0 or w.buildings.queue[b].size() >= int(w.econ.queue_max) or lacks(w, player, a.slot):
 		return
 	var t: Dictionary = w.types[k]
 	var cost: PackedInt32Array = w.queued_cost(player, k)   # (a hero revived: its share of the price, heroes.gd)
 	if not w.can_afford(player, cost) or w.ages[player] < int(t.line[0].age):
 		return
-	if t.hero and Heroes.why_not(w, player) != "":
-		return   # one hero at a time, and a fallen one waits to be revived
+	if t.hero and Heroes.why_not(w, player, k) != "":
+		return   # one of each hero out at a time, and a fallen one waits to be revived
 	w.pay(player, cost)
 	w.buildings.queue[b].append(k)
 

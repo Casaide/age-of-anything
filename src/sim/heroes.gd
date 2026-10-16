@@ -1,18 +1,22 @@
 extends RefCounted
-## Heroes in the sim (milestone 14 step 9): one per player, trained at the Town Center from its line's
-## age (rules roster role "hero", src/heroes.gd), never two at once; an aura on its friends; healing
-## slowly while hurt; and when it falls, revived at the Town Center (the same TRAIN) after
-## rules.revive_ticks, for rules.revive_pct of its cost. Static functions over the World `w`; integers
-## only, players and units in order, no Nodes.
+## Heroes in the sim (milestone 14 step 9; D-136): a race has several (src/heroes.gd), each its own unit
+## type on the hero line, trained at the Town Center from the line's age (rules roster role "hero").
+## Each is trained once and only one of each is ever out (queued, alive, or sheltering); a race's
+## heroes may all be out together. Each casts an aura on its friends, heals slowly while hurt, and when
+## it falls is revived at the Town Center (the same TRAIN) after rules.revive_ticks, for
+## rules.revive_pct of its cost. A TRAIN or SPAWN of the "hero" slot names the hero by signature
+## (args `hero`); without one it is the first that may come out now. Static functions over the World
+## `w`; integers only, players, types and units in order, no Nodes.
 ##
-## State (hashed, World.state_hash): w.hero_id per player (the living hero's unit id, sheltering in a
-## building too; 0 with none) and w.hero_fell (the tick + 1 it last fell, 0 if it never has).
-## The aura (data/heroes.json signature `aura.effects`, research effects: attack, armour.melee,
-## armour.pierce) is worked out each tick before the fighting (w.aura_now, derived): friends of the
-## hero's team within rules.aura_tiles, not the hero itself, not animals. Attack adds to the damage
-## a unit deals with its own blows and shots; armour takes off damage from blows, shots and tower
-## arrows (splash and pass-through keep the plain formula). A Regicide rule (milestone 18) can read
-## w.hero_id / w.hero_fell later.
+## State (hashed, World.state_hash), per unit type k (0 for a type that is no hero): w.hero_id (the
+## living hero's unit id, sheltering in a building too; 0 with none) and w.hero_fell (the tick + 1 it
+## last fell, 0 if it never has). The auras (data/heroes.json signature `aura.effects`, research
+## effects: attack, armour.melee, armour.pierce) are worked out each tick before the fighting
+## (w.aura_now, derived): friends of the hero's team within rules.aura_tiles, not the hero itself, not
+## animals; several heroes' auras don't add up: a friend takes the strongest of each stat. Attack adds
+## to the damage a unit deals with its own blows and shots; armour takes off damage from blows, shots
+## and tower arrows (splash and pass-through keep the plain formula). A Regicide rule (milestone 18) can
+## read w.hero_id / w.hero_fell later.
 
 const Identity := preload("res://src/identity.gd")
 const Fixed := preload("res://src/sim/fixed.gd")
@@ -35,49 +39,66 @@ static func data() -> Dictionary:
 static func setup(w) -> void:
 	var r: Dictionary = data().rules
 	w.hero_cfg = {"aura": int(r.aura_tiles) * 1000, "regen": int(r.regen_every), "revive": int(r.revive_ticks), "revive_pct": int(r.revive_pct)}
-	w.hero_id.resize(w.races.size())
-	w.hero_fell.resize(w.races.size())
-	for t in w.types:
+	w.hero_id.resize(w.types.size())
+	w.hero_fell.resize(w.types.size())
+	w.hero_types.clear()
+	for k in w.types.size():
+		var t: Dictionary = w.types[k]
 		if not t.get("hero", false):
 			continue
+		w.hero_types.append(k)
 		var fx: Array = data().hero_signatures[t.recipe.hero].aura.effects
 		for e in fx:
 			assert(e.stat in STATS and e.has("add"), "A hero's aura is attack or armour, added: %s" % e)
 		t.aura = fx
 
 
-## The player's hero type, or -1.
-static func type_of(w, player: int) -> int:
-	return w.type_of(player, "hero")
+## The player's hero types, in its race's order.
+static func types_of(w, player: int) -> Array:
+	return Array(w.hero_types).filter(func(k): return w.types[k].player == player)
 
 
-## Why the player can't train (or revive) its hero now, or "".
-static func why_not(w, player: int) -> String:
-	var k := type_of(w, player)
+## The player's hero type for signature `sid`; with none named, the first that may come out now (else
+## its first); -1 with no such hero.
+static func type_of(w, player: int, sid := "") -> int:
+	var ks := types_of(w, player)
+	if sid != "":
+		for k in ks:
+			if w.types[k].recipe.hero == sid:
+				return k
+		return -1
+	for k in ks:
+		if why_not(w, player, k) == "":
+			return k
+	return ks[0] if not ks.is_empty() else -1
+
+
+## Why the player can't train (or revive) hero type k now, or "".
+static func why_not(w, player: int, k: int) -> String:
 	if k < 0:
 		return "no hero"
-	if w.hero_id[player] != 0:
-		return "the hero is out already"
+	if w.hero_id[k] != 0:
+		return "out already"
 	for b in w.buildings.count():
 		if w.buildings.owner[b] == player and k in w.buildings.queue[b]:
-			return "the hero is on the way"
-	var left := revive_left(w, player)
+			return "on the way"
+	var left := revive_left(w, k)
 	if left > 0:
 		return "revives in %d s" % ((left + 19) / 20)
 	return ""
 
 
-## Ticks until a fallen hero may be revived (0: now, or it never fell).
-static func revive_left(w, player: int) -> int:
-	if w.hero_fell[player] == 0:
+## Ticks until fallen hero type k may be revived (0: now, or it never fell).
+static func revive_left(w, k: int) -> int:
+	if w.hero_fell[k] == 0:
 		return 0
-	return maxi(0, w.hero_fell[player] - 1 + int(w.hero_cfg.revive) - w.tick)
+	return maxi(0, w.hero_fell[k] - 1 + int(w.hero_cfg.revive) - w.tick)
 
 
 ## What training type k costs this player: a hero that has fallen before costs revive_pct of its price.
 static func cost(w, player: int, k: int) -> PackedInt32Array:
 	var c: PackedInt32Array = w.types[k].cost
-	if not w.types[k].get("hero", false) or w.hero_fell[player] == 0:
+	if not w.types[k].get("hero", false) or w.hero_fell[k] == 0:
 		return c
 	var out := PackedInt32Array(c)
 	for r in out.size():
@@ -85,11 +106,12 @@ static func cost(w, player: int, k: int) -> PackedInt32Array:
 	return out
 
 
-## A hero came out of the Town Center (Economy.train).
+## A hero came out of the Town Center (Economy.train) or was spawned.
 static func spawned(w, i: int) -> void:
 	var p: int = w.units.owner[i]
-	w.hero_id[p] = w.units.id[i]
-	w.events.append({"type": "hero_up", "id": w.units.id[i], "player": p, "revived": w.hero_fell[p] != 0, "x": w.units.x[i], "y": w.units.y[i]})
+	var k: int = w.units.kind[i]
+	w.hero_id[k] = w.units.id[i]
+	w.events.append({"type": "hero_up", "id": w.units.id[i], "player": p, "kind": k, "revived": w.hero_fell[k] != 0, "x": w.units.x[i], "y": w.units.y[i]})
 
 
 ## Is unit id `uid` sheltering in one of the player's buildings?
@@ -107,34 +129,36 @@ static func _inside(w, player: int, uid: int) -> bool:
 ## one heals a hit point every regen ticks.
 static func tick(w) -> void:
 	var u = w.units
-	for p in w.races.size():
-		var uid: int = w.hero_id[p]
+	for k in w.hero_types:
+		var uid: int = w.hero_id[k]
 		if uid == 0:
 			continue
+		var p: int = w.types[k].player
 		var i: int = u.index_of(uid)
 		if i < 0:
 			if not _inside(w, p, uid):
-				w.hero_id[p] = 0
-				w.hero_fell[p] = w.tick + 1
-				w.events.append({"type": "hero_fell", "id": uid, "player": p})
+				w.hero_id[k] = 0
+				w.hero_fell[k] = w.tick + 1
+				w.events.append({"type": "hero_fell", "id": uid, "player": p, "kind": k})
 			continue
-		if w.tick % int(w.hero_cfg.regen) == 0 and u.hp[i] < int(w.types[u.kind[i]].hp):
+		if w.tick % int(w.hero_cfg.regen) == 0 and u.hp[i] < int(w.types[k].hp):
 			u.hp[i] += 1
 
 
-## Each unit's aura this tick (per slot: AURA ints), from every living hero on the map; empty if none.
+## Each unit's aura this tick (per slot: AURA ints), the strongest of each stat from every living hero
+## on the map; empty if none.
 static func auras(w) -> PackedInt32Array:
 	var u = w.units
 	var out := PackedInt32Array()
 	var r2: int = int(w.hero_cfg.aura) * int(w.hero_cfg.aura)
-	for p in w.races.size():
-		var h: int = u.index_of(w.hero_id[p]) if w.hero_id[p] != 0 else -1
+	for k in w.hero_types:
+		var h: int = u.index_of(w.hero_id[k]) if w.hero_id[k] != 0 else -1
 		if h < 0:
 			continue
 		if out.is_empty():
 			out.resize(u.count() * AURA)
-		var fx: Array = w.types[u.kind[h]].aura
-		var team: int = w.teams[p]
+		var fx: Array = w.types[k].aura
+		var team: int = w.teams[w.types[k].player]
 		var hx: int = u.x[h]
 		var hy: int = u.y[h]
 		for j in u.count():
@@ -143,11 +167,10 @@ static func auras(w) -> PackedInt32Array:
 			var tags: Array = w.types[u.kind[j]].eval.tags
 			for e in fx:
 				if Identity.reaches(e, tags):
-					out[j * AURA + STATS.find(e.stat)] += int(e.add)
+					var at: int = j * AURA + STATS.find(e.stat)
+					out[at] = maxi(out[at], int(e.add))
 	w.aura_now = out
 	return out
-
-
 ## Damage d from attacker slot i (-1: a building) to target slot j (-1: a building), of damage type
 ## `kind` ("melee" or "pierce"), with the auras on both; never under `floor`.
 static func boost(aura: PackedInt32Array, i: int, j: int, kind: String, d: int, floor: int) -> int:
@@ -161,6 +184,6 @@ static func boost(aura: PackedInt32Array, i: int, j: int, kind: String, d: int, 
 
 
 static func hash_into(w, h: int) -> int:
-	for p in w.races.size():
-		h = Fixed.mix(Fixed.mix(h, w.hero_id[p]), w.hero_fell[p])
+	for k in w.hero_types:
+		h = Fixed.mix(Fixed.mix(h, w.hero_id[k]), w.hero_fell[k])
 	return h

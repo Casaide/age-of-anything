@@ -76,7 +76,7 @@ var scout                    # Scout: tours and the memory of the enemy army
 var land                     # Land: routes, crossings, roads, bridges, hills
 var expand                   # Expand: camps, escorts, the second Town Center
 var _target := Vector2i(-1, -1)   # where the waves go (worked out every think)
-var _resting := false       # our hero walked home to heal (_hero): out of the field army until it's well
+var _resting := {}          # unit id -> true: our heroes that walked home to heal (_hero): out of the field army until well
 var _on_back_foot := false   # the enemy army we remember outnumbers ours (Land._defending): defend the crossing
 
 
@@ -252,9 +252,8 @@ func think(w) -> void:
 	_aln = w.lane(army[0]) if not army.is_empty() else w.lane_base[player] + _army_class(w)
 	_harea = eco.reach.area_at(w, _aln, home_x, home_y)
 	_hero(w, tc, army, workers, home_x, home_y)
-	var resting: int = w.hero_id[player] if _resting else -1
 	# The field army: not the scout out on its tour, not the escorts posted with far gatherers, not a hero gone home to heal.
-	var field := army.filter(func(i): return w.units.id[i] != scout.id and not expand.escorts.has(w.units.id[i]) and not land.breaking(w, i) and w.units.id[i] != resting)
+	var field := army.filter(func(i): return w.units.id[i] != scout.id and not expand.escorts.has(w.units.id[i]) and not land.breaking(w, i) and not _resting.has(w.units.id[i]))
 	var at_work := workers.filter(func(i): return w.units.id[i] != scout.id)
 	scout.remember(w, player)
 	_on_back_foot = _on_back_foot or land._defending(w, self, field)   # (once guarded, the step stays wanted)
@@ -265,7 +264,7 @@ func think(w) -> void:
 	expand.think(w, self, tc, at_work, field, home_x, home_y)
 	_defend(w, field, home_x, home_y)
 	WallsAi.man(w, self, field, home_x, home_y)
-	_respond(w, tc, army.filter(func(i): return w.units.id[i] != scout.id and w.units.id[i] != resting), at_work, home_x, home_y)
+	_respond(w, tc, army.filter(func(i): return w.units.id[i] != scout.id and not _resting.has(w.units.id[i])), at_work, home_x, home_y)
 	_tower(w, at_work)
 	_trade(w)
 	_trade_carts(w, carts, at_work)
@@ -706,16 +705,19 @@ func _train_healers(w, tc: int, army: Array, healers: Array) -> void:
 	w.issue(player, Commands.TRAIN, {"building": w.buildings.id[tc], "slot": "healer"})
 
 
-## The race's hero (data: military.hero; src/sim/heroes.gd): trained at the Town Center once there are
-## `army` soldiers and its price is to spare beyond a worker, revived the same way as soon as it may.
-## It fights with the army; under retreat_pct of its hit points it walks home and heals (out of the
+## The race's heroes (data: military.hero; src/sim/heroes.gd, D-136), in its race's order: the first
+## trained at the Town Center once there are `army` soldiers, each next one with `more` soldiers more,
+## when its price is to spare beyond a worker; a fallen one revived the same way as soon as it may.
+## They fight with the army; one under retreat_pct of its hit points walks home and heals (out of the
 ## field army: _resting), and rejoins at back_pct.
 func _hero(w, tc: int, army: Array, workers: Array, hx: int, hy: int) -> void:
 	var h: Dictionary = cfg.military.get("hero", {})
-	var k: int = w.type_of(player, "hero")
-	if h.is_empty() or k < 0:
+	var ks := Heroes.types_of(w, player)
+	if h.is_empty() or ks.is_empty():
 		return
-	if w.ages[player] >= int(w.types[k].line[0].age) and army.size() >= int(h.army) and Heroes.why_not(w, player) == "" \
+	var out := ks.filter(func(k): return Heroes.why_not(w, player, k) in ["out already", "on the way"]).size()
+	var k: int = Heroes.type_of(w, player)
+	if Heroes.why_not(w, player, k) == "" and w.ages[player] >= int(w.types[k].line[0].age) and army.size() >= int(h.army) + out * int(h.more) \
 			and w.buildings.queue[tc].size() < int(cfg.military.queue):
 		var cost := Heroes.cost(w, player, k)
 		var worker: int = w.type_of(player, "worker")
@@ -723,18 +725,21 @@ func _hero(w, tc: int, army: Array, workers: Array, hx: int, hy: int) -> void:
 		for r in w.resources.size():
 			spare = spare and w.stock[r][player] >= cost[r] + w.types[worker].cost[r]
 		if spare:
-			w.issue(player, Commands.TRAIN, {"building": w.buildings.id[tc], "slot": "hero"})
-	var i: int = w.units.index_of(w.hero_id[player]) if w.hero_id[player] != 0 else -1
-	if i < 0:
-		_resting = false
-		return
-	var pct: int = w.units.hp[i] * 100 / maxi(1, int(w.types[w.units.kind[i]].hp))
+			w.issue(player, Commands.TRAIN, {"building": w.buildings.id[tc], "slot": "hero", "hero": w.types[k].recipe.hero})
 	var home_r := int(cfg.military.defend_tiles) * 1000
-	if not _resting and pct < int(h.retreat_pct) and Fixed.dist2(hx, hy, w.units.x[i], w.units.y[i]) > home_r * home_r / 4:
-		_resting = true
-		w.issue(player, Commands.MOVE, {"ids": [w.units.id[i]], "x": hx, "y": hy})
-	elif _resting and pct >= int(h.back_pct):
-		_resting = false   # (the waves and the defence take it along again)
+	var still := {}
+	for hk in ks:
+		var i: int = w.units.index_of(w.hero_id[hk]) if w.hero_id[hk] != 0 else -1
+		if i < 0:
+			continue
+		var id: int = w.units.id[i]
+		var pct: int = w.units.hp[i] * 100 / maxi(1, int(w.types[hk].hp))
+		if not _resting.has(id) and pct < int(h.retreat_pct) and Fixed.dist2(hx, hy, w.units.x[i], w.units.y[i]) > home_r * home_r / 4:
+			still[id] = true
+			w.issue(player, Commands.MOVE, {"ids": [id], "x": hx, "y": hy})
+		elif _resting.has(id) and pct < int(h.back_pct):
+			still[id] = true   # (at back_pct the waves and the defence take it along again)
+	_resting = still
 
 
 ## Healers follow the army, `behind` tiles back from the middle of its rear half, on the side
