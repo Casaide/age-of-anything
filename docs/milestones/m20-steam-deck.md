@@ -221,6 +221,7 @@ pages (closed on Civilian without choosing, it used to stay there).
   median frame 75 -> 8.3 ms, p95 180 -> 12-15 ms, worst 1.4 s -> ~120-250 ms; total 35 -> ~30 s. Art unchanged
   within GPU noise (`tests/bake_compare.gd`). Portraits are now posed the same every time. Left: the GPU's own
   20-60 ms on big building frames. Waiting on Dominic's Deck run.
+  Quitting mid-bake crashed (signal 11): fixed, the bake now cleans up and stops when the game quits.
 
 ## Changes from the original plan
 

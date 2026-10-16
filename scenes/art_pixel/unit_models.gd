@@ -59,16 +59,6 @@ func _heroes():
 	return _hero_models
 
 
-## Make here what's otherwise made when first asked for (the siege and hero model files, the
-## creature kit): bakes build their models on a worker thread (BakeClock.build), and a script
-## loaded there while the game ran its own hung it (both waiting on the other).
-func ready_all() -> void:
-	_siege()
-	_heroes()
-	if _kit == null:
-		_kit = CreatureKit.new()
-
-
 static func _is_engine(id: String) -> bool:
 	return (id.begins_with("siege.") and id.count(".") == 2) or id.begins_with("shot.")   # (and what engines throw: siege_models.gd)
 
