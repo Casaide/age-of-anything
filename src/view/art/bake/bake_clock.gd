@@ -30,6 +30,10 @@ static var draws := 0         # forced draws so far, and the time they took (bak
 static var draw_usec := 0
 static var _clock: Node = null
 static var _hidden := false   # frames are coming slowly: the big budget
+static var _quitting := false # the game is shutting down: no bake goes on (_next_frame)
+static var _halt := Halt.new()
+static var _made := []        # nodes built (build) that may not be in the tree yet: freed if the game quits first
+static var _tasks := {}       # worker tasks under way (off_thread): the game waits for them when it quits
 static var _slow := 0         # slow frames running (SLOW_RUN)
 static var _frame_t := 0      # when this frame started (usec): bake work is counted from here
 var _queue: Array = []        # viewports waiting for a draw
@@ -72,8 +76,20 @@ static func read(vp: SubViewport) -> Image:
 	if rd.texture_get_data_async(tex, 0, func(data: PackedByteArray): out.append(data)) != OK:
 		return vp.get_texture().get_image()
 	while out.is_empty():
-		await Engine.get_main_loop().process_frame
+		await _next_frame()
 	return Image.create_from_data(fmt.width, fmt.height, false, Image.FORMAT_RGBA8, out[0])
+
+
+## The next frame, for a bake waiting on one. Once the game is quitting it never comes: a bake
+## woken mid-shutdown went on building with what had been freed (signal 11 on quitting mid-bake).
+static func _next_frame() -> void:
+	await Engine.get_main_loop().process_frame
+	if _quitting:
+		await _halt.never
+
+
+class Halt extends RefCounted:
+	signal never
 
 
 ## Bake work done this frame so far, in usec.
@@ -89,7 +105,7 @@ static func budget_usec() -> int:
 ## Wait for the next frame if this one's bake work is over budget (call between main-thread steps).
 static func breathe() -> void:
 	if spent() > budget_usec():
-		await Engine.get_main_loop().process_frame
+		await _next_frame()
 
 
 ## Run f on a worker thread and return what it returns, the frames going on meanwhile. Only for
@@ -102,11 +118,15 @@ static func off_thread(f: Callable) -> Variant:
 
 
 static func _on_thread(f: Callable) -> Variant:
+	_ensure()
 	var out := []
 	var task := WorkerThreadPool.add_task(func(): out.append(f.call()))
+	_tasks[task] = true
 	while not WorkerThreadPool.is_task_completed(task):
-		await Engine.get_main_loop().process_frame
-	WorkerThreadPool.wait_for_task_completion(task)
+		await _next_frame()
+	if _tasks.has(task):
+		WorkerThreadPool.wait_for_task_completion(task)
+		_tasks.erase(task)
 	return out[0]
 
 
@@ -115,7 +135,39 @@ static func _on_thread(f: Callable) -> Variant:
 ## for good: the game hung. Only Images and arrays go to threads: off_thread.)
 static func build(f: Callable) -> Variant:
 	await breathe()
-	return f.call()
+	_ensure()
+	_made = _made.filter(func(n): return is_instance_valid(n) and not n.is_inside_tree())
+	var made = f.call()
+	_track(made)
+	return made
+
+
+## Every node in a build's result (itself, or in its Dictionary or Array), in _made.
+static func _track(v) -> void:
+	if typeof(v) == TYPE_OBJECT:
+		if is_instance_valid(v) and v is Node:   # (a build may free some of what it made: a stage's banner)
+			_made.append(v)
+	elif v is Dictionary:
+		for x in v.values():
+			_track(x)
+	elif v is Array:
+		for x in v:
+			_track(x)
+
+
+## Quitting mid-bake: the worker tasks under way finish first (a cache write still compressing as
+## the engine shut down crashed it, signal 11 on the Deck).
+## And models built but not yet put in the tree (a bake waits a frame or more for budget between
+## the two) are freed: left over, they crashed the engine as it shut down (signal 11, Deck).
+func _exit_tree() -> void:
+	_quitting = true
+	for task in _tasks.keys():
+		WorkerThreadPool.wait_for_task_completion(task)
+	_tasks.clear()
+	for n in _made:
+		if is_instance_valid(n) and not n.is_inside_tree():
+			n.free()
+	_made.clear()
 
 
 func _ready() -> void:
