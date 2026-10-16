@@ -532,6 +532,8 @@ func slab(points: Array, thick: float, m: Material, pos := Vector3.ZERO) -> Mesh
 # ------------------------------------------------------------------ rat
 
 static var rat_hunch := 15.0   # degrees the rat's body leans forward (the placement check's fixtures set -15: as it was)
+static var rat_torso_x := 0.8   # where worn armour sits on a rat (at 1.4 every armour sat 1.1 to 1.5 forward of the body's middle: forest rats' bark and bronze over the limit; a placement fixture puts it back)
+const RAT_BANNER_Y := 22.0
 const RAT_HAND_L := Vector3(8.3, 18.5, -4.6)   # the shield hand, up at the chest (lower, a riding rat's shield went into its mount)
 
 
@@ -566,7 +568,8 @@ func _body_rat(c: Dictionary) -> Dictionary:
 	kerchief(front, c, Vector3(3.2, 22.2, 0), 3.0, 15)   # a small scarf at the neck (a big one read as a bib)
 	return {"node": n, "front": front, "sockets": {
 		"head": Vector3(4, 24.5, 0), "hand_r": near_hand, "hand_l": RAT_HAND_L,
-		"torso": Vector3(1.4, 17.5, 0), "back": Vector3(-5.2, 19.5, 0)},   # (the hunched back slopes out below: a cape at -3.6 hung into it)
+		"torso": Vector3(rat_torso_x, 17.5, 0), "back": Vector3(-5.2, 19.5, 0),   # (the hunched back slopes out below: a cape at -3.6 hung into it)
+		"banner": Vector3(-4.0, RAT_BANNER_Y, 0)},   # a banner carried higher than a cape hangs (on the low back its flag flew through an acorn cap)
 		"anchors": [[Vector3(-0.5, 7.0, -3.2), 0.0, -1], [Vector3(-0.5, 7.0, 3.2), PI, 1]],   # (at 6 the hips hung under the belly, the feet a unit into the ground)
 		"torso_scale": Vector2(0.58, 0.74), "torso_tilt": -rat_hunch,   # armour leans with the hunch
 		"torso_fit": Vector3(0.7, 0.76, 0.6)}   # armour (built ~1.6x) a little bigger than the body all round, so it wraps it
@@ -1454,6 +1457,7 @@ const CAT_SHOULDER := Vector3(8.5, 12.5 - CAT_DROP, 0)
 const CAT_LEG_Z := 3.0
 const CAT_HEAD_AT := Vector3(15.2, 15.2 - CAT_DROP, 0)
 const CAT_SEAT := Vector3(-2.0, 19.3 - CAT_DROP, 0)   # behind the shoulders, on a small saddle
+const CAT_SIT_LIFT := 0.8   # the seat a little higher on a sitting cat (the rider stays upright as it pitches)
 const CAT_SIT := {"sit": [34.0, 3.8], "sit2": [25.0, 6.4], "sit1": [13.0, 9.4]}   # body pitch (degrees, nose up), hip height: sitting down in three steps
 const CAT_SIT_OUT := 1.6         # sitting, the folded hind foot lies this far out beside the haunch
 const CAT_HIND := [5.4, 5.9, 4.3]   # femur, tibia, metatarsus (the hock is the joint above the paw)
@@ -1514,7 +1518,7 @@ func _body_cat(c: Dictionary) -> Dictionary:
 		# The hook: up from the rump and over at the tip (RM1's tail, kept: Dominic).
 		_cat_tail(low, [Vector3(-12.0, 14.6, 0), Vector3(-15.2, 18.8, 0), Vector3(-16.6, 23.4, 0.3), Vector3(-16.2, 27.6, 0.5),
 			Vector3(-14.5, 30.0, 0.6), Vector3(-12.6, 30.2, 0.6)], 1.6, 1.1, m.fur, m.stripe)
-	var seat := CAT_SEAT
+	var seat := CAT_SEAT + (Vector3(0, CAT_SIT_LIFT, 0) if pose == "sit" else Vector3.ZERO)   # (sitting, its shoulders pitch up under the rider: a rat's bow drawn low cut into them)
 	var sockets := {"head": CAT_HEAD_AT, "hand_r": seat + Vector3(5, -6, 5.0), "hand_l": seat + Vector3(4, -6, -5.0),
 		"torso": Vector3(0, seat.y - 5, 0), "back": seat + Vector3(-7, -1.5, 0), "seat": seat, "wings": seat + Vector3(7, -1.5, 0),
 		"girth": Vector3(seat.x, 11.5, 0)}   # the belly under the seat, carried round as it sits (not the lowest thing under a pitched seat)

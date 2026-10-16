@@ -17,7 +17,7 @@ map; the code says the details.
      it to the worn-armour bake, which then skips `torso_fit`).
    - A model returns its node plus, for bodies, `sockets` (3D points where the head, hands,
      torso armour, back and seat go), leg `anchors`, and fitting data: `torso_scale` (2D,
-     legacy), `torso_fit` (3D scale for worn armour), `torso_tilt`, `gear_scale` (on heads).
+     legacy), `torso_fit` (3D scale for worn armour), `torso_tilt`, `gear_scale` (on heads). A body may add a `banner` socket: back parts tagged `banner` (the team banner) go there instead of `back` (the rat's low back carried its flag through its helmet).
    - Concept options live in `scenes/art_pixel/concepts.gd` (`concept.*` ids), shown with
      `tests/concept_sheet.gd`; nothing there is in play until picked.
    - **Holds.** A body is baked with its near arm posed for what it holds (`unit_models.arm_pose`:

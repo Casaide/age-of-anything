@@ -515,6 +515,8 @@ func _attach(lib, rig: Dictionary, slot: String, part_id: String, colours: Dicti
 	var withers: bool = slot == "back" and "flying" in p.tags and rig.sockets.has("wings")
 	if withers:
 		socket = "wings"
+	if slot == "back" and "banner" in p.tags and rig.sockets.has("banner"):
+		socket = "banner"   # a banner pole where the body's model carries one (a rat's, higher than its low back)
 	if not rig.sockets.has(socket):
 		return
 	var node := _shape()
