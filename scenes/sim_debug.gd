@@ -409,20 +409,15 @@ func use_save(rep: Dictionary) -> void:
 	vs_ai = v.vs_ai
 
 
-## Play on from a saved match (src/save_game.gd): the snapshot poured over a fresh world, or, when
-## it doesn't fit this build, the match played forward from its start to the saved tick.
+## Play on from a saved match (src/save_game.gd): its snapshot poured over a fresh world.
 func start_saved(rep: Dictionary) -> void:
 	if baking:
 		return
 	map_id = rep.map
 	var ld := SaveGame.begin(rep, lib)
+	if not ld.same:
+		print("The save comes from another build; changed since: ", ld.changed)
 	await _bake(ld.world.races)
-	if not ld.fast:
-		print("The save's snapshot doesn't fit this version: playing the match forward to tick %d" % rep.ticks)
-		while not SaveGame.run(ld, 12000):
-			if loader != null and loader.has_method("set_note"):
-				loader.set_note("Catching up: %d%%" % roundi(100 * SaveGame.progress(ld)))
-			await get_tree().process_frame
 	_attach(ld.world)
 	loaded_at = [world.tick, world.state_hash()]
 	_loaded()
@@ -438,10 +433,6 @@ func start_saved(rep: Dictionary) -> void:
 	audio.music_age(world.ages[active])
 	audio.ambience(true)
 	camera.look_at_point(Vector2(v.camera[0], v.camera[1]))
-	var drift := SaveGame.drift(ld)
-	if drift >= 0:
-		var secs := drift / World.TICK_HZ
-		_show_line("This save comes from another version: the match went its own way from %d:%02d." % [secs / 60, secs % 60], Color("#f2c94c"))
 
 
 ## Save the match as it stands (the pause menu's Save game): a new file each time.
