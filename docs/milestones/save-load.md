@@ -1,6 +1,6 @@
 # Save and load
 
-**Status:** built 2026-10-16 (Dominic asked for it mid-session during milestone 20); saves survive updates (D-141)
+**Status:** built 2026-10-16 (Dominic asked for it mid-session during milestone 20); saves survive updates (D-141) and take the new stats (D-142)
 **Exit criterion:** save mid-match, quit, load, and the match goes on with the same state hash as a match that
 never stopped (a headless test proves it), and the screens work with a mouse and with a pad.
 
@@ -78,6 +78,26 @@ fallback is gone: a save always loads from its snapshot, whatever build made it.
 
 Size: about 380 KB at 5 minutes and 550-570 KB at 20-25 minutes (zstd; the snapshot is ~3 MB raw, mostly per-cell
 map and fog arrays, and the command history is the part that grows). Saving takes 25-55 ms.
+
+## New stats for old saves (D-142)
+
+Dominic: "updated stats aren't something the save should worry about." A save is state; the stats come from the build
+loading it (`SaveGame._build(rep, lib, true)`):
+
+- the races are generated again from their prompts (their keys must match), the rules come from this build's file
+  with the save's host choices (the mode) kept, and the data tables (`DATA`) are left as this build makes them;
+- each player's unit types and building stats are worked out again from the research the save has (`Tech.retype`,
+  `Tech.refresh`, as a game mode does at the start), units and buildings keeping their share of health; animals by
+  hand; engines standing at speed 0 to pack or unpack still do.
+- This needs the tables to line up (`_layout`): the same rosters, buildings, research, resources and armour classes in
+  the same order, because state points into them by place. Buildings are sorted by id and line upgrades are made per
+  building, so a new building or research usually shifts them: such a save loads **frozen** on its own stats
+  (D-141's way). `ld.migrated` says which.
+- Test: `part:save_load` halves every unit type's and building's health in a save (a build with other stats): it
+  migrates, types take this build's health, every unit keeps its share; a save with a building missing loads frozen.
+
+**Next step, if wanted:** remap by id (building kinds, unit kinds, research bits, queue entries, rubble, garrison
+records, hero arrays, fog memories, the bots' notes) so saves keep migrating across added or removed content.
 
 ## Still open
 
