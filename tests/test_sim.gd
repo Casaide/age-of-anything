@@ -4034,34 +4034,45 @@ func _test_save_load(lib, gen) -> void:
 	var bytes := FileAccess.get_file_as_bytes(path).size()
 	DirAccess.remove_absolute(path)
 	check(rep.commands.all(func(c): return c.player == 0), "a save keeps your orders, not the bot's")
-	check(SaveGame.problem(rep, lib) == "", "the save rebuilds in this version")
-	var fast := SaveGame.begin(rep, lib)
+	check(SaveGame.problem(rep, lib) == "", "the save loads in this version")
+	var ld := SaveGame.begin(rep, lib)
+	var unit_ids: PackedInt32Array = rep.snapshot.world.units.id.duplicate()
 	var load_ms := Time.get_ticks_msec() - t0
-	check(fast.fast, "the snapshot fits: the match is back at once")
-	var odd_rep := rep.duplicate(true)
-	odd_rep.snapshot.world.units["a_variable_gone_since"] = 1   # a build where a sim variable came or went
-	check(not SaveGame.begin(odd_rep, lib).fast, "a snapshot that doesn't fit the build isn't used")
-	var slow_rep := rep.duplicate()
-	slow_rep.erase("snapshot")   # a save whose snapshot doesn't fit: the match plays forward from its start
-	var slow := SaveGame.begin(slow_rep, lib)
-	check(not slow.fast and slow.world.tick == 0, "without a snapshot it starts over")
-	t0 = Time.get_ticks_msec()
-	while not SaveGame.run(slow, 20000):
-		pass
-	var rerun_ms := Time.get_ticks_msec() - t0
-	for ld in [fast, slow]:
-		var how := "snapshot" if ld.fast else "re-run"
-		check(SaveGame.drift(ld) == -1, "%s: the loaded match is at the saved state" % how)
-		var b: World = ld.world
-		var you_b := EcoBot.new(0)
-		while b.tick < TO:
-			you_b.think(b)
-			ld.bots[0].think(b)
-			b.step()
-		check(b.hashes == world.hashes, "%s: played on from the save, the match matches one never stopped" % how)
-		check(b.state_hash() == world.state_hash(), "%s: and ends at the same state" % how)
+	check(ld.same and ld.changed.is_empty(), "this build's save loads as it was (changed: %s)" % [ld.changed])
+	var b: World = ld.world
+	var you_b := EcoBot.new(0)
+	while b.tick < TO:
+		you_b.think(b)
+		ld.bots[0].think(b)
+		b.step()
+	check(b.hashes == world.hashes, "played on from the save, the match matches one never stopped")
+	check(b.state_hash() == world.state_hash(), "and ends at the same state")
+
+	check(rep.snapshot.world.units.id == unit_ids, "playing on from a save leaves the save as it was")
+
+	# A save from an older build: a unit field, a world variable and a bot variable it didn't have
+	# yet, one it had that this build dropped, a data key this build added, and a class it replaced.
+	var old := rep.duplicate(true)
+	var sw: Dictionary = old.snapshot.world
+	sw.units.erase("wtime")
+	sw.erase("pour_at")
+	old.snapshot.bots[0].erase("_resting")
+	sw.units["a_field_since_dropped"] = PackedInt32Array([1, 2, 3])
+	for bt in sw.btypes:
+		bt.erase("hp")
+	sw.shots[SaveGame.SCRIPT] = "res://src/sim/gone_since.gd"
+	var ld_old := SaveGame.begin(old, lib)
+	var o: World = ld_old.world
+	check(o.units.wtime.size() == o.units.count(), "the new per-unit field is padded to every unit")
+	check(o.btypes.all(func(bt): return bt.has("hp")), "data keys this build added come in")
+	check(ld_old.changed.size() >= 5, "and the load says what changed: %s" % [ld_old.changed])
+	var units_before := o.units.count()
+	for i in 1200:
+		ld_old.bots[0].think(o)
+		o.step()
+	check(o.tick == AT + 1200 and o.units.count() > units_before / 2, "the old save plays on a minute with its bot (%d units)" % o.units.count())
 	check(world.units.count() > 40, "it was a real match (%d units)" % world.units.count())
-	print("save/load: %d KB, %d commands; save %d ms, load %d ms; re-running %d ticks %d ms" % [bytes / 1024, rep.commands.size(), save_ms, load_ms, AT, rerun_ms])
+	print("save/load: %d KB, %d commands; save %d ms, load %d ms" % [bytes / 1024, rep.commands.size(), save_ms, load_ms])
 
 
 # --- replay -------------------------------------------------------------------

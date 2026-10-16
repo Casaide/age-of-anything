@@ -71,8 +71,8 @@ move it to `docs/backlog.md` rather than deleting it.
 - **In progress (milestone 20): Steam Deck and controllers.** The pad controls are built (D-132): `src/view/pad_mode.gd`
   (last input wins, menu focus), `pad_play.gd` (reticle, selection circle, orders), `pad_wheel.gd` (tap A on what you command: the
   panel's buttons on a ring; D-133). First Deck run done; next: steps 7-9 (fit, speed, Steam Input). See `docs/milestones/m20-steam-deck.md`.
-- **Built (save and load, D-140):** `src/save_game.gd` (a snapshot of the World and bots, the replay as fallback),
-  Save/Load in the pause menu and lobby (`src/view/ui/saves_page.gd`). Dominic to pick slots/autosave. See `docs/milestones/save-load.md`.
+- **Built (save and load, D-140, D-141):** `src/save_game.gd` (a snapshot of the World and bots; saves from older builds
+  load too), Save/Load in the pause menu and lobby (`src/view/ui/saves_page.gd`). See `docs/milestones/save-load.md`.
 - **In progress (milestone 13): unit lines, siege first.** Crewed engines per family (D-116 to D-119); shots fly
   and can miss (`src/sim/shots.gd`). See `docs/milestones/m13-unit-lines.md`.
 
@@ -218,6 +218,9 @@ re-render and commit the files in `assets/audio/` with it (the game plays files,
 - Iterate anything that affects output in a stable order (sorted ids or arrays), never raw
   Dictionary order from untrusted sources.
 - Recipes hold only strings and ints. The race key hashes names + recipes, not derived stats.
+- Saves outlive builds (D-141): a new sim or AI variable must make sense in a match loaded from an older save. Per-unit
+  arrays are padded with 0; anything else whose fresh value is wrong mid-match gets an `after_load(missing)` (see
+  `docs/milestones/save-load.md`).
 - The coming sim: integer/fixed-point maths, fixed 20 Hz tick, driven only by a command stream,
   no physics nodes or NavigationAgent avoidance inside it. The AI issues commands like a player.
   Views read sim state; the sim never touches Nodes.
