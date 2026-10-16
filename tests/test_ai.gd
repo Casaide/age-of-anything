@@ -376,6 +376,7 @@ func _test_siege_bot(rules: Dictionary, a: Dictionary, b: Dictionary) -> void:
 	for wv in cfg.military.waves:
 		wv.at = int(wv.at) + 600   # ten minutes to build up first (its first waves would otherwise end it)
 	cfg.wonder = {}   # no Wonder: topped up to 2000 of everything it builds one and wins by it at 16:19 on Old Forest, before its first wave (16:00) has marched; it passed there only while a ram could be posted as an escort and wander out
+	cfg.military.erase("hero")   # no heroes (D-136): its first top-ups went on three heroes and the engines came after its first wave had won
 	var bots := [Bot.new(0, cfg), EcoBot.new(1)]
 	var most: Dictionary = cfg.military.siege.max
 	w.ages[0] = 3

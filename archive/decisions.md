@@ -827,3 +827,16 @@ that kind; "double tap is very sensitive". Tap, then tap again, is how a selecti
 tap could never be told apart from it. "All of these on screen" is now the first button on a unit's wheel. Also: the
 mouse takes over from the pad only after a real swipe (80 px within 0.4 s) or a click, and the menus keep their focus
 when it does (on the Deck the stick's focus kept jumping back to the top button).
+
+**D-136, 2026-10-16: Every race gets all of its heroes (supersedes D-131's one hero per race).** Dominic, resuming the
+paused heroes: "heroes i thought we'd do all of them, so each race has some variety." A race now gets every hero its
+creature and its culture name; one with fewer than three (in the base game: humans, whose heroes come only from their
+culture, spooky spiders and forest beetles) is topped up from its culture's two kindred cultures (`kin` in
+data/heroes.json), so every race has three or four. Claude's calls on how they play: each hero is trained once at the
+Town Center from age 2 and only one of each is ever out, but a race's heroes may all be out together; a fallen one is
+revived there for 60% of its price after a minute; auras don't add up (the strongest of each stat). Balance: flat
+stats (+120 hp) made a rat's hero five times its swordsman and a centaur's twice, so the hero line is a share of its
+swordsman (three times the hit points, a third more attack, no armour bonus) for 30 price points, healing a point
+every three seconds. Art: every hero look must pass placement on every body it can come to, so bodies may declare a
+`drape` socket and scale for hanging capes, and a hero may wear a low-slung variant of its hat, or keep its race's own
+weapon, on a creature it doesn't fit (`fit` in data/heroes.json).
