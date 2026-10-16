@@ -129,7 +129,10 @@ func _run() -> void:
 	items = view.pad_play.wheel.pages[view.pad_play.wheel.page][1]
 	k = items.map(func(b): return b.text).find("Build: Civilian")
 	_check(k >= 0, "a worker's wheel has Build: Civilian")
-	_check(items[0].text == "All on screen", "a unit's wheel starts with All on screen")
+	var wh = view.pad_play.wheel
+	_check(wh.pages[0][1][0].text == "All on screen", "a unit's wheel starts with All on screen")
+	print("  (the worker's wheel: pages %s, open on %d)" % [wh.pages.map(func(p): return p[0]), wh.page])
+	_check(wh.pages.size() == 1 or wh.pages[wh.page][0] == "Build", "a worker's wheel opens on its Build page")
 	await _point(k, items.size())
 	await _tap(JOY_BUTTON_A)
 	pad.fake.right = Vector2.ZERO
