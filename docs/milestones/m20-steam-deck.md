@@ -215,6 +215,13 @@ pages (closed on Civilian without choosing, it used to stay there).
   own parts (`ArtKit._keep_parts`), the atlas is 4096 wide (3300 to 5600 px tall a match), and `build_atlas` asserts
   at the limit. Checked on desktop with three rematches in a row; not yet on the Deck.
 
+- **2026-10-16, the bake froze the UI** (Dominic, on the Deck): the army's bake (lobby and match loader) blocked
+  the frame. Now budgeted (D-143): 8 ms of main-thread bake work a frame, image work on worker threads, readbacks
+  asynchronous, at most one building frame drawn a frame. Cold match bake on the Mac (`tests/bake_frames.gd`):
+  median frame 75 -> 8.3 ms, p95 180 -> 12-15 ms, worst 1.4 s -> ~120-250 ms; total 35 -> ~30 s. Art unchanged
+  within GPU noise (`tests/bake_compare.gd`). Portraits are now posed the same every time. Left: the GPU's own
+  20-60 ms on big building frames. Waiting on Dominic's Deck run.
+
 ## Changes from the original plan
 
 ## Links

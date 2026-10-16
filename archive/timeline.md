@@ -105,3 +105,4 @@ One line per moment worth remembering. Newest at the bottom.
 - **2026-10-16:** White boxes on a second match (Deck): the part atlas held every race ever baked and outgrew the GPU's 16384 px; a match now keeps only its own parts, and the atlas is 4096 wide.
 - **2026-10-16:** Saves survive game updates without replaying (D-141, Dominic): data merged, new variables padded or fixed by `after_load`; every save kept (~0.4-0.6 MB each).
 - **2026-10-16:** A loaded save plays on with this build's stats, units keeping their share of health; one whose buildings or research changed loads on its own (D-142, Dominic).
+- **2026-10-16:** The bake stops freezing the screen (D-143): budgeted per frame, image work on threads, async readbacks; a cold match bake's median frame 75 ms -> 8 ms.

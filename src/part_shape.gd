@@ -69,11 +69,22 @@ static func bake_flat(id: String, shape_list: Array, colour_map: Dictionary, art
 
 ## extras: name -> Image, packed alongside the parts; returns name -> region.
 static func build_atlas(extras := {}) -> Dictionary:
+	return take_atlas(pack_atlas(atlas_images(extras)))
+
+
+## What an atlas packs: every bake's image, and the extras' (as "extra:" + name).
+static func atlas_images(extras := {}) -> Dictionary:
 	var images := {}
 	for k in baked:
 		images[k] = baked[k].img
 	for k in extras:
 		images["extra:" + k] = extras[k]
+	return images
+
+
+## The images shelf-packed into one: {img, at: key -> Rect2}. Images only, so it can run on a
+## worker thread (ArtKit.rebuild_atlas_async: a match's atlas held a frame up for 35 ms).
+static func pack_atlas(images: Dictionary) -> Dictionary:
 	var keys := images.keys()
 	keys.sort_custom(func(a, b): return images[a].get_height() > images[b].get_height() or (images[a].get_height() == images[b].get_height() and a < b))
 	var x := 0
@@ -91,16 +102,25 @@ static func build_atlas(extras := {}) -> Dictionary:
 		row_h = maxi(row_h, sz.y)
 	assert(y + row_h <= ATLAS_MAX, "atlas %d px tall: more parts than one texture holds (ArtKit._keep_parts keeps a match to its own)" % (y + row_h))
 	var img := Image.create(ATLAS_WIDTH, y + row_h, false, Image.FORMAT_RGBA8)
-	var regions := {}
+	var at := {}
 	for k in keys:
 		var src: Image = images[k]
-		var at: Vector2i = places[k] + Vector2i.ONE * ATLAS_PAD
-		img.blit_rect(src, Rect2i(Vector2i.ZERO, src.get_size()), at)
-		if baked.has(k):
-			baked[k].region = Rect2(at, src.get_size())
-		else:
-			regions[k.trim_prefix("extra:")] = Rect2(at, src.get_size())
-	atlas = ImageTexture.create_from_image(img)
+		var p: Vector2i = places[k] + Vector2i.ONE * ATLAS_PAD
+		img.blit_rect(src, Rect2i(Vector2i.ZERO, src.get_size()), p)
+		at[k] = Rect2(p, src.get_size())
+	return {"img": img, "at": at}
+
+
+## A packed atlas in use: each bake's region, the texture. Returns the extras' regions. (A bake
+## made after it was packed has no region yet: it draws from its own texture until the next.)
+static func take_atlas(pack: Dictionary) -> Dictionary:
+	var regions := {}
+	for k in pack.at:
+		if k.begins_with("extra:"):
+			regions[k.trim_prefix("extra:")] = pack.at[k]
+		elif baked.has(k):
+			baked[k].region = pack.at[k]
+	atlas = ImageTexture.create_from_image(pack.img)
 	return regions
 
 

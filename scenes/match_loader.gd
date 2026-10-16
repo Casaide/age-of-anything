@@ -40,6 +40,7 @@ var shown := 0.0          # the bar's fill as drawn (eases towards the real valu
 var _tip_at := 0.0
 var _t := 0.0
 var _finishing := false
+var _muster_gen := 0      # bumped by each muster: a later one (the stage resized) stops the last
 
 
 func _init() -> void:
@@ -279,14 +280,20 @@ static func _pick(units: Array) -> Array:
 
 
 func _muster() -> void:
+	_muster_gen += 1
+	var gen := _muster_gen
 	for n in layer.get_children():
 		n.queue_free()
+	veil.hide_veil()
 	var w: float = stage.size.x / zoom
 	var h: float = holder.custom_minimum_size.y / zoom
 	for k in races.size():
 		var units := _pick(races[k].units)
 		var n := units.size()
 		for i in n:
+			await get_tree().process_frame   # one a frame: building a few at once held the loader up (the Deck)
+			if gen != _muster_gen:
+				return
 			var u: Dictionary = units[i]
 			var view := UnitView.new()
 			view.build(u.recipe, lib, teams[k], u.eval.speed)
@@ -301,7 +308,6 @@ func _muster() -> void:
 			view.modulate.a = 0.0
 			layer.add_child(view)
 			view.create_tween().tween_property(view, "modulate:a", 1.0, 0.35).set_delay(0.06 * i)
-	veil.hide_veil()
 
 
 ## The atlas was rebuilt: the parts on the stage redraw from the new one.

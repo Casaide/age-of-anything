@@ -894,3 +894,15 @@ buildings and research point into those tables by place, so this needs them to l
 rosters, buildings, research, resources and armour classes, in the same order); when they don't (a building or
 research added or removed, a race prompt that generates differently), the save loads frozen on its own stats as in
 D-141. Remapping by id so those migrate too is a possible next step.
+
+**D-143, 2026-10-16: The bake keeps the screen moving (Deck: the UI froze while the army baked).** Claude, from
+Dominic's Deck report. A bake's main-thread work is budgeted per frame (`BakeClock.BUDGET_MS`, 8 ms while the window
+draws smoothly; 500 ms while hidden, as before): model builds, tree adds and removes and atlas work wait for a frame
+with budget left (`breathe`), the forced draws stop at one building frame's worth of pixels a frame (`DRAW_PIXELS`), and
+renders are read back asynchronously (`BakeClock.read`, the GPU copies them out while frames go on). Only work on
+Images and arrays runs on worker threads (`off_thread`: pixelize, shadows, cuts, cache writes, atlas packing). Model
+building on a worker thread was tried and dropped: now and then it and the game's frame waited on each other and the
+game hung. A body a part is cut by is built once per baker and copied after (a war beast's body was built 32 times).
+A slow frame only counts as "hidden" after three in a row that kept to the small budget (one GPU hiccup, or a frame
+slowed by the bake's own work, flipped it before and made the next frame half a second long). Portraits are posed once
+at their seeded time (they posed a frame or two on, so a portrait changed with how long those frames took).
