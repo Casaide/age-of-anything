@@ -1,10 +1,7 @@
 {
  "name": "heroes_hr2_creatures",
  "title": "Heroes, concept round HR2: named champions (rats, frogs, beetles, spiders)",
- "_doc": "Heroes, concept round HR2 (D-127, Dominic: 'they don't look unique, they need real character to stand out'). Each hero is a signature from data/later/heroes.json (hero_signatures: parts over the race's age-3 swordsman, a size, a temper) with the name tests/hero_names.gd gives that race with that look. The first column is the race's own age-3 swordsman for comparison. Models: scenes/art_pixel/hero_concepts.gd. Notes: docs/concepts/heroes/README.md.",
- "stage": [
-  "res://data/later/heroes.json"
- ],
+ "_doc": "Heroes, concept round HR2 (D-127, Dominic: 'they don't look unique, they need real character to stand out'). Each hero is a signature from data/heroes.json (hero_signatures: parts over the race's age-3 swordsman, a size, a temper) with the name tests/hero_names.gd gives that race with that look. The first column is the race's own age-3 swordsman for comparison. Models: scenes/art_pixel/hero_models.gd (in play since 2026-10-14). Notes: docs/concepts/heroes/README.md.",
  "zooms": [
   3,
   1

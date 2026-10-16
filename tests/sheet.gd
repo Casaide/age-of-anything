@@ -18,6 +18,7 @@ extends SceneTree
 ##   rules                "default" (data/rules/<id>.json) for every prompt
 ##   size                 size references, drawn standing (facing 0) at the left of every row: unit refs
 ##   rows                 [{label, unit, other?, h?, expect?}] or {each: {prompt: [...], slot: [...]}, age?, label?}
+##                        (each slot "heroes": a row for each of the race's heroes)
 ##                        expect: rules the row must fail (an earlier round beside its fix, failing the
 ##                          rule written for it); it passes when it fails those and nothing else
 ##   sheets               [{name, title?, columns}]: columns is a list of column objects or a shorthand:
@@ -27,7 +28,7 @@ extends SceneTree
 ##                          "shots" (8 facings loosing a shot, the shot drawn in flight: CombatFx's look for the weapon),
 ##                          "strike:<k>" (a melee blow in facing k, frame by frame: flourish), "fall:<k>" (its death: die)
 ##                        a column object: {facing, pose: stand|walk|hold|<idle pose>, step, steps, hold, other, label}
-## A unit ref: {prompt, slot, age?, set?: recipe fields, add_parts?: {slot: part} over its own kit, mount?: {creature, skin, parts?}, push?: engine part (the unit pushing it home: UnitView.push_recipe), rules?}
+## A unit ref: {prompt, slot, hero?: a hero's signature (slot "hero"), age?, set?: recipe fields, add_parts?: {slot: part} over its own kit, mount?: {creature, skin, parts?}, push?: engine part (the unit pushing it home: UnitView.push_recipe), rules?}
 ##   or {creature, skin?, mount_body?: true, set?} (the bare creature, no gear)
 ##   or {kit, params, creature, skin?, mount_body?} (a creature-kit creature with its kit's parameters changed)
 ##   a prompt ref or a mount may also name {kit, params} (a mount also its creature): the race's unit,
@@ -154,8 +155,13 @@ func _rows() -> Array:
 	for r in spec.rows:
 		if r.has("each"):
 			for p in r.each.prompt:
-				for s in r.each.slot:
+				var slots: Array = []
+				for s in r.each.slot:   # "heroes": each of the race's heroes (D-138), one row each
+					slots += _race(p, spec.get("rules", "default")).get("heroes", []).map(func(h): return "hero." + h.signature) if s == "heroes" else [s]
+				for s in slots:
 					var ref := {"prompt": p, "slot": s, "age": r.get("age", 1)}
+					if s.begins_with("hero."):
+						ref = {"prompt": p, "slot": "hero", "hero": s.trim_prefix("hero."), "age": r.get("age", 1)}
 					if not _has_slot(ref):
 						print("  (no %s line for %s)" % [s, p])
 						continue
@@ -187,7 +193,7 @@ func _unit(ref: Dictionary) -> Dictionary:
 	var u: Dictionary
 	if ref.has("prompt"):
 		var race := _race(ref.prompt, ref.get("rules", spec.get("rules", "default")))
-		var found: Array = race.units.filter(func(x): return x.recipe.slot == ref.slot)
+		var found: Array = race.units.filter(func(x): return x.recipe.slot == ref.slot and x.recipe.get("hero", "") == ref.get("hero", x.recipe.get("hero", "")))   # (a hero by its signature)
 		assert(not found.is_empty(), "%s has no %s line" % [ref.prompt, ref.slot])
 		var step: Dictionary = found[0].line[0]
 		for l in found[0].line:

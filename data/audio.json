@@ -40,6 +40,8 @@
     "won": {"takes": 1, "bus": "Ui", "gap_ms": 1000, "voices": 1},
     "lost": {"takes": 1, "bus": "Ui", "gap_ms": 1000, "voices": 1},
     "alarm": {"takes": 1, "bus": "Ui", "gap_ms": 1000, "voices": 1},
+    "hero_up": {"takes": 1, "bus": "Ui", "gap_ms": 1000, "voices": 1},
+    "hero_fell": {"takes": 1, "bus": "Ui", "gap_ms": 1000, "voices": 1},
     "meadow": {"takes": 1, "bus": "Ambience", "gap_ms": 0, "voices": 1},
     "town_quiet": {"takes": 1, "bus": "Ambience", "gap_ms": 0, "voices": 1},
     "town_busy": {"takes": 1, "bus": "Ambience", "gap_ms": 0, "voices": 1}

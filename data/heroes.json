@@ -1,0 +1,1063 @@
+{
+ "schema": "aow.heroes/1",
+ "_doc": "Heroes (milestone 14 step 9; D-127, D-131: HR2's characters as a pool). D-138 (Dominic, 2026-10-16: all of them, so each race has some variety): each race gets every signature naming its creature or its culture (src/heroes.gd), sorted by id; one with fewer than rules.min_heroes is topped up from its culture's `kin` (the kindred cultures' signatures, in the kin list's order). Each gets a generated name from its race key (src/rng.gd). The heroes are derived from the race key (like its stats), so they aren't part of the key. Its recipe is the race's swordsman of each age from the hero line's first age (rules roster `hero`), with the signature's `parts` put on (the parts they replace stay in the recipe's `kit`: priced, not drawn) at the signature's `scale` (percent; a hero's size is its look: the roster's `size_is_look`). Its strength is the roster line's stats and price_points (the cost curve does the rest). `aura`: {text, effects}: research effects (D-111 shape, tag/stat/add: attack, armour.melee, armour.pierce) on the hero's friends (its team) within rules.aura_tiles, never on itself. Rules: aura_tiles; regen_every (ticks per hit point it heals while hurt); revive_ticks (after it falls, before it can be trained again at the Town Center); revive_pct (of its cost, a revival's price); min_heroes (a race with fewer of its own is topped up from its culture's kin). In play (D-138): each hero is trained once at the Town Center and only one of each is ever out (a fallen one revived the same way); a race's heroes may all be out together; their auras don't add up: a friend in reach of several takes the strongest of each stat. Sim: src/sim/heroes.gd. Concepts: docs/concepts/heroes/README.md. `fit` (D-138): per creature, parts that take the place of the signature's own on that body (a low-slung hat for a head low in its shoulders: hero_models.gd `_low`), \"\" to keep the race's own there (a shouldered weapon a spider's legs or a frog's haunches would cut): what tests/placement_check.gd needs for every hero on every body it can come to.",
+ "rules": {
+  "aura_tiles": 5,
+  "regen_every": 60,
+  "revive_ticks": 1200,
+  "revive_pct": 60,
+  "min_heroes": 3
+ },
+ "_doc_kin": "kin: culture -> kindred cultures, nearest first. A race whose creature and culture give it fewer than rules.min_heroes heroes (humans, ponies, capybaras, cats, newts, hummingbirds: only their culture's one) takes the kindred cultures' heroes in this order until it has enough.",
+ "kin": {
+  "hellenic": [
+   "imperial",
+   "nile"
+  ],
+  "imperial": [
+   "hellenic",
+   "royal"
+  ],
+  "royal": [
+   "imperial",
+   "forest"
+  ],
+  "forest": [
+   "royal",
+   "steppe"
+  ],
+  "steppe": [
+   "han",
+   "forest"
+  ],
+  "han": [
+   "steppe",
+   "imperial"
+  ],
+  "nile": [
+   "hellenic",
+   "aztec"
+  ],
+  "aztec": [
+   "nile",
+   "swamp"
+  ],
+  "swamp": [
+   "aztec",
+   "sewer"
+  ],
+  "sewer": [
+   "swamp",
+   "spooky"
+  ],
+  "spooky": [
+   "sewer",
+   "royal"
+  ]
+ },
+ "hero_names": {
+  "_doc": "A race's hero name: every pick by src/rng.gd seeded from FNV-1a(race key + '|hero|' + signature id), each hero its own draw, from lists in file order (signatures sorted by id), so every peer names it the same and a reroll renames it. The name: the creature's list and the culture's together. The epithet or nickname: the signature's own, so the name matches the look (the Gnawer wears the gnawed crown). The title: the signature's titles if it has them, else the creature's and culture's (kept neutral). The format: one of the signature's formats. A mod adds a creature or culture by adding its lists here, a hero by adding a signature.",
+  "formats": {
+   "named": "{name} {epithet}",
+   "titled": "{title} {name} {epithet}",
+   "regnal": "{name} the {ordinal} of His Name",
+   "nickname": "{nickname}",
+   "called": "{name} \"{nickname}\""
+  },
+  "ordinals": [
+   "10000th",
+   "Umpteenth",
+   "Fourth",
+   "Forty-Second",
+   "Last",
+   "Second-Best",
+   "Ninety-Ninth",
+   "Unnumbered"
+  ],
+  "creatures": {
+   "rat": {
+    "names": [
+     "Ratty",
+     "Gnawbert",
+     "Squeakus",
+     "Whiskerton",
+     "Nibbles",
+     "Scrabble",
+     "Ratticus",
+     "Mangeworth"
+    ],
+    "titles": [
+     "Boss",
+     "Captain"
+    ]
+   },
+   "frog": {
+    "names": [
+     "Croaker",
+     "Bulbous",
+     "Ribbet",
+     "Gloop",
+     "Puddlewick",
+     "Hopsworth",
+     "Mirewort"
+    ],
+    "titles": [
+     "Elder",
+     "Great"
+    ]
+   },
+   "human": {
+    "names": [],
+    "titles": [
+     "Champion"
+    ]
+   },
+   "beetle": {
+    "names": [
+     "Hornsworth",
+     "Clickett",
+     "Bramblebeck",
+     "Shellwyn",
+     "Thornaby"
+    ],
+    "titles": [
+     "Elder"
+    ]
+   },
+   "spider": {
+    "names": [
+     "Mortimer",
+     "Silkwyn",
+     "Grizelda",
+     "Webster",
+     "Arachnea",
+     "Vesper"
+    ],
+    "titles": [
+     "Elder"
+    ]
+   },
+   "centaur": {
+    "names": [
+     "Hoofius",
+     "Galloran",
+     "Stampedes",
+     "Fetlock",
+     "Canterbury"
+    ],
+    "titles": [
+     "Champion"
+    ]
+   },
+   "bear": {
+    "names": [
+     "Grumbold",
+     "Bruin",
+     "Ursula",
+     "Barnaby",
+     "Honeyfoot",
+     "Mudge"
+    ],
+    "titles": [
+     "Big",
+     "Elder"
+    ]
+   }
+  },
+  "families": {
+   "sewer": {
+    "names": [
+     "Drainsby",
+     "Gutterpuss"
+    ],
+    "titles": []
+   },
+   "swamp": {
+    "names": [
+     "Bogsworth",
+     "Reedle"
+    ],
+    "titles": []
+   },
+   "forest": {
+    "names": [
+     "Oakhollow",
+     "Fernsby"
+    ],
+    "titles": [
+     "Warden"
+    ]
+   },
+   "spooky": {
+    "names": [
+     "Gravesend",
+     "Dusk"
+    ],
+    "titles": []
+   },
+   "imperial": {
+    "names": [
+     "Gaius",
+     "Maximus",
+     "Brutus",
+     "Lucius",
+     "Aurelia",
+     "Cornelia"
+    ],
+    "titles": [
+     "General",
+     "Tribune"
+    ]
+   },
+   "hellenic": {
+    "names": [
+     "Leontios",
+     "Kleon",
+     "Myron",
+     "Thalia",
+     "Agathon"
+    ],
+    "titles": [
+     "Strategos"
+    ]
+   },
+   "royal": {
+    "names": [
+     "Reginald",
+     "Percival",
+     "Gwendolyn",
+     "Aldous",
+     "Beatrix"
+    ],
+    "titles": []
+   },
+   "steppe": {
+    "names": [
+     "Batu",
+     "Temur",
+     "Altan",
+     "Khulan",
+     "Bora"
+    ],
+    "titles": [
+     "Khan"
+    ]
+   },
+   "nile": {
+    "names": [
+     "Nefer-Ka",
+     "Amenet",
+     "Sethi",
+     "Tiye",
+     "Khafra"
+    ],
+    "titles": [
+     "Pharaoh",
+     "Vizier"
+    ]
+   },
+   "han": {
+    "names": [
+     "Guan",
+     "Wei",
+     "Mei",
+     "Zhao",
+     "Lin"
+    ],
+    "titles": [
+     "General",
+     "Marquis"
+    ]
+   },
+   "aztec": {
+    "names": [
+     "Itzli",
+     "Cuauh",
+     "Xochitl",
+     "Tlaloc-tzin",
+     "Ehecatl"
+    ],
+    "titles": [
+     "Eagle"
+    ]
+   }
+  }
+ },
+ "hero_signatures": {
+  "gnawer": {
+   "who": {
+    "creature": [
+     "rat"
+    ]
+   },
+   "parts": {
+    "head_gear": "hero.crown_gnawed",
+    "hand_l": "hero.cheese_wheel"
+   },
+   "scale": 125,
+   "epithets": [
+    "the Gnawer",
+    "Crown-Biter",
+    "Cheese-Breath"
+   ],
+   "formats": [
+    "named",
+    "titled"
+   ],
+   "temper": "Ate the crown in a siege. Would do it again.",
+   "titles": [
+    "King",
+    "Boss"
+   ],
+   "aura": {
+    "text": "Bites back: friends nearby +1 attack",
+    "effects": [
+     {
+      "tag": "all",
+      "stat": "attack",
+      "add": 1
+     }
+    ]
+   }
+  },
+  "regnal": {
+   "who": {
+    "creature": [
+     "rat"
+    ]
+   },
+   "parts": {
+    "head_gear": "hero.crown_tiny",
+    "back": "hero.cape_ermine",
+    "hand_r": "hero.sceptre_cheese"
+   },
+   "scale": 120,
+   "epithets": [],
+   "formats": [
+    "regnal"
+   ],
+   "temper": "From a long line of rats with exactly the same name. Insists on all of it.",
+   "aura": {
+    "text": "By royal decree: friends nearby +1 melee armour",
+    "effects": [
+     {
+      "tag": "all",
+      "stat": "armour.melee",
+      "add": 1
+     }
+    ]
+   }
+  },
+  "unkillable": {
+   "who": {
+    "creature": [
+     "rat"
+    ],
+    "family": [
+     "sewer"
+    ]
+   },
+   "parts": {
+    "head_gear": "hero.tricorn",
+    "back": "hero.roach_pet",
+    "hand_r": "hero.cleaver"
+   },
+   "scale": 125,
+   "epithets": [
+    "the Unkillable",
+    "Nine-Lives"
+   ],
+   "formats": [
+    "named",
+    "called"
+   ],
+   "temper": "Killed four times and finds it insulting. The cockroach is called Gerald.",
+   "nicknames": [
+    "Old Scratch",
+    "Stitches"
+   ],
+   "aura": {
+    "text": "Too stubborn to fall: friends nearby +1 pierce armour",
+    "effects": [
+     {
+      "tag": "all",
+      "stat": "armour.pierce",
+      "add": 1
+     }
+    ]
+   },
+   "fit": {
+    "spider": {
+     "head_gear": "hero.tricorn_low",
+     "hand_r": ""
+    },
+    "frog": {
+     "hand_r": ""
+    }
+   }
+  },
+  "mossback": {
+   "who": {
+    "creature": [
+     "frog"
+    ],
+    "family": [
+     "swamp"
+    ]
+   },
+   "parts": {
+    "back": "hero.moss_mantle",
+    "hand_r": "hero.lantern_staff"
+   },
+   "scale": 135,
+   "epithets": [
+    "the Ancient",
+    "Who Remembers Rain"
+   ],
+   "formats": [
+    "nickname",
+    "named"
+   ],
+   "temper": "Hadn't moved in forty years until today. Things grow there.",
+   "nicknames": [
+    "Old Mossback"
+   ],
+   "aura": {
+    "text": "Steady as a stone: friends nearby +1 melee armour",
+    "effects": [
+     {
+      "tag": "all",
+      "stat": "armour.melee",
+      "add": 1
+     }
+    ]
+   },
+   "fit": {
+    "spider": {
+     "hand_r": ""
+    }
+   }
+  },
+  "drowned": {
+   "who": {
+    "creature": [
+     "frog"
+    ]
+   },
+   "parts": {
+    "head_gear": "hero.weed_crown",
+    "hand_r": "hero.anchor"
+   },
+   "scale": 125,
+   "epithets": [
+    "Twice-Drowned",
+    "the Damp",
+    "Anchor-Arm"
+   ],
+   "formats": [
+    "named"
+   ],
+   "temper": "Drowned. Twice. Came back with an anchor and no explanation.",
+   "aura": {
+    "text": "Nothing left to fear: friends nearby +1 attack",
+    "effects": [
+     {
+      "tag": "all",
+      "stat": "attack",
+      "add": 1
+     }
+    ]
+   }
+  },
+  "loud": {
+   "who": {
+    "creature": [
+     "frog"
+    ]
+   },
+   "parts": {
+    "head_gear": "hero.lily_hat",
+    "back": "hero.conch_horn"
+   },
+   "scale": 125,
+   "epithets": [
+    "the Loud",
+    "Bellowmouth",
+    "Who Woke the Heron"
+   ],
+   "formats": [
+    "named",
+    "titled"
+   ],
+   "temper": "Speaks only at full volume. The horn is for whispering.",
+   "aura": {
+    "text": "The war horn: friends nearby +1 attack",
+    "effects": [
+     {
+      "tag": "all",
+      "stat": "attack",
+      "add": 1
+     }
+    ]
+   }
+  },
+  "unbothered": {
+   "who": {
+    "family": [
+     "imperial"
+    ]
+   },
+   "parts": {
+    "head_gear": "hero.helm_transverse",
+    "back": "hero.cape_long"
+   },
+   "scale": 120,
+   "epithets": [
+    "the Unbothered",
+    "Who Yawned at Elephants"
+   ],
+   "formats": [
+    "named",
+    "titled"
+   ],
+   "temper": "Has never once hurried. The cloak drags on purpose.",
+   "aura": {
+    "text": "Calm under arrows: friends nearby +1 pierce armour",
+    "effects": [
+     {
+      "tag": "all",
+      "stat": "armour.pierce",
+      "add": 1
+     }
+    ]
+   },
+   "fit": {
+    "beetle": {
+     "head_gear": "hero.helm_transverse_low"
+    }
+   }
+  },
+  "lionheart": {
+   "who": {
+    "family": [
+     "hellenic"
+    ]
+   },
+   "parts": {
+    "head_gear": "hero.lion_hood",
+    "back": "hero.lion_pelt"
+   },
+   "scale": 120,
+   "epithets": [
+    "Lionheart",
+    "the Lion-Skinned"
+   ],
+   "formats": [
+    "named"
+   ],
+   "temper": "Wrestled the lion. Kept the coat. Tells everyone.",
+   "aura": {
+    "text": "Lion's roar: friends nearby +1 attack",
+    "effects": [
+     {
+      "tag": "all",
+      "stat": "attack",
+      "add": 1
+     }
+    ]
+   },
+   "fit": {
+    "frog": {
+     "head_gear": "hero.lion_hood_low"
+    },
+    "beetle": {
+     "head_gear": "hero.lion_hood_low"
+    },
+    "spider": {
+     "head_gear": "hero.lion_hood_low"
+    }
+   }
+  },
+  "overdressed": {
+   "who": {
+    "family": [
+     "royal"
+    ]
+   },
+   "parts": {
+    "head_gear": "hero.helm_plume",
+    "back": "hero.cape_heraldic"
+   },
+   "scale": 120,
+   "epithets": [
+    "the Overdressed",
+    "the Magnificent",
+    "of the Many Feathers"
+   ],
+   "formats": [
+    "titled",
+    "named"
+   ],
+   "temper": "Late to every battle: the plumes take an hour.",
+   "titles": [
+    "Sir",
+    "Duke"
+   ],
+   "aura": {
+    "text": "Dazzling: friends nearby +1 melee armour",
+    "effects": [
+     {
+      "tag": "all",
+      "stat": "armour.melee",
+      "add": 1
+     }
+    ]
+   }
+  },
+  "wolfbrother": {
+   "who": {
+    "family": [
+     "steppe"
+    ]
+   },
+   "parts": {
+    "head_gear": "hero.wolf_hat",
+    "back": "hero.horsetail_standard"
+   },
+   "scale": 120,
+   "epithets": [
+    "Wolfbrother",
+    "the Far-Rider"
+   ],
+   "formats": [
+    "named",
+    "titled"
+   ],
+   "temper": "Raised by wolves, or says so; the wolves have not commented.",
+   "aura": {
+    "text": "The pack hunts: friends nearby +1 attack",
+    "effects": [
+     {
+      "tag": "all",
+      "stat": "attack",
+      "add": 1
+     }
+    ]
+   },
+   "fit": {
+    "frog": {
+     "head_gear": "hero.wolf_hat_low"
+    },
+    "beetle": {
+     "head_gear": "hero.wolf_hat_low"
+    },
+    "spider": {
+     "head_gear": "hero.wolf_hat_low"
+    }
+   }
+  },
+  "golden": {
+   "who": {
+    "family": [
+     "nile"
+    ]
+   },
+   "parts": {
+    "head_gear": "hero.double_crown",
+    "back": "hero.cat_pet"
+   },
+   "scale": 120,
+   "epithets": [
+    "the Golden",
+    "Beloved of Cats"
+   ],
+   "formats": [
+    "named",
+    "titled"
+   ],
+   "temper": "The cat is in charge. Everyone knows. Nobody says.",
+   "aura": {
+    "text": "The cat's blessing: friends nearby +1 pierce armour",
+    "effects": [
+     {
+      "tag": "all",
+      "stat": "armour.pierce",
+      "add": 1
+     }
+    ]
+   }
+  },
+  "unmoved": {
+   "who": {
+    "family": [
+     "han"
+    ]
+   },
+   "parts": {
+    "hand_r": "hero.guandao",
+    "back": "hero.back_flags"
+   },
+   "scale": 120,
+   "epithets": [
+    "the Unmoved",
+    "of the Long Blade"
+   ],
+   "formats": [
+    "named",
+    "titled"
+   ],
+   "temper": "Has not changed expression since the last dynasty.",
+   "aura": {
+    "text": "Hold the line: friends nearby +1 melee armour",
+    "effects": [
+     {
+      "tag": "all",
+      "stat": "armour.melee",
+      "add": 1
+     }
+    ]
+   },
+   "fit": {
+    "frog": {
+     "hand_r": ""
+    }
+   }
+  },
+  "jaguar": {
+   "who": {
+    "family": [
+     "aztec"
+    ]
+   },
+   "parts": {
+    "head_gear": "hero.jaguar_helm",
+    "back": "hero.quetzal_fan"
+   },
+   "scale": 120,
+   "epithets": [
+    "Jaguar-Heart",
+    "Who Eats the Sun"
+   ],
+   "formats": [
+    "named"
+   ],
+   "temper": "Fights in a jaguar's mouth under a sunrise of feathers. Subtle, never.",
+   "aura": {
+    "text": "Jaguar's fury: friends nearby +1 attack",
+    "effects": [
+     {
+      "tag": "all",
+      "stat": "attack",
+      "add": 1
+     }
+    ]
+   },
+   "fit": {
+    "frog": {
+     "head_gear": "hero.jaguar_helm_low"
+    },
+    "beetle": {
+     "head_gear": "hero.jaguar_helm_low"
+    },
+    "rat": {
+     "head_gear": "hero.jaguar_helm_low"
+    },
+    "spider": {
+     "head_gear": "hero.jaguar_helm_low"
+    }
+   }
+  },
+  "polished": {
+   "who": {
+    "creature": [
+     "beetle"
+    ]
+   },
+   "parts": {
+    "head_gear": "hero.acorn_plume",
+    "hand_l": "hero.gold_shield"
+   },
+   "scale": 125,
+   "epithets": [
+    "the Polished",
+    "the Gleaming"
+   ],
+   "formats": [
+    "titled",
+    "called"
+   ],
+   "temper": "Polishes the shell between blows. Has a favourite reflection.",
+   "nicknames": [
+    "Sir Shiny"
+   ],
+   "titles": [
+    "Sir"
+   ],
+   "aura": {
+    "text": "Blinding shine: friends nearby +1 pierce armour",
+    "effects": [
+     {
+      "tag": "all",
+      "stat": "armour.pierce",
+      "add": 1
+     }
+    ]
+   }
+  },
+  "barkhide": {
+   "who": {
+    "creature": [
+     "beetle"
+    ],
+    "family": [
+     "forest"
+    ]
+   },
+   "parts": {
+    "back": "hero.sapling",
+    "hand_r": "hero.root_club"
+   },
+   "scale": 135,
+   "epithets": [
+    "Rootfoot",
+    "the Sprouting"
+   ],
+   "formats": [
+    "nickname",
+    "named"
+   ],
+   "temper": "Stood so long in a wood a tree took root. Fond of it now.",
+   "nicknames": [
+    "Old Barkhide"
+   ],
+   "aura": {
+    "text": "Rooted: friends nearby +1 melee armour",
+    "effects": [
+     {
+      "tag": "all",
+      "stat": "armour.melee",
+      "add": 1
+     }
+    ]
+   },
+   "fit": {
+    "spider": {
+     "hand_r": ""
+    },
+    "rat": {
+     "hand_r": ""
+    }
+   }
+  },
+  "eight_eyes": {
+   "who": {
+    "creature": [
+     "spider"
+    ],
+    "family": [
+     "spooky"
+    ]
+   },
+   "parts": {
+    "head_gear": "hero.top_hat",
+    "hand_r": "hero.cane"
+   },
+   "scale": 160,
+   "epithets": [
+    "Eight-Eyes",
+    "the Well-Mannered"
+   ],
+   "formats": [
+    "named",
+    "titled"
+   ],
+   "temper": "Apologises before every bite. Means it, too.",
+   "titles": [
+    "Lord",
+    "Sir"
+   ],
+   "aura": {
+    "text": "Sees every gap: friends nearby +1 attack",
+    "effects": [
+     {
+      "tag": "all",
+      "stat": "attack",
+      "add": 1
+     }
+    ]
+   },
+   "fit": {
+    "beetle": {
+     "head_gear": "hero.top_hat_low"
+    }
+   }
+  },
+  "widow": {
+   "who": {
+    "creature": [
+     "spider"
+    ]
+   },
+   "parts": {
+    "head_gear": "hero.widow_hat",
+    "back": "hero.web_wheel"
+   },
+   "scale": 160,
+   "epithets": [
+    "the Widow",
+    "Silkmother",
+    "of the Hundred Grandchildren"
+   ],
+   "formats": [
+    "titled",
+    "named"
+   ],
+   "temper": "Has buried three husbands. Kept the webs.",
+   "titles": [
+    "Madame",
+    "Grandmother"
+   ],
+   "aura": {
+    "text": "Webbed cover: friends nearby +1 pierce armour",
+    "effects": [
+     {
+      "tag": "all",
+      "stat": "armour.pierce",
+      "add": 1
+     }
+    ]
+   }
+  },
+  "proud": {
+   "who": {
+    "creature": [
+     "centaur"
+    ]
+   },
+   "parts": {
+    "head_gear": "hero.helm_transverse",
+    "back": "hero.aquila"
+   },
+   "scale": 115,
+   "epithets": [
+    "the Proud",
+    "Hoof-of-the-Legion"
+   ],
+   "formats": [
+    "named",
+    "titled"
+   ],
+   "temper": "Carries the eagle personally; won't trust it to anyone with two legs.",
+   "aura": {
+    "text": "Follow the eagle: friends nearby +1 melee armour",
+    "effects": [
+     {
+      "tag": "all",
+      "stat": "armour.melee",
+      "add": 1
+     }
+    ]
+   }
+  },
+  "thunderhoof": {
+   "who": {
+    "creature": [
+     "centaur"
+    ]
+   },
+   "parts": {
+    "head_gear": "hero.laurel_gold",
+    "hand_r": "hero.trunk_club"
+   },
+   "scale": 115,
+   "epithets": [
+    "the Unshod"
+   ],
+   "formats": [
+    "nickname",
+    "called"
+   ],
+   "temper": "Pulled up a tree to win an argument. The tree is still on that side.",
+   "nicknames": [
+    "Thunderhoof"
+   ],
+   "aura": {
+    "text": "Stampede: friends nearby +1 attack",
+    "effects": [
+     {
+      "tag": "all",
+      "stat": "attack",
+      "add": 1
+     }
+    ]
+   }
+  },
+  "honeypaw": {
+   "who": {
+    "creature": [
+     "bear"
+    ]
+   },
+   "parts": {
+    "head_gear": "hero.honey_crown",
+    "back": "hero.beehive"
+   },
+   "scale": 120,
+   "epithets": [
+    "the Sticky",
+    "Friend of Bees"
+   ],
+   "formats": [
+    "nickname",
+    "named"
+   ],
+   "temper": "Brought the bees along. The bees did not agree to this.",
+   "nicknames": [
+    "Old Honeypaw"
+   ],
+   "aura": {
+    "text": "Angry bees: friends nearby +1 pierce armour",
+    "effects": [
+     {
+      "tag": "all",
+      "stat": "armour.pierce",
+      "add": 1
+     }
+    ]
+   }
+  },
+  "unwoken": {
+   "who": {
+    "creature": [
+     "bear"
+    ]
+   },
+   "parts": {
+    "head_gear": "hero.nightcap",
+    "hand_r": "hero.log_club",
+    "back": "hero.pillow"
+   },
+   "scale": 125,
+   "epithets": [
+    "the Unwoken",
+    "Who Was Napping",
+    "the Grumbling"
+   ],
+   "formats": [
+    "named",
+    "titled"
+   ],
+   "temper": "Fights entirely asleep. Has never lost a battle it remembers.",
+   "aura": {
+    "text": "Sleeps through anything: friends nearby +1 melee armour",
+    "effects": [
+     {
+      "tag": "all",
+      "stat": "armour.melee",
+      "add": 1
+     }
+    ]
+   }
+  }
+ }
+}

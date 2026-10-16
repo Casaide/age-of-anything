@@ -195,7 +195,8 @@ func _rig(out: Dictionary, rig: String, body_id: String, head_id: String, hold: 
 		sockets["top"] = hxf * hs.get("sockets", {}).get("top", Vector3(0, 8, 0))
 		sockets["top_local"] = hs.get("sockets", {}).get("top", Vector3(0, 8, 0))
 	bs["hold"] = hold
-	return {"sockets": sockets, "xf": xf, "body": body_id, "spec": bs, "gear_scale": gear_scale, "rig": rig, "carry": bs.get("carry", ""), "modelled": true}
+	return {"sockets": sockets, "xf": xf, "body": body_id, "spec": bs, "gear_scale": gear_scale, "rig": rig, "carry": bs.get("carry", ""), "modelled": true,
+		"drape_scale": float(body.get("drape_scale", 100)) / 100.0}
 
 
 ## The turn about z that points a held item's tip (its farthest point from the grip) along dir.
@@ -211,6 +212,8 @@ func _gear(out: Dictionary, rig: Dictionary, slot: String, part_id: String, colo
 	if not rig.modelled:
 		return
 	var sock: String = UnitView.SOCKET_FOR_SLOT[slot]
+	if slot == "back" and "drape" in lib.part(part_id).tags and rig.sockets.has("drape"):
+		sock = "drape"   # (UnitView._attach: a cape hangs from the body's drape socket)
 	var r: String = rig.rig
 	var xf: Transform3D = rig.xf
 	if slot == "torso":
@@ -241,6 +244,8 @@ func _gear(out: Dictionary, rig: Dictionary, slot: String, part_id: String, colo
 	if slot == "head_gear":
 		gxf = Transform3D(xf.basis * Basis.from_scale(Vector3.ONE * rig.gear_scale), rig.sockets[sock])
 		parent = r + ":head"
+	elif slot == "back" and "drape" in lib.part(part_id).tags:
+		gxf = Transform3D(xf.basis * Basis.from_scale(Vector3.ONE * rig.drape_scale), rig.sockets[sock])   # (UnitView._attach: a cape sized to its back)
 	else:
 		gxf = Transform3D(xf.basis, rig.sockets[sock])
 	if slot == "hand_r":

@@ -131,6 +131,10 @@ func _run_piece(name: String) -> void:
 			var m: Dictionary = a.medics
 			check(m.most.max() >= 1 and m.most.max() <= 3, "the bots train a couple of healers (most %s)" % [m.most])
 			check(m.samples == 0 or m.behind * 100 >= m.samples * 70, "healers keep behind the army (%d of %d looks)" % [m.behind, m.samples])
+			# Heroes (D-138): a bot with an economy fields more than one of its heroes (the side ground down
+			# early may never afford one).
+			var hs: Dictionary = a.heroes
+			check(maxi(hs.kinds[0].size(), hs.kinds[1].size()) >= 2, "the bots field several of their heroes (%d, %d kinds; fell %s, revived %s)" % [hs.kinds[0].size(), hs.kinds[1].size(), hs.fell, hs.revived])
 			_match_stats(a)
 		"bvb_again":   # the same match again (in its own process when side by side): same hashes, same winner
 			_match_stats(_play(rules, [frogs, rats], [Bot.new(0), Bot.new(1)], "bot vs bot, again", true))
@@ -213,6 +217,7 @@ func _play(rules: Dictionary, races: Array, bots: Array, title: String, quiet :=
 	var aged := [-1, -1]   # when each side reached age 2 (the bots aim for 4-6 minutes)
 	var bought := [[], []]   # the research each side finished, with the time
 	var medics := {"most": [0, 0], "heals": [0, 0], "behind": 0, "samples": 0}   # healers: how many, heals, kept behind the army
+	var heroes := {"up": [0, 0], "revived": [0, 0], "fell": [0, 0], "kinds": [{}, {}]}   # heroes (D-138): trained, revived, fallen, which
 	while w.tick < LIMIT and w.winner < 0:
 		for bot in bots:
 			bot.think(w)
@@ -220,6 +225,11 @@ func _play(rules: Dictionary, races: Array, bots: Array, title: String, quiet :=
 		for e in w.events:
 			if e.type == "research" and e.player < 2:
 				bought[e.player].append("%s %s" % [e.id, _clock(w.tick)])
+			elif e.type == "hero_up" and e.player < 2:
+				heroes["revived" if e.revived else "up"][e.player] += 1
+				heroes.kinds[e.player][e.kind] = true
+			elif e.type == "hero_fell" and e.player < 2:
+				heroes.fell[e.player] += 1
 			elif e.type == "heal":
 				var hi: int = w.units.index_of(e.by)
 				if hi >= 0:
@@ -254,7 +264,8 @@ func _play(rules: Dictionary, races: Array, bots: Array, title: String, quiet :=
 		for p in 2:
 			print("research P%d: %s" % [p, ", ".join(bought[p])])
 		print("healers: most %s, heals %s, behind their army in %d of %d looks" % [medics.most, medics.heals, medics.behind, medics.samples])
-	return {"winner": w.winner, "tick": w.tick, "hashes": w.hashes, "medics": medics}
+		print("heroes: trained %s, fell %s, revived %s" % [heroes.up, heroes.fell, heroes.revived])
+	return {"winner": w.winner, "tick": w.tick, "hashes": w.hashes, "medics": medics, "heroes": heroes}
 
 
 ## Healers: the most each side had, and whether they keep behind their army: when soldiers are
@@ -365,6 +376,7 @@ func _test_siege_bot(rules: Dictionary, a: Dictionary, b: Dictionary) -> void:
 	for wv in cfg.military.waves:
 		wv.at = int(wv.at) + 600   # ten minutes to build up first (its first waves would otherwise end it)
 	cfg.wonder = {}   # no Wonder: topped up to 2000 of everything it builds one and wins by it at 16:19 on Old Forest, before its first wave (16:00) has marched; it passed there only while a ram could be posted as an escort and wander out
+	cfg.military.erase("hero")   # no heroes (D-138): its first top-ups went on three heroes and the engines came after its first wave had won
 	var bots := [Bot.new(0, cfg), EcoBot.new(1)]
 	var most: Dictionary = cfg.military.siege.max
 	w.ages[0] = 3
@@ -1035,7 +1047,9 @@ func _test_walled_base(rules: Dictionary, a: Dictionary, b: Dictionary, wall: St
 		var bi := Economy.place(w, 0, gk, g[0], g[1], g[2])
 		w.buildings.done[bi] = 1
 		w.buildings.hp[bi] = w.bmods[0][gk].hp
-	var bot := Bot.new(1)
+	var cfg: Dictionary = Bot.load_config()
+	cfg.military.erase("hero")   # no heroes (D-138): with them the battle's timing shifts and its archers nick a second piece (palisade: 70 of 162 blows on one)
+	var bot := Bot.new(1, cfg)
 	var passive := EcoBot.new(0)
 	var reach := Reach.new()
 	var ln: int = w.lane_base[1]   # the bot's foot soldiers' lane (ground)

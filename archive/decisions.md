@@ -844,4 +844,15 @@ the hip), Dominic: "bent knees are required for sure". Each beast's leg is now j
 swings forward, and the knee follows by two-bone IK (siege_models.gd `beast_step`, `ik3`). The elephant's knee and
 wrist bend forward, the boar's fore knee forward and hind hock back, the heron's knee forward and heel back with the
 foot folding as it lifts, and the tarantula's and mantis's high knees rise. The stiff swing is off (`gait.swing` 0).
-||||||| 992498b
+**D-138, 2026-10-16: Every race gets all of its heroes (supersedes D-131's one hero per race).** Dominic, resuming the
+paused heroes: "heroes i thought we'd do all of them, so each race has some variety." A race now gets every hero its
+creature and its culture name; one with fewer than three (in the base game: humans, whose heroes come only from their
+culture, spooky spiders and forest beetles) is topped up from its culture's two kindred cultures (`kin` in
+data/heroes.json), so every race has three or four. Claude's calls on how they play: each hero is trained once at the
+Town Center from age 2 and only one of each is ever out, but a race's heroes may all be out together; a fallen one is
+revived there for 60% of its price after a minute; auras don't add up (the strongest of each stat). Balance: flat
+stats (+120 hp) made a rat's hero five times its swordsman and a centaur's twice, so the hero line is a share of its
+swordsman (three times the hit points, a third more attack, no armour bonus) for 30 price points, healing a point
+every three seconds. Art: every hero look must pass placement on every body it can come to, so bodies may declare a
+`drape` socket and scale for hanging capes, and a hero may wear a low-slung variant of its hat, or keep its race's own
+weapon, on a creature it doesn't fit (`fit` in data/heroes.json).

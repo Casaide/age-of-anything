@@ -8,6 +8,7 @@ const Generator := preload("res://src/race_generator.gd")
 const UnitView := preload("res://src/unit_view.gd")
 const TreeModel := preload("res://src/view/tech_tree_model.gd")
 const Identity := preload("res://src/identity.gd")
+const Heroes := preload("res://src/heroes.gd")
 const Pricing := preload("res://src/pricing.gd")
 const Economy := preload("res://src/sim/economy.gd")
 const Tech := preload("res://src/sim/tech.gd")
@@ -55,6 +56,7 @@ func _init() -> void:
 	_test_paths()
 	_test_tech_tree(lib, gen, rules)
 	_test_identity(lib, gen, rules.default)
+	_test_heroes(lib, gen, rules)
 	_test_scripts_parse()
 	_test_mods(lib, rules)
 	if "placement" in OS.get_cmdline_user_args():   # (the batch runs it as placement_check.gd 3d, side by side)
@@ -121,6 +123,83 @@ func _test_mods(base_lib, rules: Dictionary) -> void:
 ## six bonuses (group 1, creature 2, culture 3 with a team one), no kind twice; every effect has the research shape; own research
 ## and lacks name real things; a race's identity comes from its creature and culture alone (the
 ## recipes and race key don't see it), and its stat bonuses are paid for.
+## Heroes (milestone 14 step 9, src/heroes.gd, data/heroes.json; D-138): every playable creature with
+## every culture has at least rules.min_heroes, its own creature's and culture's all among them, none
+## twice; every signature is someone's; each name carries its signature's epithet or nickname; the
+## heroes are derived from the key (not in it), the same every time, dressed over the swordsman with
+## the replaced kit kept; priced dearer and tougher than the swordsman; their parts are only theirs.
+func _test_heroes(lib, gen, rules: Dictionary) -> void:
+	var fams: Array = lib.families.keys()
+	fams.sort()
+	var seen := {}
+	var least := 99
+	for cid in lib.creature_ids("playable"):
+		for fid in fams:
+			var sigs := Heroes.roster_for(lib.heroes, cid, fid)
+			least = mini(least, sigs.size())
+			var own := Heroes.signatures_for(lib.heroes, cid, fid)
+			check(sigs.size() >= int(lib.heroes.rules.min_heroes) and sigs.slice(0, own.size()) == own, "heroes: %s/%s have all their own and at least %d (%s)" % [cid, fid, lib.heroes.rules.min_heroes, sigs])
+			var once := {}
+			for sid in sigs:
+				check(not once.has(sid), "heroes: %s/%s: %s once" % [cid, fid, sid])
+				once[sid] = true
+				seen[sid] = true
+				var h := Heroes.pick(lib.heroes, "key%d" % cid.length(), cid, fid, sid)
+				var s: Dictionary = lib.heroes.hero_signatures[sid]
+				var words: Array = s.epithets + s.get("nicknames", [])
+				check(words.any(func(e): return e in h.name) or "of His Name" in h.name, "heroes: %s's name carries its look (%s)" % [sid, h.name])
+	for fid in lib.heroes.kin:
+		check(lib.families.has(fid) and lib.heroes.kin[fid].all(func(f): return lib.families.has(f) and f != fid), "heroes: %s's kin are other cultures" % fid)
+	for sid in lib.heroes.hero_signatures:
+		var s: Dictionary = lib.heroes.hero_signatures[sid]
+		var playable: bool = s.who.get("creature", []).any(func(c): return lib.creatures.has(c) and lib.creatures[c].get("playable", false)) or not s.who.get("family", []).is_empty()
+		check(seen.has(sid) or not playable, "heroes: %s is someone's hero" % sid)
+		for slot in s.parts:
+			check(lib.parts.has(s.parts[slot]) and lib.part(s.parts[slot]).slot == slot, "heroes: %s's %s is a %s part" % [sid, s.parts[slot], slot])
+		for cid in s.get("fit", {}):
+			check(lib.creatures.has(cid), "heroes: %s's fit names a creature (%s)" % [sid, cid])
+			for slot in s.fit[cid]:
+				var fid: String = s.fit[cid][slot]
+				check(s.parts.has(slot) and (fid == "" or (lib.parts.has(fid) and lib.part(fid).slot == slot)), "heroes: %s's fit for %s: a %s part in place of its own (%s)" % [sid, cid, slot, fid])
+		check(s.aura.effects.size() > 0 and s.aura.text != "", "heroes: %s has an aura" % sid)
+	for prompt in ["sewer rats with cheese hammers", "romans", "spooky spiders", "centaur romans", "egyptians", "swamp frogs", "forest beetles", "swamp humans", "sewer humans"]:
+		for reroll in 2:
+			var race: Dictionary = gen.generate(prompt, rules.default, reroll)
+			var heroes: Array = race.units.filter(func(u): return u.recipe.slot == "hero")
+			var want := Heroes.roster_for(lib.heroes, race.creature, race.family)
+			check(heroes.map(func(u): return u.recipe.hero) == want and race.units.slice(-heroes.size()) == heroes and race.heroes.size() == heroes.size(),
+				"heroes: '%s' has all its heroes, the last of its units (%s)" % [prompt, want])
+			check(Generator.race_key(race) == race.key, "heroes: '%s': the key leaves the heroes out" % prompt)
+			check(JSON.stringify(gen.generate(prompt, rules.default, reroll).heroes) == JSON.stringify(race.heroes), "heroes: '%s': the same heroes every time" % prompt)
+			var names := {}
+			for h in race.heroes:
+				names[h.name] = true
+			check(names.size() == race.heroes.size(), "heroes: '%s': each its own name (%s)" % [prompt, race.heroes.map(func(h): return h.name)])
+			var firsts := {}
+			for h in race.heroes:
+				firsts[h.name.get_slice(" ", 0)] = true
+			check(firsts.size() == race.heroes.size(), "heroes: '%s': no two share a first name (%s)" % [prompt, race.heroes.map(func(h): return h.name)])
+			var sword: Dictionary = race.units.filter(func(u): return u.recipe.slot == "infantry")[0]
+			for hero in heroes:
+				var s: Dictionary = lib.heroes.hero_signatures[hero.recipe.hero]
+				var worn := Heroes.parts_on(s, race.creature)
+				for l in hero.line:
+					var r: Dictionary = l.recipe
+					for slot in worn:
+						check(r.parts[slot] == worn[slot], "heroes: '%s' wears its %s" % [prompt, worn[slot]])
+					for slot in r.get("kit", {}):
+						check(lib.part(r.kit[slot]).slot == slot and not lib.part(r.kit[slot]).has("only_if") or not "hero_only" in lib.part(r.kit[slot]).get("only_if", []), "heroes: '%s' keeps its %s kit" % [prompt, slot])
+					var sw: Dictionary = sword.line.filter(func(x): return int(x.age) <= int(l.age))[-1]
+					var total := func(c: Dictionary) -> int: return c.values().reduce(func(a, b): return a + b, 0)
+					check(int(l.eval.hp) >= int(sw.eval.hp) * 2 and total.call(l.eval.cost) * 2 > total.call(sw.eval.cost) * 3, "heroes: '%s' age %d: tougher and dearer than its swordsman (%d hp, %d)" % [prompt, l.age, l.eval.hp, total.call(l.eval.cost)])
+					check(not "giant" in l.eval.tags, "heroes: '%s': its size is its look, not a giant's" % prompt)
+	for prompt in PROMPTS:
+		for u in gen.generate(prompt, rules.default).units:
+			if u.recipe.slot != "hero":
+				for l in u.line:
+					check(not l.recipe.parts.values().any(func(id): return "hero_only" in lib.part(id).get("only_if", [])), "heroes: '%s' %s wears no hero's kit" % [prompt, u.recipe.slot])
+
+
 func _test_identity(lib, gen, rules: Dictionary) -> void:
 	var tdata: Dictionary = DataLib.load_json("res://data/tech.json")
 	var bdata: Dictionary = DataLib.load_json("res://data/buildings.json").buildings
@@ -261,7 +340,7 @@ func _test_tech_tree(lib, gen, rules: Dictionary) -> void:
 						var sd: Array = r.roster.filter(func(s): return s.slot == n.slot)
 						check(sd.size() == 1 and sd[0].building == n.building and n.age >= int(sd[0].tier), "tree: line step %s from the roster" % n.key)
 						if not race.is_empty() and n.status == "built":
-							var u: Array = race.units.filter(func(x): return x.recipe.slot == n.slot)
+							var u: Array = race.units.filter(func(x): return x.recipe.slot == n.slot and x.recipe.get("hero", "") == n.get("hero", ""))   # (each hero its own node)
 							check(u.size() == 1 and u[0].line.any(func(l): return int(l.age) == n.age and l.recipe.name == n.name),
 								"tree: %s shows the race's own unit for that age (%s)" % [n.key, n.name])
 					_:
@@ -275,7 +354,9 @@ func _test_tech_tree(lib, gen, rules: Dictionary) -> void:
 			for sd in r.roster:
 				check(bdata.buildings.has(sd.get("building", "")), "roster %s names a building (%s)" % [sd.slot, rid])
 				var first := maxi(int(sd.tier), int(bdata.buildings[sd.building].age))   # trained once its building stands
-				check(seen.has("u:%s@%d" % [sd.slot, first]), "tree: line %s is on the page (%s)" % [sd.slot, rid])
+				var heroes: Array = race.get("heroes", []) if sd.role == "hero" else []   # (each hero its own node, D-138)
+				check(seen.has("u:%s@%d" % [sd.slot, first]) if heroes.is_empty() else heroes.all(func(h): return seen.has("u:%s.%s@%d" % [sd.slot, h.signature, first])),
+					"tree: line %s is on the page (%s)" % [sd.slot, rid])
 				if sd.get("status", "") != "planned":
 					check(sd.slot in bdata.buildings[sd.building].trains, "roster %s: its building trains it (%s)" % [sd.slot, rid])
 			if not race.is_empty():
@@ -398,7 +479,9 @@ func _test_bounds(lib, gen, rules: Dictionary) -> void:
 		for prompt in PROMPTS:
 			for reroll in 6:
 				var race: Dictionary = gen.generate(prompt, r, reroll)
-				check(race.units.size() + race.lacks.size() == r.roster.filter(func(sd): return sd.get("status", "") != "planned").size(), "roster size %s/%s" % [rid, prompt])
+				var lines: Array = race.units.filter(func(u): return u.recipe.slot != "hero")   # (the heroes: one line, several units; _test_heroes)
+				var has_hero: int = 1 if lines.size() < race.units.size() else 0
+				check(lines.size() + has_hero + race.lacks.size() == r.roster.filter(func(sd): return sd.get("status", "") != "planned").size(), "roster size %s/%s" % [rid, prompt])
 				for u in race.units:
 					var rec: Dictionary = u.recipe
 					for slot in rec.parts:
@@ -407,6 +490,8 @@ func _test_bounds(lib, gen, rules: Dictionary) -> void:
 						check(p.slot == slot, "%s in matching slot" % p.id)
 					if rec.role == "trader":   # an unarmed engine line (rules `armed`: false): no weapon at all
 						check(rec.parts.is_empty() and rec.has("crew"), "%s: a trade cart carries no weapon, its crew pushes" % rec.name)
+						continue
+					if rec.role == "hero":   # (its look over its swordsman's kit: _test_heroes)
 						continue
 					var need: String = Generator.ROLE_NEEDS[lib.uniques[rec.unique].role if rec.has("unique") else rec.role]
 					check(need in lib.part(rec.parts.hand_r).tags, "%s primary has %s" % [rec.name, need])
@@ -430,8 +515,8 @@ func _test_prompts(gen, rules: Dictionary) -> void:
 	for prompt in ["centaur romans", "centaur greeks", "angry swamp frogs", "royal knights", "sewer rats with cheese hammers", "aztec warriors", "han archers", "nile spiders"]:
 		for reroll in 4:
 			for u in gen.generate(prompt, d, reroll).units:
-				if u.recipe.role == "worker":
-					continue
+				if u.recipe.role in ["worker", "hero"]:
+					continue   # (a hero keeps its name through the ages)
 				var names: Array = u.line.map(func(l): return l.recipe.name)
 				for s in range(1, u.line.size()):
 					var same_kit: bool = u.line[s].recipe.parts == u.line[s - 1].recipe.parts
@@ -540,8 +625,8 @@ func _test_healers(lib, gen, rules: Dictionary) -> void:
 	var without: Dictionary = rules.default.duplicate(true)
 	without.roster = without.roster.filter(func(sd): return sd.slot != "healer")
 	for prompt in PROMPTS:
-		var a: Array = gen.generate(prompt, rules.default).units.filter(func(u): return u.recipe.role != "healer")
-		var b: Array = gen.generate(prompt, without).units
+		var a: Array = gen.generate(prompt, rules.default).units.filter(func(u): return not u.recipe.role in ["healer", "hero"])   # (the hero comes from the race key: src/heroes.gd)
+		var b: Array = gen.generate(prompt, without).units.filter(func(u): return u.recipe.role != "hero")
 		check(JSON.stringify(a.map(func(u): return u.line.map(func(l): return l.recipe))) == JSON.stringify(b.map(func(u): return u.line.map(func(l): return l.recipe))),
 			"'%s': adding the healer leaves the other lines' recipes as they were" % prompt)
 
@@ -605,7 +690,7 @@ func _test_swordsmen(lib, gen, rules: Dictionary) -> void:
 	for prompt in PROMPTS:
 		var a: Dictionary = gen.generate(prompt, rules.default)
 		var b: Dictionary = gen.generate(prompt, without)
-		var lines := func(race): return JSON.stringify(race.units.filter(func(u): return u.recipe.slot != "infantry").map(func(u): return u.line.map(func(l): return l.recipe)))
+		var lines := func(race): return JSON.stringify(race.units.filter(func(u): return not u.recipe.slot in ["infantry", "hero"]).map(func(u): return u.line.map(func(l): return l.recipe)))
 		check(lines.call(a) == lines.call(b) and a.name == b.name, "'%s': adding the swordsman leaves the other lines' recipes as they were" % prompt)
 
 
@@ -665,7 +750,7 @@ func _test_new_lines(lib, gen, rules: Dictionary) -> void:
 			for reroll in 2:
 				var a: Dictionary = gen.generate(prompt, rules[rid], reroll)
 				var b: Dictionary = gen.generate(prompt, without, reroll)
-				var lines := func(race): return JSON.stringify(race.units.filter(func(u): return not u.recipe.slot in ["scout", "mounted_archer", "unique"]).map(func(u): return u.line.map(func(l): return l.recipe)))
+				var lines := func(race): return JSON.stringify(race.units.filter(func(u): return not u.recipe.slot in ["scout", "mounted_archer", "unique", "hero"]).map(func(u): return u.line.map(func(l): return l.recipe)))
 				check(lines.call(a) == lines.call(b) and a.name == b.name, "%s/'%s': the new lines leave the others' recipes and the name as they were" % [rid, prompt])
 
 

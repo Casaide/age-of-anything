@@ -18,6 +18,7 @@ const TownProps := preload("res://scenes/art_pixel/town_props.gd")
 const DataLib := preload("res://src/data_lib.gd")
 const UnitModels := preload("res://scenes/art_pixel/unit_models.gd")
 const BakeCache := preload("res://src/view/art/bake_cache.gd")
+const Heroes := preload("res://src/heroes.gd")
 const BakeClock := preload("res://src/view/art/bake/bake_clock.gd")
 
 const ART_SCALE := 1.5     # art pixels per canvas unit (a tile is 96 x 48 art pixels)
@@ -178,10 +179,10 @@ func tree_ready(race: Dictionary, side: int) -> bool:
 	if not buildings.has(lib.architecture(race) + ":house"):
 		return false
 	for u in race.units:
-		if not icons.has("%d:%s" % [side, u.recipe.slot]):
+		if not icons.has("%d:%s" % [side, Heroes.line_key(u.recipe)]):
 			return false
 		for l in u.get("line", []):
-			if not icons.has("%d:%s@%d" % [side, u.recipe.slot, int(l.age)]):
+			if not icons.has("%d:%s@%d" % [side, Heroes.line_key(u.recipe), int(l.age)]):
 				return false
 	return true
 
@@ -532,9 +533,9 @@ func _icon_list(races: Array, teams: Array, sides: Array) -> Array:
 	for k in races.size():
 		var side: int = sides[k]
 		for u in races[k].units:
-			list.append([teams[k], u, "%d:%s" % [side, u.recipe.slot]])
+			list.append([teams[k], u, "%d:%s" % [side, Heroes.line_key(u.recipe)]])   # (a hero: its slot and signature)
 			for l in u.get("line", []):
-				list.append([teams[k], l, "%d:%s@%d" % [side, u.recipe.slot, int(l.age)]])
+				list.append([teams[k], l, "%d:%s@%d" % [side, Heroes.line_key(u.recipe), int(l.age)]])
 	return list
 
 

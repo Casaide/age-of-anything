@@ -11,6 +11,7 @@ const Bridges := preload("res://src/sim/bridges.gd")
 const Pens := preload("res://src/sim/pens.gd")
 const Buildings := preload("res://src/sim/buildings.gd")
 const Identity := preload("res://src/identity.gd")
+const Heroes := preload("res://src/sim/heroes.gd")
 
 enum { NONE, GATHER, RETURN, BUILD, GARRISON, TRADE, CLIMB, REPAIR }   # GARRISON: walking into a building to shelter (garrison.gd); TRADE: a cart on its route (trade.gd); CLIMB: walking to a way up onto a wall and climbing it (walls.gd); REPAIR: mending a building or an engine (repair.gd)
 
@@ -414,13 +415,16 @@ static func cmd_train(w, player: int, a: Dictionary) -> void:
 		return
 	if not a.slot in w.btypes[w.buildings.kind[b]].trains:
 		return
-	var k: int = w.type_of(player, a.slot)
+	var k: int = w.type_for(player, a)   # (the hero line: the hero named, heroes.gd)
 	if k < 0 or w.buildings.queue[b].size() >= int(w.econ.queue_max) or lacks(w, player, a.slot):
 		return
 	var t: Dictionary = w.types[k]
-	if not w.can_afford(player, t.cost) or w.ages[player] < int(t.line[0].age):
+	var cost: PackedInt32Array = w.queued_cost(player, k)   # (a hero revived: its share of the price, heroes.gd)
+	if not w.can_afford(player, cost) or w.ages[player] < int(t.line[0].age):
 		return
-	w.pay(player, t.cost)
+	if t.hero and Heroes.why_not(w, player, k) != "":
+		return   # one of each hero out at a time, and a fallen one waits to be revived
+	w.pay(player, cost)
 	w.buildings.queue[b].append(k)
 
 
@@ -1180,6 +1184,8 @@ static func train(w) -> void:
 		var k: int = q.pop_front()
 		var i := spawn_at(w, b, k)
 		w.pop[p] += t.pop
+		if t.hero:
+			Heroes.spawned(w, i)
 		_go_to_rally(w, b, i)
 
 
