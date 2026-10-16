@@ -12,6 +12,9 @@ extends SceneTree
 ## "volley[:<slot>]" (side 0's archers shoot at side 1's charging large units, or that slot;
 ## shot with shots in the air and misses stuck in the ground; the sim and the shots frozen).
 ## "heal" (side 0's healers by wounded spearmen, shot mid-heal; "heal:card" with a healer selected).
+## "heroes[:panel]" (D-136: side 0 in age 2, its heroes out with spears by the Town Center, one hurt and
+## selected: its crown, name and card; ":panel": the Town Center selected, its hero buttons, one
+## fallen and waiting to be revived).
 ## "look:<x>:<y>[:zoom]" frames a tile with the fog lifted (for art checks).
 ## "pause" the pause menu; "end" / "defeat" the end screen.
 ## "loader[:<fraction>]": the match loader, with the bake cache off so it really bakes; shot once
@@ -168,6 +171,8 @@ func _initialize() -> void:
 		await _fog_place(view, scene == "fogfound")
 	elif scene.begins_with("heal"):
 		await _heal(view, scene == "heal:card")
+	elif scene.begins_with("heroes"):
+		await _heroes(view, scene == "heroes:panel")
 	elif scene.begins_with("battle"):
 		await _battle(view, map_id, int(scene.get_slice(":", 1)))
 	elif scene.begins_with("volley"):
@@ -769,6 +774,42 @@ func _heal(view, card: bool) -> void:
 		await process_frame
 		if view.fx.heals.any(func(h): return h.t > 0.35 and h.t < 0.5):
 			break
+
+
+func _heroes(view, panel: bool) -> void:
+	var w = view.world
+	var Commands = load("res://src/sim/commands.gd")
+	var Tech = load("res://src/sim/tech.gd")
+	var SimHeroes = load("res://src/sim/heroes.gd")
+	w.ages[0] = 2
+	Tech.retype(w, 0)
+	for r in w.resources.size():
+		w.stock[r][0] = 3000
+	var s: Array = w.map.starts[0]
+	var at := Vector2i(int(s[0]) + 4500, int(s[1]) + 3500)
+	var ks: Array = SimHeroes.types_of(w, 0)
+	var before: int = w.units.count()
+	var out: Array = ks if not panel else ks.slice(0, ks.size() - 1)   # (the panel: the last one fell)
+	for k in out.size():
+		w.issue(0, Commands.SPAWN, {"slot": "hero", "hero": w.types[out[k]].recipe.hero, "count": 1, "x": at.x - 1200 + k * 1300, "y": at.y - 600})
+	w.issue(0, Commands.SPAWN, {"slot": "spear", "count": 6, "x": at.x, "y": at.y + 1000})
+	while w.units.count() < before + out.size() + 6:
+		await process_frame
+	if panel:
+		w.hero_fell[ks[-1]] = w.tick - 200   # fell ten seconds ago: its button waits for the revival
+	var first: int = w.hero_id[ks[0]]
+	w.units.hp[w.units.index_of(first)] = int(w.types[ks[0]].hp) * 2 / 3
+	if panel:
+		for b in w.buildings.count():
+			if w.buildings.owner[b] == 0 and w.btypes[w.buildings.kind[b]].id == "town_center":
+				view.selected_building = w.buildings.id[b]
+	else:
+		view.selected[first] = true
+	for f in 90:   # (held every frame: the camera settles its own zoom after the loader)
+		view.camera.zoom = Vector2.ONE * view.camera.steps[-1]
+		view._on_zoom()
+		view.camera.look_at_point(Iso.to_screen(at.x, at.y - 200))
+		await process_frame
 
 
 func _armies(view, map_id: String) -> void:

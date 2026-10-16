@@ -119,6 +119,10 @@ static func evaluate(recipe: Dictionary, lib, rules: Dictionary) -> Dictionary:
 		sight += int(st.get("sight", 0))
 		if st.has("reload"):
 			weapon.reload = int(st.reload)
+	for x in extra:   # `stats_pct`: hit points and attack in percent of what the unit has by then (the hero line: as tough for a rat as for a centaur)
+		var sp: Dictionary = x.get("stats_pct", {})
+		hp = hp * int(sp.get("hp", 100)) / 100
+		attack = attack * int(sp.get("attack", 100)) / 100
 
 	var scale := 100 if look_only else int(recipe.scale)
 	if scale >= 140:

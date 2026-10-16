@@ -131,6 +131,10 @@ func _run_piece(name: String) -> void:
 			var m: Dictionary = a.medics
 			check(m.most.max() >= 1 and m.most.max() <= 3, "the bots train a couple of healers (most %s)" % [m.most])
 			check(m.samples == 0 or m.behind * 100 >= m.samples * 70, "healers keep behind the army (%d of %d looks)" % [m.behind, m.samples])
+			# Heroes (D-136): a bot with an economy fields more than one of its heroes (the side ground down
+			# early may never afford one).
+			var hs: Dictionary = a.heroes
+			check(maxi(hs.kinds[0].size(), hs.kinds[1].size()) >= 2, "the bots field several of their heroes (%d, %d kinds; fell %s, revived %s)" % [hs.kinds[0].size(), hs.kinds[1].size(), hs.fell, hs.revived])
 			_match_stats(a)
 		"bvb_again":   # the same match again (in its own process when side by side): same hashes, same winner
 			_match_stats(_play(rules, [frogs, rats], [Bot.new(0), Bot.new(1)], "bot vs bot, again", true))
@@ -213,6 +217,7 @@ func _play(rules: Dictionary, races: Array, bots: Array, title: String, quiet :=
 	var aged := [-1, -1]   # when each side reached age 2 (the bots aim for 4-6 minutes)
 	var bought := [[], []]   # the research each side finished, with the time
 	var medics := {"most": [0, 0], "heals": [0, 0], "behind": 0, "samples": 0}   # healers: how many, heals, kept behind the army
+	var heroes := {"up": [0, 0], "revived": [0, 0], "fell": [0, 0], "kinds": [{}, {}]}   # heroes (D-136): trained, revived, fallen, which
 	while w.tick < LIMIT and w.winner < 0:
 		for bot in bots:
 			bot.think(w)
@@ -220,6 +225,11 @@ func _play(rules: Dictionary, races: Array, bots: Array, title: String, quiet :=
 		for e in w.events:
 			if e.type == "research" and e.player < 2:
 				bought[e.player].append("%s %s" % [e.id, _clock(w.tick)])
+			elif e.type == "hero_up" and e.player < 2:
+				heroes["revived" if e.revived else "up"][e.player] += 1
+				heroes.kinds[e.player][e.kind] = true
+			elif e.type == "hero_fell" and e.player < 2:
+				heroes.fell[e.player] += 1
 			elif e.type == "heal":
 				var hi: int = w.units.index_of(e.by)
 				if hi >= 0:
@@ -254,7 +264,8 @@ func _play(rules: Dictionary, races: Array, bots: Array, title: String, quiet :=
 		for p in 2:
 			print("research P%d: %s" % [p, ", ".join(bought[p])])
 		print("healers: most %s, heals %s, behind their army in %d of %d looks" % [medics.most, medics.heals, medics.behind, medics.samples])
-	return {"winner": w.winner, "tick": w.tick, "hashes": w.hashes, "medics": medics}
+		print("heroes: trained %s, fell %s, revived %s" % [heroes.up, heroes.fell, heroes.revived])
+	return {"winner": w.winner, "tick": w.tick, "hashes": w.hashes, "medics": medics, "heroes": heroes}
 
 
 ## Healers: the most each side had, and whether they keep behind their army: when soldiers are
