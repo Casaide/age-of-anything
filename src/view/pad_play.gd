@@ -107,6 +107,8 @@ func _process(delta: float) -> void:
 	if game.tech_tree.visible or game.tech_tree.closed_frame == Engine.get_process_frames():
 		return   # (the page reads the pad itself: scenes/tech_tree.gd)
 	if game.pause_menu != null and game.pause_menu.visible:
+		if game.saves_page != null and (game.saves_page.visible or game.saves_page.closed_frame == Engine.get_process_frames()):
+			return   # (B on the saves page goes back to the menu: src/view/ui/saves_page.gd)
 		if (pad.pressed(JOY_BUTTON_START) or pad.pressed(JOY_BUTTON_B)) and game.world.winner < 0:
 			game._show_pause_menu(false)
 		return
