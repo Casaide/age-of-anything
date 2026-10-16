@@ -13,7 +13,6 @@ const Iso := preload("res://src/view/iso.gd")
 const Commands := preload("res://src/sim/commands.gd")
 const Economy := preload("res://src/sim/economy.gd")
 const UiTheme := preload("res://src/view/ui/theme.gd")
-const HeroLine := preload("res://src/heroes.gd")
 
 const PAN := 1300.0         # screen px a second at full tilt
 const NUDGE := 900.0        # the reticle's own speed, screen px a second
@@ -233,7 +232,7 @@ func _wheel_items() -> Array:
 	if not mine.is_empty():
 		var w = game.world
 		var t: Dictionary = w.types[w.units.kind[w.units.index_of(mine[0])]]
-		var all := {"icon": game.kit.icons.get("%d:%s" % [t.player, HeroLine.line_key(t.recipe)]), "text": "All on screen", "key": "", "cost": "",
+		var all := {"icon": game._type_icon(t), "text": "All on screen", "key": "", "cost": "",
 			"enabled": true, "group": "Orders", "tip": "[b]All on screen[/b]\nEvery unit of yours on screen of the kinds selected.",
 			"action": _all_kinds_on_screen}
 		return [all] + game.panel.content.get("buttons", [])
