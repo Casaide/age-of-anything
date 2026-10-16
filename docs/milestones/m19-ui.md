@@ -1,6 +1,6 @@
 # Milestone 19: UI that feels like the game
 
-**Status:** in progress (2026-10-13: the timber look approved, "ui is great"; loaders and the review left)
+**Status:** in progress (2026-10-16: the timber look approved, "ui is great"; loaders built 2026-10-12; unit portraits as busts (D-145); the review left)
 **Exit criterion:** the menu, lobby, loaders, HUD, tech tree page and end screens look designed and
 finished, not flat; the UI wears your race's culture; every wait shows something worth watching;
 Dominic: "this looks like a real game".
@@ -59,10 +59,14 @@ presets menu; a fixed-width centre with a bigger map.
 - [ ] Plan approved by Dominic
 - [x] 1. Concept round (Dominic's pick): three directions rendered (archive 205-210), timber built as the recommendation; Dominic: "ui is great" (2026-10-13), timber kept
 - [x] 2. Theme and type: `src/view/ui/theme.gd` (open-licence fonts wait on a download yes)
-- [ ] 3. Match loader, lobby loaders
+- [x] 3. Match loader, lobby loaders (2026-10-12: the match loader with both armies, the lobby's dice and stage forging;
+  2026-10-13: five units a side; 2026-10-16: the bake no longer freezes them, D-143)
 - [x] 4. The UI wears the race: a `ui` block per culture, on the lobby panels and banners, the HUD, pause/end and the tech tree page
 - [x] 5. Lobby, menus, pause, end screens (the end screen's match story still to come)
 - [x] 6. HUD and tech tree
+- [x] Unit portraits (Dominic, 2026-10-16: "too zoomed out, hard to tell what's what", the upgrade button looked like
+  Train): two concept rounds (archive 22, 23), then busts with a role glyph and a line upgrade showing the unit it
+  gives in a gold frame, "Upgrade: X -> Y" (D-145, archive 24)
 - [ ] 7. Review and fixes
 - [ ] Archive: pictures taken along the way, journal, decisions, timeline
 

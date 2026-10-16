@@ -68,14 +68,25 @@ move it to `docs/backlog.md` rather than deleting it.
   Fable review met the exit criterion. See `docs/milestones/m11-cleanup.md`.
 - **Closed for now (milestones 12 and 15): the land tech tree and maps.** Three ages, walls, gates, towers, castle,
   research as data, the tech tree page; big maps, high ground, bridges, fords (Dominic, 2026-10-13).
-- **Done (milestone 17): living towns** ("living town is good"). **Milestone 19 (UI):** the timber look approved.
+- **Done (milestone 17): living towns** ("living town is good"). **In progress (milestone 19, UI):** the timber look
+  approved, loaders built (the bake keeps them moving: `src/view/art/bake/bake_clock.gd`, D-143), unit portraits are
+  busts with a role glyph and a line upgrade shows the unit it gives (D-145); the review left.
 - **In progress (milestone 20): Steam Deck and controllers.** The pad controls are built (D-132): `src/view/pad_mode.gd`
   (last input wins, menu focus), `pad_play.gd` (reticle, selection circle, orders), `pad_wheel.gd` (tap A on what you command: the
-  panel's buttons on a ring; D-133). First Deck run done; next: steps 7-9 (fit, speed, Steam Input). See `docs/milestones/m20-steam-deck.md`.
+  panel's buttons on a ring; D-133). Deck builds played; Dominic's Deck fixes going in (white boxes, the bake freeze,
+  a quit crash, the wheel's pages); next: steps 7-9 (fit, speed, Steam Input). See `docs/milestones/m20-steam-deck.md`.
 - **Built (save and load, D-140 to D-142):** `src/save_game.gd` (a snapshot of the World and bots; saves from older builds
   load too, on the new stats while the data tables line up), Save/Load in the pause menu and lobby (`src/view/ui/saves_page.gd`). See `docs/milestones/save-load.md`.
-- **In progress (milestone 13): unit lines, siege first.** Crewed engines per family (D-116 to D-119); shots fly
-  and can miss (`src/sim/shots.gd`). See `docs/milestones/m13-unit-lines.md`.
+- **In progress (milestone 13): unit lines.** Crewed engines per family (D-116 to D-119); shots fly and can miss
+  (`src/sim/shots.gd`); healers, trade carts, the great sling, war beasts with jointed legs; a unit's cost mix follows
+  its gear's material (D-144). See `docs/milestones/m13-unit-lines.md`.
+- **In progress (milestone 14): race identity and heroes.** Bonuses, own research, lacks (`src/identity.gd`), the web
+  ability, heroes (every race gets its pool's, D-138). See `docs/milestones/m14-race-identity.md`.
+- **In progress (milestone 16): sieges.** Walkable walls, gatehouses, rams, ladders, siege towers, Fortress and Siege
+  modes, tall walls (D-130); concept picks and the archive left. See `docs/milestones/m16-sieges.md`.
+- **In progress (milestone 21): modability.** The mod loader, an example mod, agent tooling (`docs/modding.md`).
+- **Planned (milestone 22): battle feel.** Formations by role, counter-aware targeting, attack lines, a Norse shield
+  wall. See `docs/milestones/m22-battle-feel.md`.
 
 ## Layout
 

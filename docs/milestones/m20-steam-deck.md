@@ -1,6 +1,6 @@
 # Milestone 20: Steam Deck and controllers
 
-**Status:** in progress: the controls built (steps 3-6, 2026-10-15); the Deck build next
+**Status:** in progress (2026-10-16): the controls built (steps 3-6), Deck builds played (step 1), Dominic's Deck fixes going in (the pad's wheel, white boxes, the bake freeze, a quit crash); steps 2 and 7-10 left
 **Exit criterion:** a full match against the AI, from the menu to the end screen, played on a
 Steam Deck with its controls only (no mouse or keyboard), at a steady 60 fps (or a locked 40-45
 with the Deck's frame limiter, if 60 can't hold), readable at 1280 x 800 on the 7" screen, the
@@ -182,7 +182,7 @@ pages (closed on Civilian without choosing, it used to stay there).
 
 ## Checklist
 - [ ] Plan approved by Dominic
-- [ ] 1. Approvals and a first build on the Deck
+- [x] 1. Approvals and a first build on the Deck (2026-10-15: debug export over SMB, two builds played)
 - [ ] 2. Determinism and performance check
 - [x] 3. Input layer (`src/view/pad_mode.gd`)
 - [x] 4. Reticle, selection circle, ordering on the pad (`src/view/pad_play.gd`)
@@ -190,7 +190,8 @@ pages (closed on Civilian without choosing, it used to stay there).
   hint strip and the wheel, not yet on the panel's buttons)
 - [x] 6. Menus and lobby on the pad (focus everywhere; the lobby's X/Menu/B; the tech tree's sticks)
 - [ ] 7. Handheld UI size, 1280 x 800 pass
-- [ ] 8. Performance, battery, suspend
+- [ ] 8. Performance, battery, suspend (the bake no longer freezes the UI, D-143, on the Mac; not yet measured on
+  the Deck; battery and suspend not started)
 - [ ] 9. Steam Input default layout
 - [ ] 10. Exit check
 - [ ] Archive: pictures taken along the way, journal, decisions, timeline
@@ -222,6 +223,11 @@ pages (closed on Civilian without choosing, it used to stay there).
   within GPU noise (`tests/bake_compare.gd`). Portraits are now posed the same every time. Left: the GPU's own
   20-60 ms on big building frames. Waiting on Dominic's Deck run.
   Quitting mid-bake crashed (signal 11): fixed, the bake now cleans up and stops when the game quits.
+
+- **2026-10-16, more from Dominic's Deck session:** a builder's wheel opens on its Build page when its buttons take
+  more than one ring (it opened on Orders, LB to reach Build; the pad check's worker has one page, so the case is
+  untested there); walls along y had no near merlons (fixed in `m16-sieges.md`); unit costs and portraits
+  (`m13-unit-lines.md` D-144, `m19-ui.md` D-145).
 
 ## Changes from the original plan
 
