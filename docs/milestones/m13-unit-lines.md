@@ -153,6 +153,9 @@ picks), then build, tests, archive pictures.
   - [ ] Dominic's look in a match
 - [ ] 8. AI (siege part done 2026-10-13: a few engines, rams at gates, walls and towers, catapults at towers; trade carts, the sapper and the great sling 2026-10-13; war beasts by the counter-pick, at most 4, 2026-10-13)
 - [x] Siege shots drawn as baked art (Dominic: "the rocks they throw look really bad"; 2026-10-13)
+- [x] Lines differ in what they cost (Dominic, 2026-10-16: "spears cost some wood and less food, swords only food or
+  food and gold"; D-144): each part's `cost_mix` follows its material, so spears cost food and wood, swords food and
+  gold, archers wood and gold; no gold before age 2; the bots mine a quarter gold from age 2 (see Results)
 - [ ] 9. Balance and exit check
   - [x] Round robin and mass battles at ages 2 and 3 with every line (2026-10-13; see Results)
   - [ ] A design change for the structural outliers (proposal for Dominic in Results)
@@ -160,6 +163,14 @@ picks), then build, tests, archive pictures.
 - [ ] Archive: pictures taken along the way, journal, decisions, timeline
 
 ## Results
+
+**Costs by material (2026-10-16, D-144).** Every soldier cost about half food, half wood (28 weapons shared one
+mix). Now a part's mix follows its material (bodies and mounts food; shafts, bows, clubs, wooden shields wood; metal
+blades, helmets and armour gold; cloth, leather and leaves food; a metal spearhead mostly wood, so the spear line
+stays cheap) and a unit's mix is its parts', weighted by points; totals don't change. Age 1: a spear 40-50F
+25-45W; age 2: a swordsman 60F 25W 80G. Bot economies over 40 minutes: ages on time, about twice the gold gathered.
+Race round robin on Reed Meadow, 30 matches: wins 10-30% (before 10-40%), 19 draws (before 14): armies may be
+smaller now they need gold; watch it in step 9.
 
 **Healers (2026-10-12).** A `healer` roster slot (Town Center, age 2, `own_seed`: its own random
 stream, so every other line's recipes are as they were). The generator gives it a staff

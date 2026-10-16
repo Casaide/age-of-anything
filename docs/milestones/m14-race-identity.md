@@ -1,6 +1,6 @@
 # Milestone 14: Race identity and heroes (asymmetric play)
 
-**Status:** in progress (2026-10-13: bonuses, own research, lacks, the ability system with the web, the AI; heroes waiting on a concept pick)
+**Status:** in progress (2026-10-16: bonuses, own research, lacks, the ability system with the web, the AI, heroes (D-138) done; the other mechanics, balance, bears and the exit check left)
 **Exit criterion:** every playable creature and every culture has its bonuses, its own research,
 what it lacks, and one signature mechanic, all as data and all shown on the tech tree page; each
 mechanic has a counter and a headless test; the bot uses its race's mechanic; a round robin of
