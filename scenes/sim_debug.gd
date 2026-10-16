@@ -35,6 +35,8 @@ const TopBar := preload("res://src/view/top_bar.gd")
 const WonderClock := preload("res://src/view/wonder_clock.gd")
 const Match := preload("res://src/sim/match.gd")
 const UnitCard := preload("res://src/view/unit_card.gd")
+const HeroLine := preload("res://src/heroes.gd")
+const SimHeroes := preload("res://src/sim/heroes.gd")
 const FogView := preload("res://src/view/fog_view.gd")
 const Minimap := preload("res://src/view/minimap.gd")
 const UiScale := preload("res://src/view/ui_scale.gd")
@@ -78,6 +80,7 @@ const FIGURE_H := 26.0       # canvas units: a unit's figure from feet to head (
 const FIGURE_W := 14.0
 const DRAG_START_PX := 6.0   # screen pixels before a left press becomes a box
 const RING := Color("#f2e9c9")
+const HERO_GOLD := Color("#e6b84a")   # a hero's crown and name plate
 ## The stance buttons, in Combat.POSTURES order: [label, tooltip].
 const STANCES := [
 	["Aggressive", "Go for any foe in sight and keep chasing it. The usual stance."],
@@ -1432,8 +1435,17 @@ func _play_events() -> void:
 			banner.visible = true
 			if vs_ai:
 				_show_pause_menu(true)   # the match is over: back to the lobby from here
+		elif e.type == "hero_up" and e.player == active:   # our hero takes the field, or comes back (sim/heroes.gd)
+			audio.play("hero_up", -3.0)
+			_show_line("%s %s" % [world.types[e.kind].name, "is back!" if e.revived else "takes the field!"], HERO_GOLD)
+		elif e.type == "hero_fell" and e.player == active:   # our hero falls, wherever it is
+			audio.play("hero_fell", -2.0)
+			_show_line("%s has fallen. Revive at the Town Center in %d s" % [world.types[e.kind].name, int(world.hero_cfg.revive) / 20], Color("#ff8a70"))
 		elif e.type == "die" and not e.building:
 			var v: Node2D = views.get(e.id)
+			if v != null and v.visible and e.kind >= 0 and world.types[e.kind].get("hero", false) and world.teams[e.owner] != world.teams[active]:
+				audio.play("hero_fell", -6.0)   # a foe's hero falls where we see it
+				_show_line("The enemy's %s has fallen!" % world.types[e.kind].name, HERO_GOLD)
 			if v != null:
 				views.erase(e.id)
 				selected.erase(e.id)
@@ -1713,6 +1725,28 @@ func _train(building: int, slot: String) -> void:
 ## Train one (five with shift) from the selected buildings: each goes to the least busy
 ## finished one with room (the lowest id on a tie), so pressing Train again and again spreads
 ## the units over every selected barracks.
+## The Town Center's hero buttons (D-136): one per hero of the race, each trained once; one that's out,
+## on the way, or waiting to be revived says so; a revival shows its (lower) price.
+func _hero_buttons(c: Dictionary, room: bool) -> void:
+	for hk in SimHeroes.types_of(world, active):
+		var wt: Dictionary = world.types[hk]
+		var cost: PackedInt32Array = SimHeroes.cost(world, active, hk)
+		var why := SimHeroes.why_not(world, active, hk)
+		var ok_age: bool = world.ages[active] >= int(wt.line[0].age)
+		var revive: bool = world.hero_fell[hk] != 0
+		var verb := "Revive" if revive else "Train"
+		var text := "%s %s (%s)" % [verb, wt.name, _cost_text(cost)]
+		if not ok_age:
+			text = "%s: needs age %d" % [wt.name, wt.line[0].age]
+		elif why != "":
+			text = "%s: %s" % [wt.name, why]
+		var sid: String = wt.recipe.hero
+		c.buttons.append({"icon": kit.icons.get("%d:%s" % [active, HeroLine.line_key(wt.recipe)]), "text": text,
+			"tip": _unit_tip(wt), "group": "Heroes", "key": "", "cost": _cost_text(cost),
+			"enabled": ok_age and why == "" and world.can_afford(active, cost) and room,
+			"action": func(): world.issue(active, Commands.TRAIN, {"building": selected_building, "slot": "hero", "hero": sid})})
+
+
 func _train_group(slot: String) -> void:
 	var group := _building_group().filter(func(id):
 		var i := world.buildings.index_of(id)
@@ -2498,6 +2532,13 @@ func _unit_tip(wt: Dictionary) -> String:
 		if int(step.age) > world.ages[active] and int(step.age) > int(wt.line[0].age):
 			lines.append("[color=%s]Age %d: becomes %s[/color]" % [TIP_DIM, int(step.age), step.recipe.get("name", wt.name)])
 	var needs := [] if world.ages[active] >= int(wt.line[0].age) else ["age %d" % int(wt.line[0].age)]
+	if wt.get("hero", false):   # one of each out at a time; a fallen one comes back for less, after a wait
+		var hk := SimHeroes.type_of(world, wt.player, wt.recipe.hero)
+		var why := SimHeroes.why_not(world, active, hk)
+		lines.append("[color=%s]One of each hero at a time. If it falls, revive it at the Town Center after %d s for %d%% of its price.[/color]" % [TIP_DIM, int(world.hero_cfg.revive) / 20, int(world.hero_cfg.revive_pct)])
+		if why != "" and wt.player == active:
+			lines.append("[color=%s]%s[/color]" % [TIP_NEED, why.capitalize() if why.begins_with("revives") else "It's %s" % why])
+		return _tip(wt.name, SimHeroes.cost(world, active, hk), lines, needs)
 	return _tip(wt.name, wt.cost, lines, needs)
 
 
@@ -2788,7 +2829,7 @@ func _update_panel() -> void:
 				var tt := Tech.tech_of(q[n])
 				if tt == -1:
 					var qt: Dictionary = world.types[q[n]]
-					slot_icon = kit.icons.get("%d:%s" % [qt.player, qt.slot])
+					slot_icon = kit.icons.get("%d:%s" % [qt.player, HeroLine.line_key(qt.recipe)])
 					slot_name = qt.name
 				else:
 					var it: Dictionary = Tech.item_of(world, owner, tt)
@@ -2819,6 +2860,9 @@ func _update_panel() -> void:
 				for slot in t.trains:
 					var tk := world.type_of(active, slot)
 					if tk < 0 or Economy.lacks(world, active, slot):
+						continue
+					if slot == "hero":   # (each of the race's heroes its own button, D-136)
+						_hero_buttons(c, room)
 						continue
 					var wt: Dictionary = world.types[tk]
 					var ok_age: bool = world.ages[active] >= int(wt.line[0].age)
@@ -2851,7 +2895,7 @@ func _update_panel() -> void:
 		var first := u.index_of(mine[0])
 		var ft: Dictionary = world.types[u.kind[first]]
 		var c := {"title": ft.name if mine.size() == 1 else "%d selected" % mine.size(), "team": team, "buttons": [], "queue": null,
-			"portrait": kit.icons.get("%d:%s" % [ft.player, ft.slot]), "hp": [u.hp[first], ft.hp] if mine.size() == 1 else []}
+			"portrait": kit.icons.get("%d:%s" % [ft.player, HeroLine.line_key(ft.recipe)]), "hp": [u.hp[first], ft.hp] if mine.size() == 1 else []}
 		var herd: Array = mine.filter(_is_animal)
 		var soldiers: int = mine.size() - herd.size() - _selected_workers().size()
 		if mine.size() == 1 and ft.worker:
@@ -2871,7 +2915,7 @@ func _update_panel() -> void:
 				counts[k] = counts.get(k, 0) + 1
 			var kinds := counts.keys()
 			kinds.sort()
-			c.tray = kinds.map(func(k): return {"icon": kit.icons.get("%d:%s" % [world.types[k].player, world.types[k].slot]), "count": counts[k]})
+			c.tray = kinds.map(func(k): return {"icon": kit.icons.get("%d:%s" % [world.types[k].player, HeroLine.line_key(world.types[k].recipe)]), "count": counts[k]})
 		if not herd.is_empty() and herd.size() == mine.size():   # only our animals: they walk, or stop
 			c.buttons.append({"icon": Icons.texture("stop"), "text": "Stop", "key": "X", "cost": "", "enabled": true, "group": "Orders",
 				"tip": "[b]Stop[/b]\nThey stand where they are.", "action": stop_selected})
@@ -2945,7 +2989,7 @@ func _update_panel() -> void:
 		var et: Dictionary = world.types[world.units.kind[i]]
 		var eo := world.units.owner[i]
 		panel.show_content({"title": et.name if eo == world.gaia else "%s, %s" % [et.name, world.races[eo].name], "team": Color(lib.palettes.teams[eo]) if eo != world.gaia else ArtKit.ANIMAL_TEAM, "buttons": [], "queue": null,
-			"portrait": kit.icons.get("%d:%s" % [et.player, et.slot]), "hp": [world.units.hp[i], et.hp],
+			"portrait": kit.icons.get("%d:%s" % [et.player, HeroLine.line_key(et.recipe)]), "hp": [world.units.hp[i], et.hp],
 			"info": _animal_info(et, eo) if et.has("animal") else UnitCard.short(et, world.combat),
 			"hint": "" if et.has("animal") else UnitCard.text(et, _foe_types(eo), world.combat)})
 		return
@@ -3119,6 +3163,35 @@ func _draw_flow() -> void:
 		marks.draw_circle(tip, 1.5 * w, Color(FLOW, 0.7))
 
 
+## How far over a unit's feet its health bar sits: a hero stands taller (its signature's scale).
+func _bar_lift(k: int) -> float:
+	var t: Dictionary = world.types[k]
+	return BODY_LIFT * 2.6 * (float(t.recipe.scale) / 100.0 if t.get("hero", false) else 1.0)
+
+
+## Heroes in the field (milestone 14): a small gold crown over each one you can see, over its health
+## bar; its name over the crown while it's selected. Drawn at a fixed size on screen.
+func _draw_heroes() -> void:
+	var font := UiTheme.text_font(true)
+	var inv := Vector2.ONE / camera.zoom.x
+	for k in world.hero_types:
+		var hid: int = world.hero_id[k]
+		var view: Node2D = views.get(hid) if hid != 0 else null
+		if view == null or not view.visible or world.units.index_of(hid) < 0:
+			continue
+		overlay.draw_set_transform(view.ground() - Vector2(0, _bar_lift(k) + 1.0), 0.0, inv)   # (one unit: one screen pixel)
+		var crown := PackedVector2Array([Vector2(-9, 0), Vector2(9, 0), Vector2(10, -11), Vector2(4.5, -5), Vector2(0, -13), Vector2(-4.5, -5), Vector2(-10, -11)])
+		overlay.draw_colored_polygon(crown, HERO_GOLD)
+		overlay.draw_polyline(crown + PackedVector2Array([crown[0]]), Color(0.18, 0.1, 0.02, 0.9), 2.0)
+		if selected.has(hid):
+			var name: String = world.types[k].name
+			var fs := 14
+			var w := font.get_string_size(name, HORIZONTAL_ALIGNMENT_LEFT, -1, fs).x
+			overlay.draw_string_outline(font, Vector2(-w * 0.5, -18), name, HORIZONTAL_ALIGNMENT_LEFT, -1, fs, 4, Color(0.08, 0.05, 0.02, 0.9))
+			overlay.draw_string(font, Vector2(-w * 0.5, -18), name, HORIZONTAL_ALIGNMENT_LEFT, -1, fs, HERO_GOLD.lightened(0.35))
+		overlay.draw_set_transform(Vector2.ZERO)
+
+
 func _draw_overlay() -> void:
 	if world == null:
 		return
@@ -3133,10 +3206,11 @@ func _draw_overlay() -> void:
 		var view: Node2D = views.get(id)
 		if view == null or not view.visible:
 			continue
-		var at: Vector2 = view.ground() - Vector2(bar_w * 0.5, BODY_LIFT * 2.6)
+		var at: Vector2 = view.ground() - Vector2(bar_w * 0.5, _bar_lift(u.kind[i]))
 		var k := clampf(float(u.hp[i]) / float(full), 0.0, 1.0)
 		overlay.draw_rect(Rect2(at, Vector2(bar_w, 2)), Color(0, 0, 0, 0.6))
 		overlay.draw_rect(Rect2(at, Vector2(bar_w * k, 2)), Color(1.0 - k, 0.3 + 0.6 * k, 0.15).lerp(Color.WHITE, 0.1))
+	_draw_heroes()
 	for bid in _building_group():
 		var bs := world.buildings
 		var b := bs.index_of(bid)

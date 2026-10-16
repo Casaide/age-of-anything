@@ -1,6 +1,6 @@
 {
  "schema": "aow.heroes/1",
- "_doc": "Heroes (milestone 14 step 9; D-127, D-131: HR2's characters as a pool). D-136 (Dominic, 2026-10-16: all of them, so each race has some variety): each race gets every signature naming its creature or its culture (src/heroes.gd), sorted by id; one with fewer than rules.min_heroes is topped up from its culture's `kin` (the kindred cultures' signatures, in the kin list's order). Each gets a generated name from its race key (src/rng.gd). The heroes are derived from the race key (like its stats), so they aren't part of the key. Its recipe is the race's swordsman of each age from the hero line's first age (rules roster `hero`), with the signature's `parts` put on (the parts they replace stay in the recipe's `kit`: priced, not drawn) at the signature's `scale` (percent; a hero's size is its look: the roster's `size_is_look`). Its strength is the roster line's stats and price_points (the cost curve does the rest). `aura`: {text, effects}: research effects (D-111 shape, tag/stat/add: attack, armour.melee, armour.pierce) on the hero's friends (its team) within rules.aura_tiles, never on itself. Rules: aura_tiles; regen_every (ticks per hit point it heals while hurt); revive_ticks (after it falls, before it can be trained again at the Town Center); revive_pct (of its cost, a revival's price); min_heroes (a race with fewer of its own is topped up from its culture's kin). In play (D-136): each hero is trained once at the Town Center and only one of each is ever out (a fallen one revived the same way); a race's heroes may all be out together; their auras don't add up: a friend in reach of several takes the strongest of each stat. Sim: src/sim/heroes.gd. Concepts: docs/concepts/heroes/README.md.",
+ "_doc": "Heroes (milestone 14 step 9; D-127, D-131: HR2's characters as a pool). D-136 (Dominic, 2026-10-16: all of them, so each race has some variety): each race gets every signature naming its creature or its culture (src/heroes.gd), sorted by id; one with fewer than rules.min_heroes is topped up from its culture's `kin` (the kindred cultures' signatures, in the kin list's order). Each gets a generated name from its race key (src/rng.gd). The heroes are derived from the race key (like its stats), so they aren't part of the key. Its recipe is the race's swordsman of each age from the hero line's first age (rules roster `hero`), with the signature's `parts` put on (the parts they replace stay in the recipe's `kit`: priced, not drawn) at the signature's `scale` (percent; a hero's size is its look: the roster's `size_is_look`). Its strength is the roster line's stats and price_points (the cost curve does the rest). `aura`: {text, effects}: research effects (D-111 shape, tag/stat/add: attack, armour.melee, armour.pierce) on the hero's friends (its team) within rules.aura_tiles, never on itself. Rules: aura_tiles; regen_every (ticks per hit point it heals while hurt); revive_ticks (after it falls, before it can be trained again at the Town Center); revive_pct (of its cost, a revival's price); min_heroes (a race with fewer of its own is topped up from its culture's kin). In play (D-136): each hero is trained once at the Town Center and only one of each is ever out (a fallen one revived the same way); a race's heroes may all be out together; their auras don't add up: a friend in reach of several takes the strongest of each stat. Sim: src/sim/heroes.gd. Concepts: docs/concepts/heroes/README.md. `fit` (D-136): per creature, parts that take the place of the signature's own on that body (a low-slung hat for a head low in its shoulders: hero_models.gd `_low`), \"\" to keep the race's own there (a shouldered weapon a spider's legs or a frog's haunches would cut): what tests/placement_check.gd needs for every hero on every body it can come to.",
  "rules": {
   "aura_tiles": 5,
   "regen_every": 20,
@@ -385,6 +385,15 @@
       "add": 1
      }
     ]
+   },
+   "fit": {
+    "spider": {
+     "head_gear": "hero.tricorn_low",
+     "hand_r": ""
+    },
+    "frog": {
+     "hand_r": ""
+    }
    }
   },
   "mossback": {
@@ -422,6 +431,11 @@
       "add": 1
      }
     ]
+   },
+   "fit": {
+    "spider": {
+     "hand_r": ""
+    }
    }
   },
   "drowned": {
@@ -516,6 +530,11 @@
       "add": 1
      }
     ]
+   },
+   "fit": {
+    "beetle": {
+     "head_gear": "hero.helm_transverse_low"
+    }
    }
   },
   "lionheart": {
@@ -546,6 +565,17 @@
       "add": 1
      }
     ]
+   },
+   "fit": {
+    "frog": {
+     "head_gear": "hero.lion_hood_low"
+    },
+    "beetle": {
+     "head_gear": "hero.lion_hood_low"
+    },
+    "spider": {
+     "head_gear": "hero.lion_hood_low"
+    }
    }
   },
   "overdressed": {
@@ -613,6 +643,17 @@
       "add": 1
      }
     ]
+   },
+   "fit": {
+    "frog": {
+     "head_gear": "hero.wolf_hat_low"
+    },
+    "beetle": {
+     "head_gear": "hero.wolf_hat_low"
+    },
+    "spider": {
+     "head_gear": "hero.wolf_hat_low"
+    }
    }
   },
   "golden": {
@@ -675,6 +716,11 @@
       "add": 1
      }
     ]
+   },
+   "fit": {
+    "frog": {
+     "hand_r": ""
+    }
    }
   },
   "jaguar": {
@@ -705,6 +751,20 @@
       "add": 1
      }
     ]
+   },
+   "fit": {
+    "frog": {
+     "head_gear": "hero.jaguar_helm_low"
+    },
+    "beetle": {
+     "head_gear": "hero.jaguar_helm_low"
+    },
+    "rat": {
+     "head_gear": "hero.jaguar_helm_low"
+    },
+    "spider": {
+     "head_gear": "hero.jaguar_helm_low"
+    }
    }
   },
   "polished": {
@@ -779,6 +839,14 @@
       "add": 1
      }
     ]
+   },
+   "fit": {
+    "spider": {
+     "hand_r": ""
+    },
+    "rat": {
+     "hand_r": ""
+    }
    }
   },
   "eight_eyes": {
@@ -817,6 +885,11 @@
       "add": 1
      }
     ]
+   },
+   "fit": {
+    "beetle": {
+     "head_gear": "hero.top_hat_low"
+    }
    }
   },
   "widow": {

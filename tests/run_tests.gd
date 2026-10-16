@@ -156,6 +156,11 @@ func _test_heroes(lib, gen, rules: Dictionary) -> void:
 		check(seen.has(sid) or not playable, "heroes: %s is someone's hero" % sid)
 		for slot in s.parts:
 			check(lib.parts.has(s.parts[slot]) and lib.part(s.parts[slot]).slot == slot, "heroes: %s's %s is a %s part" % [sid, s.parts[slot], slot])
+		for cid in s.get("fit", {}):
+			check(lib.creatures.has(cid), "heroes: %s's fit names a creature (%s)" % [sid, cid])
+			for slot in s.fit[cid]:
+				var fid: String = s.fit[cid][slot]
+				check(s.parts.has(slot) and (fid == "" or (lib.parts.has(fid) and lib.part(fid).slot == slot)), "heroes: %s's fit for %s: a %s part in place of its own (%s)" % [sid, cid, slot, fid])
 		check(s.aura.effects.size() > 0 and s.aura.text != "", "heroes: %s has an aura" % sid)
 	for prompt in ["sewer rats with cheese hammers", "romans", "spooky spiders", "centaur romans", "egyptians", "swamp frogs", "forest beetles"]:
 		for reroll in 2:
@@ -173,10 +178,11 @@ func _test_heroes(lib, gen, rules: Dictionary) -> void:
 			var sword: Dictionary = race.units.filter(func(u): return u.recipe.slot == "infantry")[0]
 			for hero in heroes:
 				var s: Dictionary = lib.heroes.hero_signatures[hero.recipe.hero]
+				var worn := Heroes.parts_on(s, race.creature)
 				for l in hero.line:
 					var r: Dictionary = l.recipe
-					for slot in s.parts:
-						check(r.parts[slot] == s.parts[slot], "heroes: '%s' wears its %s" % [prompt, s.parts[slot]])
+					for slot in worn:
+						check(r.parts[slot] == worn[slot], "heroes: '%s' wears its %s" % [prompt, worn[slot]])
 					for slot in r.get("kit", {}):
 						check(lib.part(r.kit[slot]).slot == slot and not lib.part(r.kit[slot]).has("only_if") or not "hero_only" in lib.part(r.kit[slot]).get("only_if", []), "heroes: '%s' keeps its %s kit" % [prompt, slot])
 					var sw: Dictionary = sword.line.filter(func(x): return int(x.age) <= int(l.age))[-1]

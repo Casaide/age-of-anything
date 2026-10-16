@@ -458,6 +458,29 @@ def alarm(rng):
     return _rev(out, 0.9, 0.25)
 
 
+def hero_up(rng):
+    """A hero takes the field (or is revived): a short bright horn call over a drum, a bell at the top."""
+    out = []
+    for name, at, dur in [("A3", 0.0, 0.22), ("D4", 0.2, 0.22), ("F4", 0.4, 0.22), ("A4", 0.6, 0.9)]:
+        mix_into(out, I.horn(I.note_hz(name), dur, rng, 0.9, 1.0), seconds(at))
+    mix_into(out, I.horn(I.note_hz("D3"), 1.1, rng, 0.5, 0.7), seconds(0.6))
+    mix_into(out, I.frame_drum(rng, 0.7), 0)
+    mix_into(out, I.frame_drum(rng, 0.5), seconds(0.4))
+    mix_into(out, I.low_drum(rng, 0.8), seconds(0.6))
+    mix_into(out, I.bell(I.note_hz("A5"), 1.0, rng, 0.35, wood=False), seconds(0.62))
+    return _rev(out, 0.8, 0.28)
+
+
+def hero_fell(rng):
+    """A hero falls: one long low horn that sags at the end, a muffled drum under it."""
+    out = []
+    mix_into(out, I.horn(I.note_hz("A3"), 0.5, rng, 0.8, 0.6), 0)
+    mix_into(out, I.horn(I.note_hz("F3"), 0.5, rng, 0.75, 0.55), seconds(0.45))
+    mix_into(out, I.horn(I.note_hz("D3"), 1.4, rng, 0.7, 0.5), seconds(0.9))
+    mix_into(out, I.low_drum(rng, 0.9, 1.0), seconds(0.9))
+    return _rev(out, 0.9, 0.32)
+
+
 # ----------------------------------------------------------------------------- ambience
 
 def meadow(rng):
@@ -566,5 +589,6 @@ TABLE = {
     "trained": (trained, 1, -4.0), "built": (built, 1, -3.0), "research": (research, 1, -5.0),
     "heal": (heal, 2, -12.0),
     "age": (age, 1, -1.0), "won": (won, 1, -1.0), "lost": (lost, 1, -1.0), "alarm": (alarm, 1, -1.0),
+    "hero_up": (hero_up, 1, -2.0), "hero_fell": (hero_fell, 1, -2.0),
     "meadow": (meadow, 1, -14.0), "town_quiet": (town_quiet, 1, -12.0), "town_busy": (town_busy, 1, -10.0),
 }
