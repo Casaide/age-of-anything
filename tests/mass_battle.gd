@@ -79,7 +79,7 @@ const BEAST_MATCHES := [
 	["bolt+spear v beasts", ["bolt_thrower", "spear"], ["war_beast"]],
 	["beast+archer v spear+archer", ["war_beast", "archer"], ["spear", "archer"]],
 ]
-## Heroes (milestone 14 step 9, D-136; age 2 and on): every hero of the race once (their auras on
+## Heroes (milestone 14 step 9, D-138; age 2 and on): every hero of the race once (their auras on
 ## the soldiers round them), the rest of the budget in soldiers, against soldiers at equal cost (twice
 ## the budget: a race's heroes together cost about the usual budget). A hero line priced fairly wins
 ## about half.

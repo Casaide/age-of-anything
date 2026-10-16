@@ -708,7 +708,7 @@ func _train_healers(w, tc: int, army: Array, healers: Array) -> void:
 	w.issue(player, Commands.TRAIN, {"building": w.buildings.id[tc], "slot": "healer"})
 
 
-## The race's heroes (data: military.hero; src/sim/heroes.gd, D-136), in its race's order: the first
+## The race's heroes (data: military.hero; src/sim/heroes.gd, D-138), in its race's order: the first
 ## trained at the Town Center once there are `army` soldiers, each next one with `more` soldiers more,
 ## when its price is to spare beyond a worker; a fallen one revived the same way as soon as it may.
 ## They fight with the army; one under retreat_pct of its hit points walks home and heals (out of the

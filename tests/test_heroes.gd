@@ -1,5 +1,5 @@
 extends SceneTree
-## Heroes in the sim (milestone 14 step 9; src/sim/heroes.gd; D-136): several per race, each trained
+## Heroes in the sim (milestone 14 step 9; src/sim/heroes.gd; D-138): several per race, each trained
 ## once at the Town Center from age 2 (one of each out at a time, all of them together allowed); an aura
 ## on nearby friends (not foes, not itself, not far ones) in the damage, several heroes' auras not
 ## adding up; healing slowly; revived after a wait for a share of its price when it falls; deterministic.

@@ -12,7 +12,7 @@ extends SceneTree
 ## "volley[:<slot>]" (side 0's archers shoot at side 1's charging large units, or that slot;
 ## shot with shots in the air and misses stuck in the ground; the sim and the shots frozen).
 ## "heal" (side 0's healers by wounded spearmen, shot mid-heal; "heal:card" with a healer selected).
-## "heroes[:panel]" (D-136: side 0 in age 2, its heroes out with spears by the Town Center, one hurt and
+## "heroes[:panel]" (D-138: side 0 in age 2, its heroes out with spears by the Town Center, one hurt and
 ## selected: its crown, name and card; ":panel": the Town Center selected, its hero buttons, one
 ## fallen and waiting to be revived).
 ## "look:<x>:<y>[:zoom]" frames a tile with the fog lifted (for art checks).

@@ -828,7 +828,7 @@ tap could never be told apart from it. "All of these on screen" is now the first
 mouse takes over from the pad only after a real swipe (80 px within 0.4 s) or a click, and the menus keep their focus
 when it does (on the Deck the stick's focus kept jumping back to the top button).
 
-**D-136, 2026-10-16: Every race gets all of its heroes (supersedes D-131's one hero per race).** Dominic, resuming the
+**D-138, 2026-10-16: Every race gets all of its heroes (supersedes D-131's one hero per race).** Dominic, resuming the
 paused heroes: "heroes i thought we'd do all of them, so each race has some variety." A race now gets every hero its
 creature and its culture name; one with fewer than three (in the base game: humans, whose heroes come only from their
 culture, spooky spiders and forest beetles) is topped up from its culture's two kindred cultures (`kin` in

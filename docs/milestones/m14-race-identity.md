@@ -253,9 +253,9 @@ it takes its alt); plus Gallop and Saddle Bows at the Castle, and no walls.
 - [ ] 6. Mechanics (the web only so far; leap, shell, swarm/scavenge, shoot on the move to come; the web's look needs a concept round)
 - [x] 7. AI (2026-10-13: webs on the nearest foes, own research bought; bonuses are stats)
 - [ ] 8. Balance and the lobby card (lobby card done; six bonuses a race and a balance pass 2026-10-14: every race 33-68% over two maps, frogs and rats at the edges, see Results)
-- [x] 9. Heroes (generated champion, aura, revive; concept round HR1 done 2026-10-13; D-131: all of HR2's characters as a pool; D-136: every race gets all of its pool's heroes)
+- [x] 9. Heroes (generated champion, aura, revive; concept round HR1 done 2026-10-13; D-131: all of HR2's characters as a pool; D-138: every race gets all of its pool's heroes)
   - WIP 2026-10-14 (Claude): `data/heroes.json` (names, 21 signatures with auras, rules), hero parts in `data/parts.json` (only_if hero_only), a `hero` roster line (age 2, Town Center), `src/heroes.gd` (derived from the race key, not in it), `src/sim/heroes.gd` (aura, regen, revive), the bot, models in `scenes/art_pixel/hero_models.gd`, the unit card's temper and aura, `tests/test_heroes.gd`.
-  - Resumed 2026-10-16 (Dominic: "heroes i thought we'd do all of them, so each race has some variety"), finished on branch `heroes-all` (Claude). **The rule (D-136):**
+  - Resumed 2026-10-16 (Dominic: "heroes i thought we'd do all of them, so each race has some variety"), finished on branch `heroes-all` (Claude). **The rule (D-138):**
     - A race gets every signature naming its creature or its culture (sorted by id); one with fewer than `rules.min_heroes` (3) is topped up from its culture's `kin` (heroes.json: two kindred cultures each, nearest first). In the base game that tops up humans (one culture hero each), spooky spiders and forest beetles; every playable race has 3 or 4 heroes.
     - Each hero is its own unit type on the hero line (TRAIN/SPAWN name it: args `hero`). Each is trained once at the Town Center from age 2; one of each is ever out (queued, alive or sheltering); all of a race's heroes may be out together. A fallen one is revived at the Town Center after 60 s for 60% of its price.
     - Auras don't add up: a friend near several heroes takes the strongest of each stat (+1 attack, +1 melee, +1 pierce at most).
@@ -365,7 +365,7 @@ it takes its alt); plus Gallop and Saddle Bows at the Castle, and no walls.
   38, 81%; `mass_battle -- 2` as main within a fight (spears beat the centaurs' cavalry 8 of 10, was
   10: they're no longer large).
 
-### Heroes (step 9, 2026-10-16, D-136)
+### Heroes (step 9, 2026-10-16, D-138)
 `godot --headless --path . --script res://tests/mass_battle.gd -- 2 heroes` (and `-- 3 heroes`): side A fields all of
 its race's heroes once plus soldiers for the rest, side B soldiers at the same cost (3000 a side), each fought both
 ways round, five races. Final settings: 300% hit points, 130% attack, no armour bonus, 30 price points, 1 hp every 3 s.

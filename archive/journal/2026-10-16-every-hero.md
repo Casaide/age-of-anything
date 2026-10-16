@@ -8,7 +8,7 @@ Heroes had been paused on 2026-10-14 on a WIP branch (all 21 HR2 characters as a
 them with a change: "heroes i thought we'd do all of them, so each race has some variety." The WIP came onto a fresh
 branch (`heroes-all`) from main without a conflict, and step 9 was finished there.
 
-- **All of them** (D-136): a race gets every hero its creature and culture name; humans (whose heroes come only from
+- **All of them** (D-138): a race gets every hero its creature and culture name; humans (whose heroes come only from
   their culture), spooky spiders and forest beetles are topped up from kindred cultures to three. Each hero is its
   own unit type on the hero line; trained once at the Town Center, one of each out at a time, all of them together if
   you can pay. Auras take the strongest of each stat, so three heroes don't make +3.
@@ -26,7 +26,7 @@ branch (`heroes-all`) from main without a conflict, and step 9 was finished ther
 - **The bot** saves for its next hero; a bot with an economy fields two or three.
 
 ## Decisions
-- D-136 (Dominic's call, Claude's rules for how they play): all of a race's heroes, one of each out, auras don't add up.
+- D-138 (Dominic's call, Claude's rules for how they play): all of a race's heroes, one of each out, auras don't add up.
 
 ## Pictures
 - `archive/images/2026-10-16/01-heroes-lineup-creatures.png`, `02-heroes-lineup-humans.png`: every race's heroes, age 3
