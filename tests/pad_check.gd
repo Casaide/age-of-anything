@@ -4,7 +4,7 @@ extends SceneTree
 ## Run (needs a display):
 ##   godot --path . --audio-driver Dummy --always-on-top --script res://tests/pad_check.gd -- [out_dir] [map_id]
 ## Steps: pad mode on (the compact panel, the hints) -> d-pad up: the Town Center -> tap A on it:
-## its wheel (the camera holds still), point at the worker, A twice: two queued -> B: closed -> B:
+## selected only; again: its wheel (the camera holds still), point at the worker, A twice: two queued -> B: closed -> B:
 ## deselect -> hold A on the workers: the circle sweeps them up -> X on a bush: they gather -> tap A
 ## on a selected worker: its wheel, Build: Civilian (its page), the House, A: its foundation -> LB
 ## tap: one kind -> Menu: the pause menu, focused -> B: back.
@@ -66,7 +66,10 @@ func _run() -> void:
 	await _aim(view.bviews[tc].position + Vector2(0, -6))
 	await _seconds(0.4)   # (not a double tap with anything before)
 	await _tap(JOY_BUTTON_A)
-	_check(view.pad_play.wheel.visible and view.selected_building == tc, "tap A on your Town Center: selected, its wheel open")
+	_check(view.selected_building == tc and not view.pad_play.wheel.visible, "tap A on your Town Center: selected only (its progress shows, no wheel)")
+	await _seconds(0.4)   # (not a double tap)
+	await _tap(JOY_BUTTON_A)
+	_check(view.pad_play.wheel.visible and view.selected_building == tc, "tap A again on the selected Town Center: its wheel")
 	var cam_at: Vector2 = view.camera.position
 	var items: Array = view.pad_play.wheel.pages[view.pad_play.wheel.page][1]
 	var k := items.map(func(b): return b.text).find(items.filter(func(b): return b.text.begins_with("Train"))[0].text)
@@ -126,6 +129,7 @@ func _run() -> void:
 	items = view.pad_play.wheel.pages[view.pad_play.wheel.page][1]
 	k = items.map(func(b): return b.text).find("Build: Civilian")
 	_check(k >= 0, "a worker's wheel has Build: Civilian")
+	_check(items[0].text == "All on screen", "a unit's wheel starts with All on screen")
 	await _point(k, items.size())
 	await _tap(JOY_BUTTON_A)
 	pad.fake.right = Vector2.ZERO

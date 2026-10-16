@@ -318,6 +318,7 @@ func _ready() -> void:
 func _fit_hud() -> void:
 	var f := UiScale.factor(get_window(), UiScale.HUD_NEEDS)
 	hud_root.scale = Vector2(f, f)
+	get_viewport().oversampling_override = f   # text drawn at the size it's shown, not made at 1x and scaled (fuzzy on the Deck)
 	hud_root.size = get_viewport_rect().size / f
 	CommandPanel.TipButton.ui_scale = f   # tooltip cards are popups outside the HUD: they scale their own type
 	var fam := hud_family if hud_family != "?" else ""
