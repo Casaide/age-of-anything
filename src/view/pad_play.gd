@@ -3,7 +3,7 @@ extends Node
 ## A reticle near the screen's middle stands in for the mouse: the left stick moves the camera
 ## and the reticle with it, the right stick nudges the reticle off centre, and it snaps to a unit
 ## near it. Selection is by area (hold A: a circle grows and sweeps up your units), orders are one
-## button each, commands are on a wheel (hold RB). Everything here goes through the match's own
+## button each, commands are on a wheel (tap A on what's selected, or hold RB). Everything here goes through the match's own
 ## functions (select_at, smart_order, place_at...), as the mouse does: no second way to play.
 
 const PadMode := preload("res://src/view/pad_mode.gd")
@@ -25,6 +25,7 @@ const CIRCLE_START := 34.0  # screen px: the selection circle when it appears...
 const CIRCLE_GROW := 300.0  # ...and how fast it grows, px a second...
 const CIRCLE_MAX := 0.42    # ...up to this much of the screen's smaller side
 const GROUP_HOLD := 0.5     # seconds on the d-pad to store a group
+const RB_HOLD := 0.3        # seconds on RB to open the selection's wheel (a shorter press: your soldiers)
 const RING := Color("#f2e9c9")
 
 var game: Node              # the match (scenes/sim_debug.gd)
@@ -36,6 +37,7 @@ var circle := 0.0           # the selection circle's radius, screen px (0: none)
 var sweep := {}             # unit id -> true: taken by the circle so far
 var _tap_at := {}           # button -> when it was last tapped (msec), for double taps
 var _lb_used := false       # LB was held as a modifier this press (so its release isn't a tap)
+var _rb_wheel := false      # this RB press opened the wheel (so its release isn't a tap)
 var _cycle_all := []        # the selection before LB started cycling its kinds
 var _cycle_k := -1
 var _hint_sig := ""
@@ -395,11 +397,18 @@ func _has_soldiers() -> bool:
 		return not game._is_animal(id) and not game.world.types[game.world.units.kind[game.world.units.index_of(id)]].worker)
 
 
-## RB tapped: soldiers on screen (twice: all of them); LB tapped: the next kind in the selection;
-## the d-pad: idle worker, Town Centers, groups 1 and 2; View: the last alert.
+## RB tapped: soldiers on screen (twice: all of them); RB held: the selection's wheel, which stays
+## up after it's let go (Dominic: a walking unit is hard to tap with A; both ways open it); LB
+## tapped: the next kind in the selection; the d-pad: idle worker, Town Centers, groups 1 and 2;
+## View: the last alert.
 func _quick(_delta: float) -> void:
 	var rb := JOY_BUTTON_RIGHT_SHOULDER
 	if pad.pressed(rb):
+		_rb_wheel = false
+	if pad.held(rb) and not _rb_wheel and pad.held_for(rb) >= RB_HOLD and not _wheel_items().is_empty():
+		_rb_wheel = true
+		open_wheel()
+	if pad.released(rb) and not _rb_wheel and pad.held_for(rb) < RB_HOLD:
 		var twice := Time.get_ticks_msec() - int(_tap_at.get(rb, -100000)) < DOUBLE * 1000.0
 		_all_soldiers(not twice)
 		_tap_at[rb] = -100000 if twice else Time.get_ticks_msec()
@@ -512,7 +521,7 @@ func _hints() -> void:
 	elif mine.is_empty() and game.selected_building == 0:
 		rows = [["A", "select · hold: circle"], ["RB", "soldiers"], ["down", "idle worker"], ["up", "Town Center"]]
 	else:
-		rows = [["X", "order"], ["A", "on it: commands · hold: circle"]]
+		rows = [["X", "order"], ["A", "on it: commands · hold: circle"], ["RB", "hold: commands"]]
 		if _has_soldiers():
 			rows.insert(1, ["Y", "attack-move"])
 		if mine.size() > 1:

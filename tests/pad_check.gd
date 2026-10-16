@@ -141,6 +141,18 @@ func _run() -> void:
 	await _tap(JOY_BUTTON_A)
 	items = view.pad_play.wheel.pages[view.pad_play.wheel.page][1]
 	_check(view.pad_play.wheel.visible and view.build_page == "" and items.map(func(b): return b.text).has("Build: Civilian"), "opened again: the build pages' top, not the civilian page")
+	# Held RB opens the selection's wheel too, wherever the reticle is (Dominic: a walking unit is hard to tap), and
+	# it stays up once RB is let go; a short press of RB is still "your soldiers".
+	await _tap(JOY_BUTTON_B)
+	view.pad_play.offset = Vector2(260, 160)   # (the reticle off the worker)
+	await _frames(2)
+	_hold(JOY_BUTTON_RIGHT_SHOULDER, true)
+	await create_timer(0.45).timeout
+	_check(view.pad_play.wheel.visible, "held RB opens the selected worker's wheel")
+	_hold(JOY_BUTTON_RIGHT_SHOULDER, false)
+	await _frames(3)
+	items = view.pad_play.wheel.pages[view.pad_play.wheel.page][1]
+	_check(view.pad_play.wheel.visible and items.map(func(b): return b.text).has("Build: Civilian"), "let go, the wheel stays up at its top")
 	k = items.map(func(b): return b.text).find("Build: Civilian")
 	await _point(k, items.size())
 	await _tap(JOY_BUTTON_A)
