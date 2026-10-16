@@ -1726,7 +1726,7 @@ func _train(building: int, slot: String) -> void:
 ## Train one (five with shift) from the selected buildings: each goes to the least busy
 ## finished one with room (the lowest id on a tie), so pressing Train again and again spreads
 ## the units over every selected barracks.
-## The Town Center's hero buttons (D-136): one per hero of the race, each trained once; one that's out,
+## The Town Center's hero buttons (D-138): one per hero of the race, each trained once; one that's out,
 ## on the way, or waiting to be revived says so; a revival shows its (lower) price.
 func _hero_buttons(c: Dictionary, room: bool) -> void:
 	for hk in SimHeroes.types_of(world, active):
@@ -2862,7 +2862,7 @@ func _update_panel() -> void:
 					var tk := world.type_of(active, slot)
 					if tk < 0 or Economy.lacks(world, active, slot):
 						continue
-					if slot == "hero":   # (each of the race's heroes its own button, D-136)
+					if slot == "hero":   # (each of the race's heroes its own button, D-138)
 						_hero_buttons(c, room)
 						continue
 					var wt: Dictionary = world.types[tk]

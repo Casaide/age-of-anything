@@ -8,7 +8,7 @@ extends "res://scenes/art_pixel/unit_models.gd"
 ## -x), held items with the grip at the origin ("low": the business end up and forward; "shoulder":
 ## up and back over the shoulder, as the pike: parts tagged "shouldered"), shields built flat and
 ## turned by SHIELD_FACE.
-## Low-slung variants ("hero.<hat>_low", D-136): the same hat for a head that sits low in its shoulders
+## Low-slung variants ("hero.<hat>_low", D-138): the same hat for a head that sits low in its shoulders
 ## or wears its eyes on top (frogs, beetles, spiders: data/heroes.json signature `fit`), with nothing
 ## hanging down behind or beside the head (a mane, a pelt, cheek guards) and set a little higher and
 ## further back, a size smaller (`low` while one builds).

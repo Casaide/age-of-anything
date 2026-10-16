@@ -131,7 +131,7 @@ func _run_piece(name: String) -> void:
 			var m: Dictionary = a.medics
 			check(m.most.max() >= 1 and m.most.max() <= 3, "the bots train a couple of healers (most %s)" % [m.most])
 			check(m.samples == 0 or m.behind * 100 >= m.samples * 70, "healers keep behind the army (%d of %d looks)" % [m.behind, m.samples])
-			# Heroes (D-136): a bot with an economy fields more than one of its heroes (the side ground down
+			# Heroes (D-138): a bot with an economy fields more than one of its heroes (the side ground down
 			# early may never afford one).
 			var hs: Dictionary = a.heroes
 			check(maxi(hs.kinds[0].size(), hs.kinds[1].size()) >= 2, "the bots field several of their heroes (%d, %d kinds; fell %s, revived %s)" % [hs.kinds[0].size(), hs.kinds[1].size(), hs.fell, hs.revived])
@@ -217,7 +217,7 @@ func _play(rules: Dictionary, races: Array, bots: Array, title: String, quiet :=
 	var aged := [-1, -1]   # when each side reached age 2 (the bots aim for 4-6 minutes)
 	var bought := [[], []]   # the research each side finished, with the time
 	var medics := {"most": [0, 0], "heals": [0, 0], "behind": 0, "samples": 0}   # healers: how many, heals, kept behind the army
-	var heroes := {"up": [0, 0], "revived": [0, 0], "fell": [0, 0], "kinds": [{}, {}]}   # heroes (D-136): trained, revived, fallen, which
+	var heroes := {"up": [0, 0], "revived": [0, 0], "fell": [0, 0], "kinds": [{}, {}]}   # heroes (D-138): trained, revived, fallen, which
 	while w.tick < LIMIT and w.winner < 0:
 		for bot in bots:
 			bot.think(w)
@@ -376,7 +376,7 @@ func _test_siege_bot(rules: Dictionary, a: Dictionary, b: Dictionary) -> void:
 	for wv in cfg.military.waves:
 		wv.at = int(wv.at) + 600   # ten minutes to build up first (its first waves would otherwise end it)
 	cfg.wonder = {}   # no Wonder: topped up to 2000 of everything it builds one and wins by it at 16:19 on Old Forest, before its first wave (16:00) has marched; it passed there only while a ram could be posted as an escort and wander out
-	cfg.military.erase("hero")   # no heroes (D-136): its first top-ups went on three heroes and the engines came after its first wave had won
+	cfg.military.erase("hero")   # no heroes (D-138): its first top-ups went on three heroes and the engines came after its first wave had won
 	var bots := [Bot.new(0, cfg), EcoBot.new(1)]
 	var most: Dictionary = cfg.military.siege.max
 	w.ages[0] = 3
@@ -1048,7 +1048,7 @@ func _test_walled_base(rules: Dictionary, a: Dictionary, b: Dictionary, wall: St
 		w.buildings.done[bi] = 1
 		w.buildings.hp[bi] = w.bmods[0][gk].hp
 	var cfg: Dictionary = Bot.load_config()
-	cfg.military.erase("hero")   # no heroes (D-136): with them the battle's timing shifts and its archers nick a second piece (palisade: 70 of 162 blows on one)
+	cfg.military.erase("hero")   # no heroes (D-138): with them the battle's timing shifts and its archers nick a second piece (palisade: 70 of 162 blows on one)
 	var bot := Bot.new(1, cfg)
 	var passive := EcoBot.new(0)
 	var reach := Reach.new()

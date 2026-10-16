@@ -153,7 +153,7 @@ func _rows() -> Array:
 		if r.has("each"):
 			for p in r.each.prompt:
 				var slots: Array = []
-				for s in r.each.slot:   # "heroes": each of the race's heroes (D-136), one row each
+				for s in r.each.slot:   # "heroes": each of the race's heroes (D-138), one row each
 					slots += _race(p, spec.get("rules", "default")).get("heroes", []).map(func(h): return "hero." + h.signature) if s == "heroes" else [s]
 				for s in slots:
 					var ref := {"prompt": p, "slot": s, "age": r.get("age", 1)}

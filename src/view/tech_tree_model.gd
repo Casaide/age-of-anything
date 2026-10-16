@@ -66,7 +66,7 @@ static func build(race: Dictionary, rules: Dictionary, lib) -> Dictionary:
 					"status": "built", "lacks": true, "col": col, "building": id, "first": true, "tier": int(sd.tier),
 					"early_kit": "", "step": {}, "cost": {}}])
 				continue
-			if sd.get("role", "") == "hero" and not unit.is_empty():   # the race's heroes (D-136): one node each, where they're first trained
+			if sd.get("role", "") == "hero" and not unit.is_empty():   # the race's heroes (D-138): one node each, where they're first trained
 				for u in race.units.filter(func(x): return x.recipe.slot == sd.slot):
 					var hs: Dictionary = lib.heroes.hero_signatures[u.recipe.hero]
 					var st: Dictionary = _step(u, from)

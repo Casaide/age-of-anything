@@ -1,5 +1,5 @@
 extends RefCounted
-## Heroes in the sim (milestone 14 step 9; D-136): a race has several (src/heroes.gd), each its own unit
+## Heroes in the sim (milestone 14 step 9; D-138): a race has several (src/heroes.gd), each its own unit
 ## type on the hero line, trained at the Town Center from the line's age (rules roster role "hero").
 ## Each is trained once and only one of each is ever out (queued, alive, or sheltering); a race's
 ## heroes may all be out together. Each casts an aura on its friends, heals slowly while hurt, and when
