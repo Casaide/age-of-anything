@@ -29,6 +29,7 @@ var cam: Camera3D
 var key: DirectionalLight3D
 var holder: Node3D
 var models := UnitModels.new()
+var _bodies := {}        # bodies built for cutting or wearing, by name and colours (_body)
 static var prof := {}    # phase -> usec spent, summed over every bake (tests/bake_profile.gd reports it)
 
 
@@ -39,6 +40,7 @@ static func _lap(phase: String, t0: int) -> int:
 
 
 func _init() -> void:
+	models.ready_all()   # (made here, on the main thread: the bakes build on a worker thread)
 	transparent_bg = true
 	own_world_3d = true
 	msaa_3d = Viewport.MSAA_4X
@@ -87,6 +89,7 @@ func bake(id: String, shapes: Array, colours: Dictionary) -> void:
 	var key := PartShape.bake_key(id, shapes, colours)
 	if PartShape.baked.has(key):
 		return
+	await BakeClock.breathe()   # building a model is main-thread work: not in a frame that's spent its budget
 	if models.has(id):
 		await _bake_model(id, colours, key)
 		return
@@ -99,16 +102,18 @@ func bake(id: String, shapes: Array, colours: Dictionary) -> void:
 	cam.size = bounds.size.y
 	var centre := bounds.get_center()
 	cam.position = Vector3(centre.x, -centre.y, 2000.0)
-	var model := Node3D.new()
-	for i in shapes.size():
-		model.add_child(_shape3d(shapes[i], colours, i))
+	var model: Node3D = await BakeClock.build(func():
+		var m := Node3D.new()
+		for i in shapes.size():
+			m.add_child(_shape3d(shapes[i], colours, i))
+		return m)
 	holder.add_child(model)
 	await _render()
-	var img := get_texture().get_image()
+	var img := await BakeClock.read(self)
 	holder.remove_child(model)
 	model.queue_free()
 	var origin := Vector2(-bounds.position.x, -bounds.position.y) * art_scale
-	var pix := Pixelize.run(img, SS)
+	var pix: Image = await BakeClock.off_thread(func(): return Pixelize.run(img, SS))
 	PartShape.baked[key] = {"img": pix, "tex": ImageTexture.create_from_image(pix), "origin": origin, "scale": art_scale}
 
 
@@ -182,7 +187,7 @@ func _members_front(model: Node3D, sockets: Dictionary, names: Array, view: Vect
 ## the cut ran pixel by pixel in GDScript: most of a cold unit bake.)
 func _bake_model(id: String, colours: Dictionary, bake_key: String) -> void:
 	var tl := Time.get_ticks_usec()
-	var spec: Dictionary = models.build(id, colours)
+	var spec: Dictionary = await BakeClock.build(func(): return models.build(id, colours))
 	var model: Node3D = spec.node
 	var front: Node3D = spec.get("front")
 	var wearer: Node3D = null
@@ -192,7 +197,7 @@ func _bake_model(id: String, colours: Dictionary, bake_key: String) -> void:
 	var join := Vector3.ZERO    # where the neck joins the head (the body's "join" socket) and how far round it
 	var join_r := 0.0           # the seam reaches (spec.seam_r): elsewhere a head in front of the chest keeps its outline
 	if spec.has("seam_head") and not "~" in id:
-		seam = models.build(spec.seam_head, colours).node
+		seam = (await BakeClock.build(func(): return models.build(spec.seam_head, colours))).node
 		seam.position = spec.sockets.head
 		join = spec.sockets.join
 		join_r = float(spec.seam_r)
@@ -202,7 +207,7 @@ func _bake_model(id: String, colours: Dictionary, bake_key: String) -> void:
 		# put on where the body wears it, the body there as the holdout, so the sprite keeps only what
 		# the body doesn't hide (a newt's hip inside its flank; a horse's head behind its rump). Its
 		# origin stays at the hip or the neck, so it swings and turns from there.
-		var body: Dictionary = models.build(id.get_slice("~", 1).get_slice("^", 0), colours)
+		var body: Dictionary = await _body(id.get_slice("~", 1).get_slice("^", 0), colours)
 		wearer = body.node
 		joins = at == "head" and body.has("seam_head")   # (a head its neck runs into: no outline where the body hides it)
 		if joins:
@@ -212,16 +217,14 @@ func _bake_model(id: String, colours: Dictionary, bake_key: String) -> void:
 		model.position = pivot
 		if at != "head":
 			model.basis = UnitModels.leg_basis(body.anchors[int(at)], true) * model.basis   # turned to its own side
-		if body.get("front"):
-			body.front.queue_free()
 		holder.add_child(wearer)
 	elif "~" in id:
 		# Body armour baked on its wearer: put on at the body's torso, scaled and tilted to it,
 		# with the body there as a flat key colour that's cut out afterwards. So the armour
 		# wraps the body, and the parts the body hides stay hidden, in every facing.
-		var body: Dictionary = models.build(id.get_slice("~", 1), colours)
+		var body: Dictionary = await _body(id.get_slice("~", 1), colours)
 		wearer = body.node
-		var fitted: Dictionary = models.fitted(id.get_slice("~", 0), id.get_slice("~", 1), colours) if models.has_method("fitted") else {}
+		var fitted: Dictionary = (await BakeClock.build(func(): return models.fitted(id.get_slice("~", 0), id.get_slice("~", 1), colours))) if models.has_method("fitted") else {}
 		if not fitted.is_empty():   # modelled for this body, in its own space: nothing to fit
 			model.queue_free()
 			model = fitted.node
@@ -231,8 +234,6 @@ func _bake_model(id: String, colours: Dictionary, bake_key: String) -> void:
 			model.scale = body.get("torso_fit", Vector3(ts.x, ts.y, ts.x))
 			model.rotation_degrees.z = float(body.get("torso_tilt", 0.0))
 		_hold_out(wearer)   # (built bodies used to keep their own colours here: the armour carried a whole body)
-		if body.get("front"):
-			body.front.queue_free()
 		holder.add_child(wearer)
 		spec.erase("sockets")
 	holder.add_child(model)
@@ -274,7 +275,7 @@ func _bake_model(id: String, colours: Dictionary, bake_key: String) -> void:
 		var view := _aim(box)
 		await _render()
 		tl = _lap("render", tl)
-		var shot := {"img": get_texture().get_image()}
+		var shot := {"img": await BakeClock.read(self)}
 		tl = _lap("readback", tl)
 		if front:   # the near arm alone, so it gets its own outline over the body
 			for n in [model, wearer, seam]:
@@ -282,7 +283,7 @@ func _bake_model(id: String, colours: Dictionary, bake_key: String) -> void:
 					n.visible = false
 			front.visible = true
 			await _render()
-			shot.front_img = get_texture().get_image()
+			shot.front_img = await BakeClock.read(self)
 			front.visible = false
 			for n in [model, wearer, seam]:
 				if n:
@@ -306,27 +307,46 @@ func _bake_model(id: String, colours: Dictionary, bake_key: String) -> void:
 			_aim(box)
 			await _render()
 			tl = _lap("render cut", tl)
-			shots[k].mask = get_texture().get_image()
-			tl = _lap("readback", tl)
+			shots[k].mask = await BakeClock.read(self)
+		tl = _lap("readback", tl)
 		key.shadow_enabled = true
 	azimuth = base
 	for n in [model, wearer, seam, front]:
 		if n:
 			holder.remove_child(n)
 			n.queue_free()
+	# Every facing's cut and pixelize on a worker thread (the frames go on meanwhile), then kept.
+	var seamed := joins or seam != null
+	var worn := wearer != null
+	var reach := join_r * px
+	var o := outlined
+	var b := bands
+	var made: Array = await BakeClock.off_thread(func(): return shots.map(func(shot): return _develop(shot, cut, seamed, worn, reach, o, b)))
+	tl = _lap("cut + pixelize", tl)
 	for k in facings:
-		var shot: Dictionary = shots[k]
-		var img: Image = shot.img
-		var seam_img: Image = null  # where the part meets another of the unit's parts: no outline there
-		if cut:
-			if joins or seam != null:
-				seam_img = _seam_mask(shot.mask, shot.jc, join_r * px)
-			img = _keep_white(img, shot.mask)
-		elif wearer:
-			_cut_holdout(img)
-		tl = _lap("cut loop", tl)
-		_finish(img, shot.get("front_img"), seam_img, shot.origin, bake_key + PartShape.facing_suffix(k), id + PartShape.facing_suffix(k))
-		tl = _lap("pixelize", tl)
+		_keep(made[k], bake_key + PartShape.facing_suffix(k), id + PartShape.facing_suffix(k))
+
+
+## A body a part is cut by or worn on ({node, sockets, ...} as models.build makes it, without its
+## near-arm layer), built once per colour set and copied after: a body took 30 ms to build, and
+## each leg of a walk cycle built it again (a war beast's body 32 times).
+func _body(name: String, colours: Dictionary) -> Dictionary:
+	var key := name + str(colours)
+	if not _bodies.has(key):
+		var spec: Dictionary = await BakeClock.build(func(): return models.build(name, colours))
+		if spec.get("front"):
+			spec.front.free()
+			spec.erase("front")
+		_bodies[key] = spec
+	var body: Dictionary = _bodies[key].duplicate()
+	body.node = (_bodies[key].node as Node3D).duplicate()
+	return body
+
+
+func _notification(what: int) -> void:
+	if what == NOTIFICATION_PREDELETE:
+		for b in _bodies.values():
+			b.node.free()
 
 
 ## Point the camera at the model from this facing (azimuth) and height, the key light from the
@@ -373,26 +393,30 @@ func _rig(spec: Dictionary, model: Node3D, view: Vector3, k: int, px: float) -> 
 	return rig
 
 
-## One facing's sprite from its render: cropped, pixelized (with its near-arm layer), kept in
-## PartShape.baked with where the drawn part reaches furthest from its grip.
-func _finish(img: Image, front_img: Image, seam_img: Image, origin: Vector2, bake_key: String, rig_id: String) -> void:
+## One facing's sprite from its shot (images only: it runs on a worker thread): cut by its body
+## (cut: the mask's white kept, seamed: no outline where it joins; worn: the holdout key cleared),
+## cropped, pixelized (with its near-arm layer), and where the drawn part reaches furthest from its
+## grip. {pix, top (the near-arm layer or null), origin, tip (sprite px)}.
+static func _develop(shot: Dictionary, cut: bool, seamed: bool, worn: bool, reach: float, outlined: bool, bands: int) -> Dictionary:
+	var img: Image = shot.img
+	var seam_img: Image = null  # where the part meets another of the unit's parts: no outline there
+	if cut:
+		if seamed:
+			seam_img = _seam_mask(shot.mask, shot.jc, reach)
+		img = _keep_white(img, shot.mask)
+	elif worn:
+		_cut_holdout(img)
+	var front_img: Image = shot.get("front_img")
 	var used := img.get_used_rect()
 	if front_img:
 		used = used.merge(front_img.get_used_rect())
 	used = used.grow(SS * 2).intersection(Rect2i(Vector2i.ZERO, img.get_size()))
 	used.position = used.position / SS * SS
 	var pix := Pixelize.run(img.get_region(used), SS, outlined, bands, seam_img.get_region(used) if seam_img else null)
-	if front_img:
-		# Stored as its own sprite: UnitView layers it above torso armour.
-		var top := Pixelize.run(front_img.get_region(used), SS, outlined, bands)
-		PartShape.baked[PartShape.front_key(bake_key)] = {"img": top, "tex": ImageTexture.create_from_image(top),
-			"origin": (origin - Vector2(used.position)) / SS, "scale": art_scale}
-		PartShape.rigs[rig_id]["front"] = true
-	PartShape.baked[bake_key] = {"img": pix, "tex": ImageTexture.create_from_image(pix),
-		"origin": (origin - Vector2(used.position)) / SS, "scale": art_scale}
-	# Where the drawn part reaches furthest from its grip (part units): a weapon's tip,
+	var top: Image = Pixelize.run(front_img.get_region(used), SS, outlined, bands) if front_img else null
+	var o: Vector2 = (shot.origin - Vector2(used.position)) / SS
+	# Where the drawn part reaches furthest from its grip: a weapon's tip,
 	# so a body with no arms can lay it couched whatever way it was modelled.
-	var o: Vector2 = PartShape.baked[bake_key].origin
 	var tip := Vector2.ZERO
 	var data := pix.get_data()
 	var w := pix.get_width()
@@ -401,9 +425,20 @@ func _finish(img: Image, front_img: Image, seam_img: Image, origin: Vector2, bak
 			var d := Vector2((i / 4) % w, (i / 4) / w) - o
 			if d.length() > tip.length():
 				tip = d
+	return {"pix": pix, "top": top, "origin": o, "tip": tip}
+
+
+## One facing's developed sprite kept in PartShape.baked (its near-arm layer as its own sprite:
+## UnitView layers it above torso armour), its tip (part units) in its rig.
+func _keep(d: Dictionary, bake_key: String, rig_id: String) -> void:
+	if d.top:
+		PartShape.baked[PartShape.front_key(bake_key)] = {"img": d.top, "tex": ImageTexture.create_from_image(d.top),
+			"origin": d.origin, "scale": art_scale}
+		PartShape.rigs[rig_id]["front"] = true
+	PartShape.baked[bake_key] = {"img": d.pix, "tex": ImageTexture.create_from_image(d.pix), "origin": d.origin, "scale": art_scale}
 	if not PartShape.rigs.has(rig_id):
 		PartShape.rigs[rig_id] = {}
-	PartShape.rigs[rig_id]["tip"] = tip / art_scale
+	PartShape.rigs[rig_id]["tip"] = d.tip / art_scale
 
 
 ## The render with only what the cut mask shows white (r >= 0.5) kept, the rest cleared: done by

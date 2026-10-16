@@ -32,7 +32,6 @@ const ALONG_Z := "^z"       # bake-name suffix of a gate turned a quarter, for a
 const ALONG := ["", ALONG_Z, "^d", "^a"]
 ## Parts a worker swaps in by job (see UnitView.set_tool and sim_debug's _tool_for).
 const JOB_PARTS := ["tool.axe", "tool.basket", "tool.hammer", "tool.pick", "tool.hoe", "tool.broom", "load.reeds", "load.stone", "load.gold", "load.meat"]
-const LOAD_SLICE_MS := 8   # cache loads per frame, at most this long
 const ICON_CELL := 240    # screen pixels per unit when rendering portraits; each is clipped to its cell (a frog on a newt overran 160 into its neighbours' portraits)   # houses read about 2.5x a footman
 const TOWN := {"thatch": "town_center", "junk": "junk_town_center_small", "stone": "stone_town_center", "tent": "tent_town_center",
 	"reed": "reed_town_center", "mound": "mound_town_center"}
@@ -67,7 +66,7 @@ var buildings := {}   # "arch:type" -> {body, smoke, lantern, lights, banner, va
 var icons := {}       # "side:slot" -> Texture2D: a portrait of that unit, rendered from its baked art
 var _building_icons := {}   # "arch:type" -> AtlasTexture
 var _wall_looks := {}       # "arch:type|links" -> {tex, origin}: a wall tile with its arms (wall_look)
-var part_workers := 4       # unit-part bakers rendering at once
+var part_workers := 6       # unit-part bakers rendering at once (each waits a frame or two on its readbacks: BakeClock.read)
 var hifi_workers := 4       # building and prop bakers rendering at once (2048 px viewports each)
 var track: Array = []       # the job ids the running prepare() waits on (progress())
 var report := ""            # how long the last prepare() took, in words
@@ -84,6 +83,8 @@ var _bdata := {}            # data/buildings.json (_buildings_data)
 var _icon_cache := {}       # recipe + team -> Texture2D: a portrait already painted (a side rerolled repaints only its own)
 var _warm_gen := 0          # bumped by each warm-up: a later one cancels the last one's portraits
 var tree_track: Array = []  # the jobs a tech tree page's bake waits on (tree_progress())
+var _listing := false       # prepare is still listing its jobs (a few frames: track is empty meanwhile)
+var _tree_listing := false  # bake_tree is still listing its jobs (a frame or two)
 
 signal units_ready          # prepare(): every unit part is baked and in the atlas
 signal atlas_rebuilt        # the atlas texture was replaced: anything drawn from it should redraw
@@ -95,7 +96,9 @@ signal atlas_rebuilt        # the atlas texture was replaced: anything drawn fro
 ## Prints how long each part took (bake time at match start is a budget we watch).
 func prepare(races: Array, teams: Array) -> void:
 	var t0 := Time.get_ticks_msec()
-	var unit_ids := _unit_jobs(races + [animal_race()])
+	_listing = true
+	var unit_ids: Array = await _unit_jobs(races + [animal_race()])
+	_listing = false
 	var rest_ids: Array = _props_jobs() + _building_jobs(races)
 	track = unit_ids + rest_ids
 	var rendered := _count_cold(track)
@@ -105,12 +108,12 @@ func prepare(races: Array, teams: Array) -> void:
 	_ask(rest_ids, true)
 	PartShape.bake_flat("unit_shadow", UnitView.SHADOW_SHAPES, UnitView.SHADOW_COLOURS, ART_SCALE * UNIT_SCALE)
 	if _dirty or PartShape.atlas == null:
-		rebuild_atlas()
+		await rebuild_atlas_async()
 	var t1 := Time.get_ticks_msec()
 	units_ready.emit()
 	await _await_jobs(rest_ids)
 	var t2 := Time.get_ticks_msec()
-	rebuild_atlas()
+	await rebuild_atlas_async()
 	var t3 := Time.get_ticks_msec()
 	await bake_icons(races, teams)
 	track = []
@@ -124,17 +127,21 @@ func prepare(races: Array, teams: Array) -> void:
 ## animals, the props and these races' buildings, then the portraits (teams: each race's colour;
 ## none: no portraits). Drops the last warm-up's pending work (a prompt changed: its old race).
 func warm(races: Array, teams := []) -> void:
-	var unit_ids := _unit_jobs(races)
-	var ids: Array = unit_ids + _unit_jobs([animal_race()]) + _props_jobs() + _building_jobs(races)
+	_warm_gen += 1
+	var gen := _warm_gen
+	var unit_ids: Array = await _unit_jobs(races)
+	var animal_ids: Array = await _unit_jobs([animal_race()])
+	var ids: Array = unit_ids + animal_ids + _props_jobs() + _building_jobs(races)
+	if gen != _warm_gen:
+		return   # cancelled, or a later warm-up came, while its jobs were listed
 	for kind in _queue:
 		_queue[kind] = _queue[kind].filter(func(id): return _front.has(id) or id in ids or not _warming.has(id))
 	_warming = {}
 	for id in ids:
 		_warming[id] = true
 	_ask(ids, false)
-	_warm_gen += 1
 	if not teams.is_empty():
-		_warm_icons(races, teams, unit_ids, _warm_gen)
+		_warm_icons(races, teams, unit_ids, gen)
 
 
 ## Only these part jobs' sprites (and the shadow) stay in PartShape.baked: a match's atlas holds
@@ -181,7 +188,10 @@ func _warm_icons(races: Array, teams: Array, unit_ids: Array, gen: int) -> void:
 ## What one race's tech tree page needs, up front: every age of its lines, their portraits (as
 ## kit.icons "side:slot@age"), its culture's buildings.
 func bake_tree(race: Dictionary, side: int, team: Color) -> void:
-	var ids: Array = _unit_jobs([race]) + _building_jobs([race])
+	_tree_listing = true
+	var unit_ids: Array = await _unit_jobs([race])
+	_tree_listing = false
+	var ids: Array = unit_ids + _building_jobs([race])
 	tree_track = ids
 	_ask(ids, true)
 	await _await_jobs(ids)
@@ -192,6 +202,8 @@ func bake_tree(race: Dictionary, side: int, team: Color) -> void:
 
 ## How far the tech tree page's bake is (0..1; 1 when there's none).
 func tree_progress() -> float:
+	if _tree_listing:
+		return 0.0
 	var p := progress(tree_track)
 	return 1.0 if p.y <= 0.0 else p.x / p.y
 
@@ -212,6 +224,8 @@ func tree_ready(race: Dictionary, side: int) -> bool:
 
 ## How far the tracked work is: Vector2(done, total) in estimated renders (a loader's bar).
 func progress(ids := track) -> Vector2:
+	if _listing and ids == track:
+		return Vector2(0, 1)
 	var p := Vector2.ZERO
 	for id in ids:
 		var j: Dictionary = _jobs[id]
@@ -223,6 +237,8 @@ func progress(ids := track) -> Vector2:
 
 ## What the tracked work is busy with, in words.
 func busy_with() -> String:
+	if _listing:
+		return "Mustering the armies"
 	for id in track:
 		if _jobs[id].running or not _jobs[id].done:
 			return _jobs[id].what
@@ -287,7 +303,6 @@ func _work(kind: String) -> void:
 		add_child(baker)
 	elif kind == "hifi":
 		baker = await _hifi_baker()
-	var slice := Time.get_ticks_msec()
 	while not _queue[kind].is_empty():
 		var id: String = _queue[kind].pop_front()
 		var j: Dictionary = _jobs[id]
@@ -295,13 +310,11 @@ func _work(kind: String) -> void:
 			continue
 		j.running = true
 		if kind == "load":
+			await BakeClock.breathe()   # loading never holds a frame up for long
 			j.apply.call(BakeCache.read(id))
-			if Time.get_ticks_msec() - slice > LOAD_SLICE_MS:   # loading never holds a frame up for long
-				await get_tree().process_frame
-				slice = Time.get_ticks_msec()
 		else:
 			var entry: Dictionary = await j.make.call(baker)
-			BakeCache.write(id, entry)
+			await BakeClock.off_thread(func(): BakeCache.write(id, entry))   # (compressing it is long work)
 		j.running = false
 		j.done = true
 		_dirty = true
@@ -317,13 +330,13 @@ func _unit_jobs(races: Array) -> Array:
 	for race in races:
 		for u in race.units:   # every age of every unit line: ageing up never waits on a bake
 			units.append_array(u.get("line", [{"recipe": u.recipe, "eval": u.eval}]))
-	return _steps_jobs(units)
+	return await _steps_jobs(units)
 
 
 ## Only these units ({recipe, eval}: e.g. the few a lobby stage shows, at their first age), up
 ## front; returns when they can be drawn (from their own textures: the atlas isn't rebuilt).
 func bake_steps(units: Array) -> void:
-	var ids := _steps_jobs(units)
+	var ids: Array = await _steps_jobs(units)
 	_ask(ids, true)
 	await _await_jobs(ids)
 	PartShape.bake_flat("unit_shadow", UnitView.SHADOW_SHAPES, UnitView.SHADOW_COLOURS, ART_SCALE * UNIT_SCALE)
@@ -359,6 +372,7 @@ func _steps_jobs(units: Array) -> Array:
 			for res in pushes:
 				steps.append({"recipe": UnitView.push_recipe(l.recipe, pushes[res]), "eval": l.eval})
 	for u in steps:
+		await BakeClock.breathe()   # (a probe each: listing a whole match's parts held a frame up for 150 ms)
 		var probe := UnitView.new()
 		probe.build(u.recipe, lib, ANIMAL_TEAM, u.eval.speed)   # parts bake in the team key: any team will do
 		for ps in probe.find_children("*", "Node2D", true, false):
@@ -528,10 +542,12 @@ func _hifi_baker() -> Node:
 	if _models == null:
 		_models = Models.new()
 		_models.mats.matte = true
-	var baker := Baker.new()
+	var baker: Node = await BakeClock.build(func():   # (made here, each held a frame up for 35 ms)
+		var b := Baker.new()
+		b.set_pixel_mode(ART_SCALE, SS)
+		b.outline = false   # props and buildings are drawn realistically, without the units' outline
+		return b)
 	add_child(baker)
-	baker.set_pixel_mode(ART_SCALE, SS)
-	baker.outline = false   # props and buildings are drawn realistically, without the units' outline
 	for name in MATERIALS:
 		var m: StandardMaterial3D = _models.mats.get_mat(name)
 		for t in [m.albedo_texture, m.normal_texture]:
@@ -597,7 +613,6 @@ func _paint_icons(list: Array) -> void:
 		view.build(u.recipe, lib, list[k][0], u.eval.speed)
 		view.scale = Vector2.ONE * UNIT_SCALE * zoom
 		view.position = Vector2(0.5, 0.8) * ICON_CELL
-		view.set_process(false)       # a still pose
 		view.get_child(0).visible = false   # no ground shadow
 		var hold := Control.new()     # its own cell: a big unit is cut at the edge, never drawn into its neighbour's
 		hold.clip_contents = true
@@ -605,9 +620,14 @@ func _paint_icons(list: Array) -> void:
 		hold.size = Vector2.ONE * ICON_CELL
 		hold.add_child(view)
 		vp.add_child(hold)
+		# A still pose, the same every time: posed once at its own (seeded) time. (Stopped before it
+		# was in the tree, it started again on _ready and posed a frame or two on: the portrait
+		# changed with how long those frames took.)
+		view.set_process(false)
+		view._process(0.0)
 	await get_tree().process_frame   # the views draw themselves (a deferred call) before the render
 	await BakeClock.render(vp)
-	var img := vp.get_texture().get_image()
+	var img := await BakeClock.read(vp)
 	for k in list.size():
 		var cell := img.get_region(Rect2i(Vector2i(k % cols, k / cols) * ICON_CELL, Vector2i.ONE * ICON_CELL))
 		_icon_cache[_icon_key(list[k][1].recipe, list[k][0])] = ImageTexture.create_from_image(frame_icon(cell))
@@ -726,6 +746,11 @@ func _placed(models, arch: String, type: String, model: String, suffix: String) 
 	if spec.has("doorway"):
 		spec.doorway = spec.doorway.map(func(p): return basis * p)
 	return spec
+
+
+## _placed, built on the bakes' model thread (BakeClock.build: the frames go on meanwhile).
+func _place(models, arch: String, type: String, model: String, suffix: String) -> Dictionary:
+	return await BakeClock.build(func(): return _placed(models, arch, type, model, suffix))
 
 
 ## data/buildings.json, read once (a building's model is placed several times per bake).
@@ -905,7 +930,7 @@ static func front_split(root: Node3D, front_only: bool) -> int:
 func _bake_front(baker, node: Node3D) -> Dictionary:
 	front_split(node, true)
 	var f: Dictionary = await baker.bake(node, [Vector3.ZERO])
-	return {"img": (f.tex as Texture2D).get_image(), "origin": f.points[0]}
+	return {"img": f.img, "origin": f.points[0]}
 
 
 ## A gatehouse's flanking towers (Models: nodes tagged "gate_part") that stand lower on screen than its
@@ -916,7 +941,7 @@ func _bake_front(baker, node: Node3D) -> Dictionary:
 ## hides the walk behind it), and units on the tower stand between the two (BuildingArt.perch_sort_at).
 ## info.parts: [{body, front, at}], at: the tower's middle from the gate's (sim tiles).
 func _bake_gate_parts(baker, models, arch: String, type: String, model: String, suffix: String, name: String, made: Dictionary, info: Dictionary) -> void:
-	var probe: Dictionary = _placed(models, arch, type, model, suffix)
+	var probe: Dictionary = await _place(models, arch, type, model, suffix)
 	var tags := []
 	for part in probe.body.find_children("*", "Node3D", true, false):
 		if part.has_meta("gate_part"):
@@ -928,22 +953,22 @@ func _bake_gate_parts(baker, models, arch: String, type: String, model: String, 
 	info.parts = []
 	for tg in tags:
 		var key := "%s:tower%d" % [name, tg[0]]
-		var whole: Dictionary = _placed(models, arch, type, model, suffix)
+		var whole: Dictionary = await _place(models, arch, type, model, suffix)
 		front_split(whole.body, false)
 		for mi in whole.body.find_children("*", "MeshInstance3D", true, false):
 			if _part_of(mi) != tg[0]:
 				(mi as MeshInstance3D).cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_SHADOWS_ONLY
 		var b: Dictionary = await baker.bake(whole.body, [Vector3.ZERO])
 		whole.open.free()
-		made[key] = {"img": (b.tex as Texture2D).get_image(), "origin": b.points[0]}
-		var fr: Dictionary = _placed(models, arch, type, model, suffix)
+		made[key] = {"img": b.img, "origin": b.points[0]}
+		var fr: Dictionary = await _place(models, arch, type, model, suffix)
 		front_split(fr.body, true)
 		for mi in fr.body.find_children("*", "MeshInstance3D", true, false):
 			if _part_of(mi) != tg[0]:
 				mi.visible = false
 		var f: Dictionary = await baker.bake(fr.body, [Vector3.ZERO])
 		fr.open.free()
-		made[key + ":front"] = {"img": (f.tex as Texture2D).get_image(), "origin": f.points[0]}
+		made[key + ":front"] = {"img": f.img, "origin": f.points[0]}
 		var sc := float(_buildings_data().get("scale", {}).get(arch, {}).get(type, 1.0))
 		info.parts.append({"body": key, "front": key + ":front", "at": tg[1] * sc})
 
@@ -988,18 +1013,31 @@ func prepare_units(races: Array, teams: Array) -> void:
 
 
 func rebuild_atlas() -> void:
+	regions = PartShape.build_atlas(_atlas_extras())
+	_dirty = false
+	atlas_rebuilt.emit()
+
+
+## rebuild_atlas with the packing on a worker thread (the frames go on meanwhile).
+func rebuild_atlas_async() -> void:
+	var images := PartShape.atlas_images(_atlas_extras())
+	_dirty = false   # (anything baked from here on marks it again)
+	var pack: Dictionary = await BakeClock.off_thread(func(): return PartShape.pack_atlas(images))
+	regions = PartShape.take_atlas(pack)
+	atlas_rebuilt.emit()
+
+
+func _atlas_extras() -> Dictionary:
 	var extras := {}
 	for name in bakes:
 		extras[name] = bakes[name].img
-	regions = PartShape.build_atlas(extras)
-	_dirty = false
-	atlas_rebuilt.emit()
+	return extras
 
 
 ## Every part of every unit of these races (skips what's baked; loads what's on disk).
 ## Parts bake in the team key, so the teams don't matter here.
 func bake_units(races: Array, _teams := []) -> void:
-	var ids := _unit_jobs(races)
+	var ids: Array = await _unit_jobs(races)
 	_ask(ids, true)
 	await _await_jobs(ids)
 	PartShape.bake_flat("unit_shadow", UnitView.SHADOW_SHAPES, UnitView.SHADOW_COLOURS, ART_SCALE * UNIT_SCALE)
@@ -1093,12 +1131,15 @@ func _doodad_specs() -> Array:
 func _bake_set(baker, todo: Array, shadow: bool, cols := 3, reach := 1.0) -> Dictionary:
 	baker.set_ground_shadow(shadow)
 	baker.shadow_reach = reach
-	var out: Array = await baker.bake_many(todo.map(func(t): return t[1].call()), cols)
+	var made_models := []
+	for t in todo:   # one at a time: nine at once held a frame up for 50 to 130 ms
+		made_models.append(await BakeClock.build(t[1]))
+	var out: Array = await baker.bake_many(made_models, cols)
 	baker.shadow_reach = 1.0
 	baker.set_ground_shadow(false)
 	var made := {}
 	for i in todo.size():
-		made[todo[i][0]] = {"img": (out[i].tex as Texture2D).get_image(), "origin": out[i].points[0]}
+		made[todo[i][0]] = {"img": out[i].img, "origin": out[i].points[0]}
 	return made
 
 
@@ -1147,7 +1188,7 @@ static func staged(kind: String, variant: int, stage: int) -> String:
 func _bake_building(baker, models, arch: String, type: String, model := "", suffix := "") -> Dictionary:
 	var name := "%s:%s%s" % [arch, type, suffix]
 	var made := {}
-	var spec: Dictionary = _placed(models, arch, type, model, suffix)
+	var spec: Dictionary = await _place(models, arch, type, model, suffix)
 	var pts: Array = [Vector3.ZERO, spec.get("smoke", Vector3.ZERO), spec.get("lantern", Vector3.ZERO)]
 	pts.append_array(spec.lights)
 	var door: Array = spec.get("doorway", []).slice(0, 3)
@@ -1156,7 +1197,7 @@ func _bake_building(baker, models, arch: String, type: String, model := "", suff
 	baker.set_ground_shadow(true)
 	var body: Dictionary = await baker.bake(spec.body, pts)
 	baker.set_ground_shadow(false)
-	made[name] = {"img": (body.tex as Texture2D).get_image(), "origin": body.points[0]}
+	made[name] = {"img": body.img, "origin": body.points[0]}
 	var local := func(p: Vector2) -> Vector2: return (p - body.points[0]) / ART_SCALE
 	var info := {"body": name, "lights": []}
 	if Models.WALK_H.has(type):   # units on its walkway stand this high (canvas px), on the stone
@@ -1166,7 +1207,7 @@ func _bake_building(baker, models, arch: String, type: String, model := "", suff
 			info.walk_tower_px = Models.WALK_H.wall_tower * sc * WALK_PX_PER_UNIT
 			info.walk_tower_from = Models.gate_tower_from(3.0 * (sqrt(2.0) if suffix in ALONG.slice(2) else 1.0)) * sc
 	if fronts > 0:
-		made[name + ":front"] = await _bake_front(baker, _placed(models, arch, type, model, suffix).body)
+		made[name + ":front"] = await _bake_front(baker, (await _place(models, arch, type, model, suffix)).body)
 		info.front = name + ":front"
 	if spec.has("smoke"):
 		info.smoke = local.call(body.points[1])
@@ -1186,10 +1227,10 @@ func _bake_building(baker, models, arch: String, type: String, model := "", suff
 		baker.set_ground_shadow(true)
 		var op: Dictionary = await baker.bake(spec.open, [Vector3.ZERO])
 		baker.set_ground_shadow(false)
-		made[name + ":open"] = {"img": (op.tex as Texture2D).get_image(), "origin": op.points[0]}
+		made[name + ":open"] = {"img": op.img, "origin": op.points[0]}
 		info.open = name + ":open"
 		if open_fronts > 0:
-			made[name + ":open:front"] = await _bake_front(baker, _placed(models, arch, type, model, suffix).open)
+			made[name + ":open:front"] = await _bake_front(baker, (await _place(models, arch, type, model, suffix)).open)
 			info.open_front = name + ":open:front"
 		await _bake_gate_parts(baker, models, arch, type, model, suffix, name, made, info)
 	if spec.has("arms"):   # a wall: an arm towards each of the eight neighbours (Models.LINKS), and a run for its picture
@@ -1202,14 +1243,14 @@ func _bake_building(baker, models, arch: String, type: String, model := "", suff
 				with_front.append(k)
 		var out: Array = await baker.bake_many(spec.arms + [spec.icon], 2)   # four to a render (a render is most of a bake): the tall curtain overflows a third of the frame
 		for k in spec.arms.size():
-			made["%s:arm%d" % [name, k]] = {"img": (out[k].tex as Texture2D).get_image(), "origin": out[k].points[0]}
+			made["%s:arm%d" % [name, k]] = {"img": out[k].img, "origin": out[k].points[0]}
 			info.arms.append("%s:arm%d" % [name, k])
 			info.arms_front.append("")
-		made[name + ":icon"] = {"img": (out[-1].tex as Texture2D).get_image(), "origin": out[-1].points[0]}
+		made[name + ":icon"] = {"img": out[-1].img, "origin": out[-1].points[0]}
 		info.icon = name + ":icon"
 		baker.set_ground_shadow(false)
 		if not with_front.is_empty():   # the arms' near merlons, alone (no shadow: the arm's bake has it)
-			var again: Dictionary = _placed(models, arch, type, model, suffix)
+			var again: Dictionary = await _place(models, arch, type, model, suffix)
 			var alone := []
 			for k in with_front:
 				front_split(again.arms[k], true)
@@ -1217,7 +1258,7 @@ func _bake_building(baker, models, arch: String, type: String, model := "", suff
 			var fo: Array = await baker.bake_many(alone, 2)
 			for n in with_front.size():
 				var k: int = with_front[n]
-				made["%s:arm%d:front" % [name, k]] = {"img": (fo[n].tex as Texture2D).get_image(), "origin": fo[n].points[0]}
+				made["%s:arm%d:front" % [name, k]] = {"img": fo[n].img, "origin": fo[n].points[0]}
 				info.arms_front[k] = "%s:arm%d:front" % [name, k]
 			for n in again.arms.size():
 				if not n in with_front:
@@ -1226,22 +1267,24 @@ func _bake_building(baker, models, arch: String, type: String, model := "", suff
 			again.icon.free()
 	if spec.has("vane"):
 		var vane: Dictionary = await baker.bake(spec.vane, [Vector3.ZERO, spec.vane_pivot])
-		made[name + ":vane"] = {"img": (vane.tex as Texture2D).get_image(), "origin": vane.points[1]}
+		made[name + ":vane"] = {"img": vane.img, "origin": vane.points[1]}
 		info.vane = name + ":vane"
 		info.vane_at = (vane.points[1] - vane.points[0]) / ART_SCALE
 	info.stages = []
 	baker.set_ground_shadow(true)
 	for st in BUILD_STAGES.size():
-		var part: Dictionary = _placed(models, arch, type, model, suffix)
-		_hold_back(part.body, st, models)
-		for live in ["banner", "vane", "open"]:   # the live parts only go up when it's finished
-			if part.has(live):
-				part[live].free()
-		for n in part.get("arms", []) + ([part.icon] if part.has("icon") else []):   # a wall goes up post first
-			n.free()
+		var part: Dictionary = await BakeClock.build(func():
+			var p := _placed(models, arch, type, model, suffix)
+			_hold_back(p.body, st, models)
+			for live in ["banner", "vane", "open"]:   # the live parts only go up when it's finished
+				if p.has(live):
+					p[live].free()
+			for n in p.get("arms", []) + ([p.icon] if p.has("icon") else []):   # a wall goes up post first
+				n.free()
+			return p)
 		var sb: Dictionary = await baker.bake(part.body, [Vector3.ZERO])
 		var sname := "%s:stage%d" % [name, st]
-		made[sname] = {"img": (sb.tex as Texture2D).get_image(), "origin": sb.points[0]}
+		made[sname] = {"img": sb.img, "origin": sb.points[0]}
 		info.stages.append(sname)
 	baker.set_ground_shadow(false)
 	return {"bakes": made, "info": info}
