@@ -115,6 +115,7 @@ func build(id: String, colours: Dictionary) -> Dictionary:
 		return {"node": glb_file(Mods.glb_parts[base], mod_materials(Mods.glb_parts[base], colours))}
 	var fn := "_" + base.replace(".", "_")
 	if not has_method(fn) and (base.begins_with("leg.beast_") or base.begins_with("head.beast_")):
+		_siege().hold = hold   # (a leg in a walk step: "leg.beast_elephant@w3_8")
 		return _siege().call(fn, colours)   # a war beast's legs and head (siege_models.gd: they share its builders)
 	if not has_method(fn):
 		for e in extra:
