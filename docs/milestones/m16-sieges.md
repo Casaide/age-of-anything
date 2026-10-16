@@ -140,7 +140,10 @@ implications and the questions for Dominic are in `docs/concepts/m16/README.md` 
 - [x] Walls round 2 (Dominic, after seeing the milestone: "the siege towers are too small... walls... a bit buggy and
   overlappy, and not really big enough... less like the classic first-generation look"): research below, the bugs
   found and fixed with a join check (`tests/wall_join_check.gd`), concept round W2 (`docs/concepts/m16/README.md`)
-  - [ ] Dominic's pick of the W2 direction (A thick, B tall, C per culture), then the sim and art build
+  - [x] Dominic's pick of the W2 direction: B, tall, built at 80% (D-130, walls round 3, 2026-10-14)
+- [x] A wall along y had its near merlons on its far edge (Dominic, from the Deck, 2026-10-16: "one side with protection
+  and one without, and our guys overlap it"): the near-merlon layer was drawn as a centred sprite; fixed, and the
+  join check now checks the game's own sprites; a man's shadow up on a wall shrinks to the walk
 - [x] Siege and Fortress fill the gap (Dominic: "just in siege mode we fill the gap"): every side can build and repair
   walls, gates, wall towers and ladders in those modes whatever its race lacks (`lift_lacks`)
 - [ ] Archive: pictures taken along the way (430-432, 455-456, 560-568 on 2026-10-13), journal, decisions, timeline (left to the main session)

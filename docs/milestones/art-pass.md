@@ -1,6 +1,7 @@
 # Art pass (parallel)
 
-**Status:** in progress (started 2026-10-11): step 1, the style sampler
+**Status:** superseded (noted 2026-10-16): the direction was chosen and its vertical slice done (milestones README);
+the look was then built through milestones 5 and 11 as 3D parts baked to pixel sprites (`../rendering.md`). Kept for its history
 **Exit criterion:** 200 units at 60 fps; draw calls verified; Frogs vs Rats fully in the chosen
 style.
 

@@ -149,15 +149,27 @@ Each milestone has its own file in `milestones/` (plan, checklist, results); thi
 | [0](milestones/m0-race-generation.md) | done | **Race generation:** data contract, generator, pricing, composer, Race Lab, tests | Prompts give stable, readable armies; tests pass |
 | [1](milestones/m1-sim-core.md) | done | **Sim core:** fixed tick, integer maths, command queue, replay record/playback, state hash, determinism test | The same scripted 10-minute replay gives identical hashes (met: 400/400 checkpoints; 200-unit tick 0.9 ms avg) |
 | [2](milestones/m2-map-movement.md) | done | **Map + movement:** JSON map + generated isometric TileMapLayer, flow fields, separation, camera pan/zoom, selection, box select, move | 50 units cross the map in groups with no stuck units (met: open map and chokepoint) |
-| [3](milestones/m3-economy.md) | built | **Economy:** gather/carry/drop-off, Food/Wood, TC trains workers, Houses/pop, build placement + construction | The opening economy is fun to watch for 3 minutes |
-| [4](milestones/m4-combat.md) | 1 | **Combat:** attack/armour/HP, counter tags, projectiles, deaths, unit card | Blind testers predict counters from silhouettes |
-| [5](milestones/m5-art-rework.md) | 1 | **Art rework:** realistic props and terrain, prop variety, resource and build stages, gear for armless creatures, UI pass (queue, generated icons, cursors), animation pass, the old art gone from every scene | Dominic signs off the look in the game view and the Race Lab |
-| [6](milestones/m6-foundations.md) | 1 | **Foundations:** resources from data (stone from rock outcrops), movement classes (ground, amphibious, flying), placement rules per race and building, teams, data-driven ages and tech, per-race farms | Stone is mined, flyers cross water, frogs farm the swamp, all from data; the tests prove it |
-| [7](milestones/m7-progression.md) | 1 | **Progression:** Barracks, age-up, Sharp Sticks research, tier-2 units, Watchtower, fixed-point cost table | Age-up lands at minutes 4-6 |
-| [8](milestones/m8-ai-match-flow.md) | 1 | **AI + match flow:** build order, waves, tag-aware counter-picking, race select screen, win/lose | AI beats a passive player and loses to a decent one |
-| [9](milestones/m9-fog-juice.md) | 1 | **Fog + juice:** fog, minimap, SFX, hit flash, death poses, tuning | A full match runs 9-12 minutes |
-| [10](milestones/m10-playtest-balance.md) | 1 | **Playtest + balance:** 5-10 people, balance pass, itch.io build | Success metrics below |
-| [11](milestones/m11-cleanup.md) | 1-2 | **Cleanup:** UI, UX, SFX and art polish from playing; a real lobby; more buildings | Deep review of UI, UX and art |
+| [3](milestones/m3-economy.md) | done | **Economy:** gather/carry/drop-off, Food/Wood, TC trains workers, Houses/pop, build placement + construction | The opening economy is fun to watch for 3 minutes |
+| [4](milestones/m4-combat.md) | done | **Combat:** attack/armour/HP, counter tags, projectiles, deaths, unit card | Blind testers predict counters from silhouettes |
+| [5](milestones/m5-art-rework.md) | built (sign-off) | **Art rework:** realistic props and terrain, prop variety, resource and build stages, gear for armless creatures, UI pass (queue, generated icons, cursors), animation pass, the old art gone from every scene | Dominic signs off the look in the game view and the Race Lab |
+| [6](milestones/m6-foundations.md) | done | **Foundations:** resources from data (stone from rock outcrops), movement classes (ground, amphibious, flying), placement rules per race and building, teams, data-driven ages and tech, per-race farms | Stone is mined, flyers cross water, frogs farm the swamp, all from data; the tests prove it |
+| [7](milestones/m7-progression.md) | done | **Progression:** Barracks, age-up, Sharp Sticks research, tier-2 units, Watchtower, fixed-point cost table | Age-up lands at minutes 4-6 |
+| [8](milestones/m8-ai-match-flow.md) | closed | **AI + match flow:** build order, waves, tag-aware counter-picking, race select screen, win/lose | AI beats a passive player and loses to a decent one |
+| [9](milestones/m9-fog-juice.md) | done | **Fog + juice:** fog, minimap, SFX, hit flash, death poses, tuning | A full match runs 9-12 minutes |
+| [10](milestones/m10-playtest-balance.md) | closed | **Playtest + balance:** 5-10 people, balance pass, itch.io build | Success metrics below |
+| [11](milestones/m11-cleanup.md) | done | **Cleanup:** UI, UX, SFX and art polish from playing; a real lobby; more buildings | Deep review of UI, UX and art |
+| [12](milestones/m12-tech-tree.md) | closed for now | **The full land tech tree:** three ages, walls, gates, towers, castle, research as data, the tech tree page | The page shows the whole land tree; every building stands |
+| [13](milestones/m13-unit-lines.md) | in progress | **Unit lines:** swordsman, scout, mounted archer, siege engines, unique units, sapper, great sling, healers, trade carts, war beasts; costs by material | Every line trains, fights by its counters, the AI uses it; no line 20% off at equal cost |
+| [14](milestones/m14-race-identity.md) | in progress | **Race identity and heroes:** bonuses, own research, lacks, abilities, heroes | Every creature and culture plays differently, balanced |
+| [15](milestones/m15-maps.md) | closed for now | **Maps and land:** big maps, high ground, bridges, fords | New maps play well with the bots |
+| [16](milestones/m16-sieges.md) | in progress | **Sieges:** walkable walls, gatehouses, rams, ladders, siege towers, Fortress and Siege modes | A full siege plays out |
+| [17](milestones/m17-living-towns.md) | done | **Living towns:** idle chores, damage states, piles | "Living town is good" |
+| [18](milestones/m18-match-rules.md) | planned | **Match rules:** a rules contract, lobby card, post-game stats | |
+| [19](milestones/m19-ui.md) | in progress | **UI that feels like the game:** theme, loaders, lobby, HUD, tech tree, portraits | Every screen looks designed |
+| [20](milestones/m20-steam-deck.md) | in progress | **Steam Deck and controllers:** pad controls, Deck builds, handheld UI, performance | A full match on the Deck with a pad |
+| [21](milestones/m21-modability.md) | in progress | **Modability:** a mod loader, an example mod, agent tooling | A mod installed on a second machine plays the same race |
+| [22](milestones/m22-battle-feel.md) | planned | **Battle feel:** formations by role, counter-aware targeting, attack lines, a Norse shield wall | Groups line up by role; counters seek their prey; fights read |
+| [-](milestones/save-load.md) | built | **Save and load:** snapshots that survive updates | Tried on the Deck |
 | [-](milestones/art-pass.md) | (parallel) | **Art pass:** atlas + palette shader replaces vector shapes; classic 2D isometric RTS look | 200 units at 60 fps; draw calls verified |
 | [-](milestones/art-ui-track.md) | (parallel) | **Art and UI track:** stage A1 is milestone 5; A2-A5 run alongside milestones 7-10 (props, UI, icons, cursors, animation, new buildings, menus, juice) | Each stage done before its milestone closes |
 | [-](milestones/networking.md) | +2-3 | **Networking:** see `backlog.md` | Two machines on different NATs finish a match with no desync |

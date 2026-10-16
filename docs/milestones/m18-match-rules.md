@@ -50,6 +50,6 @@ animals). Match rules are more of the same: switches on a rules file, picked in 
 - [ ] 1. Rules contract
 - [ ] 2. Lobby card
 - [ ] 3. The first rules
-- [ ] 4. Save and load (snapshot + command log, slots, autosave, versioned, tested to resume exactly)
+- [x] 4. Save and load: built on its own (2026-10-16, `save-load.md`: snapshots of the world and the bots, D-140 to D-142)
 - [ ] 5. Post-game stats (recorder, end screen with graphs and the match's timeline)
 - [ ] Archive: pictures taken along the way, journal, decisions, timeline
