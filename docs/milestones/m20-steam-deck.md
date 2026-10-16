@@ -210,6 +210,11 @@ pages (closed on Civilian without choosing, it used to stay there).
   LB's one kind, the pause menu's focus). Not yet felt with a real pad in hand: Dominic's first go is the real check.
   The mouse game is unchanged (the panel, cursors and keys only change while the pad is in use).
 
+- **2026-10-16, white boxes on a second match** (Dominic, on the Deck): every race ever baked stayed in the part
+  atlas, so after a few lobbies and matches it outgrew the GPU's 16384 px and drew white. A match now keeps only its
+  own parts (`ArtKit._keep_parts`), the atlas is 4096 wide (3300 to 5600 px tall a match), and `build_atlas` asserts
+  at the limit. Checked on desktop with three rematches in a row; not yet on the Deck.
+
 ## Changes from the original plan
 
 ## Links

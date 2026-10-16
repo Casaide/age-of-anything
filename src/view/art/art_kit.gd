@@ -99,6 +99,7 @@ func prepare(races: Array, teams: Array) -> void:
 	var rest_ids: Array = _props_jobs() + _building_jobs(races)
 	track = unit_ids + rest_ids
 	var rendered := _count_cold(track)
+	_keep_parts(unit_ids)
 	_ask(unit_ids, true)
 	await _await_jobs(unit_ids)   # the armies first, on their own (a loader stands them up)
 	_ask(rest_ids, true)
@@ -134,6 +135,28 @@ func warm(races: Array, teams := []) -> void:
 	_warm_gen += 1
 	if not teams.is_empty():
 		_warm_icons(races, teams, unit_ids, _warm_gen)
+
+
+## Only these part jobs' sprites (and the shadow) stay in PartShape.baked: a match's atlas holds
+## its own races. Everything ever baked used to stay (every race the lobby rolled, every match
+## before), and on a second match on the Deck one atlas of it all outgrew the largest texture
+## the GPU takes: every unit, building and prop drew as a white box. A dropped part that's asked
+## for again loads from the bake cache.
+func _keep_parts(ids: Array) -> void:
+	var keep := {PartShape.bake_key("unit_shadow", UnitView.SHADOW_SHAPES, PartShape.team_neutral(UnitView.SHADOW_COLOURS)): true}
+	for id in ids:
+		keep[id.get_slice("|", 1)] = true
+	for k in PartShape.baked.keys():
+		if not keep.has(k.get_slice("#", 0)):
+			PartShape.baked.erase(k)
+			_dirty = true
+	for id in _jobs:
+		var j: Dictionary = _jobs[id]
+		if id.begins_with("part|") and j.done and not keep.has(id.get_slice("|", 1)):
+			var cached := BakeCache.has(id)
+			j.done = false
+			j.kind = "load" if cached else "part"
+			j.weight = 0.2 if cached else 1.0
 
 
 ## Stop the warm-up: its pending jobs leave the queue (those under way finish; anything asked for
