@@ -6,6 +6,7 @@
   "noun": "Frog",
   "cut": ["legs"],
   "points": 3,
+  "cost_mix": {"food": 100},
   "tags": [
    "amphibious",
    "infantry"
@@ -96,6 +97,7 @@
   "cut": ["legs"],
   "noun": "Rat",
   "points": 2,
+  "cost_mix": {"food": 100},
   "price_points": 3,
   "tags": [
    "infantry",
@@ -207,6 +209,7 @@
   "slot": "body",
   "noun": "Folk",
   "points": 3,
+  "cost_mix": {"food": 100},
   "tags": [
    "infantry"
   ],
@@ -293,6 +296,7 @@
   "cut": ["legs"],
   "noun": "Spider",
   "points": 6,
+  "cost_mix": {"food": 100},
   "price_points": 7,
   "rider_loses": [
    "infantry"
@@ -391,6 +395,7 @@
   "cut": ["legs"],
   "noun": "Beetle",
   "points": 5,
+  "cost_mix": {"food": 100},
   "tags": [
    "insect",
    "armoured",
@@ -513,6 +518,7 @@
   "cut": ["legs", "head"],
   "noun": "Beetle",
   "points": 12,
+  "cost_mix": {"food": 100},
   "price_points": 15,
   "rider_loses": [
    "infantry"
@@ -660,6 +666,7 @@
   "noun": "Capybara",
   "cut": ["legs", "head"],
   "points": 10,
+  "cost_mix": {"food": 100},
   "price_points": 13,
   "rider_loses": [
    "infantry"
@@ -872,6 +879,7 @@
   "slot": "body",
   "noun": "Hummingbird",
   "points": 9,
+  "cost_mix": {"food": 100},
   "price_points": 12,
   "rider_loses": [
    "infantry"
@@ -1035,6 +1043,7 @@
    "hp": -2
   },
   "points": 4,
+  "cost_mix": {"food": 100},
   "innate": true,
   "blur": 55,
   "shapes": [
@@ -1144,6 +1153,7 @@
   "noun": "Pony",
   "cut": ["legs", "head"],
   "points": 9,
+  "cost_mix": {"food": 100},
   "price_points": 12,
   "rider_loses": [
    "infantry"
@@ -1302,7 +1312,7 @@
   "cut": ["legs"],
   "points": 9,
   "price_points": 11,
-  "cost_mix": {"food": 50, "wood": 50},
+  "cost_mix": {"food": 100},
   "large": false,
   "large_note": "a centaur is one body, not a rider on a big beast: mounted (cavalry, quick), but not large (one place in a house, and spears' bonus against large beasts doesn't reach it)",
   "cost_mix_note": "a centaur's horse half is its own body, priced like a body (half food, half wood), not a ridden mount that eats (70/30)",
@@ -1616,6 +1626,7 @@
   "noun": "Newt",
   "cut": ["legs", "head"],
   "points": 11,
+  "cost_mix": {"food": 100},
   "price_points": 15,
   "rider_loses": [
    "infantry"
@@ -2380,10 +2391,7 @@
    }
   },
   "points": 3,
-  "cost_mix": {
-   "food": 40,
-   "wood": 60
-  },
+  "cost_mix": {"food": 20, "wood": 80},
   "tier": 1
  },
  {
@@ -2438,10 +2446,7 @@
    }
   },
   "points": 3,
-  "cost_mix": {
-   "food": 40,
-   "wood": 60
-  },
+  "cost_mix": {"food": 20, "wood": 80},
   "tier": 1,
   "note": "a fire-hardened wooden spear: everyone's first spear"
  },
@@ -2504,10 +2509,7 @@
    "bronze",
    "medieval"
   ],
-  "cost_mix": {
-   "food": 40,
-   "wood": 60
-  },
+  "cost_mix": {"wood": 80, "gold": 20},
   "tier": 2
  },
  {
@@ -2570,10 +2572,7 @@
    "gunpowder"
   ],
   "two_handed": true,
-  "cost_mix": {
-   "food": 40,
-   "wood": 60
-  },
+  "cost_mix": {"wood": 70, "gold": 30},
   "tier": 3
  },
  {
@@ -2618,10 +2617,7 @@
    }
   },
   "points": 3,
-  "cost_mix": {
-   "food": 40,
-   "wood": 60
-  },
+  "cost_mix": {"food": 40, "wood": 60},
   "tier": 1
  },
  {
@@ -2674,10 +2670,7 @@
   "era": [
    "bronze"
   ],
-  "cost_mix": {
-   "food": 40,
-   "wood": 60
-  },
+  "cost_mix": {"wood": 20, "gold": 80},
   "tier": 2
  },
  {
@@ -2732,10 +2725,7 @@
    "medieval",
    "gunpowder"
   ],
-  "cost_mix": {
-   "food": 40,
-   "wood": 60
-  },
+  "cost_mix": {"wood": 20, "gold": 80},
   "tier": 3
  },
  {
@@ -2819,10 +2809,7 @@
   "points": 6,
   "price_points": 10,
   "two_handed": true,
-  "cost_mix": {
-   "food": 80,
-   "wood": 20
-  },
+  "cost_mix": {"food": 80, "wood": 20},
   "tier": 1
  },
  {
@@ -2881,10 +2868,7 @@
    "medieval",
    "gunpowder"
   ],
-  "cost_mix": {
-   "food": 40,
-   "wood": 60
-  },
+  "cost_mix": {"wood": 80, "gold": 20},
   "tier": 2
  },
  {
@@ -2941,10 +2925,7 @@
    }
   },
   "points": 3,
-  "cost_mix": {
-   "food": 40,
-   "wood": 60
-  },
+  "cost_mix": {"food": 60, "wood": 40},
   "tier": 1
  },
  {
@@ -3001,10 +2982,7 @@
   },
   "points": 4,
   "two_handed": true,
-  "cost_mix": {
-   "food": 40,
-   "wood": 60
-  },
+  "cost_mix": {"food": 20, "wood": 80},
   "tier": 1
  },
  {
@@ -3071,10 +3049,7 @@
   },
   "points": 3,
   "two_handed": true,
-  "cost_mix": {
-   "food": 40,
-   "wood": 60
-  },
+  "cost_mix": {"wood": 60, "gold": 40},
   "tier": 1
  },
  {
@@ -3142,10 +3117,7 @@
    "gunpowder"
   ],
   "two_handed": true,
-  "cost_mix": {
-   "food": 40,
-   "wood": 60
-  },
+  "cost_mix": {"wood": 50, "gold": 50},
   "tier": 2
  },
  {
@@ -3200,10 +3172,7 @@
    "gunpowder"
   ],
   "two_handed": true,
-  "cost_mix": {
-   "food": 40,
-   "wood": 60
-  },
+  "cost_mix": {"wood": 30, "gold": 70},
   "tier": 3
  },
  {
@@ -3789,6 +3758,7 @@
    }
   },
   "points": 2,
+  "cost_mix": {"food": 100},
   "shapes": [
    {
     "t": "ellipse",
@@ -3837,6 +3807,7 @@
    }
   },
   "points": 3,
+  "cost_mix": {"food": 40, "wood": 60},
   "shapes": [
    {
     "t": "circle",
@@ -3875,6 +3846,7 @@
    }
   },
   "points": 2,
+  "cost_mix": {"wood": 100},
   "shapes": [
    {
     "t": "circle",
@@ -3914,6 +3886,7 @@
    "speed": -1
   },
   "points": 3,
+  "cost_mix": {"wood": 50, "gold": 50},
   "era": [
    "medieval",
    "gunpowder"
@@ -3984,6 +3957,7 @@
    }
   },
   "points": 1,
+  "cost_mix": {"food": 100},
   "shapes": [
    {
     "t": "ellipse",
@@ -4029,6 +4003,7 @@
    }
   },
   "points": 1,
+  "cost_mix": {"food": 100},
   "shapes": [
    {
     "t": "ellipse",
@@ -4060,6 +4035,7 @@
    }
   },
   "points": 2,
+  "cost_mix": {"gold": 100},
   "era": [
    "bronze"
   ],
@@ -4129,6 +4105,7 @@
    }
   },
   "points": 3,
+  "cost_mix": {"gold": 100},
   "era": [
    "medieval",
    "gunpowder"
@@ -4193,6 +4170,7 @@
    }
   },
   "points": 6,
+  "cost_mix": {"gold": 100},
   "era": [
    "medieval",
    "gunpowder"
@@ -4244,6 +4222,7 @@
    }
   },
   "points": 1,
+  "cost_mix": {"food": 100},
   "shapes": [
    {
     "t": "ellipse",
@@ -4276,6 +4255,7 @@
    }
   },
   "points": 2,
+  "cost_mix": {"wood": 50, "gold": 50},
   "shapes": [
    {
     "t": "ellipse",
@@ -4309,6 +4289,7 @@
    }
   },
   "points": 3,
+  "cost_mix": {"gold": 100},
   "shapes": [
    {
     "t": "ellipse",
@@ -4344,6 +4325,7 @@
    "speed": -1
   },
   "points": 3,
+  "cost_mix": {"wood": 50, "gold": 50},
   "shapes": [
    {
     "t": "ellipse",
@@ -4379,6 +4361,7 @@
    "speed": -1
   },
   "points": 3,
+  "cost_mix": {"wood": 50, "gold": 50},
   "shapes": [
    {
     "t": "ellipse",
@@ -4413,6 +4396,7 @@
    "speed": -1
   },
   "points": 3,
+  "cost_mix": {"wood": 50, "gold": 50},
   "shapes": [
    {
     "t": "poly",
@@ -4464,6 +4448,7 @@
    }
   },
   "points": 2,
+  "cost_mix": {"gold": 100},
   "shapes": [
    {
     "t": "line",
@@ -4544,6 +4529,7 @@
   ],
   "stats": {},
   "points": 1,
+  "cost_mix": {"food": 100},
   "shapes": [
    {
     "t": "poly",
@@ -4581,6 +4567,7 @@
    }
   },
   "points": 1,
+  "cost_mix": {"food": 100},
   "shapes": [
    {
     "t": "ellipse",
@@ -4613,6 +4600,7 @@
    "speed": -1
   },
   "points": 3,
+  "cost_mix": {"gold": 100},
   "era": [
    "bronze"
   ],
@@ -4665,6 +4653,7 @@
    "speed": -1
   },
   "points": 3,
+  "cost_mix": {"gold": 100},
   "era": [
    "medieval",
    "gunpowder"
@@ -4733,6 +4722,7 @@
    }
   },
   "points": 2,
+  "cost_mix": {"wood": 100},
   "shapes": [
    {
     "t": "ellipse",
@@ -4796,6 +4786,7 @@
    }
   },
   "points": 1,
+  "cost_mix": {"food": 100},
   "shapes": [
    {
     "t": "poly",
@@ -4834,6 +4825,7 @@
   ],
   "stats": {},
   "points": 1,
+  "cost_mix": {"food": 100},
   "shapes": [
    {
     "t": "poly",
@@ -4872,6 +4864,7 @@
    "attack": 1
   },
   "points": 2,
+  "cost_mix": {"food": 50, "wood": 50},
   "shapes": [
    {
     "t": "line",
@@ -4920,6 +4913,7 @@
    "range": 1
   },
   "points": 1,
+  "cost_mix": {"wood": 100},
   "requires_role": "archer",
   "shapes": [
    {
@@ -5026,10 +5020,7 @@
    "bronze",
    "medieval"
   ],
-  "cost_mix": {
-   "food": 40,
-   "wood": 60
-  },
+  "cost_mix": {"wood": 20, "gold": 80},
   "tier": 2
  },
  {
@@ -5089,10 +5080,7 @@
    "bronze",
    "medieval"
   ],
-  "cost_mix": {
-   "food": 40,
-   "wood": 60
-  },
+  "cost_mix": {"wood": 70, "gold": 30},
   "tier": 2
  },
  {
@@ -5155,10 +5143,7 @@
    "bronze",
    "medieval"
   ],
-  "cost_mix": {
-   "food": 40,
-   "wood": 60
-  },
+  "cost_mix": {"wood": 60, "gold": 40},
   "tier": 1
  },
  {
@@ -5177,6 +5162,7 @@
    "speed": -1
   },
   "points": 3,
+  "cost_mix": {"wood": 50, "gold": 50},
   "era": [
    "bronze",
    "medieval"
@@ -5232,6 +5218,7 @@
    }
   },
   "points": 3,
+  "cost_mix": {"wood": 40, "gold": 60},
   "era": [
    "bronze",
    "medieval"
@@ -5274,6 +5261,7 @@
    }
   },
   "points": 2,
+  "cost_mix": {"gold": 100},
   "era": [
    "bronze",
    "medieval"
@@ -5343,6 +5331,7 @@
    }
   },
   "points": 2,
+  "cost_mix": {"gold": 100},
   "era": [
    "bronze",
    "medieval"
@@ -5421,6 +5410,7 @@
    "speed": -1
   },
   "points": 3,
+  "cost_mix": {"gold": 100},
   "era": [
    "bronze",
    "medieval"
@@ -5502,6 +5492,7 @@
    "hp": -4
   },
   "points": 4,
+  "cost_mix": {"food": 100},
   "shapes": [
    {
     "t": "poly",
@@ -5605,6 +5596,7 @@
    "hp": -4
   },
   "points": 4,
+  "cost_mix": {"food": 100},
   "shapes": [
    {
     "t": "poly",
@@ -6448,6 +6440,7 @@
    }
   },
   "points": 1,
+  "cost_mix": {"food": 100},
   "tier": 1,
   "note": "a linen head bag, gathered behind"
  },
@@ -6479,6 +6472,7 @@
    }
   },
   "points": 2,
+  "cost_mix": {"food": 100},
   "tier": 2,
   "note": "a striped headcloth, lappets on the shoulders"
  },
@@ -6510,6 +6504,7 @@
    }
   },
   "points": 3,
+  "cost_mix": {"gold": 100},
   "tier": 3,
   "note": "a bronze helmet, a ridge and cheek guards"
  },
@@ -6542,6 +6537,7 @@
    }
   },
   "points": 1,
+  "cost_mix": {"food": 100},
   "tier": 1,
   "note": "the hair in a topknot with a band"
  },
@@ -6573,6 +6569,7 @@
    }
   },
   "points": 2,
+  "cost_mix": {"food": 100},
   "tier": 2,
   "note": "a stiff black cap with two tails"
  },
@@ -6604,6 +6601,7 @@
    }
   },
   "points": 3,
+  "cost_mix": {"gold": 100},
   "tier": 3,
   "note": "a pointed lamellar helmet with a red tassel"
  },
@@ -6636,6 +6634,7 @@
    }
   },
   "points": 1,
+  "cost_mix": {"food": 100},
   "tier": 1,
   "note": "a headband and one feather"
  },
@@ -6667,6 +6666,7 @@
    }
   },
   "points": 2,
+  "cost_mix": {"food": 100},
   "tier": 2,
   "note": "a quilted cotton cap with a feather crest"
  },
@@ -6700,6 +6700,7 @@
    }
   },
   "points": 3,
+  "cost_mix": {"food": 50, "gold": 50},
   "tier": 3,
   "note": "an eagle helmet, the beak over the brow"
  },
@@ -6737,6 +6738,7 @@
    }
   },
   "points": 2,
+  "cost_mix": {"food": 100},
   "tier": 1,
   "note": "tall, round-topped, cowhide on a team rim"
  },
@@ -6774,6 +6776,7 @@
    }
   },
   "points": 2,
+  "cost_mix": {"wood": 100},
   "tier": 1,
   "note": "lacquered red with a black border, a pointed top"
  },
@@ -6811,6 +6814,7 @@
    }
   },
   "points": 2,
+  "cost_mix": {"food": 50, "wood": 50},
   "tier": 1,
   "note": "round, team-coloured, a fringe of feathers"
  },
@@ -6866,10 +6870,7 @@
    }
   },
   "points": 3,
-  "cost_mix": {
-   "food": 40,
-   "wood": 60
-  },
+  "cost_mix": {"food": 20, "wood": 80},
   "tier": 1,
   "note": "a halberd: a spear with a crescent side blade",
   "favour": 5,
@@ -6920,10 +6921,7 @@
    "attack": 7
   },
   "points": 5,
-  "cost_mix": {
-   "food": 40,
-   "wood": 60
-  },
+  "cost_mix": {"wood": 20, "gold": 80},
   "tier": 2,
   "requires_role": [
    "large",
@@ -6978,10 +6976,7 @@
    "attack": 7
   },
   "points": 5,
-  "cost_mix": {
-   "food": 40,
-   "wood": 60
-  },
+  "cost_mix": {"wood": 50, "gold": 50},
   "tier": 2,
   "requires_role": [
    "large",
@@ -7044,10 +7039,7 @@
    }
   },
   "points": 4,
-  "cost_mix": {
-   "food": 40,
-   "wood": 60
-  },
+  "cost_mix": {"wood": 80, "gold": 20},
   "tier": 2,
   "note": "a halberd with a bronze head",
   "favour": 5,
@@ -7108,10 +7100,7 @@
    "speed": -1
   },
   "points": 6,
-  "cost_mix": {
-   "food": 40,
-   "wood": 60
-  },
+  "cost_mix": {"wood": 70, "gold": 30},
   "tier": 3,
   "note": "an iron halberd, longer in the shaft",
   "favour": 5,
@@ -9473,10 +9462,7 @@
   },
   "points": 6,
   "price_points": 8,
-  "cost_mix": {
-   "food": 40,
-   "wood": 60
-  },
+  "cost_mix": {"wood": 20, "gold": 80},
   "tier": 3,
   "requires_role": [
    "infantry"
@@ -9531,10 +9517,7 @@
   },
   "points": 6,
   "price_points": 8,
-  "cost_mix": {
-   "food": 40,
-   "wood": 60
-  },
+  "cost_mix": {"wood": 20, "gold": 80},
   "tier": 3,
   "requires_role": [
    "infantry"
@@ -9591,10 +9574,7 @@
   },
   "points": 6,
   "price_points": 8,
-  "cost_mix": {
-   "food": 40,
-   "wood": 60
-  },
+  "cost_mix": {"wood": 20, "gold": 80},
   "tier": 3,
   "requires_role": [
    "infantry"
@@ -9651,10 +9631,7 @@
   },
   "points": 6,
   "price_points": 8,
-  "cost_mix": {
-   "food": 40,
-   "wood": 60
-  },
+  "cost_mix": {"wood": 20, "gold": 80},
   "tier": 3,
   "requires_role": [
    "infantry"
@@ -9711,10 +9688,7 @@
   },
   "points": 6,
   "price_points": 8,
-  "cost_mix": {
-   "food": 40,
-   "wood": 60
-  },
+  "cost_mix": {"food": 40, "wood": 60},
   "tier": 3,
   "requires_role": [
    "infantry"
@@ -9772,10 +9746,7 @@
   },
   "points": 6,
   "price_points": 8,
-  "cost_mix": {
-   "food": 40,
-   "wood": 60
-  },
+  "cost_mix": {"food": 50, "gold": 50},
   "tier": 3,
   "requires_role": [
    "infantry"
@@ -9832,10 +9803,7 @@
   },
   "points": 6,
   "price_points": 8,
-  "cost_mix": {
-   "food": 40,
-   "wood": 60
-  },
+  "cost_mix": {"wood": 20, "gold": 80},
   "tier": 3,
   "requires_role": [
    "infantry"
@@ -9861,6 +9829,7 @@
    }
   },
   "points": 3,
+  "cost_mix": {"gold": 100},
   "shapes": [
    {
     "t": "line",
@@ -9932,6 +9901,7 @@
    }
   },
   "points": 3,
+  "cost_mix": {"gold": 100},
   "shapes": [
    {
     "t": "poly",
@@ -9991,6 +9961,7 @@
   "noun": "Cat",
   "cut": ["legs", "head"],
   "points": 10,
+  "cost_mix": {"food": 100},
   "price_points": 12,
   "rider_loses": [
    "infantry"

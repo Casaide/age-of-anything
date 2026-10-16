@@ -7,15 +7,15 @@
     "wood": 55
    },
    "2": {
-    "food": 40,
-    "wood": 35,
-    "gold": 15,
+    "food": 35,
+    "wood": 30,
+    "gold": 25,
     "stone": 10
    },
    "3": {
-    "food": 40,
-    "wood": 25,
-    "gold": 15,
+    "food": 35,
+    "wood": 20,
+    "gold": 25,
     "stone": 20
    }
   },
