@@ -107,3 +107,4 @@ One line per moment worth remembering. Newest at the bottom.
 - **2026-10-16:** A loaded save plays on with this build's stats, units keeping their share of health; one whose buildings or research changed loads on its own (D-142, Dominic).
 - **2026-10-16:** The bake stops freezing the screen (D-143): budgeted per frame, image work on threads, async readbacks; a cold match bake's median frame 75 ms -> 8 ms.
 - **2026-10-16:** A wall running along y had its near merlons drawn on its far edge (a centred sprite); fixed, and a man's shadow up on a wall shrinks to the walk.
+- **2026-10-16:** Unit costs follow their gear's material (D-144): spears food and wood, swords food and gold; portrait concepts (bust, badge) for Dominic.

@@ -906,3 +906,14 @@ game hung. A body a part is cut by is built once per baker and copied after (a w
 A slow frame only counts as "hidden" after three in a row that kept to the small budget (one GPU hiccup, or a frame
 slowed by the bake's own work, flipped it before and made the next frame half a second long). Portraits are posed once
 at their seeded time (they posed a frame or two on, so a portrait changed with how long those frames took).
+
+**D-144, 2026-10-16: A unit's cost mix comes from what its gear is made of.** Dominic: "different unit lines have
+resource differences. I think spears cost some wood and less food, swords only food or food and gold", as the
+genre does. Every soldier cost about half food, half wood (28 weapons shared one 40/60 mix; bodies and armour fell
+back to 50/50). Now each part's `cost_mix` (data/parts.json) follows its material, and a unit's mix is its parts'
+weighted by points, as before (Claude's table): a creature's body and mount eat (food); a wooden shaft, bow, club or
+shield is wood; a metal blade, helmet or armour is gold (a metal spearhead or lance mostly wood, so the spear line
+stays the cheap counter); cloth, leather and leaves are food. Totals don't change, only the split. No age-1 gear
+carries gold (bots mine none before age 2; the rats' thimble and bottle-cap shield are scrap, not metal). The bots'
+gold share in ages 2 and 3 goes from 15 to 25 percent (data/ai.json). A spear is now 40-50F 25-45W in age 1; an
+age-2 swordsman 60F 25W 80G; an archer wood and gold with a little food for the body.
