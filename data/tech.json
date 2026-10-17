@@ -1112,6 +1112,31 @@
    ]
   },
   {
+   "id": "berserkergang",
+   "name": "Berserkergang",
+   "desc": "The battle-fury: infantry +2 attack.",
+   "cost": {
+    "food": 200,
+    "gold": 150
+   },
+   "time": 50,
+   "building": "castle",
+   "age": 3,
+   "own": "culture",
+   "icon": "culture_research",
+   "effects": [
+    {
+     "tag": "infantry",
+     "not": [
+      "worker",
+      "heal"
+     ],
+     "stat": "attack",
+     "add": 2
+    }
+   ]
+  },
+  {
    "id": "bog_poultice",
    "name": "Bog Poultice",
    "desc": "Moss and mud on every wound: healers heal 30% more.",

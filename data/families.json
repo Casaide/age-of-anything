@@ -1141,5 +1141,137 @@
   "war_beast": "elephant",
   "pour": "hot ash",
   "unique": "obsidian"
+ },
+ "norse": {
+  "skins": [
+   "human_light"
+  ],
+  "cloth": [
+   "#2e4a6e",
+   "#8a3424"
+  ],
+  "mounts": [
+   "pony"
+  ],
+  "adjective": "Norse",
+  "bonuses": [
+   {
+    "text": "Plunder: every kill brings in 3 gold",
+    "effects": [
+     {
+      "tag": "all",
+      "not": [
+       "worker"
+      ],
+      "stat": "kill_gold",
+      "add": 3
+     }
+    ],
+    "alt": {
+     "text": "Raiders: foot soldiers +3 attack against buildings",
+     "effects": [
+      {
+       "tag": "melee",
+       "not": [
+        "mounted",
+        "worker"
+       ],
+       "stat": "bonus.building",
+       "add": 3
+      }
+     ],
+     "price_points": 1
+    }
+   },
+   {
+    "text": "Linden shields: shield-bearers +1 pierce armour",
+    "effects": [
+     {
+      "tag": "shield",
+      "stat": "armour.pierce",
+      "add": 1
+     }
+    ],
+    "price_points": 1,
+    "alt": {
+     "text": "Linden shields: shield-bearers +5 hit points",
+     "effects": [
+      {
+       "tag": "shield",
+       "stat": "hp",
+       "add": 5
+      }
+     ],
+     "price_points": 1
+    }
+   },
+   {
+    "text": "Seafarers: no slowdown in shallows or fords (allies' too)",
+    "kind": "terrain",
+    "team": true,
+    "effects": [
+     {
+      "tag": "all",
+      "stat": "wade",
+      "add": 1
+     }
+    ],
+    "alt": {
+     "text": "Longhouses: Houses 25% cheaper (allies' too)",
+     "effects": [
+      {
+       "building": "house",
+       "stat": "cost",
+       "pct": -25
+      }
+     ]
+    }
+   }
+  ],
+  "research": [
+   "berserkergang"
+  ],
+  "lacks": [
+   "line.archer.3"
+  ],
+  "prefixes": [
+   "Fjord",
+   "Raven",
+   "Frost",
+   "Storm"
+  ],
+  "suffixes": [
+   " Jarldom",
+   "-Raiders",
+   " Host",
+   " Shieldfolk"
+  ],
+  "paths": {
+   "style": "boardwalk",
+   "width": 0.38
+  },
+  "architecture": "thatch",
+  "ranks": [
+   "Blooded",
+   "Saga"
+  ],
+  "ui": {
+   "frame": "iron",
+   "frame_colour": "#6a6e72",
+   "panel": "wood",
+   "colour": "#2a3038",
+   "button": "wood",
+   "button_colour": "#3c4450",
+   "primary": "felt",
+   "primary_colour": "#8a3424",
+   "accent": "#9cc8e8",
+   "metal": "#b8bcc0",
+   "ornament": "longship",
+   "banner": "scalloped"
+  },
+  "siege": "timber",
+  "war_beast": "boar",
+  "pour": "boiling pitch",
+  "unique": "berserker"
  }
 }

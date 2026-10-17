@@ -53,6 +53,10 @@
   "spooky": [
    "sewer",
    "royal"
+  ],
+  "norse": [
+   "steppe",
+   "royal"
   ]
  },
  "hero_names": {
@@ -279,6 +283,18 @@
     ],
     "titles": [
      "Eagle"
+    ]
+   },
+   "norse": {
+    "names": [
+     "Sigrid",
+     "Bjorn",
+     "Thyra",
+     "Halfdan",
+     "Ulfhild"
+    ],
+    "titles": [
+     "Jarl"
     ]
    }
   }
@@ -1050,6 +1066,37 @@
    "temper": "Fights entirely asleep. Has never lost a battle it remembers.",
    "aura": {
     "text": "Sleeps through anything: friends nearby +1 melee armour",
+    "effects": [
+     {
+      "tag": "all",
+      "stat": "armour.melee",
+      "add": 1
+     }
+    ]
+   }
+  },
+  "ravenfeeder": {
+   "who": {
+    "family": [
+     "norse"
+    ]
+   },
+   "parts": {
+    "head_gear": "hero.helm_wings",
+    "back": "hero.raven_pet"
+   },
+   "scale": 120,
+   "epithets": [
+    "Raven-Feeder",
+    "the Shield-Breaker"
+   ],
+   "formats": [
+    "named",
+    "titled"
+   ],
+   "temper": "Feeds the raven before every battle. The raven has started to expect it.",
+   "aura": {
+    "text": "Shield-brothers: friends nearby +1 melee armour",
     "effects": [
      {
       "tag": "all",

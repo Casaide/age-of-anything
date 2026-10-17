@@ -281,7 +281,7 @@
   },
   "horned_raider": {
    "asked": [
-    "viking"
+    "horns"
    ],
    "role": "infantry",
    "light": true,
@@ -389,6 +389,30 @@
    "price_points": 4,
    "noun": "Gloom Stalker",
    "desc": "Quick things from the dark: fall on archers, healers and workers (+2 sight); spears and real soldiers beat them"
+  },
+  "berserker": {
+   "asked": [
+    "berserker",
+    "viking"
+   ],
+   "role": "infantry",
+   "light": true,
+   "parts": [
+    "weapon.axe.bearded",
+    "helm.norse_fur"
+   ],
+   "wants": {
+    "viking": 3,
+    "norse": 2
+   },
+   "stats": {
+    "attack": 3,
+    "hp": 10,
+    "speed": 1
+   },
+   "price_points": 4,
+   "noun": "Berserker",
+   "desc": "In fur caps and a battle-fury: hits very hard (+3 attack, +10 HP) and quick; no armour, so archers cut them down"
   }
  }
 }

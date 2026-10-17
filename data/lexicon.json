@@ -560,26 +560,23 @@
    }
   },
   "viking": {
+   "family": "norse",
    "tags": {
-    "viking": 4,
-    "horns": 3,
-    "shield": 1
+    "viking": 4
    },
    "default_creature": "human"
   },
   "vikings": {
+   "family": "norse",
    "tags": {
-    "viking": 4,
-    "horns": 3,
-    "shield": 1
+    "viking": 4
    },
    "default_creature": "human"
   },
   "norse": {
+   "family": "norse",
    "tags": {
-    "viking": 4,
-    "horns": 3,
-    "shield": 1
+    "viking": 4
    },
    "default_creature": "human"
   },
@@ -1568,6 +1565,60 @@
    "tags": {
     "mounted": 1
    }
+  },
+  "norseman": {
+   "family": "norse",
+   "tags": {
+    "viking": 4
+   },
+   "default_creature": "human"
+  },
+  "norsemen": {
+   "family": "norse",
+   "tags": {
+    "viking": 4
+   },
+   "default_creature": "human"
+  },
+  "nordic": {
+   "family": "norse",
+   "tags": {
+    "viking": 4
+   },
+   "default_creature": "human"
+  },
+  "northmen": {
+   "family": "norse",
+   "tags": {
+    "viking": 4
+   },
+   "default_creature": "human"
+  },
+  "northman": {
+   "family": "norse",
+   "tags": {
+    "viking": 4
+   },
+   "default_creature": "human"
+  },
+  "horned": {
+   "tags": {
+    "horns": 5,
+    "helmet": 1
+   }
+  },
+  "raider": {
+   "tags": {
+    "light": 2
+   }
+  },
+  "berserker": {
+   "family": "norse",
+   "tags": {
+    "berserker": 4,
+    "viking": 2
+   },
+   "default_creature": "human"
   }
  }
 }
