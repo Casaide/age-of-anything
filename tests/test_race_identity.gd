@@ -35,6 +35,7 @@ func _init() -> void:
 	_test_own_research()
 	_test_kills()
 	_test_web()
+	_test_norse()
 	print("\n%d checks, %d failed" % [checks, failures])
 	quit(1 if failures > 0 else 0)
 
@@ -118,6 +119,28 @@ func _test_units() -> void:
 	var rat: Dictionary = gen.generate("forest rats", rules)
 	var hum: Dictionary = plain
 	check(int(rat.units[1].eval.cost.food) + int(rat.units[1].eval.cost.wood) < int(hum.units[1].eval.cost.food) + int(hum.units[1].eval.cost.wood), "rats: units cheaper")
+
+
+## The Norse culture (D-149): "vikings" are Norse; seafarers wade (allies too), plunder pays for kills, shield-bearers take arrows better, no archers' age-3 step, Berserkergang their own research.
+func _test_norse() -> void:
+	var v: Dictionary = gen.generate("vikings", rules)
+	check(v.family == "norse", "vikings: the Norse culture (%s)" % v.family)
+	var ident := Identity.of(v.creature, v.family)
+	check("berserkergang" in ident.research and "line.archer.3" in ident.lacks, "norse: Berserkergang, no archers' age-3 step")
+	var races := ["vikings", "forest humans", "imperial humans", "imperial humans"].map(func(pr): return gen.generate(pr, rules))
+	var w := World.new(SEED, SimMap.load_id("reed_meadow_2v2"), races, rules, [0, 0, 1, 1])
+	check(w.types[w.type_of(0, "spear")].wade == 1 and w.types[w.type_of(1, "spear")].wade == 1 and w.types[w.type_of(2, "spear")].wade == 0,
+		"norse seafarers: no slowdown in fords, for an ally too, not a foe")
+	check(w.types[w.type_of(0, "spear")].kill_gold == 3 and w.types[w.type_of(0, "worker")].kill_gold == 0, "norse plunder: every kill brings in 3 gold (not a worker's)")
+	var spear: Dictionary = v.units.filter(func(u): return u.recipe.slot == "spear")[0]
+	check(spear.recipe.parts.get("hand_l", "") != "shield.round" or int(spear.eval.armour.pierce) >= 3, "norse: a round shield +1 pierce on top of its own 2 (%d)" % int(spear.eval.armour.pierce))
+	for p in 2:
+		w.ages[p] = 3
+		for r in w.resources.size():
+			w.stock[r][p] = 5000
+	var ar := _put(w, 0, "archery_range", w.map.starts[0][0] / 1000 + 4, w.map.starts[0][1] / 1000 + 4)
+	w.researched[0][Tech.research_index(w, "line.archer.2")] = 1
+	check(Tech.why_not(w, 0, ar, "line.archer.3") == Tech.NOT_IN_TREE, "norse: no archers' age-3 step (%s)" % Tech.why_not(w, 0, ar, "line.archer.3"))
 
 
 ## Lacks: research, buildings, lines, a line's step and the market's trade stay shut; the host's

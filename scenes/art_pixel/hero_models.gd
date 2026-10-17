@@ -203,6 +203,21 @@ func _hero_wolf_hat(c: Dictionary) -> Dictionary:
 	return {"node": n}
 
 
+## Norse, the Raven-Feeder: an iron helm with two black raven wings swept up and back from its
+## sides, a team band, a nose guard.
+func _hero_helm_wings(c: Dictionary) -> Dictionary:
+	var n := Node3D.new()
+	var iron := surf("iron", Color(0.85, 0.85, 0.9), 3.0)
+	var black := plain(Color("#1c1a22"))
+	n.add_child(dome(Vector3(5.0, 5.2, 4.8), iron, Vector3(0, -3.8, 0)))
+	n.add_child(ring(4.8, 5.4, plain(c.team), Vector3(0, -3.4, 0)))
+	for side in [1, -1]:
+		for k in 3:   # three long feathers a wing, fanning back
+			n.add_child(blob(Vector3(0.9, 3.6 - k * 0.5, 0.35), black, Vector3(-0.6 - k * 1.5, 0.6 + k * 0.2, (4.6 + k * 0.3) * side), Vector3(10 * side, 0, 30 + k * 16)))
+	n.add_child(rod(Vector3(5.0, -3.6, 0), Vector3(5.5, -7.0, 0), 0.6, 0.5, iron))   # the nose guard ("face": "covered")
+	return {"node": n}
+
+
 ## Nile, the Golden: a tall double crown with two gold plumes, a cobra at the brow.
 func _hero_double_crown(c: Dictionary) -> Dictionary:
 	var n := Node3D.new()
@@ -473,6 +488,24 @@ func _hero_cat_pet(c: Dictionary) -> Dictionary:
 		n.add_child(cone(0.05, 0.6, 1.6, fur, at + Vector3(0.6, 6.6, 0.8 * side), Vector3(0, 0, -8), 6))
 		n.add_child(blob(Vector3(0.3, 0.35, 0.25), plain(Color("#30a040")), at + Vector3(2.0, 5.3, 0.6 * side)))
 	chain_rods(n, [at + Vector3(-1.8, 0.4, 0), at + Vector3(-3.4, -1.6, -0.6), at + Vector3(-3.0, -4.2, -1.0)], [0.4, 0.35, 0.3], fur)
+	return {"node": root}
+
+
+## Norse, the Raven-Feeder: a raven riding on the far shoulder, its beak forward.
+func _hero_raven_pet(c: Dictionary) -> Dictionary:
+	var root := Node3D.new()
+	var n := Node3D.new()   # (on the far shoulder, as the Golden's cat: the sword arm swings on the near one)
+	n.position = Vector3(0.5, 3.0, -6.4)
+	n.scale = Vector3.ONE * 1.4
+	root.add_child(n)
+	var black := surf("mane", Color(0.16, 0.15, 0.2), 2.0)
+	n.add_child(blob(Vector3(2.2, 1.6, 1.4), black, Vector3(-0.2, 1.4, 0), Vector3(0, 0, 20)))   # the body
+	n.add_child(blob(Vector3(1.1, 1.1, 1.0), black, Vector3(1.6, 2.8, 0)))   # the head
+	n.add_child(cone(0.05, 0.45, 1.6, plain(Color("#3a3640")), Vector3(2.9, 2.6, 0), Vector3(0, 0, -100), 6))   # the beak
+	n.add_child(blob(Vector3(1.6, 0.4, 1.0), black, Vector3(-2.4, 0.6, 0), Vector3(0, 0, 25)))   # the tail
+	for side in [1, -1]:
+		n.add_child(blob(Vector3(0.22, 0.22, 0.2), plain(Color("#e0c040")), Vector3(2.1, 3.1, 0.75 * side)))
+	n.add_child(ring(0.7, 1.1, plain(c.team), Vector3(0.2, 0.2, 0)))   # a team ring on its leg
 	return {"node": root}
 
 

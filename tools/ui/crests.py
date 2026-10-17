@@ -208,8 +208,23 @@ def step():
     return "".join(parts)
 
 
+def longship():
+    """A longship: a low hull, prow and stern curling up into spirals, round shields along its side, a striped sail."""
+    hull = ('<path d="M22,30 Q40,50 100,50 Q160,50 178,30 L170,30 Q150,40 100,40 Q50,40 30,30Z"/>')
+    stems = spiral(28, 18, -1, 0.7) + spiral(172, 18, 1, 0.7)
+    posts = ('<path d="M22,30 Q18,24 22,16" fill="none" stroke-width="4" stroke-linecap="round" class="stem"/>'
+             '<path d="M178,30 Q182,24 178,16" fill="none" stroke-width="4" stroke-linecap="round" class="stem"/>')
+    shields = "".join(disc(58 + k * 21, 38, 7) for k in range(5))
+    bosses = "".join(f'<circle cx="{58 + k * 21}" cy="38" r="2.2" class="raise"/>' for k in range(5))
+    mast = '<rect x="98" y="2" width="4" height="36"/>'
+    sail = '<path d="M76,6 L124,6 Q128,17 124,28 L76,28 Q72,17 76,6Z"/>'
+    stripes = "".join(f'<rect x="{x}" y="7" width="5" height="20" class="raise"/>' for x in (84, 97.5, 111))
+    return mast + sail + stripes + hull + posts + stems + shields + bosses
+
+
 MOTIFS = {"sun": sun, "laurel": laurel, "meander": meander, "reeds": reeds, "rivets": rivets, "stitch": stitch,
-          "leaves": leaves, "crown": crown, "bones": bones, "lotus": lotus, "cloud": cloud, "step": step}
+          "leaves": leaves, "crown": crown, "bones": bones, "lotus": lotus, "cloud": cloud, "step": step,
+          "longship": longship}
 
 TEMPLATE = """<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" width="{w}" height="{h}" viewBox="0 0 {w} {h}">
 <defs>

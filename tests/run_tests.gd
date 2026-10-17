@@ -131,6 +131,10 @@ func _test_mods(base_lib, rules: Dictionary) -> void:
 func _test_heroes(lib, gen, rules: Dictionary) -> void:
 	var fams: Array = lib.families.keys()
 	fams.sort()
+	var titles := []
+	for src in [lib.heroes.hero_names.creatures, lib.heroes.hero_names.families, lib.heroes.hero_signatures]:
+		for id in src:
+			titles.append_array(src[id].get("titles", []))
 	var seen := {}
 	var least := 99
 	for cid in lib.creature_ids("playable"):
@@ -175,9 +179,10 @@ func _test_heroes(lib, gen, rules: Dictionary) -> void:
 			for h in race.heroes:
 				names[h.name] = true
 			check(names.size() == race.heroes.size(), "heroes: '%s': each its own name (%s)" % [prompt, race.heroes.map(func(h): return h.name)])
-			var firsts := {}
+			var firsts := {}   # (the given name: past a title, "General" or "Sir", that two may share)
 			for h in race.heroes:
-				firsts[h.name.get_slice(" ", 0)] = true
+				var words: PackedStringArray = h.name.split(" ")
+				firsts[words[1] if words.size() > 1 and words[0] in titles else words[0]] = true
 			check(firsts.size() == race.heroes.size(), "heroes: '%s': no two share a first name (%s)" % [prompt, race.heroes.map(func(h): return h.name)])
 			var sword: Dictionary = race.units.filter(func(u): return u.recipe.slot == "infantry")[0]
 			for hero in heroes:
@@ -737,7 +742,7 @@ func _test_new_lines(lib, gen, rules: Dictionary) -> void:
 	check(_unit(gen.generate("greeks", d), "mounted_archer").recipe.mount.creature == "pony", "greeks' mounted archers ride ponies")
 	var themes := {"romans": "testudo", "roman frogs": "testudo", "sewer rats": "gutter_raider", "sewer rats with cheese hammers": "big_cheese",
 		"greeks": "phalanx", "aztecs": "obsidian", "swamp frogs": "bullfrog", "mongols": "steppe_raider", "royal knights": "sworn_knight",
-		"spooky beetle knights": "sworn_knight", "egyptians": "nile_bowguard", "han": "repeater", "tiny vikings": "horned_raider",
+		"spooky beetle knights": "sworn_knight", "egyptians": "nile_bowguard", "han": "repeater", "tiny vikings": "berserker", "horned vikings": "horned_raider",
 		"forest beetles": "stag_colossus", "spooky spiders": "web_lurker"}
 	for prompt in themes:
 		var got: String = _unit(gen.generate(prompt, d), "unique").recipe.unique
