@@ -58,6 +58,8 @@ relays, Steam, the joiner choosing their own race in a shared lobby (the host se
 - [x] 4. Lobby: Host, Join (LAN discovery, an address field); the match's network rules (2026-10-17; the joiner names their own race)
 - [x] 5a. Two processes over ENet on one machine, and two game windows through the lobby (2026-10-17)
 - [ ] 5b. The Mac vs the Deck on the home network (Dominic)
+- [x] 5c. A saved match on the network, a person taking over an AI seat (Dominic, 2026-10-17; D-148): tested with
+  his 2v2 save, the joiner on the ally's seat, 600 ticks in step (archive `2026-10-17/03-`, `04-`)
 - [ ] 6. Phase 2: HyperDHT sidecar, a join code, two networks
 - [ ] Archive: pictures taken along the way, journal, decisions, timeline
 
@@ -71,6 +73,9 @@ bots, no pause, saving, speed or testing keys; a note when waiting, out of sync,
 - `tests/net_check.gd -- enet`: two processes, 3000 ticks, the same hashes as each other and the reference.
 - `tests/net_game_check.gd`: two windows, the beacon found, the handshake, 1200 ticks, the same hashes (archive
   `2026-10-17/01-`, `02-`).
+**A saved match on the network (2026-10-17, D-148).** Play on the network, Host a saved game, pick the save, then the
+AI seat the other player takes; the joiner sees it in the list as usual. `tests/net_game_check.gd -- out 600
+save:<path>` plays one in two windows.
 How to play it: on both machines (the same build) Play on the network; one Hosts (sets their race and the map,
 then Host Battle), the other picks the game from the list (or types the host's address) after typing their race.
 

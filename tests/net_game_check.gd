@@ -5,11 +5,14 @@ extends SceneTree
 ## race. Both start the real match (scenes/sim_debug.tscn, use_network); each side gets a bot for its
 ## own seat so the match plays; at `ticks` they swap hashes. Saves a picture of each window.
 ## Run (needs a display):
-##   godot --path . --audio-driver Dummy --always-on-top --script res://tests/net_game_check.gd -- out_dir [ticks]
+## save:<path>: the host opens a saved match instead, the joiner taking over its ally's AI (side 3 in a
+## 2v2: player 2), the other AIs playing on both machines; `ticks` on from the save.
+##   godot --path . --audio-driver Dummy --always-on-top --script res://tests/net_game_check.gd -- out_dir [ticks] [save:<path>]
 
 const NetPage := preload("res://src/view/ui/net_page.gd")
 const Lan := preload("res://src/net/lan.gd")
 const Bot := preload("res://src/ai/bot.gd")
+const SaveGame := preload("res://src/save_game.gd")
 
 var failures := 0
 var out_dir := ""
@@ -18,7 +21,11 @@ var out_dir := ""
 func _initialize() -> void:
 	var args := Array(OS.get_cmdline_user_args())
 	var joiner := "join" in args
-	args = args.filter(func(a): return a != "join")
+	var save_path := ""
+	for a in args:
+		if String(a).begins_with("save:"):
+			save_path = String(a).trim_prefix("save:")
+	args = args.filter(func(a): return a != "join" and not String(a).begins_with("save:"))
 	out_dir = args[0] if args.size() > 0 else "/tmp"
 	var ticks := int(args[1]) if args.size() > 1 else 1200
 	DirAccess.make_dir_recursive_absolute(out_dir)
@@ -29,7 +36,12 @@ func _initialize() -> void:
 	var t0 := Time.get_ticks_msec()
 	if not joiner:
 		print("host: version %s" % Lan.version())
-		page.wait_for_player({"prompts": ["centaur romans", "(the joiner's)"], "rerolls": [0, 0], "map": "reed_meadow", "mode": "", "teams": [0, 1]}, "centaurs on Reed Meadow")
+		if save_path != "":
+			var rep := SaveGame.load_file(save_path)
+			var seat := 2 if rep.view.player_teams.size() > 2 else 1
+			page.wait_for_player({"save": rep, "seat": seat, "humans": [int(rep.view.active), seat]}, "a saved match")
+		else:
+			page.wait_for_player({"prompts": ["centaur romans", "(the joiner's)"], "rerolls": [0, 0], "map": "reed_meadow", "mode": "", "teams": [0, 1]}, "centaurs on Reed Meadow")
 		OS.create_process(OS.get_executable_path(), ["--path", ProjectSettings.globalize_path("res://"), "--audio-driver", "Dummy",
 			"--script", "res://tests/net_game_check.gd", "--", out_dir, str(ticks), "join"])
 	else:
@@ -54,8 +66,11 @@ func _initialize() -> void:
 	var link = started[0][0]
 	var me: int = started[0][1]
 	var setup: Dictionary = started[0][2]
-	_check(me == (1 if joiner else 0), "%s: plays side %d" % [who, me])
-	_check(setup.prompts[1] == "sewer rats with cheese hammers", "%s: side 1 is the joiner's race (%s)" % [who, setup.prompts[1]])
+	if setup.has("save"):
+		_check(me == (int(setup.seat) if joiner else int(setup.humans[0])), "%s: plays seat %d of the saved match" % [who, me])
+	else:
+		_check(me == (1 if joiner else 0), "%s: plays side %d" % [who, me])
+		_check(setup.prompts[1] == "sewer rats with cheese hammers", "%s: side 1 is the joiner's race (%s)" % [who, setup.prompts[1]])
 	page.queue_free()
 	var view = load("res://scenes/sim_debug.tscn").instantiate()
 	view.use_network(link, me, setup)
@@ -67,11 +82,23 @@ func _initialize() -> void:
 	if view.clock.lockstep == null:
 		quit(1)
 		return
-	view.clock.bots = [Bot.new(me)]   # (a test: a bot plays this side, through the lockstep)
+	var start_tick: int = view.world.tick
+	print("%s: loaded at tick %d, state hash %d, loaded_at %s, bots %s" % [who, view.world.tick, view.world.state_hash(), str(view.loaded_at), str(view.bot_seats)])
+	ticks += start_tick   # (a saved match goes on from where it was)
+	if setup.has("save"):
+		_check(view.clock.bots.size() == view.world.races.size() - 2, "%s: the AIs left play on (%d bots for %d sides)" % [who, view.clock.bots.size(), view.world.races.size()])
+		_check(view.active == me, "%s: commands its own seat (%d)" % [who, view.active])
+	view.clock.bots = view.clock.bots + [Bot.new(me)]   # (a test: a bot plays this side too, through the lockstep)
 	var ls = view.clock.lockstep
 	while view.world.tick < ticks and ls.desync == "" and not ls.peer_left and Time.get_ticks_msec() - t0 < 300000:
 		await process_frame
 	view.clock.paused = true
+	var hist := FileAccess.open("%s/history_%s.txt" % [out_dir, who], FileAccess.WRITE)
+	for c in view.world.history:
+		if int(c.turn) * 4 >= start_tick - 16:
+			hist.store_line("%d %d %d %s %s" % [c.turn, c.player, c.seq, c.type, JSON.stringify(c.args)])
+	hist.store_line("pending " + JSON.stringify(view.world.commands.pending.keys()))
+	hist.close()
 	_check(view.world.tick >= ticks, "%s: reached tick %d (%d)" % [who, ticks, view.world.tick])
 	_check(ls.desync == "", "%s: no desync (%s)" % [who, ls.desync])
 	root.get_texture().get_image().save_png("%s/net_%s.png" % [out_dir, who])

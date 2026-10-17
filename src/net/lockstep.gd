@@ -19,6 +19,7 @@ var others: Array = []   # messages that aren't turns (chat, the match's end): t
 var _done := {}          # player -> the last turn whose commands are all in
 var _hashes_sent := 0    # how many of world.hashes went out
 var _their_hashes := {}  # tick -> hash, from the others, waiting on our own
+var _first_seq := 0      # our first command this link carries (a saved match's queued ones are in both machines' saves)
 
 
 func _init(p_world, p_me: int, p_players: Array, p_transport) -> void:
@@ -27,7 +28,9 @@ func _init(p_world, p_me: int, p_players: Array, p_transport) -> void:
 	players = p_players
 	transport = p_transport
 	for p in players:
-		_done[p] = -1
+		_done[p] = world.turn() - 1   # (a saved match: the turns before it are done; a new one starts at -1)
+	_hashes_sent = world.hashes.size()   # (a saved match's own hashes: both machines have them)
+	_first_seq = int(world.commands.next_seq.get(me, 0))
 
 
 ## Take what arrived: the others' commands into the world's queue, their hashes checked.
@@ -35,9 +38,13 @@ func receive() -> void:
 	for msg in transport.poll():
 		match String(msg.get("t", "")):
 			"turn":
+				var p := int(msg.player)
+				if int(msg.turn) != int(_done[p]) + 1:   # every turn comes, in order: a gap would run a turn without its commands
+					desync = "turn %d from player %d missing (got %d)" % [int(_done[p]) + 1, p + 1, int(msg.turn)]
+					return
 				for cmd in msg.cmds:
 					world.commands.add(cmd)
-				_done[int(msg.player)] = int(msg.turn)
+				_done[p] = int(msg.turn)
 				for h in msg.hashes:
 					_their_hashes[int(h[0])] = int(h[1])
 			_:
@@ -65,7 +72,7 @@ func waiting_on(turn: int) -> Array:
 ## The turn just ended: send its local commands (they run two turns on), the mark, new hashes.
 func end_turn(turn: int) -> void:
 	var cmds: Array = world.commands.pending.get(turn + Commands.DELAY, []).filter(
-		func(c): return int(c.player) == me and int(c.turn) == turn)
+		func(c): return int(c.player) == me and int(c.turn) == turn and int(c.seq) >= _first_seq)
 	var hashes: Array = world.hashes.slice(_hashes_sent)
 	_hashes_sent = world.hashes.size()
 	transport.send({"t": "turn", "player": me, "turn": turn, "cmds": cmds, "hashes": hashes})
