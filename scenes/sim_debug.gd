@@ -392,11 +392,11 @@ func start_live(race_prompts: Array) -> void:
 			for entry in START_ARMY:
 				world.issue(p, Commands.SPAWN, {"slot": entry[0], "count": entry[1], "x": map.starts[p][0], "y": map.starts[p][1]})
 	_set_autoplay(autoplay)
-	if net_link != null:   # a network match: no bots, both sides are people; the lockstep paces the clock
-		clock.bots = []
-		bot_seats = []
+	if net_link != null:   # a network match: the people's sides have no bot, the AI sides play on every machine alike; the lockstep paces the clock
+		var humans: Array = net_setup.get("humans", [0, 1])
+		_seat_bots(range(world.races.size()).filter(func(p): return not p in humans).map(func(p): return [p, ai_levels[p] if p < ai_levels.size() and ai_levels[p] != "" else ai_level]))
 		active = net_me
-		clock.lockstep = Lockstep.new(world, net_me, [0, 1], net_link)
+		clock.lockstep = Lockstep.new(world, net_me, humans, net_link)
 	camera.look_at_point(Iso.to_screen(map.starts[active][0], map.starts[active][1]) + Vector2(0, 60))
 
 
@@ -430,6 +430,7 @@ func use_network(link, me: int, setup: Dictionary) -> void:
 	map_id = setup.map
 	mode = setup.mode
 	player_teams = setup.teams
+	ai_levels = setup.get("levels", [])
 	vs_ai = true
 	active = me
 
@@ -444,11 +445,11 @@ func _net_status() -> void:
 	if ls.desync != "":
 		text = "Out of sync with the other player (%s): the match can't go on." % ls.desync
 	elif ls.peer_left and world.winner < 0:
-		text = "The other player left the match."
+		text = "A player left the match." if net_setup.get("humans", [0, 1]).size() > 2 else "The other player left the match."
 	elif clock.waiting:
 		_net_wait += get_process_delta_time()
 		if _net_wait > 0.6:
-			text = "Waiting for the other player..."
+			text = "Waiting for the other player..." if net_setup.get("humans", [0, 1]).size() <= 2 else "Waiting for another player..."
 	if not clock.waiting:
 		_net_wait = 0.0
 	net_note.text = text
@@ -553,7 +554,7 @@ func _bake(races: Array) -> void:
 		loader_layer = over
 		loader = MatchLoader.new()
 		over.add_child(loader)
-		loader.start(kit, lib, races, teams, map_id)
+		loader.start(kit, lib, races, teams, map_id, player_teams if player_teams.size() == races.size() else [], active)
 	else:
 		bar.text = "Baking the art..."
 	await kit.prepare(races, teams)
@@ -2116,6 +2117,8 @@ static func wall_cells(a: Vector2i, b: Vector2i) -> Array:
 # ------------------------------------------------------------------ frame
 
 func _process(delta: float) -> void:
+	if net_link != null and clock.lockstep == null:
+		net_link.pump()   # loading a network match: the other end must still hear us
 	if baking or world == null:
 		return
 	_net_status()
@@ -3110,7 +3113,7 @@ func _update_panel() -> void:
 		var herd: Array = mine.filter(_is_animal)
 		var soldiers: int = mine.size() - herd.size() - _selected_workers().size()
 		if mine.size() == 1 and ft.worker:
-			c.info = ["Idle", "Gathering", "Carrying back", "Building", "Going inside"][u.task[first]]
+			c.info = ["Idle", "Gathering", "Carrying back", "Building", "Going inside", "Trading", "Climbing", "Repairing"][u.task[first]]   # (Economy's task enum, in order)
 			if u.carry[first] > 0:
 				c.info += " (%d %s)" % [u.carry[first], world.resources[u.carry_kind[first] - 1]]
 		elif mine.size() == 1 and ft.has("animal"):
