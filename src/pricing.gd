@@ -180,7 +180,7 @@ static func evaluate(recipe: Dictionary, lib, rules: Dictionary, age := 0) -> Di
 	if terms.has("ceiling"):
 		total = mini(total, int(terms.ceiling))   # a big body's worker (a centaur) dearer, not a horseman's price (D-078)
 	if terms.has("mix"):
-		mix = terms.mix.duplicate()   # every line its own mix (D-149): the parts set the total, the line what it's paid in
+		mix = terms.mix.duplicate()   # every line its own mix (D-150): the parts set the total, the line what it's paid in
 	var swaps: Dictionary = c.get("early", {}).get(str(age), {})
 	for r in swaps:   # a resource this age can't gather yet goes on another (age 1: gold is food)
 		if mix.has(r):
@@ -246,5 +246,5 @@ static func _price(p: Dictionary) -> int:
 	return int(p.get("price_points", p.points))
 
 
-static func _round10(n: int) -> int:   # prices in tens: easy to read and compare (D-149)
+static func _round10(n: int) -> int:   # prices in tens: easy to read and compare (D-150)
 	return maxi(0, (n + 5) / 10 * 10)
