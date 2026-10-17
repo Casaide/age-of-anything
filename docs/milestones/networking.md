@@ -1,14 +1,68 @@
-# Networking (after the demo)
+# Networking (multiplayer)
 
-**Status:** planned
-**Exit criterion:** Two machines on different NATs finish a match with no desync.
-
-What's the standard approach for Godot? Does a P2P stack for it exist? How would sidecar work? What platform limitations?
+**Status:** in progress (started 2026-10-17, Dominic: "we can solve that next using enet like you said and we do
+local tests")
+**Exit criterion:** phase 1 (the MVP): a full 1v1 between the Mac and the Deck on the home network, from the lobby to
+the end screen, with no desync. Phase 2: two machines on different networks finish a match, no server of ours.
 
 ## Scope
 
-Lockstep over a Bare/Hyperswarm sidecar. See `../backlog.md` §1.
+What the genre's games and Godot offer, and our choice (2026-10-17, discussed with Dominic):
+
+| Option | No server | NAT handled | Notes |
+|---|---|---|---|
+| Godot's ENet (built in) | yes | no (LAN or a forwarded port) | the smallest step: proves lockstep between two machines |
+| Godot's WebRTC (+ a desktop extension) | no: a signalling server, TURN for hard NATs | mostly | brings back the server we want to avoid |
+| Steam networking (GodotSteam) | yes (Valve's relays) | yes | lobbies and invites, but a Steam app id and Steam running: a release option |
+| HyperDHT over a Bare sidecar | yes (public DHT bootstrap only) | holepunching; two strict NATs need a relay | our stack: the host listens on a keypair, its public key is the join code |
+
+**Phase 1 (the MVP): lockstep over ENet, 1v1, on the LAN.** The hard part isn't the transport, it's two machines
+(macOS and Linux) staying in step; ENet proves that with no NAT in the way. **Phase 2: the HyperDHT sidecar** behind
+the same transport interface (`../backlog.md` §1 has its design: `bare sidecar.js` on a localhost socket, the swarm
+topic or the host's key as the join code, Protomux later).
+
+Why it's small: the sim already runs on a command stream (`src/sim/commands.gd`: commands stamped with the turn they
+were issued in, 4-tick turns, run two turns later in (turn, player, seq) order), and a race comes from its prompt
+and reroll, so a match is its setup (prompts, rerolls, map, mode, teams, seed) and its commands. No art or race
+data travels. Bots are deterministic, so a bot seat needs nothing sent (later; the MVP is two people).
+
+Not in phase 1: more than two players, joining a match under way, reconnecting, spectators, pausing, saving,
+relays, Steam, the joiner choosing their own race in a shared lobby (the host sets both sides).
 
 ## Plan
 
-(write before starting; see the template in `README.md`)
+1. **Two sims in one process** (`tests/net_check.gd`): two Worlds, one per player, each with a bot issuing its own
+   side's commands, joined by a loopback transport with delay and jitter; they must hash the same at every
+   checkpoint. Proves the turn gate and the command exchange without sockets.
+2. **The transport and the lockstep** (`src/net/`, view side: Nodes and sockets never enter the sim):
+   - `transport.gd`: send and receive messages (Dictionaries of ints, Strings, Arrays) to one peer; `loopback.gd`
+     for tests, `enet.gd` over Godot's ENet (reliable, ordered).
+   - `lockstep.gd`: at the end of each turn it sends that turn's local commands with a "done" mark and its state
+     hashes; it takes the peer's into the world's queue; the clock may run turn R only once both players' turn R-2
+     is in. A hash that differs ends the match with a message (and both replays saved).
+   - `SimClock` asks the lockstep before each turn starts; a late peer holds the world (a "waiting for player" note).
+3. **The handshake:** the host sends the setup and a version (a hash of the rules and data); the joiner builds the
+   same races and sends their keys back; both bake, say "loaded", and start together.
+4. **The lobby:** a Multiplayer (LAN) page: Host (the usual race setup, then waits) and Join (games found on the
+   network by a UDP broadcast, so the Deck needs no typing; an address field as the fallback). In a network match:
+   no pause menu pause, no saving, no speed change, no debug keys; surrender ends it for both.
+5. **Local tests:** `tests/net_check.gd` also runs two processes on one machine over ENet (localhost), bots on both
+   seats, a few minutes of match, hashes compared; then Dominic's Mac vs Deck match (phase 1's exit).
+6. **Phase 2:** the HyperDHT sidecar (`tools/net/sidecar.js`, Bare), the same transport interface, a join code.
+
+## Checklist
+- [x] Plan written (2026-10-17; Dominic agreed the approach: ENet first, local tests)
+- [ ] 1. Two sims in one process, loopback with delay
+- [ ] 2. Transport (loopback, ENet) and lockstep; the clock's turn gate
+- [ ] 3. Handshake: setup, version, race keys, loaded
+- [ ] 4. Lobby: Host, Join (LAN discovery, an address field); the match's network rules
+- [ ] 5. Two processes over ENet on one machine (test), then the Mac vs the Deck (Dominic)
+- [ ] 6. Phase 2: HyperDHT sidecar, a join code, two networks
+- [ ] Archive: pictures taken along the way, journal, decisions, timeline
+
+## Results
+
+## Changes from the original plan
+
+## Links
+- `../backlog.md` §1 (the sidecar's design), `m1-sim-core.md` (commands, replays, hashes), `m20-steam-deck.md`
