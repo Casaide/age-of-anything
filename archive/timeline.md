@@ -119,3 +119,4 @@ One line per moment worth remembering. Newest at the bottom.
 - **2026-10-17:** The centaur's kneel to forage works in all 8 facings (it was side-on only: Dominic saw it from behind); workers are checked at work (D-153).
 - **2026-10-17:** Reed Meadow's rivers go shallow, deep, shallow: nobody crosses the deep middle but at fords and bridges (frogs and flyers neither); wood lines reach the map edge; trees block flyers; walls run straight over hills; hill edges bevelled (D-154).
 - **2026-10-17:** Milestone 22 starts: formations by role (riders on the flanks), units go for the foes they counter, attack lines for the selection, the Norse shield wall (D-155).
+- **2026-10-17:** The network lobby is the battle setup, shared: players join into open sides, pick their team, edit their own race, everyone Ready; 2v2 with AIs on the network; both machines load together (D-156).

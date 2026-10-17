@@ -1054,3 +1054,18 @@ always on (his pick): Norse foot with shields march shoulder to shoulder (`form_
 Linden shields bonus, both its forms, since a culture has exactly three bonuses), no stat beyond the bonus's own.
 Balance: mass_battle in ages 2 and 3 and balance.gd unchanged in every single-type fight, mixed fights a win or two
 either way. (Claude)
+
+**D-156, 2026-10-17: The battle setup is the network lobby, with seats.** Dominic, after the first Mac vs Deck join:
+"Hosting a new game, dont seem to get the option for other player to join the lobby and customise there side", then
+"shared lobby means we should be able to make 2v2 games, and players can choose what side theyre on". Host a game
+now opens the battle setup listening (src/view/net_lobby.gd); every side but the host's starts as an AI, and up to
+three players join, each into the first open side, free to Take any other AI's side (so they pick their team). Each
+player edits their own race; the host the map, the mode and the AI sides. The host holds the lobby and sends the
+whole of it to everyone when it changes; any change un-readies everyone; Start is Ready, and when every player is
+ready (two at least) the host sends go and every machine starts loading at once. The AI sides play on every machine
+alike (bots are deterministic, as in D-148's saved matches); the host relays each player's turns to the others (a
+star over ENet). The join page lost its race box: the race is picked in the lobby. Claude's calls: the host owns
+the AI sides; the host's map arrows skip maps with too few sides for everyone in. Found on the way: the host's setup
+message only left when its match first polled the link (after its load), so the joiner timed out ("host isn't
+answering") or loaded only after the host; sends now flush, the link is serviced while loading and ENet waits
+15-60 s. Saved games on the network keep D-148's page.

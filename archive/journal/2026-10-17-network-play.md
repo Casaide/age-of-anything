@@ -43,3 +43,22 @@ Then the joiner took the Jaguar Lords, 26 minutes in, and both windows ran 600 t
 
 ## Next
 Dominic's Mac vs Deck match on the home network (phase 1's exit), then the HyperDHT sidecar.
+
+## The first Mac vs Deck join, and the shared lobby
+Dominic hosted on the Mac and joined from the Deck: the Deck saw the game, clicked Join, the Mac went straight into
+loading, and the Deck sat in the menu with "the host isn't answering". The host had queued its setup and gone into
+the load; ENet only sends when it's serviced, and nothing serviced it until the match's first turn, so the Deck timed
+out. Second try worked (the art was cached, the load short), but the Deck only started loading once the Mac had
+finished. Then, in a match, the Deck said "waiting for the other player" while the Mac said "the other player left":
+the same thing the other way round (the Deck's long bake). Fixed by flushing every send, servicing the link while
+loading and waiting longer for a quiet peer.
+
+Then the lobby (D-156): the battle setup itself, shared, with seats. Dominic asked for 2v2 and choosing a side
+before the 1v1 version had even run, so it went straight to seats. Written while Dominic played a match on the same
+Mac: the lobby test needs the port his game was using, so it waits (its first run had failed with "can't listen").
+
+Bugs on the way:
+- Two game windows on one Mac baking the same parts at once wrote the same temporary cache file: a corrupt entry
+  ("bake cache: unreadable entry"). The temporary file is per process now.
+- The 2v2 loading screen showed two names and put every army after the first on the right: it lays out by team now.
+- Selecting a repairing worker spammed errors: the panel's task names stopped at "Going inside" (three short).

@@ -1,11 +1,11 @@
 extends Control
 ## The match loader: what you see while a match's art is made. Both armies stand on a stage
 ## facing each other (straight away when the lobby baked them; as soon as their parts are baked
-## otherwise), the two race names with "vs", the map's name and its little picture, a bar fed by
+## otherwise; a team game's teams, yours on the left, each army a rank), the race names with "vs", the map's name and its little picture, a bar fed by
 ## the art kit's real bake jobs (ArtKit.progress(): estimated renders done of those asked for,
 ## cache loads counting little), what it's busy with, and a tip. finish() fades it into the match.
 ##
-## sim_debug makes one in _bake: start(kit, lib, races, teams, map_id), then finish() once the
+## sim_debug makes one in _bake: start(kit, lib, races, teams, map_id, player_teams, you), then finish() once the
 ## world is attached. Self-contained (its look is in src/view/loaders/loader_style.gd).
 
 const Style := preload("res://src/view/loaders/loader_style.gd")
@@ -23,6 +23,7 @@ var kit
 var lib
 var races: Array = []
 var teams: Array = []
+var left: Array = []      # per race: on the left (your team) or the right
 var root: Control         # everything, scaled to the window
 var margin: MarginContainer
 var holder: Control       # the stage's box (its height follows the window)
@@ -49,11 +50,14 @@ func _init() -> void:
 
 
 ## Show the loader for this match; it follows kit's bake from here.
-func start(p_kit, p_lib, p_races: Array, p_teams: Array, map_id: String) -> void:
+## `player_teams`: each race's team (none: each its own); `you`: the player whose team is on the left.
+func start(p_kit, p_lib, p_races: Array, p_teams: Array, map_id: String, player_teams := [], you := 0) -> void:
 	kit = p_kit
 	lib = p_lib
 	races = p_races
 	teams = p_teams
+	var mine: int = int(player_teams[you]) if you < player_teams.size() else you
+	left = range(races.size()).map(func(k): return (int(player_teams[k]) if k < player_teams.size() else k) == mine)
 	tips = DataLib.load_json("res://data/tips.json").tips
 	var bg := ColorRect.new()
 	bg.color = Style.BG
@@ -104,15 +108,22 @@ func _build(map_id: String) -> void:
 	var head := Style.label("PREPARING FOR BATTLE", Style.HEAD, Style.BRONZE)
 	head.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	col.add_child(head)
-	# The names: left and right of the seal, each over its team's colour.
+	# The names: a team each side of the seal, each name over its side's colour.
 	var names := HBoxContainer.new()
 	names.add_theme_constant_override("separation", 28)
-	for k in 2:
-		if k == 1:
+	for on_left in [true, false]:
+		if not on_left:
 			var vs := Style.label("vs", Style.VS, Style.BRONZE, 8)
 			vs.size_flags_vertical = Control.SIZE_SHRINK_CENTER
 			names.add_child(vs)
-		names.add_child(_name_block(k))
+		var team := VBoxContainer.new()
+		team.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+		team.add_theme_constant_override("separation", 10)
+		team.alignment = BoxContainer.ALIGNMENT_CENTER
+		for k in races.size():
+			if left[k] == on_left:
+				team.add_child(_name_block(k, on_left))
+		names.add_child(team)
 	col.add_child(names)
 	# The stage: grass, both armies facing the middle.
 	holder = Control.new()
@@ -177,13 +188,13 @@ func _build(map_id: String) -> void:
 	_next_tip()
 
 
-func _name_block(k: int) -> Control:
+func _name_block(k: int, on_left: bool) -> Control:
 	var b := VBoxContainer.new()
 	b.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	b.add_theme_constant_override("separation", 4)
 	var race: Dictionary = races[k] if k < races.size() else {}
-	var align := HORIZONTAL_ALIGNMENT_RIGHT if k == 0 else HORIZONTAL_ALIGNMENT_LEFT
-	var n := Style.label(race.get("name", "?"), Style.TITLE, Style.TEXT, 6)
+	var align := HORIZONTAL_ALIGNMENT_RIGHT if on_left else HORIZONTAL_ALIGNMENT_LEFT
+	var n := Style.label(race.get("name", "?"), Style.TITLE if races.size() <= 2 else roundi(Style.TITLE * 0.62), Style.TEXT, 6)
 	n.horizontal_alignment = align
 	n.clip_text = true
 	n.text_overrun_behavior = TextServer.OVERRUN_TRIM_ELLIPSIS
@@ -290,6 +301,8 @@ func _muster() -> void:
 	for k in races.size():
 		var units := _pick(races[k].units)
 		var n := units.size()
+		var rank: int = range(k).filter(func(j): return left[j] == left[k]).size()   # this army's rank on its team's side
+		var ranks: int = left.filter(func(l): return l == left[k]).size()
 		for i in n:
 			await get_tree().process_frame   # one a frame: building a few at once held the loader up (the Deck)
 			if gen != _muster_gen:
@@ -303,8 +316,9 @@ func _muster() -> void:
 			# In order from the far edge to the middle: the big ones nearest the foe.
 			var along := (i + 0.5) / float(n)   # 0 far edge .. 1 the middle
 			var x := w * (0.07 + 0.36 * along)
-			view.position = Vector2(x if k == 0 else w - x, h * (0.6 + 0.12 * (i % 2)))
-			view.face(1.0 if k == 0 else -1.0)
+			var y := 0.6 + 0.12 * (i % 2) if ranks == 1 else 0.46 + 0.3 * rank / float(ranks - 1) + 0.05 * (i % 2)
+			view.position = Vector2(x if left[k] else w - x, h * y)
+			view.face(1.0 if left[k] else -1.0)
 			view.modulate.a = 0.0
 			layer.add_child(view)
 			view.create_tween().tween_property(view, "modulate:a", 1.0, 0.35).set_delay(0.06 * i)
