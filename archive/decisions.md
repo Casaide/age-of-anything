@@ -1069,3 +1069,8 @@ the AI sides; the host's map arrows skip maps with too few sides for everyone in
 message only left when its match first polled the link (after its load), so the joiner timed out ("host isn't
 answering") or loaded only after the host; sends now flush, the link is serviced while loading and ENet waits
 15-60 s. Saved games on the network keep D-148's page.
+
+**D-157, 2026-10-17: A network match can be saved (refines D-147).** Dominic: "i cant save muliplayer?!" D-147 left
+Save out of a network match. Every machine runs the same world, so any player can save it on their own machine; the
+other people's sides go into the save as Normal AIs (fresh bots from that moment). Loaded alone, the AIs play them
+on; hosted again on the network (D-148), a person takes one over. The match isn't paused while the menu is open.
