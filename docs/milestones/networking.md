@@ -60,6 +60,8 @@ relays, Steam, the joiner choosing their own race in a shared lobby (the host se
 - [ ] 5b. The Mac vs the Deck on the home network (Dominic)
 - [x] 5c. A saved match on the network, a person taking over an AI seat (Dominic, 2026-10-17; D-148): tested with
   his 2v2 save, the joiner on the ally's seat, 600 ticks in step (archive `2026-10-17/03-`, `04-`)
+- [x] 5d. The shared lobby with seats: players join into open sides, 2v2, AIs on the network, Ready (D-156; built
+  2026-10-17, its two-window test not yet run)
 - [ ] 6. Phase 2: HyperDHT sidecar, a join code, two networks
 - [ ] Archive: pictures taken along the way, journal, decisions, timeline
 
@@ -78,6 +80,13 @@ AI seat the other player takes; the joiner sees it in the list as usual. `tests/
 save:<path>` plays one in two windows.
 How to play it: on both machines (the same build) Play on the network; one Hosts (sets their race and the map,
 then Host Battle), the other picks the game from the list (or types the host's address) after typing their race.
+
+**The shared lobby (2026-10-17, D-156).** `src/view/net_lobby.gd` makes the battle setup the lobby: Host a game
+listens at once; players take sides (up to four people, AIs in the rest), Ready, and everyone loads together. ENet
+(`enet.gd`) hosts up to three players, tags who sent what, and relays turns in a match. `tests/net_game_check.gd`
+now plays a 2v2 through it (the joiner moves to side 4, two AIs on both machines): written, not yet run.
+How to play it: on both machines (the same build) Play on the network; one Hosts (the battle setup opens), the
+other picks the game from the list, takes a side and types a race; both press Ready.
 
 ## Changes from the original plan
 

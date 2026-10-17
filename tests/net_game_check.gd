@@ -1,9 +1,10 @@
 extends SceneTree
-## A network match in two game windows on this machine, through the real lobby page and match view
-## (networking milestone, phase 1): this process hosts (src/view/ui/net_page.gd waiting with the
-## battle setup), and starts a second that finds the game by its LAN beacon and joins with its own
-## race. Both start the real match (scenes/sim_debug.tscn, use_network); each side gets a bot for its
-## own seat so the match plays; at `ticks` they swap hashes. Saves a picture of each window.
+## A network match in two game windows on this machine, through the real lobby and match view
+## (networking milestone, phase 1): this process hosts (the battle setup as a shared lobby,
+## src/view/net_lobby.gd) on the 2v2 map, and starts a second that finds the game by its LAN beacon,
+## joins, moves to the other team's open side and types its own race; both press Ready and the lobby
+## starts the real match (scenes/sim_debug.tscn, use_network) on both, the two AI sides playing on both. Each side gets a bot for its own seat so the match plays; at `ticks` they
+## swap hashes. Saves a picture of each window (the lobby too).
 ## Run (needs a display):
 ## save:<path>: the host opens a saved match instead, the joiner taking over its ally's AI (side 3 in a
 ## 2v2: player 2), the other AIs playing on both machines; `ticks` on from the save.
@@ -29,11 +30,22 @@ func _initialize() -> void:
 	out_dir = args[0] if args.size() > 0 else "/tmp"
 	var ticks := int(args[1]) if args.size() > 1 else 1200
 	DirAccess.make_dir_recursive_absolute(out_dir)
-	var page := NetPage.new()
-	root.add_child(page)
 	var started := []
-	page.start.connect(func(link, me, setup): started.append([link, me, setup]))
 	var t0 := Time.get_ticks_msec()
+	var who := "joiner" if joiner else "host"
+	var lobby = null   # a new game: the battle setup, shared
+	var page
+	if save_path == "":
+		lobby = load("res://scenes/match_setup.tscn").instantiate()
+		root.add_child(lobby)
+		current_scene = lobby
+		await process_frame
+		lobby._open_net()
+		page = lobby.net_page
+	else:
+		page = NetPage.new()
+		root.add_child(page)
+		page.start.connect(func(link, me, setup): started.append([link, me, setup]))
 	if not joiner:
 		print("host: version %s" % Lan.version())
 		if save_path != "":
@@ -41,12 +53,15 @@ func _initialize() -> void:
 			var seat := 2 if rep.view.player_teams.size() > 2 else 1
 			page.wait_for_player({"save": rep, "seat": seat, "humans": [int(rep.view.active), seat]}, "a saved match")
 		else:
-			page.wait_for_player({"prompts": ["centaur romans", "(the joiner's)"], "rerolls": [0, 0], "map": "reed_meadow", "mode": "", "teams": [0, 1]}, "centaurs on Reed Meadow")
+			page.host_chosen.emit()
+			_check(lobby.net_lobby != null and lobby.net_lobby.link != null, "host: the battle setup opened listening")
+			lobby._set_map(lobby.MAPS.find("reed_meadow_2v2"))
+			_check(lobby.sides.size() == 4, "host: on the 2v2 map, four sides")
 		OS.create_process(OS.get_executable_path(), ["--path", ProjectSettings.globalize_path("res://"), "--audio-driver", "Dummy",
-			"--script", "res://tests/net_game_check.gd", "--", out_dir, str(ticks), "join"])
+			"--script", "res://tests/net_game_check.gd", "--", out_dir, str(ticks), "join"] + (["save:" + save_path] if save_path != "" else []))
 	else:
-		page.open()
-		page.race_field.text = "sewer rats with cheese hammers"
+		if save_path != "":
+			page.open()
 		var heard := false
 		while not heard and Time.get_ticks_msec() - t0 < 15000:
 			await process_frame
@@ -56,29 +71,76 @@ func _initialize() -> void:
 				page._join(String(h[0]), int(h[2]))
 				break
 		_check(heard, "joiner: found the host's game by its beacon")
-	while started.is_empty() and Time.get_ticks_msec() - t0 < 40000:
-		await process_frame
-	var who := "joiner" if joiner else "host"
-	_check(not started.is_empty(), "%s: the handshake started the match (%d ms)" % [who, Time.get_ticks_msec() - t0])
-	if started.is_empty():
-		quit(1)
-		return
+	var view = null
+	var lobby_map := ""
+	var lobby_host_prompt := ""
+	if lobby != null:   # the shared lobby: the joiner types its race, both press Ready
+		var nl = null
+		while (nl == null or nl.humans().size() < 2) and Time.get_ticks_msec() - t0 < 40000:
+			await process_frame
+			nl = lobby.net_lobby
+		_check(nl != null and nl.humans().size() == 2, "%s: both in the lobby (%d ms)" % [who, Time.get_ticks_msec() - t0])
+		if nl == null or nl.humans().size() < 2:
+			quit(1)
+			return
+		if joiner:
+			_check(lobby.sides.size() == 4 and nl.owners[1] == nl.my_id, "joiner: on the host's 2v2 map, in the first open side (%s)" % str(nl.owners))
+			nl.take(3)   # the other team
+			while nl.owners[3] != nl.my_id and Time.get_ticks_msec() - t0 < 40000:
+				await process_frame
+			_check(nl.owners == [1, 0, 0, nl.my_id], "joiner: took side 4, its old side an AI again (%s)" % str(nl.owners))
+			lobby.sides[3].field.text = "sewer rats with cheese hammers"
+			lobby.sides[3].reroll = 0
+			lobby._regenerate(3)
+		else:
+			while lobby.sides[3].field.text != "sewer rats with cheese hammers" and Time.get_ticks_msec() - t0 < 40000:
+				await process_frame
+			_check(lobby.sides[3].race.name == lobby.gen.generate("sewer rats with cheese hammers", lobby.rules, 0).name, "host: sees the joiner's race on side 4 (%s)" % lobby.sides[3].race.name)
+		var mine: int = nl.owners.find(nl.my_id)
+		_check(lobby.sides[mine].field.editable and not lobby.sides[3 if mine == 0 else 0].field.editable, "%s: its own side can be edited, the other player's not" % who)
+		_check(lobby.sides[1].field.editable == (not joiner), "%s: an AI's side is the host's to edit" % who)
+		for f in 30:
+			await process_frame
+		lobby_map = lobby.MAPS[lobby.map_index]
+		lobby_host_prompt = lobby._prompt(0)
+		root.get_texture().get_image().save_png("%s/lobby_%s.png" % [out_dir, who])
+		lobby._play()   # Ready
+		while not (root.get_tree().current_scene != null and root.get_tree().current_scene.has_method("use_network")) and Time.get_ticks_msec() - t0 < 60000:
+			await process_frame
+		view = root.get_tree().current_scene
+		_check(view != null and view.has_method("use_network"), "%s: both ready: the lobby started the match (%d ms)" % [who, Time.get_ticks_msec() - t0])
+		if view == null or not view.has_method("use_network"):
+			quit(1)
+			return
+		started.append([view.net_link, view.net_me, view.net_setup])
+	else:
+		while started.is_empty() and Time.get_ticks_msec() - t0 < 40000:
+			await process_frame
+		_check(not started.is_empty(), "%s: the handshake started the match (%d ms)" % [who, Time.get_ticks_msec() - t0])
+		if started.is_empty():
+			quit(1)
+			return
 	var link = started[0][0]
 	var me: int = started[0][1]
 	var setup: Dictionary = started[0][2]
 	if setup.has("save"):
 		_check(me == (int(setup.seat) if joiner else int(setup.humans[0])), "%s: plays seat %d of the saved match" % [who, me])
 	else:
-		_check(me == (1 if joiner else 0), "%s: plays side %d" % [who, me])
-		_check(setup.prompts[1] == "sewer rats with cheese hammers", "%s: side 1 is the joiner's race (%s)" % [who, setup.prompts[1]])
-	page.queue_free()
-	var view = load("res://scenes/sim_debug.tscn").instantiate()
-	view.use_network(link, me, setup)
-	root.add_child(view)
-	current_scene = view
+		_check(me == (3 if joiner else 0), "%s: plays side %d" % [who, me])
+		_check(setup.humans == [0, 3], "%s: the people are sides 0 and 3 (%s)" % [who, str(setup.humans)])
+		_check(setup.prompts[3] == "sewer rats with cheese hammers", "%s: side 4 is the joiner's race (%s)" % [who, setup.prompts[3]])
+		_check(setup.map == lobby_map and setup.prompts[0] == lobby_host_prompt, "%s: the match is the lobby as shown (%s, %s)" % [who, setup.map, setup.prompts[0]])
+	if view == null:
+		page.queue_free()
+		view = load("res://scenes/sim_debug.tscn").instantiate()
+		view.use_network(link, me, setup)
+		root.add_child(view)
+		current_scene = view
 	while (view.world == null or view.baking or view.clock.lockstep == null) and Time.get_ticks_msec() - t0 < 120000:
 		await process_frame
 	_check(view.clock.lockstep != null, "%s: the match is up, the lockstep pacing it" % who)
+	if not setup.has("save"):
+		_check(view.bot_seats.map(func(b): return b.player) == [1, 2], "%s: the AI sides play here too (%s)" % [who, str(view.bot_seats)])
 	if view.clock.lockstep == null:
 		quit(1)
 		return
