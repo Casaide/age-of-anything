@@ -1,6 +1,8 @@
 [
  {
   "id": "body.frog",
+  "shield": "slung",
+  "_shield_doc": "a shield goes slung on the back (its model's sling socket; slung: upright behind, slung_flat: flat on top): held in the off hand it cut this body's head, armour or the ground (2026-10-17, Dominic)",
   "drape_scale": 70,
   "slot": "body",
   "noun": "Frog",
@@ -291,6 +293,8 @@
  },
  {
   "id": "body.spider",
+  "shield": "slung_flat",
+  "_shield_doc": "a shield goes slung on the back (its model's sling socket; slung: upright behind, slung_flat: flat on top): held in the off hand it cut this body's head, armour or the ground (2026-10-17, Dominic)",
   "drape_scale": 70,
   "slot": "body",
   "cut": ["legs"],
@@ -390,6 +394,8 @@
  },
  {
   "id": "body.beetle_rear",
+  "shield": "slung_flat",
+  "_shield_doc": "a shield goes slung on the back (its model's sling socket; slung: upright behind, slung_flat: flat on top): held in the off hand it cut this body's head, armour or the ground (2026-10-17, Dominic)",
   "drape_scale": 65,
   "slot": "body",
   "cut": ["legs"],
@@ -4820,6 +4826,8 @@
   "id": "cape.cloth",
   "not_ridden_on": ["pony", "beetle"],
   "_not_ridden_on_doc": "mounts whose riders don't wear it: a cloth cape hung through the pony's and the beetle's back (the placement check, A3)",
+  "not_worn_by": ["body.frog", "body.beetle_rear"],
+  "_not_worn_by_doc": "bodies that don't wear it: it hung through a frog's haunches and a rearing beetle's wing cases (the placement check, A3, 2026-10-17); the leaf cape fits them",
   "slot": "back",
   "tags": [
    "cape",

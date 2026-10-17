@@ -78,6 +78,7 @@ static func all(lib, lines := true) -> Array:
 		cases.append(["animal %s" % u.recipe.body, u])
 	cases += hero_cases(lib, gen, rules)
 	cases += norse_cases(lib, gen, rules)
+	cases += gear_cases(lib, gen, rules)
 	cases += kit_cases(lib)
 	cases += composite_cases(lib)
 	cases += mod_cases(lib)
@@ -113,16 +114,12 @@ static func hero_cases(lib, gen, rules: Dictionary) -> Array:
 	return out
 
 
-## The Norse culture's kit (2026-10-17, D-149): any creature can be Norse ("viking frogs"), so each
+## The Norse culture's kit (2026-10-17, D-151): any creature can be Norse ("viking frogs"), so each
 ## Norse part is put on every playable body, over the unit of HERO_BASE's race (its kit already
 ## checked above) that would wear or hold it: helmets on the age-3 swordsman and the spear rider, the
-## axes in the swordsman's, rider's and scout's hands, the rune staff in the healer's. The round
-## shield and the horned helmet (older parts the Norse wear everywhere) come too. Labels
+## axes in the swordsman's, rider's and scout's hands, the rune staff in the healer's. The horned
+## helmet (an older part the Norse wear everywhere) comes too; shields: gear_cases. Labels
 ## "norse: <creature> <unit> with <part>".
-## Not yet: a shield on a spider (it cuts the spider's head) or a rearing beetle (its armour). No
-## culture's shield was ever checked on them (no checked race gave a bug one); the Norse make it common.
-## Backlog §0b, "Shields on spiders and beetles"; add them to SHIELD_BODIES once their shield hand moves.
-const SHIELD_BODIES := ["frog", "rat", "human", "centaur"]
 const NORSE_HELMS := ["helm.norse_fur", "helm.norse_conical", "helm.norse_spectacle", "helm.horned"]
 const NORSE_AXES := ["weapon.axe.bearded", "weapon.axe.broad"]
 
@@ -143,14 +140,39 @@ static func norse_cases(lib, gen, rules: Dictionary) -> Array:
 			put.call("swordsman with %s" % h, sword, {"head_gear": h})
 		for a in NORSE_AXES:
 			put.call("swordsman with %s" % a, sword, {"hand_r": a})
-		if cid in SHIELD_BODIES:
-			put.call("swordsman with shield.round", sword, {"hand_l": "shield.round"})
 		var rider: Dictionary = ride(slot(race, "spear"), "pony", lib.creatures.pony.skins[0], {})
 		if cid != "centaur":
 			put.call("rider with weapon.axe.bearded and helm.norse_conical", rider, {"hand_r": "weapon.axe.bearded", "head_gear": "helm.norse_conical"})
 		var scout: Dictionary = slot(race, "scout")
 		put.call("scout with weapon.axe.bearded and helm.norse_fur", scout, {"hand_r": "weapon.axe.bearded", "head_gear": "helm.norse_fur"})
 		put.call("healer with tool.staff.rune", slot(race, "healer"), {"hand_r": "tool.staff.rune"})
+	return out
+
+
+## Off-hand and back gear on every body (2026-10-17, Dominic: "fix the shields etc for spiders and bugs"):
+## a culture can come to any creature ("viking spiders", "aztec beetles"), so every shield and every cape
+## and banner goes on each playable body's age-3 swordsman (HERO_BASE's race), every quiver on its archer
+## and every healer's bag in its healer's off hand. Labels "gear: <creature> <unit> with <part>".
+static func gear_cases(lib, gen, rules: Dictionary) -> Array:
+	var out := []
+	var in_play: Dictionary = DataLib.load_json("res://data/creatures.json")
+	var ids: Array = lib.parts.keys()
+	ids.sort()
+	for cid in lib.creature_ids("playable"):
+		if not in_play.has(cid):
+			continue
+		var race: Dictionary = gen.generate(HERO_BASE[cid], rules)
+		var units := {"infantry": slot(race, "infantry").line[-1], "archer": slot(race, "archer").line[-1], "healer": slot(race, "healer")}
+		for id in ids:
+			var p: Dictionary = lib.part(id)
+			if p.slot != "hand_l" and p.slot != "back" or "hero_only" in p.get("only_if", []) or "flying" in p.tags:
+				continue
+			var who := "healer" if "heal" in p.tags else ("archer" if "quiver" in p.tags else "infantry")
+			if units[who].recipe.body in p.get("not_worn_by", []):
+				continue   # (the generator never puts it on this body: parts.json not_worn_by)
+			var r: Dictionary = units[who].recipe.duplicate(true)
+			r.parts[p.slot] = id
+			out.append(["gear: %s %s with %s" % [cid, who, id], {"recipe": r, "eval": Pricing.evaluate(r, lib, rules)}])
 	return out
 
 

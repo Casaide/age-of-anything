@@ -121,7 +121,7 @@ func _test_units() -> void:
 	check(int(rat.units[1].eval.cost.food) + int(rat.units[1].eval.cost.wood) < int(hum.units[1].eval.cost.food) + int(hum.units[1].eval.cost.wood), "rats: units cheaper")
 
 
-## The Norse culture (D-149): "vikings" are Norse; seafarers wade (allies too), plunder pays for kills, shield-bearers take arrows better, no archers' age-3 step, Berserkergang their own research.
+## The Norse culture (D-151): "vikings" are Norse; seafarers wade (allies too), plunder pays for kills, shield-bearers take arrows better, no archers' age-3 step, Berserkergang their own research.
 func _test_norse() -> void:
 	var v: Dictionary = gen.generate("vikings", rules)
 	check(v.family == "norse", "vikings: the Norse culture (%s)" % v.family)

@@ -385,6 +385,10 @@ func _check_attachment(label: String, view: String, a: Dictionary, st: Dictionar
 			"hand_r", "hand_l":
 				if p.get("harness", false):
 					continue
+				if p.get("slung", false):   # a shield slung across the back (UnitView.slung_on): on the back, as back gear
+					var db := Geom.depth(pv, p.joint, 8.0)
+					note("A2 a slung shield on the back", label, view, db > ATTACH_GAP + 1.0 and Geom.shared(_vox(p), pv) == 0, "%s %.1f off the back, not touching it" % [p.name, db])
+					continue
 				var d := Geom.depth(pv, p.joint, 8.0)
 				note("A2 held in the hand", label, view, d > ATTACH_GAP, "%s %.1f off the hand" % [p.name, d])
 			"head_gear":
