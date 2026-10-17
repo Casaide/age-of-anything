@@ -33,7 +33,7 @@ The work:
    round shields to whatever culture a race gets, and the only Shield Wall is the imperial family's research (+2
    pierce armour, no formation). A Norse culture with a tighter formation for its shield infantry (a culture's
    formation gap in data) would make "super extra tight" visible.
-   **Update 2026-10-17 (D-149): the Norse culture exists now** (`norse` in data/families.json: "viking", "vikings",
+   **Update 2026-10-17 (D-151): the Norse culture exists now** (`norse` in data/families.json: "viking", "vikings",
    "norse", "norsemen", "nordic" point to it). Its shield-bearers already get +1 pierce armour (the Linden shields
    bonus, priced), and nearly every Norse foot soldier carries `shield.round`. What's left for this step is only
    the formation: Norse shield infantry (units tagged `shield`, not mounted) should stand tighter than anyone
@@ -51,7 +51,7 @@ once Dominic says yes.
 - [ ] 1. Formation by role
 - [ ] 2. Counter-aware targeting (the weight in data)
 - [ ] 3. Attack lines for the selection
-- [ ] 4. Norse shield wall formation (Dominic's yes first; the Norse culture itself is built, D-149)
+- [ ] 4. Norse shield wall formation (Dominic's yes first; the Norse culture itself is built, D-151)
 - [ ] 5. Balance check (mass_battle, race_matches, before and after) and Dominic's match
 - [ ] Archive: pictures taken along the way, journal, decisions, timeline
 

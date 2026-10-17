@@ -90,6 +90,10 @@ map; the code says the details.
 2026-10-13, after the newt's legs folded up facing left passed the layering check). It measures,
 it doesn't look; every unit of eight races at every age of its line, every rider on every mount,
 winged mounts, every newt skin, the animals and the siege crews (`tests/placement/cases.gd`).
+Every shield, cape, banner, quiver and healer's bag goes on every playable body too (`gear_cases`), and the Norse
+kit on every body (`norse_cases`). Where off-hand gear can't sit right, the body's data says so: `"shield":
+"slung"` / `"slung_flat"` carries a shield on the back from the model's `sling` socket (frogs, rearing beetles,
+spiders; baked `<shield>@slung`, D-152), and a part's `not_worn_by` keeps it off a body it doesn't fit.
 
 **3D** (`tests/placement/geometry_check.gd`, headless, also in `run_tests.gd`): each unit is put
 together from its models as UnitView composes it (`tests/placement/rig3d.gd`: legs at their hips

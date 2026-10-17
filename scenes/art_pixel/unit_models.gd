@@ -116,6 +116,8 @@ static func hips(spec: Dictionary) -> Vector3:
 func build(id: String, colours: Dictionary) -> Dictionary:
 	if _is_engine(id):
 		return _siege().build(id, colours)
+	if sling_of(id) != "":
+		return slung(build(id.get_slice("@", 0), colours), sling_of(id))
 	var own := id.get_slice("~", 0)   # (what follows "~" is the body it's baked on or cut by)
 	hold = own.get_slice("@", 1) if "@" in own else "low"   # a cut leg keeps its pose: "leg.cat@w3_8~body.cat^1"
 	var base := own.get_slice("@", 0)
@@ -139,6 +141,36 @@ func build(id: String, colours: Dictionary) -> Dictionary:
 				e.hold = hold
 				return e.call(fn, colours)
 	return call(fn, colours)
+
+
+## A shield slung on the back, for bodies whose parts.json says "shield": "slung" or "slung_flat"
+## (frogs and rearing beetles, a spider; held in the off hand it cut the ground, the armour or the head:
+## Dominic, 2026-10-17, "or just put them on their backs instead"). "<shield>@slung" hangs upright
+## behind the shoulders, its face back; "<shield>@slung_flat" lies on top of a body carried level,
+## face up, its top towards the tail. The shield as built for the hand (its face SHIELD_FACE, its middle
+## at SHIELD_AT from the grip) is turned that way, its middle on the body's "sling" socket.
+const SLUNG := "@slung"
+const SHIELD_AT := Vector3(3.0, 0.4, 1.5)
+const SLINGS := {"@slung": [Vector3(-1.0, 0.2, 0.0), Vector3.UP], "@slung_flat": [Vector3(-0.45, 1.0, 0.0), Vector3(-1.0, -0.45, 0.0)]}   # [face, up]
+
+
+static func sling_of(id: String) -> String:
+	return "@" + id.get_slice("@", 1) if id.get_slice("@", 1).begins_with("slung") else ""
+
+
+func slung(built: Dictionary, how: String) -> Dictionary:
+	var f := SHIELD_FACE.normalized()
+	var u := (Vector3.UP - f * f.dot(Vector3.UP)).normalized()
+	var from := Basis(f, u, f.cross(u))
+	var tf: Vector3 = SLINGS[how][0].normalized()
+	var tu: Vector3 = (SLINGS[how][1] - tf * tf.dot(SLINGS[how][1])).normalized()
+	var to := Basis(tf, tu, tf.cross(tu))
+	var turn := to * from.inverse()
+	var n := Node3D.new()
+	var inner: Node3D = built.node
+	inner.transform = Transform3D(turn, turn * -SHIELD_AT)
+	n.add_child(inner)
+	return {"node": n}
 
 
 ## The near arm's elbow and hand for the body's hold, from its shoulder, its resting
@@ -397,7 +429,7 @@ func _body_frog_built(c: Dictionary) -> Dictionary:
 	return {"node": n, "front": front, "sockets": {
 		"head": Vector3(6.6, 13.5, 0), "hand_r": near_hand, "hand_l": Vector3(8.0, 4.5, -5.4),   # (head at 7, 14 sat a unit off the body; the far hand at 1.2 put a staff a unit into the ground)
 		"torso": Vector3(1.0, 10.0, 0), "back": Vector3(-4.5, 13.0, 0), "sit": Vector3(-0.5, 3.6, 0),
-		"drape": Vector3(-7.5, 12.5, 0)},   # (a hero's cape hangs from behind the hunched shoulders, clear of the haunches)
+		"drape": Vector3(-7.5, 12.5, 0), "sling": Vector3(-7.4, 12.5, 0)},   # (a hero's cape hangs from behind the hunched shoulders, clear of the haunches; a shield slung upright behind it)
 		"anchors": [[Vector3(-4.5, 6.0, -5.2), 0.0, -1], [Vector3(-4.5, 6.0, 5.2), PI, 1]],
 		"torso_scale": Vector2(0.75, 0.6)}
 
@@ -717,7 +749,7 @@ func _body_spider(c: Dictionary) -> Dictionary:
 		hips.append([Vector3(xs[k], 10.5, -3.5), k * 1.0 + PI, -1, 1 if k >= 1 else 0, false, SPIDER_FAN[k]])
 	return {"node": n, "sockets": {"head": Vector3(3.5, 20.0, 0), "hand_r": hand_r, "hand_l": hand_l,
 		"torso": Vector3(1.5, 14.5, 0), "back": Vector3(-14.5, 14.5, 0), "seat": Vector3(-8.0, 16.5, 0), "wings": Vector3(-1.0, 17.0, 0),   # (back at the rump's end: at (-7, 14) a cape hung down through the abdomen)
-		"sit": Vector3(-4.0, 4.5, 0)},
+		"sit": Vector3(-4.0, 4.5, 0), "sling": Vector3(-7.6, 17.9, 0)},   # (a shield slung flat on the abdomen)
 		"anchors": hips, "torso_scale": Vector2(0.5, 0.6)}
 
 
@@ -1968,7 +2000,7 @@ func _body_beetle_rear(c: Dictionary) -> Dictionary:
 	n.add_child(rod(Vector3(3.5, 18, -4), Vector3(6.5, 14.5, -6), 0.95, 0.75, limb))   # the far arm
 	return {"node": n, "front": front, "sockets": {"head": Vector3(4, 22.5, 0), "hand_r": pose[1], "hand_l": Vector3(6.5, 14.5, -6),
 		"torso": Vector3(2.5, 16, 0), "back": Vector3(-6, 14, 0),
-		"drape": Vector3(-10.5, 12.5, 0)},   # (a hero's cape hangs from behind the shell, clear of the abdomen)
+		"drape": Vector3(-10.5, 12.5, 0), "sling": Vector3(-9.5, 14.4, 0)},   # (a hero's cape hangs from behind the shell, clear of the abdomen; a shield slung flat on the wing cases)
 		"anchors": [[Vector3(0.5, 8.0, 3.2), 0.0, 1, 0], [Vector3(-6.0, 8.0, 3.2), PI, 1, 1],
 			[Vector3(0.5, 8.0, -3.2), PI, -1, 0], [Vector3(-6.0, 8.0, -3.2), 0.0, -1, 1]],
 		"torso_scale": Vector2(0.55, 0.65)}

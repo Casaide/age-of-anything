@@ -1,7 +1,7 @@
 {
  "name": "norse_lineup",
- "title": "The Norse culture (D-149): the vikings' lines through the ages, and the Norse on every body",
- "_doc": "Rows 1-4: 'vikings' (humans) line by line at ages 1 to 3 (fur cap, conical cap or horns, spectacle helm; bearded axe at age 2, broad axe at age 3), the rune healer, the berserker, the Raven-Feeder hero. Rows after: the Norse swordsman at age 3 on the other bodies that pass placement (spiders and beetles wait for their shield hand: backlog §0b).",
+ "title": "The Norse culture (D-151): the vikings' lines through the ages, and the Norse on every body",
+ "_doc": "Rows 1-4: 'vikings' (humans) line by line at ages 1 to 3 (fur cap, conical cap or horns, spectacle helm; bearded axe at age 2, broad axe at age 3), the rune healer, the berserker, the Raven-Feeder hero. Rows after: the Norse swordsman at age 3 on every other body (frogs, spiders and beetles with their shields slung on their backs, D-152).",
  "zooms": [3, 1],
  "cell": [62, 58],
  "rows": [
@@ -9,7 +9,7 @@
   {"each": {"prompt": ["vikings"], "slot": ["spear", "infantry", "archer", "healer", "scout"]}, "age": 2, "label": "{prompt} age 2\n{name}"},
   {"each": {"prompt": ["vikings"], "slot": ["spear", "infantry", "unique", "large"]}, "age": 3, "label": "{prompt} age 3\n{name}", "h": 1.3},
   {"label": "vikings: the Raven-Feeder", "unit": {"prompt": "vikings", "slot": "hero", "hero": "ravenfeeder", "age": 3}},
-  {"each": {"prompt": ["viking frogs", "viking rats", "viking centaurs"], "slot": ["infantry"]}, "age": 3, "label": "{prompt} age 3\n{name}", "h": 1.2}
+  {"each": {"prompt": ["viking frogs", "viking rats", "viking spiders", "viking beetles", "viking centaurs"], "slot": ["infantry"]}, "age": 3, "label": "{prompt} age 3\n{name}", "h": 1.2}
  ],
  "sheets": [
   {"name": "facings", "title": "8 facings", "columns": "facings"},

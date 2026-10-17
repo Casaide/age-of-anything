@@ -32,12 +32,9 @@ the rubble, the siege tower and ladder, the trade cart, the unique units' themes
 - **Bears** (milestone 14): below, "A Bear race".
 - **The end screen's match story** (milestone 19, step 5) and the open-licence fonts (step 2, waiting on a download
   yes). The post-game stats are milestone 18's.
-- **Shields on spiders and beetles** (found 2026-10-17 with the Norse culture, D-149): a shield in a spider's off
-  hand cuts its head, and on a rearing beetle it cuts its armour (the placement check, A3). No culture's shield was
-  ever checked on them, because no checked race gave a bug one; the Norse (round shields everywhere) make "viking
-  spiders" and "viking beetles" common. Move those bodies' shield hand out (a body art change, so shown first), then
-  add them to `SHIELD_BODIES` in `tests/placement/cases.gd`. Until then the lineup sheet leaves them out.
-- **Norse, the rest** (D-149): a concept round for the Norse helmets (built from round 1's suggestion, which Dominic
+- ~~**Shields on spiders and beetles**~~ (done 2026-10-17, D-152): slung on the back, every shield and back piece
+  checked on every body (`gear_cases`).
+- **Norse, the rest** (D-151): a concept round for the Norse helmets (built from round 1's suggestion, which Dominic
   hadn't picked; the braids and beards came off, since they cut into frogs, rats and beetles), a Norse architecture
   (longhouses, today the thatch look), a Norse war beast for humans (the creature's elephant wins over the culture's
   boar), and the shield wall formation (milestone 22, step 4).
@@ -157,7 +154,7 @@ still maps the brief onto parts within host rules.
   - **Amphibians (frogs, crocodiles):** build on swamp and shallow water, and swim across
     shallow water.
   - **Roman infantry:** throw a pilum volley before closing to melee.
-  - **Vikings:** form a shield wall (stop, high pierce armour, slow). (2026-10-17: the Norse culture exists, D-149;
+  - **Vikings:** form a shield wall (stop, high pierce armour, slow). (2026-10-17: the Norse culture exists, D-151;
     the shield wall is milestone 22's step 4.)
   - Candidates to weigh up:
     - Beavers dam water into new ground or swamp.
