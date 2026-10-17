@@ -517,6 +517,44 @@ func _test_movement_classes() -> void:
 	check(w.map.terrain[w.map.cell_of(w.units.x[fi], w.units.y[fi])] == shallows, "the frog wades into the shallows")
 	check(w.map.terrain[w.map.cell_of(w.units.x[ri], w.units.y[ri])] != shallows, "the rat stops at the water's edge")
 	_test_deep_river()
+	_test_flyers_and_walls(flyers, rats)
+
+
+## Stone walls stop flyers; palisades don't (Dominic, 2026-10-17, D-158). A wall line across the
+## whole of flat_test keeps a flyer on its side; a palisade line it flies over. A save from before
+## (the walls standing, not marked) gets them marked on load (World.after_load).
+func _test_flyers_and_walls(flyers: Dictionary, rats: Dictionary) -> void:
+	var bare := rules_.duplicate(true)
+	bare.economy.start.buildings = []
+	bare.economy.start.workers = 0
+	for kind in ["wall", "palisade"]:
+		var w := World.new(SEED, SimMap.load_id("flat_test"), [flyers, rats], bare, [0, 1])
+		w.ages[1] = 3
+		var m = w.map
+		var k := Economy.btype_of(w, kind)
+		var y := 20
+		for x in m.width:
+			Economy.place(w, 1, k, x, y)
+		var fly: int = SimMap.FLYING
+		var closed := range(m.width).filter(func(x): return m.walks[fly][y * m.width + x] == 0).size()
+		if kind == "wall":
+			check(closed == m.width, "flyers and walls: a stone wall is closed to flyers (%d of %d cells)" % [closed, m.width])
+			for x in m.width:   # as a save from before D-158 has them: standing, not marked
+				m.high[y * m.width + x] = 0
+				m._refresh(y * m.width + x)
+			w.after_load([])
+			closed = range(m.width).filter(func(x): return m.walks[fly][y * m.width + x] == 0).size()
+			check(closed == m.width, "flyers and walls: an older save's walls are closed to flyers once loaded (%d of %d)" % [closed, m.width])
+		else:
+			check(closed == 0, "flyers and walls: a palisade is open to flyers (%d of %d closed)" % [closed, m.width])
+		w.issue(0, Commands.SPAWN, {"slot": "spear", "count": 1, "x": 30500, "y": 15500})
+		while w.units.count() < 1:
+			w.step()
+		w.issue(0, Commands.MOVE, {"ids": [w.units.id[0]], "x": 30500, "y": 26500})
+		for t in 600:
+			w.step()
+		var past: bool = w.units.y[0] > (y + 1) * 1000
+		check(past == (kind == "palisade"), "flyers and walls: the flyer %s the %s (y %d)" % ["crosses" if past else "stays behind", kind, w.units.y[0]])
 
 
 ## Reed Meadow's rivers have a deep middle (Dominic, 2026-10-17: frog races swam the river anywhere):

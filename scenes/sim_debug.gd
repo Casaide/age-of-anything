@@ -2251,6 +2251,10 @@ func _sync_views() -> void:
 		var perch_dy := _perch_sort(i, view.position.y)   # up on a wall: sorted between the wall and its near merlons
 		view.position.y += perch_dy
 		view.lift = Iso.lift(u.px[i] + dx * a, u.py[i] + dy * a) + _wall_lift(i) + perch_dy   # on a hill (or a wall): drawn raised, sorted on the base plane
+		if u.mclass[i] == SimMap.FLYING:
+			var roof_dy := _over_roof(i, view)   # over a building: drawn over its roof, not through it
+			view.position.y += roof_dy
+			view.lift += roof_dy + float(view.get_meta("roof", 0.0))
 		view.set_perched(u.perch[i] != 0)
 		view.walking = dx != 0 or dy != 0
 		if int(world.types[u.kind[i]].unpack) > 0:   # the great sling: on its wagon until it's set up (D-129)
@@ -2281,6 +2285,27 @@ func _sync_views() -> void:
 			views[id].queue_free()
 			views.erase(id)
 			selected.erase(id)
+
+
+## A flyer over a building (it flies over all but stone walls, D-158): how far to move its sort point
+## so it draws after the building's front corner, over the roof instead of through the walls. It also
+## climbs ROOF_PX while over one, eased in and out (the view's "roof" meta).
+const ROOF_PX := 12.0
+
+
+func _over_roof(i: int, view: UnitView) -> float:
+	var u := world.units
+	var cell := map.cell_of(u.x[i], u.y[i])
+	var bid: int = map.occupied[cell] if map.walk_over[cell] == 0 else 0   # (a farm or a pen lies flat: nothing to climb)
+	var b := world.buildings.index_of(bid) if bid != 0 else -1
+	var climb: float = view.get_meta("roof", 0.0)
+	climb = move_toward(climb, ROOF_PX if b >= 0 else 0.0, ROOF_PX * 3.0 * get_process_delta_time())
+	view.set_meta("roof", climb)
+	if b < 0:
+		return 0.0
+	var bs := world.buildings
+	var front: float = Iso.to_screen((bs.cx[b] + bs.sx[b]) * SimMap.TILE, (bs.cy[b] + bs.sy[b]) * SimMap.TILE).y
+	return maxf(0.0, front + 0.5 - view.position.y)
 
 
 ## How far up a wall unit i is drawn (walls.gd): the walkway's height on it, part of it while it

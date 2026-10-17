@@ -1074,3 +1074,17 @@ answering") or loaded only after the host; sends now flush, the link is serviced
 Save out of a network match. Every machine runs the same world, so any player can save it on their own machine; the
 other people's sides go into the save as Normal AIs (fresh bots from that moment). Loaded alone, the AIs play them
 on; hosted again on the network (D-148), a person takes one over. The match isn't paused while the menu is open.
+
+**D-158, 2026-10-17: Stone walls stop flyers; flyers draw over the buildings they cross.** Dominic: "flying units
+also can go over pallisades. Probably fair - just annoying early game. But big walls they shouldnt be able to go
+over. That said, is it just too unbalanced either way?" Claude's view: flying over everything made walls worthless
+against a winged race for 4 points of wings; flying over nothing (after D-154's trees and deep river) would leave
+wings little more than speed for hit points. The middle gives flight an arc: a nuisance early (no walling it out with
+stakes), answered by stone walls and towers from age 2, and leaves the soaring castle unit (backlog) the one thing
+that crosses everything. Dominic: "yeh block with stone walls". A building type's `blocks_flyers` (buildings.json:
+the stone wall, stone gate, wall tower) closes its cells to flyers too (SimMap.high; a side's own stone gate still
+opens for its flyers); palisades, houses and the rest they fly over. A save from before marks its standing walls on
+load (World.after_load). And, Dominic: flying over buildings "is weird though because they just ghost through
+them": a flyer over a building is sorted after the building's front corner and climbs 12 px, so it's drawn over the
+roof, not through the walls (sim_debug `_over_roof`; farms and pens lie flat, nothing to climb). The Castle doesn't
+block flyers (not asked; easy to add with the flag).
