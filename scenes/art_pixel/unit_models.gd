@@ -3284,6 +3284,83 @@ func _shield_chimalli(c: Dictionary) -> Dictionary:
 	return {"node": n}
 
 
+# ------------------------------------------------------------------ Norse (2026-10-17)
+# From the round-1 Viking concepts (docs/concepts/README.md; Claude's suggestion there, Dominic hadn't
+# picked): a fur cap at age 1, the conical cap at age 2 (the horned helm stays the fun pick beside
+# it), the spectacle helmet at age 3. Everything sits on the skull: the concepts' braids and beards
+# hung into a frog's, rat's or beetle's chest (the placement check, A3), and at game scale they
+# vanish anyway. Axes in the swordsman's "low" hold: the grip at the origin, the haft along
+# SWORD3_TIP, the edge forward.
+
+## Age 1: a round leather cap with a thick fur brim.
+func _helm_norse_fur(c: Dictionary) -> Dictionary:
+	var n := Node3D.new()
+	n.add_child(dome(Vector3(5.0, 4.4, 4.8), surf("leather", Color(0.9, 0.85, 0.8), 2.0), Vector3(-0.2, -3.8, 0)))
+	n.add_child(ring(4.6, 5.8, surf("rat_fur", Color("#7a5a3c"), 2.0), Vector3(0, -3.6, 0)))
+	_lift(n, 1.7)   # the brim clear of the brow and a rat's eyes (placement check, A2)
+	return {"node": n}
+
+
+## Age 2: a conical iron cap rising to a short spike, a nose guard.
+func _helm_norse_conical(c: Dictionary) -> Dictionary:
+	var n := Node3D.new()
+	var iron := surf("iron", Color(0.85, 0.85, 0.9), 3.0)
+	n.add_child(cone(0.3, 5.1, 5.6, iron, Vector3(0, -1.2, 0)))
+	n.add_child(ring(4.8, 5.4, iron, Vector3(0, -3.8, 0)))
+	n.add_child(rod(Vector3(0, 1.4, 0), Vector3(-0.3, 3.2, 0), 0.45, 0.15, iron))   # the spike
+	n.add_child(rod(Vector3(5.0, -3.6, 0), Vector3(5.5, -7.0, 0), 0.6, 0.5, iron))   # the nose guard ("face": "covered")
+	_lift(n, 0.6)   # its rim off a riding beetle's shell (placement check, A3)
+	return {"node": n}
+
+
+## Age 3: a rounded iron helmet with a spectacle guard round the eyes, a mail curtain behind and
+## at the sides.
+func _helm_norse_spectacle(c: Dictionary) -> Dictionary:
+	var n := Node3D.new()
+	var iron := surf("iron", Color(0.85, 0.85, 0.9), 3.0)
+	n.add_child(dome(Vector3(5.0, 5.4, 4.8), iron, Vector3(0, -3.8, 0)))
+	n.add_child(ring(4.8, 5.4, iron, Vector3(0, -3.6, 0)))
+	n.add_child(rod(Vector3(-5, -1.0, 0), Vector3(5, -1.0, 0), 0.5, 0.5, iron))
+	for side in [1, -1]:
+		n.add_child(ring(0.9, 1.5, iron, Vector3(4.6, -5.4, 1.7 * side), Vector3(0, 0, 90)))
+	var mail := surf("mail", Color(0.7, 0.7, 0.75), 2.0)
+	for a in [PI * 0.55, PI * 0.78, PI * 1.22, PI * 1.45]:   # (sides and back quarters: one straight behind would meet a banner's pole)
+		n.add_child(blob(Vector3(1.9, 2.4, 0.45), mail, Vector3(cos(a) * 5.0 - 0.6, -4.6, sin(a) * 5.0), Vector3(0, -rad_to_deg(a), 0)))
+	n.add_child(ring(4.9, 5.3, plain(c.team), Vector3(0, -3.0, 0)))
+	return {"node": n}
+
+
+## An axe head in the haft's frame: x along the haft (the head's top at `top`), -y forward (the
+## edge), a beard hanging down below the socket; `k` scales it.
+func _axe_head(top: float, k: float) -> Array:
+	var pts := [Vector2(0.3, 1.0), Vector2(0.3, -1.4), Vector2(1.4, -6.0), Vector2(-1.6, -6.8), Vector2(-5.2, -6.0),
+		Vector2(-3.0, -1.4), Vector2(-3.0, 1.0)]
+	return pts.map(func(p): return Vector2(top + p.x * k, p.y * k))
+
+
+## Norse: the bearded axe: an ash haft and an iron head whose lower edge hangs like a beard.
+func _weapon_axe_bearded(c: Dictionary) -> Dictionary:
+	var n := Node3D.new()
+	var d := SWORD3_TIP.normalized()
+	var ang := atan2(d.y, d.x)
+	n.add_child(rod(-d * 3.4, d * 13.0, 0.6, 0.55, surf("wood_grain", Color(1.1, 1.0, 0.85), 4.0)))
+	n.add_child(blade(_axe_head(12.6, 1.0), 0.6, _bright_iron(), Vector3.ZERO, ang))
+	n.add_child(ring(0.55, 0.95, surf("leather", Color.WHITE, 2.0), -d * 1.2, Vector3(0, 0, rad_to_deg(ang) - 90)))
+	return {"node": n}
+
+
+## Norse age 3: a long-hafted broad axe, a wide crescent edge, a team band under the head.
+func _weapon_axe_broad(c: Dictionary) -> Dictionary:
+	var n := Node3D.new()
+	var d := SWORD3_TIP.normalized()
+	var ang := atan2(d.y, d.x)
+	n.add_child(rod(-d * 4.0, d * 17.0, 0.65, 0.6, surf("wood_grain", Color(1.1, 1.0, 0.85), 4.0)))
+	n.add_child(blade(_axe_head(16.4, 1.35), 0.6, _bright_iron(), Vector3.ZERO, ang))
+	n.add_child(ring(0.6, 1.05, plain(c.team), d * 11.0, Vector3(0, 0, rad_to_deg(ang) - 90)))
+	n.add_child(ring(0.55, 0.95, surf("leather", Color.WHITE, 2.0), -d * 1.2, Vector3(0, 0, rad_to_deg(ang) - 90)))
+	return {"node": n}
+
+
 # ------------------------------------------------------------------ the healer's kit (HL1, look A)
 # A tall staff with a healing token tied at the top (herbs; cheese for rats; a water lily for
 # frogs) and a bag in the off hand. Held low, like a spear: built around the grip at the hand.
@@ -3528,6 +3605,25 @@ func _tool_staff_gourd(c: Dictionary) -> Dictionary:
 	n.add_child(cone(0.5, 0.6, 1.2, plain(Color("#5a3a20")), g + Vector3(0, 7.0, 0)))   # the stopper
 	n.add_child(blob(Vector3(0.7, 2.4, 0.7), plain(Color("#c02a20")), b - d * 2.5 + Vector3(1.1, -2.0, 0.4)))   # the tassel
 	n.add_child(ring(0.7, 1.15, plain(c.team), b - d * 1.2, Vector3(0, 0, tilt)))
+	return {"node": n}
+
+
+## Norse: a crooked ash staff, a carved rune stone and two herb bundles tied at the top.
+func _tool_staff_rune(c: Dictionary) -> Dictionary:
+	var n := Node3D.new()
+	var a := Vector3(-2, -9, 0)
+	var m := Vector3(1.5, 9, 0.4)
+	var b := Vector3(4.0, 25, 0)
+	var ash := surf("wood_grain", Color(1.1, 1.0, 0.85), 5.0)
+	n.add_child(rod(a, m, 1.0, 0.9, ash))
+	n.add_child(rod(m, b, 0.9, 0.8, ash))   # (a bend halfway: crooked)
+	var d := (b - m).normalized()
+	n.add_child(blob(Vector3(2.4, 3.0, 1.6), surf("rock", Color(0.9, 0.9, 0.86), 1.5), b + d * 2.4))   # the rune stone
+	for k in 3:   # its carved lines, in the team colour
+		n.add_child(blob(Vector3(0.25, 1.6, 0.2), plain(c.team), b + d * 2.4 + Vector3(0.6 * (k - 1), 0, 1.5)))
+	for side in [1, -1]:   # the herbs
+		n.add_child(blob(Vector3(0.9, 2.4, 0.9), surf("leaf", Color(0.7, 0.9, 0.55), 2.0), b - d * 1.0 + Vector3(0.4, -1.6, 1.3 * side), Vector3(0, 0, 18 * side)))
+	n.add_child(ring(0.7, 1.15, surf("leather", Color.WHITE, 2.0), b - d * 0.2, Vector3(0, 0, tilt_of(m, b))))
 	return {"node": n}
 
 

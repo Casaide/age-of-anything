@@ -17,7 +17,7 @@ const Pricing := preload("res://src/pricing.gd")
 ## Races whose every unit is checked (between them: every playable body, every hold, back parts,
 ## wings, a fused centaur, siege crews).
 const PROMPTS := ["romans", "swamp frogs", "sewer rats", "rats", "forest beetles", "spooky spiders",
-	"flying greeks with wings", "centaur romans", "winged frogs"]
+	"flying greeks with wings", "centaur romans", "winged frogs", "vikings"]
 ## More races for milestone 13's new lines only (scouts, mounted archers, unique units): with PROMPTS,
 ## every unique theme in data/uniques.json, a foot scout, the steppe raider on its pony; the sapper, trade cart and great sling.
 const LINE_PROMPTS := ["greeks", "royal humans", "mongols", "aztecs", "egyptians", "han", "sewer rats with cheese hammers",
@@ -77,6 +77,7 @@ static func all(lib, lines := true) -> Array:
 	for u in animals.units:
 		cases.append(["animal %s" % u.recipe.body, u])
 	cases += hero_cases(lib, gen, rules)
+	cases += norse_cases(lib, gen, rules)
 	cases += kit_cases(lib)
 	cases += composite_cases(lib)
 	cases += mod_cases(lib)
@@ -109,6 +110,47 @@ static func hero_cases(lib, gen, rules: Dictionary) -> Array:
 				continue
 			var r := Heroes.dress(step.recipe, sid, s, sid, int(Heroes.slot_def(rules).tier))
 			out.append(["hero: %s as %s" % [cid, sid], {"recipe": r, "eval": Pricing.evaluate(r, lib, rules)}])   # (its own tags: how it holds its weapon)
+	return out
+
+
+## The Norse culture's kit (2026-10-17, D-149): any creature can be Norse ("viking frogs"), so each
+## Norse part is put on every playable body, over the unit of HERO_BASE's race (its kit already
+## checked above) that would wear or hold it: helmets on the age-3 swordsman and the spear rider, the
+## axes in the swordsman's, rider's and scout's hands, the rune staff in the healer's. The round
+## shield and the horned helmet (older parts the Norse wear everywhere) come too. Labels
+## "norse: <creature> <unit> with <part>".
+## Not yet: a shield on a spider (it cuts the spider's head) or a rearing beetle (its armour). No
+## culture's shield was ever checked on them (no checked race gave a bug one); the Norse make it common.
+## Backlog §0b, "Shields on spiders and beetles"; add them to SHIELD_BODIES once their shield hand moves.
+const SHIELD_BODIES := ["frog", "rat", "human", "centaur"]
+const NORSE_HELMS := ["helm.norse_fur", "helm.norse_conical", "helm.norse_spectacle", "helm.horned"]
+const NORSE_AXES := ["weapon.axe.bearded", "weapon.axe.broad"]
+
+
+static func norse_cases(lib, gen, rules: Dictionary) -> Array:
+	var out := []
+	var in_play: Dictionary = DataLib.load_json("res://data/creatures.json")
+	for cid in lib.creature_ids("playable"):
+		if not in_play.has(cid):
+			continue
+		var race: Dictionary = gen.generate(HERO_BASE[cid], rules)
+		var sword: Dictionary = slot(race, "infantry").line[-1]
+		var put := func(label: String, base: Dictionary, parts: Dictionary) -> void:
+			var r: Dictionary = base.recipe.duplicate(true)
+			r.parts.merge(parts, true)
+			out.append(["norse: %s %s" % [cid, label], {"recipe": r, "eval": Pricing.evaluate(r, lib, rules)}])
+		for h in NORSE_HELMS:
+			put.call("swordsman with %s" % h, sword, {"head_gear": h})
+		for a in NORSE_AXES:
+			put.call("swordsman with %s" % a, sword, {"hand_r": a})
+		if cid in SHIELD_BODIES:
+			put.call("swordsman with shield.round", sword, {"hand_l": "shield.round"})
+		var rider: Dictionary = ride(slot(race, "spear"), "pony", lib.creatures.pony.skins[0], {})
+		if cid != "centaur":
+			put.call("rider with weapon.axe.bearded and helm.norse_conical", rider, {"hand_r": "weapon.axe.bearded", "head_gear": "helm.norse_conical"})
+		var scout: Dictionary = slot(race, "scout")
+		put.call("scout with weapon.axe.bearded and helm.norse_fur", scout, {"hand_r": "weapon.axe.bearded", "head_gear": "helm.norse_fur"})
+		put.call("healer with tool.staff.rune", slot(race, "healer"), {"hand_r": "tool.staff.rune"})
 	return out
 
 
