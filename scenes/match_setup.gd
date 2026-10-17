@@ -73,6 +73,7 @@ var tree_page: Control          # the tech tree page, over everything while open
 var saves_page: Control         # Load game: the saved matches (src/view/ui/saves_page.gd)
 var net_page: Control           # Play on the network (src/view/ui/net_page.gd)
 var net_hosting := false        # the battle setup is for hosting a network game (Start: wait for a player)
+var net_hosting_save := false   # the saves page is picking a saved match to host on the network
 var menu_layer: Node2D          # the title screen's hill, both armies on it
 var menu_stage: SubViewportContainer
 var _themes := {}               # family -> Theme (themes are built once per culture)
@@ -257,7 +258,7 @@ func _menu() -> Control:
 	var buttons := VBoxContainer.new()
 	buttons.add_theme_constant_override("separation", 14)
 	plaque.add_child(buttons)
-	for item in [["Battle the AI", func(): net_hosting = false; _open_setup()], ["Play on the network", func(): _open_net()], ["Load game", func(): _open_saves()], ["Race Lab", func(): get_tree().change_scene_to_file("res://scenes/race_lab.tscn")],
+	for item in [["Battle the AI", func(): net_hosting = false; _open_setup()], ["Play on the network", func(): _open_net()], ["Load game", func(): net_hosting_save = false; _open_saves()], ["Race Lab", func(): get_tree().change_scene_to_file("res://scenes/race_lab.tscn")],
 			["Quit", func(): get_tree().quit()]]:
 		var primary: bool = item[0] == "Battle the AI"
 		var b := UiTheme.button(item[0], primary)
@@ -286,6 +287,7 @@ func _open_net() -> void:
 		add_child(net_page)
 		PadMode.of(get_tree()).menus.append(net_page)
 		net_page.host_chosen.connect(func(): net_hosting = true; _open_setup())
+		net_page.host_save_chosen.connect(func(): net_hosting_save = true; _open_saves())
 		net_page.start.connect(_play_network)
 		net_page.closed.connect(func():
 			if not setup.visible:
@@ -326,8 +328,17 @@ func _open_saves() -> void:
 		saves_page = SavesPage.new(lib, UiTheme.look("").metal)
 		add_child(saves_page)
 		PadMode.of(get_tree()).menus.append(saves_page)
-		saves_page.chosen.connect(_play_saved)
-		saves_page.closed.connect(func(): menu.visible = true; UiTheme.arrive(menu))
+		saves_page.chosen.connect(func(rep):
+			if net_hosting_save:   # hosting it on the network: which AI the other player takes over
+				net_hosting_save = false
+				saves_page.visible = false
+				net_page.choose_seat(rep)
+			else:
+				_play_saved(rep))
+		saves_page.closed.connect(func():
+			net_hosting_save = false
+			menu.visible = true
+			UiTheme.arrive(menu))
 	menu.visible = false
 	saves_page.open()
 
