@@ -404,6 +404,7 @@ hero that heals and outlives its escort (raising the price raised A's "value lef
 - Rats' units 20% cheaper, not 30% (balance, Claude; Dominic to confirm); then 10% (2026-10-14, with the rat body priced at 3 points).
 - Six bonuses a race instead of three (Dominic, 2026-10-13), with a team bonus per culture.
 - Centaurs are mounted but not large (one place, no spear bonus against them): Claude's balance call, for Dominic to confirm.
+- A prompt naming a hero gets just that one (D-149, 2026-10-17, after the close); otherwise every hero (D-138).
 - Alternatives were only agreed for groups; Claude wrote alts for the creatures and cultures that can
   double up (swamp after frogs: food gathered faster; sewer after humans: buildings +10% hp; and more).
 
