@@ -519,7 +519,15 @@ func save_game() -> String:
 	var keep_groups := {}
 	for k in groups:
 		keep_groups[k] = groups[k].duplicate()
-	SaveGame.save(SaveGame.record(world, bot_seats, clock.bots, {
+	var seats := bot_seats
+	var bots: Array = clock.bots
+	if net_link != null:   # a network match: the other people's sides go in the save as AIs (loaded alone they play on; hosted again a person takes one over)
+		seats = seats.duplicate(true)
+		bots = bots.duplicate()
+		for p in net_setup.get("humans", [0, 1]).filter(func(p): return p != net_me):
+			seats.append({"player": p, "level": "normal", "from_seq": world.commands.next_seq.get(p, 0), "at": world.tick})
+			bots.append(Bot.new(p, {}, "normal"))
+	SaveGame.save(SaveGame.record(world, seats, bots, {
 		"active": active, "prompts": prompts, "rerolls": rerolls, "player_teams": player_teams, "ai_levels": ai_levels,
 		"ai_level": ai_level, "map_id": map.id, "mode": mode, "vs_ai": vs_ai, "names": world.races.map(func(r): return r.name),
 		"hint_step": hint_step, "groups": keep_groups, "camera": [at.x, at.y]}), path)
@@ -1788,7 +1796,7 @@ func _show_pause_menu(on: bool) -> void:
 	box.get_node("resume").visible = not over
 	box.get_node("surrender").visible = not over
 	box.get_node("tree").visible = not over
-	box.get_node("save").visible = not over and playback.is_empty() and net_link == null   # (a network match isn't saved)
+	box.get_node("save").visible = not over and playback.is_empty()   # (a network match saves on this machine: the others' sides as AIs)
 	box.get_node("save").text = "Save game"
 	var back: Button = box.get_node("menu")   # when it's over, the way back is the call to action
 	pause_menu.set_meta("pad_first", back if over else box.get_node("resume"))   # where a pad's focus starts
