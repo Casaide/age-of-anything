@@ -935,3 +935,15 @@ unique units' new parts, race mechanics, race balance, bears, the end screen's s
 pass is superseded and the art and UI track closed. Milestone 20 (the Deck) stays open; 22 (battle feel) is planned;
 18 not started. Dominic: "Sapper we killed. Should be gone from tech tree": a roster slot can be `"status": "parked"`,
 out of the game (the generator skips it) and off the tech tree page; the sapper is parked (D-128's code stays).
+
+**D-147, 2026-10-17: Multiplayer starts as lockstep over ENet on the home network; HyperDHT next.** Dominic asked for
+the fastest way to multiplayer with no server of ours and no NAT trouble; Claude compared Godot's ENet (built in, no
+NAT traversal), WebRTC (needs a signalling server and TURN), Steam networking (relays, but a Steam app id), and a
+HyperDHT sidecar over Bare (no server, holepunching, the host's key as the join code). Dominic: "we can solve that
+next using enet like you said and we do local tests". So phase 1 is lockstep over ENet, 1v1 on the LAN, to prove two
+machines (macOS and Linux) stay in step; phase 2 is the HyperDHT sidecar behind the same transport interface. The sim
+already ran on stamped commands two turns ahead, so only commands travel: at each turn's end a machine sends its
+commands with a done mark and its state hashes, and a turn starts only once every player's turn two before it is in.
+A match is its setup (the host's race, the joiner's own race, map, mode, teams); games are found by a LAN beacon (no
+address to type on the Deck; a subnet broadcast, since macOS won't send to 255.255.255.255). A network match has no
+pause, saving, speed change or testing keys; a desync or a player leaving ends it with a note.

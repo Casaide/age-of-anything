@@ -52,15 +52,27 @@ relays, Steam, the joiner choosing their own race in a shared lobby (the host se
 
 ## Checklist
 - [x] Plan written (2026-10-17; Dominic agreed the approach: ENet first, local tests)
-- [ ] 1. Two sims in one process, loopback with delay
-- [ ] 2. Transport (loopback, ENet) and lockstep; the clock's turn gate
-- [ ] 3. Handshake: setup, version, race keys, loaded
-- [ ] 4. Lobby: Host, Join (LAN discovery, an address field); the match's network rules
-- [ ] 5. Two processes over ENet on one machine (test), then the Mac vs the Deck (Dominic)
+- [x] 1. Two sims in one process, loopback with delay (2026-10-17: four link speeds, the same hashes as the reference; a tampered command caught)
+- [x] 2. Transport (loopback, ENet) and lockstep; the clock's turn gate (2026-10-17)
+- [x] 3. Handshake: setup and version (2026-10-17; race keys and "loaded" weren't needed: the gate starts both together, the hashes catch any difference)
+- [x] 4. Lobby: Host, Join (LAN discovery, an address field); the match's network rules (2026-10-17; the joiner names their own race)
+- [x] 5a. Two processes over ENet on one machine, and two game windows through the lobby (2026-10-17)
+- [ ] 5b. The Mac vs the Deck on the home network (Dominic)
 - [ ] 6. Phase 2: HyperDHT sidecar, a join code, two networks
 - [ ] Archive: pictures taken along the way, journal, decisions, timeline
 
 ## Results
+
+**Phase 1 built (2026-10-17, D-147).** `src/net/`: `transport.gd`, `loopback.gd`, `enet.gd`, `lockstep.gd`, `lan.gd`
+(beacon, finder, version); the clock's gate (`src/sim_clock.gd`); `scenes/sim_debug.gd` `use_network` (one side, no
+bots, no pause, saving, speed or testing keys; a note when waiting, out of sync, or the other player gone);
+`src/view/ui/net_page.gd` and the lobby's Play on the network.
+- `tests/net_check.gd -- loop`: 23 checks (four link speeds; a slow link stalls, never desyncs; tampering caught).
+- `tests/net_check.gd -- enet`: two processes, 3000 ticks, the same hashes as each other and the reference.
+- `tests/net_game_check.gd`: two windows, the beacon found, the handshake, 1200 ticks, the same hashes (archive
+  `2026-10-17/01-`, `02-`).
+How to play it: on both machines (the same build) Play on the network; one Hosts (sets their race and the map,
+then Host Battle), the other picks the game from the list (or types the host's address) after typing their race.
 
 ## Changes from the original plan
 

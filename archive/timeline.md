@@ -110,3 +110,4 @@ One line per moment worth remembering. Newest at the bottom.
 - **2026-10-16:** Unit costs follow their gear's material (D-144): spears food and wood, swords food and gold; portrait concepts (bust, badge) for Dominic.
 - **2026-10-16:** Unit portraits are busts with a role glyph; a line upgrade's button shows the unit it gives, in a gold frame (D-145).
 - **2026-10-17:** Milestones 5, 13, 14, 16, 19 and 21 closed, their leftovers in the backlog (D-146); the sapper off the tech tree.
+- **2026-10-17:** Network play, phase 1: lockstep over ENet, Host and Join on the home network; two windows on the Mac play in step (D-147).

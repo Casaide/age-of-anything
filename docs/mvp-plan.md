@@ -172,7 +172,7 @@ Each milestone has its own file in `milestones/` (plan, checklist, results); thi
 | [-](milestones/save-load.md) | built | **Save and load:** snapshots that survive updates | Tried on the Deck |
 | [-](milestones/art-pass.md) | (parallel) | **Art pass:** atlas + palette shader replaces vector shapes; classic 2D isometric RTS look | 200 units at 60 fps; draw calls verified |
 | [-](milestones/art-ui-track.md) | (parallel) | **Art and UI track:** stage A1 is milestone 5; A2-A5 run alongside milestones 7-10 (props, UI, icons, cursors, animation, new buildings, menus, juice) | Each stage done before its milestone closes |
-| [-](milestones/networking.md) | +2-3 | **Networking:** see `backlog.md` | Two machines on different NATs finish a match with no desync |
+| [-](milestones/networking.md) | in progress | **Networking:** lockstep over ENet on the LAN (phase 1), then a HyperDHT sidecar | Two machines on different NATs finish a match with no desync |
 
 ---
 
