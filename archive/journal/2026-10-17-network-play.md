@@ -27,9 +27,19 @@ Checks, all passing:
   address (x.y.z.255).
 - The page polled only while visible, and it never became visible in the test: no beacon, no handshake.
 
+## A saved match, a person in an AI's seat
+Dominic's next idea, with his 2v2 save to test: load a saved match on the network, the other player taking over an
+AI (D-148). It needed little: the save travels in the setup, both machines load it, the bots of the people's seats
+go and the others play on both machines alike. The test found three bugs worth their keep: the join page swallowed
+the host's first turns (they came in the same batch as the setup, since a saved match starts fast), the lockstep let a
+turn run over that gap instead of stopping, and a bot saved in the middle of a route search had lost the search.
+Then the joiner took the Jaguar Lords, 26 minutes in, and both windows ran 600 ticks in step.
+
 ## Pictures
 - `01-network-match-host-window.png`, `02-network-match-joiner-window.png`: the two windows at the end of the check,
   the joiner commanding the rats.
+- `03-network-saved-2v2-joiner-takes-the-ally.png`, `04-network-saved-2v2-host.png`: Dominic's 2v2 save on the
+  network, the joiner playing the ally's Jaguar Lords.
 
 ## Next
 Dominic's Mac vs Deck match on the home network (phase 1's exit), then the HyperDHT sidecar.

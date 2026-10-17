@@ -37,7 +37,7 @@ func send(msg: Dictionary) -> void:
 
 
 func poll() -> Array:
-	var out := []
+	var out := _take_back()
 	for m in _inbox:
 		m[0] -= 1
 	while not _inbox.is_empty() and int(_inbox[0][0]) <= 0:

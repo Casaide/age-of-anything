@@ -14,6 +14,7 @@ const Enet := preload("res://src/net/enet.gd")
 const Lan := preload("res://src/net/lan.gd")
 
 signal host_chosen              # Host a game: the lobby opens its battle setup
+signal host_save_chosen         # Host a saved game: the lobby opens its saves; one picked comes back to choose_seat
 signal start(link, me: int, setup: Dictionary)
 signal closed
 
@@ -59,6 +60,11 @@ func open() -> void:
 		visible = false
 		host_chosen.emit())
 	box.add_child(host)
+	var saved := _button("Host a saved game: the other player takes over an AI")
+	saved.pressed.connect(func():
+		visible = false
+		host_save_chosen.emit())
+	box.add_child(saved)
 	box.add_child(UiTheme.Rule.new(UiTheme.look("").metal))
 	box.add_child(UiTheme.label("Your race, if you join", "Dim"))
 	race_field = LineEdit.new()
@@ -91,8 +97,34 @@ func open() -> void:
 	_show(host)
 
 
+## A saved match to host: which AI seat the other player takes (the save's bot seats, by name).
+func choose_seat(rep: Dictionary) -> void:
+	_reset()
+	_mode = "seat"
+	_clear()
+	_title("Open a seat", "The other player takes over this side from its AI; the other AIs play on.")
+	var v: Dictionary = rep.get("view", {})
+	var names: Array = v.get("names", [])
+	var teams: Array = v.get("player_teams", [])
+	var first: Control = null
+	for s in rep.get("bots", []):
+		var p := int(s.player)
+		var b := _button("%s  (side %d, team %d, %s AI now)" % [names[p] if p < names.size() else "?", p + 1, int(teams[p]) + 1 if p < teams.size() else p + 1, str(s.get("level", "?"))])
+		b.pressed.connect(func():
+			var me := int(v.get("active", 0))
+			wait_for_player({"save": rep, "seat": p, "humans": [me, p]}, "%s, a saved match" % (names[me] if me < names.size() else "?")))
+		box.add_child(b)
+		if first == null:
+			first = b
+	if first == null:
+		box.add_child(UiTheme.label("This save has no AI seat to take over.", "Dim", true))
+	_back("Back")
+	_show(first)
+
+
 ## The host's wait: listen, broadcast, and on a hello answer with the setup (the joiner's race as
-## side 1's). `setup`: {prompts, rerolls, map, mode, teams}, side 0 the host's.
+## side 1's). `setup`: {prompts, rerolls, map, mode, teams}, side 0 the host's; or a saved match:
+## {save, seat (the joiner's), humans}.
 func wait_for_player(setup: Dictionary, name: String) -> void:
 	_reset()
 	_mode = "host"
@@ -133,7 +165,9 @@ func _process(_delta: float) -> void:
 			_list_hosts()
 	if _link == null:
 		return
-	for msg in _link.poll():
+	var batch: Array = _link.poll()
+	for i in batch.size():
+		var msg: Dictionary = batch[i]
 		match String(msg.get("t", "")):
 			"hello":   # (the host) a player wants in
 				if str(msg.get("version", "")) != Lan.version():
@@ -141,12 +175,15 @@ func _process(_delta: float) -> void:
 					note.text = "A player tried to join with a different version of the game."
 					continue
 				var setup := _host_setup.duplicate(true)
-				setup.prompts[1] = str(msg.get("prompt", setup.prompts[1]))
+				if not setup.has("save"):
+					setup.prompts[1] = str(msg.get("prompt", setup.prompts[1]))
 				_link.send({"t": "setup", "setup": setup})
-				_go(0, setup)
+				_link.put_back(batch.slice(i + 1))
+				_go(int(setup.humans[0]) if setup.has("save") else 0, setup)
 				return
-			"setup":   # (the joiner) in
-				_go(1, msg.setup)
+			"setup":   # (the joiner) in: side 1, or a saved match's open seat
+				_link.put_back(batch.slice(i + 1))   # (the host's first turns may be right behind it: the match reads them)
+				_go(int(msg.setup.seat) if msg.setup.has("save") else 1, msg.setup)
 				return
 			"refuse":
 				note.text = "The host refused: %s." % str(msg.get("why", "?"))

@@ -126,7 +126,7 @@ func _due(w, name: String, every: int) -> bool:
 ## The finished search for study `key` ([dist, prev]), or [] while it runs: the first call starts
 ## it (its prices from `price_fn`), every call settles another search_cells cells. One at a time.
 func _search(w, key: String, open: PackedByteArray, from: int, price_fn: Callable) -> Array:
-	if _job_key != key:
+	if _job_key != key or _job == null:   # (a bot loaded from a save has the search's name, not the search: it starts over)
 		_job = Routes.Search.new(w.map, price_fn.call(), open, from)
 		_job_key = key
 	if not _job.step(int(cfg.search_cells)):

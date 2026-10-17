@@ -947,3 +947,13 @@ commands with a done mark and its state hashes, and a turn starts only once ever
 A match is its setup (the host's race, the joiner's own race, map, mode, teams); games are found by a LAN beacon (no
 address to type on the Deck; a subnet broadcast, since macOS won't send to 255.255.255.255). A network match has no
 pause, saving, speed change or testing keys; a desync or a player leaving ends it with a note.
+
+**D-148, 2026-10-17: A saved match can be played on the network, a person taking over an AI.** Dominic: "load
+saved game and human can replace an AI. I have a 2v2 saved we should test it with." The host picks a save and the
+AI seat to open; the save travels in the setup, both machines load it, the people's seats lose their bots and the
+other AIs play on both machines alike (bots are deterministic and the save holds their state). The lockstep starts
+from the save's turn and carries only commands issued after it (the save's queued ones are on both machines). Found
+on the way: the join page read the host's first turns in the same batch as the setup and dropped them (now handed
+back to the match), and the lockstep trusted the latest turn mark over a gap (now a missing turn stops the match);
+a bot loaded from a save mid route search (land.gd) called the search it no longer had (now it starts it again).
+Tested with Dominic's 2v2 save (26 minutes in): the joiner took the ally, 600 ticks in step.

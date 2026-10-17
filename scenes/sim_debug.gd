@@ -183,6 +183,7 @@ var mode := ""                # the game mode (data/modes.json, picked in the lo
 var vs_ai := false          # side 2 is played by the AI (set by the match setup screen)
 var net_link = null         # a network match's link to the other player (src/net/), else null
 var net_me := 0             # the side this machine plays in a network match
+var net_setup := {}         # a network match's setup (the host's): prompts... or a save and its human seats
 var net_note: Label         # "waiting for the other player", a desync, the other player gone
 var banner: Label           # victory / defeat
 var pause_menu: Control     # Esc against the AI: resume, surrender, back to the menu
@@ -418,6 +419,12 @@ func start_replay(rep: Dictionary) -> void:
 func use_network(link, me: int, setup: Dictionary) -> void:
 	net_link = link
 	net_me = me
+	net_setup = setup
+	vs_ai = true
+	active = me
+	if setup.has("save"):   # a saved match: both machines load the same save; setup.humans are the people's seats
+		load_save = setup.save
+		return
 	prompts = setup.prompts
 	rerolls = setup.rerolls
 	map_id = setup.map
@@ -483,16 +490,25 @@ func start_saved(rep: Dictionary) -> void:
 	_loaded()
 	playback = {}
 	var v: Dictionary = rep.view
-	active = v.active
+	active = v.active if net_link == null else net_me
 	hint_step = v.hint_step
 	for k in v.groups:
 		groups[int(k)] = v.groups[k].filter(func(id): return world.units.has(id))
 	autoplay = false
 	clock.bots = ld.bots
 	bot_seats = rep.bots.duplicate(true)
+	if net_link != null:   # a saved match on the network: the people's seats lose their bots; the rest play on both machines alike
+		var humans: Array = net_setup.humans
+		var keep := range(bot_seats.size()).filter(func(k): return not int(bot_seats[k].player) in humans)
+		clock.bots = keep.map(func(k): return clock.bots[k])
+		bot_seats = keep.map(func(k): return bot_seats[k])
+		clock.lockstep = Lockstep.new(world, net_me, humans, net_link)
 	audio.music_age(world.ages[active])
 	audio.ambience(true)
-	camera.look_at_point(Vector2(v.camera[0], v.camera[1]))
+	if net_link != null and net_me != int(v.active):   # taking over a side: its own start, not where the saver was looking
+		camera.look_at_point(Iso.to_screen(map.starts[active][0], map.starts[active][1]) + Vector2(0, 60))
+	else:
+		camera.look_at_point(Vector2(v.camera[0], v.camera[1]))
 
 
 ## Save the match as it stands (the pause menu's Save game): a new file each time.

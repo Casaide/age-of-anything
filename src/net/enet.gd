@@ -53,7 +53,7 @@ func send(msg: Dictionary) -> void:
 
 
 func poll() -> Array:
-	var out := []
+	var out := _take_back()
 	if closed and peer.get_connection_status() == MultiplayerPeer.CONNECTION_DISCONNECTED:
 		return out
 	peer.poll()
