@@ -183,7 +183,7 @@ func generate(prompt: String, rules: Dictionary, reroll := 0) -> Dictionary:
 		if slot_def.slot == "worker":
 			ctx.crew = recipe   # siege engines are crewed by the race's own workers
 		ctx.firsts[slot_def.slot] = recipe   # (a war beast's riders: the spear line's unit)
-		var first := {"age": ctx.age, "recipe": recipe, "eval": Pricing.evaluate(recipe, lib, rules)}
+		var first := {"age": ctx.age, "recipe": recipe, "eval": Pricing.evaluate(recipe, lib, rules, ctx.age)}
 		units.append({"recipe": recipe, "eval": first.eval, "line": [first]})
 	for k in units.size():
 		var slot_def: Dictionary = slots[k]
@@ -195,7 +195,7 @@ func generate(prompt: String, rules: Dictionary, reroll := 0) -> Dictionary:
 			# A line that doesn't upgrade (rules "upgrades": false, the healer: Dominic) stays as
 			# it came; the tech tree shows no second tier.
 			var up: Dictionary = units[k].line[-1].recipe if not slot_def.get("upgrades", true) else _upgrade(units[k].line[-1].recipe, slot_def, ctx)
-			units[k].line.append({"age": age, "recipe": up, "eval": Pricing.evaluate(up, lib, rules)})
+			units[k].line.append({"age": age, "recipe": up, "eval": Pricing.evaluate(up, lib, rules, age)})
 	ctx.rng = rng
 	# An engine crewed by another line (rules roster `crew`: the war beast's riders, the spear line) carries
 	# that line's unit as it is at the engine's first age (an age-3 beast, age-3 spearmen), in every age.

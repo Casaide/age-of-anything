@@ -111,5 +111,5 @@ func _reprice(lib, races: Array, rules: Dictionary) -> void:
 	for r in races:
 		for u in r.units:
 			for l in u.line:
-				l.eval = Pricing.evaluate(l.recipe, lib, rules)
+				l.eval = Pricing.evaluate(l.recipe, lib, rules, int(l.age))
 			u.eval = u.line[0].eval
