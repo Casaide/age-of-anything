@@ -90,8 +90,9 @@ move it to `docs/backlog.md` rather than deleting it.
 - **In progress (networking): multiplayer.** Phase 1 built: lockstep over ENet on the home network (`src/net/`), Play
   on the network in the lobby (Host, Join by LAN beacon), D-147; next the Mac vs Deck match, then a HyperDHT
   sidecar. See `docs/milestones/networking.md`.
-- **Planned (milestone 22): battle feel.** Formations by role, counter-aware targeting, attack lines, a Norse shield
-  wall. See `docs/milestones/m22-battle-feel.md`.
+- **In progress (milestone 22): battle feel.** Built (D-155): formations by role (riders on the flanks), counter-aware
+  targeting (`counter_pull`), attack lines for the selection, the Norse shield wall; next race_matches and Dominic's
+  match. See `docs/milestones/m22-battle-feel.md`.
 
 ## Layout
 

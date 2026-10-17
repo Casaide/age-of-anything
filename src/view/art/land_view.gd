@@ -7,7 +7,7 @@ extends Node2D
 const Iso := preload("res://src/view/iso.gd")
 const ArtKit := preload("res://src/view/art/art_kit.gd")
 
-const WET := ["swamp", "shallows", "water", "river", "ford", "paddy", "fallow_paddy"]
+const WET := ["swamp", "shallows", "water", "river", "deep_river", "ford", "paddy", "fallow_paddy"]
 
 var world
 var kit

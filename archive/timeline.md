@@ -117,3 +117,5 @@ One line per moment worth remembering. Newest at the bottom.
 - **2026-10-17:** Vikings get their own Norse culture (D-151): bonuses, Berserkergang, the Berserker, the Raven-Feeder, bearded and broad axes, fur, conical and spectacle helms, a longship crest.
 - **2026-10-17:** Frogs, rearing beetles and spiders carry their shields slung on their backs; every shield and back piece checked on every body (D-152).
 - **2026-10-17:** The centaur's kneel to forage works in all 8 facings (it was side-on only: Dominic saw it from behind); workers are checked at work (D-153).
+- **2026-10-17:** Reed Meadow's rivers go shallow, deep, shallow: nobody crosses the deep middle but at fords and bridges (frogs and flyers neither); wood lines reach the map edge; trees block flyers; walls run straight over hills; hill edges bevelled (D-154).
+- **2026-10-17:** Milestone 22 starts: formations by role (riders on the flanks), units go for the foes they counter, attack lines for the selection, the Norse shield wall (D-155).

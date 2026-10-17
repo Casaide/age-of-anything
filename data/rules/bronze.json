@@ -318,6 +318,8 @@
   "sight": 6000,
   "acquire_every": 10,
   "defend_sight": 3000,
+  "counter_pull": 2000,
+  "counter_note": "counter-aware targeting (combat.gd _nearest_foe, milestone 22): a foe one of whose classes the unit's attack has a bonus against counts as counter_pull milli-tiles nearer (a spearman goes for the rider over the footman beside it, not one across the field); spreading over foes stays.",
   "leash": 5000,
   "shot_speed": 300,
   "shot_speeds": {

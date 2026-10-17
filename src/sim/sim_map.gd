@@ -412,8 +412,9 @@ func lane_group(team: int) -> int:
 
 ## Can a building of this size go here? On ground anyone could build on, or, if the
 ## building allows water (`water_ok`) and the builders' movement class `mc` can wade it,
-## in the shallows (amphibians build on the water).
-func can_build(cx: int, cy: int, size: int, mc := 0, water_ok := false) -> bool:
+## in the shallows (amphibians build on the water). Not on a cliff or a ramp, unless
+## `slope_ok` (a wall piece: walls run straight over hills, Dominic 2026-10-17).
+func can_build(cx: int, cy: int, size: int, mc := 0, water_ok := false, slope_ok := false) -> bool:
 	for y in range(cy, cy + size):
 		for x in range(cx, cx + size):
 			if x < 0 or y < 0 or x >= width or y >= height:
@@ -421,8 +422,8 @@ func can_build(cx: int, cy: int, size: int, mc := 0, water_ok := false) -> bool:
 			var c := y * width + x
 			if occupied[c] != 0 or amount[c] > 0 or deck[c] == 1:
 				return false
-			if cliff[c] == 1 or ramp[c] == 1 or level[c] != level[cy * width + cx]:
-				return false   # not on a cliff or a ramp, and all on one level
+			if (cliff[c] == 1 or ramp[c] == 1) and not slope_ok or level[c] != level[cy * width + cx]:
+				return false   # not on a cliff or a ramp (but for wall pieces), and all on one level
 			var t: int = terrain[c]
 			if not terrain_walk[t] and not (water_ok and mc != FLYING and terrain_move[t] & (1 << mc)):
 				return false
@@ -460,7 +461,7 @@ func _refresh(cell: int) -> void:
 		walks[k][cell] = 1 if mask & (1 << k) and (k == FLYING or clear) else 0
 	walks[0][cell] = walk[cell]
 	for g in range(1, lane_teams.size()):   # a team's own gates are open to it
-		var open: bool = clear or gate[cell] == lane_teams[g] + 1
+		var open: bool = clear or (gate[cell] == lane_teams[g] + 1 and cliff[cell] == 0)   # (never a way up a cliff)
 		for k in CLASSES.size():
 			walks[g * CLASSES.size() + k][cell] = 1 if mask & (1 << k) and (k == FLYING or open) else 0
 		walks[g * CLASSES.size()][cell] = 1 if ground and open else 0   # as walks[0] follows walk

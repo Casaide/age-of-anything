@@ -1021,3 +1021,36 @@ the placement check never drew a unit at work. Claude: every worker is now drawn
 check (`tests/placement/work_2d.gd`, rules K1-K5 for a fused mount's kneel, measured against the model and the bake
 camera), and any pose UnitView puts on the bakes takes fore, hind and forward from the model and the facing
 (`UnitView.ahead_on_screen`, `side_on`), never from where things happen to be on screen. Facing 0's kneel is unchanged.
+
+**D-154, 2026-10-17: Rivers get a deep middle nobody crosses; flyers no longer cross trees.** Dominic, after a 2v2 on
+Reed Meadow: frog races swam the river anywhere, and enemies walked round behind the wood lines, both "very one sided
+too early on". His idea: shallow, deep, shallow. A new terrain, `deep_river`, that no movement class crosses (not
+amphibians, not flyers; Dominic said yes to flyers too), runs down the middle of both Reed Meadows' rivers, now wider
+(the 2v2's 7 tiles across, 3 of them deep; the 1v1's 5, about 2 deep). Fords cut through all of it and bridges stretch
+to the banks, so the crossings are the only way over for everyone; the map edge where the river runs off is deep too,
+so no flyer goes round its ends over the edge rock. The swimmable bands keep `river` (amphibians and flyers) and draw a
+little lighter than the deep middle. The wood lines behind each base now reach the map edge (they stood a tile in, a
+lane behind them): one tile deeper, the inner edge where it was (moving it outward instead cost the 1v1's age-3 bot
+its University and Castle in test_ai), so each start has more home wood (1v1 19,100 from 14,900; 2v2 13,000-14,000
+from 11,100-12,100). Trees block flyers too (Dominic: flying over the woods "feels again too imbalanced"); soaring over
+trees is to be something special, a winged race's castle unit with extra big wings, concept-first (a later piece).
+Other maps' rivers stay all `river` for now. Stone, gold and food per start unchanged (one stone tile on the 1v1
+moved a step back from the wider river). Then, "while we're there": walls run straight over high ground (Dominic: "I'd rather I can
+build a wall straight over them with no issue"). Wall and palisade pieces may now stand on cliffs and ramps (each piece
+is one cell, so it sits at its own level and the line steps up the hill); gates still may not stand on a cliff (an
+own gate is open to its side, and a gate on a cliff would be a way up it), and a gate's cell on a cliff never opens
+in the walk grids either. And the hills' edges are bevelled in the view: a raised cell's outer corner drops to the
+ground below, so diagonal edges read as slopes, not a staircase of tiles (`Iso.corner_heights`; the sim's levels and
+cliffs are unchanged).
+
+**D-155, 2026-10-17: Battle feel starts (milestone 22): formation by role, counter-aware targeting, attack lines, a
+Norse shield wall.** Dominic approved the plan with three choices. A group's formation goes by role: foot soldiers in
+front, shooters behind, engines, healers and carts at the back, and every mounted unit on the flanks, horse archers
+too (his pick: fast units on the outside); with no foot beside them, riders form the centre. Units pick a foe they
+counter (their attack has a bonus against one of its classes) as if it stood `counter_pull` nearer, 2 tiles (his
+pick, "medium": the rider beside the footman, not one across the field); the spreading into duels (D-054) stays.
+Selected units show a thin team-coloured line to the foe they're fighting. The Norse shield wall is look only and
+always on (his pick): Norse foot with shields march shoulder to shoulder (`form_gap` -160, a sim effect on the
+Linden shields bonus, both its forms, since a culture has exactly three bonuses), no stat beyond the bonus's own.
+Balance: mass_battle in ages 2 and 3 and balance.gd unchanged in every single-type fight, mixed fights a win or two
+either way. (Claude)
