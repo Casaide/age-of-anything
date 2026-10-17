@@ -1,8 +1,6 @@
 # Milestone 16: Sieges (and the first game modes)
 
-**Status:** in progress (started 2026-10-13, Dominic: "start milestone 16", "including full siege with
-walkable walls etc"): every step built to a first version; art waits on concept picks; the budget
-waits on Dominic's word
+**Status:** closed (2026-10-17, Dominic: "anything requiring my checks can close, anything else we move forward"): walkways, gatehouses, wall towers, rams, breaches, repair, ladders, siege towers, the pour, the AI, Fortress and Siege modes, tall walls (D-130). The concept picks closed with it (the placeholders stay); the work left was already in `../backlog.md` ("Sieges, left after milestone 16's first pass").
 **Exit criterion:** a walled town can be held and taken: defenders on the walls, attackers with
 rams, ladders or siege towers, sappers and catapults making breaches; it reads clearly on screen;
 neither side's win is a foregone conclusion at equal cost; the bot defends and assaults walls;
@@ -126,14 +124,14 @@ below compares our composed sprites with one 3D bake of the same layout. The opt
 implications and the questions for Dominic are in `docs/concepts/m16/README.md` (round W2).
 
 ## Checklist
-- [ ] Plan approved by Dominic
+- [x] Plan approved by Dominic (closed without the check, 2026-10-17)
 - [x] 1. Measure and set the budget (measured 2026-10-13; the number is a proposal for Dominic, below)
 - [x] 2. Walkways, gatehouses, wall towers (Dominic, 2026-10-13: "full siege with walkable walls etc")
-  - [ ] Dominic's pick of the wall tower look (concept W1: squat, drum, hoard; the squat one is in as a placeholder)
+  - [x] Dominic's pick of the wall tower look (closed without the check, 2026-10-17): (concept W1: squat, drum, hoard; the squat one is in as a placeholder)
 - [x] 3. Rams, breaches, repair (walls and breaches; workers repairing siege engines too)
-  - [ ] Dominic's pick of the rubble look (W1: heap, stub; in play it's the terrain's colour only)
+  - [x] Dominic's pick of the rubble look (closed without the check, 2026-10-17): (W1: heap, stub; in play it's the terrain's colour only)
 - [x] 4. Ladders, siege towers
-  - [ ] Dominic's pick of the siege tower (concept T1: hide, open frame, belfry, the frogs' turtle; "hide" is in as a placeholder) and the ladder (W1: plain, hooked, mantlet)
+  - [x] Dominic's pick of the siege tower (closed without the check, 2026-10-17): (concept T1: hide, open frame, belfry, the frogs' turtle; "hide" is in as a placeholder) and the ladder (W1: plain, hooked, mantlet)
 - [x] 5. Defenders' tools, readability (pour built; readability partly: units drawn up on the wall, the pour's burst; outlines behind walls and wall damage states not yet)
 - [x] 6. AI (mans walls, siege towers over the wall, a townless besieger for the Siege mode; ladders not used by the bot yet)
 - [x] 7. Game modes (Fortress, Siege), showcase map, balance (Siege 2-2 over four bot matches), exit check (Dominic's "Romans besiege the rats" still to play)
@@ -146,7 +144,7 @@ implications and the questions for Dominic are in `docs/concepts/m16/README.md` 
   join check now checks the game's own sprites; a man's shadow up on a wall shrinks to the walk
 - [x] Siege and Fortress fill the gap (Dominic: "just in siege mode we fill the gap"): every side can build and repair
   walls, gates, wall towers and ladders in those modes whatever its race lacks (`lift_lacks`)
-- [ ] Archive: pictures taken along the way (430-432, 455-456, 560-568 on 2026-10-13), journal, decisions, timeline (left to the main session)
+- [x] Archive: pictures taken along the way (430-432, 455-456, 560-568 on 2026-10-13), journal, decisions, timeline (journals 2026-10-13, 2026-10-14, 2026-10-16)
 
 ## Results
 

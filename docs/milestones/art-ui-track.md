@@ -1,10 +1,6 @@
 # Art and UI track (runs alongside the milestones)
 
-**Status:** A1 built (2026-10-11), waiting on Dominic's look sign-off
-**Why this file:** the art pass (`art-pass.md`) chose the direction and shipped the vertical
-slice, but what art and UI each milestone needs wasn't laid out (Dominic, 2026-10-11). This track
-says what's expected and when. Each stage runs in parallel with its milestone, often by a
-separate agent, and must be done before that milestone closes.
+**Status:** closed (2026-10-17, Dominic: "anything requiring my checks can close, anything else we move forward"): A1 built 2026-10-11 (milestone 5); the later stages ran through milestones 11, 17 and 19.
 
 Rules for every stage:
 - The look is set: stylised, outlined units and realistic static props and buildings, baked

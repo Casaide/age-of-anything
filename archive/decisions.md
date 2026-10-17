@@ -926,3 +926,12 @@ tags; a rider with a lance or blade the horse; workers none). A line upgrade's b
 it gives, in a gold frame, named "Upgrade: X -> Y", its tooltip saying every X you have and all you train becomes
 a Y (it showed the line as it was: the same picture as the Train button beside it). Train buttons, the queue, the
 unit card and the selection tray show a line's current step (they showed its first step, upgraded or not).
+
+**D-146, 2026-10-17: Milestones 5, 13, 14, 16, 19 and 21 close; the sapper leaves the tech tree.** Dominic: "anything
+requiring my checks can close, anything else we move forward." What waited only on his look or pick closed with its
+milestone (the placeholders in play stay: the wall tower, rubble, siege tower and ladder, trade cart, the unique
+units' themes); the work left moved to `docs/backlog.md` §0b (bugs riding newts, the structural balance outliers, the
+unique units' new parts, race mechanics, race balance, bears, the end screen's story, the rest of modding). The art
+pass is superseded and the art and UI track closed. Milestone 20 (the Deck) stays open; 22 (battle feel) is planned;
+18 not started. Dominic: "Sapper we killed. Should be gone from tech tree": a roster slot can be `"status": "parked"`,
+out of the game (the generator skips it) and off the tech tree page; the sapper is parked (D-128's code stays).

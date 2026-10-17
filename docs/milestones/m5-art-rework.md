@@ -1,7 +1,6 @@
 # Milestone 5: Art rework
 
-**Status:** built (2026-10-11), waiting on Dominic's sign-off. Started by a separate agent in its
-own worktree (merged when it hit the usage limit); Claude finished it.
+**Status:** closed (2026-10-17, Dominic: "anything requiring my checks can close, anything else we move forward"): built 2026-10-11 and carried on through milestones 11 onward; the sign-off closed without a separate look.
 **Exit criterion:** Dominic signs off the look in the game view (sim_debug) and the Race Lab.
 
 ## Scope

@@ -161,7 +161,7 @@ func generate(prompt: String, rules: Dictionary, reroll := 0) -> Dictionary:
 	# its slot opens, in that age's kit; then, in a second pass (so the first recipes don't
 	# depend on the later ones), the same unit upgraded for every later age.
 	var units := []
-	var slots: Array = rules.roster.filter(func(sd): return sd.get("status", "") != "planned" and sd.role != "hero")   # planned lines: tech tree page only; the hero: after the key (src/heroes.gd)
+	var slots: Array = rules.roster.filter(func(sd): return not sd.get("status", "") in ["planned", "parked"] and sd.role != "hero")   # planned lines: tech tree page only; the hero: after the key (src/heroes.gd)
 	# A slot with "own_seed" draws from its own stream, so a line added later (the healer)
 	# leaves every other line's recipes as they were.
 	var rngs := []

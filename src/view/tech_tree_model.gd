@@ -51,7 +51,7 @@ static func build(race: Dictionary, rules: Dictionary, lib) -> Dictionary:
 		var groups := []   # each a list of nodes that must share a lane (top to bottom)
 		# Unit lines this building trains (rules roster), one node per age step.
 		for sd in rules.roster:
-			if sd.get("building", "") != id:
+			if sd.get("building", "") != id or sd.get("status", "") == "parked":   # parked: cut from the game, off the page too (the sapper)
 				continue
 			var group := []
 			var unit: Dictionary = _race_unit(race, sd.slot)
