@@ -46,6 +46,24 @@ func _init(root := "res://data", with_mods := true) -> void:
 		curves[id] = PackedInt32Array(cc[id].permille)
 	if with_mods:
 		Mods.apply(self)
+	_kit_parts(root)
+
+
+## Creature-kit bodies (parts.json "kit": a skeleton in data/creature_kit.json, the bears): their
+## sockets, anchors, cut legs, walk and idle poses filled in from the skeleton, and their head and leg
+## parts made (scenes/art_pixel/creature_kit.gd complete()). Sorted ids, so the order never varies.
+func _kit_parts(root: String) -> void:
+	if not FileAccess.file_exists(root + "/creature_kit.json"):
+		return
+	var CreatureKit = load("res://scenes/art_pixel/creature_kit.gd")   # (load, not preload: it preloads this file)
+	CreatureKit.register_all(load_json(root + "/creature_kit.json").kits)
+	var ids := parts.keys()
+	ids.sort()
+	for id in ids:
+		if parts[id].has("kit"):
+			for made in CreatureKit.complete(parts[id]):
+				if not parts.has(made.id):
+					parts[made.id] = made
 
 
 ## A host rule (data/rules/<id>.json) with the mods' changes to it.

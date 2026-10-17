@@ -780,6 +780,15 @@
     },
     "spider": {
      "head_gear": "hero.jaguar_helm_low"
+    },
+    "bear": {
+     "head_gear": "hero.jaguar_helm_low"
+    },
+    "bear_black": {
+     "head_gear": "hero.jaguar_helm_low"
+    },
+    "bear_polar": {
+     "head_gear": "hero.jaguar_helm_low"
     }
    }
   },

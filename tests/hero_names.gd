@@ -13,7 +13,6 @@ const CreatureKit := preload("res://scenes/art_pixel/creature_kit.gd")
 
 func _init() -> void:
 	var lib = DataLib.new()
-	CreatureKit.stage(lib, "res://data/later/bears.json")
 	var gen = Generator.new(lib)
 	var rules = DataLib.load_rules("default")
 	for p in OS.get_cmdline_user_args():

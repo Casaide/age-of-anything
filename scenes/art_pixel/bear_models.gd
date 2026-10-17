@@ -1,7 +1,9 @@
 extends "res://scenes/art_pixel/unit_models.gd"
-## Bear concepts (round B1, 2026-10-13): gear made for the creature kit's bear head, staged with
-## data/later/bears.json (its "models"), shown by tests/sheets/bears_*.json. Nothing here is in play.
-## Head gear sits on the bear head's "top" socket, scaled by its gear_scale (0.9): in this frame the
+## The bears' helmets (rounds B1-B3, 2026-10-13; in play 2026-10-17): gear made for the creature kit's
+## bear head (data/parts.json "helm.bear_*", built through unit_models.gd _bears()).
+## Head gear sits on the bear head's "top" socket, scaled by its gear_scale (0.9). The socket sits on the
+## skull (2026-10-17: a cap or hat must touch the head), 0.8 head units under where these were built, so
+## they're lifted by TOP_DROP (in the gear frame) to sit where they always did. In the built frame the
 ## skull's centre is about (0.2, -6.0, 0), radius ~4.8; the eyes about (4.2, -5.3, +-2.3) under a brow
 ## whose top is at -4.2; the ears at (-1.1, -2.4, +-3.2).
 
@@ -9,6 +11,9 @@ extends "res://scenes/art_pixel/unit_models.gd"
 ## A bronze helmet for a bear: a deep bowl over the skull with two round ear cups standing up where
 ## the ears are (so it still reads as a bear's head), cheek guards behind the eyes leaving the muzzle
 ## free, a neck guard, and a tall team crest on a stand (the Attic helmet's, for the dignity).
+const TOP_DROP := 0.8 / 0.9
+
+
 func _helm_bear_crest(c: Dictionary) -> Dictionary:
 	var n := Node3D.new()
 	var bronze := surf("bronze", Color.WHITE, 3.0)
@@ -22,6 +27,7 @@ func _helm_bear_crest(c: Dictionary) -> Dictionary:
 	n.add_child(blob(Vector3(3.0, 2.8, 4.6), bronze, Vector3(-3.4, -5.4, 0)))   # the neck guard
 	n.add_child(rod(Vector3(-0.2, 1.0, 0), Vector3(-0.5, 4.0, 0), 0.55, 0.55, bronze))   # the crest stand
 	crest(n, c.team, Vector3(-1.5, 4.4, 0), 13.0, 7.0)
+	_lift(n, TOP_DROP)
 	return {"node": n}
 
 
@@ -45,6 +51,7 @@ func _helm_bear_open(c: Dictionary) -> Dictionary:
 	n.add_child(blob(Vector3(2.6, 2.2, 4.2), bronze, Vector3(-3.6, -4.8, 0)))   # the neck guard
 	n.add_child(rod(Vector3(-0.4, 1.0, 0), Vector3(-0.7, 4.0, 0), 0.55, 0.55, bronze))   # the crest stand
 	crest(n, c.team, Vector3(-1.7, 4.4, 0), 13.0, 7.0)
+	_lift(n, TOP_DROP)
 	return {"node": n}
 
 

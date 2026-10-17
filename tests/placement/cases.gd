@@ -17,15 +17,16 @@ const Pricing := preload("res://src/pricing.gd")
 ## Races whose every unit is checked (between them: every playable body, every hold, back parts,
 ## wings, a fused centaur, siege crews).
 const PROMPTS := ["romans", "swamp frogs", "sewer rats", "rats", "forest beetles", "spooky spiders",
-	"flying greeks with wings", "centaur romans", "winged frogs", "vikings"]
+	"flying greeks with wings", "centaur romans", "winged frogs", "vikings", "bears", "polar bears", "moonbears", "viking bears"]
 ## More races for milestone 13's new lines only (scouts, mounted archers, unique units): with PROMPTS,
 ## every unique theme in data/uniques.json, a foot scout, the steppe raider on its pony; the sapper, trade cart and great sling.
 const LINE_PROMPTS := ["greeks", "royal humans", "mongols", "aztecs", "egyptians", "han", "sewer rats with cheese hammers",
-	"tiny vikings", "swamp humans", "forest humans", "sewer humans", "spooky humans"]
+	"tiny vikings", "swamp humans", "forest humans", "sewer humans", "spooky humans", "forest bears", "romans riding bears",
+	"rats riding bears", "giant bears"]
 const NEW_LINES := ["scout", "mounted_archer", "unique", "large", "trader", "great_sling", "war_beast"]   # (and the cavalry, which rides the same mounts; the sapper in every culture's cap, the cart and the great sling of every take, every war beast with its riders)
 ## Riders (a race's spear unit, put on each mount) and the mounts.
 const RIDERS := ["romans", "swamp frogs", "sewer rats", "spooky spiders", "forest beetles"]
-const MOUNTS := ["pony", "beetle", "spider", "capybara", "newt", "hummingbird", "cat"]
+const MOUNTS := ["pony", "beetle", "spider", "capybara", "newt", "hummingbird", "cat", "bear", "bear_black"]
 
 
 ## lines: also every later age of each unit line (their own armour, helmets, weapons).
@@ -79,6 +80,7 @@ static func all(lib, lines := true) -> Array:
 	cases += hero_cases(lib, gen, rules)
 	cases += norse_cases(lib, gen, rules)
 	cases += gear_cases(lib, gen, rules)
+	cases += bear_cases(lib, gen, rules)
 	cases += kit_cases(lib)
 	cases += composite_cases(lib)
 	cases += mod_cases(lib)
@@ -90,14 +92,14 @@ static func all(lib, lines := true) -> Array:
 ## race in PROMPTS (HERO_BASE: kit already checked above), its replaced kit kept as in play
 ## (src/heroes.gd dress). Labels "hero: <creature> as <signature>".
 const HERO_BASE := {"frog": "swamp frogs", "rat": "sewer rats", "human": "romans", "spider": "spooky spiders",
-	"beetle": "forest beetles", "centaur": "centaur romans"}
+	"beetle": "forest beetles", "centaur": "centaur romans", "bear": "bears", "bear_black": "moonbears", "bear_polar": "polar bears"}
 
 
 static func hero_cases(lib, gen, rules: Dictionary) -> Array:
 	var out := []
 	var sigs: Array = lib.heroes.hero_signatures.keys()
 	sigs.sort()
-	var in_play: Dictionary = DataLib.load_json("res://data/creatures.json")   # (not creatures staged from data/later/: the bears)
+	var in_play: Dictionary = DataLib.load_json("res://data/creatures.json")
 	for cid in lib.creature_ids("playable"):
 		if not in_play.has(cid):
 			continue
@@ -141,7 +143,7 @@ static func norse_cases(lib, gen, rules: Dictionary) -> Array:
 		for a in NORSE_AXES:
 			put.call("swordsman with %s" % a, sword, {"hand_r": a})
 		var rider: Dictionary = ride(slot(race, "spear"), "pony", lib.creatures.pony.skins[0], {})
-		if cid != "centaur":
+		if cid != "centaur" and not cid in lib.creatures.pony.get("not_ridden_by", []):   # (bears don't ride)
 			put.call("rider with weapon.axe.bearded and helm.norse_conical", rider, {"hand_r": "weapon.axe.bearded", "head_gear": "helm.norse_conical"})
 		var scout: Dictionary = slot(race, "scout")
 		put.call("scout with weapon.axe.bearded and helm.norse_fur", scout, {"hand_r": "weapon.axe.bearded", "head_gear": "helm.norse_fur"})
@@ -173,6 +175,49 @@ static func gear_cases(lib, gen, rules: Dictionary) -> Array:
 			var r: Dictionary = units[who].recipe.duplicate(true)
 			r.parts[p.slot] = id
 			out.append(["gear: %s %s with %s" % [cid, who, id], {"recipe": r, "eval": Pricing.evaluate(r, lib, rules)}])
+	return out
+
+
+## The bears (in play 2026-10-17): new bodies any culture can come to ("aztec bears"), so every helmet,
+## hat, body armour and held piece of the game (not a hero's, a siege engine's or a concept's) goes on each
+## bear body, over the unit of its race (HERO_BASE) that would wear or hold it: head gear and armour on the
+## age-3 swordsman, spears on the spearman, bows and guns on the archer, slings, javelins and blowguns on
+## the skirmisher, staffs on the healer, tools on the worker, other weapons on the swordsman
+## (shields, capes and banners: gear_cases). Labels "bear: <creature> <unit> with <part>".
+const BEARS := ["bear", "bear_black", "bear_polar"]
+
+
+static func bear_cases(lib, gen, rules: Dictionary) -> Array:
+	var out := []
+	var ids: Array = lib.parts.keys()
+	ids.sort()
+	for cid in BEARS:
+		var race: Dictionary = gen.generate(HERO_BASE[cid], rules)
+		var units := {"infantry": slot(race, "infantry").line[-1], "spear": slot(race, "spear").line[-1], "archer": slot(race, "archer").line[-1],
+			"skirmisher": slot(race, "skirmisher").line[-1], "healer": slot(race, "healer"), "worker": slot(race, "worker")}
+		for id in ids:
+			var p: Dictionary = lib.part(id)
+			if not p.slot in ["head_gear", "torso", "hand_r"] or p.get("only_if", []).any(func(o): return o in ["hero_only", "concept_only"]) or "siege" in p.tags or "sapper" in p.tags or "war_beast" in p.tags:
+				continue
+			if "load" in p.tags:
+				continue   # (a load carried home is posed by UnitView's carry hold, which the 3D rig doesn't pose: no creature's loads are in this check)
+			var who := "infantry"
+			if p.slot == "hand_r":
+				if "heal" in p.tags:
+					who = "healer"
+				elif p.tags.any(func(t): return t in ["worker", "tool", "load", "job"]):
+					who = "worker"
+				elif "skirmish" in p.tags:
+					who = "skirmisher"
+				elif "ranged" in p.tags:
+					who = "archer"
+				elif "spear" in p.tags or "lance" in p.tags:
+					who = "spear"
+			if units[who].recipe.body in p.get("not_worn_by", []):
+				continue   # (the generator never puts it on this body)
+			var r: Dictionary = units[who].recipe.duplicate(true)
+			r.parts[p.slot] = id
+			out.append(["bear: %s %s with %s" % [cid, who, id], {"recipe": r, "eval": Pricing.evaluate(r, lib, rules)}])
 	return out
 
 
@@ -241,10 +286,11 @@ static func mod_cases(lib) -> Array:
 	return out
 
 
-## Creature-kit creatures (scenes/art_pixel/creature_kit.gd), staged from their data files: the cat
-## rebuilt through the kit under a rat, and the bear concepts (data/later/bears.json: bipeds of three
-## builds, a worker, the giant, the mount under a human and a rat). Placement holds by construction.
-const KIT_FILES := ["res://data/creature_kit.json", "res://data/later/bears.json"]
+## Creature-kit creatures (scenes/art_pixel/creature_kit.gd): the cat rebuilt through the kit under a
+## rat (staged from data/creature_kit.json), and the bears' concept rows (rounds B1-B3: three builds in
+## the hoplite kit, both helmets and the stock one, a worker, the giants, the mount under a human and a
+## rat), kept beside the generated bears above. Placement holds by construction.
+const KIT_FILES := ["res://data/creature_kit.json"]
 
 
 static func kit_cases(lib) -> Array:

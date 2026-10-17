@@ -88,7 +88,7 @@ func check_case(holder: Node2D, label: String, u: Dictionary, tweak := Callable(
 		if u.recipe.has("mount"):
 			var mc: Dictionary = lib.creatures[u.recipe.mount.creature]
 			walker = mc.get("fused_body", mc.body) if u.recipe.mount.fused else mc.get("mount_body", mc.body)
-		for bp in (lib.part(walker).get("idle_poses", []) if int(u.recipe.get("idle", 1)) != 0 else []):
+		for bp in UnitView.idle_poses_of(lib, u.recipe, walker):
 			poses.append([bp, false, 0.0, bp])
 	for k in 8:
 		var stand := {}

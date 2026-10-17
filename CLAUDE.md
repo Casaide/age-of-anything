@@ -89,6 +89,9 @@ move it to `docs/backlog.md` rather than deleting it.
 - **In progress (networking): multiplayer.** Phase 1 built: lockstep over ENet on the home network (`src/net/`), Play
   on the network in the lobby (Host, Join by LAN beacon), D-147; next the Mac vs Deck match, then a HyperDHT
   sidecar. See `docs/milestones/networking.md`.
+- **Built (bears, 2026-10-17, on the `bears` branch):** brown, black ("moonbears") and polar bear races from the creature
+  kit (kit bodies completed by DataLib from `data/creature_kit.json`), the bear mount for others ("romans riding bears"),
+  a bear voice; every piece of gear checked on every bear (D-160 to D-162). Dominic to look and listen. See `docs/concepts/bears/`.
 - **Planned (milestone 22): battle feel.** Formations by role, counter-aware targeting, attack lines, a Norse shield
   wall. See `docs/milestones/m22-battle-feel.md`.
 
@@ -104,7 +107,7 @@ data/            the data contract; mods are just more of this
   lexicon.json     word -> creature/mount/family/tags/size; out-of-era words + playful notes
   rules/*.json     host rules: era bounds, point budgets, roster template, cost/train curves, economy
   cost_curves.json fixed-point cost curves (per-mille by points), written by tests/gen_cost_curve.gd
-  creature_kit.json creature-kit skeletons (scenes/art_pixel/creature_kit.gd); data/later/ holds staged, unplayed data (bears)
+  creature_kit.json creature-kit skeletons (scenes/art_pixel/creature_kit.gd: the bears); data/later/ holds staged, unplayed data
   terrain.json     terrain types: walkable, colours, resource + amount + what it turns into when used up
   audio.json       buses, every sound's takes / bus / gap / voices, the music mixes by age
   ui.json          the UI's directions (materials, colours, crest, banner cut) and which one is in use

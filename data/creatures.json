@@ -293,7 +293,12 @@
    "forest"
   ],
   "architecture": "mound",
-  "unique": "web_lurker"
+  "unique": "web_lurker",
+  "not_ridden_by": [
+   "bear",
+   "bear_black",
+   "bear_polar"
+  ]
  },
  "beetle": {
   "war_beast": "mantis",
@@ -359,11 +364,19 @@
   ],
   "architecture": "mound",
   "_mount_body_doc": "beetle soldiers rear up (BG1); ridden beetles keep the horizontal body",
-  "unique": "stag_colossus"
+  "unique": "stag_colossus",
+  "not_ridden_by": [
+   "bear",
+   "bear_black",
+   "bear_polar"
+  ]
  },
  "pony": {
   "not_ridden_by": [
-   "beetle"
+   "beetle",
+   "bear",
+   "bear_black",
+   "bear_polar"
   ],
   "_not_ridden_by_doc": "beetles don't ride horses (Dominic, 2026-10-13): they ride beetles, or spiders and newts by culture",
   "voice": "pony",
@@ -464,6 +477,11 @@
   ],
   "families": [
    "sewer"
+  ],
+  "not_ridden_by": [
+   "bear",
+   "bear_black",
+   "bear_polar"
   ]
  },
  "cat": {
@@ -487,6 +505,11 @@
   "_skins_not_under_doc": "a grey tabby under a grey rat reads as one grey blob at game scale (like the red eft under a red frog, D-122)",
   "families": [
    "sewer"
+  ],
+  "not_ridden_by": [
+   "bear",
+   "bear_black",
+   "bear_polar"
   ]
  },
  "newt": {
@@ -515,7 +538,12 @@
   "families": [
    "swamp"
   ],
-  "_voice_doc": "mounts don't speak in play (a unit speaks with its race's voice); a newt is a quiet frog"
+  "_voice_doc": "mounts don't speak in play (a unit speaks with its race's voice); a newt is a quiet frog",
+  "not_ridden_by": [
+   "bear",
+   "bear_black",
+   "bear_polar"
+  ]
  },
  "hummingbird": {
   "voice": "hummingbird",
@@ -539,7 +567,10 @@
   "_parts_doc": "parts the creature always has as a mount (its own wings), priced like any part",
   "not_ridden_by": [
    "beetle",
-   "spider"
+   "spider",
+   "bear",
+   "bear_black",
+   "bear_polar"
   ],
   "_not_ridden_by_doc": "creatures this mount never carries, even when asked (bugs on a hummingbird looked wrong, Dominic); they walk, with a note",
   "rider_scale": {
@@ -547,5 +578,208 @@
    "rat": 90
   },
   "_rider_scale_doc": "percent: riders of these creatures sit smaller on this mount (a frog dwarfed the hummingbird, Dominic)"
+ },
+ "bear": {
+  "voice": "bear",
+  "noun": "Bear",
+  "plural": "Bears",
+  "group": "folk",
+  "bonuses": [
+   {
+    "text": "Thick fur: every unit +4 hp",
+    "effects": [
+     {
+      "tag": "all",
+      "not": [
+       "siege"
+      ],
+      "stat": "hp",
+      "add": 4
+     }
+    ],
+    "price_points": 1
+   },
+   {
+    "text": "Honey hunters: food gathered 10% faster",
+    "effects": [
+     {
+      "gather": "food",
+      "pct": 10
+     }
+    ],
+    "alt": {
+     "text": "Strong backs: workers carry +2",
+     "effects": [
+      {
+       "tag": "worker",
+       "stat": "carry",
+       "add": 2
+      }
+     ]
+    }
+   }
+  ],
+  "body": "body.bear",
+  "mount_body": "body.bear_mount",
+  "mount_head": "head.bear_mount",
+  "head": "head.bear",
+  "playable": true,
+  "mount": true,
+  "giant_ok": true,
+  "skins": [
+   "bear_brown",
+   "bear_grizzled"
+  ],
+  "families": [
+   "hellenic",
+   "forest"
+  ],
+  "research": [
+   "winter_coat"
+  ],
+  "lacks": [
+   "quick_draw"
+  ],
+  "pour": "boiling honey",
+  "_doc": "bears (D-126, D-127, in play 2026-10-17): two legs as a race, armoured and dignified (the smarter counterpart to the rats); four legs as a mount for others (mount_body, mount_head); giant_ok: the large line is a giant bear. Too big to ride the small mounts (their not_ridden_by): bears walk, and their large line is a giant",
+  "not_ridden_by": [
+   "bear",
+   "bear_black",
+   "bear_polar"
+  ]
+ },
+ "bear_black": {
+  "voice": "bear",
+  "noun": "Bear",
+  "plural": "Bears",
+  "group": "folk",
+  "bonuses": [
+   {
+    "text": "Thick fur: every unit +4 hp",
+    "effects": [
+     {
+      "tag": "all",
+      "not": [
+       "siege"
+      ],
+      "stat": "hp",
+      "add": 4
+     }
+    ],
+    "price_points": 1
+   },
+   {
+    "text": "Honey hunters: food gathered 10% faster",
+    "effects": [
+     {
+      "gather": "food",
+      "pct": 10
+     }
+    ],
+    "alt": {
+     "text": "Strong backs: workers carry +2",
+     "effects": [
+      {
+       "tag": "worker",
+       "stat": "carry",
+       "add": 2
+      }
+     ]
+    }
+   }
+  ],
+  "body": "body.bear_black",
+  "mount_body": "body.bear_mount",
+  "mount_head": "head.bear_mount",
+  "head": "head.bear_black",
+  "playable": true,
+  "mount": true,
+  "giant_ok": true,
+  "skins": [
+   "bear_black"
+  ],
+  "families": [
+   "hellenic",
+   "forest"
+  ],
+  "research": [
+   "winter_coat"
+  ],
+  "lacks": [
+   "quick_draw"
+  ],
+  "pour": "boiling honey",
+  "not_ridden_by": [
+   "bear",
+   "bear_black",
+   "bear_polar"
+  ]
+ },
+ "bear_polar": {
+  "voice": "bear",
+  "noun": "Bear",
+  "plural": "Bears",
+  "group": "folk",
+  "bonuses": [
+   {
+    "text": "Thick fur: every unit +4 hp",
+    "effects": [
+     {
+      "tag": "all",
+      "not": [
+       "siege"
+      ],
+      "stat": "hp",
+      "add": 4
+     }
+    ],
+    "price_points": 1
+   },
+   {
+    "text": "Honey hunters: food gathered 10% faster",
+    "effects": [
+     {
+      "gather": "food",
+      "pct": 10
+     }
+    ],
+    "alt": {
+     "text": "Strong backs: workers carry +2",
+     "effects": [
+      {
+       "tag": "worker",
+       "stat": "carry",
+       "add": 2
+      }
+     ]
+    }
+   }
+  ],
+  "body": "body.bear_polar",
+  "mount_body": "body.bear_mount",
+  "mount_head": "head.bear_mount",
+  "head": "head.bear_polar",
+  "playable": true,
+  "mount": true,
+  "giant_ok": true,
+  "skins": [
+   "bear_polar"
+  ],
+  "families": [
+   "hellenic",
+   "forest"
+  ],
+  "research": [
+   "winter_coat"
+  ],
+  "lacks": [
+   "quick_draw"
+  ],
+  "pour": "boiling honey",
+  "not_ridden_by": [
+   "bear",
+   "bear_black",
+   "bear_polar"
+  ]
  }
 }

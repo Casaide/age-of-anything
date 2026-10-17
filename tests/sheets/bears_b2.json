@@ -2,9 +2,6 @@
  "name": "bears_b2",
  "title": "Bears, concept round B2: shorter muzzles, the mount's head low (B1 above each B2)",
  "_doc": "Dominic on B1 (2026-10-13): the big armoured bear and its helmet work; the riding bears have a weird neck and the snouts are very long. B2 (data/later/bears.json) shortens every muzzle and carries the mount's head low on a short neck; each B1 row rebuilds the B1 numbers as a kit variant (params), so before and after come from one file. Notes: docs/concepts/bears/README.md.",
- "stage": [
-  "res://data/later/bears.json"
- ],
  "zooms": [
   3,
   1

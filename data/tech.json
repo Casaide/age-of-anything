@@ -900,6 +900,40 @@
    ]
   },
   {
+   "id": "winter_coat",
+   "name": "Winter Coat",
+   "desc": "A bear's coat grown thick for the winter: soldiers +1 melee and +1 pierce armour.",
+   "cost": {
+    "food": 200,
+    "gold": 150
+   },
+   "time": 50,
+   "building": "castle",
+   "age": 3,
+   "own": "creature",
+   "icon": "creature_research",
+   "effects": [
+    {
+     "tag": "all",
+     "not": [
+      "worker",
+      "siege"
+     ],
+     "stat": "armour.melee",
+     "add": 1
+    },
+    {
+     "tag": "all",
+     "not": [
+      "worker",
+      "siege"
+     ],
+     "stat": "armour.pierce",
+     "add": 1
+    }
+   ]
+  },
+  {
    "id": "sticky_silk",
    "name": "Sticky Silk",
    "desc": "Silk on every shot: ranged hits slow the target for a few seconds.",

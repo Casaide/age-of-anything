@@ -16,8 +16,8 @@ extends RefCounted
 ##     on four legs), the posed walk, idle poses and gait, so data anchors are the model's hips by
 ##     construction.
 ## Kits live in data/creature_kit.json ("kits": {name: params}); a kit can extend another ("base").
-## A part with "kit": "<name>" is completed from it when a data file is staged (stage()): nothing in
-## data/parts.json uses a kit yet, so the game is unchanged until a creature is switched to one.
+## A part with "kit": "<name>" is completed from it: in data/parts.json by DataLib on load (the bears,
+## 2026-10-17), in a staged data file by stage() (tests and sheets: data/later/*.json).
 ## Coordinates: part units, x forward, y up, z towards the near side; the ground is y = 0.
 
 const DataLib := preload("res://src/data_lib.gd")
@@ -32,10 +32,10 @@ const INK := Color("#2a1a12")
 
 # ------------------------------------------------------------------ data
 
-## Stage a data file (data/creature_kit.json, data/later/bears.json) into a DataLib: its kits, its
-## parts (kit bodies completed, their heads and legs made), creatures, skins and lexicon words, and
-## any concept model files it names ("models": gear modelled for the staged creatures). Tests and
-## sheets only; the game loads none of these files.
+## Stage a data file (data/creature_kit.json's comparison cats, data/later/*.json) into a DataLib: its
+## kits, its parts (kit bodies completed, their heads and legs made), creatures, skins and lexicon
+## words, and any concept model files it names ("models": gear modelled for the staged creatures).
+## Tests and sheets only (the game's own kit parts, the bears, DataLib completes on load).
 static func stage(lib, path: String) -> void:
 	var key := "%d|%s" % [lib.get_instance_id(), path]
 	if _staged.has(key):
@@ -88,6 +88,12 @@ static func _merge(a: Dictionary, b: Dictionary) -> Dictionary:
 		else:
 			out[key] = b[key].duplicate(true) if (b[key] is Dictionary or b[key] is Array) else b[key]
 	return out
+
+
+## Every kit of a data file (bases and head_of resolved): DataLib does this for data/creature_kit.json.
+static func register_all(all: Dictionary) -> void:
+	for name in all:
+		register(name, _resolved(name, all))
 
 
 static func register(name: String, k: Dictionary) -> void:
@@ -232,6 +238,9 @@ static func _biped_skeleton(k: Dictionary, pose: String) -> Dictionary:
 		"back": lean(k, _v3(s.back)) if s.has("back") else lean(k, _v3(chest.at) + Vector3(-float(chest.r[0]) - 0.2, 1.5, 0)),
 		"sit": hip + Vector3(0, -1.0, 0),
 	}
+	for n in s:   # more sockets: "drape" (a hero's cape or pelt), or one named for a part ("cape.cloth"): where it hangs clear of a broad back
+		if n != "back":
+			sockets[n] = lean(k, _v3(s[n]))
 	var leg_hip := hip + Vector3(float(k.leg.get("hip_dx", 0.0)), 0, 0)
 	var z := Vector3(0, 0, float(k.leg_z))
 	var anchors := [[leg_hip - z, 0.0, -1, 0, false], [leg_hip + z, PI, 1, 0, false]]
@@ -442,11 +451,12 @@ static func _ik(a: Vector2, b: Vector2, l1: float, l2: float, side: float) -> Ve
 # ------------------------------------------------------------------ models
 
 ## The model for a kit part ("body.bear", "leg.bear", "head.bear"); m is the UnitModels building it
-## (its primitives and materials; m.hold is the body's hold or pose, or a leg's pose).
+## (its primitives and materials; m.hold is the body's hold or pose, or a leg's pose; m.rest the pose
+## a body holding a weapon rests in, "body.bear@draw@ease").
 func build(m, id: String, colours: Dictionary) -> Dictionary:
 	var kr: Array = part_kit[id]
 	var k: Dictionary = kits[kr[0]]
-	var pose: String = "" if m.hold == "low" else m.hold
+	var pose: String = m.rest if m.rest != "" else ("" if m.hold == "low" else m.hold)
 	var spec: Dictionary
 	match kr[1]:
 		"body":
