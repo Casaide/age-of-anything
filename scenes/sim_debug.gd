@@ -54,6 +54,7 @@ const Combat := preload("res://src/sim/combat.gd")
 const Abilities := preload("res://src/sim/abilities.gd")
 const Replay := preload("res://src/sim/replay.gd")
 const SaveGame := preload("res://src/save_game.gd")
+const Lockstep := preload("res://src/net/lockstep.gd")
 const SavesPage := preload("res://src/view/ui/saves_page.gd")
 const Bot := preload("res://src/ai/bot.gd")
 const Walls := preload("res://src/sim/walls.gd")
@@ -180,6 +181,9 @@ var ai_levels: Array = []   # per player in a match against the AI: its level, "
 var player_teams: Array = [] # per player: its team (allies share one); empty: everyone for themselves
 var mode := ""                # the game mode (data/modes.json, picked in the lobby; "": the usual match), set on the rules
 var vs_ai := false          # side 2 is played by the AI (set by the match setup screen)
+var net_link = null         # a network match's link to the other player (src/net/), else null
+var net_me := 0             # the side this machine plays in a network match
+var net_note: Label         # "waiting for the other player", a desync, the other player gone
 var banner: Label           # victory / defeat
 var pause_menu: Control     # Esc against the AI: resume, surrender, back to the menu
 var saves_page: Control     # the pause menu's Load: the saved matches (src/view/ui/saves_page.gd)
@@ -293,6 +297,13 @@ func _ready() -> void:
 	banner.grow_vertical = Control.GROW_DIRECTION_BOTH
 	banner.visible = false
 	ui.add_child(banner)
+	net_note = _label(26, Vector2.ZERO)   # a network match's state, top middle (_net_status)
+	net_note.set_anchors_preset(Control.PRESET_CENTER_TOP)
+	net_note.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	net_note.grow_horizontal = Control.GROW_DIRECTION_BOTH
+	net_note.offset_top = 110
+	net_note.visible = false
+	ui.add_child(net_note)
 	minimap = Minimap.new()
 	minimap.anchor_left = 1.0
 	minimap.anchor_right = 1.0
@@ -380,6 +391,11 @@ func start_live(race_prompts: Array) -> void:
 			for entry in START_ARMY:
 				world.issue(p, Commands.SPAWN, {"slot": entry[0], "count": entry[1], "x": map.starts[p][0], "y": map.starts[p][1]})
 	_set_autoplay(autoplay)
+	if net_link != null:   # a network match: no bots, both sides are people; the lockstep paces the clock
+		clock.bots = []
+		bot_seats = []
+		active = net_me
+		clock.lockstep = Lockstep.new(world, net_me, [0, 1], net_link)
 	camera.look_at_point(Iso.to_screen(map.starts[active][0], map.starts[active][1]) + Vector2(0, 60))
 
 
@@ -396,6 +412,50 @@ func start_replay(rep: Dictionary) -> void:
 
 
 ## Set up to play on from a saved match (before adding to the tree): the lobby's choices as they were.
+## Play a network match (set before adding to the tree): this machine is side `me`, the setup
+## (prompts, rerolls, map, mode, teams) the host's; `link` the other player (src/net/). One side,
+## as against the AI, but no bots: the other side is a person, and the lockstep paces the clock.
+func use_network(link, me: int, setup: Dictionary) -> void:
+	net_link = link
+	net_me = me
+	prompts = setup.prompts
+	rerolls = setup.rerolls
+	map_id = setup.map
+	mode = setup.mode
+	player_teams = setup.teams
+	vs_ai = true
+	active = me
+
+
+## A network match's state over the field: waiting on the other player (after a moment, so a
+## turn's ordinary wait doesn't flicker), a desync, the other player gone.
+func _net_status() -> void:
+	if net_link == null or clock.lockstep == null:
+		return
+	var ls = clock.lockstep
+	var text := ""
+	if ls.desync != "":
+		text = "Out of sync with the other player (%s): the match can't go on." % ls.desync
+	elif ls.peer_left and world.winner < 0:
+		text = "The other player left the match."
+	elif clock.waiting:
+		_net_wait += get_process_delta_time()
+		if _net_wait > 0.6:
+			text = "Waiting for the other player..."
+	if not clock.waiting:
+		_net_wait = 0.0
+	net_note.text = text
+	net_note.visible = text != ""
+
+
+var _net_wait := 0.0
+
+
+func _exit_tree() -> void:
+	if net_link != null:
+		net_link.close()   # leaving the match: the other side hears it
+
+
 func use_save(rep: Dictionary) -> void:
 	var v: Dictionary = rep.view
 	load_save = rep
@@ -752,7 +812,7 @@ func _unhandled_input(event: InputEvent) -> void:
 			if event.keycode == KEY_F2:
 				tech_tree.close()
 			return
-		if not _play_key(event) and (not vs_ai or show_debug):
+		if not _play_key(event) and (not vs_ai or show_debug) and net_link == null:   # (no testing keys in a network match)
 			_debug_key(event)
 
 
@@ -1711,7 +1771,7 @@ func _show_pause_menu(on: bool) -> void:
 	box.get_node("resume").visible = not over
 	box.get_node("surrender").visible = not over
 	box.get_node("tree").visible = not over
-	box.get_node("save").visible = not over and playback.is_empty()
+	box.get_node("save").visible = not over and playback.is_empty() and net_link == null   # (a network match isn't saved)
 	box.get_node("save").text = "Save game"
 	var back: Button = box.get_node("menu")   # when it's over, the way back is the call to action
 	pause_menu.set_meta("pad_first", back if over else box.get_node("resume"))   # where a pad's focus starts
@@ -1733,11 +1793,11 @@ func _show_pause_menu(on: bool) -> void:
 			story += "\nBeat %s? Try %s next." % [ai_level.capitalize(), "Normal" if ai_level == "easy" else "Hard"]   # so testers know the step up exists
 		sub.text = story
 	else:
-		title.text = "Paused"
+		title.text = "Paused" if net_link == null else "Menu"   # (a network match doesn't pause)
 		title.remove_theme_color_override("font_color")
 		title.add_theme_font_size_override("font_size", 52)
 		sub.text = "%s  ·  %s" % [world.races[active].name, map.id.capitalize()]
-	clock.paused = on and not over
+	clock.paused = on and not over and net_link == null
 	if on:
 		UiTheme.arrive(pause_menu.get_node("card"), 10.0)
 		audio.play("ui_tip")
@@ -2042,6 +2102,7 @@ static func wall_cells(a: Vector2i, b: Vector2i) -> Array:
 func _process(delta: float) -> void:
 	if baking or world == null:
 		return
+	_net_status()
 	_play_events()
 	panel.keep_left_of(minimap.position.x - 24)   # wide panels (soldiers with stances) wrap rather than run under the minimap
 	audio.battle(world.tick / float(World.TICK_HZ) < battle_until)

@@ -30,7 +30,7 @@ along the way. The overview table lives in `../mvp-plan.md` §3; these files hol
 | 22 | [Battle feel](m22-battle-feel.md) | planned (formations by role, counter targeting, attack lines, a Norse shield wall) |
 | - | [Art pass](art-pass.md) | superseded (the look built through milestones 5 and 11) |
 | - | [Art and UI track](art-ui-track.md) | closed 2026-10-17 |
-| - | [Networking](networking.md) | planned (after the demo) |
+| - | [Networking](networking.md) | in progress (phase 1, the home network over ENet, built; the Mac vs Deck match next) |
 | - | [Save and load](save-load.md) | built 2026-10-16; Dominic's choices open |
 
 ## How to use these

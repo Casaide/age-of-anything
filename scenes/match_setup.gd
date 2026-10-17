@@ -30,6 +30,7 @@ const TraitStrip := preload("res://src/view/ui/trait_strip.gd")
 const TreeModel := preload("res://src/view/tech_tree_model.gd")
 const Identity := preload("res://src/identity.gd")
 const SavesPage := preload("res://src/view/ui/saves_page.gd")
+const NetPage := preload("res://src/view/ui/net_page.gd")
 
 const NOT_MAPS := ["choke_test", "river_test", "hill_test"]   # test maps (sim_debug lists them)
 var MAPS := _maps()   # every map in data/maps: the real ones first (by name), the test maps last
@@ -70,6 +71,8 @@ var right_col: VBoxContainer    # the other team's
 var start_button: Button        # where a pad's focus starts on the battle setup
 var tree_page: Control          # the tech tree page, over everything while open
 var saves_page: Control         # Load game: the saved matches (src/view/ui/saves_page.gd)
+var net_page: Control           # Play on the network (src/view/ui/net_page.gd)
+var net_hosting := false        # the battle setup is for hosting a network game (Start: wait for a player)
 var menu_layer: Node2D          # the title screen's hill, both armies on it
 var menu_stage: SubViewportContainer
 var _themes := {}               # family -> Theme (themes are built once per culture)
@@ -137,6 +140,8 @@ func _pad() -> void:
 	var pad := PadMode.of(get_tree())
 	if not pad.on or not setup.visible or (tree_page != null and (tree_page.visible or tree_page.closed_frame == Engine.get_process_frames())):
 		return
+	if net_page != null and (net_page.visible or net_page.closed_frame == Engine.get_process_frames()):
+		return   # (the network page reads the pad by focus)
 	if pad.pressed(JOY_BUTTON_X):
 		var focus := get_viewport().gui_get_focus_owner()
 		var k := 0
@@ -252,7 +257,7 @@ func _menu() -> Control:
 	var buttons := VBoxContainer.new()
 	buttons.add_theme_constant_override("separation", 14)
 	plaque.add_child(buttons)
-	for item in [["Battle the AI", func(): _open_setup()], ["Load game", func(): _open_saves()], ["Race Lab", func(): get_tree().change_scene_to_file("res://scenes/race_lab.tscn")],
+	for item in [["Battle the AI", func(): net_hosting = false; _open_setup()], ["Play on the network", func(): _open_net()], ["Load game", func(): _open_saves()], ["Race Lab", func(): get_tree().change_scene_to_file("res://scenes/race_lab.tscn")],
 			["Quit", func(): get_tree().quit()]]:
 		var primary: bool = item[0] == "Battle the AI"
 		var b := UiTheme.button(item[0], primary)
@@ -271,6 +276,48 @@ func _menu() -> Control:
 	col.add_child(gap2)
 	col.add_child(foot)
 	return root
+
+
+## Play on the network: host (the battle setup, then wait for a player) or join a game on the home
+## network (src/view/ui/net_page.gd).
+func _open_net() -> void:
+	if net_page == null:
+		net_page = NetPage.new()
+		add_child(net_page)
+		PadMode.of(get_tree()).menus.append(net_page)
+		net_page.host_chosen.connect(func(): net_hosting = true; _open_setup())
+		net_page.start.connect(_play_network)
+		net_page.closed.connect(func():
+			if not setup.visible:
+				menu.visible = true
+				UiTheme.arrive(menu))
+	menu.visible = false
+	net_page.open()
+
+
+## Host: the battle as set up, one human each side (1v1 on a two-player map); wait for a player.
+func _host_network() -> void:
+	if sides.size() != 2:
+		net_page.visible = false
+		start_button.text = "Host Battle: 1v1 maps only"
+		return
+	var setup_now := {"prompts": [_prompt(0), _prompt(1)], "rerolls": [sides[0].reroll, 0], "map": MAPS[map_index],
+		"mode": MODES[mode_index][0] if MODES[mode_index][0] != "standard" else "", "teams": sides.map(func(s): return s.side_team)}
+	net_page.wait_for_player(setup_now, "%s on %s" % [sides[0].race.get("name", "?"), str(map_data.get("name", MAPS[map_index]))])
+
+
+## Both ready: the match, this machine playing side `me` (the host 0, the joiner 1).
+func _play_network(link, me: int, net_setup: Dictionary) -> void:
+	Audio.of(get_tree()).play("ui_start")
+	while baking:
+		await get_tree().process_frame
+	var view = load("res://scenes/sim_debug.tscn").instantiate()
+	view.use_network(link, me, net_setup)
+	remove_child(kit)
+	view.kit = kit
+	get_tree().root.add_child(view)
+	get_tree().current_scene = view
+	queue_free()
 
 
 ## Load game: the saved matches over the title menu; picking one plays on from it.
@@ -301,6 +348,7 @@ func _play_saved(rep: Dictionary) -> void:
 func _open_setup() -> void:
 	menu.visible = false
 	setup.visible = true
+	start_button.text = "Host Battle" if net_hosting else "Start Battle"
 	UiTheme.arrive(setup.get_child(0))
 	Audio.of(get_tree()).play("ui_tip")
 
@@ -1069,6 +1117,9 @@ func _map_image(m: Dictionary) -> Image:
 
 
 func _play() -> void:
+	if net_hosting:
+		_host_network()
+		return
 	Audio.of(get_tree()).play("ui_start")
 	while baking:   # the lobby's own bake finishes first (it's awaited here, so it must not outlive the lobby)
 		await get_tree().process_frame

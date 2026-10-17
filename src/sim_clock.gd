@@ -14,6 +14,10 @@ var paused := false
 var speed := 1.0               # playback multiplier for watching replays
 var stop_at := -1              # stop stepping at this tick (end of a replay); -1 runs forever
 var bots: Array = []           # players run by a bot: each thinks (issues commands) before every tick
+## A network match (src/net/lockstep.gd): it says when a turn may start (every player's commands
+## for it are in), sends this machine's, and the clock holds while it waits.
+var lockstep = null
+var waiting := false           # the last frame held for the lockstep
 ## Capture tools (tests/sim_screenshot.gd): > 0 steps exactly `speed` x this many ticks a frame,
 ## whatever the frame time (frame-locked, so as fast as frames come and the same every run);
 ## `hold` keeps the world still meanwhile (the loader fading out).
@@ -36,11 +40,20 @@ func _process(delta: float) -> void:
 	if frame_steps > 0:
 		_acc = roundi(speed * frame_steps) * STEP + STEP * 0.5
 		cap = roundi(speed * frame_steps)
+	waiting = false
+	if lockstep != null:
+		lockstep.receive()
 	while _acc >= STEP and n < cap and world.tick != stop_at:
-		for bot in bots:
-			bot.think(world)
 		var t := Time.get_ticks_usec()
-		world.step()
+		if lockstep != null:
+			if not lockstep.step(bots):
+				waiting = true
+				_acc = minf(_acc, STEP * 2.0)   # (no catching up a long wait in one spurt)
+				break
+		else:
+			for bot in bots:
+				bot.think(world)
+			world.step()
 		events.append_array(world.events)
 		tick_usec = Time.get_ticks_usec() - t
 		tick_usec_avg = lerpf(tick_usec_avg, tick_usec, 0.05)
@@ -61,6 +74,7 @@ func take_events() -> Array:
 
 func reset(w: World, end_tick := -1) -> void:
 	world = w
+	lockstep = null
 	stop_at = end_tick
 	_acc = 0.0
 	alpha = 0.0
