@@ -1,6 +1,6 @@
 # Milestone 13: Unit lines
 
-**Status:** in progress (2026-10-13): siege engines built (step 3b), steps 2 and 8 (siege part) done; trade carts in play; war beasts and the GS2 great sling in play (D-129), siege shots baked; the frogs' great sling is FS1 A, the bullfrog leaper, in play with a throw (D-131); war beasts break cavalry (D-131)
+**Status:** closed (2026-10-17, Dominic: "anything requiring my checks can close, anything else we move forward"). Every line is in play: swordsman, scout, mounted archer, siege engines per family, unique units, the great sling (the frogs' bullfrog leaper), healers, trade carts, war beasts with jointed legs; the bot uses them; costs by material (D-144). Dominic's looks and picks closed with it (the placeholders stay); the work left is in `../backlog.md` §0b.
 **Exit criterion:** the tech tree page shows no blank nodes for land; every line trains, fights by
 its counters, and the AI uses it; a balance round robin at ages 2 and 3 with no line more than 20%
 off at equal cost; Dominic plays a match using siege and healers.
@@ -95,13 +95,13 @@ picks), then build, tests, archive pictures.
    Dominic's match.
 
 ## Checklist
-- [ ] Plan approved by Dominic
+- [x] Plan approved by Dominic (closed without the check, 2026-10-17)
 - [x] 1. Swordsman, scout, mounted archer (2026-10-13)
   - [x] Swordsman line at the Barracks, ages 1-3 (2026-10-13)
   - [x] Scout line at the Stable and mounted archer line at the Archery Range, ages 2-3 (2026-10-13)
   - [x] ~~Raider~~: cut as a line (Dominic, D-123); raiders are unique themes (step 4)
 - [x] 2. Siege combat systems (splash, minimum range, bonus vs buildings, rams for buildings only, bolts through a line; 2026-10-13)
-- [ ] 3. Siege engines (concept round per family)
+- [x] 3. Siege engines (concept round per family)
   - [x] 3a. Concept round SW1: ram, catapult, bolt thrower, five families, two directions (2026-10-13)
   - [x] Dominic's pick (D-119: crewed engines, the rats' open ram, the ridden giant beetle)
   - [x] Round 3: the frogs' engines rethought, three directions (2026-10-13)
@@ -109,20 +109,20 @@ picks), then build, tests, archive pictures.
   - [x] Round 4: the newt as frog cavalry, other frog catapults (the snail first) (2026-10-13)
   - [x] Dominic's pick: the frogs' catapult, the snail (D-122); the newt mount too
   - [x] 3b. Build the pick: parts, recipes, roster slots, Siege Workshop, pricing (2026-10-13)
-  - [ ] Dominic's look in a match
+  - [x] Dominic's look in a match (closed without the check, 2026-10-17)
   - [x] The newt built as the frogs' cavalry mount (D-122): `body/head/leg.newt` in data and
     `unit_models.gd`, three skins, amphibious, the swamp family's and the frogs' own mount (2026-10-13)
 - [x] Swordsman age-3 kit for every culture (Dominic, 2026-10-13: "need age 3")
   - [x] Concept round S3: two options each for hellenic, steppe, han, swamp, forest, spooky (2026-10-13)
   - [x] Dominic's pick (D-125), built into play with a plain iron sword as the fallback (2026-10-13)
-  - [ ] Dominic's look in a match
-- [ ] Rat mount: the long-head capybara (in play) or the alley cat (iterating: a real cat body, sits when idle); the tiger for another culture?
+  - [x] Dominic's look in a match (closed without the check, 2026-10-17)
+- [x] Rat mount: the alley cat is in play (rats ride cats); the capybara stays a mount (closed without the check, 2026-10-17)
 - [x] Siege engine sounds (2026-10-13: ram, catapult release and impact, bolt thrower, great sling, sapper blast, coins)
 - [x] The swordsmen's raid mode for the bot (`building_foes` 2, switched on 2026-10-13; see Results)
-- [ ] Check bugs (swamp beetles, spiders) riding newts; "frogs riding beetles" now gives newts
-- [ ] 4. Unique unit, sapper, great sling
+- [ ] Check bugs (swamp beetles, spiders) riding newts; "frogs riding beetles" now gives newts (moved to `../backlog.md` §0b, 2026-10-17)
+- [x] 4. Unique unit, sapper, great sling
   - [x] The unique unit: themes in `data/uniques.json` (17, raiders among them), from existing parts (2026-10-13)
-  - [ ] Dominic's look at the themes; concept round for the new parts each wants (list in Results)
+  - [x] Dominic's look at the themes (closed without the check, 2026-10-17); the concept round for their new parts (moved to `../backlog.md` §0b, 2026-10-17)
   - [x] Sapper, great sling: built and in play (2026-10-13), placeholder looks
   - [x] Concept rounds SP1 (the sapper's charge) and GS1 (the great sling) (2026-10-13)
   - [x] Dominic's picks: GS2's siege-weight traction sling (D-129); the sapper parked (D-128)
@@ -130,11 +130,11 @@ picks), then build, tests, archive pictures.
   - [x] Concept round FS1: the frogs' great sling (bullfrog leaper, stilt sling, crayfish winder) (2026-10-13)
   - [x] Dominic's pick from FS1: A, the bullfrog leaper (D-131); built and in play, packed on a sledge the bullfrog hauls, a throw shown after each shot (2026-10-14)
 - [x] 5. Healers (built 2026-10-12; the look is a pick pending: HL1 concept sheet, look A in game)
-- [ ] 6. Trade carts
+- [x] 6. Trade carts
   - [x] Mechanics, data, AI, Pack Animals, a placeholder look (2026-10-13)
   - [x] Concept round TC1 (2026-10-13)
-  - [ ] Dominic's pick, then build the look
-- [ ] 7. War beasts
+  - [x] Dominic's pick: the placeholder look stays (closed without the check, 2026-10-17)
+- [x] 7. War beasts
   - [x] Concept round WB1 (2026-10-13)
   - [x] Concept round WB2 (2026-10-13); Dominic's picks (D-129)
   - [x] Built: the `war_beast` line in play (Stable, age 3), elephant, war boar, tarantula, heron, mantis, riders the race's spearmen; priced, balanced (2026-10-13)
@@ -150,17 +150,17 @@ picks), then build, tests, archive pictures.
   - [x] Bent knees (Dominic: "bent knees are required for sure"; D-137): every beast's leg jointed and baked in 8
     walk steps (`legs.poses`), the knee by two-bone IK as the foot steps back along the ground and swings forward
     lifted (`12-`, `13-`).
-  - [ ] Dominic's look in a match
-- [ ] 8. AI (siege part done 2026-10-13: a few engines, rams at gates, walls and towers, catapults at towers; trade carts, the sapper and the great sling 2026-10-13; war beasts by the counter-pick, at most 4, 2026-10-13)
+  - [x] Dominic's look in a match (closed without the check, 2026-10-17)
+- [x] 8. AI (siege part done 2026-10-13: a few engines, rams at gates, walls and towers, catapults at towers; trade carts, the sapper and the great sling 2026-10-13; war beasts by the counter-pick, at most 4, 2026-10-13)
 - [x] Siege shots drawn as baked art (Dominic: "the rocks they throw look really bad"; 2026-10-13)
 - [x] Lines differ in what they cost (Dominic, 2026-10-16: "spears cost some wood and less food, swords only food or
   food and gold"; D-144): each part's `cost_mix` follows its material, so spears cost food and wood, swords food and
   gold, archers wood and gold; no gold before age 2; the bots mine a quarter gold from age 2 (see Results)
-- [ ] 9. Balance and exit check
+- [x] 9. Balance and exit check
   - [x] Round robin and mass battles at ages 2 and 3 with every line (2026-10-13; see Results)
-  - [ ] A design change for the structural outliers (proposal for Dominic in Results)
-  - [ ] Dominic's match
-- [ ] Archive: pictures taken along the way, journal, decisions, timeline
+  - [ ] A design change for the structural outliers (proposal in Results) (moved to `../backlog.md` §0b, 2026-10-17)
+  - [x] Dominic's match (closed without the check, 2026-10-17)
+- [x] Archive: pictures taken along the way, journal, decisions, timeline (journals 2026-10-13 to 2026-10-16)
 
 ## Results
 

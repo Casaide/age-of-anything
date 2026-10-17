@@ -14,6 +14,28 @@ into active work, move it into `mvp-plan.md` (or a new plan) with an exit criter
 - **Cost sanity:** 8 of 20 units still more than 20% off the mean at equal cost; big bodies are worth
   more with spears than with bows. Needs per-unit price-by-simulation (see "Later" in CLAUDE.md).
 
+## 0b. Carried forward when milestones 5, 13, 14, 16, 19 and 21 closed (2026-10-17, Dominic: "anything requiring my checks can close, anything else we move forward")
+
+What only waited on Dominic's look or pick closed with its milestone (the placeholders in play stay: the wall tower,
+the rubble, the siege tower and ladder, the trade cart, the unique units' themes). The work left:
+
+- **Bugs riding newts** (milestone 13): check swamp beetles and spiders riding newts; "frogs riding beetles" gives
+  newts now.
+- **Structural balance outliers** (milestone 13, step 9): a design change, not more price tuning (the proposal is in
+  `milestones/m13-unit-lines.md` Results). Also watch the draws since costs by material (D-144): 19 of 30 race matches
+  went the distance, against 14 before.
+- **The unique units' new parts** (milestone 13, step 4): a concept round for the parts each theme wants (the list is
+  in `milestones/m13-unit-lines.md` Results); the themes play on existing parts now.
+- **Race mechanics** (milestone 14, step 6): leap, shell, swarm/scavenge, shoot on the move (the web is the only one
+  in play), and a concept round for the web's look.
+- **Race balance** (milestone 14, step 8): frogs and rats at the edges (every race 33-68% over two maps).
+- **Bears** (milestone 14): below, "A Bear race".
+- **The end screen's match story** (milestone 19, step 5) and the open-licence fonts (step 2, waiting on a download
+  yes). The post-game stats are milestone 18's.
+- **Mods, the rest** (milestone 21): the lobby's mod list (enable, disable, refusals, missing mods for a shared race);
+  buildings, tech, audio and creature-kit creatures moddable; model scripts sandboxed or `.glb`-only for shared mods;
+  installed from a zip on a second machine with the same race key and a match played; Steam Workshop.
+
 ## 1. Networking (next after the demo)
 
 1. **Two-sim test:** two sim instances in one process, fed the same commands with artificial

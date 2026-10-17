@@ -353,6 +353,9 @@ func _test_tech_tree(lib, gen, rules: Dictionary) -> void:
 				check(seen.has("r:" + id) != others, "tree: research %s is on the page%s" % [id, " (not: another race's own)" if others else ""])
 			for sd in r.roster:
 				check(bdata.buildings.has(sd.get("building", "")), "roster %s names a building (%s)" % [sd.slot, rid])
+				if sd.get("status", "") == "parked":   # cut from the game: off the page (the sapper)
+					check(not seen.keys().any(func(k): return k.begins_with("u:%s@" % sd.slot)), "tree: parked line %s is not on the page (%s)" % [sd.slot, rid])
+					continue
 				var first := maxi(int(sd.tier), int(bdata.buildings[sd.building].age))   # trained once its building stands
 				var heroes: Array = race.get("heroes", []) if sd.role == "hero" else []   # (each hero its own node, D-138)
 				check(seen.has("u:%s@%d" % [sd.slot, first]) if heroes.is_empty() else heroes.all(func(h): return seen.has("u:%s.%s@%d" % [sd.slot, h.signature, first])),
@@ -481,7 +484,7 @@ func _test_bounds(lib, gen, rules: Dictionary) -> void:
 				var race: Dictionary = gen.generate(prompt, r, reroll)
 				var lines: Array = race.units.filter(func(u): return u.recipe.slot != "hero")   # (the heroes: one line, several units; _test_heroes)
 				var has_hero: int = 1 if lines.size() < race.units.size() else 0
-				check(lines.size() + has_hero + race.lacks.size() == r.roster.filter(func(sd): return sd.get("status", "") != "planned").size(), "roster size %s/%s" % [rid, prompt])
+				check(lines.size() + has_hero + race.lacks.size() == r.roster.filter(func(sd): return not sd.get("status", "") in ["planned", "parked"]).size(), "roster size %s/%s" % [rid, prompt])
 				for u in race.units:
 					var rec: Dictionary = u.recipe
 					for slot in rec.parts:
