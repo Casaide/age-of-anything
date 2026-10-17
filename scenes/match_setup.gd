@@ -889,6 +889,8 @@ func _bake(i: int) -> void:
 	await kit.bake_steps(picks.map(func(u): return {"recipe": u.recipe, "eval": u.eval}))
 	print("Lobby bake: %d ms (%s: %d units for the stage)" % [Time.get_ticks_msec() - t0, s.race.name, picks.size()])
 	baking = false
+	if i >= sides.size() or not is_same(sides[i], s):   # (the sides were rebuilt meanwhile, 2v2 to 1v1: theirs bake anew)
+		return
 	if s.gen == gen:   # (typed or rolled again meanwhile: it's dirty, and baked next)
 		s.baked_gen = gen
 	_muster(i)
