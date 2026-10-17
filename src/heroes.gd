@@ -12,6 +12,10 @@ extends RefCounted
 ## age (rules roster role "hero"), with the signature's parts put on; the parts they replace stay in
 ## the recipe's `kit` (priced by pricing.gd, not drawn), so every hero fights with its race's kit plus
 ## the hero line's stats and price_points. Its scale is the signature's (a look only: size_is_look).
+##
+## A prompt that names a hero (data/lexicon.json `hero`: "spider widow") gets only that one, when it is
+## among the race's own (Dominic, 2026-10-17: the same hero every time if you want it); the race keeps
+## the ones it asked for in `hero_asked`, in its key.
 
 const Rng := preload("res://src/rng.gd")
 const Pricing := preload("res://src/pricing.gd")
@@ -39,6 +43,11 @@ static func roster_for(heroes: Dictionary, creature: String, family: String) -> 
 			if out.size() < int(heroes.rules.min_heroes) and not sid in out:
 				out.append(sid)
 	return out
+
+
+## The heroes a prompt named that are among the race's own (roster_for), in roster_for's order.
+static func asked(heroes: Dictionary, named: Array, creature: String, family: String) -> Array:
+	return roster_for(heroes, creature, family).filter(func(sid): return sid in named)
 
 
 ## A hero's name {signature, name, given} as the race with this key calls it: each signature its own
@@ -78,7 +87,7 @@ static func make(lib, race: Dictionary, rules: Dictionary) -> Array:
 		return []
 	var out := []
 	var taken := []
-	for sid in roster_for(lib.heroes, race.creature, race.family):
+	for sid in race.get("hero_asked", roster_for(lib.heroes, race.creature, race.family)):
 		var h := pick(lib.heroes, race.key, race.creature, race.family, sid, taken)
 		taken.append(h.given)
 		var s: Dictionary = lib.heroes.hero_signatures[sid]

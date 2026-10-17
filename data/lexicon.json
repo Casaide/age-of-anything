@@ -1568,6 +1568,120 @@
    "tags": {
     "mounted": 1
    }
+  },
+  "barkhide": {
+   "hero": "barkhide"
+  },
+  "rootfoot": {
+   "hero": "barkhide"
+  },
+  "drowned": {
+   "hero": "drowned"
+  },
+  "anchor": {
+   "hero": "drowned"
+  },
+  "eyes": {
+   "hero": "eight_eyes"
+  },
+  "manners": {
+   "hero": "eight_eyes"
+  },
+  "gnawer": {
+   "hero": "gnawer"
+  },
+  "golden": {
+   "hero": "golden"
+  },
+  "honeypaw": {
+   "hero": "honeypaw"
+  },
+  "honey": {
+   "hero": "honeypaw"
+  },
+  "jaguar": {
+   "hero": "jaguar"
+  },
+  "lionheart": {
+   "hero": "lionheart"
+  },
+  "lion": {
+   "hero": "lionheart"
+  },
+  "loud": {
+   "hero": "loud"
+  },
+  "bellowmouth": {
+   "hero": "loud"
+  },
+  "mossback": {
+   "hero": "mossback"
+  },
+  "ancient": {
+   "hero": "mossback"
+  },
+  "overdressed": {
+   "hero": "overdressed"
+  },
+  "magnificent": {
+   "hero": "overdressed"
+  },
+  "polished": {
+   "hero": "polished"
+  },
+  "shiny": {
+   "hero": "polished"
+  },
+  "proud": {
+   "hero": "proud"
+  },
+  "crown": {
+   "hero": "regnal"
+  },
+  "sceptre": {
+   "hero": "regnal"
+  },
+  "dynasty": {
+   "hero": "regnal"
+  },
+  "thunderhoof": {
+   "hero": "thunderhoof"
+  },
+  "unshod": {
+   "hero": "thunderhoof"
+  },
+  "unbothered": {
+   "hero": "unbothered"
+  },
+  "yawning": {
+   "hero": "unbothered"
+  },
+  "unkillable": {
+   "hero": "unkillable"
+  },
+  "stitches": {
+   "hero": "unkillable"
+  },
+  "unmoved": {
+   "hero": "unmoved"
+  },
+  "unwoken": {
+   "hero": "unwoken"
+  },
+  "sleepy": {
+   "hero": "unwoken"
+  },
+  "napping": {
+   "hero": "unwoken"
+  },
+  "widow": {
+   "hero": "widow"
+  },
+  "silkmother": {
+   "hero": "widow"
+  },
+  "wolfbrother": {
+   "hero": "wolfbrother"
   }
  }
 }

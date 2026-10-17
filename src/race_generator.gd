@@ -94,7 +94,7 @@ func lookup(word: String) -> String:
 func interpret(prompt: String, rules: Dictionary) -> Dictionary:
 	var brief := {
 		"creatures": [], "default_creatures": [], "mounts": [], "mount_wings": "", "families": [],
-		"tags": {}, "body_size": "", "notes": [], "unknown": [],
+		"tags": {}, "body_size": "", "notes": [], "unknown": [], "heroes": [],
 	}
 	for raw in normalize(prompt).split(" ", false):
 		if lib.stopwords.has(raw):
@@ -121,6 +121,8 @@ func interpret(prompt: String, rules: Dictionary) -> Dictionary:
 			brief.families.append(entry.family)
 		if entry.has("size"):
 			brief.body_size = entry["size"]
+		if entry.has("hero") and not (entry.hero in brief.heroes):
+			brief.heroes.append(entry.hero)
 		for t in tags:
 			brief.tags[t] = brief.tags.get(t, 0) + int(tags[t])
 	return brief
@@ -228,6 +230,12 @@ func generate(prompt: String, rules: Dictionary, reroll := 0) -> Dictionary:
 		"units": units,
 		"lacks": lacks,   # derived (the slots left out), not in the key; what its creature and culture lack: src/identity.gd
 	}
+	var asked := Heroes.asked(lib.heroes, brief.heroes, creature, family)
+	if not asked.is_empty():
+		race.hero_asked = asked   # the heroes the prompt named: only those (src/heroes.gd), so in the key
+	elif not brief.heroes.is_empty():
+		notes.append("Nobody called %s leads %s, so their own heroes came instead." % [
+			" or ".join(brief.heroes.map(func(sid): return "'%s'" % sid.replace("_", " "))), String(c.plural).to_lower()])
 	if not lib.mods.is_empty():
 		race.mods = lib.mods.duplicate()   # made with mods (src/mods.gd): a peer needs the same ones (in the key)
 	race.key = race_key(race)
@@ -239,14 +247,16 @@ func generate(prompt: String, rules: Dictionary, reroll := 0) -> Dictionary:
 	return race
 
 
-## Hash of the shareable content only (names + recipes), not derived stats nor the heroes (derived from
-## this key: src/heroes.gd).
+## Hash of the shareable content only (names + recipes, the heroes the prompt named), not derived stats nor
+## the heroes themselves (derived from this key: src/heroes.gd).
 static func race_key(race: Dictionary) -> String:
 	var units: Array = race.units.filter(func(u): return u.recipe.slot != "hero")
 	var shareable := {
 		"schema": race.schema, "name": race.name, "creature": race.creature, "family": race.family,
 		"recipes": units.map(func(u): return u.line.map(func(l): return l.recipe) if u.has("line") else [u.recipe]),
 	}
+	if race.has("hero_asked"):   # (only then: a race whose prompt names no hero keeps the key it always had)
+		shareable.hero_asked = race.hero_asked
 	if race.has("mods"):   # (only then: a race made without mods keeps the key it always had)
 		shareable.mods = race.mods
 	return JSON.stringify(shareable, "", true).sha256_text()

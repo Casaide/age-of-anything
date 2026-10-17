@@ -958,6 +958,16 @@ back to the match), and the lockstep trusted the latest turn mark over a gap (no
 a bot loaded from a save mid route search (land.gd) called the search it no longer had (now it starts it again).
 Tested with Dominic's 2v2 save (26 minutes in): the joiner took the ally, 600 ticks in step.
 
+**D-149, 2026-10-17: A prompt can name its hero (refines D-138).** Dominic: "shouldnt we randomly get only one option
+based on race description? so its possible to deterministically always get the same hero if you want". Heroes were
+already the same every time (derived from the race key), so the ask was really about choosing one. Claude proposed, and
+Dominic took, a middle way: a prompt that names a hero ("spooky spider widow", "sewer rats with a crown") gets only that
+hero; a prompt that names none keeps all of its heroes (D-138's variety). The words are data (data/lexicon.json entries
+with a `hero`: one or two per signature, its look or its epithet). Naming several of the race's own gives those; a hero
+that isn't the race's own ("roman widow") is ignored with a note, since every hero's look is only checked on the bodies
+it can come to. The heroes asked for are kept on the race (`hero_asked`) and hashed into the key only when there are
+some, so every existing race keeps its key.
+
 **D-150, 2026-10-17: Each unit line has one cost mix; the parts set only the total.** Supersedes D-144's split.
 Dominic, on the swordsmen still paying 40-60 wood (for their shield and banner): "We're using the parts too
 literally... Different lines don't have clear cost benefits... I'm concerned we're making it too confusing with such
