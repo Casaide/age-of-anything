@@ -208,6 +208,12 @@ still maps the brief onto parts within host rules.
   - Sci-fi "space federation" pack. A space-fleet sci-fi mod is Dominic's personal dream; keep
     official names and likenesses out of shipped content.
 
+### A race perk: a line without gold (Dominic, 2026-10-17)
+One race might lose the gold cost of a line as its special benefit (Dominic: "we could do that for rats or spiders or
+something if it's balanced, but it has to be carefully balanced"). It would be an identity bonus (`src/identity.gd`)
+that changes the line's mix, priced like any other bonus, then checked with the race round robin and the bots'
+economies (D-150 set every line's mix).
+
 ### The sapper (parked 2026-10-13, Dominic: "remove the sapper unit, not needed")
 Built in milestone 13 (Castle, age 3: walks up to a building and blows up with it; a wall tile or house in one blast,
 a Town Center in three). Parked: its roster slot is `"status": "planned"`, the Castle doesn't train it, the bot doesn't

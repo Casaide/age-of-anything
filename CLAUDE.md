@@ -78,8 +78,8 @@ move it to `docs/backlog.md` rather than deleting it.
 - **Built (save and load, D-140 to D-142):** `src/save_game.gd` (a snapshot of the World and bots; saves from older builds
   load too, on the new stats while the data tables line up), Save/Load in the pause menu and lobby (`src/view/ui/saves_page.gd`). See `docs/milestones/save-load.md`.
 - **Closed (milestone 13): unit lines.** Crewed engines per family (D-116 to D-119); shots fly and can miss
-  (`src/sim/shots.gd`); healers, trade carts, the great sling, war beasts with jointed legs; a unit's cost mix follows
-  its gear's material (D-144). See `docs/milestones/m13-unit-lines.md`.
+  (`src/sim/shots.gd`); healers, trade carts, the great sling, war beasts with jointed legs; a unit's parts set its cost
+  and its line what it's paid in (D-150). See `docs/milestones/m13-unit-lines.md`.
 - **Closed (milestone 14): race identity and heroes.** Bonuses, own research, lacks (`src/identity.gd`), the web
   ability, heroes (every race gets its pool's, D-138). See `docs/milestones/m14-race-identity.md`.
 - **Closed (milestone 16): sieges.** Walkable walls, gatehouses, rams, ladders, siege towers, Fortress and Siege
