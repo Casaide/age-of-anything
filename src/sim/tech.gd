@@ -46,8 +46,9 @@ const NOT_IN_TREE := "not in this race's tech tree"
 
 ## Unit adds outside the eval: sight (tiles), carry, kill_gold (gold to the owner for each kill),
 ## wade (1: no terrain slows it), reach (milli-tiles on a melee reach), slow_on_hit (ticks its hits slow
-## the target: Abilities.SLOW_PCT).
-const UNIT_EXTRA := ["sight", "carry", "kill_gold", "wade", "reach", "slow_on_hit"]
+## the target: Abilities.SLOW_PCT), form_gap (milli-tiles on FORM_GAP in its formation band: the Norse
+## shield wall, World._formation).
+const UNIT_EXTRA := ["sight", "carry", "kill_gold", "wade", "reach", "slow_on_hit", "form_gap"]
 const UNIT_PCT := ["speed", "reload", "cost", "train_time", "build_speed", "carry", "heal"]   # carry: of the rules' carry
 const BUILDING_ADD := ["sight", "armour.melee", "armour.pierce", "trade_fee", "range", "pop"]   # trade_fee: points of the market's fee
 const BUILDING_PCT := ["hp", "food", "research_time", "cost", "research_cost", "age_time"]   # food: a farm's pool, sown or reseeded; research_cost: research there; age_time: the age-up there
@@ -510,6 +511,7 @@ static func retype(w, player: int) -> void:
 		t.kill_gold = int(add.get("kill_gold", 0))
 		t.wade = int(add.get("wade", 0))
 		t.slow_on_hit = int(add.get("slow_on_hit", 0))
+		t.form_gap = int(add.get("form_gap", 0))
 		if not t.ranged:
 			t.reach += int(add.get("reach", 0))
 		var u = w.units

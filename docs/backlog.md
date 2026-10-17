@@ -215,6 +215,13 @@ still maps the brief onto parts within host rules.
   - Sci-fi "space federation" pack. A space-fleet sci-fi mod is Dominic's personal dream; keep
     official names and likenesses out of shipped content.
 
+### A big-winged castle unit that soars over trees (Dominic, 2026-10-17)
+Flyers no longer cross trees or the deep river (D-154): flying over the woods "feels again too imbalanced". Dominic:
+"If their castle unit had extra big wings and could go over trees that would be more unique." A winged race's castle
+unit with oversized wings and a movement class of its own (say `soaring`: what flying was, trees included; the deep
+river still stops it, or not: Dominic to say). New art, so concept-first (D-080): wing options on a sheet, Dominic
+picks, then the placement check. Data: a movement class in `rules.movement.classes`, the tag from its wings part.
+
 ### A race perk: a line without gold (Dominic, 2026-10-17)
 One race might lose the gold cost of a line as its special benefit (Dominic: "we could do that for rats or spiders or
 something if it's balanced, but it has to be carefully balanced"). It would be an identity bonus (`src/identity.gd`)

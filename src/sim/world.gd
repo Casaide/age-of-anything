@@ -284,6 +284,7 @@ func _make_type(player: int, u: Dictionary) -> Dictionary:
 		"docks": "docks" in e.tags,                    # a siege tower: stopped by an enemy wall, a way up for its side (walls.gd)
 		"sight_add": 0, "carry_add": 0, "build_pct": 0,   # research on the type (Tech.retype)
 		"heal_pct": 0, "kill_gold": 0, "wade": 0, "slow_on_hit": 0,   # (and the race's bonuses, milestone 14)
+		"form_gap": 0,   # added to FORM_GAP in its formation band (a Norse shield wall closes up: _formation)
 		"line": u.get("line", [{"age": int(r.tier), "recipe": r, "eval": e}]),   # the unit through the ages (age-ups re-price from it)
 		"hero": r.has("hero"), "aura": [],   # the race's hero (heroes.gd): one at a time, its aura on its friends
 	}
@@ -772,13 +773,18 @@ func slot_of(a: Dictionary, uid) -> Vector2i:
 	return Vector2i(int(a.sx), int(a.sy))
 
 
-## A group move's formation: a box facing the way the group goes, centred on the click, as wide
-## as about twice its depth, neighbours a body's width plus FORM_GAP apart. Melee in the front
-## rows, shooters (and healers) behind. Units are dealt slots by where they are now: the ones
-## furthest ahead take the front rows and, along each row, left to right as they stand, so the
-## group closes up without units crossing. A slot that is blocked, or that can't be walked to
-## in a straight line from the click, moves half-way in, else onto the click. Returns the args
-## with slots (uid -> Vector2i), the group, its centre (fx, fy) and pace (slowest speed).
+## A group move's formation (milestone 22), centred on the click, facing the way the group goes. The
+## group is dealt into bands by role: foot soldiers in the front rows, shooters behind them, engines,
+## healers and the harmless (carts, towers) at the back, each band rows as wide as the centre (about
+## twice its depth), neighbours the band's biggest body plus FORM_GAP apart (plus the band's
+## form_gap, the loosest of its types: a Norse shield wall closes up). Mounted units, shooting or
+## not, stand on the flanks: two wings beside the centre, as deep as its front and shooters. With no
+## foot beside them they form the centre themselves. Units are dealt slots by where they are now:
+## in each band (each wing), the ones furthest ahead take the front rows and, along each row, left
+## to right as they stand, so the group closes up without units crossing. A slot that is blocked,
+## or that can't be walked to in a straight line from the click, moves half-way in, else onto the
+## click. Returns the args with slots (uid -> Vector2i), the group, its centre (fx, fy) and pace
+## (slowest speed).
 func _formation(player: int, a: Dictionary) -> Dictionary:
 	var out := a.duplicate()
 	var idx := []
@@ -800,12 +806,10 @@ func _formation(player: int, a: Dictionary) -> Dictionary:
 	var sx := 0
 	var sy := 0
 	var pace := 1 << 30
-	var rmax := 0
 	for i in idx:
 		sx += units.x[i]
 		sy += units.y[i]
 		pace = mini(pace, units.speed[i])
-		rmax = maxi(rmax, units.radius[i])
 	var cx := sx / n
 	var cy := sy / n
 	var dx := x - cx
@@ -816,40 +820,106 @@ func _formation(player: int, a: Dictionary) -> Dictionary:
 	if d > 0:
 		ux = dx * Fixed.ONE / d
 		uy = dy * Fixed.ONE / d
-	var front := []
-	var back := []
+	var bands := [[], [], []]   # front, shooters, rear
+	var flank := []
 	for i in idx:
-		var t: Dictionary = types[units.kind[i]]
-		if t.get("ranged", false) or t.get("healer", false):
-			back.append(i)
+		var role := _form_role(i)
+		if role == 3:
+			flank.append(i)
 		else:
-			front.append(i)
-	var cols := clampi(Fixed.isqrt(2 * n), 1, n)
-	var space := 2 * rmax + FORM_GAP
-	var rows := (front.size() + cols - 1) / cols + (back.size() + cols - 1) / cols
-	var row := 0
-	for part in [front, back]:
-		var ahead := {}
-		for i in part:
-			ahead[i] = (units.x[i] - cx) * ux + (units.y[i] - cy) * uy
-		part.sort_custom(func(p, q): return ahead[p] > ahead[q] or (ahead[p] == ahead[q] and p < q))
+			bands[role].append(i)
+	if bands[0].is_empty() and bands[1].is_empty():
+		bands[0] = flank   # all riders (and engines): they are the front
+		flank = []
+	var ahead := {}
+	var side := {}
+	for i in idx:
+		ahead[i] = (units.x[i] - cx) * ux + (units.y[i] - cy) * uy
+		side[i] = (units.y[i] - cy) * ux - (units.x[i] - cx) * uy
+	var by_ahead := func(p, q): return ahead[p] > ahead[q] or (ahead[p] == ahead[q] and p < q)
+	var by_side := func(p, q): return side[p] < side[q] or (side[p] == side[q] and p < q)
+	var nc: int = bands[0].size() + bands[1].size() + bands[2].size()
+	var cols := clampi(Fixed.isqrt(2 * nc), 1, nc)
+	var total := 0      # the centre's depth, front row to back
+	var half := 0       # the centre's half width, to its outermost body's edge
+	var deep := 0       # the front and shooters' rows: the wings stand beside them
+	for k in 3:
+		if bands[k].is_empty():
+			continue
+		var rows: int = (bands[k].size() + cols - 1) / cols
+		var sp := _form_space(bands[k])
+		total += rows * sp
+		half = maxi(half, (mini(cols, bands[k].size()) - 1) * sp / 2 + _form_rmax(bands[k]))
+		if k < 2:
+			deep += rows
+	var put := func(i: int, along: int, across: int) -> void:
+		var px := x + (ux * along - uy * across) / Fixed.ONE
+		var py := y + (uy * along + ux * across) / Fixed.ONE
+		out.slots[units.id[i]] = _slot_ok(i, px, py, x, y)
+	var top := total / 2
+	for part in bands:
+		if part.is_empty():
+			continue
+		var sp := _form_space(part)
+		part.sort_custom(by_ahead)
 		for first in range(0, part.size(), cols):
 			var line: Array = part.slice(first, first + cols)
-			var side := {}
-			for i in line:
-				side[i] = (units.y[i] - cy) * ux - (units.x[i] - cx) * uy
-			line.sort_custom(func(p, q): return side[p] < side[q] or (side[p] == side[q] and p < q))
+			line.sort_custom(by_side)
 			var k := line.size()
-			var along := (rows - 1) * space / 2 - row * space
 			for c in k:
-				var across := (2 * c - (k - 1)) * space / 2
-				var px := x + (ux * along - uy * across) / Fixed.ONE
-				var py := y + (uy * along + ux * across) / Fixed.ONE
-				out.slots[units.id[line[c]]] = _slot_ok(line[c], px, py, x, y)
-			row += 1
+				put.call(line[c], top - sp / 2, (2 * c - (k - 1)) * sp / 2)
+			top -= sp
+	if not flank.is_empty():
+		flank.sort_custom(by_side)
+		var nl := (flank.size() + 1) / 2
+		var sp := _form_space(flank)
+		var inner := half + FORM_GAP + _form_rmax(flank)
+		for wing in [flank.slice(0, nl), flank.slice(nl)]:
+			if wing.is_empty():
+				continue
+			var left: bool = wing[0] == flank[0]
+			var depth := clampi(deep, 1, wing.size())
+			var wc: int = (wing.size() + depth - 1) / depth
+			wing.sort_custom(by_ahead)
+			var along := total / 2 - sp / 2
+			for first in range(0, wing.size(), wc):
+				var line: Array = wing.slice(first, first + wc)
+				line.sort_custom(by_side)
+				var k := line.size()
+				for c in k:
+					put.call(line[c], along, -(inner + (k - 1 - c) * sp) if left else inner + c * sp)
+				along -= sp
 	if n > 1:
 		out.pace = pace
 	return out
+
+
+## Unit i's band in a formation: 0 foot soldiers, 1 shooters, 2 the rear (engines, healers, carts,
+## towers), 3 the flanks (mounted).
+func _form_role(i: int) -> int:
+	var t: Dictionary = types[units.kind[i]]
+	var tags: Array = t.eval.tags
+	if t.healer or t.harmless or "machine" in tags:
+		return 2
+	if "mounted" in tags:
+		return 3
+	return 1 if t.get("ranged", false) else 0
+
+
+func _form_rmax(part: Array) -> int:
+	var r := 0
+	for i in part:
+		r = maxi(r, units.radius[i])
+	return r
+
+
+## The distance between neighbours in a band: its biggest body plus FORM_GAP plus its loosest
+## type's form_gap (0 but for a shield wall's negative one).
+func _form_space(part: Array) -> int:
+	var g := -(1 << 20)
+	for i in part:
+		g = maxi(g, int(types[units.kind[i]].form_gap))
+	return 2 * _form_rmax(part) + maxi(FORM_GAP + g, 0)
 
 
 ## A formation slot unit i can stand in: (px, py) if it's open ground (moved off any wall by

@@ -136,7 +136,8 @@
    "resource": "wood",
    "amount": 100,
    "depleted": "stump",
-   "note": "a tree (milestone 15): 100 wood; blocks movement and sight (fog) until felled; leaves a stump. The view picks the species by the ground round it"
+   "note": "a tree (milestone 15): 100 wood; blocks movement and sight (fog) until felled; leaves a stump. The view picks the species by the ground round it. Nobody crosses it, flyers neither (Dominic, 2026-10-17: flying over the woods was too strong; soaring over trees is for a big-winged castle unit, later)",
+   "move": []
   },
   "stump": {
    "walkable": true,
@@ -152,7 +153,14 @@
    ],
    "colour": "#2f5f72",
    "colour2": "#2b586a",
-   "note": "a river's running water (milestone 15): ground units go round (fords, bridges); amphibians swim it"
+   "note": "a river's shallow band (milestone 15): ground units go round (fords, bridges); amphibians swim it, flyers cross it. Reed Meadow's rivers have a deep middle (deep_river)"
+  },
+  "deep_river": {
+   "walkable": false,
+   "move": [],
+   "colour": "#24495a",
+   "colour2": "#214455",
+   "note": "the deep middle of a river (2026-10-17): nobody crosses it, not amphibians, not flyers (Dominic: frog races swam the Reed Meadow river anywhere and won early); only fords and bridges"
   },
   "ford": {
    "walkable": true,
