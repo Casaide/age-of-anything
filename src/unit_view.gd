@@ -8,6 +8,7 @@ extends Node2D
 
 const PartShape := preload("res://src/part_shape.gd")
 const UnitModels := preload("res://scenes/art_pixel/unit_models.gd")
+const PartBaker := preload("res://scenes/art_pixel/part_baker.gd")
 static var UnitModelsCheck = UnitModels.new()   # which parts have hand-built models
 const Rng := preload("res://src/rng.gd")
 
@@ -673,6 +674,8 @@ func _make_rig(lib, body_id: String, head_id: String, colours: Dictionary, paren
 	if with_legs and body.has("legs"):
 		var anchors: Array = rig.get("anchors", body.legs.anchors)
 		var cut: bool = "legs" in body.get("cut", [])
+		# Fore or hind by the model's own hips (data anchors: x is forward), not where the facing draws them.
+		var fore_mid: float = body.legs.anchors.reduce(func(m, b): return m + float(b[0]), 0.0) / maxf(1.0, body.legs.anchors.size())
 		for i in anchors.size():
 			var a: Array = anchors[i]
 			if _clinging and (not bool(a[6]) if a.size() > 6 else float(a[3]) < 0.0):
@@ -711,7 +714,7 @@ func _make_rig(lib, body_id: String, head_id: String, colours: Dictionary, paren
 				if low > 0.0:
 					reach = clampf(_girth_drop / (low * cos(CLING_TURN)), 1.0, 2.6)
 			legs.append({"node": leg, "phase": float(a[2]), "cling": _clinging, "reach": reach, "rest": leg.position,
-				"base": leg_id + pose, "walk_id": leg_id, "cut": "~%s^%d" % [body_id, i] if cut else "", "steps": int(body.legs.get("poses", 0)) if pose == "" else 0})
+				"fore": float(body.legs.anchors[i][0]) > fore_mid, "base": leg_id + pose, "walk_id": leg_id, "cut": "~%s^%d" % [body_id, i] if cut else "", "steps": int(body.legs.get("poses", 0)) if pose == "" else 0})
 
 	var body_node := _shape()
 	body_node.part_id = body_id + _hold_suffix + pose
@@ -1583,7 +1586,9 @@ func _work(t: float, stepped: bool) -> void:
 		crouch *= 0.5
 	if weapon:
 		weapon.rotation = weapon_rot + swing
-	bob.rotation += lean
+	if recipe.has("mount") and recipe.mount.get("fused", false) and job == "forage":
+		return   # a fused mount kneels to forage instead (_kneel): its hind hooves stay planted
+	bob.rotation += lean * side_on(facing_k)   # forward, in this facing (a back turned to the camera leaned sideways)
 	bob.position.y += crouch
 
 
@@ -1661,6 +1666,41 @@ var _kneel_want := 0.0
 var _kneel_from := 0.0    # the kneel when it last changed its mind
 var _kneel_at := 0.0      # ...and the time then
 var _kneel_seen := false
+const KNEEL_DIP := 3.0    # part units the chest (and the human half) drops kneeling, seen end-on
+
+
+## A leg sprite's top and bottom (its highest and lowest opaque pixels, part units from its hip),
+## each at the middle of its row.
+func _span(n: PartShape) -> Array:
+	var b: Variant = n.bake_of()
+	if b == null:
+		return [Vector2.ZERO, Vector2(0.0, -n.position.y)]
+	var img: Image = b.img
+	var rows := []
+	for y in img.get_height():
+		var xs := 0.0
+		var count := 0
+		for x in img.get_width():
+			if img.get_pixel(x, y).a > 0.5:
+				xs += x + 0.5
+				count += 1
+		if count > 0:
+			rows.append((Vector2(xs / count, y + 0.5) - b.origin) / b.scale)
+	return [rows[0], rows[-1]] if not rows.is_empty() else [Vector2.ZERO, Vector2(0.0, -n.position.y)]
+
+
+## The model's forward (+x), one part unit along the ground, on screen in facing k (the bake camera:
+## part_baker.gd AZIMUTH, FACING_STEP, ELEVATION): (1, 0) is side-on facing right, short when it
+## points towards or away from the camera.
+static func ahead_on_screen(k: int) -> Vector2:
+	var az := deg_to_rad(PartBaker.AZIMUTH + PartBaker.FACING_STEP * k)
+	return Vector2(cos(az), sin(deg_to_rad(PartBaker.ELEVATION)) * sin(az))
+
+
+## How side-on facing k is, for a turn of the whole sprite drawn as seen in the classic view (facing 0):
+## 1 there, -1 facing the other way, 0 towards or away from the camera.
+static func side_on(k: int) -> float:
+	return clampf(ahead_on_screen(k).x / ahead_on_screen(0).x, -1.0, 1.0)
 
 
 func _kneel(_delta: float) -> void:
@@ -1679,24 +1719,29 @@ func _kneel(_delta: float) -> void:
 		for leg in legs:
 			if leg.has("shin"):
 				leg.shin.visible = false
-		if seat_node != null and seat_node.rotation != 0.0:
+		if seat_node != null and seat_node.has_meta("rest"):
 			seat_node.rotation = 0.0
-			seat_node.position.x = seat_node.get_meta("rest_x", seat_node.position.x)
+			seat_node.position = seat_node.get_meta("rest")
 		return
-	if seat_node != null and not seat_node.has_meta("rest_x"):
-		seat_node.set_meta("rest_x", seat_node.position.x)
-	var xs := legs.map(func(l): return l.node.position.x)
-	xs.sort()
-	var mid: float = (xs[1] + xs[2]) * 0.5
+	if seat_node != null and not seat_node.has_meta("rest"):
+		seat_node.set_meta("rest", seat_node.position)
+	# In this facing's terms (2026-10-17: picked by screen x and bent as if seen from the side, it folded
+	# a flank's legs sideways and sank the hind end in every other facing; Dominic saw it from behind):
+	# which legs are fore and hind comes from the body's model, and the model's forward (+x) on screen
+	# (`ahead`: a part unit along the ground, foreshortened) says where back along the ground is.
+	var ahead := ahead_on_screen(facing_k)
+	var side := side_on(facing_k)
+	var hind_x := []
 	for leg in legs:
-		if leg.node.position.x <= mid:
+		if not leg.fore:
+			hind_x.append(leg.rest.x)
 			continue
 		# A front leg bends at the knee (Dominic: "the knees aren't bent"): the upper leg, the
 		# leg's own sprite, shortens to the knee; a second copy of it, the shin, folds back
 		# from the knee to lie along the ground.
 		var upper := 1.0 - 0.45 * kneel
 		leg.node.scale.y = upper
-		leg.node.rotation += 0.1 * kneel
+		leg.node.rotation += 0.1 * kneel * side
 		var shin: Node2D = leg.get("shin")
 		if shin == null:
 			shin = _shape()
@@ -1708,19 +1753,34 @@ func _kneel(_delta: float) -> void:
 			leg.node.add_sibling(shin)
 			leg.shin = shin
 		shin.visible = kneel > 0.03
-		var hip_to_ground: float = -leg.rest.y
-		shin.position = leg.node.position + Vector2(0.0, hip_to_ground * upper).rotated(leg.node.rotation)
-		shin.rotation = leg.node.rotation + 1.45 * kneel   # back along the ground, hoof behind the knee
-		shin.scale = Vector2(leg.node.scale.x, 0.5)
+		# The knee is the shortened leg's lowest pixel; the shin's top pixel sits on it (a leg cut by
+		# its body shows from below the hip: placed at the hip's drop, the shin hung loose below the knee).
+		if not leg.has("span"):
+			leg.span = _span(leg.node)
+		var top: Vector2 = leg.span[0]
+		var low: Vector2 = leg.span[1]
+		var sx: float = leg.node.scale.x
+		var knee: Vector2 = leg.node.position + Vector2(low.x * sx, low.y * upper).rotated(leg.node.rotation)
+		# Back along the ground, the hoof behind the knee: half a leg's length, a little down; behind
+		# the knee (and the chest) where back is away from the camera.
+		var fold := -ahead * 0.5 + Vector2(0.0, 0.06)
+		shin.rotation = lerp_angle(0.0, atan2(-fold.x, fold.y), kneel)
+		shin.scale = Vector2(sx, fold.length() * low.y / maxf(low.y - top.y, 1.0))
+		shin.position = knee - Vector2(top.x * sx, top.y * shin.scale.y).rotated(shin.rotation)
+		var z: float = leg.node.get_meta("z", 0)
+		if shin.get_meta("z") != (-2.5 if ahead.y > 0.2 else z):
+			shin.set_meta("z", -2.5 if ahead.y > 0.2 else z)
+			_sort_layers(shin.get_parent())
 	# The chest comes down with the folded legs, pivoting about the hind hooves (which stay
-	# planted), and the human half leans back over the hindquarters to keep its balance.
-	var a := 0.17 * kneel
-	var pivot := Vector2((xs[0] + xs[1]) * 0.5, 0.0)
+	# planted), and the human half leans back over the hindquarters to keep its balance. Side-on
+	# that's a turn of the whole sprite; towards or away from the camera the chest just drops.
+	var a := 0.17 * kneel * side
+	var pivot := Vector2(0.0 if hind_x.is_empty() else hind_x.reduce(func(m, x): return m + x, 0.0) / hind_x.size(), 0.0)
 	bob.rotation += a
 	bob.position += pivot - pivot.rotated(a)
 	if seat_node != null:
-		seat_node.rotation = -0.4 * kneel
-		seat_node.position.x = seat_node.get_meta("rest_x", seat_node.position.x) - 1.5 * kneel
+		seat_node.rotation = -0.4 * kneel * side
+		seat_node.position = seat_node.get_meta("rest") - ahead * 1.5 * kneel + Vector2(0.0, KNEEL_DIP * kneel * (1.0 - absf(side)))
 
 
 ## Resting poses (concept C2, the cat: "including sitting when idle", Dominic): a body with
