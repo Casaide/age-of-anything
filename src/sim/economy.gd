@@ -89,7 +89,7 @@ static func load_btypes(resources: Array) -> Array:
 			"build_ticks": int(b.build_time) * 20, "pop": int(b.pop), "house": bool(b.house),
 			"trains": b.trains.duplicate(), "age": int(b.age), "armour": b.get("armour", {}).duplicate(),
 			"attack": b.get("attack", {}).duplicate(), "gate": bool(b.get("gate", false)),
-			"line": bool(b.get("line", false)), "replaces": b.get("replaces", []).duplicate(),
+			"blocks_flyers": bool(b.get("blocks_flyers", false)), "line": bool(b.get("line", false)), "replaces": b.get("replaces", []).duplicate(),
 			"pen": _pen_ticks(b.get("pen", {})),
 			"idle_note": b.get("idle_note", ""),
 			"garrison": int(b.get("garrison", 0)), "sight": int(b.get("sight", 0)), "more_from_age": int(b.get("more_from_age", 0)),
@@ -211,7 +211,7 @@ static func place(w, player: int, k: int, cx: int, cy: int, along := 0) -> int:
 			if w.rubble.has(c):
 				w.map.set_terrain(c, w.rubble[c][0])
 				w.rubble.erase(c)
-	w.map.occupy(w.buildings.footprint(i, w.map.width), w.buildings.id[i], w.teams[player] if t.gate else -1)
+	w.map.occupy(w.buildings.footprint(i, w.map.width), w.buildings.id[i], w.teams[player] if t.gate else -1, t.blocks_flyers)
 	if t.ladder:
 		w.map.set_walk_over(w.buildings.footprint(i, w.map.width), true)   # walked over at the wall's foot (walls.gd)
 	if t.gate:
