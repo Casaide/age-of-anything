@@ -86,6 +86,9 @@ move it to `docs/backlog.md` rather than deleting it.
 - **Closed (milestone 21): modability.** The mod loader, an example mod, agent tooling (`docs/modding.md`).
 - **Milestones 5, 13, 14, 16, 19 and 21 closed 2026-10-17** (Dominic: what waited on his checks closes, the rest
   moves forward): what's left is in `docs/backlog.md` §0b.
+- **In progress (networking): multiplayer.** Phase 1 built: lockstep over ENet on the home network (`src/net/`), Play
+  on the network in the lobby (Host, Join by LAN beacon), D-147; next the Mac vs Deck match, then a HyperDHT
+  sidecar. See `docs/milestones/networking.md`.
 - **Planned (milestone 22): battle feel.** Formations by role, counter-aware targeting, attack lines, a Norse shield
   wall. See `docs/milestones/m22-battle-feel.md`.
 
@@ -177,6 +180,8 @@ python3 tools/maps/reed_meadow.py                                  # rebuild the
 godot --headless --path . --script res://tests/path_audit.gd -- 8  # pathing diagnostic: give-ups, snaps, jitter, treading, with examples
 godot --path . res://scenes/match_setup.tscn                       # pick races and play vs the AI (the main scene)
 godot --path . --script res://tests/sim_screenshot.gd -- /tmp/sim.png [map_id] [armies|opening:<tick>] ["prompt A" "prompt B"]
+godot --headless --path . --script res://tests/net_check.gd -- [loop|enet] [ticks]   # lockstep: two worlds over a loopback, two processes over ENet; same hashes
+godot --path . --audio-driver Dummy --always-on-top --script res://tests/net_game_check.gd -- /tmp/net [ticks]   # a network match in two game windows through the lobby page
 godot --path . --audio-driver Dummy --always-on-top --script res://tests/pad_check.gd -- /tmp/pad   # a match played by a fake pad: 25 checks + pictures (exit 1 on a failure)
 godot --path . --audio-driver Dummy --always-on-top --script res://tests/save_check.gd -- /tmp/save   # save and load through the menus, mouse, pad and lobby (exit 1 on a failure)
 godot --path . res://scenes/sim_debug.tscn                         # run the sim debug view
