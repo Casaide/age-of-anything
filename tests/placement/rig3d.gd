@@ -216,6 +216,10 @@ func _gear(out: Dictionary, rig: Dictionary, slot: String, part_id: String, colo
 		sock = "drape"   # (UnitView._attach: a cape hangs from the body's drape socket)
 	if slot == "back" and "banner" in lib.part(part_id).tags and not "hero" in lib.part(part_id).tags and rig.sockets.has("banner"):
 		sock = "banner"   # (UnitView._attach: a banner on the body's banner socket)
+	var slung := UnitView.slung_on(lib, rig.body, slot, part_id)
+	if slung != "":
+		sock = "sling"   # (UnitView._attach: a shield slung on the back, baked "<shield>@slung")
+		part_id += slung
 	var r: String = rig.rig
 	var xf: Transform3D = rig.xf
 	if slot == "torso":
@@ -264,5 +268,5 @@ func _gear(out: Dictionary, rig: Dictionary, slot: String, part_id: String, colo
 		parent = r + ":arm"
 	var harness: bool = rig.carry == "harness" and slot in ["hand_r", "hand_l"]
 	out.pieces.append({"name": r + ":" + slot, "kind": slot, "rig": r, "id": part_id, "node": gs.node, "geo": gs._key, "xf": gxf,
-		"joint": rig.sockets[sock], "parent": parent, "side": 0, "harness": harness,
+		"joint": rig.sockets[sock], "parent": parent, "side": 0, "harness": harness, "slung": slung != "",
 		"mouth": slot == "hand_r" and rig.spec.get("hold", "") == "mouth"})

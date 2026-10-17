@@ -32,6 +32,12 @@ the rubble, the siege tower and ladder, the trade cart, the unique units' themes
 - **Bears** (milestone 14): below, "A Bear race".
 - **The end screen's match story** (milestone 19, step 5) and the open-licence fonts (step 2, waiting on a download
   yes). The post-game stats are milestone 18's.
+- ~~**Shields on spiders and beetles**~~ (done 2026-10-17, D-152): slung on the back, every shield and back piece
+  checked on every body (`gear_cases`).
+- **Norse, the rest** (D-151): a concept round for the Norse helmets (built from round 1's suggestion, which Dominic
+  hadn't picked; the braids and beards came off, since they cut into frogs, rats and beetles), a Norse architecture
+  (longhouses, today the thatch look), a Norse war beast for humans (the creature's elephant wins over the culture's
+  boar), and the shield wall formation (milestone 22, step 4).
 - **Mods, the rest** (milestone 21): the lobby's mod list (enable, disable, refusals, missing mods for a shared race);
   buildings, tech, audio and creature-kit creatures moddable; model scripts sandboxed or `.glb`-only for shared mods;
   installed from a zip on a second machine with the same race key and a match played; Steam Workshop.
@@ -148,7 +154,8 @@ still maps the brief onto parts within host rules.
   - **Amphibians (frogs, crocodiles):** build on swamp and shallow water, and swim across
     shallow water.
   - **Roman infantry:** throw a pilum volley before closing to melee.
-  - **Vikings:** form a shield wall (stop, high pierce armour, slow).
+  - **Vikings:** form a shield wall (stop, high pierce armour, slow). (2026-10-17: the Norse culture exists, D-151;
+    the shield wall is milestone 22's step 4.)
   - Candidates to weigh up:
     - Beavers dam water into new ground or swamp.
     - Bears hibernate to heal, or maul (splash).

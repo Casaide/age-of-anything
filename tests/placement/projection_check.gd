@@ -284,6 +284,17 @@ func _check_view(v, label: String, view: String, k: int, u: Dictionary, stand: D
 		# What the near hand holds draws over the body; a weapon or shield never vanishes.
 		for slot in ["hand_r", "hand_l"]:
 			for i in _find(parts, rig, slot):
+				if "@slung" in parts[i].id:
+					# A shield slung on the back (UnitView.slung_on): upright, drawn as back gear by its
+					# sling's depth; flat on top, over the body. The stand views' 3D truth checks both.
+					var ds := float(depth.get("sling", 0.0))
+					if "@slung_flat" in parts[i].id:
+						note("a shield slung flat over the body", label, view, _over(parts, body, i) > 0, "%d px" % _over(parts, body, i))
+					elif k != 0 and ds < -0.5:
+						note("back parts behind the body facing the camera", label, view, _over(parts, i, body) > 0, "%d px" % _over(parts, i, body))
+					elif k != 0 and ds > 0.5:
+						note("back parts over the body facing away", label, view, _over(parts, body, i) > 0, "%d px" % _over(parts, body, i))
+					continue
 				if k != 0 and float(depth.get(slot, 0.0)) >= 0.5:
 					note("near hand over the body", label, view, _over(parts, body, i) > 0, "%d px" % _over(parts, body, i))
 				if k != 0 and float(depth.get(slot, 0.0)) < -0.5:
