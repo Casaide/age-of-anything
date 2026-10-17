@@ -1887,6 +1887,16 @@ func _step_out(x: int, y: int, mc: int) -> Vector2i:
 	return Flow.centre(map, Flow.nearest_walkable(map, cy * map.width + cx, mc))
 
 
+## A save from before stone walls stopped flyers (D-158): the walls standing in it block them now.
+func after_load(_missing: Array) -> void:
+	for b in buildings.count():
+		if btypes[buildings.kind[b]].get("blocks_flyers", false):   # (get: a save that keeps its own tables has none)
+			for c in buildings.footprint(b, map.width):
+				if map.high[c] == 0:
+					map.high[c] = 1
+					map._refresh(c)
+
+
 # ------------------------------------------------------------------ hash
 
 ## Hash of everything that matters, in id order.
