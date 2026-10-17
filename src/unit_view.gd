@@ -767,10 +767,13 @@ func _attach(lib, rig: Dictionary, slot: String, part_id: String, colours: Dicti
 		socket = "drape"   # a hanging cape or pelt from where the body's model says it hangs clear (its "drape" socket)
 	if slot == "back" and "banner" in p.tags and not "hero" in p.tags and rig.sockets.has("banner"):   # (a hero's back pieces are fitted to the back itself)
 		socket = "banner"   # a banner pole where the body's model carries one (a rat's, higher than its low back)
+	var slung := slung_on(lib, rig.body, slot, part_id)
+	if slung != "":
+		socket = "sling" if rig.sockets.has("sling") else "back"   # slung across the back (the body's model's sling socket)
 	if not rig.sockets.has(socket):
 		return
 	var node := _shape()
-	node.part_id = part_id
+	node.part_id = part_id + slung
 	node.facing = facing_k
 	var worn: bool = slot == "torso" and UnitModelsCheck.has(rig.body) and UnitModelsCheck.has(part_id)   # (the body's model, not its bake: the first preview comes before any bake)
 	if worn:
@@ -789,6 +792,11 @@ func _attach(lib, rig: Dictionary, slot: String, part_id: String, colours: Dicti
 		# a cape shows when it walks away, the far hand's shield goes behind.
 		var near: bool = float(rig.depth[socket]) >= -0.5
 		z = (1.6 if slot == "back" else absf(z)) if near else (-3.0 if slot == "back" else -absf(z))
+	if slung == "@slung_flat":
+		z = 1.6   # lying on top of a level back: seen from above in every facing, over the body
+	elif slung != "":
+		# Upright behind the shoulders: back gear, in every facing (over the body only when the back is turned to us).
+		z = 1.6 if facing_k != 0 and rig.depth.has(socket) and float(rig.depth[socket]) > 0.5 else -3.0
 	if p.has("blur"):
 		# A wing blur (parts.json "blur": its opacity in percent): see-through, and it buzzes.
 		# Drawn over or under the body like any back part (over it in every facing, the wings
@@ -819,6 +827,12 @@ func _attach(lib, rig: Dictionary, slot: String, part_id: String, colours: Dicti
 	if slot == "back":
 		back_node = node
 
+
+## How an off-hand shield is carried on this body: "" in the hand, else its sling ("@slung" upright
+## behind, "@slung_flat" flat on top: parts.json body "shield"; baked "<shield>@slung", unit_models.gd slung).
+static func slung_on(lib, body_id: String, slot: String, part_id: String) -> String:
+	var how: String = lib.part(body_id).get("shield", "")
+	return "@" + how if slot == "hand_l" and how != "" and "shield" in lib.part(part_id).tags else ""
 
 func _face(dir: float) -> void:
 	facing = dir if facing_k == 0 else 1.0   # baked facings are never mirrored

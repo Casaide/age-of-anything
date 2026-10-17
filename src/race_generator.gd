@@ -39,7 +39,7 @@ const LIGHT_ROLES := ["scout", "sapper"]
 const LIGHT_POINTS := 2
 ## Signature gear (a culture's kit, cheese hammers...) is only favoured when the prompt,
 ## family or creature asks for it. No cheese hammers for Romans unless someone says cheese.
-const SIGNATURE_TAGS := ["roman", "greek", "viking", "cheese", "woodland", "knight", "bat", "crossbow", "junk", "saucepan", "nile", "han", "aztec"]   # woodland: acorn caps, leaves, bark (swamp/forest); knight: iron helm, kite, mail (royal); bat wings (spooky/sewer); crossbows (royal, sewer rats); junk: bottle caps (sewer); saucepan: only when asked (ww2)
+const SIGNATURE_TAGS := ["roman", "greek", "viking", "cheese", "woodland", "knight", "bat", "crossbow", "junk", "saucepan", "nile", "han", "aztec", "norse"]   # woodland: acorn caps, leaves, bark (swamp/forest); knight: iron helm, kite, mail (royal); bat wings (spooky/sewer); crossbows (royal, sewer rats); junk: bottle caps (sewer); saucepan: only when asked (ww2)
 ## Extra wants for "Heavy" large units (armoured elites instead of giants).
 const HEAVY_BOOST := {"heavy": 3, "armour": 3, "helmet": 2, "shield": 1}   # no "knight": knight kit is the royal culture's signature
 const OPTIONAL_SLOTS := ["hand_l", "head_gear", "torso", "back"]
@@ -450,9 +450,12 @@ func _lacks(slot_def: Dictionary, units: Array, ctx: Dictionary) -> String:
 	return ""
 
 
-## Can a rider on this recipe's mount wear the part? (parts.json "not_ridden_on": a cloth cape hangs
-## through a pony's back: the placement check, A3.)
+## Can a rider on this recipe's mount, and this recipe's body, wear the part? (parts.json "not_ridden_on":
+## a cloth cape hangs through a pony's back; "not_worn_by": bodies it doesn't fit, a cloth cape through a
+## frog's haunches: the placement check, A3.)
 func _fits_mount(p: Dictionary, recipe: Dictionary) -> bool:
+	if recipe.body in p.get("not_worn_by", []):
+		return false
 	return not (recipe.has("mount") and not recipe.mount.fused and recipe.mount.creature in p.get("not_ridden_on", []))
 
 

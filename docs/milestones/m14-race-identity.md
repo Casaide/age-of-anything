@@ -150,6 +150,7 @@ both at the Castle in age 3. Culture mechanics are left out for now (creature me
 | Forest | wood gathered 10% faster | Woodsmen: workers carry +2 wood | bolt thrower |
 | Royal | heavy cavalry 10% cheaper | Chivalry: mounted +20 hit points | skirmisher's age-3 step |
 | Spooky | units +2 sight | Creeping Dread: enemies near your army move 10% slower | market trade |
+| Norse (2026-10-17, D-151) | kills bring in 3 gold | Berserkergang: infantry +2 attack | the archers' age-3 step |
 
 ## More bonuses: six per race (Dominic, 2026-10-13)
 
@@ -214,6 +215,7 @@ building, Tech.head_ticks).
 | Forest | wood gathered 10% faster (alt: food 10% faster) | Woodland archers: bowmen +1 range (alt: +5 HP) | Forest lore: Lumber Camps 25% cheaper | woodsmen and bowmen |
 | Royal | cavalry 10% cheaper | Knightly training: cavalry trains 20% faster | Heralds: units +1 sight | knights |
 | Spooky | units +2 sight | Night archers: foot archers and skirmishers train 20% faster | Night watch: Watchtowers +1 range | they shoot from the dark |
+| Norse (added 2026-10-17, D-151) | Plunder: kills bring in 3 gold (alt: foot soldiers +3 attack against buildings) | Linden shields: shield-bearers +1 pierce armour (alt: +5 HP) | Seafarers: no slowdown in shallows or fords (alt: Houses 25% cheaper) | raiders off the boats, behind round shields |
 
 So a race reads like the genre's civ cards, for example **steppe centaurs**: research 15% faster
 (Folk); workers carry 60% more, food gathered 15% faster and 100 more food at the start (Centaurs); mounted 10% faster, mounted
