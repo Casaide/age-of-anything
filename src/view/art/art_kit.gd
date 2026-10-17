@@ -314,7 +314,8 @@ func _work(kind: String) -> void:
 			j.apply.call(BakeCache.read(id))
 		else:
 			var entry: Dictionary = await j.make.call(baker)
-			await BakeClock.off_thread(func(): BakeCache.write(id, entry))   # (compressing it is long work)
+			if not entry.is_empty():   # (a bake that failed, e.g. headless with no renderer, returns {}: kept, every later run would read it as nothing)
+				await BakeClock.off_thread(func(): BakeCache.write(id, entry))   # (compressing it is long work)
 		j.running = false
 		j.done = true
 		_dirty = true
