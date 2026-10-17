@@ -112,4 +112,5 @@ One line per moment worth remembering. Newest at the bottom.
 - **2026-10-17:** Milestones 5, 13, 14, 16, 19 and 21 closed, their leftovers in the backlog (D-146); the sapper off the tech tree.
 - **2026-10-17:** Network play, phase 1: lockstep over ENet, Host and Join on the home network; two windows on the Mac play in step (D-147).
 - **2026-10-17:** A saved match on the network: the other player takes over an AI seat (D-148); Dominic's 2v2 save plays in step.
-- **2026-10-17:** Vikings get their own Norse culture (D-149): bonuses, Berserkergang, the Berserker, the Raven-Feeder, bearded and broad axes, fur, conical and spectacle helms, a longship crest.
+- **2026-10-17:** Vikings get their own Norse culture (D-151): bonuses, Berserkergang, the Berserker, the Raven-Feeder, bearded and broad axes, fur, conical and spectacle helms, a longship crest.
+- **2026-10-17:** Frogs, rearing beetles and spiders carry their shields slung on their backs; every shield and back piece checked on every body (D-152).

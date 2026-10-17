@@ -440,9 +440,12 @@ func _lacks(slot_def: Dictionary, units: Array, ctx: Dictionary) -> String:
 	return ""
 
 
-## Can a rider on this recipe's mount wear the part? (parts.json "not_ridden_on": a cloth cape hangs
-## through a pony's back: the placement check, A3.)
+## Can a rider on this recipe's mount, and this recipe's body, wear the part? (parts.json "not_ridden_on":
+## a cloth cape hangs through a pony's back; "not_worn_by": bodies it doesn't fit, a cloth cape through a
+## frog's haunches: the placement check, A3.)
 func _fits_mount(p: Dictionary, recipe: Dictionary) -> bool:
+	if recipe.body in p.get("not_worn_by", []):
+		return false
 	return not (recipe.has("mount") and not recipe.mount.fused and recipe.mount.creature in p.get("not_ridden_on", []))
 
 

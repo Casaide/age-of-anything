@@ -958,7 +958,7 @@ back to the match), and the lockstep trusted the latest turn mark over a gap (no
 a bot loaded from a save mid route search (land.gd) called the search it no longer had (now it starts it again).
 Tested with Dominic's 2v2 save (26 minutes in): the joiner took the ally, 600 ticks in step.
 
-**D-149, 2026-10-17: Vikings get a Norse culture of their own.** Dominic asked whether Vikings ever got a shield wall
+**D-151, 2026-10-17: Vikings get a Norse culture of their own.** Dominic asked whether Vikings ever got a shield wall
 (they hadn't: "viking" only added horned helmets and round shields to whatever culture a race drew, and the only
 Shield Wall is the imperial research) and wanted them to have their own culture. Claude built it as data: a `norse`
 family (sea-blue and madder-red cloth, ponies, the thatch architecture, boardwalk paths, an iron-framed wood UI with
@@ -974,5 +974,17 @@ everyone else: a bearded axe (age 2, wood and gold by its haft and head, D-144),
 Viking suggestion, which Dominic never picked, minus the braids and beards: they hung into a frog's, rat's or
 beetle's chest, and the concepts had shown they vanish at game scale. Not in scope: the tight shield wall formation
 (milestone 22, step 4). Found on the way: no culture's shield was ever checked on a spider or a rearing beetle, and it
-cuts them (backlog §0b). Balance: Raiders first (priced into every foot soldier) left the Vikings 0 of 12 in
+cuts them (fixed by D-152). Balance: Raiders first (priced into every foot soldier) left the Vikings 0 of 12 in
 race_matches; with Plunder first, 1 win, 7 draws (8%, level with imperial humans, inside the 8-41% range).
+
+**D-152, 2026-10-17: Frogs, rearing beetles and spiders carry their shields slung on their backs.** Dominic, on the
+shields found clipping with the Norse culture: "Fix the shields etc for spiders and bugs. Or just put them on their
+backs instead." Every shield and back piece was put on every body (`gear_cases` in tests/placement/cases.gd): every
+shield cut a spider's head and a rearing beetle's armour, most went into the ground at a frog's low off hand, and the
+cloth cape cut frogs' and beetles' haunches. Claude went with the backs: a body's `"shield"` in parts.json says how
+it carries one, `slung` (upright behind the shoulders: frogs) or `slung_flat` (flat on top: the spider's abdomen, the
+beetle's wing cases), and its model gives a `sling` socket; the shield bakes as `<shield>@slung`, the hand's model
+turned to lie there (unit_models.gd `slung`), and the placement check holds it to the back-gear rule. Humans, rats
+and centaurs keep their shields in hand. The cloth cape isn't worn by frogs and rearing beetles (`not_worn_by`, like
+`not_ridden_on`); the leaf cape fits them. (The Norse decision, first written as D-149, was renumbered D-151 at merge:
+main's D-149 names heroes.)
