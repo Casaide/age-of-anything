@@ -48,6 +48,10 @@ static func set_relief(map) -> void:
 
 ## Per cell its four corners' heights in levels: a plain cell is flat at its level; a ramp's
 ## corners rise to the level above where they touch ground of that level (or a ramp up from it).
+## A raised cell's outer corner (the other three cells round it all lower, none a ramp) drops to
+## the highest of them, so a hill's diagonal edges are bevelled, not a staircase of tile corners
+## (Dominic, 2026-10-17: "a bit boxy around the edges"). The look only: the sim's levels and
+## cliffs are the cells'.
 static func corner_heights(map) -> PackedFloat32Array:
 	var w: int = map.width
 	var h: int = map.height
@@ -60,6 +64,20 @@ static func corner_heights(map) -> PackedFloat32Array:
 			var lv: int = map.level[c]
 			for k in 4:
 				var v := float(lv)
+				if map.ramp[c] == 0 and lv > 0:
+					var below := -1   # the highest of the other three, if all are lower plain ground
+					var cx: int = x + CORNERS[k].x
+					var cy: int = y + CORNERS[k].y
+					for n in [Vector2i(cx - 1, cy - 1), Vector2i(cx, cy - 1), Vector2i(cx - 1, cy), Vector2i(cx, cy)]:
+						if n == Vector2i(x, y) or n.x < 0 or n.y < 0 or n.x >= w or n.y >= h:
+							continue
+						var o: int = n.y * w + n.x
+						if map.level[o] >= lv or map.ramp[o] == 1:
+							below = -2
+							break
+						below = maxi(below, map.level[o])
+					if below >= 0:
+						v = float(below)
 				if map.ramp[c] == 1:
 					# The four cells round this corner: is any of them up a level?
 					var cx: int = x + CORNERS[k].x

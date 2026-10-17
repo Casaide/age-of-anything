@@ -316,7 +316,8 @@ static func lacks(w, player: int, id: String) -> bool:
 
 
 ## Can this player put a building of type k here? On open ground as usual, or (a gate) over
-## its own wall tiles of the types it `replaces`.
+## its own wall tiles of the types it `replaces`. Wall pieces (`line`) also go on cliffs and ramps,
+## so a wall runs straight over a hill (D-154); a gate never stands on a cliff.
 static func can_place(w, player: int, k: int, cx: int, cy: int, along := 0) -> bool:
 	var t: Dictionary = w.btypes[k]
 	var mc := builder_class(w, player)
@@ -326,7 +327,9 @@ static func can_place(w, player: int, k: int, cx: int, cy: int, along := 0) -> b
 	for c in _footprint(w, cx, cy, d, along):
 		var x: int = c % w.map.width
 		var y: int = c / w.map.width
-		if not w.map.can_build(x, y, 1, mc, t.water) and not _replaceable(w, player, t, c):
+		if not w.map.can_build(x, y, 1, mc, t.water, t.line) and not _replaceable(w, player, t, c):
+			return false
+		if t.gate and w.map.cliff[c] == 1:
 			return false
 	if t.ladder and not _against_enemy_wall(w, player, cy * w.map.width + cx):
 		return false   # a ladder only leans on an enemy walkway (walls.gd)

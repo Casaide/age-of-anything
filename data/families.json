@@ -1184,22 +1184,38 @@
     }
    },
    {
-    "text": "Linden shields: shield-bearers +1 pierce armour",
+    "text": "Linden shields: shield-bearers +1 pierce armour; on foot they march in a shield wall, shoulder to shoulder",
     "effects": [
      {
       "tag": "shield",
       "stat": "armour.pierce",
       "add": 1
+     },
+     {
+      "tag": "shield",
+      "not": [
+       "mounted"
+      ],
+      "stat": "form_gap",
+      "add": -160
      }
     ],
     "price_points": 1,
     "alt": {
-     "text": "Linden shields: shield-bearers +5 hit points",
+     "text": "Linden shields: shield-bearers +5 hit points; on foot they march in a shield wall, shoulder to shoulder",
      "effects": [
       {
        "tag": "shield",
        "stat": "hp",
        "add": 5
+      },
+      {
+       "tag": "shield",
+       "not": [
+        "mounted"
+       ],
+       "stat": "form_gap",
+       "add": -160
       }
      ],
      "price_points": 1
