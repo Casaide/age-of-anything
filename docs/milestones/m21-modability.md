@@ -1,7 +1,6 @@
 # Milestone 21: Modability
 
-**Status:** in progress (proposed and started 2026-10-13: the loader MVP, an example mod, the agent
-tooling; the rest planned below)
+**Status:** closed (2026-10-17, Dominic: "anything requiring my checks can close, anything else we move forward"): the loader MVP, an example mod, the agent tooling. The rest (the lobby's mod list, more moddable kinds, sandboxing, a second machine, Workshop) moves to `../backlog.md` §0b.
 **Exit criterion:** someone (or an agent) who has never seen the code makes a new mod from
 `docs/modding.md` alone (new parts, their models, words, a rules change), checks it with the tools,
 packs it, and a second machine installs the zip into its mods folder and plays a match with a race that
@@ -217,13 +216,13 @@ as a layer" (an era per race, every role re-kitted, buildings by era), which sta
 - [x] Private fan test in `mods_private/` (gitignored, export-excluded), sheet rendered there only
 - [x] Agent tooling: `tools/mods/new_mod.py`, `tests/mod_check.gd`, `tools/mods/pack.py`, `docs/modding.md`
 - [x] Exports exclude `mods/` and `mods_private/`
-- [ ] Dominic's look at the example mod and the private test
-- [ ] Lobby: mod list, enable/disable, refusals shown, missing mods for a shared race
-- [ ] Buildings, tech, audio, creature-kit creatures moddable
-- [ ] Model scripts sandboxed (declarative models) or `.glb`-only for shared mods
-- [ ] Installed from a zip on a second machine, same race key, a match played
-- [ ] Steam Workshop
-- [ ] Archive: pictures taken along the way, journal, decisions, timeline
+- [x] Dominic's look at the example mod and the private test (closed without the check, 2026-10-17)
+- [ ] Lobby: mod list, enable/disable, refusals shown, missing mods for a shared race (moved to `../backlog.md` §0b, 2026-10-17)
+- [ ] Buildings, tech, audio, creature-kit creatures moddable (moved to `../backlog.md` §0b, 2026-10-17)
+- [ ] Model scripts sandboxed (declarative models) or `.glb`-only for shared mods (moved to `../backlog.md` §0b, 2026-10-17)
+- [ ] Installed from a zip on a second machine, same race key, a match played (moved to `../backlog.md` §0b, 2026-10-17)
+- [ ] Steam Workshop (moved to `../backlog.md` §0b, 2026-10-17)
+- [x] Archive: pictures taken along the way, journal, decisions, timeline (journal 2026-10-14)
 
 ## Results
 

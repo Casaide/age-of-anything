@@ -1,6 +1,6 @@
 # Milestone 14: Race identity and heroes (asymmetric play)
 
-**Status:** in progress (2026-10-16: bonuses, own research, lacks, the ability system with the web, the AI, heroes (D-138) done; the other mechanics, balance, bears and the exit check left)
+**Status:** closed (2026-10-17, Dominic: "anything requiring my checks can close, anything else we move forward"): bonuses, own research, lacks, the ability system with the web, the AI, the lobby card, heroes (D-138). The other mechanics, race balance and bears move to `../backlog.md` §0b.
 **Exit criterion:** every playable creature and every culture has its bonuses, its own research,
 what it lacks, and one signature mechanic, all as data and all shown on the tech tree page; each
 mechanic has a counter and a headless test; the bot uses its race's mechanic; a round robin of
@@ -244,15 +244,15 @@ it takes its alt); plus Gallop and Saddle Bows at the Castle, and no walls.
 9. **Exit check.** Dominic plays three races and says what makes each different.
 
 ## Checklist
-- [ ] Plan approved by Dominic
+- [x] Plan approved by Dominic (closed without the check, 2026-10-17)
 - [x] 1. Design round: bonuses, research and lacks agreed (2026-10-12); mechanics' details still to design
 - [x] 2. Data contract and bonuses (2026-10-13: `data/groups.json`, creatures' and cultures' `bonuses`/`research`/`lacks`, `src/identity.gd`; race keys unchanged)
 - [x] 3. Own research (2026-10-13: 14 live at the Castle, Strong Legs stays at the Barracks; Flood Plains and Creeping Dread planned)
 - [x] 4. Lacks (2026-10-13: research, buildings, lines, a line's step, market trade; crossed out on the page; the bot skips them)
 - [x] 5. Ability system (2026-10-13: `src/sim/abilities.gd`, the ABILITY command, a panel button; the web; placeholder mark on the ground)
-- [ ] 6. Mechanics (the web only so far; leap, shell, swarm/scavenge, shoot on the move to come; the web's look needs a concept round)
+- [ ] 6. Mechanics (the web in play; leap, shell, swarm/scavenge, shoot on the move and the web's look (moved to `../backlog.md` §0b, 2026-10-17))
 - [x] 7. AI (2026-10-13: webs on the nearest foes, own research bought; bonuses are stats)
-- [ ] 8. Balance and the lobby card (lobby card done; six bonuses a race and a balance pass 2026-10-14: every race 33-68% over two maps, frogs and rats at the edges, see Results)
+- [ ] 8. Balance and the lobby card (moved to `../backlog.md` §0b, 2026-10-17) (lobby card done; six bonuses a race and a balance pass 2026-10-14: every race 33-68% over two maps, frogs and rats at the edges, see Results)
 - [x] 9. Heroes (generated champion, aura, revive; concept round HR1 done 2026-10-13; D-131: all of HR2's characters as a pool; D-138: every race gets all of its pool's heroes)
   - WIP 2026-10-14 (Claude): `data/heroes.json` (names, 21 signatures with auras, rules), hero parts in `data/parts.json` (only_if hero_only), a `hero` roster line (age 2, Town Center), `src/heroes.gd` (derived from the race key, not in it), `src/sim/heroes.gd` (aura, regen, revive), the bot, models in `scenes/art_pixel/hero_models.gd`, the unit card's temper and aura, `tests/test_heroes.gd`.
   - Resumed 2026-10-16 (Dominic: "heroes i thought we'd do all of them, so each race has some variety"), finished on branch `heroes-all` (Claude). **The rule (D-138):**
@@ -264,10 +264,10 @@ it takes its alt); plus Gallop and Saddle Bows at the Castle, and no walls.
   - **Placement:** `tests/placement/cases.gd` hero_cases: every hero look on every playable body it can come to (any culture's on any creature), age 3, plus every PROMPTS race's own heroes at every age. The fix pass: a body may declare a `drape` socket and a `drape_scale` (frog, rat, spider, rearing beetle) for back pieces tagged `drape` (the long capes, the lion pelt, the moss mantle), applied by UnitView and the 3D check alike; low-slung hat variants (`hero.*_low`: nothing hanging behind the head, a size smaller, set back) and a per-creature `fit` in heroes.json (a variant, or "" to keep the race's own weapon where a shouldered one would cut a spider's legs); a look with no back piece stows the swordsman's banner or cape in its kit; the Unkillable's roach moved to the far shoulder, the heraldic cape flares back. `placement_check.gd` passes in full (19724 checks).
   - **Balance:** flat stats made a 22 hp rat's hero five times its swordsman and a centaur's twice, so the line now uses `stats_pct` (pricing.gd: 300% hit points, 130% attack), no armour bonus, 30 price points (a rat's hero about 665, a centaur's 885), healing 1 hp every 3 s. `tests/mass_battle.gd -- 2 heroes` (all of a race's heroes plus soldiers against soldiers at equal cost, twice the budget): see Results.
   - Pictures: `archive/images/2026-10-16/` (lineup sheets, the match, the Town Center's buttons). The Regicide rule stays for milestone 18.
-- [ ] A new creature: bears (two legs, armoured, dignified, "the smarter version compared to rats"; rideable for some races; bigger polar or older bears; see the backlog entry). Dominic: plan once milestone 13 is done
+- [ ] A new creature: bears (moved to `../backlog.md` §0b, 2026-10-17): (two legs, armoured, dignified, "the smarter version compared to rats"; rideable for some races; bigger polar or older bears; see the backlog entry). Dominic: plan once milestone 13 is done
   - [x] Concept round B1 (2026-10-13): three builds (brown, black, polar), the worker, the mount, the giants, built with the creature kit, all passing placement (`docs/concepts/bears/`, data staged in `data/later/bears.json`). Waiting on Dominic's pick.
-- [ ] 10. Exit check
-- [ ] Archive: pictures taken along the way, journal, decisions, timeline
+- [x] 10. Exit check (closed without the check, 2026-10-17)
+- [x] Archive: pictures taken along the way, journal, decisions, timeline (journals 2026-10-13 to 2026-10-16)
 
 ## Results
 

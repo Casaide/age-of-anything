@@ -1,6 +1,6 @@
 # Milestone 19: UI that feels like the game
 
-**Status:** in progress (2026-10-16: the timber look approved, "ui is great"; loaders built 2026-10-12; unit portraits as busts (D-145); the review left)
+**Status:** closed (2026-10-17, Dominic: "anything requiring my checks can close, anything else we move forward"): the timber look, theme and type, loaders, the UI wearing the race, lobby, menus, pause and end screens, HUD and tech tree, unit portraits (D-145). The review closed with it; the end screen's match story and the fonts move to `../backlog.md` §0b.
 **Exit criterion:** the menu, lobby, loaders, HUD, tech tree page and end screens look designed and
 finished, not flat; the UI wears your race's culture; every wait shows something worth watching;
 Dominic: "this looks like a real game".
@@ -56,7 +56,7 @@ presets menu; a fixed-width centre with a bigger map.
 7. A Fable-style review of every screen (as milestone 11's exit), fixes, Dominic's look.
 
 ## Checklist
-- [ ] Plan approved by Dominic
+- [x] Plan approved by Dominic (closed without the check, 2026-10-17)
 - [x] 1. Concept round (Dominic's pick): three directions rendered (archive 205-210), timber built as the recommendation; Dominic: "ui is great" (2026-10-13), timber kept
 - [x] 2. Theme and type: `src/view/ui/theme.gd` (open-licence fonts wait on a download yes)
 - [x] 3. Match loader, lobby loaders (2026-10-12: the match loader with both armies, the lobby's dice and stage forging;
@@ -67,8 +67,8 @@ presets menu; a fixed-width centre with a bigger map.
 - [x] Unit portraits (Dominic, 2026-10-16: "too zoomed out, hard to tell what's what", the upgrade button looked like
   Train): two concept rounds (archive 22, 23), then busts with a role glyph and a line upgrade showing the unit it
   gives in a gold frame, "Upgrade: X -> Y" (D-145, archive 24)
-- [ ] 7. Review and fixes
-- [ ] Archive: pictures taken along the way, journal, decisions, timeline
+- [x] 7. Review and fixes (closed without the check, 2026-10-17)
+- [x] Archive: pictures taken along the way, journal, decisions, timeline (journals 2026-10-12 to 2026-10-16)
 
 ## Results
 
