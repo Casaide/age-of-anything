@@ -37,6 +37,8 @@ static func run(pc, holder: Node2D, lib, kit) -> Array:
 			"frog on newt_fire", ["legs and head over the body only where the model shows them"], "uncut", Callable()],
 		["newt legs folded up off the ground facing left (the legs not turned to their side: Dominic)",
 			"frog on newt_fire", ["B5 a near foot in sight", "B5 standing feet on the ground"], "unturned", Callable()],
+		["a centaur's kneel to forage picked by screen x and bent as if side-on (from behind: a flank's legs folded sideways, the hind end sunk: Dominic, 2026-10-17)",
+			"centaur romans worker", ["K1 a kneel folds the fore legs", "K2 a folded shin lies back along the ground", "K4 kneeling, the hind hooves stay planted"], "", func(v, pose): _old_kneel(v, pose)],
 	]
 	list += composite_fixtures()
 	await pc.bake(kit, list.map(func(f): return cases[f[1]]))
@@ -187,6 +189,54 @@ static func _armour_with_body(v) -> void:
 static func _old_bob(v, pose: String) -> void:
 	if pose.begins_with("walk"):
 		v.bob.position.y = -absf(sin(v.phase)) * float(v.gait.bob)
+
+
+## The fused mount's kneel as it was until 2026-10-17 (round C1, drawn side-on): the two legs furthest
+## right on screen fold, their shins swing back as if the body faced right, and the body turns about
+## the two legs furthest left. Put on a foraging view after UnitView's own kneel is taken off.
+static func _old_kneel(v, pose: String) -> void:
+	if pose != "forage" or v.kneel <= 0.0:
+		return
+	var kneel: float = v.kneel
+	v.bob.rotation = 0.0
+	v.bob.position.x = 0.0
+	if v.seat_node != null and v.seat_node.has_meta("rest"):
+		v.seat_node.position = v.seat_node.get_meta("rest")
+	for leg in v.legs:
+		leg.node.rotation = 0.0
+		leg.node.scale.y = leg.reach
+		if leg.has("shin"):
+			leg.shin.visible = false
+	var xs: Array = v.legs.map(func(l): return l.node.position.x)
+	xs.sort()
+	var mid: float = (xs[1] + xs[2]) * 0.5
+	for leg in v.legs:
+		if leg.node.position.x <= mid:
+			continue
+		var upper := 1.0 - 0.45 * kneel
+		leg.node.scale.y = upper
+		leg.node.rotation += 0.1 * kneel
+		var shin: Node2D = leg.get("shin")
+		if shin == null:
+			shin = v._shape()
+			shin.part_id = leg.node.part_id
+			shin.facing = leg.node.facing
+			shin.shade = leg.node.shade
+			shin.setup(leg.node.shapes, leg.node.colours)
+			shin.set_meta("z", leg.node.get_meta("z", 0))
+			leg.node.add_sibling(shin)
+			leg.shin = shin
+		shin.visible = true
+		shin.position = leg.node.position + Vector2(0.0, -leg.rest.y * upper).rotated(leg.node.rotation)
+		shin.rotation = leg.node.rotation + 1.45 * kneel
+		shin.scale = Vector2(leg.node.scale.x, 0.5)
+	var a := 0.17 * kneel
+	var pivot := Vector2((xs[0] + xs[1]) * 0.5, 0.0)
+	v.bob.rotation += a
+	v.bob.position += pivot - pivot.rotated(a)
+	if v.seat_node != null:
+		v.seat_node.rotation = -0.4 * kneel
+		v.seat_node.position.x -= 1.5 * kneel
 
 
 ## Composites put back (tests/placement/composite_2d.gd): TC1 A for rats as Dominic saw it ("this is
