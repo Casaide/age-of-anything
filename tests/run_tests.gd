@@ -162,6 +162,19 @@ func _test_heroes(lib, gen, rules: Dictionary) -> void:
 				var fid: String = s.fit[cid][slot]
 				check(s.parts.has(slot) and (fid == "" or (lib.parts.has(fid) and lib.part(fid).slot == slot)), "heroes: %s's fit for %s: a %s part in place of its own (%s)" % [sid, cid, slot, fid])
 		check(s.aura.effects.size() > 0 and s.aura.text != "", "heroes: %s has an aura" % sid)
+	for word in lib.lexicon:
+		if lib.lexicon[word].has("hero"):
+			check(lib.heroes.hero_signatures.has(lib.lexicon[word].hero), "heroes: the word '%s' names a hero" % word)
+	# A prompt naming a hero gets just that one, every time; one not among the race's own is ignored with a note.
+	for case in [["spooky spider widow", ["widow"]], ["sewer rats with a crown", ["regnal"]], ["proud centaur romans", ["proud"]],
+			["swamp frog mossback and the loud", ["loud", "mossback"]], ["roman widow", []]]:
+		var race: Dictionary = gen.generate(case[0], rules.default)
+		var got: Array = race.units.filter(func(u): return u.recipe.slot == "hero").map(func(u): return u.recipe.hero)
+		var want: Array = case[1] if not case[1].is_empty() else Heroes.roster_for(lib.heroes, race.creature, race.family)
+		check(got == want, "heroes: '%s' gets %s (%s)" % [case[0], want, got])
+		check(JSON.stringify(gen.generate(case[0], rules.default, 1).heroes.map(func(h): return h.signature)) == JSON.stringify(want), "heroes: '%s': the same hero on a reroll" % case[0])
+		check(Generator.race_key(race) == race.key and race.has("hero_asked") != case[1].is_empty(), "heroes: '%s': the key holds the heroes asked for" % case[0])
+		check(case[1].is_empty() == race.notes.any(func(n): return "leads" in n), "heroes: '%s': a note only when the hero isn't theirs (%s)" % [case[0], race.notes])
 	for prompt in ["sewer rats with cheese hammers", "romans", "spooky spiders", "centaur romans", "egyptians", "swamp frogs", "forest beetles", "swamp humans", "sewer humans"]:
 		for reroll in 2:
 			var race: Dictionary = gen.generate(prompt, rules.default, reroll)
