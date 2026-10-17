@@ -96,6 +96,7 @@ func interpret(prompt: String, rules: Dictionary) -> Dictionary:
 		"creatures": [], "default_creatures": [], "mounts": [], "mount_wings": "", "families": [],
 		"tags": {}, "body_size": "", "notes": [], "unknown": [], "heroes": [],
 	}
+	var riding := false   # a word that rides came first ("riding", "cavalry"): a word that is a race or a mount (bears) is the mount
 	for raw in normalize(prompt).split(" ", false):
 		if lib.stopwords.has(raw):
 			continue
@@ -109,12 +110,15 @@ func interpret(prompt: String, rules: Dictionary) -> Dictionary:
 			if not (entry.note in brief.notes):
 				brief.notes.append(entry.note)
 			tags = entry.get("substitute", {})
-		if entry.has("creature") and not (entry.creature in brief.creatures):
+		var as_mount: bool = entry.has("mount") and (riding or not entry.has("creature"))
+		if entry.has("creature") and not as_mount and not (entry.creature in brief.creatures):
 			brief.creatures.append(entry.creature)
 		if entry.has("default_creature") and not (entry.default_creature in brief.default_creatures):
 			brief.default_creatures.append(entry.default_creature)
-		if entry.has("mount") and not (entry.mount in brief.mounts):
+		if as_mount and not (entry.mount in brief.mounts):
 			brief.mounts.append(entry.mount)
+		if int(tags.get("mounted", 0)) >= 2:
+			riding = true
 		if entry.has("mount_wings"):
 			brief.mount_wings = entry.mount_wings
 		if entry.has("family") and not (entry.family in brief.families):
@@ -431,6 +435,8 @@ func _crew_from(r: Dictionary, as_itself: bool) -> Dictionary:
 	var crew: Dictionary = {"body": r.body, "head": r.head, "skin": r.skin, "parts": r.parts.duplicate(), "scale": r.scale}
 	if r.has("mount"):
 		crew.mount = r.mount.duplicate(true)   # a centaur's horse half
+	if lib.part(r.body).get("crew", "") == "wide":
+		crew.wide = 1   # too big for an engine's frame (a bear): it works the engine from beside it (UnitView.engine_sockets)
 	if as_itself:
 		crew.merge({"slot": r.slot, "role": r.role, "tier": int(r.tier), "name": r.get("name", "")})
 	return crew

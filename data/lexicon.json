@@ -1733,6 +1733,46 @@
     "viking": 2
    },
    "default_creature": "human"
+  },
+  "bear": {
+   "creature": "bear",
+   "mount": "bear"
+  },
+  "bears": {
+   "creature": "bear",
+   "mount": "bear",
+   "_doc": "a race, or after a word that rides ('romans riding bears') the mount"
+  },
+  "grizzly": {
+   "creature": "bear",
+   "mount": "bear"
+  },
+  "polar": {
+   "creature": "bear_polar",
+   "mount": "bear"
+  },
+  "grizzlies": {
+   "creature": "bear",
+   "mount": "bear"
+  },
+  "ursine": {
+   "creature": "bear"
+  },
+  "moonbear": {
+   "creature": "bear_black",
+   "mount": "bear_black"
+  },
+  "moonbears": {
+   "creature": "bear_black",
+   "mount": "bear_black"
+  },
+  "blackbear": {
+   "creature": "bear_black",
+   "mount": "bear_black"
+  },
+  "blackbears": {
+   "creature": "bear_black",
+   "mount": "bear_black"
   }
  }
 }

@@ -138,6 +138,26 @@
   "hummingbird_fire": [
    "#5a9a2a",
    "#f06a1a"
+  ],
+  "bear_brown": [
+   "#6b4528",
+   "#3a2416",
+   "#9c7450"
+  ],
+  "bear_black": [
+   "#2a2420",
+   "#16110e",
+   "#b08a5e"
+  ],
+  "bear_polar": [
+   "#ebe5d4",
+   "#8a8478",
+   "#f5f1e6"
+  ],
+  "bear_grizzled": [
+   "#7e6a52",
+   "#3e3022",
+   "#cdbb9c"
   ]
  },
  "materials": {

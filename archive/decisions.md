@@ -1012,3 +1012,47 @@ turned to lie there (unit_models.gd `slung`), and the placement check holds it t
 and centaurs keep their shields in hand. The cloth cape isn't worn by frogs and rearing beetles (`not_worn_by`, like
 `not_ridden_on`); the leaf cape fits them. (The Norse decision, first written as D-149, was renumbered D-151 at merge:
 main's D-149 names heroes.)
+
+**D-160, 2026-10-17: Bears are in play.** Dominic: "lets get the bears going on a branch". He had picked the heads
+(B2, D-126) and kept the B3 mount (D-127) and left the rest to Claude, so Claude took the B1-B2 recommendations
+and brought them into the game's data, with no new concept round: the kits go into data/creature_kit.json, the parts into
+data/parts.json (DataLib completes kit bodies on load), the creatures, skins and words into their files, and the
+helmets into scenes/art_pixel/bear_models.gd. There are three playable bears: brown ("bears", "grizzly"), black
+("moonbears", "blackbears") and polar ("polar bears"), all folk, with hellenic or forest culture by roll.
+- Bears walk: no pony, cat, newt, beetle, spider, hummingbird or other bear carries them (`not_ridden_by`), so
+  their large line is a giant bear and they have no mounted archers.
+- Others ride bears: a word that names both a race and a mount ("bears") is the mount when a word that rides comes
+  first ("romans riding bears", "rats riding bears"), and the race otherwise (race_generator.gd interpret).
+- Placeholder identity: thick fur (+4 HP, priced), honey hunters (food +10%); own research Winter Coat (Castle,
+  soldiers +1/+1 armour); they lack Quick Draw; they pour boiling honey. They get a bear voice of their own
+  (tools/audio voices.py `bear`: a huff, a low "hrrm", a falling roar), which Dominic hasn't heard yet.
+- The polar bear as the brown bears' giant and a culture and architecture of their own wait in the backlog.
+
+**D-161, 2026-10-17: How a broad body takes the game's gear.** Putting every helmet, armour and held piece on the
+bears (D-162) showed what a body twice as wide as a human needs. Each fix is data, so the same tools work for the
+next broad creature:
+- Head gear: the bear head's `top` socket now sits on the skull, because a cap or a leaf hat has to touch the head.
+  The bears' own helmets are lifted by the same drop, so they sit where Dominic saw them.
+- A body can give a back piece a place of its own, a socket named for the part (`"cape.cloth"`, `"hero.lion_pelt"`).
+  Without it the cloth cape cut through the bear's back. A bear's `banner` socket is higher too, so tall helmets
+  clear the crossbar.
+- Stock helmets whose rim covers a bear's eyes stay off bears (`not_worn_by`): the Attic on every bear, the bronze
+  on the black and polar ones. Bears have their own helmets. The cloth cape isn't worn by bear riders
+  (`not_ridden_on`), and the jaguar hero wears its low helm on bears (heroes.json `fit`).
+- `"crew": "wide"`: a bear is too big for a ram's frame or a war beast's back, so it works them from beside, on the
+  `_wide` sockets, as a centaur does.
+- `ridden_idle_poses`: a ridden bear only settles back a little. Sitting all the way up, its raised head ran into
+  the rider's lance and a frog's head.
+- A body that rests in idle poses while holding its weapon its own way is baked in both at once,
+  `"body.bear@draw@ease"`: a bear archer at ease keeps its bow drawn while only its feet move. The 2D check found
+  the bake missing, and the game would have drawn a magenta marker.
+- The siege tower gets a `_wide` place for the crew member at its back corner, where a black bear's shoulders showed
+  past the tower.
+
+**D-162, 2026-10-17: A new body is checked against every piece it can come to.** Any culture can come to a bear
+("aztec bears"), so `bear_cases` (tests/placement/cases.gd) puts every helmet, hat, body armour and held piece of
+the game on each bear body. Hero, siege, concept and carried-load parts are left out. Each piece goes on the unit of
+the race that would wear or hold it, together with the bear races in PROMPTS, every rider on the bear mounts, and
+the Norse, hero and gear sweeps that already ran over every playable body. The first run had 191 failing checks
+(102 before the sweep) in 3D, and 205 in 2D; after D-161, none. Carried loads aren't in the 3D check for any creature (UnitView's carry
+hold isn't posed by the rig); that's in the backlog.

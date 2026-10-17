@@ -1,0 +1,20 @@
+{
+ "name": "bears_play",
+ "title": "Bears in play (2026-10-17): the generated bear races, line by line, and others riding bears",
+ "_doc": "Rows 1-3: 'bears' (brown, hellenic by roll) through the ages: the open-faced cap for the line, the ear-cup helmet for the giant and the elite (D-126). Row 4: 'polar bears' and 'moonbears' (the black bear) at age 3. Row 5: 'viking bears'. Row 6: others on bears ('romans riding bears', 'rats riding bears': the B3 mount). Bears don't ride (too big for the small mounts: creatures.json not_ridden_by), so their large line is a giant bear.",
+ "zooms": [3, 1],
+ "cell": [70, 76],
+ "size": [{"prompt": "romans", "slot": "worker"}, {"prompt": "sewer rats", "slot": "worker"}],
+ "rows": [
+  {"each": {"prompt": ["bears"], "slot": ["worker", "spear", "infantry"]}, "age": 1, "label": "{prompt} age 1\n{name}"},
+  {"each": {"prompt": ["bears"], "slot": ["spear", "infantry", "skirmisher", "archer", "healer"]}, "age": 2, "label": "{prompt} age 2\n{name}"},
+  {"each": {"prompt": ["bears"], "slot": ["spear", "infantry", "unique", "large"]}, "age": 3, "label": "{prompt} age 3\n{name}", "h": 1.4},
+  {"each": {"prompt": ["polar bears", "moonbears"], "slot": ["worker", "infantry", "large"]}, "age": 3, "label": "{prompt} age 3\n{name}", "h": 1.4},
+  {"each": {"prompt": ["viking bears"], "slot": ["spear", "infantry", "unique"]}, "age": 3, "label": "{prompt} age 3\n{name}"},
+  {"each": {"prompt": ["romans riding bears", "rats riding bears"], "slot": ["large", "scout"]}, "age": 3, "label": "{prompt}\n{name}", "h": 1.3}
+ ],
+ "sheets": [
+  {"name": "facings", "title": "8 facings", "columns": "facings"},
+  {"name": "walk", "title": "walking: four steps in three facings", "columns": "walk:1,2,7"}
+ ]
+}

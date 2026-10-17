@@ -12,6 +12,7 @@ const TEX_DIR := "res://assets/art/textures/"
 
 static var tex_cache := {}   # shared by every baker (each used to rasterise the SVGs again)
 var hold := "low"   # the body being built: how its near hand holds the weapon (see arm_pose)
+var rest := ""   # ...and the idle pose it rests in while holding it, if any ("body.bear@draw@ease": creature_kit.gd)
 
 
 ## Part ids may carry a hold after "@" (a body posed for its weapon: "body.frog@throw"), and
@@ -27,6 +28,8 @@ func has(id: String) -> bool:
 	var fn := "_" + base.replace(".", "_")
 	if base.begins_with("hero.") and not has_method(fn):
 		return _heroes().has_method(fn)   # a hero's signature gear (hero_models.gd)
+	if base.begins_with("helm.bear_"):
+		return _bears().has_method(fn)   # a bear's helmet (bear_models.gd)
 	return has_method(fn) or extra.any(func(e): return e.has_method(fn)) or (base.begins_with("leg.beast_") or base.begins_with("head.beast_")) and _siege().has_method(fn)
 
 
@@ -57,6 +60,16 @@ func _heroes():
 	if _hero_models == null:
 		_hero_models = load("res://scenes/art_pixel/hero_models.gd").new()
 	return _hero_models
+
+
+## The bears' helmets ("helm.bear_*", made for the creature kit's bear head) are modelled in bear_models.gd.
+var _bear_models = null
+
+
+func _bears():
+	if _bear_models == null:
+		_bear_models = load("res://scenes/art_pixel/bear_models.gd").new()
+	return _bear_models
 
 
 static func _is_engine(id: String) -> bool:
@@ -120,6 +133,7 @@ func build(id: String, colours: Dictionary) -> Dictionary:
 		return slung(build(id.get_slice("@", 0), colours), sling_of(id))
 	var own := id.get_slice("~", 0)   # (what follows "~" is the body it's baked on or cut by)
 	hold = own.get_slice("@", 1) if "@" in own else "low"   # a cut leg keeps its pose: "leg.cat@w3_8~body.cat^1"
+	rest = own.get_slice("@", 2) if own.count("@") >= 2 else ""   # a body resting in a pose while it holds: "body.bear@draw@ease"
 	var base := own.get_slice("@", 0)
 	if CreatureKit.has_part(base):
 		if _kit == null:
@@ -135,6 +149,8 @@ func build(id: String, colours: Dictionary) -> Dictionary:
 		var hm = _heroes()
 		hm.hold = hold
 		return hm.call(fn, colours)
+	if base.begins_with("helm.bear_"):
+		return _bears().call(fn, colours)
 	if not has_method(fn):
 		for e in extra:
 			if e.has_method(fn):
