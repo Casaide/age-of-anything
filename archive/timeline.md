@@ -112,3 +112,4 @@ One line per moment worth remembering. Newest at the bottom.
 - **2026-10-17:** Milestones 5, 13, 14, 16, 19 and 21 closed, their leftovers in the backlog (D-146); the sapper off the tech tree.
 - **2026-10-17:** Network play, phase 1: lockstep over ENet, Host and Join on the home network; two windows on the Mac play in step (D-147).
 - **2026-10-17:** A saved match on the network: the other player takes over an AI seat (D-148); Dominic's 2v2 save plays in step.
+- **2026-10-17:** Unit costs: each line has one mix of resources, the same for every race; the parts set only the total (D-150).

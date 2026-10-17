@@ -195,7 +195,7 @@ func _test_match_flipped(map: SimMap, races: Array, lib, rules: Dictionary) -> v
 	for r in races:
 		var fr = _reversed(r)
 		for i in fr.units.size():
-			var e: Dictionary = Pricing.evaluate(fr.units[i].recipe, lib, rules)
+			var e: Dictionary = Pricing.evaluate(fr.units[i].recipe, lib, rules, int(r.units[i].line[0].age))
 			check(e == r.units[i].eval, "pricing ignores key order (%s)" % r.units[i].recipe.name)
 			fr.units[i].eval = e
 		flipped.append(fr)

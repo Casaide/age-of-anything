@@ -164,6 +164,8 @@ picks), then build, tests, archive pictures.
 
 ## Results
 
+**Superseded (2026-10-17, D-150):** each line now has one mix, the same for every race (spears food and wood, swords food and gold...); the parts set only the total.
+
 **Costs by material (2026-10-16, D-144).** Every soldier cost about half food, half wood (28 weapons shared one
 mix). Now a part's mix follows its material (bodies and mounts food; shafts, bows, clubs, wooden shields wood; metal
 blades, helmets and armour gold; cloth, leather and leaves food; a metal spearhead mostly wood, so the spear line

@@ -16,7 +16,8 @@ const DEFAULT_MIX := {"food": 50, "wood": 50}
 const MOUNT_MIX := {"food": 70, "wood": 30}
 
 
-static func evaluate(recipe: Dictionary, lib, rules: Dictionary) -> Dictionary:
+## `age`: the age the unit is trained in (0: unknown), for what that age can pay in (rules.cost.early).
+static func evaluate(recipe: Dictionary, lib, rules: Dictionary, age := 0) -> Dictionary:
 	var body: Dictionary = lib.part(recipe.body)
 	var gear := [lib.part(recipe.head)] if recipe.head != "" else []   # an engine has no head of its own
 	for slot in recipe.parts:
@@ -179,7 +180,12 @@ static func evaluate(recipe: Dictionary, lib, rules: Dictionary) -> Dictionary:
 	if terms.has("ceiling"):
 		total = mini(total, int(terms.ceiling))   # a big body's worker (a centaur) dearer, not a horseman's price (D-078)
 	if terms.has("mix"):
-		mix = terms.mix.duplicate()
+		mix = terms.mix.duplicate()   # every line its own mix (D-149): the parts set the total, the line what it's paid in
+	var swaps: Dictionary = c.get("early", {}).get(str(age), {})
+	for r in swaps:   # a resource this age can't gather yet goes on another (age 1: gold is food)
+		if mix.has(r):
+			mix[swaps[r]] = int(mix.get(swaps[r], 0)) + int(mix[r])
+			mix.erase(r)
 	total = total * (100 + cost_pct) / 100
 	# Split the total over the resources in the mix, in the fixed resource order; the last
 	# one used takes the remainder (so food/wood splits come out as they always did).
@@ -194,7 +200,7 @@ static func evaluate(recipe: Dictionary, lib, rules: Dictionary) -> Dictionary:
 		cost[r] = 0
 	for n in used.size():
 		var r: String = used[n]
-		cost[r] = _round5(left) if n == used.size() - 1 else _round5(total * int(mix[r]) / mix_total)
+		cost[r] = _round10(left) if n == used.size() - 1 else _round10(total * int(mix[r]) / mix_total)
 		left -= cost[r]
 
 	var tag_list := tags.keys()
@@ -240,5 +246,5 @@ static func _price(p: Dictionary) -> int:
 	return int(p.get("price_points", p.points))
 
 
-static func _round5(n: int) -> int:
-	return maxi(0, (n + 2) / 5 * 5)
+static func _round10(n: int) -> int:   # prices in tens: easy to read and compare (D-149)
+	return maxi(0, (n + 5) / 10 * 10)

@@ -498,7 +498,7 @@ func _test_bounds(lib, gen, rules: Dictionary) -> void:
 						continue
 					var need: String = Generator.ROLE_NEEDS[lib.uniques[rec.unique].role if rec.has("unique") else rec.role]
 					check(need in lib.part(rec.parts.hand_r).tags, "%s primary has %s" % [rec.name, need])
-					check(u.eval.cost.food + u.eval.cost.wood > 0, "%s has a cost" % rec.name)
+					check(u.eval.cost.values().reduce(func(a, b): return a + b, 0) > 0, "%s has a cost" % rec.name)
 					if rec.role == "skirmisher":
 						check(not ("bow" in lib.part(rec.parts.hand_r).tags), "%s skirmisher has no bow" % rec.name)
 

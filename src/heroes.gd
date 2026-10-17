@@ -89,7 +89,7 @@ static func make(lib, race: Dictionary, rules: Dictionary) -> Array:
 				if int(l.age) <= age:
 					step = l
 			var r := dress(step.recipe, sid, s, h.name, int(sd.tier))
-			line.append({"age": age, "recipe": r, "eval": Pricing.evaluate(r, lib, rules)})
+			line.append({"age": age, "recipe": r, "eval": Pricing.evaluate(r, lib, rules, age)})
 		out.append({"recipe": line[0].recipe, "eval": line[0].eval, "line": line})
 	return out
 

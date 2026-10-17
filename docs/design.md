@@ -172,8 +172,11 @@ as era packs.
 - **Counter tags** from parts (the genre's standard web): spear > large/mounted, mounted > archers/skirmishers,
   archer > infantry, skirmisher > archer. Even
   absurd races have obvious weaknesses (big gets `large`, which is weak to spears).
-- Costs split across resources by each part's `cost_mix`. A role can set its own terms in
-  `rules.cost.roles` (workers: food only, at least 50 before the creature's `cost_pct`).
+- The parts set a unit's total cost; its line sets what that total is paid in (`rules.cost.roles` mix, the same for
+  every race, D-150): spears and skirmishers food and wood, scouts food, swordsmen food and gold, archers wood and
+  gold, mounted lines food and gold, siege wood and gold. The cheap counters never cost gold. In age 1 a gold share is
+  paid in food (`rules.cost.early`). Prices are in tens. A role can set more terms there (workers: food only, at least
+  50 before the creature's `cost_pct`); a part's own `cost_mix` is only the fallback for a line with no mix.
 - A part's `points` are what the generator's budget spends; `price_points`, when a part has them,
   are what it costs (mounts and a few weapons are worth more in a fight than their budget points),
   so a price change never changes a race. A mount's `rider_loses` drops rider tags: a rider is

@@ -957,3 +957,18 @@ on the way: the join page read the host's first turns in the same batch as the s
 back to the match), and the lockstep trusted the latest turn mark over a gap (now a missing turn stops the match);
 a bot loaded from a save mid route search (land.gd) called the search it no longer had (now it starts it again).
 Tested with Dominic's 2v2 save (26 minutes in): the joiner took the ally, 600 ticks in step.
+
+**D-150, 2026-10-17: Each unit line has one cost mix; the parts set only the total.** Supersedes D-144's split.
+Dominic, on the swordsmen still paying 40-60 wood (for their shield and banner): "We're using the parts too
+literally... Different lines don't have clear cost benefits... I'm concerned we're making it too confusing with such
+variable costing - especially if each individual part is adding different resource requirements". He wants it "super
+balanced" and simple to read: fine if centaurs get fewer, stronger units. So a unit's total still comes from its
+parts' points (cost stays the balancer, and a stronger race still pays more), but what it's paid in is its line's,
+the same for every race (`rules.cost.roles` mix, Claude's table, Dominic agreed): spear 35 food 65 wood, skirmisher
+40/60 food/wood, scout food, swordsman 60 food 40 gold, archer 55 wood 45 gold, heavy 55 food 45 gold, mounted
+archer 45 wood 55 gold, war beast 60 food 40 gold, healer gold, unique 40 food 60 gold, siege engines 60 wood 40
+gold, the great sling 40 food 60 gold; heroes, traders and workers as they were. The cheap counters (spear,
+skirmisher, scout) never cost gold. In age 1 a gold share is food (`rules.cost.early`; `Pricing.evaluate` takes the
+age). Prices round to tens, not fives. Totals move only by that rounding, so equal-cost fights are as before.
+Claude's second idea, a cap on how far a line's total strays by race, was dropped: it would make a stronger race
+cheap. Parked: a race perk that drops a line's gold cost (Dominic: one race maybe, "carefully balanced"; backlog §8).
