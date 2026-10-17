@@ -29,7 +29,7 @@ the rubble, the siege tower and ladder, the trade cart, the unique units' themes
 - **Race mechanics** (milestone 14, step 6): leap, shell, swarm/scavenge, shoot on the move (the web is the only one
   in play), and a concept round for the web's look.
 - **Race balance** (milestone 14, step 8): frogs and rats at the edges (every race 33-68% over two maps).
-- **Bears** (milestone 14): below, "A Bear race".
+- **Bears** (milestone 14): in play since 2026-10-17 (the `bears` branch, D-160 to D-162); what's left is below, "A Bear race".
 - **The end screen's match story** (milestone 19, step 5) and the open-licence fonts (step 2, waiting on a download
   yes). The post-game stats are milestone 18's.
 - ~~**Shields on spiders and beetles**~~ (done 2026-10-17, D-152): slung on the back, every shield and back piece
@@ -235,7 +235,18 @@ take and architecture, and pricing (big hp through points, no special case).
 Dominic's direction (2026-10-13): two legs, armoured, more like the Greeks: dignified and intelligent,
 the smarter counterpart to the rats. Bears also rideable as a mount for some races.
 Some bears bigger still, on two legs and much larger: polar bears, or older bears (Dominic) — a natural large/giant line.
-Concept round B1 is up (2026-10-13, `docs/concepts/bears/`, data in `data/later/bears.json`), waiting on Dominic's pick.
+Concept rounds B1-B3 (2026-10-13, `docs/concepts/bears/`); Dominic picked the heads (B2) and the mount (B3), D-126, D-127.
+**In play since 2026-10-17** (D-160 to D-162): the brown, black ("moonbears") and polar bears as races, the bear mount
+for others ("romans riding bears"), a bear voice. Still to do:
+- Dominic's look at them in a match, and a listen to the bear voice (`assets/audio/voice/bear_*`).
+- The polar bear as the brown bears' giant (B1's recommendation): the large line is the race's own bear at 1.5x for now.
+- "black bears" as words (two-word phrases): the black bear is "moonbear(s)" / "blackbear(s)" for now.
+- The bears' own culture and architecture (dignified, Greek-like halls; timber lodges): they borrow hellenic and forest.
+- Their bonuses beyond the placeholders (folk research, thick fur, honey hunters) and their own research (Winter Coat)
+  after a balance look (`tests/race_matches.gd` with bears in the round; 2026-10-17 on Reed Meadow: bears 33%, polar
+  bears 0% of 6, level rats 33%, imperial humans 16%, 7 draws of 12).
+- Carried loads (`load.*`, UnitView's carry hold) aren't in the 3D placement check for any creature; the bears' were left
+  out with them.
 
 ### Eras and themes as a layer (Dominic, 2026-10-13: later; "we're not ready for later ages like that yet")
 

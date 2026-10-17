@@ -2,7 +2,6 @@
  "name": "bears_b1",
  "title": "Bears, concept round B1 (creature kit)",
  "_doc": "Dominic (2026-10-13): bears as a race on two legs, armoured, dignified like the Greeks; rideable on four legs; bigger polar or old bears as the giant line. Staged from data/later/bears.json; nothing here is in play. Notes: docs/concepts/bears/README.md.",
- "stage": ["res://data/later/bears.json"],
  "zooms": [3, 1],
  "cell": [70, 76],
  "size": [{"prompt": "romans", "slot": "worker"}, {"prompt": "sewer rats", "slot": "worker"}, {"prompt": "swamp frogs", "slot": "worker"}],

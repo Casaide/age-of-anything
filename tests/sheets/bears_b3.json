@@ -2,9 +2,6 @@
  "name": "bears_b3",
  "title": "Bears, concept round B3: the mount's neck runs into its head (B2 above each B3); the polar's neck shorter; helmets by rank (D-126)",
  "_doc": "Dominic on B2 (2026-10-13): 'the snouts look perfect', but 'mounted bears I think have broken neck still'. B3 (data/later/bears.json): the mount's neck is one thick mass from the hump into the back of the skull (the kit's neck.into), the head held out of the body's bake so they join without a line; the polar's neck a little shorter; the open-faced helmet for line soldiers, the ear-cup helmet for giants and elites (D-126). Each B2 row rebuilds B2's numbers as a kit variant. Every row passes placement, with the new head-join rule (A2 head joins the neck without a notch), which B2's mount fails. Notes: docs/concepts/bears/README.md.",
- "stage": [
-  "res://data/later/bears.json"
- ],
  "zooms": [
   3,
   1

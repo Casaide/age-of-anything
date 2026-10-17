@@ -498,20 +498,37 @@ their bones and the lowest bone's `tilt`. From the numbers it makes:
 
 Kits live in `data/creature_kit.json` (`kits`; `_params_doc` lists every parameter; a kit can
 extend another with `base`, and a `null` removes a volume). A body part with `"kit": "<name>"` is
-completed from its kit when a data file is staged (`CreatureKit.stage(lib, path)`), which also adds
-the file's creatures, skins, words and concept model files (`models`). `unit_models.gd` builds any
-kit part (`CreatureKit.has_part`) and any part from a staged model file (`UnitModels.extra`).
-**Nothing in `data/parts.json` uses a kit yet:** only tests and sheets stage these files. To put a
-kit creature in play, move its kit and parts into the game's data and have `DataLib` complete kit
-parts on load.
+completed from its kit: in `data/parts.json` by `DataLib` on load (the bears, in play since
+2026-10-17: `CreatureKit.register_all` + `complete`, which also makes their head and leg parts), and
+in a staged data file by `CreatureKit.stage(lib, path)` (tests and sheets: `data/later/*.json`), which
+also adds the file's creatures, skins, words and concept model files (`models`). `unit_models.gd`
+builds any kit part (`CreatureKit.has_part`), the bears' helmets (`bear_models.gd`, "helm.bear_*") and
+any part from a staged model file (`UnitModels.extra`).
+
+What a broad body needed in play (the bears, 2026-10-17; each a kit `sockets` entry or a part field):
+- `top` on the skull: a cap or hat must touch the head (a decal hat has no volume, so its socket must be
+  within a unit of it); the bears' own helmets are lifted by the same drop (`bear_models.gd TOP_DROP`).
+- a socket named for a part (`"cape.cloth"`, `"hero.lion_pelt"`): where that piece hangs clear of a broad
+  back, ahead of `drape` (a hero's cape or pelt) and `back` (`UnitView._attach`, the rig the same);
+  `banner` higher and further back, so a tall helmet clears the banner's crossbar.
+- `not_worn_by` on stock helmets whose rim covers a bear's eyes (the Attic; the bronze on the black and
+  polar bears), and `not_ridden_on` on the cloth cape for the bear mount.
+- `"crew": "wide"` on the body: too big for an engine's frame, it works it from beside it (the `_wide`
+  sockets), as a centaur does; the generator puts `wide` on its crew (`UnitView.engine_sockets`).
+- `ridden_idle_poses` on a mount body: under a rider the bear only half sits (sitting up, its raised head
+  met a lance and a frog's head; `UnitView.idle_poses_of`).
+- a body that rests in poses while holding its weapon its own way bakes both, `"<body>@<hold>@<pose>"`
+  (`UnitView.pose_parts`; `unit_models.rest`): a bear archer at ease keeps its bow drawn.
 
 **The cat through the kit** (`kitcat`, `kitcat_built`): `kitcat` is the cat's modelled body and head
 on the kit's skeleton, legs, poses and sockets. Side by side with the game's cat, no difference shows in any facing,
 walk step or sitting pose (`archive/images/2026-10-13/392`, `393`), so the skeleton reproduces the
 hand-built cat. `kitcat_built` makes the body and head from the kit's primitives too. It reads as a
 cat but is blockier than the modelled one, so the game's cat stays as it is. The kit's job is new
-creatures (bears first: `data/later/bears.json`, `docs/concepts/bears/`). Kit creatures are in
-`tests/placement/cases.gd` (`kit_cases`, labels "kit: ...") and pass both halves of the check.
+creatures (bears first: in play since 2026-10-17, `docs/concepts/bears/`). Kit creatures are in
+`tests/placement/cases.gd` (`kit_cases`, labels "kit: ..."; the bears' generated races in `PROMPTS` and
+every helmet, armour and held piece on each bear body in `bear_cases`, labels "bear: ...") and pass both
+halves of the check.
 
 ## The sheet tool
 
@@ -536,7 +553,7 @@ fails exactly those, and says so.
 godot --path . --audio-driver Dummy --always-on-top --script res://tests/sheet.gd -- tests/sheets/bears_b1.json out_dir [sheet,...] [zoom,...] [nocheck]
 ```
 
-Specs so far: `bears_b1` (round B1), `bears_b2` (round B2, with each B1 row rebuilt as a kit
+Specs so far: `bears_play` (the bears in play), `bears_b1` (round B1), `bears_b2` (round B2, with each B1 row rebuilt as a kit
 variant: a prompt unit or a mount can name `kit` + `params`), `kit_cat` (the kit against the game's cat),
 milestone 13's `trade_carts_tc1`, `war_beasts_wb1` and `_wb2`, `sapper_sp1`, `great_sling_gs1`, `_gs2` and `_fs1` (the frogs' great sling), the in-play `war_beasts_play` and `great_sling_play` (D-129), the heroes' `heroes_hr2_*` (D-127: named champions; `tests/hero_names.gd` prints the names the naming contract in `data/later/heroes.json` gives a race) (concept files staged
 from `data/later/`; a staged concept model file must be listed in `bake_cache.gd` SOURCES, or a stale

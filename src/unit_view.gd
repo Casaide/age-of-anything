@@ -209,7 +209,7 @@ func build(r: Dictionary, lib, team: Color, speed := 10) -> void:
 		if pb.has("legs") and pb.legs.has("gait"):
 			gait = gait.duplicate()
 			gait.merge(pb.legs.gait, true)
-		_idle_poses = pb.get("idle_poses", []) if int(r.get("idle", 1)) != 0 else []   # (a beast in harness stands in its traces)
+		_idle_poses = idle_poses_of(lib, r, _pose_body)
 	if _sit_after < 0.0 and not _idle_poses.is_empty():
 		_sit_after = noise.randf_range(SIT_AFTER.x, SIT_AFTER.y)
 	idle_wait = noise.randf_range(1.0, 5.0)
@@ -321,11 +321,23 @@ func _build_engine(r: Dictionary, lib, team: Color, colours: Dictionary, speed: 
 		_beast_head_rest = head_node.position
 
 
+## The poses a body rests in when it stands still (parts.json idle_poses: a cat sits down); under a
+## rider, its ridden_idle_poses if it names them (a ridden bear only half sits: sitting up, its raised
+## head met the rider's lance). None for a beast in harness ("idle": 0: it stands in its traces).
+static func idle_poses_of(lib, r: Dictionary, body_id: String) -> Array:
+	if int(r.get("idle", 1)) == 0:
+		return []
+	var pb: Dictionary = lib.part(body_id)
+	if r.has("mount") and not r.mount.get("fused", false) and pb.has("ridden_idle_poses"):
+		return pb.ridden_idle_poses
+	return pb.get("idle_poses", [])
+
+
 ## The sockets an engine's members stand on: its crew's ("crew<n>_f<k>[_reach|_raise][_in|_top]"; a
-## crew member too big for the frame, a centaur, takes the "_wide" ones beside it, not "_in") and the
+## crew member too big for the frame, a centaur or a bear, takes the "_wide" ones beside it, not "_in") and the
 ## beasts hauling it ("haul<n>_f<k>"). The placement check composes the same (tests/placement/composite_3d.gd).
 static func engine_sockets(r: Dictionary, sockets: Dictionary) -> Array:
-	var wide: bool = r.crew.has("mount")
+	var wide: bool = r.crew.has("mount") or int(r.crew.get("wide", 0)) != 0   # (a centaur's horse half; a body too big for the frame: a bear, parts.json "crew": "wide")
 	# A "_wide" socket stands in for its namesake ("crew0_f0_reach_in", "crew2_f0_reach"; a war beast's rider
 	# "crew0_f0_top", D-129) for such a crew.
 	# A "_narrow" one is only for a crew that fits a tight file (the great sling's haulers): such a crew leaves it out.
@@ -763,7 +775,9 @@ func _attach(lib, rig: Dictionary, slot: String, part_id: String, colours: Dicti
 	var withers: bool = slot == "back" and "flying" in p.tags and rig.sockets.has("wings")
 	if withers:
 		socket = "wings"
-	if slot == "back" and "drape" in p.tags and rig.sockets.has("drape"):
+	if slot == "back" and rig.sockets.has(part_id):
+		socket = part_id   # a body with its own place for this piece (a bear's cloak hangs clear of its broad back: its "cape.cloth" socket)
+	elif slot == "back" and "drape" in p.tags and rig.sockets.has("drape"):
 		socket = "drape"   # a hanging cape or pelt from where the body's model says it hangs clear (its "drape" socket)
 	if slot == "back" and "banner" in p.tags and not "hero" in p.tags and rig.sockets.has("banner"):   # (a hero's back pieces are fitted to the back itself)
 		socket = "banner"   # a banner pole where the body's model carries one (a rat's, higher than its low back)
@@ -1800,9 +1814,14 @@ static func pose_parts(lib, r: Dictionary) -> Array:
 				continue
 			leg[1] = -1
 		legs.append(leg)
+	# A body that holds its weapon its own way (a bear drawing a bow) rests in its poses holding it:
+	# "<body>@<hold>@<pose>" (on two legs only the feet move, so the arms keep the hold).
+	var hold := hold_for(lib.part(r.parts.hand_r).tags) if not r.has("mount") and not r.has("crew") and r.parts.has("hand_r") else "low"
 	var out := []
 	for pose in body.get("idle_poses", []):
 		out.append([body_id + "@" + pose, body.shapes])
+		if hold != "low":
+			out.append([body_id + "@" + hold + "@" + pose, body.shapes])
 		if head_id != "" and "head" in body.get("cut", []):   # a cut head is cut by the body in that pose
 			out.append(["%s~%s@%s^head" % [head_id, body_id, pose], lib.part(head_id).shapes])
 		for l in legs:

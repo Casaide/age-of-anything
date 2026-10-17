@@ -124,7 +124,7 @@ func check(label: String, u: Dictionary) -> void:
 	if r.has("mount"):
 		var mc: Dictionary = lib.creatures[r.mount.creature]
 		walker_body = mc.get("fused_body", mc.body) if r.mount.fused else mc.get("mount_body", mc.body)
-	for bp in (lib.part(walker_body).get("idle_poses", []) if int(r.get("idle", 1)) != 0 else []):
+	for bp in UnitView.idle_poses_of(lib, r, walker_body):
 		_check_pose(label, bp, rig.unit(r, {"body_pose": bp}), true)
 	rig.clear()
 	if _vox_cache.size() > 600:

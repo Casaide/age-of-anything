@@ -989,7 +989,8 @@ func _tower_c(s: Dictionary, c: Dictionary) -> Dictionary:
 	for z in [-W * 0.26, W * 0.26]:   # its ropes, from its head back to the top's front parapet
 		n.add_child(rod(Vector3(gx, deck + g_len - 1.0, z), Vector3(L * 0.4 * kt, top + 3.0, z), 0.3, 0.3, s.rope, false))
 	pennant(n, s, Vector3(-L * 0.35 * kt, top + 1.0, -W * 0.35 * kt), 14.0, 6.0)
-	return {"node": n, "sockets": {"crew0_f0_reach": Vector3(-L * 0.5 - 9.0, 0, -10.0), "crew1_f0_reach": Vector3(-L * 0.5 - 15.0, 0, 10.0)}}
+	return {"node": n, "sockets": {"crew0_f0_reach": Vector3(-L * 0.5 - 9.0, 0, -10.0), "crew1_f0_reach": Vector3(-L * 0.5 - 15.0, 0, 10.0),
+		"crew0_f0_reach_wide": Vector3(-L * 0.5 - 13.0, 0, -10.0)}}   # (a wide crew, a bear or a centaur, pushes from further back: its shoulders showed past the tower's back corner, placement C4)
 
 
 # ------------------------------------------------------------------ siege tower concepts (milestone 16)

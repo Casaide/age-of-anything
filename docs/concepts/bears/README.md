@@ -1,4 +1,10 @@
-# Bears (concept rounds B1, B2 and B3, 2026-10-13)
+# Bears (concept rounds B1, B2 and B3, 2026-10-13; in play 2026-10-17)
+
+**In play (2026-10-17, D-160 to D-162).** The data moved out of `data/later/bears.json` into the game's
+data (kits in `data/creature_kit.json`, parts in `data/parts.json`, creatures, skins and words), the
+helmets into `scenes/art_pixel/bear_models.gd`. `tests/sheets/bears_play.json` draws the generated races;
+the B1-B3 specs still draw the rounds (they no longer stage anything). Below is the history of the rounds:
+where it says "nothing is in play", that was true then.
 
 Dominic's direction: bears as a race on two legs, armoured, more like the Greeks: dignified and
 intelligent, the smarter counterpart to the rats. Some races can ride them on four legs. Some bears

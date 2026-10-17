@@ -176,6 +176,25 @@ def capybara(rng, kind):
     return add(chirp(2000.0, 900.0, 0.4), delay_start(purr(0.3, 18.0), 0.1))
 
 
+def bear(rng, kind):
+    """A bear: a deep chesty 'hrrm' through a big throat (low, rough, dark), a huff of breath when
+    picked, and a long falling roar when it dies. Dignified, not snarling: the clever ones."""
+    table = [(420, 7, 1.0), (820, 9, 0.45), (2200, 10, 0.08)]   # a round, closed 'o' in a big throat
+    j = rng.uniform(0.93, 1.07)
+    def huff(dur):
+        n = seconds(dur)
+        return mul(bandpass(noise(n, rng), 600.0, 0.8, 1.5), env(n, 0.015, dur * 0.3, 0.5, dur * 0.4))
+    if kind == "select":   # a huff, then a short rising 'hm?'
+        return add(gain(huff(0.12), 0.7), delay_start(throat(rng, 0.2, _contour(88.0 * j, 104.0 * j, 0.2), table, 0.06, 0.32, 0.35, 0.02, 0.06, 0.0, 1600.0), 0.07))
+    if kind == "ack":   # 'hrrm-hm': one or two low grunts, falling
+        out = []
+        for k in range(rng.choice([1, 2])):
+            mix_into(out, throat(rng, 0.2, _contour(96.0 * j * rng.uniform(0.95, 1.05), 74.0 * j, 0.2), table, 0.05, 0.32, 0.55, 0.015, 0.06, 0.03 if k == 0 else 0.0, 1500.0), seconds(k * 0.22))
+        return out
+    roar = throat(rng, 0.7, _contour(150.0 * j, 58.0, 0.7, 0.6), [(560, 6, 1.0), (1050, 8, 0.5), (2300, 10, 0.12)], 0.12, 0.4, 0.6, 0.03, 0.15, 0.04, 2200.0)
+    return add(roar, delay_start(gain(huff(0.3), 0.5), 0.55))
+
+
 def hummingbird(rng, kind):
     """Sharp little 'tsip' chips over the low hum of its wings."""
     def chip(f0, f1, dur):
@@ -199,6 +218,6 @@ def hummingbird(rng, kind):
 
 
 CREATURES = {"frog": frog, "rat": rat, "human": human, "spider": spider, "beetle": beetle,
-             "pony": pony, "centaur": centaur, "capybara": capybara, "hummingbird": hummingbird}
+             "pony": pony, "centaur": centaur, "capybara": capybara, "hummingbird": hummingbird, "bear": bear}
 KINDS = {"select": 2, "ack": 3, "die": 2}   # takes per kind
 PEAK_DB = -4.0
