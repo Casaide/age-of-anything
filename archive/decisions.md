@@ -1012,3 +1012,12 @@ turned to lie there (unit_models.gd `slung`), and the placement check holds it t
 and centaurs keep their shields in hand. The cloth cape isn't worn by frogs and rearing beetles (`not_worn_by`, like
 `not_ridden_on`); the leaf cape fits them. (The Norse decision, first written as D-149, was renumbered D-151 at merge:
 main's D-149 names heroes.)
+
+**D-153, 2026-10-17: Workers are checked at work; a 2D pose on the bakes takes its directions from the facing.**
+Dominic saw a foraging centaur from behind in a network match, drawn broken ("i thought our tooling and tests
+protected against this needing visual checks"). The kneel to forage (D-105's C1) was a 2D pose written side-on: it
+picked the front legs and the pivot by screen x and bent as if the body faced right, so it was right only in facing 0;
+the placement check never drew a unit at work. Claude: every worker is now drawn foraging in all 8 facings by the 2D
+check (`tests/placement/work_2d.gd`, rules K1-K5 for a fused mount's kneel, measured against the model and the bake
+camera), and any pose UnitView puts on the bakes takes fore, hind and forward from the model and the facing
+(`UnitView.ahead_on_screen`, `side_on`), never from where things happen to be on screen. Facing 0's kneel is unchanged.
