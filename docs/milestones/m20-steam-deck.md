@@ -131,6 +131,16 @@ Touchscreen support is out (Dominic).
   it runs in Game Mode with Steam Input. (Valve's SteamOS devkit client is the heavier
   alternative; SSH is enough for us.) An SSH key from this Mac on the Deck lets agents copy builds
   and read logs without a password.
+- **What we do now (2026-10-18): pull over SMB with one script.** SSH isn't set up; the Mac shares
+  `build/linux` as `linux` (File Sharing). On the Mac, export:
+  `godot --headless --path . --export-debug "Linux (Steam Deck)" build/linux/age_of_anything.x86_64`.
+  On the Deck (Desktop mode, Konsole), `tools/deck/pull_build.sh` (copied over once, `chmod +x`)
+  copies the `.x86_64`, `.pck` and `.sh` from `smb://me@192.168.0.10/linux` into
+  `~/Games/age_of_anything`, makes them executable and replaces the old build only when every file
+  arrived; `--run` starts it. It copies through KDE's `kioclient` (Dolphin's saved password), else
+  `smbclient`. Settings: `AOA_HOST`, `AOA_SHARE`, `AOA_USER`, `AOA_DIR`. Add
+  `~/Games/age_of_anything/age_of_anything.sh` to Steam once as a non-Steam game; each pull keeps
+  that path.
 - **Touchscreen:** no. **Steam release:** later.
 
 ## The controls pass (steps 3-6, 2026-10-15)
