@@ -1097,3 +1097,11 @@ another. Claude's calls: naming two of the race's heroes brings the first named,
 home"; a named hero who isn't in the pool still gets a note and the key's pick. The sim keeps supporting several
 heroes a player (training, revival, auras that don't add up), since allies' heroes still meet. Old saves whose race
 had three heroes no longer line up with today's tables and load on their own frozen races (D-141).
+
+**D-160, 2026-10-18: Colour words pick the skin.** Dominic: "red spiders" didn't work, spiders had few colours and
+a colour in the name was ignored. Colour words are lexicon entries (`"colour"`), each skin lists the colours it
+answers to (palettes.json `skin_colours`), and a race's skin is picked from the ones in a colour it asked for (any of
+them, if it asked for several), then narrowed by its culture as before. A creature that doesn't come in the colour
+keeps its own skins and the race gets a note. Spiders gain red, white, yellow and blue skins, kept clear of the team
+colours. Claude's call: human skin tones answer to no colour word, so a colour never picks a person's skin. Adding
+skins changes which skin some existing spider prompts roll (the key changes with it; saves keep their races).

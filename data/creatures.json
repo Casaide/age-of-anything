@@ -286,7 +286,11 @@
   "skins": [
    "spider_black",
    "spider_tarantula",
-   "spider_green"
+   "spider_green",
+   "spider_red",
+   "spider_white",
+   "spider_yellow",
+   "spider_blue"
   ],
   "families": [
    "spooky",
