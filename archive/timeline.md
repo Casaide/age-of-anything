@@ -122,3 +122,4 @@ One line per moment worth remembering. Newest at the bottom.
 - **2026-10-17:** The network lobby is the battle setup, shared: players join into open sides, pick their team, edit their own race, everyone Ready; 2v2 with AIs on the network; both machines load together (D-156).
 - **2026-10-17:** A network match can be saved; the other players' sides go in as AIs (D-157).
 - **2026-10-17:** Stone walls stop flyers (palisades don't); flyers are drawn over the buildings they cross instead of through them (D-158).
+- **2026-10-18:** One hero a race, not three: the one the prompt names, else the race key's pick (D-159).

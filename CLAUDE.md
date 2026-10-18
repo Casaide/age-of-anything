@@ -81,7 +81,7 @@ move it to `docs/backlog.md` rather than deleting it.
   (`src/sim/shots.gd`); healers, trade carts, the great sling, war beasts with jointed legs; a unit's parts set its cost
   and its line what it's paid in (D-150). See `docs/milestones/m13-unit-lines.md`.
 - **Closed (milestone 14): race identity and heroes.** Bonuses, own research, lacks (`src/identity.gd`), the web
-  ability, heroes (every race gets its pool's, D-138). See `docs/milestones/m14-race-identity.md`.
+  ability, heroes (one a race, named in the prompt or picked by its key, D-159). See `docs/milestones/m14-race-identity.md`.
 - **Closed (milestone 16): sieges.** Walkable walls, gatehouses, rams, ladders, siege towers, Fortress and Siege
   modes, tall walls (D-130). See `docs/milestones/m16-sieges.md`.
 - **Closed (milestone 21): modability.** The mod loader, an example mod, agent tooling (`docs/modding.md`).

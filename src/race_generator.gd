@@ -230,12 +230,17 @@ func generate(prompt: String, rules: Dictionary, reroll := 0) -> Dictionary:
 		"units": units,
 		"lacks": lacks,   # derived (the slots left out), not in the key; what its creature and culture lack: src/identity.gd
 	}
+	# The race's one hero (src/heroes.gd, D-159): the first the prompt names from its pool (in the key).
 	var asked := Heroes.asked(lib.heroes, brief.heroes, creature, family)
+	var said := func(sids: Array) -> String: return " or ".join(sids.map(func(sid): return "'%s'" % _hero_word(prompt, sid)))
 	if not asked.is_empty():
-		race.hero_asked = asked   # the heroes the prompt named: only those (src/heroes.gd), so in the key
-	elif not brief.heroes.is_empty():
-		notes.append("Nobody called %s leads %s, so their own heroes came instead." % [
-			" or ".join(brief.heroes.map(func(sid): return "'%s'" % sid.replace("_", " "))), String(c.plural).to_lower()])
+		race.hero_asked = asked[0]
+	if asked.size() > 1:
+		notes.append("Only one hero leads a race, so %s came and %s stayed home." % [said.call([asked[0]]), said.call(asked.slice(1))])
+	var strays: Array = brief.heroes.filter(func(sid): return not sid in asked)
+	if not strays.is_empty():
+		notes.append("Nobody called %s leads %s, so one of their own came instead." % [said.call(strays), String(c.plural).to_lower()]
+			if asked.is_empty() else "Nobody called %s leads %s." % [said.call(strays), String(c.plural).to_lower()])
 	if not lib.mods.is_empty():
 		race.mods = lib.mods.duplicate()   # made with mods (src/mods.gd): a peer needs the same ones (in the key)
 	race.key = race_key(race)
@@ -260,6 +265,15 @@ static func race_key(race: Dictionary) -> String:
 	if race.has("mods"):   # (only then: a race made without mods keeps the key it always had)
 		shareable.mods = race.mods
 	return JSON.stringify(shareable, "", true).sha256_text()
+
+
+## The prompt's word that named this hero (for the notes).
+func _hero_word(prompt: String, sid: String) -> String:
+	for raw in normalize(prompt).split(" ", false):
+		var word := lookup(raw)
+		if word != "" and lib.lexicon[word].get("hero", "") == sid:
+			return raw
+	return sid
 
 
 func _race_name(rng, c: Dictionary, family: String) -> String:

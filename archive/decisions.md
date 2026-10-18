@@ -1088,3 +1088,12 @@ load (World.after_load). And, Dominic: flying over buildings "is weird though be
 them": a flyer over a building is sorted after the building's front corner and climbs 12 px, so it's drawn over the
 roof, not through the walls (sim_debug `_over_roof`; farms and pens lie flat, nothing to climb). The Castle doesn't
 block flyers (not asked; easy to add with the flag).
+
+**D-159, 2026-10-18: One hero a race (supersedes D-138's all of them; keeps D-149's named hero).** Dominic, after
+seeing three heroes to buy at the Town Center: "no there should never be 3 heroes to buy". A race's pool stays as
+D-138 built it (its creature's and culture's heroes, topped up from kindred cultures), but the race gets one of
+them: the first one its prompt names (D-149), else one picked from the pool by its race key, so a reroll may bring
+another. Claude's calls: naming two of the race's heroes brings the first named, with a note that the other "stayed
+home"; a named hero who isn't in the pool still gets a note and the key's pick. The sim keeps supporting several
+heroes a player (training, revival, auras that don't add up), since allies' heroes still meet. Old saves whose race
+had three heroes no longer line up with today's tables and load on their own frozen races (D-141).
