@@ -1103,6 +1103,7 @@ helmets into scenes/art_pixel/bear_models.gd. There are three playable bears: br
   soldiers +1/+1 armour); they lack Quick Draw; they pour boiling honey. They get a bear voice of their own
   (tools/audio voices.py `bear`: a huff, a low "hrrm", a falling roar), which Dominic hasn't heard yet.
 - The polar bear as the brown bears' giant and a culture and architecture of their own wait in the backlog.
+(Written as D-160 to D-162 on the `bears` branch; renumbered at the merge into main, 2026-10-18.)
 
 **D-160, 2026-10-17: How a broad body takes the game's gear.** Putting every helmet, armour and held piece on the
 bears (D-161) showed what a body twice as wide as a human needs. Each fix is data, so the same tools work for the
