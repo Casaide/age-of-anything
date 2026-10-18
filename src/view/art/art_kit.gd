@@ -46,6 +46,7 @@ const DOODADS := {"reeds": 6, "bush": 6, "rock": 6, "quarry": 4, "gold": 4, "car
 ## (tree_models.gd styles; the sheet is waiting on Dominic's pick, D-080).
 const TREE_STYLE := {"broadleaf": 0, "pine": 0, "swamp": 1}
 const TREES := ["tree_broadleaf", "tree_pine", "tree_swamp"]
+const SHADOW := "~shadow"   # a tree bake's ground shadow, kept apart (doodad_shadow)
 ## Map bridges: the look (bridge_models.gd style). Every size a map uses is baked (bridge_sizes),
 ## along sim x and along sim y (^z), standing and broken (.1).
 const BRIDGE_STYLE := 0
@@ -1246,7 +1247,28 @@ func _bake_set(baker, todo: Array, shadow: bool, cols := 3, reach := 1.0) -> Dic
 	var made := {}
 	for i in todo.size():
 		made[todo[i][0]] = {"img": out[i].img, "origin": out[i].points[0]}
+		if reach > 1.0:   # trees: the long shadow goes apart, to lie on the ground under everything
+			var parts := _split_shadow(out[i].img)
+			made[todo[i][0]].img = parts[0]
+			made[todo[i][0] + SHADOW] = {"img": parts[1], "origin": out[i].points[0]}
 	return made
+
+
+## A bake's opaque art and its see-through ground shadow, as two images the same size.
+static func _split_shadow(img: Image) -> Array:
+	if img.get_format() != Image.FORMAT_RGBA8:
+		img = img.duplicate()
+		img.convert(Image.FORMAT_RGBA8)
+	var art := img.get_data()
+	var shade := art.duplicate()
+	for o in range(0, art.size(), 4):
+		if art[o + 3] == 255:
+			shade[o + 3] = 0
+		else:
+			art[o + 3] = 0
+	var w := img.get_width()
+	var h := img.get_height()
+	return [Image.create_from_data(w, h, false, Image.FORMAT_RGBA8, art), Image.create_from_data(w, h, false, Image.FORMAT_RGBA8, shade)]
 
 
 ## How used-up a resource looks: its stage from what's left of what it started with.
@@ -1465,6 +1487,13 @@ func sprite(name: String) -> Sprite2D:
 ## A doodad sprite of a kind, varied by a cosmetic pick (and for resources, a stage).
 func doodad(kind: String, pick: int, stage := 0) -> Sprite2D:
 	return sprite(staged(kind, posmod(pick, DOODADS[kind]), stage))
+
+
+## A tree's ground shadow, baked apart (null for doodads whose shadow is in the sprite): drawn
+## flat under every unit and building, so it never darkens a tower top it reaches.
+func doodad_shadow(kind: String, pick: int, stage := 0) -> Sprite2D:
+	var name := staged(kind, posmod(pick, DOODADS[kind]), stage) + SHADOW
+	return sprite(name) if bakes.has(name) else null
 
 
 ## One palette for the whole frame: the terrain ramps, the building materials, and

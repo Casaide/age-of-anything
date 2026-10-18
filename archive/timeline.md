@@ -125,3 +125,4 @@ One line per moment worth remembering. Newest at the bottom.
 - **2026-10-18:** One hero a race, not three: the one the prompt names, else the race key's pick (D-159).
 - **2026-10-18:** Colour words: "red spiders" are red; spiders come in red, white, yellow and blue too (D-160).
 - **2026-10-17:** Bears in play (D-161): brown, black and polar bear races, the bear mount for others ("romans riding bears"), a bear voice; broad bodies fitted through data (D-162), every piece checked on every bear (D-163).
+- **2026-10-18:** Towers take garrisons by right-click on their body; feet stay inside wall-tower hoardings; tree shadows lie on the ground, not over roofs.
