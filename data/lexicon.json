@@ -1734,6 +1734,57 @@
    },
    "default_creature": "human"
   },
+  "red": {
+   "colour": "red"
+  },
+  "crimson": {
+   "colour": "red"
+  },
+  "scarlet": {
+   "colour": "red"
+  },
+  "blue": {
+   "colour": "blue"
+  },
+  "green": {
+   "colour": "green"
+  },
+  "black": {
+   "colour": "black"
+  },
+  "white": {
+   "colour": "white"
+  },
+  "grey": {
+   "colour": "grey"
+  },
+  "gray": {
+   "colour": "grey"
+  },
+  "brown": {
+   "colour": "brown"
+  },
+  "orange": {
+   "colour": "orange"
+  },
+  "ginger": {
+   "colour": "orange"
+  },
+  "yellow": {
+   "colour": "yellow"
+  },
+  "gold": {
+   "colour": "yellow"
+  },
+  "pink": {
+   "colour": "pink"
+  },
+  "purple": {
+   "colour": "purple"
+  },
+  "violet": {
+   "colour": "purple"
+  },
   "bear": {
    "creature": "bear",
    "mount": "bear"

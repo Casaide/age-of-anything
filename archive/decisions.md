@@ -1089,7 +1089,23 @@ them": a flyer over a building is sorted after the building's front corner and c
 roof, not through the walls (sim_debug `_over_roof`; farms and pens lie flat, nothing to climb). The Castle doesn't
 block flyers (not asked; easy to add with the flag).
 
-**D-159, 2026-10-17: Bears are in play.** Dominic: "lets get the bears going on a branch". He had picked the heads
+**D-159, 2026-10-18: One hero a race (supersedes D-138's all of them; keeps D-149's named hero).** Dominic, after
+seeing three heroes to buy at the Town Center: "no there should never be 3 heroes to buy". A race's pool stays as
+D-138 built it (its creature's and culture's heroes, topped up from kindred cultures), but the race gets one of
+them: the first one its prompt names (D-149), else one picked from the pool by its race key, so a reroll may bring
+another. Claude's calls: naming two of the race's heroes brings the first named, with a note that the other "stayed
+home"; a named hero who isn't in the pool still gets a note and the key's pick. The sim keeps supporting several
+heroes a player (training, revival, auras that don't add up), since allies' heroes still meet. Old saves whose race
+had three heroes no longer line up with today's tables and load on their own frozen races (D-141).
+
+**D-160, 2026-10-18: Colour words pick the skin.** Dominic: "red spiders" didn't work, spiders had few colours and
+a colour in the name was ignored. Colour words are lexicon entries (`"colour"`), each skin lists the colours it
+answers to (palettes.json `skin_colours`), and a race's skin is picked from the ones in a colour it asked for (any of
+them, if it asked for several), then narrowed by its culture as before. A creature that doesn't come in the colour
+keeps its own skins and the race gets a note. Spiders gain red, white, yellow and blue skins, kept clear of the team
+colours. Claude's call: human skin tones answer to no colour word, so a colour never picks a person's skin. Adding
+skins changes which skin some existing spider prompts roll (the key changes with it; saves keep their races).
+**D-161, 2026-10-17: Bears are in play.** Dominic: "lets get the bears going on a branch". He had picked the heads
 (B2, D-126) and kept the B3 mount (D-127) and left the rest to Claude, so Claude took the B1-B2 recommendations
 and brought them into the game's data, with no new concept round: the kits go into data/creature_kit.json, the parts into
 data/parts.json (DataLib completes kit bodies on load), the creatures, skins and words into their files, and the
@@ -1103,10 +1119,10 @@ helmets into scenes/art_pixel/bear_models.gd. There are three playable bears: br
   soldiers +1/+1 armour); they lack Quick Draw; they pour boiling honey. They get a bear voice of their own
   (tools/audio voices.py `bear`: a huff, a low "hrrm", a falling roar), which Dominic hasn't heard yet.
 - The polar bear as the brown bears' giant and a culture and architecture of their own wait in the backlog.
-(Written as D-160 to D-162 on the `bears` branch; renumbered at the merge into main, 2026-10-18.)
+(Written as D-160 to D-162 on the `bears` branch; renumbered at the merge into main, 2026-10-18: main had taken D-159 and D-160.)
 
-**D-160, 2026-10-17: How a broad body takes the game's gear.** Putting every helmet, armour and held piece on the
-bears (D-161) showed what a body twice as wide as a human needs. Each fix is data, so the same tools work for the
+**D-162, 2026-10-17: How a broad body takes the game's gear.** Putting every helmet, armour and held piece on the
+bears (D-163) showed what a body twice as wide as a human needs. Each fix is data, so the same tools work for the
 next broad creature:
 - Head gear: the bear head's `top` socket now sits on the skull, because a cap or a leaf hat has to touch the head.
   The bears' own helmets are lifted by the same drop, so they sit where Dominic saw them.
@@ -1126,10 +1142,10 @@ next broad creature:
 - The siege tower gets a `_wide` place for the crew member at its back corner, where a black bear's shoulders showed
   past the tower.
 
-**D-161, 2026-10-17: A new body is checked against every piece it can come to.** Any culture can come to a bear
+**D-163, 2026-10-17: A new body is checked against every piece it can come to.** Any culture can come to a bear
 ("aztec bears"), so `bear_cases` (tests/placement/cases.gd) puts every helmet, hat, body armour and held piece of
 the game on each bear body. Hero, siege, concept and carried-load parts are left out. Each piece goes on the unit of
 the race that would wear or hold it, together with the bear races in PROMPTS, every rider on the bear mounts, and
 the Norse, hero and gear sweeps that already ran over every playable body. The first run had 191 failing checks
-(102 before the sweep) in 3D, and 205 in 2D; after D-160, none. Carried loads aren't in the 3D check for any creature (UnitView's carry
+(102 before the sweep) in 3D, and 205 in 2D; after D-162, none. Carried loads aren't in the 3D check for any creature (UnitView's carry
 hold isn't posed by the rig); that's in the backlog.
