@@ -2,11 +2,13 @@ extends ColorRect
 ## Play on the network (the networking milestone, phase 1: the home network over ENet). Over the
 ## lobby's title menu: host a game (the usual battle setup, then this page waits for a player),
 ## or join one: the games heard on the network (src/net/lan.gd: no address to type on the Deck),
-## or an address. The joiner names their own race; the host's setup and the joiner's race make
-## the match. Emits `start(link, me, setup)` when both are ready. A pad walks it by focus.
+## or an address. A new game is set up together in the battle setup, shared (src/view/net_lobby.gd):
+## the host's opens listening, and a joiner who hears lobby {..} emits `joined(link, state)`. A
+## saved game is hosted from here: `start(link, me, setup)` once a player is in. A pad walks it by focus.
 ##
-## The handshake (before the lockstep): the joiner sends hello {prompt, version}; the host answers
-## setup {prompts, rerolls, map, mode, teams} or refuse {why} (another version of the game).
+## The handshake (before the lockstep): the joiner sends hello {version}; the host answers lobby
+## {map, mode, sides} (a new game), setup {save, seat, humans} (a saved one) or refuse {why} (another
+## version of the game).
 
 const UiTheme := preload("res://src/view/ui/theme.gd")
 const PadMode := preload("res://src/view/pad_mode.gd")
@@ -16,12 +18,12 @@ const Lan := preload("res://src/net/lan.gd")
 signal host_chosen              # Host a game: the lobby opens its battle setup
 signal host_save_chosen         # Host a saved game: the lobby opens its saves; one picked comes back to choose_seat
 signal start(link, me: int, setup: Dictionary)
+signal joined(link, state: Dictionary)   # in a new game's lobby (scenes/match_setup.gd takes it on)
 signal closed
 
 var closed_frame := -1
 var box: VBoxContainer
 var list: VBoxContainer
-var race_field: LineEdit
 var address_field: LineEdit
 var note: Label
 var finder = null
@@ -66,11 +68,6 @@ func open() -> void:
 		host_save_chosen.emit())
 	box.add_child(saved)
 	box.add_child(UiTheme.Rule.new(UiTheme.look("").metal))
-	box.add_child(UiTheme.label("Your race, if you join", "Dim"))
-	race_field = LineEdit.new()
-	race_field.text = "sewer rats with cheese hammers"
-	race_field.custom_minimum_size = Vector2(660, 48)
-	box.add_child(race_field)
 	box.add_child(UiTheme.label("Games on this network", "Dim"))
 	list = VBoxContainer.new()
 	list.add_theme_constant_override("separation", 8)
@@ -122,8 +119,7 @@ func choose_seat(rep: Dictionary) -> void:
 	_show(first)
 
 
-## The host's wait: listen, broadcast, and on a hello answer with the setup (the joiner's race as
-## side 1's). `setup`: {prompts, rerolls, map, mode, teams}, side 0 the host's; or a saved match:
+## The host's wait for a saved match: listen, broadcast, and on a hello answer with the setup:
 ## {save, seat (the joiner's), humans}.
 func wait_for_player(setup: Dictionary, name: String) -> void:
 	_reset()
@@ -175,15 +171,21 @@ func _process(_delta: float) -> void:
 					note.text = "A player tried to join with a different version of the game."
 					continue
 				var setup := _host_setup.duplicate(true)
-				if not setup.has("save"):
-					setup.prompts[1] = str(msg.get("prompt", setup.prompts[1]))
 				_link.send({"t": "setup", "setup": setup})
 				_link.put_back(batch.slice(i + 1))
-				_go(int(setup.humans[0]) if setup.has("save") else 0, setup)
+				_go(int(setup.humans[0]), setup)
 				return
-			"setup":   # (the joiner) in: side 1, or a saved match's open seat
+			"setup":   # (the joiner) in: a saved match's open seat
 				_link.put_back(batch.slice(i + 1))   # (the host's first turns may be right behind it: the match reads them)
-				_go(int(msg.setup.seat) if msg.setup.has("save") else 1, msg.setup)
+				_go(int(msg.setup.seat), msg.setup)
+				return
+			"lobby":   # (the joiner) in a new game's lobby: the battle setup takes the link on
+				var link = _link
+				_link = null
+				_reset()
+				visible = false
+				link.put_back(batch.slice(i + 1))
+				joined.emit(link, msg)
 				return
 			"refuse":
 				note.text = "The host refused: %s." % str(msg.get("why", "?"))
@@ -193,8 +195,8 @@ func _process(_delta: float) -> void:
 	if _link != null and _mode == "join":
 		if _link.connected and not _link.has_meta("said_hello"):
 			_link.set_meta("said_hello", true)
-			_link.send({"t": "hello", "prompt": race_field.text.strip_edges() if race_field.text.strip_edges() != "" else "sewer rats", "version": Lan.version()})
-			note.text = "Connected: waiting for the host's setup..."
+			_link.send({"t": "hello", "version": Lan.version()})
+			note.text = "Connected: waiting for the host..."
 		elif _link.closed:
 			note.text = "Couldn't join: %s." % (_link.error if _link.error != "" else "the host isn't answering")
 			_link = null

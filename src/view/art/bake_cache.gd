@@ -94,7 +94,7 @@ static func read(key: String) -> Dictionary:
 static func write(key: String, entry: Dictionary) -> void:
 	if not enabled:
 		return
-	var tmp := path(key) + ".tmp"   # written whole, then moved: a crash never leaves half an entry
+	var tmp := path(key) + ".%d.tmp" % OS.get_process_id()   # written whole, then moved: a crash never leaves half an entry (per process: two windows bake the same parts at once)
 	var f := FileAccess.open_compressed(tmp, FileAccess.WRITE, FileAccess.COMPRESSION_ZSTD)
 	f.store_var(entry)
 	f.close()

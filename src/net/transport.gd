@@ -19,6 +19,11 @@ func poll() -> Array:
 	return _take_back()
 
 
+## Keep the link alive between polls (the match is loading); nothing is read.
+func pump() -> void:
+	pass
+
+
 ## Give these back, unread, to be the next poll's first (the lobby read a batch that ran on into
 ## the match's first turns: the match must have them).
 func put_back(msgs: Array) -> void:

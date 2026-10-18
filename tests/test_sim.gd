@@ -516,6 +516,89 @@ func _test_movement_classes() -> void:
 	var ri := w.units.index_of(rat)
 	check(w.map.terrain[w.map.cell_of(w.units.x[fi], w.units.y[fi])] == shallows, "the frog wades into the shallows")
 	check(w.map.terrain[w.map.cell_of(w.units.x[ri], w.units.y[ri])] != shallows, "the rat stops at the water's edge")
+	_test_deep_river()
+	_test_flyers_and_walls(flyers, rats)
+
+
+## Stone walls stop flyers; palisades don't (Dominic, 2026-10-17, D-158). A wall line across the
+## whole of flat_test keeps a flyer on its side; a palisade line it flies over. A save from before
+## (the walls standing, not marked) gets them marked on load (World.after_load).
+func _test_flyers_and_walls(flyers: Dictionary, rats: Dictionary) -> void:
+	var bare := rules_.duplicate(true)
+	bare.economy.start.buildings = []
+	bare.economy.start.workers = 0
+	for kind in ["wall", "palisade"]:
+		var w := World.new(SEED, SimMap.load_id("flat_test"), [flyers, rats], bare, [0, 1])
+		w.ages[1] = 3
+		var m = w.map
+		var k := Economy.btype_of(w, kind)
+		var y := 20
+		for x in m.width:
+			Economy.place(w, 1, k, x, y)
+		var fly: int = SimMap.FLYING
+		var closed := range(m.width).filter(func(x): return m.walks[fly][y * m.width + x] == 0).size()
+		if kind == "wall":
+			check(closed == m.width, "flyers and walls: a stone wall is closed to flyers (%d of %d cells)" % [closed, m.width])
+			for x in m.width:   # as a save from before D-158 has them: standing, not marked
+				m.high[y * m.width + x] = 0
+				m._refresh(y * m.width + x)
+			w.after_load([])
+			closed = range(m.width).filter(func(x): return m.walks[fly][y * m.width + x] == 0).size()
+			check(closed == m.width, "flyers and walls: an older save's walls are closed to flyers once loaded (%d of %d)" % [closed, m.width])
+		else:
+			check(closed == 0, "flyers and walls: a palisade is open to flyers (%d of %d closed)" % [closed, m.width])
+		w.issue(0, Commands.SPAWN, {"slot": "spear", "count": 1, "x": 30500, "y": 15500})
+		while w.units.count() < 1:
+			w.step()
+		w.issue(0, Commands.MOVE, {"ids": [w.units.id[0]], "x": 30500, "y": 26500})
+		for t in 600:
+			w.step()
+		var past: bool = w.units.y[0] > (y + 1) * 1000
+		check(past == (kind == "palisade"), "flyers and walls: the flyer %s the %s (y %d)" % ["crosses" if past else "stays behind", kind, w.units.y[0]])
+
+
+## Reed Meadow's rivers have a deep middle (Dominic, 2026-10-17: frog races swam the river anywhere):
+## no class gets across but at a ford or a bridge, and no flyer crosses a tree. Flood fills over each
+## class's walk grid (8-way, no corner cutting), with the fords and without (bridge decks aren't laid
+## on a bare SimMap).
+func _test_deep_river() -> void:
+	for id in ["reed_meadow", "reed_meadow_2v2"]:
+		var m: SimMap = SimMap.load_id(id)
+		var ford: int = m.terrain_ids.find("ford")
+		var tree: int = m.terrain_ids.find("tree")
+		var deep: int = m.terrain_ids.find("deep_river")
+		check(m.terrain_move[tree] == 0 and m.terrain_move[deep] == 0, "%s: nobody crosses trees or the deep river" % id)
+		var a: int = m.cell_of(m.starts[0][0], m.starts[0][1])
+		var b: int = m.cell_of(m.starts[1][0], m.starts[1][1])
+		for mc in SimMap.CLASSES.size():
+			var cut := _flood(m, mc, a, ford)
+			var joined := _flood(m, mc, a, -1)
+			check(cut[b] == 0 and joined[b] == 1, "%s: %s units cross the river only at a ford (cut %d, with fords %d)" % [id, SimMap.CLASSES[mc], cut[b], joined[b]])
+
+
+func _flood(m: SimMap, mc: int, from: int, skip: int) -> PackedByteArray:
+	var seen := PackedByteArray()
+	seen.resize(m.width * m.height)
+	var ok := func(x: int, y: int) -> bool:
+		if x < 0 or y < 0 or x >= m.width or y >= m.height:
+			return false
+		var c: int = y * m.width + x
+		return m.walks[mc][c] == 1 and m.terrain[c] != skip
+	seen[from] = 1
+	var todo := [from]
+	while not todo.is_empty():
+		var c: int = todo.pop_back()
+		var x: int = c % m.width
+		var y: int = c / m.width
+		for d in [Vector2i(1, 0), Vector2i(-1, 0), Vector2i(0, 1), Vector2i(0, -1), Vector2i(1, 1), Vector2i(1, -1), Vector2i(-1, 1), Vector2i(-1, -1)]:
+			var n: int = (y + d.y) * m.width + x + d.x
+			if not ok.call(x + d.x, y + d.y) or seen[n] == 1:
+				continue
+			if d.x != 0 and d.y != 0 and not (ok.call(x + d.x, y) and ok.call(x, y + d.y)):
+				continue
+			seen[n] = 1
+			todo.append(n)
+	return seen
 
 
 # --- the land: trees, rivers, fords, bridges (milestone 15) --------------------------
@@ -2970,6 +3053,9 @@ func _test_combat(gen) -> void:
 	_test_siege(gen)
 	_test_surround(gen)
 	_test_formation(gen)
+	_test_role_formation(gen)
+	_test_counter_pick(gen)
+	_test_shield_wall(gen)
 	_test_stances(gen)
 	_test_ranged_holds(gen)
 	var wins := 0
@@ -3701,6 +3787,119 @@ func _test_formation(gen) -> void:
 		check(still, "%s: it holds still afterwards" % what)
 
 
+## A mixed group's formation goes by role (milestone 22): foot soldiers in front, shooters behind
+## them, healers at the back, and the riders on both flanks, outside the centre's width; it settles
+## without overlaps and holds still.
+func _test_role_formation(gen) -> void:
+	var race: Dictionary = gen.generate(PROMPTS[0], rules_)
+	var w := _bare_world([race, race])
+	var spears := _spawn_n(w, "spear", 12, 12000, 14000)
+	var archers := _spawn_n(w, "archer", 8, 12000, 16000)
+	var riders := _spawn_n(w, "large", 6, 14000, 15000)
+	var healers := _spawn_n(w, "healer", 2, 11000, 15000)
+	var mounted := riders.all(func(id): return "mounted" in w.types[w.units.kind[w.units.index_of(id)]].eval.tags)
+	check(mounted, "role formation: the large slot rides")
+	var ids: Array = spears + archers + riders + healers
+	w.issue(0, Commands.MOVE, {"ids": ids, "x": 40000, "y": 40000})
+	var settled := -1
+	while w.tick < 4000 and settled < 0:
+		w.step()
+		if w.tick % 20 == 0 and w.tick > 200 and not 1 in w.units.moving:
+			settled = w.tick
+	check(settled > 0, "role formation: settles (tick %d)" % settled)
+	var x0 := w.units.x.duplicate()
+	var y0 := w.units.y.duplicate()
+	for t in 200:
+		w.step()
+	var ahead := func(id): return w.units.tx[w.units.index_of(id)] + w.units.ty[w.units.index_of(id)]   # down and right
+	var across := func(id): return w.units.tx[w.units.index_of(id)] - w.units.ty[w.units.index_of(id)]
+	var lo := func(l: Array, f: Callable): return l.map(f).min()
+	var hi := func(l: Array, f: Callable): return l.map(f).max()
+	check(lo.call(spears, ahead) > hi.call(archers, ahead), "role formation: the spearmen stand ahead of the archers")
+	check(lo.call(archers, ahead) > hi.call(healers, ahead), "role formation: the healers stand behind the archers")
+	var foot: Array = spears + archers + healers
+	var mid: int = (lo.call(foot, across) + hi.call(foot, across)) / 2
+	var left := 0
+	var right := 0
+	for id in riders:
+		var a: int = across.call(id)
+		if a < lo.call(foot, across):
+			left += 1
+		elif a > hi.call(foot, across):
+			right += 1
+	check(left + right == riders.size() and left > 0 and right > 0,
+		"role formation: the riders stand on both flanks (%d left, %d right of %d; centre %d)" % [left, right, riders.size(), mid])
+	var overlaps := 0
+	var still := true
+	for i in w.units.count():
+		still = still and w.units.x[i] == x0[i] and w.units.y[i] == y0[i]
+		for j in range(i + 1, w.units.count()):
+			var rr: int = w.units.radius[i] + w.units.radius[j]
+			if Fixed.dist2(w.units.x[i], w.units.y[i], w.units.x[j], w.units.y[j]) < rr * rr * 81 / 100:
+				overlaps += 1
+	check(overlaps == 0, "role formation: no one overlaps (%d pairs)" % overlaps)
+	check(still, "role formation: it holds still afterwards")
+
+
+## Counter-aware targeting (milestone 22): a spearman with a footman and a rider ahead, the rider a
+## little further, goes for the rider (its attack has a bonus against mounted or large); with
+## counter_pull 0 it goes for the nearest, the footman.
+func _test_counter_pick(gen) -> void:
+	var race: Dictionary = gen.generate(PROMPTS[0], rules_)
+	for pull in [-1, 0]:
+		var w := _bare_world([race, race])
+		if pull == 0:
+			w.combat.counter_pull = 0
+		var foot := _lone(w, 1, "infantry", 17000, 20500, "passive")
+		var rider := _lone(w, 1, "large", 18000, 20500, "passive")
+		var me := _lone(w, 0, "spear", 15000, 20500, "passive")
+		var i := w.units.index_of(me)
+		var d_foot := Fixed.isqrt(Fixed.dist2(w.units.x[i], w.units.y[i], _at(w, foot)[0], _at(w, foot)[1]))
+		var d_rider := Fixed.isqrt(Fixed.dist2(w.units.x[i], w.units.y[i], _at(w, rider)[0], _at(w, rider)[1]))
+		check(d_foot < d_rider and d_rider - d_foot < int(rules_.combat.counter_pull),
+			"counter pick: the rider is a little further than the footman (%d v %d)" % [d_rider, d_foot])
+		w.issue(0, Commands.STANCE, {"ids": [me], "stance": "aggressive"})
+		for t in 60:
+			w.step()
+		var want := foot if pull == 0 else rider
+		check(w.units.foe[w.units.index_of(me)] == want, "counter pick (pull %s): the spearman goes for the %s (foe %d; footman %d, rider %d)"
+			% ["rules" if pull < 0 else "0", "footman" if pull == 0 else "rider", w.units.foe[w.units.index_of(me)], foot, rider])
+
+
+## The Norse shield wall (milestone 22, Dominic: "super extra tight"): Norse shield infantry march
+## shoulder to shoulder (Linden shields: form_gap), their riders don't, and a Greek phalanx with
+## shields of its own keeps the usual gap. Neighbours' slots, side by side in the front row.
+func _test_shield_wall(gen) -> void:
+	var gaps := {}
+	for prompt in ["vikings", PROMPTS[0]]:
+		var race: Dictionary = gen.generate(prompt, rules_)
+		var w := _bare_world([race, race])
+		var spears := _spawn_n(w, "spear", 12, 12000, 14000)
+		var i := w.units.index_of(spears[0])
+		var t: Dictionary = w.types[w.units.kind[i]]
+		if prompt == "vikings":
+			check("shield" in t.eval.tags, "shield wall: Norse spearmen carry shields")
+		w.issue(0, Commands.MOVE, {"ids": spears, "x": 40000, "y": 40000})
+		w.step()
+		while w.tick < 4000 and (w.tick < 200 or 1 in w.units.moving):
+			w.step()
+		var best := 1 << 30
+		for a in spears:
+			for b in spears:
+				if a < b:
+					var ia := w.units.index_of(a)
+					var ib := w.units.index_of(b)
+					best = mini(best, Fixed.isqrt(Fixed.dist2(w.units.x[ia], w.units.y[ia], w.units.x[ib], w.units.y[ib])))
+		gaps[prompt] = best - 2 * w.units.radius[i]
+		if prompt == "vikings":
+			var riders := _spawn_n(w, "large", 1, 12000, 16000)
+			var r: Dictionary = w.types[w.units.kind[w.units.index_of(riders[0])]]
+			check(int(t.form_gap) < 0 and ("mounted" not in r.eval.tags or int(r.form_gap) == 0),
+				"shield wall: the Norse foot close up (form_gap %d), their riders don't (%d)" % [t.form_gap, r.form_gap])
+	check(absi(gaps["vikings"]) <= World.SLOT_ARRIVE and gaps[PROMPTS[0]] >= World.FORM_GAP - World.SLOT_ARRIVE,   # (each stops within SLOT_ARRIVE of its slot)
+		"shield wall: Norse spearmen stand %d milli-tiles apart (body to body), frogs %d" % [gaps["vikings"], gaps[PROMPTS[0]]])
+
+
 func _spawn_n(w: World, slot: String, n: int, x: int, y: int) -> Array:
 	var before := w.next_id
 	w.issue(0, Commands.SPAWN, {"slot": slot, "count": n, "x": x, "y": y})
@@ -4229,6 +4428,43 @@ func _test_walls(races: Array) -> void:
 	var a := _walls_run(rats_first, true)
 	var b := _walls_run(rats_first, false)
 	check(a.state_hash() == b.state_hash(), "walls: the same commands give the same state hash")
+	_test_wall_over_hill(races)
+
+
+## Walls run straight over a hill (Dominic, 2026-10-17, D-154): every wall and palisade piece of a
+## line across Reed Meadow's team hill can go down, cliffs and ramps included; a gate never stands
+## on a cliff (it would open the cliff to its side), but still goes over a wall on flat ground.
+func _test_wall_over_hill(races: Array) -> void:
+	var bare := rules_.duplicate(true)
+	bare.economy.start.buildings = []
+	bare.economy.start.workers = 0
+	var w := World.new(SEED, SimMap.load_id("reed_meadow_2v2"), [races[1], races[0], races[1], races[0]], bare, [0, 1, 0, 1])
+	w.ages[0] = 3
+	var m = w.map
+	var y := 18
+	var slopes := 0
+	for kind in ["wall", "palisade"]:
+		var k := Economy.btype_of(w, kind)
+		var refused := []
+		for x in range(10, 29):
+			if not Economy.can_place(w, 0, k, x, y):
+				refused.append(x)
+			if kind == "wall" and (m.cliff[y * m.width + x] == 1 or m.ramp[y * m.width + x] == 1):
+				slopes += 1
+		check(refused.is_empty(), "wall over a hill: every %s piece of a line across the hill can go down (refused at x %s)" % [kind, refused])
+	check(slopes >= 4, "wall over a hill: the line crosses cliffs and ramps (%d cells)" % slopes)
+	var wk := Economy.btype_of(w, "wall")
+	for x in range(10, 29):
+		Fortify._put(w, 0, wk, x, y, 0)
+	var gk := Economy.btype_of(w, "stone_gate")
+	var cliff_x := -1
+	for x in range(11, 27):
+		if m.cliff[y * m.width + x] == 1:
+			cliff_x = x
+			break
+	check(cliff_x > 0 and not Economy.can_place(w, 0, gk, cliff_x - 1, y, 0) and not Economy.can_place(w, 0, gk, cliff_x, y, 0),
+		"wall over a hill: no gate over the wall on a cliff (x %d)" % cliff_x)
+	check(Economy.can_place(w, 0, gk, 25, y, 0), "wall over a hill: a gate still goes over the wall on flat ground")
 
 
 const Fortify := preload("res://src/sim/fortify.gd")

@@ -392,11 +392,11 @@ func start_live(race_prompts: Array) -> void:
 			for entry in START_ARMY:
 				world.issue(p, Commands.SPAWN, {"slot": entry[0], "count": entry[1], "x": map.starts[p][0], "y": map.starts[p][1]})
 	_set_autoplay(autoplay)
-	if net_link != null:   # a network match: no bots, both sides are people; the lockstep paces the clock
-		clock.bots = []
-		bot_seats = []
+	if net_link != null:   # a network match: the people's sides have no bot, the AI sides play on every machine alike; the lockstep paces the clock
+		var humans: Array = net_setup.get("humans", [0, 1])
+		_seat_bots(range(world.races.size()).filter(func(p): return not p in humans).map(func(p): return [p, ai_levels[p] if p < ai_levels.size() and ai_levels[p] != "" else ai_level]))
 		active = net_me
-		clock.lockstep = Lockstep.new(world, net_me, [0, 1], net_link)
+		clock.lockstep = Lockstep.new(world, net_me, humans, net_link)
 	camera.look_at_point(Iso.to_screen(map.starts[active][0], map.starts[active][1]) + Vector2(0, 60))
 
 
@@ -430,6 +430,7 @@ func use_network(link, me: int, setup: Dictionary) -> void:
 	map_id = setup.map
 	mode = setup.mode
 	player_teams = setup.teams
+	ai_levels = setup.get("levels", [])
 	vs_ai = true
 	active = me
 
@@ -444,11 +445,11 @@ func _net_status() -> void:
 	if ls.desync != "":
 		text = "Out of sync with the other player (%s): the match can't go on." % ls.desync
 	elif ls.peer_left and world.winner < 0:
-		text = "The other player left the match."
+		text = "A player left the match." if net_setup.get("humans", [0, 1]).size() > 2 else "The other player left the match."
 	elif clock.waiting:
 		_net_wait += get_process_delta_time()
 		if _net_wait > 0.6:
-			text = "Waiting for the other player..."
+			text = "Waiting for the other player..." if net_setup.get("humans", [0, 1]).size() <= 2 else "Waiting for another player..."
 	if not clock.waiting:
 		_net_wait = 0.0
 	net_note.text = text
@@ -518,7 +519,15 @@ func save_game() -> String:
 	var keep_groups := {}
 	for k in groups:
 		keep_groups[k] = groups[k].duplicate()
-	SaveGame.save(SaveGame.record(world, bot_seats, clock.bots, {
+	var seats := bot_seats
+	var bots: Array = clock.bots
+	if net_link != null:   # a network match: the other people's sides go in the save as AIs (loaded alone they play on; hosted again a person takes one over)
+		seats = seats.duplicate(true)
+		bots = bots.duplicate()
+		for p in net_setup.get("humans", [0, 1]).filter(func(p): return p != net_me):
+			seats.append({"player": p, "level": "normal", "from_seq": world.commands.next_seq.get(p, 0), "at": world.tick})
+			bots.append(Bot.new(p, {}, "normal"))
+	SaveGame.save(SaveGame.record(world, seats, bots, {
 		"active": active, "prompts": prompts, "rerolls": rerolls, "player_teams": player_teams, "ai_levels": ai_levels,
 		"ai_level": ai_level, "map_id": map.id, "mode": mode, "vs_ai": vs_ai, "names": world.races.map(func(r): return r.name),
 		"hint_step": hint_step, "groups": keep_groups, "camera": [at.x, at.y]}), path)
@@ -553,7 +562,7 @@ func _bake(races: Array) -> void:
 		loader_layer = over
 		loader = MatchLoader.new()
 		over.add_child(loader)
-		loader.start(kit, lib, races, teams, map_id)
+		loader.start(kit, lib, races, teams, map_id, player_teams if player_teams.size() == races.size() else [], active)
 	else:
 		bar.text = "Baking the art..."
 	await kit.prepare(races, teams)
@@ -1787,7 +1796,7 @@ func _show_pause_menu(on: bool) -> void:
 	box.get_node("resume").visible = not over
 	box.get_node("surrender").visible = not over
 	box.get_node("tree").visible = not over
-	box.get_node("save").visible = not over and playback.is_empty() and net_link == null   # (a network match isn't saved)
+	box.get_node("save").visible = not over and playback.is_empty()   # (a network match saves on this machine: the others' sides as AIs)
 	box.get_node("save").text = "Save game"
 	var back: Button = box.get_node("menu")   # when it's over, the way back is the call to action
 	pause_menu.set_meta("pad_first", back if over else box.get_node("resume"))   # where a pad's focus starts
@@ -2116,6 +2125,8 @@ static func wall_cells(a: Vector2i, b: Vector2i) -> Array:
 # ------------------------------------------------------------------ frame
 
 func _process(delta: float) -> void:
+	if net_link != null and clock.lockstep == null:
+		net_link.pump()   # loading a network match: the other end must still hear us
 	if baking or world == null:
 		return
 	_net_status()
@@ -2240,6 +2251,10 @@ func _sync_views() -> void:
 		var perch_dy := _perch_sort(i, view.position.y)   # up on a wall: sorted between the wall and its near merlons
 		view.position.y += perch_dy
 		view.lift = Iso.lift(u.px[i] + dx * a, u.py[i] + dy * a) + _wall_lift(i) + perch_dy   # on a hill (or a wall): drawn raised, sorted on the base plane
+		if u.mclass[i] == SimMap.FLYING:
+			var roof_dy := _over_roof(i, view)   # over a building: drawn over its roof, not through it
+			view.position.y += roof_dy
+			view.lift += roof_dy + float(view.get_meta("roof", 0.0))
 		view.set_perched(u.perch[i] != 0)
 		view.walking = dx != 0 or dy != 0
 		if int(world.types[u.kind[i]].unpack) > 0:   # the great sling: on its wagon until it's set up (D-129)
@@ -2270,6 +2285,27 @@ func _sync_views() -> void:
 			views[id].queue_free()
 			views.erase(id)
 			selected.erase(id)
+
+
+## A flyer over a building (it flies over all but stone walls, D-158): how far to move its sort point
+## so it draws after the building's front corner, over the roof instead of through the walls. It also
+## climbs ROOF_PX while over one, eased in and out (the view's "roof" meta).
+const ROOF_PX := 12.0
+
+
+func _over_roof(i: int, view: UnitView) -> float:
+	var u := world.units
+	var cell := map.cell_of(u.x[i], u.y[i])
+	var bid: int = map.occupied[cell] if map.walk_over[cell] == 0 else 0   # (a farm or a pen lies flat: nothing to climb)
+	var b := world.buildings.index_of(bid) if bid != 0 else -1
+	var climb: float = view.get_meta("roof", 0.0)
+	climb = move_toward(climb, ROOF_PX if b >= 0 else 0.0, ROOF_PX * 3.0 * get_process_delta_time())
+	view.set_meta("roof", climb)
+	if b < 0:
+		return 0.0
+	var bs := world.buildings
+	var front: float = Iso.to_screen((bs.cx[b] + bs.sx[b]) * SimMap.TILE, (bs.cy[b] + bs.sy[b]) * SimMap.TILE).y
+	return maxf(0.0, front + 0.5 - view.position.y)
 
 
 ## How far up a wall unit i is drawn (walls.gd): the walkway's height on it, part of it while it
@@ -3110,7 +3146,7 @@ func _update_panel() -> void:
 		var herd: Array = mine.filter(_is_animal)
 		var soldiers: int = mine.size() - herd.size() - _selected_workers().size()
 		if mine.size() == 1 and ft.worker:
-			c.info = ["Idle", "Gathering", "Carrying back", "Building", "Going inside"][u.task[first]]
+			c.info = ["Idle", "Gathering", "Carrying back", "Building", "Going inside", "Trading", "Climbing", "Repairing"][u.task[first]]   # (Economy's task enum, in order)
 			if u.carry[first] > 0:
 				c.info += " (%d %s)" % [u.carry[first], world.resources[u.carry_kind[first] - 1]]
 		elif mine.size() == 1 and ft.has("animal"):

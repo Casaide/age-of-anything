@@ -1,6 +1,6 @@
 extends Node
 ## The 2D half of the placement check (needs a window: it reads the baked sprites). Every unit is
-## composed by UnitView in all 8 facings, standing and at three walk phases, and each part's baked
+## composed by UnitView in all 8 facings, standing, at three walk phases and (a worker) at work, and each part's baked
 ## sprite laid onto a grid in the unit's own space, in draw order, so "A draws over B" is a count of
 ## pixels. The layering rules (docs/rendering.md) and these:
 ##   B5 ground: standing, every weight-bearing leg's lowest pixel is on its foot's ground point (the
@@ -22,6 +22,7 @@ const PartBaker := preload("res://scenes/art_pixel/part_baker.gd")
 const Rig3D := preload("res://tests/placement/rig3d.gd")
 const Geom := preload("res://tests/placement/geom.gd")
 const Composite2D := preload("res://tests/placement/composite_2d.gd")
+const Work2D := preload("res://tests/placement/work_2d.gd")
 
 ## Poses: [name, walking, phase].
 const POSES := [["stand", false, 0.0], ["walk0", true, 0.0], ["walk1", true, 2.1], ["walk2", true, 4.2]]
@@ -83,6 +84,8 @@ func check_case(holder: Node2D, label: String, u: Dictionary, tweak := Callable(
 	var poses := POSES.duplicate()
 	if not u.recipe.has("crew") and not u.recipe.has("mount") and lib.creatures.get(u.recipe.get("creature", ""), {}).get("gait", "") == "hop":
 		poses += HOP_POSES   # a hopper on the ground: crouched to leap, squashed landing (B5 holds there)
+	if u.recipe.get("slot", "") == "worker" and not u.recipe.has("crew"):
+		poses += Work2D.WORK_POSES   # at work: the layering rules hold there too, and a fused mount's kneel (work_2d.gd)
 	if not u.recipe.has("crew"):
 		var walker: String = u.recipe.body
 		if u.recipe.has("mount"):
@@ -100,6 +103,8 @@ func check_case(holder: Node2D, label: String, u: Dictionary, tweak := Callable(
 			v.build(u.recipe, lib, _team, u.eval.speed)
 			v.idle_wait = 1000.0
 			holder.add_child(v)
+			if Work2D.is_work(pose):
+				v.job = pose[0]
 			v.walking = pose[1]
 			v.phase = pose[2]
 			v._process(0.0)
@@ -117,6 +122,8 @@ func check_case(holder: Node2D, label: String, u: Dictionary, tweak := Callable(
 				await Composite2D.check_engine_view(self, v, label, k, u, stand, pose)
 			else:
 				await _check_view(v, label, "f%d %s" % [k, pose[0]], k, u, stand)
+				if Work2D.is_work(pose):
+					Work2D.check(self, v, label, "f%d %s" % [k, pose[0]], k)
 				if pose[1]:
 					Composite2D.walk_legs(self, v, label, "f%d %s" % [k, pose[0]], u, float(pose[2]))
 				Composite2D.coverage(self, v, label, "f%d %s" % [k, pose[0]])
@@ -264,7 +271,7 @@ func _check_view(v, label: String, view: String, k: int, u: Dictionary, stand: D
 		# Legs and head show where the 3D model shows them (the body's own bake of them together).
 		if rig != "rider" and (view.ends_with("stand") or v.body_pose != ""):   # (a resting pose stands too)
 			await _check_model(v, parts, rig, body, label, view, k, u, stand)
-		elif rig != "rider" and not stand.is_empty() and stand.has(rig):
+		elif rig != "rider" and not stand.is_empty() and stand.has(rig) and v.job == "":   # (at work: work_2d.gd)
 			_check_walk(v, parts, rig, label, view, stand[rig])
 		# Back parts: behind the body when the back faces away from the camera, over it when it faces it.
 		for i in _find(parts, rig, "back"):

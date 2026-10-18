@@ -38,7 +38,7 @@ ROOT = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)
 
 LEGEND = {".": "grass", ",": "swamp", '"': "reeds", "#": "rock", "~": "water",
           "b": "bugbush", "s": "stone", "w": "shallows", "g": "gold",
-          "T": "tree", "R": "river", "f": "ford"}
+          "T": "tree", "R": "river", "D": "deep_river", "f": "ford"}
 AMOUNT = {"b": ("food", 150), '"': ("wood", 100), "s": ("stone", 450), "g": ("gold", 800), "T": ("wood", 100)}
 
 # Animals per start (sim: src/sim/animals.gd). "size" places a herd: one animal on the ring,
@@ -93,7 +93,7 @@ def layout(size):
         sx, sy = 12, 12
         f = [
             # home: the big reed line along the north and west edges behind the base, and groves
-            ("T", line(2, 2, 22, 4)), ('"', line(2, 5, 4, 22)),   # a forest behind the base, reeds down the side
+            ("T", line(1, 1, 22, 4)), ('"', line(1, 5, 4, 22)),   # a forest behind the base, reeds down the side
             ("T", rect(17, 5, 21, 7)),
             ('"', rect(5, 19, 10, 21)),
             ('"', rect(24, 11, 26, 14)),
@@ -106,7 +106,7 @@ def layout(size):
             ("#", rect(28, 8, 30, 9)), ("#", rect(21, 15, 23, 17)), ("#", rect(10, 31, 12, 36)),
             # contested: wings of the swamp band (NE for this start's half), by the pond
             ("g", rect(41, 17, 42, 18)),                       # gold on the band, by the river
-            ("s", rect(37, 25, 38, 26) + [(39, 25)]),          # stone by the pond
+            ("s", rect(36, 25, 37, 26) + [(38, 25)]),          # stone by the pond (a step back from the wider river)
             ('"', rect(33, 15, 35, 18)), ('"', rect(48, 6, 53, 7)), ("T", rect(36, 3, 41, 4)),
             ("T", blob(29, 4.5, 2.2, 1.6)),                    # a contested wood by the north edge
             ("#", rect(40, 22, 41, 27)),                       # the rock spit in the swamp
@@ -116,7 +116,7 @@ def layout(size):
         sx, sy = 16, 16
         f = [
             # home: the big reed line along the north and west edges, and groves
-            ("T", line(2, 2, 30, 4)), ('"', line(2, 5, 4, 30)),   # a forest behind the base, reeds down the side
+            ("T", line(1, 1, 30, 4)), ('"', line(1, 5, 4, 30)),   # a forest behind the base, reeds down the side
             ("T", rect(23, 6, 27, 8)),
             ('"', rect(6, 24, 9, 28)),
             ('"', rect(30, 14, 32, 18)),
@@ -144,15 +144,17 @@ def layout(size):
 
 
 # The river, in the north-west start's frame: the arm from the north-east corner to the middle,
-# then along x to the centre (the half turn draws the rest). Radius in tiles; the fords are
+# then along x to the centre (the half turn draws the rest). Radius in tiles; within `deep` of its
+# line the river is deep (nobody crosses it, not frogs, not flyers: Dominic, 2026-10-17, frog races
+# swam it anywhere and won the 2v2 early), the rest a shallow band on each side; the fords are
 # points on the arm (river cells this close become ford); the bridge is centred on the map
 # (so it maps onto itself), across the middle stretch, [x0, y0, x1, y1].
 RIVER = {
-    64: {"arm": [(64.5, -1.5), (50.0, 15.0), (39.0, 28.0), (35.0, 31.5), (31.5, 31.5)], "r": 1.1,
-         "fords": [(44.5, 21.5)], "ford_r": 1.8, "bridges": [[31, 31, 32, 32]]},
+    64: {"arm": [(64.5, -1.5), (50.0, 15.0), (39.0, 28.0), (35.0, 31.5), (31.5, 31.5)], "r": 2.0, "deep": 1.0,
+         "fords": [(44.5, 21.5)], "ford_r": 2.8, "bridges": [[31, 31, 32, 32]]},
     # the 2v2: a kink in each arm runs along x for a while, crossed by a bridge (with its twin)
-    88: {"arm": [(88.5, -1.5), (78.0, 9.0), (70.0, 9.0), (57.0, 38.0), (51.0, 43.5), (43.5, 43.5)], "r": 2.0,
-         "fords": [(63.5, 24.5)], "ford_r": 2.3, "bridges": [[43, 42, 44, 45], [74, 7, 74, 11]]},
+    88: {"arm": [(88.5, -1.5), (78.0, 9.0), (70.0, 9.0), (57.0, 38.0), (51.0, 43.5), (43.5, 43.5)], "r": 3.0, "deep": 1.5,
+         "fords": [(63.5, 24.5)], "ford_r": 3.4, "bridges": [[43, 42, 44, 45], [74, 7, 74, 11]]},
 }
 
 
@@ -309,7 +311,9 @@ def river(grid, S):
         for x in range(S):
             rx, ry = x, y   # the far arm comes from the half turn (build copies the top half over)
             d = min(seg_dist(rx, ry, *arm[k], *arm[k + 1]) for k in range(len(arm) - 1))
-            if d <= spec["r"]:
+            if d <= spec["deep"]:
+                grid[y][x] = "D"
+            elif d <= spec["r"]:
                 grid[y][x] = "R"
             elif d <= spec["r"] + 1.0 and grid[y][x] == ".":
                 grid[y][x] = ","   # wet banks
@@ -317,7 +321,7 @@ def river(grid, S):
         for y in range(S):
             for x in range(S):
                 rx, ry = x, y
-                if grid[y][x] == "R" and math.hypot(rx - fx, ry - fy) <= spec["ford_r"]:
+                if grid[y][x] in "RD" and math.hypot(rx - fx, ry - fy) <= spec["ford_r"]:
                     grid[y][x] = "f"
     out = []
     for b in spec["bridges"]:
@@ -327,6 +331,32 @@ def river(grid, S):
         if twin != b:
             out.append(twin)
     return out
+
+
+def edge(grid, S):
+    """Rock round the edge, but deep water where the river runs off the map: nobody, not even a
+    flyer over the edge rock, gets round the river's ends."""
+    for i in range(S):
+        for (x, y) in ((i, 0), (i, S - 1), (0, i), (S - 1, i)):
+            grid[y][x] = "D" if grid[y][x] in "RD" else "#"
+
+
+def stretch(grid, b):
+    """A bridge made long enough to reach the ground on both banks (the river is wider than the
+    listed bridge): its ends move out along its length while they stand on water."""
+    x0, y0, x1, y1 = b
+    along_y = y1 - y0 >= x1 - x0
+    if along_y:
+        while any(grid[y0 - 1][x] in "RD" for x in range(x0, x1 + 1)):
+            y0 -= 1
+        while any(grid[y1 + 1][x] in "RD" for x in range(x0, x1 + 1)):
+            y1 += 1
+    else:
+        while any(grid[y][x0 - 1] in "RD" for y in range(y0, y1 + 1)):
+            x0 -= 1
+        while any(grid[y][x1 + 1] in "RD" for y in range(y0, y1 + 1)):
+            x1 += 1
+    return [x0, y0, x1, y1]
 
 
 def build(map_id, name, size):
@@ -361,8 +391,8 @@ def build(map_id, name, size):
         for x in range(S):
             if y * S + x < (S - 1 - y) * S + (S - 1 - x):
                 grid[S - 1 - y][S - 1 - x] = grid[y][x]
-    for i in range(S):
-        grid[0][i] = grid[S - 1][i] = grid[i][0] = grid[i][S - 1] = "#"
+    edge(grid, S)
+    bridges = [stretch(grid, b) for b in bridges]
     starts = [list(start), [S - 1 - start[0], S - 1 - start[1]]]
     # keep the Town Center's ground (and a ring round it) clear
     for (stx, sty) in starts:
@@ -389,19 +419,24 @@ def build(map_id, name, size):
     return d
 
 
-def reach(rows, start, crossings, cliff=frozenset()):
-    """Cells a walker reaches from start (8-way, no corner cutting, as the sim walks), with
-    or without the fords and bridges, never onto a cliff."""
+def reach(rows, start, crossings, cliff=frozenset(), mclass="ground"):
+    """Cells a walker (or an amphibian, or a flyer: `mclass`) reaches from start (8-way, no corner
+    cutting, as the sim walks), with or without the fords and bridges, never onto a cliff (flyers
+    ignore cliffs and fly over everything but the deep river and trees)."""
     S = len(rows)
     deck = set()
     if crossings:
         for b in crossings:
             deck |= {(x, y) for x in range(b[0], b[2] + 1) for y in range(b[1], b[3] + 1)}
     def ok(x, y):
-        if not (0 <= x < S and 0 <= y < S) or (x, y) in cliff:
+        if not (0 <= x < S and 0 <= y < S) or ((x, y) in cliff and mclass != "flying"):
             return False
         t = LEGEND[rows[y][x]]
-        return t in ("grass", "swamp") or (crossings is not None and (t == "ford" or (x, y) in deck))
+        if t == "ford" or (x, y) in deck:
+            return crossings is not None
+        if mclass == "flying":
+            return t not in ("deep_river", "tree")   # (data/terrain.json: nobody crosses either)
+        return t in ("grass", "swamp") or (mclass == "amphibious" and t in ("river", "shallows"))
     seen = {tuple(start)}
     todo = [tuple(start)]
     while todo:
@@ -418,13 +453,14 @@ def reach(rows, start, crossings, cliff=frozenset()):
 
 
 def check_crossings(map_id, rows, starts, bridges):
-    """The river splits the map in two for walkers: without its fords and bridges the two halves
-    don't meet; with them, every start reaches every other."""
-    cut = reach(rows, starts[0], None)
-    assert tuple(starts[1]) not in cut, "%s: walkers get round the river without a crossing" % map_id
-    joined = reach(rows, starts[0], bridges)
-    for s in starts:
-        assert tuple(s) in joined, "%s: start %s can't be reached over the crossings" % (map_id, s)
+    """The river splits the map in two for everyone (walkers, amphibians, flyers: the deep water):
+    without its fords and bridges the two halves don't meet; with them, every start reaches every other."""
+    for mc in ("ground", "amphibious", "flying"):
+        cut = reach(rows, starts[0], None, mclass=mc)
+        assert tuple(starts[1]) not in cut, "%s: %s units get round the river without a crossing" % (map_id, mc)
+        joined = reach(rows, starts[0], bridges, mclass=mc)
+        for s in starts:
+            assert tuple(s) in joined, "%s: start %s can't be reached over the crossings (%s)" % (map_id, s, mc)
 
 
 def check_bridges(map_id, rows, bridges):
@@ -433,7 +469,7 @@ def check_bridges(map_id, rows, bridges):
         along_y = y1 - y0 >= x1 - x0
         for x in range(x0, x1 + 1):
             for y in range(y0, y1 + 1):
-                assert rows[y][x] == "R", "%s: a bridge must stand on the river at %d,%d" % (map_id, x, y)
+                assert rows[y][x] in "RD", "%s: a bridge must stand on the river at %d,%d" % (map_id, x, y)
         ends = [(x, y) for x in range(x0, x1 + 1) for y in (y0 - 1, y1 + 1)] if along_y else \
             [(x, y) for y in range(y0, y1 + 1) for x in (x0 - 1, x1 + 1)]
         for (x, y) in ends:
@@ -452,7 +488,7 @@ def layout_2v2():
     is drawn once. The half turn draws the other team."""
     a1 = (14, 34)
     kit = [
-        ("T", line(2, 20, 5, 48)),                          # the wood line behind the base, along the west edge
+        ("T", line(1, 20, 5, 48)),                          # the wood line behind the base, against the west edge (no lane behind it)
         ("T", rect(22, 39, 25, 41)),                        # a grove
         ("b", rect(19, 32, 20, 35)),                        # 8 bug bushes
         ("s", rect(8, 27, 9, 28) + [(10, 27)]),             # stone, 5 tiles
@@ -461,7 +497,7 @@ def layout_2v2():
         ("g", rect(21, 27, 22, 28)),                        # gold, 4 tiles
         ('"', rect(9, 50, 13, 52)),                         # reeds down the flank
         # the flank beyond the base (towards the river's far arm): contested but nearer us
-        ("T", line(2, 52, 5, 72)),                          # the flank forest along the edge
+        ("T", line(1, 52, 5, 72)),                          # the flank forest against the edge
         ("g", rect(11, 60, 12, 61)),                        # flank gold
         ("s", rect(8, 56, 9, 57) + [(10, 56)]),             # flank stone
         ("b", rect(8, 64, 9, 65)),                          # flank bushes
@@ -512,8 +548,8 @@ def build_2v2(map_id, name):
         for x in range(S):
             if y * S + x < (S - 1 - y) * S + (S - 1 - x):
                 grid[S - 1 - y][S - 1 - x] = grid[y][x]
-    for i in range(S):
-        grid[0][i] = grid[S - 1][i] = grid[i][0] = grid[i][S - 1] = "#"
+    edge(grid, S)
+    bridges = [stretch(grid, b) for b in bridges]
     a2 = (a1[1], a1[0])
     starts = [list(a1), [S - 1 - a1[0], S - 1 - a1[1]], list(a2), [S - 1 - a2[0], S - 1 - a2[1]]]
     for (stx, sty) in starts:
