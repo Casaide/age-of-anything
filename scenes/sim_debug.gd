@@ -1176,6 +1176,16 @@ func _cell_at(pos: Vector2) -> int:
 	return map.cell_of(m.x, m.y)
 
 
+## The building under the cursor: clicking a wall, roof or tower (one tile, drawn tall) hits the
+## footprint below. Selecting, right-click orders and the cursor all ask this.
+func building_under(pos: Vector2) -> int:
+	for probe in [pos, pos + Vector2(0, 14)]:
+		var bid: int = map.occupied[_cell_at(probe)]
+		if bid != 0:
+			return bid
+	return 0
+
+
 ## Click: the unit whose body is nearest the cursor (within PICK_PX on screen),
 ## else the building under it.
 func select_at(pos: Vector2, add := false) -> void:
@@ -1192,22 +1202,21 @@ func select_at(pos: Vector2, add := false) -> void:
 			_say("select", world.units.owner[world.units.index_of(best)])
 		_take_side(world.units.owner[world.units.index_of(best)])
 		return
-	for probe in [pos, pos + Vector2(0, 14)]:   # clicking a wall or roof hits the footprint below
-		var bid: int = map.occupied[_cell_at(probe)]
-		if bid != 0:
-			selected.clear()
-			if add and _same_building_type(bid, selected_building):   # shift-click: add or drop one of the same type
-				if selected_buildings.has(bid):
-					selected_buildings.erase(bid)
-					selected_building = _next_lead()
-				else:
-					selected_buildings[bid] = true
+	var bid := building_under(pos)
+	if bid != 0:
+		selected.clear()
+		if add and _same_building_type(bid, selected_building):   # shift-click: add or drop one of the same type
+			if selected_buildings.has(bid):
+				selected_buildings.erase(bid)
+				selected_building = _next_lead()
 			else:
-				selected_building = bid
-				selected_buildings = {bid: true}
-			audio.play("ui_click", -4.0)
-			_take_side(world.buildings.owner[world.buildings.index_of(bid)])
-			return
+				selected_buildings[bid] = true
+		else:
+			selected_building = bid
+			selected_buildings = {bid: true}
+		audio.play("ui_click", -4.0)
+		_take_side(world.buildings.owner[world.buildings.index_of(bid)])
+		return
 	var cell := _cell_at(pos)
 	if map.resource_at(cell) != "" and map.pool[cell] < 0:   # a bush, reeds or stone: show what's left
 		selected_resource = cell
@@ -1388,7 +1397,7 @@ func smart_order(pos: Vector2) -> void:
 			audio.play("ui_click", -4.0)
 		return
 	var groups := _selected_by_owner()
-	var bid: int = map.occupied[cell]
+	var bid := building_under(pos)
 	var foe := unit_at(pos)
 	var q := 1 if queueing else 0
 	for p in groups.size():
@@ -2534,6 +2543,23 @@ func _add_resource_view(c: int, kind: String, left: int) -> void:
 	# A farm's crops share its pool (every tile shows them) and lie flat under the farmers.
 	(flat if map.pool[c] >= 0 else layer).add_child(holder)
 	rviews[c] = holder
+	_add_tree_shadow(holder, c)
+
+
+## A tree's ground shadow, on the flat layer (under everything, so it never darkens a tower top
+## behind the tree), following its holder: restaged with it, faded with it, freed with it.
+func _add_tree_shadow(holder: Node2D, c: int) -> void:
+	var r: Dictionary = holder.get_meta("res")
+	if holder.has_meta("shadow"):
+		holder.get_meta("shadow").queue_free()
+		holder.remove_meta("shadow")
+	var s: Sprite2D = kit.doodad_shadow(r.kind, r.pick, r.stage) if r.kind in ArtKit.TREES else null
+	if s == null:
+		return
+	s.position = holder.position + Vector2(0, -Iso.lift((c % map.width) * 1000 + 500, (c / map.width) * 1000 + 500))
+	flat.add_child(s)
+	holder.set_meta("shadow", s)
+	holder.tree_exiting.connect(s.queue_free)
 
 
 ## Props show the ground as the side you command last saw it (fog.gd remembers it): an enemy's
@@ -2597,6 +2623,7 @@ func _sync_resources() -> void:
 			var prop: Node2D = kit.doodad(r.kind, r.pick, stage)
 			prop.position.y -= Iso.lift((c % map.width) * 1000 + 500, (c / map.width) * 1000 + 500)
 			h.add_child(prop)
+			_add_tree_shadow(h, c)
 		if left <= 0:
 			r.gone += dt   # (a farm worked out sounds from its sim event: _play_events)
 			var linger := 6.0 if r.kind in ["reeds", "quarry", "gold", "carcass"] else 0.0   # stubble and rubble stay a while
@@ -2607,6 +2634,8 @@ func _sync_resources() -> void:
 				continue
 			_fading[c] = true
 			h.modulate.a = clampf(1.0 - (r.gone - linger) / 1.5, 0.0, 1.0)
+			if h.has_meta("shadow"):
+				h.get_meta("shadow").modulate.a = h.modulate.a
 			if h.modulate.a <= 0.0:
 				h.queue_free()
 				rviews.erase(c)
@@ -3318,7 +3347,7 @@ func _cursor_kind(pos: Vector2) -> String:
 	if _selected_by_owner()[active].is_empty():
 		return "pointer"
 	var cell := _cell_at(pos)
-	var bid: int = map.occupied[cell]
+	var bid := building_under(pos)
 	var enemy: bool = bid != 0 and world.is_enemy(active, world.buildings.owner[world.buildings.index_of(bid)]) \
 		and bviews.has(bid) and bviews[bid].visible   # not over buildings you haven't found
 	var under := unit_at(pos)
