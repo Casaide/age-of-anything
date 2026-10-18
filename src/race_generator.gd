@@ -696,8 +696,8 @@ func _skins(c: Dictionary, family: String, colours: Array, notes: Array) -> Arra
 		else:
 			skins = coloured
 	var prefer: Array = lib.families[family].get("skins", [])
-	var both: Array = c.skins.filter(func(s): return s in prefer)
-	return both if not both.is_empty() else c.skins
+	var both: Array = skins.filter(func(s): return s in prefer)
+	return both if not both.is_empty() else skins
 
 
 func _mount_for(creature: String, fused: bool, rng, brief: Dictionary, rider_skin: String) -> Dictionary:
