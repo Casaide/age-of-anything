@@ -94,7 +94,7 @@ func lookup(word: String) -> String:
 func interpret(prompt: String, rules: Dictionary) -> Dictionary:
 	var brief := {
 		"creatures": [], "default_creatures": [], "mounts": [], "mount_wings": "", "families": [],
-		"tags": {}, "body_size": "", "notes": [], "unknown": [], "heroes": [],
+		"tags": {}, "body_size": "", "notes": [], "unknown": [], "heroes": [], "colours": [],
 	}
 	var riding := false   # a word that rides came first ("riding", "cavalry"): a word that is a race or a mount (bears) is the mount
 	for raw in normalize(prompt).split(" ", false):
@@ -125,6 +125,8 @@ func interpret(prompt: String, rules: Dictionary) -> Dictionary:
 			brief.families.append(entry.family)
 		if entry.has("size"):
 			brief.body_size = entry["size"]
+		if entry.has("colour") and not (entry.colour in brief.colours):
+			brief.colours.append(entry.colour)
 		if entry.has("hero") and not (entry.hero in brief.heroes):
 			brief.heroes.append(entry.hero)
 		for t in tags:
@@ -161,7 +163,7 @@ func generate(prompt: String, rules: Dictionary, reroll := 0) -> Dictionary:
 
 	var ctx := {
 		"rng": rng, "rules": rules, "brief": brief, "tags": tags,
-		"creature": creature, "family": family, "skin": rng.pick(_skins(c, family)), "notes": notes, "firsts": {},
+		"creature": creature, "family": family, "skin": rng.pick(_skins(c, family, brief.colours, notes)), "notes": notes, "firsts": {},
 	}
 	# Each roster slot is a unit line through the ages (D-057): first the unit at the age
 	# its slot opens, in that age's kit; then, in a second pass (so the first recipes don't
@@ -234,12 +236,17 @@ func generate(prompt: String, rules: Dictionary, reroll := 0) -> Dictionary:
 		"units": units,
 		"lacks": lacks,   # derived (the slots left out), not in the key; what its creature and culture lack: src/identity.gd
 	}
+	# The race's one hero (src/heroes.gd, D-159): the first the prompt names from its pool (in the key).
 	var asked := Heroes.asked(lib.heroes, brief.heroes, creature, family)
+	var said := func(sids: Array) -> String: return " or ".join(sids.map(func(sid): return "'%s'" % _hero_word(prompt, sid)))
 	if not asked.is_empty():
-		race.hero_asked = asked   # the heroes the prompt named: only those (src/heroes.gd), so in the key
-	elif not brief.heroes.is_empty():
-		notes.append("Nobody called %s leads %s, so their own heroes came instead." % [
-			" or ".join(brief.heroes.map(func(sid): return "'%s'" % sid.replace("_", " "))), String(c.plural).to_lower()])
+		race.hero_asked = asked[0]
+	if asked.size() > 1:
+		notes.append("Only one hero leads a race, so %s came and %s stayed home." % [said.call([asked[0]]), said.call(asked.slice(1))])
+	var strays: Array = brief.heroes.filter(func(sid): return not sid in asked)
+	if not strays.is_empty():
+		notes.append("Nobody called %s leads %s, so one of their own came instead." % [said.call(strays), String(c.plural).to_lower()]
+			if asked.is_empty() else "Nobody called %s leads %s." % [said.call(strays), String(c.plural).to_lower()])
 	if not lib.mods.is_empty():
 		race.mods = lib.mods.duplicate()   # made with mods (src/mods.gd): a peer needs the same ones (in the key)
 	race.key = race_key(race)
@@ -264,6 +271,15 @@ static func race_key(race: Dictionary) -> String:
 	if race.has("mods"):   # (only then: a race made without mods keeps the key it always had)
 		shareable.mods = race.mods
 	return JSON.stringify(shareable, "", true).sha256_text()
+
+
+## The prompt's word that named this hero (for the notes).
+func _hero_word(prompt: String, sid: String) -> String:
+	for raw in normalize(prompt).split(" ", false):
+		var word := lookup(raw)
+		if word != "" and lib.lexicon[word].get("hero", "") == sid:
+			return raw
+	return sid
 
 
 func _race_name(rng, c: Dictionary, family: String) -> String:
@@ -674,12 +690,20 @@ func _winged(tags: Dictionary) -> bool:
 	return int(tags.get("wings", 0)) > 0
 
 
-## The creature's skins, narrowed to the ones its culture prefers when it names some
-## (families.json "skins": Aztec and Nile people tan or dark, Han light or tan).
-func _skins(c: Dictionary, family: String) -> Array:
+## The creature's skins: the ones in a colour asked for ("red spiders"; palettes.json "skin_colours"),
+## then narrowed to the ones its culture prefers when it names some (families.json "skins": Aztec and
+## Nile people tan or dark, Han light or tan). A colour the creature doesn't come in gets a note.
+func _skins(c: Dictionary, family: String, colours: Array, notes: Array) -> Array:
+	var skins: Array = c.skins
+	if not colours.is_empty():
+		var coloured: Array = skins.filter(func(s): return lib.palettes.skin_colours.get(s, []).any(func(col): return col in colours))
+		if coloured.is_empty():
+			notes.append("%s don't come in %s, so they came in their own colours." % [c.plural, " or ".join(colours)])
+		else:
+			skins = coloured
 	var prefer: Array = lib.families[family].get("skins", [])
-	var both: Array = c.skins.filter(func(s): return s in prefer)
-	return both if not both.is_empty() else c.skins
+	var both: Array = skins.filter(func(s): return s in prefer)
+	return both if not both.is_empty() else skins
 
 
 func _mount_for(creature: String, fused: bool, rng, brief: Dictionary, rider_skin: String) -> Dictionary:

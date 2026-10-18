@@ -169,23 +169,29 @@ func _test_heroes(lib, gen, rules: Dictionary) -> void:
 	for word in lib.lexicon:
 		if lib.lexicon[word].has("hero"):
 			check(lib.heroes.hero_signatures.has(lib.lexicon[word].hero), "heroes: the word '%s' names a hero" % word)
-	# A prompt naming a hero gets just that one, every time; one not among the race's own is ignored with a note.
-	for case in [["spooky spider widow", ["widow"]], ["sewer rats with a crown", ["regnal"]], ["proud centaur romans", ["proud"]],
-			["swamp frog mossback and the loud", ["loud", "mossback"]], ["roman widow", []]]:
+	# One hero a race (D-159): the first the prompt names from its pool, the same on every reroll; else one
+	# of its pool by the key. A second named, or one not in its pool, gets a note.
+	for case in [["spooky spider widow", "widow", false], ["sewer rats with a crown", "regnal", false], ["proud centaur romans", "proud", false],
+			["swamp frog mossback and the loud", "mossback", true], ["roman widow", "", true]]:
 		var race: Dictionary = gen.generate(case[0], rules.default)
 		var got: Array = race.units.filter(func(u): return u.recipe.slot == "hero").map(func(u): return u.recipe.hero)
-		var want: Array = case[1] if not case[1].is_empty() else Heroes.roster_for(lib.heroes, race.creature, race.family)
-		check(got == want, "heroes: '%s' gets %s (%s)" % [case[0], want, got])
-		check(JSON.stringify(gen.generate(case[0], rules.default, 1).heroes.map(func(h): return h.signature)) == JSON.stringify(want), "heroes: '%s': the same hero on a reroll" % case[0])
-		check(Generator.race_key(race) == race.key and race.has("hero_asked") != case[1].is_empty(), "heroes: '%s': the key holds the heroes asked for" % case[0])
-		check(case[1].is_empty() == race.notes.any(func(n): return "leads" in n), "heroes: '%s': a note only when the hero isn't theirs (%s)" % [case[0], race.notes])
+		var pool := Heroes.roster_for(lib.heroes, race.creature, race.family)
+		check(got.size() == 1 and (got[0] == case[1] if case[1] != "" else got[0] in pool), "heroes: '%s' gets one hero, %s (%s)" % [case[0], case[1], got])
+		if case[1] != "":
+			check(gen.generate(case[0], rules.default, 1).heroes.map(func(h): return h.signature) == [case[1]], "heroes: '%s': the same hero on a reroll" % case[0])
+		check(Generator.race_key(race) == race.key and race.has("hero_asked") == (case[1] != ""), "heroes: '%s': the key holds the hero asked for" % case[0])
+		check(case[2] == race.notes.any(func(n): return "leads" in n), "heroes: '%s': a note only for a hero that didn't come (%s)" % [case[0], race.notes])
+	var picks := {}
+	for reroll in 8:
+		picks[gen.generate("spooky spiders", rules.default, reroll).heroes[0].signature] = true
+	check(picks.size() >= 2, "heroes: rerolls bring different heroes from the pool (%s)" % [picks.keys()])
 	for prompt in ["sewer rats with cheese hammers", "romans", "spooky spiders", "centaur romans", "egyptians", "swamp frogs", "forest beetles", "swamp humans", "sewer humans"]:
 		for reroll in 2:
 			var race: Dictionary = gen.generate(prompt, rules.default, reroll)
 			var heroes: Array = race.units.filter(func(u): return u.recipe.slot == "hero")
-			var want := Heroes.roster_for(lib.heroes, race.creature, race.family)
-			check(heroes.map(func(u): return u.recipe.hero) == want and race.units.slice(-heroes.size()) == heroes and race.heroes.size() == heroes.size(),
-				"heroes: '%s' has all its heroes, the last of its units (%s)" % [prompt, want])
+			var pool := Heroes.roster_for(lib.heroes, race.creature, race.family)
+			check(heroes.size() == 1 and heroes[0].recipe.hero in pool and race.units.back() == heroes[0] and race.heroes.size() == 1,
+				"heroes: '%s' has one hero from its pool, the last of its units (%s of %s)" % [prompt, heroes.map(func(u): return u.recipe.hero), pool])
 			check(Generator.race_key(race) == race.key, "heroes: '%s': the key leaves the heroes out" % prompt)
 			check(JSON.stringify(gen.generate(prompt, rules.default, reroll).heroes) == JSON.stringify(race.heroes), "heroes: '%s': the same heroes every time" % prompt)
 			var names := {}

@@ -1,6 +1,6 @@
 # Bears (concept rounds B1, B2 and B3, 2026-10-13; in play 2026-10-17)
 
-**In play (2026-10-17, D-159 to D-161).** The data moved out of `data/later/bears.json` into the game's
+**In play (2026-10-17, D-161 to D-163).** The data moved out of `data/later/bears.json` into the game's
 data (kits in `data/creature_kit.json`, parts in `data/parts.json`, creatures, skins and words), the
 helmets into `scenes/art_pixel/bear_models.gd`. `tests/sheets/bears_play.json` draws the generated races;
 the B1-B3 specs still draw the rounds (they no longer stage anything). Below is the history of the rounds:

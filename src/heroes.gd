@@ -1,21 +1,19 @@
 extends RefCounted
-## A race's heroes (milestone 14 step 9; D-127, D-131: HR2's characters as a pool; D-138: all of them).
-## Each race gets every signature (data/heroes.json hero_signatures: a look, a temper, an aura) naming
+## A race's hero (milestone 14 step 9; D-127, D-131: HR2's characters as a pool; D-159: one hero).
+## A race's pool is every signature (data/heroes.json hero_signatures: a look, a temper, an aura) naming
 ## its creature or its culture; one with fewer than rules.min_heroes is topped up from its culture's
-## `kin` (the kindred cultures' signatures, in the kin list's order), so every race has a few. Each
-## hero's name is made from the creature's and culture's name lists and the signature's epithets, by
-## src/rng.gd seeded from the race key and the signature. The heroes are derived from the key (and the
+## `kin` (the kindred cultures' signatures, in the kin list's order), so every pool has a few. The race
+## gets one of them (Dominic, 2026-10-18: never several to buy): the one its prompt names
+## (data/lexicon.json `hero`: "spider widow"), else one picked by its race key. The hero's name is made
+## from the creature's and culture's name lists and the signature's epithets, by src/rng.gd seeded from the race key and the signature. The heroes are derived from the key (and the
 ## data), like a unit's stats, so they are not part of the key: every existing race keeps its key and
-## every other line's recipes, and a reroll renames them.
+## every other line's recipes, and a reroll may bring another. A hero the prompt named is kept on the
+## race (`hero_asked`) and is in its key.
 ##
 ## The hero's line: the race's swordsman (else its spearman) of each age from the hero line's first
 ## age (rules roster role "hero"), with the signature's parts put on; the parts they replace stay in
 ## the recipe's `kit` (priced by pricing.gd, not drawn), so every hero fights with its race's kit plus
 ## the hero line's stats and price_points. Its scale is the signature's (a look only: size_is_look).
-##
-## A prompt that names a hero (data/lexicon.json `hero`: "spider widow") gets only that one, when it is
-## among the race's own (Dominic, 2026-10-17: the same hero every time if you want it); the race keeps
-## the ones it asked for in `hero_asked`, in its key.
 
 const Rng := preload("res://src/rng.gd")
 const Pricing := preload("res://src/pricing.gd")
@@ -45,9 +43,17 @@ static func roster_for(heroes: Dictionary, creature: String, family: String) -> 
 	return out
 
 
-## The heroes a prompt named that are among the race's own (roster_for), in roster_for's order.
+## The heroes a prompt named (in the prompt's order) that are in the race's pool (roster_for).
 static func asked(heroes: Dictionary, named: Array, creature: String, family: String) -> Array:
-	return roster_for(heroes, creature, family).filter(func(sid): return sid in named)
+	var pool := roster_for(heroes, creature, family)
+	return named.filter(func(sid): return sid in pool)
+
+
+## The race's one hero: the one its prompt named (hero_asked), else one of its pool by its key.
+static func chosen(heroes: Dictionary, race: Dictionary) -> String:
+	if race.has("hero_asked"):
+		return race.hero_asked
+	return Rng.new(Rng.hash_string(race.key + "|hero")).pick(roster_for(heroes, race.creature, race.family))
 
 
 ## A hero's name {signature, name, given} as the race with this key calls it: each signature its own
@@ -72,7 +78,7 @@ static func pick(heroes: Dictionary, key: String, creature: String, family: Stri
 	return {"signature": sid, "name": name.strip_edges(), "given": given if "{name}" in fmt else ""}
 
 
-## The race's heroes as unit lines [{recipe, eval, line}] in roster_for's order, or [] (no hero line
+## The race's hero as a unit line [{recipe, eval, line}], or [] (no hero line
 ## in the rules, no line to dress). Called once the race key is set.
 static func make(lib, race: Dictionary, rules: Dictionary) -> Array:
 	var sd := slot_def(rules)
@@ -86,10 +92,8 @@ static func make(lib, race: Dictionary, rules: Dictionary) -> Array:
 	if base.is_empty():
 		return []
 	var out := []
-	var taken := []
-	for sid in race.get("hero_asked", roster_for(lib.heroes, race.creature, race.family)):
-		var h := pick(lib.heroes, race.key, race.creature, race.family, sid, taken)
-		taken.append(h.given)
+	for sid in [chosen(lib.heroes, race)]:
+		var h := pick(lib.heroes, race.key, race.creature, race.family, sid)
 		var s: Dictionary = lib.heroes.hero_signatures[sid]
 		var line := []
 		for age in range(int(sd.tier), int(rules.get("ages", 1)) + 1):

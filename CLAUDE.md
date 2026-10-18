@@ -80,7 +80,7 @@ move it to `docs/backlog.md` rather than deleting it.
   (`src/sim/shots.gd`); healers, trade carts, the great sling, war beasts with jointed legs; a unit's parts set its cost
   and its line what it's paid in (D-150). See `docs/milestones/m13-unit-lines.md`.
 - **Closed (milestone 14): race identity and heroes.** Bonuses, own research, lacks (`src/identity.gd`), the web
-  ability, heroes (every race gets its pool's, D-138). See `docs/milestones/m14-race-identity.md`.
+  ability, heroes (one a race, named in the prompt or picked by its key, D-159). See `docs/milestones/m14-race-identity.md`.
 - **Closed (milestone 16): sieges.** Walkable walls, gatehouses, rams, ladders, siege towers, Fortress and Siege
   modes, tall walls (D-130). See `docs/milestones/m16-sieges.md`.
 - **Closed (milestone 21): modability.** The mod loader, an example mod, agent tooling (`docs/modding.md`).
@@ -91,7 +91,7 @@ move it to `docs/backlog.md` rather than deleting it.
   sidecar. See `docs/milestones/networking.md`.
 - **Built (bears, 2026-10-17):** brown, black ("moonbears") and polar bear races from the creature
   kit (kit bodies completed by DataLib from `data/creature_kit.json`), the bear mount for others ("romans riding bears"),
-  a bear voice; every piece of gear checked on every bear (D-159 to D-161). Dominic to look and listen. See `docs/concepts/bears/`.
+  a bear voice; every piece of gear checked on every bear (D-161 to D-163). Dominic to look and listen. See `docs/concepts/bears/`.
 - **In progress (milestone 22): battle feel.** Built (D-155): formations by role (riders on the flanks), counter-aware
   targeting (`counter_pull`), attack lines for the selection, the Norse shield wall; next race_matches and Dominic's
   match. See `docs/milestones/m22-battle-feel.md`.
