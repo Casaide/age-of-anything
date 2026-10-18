@@ -3000,11 +3000,19 @@ func _wall_tower(arch: String, team: Color) -> Dictionary:
 	var dark := Materials.flat(Color("#1e1a16"), 1.0)
 	body.add_child(box(Vector3(TOWER_W, h, TOWER_W), m, Vector3(0, h / 2, 0)))   # the whole tile: the wall arms meet its faces
 	body.add_child(box(Vector3(TOWER_W - 0.2, 0.01, TOWER_W - 0.2), _walk_mat(arch), Vector3(0, h + 0.003, 0)))   # its floor
-	body.add_child(box(Vector3(TOWER_W + 0.04, 0.1, TOWER_W + 0.04), m, Vector3(0, h - 0.07, 0)))   # a corbel band under the hoarding
-	for y in [h * 0.32, h * 0.62]:   # arrow loops on the two faces towards the camera
-		body.add_child(box(Vector3(0.06, 0.26, 0.02), dark, Vector3(0, y, TOWER_W / 2 + 0.005)))
-		body.add_child(box(Vector3(0.02, 0.26, 0.06), dark, Vector3(TOWER_W / 2 + 0.005, y, 0)))
-	body.add_child(box(Vector3(0.26, 0.36, 0.02), cloth(team), Vector3(-0.2, h - 0.34, TOWER_W / 2 + 0.03)))   # a team rag hung under the hoarding
+	var about := Vector3(0, h, 0)
+	for side in [-1, 1]:   # a corbel band under the hoarding, a side at a time: the near two are parapet
+		body.add_child(parapet(box(Vector3(TOWER_W + 0.04, 0.1, 0.04), m, Vector3(0, h - 0.07, side * (TOWER_W / 2))), Vector3.ZERO, about))
+		body.add_child(parapet(box(Vector3(0.04, 0.1, TOWER_W + 0.04), m, Vector3(side * (TOWER_W / 2), h - 0.07, 0)), Vector3.ZERO, about))
+	# The two near faces again, a skin over the stone, parapet too: drawn over the units on the floor, it
+	# hides any foot that reaches past the floor's near edge (Dominic: "feet sticking out"). Whole faces,
+	# so the layer ends on the tower's own edges (stopped partway down, its edge showed as a line).
+	body.add_child(parapet(box(Vector3(TOWER_W, h - 0.02, 0.002), m, Vector3(0, (h - 0.02) / 2, TOWER_W / 2 + 0.001)), Vector3.ZERO, about))
+	body.add_child(parapet(box(Vector3(0.002, h - 0.02, TOWER_W), m, Vector3(TOWER_W / 2 + 0.001, (h - 0.02) / 2, 0)), Vector3.ZERO, about))
+	for y in [h * 0.32, h * 0.62]:   # arrow loops on the two faces towards the camera (on the skin)
+		body.add_child(parapet(box(Vector3(0.06, 0.26, 0.02), dark, Vector3(0, y, TOWER_W / 2 + 0.005)), Vector3.ZERO, about))
+		body.add_child(parapet(box(Vector3(0.02, 0.26, 0.06), dark, Vector3(TOWER_W / 2 + 0.005, y, 0)), Vector3.ZERO, about))
+	body.add_child(parapet(box(Vector3(0.26, 0.36, 0.02), cloth(team), Vector3(-0.2, h - 0.34, TOWER_W / 2 + 0.03)), Vector3.ZERO, about))   # a team rag hung under the hoarding (over the skin)
 	_tower_top(body, arch, Vector3.ZERO, TOWER_W, TOWER_W, h)
 	return {"body": body, "anchor": Vector3.ZERO, "lights": [], "team": team}
 
