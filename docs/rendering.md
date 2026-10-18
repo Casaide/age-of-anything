@@ -137,7 +137,7 @@ by ray parity; decals left out). One part unit is 1.275 art pixels at game size.
   a far leg's foot under the belly fails).
 
 **2D** (`tests/placement/projection_check.gd`, needs the bakes): every unit composed by UnitView in
-all 8 facings, standing and at three walk phases, each part's sprite laid onto a grid in the unit's
+all 8 facings, standing, at three walk phases and (workers) foraging, each part's sprite laid onto a grid in the unit's
 space in draw order. The layering rules below, every part drawn has its bake, and:
 
 - **B5 ground**: standing, each weight-bearing leg's lowest pixel within 2 px of its foot's ground
@@ -149,6 +149,21 @@ space in draw order. The layering rules below, every part drawn has its bake, an
   and head show where it shows them (rule 2 below); a rider shows the leg on the flank facing the
   camera, and a person's reaches at least 80% of the way from the seat to the girth (a clinging or
   folded-legged rider's, `creatures.json rider_legs`, at least onto the flank).
+
+**At work** (2026-10-17, after Dominic saw a foraging centaur from behind in a match: "i thought our tooling and
+tests protected against this needing visual checks"). The 2D check drew units standing and walking only, and the 3D
+check has the work holds as baked bodies, so a pose UnitView puts on the bakes in 2D was never drawn anywhere. The
+centaur's kneel to forage (`UnitView._kneel`, D-105's C1) was designed side-on in facing 0: it folded the two legs
+furthest right on screen and turned the whole sprite about the two furthest left, so in the other seven facings it
+folded a flank's legs sideways, swung the shins forward and sank the hind end. Now every worker is also drawn
+foraging in all 8 facings (`tests/placement/work_2d.gd`): the layering rules hold there, and a fused mount's kneel
+is measured against the model and the bake camera, not against UnitView:
+- **K1** the legs that fold are the body's fore legs (its model's hips ahead of the middle); **K2** a folded shin
+  lies back along the ground (towards the model's tail on screen); **K3** it hangs from its knee; **K4** the hind
+  hooves stay planted (each hind leg's lowest pixel where it stands); **K5** nothing goes below the standing ground line.
+- A pose drawn on the bakes in 2D takes its fore, hind and forward from the facing: `UnitView.ahead_on_screen(k)` (the
+  model's +x on screen) and `side_on(k)` (1 side-on as in facing 0, 0 end-on) scale a turn of the whole sprite, so a
+  worker's forage lean is forward in every facing, not sideways from behind.
 
 **Composites** (2026-10-13, after TC1 A for rats passed every check while broken: Dominic, "this is
 bugged, did the tests not catch it?"). A composite is more than one body drawn as one unit: an engine

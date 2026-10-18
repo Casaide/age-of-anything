@@ -29,7 +29,7 @@ the rubble, the siege tower and ladder, the trade cart, the unique units' themes
 - **Race mechanics** (milestone 14, step 6): leap, shell, swarm/scavenge, shoot on the move (the web is the only one
   in play), and a concept round for the web's look.
 - **Race balance** (milestone 14, step 8): frogs and rats at the edges (every race 33-68% over two maps).
-- **Bears** (milestone 14): in play since 2026-10-17 (the `bears` branch, D-160 to D-162); what's left is below, "A Bear race".
+- **Bears** (milestone 14): in play since 2026-10-17 (D-159 to D-161); what's left is below, "A Bear race".
 - **The end screen's match story** (milestone 19, step 5) and the open-licence fonts (step 2, waiting on a download
   yes). The post-game stats are milestone 18's.
 - ~~**Shields on spiders and beetles**~~ (done 2026-10-17, D-152): slung on the back, every shield and back piece
@@ -215,6 +215,13 @@ still maps the brief onto parts within host rules.
   - Sci-fi "space federation" pack. A space-fleet sci-fi mod is Dominic's personal dream; keep
     official names and likenesses out of shipped content.
 
+### A big-winged castle unit that soars over trees (Dominic, 2026-10-17)
+Flyers no longer cross trees or the deep river (D-154): flying over the woods "feels again too imbalanced". Dominic:
+"If their castle unit had extra big wings and could go over trees that would be more unique." A winged race's castle
+unit with oversized wings and a movement class of its own (say `soaring`: what flying was, trees included; the deep
+river still stops it, or not: Dominic to say). New art, so concept-first (D-080): wing options on a sheet, Dominic
+picks, then the placement check. Data: a movement class in `rules.movement.classes`, the tag from its wings part.
+
 ### A race perk: a line without gold (Dominic, 2026-10-17)
 One race might lose the gold cost of a line as its special benefit (Dominic: "we could do that for rats or spiders or
 something if it's balanced, but it has to be carefully balanced"). It would be an identity bonus (`src/identity.gd`)
@@ -236,7 +243,7 @@ Dominic's direction (2026-10-13): two legs, armoured, more like the Greeks: dign
 the smarter counterpart to the rats. Bears also rideable as a mount for some races.
 Some bears bigger still, on two legs and much larger: polar bears, or older bears (Dominic) — a natural large/giant line.
 Concept rounds B1-B3 (2026-10-13, `docs/concepts/bears/`); Dominic picked the heads (B2) and the mount (B3), D-126, D-127.
-**In play since 2026-10-17** (D-160 to D-162): the brown, black ("moonbears") and polar bears as races, the bear mount
+**In play since 2026-10-17** (D-159 to D-161): the brown, black ("moonbears") and polar bears as races, the bear mount
 for others ("romans riding bears"), a bear voice. Still to do:
 - Dominic's look at them in a match, and a listen to the bear voice (`assets/audio/voice/bear_*`).
 - The polar bear as the brown bears' giant (B1's recommendation): the large line is the race's own bear at 1.5x for now.

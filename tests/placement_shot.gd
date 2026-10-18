@@ -1,8 +1,8 @@
 extends SceneTree
 ## Units from the placement check's cases (tests/placement/cases.gd) by label, in all 8 facings,
-## one row per label, standing (or "walk:<phase>"), at a zoom: to look at a case the check flags.
+## one row per label, standing (or "walk:<phase>", or at work: "job:forage"), at a zoom: to look at a case the check flags.
 ## Needs a display:
-##   godot --path . --audio-driver Dummy --always-on-top --script res://tests/placement_shot.gd -- out.png zoom "label" ["label" ...] [walk:2.1]
+##   godot --path . --audio-driver Dummy --always-on-top --script res://tests/placement_shot.gd -- out.png zoom "label" ["label" ...] [walk:2.1] [job:forage]
 
 const DataLib := preload("res://src/data_lib.gd")
 const ArtKit := preload("res://src/view/art/art_kit.gd")
@@ -17,10 +17,13 @@ func _initialize() -> void:
 	var args := OS.get_cmdline_user_args()
 	var zoom := float(args[1])
 	var walk := -1.0
+	var job := ""
 	var labels := []
 	for a in args.slice(2):
 		if a.begins_with("walk:"):
 			walk = float(a.trim_prefix("walk:"))
+		elif a.begins_with("job:"):
+			job = a.trim_prefix("job:")
 		else:
 			labels.append(a)
 	var lib = DataLib.new()
@@ -58,6 +61,7 @@ func _initialize() -> void:
 			v.idle_wait = 1000.0
 			v.position = Vector2((k + 0.55) * W / 8.0, (row + 0.78) * row_h) / zoom
 			world.add_child(v)
+			v.job = job
 			if walk >= 0.0:
 				v.walking = true
 				v.phase = walk
