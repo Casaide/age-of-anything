@@ -131,10 +131,10 @@ func _run_piece(name: String) -> void:
 			var m: Dictionary = a.medics
 			check(m.most.max() >= 1 and m.most.max() <= 3, "the bots train a couple of healers (most %s)" % [m.most])
 			check(m.samples == 0 or m.behind * 100 >= m.samples * 70, "healers keep behind the army (%d of %d looks)" % [m.behind, m.samples])
-			# Heroes (D-138): a bot with an economy fields more than one of its heroes (the side ground down
-			# early may never afford one).
+			# Heroes (D-159): a bot with an economy fields its one hero (the side ground down early may never
+			# afford it), and only that one.
 			var hs: Dictionary = a.heroes
-			check(maxi(hs.kinds[0].size(), hs.kinds[1].size()) >= 2, "the bots field several of their heroes (%d, %d kinds; fell %s, revived %s)" % [hs.kinds[0].size(), hs.kinds[1].size(), hs.fell, hs.revived])
+			check(maxi(hs.kinds[0].size(), hs.kinds[1].size()) == 1, "the bots field their hero, one kind each (%d, %d kinds; fell %s, revived %s)" % [hs.kinds[0].size(), hs.kinds[1].size(), hs.fell, hs.revived])
 			_match_stats(a)
 		"bvb_again":   # the same match again (in its own process when side by side): same hashes, same winner
 			_match_stats(_play(rules, [frogs, rats], [Bot.new(0), Bot.new(1)], "bot vs bot, again", true))

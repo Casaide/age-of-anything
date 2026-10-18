@@ -52,6 +52,22 @@
    "#4a7a3a",
    "#8ac06a"
   ],
+  "spider_red": [
+   "#801a26",
+   "#c8463a"
+  ],
+  "spider_white": [
+   "#e8e4d8",
+   "#d07890"
+  ],
+  "spider_yellow": [
+   "#f0e8a0",
+   "#c8a040"
+  ],
+  "spider_blue": [
+   "#1e2a6a",
+   "#40a0c0"
+  ],
   "beetle_stag": [
    "#3a2a4a",
    "#6a4a8a"
@@ -186,5 +202,112 @@
   "#e8c33a",
   "#8a4fd0"
  ],
- "_skins_doc": "skin palettes: [main, second] and, for patterned skins, more (skin3, skin4...: a newt's spots, the rings round them (none when the main colour), a fifth colour for a crest). A main colour never reads as a team colour (CIE76 distance 30+ from every one, tests/run_tests.gd): a red frog on the blue side looked like the enemy (Dominic, 2026-10-13), so poison_red is raspberry, frog_blue teal, newt_eft orange"
+ "_skins_doc": "skin palettes: [main, second] and, for patterned skins, more (skin3, skin4...: a newt's spots, the rings round them (none when the main colour), a fifth colour for a crest). A main colour never reads as a team colour (CIE76 distance 30+ from every one, tests/run_tests.gd): a red frog on the blue side looked like the enemy (Dominic, 2026-10-13), so poison_red is raspberry, frog_blue teal, newt_eft orange",
+ "_skin_colours_doc": "the colour words (lexicon \"colour\") each skin answers to: \"red spiders\" wear spider_red. Human skin tones answer to none on purpose: a colour word never picks a person's skin",
+ "skin_colours": {
+  "frog_green": [
+   "green"
+  ],
+  "frog_blue": [
+   "blue"
+  ],
+  "toad_brown": [
+   "brown"
+  ],
+  "poison_red": [
+   "red",
+   "pink"
+  ],
+  "rat_grey": [
+   "grey"
+  ],
+  "rat_brown": [
+   "brown"
+  ],
+  "rat_white": [
+   "white"
+  ],
+  "spider_black": [
+   "black"
+  ],
+  "spider_tarantula": [
+   "brown",
+   "orange"
+  ],
+  "spider_green": [
+   "green"
+  ],
+  "spider_red": [
+   "red"
+  ],
+  "spider_white": [
+   "white",
+   "pink"
+  ],
+  "spider_yellow": [
+   "yellow"
+  ],
+  "spider_blue": [
+   "blue"
+  ],
+  "beetle_stag": [
+   "purple",
+   "black"
+  ],
+  "beetle_jade": [
+   "green",
+   "blue"
+  ],
+  "pony_bay": [
+   "brown"
+  ],
+  "pony_grey": [
+   "grey"
+  ],
+  "pony_dun": [
+   "yellow",
+   "brown"
+  ],
+  "pony_white": [
+   "white"
+  ],
+  "capybara": [
+   "brown"
+  ],
+  "cat_ginger": [
+   "orange"
+  ],
+  "cat_tuxedo": [
+   "black",
+   "white"
+  ],
+  "cat_grey": [
+   "grey"
+  ],
+  "newt_fire": [
+   "black",
+   "orange",
+   "yellow"
+  ],
+  "newt_eft": [
+   "orange",
+   "red"
+  ],
+  "newt_crested": [
+   "brown",
+   "green"
+  ],
+  "hummingbird_ruby": [
+   "red",
+   "green"
+  ],
+  "hummingbird_violet": [
+   "purple",
+   "blue"
+  ],
+  "hummingbird_fire": [
+   "orange",
+   "green"
+  ]
+ }
 }
