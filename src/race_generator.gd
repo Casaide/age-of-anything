@@ -94,7 +94,7 @@ func lookup(word: String) -> String:
 func interpret(prompt: String, rules: Dictionary) -> Dictionary:
 	var brief := {
 		"creatures": [], "default_creatures": [], "mounts": [], "mount_wings": "", "families": [],
-		"tags": {}, "body_size": "", "notes": [], "unknown": [], "heroes": [],
+		"tags": {}, "body_size": "", "notes": [], "unknown": [], "heroes": [], "colours": [],
 	}
 	for raw in normalize(prompt).split(" ", false):
 		if lib.stopwords.has(raw):
@@ -121,6 +121,8 @@ func interpret(prompt: String, rules: Dictionary) -> Dictionary:
 			brief.families.append(entry.family)
 		if entry.has("size"):
 			brief.body_size = entry["size"]
+		if entry.has("colour") and not (entry.colour in brief.colours):
+			brief.colours.append(entry.colour)
 		if entry.has("hero") and not (entry.hero in brief.heroes):
 			brief.heroes.append(entry.hero)
 		for t in tags:
@@ -157,7 +159,7 @@ func generate(prompt: String, rules: Dictionary, reroll := 0) -> Dictionary:
 
 	var ctx := {
 		"rng": rng, "rules": rules, "brief": brief, "tags": tags,
-		"creature": creature, "family": family, "skin": rng.pick(_skins(c, family)), "notes": notes, "firsts": {},
+		"creature": creature, "family": family, "skin": rng.pick(_skins(c, family, brief.colours, notes)), "notes": notes, "firsts": {},
 	}
 	# Each roster slot is a unit line through the ages (D-057): first the unit at the age
 	# its slot opens, in that age's kit; then, in a second pass (so the first recipes don't
@@ -682,9 +684,17 @@ func _winged(tags: Dictionary) -> bool:
 	return int(tags.get("wings", 0)) > 0
 
 
-## The creature's skins, narrowed to the ones its culture prefers when it names some
-## (families.json "skins": Aztec and Nile people tan or dark, Han light or tan).
-func _skins(c: Dictionary, family: String) -> Array:
+## The creature's skins: the ones in a colour asked for ("red spiders"; palettes.json "skin_colours"),
+## then narrowed to the ones its culture prefers when it names some (families.json "skins": Aztec and
+## Nile people tan or dark, Han light or tan). A colour the creature doesn't come in gets a note.
+func _skins(c: Dictionary, family: String, colours: Array, notes: Array) -> Array:
+	var skins: Array = c.skins
+	if not colours.is_empty():
+		var coloured: Array = skins.filter(func(s): return lib.palettes.skin_colours.get(s, []).any(func(col): return col in colours))
+		if coloured.is_empty():
+			notes.append("%s don't come in %s, so they came in their own colours." % [c.plural, " or ".join(colours)])
+		else:
+			skins = coloured
 	var prefer: Array = lib.families[family].get("skins", [])
 	var both: Array = c.skins.filter(func(s): return s in prefer)
 	return both if not both.is_empty() else c.skins
