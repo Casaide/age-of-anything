@@ -407,6 +407,7 @@ hero that heals and outlives its escort (raising the price raised A's "value lef
 - Six bonuses a race instead of three (Dominic, 2026-10-13), with a team bonus per culture.
 - Centaurs are mounted but not large (one place, no spear bonus against them): Claude's balance call, for Dominic to confirm.
 - A prompt naming a hero gets just that one (D-149, 2026-10-17, after the close); otherwise every hero (D-138).
+- One hero a race (D-159, 2026-10-18, Dominic: "never 3 heroes to buy"): the one the prompt names, else the key's pick from its pool.
 - Alternatives were only agreed for groups; Claude wrote alts for the creatures and cultures that can
   double up (swamp after frogs: food gathered faster; sewer after humans: buildings +10% hp; and more).
 

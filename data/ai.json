@@ -214,7 +214,7 @@
    "retreat_pct": 30,
    "back_pct": 80
   },
-  "_doc_hero": "the race's heroes (Town Center, from age 2; src/sim/heroes.gd, D-138): the first trained once the bot has `army` soldiers, each next one with `more` soldiers more (in the race's order), saving for it (soldiers leave its price alone while nobody raids us) and training it once it can pay beyond a worker; a fallen one revived the same way as soon as it may; they march with the army (the waves, the defence), and one under `retreat_pct` of its hit points walks home to heal, going back to the fight at `back_pct` (bot.gd _hero)",
+  "_doc_hero": "the race's hero (Town Center, from age 2; src/sim/heroes.gd, D-159: one a race): trained once the bot has `army` soldiers (`more`: soldiers more for each further one, were a race to have several), saving for it (soldiers leave its price alone while nobody raids us) and training it once it can pay beyond a worker; a fallen one revived the same way as soon as it may; they march with the army (the waves, the defence), and one under `retreat_pct` of its hit points walks home to heal, going back to the fight at `back_pct` (bot.gd _hero)",
   "_doc_healers": "healers (Town Center, from age 2): one per per_army soldiers, up to max per age; kept `behind` tiles back from the army's middle (towards home); idle ones further than `follow` tiles from that spot are sent there every `every` seconds",
   "towers": {
    "age": 2,
