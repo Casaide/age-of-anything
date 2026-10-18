@@ -4,6 +4,8 @@ extends RefCounted
 ## pennant (the rally flag's little sibling); a build shows its foundation's outline, a gather
 ## its tile, an attack its target ringed in red. Later legs fade, so the order reads at a glance.
 ## Shown for your own selected units, and for a few seconds for units just given a shift-order.
+## A selected unit in a fight (ordered, attack-moving or one it found itself) gets a thin line in
+## its team's colour to the foe it's fighting, the foe ringed (milestone 22: who's fighting whom).
 ## View side only: it reads the sim, never writes it.
 
 const Iso := preload("res://src/view/iso.gd")
@@ -25,6 +27,7 @@ var pool: Array = []        # waypoint pennants (Sprite2D in the y-sorted layer)
 var legs: Array = []        # [from, to, order, foe] canvas points, deduplicated
 var spots: Array = []       # [{kind, at, order, id, cx, cy, size}] deduplicated
 var flashed := {}           # unit id -> msec until its route stops showing unselected
+var fights: Array = []      # [from, to] canvas points: a selected unit to the foe it's fighting
 
 
 func _init(view) -> void:
@@ -41,6 +44,7 @@ func flash(ids: Array) -> void:
 func update() -> void:
 	legs.clear()
 	spots.clear()
+	fights.clear()
 	var now := Time.get_ticks_msec()
 	for id in flashed.keys():
 		if flashed[id] < now:
@@ -59,6 +63,18 @@ func update() -> void:
 		if i < 0 or view == null or w.units.owner[i] != d.active:
 			continue
 		var from: Vector2 = view.ground()
+		var fighting: int = w.units.foe[i] if w.units.stance[i] != Combat.NONE and w.units.stance[i] != Combat.RETURN else 0
+		if fighting != 0:
+			var f := {"kind": "attack", "id": fighting}
+			var to: Variant = _anchor(f)
+			if to != null:
+				fights.append([from, _edge(f, to, from)])
+				f.at = to
+				f.order = 0
+				var fk := "attack@%d,%d" % [roundi(to.x), roundi(to.y)]
+				if not seen_spot.has(fk):
+					seen_spot[fk] = spots.size()
+					spots.append(f)
 		var prev := {}   # the spot the leg starts from (none: the unit itself)
 		var k := 0
 		for s in route(w, i):
@@ -70,7 +86,10 @@ func update() -> void:
 			var foe: bool = s.kind == "attack" or s.kind == "amove"
 			var lk := "%d,%d>%d,%d" % [roundi(from.x), roundi(from.y), roundi(at.x), roundi(at.y)]
 			var sk := "%s@%d,%d" % [s.kind, roundi(at.x), roundi(at.y)]
-			if k == 0:
+			if k == 0 and s.kind == "attack" and s.id == fighting:
+				k += 1   # its fight line shows it; the route goes on from the unit, not the foe
+				continue
+			elif k == 0:
 				if not firsts.has(sk):
 					firsts[sk] = [s, foe, []]
 				firsts[sk][2].append(from)
@@ -214,6 +233,10 @@ func _place_pennants() -> void:
 ## Draw the dashed routes and the outlines under the units (from the marks layer's draw).
 func draw(c: Node2D) -> void:
 	var px: float = 1.0 / d.camera.zoom.x   # one screen pixel in canvas units
+	var team := Color(d.lib.palettes.teams[d.active])
+	for f in fights:
+		c.draw_line(f[0], f[1], Color(EDGE, 0.45), 3.5 * px)
+		c.draw_line(f[0], f[1], Color(team.lightened(0.25), 0.85), 1.5 * px)
 	for l in legs:
 		var col: Color = FOE if l[3] else RING
 		var a := _fade(l[2]) * (0.8 if l[2] == 0 else 0.95)
@@ -226,7 +249,9 @@ func draw(c: Node2D) -> void:
 				_ellipse(c, s.at, 6.0, FOE if s.kind == "amove" else RING, a, px)
 			"attack":
 				if s.has("unit"):
-					_ellipse(c, s.at, d.world.units.radius[s.unit] * Iso.RADIUS_PX + 2.0, FOE, a, px)
+					var j: int = d.world.units.index_of(s.id)   # (by id: the sim may have stepped, and units died, since update)
+					if j >= 0:
+						_ellipse(c, s.at, d.world.units.radius[j] * Iso.RADIUS_PX + 2.0, FOE, a, px)
 				else:
 					_diamond(c, s, FOE, a, px, false)
 			"gather":

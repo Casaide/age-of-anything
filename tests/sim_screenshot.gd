@@ -4,7 +4,8 @@ extends SceneTree
 ##   godot --path . --script res://tests/sim_screenshot.gd -- out.png [map_id] [scene] ["prompt A" "prompt B"]
 ## Scenes: "armies" (both test armies march at each other; the default) or
 ## "opening:<tick>" (both sides autoplay their economy; shot at that tick, over player 1's base),
-## or "battle:<tick>" (both test armies attack-move at each other; shot mid-fight at that tick).
+## or "battle:<tick>[:select]" (both test armies attack-move at each other; shot mid-fight at that tick;
+## ":select": side 0's army selected, its attack lines showing).
 ## "barracks" (three of side 0's barracks, double-clicked and told to train six spears: they spread two each).
 ## "tower" (side 1's town with enemy spears by its Watchtower; shot with arrows in the air).
 ## "castle" (side 1's Castle and University by its Town Center, enemy spears in the Castle's
@@ -45,6 +46,8 @@ extends SceneTree
 ## "walkway[:breach|:climb][:zoom]" (milestone 16): a stone ring round side 0's Town Center (gatehouses,
 ## wall towers), its archers up on the east and south walls, enemy spears below; ":breach" with two
 ## tiles of the south wall knocked down to rubble; ":climb" shot while the archers climb.
+## "flyover" (D-158): side 0's flyers cross their own Town Center, drawn over its roof (a winged prompt for side 0).
+## "wallhill" (D-154, on reed_meadow_2v2): a stone wall and a palisade straight over the team hill, cliffs and ramps and all.
 ## "walljoins[:zoom]" (milestone 16, the walls' join fixtures): on open ground (flat_test, cells 36-50 by
 ## 30-44) a straight stone wall with a wall tower in it and a gatehouse at its end, an L with a tower on
 ## its corner, a T, a diagonal run with a tower and a diagonal gatehouse; archers up on the straight and
@@ -117,6 +120,8 @@ func _initialize() -> void:
 		await _sheep(view, scene.trim_prefix("sheep").trim_prefix(":"))
 	elif scene == "tower":
 		await _tower(view)
+	elif scene == "flyover":
+		await _flyover(view)
 	elif scene.begins_with("garrison"):
 		await _garrison(view, scene.ends_with(":bastion"))
 	elif scene == "castle":
@@ -153,6 +158,8 @@ func _initialize() -> void:
 		view._show_pause_menu(true)
 	elif scene.begins_with("gate:"):
 		await _gate(view, scene.get_slice(":", 1), scene.get_slice(":", 2), int(scene.get_slice(":", 3)))
+	elif scene == "wallhill":   # (D-154) a stone wall and a palisade run straight over Reed Meadow 2v2's team hill
+		await _wall_hill(view)
 	elif scene.begins_with("walkway"):
 		await _walkway(view, scene.get_slice(":", 1), float(scene.get_slice(":", 2)) if scene.get_slice_count(":") > 2 else 2.5)
 	elif scene.begins_with("walljoins"):
@@ -174,7 +181,7 @@ func _initialize() -> void:
 	elif scene.begins_with("heroes"):
 		await _heroes(view, scene == "heroes:panel")
 	elif scene.begins_with("battle"):
-		await _battle(view, map_id, int(scene.get_slice(":", 1)))
+		await _battle(view, map_id, int(scene.get_slice(":", 1)), scene.ends_with(":select"))
 	elif scene.begins_with("volley"):
 		await _volley(view, map_id, scene.get_slice(":", 1) if ":" in scene else "large")
 	elif scene.begins_with("formation"):
@@ -448,6 +455,29 @@ func _walls(view, far := false) -> void:
 
 ## Walls you stand on: a stone ring (Fortify) round side 0's Town Center, archers sent up onto its
 ## east and south walls, enemy spears outside; the camera on the south-east corner.
+## A stone wall across the team hill along y 18 and a palisade down it along x 18, cliffs and
+## ramps and all (D-154: walls run straight over hills), on reed_meadow_2v2.
+func _wall_hill(view) -> void:
+	var w = view.world
+	var Fortify = load("res://src/sim/fortify.gd")
+	var Economy = load("res://src/sim/economy.gd")
+	view.reveal = true
+	w.ages[0] = 3
+	var wk: int = Economy.btype_of(w, "wall")
+	var pk: int = Economy.btype_of(w, "palisade")
+	for x in range(9, 29):
+		if Economy.can_place(w, 0, wk, x, 18):
+			Fortify._put(w, 0, wk, x, 18, 0)
+	for y in range(9, 29):
+		if Economy.can_place(w, 0, pk, 18, y):
+			Fortify._put(w, 0, pk, 18, y, 0)
+	view.camera.zoom = Vector2(2.4, 2.4)
+	view._on_zoom()
+	view.camera.look_at_point(Iso.to_screen(18000, 18500))
+	for f in 30:
+		await process_frame
+
+
 func _walkway(view, variant: String, z: float) -> void:
 	var w = view.world
 	var Fortify = load("res://src/sim/fortify.gd")
@@ -1033,7 +1063,7 @@ func _engines(view, map_id: String, what: String) -> void:
 			view.fx.set_process(false)
 
 
-func _battle(view, map_id: String, at_tick: int) -> void:
+func _battle(view, map_id: String, at_tick: int, select := false) -> void:
 	while view.world.units.count() <= 6:
 		await process_frame
 	var meet: Vector2 = MEET[map_id] * 1000.0
@@ -1044,6 +1074,9 @@ func _battle(view, map_id: String, at_tick: int) -> void:
 			if w.units.owner[i] == p and not w.types[w.units.kind[i]].worker:
 				ids.append(w.units.id[i])
 		w.issue(p, "attack_move", {"ids": ids, "x": int(meet.x), "y": int(meet.y)})
+		if select and p == 0:
+			for id in ids:
+				view.selected[id] = true
 	view.clock.speed = 8.0
 	while w.tick < at_tick - 20:
 		await process_frame
@@ -1277,6 +1310,37 @@ func _tower(view) -> void:
 	for f in 4:
 		await process_frame
 	view.camera.look_at_point(Iso.to_screen(s[0] + 4500, s[1] + 4500))
+
+
+## Flyers over a Town Center (D-158): side 0's spears (give it a winged prompt) fly across their own
+## Town Center; shot while one is over it, drawn over the roof.
+func _flyover(view) -> void:
+	var w = view.world
+	var s: Array = w.map.starts[0]
+	w.issue(0, load("res://src/sim/commands.gd").SPAWN, {"slot": "spear", "count": 3, "x": s[0] + 3500, "y": s[1] + 3500})
+	var n0: int = w.units.count()
+	for f in 200:
+		await process_frame
+		if w.units.count() >= n0 + 3:
+			break
+	var ids := []
+	for i in w.units.count():
+		if w.units.owner[i] == 0 and w.units.mclass[i] == 2:
+			ids.append(w.units.id[i])
+	w.issue(0, load("res://src/sim/commands.gd").MOVE, {"ids": ids, "x": s[0] - 3500, "y": s[1] - 3500})
+	view.camera.look_at_point(Iso.to_screen(s[0], s[1]))
+	for f in 900:
+		await process_frame
+		var over := false
+		for id in ids:
+			var i: int = w.units.index_of(id)
+			if i >= 0 and w.map.occupied[w.map.cell_of(w.units.x[i], w.units.y[i])] != 0 and absi(w.units.x[i] - s[0]) < 600:
+				over = true
+		if over:
+			break
+	for f in 20:
+		await process_frame
+	view.clock.paused = true
 
 
 ## Garrisons (milestone 12 phase 3): see the scene list at the top.

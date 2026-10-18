@@ -31,6 +31,7 @@ const TreeModel := preload("res://src/view/tech_tree_model.gd")
 const Identity := preload("res://src/identity.gd")
 const SavesPage := preload("res://src/view/ui/saves_page.gd")
 const NetPage := preload("res://src/view/ui/net_page.gd")
+const NetLobby := preload("res://src/view/net_lobby.gd")
 
 const NOT_MAPS := ["choke_test", "river_test", "hill_test"]   # test maps (sim_debug lists them)
 var MAPS := _maps()   # every map in data/maps: the real ones first (by name), the test maps last
@@ -74,6 +75,9 @@ var saves_page: Control         # Load game: the saved matches (src/view/ui/save
 var net_page: Control           # Play on the network (src/view/ui/net_page.gd)
 var net_hosting := false        # the battle setup is for hosting a network game (Start: wait for a player)
 var net_hosting_save := false   # the saves page is picking a saved match to host on the network
+var net_lobby = null            # the battle setup shared over the network (src/view/net_lobby.gd), else null
+var map_buttons: Array = []     # the map's and the mode's arrows (the host's alone in a network lobby)
+var net_hint: Label             # under Start in a network lobby: where to find this game
 var menu_layer: Node2D          # the title screen's hill, both armies on it
 var menu_stage: SubViewportContainer
 var _themes := {}               # family -> Theme (themes are built once per culture)
@@ -149,14 +153,14 @@ func _pad() -> void:
 		for i in sides.size():
 			if focus != null and sides[i].panel.is_ancestor_of(focus):
 				k = i
+		if sides[k].dice.disabled:
+			return   # (a network lobby: another player's side)
 		sides[k].dice.tumble()
 		_roll(k)
 	elif pad.pressed(JOY_BUTTON_START):
 		_play()
 	elif pad.pressed(JOY_BUTTON_B) and not get_viewport().gui_get_focus_owner() is LineEdit:
-		setup.visible = false
-		menu.visible = true
-		UiTheme.arrive(menu)
+		_back_to_menu()
 
 
 func _theme(family: String) -> Theme:
@@ -289,6 +293,7 @@ func _open_net() -> void:
 		net_page.host_chosen.connect(func(): net_hosting = true; _open_setup())
 		net_page.host_save_chosen.connect(func(): net_hosting_save = true; _open_saves())
 		net_page.start.connect(_play_network)
+		net_page.joined.connect(_join_lobby)
 		net_page.closed.connect(func():
 			if not setup.visible:
 				menu.visible = true
@@ -297,21 +302,45 @@ func _open_net() -> void:
 	net_page.open()
 
 
-## Host: the battle as set up, one human each side (1v1 on a two-player map); wait for a player.
-func _host_network() -> void:
-	if sides.size() != 2:
-		net_page.visible = false
-		start_button.text = "Host Battle: 1v1 maps only"
-		return
-	var setup_now := {"prompts": [_prompt(0), _prompt(1)], "rerolls": [sides[0].reroll, 0], "map": MAPS[map_index],
-		"mode": MODES[mode_index][0] if MODES[mode_index][0] != "standard" else "", "teams": sides.map(func(s): return s.side_team)}
-	net_page.wait_for_player(setup_now, "%s on %s" % [sides[0].race.get("name", "?"), str(map_data.get("name", MAPS[map_index]))])
+## The battle setup as a network lobby (src/view/net_lobby.gd): the host's (listening from now) or a
+## joiner's (in, with the host's lobby). The host's map arrows skip maps with too few sides.
+func _open_net_lobby(host: bool) -> void:
+	net_lobby = NetLobby.new(self, host)
+	add_child(net_lobby)
+	net_lobby.host_left.connect(func():
+		_back_to_menu()
+		_open_net()
+		net_page.note.text = "The host left the game.")
+
+
+func _join_lobby(link, state: Dictionary) -> void:
+	_open_setup()
+	_open_net_lobby(false)
+	net_lobby.join(link, state)
+
+
+## Back to the title menu (a network lobby closes: the other machine hears it).
+func _back_to_menu() -> void:
+	if net_lobby != null:
+		net_lobby.leave()
+		net_lobby.queue_free()
+		net_lobby = null
+		net_hosting = false
+		net_hint.visible = false
+		start_button.disabled = false
+		for b in map_buttons:
+			b.disabled = false
+		_build_sides(sides.size())   # (the panels as for a battle against the AI again)
+	setup.visible = false
+	menu.visible = true
+	UiTheme.arrive(menu)
 
 
 ## Both ready: the match, this machine playing side `me` (the host 0, the joiner 1).
 func _play_network(link, me: int, net_setup: Dictionary) -> void:
 	Audio.of(get_tree()).play("ui_start")
 	while baking:
+		link.pump()
 		await get_tree().process_frame
 	var view = load("res://scenes/sim_debug.tscn").instantiate()
 	view.use_network(link, me, net_setup)
@@ -359,7 +388,10 @@ func _play_saved(rep: Dictionary) -> void:
 func _open_setup() -> void:
 	menu.visible = false
 	setup.visible = true
-	start_button.text = "Host Battle" if net_hosting else "Start Battle"
+	start_button.text = "Start Battle"
+	if net_hosting and net_lobby == null:
+		_open_net_lobby(true)
+		net_lobby.host()
 	UiTheme.arrive(setup.get_child(0))
 	Audio.of(get_tree()).play("ui_tip")
 
@@ -413,7 +445,7 @@ func _setup() -> Control:
 	back.add_theme_constant_override("icon_max_width", 22)
 	back.custom_minimum_size = Vector2(150, 48)
 	back.size_flags_vertical = Control.SIZE_SHRINK_CENTER
-	back.pressed.connect(func(): setup.visible = false; menu.visible = true; UiTheme.arrive(menu))
+	back.pressed.connect(_back_to_menu)
 	head.add_child(back)
 	var title := UiTheme.label("Prepare for Battle", "Title")
 	title.add_theme_font_size_override("font_size", 46)
@@ -464,7 +496,7 @@ func _build_sides(n: int) -> void:
 	var compact := n > 2
 	for i in n:
 		var t := _team_of(i, n)
-		var who := "You" if i == 0 else ("Ally (AI)" if t == _team_of(0, n) else "The AI")
+		var who := "You" if i == 0 else ("Ally (AI)" if t == _team_of(0, n) else "The AI")   # (a network lobby relabels them: net_lobby.gd)
 		var panel := _side_panel(i, who, compact)
 		sides[i].side_team = t
 		(left_col if t == _team_of(0, n) else right_col).add_child(panel)
@@ -477,7 +509,7 @@ func _build_sides(n: int) -> void:
 			_regenerate(i)
 		else:
 			_roll(i)
-	level_card.visible = not compact
+	level_card.visible = not compact and net_lobby == null
 	for k in level_buttons.size():
 		level_buttons[k].set_pressed_no_signal(n > 1 and k == sides[1].level)
 
@@ -507,7 +539,7 @@ func _centre() -> Control:
 	pick.add_theme_constant_override("separation", 8)
 	var prev := UiTheme.button("<")
 	prev.custom_minimum_size = Vector2(46, 46)
-	prev.pressed.connect(func(): _set_map(map_index - 1))
+	prev.pressed.connect(func(): _set_map(map_index - 1, -1))
 	pick.add_child(prev)
 	map_name = UiTheme.label("", "Heading")
 	map_name.size_flags_horizontal = Control.SIZE_EXPAND_FILL
@@ -518,7 +550,7 @@ func _centre() -> Control:
 	pick.add_child(map_name)
 	var next := UiTheme.button(">")
 	next.custom_minimum_size = Vector2(46, 46)
-	next.pressed.connect(func(): _set_map(map_index + 1))
+	next.pressed.connect(func(): _set_map(map_index + 1, 1))
 	pick.add_child(next)
 	inner.add_child(pick)
 	var well := PanelContainer.new()
@@ -547,6 +579,7 @@ func _centre() -> Control:
 	mnext.pressed.connect(func(): _set_mode(mode_index + 1))
 	mode_pick.add_child(mnext)
 	inner.add_child(mode_pick)
+	map_buttons = [prev, next, mprev, mnext]
 	_set_mode(0)
 	var spare := Control.new()   # and the AI's level and Start stay at the foot, level with the side panels
 	spare.size_flags_vertical = Control.SIZE_EXPAND_FILL
@@ -581,6 +614,11 @@ func _centre() -> Control:
 	start.pressed.connect(_play)
 	start_button = start
 	col.add_child(start)
+	net_hint = UiTheme.label("", "Dim", true)
+	net_hint.custom_minimum_size.x = CENTRE_W
+	net_hint.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	net_hint.visible = false
+	col.add_child(net_hint)
 	var breathe := start.create_tween().set_loops()   # Start breathes: the screen's call to arms
 	breathe.set_trans(Tween.TRANS_SINE)
 	breathe.tween_property(start, "self_modulate", Color(1.12, 1.08, 1.0), 1.4)
@@ -625,6 +663,7 @@ func _side_panel(i: int, who: String, compact := false) -> Control:
 	whol.custom_minimum_size.x = 40
 	whol.size_flags_vertical = Control.SIZE_SHRINK_CENTER
 	top.add_child(whol)
+	var levels := []
 	if compact and i > 0:   # this AI's level, in its own panel
 		var group := ButtonGroup.new()
 		for k in LEVELS.size():
@@ -636,6 +675,12 @@ func _side_panel(i: int, who: String, compact := false) -> Control:
 			lb.custom_minimum_size = Vector2(0, 38)
 			lb.toggled.connect(func(on): if on: sides[i].level = k)
 			top.add_child(lb)
+			levels.append(lb)
+	var take := UiTheme.button("Take this side")   # (a network lobby: an AI's side, open to a player)
+	take.add_theme_font_size_override("font_size", 16 if compact else 18)
+	take.visible = false
+	take.pressed.connect(func(): if net_lobby != null: net_lobby.take(i))
+	top.add_child(take)
 	var tree_b := UiTheme.button("Tech tree")
 	tree_b.icon = Icons.texture("research")
 	tree_b.add_theme_constant_override("icon_max_width", 22)
@@ -755,7 +800,7 @@ func _side_panel(i: int, who: String, compact := false) -> Control:
 		col.add_child(roster)
 	sides.append({"field": field, "dice": dice, "reroll": 0, "rolled": "", "race": {}, "name": name, "line": line, "roster": roster, "units": units,
 		"stage": stage, "vp": vp, "layer": layer, "status": status, "dirty_at": 0.0, "team": team, "panel": card, "banner": banner, "family": "?",
-		"level": 0, "side_team": i, "compact": compact, "veil": veil, "forging": false, "gen": 0, "baked_gen": -1})
+		"who": whol, "take": take, "levels": levels, "level": 0, "side_team": i, "compact": compact, "veil": veil, "forging": false, "gen": 0, "baked_gen": -1})
 	return card
 
 
@@ -854,6 +899,8 @@ func _regenerate(i: int) -> void:
 	s.status.text = "  Forging the army..."
 	s.dirty_at = Time.get_ticks_msec() / 1000.0
 	_forging(i)
+	if net_lobby != null:
+		net_lobby.side_changed(i)
 
 
 ## A side's army is being made (typed, rolled, baking): the old one dims under the forge veil
@@ -1076,9 +1123,12 @@ func _set_mode(k: int) -> void:
 	mode_name.tooltip_text = MODES[mode_index][2]
 
 
-func _set_map(k: int) -> void:
+func _set_map(k: int, step := 1) -> void:
 	map_index = posmod(k, MAPS.size())
 	var m: Dictionary = DataLib.load_json("res://data/maps/%s.json" % MAPS[map_index])
+	while net_lobby != null and not net_lobby.map_ok(m):   # (a network lobby: a side for everyone in)
+		map_index = posmod(map_index + step, MAPS.size())
+		m = DataLib.load_json("res://data/maps/%s.json" % MAPS[map_index])
 	map_data = m
 	if m.starts.size() != sides.size():
 		_build_sides(m.starts.size())
@@ -1130,8 +1180,8 @@ func _map_image(m: Dictionary) -> Image:
 
 
 func _play() -> void:
-	if net_hosting:
-		_host_network()
+	if net_lobby != null:
+		net_lobby.toggle_ready()
 		return
 	Audio.of(get_tree()).play("ui_start")
 	while baking:   # the lobby's own bake finishes first (it's awaited here, so it must not outlive the lobby)

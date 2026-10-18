@@ -1013,7 +1013,83 @@ and centaurs keep their shields in hand. The cloth cape isn't worn by frogs and 
 `not_ridden_on`); the leaf cape fits them. (The Norse decision, first written as D-149, was renumbered D-151 at merge:
 main's D-149 names heroes.)
 
-**D-160, 2026-10-17: Bears are in play.** Dominic: "lets get the bears going on a branch". He had picked the heads
+**D-153, 2026-10-17: Workers are checked at work; a 2D pose on the bakes takes its directions from the facing.**
+Dominic saw a foraging centaur from behind in a network match, drawn broken ("i thought our tooling and tests
+protected against this needing visual checks"). The kneel to forage (D-105's C1) was a 2D pose written side-on: it
+picked the front legs and the pivot by screen x and bent as if the body faced right, so it was right only in facing 0;
+the placement check never drew a unit at work. Claude: every worker is now drawn foraging in all 8 facings by the 2D
+check (`tests/placement/work_2d.gd`, rules K1-K5 for a fused mount's kneel, measured against the model and the bake
+camera), and any pose UnitView puts on the bakes takes fore, hind and forward from the model and the facing
+(`UnitView.ahead_on_screen`, `side_on`), never from where things happen to be on screen. Facing 0's kneel is unchanged.
+
+**D-154, 2026-10-17: Rivers get a deep middle nobody crosses; flyers no longer cross trees.** Dominic, after a 2v2 on
+Reed Meadow: frog races swam the river anywhere, and enemies walked round behind the wood lines, both "very one sided
+too early on". His idea: shallow, deep, shallow. A new terrain, `deep_river`, that no movement class crosses (not
+amphibians, not flyers; Dominic said yes to flyers too), runs down the middle of both Reed Meadows' rivers, now wider
+(the 2v2's 7 tiles across, 3 of them deep; the 1v1's 5, about 2 deep). Fords cut through all of it and bridges stretch
+to the banks, so the crossings are the only way over for everyone; the map edge where the river runs off is deep too,
+so no flyer goes round its ends over the edge rock. The swimmable bands keep `river` (amphibians and flyers) and draw a
+little lighter than the deep middle. The wood lines behind each base now reach the map edge (they stood a tile in, a
+lane behind them): one tile deeper, the inner edge where it was (moving it outward instead cost the 1v1's age-3 bot
+its University and Castle in test_ai), so each start has more home wood (1v1 19,100 from 14,900; 2v2 13,000-14,000
+from 11,100-12,100). Trees block flyers too (Dominic: flying over the woods "feels again too imbalanced"); soaring over
+trees is to be something special, a winged race's castle unit with extra big wings, concept-first (a later piece).
+Other maps' rivers stay all `river` for now. Stone, gold and food per start unchanged (one stone tile on the 1v1
+moved a step back from the wider river). Then, "while we're there": walls run straight over high ground (Dominic: "I'd rather I can
+build a wall straight over them with no issue"). Wall and palisade pieces may now stand on cliffs and ramps (each piece
+is one cell, so it sits at its own level and the line steps up the hill); gates still may not stand on a cliff (an
+own gate is open to its side, and a gate on a cliff would be a way up it), and a gate's cell on a cliff never opens
+in the walk grids either. And the hills' edges are bevelled in the view: a raised cell's outer corner drops to the
+ground below, so diagonal edges read as slopes, not a staircase of tiles (`Iso.corner_heights`; the sim's levels and
+cliffs are unchanged).
+
+**D-155, 2026-10-17: Battle feel starts (milestone 22): formation by role, counter-aware targeting, attack lines, a
+Norse shield wall.** Dominic approved the plan with three choices. A group's formation goes by role: foot soldiers in
+front, shooters behind, engines, healers and carts at the back, and every mounted unit on the flanks, horse archers
+too (his pick: fast units on the outside); with no foot beside them, riders form the centre. Units pick a foe they
+counter (their attack has a bonus against one of its classes) as if it stood `counter_pull` nearer, 2 tiles (his
+pick, "medium": the rider beside the footman, not one across the field); the spreading into duels (D-054) stays.
+Selected units show a thin team-coloured line to the foe they're fighting. The Norse shield wall is look only and
+always on (his pick): Norse foot with shields march shoulder to shoulder (`form_gap` -160, a sim effect on the
+Linden shields bonus, both its forms, since a culture has exactly three bonuses), no stat beyond the bonus's own.
+Balance: mass_battle in ages 2 and 3 and balance.gd unchanged in every single-type fight, mixed fights a win or two
+either way. (Claude)
+
+**D-156, 2026-10-17: The battle setup is the network lobby, with seats.** Dominic, after the first Mac vs Deck join:
+"Hosting a new game, dont seem to get the option for other player to join the lobby and customise there side", then
+"shared lobby means we should be able to make 2v2 games, and players can choose what side theyre on". Host a game
+now opens the battle setup listening (src/view/net_lobby.gd); every side but the host's starts as an AI, and up to
+three players join, each into the first open side, free to Take any other AI's side (so they pick their team). Each
+player edits their own race; the host the map, the mode and the AI sides. The host holds the lobby and sends the
+whole of it to everyone when it changes; any change un-readies everyone; Start is Ready, and when every player is
+ready (two at least) the host sends go and every machine starts loading at once. The AI sides play on every machine
+alike (bots are deterministic, as in D-148's saved matches); the host relays each player's turns to the others (a
+star over ENet). The join page lost its race box: the race is picked in the lobby. Claude's calls: the host owns
+the AI sides; the host's map arrows skip maps with too few sides for everyone in. Found on the way: the host's setup
+message only left when its match first polled the link (after its load), so the joiner timed out ("host isn't
+answering") or loaded only after the host; sends now flush, the link is serviced while loading and ENet waits
+15-60 s. Saved games on the network keep D-148's page.
+
+**D-157, 2026-10-17: A network match can be saved (refines D-147).** Dominic: "i cant save muliplayer?!" D-147 left
+Save out of a network match. Every machine runs the same world, so any player can save it on their own machine; the
+other people's sides go into the save as Normal AIs (fresh bots from that moment). Loaded alone, the AIs play them
+on; hosted again on the network (D-148), a person takes one over. The match isn't paused while the menu is open.
+
+**D-158, 2026-10-17: Stone walls stop flyers; flyers draw over the buildings they cross.** Dominic: "flying units
+also can go over pallisades. Probably fair - just annoying early game. But big walls they shouldnt be able to go
+over. That said, is it just too unbalanced either way?" Claude's view: flying over everything made walls worthless
+against a winged race for 4 points of wings; flying over nothing (after D-154's trees and deep river) would leave
+wings little more than speed for hit points. The middle gives flight an arc: a nuisance early (no walling it out with
+stakes), answered by stone walls and towers from age 2, and leaves the soaring castle unit (backlog) the one thing
+that crosses everything. Dominic: "yeh block with stone walls". A building type's `blocks_flyers` (buildings.json:
+the stone wall, stone gate, wall tower) closes its cells to flyers too (SimMap.high; a side's own stone gate still
+opens for its flyers); palisades, houses and the rest they fly over. A save from before marks its standing walls on
+load (World.after_load). And, Dominic: flying over buildings "is weird though because they just ghost through
+them": a flyer over a building is sorted after the building's front corner and climbs 12 px, so it's drawn over the
+roof, not through the walls (sim_debug `_over_roof`; farms and pens lie flat, nothing to climb). The Castle doesn't
+block flyers (not asked; easy to add with the flag).
+
+**D-159, 2026-10-17: Bears are in play.** Dominic: "lets get the bears going on a branch". He had picked the heads
 (B2, D-126) and kept the B3 mount (D-127) and left the rest to Claude, so Claude took the B1-B2 recommendations
 and brought them into the game's data, with no new concept round: the kits go into data/creature_kit.json, the parts into
 data/parts.json (DataLib completes kit bodies on load), the creatures, skins and words into their files, and the
@@ -1028,8 +1104,8 @@ helmets into scenes/art_pixel/bear_models.gd. There are three playable bears: br
   (tools/audio voices.py `bear`: a huff, a low "hrrm", a falling roar), which Dominic hasn't heard yet.
 - The polar bear as the brown bears' giant and a culture and architecture of their own wait in the backlog.
 
-**D-161, 2026-10-17: How a broad body takes the game's gear.** Putting every helmet, armour and held piece on the
-bears (D-162) showed what a body twice as wide as a human needs. Each fix is data, so the same tools work for the
+**D-160, 2026-10-17: How a broad body takes the game's gear.** Putting every helmet, armour and held piece on the
+bears (D-161) showed what a body twice as wide as a human needs. Each fix is data, so the same tools work for the
 next broad creature:
 - Head gear: the bear head's `top` socket now sits on the skull, because a cap or a leaf hat has to touch the head.
   The bears' own helmets are lifted by the same drop, so they sit where Dominic saw them.
@@ -1049,10 +1125,10 @@ next broad creature:
 - The siege tower gets a `_wide` place for the crew member at its back corner, where a black bear's shoulders showed
   past the tower.
 
-**D-162, 2026-10-17: A new body is checked against every piece it can come to.** Any culture can come to a bear
+**D-161, 2026-10-17: A new body is checked against every piece it can come to.** Any culture can come to a bear
 ("aztec bears"), so `bear_cases` (tests/placement/cases.gd) puts every helmet, hat, body armour and held piece of
 the game on each bear body. Hero, siege, concept and carried-load parts are left out. Each piece goes on the unit of
 the race that would wear or hold it, together with the bear races in PROMPTS, every rider on the bear mounts, and
 the Norse, hero and gear sweeps that already ran over every playable body. The first run had 191 failing checks
-(102 before the sweep) in 3D, and 205 in 2D; after D-161, none. Carried loads aren't in the 3D check for any creature (UnitView's carry
+(102 before the sweep) in 3D, and 205 in 2D; after D-160, none. Carried loads aren't in the 3D check for any creature (UnitView's carry
 hold isn't posed by the rig); that's in the backlog.

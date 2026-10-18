@@ -106,6 +106,11 @@ static func type_vectors(w, t: Dictionary) -> void:
 		for k in atk.size():
 			atk[k] += bonus[k]
 		t.atk = atk
+		var counters := PackedInt32Array()   # the classes it has a bonus against (past melee, pierce, building): _nearest_foe
+		for k in range(BASE.size(), bonus.size()):
+			if bonus[k] > 0:
+				counters.append(k)
+		t.counters = counters
 		t.arm = _vector(w, e.armour)
 		var cls := PackedByteArray()
 		cls.resize(w.classes.size())
@@ -1089,7 +1094,8 @@ static func _lost(w, i: int) -> void:
 
 
 ## The best enemy unit within `sight` (centre to centre): nearest, counting each of
-## its current attackers as `spread` further away, lowest id on ties (skipping those the shots
+## its current attackers as `spread` further away and a foe it counters (its attack has a bonus
+## against one of the foe's classes) as rules counter_pull nearer (milestone 22), lowest id on ties (skipping those the shots
 ## in `inbound` will kill, if given); then, for attack-movers, the nearest enemy building.
 ## Returns an id or 0.
 static func _nearest_foe(w, i: int, sight: int, buildings_too: bool, engaged: PackedInt32Array, spread := SPREAD, inbound := PackedInt32Array(),
@@ -1106,6 +1112,8 @@ static func _nearest_foe(w, i: int, sight: int, buildings_too: bool, engaged: Pa
 	var cy: int = u.y[i] / SimMap.TILE
 	var pr: PackedInt32Array = u.perch
 	var level := -1 if w.types[u.kind[i]].ranged else (1 if pr[i] != 0 else 0)   # melee: only foes up on a wall if it is, and only the ground if not
+	var counters: PackedInt32Array = w.types[u.kind[i]].counters
+	var pull: int = int(w.combat.counter_pull)
 	for yy in (range(maxi(cy - r, 0), mini(cy + r + 1, sp.height)) if units_too else []):
 		for xx in range(maxi(cx - r, 0), mini(cx + r + 1, sp.width)):
 			var cell: int = yy * sp.width + xx
@@ -1121,6 +1129,12 @@ static func _nearest_foe(w, i: int, sight: int, buildings_too: bool, engaged: Pa
 				if d2 > sight * sight or d2 < near * near or not Fog.visible(w, me, u.x[j], u.y[j]):
 					continue   # only what its side can see: no going for foes in the fog (Dominic); none under an engine's nose
 				var d := Fixed.isqrt(d2) + engaged[j] * spread
+				if pull > 0:
+					var cls: PackedByteArray = w.types[u.kind[j]].cls
+					for c in counters:
+						if cls[c] != 0:
+							d -= pull
+							break
 				if d < best_d or (d == best_d and u.id[j] < best):
 					best_d = d
 					best = u.id[j]

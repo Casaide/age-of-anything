@@ -47,6 +47,7 @@ var occupied := PackedInt32Array() # building id standing on the cell, or 0
 var amount := PackedInt32Array()   # resource left on the cell (for a pooled cell: on its anchor)
 var pool := PackedInt32Array()     # pooled cells (a farm's): the anchor cell holding the shared amount, or -1
 var walk_over := PackedByteArray() # 1 where a building may be walked across (farms)
+var high := PackedByteArray()      # 1 where a building flyers can't cross stands (stone walls: buildings.json blocks_flyers)
 var deck := PackedByteArray()      # 1 where a standing bridge spans the water: ground and amphibians walk it (bridges.gd)
 var opaque := PackedByteArray()    # 1 where the cell blocks sight (a tree), for fog.gd
 var opaque_chunks := PackedInt32Array()   # opaque cells per CHUNK x CHUNK block, so sight skips open country
@@ -137,6 +138,7 @@ static func load_id(map_id: String) -> RefCounted:
 	m.pool.resize(n)
 	m.pool.fill(-1)
 	m.walk_over.resize(n)
+	m.high.resize(n)
 	m.deck.resize(n)
 	m.opaque.resize(n)
 	m.opaque_chunks.resize(((m.width + CHUNK - 1) / CHUNK) * ((m.height + CHUNK - 1) / CHUNK))
@@ -391,7 +393,8 @@ func clear_pool(cells: PackedInt32Array, k: int) -> void:
 
 ## Mark a building's footprint (id) or clear it (0). A gate (`gate_team` >= 0) blocks like any
 ## building, except in that team's own lanes (made here, the first time the team has a gate).
-func occupy(cells: PackedInt32Array, building_id: int, gate_team := -1) -> void:
+## `blocks_flyers`: flyers can't cross it either (stone walls).
+func occupy(cells: PackedInt32Array, building_id: int, gate_team := -1, blocks_flyers := false) -> void:
 	if gate_team >= 0 and lane_group(gate_team) == 0:
 		lane_teams.append(gate_team)
 		for k in CLASSES.size():
@@ -399,6 +402,7 @@ func occupy(cells: PackedInt32Array, building_id: int, gate_team := -1) -> void:
 	for c in cells:
 		occupied[c] = building_id
 		gate[c] = gate_team + 1 if building_id != 0 else 0
+		high[c] = 1 if blocks_flyers and building_id != 0 else 0
 		_refresh(c)
 
 
@@ -412,8 +416,9 @@ func lane_group(team: int) -> int:
 
 ## Can a building of this size go here? On ground anyone could build on, or, if the
 ## building allows water (`water_ok`) and the builders' movement class `mc` can wade it,
-## in the shallows (amphibians build on the water).
-func can_build(cx: int, cy: int, size: int, mc := 0, water_ok := false) -> bool:
+## in the shallows (amphibians build on the water). Not on a cliff or a ramp, unless
+## `slope_ok` (a wall piece: walls run straight over hills, Dominic 2026-10-17).
+func can_build(cx: int, cy: int, size: int, mc := 0, water_ok := false, slope_ok := false) -> bool:
 	for y in range(cy, cy + size):
 		for x in range(cx, cx + size):
 			if x < 0 or y < 0 or x >= width or y >= height:
@@ -421,8 +426,8 @@ func can_build(cx: int, cy: int, size: int, mc := 0, water_ok := false) -> bool:
 			var c := y * width + x
 			if occupied[c] != 0 or amount[c] > 0 or deck[c] == 1:
 				return false
-			if cliff[c] == 1 or ramp[c] == 1 or level[c] != level[cy * width + cx]:
-				return false   # not on a cliff or a ramp, and all on one level
+			if (cliff[c] == 1 or ramp[c] == 1) and not slope_ok or level[c] != level[cy * width + cx]:
+				return false   # not on a cliff or a ramp (but for wall pieces), and all on one level
 			var t: int = terrain[c]
 			if not terrain_walk[t] and not (water_ok and mc != FLYING and terrain_move[t] & (1 << mc)):
 				return false
@@ -456,13 +461,13 @@ func _refresh(cell: int) -> void:
 		opaque[cell] = op
 		opaque_version += 1
 	for k in CLASSES.size():
-		# Buildings block everyone but flyers.
-		walks[k][cell] = 1 if mask & (1 << k) and (k == FLYING or clear) else 0
+		# Buildings block everyone but flyers; stone walls block flyers too.
+		walks[k][cell] = 1 if mask & (1 << k) and ((k == FLYING and high[cell] == 0) or clear) else 0
 	walks[0][cell] = walk[cell]
 	for g in range(1, lane_teams.size()):   # a team's own gates are open to it
-		var open: bool = clear or gate[cell] == lane_teams[g] + 1
+		var open: bool = clear or (gate[cell] == lane_teams[g] + 1 and cliff[cell] == 0)   # (never a way up a cliff)
 		for k in CLASSES.size():
-			walks[g * CLASSES.size() + k][cell] = 1 if mask & (1 << k) and (k == FLYING or open) else 0
+			walks[g * CLASSES.size() + k][cell] = 1 if mask & (1 << k) and ((k == FLYING and high[cell] == 0) or open) else 0
 		walks[g * CLASSES.size()][cell] = 1 if ground and open else 0   # as walks[0] follows walk
 	for k in roomy.size():   # keep the roomy grids made so far in step with this cell
 		if was[k] != walks[k][cell]:

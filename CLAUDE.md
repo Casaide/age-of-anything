@@ -90,11 +90,12 @@ move it to `docs/backlog.md` rather than deleting it.
 - **In progress (networking): multiplayer.** Phase 1 built: lockstep over ENet on the home network (`src/net/`), Play
   on the network in the lobby (Host, Join by LAN beacon), D-147; next the Mac vs Deck match, then a HyperDHT
   sidecar. See `docs/milestones/networking.md`.
-- **Built (bears, 2026-10-17, on the `bears` branch):** brown, black ("moonbears") and polar bear races from the creature
+- **Built (bears, 2026-10-17):** brown, black ("moonbears") and polar bear races from the creature
   kit (kit bodies completed by DataLib from `data/creature_kit.json`), the bear mount for others ("romans riding bears"),
-  a bear voice; every piece of gear checked on every bear (D-160 to D-162). Dominic to look and listen. See `docs/concepts/bears/`.
-- **Planned (milestone 22): battle feel.** Formations by role, counter-aware targeting, attack lines, a Norse shield
-  wall. See `docs/milestones/m22-battle-feel.md`.
+  a bear voice; every piece of gear checked on every bear (D-159 to D-161). Dominic to look and listen. See `docs/concepts/bears/`.
+- **In progress (milestone 22): battle feel.** Built (D-155): formations by role (riders on the flanks), counter-aware
+  targeting (`counter_pull`), attack lines for the selection, the Norse shield wall; next race_matches and Dominic's
+  match. See `docs/milestones/m22-battle-feel.md`.
 
 ## Layout
 
