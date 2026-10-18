@@ -308,6 +308,19 @@
   "hummingbird_fire": [
    "orange",
    "green"
+  ],
+  "bear_brown": [
+   "brown"
+  ],
+  "bear_black": [
+   "black"
+  ],
+  "bear_polar": [
+   "white"
+  ],
+  "bear_grizzled": [
+   "grey",
+   "brown"
   ]
  }
 }
