@@ -1,0 +1,356 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Age of Anything</title>
+<!-- Concept draft 5 (2026-10-19, Claude): Dominic's sections (generate your army, build your city, mount the walls,
+     led by heroes, play with friends, every game something new, Steam Deck and controllers) plus automatically
+     balanced and the peoples and cultures. Pre-Steam: the actions are the devlog and the mailing list. Working title.
+     Armies, heroes, cultures: the game's own bakes (tests/sheet.gd); names: tests/print_races.gd; pictures: archive/images. -->
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@500;700;900&family=Alegreya+Sans:wght@400;500;700&display=swap" rel="stylesheet">
+<style>
+:root {
+	--wood: #4a3220; --wood-dark: #2b1d12; --well: #17110b; --bronze: #9a7438; --metal: #c09048;
+	--lacquer: #7a2a18; --accent: #f2c94c; --title: #f6d77a; --text: #f4e9cf; --dim: #c4b493; --grass: #56782e;
+	--grain: repeating-linear-gradient(92deg, rgba(0,0,0,.10) 0 2px, transparent 2px 9px, rgba(255,255,255,.03) 9px 11px, transparent 11px 23px);
+}
+* { box-sizing: border-box; }
+html, body { margin: 0; }
+body { background: var(--well); color: var(--text); font: 19px/1.6 "Alegreya Sans", system-ui, sans-serif; }
+h1, h2, h3, .btn { font-family: Cinzel, Georgia, serif; }
+a { color: var(--accent); }
+img.px { image-rendering: pixelated; }
+.wrap { max-width: 1180px; margin: 0 auto; padding: 0 16px; }
+
+.panel { background: var(--grain), linear-gradient(var(--wood), var(--wood-dark)); border: 3px solid var(--bronze);
+	box-shadow: inset 0 0 0 1px #000, inset 0 0 0 4px rgba(192,144,72,.25), 0 10px 30px rgba(0,0,0,.5); border-radius: 4px; position: relative; }
+.panel::before, .panel::after { content: ""; position: absolute; top: 8px; width: 9px; height: 9px; border-radius: 50%; z-index: 1;
+	background: radial-gradient(circle at 35% 35%, #f0d08a, var(--metal) 50%, #5a3c18); }
+.panel::before { left: 8px; } .panel::after { right: 8px; }
+.frame { padding: 10px; margin: 0; }
+.frame img { display: block; width: 100%; border: 1px solid #000; }
+
+.btn { display: inline-block; padding: 13px 24px; font-weight: 700; font-size: 16px; letter-spacing: .06em; text-decoration: none; cursor: pointer;
+	color: #fff4d8; border: 2px solid var(--metal); border-radius: 3px; text-transform: uppercase;
+	background: linear-gradient(#9a3a22, var(--lacquer)); box-shadow: 0 0 0 1px #000; }
+.btn.quiet { background: rgba(0,0,0,.4); }
+.btn:hover { box-shadow: 0 0 0 1px #000, 0 0 22px rgba(242,201,76,.4); }
+
+/* hero */
+.hero { position: relative; min-height: 86vh; display: flex; align-items: flex-end; overflow: hidden; }
+.hero img.bg { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; object-position: 50% 40%; }
+.hero::after { content: ""; position: absolute; inset: 0;
+	background: linear-gradient(90deg, rgba(23,17,11,.92) 0%, rgba(23,17,11,.7) 38%, rgba(23,17,11,.05) 70%), linear-gradient(180deg, transparent 60%, var(--well)); }
+.hero .wrap { position: relative; z-index: 1; padding-bottom: 64px; width: 100%; }
+.hero-copy { max-width: 560px; }
+.logo { font-weight: 900; color: var(--title); font-size: clamp(42px, 6.5vw, 78px); line-height: 1; margin: 0 0 18px;
+	text-shadow: 0 2px 0 #3a2410, 0 4px 18px rgba(0,0,0,.8); }
+.headline { font-family: Cinzel, serif; font-weight: 700; font-size: clamp(22px, 2.6vw, 30px); line-height: 1.25; margin: 0 0 14px; }
+.hero p.intro { margin: 0 0 26px; }
+.ctas { display: flex; gap: 12px; flex-wrap: wrap; }
+.platforms { color: var(--dim); font-size: 15px; margin-top: 14px; }
+
+/* feature rows: text one side, picture the other, swapping each row */
+.row { display: grid; grid-template-columns: 1fr 1.25fr; gap: 48px; align-items: center; padding: 72px 0; }
+.row.flip { grid-template-columns: 1.25fr 1fr; }
+.row.flip .text { order: 2; }
+.row > * { min-width: 0; }
+.row.big { grid-template-columns: .75fr 1.6fr; }
+.row.big.flip { grid-template-columns: 1.6fr .75fr; }
+h2 { color: var(--title); font-size: clamp(26px, 3.2vw, 36px); line-height: 1.15; margin: 0 0 16px; }
+.row p, .wide p { margin: 0 0 14px; }
+.aside { color: var(--dim); font-size: 17px; }
+.pair { display: grid; gap: 14px; }
+.checks { list-style: none; padding: 0; margin: 18px 0 0; }
+.checks li { position: relative; padding: 5px 0 5px 32px; font-size: 17px; border-top: 1px solid rgba(154,116,56,.25); }
+.checks li::before { content: "\2713"; position: absolute; left: 4px; top: 4px; color: var(--accent); font-weight: 700; }
+
+/* the prompt box */
+.box { padding: 20px; }
+.prompt { display: flex; align-items: center; gap: 4px; background: var(--well); border: 2px solid var(--bronze); border-radius: 3px; padding: 11px 15px;
+	font: 20px ui-monospace, Menlo, monospace; color: var(--text); min-height: 52px; }
+.prompt .caret { width: 2px; height: 1.1em; background: var(--accent); animation: blink 1s steps(1) infinite; }
+@keyframes blink { 50% { opacity: 0; } }
+.chips { display: flex; flex-wrap: wrap; gap: 7px; margin-top: 11px; }
+.chip { background: rgba(0,0,0,.35); border: 1px solid var(--bronze); color: var(--text); border-radius: 999px; padding: 4px 12px; cursor: pointer; font: inherit; font-size: 15px; }
+.chip[aria-pressed="true"] { background: var(--lacquer); border-color: var(--accent); }
+.field { background: var(--grass); border: 2px solid var(--well); border-radius: 3px; overflow-x: auto; }
+.box .field { margin-top: 14px; aspect-ratio: 4.3; overflow: hidden; }
+.box .field img { height: 100%; min-width: 0; object-fit: contain; object-position: 50% 100%; }
+.field img { display: block; width: 100%; min-width: 520px; transition: opacity .25s; }
+.field img.hide { opacity: 0; }
+.race { display: flex; flex-wrap: wrap; align-items: baseline; gap: 4px 14px; margin-top: 12px; min-height: 2em; }
+.race h3 { color: var(--title); margin: 0; font-size: 23px; }
+.race span { color: var(--dim); font-size: 16px; }
+
+/* labelled strips (heroes, creatures) */
+.strip { overflow-x: auto; }
+.strip .field img, .strip .names { min-width: 520px; }
+.names { position: relative; height: 3.2em; color: var(--dim); font-size: 14px; line-height: 1.25; }
+.names span { position: absolute; top: 8px; width: 15%; transform: translateX(-50%); text-align: center; }
+
+/* peoples and cultures */
+.wide { padding: 72px 0; }
+.wide .lead { max-width: 760px; }
+.cultures { display: grid; grid-template-columns: repeat(6, 1fr); gap: 12px; margin-top: 26px; }
+.culture { padding: 8px 8px 10px; text-align: center; }
+.culture .field img { min-width: 0; }
+.culture b { display: block; font-family: Cinzel, serif; color: var(--title); font-size: 15px; margin-top: 8px; }
+.culture span { display: block; color: var(--dim); font-size: 13px; line-height: 1.25; }
+.creatures { margin-top: 18px; }
+
+/* made by */
+.maker { display: grid; grid-template-columns: 1.2fr 1fr; gap: 40px; align-items: center; max-width: 900px; margin: 24px auto 0; padding: 40px 0 8px; }
+.maker > * { min-width: 0; }
+.maker p { margin: 0; }
+.maker figcaption { color: var(--dim); font-size: 14px; padding: 8px 4px 0; }
+
+/* follow */
+.follow { padding: 40px; display: grid; grid-template-columns: 1fr 1fr; gap: 40px; margin: 40px 0 0; }
+.follow h2 { font-size: 28px; margin: 0 0 10px; }
+.follow p { margin: 0 0 18px; }
+
+footer { border-top: 1px solid #3a2a18; margin-top: 72px; padding: 28px 0 44px; color: var(--dim); font-size: 14px; }
+footer .wrap { display: flex; justify-content: space-between; gap: 16px; flex-wrap: wrap; }
+.draft { position: fixed; right: 12px; bottom: 12px; background: var(--lacquer); color: #fff; font: 600 12px system-ui; padding: 6px 10px; border-radius: 3px; z-index: 9; }
+
+@media (max-width: 860px) {
+	.row, .row.flip, .row.big, .row.big.flip { grid-template-columns: 1fr; gap: 24px; padding: 48px 0; }
+	.row .text, .row.flip .text { order: 2; }
+	.wide { padding: 48px 0; }
+	.cultures { grid-template-columns: repeat(3, 1fr); }
+	.maker { grid-template-columns: 1fr; gap: 20px; }
+	.follow { grid-template-columns: 1fr; padding: 26px 20px; gap: 24px; }
+	.hero::after { background: linear-gradient(180deg, rgba(23,17,11,.35), rgba(23,17,11,.92) 55%, var(--well)); }
+}
+</style>
+</head>
+<body>
+<div class="draft">Concept draft 6: working title, not public</div>
+
+<header class="hero">
+	<img class="bg" src="img/town_rats.jpg" alt="A rat town at twenty minutes: tin-roofed sheds, water-tank houses, fields and a tin-clad castle">
+	<div class="wrap">
+		<div class="hero-copy">
+			<h1 class="logo">Age of Anything</h1>
+			<p class="headline">Describe a people. Then lead them to war.</p>
+			<p class="intro">A real-time strategy game in the classic mould: gather, build, advance through the ages and fight.
+				Generate your army from a growing collection of cultures and peoples.</p>
+			<div class="ctas"><a class="btn" href="#follow">Follow development</a></div>
+			<p class="platforms">In development for PC, Mac, Linux and Steam Deck.</p>
+		</div>
+	</div>
+</header>
+
+<main class="wrap">
+
+	<div class="row big">
+		<div class="text">
+			<h2>Generate your army</h2>
+			<p>Every race is put together from a kit of bodies, armour, weapons and mounts, dressed in one of a dozen
+				cultures. Ask for viking frogs and you get frogs in spectacle helms with bearded axes, scouts riding newts,
+				and a hero called Elder Bjorn Raven-Feeder.</p>
+			<p>The race gets its own name, its own unit lines through the ages and its own bonuses. The same words build the
+				same race on every computer, so a friend can face exactly the army you made.</p>
+			<ul class="checks">
+				<li>290 parts: 71 weapons and tools, 55 helmets and hats, 22 shields, 43 war machines and beasts</li>
+				<li>7 peoples, three kinds of bear among them, in 12 cultures, with 6 mounts to ride</li>
+				<li>332 words it understands, and more with each update</li>
+				<li>One test run: 2,160 races generated, 2,159 different armies, 15,902 different units</li>
+				<li>A hero for every race: 2,000 different heroes in that same run</li>
+			</ul>
+		</div>
+		<div class="box panel">
+			<div class="prompt"><span id="typed"></span><span class="caret"></span></div>
+			<div class="chips" id="chips"></div>
+			<div class="field"><img class="px hide" id="army" alt=""></div>
+			<div class="race"><h3 id="race"></h3><span id="hero"></span></div>
+		</div>
+	</div>
+
+	<div class="row flip">
+		<div class="text">
+			<h2>Automatically balanced</h2>
+			<p>Every part a unit carries has a price. Armour, a mount, a bigger body: each one adds to what the unit costs and
+				how long it takes to train, so a bear in bronze costs a great deal more than a frog with a stick. The game
+				prices every unit it makes, the strange ones included.</p>
+			<p>Counters do the rest. Spears stop riders and giants, riders run down archers, slingers beat bowmen. However
+				odd the matchup, both sides paid for what they brought, and both have an answer.</p>
+			<ul class="checks">
+				<li>46,661 automated checks run on every change</li>
+				<li>Every soldier line fights every other at equal cost, in two ages</li>
+				<li>Mass battles of mixed armies, each fought twice with the sides swapped</li>
+				<li>Counters win about four in five of their match-ups at equal cost</li>
+				<li>Whole bot-against-bot matches between races, from both starting positions</li>
+			</ul>
+		</div>
+		<figure class="frame panel"><img src="img/battle.jpg" alt="Centaur Romans and viking frogs clash: newt riders, a war heron, a fallen war elephant, arrows in the grass"></figure>
+	</div>
+
+	<div class="row">
+		<div class="text">
+			<h2>Build your city</h2>
+			<p>A people builds in its own style. Rats put up tin-roofed sheds and water-tank houses from the scrapheap. Frogs
+				raise thatched huts on stilts, joined by boardwalks. Beetles dig mounds. Greeks and Romans build in stone and
+				red tile, whoever they happen to be.</p>
+			<p>Six building styles so far, each with its own town centre, barracks, walls, castle and wonder. Towns come alive
+				as they grow: smoke from the chimneys, lit doorways, sheep in the pens, workers carrying their loads home.</p>
+		</div>
+		<div class="pair">
+			<figure class="frame panel"><img src="img/town_castle.jpg" alt="A town of white houses with red tiled roofs, a temple-like town centre and a stone castle"></figure>
+			<figure class="frame panel"><img src="img/town_frogs.jpg" alt="A frog town of thatched huts on stilts joined by boardwalks"></figure>
+		</div>
+	</div>
+
+	<div class="row flip">
+		<div class="text">
+			<h2>Mount the walls</h2>
+			<p>Raise walls and your soldiers can walk along them: archers on the walkway, towers at the corners, gatehouses
+				that open for your own people and stay shut to everyone else.</p>
+			<p>Getting through someone else's takes rams, ladders and siege towers, with catapults and bolt throwers to soften
+				them up, each crewed by its own people. The frogs bring a ram called the Snapper and a catapult carried on a
+				snail.</p>
+		</div>
+		<figure class="frame panel"><img src="img/walls.jpg" alt="A walled Roman town: archers on the walkway and in a tower, frogs at the foot of the wall"></figure>
+	</div>
+
+	<div class="row big">
+		<div class="text">
+			<h2>Led by heroes</h2>
+			<p>Every race has one hero, a named champion with gear nobody else wears. Name one in your prompt or let the race
+				choose its own.</p>
+			<p>A hero leads from the front and lifts the soldiers around them. If they fall, the town can bring them back
+				for a price.</p>
+		</div>
+		<div class="strip frame panel">
+			<div class="field"><img class="px" src="img/heroes.png" alt="Six heroes: a viking frog, a crowned rat, a black bear, a spider in a top hat, a centaur and a rat carrying a sapling"></div>
+			<div class="names"><span style="left:9.0%">Elder Bjorn Raven-Feeder</span><span style="left:24.3%">Ratty Crown-Biter</span><span style="left:39.2%">Kleon the Unbothered</span><span style="left:55.7%">Sigrid the Well-Mannered</span><span style="left:73.8%">Brutus the Proud</span><span style="left:89.9%">Nibbles Rootfoot</span></div>
+		</div>
+	</div>
+
+	<section class="wide">
+		<h2>Seven peoples, twelve cultures</h2>
+		<p class="lead">Frogs, rats, spiders, beetles, bears, centaurs and humans, each of whom can take up any of twelve
+			cultures: its armour, its weapons, its colours and its names. Viking frogs, Egyptian spiders and Roman bears are all
+			fair game. New peoples and cultures arrive with updates; the bears came this month.</p>
+		<div class="cultures">
+			<div class="culture panel"><div class="field"><img class="px" src="img/culture_1.png" alt=""></div><b>Norse</b><span>Broad Axeman</span></div>
+			<div class="culture panel"><div class="field"><img class="px" src="img/culture_2.png" alt=""></div><b>Roman</b><span>Plated Legionary</span></div>
+			<div class="culture panel"><div class="field"><img class="px" src="img/culture_3.png" alt=""></div><b>Greek</b><span>Xiphos Swordsman</span></div>
+			<div class="culture panel"><div class="field"><img class="px" src="img/culture_4.png" alt=""></div><b>Egyptian</b><span>Royal Khopesh Warrior</span></div>
+			<div class="culture panel"><div class="field"><img class="px" src="img/culture_5.png" alt=""></div><b>Chinese</b><span>Dao Swordsman</span></div>
+			<div class="culture panel"><div class="field"><img class="px" src="img/culture_6.png" alt=""></div><b>Aztec</b><span>Club Warrior</span></div>
+			<div class="culture panel"><div class="field"><img class="px" src="img/culture_7.png" alt=""></div><b>Steppe</b><span>Sabreman</span></div>
+			<div class="culture panel"><div class="field"><img class="px" src="img/culture_8.png" alt=""></div><b>Royal</b><span>Iron Swordsman</span></div>
+			<div class="culture panel"><div class="field"><img class="px" src="img/culture_9.png" alt=""></div><b>Swamp</b><span>Maceman Frog</span></div>
+			<div class="culture panel"><div class="field"><img class="px" src="img/culture_10.png" alt=""></div><b>Sewer</b><span>Cheesehammer Rat</span></div>
+			<div class="culture panel"><div class="field"><img class="px" src="img/culture_11.png" alt=""></div><b>Forest</b><span>Chitin Swordsman Beetle</span></div>
+			<div class="culture panel"><div class="field"><img class="px" src="img/culture_12.png" alt=""></div><b>Spooky</b><span>Hookblade Spider</span></div>
+		</div>
+		<div class="strip frame panel creatures">
+			<div class="field"><img class="px" src="img/kit.png" alt="A spearman of each kind: frog, rat, spider, beetle, bear, centaur and human"></div>
+			<div class="names"><span style="left:9.2%">frog</span><span style="left:23.3%">rat</span><span style="left:38.4%">spider</span><span style="left:53.4%">beetle</span><span style="left:66.3%">bear</span><span style="left:79.3%">centaur</span><span style="left:92.3%">human</span></div>
+		</div>
+	</section>
+
+	<div class="row flip">
+		<div class="text">
+			<h2>Play with friends</h2>
+			<p>Host a match on your home network and your friends join from the lobby, no accounts or servers involved. Play
+				one against one, or two against two with bots filling any empty seat. Matches can be saved and picked up later.</p>
+			<p class="aside">Local network play today; online play is next.</p>
+		</div>
+		<figure class="frame panel"><img src="img/lobby.jpg" alt="The match lobby: four sides, each with its race's army, a battlefield in the middle"></figure>
+	</div>
+
+	<div class="row">
+		<div class="text">
+			<h2>Every game something new</h2>
+			<p>Roll the dice in the lobby for a race you've never seen, or type one you've always wanted. Pick a battlefield,
+				from an old forest to a river delta crossed by fords and bridges, or a siege map where one side starts behind
+				walls.</p>
+			<p>The bots come in three strengths, and they play the race they're given: they scout, build to its strengths,
+				pick soldiers to counter yours and attack in waves.</p>
+			<p>And if the kit doesn't have what you want, add it. Mods are plain data: new weapons, armour, creatures, cultures,
+				words, even a whole era. Their units are priced by the same rules as everything else, so they stay fair.</p>
+		</div>
+		<figure class="frame panel"><img src="img/maps.jpg" alt="Five battlefields side by side: Old Forest, Reed Meadow, Reed Meadow for two against two, River Delta"></figure>
+	</div>
+
+	<div class="row flip">
+		<div class="text">
+			<h2>Steam Deck and controllers</h2>
+			<p>Made to be played with a pad as well as a mouse. Tap A on anything you command and its orders open on a ring
+				around it: what to build, whom to train, where to send them. A reticle selects, a circle gathers an army.</p>
+			<p>Pick up the mouse at any moment and the game follows; the pad takes over again the moment you touch it.</p>
+		</div>
+		<figure class="frame panel"><img src="img/deck_wheel.jpg" alt="The controller build ring around a worker: a house, farm, barracks and more"></figure>
+	</div>
+
+	<section class="maker">
+		<div>
+			<h2>Made by one guy and his AI</h2>
+			<p>Age of Anything is made by one guy and his AI, and made with love. First prototype in 24 hours went from ideas
+				to gameplay, and hasn't stopped growing since.</p>
+		</div>
+		<figure class="frame panel"><img src="img/first_generator.png" alt="The first race generator: angry swamp frogs with reed spears against sewer rats with cheese hammers, in simple shapes"><figcaption>Day one: the first race generator.</figcaption></figure>
+	</section>
+
+	<section class="follow panel" id="follow">
+		<div>
+			<h2>The devlog</h2>
+			<p>Each piece of the game written up as it's built: new peoples, maps, art and the thinking behind them.</p>
+			<a class="btn quiet" href="#">Read the devlog</a>
+		</div>
+		<div>
+			<h2>The Discord</h2>
+			<p>Where new builds, races and screenshots land first, and where to tell us what you'd build.</p>
+			<a class="btn" href="#discord-tbd"><!-- TODO: Discord invite link (TBD) -->Join the Discord</a>
+		</div>
+	</section>
+</main>
+
+<footer>
+	<div class="wrap">
+		<span>Age of Anything (working title). Made with Godot.</span>
+	</div>
+</footer>
+
+<script>
+// Real generator output (tests/print_races.gd): race name and hero. Armies: worker, spear, skirmisher, archer, infantry, large, hero at age 3.
+const races = [
+	["viking frogs", 1, "Raven Jarldom", "Elder Bjorn Raven-Feeder"],
+	["rats riding bears", 6, "Bramblefolk", "Nibbles Rootfoot"],
+	["sewer rats with cheese hammers", 2, "Gutterkin", "Ratty Crown-Biter"],
+	["moonbears", 3, "Hellenic Bears", "Kleon the Unbothered"],
+	["viking spiders", 4, "Storm Jarldom", "Sigrid the Well-Mannered"],
+	["centaur romans", 5, "Aurelian Guard", "Brutus the Proud"],
+];
+const chips = document.getElementById("chips");
+const army = document.getElementById("army");
+let timer = null;
+function pick(i) {
+	const [prompt, n, race, hero] = races[i];
+	[...chips.children].forEach((c, j) => c.setAttribute("aria-pressed", j === i));
+	const typed = document.getElementById("typed");
+	["race", "hero"].forEach(id => document.getElementById(id).textContent = "");
+	army.classList.add("hide");
+	clearInterval(timer); let k = 0; typed.textContent = "";
+	timer = setInterval(() => {
+		typed.textContent = prompt.slice(0, ++k);
+		if (k < prompt.length) return;
+		clearInterval(timer);
+		army.onload = () => army.classList.remove("hide");
+		army.src = "img/army_" + n + ".png"; army.alt = "The " + race + " army, from workers to their hero";
+		if (army.complete) army.classList.remove("hide");
+		document.getElementById("race").textContent = race;
+		document.getElementById("hero").textContent = "led by " + hero;
+	}, 55);
+}
+races.forEach((r, i) => { const b = document.createElement("button"); b.className = "chip"; b.textContent = r[0]; b.onclick = () => pick(i); chips.appendChild(b); });
+pick(0);
+</script>
+</body>
+</html>

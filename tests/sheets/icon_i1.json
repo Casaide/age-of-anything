@@ -1,0 +1,72 @@
+{
+ "name": "icon_i1",
+ "title": "Game icon round I1 and the sticker set: units for portrait marks",
+ "_doc": "The game's icon (2026-10-19): option B puts one of the game's own units on a bronze shield. These are the candidates, baked through the normal pipeline. Notes: docs/concepts/icon/README.md.",
+ "zooms": [
+  6
+ ],
+ "cell": [
+  70,
+  80
+ ],
+ "rows": [
+  {
+   "label": "viking frog spear",
+   "unit": {
+    "prompt": "viking frogs",
+    "slot": "spear",
+    "age": 2
+   }
+  },
+  {
+   "label": "rat on bear",
+   "h": 1.4,
+   "unit": {
+    "prompt": "rats riding bears",
+    "slot": "large",
+    "age": 2
+   }
+  },
+  {
+   "label": "brown bear",
+   "h": 1.3,
+   "unit": {
+    "prompt": "brown bears",
+    "slot": "spear",
+    "age": 2
+   }
+  },
+  {
+   "label": "spider",
+   "unit": {
+    "prompt": "spooky spiders",
+    "slot": "spear",
+    "age": 2
+   }
+  },
+  {
+   "label": "centaur",
+   "h": 1.4,
+   "unit": {
+    "prompt": "centaur greeks",
+    "slot": "spear",
+    "age": 2
+   }
+  }
+ ],
+ "sheets": [
+  {
+   "name": "f",
+   "columns": [
+    {
+     "facing": 2,
+     "label": "f2"
+    },
+    {
+     "facing": 3,
+     "label": "f3"
+    }
+   ]
+  }
+ ]
+}

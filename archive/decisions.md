@@ -1149,3 +1149,13 @@ the race that would wear or hold it, together with the bear races in PROMPTS, ev
 the Norse, hero and gear sweeps that already ran over every playable body. The first run had 191 failing checks
 (102 before the sweep) in 3D, and 205 in 2D; after D-162, none. Carried loads aren't in the 3D check for any creature (UnitView's carry
 hold isn't posed by the rig); that's in the backlog.
+
+**D-164, 2026-10-19: The game's icon is N4, the parts kit, ink on gold.** Dominic picked N4 from the fresh icon round
+(`docs/concepts/icon/fresh/`): a model kit's frame with its parts still on it (a frog's head, a horned helm, a round
+shield, a sword), the game in one picture: an army built from a kit of parts. Drawn navy and bone; Dominic asked
+whether it should match the website's colours, Claude showed it in lacquer red, gold on dark and ink on gold, and he
+chose ink on gold (the site's gold accent, the brightest tile in a dark Discord or library list). Files in
+`docs/concepts/icon/chosen/`: `icon.svg`, `discord_server_icon_1024.png`, a favicon set; it is the website's favicon.
+Not in the game yet (`project.godot` `config/icon`, the export icons): a later step. At 16 px it reads as a framed grid
+on gold rather than its parts; a hand-drawn 16 px version can come later if that matters. Round I1's race marks stay
+as Discord stickers and emoji (`docs/concepts/icon/stickers/`).
