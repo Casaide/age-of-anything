@@ -52,6 +52,8 @@ extends SceneTree
 ## 30-44) a straight stone wall with a wall tower in it and a gatehouse at its end, an L with a tower on
 ## its corner, a T, a diagonal run with a tower and a diagonal gatehouse; archers up on the straight and
 ## diagonal walkways, one on each tower. Every join and draw-order case of the walls in one frame.
+## "showcase:<tick>" (the website, 2026-10-19): both sides in age 3 with big mixed armies (war beasts, heroes)
+## fighting by the meeting point, the UI hidden; crop the shot to the clash.
 ## Prefix any scene with "ai-" to see it as in a match against the AI.
 
 const Iso := preload("res://src/view/iso.gd")
@@ -180,6 +182,8 @@ func _initialize() -> void:
 		await _heal(view, scene == "heal:card")
 	elif scene.begins_with("heroes"):
 		await _heroes(view, scene == "heroes:panel")
+	elif scene.begins_with("showcase"):
+		await _showcase(view, map_id, int(scene.get_slice(":", 1)))
 	elif scene.begins_with("battle"):
 		await _battle(view, map_id, int(scene.get_slice(":", 1)), scene.ends_with(":select"))
 	elif scene.begins_with("volley"):
@@ -1561,3 +1565,48 @@ func _wonder(view, pick: String) -> void:
 	view.camera.zoom = Vector2(2.0, 2.0)
 	view._on_zoom()
 	view.camera.look_at_point(Iso.to_screen(w.buildings.cx[b] * 1000 - 1000, w.buildings.cy[b] * 1000 + 5000))
+
+
+## The website's battle: both sides in age 3, big mixed armies with war beasts and heroes, the UI hidden.
+func _showcase(view, map_id: String, at_tick: int) -> void:
+	var w = view.world
+	var Tech = load("res://src/sim/tech.gd")
+	view.reveal = true
+	for p in 2:
+		w.ages[p] = 3
+		Tech.retype(w, p)
+		Tech.refresh(w, p)
+	var meet: Vector2 = MEET[map_id] * 1000.0
+	var army := [["spear", 8], ["infantry", 8], ["archer", 6], ["skirmisher", 4], ["large", 4], ["war_beast", 1], ["hero", 1]]
+	var n0: int = w.units.count()
+	for p in 2:
+		var d := -4500 if p == 0 else 4500
+		for e in army:
+			w.issue(p, "spawn", {"slot": e[0], "count": e[1], "x": int(meet.x) + d, "y": int(meet.y) + d})
+	while w.units.count() < n0 + 50:
+		await process_frame
+	for p in 2:
+		var ids := []
+		for i in w.units.count():
+			if w.units.owner[i] == p and not w.types[w.units.kind[i]].worker:
+				ids.append(w.units.id[i])
+		w.issue(p, "attack_move", {"ids": ids, "x": int(meet.x), "y": int(meet.y)})
+	view.clock.speed = 8.0
+	while w.tick < at_tick - 20:
+		await process_frame
+	view.clock.speed = 1.0
+	while w.tick < at_tick:
+		await process_frame
+	view.show_debug = false
+	view.hud.get_parent().visible = false
+	view.camera.zoom = Vector2(3.0, 3.0)
+	view._on_zoom()
+	var c := Vector2.ZERO
+	var n := 0
+	for i in w.units.count():
+		if w.units.owner[i] in [0, 1] and not w.types[w.units.kind[i]].worker:
+			c += Vector2(w.units.x[i], w.units.y[i])
+			n += 1
+	if n > 0:
+		c /= n
+		view.camera.look_at_point(Iso.to_screen(c.x, c.y))

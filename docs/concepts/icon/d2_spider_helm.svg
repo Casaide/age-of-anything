@@ -1,0 +1,26 @@
+<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" width="512" height="512" viewBox="0 0 512 512"><defs>
+<linearGradient id="bronze" x1="0" y1="0" x2="0.3" y2="1">
+ <stop offset="0" stop-color="#f3d58a"/><stop offset="0.35" stop-color="#c09048"/><stop offset="0.7" stop-color="#9a7438"/><stop offset="1" stop-color="#5a3e18"/>
+</linearGradient>
+<linearGradient id="lacquer" x1="0" y1="0" x2="0" y2="1">
+ <stop offset="0" stop-color="#a23a20"/><stop offset="1" stop-color="#561a0e"/>
+</linearGradient>
+<linearGradient id="cloth" x1="0" y1="0" x2="1" y2="0">
+ <stop offset="0" stop-color="#6a2010"/><stop offset="0.45" stop-color="#9c3620"/><stop offset="1" stop-color="#5e1c0e"/>
+</linearGradient>
+<linearGradient id="iron" x1="0" y1="0" x2="0" y2="1">
+ <stop offset="0" stop-color="#e4e2dc"/><stop offset="0.5" stop-color="#9a978f"/><stop offset="1" stop-color="#55524c"/>
+</linearGradient>
+<linearGradient id="horn" x1="0" y1="1" x2="0" y2="0">
+ <stop offset="0" stop-color="#b8a67e"/><stop offset="1" stop-color="#f4ead2"/>
+</linearGradient>
+<linearGradient id="frog" x1="0" y1="0" x2="0" y2="1">
+ <stop offset="0" stop-color="#8cc04a"/><stop offset="1" stop-color="#3e6a1e"/>
+</linearGradient>
+<radialGradient id="meadow" cx="0.5" cy="0.62" r="0.62">
+ <stop offset="0" stop-color="#7a9a3e"/><stop offset="0.75" stop-color="#56782e"/><stop offset="1" stop-color="#34501a"/>
+</radialGradient>
+<radialGradient id="well" cx="0.5" cy="0.4" r="0.65">
+ <stop offset="0" stop-color="#3a2818"/><stop offset="1" stop-color="#17110b"/>
+</radialGradient>
+</defs><radialGradient id="goldfield" cx="0.5" cy="0.4" r="0.65"><stop offset="0" stop-color="#ffe07a"/><stop offset="1" stop-color="#d89a22"/></radialGradient><circle cx="256" cy="256" r="236" fill="url(#well)"/><path d="M256,24 A232,232 0 1,1 255.9,24 Z" fill="none" stroke="#2a1a0a" stroke-width="34" stroke-linejoin="round"/><path d="M256,24 A232,232 0 1,1 255.9,24 Z" fill="none" stroke="url(#bronze)" stroke-width="22" stroke-linejoin="round"/><path d="M256,24 A232,232 0 1,1 255.9,24 Z" fill="none" stroke="#fff2c8" stroke-width="2" stroke-linejoin="round" opacity="0.35" transform="translate(256,256) scale(0.955) translate(-256,-256)"/><path d="M188,206 C130,200 82,160 78,64 C108,118 146,140 196,158 Z" fill="url(#horn)" stroke="#1a1006" stroke-width="8" stroke-linejoin="round"/><g transform="translate(512,0) scale(-1,1)"><path d="M206,160 C186,110 150,84 106,72" fill="none" stroke="#1a1006" stroke-width="18" stroke-linecap="round"/><path d="M206,160 C186,110 150,84 106,72" fill="none" stroke="#4a3a24" stroke-width="9" stroke-linecap="round"/><ellipse cx="98" cy="70" rx="22" ry="16" transform="rotate(-20 98 70)" fill="#4a3a24" stroke="#1a1006" stroke-width="8" stroke-linejoin="round"/></g><path d="M150,330 C142,190 196,130 256,130 C316,130 370,190 362,330 C362,382 330,412 300,420 L292,330 L220,330 L212,420 C182,412 150,382 150,330 Z" fill="url(#iron)" stroke="#1a1006" stroke-width="9" stroke-linejoin="round"/><path d="M180,300 C190,268 224,262 248,270 L248,330 L264,330 L264,270 C288,262 322,268 332,300 L326,332 L186,332 Z" fill="#0e0904"/><circle cx="200" cy="300" r="8" fill="#ff4a3a"/><circle cx="198" cy="298" r="2" fill="#ffd0c0"/><circle cx="226" cy="296" r="10" fill="#ff4a3a"/><circle cx="224" cy="294" r="2" fill="#ffd0c0"/><circle cx="198" cy="320" r="6" fill="#ff4a3a"/><circle cx="196" cy="318" r="2" fill="#ffd0c0"/><circle cx="312" cy="300" r="8" fill="#ff4a3a"/><circle cx="310" cy="298" r="2" fill="#ffd0c0"/><circle cx="286" cy="296" r="10" fill="#ff4a3a"/><circle cx="284" cy="294" r="2" fill="#ffd0c0"/><circle cx="314" cy="320" r="6" fill="#ff4a3a"/><circle cx="312" cy="318" r="2" fill="#ffd0c0"/><path d="M246,262 H266 V392 L256,404 L246,392 Z" fill="url(#bronze)" stroke="#1a1006" stroke-width="7" stroke-linejoin="round"/><path d="M154,286 C210,262 302,262 358,286" fill="none" stroke="url(#bronze)" stroke-width="20"/><path d="M154,286 C210,262 302,262 358,286" fill="none" stroke="#1a1006" stroke-width="5" opacity="0.6" transform="translate(0,12)"/><path d="M256,134 V264" stroke="#9a7438" stroke-width="18"/><path d="M196,190 C214,160 236,150 252,148" fill="none" stroke="#fff" stroke-width="7" stroke-linecap="round" opacity="0.5"/></svg>

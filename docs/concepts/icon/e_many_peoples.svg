@@ -1,0 +1,26 @@
+<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" width="512" height="512" viewBox="0 0 512 512"><defs>
+<linearGradient id="bronze" x1="0" y1="0" x2="0.3" y2="1">
+ <stop offset="0" stop-color="#f3d58a"/><stop offset="0.35" stop-color="#c09048"/><stop offset="0.7" stop-color="#9a7438"/><stop offset="1" stop-color="#5a3e18"/>
+</linearGradient>
+<linearGradient id="lacquer" x1="0" y1="0" x2="0" y2="1">
+ <stop offset="0" stop-color="#a23a20"/><stop offset="1" stop-color="#561a0e"/>
+</linearGradient>
+<linearGradient id="cloth" x1="0" y1="0" x2="1" y2="0">
+ <stop offset="0" stop-color="#6a2010"/><stop offset="0.45" stop-color="#9c3620"/><stop offset="1" stop-color="#5e1c0e"/>
+</linearGradient>
+<linearGradient id="iron" x1="0" y1="0" x2="0" y2="1">
+ <stop offset="0" stop-color="#e4e2dc"/><stop offset="0.5" stop-color="#9a978f"/><stop offset="1" stop-color="#55524c"/>
+</linearGradient>
+<linearGradient id="horn" x1="0" y1="1" x2="0" y2="0">
+ <stop offset="0" stop-color="#b8a67e"/><stop offset="1" stop-color="#f4ead2"/>
+</linearGradient>
+<linearGradient id="frog" x1="0" y1="0" x2="0" y2="1">
+ <stop offset="0" stop-color="#8cc04a"/><stop offset="1" stop-color="#3e6a1e"/>
+</linearGradient>
+<radialGradient id="meadow" cx="0.5" cy="0.62" r="0.62">
+ <stop offset="0" stop-color="#7a9a3e"/><stop offset="0.75" stop-color="#56782e"/><stop offset="1" stop-color="#34501a"/>
+</radialGradient>
+<radialGradient id="well" cx="0.5" cy="0.4" r="0.65">
+ <stop offset="0" stop-color="#3a2818"/><stop offset="1" stop-color="#17110b"/>
+</radialGradient>
+</defs><clipPath id="sh"><path d="M70,58 H442 V248 C442,366 360,432 256,474 C152,432 70,366 70,248 Z"/></clipPath><g clip-path="url(#sh)"><rect x="0" y="0" width="256" height="250" fill="url(#lacquer)"/><rect x="256" y="0" width="256" height="250" fill="#3a2818"/><rect x="0" y="250" width="256" height="262" fill="#4e7a26"/><rect x="256" y="250" width="256" height="262" fill="#25427a"/><path d="M118,206 C108,150 140,104 206,92 C170,118 158,150 166,204 Z" fill="url(#horn)" stroke="#1a1006" stroke-width="8" stroke-linejoin="round"/><path d="M112,206 H174 V222 H112 Z" fill="url(#bronze)" stroke="#1a1006" stroke-width="6"/><path d="M298,214 C276,170 290,104 350,96 C410,90 432,150 410,190 C396,214 352,226 298,214 Z" fill="#a8a29a" stroke="#1a1006" stroke-width="8" stroke-linejoin="round"/><path d="M318,198 C304,166 314,124 352,120 C390,118 402,156 388,180 C378,196 350,204 318,198 Z" fill="#e6a0a0"/><path d="M98,380 C98,316 134,284 170,284 C206,284 236,316 236,380 Z" fill="url(#frog)" stroke="#1a1006" stroke-width="8" stroke-linejoin="round"/><circle cx="168" cy="338" r="36" fill="#f2c94c" stroke="#1a1006" stroke-width="5"/><ellipse cx="168" cy="340" rx="24" ry="11" fill="#140c04"/><circle cx="154" cy="326" r="7" fill="#fff8e0"/><path d="M300,296 C336,312 360,384 348,418 C332,410 318,372 300,336 Z" fill="#f4ead2" stroke="#1a1006" stroke-width="6" stroke-linejoin="round"/><path d="M300,296 C330,308 364,362 370,384 C342,388 318,358 300,330 Z" fill="#f4ead2" stroke="#1a1006" stroke-width="6" stroke-linejoin="round"/><path d="M300,296 C324,304 368,340 392,350 C352,366 318,344 300,324 Z" fill="#f4ead2" stroke="#1a1006" stroke-width="6" stroke-linejoin="round"/><path d="M300,296 C318,300 372,318 414,316 C362,344 318,330 300,318 Z" fill="#f4ead2" stroke="#1a1006" stroke-width="6" stroke-linejoin="round"/><path d="M282,286 C312,270 352,276 384,300 C350,312 316,318 290,320 Z" fill="#d8ccb0" stroke="#1a1006" stroke-width="6" stroke-linejoin="round"/><rect x="244" y="40" width="24" height="460" fill="url(#bronze)" stroke="#1a1006" stroke-width="5"/><rect x="40" y="238" width="432" height="24" fill="url(#bronze)" stroke="#1a1006" stroke-width="5"/><circle cx="256" cy="250" r="10" fill="#f3d58a" stroke="#1a1006" stroke-width="3"/></g><path d="M70,58 H442 V248 C442,366 360,432 256,474 C152,432 70,366 70,248 Z" fill="none" stroke="#2a1a0a" stroke-width="38" stroke-linejoin="round"/><path d="M70,58 H442 V248 C442,366 360,432 256,474 C152,432 70,366 70,248 Z" fill="none" stroke="url(#bronze)" stroke-width="26" stroke-linejoin="round"/><path d="M70,58 H442 V248 C442,366 360,432 256,474 C152,432 70,366 70,248 Z" fill="none" stroke="#fff2c8" stroke-width="2" stroke-linejoin="round" opacity="0.35" transform="translate(256,256) scale(0.955) translate(-256,-256)"/></svg>

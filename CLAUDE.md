@@ -15,6 +15,7 @@ Godot 4.7 (GDScript), 2D. Solo dev, macOS.
 | `docs/backlog.md` | Everything postponed, in rough priority order |
 | `docs/roster-template.md` | Full building, age and unit-line plan, with MVP/Next/Later status |
 | `docs/market-context.md` | Why this game, why now (industry, genres, engines) |
+| `docs/business.md` | How the game earns (Steam, Early Access, era packs) and the website plan; open questions |
 | `docs/rendering.md` | How the art is made: models (code and Blender), 8-facing bakes, worn armour, buildings, checking tools |
 | `docs/audio.md` | How the sound is made: the offline synth (`tools/audio/`), effects, creature voices, the theme in stems by age |
 
