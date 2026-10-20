@@ -138,3 +138,4 @@ One line per moment worth remembering. Newest at the bottom.
 - **2026-10-20:** Frog falls round HF2 (Dominic on HF1: "Just rotating or squishing the image"): the dead frog posed in 3D and baked (`scenes/art_pixel/fall_concepts.gd`): belly up, on its side, face-down sprawl, gear dropped beside it; Dominic to pick.
 - **2026-10-20:** HF2b: the sprawl in its own baked footprint shadow, and lying on its belly for real (limp arms, a slumped body; it had been propped on one hand).
 - **2026-10-20:** D-165: the frogs die laid down in 3D (the sprawl, baked per recipe with its own shadow); placement rules D1/D2 for corpses; rig3d and geom moved into the game.
+- **2026-10-20:** D-166: the dead frog lies turned per facing (round HF3), so no view sees its sprawl end on from behind.

@@ -1173,3 +1173,10 @@ recipe (`src/view/art/corpse.gd`, `art_kit._corpse_job`), and UnitView plays the
 `geom.gd`). New placement rules D1 (a corpse lies on the ground) and D2 (dropped gear on the ground, clear of the
 body), with a fixture for the frog propped up on its hand. Cost: ~0.6 s of renders per frog recipe on a cold load
 (six workers at once, then the bake cache).
+
+**D-166, 2026-10-20: A corpse may lie turned differently in each facing, so every view reads.** Dominic, on the frog's
+sprawl looking like legs stood on from behind: "slightly different views from different sides so it always looks good is
+fine". The dead aren't tied to the facing they fell in: `corpse.turn` (8 degrees, parts.json) turns the laid-down body
+on its spot per facing before it bakes, its shadow with it. The frog's is [0, -45, -30, 0, 0, 30, -30, 0], picked from
+round HF3 (`tests/sheets/frog_fall_hf3.json`: the sprawl turned -60 to +60 in every facing); no facing now sees it end
+on from behind.
