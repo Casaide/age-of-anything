@@ -20,6 +20,7 @@ const UnitModels := preload("res://scenes/art_pixel/unit_models.gd")
 const BakeCache := preload("res://src/view/art/bake_cache.gd")
 const Heroes := preload("res://src/heroes.gd")
 const BakeClock := preload("res://src/view/art/bake/bake_clock.gd")
+const Corpse := preload("res://src/view/art/corpse.gd")
 
 const ART_SCALE := 1.5     # art pixels per canvas unit (a tile is 96 x 48 art pixels)
 const UNIT_SCALE := 0.85   # units at about a third of a building's height
@@ -393,6 +394,9 @@ func _steps_jobs(units: Array) -> Array:
 			var pose_colours := UnitView.colours_for(lib, mount_skin, u.recipe.family, ANIMAL_TEAM)
 			for pp in UnitView.pose_parts(lib, u.recipe):
 				ids.append(_part_job(pp[0], pp[1], pose_colours))
+		var pose := UnitView.corpse_pose(lib, u.recipe)
+		if not pose.is_empty():   # how it lies dead, laid down in 3D (D-165: the frog)
+			ids.append(_corpse_job(u.recipe, pose))
 		var colours := UnitView.colours_for(lib, u.recipe.skin, u.recipe.family, ANIMAL_TEAM)
 		if u.recipe.slot == "worker":
 			# Workers change tools for the job and carry their load home in their hands.
@@ -430,6 +434,34 @@ func _part_job(id: String, shapes: Array, colours: Dictionary) -> String:
 		PartShape.rigs.merge(e.rigs, true)
 	return _job("part|%s|%s|%d" % [key, ART_SCALE * UNIT_SCALE, UNIT_BANDS], "part", 1 + 8 * int(modelled), "Mustering the armies",
 		PartShape.baked.has(key), make, apply)
+
+
+## A unit's corpse frames (UnitView._corpse_fall), its last with its shadow: one job, eight facings a frame.
+func _corpse_job(r: Dictionary, pose: Dictionary) -> String:
+	var frames: Array = pose.frames
+	var keys := []
+	for f in frames:
+		var id := UnitView.corpse_id(r, pose, int(f))
+		for k in 8:
+			keys.append(PartShape.bake_key(id, [], {}) + PartShape.facing_suffix(k))
+			if int(f) == int(frames[-1]):
+				keys.append(PartShape.bake_key(id + "~shadow", [], {}) + PartShape.facing_suffix(k))
+	var make := func(pb) -> Dictionary:
+		var rig := Corpse.Rig3D.new(lib)
+		for f in frames:
+			await Corpse.bake(pb, lib, rig, r, pose, float(f) / 100.0, int(f) == int(frames[-1]))
+		rig.clear()
+		var e := {"baked": {}, "rigs": {}}
+		for k in keys:
+			var b: Dictionary = PartShape.baked[k]
+			e.baked[k] = {"img": BakeCache.pack(b.img), "origin": b.origin, "scale": b.scale}
+		return e
+	var apply := func(e: Dictionary) -> void:
+		for k in e.baked:
+			var img := BakeCache.unpack(e.baked[k].img)
+			PartShape.baked[k] = {"img": img, "tex": ImageTexture.create_from_image(img), "origin": e.baked[k].origin, "scale": e.baked[k].scale}
+	return _job("corpse|%s|%s|%d" % [UnitView.corpse_id(r, pose, 0), ART_SCALE * UNIT_SCALE, UNIT_BANDS], "part", 8 * frames.size(), "Mustering the armies",
+		PartShape.baked.has(keys[-1]), make, apply)
 
 
 ## What a part bake made, to keep: its sprites (every facing, front layers) and rigs.

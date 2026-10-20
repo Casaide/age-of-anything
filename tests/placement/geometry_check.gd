@@ -13,11 +13,16 @@ extends RefCounted
 ##      the highest points on either side of it (a gap between the skull and the neck is a dip too).
 ##   A4 stance (data: parts.json legs.stance): a standing leg reaches down, not folded up, and its
 ##      foot is out to its own side by the body's sprawl.
+##   D1 a corpse lies on the ground (parts.json corpse, src/view/art/corpse.gd): laid down, its body,
+##      every leg and its head reach within LIE of the ground (not propped on a hand: HF2b).
+##   D2 what it dropped lies on the ground, clear of the body: each item within 1 of the ground and
+##      sharing no more volume with the body than touching surfaces do.
 ## Results are {rule|case: [failing views]}, like tests/layer_check.gd.
 
-const Geom := preload("res://tests/placement/geom.gd")
-const Rig3D := preload("res://tests/placement/rig3d.gd")
+const Geom := preload("res://src/view/art/geom.gd")
+const Rig3D := preload("res://src/view/art/rig3d.gd")
 const Composite3D := preload("res://tests/placement/composite_3d.gd")
+const Corpse := preload("res://src/view/art/corpse.gd")
 const UnitView := preload("res://src/unit_view.gd")
 
 ## Tolerances (part units; one part unit is 1.275 art pixels at game size).
@@ -41,6 +46,7 @@ const BROW_CLEAR := 0.5      # an open cap's lowest edge over the eyes at least 
 const HEAD_NOTCH := 1.0      # the top line from the withers to the head dips at most this (data: legs.stance.notch)
 const NOTCH_SPIKE := 3         # ...after spikes narrower than this many voxel columns are levelled
 const EYE_CLEAR := 3.0       # nothing of the head gear this far out in front of an eye
+const LIE := 3.0             # a corpse's body, legs and head this near the ground at most
 
 var lib
 var rig: Rig3D
@@ -126,9 +132,43 @@ func check(label: String, u: Dictionary) -> void:
 		walker_body = mc.get("fused_body", mc.body) if r.mount.fused else mc.get("mount_body", mc.body)
 	for bp in UnitView.idle_poses_of(lib, r, walker_body):
 		_check_pose(label, bp, rig.unit(r, {"body_pose": bp}), true)
+	_check_corpse(label, r)
 	rig.clear()
 	if _vox_cache.size() > 600:
 		_vox_cache.clear()   # (kept across units: a mount's body and legs voxelize once for all its riders)
+
+
+## D1, D2: the unit as it lies dead (the last frame of its corpse pose), if its body has one.
+func _check_corpse(label: String, r: Dictionary) -> void:
+	var pose := UnitView.corpse_pose(lib, r)
+	if pose.is_empty():
+		return
+	var m := Corpse.model(lib, rig, r, pose, 1.0)
+	var body: Node3D = m.get_node("body")
+	var high := []
+	var body_vox := {}
+	for w in body.get_children():
+		var lo := INF
+		for v in Geom.vertices(w, body.transform):
+			lo = minf(lo, v.y)
+		var kind: String = String(w.name).rstrip("0123456789")
+		if kind in ["body", "leg", "head"] and lo > LIE:
+			high.append("%s %.1f up" % [w.name, lo])
+		body_vox.merge(Geom.voxels(w, body.transform))
+	note("D1 a corpse lies on the ground", label, "down", not high.is_empty(), ", ".join(high))
+	var bad := []
+	for d in m.get_children():
+		if d == body:
+			continue
+		var lo := INF
+		for v in Corpse.verts(d):
+			lo = minf(lo, v.y)
+		var vox: Dictionary = Geom.voxels(d.get_child(0), d.transform)
+		var shared := vox.keys().filter(func(k): return body_vox.has(k)).size()
+		if lo > 1.0 or shared > PEN_VOX + PEN_SHARE * vox.size():
+			bad.append("%s %.1f up, %d voxels in the body" % [d.name, lo, shared])
+	note("D2 dropped gear on the ground, clear of the body", label, "down", not bad.is_empty(), ", ".join(bad))
+	m.free()
 
 
 func _vox(p: Dictionary) -> Dictionary:

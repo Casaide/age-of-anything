@@ -1159,3 +1159,17 @@ chose ink on gold (the site's gold accent, the brightest tile in a dark Discord 
 Not in the game yet (`project.godot` `config/icon`, the export icons): a later step. At 16 px it reads as a framed grid
 on gold rather than its parts; a hand-drawn 16 px version can come later if that matters. Round I1's race marks stay
 as Discord stickers and emoji (`docs/concepts/icon/stickers/`).
+
+**D-165, 2026-10-20: The frogs die laid down in 3D, face down in a sprawl; supersedes D-106's hopper fall.** D-106
+gave a hopper one last hop that turned its whole sprite over, meant as landing on its back; on a flat pixel sprite
+it read as a frog drawn upside down (Dominic, from a battle screenshot: they "look upside down"). Round HF1 turned
+and squashed the sprite other ways (onto its side, a belly flop, a kick); Dominic: "those are all terrible. Just
+rotating or squishing the image". Round HF2 posed the dead frog in 3D and baked it: belly up, on its side, face-down
+sprawl. He picked the sprawl ("probably the most realistic, but shadow makes it look like it's floating"), so HF2b
+gave it its own baked shadow and laid it on its belly for real (limp arms, a slumped body: it had been propped on
+one hand). Now a body with a `corpse` pose in parts.json (only `body.frog`) bakes a few frames of its fall per
+recipe (`src/view/art/corpse.gd`, `art_kit._corpse_job`), and UnitView plays them after a short last hop
+(`_corpse_fall`). The 3D unit assembly moved from the tests into the game for it (`src/view/art/rig3d.gd`,
+`geom.gd`). New placement rules D1 (a corpse lies on the ground) and D2 (dropped gear on the ground, clear of the
+body), with a fixture for the frog propped up on its hand. Cost: ~0.6 s of renders per frog recipe on a cold load
+(six workers at once, then the bake cache).
