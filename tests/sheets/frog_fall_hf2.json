@@ -1,0 +1,212 @@
+{
+ "name": "frog_fall_hf2",
+ "title": "Frog falls, concept round HF2 (2026-10-20): the dead frog posed in 3D and baked, not a turned sprite",
+ "_doc": "Dominic on HF1 (turned and squashed sprites): 'those are all terrible. Just rotating or squishing the image'. Here the whole frog is put together in 3D (rig3d), laid down (scenes/art_pixel/fall_concepts.gd POSES), what it held dropped flat beside it, and baked in 8 facings like any part. The poses as shown in the round (2026-10-20) are written into each row; the arms' limp model has moved on since (HF2b).",
+ "zooms": [
+  3,
+  1
+ ],
+ "cell": [
+  80,
+  64
+ ],
+ "size": [
+  {
+   "prompt": "viking frogs",
+   "slot": "spear",
+   "age": 2
+  }
+ ],
+ "rows": [
+  {
+   "label": "A belly up:\nviking frog spear",
+   "unit": {
+    "prompt": "viking frogs",
+    "slot": "spear",
+    "age": 2,
+    "concept": {
+     "corpse": {
+      "frames": [
+       100
+      ],
+      "pivot": [
+       0,
+       9,
+       0
+      ],
+      "roll": 172.0,
+      "pitch": -34.0,
+      "legs": "",
+      "leg_turn": [
+       35.0,
+       10.0,
+       0.0
+      ],
+      "helm": true
+     }
+    }
+   }
+  },
+  {
+   "label": "A belly up:\nswamp frog worker",
+   "unit": {
+    "prompt": "swamp frogs",
+    "slot": "worker",
+    "concept": {
+     "corpse": {
+      "frames": [
+       100
+      ],
+      "pivot": [
+       0,
+       9,
+       0
+      ],
+      "roll": 172.0,
+      "pitch": -34.0,
+      "legs": "",
+      "leg_turn": [
+       35.0,
+       10.0,
+       0.0
+      ],
+      "helm": true
+     }
+    }
+   }
+  },
+  {
+   "label": "B on its side:\nviking frog spear",
+   "unit": {
+    "prompt": "viking frogs",
+    "slot": "spear",
+    "age": 2,
+    "concept": {
+     "corpse": {
+      "frames": [
+       100
+      ],
+      "pivot": [
+       0,
+       9,
+       0
+      ],
+      "roll": -84.0,
+      "pitch": -34.0,
+      "body": "limp",
+      "legs": "limp",
+      "leg_turn": [
+       0.0,
+       30.0,
+       -12.0
+      ],
+      "helm": false
+     }
+    }
+   }
+  },
+  {
+   "label": "B on its side:\nswamp frog worker",
+   "unit": {
+    "prompt": "swamp frogs",
+    "slot": "worker",
+    "concept": {
+     "corpse": {
+      "frames": [
+       100
+      ],
+      "pivot": [
+       0,
+       9,
+       0
+      ],
+      "roll": -84.0,
+      "pitch": -34.0,
+      "body": "limp",
+      "legs": "limp",
+      "leg_turn": [
+       0.0,
+       30.0,
+       -12.0
+      ],
+      "helm": false
+     }
+    }
+   }
+  },
+  {
+   "label": "C face-down sprawl:\nviking frog spear",
+   "unit": {
+    "prompt": "viking frogs",
+    "slot": "spear",
+    "age": 2,
+    "concept": {
+     "corpse": {
+      "frames": [
+       100
+      ],
+      "pivot": [
+       0,
+       9,
+       0
+      ],
+      "roll": 0.0,
+      "pitch": -30.0,
+      "legs": "limp",
+      "leg_turn": [
+       0.0,
+       28.0,
+       28.0
+      ],
+      "helm": false
+     }
+    }
+   }
+  },
+  {
+   "label": "C face-down sprawl:\nswamp frog worker",
+   "unit": {
+    "prompt": "swamp frogs",
+    "slot": "worker",
+    "concept": {
+     "corpse": {
+      "frames": [
+       100
+      ],
+      "pivot": [
+       0,
+       9,
+       0
+      ],
+      "roll": 0.0,
+      "pitch": -30.0,
+      "legs": "limp",
+      "leg_turn": [
+       0.0,
+       28.0,
+       28.0
+      ],
+      "helm": false
+     }
+    }
+   }
+  }
+ ],
+ "sheets": [
+  {
+   "name": "down",
+   "title": "Down, 8 facings",
+   "columns": "corpse"
+  },
+  {
+   "name": "fall0",
+   "title": "The fall in 3D, facing 0 (0% standing, 100% down)",
+   "columns": "corpse_fall:0"
+  },
+  {
+   "name": "fall3",
+   "title": "The fall in 3D, facing 3",
+   "columns": "corpse_fall:3"
+  }
+ ]
+}

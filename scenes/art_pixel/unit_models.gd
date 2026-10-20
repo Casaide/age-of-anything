@@ -421,11 +421,16 @@ func _body_frog(c: Dictionary) -> Dictionary:
 	return _scaled(_body_frog_built(c), FROG_SCALE)
 
 
+const LIMP_ARM := [Vector3(7.5, 13.0, 8.5), Vector3(11.0, 15.0, 10.0)]   # (forward and up: the body lies pitched nose down 40, so they lie flat)   # a dead frog's elbow and hand (body.frog@limp)
+
+
 func _body_frog_built(c: Dictionary) -> Dictionary:
 	var n := Node3D.new()
 	var m := _frog_mats(c)
-	n.add_child(blob(Vector3(8.2, 5.6, 6.6), m[0], Vector3(-0.5, 9.5, 0), Vector3(0, 0, 32)))
-	n.add_child(blob(Vector3(6.0, 3.8, 5.0), m[1], Vector3(1.6, 8.0, 0), Vector3(0, 0, 32)))
+	# Dead (D-165, @limp), the body slumps: lower and wider, about as much of it (a frog has no ribs to hold it up).
+	var slump := Vector3(1.1, 0.75, 1.15) if hold == "limp" else Vector3.ONE
+	n.add_child(blob(Vector3(8.2, 5.6, 6.6) * slump, m[0], Vector3(-0.5, 9.5, 0), Vector3(0, 0, 32)))
+	n.add_child(blob(Vector3(6.0, 3.8, 5.0) * slump, m[1], Vector3(1.6, 8.0 if hold != "limp" else 7.0, 0), Vector3(0, 0, 32)))
 	var front := Node3D.new()
 	var near_hand := Vector3.ZERO
 	for side in [1, -1]:
@@ -433,7 +438,12 @@ func _body_frog_built(c: Dictionary) -> Dictionary:
 		var sh := Vector3(4.2, 11.0, 4.6 * side)
 		var elbow := Vector3(6.0, 6.5, 5.6 * side)
 		var hand := Vector3(8.0, 1.2, 5.4) if side == 1 else Vector3(8.0, 4.5, -5.4)
-		if side == 1:
+		if hold == "limp":   # (D-165, src/view/art/corpse.gd: a dead frog's arms flung forward and out, to lie on the ground)
+			elbow = Vector3(LIMP_ARM[0].x, LIMP_ARM[0].y, LIMP_ARM[0].z * side)
+			hand = Vector3(LIMP_ARM[1].x, LIMP_ARM[1].y, LIMP_ARM[1].z * side)
+			if side == 1:
+				near_hand = hand
+		elif side == 1:
 			var pose := arm_pose(sh, elbow, Vector3(8.5, 8.5, 7.8), Vector3(8.4, 13.5, 0))   # (hand out from the flank: at z 5.4 a lance's butt ran through it)   # (the "head" a blowgun is held 6 in front of: the wide mouth's front; the head socket put it inside the head)
 			elbow = pose[0]
 			hand = pose[1]
@@ -479,12 +489,18 @@ func _leg_frog_built(c: Dictionary) -> Dictionary:
 	var m := _frog_mats(c)
 	var knee := Vector3(5.5, 3.8, 1.6)
 	var ankle := Vector3(-2.0, -3.2, 1.2)
+	var heel := ankle + Vector3(0, -2.4, 0)
+	var toe_dir := Vector3(6.5, -0.4, 0)
+	if hold == "limp":   # (D-165, src/view/art/corpse.gd: a dead frog's leg stretched out long behind it)
+		knee = Vector3(-5.2, -1.2, 1.6)
+		ankle = Vector3(-10.4, -1.8, 1.3)
+		heel = ankle + Vector3(-2.2, -0.3, 0)
+		toe_dir = Vector3(-5.5, -0.3, 0)
 	n.add_child(rod(Vector3.ZERO, knee, 2.6, 1.8, m[0]))
 	n.add_child(rod(knee, ankle, 1.7, 1.1, m[0]))
-	var heel := ankle + Vector3(0, -2.4, 0)
 	n.add_child(rod(ankle, heel, 1.1, 0.9, m[0]))
 	for t in 4:
-		var toe := heel + Vector3(6.5, -0.4, (t - 1.5) * 1.6)
+		var toe := heel + toe_dir + Vector3(0, 0, (t - 1.5) * 1.6)
 		n.add_child(rod(heel, toe, 0.5, 0.42, m[0], false))
 		n.add_child(blob(Vector3(0.8, 0.55, 0.8), m[1], toe))
 	return {"node": n}

@@ -49,6 +49,9 @@ static func run(lib) -> Array:
 		["the leather cap's brim across the brows like a headband (the cap before it sat higher)",
 			"human in a leather cap", ["A2 an open cap clear of the brow"],
 			func(g): g.rig.overrides["helm.cap"] = func(c): return _old_cap(g.rig.models, c), func(g): g.rig.overrides.erase("helm.cap"), human],
+		["a dead frog propped up on its far hand, the belly in the air (HF2b: the arms still braced as it stood; Dominic: \"looks like it's floating\")",
+			"swamp frogs spear", ["D1 a corpse lies on the ground"],
+			func(g): g.lib.parts["body.frog"].corpse["body"] = "", func(g): g.lib.parts["body.frog"].corpse["body"] = "limp", {}],
 	]
 	list += composite_fixtures(cases)
 	var ok := true

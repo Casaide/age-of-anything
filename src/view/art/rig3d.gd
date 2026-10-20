@@ -2,13 +2,14 @@ extends RefCounted
 ## A unit put together in 3D, the way UnitView composes it in 2D: the body's model, its legs at
 ## their hips (posed for a walk phase), its head on its socket, its gear on its sockets (worn armour
 ## fitted as the bake fits it), a rider on its mount's seat. Every piece keeps its model, its world
-## transform, the joint it hangs from and its parent piece, for tests/placement/geometry_check.gd.
+## transform, the joint it hangs from and its parent piece, for tests/placement/geometry_check.gd and
+## the dead laid down in 3D (corpse.gd).
 ## 2D-only touches (a rider's near leg stretched down the flank, a pegasus's wings at the withers,
 ## a harness's couched weapon) are left to the projection checks.
 
 const UnitModels := preload("res://scenes/art_pixel/unit_models.gd")
 const UnitView := preload("res://src/unit_view.gd")
-const Geom := preload("res://tests/placement/geom.gd")
+const Geom := preload("res://src/view/art/geom.gd")
 
 const SCREEN_Y := 0.8660254   # one 3D unit straight up is this many screen units (elevation 30)
 
