@@ -1073,6 +1073,14 @@ func die(tip: float) -> void:
 	walking = false
 	job = ""
 	attack_t = 0.0
+	var pose := corpse_pose(_built[1], recipe)
+	if not pose.is_empty():
+		_corpse_pose = pose
+		_corpse = _shape()
+		_corpse.facing = facing_k
+		_corpse.setup([], colours_for(_built[1], recipe.skin, recipe.family, _built[2]))
+		_corpse.visible = false
+		visual.add_child(_corpse)
 	for c in crew:
 		if c.top and not legs.is_empty():
 			# A war beast's riders come off it (_beast_fall), out of its body's turn.
@@ -1334,18 +1342,15 @@ func _attack(a: float) -> void:
 		weapon.rotation = weapon_rot + lerpf(0.9, 0.0, (a - 0.8) / 0.2)
 
 
-## The fall, by body shape (D3): a hopper gives one last hop and lands on its back; a flyer
-## drops to the ground, then topples; four or six legs fold and the body sinks (a rider slumps);
-## a biped topples backwards, away from the blow, and bounces once. The shadow stays put;
-## combat_fx fades the body and raises the dust.
+## The fall, by body shape (D3): a body laid down in 3D (parts.json corpse: the frog) plays its baked
+## frames (_corpse_fall); a flyer drops to the ground, then topples; four or six legs fold and the
+## body sinks (a rider slumps); a biped topples backwards, away from the blow, and bounces once.
+## The shadow stays put (a corpse's becomes its own); combat_fx fades the body and raises the dust.
 func _die_pose() -> void:
 	var t := die_t
 	_die_offset = Vector2.ZERO
-	if gait.get("hop", false):
-		var a := minf(t / 0.45, 1.0)
-		var h := _hip_height() + 8.0
-		visual.rotation = -PI * a
-		_die_offset = Vector2(0.0, -h * (1.0 - cos(PI * a)) * 0.5 - sin(a * PI) * 5.0)
+	if _corpse != null:
+		_corpse_fall(t)
 	elif flying:
 		var drop := minf(t / 0.3, 1.0)
 		bob.position.y = lerpf(bob.position.y, 0.0, drop)
@@ -1369,6 +1374,52 @@ func _die_pose() -> void:
 		if legs.size() == 2:
 			legs[0].node.rotation += -0.4 * e
 			legs[1].node.rotation += 0.2 * e
+
+
+## The dead laid down in 3D (D-165, src/view/art/corpse.gd; Dominic: "Just rotating or squishing the
+## image" was terrible): a body with a corpse pose in parts.json (the frog) gives one last short hop,
+## and on the way down its sprite is swapped for the frames baked of it falling in 3D, the last one
+## lying face down in its own shadow (art_kit bakes them with the race). Not for a rider, an engine
+## or a flyer: those fall their own way.
+var _corpse: PartShape = null
+var _corpse_pose := {}
+const CORPSE_AT := [0.12, 0.24, 0.36]   # when each frame shows (seconds into the death; the hop lands at the last)
+
+
+static func corpse_pose(lib, r: Dictionary) -> Dictionary:
+	if r.has("mount") or r.has("crew") or (r.parts.has("back") and "flying" in lib.part(r.parts.back).tags):
+		return {}
+	return lib.part(r.body).get("corpse", {})
+
+
+## The part id a frame of a unit's corpse is baked under (f: percent of the way down).
+static func corpse_id(r: Dictionary, pose: Dictionary, f: int) -> String:
+	return "corpse@%d#%d#%d" % [f, JSON.stringify(r, "", true).hash(), JSON.stringify(pose, "", true).hash()]
+
+
+func _corpse_fall(t: float) -> void:
+	var up := clampf(t / CORPSE_AT[-1], 0.0, 1.0)
+	_die_offset = Vector2(0.0, -sin(up * PI) * HOP_HEIGHT * 0.6)
+	var frames: Array = _corpse_pose.frames
+	var shown := -1
+	for i in frames.size():
+		if t >= CORPSE_AT[i]:
+			shown = i
+	if shown < 0:
+		return
+	var id := corpse_id(recipe, _corpse_pose, int(frames[shown]))
+	if _corpse.part_id == id:
+		return
+	_corpse.part_id = id
+	_corpse.visible = true
+	_corpse.queue_redraw()
+	for c in visual.get_children():
+		c.visible = c == _corpse
+	if shown == frames.size() - 1:   # down: in its own shadow (the posed body pressed onto the ground)
+		_shadow.part_id = id + "~shadow"
+		_shadow.facing = facing_k
+		_shadow.setup([], {})
+		_shadow.scale = Vector2(unit_scale * facing, unit_scale)
 
 
 ## Which way the unit faces, on screen, in the sprite's own space: the baked facing's

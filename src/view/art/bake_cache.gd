@@ -13,7 +13,7 @@ const ROOT := "user://bake_cache"
 const KEEP := 12      # versions kept on disk (a few MB each; several checkouts and worktrees share user://, so few would evict each other)
 ## What the baked look comes from. Folders are hashed file by file (sorted).
 const SOURCES := ["res://src/view/art/art_kit.gd", "res://src/view/art/bake/", "res://scenes/art_pixel/part_baker.gd",
-	"res://scenes/art_pixel/pixelize.gd", "res://scenes/art_pixel/prop_models.gd", "res://scenes/art_pixel/unit_models.gd", "res://scenes/art_pixel/siege_models.gd", "res://scenes/art_pixel/tree_models.gd", "res://scenes/art_pixel/bridge_models.gd", "res://scenes/art_pixel/town_props.gd",
+	"res://scenes/art_pixel/pixelize.gd", "res://src/view/art/corpse.gd", "res://src/view/art/rig3d.gd", "res://src/view/art/geom.gd", "res://scenes/art_pixel/prop_models.gd", "res://scenes/art_pixel/unit_models.gd", "res://scenes/art_pixel/siege_models.gd", "res://scenes/art_pixel/tree_models.gd", "res://scenes/art_pixel/bridge_models.gd", "res://scenes/art_pixel/town_props.gd",
 	"res://scenes/art_pixel/creature_kit.gd", "res://scenes/art_pixel/bear_models.gd", "res://scenes/art_pixel/cart_concepts.gd", "res://scenes/art_pixel/m13_concepts.gd", "res://scenes/art_pixel/hero_models.gd", "res://data/creature_kit.json", "res://data/later/",
 	"res://src/part_shape.gd", "res://data/parts.json", "res://data/buildings.json",
 	"res://data/animals.json", "res://data/palettes.json", "res://data/families.json", "res://data/creatures.json",

@@ -22,7 +22,7 @@ extends RefCounted
 ## Results go into the GeometryCheck's results (its note()), so the sheet tool and the placement
 ## check report them with the rest.
 
-const Geom := preload("res://tests/placement/geom.gd")
+const Geom := preload("res://src/view/art/geom.gd")
 const UnitView := preload("res://src/unit_view.gd")
 
 const PEN_VOX := 12

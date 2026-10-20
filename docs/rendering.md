@@ -96,12 +96,12 @@ kit on every body (`norse_cases`). Where off-hand gear can't sit right, the body
 spiders; baked `<shield>@slung`, D-152), and a part's `not_worn_by` keeps it off a body it doesn't fit.
 
 **3D** (`tests/placement/geometry_check.gd`, headless, also in `run_tests.gd`): each unit is put
-together from its models as UnitView composes it (`tests/placement/rig3d.gd`: legs at their hips
+together from its models as UnitView composes it (`src/view/art/rig3d.gd`: legs at their hips
 turned by `leg_basis`, head on its socket, gear on its sockets, worn armour fitted as the bake fits
 it, a rider's hips on its mount's seat) in every pose the game draws: standing, the swings it goes
 through (a worker's tool wound up and landing, a melee blow, a spear's thrust levelled and driven
 forward; ranged units only loose), and the walk at 8 phases. Meshes are read in world space and
-voxelized on a 0.5-unit grid (`tests/placement/geom.gd`: primitives filled exactly, modelled meshes
+voxelized on a 0.5-unit grid (`src/view/art/geom.gd`: primitives filled exactly, modelled meshes
 by ray parity; decals left out). One part unit is 1.275 art pixels at game size.
 
 - **A1 ground**: standing, every foot within 1 unit of the ground; nothing below -1; the centre of
@@ -135,6 +135,11 @@ by ray parity; decals left out). One part unit is 1.275 art pixels at game size.
 - **A4 stance** (`legs.stance` in parts.json): a standing leg's drop (hip to foot) at least 60% of its
   reach (`drop`: not folded up), its foot out to its own side of its hip by `sprawl` (-2 to 6 units:
   a far leg's foot under the belly fails).
+- **D1 a corpse lies on the ground** (a body with a `corpse` pose, see Deaths below): laid down, its body, every
+  leg and its head reach within 3 units of the ground. The fixture props the frog up on its far hand
+  (HF2b: its arms still braced as it stood) and must fail it.
+- **D2 dropped gear on the ground, clear of the body**: each item it let go of within 1 unit of the ground,
+  sharing no more than 12 voxels + 3% with the body.
 
 **2D** (`tests/placement/projection_check.gd`, needs the bakes): every unit composed by UnitView in
 all 8 facings, standing, at three walk phases and (workers) foraging, each part's sprite laid onto a grid in the unit's
@@ -440,6 +445,19 @@ godot --path . --script res://tests/sim_screenshot.gd -- out.png flat_test ai-lo
 bake but keeps the classic view's layering, so from behind it draws the near arm across the back
 (a false alarm Dominic caught). `facing_sheet.gd -- out.png "prompt" 8 <unit index>` shows one
 unit's real 8 facings close up. Bodies whose clothes hang over the hips set `legs_under`.
+
+**Deaths laid down in 3D** (D-165, the frog; Dominic on turned and squashed sprites: "Just rotating or squishing
+the image"). Most bodies fall in 2D (`UnitView._die_pose`: a biped topples, four legs fold). A body with a
+`corpse` pose in parts.json is laid down in 3D instead (`src/view/art/corpse.gd`): the whole unit put together
+as the placement check does (`rig3d.gd`), the body pitched and rolled about its middle, each leg turned at its
+hip, body and legs swapped for their limp models (`"<body>@limp"`, `"<leg>@limp"`), the head dropped at the
+neck, what it held (both hands, a banner) laid flat on the ground beside it. Its `frames` (percent of the
+way down) bake in 8 facings, the last with its own shadow (the posed body pressed onto the ground, so it
+lies in it rather than over the standing unit's ellipse). `art_kit._corpse_job` bakes them with the race
+(one job per recipe, ~0.6 s of renders, six workers at once, then the bake cache); UnitView gives one last
+short hop and swaps to the frames on the way down (`_corpse_fall`). The sheet tool's `corpse` and
+`corpse_fall:<k>` columns draw a pose (a unit ref's `concept.corpse` tries another); `fall:<k>` plays
+the death as the game does. Not for riders, engines or flyers.
 
 **Legs that bend, and resting poses (C2, the cat).** A leg is normally one sprite swung about its hip.
 A body can instead bake its legs posed: `legs.poses: n` bakes each leg as `"<leg>@w<i>_<n>"`, step i of

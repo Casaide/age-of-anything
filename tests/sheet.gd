@@ -26,9 +26,11 @@ extends SceneTree
 ##                          "idle:<pose>" (8, in that pose), "walk:<k>,<k>" (4 steps per facing),
 ##                          "cycle:<k>" (8 steps in one facing), "holds:<h>,<h>" (2 facings per hold),
 ##                          "shots" (8 facings loosing a shot, the shot drawn in flight: CombatFx's look for the weapon),
-##                          "strike:<k>" (a melee blow in facing k, frame by frame: flourish), "fall:<k>" (its death: die)
+##                          "strike:<k>" (a melee blow in facing k, frame by frame: flourish), "fall:<k>" (its death: die),
+##                          "corpse" (8 facings, laid down in 3D: its body's parts.json corpse pose, or concept.corpse, src/view/art/corpse.gd),
+##                          "corpse_fall:<k>" (that pose frame by frame in facing k)
 ##                        a column object: {facing, pose: stand|walk|hold|<idle pose>, step, steps, hold, other, label}
-## A unit ref: {prompt, slot, hero?: a hero's signature (slot "hero"), age?, set?: recipe fields, add_parts?: {slot: part} over its own kit, mount?: {creature, skin, parts?}, push?: engine part (the unit pushing it home: UnitView.push_recipe), rules?}
+## A unit ref: {prompt, slot, hero?: a hero's signature (slot "hero"), age?, concept?: UnitView.concept ({corpse: a corpse pose} for corpse columns), tip?: its fall's side (1 or -1), set?: recipe fields, add_parts?: {slot: part} over its own kit, mount?: {creature, skin, parts?}, push?: engine part (the unit pushing it home: UnitView.push_recipe), rules?}
 ##   or {creature, skin?, mount_body?: true, set?} (the bare creature, no gear)
 ##   or {kit, params, creature, skin?, mount_body?} (a creature-kit creature with its kit's parameters changed)
 ##   a prompt ref or a mount may also name {kit, params} (a mount also its creature): the race's unit,
@@ -46,6 +48,8 @@ const CombatFx := preload("res://src/view/combat_fx.gd")
 const GeometryCheck := preload("res://tests/placement/geometry_check.gd")
 const ProjectionCheck := preload("res://tests/placement/projection_check.gd")
 const ScriptErrors := preload("res://tests/placement/script_errors.gd")
+const Corpse := preload("res://src/view/art/corpse.gd")
+const Rig3D := preload("res://src/view/art/rig3d.gd")
 
 const BG := Color("#56782e")
 const STRIKE_MS := [0, 120, 210, 280, 340, 450]   # frames of a blow (UnitView.flourish: a war beast's lasts 0.6 s, lands at 0.21)
@@ -59,6 +63,7 @@ var team: Color
 var _races := {}
 var _variants := {}
 var _checked := false   # the placement check ran to the end
+var _corpses := {}      # [recipe, pose, f percent] -> the baked pose's part id (FallConcepts.bake)
 
 
 func _initialize() -> void:
@@ -104,6 +109,7 @@ func _initialize() -> void:
 			if u != null and u.has("part"):
 				await _bake_part(u)
 	kit.rebuild_atlas()
+	await _bake_corpses(rows)
 	var verdicts := {}
 	if check:
 		var errors = ScriptErrors.new()
@@ -211,6 +217,8 @@ func _unit(ref: Dictionary) -> Dictionary:
 			"body": body, "head": c.get("mount_head", c.head) if mb else c.head, "parts": {}, "scale": 100, "name": c.noun}, "eval": {"speed": 10}}
 	if ref.has("set"):
 		u.recipe.merge(ref.set, true)
+	u.concept = ref.get("concept", {})
+	u.tip = float(ref.get("tip", 1.0))
 	if ref.has("push"):   # the unit pushing an engine home (D-127: a rat's barrow), as UnitView.push_recipe
 		u.recipe = UnitView.push_recipe(u.recipe, ref.push)
 	if ref.has("prompt") and ref.has("kit"):   # the race's unit on a kit variant of its creature
@@ -365,6 +373,12 @@ func _columns(sh: Dictionary) -> Array:
 		"strike", "fall":   # a blow (flourish) or the death (die) in one facing, frames at these milliseconds
 			for ms in (STRIKE_MS if head == "strike" else FALL_MS):
 				out.append([int(tail), head, ms, 1000, "", false, "%s %.2f s" % [head, ms / 1000.0]])
+		"corpse":
+			for k in 8:
+				out.append([k, "corpse", 100, 100, "", false, FACING_NAMES[k] + " down"])
+		"corpse_fall":
+			for f in [0, 25, 50, 75, 100]:
+				out.append([int(tail), "corpse", f, 100, "", false, "f%s %d%%" % [tail, f]])
 		"shots":
 			for k in 8:
 				out.append([k, "loose", 0, 8, "", false, FACING_NAMES[k] + " firing"])
@@ -458,6 +472,22 @@ func _draw(world: Node2D, u: Dictionary, at: Vector2, col: Array) -> void:
 		ps.scale = Vector2.ONE * ArtKit.UNIT_SCALE * 1.5
 		world.add_child(ps)
 		return
+	if col[1] == "corpse":
+		var shadow := PartShape.new()   # (its own: the posed body's footprint, FallConcepts.bake)
+		shadow.part_id = _corpses[_corpse_key(u, col[2])] + "~shadow"
+		shadow.facing = col[0]
+		shadow.setup([], {})
+		shadow.position = at
+		shadow.scale = Vector2.ONE * ArtKit.UNIT_SCALE * float(u.recipe.scale) / 100.0
+		world.add_child(shadow)
+		var ps := PartShape.new()
+		ps.part_id = _corpses[_corpse_key(u, col[2])]
+		ps.facing = col[0]
+		ps.setup([], UnitView.colours_for(lib, u.recipe.skin, u.recipe.family, team))
+		ps.position = at
+		ps.scale = Vector2.ONE * ArtKit.UNIT_SCALE * float(u.recipe.scale) / 100.0
+		world.add_child(ps)
+		return
 	var v := UnitView.new()
 	v.facing_k = col[0]
 	var pose: String = col[1]
@@ -467,6 +497,7 @@ func _draw(world: Node2D, u: Dictionary, at: Vector2, col: Array) -> void:
 	if pose in idle:
 		v.body_pose = pose
 	v.build(u.recipe, lib, team, u.eval.get("speed", 10))
+	v.concept = u.get("concept", {})
 	v.scale = Vector2.ONE * ArtKit.UNIT_SCALE
 	v.position = at
 	v.idle_wait = 1000.0
@@ -480,7 +511,7 @@ func _draw(world: Node2D, u: Dictionary, at: Vector2, col: Array) -> void:
 		if pose == "strike":
 			v.flourish()
 		else:
-			v.die(1.0)
+			v.die(u.get("tip", 1.0))
 		var members: Array = v.crew.map(func(c): return c.view)
 		for i in roundi(col[2] * 0.06):
 			for m in [v] + members:
@@ -522,3 +553,38 @@ func _label(text: String, at: Vector2, size: int) -> Label:
 	l.add_theme_color_override("font_outline_color", Color(0, 0, 0, 0.7))
 	l.add_theme_constant_override("outline_size", 3)
 	return l
+
+
+## Every corpse a sheet draws, baked in 3D up front (corpse.gd), each frame with its shadow.
+func _bake_corpses(rows: Array) -> void:
+	var steps := {}
+	for sh in spec.sheets:
+		for c in _columns(sh):
+			if c[1] == "corpse":
+				steps[c[2]] = true
+	if steps.is_empty():
+		return
+	var baker := PartBaker.new()
+	baker.art_scale = ArtKit.ART_SCALE * ArtKit.UNIT_SCALE
+	baker.bands = ArtKit.UNIT_BANDS
+	root.add_child(baker)
+	var rig = Corpse.Rig3D.new(lib)
+	for r in rows:
+		for u in [r[1], r[2]]:
+			if u == null or u.has("part") or _corpse_pose(u).is_empty():
+				continue
+			for f in steps:
+				var k := _corpse_key(u, f)
+				if not _corpses.has(k):
+					await Corpse.bake(baker, lib, rig, u.recipe, _corpse_pose(u), float(f) / 100.0, true)
+					_corpses[k] = UnitView.corpse_id(u.recipe, _corpse_pose(u), f)
+		rig.clear()
+	baker.queue_free()
+
+
+func _corpse_pose(u: Dictionary) -> Dictionary:
+	return u.get("concept", {}).get("corpse", UnitView.corpse_pose(lib, u.recipe))
+
+
+func _corpse_key(u: Dictionary, f: int) -> String:
+	return "%s|%s|%d" % [JSON.stringify(u.recipe, "", true), JSON.stringify(_corpse_pose(u), "", true), f]

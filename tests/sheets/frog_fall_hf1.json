@@ -1,0 +1,220 @@
+{
+ "name": "frog_fall_hf1",
+ "title": "Frog falls, concept round HF1 (2026-10-19): dying frogs \"look upside down\"",
+ "_doc": "A hopper's death (UnitView._hop_fall, concept.fall): A is today's (the sprite turned right over), B a topple onto its side away from the blow, C a belly flop, D the side fall with stiff legs that kick twice. Mid-fall at 0.3 s, landed at 1.2 s (combat_fx fades the body from 0.6 s; not drawn here).",
+ "zooms": [
+  3,
+  1
+ ],
+ "cell": [
+  80,
+  64
+ ],
+ "size": [
+  {
+   "prompt": "romans",
+   "slot": "spear"
+  }
+ ],
+ "rows": [
+  {
+   "label": "A back (now, D-106):\nviking frog spear",
+   "unit": {
+    "prompt": "viking frogs",
+    "slot": "spear",
+    "age": 2,
+    "concept": {
+     "fall": "back"
+    }
+   }
+  },
+  {
+   "label": "A back (now, D-106):\nswamp frog worker",
+   "unit": {
+    "prompt": "swamp frogs",
+    "slot": "worker",
+    "concept": {
+     "fall": "back"
+    }
+   }
+  },
+  {
+   "label": "B side:\nviking frog spear",
+   "unit": {
+    "prompt": "viking frogs",
+    "slot": "spear",
+    "age": 2,
+    "concept": {
+     "fall": "side"
+    }
+   }
+  },
+  {
+   "label": "B side, other side:\nviking frog spear",
+   "unit": {
+    "prompt": "viking frogs",
+    "slot": "spear",
+    "age": 2,
+    "concept": {
+     "fall": "side"
+    },
+    "tip": -1
+   }
+  },
+  {
+   "label": "B side:\nswamp frog worker",
+   "unit": {
+    "prompt": "swamp frogs",
+    "slot": "worker",
+    "concept": {
+     "fall": "side"
+    }
+   }
+  },
+  {
+   "label": "C splat:\nviking frog spear",
+   "unit": {
+    "prompt": "viking frogs",
+    "slot": "spear",
+    "age": 2,
+    "concept": {
+     "fall": "splat"
+    }
+   }
+  },
+  {
+   "label": "C splat:\nswamp frog worker",
+   "unit": {
+    "prompt": "swamp frogs",
+    "slot": "worker",
+    "concept": {
+     "fall": "splat"
+    }
+   }
+  },
+  {
+   "label": "D kick:\nviking frog spear",
+   "unit": {
+    "prompt": "viking frogs",
+    "slot": "spear",
+    "age": 2,
+    "concept": {
+     "fall": "kick"
+    }
+   }
+  },
+  {
+   "label": "D kick, other side:\nviking frog spear",
+   "unit": {
+    "prompt": "viking frogs",
+    "slot": "spear",
+    "age": 2,
+    "concept": {
+     "fall": "kick"
+    },
+    "tip": -1
+   }
+  },
+  {
+   "label": "D kick:\nswamp frog worker",
+   "unit": {
+    "prompt": "swamp frogs",
+    "slot": "worker",
+    "concept": {
+     "fall": "kick"
+    }
+   }
+  },
+  {
+   "label": "not a hopper (unchanged):\nfrog on a newt",
+   "unit": {
+    "prompt": "viking frogs",
+    "slot": "large",
+    "age": 2
+   }
+  }
+ ],
+ "sheets": [
+  {
+   "name": "facings",
+   "title": "Mid-fall and landed, five facings",
+   "columns": [
+    {
+     "facing": 0,
+     "pose": "fall",
+     "step": 300,
+     "steps": 1000,
+     "label": "f0 mid-fall"
+    },
+    {
+     "facing": 0,
+     "pose": "fall",
+     "step": 1200,
+     "steps": 1000,
+     "label": "f0 landed"
+    },
+    {
+     "facing": 1,
+     "pose": "fall",
+     "step": 300,
+     "steps": 1000,
+     "label": "f1 mid-fall"
+    },
+    {
+     "facing": 1,
+     "pose": "fall",
+     "step": 1200,
+     "steps": 1000,
+     "label": "f1 landed"
+    },
+    {
+     "facing": 2,
+     "pose": "fall",
+     "step": 300,
+     "steps": 1000,
+     "label": "f2 mid-fall"
+    },
+    {
+     "facing": 2,
+     "pose": "fall",
+     "step": 1200,
+     "steps": 1000,
+     "label": "f2 landed"
+    },
+    {
+     "facing": 4,
+     "pose": "fall",
+     "step": 300,
+     "steps": 1000,
+     "label": "f4 mid-fall"
+    },
+    {
+     "facing": 4,
+     "pose": "fall",
+     "step": 1200,
+     "steps": 1000,
+     "label": "f4 landed"
+    },
+    {
+     "facing": 6,
+     "pose": "fall",
+     "step": 300,
+     "steps": 1000,
+     "label": "f6 mid-fall"
+    },
+    {
+     "facing": 6,
+     "pose": "fall",
+     "step": 1200,
+     "steps": 1000,
+     "label": "f6 landed"
+    }
+   ]
+  },
+  {
+   "name": "frames",
+   "title": "The fall frame by frame, facing 1",
+   "columns": "fall:1"
+  }
+ ]
+}

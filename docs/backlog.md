@@ -317,6 +317,14 @@ gets from it (units, ages, upkeep), and how the AI values a resource it doesn't 
 
 ## 9. Art and presentation
 
+- **More bodies laid down in 3D when they die** (D-165): only the frog has a `corpse` pose. Bipeds still topple
+  as a turned sprite, and a turned sprite is what Dominic called terrible on the frogs; the rats, beetles and
+  humans would gain the most. Each needs its limp models and the pose numbers, checked by D1/D2. Round HF2's
+  other frog poses (belly up, on its side) are in `tests/sheets/frog_fall_hf2.json` if a race wants them.
+- **The frog's sprawl, knees bent** (HF2b): seen from behind, legs stretched back towards the camera still
+  read a little like legs standing. A frog-legged sprawl (knees out and bent) would help. The belly rests 2
+  units up on the kerchief, which doesn't flatten like cloth would.
+
 - **Full classic-RTS-style art pass:** atlas of mask textures, palette shader, buildings, terrain.
 - 8 facings if 2 + mirror isn't enough.
 - **UI themed by your race** (Dominic, 2026-10-11): the HUD adapts to the generated race:
