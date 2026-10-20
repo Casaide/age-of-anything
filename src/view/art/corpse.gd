@@ -22,6 +22,10 @@ extends RefCounted
 ##             leg's foot out to its own side; < 0 across under the body)], degrees
 ##   head      the head (and its helmet) turned at the neck, degrees (- nose down)
 ##   helm      true: the helmet comes off and lies upturned by the head
+##   turn      [8 degrees]: in each facing the body lies turned this much about its spot (+ anticlockwise
+##             seen from above), so every view shows it from a side it reads from (Dominic: "slightly
+##             different views from different sides so it always looks good is fine"); seen end on
+##             from behind, legs stretched out towards the camera read as legs stood on
 ## What it held (both hands, a banner on its back) leaves it from frame 60.
 
 const Rig3D := preload("res://src/view/art/rig3d.gd")
@@ -178,16 +182,20 @@ static func bake(baker, lib, rig, r: Dictionary, p: Dictionary, f: float, shadow
 	var m := model(lib, rig, r, p, f)
 	baker.holder.add_child(m)
 	var box: AABB = baker._aabb(m)
-	var rad := box.size.length() * 0.5 + 2.0
+	var rad := box.size.length() * 0.5 + Vector2(box.get_center().x, box.get_center().z).length() + 2.0   # (room for it turned about its spot)
+	var turns: Array = p.get("turn", [0, 0, 0, 0, 0, 0, 0, 0])
 	var px: float = baker.art_scale * baker.SS
 	baker.size = Vector2i.ONE * ceili(2.0 * rad * px)
 	baker.cam.keep_aspect = Camera3D.KEEP_HEIGHT
 	baker.cam.size = 2.0 * rad
 	var base: float = baker.azimuth
 	var shots := []
+	var boxes := []   # each facing's aim, kept for its shadow (the same camera, so the two line up)
 	for k in 8:
 		baker.azimuth = base + baker.FACING_STEP * k
-		baker._aim(box)
+		m.rotation.y = deg_to_rad(float(turns[k]))
+		boxes.append(baker._aabb(m))
+		baker._aim(boxes[k])
 		await baker._render()
 		var shot := {"img": await BakeClock.read(baker)}
 		shot.origin = baker.cam.unproject_position(Vector3.ZERO)
@@ -206,7 +214,8 @@ static func bake(baker, lib, rig, r: Dictionary, p: Dictionary, f: float, shadow
 		baker.key.shadow_enabled = false
 		for k in 8:
 			baker.azimuth = base + baker.FACING_STEP * k
-			baker._aim(box)
+			flat.rotation.y = deg_to_rad(float(turns[k]))
+			baker._aim(boxes[k])
 			await baker._render()
 			flats.append(await BakeClock.read(baker))
 		baker.key.shadow_enabled = true

@@ -452,7 +452,8 @@ the image"). Most bodies fall in 2D (`UnitView._die_pose`: a biped topples, four
 as the placement check does (`rig3d.gd`), the body pitched and rolled about its middle, each leg turned at its
 hip, body and legs swapped for their limp models (`"<body>@limp"`, `"<leg>@limp"`), the head dropped at the
 neck, what it held (both hands, a banner) laid flat on the ground beside it. Its `frames` (percent of the
-way down) bake in 8 facings, the last with its own shadow (the posed body pressed onto the ground, so it
+way down) bake in 8 facings, each turned on the ground by its `turn` so no facing sees it end on from behind
+(D-166: views may differ by side), the last with its own shadow (the posed body pressed onto the ground, so it
 lies in it rather than over the standing unit's ellipse). `art_kit._corpse_job` bakes them with the race
 (one job per recipe, ~0.6 s of renders, six workers at once, then the bake cache); UnitView gives one last
 short hop and swaps to the frames on the way down (`_corpse_fall`). The sheet tool's `corpse` and
