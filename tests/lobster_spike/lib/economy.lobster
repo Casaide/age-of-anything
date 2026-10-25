@@ -25,8 +25,9 @@ def footprint(b:int) -> [int]:
 def add_building(bid:int, owner:int, k:int, cx:int, cy:int) -> int:
     let size = bt_size[k]
     for(building_columns()) col, n:
-        col.push([bid, owner, k, cx, cy, size, size, 1, 0, 0, 0, -1, -1][n])
+        col.push([bid, owner, k, cx, cy, size, size, 1, 0, 0, 0, -1, -1, 0][n])
     b_queue.push([]::int)
+    b_inside.push([]::int)
     return b_id.length - 1
 
 // Put a building (unbuilt) on the map and return its slot (Economy.place).
@@ -43,8 +44,9 @@ def add_unit(owner:int, k:int, x:int, y:int) -> int:
     // units.gd _put's defaults, in unit_columns order
     let v = [next_id, x, y, x, y, 0, 0, x, y, 0, 0, -1, -1, 0,
              t_hp[k], 0, 0, 0, t_posture[k], x, y, 0, 0, -1,
-             T_NONE, -1, -1, -1, 0, 0, 0, 0, 0, 0, 0, 0,
+             T_NONE, -1, -1, -1, 0, 0, 0, 0, 0, 0, 0, 0, 0,
              owner, k, t_speed[k], t_radius[k], t_mclass[k]]
+    unit_changes++
     for(unit_columns()) col, n: col.push(v[n])
     next_id++
     return u_id.length - 1
@@ -378,6 +380,19 @@ def fallow(i:int, cell:int, kind:int):
     let other = nearest_resource(u_x[i], u_y[i], kind, i, true, false, true)
     if other >= 0: start_gather(i, other, kind)
 
+// A farm torn down leaves plain ground behind (Economy.clear_farm, SimMap.clear_pool).
+def clear_farm(b:int):
+    if not bt_farm[b_kind[b]] or b_done[b] == 0: return
+    let cells = footprint(b)
+    let to = tr_cleared[terrain[cells[0]]]
+    if to < 0: return
+    for(cells) c:
+        pool[c] = -1
+        amount[c] = 0
+        walk_over[c] = 0
+        terrain[c] = to
+        refresh(c)
+
 // A finished farm turns its ground into crops; the builder who finished it starts the harvest.
 def become_ground(b:int, i:int):
     let k = b_kind[b]
@@ -573,6 +588,11 @@ def update_pop():
         pop[p] = 0
         pop_cap[p] = 0
     for(u_x.length) i: pop[u_owner[i]] += t_pop[u_kind[i]]
+    for(b_id.length) b:   // those sheltering inside still count
+        var o = 0
+        while o < b_inside[b].length:
+            pop[b_owner[b]] += t_pop[b_inside[b][o + REC_KIND]]
+            o += REC_SIZE
     for(b_id.length) b:
         if b_done[b] == 1:
             let p = b_owner[b]
@@ -581,8 +601,13 @@ def update_pop():
             pop_cap[p] += add
     for(num_players) p: pop_cap[p] = min(pop_cap[p], r_pop_max)
 
-// The walkable cell beside building b nearest its rally point (or its front corner).
 def spawn_cell(b:int, k:int) -> int:
+    let c = spawn_cell_loose(b, k)
+    assert c >= 0
+    return c
+
+// The walkable cell beside building b nearest its rally point (or its front corner), or -1.
+def spawn_cell_loose(b:int, k:int) -> int:
     let cx = b_cx[b]
     let cy = b_cy[b]
     let sx = b_sx[b]
@@ -603,7 +628,6 @@ def spawn_cell(b:int, k:int) -> int:
                     best = y * W + x
             x++
         y++
-    assert best >= 0
     return best
 
 def go_to_rally(b:int, i:int):
@@ -629,6 +653,7 @@ def train():
                     let c = spawn_cell(b, k)
                     let i = add_unit(p, k, (c % W) * TILE + 500, (c / W) * TILE + 500)
                     pop[p] += t_pop[k]
+                    if t_hero[k]: hero_spawned(i)
                     go_to_rally(b, i)
 
 // ---- commands
@@ -694,8 +719,10 @@ def cmd_train(player:int, bid:int, k:int, ok:int):
     if b < 0 or b_owner[b] != player or b_done[b] == 0: return
     if not contains(bm_trains[player][b_kind[b]], k): return
     if k < 0 or b_queue[b].length >= r_queue_max or not ok: return
-    if not can_afford(player, t_cost[k]) or ages[player] < t_age[k]: return
-    pay(player, t_cost[k])
+    let cost = unit_cost(k)   // (a revived hero's share of its price)
+    if not can_afford(player, cost) or ages[player] < t_age[k]: return
+    if t_hero[k] and hero_barred(player, k): return
+    pay(player, cost)
     b_queue[b].push(k)
 
 // Reseed a worked-out farm: pay, crops again, the workers start the harvest.

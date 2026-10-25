@@ -26,6 +26,10 @@ const Economy := preload("res://src/sim/economy.gd")
 const Tech := preload("res://src/sim/tech.gd")
 const Fog := preload("res://src/sim/fog.gd")
 const EcoBot := preload("res://src/ai/eco_bot.gd")
+const Garrison := preload("res://src/sim/garrison.gd")
+const Heal := preload("res://src/sim/heal.gd")
+const Heroes := preload("res://src/sim/heroes.gd")
+const Match := preload("res://src/sim/match.gd")
 const Bot := preload("res://src/ai/bot.gd")
 
 const SEED := 20261010
@@ -35,7 +39,8 @@ const SETTLE := 40            # ticks before the export (multiple of a turn), mo
 const ORDERS_EVERY := 20      # turns between orders (4 s)
 const CHUNK := 10             # units per spawn point
 const CMD_CODES := {Commands.MOVE: 0, Commands.ATTACK_MOVE: 1, Commands.STANCE: 2, Commands.GATHER: 3, Commands.BUILD: 4,
-	Commands.HELP_BUILD: 5, Commands.TRAIN: 6, Commands.RALLY: 7, Commands.RESEED: 8, Commands.AGE_UP: 9, Commands.RESEARCH: 10}
+	Commands.HELP_BUILD: 5, Commands.TRAIN: 6, Commands.RALLY: 7, Commands.RESEED: 8, Commands.AGE_UP: 9, Commands.RESEARCH: 10,
+	Commands.CALL_TO_ARMS: 11, Commands.BACK_TO_WORK: 12, Commands.ATTACK: 13}
 
 var mode := "move"
 var trace_tick := -1
@@ -57,7 +62,7 @@ func _init() -> void:
 			trace_tick = int(a.substr(6))
 	var rules = DataLib.load_json("res://data/rules/default.json")
 	rules.animals = false
-	if mode != "eco":
+	if mode == "move" or mode == "fight":
 		rules.economy.start.buildings = []
 		rules.economy.start.workers = 0
 	var gen = Generator.new(DataLib.new())
@@ -143,6 +148,12 @@ func _cmd_row(w: World, c: Dictionary) -> String:
 			v = [a.building, 0, 0, 0]
 		Commands.RESEARCH:
 			v = [a.building, Tech.research_index(w, a.id), 0, 0]
+		Commands.CALL_TO_ARMS:
+			v = [a.building, 0, 0, 0]
+		Commands.BACK_TO_WORK:
+			v = [0, 0, 0, 0]
+		Commands.ATTACK:
+			v = [a.target, 0, 0, 0]
 	var ids: Array = a.get("ids", [])
 	return _ints([(c.turn + Commands.DELAY) * Commands.TICKS_PER_TURN, CMD_CODES[c.type], p] + v + [ids.size()] + ids)
 
@@ -301,9 +312,13 @@ func _ported_step(w: World) -> void:
 	Economy.train(w)
 	Tech.tick(w)
 	Economy.work(w)
+	Garrison.tick(w)
 	w.spatial.build(w.units.x, w.units.y)
 	var alive := w.units.changes
+	Heal.tick(w)
 	Combat.tick(w)
+	Heroes.tick(w)
+	Match.tick(w)
 	Fog.tick(w)
 	if w.units.changes != alive:
 		w.spatial.build(w.units.x, w.units.y)
@@ -325,13 +340,13 @@ static func unit_fields(u, i: int) -> Array:
 	return [u.id[i], u.x[i], u.y[i], u.tx[i], u.ty[i], u.moving[i], u.arrive[i], u.wx[i], u.wy[i], u.group[i], u.stuck[i],
 		u.prog[i], u.fkey[i], u.pace[i], u.hp[i], u.foe[i], u.cooldown[i], u.stance[i], u.posture[i], u.gx[i], u.gy[i],
 		u.amx[i], u.amy[i], u.amc[i], u.task[i], u.target[i], u.home[i], u.gspot[i], u.carry_kind[i], u.carry[i], u.work[i],
-		u.reach[i], u.rx0[i], u.ry0[i], u.rx1[i], u.ry1[i]]
+		u.reach[i], u.rx0[i], u.ry0[i], u.rx1[i], u.ry1[i], u.patient[i]]
 
 
 ## The per-building fields both sims hash, in order (then its queue).
 static func building_fields(b, i: int) -> Array:
 	return [b.id[i], b.owner[i], b.kind[i], b.cx[i], b.cy[i], b.sx[i], b.sy[i], b.hp[i], b.progress[i], b.done[i],
-		b.train[i], b.rally_x[i], b.rally_y[i]]
+		b.train[i], b.rally_x[i], b.rally_y[i], b.cooldown[i]]
 
 
 ## The state the port has: the tick and counters, the cached and queued fields, every unit and
@@ -358,6 +373,13 @@ static func state_hash(w: World) -> int:
 		h = Fixed.mix(h, b.queue[i].size())
 		for k in b.queue[i]:
 			h = Fixed.mix(h, k)
+		h = Fixed.mix(h, b.inside[i].size())
+		for rec in b.inside[i]:
+			for v in rec:
+				h = Fixed.mix(h, v)
+	for k in w.hero_types:
+		h = Fixed.mix(Fixed.mix(h, w.hero_id[k]), w.hero_fell[k])
+	h = Fixed.mix(h, w.winner)
 	h = Fixed.mix(h, w.shots.count())
 	for v in w.shots.data:
 		h = Fixed.mix(h, v)
@@ -366,6 +388,7 @@ static func state_hash(w: World) -> int:
 		h = Fixed.mix(h, w.pop[p])
 		h = Fixed.mix(h, w.pop_cap[p])
 		h = Fixed.mix(h, w.ages[p])
+		h = Fixed.mix(h, w.defeated[p])
 		for v in w.researched[p]:
 			h = Fixed.mix(h, v)
 		for r in w.resources.size():
@@ -395,6 +418,10 @@ static func _dump(w: World, out: PackedStringArray) -> void:
 		out.append(_ints(unit_fields(w.units, i)))
 	for i in w.buildings.count():
 		out.append("b " + _ints(building_fields(w.buildings, i)) + " q " + _ints(w.buildings.queue[i]))
+	for k in w.types.size():
+		var t: Dictionary = w.types[k]
+		out.append("type %d %s" % [k, _ints([t.hp, t.speed, t.reach, t.reload, t.pop, t.train_ticks, t.carry_add, t.build_pct, t.shot_speed, int(t.ranged), t.sight_add]
+			+ Array(t.cost) + Array(t.atk) + Array(t.arm))])
 	var left := PackedStringArray()
 	for c in w.map.resource_cells:
 		left.append("%d:%d/%d" % [c, w.map.amount[c], w.map.terrain[c]])
@@ -437,7 +464,11 @@ static func _write_state(w: World, lines: PackedStringArray) -> void:
 	var e: Dictionary = w.econ
 	lines.append("RULES " + _ints([c.min_damage, c.acquire_every, c.defend_sight, c.counter_pull, c.leash, c.sight, c.shot_lead_pct,
 		c.shot_strays, c.shot_slack, w.high.reach, w.high.uphill_damage_pct, w.high.sight_unit, w.high.sight_building,
-		w.fog_cfg.every, w.fog_cfg.unit, w.fog_cfg.worker, w.fog_cfg.building, e.carry, e.queue_max, e.pop_max]))
+		w.fog_cfg.every, w.fog_cfg.unit, w.fog_cfg.worker, w.fog_cfg.building, e.carry, e.queue_max, e.pop_max, w.fog_cfg.tower,
+		w.garrison_cfg.heal_every, w.garrison_cfg.call_range]))
+	lines.append(_ints([w.garrison_cfg.not.size()] + w.garrison_cfg.not.map(func(t): return _tag_or_none(w, t))))
+	var heal_not: Array = c.get("heal_not", [])
+	lines.append(_ints([c.heal_amount, c.heal_reload, c.heal_range, c.heal_sight, heal_not.size()] + heal_not.map(func(t): return _tag_or_none(w, t))))
 	lines.append("TYPES %d %d" % [w.types.size(), w.classes.size()])
 	for k in w.types.size():
 		var t: Dictionary = w.types[k]
@@ -459,6 +490,9 @@ static func _write_state(w: World, lines: PackedStringArray) -> void:
 		lines.append(_ints([t.size, t.build_ticks, t.pop, t.sight, t.age, t.more_from_age, int(t.water), int(t.line), int(tower),
 			int(farm), land, water, t.workers, int(not t.pen.is_empty() or t.gate or t.ladder or t.walkway > 0 or t.blocks_flyers)]))
 		lines.append(t.id)
+		var at: Dictionary = t.attack
+		lines.append(_ints([int(not at.is_empty()), _class(w, at.get("damage", "pierce")), int(at.get("attack", 0)), int(at.get("range", 0)),
+			int(at.get("reload", 0)), t.arrows, t.garrison, int(t.gate), int(t.line), int(t.get("sees_over_trees", false))]))
 		lines.append(_ints(t.cost))
 		lines.append(_ints(t.drop))
 		lines.append(_ints(t.reseed))
@@ -621,6 +655,17 @@ static func _write_tech(w: World, lines: PackedStringArray) -> void:
 	lines.append("RESEARCHED")
 	for p in np:
 		lines.append(_ints([w.ages[p]] + Array(w.researched[p])))
+	# Heroes (heroes.gd): the rules, and per hero type its state and aura effects.
+	var hc: Dictionary = w.hero_cfg
+	lines.append("HEROES %d" % w.hero_types.size())
+	lines.append(_ints([hc.aura, hc.regen, hc.revive, hc.revive_pct]))
+	for k in w.hero_types:
+		lines.append(_ints([k, w.hero_id[k], w.hero_fell[k], w.types[k].aura.size()]))
+		for fx in w.types[k].aura:
+			lines.append(_ints(_effect(w, fx)))
+	# Winning and losing (match.gd).
+	lines.append("MATCH")
+	lines.append(_ints([w.winner] + Array(w.started_with_town) + Array(w.defeated).slice(0, np)))
 
 
 ## World._form_role, by type.

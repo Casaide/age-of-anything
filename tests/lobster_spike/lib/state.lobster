@@ -57,6 +57,7 @@ var t_cls = []::[int]
 var t_counters = []::[int]     // classes past the base three it has a bonus against
 
 // Units (units.gd), slots sorted by id. reach, task, perch, patient, gspot are constant here.
+var unit_changes = 0       // bumped on every unit added, put back or removed (units.changes)
 var u_id = []::int
 var u_owner = []::int
 var u_kind = []::int
@@ -98,15 +99,41 @@ var u_rx0 = []::int
 var u_ry0 = []::int
 var u_rx1 = []::int
 var u_ry1 = []::int
+var u_patient = []::int        // healers: the unit id being healed (or walked to), or 0
 
 // The columns in unit_fields order (the hash, the scenario file), then the rest.
 def unit_columns() -> [[int]]:
     return [u_id, u_x, u_y, u_tx, u_ty, u_moving, u_arrive, u_wx, u_wy, u_group, u_stuck, u_prog, u_fkey, u_pace,
             u_hp, u_foe, u_cooldown, u_stance, u_posture, u_gx, u_gy, u_amx, u_amy, u_amc,
-            u_task, u_target, u_home, u_gspot, u_carry_kind, u_carry, u_work, u_reach, u_rx0, u_ry0, u_rx1, u_ry1,
+            u_task, u_target, u_home, u_gspot, u_carry_kind, u_carry, u_work, u_reach, u_rx0, u_ry0, u_rx1, u_ry1, u_patient,
             u_owner, u_kind, u_speed, u_radius, u_mclass]
 
-let UNIT_HASHED = 36           // the columns hashed (unit_fields)
+let UNIT_HASHED = 37           // the columns hashed (unit_fields)
+var t_tags = []::[int]         // per unit type: its eval's tags (class indexes), as its line stands
+var t_damage = []::int         // per unit type: its attack's class (0 melee, 1 pierce, ...)
+
+// This tick's events (World.events), for the bots: hits, deaths, shots. Not state.
+let EV_HIT = 0                 // a: by, b: to, c: damage
+let EV_DIE = 1                 // a: id, b: 1 for a building
+let EV_SHOT = 2                // a: by, b: to
+class Event:
+    kind:int
+    a:int
+    b:int
+    c:int
+    x:int
+    y:int
+var events = []::Event
+var events_on = false          // only the bots read them
+
+let REC_ID = 0                 // a sheltering unit's record (garrison.gd)
+let REC_KIND = 1
+let REC_HP = 2
+let REC_POSTURE = 3
+let REC_CARRY_KIND = 4
+let REC_CARRY = 5
+let REC_HOME = 6
+let REC_SIZE = 7
 
 // Unit types' economy (World._make_type): pop, train time, cost vector, research and bonuses.
 var t_pop = []::int
@@ -133,10 +160,40 @@ var b_done = []::int
 var b_train = []::int
 var b_rally_x = []::int
 var b_rally_y = []::int
+var b_cooldown = []::int       // shooting buildings: ticks until the next volley
 var b_queue = []::[int]        // unit type indexes, head first
+var b_inside = []::[int]       // units sheltering inside (garrison.gd): REC_SIZE ints each, by id
 
 def building_columns() -> [[int]]:
-    return [b_id, b_owner, b_kind, b_cx, b_cy, b_sx, b_sy, b_hp, b_progress, b_done, b_train, b_rally_x, b_rally_y]
+    return [b_id, b_owner, b_kind, b_cx, b_cy, b_sx, b_sy, b_hp, b_progress, b_done, b_train, b_rally_x, b_rally_y, b_cooldown]
+
+// Shooting buildings and garrisons, per building type (buildings.json attack, garrison).
+var bt_attacks = []::int       // 1 if it has an attack
+var bt_atk_class = []::int
+var bt_atk = []::int
+var bt_range = []::int         // tiles
+var bt_reload = []::int
+var bt_arrows = []::int        // its own arrows (one more per unit inside)
+var bt_garrison = []::int      // how many it holds
+var bt_gate = []::int
+var bt_wall = []::int          // a wall piece (`line`)
+var bt_over_trees = []::int    // sees over trees (fog)
+var r_fog_tower = 0
+var r_garrison_heal_every = 0
+var r_call_range = 0
+var garrison_not = []::int     // tags (classes) that don't fit in a building (workers always do)
+
+// Heroes (heroes.gd) and the match (match.gd).
+var hero_types = []::int       // the unit types that are heroes, in order
+var hero_id = []::int          // per hero type (alongside hero_types): its living hero's id, 0 with none
+var hero_fell = []::int        // ... the tick + 1 it last fell, 0 if never
+var r_aura = 0                 // milli-tiles
+var r_regen = 0
+var r_revive = 0
+var r_revive_pct = 0
+var winner = -1
+var defeated = []::int
+var started_with_town = []::int
 
 // Building types (Economy.load_btypes), and per player what research and the race make of them.
 var bt_size = []::int
@@ -185,6 +242,7 @@ var r_fog_building = 0
 var r_high_sight_building = 0
 
 def remove_unit(i:int):
+    unit_changes++
     for(unit_columns()) col: col.remove(i)
 
 var tick = 0
@@ -227,3 +285,23 @@ var s_stood = []::int
 var s_yields = []::int
 var s_role = []::int
 var s_planted = []::int
+def remove_building(b:int):
+    for(building_columns()) col: col.remove(b)
+    b_queue.remove(b)
+    b_inside.remove(b)
+
+// A unit back in the arrays under an id it had before (out of a building), in its place by id
+// (Units.insert, with units.gd _put's defaults). Its slot.
+def insert_unit(uid:int, owner:int, k:int, x:int, y:int, speed:int, radius:int, hp:int) -> int:
+    let found, at = binary_search(u_id, uid)
+    assert not found
+    let v = [uid, x, y, x, y, 0, 0, x, y, 0, 0, -1, -1, 0,
+             hp, 0, 0, 0, 0, x, y, 0, 0, -1,
+             0, -1, -1, -1, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+             owner, k, speed, radius, 0]
+    unit_changes++
+    for(unit_columns()) col, n: col.insert(at, v[n])
+    return at
+
+var t_hero = []::int           // per unit type: 1 for a hero
+var t_heal = []::int           // per unit type: its eval's heal (0: not a healer's)
