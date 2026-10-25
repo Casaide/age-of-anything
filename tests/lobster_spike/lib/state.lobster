@@ -357,3 +357,37 @@ def slot_index(slot:string) -> int:
     for(slot_names) s, k:
         if s == slot: return k
     return -1
+
+// Animals (animals.gd) and the rest of the types' flags, declared here: combat reads them.
+let B_NONE = 0
+let B_FLEE = 1
+let B_FIGHT = 2
+let B_HERD = 3
+var gaia = -1
+var claim_tiles = 4
+var t_behave = []::int         // per unit type: B_NONE / FLEE / FIGHT / HERD
+var t_flee = []::int           // per unit type: milli-tiles it bolts
+var t_food = []::int           // per unit type: the carcass's food
+var bt_pen_animals = []::int   // per building type (0: not a pen)
+var bt_pen_food = []::int
+var bt_pen_food_ticks = []::int
+var bt_pen_breed_ticks = []::int
+var herd_spots = dictionary<int, [int]>(16)   // Town Center id -> [x, y], chosen once
+var t_no_heal = []::int
+var t_animal = []::int
+
+// Map bridges (bridges.gd): per bridge its id, deck cells, rect (milli-tiles, inclusive), state.
+var br_id = []::int
+var br_cells = []::[int]
+var br_x0 = []::int
+var br_y0 = []::int
+var br_x1 = []::int
+var br_y1 = []::int
+var br_hp = []::int
+var br_up = []::int
+var br_work = []::int
+var br_payer = []::int
+var br_full_hp = 0
+var br_ticks = 1
+var br_cost = []::int
+var br_arm = []::int

@@ -564,7 +564,7 @@ def hills(l:Land, bot:Bot, army:[int]):
         n--
     let foes = []::int
     for(u_x.length) i:
-        if is_foe(bot.player, u_owner[i]) and not t_worker[u_kind[i]] and fog_visible(bot.player, u_x[i], u_y[i]): foes.push(i)
+        if is_foe(bot.player, u_owner[i]) and not t_worker[u_kind[i]] and t_animal[u_kind[i]] == 0 and fog_visible(bot.player, u_x[i], u_y[i]): foes.push(i)
     if foes.length < cfg("land.hills.army"): return
     let near = cfg("land.hills.near") * 1000
     let cells = []::int

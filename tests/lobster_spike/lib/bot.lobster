@@ -403,7 +403,7 @@ def train_soldiers(bot:Bot, workers:[int], count:int):
     var guard_pop = 0
     for(u_x.length) i:
         let k = u_kind[i]
-        if u_owner[i] == p and not t_worker[k] and not t_healer[k] and not t_trader[k]: guard_pop += t_pop[k]
+        if u_owner[i] == p and not t_worker[k] and not t_healer[k] and t_animal[k] == 0 and not t_trader[k]: guard_pop += t_pop[k]
     if lv_army_ratio > 0 and guard_pop * 100 >= count * lv_army_ratio * ages[p]: return
     if (bot.saving_age or (((lv_build_up and bot.blocked_save >= 1) or bot.blocked_save >= 2) and equal(bot.eco.goal, bot.blocked))) and
        (guard_pop >= cfg("military.guard") or ages[p] == 1) and not bot.threat_ids.length:
@@ -527,7 +527,7 @@ def defend(bot:Bot, army:[int], hx:int, hy:int):
     var intruder = -1
     var best_d2 = r * r
     for(u_x.length) i:
-        if is_foe(bot.player, u_owner[i]) and fog_visible(bot.player, u_x[i], u_y[i]):
+        if is_foe(bot.player, u_owner[i]) and t_animal[u_kind[i]] == 0 and fog_visible(bot.player, u_x[i], u_y[i]):   // (a rival's sheep is no intruder)
             let d2 = dist2(hx, hy, u_x[i], u_y[i])
             if d2 < best_d2:
                 best_d2 = d2
@@ -804,7 +804,7 @@ def dominant(bot:Bot, idx:[int]) -> bool:
     var with = ours
     for(u_x.length) i:
         let k = u_kind[i]
-        if u_owner[i] != bot.player and not is_enemy(bot.player, u_owner[i]) and not t_worker[k] and not t_healer[k] and not t_trader[k]: with += t_pop[k]
+        if u_owner[i] != bot.player and u_owner[i] != gaia and not is_enemy(bot.player, u_owner[i]) and not t_worker[k] and not t_healer[k] and t_animal[k] == 0 and not t_trader[k]: with += t_pop[k]
     return ours >= repeat_min(bot) and with * 100 >= max(1, theirs) * cfg("military.dominant_pct")
 
 def has_siege(idx:[int]) -> bool:
@@ -913,7 +913,7 @@ def defenders(bot:Bot, b:int) -> int:
     var n = 0
     for(u_x.length) i:
         let k = u_kind[i]
-        if is_foe(bot.player, u_owner[i]) and not t_worker[k] and not t_healer[k] and not t_trader[k] and fog_visible(bot.player, u_x[i], u_y[i]) and dist2(x, y, u_x[i], u_y[i]) < r * r: n++
+        if is_foe(bot.player, u_owner[i]) and not t_worker[k] and t_animal[k] == 0 and not t_healer[k] and not t_trader[k] and fog_visible(bot.player, u_x[i], u_y[i]) and dist2(x, y, u_x[i], u_y[i]) < r * r: n++
     return n
 
 def send_wave(bot:Bot, ids:[int], tx0:int, ty0:int, may_raid:bool, hx:int, hy:int):
@@ -1112,6 +1112,7 @@ def full_bot_think(bot:Bot):
             if t_worker[k]: workers.push(i)
             elif t_healer[k]: healers.push(i)
             elif t_trader[k]: carts.push(i)
+            elif t_animal[k] != 0: pass()   // (our sheep aren't soldiers)
             else:
                 army.push(i)
                 if t_slot[k] == "scout": scouts++

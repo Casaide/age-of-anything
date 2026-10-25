@@ -31,6 +31,8 @@ import .lib.heal
 import .lib.heroes
 import .lib.match
 import .lib.trade
+import .lib.animals
+import .lib.bridges
 import .lib.commands
 import .lib.ai_cfg
 import .lib.scout
@@ -69,6 +71,9 @@ let ME = 0
 let TEAM_COLS = [float4 { 0.85, 0.22, 0.18, 1.0 }, float4 { 0.20, 0.42, 0.85, 1.0 }, float4 { 0.85, 0.75, 0.2, 1.0 },
                  float4 { 0.25, 0.7, 0.3, 1.0 }]
 let WHITE = float4 { 1.0, 1.0, 1.0, 1.0 }
+let ANIMAL_COL = float4 { 0.54, 0.48, 0.35, 1.0 }   // ArtKit.ANIMAL_TEAM: nobody's
+
+def team_col(p:int) -> float4: return if p == gaia: ANIMAL_COL else: TEAM_COLS[p % TEAM_COLS.length]
 
 // ------------------------------------------------------------------ iso (Iso.to_screen * 1.5: art px)
 
@@ -257,7 +262,7 @@ def collect_units(alpha:float):
             var f = frame_index("u{u_kind[i]}.{state}.{d}.{n}")
             if f < 0: f = frame_index("u{u_kind[i]}.idle.{d}.0")
             let p = iso(x, y)
-            let tc = TEAM_COLS[u_owner[i] % TEAM_COLS.length]
+            let tc = team_col(u_owner[i])
             let since = clock_s - hit_t0.get(u_id[i], -10.0)
             let flash = if since < 0.12: 1.0 + 1.8 * (1.0 - since / 0.12) else: 1.0
             add(f, p.x, p.y, p.y, float4 { tc.x, tc.y, tc.z, flash })
@@ -270,7 +275,7 @@ def collect_corpses():
             let f = frame_index("u{c.kind}.die.{c.dir}.{n}")
             let p = iso(c.x, c.y)
             let fade = clamp(1.0 - (clock_s - c.t0 - 2.2) / 1.8, 0.0, 1.0)
-            let tc = TEAM_COLS[c.owner % TEAM_COLS.length]
+            let tc = team_col(c.owner)
             add(f, p.x, p.y, p.y - 2.0, float4 { tc.x, tc.y, tc.z, 0.35 + 0.65 * fade })
 
 def collect_buildings():
@@ -289,7 +294,7 @@ def collect_buildings():
                     if look.stages[st] != "-": name = look.stages[st]
                 let at = iso(float(b_cx[b] * 1000 + b_sx[b] * 500), float(b_cy[b] * 1000 + b_sy[b] * 500))
                 let shade = if fog[ME][cell] == 2 or teams[p] == teams[ME]: 1.0 else: 0.6
-                let tc = TEAM_COLS[p % TEAM_COLS.length]
+                let tc = team_col(p)
                 let flat = walk_over[cell] == 1
                 add(frame_index(name), at.x, at.y, if flat: -100000.0 + at.y else: at.y, float4 { tc.x, tc.y, tc.z, shade })
                 if look.front != "-": add(frame_index(look.front), at.x, at.y, at.y + 2.0, float4 { tc.x, tc.y, tc.z, shade })

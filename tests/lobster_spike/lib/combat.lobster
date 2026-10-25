@@ -5,7 +5,7 @@
 // belongs to of max(0, attack - armour)). Hits within a tick land together.
 // Left out (none in the scenarios, asserted by the exporter or here): bridges, walls you stand on
 // and pouring from them, siege weapons (minimum range, splash, bolts, packing, blasts), bounties,
-// sticky hits, animals.
+// sticky hits.
 
 var c_hurt = []::int
 var c_hurt_by = []::int
@@ -16,7 +16,8 @@ var c_aura = []::int           // this tick's auras per unit slot (heroes.gd AUR
 
 let AURA = 3
 
-def is_foe(a:int, b:int) -> bool: return teams[a] != teams[b]
+// Should these two fight on their own (enemies, and neither an animal nobody owns)? (World.is_foe)
+def is_foe(a:int, b:int) -> bool: return a != gaia and b != gaia and teams[a] != teams[b]
 def is_enemy(a:int, b:int) -> bool: return teams[a] != teams[b]
 
 def combat_clear(i:int):
@@ -24,12 +25,13 @@ def combat_clear(i:int):
     u_stance[i] = NONE
     u_patient[i] = 0
 
-// An enemy unit or building of `player` (Combat._is_target; no animals, no bridges here).
+// An enemy unit or building of `player`, or an animal to hunt (wild, or its own sheep) (Combat._is_target; no bridges here).
 def is_target(id:int, p:int) -> bool:
     let i = index_of(id)
-    if i >= 0: return is_enemy(u_owner[i], p)
+    if i >= 0: return is_enemy(u_owner[i], p) or (u_owner[i] == p and t_animal[u_kind[i]] != 0)
     let b = b_index_of(id)
-    return b >= 0 and is_enemy(b_owner[b], p)
+    if b < 0: return bridge_target(id)   // a map bridge: anyone may break it
+    return is_enemy(b_owner[b], p)
 
 def cmd_attack(p:int, ids:[int], target:int):
     if not is_target(target, p): return
@@ -157,6 +159,7 @@ def fog_sees_area(p:int, b:int) -> bool:
 // those the shots in the air will kill); then, `buildings_too`, the nearest enemy building it sees.
 def nearest_foe(i:int, sight:int, buildings_too:bool, spread:int, use_inbound:bool, near:int, units_too:bool) -> int:
     let me = u_owner[i]
+    if me == gaia: return 0   // animals don't go looking for a fight
     var best = 0
     var best_d = 1 << 40
     let r = sight / TILE + 1
@@ -178,7 +181,7 @@ def nearest_foe(i:int, sight:int, buildings_too:bool, spread:int, use_inbound:bo
                 while k < e:
                     let j = sp_items[k]
                     k++
-                    if not is_foe(u_owner[j], me): continue
+                    if not is_foe(u_owner[j], me) or t_animal[u_kind[j]] != 0: continue   // a rival's sheep is stolen, not killed
                     if use_inbound and c_inbound[j] >= u_hp[j]: continue
                     let d2 = dist2(xi, yi, u_x[j], u_y[j])
                     if d2 > sight * sight or d2 < near * near or not fog_visible(me, u_x[j], u_y[j]): continue
@@ -262,7 +265,7 @@ def stray(owner:int, x:int, y:int, slack:int) -> int:
             while q < sp_end[cell]:
                 let k = sp_items[q]
                 q++
-                if not is_foe(u_owner[k], owner): continue
+                if not is_foe(u_owner[k], owner) or t_animal[u_kind[k]] != 0: continue
                 let r = u_radius[k] + slack
                 let d = dist2(x, y, u_x[k], u_y[k])
                 if d <= r * r and (d < best_d or (d == best_d and k < best)):
@@ -483,6 +486,7 @@ def apply_hits(n:int):
         if c_hurt[j] != 0:
             u_hp[j] -= c_hurt[j]
             let k = u_kind[j]
+            if t_animal[k] != 0: animal_hurt(j, c_hurt_by[j])   // a deer bolts, a sheep stands for the knife
             if u_foe[j] == 0 and (u_stance[j] == NONE or u_stance[j] == RETURN) and u_task[j] == T_NONE and not t_worker[k] and
                not t_harmless[k] and not t_healer[k] and not t_buildings_only[k] and u_posture[j] != PASSIVE:
                 engage(j, c_hurt_by[j])
@@ -491,7 +495,8 @@ def apply_hits(n:int):
     while j >= 0:
         if u_hp[j] <= 0:
             if events_on: events.push(Event { EV_DIE, u_id[j], 0, 0, u_x[j], u_y[j] })
-            lost[u_owner[j]]++
+            if t_animal[u_kind[j]] != 0: animal_died(j)   // a carcass to gather (food, not a unit lost)
+            else: lost[u_owner[j]]++
             remove_unit(j)
         j--
     var b = c_bhurt.length - 1
@@ -501,6 +506,7 @@ def apply_hits(n:int):
             if b_hp[b] <= 0:
                 if events_on: events.push(Event { EV_DIE, b_id[b], 1, 0, b_cx[b] * TILE + b_sx[b] * TILE / 2, b_cy[b] * TILE + b_sy[b] * TILE / 2 })
                 clear_farm(b)
+                pen_gone(b)
                 spill(b)
                 occupy(footprint(b), 0)
                 remove_building(b)
@@ -508,6 +514,7 @@ def apply_hits(n:int):
 
 // One tick of fighting (Combat.tick). The spatial buckets must be built from the current positions.
 def combat_tick():
+    let brhurt = map(br_id.length): 0   // this tick's damage to each map bridge
     let n = u_x.length
     let nb = b_id.length
     for(n) i:
@@ -557,6 +564,21 @@ def combat_tick():
         if u_foe[i] == 0: continue
         var j = index_of(u_foe[i])
         let b = if j >= 0: -1 else: b_index_of(u_foe[i])
+        let br = if j < 0 and b < 0 and br_id.length > 0: bridge_index(u_foe[i]) else: -1
+        if br >= 0 and br_up[br] == 1:   // breaking a bridge: walk up to it and hack away
+            if bridge_gap(i, br) <= t_reach[k]:
+                u_moving[i] = 0
+                if u_cooldown[i] == 0:
+                    u_cooldown[i] = t_reload[k]
+                    let d = bridge_damage(t_atk[k], r_min_damage)
+                    brhurt[br] += d
+                    if events_on: events.push(Event { EV_HIT, u_id[i], u_foe[i], d, u_x[i], u_y[i] })
+            elif bridge_gap(i, br) <= REACH + TILE:
+                order_direct(i, clamp(u_x[i], br_x0[br], br_x1[br]), clamp(u_y[i], br_y0[br], br_y1[br]))
+            else:
+                let key = building_field(u_foe[i], false, lane(i))
+                if u_moving[i] == 0 or u_fkey[i] != key: order_reach(i, br_x0[br], br_y0[br], br_x1[br], br_y1[br], key)
+            continue
         if j < 0 and b < 0:
             let next = if u_stance[i] == ATTACK_MOVE: nearest_foe(i, sight_of(i), true, SPREAD, false, 0, not t_buildings_only[k]) else: 0
             if next != 0:
@@ -609,7 +631,7 @@ def combat_tick():
             u_moving[i] = 0
         elif u_stance[i] == AUTO and posture == DEFENSIVE and dist2(u_x[i], u_y[i], u_gx[i], u_gy[i]) > r_leash * r_leash:
             go_back(i)
-        elif u_stance[i] == AUTO and (g > r_sight + 2 * TILE or (j >= 0 and not fog_visible(u_owner[i], u_x[j], u_y[j]))):
+        elif u_stance[i] == AUTO and (g > r_sight + 2 * TILE or (j >= 0 and u_owner[i] != gaia and not fog_visible(u_owner[i], u_x[j], u_y[j]))):
             lost_foe(i)
         elif b >= 0 and not t_ranged[k]:
             chasers[b].push(i)
@@ -619,3 +641,5 @@ def combat_tick():
         if chasers[b].length: surround(b, chasers[b], hitters[b])
     towers()
     apply_hits(n)
+    for(brhurt) d, kb:
+        if d > 0: bridge_hurt(kb, d)
