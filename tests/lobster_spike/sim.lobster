@@ -32,6 +32,8 @@ import .lib.heal
 import .lib.heroes
 import .lib.match
 import .lib.trade
+import .lib.animals
+import .lib.bridges
 import .lib.commands
 import .lib.ai_cfg
 import .lib.scout
@@ -65,7 +67,6 @@ let bots = map(num_players) p: EcoBot { p }
 let full_bots = map(num_players) p: new_bot(p)
 if bots_mode:
     cmds = []::Cmd
-    for(u_kind) k: assert t_player[k] >= 0   // (no animals: the bots' herding and hunting aren't ported)
 
 var spent = 0.0
 var first_bad = -1
@@ -83,7 +84,7 @@ for(ticks) k:
         first_bad = k
     if tick == dump_tick:
         write_file(args[0] + ".lobster.dump", dump_state(), 0, 1)
-var left = map(num_players): 0
+var left = map(num_players + 1): 0   // (and gaia's animals)
 for(u_owner) p: left[p]++
 print "{n0} units, {ticks} ticks, {cmds.length} orders; at the end: units {left}, buildings {b_id.length}, gathered {gathered}"
 print "lobster step: {spent * 1000.0 / ticks} ms a tick"

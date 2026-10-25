@@ -21,6 +21,12 @@ let SEAL_MARGIN = 5
 let MIX_AGE1 = [60, 40, 0, 0]   // food, wood, stone, gold (EcoBot.MIX for age 1)
 let REACH_REFRESH = 100
 let REACH_SEARCH = 3
+let HUNT_RADIUS = 16
+let CLAIM_COOLDOWN = 200
+let MEAT_LEFT = 40
+let PEN_SHEEP = 3
+let BOAR_SOLDIERS = 3
+let BOAR_LEAD = 2
 
 // ---- reach.gd: where a bot's units can get to (walkable areas by 4-neighbour steps, per lane)
 
@@ -154,6 +160,7 @@ class EcoBot:
     held_ids:[int] = []    // workers kept out of the way until a tick (alongside held_until)
     held_until:[int] = []
     next_rebalance = 0
+    next_claim = 0
 
 def held(bot:EcoBot, uid:int) -> int:
     for(bot.held_ids) id, n:
@@ -455,6 +462,10 @@ def farms(bot:EcoBot, tc:int, workers:[int], n:[int]):
         if pool[c] < 0 and amount[c] > 0 and tr_res[terrain[c]] == food and
            dist2(hx, hy, (c % W) * 1000 + 500, (c / W) * 1000 + 500) <= FARM_RADIUS * FARM_RADIUS * 1000000:
             wild += amount[c]
+    for(u_x.length) i:   // and the meat still walking about near home: our sheep, wild deer and boar
+        let k = u_kind[i]
+        if t_animal[k] != 0 and (u_owner[i] == p or u_owner[i] == gaia) and dist2(hx, hy, u_x[i], u_y[i]) <= HUNT_RADIUS * HUNT_RADIUS * 1000000:
+            wild += t_food[k]
     let mix = shares(bot)
     var total = 0
     for(n) v: total += v
@@ -466,6 +477,130 @@ def farms(bot:EcoBot, tc:int, workers:[int], n:[int]):
     if builder < 0: builder = pick_builder(bot, workers)
     let sx, sy = house_spot(bot, b_cx[tc] + 1, b_cy[tc] + 1, bt_size[fk])
     if builder >= 0 and sx >= 0: issue_cmd(p, 4, [u_id[builder]], fk, sx, sy, 0)
+
+// Up to `count` ids of food gatherers (or idle workers) nearest a point; ties go to the lower id.
+def nearest_food_workers(bot:EcoBot, workers:[int], x:int, y:int, count:int) -> [int]:
+    let food = resource_index("food") + 1
+    let keys = []::int
+    for(workers) i:
+        let gathering = (u_task[i] == GATHER or u_task[i] == T_RETURN) and u_carry_kind[i] == food
+        let idle = u_task[i] == T_NONE and u_foe[i] == 0
+        if (gathering or idle) and not is_ordered(bot, u_id[i]): keys.push(i)
+    let ds = map(keys) i: dist2(x, y, u_x[i], u_y[i])
+    let order = map(keys.length) n: n
+    insertion_sort(order) a, b: ds[a] < ds[b] or (ds[a] == ds[b] and u_id[keys[a]] < u_id[keys[b]])
+    return map(slice(order, 0, max(0, min(count, order.length)))) n: u_id[keys[n]]
+
+// Sheep nobody owns near home: the nearest food gatherer walks over to claim one.
+def herd(bot:EcoBot, tc:int, workers:[int]):
+    if tick < bot.next_claim: return
+    let hx = b_cx[tc] * 1000 + 1500
+    let hy = b_cy[tc] * 1000 + 1500
+    var sheep = -1
+    var best_d2 = HUNT_RADIUS * HUNT_RADIUS * 1000000
+    for(u_x.length) i:
+        if u_owner[i] == gaia and t_behave[u_kind[i]] == B_HERD and area_at(bot.reach, bot.wln, u_x[i], u_y[i]) == bot.home:
+            let d2 = dist2(hx, hy, u_x[i], u_y[i])
+            if d2 < best_d2:
+                best_d2 = d2
+                sheep = i
+    if sheep < 0: return
+    let party = nearest_food_workers(bot, workers, u_x[sheep], u_y[sheep], 1)
+    if party.length:
+        issue_cmd(bot.player, CMD_MOVE, party, u_x[sheep], u_y[sheep], 0, 0)
+        bot.ordered.push(party[0])
+        bot.next_claim = tick + CLAIM_COOLDOWN
+
+// Sheep for the long run: enough of ours near home in age 1 or 2 and no pen: build one; once it
+// stands, our sheep outside it go in (while it has room).
+def bot_pen(bot:EcoBot, tc:int, workers:[int]):
+    let p = bot.player
+    var pen = -1
+    for(b_id.length) b:
+        if pen < 0 and b_owner[b] == p and is_pen(b): pen = b
+    if pen < 0:
+        let hx = b_cx[tc] * 1000 + 1500
+        let hy = b_cy[tc] * 1000 + 1500
+        var near = 0
+        for(u_x.length) i:
+            if u_owner[i] == p and t_behave[u_kind[i]] == B_HERD and dist2(hx, hy, u_x[i], u_y[i]) <= HUNT_RADIUS * HUNT_RADIUS * 1000000: near++
+        let k = btype_named("pen")
+        let ageing = bot.push >= 100 and bot.goal.length > 0
+        if ages[p] <= 2 and not ageing and near >= PEN_SHEEP and can_afford(p, bm_cost[p][k]) and not building_underway(bot):
+            let builder = pick_builder(bot, workers)
+            let sx, sy = house_spot(bot, b_cx[tc] + 1, b_cy[tc] + 1, bt_size[k])
+            if builder >= 0 and sx >= 0:
+                issue_cmd(p, CMD_BUILD, [u_id[builder]], k, sx, sy, 0)
+                bot.ordered.push(u_id[builder])
+        return
+    if b_done[pen] == 0: return
+    let heading = pen_animals(pen, false)
+    let out = []::int
+    for(u_x.length) i:
+        if u_owner[i] == p and t_behave[u_kind[i]] == B_HERD and pen_at(i) < 0 and not contains(heading, i): out.push(u_id[i])
+    if out.length and pen_room(pen): issue_cmd(p, CMD_PEN, out, b_id[pen], 0, 0, 0)
+
+def has_pen(p:int) -> bool:
+    for(b_id.length) b:
+        if b_owner[b] == p and is_pen(b): return true
+    return false
+
+// Hunting, one animal at a time: our own sheep first, then deer near home once there are a few
+// workers, then boar only with a big party, idle soldiers at home leading. Meat near home that
+// nobody gathers gets workers sent to it.
+def hunt(bot:EcoBot, tc:int, workers:[int]):
+    let p = bot.player
+    for(u_x.length) i:
+        if u_owner[i] == p and u_foe[i] != 0:
+            let j = index_of(u_foe[i])
+            if j >= 0 and t_animal[u_kind[j]] != 0: return   // a hunt is on
+    let hx = b_cx[tc] * 1000 + 1500
+    let hy = b_cy[tc] * 1000 + 1500
+    let near = FARM_RADIUS * FARM_RADIUS * 1000000
+    let carcass = tr_index("carcass")
+    for(resource_cells) c:
+        if terrain[c] == carcass and amount[c] > MEAT_LEFT and dist2(hx, hy, (c % W) * 1000 + 500, (c / W) * 1000 + 500) <= near and
+           reaches_cell(bot.reach, bot.wln, bot.home, c):
+            var busy = false
+            for(workers) i:
+                if u_home[i] == c and (u_task[i] == GATHER or u_task[i] == T_RETURN): busy = true
+            if not busy:
+                let cooks = nearest_food_workers(bot, workers, (c % W) * 1000 + 500, (c / W) * 1000 + 500, 8)
+                if cooks.length:
+                    issue_cmd(p, CMD_GATHER, cooks, c, 0, 0, 0)
+                    for(cooks) id: bot.ordered.push(id)
+                return
+    for(workers) i:
+        let h = u_home[i]
+        if (u_task[i] == GATHER or u_task[i] == T_RETURN) and h >= 0 and terrain[h] == carcass and amount[h] > MEAT_LEFT and
+           dist2(hx, hy, (h % W) * 1000 + 500, (h / W) * 1000 + 500) <= near: return
+    let guards = []::int
+    for(u_x.length) i:
+        let k = u_kind[i]
+        if u_owner[i] == p and not t_worker[k] and t_animal[k] == 0 and not t_healer[k] and not t_trader[k] and u_foe[i] == 0 and
+           u_moving[i] == 0 and dist2(hx, hy, u_x[i], u_y[i]) <= near: guards.push(u_id[i])
+    var target = -1
+    let penning = has_pen(p)
+    for([B_HERD, B_FLEE, B_FIGHT]) want:
+        let need = if want == B_HERD: 0 elif want == B_FLEE: 8 else: 12
+        if target < 0 and workers.length >= need and not (want == B_HERD and penning) and not (want == B_FIGHT and guards.length < BOAR_LEAD):
+            var best_d2 = HUNT_RADIUS * HUNT_RADIUS * 1000000
+            for(u_x.length) i:
+                let mine = u_owner[i] == p and want == B_HERD
+                let wild = u_owner[i] == gaia and want != B_HERD
+                if (mine or wild) and t_behave[u_kind[i]] == want and area_at(bot.reach, bot.wln, u_x[i], u_y[i]) == bot.home:
+                    let d2 = dist2(hx, hy, u_x[i], u_y[i])
+                    if d2 < best_d2:
+                        best_d2 = d2
+                        target = i
+    if target < 0: return
+    let want = t_behave[u_kind[target]]
+    let party = if want == B_HERD: 3 elif want == B_FLEE: 3 else: 8
+    var ids = if want == B_FIGHT: slice(guards, 0, min(BOAR_SOLDIERS, guards.length)) else: []::int
+    for(nearest_food_workers(bot, workers, u_x[target], u_y[target], party - ids.length)) id: ids.push(id)
+    if ids.length:
+        issue_cmd(p, CMD_ATTACK, ids, u_id[target], 0, 0, 0)
+        for(ids) id: bot.ordered.push(id)
 
 def bot_think(bot:EcoBot):
     let p = bot.player
@@ -502,7 +637,9 @@ def bot_think(bot:EcoBot):
     bot.ordered.remove_range(0, bot.ordered.length)
     for(workers) i:
         if held(bot, u_id[i]) > tick: bot.ordered.push(u_id[i])   // pulled from a fight: not a builder or a hunter for now
-    // (herding, pens and hunting: no animals here)
+    herd(bot, tc, workers)
+    bot_pen(bot, tc, workers)
+    hunt(bot, tc, workers)
     finish_foundations(bot, workers)
     rebalance_workers(bot, workers, n)
     // Age up: with enough workers, a barracks, then save up and click it.

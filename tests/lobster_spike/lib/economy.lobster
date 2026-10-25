@@ -546,6 +546,11 @@ def gather_after_camp(b:int):
 
 def build_job(i:int):
     let b = b_index_of(u_target[i])
+    if b < 0:
+        let br = bridge_index(u_target[i])
+        if br >= 0:
+            if not bridge_work(i, br, in_reach(i, br_x0[br], br_y0[br], br_x1[br], br_y1[br])): clear_task(i)
+            return
     if b < 0 or b_done[b] == 1:
         let nb = if u_orders[i].length: -1 else: nearby_foundation(i)
         if nb >= 0:
@@ -571,6 +576,7 @@ def build_job(i:int):
             b_done[b] = 1
             b_hp[b] = max_hp
             if bt_farm[k]: become_ground(b, i)
+            elif bt_pen_animals[k] > 0: pen_opened(b)   // a pen: walked into
             else: gather_after_camp(b)
     elif u_moving[i] == 0:
         if u_stuck[i] >= GIVE_UP: clear_task(i)
@@ -590,7 +596,8 @@ def update_pop():
     for(num_players) p:
         pop[p] = 0
         pop_cap[p] = 0
-    for(u_x.length) i: pop[u_owner[i]] += t_pop[u_kind[i]]
+    for(u_x.length) i:
+        if u_owner[i] != gaia: pop[u_owner[i]] += t_pop[u_kind[i]]
     for(b_id.length) b:   // those sheltering inside still count
         var o = 0
         while o < b_inside[b].length:
@@ -712,6 +719,7 @@ def cmd_build(player:int, ids:[int], k:int, cx:int, cy:int):
     for(own_workers(player, ids)) i: start_build(i, bid)
 
 def cmd_help_build(player:int, ids:[int], target:int):
+    if bridge_help(player, target, own_workers(player, ids)): return   // a map bridge: rebuilt by anyone
     let b = b_index_of(target)
     if b < 0 or b_owner[b] != player or b_done[b] == 1: return
     for(own_workers(player, ids)) i: start_build(i, target)

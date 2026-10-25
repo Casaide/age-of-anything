@@ -13,6 +13,7 @@ def capacity(b:int) -> int:
 def can_hold(b:int, i:int) -> bool:
     if capacity(b) <= 0 or b_owner[b] != u_owner[i]: return false
     let k = u_kind[i]
+    if t_animal[k] != 0: return false
     if t_worker[k]: return true
     for(garrison_not) c:
         if c >= 0 and contains(t_tags[k], c): return false

@@ -291,7 +291,10 @@ def solve_queued():
             sources.push(target)
         else:
             let b = b_index_of(target)
-            if b >= 0: sources = footprint(b)   // (no map bridges in the spike)
+            if b >= 0: sources = footprint(b)
+            else:
+                for(br_id) v, k:
+                    if v == target: sources = br_cells[k]
         let near = kind == FIELD_CELL_NEAR or kind == FIELD_BUILDING_NEAR
         let f = solve(sources, if near: NEAR_CUTOFF else: INF, mc)
         spent += max(f.pops, 1)

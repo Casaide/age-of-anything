@@ -51,6 +51,8 @@ def step():
     trade_tick()
     repair_tick()
     garrison_tick()
+    animals_tick()
+    grow_scratch()   // (a lamb born in a pen)
     spatial_build()
     let alive = unit_changes
     heal_tick()
@@ -113,6 +115,8 @@ def state_hash() -> int:
     for(hero_types) hk, hn: h = mix(mix(h, hero_id[hn]), hero_fell[hn])
     h = mix(h, winner)
     for(market_price) v: h = mix(h, v)
+    for(br_id) id, k:
+        for([id, br_hp[k], br_up[k], br_work[k], br_payer[k]]) v: h = mix(h, v)
     h = mix(h, shots.length / SHOT_STRIDE)
     for(shots) v: h = mix(h, v)
     for(num_players) p:
@@ -351,6 +355,41 @@ def load_extras():
     market_price = extra("market_price")
     t_no_heal = extra("t_no_heal")
     t_animal = extra("t_animal")
+    let g = extra("gaia")
+    gaia = num_players
+    teams.push(-1)       // gaia: everyone's quarry, nobody's ally
+    lane_base.push(g[0])
+    lost.push(0)
+    claim_tiles = g[1]
+    t_behave = extra("t_behave")
+    t_flee = extra("t_flee")
+    t_food = extra("t_food")
+    let bc = extra("bridge_cfg")   // hp, ticks, then cost per resource, armour per class
+    br_full_hp = bc[0]
+    br_ticks = bc[1]
+    br_cost = bc.slice(2, num_resources)
+    br_arm = bc.slice(2 + num_resources, -1)
+    let bv = extra("bridges")      // per bridge: id x0 y0 x1 y1 hp up work payer, its cells
+    var o = 0
+    while o < bv.length:
+        br_id.push(bv[o])
+        br_x0.push(bv[o + 1])
+        br_y0.push(bv[o + 2])
+        br_x1.push(bv[o + 3])
+        br_y1.push(bv[o + 4])
+        br_hp.push(bv[o + 5])
+        br_up.push(bv[o + 6])
+        br_work.push(bv[o + 7])
+        br_payer.push(bv[o + 8])
+        let n = bv[o + 9]
+        br_cells.push(bv.slice(o + 10, n))
+        o += 10 + n
+    let pens = extra("bt_pen")
+    for(pens.length / 4) k:
+        bt_pen_animals.push(pens[k * 4])
+        bt_pen_food.push(pens[k * 4 + 1])
+        bt_pen_food_ticks.push(pens[k * 4 + 2])
+        bt_pen_breed_ticks.push(pens[k * 4 + 3])
 
 def read_effect() -> Effect:
     let kind = next_int()
