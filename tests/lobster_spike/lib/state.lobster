@@ -165,11 +165,6 @@ var bm_cost = []::[[int]]      // [player][type]: Economy.bcost
 
 var bt_name = []::string
 var bt_cost = []::[int]        // the price as listed (the bots check it for farms)
-// The next age per player, for the bots' age-up check: where it's clicked, its cost, what it needs.
-var age_building = []::int
-var age_cost = []::[int]
-var age_needs = []::[int]
-var worker_lacked = []::int
 var map_version = 0            // bumped on every cell change (SimMap.version; the bots' reach relabels)
 
 // Players' economy.

@@ -141,18 +141,6 @@ def has_building(p:int, k:int) -> bool:
         if b_owner[b] == p and b_done[b] == 1 and b_kind[b] == k: return true
     return false
 
-// Why the player can't age up at building b (Tech.why_not for the age-up): false if it can.
-def age_up_barred(p:int, b:int) -> bool:
-    if b < 0 or b_owner[b] != p or b_done[b] == 0: return true
-    if age_building[p] < 0: return true                  // (the last age)
-    if b_kind[b] != age_building[p]: return true
-    // (nothing is ever ageing up in the spike: an AGE_UP stops it)
-    for(age_needs[p]) k:
-        if not has_building(p, k): return true
-    if b_queue[b].length >= r_queue_max: return true
-    if not can_afford(p, age_cost[p]): return true
-    return false
-
 def sum_of(xs:[int]) -> int:
     var t = 0
     for(xs) v: t += v
@@ -397,13 +385,13 @@ def bot_think(bot:EcoBot):
             if sx >= 0:
                 issue_cmd(p, 4, builders, bk, sx, sy, 0)
                 bot.next_house = tick + HOUSE_COOLDOWN
-    if saving and not age_up_barred(p, tc):
+    if saving and not tech_barred(p, tc, -1):
         issue_cmd(p, 9, []::int, b_id[tc], 0, 0, 0)
     // Keep the Town Center busy.
     let wk = worker_type(p)
     let q = b_queue[tc]
     if not saving and tick >= bot.next_train and q.length < 2 and count + q.length < MAX_WORKERS and can_afford(p, t_cost[wk]):
-        issue_cmd(p, 6, []::int, b_id[tc], wk, if worker_lacked[p]: 0 else: 1, 0)
+        issue_cmd(p, 6, []::int, b_id[tc], wk, 1, 0)   // (no race lacks workers)
         bot.next_train = tick + TRAIN_COOLDOWN
     // A house before we're stuck.
     let hk = btype_named("house")
