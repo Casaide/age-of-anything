@@ -199,7 +199,9 @@ func _check(w: World) -> void:
 			and t.pass_len == 0 and t.blast == 0 and not t.buildings_only and int(t.kill_gold) == 0 and int(t.slow_on_hit) == 0,
 			"The spike's units are plain soldiers and workers")
 	assert(w.field_order.is_empty() and w.field_queue.is_empty())
-	assert(w.webs.is_empty() and w.map.lane_teams.size() == 1 and w.bridge_id.is_empty())
+	assert(w.webs.is_empty() and w.map.lane_teams.size() == 1)
+	# Standing bridges are walkable deck the port has; only the full bot's land plans mend and break them.
+	assert(w.bridge_id.is_empty() or mode != "match", "Bridges aren't ported for the full bot")
 
 
 ## The k-th spawn point round a start: a square spiral, three tiles apart, on walkable ground.
