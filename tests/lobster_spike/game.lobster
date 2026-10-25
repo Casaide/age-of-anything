@@ -44,6 +44,7 @@ let args = command_line_arguments()
 // Options after the two paths: watch (the bot plays you too), speed:<x>, shot:<png> with at:<seconds>
 // (a screenshot after that much play, then quit), look:<x>,<y> (the camera on that tile).
 var watch = false
+var follow = false              // the camera follows the fighting (captures)
 var selftest = false            // play a few orders through the controls, check the sim took them, quit
 var shot = ""
 var shot_at = 0.0
@@ -58,6 +59,7 @@ for(args) a, k:
         if key == "at": shot_at = string_to_float(val)
         if key == "speed": start_speed = string_to_float(val)
         if a == "selftest": selftest = true
+        if a == "follow": follow = true
         if key == "look":
             let lx, ly = split_string(val, ",")
             look_x = string_to_int(lx)
@@ -92,28 +94,43 @@ var ground_tick = -1000
 
 def cell_noise(c:int) -> float: return float((c * 2654435761) % 1000) / 1000.0
 
+// Each cell a fan of four triangles: its own colour in the middle, its corners the average of the
+// cells round them, so the ground blends from tile to tile.
 def build_ground():
+    let fg = fog[ME]
+    let cols = map(W * H) c:
+        let t = terrain[c]
+        let k = 0.35 + 0.65 * cell_noise(c)
+        let shade = if fg[c] == 0: 0.12 elif fg[c] == 1: 0.55 else: 1.0
+        (ground_a[t] * k + ground_b[t] * (1.0 - k)) * shade
+    let corner = map((W + 1) * (H + 1)) v:
+        let vx = v % (W + 1)
+        let vy = v / (W + 1)
+        var sum = float4_0
+        var n = 0
+        for([int2 { -1, -1 }, int2 { 0, -1 }, int2 { -1, 0 }, int2 { 0, 0 }]) d:
+            let x = vx + d.x
+            let y = vy + d.y
+            if x >= 0 and y >= 0 and x < W and y < H:
+                sum += cols[y * W + x]
+                n++
+        sum / float(max(1, n))
     let pos = []::float3
     let col = []::float4
     let idx = []::int
-    let fg = fog[ME]
     for(W * H) c:
         let cx = c % W
         let cy = c / W
-        let t = terrain[c]
-        var k = 0.35 + 0.65 * cell_noise(c)
-        var shade = 1.0
-        if fg[c] == 0: shade = 0.12
-        elif fg[c] == 1: shade = 0.55
-        let a = ground_a[t]
-        let b = ground_b[t]
-        let base = (a * k + b * (1.0 - k)) * shade
         let n = pos.length
+        let m = iso(float(cx * 1000 + 500), float(cy * 1000 + 500))
+        pos.push(float3 { m.x, m.y, 0.0 })
+        col.push(float4 { cols[c].x, cols[c].y, cols[c].z, 1.0 })
         for([int2 { 0, 0 }, int2 { 1, 0 }, int2 { 1, 1 }, int2 { 0, 1 }]) d:
             let p = iso(float((cx + d.x) * 1000), float((cy + d.y) * 1000))
+            let k = corner[(cy + d.y) * (W + 1) + cx + d.x]
             pos.push(float3 { p.x, p.y, 0.0 })
-            col.push(float4 { base.x, base.y, base.z, 1.0 })
-        for([0, 2, 1, 0, 3, 2]) v: idx.push(n + v)
+            col.push(float4 { k.x, k.y, k.z, 1.0 })
+        for([0, 2, 1, 0, 3, 2, 0, 4, 3, 0, 1, 4]) v: idx.push(n + v)
     ground_mesh = gl.new_mesh("PC", pos, col, []::float3, []::float2, []::float2, idx)
 
 // ------------------------------------------------------------------ what the view remembers
@@ -133,6 +150,8 @@ var p_y = []::int
 var unit_dir = dictionary<int, int>(1024)
 var attack_t0 = dictionary<int, float>(1024)
 var corpses = []::Corpse
+var hit_t0 = dictionary<int, float>(1024)      // when a unit was last hit (the flash)
+var shot_from = dictionary<int, int>(1024)     // a shot (its by * 65536 + landing tick) -> the tick it was first seen
 var last_kind = dictionary<int, int>(1024)
 var last_owner = dictionary<int, int>(1024)
 
@@ -149,6 +168,7 @@ def after_step():
     for(events) e:
         if e.kind == EV_SHOT: attack_t0.set(e.a, clock_s)
         elif e.kind == EV_HIT:
+            hit_t0.set(e.b, clock_s)
             let i = index_of(e.a)
             if i >= 0 and not t_ranged[u_kind[i]]: attack_t0.set(e.a, clock_s)
         elif e.kind == EV_DIE and e.b == 0:
@@ -238,7 +258,9 @@ def collect_units(alpha:float):
             if f < 0: f = frame_index("u{u_kind[i]}.idle.{d}.0")
             let p = iso(x, y)
             let tc = TEAM_COLS[u_owner[i] % TEAM_COLS.length]
-            add(f, p.x, p.y, p.y, tc)
+            let since = clock_s - hit_t0.get(u_id[i], -10.0)
+            let flash = if since < 0.12: 1.0 + 1.8 * (1.0 - since / 0.12) else: 1.0
+            add(f, p.x, p.y, p.y, float4 { tc.x, tc.y, tc.z, flash })
 
 def collect_corpses():
     corpses = filter(corpses) c: clock_s - c.t0 < 4.0
@@ -312,6 +334,7 @@ def draw_world(alpha:float):
                 b_sheet = -1
                 for(draws) d: sprite(d.f, d.x, d.ay, d.col)
                 flush_sprites()
+                draw_shots(alpha)
                 draw_marks(alpha)
 
 // ------------------------------------------------------------------ selection and orders
@@ -491,8 +514,48 @@ def draw_ring(p:float2, r:float, col:float4):
             gl.scale(float2 { 1.0, 0.5 }):
                 gl.open_circle(r, 20, 1.2)
 
+// Shots in flight (shots.gd): a dart on an arc from where it was loosed to where it lands.
+def draw_shots(alpha:float):
+    gl.set_shader("color")
+    let n = shots.length / SHOT_STRIDE
+    for(n) k:
+        let o = k * SHOT_STRIDE
+        let land = shots[o]
+        let key = shots[o + 2] * 65536 + land % 65536
+        var t_from = shot_from.get(key, -1)
+        if t_from < 0:
+            t_from = tick - 1
+            shot_from.set(key, t_from)
+        let t = clamp((float(tick - t_from) + alpha) / float(max(1, land - t_from)), 0.0, 1.0)
+        let ax = float(shots[o + 7])
+        let ay = float(shots[o + 8])
+        let sx = float(shots[o + 9])
+        let sy = float(shots[o + 10])
+        if fog[ME][cell_of(int(ax), int(ay))] == 2 or fog[ME][cell_of(int(sx), int(sy))] == 2:
+            let a = iso(sx, sy)
+            let b = iso(ax, ay)
+            let arc = magnitude(b - a) * 0.25
+            def at(u:float) -> float2: return a + (b - a) * u - float2 { 0.0, 14.0 + arc * 4.0 * u * (1.0 - u) }
+            gl.color(float4 { 0.2, 0.15, 0.1, 1.0 }):
+                gl.line(at(max(0.0, t - 0.06)), at(t), 1.0)
+    if tick % 200 == 0: shot_from = dictionary<int, int>(1024)   // (forget the landed ones now and then)
+
+// Health bars over hurt units you can see, and over the selected.
+def draw_bars(alpha:float):
+    for(u_x.length) i:
+        let k = u_kind[i]
+        if u_hp[i] < t_hp[k] and (teams[u_owner[i]] == teams[ME] or visible_to_me(cell_of(u_x[i], u_y[i]))):
+            let px, py = prev_pos(i)
+            let p = iso(px + (u_x[i] - px) * alpha, py + (u_y[i] - py) * alpha)
+            let hpk = float(u_hp[i]) / float(max(1, t_hp[k]))
+            gl.color(float4 { 0.0, 0.0, 0.0, 0.6 }):
+                gl.translate(p + float2 { -9.0, -38.0 }): gl.rect(float2 { 18.0, 3.0 })
+            gl.color(float4 { 1.0 - hpk, 0.3 + 0.6 * hpk, 0.15, 1.0 }):
+                gl.translate(p + float2 { -9.0, -38.0 }): gl.rect(float2 { 18.0 * hpk, 3.0 })
+
 def draw_marks(alpha:float):
     gl.set_shader("color")
+    draw_bars(alpha)
     for(selected_units()) id:
         let i = index_of(id)
         let px, py = prev_pos(i)
@@ -698,6 +761,16 @@ while gl.frame() and not (gl.button("escape") == 1 and placing < 0 and not build
         clock_s += 0.05
         after_step()
         acc -= 0.05
+    if follow:
+        var fx = 0
+        var fy = 0
+        var nf = 0
+        for(u_x.length) i:
+            if u_foe[i] != 0:
+                fx += u_x[i]
+                fy += u_y[i]
+                nf++
+        if nf > 0: cam = cam + (iso(float(fx / nf), float(fy / nf)) - cam) * 0.05
     scroll()
     keys()
     mouse()

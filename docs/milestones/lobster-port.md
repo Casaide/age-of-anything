@@ -53,14 +53,19 @@ SURRENDER, the bots' walls and abilities.
 
 ## Checklist
 
-- [ ] 1. Rest of the sim
-- [ ] 2. Match pack
-- [ ] 3. Game shell
-- [ ] 4. Playing
+- [ ] 1. Rest of the sim: done so far: shift-queued orders, STOP, CANCEL, DROP_OFF, SURRENDER, auto-reseed,
+      markets, trade carts, repair, the bots' trading (play and match scenarios match every tick, 2026-10-26)
+- [x] 2. Match pack (`art_pack.gd`, `make_pack.sh`: 39 unit types x 8 directions x every state, every bake, in sheets)
+- [x] 3. Game shell (`game.lobster`, `play.sh`)
+- [ ] 4. Playing: selection, orders, building, training, age-up, the bot opponent and the win banner are in; a
+      self-test drives the controls (`play.sh pack selftest`). Waiting on Dominic's first match. Research, a
+      minimap and sound to come
 - [ ] 5. Feel
 - [ ] 6. Setup in Lobster
 - [ ] Archive
 
 ## Results
 
-(none yet)
+- 2026-10-26: the first match in a Lobster window (rats v frogs on flat_test, the bot on both sides when watching):
+  `archive/images/2026-10-26/01-lobster-game-first-frame.png`, `02-lobster-game-rat-raid.png`. The sim and both
+  bots take 0.35 ms a tick in the game; frames hold 60 fps with the whole match drawn.
