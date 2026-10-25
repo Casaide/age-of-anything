@@ -1,7 +1,7 @@
 // ------------------------------------------------------------------ flow fields (flow.gd)
 
 class Flow:
-    source:int
+    sources:[int]
     max_cost:int
     pops:int
     dist:[int]
@@ -28,7 +28,7 @@ def walkable(x:int, y:int, k:int) -> bool:
 def cell_walkable(cx:int, cy:int, k:int) -> bool:
     return cx >= 0 and cy >= 0 and cx < W and cy < H and walks[k][cy * W + cx] == 1
 
-def solve(src:int, cutoff:int, k:int) -> Flow:
+def solve(srcs:[int], cutoff:int, k:int) -> Flow:
     let w = W
     let h = H
     let n = w * h
@@ -41,9 +41,10 @@ def solve(src:int, cutoff:int, k:int) -> Flow:
         dist.push(INF)
         next.push(-1)
     var pending = 0
-    dist[src] = 0
-    ring[0].push(src)
-    pending++
+    for(srcs) src:
+        dist[src] = 0
+        ring[0].push(src)
+        pending++
     var pops = 0
     var cost = 0
     while pending > 0 and cost <= cutoff:
@@ -117,7 +118,7 @@ def solve(src:int, cutoff:int, k:int) -> Flow:
         bucket.remove_range(0, bucket.length)
         cost++
     for(ring) b: b.remove_range(0, b.length)   // (a cutoff can leave some queued)
-    return Flow { src, cutoff, pops, dist, next }
+    return Flow { srcs, cutoff, pops, dist, next }
 
 // The walkable cell closest to `cell` (itself if walkable). Ties go to the lower index.
 def nearest_walkable(cell:int, k:int) -> int:
@@ -285,8 +286,14 @@ def solve_queued():
         let mc = key % LANES
         let target = key / (LANES * 4)
         let kind = (key / LANES) % 4
-        assert kind == FIELD_CELL   // (cell fields only in the spike)
-        let f = solve(target, INF, mc)
+        var sources = []::int
+        if kind == FIELD_CELL or kind == FIELD_CELL_NEAR:
+            sources.push(target)
+        else:
+            let b = b_index_of(target)
+            if b >= 0: sources = footprint(b)   // (no map bridges in the spike)
+        let near = kind == FIELD_CELL_NEAR or kind == FIELD_BUILDING_NEAR
+        let f = solve(sources, if near: NEAR_CUTOFF else: INF, mc)
         spent += max(f.pops, 1)
         field_keys.push(key)
         field_vals.push(f)
@@ -294,3 +301,229 @@ def solve_queued():
             field_keys.remove(0)
             field_vals.remove(0)
 
+
+// ------------------------------------------------------------------ patching fields (flow.gd)
+// The map changed under a cached field: lower or raise just the costs the change touches. The costs
+// come out as a fresh solve's; where two ways cost the same, `next` may pick the other one.
+
+var bad_mark = []::int     // patch_closed's set of cells, by generation
+var bad_gen = 0
+
+// The cost of the field spreading from c to its neighbour n (n walkable): straight 10, diagonal 14
+// if both cells beside the corner are open, or always from a blocked source; 0 if not allowed.
+def step_cost(f:Flow, walk:[int], c:int, n:int) -> int:
+    let dx = n % W - c % W
+    let dy = n / W - c / W
+    if dx == 0 or dy == 0: return STRAIGHT
+    if walk[c] == 0 and f.dist[c] == 0: return DIAGONAL
+    if walk[c + dx] == 1 and walk[c + dy * W] == 1: return DIAGONAL
+    return 0
+
+// Give cell s the best cost its neighbours offer (within the cutoff); true if that lowered it.
+def relax_from_neighbours(f:Flow, walk:[int], s:int) -> bool:
+    let dist = f.dist
+    let sx = s % W
+    let sy = s / W
+    var lowered = false
+    var ny = max(sy - 1, 0)
+    while ny < min(sy + 2, H):
+        var nx = max(sx - 1, 0)
+        while nx < min(sx + 2, W):
+            let n = ny * W + nx
+            if n != s and dist[n] < INF and dist[n] <= f.max_cost:
+                let st = step_cost(f, walk, n, s)
+                if st > 0 and dist[n] + st < dist[s]:
+                    dist[s] = dist[n] + st
+                    f.next[s] = n
+                    lowered = true
+            nx++
+        ny++
+    return lowered
+
+// Spread lowered costs from the seeds outwards, cheapest first, each cell expanded once at its final
+// cost, within the cutoff. The cells expanded, or -1 past `limit`.
+def spread(f:Flow, walk:[int], seeds:[int], limit:int) -> int:
+    let dist = f.dist
+    let next = f.next
+    let order = []::int
+    for(seeds) c:
+        if dist[c] <= f.max_cost: order.push(dist[c] * (1 << 20) + c)
+    if not order.length: return 0
+    sort_ints(order)
+    let w = W
+    let h = H
+    var pending = 0
+    var fed = 0
+    var done = 0
+    var cost = order[0] >> 20
+    while true:
+        while fed < order.length and (order[fed] >> 20) == cost:
+            ring[cost % RING].push(order[fed] & ((1 << 20) - 1))
+            pending++
+            fed++
+        if pending == 0:
+            if fed >= order.length: break
+            cost = order[fed] >> 20
+            continue
+        let bucket = ring[cost % RING]
+        var bi = 0
+        while bi < bucket.length:
+            let c = bucket[bi]
+            bi++
+            pending--
+            if dist[c] != cost: continue
+            done++
+            if done > limit:
+                for(ring) b: b.remove_range(0, b.length)
+                return -1
+            let cx = c % w
+            let cy = c / w
+            let up = cy > 0 and walk[c - w] == 1
+            let down = cy < h - 1 and walk[c + w] == 1
+            let left = cx > 0 and walk[c - 1] == 1
+            let right = cx < w - 1 and walk[c + 1] == 1
+            let s = cost + STRAIGHT
+            let d = cost + DIAGONAL
+            let more_s = s <= f.max_cost
+            let more_d = d <= f.max_cost
+            let bs = ring[s % RING]
+            let bd = ring[d % RING]
+            let n_ = c - w
+            let e_ = c + 1
+            let s_ = c + w
+            let w_ = c - 1
+            if up and s < dist[n_]:
+                dist[n_] = s
+                next[n_] = c
+                if more_s:
+                    bs.push(n_)
+                    pending++
+            if right and s < dist[e_]:
+                dist[e_] = s
+                next[e_] = c
+                if more_s:
+                    bs.push(e_)
+                    pending++
+            if down and s < dist[s_]:
+                dist[s_] = s
+                next[s_] = c
+                if more_s:
+                    bs.push(s_)
+                    pending++
+            if left and s < dist[w_]:
+                dist[w_] = s
+                next[w_] = c
+                if more_s:
+                    bs.push(w_)
+                    pending++
+            if up and right and walk[n_ + 1] == 1 and d < dist[n_ + 1]:
+                dist[n_ + 1] = d
+                next[n_ + 1] = c
+                if more_d:
+                    bd.push(n_ + 1)
+                    pending++
+            if down and right and walk[s_ + 1] == 1 and d < dist[s_ + 1]:
+                dist[s_ + 1] = d
+                next[s_ + 1] = c
+                if more_d:
+                    bd.push(s_ + 1)
+                    pending++
+            if down and left and walk[s_ - 1] == 1 and d < dist[s_ - 1]:
+                dist[s_ - 1] = d
+                next[s_ - 1] = c
+                if more_d:
+                    bd.push(s_ - 1)
+                    pending++
+            if up and left and walk[n_ - 1] == 1 and d < dist[n_ - 1]:
+                dist[n_ - 1] = d
+                next[n_ - 1] = c
+                if more_d:
+                    bd.push(n_ - 1)
+                    pending++
+        bucket.remove_range(0, bucket.length)
+        cost++
+    f.pops += done
+    return done
+
+// Cells opened (walkable now in lane k; none a source): lower the costs they shorten.
+def patch_opened(f:Flow, cells:[int], k:int, limit:int) -> int:
+    let walk = walks[k]
+    let seeds = []::int
+    for(cells) cell:
+        let cx = cell % W
+        let cy = cell / W
+        var y = max(cy - 1, 0)
+        while y < min(cy + 2, H):
+            var x = max(cx - 1, 0)
+            while x < min(cx + 2, W):
+                let s = y * W + x
+                if walk[s] == 1 and f.dist[s] != 0 and relax_from_neighbours(f, walk, s): seeds.push(s)
+                x++
+            y++
+    return spread(f, walk, seeds, limit)
+
+// Cells closed (blocked now in lane k; none a source): every cell whose way ran through one loses its
+// cost, then takes the best its neighbours still offer. The cells reset and settled, or -1 past `limit`.
+def patch_closed(f:Flow, cells:[int], k:int, limit:int) -> int:
+    let walk = walks[k]
+    let dist = f.dist
+    let next = f.next
+    if bad_mark.length != W * H: bad_mark = map(W * H): 0
+    bad_gen++
+    let queue = []::int
+    for(cells) cell:
+        if bad_mark[cell] != bad_gen and dist[cell] < INF:
+            bad_mark[cell] = bad_gen
+            queue.push(cell)
+        let cx = cell % W
+        let cy = cell / W
+        var y = max(cy - 1, 0)
+        while y < min(cy + 2, H):
+            var x = max(cx - 1, 0)
+            while x < min(cx + 2, W):
+                let s = y * W + x
+                x++
+                if bad_mark[s] == bad_gen or next[s] < 0: continue
+                let t = next[s]
+                if (walk[t] == 0 and dist[t] != 0) or walk[s] == 0 or step_cost(f, walk, t, s) == 0:
+                    bad_mark[s] = bad_gen
+                    queue.push(s)
+            y++
+    var head = 0
+    while head < queue.length:
+        if queue.length > limit: return -1
+        let c = queue[head]
+        head++
+        let x0 = c % W
+        let y0 = c / W
+        var ny = max(y0 - 1, 0)
+        while ny < min(y0 + 2, H):
+            var nx = max(x0 - 1, 0)
+            while nx < min(x0 + 2, W):
+                let n = ny * W + nx
+                if next[n] == c and bad_mark[n] != bad_gen:
+                    bad_mark[n] = bad_gen
+                    queue.push(n)
+                nx++
+            ny++
+    for(queue) c:
+        dist[c] = INF
+        next[c] = -1
+    let seeds = []::int
+    for(queue) c:
+        if walk[c] == 1 and relax_from_neighbours(f, walk, c): seeds.push(c)
+    let sp = spread(f, walk, seeds, limit - queue.length)
+    return if sp < 0: -1 else: queue.length + sp
+
+// Does a change at `cell` possibly alter this field? Only if the solve reached it or a neighbour.
+def touches(f:Flow, cell:int) -> bool:
+    let cx = cell % W
+    let cy = cell / W
+    var y = max(cy - 1, 0)
+    while y < min(cy + 2, H):
+        var x = max(cx - 1, 0)
+        while x < min(cx + 2, W):
+            if f.dist[y * W + x] < INF: return true
+            x++
+        y++
+    return false

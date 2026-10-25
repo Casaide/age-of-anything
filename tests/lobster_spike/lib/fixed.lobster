@@ -29,6 +29,11 @@ def isqrt(n:int) -> int:
         y = (x + n / x) >> 1
     return x
 
+def contains(xs:[int], v:int) -> bool:
+    for(xs) x:
+        if x == v: return true
+    return false
+
 def dist2(ax:int, ay:int, bx:int, by:int) -> int:
     let dx = bx - ax
     let dy = by - ay

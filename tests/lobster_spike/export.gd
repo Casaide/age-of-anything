@@ -1,16 +1,18 @@
 extends SceneTree
 ## The Lobster sim spike (2026-10-25): scenarios for the port in sim.lobster, from the GDScript sim.
-## Two armies (rats and frogs: ground and amphibious lanes, mounted flanks, shooters) spawn round
-## their starts and settle, then play scripted orders picked from the state as it goes:
-##   move:  allies (nobody fights); every 4 s each sends its army or a quarter of it somewhere.
-##   fight: enemies; they attack-move at each other, and every 4 s each side attack-moves at the
-##          other's army, moves a quarter somewhere, or sets a quarter's stance.
-## Writes the state after the settle (map, terrain speeds, sight blockers, unit types with their
-## combat vectors, every unit, shots in the air, fog), the orders as they ran, and a hash of the
-## state after every tick (state_hash below), so the port can be checked tick by tick. Times
-## World.step and a step of just the systems the port has (movement, combat, fog), and checks the
-## two give the same hashes in the scenario.
-## Run: godot --headless --path . --script res://tests/lobster_spike/export.gd -- <move|fight> <map> <units per player> <ticks> <out file> [dump:<tick>] [trace:<tick>]
+## Two races (rats and frogs: ground and amphibious lanes, mounted flanks, shooters):
+##   move:  allied armies spawn round their starts and settle; every 4 s each sends its army or a
+##          quarter of it somewhere (nobody fights).
+##   fight: enemy armies; they attack-move at each other, and every 4 s each side attack-moves at
+##          the other's army, moves a quarter somewhere, or sets a quarter's stance.
+##   eco:   the match start (Town Centers, workers) played by two eco bots (src/ai/eco_bot.gd):
+##          gathering, carrying, training, rallies, houses, farms, a barracks. Animals off.
+## Writes the state at the start (map with its terrain tables and resources, sight blockers, rules,
+## unit and building types, every unit and building, stocks, shots in the air, fog), the orders
+## as they ran, and a hash of the state after every tick (state_hash below), so the port can be
+## checked tick by tick. Times World.step and a step of just the systems the port has, and checks
+## the two give the same hashes in the scenario.
+## Run: godot --headless --path . --script res://tests/lobster_spike/export.gd -- <move|fight|eco> <map> <units per player (move, fight)> <ticks> <out file> [dump:<tick>] [trace:<tick>]
 
 const DataLib := preload("res://src/data_lib.gd")
 const Generator := preload("res://src/race_generator.gd")
@@ -20,16 +22,19 @@ const Commands := preload("res://src/sim/commands.gd")
 const SimMap := preload("res://src/sim/sim_map.gd")
 const World := preload("res://src/sim/world.gd")
 const Combat := preload("res://src/sim/combat.gd")
+const Economy := preload("res://src/sim/economy.gd")
+const Tech := preload("res://src/sim/tech.gd")
 const Fog := preload("res://src/sim/fog.gd")
-const Shots := preload("res://src/sim/shots.gd")
+const EcoBot := preload("res://src/ai/eco_bot.gd")
 
 const SEED := 20261010
 const PROMPTS := ["sewer rats with cheese hammers", "angry swamp frogs with reed spears"]
 const SLOTS := ["spear", "skirmisher", "archer", "large", "worker"]
-const SETTLE := 40            # ticks before the export (multiple of a turn)
+const SETTLE := 40            # ticks before the export (multiple of a turn), move and fight
 const ORDERS_EVERY := 20      # turns between orders (4 s)
 const CHUNK := 10             # units per spawn point
-const CMD_CODES := {Commands.MOVE: 0, Commands.ATTACK_MOVE: 1, Commands.STANCE: 2}
+const CMD_CODES := {Commands.MOVE: 0, Commands.ATTACK_MOVE: 1, Commands.STANCE: 2, Commands.GATHER: 3, Commands.BUILD: 4,
+	Commands.HELP_BUILD: 5, Commands.TRAIN: 6, Commands.RALLY: 7, Commands.RESEED: 8}
 
 var mode := "move"
 var trace_tick := -1
@@ -38,7 +43,7 @@ var trace_tick := -1
 func _init() -> void:
 	var args := OS.get_cmdline_user_args()
 	mode = args[0]
-	assert(mode == "move" or mode == "fight")
+	assert(mode in ["move", "fight", "eco"])
 	var map_id: String = args[1]
 	var per_player := int(args[2])
 	var ticks := int(args[3])
@@ -51,8 +56,9 @@ func _init() -> void:
 			trace_tick = int(a.substr(6))
 	var rules = DataLib.load_json("res://data/rules/default.json")
 	rules.animals = false
-	rules.economy.start.buildings = []
-	rules.economy.start.workers = 0
+	if mode != "eco":
+		rules.economy.start.buildings = []
+		rules.economy.start.workers = 0
 	var gen = Generator.new(DataLib.new())
 	var races := []
 	for p in PROMPTS:
@@ -69,16 +75,11 @@ func _init() -> void:
 	var lite_hashes := PackedInt64Array()
 	var dump := PackedStringArray()
 	var t_lite := _play(lite, ticks, true, lite_hashes, dump_tick, dump)
-	var cmds := full.history.filter(func(c): return CMD_CODES.has(c.type))
-	lines.append("CMDS %d" % cmds.size())
-	for c in cmds:
-		var a: Dictionary = c.args
-		var stance: int = Combat.POSTURES.find(a.stance) if c.type == Commands.STANCE else 0
-		var row := PackedStringArray([str((c.turn + Commands.DELAY) * Commands.TICKS_PER_TURN), str(CMD_CODES[c.type]), str(c.player),
-			str(a.get("x", 0)), str(a.get("y", 0)), str(stance), str(a.ids.size())])
-		for uid in a.ids:
-			row.append(str(uid))
-		lines.append(" ".join(row))
+	for c in full.history:
+		assert(CMD_CODES.has(c.type), "The port has no %s command" % c.type)
+	lines.append("CMDS %d" % full.history.size())
+	for c in full.history:
+		lines.append(_cmd_row(full, c))
 	lines.append("HASHES %d" % ticks)
 	for h in full_hashes:
 		lines.append(str(h))
@@ -98,15 +99,50 @@ func _init() -> void:
 	var left := [0, 0]
 	for i in full.units.count():
 		left[full.units.owner[i]] += 1
-	print("%s on %s, %d units, %d ticks, %d orders; left at the end: %d v %d" % [mode, map_id, start_units, ticks, cmds.size(), left[0], left[1]])
+	print("%s on %s, %d units, %d ticks, %d orders; at the end: units %d v %d, buildings %d, gathered %s" % [mode, map_id, start_units, ticks,
+		full.history.size(), left[0], left[1], full.buildings.count(), str(full.gathered)])
 	print("whole step:   %.3f ms a tick" % (t_full / 1000.0 / ticks))
 	print("ported step:  %.3f ms a tick" % (t_lite / 1000.0 / ticks))
 	print("ported step gives the whole step's hashes: %s%s" % [first_diff < 0, "" if first_diff < 0 else " (first diff at tick index %d)" % first_diff])
 	quit(0 if first_diff < 0 else 1)
 
 
-## A World with both armies spawned in chunks round their starts, settled for SETTLE ticks.
+## One command as it ran: run tick, code, player, four args, ids. The static checks (types, what a
+## building trains, what the race lacks) are worked out here; the port checks the rest as it runs.
+func _cmd_row(w: World, c: Dictionary) -> String:
+	var a: Dictionary = c.args
+	var p: int = c.player
+	var v := [0, 0, 0, 0]
+	match c.type:
+		Commands.MOVE, Commands.ATTACK_MOVE:
+			v = [a.x, a.y, 0, 0]
+		Commands.STANCE:
+			v = [Combat.POSTURES.find(a.stance), 0, 0, 0]
+		Commands.GATHER:
+			v = [a.cell, 0, 0, 0]
+		Commands.BUILD:
+			assert(int(a.get("queue", 0)) == 0 and int(a.get("along", 0)) == 0)
+			var k := Economy.btype_of(w, a.building)
+			v = [Economy.upgraded(w, p, k) if k >= 0 else -1, a.cx, a.cy, 0]
+		Commands.HELP_BUILD:
+			v = [a.target, 0, 0, 0]
+		Commands.TRAIN:
+			v = [a.building, w.type_for(p, a), 0 if Economy.lacks(w, p, a.slot) else 1, 0]
+		Commands.RALLY:
+			v = [a.building, a.x, a.y, 0]
+		Commands.RESEED:
+			v = [a.building, 0, 0, 0]
+	var ids: Array = a.get("ids", [])
+	return _ints([(c.turn + Commands.DELAY) * Commands.TICKS_PER_TURN, CMD_CODES[c.type], p] + v + [ids.size()] + ids)
+
+
+## move and fight: both armies spawned in chunks round their starts, settled for SETTLE ticks.
+## eco: the match start as made.
 func _setup(map_id: String, races: Array, rules: Dictionary, per_player: int) -> World:
+	if mode == "eco":
+		var e := World.new(SEED, SimMap.load_id(map_id), races, rules)
+		_check(e)
+		return e
 	var w := World.new(SEED, SimMap.load_id(map_id), races, rules, [0, 0] if mode == "move" else [0, 1])
 	var per_slot := per_player / SLOTS.size()
 	for p in races.size():
@@ -123,14 +159,21 @@ func _setup(map_id: String, races: Array, rules: Dictionary, per_player: int) ->
 				k += 1
 	while w.tick < SETTLE:
 		w.step()
+	w.history.clear()   # (the spawns: done before the export)
+	assert(w.buildings.count() == 0)
+	_check(w)
+	return w
+
+
+## What the port leaves out isn't there.
+func _check(w: World) -> void:
 	for i in w.units.count():
 		var t: Dictionary = w.types[w.units.kind[i]]
 		assert(not t.hero and not t.healer and t.unpack == 0 and t.wade == 0 and t.min_range == 0 and t.splash == 0
 			and t.pass_len == 0 and t.blast == 0 and not t.buildings_only and int(t.kill_gold) == 0 and int(t.slow_on_hit) == 0,
-			"The spike's units are plain soldiers")
+			"The spike's units are plain soldiers and workers")
 	assert(w.field_order.is_empty() and w.field_queue.is_empty())
-	assert(w.buildings.count() == 0 and w.webs.is_empty())
-	return w
+	assert(w.webs.is_empty() and w.map.lane_teams.size() == 1 and w.bridge_id.is_empty())
 
 
 ## The k-th spawn point round a start: a square spiral, three tiles apart, on walkable ground.
@@ -168,7 +211,7 @@ func _walkable_point(map: SimMap, rng) -> Vector2i:
 	return Vector2i.ZERO
 
 
-## This turn's orders for the players, picked from the state now.
+## This turn's orders for the players (move and fight), picked from the state now.
 func _issue_orders(w: World, rng, first: bool) -> void:
 	for p in 2:
 		var mine := []
@@ -209,13 +252,18 @@ func _issue_orders(w: World, rng, first: bool) -> void:
 				w.issue(p, Commands.STANCE, {"ids": some, "stance": Combat.POSTURES[rng.range_int(0, 3)]})
 
 
-## Plays `ticks` ticks issuing orders, a hash after each; returns the time spent stepping (usec).
+## Plays `ticks` ticks giving orders, a hash after each; returns the time spent stepping (usec).
 func _play(w: World, ticks: int, ported_only: bool, hashes: PackedInt64Array, dump_tick: int, dump) -> int:
 	var rng = Rng.new(SEED ^ 0x5C51)
+	var bots := [EcoBot.new(0), EcoBot.new(1)] if mode == "eco" else []
+	var start := w.tick
 	var spent := 0
 	var first := true
 	for k in ticks:
-		if w.tick % Commands.TICKS_PER_TURN == 0 and (w.turn() - SETTLE / Commands.TICKS_PER_TURN) % ORDERS_EVERY == 0:
+		if mode == "eco":
+			for bot in bots:
+				bot.think(w)
+		elif w.tick % Commands.TICKS_PER_TURN == 0 and (w.turn() - start / Commands.TICKS_PER_TURN) % ORDERS_EVERY == 0:
 			_issue_orders(w, rng, first)
 			first = false
 		var t0 := Time.get_ticks_usec()
@@ -230,7 +278,8 @@ func _play(w: World, ticks: int, ported_only: bool, hashes: PackedInt64Array, du
 	return spent
 
 
-## World.step cut down to the systems the port has: commands, combat, fog, flow-field solves, moves, separation.
+## World.step cut down to the systems the port has: commands, training, jobs, combat, fog, map
+## changes, flow-field solves, moves, separation.
 func _ported_step(w: World) -> void:
 	w.units.save_prev()
 	w.events.clear()
@@ -238,14 +287,19 @@ func _ported_step(w: World) -> void:
 		for cmd in w.commands.take(w.turn()):
 			w._run(cmd)
 			w.history.append(cmd)
+	Economy.train(w)
+	Tech.tick(w)
+	Economy.work(w)
 	w.spatial.build(w.units.x, w.units.y)
 	var alive := w.units.changes
 	Combat.tick(w)
 	Fog.tick(w)
 	if w.units.changes != alive:
 		w.spatial.build(w.units.x, w.units.y)
+	w._next_orders()
 	var t := w.tick
 	_trace(w, t, "start")
+	w._sync_map()
 	w._solve_queued()
 	w._move()
 	_trace(w, t, "move")
@@ -259,15 +313,22 @@ func _ported_step(w: World) -> void:
 static func unit_fields(u, i: int) -> Array:
 	return [u.id[i], u.x[i], u.y[i], u.tx[i], u.ty[i], u.moving[i], u.arrive[i], u.wx[i], u.wy[i], u.group[i], u.stuck[i],
 		u.prog[i], u.fkey[i], u.pace[i], u.hp[i], u.foe[i], u.cooldown[i], u.stance[i], u.posture[i], u.gx[i], u.gy[i],
-		u.amx[i], u.amy[i], u.amc[i]]
+		u.amx[i], u.amy[i], u.amc[i], u.task[i], u.target[i], u.home[i], u.gspot[i], u.carry_kind[i], u.carry[i], u.work[i],
+		u.reach[i], u.rx0[i], u.ry0[i], u.rx1[i], u.ry1[i]]
 
 
-## The state the port has: the tick, the next group, the cached and queued fields, every unit, the
-## shots in the air, the losses.
+## The per-building fields both sims hash, in order (then its queue).
+static func building_fields(b, i: int) -> Array:
+	return [b.id[i], b.owner[i], b.kind[i], b.cx[i], b.cy[i], b.sx[i], b.sy[i], b.hp[i], b.progress[i], b.done[i],
+		b.train[i], b.rally_x[i], b.rally_y[i]]
+
+
+## The state the port has: the tick and counters, the cached and queued fields, every unit and
+## building, the shots in the air, stocks, pop, losses, and what's left of every resource.
 static func state_hash(w: World) -> int:
 	var h := Fixed.FNV_START
-	h = Fixed.mix(h, w.tick)
-	h = Fixed.mix(h, w.next_group)
+	for v in [w.tick, w.next_id, w.next_group]:
+		h = Fixed.mix(h, v)
 	for key in w.field_order:
 		h = Fixed.mix(h, key)
 	h = Fixed.mix(h, -1)
@@ -278,11 +339,27 @@ static func state_hash(w: World) -> int:
 	for i in u.count():
 		for v in unit_fields(u, i):
 			h = Fixed.mix(h, v)
+	var b := w.buildings
+	h = Fixed.mix(h, b.count())
+	for i in b.count():
+		for v in building_fields(b, i):
+			h = Fixed.mix(h, v)
+		h = Fixed.mix(h, b.queue[i].size())
+		for k in b.queue[i]:
+			h = Fixed.mix(h, k)
 	h = Fixed.mix(h, w.shots.count())
 	for v in w.shots.data:
 		h = Fixed.mix(h, v)
 	for p in w.races.size():
 		h = Fixed.mix(h, w.lost[p])
+		h = Fixed.mix(h, w.pop[p])
+		h = Fixed.mix(h, w.pop_cap[p])
+		for r in w.resources.size():
+			h = Fixed.mix(h, w.stock[r][p])
+			h = Fixed.mix(h, w.gathered[r][p])
+	for c in w.map.resource_cells:
+		h = Fixed.mix(h, w.map.amount[c])
+		h = Fixed.mix(h, w.map.terrain[c])
 	return h
 
 
@@ -292,67 +369,124 @@ func _trace(w: World, t: int, what: String) -> void:
 		return
 	var rows := PackedStringArray()
 	for i in w.units.count():
-		rows.append(what + " " + " ".join(unit_fields(w.units, i).map(func(v): return str(v))))
+		rows.append(what + " " + _ints(unit_fields(w.units, i)))
 	print("\n".join(rows))
 
 
 static func _dump(w: World, out: PackedStringArray) -> void:
-	out.append("tick %d next_group %d fields %s queue %s shots %s lost %s" % [w.tick, w.next_group, str(w.field_order), str(w.field_queue), str(w.shots.data), str(w.lost)])
+	out.append("tick %d next_id %d next_group %d fields %s queue %s shots %s lost %s stock %s gathered %s pop %s cap %s" % [w.tick,
+		w.next_id, w.next_group, str(w.field_order), str(w.field_queue), str(w.shots.data), str(w.lost), str(w.stock), str(w.gathered),
+		str(w.pop), str(w.pop_cap)])
 	for i in w.units.count():
-		out.append(" ".join(unit_fields(w.units, i).map(func(v): return str(v))))
+		out.append(_ints(unit_fields(w.units, i)))
+	for i in w.buildings.count():
+		out.append("b " + _ints(building_fields(w.buildings, i)) + " q " + _ints(w.buildings.queue[i]))
+	var left := PackedStringArray()
+	for c in w.map.resource_cells:
+		left.append("%d:%d/%d" % [c, w.map.amount[c], w.map.terrain[c]])
+	out.append("left " + " ".join(left))
 
 
 static func _ints(a) -> String:
 	return " ".join(Array(a).map(func(v): return str(int(v))))
 
 
-## The map's walk grids, terrain speeds and sight blockers, the players, the rules the port reads,
-## the unit types, every unit, the shots in the air and each player's fog.
+## The map (walk grids, terrain and its tables, resources, buildings' cells, sight blockers), the
+## players, the rules the port reads, the unit and building types, every unit and building, the
+## shots in the air and each player's fog.
 static func _write_state(w: World, lines: PackedStringArray) -> void:
 	var m := w.map
 	var n := m.width * m.height
-	lines.append("AOWSPIKE 2")
-	lines.append("MAP %d %d %d" % [m.width, m.height, m.walks.size()])
+	lines.append("AOWSPIKE 3")
+	lines.append("MAP %d %d %d %d" % [m.width, m.height, m.walks.size(), int(m.has_heights)])
 	for k in m.walks.size():
 		lines.append(_ints(m.walks[k]))
+	for g in [m.terrain, m.amount, m.pool, m.occupied, m.walk_over, m.cliff, m.ramp, m.level, m.deck, m.high, m.opaque, m.gate]:
+		lines.append(_ints(g))
+	lines.append(_ints([m.resource_cells.size()] + Array(m.resource_cells)))
+	lines.append("TERRAIN %d" % m.terrain_ids.size())
+	for t in m.terrain_ids.size():
+		lines.append(_ints([int(m.terrain_walk[t]), m.terrain_move[t], Economy.kind_of(w, m.terrain_resource[t]), m.terrain_amount[t],
+			m.terrain_depleted[t], m.terrain_reseed[t], m.terrain_cleared[t], int(m.terrain_opaque[t])]))
 	lines.append("SPEED %d" % w.move_pct.size())
 	for cls in w.move_pct.size():
 		var row := PackedInt32Array()
 		for c in n:
 			row.append(w.move_pct[cls][m.terrain[c]])
 		lines.append(_ints(row))
-	lines.append("SIGHT")
-	lines.append(_ints(m.opaque))
-	lines.append(_ints(m.level))
-	lines.append("PLAYERS %d" % w.races.size())
-	lines.append(_ints(Array(w.lane_base).slice(0, w.races.size())))
-	lines.append(_ints(Array(w.teams).slice(0, w.races.size())))
+	var np := w.races.size()
+	lines.append("PLAYERS %d %d" % [np, w.resources.size()])
+	lines.append(_ints(Array(w.lane_base).slice(0, np)))
+	lines.append(_ints(Array(w.teams).slice(0, np)))
+	lines.append(_ints(w.gather_spots))
 	var c: Dictionary = w.combat
-	lines.append("RULES %d %d %d %d %d %d %d %d %d %d %d %d %d %d %d %d" % [c.min_damage, c.acquire_every, c.defend_sight, c.counter_pull,
-		c.leash, c.sight, c.shot_lead_pct, c.shot_strays, c.shot_slack, int(w.high.reach), int(w.high.uphill_damage_pct), int(w.high.sight_unit), int(w.map.has_heights),
-		w.fog_cfg.every, w.fog_cfg.unit, w.fog_cfg.worker])
+	var e: Dictionary = w.econ
+	lines.append("RULES " + _ints([c.min_damage, c.acquire_every, c.defend_sight, c.counter_pull, c.leash, c.sight, c.shot_lead_pct,
+		c.shot_strays, c.shot_slack, w.high.reach, w.high.uphill_damage_pct, w.high.sight_unit, w.high.sight_building,
+		w.fog_cfg.every, w.fog_cfg.unit, w.fog_cfg.worker, w.fog_cfg.building, e.carry, e.queue_max, e.pop_max]))
 	lines.append("TYPES %d %d" % [w.types.size(), w.classes.size()])
 	for k in w.types.size():
 		var t: Dictionary = w.types[k]
-		lines.append("%d %d %d %d %d %d %d %d %d %d %d %d %d %d" % [t.speed, t.radius, _role(t), int(t.form_gap), int(t.worker),
-			int(t.get("harmless", false)), int(t.healer), int(t.ranged), t.reach, t.reload, t.shot_speed, int(t.get("min_damage", 0)),
-			int(t.eval.get("sight", 0)) + int(t.sight_add), int(t.mclass)])
+		lines.append(_ints([t.speed, t.radius, _role(t), t.form_gap, int(t.worker), int(t.get("harmless", false)), int(t.healer),
+			int(t.ranged), t.reach, t.reload, t.shot_speed, t.get("min_damage", 0), int(t.eval.get("sight", 0)) + int(t.sight_add),
+			t.mclass, t.pop, t.train_ticks, t.hp, t.posture, int(t.carry_add), int(t.build_pct), t.player, int(t.line[0].age)]))
+		lines.append(_ints(t.cost))
 		lines.append(_ints(t.atk))
 		lines.append(_ints(t.arm))
 		lines.append(_ints(t.cls))
 		lines.append("%d %s" % [t.counters.size(), _ints(t.counters)])
+	lines.append("BTYPES %d" % w.btypes.size())
+	for k in w.btypes.size():
+		var t: Dictionary = w.btypes[k]
+		var tower: bool = not t.attack.is_empty() and t.arrows > 0
+		var farm: bool = not t.becomes.is_empty()
+		var land: int = m.terrain_ids.find(t.becomes.get("land", "")) if farm else -1
+		var water: int = m.terrain_ids.find(t.becomes.get("water", "")) if farm else -1
+		lines.append(_ints([t.size, t.build_ticks, t.pop, t.sight, t.age, t.more_from_age, int(t.water), int(t.line), int(tower),
+			int(farm), land, water, t.workers, int(not t.pen.is_empty() or t.gate or t.ladder or t.walkway > 0 or t.blocks_flyers)]))
+		lines.append(t.id)
+		lines.append(_ints(t.cost))
+		lines.append(_ints(t.drop))
+		lines.append(_ints(t.reseed))
+		for p in np:
+			var mods: Dictionary = w.bmods[p][k]
+			var trains := []
+			for slot in t.trains:
+				var tk := w.type_of(p, slot)
+				if tk >= 0:
+					trains.append(tk)
+			lines.append(_ints([mods.hp, int(mods.add.get("pop", 0)), int(mods.add.get("sight", 0)), Economy.farm_food(w, p, k),
+				int(Economy.lacks(w, p, t.id)), trains.size()] + trains))
+			lines.append(_ints(Economy.bcost(w, p, k)))
+	# The next age, for the bots' age-up check (Tech.why_not): its cost, where it's clicked, what it needs.
+	lines.append("AGES")
+	for p in np:
+		var age: Dictionary = Tech.next_age(w, p)
+		var needs := Tech.requires(w, p, age).map(func(id): return Economy.btype_of(w, id))
+		lines.append(_ints([Economy.btype_of(w, age.building), int(Economy.lacks(w, p, "worker"))] + Array(age.cost) + [needs.size()] + needs))
+	lines.append("ECON")
+	for p in np:
+		var row := [w.ages[p], w.auto_reseed[p], w.pop[p], w.pop_cap[p], w.lost[p]]
+		for r in w.resources.size():
+			row += [w.stock[r][p], w.gathered[r][p], w.gather_ticks[p][r]]
+		lines.append(_ints(row))
 	lines.append("TICK %d %d %d" % [w.tick, w.next_id, w.next_group])
 	var u := w.units
 	lines.append("UNITS %d" % u.count())
 	for i in u.count():
-		assert(u.reach[i] == 0 and u.task[i] == 0 and u.perch[i] == 0 and u.patient[i] == 0 and u.orders[i].is_empty())
+		assert(u.perch[i] == 0 and u.patient[i] == 0 and u.orders[i].is_empty())
 		lines.append(_ints(unit_fields(u, i) + [u.owner[i], u.kind[i], u.speed[i], u.radius[i], u.mclass[i]]))
+	var b := w.buildings
+	lines.append("BUILDINGS %d" % b.count())
+	for i in b.count():
+		assert(b.diag[i] == 0 and b.inside[i].is_empty() and b.cooldown[i] == 0)
+		lines.append(_ints(building_fields(b, i) + [b.queue[i].size()] + b.queue[i]))
 	lines.append("SHOTS %d" % w.shots.count())
 	lines.append(_ints(w.shots.data))
-	lines.append("LOST %s" % _ints(Array(w.lost).slice(0, w.races.size())))
 	lines.append("FOG")
-	for p in w.races.size():
+	for p in np:
 		lines.append(_ints(w.fog[p]))
+		lines.append(_ints([w.fog_lit[p].size()] + Array(w.fog_lit[p])))
 
 
 ## World._form_role, by type.

@@ -61,6 +61,12 @@ def fog_update_team(team:[int]):
             if stamped.get(key, 0): continue
             stamped.set(key, 1)
             stamp(g, lit, u_x[i] / 1000, u_y[i] / 1000, r, high)
+    for(b_id.length) b:
+        if teams[b_owner[b]] == team_p and b_done[b] == 1:   // a foundation sees nothing
+            let k = b_kind[b]
+            var r = (if bt_sight[k] > 0: bt_sight[k] else: r_fog_building) + bm_sight[b_owner[b]][k]
+            if has_heights: r += level[b_cy[b] * W + b_cx[b]] * r_high_sight_building
+            stamp(g, lit, b_cx[b] + b_sx[b] / 2, b_cy[b] + b_sy[b] / 2, r + max(b_sx[b], b_sy[b]) / 2, false)
     fog[p] = g
     fog_lit[p] = lit
     var k = 1
@@ -69,12 +75,17 @@ def fog_update_team(team:[int]):
         fog_lit[team[k]] = lit
         k++
 
-// Sight circles with trees in them, per centre, radius and over_trees (the ground never changes here).
+// Sight circles with trees in them, per centre, radius and over_trees, until a tree is felled.
 let sight_cache = dictionary<int, [int]>(4001)
+var sight_cache_version = 0    // bumped when a cell starts or stops blocking sight (map.lobster refresh)
+var sight_cache_for = 0
 
 def stamp(g:[int], lit:[int], cx:int, cy:int, r:int, over_trees:bool):
     let v = level[cy * W + cx]
     if blocked_near(cx, cy, r, v, over_trees):
+        if sight_cache_for != sight_cache_version:
+            sight_cache.clear()
+            sight_cache_for = sight_cache_version
         let key = ((cy * W + cx) * 64 + r) * 2 + (if over_trees: 1 else: 0)
         var cells = sight_cache.get(key)
         if not cells:
