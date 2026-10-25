@@ -186,6 +186,13 @@ func _setup(map_id: String, races: Array, rules: Dictionary, per_player: int) ->
 	if mode == "eco" or mode == "match" or mode == "play":
 		var e := World.new(SEED, SimMap.load_id(map_id), races, rules)
 		e.set_meta("mode", mode)
+		if "age3" in OS.get_cmdline_user_args():   # a late game straight away: age 3, full stocks (Wonders, engines)
+			for p in races.size():
+				e.ages[p] = 3
+				Tech.retype(e, p)
+				Tech.refresh(e, p)
+				for r in e.resources.size():
+					e.stock[r][p] += 3000
 		_check(e)
 		return e
 	var w := World.new(SEED, SimMap.load_id(map_id), races, rules, [0, 0] if mode == "move" else [0, 1])
@@ -505,6 +512,8 @@ static func state_hash(w: World) -> int:
 	for k in w.hero_types:
 		h = Fixed.mix(Fixed.mix(h, w.hero_id[k]), w.hero_fell[k])
 	h = Fixed.mix(h, w.winner)
+	for k in w.wonder_ids.size():
+		h = Fixed.mix(Fixed.mix(h, w.wonder_ids[k]), w.wonder_since[k])
 	for v in w.market_price:
 		h = Fixed.mix(h, v)
 	for k in w.bridge_id.size():
@@ -702,6 +711,9 @@ static func _write_extra(w: World, lines: PackedStringArray) -> void:
 		pens.append_array([int(p.animals), int(p.food), int(p.food_ticks), int(p.breed_ticks)] if not p.is_empty() else [0, 0, 1, 1])
 	e.bt_pen = pens
 	e.combat2 = [int(w.combat.get("splash_friend_pct", 100))]
+	var hold_m := int(w.mode_cfg.get("hold_minutes", 0))
+	e.match2 = [Match.hold_ticks(w), hold_m * 1200 if w.mode_cfg.has("defend") else -1]
+	e.wonders = Array(w.wonder_ids) + Array(w.wonder_since) + Array(w.wonder_owners)
 	var bc: Dictionary = w.bridge_cfg
 	e.bridge_cfg = [int(bc.hp), int(bc.ticks)] + Array(bc.cost) + Array(bc.arm)
 	var brs := []

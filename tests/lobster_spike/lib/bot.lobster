@@ -721,19 +721,21 @@ def known_enemy_town(bot:Bot, hx:int, hy:int) -> int:
     return best
 
 // Where to attack: the nearest enemy Town Center we've seen, else the nearest enemy building we've
-// seen but walls, else an enemy's start (Bot._enemy_target). (No Wonders here.)
+// seen but walls, else an enemy's start (Bot._enemy_target); a Wonder we know of before all.
 def enemy_target(bot:Bot, hx:int, hy:int) -> int, int:
     let tk = btype_named("town_center")
+    let wk = btype_named("wonder")
     var bx = -1
     var by = -1
     var best_d2 = 1 << 62
     var best_rank = -2
     var best_ok = false
     for(b_id.length) b:
-        if is_enemy(bot.player, b_owner[b]) and known(bot.player, b):
+        let wonder = b_kind[b] == wk
+        if is_enemy(bot.player, b_owner[b]) and (known(bot.player, b) or (wonder and knows_wonder(bot, b))):
             let x = b_cx[b] * 1000 + b_sx[b] * 500
             let y = b_cy[b] * 1000 + b_sy[b] * 500
-            let rank = if b_kind[b] == tk: 1 elif bt_wall[b_kind[b]] or bt_gate[b_kind[b]]: -1 else: 0
+            let rank = if wonder: 2 elif b_kind[b] == tk: 1 elif bt_wall[b_kind[b]] or bt_gate[b_kind[b]]: -1 else: 0
             let ok = reaches_building(bot.eco.reach, bot.aln, bot.harea, b)
             let d2 = dist2(hx, hy, x, y)
             if (ok and not best_ok) or (ok == best_ok and (rank > best_rank or (rank == best_rank and d2 < best_d2))):
@@ -934,21 +936,59 @@ def send_wave(bot:Bot, ids:[int], tx0:int, ty0:int, may_raid:bool, hx:int, hy:in
         via(bot, flankers, bot.land.flank_x, bot.land.flank_y, tx, ty)
     via(bot, main, bot.land.detour_x, bot.land.detour_y, tx, ty)
 
+// Whether we know of this enemy Wonder: seen, or finished (everyone hears of that).
+def knows_wonder(bot:Bot, b:int) -> bool:
+    return contains(wonder_ids, b_id[b]) or fog[bot.player][b_cy[b] * W + b_cx[b]] != UNSEEN
+
+// The id of the nearest enemy Wonder we know of and can get to, finished ones first, or 0.
+def known_enemy_wonder(bot:Bot, hx:int, hy:int) -> int:
+    let wk = btype_named("wonder")
+    var best = 0
+    var best_key = 1 << 62
+    for(b_id.length) b:
+        if wk >= 0 and b_kind[b] == wk and is_enemy(bot.player, b_owner[b]) and knows_wonder(bot, b) and reaches_building(bot.eco.reach, bot.aln, bot.harea, b):
+            let key = dist2(hx, hy, b_cx[b] * 1000, b_cy[b] * 1000) / 1000 + (if b_done[b] == 1: 0 else: 1 << 40)
+            if key < best_key:
+                best_key = key
+                best = b_id[b]
+    return best
+
+// A Wonder when we're rich: from the age in data, with none of ours up or going up, once every
+// stock is spare_pct percent of its cost; laid by the Town Center (Bot._wonder).
+def bot_wonder(bot:Bot, tc:int, workers:[int]):
+    let p = bot.player
+    let k = btype_named("wonder")
+    if not has_cfg("wonder.age") or k < 0 or ages[p] < cfg("wonder.age") or tick < bot.next_build: return
+    for(b_id.length) b:
+        if b_owner[b] == p and b_kind[b] == k: return
+    let cost = bm_cost[p][k]
+    for(cost) c, r:
+        if stock[r][p] < c * cfg("wonder.spare_pct") / 100: return
+    let sx, sy = house_spot(bot.eco, b_cx[tc] + 1, b_cy[tc] + 1, bt_size[k])
+    if sx < 0 or not workers.length: return
+    let builders = map(slice(workers, 0, min(cfg("wonder.builders"), workers.length))) i: u_id[i]
+    issue_cmd(p, CMD_BUILD, builders, k, sx, sy, 0)
+    bot.next_build = tick + BUILD_COOLDOWN
+
 def waves(bot:Bot, army:[int], hx:int, hy:int):
+    let wonder = known_enemy_wonder(bot, hx, hy)
     let tx = bot.target_x
     let ty = bot.target_y
     if tx < 0: return
     let need = if bot.wave < wave_at.length: wave_min[bot.wave] else: repeat_min(bot)
     var strength = 0
     for(army) i: strength += t_pop[u_kind[i]]
-    if tick >= bot.next_wave_tick and strength >= need:
+    // A finished enemy Wonder can't wait for the next wave: everyone goes now (again every regroup).
+    let urgent = wonder > 0 and contains(wonder_ids, wonder) and tick - bot.rushed >= cfg("military.regroup_every") * 20 and strength > 0
+    if urgent: bot.rushed = tick
+    if (tick >= bot.next_wave_tick and strength >= need) or urgent:
         let near = cfg("military.defend_tiles") * 2000
         let away = filter(army) i: dist2(hx, hy, u_x[i], u_y[i]) > near * near
         let at_home = filter(army) i: dist2(hx, hy, u_x[i], u_y[i]) <= near * near
         var keep = army.length - max(1, army.length * lv_wave_pct / 100)
         if lv_all_in > 0 and strength >= lv_all_in: keep = 0
         let sent = append(away, slice(at_home, 0, max(0, at_home.length - keep)))
-        if sent.length: send_wave(bot, map(sent) i: u_id[i], tx, ty, true, hx, hy)
+        if sent.length: send_wave(bot, map(sent) i: u_id[i], tx, ty, wonder <= 0, hx, hy)
         bot.assault = true
         bot.wave++
         bot.next_wave_tick = if bot.wave < wave_at.length: wave_at[bot.wave] * 20 else: tick + cfg("military.repeat_every") * 20
@@ -967,19 +1007,19 @@ def waves(bot:Bot, army:[int], hx:int, hy:int):
     var out_pop = 0
     for(army) i:
         if dist2(hx, hy, u_x[i], u_y[i]) > 4 * home_r * home_r: out_pop += t_pop[u_kind[i]]
-    if out_pop * 2 < need:
+    if out_pop * 2 < need and wonder <= 0:
         let back = filter(ids) id:
             let i = index_of(id)
             dist2(hx, hy, u_x[i], u_y[i]) > 4 * home_r * home_r
         if back.length: issue_cmd(bot.player, 1, back, hx, hy, 0, 0)
         return
     let strong = dominant(bot, army)
-    if lv_raids > 0 and tick >= lv_raid_from and not strong and raid(bot, ids, hx, hy): return
+    if lv_raids > 0 and tick >= lv_raid_from and wonder <= 0 and not strong and raid(bot, ids, hx, hy): return
     let cx, cy = contain_point(bot, tx, ty)
-    if cx >= 0 and pop_of(army) < cfg("military.contain_pop") and not has_siege(army):
+    if wonder <= 0 and cx >= 0 and pop_of(army) < cfg("military.contain_pop") and not has_siege(army):
         issue_cmd(bot.player, 1, ids, cx, cy, 0, 0)
         return
-    var tc_id = known_enemy_town(bot, hx, hy)
+    var tc_id = if wonder > 0: wonder else: known_enemy_town(bot, hx, hy)   // (a Wonder first)
     if tc_id <= 0: tc_id = bot.aim
     if tc_id <= 0:
         issue_cmd(bot.player, 1, ids, tx, ty, 0, 0)
@@ -1122,7 +1162,7 @@ def full_bot_think(bot:Bot):
     bot.eco.goal = goal_of(bot, count)
     bot.eco.push = if bot.saving_age: 100 elif bot.blocked.length: bot.blocked_push else: cfg_or("economy.build_push", 30)
     age_three(bot, tc, count)
-    assert not has_cfg("wonder.age") or ages[p] < cfg("wonder.age")   // (Wonders: not in the spike)
+    bot_wonder(bot, tc, workers)
     upgrade_lines(bot, army)
     train_scout(bot, scouts)
     train_soldiers(bot, workers, count)

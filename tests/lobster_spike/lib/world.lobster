@@ -115,6 +115,7 @@ def state_hash() -> int:
         for(b_inside[b]) v: h = mix(h, v)
     for(hero_types) hk, hn: h = mix(mix(h, hero_id[hn]), hero_fell[hn])
     h = mix(h, winner)
+    for(wonder_ids) id, k: h = mix(mix(h, id), wonder_since[k])
     for(market_price) v: h = mix(h, v)
     for(br_id) id, k:
         for([id, br_hp[k], br_up[k], br_work[k], br_payer[k]]) v: h = mix(h, v)
@@ -386,6 +387,14 @@ def load_extras():
         br_cells.push(bv.slice(o + 10, n))
         o += 10 + n
     r_splash_friend_pct = extra("combat2")[0]
+    let m2 = extra("match2")
+    wonder_hold = m2[0]
+    mode_hold = m2[1]
+    let wd = extra("wonders")
+    let nw = wd.length / 3
+    wonder_ids = wd.slice(0, nw)
+    wonder_since = wd.slice(nw, nw)
+    wonder_owners = wd.slice(nw * 2, nw)
     let pens = extra("bt_pen")
     for(pens.length / 4) k:
         bt_pen_animals.push(pens[k * 4])
