@@ -26,6 +26,7 @@ import .lib.map
 import .lib.economy
 import .lib.combat
 import .lib.eco_bot
+import .lib.tech
 
 // ------------------------------------------------------------------ the tick
 
@@ -73,7 +74,9 @@ def run(c:Cmd):
         case 6: cmd_train(p, c.a, c.b, c.c)
         case 7: cmd_rally(p, c.a, c.b, c.c)
         case 8: cmd_reseed(p, c.ids, c.a)
-        default: assert false   // AGE_UP: ageing up isn't ported yet
+        case 9: cmd_age_up(p, c.a)
+        case 10: cmd_research(p, c.a, c.b)
+        default: assert false
 
 // The scratch arrays grow with the units (training adds them).
 def grow_scratch():
@@ -92,6 +95,7 @@ def step():
         for(take_pending()) c: run(c)
     train()
     grow_scratch()
+    tech_tick()
     work()
     spatial_build()
     let alive = u_x.length
@@ -149,6 +153,8 @@ def state_hash() -> int:
         h = mix(h, lost[p])
         h = mix(h, pop[p])
         h = mix(h, pop_cap[p])
+        h = mix(h, ages[p])
+        for(researched[p]) v: h = mix(h, v)
         for(num_resources) r:
             h = mix(h, stock[r][p])
             h = mix(h, gathered[r][p])
@@ -272,12 +278,7 @@ def load(path:string):
             bm_lacks[p].push(next_int())
             bm_trains[p].push(read_ints(next_int()))
             bm_cost[p].push(read_ints(num_resources))
-    expect("AGES")
-    for(num_players):
-        age_building.push(next_int())
-        worker_lacked.push(next_int())
-        age_cost.push(read_ints(num_resources))
-        age_needs.push(read_ints(next_int()))
+    load_tech(nt)
     expect("ECON")
     for(num_resources):
         stock.push(map(num_players): 0)
@@ -320,6 +321,93 @@ def load(path:string):
         let v = read_ints(7)
         cmds.push(Cmd { v[0], v[1], v[2], v[3], v[4], v[5], v[6], read_ints(next_int()), 0 })
 
+def read_effect() -> Effect:
+    let kind = next_int()
+    let stat = next_int()
+    let value = next_int()
+    let tag = next_int()
+    let ands = read_ints(next_int())
+    let nots = read_ints(next_int())
+    let blds = read_ints(next_int())
+    return Effect { kind, stat, value, tag, ands, nots, blds }
+
+def read_effects() -> [Effect]:
+    return map(next_int()): read_effect()
+
+// The TECH section (export.gd _write_tech): ages, research, race effects, buildings' base numbers,
+// every unit type's line, and what each player has.
+def load_tech(nt:int):
+    expect("TECH")
+    let na = next_int()
+    let nr = next_int()
+    r_melee_reach = next_int()
+    r_melee_reload = next_int()
+    r_ranged_reload = next_int()
+    r_shot_speed = next_int()
+    class_machine = next_int()
+    class_mounted = next_int()
+    shot_speeds = read_ints(num_classes)
+    base_gather_ticks = read_ints(num_resources)
+    for(na):
+        let age = next_int()
+        let building = next_int()
+        let ticks = next_int()
+        let cost = read_ints(num_resources)
+        let needs = map(num_players): read_ints(next_int())
+        ages_list.push(Age { age, building, ticks, cost, needs })
+    for(nr):
+        let id = tokens[tp]
+        tp++
+        let building = next_int()
+        let ticks = next_int()
+        let age = next_int()
+        let after = next_int()
+        let line_age = next_int()
+        let cost = read_ints(num_resources)
+        let open = []::int
+        let line_has = []::int
+        let before = []::int
+        for(num_players):
+            open.push(next_int())
+            line_has.push(next_int())
+            before.push(next_int())
+        research.push(Research { id, building, ticks, age, after, line_age, cost, open, line_has, before, read_effects() })
+    for(num_players): race_fx.push(read_effects())
+    for(bt_size.length):
+        bt_hp_base.push(next_int())
+        bt_food_base.push(next_int())
+        bt_arm.push(read_ints(num_classes))
+    for(nt):
+        t_hero.push(next_int())
+        let steps = []::LineStep
+        for(next_int()):
+            let age = next_int()
+            let up = next_int()
+            let speed = next_int()
+            let hp = next_int()
+            let pop_ = next_int()
+            let train_time = next_int()
+            let cost = read_ints(num_resources)
+            let damage = next_int()
+            let attack = next_int()
+            let bonus = read_ints(num_classes)
+            let armour = read_ints(num_classes)
+            let tags = read_ints(next_int())
+            let v = read_ints(12)
+            steps.push(LineStep { age, up, speed, hp, pop_, train_time, cost, damage, attack, bonus, armour, tags,
+                                  v[0], v[1], v[2], v[3], v[4], v[5], v[6], v[7], v[8], v[9], v[10], v[11] })
+        lines.push(steps)
+    expect("RESEARCHED")
+    for(num_players):
+        next_int()   // (its age: in ECON)
+        researched.push(read_ints(nr))
+    for(num_players):
+        bm_arm.push(map(bt_size.length): []::int)
+        for([bm_research_time, bm_age_time, bm_research_cost, bm_range, bm_cost_pct]) col: col.push(map(bt_size.length): 0)
+    for([t_heal_pct, t_kill_gold, t_wade, t_slow_on_hit, t_min_range, t_splash, t_pass_len, t_buildings_only, t_unpack, t_pack,
+         t_blast, t_blast_line, t_eval_sight, t_sight_add, t_machine, t_mounted]) col:
+        for(nt): col.push(0)
+
 def zeros(n:int) -> [int]: return map(n): 0
 
 // Roomy and tight grids per lane (SimMap.roomy_grid), worked out at the start; refresh keeps them.
@@ -355,6 +443,9 @@ fresh_at = zeros(cells)
 grow_scratch()
 make_room()
 make_chunks()
+for(num_players) p:   // the numbers research and bonuses give, worked out here as the sim does
+    retype(p)
+    tech_refresh(p)
 for(b_id.length) b: assert not bt_special[b_kind[b]]
 
 expect("HASHES")

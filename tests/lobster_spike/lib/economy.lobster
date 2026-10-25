@@ -634,7 +634,10 @@ def train():
 // ---- commands
 
 def cmd_gather(player:int, ids:[int], cell:int):
-    let kind = res_at(cell)
+    // A bot that found nothing sends cell -1: GDScript's arrays read that as the last cell (in practice
+    // no resource there), so its gatherers walk to -1's tile: (-500, 500).
+    let kind = res_at(if cell < 0: cell + W * H else: cell)
+    assert cell >= 0 or kind <= 0
     for(ids) uid:
         let i = index_of(uid)
         if i >= 0 and u_owner[i] == player:

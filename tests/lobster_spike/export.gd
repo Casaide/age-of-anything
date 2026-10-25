@@ -26,6 +26,7 @@ const Economy := preload("res://src/sim/economy.gd")
 const Tech := preload("res://src/sim/tech.gd")
 const Fog := preload("res://src/sim/fog.gd")
 const EcoBot := preload("res://src/ai/eco_bot.gd")
+const Bot := preload("res://src/ai/bot.gd")
 
 const SEED := 20261010
 const PROMPTS := ["sewer rats with cheese hammers", "angry swamp frogs with reed spears"]
@@ -34,7 +35,7 @@ const SETTLE := 40            # ticks before the export (multiple of a turn), mo
 const ORDERS_EVERY := 20      # turns between orders (4 s)
 const CHUNK := 10             # units per spawn point
 const CMD_CODES := {Commands.MOVE: 0, Commands.ATTACK_MOVE: 1, Commands.STANCE: 2, Commands.GATHER: 3, Commands.BUILD: 4,
-	Commands.HELP_BUILD: 5, Commands.TRAIN: 6, Commands.RALLY: 7, Commands.RESEED: 8}
+	Commands.HELP_BUILD: 5, Commands.TRAIN: 6, Commands.RALLY: 7, Commands.RESEED: 8, Commands.AGE_UP: 9, Commands.RESEARCH: 10}
 
 var mode := "move"
 var trace_tick := -1
@@ -43,7 +44,7 @@ var trace_tick := -1
 func _init() -> void:
 	var args := OS.get_cmdline_user_args()
 	mode = args[0]
-	assert(mode in ["move", "fight", "eco"])
+	assert(mode in ["move", "fight", "eco", "match"])
 	var map_id: String = args[1]
 	var per_player := int(args[2])
 	var ticks := int(args[3])
@@ -75,8 +76,14 @@ func _init() -> void:
 	var lite_hashes := PackedInt64Array()
 	var dump := PackedStringArray()
 	var t_lite := _play(lite, ticks, true, lite_hashes, dump_tick, dump)
+	var missing := {}
 	for c in full.history:
-		assert(CMD_CODES.has(c.type), "The port has no %s command" % c.type)
+		if not CMD_CODES.has(c.type):
+			missing[c.type] = int(missing.get(c.type, 0)) + 1
+	if not missing.is_empty():
+		print("the port has no command for: %s (first at tick %d)" % [str(missing), (full.history.filter(func(c): return not CMD_CODES.has(c.type))[0].turn + Commands.DELAY) * Commands.TICKS_PER_TURN])
+		quit(2)
+		return
 	lines.append("CMDS %d" % full.history.size())
 	for c in full.history:
 		lines.append(_cmd_row(full, c))
@@ -132,6 +139,10 @@ func _cmd_row(w: World, c: Dictionary) -> String:
 			v = [a.building, a.x, a.y, 0]
 		Commands.RESEED:
 			v = [a.building, 0, 0, 0]
+		Commands.AGE_UP:
+			v = [a.building, 0, 0, 0]
+		Commands.RESEARCH:
+			v = [a.building, Tech.research_index(w, a.id), 0, 0]
 	var ids: Array = a.get("ids", [])
 	return _ints([(c.turn + Commands.DELAY) * Commands.TICKS_PER_TURN, CMD_CODES[c.type], p] + v + [ids.size()] + ids)
 
@@ -139,7 +150,7 @@ func _cmd_row(w: World, c: Dictionary) -> String:
 ## move and fight: both armies spawned in chunks round their starts, settled for SETTLE ticks.
 ## eco: the match start as made.
 func _setup(map_id: String, races: Array, rules: Dictionary, per_player: int) -> World:
-	if mode == "eco":
+	if mode == "eco" or mode == "match":
 		var e := World.new(SEED, SimMap.load_id(map_id), races, rules)
 		_check(e)
 		return e
@@ -255,12 +266,12 @@ func _issue_orders(w: World, rng, first: bool) -> void:
 ## Plays `ticks` ticks giving orders, a hash after each; returns the time spent stepping (usec).
 func _play(w: World, ticks: int, ported_only: bool, hashes: PackedInt64Array, dump_tick: int, dump) -> int:
 	var rng = Rng.new(SEED ^ 0x5C51)
-	var bots := [EcoBot.new(0), EcoBot.new(1)] if mode == "eco" else []
+	var bots := [EcoBot.new(0), EcoBot.new(1)] if mode == "eco" else [Bot.new(0, Bot.load_config()), Bot.new(1, Bot.load_config())] if mode == "match" else []
 	var start := w.tick
 	var spent := 0
 	var first := true
 	for k in ticks:
-		if mode == "eco":
+		if not bots.is_empty():
 			for bot in bots:
 				bot.think(w)
 		elif w.tick % Commands.TICKS_PER_TURN == 0 and (w.turn() - start / Commands.TICKS_PER_TURN) % ORDERS_EVERY == 0:
@@ -354,6 +365,9 @@ static func state_hash(w: World) -> int:
 		h = Fixed.mix(h, w.lost[p])
 		h = Fixed.mix(h, w.pop[p])
 		h = Fixed.mix(h, w.pop_cap[p])
+		h = Fixed.mix(h, w.ages[p])
+		for v in w.researched[p]:
+			h = Fixed.mix(h, v)
 		for r in w.resources.size():
 			h = Fixed.mix(h, w.stock[r][p])
 			h = Fixed.mix(h, w.gathered[r][p])
@@ -458,12 +472,7 @@ static func _write_state(w: World, lines: PackedStringArray) -> void:
 			lines.append(_ints([mods.hp, int(mods.add.get("pop", 0)), int(mods.add.get("sight", 0)), Economy.farm_food(w, p, k),
 				int(Economy.lacks(w, p, t.id)), trains.size()] + trains))
 			lines.append(_ints(Economy.bcost(w, p, k)))
-	# The next age, for the bots' age-up check (Tech.why_not): its cost, where it's clicked, what it needs.
-	lines.append("AGES")
-	for p in np:
-		var age: Dictionary = Tech.next_age(w, p)
-		var needs := Tech.requires(w, p, age).map(func(id): return Economy.btype_of(w, id))
-		lines.append(_ints([Economy.btype_of(w, age.building), int(Economy.lacks(w, p, "worker"))] + Array(age.cost) + [needs.size()] + needs))
+	_write_tech(w, lines)
 	lines.append("ECON")
 	for p in np:
 		var row := [w.ages[p], w.auto_reseed[p], w.pop[p], w.pop_cap[p], w.lost[p]]
@@ -487,6 +496,131 @@ static func _write_state(w: World, lines: PackedStringArray) -> void:
 	for p in np:
 		lines.append(_ints(w.fog[p]))
 		lines.append(_ints([w.fog_lit[p].size()] + Array(w.fog_lit[p])))
+
+
+## Ages and research (tech.gd) as data for the port: the ages (cost, time, where, what they need per
+## player), every research item (its static checks per player worked out here: open to the race,
+## a line with new kit that age, the line upgrade before it) with its effects, each race's own
+## effects, the buildings' base numbers research works on, and every unit type's line: per age its
+## eval, which Tech.retype and World.set_type turn into the type's numbers.
+const EVAL_ADD := ["attack", "hp", "range", "speed"]
+
+
+static func _class(w: World, tag: String) -> int:
+	var k: int = w.classes.find(tag)
+	return k if k >= 0 else w.classes.size() - 1   # (GDScript: find's -1 indexes the last class)
+
+
+static func _tag_or_none(w: World, tag: String) -> int:
+	return -1 if tag == "all" else w.classes.find(tag) if w.classes.has(tag) else -2
+
+
+## One effect: kind, stat, value, tag (-1 all, -2 no such tag), and tags, not tags, buildings (-1 all).
+static func _effect(w: World, fx: Dictionary) -> Array:
+	var kind := -1
+	var stat := 0
+	var value := int(fx.get("add", fx.get("pct", 0)))
+	if fx.has("becomes"):
+		return [8, Economy.btype_of(w, fx.building), Economy.btype_of(w, fx.becomes), -2, 0, 0, 0]
+	if fx.has("gather"):
+		kind = 7
+		stat = w.resources.find(fx.gather)
+	elif fx.has("start"):
+		return [9, 0, 0, -2, 0, 0, 0]
+	elif fx.has("tag"):
+		if fx.has("pct"):
+			kind = 4
+			stat = Tech.UNIT_PCT.find(fx.stat)
+		elif fx.stat in Tech.UNIT_EXTRA:
+			kind = 3
+			stat = Tech.UNIT_EXTRA.find(fx.stat)
+		elif fx.stat.begins_with("armour."):
+			kind = 1
+			stat = _class(w, fx.stat.substr(7))
+		elif fx.stat.begins_with("bonus."):
+			kind = 2
+			stat = _class(w, fx.stat.substr(6))
+		else:
+			kind = 0
+			stat = EVAL_ADD.find(fx.stat)
+		assert(stat >= 0, "Unknown unit stat %s" % fx.stat)
+	else:
+		kind = 5 if fx.has("add") else 6
+		stat = (Tech.BUILDING_ADD if fx.has("add") else Tech.BUILDING_PCT).find(fx.stat)
+		assert(stat >= 0, "Unknown building stat %s" % fx.stat)
+	var ands: Array = fx.get("and", []).map(func(t): return _tag_or_none(w, t))
+	var nots: Array = fx.get("not", []).map(func(t): return _tag_or_none(w, t))
+	var blds := []
+	if fx.has("building"):
+		var ids: Array = fx.building if fx.building is Array else [fx.building]
+		blds = [-1] if ids.has("all") else ids.map(func(id): return Economy.btype_of(w, id))
+	return [kind, stat, value, _tag_or_none(w, fx.get("tag", "all")) if fx.has("tag") else -2, ands.size()] + ands + [nots.size()] + nots + [blds.size()] + blds
+
+
+static func _write_tech(w: World, lines: PackedStringArray) -> void:
+	var np := w.races.size()
+	var c: Dictionary = w.combat
+	lines.append("TECH %d %d" % [w.tech.ages.size(), w.tech.research.size()])
+	lines.append(_ints([c.melee_reach, c.melee_reload, c.ranged_reload, c.shot_speed, _tag_or_none(w, "machine"), _tag_or_none(w, "mounted")]))
+	var speeds := PackedInt32Array()
+	speeds.resize(w.classes.size())
+	for tag in c.shot_speeds:
+		if w.classes.has(tag):
+			speeds[w.classes.find(tag)] = int(c.shot_speeds[tag])
+	lines.append(_ints(speeds))
+	lines.append(_ints(w.resources.map(func(r): return int(w.econ.gather_ticks[r]))))
+	for a in w.tech.ages:
+		lines.append(_ints([a.age, Economy.btype_of(w, a.building), a.ticks] + Array(a.cost)))
+		for p in np:
+			var needs := Tech.requires(w, p, a).map(func(id): return Economy.btype_of(w, id))
+			lines.append(_ints([needs.size()] + needs))
+	for r in w.tech.research.size():
+		var item: Dictionary = w.tech.research[r]
+		var after: int = Tech.research_index(w, item.after) if item.after != "" else -1
+		lines.append(item.id)
+		lines.append(_ints([Economy.btype_of(w, item.building), item.ticks, item.age, after, int(item.get("line_age", 0))] + Array(item.cost)))
+		for p in np:
+			var race: Dictionary = w.races[p]
+			var open: bool = (item.only.is_empty() or bool(w.rules.get("full_tech_tree", false)) or race.creature in item.only or race.family in item.only) \
+				and not Tech.lacks(w, p, item.id)
+			var line_has: bool = Tech._line_has(w, p, item.line, item.line_age) if item.has("line") else true
+			var before: int = Tech.line_before(w, p, item) if item.has("line") else -1
+			lines.append(_ints([int(open), int(line_has), before]))
+		lines.append(str(item.effects.size()))
+		for fx in item.effects:
+			lines.append(_ints(_effect(w, fx)))
+	for p in np:
+		lines.append(str(w.ident[p].fx.size()))
+		for fx in w.ident[p].fx:
+			lines.append(_ints(_effect(w, fx)))
+	for k in w.btypes.size():
+		var bt: Dictionary = w.btypes[k]
+		lines.append(_ints([bt.hp, bt.food] + Array(bt.arm)))
+	# Every unit type's line: per step its age, its line upgrade (a research index, -1 for none),
+	# and its eval: speed hp pop train_time cost.. damage-class attack bonus.. armour.. tags.. range reload
+	# min_range splash pass buildings-only unpack pack blast blast_line heal sight.
+	for k in w.types.size():
+		var t: Dictionary = w.types[k]
+		lines.append(_ints([int(t.hero), t.line.size()]))
+		for l in t.line:
+			var e: Dictionary = l.eval
+			var up: int = Tech.research_index(w, "line.%s.%d" % [t.slot, int(l.age)])
+			var bonus := PackedInt32Array()
+			bonus.resize(w.classes.size())
+			for key in e.bonus:
+				bonus[_class(w, key)] = int(e.bonus[key])
+			var arm := PackedInt32Array()
+			arm.resize(w.classes.size())
+			for key in e.armour:
+				arm[_class(w, key)] = int(e.armour[key])
+			var tags: Array = e.tags.map(func(tag): return _class(w, tag))
+			lines.append(_ints([l.age, up, e.speed, e.hp, e.pop, e.train_time] + Array(Economy.cost_vector(w.resources, e.cost))
+				+ [_class(w, e.damage), e.attack] + Array(bonus) + Array(arm) + [tags.size()] + tags
+				+ [e["range"], e.get("reload", 0), e.get("min_range", 0), e.get("splash", 0), e.get("pass", 0), int(e.get("targets", "") == "buildings"),
+				e.get("unpack", 0), e.get("pack", 0), e.get("blast", 0), e.get("blast_line_pct", 0), e.get("heal", 0), e.get("sight", 0)]))
+	lines.append("RESEARCHED")
+	for p in np:
+		lines.append(_ints([w.ages[p]] + Array(w.researched[p])))
 
 
 ## World._form_role, by type.
