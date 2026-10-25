@@ -38,6 +38,7 @@ const Animals := preload("res://src/sim/animals.gd")
 const SEED := 20261010
 const PROMPTS := ["sewer rats with cheese hammers", "angry swamp frogs with reed spears"]
 const SLOTS := ["spear", "skirmisher", "archer", "large", "worker"]
+const SIEGE_SLOTS := ["spear", "archer", "infantry", "large", "ram", "catapult", "bolt_thrower", "sapper", "great_sling"]
 const SETTLE := 40            # ticks before the export (multiple of a turn), move and fight
 const ORDERS_EVERY := 20      # turns between orders (4 s)
 const CHUNK := 10             # units per spawn point
@@ -55,7 +56,7 @@ var think_usec := 0   # the bots' thinking, both runs
 func _init() -> void:
 	var args := OS.get_cmdline_user_args()
 	mode = args[0]
-	assert(mode in ["move", "fight", "eco", "match", "play"])
+	assert(mode in ["move", "fight", "eco", "match", "play", "siege"])
 	var map_id: String = args[1]
 	var per_player := int(args[2])
 	var ticks := int(args[3])
@@ -189,11 +190,19 @@ func _setup(map_id: String, races: Array, rules: Dictionary, per_player: int) ->
 		return e
 	var w := World.new(SEED, SimMap.load_id(map_id), races, rules, [0, 0] if mode == "move" else [0, 1])
 	w.set_meta("mode", mode)
-	var per_slot := per_player / SLOTS.size()
+	var slots: Array = SIEGE_SLOTS if mode == "siege" else SLOTS
+	if mode == "siege":   # age 3, the engines out, the towns standing for them to break
+		for p in races.size():
+			w.ages[p] = 3
+			Tech.retype(w, p)
+			Tech.refresh(w, p)
+	var per_slot := per_player / slots.size()
 	for p in races.size():
 		var s: Array = w.map.starts[p]
 		var k := 0
-		for slot in SLOTS:
+		for slot in slots:
+			if mode == "siege" and w.type_of(p, slot) < 0:
+				continue   # (not every race has every engine)
 			assert(w.type_of(p, slot) >= 0, "No %s for player %d" % [slot, p])
 			var left := per_slot
 			while left > 0:
@@ -205,7 +214,7 @@ func _setup(map_id: String, races: Array, rules: Dictionary, per_player: int) ->
 	while w.tick < SETTLE:
 		w.step()
 	w.history.clear()   # (the spawns: done before the export)
-	assert(w.buildings.count() == 0)
+	assert(w.buildings.count() == 0 or mode == "siege")
 	_check(w)
 	return w
 
@@ -214,9 +223,7 @@ func _setup(map_id: String, races: Array, rules: Dictionary, per_player: int) ->
 func _check(w: World) -> void:
 	for i in w.units.count():
 		var t: Dictionary = w.types[w.units.kind[i]]
-		assert(not t.hero and not t.healer and t.unpack == 0 and t.wade == 0 and t.min_range == 0 and t.splash == 0
-			and t.pass_len == 0 and t.blast == 0 and not t.buildings_only and int(t.kill_gold) == 0 and int(t.slow_on_hit) == 0,
-			"The spike's units are plain soldiers and workers")
+		assert(t.wade == 0 and int(t.slow_on_hit) == 0, "Wading and sticky hits aren't ported")
 	assert(w.field_order.is_empty() and w.field_queue.is_empty())
 	assert(w.webs.is_empty() and w.map.lane_teams.size() == 1)
 
@@ -275,7 +282,7 @@ func _issue_orders(w: World, rng, first: bool) -> void:
 			w.issue(p, Commands.MOVE, {"ids": mine if rng.range_int(0, 1) == 0 else some, "x": target.x, "y": target.y})
 			continue
 		var at := Vector2i(int(w.map.starts[1 - p][0]), int(w.map.starts[1 - p][1]))
-		if not foes.is_empty():
+		if not foes.is_empty() and mode != "siege":   # (siege: always at the enemy's town)
 			var sx := 0
 			var sy := 0
 			for j in foes:
@@ -422,6 +429,7 @@ func _ported_step(w: World) -> void:
 	Tech.tick(w)
 	Economy.work(w)
 	Trade.tick(w)
+	w._pack()
 	Repair.tick(w)
 	Garrison.tick(w)
 	Animals.tick(w)
@@ -693,6 +701,7 @@ static func _write_extra(w: World, lines: PackedStringArray) -> void:
 		var p: Dictionary = t.pen
 		pens.append_array([int(p.animals), int(p.food), int(p.food_ticks), int(p.breed_ticks)] if not p.is_empty() else [0, 0, 1, 1])
 	e.bt_pen = pens
+	e.combat2 = [int(w.combat.get("splash_friend_pct", 100))]
 	var bc: Dictionary = w.bridge_cfg
 	e.bridge_cfg = [int(bc.hp), int(bc.ticks)] + Array(bc.cost) + Array(bc.arm)
 	var brs := []

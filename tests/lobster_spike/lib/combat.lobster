@@ -305,6 +305,12 @@ def land():
         var d = recs[o + SHOT_DAMAGE]
         var j = index_of(to)
         let b = if j < 0: b_index_of(to) else: -1
+        let src = recs[o + SHOT_SRC]
+        if src >= 0 and t_splash[src] > 0:
+            splash(o, recs, b)   // a stone lands on its spot, whoever is there
+            o += SHOT_STRIDE
+            continue
+        if src >= 0 and t_pass_len[src] > 0: pass_through(o, recs, j)   // a bolt goes through those in its way
         if b >= 0:
             c_bhurt[b] += d
             if events_on: events.push(Event { EV_HIT, by, to, d, ax, ay })
@@ -490,7 +496,13 @@ def apply_hits(n:int):
             if u_foe[j] == 0 and (u_stance[j] == NONE or u_stance[j] == RETURN) and u_task[j] == T_NONE and not t_worker[k] and
                not t_harmless[k] and not t_healer[k] and not t_buildings_only[k] and u_posture[j] != PASSIVE:
                 engage(j, c_hurt_by[j])
-    // (bounties and sticky hits: none in the spike, asserted)
+    // Bounties (Combat._bounties): a killer with kill_gold earns it for each enemy unit (not animals)
+    // its last blow killed this tick. (Sticky hits: abilities, not ported, asserted by the exporter.)
+    let gold = resource_index("gold")
+    for(n) jj:
+        if c_hurt[jj] != 0 and u_hp[jj] <= 0 and t_animal[u_kind[jj]] == 0:
+            let kk = index_of(c_hurt_by[jj])
+            if kk >= 0 and t_kill_gold[u_kind[kk]] != 0 and is_foe(u_owner[kk], u_owner[jj]): stock[gold][u_owner[kk]] += t_kill_gold[u_kind[kk]]
     var j = n - 1
     while j >= 0:
         if u_hp[j] <= 0:
@@ -499,7 +511,7 @@ def apply_hits(n:int):
             else: lost[u_owner[j]]++
             remove_unit(j)
         j--
-    var b = c_bhurt.length - 1
+    var b = b_id.length - 1
     while b >= 0:
         if c_bhurt[b] != 0:
             b_hp[b] -= c_bhurt[b]
@@ -522,7 +534,7 @@ def combat_tick():
         c_hurt_by[i] = 0
         c_engaged[i] = 0
     while c_bhurt.length < nb: c_bhurt.push(0)
-    for(nb) b: c_bhurt[b] = 0
+    for(c_bhurt.length) b: c_bhurt[b] = 0
     for(n) i:
         if u_foe[i] != 0:
             let j = index_of(u_foe[i])
@@ -550,7 +562,7 @@ def combat_tick():
             if (u_foe[i] == 0 and (idle or stance == ATTACK_MOVE)) or crowded:
                 let am = stance == ATTACK_MOVE
                 var f = nearest_foe(i, if am: sight_of(i) else: look(i), am or t_buildings_only[k] != 0, if posture == STAND and not am: 0 else: SPREAD,
-                                    false, 0, not t_buildings_only[k])
+                                    false, near_of(i), not t_buildings_only[k])
                 if crowded and t_ranged[k] and f != 0 and gap(i, index_of(u_foe[i])) <= t_reach[k]:
                     let fj = index_of(f)
                     if fj < 0 or gap(i, fj) > t_reach[k]: f = 0
@@ -580,7 +592,7 @@ def combat_tick():
                 if u_moving[i] == 0 or u_fkey[i] != key: order_reach(i, br_x0[br], br_y0[br], br_x1[br], br_y1[br], key)
             continue
         if j < 0 and b < 0:
-            let next = if u_stance[i] == ATTACK_MOVE: nearest_foe(i, sight_of(i), true, SPREAD, false, 0, not t_buildings_only[k]) else: 0
+            let next = if u_stance[i] == ATTACK_MOVE: nearest_foe(i, sight_of(i), true, SPREAD, false, near_of(i), not t_buildings_only[k]) else: 0
             if next != 0:
                 u_foe[i] = next
                 let nj = index_of(next)
@@ -590,11 +602,15 @@ def combat_tick():
             continue
         let g = gap_to(i, j, b)
         var up = if t_ranged[k]: height_step(i, j, b) else: 0
+        if t_min_range[k] > 0 and g < t_min_range[k]:
+            too_close(i, j, b)   // an engine can't hit what's under its nose
+            continue
         if g <= t_reach[k] + up * r_high_reach + (if (t_ranged[k] or b >= 0) and u_moving[i] == 0: HOLD else: 0):
             u_moving[i] = 0
             if b >= 0: hitters[b].push(i)
+            if t_unpack[k] > 0 and u_ready[i] < t_unpack[k]: continue   // still unpacking: it throws once it's set up
             if u_cooldown[i] == 0 and j >= 0 and t_ranged[k] and c_inbound[j] >= u_hp[j] and u_stance[i] != ORDERED:
-                let f = nearest_foe(i, t_reach[k] + u_radius[i] + TILE / 2, false, SPREAD, true, 0, true)
+                let f = nearest_foe(i, t_reach[k] + u_radius[i] + TILE / 2, false, SPREAD, true, near_of(i), true)
                 let fj = if f != 0: index_of(f) else: -1
                 if fj < 0 or gap(i, fj) > t_reach[k] + height_step(i, fj, -1) * r_high_reach: continue
                 c_engaged[j]--
@@ -621,8 +637,9 @@ def combat_tick():
                     if up < 0: d = uphill(d)
                     if t_ranged[k]:
                         loose(u_id[i], u_owner[i], u_x[i], u_y[i], -1, b, d, k, up, t_shot_speed[k])
+                    elif t_blast[k] > 0:
+                        blast(i, b, d)   // the sapper's charge goes off, and the sapper with it
                     else:
-                        assert not t_blast[k]   // (sappers: not in the spike)
                         c_bhurt[b] += d
                         if events_on: events.push(Event { EV_HIT, u_id[i], b_id[b], d, u_x[i], u_y[i] })
         elif u_stance[i] == AUTO and posture == STAND:
