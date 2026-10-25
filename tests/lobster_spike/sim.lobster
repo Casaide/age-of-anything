@@ -24,9 +24,13 @@ import .lib.movement
 import .lib.fog
 import .lib.map
 import .lib.economy
+import .lib.tech
 import .lib.combat
 import .lib.eco_bot
-import .lib.tech
+import .lib.garrison
+import .lib.heal
+import .lib.heroes
+import .lib.match
 
 // ------------------------------------------------------------------ the tick
 
@@ -76,6 +80,9 @@ def run(c:Cmd):
         case 8: cmd_reseed(p, c.ids, c.a)
         case 9: cmd_age_up(p, c.a)
         case 10: cmd_research(p, c.a, c.b)
+        case 11: cmd_call_to_arms(p, c.a)
+        case 12: cmd_back_to_work(p)
+        case 13: cmd_attack(p, filter(c.ids) uid: index_of(uid) >= 0 and u_owner[index_of(uid)] == p, c.a)
         default: assert false
 
 // The scratch arrays grow with the units (training adds them).
@@ -97,11 +104,15 @@ def step():
     grow_scratch()
     tech_tick()
     work()
+    garrison_tick()
     spatial_build()
-    let alive = u_x.length
+    let alive = unit_changes
+    heal_tick()
     combat_tick()
+    hero_tick()
+    match_tick()
     fog_tick()
-    if u_x.length != alive: spatial_build()
+    if unit_changes != alive: spatial_build()
     trace("start")
     sync_map()
     solve_queued()
@@ -147,6 +158,10 @@ def state_hash() -> int:
         for(bcols) col: h = mix(h, col[b])
         h = mix(h, b_queue[b].length)
         for(b_queue[b]) k: h = mix(h, k)
+        h = mix(h, b_inside[b].length / REC_SIZE)
+        for(b_inside[b]) v: h = mix(h, v)
+    for(hero_types) hk, hn: h = mix(mix(h, hero_id[hn]), hero_fell[hn])
+    h = mix(h, winner)
     h = mix(h, shots.length / SHOT_STRIDE)
     for(shots) v: h = mix(h, v)
     for(num_players) p:
@@ -154,6 +169,7 @@ def state_hash() -> int:
         h = mix(h, pop[p])
         h = mix(h, pop_cap[p])
         h = mix(h, ages[p])
+        h = mix(h, defeated[p])
         for(researched[p]) v: h = mix(h, v)
         for(num_resources) r:
             h = mix(h, stock[r][p])
@@ -170,6 +186,14 @@ def dump_state() -> string:
         s += "b"
         for(building_columns()) col: s += " {col[b]}"
         s += " q {b_queue[b]}\n"
+    for(t_hp.length) k:
+        var v = [t_hp[k], t_speed[k], t_reach[k], t_reload[k], t_pop[k], t_train_ticks[k], t_carry_add[k], t_build_pct[k], t_shot_speed[k],
+                 t_ranged[k], t_sight_add[k]]
+        for([t_cost[k], t_atk[k], t_arm[k]]) xs:
+            for(xs) x: v.push(x)
+        var line = "type {k}"
+        for(v) x: line += " {x}"
+        s += line + "\n"
     return s
 
 // ------------------------------------------------------------------ the scenario file
@@ -237,6 +261,15 @@ def load(path:string):
     r_carry = next_int()
     r_queue_max = next_int()
     r_pop_max = next_int()
+    r_fog_tower = next_int()
+    r_garrison_heal_every = next_int()
+    r_call_range = next_int()
+    garrison_not = read_ints(next_int())
+    r_heal_amount = next_int()
+    r_heal_reload = next_int()
+    r_heal_range = next_int()
+    r_heal_sight = next_int()
+    heal_not = read_ints(next_int())
     expect("TYPES")
     let nt = next_int()
     num_classes = next_int()
@@ -267,6 +300,9 @@ def load(path:string):
             col.push(v[k])
         bt_name.push(tokens[tp])
         tp++
+        let a = read_ints(10)
+        for([bt_attacks, bt_atk_class, bt_atk, bt_range, bt_reload, bt_arrows, bt_garrison, bt_gate, bt_wall, bt_over_trees]) col, n:
+            col.push(a[n])
         bt_cost.push(read_ints(num_resources))
         bt_drop.push(read_ints(num_resources))
         bt_reseed.push(read_ints(num_resources))
@@ -310,6 +346,7 @@ def load(path:string):
         let f = read_ints(bcols.length)
         for(bcols) col, k: col.push(f[k])
         b_queue.push(read_ints(next_int()))
+        b_inside.push([]::int)   // (nobody sheltering at the start: asserted)
     expect("SHOTS")
     shots = read_ints(next_int() * SHOT_STRIDE)
     expect("FOG")
@@ -405,8 +442,24 @@ def load_tech(nt:int):
         bm_arm.push(map(bt_size.length): []::int)
         for([bm_research_time, bm_age_time, bm_research_cost, bm_range, bm_cost_pct]) col: col.push(map(bt_size.length): 0)
     for([t_heal_pct, t_kill_gold, t_wade, t_slow_on_hit, t_min_range, t_splash, t_pass_len, t_buildings_only, t_unpack, t_pack,
-         t_blast, t_blast_line, t_eval_sight, t_sight_add, t_machine, t_mounted]) col:
+         t_blast, t_blast_line, t_eval_sight, t_sight_add, t_machine, t_mounted, t_damage, t_heal]) col:
         for(nt): col.push(0)
+    for(nt): t_tags.push([]::int)
+    expect("HEROES")
+    let nh = next_int()
+    r_aura = next_int()
+    r_regen = next_int()
+    r_revive = next_int()
+    r_revive_pct = next_int()
+    for(nh):
+        hero_types.push(next_int())
+        hero_id.push(next_int())
+        hero_fell.push(next_int())
+        hero_fx.push(read_effects())
+    expect("MATCH")
+    winner = next_int()
+    started_with_town = read_ints(num_players)
+    defeated = read_ints(num_players)
 
 def zeros(n:int) -> [int]: return map(n): 0
 
