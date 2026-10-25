@@ -114,3 +114,32 @@ let SIN = [
     -392, -369, -345, -321, -297, -273, -249, -224, -200, -175, -150, -125, -100, -75, -50, -25,
 ]
 
+
+// commands.gd: the command codes (export.gd CMD_CODES).
+let CMD_MOVE = 0
+let CMD_ATTACK_MOVE = 1
+let CMD_STANCE = 2
+let CMD_GATHER = 3
+let CMD_BUILD = 4
+let CMD_HELP_BUILD = 5
+let CMD_TRAIN = 6
+let CMD_RALLY = 7
+let CMD_RESEED = 8
+let CMD_AGE_UP = 9
+let CMD_RESEARCH = 10
+let CMD_CALL_TO_ARMS = 11
+let CMD_BACK_TO_WORK = 12
+let CMD_ATTACK = 13
+let CMD_STOP = 14
+let CMD_CANCEL = 15
+let CMD_DROP_OFF = 16
+let CMD_SURRENDER = 17
+let CMD_AUTO_RESEED = 18
+let CMD_GARRISON = 19
+let CMD_UNGARRISON = 20
+let CMD_REPAIR = 21
+let CMD_TRADE = 22
+let CMD_ROUTE = 23
+let CMD_PEN = 24
+let CMD_RELEASE = 25
+let CMD_ABILITY = 26

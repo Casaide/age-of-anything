@@ -45,9 +45,11 @@ def add_unit(owner:int, k:int, x:int, y:int) -> int:
     let v = [next_id, x, y, x, y, 0, 0, x, y, 0, 0, -1, -1, 0,
              t_hp[k], 0, 0, 0, t_posture[k], x, y, 0, 0, -1,
              T_NONE, -1, -1, -1, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+             0, 0, 0, 0, 0, 0, 0,
              owner, k, t_speed[k], t_radius[k], t_mclass[k]]
     unit_changes++
     for(unit_columns()) col, n: col.push(v[n])
+    u_orders.push([])
     next_id++
     return u_id.length - 1
 
@@ -399,7 +401,8 @@ def become_ground(b:int, i:int):
     let cells = footprint(b)
     let land = tr_walk[terrain[cells[0]]]
     make_pool(cells, if land: bt_land[k] else: bt_wet[k], bm_food[b_owner[b]][k])
-    start_gather(i, cells[0], 1)   // (food: resource index 0; no shift-queued orders here)
+    if not u_orders[i].length: start_gather(i, cells[0], 1)   // (food: resource index 0)
+    else: clear_task(i)   // told what to do after (shift): that comes first, not farming forever
 
 // ---- a tick of jobs
 
@@ -527,7 +530,7 @@ def gather_after_camp(b:int):
     if not kinds.length or kinds.length == bt_drop[k].length: return
     let bid = b_id[b]
     for(u_x.length) j:
-        if u_task[j] == BUILD and u_target[j] == bid:
+        if u_task[j] == BUILD and u_target[j] == bid and not u_orders[j].length:
             var best = -1
             var best_kind = 0
             var best_d2 = 1 << 62
@@ -544,11 +547,11 @@ def gather_after_camp(b:int):
 def build_job(i:int):
     let b = b_index_of(u_target[i])
     if b < 0 or b_done[b] == 1:
-        let nb = nearby_foundation(i)
+        let nb = if u_orders[i].length: -1 else: nearby_foundation(i)
         if nb >= 0:
             u_target[i] = b_id[nb]
             approach_building(i, nb)
-        elif not back_to_work(i):
+        elif u_orders[i].length or not back_to_work(i):
             clear_task(i)
         return
     let x0, y0, x1, y1 = building_rect(b)

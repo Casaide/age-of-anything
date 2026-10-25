@@ -87,6 +87,7 @@ var bm_age_time = []::[int]
 var bm_research_cost = []::[int]
 var bm_range = []::[int]
 var bm_cost_pct = []::[int]
+var bm_trade_fee = []::[int]   // [player][type]: points off the market's fee
 var class_machine = -2         // the classes "machine" and "mounted" (formation bands), or -2
 var class_mounted = -2
 // Unit types' research and bonuses (Tech.retype).
@@ -251,6 +252,7 @@ def tech_refresh(p:int):
         bm_arm[p][k] = arm
         bm_sight[p][k] = add[0]
         bm_range[p][k] = add[4]
+        bm_trade_fee[p][k] = add[3]
         bm_pop[p][k] = add[5]
         bm_food[p][k] = bt_food_base[k] * (100 + pct[1]) / 100
         bm_research_time[p][k] = pct[2]

@@ -31,6 +31,8 @@ import .lib.garrison
 import .lib.heal
 import .lib.heroes
 import .lib.match
+import .lib.trade
+import .lib.commands
 import .lib.ai_cfg
 import .lib.scout
 import .lib.land
@@ -38,17 +40,6 @@ import .lib.expand
 import .lib.bot
 
 // ------------------------------------------------------------------ the tick
-
-class Cmd:
-    run_tick:int
-    code:int        // 0 MOVE, 1 ATTACK_MOVE, 2 STANCE, 3 GATHER, 4 BUILD, 5 HELP_BUILD, 6 TRAIN, 7 RALLY, 8 RESEED, 9 AGE_UP
-    player:int
-    a:int
-    b:int
-    c:int
-    d:int
-    ids:[int]
-    seq:int
 
 var scenario_mode = ""
 var cmds = []::Cmd             // recorded orders, in run order (replaying a scenario's)
@@ -58,8 +49,10 @@ var next_seq = []::int         // per player
 
 // Issue an order this turn: it runs at the start of turn + 2, after the turn's earlier orders,
 // by (player, seq) (Commands.issue and take).
-def issue_cmd(p:int, code:int, ids:[int], a:int, b:int, c:int, d:int):
-    pending.push(Cmd { (tick / TICKS_PER_TURN + 2) * TICKS_PER_TURN, code, p, a, b, c, d, ids, next_seq[p] })
+def issue_cmd(p:int, code:int, ids:[int], a:int, b:int, c:int, d:int, queue:int = 0):
+    let cmd = Cmd { (tick / TICKS_PER_TURN + 2) * TICKS_PER_TURN, code, p, a, b, c, d, ids, next_seq[p] }
+    cmd.queue = queue
+    pending.push(cmd)
     next_seq[p]++
 
 // The pending orders that run now, in (player, seq) order (all were issued in one turn).
@@ -71,31 +64,6 @@ def take_pending() -> [Cmd]:
     let out = map(keys) key: pending[key & ((1 << 20) - 1)]
     pending = filter(pending): _.run_tick != tick
     return out
-
-var cmd_log = false
-
-def run(c:Cmd):
-    let p = c.player
-    if cmd_log:
-        var s = "cmd {c.run_tick} {c.code} {c.player} {c.a} {c.b} {c.c} {c.d} {c.ids.length}"
-        for(c.ids) id: s += " {id}"
-        print s
-    switch c.code:
-        case 0: run_move(p, c.ids, c.a, c.b)
-        case 1: run_attack_move(p, c.ids, c.a, c.b)
-        case 2: run_stance(p, c.ids, c.a)
-        case 3: cmd_gather(p, own_units_cleared(p, c.ids), c.a)
-        case 4: cmd_build(p, own_units_cleared(p, c.ids), c.a, c.b, c.c)
-        case 5: cmd_help_build(p, own_units_cleared(p, c.ids), c.a)
-        case 6: cmd_train(p, c.a, c.b, c.c)
-        case 7: cmd_rally(p, c.a, c.b, c.c)
-        case 8: cmd_reseed(p, c.ids, c.a)
-        case 9: cmd_age_up(p, c.a)
-        case 10: cmd_research(p, c.a, c.b)
-        case 11: cmd_call_to_arms(p, c.a)
-        case 12: cmd_back_to_work(p)
-        case 13: cmd_attack(p, filter(c.ids) uid: index_of(uid) >= 0 and u_owner[index_of(uid)] == p, c.a)
-        default: assert false
 
 // The scratch arrays grow with the units (training adds them).
 def grow_scratch():
@@ -117,6 +85,8 @@ def step():
     grow_scratch()
     tech_tick()
     work()
+    trade_tick()
+    repair_tick()
     garrison_tick()
     spatial_build()
     let alive = unit_changes
@@ -126,6 +96,7 @@ def step():
     match_tick()
     fog_tick()
     if unit_changes != alive: spatial_build()
+    next_orders()
     trace("start")
     sync_map()
     solve_queued()
@@ -165,6 +136,9 @@ def state_hash() -> int:
     let cols = unit_columns()
     for(n) i:
         for(UNIT_HASHED) k: h = mix(h, cols[k][i])
+        h = mix(h, u_orders[i].length)
+        for(u_orders[i]) o:
+            for(order_ints(o)) v: h = mix(h, v)
     let bcols = building_columns()
     h = mix(h, b_id.length)
     for(b_id.length) b:
@@ -175,6 +149,7 @@ def state_hash() -> int:
         for(b_inside[b]) v: h = mix(h, v)
     for(hero_types) hk, hn: h = mix(mix(h, hero_id[hn]), hero_fell[hn])
     h = mix(h, winner)
+    for(market_price) v: h = mix(h, v)
     h = mix(h, shots.length / SHOT_STRIDE)
     for(shots) v: h = mix(h, v)
     for(num_players) p:
@@ -183,6 +158,7 @@ def state_hash() -> int:
         h = mix(h, pop_cap[p])
         h = mix(h, ages[p])
         h = mix(h, defeated[p])
+        h = mix(h, auto_reseed[p])
         for(researched[p]) v: h = mix(h, v)
         for(num_resources) r:
             h = mix(h, stock[r][p])
@@ -366,6 +342,7 @@ def load(path:string):
     for(next_int()):
         let f = read_ints(cols.length)
         for(cols) col, k: col.push(f[k])
+        u_orders.push([]::Cmd)   // (no queued orders at the start: asserted)
     expect("BUILDINGS")
     let bcols = building_columns()
     for(next_int()):
@@ -380,11 +357,37 @@ def load(path:string):
         fog.push(read_ints(W * H))
         fog_lit.push(read_ints(next_int()))
         fog_seen.push(map(next_int()): read_ints(11))
+    expect("EXTRA")
+    for(next_int()):
+        let name = next_tok()
+        extras.set(name, read_ints(next_int()))
+    load_extras()
     load_ai()
     expect("CMDS")
     for(next_int()):
-        let v = read_ints(7)
-        cmds.push(Cmd { v[0], v[1], v[2], v[3], v[4], v[5], v[6], read_ints(next_int()), 0 })
+        let v = read_ints(8)
+        let c = Cmd { v[0], v[1], v[2], v[4], v[5], v[6], v[7], read_ints(next_int()), 0 }
+        c.queue = v[3]
+        cmds.push(c)
+
+// The EXTRA section (export.gd _write_extra): named int lists, for the systems ported after the
+// fixed sections.
+def extra(name:string) -> [int]:
+    let v = extras.get(name)
+    assert v
+    return v
+
+def load_extras():
+    let rp = extra("repair")
+    r_repair_speed = rp[0]
+    r_repair_cost = rp[1]
+    let tr = extra("trade")
+    r_trade_min = tr[0]
+    r_trade_sq_div = tr[1]
+    r_trade_lin_pct = tr[2]
+    market_price = extra("market_price")
+    t_no_heal = extra("t_no_heal")
+    t_animal = extra("t_animal")
 
 def read_effect() -> Effect:
     let kind = next_int()
@@ -468,7 +471,7 @@ def load_tech(nt:int):
         researched.push(read_ints(nr))
     for(num_players):
         bm_arm.push(map(bt_size.length): []::int)
-        for([bm_research_time, bm_age_time, bm_research_cost, bm_range, bm_cost_pct]) col: col.push(map(bt_size.length): 0)
+        for([bm_research_time, bm_age_time, bm_research_cost, bm_range, bm_cost_pct, bm_trade_fee]) col: col.push(map(bt_size.length): 0)
     for([t_heal_pct, t_kill_gold, t_wade, t_slow_on_hit, t_min_range, t_splash, t_pass_len, t_buildings_only, t_unpack, t_pack,
          t_blast, t_blast_line, t_eval_sight, t_sight_add, t_machine, t_mounted, t_damage, t_heal]) col:
         for(nt): col.push(0)
