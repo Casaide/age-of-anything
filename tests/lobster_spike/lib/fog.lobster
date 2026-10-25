@@ -64,9 +64,10 @@ def fog_update_team(team:[int]):
     for(b_id.length) b:
         if teams[b_owner[b]] == team_p and b_done[b] == 1:   // a foundation sees nothing
             let k = b_kind[b]
-            var r = (if bt_sight[k] > 0: bt_sight[k] else: r_fog_building) + bm_sight[b_owner[b]][k]
+            // the data's own sight, else a tower's (it shoots) or a building's
+            var r = (if bt_sight[k] > 0: bt_sight[k] elif bt_attacks[k] and bt_arrows[k] > 0: r_fog_tower else: r_fog_building) + bm_sight[b_owner[b]][k]
             if has_heights: r += level[b_cy[b] * W + b_cx[b]] * r_high_sight_building
-            stamp(g, lit, b_cx[b] + b_sx[b] / 2, b_cy[b] + b_sy[b] / 2, r + max(b_sx[b], b_sy[b]) / 2, false)
+            stamp(g, lit, b_cx[b] + b_sx[b] / 2, b_cy[b] + b_sy[b] / 2, r + max(b_sx[b], b_sy[b]) / 2, bt_over_trees[k] != 0)
     fog[p] = g
     fog_lit[p] = lit
     var k = 1

@@ -17,13 +17,15 @@ def plan(i:int, x:int, y:int, stuck:int) -> int, int:
         let kind = (u_fkey[i] / LANES) % 4
         if kind == FIELD_CELL_NEAR or kind == FIELD_BUILDING_NEAR: return -2, -2
         return -1, -1
-    assert u_reach[i] != 2   // (places round a building under attack: not in the spike)
     if u_reach[i] == 1:
         if cost <= 2 * DIAGONAL:   // within two cells: make for a free spot before meeting the crowd
             if u_task[i] == T_RETURN and u_gspot[i] >= 0: return drop_spot(i, x, y)
             return spot(i, x, y)
     elif cost == 0 or (cost <= DIRECT_COST and stuck < STUCK_LIMIT / 2 and clear_path(x, y, tx, ty, u_radius[i], lane(i))):
         return tx, ty
+    elif u_reach[i] == 2 and cost <= 4 * STRAIGHT:
+        let cx, cy = round_corner(i, x, y, tx, ty)   // its place is round the far side of the building
+        if cx >= 0: return cx, cy
     var best = ahead(f, cell, x, y, if stuck >= STUCK_LIMIT / 2: 1 else: LOOKAHEAD, u_radius[i], lane(i))
     if best < 0:
         if u_reach[i] == 0: return tx, ty
@@ -155,6 +157,28 @@ def drop_spot(i:int, x:int, y:int) -> int, int:
     let ln = lane(i)
     if not walkable(qx, qy, ln) or not clear_path(x, y, qx, qy, r, ln): return spot(i, x, y)
     return qx, qy
+
+// A corner of unit i's rect, stood off by a body and a row, to walk round it towards (tx, ty): of
+// the corners it can walk straight to (not the one it's at), the shortest way on. (-1, -1) if none.
+def round_corner(i:int, x:int, y:int, tx:int, ty:int) -> int, int:
+    let e = 3 * u_radius[i] + FORM_GAP
+    let ln = lane(i)
+    var bx = -1
+    var by = -1
+    var best_d = 1 << 62
+    let cxs = [u_rx0[i] - e, u_rx1[i] + e, u_rx1[i] + e, u_rx0[i] - e]
+    let cys = [u_ry0[i] - e, u_ry0[i] - e, u_ry1[i] + e, u_ry1[i] + e]
+    for(4) k:
+        let cx = cxs[k]
+        let cy = cys[k]
+        let d0 = dist2(x, y, cx, cy)
+        if d0 >= 200 * 200 and walkable(cx, cy, ln) and clear_path(x, y, cx, cy, u_radius[i], ln):
+            let d = isqrt(d0) + isqrt(dist2(cx, cy, tx, ty))
+            if d < best_d:
+                best_d = d
+                bx = cx
+                by = cy
+    return bx, by
 
 // The nearest point of unit i's rect.
 def rect_near(i:int, x:int, y:int) -> int, int:
@@ -466,6 +490,10 @@ def separate():
         elif mv[i] == 1 and task != T_NONE: s_role[i] = 2
         // Workers standing at their job are planted: nobody moves them. (Hitting a building, too: none here.)
         s_planted[i] = if mv[i] == 0 and (task == GATHER or task == BUILD): 1 else: 0
+        if mv[i] == 0 and s_planted[i] == 0 and u_foe[i] != 0:
+            // So is a unit hitting a building: the crowd round a wall walks round it.
+            let b = b_index_of(u_foe[i])
+            if b >= 0 and gap_b(i, b) <= t_reach[u_kind[i]] + HOLD: s_planted[i] = 1
     for(n) u:
         let cx = sp_cell[u] % w
         let cy = sp_cell[u] / w

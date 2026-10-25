@@ -71,7 +71,7 @@ var research = []::Research
 var race_fx = []::[Effect]     // per player
 var researched = []::[int]     // per player, per research
 var lines = []::[LineStep]     // per unit type
-var t_hero = []::int
+
 var r_melee_reach = 0
 var r_melee_reload = 0
 var r_ranged_reload = 0
@@ -190,6 +190,9 @@ def set_type_from(k:int, l:LineStep, fxs:[Effect]):
     t_blast[k] = l.blast
     t_blast_line[k] = l.blast_line
     t_eval_sight[k] = l.sight
+    t_tags[k] = l.tags
+    t_damage[k] = l.damage
+    t_heal[k] = l.heal
     // Tech.retype's percents and extras
     t_speed[k] = max(1, t_speed[k] * (100 + pct[0]) / 100)
     t_reload[k] = max(1, t_reload[k] * (100 + pct[1]) / 100)

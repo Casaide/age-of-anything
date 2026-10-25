@@ -239,6 +239,22 @@ def order_move(i:int, x:int, y:int, arrive:int, group:int, fx:int, fy:int, pace:
     u_pace[i] = pace
     start(i)
 
+// Head for a point of its own beside a rect (a place round a building it attacks), following the
+// rect's field `key` there and stepping round the rect's corners near it (World.order_beside).
+def order_beside(i:int, x:int, y:int, x0:int, y0:int, x1:int, y1:int, key:int):
+    u_tx[i] = x
+    u_ty[i] = y
+    u_reach[i] = 2
+    u_rx0[i] = x0
+    u_ry0[i] = y0
+    u_rx1[i] = x1
+    u_ry1[i] = y1
+    u_fkey[i] = key
+    u_arrive[i] = SLOT_ARRIVE
+    u_group[i] = 0
+    u_pace[i] = 0
+    start(i)
+
 // Head straight for a point with no flow field (World.order_direct).
 def order_direct(i:int, x:int, y:int):
     u_tx[i] = x
@@ -285,6 +301,7 @@ def run_attack_move(player:int, ids:[int], x:int, y:int):
             continue
         clear_task(i)
         u_foe[i] = 0
+        u_patient[i] = 0
         u_stance[i] = ATTACK_MOVE
         u_amx[i] = slot_x[i]
         u_amy[i] = slot_y[i]
