@@ -88,7 +88,8 @@ def area_at(r:Reach, ln:int, x:int, y:int) -> int:
                 if max(abs(dx), abs(dy)) == rr:
                     let xx = cx + dx
                     let yy = cy + dy
-                    if xx >= 0 and yy >= 0 and xx < W and yy < H and lab[yy * W + xx] != 0: return lab[yy * W + xx]
+                    let at = yy * W + xx   // (in a local: Lobster's --mir JIT misreads the global W inside this and-chain, scratchpad repro)
+                    if xx >= 0 and yy >= 0 and xx < W and yy < H and lab[at] != 0: return lab[at]
                 dx++
             dy++
     return 0
@@ -108,6 +109,22 @@ def touches_area(r:Reach, ln:int, area:int, cx:int, cy:int, sx:int, sy:int) -> b
         y++
     return false
 
+// The middle of the cell of `area` nearest (x, y) (lowest cell on ties), or (-1, -1) (Reach.nearest_in).
+def nearest_in(r:Reach, ln:int, area:int, x:int, y:int) -> int, int:
+    let lab = reach_labels(r, ln)
+    var best = -1
+    var best_d2 = 1 << 62
+    for(lab) a, c:
+        if a == area:
+            let dx = (c % W) * 1000 + 500 - x
+            let dy = (c / W) * 1000 + 500 - y
+            let d2 = dx * dx + dy * dy
+            if d2 < best_d2:
+                best_d2 = d2
+                best = c
+    if best < 0: return -1, -1
+    return (best % W) * 1000 + 500, (best / W) * 1000 + 500
+
 def reaches_cell(r:Reach, ln:int, area:int, cell:int) -> bool:
     return touches_area(r, ln, area, cell % W, cell / W, 1, 1)
 
@@ -124,6 +141,39 @@ class EcoBot:
     wln = 0
     home = 0
     ordered:[int] = []     // unit ids given an order this think
+    // What the full bot sets (EcoBot's defaults otherwise):
+    mix_ages:[int] = [1]   // ages with a mix, ascending, and their mixes (shares per resource)
+    mixes:[[int]] = [[60, 40, 0, 0]]
+    max_workers = 30
+    age_workers = 16
+    rebalance = 0          // ticks between moving a gatherer (0: never)
+    plenty = 1000
+    hold = false           // the army is under its floor: no new workers
+    goal:[int] = []        // what we save for (the next age, a building); empty: nothing
+    push = 100             // how hard the shares lean to it
+    held_ids:[int] = []    // workers kept out of the way until a tick (alongside held_until)
+    held_until:[int] = []
+    next_rebalance = 0
+
+def held(bot:EcoBot, uid:int) -> int:
+    for(bot.held_ids) id, n:
+        if id == uid: return bot.held_until[n]
+    return 0
+
+def hold_until(bot:EcoBot, uid:int, t:int):
+    for(bot.held_ids) id, n:
+        if id == uid:
+            bot.held_until[n] = t
+            return
+    bot.held_ids.push(uid)
+    bot.held_until.push(t)
+
+def unhold(bot:EcoBot, uid:int):
+    for(bot.held_ids) id, n:
+        if id == uid:
+            bot.held_ids.remove(n)
+            bot.held_until.remove(n)
+            return
 
 def btype_named(id:string) -> int:
     for(bt_name) n, k:
@@ -146,14 +196,35 @@ def sum_of(xs:[int]) -> int:
     for(xs) v: t += v
     return max(1, t)
 
-// The share of workers wanted per resource: the mix, none on a stock of PLENTY (EcoBot.shares, no goal).
-def shares(p:int) -> [int]:
-    let out = copy(MIX_AGE1)
+// This age's mix as a share per resource index (EcoBot._mix).
+def mix_of(bot:EcoBot) -> [int]:
+    var mix = bot.mixes[0]
+    for(bot.mix_ages) a, n:
+        if a <= ages[bot.player]: mix = bot.mixes[n]
+    return mix
+
+let GOAL_SPARE = 100
+
+// The share of workers wanted per resource: this age's mix, plus for what the goal still lacks
+// `push` more split by how much each lacks; with a full push the ones saved up are halved while
+// another falls short; none on a stock of plenty (EcoBot.shares).
+def shares(bot:EcoBot) -> [int]:
+    let p = bot.player
+    let base = mix_of(bot)
+    let goal = bot.goal
+    var lack = 0
+    for(goal) g, r: lack += max(0, g - stock[r][p])
+    let out = copy(base)
     var some = false
-    for(num_resources) r:
-        if stock[r][p] >= PLENTY: out[r] = 0
+    for(base.length) r:
+        let s = stock[r][p]
+        if r < goal.length and s < goal[r]:
+            out[r] = base[r] + bot.push * (goal[r] - s) / lack
+        elif lack > 0 and bot.push >= 100 and (r >= goal.length or s >= goal[r] + GOAL_SPARE):
+            out[r] = base[r] / 2
+        if s >= bot.plenty and (r >= goal.length or s >= goal[r]): out[r] = 0
         some = some or out[r] > 0
-    return if some: out else: MIX_AGE1
+    return if some: out else: base
 
 // Nearest cell with that resource left that workers in `area` can get to (-1: the home area).
 // `free` passes over full farms; `first`: the first such cell found, not the nearest.
@@ -174,7 +245,7 @@ def bot_nearest_resource(bot:EcoBot, x:int, y:int, kind:int, free:bool, area0:in
 
 // The resource (kind) furthest below its share that has some left on the map, or 0.
 def short_of(bot:EcoBot, n:[int], x:int, y:int, area:int) -> int:
-    for([shares(bot.player), MIX_AGE1]) mix:
+    for([shares(bot), mix_of(bot)]) mix:
         let sum = sum_of(mix)
         var total = 1
         for(n) v: total += v
@@ -191,13 +262,70 @@ def short_of(bot:EcoBot, n:[int], x:int, y:int, area:int) -> int:
 
 def is_ordered(bot:EcoBot, uid:int) -> bool: return contains(bot.ordered, uid)
 
-// A foundation of ours waiting to be built that our workers can get to (farms and camps apart).
-def building_underway(bot:EcoBot) -> bool:
+// A foundation of ours waiting to be built that our workers can get to (farms and camps apart;
+// houses only with `houses`).
+def building_underway(bot:EcoBot, houses:bool = true) -> bool:
     for(b_id.length) b:
         if b_owner[b] == bot.player and b_done[b] != 1 and reaches_building(bot.reach, bot.wln, bot.home, b):
             let id = bt_name[b_kind[b]]
-            if id != "wonder" and id != "farm" and id != "lumber_camp" and id != "mining_camp" and id != "mill": return true
+            if id != "wonder" and id != "farm" and id != "lumber_camp" and id != "mining_camp" and id != "mill" and (houses or id != "house"): return true
     return false
+
+// Our workers sheltering inside buildings (they still count).
+def sheltered(p:int) -> int:
+    var n = 0
+    for(b_id.length) b:
+        if b_owner[b] == p:
+            var o = 0
+            while o < b_inside[b].length:
+                if t_worker[b_inside[b][o + REC_KIND]]: n++
+                o += REC_SIZE
+    return n
+
+// Workers stay where they were sent: every `rebalance` ticks one gatherer moves from the resource
+// most over its share to the one most under it (EcoBot._rebalance).
+def rebalance_workers(bot:EcoBot, workers:[int], n:[int]):
+    if bot.rebalance <= 0 or tick < bot.next_rebalance: return
+    bot.next_rebalance = tick + bot.rebalance
+    let mix = shares(bot)
+    let sum = sum_of(mix)
+    var total = 0
+    for(n) v: total += v
+    var over = -1
+    var most = 0
+    let unders = []::int   // -(how far under) * 64 + r: most under first, then the lower resource
+    for(num_resources) r:
+        let gap = n[r] * sum - mix[r] * total
+        if gap >= sum and gap > most:
+            most = gap
+            over = r
+        if mix[r] > 0 and -gap >= sum: unders.push(gap * 64 + r)
+    sort_ints(unders)
+    if over < 0 or not unders.length: return
+    let tc = town_center(bot.player)
+    var under = -1
+    var to = -1
+    for(unders) e:
+        if to < 0:
+            let r = ((e % 64) + 64) % 64
+            to = bot_nearest_resource(bot, b_cx[tc] * 1000 + 1500, b_cy[tc] * 1000 + 1500, r + 1, true, -1, false)
+            if to >= 0: under = r
+    if to < 0: return
+    let tx = (to % W) * 1000 + 500
+    let ty = (to / W) * 1000 + 500
+    var best = -1
+    var best_d2 = 1 << 62
+    for(workers) i:
+        if not is_ordered(bot, u_id[i]) and u_carry_kind[i] == over + 1 and (u_task[i] == GATHER or u_task[i] == T_RETURN):
+            let d2 = dist2(u_x[i], u_y[i], tx, ty)
+            if d2 < best_d2:
+                best_d2 = d2
+                best = i
+    if best < 0: return
+    let cell = bot_nearest_resource(bot, u_x[best], u_y[best], under + 1, true, area_of_unit(bot.reach, best), false)
+    if cell >= 0:
+        issue_cmd(bot.player, 3, [u_id[best]], cell, 0, 0, 0)
+        bot.ordered.push(u_id[best])
 
 def farm_underway(p:int, fk:int) -> bool:
     for(b_id.length) b:
@@ -327,7 +455,7 @@ def farms(bot:EcoBot, tc:int, workers:[int], n:[int]):
         if pool[c] < 0 and amount[c] > 0 and tr_res[terrain[c]] == food and
            dist2(hx, hy, (c % W) * 1000 + 500, (c / W) * 1000 + 500) <= FARM_RADIUS * FARM_RADIUS * 1000000:
             wild += amount[c]
-    let mix = shares(p)
+    let mix = shares(bot)
     var total = 0
     for(n) v: total += v
     let want = max(n[food - 1], mix[food - 1] * total / sum_of(mix))
@@ -357,8 +485,8 @@ def bot_think(bot:EcoBot):
                 if u_carry_kind[i] > 0: n[u_carry_kind[i] - 1]++
             elif task == T_NONE:
                 if u_foe[i] != 0: n[0]++   // hunting: food on the hoof
-                elif u_moving[i] == 0: idle.push(i)
-    let count = workers.length
+                elif u_moving[i] == 0 and held(bot, u_id[i]) <= tick: idle.push(i)
+    let count = workers.length + sheltered(p)   // (workers sheltering from a raid still count)
     // Idle hands: back to work on whatever we're shortest of, that they can get to.
     for(idle) i:
         let area = area_of_unit(bot.reach, i)
@@ -372,10 +500,13 @@ def bot_think(bot:EcoBot):
     if rally >= 0 and cell_of(b_rally_x[tc], b_rally_y[tc]) != rally:
         issue_cmd(p, 7, []::int, b_id[tc], (rally % W) * 1000 + 500, (rally / W) * 1000 + 500, 0)
     bot.ordered.remove_range(0, bot.ordered.length)
+    for(workers) i:
+        if held(bot, u_id[i]) > tick: bot.ordered.push(u_id[i])   // pulled from a fight: not a builder or a hunter for now
     // (herding, pens and hunting: no animals here)
     finish_foundations(bot, workers)
+    rebalance_workers(bot, workers, n)
     // Age up: with enough workers, a barracks, then save up and click it.
-    let saving = ages[p] == 1 and count >= AGE_WORKERS
+    let saving = ages[p] == 1 and count >= bot.age_workers
     let bk = btype_named("barracks")
     if saving and not has_building(p, bk) and not building_underway(bot):
         if can_afford(p, bm_cost[p][bk]):
@@ -390,7 +521,7 @@ def bot_think(bot:EcoBot):
     // Keep the Town Center busy.
     let wk = worker_type(p)
     let q = b_queue[tc]
-    if not saving and tick >= bot.next_train and q.length < 2 and count + q.length < MAX_WORKERS and can_afford(p, t_cost[wk]):
+    if not saving and not bot.hold and tick >= bot.next_train and q.length < 2 and count + q.length < bot.max_workers and can_afford(p, t_cost[wk]):
         issue_cmd(p, 6, []::int, b_id[tc], wk, 1, 0)   // (no race lacks workers)
         bot.next_train = tick + TRAIN_COOLDOWN
     // A house before we're stuck.

@@ -9,6 +9,10 @@ def next_int() -> int:
     tp++
     return v
 
+def next_tok() -> string:
+    tp++
+    return tokens[tp - 1]
+
 def expect(word:string):
     assert tokens[tp] == word
     tp++

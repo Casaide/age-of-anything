@@ -31,6 +31,11 @@ import .lib.garrison
 import .lib.heal
 import .lib.heroes
 import .lib.match
+import .lib.ai_cfg
+import .lib.scout
+import .lib.land
+import .lib.expand
+import .lib.bot
 
 // ------------------------------------------------------------------ the tick
 
@@ -45,6 +50,7 @@ class Cmd:
     ids:[int]
     seq:int
 
+var scenario_mode = ""
 var cmds = []::Cmd             // recorded orders, in run order (replaying a scenario's)
 var next_cmd = 0
 var pending = []::Cmd          // orders the bots issued, waiting for their turn (bots mode)
@@ -66,8 +72,14 @@ def take_pending() -> [Cmd]:
     pending = filter(pending): _.run_tick != tick
     return out
 
+var cmd_log = false
+
 def run(c:Cmd):
     let p = c.player
+    if cmd_log:
+        var s = "cmd {c.run_tick} {c.code} {c.player} {c.a} {c.b} {c.c} {c.d} {c.ids.length}"
+        for(c.ids) id: s += " {id}"
+        print s
     switch c.code:
         case 0: run_move(p, c.ids, c.a, c.b)
         case 1: run_attack_move(p, c.ids, c.a, c.b)
@@ -95,6 +107,7 @@ def grow_scratch():
 // World.step, for the systems ported: commands, training, jobs, combat, fog, map changes,
 // flow-field solves, moves, separation.
 def step():
+    events.remove_range(0, events.length)   // (World.step: the last tick's events go)
     if tick % TICKS_PER_TURN == 0:
         while next_cmd < cmds.length and cmds[next_cmd].run_tick == tick:
             run(cmds[next_cmd])
@@ -203,6 +216,8 @@ def load(path:string):
     tokens = filter(tokenize(text, " \n", "")): _.length > 0
     expect("AOWSPIKE")
     assert next_int() == 3
+    expect("MODE")
+    scenario_mode = next_tok()
     expect("MAP")
     W = next_int()
     H = next_int()
@@ -240,6 +255,15 @@ def load(path:string):
     lane_base = read_ints(num_players)
     teams = read_ints(num_players)
     gather_spots = read_ints(num_resources)
+    for(num_resources): resource_names.push(next_tok())
+    for(tr_walk.length): tr_names.push(next_tok())
+    for(next_int()):
+        start_x.push(next_int())
+        start_y.push(next_int())
+    for(next_int()): slot_names.push(next_tok())
+    for(num_players):
+        trade_lacked.push(next_int())
+        slots_lacked.push(read_ints(next_int()))
     expect("RULES")
     r_min_damage = next_int()
     r_acquire_every = next_int()
@@ -278,6 +302,8 @@ def load(path:string):
         for([t_speed, t_radius, t_role, t_gap, t_worker, t_harmless, t_healer, t_ranged, t_reach, t_reload, t_shot_speed,
              t_min_damage, t_sight, t_mclass, t_pop, t_train_ticks, t_hp, t_posture, t_carry_add, t_build_pct, t_player, t_age]) col, k:
             col.push(v[k])
+        t_slot.push(next_tok())
+        t_trader.push(next_int())
         t_cost.push(read_ints(num_resources))
         t_atk.push(read_ints(num_classes))
         t_arm.push(read_ints(num_classes))
@@ -353,6 +379,8 @@ def load(path:string):
     for(num_players):
         fog.push(read_ints(W * H))
         fog_lit.push(read_ints(next_int()))
+        fog_seen.push(map(next_int()): read_ints(11))
+    load_ai()
     expect("CMDS")
     for(next_int()):
         let v = read_ints(7)
@@ -444,7 +472,10 @@ def load_tech(nt:int):
     for([t_heal_pct, t_kill_gold, t_wade, t_slow_on_hit, t_min_range, t_splash, t_pass_len, t_buildings_only, t_unpack, t_pack,
          t_blast, t_blast_line, t_eval_sight, t_sight_add, t_machine, t_mounted, t_damage, t_heal]) col:
         for(nt): col.push(0)
-    for(nt): t_tags.push([]::int)
+    for(nt):
+        t_tags.push([]::int)
+        t_bonus.push([]::int)
+        t_eval_attack.push(0)
     expect("HEROES")
     let nh = next_int()
     r_aura = next_int()
@@ -511,12 +542,14 @@ var bots_mode = false
 for(args) a, k:
     if k > 0:
         if a == "bots": bots_mode = true
+        if a == "cmdlog": cmd_log = true
         let key, val = split_string(a, ":")
         let v, ok = string_to_int(val)
         if key == "dump": dump_tick = v
         if key == "trace": trace_tick = v
 next_seq = map(num_players): 0
 let bots = map(num_players) p: EcoBot { p }
+let full_bots = map(num_players) p: new_bot(p)
 if bots_mode:
     cmds = []::Cmd
     for(u_kind) k: assert t_player[k] >= 0   // (no animals: the bots' herding and hunting aren't ported)
@@ -526,7 +559,11 @@ var first_bad = -1
 for(ticks) k:
     let t0 = seconds_elapsed()
     if bots_mode:
-        for(bots) bot: bot_think(bot)
+        if scenario_mode == "match":
+            events_on = true
+            for(full_bots) bot: full_bot_think(bot)
+        else:
+            for(bots) bot: bot_think(bot)
     step()
     spent += seconds_elapsed() - t0
     if first_bad < 0 and state_hash() != expected[k]:
