@@ -52,6 +52,29 @@ let SPREAD = 1500
 let CROWDED = 2
 let HOLD = 120
 
+// economy.gd: units.task, and the gatherers' ways.
+let T_NONE = 0
+let GATHER = 1
+let T_RETURN = 2
+let BUILD = 3
+let REACH = 250                // milli-tiles between a body's edge and what it works on
+let SEARCH_TILES = 8
+let SPREAD_TILES = 2
+let BUSY_COST = 4000000
+let GIVE_UP = 60
+let NEXT_BUILD_TILES = 5
+let BACK_TO_WORK_TILES = 10
+let WAIT_TICKS = 20
+let SPOTS = 8
+let SIDES = 2
+let SPOT_GAP = 100             // (World.SPOT_GAP too)
+let SPOT_NEAR = 150
+let SPOT_DX = [0, 1, 1, 1, 0, -1, -1, -1]
+let SPOT_DY = [-1, -1, 0, 1, 1, 1, 0, -1]
+let SPOT_BUSY = 3
+let NEAR_CUTOFF = 160
+let FIELD_BUILDING = 3
+
 // shots.gd: one record a shot.
 let SHOT_LAND = 0
 let SHOT_TO = 1

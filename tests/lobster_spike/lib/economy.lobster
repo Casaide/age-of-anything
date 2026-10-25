@@ -1,0 +1,725 @@
+// ------------------------------------------------------------------ the economy (economy.gd, buildings.gd)
+// Buildings, worker jobs (gather -> carry -> drop off -> back), construction, farms, training and
+// pop, and the GATHER / BUILD / HELP_BUILD / TRAIN / RALLY commands. Resource kinds are indexes + 1
+// (0: none), as units.carry_kind. Left out (none in the scenarios, asserted by the exporter or
+// here): gates and walls, pens, bridges, research and ageing up, heroes, shift-queued orders.
+
+// ---- buildings (buildings.gd)
+
+def b_index_of(bid:int) -> int:
+    let found, at = binary_search(b_id, bid)
+    return if found: at else: -1
+
+// The cells under building b, row by row.
+def footprint(b:int) -> [int]:
+    let out = []::int
+    var y = b_cy[b]
+    while y < b_cy[b] + b_sy[b]:
+        var x = b_cx[b]
+        while x < b_cx[b] + b_sx[b]:
+            out.push(y * W + x)
+            x++
+        y++
+    return out
+
+def add_building(bid:int, owner:int, k:int, cx:int, cy:int) -> int:
+    let size = bt_size[k]
+    for(building_columns()) col, n:
+        col.push([bid, owner, k, cx, cy, size, size, 1, 0, 0, 0, -1, -1][n])
+    b_queue.push([]::int)
+    return b_id.length - 1
+
+// Put a building (unbuilt) on the map and return its slot (Economy.place).
+def place(player:int, k:int, cx:int, cy:int) -> int:
+    assert not bt_special[k]
+    let b = add_building(next_id, player, k, cx, cy)
+    next_id++
+    occupy(footprint(b), b_id[b])
+    return b
+
+// ---- units
+
+def add_unit(owner:int, k:int, x:int, y:int) -> int:
+    // units.gd _put's defaults, in unit_columns order
+    let v = [next_id, x, y, x, y, 0, 0, x, y, 0, 0, -1, -1, 0,
+             t_hp[k], 0, 0, 0, t_posture[k], x, y, 0, 0, -1,
+             T_NONE, -1, -1, -1, 0, 0, 0, 0, 0, 0, 0, 0,
+             owner, k, t_speed[k], t_radius[k], t_mclass[k]]
+    for(unit_columns()) col, n: col.push(v[n])
+    next_id++
+    return u_id.length - 1
+
+def is_worker(i:int) -> bool: return t_worker[u_kind[i]] != 0
+
+def own_workers(player:int, ids:[int]) -> [int]:
+    let out = []::int
+    for(ids) uid:
+        let i = index_of(uid)
+        if i >= 0 and u_owner[i] == player and is_worker(i): out.push(i)
+    return out
+
+// A plain MOVE ends whatever the unit was doing (it keeps what it carries).
+def clear_task(i:int):
+    u_task[i] = T_NONE
+    u_target[i] = -1
+    u_home[i] = -1
+    u_gspot[i] = -1
+    u_work[i] = 0
+
+// The player's worker type (Economy.builder_class: its movement class is where they may build).
+def worker_type(player:int) -> int:
+    for(t_worker) w, k:
+        if w and t_player[k] == player: return k
+    return -1
+
+def can_afford(player:int, cost:[int]) -> bool:
+    for(cost) c, r:
+        if stock[r][player] < c: return false
+    return true
+
+def pay(player:int, cost:[int]):
+    for(cost) c, r: stock[r][player] -= c
+
+// ---- rects
+
+def cell_rect(cell:int) -> int, int, int, int:
+    let x = (cell % W) * TILE
+    let y = (cell / W) * TILE
+    return x, y, x + TILE - 1, y + TILE - 1
+
+def building_rect(b:int) -> int, int, int, int:
+    let x = b_cx[b] * TILE
+    let y = b_cy[b] * TILE
+    return x, y, x + b_sx[b] * TILE - 1, y + b_sy[b] * TILE - 1
+
+// Is unit i's body within REACH of the rect?
+def in_reach(i:int, x0:int, y0:int, x1:int, y1:int) -> bool:
+    let dx = max(max(x0 - u_x[i], 0), u_x[i] - x1)
+    let dy = max(max(y0 - u_y[i], 0), u_y[i] - y1)
+    let reach = u_radius[i] + REACH
+    return dx * dx + dy * dy <= reach * reach
+
+def approach_building(i:int, b:int):
+    let x0, y0, x1, y1 = building_rect(b)
+    order_reach(i, x0, y0, x1, y1, building_field(b_id[b], true, lane(i)))
+
+// ---- gather spots
+
+// Do gatherers at this tile stand at spots round it? Not on a farm; otherwise as its resource says.
+def spotted(cell:int) -> bool:
+    if pool[cell] >= 0: return false
+    let k = res_at(cell)
+    return k > 0 and gather_spots[k - 1] != 0
+
+def sides_only(cell:int) -> bool:
+    let k = res_at(cell)
+    return k > 0 and gather_spots[k - 1] == SIDES
+
+// Is there open ground to stand on beside this spotted tile in unit i's lane (lane 0 without one)?
+def open_beside(cell:int, i:int) -> bool:
+    let ln = if i >= 0: lane(i) else: 0
+    let x = cell % W
+    let y = cell / W
+    let step = if sides_only(cell): 2 else: 1
+    var k = 0
+    while k < SPOTS:
+        if cell_walkable(x + SPOT_DX[k], y + SPOT_DY[k], ln): return true
+        k += step
+    return false
+
+// Where worker i stands at spot k round resource tile `cell`; (-1, -1) if that ground is blocked.
+def spot_at(i:int, cell:int, k:int) -> int, int:
+    let r = u_radius[i]
+    let dx = SPOT_DX[k]
+    let dy = SPOT_DY[k]
+    var off = r + SPOT_GAP
+    if dx != 0 and dy != 0: off = (r + REACH - 60) * 707 / 1000
+    let x0 = (cell % W) * TILE
+    let y0 = (cell / W) * TILE
+    let x = if dx == 0: x0 + TILE / 2 elif dx < 0: x0 - off else: x0 + TILE - 1 + off
+    let y = if dy == 0: y0 + TILE / 2 elif dy < 0: y0 - off else: y0 + TILE - 1 + off
+    let ln = lane(i)
+    if not walkable(x, y, ln): return -1, -1
+    let px, py = off_walls(x, y, r, ln)
+    let ex = max(max(x0 - px, 0), px - (x0 + TILE - 1))
+    let ey = max(max(y0 - py, 0), py - (y0 + TILE - 1))
+    if ex * ex + ey * ey > (r + REACH - 20) * (r + REACH - 20): return -1, -1
+    return px, py
+
+// The spots held round tiles within two of `cell` by gatherers other than i, and where builders
+// at work stand near it: x, y, radius each (flat).
+def held_near(cell:int, i:int) -> [int]:
+    let out = []::int
+    for(u_x.length) j:
+        if j != i:
+            let h = u_home[j]
+            if h >= 0 and u_gspot[j] >= 0 and (u_task[j] == GATHER or u_task[j] == T_RETURN):
+                if abs(h % W - cell % W) <= 2 and abs(h / W - cell / W) <= 2:
+                    let qx, qy = spot_at(j, h, u_gspot[j])
+                    out.push(qx)
+                    out.push(qy)
+                    out.push(u_radius[j])
+            elif u_task[j] == BUILD and u_moving[j] == 0:
+                let c = cell_of(u_x[j], u_y[j])
+                if abs(c % W - cell % W) <= 2 and abs(c / W - cell / W) <= 2:
+                    out.push(u_x[j])
+                    out.push(u_y[j])
+                    out.push(u_radius[j])
+    return out
+
+// Would a body of unit i at (px, py) stand in a held spot?
+def crowded(i:int, px:int, py:int, held:[int]) -> bool:
+    let r = u_radius[i]
+    var q = 0
+    while q < held.length:
+        let rr = r + held[q + 2] - SPOT_GAP
+        if dist2(px, py, held[q], held[q + 1]) < rr * rr: return true
+        q += 3
+    return false
+
+def spot_held(cell:int, k:int, i:int) -> bool:
+    let px, py = spot_at(i, cell, k)
+    return px < 0 or crowded(i, px, py, held_near(cell, i))
+
+// The free spot round `cell` nearest worker i (lowest k on ties), or -1.
+def free_spot(i:int, cell:int) -> int:
+    if not spotted(cell): return -1
+    let held = held_near(cell, i)
+    var best = -1
+    var best_d = 1 << 62
+    var k = 0
+    let step = if sides_only(cell): 2 else: 1
+    while k < SPOTS:
+        let px, py = spot_at(i, cell, k)
+        if px >= 0 and not crowded(i, px, py, held):
+            let d = dist2(u_x[i], u_y[i], px, py)
+            if d < best_d:
+                best_d = d
+                best = k
+        k += step
+    return best
+
+// Walk up to a resource tile: to the worker's own spot round it while it gathers there, else
+// anywhere in reach (a farm, or no room).
+def approach_cell(i:int, cell:int):
+    if u_home[i] == cell and spotted(cell):
+        if u_gspot[i] < 0 or spot_held(cell, u_gspot[i], i):
+            u_gspot[i] = free_spot(i, cell)
+        if u_gspot[i] >= 0:
+            let px, py = spot_at(i, cell, u_gspot[i])
+            order_move(i, px, py, SLOT_ARRIVE, 0, -1, -1, 0, true)
+            return
+    let x0, y0, x1, y1 = cell_rect(cell)
+    order_reach(i, x0, y0, x1, y1, cell_field(cell, true, lane(i)))
+
+// ---- picking where to work
+
+// Is this cell's ground (a farm's pool) worked by as many workers as it takes, not counting unit i?
+def taken(cell:int, i:int) -> bool:
+    if cell < 0 or pool[cell] < 0: return false
+    let b = b_index_of(occupied[cell])
+    if b >= 0 and i >= 0 and b_owner[b] != u_owner[i]: return true
+    let limit = if b >= 0: bt_workers[b_kind[b]] else: 0
+    if limit <= 0: return false
+    var n = 0
+    for(u_x.length) j:
+        if j != i and u_home[j] >= 0 and pool[u_home[j]] == pool[cell] and (u_task[j] == GATHER or u_task[j] == T_RETURN): n++
+    return n >= limit
+
+def explored(player:int, c:int) -> bool:
+    return player >= fog.length or fog[player][c] != 0
+
+// The tile of this resource near `cell` with the fewest gatherers, nearer ones first, ties to the lower cell.
+def least_busy(cell:int, kind:int, except:int, i:int) -> int:
+    let cx = cell % W
+    let cy = cell / W
+    var best = cell
+    var best_score = 1 << 62
+    let busy = dictionary<int, int>(251)
+    for(u_x.length) j:
+        if u_home[j] >= 0 and (u_task[j] == GATHER or u_task[j] == T_RETURN):
+            busy.set(u_home[j], busy.get(u_home[j], 0) + 1)
+    var yy = max(cy - SPREAD_TILES, 0)
+    while yy < min(cy + SPREAD_TILES + 1, H):
+        var xx = max(cx - SPREAD_TILES, 0)
+        while xx < min(cx + SPREAD_TILES + 1, W):
+            let c = yy * W + xx
+            xx++
+            if c == except or amount[c] <= 0 or res_at(c) != kind or taken(c, i): continue
+            if spotted(c) and not open_beside(c, i): continue
+            let nb = busy.get(c, 0)
+            var score = nb * BUSY_COST + dist2(cx * 1000, cy * 1000, (xx - 1) * 1000, yy * 1000)
+            if i >= 0 and nb > 0 and spotted(c) and free_spot(i, c) < 0: score += 1 << 40
+            if score < best_score:
+                best_score = score
+                best = c
+        yy++
+    return best
+
+// The nearest cell with this resource within SEARCH_TILES, or -1 (ties to the lower cell).
+def nearest_resource(x:int, y:int, kind:int, i:int, farms:bool, roomy_only:bool, seen:bool) -> int:
+    let cx = x / TILE
+    let cy = y / TILE
+    var best = -1
+    var best_d2 = 1 << 62
+    var yy = max(cy - SEARCH_TILES, 0)
+    while yy < min(cy + SEARCH_TILES + 1, H):
+        var xx = max(cx - SEARCH_TILES, 0)
+        while xx < min(cx + SEARCH_TILES + 1, W):
+            let c = yy * W + xx
+            let d2 = dist2(x, y, xx * TILE + 500, yy * TILE + 500)
+            xx++
+            if amount[c] <= 0 or res_at(c) != kind or (farms and pool[c] < 0): continue
+            if d2 >= best_d2 or (i >= 0 and taken(c, i)) or (seen and not explored(u_owner[i], c)) or (spotted(c) and not open_beside(c, i)): continue
+            if roomy_only and spotted(c) and free_spot(i, c) < 0: continue
+            best_d2 = d2
+            best = c
+        yy++
+    return best
+
+// Where worker i gathers when sent to `cell` (Economy._pick).
+def pick(i:int, cell:int, kind:int) -> int:
+    let c = least_busy(cell, kind, -1, i)
+    let to_farm = pool[cell] >= 0
+    let x = (cell % W) * TILE + TILE / 2
+    let y = (cell / W) * TILE + TILE / 2
+    if spotted(c) and free_spot(i, c) < 0:
+        let roomy_c = nearest_resource(x, y, kind, i, false, true, false)
+        if roomy_c >= 0: return roomy_c
+    if not taken(c, i) and (not to_farm or pool[c] >= 0): return c
+    let farm = nearest_resource(x, y, kind, i, true, false, false)
+    if farm >= 0: return farm
+    return if not taken(c, i): c else: nearest_resource(x, y, kind, i, false, false, false)
+
+// The owner's nearest finished building that takes what unit i carries, or -1.
+def nearest_drop_off(i:int) -> int:
+    var best = -1
+    var best_d2 = 1 << 62
+    for(b_id.length) b:
+        if b_owner[b] == u_owner[i] and b_done[b] != 0 and u_carry_kind[i] > 0 and bt_drop[b_kind[b]][u_carry_kind[i] - 1] != 0:
+            let d2 = dist2(u_x[i], u_y[i], b_cx[b] * TILE + b_sx[b] * TILE / 2, b_cy[b] * TILE + b_sy[b] * TILE / 2)
+            if d2 < best_d2:
+                best_d2 = d2
+                best = b
+    return best
+
+// ---- tasks
+
+// Send worker i to gather `kind` at `cell` (Economy.start_gather).
+def start_gather(i:int, cell:int, kind:int):
+    let c = pick(i, cell, kind)
+    if u_carry[i] > 0 and u_carry_kind[i] != kind: u_carry[i] = 0
+    u_carry_kind[i] = kind
+    u_task[i] = GATHER
+    u_target[i] = if c >= 0: c else: cell
+    u_home[i] = c
+    u_gspot[i] = -1
+    u_work[i] = 0
+    approach_cell(i, u_target[i])
+
+def start_build(i:int, bid:int):
+    if u_task[i] != GATHER and u_task[i] != T_RETURN: u_home[i] = -1
+    u_task[i] = BUILD
+    u_target[i] = bid
+    u_gspot[i] = -1
+    u_work[i] = 0
+    approach_building(i, b_index_of(bid))
+
+def to_drop_off(i:int):
+    let b = nearest_drop_off(i)
+    if b < 0:
+        clear_task(i)
+        return
+    u_task[i] = T_RETURN
+    u_target[i] = b_id[b]
+    u_work[i] = 0
+    approach_building(i, b)
+
+// ---- farms
+
+// The finished farm of `player` whose crops cover `cell`, or -1.
+def farm_at(cell:int, player:int) -> int:
+    if pool[cell] < 0: return -1
+    let b = b_index_of(occupied[cell])
+    if b < 0 or b_owner[b] != player or b_done[b] == 0 or not bt_farm[b_kind[b]]: return -1
+    return b
+
+// Reseed finished farm b if it's worked out and its owner can pay: crops again. Whether it was.
+def reseed(b:int) -> bool:
+    if b < 0: return false   // (GDScript: farm_at's -1 reads the last building; never in a scenario where it matters)
+    let p = b_owner[b]
+    let k = b_kind[b]
+    let cells = footprint(b)
+    let to = tr_reseed[terrain[cells[0]]]
+    if b_done[b] == 0 or not bt_farm[k] or left_at(cells[0]) > 0 or to < 0 or not can_afford(p, bt_reseed[k]): return false
+    pay(p, bt_reseed[k])
+    make_pool(cells, to, bm_food[p][k])
+    return true
+
+def farm_done(i:int, cell:int):
+    let b = farm_at(cell, u_owner[i])
+    if b < 0: return
+    if auto_reseed[b_owner[b]] == 1: reseed(b)
+
+def fallow(i:int, cell:int, kind:int):
+    if u_carry[i] > 0:
+        to_drop_off(i)
+        return
+    let x0, y0, x1, y1 = cell_rect(cell)
+    if in_reach(i, x0, y0, x1, y1):
+        u_moving[i] = 0
+        u_stuck[i] = 0
+    elif u_moving[i] == 0 and u_stuck[i] < GIVE_UP:
+        approach_cell(i, cell)
+    u_work[i]++
+    if u_work[i] < WAIT_TICKS: return
+    u_work[i] = 0
+    if auto_reseed[u_owner[i]] == 1 and reseed(farm_at(cell, u_owner[i])): return
+    let other = nearest_resource(u_x[i], u_y[i], kind, i, true, false, true)
+    if other >= 0: start_gather(i, other, kind)
+
+// A finished farm turns its ground into crops; the builder who finished it starts the harvest.
+def become_ground(b:int, i:int):
+    let k = b_kind[b]
+    let cells = footprint(b)
+    let land = tr_walk[terrain[cells[0]]]
+    make_pool(cells, if land: bt_land[k] else: bt_wet[k], bm_food[b_owner[b]][k])
+    start_gather(i, cells[0], 1)   // (food: resource index 0; no shift-queued orders here)
+
+// ---- a tick of jobs
+
+def gather(i:int, carry_max:int):
+    if u_carry[i] >= carry_max:
+        to_drop_off(i)
+        return
+    let cell = u_target[i]
+    let kind = u_carry_kind[i]
+    if res_at(cell) != kind and u_home[i] == cell and farm_at(cell, u_owner[i]) >= 0:
+        fallow(i, cell, kind)
+        return
+    if res_at(cell) != kind:
+        var more = nearest_resource(u_x[i], u_y[i], kind, i, false, true, true)
+        if more < 0: more = nearest_resource(u_x[i], u_y[i], kind, i, false, false, true)
+        if more >= 0:
+            u_target[i] = more
+            u_home[i] = more
+            u_gspot[i] = -1
+            u_work[i] = 0
+            approach_cell(i, more)
+        elif u_carry[i] > 0:
+            u_home[i] = -1
+            to_drop_off(i)
+        else:
+            clear_task(i)
+        return
+    if u_home[i] < 0:
+        wait_by(i, cell, kind)
+        return
+    let x0, y0, x1, y1 = cell_rect(cell)
+    if in_reach(i, x0, y0, x1, y1) and (u_reach[i] == 1 or u_moving[i] == 0 or dist2(u_x[i], u_y[i], u_tx[i], u_ty[i]) <= SPOT_NEAR * SPOT_NEAR):
+        u_moving[i] = 0
+        u_stuck[i] = 0
+        u_work[i]++
+        if u_work[i] >= gather_ticks[u_owner[i]][kind - 1]:
+            u_work[i] = 0
+            take(cell)
+            u_carry[i]++
+            if pool[cell] >= 0 and left_at(cell) <= 0: farm_done(i, cell)
+    elif u_moving[i] == 0:
+        if u_stuck[i] >= GIVE_UP:
+            let other = least_busy(cell, kind, cell, i)
+            if other != cell and not taken(other, i):
+                u_target[i] = other
+                u_home[i] = other
+                u_gspot[i] = -1
+                approach_cell(i, other)
+            else:
+                clear_task(i)
+        elif u_reach[i] == 0 and u_gspot[i] >= 0:
+            order_reach(i, x0, y0, x1, y1, cell_field(cell, true, lane(i)))
+        else:
+            approach_cell(i, cell)
+
+// Waiting by a full farm: every WAIT_TICKS, look again.
+def wait_by(i:int, cell:int, kind:int):
+    if u_moving[i] == 0: u_stuck[i] = 0
+    u_work[i]++
+    if u_work[i] < WAIT_TICKS: return
+    u_work[i] = 0
+    let c = pick(i, cell, kind)
+    if c >= 0:
+        u_target[i] = c
+        u_home[i] = c
+        u_gspot[i] = -1
+        approach_cell(i, c)
+
+def return_home(i:int):
+    let b = b_index_of(u_target[i])
+    if b < 0 or b_done[b] == 0:
+        to_drop_off(i)
+        return
+    let x0, y0, x1, y1 = building_rect(b)
+    if in_reach(i, x0, y0, x1, y1):
+        let p = u_owner[i]
+        if u_carry_kind[i] > 0:
+            stock[u_carry_kind[i] - 1][p] += u_carry[i]
+            gathered[u_carry_kind[i] - 1][p] += u_carry[i]
+        u_carry[i] = 0
+        u_moving[i] = 0
+        if u_home[i] >= 0:
+            u_task[i] = GATHER
+            u_target[i] = u_home[i]
+            approach_cell(i, u_home[i])
+        else:
+            clear_task(i)
+    elif u_moving[i] == 0:
+        if u_stuck[i] >= GIVE_UP: clear_task(i)
+        else: approach_building(i, b)
+
+// The nearest unfinished building of the worker's owner within NEXT_BUILD_TILES, on explored ground.
+def nearby_foundation(i:int) -> int:
+    var best = -1
+    var best_d2 = NEXT_BUILD_TILES * NEXT_BUILD_TILES * TILE * TILE + 1
+    for(b_id.length) b:
+        if b_owner[b] == u_owner[i] and b_done[b] != 1 and explored(u_owner[i], (b_cy[b] + b_sy[b] / 2) * W + b_cx[b] + b_sx[b] / 2):
+            let d2 = dist2(u_x[i], u_y[i], b_cx[b] * TILE + b_sx[b] * TILE / 2, b_cy[b] * TILE + b_sy[b] * TILE / 2)
+            if d2 < best_d2:
+                best_d2 = d2
+                best = b
+    return best
+
+// A builder done: back to the resource it gathered before building, if that's near. Whether it went.
+def back_to_work(i:int) -> bool:
+    var h = u_home[i]
+    let kind = u_carry_kind[i]
+    if h < 0 or kind <= 0: return false
+    let hx = (h % W) * TILE + TILE / 2
+    let hy = (h / W) * TILE + TILE / 2
+    let far = BACK_TO_WORK_TILES * TILE
+    if dist2(u_x[i], u_y[i], hx, hy) > far * far: return false
+    if res_at(h) != kind or amount[h] <= 0:
+        h = nearest_resource(hx, hy, kind, i, false, false, true)
+        if h < 0: return false
+    start_gather(i, h, kind)
+    return true
+
+// A finished camp (taking in some resources, not all): its builders go and gather the nearest of them.
+def gather_after_camp(b:int):
+    let k = b_kind[b]
+    let kinds = []::int
+    for(bt_drop[k]) d, r:
+        if d == 1: kinds.push(r + 1)
+    if not kinds.length or kinds.length == bt_drop[k].length: return
+    let bid = b_id[b]
+    for(u_x.length) j:
+        if u_task[j] == BUILD and u_target[j] == bid:
+            var best = -1
+            var best_kind = 0
+            var best_d2 = 1 << 62
+            for(kinds) kind:
+                let c = nearest_resource(u_x[j], u_y[j], kind, j, false, false, true)
+                if c >= 0:
+                    let d2 = dist2(u_x[j], u_y[j], (c % W) * TILE + 500, (c / W) * TILE + 500)
+                    if d2 < best_d2:
+                        best_d2 = d2
+                        best = c
+                        best_kind = kind
+            if best >= 0: start_gather(j, best, best_kind)
+
+def build_job(i:int):
+    let b = b_index_of(u_target[i])
+    if b < 0 or b_done[b] == 1:
+        let nb = nearby_foundation(i)
+        if nb >= 0:
+            u_target[i] = b_id[nb]
+            approach_building(i, nb)
+        elif not back_to_work(i):
+            clear_task(i)
+        return
+    let x0, y0, x1, y1 = building_rect(b)
+    if in_reach(i, x0, y0, x1, y1):
+        u_moving[i] = 0
+        u_stuck[i] = 0
+        let k = b_kind[b]
+        let max_hp = bm_hp[b_owner[b]][k]
+        let pct = t_build_pct[u_kind[i]]
+        var st = 1
+        if pct != 0:
+            u_work[i]++
+            st += u_work[i] * pct / 100 - (u_work[i] - 1) * pct / 100
+        b_progress[b] = min(bt_build_ticks[k], b_progress[b] + st)
+        b_hp[b] = max(1, max_hp * b_progress[b] / bt_build_ticks[k])
+        if b_progress[b] >= bt_build_ticks[k]:
+            b_done[b] = 1
+            b_hp[b] = max_hp
+            if bt_farm[k]: become_ground(b, i)
+            else: gather_after_camp(b)
+    elif u_moving[i] == 0:
+        if u_stuck[i] >= GIVE_UP: clear_task(i)
+        else: approach_building(i, b)
+
+// One tick of every worker's job (Economy.work). Runs before movement.
+def work():
+    for(u_x.length) i:
+        let task = u_task[i]
+        if task == GATHER: gather(i, r_carry + t_carry_add[u_kind[i]])
+        elif task == T_RETURN: return_home(i)
+        elif task == BUILD: build_job(i)
+
+// ---- training and pop
+
+def update_pop():
+    for(num_players) p:
+        pop[p] = 0
+        pop_cap[p] = 0
+    for(u_x.length) i: pop[u_owner[i]] += t_pop[u_kind[i]]
+    for(b_id.length) b:
+        if b_done[b] == 1:
+            let p = b_owner[b]
+            var add = bt_pop[b_kind[b]]
+            if add > 0: add += bm_pop[p][b_kind[b]]
+            pop_cap[p] += add
+    for(num_players) p: pop_cap[p] = min(pop_cap[p], r_pop_max)
+
+// The walkable cell beside building b nearest its rally point (or its front corner).
+def spawn_cell(b:int, k:int) -> int:
+    let cx = b_cx[b]
+    let cy = b_cy[b]
+    let sx = b_sx[b]
+    let sy = b_sy[b]
+    let gx = if b_rally_x[b] >= 0: b_rally_x[b] else: (cx + sx) * TILE
+    let gy = if b_rally_x[b] >= 0: b_rally_y[b] else: (cy + sy) * TILE
+    var best = -1
+    var best_d2 = 1 << 62
+    var y = cy - 1
+    while y < cy + sy + 1:
+        var x = cx - 1
+        while x < cx + sx + 1:
+            let edge = x == cx - 1 or x == cx + sx or y == cy - 1 or y == cy + sy
+            if edge and cell_walkable(x, y, lane_base[b_owner[b]] + t_mclass[k]):
+                let d2 = dist2(gx, gy, x * TILE + 500, y * TILE + 500)
+                if d2 < best_d2:
+                    best_d2 = d2
+                    best = y * W + x
+            x++
+        y++
+    assert best >= 0
+    return best
+
+def go_to_rally(b:int, i:int):
+    if b_rally_x[b] < 0: return
+    let cell = cell_of(b_rally_x[b], b_rally_y[b])
+    let kind = res_at(cell)
+    if kind > 0 and is_worker(i): start_gather(i, cell, kind)
+    else: order_move(i, b_rally_x[b], b_rally_y[b], 200, 0, -1, -1, 0)
+
+// Advance every building's train queue; training waits at the pop cap (Economy.train).
+def train():
+    update_pop()
+    for(b_id.length) b:
+        let q = b_queue[b]
+        if b_done[b] != 0 and q.length and q[0] >= 0:
+            let p = b_owner[b]
+            let k = q[0]
+            if not (b_train[b] == 0 and pop[p] + t_pop[k] > pop_cap[p]):
+                b_train[b]++
+                if b_train[b] >= t_train_ticks[k]:
+                    b_train[b] = 0
+                    q.remove(0)
+                    let c = spawn_cell(b, k)
+                    let i = add_unit(p, k, (c % W) * TILE + 500, (c / W) * TILE + 500)
+                    pop[p] += t_pop[k]
+                    go_to_rally(b, i)
+
+// ---- commands
+
+def cmd_gather(player:int, ids:[int], cell:int):
+    let kind = res_at(cell)
+    for(ids) uid:
+        let i = index_of(uid)
+        if i >= 0 and u_owner[i] == player:
+            if kind <= 0 or not is_worker(i):
+                order_move(i, (cell % W) * 1000 + 500, (cell / W) * 1000 + 500, 200, 0, -1, -1, 0)
+            else:
+                start_gather(i, cell, kind)
+
+// Why this player can't start a building of type k anywhere just now: false if it can.
+def build_barred(player:int, k:int) -> bool:
+    if bm_lacks[player][k]: return true
+    if ages[player] < bt_age[k]: return true
+    if bt_more_from_age[k] > 0 and ages[player] < bt_more_from_age[k]:
+        for(b_id.length) b:
+            if b_owner[b] == player and b_kind[b] == k: return true
+    return false
+
+def can_place(player:int, k:int, cx:int, cy:int) -> bool:
+    let mc = t_mclass[worker_type(player)]
+    let s = bt_size[k]
+    if cx < 0 or cy < 0 or cx + s > W or cy + s > H: return false
+    var y = cy
+    while y < cy + s:
+        var x = cx
+        while x < cx + s:
+            if not can_build(x, y, 1, mc, bt_water[k] != 0, bt_line[k] != 0): return false
+            x++
+        y++
+    return true
+
+// Pay for and place a BUILD's foundation; its id, or 0 when it can't be built there.
+def lay_foundation(player:int, ids:[int], k:int, cx:int, cy:int) -> int:
+    if k < 0: return 0
+    if not own_workers(player, ids).length or build_barred(player, k): return 0
+    if not can_place(player, k, cx, cy): return 0
+    let cost = bm_cost[player][k]
+    if not can_afford(player, cost): return 0
+    pay(player, cost)
+    return b_id[place(player, k, cx, cy)]
+
+def cmd_build(player:int, ids:[int], k:int, cx:int, cy:int):
+    let bid = lay_foundation(player, ids, k, cx, cy)
+    if bid == 0: return
+    for(own_workers(player, ids)) i: start_build(i, bid)
+
+def cmd_help_build(player:int, ids:[int], target:int):
+    let b = b_index_of(target)
+    if b < 0 or b_owner[b] != player or b_done[b] == 1: return
+    for(own_workers(player, ids)) i: start_build(i, target)
+
+// TRAIN, its unit type worked out by the exporter (k, -1 for none; ok 0 if the race lacks the line).
+def cmd_train(player:int, bid:int, k:int, ok:int):
+    let b = b_index_of(bid)
+    if b < 0 or b_owner[b] != player or b_done[b] == 0: return
+    if not contains(bm_trains[player][b_kind[b]], k): return
+    if k < 0 or b_queue[b].length >= r_queue_max or not ok: return
+    if not can_afford(player, t_cost[k]) or ages[player] < t_age[k]: return
+    pay(player, t_cost[k])
+    b_queue[b].push(k)
+
+// Reseed a worked-out farm: pay, crops again, the workers start the harvest.
+def cmd_reseed(player:int, ids:[int], bid:int):
+    let b = b_index_of(bid)
+    if b < 0 or b_owner[b] != player or not reseed(b): return
+    let cells = footprint(b)
+    for(own_workers(player, ids)) i: start_gather(i, cells[0], 1)
+
+def cmd_rally(player:int, bid:int, ax:int, ay:int):
+    let b = b_index_of(bid)
+    if b < 0 or b_owner[b] != player: return
+    var x = clamp(ax, 0, W * TILE - 1)
+    var y = clamp(ay, 0, H * TILE - 1)
+    let cell = cell_of(x, y)
+    if res_at(cell) != 0:
+        x = (cell % W) * TILE + TILE / 2
+        y = (cell / W) * TILE + TILE / 2
+    b_rally_x[b] = x
+    b_rally_y[b] = y
+
+// World._run's prelude for unit orders (GATHER, BUILD, HELP_BUILD): the player's own units, their
+// fights forgotten (orders are never shift-queued here).
+def own_units_cleared(player:int, ids:[int]) -> [int]:
+    let now = []::int
+    for(ids) uid:
+        let i = index_of(uid)
+        if i >= 0 and u_owner[i] == player: now.push(uid)
+    for(now) uid: combat_clear(index_of(uid))
+    return now

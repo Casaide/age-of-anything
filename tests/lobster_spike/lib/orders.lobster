@@ -195,11 +195,35 @@ def start(i:int):
     u_moving[i] = 1
     u_stuck[i] = 0
     u_prog[i] = -1
-    let wx, wy = plan(i, u_x[i], u_y[i], 0)
+    var wx, wy = plan(i, u_x[i], u_y[i], 0)
+    if wx == -3: wx, wy = rect_near(i, u_x[i], u_y[i])
     u_wx[i] = if wx >= 0: wx else: u_x[i]
     u_wy[i] = if wx >= 0: wy else: u_y[i]
 
-def order_move(i:int, x:int, y:int, arrive:int, group:int, fx:int, fy:int, pace:int):
+// Field keys: ((target * 4 + kind) * LANES + lane).
+def cell_field(cell:int, near:bool, ln:int) -> int:
+    return (cell * 4 + (if near: FIELD_CELL_NEAR else: FIELD_CELL)) * LANES + ln
+
+def building_field(bid:int, near:bool, ln:int) -> int:
+    return (bid * 4 + (if near: FIELD_BUILDING_NEAR else: FIELD_BUILDING)) * LANES + ln
+
+// Head for "next to" a rect of milli-tiles (inclusive), following field `key` (World.order_reach).
+def order_reach(i:int, x0:int, y0:int, x1:int, y1:int, key:int):
+    u_tx[i] = x0 + (x1 - x0) / 2
+    u_ty[i] = y0 + (y1 - y0) / 2
+    u_reach[i] = 1
+    u_rx0[i] = x0
+    u_ry0[i] = y0
+    u_rx1[i] = x1
+    u_ry1[i] = y1
+    u_fkey[i] = key
+    u_arrive[i] = 0
+    u_group[i] = 0
+    start(i)
+
+// Head for a point (snapped to walkable ground) and stop within `arrive` (World.order_move). In a
+// group move, its own slot by the field of the group's centre (fx, fy); `near`: a near field.
+def order_move(i:int, x:int, y:int, arrive:int, group:int, fx:int, fy:int, pace:int, near:bool = false):
     let ln = lane(i)
     let px, py = snap(x, y, ln)
     var cell = cell_of(px, py)
@@ -208,7 +232,8 @@ def order_move(i:int, x:int, y:int, arrive:int, group:int, fx:int, fy:int, pace:
         cell = cell_of(qx, qy)
     u_tx[i] = px
     u_ty[i] = py
-    u_fkey[i] = (cell * 4 + FIELD_CELL) * LANES + ln
+    u_reach[i] = 0
+    u_fkey[i] = cell_field(cell, near, ln)
     u_arrive[i] = arrive
     u_group[i] = group
     u_pace[i] = pace
@@ -218,6 +243,7 @@ def order_move(i:int, x:int, y:int, arrive:int, group:int, fx:int, fy:int, pace:
 def order_direct(i:int, x:int, y:int):
     u_tx[i] = x
     u_ty[i] = y
+    u_reach[i] = 0
     u_fkey[i] = -1
     u_arrive[i] = 0
     u_group[i] = 0
@@ -231,13 +257,14 @@ def resume_attack_move(i:int):
         cx, cy = centre(u_amc[i])
     order_move(i, u_amx[i], u_amy[i], SLOT_ARRIVE, 0, cx, cy, 0)
 
-// A MOVE command (World._run: formation, then for each of the player's units its fight
-// forgotten (Combat.clear) and order_move to its slot).
+// A MOVE command (World._run: formation, then for each of the player's units its job and fight
+// forgotten (Economy.clear_task, Combat.clear) and order_move to its slot).
 def run_move(player:int, ids:[int], x:int, y:int):
     let group, fx, fy, pace = formation(player, ids, x, y)
     for(ids) uid:
         let i = index_of(uid)
         if i >= 0 and u_owner[i] == player:
+            clear_task(i)
             combat_clear(i)
             order_move(i, slot_x[i], slot_y[i], SLOT_ARRIVE, group, fx, fy, pace)
 
@@ -253,8 +280,10 @@ def run_attack_move(player:int, ids:[int], x:int, y:int):
     for(slots) i:
         if t_harmless[u_kind[i]]:
             combat_clear(i)
+            clear_task(i)
             order_move(i, slot_x[i], slot_y[i], SLOT_ARRIVE, group, fx, fy, pace)
             continue
+        clear_task(i)
         u_foe[i] = 0
         u_stance[i] = ATTACK_MOVE
         u_amx[i] = slot_x[i]

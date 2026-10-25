@@ -235,7 +235,7 @@ def apply_hits(n:int):
         if c_hurt[j] != 0:
             u_hp[j] -= c_hurt[j]
             let k = u_kind[j]
-            if u_foe[j] == 0 and (u_stance[j] == NONE or u_stance[j] == RETURN) and not t_worker[k] and not t_harmless[k] and not t_healer[k] and u_posture[j] != PASSIVE:
+            if u_foe[j] == 0 and (u_stance[j] == NONE or u_stance[j] == RETURN) and u_task[j] == T_NONE and not t_worker[k] and not t_harmless[k] and not t_healer[k] and u_posture[j] != PASSIVE:
                 engage(j, c_hurt_by[j])
     var j = n - 1
     while j >= 0:
@@ -266,7 +266,7 @@ def combat_tick():
         let stance = u_stance[i]
         let posture = u_posture[i]
         if (tick + u_id[i]) % r_acquire_every == 0:
-            let idle = stance == NONE and u_moving[i] == 0 and not t_worker[k] and posture != PASSIVE
+            let idle = stance == NONE and u_moving[i] == 0 and u_task[i] == T_NONE and not t_worker[k] and posture != PASSIVE
             let free = stance == AUTO or stance == ATTACK_MOVE
             var crowded = false
             if u_foe[i] != 0 and free:

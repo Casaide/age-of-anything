@@ -86,11 +86,108 @@ var u_gy = []::int
 var u_amx = []::int
 var u_amy = []::int
 var u_amc = []::int
+var u_task = []::int           // Economy NONE / GATHER / RETURN / BUILD
+var u_target = []::int         // resource cell (GATHER) or building id (RETURN, BUILD)
+var u_home = []::int           // resource cell to go back to after a drop-off, or -1
+var u_gspot = []::int          // its standing spot round `home`, or -1
+var u_carry_kind = []::int     // resource index + 1, or 0
+var u_carry = []::int
+var u_work = []::int           // ticks into the current gather (or build, or wait)
+var u_reach = []::int          // 0: arrive at (tx, ty); 1: next to the rect below; 2: (tx, ty), its place beside the rect
+var u_rx0 = []::int
+var u_ry0 = []::int
+var u_rx1 = []::int
+var u_ry1 = []::int
 
+// The columns in unit_fields order (the hash, the scenario file), then the rest.
 def unit_columns() -> [[int]]:
-    return [u_id, u_owner, u_kind, u_x, u_y, u_tx, u_ty, u_moving, u_arrive, u_wx, u_wy, u_group, u_stuck,
-            u_prog, u_fkey, u_speed, u_radius, u_mclass, u_pace, u_hp, u_foe, u_cooldown, u_stance, u_posture,
-            u_gx, u_gy, u_amx, u_amy, u_amc]
+    return [u_id, u_x, u_y, u_tx, u_ty, u_moving, u_arrive, u_wx, u_wy, u_group, u_stuck, u_prog, u_fkey, u_pace,
+            u_hp, u_foe, u_cooldown, u_stance, u_posture, u_gx, u_gy, u_amx, u_amy, u_amc,
+            u_task, u_target, u_home, u_gspot, u_carry_kind, u_carry, u_work, u_reach, u_rx0, u_ry0, u_rx1, u_ry1,
+            u_owner, u_kind, u_speed, u_radius, u_mclass]
+
+let UNIT_HASHED = 36           // the columns hashed (unit_fields)
+
+// Unit types' economy (World._make_type): pop, train time, cost vector, research and bonuses.
+var t_pop = []::int
+var t_train_ticks = []::int
+var t_hp = []::int
+var t_posture = []::int
+var t_carry_add = []::int
+var t_build_pct = []::int
+var t_player = []::int
+var t_age = []::int
+var t_cost = []::[int]
+
+// Buildings (buildings.gd), slots sorted by id; ids shared with units.
+var b_id = []::int
+var b_owner = []::int
+var b_kind = []::int
+var b_cx = []::int
+var b_cy = []::int
+var b_sx = []::int
+var b_sy = []::int
+var b_hp = []::int
+var b_progress = []::int
+var b_done = []::int
+var b_train = []::int
+var b_rally_x = []::int
+var b_rally_y = []::int
+var b_queue = []::[int]        // unit type indexes, head first
+
+def building_columns() -> [[int]]:
+    return [b_id, b_owner, b_kind, b_cx, b_cy, b_sx, b_sy, b_hp, b_progress, b_done, b_train, b_rally_x, b_rally_y]
+
+// Building types (Economy.load_btypes), and per player what research and the race make of them.
+var bt_size = []::int
+var bt_build_ticks = []::int
+var bt_pop = []::int
+var bt_sight = []::int
+var bt_age = []::int
+var bt_more_from_age = []::int
+var bt_water = []::int
+var bt_line = []::int
+var bt_tower = []::int
+var bt_farm = []::int
+var bt_land = []::int          // a farm: the terrain it becomes on land, in water
+var bt_wet = []::int
+var bt_workers = []::int       // a farm: how many work it at once
+var bt_special = []::int       // pens, gates, ladders, walls you stand on: not in the spike
+var bt_drop = []::[int]        // per resource: 1 if it takes it in
+var bt_reseed = []::[int]
+var bm_hp = []::[int]          // [player][type]
+var bm_pop = []::[int]
+var bm_sight = []::[int]
+var bm_food = []::[int]        // a farm's food when sown (Economy.farm_food)
+var bm_lacks = []::[int]
+var bm_trains = []::[[int]]    // [player][type]: the unit types it trains
+var bm_cost = []::[[int]]      // [player][type]: Economy.bcost
+
+var bt_name = []::string
+var bt_cost = []::[int]        // the price as listed (the bots check it for farms)
+// The next age per player, for the bots' age-up check: where it's clicked, its cost, what it needs.
+var age_building = []::int
+var age_cost = []::[int]
+var age_needs = []::[int]
+var worker_lacked = []::int
+var map_version = 0            // bumped on every cell change (SimMap.version; the bots' reach relabels)
+
+// Players' economy.
+var num_resources = 0
+var gather_spots = []::int     // per resource: 1 spots all round, 2 the four sides, 0 anywhere in reach
+var ages = []::int
+var auto_reseed = []::int
+var pop = []::int
+var pop_cap = []::int
+var stock = []::[int]          // [resource][player]
+var gathered = []::[int]
+var gather_ticks = []::[int]   // [player][resource]
+var next_id = 0
+var r_carry = 0
+var r_queue_max = 0
+var r_pop_max = 0
+var r_fog_building = 0
+var r_high_sight_building = 0
 
 def remove_unit(i:int):
     for(unit_columns()) col: col.remove(i)
@@ -134,3 +231,4 @@ var s_settle = []::int
 var s_stood = []::int
 var s_yields = []::int
 var s_role = []::int
+var s_planted = []::int

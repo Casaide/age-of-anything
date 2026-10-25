@@ -1,6 +1,10 @@
 // ------------------------------------------------------------------ movement (world.gd)
 
-// Unit i's next waypoint from (x, y) (World._plan, point moves). `stuck` is its count at the tick's start.
+// Unit i's next waypoint from (x, y) (World._plan). Point moves aim at the target if the way is
+// clear; reach moves aim at a free spot round their rect once beside it; otherwise the furthest
+// clear cell a few steps down the flow field. (-1, -1): unreachable. (-2, -2): outside a near
+// field's cutoff. (-3, -3): every spot round its rect has a worker at work in it.
+// `stuck` is its stuck count as GDScript reads it (units.stuck: live during the tick's moves).
 def plan(i:int, x:int, y:int, stuck:int) -> int, int:
     let tx = u_tx[i]
     let ty = u_ty[i]
@@ -13,18 +17,156 @@ def plan(i:int, x:int, y:int, stuck:int) -> int, int:
         let kind = (u_fkey[i] / LANES) % 4
         if kind == FIELD_CELL_NEAR or kind == FIELD_BUILDING_NEAR: return -2, -2
         return -1, -1
-    if cost == 0 or (cost <= DIRECT_COST and stuck < STUCK_LIMIT / 2 and clear_path(x, y, tx, ty, u_radius[i], lane(i))):
+    assert u_reach[i] != 2   // (places round a building under attack: not in the spike)
+    if u_reach[i] == 1:
+        if cost <= 2 * DIAGONAL:   // within two cells: make for a free spot before meeting the crowd
+            if u_task[i] == T_RETURN and u_gspot[i] >= 0: return drop_spot(i, x, y)
+            return spot(i, x, y)
+    elif cost == 0 or (cost <= DIRECT_COST and stuck < STUCK_LIMIT / 2 and clear_path(x, y, tx, ty, u_radius[i], lane(i))):
         return tx, ty
-    let best = ahead(f, cell, x, y, if stuck >= STUCK_LIMIT / 2: 1 else: LOOKAHEAD, u_radius[i], lane(i))
-    if best < 0: return tx, ty
+    var best = ahead(f, cell, x, y, if stuck >= STUCK_LIMIT / 2: 1 else: LOOKAHEAD, u_radius[i], lane(i))
+    if best < 0:
+        if u_reach[i] == 0: return tx, ty
+        best = -2 - best
     return centre(best)
 
+// The nearest free spot round unit i's rect (a body's width from it, clear of every stopped unit
+// there); the same spot while it stays free; one only an idle body stands in after free ones.
+// (-3, -3) when every spot has a worker at work in it (World._spot).
+def spot(i:int, x:int, y:int) -> int, int:
+    let r = u_radius[i]
+    let ln = lane(i)
+    let x0 = u_rx0[i]
+    let y0 = u_ry0[i]
+    let x1 = u_rx1[i] + 1
+    let y1 = u_ry1[i] + 1
+    let o = r + SPOT_GAP
+    let near = []::int
+    var cy = max((y0 - o) / TILE - 1, 0)
+    while cy < min((y1 + o) / TILE + 2, H):
+        var cx = max((x0 - o) / TILE - 1, 0)
+        while cx < min((x1 + o) / TILE + 2, W):
+            let c = cy * W + cx
+            var k = sp_start[c]
+            while k < sp_end[c]:
+                let j = sp_items[k]
+                k++
+                if j != i and j < u_x.length and u_moving[j] == 0: near.push(j)
+            cx++
+        cy++
+    let space = 2 * r + SPOT_GAP / 2
+    let wd = x1 - x0 + 2 * o
+    let ht = y1 - y0 + 2 * o
+    let perim = 2 * (wd + ht)
+    let count = max(perim / space, 4)
+    var bx = -1
+    var by = -1
+    var best_d = 1 << 62
+    let rr0 = r + REACH - SPOT_GAP / 2
+    for(count) k:
+        let along = k * perim / count
+        var px = 0
+        var py = 0
+        if along < wd:
+            px = x0 - o + along
+            py = y0 - o
+        elif along < wd + ht:
+            px = x1 + o
+            py = y0 - o + along - wd
+        elif along < 2 * wd + ht:
+            px = x1 + o - (along - wd - ht)
+            py = y1 + o
+        else:
+            px = x0 - o
+            py = y1 + o - (along - 2 * wd - ht)
+        let ex = max(max(x0 - px, 0), px - x1)
+        let ey = max(max(y0 - py, 0), py - y1)
+        if ex * ex + ey * ey > rr0 * rr0 or not walkable(px, py, ln): continue
+        px, py = off_walls(px, py, r, ln)
+        var lv = 0
+        for(near) j:
+            let rr = r + u_radius[j] - SPOT_GAP / 2
+            if dist2(px, py, u_x[j], u_y[j]) < rr * rr:
+                if u_task[j] == GATHER or u_task[j] == BUILD:
+                    lv = 2
+                    break
+                lv = 1
+        if lv == 2: continue
+        var d = dist2(x, y, px, py) + lv * (1 << 40)
+        if px == u_wx[i] and py == u_wy[i]: d -= 1 << 39
+        if d < best_d:
+            best_d = d
+            bx = px
+            by = py
+    if bx < 0: return -3, -3
+    if clear_path(x, y, bx, by, r, ln): return bx, by
+    return rect_near(i, x, y)
+
+// Where a worker carrying home makes for round its drop-off: the point of the ring a body's width
+// out nearest what it gathers, moved round the ring by a lane of its own (World._drop_spot).
+def drop_spot(i:int, x:int, y:int) -> int, int:
+    let r = u_radius[i]
+    let o = r + SPOT_GAP
+    let x0 = u_rx0[i] - o
+    let y0 = u_ry0[i] - o
+    let x1 = u_rx1[i] + o
+    let y1 = u_ry1[i] + o
+    var ax = x
+    var ay = y
+    if u_home[i] >= 0:
+        ax = (u_home[i] % W) * TILE + TILE / 2
+        ay = (u_home[i] / W) * TILE + TILE / 2
+    var px = clamp(ax, x0, x1)
+    var py = clamp(ay, y0, y1)
+    if px > x0 and px < x1 and py > y0 and py < y1:
+        let d = min(min(px - x0, x1 - px), min(py - y0, y1 - py))
+        if d == px - x0: px = x0
+        elif d == x1 - px: px = x1
+        elif d == py - y0: py = y0
+        else: py = y1
+    let wd = x1 - x0
+    let ht = y1 - y0
+    let perim = 2 * (wd + ht)
+    var along = 0
+    if py == y0: along = px - x0
+    elif px == x1: along = wd + py - y0
+    elif py == y1: along = wd + ht + x1 - px
+    else: along = 2 * wd + ht + y1 - py
+    along = along + (u_id[i] * 7 % 5 - 2) * r / 2
+    along = ((along % perim) + perim) % perim
+    var qx = 0
+    var qy = 0
+    if along < wd:
+        qx = x0 + along
+        qy = y0
+    elif along < wd + ht:
+        qx = x1
+        qy = y0 + along - wd
+    elif along < 2 * wd + ht:
+        qx = x1 - (along - wd - ht)
+        qy = y1
+    else:
+        qx = x0
+        qy = y1 - (along - 2 * wd - ht)
+    let c = (r + REACH - 50) * 707 / 1000
+    if (qx < u_rx0[i] or qx > u_rx1[i]) and (qy < u_ry0[i] or qy > u_ry1[i]):
+        qx = clamp(qx, u_rx0[i] - c, u_rx1[i] + c)
+        qy = clamp(qy, u_ry0[i] - c, u_ry1[i] + c)
+    let ln = lane(i)
+    if not walkable(qx, qy, ln) or not clear_path(x, y, qx, qy, r, ln): return spot(i, x, y)
+    return qx, qy
+
+// The nearest point of unit i's rect.
+def rect_near(i:int, x:int, y:int) -> int, int:
+    return clamp(x, u_rx0[i], u_rx1[i]), clamp(y, u_ry0[i], u_ry1[i])
+
+// How far unit i still has to go, and how much nearer it should be by the next check (World._progress).
 def progress(i:int, x:int, y:int) -> int, int:
     if u_fkey[i] >= 0:
         let n = field_index(u_fkey[i])
         if n >= 0:
             let d = field_vals[n].dist[cell_of(x, y)]
-            if d < INF and d > DIAGONAL and not (d <= DIRECT_COST and u_arrive[i] == SLOT_ARRIVE):
+            if d < INF and d > DIAGONAL and not (d <= DIRECT_COST and u_arrive[i] == SLOT_ARRIVE and u_reach[i] != 1):
                 return d, STRAIGHT_PER_CHECK
     return isqrt(dist2(x, y, u_tx[i], u_ty[i])), u_speed[i] * PROGRESS_EVERY / 4
 
@@ -169,12 +311,21 @@ def move():
             mv[i] = 1
         let x = xs[i]
         let y = ys[i]
-        let gx = u_tx[i] - x
-        let gy = u_ty[i] - y
-        if gx * gx + gy * gy <= u_arrive[i] * u_arrive[i]:
-            mv[i] = 0
-            st[i] = 0
-            continue
+        if u_reach[i] == 1:
+            let ex = max(max(u_rx0[i] - x, 0), x - u_rx1[i])
+            let ey = max(max(u_ry0[i] - y, 0), y - u_ry1[i])
+            let reach = u_radius[i] + REACH
+            if ex * ex + ey * ey <= reach * reach:
+                mv[i] = 0
+                st[i] = 0
+                continue
+        else:
+            let gx = u_tx[i] - x
+            let gy = u_ty[i] - y
+            if gx * gx + gy * gy <= u_arrive[i] * u_arrive[i]:
+                mv[i] = 0
+                st[i] = 0
+                continue
         var s = if u_pace[i] == 0: u_speed[i] else: min(u_speed[i], u_pace[i])
         let mci = u_mclass[i]
         let mc = lane_base[u_owner[i]] + mci
@@ -183,22 +334,36 @@ def move():
         if pct != 100: s = s * pct / 100
         if (tick + u_id[i]) % PROGRESS_EVERY == 0 and u_foe[i] == 0:
             let px, py = progress(i, x, y)
-            if u_prog[i] >= 0 and px > u_prog[i] - py and u_group[i] > 0 and (queued(i, x, y) or passed(i, x, y)):
+            if u_prog[i] >= 0 and px > u_prog[i] - py and u_group[i] > 0 and u_reach[i] == 0 and (queued(i, x, y) or passed(i, x, y)):
                 pass()
             elif u_prog[i] >= 0 and px > u_prog[i] - py:
-                st[i] += STUCK_LIMIT / (if u_group[i] > 0: 6 else: 2)
+                st[i] += STUCK_LIMIT / (if u_group[i] > 0 and u_reach[i] == 0: 6 else: 2)
                 if st[i] >= STUCK_LIMIT:
                     let near = u_arrive[i] * ARRIVE_SETTLE + RETURN_SLACK
-                    if dist2(x, y, u_tx[i], u_ty[i]) <= near * near: st[i] = 0
+                    if u_reach[i] != 1 and dist2(x, y, u_tx[i], u_ty[i]) <= near * near: st[i] = 0
                     mv[i] = 0
                     continue
             else:
                 st[i] = 0
             u_prog[i] = px
         if (tick + u_id[i]) % REPLAN_EVERY == 0 or dist2(x, y, wxs[i], wys[i]) <= s * s:
-            let wx, wy = plan(i, x, y, st[i])
-            assert wx != -2 and wx != -3   // (no near fields, no rects in the spike)
-            if wx < 0:
+            var wx, wy = plan(i, x, y, st[i])
+            if wx == -2:
+                // Past a near field's edge: switch to the full field, straight on meanwhile.
+                let key = u_fkey[i]
+                var base = key / LANES
+                base = base - base % 4 + (if base % 4 == FIELD_CELL_NEAR: FIELD_CELL else: FIELD_BUILDING)
+                u_fkey[i] = base * LANES + key % LANES
+                wx = u_tx[i]
+                wy = u_ty[i]
+            elif wx == -3:
+                // Nowhere free round its rect: a few looks like that and it gives the place up.
+                st[i] += STUCK_LIMIT / SPOT_BUSY
+                if st[i] >= STUCK_LIMIT:
+                    mv[i] = 0
+                    continue
+                wx, wy = rect_near(i, x, y)
+            elif wx < 0:
                 mv[i] = 0
                 st[i] = STUCK_LIMIT
                 continue
@@ -236,7 +401,8 @@ def move():
             if st[i] >= STUCK_LIMIT:
                 mv[i] = 0
             else:
-                let wx, wy = plan(i, x, y, st[i])
+                var wx, wy = plan(i, x, y, st[i])
+                if wx == -3: wx, wy = rect_near(i, x, y)
                 wxs[i] = if wx >= 0: wx else: x
                 wys[i] = if wx >= 0: wy else: y
             continue
@@ -285,13 +451,21 @@ def separate():
         s_pushy[i] = 0
         s_stood[i] = 0
         s_yields[i] = 0
-        if grp[i] > 0 and ar[i] == SLOT_ARRIVE:
+        if grp[i] > 0 and ar[i] == SLOT_ARRIVE and u_reach[i] == 0:
             if mv[i] == 0:
                 s_stood[i] = 1
                 s_yields[i] = 1
             elif u_foe[i] == 0 and dist2(xs[i], ys[i], txs[i], tys[i]) <= RETURN_YIELD * RETURN_YIELD:
                 s_yields[i] = 1
-        s_role[i] = if mv[i] == 0 and u_foe[i] == 0 and s_stood[i] == 0: 1 else: 0
+        // 1: standing idle (gives way), 2: walking to or from a job, 3: making for its own gather
+        // spot or carrying home from it (it won't stop in the crowd).
+        let task = u_task[i]
+        s_role[i] = 0
+        if mv[i] == 0 and task == T_NONE and u_foe[i] == 0 and s_stood[i] == 0: s_role[i] = 1
+        elif mv[i] == 1 and u_gspot[i] >= 0 and (task == GATHER or task == T_RETURN): s_role[i] = 3
+        elif mv[i] == 1 and task != T_NONE: s_role[i] = 2
+        // Workers standing at their job are planted: nobody moves them. (Hitting a building, too: none here.)
+        s_planted[i] = if mv[i] == 0 and (task == GATHER or task == BUILD): 1 else: 0
     for(n) u:
         let cx = sp_cell[u] % w
         let cy = sp_cell[u] / w
@@ -339,9 +513,13 @@ def separate():
                 if grp[i] == grp[j] and ((s_stood[i] == 1 and mv[j] == 1) or (s_stood[j] == 1 and mv[i] == 1)): continue
                 if s_stood[i] == 1 and s_stood[j] == 1: continue
                 if owners[i] == owners[j] and grp[i] != grp[j] and ((s_stood[i] == 1 and s_yields[j] == 1 and mv[j] == 1) or (s_stood[j] == 1 and s_yields[i] == 1 and mv[i] == 1)): continue
-                let hi = s_yields[j] == 1 and mv[i] == 1 and grp[i] > 0 and grp[i] != grp[j] and owners[i] == owners[j]
-                let hj = s_yields[i] == 1 and mv[j] == 1 and grp[j] > 0 and grp[j] != grp[i] and owners[i] == owners[j]
+                let hi = s_planted[i] == 1 or (s_role[i] >= 2 and s_role[j] == 1) or
+                         (s_yields[j] == 1 and mv[i] == 1 and grp[i] > 0 and grp[i] != grp[j] and owners[i] == owners[j])
+                let hj = s_planted[j] == 1 or (s_role[j] >= 2 and s_role[i] == 1) or
+                         (s_yields[i] == 1 and mv[j] == 1 and grp[j] > 0 and grp[j] != grp[i] and owners[i] == owners[j])
                 if hi and hj: continue
+                // One of the side's own at work and a gatherer making for its spot: the walker slips past.
+                if owners[i] == owners[j] and ((s_planted[i] == 1 and s_role[j] == 3) or (s_planted[j] == 1 and s_role[i] == 3)): continue
                 let push = (rr - d) / SEPARATION_DIV + 1
                 let px = ux * push / ONE
                 let py = uy * push / ONE
