@@ -305,3 +305,20 @@ def insert_unit(uid:int, owner:int, k:int, x:int, y:int, speed:int, radius:int, 
 
 var t_hero = []::int           // per unit type: 1 for a hero
 var t_heal = []::int           // per unit type: its eval's heal (0: not a healer's)
+var fog_seen = []::[[int]]     // per player: enemy buildings remembered as last seen (fog.lobster remember)
+var t_eval_attack = []::int     // per unit type: its eval attack with research (the counter-pick)
+var t_bonus = []::[int]         // per unit type: its eval bonus vector with research
+var t_slot = []::string         // per unit type: its roster slot
+var t_trader = []::int
+var resource_names = []::string
+var tr_names = []::string
+var start_x = []::int           // the map starts, milli-tiles
+var start_y = []::int
+var slot_names = []::string
+var slots_lacked = []::[int]    // per player: slot indexes (slot_names) its race lacks
+var trade_lacked = []::int
+
+def slot_index(slot:string) -> int:
+    for(slot_names) s, k:
+        if s == slot: return k
+    return -1

@@ -193,6 +193,8 @@ def set_type_from(k:int, l:LineStep, fxs:[Effect]):
     t_tags[k] = l.tags
     t_damage[k] = l.damage
     t_heal[k] = l.heal
+    t_eval_attack[k] = attack   // (the bots' counter-pick reads the eval with research in it)
+    t_bonus[k] = bonus
     // Tech.retype's percents and extras
     t_speed[k] = max(1, t_speed[k] * (100 + pct[0]) / 100)
     t_reload[k] = max(1, t_reload[k] * (100 + pct[1]) / 100)

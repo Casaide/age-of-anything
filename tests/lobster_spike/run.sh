@@ -15,7 +15,7 @@ mkdir -p "$out"
 echo "== $mode, $map, $((per * 2)) units, $ticks ticks"
 timeout 3600 "$GODOT" --headless --path . --script res://tests/lobster_spike/export.gd -- "$mode" "$map" "$per" "$ticks" "$file" | grep -E '^(move|fight|whole|ported)'
 "$LOBSTER" --mir tests/lobster_spike/sim.lobster -- "$file" | grep -v warning
-if [ "$mode" = eco ]; then
+if [ "$mode" = eco ] || [ "$mode" = match ]; then
 	echo "-- the same, the bots playing in Lobster:"
 	"$LOBSTER" --mir tests/lobster_spike/sim.lobster -- "$file" bots | grep -v warning
 fi

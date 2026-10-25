@@ -13,3 +13,4 @@ $run "$out" fight reed_meadow_2v2 1000 1200
 $run "$out" eco flat_test 0 4800
 $run "$out" eco reed_meadow 0 4800
 $run "$out" eco reed_meadow_2v2 0 4800
+$run "$out" match flat_test 0 18000
