@@ -49,6 +49,7 @@ def step():
     tech_tick()
     work()
     trade_tick()
+    pack_tick()
     repair_tick()
     garrison_tick()
     animals_tick()
@@ -384,6 +385,7 @@ def load_extras():
         let n = bv[o + 9]
         br_cells.push(bv.slice(o + 10, n))
         o += 10 + n
+    r_splash_friend_pct = extra("combat2")[0]
     let pens = extra("bt_pen")
     for(pens.length / 4) k:
         bt_pen_animals.push(pens[k * 4])
