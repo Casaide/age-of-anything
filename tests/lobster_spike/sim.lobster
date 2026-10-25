@@ -26,6 +26,7 @@ import .lib.map
 import .lib.economy
 import .lib.tech
 import .lib.combat
+import .lib.siege
 import .lib.eco_bot
 import .lib.garrison
 import .lib.heal
