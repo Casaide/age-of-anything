@@ -848,8 +848,7 @@ def via(bot:Bot, ids:[int], vx:int, vy:int, tx:int, ty:int):
         issue_cmd(bot.player, 1, ids, tx, ty, 0, 0)
         return
     issue_cmd(bot.player, 1, ids, vx, vy, 0, 0)
-    // (then a queued attack-move to the target: shift-queued orders aren't ported)
-    print "tick {tick}: bot {bot.player} would queue an attack-move after a waypoint (not ported)"
+    issue_cmd(bot.player, 1, ids, tx, ty, 0, 0, 1)
 
 // The enemy economy worth raiding, nearest us first (Bot._eco_targets).
 def eco_targets(bot:Bot, hx:int, hy:int) -> [int]:
@@ -1007,34 +1006,88 @@ def off_walls_army(bot:Bot, army:[int], hx:int, hy:int):
             if b >= 0 and u_foe[i] != to and (bt_wall[b_kind[b]] or bt_gate[b_kind[b]]): ids.push(u_id[i])
     if ids.length: issue_cmd(bot.player, 13, ids, to, 0, 0, 0)
 
-// ---- trade (not ported): stop where GDScript's bot would trade or train carts (Bot._trade, _trade_carts)
+// ---- trade (Bot._trade, _trade_carts, _trade_pair, _second_market)
 
 def saving_of(bot:Bot, r:int) -> int: return if r < bot.eco.goal.length: bot.eco.goal[r] else: 0
 
-def trade_guard(bot:Bot):
+// Short of food or wood with gold piled up: buy it; with no gold to spare, sell the biggest pile.
+def bot_trade(bot:Bot):
     let p = bot.player
-    let mk_k = btype_named("market")
-    var markets = 0
+    if not has_cfg("economy.trade.every") or tick < bot.next_trade or trade_lacked[p]: return
     var mk = -1
-    var towns = 0
     for(b_id.length) b:
-        if b_kind[b] == mk_k:
-            markets++
-            if mk < 0 and b_owner[b] == p and b_done[b] == 1: mk = b
-        if b_owner[b] == p and bt_name[b_kind[b]] == "town_center": towns++
-    if has_cfg("economy.trade.every") and tick >= bot.next_trade and not trade_lacked[p] and mk >= 0:
-        bot.next_trade = tick + cfg("economy.trade.every") * 20
-        let g = resource_index("gold")
-        var low = -1
-        for(["food", "wood"]) res:
-            let r = resource_index(res)
-            if stock[r][p] < cfg("economy.trade.below") and (low < 0 or stock[r][p] < stock[low][p]): low = r
-        if low >= 0:
-            assert stock[g][p] < cfg("economy.trade.above") + saving_of(bot, g)   // (it would buy: trading isn't ported)
-            for(num_resources) r:
-                assert r == g or stock[r][p] < cfg("economy.trade.above") + saving_of(bot, r)   // (it would sell)
-    if has_cfg("economy.carts.age") and ages[p] >= cfg("economy.carts.age") and tick % (cfg("economy.carts.every") * 20) == bot_phase(bot) and type_named(p, "trader") >= 0:
-        assert markets <= 1 and towns <= 1   // (a trade pair, or a second market by a second Town Center: not ported)
+        if mk < 0 and b_owner[b] == p and b_done[b] == 1 and bt_name[b_kind[b]] == "market": mk = b
+    if mk < 0: return
+    bot.next_trade = tick + cfg("economy.trade.every") * 20
+    let g = resource_index("gold")
+    var low = -1
+    for(["food", "wood"]) res:
+        let r = resource_index(res)
+        if stock[r][p] < cfg("economy.trade.below") and (low < 0 or stock[r][p] < stock[low][p]): low = r
+    if low >= 0 and stock[g][p] >= cfg("economy.trade.above") + saving_of(bot, g):
+        issue_cmd(p, CMD_TRADE, []::int, b_id[mk], low, 1, 0)
+        return
+    if low < 0: return
+    var most = -1
+    for(num_resources) r:
+        if r != g and stock[r][p] >= cfg("economy.trade.above") + saving_of(bot, r) and (most < 0 or stock[r][p] > stock[most][p]): most = r
+    if most >= 0: issue_cmd(p, CMD_TRADE, []::int, b_id[mk], most, 0, 0)
+
+// [our market, the far market]: the farthest pair our carts may trade between, or [].
+def trade_pair(p:int) -> [int]:
+    var best = []::int
+    var best_d = -1
+    for(b_id.length) a:
+        if b_owner[a] == p and b_done[a] == 1 and bt_name[b_kind[a]] == "market":
+            for(b_id.length) b:
+                if b != a and b_done[b] == 1 and bt_name[b_kind[b]] == "market" and not route_barred(p, a, b):
+                    let d = market_tiles(a, b)
+                    if d > best_d:
+                        best_d = d
+                        best = [a, b]
+    return best
+
+// One market of ours, two Town Centers: a second market by the Town Center farthest from it.
+def second_market(bot:Bot, workers:[int]):
+    let p = bot.player
+    let mk = btype_named("market")
+    let ours = []::int
+    for(b_id.length) b:
+        if b_owner[b] == p and b_kind[b] == mk: ours.push(b)
+    if ours.length != 1 or b_done[ours[0]] == 0 or tick < bot.next_build or not can_afford(p, bt_cost[mk]) or bot.saving_age: return
+    var far = -1
+    var far_d = r_trade_min + 4
+    for(b_id.length) b:
+        if b_owner[b] == p and b_done[b] == 1 and bt_name[b_kind[b]] == "town_center":
+            let d = market_tiles(ours[0], b)
+            if d >= far_d:
+                far = b
+                far_d = d
+    if far < 0: return
+    let sx, sy = house_spot(bot.eco, b_cx[far] + 1, b_cy[far] + 1, bt_size[mk])
+    if sx < 0: return
+    let builders = nearest_workers(bot, workers, sx * 1000, sy * 1000, 2)
+    if not builders.length: return
+    issue_cmd(p, CMD_BUILD, builders, mk, sx, sy, 0)
+    bot.next_build = tick + BUILD_COOLDOWN
+
+def trade_carts(bot:Bot, carts:[int], workers:[int]):
+    let p = bot.player
+    if not has_cfg("economy.carts.age") or ages[p] < cfg("economy.carts.age") or tick % (cfg("economy.carts.every") * 20) != bot_phase(bot): return
+    let k = type_named(p, "trader")
+    if k < 0: return
+    let pair = trade_pair(p)
+    if not pair.length:
+        if cfg_or("economy.carts.second_market", 0) == 1: second_market(bot, workers)
+        return
+    let idle = []::int
+    for(carts) i:
+        if u_task[i] != T_TRADE: idle.push(u_id[i])
+    if idle.length: issue_cmd(p, CMD_ROUTE, idle, b_id[pair[1]], 0, 0, 0)
+    let home = pair[0]
+    if fielded(p, k) >= cfg("economy.carts.max") or b_queue[home].length or bot.saving_age or bot.threat_ids.length: return
+    let reserve = map(num_resources) r: saving_of(bot, r)
+    if affords(p, t_cost[k], reserve): issue_cmd(p, CMD_TRAIN, []::int, b_id[home], k, 1, 0)
 
 // ---- think
 
@@ -1051,13 +1104,14 @@ def full_bot_think(bot:Bot):
     let workers = []::int
     let army = []::int
     let healers = []::int
+    let carts = []::int
     var scouts = 0
     for(u_x.length) i:
         if u_owner[i] == p:
             let k = u_kind[i]
             if t_worker[k]: workers.push(i)
             elif t_healer[k]: healers.push(i)
-            elif t_trader[k]: assert false   // (trade carts: not in the spike)
+            elif t_trader[k]: carts.push(i)
             else:
                 army.push(i)
                 if t_slot[k] == "scout": scouts++
@@ -1091,7 +1145,8 @@ def full_bot_think(bot:Bot):
     // (WallsAi.man: no walls you stand on here)
     respond(bot, tc, filter(army) i: u_id[i] != bot.scout.id and not contains(bot.resting, u_id[i]), at_work, hx, hy)
     tower_after_raid(bot, at_work)
-    trade_guard(bot)
+    bot_trade(bot)
+    trade_carts(bot, carts, at_work)
     waves(bot, field, hx, hy)
     off_walls_army(bot, field, hx, hy)
     // (_siege: no engines here; WallsAi.storm: no walls; AbilityAi: no abilities)

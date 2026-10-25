@@ -273,10 +273,9 @@ def resume_attack_move(i:int):
         cx, cy = centre(u_amc[i])
     order_move(i, u_amx[i], u_amy[i], SLOT_ARRIVE, 0, cx, cy, 0)
 
-// A MOVE command (World._run: formation, then for each of the player's units its job and fight
+// A MOVE command (World._run, after the formation: for each of the player's units its job and fight
 // forgotten (Economy.clear_task, Combat.clear) and order_move to its slot).
-def run_move(player:int, ids:[int], x:int, y:int):
-    let group, fx, fy, pace = formation(player, ids, x, y)
+def run_move(player:int, ids:[int], group:int, fx:int, fy:int, pace:int):
     for(ids) uid:
         let i = index_of(uid)
         if i >= 0 and u_owner[i] == player:
@@ -284,9 +283,8 @@ def run_move(player:int, ids:[int], x:int, y:int):
             combat_clear(i)
             order_move(i, slot_x[i], slot_y[i], SLOT_ARRIVE, group, fx, fy, pace)
 
-// An ATTACK_MOVE command (World._run: formation, then Combat.cmd_attack_move).
-def run_attack_move(player:int, ids:[int], x:int, y:int):
-    let group, fx, fy, pace = formation(player, ids, x, y)
+// An ATTACK_MOVE command (Combat.cmd_attack_move, after the formation).
+def run_attack_move(player:int, ids:[int], group:int, fx:int, fy:int, pace:int):
     let slots = []::int
     for(ids) uid:
         let i = index_of(uid)
