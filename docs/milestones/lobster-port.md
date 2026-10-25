@@ -24,6 +24,14 @@ SURRENDER, the bots' walls and abilities.
   Godot tool writes a *match pack*: the scenario (the match's starting state, as the export does now) plus every sprite
   the match needs as PNG sheets and a JSON index (anchors, facings, frames). Lobster loads the pack and draws it.
   Whether the baker moves to Lobster later is a later call.
+  Units aren't baked whole: each part is baked (8 facings for modelled parts) and `UnitView` puts them together on
+  rigs with procedural animation (bobbing, swinging legs, posed walk steps, 0.35 s attacks, tools and loads swapped
+  in). So the pack renders `UnitView` itself, per unit type, facing and step, into flipbook sheets: idle, the 8 walk
+  steps, 5 attack steps, work per tool, carrying per load, the fall. Team colour stays the baked magenta key
+  (`team_mask.gdshader`'s test), recoloured by a Lobster shader. Buildings, construction stages, gates, wall arms,
+  props and resource stages come out of `kit.bakes` as they are (image + origin). Terrain is a shader in Godot;
+  Lobster starts with per-tile colours blended (`data/terrain.json`) and the doodads, and grows from there. Iso:
+  64x32 canvas px a tile, `to_screen(x, y) = ((x - y) * 32 / 1000, (x + y) * 16 / 1000)`, 20 px a level.
 - **The game: Lobster.** Window, isometric camera, terrain, units and buildings in draw order, selection, orders,
   the command panel, minimap, fog, sound (the WAVs in `assets/audio/`), the bot on the other side.
 - **Setup (races from prompts): Godot first, Lobster later.** The first playable match comes from a pack Godot

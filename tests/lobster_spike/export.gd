@@ -31,6 +31,8 @@ const Heal := preload("res://src/sim/heal.gd")
 const Heroes := preload("res://src/sim/heroes.gd")
 const Match := preload("res://src/sim/match.gd")
 const Bot := preload("res://src/ai/bot.gd")
+const Trade := preload("res://src/sim/trade.gd")
+const Repair := preload("res://src/sim/repair.gd")
 
 const SEED := 20261010
 const PROMPTS := ["sewer rats with cheese hammers", "angry swamp frogs with reed spears"]
@@ -40,7 +42,9 @@ const ORDERS_EVERY := 20      # turns between orders (4 s)
 const CHUNK := 10             # units per spawn point
 const CMD_CODES := {Commands.MOVE: 0, Commands.ATTACK_MOVE: 1, Commands.STANCE: 2, Commands.GATHER: 3, Commands.BUILD: 4,
 	Commands.HELP_BUILD: 5, Commands.TRAIN: 6, Commands.RALLY: 7, Commands.RESEED: 8, Commands.AGE_UP: 9, Commands.RESEARCH: 10,
-	Commands.CALL_TO_ARMS: 11, Commands.BACK_TO_WORK: 12, Commands.ATTACK: 13}
+	Commands.CALL_TO_ARMS: 11, Commands.BACK_TO_WORK: 12, Commands.ATTACK: 13, Commands.STOP: 14, Commands.CANCEL: 15,
+	Commands.DROP_OFF: 16, Commands.SURRENDER: 17, Commands.AUTO_RESEED: 18, Commands.GARRISON: 19, Commands.UNGARRISON: 20,
+	Commands.REPAIR: 21, Commands.TRADE: 22, Commands.ROUTE: 23, Commands.PEN: 24, Commands.RELEASE: 25, Commands.ABILITY: 26}
 
 var mode := "move"
 var trace_tick := -1
@@ -50,7 +54,7 @@ var think_usec := 0   # the bots' thinking, both runs
 func _init() -> void:
 	var args := OS.get_cmdline_user_args()
 	mode = args[0]
-	assert(mode in ["move", "fight", "eco", "match"])
+	assert(mode in ["move", "fight", "eco", "match", "play"])
 	var map_id: String = args[1]
 	var per_player := int(args[2])
 	var ticks := int(args[3])
@@ -121,49 +125,63 @@ func _init() -> void:
 	quit(0 if first_diff < 0 else 1)
 
 
-## One command as it ran: run tick, code, player, four args, ids. The static checks (types, what a
-## building trains, what the race lacks) are worked out here; the port checks the rest as it runs.
+## One command as it ran: run tick, code, player, queued, four args, ids. The static checks (types, what
+## a building trains, what the race lacks) are worked out here; the port checks the rest as it runs.
 func _cmd_row(w: World, c: Dictionary) -> String:
 	var a: Dictionary = c.args
-	var p: int = c.player
-	var v := [0, 0, 0, 0]
-	match c.type:
-		Commands.MOVE, Commands.ATTACK_MOVE:
-			v = [a.x, a.y, 0, 0]
-		Commands.STANCE:
-			v = [Combat.POSTURES.find(a.stance), 0, 0, 0]
-		Commands.GATHER:
-			v = [a.cell, 0, 0, 0]
-		Commands.BUILD:
-			assert(int(a.get("queue", 0)) == 0 and int(a.get("along", 0)) == 0)
-			var k := Economy.btype_of(w, a.building)
-			v = [Economy.upgraded(w, p, k) if k >= 0 else -1, a.cx, a.cy, 0]
-		Commands.HELP_BUILD:
-			v = [a.target, 0, 0, 0]
-		Commands.TRAIN:
-			v = [a.building, w.type_for(p, a), 0 if Economy.lacks(w, p, a.slot) else 1, 0]
-		Commands.RALLY:
-			v = [a.building, a.x, a.y, 0]
-		Commands.RESEED:
-			v = [a.building, 0, 0, 0]
-		Commands.AGE_UP:
-			v = [a.building, 0, 0, 0]
-		Commands.RESEARCH:
-			v = [a.building, Tech.research_index(w, a.id), 0, 0]
-		Commands.CALL_TO_ARMS:
-			v = [a.building, 0, 0, 0]
-		Commands.BACK_TO_WORK:
-			v = [0, 0, 0, 0]
-		Commands.ATTACK:
-			v = [a.target, 0, 0, 0]
 	var ids: Array = a.get("ids", [])
-	return _ints([(c.turn + Commands.DELAY) * Commands.TICKS_PER_TURN, CMD_CODES[c.type], p] + v + [ids.size()] + ids)
+	return _ints([(c.turn + Commands.DELAY) * Commands.TICKS_PER_TURN, CMD_CODES[c.type], c.player, int(a.get("queue", 0))]
+		+ _args_ints(w, c.player, c.type, a) + [ids.size()] + ids)
+
+
+## A command's four ints (sim.lobster's Cmd a, b, c, d). A BUILD's type is the one asked for: the port
+## works out what research made it as the order runs (Economy.upgraded).
+static func _args_ints(w: World, p: int, type: String, a: Dictionary) -> Array:
+	match type:
+		Commands.MOVE, Commands.ATTACK_MOVE:
+			return [a.x, a.y, 0, 0]
+		Commands.STANCE:
+			return [Combat.POSTURES.find(a.stance), 0, 0, 0]
+		Commands.GATHER:
+			return [a.cell, 0, 0, 0]
+		Commands.BUILD:
+			assert(int(a.get("along", 0)) == 0)
+			return [Economy.btype_of(w, a.building), a.cx, a.cy, 0]
+		Commands.HELP_BUILD, Commands.ATTACK, Commands.REPAIR:
+			return [a.target, 0, 0, 0]
+		Commands.TRADE:
+			return [a.building, w.resources.find(String(a.resource)), int(a.buy), 0]
+		Commands.ROUTE:
+			return [a.building, 0, 0, 0]
+		Commands.TRAIN:
+			return [a.building, w.type_for(p, a), 0 if Economy.lacks(w, p, a.slot) else 1, 0]
+		Commands.RALLY:
+			return [a.building, a.x, a.y, 0]
+		Commands.RESEARCH:
+			return [a.building, Tech.research_index(w, a.id), 0, 0]
+		Commands.RESEED, Commands.AGE_UP, Commands.CALL_TO_ARMS, Commands.DROP_OFF:
+			return [a.building, 0, 0, 0]
+		Commands.CANCEL:
+			return [a.building, a.index, 0, 0]
+		Commands.AUTO_RESEED:
+			return [a.on, 0, 0, 0]
+	return [0, 0, 0, 0]
+
+
+## A unit's queued order as both sims hash it: code, four ints, then its slot if it has one (a group
+## move's queued copy: its slot, the group, the group's centre and pace).
+static func order_ints(w: World, p: int, o: Dictionary) -> Array:
+	var a: Dictionary = o.args
+	var out: Array = [CMD_CODES[o.type]] + _args_ints(w, p, o.type, a)
+	if a.has("sx"):
+		return out + [1, a.sx, a.sy, a.group, a.fx, a.fy, a.pace]
+	return out + [0, 0, 0, 0, 0, 0, 0]
 
 
 ## move and fight: both armies spawned in chunks round their starts, settled for SETTLE ticks.
 ## eco: the match start as made.
 func _setup(map_id: String, races: Array, rules: Dictionary, per_player: int) -> World:
-	if mode == "eco" or mode == "match":
+	if mode == "eco" or mode == "match" or mode == "play":
 		var e := World.new(SEED, SimMap.load_id(map_id), races, rules)
 		e.set_meta("mode", mode)
 		_check(e)
@@ -201,7 +219,7 @@ func _check(w: World) -> void:
 	assert(w.field_order.is_empty() and w.field_queue.is_empty())
 	assert(w.webs.is_empty() and w.map.lane_teams.size() == 1)
 	# Standing bridges are walkable deck the port has; only the full bot's land plans mend and break them.
-	assert(w.bridge_id.is_empty() or mode != "match", "Bridges aren't ported for the full bot")
+	assert(w.bridge_id.is_empty() or mode == "move" or mode == "fight" or mode == "eco", "Bridges aren't ported for the full bot")
 
 
 ## The k-th spawn point round a start: a square spiral, three tiles apart, on walkable ground.
@@ -280,10 +298,92 @@ func _issue_orders(w: World, rng, first: bool) -> void:
 				w.issue(p, Commands.STANCE, {"ids": some, "stance": Combat.POSTURES[rng.range_int(0, 3)]})
 
 
+## play: a person's orders on top of the bots', seeded: shift-queued moves, attack-moves, gathers and
+## houses, stops, cancels, drop-offs, the auto-reseed switch, plain moves; player 1 gives up 3/4 through.
+func _fuzz(w: World, rng, give_up: bool) -> void:
+	if give_up:
+		w.issue(1, Commands.SURRENDER, {})
+	if w.turn() % 6 != 0:
+		return
+	var p: int = rng.range_int(0, 1)
+	var mine := []
+	var workers := []
+	for i in w.units.count():
+		if w.units.owner[i] == p:
+			mine.append(w.units.id[i])
+			if w.types[w.units.kind[i]].worker:
+				workers.append(w.units.id[i])
+	var pick: int = rng.range_int(0, 4)
+	var some := mine.filter(func(uid): return uid % 5 == pick).slice(0, 5)
+	var some_workers := workers.filter(func(uid): return uid % 5 == pick).slice(0, 2)
+	var bs := w.buildings
+	var own_b := []
+	for b in bs.count():
+		if bs.owner[b] == p:
+			own_b.append(b)
+	var r: int = rng.range_int(0, 12)
+	match r:
+		0:
+			var at := _walkable_point(w.map, rng)
+			if not some.is_empty():
+				w.issue(p, Commands.MOVE, {"ids": some, "x": at.x, "y": at.y, "queue": 1})
+		1:
+			if not some.is_empty():
+				w.issue(p, Commands.ATTACK_MOVE, {"ids": some, "x": int(w.map.starts[1 - p][0]), "y": int(w.map.starts[1 - p][1]), "queue": 1})
+		2:
+			if not some.is_empty():
+				w.issue(p, Commands.STOP, {"ids": some})
+		3:
+			var queued := own_b.filter(func(b): return not bs.queue[b].is_empty())
+			if not queued.is_empty():
+				var b: int = queued[rng.range_int(0, queued.size() - 1)]
+				w.issue(p, Commands.CANCEL, {"building": bs.id[b], "index": rng.range_int(0, bs.queue[b].size() - 1)})
+		4:
+			var tc := own_b.filter(func(b): return bs.kind[b] == Economy.btype_of(w, "town_center") and bs.done[b] == 1)
+			if not tc.is_empty() and not some_workers.is_empty():
+				w.issue(p, Commands.DROP_OFF, {"ids": some_workers, "building": bs.id[tc[0]]})
+		5:
+			w.issue(p, Commands.AUTO_RESEED, {"on": rng.range_int(0, 1)})
+		6:
+			var cells: PackedInt32Array = w.map.resource_cells
+			var c: int = cells[rng.range_int(0, cells.size() - 1)]
+			if not some_workers.is_empty() and w.map.amount[c] > 0:
+				w.issue(p, Commands.GATHER, {"ids": some_workers, "cell": c, "queue": 1})
+		7:
+			var s: Array = w.map.starts[p]
+			var cx: int = int(s[0]) / 1000 + rng.range_int(-8, 8)
+			var cy: int = int(s[1]) / 1000 + rng.range_int(-8, 8)
+			if not some_workers.is_empty():
+				w.issue(p, Commands.BUILD, {"ids": some_workers, "building": "house", "cx": cx, "cy": cy, "queue": 1})
+		8:
+			var open := own_b.filter(func(b): return bs.done[b] == 0)
+			if not open.is_empty() and not some_workers.is_empty():
+				w.issue(p, Commands.HELP_BUILD, {"ids": some_workers, "target": bs.id[open[0]], "queue": 1})
+		9:
+			var at := _walkable_point(w.map, rng)
+			if not some.is_empty():
+				w.issue(p, Commands.MOVE, {"ids": some, "x": at.x, "y": at.y})
+		10:
+			var mk := own_b.filter(func(b): return w.btypes[bs.kind[b]].id == "market")
+			if not mk.is_empty():
+				w.issue(p, Commands.TRADE, {"building": bs.id[mk[0]], "resource": w.resources[rng.range_int(0, w.resources.size() - 1)], "buy": rng.range_int(0, 1)})
+		11:
+			var mks := []
+			for b in bs.count():
+				if w.btypes[bs.kind[b]].id == "market":
+					mks.append(b)
+			if not mks.is_empty() and not some.is_empty():
+				w.issue(p, Commands.ROUTE, {"ids": some, "building": bs.id[mks[rng.range_int(0, mks.size() - 1)]]})
+		12:
+			var hurt := own_b.filter(func(b): return bs.done[b] == 1 and bs.hp[b] < w.bmods[p][bs.kind[b]].hp)
+			if not hurt.is_empty() and not some_workers.is_empty():
+				w.issue(p, Commands.REPAIR, {"ids": some_workers, "target": bs.id[hurt[0]], "queue": rng.range_int(0, 1)})
+
+
 ## Plays `ticks` ticks giving orders, a hash after each; returns the time spent stepping (usec).
 func _play(w: World, ticks: int, ported_only: bool, hashes: PackedInt64Array, dump_tick: int, dump) -> int:
 	var rng = Rng.new(SEED ^ 0x5C51)
-	var bots := [EcoBot.new(0), EcoBot.new(1)] if mode == "eco" else [Bot.new(0, Bot.load_config()), Bot.new(1, Bot.load_config())] if mode == "match" else []
+	var bots := [EcoBot.new(0), EcoBot.new(1)] if mode == "eco" else [Bot.new(0, Bot.load_config()), Bot.new(1, Bot.load_config())] if mode == "match" or mode == "play" else []
 	var start := w.tick
 	var spent := 0
 	var first := true
@@ -293,6 +393,8 @@ func _play(w: World, ticks: int, ported_only: bool, hashes: PackedInt64Array, du
 			for bot in bots:
 				bot.think(w)
 			think_usec += Time.get_ticks_usec() - b0
+			if mode == "play" and w.tick % Commands.TICKS_PER_TURN == 0:
+				_fuzz(w, rng, k == ticks * 3 / 4)
 		elif w.tick % Commands.TICKS_PER_TURN == 0 and (w.turn() - start / Commands.TICKS_PER_TURN) % ORDERS_EVERY == 0:
 			_issue_orders(w, rng, first)
 			first = false
@@ -320,6 +422,8 @@ func _ported_step(w: World) -> void:
 	Economy.train(w)
 	Tech.tick(w)
 	Economy.work(w)
+	Trade.tick(w)
+	Repair.tick(w)
 	Garrison.tick(w)
 	w.spatial.build(w.units.x, w.units.y)
 	var alive := w.units.changes
@@ -348,7 +452,8 @@ static func unit_fields(u, i: int) -> Array:
 	return [u.id[i], u.x[i], u.y[i], u.tx[i], u.ty[i], u.moving[i], u.arrive[i], u.wx[i], u.wy[i], u.group[i], u.stuck[i],
 		u.prog[i], u.fkey[i], u.pace[i], u.hp[i], u.foe[i], u.cooldown[i], u.stance[i], u.posture[i], u.gx[i], u.gy[i],
 		u.amx[i], u.amy[i], u.amc[i], u.task[i], u.target[i], u.home[i], u.gspot[i], u.carry_kind[i], u.carry[i], u.work[i],
-		u.reach[i], u.rx0[i], u.ry0[i], u.rx1[i], u.ry1[i], u.patient[i]]
+		u.reach[i], u.rx0[i], u.ry0[i], u.rx1[i], u.ry1[i], u.patient[i],
+		u.route[i], u.ready[i], u.perch[i], u.wgoal[i], u.wnext[i], u.wexit[i], u.wtime[i]]
 
 
 ## The per-building fields both sims hash, in order (then its queue).
@@ -373,6 +478,10 @@ static func state_hash(w: World) -> int:
 	for i in u.count():
 		for v in unit_fields(u, i):
 			h = Fixed.mix(h, v)
+		h = Fixed.mix(h, u.orders[i].size())
+		for o in u.orders[i]:
+			for v in order_ints(w, u.owner[i], o):
+				h = Fixed.mix(h, v)
 	var b := w.buildings
 	h = Fixed.mix(h, b.count())
 	for i in b.count():
@@ -388,6 +497,8 @@ static func state_hash(w: World) -> int:
 	for k in w.hero_types:
 		h = Fixed.mix(Fixed.mix(h, w.hero_id[k]), w.hero_fell[k])
 	h = Fixed.mix(h, w.winner)
+	for v in w.market_price:
+		h = Fixed.mix(h, v)
 	h = Fixed.mix(h, w.shots.count())
 	for v in w.shots.data:
 		h = Fixed.mix(h, v)
@@ -397,6 +508,7 @@ static func state_hash(w: World) -> int:
 		h = Fixed.mix(h, w.pop_cap[p])
 		h = Fixed.mix(h, w.ages[p])
 		h = Fixed.mix(h, w.defeated[p])
+		h = Fixed.mix(h, w.auto_reseed[p])
 		for v in w.researched[p]:
 			h = Fixed.mix(h, v)
 		for r in w.resources.size():
@@ -557,7 +669,21 @@ static func _write_state(w: World, lines: PackedStringArray) -> void:
 		lines.append(str(seen.size()))
 		for id in seen:
 			lines.append(_ints([id] + Array(seen[id])))
+	_write_extra(w, lines)
 	_write_ai(lines)
+
+
+## Named int lists for the systems ported after the fixed sections (sim.lobster load_extras).
+static func _write_extra(w: World, lines: PackedStringArray) -> void:
+	var e := {}
+	e.repair = [w.repair_cfg.speed_pct, w.repair_cfg.cost_pct]
+	e.trade = [int(w.econ.trade.min_tiles), int(w.econ.trade.sq_div), int(w.econ.trade.lin_pct)]
+	e.market_price = Array(w.market_price)
+	e.t_no_heal = w.types.map(func(t): return int(t.get("no_heal", false)))
+	e.t_animal = w.types.map(func(t): return int(t.has("animal")))
+	lines.append("EXTRA %d" % e.size())
+	for name in e:
+		lines.append("%s %d %s" % [name, e[name].size(), _ints(e[name])])
 
 
 ## Ages and research (tech.gd) as data for the port: the ages (cost, time, where, what they need per
