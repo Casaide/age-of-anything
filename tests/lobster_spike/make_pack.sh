@@ -8,5 +8,5 @@ map="${1:-flat_test}"
 out="tests/lobster_spike/pack"
 GODOT="${GODOT:-/Applications/Godot.app/Contents/MacOS/Godot}"
 mkdir -p "$out"
-"$GODOT" --headless --path . --script res://tests/lobster_spike/export.gd -- match "$map" 0 0 "$PWD/$out/scenario.txt" | grep -E '^(match|ported)'
+"$GODOT" --headless --path . --script res://tests/lobster_spike/export.gd -- match "$map" 0 0 "$PWD/$out/scenario.txt" animals | grep -E '^(match|ported)'
 "$GODOT" --path . --audio-driver Dummy --always-on-top --script res://tests/lobster_spike/art_pack.gd -- "$PWD/$out" "$map" | grep -E '^(baked|pack)'

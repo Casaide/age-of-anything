@@ -66,7 +66,7 @@ def auras() -> [int]:
             let hx = u_x[h]
             let hy = u_y[h]
             for(u_x.length) j:
-                if j != h and teams[u_owner[j]] == team and dist2(hx, hy, u_x[j], u_y[j]) <= r2:
+                if j != h and u_owner[j] != gaia and teams[u_owner[j]] == team and dist2(hx, hy, u_x[j], u_y[j]) <= r2:
                     for(hero_fx[n]) e:
                         if reaches(e, t_tags[u_kind[j]]):
                             let stat = if e.kind == 0: 0 elif e.stat == 0: 1 else: 2

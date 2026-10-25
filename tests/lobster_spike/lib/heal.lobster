@@ -18,7 +18,7 @@ def no_heal(k:int) -> bool:
 
 // Can healer i heal unit j: someone else on its team, not a machine, and hurt?
 def wounded(i:int, j:int) -> bool:
-    return j != i and not no_heal(u_kind[j]) and not is_enemy(u_owner[i], u_owner[j]) and u_hp[j] < t_hp[u_kind[j]]
+    return j != i and t_animal[u_kind[j]] == 0 and not no_heal(u_kind[j]) and u_owner[j] != gaia and not is_enemy(u_owner[i], u_owner[j]) and u_hp[j] < t_hp[u_kind[j]]
 
 // The most wounded friend within `sight`: the most hit points missing less what the healers on it
 // will give, then the nearest, then the lowest id.

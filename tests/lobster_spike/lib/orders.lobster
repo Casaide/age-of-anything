@@ -310,7 +310,7 @@ def run_attack_move(player:int, ids:[int], group:int, fx:int, fy:int, pace:int):
 def run_stance(player:int, ids:[int], posture:int):
     for(ids) uid:
         let i = index_of(uid)
-        if i >= 0 and u_owner[i] == player:
+        if i >= 0 and u_owner[i] == player and t_animal[u_kind[i]] == 0:   // (animals have no stance)
             u_posture[i] = posture
             if u_stance[i] == AUTO and posture == PASSIVE:
                 u_foe[i] = 0

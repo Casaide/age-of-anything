@@ -20,8 +20,6 @@ var r_repair_cost = 0
 var r_trade_min = 0
 var r_trade_sq_div = 1
 var r_trade_lin_pct = 0
-var t_no_heal = []::int
-var t_animal = []::int
 
 def is_market(b:int) -> bool: return b_done[b] == 1 and bt_name[b_kind[b]] == "market"
 

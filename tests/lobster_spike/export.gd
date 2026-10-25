@@ -33,6 +33,7 @@ const Match := preload("res://src/sim/match.gd")
 const Bot := preload("res://src/ai/bot.gd")
 const Trade := preload("res://src/sim/trade.gd")
 const Repair := preload("res://src/sim/repair.gd")
+const Animals := preload("res://src/sim/animals.gd")
 
 const SEED := 20261010
 const PROMPTS := ["sewer rats with cheese hammers", "angry swamp frogs with reed spears"]
@@ -66,7 +67,7 @@ func _init() -> void:
 		if a.begins_with("trace:"):
 			trace_tick = int(a.substr(6))
 	var rules = DataLib.load_json("res://data/rules/default.json")
-	rules.animals = false
+	rules.animals = "animals" in args   # (off unless asked: the bots' herding and hunting come later)
 	if mode == "move" or mode == "fight":
 		rules.economy.start.buildings = []
 		rules.economy.start.workers = 0
@@ -113,7 +114,7 @@ func _init() -> void:
 		if full_hashes[k] != lite_hashes[k]:
 			first_diff = k
 			break
-	var left := [0, 0]
+	var left := [0, 0, 0]   # (and gaia's animals)
 	for i in full.units.count():
 		left[full.units.owner[i]] += 1
 	print("%s on %s, %d units, %d ticks, %d orders; at the end: units %d v %d, buildings %d, gathered %s" % [mode, map_id, start_units, ticks,
@@ -159,7 +160,7 @@ static func _args_ints(w: World, p: int, type: String, a: Dictionary) -> Array:
 			return [a.building, a.x, a.y, 0]
 		Commands.RESEARCH:
 			return [a.building, Tech.research_index(w, a.id), 0, 0]
-		Commands.RESEED, Commands.AGE_UP, Commands.CALL_TO_ARMS, Commands.DROP_OFF:
+		Commands.RESEED, Commands.AGE_UP, Commands.CALL_TO_ARMS, Commands.DROP_OFF, Commands.PEN, Commands.RELEASE:
 			return [a.building, 0, 0, 0]
 		Commands.CANCEL:
 			return [a.building, a.index, 0, 0]
@@ -218,8 +219,6 @@ func _check(w: World) -> void:
 			"The spike's units are plain soldiers and workers")
 	assert(w.field_order.is_empty() and w.field_queue.is_empty())
 	assert(w.webs.is_empty() and w.map.lane_teams.size() == 1)
-	# Standing bridges are walkable deck the port has; only the full bot's land plans mend and break them.
-	assert(w.bridge_id.is_empty() or mode == "move" or mode == "fight" or mode == "eco", "Bridges aren't ported for the full bot")
 
 
 ## The k-th spawn point round a start: a square spiral, three tiles apart, on walkable ground.
@@ -425,6 +424,7 @@ func _ported_step(w: World) -> void:
 	Trade.tick(w)
 	Repair.tick(w)
 	Garrison.tick(w)
+	Animals.tick(w)
 	w.spatial.build(w.units.x, w.units.y)
 	var alive := w.units.changes
 	Heal.tick(w)
@@ -499,6 +499,9 @@ static func state_hash(w: World) -> int:
 	h = Fixed.mix(h, w.winner)
 	for v in w.market_price:
 		h = Fixed.mix(h, v)
+	for k in w.bridge_id.size():
+		for v in [w.bridge_id[k], w.bridge_hp[k], w.bridge_up[k], w.bridge_work[k], w.bridge_payer[k]]:
+			h = Fixed.mix(h, v)
 	h = Fixed.mix(h, w.shots.count())
 	for v in w.shots.data:
 		h = Fixed.mix(h, v)
@@ -622,7 +625,7 @@ static func _write_state(w: World, lines: PackedStringArray) -> void:
 		var land: int = m.terrain_ids.find(t.becomes.get("land", "")) if farm else -1
 		var water: int = m.terrain_ids.find(t.becomes.get("water", "")) if farm else -1
 		lines.append(_ints([t.size, t.build_ticks, t.pop, t.sight, t.age, t.more_from_age, int(t.water), int(t.line), int(tower),
-			int(farm), land, water, t.workers, int(not t.pen.is_empty() or t.gate or t.ladder or t.walkway > 0 or t.blocks_flyers)]))
+			int(farm), land, water, t.workers, int(t.gate or t.ladder or t.walkway > 0 or t.blocks_flyers)]))
 		lines.append(t.id)
 		var at: Dictionary = t.attack
 		lines.append(_ints([int(not at.is_empty()), _class(w, at.get("damage", "pierce")), int(at.get("attack", 0)), int(at.get("range", 0)),
@@ -681,6 +684,23 @@ static func _write_extra(w: World, lines: PackedStringArray) -> void:
 	e.market_price = Array(w.market_price)
 	e.t_no_heal = w.types.map(func(t): return int(t.get("no_heal", false)))
 	e.t_animal = w.types.map(func(t): return int(t.has("animal")))
+	e.gaia = [w.lane_base[w.gaia], w.claim_tiles]
+	e.t_behave = w.types.map(func(t): return ["", "flee", "fight", "herd"].find(t.get("behaviour", "")))
+	e.t_flee = w.types.map(func(t): return int(t.get("flee", 0)))
+	e.t_food = w.types.map(func(t): return int(t.get("food", 0)) if t.has("animal") else 0)
+	var pens := []
+	for t in w.btypes:
+		var p: Dictionary = t.pen
+		pens.append_array([int(p.animals), int(p.food), int(p.food_ticks), int(p.breed_ticks)] if not p.is_empty() else [0, 0, 1, 1])
+	e.bt_pen = pens
+	var bc: Dictionary = w.bridge_cfg
+	e.bridge_cfg = [int(bc.hp), int(bc.ticks)] + Array(bc.cost) + Array(bc.arm)
+	var brs := []
+	for k in w.bridge_id.size():
+		var r: Rect2i = w.bridge_rect[k]
+		brs.append_array([w.bridge_id[k], r.position.x, r.position.y, r.end.x, r.end.y, w.bridge_hp[k], w.bridge_up[k], w.bridge_work[k], w.bridge_payer[k], w.bridge_cells[k].size()])
+		brs.append_array(Array(w.bridge_cells[k]))
+	e.bridges = brs
 	lines.append("EXTRA %d" % e.size())
 	for name in e:
 		lines.append("%s %d %s" % [name, e[name].size(), _ints(e[name])])

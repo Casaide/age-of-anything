@@ -37,7 +37,7 @@ def forget_dead(s:Scout):
 def remember_soldiers(s:Scout, p:int):
     for(u_x.length) i:
         let k = u_kind[i]
-        if is_foe(p, u_owner[i]) and fog_visible(p, u_x[i], u_y[i]) and not t_worker[k] and not t_healer[k] and not t_trader[k]:
+        if is_foe(p, u_owner[i]) and fog_visible(p, u_x[i], u_y[i]) and not t_worker[k] and t_animal[k] == 0 and not t_healer[k] and not t_trader[k]:
             let found, at = binary_search(s.seen_ids, u_id[i])
             if found:
                 s.seen_kind[at] = k
@@ -192,7 +192,7 @@ def scout_think(s:Scout, bot:Bot, workers:[int], army:[int], hx:int, hy:int):
     var best = -1
     for(army) i:
         let k = u_kind[i]
-        if u_foe[i] == 0 and u_moving[i] == 0 and dist2(hx, hy, u_x[i], u_y[i]) <= 400 * 1000000:
+        if u_foe[i] == 0 and u_moving[i] == 0 and dist2(hx, hy, u_x[i], u_y[i]) <= 400 * 1000000 and t_animal[k] == 0:
             if not (has_scout and t_slot[k] != "scout"):
                 if best < 0 or t_speed[k] > t_speed[u_kind[best]]: best = i
     scout_start(s, bot, best, false, hx, hy)
