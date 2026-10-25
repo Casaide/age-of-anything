@@ -44,6 +44,7 @@ const CMD_CODES := {Commands.MOVE: 0, Commands.ATTACK_MOVE: 1, Commands.STANCE: 
 
 var mode := "move"
 var trace_tick := -1
+var think_usec := 0   # the bots' thinking, both runs
 
 
 func _init() -> void:
@@ -114,6 +115,7 @@ func _init() -> void:
 	print("%s on %s, %d units, %d ticks, %d orders; at the end: units %d v %d, buildings %d, gathered %s" % [mode, map_id, start_units, ticks,
 		full.history.size(), left[0], left[1], full.buildings.count(), str(full.gathered)])
 	print("whole step:   %.3f ms a tick" % (t_full / 1000.0 / ticks))
+	print("bots thinking: %.3f ms a tick" % (think_usec / 2000.0 / ticks))
 	print("ported step:  %.3f ms a tick" % (t_lite / 1000.0 / ticks))
 	print("ported step gives the whole step's hashes: %s%s" % [first_diff < 0, "" if first_diff < 0 else " (first diff at tick index %d)" % first_diff])
 	quit(0 if first_diff < 0 else 1)
@@ -163,9 +165,11 @@ func _cmd_row(w: World, c: Dictionary) -> String:
 func _setup(map_id: String, races: Array, rules: Dictionary, per_player: int) -> World:
 	if mode == "eco" or mode == "match":
 		var e := World.new(SEED, SimMap.load_id(map_id), races, rules)
+		e.set_meta("mode", mode)
 		_check(e)
 		return e
 	var w := World.new(SEED, SimMap.load_id(map_id), races, rules, [0, 0] if mode == "move" else [0, 1])
+	w.set_meta("mode", mode)
 	var per_slot := per_player / SLOTS.size()
 	for p in races.size():
 		var s: Array = w.map.starts[p]
@@ -283,8 +287,10 @@ func _play(w: World, ticks: int, ported_only: bool, hashes: PackedInt64Array, du
 	var first := true
 	for k in ticks:
 		if not bots.is_empty():
+			var b0 := Time.get_ticks_usec()
 			for bot in bots:
 				bot.think(w)
+			think_usec += Time.get_ticks_usec() - b0
 		elif w.tick % Commands.TICKS_PER_TURN == 0 and (w.turn() - start / Commands.TICKS_PER_TURN) % ORDERS_EVERY == 0:
 			_issue_orders(w, rng, first)
 			first = false
@@ -439,6 +445,7 @@ static func _write_state(w: World, lines: PackedStringArray) -> void:
 	var m := w.map
 	var n := m.width * m.height
 	lines.append("AOWSPIKE 3")
+	lines.append("MODE " + (w.get_meta("mode") if w.has_meta("mode") else "eco"))
 	lines.append("MAP %d %d %d %d" % [m.width, m.height, m.walks.size(), int(m.has_heights)])
 	for k in m.walks.size():
 		lines.append(_ints(m.walks[k]))
@@ -460,6 +467,18 @@ static func _write_state(w: World, lines: PackedStringArray) -> void:
 	lines.append(_ints(Array(w.lane_base).slice(0, np)))
 	lines.append(_ints(Array(w.teams).slice(0, np)))
 	lines.append(_ints(w.gather_spots))
+	# Names and places the bots read: resources, terrains, the map's starts, each race's lacks.
+	lines.append(" ".join(w.resources))
+	lines.append(" ".join(m.terrain_ids))
+	lines.append(_ints([m.starts.size()] + m.starts.reduce(func(acc, s): return acc + [int(s[0]), int(s[1])], [])))
+	var slots := []
+	for t in w.types:
+		if not slots.has(t.slot):
+			slots.append(t.slot)
+	lines.append("%d %s" % [slots.size(), " ".join(slots)])
+	for p in np:
+		var lacked: Array = range(slots.size()).filter(func(s): return Economy.lacks(w, p, slots[s]))
+		lines.append(_ints([int(Economy.lacks(w, p, "trade")), lacked.size()] + lacked))
 	var c: Dictionary = w.combat
 	var e: Dictionary = w.econ
 	lines.append("RULES " + _ints([c.min_damage, c.acquire_every, c.defend_sight, c.counter_pull, c.leash, c.sight, c.shot_lead_pct,
@@ -475,6 +494,7 @@ static func _write_state(w: World, lines: PackedStringArray) -> void:
 		lines.append(_ints([t.speed, t.radius, _role(t), t.form_gap, int(t.worker), int(t.get("harmless", false)), int(t.healer),
 			int(t.ranged), t.reach, t.reload, t.shot_speed, t.get("min_damage", 0), int(t.eval.get("sight", 0)) + int(t.sight_add),
 			t.mclass, t.pop, t.train_ticks, t.hp, t.posture, int(t.carry_add), int(t.build_pct), t.player, int(t.line[0].age)]))
+		lines.append("%s %d" % [t.slot, int(t.get("trader", false))])
 		lines.append(_ints(t.cost))
 		lines.append(_ints(t.atk))
 		lines.append(_ints(t.arm))
@@ -530,6 +550,12 @@ static func _write_state(w: World, lines: PackedStringArray) -> void:
 	for p in np:
 		lines.append(_ints(w.fog[p]))
 		lines.append(_ints([w.fog_lit[p].size()] + Array(w.fog_lit[p])))
+		# what it remembers of enemy buildings (fog_seen, in its order): id, kind owner cx cy sx done progress age sy diag
+		var seen: Dictionary = w.fog_seen[p]
+		lines.append(str(seen.size()))
+		for id in seen:
+			lines.append(_ints([id] + Array(seen[id])))
+	_write_ai(lines)
 
 
 ## Ages and research (tech.gd) as data for the port: the ages (cost, time, where, what they need per
@@ -666,6 +692,44 @@ static func _write_tech(w: World, lines: PackedStringArray) -> void:
 	# Winning and losing (match.gd).
 	lines.append("MATCH")
 	lines.append(_ints([w.winner] + Array(w.started_with_town) + Array(w.defeated).slice(0, np)))
+
+
+## The full bot's config (data/ai.json with its level applied, as Bot.new leaves it): numbers as
+## "path value", string lists as "path n s...", the build order and waves as rows, the level's fields.
+static func _write_ai(lines: PackedStringArray) -> void:
+	var bot = Bot.new(0, Bot.load_config())
+	var nums := PackedStringArray()
+	var strs := PackedStringArray()
+	var walk := func(walk_fn: Callable, v, path: String) -> void:
+		if path.ends_with("note") or path.contains("_doc") or path == "build_order" or path == "military.waves" or path == "levels":
+			return
+		match typeof(v):
+			TYPE_DICTIONARY:
+				var ks: Array = v.keys()
+				ks.sort()
+				for k in ks:
+					walk_fn.call(walk_fn, v[k], k if path == "" else path + "." + str(k))
+			TYPE_ARRAY:
+				strs.append("%s %d %s" % [path, v.size(), " ".join(v.map(func(s): return str(s)))])
+			TYPE_INT, TYPE_FLOAT, TYPE_BOOL:
+				nums.append("%s %d" % [path, int(v)])
+			TYPE_STRING:
+				strs.append("%s 1 %s" % [path, v])
+	walk.call(walk, bot.cfg, "")
+	lines.append("AI %d %d" % [nums.size(), strs.size()])
+	lines.append_array(nums)
+	lines.append_array(strs)
+	var order: Array = bot.cfg.build_order
+	lines.append("BUILD_ORDER %d" % order.size())
+	for s in order:
+		lines.append("%s %s %s" % [s.building, s.get("near", "-"), _ints([s.get("age", 1), s.workers, s.get("count", -1), s.get("builders", 2), s.get("away", 0),
+			s.get("own_side", 0), s.get("guard", 0), s.get("save", 0), s.get("push", -1), s.get("expand_workers", -1)])])
+	var waves: Array = bot.cfg.military.waves
+	lines.append("WAVES %d" % waves.size())
+	for wv in waves:
+		lines.append(_ints([wv.at, wv.min_army]))
+	lines.append("LEVEL " + _ints([bot.army_ratio, bot.wave_pct, int(bot.build_up), bot.age3_workers, bot.towers, bot.all_in, bot.shelter_pop,
+		int(bot.guard_crossing), bot.raids, bot.raid_from]))
 
 
 ## World._form_role, by type.

@@ -70,11 +70,40 @@ def fog_update_team(team:[int]):
             stamp(g, lit, b_cx[b] + b_sx[b] / 2, b_cy[b] + b_sy[b] / 2, r + max(b_sx[b], b_sy[b]) / 2, bt_over_trees[k] != 0)
     fog[p] = g
     fog_lit[p] = lit
+    remember(p)
     var k = 1
     while k < team.length:
         fog[team[k]] = copy(g)
         fog_lit[team[k]] = lit
+        fog_seen[team[k]] = map(fog_seen[p]) s: copy(s)
         k++
+
+// What a player remembers of enemy buildings it has seen (fog_seen): per player, in the order first
+// seen, [id, kind, owner, cx, cy, sx, done, progress, age, sy, diag] as last seen; one whose spot is
+// seen empty is forgotten (Fog._remember; the remembered ground isn't ported: no bot reads it).
+
+def sees_rect(p:int, cx:int, cy:int, sx:int, sy:int) -> bool:
+    let g = fog[p]
+    var y = cy
+    while y < cy + sy:
+        var x = cx
+        while x < cx + sx:
+            if g[y * W + x] == VISIBLE: return true
+            x++
+        y++
+    return false
+
+def remember(p:int):
+    let seen = fog_seen[p]
+    for(b_id.length) b:
+        if teams[b_owner[b]] != teams[p] and sees_rect(p, b_cx[b], b_cy[b], b_sx[b], b_sy[b]):
+            let rec = [b_id[b], b_kind[b], b_owner[b], b_cx[b], b_cy[b], b_sx[b], b_done[b], b_progress[b], ages[b_owner[b]], b_sy[b], 0]
+            var at = -1
+            for(seen) s, n:
+                if s[0] == b_id[b]: at = n
+            if at >= 0: seen[at] = rec
+            else: seen.push(rec)
+    fog_seen[p] = filter(seen) s: not (b_index_of(s[0]) < 0 and sees_rect(p, s[3], s[4], s[5], s[9]))
 
 // Sight circles with trees in them, per centre, radius and over_trees, until a tree is felled.
 let sight_cache = dictionary<int, [int]>(4001)
