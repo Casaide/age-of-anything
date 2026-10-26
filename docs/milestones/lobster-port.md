@@ -225,6 +225,11 @@ SURRENDER, the bots' walls and abilities.
         panel, unit card, portraits as busts, captioned button groups with costs and hover cards, the training
         well, the minimap's diamond and frame; Godot's icons as PNGs (`icons.sh`). Not yet: the panel's iron and
         leather materials (the UI shader paints wood, metal and lacquer), the pad's compact panel.
+  - [x] Checked at the end (2026-10-26): the parity suite (`all.sh`): all 18 scenarios, 26 runs, every tick's
+        hash the same as Godot's (moves, fights to 2000 units, sieges, walls, economies, a person's orders, five whole
+        bot matches, the bots in Lobster too). A whole match with no pack (`play.sh none lobby ... watch tillend`):
+        the races balanced by fights at the start, 40 minutes of bot play to age 3 without a fault (`46-...`; no side
+        had won by then).
   - [x] Selection rings on the ground (Dominic, 2026-10-26: "selection circles arent behind anything. They're on
         top"): drawn in the sorted world under everything standing (`41-...`). Test runs are silent (Dominic: "stop
         any future testing having sounds"): the game mutes with shot:, selftest, padtest, labtest, reload:, or `mute`.
