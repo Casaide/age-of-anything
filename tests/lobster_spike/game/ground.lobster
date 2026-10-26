@@ -284,6 +284,7 @@ SHADER cliff
 """
 
 var mask_tex:resource<texture>? = nil
+var mask_bytes = []::int          // the masks as Godot's image holds them (RGBA bytes, MASK_K a tile)
 var paths_tex:resource<texture>? = nil
 var arc_tex:resource<texture>? = nil
 var wear_tex:resource<texture>? = nil
@@ -330,6 +331,7 @@ def build_masks():
             let y1 = min(y + 1, h - 1)
             for(w) x:
                 for(4) ch: a[(y * w + x) * 4 + ch] = (b[(y0 * w + x) * 4 + ch] + b[(y * w + x) * 4 + ch] + b[(y1 * w + x) * 4 + ch]) / 3.0
+    mask_bytes = map(w * h * 4) i: clamp(int(a[i] * 255.0 + 0.5), 0, 255)
     let rows = map(h) y: map(w) x: float4 { byte_of(a[(y * w + x) * 4]), byte_of(a[(y * w + x) * 4 + 1]), byte_of(a[(y * w + x) * 4 + 2]), byte_of(a[(y * w + x) * 4 + 3]) }
     mask_tex = gl.create_texture(rows, texture_format_clamp | texture_format_nomipmap)
     let zero = map(4): map(4): float4_0

@@ -65,6 +65,7 @@ import .gen.swap
 import .game.audio
 import .game.pack
 import .game.ground
+import .game.doodads
 
 let args = command_line_arguments()
 // Options after the two paths: watch (the bot plays you too), speed:<x>, shot:<png> with at:<seconds>
@@ -588,7 +589,43 @@ def collect_buildings():
                     add(frame_index(name), at.x, at.y - up, if flat: -100000.0 + at.y else: at.y, col)
                     if look.front != "-": add(frame_index(look.front), at.x, at.y - up, at.y + 2.0, col)
 
+var map_name_now = "reed_meadow"
+
+// No stones, flowers or shore reeds by resources, buildings, bridges or the starts (sim_debug._keep_clear).
+def keep_clear(t:float2) -> bool:
+    var y = int(t.y) - 1
+    while y < int(t.y) + 2:
+        var x = int(t.x) - 1
+        while x < int(t.x) + 2:
+            if x >= 0 and y >= 0 and x < W and y < H:
+                let c = y * W + x
+                if amount[c] > 0 or occupied[c] != 0: return true
+                for(br_cells) cells:
+                    if contains(cells, c): return true
+            x++
+        y++
+    for(start_x) sx, n:
+        let dx = t.x - float(sx) / 1000.0
+        let dy = t.y - float(start_y[n]) / 1000.0
+        if sqrt(dx * dx + dy * dy) < 4.0: return true
+    return false
+
+def collect_doodads():
+    for(doodad_list) d:
+        let c = clamp(int(d.t.y), 0, H - 1) * W + clamp(int(d.t.x), 0, W - 1)
+        if fog[ME][c] != 0:
+            let f = frame_index(d.name)
+            if f >= 0:
+                let at = iso(d.t.x * 1000.0, d.t.y * 1000.0)
+                let ay = at.y - lift_at(d.t.x * 1000.0, d.t.y * 1000.0) * 1.5
+                let shade = if fog[ME][c] == 2: 1.0 else: 0.6
+                if d.scale == 1.0: add(f, at.x, ay, at.y, float4 { 1.0, 1.0, 1.0, shade })
+                else:
+                    let fr = frames[f]
+                    add_xf(f, [d.scale, 0.0, 0.0, d.scale, at.x - d.scale * float(fr.ox), ay - d.scale * float(fr.oy)], at.y, float4 { 1.0, 1.0, 1.0, shade })
+
 def collect_props():
+    collect_doodads()
     for(W * H) c:
         if fog[ME][c] != 0 and (tr_res[terrain[c]] != 0 or species[c] != "-"):
             let tname = tr_names[terrain[c]]
@@ -620,6 +657,7 @@ def draw_world(alpha:float):
         if not relief_built:
             build_relief()
             relief_built = true
+            build_doodads(map_name_now, doodads) t: keep_clear(t)
         mask_version = map_version
         mask_tick = tick
     let ws = float(gl.window_size())
@@ -1373,6 +1411,7 @@ if args[1] == "-" or args[1] == "lobby":   // the races from their prompts and t
     let map_id = if args[1] == "lobby": lobby_map elif pack_map != "": pack_map else: "reed_meadow"
     setup_world(20261010, map_id, races, rules, [])
     load_species(map_id)
+    map_name_now = map_id
     if pack_library: race_facts(races)
     print "races in {(t_setup - t_gen) * 1000.0} ms, the start in {(seconds_elapsed() - t_setup) * 1000.0} ms"
 else:
