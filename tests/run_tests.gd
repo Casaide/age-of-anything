@@ -797,7 +797,7 @@ func _test_composer(lib, gen, rules: Dictionary) -> void:
 ## it moves (view only).
 func _test_cat_poses(gen, rules: Dictionary) -> void:
 	var lib = DataLib.new()
-	var u: Dictionary = _unit(gen.generate("sewer rats with crossbows", rules), "large")
+	var u: Dictionary = _unit(gen.generate("sewer rats", rules), "large")   # (rats ride their cat 85% of the time: a prompt whose draw is the cat; "with crossbows" drew a beetle once banners left the candidates)
 	check(u.recipe.has("mount") and u.recipe.mount.creature == "cat", "rats ride cats (D-124)")
 	var capy: Dictionary = _unit(gen.generate("sewer rats riding capybaras", rules), "large")
 	check(capy.recipe.has("mount") and capy.recipe.mount.creature == "capybara", "a capybara when asked for")

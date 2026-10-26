@@ -656,7 +656,7 @@ func _check_engine(label: String, r: Dictionary) -> void:
 		if not name.begins_with("crew"):
 			continue
 		var at: Vector3 = es.sockets[name]
-		if name.ends_with("_top"):
+		if name.ends_with("_top") or name.ends_with("_box"):   # (_box: in a walled howdah, its legs not drawn, set into the floor)
 			# Something to stand on just under the feet (a deck, a saddle, a basket's floor); not
 			# floating over it (how deep a crew member stands in a basket is the next check's business).
 			var c := Geom.unkey(Geom.cell(at))

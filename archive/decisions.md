@@ -1207,3 +1207,19 @@ the dark outline stay (they are what keeps it a classic RTS). The human body is 
 build (about 5.5 heads, broad shoulders), its gear refitted; rats, frogs and the other creatures follow in their own
 concept rounds. Team colour moves toward a smaller region over natural colours as the pieces are remade. Milestone 23
 (`docs/milestones/m23-fidelity.md`).
+
+**D-174, 2026-10-27: Banners only when a prompt asks for them.** Dominic: "remove the banners, unsure why we have them
+on so many units". `banner.team` (+1 attack, a back part any unit with a free back took) is `only_if: ["banner"]` now:
+a race gets it when its prompt says banner(s) or flag(s) (lexicon). Two unique units keep one by design (the Big Cheese,
+the Aztec obsidian guard: data/uniques.json). Races generated from the same prompt change (their keys too).
+
+**D-175, 2026-10-27: The human tunic is wool in the culture's colour; the team colour moves to a sash, the hem, shields and
+crests.** Claude's call (milestone 23 step 2b, after Dominic: the clothes "feel cheap still", and his liking for the
+F1 figure: a red tunic, the team on the shield and crest); open to Dominic. The culture's cloth colour is mixed into
+undyed wool (45%) so the team colour stays the brightest thing on a unit: in a battle the Roman red tunic read as the
+red team's. Supersedes D-055's team-coloured tunic for humans.
+
+**D-176, 2026-10-27: War elephants carry their riders in a walled howdah, from the hips up.** Dominic, on two heroic
+humans standing on an open platform: "the elephant with units standing makes no sense now". Crew on a howdah's "_box"
+sockets aren't drawn below the hips (their legs hidden; the 3D check leaves them out too), set down so the tunic's hem
+meets the walls' top (12 over the floor).

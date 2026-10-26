@@ -238,9 +238,10 @@ func sit_point(r: Dictionary, lib) -> Variant:
 ## A siege engine (milestone 13, D-118/D-119): the engine is one baked part in its facings (the
 ## recipe's body), and its crew are the race's own workers (the recipe's `crew`), each a UnitView of
 ## its own on the engine's crew sockets for this facing. A socket's name says how its crew member
-## stands: "crew<n>_f<k>[_reach|_raise][_in|_top]": turned k facings from the engine, the arm hold
-## it keeps, drawn behind the engine ("in": inside its frame) or over it ("top": riding); else by
-## how near the camera the socket is. Crew walk while the engine moves (not those riding on top).
+## stands: "crew<n>_f<k>[_reach|_raise][_in|_top|_box]": turned k facings from the engine, the arm hold
+## it keeps, drawn behind the engine ("in": inside its frame) or over it ("top": riding; "box": riding in a
+## walled howdah, seen from the hips up: its legs not drawn, Dominic on the heroic humans standing on an open
+## platform); else by how near the camera the socket is. Crew walk while the engine moves (not those riding).
 var crew: Array = []      # [{view, top}]
 var rest_hold := "low"    # the hold a unit goes back to between blows and jobs (a crew member's own)
 ## Up on a wall's walkway (or down from it): the shadow shrinks to the walk, so it doesn't stick out
@@ -298,7 +299,7 @@ func _build_engine(r: Dictionary, lib, team: Color, colours: Dictionary, speed: 
 				hold = t
 			elif t == "in":
 				z = -1.0
-			elif t == "top":
+			elif t == "top" or t == "box":
 				z = 1.0
 				top = true
 		var v = get_script().new()
@@ -311,6 +312,9 @@ func _build_engine(r: Dictionary, lib, team: Color, colours: Dictionary, speed: 
 			v.set_hold(hold)
 		v.phase = 0.4 if hauls else 0.7 * n
 		bob.add_child(v)
+		if name.ends_with("_box"):
+			for leg in v.legs:
+				leg.node.visible = false
 		crew.append({"view": v, "top": top, "socket": name})
 	if head_node:
 		# A beast's head among its riders by depth: over those behind it (a heron's neck in front of its
@@ -342,7 +346,7 @@ static func engine_sockets(r: Dictionary, sockets: Dictionary) -> Array:
 	# A "_wide" socket stands in for its namesake ("crew0_f0_reach_in", "crew2_f0_reach"; a war beast's rider
 	# "crew0_f0_top", D-129) for such a crew.
 	# A "_narrow" one is only for a crew that fits a tight file (the great sling's haulers): such a crew leaves it out.
-	var out: Array = sockets.keys().filter(func(s): return s.begins_with("crew") and not (wide and s.ends_with("_narrow")) and (s.ends_with("_wide") == wide or (wide and not sockets.has(s.trim_suffix("_in").trim_suffix("_top") + "_wide") and not s.ends_with("_in"))))
+	var out: Array = sockets.keys().filter(func(s): return s.begins_with("crew") and not (wide and s.ends_with("_narrow")) and (s.ends_with("_wide") == wide or (wide and not sockets.has(s.trim_suffix("_in").trim_suffix("_top").trim_suffix("_box") + "_wide") and not s.ends_with("_in"))))
 	if r.has("haul"):
 		out += sockets.keys().filter(func(s): return s.begins_with("haul"))
 	return out
@@ -825,7 +829,7 @@ func _attach(lib, rig: Dictionary, slot: String, part_id: String, colours: Dicti
 		node.scale = rig.torso_scale
 	elif slot == "head_gear":
 		node.scale = Vector2.ONE * rig.gear_scale   # head gear sized to the head that wears it
-	elif slot == "back" and "drape" in p.tags:
+	elif slot == "back" and ("drape" in p.tags or rig.sockets.has(part_id)):   # (or hung from the body's own place for it: sized to it too)
 		node.scale = Vector2.ONE * rig.drape_scale   # a hanging cape or pelt sized to the back it hangs from (parts.json drape_scale)
 	rig.root.add_child(node)
 	if rig.carry == "harness" and slot == "hand_r":

@@ -720,7 +720,7 @@ func _paint(n: Node, colour: Color) -> void:
 		(mi as MeshInstance3D).cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
 
 
-## Siege crews by socket: "_in" behind the engine, "_top" over it, the rest by the socket's depth.
+## Siege crews by socket: "_in" behind the engine, "_top" and "_box" over it, the rest by the socket's depth.
 func _check_crew(v, label: String, view: String) -> void:
 	var engine: Node = v._body_nodes[0]   # (the engine's sprite, or a war beast's rig: its body, legs; its head is ordered with the crew)
 	while engine.get_parent() != v.bob:
@@ -735,6 +735,6 @@ func _check_crew(v, label: String, view: String) -> void:
 		var want: bool = rig.get("front", {}).get(name, float(rig.depth[name]) > 0.0)   # (which is in front where they overlap: part_baker._members_front)
 		if name.ends_with("_in"):
 			want = false
-		elif name.ends_with("_top"):
+		elif name.ends_with("_top") or name.ends_with("_box"):
 			want = true
 		note("siege crew by socket", label, view, over != want, name)

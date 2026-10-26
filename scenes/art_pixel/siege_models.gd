@@ -2215,22 +2215,31 @@ func gold_load(n: Node3D, s: Dictionary, at: Vector3) -> void:
 # ride (a centaur's horse half) walks beside it on the "_wide" ones (build). The great sling: "siege.sling.<take>"
 # set up, and "siege.sling_packed.<take>" on its wagon (shown while it isn't set up: UnitView.set_packed).
 
-## A howdah: a railed platform at `at` (its floor's middle), team cloths down both sides; returns the
-## riders' sockets (two on top, corner to corner; one in the middle for a big crew, frogs and spiders:
-## two of them sat in each other, placement C1).
+## A howdah: a walled box at `at` (its floor's middle), team cloths down both sides; the riders stand in it,
+## seen from the hips up (Dominic, 2026-10-27, on the heroic humans standing on an open platform: "the elephant
+## with units standing makes no sense now"). Returns the riders' sockets (two, corner to corner; one in the
+## middle for a big crew, frogs and spiders: two of them sat in each other, placement C1).
+const HOWDAH_WALL := 12.0   # its walls' height over the floor: up to a heroic human's thighs (hips at 18)
+
+
 func howdah(n: Node3D, s: Dictionary, at: Vector3, L: float, W: float, riders := 2) -> Dictionary:
 	n.add_child(_box(Vector3(L, 1.4, W), s.dark, at))
+	var top := HOWDAH_WALL
 	for x in [-L * 0.5 + 0.6, L * 0.5 - 0.6]:
 		for side in [1, -1]:
-			n.add_child(rod(at + Vector3(x, 0, W * 0.5 * side), at + Vector3(x, 5.0, W * 0.5 * side), 0.45, 0.45, s.dark))
-	for side in [1, -1]:
-		n.add_child(rod(at + Vector3(-L * 0.5, 5.0, W * 0.5 * side), at + Vector3(L * 0.5, 5.0, W * 0.5 * side), 0.4, 0.4, s.dark))
+			n.add_child(rod(at + Vector3(x, 0, W * 0.5 * side), at + Vector3(x, top + 1.2, W * 0.5 * side), 0.55, 0.5, s.dark))   # corner posts
+	for side in [1, -1]:   # the walls: planks along each side and across each end, a team band along their tops
+		n.add_child(_box(Vector3(L - 1.0, top, 0.6), s.wood, at + Vector3(0, top * 0.5 + 0.7, W * 0.5 * side)))
+		n.add_child(_box(Vector3(0.6, top, W - 1.0), s.wood, at + Vector3(L * 0.5 * side, top * 0.5 + 0.7, 0)))
+		n.add_child(_box(Vector3(L, 1.2, 0.8), s.team, at + Vector3(0, top + 0.3, W * 0.5 * side)))
+		n.add_child(_box(Vector3(0.8, 1.2, W), s.team, at + Vector3(L * 0.5 * side, top + 0.3, 0)))
 		n.add_child(_box(Vector3(L * 0.8, 8.0, 0.4), s.team, at + Vector3(0, -4.0, (W * 0.5 + 0.3) * side), Vector3(10 * side, 0, 0)))
-	for x in [-L * 0.5, L * 0.5]:
-		n.add_child(rod(at + Vector3(x, 5.0, -W * 0.5), at + Vector3(x, 5.0, W * 0.5), 0.4, 0.4, s.dark))
+	# The riders stand in it from the hips up ("_box": legs not drawn), set down so a heroic human's hem (15.3 over
+	# its feet) meets the walls' top.
+	var down := 0.7 + HOWDAH_WALL - 15.3
 	if riders == 1:
-		return {"crew0_f0_top": at + Vector3(0, 0.7, 0)}
-	return {"crew0_f0_top": at + Vector3(L * 0.13, 0.7, W * 0.32), "crew1_f0_top": at + Vector3(-L * 0.13, 0.7, -W * 0.32)}   # (L * 0.05 apart, two heroic humans stood in each other: C1, D-173)
+		return {"crew0_f0_box": at + Vector3(0, down, 0)}
+	return {"crew0_f0_box": at + Vector3(L * 0.13, down, W * 0.32), "crew1_f0_box": at + Vector3(-L * 0.13, down, -W * 0.32)}   # (L * 0.05 apart, two heroic humans stood in each other: C1, D-173)
 
 
 ## Humans: a war elephant, grey and wrinkled, tusks capped in bronze, ears out. a: a howdah with two
@@ -3098,11 +3107,11 @@ func _beside(spec: Dictionary, kind: String, colours: Dictionary) -> Dictionary:
 	var names: Array = spec.sockets.keys()
 	names.sort()
 	for name in names:
-		if not name.ends_with("_top"):
+		if not name.ends_with("_top") and not name.ends_with("_box"):
 			continue
 		var at: Vector3 = spec.sockets[name]
 		var side := signf(at.z) if absf(at.z) > 0.5 else (1.0 if k % 2 == 0 else -1.0)
-		spec.sockets[name.trim_suffix("_top") + "_wide"] = Vector3(at.x, 0, side * (zmax + BESIDE_GAP))
+		spec.sockets[name.trim_suffix("_top").trim_suffix("_box") + "_wide"] = Vector3(at.x, 0, side * (zmax + BESIDE_GAP))
 		k += 1
 	return spec
 

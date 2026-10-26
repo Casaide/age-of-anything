@@ -52,13 +52,13 @@ static func members(lib, r: Dictionary, sockets: Dictionary) -> Array:
 				turn = int(t.substr(1))
 			elif t in UnitView.WORK_HOLDS:
 				hold = t
-			elif t == "top":
+			elif t == "top" or t == "box":
 				top = true
 		var recipe := UnitView.haul_recipe(lib, r) if hauls else UnitView.crew_recipe(r)
 		var s := float(recipe.get("scale", 100)) / 100.0   # (a tiny race's crew are drawn tiny)
 		var xf := Transform3D(Basis(Vector3.UP, deg_to_rad(-45.0 * turn)).scaled(Vector3.ONE * s), sockets[name])
 		out.append({"name": name, "recipe": recipe, "xf": xf,
-			"hold": "" if hauls else hold, "top": top, "hauls": hauls})
+			"hold": "" if hauls else hold, "top": top, "hauls": hauls, "box": name.ends_with("_box")})   # (box: in a walled howdah, legs not drawn)
 	return out
 
 
@@ -121,6 +121,8 @@ static func _pose(g, label: String, view: String, walk: float, r: Dictionary, so
 		var a: Dictionary = g.rig.unit(m.recipe, {"walk": w, "hold": m.hold} if w >= 0.0 else {"hold": m.hold})
 		var v := {}
 		for p in a.pieces:
+			if m.box and p.kind == "leg":
+				continue
 			for q in Geom.voxels(p.node, m.xf * p.xf):
 				v[q] = true
 		vox.append(v)
