@@ -143,3 +143,4 @@ One line per moment worth remembering. Newest at the bottom.
 - **2026-10-26:** Dominic on AQ1: fidelity of units and buildings is a key goal; "Destruction looks great" (D-171, building waits on his go-ahead); the study's energy shots now leave the rifle's muzzle (the game still launches every shot from the body).
 - **2026-10-26:** D-172: go-ahead on destruction; a ruin is decoration only, can be built over and fades away (Dominic: "Destruction is for looking cool not game mechanic").
 - **2026-10-26:** Destruction built (D-171/D-172): buildings show broken-up baked stages as they lose hp, fall under pixel dust, and leave a ruin that fades or is built over.
+- **2026-10-26:** Fidelity round F1: rendering alone (smooth, 2x) does not make units less cartoony, the models do; a realistic legionary modelled in Blender (7 and 5.5 heads) baked beside today's; Dominic to pick.

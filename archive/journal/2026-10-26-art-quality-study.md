@@ -54,6 +54,23 @@ foundation is laid on it. Picture: `archive/images/2026-10-26/16-destruction-in-
   darken it, not fade it). The ruin moves into a CanvasGroup when it falls, and the group fades.
 - Cost: ~+8 s on a cold start; four-to-a-render only helps the smaller buildings.
 
+## Fidelity round F1 (night)
+
+Dominic: "I want to see if we can get our units looking much better and more realistic. They are simple and
+cartoony atm". Round F1 (`docs/concepts/fidelity/`) first asked where the cartoon comes from. Five units baked
+four ways (today, smooth pre-rendered shading, 2x painted, 2x smooth): the smooth bakes looked *more* like vinyl
+toys, not less; the painted bands and outline were hiding how blobby the models are. 2x adds detail but keeps
+the 3.4-heads-tall toy soldier. So it's the models: proportions, primitive shapes, flat saturated colour.
+
+Stretching today's legs and shrinking the head failed the placement check at once (feet 5-8 units under the
+ground): new proportions mean a new body. So Claude modelled a whole legionary by Blender script
+(`tools/blender/concept_soldier.py`: an anatomical body, segmented plate, galea, scutum, gladius) at 7 heads and
+at a broad 5.5, and baked it through the game's own unit baker beside today's (`tests/art_quality/fidelity_sheet.gd`).
+They read as soldiers. At today's resolution a 7-head figure's head is ~5 pixels: realism needs 2x. Claude
+recommends the heroic 5.5 build at 2x with the painted bands kept; Dominic to pick.
+
+Pictures: `archive/images/2026-10-26/17-` to `21-fidelity-*.png`.
+
 ## Decisions
 
 D-171 (destruction picked), D-172 (go-ahead; ruins are decoration, can be built over, fade). Before the feedback, Dominic was to pick. Claude's recommendations: destruction in stages next; deaths in 3D for every body;
