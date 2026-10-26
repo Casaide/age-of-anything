@@ -1150,6 +1150,8 @@ def become(prompt:string):
     let old = rstr(su_races[ME], "name")
     swap_race(ME, race)
     race_facts(su_races)
+    bake_missing_parts()   // (the newcomer's parts the pack lacks, before any of its views are built: with no pack, all of them)
+    bake_buildings_for(arch_of)   // (and its culture's buildings)
     banner = old + " become " + rstr(race, "name") + " (" + rstr(race, "creature") + ", " + rstr(race, "family") + "): balanced in {rr_fights} fights, {int((seconds_elapsed() - t0) * 1000.0)} ms"
     banner_t = seconds_elapsed()
     print banner
@@ -1976,6 +1978,7 @@ ui_setup("")
 let mods_wanted = if mods_arg != "": tokenize(mods_arg, ",", " ") else: pack_mods
 if mods_wanted.length: print "mods: {mods_use(mods_wanted)}"
 id_load("../../data")
+complete_kit_parts()   // (the creature kit's bodies: with no pack, made here; a pack's kit_parts.json fills them in first)
 composed = not have_pack or read_file(args[0] + "/rigs.json") != nil
 if composed and have_pack: load_part_data(args[0])
 var lobby_report = []::string
