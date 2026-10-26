@@ -591,7 +591,7 @@ def rebuild(v:UV) -> void:
     let keep_phase = v.phase
     let w = v.weapon
     let tool = if w: w.part_id else: ""
-    for(v.node.kids) c: c.parent = nil
+    for(v.node.kids) c: free_tree(c)
     v.node.kids = []
     let hold = v.work_hold
     v.legs = []

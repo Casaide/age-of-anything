@@ -126,7 +126,7 @@ SHADER sprite
         vec4 t = texture(tex0, itc);
         if (t.a < 0.02) discard;
         vec3 rgb = t.rgb;
-        if (min(t.r, t.b) - t.g > 0.22 && abs(t.r - t.b) < 0.3) rgb = icolor.rgb * max(t.r, t.b);
+        if (min(t.r, t.b) - t.g > 0.22 && abs(t.r - t.b) < 0.3) rgb = icolor.rgb * max(t.r, t.b) * 1.08;
         frag_color = vec4(rgb * icolor.a, t.a);
 """
 
@@ -178,3 +178,21 @@ def sprite(f:int, x:float, y:float, col:float4):
     b_idx.push(n)
     b_idx.push(n + 3)
     b_idx.push(n + 2)
+
+// Frame f drawn through an affine transform from its texture px to art px ([xx, xy, yx, yy, ox, oy]:
+// a composed unit's part, turned and scaled as its rig says).
+def sprite_xf(f:int, xf:[float], col:float4):
+    let fr = frames[f]
+    if fr.sheet != b_sheet:
+        flush_sprites()
+        b_sheet = fr.sheet
+    let s = float(sheet_size)
+    let n = b_pos.length
+    for([float2 { 0.0, 0.0 }, float2 { float(fr.w), 0.0 }, float2 { float(fr.w), float(fr.h) }, float2 { 0.0, float(fr.h) }]) c:
+        b_pos.push(float3 { xf[0] * c.x + xf[2] * c.y + xf[4], xf[1] * c.x + xf[3] * c.y + xf[5], 0.0 })
+    b_tc.push(float2 { fr.x / s, fr.y / s })
+    b_tc.push(float2 { (fr.x + fr.w) / s, fr.y / s })
+    b_tc.push(float2 { (fr.x + fr.w) / s, (fr.y + fr.h) / s })
+    b_tc.push(float2 { fr.x / s, (fr.y + fr.h) / s })
+    for(4): b_col.push(col)
+    for([n, n + 2, n + 1, n, n + 3, n + 2]) k: b_idx.push(k)
