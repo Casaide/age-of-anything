@@ -4,8 +4,9 @@
 // near home sweep, sit or chat, herd animals graze, farmers till; a house grows a yard, then a
 // garden; a few critters of the culture round each Town Center (dragonflies by reed towns, pigeons
 // by junk towns, small birds elsewhere). Imported by game.lobster after its views (it uses them).
-// Not yet: chimney smoke, cracks and fire on damaged buildings, the stable's tethered mount, the
-// town's ambience.
+// Buildings (BuildingArt): chimneys smoke while they work (houses always), windows and lanterns
+// glow and flicker, and a building badly hurt burns in a few places with black smoke.
+// Not yet: cracks on damaged walls, the stable's tethered mount, the town's ambience.
 
 let LOAD_DECAY_S = 14.0
 let PILE_STAGE_AT = [0.5, 3.0, 7.0]
@@ -47,6 +48,18 @@ var town_puffs = []::Puff
 var critters = []::Critter
 var critter_towns = dictionary<int, int>(8)
 var town_tick_seen = -1
+
+// Smoke, flames and black smoke (BuildingArt's particles): canvas units.
+class Puff2:
+    p:float2
+    v:float2
+    t:float
+    life:float
+    kind:int                      // 0 chimney smoke, 1 flame, 2 black smoke
+    size:float
+
+var town_parts = []::Puff2
+var town_emit = dictionary<string, float>(128)   // "<building id>:<what>" -> particles owed
 var town_builders = []::int
 
 def is_house(k:int) -> bool: return k < su_btypes.length and gbool(su_btypes[k], "house", false)
@@ -154,6 +167,97 @@ def town_dust():
                 let hit = v.node.pos - float2 { 0.0, v.lift } + (if magnitude(d) > 0.0: normalize(d) * min(10.0, magnitude(d)) else: float2_0)
                 for(3): town_puffs.push(Puff { hit + float2 { rnd_range(-2.0, 2.0), rnd_range(-1.0, 1.0) }, 0.0, float2 { rnd_range(-7.0, 7.0), rnd_range(-6.0, -2.0) } })
 
+let DAMAGE_FIRE = 0.6
+
+def rnd_dir(dir:float2, spread:float, lo:float, hi:float) -> float2:
+    let a = atan2(normalize(dir)) + rnd_range(-spread, spread)
+    return float2 { cos(a), sin(a) } * rnd_range(lo, hi)
+
+// Where building b stands on the canvas (its look's anchor), and its look's bake, if seen.
+def building_anchor(b:int) -> float2:
+    return ground_at(b_cx[b] * 1000 + b_sx[b] * 500, b_cy[b] * 1000 + b_sy[b] * 500)
+
+def building_look(b:int) -> string: return building_key(arch_of[b_owner[b]], bt_name[b_kind[b]], ages[b_owner[b]], (b_id[b] * 7 + b_cx[b] * 3 + b_cy[b]) % 4)
+
+// A few points on a building's roof, where it catches (the same ones always).
+def fire_spots(b:int, look:string) -> [float2]:
+    let lk = looks.get(look)
+    if not lk: return []
+    let fi = frame_index(lk.body)
+    if fi < 0: return []
+    let fr = frames[fi]
+    var h = (b_id[b] * 2654435761) & 0xffffffff
+    def next() -> float:
+        h = (h * 1103515245 + 12345) & 0x7fffffff
+        return float(h % 10000) / 10000.0
+    // (the middle of the bake: its top is often a mast or a spire with sky round it; Godot checks the
+    // bake's pixels, which the pack doesn't keep)
+    return map(3): float2 { (float(fr.w) * (0.3 + next() * 0.4) - float(fr.ox)) / 1.5, (float(fr.h) * (0.38 + next() * 0.2) - float(fr.oy)) / 1.5 }
+
+def emit(key:string, rate:float, dt:float, make):
+    var owed = town_emit.get(key, 0.0) + rate * dt
+    while owed >= 1.0:
+        town_parts.push(make())
+        owed -= 1.0
+    town_emit.set(key, owed)
+
+def building_fx_tick(dt:float):
+    for(b_id.length) b:
+        let cell = b_cy[b] * W + b_cx[b]
+        if b_done[b] == 1 and (teams[b_owner[b]] == teams[ME] or fog[ME][cell] == 2) and b_owner[b] < arch_of.length:
+            let look = building_look(b)
+            let at = building_anchor(b)
+            let fx = bfx.get(look)
+            if fx and fx.has_smoke and (is_house(b_kind[b]) or b_queue[b].length > 0):
+                emit("{b_id[b]}:s", 2.5, dt) (): Puff2 { at + fx.smoke, rnd_dir(float2 { 0.2, -1.0 }, 12.0, 4.0, 7.0), 0.0, 4.0, 0, rnd_range(0.12, 0.2) * 16.0 }
+            let full = bm_hp[b_owner[b]][b_kind[b]]
+            let damage = if full > 0: 1.0 - float(b_hp[b]) / float(full) else: 0.0
+            if damage >= DAMAGE_FIRE:
+                let spots = fire_spots(b, look)
+                let burning = min(spots.length, 1 + int((damage - DAMAGE_FIRE) / (1.0 - DAMAGE_FIRE) * 3.0))
+                for(burning) k:
+                    let sp = at + spots[k]
+                    emit("{b_id[b]}:f{k}", 20.0, dt) (): Puff2 { sp + float2 { rnd_range(-3.0, 3.0), rnd_range(-2.0, 2.0) }, rnd_dir(float2 { 0.0, -1.0 }, 14.0, 7.0, 13.0), 0.0, 0.8, 1, rnd_range(0.14, 0.24) * 16.0 }
+                    emit("{b_id[b]}:b{k}", 4.0, dt) (): Puff2 { sp + float2 { 0.0, -5.0 }, rnd_dir(float2 { 0.15, -1.0 }, 14.0, 6.0, 10.0), 0.0, 3.5, 2, rnd_range(0.16, 0.26) * 16.0 }
+    for(town_parts) q:
+        q.t += dt
+        let g = if q.kind == 0: float2 { 2.0, -1.0 } elif q.kind == 1: float2 { 0.0, -8.0 } else: float2 { 2.5, -1.5 }
+        q.v += g * dt
+        q.p += q.v * dt
+    town_parts = filter(town_parts) q: q.t < q.life
+
+def mix4(a:float4, b:float4, f:float) -> float4: return a + (b - a) * f
+
+def ramp3(a:float4, b:float4, c:float4, mid:float, k:float) -> float4:
+    return if k < mid: mix4(a, b, k / mid) else: mix4(b, c, (k - mid) / (1.0 - mid))
+
+def draw_building_fx():
+    gl.set_shader("color")
+    for(town_parts) q:
+        let k = q.t / q.life
+        if q.kind == 0:
+            fx_circle(q.p, q.size * lerpf(0.4, 1.5, k), ramp3(float4 { 0.8, 0.8, 0.78, 0.0 }, float4 { 0.78, 0.78, 0.76, 0.33 }, float4 { 0.7, 0.7, 0.7, 0.0 }, 0.15, k))
+        elif q.kind == 2:
+            fx_circle(q.p, q.size * lerpf(0.6, 2.4, k), ramp3(float4 { 0.12, 0.1, 0.09, 0.0 }, float4 { 0.1, 0.09, 0.08, 0.55 }, float4 { 0.2, 0.19, 0.18, 0.0 }, 0.12, k))
+    for(town_parts) q:
+        if q.kind == 1:
+            let k = q.t / q.life
+            fx_circle(q.p, q.size * lerpf(1.0, 0.2, k), ramp3(float4 { 1.0, 0.92, 0.5, 1.0 }, float4 { 1.0, 0.5, 0.1, 1.0 }, float4 { 0.75, 0.15, 0.05, 0.0 }, 0.35, k))
+    // Lit windows and lanterns: a warm glow, flickering, added on (BuildingArt._glow).
+    let old = gl.blend(blend_add_alpha)
+    let now = gl.time()
+    for(b_id.length) b:
+        if b_done[b] == 1 and fog[ME][b_cy[b] * W + b_cx[b]] == 2 and b_owner[b] < arch_of.length:
+            let fx = bfx.get(building_look(b))
+            if fx:
+                let at = building_anchor(b)
+                for(fx.lights) l, n:
+                    let ph = float(b_id[b] * 13 + n * 7)
+                    let f = 0.8 + 0.2 * sin((now * 7.0 + ph) * 57.29578) * sin((now * 2.3 + ph * 2.0) * 57.29578)
+                    let r = if n == 0 and fx.lights.length > 0: 9.0 else: 7.0
+                    for(3) layer: fx_circle(at + l, r * (1.0 - float(layer) * 0.3), float4 { 1.0 * f, 0.78 * f, 0.4 * f, 0.12 })
+    gl.blend(old)
+
 def make_critters():
     for(b_id.length) b:
         if bt_name[b_kind[b]] == "town_center" and b_done[b] != 0 and not critter_towns.get(b_id[b], 0) and b_owner[b] < arch_of.length:
@@ -215,6 +319,7 @@ def town_tick(dt:float):
     town_dust()
     for(piles.get_keys()) k: piles.set(k, max(0.0, piles.get(k, 0.0) - dt / LOAD_DECAY_S))
     make_critters()
+    building_fx_tick(dt)
     for(critters) c: critter_tick(c, dt)
     for(town_puffs) p:
         p.t += dt
@@ -293,6 +398,7 @@ def lighten(c:float4, k:float) -> float4: return float4 { c.x + (1.0 - c.x) * k,
 
 // Dust and critters, in canvas units (under the 1.5 scale), a few art pixels each.
 def draw_town():
+    draw_building_fx()
     gl.set_shader("color")
     let px = 1.0 / 1.5
     for(town_puffs) p:

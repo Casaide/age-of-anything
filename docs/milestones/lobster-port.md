@@ -77,7 +77,8 @@ SURRENDER, the bots' walls and abilities.
       sim tells the view of misses, heals and stones landing), and the living town (`game/town.lobster`: piles at
       the drop-offs, chores, builders' dust, yards and gardens, critters). Control groups (Ctrl or Cmd + a number keeps the selection, the number brings it back, twice to look;
       in the self-test). To come: a nicer panel;
-      from town life, chimney smoke, damaged buildings' cracks and fire, the stable's tethered mount, the town's sound.
+      from town life, cracks on damaged walls, the stable's tethered mount, the town's sound. Chimney smoke, lit windows
+      and fire on badly hurt buildings are in (`building_fx.gd` writes where each look's chimney and windows are; `15-...`).
 - [x] Save and load (2026-10-26): `gen/save.lobster`, written by `gen_reset.py` from the same list of globals as
       the reset: every sim and setup global plus the bots, one record as a flexbuffer (about 3 MB, saved in 15 ms,
       loaded in 10 ms). F5 saves, F9 loads (`reload:<s>` in tests). `save_check.lobster`: a bot match saved at
@@ -96,8 +97,9 @@ SURRENDER, the bots' walls and abilities.
       screen, LT / RT zoom, the d-pad an idle worker, the Town Center, groups 1 and 2. Last input wins.
       `padtest`: a fake pad plays (7 checks). Not yet: the wheel's pages, LB (queue, cycling kinds), menus on
       the pad, Steam Input's layout, a Deck build of the Lobster game.
-- [x] Control groups shown (Dominic, 2026-10-26: "visible somewhere, at least as a number on the units"): the
-      group's number by each unit, and each group with its size under the top bar (`14-...`).
+- [x] Control groups shown (Dominic, 2026-10-26: "visible somewhere, at least as a number on the units", then "only
+      when you select the group"): the group's number by each selected unit, and each group with its size under the
+      top bar (`14-...`).
 - [ ] 6. Setup in Lobster (Dominic, 2026-10-26: "Let's do it! Primarily because ... it opens us up to generation at
       army creation time and during the game"). Three steps, each checked against GDScript:
   - [x] 6a. Races and the match from data, 2026-10-26: a JSON reader and Godot-compatible writer, SHA-256, DataLib,
