@@ -60,6 +60,7 @@ def splash(o:int, recs:[int], b:int):
     let y = recs[o + SHOT_Y]
     let up = recs[o + SHOT_UP]
     let r = t_splash[src]
+    if events_on: events.push(Event { EV_SPLASH, by, 0, r, x, y })
     let reach = (r + MAX_BODY) / TILE + 1
     let cx = x / TILE
     let cy = y / TILE
@@ -109,6 +110,7 @@ def blast(i:int, b:int, d:int):
     let x = u_x[i]
     let y = u_y[i]
     let r = t_blast[k0]
+    if events_on: events.push(Event { EV_SPLASH, by, 1, r, x, y })
     for(b_id.length) k:
         let gx = max(max(b_cx[k] * TILE - x, 0), x - (b_cx[k] + b_sx[k]) * TILE)
         let gy = max(max(b_cy[k] * TILE - y, 0), y - (b_cy[k] + b_sy[k]) * TILE)

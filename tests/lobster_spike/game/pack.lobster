@@ -35,6 +35,7 @@ var team_rgb = []::float4                     // per player
 var unit_names = dictionary<int, string>(128)
 var unit_blow = dictionary<int, string>(128)  // per unit type: its melee blow's sound, its shot's
 var unit_shot = dictionary<int, string>(128)
+var unit_shotk = dictionary<int, string>(128)   // the shot each unit type looses (combat_fx.shot_kind)
 var building_names = dictionary<int, string>(64)
 var research_names = dictionary<int, string>(128)
 var pack_map = ""                             // the match the art was baked for: its map and races' prompts

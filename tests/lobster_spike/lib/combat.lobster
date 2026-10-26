@@ -342,6 +342,7 @@ def land():
                 c_hurt[j] += d
                 c_hurt_by[j] = by
                 if events_on: events.push(Event { EV_HIT, by, u_id[j], d, ax, ay })
+            elif events_on: events.push(Event { EV_MISS, by, to, 0, ax, ay })
         o += SHOT_STRIDE
 
 def shots_inbound():
@@ -536,7 +537,7 @@ def apply_hits(n:int):
         if c_bhurt[b] != 0:
             b_hp[b] -= c_bhurt[b]
             if b_hp[b] <= 0:
-                if events_on: events.push(Event { EV_DIE, b_id[b], 1, 0, b_cx[b] * TILE + b_sx[b] * TILE / 2, b_cy[b] * TILE + b_sy[b] * TILE / 2 })
+                if events_on: events.push(Event { EV_DIE, b_id[b], 1, b_sx[b], b_cx[b] * TILE + b_sx[b] * TILE / 2, b_cy[b] * TILE + b_sy[b] * TILE / 2 })
                 clear_farm(b)
                 pen_gone(b)
                 spill(b)
