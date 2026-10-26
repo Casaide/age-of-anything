@@ -110,7 +110,9 @@ SURRENDER, the bots' walls and abilities.
       draws -size..size round its point: the page's boxes allow for it.)
 - [x] The Race Lab, in the lobby (2026-10-26): each typed race's whole roster drawn from the part library as you
       type, idling in its team colour, under its stats (`lab` with `races:A|B` captures it; `19-...`). Rerolls too: a
-      Reroll button per race, another take on the same prompt, played as shown (`reroll:a|b`; `28-...`). Not yet: the
+      Reroll button per race, another take on the same prompt, played as shown (`reroll:a|b`; `28-...`). And Test: every line of the two
+      typed races fought against every other at equal cost there and then (66 fights, about a second), how even they
+      are before any pricing (`29-...`). Not yet: the
       Race Lab's two armies milling about and fighting.
 - [x] The command panel (2026-10-26): `game/panel.lobster`: a unit card (a portrait from the unit's own parts, hp,
       stats) and clickable buttons with hotkeys, units' portraits and buildings' pictures on them, cost on hover
