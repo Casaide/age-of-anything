@@ -34,6 +34,9 @@ const Bot := preload("res://src/ai/bot.gd")
 const Trade := preload("res://src/sim/trade.gd")
 const Repair := preload("res://src/sim/repair.gd")
 const Animals := preload("res://src/sim/animals.gd")
+const Walls := preload("res://src/sim/walls.gd")
+const Fortify := preload("res://src/sim/fortify.gd")
+const WALLS_SLOTS := [["archer", 12], ["skirmisher", 6], ["spear", 6], ["infantry", 12], ["siege_tower", 2], ["ram", 2], ["worker", 4]]
 
 const SEED := 20261010
 const PROMPTS := ["sewer rats with cheese hammers", "angry swamp frogs with reed spears"]
@@ -56,7 +59,7 @@ var think_usec := 0   # the bots' thinking, both runs
 func _init() -> void:
 	var args := OS.get_cmdline_user_args()
 	mode = args[0]
-	assert(mode in ["move", "fight", "eco", "match", "play", "siege"])
+	assert(mode in ["move", "fight", "eco", "match", "play", "siege", "walls"])
 	var map_id: String = args[1]
 	var per_player := int(args[2])
 	var ticks := int(args[3])
@@ -197,6 +200,29 @@ func _setup(map_id: String, races: Array, rules: Dictionary, per_player: int) ->
 	var w := World.new(SEED, SimMap.load_id(map_id), races, rules, [0, 0] if mode == "move" else [0, 1])
 	w.set_meta("mode", mode)
 	var slots: Array = SIEGE_SLOTS if mode == "siege" else SLOTS
+	if mode == "walls":   # player 0's town walled in stone (towers, gates), both in age 3
+		for p in races.size():
+			w.ages[p] = 3
+			Tech.retype(w, p)
+			Tech.refresh(w, p)
+			for r in w.resources.size():
+				w.stock[r][p] += 2000
+		var home: Array = w.map.starts[0]
+		Fortify.ring(w, 0, int(home[0]) / 1000, int(home[1]) / 1000, 9, {"wall": "wall", "gate": "stone_gate",
+			"tower": "wall_tower" if Economy.btype_of(w, "wall_tower") >= 0 else "", "tower_every": 6, "gates": ["n", "e", "s", "w"]})
+		for p in races.size():
+			var s0: Array = w.map.starts[p] if p == 0 else [int(home[0]) + 16000, int(home[1])]
+			var k0 := 0
+			for e in WALLS_SLOTS:
+				if w.type_of(p, e[0]) < 0 or (p == 0 and e[0] in ["siege_tower", "ram", "worker", "infantry"]):
+					continue
+				w.issue(p, Commands.SPAWN, {"slot": e[0], "count": e[1], "x": s0[0] + (k0 % 3 - 1) * 2000, "y": s0[1] + (k0 / 3 - 1) * 2000})
+				k0 += 1
+		while w.tick < SETTLE:
+			w.step()
+		w.history.clear()
+		_check(w)
+		return w
 	if mode == "siege":   # age 3, the engines out, the towns standing for them to break
 		for p in races.size():
 			w.ages[p] = 3
@@ -388,7 +414,7 @@ func _fuzz(w: World, rng, give_up: bool) -> void:
 				w.issue(p, Commands.ROUTE, {"ids": some, "building": bs.id[mks[rng.range_int(0, mks.size() - 1)]]})
 		13, 14:
 			var s2: Array = w.map.starts[p]
-			var kinds := ["palisade", "palisade_gate"]   # (stone walls you stand on: once walls.gd is in)
+			var kinds := ["palisade", "palisade_gate", "wall", "stone_gate", "wall_tower"]
 			var kind: String = kinds[rng.range_int(0, kinds.size() - 1)]
 			var cx2: int = int(s2[0]) / 1000 + rng.range_int(-9, 9)
 			var cy2: int = int(s2[1]) / 1000 + rng.range_int(-9, 9)
@@ -398,6 +424,81 @@ func _fuzz(w: World, rng, give_up: bool) -> void:
 			var hurt := own_b.filter(func(b): return bs.done[b] == 1 and bs.hp[b] < w.bmods[p][bs.kind[b]].hp)
 			if not hurt.is_empty() and not some_workers.is_empty():
 				w.issue(p, Commands.REPAIR, {"ids": some_workers, "target": bs.id[hurt[0]], "queue": rng.range_int(0, 1)})
+
+
+## walls: the defenders up on the east and south walls; the attackers' towers and ladders against the
+## east wall, their foot soldiers up and over, rams on the east gate, the rest attack-moving in;
+## now and then someone stops, comes down, or goes up somewhere else.
+func _walls_orders(w: World, rng, first: bool) -> void:
+	var home: Array = w.map.starts[0]
+	var hx: int = int(home[0])
+	var hy: int = int(home[1])
+	var by_slot := func(p: int, slot: String) -> Array:
+		var out := []
+		for i in w.units.count():
+			if w.units.owner[i] == p and w.types[w.units.kind[i]].slot == slot:
+				out.append(w.units.id[i])
+		return out
+	if first:
+		var shooters: Array = by_slot.call(0, "archer") + by_slot.call(0, "skirmisher")
+		var spots := [[9, -4], [9, 4], [-4, 9], [4, 9], [9, 2]]
+		for k in spots.size():
+			var part := shooters.filter(func(id): return id % spots.size() == k)
+			if not part.is_empty():
+				w.issue(0, Commands.MOVE, {"ids": part, "x": hx + spots[k][0] * 1000, "y": hy + spots[k][1] * 1000})
+		var towers: Array = by_slot.call(1, "siege_tower")
+		for k in towers.size():
+			w.issue(1, Commands.MOVE, {"ids": [towers[k]], "x": hx + 10000, "y": hy + (-2 + 4 * k) * 1000})
+		var workers: Array = by_slot.call(1, "worker")
+		if not workers.is_empty() and Economy.btype_of(w, "ladder") >= 0:
+			w.issue(1, Commands.BUILD, {"ids": workers.slice(0, 2), "building": "ladder", "cx": hx / 1000 + 10, "cy": hy / 1000 + 6})
+			w.issue(1, Commands.BUILD, {"ids": workers.slice(2, 4), "building": "ladder", "cx": hx / 1000 + 10, "cy": hy / 1000 - 6})
+		return
+	var r: int = rng.range_int(0, 7)
+	match r:
+		0, 1:   # foot soldiers onto the east wall (by a tower or a ladder)
+			var foot: Array = by_slot.call(1, "infantry") + by_slot.call(1, "spear")
+			if not foot.is_empty():
+				w.issue(1, Commands.MOVE, {"ids": foot.slice(0, 8), "x": hx + 9000, "y": hy + rng.range_int(-6, 6) * 1000})
+		2:
+			var rams: Array = by_slot.call(1, "ram")
+			var gate: int = w.map.occupied[(hy / 1000) * w.map.width + hx / 1000 + 9]
+			if not rams.is_empty() and gate != 0:
+				w.issue(1, Commands.ATTACK, {"ids": rams, "target": gate})
+		3:
+			var army := []
+			for i in w.units.count():
+				if w.units.owner[i] == 1 and not w.types[w.units.kind[i]].worker and w.units.perch[i] == 0:
+					army.append(w.units.id[i])
+			if not army.is_empty():
+				w.issue(1, Commands.ATTACK_MOVE, {"ids": army.slice(0, 10), "x": hx, "y": hy})
+		4:   # someone up on a wall comes down (or stops)
+			var up := []
+			for i in w.units.count():
+				if w.units.perch[i] != 0:
+					up.append([w.units.owner[i], w.units.id[i]])
+			if not up.is_empty():
+				var e: Array = up[rng.range_int(0, up.size() - 1)]
+				if rng.range_int(0, 1) == 0:
+					w.issue(e[0], Commands.STOP, {"ids": [e[1]]})
+				else:
+					w.issue(e[0], Commands.MOVE, {"ids": [e[1]], "x": hx + rng.range_int(-4, 4) * 1000, "y": hy + rng.range_int(-4, 4) * 1000})
+		5:   # defenders shift along the walls
+			var shooters: Array = by_slot.call(0, "archer")
+			if not shooters.is_empty():
+				w.issue(0, Commands.MOVE, {"ids": shooters.slice(0, 6), "x": hx + 9000, "y": hy + rng.range_int(-8, 8) * 1000})
+		6:   # defending spears attack someone up on their wall
+			var foes := []
+			for i in w.units.count():
+				if w.units.owner[i] == 1 and w.units.perch[i] != 0:
+					foes.append(w.units.id[i])
+			var spears: Array = by_slot.call(0, "spear")
+			if not foes.is_empty() and not spears.is_empty():
+				w.issue(0, Commands.ATTACK, {"ids": spears, "target": foes[0]})
+		7:
+			var workers: Array = by_slot.call(1, "worker")
+			if not workers.is_empty() and Economy.btype_of(w, "ladder") >= 0:
+				w.issue(1, Commands.BUILD, {"ids": workers.slice(0, 2), "building": "ladder", "cx": hx / 1000 + 10, "cy": hy / 1000 + rng.range_int(-7, 7)})
 
 
 ## Plays `ticks` ticks giving orders, a hash after each; returns the time spent stepping (usec).
@@ -415,6 +516,9 @@ func _play(w: World, ticks: int, ported_only: bool, hashes: PackedInt64Array, du
 			think_usec += Time.get_ticks_usec() - b0
 			if mode == "play" and w.tick % Commands.TICKS_PER_TURN == 0:
 				_fuzz(w, rng, k == ticks * 3 / 4)
+		elif mode == "walls" and w.tick % Commands.TICKS_PER_TURN == 0 and (w.turn() - start / Commands.TICKS_PER_TURN) % 10 == 0:
+			_walls_orders(w, rng, first)
+			first = false
 		elif w.tick % Commands.TICKS_PER_TURN == 0 and (w.turn() - start / Commands.TICKS_PER_TURN) % ORDERS_EVERY == 0:
 			_issue_orders(w, rng, first)
 			first = false
@@ -446,6 +550,7 @@ func _ported_step(w: World) -> void:
 	w._pack()
 	Repair.tick(w)
 	Garrison.tick(w)
+	Walls.tick(w)
 	Animals.tick(w)
 	w.spatial.build(w.units.x, w.units.y)
 	var alive := w.units.changes
@@ -523,6 +628,14 @@ static func state_hash(w: World) -> int:
 		h = Fixed.mix(Fixed.mix(h, w.wonder_ids[k]), w.wonder_since[k])
 	for v in w.market_price:
 		h = Fixed.mix(h, v)
+	for i in w.units.count():   # (Walls.hash_into: units up or climbing, the pours, the rubble)
+		if w.units.perch[i] != 0 or w.units.wgoal[i] != 0:
+			for v in [w.units.id[i], w.units.perch[i], w.units.wgoal[i], w.units.wnext[i], w.units.wexit[i], w.units.wtime[i]]:
+				h = Fixed.mix(h, v)
+	var pids: Array = w.pour_at.keys()
+	pids.sort()
+	for id in pids:
+		h = Fixed.mix(Fixed.mix(h, id), w.pour_at[id])
 	var rcells: Array = w.rubble.keys()
 	rcells.sort()
 	for c in rcells:
@@ -567,6 +680,9 @@ static func _dump(w: World, out: PackedStringArray) -> void:
 	out.append("tick %d next_id %d next_group %d fields %s queue %s shots %s lost %s stock %s gathered %s pop %s cap %s" % [w.tick,
 		w.next_id, w.next_group, str(w.field_order), str(w.field_queue), str(w.shots.data), str(w.lost), str(w.stock), str(w.gathered),
 		str(w.pop), str(w.pop_cap)])
+	var pids: Array = w.pour_at.keys()
+	pids.sort()
+	out.append("pour " + " ".join(pids.map(func(id): return "%d:%d" % [id, w.pour_at[id]])))
 	for i in w.units.count():
 		out.append(_ints(unit_fields(w.units, i)))
 	for i in w.buildings.count():
@@ -689,7 +805,7 @@ static func _write_state(w: World, lines: PackedStringArray) -> void:
 	var b := w.buildings
 	lines.append("BUILDINGS %d" % b.count())
 	for i in b.count():
-		assert(b.diag[i] == 0 and b.inside[i].is_empty() and b.cooldown[i] == 0)
+		assert(b.inside[i].is_empty())   # (nobody sheltering at the start)
 		lines.append(_ints(building_fields(b, i) + [b.queue[i].size()] + b.queue[i]))
 	lines.append("SHOTS %d" % w.shots.count())
 	lines.append(_ints(w.shots.data))
@@ -735,6 +851,13 @@ static func _write_extra(w: World, lines: PackedStringArray) -> void:
 	var froms: Array = wc.from.map(func(id): return Economy.btype_of(w, id))
 	e.walk_cfg = [int(wc.climb), int(wc.fall), int(wc.speed_pct), int(wc.push), int(wc.rubble), int(wc.repair_pct), nots.size()] + nots + [froms.size()] + froms
 	e.lanes = Array(w.map.lane_teams)
+	e.t_docks = w.types.map(func(t): return int(t.get("docks", false)))
+	var pa := []
+	var pids: Array = w.pour_at.keys()
+	pids.sort()
+	for id in pids:
+		pa.append_array([id, w.pour_at[id]])
+	e.pour_at = pa
 	var rub := []
 	var rcells: Array = w.rubble.keys()
 	rcells.sort()
