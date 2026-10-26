@@ -7,7 +7,8 @@
 // Buildings (BuildingArt): chimneys smoke while they work (houses always), windows and lanterns
 // glow and flicker, and a building badly hurt burns in a few places with black smoke.
 // The town's sound follows your town: its size and how near the camera is (town_level).
-// Damaged buildings crack from 30% (drawn over the walls). Not yet: the stable's tethered mount.
+// Damaged buildings crack from 30% (drawn over the walls). A stable keeps one of its race's mounts
+// tethered by the door, idling and grazing.
 
 let LOAD_DECAY_S = 14.0
 let PILE_STAGE_AT = [0.5, 3.0, 7.0]
@@ -389,6 +390,7 @@ def town_cell_free(m:float2) -> bool:   // milli-tiles
 // The piles, yards and gardens as sprites (in the draw list), and the cracks.
 def collect_town():
     collect_cracks()
+    collect_tethers()
     for(b_id.length) b:
         let cell = b_cy[b] * W + b_cx[b]
         if teams[b_owner[b]] == teams[ME] or fog[ME][cell] != 0:
@@ -498,3 +500,64 @@ def town_level() -> float:
     let off = (centre - cam) / half
     let near = clamp(1.6 - max(abs(off.x), abs(off.y)), 0.0, 1.0)
     return size * near
+
+// ---- the stable's tethered mount (TownLife._sync_tethers)
+
+var tethered = dictionary<int, UV>(8)
+
+// The mount a race's large unit rides, as a recipe of its own (no rider), or nil (giants, Heavy elites,
+// centaurs: no separate mount).
+def mount_recipe(p:int) -> JV?:
+    for(glist(su_races[p], "units")) u:
+        let r = at(u, "recipe")
+        if rstr(r, "slot") == "large" and has(r, "mount") and not gbool(at(r, "mount"), "fused", false):
+            let m = at(r, "mount")
+            let mc = creature(rstr(m, "creature"))
+            let out = jobj()
+            set(out, "slot", jstr("mount"))
+            set(out, "name", jstr(""))
+            set(out, "body", jstr(gstr(mc, "mount_body", gstr(mc, "body", ""))))
+            set(out, "head", jstr(gstr(mc, "mount_head", gstr(mc, "head", ""))))
+            set(out, "parts", jobj())
+            set(out, "scale", jint(100))
+            set(out, "skin", at(m, "skin"))
+            set(out, "family", at(r, "family"))
+            set(out, "creature", at(m, "creature"))
+            return out
+    return nil
+
+def tether_spot(b:int) -> float2: return float2 { float((b_cx[b] + b_sx[b]) * 1000 + 350), (float(b_cy[b]) + float(b_sy[b]) * 0.5) * 1000.0 }
+
+def collect_tethers():
+    let keep = dictionary<int, int>(8)
+    for(b_id.length) b:
+        let cell = b_cy[b] * W + b_cx[b]
+        if bt_name[b_kind[b]] == "stable" and b_done[b] == 1 and (teams[b_owner[b]] == teams[ME] or fog[ME][cell] != 0):
+            let r = mount_recipe(b_owner[b])
+            if r:
+                keep.set(b_id[b], 1)
+                let t = tether_spot(b)
+                var v = tethered.get(b_id[b])
+                if not v:
+                    let made = uv_new()
+                    let tc = team_col(b_owner[b])
+                    uv_build(made, r, float3 { tc.x, tc.y, tc.z }, 20)
+                    made.node.scl = float2_1 * 0.85
+                    made.pose_steps = 4
+                    made.art_px = 1.5
+                    made.node.pos = canvas(t.x + 300.0, t.y + 250.0)
+                    made.lift = lift_at(t.x + 300.0, t.y + 250.0)
+                    face_vec(made, canvas(t.x, t.y) - made.node.pos)
+                    tethered.set(b_id[b], made)
+                    v = made
+                let mv = v
+                if mv:
+                    mv.job = if int(gl.time() / 7.0 + float(b_id[b])) % 3 == 0: "graze" else: ""
+                    uv_process(mv, gl.delta_time())
+                    let at = iso(t.x + 300.0, t.y + 250.0)
+                    add_view(mv, at.y, team_col(b_owner[b]), if fog[ME][cell] == 2 or teams[b_owner[b]] == teams[ME]: 1.0 else: 0.6)
+                    let post = frame_index("tether_post")
+                    let pa = iso(t.x, t.y)
+                    if post >= 0: add(post, pa.x, pa.y - lift_at(t.x, t.y) * 1.5, pa.y, float4 { 1.0, 1.0, 1.0, 1.0 })
+    for(tethered.get_keys()) id:
+        if not keep.get(id, 0): tethered.del(id)

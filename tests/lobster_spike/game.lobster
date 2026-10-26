@@ -93,6 +93,7 @@ var mode_arg = ""               // mode:<id>: the lobby's game mode (data/modes.
 var map_arg = ""                // map:<id>: the lobby's map (tests and captures)
 var races_arg = ""             // races:<A>|<B>: the lobby's prompts, as if typed (then balanced, then played)
 var look_y = -1
+var place_arg = ""              // place:<building>: one finished by your Town Center at the start (captures)
 var army_n = 0                  // army:<n>: n of each of your soldier types by your Town Center at the start (captures)
 var hurt_pct = -1                // hurt:<percent>: your buildings start at that much of their hit points (captures of fire)
 var lab_arg = false             // lab: the lobby with races:A|B typed in, a picture (shot:) after a second, then quit
@@ -123,6 +124,7 @@ for(args) a, k:
         if a == "lab": lab_arg = true
         if key == "hurt": hurt_pct = string_to_int(val)
         if key == "army": army_n = string_to_int(val)
+        if key == "place": place_arg = val
         if key == "join": join_ip = val
         if key == "swap":
             let sp, sa = split_string(val, "@")
@@ -1788,6 +1790,21 @@ if hosting:
         if net_wait_frame(if link.error != "": "Could not host: {link.error}" else: "Hosting on port {NET_PORT}: waiting for a player to join..."): return
     net_send(link, 'S', world_bytes(bots))
 let net_on = hosting or join_ip != ""
+if place_arg != "":
+    let k = btype_index(place_arg)
+    let tc = town_center(ME)
+    if k >= 0 and tc >= 0:
+        var done = false
+        for(12) r:
+            for(8) a:
+                if not done:
+                    let x = b_cx[tc] + int(cos(float(a) * 45.0) * float(4 + r))
+                    let y = b_cy[tc] + int(sin(float(a) * 45.0) * float(4 + r))
+                    if can_place(ME, k, x, y):
+                        fort_put(ME, k, x, y, 0)
+                        update_pop()
+                        cam = iso(float(x * 1000 + 1500), float(y * 1000 + 1500))
+                        done = true
 if army_n > 0:
     let slots = []::string
     for(t_slot.length) k:
