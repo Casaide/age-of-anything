@@ -1230,7 +1230,23 @@ def box_select(a:float2, b:float2):
             if s.x >= lo.x and s.x <= hi.x and s.y >= lo.y and s.y <= hi.y: selected.push(u_id[i])
     if selected.length: say(ME, "select")
 
-def order(m:float2):
+var arming_attack = false       // the Attack-move button (or R): the next left click is where
+var arming_ability = false      // the race's ability button: the next left click is where
+
+// The map bridge whose deck covers cell c, or -1.
+def bridge_on(c:int) -> int:
+    for(br_cells) cells, k:
+        if contains(cells, c): return k
+    return -1
+
+// Does building b take in what unit i carries?
+def takes_in(b:int, i:int) -> bool: return u_carry[i] > 0 and u_carry_kind[i] > 0 and bt_drop[b_kind[b]][u_carry_kind[i] - 1] != 0
+
+// The right click (sim_debug.smart_order): what's under the mouse decides the order. Our animals go into our
+// pen or walk; the rest attack-move (A held, or armed), attack a foe or hunt, slaughter our sheep (workers),
+// attack a foe's building, gather, rebuild a broken bridge, mend, wall up our breach, climb our wall, help
+// build, trade at a market, drop off, reseed a fallow farm, go inside our building, or move.
+def order(m:float2, attack_move:bool = false):
     let mm = mouse_milli()
     let x = int(mm.x)
     let y = int(mm.y)
@@ -1239,34 +1255,59 @@ def order(m:float2):
     if sel_building != 0 and not selected.length:
         issue_cmd(ME, CMD_RALLY, []::int, sel_building, x, y, 0)
         return
-    let ids = selected_units()
-    if not ids.length: return
+    let all = selected_units()
+    if not all.length: return
     say(ME, "ack")
-    let foe = unit_at_screen(m, false)
-    if foe >= 0:
-        issue_cmd(ME, CMD_ATTACK, ids, u_id[foe], 0, 0, 0, q)
-        return
-    let b = building_at(mm)
+    let herd = filter(all) id: is_animal(index_of(id))
+    let ids = filter(all) id: not is_animal(index_of(id))
     let workers = selected_workers()
-    let others = filter(ids) id: not contains(workers, id)
-    if b >= 0 and is_enemy(b_owner[b], ME) and fog[ME][cell_of(x, y)] != 0:
-        issue_cmd(ME, CMD_ATTACK, ids, b_id[b], 0, 0, 0, q)
-        return
     let c = cell_of(x, y)
-    if workers.length:
-        if b >= 0 and b_owner[b] == ME and b_done[b] == 0:
-            issue_cmd(ME, CMD_HELP_BUILD, workers, b_id[b], 0, 0, 0, q)
-            if others.length: issue_cmd(ME, CMD_MOVE, others, x, y, 0, 0, q)
-            return
-        if res_at(c) != 0:
-            issue_cmd(ME, CMD_GATHER, workers, c, 0, 0, 0, q)
-            if others.length: issue_cmd(ME, CMD_MOVE, others, x, y, 0, 0, q)
-            return
-        if b >= 0 and b_owner[b] == ME and b_done[b] == 1 and (filter(workers) id: u_carry[index_of(id)] > 0).length:
-            issue_cmd(ME, CMD_DROP_OFF, workers, b_id[b], 0, 0, 0, q)
-            return
-    let code = if gl.button("a") >= 1: CMD_ATTACK_MOVE else: CMD_MOVE
-    issue_cmd(ME, code, ids, x, y, 0, 0, q)
+    let b = building_at(mm)
+    let foe = unit_at_screen(m, false)
+    let mine = unit_at_screen(m, true)
+    if herd.length:
+        if b >= 0 and b_owner[b] == ME and b_done[b] == 1 and is_pen(b): issue_cmd(ME, CMD_PEN, herd, b_id[b], 0, 0, 0)
+        else: issue_cmd(ME, CMD_MOVE, herd, x, y, 0, 0, q)   // (our sheep only ever walk)
+    if not ids.length: return
+    let others = filter(ids) id: not contains(workers, id)
+    let bridge = bridge_on(c)
+    let am = attack_move or gl.button("a") >= 1
+    if am and bridge >= 0 and br_up[bridge] == 1 and foe < 0:
+        issue_cmd(ME, CMD_ATTACK, ids, br_id[bridge], 0, 0, 0, q)   // attack-click a bridge: break it
+    elif am:
+        issue_cmd(ME, CMD_ATTACK_MOVE, ids, x, y, 0, 0, q)
+    elif foe >= 0:
+        issue_cmd(ME, CMD_ATTACK, ids, u_id[foe], 0, 0, 0, q)   // a foe, or an animal to hunt
+    elif mine >= 0 and u_owner[mine] == ME and is_animal(mine) and workers.length:
+        issue_cmd(ME, CMD_ATTACK, ids, u_id[mine], 0, 0, 0, q)   // slaughter one of our sheep for its food
+    elif b >= 0 and is_enemy(b_owner[b], ME) and fog[ME][c] != 0:
+        issue_cmd(ME, CMD_ATTACK, ids, b_id[b], 0, 0, 0, q)
+    elif res_at(c) != 0 and workers.length:
+        issue_cmd(ME, CMD_GATHER, workers, c, 0, 0, 0, q)
+        if others.length: issue_cmd(ME, CMD_MOVE, others, x, y, 0, 0, q)
+    elif bridge >= 0 and br_up[bridge] == 0 and workers.length:
+        issue_cmd(ME, CMD_HELP_BUILD, ids, br_id[bridge], 0, 0, 0, q)   // rebuild a broken bridge
+    elif mine >= 0 and workers.length and can_mend(ME, u_id[mine]):
+        issue_cmd(ME, CMD_REPAIR, ids, u_id[mine], 0, 0, 0, q)   // mend our siege engine
+    elif b < 0 and workers.length and rubble.get(c) and rubble.get(c, []::int)[1] == ME and not build_barred(ME, rubble.get(c, []::int)[2]):
+        let r = rubble.get(c, []::int)   // wall up our breach again
+        issue_cmd(ME, CMD_BUILD, ids, r[2], r[3], r[4], r[5], q)
+    elif b >= 0 and workers.length and can_mend(ME, b_id[b]):
+        issue_cmd(ME, CMD_REPAIR, ids, b_id[b], 0, 0, 0, q)   // mend our damaged building
+    elif b >= 0 and places(c) > 0 and teams[b_owner[b]] == teams[ME] and not workers.length:
+        issue_cmd(ME, CMD_MOVE, ids, x, y, 0, 0, q)   // up onto our wall
+    elif b >= 0 and b_owner[b] == ME and b_done[b] == 0:
+        issue_cmd(ME, CMD_HELP_BUILD, ids, b_id[b], 0, 0, 0, q)
+    elif b >= 0 and is_market(b) and not is_enemy(b_owner[b], ME) and (filter(ids) id: t_trader[u_kind[index_of(id)]] != 0).length:
+        issue_cmd(ME, CMD_ROUTE, ids, b_id[b], 0, 0, 0)   // trade carts: trade with that market
+    elif b >= 0 and b_owner[b] == ME and b_done[b] == 1 and (filter(ids) id: takes_in(b, index_of(id))).length:
+        issue_cmd(ME, CMD_DROP_OFF, ids, b_id[b], 0, 0, 0, q)   // take what they carry in
+    elif b >= 0 and pool[c] >= 0 and b_owner[b] == ME:
+        issue_cmd(ME, CMD_RESEED, ids, b_id[b], 0, 0, 0)   // a fallow farm of ours
+    elif b >= 0 and b_owner[b] == ME and room(b) > 0 and (filter(ids) id: can_hold(b, index_of(id))).length:
+        issue_cmd(ME, CMD_GARRISON, ids, b_id[b], 0, 0, 0, q)   // inside our Town Center or tower
+    else:
+        issue_cmd(ME, CMD_MOVE, ids, x, y, 0, 0, q)
 
 // What player 0 may build clock_s: (type) in menu order.
 def buildable() -> [int]:
@@ -1359,9 +1400,39 @@ def keys():
             if gl.button(key) == 1 and n < offer.length: issue_cmd(ME, CMD_RESEARCH, []::int, sel_building, offer[n], 0, 0)
         if gl.button("x") == 1 and b_queue[b].length: issue_cmd(ME, CMD_CANCEL, []::int, sel_building, b_queue[b].length - 1, 0, 0)
     if gl.button("s") == 1 and selected.length and gl.button("left shift") == 0: issue_cmd(ME, CMD_STOP, selected_units(), 0, 0, 0, 0)
+    if b < 0 and selected_soldiers().length:
+        if gl.button("r") == 1: arming_attack = true   // R then click: attack-move there
+        let hk = ability_hotkey()
+        if hk != "" and gl.button(hk) == 1 and ability_users().length: arming_ability = true
+
+// The selected units that fight (not workers, not animals).
+def selected_soldiers() -> [int]: return filter(selected_units()) id: t_worker[u_kind[index_of(id)]] == 0 and t_animal[u_kind[index_of(id)]] == 0
+
+// Our race's ability (data: its name, desc, hotkey...), or nil; and the selected units that may use it.
+def my_ability() -> JV?:
+    let ab = get(su_idents[ME], "ability")
+    return if ab and ab.kind == J_OBJ and gstr(ab, "kind", "") != "": ab else: nil
+def ability_hotkey() -> string:
+    let ab = my_ability()
+    return if ab: gstr(ab, "hotkey", "").lowercase() else: ""
+def ability_users() -> [int]: return filter(selected_units()) id: t_ability[u_kind[index_of(id)]] != 0
 
 def mouse():
     let m = mouse_px()
+    if arming_attack or arming_ability:   // the armed order goes where the next left click is
+        if gl.button("mouse1") == 1:
+            if arming_attack: order(m, true)
+            else:
+                let mm = mouse_milli()
+                issue_cmd(ME, CMD_ABILITY, selected_units(), int(mm.x), int(mm.y), 0, 0)
+                say(ME, "ack")
+            arming_attack = false
+            arming_ability = false
+            return
+        if gl.button("mouse3") == 1 or gl.button("escape") == 1:
+            arming_attack = false
+            arming_ability = false
+            return
     if placing >= 0:
         if gl.button("mouse1") == 1: place_here(gl.button("left shift") >= 1)
         if gl.button("mouse3") == 1 or gl.button("escape") == 1: placing = -1
@@ -1691,6 +1762,21 @@ def self_test() -> bool:
         test_step++
     elif test_step == 4 and clock_s >= 4.5:
         expect_ok((filter(selected_units()) id: u_moving[index_of(id)] == 1 or u_task[index_of(id)] != T_NONE).length > 0, "right click on open ground moves them")
+        // two workers carrying nothing, right-clicked onto the Town Center: they go inside
+        let idle = filter(u_id) id: u_owner[index_of(id)] == ME and t_worker[u_kind[index_of(id)]] != 0 and u_carry[index_of(id)] == 0
+        selected = idle.slice(0, 2)
+        fake_mouse = screen_of_cell(b_cy[tc] * W + b_cx[tc] + 1)
+        order(fake_mouse)
+        test_step++
+    elif test_step == 5 and clock_s >= 9.0:
+        expect_ok(b_inside[tc].length > 0, "right click on the Town Center sends workers inside ({b_inside[tc].length / REC_SIZE} in)")
+        selected = []
+        sel_building = b_id[tc]
+        for(panel_buttons()) btn:
+            if btn.act == 12: press(btn)
+        test_step++
+    elif test_step == 6 and clock_s >= 10.0:
+        expect_ok(b_inside[tc].length == 0, "Ungarrison brings them out")
         print test_log
         return true
     return false
@@ -2103,7 +2189,7 @@ def pause_menu():
     ui_frame(true)
     if gl.button("controller_b") == 1: menu_open = false
     ui_fill(float2_0, ws, float4 { 0.0, 0.0, 0.0, 0.45 })
-    let size = float2 { 420.0 * u, 470.0 * u }
+    let size = float2 { 420.0 * u, 542.0 * u }
     let at = ws / 2.0 - size / 2.0
     ui_panel(at, size, if net_on: "Menu (the match goes on)" else: "Paused")
     var y = at.y + 70.0 * u
@@ -2122,11 +2208,14 @@ def pause_menu():
         menu_open = false
         tree_open = true
         tree_page = build_tree(ME)
+    if winner < 0 and defeated[ME] == 0 and item("Surrender", false):   // (the match ends as a defeat for your side)
+        issue_cmd(ME, CMD_SURRENDER, []::int, 0, 0, 0, 0)
+        menu_open = false
     if item("Quit", false): quit_game = true
     ui_flush()
 
 while gl.frame() and not quit_game:
-    if gl.button("escape") == 1 and placing < 0 and not build_menu and not typing_race and not tree_open and not pad_wheel.length: menu_open = not menu_open
+    if gl.button("escape") == 1 and placing < 0 and not build_menu and not typing_race and not tree_open and not pad_wheel.length and not arming_attack and not arming_ability: menu_open = not menu_open
     if gl.button("controller_start") == 1 and not typing_race: menu_open = not menu_open
     if has_s(args, "menu") and frame_no == 2: menu_open = true   // (captures)
     if gl.button("escape") == 1: build_menu = false

@@ -3,7 +3,7 @@
 // building as a record (REC_*), healed 1 hp every heal_every ticks, an arrow each in its volley.
 // Coming out they take their old id and slot back, beside the building. The Town Center's call to
 // arms sends the workers near it into the nearest building with room; back to work brings them out.
-// Left out: GARRISON and UNGARRISON by hand (the bots don't use them).
+// GARRISON sends units in by hand, UNGARRISON brings everyone out (toward the rally point).
 
 let T_GARRISON = 4             // economy.gd NONE, GATHER, RETURN, BUILD, GARRISON
 
@@ -141,3 +141,20 @@ def garrison_tick():
         while o < recs.length:
             if recs[o + REC_HP] < t_hp[recs[o + REC_KIND]]: recs[o + REC_HP]++
             o += REC_SIZE
+
+// Commands.GARRISON {ids, building}: the player's units go inside the player's building, while it has room.
+def cmd_garrison(p:int, ids:[int], bid:int):
+    let b = b_index_of(bid)
+    if b < 0 or b_owner[b] != p: return
+    for(ids) uid:
+        let i = index_of(uid)
+        if i >= 0 and u_owner[i] == p and can_hold(b, i) and room(b) > 0: send_in(i, b)
+
+// Commands.UNGARRISON {building}: everyone inside comes out, in id order, and makes for the rally point.
+def cmd_ungarrison(p:int, bid:int):
+    let b = b_index_of(bid)
+    if b < 0 or b_owner[b] != p: return
+    let out = []::int
+    while b_inside[b].length: out.push(u_id[come_out(b, b_inside[b].length / REC_SIZE - 1)])
+    qsort_in_place(out) x, y: x < y
+    for(out) uid: go_to_rally(b, index_of(uid))
