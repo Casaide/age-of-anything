@@ -37,6 +37,7 @@ var building_names = dictionary<int, string>(64)
 var research_names = dictionary<int, string>(128)
 var pack_map = ""                             // the match the art was baked for: its map and races' prompts
 var pack_prompts = []::string
+var pack_library = false                      // the pack is the part library: every race's units, any race
 let pack_formats = texture_format_nearest_mag | texture_format_nearest_min | texture_format_nomipmap | texture_format_clamp
 
 def load_pack(dir:string):
@@ -77,6 +78,7 @@ def load_pack(dir:string):
                 case "bus": buses.set(t[1], float(num(2)))
                 case "voicekind": voice_takes.set(t[1], num(2))
                 case "match": pack_map = t[1]
+                case "library": pack_library = true
                 case "prompt": pack_prompts.push(if t.length > 2: spaced(t[2]) else: "")
                 default: pass()
 

@@ -739,7 +739,10 @@ def die(v:UV, tip:float) -> void:
     v.walking = false
     v.job = ""
     v.attack_t = 0.0
-    let pose = corpse_pose_of(v.recipe)
+    var pose = corpse_pose_of(v.recipe)
+    if pose:   // (a library may not hold this recipe's fall: it falls the usual way then)
+        let f0 = as_int(glist(pose, "frames")[0])
+        if not bakes.get(corpse_id(v.recipe, pose, f0) + ":" + facing_suffix(v.facing_k)): pose = nil
     if pose:
         v.corpse_pose = pose
         let c = new_part("")

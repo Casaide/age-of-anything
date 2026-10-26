@@ -59,6 +59,8 @@ import .gen.start
 import .view.node
 import .view.art
 import .view.unit_view
+import .gen.reset
+import .gen.balance
 import .game.audio
 import .game.pack
 
@@ -73,6 +75,7 @@ var shot = ""
 var shot_at = 0.0
 var start_speed = 1.0
 var look_x = -1
+var races_arg = ""             // races:<A>|<B>: the lobby's prompts, as if typed (then balanced, then played)
 var look_y = -1
 for(args) a, k:
     if k >= 2:
@@ -83,6 +86,7 @@ for(args) a, k:
         if key == "speed": start_speed = string_to_float(val)
         if a == "selftest": selftest = true
         if a == "follow": follow = true
+        if key == "races": races_arg = val
         if key == "look":
             let lx, ly = split_string(val, ",")
             look_x = string_to_int(lx)
@@ -579,6 +583,140 @@ def draw_world(alpha:float):
                 draw_shots(alpha)
                 draw_marks(alpha)
 
+
+// ------------------------------------------------------------------ the lobby (type your races; Lobster makes, balances and sets them up)
+// Two prompts, each race shown as you type (the generator takes a few milliseconds); Enter balances
+// them by fighting every line against every other (gen/balance.lobster) and starts the match with
+// the prices the fights set. The units are drawn from the part library (art_pack.gd library).
+
+let RULES_ID = "default"
+
+class LobbyRace:
+    prompt:string
+    race:JV
+
+def race_lines(r:JV) -> [string]:
+    let out = []::string
+    out.push(rstr(r, "name") + "  (" + rstr(r, "creature") + ", " + rstr(r, "family") + ")")
+    for(glist(r, "notes")) n: out.push("  " + as_str(n))
+    for(glist(r, "units")) u:
+        let rec = at(u, "recipe")
+        let e = at(u, "eval")
+        let c = at(e, "cost")
+        var cost = 0
+        for(c.a) v: cost += as_int(v)
+        out.push("  " + rstr(rec, "name") + "   hp " + string(as_int(at(e, "hp"))) + "  atk " + string(as_int(at(e, "attack"))) + "  cost " + string(cost))
+    return out
+
+def lobby_text(p:float2, s:string, col:float4):
+    gl.color(col):
+        gl.translate(p): gl.text(s)
+
+// The lobby's own frame loop: the prompts, or [] when the window closes.
+def run_lobby(defaults:[string]) -> [string]:
+    let prompts = copy(defaults)
+    var field = 0
+    let rules = load_rules(RULES_ID)
+    gl.start_text_input(int2 { 0, 0 }, int2 { 400, 40 })
+    gl.set_text_input(prompts[field])
+    var shown = map(prompts) p: generate(p, rules, 0)
+    var shown_for = copy(prompts)
+    while gl.frame():
+        if gl.button("escape") == 1: return []
+        let text, editing, cursor, sel = gl.text_input_state()
+        prompts[field] = text
+        if gl.button("tab") == 1:
+            field = (field + 1) % prompts.length
+            gl.set_text_input(prompts[field])
+        if gl.button("return") == 1:
+            gl.end_text_input()
+            return prompts
+        for(prompts) p, k:
+            if p != shown_for[k]:
+                shown[k] = generate(p, rules, 0)
+                shown_for[k] = p
+        gl.clear(float4 { 0.07, 0.06, 0.05, 1.0 })
+        gl.set_shader("color")
+        let u = ui()
+        let ws = float(gl.window_size())
+        gl.set_font_size(int(40.0 * u))
+        lobby_text(float2 { 40.0 * u, 30.0 * u }, "Age of Anything", float4 { 0.95, 0.85, 0.6, 1.0 })
+        gl.set_font_size(int(18.0 * u))
+        lobby_text(float2 { 40.0 * u, 90.0 * u }, "Type your race and theirs. Tab: the other one. Enter: balance them and play. Esc: quit.", float4 { 0.8, 0.78, 0.7, 1.0 })
+        for(prompts) p, k:
+            let x = 40.0 * u + float(k) * ws.x / 2.0
+            let y = 140.0 * u
+            lobby_text(float2 { x, y }, if k == 0: "Your race" else: "Their race", float4 { 0.7, 0.68, 0.6, 1.0 })
+            gl.color(if k == field: float4 { 0.25, 0.2, 0.14, 1.0 } else: float4 { 0.15, 0.13, 0.1, 1.0 }):
+                gl.translate(float2 { x - 8.0 * u, y + 26.0 * u }): gl.rect(float2 { ws.x / 2.0 - 70.0 * u, 34.0 * u })
+            gl.set_font_size(int(22.0 * u))
+            lobby_text(float2 { x, y + 30.0 * u }, p + (if k == field and (int(seconds_elapsed() * 2.0) % 2) == 0: "|" else: ""), float4 { 1.0, 0.95, 0.85, 1.0 })
+            gl.set_font_size(int(16.0 * u))
+            for(race_lines(shown[k])) line, n:
+                lobby_text(float2 { x, y + 80.0 * u + float(n) * 22.0 * u }, line, if n == 0: float4 { 0.95, 0.85, 0.6, 1.0 } else: float4 { 0.8, 0.78, 0.72, 1.0 })
+    return []
+
+// The races balanced by fights before the match: a few rounds of the round robin in age 2, each line
+// priced by its win rate (gen/balance.lobster), shown as it goes. Returns the prices' report.
+def balance_for_match(races:[JV], rules:JV, rounds:int) -> [string]:
+    let report = []::string
+    let t0 = seconds_elapsed()
+    var stop = false
+    auto_balance(races, rules, 2, rounds, 10) round, units, rates, mean, off:
+        report.push("round {round + 1}: {off} of {units.length} lines more than 10 points off the mean ({rr_fights} fights, {seconds_elapsed() - t0} s)")
+        gl.frame()
+        gl.clear(float4 { 0.07, 0.06, 0.05, 1.0 })
+        gl.set_shader("color")
+        let u = ui()
+        gl.set_font_size(int(26.0 * u))
+        lobby_text(float2 { 40.0 * u, 40.0 * u }, "Balancing the armies by fighting them...", float4 { 0.95, 0.85, 0.6, 1.0 })
+        gl.set_font_size(int(16.0 * u))
+        for(report) line, n: lobby_text(float2 { 40.0 * u, 100.0 * u + float(n) * 24.0 * u }, line, float4 { 0.8, 0.78, 0.72, 1.0 })
+        for(units) un, k:
+            let pct = rr_price_pct.get(price_key(races, un), 100)
+            lobby_text(float2 { 40.0 * u + float(k / 18) * 560.0 * u, 260.0 * u + float(k % 18) * 22.0 * u },
+                "{rates[k]}%  {un.label}" + (if pct != 100: "  price {pct}%" else: ""), float4 { 0.75, 0.72, 0.66, 1.0 })
+    return report
+
+// The fights' prices on the races: every step of a priced line costs its percent.
+def apply_prices(races:[JV]):
+    for(races) r:
+        for(glist(r, "units")) un:
+            let slot = rstr(at(un, "recipe"), "slot")
+            let pct = rr_price_pct.get(rstr(r, "key") + "|" + slot, 100)
+            if pct != 100:
+                let steps = glist(un, "line")
+                for(steps) l:
+                    let c = at(at(l, "eval"), "cost")
+                    for(c.a) v, n: c.a[n] = jint(round10(as_int(v) * pct / 100))
+                let c0 = at(at(un, "eval"), "cost")
+                if steps.length and at(steps[0], "eval") != at(un, "eval"):
+                    for(c0.a) v, n: c0.a[n] = jint(round10(as_int(v) * pct / 100))
+
+// CombatFx.shot_kind: what a unit's shots are, by its weapon's tags.
+def shot_kind_of(tags:[string]) -> string:
+    if has_s(tags, "great_sling"): return "sling_stone"
+    if has_s(tags, "catapult"): return "boulder"
+    if has_s(tags, "bolt_thrower"): return "siege_bolt"
+    if has_s(tags, "javelin"): return "javelin"
+    if has_s(tags, "sling"): return "stone"
+    if has_s(tags, "poison"): return "dart"
+    if has_s(tags, "gun"): return "ball"
+    if has_s(tags, "heavy") and has_s(tags, "bow"): return "bolt"
+    return "arrow"
+
+// What the pack used to tell per race: names, voices, blow and shot sounds, architectures.
+def race_facts(races:[JV]):
+    voice_of = map(races) r: rstr(creature(rstr(r, "creature")), "voice")
+    arch_of = map(races) r: architecture(r)
+    for(t_slot.length) k:
+        let r = su_type_recipe[k]
+        unit_names.set(k, gstr(r, "name", t_slot[k]))
+        let tags = eval_tags(su_type_eval[k])
+        unit_blow.set(k, if has_s(tags, "ram"): "ram_hit" elif has_s(tags, "blade"): "hit_blade" elif has_s(tags, "blunt"): "hit_blunt" else: "hit_pierce")
+        let kind = shot_kind_of(tags)
+        unit_shot.set(k, if kind == "boulder": "catapult_release" elif kind == "siege_bolt": "bolt_release" elif kind == "sling_stone": "sling_release" else: "shoot_" + kind)
+
 // ------------------------------------------------------------------ selection and orders
 
 var selected = []::int          // unit ids
@@ -1051,13 +1189,25 @@ lib_load("../../data")
 id_load("../../data")
 composed = read_file(args[0] + "/rigs.json") != nil
 if composed: load_part_data(args[0])
-if args[1] == "-":   // the races from their prompts and the match start, made here (gen/)
-    let rules = load_rules("default")
+var lobby_report = []::string
+if args[1] == "-" or args[1] == "lobby":   // the races from their prompts and the match start, made here (gen/)
+    let rules = load_rules(RULES_ID)
     set(rules, "animals", jbool(true))
+    var prompts = if pack_prompts.length >= 2: pack_prompts else: ["sewer rats with cheese hammers", "angry swamp frogs with reed spears"]
+    if args[1] == "lobby":
+        if races_arg != "": prompts = tokenize(races_arg, "|", " ")
+        else: prompts = run_lobby(prompts)
+        if not prompts.length: return
     let t_gen = seconds_elapsed()
-    let races = map(pack_prompts) pr: generate(pr, rules, 0)
+    let races = map(prompts) pr: generate(pr, rules, 0)
     let t_setup = seconds_elapsed()
-    setup_world(20261010, pack_map, races, rules, [])
+    if args[1] == "lobby":
+        lobby_report = balance_for_match(races, rules, 4)
+        for(lobby_report) l: print l
+        apply_prices(races)
+        reset_world()
+    setup_world(20261010, if pack_map != "": pack_map else: "reed_meadow", races, rules, [])
+    if pack_library: race_facts(races)
     print "races in {(t_setup - t_gen) * 1000.0} ms, the start in {(seconds_elapsed() - t_setup) * 1000.0} ms"
 else: start_world(args[1])
 note("world")
