@@ -1198,3 +1198,12 @@ over is cool but can get frustrating and ugly. I think wrong game for that". So 
 frees the footprint when a building falls, as today; the ruin is drawn there with no effect on movement, placement or
 sight; building over it clears it; otherwise it fades away after a while. Supersedes the "ruin that stays" in study
 AQ1's direction 2.
+
+**D-173, 2026-10-26: Unit fidelity goes heroic: humans 5.5 heads tall, everything baked at 2x.** Dominic picked from
+round F1 (`docs/concepts/fidelity/`): "go with heroic 5.5 heads at 2x". Supersedes the toy proportions (~3.4 heads)
+of today's human and the 1.5 art pixels per canvas unit of D-042's bake: the art scale becomes 3.0 (a tile 192 art
+pixels across, one art pixel a screen pixel at play zoom), units and buildings alike; the painted value bands and
+the dark outline stay (they are what keeps it a classic RTS). The human body is rebuilt at the genre's heroic
+build (about 5.5 heads, broad shoulders), its gear refitted; rats, frogs and the other creatures follow in their own
+concept rounds. Team colour moves toward a smaller region over natural colours as the pieces are remade. Milestone 23
+(`docs/milestones/m23-fidelity.md`).
