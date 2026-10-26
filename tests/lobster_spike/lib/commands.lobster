@@ -211,6 +211,8 @@ def run(c0:Cmd):
         case CMD_PEN: cmd_pen(p, ids, c.a)
         case CMD_ABILITY: cmd_ability(p, ids, c.a, c.b)
         case CMD_RELEASE: cmd_release(p, c.a)
+        case CMD_GARRISON: cmd_garrison(p, own_units_cleared(p, ids), c.a)
+        case CMD_UNGARRISON: cmd_ungarrison(p, c.a)
         default: assert false
 
 // Units that have finished what they were doing take their next queued order; a queued BUILD whose

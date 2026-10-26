@@ -17,7 +17,9 @@ class Btn:
     label:string
     hotkey:string
     act:int                       // 0 train slot, 1 research, 2 age up, 3 build, 4 stop, 5 cancel the last in the queue,
-                                  // 6 a build page (arg 0 civilian, 1 military, -1 back), 7 stance (arg), 8 call to arms, 9 back to work
+                                  // 6 a build page (arg 0 civilian, 1 military, -1 back), 7 stance (arg), 8 call to arms, 9 back to work,
+                                  // 10 arm attack-move, 11 arm the race's ability, 12 ungarrison, 13 reseed, 14 auto-reseed,
+                                  // 15 release the pen's animals, 16 trade (arg: resource x 2 + 1 to buy), 17 slaughter
     arg:int
     unit = -1                     // a unit type to draw on it
     building = -1                 // or a building type
@@ -165,6 +167,58 @@ def panel_buttons() -> [Btn]:
             b.group = "Age up"
             b.tip = if b.enabled: "On to the next age." else: "Needs its buildings first, or you can\'t pay for it yet."
             out.push(b)
+        if capacity(bi) > 0:   // a building that holds a garrison: everyone out
+            let inside = b_inside[bi].length / REC_SIZE
+            let b = Btn { "Ungarrison", "", 12, 0 }
+            b.icon = "ungarrison"
+            b.enabled = inside > 0
+            b.group = "Orders"
+            b.note = "{inside}/{capacity(bi)}"
+            b.tip = "Everyone inside comes out (to the rally point, if it has one)."
+            out.push(b)
+        let anchor_cell = b_cy[bi] * W + b_cx[bi]
+        if b_done[bi] != 0 and pool[anchor_cell] >= 0:   // a farm: Reseed when it's worked out, and Auto-reseed for all farms
+            let fk = btype_named("farm")
+            let reseed = if fk >= 0: bt_reseed[fk] else: []::int
+            if left_at(anchor_cell) <= 0:
+                let b = Btn { "Reseed", "", 13, 0 }
+                b.icon = "fallow_fields"
+                b.costv = reseed
+                b.cost = cost_words(reseed)
+                b.enabled = can_afford(ME, reseed)
+                b.group = "Farm"
+                b.tip = "Crops again for {b.cost}; its farmer starts the harvest."
+                out.push(b)
+            let on = auto_reseed[ME] == 1
+            let b = Btn { "Auto-reseed", "", 14, 0 }
+            b.icon = "fallow_fields"
+            b.accent = on
+            b.note = if on: "ON" else: "OFF"
+            b.group = "Farm"
+            b.tip = "A farm worked out is sown again at once for {cost_words(reseed)}, and its farmer farms on. For all your farms."
+            out.push(b)
+        if b_done[bi] != 0 and is_pen(bi):
+            let n = min(pen_animals(bi, true).length, bt_pen_animals[b_kind[bi]])
+            let b = Btn { "Release", "", 15, 0 }
+            b.icon = "release"
+            b.enabled = n > 0
+            b.group = "Orders"
+            b.tip = "The animals walk out and stand in front of the pen."
+            out.push(b)
+        if is_market(bi):   // buy and sell a lot of each resource for gold
+            let g = resource_index("gold")
+            for([true, false]) buy:
+                for(resource_names) rn, r:
+                    if r != g:
+                        let price = quote(ME, r, buy)
+                        let verb = if buy: "Buy" else: "Sell"
+                        let b = Btn { "{verb} {LOT} {rn}", if buy: "+" else: "-", 16, r * 2 + (if buy: 1 else: 0) }
+                        b.icon = "res_" + rn
+                        b.note = "{price} gold"
+                        b.enabled = not trade_barred(ME, bi, r, buy)
+                        b.group = verb
+                        b.tip = "{if buy: "Costs" else: "Pays"} {price} gold. Each trade moves the price: buying pushes it up, selling down."
+                        out.push(b)
         if bt_name[b_kind[bi]] == "town_center" and b_done[bi] != 0:   // one bell, rung and unrung
             let rung = (filter(b_id.length) b: b_owner[b] == ME and (filter(b_inside[b].length / REC_SIZE) k: t_worker[b_inside[b][k * REC_SIZE + REC_KIND]] != 0).length > 0).length > 0
             let b = Btn { if rung: "Back to work" else: "Call to arms", "", if rung: 9 else: 8, 0 }
@@ -177,7 +231,33 @@ def panel_buttons() -> [Btn]:
     if not ids.length: return out
     let workers = selected_workers()
     let soldiers = filter(ids) id: t_worker[u_kind[index_of(id)]] == 0 and t_animal[u_kind[index_of(id)]] == 0
+    let herd = filter(ids) id: t_animal[u_kind[index_of(id)]] != 0
+    if herd.length and workers.length:   // workers and our sheep: the workers slaughter them
+        let b = Btn { "Slaughter", "", 17, 0 }
+        b.icon = "slaughter"
+        b.group = "Orders"
+        b.tip = "The selected workers slaughter the selected animals, one at a time, and gather the meat."
+        out.push(b)
     if soldiers.length:
+        let am = Btn { "Attack-move", "R", 10, 0 }
+        am.icon = "attack_move"
+        am.group = "Orders"
+        am.accent = arming_attack
+        am.tip = "Then click where: they walk there and fight whatever they meet on the way."
+        out.push(am)
+        let ab = my_ability()
+        let users = ability_users()
+        if ab and users.length:   // the race's ability: ready on the first that's ready, else its wait
+            var wait = 1000000
+            for(users) id: wait = min(wait, ability_wait(index_of(id)))
+            let b = Btn { gstr(ab, "name", "Ability"), gstr(ab, "hotkey", ""), 11, 0 }
+            b.icon = "creature_research"
+            b.enabled = wait == 0
+            b.note = if wait == 0: "" else: "{(wait + 19) / 20}s"
+            b.accent = arming_ability
+            b.group = "Orders"
+            b.tip = "{gstr(ab, "desc", "")} Then click where (within {gint(ab, "range", 0) / 1000} tiles)."
+            out.push(b)
         let st = Btn { "Stop", "S", 4, 0 }
         st.icon = "stop"
         st.group = "Orders"
@@ -233,6 +313,16 @@ def press(b:Btn):
         case 7: issue_cmd(ME, CMD_STANCE, selected_units(), b.arg, 0, 0, 0)
         case 8: issue_cmd(ME, CMD_CALL_TO_ARMS, []::int, sel_building, 0, 0, 0)
         case 9: issue_cmd(ME, CMD_BACK_TO_WORK, []::int, 0, 0, 0, 0)
+        case 10: arming_attack = true
+        case 11: arming_ability = true
+        case 12: issue_cmd(ME, CMD_UNGARRISON, []::int, sel_building, 0, 0, 0)
+        case 13: issue_cmd(ME, CMD_RESEED, []::int, sel_building, 0, 0, 0)
+        case 14: issue_cmd(ME, CMD_AUTO_RESEED, []::int, if auto_reseed[ME] == 1: 0 else: 1, 0, 0, 0)
+        case 15: issue_cmd(ME, CMD_RELEASE, []::int, sel_building, 0, 0, 0)
+        case 16: issue_cmd(ME, CMD_TRADE, []::int, sel_building, b.arg / 2, b.arg % 2, 0)
+        case 17:   // the workers go for the first of the selected animals (sim_debug.slaughter_selected)
+            let herd = filter(selected_units()) id: t_animal[u_kind[index_of(id)]] != 0
+            if herd.length: issue_cmd(ME, CMD_ATTACK, selected_workers(), herd[0], 0, 0, 0)
         default:
             let bi = b_index_of(sel_building)
             if bi >= 0 and b_queue[bi].length: issue_cmd(ME, CMD_CANCEL, []::int, sel_building, b_queue[bi].length - 1, 0, 0)
