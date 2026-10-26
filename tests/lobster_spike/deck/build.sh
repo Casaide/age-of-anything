@@ -20,12 +20,15 @@ mkdir -p "$out/lobster/bin"
 "$ENGINE" run --rm --platform linux/amd64 -v "$LOBSTER_SRC:/lobster:ro" -v "$out/lobster/bin:/out" "$IMAGE" sh -c '
 	set -e
 	apt-get update -qq && apt-get install -y -qq build-essential cmake libgl1-mesa-dev libx11-dev libxext-dev \
-		libxrandr-dev libxcursor-dev libxi-dev libxss-dev libxfixes-dev libasound2-dev libpulse-dev libudev-dev >/dev/null
+		libxrandr-dev libxcursor-dev libxi-dev libxss-dev libxfixes-dev libxtst-dev libxkbcommon-dev libdbus-1-dev \
+		libasound2-dev libpulse-dev libudev-dev libegl1-mesa-dev libgles2-mesa-dev >/dev/null
 	cp -r /lobster/dev /tmp/dev
 	cd /tmp/dev && rm -rf build-linux && mkdir build-linux && cd build-linux
-	cmake -DCMAKE_BUILD_TYPE=Release .. >/dev/null
-	make -j"$(nproc)" lobster >/dev/null
-	cp /tmp/dev/bin/lobster /out/lobster 2>/dev/null || cp ../../bin/lobster /out/lobster 2>/dev/null || cp lobster /out/lobster
+	cmake -DCMAKE_BUILD_TYPE=Release .. > /tmp/cmake.log 2>&1 || { tail -30 /tmp/cmake.log; exit 1; }
+	make -j"$(nproc)" lobster > /tmp/make.log 2>&1 || { tail -40 /tmp/make.log; exit 1; }
+	found=$(find /tmp/dev -name lobster -type f -perm -u+x -newer /tmp/cmake.log | head -1)
+	[ -n "$found" ] || { echo "no lobster binary built"; exit 1; }
+	cp "$found" /out/lobster
 	strip /out/lobster
 '
 cp -R "$LOBSTER_SRC/data" "$LOBSTER_SRC/modules" "$out/lobster/"
