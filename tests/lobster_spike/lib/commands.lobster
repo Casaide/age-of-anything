@@ -6,9 +6,64 @@
 
 let QUEUEABLE = [CMD_MOVE, CMD_GATHER, CMD_BUILD, CMD_HELP_BUILD, CMD_ATTACK, CMD_ATTACK_MOVE, CMD_DROP_OFF, CMD_GARRISON, CMD_REPAIR]
 
-// Doing something: a job, a move, or a fight (World.busy).
+// Doing something: a job, a move, a fight, or a way along or off a wall (World.busy).
 def busy(i:int) -> bool:
-    return u_task[i] != T_NONE or u_moving[i] == 1 or u_foe[i] != 0 or u_patient[i] != 0
+    return u_task[i] != T_NONE or u_moving[i] == 1 or u_foe[i] != 0 or u_patient[i] != 0 or wall_busy(i)
+
+let WALL_ORDERS = [CMD_MOVE, CMD_ATTACK, CMD_ATTACK_MOVE, CMD_GATHER, CMD_BUILD, CMD_HELP_BUILD, CMD_DROP_OFF, CMD_GARRISON, CMD_PEN, CMD_RESEED, CMD_REPAIR]
+
+// Where an order sends a unit (milli-tiles), for climbing down towards it; -1, -1 if nowhere (World._order_point).
+def order_point(c:Cmd) -> int, int:
+    switch c.code:
+        case CMD_MOVE, CMD_ATTACK_MOVE: return if c.slotted == 1: c.sx else: c.a, if c.slotted == 1: c.sy else: c.b
+        case CMD_GATHER: return centre(c.a)
+        case CMD_BUILD: return c.b * TILE + TILE / 2, c.c * TILE + TILE / 2
+        default:
+            let j = index_of(c.a)
+            if j >= 0: return u_x[j], u_y[j]
+            let b = b_index_of(c.a)
+            if b >= 0: return b_cx[b] * TILE + b_sx[b] * TILE / 2, b_cy[b] * TILE + b_sy[b] * TILE / 2
+            return -1, -1
+
+// Walls you stand on, before an order runs (World._wall_orders): a MOVE onto a walkway sends those
+// who may climb up; an ATTACK on a foe up on a wall sends melee up to it; a unit up on a wall given
+// anything else climbs down first (the order waits in its queue). Returns the order for the rest.
+def wall_orders(c:Cmd) -> Cmd:
+    let p = c.player
+    let now = []::int
+    for(c.ids) uid:
+        let i = index_of(uid)
+        if i >= 0 and u_owner[i] == p and not (c.queue == 1 and busy(i)): now.push(uid)
+    let done = []::int
+    if c.code == CMD_MOVE:
+        let goal = walkway_at(if c.slotted == 1: c.sx else: c.a, if c.slotted == 1: c.sy else: c.b)
+        if goal >= 0:
+            for(order_onto(p, now, goal)) uid:
+                done.push(uid)
+                if c.queue == 0: u_orders[index_of(uid)] = []::Cmd
+    let foe = if c.code == CMD_ATTACK: index_of(c.a) else: -1
+    if foe >= 0 and u_perch[foe] != 0:
+        let climbers = filter(now) uid: u_perch[index_of(uid)] == 0 and not t_ranged[u_kind[index_of(uid)]]
+        for(order_onto(p, climbers, u_perch[foe] - 1)) uid:
+            done.push(uid)
+            let one = Cmd { c.run_tick, CMD_ATTACK, p, c.a, 0, 0, 0, [uid], c.seq }
+            u_orders[index_of(uid)] = [one]
+    for(now) uid:
+        let i = index_of(uid)
+        if not contains(done, uid) and u_perch[i] != 0:
+            let shoots_or_reaches = c.code == CMD_ATTACK and (t_ranged[u_kind[i]] or (foe >= 0 and u_perch[foe] != 0 and on_net(dist_from(u_perch[i] - 1), u_perch[foe] - 1)))
+            if not shoots_or_reaches:
+                done.push(uid)
+                let ax, ay = order_point(c)
+                if ax >= 0 and wall_leave(i, ax, ay):
+                    if c.queue == 0: u_orders[i] = []::Cmd
+                    if c.code != CMD_MOVE:   // (a move is where it walks once down)
+                        let one = copy_cmd(c, [uid])
+                        one.queue = 0
+                        u_orders[i].insert(0, one)
+    if not done.length: return c
+    let out = copy_cmd(c, filter(c.ids) uid: not contains(done, uid))
+    return out
 
 def copy_cmd(c:Cmd, ids:[int]) -> Cmd:
     let o = Cmd { c.run_tick, c.code, c.player, c.a, c.b, c.c, c.d, ids, c.seq }
@@ -89,6 +144,7 @@ def cmd_stop(p:int, ids:[int]):
             combat_clear(i)
             u_orders[i] = []::Cmd
             u_moving[i] = 0
+            wall_stop(i)
 
 var cmd_log = false
 
@@ -105,6 +161,10 @@ def run(c0:Cmd):
         if bid == 0: return
         c = Cmd { c.run_tick, CMD_HELP_BUILD, p, bid, 0, 0, 0, c.ids, c.seq }
         c.queue = 1
+    if contains(WALL_ORDERS, c.code):
+        let a = wall_orders(c)
+        if not a.ids.length and c.ids.length: return   // (every unit dealt with there)
+        c = a
     var formed = false
     if (c.code == CMD_MOVE or c.code == CMD_ATTACK_MOVE) and c.slotted == 0:
         c = copy_cmd(c, c.ids)

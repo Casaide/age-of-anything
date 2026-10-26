@@ -209,6 +209,7 @@ def building_field(bid:int, near:bool, ln:int) -> int:
 
 // Head for "next to" a rect of milli-tiles (inclusive), following field `key` (World.order_reach).
 def order_reach(i:int, x0:int, y0:int, x1:int, y1:int, key:int):
+    if u_perch[i] != 0: return   // on a wall: it walks the walkway, never the ground
     u_tx[i] = x0 + (x1 - x0) / 2
     u_ty[i] = y0 + (y1 - y0) / 2
     u_reach[i] = 1
@@ -224,6 +225,7 @@ def order_reach(i:int, x0:int, y0:int, x1:int, y1:int, key:int):
 // Head for a point (snapped to walkable ground) and stop within `arrive` (World.order_move). In a
 // group move, its own slot by the field of the group's centre (fx, fy); `near`: a near field.
 def order_move(i:int, x:int, y:int, arrive:int, group:int, fx:int, fy:int, pace:int, near:bool = false):
+    if u_perch[i] != 0: return
     let ln = lane(i)
     let px, py = snap(x, y, ln)
     var cell = cell_of(px, py)
@@ -242,6 +244,7 @@ def order_move(i:int, x:int, y:int, arrive:int, group:int, fx:int, fy:int, pace:
 // Head for a point of its own beside a rect (a place round a building it attacks), following the
 // rect's field `key` there and stepping round the rect's corners near it (World.order_beside).
 def order_beside(i:int, x:int, y:int, x0:int, y0:int, x1:int, y1:int, key:int):
+    if u_perch[i] != 0: return
     u_tx[i] = x
     u_ty[i] = y
     u_reach[i] = 2
@@ -257,6 +260,7 @@ def order_beside(i:int, x:int, y:int, x0:int, y0:int, x1:int, y1:int, key:int):
 
 // Head straight for a point with no flow field (World.order_direct).
 def order_direct(i:int, x:int, y:int):
+    if u_perch[i] != 0: return
     u_tx[i] = x
     u_ty[i] = y
     u_reach[i] = 0

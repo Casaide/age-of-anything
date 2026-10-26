@@ -52,6 +52,7 @@ def step():
     pack_tick()
     repair_tick()
     garrison_tick()
+    walls_tick()
     animals_tick()
     grow_scratch()   // (a lamb born in a pen)
     spatial_build()
@@ -117,7 +118,7 @@ def state_hash() -> int:
     h = mix(h, winner)
     for(wonder_ids) id, k: h = mix(mix(h, id), wonder_since[k])
     for(market_price) v: h = mix(h, v)
-    h = rubble_hash(h)
+    h = walls_hash(h)
     for(br_id) id, k:
         for([id, br_hp[k], br_up[k], br_work[k], br_payer[k]]) v: h = mix(h, v)
     h = mix(h, shots.length / SHOT_STRIDE)
@@ -140,6 +141,7 @@ def state_hash() -> int:
 
 def dump_state() -> string:
     var s = "tick {tick} next_id {next_id} next_group {next_group} fields {field_keys} queue {field_queue} shots {shots} lost {lost} stock {stock} gathered {gathered} pop {pop} cap {pop_cap}\n"
+    s += "pour " + concat_string(map(pour_ids) id: "{id}:{pour_at.get(id, 0)}", " ") + "\n"
     for(u_x.length) i: s += unit_line(i) + "\n"
     for(b_id.length) b:
         s += "b"
@@ -425,6 +427,13 @@ def load_extras():
         rubble.set(rb[o3], rb.slice(o3 + 1, 6))
         rubble_cells.push(rb[o3])
         o3 += 7
+    t_docks = extra("t_docks")
+    let pa = extra("pour_at")
+    var o4 = 0
+    while o4 < pa.length:
+        pour_at.set(pa[o4], pa[o4 + 1])
+        pour_ids.push(pa[o4])
+        o4 += 2
     let pens = extra("bt_pen")
     for(pens.length / 4) k:
         bt_pen_animals.push(pens[k * 4])

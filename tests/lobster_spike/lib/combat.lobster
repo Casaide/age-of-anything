@@ -80,6 +80,7 @@ def sight_of(i:int) -> int:
 
 def look(i:int) -> int:
     let k = u_kind[i]
+    if u_perch[i] != 0: return t_reach[k] + u_radius[i] + TILE / 2 + (if t_ranged[k]: r_high_reach else: TILE)   // up on a wall it never chases
     if u_posture[i] == DEFENSIVE: return max(r_defend_sight, t_reach[k] + u_radius[i] + TILE / 2)
     if u_posture[i] == STAND: return t_reach[k] + u_radius[i] + TILE / 2
     return sight_of(i)
@@ -109,9 +110,14 @@ def height_step_to(i:int, lv:int) -> int:
     return if d > 0: 1 elif d < 0: -1 else: 0
 
 // High ground: 1 if unit i stands a level above unit j (or building b), -1 if below, 0 on the level.
+// A unit up on a wall stands a level above the ground it's on.
 def height_step(i:int, j:int, b:int) -> int:
-    if not has_heights: return 0
-    return height_step_to(i, if j >= 0: level[cell_of(u_x[j], u_y[j])] else: level[b_cy[b] * W + b_cx[b]])
+    var at = if u_perch[i] != 0: 1 else: 0
+    var to = if j >= 0 and u_perch[j] != 0: 1 else: 0
+    if has_heights:
+        at += level[cell_of(u_x[i], u_y[i])]
+        to += if j >= 0: level[cell_of(u_x[j], u_y[j])] else: level[b_cy[b] * W + b_cx[b]]
+    return if at > to: 1 elif at < to: -1 else: 0
 
 def uphill(d:int) -> int: return max(1, d * r_uphill_pct / 100)
 
@@ -175,6 +181,7 @@ def nearest_foe(i:int, sight:int, buildings_too:bool, spread:int, use_inbound:bo
     let cx = u_x[i] / TILE
     let cy = u_y[i] / TILE
     let counters = t_counters[u_kind[i]]
+    let lvl = if t_ranged[u_kind[i]]: -1 elif u_perch[i] != 0: 1 else: 0   // melee: only foes up on a wall if it is, the ground if not
     let xi = u_x[i]
     let yi = u_y[i]
     if units_too:
@@ -191,6 +198,7 @@ def nearest_foe(i:int, sight:int, buildings_too:bool, spread:int, use_inbound:bo
                     let j = sp_items[k]
                     k++
                     if not is_foe(u_owner[j], me) or t_animal[u_kind[j]] != 0: continue   // a rival's sheep is stolen, not killed
+                    if lvl >= 0 and (if u_perch[j] != 0: 1 else: 0) != lvl: continue
                     if use_inbound and c_inbound[j] >= u_hp[j]: continue
                     let d2 = dist2(xi, yi, u_x[j], u_y[j])
                     if d2 > sight * sight or d2 < near * near or not fog_visible(me, u_x[j], u_y[j]): continue
@@ -610,6 +618,9 @@ def combat_tick():
             else:
                 lost_foe(i)
             continue
+        if j >= 0 and not t_ranged[k] and (u_perch[i] != 0) != (u_perch[j] != 0):
+            lost_foe(i)   // melee can't reach up onto a wall, nor down off one
+            continue
         let g = gap_to(i, j, b)
         var up = if t_ranged[k]: height_step(i, j, b) else: 0
         if t_min_range[k] > 0 and g < t_min_range[k]:
@@ -652,6 +663,15 @@ def combat_tick():
                     else:
                         c_bhurt[b] += d
                         if events_on: events.push(Event { EV_HIT, u_id[i], b_id[b], d, u_x[i], u_y[i] })
+        elif u_perch[i] != 0:
+            if j >= 0 and u_perch[j] != 0 and not t_ranged[k] and on_net(dist_from(u_perch[i] - 1), u_perch[j] - 1):
+                if u_wgoal[i] != u_perch[j] and u_wtime[i] == 0:
+                    wall_walk(i, u_perch[j] - 1)   // along the walkway to the foe up here
+                    u_foe[i] = u_id[j]
+                    u_stance[i] = AUTO
+            else:
+                u_foe[i] = 0   // up on a wall: out of reach, let it go (it never chases off the wall)
+                u_stance[i] = NONE
         elif u_stance[i] == AUTO and posture == STAND:
             u_foe[i] = 0
             u_stance[i] = NONE
@@ -667,6 +687,7 @@ def combat_tick():
     for(nb) b:   // (slots ascending: GDScript sorts the besieged buildings' slots)
         if chasers[b].length: surround(b, chasers[b], hitters[b])
     towers()
+    pour()
     apply_hits(n)
     for(brhurt) d, kb:
         if d > 0: bridge_hurt(kb, d)

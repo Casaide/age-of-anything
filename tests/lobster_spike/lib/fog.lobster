@@ -56,6 +56,7 @@ def fog_update_team(team:[int]):
             let k = u_kind[i]
             var r = (if t_worker[k]: r_fog_worker else: r_fog_unit) + t_sight[k]
             if has_heights: r += level[cell_of(u_x[i], u_y[i])] * r_high_sight_unit   // high ground sees further
+            if u_perch[i] != 0: r += r_high_sight_unit   // so does a unit up on a wall
             let high = t_mclass[k] == 2
             let key = ((u_y[i] / 1000 * W + u_x[i] / 1000) * 64 + r) * 2 + (if high: 1 else: 0)
             if stamped.get(key, 0): continue
