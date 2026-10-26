@@ -90,6 +90,14 @@ SURRENDER, the bots' walls and abilities.
       each side's bot only on its own machine, a 10-minute match with all 300 hash checks the same. Two game
       windows played 100 seconds together (`13-...`). Not yet: the LAN beacon to find a host, a lobby page for
       it, more than two players, the Mac against the Deck.
+- [x] Pad play (2026-10-26): `game/pad.lobster`, after `src/view/pad_play.gd` and the m20 button table: a reticle
+      for the mouse (left stick pans, right stick nudges), A taps to select, held a circle sweeps, on what's
+      selected the wheel (train, research, age up; build); X smart order, Y attack-move, B back, RB soldiers on
+      screen, LT / RT zoom, the d-pad an idle worker, the Town Center, groups 1 and 2. Last input wins.
+      `padtest`: a fake pad plays (7 checks). Not yet: the wheel's pages, LB (queue, cycling kinds), menus on
+      the pad, Steam Input's layout, a Deck build of the Lobster game.
+- [x] Control groups shown (Dominic, 2026-10-26: "visible somewhere, at least as a number on the units"): the
+      group's number by each unit, and each group with its size under the top bar (`14-...`).
 - [ ] 6. Setup in Lobster (Dominic, 2026-10-26: "Let's do it! Primarily because ... it opens us up to generation at
       army creation time and during the game"). Three steps, each checked against GDScript:
   - [x] 6a. Races and the match from data, 2026-10-26: a JSON reader and Godot-compatible writer, SHA-256, DataLib,
