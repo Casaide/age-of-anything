@@ -887,6 +887,7 @@ def run_lobby(defaults:[string]) -> [string]:
     var shown = map(prompts) p, k: generate(p, rules, lobby_rerolls[k])
     var shown_for = copy(prompts)
     var lab_frames = 0
+    var test_lines = []::string      // the last Test: how the fights went
     var armies = map(shown) r, k: if composed and pack_library: roster_views(r, k) else: []::UV
     def step_map(by:int):
         let maps = map_ids()
@@ -935,23 +936,41 @@ def run_lobby(defaults:[string]) -> [string]:
             let m = float(gl.mouse_pos(0))
             if gl.button("mouse1") == 1 and m.x >= x + 20.0 * u and m.x <= x + half - 68.0 * u and m.y >= 176.0 * u and m.y <= 220.0 * u: focus(k)
         let by = ws.y - 100.0 * u
-        if ui_button(float2 { 24.0 * u, by }, float2 { 52.0 * u, 60.0 * u }, "<", false): step_map(-1)
-        if ui_button(float2 { 300.0 * u, by }, float2 { 52.0 * u, 60.0 * u }, ">", false): step_map(1)
-        if ui_button(float2 { 370.0 * u, by }, float2 { 220.0 * u, 60.0 * u }, "Mode: " + lobby_mode, false):
+        // The bottom row, left to right, in shares of the window: map < name >, mode, test | address, join, host, play.
+        let g = 12.0 * u
+        let unit_w = (ws.x - 48.0 * u - g * 8.0) / 15.0
+        var bx = 24.0 * u
+        def slot(n:float) -> float2:
+            let at = float2 { bx, by }
+            bx += unit_w * n + g
+            return at
+        if ui_button(slot(0.6), float2 { unit_w * 0.6, 60.0 * u }, "<", false): step_map(-1)
+        let name_at = slot(2.0)
+        if ui_button(slot(0.6), float2 { unit_w * 0.6, 60.0 * u }, ">", false): step_map(1)
+        if ui_button(slot(2.4), float2 { unit_w * 2.4, 60.0 * u }, "Mode: " + lobby_mode, false):
             lobby_mode = MODE_IDS[(str_index(MODE_IDS, lobby_mode) + 1) % MODE_IDS.length]
-        ui_box(float2 { ws.x - 760.0 * u, by }, float2 { 230.0 * u, 60.0 * u }, -1, ui_look.face, false)
-        if field == 2: ui_outline(float2 { ws.x - 760.0 * u, by }, float2 { 230.0 * u, 60.0 * u }, 2.0 * u, ui_look.accent)
+        if ui_button(slot(1.4), float2 { unit_w * 1.4, 60.0 * u }, "Test", false) or (has_s(args, "labtest") and lab_frames == 5):
+            // Fight every line against every other at equal cost, now (the balancer's first round, its
+            // prices not kept): how even the two races are as typed.
+            let report = balance_for_match(shown, rules, 1)
+            test_lines = report
+            reset_world()
+            rr_price_pct = dictionary<string, int>(64)
+        let addr_at = slot(2.6)
+        ui_box(addr_at, float2 { unit_w * 2.6, 60.0 * u }, -1, ui_look.face, false)
+        if field == 2: ui_outline(addr_at, float2 { unit_w * 2.6, 60.0 * u }, 2.0 * u, ui_look.accent)
         var go = ""
-        if ui_button(float2 { ws.x - 520.0 * u, by }, float2 { 120.0 * u, 60.0 * u }, "Join", false): go = "join"
-        if ui_button(float2 { ws.x - 390.0 * u, by }, float2 { 140.0 * u, 60.0 * u }, "Host", false): go = "host"
-        if ui_button(float2 { ws.x - 240.0 * u, by }, float2 { 216.0 * u, 60.0 * u }, "Play", true): go = "play"
+        if ui_button(slot(1.4), float2 { unit_w * 1.4, 60.0 * u }, "Join", false): go = "join"
+        if ui_button(slot(1.4), float2 { unit_w * 1.4, 60.0 * u }, "Host", false): go = "host"
+        if ui_button(slot(2.6), float2 { unit_w * 2.6, 60.0 * u }, "Play", true): go = "play"
         // The armies, then the text.
         for(prompts) p, k:
             draw_roster(armies[k], float2 { 24.0 * u + float(k) * half + 50.0 * u, ws.y - 190.0 * u }, 0.9 * u, k, gl.delta_time())
         ui_text(float2 { 30.0 * u, 26.0 * u }, "Age of Anything", int(42.0 * u), ui_look.title)
         ui_text(float2 { 30.0 * u, 84.0 * u }, "Type your race and theirs: anything you can describe. Tab: the next field. Enter: balance them by fighting, and play.", int(16.0 * u), ui_look.dim)
-        ui_text(float2 { 90.0 * u, by + 18.0 * u }, lobby_map, int(18.0 * u), ui_look.text)
-        ui_text(float2 { ws.x - 750.0 * u, by + 18.0 * u }, address + (if field == 2 and (int(seconds_elapsed() * 2.0) % 2) == 0: "|" else: ""), int(18.0 * u), ui_look.text)
+        ui_text(name_at + float2 { 10.0 * u, 18.0 * u }, lobby_map, int(18.0 * u), ui_look.text)
+        if test_lines.length: ui_text(float2 { 30.0 * u, ws.y - 32.0 * u }, "Test: " + test_lines[test_lines.length - 1], int(15.0 * u), ui_look.accent)
+        ui_text(addr_at + float2 { 12.0 * u, 18.0 * u }, address + (if field == 2 and (int(seconds_elapsed() * 2.0) % 2) == 0: "|" else: ""), int(18.0 * u), ui_look.text)
         for(prompts) p, k:
             let x = 24.0 * u + float(k) * half
             ui_text(float2 { x + 32.0 * u, 184.0 * u }, p + (if k == field and (int(seconds_elapsed() * 2.0) % 2) == 0: "|" else: ""), int(22.0 * u), ui_look.text)
@@ -959,7 +978,7 @@ def run_lobby(defaults:[string]) -> [string]:
                 ui_text(float2 { x + 32.0 * u, 236.0 * u + float(n) * 22.0 * u }, line, int(16.0 * u), if n == 0: ui_look.title else: ui_look.dim)
         ui_flush()
         lab_frames++
-        if lab_arg and lab_frames == 90:
+        if lab_arg and lab_frames == (if has_s(args, "labtest"): 20 else: 90):
             if shot != "": gl.screenshot(shot)
             return []
         if go != "":
