@@ -407,7 +407,10 @@ import .model.town_props
 import .model.bridges
 import .model.build_mats
 import .view.world_bake
+import .model.buildings
+import .model.buildings2
 import .game.art_kit
+import .game.art_kit_buildings
 import .game.bake_missing   // (here: it makes views to see what parts they wear)
 
 def job_of(i:int) -> string:
@@ -1477,11 +1480,14 @@ def scroll():
 
 // ------------------------------------------------------------------ marks and the HUD
 
+// An ellipse on the ground (2:1) round p, about 1.6 px thick at any size: line segments through the UI layer's
+// meshes (gl.open_circle goes astray after the sprites' shader, as gl.rect and gl.line do in this build).
 def draw_ring(p:float2, r:float, col:float4):
-    gl.color(col):
-        gl.translate(p):
-            gl.scale(float2 { 1.0, 0.5 }):
-                gl.open_circle(r, 48, min(0.12, 1.6 / r))   // (thickness: a fraction of the radius; about 1.6 px, a big building's ring as fine as a unit's)
+    let n = 48
+    for(n) k:
+        let a0 = 360.0 * float(k) / float(n)
+        let a1 = 360.0 * float(k + 1) / float(n)
+        ui_line(p + float2 { cos(a0) * r, sin(a0) * r * 0.5 }, p + float2 { cos(a1) * r, sin(a1) * r * 0.5 }, 1.6, col)
 
 // Shots in flight (shots.gd, combat_fx.gd): each weapon's shot on its arc from the shooter's body to
 // where it lands, for the sim's flight, with a speck of shadow under it. Canvas units (under the 1.5 scale).
@@ -2237,6 +2243,9 @@ while gl.frame() and not quit_game:
         ak_rebake = rebake_art
         let nd = bake_doodads()
         print "baked {nd} props{if rebake_art: "" else: " the pack lacked"}, in {int((seconds_elapsed() - t1) * 1000.0)} ms"
+        let t2 = seconds_elapsed()
+        let nb = bake_buildings_for(arch_of)
+        print "baked {nb} building frames{if rebake_art: "" else: " the pack lacked"}, in {int((seconds_elapsed() - t2) * 1000.0)} ms"
     if shot != "" and frame_no < 3: note("frame {frame_no} tc at {if tc0 >= 0: to_screen(iso(float(b_cx[tc0] * 1000 + 2000), float(b_cy[tc0] * 1000 + 2000))) else: float2_0} cam {cam} zoom {zoom} ws {gl.window_size()} fb {gl.framebuffer_size()} tc {tc0} draws {draws.length} W {W} H {H} first {iso(0.0, 0.0)} last {iso(float(W * 1000), float(H * 1000))}")
     if shot != "" and frame_no % 60 == 0: print "frame {frame_no}: {dt * 1000.0} ms, play {clock_s} s"
     if reload_at >= 0.0 and clock_s >= reload_at:

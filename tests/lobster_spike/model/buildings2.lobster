@@ -92,12 +92,12 @@ def bld_fort_tower(body:MNode, arch:string, at:float3, r:float, h:float) -> floa
             add_child(body, bcyl(r * 0.15, r + 0.05, r * 0.6, felt, at + bv(0.0, h + 0.31 + r * 0.3, 0.0), float3_0, 20))
             return h + 0.31 + r * 0.6
         case "reed":
-            let deck = bld_stilt_deck(body, at, r * 2.0 + 0.2, r * 2.0 + 0.2)
+            let deck_y = bld_stilt_deck(body, at, r * 2.0 + 0.2, r * 2.0 + 0.2)
             let weave = bm("weave")
-            add_child(body, bcyl(r * 0.88, r, h - deck, weave, at + bv(0.0, deck + (h - deck) / 2.0, 0.0), float3_0, 22))
+            add_child(body, bcyl(r * 0.88, r, h - deck_y, weave, at + bv(0.0, deck_y + (h - deck_y) / 2.0, 0.0), float3_0, 22))
             for([0.25, 0.7]) t:
-                add_child(body, bring(r * (1.0 - 0.12 * t) - 0.02, r * (1.0 - 0.12 * t) + 0.04, bm("mud"), at + bv(0.0, deck + (h - deck) * t, 0.0)))
-            bld_slit(body, at + bv(0.0, deck + (h - deck) * 0.5, r * 0.95), 0.0)
+                add_child(body, bring(r * (1.0 - 0.12 * t) - 0.02, r * (1.0 - 0.12 * t) + 0.04, bm("mud"), at + bv(0.0, deck_y + (h - deck_y) * t, 0.0)))
+            bld_slit(body, at + bv(0.0, deck_y + (h - deck_y) * 0.5, r * 0.95), 0.0)
             add_child(body, bdome(r * 0.98, bm("thatch"), at + bv(0.0, h - 0.02, 0.0), bv(1.0, 1.0, 1.0)))
             return h + r * 0.98
         case "mound":
@@ -201,9 +201,9 @@ def bld_keep(body:MNode, arch:string, at:float3, w:float, d:float, h:float, team
         case "tent":
             return at.y + bld_yurt(holder, float3_0, min(w, d) / 2.0 + 0.15, h * 0.55, team)
         case "reed":
-            let deck = bld_stilt_deck(holder, float3_0, w + 0.2, d + 0.2)
+            let deck_y = bld_stilt_deck(holder, float3_0, w + 0.2, d + 0.2)
             let r = min(w, d) / 2.0
-            let top = bld_reed_dome(holder, bv(0.0, deck, 0.0), r, team)
+            let top = bld_reed_dome(holder, bv(0.0, deck_y, 0.0), r, team)
             add_child(holder, bcyl(r * 0.36, r * 0.44, 0.22, bm("weave"), bv(0.0, top - 0.06, 0.0), float3_0, 20))
             add_child(holder, bdome(r * 0.44, bm("thatch"), bv(0.0, top + 0.05, 0.0), bv(1.0, 1.1, 1.0)))
             return at.y + top + r * 0.5
