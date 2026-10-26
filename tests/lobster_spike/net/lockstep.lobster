@@ -35,6 +35,8 @@ class Lockstep:
     mine = dictionary<int, int>(64)
     desync = ""
     first_seq = 0                // our first command this link carries
+    more = []::Link              // a host's other players' links (more than two people: a star round the host)
+    relay = false                // the host: every turn that comes in goes on to the others
 
 def net_host(port:int) -> Link:
     let l, err = tcp.listen("0.0.0.0", port)
@@ -87,6 +89,15 @@ def net_flush(link:Link):
         if n <= 0: return
         link.out = link.out.substring(n, link.out.length - n)
 
+// Frames taken but not handled yet go back on the link, in order (a turn that came with the match).
+def net_unread(link:Link, frames:[[string]]):
+    var back = ""
+    for(frames) f:
+        let head = ensure_size(f[0], 5, 0)
+        let h, _ = write_int32_le(head, 1, f[1].length)
+        back += h + f[1]
+    link.inb = back + link.inb
+
 def net_poll(link:Link) -> [[string]]:
     net_flush(link)
     let frames = []::[string]
@@ -125,29 +136,36 @@ def check_hashes(ls:Lockstep):
 
 // Take what came: the others' commands into the queue, their hashes checked. Other frames
 // (not turns) are returned for the caller.
+def ls_links(ls:Lockstep) -> [Link]: return append([ls.link], ls.more)
+
 def ls_receive(ls:Lockstep) -> [[string]]:
     let rest = []::[string]
-    for(net_poll(ls.link)) f:
-        if f[0] == "T":
-            let v, err = flexbuffers_binary_to_value(typeof TurnMsg, f[1])
-            let m = v
-            if err or not m: ls.desync = "a turn that will not read: {err}"
-            else:
-                if m.turn != ls.done[m.player] + 1: ls.desync = "turn {ls.done[m.player] + 1} from player {m.player + 1} missing (got {m.turn})"
-                for(m.cmds) c:
-                    pending.push(c)
-                    next_seq[c.player] = max(next_seq[c.player], c.seq + 1)
-                ls.done[m.player] = m.turn
-                var k = 0
-                while k + 1 < m.hashes.length:
-                    ls.theirs.set(m.hashes[k], m.hashes[k + 1])
-                    k += 2
-        else: rest.push(f)
+    let links = ls_links(ls)
+    for(links) src, li:
+        for(net_poll(src)) f:
+            if f[0] == "T" and ls.relay:   // (the host passes each player's turn on to the others)
+                for(links) to, lj:
+                    if lj != li: net_send(to, 'T', f[1])
+            if f[0] == "T":
+                let v, err = flexbuffers_binary_to_value(typeof TurnMsg, f[1])
+                let m = v
+                if err or not m: ls.desync = "a turn that will not read: {err}"
+                else:
+                    if m.turn != ls.done[m.player] + 1: ls.desync = "turn {ls.done[m.player] + 1} from player {m.player + 1} missing (got {m.turn})"
+                    for(m.cmds) c:
+                        pending.push(c)
+                        next_seq[c.player] = max(next_seq[c.player], c.seq + 1)
+                    ls.done[m.player] = m.turn
+                    var k = 0
+                    while k + 1 < m.hashes.length:
+                        ls.theirs.set(m.hashes[k], m.hashes[k + 1])
+                        k += 2
+            else: rest.push(f)
     check_hashes(ls)
     return rest
 
 def may_run(ls:Lockstep, turn:int) -> bool:
-    if ls.desync != "" or ls.link.closed: return false
+    if ls.desync != "" or (filter(ls_links(ls)) l: l.closed).length: return false
     for(ls.players) p:
         if ls.done[p] < turn - 2: return false
     return true
@@ -160,7 +178,8 @@ def end_turn(ls:Lockstep, turn:int):
     let mine = filter(pending) c: c.player == ls.me and c.run_tick == run and c.seq >= ls.first_seq
     let msg = TurnMsg { ls.me, turn, mine, ls.hashes_out }
     ls.hashes_out = []
-    net_send(ls.link, 'T', flexbuffers_value_to_binary(msg, 1000))
+    let bin = flexbuffers_value_to_binary(msg, 1000)
+    for(ls_links(ls)) l: net_send(l, 'T', bin)
     ls.done[ls.me] = turn
 
 // After every step: a hash now and then, a finished turn out.
