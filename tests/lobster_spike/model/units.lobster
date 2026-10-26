@@ -3,7 +3,7 @@
 // comments are there. Part units are about one 2D pixel: x the way the unit faces, y up, z the near side.
 
 var hold = "low"                     // the body being built: how its near hand holds the weapon (arm_pose)
-var rest = ""                        // ...and the idle pose it rests in while holding it (creature kit)
+var rest_pose = ""                        // ...and the idle pose it rests in while holding it (creature kit)
 
 let INK = html("#2a1a12")
 let REACH_FLOOR = 8.0
