@@ -101,6 +101,17 @@ you select the group". On the art study: "unit and building fidelity is a key go
 and the study's lasers didn't come from the barrel (passed to the study's session). The town is whole: cracks,
 the stable's tethered horse, the town's sound.
 
+Late on: the lobby got Test (the typed races fought line against line on the spot), Fight (both armies on the map
+at once), Find (a host on the home network: this Lobster build has no UDP, so the joiner asks every address over
+TCP; a read that spun forever once the other end closed turned up on the way). A Deck build: Lobster compiled for
+Linux in a container (Dominic approved the downloads; he asked why not cross-compile from the Mac: Linux's
+libraries would have to be gathered by hand), checked in a Linux container, put on the share. And the baker's port
+began: Godot's models exported as meshes, baked in Lobster with the part baker's camera, lights, textures and a
+shadow map, matching Godot's bakes within a pixel; then a mesh library of every part with each material tagged by
+the race colour it follows, so the game bakes any race's parts itself (the sci-fi mod's soldiers, in play). On the
+way: Lobster mesh colours are bytes (a position put there came out clamped), gl.ortho's depth mode left the
+framebuffer empty, and Godot's lights here aren't divided by pi.
+
 ## Pictures
 
 `archive/images/2026-10-26/`: the first frame (01), a rat raid on the frog town (02), sheep penned (03), the UI scaled (04), the ground shader with composed rats (05), moonbears from the lobby and the library (06), rats become forest bears mid-match (07), hills and cliffs (08), joined walls (09), cobbled paths (10), a fight with shots on their arcs (11), the town's piles (12), a network match from the joiner's side (13), pad play and group numbers (14), a burning Town Center (15), the Siege mode (16), the sci-fi mod's soldiers (17), the tech tree (18, 24, 27), the Race Lab (19), the panel (20, 21), the timber lobby (22), the pause menu (23), cracks (25), a tethered horse (26), rerolls (28).
