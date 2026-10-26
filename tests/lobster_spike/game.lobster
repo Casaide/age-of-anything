@@ -56,6 +56,9 @@ import .gen.heroes
 import .gen.generator
 import .gen.setup
 import .gen.start
+import .view.node
+import .view.art
+import .view.unit_view
 import .game.audio
 import .game.pack
 
@@ -63,6 +66,7 @@ let args = command_line_arguments()
 // Options after the two paths: watch (the bot plays you too), speed:<x>, shot:<png> with at:<seconds>
 // (a screenshot after that much play, then quit), look:<x>,<y> (the camera on that tile).
 var watch = false
+var composed = false            // the pack has part bakes: units are composed (view/), not flipbooks
 var follow = false              // the camera follows the fighting (captures)
 var selftest = false            // play a few orders through the controls, check the sim took them, quit
 var shot = ""
@@ -233,6 +237,7 @@ def sounds_after_step():
 
 def after_step():
     sounds_after_step()
+    if composed: view_events()
     for(events) e:
         if e.kind == EV_SHOT: attack_t0.set(e.a, clock_s)
         elif e.kind == EV_HIT:
@@ -250,15 +255,180 @@ def after_step():
 
 class Drawable:
     y:float          // sort point (art px)
+    seq:int          // then the order added (a unit's parts, in its draw order)
     f:int            // frame
     x:float
     ay:float         // anchor y
     col:float4
+    xf:[float]       // a composed part's transform (else empty: drawn at its anchor)
 
 var draws = []::Drawable
 
 def add(f:int, x:float, y:float, sort_y:float, col:float4):
-    if f >= 0: draws.push(Drawable { sort_y, f, x, y, col })
+    if f >= 0: draws.push(Drawable { sort_y, draws.length, f, x, y, col, [] })
+
+def add_xf(f:int, xf:[float], sort_y:float, col:float4):
+    if f >= 0: draws.push(Drawable { sort_y, draws.length, f, 0.0, 0.0, col, xf })
+
+// ------------------------------------------------------------------ composed units (view/unit_view.lobster)
+// A view per unit, as the Godot game keeps one: walking from its move, its job and tool from its
+// task, facing its work or the way it walks, a lunge or a release on its blows and shots, its fall
+// when it dies (a ghost for a few seconds). Parts drawn from the pack's part bakes.
+
+let views = dictionary<int, UV>(1024)
+let view_ver = dictionary<int, int>(1024)
+class Ghost:
+    view:UV
+    sort_y:float
+    owner:int
+    t0:float
+var ghosts = []::Ghost
+var frame_dt = 1.0 / 60.0
+let view_stage = VNode {}       // canvas units to art px
+view_stage.scl = float2_1 * 1.5
+let ID_XF = [1.0, 0.0, 0.0, 1.0, 0.0, 0.0]
+
+// The line step a type is drawn in (as retype picks it): the recipe its units look like now.
+def type_step(k:int) -> int:
+    let p = t_player[k]
+    if p < 0 or p >= num_players: return 0
+    let line = lines[k]
+    var step = 0
+    for(line) l, n:
+        if l.age <= ages[p] and (l.age == line[0].age or t_worker[k] or t_hero[k] or upgraded_line(p, l)): step = n
+    return step
+
+def make_view(k:int, p:int, step:int) -> UV:
+    let v = uv_new()
+    add_child(view_stage, v.node)
+    let tc = team_col(p)
+    let line = su_type_line[k]
+    let r = if step < line.length: at(line[step], "recipe") else: su_type_recipe[k]
+    uv_build(v, r, float3 { tc.x, tc.y, tc.z }, t_speed[k] / 5)
+    v.node.scl = float2_1 * 0.85
+    v.pose_steps = 8
+    v.art_px = 1.5
+    return v
+
+def canvas(x:float, y:float) -> float2: return iso(x, y) / 1.5
+
+def job_of(i:int) -> string:
+    if u_moving[i] != 0: return ""
+    if u_task[i] == GATHER:
+        let r = (u_carry_kind[i] - 1 + num_resources) % num_resources   // (GDScript: a -1 index is the last)
+        let name = resource_names[r]
+        return if name == "wood": "chop" elif name == "stone" or name == "gold": "mine" else: "forage"
+    if u_task[i] == BUILD: return "build"
+    return ""
+
+def tool_of(i:int, k:int) -> string:
+    let res = if u_carry_kind[i] > 0: resource_names[u_carry_kind[i] - 1] else: ""
+    if u_task[i] == T_RETURN and u_carry[i] > 0:
+        return if res == "wood": "load.reeds" elif res == "stone": "load.stone" elif res == "gold": "load.gold" else: "tool.basket"
+    if u_task[i] == GATHER:
+        return if res == "wood": "tool.axe" elif res == "stone" or res == "gold": "tool.pick" else: "tool.basket"
+    if u_task[i] == BUILD: return "tool.hammer"
+    return gstr(at(su_type_recipe[k], "parts"), "hand_r", "tool.basket")
+
+def work_point(i:int) -> float2:
+    if u_task[i] == GATHER:
+        let c = u_target[i]
+        return canvas(float((c % W) * 1000 + 500), float((c / W) * 1000 + 500))
+    let b = b_index_of(u_target[i])
+    if b < 0: return float2 { -1.0, -1.0 }
+    return canvas(float((b_cx[b] * 2 + b_sx[b]) * 500), float((b_cy[b] * 2 + b_sy[b]) * 500))
+
+def view_of(i:int) -> UV:
+    let k = u_kind[i]
+    let step = type_step(k)
+    let ver = (k * 16 + step) * 16 + u_owner[i]
+    let have = views.get(u_id[i])
+    if have and view_ver.get(u_id[i], -1) == ver: return have
+    if have:
+        remove_child(view_stage, have.node)
+        free_tree(have.node)
+    let v = make_view(k, u_owner[i], step)
+    views.set(u_id[i], v)
+    view_ver.set(u_id[i], ver)
+    return v
+
+def crew_tick(c:UV) -> void:
+    uv_process(c, frame_dt)
+    for(c.crew) cc: crew_tick(cc)
+
+def add_view(v:UV, sort_y:float, tc:float4, shade:float):
+    let sx = xf_local(view_stage)
+    for(draw_list(v, ID_XF)) d:
+        add_xf(frame_index("p:" + d.key), xf_mul(sx, d.xf), sort_y, float4 { tc.x, tc.y, tc.z, d.alpha * shade })
+
+def collect_views(alpha:float):
+    let alive = dictionary<int, int>(1024)
+    for(u_x.length) i:
+        alive.set(u_id[i], 1)
+        let px, py = prev_pos(i)
+        let x = px + (u_x[i] - px) * alpha
+        let y = py + (u_y[i] - py) * alpha
+        let mine = teams[u_owner[i]] == teams[ME]
+        if mine or visible_to_me(cell_of(u_x[i], u_y[i])):
+            let k = u_kind[i]
+            let v = view_of(i)
+            let dx = u_x[i] - px
+            let dy = u_y[i] - py
+            v.node.pos = canvas(x, y)
+            set_perched(v, u_perch[i] != 0)
+            v.walking = dx != 0 or dy != 0
+            if t_unpack[k] > 0: set_packed(v, u_ready[i] < t_unpack[k])
+            if on_screen(u_x[i], u_y[i]):
+                let job = job_of(i)
+                v.job = job
+                if t_worker[k]: set_tool(v, tool_of(i, k))
+                if job != "":
+                    let w = work_point(i)
+                    if w.x >= 0.0 and vlen(w - v.node.pos) > 2.0: face_vec(v, w - v.node.pos)
+                elif abs(dx) + abs(dy) > 4: face_vec(v, iso(float(dx), float(dy)) / 1.5)
+                uv_process(v, frame_dt)
+                for(v.crew) c: crew_tick(c)
+                let since = clock_s - hit_t0.get(u_id[i], -10.0)
+                let flash = if since < 0.12: 1.0 + 1.8 * (1.0 - since / 0.12) else: 1.0
+                add_view(v, iso(x, y).y, team_col(u_owner[i]), flash)
+            last_kind.set(u_id[i], k)
+            last_owner.set(u_id[i], u_owner[i])
+    for(views.get_keys()) id:
+        if not alive.get(id, 0):
+            let v = views.get(id)
+            if v:
+                remove_child(view_stage, v.node)
+                free_tree(v.node)
+            views.del(id)
+    for(ghosts) g:
+        if clock_s - g.t0 >= 4.0:
+            remove_child(view_stage, g.view.node)
+            free_tree(g.view.node)
+    ghosts = filter(ghosts) g: clock_s - g.t0 < 4.0
+    for(ghosts) g:
+        uv_process(g.view, frame_dt)
+        for(g.view.crew) c: crew_tick(c)
+        let fade = clamp(1.0 - (clock_s - g.t0 - 2.2) / 1.8, 0.0, 1.0)
+        add_view(g.view, g.sort_y - 2.0, team_col(g.owner), 0.35 + 0.65 * fade)
+
+// Combat events on the views: the attacker faces its target and lunges (a blow) or looses (a shot);
+// the dead play their fall.
+def view_events():
+    for(events) e:
+        if e.kind == EV_SHOT or e.kind == EV_HIT:
+            let i = index_of(e.a)
+            let v = views.get(e.a)
+            if i >= 0 and v:
+                let ranged = t_ranged[u_kind[i]] != 0
+                if e.kind == EV_SHOT or not ranged:
+                    face_vec(v, canvas(float(e.x), float(e.y)) - v.node.pos)
+                    if e.kind == EV_SHOT: loose(v) else: flourish(v)
+        elif e.kind == EV_DIE and e.b == 0:
+            let v = views.get(e.a)
+            if v:
+                die(v, if (e.a * 7) % 2 == 0: 1.0 else: -1.0)
+                ghosts.push(Ghost { v, iso(float(e.x), float(e.y)).y, last_owner.get(e.a, 0), clock_s })
+                views.del(e.a)
 
 def unit_state(i:int, moving:bool) -> string, int:
     let k = u_kind[i]
@@ -396,11 +566,15 @@ def draw_world(alpha:float):
                 draws = []::Drawable
                 collect_props()
                 collect_buildings()
-                collect_units(alpha)
-                collect_corpses()
-                qsort_in_place(draws) a, b: a.y < b.y
+                if composed: collect_views(alpha)
+                else:
+                    collect_units(alpha)
+                    collect_corpses()
+                qsort_in_place(draws) a, b: a.y < b.y or (a.y == b.y and a.seq < b.seq)
                 b_sheet = -1
-                for(draws) d: sprite(d.f, d.x, d.ay, d.col)
+                for(draws) d:
+                    if d.xf.length: sprite_xf(d.f, d.xf, d.col)
+                    else: sprite(d.f, d.x, d.ay, d.col)
                 flush_sprites()
                 draw_shots(alpha)
                 draw_marks(alpha)
@@ -873,9 +1047,11 @@ check(gl.set_font_name("data/fonts/Droid_Sans/DroidSans.ttf"), "no font")
 zoom = 2.0 * floor(ui() + 0.5)   // two screen points an art pixel, as the game's camera
 load_pack(args[0])
 note("pack")
+lib_load("../../data")
+id_load("../../data")
+composed = read_file(args[0] + "/rigs.json") != nil
+if composed: load_part_data(args[0])
 if args[1] == "-":   // the races from their prompts and the match start, made here (gen/)
-    lib_load("../../data")
-    id_load("../../data")
     let rules = load_rules("default")
     set(rules, "animals", jbool(true))
     let t_gen = seconds_elapsed()
@@ -904,8 +1080,9 @@ while gl.frame() and not (gl.button("escape") == 1 and placing < 0 and not build
     if gl.button("=") == 1: speed = min(8.0, speed * 2.0)
     if gl.button("-") == 1: speed = max(0.25, speed / 2.0)
     let dt = gl.delta_time()
+    frame_dt = dt
     frame_no++
-    if shot != "" and frame_no < 3: note("frame {frame_no} cam {cam} zoom {zoom} ws {gl.window_size()} fb {gl.framebuffer_size()} tc {tc0} draws {draws.length} W {W} H {H} first {iso(0.0, 0.0)} last {iso(float(W * 1000), float(H * 1000))}")
+    if shot != "" and frame_no < 3: note("frame {frame_no} tc at {if tc0 >= 0: to_screen(iso(float(b_cx[tc0] * 1000 + 2000), float(b_cy[tc0] * 1000 + 2000))) else: float2_0} cam {cam} zoom {zoom} ws {gl.window_size()} fb {gl.framebuffer_size()} tc {tc0} draws {draws.length} W {W} H {H} first {iso(0.0, 0.0)} last {iso(float(W * 1000), float(H * 1000))}")
     if shot != "" and frame_no % 60 == 0: print "frame {frame_no}: {dt * 1000.0} ms, play {clock_s} s"
     if not paused and winner < 0: acc += dt * speed
     acc = min(acc, 0.5)
@@ -944,5 +1121,5 @@ while gl.frame() and not (gl.button("escape") == 1 and placing < 0 and not build
         return
     if shot != "" and clock_s >= shot_at and not selftest:
         gl.screenshot(shot)
-        print "shot {shot} at {clock_s} s, tick {tick}; sim {step_time * 1000.0 / max(1, steps)} ms a tick"
+        print "shot {shot} at {clock_s} s, tick {tick}; sim {step_time * 1000.0 / max(1, steps)} ms a tick; cam {cam} zoom {zoom} ws {gl.window_size()} fb {gl.framebuffer_size()}"
         return
