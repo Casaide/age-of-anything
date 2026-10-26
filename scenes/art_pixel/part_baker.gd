@@ -65,6 +65,12 @@ func _init() -> void:
 	fill.light_energy = 0.3
 	fill.light_color = Color("#b8c8ff")
 	add_child(fill)
+	if OS.has_environment("AOW_UNIT_RIM"):   # fidelity study (docs/concepts/fidelity/): a cool light from behind rims the silhouette
+		var rim := DirectionalLight3D.new()
+		rim.basis = Basis.looking_at(Vector3(-0.3, -0.35, 1.0).normalized(), Vector3.UP)
+		rim.light_energy = float(OS.get_environment("AOW_UNIT_RIM"))
+		rim.light_color = Color("#dfe8ff")
+		add_child(rim)
 	var env := Environment.new()
 	env.background_mode = Environment.BG_CLEAR_COLOR
 	env.ambient_light_source = Environment.AMBIENT_SOURCE_COLOR

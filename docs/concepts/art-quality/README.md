@@ -13,6 +13,11 @@
   should probably able to be built over? Same as [a classic RTS]. Destruction is for looking cool not game mechanic.
   Destruction staying until built over is cool but can get frustrating and ugly. I think wrong game for that". So a
   ruin is decoration only: it doesn't block or change play, you can build over it, and it fades away after a while.
+- **Built (2026-10-26):** destruction is in the game (D-171, D-172): broken-up stages as a building loses hp,
+  the fall under pixel dust, the burnt-out ruin that fades after 45 s or goes when something is laid on it.
+  About +8 s on a cold match start (buildings 11 s to 19 s on this Mac), nothing once cached.
+
+  ![destruction in the game: a rat house through its stages, its fall, its ruin, a house laid over it](14-destruction-in-game.png)
 - **The lasers didn't leave the barrel.** True, and not only in the concepts: the game launches every shot,
   arrows too, from the shooter's body (`sim_debug.gd`: `_body(a) - Vector2(0, 2)`). The study's three looks now
   start at each rifle's muzzle (the weapon's baked tip through its sprite's transform); pictures 12 and 13 are

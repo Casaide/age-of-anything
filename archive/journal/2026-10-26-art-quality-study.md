@@ -39,6 +39,21 @@ Destruction is for looking cool not game mechanic. Destruction staying until bui
 frustrating and ugly. I think wrong game for that". That's the go-ahead (D-172): a ruin is decoration only, you can
 build over it, and it fades after a while.
 
+## Destruction built (evening)
+
+Dominic: "yes. But then please focus on fidelity". Destruction went in: `Ruin` moved into the game
+(`src/view/art/bake/ruin.gd`), every building look bakes four broken-up stages, BuildingArt swaps them in as hp
+falls (keeping the fire), and CombatFx leaves the ruin under pixel dust, fading after 45 s or cleared when a
+foundation is laid on it. Picture: `archive/images/2026-10-26/16-destruction-in-game.png` (a rat house).
+
+- The first try knocked down the rats' only Town Center: the fall played under a big gold "Victory!" banner
+  and the match ended. The check now knocks down a house.
+- The first dust was polka dots: every puff a lit ball of its own. Now all puffs draw in shade, then mid tone
+  up-left, then a small highlight further up-left: the classic pixel-art cloud, lit as one billow.
+- A fading ruin can't just lower its alpha: the team-colour shader reads modulate alpha as shade (lowering it would
+  darken it, not fade it). The ruin moves into a CanvasGroup when it falls, and the group fades.
+- Cost: ~+8 s on a cold start; four-to-a-render only helps the smaller buildings.
+
 ## Decisions
 
 D-171 (destruction picked), D-172 (go-ahead; ruins are decoration, can be built over, fade). Before the feedback, Dominic was to pick. Claude's recommendations: destruction in stages next; deaths in 3D for every body;
