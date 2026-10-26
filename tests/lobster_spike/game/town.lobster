@@ -391,8 +391,7 @@ def collect_town():
                         if f >= 0: add(f, at.x, at.y - lift_at(free[1].x, free[1].y) * 1.5, -100000.0 + at.y, float4 { 1.0, 1.0, 1.0, shade })
 
 def town_rect(at:float2, size:float2, col:float4):
-    gl.color(col):
-        gl.translate(at): gl.rect(size)
+    ui_fill(at, size, col)
 
 def lighten(c:float4, k:float) -> float4: return float4 { c.x + (1.0 - c.x) * k, c.y + (1.0 - c.y) * k, c.z + (1.0 - c.z) * k, c.w }
 
