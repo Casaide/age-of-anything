@@ -9,6 +9,9 @@
 let WB_SS = 4                                   // ArtKit.SS
 let WB_ART = 1.5                                // ArtKit.ART_SCALE: art px a canvas unit
 let WB_PX = 32.0 / 0.70710678 * WB_ART          // art px a world unit (Baker.PX_PER_UNIT x the art scale)
+let WB_AO_RADIUS = 0.35                         // Baker's environment: ssao_radius (world units), ssao_intensity
+let WB_AO_INTENSITY = 0.88                      // (2.2 in Godot's terms, scaled as view/baker.lobster's)
+var wb_ao_tex:resource<texture>? = nil          // the bake under way's AO map
 
 let WORLD_SHADERS = """
 SHADER worlddepth
@@ -38,7 +41,8 @@ SHADER worldlit
         icol = acolor;
     PIXEL
         INPUTS inorm:3 iobj:4 iuv:2 icol:4
-        UNIFORMS tex0 tex1 tex2
+        UNIFORMS tex0 tex1 tex2 tex3
+        UNIFORM vec2 aosize
         UNIFORM vec4 albedo
         UNIFORM vec4 uvmap
         UNIFORM vec4 uvmap2
@@ -123,7 +127,7 @@ SHADER worldlit
                 diffuse += cols[k] * nl * sh;
                 spec += cols[k] * nl * sh * D * V * F * 3.14159265;
             }
-            vec3 ambient = vec3(0.578, 0.631, 0.745) * 0.28;
+            vec3 ambient = vec3(0.578, 0.631, 0.745) * 0.28 * texture(tex3, gl_FragCoord.xy / aosize).r;   // occluded (the AO map)
             vec3 lin = lin_base * (1.0 - mat1.x) * (diffuse + ambient) + spec;
             if (mat1.w > 0.5) lin = lin_base;
             lin += pow(emis.rgb, vec3(2.2));   // emission (a flame, embers, a lit window)
@@ -271,8 +275,11 @@ def world_bake(model:MNode, shadow:bool, reach:float = 1.0) -> string, int, int,
             if t0: gl.set_mesh_texture(mesh, 0, 0, t0)
             gl.set_mesh_texture(mesh, 0, 1, smap)
             if t2: gl.set_mesh_texture(mesh, 0, 2, t2)
+            let aot = wb_ao_tex
+            if aot: gl.set_mesh_texture(mesh, 0, 3, aot)
             gl.set_shader("worldlit")
             set_common()
+            gl.set_uniform("aosize", float2 { float(w), float(h) })
             gl.set_uniform("albedo", float4 { m.albedo.x, m.albedo.y, m.albedo.z, 1.0 })
             gl.set_uniform("uvmap", float4 { m.uv_scale.x, m.uv_scale.y, m.uv_scale.z, 0.0 })
             gl.set_uniform("uvmap2", float4 { m.uv_offset.x, m.uv_offset.y, m.uv_offset.z, 0.0 })
@@ -281,6 +288,30 @@ def world_bake(model:MNode, shadow:bool, reach:float = 1.0) -> string, int, int,
             gl.set_uniform("pass", float4 { if sun_only: 1.0 else: 0.0, if m.scissor: 1.0 else: 0.0, 0.0, 0.0 })
             gl.set_uniform("emis", float4 { m.emission.x, m.emission.y, m.emission.z, 0.0 })
             gl.render_mesh(mesh)
+    // ambient occlusion: the view's depth, then the AO map over it (the building baker's SSAO: radius 0.35, intensity
+    // 2.2 in Godot's terms; view/baker.lobster's bakeao, its intensity scaled as the part baker's)
+    let vpos = []::float3
+    for(wdraws) d:
+        if not d.mat.scissor:
+            for(d.p) p: vpos.push(to_px(p))
+    let vtex = gl.create_blank_texture(int3 { w, h, 0 }, texture_format_nomipmap | texture_format_float | texture_format_clamp)
+    gl.switch_to_framebuffer(vtex, true)
+    gl.ortho(false, true)
+    gl.clear(float4_1)
+    gl.set_shader("bakedepth")
+    gl.render_mesh(gl.new_mesh("P", vpos, []::float4, []::float3, []::float2, []::float2, map(vpos.length) i: i))
+    let ao_tex = gl.create_blank_texture(int3 { w, h, 0 }, texture_format_nomipmap | texture_format_clamp)
+    gl.switch_to_framebuffer(ao_tex, false)
+    gl.ortho(false, false)
+    let full = gl.new_mesh("P", [float3 { 0.0, 0.0, 0.0 }, float3 { float(w), 0.0, 0.0 }, float3 { float(w), float(h), 0.0 }, float3 { 0.0, float(h), 0.0 }],
+                           []::float4, []::float3, []::float2, []::float2, [0, 2, 1, 0, 3, 2])
+    gl.set_mesh_texture(full, 0, 0, vtex)
+    gl.set_shader("bakeao")
+    gl.set_uniform("aosize", float2 { float(w), float(h) })
+    gl.set_uniform("aoparm", float4 { WB_AO_RADIUS * px, vz, WB_AO_INTENSITY, 1.0 })
+    gl.set_uniform("aorange", WB_AO_RADIUS)
+    gl.render_mesh(full)
+    wb_ao_tex = ao_tex
     let art = gl.create_blank_texture(int3 { w, h, 0 }, texture_format_nomipmap)
     gl.switch_to_framebuffer(art, true)
     gl.ortho(false, true)

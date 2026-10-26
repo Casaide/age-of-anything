@@ -6,6 +6,9 @@
 // meshes come from Godot (mesh_export.gd); the models in Lobster are the next stage. No ambient occlusion yet.
 
 let BAKE_SS = 4
+let BAKE_AO_RADIUS = 1.2            // PartBaker's environment: ssao_radius, ssao_intensity, ssao_power
+let BAKE_AO_INTENSITY = 1.0           // (Godot's 2.5 in this formula: the bodies' brightness then within a level of Godot's bakes)
+let BAKE_AO_POWER = 1.4
 let BAKE_ART = 1.5 * 0.85           // art px a part unit (ArtKit: ART_SCALE x UNIT_SCALE: baked at the size drawn)
 let PX_PER_UNIT = 32.0 / 0.70710678 // the baker's screen px a world unit (Baker.PX_PER_UNIT)
 
@@ -19,6 +22,48 @@ SHADER bakedepth
     PIXEL
         INPUTS idepth:2
         frag_color = vec4(idepth.x * 0.5 + 0.5, 0.0, 0.0, 1.0);
+
+SHADER bakeao
+    VERTEX
+        INPUTS apos:4
+        UNIFORMS mvp
+        gl_Position = mvp * apos;
+    PIXEL
+        UNIFORMS tex0
+        UNIFORM vec2 aosize
+        UNIFORM vec4 aoparm
+        UNIFORM float aorange
+        // Ambient occlusion over the view-depth map (as Godot's SSAO darkens the ambient light): round each pixel,
+        // 16 samples on a spiral out to the radius (aoparm.x, render px); a sample standing nearer the camera by
+        // more than a hair and less than twice the radius (aorange, part units; aoparm.y: view depth a part unit)
+        // occludes, the nearer the less; intensity aoparm.z, power aoparm.w.
+        vec2 uv = gl_FragCoord.xy / aosize;
+        float d0 = texture(tex0, uv).r;
+        float ao = 1.0;
+        if (d0 < 0.999) {
+            // the surface's own slope here (from its neighbours), so a curved face doesn't shade itself: a sample
+            // occludes only where it stands nearer the camera than the surface's plane through this pixel
+            vec2 tx = 1.0 / aosize;
+            float dxp = texture(tex0, uv + vec2(tx.x, 0.0)).r;
+            float dxm = texture(tex0, uv - vec2(tx.x, 0.0)).r;
+            float dyp = texture(tex0, uv + vec2(0.0, tx.y)).r;
+            float dym = texture(tex0, uv - vec2(0.0, tx.y)).r;
+            float gx = (dxp < 0.999 && dxm < 0.999) ? (dxp - dxm) * 0.5 : 0.0;
+            float gy = (dyp < 0.999 && dym < 0.999) ? (dyp - dym) * 0.5 : 0.0;
+            float occ = 0.0;
+            for (int k = 0; k < 16; k++) {
+                float a = float(k) * 2.39996;
+                vec2 opx = vec2(cos(a), sin(a)) * aoparm.x * sqrt((float(k) + 0.5) / 16.0);
+                float ds = texture(tex0, uv + opx / aosize).r;
+                if (ds < 0.999) {
+                    float plane = d0 + gx * opx.x + gy * opx.y;
+                    float dz = (plane - ds) * 2.0 / aoparm.y;
+                    if (dz > 0.05) occ += clamp(1.0 - dz / (2.0 * aorange), 0.0, 1.0);
+                }
+            }
+            ao = pow(clamp(1.0 - aoparm.z * occ / 16.0, 0.0, 1.0), aoparm.w);
+        }
+        frag_color = vec4(ao, ao, ao, 1.0);
 
 SHADER bakelit
     VERTEX
@@ -37,7 +82,8 @@ SHADER bakelit
         iuv = atc;
     PIXEL
         INPUTS inorm:3 iobj:4 iuv:2
-        UNIFORMS tex0 tex1
+        UNIFORMS tex0 tex1 tex2
+        UNIFORM vec2 aosize
         UNIFORM vec3 key_dir
         UNIFORM vec4 lx
         UNIFORM vec4 ly
@@ -69,7 +115,7 @@ SHADER bakelit
         if (mflags.z > 0.5) icol = albedo;           // a mask: the flat colour (a decal's texture only cuts)
         // PartBaker's rig: a warm key from the camera's upper left, a cool fill from the other side,
         // ambient; linear tone (Godot's linear tonemap, sRGB out).
-        vec3 light = vec3(0.784, 0.816, 0.878) * 0.28;
+        vec3 light = vec3(0.784, 0.816, 0.878) * 0.28 * texture(tex2, gl_FragCoord.xy / aosize).r;   // ambient, occluded
         // In the key light's shadow? Its depth map, seen from the light (lx, ly: map px; lz: depth -1..1).
         vec3 lp = vec3(dot(iobj.xyz, lx.xyz) + lx.w, dot(iobj.xyz, ly.xyz) + ly.w, dot(iobj.xyz, lz.xyz) + lz.w);
         float lit = 1.0;
@@ -292,6 +338,30 @@ def bake_facing(part:[BakeTri], facing:int, hide:[BakeTri] = [], join:float3 = f
         g
     let order = map(tris.length) i: i
     qsort_in_place(order) a, b: gid[a] < gid[b] or (gid[a] == gid[b] and a < b)
+    // Ambient occlusion: the view's depth (the part and what hides it), then the AO map over it (PartBaker's SSAO:
+    // radius 1.2, intensity 2.5, power 1.4).
+    let vpos = []::float3
+    for(tris) t:
+        if t.mat < 0 or not bake_mats[t.mat].scissor:
+            for(t.p) p: vpos.push(float3 { (dot(p, cx) - lo.x) * px, (-dot(p, cy) - lo.y) * px, view_z(p) })
+    let vmap_tex = gl.create_blank_texture(int3 { w, h, 0 }, texture_format_nomipmap | texture_format_float | texture_format_clamp)
+    gl.switch_to_framebuffer(vmap_tex, true)
+    gl.ortho(false, true)
+    gl.clear(float4_1)
+    gl.set_shader("bakedepth")
+    gl.render_mesh(gl.new_mesh("P", vpos, []::float4, []::float3, []::float2, []::float2, map(vpos.length) i: i))
+    let ao_tex = gl.create_blank_texture(int3 { w, h, 0 }, texture_format_nomipmap | texture_format_clamp)
+    gl.switch_to_framebuffer(ao_tex, false)
+    gl.ortho(false, false)
+    let full = gl.new_mesh("P", [float3 { 0.0, 0.0, 0.0 }, float3 { float(w), 0.0, 0.0 }, float3 { float(w), float(h), 0.0 }, float3 { 0.0, float(h), 0.0 }],
+                           []::float4, []::float3, []::float2, []::float2, [0, 2, 1, 0, 3, 2])
+    gl.set_mesh_texture(full, 0, 0, vmap_tex)
+    gl.set_shader("bakeao")
+    gl.set_uniform("aosize", float2 { float(w), float(h) })
+    gl.set_uniform("aoparm", float4 { BAKE_AO_RADIUS * px, vz, BAKE_AO_INTENSITY, BAKE_AO_POWER })
+    gl.set_uniform("aorange", BAKE_AO_RADIUS)
+    gl.render_mesh(full)
+    if bake_debug != "": gl.save_texture(ao_tex, bake_debug + "_ao{facing}.png")
     def render_pass(mask:bool) -> string:
         let tex = gl.create_blank_texture(int3 { w, h, 0 }, texture_format_nomipmap)
         gl.switch_to_framebuffer(tex, true)
@@ -320,7 +390,9 @@ def bake_facing(part:[BakeTri], facing:int, hide:[BakeTri] = [], join:float3 = f
             let bt = bm.tex
             if bt: gl.set_mesh_texture(m, 0, 0, bt)
             gl.set_mesh_texture(m, 0, 1, smap)
+            gl.set_mesh_texture(m, 0, 2, ao_tex)
             gl.set_shader("bakelit")
+            gl.set_uniform("aosize", float2 { float(w), float(h) })
             gl.set_uniform("cam_x", cx)
             gl.set_uniform("cam_y", cy)
             gl.set_uniform("cam_z", cz)
