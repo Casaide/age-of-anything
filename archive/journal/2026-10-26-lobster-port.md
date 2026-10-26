@@ -28,7 +28,7 @@ shots, hit flashes, the win banner. `make_pack.sh [map] ["race" "race"]` makes a
 - The art stays Godot-baked for now: the units are procedural 3D models (about 10,000 lines) plus Blender models,
   and porting the baker changes nothing you see. Godot is the game's asset tool; the game runs in Lobster.
 - Race generation from prompts also stays in Godot for now (the pack tool runs it); porting the generator, pricing and
-  identity only pays once the baker moves too. Dominic's call. (Superseded the same day by D-167: Dominic, "Let's do
+  identity only pays once the baker moves too. Dominic's call. (Superseded the same day by D-168: Dominic, "Let's do
   it!", for generation at army creation and mid-match.)
 
 ## Later the same day: races and the start in Lobster (step 6a)

@@ -1181,7 +1181,7 @@ on its spot per facing before it bakes, its shadow with it. The frog's is [0, -4
 round HF3 (`tests/sheets/frog_fall_hf3.json`: the sprawl turned -60 to +60 in every facing); no facing now sees it end
 on from behind.
 
-**D-167, 2026-10-26: Races and the match start are made in Lobster; Godot only bakes the art.** Dominic, on the
+**D-168, 2026-10-26: Races and the match start are made in Lobster; Godot only bakes the art.** Dominic, on the
 Lobster port: "Let's do it! Primarily because ... it opens us up to generation at army creation time and during the
 game." Supersedes the port's first call (generation stays in Godot). The generator, pricing, identity and heroes
 (`tests/lobster_spike/gen/`) and World's setup (`gen/setup.lobster`, `gen/start.lobster`) run in Lobster and give
