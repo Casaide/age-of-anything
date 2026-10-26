@@ -89,9 +89,21 @@ Lobster build turned out to have TCP sockets, the host sends its set-up match as
 after. The first two-window match ran with neither side's bot doing anything: a guard meant for the other player's
 seat also stopped your own.
 
+The evening: game modes (Fortress and Siege start as in Godot, token for token), mods (the sci-fi test mod's
+future soldiers play), the tech tree page with the race panel, the Race Lab in the lobby with rerolls, a command
+panel with portraits, and a UI layer with the timber look (wood and bronze painted by a shader) that the lobby,
+the panel, a pause menu and the tech tree now use. Dominic asked whether to build a UI framework or find one;
+Claude advised a small one of our own over Lobster's Dear ImGui (it looks like a tool, and it's mouse-first).
+Building it turned up three quirks in this Lobster build: gl.rect draws twice its size round its point, it and
+gl.line stop drawing once a custom shader has been used, and a raw mesh doesn't get gl.color. Everything flat now
+draws as small meshes. Dominic on control groups: "visible somewhere ... a number on the units", then "only when
+you select the group". On the art study: "unit and building fidelity is a key goal ... Destruction looks great",
+and the study's lasers didn't come from the barrel (passed to the study's session). The town is whole: cracks,
+the stable's tethered horse, the town's sound.
+
 ## Pictures
 
-`archive/images/2026-10-26/`: the first frame (01), a rat raid on the frog town (02), sheep penned (03), the UI scaled (04), the ground shader with composed rats (05), moonbears from the lobby and the library (06), rats become forest bears mid-match (07), hills and cliffs (08), joined walls (09), cobbled paths (10), a fight with shots on their arcs (11), the town's piles (12), a network match from the joiner's side (13).
+`archive/images/2026-10-26/`: the first frame (01), a rat raid on the frog town (02), sheep penned (03), the UI scaled (04), the ground shader with composed rats (05), moonbears from the lobby and the library (06), rats become forest bears mid-match (07), hills and cliffs (08), joined walls (09), cobbled paths (10), a fight with shots on their arcs (11), the town's piles (12), a network match from the joiner's side (13), pad play and group numbers (14), a burning Town Center (15), the Siege mode (16), the sci-fi mod's soldiers (17), the tech tree (18, 24, 27), the Race Lab (19), the panel (20, 21), the timber lobby (22), the pause menu (23), cracks (25), a tethered horse (26), rerolls (28).
 
 ## Ideas parked
 
