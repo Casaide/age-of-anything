@@ -91,8 +91,12 @@ SURRENDER, the bots' walls and abilities.
       skips the lobby and plays the second side. Turns as in `src/net/lockstep.gd` (commands run two turns on,
       a hash every 40 ticks); no pausing, speed, loading or N in a network match. `net_check.sh`: two processes,
       each side's bot only on its own machine, a 10-minute match with all 300 hash checks the same. Two game
-      windows played 100 seconds together (`13-...`). Not yet: the LAN beacon to find a host, a lobby page for
-      it, more than two players, the Mac against the Deck.
+      windows played 100 seconds together (`13-...`). Finding a host (2026-10-26, `net/lan.lobster`): this Lobster build has
+      no UDP, so Find asks every address of the home network's /24 over TCP; a host answers with its name, version
+      and map, and only a join with the same build's version (a hash of the protocol and the data) becomes its match.
+      The lobby has Find, Join (an address), Host (`30-...`). `net_check.sh` now scans, finds the host, and plays.
+      A peer that closes its end no longer hangs a read (an empty read was taken as more to come). Not yet: more than
+      two players, the Mac against the Deck.
 - [x] Pad play (2026-10-26): `game/pad.lobster`, after `src/view/pad_play.gd` and the m20 button table: a reticle
       for the mouse (left stick pans, right stick nudges), A taps to select, held a circle sweeps, on what's
       selected the wheel (train, research, age up; build); X smart order, Y attack-move, B back, RB soldiers on
