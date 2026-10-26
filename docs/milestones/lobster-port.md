@@ -75,7 +75,8 @@ SURRENDER, the bots' walls and abilities.
       A* from the town's door to its buildings, food and wood, merging into trunk roads), and the combat effects
       (`game/fx.lobster`: each weapon's shot on its arc, misses standing in the ground, sparks, dust, heal motes; the
       sim tells the view of misses, heals and stones landing), and the living town (`game/town.lobster`: piles at
-      the drop-offs, chores, builders' dust, yards and gardens, critters). To come: control groups, a nicer panel;
+      the drop-offs, chores, builders' dust, yards and gardens, critters). Control groups (Ctrl or Cmd + a number keeps the selection, the number brings it back, twice to look;
+      in the self-test). To come: a nicer panel;
       from town life, chimney smoke, damaged buildings' cracks and fire, the stable's tethered mount, the town's sound.
 - [ ] 6. Setup in Lobster (Dominic, 2026-10-26: "Let's do it! Primarily because ... it opens us up to generation at
       army creation time and during the game"). Three steps, each checked against GDScript:
