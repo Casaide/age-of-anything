@@ -12,6 +12,7 @@
 let UI_SHADERS = """
 PIXELFUNCTIONS
     float uihash(vec2 p) { return fract(sin(dot(p, vec2(127.1, 311.7))) * 43758.5453); }
+    vec2 uihash2(vec2 p) { return fract(sin(vec2(dot(p, vec2(127.1, 311.7)), dot(p, vec2(269.5, 183.3)))) * 43758.5453); }
     float uinoise(vec2 p) {
         vec2 i = floor(p);
         vec2 f = fract(p);
@@ -19,6 +20,50 @@ PIXELFUNCTIONS
         return mix(mix(uihash(i), uihash(i + vec2(1.0, 0.0)), u.x), mix(uihash(i + vec2(0.0, 1.0)), uihash(i + vec2(1.0, 1.0)), u.x), u.y);
     }
     float uifbm(vec2 p) { return uinoise(p) * 0.55 + uinoise(p * 2.1 + 7.0) * 0.3 + uinoise(p * 4.3 + 3.0) * 0.15; }
+    // cellular: the distance to the nearest feature point (x) and the next nearest (y)
+    vec2 uicell(vec2 p) {
+        vec2 i = floor(p);
+        vec2 f = fract(p);
+        float d1 = 8.0;
+        float d2 = 8.0;
+        for (int y = -1; y <= 1; y++) {
+            for (int x = -1; x <= 1; x++) {
+                vec2 g = vec2(float(x), float(y));
+                float d = length(g + uihash2(i + g) - f);
+                if (d < d1) { d2 = d1; d1 = d; } else if (d < d2) { d2 = d; }
+            }
+        }
+        return vec2(d1, d2);
+    }
+    // UiMaterials._tone: v about 0.8 is the colour itself; lower darkens, higher lightens towards a warm white
+    vec3 uitone(vec3 c, float v) {
+        float k = v / 0.8;
+        if (k <= 1.0) return c * k;
+        return mix(c, vec3(1.0, 0.97, 0.9), clamp((k - 1.0) * 0.9, 0.0, 1.0));
+    }
+    // hammered metal (bronze, gold, iron): soft dimples lit from the top left, scratches, blotches
+    float uimetal(vec2 p, float rough, float seed) {
+        vec2 q = p * 0.045 + seed;
+        float d = uicell(q).x;
+        float dl = uicell(q - vec2(0.09, 0.09)).x;
+        return 0.78 + (d - dl) * 1.5 + 0.12 * (uifbm(p * 0.012 + seed) - 0.5) + rough * 0.25 * (uinoise(vec2(p.x * 0.4, p.y * 0.025) + seed) - 0.5);
+    }
+    // dressed stone: blocks in staggered courses, each a touch different, speckled, dark joints with a lit lip
+    float uistone(vec2 p) {
+        float row = floor(p.y / 64.0);
+        float sx = p.x + (mod(row, 2.0) > 0.5 ? 64.0 : 0.0);
+        float bx = mod(sx, 128.0);
+        float by = mod(p.y, 64.0);
+        float v = 0.78 + 0.18 * (uifbm(p * 0.02 + 41.0) - 0.5) + 0.12 * (uinoise(p * 0.5 + 42.0) - 0.5);
+        v *= 0.94 + 0.06 * sin((row * 3.0 + floor(sx / 128.0)) * 1.7);
+        if (bx < 2.0 || by < 2.0) v *= 0.45;
+        else if (bx < 3.0 || by < 3.0) v *= 1.12;
+        return v;
+    }
+    float uiparchment(vec2 p) {
+        float m = uifbm(p * 0.015 + 51.0);
+        return 0.94 + 0.12 * (m - 0.5) - 0.18 * clamp((m - 0.68) * 3.0, 0.0, 1.0) + 0.05 * (uinoise(vec2(p.x * 0.3, p.y * 0.04) + 52.0) - 0.5);
+    }
 
 SHADER uimat
     VERTEX
@@ -30,29 +75,64 @@ SHADER uimat
         UNIFORM float kind
         UNIFORM float win_h
         UNIFORM float px
+        // the painted materials of src/view/ui/ui_materials.gd, by kind: 0 wood, 1 bronze, 2 gold, 3 iron, 4 marble,
+        // 5 stone, 6 sandstone, 7 parchment, 8 felt, 9 leather, 10 reed, 11 lacquer, 12 bone
         vec2 p = vec2(gl_FragCoord.x, win_h - gl_FragCoord.y) / px;
-        float v = 1.0;
-        if (kind < 0.5) {
-            // wood: long grain along x, rings, planks with dark seams and a lit lip, a touch of fine noise
+        vec3 c = mcol.rgb;
+        int k = int(kind + 0.5);
+        float v = 0.8;
+        if (k == 0) {   // wood: long grain, rings, planks with dark seams and a lit lip
             float g = uifbm(vec2(p.x * 0.012, p.y * 0.09));
-            float rings = 0.5 + 0.5 * sin(g * 38.0);
-            v = 0.62 + 0.22 * rings + 0.16 * (uinoise(p * 0.5) - 0.5);
-            float py = mod(p.y, 32.0);
-            if (py < 1.0) v *= 0.42;
-            else if (py < 1.6) v *= 1.18;
-            v *= 0.92 + 0.08 * sin(floor(p.y / 32.0) * 2.1);
-        } else if (kind < 1.5) {
-            // hammered metal: soft dimples lit from the top left, a few scratches, blotches
-            vec2 q = p * 0.09;
-            float d = uinoise(q);
-            float dl = uinoise(q - vec2(0.09, 0.09));
-            v = 0.8 + (d - dl) * 1.6 + 0.12 * (uifbm(p * 0.012) - 0.5) + 0.1 * (uinoise(vec2(p.x * 0.05, p.y * 0.8)) - 0.5);
-        } else {
-            // lacquer: smooth, a soft sheen down its face
-            v = 0.9 + 0.1 * uinoise(p * 0.02);
+            v = 0.62 + 0.22 * (0.5 + 0.5 * sin(g * 38.0)) + 0.16 * (uinoise(p * 0.5) - 0.5);
+            float py = mod(p.y, 64.0);
+            if (py < 2.0) v *= 0.42;
+            else if (py < 3.0) v *= 1.18;
+            v *= 0.92 + 0.08 * sin(floor(p.y / 64.0) * 2.1);
+        } else if (k == 1) {
+            v = uimetal(p, 0.4, 21.0);
+        } else if (k == 2) {
+            v = uimetal(p, 0.2, 23.0);
+        } else if (k == 3) {   // iron: hammered and darker, rust blooming in patches
+            v = uimetal(p, 0.9, 25.0);
+            float r = clamp((uifbm(p * 0.02 + 26.0) - 0.6) * 2.5, 0.0, 0.35);
+            frag_color = vec4(mix(uitone(c, v), vec3(0.478, 0.243, 0.11), r), mcol.a);
+            return;
+        } else if (k == 4) {   // marble: pale clouds, thin dark veins on a warped sine
+            float w = uifbm(p * 0.008 + 31.0);
+            float vein = abs(sin((p.x + p.y) * 6.2832 / 256.0 + w * 14.0));
+            v = 0.8 + 0.08 * (uifbm(p * 0.02 + 32.0) - 0.5) - 0.22 * pow(1.0 - vein, 10.0);
+        } else if (k == 5) {
+            v = uistone(p);
+        } else if (k == 6) {   // sandstone: stone's courses, softer, with fine layered bands
+            v = uistone(p) * (0.96 + 0.08 * uinoise(vec2(p.x * 0.003, p.y * 0.05) + 43.0));
+        } else if (k == 7) {
+            v = uiparchment(p);
+        } else if (k == 8) {   // felt: dense fuzz, gentle lumps
+            v = 0.84 + 0.1 * (uinoise(p * 0.6 + 61.0) - 0.5) + 0.14 * (uifbm(p * 0.03 + 62.0) - 0.5);
+        } else if (k == 9) {   // leather: fine pebbled grain, darker creases
+            vec2 cd = uicell(p * 0.12 + 71.0);
+            v = 0.8 + 0.12 * (uifbm(p * 0.02 + 72.0) - 0.5) - 0.16 * (1.0 - clamp((cd.y - cd.x) * 4.0, 0.0, 1.0));
+        } else if (k == 10) {   // woven reed: upright stalks, each rounded by its light, bound across now and then
+            float sx = mod(p.x, 16.0) / 16.0;
+            float kk = floor(p.x / 16.0);
+            v = 0.5 + 0.42 * sin(sx * 3.14159) + 0.1 * (uinoise(vec2(p.x * 0.006, p.y * 0.05) + 81.0) - 0.5) + 0.04 * sin(kk * 2.3);
+            float by = mod(p.y + mod(kk, 2.0) * 6.0, 128.0);
+            if (by < 10.0) v = 0.45 + 0.4 * sin(by / 10.0 * 3.14159);
+            if (mod(p.y + kk * 37.0, 96.0) < 1.0) v *= 0.6;
+        } else if (k == 11) {   // lacquer: deep, smooth, a slow gloss, the faintest brush lines
+            v = 0.86 + 0.16 * (uifbm(p * 0.01 + 91.0) - 0.5) + 0.04 * (uinoise(vec2(p.x * 0.2, p.y * 0.0125) + 92.0) - 0.5);
+        } else {   // bone: parchment, porous
+            v = uiparchment(p);
+            if (uinoise(p * 0.45 + 95.0) > 0.78) v *= 0.75;
         }
-        frag_color = vec4(mcol.rgb * v, mcol.a);
+        frag_color = vec4(uitone(c, v), mcol.a);
 """
+
+let UI_MATERIALS = ["wood", "bronze", "gold", "iron", "marble", "stone", "sandstone", "parchment", "felt", "leather", "reed", "lacquer", "bone"]
+def ui_material(name:string) -> int:
+    for(UI_MATERIALS) m, k:
+        if m == name: return k
+    return 0
 
 class UiLook:
     frame:float4
@@ -65,6 +145,9 @@ class UiLook:
     dim:float4
     title:float4
     metal:float4
+    frame_mat = 1                // each role's painted material (UI_MATERIALS): the frames, the panels' faces, the buttons
+    panel_mat = 0
+    button_mat = 0
 
 var ui_look = UiLook { float4_1, float4_1, float4_1, float4_1, float4_1, float4_1, float4_1, float4_1, float4_1, float4_1 }
 var ui_ready = false
@@ -85,6 +168,9 @@ def ui_setup(culture:string):
     def c(k:string, f:string) -> float4: return hex4(gstr(dir, k, f))
     ui_look = UiLook { c("frame_colour", "#9a7438"), c("colour", "#4a3220"), c("button_colour", "#6a4a2c"), c("primary_colour", "#7a2a18"),
                        c("well", "#17110b"), c("accent", "#f2c94c"), c("text", "#f4e9cf"), c("dim", "#c4b493"), c("title", "#f6d77a"), c("metal", "#c09048") }
+    ui_look.frame_mat = ui_material(gstr(dir, "frame", "bronze"))
+    ui_look.panel_mat = ui_material(gstr(dir, "panel", "wood"))
+    ui_look.button_mat = ui_material(gstr(dir, "button", "wood"))
     if not ui_ready:
         fatal(gl.load_materials(UI_SHADERS, true))
         ui_ready = true
@@ -136,8 +222,10 @@ def ui_line(a:float2, b:float2, w:float, col:float4):
                                [col, col, col, col], []::float3, []::float2, []::float2, [0, 2, 1, 0, 3, 2]))
     gl.set_shader("color")
 
-def ui_mat(at:float2, size:float2, col:float4, kind:int):
+// A painted rect; `role` picks the look's material: 0 a panel's face, 1 a frame, 2 a button.
+def ui_mat(at:float2, size:float2, col:float4, role:int):
     if size.x <= 0.0 or size.y <= 0.0: return
+    let kind = if role == 1: ui_look.frame_mat elif role == 2: ui_look.button_mat else: ui_look.panel_mat
     gl.set_shader("uimat")
     let ok = gl.set_uniform("mcol", col) and gl.set_uniform("kind", float(kind)) and gl.set_uniform("win_h", float(gl.window_size().y)) and gl.set_uniform("px", max(1.0, ui()))
     if not ok and not ui_warned:
