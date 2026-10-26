@@ -32,7 +32,7 @@ SHADER bakelit
         vec4 t = vec4(1.0);
         if (mapping > 1.5) {
             vec3 p = iobj.xyz * uvmap.x + vec3(uvmap.z, uvmap.w, 0.0);
-            vec3 w = abs(n);
+            vec3 w = abs(n) * abs(n);   // (UnitModels.surf: triplanar sharpness 2)
             w /= (w.x + w.y + w.z);
             p *= vec3(1.0, -1.0, 1.0);
             t = texture(tex0, p.zy) * w.x + texture(tex0, p.xz) * w.y + texture(tex0, vec2(-p.x, p.y)) * w.z;
@@ -43,9 +43,8 @@ SHADER bakelit
         // PartBaker's rig: a warm key from the camera's upper left, a cool fill from the other side,
         // ambient; linear tone (Godot's linear tonemap, sRGB out).
         vec3 light = vec3(0.784, 0.816, 0.878) * 0.28;
-        // (Lambert as Godot shades it: the lights' energy over pi)
-        light += vec3(1.0, 0.957, 0.878) * 1.7 * max(0.0, dot(n, -key_dir)) / 3.14159;
-        light += vec3(0.722, 0.784, 1.0) * 0.3 * max(0.0, dot(n, -fill_dir)) / 3.14159;
+        light += vec3(1.0, 0.957, 0.878) * 1.7 * max(0.0, dot(n, -key_dir));
+        light += vec3(0.722, 0.784, 1.0) * 0.3 * max(0.0, dot(n, -fill_dir));
         vec3 lin = pow(icol.rgb, vec3(2.2)) * light;
         vec3 c = pow(clamp(lin, 0.0, 1.0), vec3(1.0 / 2.2));
         frag_color = vec4(c, 1.0);
@@ -85,7 +84,7 @@ def load_mesh(path:string) -> [BakeTri]:
                 let file = dir + "/" + t[0]
                 tex = bake_tex_cache.get(file)
                 if not tex:
-                    let loaded = gl.load_texture(file, texture_format_nomipmap)
+                    let loaded = gl.load_texture(file)   // (mipmapped, as UnitModels.tex: a part is small on screen)
                     if loaded: bake_tex_cache.set(file, loaded)
                     tex = loaded
             let f = map(t.slice(1, -1)) x: string_to_float(x)

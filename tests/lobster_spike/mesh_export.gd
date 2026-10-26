@@ -18,7 +18,7 @@ func _colours(lib, race: Dictionary) -> Dictionary:
 	var c := {}
 	for k in lib.palettes.materials:
 		c[k] = Color(lib.palettes.materials[k])
-	var sk: Array = lib.palettes.skins[race.units[0].recipe.skin]
+	var sk: Array = lib.palettes.skins[race.units[1].recipe.skin]   # (the spearman's, as bake_check takes)
 	c.skin = Color(sk[0])
 	c.skin2 = Color(sk[1])
 	for i in range(2, sk.size()):
@@ -89,6 +89,8 @@ func _write(node: Node3D, out: PackedStringArray) -> void:
 			var cols = arr[Mesh.ARRAY_COLOR]
 			var idx = arr[Mesh.ARRAY_INDEX]
 			var c := _albedo(mi, s)
+			var mat = _material(mi, s)
+			var use_vc: bool = mat is StandardMaterial3D and mat.vertex_color_use_as_albedo   # (as Godot: vertex colours only when asked)
 			var uvs = arr[Mesh.ARRAY_TEX_UV]
 			out.append("mat " + _texture(mi, s))
 			var order: Array = Array(idx) if idx != null and idx.size() > 0 else range(v.size())
@@ -98,7 +100,7 @@ func _write(node: Node3D, out: PackedStringArray) -> void:
 					var i: int = order[k + j]
 					var p: Vector3 = t * v[i]
 					var nn: Vector3 = (nb * (n[i] if n.size() > i else Vector3.UP)).normalized()
-					var cc: Color = c * (cols[i] if cols != null and cols.size() > i else Color.WHITE)
+					var cc: Color = c * (cols[i] if use_vc and cols != null and cols.size() > i else Color.WHITE)
 					var uv: Vector2 = uvs[i] if uvs != null and uvs.size() > i else Vector2.ZERO
 					line += " %.4f %.4f %.4f %.3f %.3f %.3f %.3f %.3f %.3f %.4f %.4f" % [p.x, p.y, p.z, nn.x, nn.y, nn.z, cc.r, cc.g, cc.b, uv.x, uv.y]
 				out.append(line)
