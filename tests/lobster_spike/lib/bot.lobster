@@ -1225,7 +1225,7 @@ def full_bot_think(bot:Bot):
     bot.aln = if army.length: lane(army[0]) else: lane_base[p] + t_mclass[type_named(p, "spear")]
     bot.harea = area_at(bot.eco.reach, bot.aln, hx, hy)
     heroes_think(bot, tc, army, hx, hy)
-    let field = filter(army) i: u_id[i] != bot.scout.id and not is_escort(bot.expand, u_id[i]) and not contains(bot.resting, u_id[i])
+    let field = filter(army) i: u_id[i] != bot.scout.id and not is_escort(bot.expand, u_id[i]) and not land_breaking(bot.land, i) and not contains(bot.resting, u_id[i])
     let at_work = filter(workers) i: u_id[i] != bot.scout.id
     remember_soldiers(bot.scout, p)
     bot.on_back_foot = bot.on_back_foot or defending(bot, field)

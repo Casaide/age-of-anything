@@ -3,7 +3,8 @@
 // fresh one search at a time: our army's way to its target (and a detour round enemy fire over it,
 // a flank for amphibians), the enemy's way to us (its crossing is the key crossing a tower may
 // guard), roads through thin woods felled by workers, ranged soldiers stepping up onto hills.
-// Left out: bridges (none on the spike's maps: asserted), so no mending or breaking.
+// Bridges: one down that would shorten our way a lot (or is the only way) gets rebuilt; a standing one
+// whose loss makes their way much longer is broken when we're outnumbered or swim.
 
 let ROUTE_INF = 1 << 30
 let ROUTE_STEP = 10
@@ -116,7 +117,13 @@ def terrain_named(id:string) -> int:
     return -1
 
 class Land:
-    crossings_kind:[int] = []        // 0 ford (bridges: none here)
+    crossings_kind:[int] = []        // 0 ford, 1 bridge
+    crossings_bridge:[int] = []      // a bridge's slot, or -1
+    mend:[int] = []                  // bridge slots worth rebuilding (studied)
+    cut:[int] = []                   // bridge slots worth breaking (studied)
+    broke:[int] = []                 // bridge slots we broke on purpose (never mended for a shortcut)
+    breakers:[int] = []              // soldier ids sent at a bridge
+    bridge_next = 0
     crossings_centre:[int] = []
     crossings_cells:[[int]] = []
     made = false
@@ -169,8 +176,14 @@ def land_crossings(l:Land) -> int:
                         seen[y * W + x] = 1
                         cells.push(y * W + x)
             l.crossings_kind.push(0)
+            l.crossings_bridge.push(-1)
             l.crossings_centre.push(cells_centre(cells))
             l.crossings_cells.push(cells)
+    for(br_id) id, k:
+        l.crossings_kind.push(1)
+        l.crossings_bridge.push(k)
+        l.crossings_centre.push(cells_centre(br_cells[k]))
+        l.crossings_cells.push(br_cells[k])
     return l.crossings_centre.length
 
 def cells_centre(cells:[int]) -> int:
@@ -277,6 +290,56 @@ def key_from(l:Land, path:[int]):
                 if l.key < 0 and contains(cells, c):
                     l.key = k
                     l.key_side = path[max(0, n - 1)]
+
+// Why we may cut their way (Land._may_cut): 2, we swim; 1, they outnumber us; 0, no reason (or no army of theirs).
+def may_cut(bot:Bot, army:[int]) -> int:
+    var theirs = 0
+    for(bot.scout.seen_kind) k: theirs += t_pop[k]
+    if theirs < cfg("land.cut_enemy"): return 0
+    if bot.aln % 3 == 1: return 2
+    return if defending(bot, army): 1 else: 0
+
+def enemies_near(p:int, x:int, y:int, r:int) -> bool:
+    for(u_x.length) i:
+        if is_foe(p, u_owner[i]) and not t_worker[u_kind[i]] and fog_visible(p, u_x[i], u_y[i]) and dist2(x, y, u_x[i], u_y[i]) <= r * r: return true
+    return false
+
+// Mend a bridge worth mending (two workers, if it's quiet there and we can pay), break one worth
+// breaking (melee soldiers idle at home). Every few seconds (Land._bridges).
+def land_bridges(l:Land, bot:Bot, workers:[int], army:[int], hx:int, hy:int):
+    if not br_id.length or tick < l.bridge_next: return
+    l.bridge_next = tick + 100
+    let p = bot.player
+    for(br_id) id, k:
+        let ax = br_x0[k] + (br_x1[k] - br_x0[k]) / 2
+        let ay = br_y0[k] + (br_y1[k] - br_y0[k]) / 2
+        if br_up[k] == 0 and contains(l.mend, k) and (br_payer[k] < 0 or br_payer[k] == p) and not enemies_near(p, ax, ay, 8000) and
+           (br_payer[k] == p or can_afford(p, br_cost)):
+            var on = 0
+            for(workers) i:
+                if u_task[i] == BUILD and u_target[i] == id: on++
+            if on < 2:
+                let ids = nearest_workers(bot, workers, ax, ay, 2 - on)
+                if ids.length: issue_cmd(p, CMD_HELP_BUILD, ids, id, 0, 0, 0)
+        if br_up[k] == 1 and contains(l.cut, k):
+            l.breakers = filter(l.breakers) b: index_of(b) >= 0 and u_foe[index_of(b)] == id
+            if not (l.breakers.length >= cfg("land.breakers") or bot.assault):
+                let keys = []::int
+                for(army) i:
+                    if not t_ranged[u_kind[i]] and u_foe[i] == 0 and not is_escort(bot.expand, u_id[i]) and dist2(hx, hy, u_x[i], u_y[i]) <= 400 * 1000000:
+                        keys.push(i)
+                let ds = map(keys) i: dist2(u_x[i], u_y[i], ax, ay)
+                let order = map(keys.length) n: n
+                insertion_sort(order) a, b: ds[a] < ds[b] or (ds[a] == ds[b] and u_id[keys[a]] < u_id[keys[b]])
+                let ids = map(slice(order, 0, max(0, min(cfg("land.breakers") - l.breakers.length, order.length)))) n: u_id[keys[n]]
+                if ids.length + l.breakers.length >= cfg("land.breakers") / 2 and ids.length:
+                    issue_cmd(p, CMD_ATTACK, ids, id, 0, 0, 0)
+                    for(ids) x: l.breakers.push(x)
+                    if not contains(l.broke, k): l.broke.push(k)
+
+// Is unit i one of ours at work breaking a bridge (kept out of the waves meanwhile)?
+def land_breaking(l:Land, i:int) -> bool:
+    return contains(l.breakers, u_id[i]) and u_foe[i] != 0 and bridge_index(u_foe[i]) >= 0
 
 def defending(bot:Bot, army:[int]) -> bool:
     var ours = 0
@@ -445,7 +508,45 @@ def land_study(l:Land, bot:Bot, workers:[int], army:[int], hx:int, hy:int):
         l.their_cost = if g >= 0: s.dist[g] else: ROUTE_INF
         key_from(l, route_path(s, g))
         return
-    // (bridges: none here)
+    // Bridges: one what-if each (a standing one gone, for them; a broken one back, for us).
+    for(br_id) id, k:
+        let name = "bridge{k}"
+        if due(l, name, cfg("land.bridge_every")):
+            if br_up[k] == 1:
+                let why = may_cut(bot, army)
+                if eln < 0 or l.their_cost >= ROUTE_INF or why == 0:
+                    l.cut = filter(l.cut) v: v != k
+                    mark_done(l, name)
+                else:
+                    let esx, esy = enemy_start(bot.player, hx, hy)
+                    let efrom = open_near(eln, cell_of(hx, hy))
+                    let price = route_prices(eln, 0)
+                    for(br_cells[k]) c: price[c] = 0
+                    let s = land_search(l, name, walks[eln], efrom, price)
+                    if not s: return
+                    mark_done(l, name)
+                    l.cut = filter(l.cut) v: v != k
+                    let g = cheapest(s, ring_round(walks[eln], esx / 1000, esy / 1000, 3))
+                    let without = if g >= 0: s.dist[g] else: ROUTE_INF
+                    if without >= ROUTE_INF or without * 100 >= l.their_cost * (100 + cfg("land.cut_pct")): l.cut.push(k)
+                    return
+            else:
+                let esx, esy = enemy_start(bot.player, hx, hy)
+                if (contains(l.broke, k) and l.our_start_cost < ROUTE_INF) or esx < 0:
+                    l.mend = filter(l.mend) v: v != k   // (we broke it to cut their way: it stays down while we can get round)
+                    mark_done(l, name)
+                else:
+                    let price = route_prices(ln, 0)
+                    for(br_cells[k]) c: price[c] = ROUTE_STEP   // (as if it stood again)
+                    let s = land_search(l, name, walks[ln], src, price)
+                    if not s: return
+                    mark_done(l, name)
+                    l.mend = filter(l.mend) v: v != k
+                    let g = cheapest(s, ring_round(walks[ln], esx / 1000, esy / 1000, 3))
+                    let with = if g >= 0: s.dist[g] else: ROUTE_INF
+                    if with < ROUTE_INF and (l.our_start_cost >= ROUTE_INF or with * 100 <= l.our_start_cost * (100 - cfg("land.mend_pct"))): l.mend.push(k)
+                    return
+            return
     if due(l, "detour", cfg("land.detour_every")) and l.our_path.length:
         let dx, dy = detour_point(l, bot, ln, src, goal)
         if dy == -2: return
@@ -630,5 +731,5 @@ def land_think(l:Land, bot:Bot, workers:[int], army:[int], hx:int, hy:int):
     if l.job or tick >= l.next_study:
         if not l.job: l.next_study = tick + cfg("land.study_every") * 20
         land_study(l, bot, workers, army, hx, hy)
-    // (bridges: none here)
+    land_bridges(l, bot, workers, army, hx, hy)
     hills(l, bot, army)
