@@ -990,6 +990,9 @@ def draw_banner():
 // ------------------------------------------------------------------ selection and orders
 
 var selected = []::int          // unit ids
+var groups = dictionary<int, [int]>(10)   // control group (0 for key 1) -> unit ids
+var last_group = -1
+var last_group_at = -10.0
 var sel_building = 0            // building id
 var drag_from = float2_0
 var dragging = false
@@ -1120,6 +1123,19 @@ def train_slot(n:int):
         let tr = trainable(b)
         if n < tr.length: issue_cmd(ME, CMD_TRAIN, []::int, sel_building, tr[n], 1, 0)
 
+def store_group(n:int): groups.set(n, selected_units())
+
+def recall_group(n:int):
+    let ids = filter(groups.get(n, [])) id: index_of(id) >= 0
+    if not ids.length: return
+    selected = ids
+    sel_building = 0
+    if last_group == n and gl.time() - last_group_at < 0.4:
+        let i = index_of(ids[0])
+        cam = iso(float(u_x[i]), float(u_y[i]))
+    last_group = n
+    last_group_at = gl.time()
+
 def keys():
     if gl.button("m") == 1: sound_on = not sound_on
     if gl.button("n") == 1 and composed and pack_library:   // a new race, mid-match
@@ -1128,6 +1144,16 @@ def keys():
         gl.set_text_input("")
         return
     let digit = map(9) n: gl.button("{n + 1}") == 1
+    // Control groups (sim_debug._control_group): Ctrl (or Cmd) + a number keeps the selected units;
+    // the number brings them back (when no building's panel takes it), twice quickly to look at them.
+    let ctrl = gl.button("left ctrl") >= 1 or gl.button("right ctrl") >= 1 or gl.button("left gui") >= 1 or gl.button("right gui") >= 1
+    for(digit) hit, n:
+        if hit and ctrl:
+            store_group(n)
+            return
+        if hit and not build_menu and b_index_of(sel_building) < 0:
+            recall_group(n)
+            return
     if gl.button("b") == 1 and selected_workers().length: build_menu = not build_menu
     if build_menu:
         let menu = buildable()
@@ -1440,6 +1466,11 @@ def self_test() -> bool:
     elif test_step == 3 and clock_s >= 4.0:
         expect_ok(b_queue[tc].length >= 1 or pop[ME] > 3, "1 on the Town Center trains a worker")
         let army = filter(u_id) id: u_owner[index_of(id)] == ME
+        selected = army.slice(0, 2)
+        store_group(2)
+        selected = []
+        recall_group(2)
+        expect_ok(selected.length == 2, "Ctrl+3 keeps two units, 3 brings them back")
         selected = army
         fake_mouse = to_screen(iso(float(tx * 1000 + 4000), float(ty * 1000 + 4000)))
         order(fake_mouse)
