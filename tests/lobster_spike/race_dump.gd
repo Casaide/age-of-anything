@@ -12,6 +12,7 @@ func _init() -> void:
 	var gen = Generator.new(lib)
 	var rules = DataLib.load_rules(args[1])
 	var out := FileAccess.open(args[0], FileAccess.WRITE)
+	var reroll := int(OS.get_environment("AOW_REROLL")) if OS.get_environment("AOW_REROLL") != "" else 0
 	for p in args.slice(2):
-		out.store_line(JSON.stringify(gen.generate(p, rules), "", true))
+		out.store_line(JSON.stringify(gen.generate(p, rules, reroll), "", true))
 	quit()
