@@ -1,5 +1,7 @@
 {
  "frog": {
+  "draw_scale": 80,
+  "_draw_scale_doc": "drawn this much smaller than built (per cent), on foot: the look only; the sim, stats and prices take the recipe's scale (Dominic, 2026-10-26: rats and frogs better smaller)",
   "war_beast": "heron",
   "voice": "frog",
   "noun": "Frog",
@@ -63,6 +65,8 @@
   "unique": "bullfrog"
  },
  "rat": {
+  "draw_scale": 80,
+  "_draw_scale_doc": "drawn this much smaller than built (per cent), on foot: the look only; the sim, stats and prices take the recipe's scale (Dominic, 2026-10-26: rats and frogs better smaller)",
   "war_beast": "boar",
   "voice": "rat",
   "push_home": {
