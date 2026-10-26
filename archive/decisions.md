@@ -1187,3 +1187,16 @@ game." Supersedes the port's first call (generation stays in Godot). The generat
 (`tests/lobster_spike/gen/`) and World's setup (`gen/setup.lobster`, `gen/start.lobster`) run in Lobster and give
 the same races (keys, recipes, stats) and the same start, token for token, as GDScript; the game makes both from the
 pack's prompts and map. Next, the units drawn from baked parts in Lobster (6b), then the baker itself (6c). Claude.
+
+**D-169, 2026-10-26: Any race draws at once from a part library; the Lobster baker becomes the art-quality step.**
+A part's bake holds its skin and cloth colours, so a race needs its own bakes. Most parts (230 of 290) are fixed
+colour; only bodies, heads and legs vary with a creature's skin and six parts with a culture's cloth. So Godot bakes
+every part in every colour a race can wear, once (about 90,000 bakes, 160 MB), and the Lobster composer draws any
+generated race from it, looking exactly as in Godot. Porting the baker (6c) is no longer needed for new races; it
+becomes where art quality is raised. Claude.
+
+**D-170, 2026-10-26: Prices are set by fights when races are made: before a match, and mid-match.** The lobby's
+loading time runs the equal-cost round robin between the match's races (the GDScript balance tool's fights, in
+Lobster), prices each line by its win rate and bisects, a few rounds (about 5 s for two races). A race made mid-match
+(N) is balanced the same way against the others while the match waits, the running world set aside and brought
+back. Dominic, 2026-10-26: "the match load time is all balance testing etc - or we do it before the match starts".

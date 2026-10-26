@@ -70,7 +70,8 @@ SURRENDER, the bots' walls and abilities.
       the bot opponent, the win banner; a self-test drives the controls (`play.sh pack selftest`). Waiting on
       Dominic's first match.
 - [ ] 5. Feel: minimap, fog, sound and creature voices, hit flashes, shots, health bars, the top bar, a UI scaled to
-      the screen are in. To come: the Godot terrain's look, music, control groups, a nicer panel.
+      the screen are in; the ground is Godot's terrain shader, ported (`game/ground.lobster`, 2026-10-26). To come:
+      culture paths, hills' relief and the ground's doodads, music, control groups, a nicer panel.
 - [ ] 6. Setup in Lobster (Dominic, 2026-10-26: "Let's do it! Primarily because ... it opens us up to generation at
       army creation time and during the game"). Three steps, each checked against GDScript:
   - [x] 6a. Races and the match from data, 2026-10-26: a JSON reader and Godot-compatible writer, SHA-256, DataLib,
@@ -79,14 +80,32 @@ SURRENDER, the bots' walls and abilities.
         (four matches: the Lobster start equals export.gd's scenario token for token). The game makes its races and
         start from the pack's prompts (`play.sh pack`; `scenario:<file>` for an export). Game modes' starts (Siege,
         Fortress) and mods aren't set up in Lobster yet.
-  - [ ] The lobby: prompts typed in the game. Needs a new race's art without Godot (6b, 6c).
-  - [ ] 6b. Units drawn from baked parts in Lobster (UnitView's assembly, rigs, procedural animation): no
-        per-race flipbooks; Godot bakes each part once.
+  - [x] 6b. Units drawn from baked parts in Lobster, 2026-10-26: `view/` (a scene graph, Godot's PCG, the part
+        bakes and rigs, `src/unit_view.gd` ported). `view_check.lobster`: art_pack's states for 39 types x 8 facings,
+        14946 of 14952 frames' draw lists identical to Godot's (six differ by Godot's float32 positions). The game
+        composes every unit live.
+  - [x] The part library (`art_pack.gd ... library`): every part in every colour any race can wear (every creature
+        with every culture in every skin, every hold, every part on every body): about 90,000 bakes, 26 sheets,
+        160 MB, loaded in 2.4 s. `library_check.lobster`: 120 of 120 random races drawn whole. So any race the
+        generator makes plays at once, looking exactly as in Godot.
+  - [x] The lobby: two prompts typed in the game, each race shown as you type; Enter balances them by fights
+        (below) and starts the match (`play.sh library lobby`, or `game.lobster -- library lobby`).
+  - [x] Balance by simulation (`gen/balance.lobster`, `balance.lobster`): tests/round_robin.gd's equal-cost fights,
+        the same fights (all 528 of balance.gd's age-2 round robin match GDScript), in 8 s in one process; the
+        auto-balance prices each line by its win rate, then bisects: on balance.gd's five races, 20 of 33 units
+        more than 10 points off the mean become 2 in six rounds. Two races before a match: about 5 s.
+  - [x] A new race mid-match (N): the running world stashed (`gen/reset.lobster`), the newcomer balanced against
+        the others by fights, then the player's lines, bonuses and buildings become it (`gen/swap.lobster`).
   - [ ] 6c. The part baker in Lobster (the procedural 3D models, the Blender models converted, the pixel pass):
-        Godot no longer needed. Then generation in play: price-by-simulation at race creation, races mid-match.
+        Godot no longer needed. With the library, this is now the art-quality step (higher resolution, more poses,
+        destruction, effects), not a blocker. The art-quality study (Dominic, 2026-10-26: "how far we can go with art
+        quality ... while maintaining nostalgia above all else") goes concept-first, after this.
 - [ ] Archive
 
 ## Results
+
+- 2026-10-26 (6b and on): the ground shader and composed rats (`archive/images/2026-10-26/05-...`), moonbears typed into
+  the lobby and drawn from the library (`06-...`), rats becoming forest bears a minute into a match (`07-...`).
 
 - 2026-10-26 (6a): two races from prompts in about 3 ms and the match start in about 3 ms, in the game; frames from the
   Lobster-made start and from the GDScript scenario are byte-identical at tick 101.

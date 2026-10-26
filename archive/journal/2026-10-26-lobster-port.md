@@ -58,9 +58,31 @@ since 0 means empty). After that, all the same. The game now makes its races (ab
   where they are (they shoot from there). Found by the Siege mode with Lobster's bots.
 - Lobster bots answered sheep: GDScript counts meat on the hoof as wild food when deciding farms.
 
+## Evening: units from parts, a library of every part, balance by fights, races mid-match
+
+UnitView came over to Lobster: a small scene graph, Godot's own random numbers (PCG32; its randf takes the exponent
+from one draw and the significand from the next, with the top bit set, found by testing against Godot's outputs),
+then every rig, rider, crew, hop, kneel and fall. Godot's pack tool now dumps each view's draw list frame by frame;
+the Lobster composer matched 14946 of 14952. The misses on the way: a stage left out of the check (a third of a
+pixel off), the war beast's far legs a step ahead (Godot's rigs.json lost pi's last digits: full precision fixed
+it), and a hopping worker walking straight up the screen (Godot keeps positions in float32).
+
+Then the library: most parts never change colour, so every part in every colour any race can wear is about 90,000
+bakes (four minutes the first time, ninety seconds after). Random prompts all drew whole once holds and cloth gear
+were covered for every culture.
+
+The balancer: GDScript's round robin, in Lobster, gave GDScript's results for all 528 fights once the animals were
+put back (the round robin's worlds have them, and they draw from the same random numbers as the spawns). Then the
+auto-balance, which first swung the Heavy Lancer from 96% to 3% (a 261% price), and settled once it bisected.
+
+The lobby, and N mid-match: the running world is set aside (every global moved, then moved back), the newcomer
+fights the others, and your people become it. The rats became forest bears a minute into a match.
+
+The ground: Godot's terrain shader in Lobster's shader format, the same masks.
+
 ## Pictures
 
-`archive/images/2026-10-26/`: the first frame (01), a rat raid on the frog town (02), sheep penned (03).
+`archive/images/2026-10-26/`: the first frame (01), a rat raid on the frog town (02), sheep penned (03), the UI scaled (04), the ground shader with composed rats (05), moonbears from the lobby and the library (06), rats become forest bears mid-match (07).
 
 ## Ideas parked
 
