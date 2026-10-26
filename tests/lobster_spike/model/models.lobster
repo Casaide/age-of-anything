@@ -21,7 +21,7 @@ def build_model(id:string, c:Colours) -> Spec?:
     let own = if tilde >= 0: id.substring(0, tilde) else: id
     let bits = tokenize(own, "@", "")
     hold = if bits.length > 1: bits[1] else: "low"
-    rest = if bits.length > 2: bits[2] else: ""
+    rest_pose = if bits.length > 2: bits[2] else: ""
     let base = bits[0]
     // each model file's parts (model/all.lobster imports them; a file answers nil for parts it doesn't have)
     return build_units(base, c) or build_units2(base, c) or build_units3(base, c) or build_units4(base, c) or build_units5(base, c) or

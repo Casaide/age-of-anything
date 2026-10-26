@@ -353,7 +353,7 @@ def kit_build(id:string, c:Colours) -> Spec:
     let role = kit_role.get(id, "")
     let k = kit_kits.get(name)
     assert k
-    let pose = if rest != "": rest elif hold == "low": "" else: hold
+    let pose = if rest_pose != "": rest_pose elif hold == "low": "" else: hold
     let idle_pose = if kit_has_s(kit_idle(k), pose): pose else: ""
     var spec = spec_of(mnode())
     if role == "body":

@@ -380,6 +380,22 @@ def make_view(k:int, p:int, step:int) -> UV:
 def canvas(x:float, y:float) -> float2: return iso(x, y) / 1.5
 
 import .view.baker
+import .model.kit
+import .model.grng
+import .model.base
+import .model.flat
+import .model.glb
+import .model.units
+import .model.units2
+import .model.units3
+import .model.units4
+import .model.units5
+import .model.kit_bodies
+import .model.siege
+import .model.heroes
+import .model.bears
+import .model.models
+import .view.part_bake
 import .game.bake_missing   // (here: it makes views to see what parts they wear)
 
 def job_of(i:int) -> string:
@@ -2041,7 +2057,7 @@ while gl.frame() and not quit_game:
     music_tick("age{clamp(ages[ME], 1, 4)}", gl.time() - last_battle < 6.0, dt)
     ambience_tick(town_level(), dt)
     frame_no++
-    if frame_no == 1 and mesh_dir != "":   // (inside a frame: a bake outside one leaves the window drawing nothing)
+    if frame_no == 1:   // (inside a frame: a bake outside one leaves the window drawing nothing)
         let t0 = seconds_elapsed()
         let n = bake_missing_parts()
         print "baked {n} part facings the pack lacked, in {int((seconds_elapsed() - t0) * 1000.0)} ms"
