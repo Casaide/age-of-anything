@@ -8,7 +8,7 @@ var model_tex_dir = "textures"
 let model_mat_at = dictionary<string, int>(64)
 
 def mat_index(m:MMat) -> int:
-    let key = "{m.tex}|{m.triplanar}|{m.uv_scale}|{m.uv_offset}|{m.scissor}|{m.unshaded}|{m.emission}"
+    let key = "{m.tex}|{m.triplanar}|{m.uv_scale}|{m.uv_offset}|{m.scissor}|{m.unshaded}|{m.emission}|{m.two_sided}"
     let known = model_mat_at.get(key, -1)
     if known >= 0: return known
     var tex:resource<texture>? = nil
@@ -24,6 +24,7 @@ def mat_index(m:MMat) -> int:
     bm.scissor = m.scissor
     bm.unshaded = m.unshaded
     bm.emission = m.emission
+    bm.two_sided = m.two_sided
     bake_mats.push(bm)
     model_mat_at.set(key, bake_mats.length - 1)
     return bake_mats.length - 1
