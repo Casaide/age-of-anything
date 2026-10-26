@@ -105,7 +105,8 @@ SURRENDER, the bots' walls and abilities.
 - [x] The tech tree page (2026-10-26): `game/techtree.lobster`, after `src/view/tech_tree_model.gd`: ages as rows,
       buildings as columns, unit lines (a node where the unit changes) and research tracks packed into lanes, your
       race's names, what it lacks struck through, other races' own research left off; F1 in a match (`18-...`).
-      Not yet: the race panel (bonuses in words), effect texts, heroes' nodes. (In this Lobster build `gl.rect`
+      The race panel too (its bonuses and where each comes from, its own research, what it lacks; `27-...`).
+      Not yet: research effects in words, heroes' nodes. (In this Lobster build `gl.rect`
       draws -size..size round its point: the page's boxes allow for it.)
 - [x] The Race Lab, in the lobby (2026-10-26): each typed race's whole roster drawn from the part library as you
       type, idling in its team colour, under its stats (`lab` with `races:A|B` captures it; `19-...`). Not yet: the
