@@ -21,6 +21,7 @@ class Look:
 
 var sheet_size = 4096
 var sheet_tex = []::resource<texture>
+var sheet_dims = []::float2        // each sheet's size in px (the pack's are all sheet_size; a part baked in the game is its own)
 var frames = []::Frame
 var frame_at = dictionary<string, int>(32768)
 var anims = dictionary<string, int>(1024)     // "<type>.<state>" -> frames
@@ -84,6 +85,7 @@ def load_pack(dir:string):
                     sheet_size = num(2)
                     for(num(1)) s:
                         sheet_tex.push(assert gl.load_texture(dir + "/sheet{s}.png", pack_formats))
+                        sheet_dims.push(float2_1 * float(sheet_size))
                 case "frame":
                     frame_at.set(t[1], frames.length)
                     frames.push(Frame { num(2), num(3), num(4), num(5), num(6), num(7), num(8) })
@@ -197,11 +199,11 @@ def sprite(f:int, x:float, y:float, col:float4):
     let y0 = floor(y) - fr.oy
     let x1 = x0 + fr.w
     let y1 = y0 + fr.h
-    let s = float(sheet_size)
-    let u0 = fr.x / s
-    let v0 = fr.y / s
-    let u1 = (fr.x + fr.w) / s
-    let v1 = (fr.y + fr.h) / s
+    let s = sheet_dims[fr.sheet]
+    let u0 = fr.x / s.x
+    let v0 = fr.y / s.y
+    let u1 = (fr.x + fr.w) / s.x
+    let v1 = (fr.y + fr.h) / s.y
     let n = b_pos.length
     b_pos.push(float3 { x0, y0, 0.0 })
     b_pos.push(float3 { x1, y0, 0.0 })
@@ -226,13 +228,13 @@ def sprite_xf(f:int, xf:[float], col:float4):
     if fr.sheet != b_sheet:
         flush_sprites()
         b_sheet = fr.sheet
-    let s = float(sheet_size)
+    let s = sheet_dims[fr.sheet]
     let n = b_pos.length
     for([float2 { 0.0, 0.0 }, float2 { float(fr.w), 0.0 }, float2 { float(fr.w), float(fr.h) }, float2 { 0.0, float(fr.h) }]) c:
         b_pos.push(float3 { xf[0] * c.x + xf[2] * c.y + xf[4], xf[1] * c.x + xf[3] * c.y + xf[5], 0.0 })
-    b_tc.push(float2 { fr.x / s, fr.y / s })
-    b_tc.push(float2 { (fr.x + fr.w) / s, fr.y / s })
-    b_tc.push(float2 { (fr.x + fr.w) / s, (fr.y + fr.h) / s })
-    b_tc.push(float2 { fr.x / s, (fr.y + fr.h) / s })
+    b_tc.push(float2 { fr.x / s.x, fr.y / s.y })
+    b_tc.push(float2 { (fr.x + fr.w) / s.x, fr.y / s.y })
+    b_tc.push(float2 { (fr.x + fr.w) / s.x, (fr.y + fr.h) / s.y })
+    b_tc.push(float2 { fr.x / s.x, (fr.y + fr.h) / s.y })
     for(4): b_col.push(col)
     for([n, n + 2, n + 1, n, n + 3, n + 2]) k: b_idx.push(k)

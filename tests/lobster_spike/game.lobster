@@ -91,6 +91,7 @@ var swap_at = -1.0
 var rules_arg = ""               // rules:<id>: the host rules (else the pack's)
 var mods_arg = ""                // mods:a,b: mods to merge over the data (else the pack's)
 var lobby_rerolls = [0, 0]      // each side's reroll (the generator's other takes on the same prompt)
+var mesh_dir = ""               // meshes:<dir>: the mesh library (mesh_export.gd library): parts the pack lacks are baked here
 var mode_arg = ""               // mode:<id>: the lobby's game mode (data/modes.json)
 var map_arg = ""                // map:<id>: the lobby's map (tests and captures)
 var races_arg = ""             // races:<A>|<B>: the lobby's prompts, as if typed (then balanced, then played)
@@ -120,6 +121,7 @@ for(args) a, k:
         if key == "mode": mode_arg = val
         if key == "reroll": lobby_rerolls = map(tokenize(val, "|", " ")) r: string_to_int(r)
         if key == "rules": rules_arg = val
+        if key == "meshes": mesh_dir = val
         if key == "mods": mods_arg = val
         if key == "reload": reload_at = string_to_float(val)
         if a == "host": hosting = true
@@ -371,6 +373,9 @@ def make_view(k:int, p:int, step:int) -> UV:
     return v
 
 def canvas(x:float, y:float) -> float2: return iso(x, y) / 1.5
+
+import .view.baker
+import .game.bake_missing   // (here: it makes views to see what parts they wear)
 
 def job_of(i:int) -> string:
     if u_moving[i] != 0: return ""
@@ -1734,6 +1739,7 @@ if shot != "" or selftest or padtest: gl.set_target_delta_time(1.0 / 60.0)
 note("window")
 fatal(gl.load_materials(SPRITE_SHADERS, true))
 fatal(gl.load_materials(TERRAIN_SHADERS, true))
+fatal(gl.load_materials(BAKE_SHADERS, true))
 check(gl.set_font_name("data/fonts/Droid_Sans/DroidSans.ttf"), "no font")
 zoom = 2.0 * floor(ui() + 0.5)   // two screen points an art pixel, as the game's camera
 load_pack(args[0])
@@ -1999,6 +2005,10 @@ while gl.frame() and not quit_game:
     music_tick("age{clamp(ages[ME], 1, 4)}", gl.time() - last_battle < 6.0, dt)
     ambience_tick(town_level(), dt)
     frame_no++
+    if frame_no == 1 and mesh_dir != "":   // (inside a frame: a bake outside one leaves the window drawing nothing)
+        let t0 = seconds_elapsed()
+        let n = bake_missing_parts()
+        print "baked {n} part facings the pack lacked, in {int((seconds_elapsed() - t0) * 1000.0)} ms"
     if shot != "" and frame_no < 3: note("frame {frame_no} tc at {if tc0 >= 0: to_screen(iso(float(b_cx[tc0] * 1000 + 2000), float(b_cy[tc0] * 1000 + 2000))) else: float2_0} cam {cam} zoom {zoom} ws {gl.window_size()} fb {gl.framebuffer_size()} tc {tc0} draws {draws.length} W {W} H {H} first {iso(0.0, 0.0)} last {iso(float(W * 1000), float(H * 1000))}")
     if shot != "" and frame_no % 60 == 0: print "frame {frame_no}: {dt * 1000.0} ms, play {clock_s} s"
     if reload_at >= 0.0 and clock_s >= reload_at:
