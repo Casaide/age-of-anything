@@ -121,10 +121,10 @@ def state_hash() -> int:
     for(wonder_ids) id, k: h = mix(mix(h, id), wonder_since[k])
     for(market_price) v: h = mix(h, v)
     h = walls_hash(h)
-    h = abilities_hash(h)
-    h = wear_hash(h)
     for(br_id) id, k:
         for([id, br_hp[k], br_up[k], br_work[k], br_payer[k]]) v: h = mix(h, v)
+    h = abilities_hash(h)
+    h = wear_hash(h)
     h = mix(h, shots.length / SHOT_STRIDE)
     for(shots) v: h = mix(h, v)
     for(num_players) p:

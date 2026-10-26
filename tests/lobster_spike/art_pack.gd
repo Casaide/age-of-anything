@@ -8,7 +8,9 @@ extends SceneTree
 ## doodad counts, the terrain colours and each tree cell's species. Team colour stays the baked key
 ## (magenta): the Lobster game recolours it (team_mask.gdshader's test). Art pixels throughout:
 ## a tile is 96 x 48, Iso.to_screen * 1.5.
-## Run (needs a display): godot --path . --audio-driver Dummy --always-on-top --script res://tests/lobster_spike/art_pack.gd -- <out dir> <map>
+## Also: each player's team colour and creature voice, unit and building names, each unit type's
+## blow and shot sounds, and the sound table (data/audio.json).
+## Run (needs a display): godot --path . --audio-driver Dummy --always-on-top --script res://tests/lobster_spike/art_pack.gd -- <out dir> <map> [prompt A] [prompt B]
 
 const Export := preload("res://tests/lobster_spike/export.gd")
 const DataLib := preload("res://src/data_lib.gd")
@@ -19,6 +21,7 @@ const UnitView := preload("res://src/unit_view.gd")
 const PartShape := preload("res://src/part_shape.gd")
 const ArtKit := preload("res://src/view/art/art_kit.gd")
 const LandView := preload("res://src/view/art/land_view.gd")
+const CombatFx := preload("res://src/view/combat_fx.gd")
 
 const KEY := Color(1, 0, 1)      # the team key: units drawn in it, recoloured in Lobster
 const CELL := 192                # art px per capture cell
@@ -51,7 +54,8 @@ func _initialize() -> void:
 	rules.animals = false
 	var gen = Generator.new(lib)
 	var races := []
-	for p in Export.PROMPTS:
+	var prompts: Array = [args[2], args[3]] if args.size() > 3 else Export.PROMPTS
+	for p in prompts:
 		races.append(gen.generate(p, rules))
 	var w := World.new(Export.SEED, SimMap.load_id(map_id), races, rules)
 	var teams := []
@@ -89,6 +93,7 @@ func _initialize() -> void:
 			continue
 		frames.append([name, img, int(round(b.origin.x)), int(round(b.origin.y))])
 	_buildings(w, races, lines)
+	_names_and_sounds(w, races, lines)
 	_ground(w, lines)
 	_pack(out, lines)
 	var f := FileAccess.open(out.path_join("index.txt"), FileAccess.WRITE)
@@ -216,6 +221,43 @@ func _buildings(w: World, races: Array, lines: PackedStringArray) -> void:
 		lines.append("doodad %s %d" % [kind, ArtKit.DOODADS[kind]])
 	for terrain in ["bugbush", "reeds", "stone", "gold", "carcass", "field", "paddy", "tree"]:
 		lines.append("prop %s %s" % [terrain, {"bugbush": "bush", "reeds": "reeds", "stone": "quarry", "gold": "gold", "carcass": "carcass", "field": "crops", "paddy": "paddy", "tree": "tree"}[terrain]])
+
+
+## Team colours, voices, names (spaces as underscores) and sounds.
+func _names_and_sounds(w: World, races: Array, lines: PackedStringArray) -> void:
+	for p in races.size():
+		var c := Color(lib.palettes.teams[p])
+		lines.append("team %d %d %d %d" % [p, c.r8, c.g8, c.b8])
+		lines.append("voice %d %s" % [p, lib.creatures[races[p].creature].voice])
+	for k in w.types.size():
+		var t: Dictionary = w.types[k]
+		var tags: Array = t.eval.get("tags", [])
+		lines.append("uname %d %s" % [k, String(t.get("name", t.slot)).replace(" ", "_")])
+		lines.append("usound %d %s %s" % [k, _blow(tags), CombatFx.shot_sound(CombatFx.shot_kind(tags))])
+	for k in w.btypes.size():
+		lines.append("bname %d %s" % [k, String(w.btypes[k].name).replace(" ", "_")])
+	for r in w.tech.research.size():
+		lines.append("rname %d %s" % [r, String(w.tech.research[r].get("name", w.tech.research[r].id)).replace(" ", "_")])
+	var a: Dictionary = DataLib.load_json("res://data/audio.json")
+	for name in a.sounds:
+		var s: Dictionary = a.sounds[name]
+		lines.append("sound %s %d %d %s" % [name, int(s.get("takes", 1)), int(s.get("gap_ms", 0)), s.get("bus", "Sfx")])
+	for bus in a.buses:
+		lines.append("bus %s %d" % [bus, int(a.buses[bus])])
+	var v: Dictionary = a.voices.kinds
+	for kind in v:
+		lines.append("voicekind %s %d" % [kind, int(v[kind])])
+
+
+## The sim view's blow sound for a melee weapon's tags (sim_debug.gd _blow_sound).
+static func _blow(tags: Array) -> String:
+	if "ram" in tags:
+		return "ram_hit"
+	if "blade" in tags:
+		return "hit_blade"
+	if "blunt" in tags:
+		return "hit_blunt"
+	return "hit_pierce"
 
 
 ## Terrain colours (data/terrain.json, in the map's terrain order) and each tree cell's species.
