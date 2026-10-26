@@ -206,7 +206,7 @@ def page_flush():
 // (gl.rect draws -size..size round the point in this build, so it's given the centre and half the size)
 def page_rect(at:float2, size:float2, col:float4):
     gl.set_shader("color")
-    gl.color(col): gl.translate(at + size / 2.0): gl.rect(size / 2.0)
+    ui_fill(at, size, col)
 
 def page_line(a:float2, b:float2, w:float, col:float4):
     gl.set_shader("color")

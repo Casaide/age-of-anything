@@ -838,9 +838,7 @@ def lobby_text(p:float2, s:string, col:float4):
         gl.translate(p): gl.text(s)
 
 // A filled box from its top-left corner (gl.rect draws -size..size round its point in this build).
-def box(at:float2, size:float2, col:float4):
-    gl.set_shader("color")
-    gl.color(col): gl.translate(at + size / 2.0): gl.rect(size / 2.0)
+def box(at:float2, size:float2, col:float4): ui_fill(at, size, col)
 
 // The Race Lab in the lobby (scenes/race_lab): a race's whole roster drawn as you type it, idling in
 // its team colour, from the part library.
@@ -1041,8 +1039,7 @@ def typing_tick():
     let u = ui()
     let ws = float(gl.window_size())
     gl.set_shader("color")
-    gl.color(float4 { 0.08, 0.06, 0.04, 0.92 }):
-        gl.translate(float2 { ws.x * 0.2, ws.y * 0.4 }): gl.rect(float2 { ws.x * 0.6, 110.0 * u })
+    ui_fill(float2 { ws.x * 0.2, ws.y * 0.4 }, float2 { ws.x * 0.6, 110.0 * u }, float4 { 0.08, 0.06, 0.04, 0.92 })
     gl.set_font_size(int(18.0 * u))
     lobby_text(float2 { ws.x * 0.2 + 20.0 * u, ws.y * 0.4 + 14.0 * u }, "Your people become... (Enter: balance and change; Esc: never mind)", float4 { 0.8, 0.78, 0.7, 1.0 })
     gl.set_font_size(int(26.0 * u))
@@ -1054,8 +1051,7 @@ def draw_banner():
     let u = ui()
     let ws = float(gl.window_size())
     gl.set_shader("color")
-    gl.color(float4 { 0.08, 0.06, 0.04, 0.85 }):
-        gl.translate(float2 { 20.0 * u, 50.0 * u }): gl.rect(float2 { ws.x - 40.0 * u, 40.0 * u })
+    ui_fill(float2 { 20.0 * u, 50.0 * u }, float2 { ws.x - 40.0 * u, 40.0 * u }, float4 { 0.08, 0.06, 0.04, 0.85 })
     gl.set_font_size(int(20.0 * u))
     lobby_text(float2 { 34.0 * u, 58.0 * u }, banner, float4 { 0.95, 0.85, 0.6, 1.0 })
 
@@ -1341,10 +1337,8 @@ def draw_bars(alpha:float):
             let px, py = prev_pos(i)
             let p = iso(px + (u_x[i] - px) * alpha, py + (u_y[i] - py) * alpha)
             let hpk = float(u_hp[i]) / float(max(1, t_hp[k]))
-            gl.color(float4 { 0.0, 0.0, 0.0, 0.6 }):
-                gl.translate(p + float2 { -9.0, -38.0 }): gl.rect(float2 { 18.0, 3.0 })
-            gl.color(float4 { 1.0 - hpk, 0.3 + 0.6 * hpk, 0.15, 1.0 }):
-                gl.translate(p + float2 { -9.0, -38.0 }): gl.rect(float2 { 18.0 * hpk, 3.0 })
+            ui_fill(p + float2 { -9.0, -38.0 }, float2 { 18.0, 3.0 }, float4 { 0.0, 0.0, 0.0, 0.6 })
+            ui_fill(p + float2 { -9.0, -38.0 }, float2 { 18.0 * hpk, 3.0 }, float4 { 1.0 - hpk, 0.3 + 0.6 * hpk, 0.15, 1.0 })
 
 def draw_marks(alpha:float):
     gl.set_shader("color")
@@ -1355,10 +1349,8 @@ def draw_marks(alpha:float):
         let p = iso(px + (u_x[i] - px) * alpha, py + (u_y[i] - py) * alpha)
         draw_ring(p, float(u_radius[i]) * 0.068 + 3.0, float4 { 0.95, 0.91, 0.79, 1.0 })
         let hpk = float(u_hp[i]) / float(max(1, t_hp[u_kind[i]]))
-        gl.color(float4 { 0.0, 0.0, 0.0, 0.6 }):
-            gl.translate(p + float2 { -9.0, -38.0 }): gl.rect(float2 { 18.0, 3.0 })
-        gl.color(float4 { 1.0 - hpk, 0.3 + 0.6 * hpk, 0.15, 1.0 }):
-            gl.translate(p + float2 { -9.0, -38.0 }): gl.rect(float2 { 18.0 * hpk, 3.0 })
+        ui_fill(p + float2 { -9.0, -38.0 }, float2 { 18.0, 3.0 }, float4 { 0.0, 0.0, 0.0, 0.6 })
+        ui_fill(p + float2 { -9.0, -38.0 }, float2 { 18.0 * hpk, 3.0 }, float4 { 1.0 - hpk, 0.3 + 0.6 * hpk, 0.15, 1.0 })
     let b = b_index_of(sel_building)
     if b >= 0:
         let at = iso(float(b_cx[b] * 1000 + b_sx[b] * 500), float(b_cy[b] * 1000 + b_sy[b] * 500))
@@ -1404,13 +1396,11 @@ def draw_minimap():
         let cell = b_cy[b] * W + b_cx[b]
         if teams[b_owner[b]] == teams[ME] or fog[ME][cell] != 0:
             let p = mm_point(iso(float(b_cx[b] * 1000 + b_sx[b] * 500), float(b_cy[b] * 1000 + b_sy[b] * 500)))
-            gl.color(team_col(b_owner[b])):
-                gl.translate(p - float2 { 2.0, 2.0 }): gl.rect(float2 { 4.0, 4.0 })
+            ui_fill(p - float2 { 2.0, 2.0 }, float2 { 4.0, 4.0 }, team_col(b_owner[b]))
     for(u_x.length) i:
         if teams[u_owner[i]] == teams[ME] or visible_to_me(cell_of(u_x[i], u_y[i])):
             let p = mm_point(iso(float(u_x[i]), float(u_y[i])))
-            gl.color(team_col(u_owner[i])):
-                gl.translate(p - float2 { 1.0, 1.0 }): gl.rect(float2 { 2.0, 2.0 })
+            ui_fill(p - float2 { 1.0, 1.0 }, float2 { 2.0, 2.0 }, team_col(u_owner[i]))
     let ws = float(gl.window_size())
     let corners = map([float2_0, float2 { ws.x, 0.0 }, float2 { ws.x, ws.y - 120.0 * ui() }, float2 { 0.0, ws.y - 120.0 * ui() }]) c: mm_point(from_screen(c))
     gl.color(float4 { 0.95, 0.91, 0.79, 0.9 }):
@@ -1524,6 +1514,7 @@ def self_test() -> bool:
     return false
 
 import .game.pad   // (here: it plays through the controls above)
+import .game.ui
 import .game.techtree
 import .game.panel
 
@@ -1675,6 +1666,7 @@ load_pack(args[0])
 note("pack")
 music_start()
 lib_load("../../data")
+ui_setup("")
 let mods_wanted = if mods_arg != "": tokenize(mods_arg, ",", " ") else: pack_mods
 if mods_wanted.length: print "mods: {mods_use(mods_wanted)}"
 id_load("../../data")
