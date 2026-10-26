@@ -35,6 +35,7 @@ import .lib.match
 import .lib.trade
 import .lib.animals
 import .lib.bridges
+import .lib.walls
 import .lib.commands
 import .lib.ai_cfg
 import .lib.scout
@@ -87,7 +88,7 @@ for(ticks) k:
         write_file(args[0] + ".lobster.dump", dump_state(), 0, 1)
 var left = map(num_players + 1): 0   // (and gaia's animals)
 for(u_owner) p: left[p]++
-print "{n0} units, {ticks} ticks, {cmds.length} orders; at the end: units {left}, buildings {b_id.length}, gathered {gathered}"
+print "{n0} units, {ticks} ticks, {cmds.length} orders; at the end: units {left}, buildings {b_id.length}, gathered {gathered}, lanes {walks.length}, gates {(filter(b_kind) k: bt_gate[k] != 0).length}"
 print "lobster step: {spent * 1000.0 / ticks} ms a tick"
 if first_bad < 0:
     print "hashes: all {ticks} match"

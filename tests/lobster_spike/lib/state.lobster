@@ -193,11 +193,12 @@ var b_train = []::int
 var b_rally_x = []::int
 var b_rally_y = []::int
 var b_cooldown = []::int       // shooting buildings: ticks until the next volley
+var b_diag = []::int           // 0: the whole rect; 1 or 2: a diagonal gate, the cells on one diagonal of its square
 var b_queue = []::[int]        // unit type indexes, head first
 var b_inside = []::[int]       // units sheltering inside (garrison.gd): REC_SIZE ints each, by id
 
 def building_columns() -> [[int]]:
-    return [b_id, b_owner, b_kind, b_cx, b_cy, b_sx, b_sy, b_hp, b_progress, b_done, b_train, b_rally_x, b_rally_y, b_cooldown]
+    return [b_id, b_owner, b_kind, b_cx, b_cy, b_sx, b_sy, b_hp, b_progress, b_done, b_train, b_rally_x, b_rally_y, b_cooldown, b_diag]
 
 // Shooting buildings and garrisons, per building type (buildings.json attack, garrison).
 var bt_attacks = []::int       // 1 if it has an attack
@@ -391,3 +392,22 @@ var br_full_hp = 0
 var br_ticks = 1
 var br_cost = []::int
 var br_arm = []::int
+
+// Walls you stand on, gates, ladders (walls.gd, buildings.json), per building type.
+var bt_length = []::int
+var bt_stairs = []::int
+var bt_ladder = []::int
+var bt_walkway = []::int        // standing places a cell on its top (0: none)
+var bt_blocks_flyers = []::int
+var bt_replaces = []::[int]     // building types it may be laid over (a gate into a wall)
+var bt_pour = []::[int]         // a walkway tower's pour: reach, reload, damage (empty: none)
+var walk_climb = 40
+var walk_fall = 10
+var walk_speed_pct = 80
+var walk_push = 2
+var walk_not = []::int          // classes that can't climb
+var rubble_terrain = -1
+var rubble_from = []::int       // building types that leave rubble
+var rubble_repair_pct = 100
+var rubble = dictionary<int, [int]>(64)   // cell -> [terrain it was, owner, kind, cx, cy, along]
+var rubble_cells = []::int      // its keys, ascending

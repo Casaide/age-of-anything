@@ -34,6 +34,7 @@ import .lib.match
 import .lib.trade
 import .lib.animals
 import .lib.bridges
+import .lib.walls
 import .lib.commands
 import .lib.ai_cfg
 import .lib.scout

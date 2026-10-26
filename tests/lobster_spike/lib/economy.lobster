@@ -10,33 +10,92 @@ def b_index_of(bid:int) -> int:
     let found, at = binary_search(b_id, bid)
     return if found: at else: -1
 
-// The cells under building b, row by row.
-def footprint(b:int) -> [int]:
-    let out = []::int
-    var y = b_cy[b]
-    while y < b_cy[b] + b_sy[b]:
-        var x = b_cx[b]
-        while x < b_cx[b] + b_sx[b]:
-            out.push(y * W + x)
-            x++
-        y++
-    return out
+// The cells under building b, row by row (a diagonal gate's: its diagonal).
+def footprint(b:int) -> [int]: return cells_of(b_cx[b], b_cy[b], b_sx[b], b_sy[b], b_diag[b])
 
-def add_building(bid:int, owner:int, k:int, cx:int, cy:int) -> int:
-    let size = bt_size[k]
+def add_building(bid:int, owner:int, k:int, cx:int, cy:int, sx:int, sy:int, diag:int) -> int:
     for(building_columns()) col, n:
-        col.push([bid, owner, k, cx, cy, size, size, 1, 0, 0, 0, -1, -1, 0][n])
+        col.push([bid, owner, k, cx, cy, sx, sy, 1, 0, 0, 0, -1, -1, 0, diag][n])
     b_queue.push([]::int)
     b_inside.push([]::int)
     return b_id.length - 1
 
+// A footprint's size laid `along` (Economy.dims): gates turn, diagonals take a square.
+def dims(k:int, along:int) -> int, int:
+    if along >= 2: return bt_length[k], bt_length[k]
+    return if along == 0: bt_length[k] else: bt_size[k], if along == 0: bt_size[k] else: bt_length[k]
+
+def diag_of(along:int) -> int: return if along >= 2: along - 1 else: 0
+
+def along_for(k:int, along:int) -> int: return if bt_gate[k] and along >= 0 and along <= 3: along else: 0
+
+// The cells of a footprint with its top-left on (x0, y0), row by row: the rect, or a diagonal's (Buildings.cells).
+def cells_of(x0:int, y0:int, w:int, h:int, d:int) -> [int]:
+    let out = []::int
+    for(h) dy:
+        let y = y0 + dy
+        if d != 0: out.push(y * W + (if d == 1: x0 + dy else: x0 + w - 1 - dy))
+        else:
+            for(w) dx: out.push(y * W + x0 + dx)
+    return out
+
 // Put a building (unbuilt) on the map and return its slot (Economy.place).
-def place(player:int, k:int, cx:int, cy:int) -> int:
-    assert not bt_special[k]
-    let b = add_building(next_id, player, k, cx, cy)
+def place(player:int, k:int, cx:int, cy:int, along:int = 0) -> int:
+    let sx, sy = dims(k, along)
+    let b = add_building(next_id, player, k, cx, cy, sx, sy, diag_of(along))
     next_id++
-    occupy(footprint(b), b_id[b])
+    clear_rubble(footprint(b))   // built over a breach: the rubble goes
+    occupy(footprint(b), b_id[b], if bt_gate[k]: teams[player] else: -1, bt_blocks_flyers[k] != 0)
+    if bt_ladder[k]: set_walk_over(footprint(b), true)   // walked over at the wall's foot
+    if bt_gate[k]: refresh_lanes()   // the team's first gate gives it lanes of its own
     return b
+
+// Each player's (and gaia's) first lane: its team's own group once it has a gate (World.refresh_lanes).
+def refresh_lanes():
+    for(lane_base.length) p: lane_base[p] = lane_group(teams[p]) * NUM_CLASSES
+    assert walks.length <= LANES
+
+// A building goes up over these cells: any rubble there is cleared (Walls.clear_rubble).
+def clear_rubble(cells:[int]):
+    if not rubble_cells.length: return
+    for(cells) c:
+        let rec = rubble.get(c)
+        if rec:
+            rubble.del(c)
+            rubble_cells = filter(rubble_cells) v: v != c
+            set_terrain(c, rec[0])
+
+// Can a gate (or anything with `replaces`) take this cell's place: the player's own building of a type it replaces?
+def replaceable(player:int, k:int, c:int) -> bool:
+    let id = occupied[c]
+    if id == 0 or not bt_replaces[k].length: return false
+    let b = b_index_of(id)
+    return b >= 0 and b_owner[b] == player and contains(bt_replaces[k], b_kind[b])
+
+// Is cell c beside (N E S W) a finished walkway cell of an enemy of `player` (a ladder's place)?
+def against_enemy_wall(player:int, c:int) -> bool:
+    for([int2 { 0, -1 }, int2 { 1, 0 }, int2 { 0, 1 }, int2 { -1, 0 }]) n:
+        let x = c % W + n.x
+        let y = c / W + n.y
+        if x >= 0 and y >= 0 and x < W and y < H:
+            let b = b_index_of(occupied[y * W + x])
+            if b >= 0 and b_done[b] == 1 and bt_walkway[b_kind[b]] > 0 and is_enemy(b_owner[b], player): return true
+    return false
+
+// Take a building away without a fight (a wall tile a gate replaces). (Economy.demolish)
+def demolish(b:int):
+    pen_gone(b)
+    occupy(footprint(b), 0)
+    remove_building(b)
+
+// What a building of type k costs over these cells: its cost, or rebuilt over its own breach, repair_pct of it.
+def repair_cost(player:int, k:int, cells:[int]) -> [int]:
+    let cost = bm_cost[player][k]
+    if not rubble_cells.length or not cells.length: return cost
+    for(cells) c:
+        let rec = rubble.get(c)
+        if not rec or rec[1] != player: return cost
+    return map(cost) v: v * rubble_repair_pct / 100
 
 // ---- units
 
@@ -92,6 +151,7 @@ def cell_rect(cell:int) -> int, int, int, int:
     return x, y, x + TILE - 1, y + TILE - 1
 
 def building_rect(b:int) -> int, int, int, int:
+    if b_diag[b] != 0: return cell_rect((b_cy[b] + b_sy[b] / 2) * W + b_cx[b] + b_sx[b] / 2)
     let x = b_cx[b] * TILE
     let y = b_cy[b] * TILE
     return x, y, x + b_sx[b] * TILE - 1, y + b_sy[b] * TILE - 1
@@ -690,31 +750,33 @@ def build_barred(player:int, k:int) -> bool:
             if b_owner[b] == player and b_kind[b] == k: return true
     return false
 
-def can_place(player:int, k:int, cx:int, cy:int) -> bool:
+def can_place(player:int, k:int, cx:int, cy:int, along:int = 0) -> bool:
     let mc = t_mclass[worker_type(player)]
-    let s = bt_size[k]
-    if cx < 0 or cy < 0 or cx + s > W or cy + s > H: return false
-    var y = cy
-    while y < cy + s:
-        var x = cx
-        while x < cx + s:
-            if not can_build(x, y, 1, mc, bt_water[k] != 0, bt_line[k] != 0): return false
-            x++
-        y++
+    let sx, sy = dims(k, along)
+    if cx < 0 or cy < 0 or cx + sx > W or cy + sy > H: return false
+    for(cells_of(cx, cy, sx, sy, diag_of(along))) c:
+        if not can_build(c % W, c / W, 1, mc, bt_water[k] != 0, bt_line[k] != 0) and not replaceable(player, k, c): return false
+        if bt_gate[k] and cliff[c] == 1: return false
+    if bt_ladder[k] and not against_enemy_wall(player, cy * W + cx): return false   // a ladder only leans on an enemy walkway
     return true
 
 // Pay for and place a BUILD's foundation; its id, or 0 when it can't be built there.
-def lay_foundation(player:int, ids:[int], k:int, cx:int, cy:int) -> int:
+def lay_foundation(player:int, ids:[int], k:int, cx:int, cy:int, along0:int = 0) -> int:
     if k < 0: return 0
     if not own_workers(player, ids).length or build_barred(player, k): return 0
-    if not can_place(player, k, cx, cy): return 0
-    let cost = bm_cost[player][k]
+    let along = along_for(k, along0)
+    if not can_place(player, k, cx, cy, along): return 0
+    let sx, sy = dims(k, along)
+    let cells = cells_of(cx, cy, sx, sy, diag_of(along))
+    let cost = repair_cost(player, k, cells)
     if not can_afford(player, cost): return 0
     pay(player, cost)
-    return b_id[place(player, k, cx, cy)]
+    for(cells) c:
+        if replaceable(player, k, c): demolish(b_index_of(occupied[c]))   // a gate dropped into a wall takes its place
+    return b_id[place(player, k, cx, cy, along)]
 
-def cmd_build(player:int, ids:[int], k:int, cx:int, cy:int):
-    let bid = lay_foundation(player, ids, k, cx, cy)
+def cmd_build(player:int, ids:[int], k:int, cx:int, cy:int, along:int = 0):
+    let bid = lay_foundation(player, ids, k, cx, cy, along)
     if bid == 0: return
     for(own_workers(player, ids)) i: start_build(i, bid)
 
