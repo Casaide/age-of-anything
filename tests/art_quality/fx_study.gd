@@ -2,7 +2,8 @@ extends "res://tests/sim_screenshot.gd"
 ## Art-quality study, direction 4 (docs/concepts/art-quality/): energy weapons for a sci-fi mod.
 ## A real volley in the game (the scifi_test mod's pulse troopers firing on charging rats), frozen with
 ## its shots in the air; then the same moment drawn in each look, the game's own effects hidden:
-##   today   the game's combat_fx: the mod's "pulse" (a line with a halo line)
+##   today   the game's combat_fx: the mod's "pulse" (a line with a halo line), from the shooter's body
+## (the three concepts start each shot at the rifle's muzzle: _from_muzzles)
 ##   pixel   bolts drawn on the art-pixel grid in three bands, added light; a pixel starburst where they
 ##           hit, a dithered pool of light on the ground, scorch marks with embers
 ##   beam    unbroken lasers from muzzle to target, soft glow, a flare at each end, lit ground under it
@@ -11,6 +12,7 @@ extends "res://tests/sim_screenshot.gd"
 ##   AOW_MODS=scifi_test godot --path . --audio-driver Dummy --always-on-top --script res://tests/art_quality/fx_study.gd -- out_dir
 
 const Fx := preload("res://tests/art_quality/fx_looks.gd")
+const PartShape := preload("res://src/part_shape.gd")
 
 
 func _initialize() -> void:
@@ -37,6 +39,7 @@ func _initialize() -> void:
 	view.camera.set_process_unhandled_input(false)
 	await _pulse_volley(view, "reed_meadow")
 	var shots: Array = view.fx.shots.duplicate(true)
+	_from_muzzles(view, shots)
 	var looks := Fx.new()
 	looks.shots = shots
 	looks.z_index = 50
@@ -54,6 +57,21 @@ func _initialize() -> void:
 		root.get_texture().get_image().save_png(out.path_join("fx_%s.png" % name))
 		print("saved ", out.path_join("fx_%s.png" % name))
 	quit()
+
+
+## The game launches every shot from the shooter's body (sim_debug: _body(a) - (0, 2)); Dominic, on round
+## AQ1: "those laser effects weren't coming from their barrel". The concepts start each shot at its rifle's
+## muzzle instead: the shooter is the unit whose body the shot left (found here), the muzzle its weapon's
+## baked tip through the weapon sprite's transform as it's drawn (FxLooks._from, every capture).
+func _from_muzzles(view, shots: Array) -> void:
+	for sh in shots:
+		var ground: Vector2 = sh.from + Vector2(0, 2 + view.BODY_LIFT)
+		var best = null
+		for v in view.views.values():
+			if v.weapon != null and (best == null or v.ground().distance_to(ground) < best.ground().distance_to(ground)):
+				best = v
+		if best != null and best.ground().distance_to(ground) < 12.0:   # (it may have stepped since it fired)
+			sh.shooter = best
 
 
 ## As sim_screenshot's volley, with the pulse troopers (side 0's `slot`) in a block and side 1's spears
