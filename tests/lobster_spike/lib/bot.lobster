@@ -1246,5 +1246,5 @@ def full_bot_think(bot:Bot):
     off_walls_army(bot, field, hx, hy)
     bot_siege(bot, field, hx, hy)
     storm_walls(bot, field, bot.target_x, bot.target_y)
-    // (AbilityAi: no abilities)
+    ability_think(p, army)   // the race's ability (spiders' webs)
     escort_healers(bot, field, healers, hx, hy)
