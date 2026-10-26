@@ -34,9 +34,14 @@ detailed and higher quality. Destruction looks great. FYI those laser effects we
   time: the first try read it once and the troopers had stepped on before the picture, so half the beams still
   came out of their chests). Re-captured: `archive/images/2026-10-26/14-` and `15-art-quality-scifi-fx-muzzles*.png`.
 
+Then his answer on the ruin: "Destroyed buildings should probably able to be built over? Same as [a classic RTS].
+Destruction is for looking cool not game mechanic. Destruction staying until built over is cool but can get
+frustrating and ugly. I think wrong game for that". That's the go-ahead (D-172): a ruin is decoration only, you can
+build over it, and it fades after a while.
+
 ## Decisions
 
-D-171 (destruction picked). Before the feedback, Dominic was to pick. Claude's recommendations: destruction in stages next; deaths in 3D for every body;
+D-171 (destruction picked), D-172 (go-ahead; ruins are decoration, can be built over, fade). Before the feedback, Dominic was to pick. Claude's recommendations: destruction in stages next; deaths in 3D for every body;
 pixel bolts and plasma as `shots.json` styles for the sci-fi mod; no global 2x (maybe buildings-only 2x,
 and a Deck build with the flag to see it on the real screen).
 

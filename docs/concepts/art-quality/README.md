@@ -9,8 +9,10 @@
   recommendation below ("not a global 2x") is withdrawn. Next: a fidelity round, concepts that raise unit and
   building detail (2x bakes for both, finer models and textures, more poses) while keeping the genre's painted,
   chunky read, at play zoom and close up, with costs and a Steam Deck build.
-- **Destruction: picked** (D-171). Before it's built: Dominic to say go, and to answer the ruin's sim
-  questions: does a ruin block movement, can you build on it, how long does it stay?
+- **Destruction: picked** (D-171), **go-ahead with its rules** (D-172). Dominic on the ruin: "Destroyed buildings
+  should probably able to be built over? Same as [a classic RTS]. Destruction is for looking cool not game mechanic.
+  Destruction staying until built over is cool but can get frustrating and ugly. I think wrong game for that". So a
+  ruin is decoration only: it doesn't block or change play, you can build over it, and it fades away after a while.
 - **The lasers didn't leave the barrel.** True, and not only in the concepts: the game launches every shot,
   arrows too, from the shooter's body (`sim_debug.gd`: `_body(a) - Vector2(0, 2)`). The study's three looks now
   start at each rifle's muzzle (the weapon's baked tip through its sprite's transform); pictures 12 and 13 are
@@ -115,7 +117,8 @@ frames are generated pictures, not particles, so cheaper than today's.
   The view could keep it as a decoration that fades after a minute or two.
 - Fire and smoke over the stages would stay as today's live parts.
 
-**Picked** by Dominic ("Destruction looks great", D-171); waiting on his go-ahead and the ruin's sim questions.
+**Picked** by Dominic ("Destruction looks great", D-171), with a go-ahead (D-172): the ruin is decoration only, can
+be built over, and fades away after a while.
 
 **Recommendation:** yes. It's the most "classic" of the four (the genre's buildings always burned and
 crumbled in stages), cheap at run time, and it reuses the construction-stage machinery. Pick a stage look,
@@ -209,7 +212,7 @@ hero or super weapon if ever. Build as a `style` in `shots.json`, drawn by `comb
 | Direction | Nostalgia | Cost | Recommendation |
 |---|---|---|---|
 | 1 Higher resolution | at risk at 2x | bake ~2x, memory 2x, atlas needs pages | fidelity is a key goal (Dominic): a fidelity round next |
-| 2 Destruction in stages | strong | +4-6 s cold (estimate), no frame cost | picked (D-171), waiting on go-ahead |
+| 2 Destruction in stages | strong | +4-6 s cold (estimate), no frame cost | picked, go-ahead (D-171, D-172): ruins decoration only, fade |
 | 3 Deaths in 3D, follow-through | strong | a few seconds cold (estimate), no frame cost | deaths yes; follow-through on heavy weapons |
 | 4 Sci-fi effects | pixel: strong, beams: weak | none to speak of | pixel bolts + plasma as `shots.json` styles |
 

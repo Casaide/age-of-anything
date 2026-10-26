@@ -141,3 +141,4 @@ One line per moment worth remembering. Newest at the bottom.
 - **2026-10-20:** D-166: the dead frog lies turned per facing (round HF3), so no view sees its sprawl end on from behind.
 - **2026-10-26:** Art-quality study AQ1 (concepts, not in the game): higher resolution (1.5x/2x behind `AOW_ART_SCALE`), buildings breaking up in baked stages with pixel dust, deaths laid down in 3D and a follow-through hold, sci-fi energy shots four ways; Dominic to pick (`docs/concepts/art-quality/`).
 - **2026-10-26:** Dominic on AQ1: fidelity of units and buildings is a key goal; "Destruction looks great" (D-171, building waits on his go-ahead); the study's energy shots now leave the rifle's muzzle (the game still launches every shot from the body).
+- **2026-10-26:** D-172: go-ahead on destruction; a ruin is decoration only, can be built over and fades away (Dominic: "Destruction is for looking cool not game mechanic").

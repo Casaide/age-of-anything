@@ -1190,3 +1190,11 @@ ruin's sim questions (does it block, can it be built on, how long it stays). (Nu
 branch uses D-167 to D-170.) In the same note Dominic set unit and building fidelity as a key goal ("units being more
 detailed and higher quality"): direction 1's "not a global 2x" no longer stands as the recommendation; a fidelity round
 comes next.
+
+**D-172, 2026-10-26: Go-ahead on destruction (D-171); a ruin is decoration only, can be built over, and fades.** Dominic,
+asked whether a ruin blocks, can be built on, and how long it stays: "Destroyed buildings should probably able to be
+built over? Same as [a classic RTS]. Destruction is for looking cool not game mechanic. Destruction staying until built
+over is cool but can get frustrating and ugly. I think wrong game for that". So destruction is view-side only: the sim
+frees the footprint when a building falls, as today; the ruin is drawn there with no effect on movement, placement or
+sight; building over it clears it; otherwise it fades away after a while. Supersedes the "ruin that stays" in study
+AQ1's direction 2.
