@@ -6,5 +6,5 @@ cd "$(dirname "$0")"
 ticks="${1:-4000}"
 "$LOBSTER" --mir net_check.lobster -- host "$ticks" 2>&1 | grep -v warning &
 sleep 1
-"$LOBSTER" --mir net_check.lobster -- join "$ticks" 2>&1 | grep -v warning
+"$LOBSTER" --mir net_check.lobster -- join "$ticks" $2 2>&1 | grep -v warning
 wait

@@ -48,6 +48,7 @@ import gen.scenario_out
 import gen.reset
 import gen.save
 import net.lockstep
+import net.lan
 
 // A network match, headless (src/net, tests/net_check.gd): two processes on one machine linked over
 // TCP. The host sets the match up and sends it whole; then each runs the same world in lockstep,
@@ -59,13 +60,30 @@ let role = args[0]
 let ticks = string_to_int(args[1])
 let me = if role == "host": 0 else: 1
 var bots = []::Bot
-let link = if role == "host": net_host(NET_PORT) else: net_join("127.0.0.1", NET_PORT)
-assert link.error == ""
+var link = Link {}
 let t_wait = seconds_elapsed()
-while not net_ready(link):
-    assert link.error == ""
-    assert seconds_elapsed() - t_wait < 20.0
-    tcp.wait(link.listener, link.sock, true, 0.05)
+if role == "host":   // (through the door: a scan's '?' gets an answer, a 'J' becomes the match)
+    lib_load("../../data")
+    let door = door_open(NET_PORT, "net_check", "reed_meadow")
+    var got:Link? = nil
+    while not got:
+        assert door.error == ""
+        assert seconds_elapsed() - t_wait < 30.0
+        got = door_tick(door)
+        tcp.wait(door.listener, nil, false, 0.02)
+    link = got or link
+else:
+    lib_load("../../data")
+    let found = if has_s(args, "noscan"): []::LanHost else: lan_scan(1.5)
+    let names = map(found) h: h.name + "@" + h.ip
+    print "join: found {found.length} host(s): {names}"
+    link = net_join("127.0.0.1", NET_PORT)
+    while not net_ready(link):
+        if link.error != "": print "join: {link.error}"
+        assert link.error == ""
+        assert seconds_elapsed() - t_wait < 20.0
+        tcp.wait(nil, link.sock, true, 0.05)
+    join_hello(link)
 if role == "host":
     lib_load("../../data")
     id_load("../../data")
