@@ -91,6 +91,7 @@ var swap_at = -1.0
 var rules_arg = ""               // rules:<id>: the host rules (else the pack's)
 var mods_arg = ""                // mods:a,b: mods to merge over the data (else the pack's)
 var lobby_rerolls = [0, 0]      // each side's reroll (the generator's other takes on the same prompt)
+var rebake_art = false          // rebake: every prop baked in Lobster, even those the pack has
 var mesh_dir = ""               // meshes:<dir>: the mesh library (mesh_export.gd library): parts the pack lacks are baked here
 var mode_arg = ""               // mode:<id>: the lobby's game mode (data/modes.json)
 var map_arg = ""                // map:<id>: the lobby's map (tests and captures)
@@ -124,6 +125,7 @@ for(args) a, k:
         if key == "reroll": lobby_rerolls = map(tokenize(val, "|", " ")) r: string_to_int(r)
         if key == "rules": rules_arg = val
         if key == "meshes": mesh_dir = val
+        if a == "rebake": rebake_art = true
         if key == "mods": mods_arg = val
         if key == "reload": reload_at = string_to_float(val)
         if a == "host": hosting = true
@@ -146,6 +148,9 @@ for(args) a, k:
             let lx, ly = split_string(val, ",")
             look_x = string_to_int(lx)
             look_y = string_to_int(ly)
+
+// Tests and captures are silent (Dominic: no sound from testing); `mute` silences a game too.
+if has_s(args, "mute") or shot != "" or selftest or padtest or has_s(args, "labtest") or reload_at >= 0.0: sound_on = false
 
 var ME = 0                      // the side you command (1 for the one who joins a network match)
 var in_net_match = false
@@ -396,6 +401,13 @@ import .model.heroes
 import .model.bears
 import .model.models
 import .view.part_bake
+import .model.props
+import .model.trees
+import .model.town_props
+import .model.bridges
+import .model.build_mats
+import .view.world_bake
+import .game.art_kit
 import .game.bake_missing   // (here: it makes views to see what parts they wear)
 
 def job_of(i:int) -> string:
@@ -807,12 +819,17 @@ def draw_world(alpha:float):
                     collect_units(alpha)
                     collect_corpses()
                 for(occluders) o, k: draws.push(Drawable { o.sort_y, draws.length, -2, float(k), 0.0, float4_1, [] })   // a hill's near-edge tops: what's behind it hides
+                draws.push(Drawable { -50000.0, draws.length, -4, 0.0, 0.0, float4_1, [] })   // the selection rings: on the ground, over its flat props and shadows, under everything standing
                 qsort_in_place(draws) a, b: a.y < b.y or (a.y == b.y and a.seq < b.seq)
                 b_sheet = -1
                 for(draws) d:
                     if d.f == -2:
                         flush_sprites()
                         draw_occluder(occluders[int(d.x)], zoom)
+                        b_sheet = -1
+                    elif d.f == -4:
+                        flush_sprites()
+                        draw_rings(alpha)
                         b_sheet = -1
                     elif d.f == -3:   // a damaged building's cracks, sorted with it (game/town.lobster)
                         flush_sprites()
@@ -1393,7 +1410,7 @@ def draw_ring(p:float2, r:float, col:float4):
     gl.color(col):
         gl.translate(p):
             gl.scale(float2 { 1.0, 0.5 }):
-                gl.open_circle(r, 24, 0.12)   // (thickness: a fraction of the radius)
+                gl.open_circle(r, 48, min(0.12, 1.6 / r))   // (thickness: a fraction of the radius; about 1.6 px, a big building's ring as fine as a unit's)
 
 // Shots in flight (shots.gd, combat_fx.gd): each weapon's shot on its arc from the shooter's body to
 // where it lands, for the sim's flight, with a speck of shadow under it. Canvas units (under the 1.5 scale).
@@ -1442,6 +1459,19 @@ def draw_bars(alpha:float):
             ui_fill(p + float2 { -9.0, -38.0 }, float2 { 18.0, 3.0 }, float4 { 0.0, 0.0, 0.0, 0.6 })
             ui_fill(p + float2 { -9.0, -38.0 }, float2 { 18.0 * hpk, 3.0 }, float4 { 1.0 - hpk, 0.3 + 0.6 * hpk, 0.15, 1.0 })
 
+// The selection rings, on the ground under the selected units and building (drawn in the sorted world, before
+// anything standing: a unit stands in its ring, and what's in front of it covers it).
+def draw_rings(alpha:float):
+    gl.set_shader("color")
+    for(selected_units()) id:
+        let i = index_of(id)
+        let px, py = prev_pos(i)
+        draw_ring(iso(px + (u_x[i] - px) * alpha, py + (u_y[i] - py) * alpha), float(u_radius[i]) * 0.068 + 3.0, float4 { 0.95, 0.91, 0.79, 1.0 })
+    let b = b_index_of(sel_building)
+    if b >= 0:
+        let at = iso(float(b_cx[b] * 1000 + b_sx[b] * 500), float(b_cy[b] * 1000 + b_sy[b] * 500))
+        draw_ring(at, float(b_sx[b]) * 68.0 * 0.75, float4 { 0.95, 0.91, 0.79, 1.0 })
+
 def draw_marks(alpha:float):
     gl.set_shader("color")
     draw_bars(alpha)
@@ -1449,14 +1479,9 @@ def draw_marks(alpha:float):
         let i = index_of(id)
         let px, py = prev_pos(i)
         let p = iso(px + (u_x[i] - px) * alpha, py + (u_y[i] - py) * alpha)
-        draw_ring(p, float(u_radius[i]) * 0.068 + 3.0, float4 { 0.95, 0.91, 0.79, 1.0 })
         let hpk = float(u_hp[i]) / float(max(1, t_hp[u_kind[i]]))
         ui_fill(p + float2 { -9.0, -38.0 }, float2 { 18.0, 3.0 }, float4 { 0.0, 0.0, 0.0, 0.6 })
         ui_fill(p + float2 { -9.0, -38.0 }, float2 { 18.0 * hpk, 3.0 }, float4 { 1.0 - hpk, 0.3 + 0.6 * hpk, 0.15, 1.0 })
-    let b = b_index_of(sel_building)
-    if b >= 0:
-        let at = iso(float(b_cx[b] * 1000 + b_sx[b] * 500), float(b_cy[b] * 1000 + b_sy[b] * 500))
-        draw_ring(at, float(b_sx[b]) * 68.0 * 0.75, float4 { 0.95, 0.91, 0.79, 1.0 })
     if placing >= 0:
         let cx, cy = place_at()
         let ok = can_place(ME, placing, cx, cy)
@@ -1465,47 +1490,108 @@ def draw_marks(alpha:float):
         gl.color(if ok: float4 { 0.3, 0.9, 0.3, 0.35 } else: float4 { 0.9, 0.2, 0.2, 0.35 }):
             gl.polygon(pts)
 
-// ------------------------------------------------------------------ the minimap
-// The ground mesh again, small, in the bottom bar's right end; your units and buildings and the
-// enemy's you see as dots; the camera's view outlined. A click there looks there.
+// ------------------------------------------------------------------ the minimap (src/view/minimap.gd)
+// The map as a diamond at the bottom right (MM_SIZE UI px wide, half as tall, times hud_s()): the ground
+// mesh again, small, in a frame of the look's metal (lit on its upper edges, in shade below, a stud at each
+// point); your buildings as squares and units as dots in team colours (enemies only where you see them,
+// animals pale); the camera's view outlined. A click there looks there (only the diamond takes it).
 
-let MM_HALF = 110.0          // half its width, screen px (at a 1000 px high window)
+let MM_SIZE = 300.0          // its width in UI px (minimap.gd's SIZE)
+let MM_RIM = 12.0            // the frame round the diamond
 
 // The UI's size: its numbers are for a window 1000 px high (a retina screen has twice the pixels).
 def ui() -> float: return max(1.0, float(gl.window_size().y) / 1000.0)
 
-def mm_top() -> float2:
-    let ws = float(gl.window_size())
-    return float2 { ws.x - MM_HALF * ui() - 20.0 * ui(), ws.y - 118.0 * ui() }
+// Screen px per canvas unit: the diamond (48 (W + H) canvas units wide) MM_SIZE wide.
+def mm_scale() -> float: return MM_SIZE * hud_s() / (48.0 * float(W + H))
 
-def mm_scale() -> float: return MM_HALF * ui() / (48.0 * float(max(W, H)))
+// Its box's top left: the panel's margin and the frame from the window's bottom right (sim_debug: offset
+// -SIZE - 24, -SIZE / 2 - 20).
+def mm_box() -> float2:
+    let ws = float(gl.window_size())
+    let s = hud_s()
+    return float2 { ws.x - (MM_SIZE + 24.0) * s, ws.y - (MM_SIZE * 0.5 + 20.0) * s }
+
+// The map's (0, 0) corner, the diamond's top point, on the screen.
+def mm_top() -> float2: return mm_box() + float2 { 48.0 * float(H) * mm_scale(), 0.0 }
 
 def mm_point(p:float2) -> float2: return mm_top() + p * mm_scale()
 
 def in_minimap(m:float2) -> bool:
-    let top = mm_top()
-    return m.x >= top.x - MM_HALF * ui() and m.x <= top.x + MM_HALF * ui() and m.y >= top.y and m.y <= top.y + MM_HALF * ui()
+    let s = hud_s()
+    let c = mm_box() + float2 { MM_SIZE * 0.5, MM_SIZE * 0.25 } * s
+    return abs(m.x - c.x) / (MM_SIZE * 0.5 * s) + abs(m.y - c.y) / (MM_SIZE * 0.25 * s) <= 1.0
+
+def mm_poly(pts:[float2], cols:[float4]):
+    gl.set_shader("color_attr")
+    gl.render_mesh(gl.new_mesh("PC", map(pts) p: float3 { p.x, p.y, 0.0 }, cols, []::float3, []::float2, []::float2,
+                               if pts.length == 4: [0, 1, 2, 0, 2, 3] else: [0, 1, 2]))
+    gl.set_shader("color")
+
+// The diamond's frame (minimap.gd's _draw_frame).
+def mm_frame():
+    let s = hud_s()
+    let b = mm_box()
+    let size = MM_SIZE * s
+    let rim = MM_RIM * s
+    let c = b + float2 { size * 0.5, size * 0.25 }
+    let o = [float2 { c.x, b.y - rim * 0.6 }, float2 { b.x + size + rim, c.y }, float2 { c.x, b.y + size * 0.5 + rim * 0.6 }, float2 { b.x - rim, c.y }]
+    let i = [float2 { c.x, b.y - 1.0 }, float2 { b.x + size + 1.5, c.y }, float2 { c.x, b.y + size * 0.5 + 1.0 }, float2 { b.x - 1.5, c.y }]
+    mm_poly(map(o) p: p + float2 { 3.0, 6.0 } * s, map(4): float4 { 0.0, 0.0, 0.0, 0.4 })
+    // the frame's material, painted by the UI's shader on the diamond
+    gl.set_shader("uimat")
+    gl.set_uniform("mcol", ui_look.frame)
+    gl.set_uniform("kind", 1.0)
+    gl.set_uniform("win_h", float(gl.window_size().y))
+    gl.set_uniform("px", max(1.0, ui()))
+    gl.render_mesh(gl.new_mesh("P", map(o) p: float3 { p.x, p.y, 0.0 }, []::float4, []::float3, []::float2, []::float2, [0, 1, 2, 0, 2, 3]))
+    gl.set_shader("color")
+    let light = [float4 { 1.0, 0.95, 0.85, 0.3 }, float4 { 0.0, 0.0, 0.0, 0.35 }, float4 { 0.0, 0.0, 0.0, 0.5 }, float4 { 1.0, 0.95, 0.85, 0.15 }]
+    for(4) k:
+        let l = light[k]
+        let none = float4 { l.x, l.y, l.z, 0.0 }
+        mm_poly([o[k], o[(k + 1) % 4], i[(k + 1) % 4], i[k]], [l, l, none, none])
+    mm_poly(i, map(4): float4 { 0.07, 0.05, 0.03, 1.0 })
+    for(4) k:
+        ui_line(o[k], o[(k + 1) % 4], 1.5, float4 { 0.0, 0.0, 0.0, 0.75 })
+        ui_line(i[k], i[(k + 1) % 4], 1.5, float4 { 0.0, 0.0, 0.0, 0.7 })
+
+def mm_studs():
+    let s = hud_s()
+    let b = mm_box()
+    let size = MM_SIZE * s
+    let rim = MM_RIM * s
+    let c = b + float2 { size * 0.5, size * 0.25 }
+    for([float2 { c.x, b.y - rim * 0.6 }, float2 { b.x + size + rim, c.y }, float2 { c.x, b.y + size * 0.5 + rim * 0.6 }, float2 { b.x - rim, c.y }]) p:
+        ui_stud(p, 4.8 * s, ui_look.metal)
 
 def draw_minimap():
     let gm = ground_mesh
     if not gm: return
+    let s = hud_s()
+    mm_frame()
     gl.translate(mm_top()):
         gl.scale(mm_scale()):
             gl.set_shader("color_attr")
             gl.render_mesh(gm)
     gl.set_shader("color")
+    let per_tile = MM_SIZE * s / float(W + H) * 2.0   // a tile's width on it
     for(b_id.length) b:
         let cell = b_cy[b] * W + b_cx[b]
         if teams[b_owner[b]] == teams[ME] or fog[ME][cell] != 0:
             let p = mm_point(iso(float(b_cx[b] * 1000 + b_sx[b] * 500), float(b_cy[b] * 1000 + b_sy[b] * 500)))
-            ui_fill(p - float2 { 2.0, 2.0 }, float2 { 4.0, 4.0 }, team_col(b_owner[b]))
+            let r = max(3.0 * s, float(max(b_sx[b], b_sy[b])) * per_tile * 0.45)
+            ui_fill(p - float2 { r, r * 0.6 }, float2 { r * 2.0, r * 1.2 }, team_col(b_owner[b]))
     for(u_x.length) i:
         if teams[u_owner[i]] == teams[ME] or visible_to_me(cell_of(u_x[i], u_y[i])):
             let p = mm_point(iso(float(u_x[i]), float(u_y[i])))
-            ui_fill(p - float2 { 1.0, 1.0 }, float2 { 2.0, 2.0 }, team_col(u_owner[i]))
+            let tc = team_col(u_owner[i])
+            let dot = if u_owner[i] == gaia or t_animal[u_kind[i]] != 0: float4 { 0.85, 0.82, 0.72, 1.0 } else: float4 { tc.x + (1.0 - tc.x) * 0.2, tc.y + (1.0 - tc.y) * 0.2, tc.z + (1.0 - tc.z) * 0.2, 1.0 }
+            ui_fill(p - float2_1 * s, float2_1 * 2.0 * s, dot)
     let ws = float(gl.window_size())
-    let corners = map([float2_0, float2 { ws.x, 0.0 }, float2 { ws.x, ws.y - 120.0 * ui() }, float2 { 0.0, ws.y - 120.0 * ui() }]) c: mm_point(from_screen(c))
-    for(4) k: ui_line(corners[k], corners[(k + 1) % 4], 1.0, float4 { 0.95, 0.91, 0.79, 0.9 })
+    let corners = map([float2_0, float2 { ws.x, 0.0 }, ws, float2 { 0.0, ws.y }]) c: mm_point(from_screen(c))
+    for(4) k: ui_line(corners[k], corners[(k + 1) % 4], 2.0 * s, float4 { 1.0, 1.0, 1.0, 0.9 })
+    mm_studs()
 
 def text_at(p:float2, s:string):
     gl.translate(p): gl.text(s)
@@ -1523,13 +1609,8 @@ def draw_hud(paused:bool, speed:float):
     gl.set_shader("color")
     let ws = float(gl.window_size())
     let u = ui()
-    box(float2_0, float2 { ws.x, 30.0 * u }, float4 { 0.08, 0.06, 0.04, 0.85 })
-    gl.set_font_size(int(18.0 * u))
-    gl.color(float4 { 0.95, 0.9, 0.75, 1.0 }):
-        text_at(float2 { 10.0 * u, 5.0 * u }, stock_text())
-        let clock = tick / 20
-        text_at(float2 { ws.x - 260.0 * u, 5.0 * u }, "{clock / 60}:{if clock % 60 < 10: "0" else: ""}{clock % 60}  x{speed}{if paused: "  paused" else: ""}")
-        if placing >= 0: text_at(float2 { 12.0 * u, ws.y - 180.0 * u }, "Placing {bname(placing)}: left click to place (shift: more), right click to cancel")
+    draw_topbar(speed, paused)   // (game/topbar.lobster)
+    gl.set_shader("color")   // (placing: the panel's info line says how)
     if winner >= 0:
         gl.set_font_size(int(48.0 * u))
         gl.color(float4 { 1.0, 0.85, 0.3, 1.0 }):
@@ -1617,6 +1698,7 @@ def self_test() -> bool:
 import .game.pad   // (here: it plays through the controls above)
 import .game.techtree
 import .game.panel
+import .game.topbar
 
 // Control groups shown (Dominic, 2026-10-26: "visible somewhere, at least as a number on the units",
 // then "only when you select the group"): a small number by each selected unit that's in a group (its
@@ -1651,7 +1733,7 @@ def draw_groups():
                 let label = string(first.get(id, 0) + 1)
                 outlined_text(at - label_size(label, fs) / 2.0, label, float4 { 1.0, 0.88, 0.5, 1.0 }, u)
     var x = 16.0 * u
-    let y = 48.0 * u
+    let y = topbar_bottom() + 8.0 * u   // under the top bar (game/topbar.lobster)
     let fs2 = int(15.0 * u)
     gl.set_font_size(fs2)
     for(keys) n, k:
@@ -1778,6 +1860,7 @@ note("window")
 fatal(gl.load_materials(SPRITE_SHADERS, true))
 fatal(gl.load_materials(TERRAIN_SHADERS, true))
 fatal(gl.load_materials(BAKE_SHADERS, true))
+fatal(gl.load_materials(WORLD_SHADERS, true))
 check(gl.set_font_name("data/fonts/Droid_Sans/DroidSans.ttf"), "no font")
 zoom = 2.0 * floor(ui() + 0.5)   // two screen points an art pixel, as the game's camera
 load_pack(args[0])
@@ -2061,6 +2144,10 @@ while gl.frame() and not quit_game:
         let t0 = seconds_elapsed()
         let n = bake_missing_parts()
         print "baked {n} part facings the pack lacked, in {int((seconds_elapsed() - t0) * 1000.0)} ms"
+        let t1 = seconds_elapsed()
+        ak_rebake = rebake_art
+        let nd = bake_doodads()
+        print "baked {nd} props{if rebake_art: "" else: " the pack lacked"}, in {int((seconds_elapsed() - t1) * 1000.0)} ms"
     if shot != "" and frame_no < 3: note("frame {frame_no} tc at {if tc0 >= 0: to_screen(iso(float(b_cx[tc0] * 1000 + 2000), float(b_cy[tc0] * 1000 + 2000))) else: float2_0} cam {cam} zoom {zoom} ws {gl.window_size()} fb {gl.framebuffer_size()} tc {tc0} draws {draws.length} W {W} H {H} first {iso(0.0, 0.0)} last {iso(float(W * 1000), float(H * 1000))}")
     if shot != "" and frame_no % 60 == 0: print "frame {frame_no}: {dt * 1000.0} ms, play {clock_s} s"
     if reload_at >= 0.0 and clock_s >= reload_at:

@@ -1,26 +1,64 @@
 // ------------------------------------------------------------------ the command panel (src/view/command_panel.gd, unit_card.gd)
-// Along the foot of the screen: on the left the unit card (a portrait drawn from the unit's own parts,
-// its name, hit points and stats), then the selection's buttons with their hotkeys: a building trains
-// (each unit's portrait), researches and ages up; workers build (each building's picture), and stop.
-// A click on a button does what its key does; hovering shows its cost. Imported by game.lobster after
-// its controls and the tech tree page (box, page_text).
+// At the foot of the screen, from the left, sized to what it holds (command_panel.gd, laid out as Godot lays
+// it, in UI px times hud_s()): a frame in the look with the culture's crest on its top edge, in three parts
+// split by carved grooves:
+// - who's selected: a portrait (a bust cut from the unit's own figure, its role glyph in the corner; a
+//   building's picture), the name, a slim health bar with "hp / max", and what it's doing or its card's
+//   first lines; for a group, a tray of small portraits with counts;
+// - what it can do: square buttons with a picture, a hotkey and the cost (a number and the resource's icon,
+//   red when you can't pay), in captioned groups (Train, Heroes, Research, Age up, Orders, Stance, Build);
+//   workers' buildings on two pages (civilian, military) as Godot's; hovering shows a card;
+// - for a building, its queue sunk in a well: what's under way in the first slot with a progress bar, the
+//   rest in small slots after it; a click on one cancels it.
+// Imported by game.lobster after its controls and the tech tree page; the look's boxes, the icons and the
+// text with its fonts are game/topbar.lobster's (hud_box, hud_button, tb_icon, tb_text).
 
 class Btn:
     label:string
     hotkey:string
-    act:int                       // 0 train slot, 1 research, 2 age up, 3 build, 4 stop, 5 cancel the last in the queue
+    act:int                       // 0 train slot, 1 research, 2 age up, 3 build, 4 stop, 5 cancel the last in the queue,
+                                  // 6 a build page (arg 0 civilian, 1 military, -1 back), 7 stance (arg), 8 call to arms, 9 back to work
     arg:int
     unit = -1                     // a unit type to draw on it
     building = -1                 // or a building type
     cost = ""
+    costv = []::int               // the cost per resource (the row along its foot)
+    icon = ""                     // or an icon (icons/<name>.png)
+    glyph = ""                    // a small badge top right (icons/glyph/<name>.png): what a building is for
+    accent = false                // a gold rim: the age-up, a line upgrade, the stance in use
+    enabled = true
+    group = ""                    // its caption
+    note = ""                     // under the picture instead of a cost ("ON", a page's name)
+    tip = ""                      // the hover card's line under the title
+    line_key = -1                 // a line upgrade: the step it gives, drawn from line_recipe (its portrait key)
+    line_recipe:JV? = nil
 
-let PANEL_H = 150.0               // ui px
-let BTN = 64.0
-var portraits = dictionary<int, UV>(64)
+let P_PORTRAIT = 96.0
+let P_BUTTON = 80.0
+let P_QFIRST = 60.0
+let P_QSLOT = 28.0
+let P_QCOLS = 7
+let P_GROUP_COLS = 4
+let PANEL_GOLD = float4 { 0.95, 0.79, 0.3, 1.0 }    // #f2c94c
+let PANEL_SHORT = float4 { 0.88, 0.44, 0.38, 1.0 }  // #e07060: a cost you can\'t pay
+let HP_GOOD = float4 { 0.36, 0.72, 0.29, 1.0 }      // #5cb84a
+let HP_HURT = float4 { 0.88, 0.66, 0.23, 1.0 }      // #e0a83a
+let HP_LOW = float4 { 0.85, 0.31, 0.24, 1.0 }       // #d8503c
+let STANCE_NAMES = ["Aggressive", "Defensive", "Stand ground", "No attack"]
+let STANCE_ICONS = ["stance_aggressive", "stance_defensive", "stance_stand", "stance_passive"]
+let STANCE_TIPS = ["Go for any foe in sight and keep chasing it.", "Fight foes that come near, chase them a short way, then walk back.",
+                   "Never move to fight: hit only what is already in reach.", "Never fight on their own, not even back."]
+let TASK_NAMES = ["Idle", "Gathering", "Carrying back", "Building", "Going inside", "Trading", "Climbing", "Repairing"]
 
-def panel_top() -> float: return float(gl.window_size().y) - PANEL_H * ui()
+var panel_rect = float4_0         // where the panel is (x, y, w, h): clicks there aren't the world's
+var build_page = -1               // workers' build page: -1 the two page buttons, 0 civilian, 1 military
+var hud_culture = "?"
+var hud_crest = "sun"
 
-def in_panel(m:float2) -> bool: return m.y >= panel_top() and not in_minimap(m)
+def in_panel(m:float2) -> bool: return m.x >= panel_rect.x and m.y >= panel_rect.y and m.x <= panel_rect.x + panel_rect.z and m.y <= panel_rect.y + panel_rect.w
+
+// The panel's top edge (the placing hint and others sit above it).
+def panel_top() -> float: return panel_rect.y
 
 def cost_words(c:[int]) -> string:
     let parts = []::string
@@ -28,31 +66,157 @@ def cost_words(c:[int]) -> string:
         if v > 0: parts.push("{v} {resource_names[n]}")
     return concat_string(parts, ", ")
 
+def age_name(age:int) -> string:
+    for(su_ages) a:
+        if gint(a, "age", 0) == age: return gstr(a, "name", "Age {age}")
+    return "Age {age}"
+
+// A research's picture: its icon (data/tech.json's `icon`, else its id; the generic scroll when there's no
+// such icon), or for a line upgrade the unit it gives, in a gold frame (sim_debug's _upgrade_icon).
+def research_look(b:Btn, r:int):
+    let item = su_research[r]
+    let line = gstr(item, "line", "")
+    if line != "":
+        let k = type_of_slot(ME, line)
+        if k >= 0:
+            let age = gint(item, "line_age", 0)
+            for(su_type_line[k]) l:
+                if as_int(at(l, "age")) == age:
+                    b.line_recipe = at(l, "recipe")
+                    b.line_key = 100000 + k * 16 + age
+            if b.line_key < 0: b.unit = k
+            b.accent = true
+            return
+    b.icon = gstr(item, "icon", research[r].id)
+
+// What's in a queue entry: a unit type (its portrait), or the age-up or a research (its picture).
+def queue_look(e:int) -> Btn:
+    let t = tech_of(e)
+    if t == -1:
+        let b = Btn { unit_name(e), "", 0, 0 }
+        b.unit = e
+        return b
+    if t == AGE_UP_ENTRY:
+        let b = Btn { "Age up to the " + age_name(ages[ME] + 1), "", 2, 0 }
+        b.icon = "age_up"
+        return b
+    let b = Btn { research_name(t), "", 1, t }
+    research_look(b, t)
+    return b
+
+// The building pages (data/buildings.json's menu): each page's buildings this race can put up now.
+var build_menu_ids = []::[string]
+def page_buildings(page:int) -> [int]:
+    if not build_menu_ids.length:
+        let menu = gobj(load_json(lib_root + "/buildings.json"), "menu")
+        build_menu_ids = [gstrs(menu, "civilian"), gstrs(menu, "military")]
+    let can = buildable()
+    let out = []::int
+    for(build_menu_ids[page]) id:
+        for(can) k:
+            if bt_name[k] == id: out.push(k)
+    return out
+
+def build_btn(k:int) -> Btn:
+    let can = buildable()
+    var n = -1
+    for(can) c, i:
+        if c == k: n = i
+    let b = Btn { bname(k), if build_menu and n >= 0 and n < 9: string(n + 1) else: "", 3, k }
+    b.building = k
+    b.costv = bm_cost[ME][k]
+    b.cost = cost_words(b.costv)
+    b.enabled = can_afford(ME, b.costv)
+    b.glyph = bt_name[k]
+    b.tip = if b.enabled: "Click, then where to build it." else: "You can\'t pay for it yet."
+    return b
+
 def panel_buttons() -> [Btn]:
     let out = []::Btn
-    if build_menu or selected_workers().length:   // (workers in the selection: what they can build)
-        for(buildable()) k, n:
-            let b = Btn { bname(k), if n < 9: string(n + 1) else: "", 3, k }
-            b.building = k
-            b.cost = cost_words(bm_cost[ME][k])
-            out.push(b)
-        out.push(Btn { "Stop", "S", 4, 0 })
-        return out
+    let ids = selected_units()
     let bi = b_index_of(sel_building)
-    if bi >= 0 and b_owner[bi] == ME and not selected.length:
+    if bi >= 0 and b_owner[bi] == ME and not ids.length:
+        let room = b_queue[bi].length < r_queue_max
         for(trainable(bi)) k, n:
             let b = Btn { unit_name(k), if n < 9: string(n + 1) else: "", 0, n }
             b.unit = k
-            b.cost = cost_words(t_cost[k])
+            b.costv = t_cost[k]
+            b.cost = cost_words(b.costv)
+            b.enabled = b_done[bi] != 0 and room and can_afford(ME, b.costv)
+            b.group = if t_hero[k] != 0: "Heroes" else: "Train"
+            b.tip = if not room: "The queue is full." elif not can_afford(ME, b.costv): "You can\'t pay for it yet." else: "Hit points {t_hp[k]}."
             out.push(b)
         for(offered(bi)) r, n:
             let b = Btn { research_name(r), if n < RESEARCH_KEYS.length: RESEARCH_KEYS[n].uppercase() else: "", 1, r }
-            b.cost = cost_words(research_cost(ME, r))
+            b.costv = research_cost(ME, r)
+            b.cost = cost_words(b.costv)
+            b.enabled = not tech_barred(ME, bi, r)
+            b.group = "Research"
+            b.tip = if b.enabled: "Click to research it." else: "You can\'t pay for it yet, or the queue is full."
+            research_look(b, r)
             out.push(b)
-        if bt_name[b_kind[bi]] == "town_center": out.push(Btn { "Age up", "U", 2, 0 })
-        if b_queue[bi].length: out.push(Btn { "Cancel", "X", 5, 0 })
+        if next_age(ME) >= 0 and ages_list[next_age(ME)].building == b_kind[bi]:
+            let b = Btn { "Age up: the " + age_name(ages_list[next_age(ME)].age), "U", 2, 0 }
+            b.costv = ages_list[next_age(ME)].cost
+            b.cost = cost_words(b.costv)
+            b.icon = "age_up"
+            b.accent = true
+            b.enabled = not tech_barred(ME, bi, -1)
+            b.group = "Age up"
+            b.tip = if b.enabled: "On to the next age." else: "Needs its buildings first, or you can\'t pay for it yet."
+            out.push(b)
+        if bt_name[b_kind[bi]] == "town_center" and b_done[bi] != 0:   // one bell, rung and unrung
+            let rung = (filter(b_id.length) b: b_owner[b] == ME and (filter(b_inside[b].length / REC_SIZE) k: t_worker[b_inside[b][k * REC_SIZE + REC_KIND]] != 0).length > 0).length > 0
+            let b = Btn { if rung: "Back to work" else: "Call to arms", "", if rung: 9 else: 8, 0 }
+            b.icon = if rung: "back_to_work" else: "call_to_arms"
+            b.accent = rung
+            b.group = "Orders"
+            b.tip = if rung: "The sheltering workers come out and go back to work." else: "Workers near it run into the nearest buildings."
+            out.push(b)
         return out
-    if selected_units().length: out.push(Btn { "Stop", "S", 4, 0 })
+    if not ids.length: return out
+    let workers = selected_workers()
+    let soldiers = filter(ids) id: t_worker[u_kind[index_of(id)]] == 0 and t_animal[u_kind[index_of(id)]] == 0
+    if soldiers.length:
+        let st = Btn { "Stop", "S", 4, 0 }
+        st.icon = "stop"
+        st.group = "Orders"
+        st.tip = "Drop every order: they stand where they are."
+        out.push(st)
+        let now = u_posture[index_of(soldiers[0])]
+        for(STANCE_NAMES) name, k:
+            let b = Btn { name, "", 7, k }
+            b.icon = STANCE_ICONS[k]
+            b.group = "Stance"
+            b.accent = now == k
+            b.note = if now == k: "ON" else: ""
+            b.tip = STANCE_TIPS[k]
+            out.push(b)
+    if workers.length:
+        if build_menu:   // (B: every building, on the number keys)
+            for(buildable()) k:
+                let b = build_btn(k)
+                b.group = "Build"
+                out.push(b)
+        elif build_page < 0:
+            for(["Civilian", "Military"]) name, page:
+                let b = Btn { "Build: " + name, "", 6, page }
+                b.building = btype_named(if page == 0: "house" else: "barracks")
+                b.glyph = if page == 0: "house" else: "barracks"
+                b.note = name
+                b.group = "Build"
+                b.tip = if page == 0: "Houses, farms, camps, the market, the armoury and Town Centers." else: "Barracks, ranges, stables, towers, walls and gates."
+                out.push(b)
+        else:
+            for(page_buildings(build_page)) k:
+                let b = build_btn(k)
+                b.group = if build_page == 0: "Civilian" else: "Military"
+                out.push(b)
+            let back = Btn { "Back", "Esc", 6, -1 }
+            back.icon = "back"
+            back.group = " "
+            back.tip = "To the civilian and military pages."
+            out.push(back)
     return out
 
 def press(b:Btn):
@@ -63,40 +227,141 @@ def press(b:Btn):
         case 3:
             placing = b.arg
             build_menu = false
+            build_page = -1
         case 4: issue_cmd(ME, CMD_STOP, selected_units(), 0, 0, 0, 0)
+        case 6: build_page = b.arg
+        case 7: issue_cmd(ME, CMD_STANCE, selected_units(), b.arg, 0, 0, 0)
+        case 8: issue_cmd(ME, CMD_CALL_TO_ARMS, []::int, sel_building, 0, 0, 0)
+        case 9: issue_cmd(ME, CMD_BACK_TO_WORK, []::int, 0, 0, 0, 0)
         default:
             let bi = b_index_of(sel_building)
             if bi >= 0 and b_queue[bi].length: issue_cmd(ME, CMD_CANCEL, []::int, sel_building, b_queue[bi].length - 1, 0, 0)
 
-def btn_at(n:int) -> float2:
-    let u = ui()
-    let per_row = 9
-    return float2 { 420.0 * u + float(n % per_row) * (BTN + 8.0) * u, panel_top() + 14.0 * u + float(n / per_row) * (BTN + 8.0) * u }
+// A click on the panel or the top bar: true if it took it (the world doesn't get it; their buttons act as they're drawn).
+def panel_click(m:float2) -> bool: return in_panel(m) or in_topbar(m)
 
-// A click on the panel: true if it took it (the world doesn't get it; its buttons act as they're drawn).
-def panel_click(m:float2) -> bool: return in_panel(m)
+// ---- figures and portraits
+
+var portraits = dictionary<int, UV>(64)
 
 // A unit's figure from its own parts, drawn at a screen point (feet there), z screen px a canvas unit.
-def draw_portrait(k:int, at:float2, z:float):
-    var v = portraits.get(k)
+def draw_portrait(k:int, at:float2, z:float): draw_figure(k, su_type_recipe[k], t_player[k], at, z)
+
+// A figure from a recipe (key: its place in the cache), drawn as draw_portrait.
+def draw_figure(key:int, recipe:JV, owner:int, at:float2, z:float):
+    var v = portraits.get(key)
     if not v:
         let made = uv_new()
-        let tc = team_col(t_player[k])
-        uv_build(made, su_type_recipe[k], float3 { tc.x, tc.y, tc.z }, 20)
+        let tc = team_col(owner)
+        uv_build(made, recipe, float3 { tc.x, tc.y, tc.z }, 20)
         made.node.scl = float2_1 * 0.85
         made.pose_steps = 8
         made.art_px = 1.5
         face_vec(made, float2 { 1.0, 1.0 })
-        portraits.set(k, made)
+        portraits.set(key, made)
         v = made
     let pv = v
     if not pv: return
     pv.node.pos = float2_0
     uv_process(pv, gl.delta_time())
-    let tc = team_col(t_player[k])
+    let tc = team_col(owner)
     for(draw_list(pv, ID_XF)) d:
         let f = frame_index("p:" + d.key)
         if f >= 0: sprite_xf(f, xf_mul([1.5 * z, 0.0, 0.0, 1.5 * z, at.x, at.y], d.xf), float4 { tc.x, tc.y, tc.z, d.alpha })
+
+// A portrait (art_kit.gd's bust_icon): the figure drawn once into a texture, then a square cut on its body
+// (thin rows, a pole or a tail, trimmed off; the top ICON_BUST of it, centred on its weight), and the role
+// glyph in the corner. A crewed engine is framed whole.
+class Portrait:
+    tex:resource<texture>
+    uv0:float2
+    uv1:float2
+    glyph:string
+
+let PT_CELL = 240
+var busts = dictionary<int, Portrait>(64)
+
+// A unit's role glyph (art_kit.gd's role_glyph): by its weapon's tags; a rider with a lance or a blade, the horse.
+def role_glyph(recipe:JV) -> string:
+    if gstr(recipe, "role", "") == "worker": return ""
+    let id = gstr(gobj(recipe, "parts"), "hand_r", "")
+    let tags = if id != "": gstrs(part(id), "tags") else: []::string
+    let rides = has(recipe, "mount") and not gbool(gobj(recipe, "mount"), "fused", false)
+    if has_s(tags, "heal") or has_s(tags, "staff"): return "staff"
+    if has_s(tags, "bow"): return "bow"
+    if has_s(tags, "ranged"): return "sling"
+    if rides and (has_s(tags, "lance") or not has_s(tags, "spear")): return "horse"
+    if has_s(tags, "spear") or has_s(tags, "reach"): return "spear"
+    if has_s(tags, "melee"): return "sword"
+    return ""
+
+def bust(key:int, recipe:JV, owner:int) -> Portrait?:
+    let have = busts.get(key)
+    if have: return have
+    flush_sprites()
+    let tex = gl.create_blank_texture(int3 { PT_CELL, PT_CELL, 0 }, texture_format_nomipmap | texture_format_nearest_mag | texture_format_nearest_min | texture_format_clamp)
+    gl.switch_to_framebuffer(tex)
+    gl.ortho()
+    gl.clear(float4 { 0.0, 0.0, 0.0, 0.0 })
+    b_sheet = -1
+    draw_figure(key, recipe, owner, float2 { 0.5, 0.8 } * float(PT_CELL), 3.2)
+    flush_sprites()
+    gl.switch_to_framebuffer(nil)
+    gl.ortho()
+    let px = gl.read_texture(tex) or ""
+    let n = PT_CELL
+    def alpha(x:int, y:int) -> bool: return px.length >= n * n * 4 and px[((n - 1 - y) * n + x) * 4 + 3] > 25   // (rows come bottom up)
+    let rows = map(n): 0
+    var x0 = n
+    var x1 = -1
+    for(n) y:
+        for(n) x:
+            if alpha(x, y):
+                rows[y]++
+                x0 = min(x0, x)
+                x1 = max(x1, x)
+    var y0 = 0
+    while y0 < n - 1 and rows[y0] < 5: y0++
+    var y1 = n - 1
+    while y1 > y0 and rows[y1] < 5: y1--
+    let engine = has(recipe, "crew")
+    var side = max(int(float(y1 - y0 + 1) * (if engine: 1.15 else: 0.62 * 1.1)), 54)
+    var sum = 0
+    var mass = 0
+    for(min(y0 + side, n) - y0) dy:
+        for(n) x:
+            if alpha(x, y0 + dy):
+                sum += x
+                mass++
+    var cx = if mass > 0: sum / mass else: n / 2
+    var top = y0 - int(float(side) * 0.06)
+    if engine:
+        side = max(x1 - x0 + 1, y1 - y0 + 1) + 8
+        cx = (x0 + x1) / 2
+        top = (y0 + y1) / 2 - side / 2
+    let left = cx - side / 2
+    let p = Portrait { tex, float2 { float(left), float(top) } / float(n), float2 { float(left + side), float(top + side) } / float(n), if engine: "" else: role_glyph(recipe) }
+    busts.set(key, p)
+    return p
+
+// A unit type's portrait in a square (its line step's when key/recipe say so).
+def draw_bust(key:int, recipe:JV, owner:int, at:float2, side:float):
+    let p = bust(key, recipe, owner)
+    if not p: return
+    let w = float4_1
+    let m = gl.new_mesh("PCT", [float3 { at.x, at.y, 0.0 }, float3 { at.x + side, at.y, 0.0 }, float3 { at.x + side, at.y + side, 0.0 }, float3 { at.x, at.y + side, 0.0 }],
+                        [w, w, w, w], []::float3,
+                        [float2 { p.uv0.x, 1.0 - p.uv0.y }, float2 { p.uv1.x, 1.0 - p.uv0.y }, float2 { p.uv1.x, 1.0 - p.uv1.y }, float2 { p.uv0.x, 1.0 - p.uv1.y }],
+                        []::float2, [0, 2, 1, 0, 3, 2])
+    gl.set_mesh_texture(m, 0, 0, p.tex)
+    gl.set_shader("textured_color")
+    gl.color(float4_1): gl.render_mesh(m)
+    gl.set_shader("color")
+    if p.glyph != "":
+        let g = side * 0.375
+        tb_icon("glyph/role_" + p.glyph, at + float2_1 * (side - g - max(1.0, side / 40.0)), g, 1.0)
+
+def draw_type_bust(k:int, at:float2, side:float): draw_bust(k, su_type_recipe[k], t_player[k], at, side)
 
 // A building's picture scaled into a box (its look's body bake; sprite_xf places the frame's corner).
 def draw_building_icon(k:int, at:float2, size:float):
@@ -109,56 +374,359 @@ def draw_building_icon(k:int, at:float2, size:float):
     let tc = team_col(ME)
     sprite_xf(f, [s, 0.0, 0.0, s, at.x + size / 2.0 - float(fr.w) / 2.0 * s, at.y + size / 2.0 - float(fr.h) / 2.0 * s], float4 { tc.x, tc.y, tc.z, 1.0 })
 
+// ---- pieces of the look
+
+// A well (theme.gd's well_box: a thin frame round a dark sunk face), as the top bar's plaques.
+def hud_well(at:float2, size:float2): tb_plaque(at, size)
+
+// A carved groove down the panel (command_panel.gd's Groove): a dark cut with a light lip; a major one runs
+// the height with a bronze diamond at its middle, a minor one starts under the captions and is fainter.
+def groove(x:float, top:float, bottom:float, major:bool):
+    let s = hud_s()
+    let a = if major: 1.0 else: 0.55
+    let y0 = top + (if major: 2.0 else: 22.0) * s
+    let y1 = bottom - 2.0 * s
+    let gx = floor(x + 5.0 * s)
+    ui_fill(float2 { gx, y0 }, float2 { max(1.0, s), y1 - y0 }, float4 { 0.0, 0.0, 0.0, 0.6 * a })
+    ui_fill(float2 { gx + max(1.0, s), y0 }, float2 { max(1.0, s), y1 - y0 }, float4 { 0.54, 0.45, 0.31, 0.5 * a })
+    if major:
+        let m = float2 { gx + 0.5 * s, floor((y0 + y1) * 0.5) }
+        let d = 4.0 * s
+        gl.set_shader("color_attr")
+        let c = float4 { 0.63, 0.53, 0.35, 1.0 }
+        gl.render_mesh(gl.new_mesh("PC", [float3 { m.x, m.y - d, 0.0 }, float3 { m.x + d, m.y, 0.0 }, float3 { m.x, m.y + d, 0.0 }, float3 { m.x - d, m.y, 0.0 }],
+                                   [c, c, c, c], []::float3, []::float2, []::float2, [0, 1, 2, 0, 2, 3]))
+        gl.set_shader("color")
+
+// A slim bar (theme.gd's bar_back and bar_fill): a dark sunk track, the fill raised.
+def hud_bar(at:float2, size:float2, frac:float, col:float4):
+    ui_fill(at, size, float4 { 0.0, 0.0, 0.0, 0.6 })
+    ui_outline(at, size, 1.0, float4 { 0.0, 0.0, 0.0, 0.7 })
+    let w = size.x * clamp(frac, 0.0, 1.0)
+    if w > 0.0:
+        ui_fill(at, float2 { w, size.y }, col)
+        ui_fill(at, float2 { w, max(1.0, size.y * 0.3) }, float4 { 1.0, 1.0, 1.0, 0.3 })
+        ui_fill(at + float2 { 0.0, size.y - max(1.0, size.y * 0.25) }, float2 { w, max(1.0, size.y * 0.25) }, float4 { 0.0, 0.0, 0.0, 0.3 })
+
+// Text with a dark edge (queued).
+def edged_text(at:float2, s:string, size:int, col:float4, font:int): tb_text_edged(at, s, size, col, font)
+
+// Lines of text no wider than w (word wrap, by the text's estimated width).
+def wrap(s:string, size:int, font:int, w:float) -> [string]:
+    let out = []::string
+    for(tokenize(s, "\n", "")) para:
+        var line = ""
+        for(tokenize(para, " ", "")) word:
+            let next = if line == "": word else: line + " " + word
+            if line != "" and tb_text_w(next, size, font) > w:
+                out.push(line)
+                line = word
+            else: line = next
+        out.push(line)
+    return out
+
+// The card's first lines (unit_card.gd short): attack, damage, range and hp; armour and speed.
+def card_lines(k:int) -> [string]:
+    let e = su_type_eval[k]
+    let C = su_classes.length
+    if t_heal[k] > 0:
+        let cb = gobj(su_rules, "combat")
+        let every = gint(cb, "heal_reload", 0) * 10 / 20
+        let reach = gint(cb, "heal_range", 0) / 100
+        def tenths(n:int) -> string: return if n % 10 == 0: string(n / 10) else: "{n / 10}.{n % 10}"
+        let heals = if gint(cb, "heal_amount", 0) > 0: "Heals {gint(cb, "heal_amount", 0) * t_heal[k]} hp every {tenths(every)} s, range {tenths(reach)}" else: "Heals wounded friends"
+        return [heals + "    HP {t_hp[k]}", "Never fights"]
+    let range = gint(e, "range", 1)
+    let attack = if t_eval_attack[k] > 0: t_eval_attack[k] else: gint(e, "attack", 0)
+    let arm = t_arm[k]
+    return ["Attack {attack} {gstr(e, "damage", "melee")}" + (if range > 1: ", range {range}" else: "") + "    HP {t_hp[k]}",
+            "Armour {if C > 0: arm[0] else: 0} melee / {if C > 1: arm[1] else: 0} pierce    Speed {t_speed[k] / SPEED_SCALE}"]
+
+// The culture's look on the HUD (sim_debug: the HUD wears the culture of the side you command) and its crest.
+def hud_look():
+    let fam = rstr(su_races[ME], "family")
+    if fam == hud_culture: return
+    hud_culture = fam
+    ui_setup(fam)
+    let d = load_json(lib_root + "/ui.json")
+    hud_crest = gstr(gobj(family(fam), "ui"), "ornament", gstr(at(at(d, "directions"), gstr(d, "direction", "timber")), "ornament", "sun"))
+
+// ---- the panel
+
+class PItem:                      // a button's place this frame
+    b:Btn
+    at:float2
+    side:float
+
 def draw_panel():
-    let u = ui()
+    hud_look()
+    let s = hud_s()
     let ws = float(gl.window_size())
-    let top = panel_top()
+    let mpos = mouse_px()
     ui_frame(false)
-    ui_box(float2 { -8.0 * u, top }, float2 { ws.x + 16.0 * u, PANEL_H * u + 8.0 * u }, 1, ui_look.face, false)
-    // The unit card: the first selected unit (or the building).
     let ids = selected_units()
     let bi = b_index_of(sel_building)
-    ui_box(float2 { 12.0 * u, top + 12.0 * u }, float2 { 110.0 * u, PANEL_H * u - 24.0 * u }, -1, ui_look.face, false)
-    let btns = panel_buttons()
-    let m = float(gl.mouse_pos(0))
-    var hover = -1
-    var pressed = -1
-    for(btns) b, n:
-        let at = btn_at(n)
-        if m.x >= at.x and m.y >= at.y and m.x <= at.x + BTN * u and m.y <= at.y + BTN * u: hover = n
-        if ui_button(at, float2_1 * BTN * u, "", b.act == 2): pressed = n
-    if pressed >= 0: press(btns[pressed])
-    // Pictures (sprites) after the boxes, text last.
-    b_sheet = -1
-    if ids.length:
-        draw_portrait(u_kind[index_of(ids[0])], float2 { 67.0 * u, top + 128.0 * u }, 1.7 * u)
-    elif bi >= 0:
-        draw_building_icon(b_kind[bi], float2 { 22.0 * u, top + 30.0 * u }, 90.0 * u)
-    for(btns) b, n:
-        let at = btn_at(n)
-        if b.unit >= 0: draw_portrait(b.unit, at + float2 { BTN * 0.5 * u, BTN * 0.86 * u }, 1.1 * u)
-        if b.building >= 0: draw_building_icon(b.building, at + float2 { 4.0 * u, 4.0 * u }, (BTN - 8.0) * u)
-    flush_sprites()
-    let fs = int(13.0 * u)
-    let light = ui_look.text
-    if ids.length:
+    let btns = if build_menu and not selected_workers().length: []::Btn else: panel_buttons()
+    // What's shown: title, hp, info lines, portrait, tray, queue.
+    var title = rstr(su_races[ME], "name")
+    var hp_now = -1
+    var hp_max = 1
+    var info = []::string
+    var portrait = -1             // a unit type
+    var b_pic = -1                // or a building type
+    let tray_k = []::int
+    let tray_n = []::int
+    var has_queue = false
+    if bi >= 0:
+        let k = b_kind[bi]
+        let owner = b_owner[bi]
+        title = if owner == ME: bname(k) else: rstr(su_races[owner], "name") + " " + bname(k)
+        hp_now = b_hp[bi]
+        hp_max = bm_hp[owner][k]
+        b_pic = k
+        if b_done[bi] == 0: info.push("Being built: {100 * b_progress[bi] / max(1, bt_build_ticks[k])}%")
+        else:
+            if bt_garrison[k] > 0:
+                let inside = b_inside[bi].length / REC_SIZE
+                let arrows = bt_arrows[k] + inside
+                info.push("{inside} / {bt_garrison[k]} inside" + (if bt_attacks[k] != 0: (if arrows > 0: ", {arrows} arrow{if arrows == 1: "" else: "s"} a volley" else: ", no arrows till manned") else: ""))
+            has_queue = owner == ME and (trainable(bi).length > 0 or (filter(research) r: r.building == k).length > 0)
+            let q = b_queue[bi]
+            if q.length:
+                let t = head_tech(bi)
+                if t == AGE_UP_ENTRY: info.push("Ageing up to the " + age_name(ages[owner] + 1))
+                elif t != -1: info.push("Researching " + research_name(t))
+                else: info.push("Training " + unit_name(q[0]) + (if b_train[bi] == 0 and pop[owner] + t_pop[q[0]] > pop_cap[owner]: " (needs a house)" else: ""))
+    elif ids.length:
         let i = index_of(ids[0])
         let k = u_kind[i]
-        ui_text(float2 { 132.0 * u, top + 14.0 * u }, (if ids.length > 1: string(ids.length) + " x " else: "") + unit_name(k), int(18.0 * u), light)
-        ui_text(float2 { 132.0 * u, top + 42.0 * u }, "hp {u_hp[i]} / {t_hp[k]}", fs, light)
-        ui_text(float2 { 132.0 * u, top + 62.0 * u }, "attack {fold(t_atk[k], 0) a, b: max(a, b)}   armour {fold(t_arm[k], 0) a, b: max(a, b)}", fs, light)
-        ui_text(float2 { 132.0 * u, top + 82.0 * u }, "speed {t_speed[k]}   cost {cost_words(t_cost[k])}", fs, light)
-    elif bi >= 0:
-        ui_text(float2 { 132.0 * u, top + 14.0 * u }, bname(b_kind[bi]), int(18.0 * u), light)
-        ui_text(float2 { 132.0 * u, top + 42.0 * u }, "hp {b_hp[bi]} / {bm_hp[b_owner[bi]][b_kind[bi]]}" + (if b_done[bi] == 0: "   (building)" else: ""), fs, light)
-        ui_text(float2 { 132.0 * u, top + 62.0 * u }, "queue {b_queue[bi].length}" + (if b_queue[bi].length: ": " + concat_string(map(b_queue[bi]) q: unit_name(q), ", ") else: ""), fs, light)
+        portrait = k
+        if ids.length == 1:
+            title = unit_name(k)
+            hp_now = u_hp[i]
+            hp_max = t_hp[k]
+            if t_worker[k] != 0:
+                var line = TASK_NAMES[clamp(u_task[i], 0, TASK_NAMES.length - 1)]
+                if u_carry[i] > 0 and u_carry_kind[i] > 0: line += " ({u_carry[i]} {resource_names[u_carry_kind[i] - 1]})"
+                info.push(line)
+            elif t_animal[k] == 0: info = card_lines(k)
+        else:
+            title = "{ids.length} selected"
+            for(ids) id:
+                let kk = u_kind[index_of(id)]
+                var at = -1
+                for(tray_k) t, n:
+                    if t == kk: at = n
+                if at < 0:
+                    tray_k.push(kk)
+                    tray_n.push(1)
+                else: tray_n[at]++
+            insertion_sort(tray_k) a, b: a < b
+            for(tray_k) kk, n: tray_n[n] = (filter(ids) id: u_kind[index_of(id)] == kk).length
     else:
-        ui_text(float2 { 132.0 * u, top + 14.0 * u }, "Left click or drag to select. Arrows or edges scroll, wheel zooms, space pauses, +/- speed. F1: tech tree.", fs, light)
-    for(btns) b, n:
-        let at = btn_at(n)
-        if b.hotkey != "": ui_text(at + float2 { 4.0 * u, 2.0 * u }, b.hotkey, int(12.0 * u), float4 { 1.0, 0.85, 0.4, 1.0 })
-        if b.unit < 0 and b.building < 0: ui_text(at + float2 { 6.0 * u, BTN * 0.4 * u }, if b.label.length > 9: b.label.substring(0, 8) + "." else: b.label, int(11.0 * u), light)
-    if hover >= 0:
-        let b = btns[hover]
-        ui_text(float2 { 420.0 * u, top - 26.0 * u }, b.label + (if b.cost != "": "   " + b.cost else: ""), int(15.0 * u), float4 { 1.0, 0.92, 0.7, 1.0 })
+        info.push("Select units or a building.")
+    if placing >= 0: info = ["Placing {bname(placing)}: left-click to build, shift keeps placing, right-click/Esc cancels"]
+    // Lay it out (UI px times s): the who column, the button groups, the queue.
+    let pad_l = 16.0 * s
+    let pad_t = 16.0 * s
+    let pad_b = 12.0 * s
+    let sep = 12.0 * s
+    let x0 = 12.0 * s
+    let who_w = 300.0 * s
+    let info_lines = []::string
+    for(info) l: for(wrap(l, int(15.0 * s), 0, who_w)) w: info_lines.push(w)
+    let title_h = 30.0 * s
+    let hp_h = if hp_now >= 0: 20.0 * s else: 0.0
+    let tray_rows = (tray_k.length + 6) / 7
+    let who_h = title_h + 5.0 * s + hp_h + (if hp_now >= 0: 5.0 * s else: 0.0) + float(info_lines.length) * 20.0 * s + (if tray_k.length: 5.0 * s + float(tray_rows) * 43.0 * s else: 0.0)
+    let show_pic = portrait >= 0 or b_pic >= 0
+    // Button grps, in the order their captions first appear.
+    let grps = []::string
+    for(btns) b:
+        if not has_s(grps, b.group): grps.push(b.group)
+    let group_w = map(grps) g:
+        let n = (filter(btns) b: b.group == g).length
+        let cols = min(n, P_GROUP_COLS)
+        float(cols) * P_BUTTON * s + float(cols - 1) * 6.0 * s
+    let group_rows = map(grps) g: ((filter(btns) b: b.group == g).length + P_GROUP_COLS - 1) / P_GROUP_COLS
+    var acts_h = 0.0
+    for(group_rows) r: acts_h = max(acts_h, 21.0 * s + float(r) * P_BUTTON * s + float(r - 1) * 6.0 * s)
+    var acts_w = 0.0
+    for(group_w) w, n: acts_w += w + (if n > 0: 10.0 * s + 10.0 * s + 10.0 * s else: 0.0)
+    let queue = if has_queue: b_queue[bi] else: []::int
+    let q_rest = max(0, queue.length - 1)
+    let q_rows = (q_rest + P_QCOLS - 1) / P_QCOLS
+    let q_inner_w = P_QFIRST * s + (if q_rest > 0: 6.0 * s + float(min(q_rest, P_QCOLS)) * (P_QSLOT + 3.0) * s - 3.0 * s else: 0.0)
+    let q_w = 20.0 * s + max(q_inner_w, 70.0 * s)
+    let q_h = 16.0 * s + 16.0 * s + 5.0 * s + max(P_QFIRST * s, float(q_rows) * (P_QSLOT + 3.0) * s) + 5.0 * s + 4.0 * s
+    let acts = grps.length > 0
+    var content_w = (if show_pic: P_PORTRAIT * s + sep else: 0.0) + who_w
+    if acts or has_queue: content_w += sep + 10.0 * s
+    if acts: content_w += sep + acts_w
+    if acts and has_queue: content_w += sep + 10.0 * s
+    if has_queue: content_w += sep + q_w
+    let content_h = max(max(if show_pic: P_PORTRAIT * s else: 0.0, who_h), max(acts_h, if has_queue: q_h else: 0.0))
+    let pw = pad_l * 2.0 + content_w
+    let ph = pad_t + content_h + pad_b
+    let py = ws.y - 12.0 * s - ph
+    panel_rect = float4 { x0, py, pw, ph }
+    hud_box(float2 { x0, py }, float2 { pw, ph }, 8.0, ui_look.face, true, 12.0)
+    // The crest on the top edge, cast in the look's metal.
+    let crest_h = 36.0 * s
+    let cy = py   // (ui_box.gd: centred on the top edge)
+    // Who.
+    var x = x0 + pad_l
+    let y = py + pad_t
+    let items = []::PItem
+    if show_pic:
+        hud_well(float2 { x, y }, float2_1 * P_PORTRAIT * s)
+        x += P_PORTRAIT * s + sep
+    let who_x = x
+    var wy = y + title_h + 5.0 * s
+    if hp_now >= 0:
+        let f = float(hp_now) / float(max(1, hp_max))
+        hud_bar(float2 { who_x, wy + 6.0 * s }, float2 { who_w - 84.0 * s, 7.0 * s }, f, if f > 0.5: HP_GOOD elif f > 0.25: HP_HURT else: HP_LOW)
+        wy += hp_h + 5.0 * s
+    let info_y = wy
+    let tray_y = info_y + float(info_lines.length) * 20.0 * s + 5.0 * s
+    for(tray_k) kk, n: hud_well(float2 { who_x + float(n % 7) * 43.0 * s, tray_y + float(n / 7) * 43.0 * s }, float2_1 * 40.0 * s)
+    x += who_w
+    let bottom = py + ph - pad_b
+    if acts or has_queue:
+        groove(x + sep - 5.0 * s, py + pad_t, bottom, true)
+        x += sep + 10.0 * s
+    // The button grps.
+    var pressed = -1
+    var hover = -1
+    if acts:
+        x += sep
+        for(grps) g, gn:
+            if gn > 0:
+                groove(x, py + pad_t, bottom, false)
+                x += 20.0 * s + 10.0 * s
+            let mine = filter(btns) b: b.group == g
+            for(mine) b, n:
+                let at = float2 { x + float(n % P_GROUP_COLS) * (P_BUTTON + 6.0) * s, y + 21.0 * s + float(n / P_GROUP_COLS) * (P_BUTTON + 6.0) * s }
+                items.push(PItem { b, at, P_BUTTON * s })
+            x += group_w[gn]
+    for(items) it, n:
+        if hud_button(it.at, float2_1 * it.side, it.b.accent, it.b.enabled): pressed = n
+        if mpos.x >= it.at.x and mpos.y >= it.at.y and mpos.x <= it.at.x + it.side and mpos.y <= it.at.y + it.side: hover = n
+    if pressed >= 0: press(items[pressed].b)
+    // The queue well.
+    let qlook = map(queue) e: queue_look(e)
+    let q_items = []::PItem
+    var frac = 0.0
+    var qx = 0.0
+    if has_queue:
+        if acts:
+            groove(x + sep - 5.0 * s, py + pad_t, bottom, true)
+            x += sep + 10.0 * s
+        qx = x + sep
+        hud_well(float2 { qx, y }, float2 { q_w, q_h })
+        let fx = qx + 10.0 * s
+        let fy = y + 8.0 * s + 16.0 * s + 5.0 * s
+        if queue.length: q_items.push(PItem { qlook[0], float2 { fx, fy }, P_QFIRST * s })
+        else: hud_well(float2 { fx, fy }, float2_1 * P_QFIRST * s)
+        for(q_rest) n: q_items.push(PItem { qlook[n + 1], float2 { fx + (P_QFIRST + 6.0) * s + float(n % P_QCOLS) * (P_QSLOT + 3.0) * s, fy + float(n / P_QCOLS) * (P_QSLOT + 3.0) * s }, P_QSLOT * s })
+        var cancel = -1
+        for(q_items) it, n:
+            if hud_button(it.at, float2_1 * it.side, n == 0, true): cancel = n
+        if cancel >= 0: issue_cmd(ME, CMD_CANCEL, []::int, sel_building, cancel, 0, 0)
+        if queue.length:
+            let t = head_tech(bi)
+            let ticks = if t != -1: head_ticks(bi) else: t_train_ticks[queue[0]]
+            frac = float(b_train[bi]) / float(max(1, ticks))
+        let bar = float2 { fx, fy + P_QFIRST * s + 5.0 * s }
+        hud_bar(bar, float2 { P_QFIRST * s, 4.0 * s }, frac, PANEL_GOLD * float4 { 1.0, 1.0, 1.0, if queue.length: 1.0 else: 0.25 })
+    // Pictures: sprites (buildings, page buttons) after the boxes, then the textures, text last.
+    b_sheet = -1
+    let pic_at = float2 { x0 + pad_l, y }
+    if b_pic >= 0: draw_building_icon(b_pic, pic_at + float2_1 * 4.0 * s, (P_PORTRAIT - 8.0) * s)
+    for(items) it:
+        if it.b.building >= 0: draw_building_icon(it.b.building, it.at + float2 { 6.0 * s, 5.0 * s }, it.side - 22.0 * s)
+    flush_sprites()
+    // (busts render into their own textures the first time: after the sprites above are out)
+    if portrait >= 0: draw_type_bust(portrait, pic_at + float2_1 * 2.0 * s, (P_PORTRAIT - 4.0) * s)
+    for(tray_k) kk, n: draw_type_bust(kk, float2 { who_x + float(n % 7) * 43.0 * s, tray_y + float(n / 7) * 43.0 * s } + float2_1 * 2.0 * s, 36.0 * s)
+    def picture(it:PItem, inset:float, foot:float):
+        let b = it.b
+        let side = it.side - inset * 2.0
+        let pic_side = side - foot
+        let pat = it.at + float2 { inset + foot * 0.5, inset }
+        let r = b.line_recipe
+        if b.line_key >= 0 and r: draw_bust(b.line_key, r, ME, pat, pic_side)
+        elif b.unit >= 0: draw_type_bust(b.unit, pat, pic_side)
+        if b.icon != "": tb_icon(b.icon, pat, pic_side, if b.enabled: 1.0 else: 0.35)
+        if b.line_key >= 0 or (b.unit >= 0 and b.accent): ui_outline(pat, float2_1 * pic_side, max(1.5, pic_side / 20.0), float4 { 0.91, 0.72, 0.29, 1.0 })
+    for(items) it:
+        picture(it, 5.0 * s, if it.b.costv.length or it.b.note != "": 12.0 * s else: 0.0)
+        if not it.b.enabled: ui_fill(it.at + float2_1 * 3.0 * s, float2_1 * (it.side - 6.0 * s), float4 { 0.0, 0.0, 0.0, 0.35 })
+        if it.b.glyph != "": tb_icon("glyph/" + it.b.glyph, it.at + float2 { it.side - 29.0 * s, 3.0 * s }, 26.0 * s, if it.b.enabled: 1.0 else: 0.5)
+    for(q_items) it, n: picture(it, 3.0 * s, 0.0)
+    // The crest (a texture: after the sprites).
+    tb_icon_wide("crest_" + hud_crest, float2 { x0 + pw * 0.5, cy }, crest_h)
+    // Text.
+    tb_text(float2 { who_x, y + 1.0 * s }, title, int(23.0 * s), ui_look.title, 2)
+    if hp_now >= 0:
+        let ht = "{hp_now} / {hp_max}"
+        tb_text(float2 { who_x + who_w - tb_text_w(ht, int(14.0 * s), 0), y + title_h + 5.0 * s }, ht, int(14.0 * s), ui_look.dim, 0)
+    for(info_lines) l, n: tb_text(float2 { who_x, info_y + float(n) * 20.0 * s }, l, int(15.0 * s), ui_look.dim, 0)
+    for(tray_k) kk, n:
+        if tray_n[n] > 1:
+            let ct = string(tray_n[n])
+            edged_text(float2 { who_x + float(n % 7) * 43.0 * s + 38.0 * s - tb_text_w(ct, int(13.0 * s), 1), tray_y + float(n / 7) * 43.0 * s + 22.0 * s }, ct, int(13.0 * s), float4_1, 1)
+    if acts:
+        for(grps) g:   // each group's caption over its first button
+            let first = filter(items) it: it.b.group == g
+            if first.length and g != " ": tb_text(float2 { first[0].at.x, y - 1.0 * s }, g.uppercase(), int(12.0 * s), ui_look.dim * float4 { 0.95, 0.85, 0.7, 1.0 }, 2)
+    for(items) it:
+        let b = it.b
+        if b.hotkey != "": edged_text(it.at + float2 { 7.0 * s, 3.0 * s }, b.hotkey, int(14.0 * s), PANEL_GOLD, 1)
+        if b.costv.length: cost_row(b.costv, it.at + float2 { 0.0, it.side - 19.0 * s }, it.side)
+        elif b.note != "":
+            let fsz = int(13.0 * s)
+            edged_text(it.at + float2 { (it.side - tb_text_w(b.note, fsz, 1)) * 0.5, it.side - 19.0 * s }, b.note, fsz, float4_1, 1)
+    if has_queue:
+        let cap = if queue.length and head_tech(bi) == AGE_UP_ENTRY: "AGEING UP" elif queue.length and head_tech(bi) != -1: "RESEARCHING" else: "TRAINING"
+        tb_text(float2 { qx + 10.0 * s, y + 7.0 * s }, cap, int(12.0 * s), ui_look.dim * float4 { 0.95, 0.85, 0.7, 1.0 }, 2)
+    // A hover's card over the panel: its name, its cost, a line.
+    var q_hover = -1
+    for(q_items) it, n:
+        if mpos.x >= it.at.x and mpos.y >= it.at.y and mpos.x <= it.at.x + it.side and mpos.y <= it.at.y + it.side: q_hover = n
+    if hover >= 0: tip_card(mpos, items[hover].b.label, items[hover].b.cost, items[hover].b.tip, items[hover].b.enabled)
+    elif q_hover >= 0: tip_card(mpos, q_items[q_hover].b.label, "", "Click to cancel.", true)
+    tb_flush()
     ui_flush()
+
+// The cost along a button's foot: each part a number and the resource's icon, shrunk to fit; red when short.
+def cost_row(c:[int], at:float2, w:float):
+    let s = hud_s()
+    let parts = filter(c.length) n: c[n] > 0
+    if not parts.length: return
+    var fs = 13.0 * s
+    def row_w(f:float) -> float:
+        var t = 0.0
+        for(parts) n: t += tb_text_w(string(c[n]), int(f), 1) + f * 1.15 + 2.0 * s
+        return t
+    while row_w(fs) > w - 6.0 * s and fs > 7.0 * s: fs -= 1.0
+    var x = at.x + (w - row_w(fs)) / 2.0
+    for(parts) n:
+        let txt = string(c[n])
+        let tw = tb_text_w(txt, int(fs), 1)
+        edged_text(float2 { x, at.y }, txt, int(fs), if stock[n][ME] < c[n]: PANEL_SHORT else: float4_1, 1)
+        tb_icon("res_" + resource_names[n], float2 { x + tw + 1.0 * s, at.y + 1.0 * s }, fs * 1.15, 1.0)
+        x += tw + fs * 1.15 + 2.0 * s
+
+// A tooltip card (theme.gd's tip_card): the name in bold, the cost, a line; above the mouse.
+def tip_card(m:float2, name:string, cost:string, line:string, ok:bool):
+    let s = hud_s()
+    let tlines = filter([cost, line]) l: l != ""
+    var w = tb_text_w(name, int(16.0 * s), 1)
+    for(tlines) l: w = max(w, tb_text_w(l, int(14.0 * s), 0))
+    w += 28.0 * s
+    let h = 16.0 * s + 22.0 * s + float(tlines.length) * 19.0 * s + 8.0 * s
+    let at = float2 { clamp(m.x - w * 0.3, 4.0, float(gl.window_size().x) - w - 4.0), m.y - h - 14.0 * s }
+    hud_box(at, float2 { w, h }, 3.0, ui_look.face * float4 { 1.08, 1.08, 1.08, 1.0 }, false, 4.0)
+    tb_text(at + float2 { 14.0 * s, 9.0 * s }, name, int(16.0 * s), ui_look.title, 1)
+    for(tlines) l, n: tb_text(at + float2 { 14.0 * s, 9.0 * s + 22.0 * s + float(n) * 19.0 * s }, l, int(14.0 * s), if l == line and not ok: PANEL_SHORT else: float4 { 0.94, 0.89, 0.78, 1.0 }, 0)
