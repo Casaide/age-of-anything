@@ -89,6 +89,7 @@ var swap_arg = ""              // swap:<prompt>@<seconds>: become that race then
 var swap_at = -1.0
 var rules_arg = ""               // rules:<id>: the host rules (else the pack's)
 var mods_arg = ""                // mods:a,b: mods to merge over the data (else the pack's)
+var lobby_rerolls = [0, 0]      // each side's reroll (the generator's other takes on the same prompt)
 var mode_arg = ""               // mode:<id>: the lobby's game mode (data/modes.json)
 var map_arg = ""                // map:<id>: the lobby's map (tests and captures)
 var races_arg = ""             // races:<A>|<B>: the lobby's prompts, as if typed (then balanced, then played)
@@ -115,6 +116,7 @@ for(args) a, k:
         if key == "races": races_arg = val
         if key == "map": map_arg = val
         if key == "mode": mode_arg = val
+        if key == "reroll": lobby_rerolls = map(tokenize(val, "|", " ")) r: string_to_int(r)
         if key == "rules": rules_arg = val
         if key == "mods": mods_arg = val
         if key == "reload": reload_at = string_to_float(val)
@@ -882,7 +884,7 @@ def run_lobby(defaults:[string]) -> [string]:
     let rules = load_rules(rules_id())
     gl.start_text_input(int2 { 0, 0 }, int2 { 400, 40 })
     gl.set_text_input(prompts[field])
-    var shown = map(prompts) p: generate(p, rules, 0)
+    var shown = map(prompts) p, k: generate(p, rules, lobby_rerolls[k])
     var shown_for = copy(prompts)
     var lab_frames = 0
     var armies = map(shown) r, k: if composed and pack_library: roster_views(r, k) else: []::UV
@@ -910,7 +912,8 @@ def run_lobby(defaults:[string]) -> [string]:
         if gl.button("f2") == 1: lobby_mode = MODE_IDS[(str_index(MODE_IDS, lobby_mode) + 1) % MODE_IDS.length]
         for(prompts) p, k:
             if p != shown_for[k]:
-                shown[k] = generate(p, rules, 0)
+                if shown_for[k] != "": lobby_rerolls[k] = 0   // (a new prompt starts from its first take)
+                shown[k] = generate(p, rules, lobby_rerolls[k])
                 shown_for[k] = p
                 if composed and pack_library: armies[k] = roster_views(shown[k], k)
         gl.clear(float4 { 0.07, 0.06, 0.05, 1.0 })
@@ -925,6 +928,10 @@ def run_lobby(defaults:[string]) -> [string]:
             ui_panel(float2 { x, 130.0 * u }, float2 { half - 48.0 * u, ws.y - 250.0 * u }, if k == 0: "Your race" else: "Their race")
             ui_box(float2 { x + 20.0 * u, 176.0 * u }, float2 { half - 88.0 * u, 44.0 * u }, -1, ui_look.face, false)
             if k == field: ui_outline(float2 { x + 20.0 * u, 176.0 * u }, float2 { half - 88.0 * u, 44.0 * u }, 2.0 * u, ui_look.accent)
+            if ui_button(float2 { x + half - 190.0 * u, 136.0 * u }, float2 { 120.0 * u, 34.0 * u }, "Reroll", false):
+                lobby_rerolls[k]++
+                shown[k] = generate(p, rules, lobby_rerolls[k])
+                if composed and pack_library: armies[k] = roster_views(shown[k], k)
             let m = float(gl.mouse_pos(0))
             if gl.button("mouse1") == 1 and m.x >= x + 20.0 * u and m.x <= x + half - 68.0 * u and m.y >= 176.0 * u and m.y <= 220.0 * u: focus(k)
         let by = ws.y - 100.0 * u
@@ -1745,7 +1752,7 @@ elif args[1] == "-" or args[1] == "lobby":   // the races from their prompts and
     set(rules, "animals", jbool(true))
     let prompts = lobby_prompts
     let t_gen = seconds_elapsed()
-    let races = map(prompts) pr: generate(pr, rules, 0)
+    let races = map(prompts) pr, k: generate(pr, rules, if k < lobby_rerolls.length: lobby_rerolls[k] else: 0)
     let t_setup = seconds_elapsed()
     if args[1] == "lobby":
         lobby_report = balance_for_match(races, rules, 4)
