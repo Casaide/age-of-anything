@@ -96,6 +96,7 @@ var map_arg = ""                // map:<id>: the lobby's map (tests and captures
 var races_arg = ""             // races:<A>|<B>: the lobby's prompts, as if typed (then balanced, then played)
 var look_y = -1
 var place_arg = ""              // place:<building>: one finished by your Town Center at the start (captures)
+var skirmish = false            // the lobby's Skirmish: both armies on the map at once, marching on each other
 var army_n = 0                  // army:<n>: n of each of your soldier types by your Town Center at the start (captures)
 var hurt_pct = -1                // hurt:<percent>: your buildings start at that much of their hit points (captures of fire)
 var lab_arg = false             // lab: the lobby with races:A|B typed in, a picture (shot:) after a second, then quit
@@ -123,6 +124,7 @@ for(args) a, k:
         if key == "reload": reload_at = string_to_float(val)
         if a == "host": hosting = true
         if a == "padtest": padtest = true
+        if a == "skirmish": skirmish = true
         if a == "tree": tree_arg = true
         if a == "lab": lab_arg = true
         if key == "hurt": hurt_pct = string_to_int(val)
@@ -940,7 +942,8 @@ def run_lobby(defaults:[string]) -> [string]:
         let by = ws.y - 100.0 * u
         // The bottom row, left to right, in shares of the window: map < name >, mode, test | address, join, host, play.
         let g = 12.0 * u
-        let unit_w = (ws.x - 48.0 * u - g * 9.0) / 16.4
+        var go = ""
+        let unit_w = (ws.x - 48.0 * u - g * 10.0) / 17.6
         var bx = 24.0 * u
         def slot(n:float) -> float2:
             let at = float2 { bx, by }
@@ -951,6 +954,9 @@ def run_lobby(defaults:[string]) -> [string]:
         if ui_button(slot(0.6), float2 { unit_w * 0.6, 60.0 * u }, ">", false): step_map(1)
         if ui_button(slot(2.4), float2 { unit_w * 2.4, 60.0 * u }, "Mode: " + lobby_mode, false):
             lobby_mode = MODE_IDS[(str_index(MODE_IDS, lobby_mode) + 1) % MODE_IDS.length]
+        if ui_button(slot(1.4), float2 { unit_w * 1.4, 60.0 * u }, "Fight", false):
+            skirmish = true
+            go = "play"
         if ui_button(slot(1.4), float2 { unit_w * 1.4, 60.0 * u }, "Test", false) or (has_s(args, "labtest") and lab_frames == 5):
             // Fight every line against every other at equal cost, now (the balancer's first round, its
             // prices not kept): how even the two races are as typed.
@@ -961,7 +967,6 @@ def run_lobby(defaults:[string]) -> [string]:
         let addr_at = slot(2.6)
         ui_box(addr_at, float2 { unit_w * 2.6, 60.0 * u }, -1, ui_look.face, false)
         if field == 2: ui_outline(addr_at, float2 { unit_w * 2.6, 60.0 * u }, 2.0 * u, ui_look.accent)
-        var go = ""
         if ui_button(slot(1.4), float2 { unit_w * 1.4, 60.0 * u }, "Find", false):
             // Who's hosting nearby: the first host found fills the address.
             let hosts = lan_scan(1.5)
@@ -1851,13 +1856,27 @@ if place_arg != "":
                         update_pop()
                         cam = iso(float(x * 1000 + 1500), float(y * 1000 + 1500))
                         done = true
-if army_n > 0:
-    let slots = []::string
-    for(t_slot.length) k:
-        if t_player[k] == ME and not t_worker[k] and t_animal[k] == 0: push_new(slots, t_slot[k])
-    for(slots) slot:
-        for(army_n): mode_put(ME, type_of_slot(ME, slot), start_x[ME] + 4000, start_y[ME] + 4000)
+if skirmish: army_n = max(army_n, 3)
+if army_n > 0:   // (a skirmish: both sides, marching on each other)
+    for(num_players) p:
+        if p == ME or skirmish:
+            let slots = []::string
+            for(t_slot.length) k:
+                if t_player[k] == p and not t_worker[k] and t_animal[k] == 0 and t_trader[k] == 0 and t_healer[k] == 0: push_new(slots, t_slot[k])
+            let ids = []::int
+            for(slots) slot:
+                for(army_n):
+                    let i = mode_put(p, type_of_slot(p, slot), start_x[p] + 4000, start_y[p] + 4000)
+                    ids.push(u_id[i])
+            if skirmish:
+                let foe = (p + 1) % num_players
+                issue_cmd(p, CMD_ATTACK_MOVE, ids, start_x[foe], start_y[foe], 0, 0)
     update_pop()
+    if skirmish:
+        let mid_x = (start_x[0] + start_x[1]) / 2
+        let mid_y = (start_y[0] + start_y[1]) / 2
+        cam = iso(float(mid_x), float(mid_y))
+        follow = true   // (the camera goes where they fight)
 if hurt_pct >= 0:
     for(b_id.length) b:
         if b_owner[b] == ME: b_hp[b] = max(1, bm_hp[ME][b_kind[b]] * hurt_pct / 100)
