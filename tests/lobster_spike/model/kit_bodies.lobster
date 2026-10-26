@@ -650,3 +650,85 @@ def build_kit(base:string, c:Colours) -> Spec?:
     kit_load()
     if kit_part.get(base, "") == "": return nil
     return kit_build(base, c)
+
+// ---- a kit body's data from its skeleton (CreatureKit.complete): what parts.json would hold for it, so a race
+// of kit creatures plays with no pack (the library pack carried Godot's as kit_parts.json)
+
+def ksnap(x:float, step:float) -> float: return floor(x / step + 0.5) * step
+def kjv2(v:float3) -> JV:   // _v2: x, -y, snapped to a tenth
+    let o = JV { J_ARR }
+    o.a = [jnumk(ksnap(v.x, 0.1)), jnumk(ksnap(-v.y, 0.1))]
+    return o
+def jnumk(f:float) -> JV:
+    let o = JV { J_FLOAT }
+    o.f = f
+    return o
+
+def kit_complete(p:JV):
+    kit_load()
+    let k = kit_kits.get(as_str(at(p, "kit")))
+    if not k: return
+    let kk = k
+    let sk = kit_skeleton(kk, "")
+    let sc = kf(kk, "scale", 1.0)
+    set(p, "cut", jstrs(if kit_quad(kk): ["legs", "head"] else: ["legs"]))
+    let socks = jobj()
+    for(sk.names) s:
+        if s != "sit": set(socks, s, kjv2(ksock_at(sk, s) * sc))
+    set(p, "sockets", socks)
+    let anchors = map(sk.anchors) a:
+        jarr([jnumk(ksnap(a.pos.x * sc, 0.1)), jnumk(ksnap(-a.pos.y * sc, 0.1)), jnumk(ksnap(a.phase, 0.01)), jint(a.side), jint(0),
+              jbool(a.more.length > 1 and a.more[1] > 0.5)])
+    let parts = at(kk, "parts")
+    let walk = kobj(kk, "walk")
+    let legs = jobj()
+    set(legs, "part", at(parts, "leg"))
+    set(legs, "anchors", jarr(anchors))
+    set(legs, "poses", jint(gint(walk, "steps", 8)))
+    let gait = kget(walk, "gait")
+    if gait: set(legs, "gait", deep_copy(gait))
+    else:
+        let g = jobj()
+        set(g, "swing", jnumk(0.0))
+        set(legs, "gait", g)
+    set(legs, "stance", deep_copy(kobj(kk, "stance")))
+    if has(parts, "hind"): set(legs, "hind", at(parts, "hind"))
+    set(p, "legs", legs)
+    set(p, "idle_poses", jstrs(kit_idle(kk)))
+    set(p, "torso_scale", jarr(if kit_quad(kk): [jnumk(1.3), jnumk(1.0)] else: [jnumk(0.9), jnumk(1.1)]))
+    let chest = kobj(kobj(kk, "body"), "chest")
+    let at_ = if has(chest, "at"): at(chest, "at") else: jarr([jint(0), jint(15)])
+    let r_ = if has(chest, "r"): at(chest, "r") else: jarr([jint(6), jint(6), jint(5)])
+    let shape = jobj()
+    set(shape, "t", jstr("ellipse"))
+    set(shape, "c", jarr([jnumk(as_float(at_.a[0])), jnumk(-as_float(at_.a[1]))]))
+    set(shape, "r", jarr([jnumk(as_float(r_.a[0])), jnumk(as_float(r_.a[1]))]))
+    set(shape, "ch", jstr("skin"))
+    set(p, "shapes", jarr([shape]))
+    if has(kk, "head") and has(parts, "head"):   // the head part's top socket and shape
+        let head = get(lib_parts, as_str(at(parts, "head")))
+        if head:
+            let hs = jobj()
+            set(hs, "top", kjv2(kv3(at(at(kk, "head"), "top"))))
+            set(head, "sockets", hs)
+            let hshape = jobj()
+            set(hshape, "t", jstr("circle"))
+            set(hshape, "c", jarr([jint(0), jint(-4)]))
+            set(hshape, "r", jint(4))
+            set(hshape, "ch", jstr("skin"))
+            set(head, "shapes", jarr([hshape]))
+    for(["leg", "hind"]) role:
+        if has(parts, role):
+            let leg = get(lib_parts, as_str(at(parts, role)))
+            if leg and not has(leg, "shapes"):
+                let ls = jobj()
+                set(ls, "t", jstr("poly"))
+                set(ls, "p", jarr(map([[-1.5, 0.0], [1.5, 0.0], [1.5, 10.0], [-1.5, 10.0]]) xy: jarr([jnumk(xy[0]), jnumk(xy[1])])))
+                set(ls, "ch", jstr("skin"))
+                set(leg, "shapes", jarr([ls]))
+
+// Every kit body in the data completed (with no pack: the library pack gives Godot's).
+def complete_kit_parts():
+    for(sorted_strs(lib_parts.keys)) id:
+        let p = at(lib_parts, id)
+        if has(p, "kit") and not has(p, "legs"): kit_complete(p)
