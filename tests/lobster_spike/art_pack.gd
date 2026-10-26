@@ -92,6 +92,9 @@ func _initialize() -> void:
 		if img == null or img.is_empty():
 			continue
 		frames.append([name, img, int(round(b.origin.x)), int(round(b.origin.y))])
+	lines.append("match %s" % map_id)   # (the game makes the races and the start itself: gen/setup.lobster)
+	for k in prompts.size():
+		lines.append("prompt %d %s" % [k, String(prompts[k]).replace(" ", "_")])
 	_buildings(w, races, lines)
 	_names_and_sounds(w, races, lines)
 	_ground(w, lines)

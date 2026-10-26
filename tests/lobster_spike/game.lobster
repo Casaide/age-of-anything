@@ -1,7 +1,7 @@
 // Age of Anything in Lobster (docs/milestones/lobster-port.md): the ported sim and bots, the art
 // from a match pack (art_pack.gd), a window to play in. You are player 0; the ported bot plays the
 // rest ("watch": the bot plays you too).
-// Run: lobster game.lobster -- <pack dir> <scenario file> [watch]
+// Run: lobster game.lobster -- <pack dir> <scenario file, or - to make the start from the pack\'s races> [watch]
 //   left click / drag: select;  right click: move, attack, gather, build, rally;  shift: queue
 //   A + right click: attack-move;  S: stop;  B then 1-9: build;  1-9 on a building: train;  U: age up
 //   Q W E R T Y I O P on a building: research;  M: sound on / off;  the minimap (bottom right): click to look there
@@ -46,6 +46,16 @@ import .lib.expand
 import .lib.bot
 import .lib.walls_ai
 import .lib.world
+import .gen.json
+import .gen.sha256
+import .gen.rng
+import .gen.datalib
+import .gen.identity
+import .gen.pricing
+import .gen.heroes
+import .gen.generator
+import .gen.setup
+import .gen.start
 import .game.audio
 import .game.pack
 
@@ -863,7 +873,17 @@ check(gl.set_font_name("data/fonts/Droid_Sans/DroidSans.ttf"), "no font")
 zoom = 2.0 * floor(ui() + 0.5)   // two screen points an art pixel, as the game's camera
 load_pack(args[0])
 note("pack")
-start_world(args[1])
+if args[1] == "-":   // the races from their prompts and the match start, made here (gen/)
+    lib_load("../../data")
+    id_load("../../data")
+    let rules = load_rules("default")
+    set(rules, "animals", jbool(true))
+    let t_gen = seconds_elapsed()
+    let races = map(pack_prompts) pr: generate(pr, rules, 0)
+    let t_setup = seconds_elapsed()
+    setup_world(20261010, pack_map, races, rules, [])
+    print "races in {(t_setup - t_gen) * 1000.0} ms, the start in {(seconds_elapsed() - t_setup) * 1000.0} ms"
+else: start_world(args[1])
 note("world")
 events_on = true
 let bots = map(num_players) p: new_bot(p)
