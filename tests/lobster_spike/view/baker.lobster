@@ -80,12 +80,16 @@ class BakeTri:
     uv:[float2]
     mat:int
 
-// A material: its texture (or none) and how it's mapped (Godot's uv1 scale and offset, triplanar or not).
+// A material: its texture (or none) and how it's mapped (Godot's uv1 scale and offset, triplanar or not);
+// in a library mesh, also the race channel its colour follows (m x the channel + b) or "" (fixed: b).
 class BakeMat:
     tex:resource<texture>?
     scale:float2
     offset:float2
     triplanar:bool
+    channel = "*"                   // "*": the colour is on each triangle (a mesh made for one race)
+    m = float3_0
+    b = float3_0
 
 var bake_mats = []::BakeMat
 
@@ -99,7 +103,8 @@ def load_mesh(path:string) -> [BakeTri]:
     var mat = -1
     for(tokenize(text, "\n", "")) line:
         if starts_with(line, "mat "):
-            let t = tokenize(line.substring(4, line.length - 4), " ", "")
+            let halves = tokenize(line.substring(4, line.length - 4), "|", " ")
+            let t = tokenize(halves[0], " ", "")
             var tex:resource<texture>? = nil
             if t[0] != "-":
                 let file = dir + "/" + t[0]
@@ -109,7 +114,18 @@ def load_mesh(path:string) -> [BakeTri]:
                     if loaded: bake_tex_cache.set(file, loaded)
                     tex = loaded
             let f = map(t.slice(1, -1)) x: string_to_float(x)
-            bake_mats.push(if f.length >= 5: BakeMat { tex, float2 { f[0], f[1] }, float2 { f[2], f[3] }, f[4] > 0.5 } else: BakeMat { tex, float2_1, float2_0, false })
+            let bm = if f.length >= 5: BakeMat { tex, float2 { f[0], f[1] }, float2 { f[2], f[3] }, f[4] > 0.5 } else: BakeMat { tex, float2_1, float2_0, false }
+            if halves.length > 1:   // "ch <channel> m.r m.g m.b b.r b.g b.b", or "ch - r g b"
+                let c = tokenize(halves[1], " ", "")
+                let num = map(c.slice(2, -1)) x: string_to_float(x)
+                if c[1] == "-":
+                    bm.channel = ""
+                    bm.b = float3 { num[0], num[1], num[2] }
+                else:
+                    bm.channel = c[1]
+                    bm.m = float3 { num[0], num[1], num[2] }
+                    bm.b = float3 { num[3], num[4], num[5] }
+            bake_mats.push(bm)
             mat = bake_mats.length - 1
         elif starts_with(line, "tri "):
             let v = map(tokenize(line.substring(4, line.length - 4), " ", "")) t: string_to_float(t)
@@ -141,6 +157,23 @@ def light_dir(rx:float, ry:float) -> float3:
     return float3 { -sy * cx, sx, -cy * cx }
 
 // One facing of a mesh: its pixel sprite (RGBA bytes, w, h) and where the model's origin is on it.
+// A channel's colour for a race (the team channel: the team key, recoloured per team when drawn).
+def channel_colour(cols:Colours?, ch:string) -> float3:
+    let c = cols
+    if not c or ch == "team": return float3 { 1.0, 0.0, 1.0 }
+    let hex = c.hex.get(ch, "ff00ff")
+    def byte(i:int) -> float: return float(string_to_int(hex.substring(i, 2), 16)) / 255.0
+    return float3 { byte(0), byte(2), byte(4) }
+
+var bake_colours:Colours? = nil     // the race's colours for library meshes (set before bake_facing)
+
+def mat_albedo(mat:int, tri_c:float3) -> float3:
+    if mat < 0: return tri_c
+    let bm = bake_mats[mat]
+    if bm.channel == "*": return tri_c
+    if bm.channel == "": return bm.b
+    return bm.m * channel_colour(bake_colours, bm.channel) + bm.b
+
 def bake_facing(tris:[BakeTri], facing:int) -> string, int, int, float2:
     let az = 35.0 + 45.0 * float(facing)
     let el = 30.0
@@ -238,7 +271,8 @@ def bake_facing(tris:[BakeTri], facing:int) -> string, int, int, float2:
             gl.set_shader("bakelit")
             gl.set_uniform("key_dir", key)
             gl.set_uniform("fill_dir", normalize(float3 { -0.6, -0.3, 0.7 }))
-            gl.set_uniform("albedo", float4 { first.c[0].x, first.c[0].y, first.c[0].z, 1.0 })
+            let al = mat_albedo(first.mat, first.c[0])
+            gl.set_uniform("albedo", float4 { al.x, al.y, al.z, 1.0 })
             gl.set_uniform("uvmap", float4 { bm.scale.x, bm.scale.y, bm.offset.x, bm.offset.y })
             gl.set_uniform("mapping", if bake_shadow_debug: -1.0 elif not bt: 0.0 elif bm.triplanar: 2.0 else: 1.0)
             gl.set_uniform("lx", float4 { kx.x * lpx, kx.y * lpx, kx.z * lpx, -llo.x * lpx })
