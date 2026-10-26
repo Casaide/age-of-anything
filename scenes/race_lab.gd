@@ -15,7 +15,7 @@ const Iso := preload("res://src/view/iso.gd")
 
 const RULE_IDS := ["default", "bronze", "anything"]
 const DEFAULT_PROMPTS := ["angry swamp frogs with reed spears", "sewer rats with cheese hammers"]
-static var WORLD_ZOOM := ArtKit.ART_SCALE * 2.0   # two screen pixels per art pixel
+const WORLD_ZOOM := ArtKit.BASE_SCALE * 2.0   # the size it always had (D-173: the art is finer, not bigger)
 const GROUND_TILES := 30   # the ground is a square tile map big enough to fill the field
 const LINEUP_Y := 78.0
 const COPIES := {"worker": 2, "spear": 2, "skirmisher": 2, "archer": 2, "large": 1}

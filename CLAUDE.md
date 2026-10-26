@@ -92,6 +92,8 @@ move it to `docs/backlog.md` rather than deleting it.
 - **Built (bears, 2026-10-17):** brown, black ("moonbears") and polar bear races from the creature
   kit (kit bodies completed by DataLib from `data/creature_kit.json`), the bear mount for others ("romans riding bears"),
   a bear voice; every piece of gear checked on every bear (D-161 to D-163). Dominic to look and listen. See `docs/concepts/bears/`.
+- **In progress (milestone 23): fidelity** (D-173): art baked at 2x (`ArtKit.ART_SCALE` 3.0, zooms in `BASE_SCALE`), heroic
+  5.5-head humans; destruction in baked stages with pixel dust and fading ruins (D-171, D-172). See `docs/milestones/m23-fidelity.md`.
 - **In progress (milestone 22): battle feel.** Built (D-155): formations by role (riders on the flanks), counter-aware
   targeting (`counter_pull`), attack lines for the selection, the Norse shield wall; next race_matches and Dominic's
   match. See `docs/milestones/m22-battle-feel.md`.
