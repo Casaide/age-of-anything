@@ -1,5 +1,5 @@
 // ------------------------------------------------------------------ Heroes (src/heroes.gd)
-// A race's one hero: the one its prompt names, else one of its pool picked by its race key; dressed
+// A race's one hero: the one its prompt names, else one of its hpool picked by its race key; dressed
 // over its swordsman (else spearman) line.
 
 let HERO_BASE_SLOTS = ["infantry", "spear"]
@@ -21,8 +21,8 @@ def roster_for(cid:string, fid:string) -> [string]:
     return out
 
 def heroes_asked(named:[string], cid:string, fid:string) -> [string]:
-    let pool = roster_for(cid, fid)
-    return filter(named) sid: has_s(pool, sid)
+    let hpool = roster_for(cid, fid)
+    return filter(named) sid: has_s(hpool, sid)
 
 def hero_chosen(race:JV) -> string:
     if has(race, "hero_asked"): return as_str(at(race, "hero_asked"))
@@ -43,22 +43,22 @@ def hero_pick(key:string, cid:string, fid:string, sid:string) -> JV:
     let n = at(lib_heroes, "hero_names")
     let cn = gobj(gobj(n, "creatures"), cid)
     let fn_ = gobj(gobj(n, "families"), fid)
-    var pool = gstrs(cn, "names")
-    for(gstrs(fn_, "names")) x: pool.push(x)
+    var hpool = gstrs(cn, "names")
+    for(gstrs(fn_, "names")) x: hpool.push(x)
     let taken = []::string
-    var free = filter(pool) x: not has_s(taken, x)
+    var free = filter(hpool) x: not has_s(taken, x)
     if not free.length:
         for(gstrs(at(s, "who"), "family")) f:
             for(gstrs(gobj(gobj(n, "families"), f), "names")) x:
                 if not has_s(taken, x) and not has_s(free, x): free.push(x)
-    if free.length: pool = free
+    if free.length: hpool = free
     var titles = []::string
     if has(s, "titles"): titles = gstrs(s, "titles")
     else:
         titles = gstrs(cn, "titles")
         for(gstrs(fn_, "titles")) x: titles.push(x)
     let fmt = as_str(at(at(n, "formats"), rpick(r, gstrs(s, "formats"))))
-    let given = if pool.length: rpick(r, pool) else: ""
+    let given = if hpool.length: rpick(r, hpool) else: ""
     let epis = gstrs(s, "epithets")
     let epithet = if epis.length: rpick(r, epis) else: ""
     let nicks = gstrs(s, "nicknames")
