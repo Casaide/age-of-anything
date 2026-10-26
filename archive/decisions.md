@@ -1180,3 +1180,13 @@ fine". The dead aren't tied to the facing they fell in: `corpse.turn` (8 degrees
 on its spot per facing before it bakes, its shadow with it. The frog's is [0, -45, -30, 0, 0, 30, -30, 0], picked from
 round HF3 (`tests/sheets/frog_fall_hf3.json`: the sprawl turned -60 to +60 in every facing); no facing now sees it end
 on from behind.
+
+**D-171, 2026-10-26: Destruction goes the way of study AQ1's direction 2: buildings break up in baked stages.** Dominic on
+the art-quality study (`docs/concepts/art-quality/`): "Destruction looks great". The pick: a building broken up in 3D
+before it bakes (pieces fall from the top, others tilt and scorch, rubble heaps from its own materials, walls become
+ragged stumps with breaches), five stages from whole to ruin, the fall with pixel dust, and a ruin that stays; it would
+replace the drawn cracks, keeping today's fire and smoke. Not built yet: Claude asks Dominic to go ahead, with the
+ruin's sim questions (does it block, can it be built on, how long it stays). (Numbered D-171: the Lobster port's
+branch uses D-167 to D-170.) In the same note Dominic set unit and building fidelity as a key goal ("units being more
+detailed and higher quality"): direction 1's "not a global 2x" no longer stands as the recommendation; a fidelity round
+comes next.

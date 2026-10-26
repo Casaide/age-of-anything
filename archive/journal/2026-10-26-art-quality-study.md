@@ -20,9 +20,23 @@ today's look, with costs. Write-up and pictures: `docs/concepts/art-quality/READ
 4. **Sci-fi effects.** A real volley of the `scifi_test` mod's pulse troopers, frozen, drawn four ways: today,
    pixel bolts on the art grid with starburst hits and light pools, full laser beams, plasma balls.
 
+## Dominic's feedback (later the same day)
+
+"The art is looking very interesting. To clarify unit and building fidelity is a key goal, units being more
+detailed and higher quality. Destruction looks great. FYI those laser effects weren't coming from their barrel".
+
+- Destruction picked (D-171); building waits on his go-ahead and the ruin's sim questions (block? build on it?
+  how long?).
+- Fidelity is a key goal: the next round raises unit and building detail; "not a global 2x" is withdrawn.
+- The barrel: he was right, and it goes deeper than the study. The game launches every shot from the
+  shooter's body (`_body(a) - (0, 2)` in sim_debug), arrows included; the pulse bolts just made it obvious. The
+  concepts now start at each rifle's muzzle (the weapon's baked tip through its sprite's transform, read at draw
+  time: the first try read it once and the troopers had stepped on before the picture, so half the beams still
+  came out of their chests). Re-captured: `archive/images/2026-10-26/14-` and `15-art-quality-scifi-fx-muzzles*.png`.
+
 ## Decisions
 
-None yet: Dominic picks. Claude's recommendations: destruction in stages next; deaths in 3D for every body;
+D-171 (destruction picked). Before the feedback, Dominic was to pick. Claude's recommendations: destruction in stages next; deaths in 3D for every body;
 pixel bolts and plasma as `shots.json` styles for the sci-fi mod; no global 2x (maybe buildings-only 2x,
 and a Deck build with the flag to see it on the real screen).
 
