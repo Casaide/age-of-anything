@@ -133,9 +133,9 @@ def fx_draw(ground_of):
         let up = float2 { sin(s.tilt * 57.29578), -cos(s.tilt * 57.29578) } * st.len * 0.9
         let w = max(st.w, 1.4)
         let sh = s.pos + float2 { 0.6, 0.3 }
-        gl.color(float4 { 0.0, 0.0, 0.0, 0.3 * a }): gl.line(sh, sh + float2 { up.x * 1.4, -up.y * 0.35 }, w)
-        gl.color(float4 { 0.1, 0.07, 0.04, 0.8 * a }): gl.line(s.pos, s.pos + up, w + 1.2)
-        gl.color(float4 { st.col.x * 0.65, st.col.y * 0.65, st.col.z * 0.65, a }): gl.line(s.pos, s.pos + up, w)
+        ui_line(sh, sh + float2 { up.x * 1.4, -up.y * 0.35 }, w, float4 { 0.0, 0.0, 0.0, 0.3 * a })
+        ui_line(s.pos, s.pos + up, w + 1.2, float4 { 0.1, 0.07, 0.04, 0.8 * a })
+        ui_line(s.pos, s.pos + up, w, float4 { st.col.x * 0.65, st.col.y * 0.65, st.col.z * 0.65, a })
         fx_circle(s.pos + up, w * 0.9, float4 { 0.92, 0.9, 0.84, a })
     for(fx_heals) h:
         let g = ground_of(h.id)
@@ -153,7 +153,7 @@ def fx_draw(ground_of):
         gl.color(float4 { 1.0, 0.92, 0.7, f }):
             for(4) k:
                 let a = float(k) * 90.0 + 22.9
-                gl.line(s.pos, s.pos + float2 { cos(a), sin(a) } * r, 1.0)
+                ui_line(s.pos, s.pos + float2 { cos(a), sin(a) } * r, 1.0, float4 { 1.0, 0.92, 0.7, f })
     for(fx_dusts) d:
         if d.t >= 0.0:
             let f = d.t / 1.6
