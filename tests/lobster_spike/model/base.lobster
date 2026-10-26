@@ -12,6 +12,7 @@ def html(h:string) -> float3:       // Color("#rrggbb")
         return float(v) / 255.0
     return float3 { byte(0), byte(2), byte(4) }
 
+def lerp3(a:float3, b:float3, t:float) -> float3: return a + (b - a) * t   // Vector3.lerp, Color.lerp
 def darkened(c:float3, a:float) -> float3: return c * (1.0 - a)
 def lightened(c:float3, a:float) -> float3: return c + (float3_1 - c) * a
 
