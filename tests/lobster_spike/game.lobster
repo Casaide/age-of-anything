@@ -127,12 +127,13 @@ def to_screen(p:float2) -> float2: return (p - cam) * zoom + float(gl.window_siz
 def from_screen(p:float2) -> float2: return (p - float(gl.window_size()) / 2.0) / zoom + cam
 var fake_mouse = float2 { -1.0, -1.0 }   // the self-test's mouse (screen px), when set
 def mouse_px() -> float2: return if fake_mouse.x >= 0.0: fake_mouse else: float(gl.mouse_pos(0))
-def mouse_milli() -> float2: return iso_inv(from_screen(mouse_px()))
+def mouse_milli() -> float2: return pick_milli(from_screen(mouse_px()))   // (on raised ground: the hill under the mouse)
 
 // ------------------------------------------------------------------ the ground
 
 var ground_mesh:resource<mesh>? = nil
 var ground_tick = -1000
+var relief_built = false
 var mask_version = -1
 var mask_tick = -1000
 
@@ -391,6 +392,7 @@ def collect_views(alpha:float):
             let dx = u_x[i] - px
             let dy = u_y[i] - py
             v.node.pos = canvas(x, y)
+            v.lift = lift_at(x, y)
             set_perched(v, u_perch[i] != 0)
             v.walking = dx != 0 or dy != 0
             if t_unpack[k] > 0: set_packed(v, u_ready[i] < t_unpack[k])
@@ -542,11 +544,12 @@ def collect_buildings():
                     let st = clamp(b_progress[b] * 4 / max(1, bt_build_ticks[k]), 0, 3)
                     if look.stages[st] != "-": name = look.stages[st]
                 let at = iso(float(b_cx[b] * 1000 + b_sx[b] * 500), float(b_cy[b] * 1000 + b_sy[b] * 500))
+                let up = lift_at(float(b_cx[b] * 1000 + b_sx[b] * 500), float(b_cy[b] * 1000 + b_sy[b] * 500)) * 1.5
                 let shade = if fog[ME][cell] == 2 or teams[p] == teams[ME]: 1.0 else: 0.6
                 let tc = team_col(p)
                 let flat = walk_over[cell] == 1
-                add(frame_index(name), at.x, at.y, if flat: -100000.0 + at.y else: at.y, float4 { tc.x, tc.y, tc.z, shade })
-                if look.front != "-": add(frame_index(look.front), at.x, at.y, at.y + 2.0, float4 { tc.x, tc.y, tc.z, shade })
+                add(frame_index(name), at.x, at.y - up, if flat: -100000.0 + at.y else: at.y, float4 { tc.x, tc.y, tc.z, shade })
+                if look.front != "-": add(frame_index(look.front), at.x, at.y - up, at.y + 2.0, float4 { tc.x, tc.y, tc.z, shade })
 
 def collect_props():
     for(W * H) c:
@@ -562,11 +565,12 @@ def collect_props():
                 let stage = if tname == "stump": 3 else: resource_stage(kind, left, full)
                 let name = staged(kind, pick % doodads.get(kind, 1), stage)
                 let at = iso(float((c % W) * 1000 + 500), float((c / W) * 1000 + 500))
+                let up = lift_at(float((c % W) * 1000 + 500), float((c / W) * 1000 + 500)) * 1.5
                 let shade = if fog[ME][c] == 2: 1.0 else: 0.6
                 let flat = pool[c] >= 0
-                add(frame_index(name), at.x, at.y, if flat: -100000.0 + at.y else: at.y, float4 { 1.0, 1.0, 1.0, shade })
+                add(frame_index(name), at.x, at.y - up, if flat: -100000.0 + at.y else: at.y, float4 { 1.0, 1.0, 1.0, shade })
                 let sh = frame_index(name + "~shadow")
-                if sh >= 0: add(sh, at.x, at.y, -200000.0 + at.y, float4 { 1.0, 1.0, 1.0, shade })
+                if sh >= 0: add(sh, at.x, at.y - up, -200000.0 + at.y, float4 { 1.0, 1.0, 1.0, shade })
 
 def draw_world(alpha:float):
     if tick - ground_tick >= 10 or not ground_mesh:
@@ -576,6 +580,9 @@ def draw_world(alpha:float):
         ground_tick = tick
     if not ground_quad or (map_version != mask_version and tick - mask_tick >= 50):
         build_masks()
+        if not relief_built:
+            build_relief()
+            relief_built = true
         mask_version = map_version
         mask_tick = tick
     let ws = float(gl.window_size())
@@ -583,6 +590,7 @@ def draw_world(alpha:float):
         gl.scale(zoom):
             gl.translate(-float2 { floor(cam.x), floor(cam.y) }):
                 draw_ground(zoom)
+                draw_relief(zoom)
                 draw_fog()
                 draws = []::Drawable
                 collect_props()
@@ -591,10 +599,15 @@ def draw_world(alpha:float):
                 else:
                     collect_units(alpha)
                     collect_corpses()
+                for(occluders) o, k: draws.push(Drawable { o.sort_y, draws.length, -2, float(k), 0.0, float4_1, [] })   // a hill's near-edge tops: what's behind it hides
                 qsort_in_place(draws) a, b: a.y < b.y or (a.y == b.y and a.seq < b.seq)
                 b_sheet = -1
                 for(draws) d:
-                    if d.xf.length: sprite_xf(d.f, d.xf, d.col)
+                    if d.f == -2:
+                        flush_sprites()
+                        draw_occluder(occluders[int(d.x)], zoom)
+                        b_sheet = -1
+                    elif d.xf.length: sprite_xf(d.f, d.xf, d.col)
                     else: sprite(d.f, d.x, d.ay, d.col)
                 flush_sprites()
                 draw_shots(alpha)
