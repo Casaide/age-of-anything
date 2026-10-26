@@ -193,13 +193,13 @@ def pad_draw():
     let rcol = float4 { 0.949, 0.914, 0.788, 0.9 }
     gl.color(rcol):
         gl.translate(c):
-            gl.scale(float2 { 1.0, 0.5 }): gl.open_circle(12.0 * u, 24, 2.0 * u)
+            gl.scale(float2 { 1.0, 0.5 }): gl.open_circle(12.0 * u, 24, 0.16)
             gl.line(float2 { -18.0 * u, 0.0 }, float2 { -8.0 * u, 0.0 }, 2.0 * u)
             gl.line(float2 { 8.0 * u, 0.0 }, float2 { 18.0 * u, 0.0 }, 2.0 * u)
     if pad_circle > 0.0:
         gl.color(float4 { rcol.x, rcol.y, rcol.z, 0.6 }):
             gl.translate(c):
-                gl.scale(float2 { 1.0, 0.5 }): gl.open_circle(pad_circle, 48, 2.0 * u)
+                gl.scale(float2 { 1.0, 0.5 }): gl.open_circle(pad_circle, 48, 2.0 * u / pad_circle)
     if pad_wheel.length:
         let r = 150.0 * u
         let mid = float(gl.window_size()) / 2.0

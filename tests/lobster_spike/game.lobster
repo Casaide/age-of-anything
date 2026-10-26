@@ -1295,7 +1295,7 @@ def draw_ring(p:float2, r:float, col:float4):
     gl.color(col):
         gl.translate(p):
             gl.scale(float2 { 1.0, 0.5 }):
-                gl.open_circle(r, 20, 1.2)
+                gl.open_circle(r, 24, 0.12)   // (thickness: a fraction of the radius)
 
 // Shots in flight (shots.gd, combat_fx.gd): each weapon's shot on its arc from the shooter's body to
 // where it lands, for the sim's flight, with a speck of shadow under it. Canvas units (under the 1.5 scale).
@@ -1432,45 +1432,13 @@ def draw_hud(paused:bool, speed:float):
     gl.set_shader("color")
     let ws = float(gl.window_size())
     let u = ui()
-    gl.color(float4 { 0.08, 0.06, 0.04, 0.85 }): gl.rect(float2 { ws.x, 30.0 * u })
-    gl.color(float4 { 0.08, 0.06, 0.04, 0.85 }):
-        gl.translate(float2 { 0.0, ws.y - 120.0 * u }): gl.rect(float2 { ws.x, 120.0 * u })
+    box(float2_0, float2 { ws.x, 30.0 * u }, float4 { 0.08, 0.06, 0.04, 0.85 })
     gl.set_font_size(int(18.0 * u))
     gl.color(float4 { 0.95, 0.9, 0.75, 1.0 }):
         text_at(float2 { 10.0 * u, 5.0 * u }, stock_text())
         let clock = tick / 20
         text_at(float2 { ws.x - 260.0 * u, 5.0 * u }, "{clock / 60}:{if clock % 60 < 10: "0" else: ""}{clock % 60}  x{speed}{if paused: "  paused" else: ""}")
-        var line = ws.y - 112.0 * u
-        def say(s:string):
-            text_at(float2 { 12.0 * u, line }, s)
-            line += 22.0 * u
-        if build_menu:
-            var s = "Build: "
-            for(buildable()) k, n: s += "{n + 1} {bname(k)} ({bm_cost[ME][k]})  "
-            say(s)
-            say("Esc or B: close")
-        elif placing >= 0:
-            say("Placing {bname(placing)}: left click to place (shift: more), right click to cancel")
-        else:
-            let ids = selected_units()
-            let b = b_index_of(sel_building)
-            if ids.length:
-                let i = index_of(ids[0])
-                say("{ids.length} selected: {unit_name(u_kind[i])}  hp {u_hp[i]}/{t_hp[u_kind[i]]}")
-                if selected_workers().length: say("B: build   S: stop   right click: gather / build / move   A + right click: attack-move")
-                else: say("S: stop   right click: move / attack   A + right click: attack-move   shift: queue")
-            elif b >= 0:
-                say("{bname(b_kind[b])}  hp {b_hp[b]}/{bm_hp[ME][b_kind[b]]}{if b_done[b] == 0: "  (building)" else: ""}   queue {b_queue[b].length}")
-                var s = ""
-                for(trainable(b)) k, n: s += "{n + 1} {unit_name(k)} ({t_cost[k]})  "
-                if s.length: say("Train: " + s)
-                var rs = ""
-                for(offered(b)) r, n:
-                    if n < RESEARCH_KEYS.length: rs += "{RESEARCH_KEYS[n].uppercase()} {research_name(r)} ({research_cost(ME, r)})  "
-                if rs.length: say("Research: " + rs)
-                say("U: age up (at the Town Center)   X: cancel the last in the queue   right click: rally")
-            else:
-                say("Left click or drag to select. Arrows or edges scroll, wheel zooms, space pauses, +/- speed.")
+        if placing >= 0: text_at(float2 { 12.0 * u, ws.y - 180.0 * u }, "Placing {bname(placing)}: left click to place (shift: more), right click to cancel")
     if winner >= 0:
         gl.set_font_size(int(48.0 * u))
         gl.color(float4 { 1.0, 0.85, 0.3, 1.0 }):
@@ -1557,6 +1525,7 @@ def self_test() -> bool:
 
 import .game.pad   // (here: it plays through the controls above)
 import .game.techtree
+import .game.panel
 
 // Control groups shown (Dominic, 2026-10-26: "visible somewhere, at least as a number on the units",
 // then "only when you select the group"): a small number by each selected unit that's in a group (its
@@ -1946,10 +1915,11 @@ while gl.frame() and not (gl.button("escape") == 1 and placing < 0 and not build
         let padded = pad_tick(if padtest: pad_script() else: read_pad(), dt)
         if not padded: scroll()
         keys()
-        if not padded: mouse()
+        if not padded and not panel_click(mouse_px()): mouse()
     gl.clear(float4 { 0.05, 0.05, 0.05, 1.0 })
     gl.blend(1)
     draw_world(acc / 0.05)
+    draw_panel()
     draw_hud(paused, speed)
     draw_groups()
     pad_draw()
