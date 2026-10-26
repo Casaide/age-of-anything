@@ -1,6 +1,6 @@
 // ------------------------------------------------------------------ DataLib (src/data_lib.gd)
 // The data contract, read once: parts by id, creatures, cultures, uniques, heroes, palettes, the
-// lexicon, resources, cost curves. Mods aren't read yet (src/mods.gd: later).
+// lexicon, resources, cost curves. Mods are merged over it by gen/mods.lobster (mods_use).
 
 var lib_root = "data"
 var lib_parts = jobj()
@@ -16,6 +16,8 @@ var lib_resources:[string] = []
 var lib_curves = dictionary<string, [int]>(17)
 var lib_cands = dictionary<string, [JV]>(31)   // slot|eras -> candidates
 var lib_mods:[string] = []
+var lib_mod_data = []::JV               // the mods in use, in load order: their data (path -> parsed)
+var lib_mod_dirs = []::string           // ...and their data folders
 
 def has_s(xs:[string], s:string) -> bool:
     for(xs) x:
@@ -74,7 +76,52 @@ def made_part(id:string, slot:string) -> JV:
     set(o, "points", jint(0))
     return o
 
-def load_rules(id:string) -> JV: return load_json(lib_root + "/rules/" + id + ".json")
+// Deep merge: b's keys over a's; objects merge; "+key": [...] appends to a's list at key.
+def mod_merge(a:JV, b:JV) -> JV:
+    let out = deep_copy(a)
+    for(b.keys) key, n:
+        let v = b.a[n]
+        if starts_with(key, "+"):
+            let k = substring(key, 1, key.length - 1)
+            let list = copy(glist(out, k))
+            for(v.a) x:
+                var seen = false
+                for(list) y:
+                    if stringify(y) == stringify(x): seen = true
+                if not seen: list.push(x)
+            set(out, k, jarr(list))
+        elif has(out, key) and at(out, key).kind == J_OBJ and v.kind == J_OBJ: set(out, key, mod_merge(at(out, key), v))
+        else: set(out, key, deep_copy(v))
+    return out
+
+def jobj_without(o:JV, key:string) -> JV:
+    let out = jobj()
+    for(o.keys) k, n:
+        if k != key: set(out, k, o.a[n])
+    return out
+
+// A host rule with every mod's change to it, in load order (Mods.rules): a mod's rules/<id>.json
+// deep-merges into a game rule ("+key" appends), or adds a rule of its own ("extends" another, or whole).
+def load_rules(id:string) -> JV:
+    let text = read_file(lib_root + "/rules/" + id + ".json")
+    var out = if text: parse_json(text) else: jobj()
+    for(lib_mod_data) md:
+        let r = get(md, "rules/{id}.json")
+        if r:
+            if not out.keys.length and has(r, "extends"):
+                out = load_rules(gstr(r, "extends", ""))
+                set(out, "id", jstr(id))
+            out = mod_merge(out, jobj_without(r, "extends"))
+    assert out.keys.length
+    return out
+
+// Where a data file comes from: the last mod in load order that has it, else the game's (Mods.data_path).
+def data_path(rel:string) -> string:
+    var k = lib_mod_data.length - 1
+    while k >= 0:
+        if has(lib_mod_data[k], rel): return lib_mod_dirs[k] + "/" + rel
+        k--
+    return lib_root + "/" + rel
 
 def part(id:string) -> JV:
     let p = get(lib_parts, id)

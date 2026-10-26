@@ -27,6 +27,8 @@ var anims = dictionary<string, int>(1024)     // "<type>.<state>" -> frames
 var looks = dictionary<string, Look>(512)
 var arch_of = []::string                      // per player
 var doodads = dictionary<string, int>(64)
+var pack_rules = "default"                   // the host rules the pack's races were made with
+var pack_mods = []::string                   // the mods they were made with
 var prop_of = dictionary<string, string>(64)  // terrain id -> prop kind
 var ground_a = []::float4                     // per terrain: its two colours
 var ground_b = []::float4
@@ -94,6 +96,8 @@ def load_pack(dir:string):
                 case "armsf":
                     let lk = looks.get(t[1])
                     if lk: lk.arms_front = t.slice(2, -1)
+                case "rules": pack_rules = t[1]
+                case "mods": pack_mods = tokenize(t[1], ",", " ")
                 case "doodad": doodads.set(t[1], num(2))
                 case "prop": prop_of.set(t[1], t[2])
                 case "ground":

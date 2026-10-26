@@ -9,6 +9,8 @@ class ShotStyle:
     len:float
     w:float
     col:float4
+    glow = float4_0               // a soft halo round it (a mod's bolt of light); alpha 0: none
+    sticks = true                 // a miss stands in the ground (false: a bolt of light)
 
 def hex_col(h:string) -> float4:
     def byte(i:int) -> float: return float(string_to_int(h.substring(i, 2), 16)) / 255.0
@@ -23,6 +25,14 @@ for([["arrow", "0.22", "7.0", "1.0", "e8dcc0"], ["bolt", "0.08", "6.0", "1.4", "
 def shot_style(kind:string) -> ShotStyle:
     let s = SHOT_STYLES.get(kind)
     if s: return s
+    let m = get(mod_shots, kind)   // a mod's look (its shots.json: colours as "#rrggbb")
+    if m:
+        def num(k:string, f:float) -> float: return if has(m, k): as_float(at(m, k)) else: f
+        let made = ShotStyle { num("arc", 0.0), num("len", 0.0), num("w", 1.0), hex_col(substring(gstr(m, "col", "#ffffff"), 1, 6)) }
+        if has(m, "glow"): made.glow = hex_col(substring(gstr(m, "glow", "#ffffff"), 1, 6))
+        made.sticks = gbool(m, "sticks", true)
+        SHOT_STYLES.set(kind, made)
+        return made
     let a = SHOT_STYLES.get("arrow")
     assert a
     return a
@@ -73,7 +83,7 @@ def fx_splash(at:float2, r:float):
 
 def fx_stick(at:float2, kind:string):
     fx_dusts.push(Dust { at, 0.0, 1.5 })
-    if shot_style(kind).len > 0.0:
+    if shot_style(kind).len > 0.0 and shot_style(kind).sticks:
         fx_stuck.push(Stuck { at + float2 { rnd_range(-1.5, 1.5), rnd_range(-1.0, 1.0) }, 0.0, kind, rnd_range(-0.6, 0.6) })
 
 def fx_heal(id:int):
