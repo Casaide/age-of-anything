@@ -64,16 +64,59 @@ def crop_sprite(sprite:string, w:int, h:int, origin:float2) -> string, int, int,
         for(cw * 4) i: write_int8_le(out, y * cw * 4 + i, sprite[((y + y0) * w + x0) * 4 + i])
     return out, cw, ch, origin - float2 { float(x0), float(y0) }
 
-// One sprite into the pack: its own sheet, a frame, its bake (origin and scale for the composer).
-def keep_sprite(full:string, sprite:string, w:int, h:int, origin:float2):
-    if w == 0: return
+// ---- the bake cache: a part baked once is kept on disk (bake_cache/: a PNG a sprite, and a manifest of its
+// sprites, soles, spans and rigs), so a later start loads it instead (a cut leg bakes with its whole body: a
+// beast's legs in every walk step took most of a minute). BAKE_VERSION goes up when the models or the baker
+// change, so old bakes aren't reused.
+
+let BAKE_VERSION = 1
+var bake_cache_dir = "bake_cache"   // (play.sh makes it; Lobster can't make a folder)
+var cache_lines = []::string        // the manifest of the part being baked
+var cache_stem = ""                 // its file names' stem ("" while not recording)
+
+def cache_stem_of(id:string, full:string) -> string:
+    return bake_cache_dir + "/" + sha256_text("{BAKE_VERSION}|{id}|{full}").substring(0, 20)
+
+def sprite_texture(name:string, sprite:string, w:int, h:int) -> resource<texture>:
     let rows = map(h) y: map(w) x: float4 { float(sprite[(y * w + x) * 4]) / 255.0, float(sprite[(y * w + x) * 4 + 1]) / 255.0,
                                             float(sprite[(y * w + x) * 4 + 2]) / 255.0, float(sprite[(y * w + x) * 4 + 3]) / 255.0 }
-    sheet_tex.push(gl.create_texture(rows, texture_format_clamp | texture_format_nomipmap))
+    if cache_stem != "":   // (kept for the next start)
+        let file = "{cache_stem}_{cache_lines.length}.png"
+        write_file(file, bmat_png(map(sprite.length) i: sprite[i], w, h))
+        cache_lines.push("sprite {name} {file} {w} {h}")
+    return gl.create_texture(rows, texture_format_clamp | texture_format_nomipmap)
+
+def add_frame(full:string, tex:resource<texture>, w:int, h:int, origin:float2):
+    sheet_tex.push(tex)
     sheet_dims.push(float2 { float(w), float(h) })
     frame_at.set("p:" + full, frames.length)
     frames.push(Frame { sheet_tex.length - 1, 0, 0, w, h, int(origin.x + 0.5), int(origin.y + 0.5) })
     bakes.set(full, Bake { origin.x, origin.y, BAKE_ART })
+
+// One sprite into the pack: its own sheet, a frame, its bake (origin and scale for the composer).
+def keep_sprite(full:string, sprite:string, w:int, h:int, origin:float2):
+    if w == 0: return
+    let tex = sprite_texture(full, sprite, w, h)
+    if cache_stem != "": cache_lines[cache_lines.length - 1] += " {origin.x} {origin.y}"
+    add_frame(full, tex, w, h, origin)
+
+// A part's bakes from the cache, if they're there (true: nothing to bake).
+def load_cached(id:string, full:string) -> bool:
+    let text = read_file(cache_stem_of(id, full) + ".txt")
+    if not text: return false
+    for(tokenize(text, "\n", "")) line:
+        let t = tokenize(line, " ", "")
+        if t.length:
+            switch t[0]:
+                case "sprite":
+                    let tex = gl.load_texture(t[2], texture_format_clamp | texture_format_nomipmap)
+                    if not tex: return false
+                    add_frame(t[1], tex, string_to_int(t[3]), string_to_int(t[4]), float2 { string_to_float(t[5]), string_to_float(t[6]) })
+                case "soles": bake_soles.set(t[1], map((t.length - 2) / 2) n: float2 { string_to_float(t[2 + n * 2]), string_to_float(t[3 + n * 2]) })
+                case "span": bake_spans.set(t[1], [float2 { string_to_float(t[2]), string_to_float(t[3]) }, float2 { string_to_float(t[4]), string_to_float(t[5]) }])
+                case "rig": set(rigs, t[1], parse_json(line.substring(5 + t[1].length, line.length - 5 - t[1].length)))
+                default: pass()
+    return true
 
 // A leg's soles (each column's lowest opaque pixel) and span (its top and bottom rows' middles), part units.
 def keep_soles(full:string, sprite:string, w:int, h:int, origin:float2):
@@ -86,6 +129,7 @@ def keep_soles(full:string, sprite:string, w:int, h:int, origin:float2):
                 break
             y--
     bake_soles.set(full, soles)
+    if cache_stem != "": cache_lines.push("soles {full} " + concat_string(map(soles) p: "{p.x} {p.y}", " "))
     let rows = []::float2
     for(h) y:
         var xs = 0.0
@@ -95,7 +139,9 @@ def keep_soles(full:string, sprite:string, w:int, h:int, origin:float2):
                 xs += float(x) + 0.5
                 count++
         if count > 0: rows.push((float2 { xs / float(count), float(y) + 0.5 } - origin) / BAKE_ART)
-    if rows.length: bake_spans.set(full, [rows[0], rows[rows.length - 1]])
+    if rows.length:
+        bake_spans.set(full, [rows[0], rows[rows.length - 1]])
+        if cache_stem != "": cache_lines.push("span {full} {rows[0].x} {rows[0].y} {rows[rows.length - 1].x} {rows[rows.length - 1].y}")
 
 // Where the drawn part reaches furthest from its grip (sprite px from the origin): a weapon's tip.
 def sprite_tip(sprite:string, w:int, h:int, origin:float2) -> float2:
@@ -156,6 +202,16 @@ def find_s(xs:[string], x:string) -> int:
 // Every facing of one part: its sprites, front layers, rigs, a leg's soles. `full` is its bake key (without the
 // facing). Returns false when there is no model for it.
 def bake_model_part(id:string, full:string, c:Colours) -> bool:
+    if bake_cache_dir == "": return bake_model_part_now(id, full, c)   // (checks bake afresh)
+    if load_cached(id, full): return true
+    cache_stem = cache_stem_of(id, full)
+    cache_lines = []
+    let ok = bake_model_part_now(id, full, c)
+    if ok: write_file(cache_stem + ".txt", concat_string(cache_lines, "\n") + "\n")
+    cache_stem = ""
+    return ok
+
+def bake_model_part_now(id:string, full:string, c:Colours) -> bool:
     let built = build_model(id, c)
     if not built: return false
     let s = built
@@ -249,5 +305,6 @@ def bake_model_part(id:string, full:string, c:Colours) -> bool:
             set(r, "front", jbool(true))
         set(r, "tip", jv2(sprite_tip(sprite, w, h, origin) / BAKE_ART))
         set(rigs, rig_id, r)
+        cache_lines.push("rig {rig_id} " + stringify(r))
         baked_here++
     return true

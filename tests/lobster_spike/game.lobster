@@ -411,6 +411,7 @@ import .model.buildings
 import .model.buildings2
 import .game.art_kit
 import .game.art_kit_buildings
+import .game.pack_data
 import .game.bake_missing   // (here: it makes views to see what parts they wear)
 
 def job_of(i:int) -> string:
@@ -869,10 +870,12 @@ def map_ids() -> [string]:
             if ends_with(n, ".txt"): out.push(substring(n, 0, n.length - 4))
     return sorted_strs(out)
 
-// The map's tree species per cell (map_species.gd), if written.
+// The map's tree species per cell
+// (and every table the pack lacks, from data: game/pack_data.lobster; the species worked out as Godot's LandView
+// does, species_check.lobster)
 def load_species(map_id:string):
-    let text = read_file("maps/" + map_id + ".txt")
-    if text: species = filter(tokenize(text, " \n", "")): _.length > 0
+    species = species_from_map(map_id)
+    pack_from_data(map_id)
 
 class LobbyRace:
     prompt:string
@@ -1955,7 +1958,11 @@ fatal(gl.load_materials(BAKE_SHADERS, true))
 fatal(gl.load_materials(WORLD_SHADERS, true))
 check(gl.set_font_name("data/fonts/Droid_Sans/DroidSans.ttf"), "no font")
 zoom = 2.0 * floor(ui() + 0.5)   // two screen points an art pixel, as the game's camera
-load_pack(args[0])
+// A pack is optional (args[0] "none", or a folder without one): its tables come from data then
+// (game/pack_data.lobster), the units are composed from their parts, and every picture is baked at the start.
+let have_pack = read_file(args[0] + "/index.txt") != nil
+if have_pack: load_pack(args[0])
+else: pack_library = true
 note("pack")
 music_start()
 ambience_start()
@@ -1964,8 +1971,8 @@ ui_setup("")
 let mods_wanted = if mods_arg != "": tokenize(mods_arg, ",", " ") else: pack_mods
 if mods_wanted.length: print "mods: {mods_use(mods_wanted)}"
 id_load("../../data")
-composed = read_file(args[0] + "/rigs.json") != nil
-if composed: load_part_data(args[0])
+composed = not have_pack or read_file(args[0] + "/rigs.json") != nil
+if composed and have_pack: load_part_data(args[0])
 var lobby_report = []::string
 
 // A line in the middle of an empty screen while the link is made (true: the window was closed).

@@ -206,6 +206,25 @@ SURRENDER, the bots' walls and abilities.
         (`world_bake_check.lobster`, `42-...`); the game bakes the props the pack lacks (`game/art_kit.lobster`;
         `rebake` bakes all 193 in 2.5 s, `41-...`). Next: the buildings' looks (stages, layers, gate parts, wall
         arms, chimney points) baked in Lobster, then a pack made without Godot.
+  - [x] 6e. Buildings and a match without a pack (2026-10-26): every look of each culture's buildings baked in the
+        game (`game/art_kit_buildings.lobster`: construction stages, near layers, gates open and their towers, wall
+        arms, house variants, age looks, chimney and window points; 1283 of 1312 frames within 3 px and 12 levels
+        of Godot's, `building_bake_check.sh`, the rest thin scaffold), the pack's tables from data
+        (`game/pack_data.lobster`: team colours, sounds, voices, building and research names, ground colours, and
+        each tree cell's species, cell for cell as Godot's on all nine maps, `species_check.lobster`). So
+        `play.sh none lobby` plays with no Godot-made files at all: every part, prop and building baked at the
+        start, the parts kept in `bake_cache/` for the next start (the first start bakes a few hundred part facings;
+        a beast's legs in every walk step, each with its body, are most of it). `rebake` bakes every prop and
+        building even with a pack.
+  - [x] Controls after Godot's (2026-10-26): the whole smart right-click (pens, slaughter, breaking and rebuilding
+        bridges, mending, walling up a breach, climbing our wall, trade routes, reseeding, garrisoning), attack-move
+        and the race's ability armed by a button or key then a click, Ungarrison, Reseed and Auto-reseed, Release,
+        the market's buying and selling, Surrender in the pause menu; GARRISON and UNGARRISON by hand in the sim
+        (left out before: the bots don't use them). The self-test garrisons and ungarrisons (9 checks).
+  - [x] The UI after Godot's (2026-10-26, `39-...`, `40-...`): the top bar (`game/topbar.lobster`) and the command
+        panel, unit card, portraits as busts, captioned button groups with costs and hover cards, the training
+        well, the minimap's diamond and frame; Godot's icons as PNGs (`icons.sh`). Not yet: the panel's iron and
+        leather materials (the UI shader paints wood, metal and lacquer), the pad's compact panel.
   - [x] Selection rings on the ground (Dominic, 2026-10-26: "selection circles arent behind anything. They're on
         top"): drawn in the sorted world under everything standing (`41-...`). Test runs are silent (Dominic: "stop
         any future testing having sounds"): the game mutes with shot:, selftest, padtest, labtest, reload:, or `mute`.
