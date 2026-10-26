@@ -99,6 +99,9 @@ def net_poll(link:Link) -> [[string]]:
             link.error = err
             break
         if not data: break
+        if data == "":   // (an empty read: the other end has closed)
+            link.closed = true
+            break
         link.inb += data
     while link.inb.length >= 5:
         let len, _ = read_int32_le(link.inb, 1)

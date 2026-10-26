@@ -66,6 +66,7 @@ import .gen.balance
 import .gen.swap
 import .gen.save
 import .net.lockstep
+import .net.lan
 import .game.audio
 import .game.pack
 import .game.ground
@@ -888,6 +889,7 @@ def run_lobby(defaults:[string]) -> [string]:
     var shown_for = copy(prompts)
     var lab_frames = 0
     var test_lines = []::string      // the last Test: how the fights went
+    var find_note = ""
     var armies = map(shown) r, k: if composed and pack_library: roster_views(r, k) else: []::UV
     def step_map(by:int):
         let maps = map_ids()
@@ -938,7 +940,7 @@ def run_lobby(defaults:[string]) -> [string]:
         let by = ws.y - 100.0 * u
         // The bottom row, left to right, in shares of the window: map < name >, mode, test | address, join, host, play.
         let g = 12.0 * u
-        let unit_w = (ws.x - 48.0 * u - g * 8.0) / 15.0
+        let unit_w = (ws.x - 48.0 * u - g * 9.0) / 16.4
         var bx = 24.0 * u
         def slot(n:float) -> float2:
             let at = float2 { bx, by }
@@ -960,6 +962,14 @@ def run_lobby(defaults:[string]) -> [string]:
         ui_box(addr_at, float2 { unit_w * 2.6, 60.0 * u }, -1, ui_look.face, false)
         if field == 2: ui_outline(addr_at, float2 { unit_w * 2.6, 60.0 * u }, 2.0 * u, ui_look.accent)
         var go = ""
+        if ui_button(slot(1.4), float2 { unit_w * 1.4, 60.0 * u }, "Find", false):
+            // Who's hosting nearby: the first host found fills the address.
+            let hosts = lan_scan(1.5)
+            if hosts.length:
+                address = hosts[0].ip
+                find_note = "Found {hosts.length}: {hosts[0].name} at {hosts[0].ip} ({hosts[0].map})" + (if hosts[0].version != net_version(): ", another build" else: "")
+            else: find_note = "No one is hosting nearby"
+            if field == 2: gl.set_text_input(address)
         if ui_button(slot(1.4), float2 { unit_w * 1.4, 60.0 * u }, "Join", false): go = "join"
         if ui_button(slot(1.4), float2 { unit_w * 1.4, 60.0 * u }, "Host", false): go = "host"
         if ui_button(slot(2.6), float2 { unit_w * 2.6, 60.0 * u }, "Play", true): go = "play"
@@ -969,6 +979,7 @@ def run_lobby(defaults:[string]) -> [string]:
         ui_text(float2 { 30.0 * u, 26.0 * u }, "Age of Anything", int(42.0 * u), ui_look.title)
         ui_text(float2 { 30.0 * u, 84.0 * u }, "Type your race and theirs: anything you can describe. Tab: the next field. Enter: balance them by fighting, and play.", int(16.0 * u), ui_look.dim)
         ui_text(name_at + float2 { 10.0 * u, 18.0 * u }, lobby_map, int(18.0 * u), ui_look.text)
+        if find_note != "": ui_text(float2 { ws.x * 0.55, ws.y - 32.0 * u }, find_note, int(15.0 * u), ui_look.accent)
         if test_lines.length: ui_text(float2 { 30.0 * u, ws.y - 32.0 * u }, "Test: " + test_lines[test_lines.length - 1], int(15.0 * u), ui_look.accent)
         ui_text(addr_at + float2 { 12.0 * u, 18.0 * u }, address + (if field == 2 and (int(seconds_elapsed() * 2.0) % 2) == 0: "|" else: ""), int(18.0 * u), ui_look.text)
         for(prompts) p, k:
@@ -1756,12 +1767,17 @@ if args[1] == "lobby" and join_ip == "":
 if join_ip != "":
     link = net_join(join_ip, NET_PORT)
     var msg = "Joining {join_ip}..."
+    var said = false
     while not joined_bots.length:
         if net_wait_frame(if link.error != "": "Could not join {join_ip}: {link.error}" else: msg): return
         if link.error == "" and net_ready(link):
+            if not said:
+                join_hello(link)
+                said = true
             msg = "Joined {join_ip}: the host is sending the match..."
             for(net_poll(link)) f:
                 if f[0] == "S": joined_bots = load_world_bytes(f[1])
+                if f[0] == "X": link.error = f[1]
     ME = 1
     map_name_now = gstr(su_map, "id", "reed_meadow")
     load_species(map_name_now)
@@ -1811,9 +1827,13 @@ events_on = true
 var bots = map(num_players) p: new_bot(p)
 if joined_bots.length: bots = joined_bots
 if hosting:
-    link = net_host(NET_PORT)
-    while not net_ready(link):
-        if net_wait_frame(if link.error != "": "Could not host: {link.error}" else: "Hosting on port {NET_PORT}: waiting for a player to join..."): return
+    let door = door_open(NET_PORT, rstr(su_races[0], "name"), map_name_now)
+    var got:Link? = nil
+    let here = my_ipv4()
+    while not got:
+        if net_wait_frame(if door.error != "": "Could not host: {door.error}" else: "Hosting at {if here != "": here else: "this machine"}: waiting for a player to join..."): return
+        got = door_tick(door)
+    link = got or link
     net_send(link, 'S', world_bytes(bots))
 let net_on = hosting or join_ip != ""
 if place_arg != "":
