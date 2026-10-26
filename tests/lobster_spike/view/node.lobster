@@ -134,6 +134,12 @@ def add_child(p:VNode, c:VNode):
     c.parent = p
     p.kids.push(c)
 
+// Drop a subtree: its parent links cut (they're cycles to Lobster's reference counting).
+def free_tree(n:VNode) -> void:
+    for(n.kids) k: free_tree(k)
+    n.kids = []
+    n.parent = nil
+
 def remove_child(p:VNode, c:VNode):
     var n = 0
     while n < p.kids.length:
