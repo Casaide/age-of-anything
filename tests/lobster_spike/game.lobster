@@ -62,6 +62,7 @@ import .view.unit_view
 import .gen.reset
 import .gen.balance
 import .gen.swap
+import .gen.save
 import .game.audio
 import .game.pack
 import .game.ground
@@ -85,6 +86,8 @@ var swap_at = -1.0
 var map_arg = ""                // map:<id>: the lobby's map (tests and captures)
 var races_arg = ""             // races:<A>|<B>: the lobby's prompts, as if typed (then balanced, then played)
 var look_y = -1
+var reload_at = -1.0            // reload:<seconds>: save then, load 5 s later (tests and captures)
+var reload_tick = -1
 for(args) a, k:
     if k >= 2:
         if a == "watch": watch = true
@@ -96,6 +99,7 @@ for(args) a, k:
         if a == "follow": follow = true
         if key == "races": races_arg = val
         if key == "map": map_arg = val
+        if key == "reload": reload_at = string_to_float(val)
         if key == "swap":
             let sp, sa = split_string(val, "@")
             swap_arg = sp
@@ -1552,7 +1556,65 @@ else:
     else: start_world(args[1])
 note("world")
 events_on = true
-let bots = map(num_players) p: new_bot(p)
+var bots = map(num_players) p: new_bot(p)
+
+// Saving and loading (gen/save.lobster): F5 saves the match, F9 brings the save back (the whole world
+// and the bots); the view starts over from it: units redrawn, the ground, paths and town read again.
+let SAVE_PATH = "quick.sav"
+def quick_save():
+    let t0 = seconds_elapsed()
+    let ok = save_world(SAVE_PATH, bots)
+    banner = if ok: "Saved ({int((seconds_elapsed() - t0) * 1000.0)} ms)" else: "Could not save"
+    banner_t = gl.time()
+
+def quick_load():
+    let t0 = seconds_elapsed()
+    let loaded = load_world(SAVE_PATH)
+    if not loaded.length:
+        banner = "No save to load"
+        banner_t = gl.time()
+        return
+    bots = loaded
+    for(views.get_values()) v:
+        remove_child(view_stage, v.node)
+        free_tree(v.node)
+    views.clear()
+    view_ver.clear()
+    for(ghosts) g:
+        remove_child(view_stage, g.view.node)
+        free_tree(g.view.node)
+    ghosts = []
+    corpses = []
+    fx_clear()
+    hit_t0.clear()
+    attack_t0.clear()
+    shot_from.clear()
+    town_last.clear()
+    town_idle_since.clear()
+    chores.clear()
+    piles.clear()
+    house_born.clear()
+    town_puffs = []
+    path_used = []
+    path_done.clear()
+    path_out = []
+    path_anchor_hub.clear()
+    path_anchor_res.clear()
+    path_count = -1
+    refresh_paths()
+    ground_tick = -1000
+    mask_version = -1
+    mask_tick = -1000
+    selected = []
+    sel_building = 0
+    groups.clear()
+    placing = -1
+    clock_s = float(tick) / 20.0
+    p_id = copy(u_id)
+    p_x = copy(u_x)
+    p_y = copy(u_y)
+    banner = "Loaded ({int((seconds_elapsed() - t0) * 1000.0)} ms)"
+    banner_t = gl.time()
 note("bots")
 let tc0 = town_center(ME)
 if tc0 >= 0: cam = iso(float(b_cx[tc0] * 1000 + 1500), float(b_cy[tc0] * 1000 + 1500))
@@ -1577,6 +1639,17 @@ while gl.frame() and not (gl.button("escape") == 1 and placing < 0 and not build
     frame_no++
     if shot != "" and frame_no < 3: note("frame {frame_no} tc at {if tc0 >= 0: to_screen(iso(float(b_cx[tc0] * 1000 + 2000), float(b_cy[tc0] * 1000 + 2000))) else: float2_0} cam {cam} zoom {zoom} ws {gl.window_size()} fb {gl.framebuffer_size()} tc {tc0} draws {draws.length} W {W} H {H} first {iso(0.0, 0.0)} last {iso(float(W * 1000), float(H * 1000))}")
     if shot != "" and frame_no % 60 == 0: print "frame {frame_no}: {dt * 1000.0} ms, play {clock_s} s"
+    if reload_at >= 0.0 and clock_s >= reload_at:
+        quick_save()
+        reload_tick = tick
+        print "saved at tick {tick}: {u_id.length} units, {b_id.length} buildings, hash {state_hash()}"
+        reload_at = -1.0
+    if reload_tick >= 0 and tick >= reload_tick + 100:
+        quick_load()
+        print "loaded: tick {tick}, {u_id.length} units, {b_id.length} buildings, hash {state_hash()}"
+        reload_tick = -1
+    if not typing_race and gl.button("f5") == 1: quick_save()
+    if not typing_race and gl.button("f9") == 1: quick_load()
     if swap_arg != "" and clock_s >= swap_at:
         become(swap_arg)
         swap_arg = ""
