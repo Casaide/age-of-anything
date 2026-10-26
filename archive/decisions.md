@@ -1180,3 +1180,10 @@ fine". The dead aren't tied to the facing they fell in: `corpse.turn` (8 degrees
 on its spot per facing before it bakes, its shadow with it. The frog's is [0, -45, -30, 0, 0, 30, -30, 0], picked from
 round HF3 (`tests/sheets/frog_fall_hf3.json`: the sprawl turned -60 to +60 in every facing); no facing now sees it end
 on from behind.
+
+**D-167, 2026-10-26: Races and the match start are made in Lobster; Godot only bakes the art.** Dominic, on the
+Lobster port: "Let's do it! Primarily because ... it opens us up to generation at army creation time and during the
+game." Supersedes the port's first call (generation stays in Godot). The generator, pricing, identity and heroes
+(`tests/lobster_spike/gen/`) and World's setup (`gen/setup.lobster`, `gen/start.lobster`) run in Lobster and give
+the same races (keys, recipes, stats) and the same start, token for token, as GDScript; the game makes both from the
+pack's prompts and map. Next, the units drawn from baked parts in Lobster (6b), then the baker itself (6c). Claude.

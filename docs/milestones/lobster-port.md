@@ -73,10 +73,13 @@ SURRENDER, the bots' walls and abilities.
       the screen are in. To come: the Godot terrain's look, music, control groups, a nicer panel.
 - [ ] 6. Setup in Lobster (Dominic, 2026-10-26: "Let's do it! Primarily because ... it opens us up to generation at
       army creation time and during the game"). Three steps, each checked against GDScript:
-  - [ ] 6a. Races and the match from data: a JSON reader, DataLib, the generator, pricing, identity, heroes, and
-        World setup (types and their line steps, buildings, research, the map, starts, animals, every system's
-        setup). Checked: the same race keys and recipes as `print_races.gd`, and a Lobster-made match start equal,
-        array by array, to the scenario export.gd writes. Then the lobby: prompts typed in the game.
+  - [x] 6a. Races and the match from data, 2026-10-26: a JSON reader and Godot-compatible writer, SHA-256, DataLib,
+        the generator, pricing, identity, heroes (`gen/`), and World setup (`gen/setup.lobster`, `gen/start.lobster`).
+        Checked: `race_check.sh` (23 prompts x 3 rules: the same races, keys, notes, heroes) and `start_check.sh`
+        (four matches: the Lobster start equals export.gd's scenario token for token). The game makes its races and
+        start from the pack's prompts (`play.sh pack`; `scenario:<file>` for an export). Game modes' starts (Siege,
+        Fortress) and mods aren't set up in Lobster yet.
+  - [ ] The lobby: prompts typed in the game. Needs a new race's art without Godot (6b, 6c).
   - [ ] 6b. Units drawn from baked parts in Lobster (UnitView's assembly, rigs, procedural animation): no
         per-race flipbooks; Godot bakes each part once.
   - [ ] 6c. The part baker in Lobster (the procedural 3D models, the Blender models converted, the pixel pass):
@@ -84,6 +87,9 @@ SURRENDER, the bots' walls and abilities.
 - [ ] Archive
 
 ## Results
+
+- 2026-10-26 (6a): two races from prompts in about 3 ms and the match start in about 3 ms, in the game; frames from the
+  Lobster-made start and from the GDScript scenario are byte-identical at tick 101.
 
 - 2026-10-26: the first match in a Lobster window (rats v frogs on flat_test, the bot on both sides when watching):
   `archive/images/2026-10-26/01-lobster-game-first-frame.png`, `02-lobster-game-rat-raid.png`. The sim and both

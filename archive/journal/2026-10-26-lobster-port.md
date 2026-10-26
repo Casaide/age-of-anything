@@ -28,9 +28,25 @@ shots, hit flashes, the win banner. `make_pack.sh [map] ["race" "race"]` makes a
 - The art stays Godot-baked for now: the units are procedural 3D models (about 10,000 lines) plus Blender models,
   and porting the baker changes nothing you see. Godot is the game's asset tool; the game runs in Lobster.
 - Race generation from prompts also stays in Godot for now (the pack tool runs it); porting the generator, pricing and
-  identity only pays once the baker moves too. Dominic's call.
+  identity only pays once the baker moves too. Dominic's call. (Superseded the same day by D-167: Dominic, "Let's do
+  it!", for generation at army creation and mid-match.)
 
-## Funny moments / bugs
+## Later the same day: races and the start in Lobster (step 6a)
+
+Dominic asked whether a 100%-Lobster game was worth it, and on hearing it opens generation at army creation and
+mid-match, said do it. So the generator came over: a JSON reader that keeps Godot's key order and a writer matching
+`JSON.stringify(v, "", true)`, SHA-256 (Lobster has none) for the race key, the Rng, DataLib with the bears' kit parts,
+then `race_generator.gd`, `pricing.gd`, `identity.gd` and `heroes.gd`. `race_check.sh` compares 23 prompts under the
+default, anything and bronze rules: every race the same, notes and hero names included, on the first full run.
+
+Then World's setup: the map and its heights, rules, unit and animal types, the attack classes, buildings, research
+and line upgrades, every line's steps, the races' bonuses, starts, seeded animals, bridges, heroes, the fog, the bots'
+config, straight into the sim's arrays. A writer turns the arrays back into scenario tokens; `start_check.sh` compares
+them with export.gd's for four matches (flat_test; Reed Meadow with animals and a bridge; River Delta, moonbears v
+spiders; Siege Vale, centaurs v vikings). One bug: ids start at 1 (a Town Center with id 0 doesn't block the map,
+since 0 means empty). After that, all the same. The game now makes its races (about 3 ms for two) and its start
+(about 3 ms) from the pack's prompts; a frame at tick 101 is byte-identical to one from the GDScript scenario.
+
 
 - The first Lobster window showed nothing at all: macOS doesn't hand a frame to a window with vsync on while the
   display sleeps (03:00). Captures now run without vsync.
@@ -49,4 +65,4 @@ shots, hit flashes, the win banner. `make_pack.sh [map] ["race" "race"]` makes a
 ## Ideas parked
 
 - The Godot terrain shader's look in Lobster (paths, water, cliffs); music stems; control groups; a proper panel.
-- Porting the generator and pricing (and one day the baker) for a lobby that runs without Godot.
+- A lobby that types prompts needs the art without Godot: steps 6b (units from baked parts) and 6c (the baker).
