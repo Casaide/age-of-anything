@@ -48,7 +48,6 @@ let args = command_line_arguments()
 assert args.length >= 1
 start_world(args[0])
 let n0 = u_x.length
-for(b_id.length) b: assert not bt_special[b_kind[b]]
 
 expect("HASHES")
 let ticks = next_int()
@@ -71,6 +70,8 @@ if bots_mode:
     cmds = []::Cmd
 
 var spent = 0.0
+var most_up = 0      // the most units up on walls at once
+var climbing = 0     // unit-ticks spent climbing
 var first_bad = -1
 for(ticks) k:
     let t0 = seconds_elapsed()
@@ -82,13 +83,15 @@ for(ticks) k:
             for(bots) bot: bot_think(bot)
     step()
     spent += seconds_elapsed() - t0
+    most_up = max(most_up, (filter(u_perch) v: v != 0).length)
+    for(u_task) t: climbing += if t == T_CLIMB: 1 else: 0
     if first_bad < 0 and state_hash() != expected[k]:
         first_bad = k
     if tick == dump_tick:
         write_file(args[0] + ".lobster.dump", dump_state(), 0, 1)
 var left = map(num_players + 1): 0   // (and gaia's animals)
 for(u_owner) p: left[p]++
-print "{n0} units, {ticks} ticks, {cmds.length} orders; at the end: units {left}, buildings {b_id.length}, gathered {gathered}, lanes {walks.length}, gates {(filter(b_kind) k: bt_gate[k] != 0).length}"
+print "{n0} units, {ticks} ticks, {cmds.length} orders; at the end: units {left}, buildings {b_id.length}, gathered {gathered}, lanes {walks.length}, gates {(filter(b_kind) k: bt_gate[k] != 0).length}, most up on walls {most_up}, climbing {climbing}"
 print "lobster step: {spent * 1000.0 / ticks} ms a tick"
 if first_bad < 0:
     print "hashes: all {ticks} match"
