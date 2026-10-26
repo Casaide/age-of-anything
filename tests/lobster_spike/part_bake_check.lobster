@@ -36,6 +36,7 @@ import .model.kit_bodies
 import .model.siege
 import .model.heroes
 import .model.bears
+import .model.mods_active
 import .model.models
 import .view.part_bake
 

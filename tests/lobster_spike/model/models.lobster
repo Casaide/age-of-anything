@@ -25,6 +25,7 @@ def build_model(id:string, c:Colours) -> Spec?:
     let base = bits[0]
     // each model file's parts (model/all.lobster imports them; a file answers nil for parts it doesn't have)
     return build_units(base, c) or build_units2(base, c) or build_units3(base, c) or build_units4(base, c) or build_units5(base, c) or
-           build_kit(base, c) or build_siege(base, c) or build_heroes(base, c) or build_bears(base, c)
+           build_kit(base, c) or build_siege(base, c) or build_heroes(base, c) or build_bears(base, c) or
+           build_mods(base, c)   // (the active mods' Lobster models: model/mods_active.lobster)
 
 def has_model(id:string, c:Colours) -> bool: return build_model(id, c) != nil

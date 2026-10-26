@@ -11,5 +11,6 @@
  "eras": ["scifi"],
  "data": "data",
  "models": ["models/scifi_parts.gd"],
+ "lobster_models": ["models/scifi_parts.lobster"],
  "check": {"rules": "anything", "prompts": ["future soldiers", "space marines", "sewer rats from the future"]}
 }

@@ -63,6 +63,14 @@ Frames (part units, about one art pixel): x the way the unit faces, y up, z towa
   `_armour_plate_composite`.
 - Back gear: from the back's surface outwards (-x). Copy `_pack_power`.
 
+**The Lobster game:** the same parts in a Lobster file, `models/<id>_parts.lobster`, listed in `mod.json`
+as `"lobster_models"`, with `build_mod_<id>(base, c) -> Spec?` choosing by part id (nil for the rest). The
+builders are named as the GDScript ones without the underscore, with the same helpers
+(`tests/lobster_spike/model/base.lobster`; `box` for `_box`; your texture as `surf("textures/<id>/plate", ...)`,
+made from the SVG by `tests/lobster_spike/tex_png.gd`). Copy `mods/scifi_test/models/scifi_parts.lobster`. Check it
+against the GDScript one with `AOW_MODS=<id> tests/lobster_spike/model_check.sh /tmp/m "<prompt>" <part id>...`, and
+play it with `tests/lobster_spike/play.sh none lobby mods:<id> rules:anything`.
+
 **Blender (`.glb`):** a script in `tools/` (copy `mods/scifi_test/tools/buckler.py`), run
 `blender -b --python mods/<id>/tools/<part>.py -- mods/<id>/models/<part>.glb`, then give the part
 `"glb": "models/<part>.glb"` instead of a builder. Model in part units facing +X, up +Z; name the
