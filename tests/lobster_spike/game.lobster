@@ -67,6 +67,7 @@ import .game.pack
 import .game.ground
 import .game.doodads
 import .game.paths
+import .game.fx
 
 let args = command_line_arguments()
 // Options after the two paths: watch (the bot plays you too), speed:<x>, shot:<png> with at:<seconds>
@@ -304,6 +305,7 @@ class Ghost:
     sort_y:float
     owner:int
     t0:float
+    puffed:bool = false
 var ghosts = []::Ghost
 var frame_dt = 1.0 / 60.0
 let view_stage = VNode {}       // canvas units to art px
@@ -412,7 +414,7 @@ def collect_views(alpha:float):
                 uv_process(v, frame_dt)
                 for(v.crew) c: crew_tick(c)
                 let since = clock_s - hit_t0.get(u_id[i], -10.0)
-                let flash = if since < 0.12: 1.0 + 1.8 * (1.0 - since / 0.12) else: 1.0
+                let flash = if since < 0.12: 1.0 + 1.8 * (1.0 - since / 0.12) else: heal_glow(u_id[i])
                 add_view(v, iso(x, y).y, team_col(u_owner[i]), flash)
             last_kind.set(u_id[i], k)
             last_owner.set(u_id[i], u_owner[i])
@@ -431,11 +433,20 @@ def collect_views(alpha:float):
     for(ghosts) g:
         uv_process(g.view, frame_dt)
         for(g.view.crew) c: crew_tick(c)
+        if clock_s - g.t0 >= 1.9 and not g.puffed:   // (combat_fx: the body goes in a puff of dust)
+            g.puffed = true
+            fx_puff(g.view.node.pos - float2 { 0.0, g.view.lift }, g.view.die_tip)
         let fade = clamp(1.0 - (clock_s - g.t0 - 2.2) / 1.8, 0.0, 1.0)
         add_view(g.view, g.sort_y - 2.0, team_col(g.owner), 0.35 + 0.65 * fade)
 
-// Combat events on the views: the attacker faces its target and lunges (a blow) or looses (a shot);
-// the dead play their fall.
+// Where something stands on the canvas (Iso.to_ground: raised ground lifts it).
+def ground_at(x:int, y:int) -> float2: return canvas(float(x), float(y)) - float2 { 0.0, lift_at(float(x), float(y)) }
+
+def seen_at(x:int, y:int) -> bool: return fog[ME][cell_of(x, y)] == 2
+
+// Combat events on the views: the attacker faces its target and lunges (a blow, a spark where it lands)
+// or looses (a shot; a miss stands in the ground); the dead play their fall; healed units glow; stones,
+// charges and fallen buildings raise dust (game/fx.lobster).
 def view_events():
     for(events) e:
         if e.kind == EV_SHOT or e.kind == EV_HIT:
@@ -446,6 +457,23 @@ def view_events():
                 if e.kind == EV_SHOT or not ranged:
                     face_vec(v, canvas(float(e.x), float(e.y)) - v.node.pos)
                     if e.kind == EV_SHOT: loose(v) else: flourish(v)
+                if e.kind == EV_HIT and not ranged and seen_at(e.x, e.y):
+                    let j = index_of(e.b)
+                    let to = if j >= 0: ground_at(u_x[j], u_y[j]) - float2 { 0.0, 10.0 } else: ground_at(e.x, e.y) - float2 { 0.0, 20.0 }
+                    fx_spark(to, e.c >= 8)
+        elif e.kind == EV_MISS:
+            if seen_at(e.x, e.y):
+                let i = index_of(e.a)
+                fx_stick(ground_at(e.x, e.y), if i >= 0: unit_shotk.get(u_kind[i], "arrow") else: "arrow")
+        elif e.kind == EV_HEAL:
+            let h = views.get(e.a)
+            let p = views.get(e.b)
+            if h and p: face_vec(h, p.node.pos - h.node.pos)
+            if p: fx_heal(e.b)
+        elif e.kind == EV_SPLASH:
+            if seen_at(e.x, e.y): fx_splash(ground_at(e.x, e.y), float(e.c) * RADIUS_PX)
+        elif e.kind == EV_DIE and e.b == 1:
+            if fog[ME][cell_of(e.x, e.y)] != 0: fx_collapse(ground_at(e.x, e.y), max(1, e.c))
         elif e.kind == EV_DIE and e.b == 0:
             let v = views.get(e.a)
             if v:
@@ -724,7 +752,11 @@ def draw_world(alpha:float):
                     elif d.xf.length: sprite_xf(d.f, d.xf, d.col)
                     else: sprite(d.f, d.x, d.ay, d.col)
                 flush_sprites()
-                draw_shots(alpha)
+                gl.scale(1.5):
+                    draw_shots(alpha)
+                    fx_draw() id:
+                        let v = views.get(id)
+                        if v and v.node.visible: v.node.pos - float2 { 0.0, v.lift } else: float2 { -1000000000.0, 0.0 }
                 draw_marks(alpha)
 
 
@@ -883,6 +915,7 @@ def race_facts(races:[JV]):
         let tags = eval_tags(su_type_eval[k])
         unit_blow.set(k, if has_s(tags, "ram"): "ram_hit" elif has_s(tags, "blade"): "hit_blade" elif has_s(tags, "blunt"): "hit_blunt" else: "hit_pierce")
         let kind = shot_kind_of(tags)
+        unit_shotk.set(k, kind)
         unit_shot.set(k, if kind == "boulder": "catapult_release" elif kind == "siege_bolt": "bolt_release" elif kind == "sling_stone": "sling_release" else: "shoot_" + kind)
 
 
@@ -1162,30 +1195,38 @@ def draw_ring(p:float2, r:float, col:float4):
             gl.scale(float2 { 1.0, 0.5 }):
                 gl.open_circle(r, 20, 1.2)
 
-// Shots in flight (shots.gd): a dart on an arc from where it was loosed to where it lands.
+// Shots in flight (shots.gd, combat_fx.gd): each weapon's shot on its arc from the shooter's body to
+// where it lands, for the sim's flight, with a speck of shadow under it. Canvas units (under the 1.5 scale).
 def draw_shots(alpha:float):
     gl.set_shader("color")
     let n = shots.length / SHOT_STRIDE
     for(n) k:
         let o = k * SHOT_STRIDE
-        let land = shots[o]
-        let key = shots[o + 2] * 65536 + land % 65536
+        let land = shots[o + SHOT_LAND]
+        let key = shots[o + SHOT_BY] * 65536 + land % 65536
         var t_from = shot_from.get(key, -1)
         if t_from < 0:
             t_from = tick - 1
             shot_from.set(key, t_from)
         let t = clamp((float(tick - t_from) + alpha) / float(max(1, land - t_from)), 0.0, 1.0)
-        let ax = float(shots[o + 7])
-        let ay = float(shots[o + 8])
-        let sx = float(shots[o + 9])
-        let sy = float(shots[o + 10])
-        if fog[ME][cell_of(int(ax), int(ay))] == 2 or fog[ME][cell_of(int(sx), int(sy))] == 2:
-            let a = iso(sx, sy)
-            let b = iso(ax, ay)
-            let arc = magnitude(b - a) * 0.25
-            def at(u:float) -> float2: return a + (b - a) * u - float2 { 0.0, 14.0 + arc * 4.0 * u * (1.0 - u) }
-            gl.color(float4 { 0.2, 0.15, 0.1, 1.0 }):
-                gl.line(at(max(0.0, t - 0.06)), at(t), 1.0)
+        let ax = shots[o + SHOT_X]
+        let ay = shots[o + SHOT_Y]
+        let sx = shots[o + SHOT_X0]
+        let sy = shots[o + SHOT_Y0]
+        if seen_at(ax, ay) or seen_at(sx, sy):
+            let src = shots[o + SHOT_SRC]
+            let st = shot_style(if src >= 0: unit_shotk.get(src, "arrow") else: "arrow")
+            let a = ground_at(sx, sy) - float2 { 0.0, 12.0 }
+            let b = ground_at(ax, ay) - float2 { 0.0, 10.0 }
+            let h = magnitude(b - a) * st.arc
+            def at(u:float) -> float2: return a + (b - a) * u - float2 { 0.0, h * 4.0 * u * (1.0 - u) }
+            let p = at(t)
+            let ahead = at(min(t + 0.03, 1.0))
+            let dir = if magnitude(ahead - p) > 0.0001: normalize(ahead - p) else: normalize(b - a + float2 { 0.0001, 0.0 })
+            let lift = h * 4.0 * t * (1.0 - t)
+            if st.len > 0.0: gl.color(st.col): gl.line(p - dir * st.len * 0.5, p + dir * st.len * 0.5, st.w)
+            else: fx_circle(p, st.w, st.col)
+            fx_circle(p + float2 { 0.0, lift + 1.0 }, 0.8, float4 { 0.0, 0.0, 0.0, 0.25 })
     if tick % 200 == 0: shot_from = dictionary<int, int>(1024)   // (forget the landed ones now and then)
 
 // Health bars over hurt units you can see, and over the selected.
@@ -1495,6 +1536,7 @@ while gl.frame() and not (gl.button("escape") == 1 and placing < 0 and not build
     if gl.button("-") == 1: speed = max(0.25, speed / 2.0)
     let dt = gl.delta_time()
     frame_dt = dt
+    fx_tick(dt)
     music_tick("age{clamp(ages[ME], 1, 4)}", gl.time() - last_battle < 6.0, dt)
     frame_no++
     if shot != "" and frame_no < 3: note("frame {frame_no} tc at {if tc0 >= 0: to_screen(iso(float(b_cx[tc0] * 1000 + 2000), float(b_cy[tc0] * 1000 + 2000))) else: float2_0} cam {cam} zoom {zoom} ws {gl.window_size()} fb {gl.framebuffer_size()} tc {tc0} draws {draws.length} W {W} H {H} first {iso(0.0, 0.0)} last {iso(float(W * 1000), float(H * 1000))}")
@@ -1526,6 +1568,12 @@ while gl.frame() and not (gl.button("escape") == 1 and placing < 0 and not build
                 fx += u_x[i]
                 fy += u_y[i]
                 nf++
+        if nf == 0:   // (no fighting yet: the armies)
+            for(u_x.length) i:
+                if t_worker[u_kind[i]] == 0 and t_animal[u_kind[i]] == 0:
+                    fx += u_x[i]
+                    fy += u_y[i]
+                    nf++
         if nf > 0: cam = cam + (iso(float(fx / nf), float(fy / nf)) - cam) * 0.05
     if not typing_race:
         scroll()

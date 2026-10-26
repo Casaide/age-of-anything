@@ -81,11 +81,13 @@ fights the others, and your people become it. The rats became forest bears a min
 The ground: Godot's terrain shader in Lobster's shader format, the same masks. Then the rest of the ground: hills raised in levels with cliff faces (a hill hides what's behind
 it), the doodads scattered from Godot's own random numbers seeded by the map's name (so in the same places), and each
 culture's paths. The paths were laid from the start but never showed: rebuilding the water and rock masks (every time a
-bush is eaten) reset the path texture to empty. Rats lay cobbles.
+bush is eaten) reset the path texture to empty. Rats lay cobbles. Then the combat effects: sparks, dust, shots stuck in the ground, heal motes. Capturing a fight showed long dark
+streaks running up off the top of the screen; they were there with the new effects switched off too: the old shot
+drawing. Shots now fly as the Godot game draws them, each weapon its own arc, length and colour.
 
 ## Pictures
 
-`archive/images/2026-10-26/`: the first frame (01), a rat raid on the frog town (02), sheep penned (03), the UI scaled (04), the ground shader with composed rats (05), moonbears from the lobby and the library (06), rats become forest bears mid-match (07), hills and cliffs (08), joined walls (09), cobbled paths (10).
+`archive/images/2026-10-26/`: the first frame (01), a rat raid on the frog town (02), sheep penned (03), the UI scaled (04), the ground shader with composed rats (05), moonbears from the lobby and the library (06), rats become forest bears mid-match (07), hills and cliffs (08), joined walls (09), cobbled paths (10), a fight with shots on their arcs (11).
 
 ## Ideas parked
 
