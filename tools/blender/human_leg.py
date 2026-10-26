@@ -1,6 +1,10 @@
 """A human leg in trousers and a boot, for the unit bakes (Blender 5, headless):
 
     blender -b --python tools/blender/human_leg.py -- assets/models/leg_human.glb
+    blender -b --python tools/blender/human_leg.py -- assets/models/leg_human_heroic.glb heroic
+
+heroic (D-173): the leg of the genre's heroic build (about 5.5 heads tall): hip to sole 18 instead of 11, thigh
+and calf 1.12 as thick; the boot's foot only 1.15 as big (a long foot reads as a clown's).
 
 Part units, facing +X, up +Z, the hip at the origin (the game swings the leg about it). The same
 hip, knee and ankle as the primitive leg: knee a little forward, the calf behind it, the foot
@@ -11,6 +15,8 @@ import bpy, bmesh
 from mathutils import Vector
 
 out = sys.argv[sys.argv.index("--") + 1]
+heroic = "heroic" in sys.argv[sys.argv.index("--") + 2:]
+LONG, THICK = (18.0 / 10.8, 1.12) if heroic else (1.0, 1.0)
 bpy.ops.wm.read_factory_settings(use_empty=True)
 
 
@@ -46,7 +52,8 @@ def sweep(name, material, profile, segs=24):
     bm = bmesh.new()
     rings = []
     for z, rx, ry, dx in profile:
-        cx = centre(z) + dx
+        cx = (centre(z) + dx) * THICK
+        z, rx, ry = z * LONG, rx * THICK, ry * THICK
         rings.append([bm.verts.new((cx + math.cos(2 * math.pi * k / segs) * rx, math.sin(2 * math.pi * k / segs) * ry, z)) for k in range(segs)])
     for i in range(len(rings) - 1):
         for k in range(segs):
@@ -71,7 +78,8 @@ bm = bmesh.new()
 bmesh.ops.create_uvsphere(bm, u_segments=20, v_segments=12, radius=1.0)
 for v in bm.verts:
     x, y, z = v.co
-    v.co = Vector((x * 2.2 + 1.3, y * 1.3, max(z, -0.55) * 1.0 - 10.2))   # flat sole
+    f = 1.15 if heroic else 1.0
+    v.co = Vector(((x * 2.2 + 1.3) * f, y * 1.3 * f, max(z, -0.55) * f - 10.2 * LONG - 0.55 * (f - 1.0)))   # flat sole
 bm.to_mesh(foot.data)
 bm.free()
 

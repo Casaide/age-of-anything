@@ -12,6 +12,7 @@ const TEX_DIR := "res://assets/art/textures/"
 
 static var tex_cache := {}   # shared by every baker (each used to rasterise the SVGs again)
 var hold := "low"   # the body being built: how its near hand holds the weapon (see arm_pose)
+var arm_reach := 1.0   # the body being built: how much longer its arm is than the poses were made for (arm_pose)
 var rest := ""   # ...and the idle pose it rests in while holding it, if any ("body.bear@draw@ease": creature_kit.gd)
 
 
@@ -87,7 +88,7 @@ func fitted(armour_id: String, body_id: String, colours: Dictionary) -> Dictiona
 	if armour_id.begins_with("harness."):   # a draught harness, fitted on its beast (siege_models.gd)
 		return _siege().harness_fitted(armour_id, body_id, colours)
 	var kind := armour_id.trim_prefix("armour.")
-	var name := "armour_%s_%s" % [kind, body_id.trim_prefix("body.")]
+	var name := "armour_%s_%s" % [kind, body_id.trim_prefix("body.")] + (HUMAN_LOOK if body_id == "body.human" else "")
 	if not FileAccess.file_exists("res://assets/models/%s.glb" % name):
 		return {}
 	var main := surf(kind, Color.WHITE, 4.0) if kind != "leather" else surf("leather", Color.WHITE, 5.0)
@@ -200,6 +201,13 @@ const REACH_FLOOR := 8.0   # a reaching hand comes no lower than this (part unit
 
 
 func arm_pose(sh: Vector3, elbow: Vector3, hand: Vector3, head: Vector3) -> Array:
+	var pose := _arm_pose(sh, elbow, hand, head)
+	if arm_reach == 1.0 or hold in ["low", "mouth", "draw"]:   # (a bow at full stretch is already at arm's length; longer, a rider's drew into its newt)
+		return pose
+	return [sh + (pose[0] - sh) * arm_reach, sh + (pose[1] - sh) * arm_reach]   # a longer arm (the heroic human, D-173) reaches as far out
+
+
+func _arm_pose(sh: Vector3, elbow: Vector3, hand: Vector3, head: Vector3) -> Array:
 	var z := sh.z
 	match hold:
 		"throw":   # (hands out to the side of the head: nearer, the arm and javelin went through it)
@@ -942,7 +950,13 @@ func crest(n: Node3D, tint: Color, pos: Vector3, length: float, height: float) -
 
 # ------------------------------------------------------------------ human
 
-const HUMAN_HAND_L := Vector3(5.5, 20.5, -4.8)   # the shield hand, forearm up (at hip height, 17.2, a rider's shield went into its horse)
+## The human, heroic build (D-173): about 5.5 heads tall, broad shoulders, hips at 18 on long legs. The torso, legs
+## and worn armour are modelled in Blender (tools/blender/human_*.py ... heroic: *_heroic.glb); the arms here, posed
+## for what the near hand holds. The build before D-173 (hips at 11, a head a third of the height) is the same
+## scripts without "heroic" (torso_human.glb, leg_human.glb, kept).
+const HUMAN_LOOK := "_heroic"
+const HUMAN_HAND_L := Vector3(6.1, 27.3, -5.4)   # the shield hand, forearm up (at hip height a rider's shield went into its horse)
+const HUMAN_ARM := 1.15     # its arm against the one the holds were posed for (arm_pose)
 
 
 func _body_human(c: Dictionary) -> Dictionary:
@@ -952,40 +966,33 @@ func _body_human(c: Dictionary) -> Dictionary:
 	var cloth := surf("cloth", c.cloth, 6.0)
 	var skin := surf("skin", c.skin, 8.0)
 	var belt := surf("leather", Color.WHITE, 3.0)
-	# A belted tunic: chest and shoulders, a flared skirt over the hips. Modelled in Blender
-	# (tools/blender/human_torso.py); the primitive version is the fallback.
-	if FileAccess.file_exists("res://assets/models/torso_human.glb"):
-		n.add_child(glb("torso_human", {"team": tunic, "cloth": cloth, "leather": belt, "skin": skin}))
-	else:
-		n.add_child(blob(Vector3(4.4, 5.8, 5.4), tunic, Vector3(0.3, 19.6, 0)))
-		n.add_child(cone(4.3, 5.5, 4.6, tunic, Vector3(0, 12.9, 0)))
-		n.add_child(ring(5.0, 5.7, cloth, Vector3(0, 10.75, 0)))   # hem trim in the culture's colour
-		n.add_child(ring(4.2, 5.1, belt, Vector3(0, 15.0, 0)))
-		n.add_child(rod(Vector3(0.3, 23.5, 0), Vector3(0.6, 27, 0), 1.8, 1.7, skin))
-	n.add_child(blob(Vector3(1.0, 1.0, 0.5), surf("bronze", Color.WHITE, 2.0), Vector3(4.6, 15.2, 0.6)))   # the buckle
+	# A belted tunic: chest and shoulders, a flared skirt over the hips (tools/blender/human_torso.py).
+	n.add_child(glb("torso_human" + HUMAN_LOOK, {"team": tunic, "cloth": cloth, "leather": belt, "skin": skin}))
+	n.add_child(blob(Vector3(1.0, 1.0, 0.5), surf("bronze", Color.WHITE, 2.0), Vector3(4.95, 22.0, 0.6)))   # the buckle
 	var near_hand := Vector3.ZERO
 	var front := Node3D.new()
 	for side in [1, -1]:
 		var into: Node3D = front if side == 1 else n
-		var sh := Vector3(0.3, 22.9, 4.4 * side)   # shoulders in a little (Dominic: too big)
-		var elbow := Vector3(1.4, 18.4, 5.8 * side)
-		var hand := Vector3(6.0, 16.2, 5.6) if side == 1 else HUMAN_HAND_L
+		var sh := Vector3(0.3, 29.3, 4.7 * side)   # (at 5.0 two crew on a war beast's howdah went into each other: placement C1)
+		var elbow := Vector3(1.3, 23.9, 5.9 * side)
+		var hand := Vector3(6.2, 23.7, 6.8) if side == 1 else HUMAN_HAND_L   # (at (6.4, 20.9, 6.0) a rider's sword hand went into a sitting bear's head: A3)
 		if side == 1:
-			var pose := arm_pose(sh, elbow, hand, Vector3(0.6, 27, 0))
+			arm_reach = HUMAN_ARM
+			var pose := arm_pose(sh, elbow, hand, Vector3(0.6, 34, 0))
+			arm_reach = 1.0
 			elbow = pose[0]
 			hand = pose[1]
 			near_hand = hand
-		into.add_child(blob(Vector3(2.1, 2.1, 2.1), cloth, sh))
-		into.add_child(rod(sh, elbow, 1.6, 1.45, cloth))
-		into.add_child(rod(elbow, hand, 1.35, 1.15, skin))
-		into.add_child(blob(Vector3(1.5, 1.6, 1.3), skin, hand))
-	# (No scarf: the tunic is already the team colour, and a scarf ring hid the neck: Dominic.)
+		into.add_child(blob(Vector3(2.4, 2.3, 2.2), cloth, sh))
+		into.add_child(rod(sh, elbow, 1.75, 1.55, cloth))
+		into.add_child(rod(elbow, hand, 1.45, 1.2, skin))
+		into.add_child(blob(Vector3(1.55, 1.65, 1.35), skin, hand))
 	return {"node": n, "front": front, "sockets": {
-		"head": Vector3(0.6, 25.6, 0), "hand_r": near_hand, "hand_l": HUMAN_HAND_L,   # head low: a short neck (Dominic)
-		"torso": Vector3(0.0, 19.4, 0), "back": Vector3(-4.2, 22, 0)},   # the chest's middle (lower, the jerkin bulged out of the belly from the front)
-		"anchors": [[Vector3(-2.3, 11.0, -2.4), 0.0, -1], [Vector3(2.0, 11.0, 2.4), PI, 1]],
+		"head": Vector3(0.6, 31.6, 0), "hand_r": near_hand, "hand_l": HUMAN_HAND_L,
+		"torso": Vector3(0.0, 26.0, 0), "back": Vector3(-4.8, 29.7, 0)},   # the chest's middle; high between the shoulder blades (a quiver at 27.5 met the striding thigh: A3)
+		"anchors": [[Vector3(-2.4, 18.0, -2.5), 0.0, -1], [Vector3(2.1, 18.0, 2.5), PI, 1]],
 		"torso_scale": Vector2(0.66, 0.82),
-		"torso_fit": Vector3(0.43, 0.74, 0.52),   # worn armour (built ~1.6x) just over the (Blender) chest, not an egg round it
+		"torso_fit": Vector3(0.46, 0.70, 0.55),   # worn armour (built ~1.6x) just over the (Blender) chest, not an egg round it
 		"legs_under": true}   # the tunic's skirt hangs over the thighs
 
 
@@ -998,10 +1005,10 @@ func _head_human(c: Dictionary) -> Dictionary:
 		var face := surf("skin", c.skin * 0.4, 6.0)
 		face.emission_enabled = true
 		face.emission = c.skin * 0.82
-		var hs := float(OS.get_environment("AOW_HUMAN_HEAD")) if OS.has_environment("AOW_HUMAN_HEAD") else 1.0   # fidelity study: proportions
+		var hs := 0.68   # the heroic build's head (D-173): ~5.5 heads tall (1.0: the build before, a third of the height)
 		var head := glb("head_human", {"skin": face, "hair": surf("mane", c.skin2.darkened(0.45), 3.0), "eye": plain(Color("#1a1210"))})
 		head.scale *= hs
-		return {"node": head, "sockets": {"top": Vector3(0.3, 10.3, 0) * hs},
+		return {"node": head, "sockets": {"top": Vector3(0.3, 10.3, 0) * hs + Vector3(0, 0.2, 0)},   # (gear a touch higher on the smaller head: every cap's rim came under 0.5 over the brow, A2)
 			"gear_scale": 0.86 * hs}   # a narrower skull than the old egg: caps and helmets sit on it, not flat on top
 	return _head_human_primitive(c)
 
@@ -1031,9 +1038,7 @@ func _leg_human(c: Dictionary) -> Dictionary:
 	var boot := surf("leather", Color("#6a4a30"), 3.0)
 	# Modelled in Blender (tools/blender/human_leg.py): a shaped thigh, knee and calf, a cuffed boot.
 	if FileAccess.file_exists("res://assets/models/leg_human.glb"):
-		n.add_child(glb("leg_human", {"cloth": cloth, "leather": boot}))
-		if OS.has_environment("AOW_HUMAN_LEGS"):   # fidelity study (docs/concepts/fidelity/): longer legs
-			n.scale = Vector3(1.0, float(OS.get_environment("AOW_HUMAN_LEGS")), 1.0)
+		n.add_child(glb("leg_human" + HUMAN_LOOK, {"cloth": cloth, "leather": boot}))
 		return {"node": n}
 	n.add_child(rod(Vector3(0, 0, 0), Vector3(0.7, -5.4, 0), 2.0, 1.6, cloth))
 	n.add_child(rod(Vector3(0.7, -5.4, 0), Vector3(0.1, -9.4, 0), 1.5, 1.3, cloth))

@@ -120,7 +120,7 @@ static func _short_rider_legs(v) -> void:
 		v.seat_node.position = rig.sockets.seat + Vector2(0, 6)
 	for leg in v.legs:
 		if leg.cling:
-			leg.node.scale.y = 1.0
+			leg.node.scale.y = 0.6   # the leg before D-173 (11 long, the heroic one 18): at its standing length it ended at the spine
 
 
 ## Shows the rider's leg the old way: the one whose hip is nearer the camera (by depth, not by side).

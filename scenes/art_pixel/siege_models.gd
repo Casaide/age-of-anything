@@ -699,7 +699,7 @@ func _ram_c(s: Dictionary, c: Dictionary) -> Dictionary:
 	else:
 		spec = _ram_b(s, c)
 	var L := 42.0
-	spec.sockets = {"crew0_f0_reach_in": Vector3(-L * 0.3, 0, -2.5), "crew1_f0_reach_in": Vector3(L * 0.1, 0, -2.5),
+	spec.sockets = {"crew0_f0_reach_in": Vector3(-L * 0.3, 0, -3.2), "crew1_f0_reach_in": Vector3(L * 0.1, 0, -3.2),   # (at 2.5 the heroic humans' shoulders were in the frame: C1, D-173)
 		"crew2_f0_reach": Vector3(-L * 0.5 - 5.0, 0, 5.0),
 		"crew2_f0_reach_wide": Vector3(-L * 0.5 - 12.0, 0, 5.0)}   # (a centaur's torso rose in front of the roof's eave at the back: placement C4)
 	if s.fam == "timber" and TIMBER_RAM_ROOF != "":   # under a roof: one each side of the log, so one always shows
@@ -725,8 +725,8 @@ func _ram_covered(s: Dictionary, c: Dictionary, roof: String) -> Dictionary:
 	var W := 12.0
 	var wr := 4.2
 	var base := wr + 1.0
-	var eave := 23.0           # the top plates: the crew stand under them
-	var ridge := 30.5
+	var eave := 27.0           # the top plates: the crew stand under them (23 before the heroic humans' longer legs, D-173)
+	var ridge := 34.5
 	var px := L * 0.36         # the posts, front and back
 	undercarriage(n, s, L, W, wr)
 	for side in [1, -1]:
@@ -743,7 +743,7 @@ func _ram_covered(s: Dictionary, c: Dictionary, roof: String) -> Dictionary:
 			n.add_child(rod(Vector3(x, eave - 0.6, (W * 0.5 + 1.6) * side), Vector3(x, ridge, 0), 0.55, 0.5, s.wood, false))
 	var rx := px + 3.5         # the roof's half length (a little over the gables)
 	n.add_child(beam(Vector3(-rx, ridge, 0), Vector3(rx, ridge, 0), 1.3, 1.3, s.dark))
-	var y := 17.0              # the log, hung from the ridge beam
+	var y := 21.0              # the log, hung from the ridge beam at the crew's chests (17 went through the heroic humans' skirts, D-173)
 	for x in [-L * 0.25, L * 0.25]:
 		n.add_child(rod(Vector3(x, ridge, 0), Vector3(x, y + 2.0, 0), 0.35, 0.35, s.rope, false))
 	ram_log(n, s, -L * 0.55, L * 0.5 + 8.0, y, 3.0)
@@ -2230,7 +2230,7 @@ func howdah(n: Node3D, s: Dictionary, at: Vector3, L: float, W: float, riders :=
 		n.add_child(rod(at + Vector3(x, 5.0, -W * 0.5), at + Vector3(x, 5.0, W * 0.5), 0.4, 0.4, s.dark))
 	if riders == 1:
 		return {"crew0_f0_top": at + Vector3(0, 0.7, 0)}
-	return {"crew0_f0_top": at + Vector3(L * 0.05, 0.7, W * 0.3), "crew1_f0_top": at + Vector3(-L * 0.05, 0.7, -W * 0.3)}
+	return {"crew0_f0_top": at + Vector3(L * 0.13, 0.7, W * 0.32), "crew1_f0_top": at + Vector3(-L * 0.13, 0.7, -W * 0.32)}   # (L * 0.05 apart, two heroic humans stood in each other: C1, D-173)
 
 
 ## Humans: a war elephant, grey and wrinkled, tusks capped in bronze, ears out. a: a howdah with two
