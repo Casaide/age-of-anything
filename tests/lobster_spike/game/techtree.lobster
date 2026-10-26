@@ -19,6 +19,7 @@ class TNode:
     lacks = false
     race_only = false            // research only some races get, and this race does
     cost = ""
+    effect = ""                  // a research's effects in words
 
 class TColumn:
     name:string
@@ -96,11 +97,21 @@ def build_tree(p:int) -> TTree:
         let lanes_g = []::[TNode]
         for(glist(rules, "roster")) sd:
             let slot = gstr(sd, "slot", "")
-            if gstr(sd, "building", "") == id and gstr(sd, "status", "") != "parked" and gstr(sd, "role", "") != "hero":
+            if gstr(sd, "building", "") == id and gstr(sd, "status", "") != "parked":
                 let first_age = max(gint(sd, "tier", 1), gint(b, "age", 1))
                 let line_planned = gstr(sd, "status", "") == "planned"
                 let line_name = gstr(sd, "name", slot)
-                if not line_planned and (has_str(glist(race, "lacks"), slot) or race_lacks(ident, slot)):
+                if gstr(sd, "role", "") == "hero":   // the race's heroes (D-138): one node each, where they're first trained
+                    for(glist(race, "units")) hu:
+                        let rec = at(hu, "recipe")
+                        if rstr(rec, "slot") == slot:
+                            let hs = at(at(lib_heroes, "hero_signatures"), rstr(rec, "hero"))
+                            let n = TNode { "u:{slot}.{rstr(rec, "hero")}@{first_age}", "unit", gstr(rec, "name", line_name),
+                                            gstr(hs, "temper", "") + "\nAura: " + gstr(gobj(hs, "aura"), "text", ""), first_age, false, col }
+                            let st = line_step(hu, first_age)
+                            if st: n.cost = cost_text(gobj(at(st, "eval"), "cost"))
+                            lanes_g.push([n])
+                elif not line_planned and (has_str(glist(race, "lacks"), slot) or race_lacks(ident, slot)):
                     let n = TNode { "u:{slot}@{first_age}", "unit", line_name, gstr(sd, "desc", ""), first_age, false, col }
                     n.lacks = true
                     lanes_g.push([n])
@@ -147,6 +158,7 @@ def build_tree(p:int) -> TTree:
                         n.lacks = lacks
                         n.race_only = only.length > 0 and not lacks
                         n.cost = cost_text(gobj(c, "cost"))
+                        n.effect = if has(c, "effect"): gstr(c, "effect", "") else: effect_text(glist(c, "effects"))
                         group.push(n)
                         var nxt:JV? = nil
                         for(here) r2:
@@ -306,6 +318,7 @@ def tree_tick() -> bool:
             page_text(at + float2 { 11.0 * u, 10.0 * u }, if n.name.length > 17: n.name.substring(0, 16) + "." else: n.name, int(14.0 * u), col)
             if n.lacks: page_rect(at + float2 { 0.0, size.y * 0.5 - 1.5 * u }, float2 { size.x, 3.0 * u }, float4 { 0.8, 0.25, 0.2, 0.9 })   // struck through
             if m.x >= at.x and m.y >= at.y and m.x <= at.x + size.x and m.y <= at.y + size.y: hover = k
+        if n.key == tree_hover_arg: hover = k
     let words = tree_words or race_words(ME)
     tree_words = words
     let py = TREE_TOP * u + float(t.ages.length) * TREE_ROW * u + 20.0 * u
@@ -324,8 +337,11 @@ def tree_tick() -> bool:
     column(2, "It lacks", words.lacks)
     if hover >= 0:   // what it is, at the foot of the page
         let n = t.nodes[hover]
-        page_rect(float2 { 0.0, ws.y - 90.0 * u }, float2 { ws.x, 90.0 * u }, float4 { 0.0, 0.0, 0.0, 0.85 })
-        page_text(float2 { 30.0 * u, ws.y - 80.0 * u }, n.name + (if n.cost != "": "   (" + n.cost + ")" else: "") + (if n.lacks: "   - your race lacks it" else: ""), int(18.0 * u), ui_look.title)
-        page_text(float2 { 30.0 * u, ws.y - 48.0 * u }, n.desc, int(14.0 * u), float4 { 0.8, 0.78, 0.7, 1.0 })
+        let foot_lines = filter(append(tokenize(n.desc, "\n", ""), [n.effect])) l: l.length > 0
+        let foot = 52.0 * u + 22.0 * u * float(foot_lines.length)
+        page_rect(float2 { 0.0, ws.y - foot }, float2 { ws.x, foot }, float4 { 0.0, 0.0, 0.0, 0.85 })
+        page_text(float2 { 30.0 * u, ws.y - foot + 10.0 * u }, n.name + (if n.cost != "": "   (" + n.cost + ")" else: "") + (if n.lacks: "   - your race lacks it" else: ""), int(18.0 * u), ui_look.title)
+        for(foot_lines) l, k:   // (its description, then a research's effect in words)
+            page_text(float2 { 30.0 * u, ws.y - foot + 42.0 * u + 22.0 * u * float(k) }, l, int(14.0 * u), if k == foot_lines.length - 1 and n.effect != "": ui_look.title else: float4 { 0.8, 0.78, 0.7, 1.0 })
     page_flush()
     return true
