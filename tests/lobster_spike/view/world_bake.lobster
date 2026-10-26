@@ -53,6 +53,7 @@ SHADER worldlit
         UNIFORM vec4 lz
         UNIFORM vec2 lsize
         UNIFORM vec4 pass
+        UNIFORM vec4 emis
         // mat0: mapping (0 none, 1 UV, 2 triplanar), triplanar sharpness, roughness, specular (metallic_specular)
         // mat1: metallic, normal map (0/1), normal scale, unshaded; pass: x 1 = only the sun (the ground's shadow
         // mask), y 1 = alpha scissor
@@ -125,6 +126,7 @@ SHADER worldlit
             vec3 ambient = vec3(0.578, 0.631, 0.745) * 0.28;
             vec3 lin = lin_base * (1.0 - mat1.x) * (diffuse + ambient) + spec;
             if (mat1.w > 0.5) lin = lin_base;
+            lin += pow(emis.rgb, vec3(2.2));   // emission (a flame, embers, a lit window)
             // Godot's filmic tone (exposure 0.95, white 1), then sRGB
             lin *= 0.95;
             vec3 A = vec3(0.22 * 4.0); vec3 B = vec3(0.30 * 2.0);
@@ -277,6 +279,7 @@ def world_bake(model:MNode, shadow:bool, reach:float = 1.0) -> string, int, int,
             gl.set_uniform("mat0", float4 { if not t0: 0.0 elif m.triplanar: 2.0 else: 1.0, m.triplanar_sharpness, m.roughness, m.metallic_specular })
             gl.set_uniform("mat1", float4 { m.metallic, if t2: 1.0 else: 0.0, m.normal_scale, if m.unshaded: 1.0 else: 0.0 })
             gl.set_uniform("pass", float4 { if sun_only: 1.0 else: 0.0, if m.scissor: 1.0 else: 0.0, 0.0, 0.0 })
+            gl.set_uniform("emis", float4 { m.emission.x, m.emission.y, m.emission.z, 0.0 })
             gl.render_mesh(mesh)
     let art = gl.create_blank_texture(int3 { w, h, 0 }, texture_format_nomipmap)
     gl.switch_to_framebuffer(art, true)

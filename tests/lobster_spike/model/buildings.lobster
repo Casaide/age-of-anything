@@ -820,7 +820,7 @@ def outpost_look(arch:string) -> string:
     switch arch:
         case "junk", "tent": return "pole"
         case "stone": return "beacon"
-        default: return "deck"
+        default: return "deck_y"
 
 def bld_outpost(arch:string, team:float3) -> BSpec:
     switch outpost_look(arch):
@@ -861,7 +861,7 @@ def bld_outpost_pole(arch:string, team:float3) -> BSpec:
     bpt(sp, "lantern", bv(0.0, top + 0.1, 0.18))
     return bteam(sp, team)
 
-// A low look-out deck: four short legs, a ladder, a railing and a sunshade, a horn on the rail.
+// A low look-out deck_y: four short legs, a ladder, a railing and a sunshade, a horn on the rail.
 def bld_outpost_deck(arch:string, team:float3) -> BSpec:
     brng = grng(42)
     let body = mnode()
@@ -1020,19 +1020,19 @@ def bld_bastion(arch:string, team:float3) -> BSpec:
             add_child(body, bbox(bv(0.24, 0.12, 0.01), bcloth(team), bv(0.13, top + 0.85, 0.0)))
             top += 0.6
         case "reed":
-            let deck = bld_stilt_deck(body, float3_0, 0.96, 0.96)
+            let deck_y = bld_stilt_deck(body, float3_0, 0.96, 0.96)
             let h = 1.45
-            add_child(body, bcyl(0.36, 0.42, h, bm("weave"), bv(0.0, deck + h / 2.0, 0.0), float3_0, 24))
-            add_child(body, bcyl(0.43, 0.45, 0.3, bm("mud"), bv(0.0, deck + 0.15, 0.0), float3_0, 24))   // mud-plastered skirt
+            add_child(body, bcyl(0.36, 0.42, h, bm("weave"), bv(0.0, deck_y + h / 2.0, 0.0), float3_0, 24))
+            add_child(body, bcyl(0.43, 0.45, 0.3, bm("mud"), bv(0.0, deck_y + 0.15, 0.0), float3_0, 24))   // mud-plastered skirt
             for([0.65, 1.2]) y:
-                add_child(body, bring(0.37, 0.41, bm("wood"), bv(0.0, deck + y, 0.0)))
-            bld_reed_fence(body, bv(0.0, deck + h, 0.0), 0.4)
-            add_child(body, bdome(0.46, bm("thatch"), bv(0.0, deck + h + 0.28, 0.0), bv(1.0, 0.7, 1.0)))
+                add_child(body, bring(0.37, 0.41, bm("wood"), bv(0.0, deck_y + y, 0.0)))
+            bld_reed_fence(body, bv(0.0, deck_y + h, 0.0), 0.4)
+            add_child(body, bdome(0.46, bm("thatch"), bv(0.0, deck_y + h + 0.28, 0.0), bv(1.0, 0.7, 1.0)))
             for([-0.4, 0.4]) x:
-                add_child(body, bcyl(0.02, 0.02, 0.3, wood, bv(x, deck + h + 0.15, 0.1), float3_0, 5))
-            add_child(body, bbox(bv(0.05, 0.18, 0.02), slit, bv(0.12, deck + 0.95, 0.4), bv(0.0, 15.0, 0.0)))
-            add_child(body, bbox(bv(0.26, 0.12, 0.02), bcloth(team), bv(-0.1, deck + h - 0.1, 0.42)))
-            top = deck + h + 0.6
+                add_child(body, bcyl(0.02, 0.02, 0.3, wood, bv(x, deck_y + h + 0.15, 0.1), float3_0, 5))
+            add_child(body, bbox(bv(0.05, 0.18, 0.02), slit, bv(0.12, deck_y + 0.95, 0.4), bv(0.0, 15.0, 0.0)))
+            add_child(body, bbox(bv(0.26, 0.12, 0.02), bcloth(team), bv(-0.1, deck_y + h - 0.1, 0.42)))
+            top = deck_y + h + 0.6
         case "mound":
             let mud = bm("mud")
             add_child(body, bcyl(0.14, 0.52, top, mud, bv(0.0, top / 2.0, 0.0), float3_0, 14))
@@ -1053,7 +1053,7 @@ def bld_bastion(arch:string, team:float3) -> BSpec:
 
 // ------------------------------------------------------------------ amphibians: reed domes on stilts
 
-// A plank deck on log stilts, w x d, at `at`. Returns the deck's top height.
+// A plank deck_y on log stilts, w x d, at `at`. Returns the deck_y's top height.
 def bld_stilt_deck(body:MNode, at:float3, w:float, d:float) -> float:
     let wood = bm("wood")
     let h = 0.4
@@ -1092,7 +1092,7 @@ def bld_reed_dome(body:MNode, at:float3, r:float, team:float3, door_turn:float =
         bld_lily_cap(body, bv(at.x, top - 0.04, at.z), r * 0.45)
     return top
 
-// Reed bundles standing round a deck's edge, tied in the middle.
+// Reed bundles standing round a deck_y's edge, tied in the middle.
 def bld_reed_fence(body:MNode, at:float3, half:float, gap_side:int = 0):
     let reed = bm("thatch")
     let tie = bm("wood")
@@ -1109,39 +1109,39 @@ def bld_reed_fence(body:MNode, at:float3, half:float, gap_side:int = 0):
 def reed_house(team:float3) -> BSpec:
     brng = grng(11)
     let body = mnode()
-    let deck = bld_stilt_deck(body, float3_0, 1.5, 1.5)
-    bld_reed_dome(body, bv(0.0, deck, 0.0), 0.58, team)
+    let deck_y = bld_stilt_deck(body, float3_0, 1.5, 1.5)
+    bld_reed_dome(body, bv(0.0, deck_y, 0.0), 0.58, team)
     let wood = bm("wood")
     for([-0.12, 0.12]) x:
-        add_child(body, beam(bv(x, 0.0, 1.05), bv(x, deck, 0.72), 0.02, wood, 6))
+        add_child(body, beam(bv(x, 0.0, 1.05), bv(x, deck_y, 0.72), 0.02, wood, 6))
     for(3) k:
-        add_child(body, bbox(bv(0.28, 0.025, 0.025), wood, lerp3(bv(0.0, 0.0, 1.05), bv(0.0, deck, 0.72), float(k + 1) / 4.0)))
-    add_child(body, beam(bv(0.6, deck, 0.4), bv(0.95, deck + 0.9, -0.1), 0.012, wood, 4))
+        add_child(body, bbox(bv(0.28, 0.025, 0.025), wood, lerp3(bv(0.0, 0.0, 1.05), bv(0.0, deck_y, 0.72), float(k + 1) / 4.0)))
+    add_child(body, beam(bv(0.6, deck_y, 0.4), bv(0.95, deck_y + 0.9, -0.1), 0.012, wood, 4))
     let sp = bspec(body)
-    bpt(sp, "lantern", bv(0.3, deck + 0.2, 0.65))
+    bpt(sp, "lantern", bv(0.3, deck_y + 0.2, 0.65))
     bpt(sp, "door", bv(0.0, 0.0, 1.0))
     return bteam(sp, team)
 
 def reed_town_center(team:float3) -> BSpec:
     brng = grng(12)
     let body = mnode()
-    let deck = bld_stilt_deck(body, float3_0, 2.5, 2.5)
-    var top = bld_reed_dome(body, bv(-0.25, deck, -0.25), 0.92, team)
+    let deck_y = bld_stilt_deck(body, float3_0, 2.5, 2.5)
+    var top = bld_reed_dome(body, bv(-0.25, deck_y, -0.25), 0.92, team)
     add_child(body, bcyl(0.34, 0.4, 0.22, bm("weave"), bv(-0.25, top - 0.05, -0.25), float3_0, 20))
     add_child(body, bdome(0.4, bm("thatch"), bv(-0.25, top + 0.05, -0.25), bv(1.0, 1.1, 1.0)))
     bld_lily_cap(body, bv(-0.25, top + 0.45, -0.25), 0.2)
     top += 0.5
-    bld_reed_dome(body, bv(0.8, deck, 0.75), 0.36, team, 40.0)
-    bld_reed_fence(body, bv(0.0, deck, 0.0), 1.2)
+    bld_reed_dome(body, bv(0.8, deck_y, 0.75), 0.36, team, 40.0)
+    bld_reed_fence(body, bv(0.0, deck_y, 0.0), 1.2)
     let wood = bm("wood")
     for(3) k:
-        add_child(body, bbox(bv(0.5, 0.05, 0.16), wood, bv(-0.2, deck * (float(k) + 0.5) / 3.0, 1.55 - float(k) * 0.14)))
-    add_child(body, beam(bv(-1.0, deck, 0.8), bv(-1.0, deck + 0.45, 0.8), 0.02, wood, 6))
-    add_child(body, beam(bv(-0.6, deck, 0.8), bv(-0.6, deck + 0.45, 0.8), 0.02, wood, 6))
-    add_child(body, beam(bv(-1.0, deck + 0.42, 0.8), bv(-0.6, deck + 0.42, 0.8), 0.015, wood, 4))
+        add_child(body, bbox(bv(0.5, 0.05, 0.16), wood, bv(-0.2, deck_y * (float(k) + 0.5) / 3.0, 1.55 - float(k) * 0.14)))
+    add_child(body, beam(bv(-1.0, deck_y, 0.8), bv(-1.0, deck_y + 0.45, 0.8), 0.02, wood, 6))
+    add_child(body, beam(bv(-0.6, deck_y, 0.8), bv(-0.6, deck_y + 0.45, 0.8), 0.02, wood, 6))
+    add_child(body, beam(bv(-1.0, deck_y + 0.42, 0.8), bv(-0.6, deck_y + 0.42, 0.8), 0.015, wood, 4))
     for(3) k:
-        add_child(body, bball(0.05, bflat(html("#8aa0a8"), 0.4, 0.3), bv(-0.92 + float(k) * 0.12, deck + 0.32, 0.8), bv(0.6, 1.8, 0.6)))
-    let pole_at = bv(1.0, deck, -0.95)
+        add_child(body, bball(0.05, bflat(html("#8aa0a8"), 0.4, 0.3), bv(-0.92 + float(k) * 0.12, deck_y + 0.32, 0.8), bv(0.6, 1.8, 0.6)))
+    let pole_at = bv(1.0, deck_y, -0.95)
     add_child(body, bcyl(0.03, 0.035, 1.6, wood, pole_at + bv(0.0, 0.8, 0.0), float3_0, 8))
     let banner = mnode()
     let flag_top = pole_at + bv(0.03, 1.5, 0.0)
@@ -1151,8 +1151,8 @@ def reed_town_center(team:float3) -> BSpec:
     let sp = bspec(body)
     bbanner(sp, banner, flag_top)
     bpt(sp, "smoke", bv(-0.25, top, -0.25))
-    bpt(sp, "lantern", bv(-0.25, deck + 0.4, 0.75))
-    return bdoorway(sp, bld_doorway(bv(-0.25, deck + 0.04, -0.25 + 0.92 + 0.06), 0.92 * 0.42, 0.92 * 0.35 + 0.92 * 0.25 - 0.04, true))
+    bpt(sp, "lantern", bv(-0.25, deck_y + 0.4, 0.75))
+    return bdoorway(sp, bld_doorway(bv(-0.25, deck_y + 0.04, -0.25 + 0.92 + 0.06), 0.92 * 0.42, 0.92 * 0.35 + 0.92 * 0.25 - 0.04, true))
 
 // ------------------------------------------------------------------ bugs: earth mounds, logs, husks
 
@@ -1846,8 +1846,8 @@ def wonder_reed(team:float3) -> BSpec:
     let body = mnode()
     let weave = bm("weave")
     let thatch = bm("thatch")
-    let deck = bld_stilt_deck(body, float3_0, 4.5, 4.5)
-    let top = bld_reed_dome(body, bv(0.0, deck, -0.2), 1.35, team)
+    let deck_y = bld_stilt_deck(body, float3_0, 4.5, 4.5)
+    let top = bld_reed_dome(body, bv(0.0, deck_y, -0.2), 1.35, team)
     var y = top - 0.15
     let radii = [0.7, 0.52, 0.38]
     for(3) s:   // the spire: drum, cap, drum, cap ...
@@ -1869,16 +1869,16 @@ def wonder_reed(team:float3) -> BSpec:
             add_child(body, petal)
             add_child(petal, bball(0.32 - float(rk) * 0.06, bflat(if rk == 0: html("#e890b0") else: html("#f4c0d0"), 0.6), float3_0, bv(0.45, 1.0, 0.22), bv(lean, 0.0, 0.0)))
     add_child(body, bball(0.13, bflat(html("#f2c94c"), 0.5), heart + bv(0.0, 0.2, 0.0)))
-    for([bv(-1.7, deck, -1.7), bv(1.65, deck, 1.6), bv(1.75, deck, -1.7)]) at:
+    for([bv(-1.7, deck_y, -1.7), bv(1.65, deck_y, 1.6), bv(1.75, deck_y, -1.7)]) at:
         bld_reed_dome(body, at, 0.42, team, 20.0 * signf(at.x))
-    bld_reed_fence(body, bv(0.0, deck, 0.0), 2.15)
+    bld_reed_fence(body, bv(0.0, deck_y, 0.0), 2.15)
     let wood = bm("wood")
     for(3) k:   // steps down at the front
-        add_child(body, bbox(bv(0.6, 0.05, 0.16), wood, bv(0.0, deck * (float(k) + 0.5) / 3.0, 2.55 - float(k) * 0.14)))
-    let banner, pivot = bld_pennant(body, bv(-1.9, deck, 1.9), 2.2, team)
+        add_child(body, bbox(bv(0.6, 0.05, 0.16), wood, bv(0.0, deck_y * (float(k) + 0.5) / 3.0, 2.55 - float(k) * 0.14)))
+    let banner, pivot = bld_pennant(body, bv(-1.9, deck_y, 1.9), 2.2, team)
     let sp = bspec(body)
     bbanner(sp, banner, pivot)
-    bpt(sp, "lantern", bv(0.0, deck + 0.4, 1.3))
+    bpt(sp, "lantern", bv(0.0, deck_y + 0.4, 1.3))
     return bteam(sp, team)
 
 // The bugs' Wonder: the great termite spires, round doors, amber glowing in the walls, a shell trophy.
