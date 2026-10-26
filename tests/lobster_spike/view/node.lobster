@@ -94,7 +94,13 @@ def randf(r:Pcg) -> float:
     if e == 0: return 0.0
     return f32_of(pcg_next(r) | 0x80000001) * pow(2.0, float(-32 - clz32(e)))
 
-def randf_range(r:Pcg, a:float, b:float) -> float: return randf(r) * (b - a) + a
+let f32_buf = ensure_size("", 4, 0)
+def f32(x:float) -> float:   // rounded to a 32-bit float (Godot's real_t)
+    write_float32_le(f32_buf, 0, x)
+    let v, _n = read_float32_le(f32_buf, 0)
+    return v
+
+def randf_range(r:Pcg, a:float, b:float) -> float: return f32(randf(r) * f32(b - a) + a)
 def randi(r:Pcg) -> int: return pcg_next(r)
 
 // ---- nodes
