@@ -125,6 +125,17 @@ def ui_fill(at:float2, size:float2, col:float4):
     gl.render_mesh(ui_quad(at, size, col))
     gl.set_shader("color")   // (what the callers' own shapes expect next)
 
+// A line as a quad (gl.line draws nothing once a custom shader has been used, in this build).
+def ui_line(a:float2, b:float2, w:float, col:float4):
+    let d = b - a
+    let l = magnitude(d)
+    if l <= 0.0001: return
+    let n = float2 { -d.y, d.x } / l * (w * 0.5)
+    gl.set_shader("color_attr")
+    gl.render_mesh(gl.new_mesh("PC", [float3 { a.x + n.x, a.y + n.y, 0.0 }, float3 { b.x + n.x, b.y + n.y, 0.0 }, float3 { b.x - n.x, b.y - n.y, 0.0 }, float3 { a.x - n.x, a.y - n.y, 0.0 }],
+                               [col, col, col, col], []::float3, []::float2, []::float2, [0, 2, 1, 0, 3, 2]))
+    gl.set_shader("color")
+
 def ui_mat(at:float2, size:float2, col:float4, kind:int):
     if size.x <= 0.0 or size.y <= 0.0: return
     gl.set_shader("uimat")

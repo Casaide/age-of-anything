@@ -210,7 +210,7 @@ def page_rect(at:float2, size:float2, col:float4):
 
 def page_line(a:float2, b:float2, w:float, col:float4):
     gl.set_shader("color")
-    gl.color(col): gl.line(a, b, w)
+    ui_line(a, b, w, col)
 
 def tree_node_at(t:TTree, n:TNode, u:float) -> float2:
     let c = t.columns[n.col]

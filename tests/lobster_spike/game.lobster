@@ -781,6 +781,10 @@ def draw_world(alpha:float):
                         flush_sprites()
                         draw_occluder(occluders[int(d.x)], zoom)
                         b_sheet = -1
+                    elif d.f == -3:   // a damaged building's cracks, sorted with it (game/town.lobster)
+                        flush_sprites()
+                        gl.scale(1.5): draw_cracks_of(int(d.x))
+                        b_sheet = -1
                     elif d.xf.length: sprite_xf(d.f, d.xf, d.col)
                     else: sprite(d.f, d.x, d.ay, d.col)
                 flush_sprites()
@@ -1351,8 +1355,8 @@ def draw_shots(alpha:float):
             let dir = if magnitude(ahead - p) > 0.0001: normalize(ahead - p) else: normalize(b - a + float2 { 0.0001, 0.0 })
             let lift = h * 4.0 * t * (1.0 - t)
             if st.glow.w > 0.0:   // a bolt of light: a soft halo under its core
-                gl.color(float4 { st.glow.x, st.glow.y, st.glow.z, 0.35 }): gl.line(p - dir * st.len * 0.6, p + dir * st.len * 0.6, st.w * 2.2)
-            if st.len > 0.0: gl.color(st.col): gl.line(p - dir * st.len * 0.5, p + dir * st.len * 0.5, st.w)
+                ui_line(p - dir * st.len * 0.6, p + dir * st.len * 0.6, st.w * 2.2, float4 { st.glow.x, st.glow.y, st.glow.z, 0.35 })
+            if st.len > 0.0: ui_line(p - dir * st.len * 0.5, p + dir * st.len * 0.5, st.w, st.col)
             else: fx_circle(p, st.w, st.col)
             fx_circle(p + float2 { 0.0, lift + 1.0 }, 0.8, float4 { 0.0, 0.0, 0.0, 0.25 })
     if tick % 200 == 0: shot_from = dictionary<int, int>(1024)   // (forget the landed ones now and then)
@@ -1431,8 +1435,7 @@ def draw_minimap():
             ui_fill(p - float2 { 1.0, 1.0 }, float2 { 2.0, 2.0 }, team_col(u_owner[i]))
     let ws = float(gl.window_size())
     let corners = map([float2_0, float2 { ws.x, 0.0 }, float2 { ws.x, ws.y - 120.0 * ui() }, float2 { 0.0, ws.y - 120.0 * ui() }]) c: mm_point(from_screen(c))
-    gl.color(float4 { 0.95, 0.91, 0.79, 0.9 }):
-        for(4) k: gl.line(corners[k], corners[(k + 1) % 4], 1.0)
+    for(4) k: ui_line(corners[k], corners[(k + 1) % 4], 1.0, float4 { 0.95, 0.91, 0.79, 0.9 })
 
 def text_at(p:float2, s:string):
     gl.translate(p): gl.text(s)
@@ -1468,7 +1471,7 @@ def draw_hud(paused:bool, speed:float):
         let hi = float2 { max(m.x, drag_from.x), max(m.y, drag_from.y) }
         gl.color(float4 { 0.95, 0.91, 0.79, 0.8 }):
             for([[lo, float2 { hi.x, lo.y }], [float2 { hi.x, lo.y }, hi], [hi, float2 { lo.x, hi.y }], [float2 { lo.x, hi.y }, lo]]) e:
-                gl.line(e[0], e[1], 1.5)
+                ui_line(e[0], e[1], 1.5, float4 { 0.95, 0.91, 0.79, 0.8 })
 
 // ------------------------------------------------------------------ the self-test
 
@@ -1692,6 +1695,7 @@ zoom = 2.0 * floor(ui() + 0.5)   // two screen points an art pixel, as the game'
 load_pack(args[0])
 note("pack")
 music_start()
+ambience_start()
 lib_load("../../data")
 ui_setup("")
 let mods_wanted = if mods_arg != "": tokenize(mods_arg, ",", " ") else: pack_mods
@@ -1911,6 +1915,7 @@ while gl.frame() and not quit_game:
     fx_tick(dt)
     town_tick(dt)
     music_tick("age{clamp(ages[ME], 1, 4)}", gl.time() - last_battle < 6.0, dt)
+    ambience_tick(town_level(), dt)
     frame_no++
     if shot != "" and frame_no < 3: note("frame {frame_no} tc at {if tc0 >= 0: to_screen(iso(float(b_cx[tc0] * 1000 + 2000), float(b_cy[tc0] * 1000 + 2000))) else: float2_0} cam {cam} zoom {zoom} ws {gl.window_size()} fb {gl.framebuffer_size()} tc {tc0} draws {draws.length} W {W} H {H} first {iso(0.0, 0.0)} last {iso(float(W * 1000), float(H * 1000))}")
     if shot != "" and frame_no % 60 == 0: print "frame {frame_no}: {dt * 1000.0} ms, play {clock_s} s"
