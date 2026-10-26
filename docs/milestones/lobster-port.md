@@ -96,7 +96,10 @@ SURRENDER, the bots' walls and abilities.
       and map, and only a join with the same build's version (a hash of the protocol and the data) becomes its match.
       The lobby has Find, Join (an address), Host (`30-...`). `net_check.sh` now scans, finds the host, and plays.
       A peer that closes its end no longer hangs a read (an empty read was taken as more to come). Not yet: more than
-      two players, the Mac against the Deck.
+      two players, the Mac against the Deck. More than two since (2026-10-26): a star round the host (each joiner's
+      turns relayed to the others, a seat given with the match); `host:4` makes a 2v2 on the four-player map from
+      the two prompts and their further takes. `net_check.sh 2400 noscan 4`: four processes, 60 of 60 hashes the
+      same; four game windows played a minute together (`38-...`). Not yet: the Mac against the Deck.
 - [x] Pad play (2026-10-26): `game/pad.lobster`, after `src/view/pad_play.gd` and the m20 button table: a reticle
       for the mouse (left stick pans, right stick nudges), A taps to select, held a circle sweeps, on what's
       selected the wheel (train, research, age up; build); X smart order, Y attack-move, B back, RB soldiers on
