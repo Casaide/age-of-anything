@@ -39,7 +39,7 @@ rsync -a --delete --exclude '*.import' --exclude '*.uid' "$root/data/" "$out/dat
 rsync -a --delete --exclude '*.import' "$root/assets/audio/" "$out/assets/audio/"
 rsync -a --delete --exclude '*.import' "$root/assets/models/" "$out/assets/models/"   # (the Blender parts: model/glb.lobster)
 rsync -a --delete --exclude '*.import' --exclude '*.uid' "$root/mods/" "$out/mods/"
-rsync -a --delete --exclude 'pack' --exclude 'pack6b' --exclude 'pack_scifi' --exclude 'library' --exclude 'bake_cache' \
+rsync -a --delete --delete-excluded --exclude 'pack' --exclude 'pack6b' --exclude 'pack_scifi' --exclude 'library' --exclude 'bake_cache' \
 	--exclude 'model/mods' --exclude 'textures/bmat*' --exclude '*.sav' --exclude 'memory_leaks.txt' \
 	--exclude 'deck' "$here/" "$out/tests/lobster_spike/"
 cat > "$out/run.sh" <<'EOF'
