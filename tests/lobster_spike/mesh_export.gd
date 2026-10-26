@@ -2,8 +2,9 @@ extends SceneTree
 ## The baker's port (step 6c), stage 1: a part's 3D model as Godot builds it (UnitModels, the creature kit,
 ## the .glb parts), written out as triangles, so the Lobster baker can render the same geometry and its
 ## bakes be compared with Godot's. Each part in a race's colours (the team key for the team channel).
-## Writes <out>/<part id>.mesh: "tri" lines of three vertices, each "x y z nx ny nz r g b" in the model's
-## space (Godot's: y up), the material's albedo, and the bake camera's settings on a "cam" line.
+## Writes <out>/<part id>.mesh: "mat <texture png | -> [scale x y, offset x y, triplanar]" lines, each followed by
+## its "tri" lines of three vertices, "x y z nx ny nz r g b u v" in the model's space (Godot's: y up), the
+## albedo colour; the textures as tex<n>.png beside them.
 ##   godot --headless --path . --script res://tests/lobster_spike/mesh_export.gd -- <out dir> "<prompt>" [part id ...]
 
 const DataLib := preload("res://src/data_lib.gd")
@@ -28,15 +29,42 @@ func _colours(lib, race: Dictionary) -> Dictionary:
 	return PartShape.team_neutral(c)
 
 
-func _albedo(mi: MeshInstance3D, s: int) -> Color:
+func _material(mi: MeshInstance3D, s: int):
 	var m = mi.get_surface_override_material(s)
 	if m == null:
 		m = mi.material_override
 	if m == null and mi.mesh:
 		m = mi.mesh.surface_get_material(s)
+	return m
+
+
+func _albedo(mi: MeshInstance3D, s: int) -> Color:
+	var m = _material(mi, s)
 	if m is StandardMaterial3D:
 		return m.albedo_color
 	return Color(1, 0, 1)
+
+
+var _textures := {}   # texture -> its file name in the out dir
+var _dir := ""
+
+
+## A material's albedo texture saved beside the meshes (once), and how it's tiled; "-" for none.
+func _texture(mi: MeshInstance3D, s: int) -> String:
+	var m = _material(mi, s)
+	if not (m is StandardMaterial3D) or m.albedo_texture == null:
+		return "-"
+	var t: Texture2D = m.albedo_texture
+	if not _textures.has(t):
+		var name := "tex%d.png" % _textures.size()
+		var img := t.get_image()
+		if img.is_compressed():
+			img.decompress()
+		img.save_png(_dir.path_join(name))
+		_textures[t] = name
+	var sc: Vector3 = m.uv1_scale
+	var off: Vector3 = m.uv1_offset
+	return "%s %.4f %.4f %.4f %.4f %d" % [_textures[t], sc.x, sc.y, off.x, off.y, 1 if m.uv1_triplanar else 0]
 
 
 func _write(node: Node3D, out: PackedStringArray) -> void:
@@ -61,6 +89,8 @@ func _write(node: Node3D, out: PackedStringArray) -> void:
 			var cols = arr[Mesh.ARRAY_COLOR]
 			var idx = arr[Mesh.ARRAY_INDEX]
 			var c := _albedo(mi, s)
+			var uvs = arr[Mesh.ARRAY_TEX_UV]
+			out.append("mat " + _texture(mi, s))
 			var order: Array = Array(idx) if idx != null and idx.size() > 0 else range(v.size())
 			for k in range(0, order.size() - 2, 3):
 				var line := "tri"
@@ -69,13 +99,15 @@ func _write(node: Node3D, out: PackedStringArray) -> void:
 					var p: Vector3 = t * v[i]
 					var nn: Vector3 = (nb * (n[i] if n.size() > i else Vector3.UP)).normalized()
 					var cc: Color = c * (cols[i] if cols != null and cols.size() > i else Color.WHITE)
-					line += " %.4f %.4f %.4f %.3f %.3f %.3f %.3f %.3f %.3f" % [p.x, p.y, p.z, nn.x, nn.y, nn.z, cc.r, cc.g, cc.b]
+					var uv: Vector2 = uvs[i] if uvs != null and uvs.size() > i else Vector2.ZERO
+					line += " %.4f %.4f %.4f %.3f %.3f %.3f %.3f %.3f %.3f %.4f %.4f" % [p.x, p.y, p.z, nn.x, nn.y, nn.z, cc.r, cc.g, cc.b, uv.x, uv.y]
 				out.append(line)
 
 
 func _init() -> void:
 	var args := Array(OS.get_cmdline_user_args())
 	var dir: String = args[0]
+	_dir = dir
 	DirAccess.make_dir_recursive_absolute(dir)
 	var lib = DataLib.new()
 	var race: Dictionary = Generator.new(lib).generate(args[1], DataLib.load_rules("default"))
