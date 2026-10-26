@@ -5,6 +5,7 @@ extends Node2D
 ## and `glow` (added light, over everything: bolts, flares, light pools that light the units too).
 
 const ArtKit := preload("res://src/view/art/art_kit.gd")
+const PartShape := preload("res://src/part_shape.gd")
 
 var shots: Array = []
 var look := "today"
@@ -46,7 +47,18 @@ func _pix(n: CanvasItem, p: Vector2, c: Color) -> void:
 
 
 func _at(s: Dictionary) -> Vector2:
-	return s.from.lerp(s.to, clampf(s.t / s.dur, 0.0, 1.0))
+	return _from(s).lerp(s.to, clampf(s.t / s.dur, 0.0, 1.0))
+
+
+## Where a shot leaves: its shooter's muzzle as drawn now (the weapon's baked tip, PartShape.rigs "tip" for
+## its facing, through the weapon sprite's transform), else where the game launched it (the body).
+func _from(s: Dictionary) -> Vector2:
+	var v = s.get("shooter")
+	if v == null or not is_instance_valid(v) or v.weapon == null:
+		return s.from
+	var w: Node2D = v.weapon
+	var rig: Dictionary = PartShape.rigs.get(w.part_id + PartShape.facing_suffix(v.facing_k), PartShape.rigs.get(w.part_id, {}))
+	return get_global_transform().affine_inverse() * (w.get_global_transform() * rig.get("tip", Vector2.ZERO))
 
 
 static func _h(v: Vector2, k: int) -> float:
@@ -83,7 +95,7 @@ func _pixel() -> void:
 	for sh in shots:
 		var k: float = sh.t / sh.dur
 		var p := _at(sh)
-		var dir: Vector2 = (sh.to - sh.from).normalized()
+		var dir: Vector2 = (sh.to - _from(sh)).normalized()
 		var side := Vector2(0, 1) if absf(dir.x) > absf(dir.y) else Vector2(1, 0)
 		var n := 14
 		for i in n:   # the bolt: a white core two pixels thick, a cyan band each side, a dithered blue edge
@@ -113,7 +125,7 @@ func _beam() -> void:
 		var k: float = sh.t / sh.dur
 		if k > 0.6:
 			continue   # a beam is on for a moment of the shot's flight
-		var a: Vector2 = sh.from
+		var a: Vector2 = _from(sh)
 		var b: Vector2 = sh.to
 		var flick := 0.75 + 0.25 * _h(a, 7)
 		glow.draw_line(a, b, Color(CYAN, 0.15 * flick), 3.0)
@@ -131,7 +143,7 @@ func _plasma() -> void:
 	for sh in shots:
 		var k: float = sh.t / sh.dur
 		var p := _at(sh)
-		var dir: Vector2 = (sh.to - sh.from).normalized()
+		var dir: Vector2 = (sh.to - _from(sh)).normalized()
 		for i in range(2, 16):   # its trail: pixels thrown off behind it, thinning
 			var q := p - dir * i * s * 1.3 + Vector2(0, (_h(p, i) - 0.5) * 3.0 * s)
 			_pix(glow, q, Color(PLASMA, 0.85 * (1.0 - i / 16.0)))

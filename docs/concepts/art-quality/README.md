@@ -1,4 +1,23 @@
-# How far can the art go? (study AQ1, 2026-10-26): waiting on Dominic
+# How far can the art go? (study AQ1, 2026-10-26)
+
+## Dominic's feedback (2026-10-26)
+
+> "The art is looking very interesting. To clarify unit and building fidelity is a key goal, units being more
+> detailed and higher quality. Destruction looks great. FYI those laser effects weren't coming from their barrel"
+
+- **Fidelity is a key goal.** Units and buildings more detailed and higher quality. Direction 1's
+  recommendation below ("not a global 2x") is withdrawn. Next: a fidelity round, concepts that raise unit and
+  building detail (2x bakes for both, finer models and textures, more poses) while keeping the genre's painted,
+  chunky read, at play zoom and close up, with costs and a Steam Deck build.
+- **Destruction: picked** (D-171). Before it's built: Dominic to say go, and to answer the ruin's sim
+  questions: does a ruin block movement, can you build on it, how long does it stay?
+- **The lasers didn't leave the barrel.** True, and not only in the concepts: the game launches every shot,
+  arrows too, from the shooter's body (`sim_debug.gd`: `_body(a) - Vector2(0, 2)`). The study's three looks now
+  start at each rifle's muzzle (the weapon's baked tip through its sprite's transform); pictures 12 and 13 are
+  re-captured. "Today" still shows the game's own launch point. Starting the game's shots at the weapon is a
+  follow-up for the game itself.
+
+---
 
 Dominic, 2026-10-26: "I want to explore how far we can go with art quality ... higher res, better
 destruction, better animations ... sci fi mods ... lasers firing ... while maintaining nostalgia above all
@@ -57,8 +76,8 @@ look like small renders rather than painted sprites; the chunky read of today is
 A middle way worth trying instead: keep units at today's scale and bake **buildings and props** finer
 (they're big, static and where the 2x gain shows most), or bake at 2x only for a "close zoom" level.
 
-**Recommendation:** not a global 2x now. If Dominic likes the close-ups, try buildings-only 2x as the
-next round, and a Deck build with `AOW_ART_SCALE=3.0` to see it on the real screen.
+**Recommendation (before Dominic's feedback):** not a global 2x now; try buildings-only 2x and a Deck build.
+**Superseded:** Dominic made unit and building fidelity a key goal, so the next round raises both (see the top).
 
 ---
 
@@ -95,6 +114,8 @@ frames are generated pictures, not particles, so cheaper than today's.
 - A ruin that stays needs a sim decision (does it block? can you build on it? how long does it stay?).
   The view could keep it as a decoration that fades after a minute or two.
 - Fire and smoke over the stages would stay as today's live parts.
+
+**Picked** by Dominic ("Destruction looks great", D-171); waiting on his go-ahead and the ruin's sim questions.
 
 **Recommendation:** yes. It's the most "classic" of the four (the genre's buildings always burned and
 crumbled in stages), cheap at run time, and it reuses the construction-stage machinery. Pick a stage look,
@@ -150,7 +171,9 @@ weapons (hammers, axes, two-handers) where it reads.
 ## 4. Sci-fi effects (for a future mod)
 
 A real volley in the game: the `scifi_test` mod's pulse troopers firing at charging rats, frozen with their
-shots in the air, then the same shots drawn four ways (the game's effects hidden for the three concepts):
+shots in the air, then the same shots drawn four ways (the game's effects hidden for the three concepts). The
+concepts start at each rifle's muzzle (after Dominic: "those laser effects weren't coming from their barrel");
+"today" leaves from the body, as the game launches every shot.
 
 ![energy weapons, four looks](12-scifi-fx.png)
 ![the hits close up](13-scifi-fx-close.png)
@@ -185,12 +208,12 @@ hero or super weapon if ever. Build as a `style` in `shots.json`, drawn by `comb
 
 | Direction | Nostalgia | Cost | Recommendation |
 |---|---|---|---|
-| 1 Higher resolution | at risk at 2x | bake ~2x, memory 2x, atlas needs pages | not globally; try buildings-only 2x and a Deck build |
-| 2 Destruction in stages | strong | +4-6 s cold (estimate), no frame cost | yes, next |
+| 1 Higher resolution | at risk at 2x | bake ~2x, memory 2x, atlas needs pages | fidelity is a key goal (Dominic): a fidelity round next |
+| 2 Destruction in stages | strong | +4-6 s cold (estimate), no frame cost | picked (D-171), waiting on go-ahead |
 | 3 Deaths in 3D, follow-through | strong | a few seconds cold (estimate), no frame cost | deaths yes; follow-through on heavy weapons |
 | 4 Sci-fi effects | pixel: strong, beams: weak | none to speak of | pixel bolts + plasma as `shots.json` styles |
 
-Dominic picks; nothing gets built before that.
+Nothing gets built before Dominic says go.
 
 ## Frame time
 
