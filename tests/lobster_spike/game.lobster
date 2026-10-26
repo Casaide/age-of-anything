@@ -1202,7 +1202,7 @@ def order(m:float2):
     let x = int(mm.x)
     let y = int(mm.y)
     if x < 0 or y < 0 or x >= W * TILE or y >= H * TILE: return
-    let q = if gl.button("left shift") >= 1: 1 else: 0
+    let q = if gl.button("left shift") >= 1 or gl.button("controller_leftshoulder") >= 1: 1 else: 0   // (shift, or LB held on a pad: queued)
     if sel_building != 0 and not selected.length:
         issue_cmd(ME, CMD_RALLY, []::int, sel_building, x, y, 0)
         return
@@ -1649,6 +1649,7 @@ def draw_groups():
 // padtest: a fake pad plays a few seconds (tests/pad_check.gd's idea): pan, the circle, the wheel, a house.
 var pad_step = 0
 var test_pause = false
+var pad_paged = false
 var pad_spot = float2_0
 var pad_houses = 0
 def pad_script() -> PadIn:
@@ -1685,17 +1686,33 @@ def pad_script() -> PadIn:
     if pad_step == 5:
         pad_step++
         return none
-    if pad_step == 6:
+    if pad_step == 6 and wheel_pages() > 1 and not pad_paged:   // (more than a page: LB turns it, and back)
+        pad_paged = true
+        pad_step = 60
+        return PadIn { none.axes, ["leftshoulder"] }
+    if pad_step == 60:
+        expect_ok(pad_page == 1, "LB turns the wheel\'s page ({wheel_pages()} pages)")
+        pad_step = 61
+        return none
+    if pad_step == 61:
+        pad_step = 62
+        return PadIn { none.axes, ["leftshoulder"] }
+    if pad_step == 62:
+        pad_step = 6
+        return none
+    if pad_step == 6 and pad_page == 0:
         expect_ok(pad_wheel.length > 0, "A on a selected worker opens its wheel ({pad_wheel.length} things to build)")
         var house = 0
-        for(pad_wheel) w, n:
+        let items = wheel_page_items()
+        for(items) w, n:
             if w.act == 3 and bt_name[w.arg] == "house": house = n
-        let a = float(house) / float(max(1, pad_wheel.length)) * 360.0 - 90.0
+        let a = float(house) / float(max(1, items.length)) * 360.0 - 90.0
         pad_step++
         return PadIn { [cos(a), sin(a), 0.0, 0.0, 0.0, 0.0], [] }
     if pad_step == 7:
         pad_step++
         return PadIn { none.axes, ["a"] }
+
     if pad_step == 8:
         expect_ok(placing >= 0 and bt_name[placing] == "house", "pointing at the house and A starts placing one")
         pad_houses = (filter(b_id.length) b: b_owner[b] == ME and bt_name[b_kind[b]] == "house").length
@@ -2106,7 +2123,7 @@ while gl.frame() and not quit_game:
     if selftest and self_test():
         if shot != "": gl.screenshot(shot)
         return
-    if padtest and pad_step >= 15:
+    if padtest and pad_step >= 15 and pad_step < 60:
         if shot != "": gl.screenshot(shot)
         return
     if shot != "" and clock_s >= shot_at and not selftest and not padtest and (not tree_arg or frame_no > 4) and (not has_s(args, "menu") or frame_no > 4):

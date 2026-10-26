@@ -35,7 +35,15 @@ var pad_prev = []::string
 var pad_held_t = dictionary<string, float>(16)
 var pad_circle = 0.0
 var pad_wheel = []::WheelItem
-var pad_pick = 0
+var pad_pick = 0                  // on the wheel's page
+var pad_page = 0                  // the wheel's page (8 a page; LB turns them)
+let WHEEL_PAGE = 8
+
+def wheel_page_items() -> [WheelItem]:
+    let first = pad_page * WHEEL_PAGE
+    return pad_wheel.slice(first, min(WHEEL_PAGE, pad_wheel.length - first))
+
+def wheel_pages() -> int: return (pad_wheel.length + WHEEL_PAGE - 1) / WHEEL_PAGE
 var pad_last_mouse = float2 { -1.0, -1.0 }
 var pad_lt = false
 var pad_kept = []::string         // d-pad buttons held long enough to keep a group (once a hold)
@@ -109,11 +117,15 @@ def pad_tick(pin:PadIn, dt:float) -> bool:
     let left = float2 { pin.axes[0], pin.axes[1] }
     let right = float2 { pin.axes[2], pin.axes[3] }
     if pad_wheel.length:   // the wheel: either stick points, A chooses (it stays up), B closes
+        if pressed("leftshoulder") and wheel_pages() > 1:
+            pad_page = (pad_page + 1) % wheel_pages()
+            pad_pick = 0
+        let items = wheel_page_items()
         let d = if magnitude(left) > magnitude(right): left else: right
         if magnitude(d) > 0.5:
             let a = atan2(d)
-            pad_pick = (int(floor(((a + 90.0 + 360.0) % 360.0) / 360.0 * float(pad_wheel.length) + 0.5))) % pad_wheel.length
-        if pressed("a"): wheel_choose(pad_wheel[pad_pick])
+            pad_pick = (int(floor(((a + 90.0 + 360.0) % 360.0) / 360.0 * float(items.length) + 0.5))) % items.length
+        if pressed("a") and pad_pick < items.length: wheel_choose(items[pad_pick])
         if pressed("b"): pad_wheel = []
         pad_prev = pin.down
         return true
@@ -140,6 +152,7 @@ def pad_tick(pin:PadIn, dt:float) -> bool:
         elif is_selected_here(reticle()):
             pad_wheel = wheel_items()
             pad_pick = 0
+            pad_page = 0
         else: click_select(reticle())
     if pressed("x"):
         if placing >= 0: place_here(false)
@@ -206,8 +219,10 @@ def pad_draw():
         gl.color(float4 { 0.0, 0.0, 0.0, 0.45 }):
             gl.translate(mid): gl.circle(r + 70.0 * u, 48)
         gl.set_font_size(int(18.0 * u))
-        for(pad_wheel) w, n:
-            let a = float(n) / float(pad_wheel.length) * 360.0 - 90.0
+        let items = wheel_page_items()
+        if wheel_pages() > 1: lobby_text(mid + float2 { -60.0 * u, r + 40.0 * u }, "page {pad_page + 1} / {wheel_pages()}  (LB)", float4 { 0.8, 0.78, 0.7, 1.0 })
+        for(items) w, n:
+            let a = float(n) / float(items.length) * 360.0 - 90.0
             let at = mid + float2 { cos(a), sin(a) } * r
             let size = gl.text_size(w.label)
             let col = if n == pad_pick: float4 { 1.0, 0.85, 0.4, 1.0 } else: float4 { 0.9, 0.86, 0.75, 1.0 }
