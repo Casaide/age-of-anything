@@ -51,6 +51,7 @@ import .gen.sha256
 import .gen.rng
 import .gen.datalib
 import .gen.identity
+import .gen.effect_words
 import .gen.mods
 import .gen.pricing
 import .gen.heroes
@@ -103,6 +104,7 @@ var army_n = 0                  // army:<n>: n of each of your soldier types by 
 var hurt_pct = -1                // hurt:<percent>: your buildings start at that much of their hit points (captures of fire)
 var lab_arg = false             // lab: the lobby with races:A|B typed in, a picture (shot:) after a second, then quit
 var tree_arg = false            // tree: the tech tree page open from the start (captures)
+var tree_hover_arg = ""         // treehover:<node key>: that node hovered on it (captures: "r:fletching", "u:hero.<id>@3")
 var padtest = false             // padtest: a fake pad plays a few seconds, then quit
 var net_people = 2              // people in a network match (host:<n>)
 var net_others = []::Link       // a host's joiners after the first
@@ -135,6 +137,9 @@ for(args) a, k:
         if a == "padtest": padtest = true
         if a == "skirmish": skirmish = true
         if a == "tree": tree_arg = true
+        if key == "treehover":
+            tree_arg = true
+            tree_hover_arg = val
         if a == "lab": lab_arg = true
         if key == "hurt": hurt_pct = string_to_int(val)
         if key == "army": army_n = string_to_int(val)
@@ -862,13 +867,13 @@ var lobby_map = "reed_meadow"
 let MODE_IDS = ["standard", "fortress", "siege"]   // data/modes.json (gen/modes.lobster)
 var lobby_mode = "standard"
 
-// The maps a match can be on (data/maps, with their tree species written by map_species.gd).
+// The maps a match can be on (data/maps).
 def map_ids() -> [string]:
-    let names, sizes, times = scan_folder("maps", false)
+    let names, sizes, times = scan_folder("../../data/maps", false)
     let out = []::string
     if names:
         for(names) n:
-            if ends_with(n, ".txt"): out.push(substring(n, 0, n.length - 4))
+            if ends_with(n, ".json"): out.push(substring(n, 0, n.length - 5))
     return sorted_strs(out)
 
 // The map's tree species per cell
