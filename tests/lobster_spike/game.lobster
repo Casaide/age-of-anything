@@ -79,6 +79,7 @@ var start_speed = 1.0
 var look_x = -1
 var swap_arg = ""              // swap:<prompt>@<seconds>: become that race then (tests and captures)
 var swap_at = -1.0
+var map_arg = ""                // map:<id>: the lobby's map (tests and captures)
 var races_arg = ""             // races:<A>|<B>: the lobby's prompts, as if typed (then balanced, then played)
 var look_y = -1
 for(args) a, k:
@@ -91,6 +92,7 @@ for(args) a, k:
         if a == "selftest": selftest = true
         if a == "follow": follow = true
         if key == "races": races_arg = val
+        if key == "map": map_arg = val
         if key == "swap":
             let sp, sa = split_string(val, "@")
             swap_arg = sp
@@ -605,6 +607,21 @@ def draw_world(alpha:float):
 // the prices the fights set. The units are drawn from the part library (art_pack.gd library).
 
 let RULES_ID = "default"
+var lobby_map = "reed_meadow"
+
+// The maps a match can be on (data/maps, with their tree species written by map_species.gd).
+def map_ids() -> [string]:
+    let names, sizes, times = scan_folder("maps", false)
+    let out = []::string
+    if names:
+        for(names) n:
+            if ends_with(n, ".txt"): out.push(substring(n, 0, n.length - 4))
+    return sorted_strs(out)
+
+// The map's tree species per cell (map_species.gd), if written.
+def load_species(map_id:string):
+    let text = read_file("maps/" + map_id + ".txt")
+    if text: species = filter(tokenize(text, " \n", "")): _.length > 0
 
 class LobbyRace:
     prompt:string
@@ -646,6 +663,13 @@ def run_lobby(defaults:[string]) -> [string]:
         if gl.button("return") == 1:
             gl.end_text_input()
             return prompts
+        let maps = map_ids()
+        if maps.length and (gl.button("up") == 1 or gl.button("down") == 1):
+            var at = 0
+            for(maps) m, n:
+                if m == lobby_map: at = n
+            at = (at + (if gl.button("down") == 1: 1 else: maps.length - 1)) % maps.length
+            lobby_map = maps[at]
         for(prompts) p, k:
             if p != shown_for[k]:
                 shown[k] = generate(p, rules, 0)
@@ -657,7 +681,8 @@ def run_lobby(defaults:[string]) -> [string]:
         gl.set_font_size(int(40.0 * u))
         lobby_text(float2 { 40.0 * u, 30.0 * u }, "Age of Anything", float4 { 0.95, 0.85, 0.6, 1.0 })
         gl.set_font_size(int(18.0 * u))
-        lobby_text(float2 { 40.0 * u, 90.0 * u }, "Type your race and theirs. Tab: the other one. Enter: balance them and play. Esc: quit.", float4 { 0.8, 0.78, 0.7, 1.0 })
+        lobby_text(float2 { 40.0 * u, 90.0 * u }, "Type your race and theirs. Tab: the other one. Up / down: the map. Enter: balance them and play. Esc: quit.", float4 { 0.8, 0.78, 0.7, 1.0 })
+        lobby_text(float2 { ws.x * 0.6, 40.0 * u }, "Map: " + lobby_map, float4 { 0.95, 0.85, 0.6, 1.0 })
         for(prompts) p, k:
             let x = 40.0 * u + float(k) * ws.x / 2.0
             let y = 140.0 * u
@@ -1281,6 +1306,7 @@ if args[1] == "-" or args[1] == "lobby":   // the races from their prompts and t
     set(rules, "animals", jbool(true))
     var prompts = if pack_prompts.length >= 2: pack_prompts else: ["sewer rats with cheese hammers", "angry swamp frogs with reed spears"]
     if args[1] == "lobby":
+        if map_arg != "": lobby_map = map_arg
         if races_arg != "": prompts = tokenize(races_arg, "|", " ")
         else: prompts = run_lobby(prompts)
         if not prompts.length: return
@@ -1292,7 +1318,9 @@ if args[1] == "-" or args[1] == "lobby":   // the races from their prompts and t
         for(lobby_report) l: print l
         apply_prices(races)
         reset_world()
-    setup_world(20261010, if pack_map != "": pack_map else: "reed_meadow", races, rules, [])
+    let map_id = if args[1] == "lobby": lobby_map elif pack_map != "": pack_map else: "reed_meadow"
+    setup_world(20261010, map_id, races, rules, [])
+    load_species(map_id)
     if pack_library: race_facts(races)
     print "races in {(t_setup - t_gen) * 1000.0} ms, the start in {(seconds_elapsed() - t_setup) * 1000.0} ms"
 else: start_world(args[1])
