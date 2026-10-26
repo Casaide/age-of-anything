@@ -26,6 +26,7 @@ import view.baker
 let args = command_line_arguments()
 let dir = args[0]
 let facing = if args.length > 3: string_to_int(args[3]) else: 0
+bake_shadow_debug = args.length > 4
 fatal(gl.window("bake check", 1600, 1000, gl.window_init_no_vsync))
 fatal(gl.load_materials(SPRITE_SHADERS, true))
 fatal(gl.load_materials(BAKE_SHADERS, true))
