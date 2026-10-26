@@ -94,6 +94,7 @@ var races_arg = ""             // races:<A>|<B>: the lobby's prompts, as if type
 var look_y = -1
 var army_n = 0                  // army:<n>: n of each of your soldier types by your Town Center at the start (captures)
 var hurt_pct = -1                // hurt:<percent>: your buildings start at that much of their hit points (captures of fire)
+var tree_arg = false            // tree: the tech tree page open from the start (captures)
 var padtest = false             // padtest: a fake pad plays a few seconds, then quit
 var hosting = false             // host: a network match, waiting for a player to join (net/lockstep.lobster)
 var join_ip = ""                // join:<ip>: play the second side of the match a host there sets up
@@ -116,6 +117,7 @@ for(args) a, k:
         if key == "reload": reload_at = string_to_float(val)
         if a == "host": hosting = true
         if a == "padtest": padtest = true
+        if a == "tree": tree_arg = true
         if key == "hurt": hurt_pct = string_to_int(val)
         if key == "army": army_n = string_to_int(val)
         if key == "join": join_ip = val
@@ -1513,6 +1515,7 @@ def self_test() -> bool:
     return false
 
 import .game.pad   // (here: it plays through the controls above)
+import .game.techtree
 
 // Control groups shown (Dominic, 2026-10-26: "visible somewhere, at least as a number on the units",
 // then "only when you select the group"): a small number by each selected unit that's in a group (its
@@ -1831,7 +1834,7 @@ var steps = 0
 var frame_no = 0
 var step_time = 0.0
 note("loop")
-while gl.frame() and not (gl.button("escape") == 1 and placing < 0 and not build_menu and not typing_race):
+while gl.frame() and not (gl.button("escape") == 1 and placing < 0 and not build_menu and not typing_race and not tree_open):
     if gl.button("escape") == 1: build_menu = false
     if gl.button("space") == 1 and not net_on: paused = not paused
     if gl.button("=") == 1 and not net_on: speed = min(8.0, speed * 2.0)
@@ -1858,7 +1861,7 @@ while gl.frame() and not (gl.button("escape") == 1 and placing < 0 and not build
     if swap_arg != "" and clock_s >= swap_at:
         become(swap_arg)
         swap_arg = ""
-    if not paused and not test_pause and winner < 0 and not typing_race: acc += dt * speed
+    if not paused and not test_pause and winner < 0 and not typing_race and (not tree_open or net_on): acc += dt * speed
     acc = min(acc, 0.5)
     if net_on:
         ls_receive(lockstep)
@@ -1898,7 +1901,7 @@ while gl.frame() and not (gl.button("escape") == 1 and placing < 0 and not build
                     fy += u_y[i]
                     nf++
         if nf > 0: cam = cam + (iso(float(fx / nf), float(fy / nf)) - cam) * 0.05
-    if not typing_race:
+    if not typing_race and not tree_open:
         let padded = pad_tick(if padtest: pad_script() else: read_pad(), dt)
         if not padded: scroll()
         keys()
@@ -1909,6 +1912,10 @@ while gl.frame() and not (gl.button("escape") == 1 and placing < 0 and not build
     draw_hud(paused, speed)
     draw_groups()
     pad_draw()
+    if tree_arg and frame_no == 2:
+        tree_open = true
+        tree_page = build_tree(ME)
+    tree_tick()
     draw_banner()
     if typing_race: typing_tick()
     if selftest and self_test():
@@ -1917,7 +1924,7 @@ while gl.frame() and not (gl.button("escape") == 1 and placing < 0 and not build
     if padtest and pad_step >= 15:
         if shot != "": gl.screenshot(shot)
         return
-    if shot != "" and clock_s >= shot_at and not selftest and not padtest:
+    if shot != "" and clock_s >= shot_at and not selftest and not padtest and (not tree_arg or frame_no > 4):
         gl.screenshot(shot)
         print "shot {shot} at {clock_s} s, tick {tick}; sim {step_time * 1000.0 / max(1, steps)} ms a tick; cam {cam} zoom {zoom} ws {gl.window_size()} fb {gl.framebuffer_size()}"
         return
