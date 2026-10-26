@@ -502,6 +502,7 @@ func _bake_library(gen, rules: Dictionary) -> void:
 				if not seen.has(key):
 					seen[key] = true
 					units.append(l)
+	units.append_array(_library_extras(races, seen))
 	var arch := {}
 	var by_arch := []
 	for r in base:
@@ -516,3 +517,66 @@ func _bake_library(gen, rules: Dictionary) -> void:
 	kit._ask(unit_ids + rest_ids, true)
 	await kit._await_jobs(unit_ids + rest_ids)
 	PartShape.bake_flat("unit_shadow", UnitView.SHADOW_SHAPES, UnitView.SHADOW_COLOURS, ArtKit.ART_SCALE * ArtKit.UNIT_SCALE)
+
+
+## What no generated race happened to show: every arm hold on every creature in each skin and
+## culture (a body's holds are baked in its cloth), and every part on every creature's body, cloth
+## parts in every culture's colours (worn armour bakes onto the body it's worn by).
+func _library_extras(races: Array, seen: Dictionary) -> Array:
+	var holds := {}   # hold -> a weapon held that way
+	var by_slot := {}
+	var ids: Array = lib.parts.keys()
+	ids.sort()
+	for id in ids:
+		var p: Dictionary = lib.parts[id]
+		if p.get("innate", false) or String(id).begins_with("siege."):
+			continue
+		if p.slot == "hand_r" and not p.has("requires_role"):
+			var h := UnitView.hold_for(p.tags)
+			if not holds.has(h):
+				holds[h] = id
+			if ("spear" in p.tags or "lance" in p.tags) and not holds.has("thrust"):
+				holds["thrust"] = id
+		if p.slot in ["hand_r", "hand_l", "head_gear", "torso", "back"]:
+			if not by_slot.has(p.slot):
+				by_slot[p.slot] = []
+			by_slot[p.slot].append(id)
+	var out := []
+	var base_done := {}
+	for r in races:
+		var w: Dictionary = {}
+		for u in r.units:
+			if u.recipe.slot == "worker":
+				w = u
+		if w.is_empty():
+			continue
+		var rec: Dictionary = w.recipe
+		var bkey := "%s|%s|%s" % [rec.body, rec.skin, rec.family]
+		if base_done.has(bkey):
+			continue
+		base_done[bkey] = true
+		var first_of_creature := not base_done.has(rec.body)
+		base_done[rec.body] = true
+		for h in holds:   # every hold, in this skin and culture
+			out.append(_extra_step(rec, "infantry", {"hand_r": holds[h]}, w.eval, seen))
+		for slot in by_slot:   # every part, on this body: once a creature; cloth parts in every culture
+			for id in by_slot[slot]:
+				var cloth: bool = lib.part(id).shapes.any(func(sh): return String(sh.get("ch", "")).begins_with("cloth"))
+				if first_of_creature or cloth:
+					var parts := {slot: id}
+					if slot != "hand_r":
+						parts.hand_r = holds["low"]
+					out.append(_extra_step(rec, "infantry", parts, w.eval, seen))
+	return out.filter(func(x): return not x.is_empty())
+
+
+func _extra_step(rec: Dictionary, role: String, parts: Dictionary, e: Dictionary, seen: Dictionary) -> Dictionary:
+	var r: Dictionary = rec.duplicate(true)
+	r.slot = role
+	r.role = role
+	r.parts = parts
+	var key := JSON.stringify(r, "", true)
+	if seen.has(key):
+		return {}
+	seen[key] = true
+	return {"recipe": r, "eval": e}
