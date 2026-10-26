@@ -49,12 +49,17 @@ var kit
 
 
 func _initialize() -> void:
-	var args := OS.get_cmdline_user_args()
+	var args := Array(OS.get_cmdline_user_args())
 	var out: String = args[0]
 	var map_id: String = args[1]
 	DirAccess.make_dir_recursive_absolute(out)
 	lib = DataLib.new()
-	var rules = DataLib.load_json("res://data/rules/default.json")
+	var rules_id := "default"   # rules:<id> (a mod's era needs a host rule that lets it in: anything)
+	for a in args:
+		if a.begins_with("rules:"):
+			rules_id = a.substr(6)
+	args = args.filter(func(a): return not a.begins_with("rules:"))
+	var rules = DataLib.load_rules(rules_id)
 	rules.animals = false
 	var gen = Generator.new(lib)
 	var races := []
@@ -105,6 +110,10 @@ func _initialize() -> void:
 			continue
 		frames.append([name, img, int(round(b.origin.x)), int(round(b.origin.y))])
 	lines.append("match %s" % map_id)   # (the game makes the races and the start itself: gen/setup.lobster)
+	lines.append("rules %s" % rules_id)
+	var mods_in: Array = load("res://src/mods.gd").active.map(func(a): return a.id)
+	if not mods_in.is_empty():   # (AOW_MODS: the game merges the same mods before it makes the races)
+		lines.append("mods %s" % ",".join(mods_in))
 	for k in prompts.size():
 		lines.append("prompt %d %s" % [k, String(prompts[k]).replace(" ", "_")])
 	_parts(lines, out)

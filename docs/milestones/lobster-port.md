@@ -108,7 +108,11 @@ SURRENDER, the bots' walls and abilities.
         (four matches: the Lobster start equals export.gd's scenario token for token). The game makes its races and
         start from the pack's prompts (`play.sh pack`; `scenario:<file>` for an export). Game modes' starts are in since
         2026-10-26 (`gen/modes.lobster`: Fortress and Siege match export.gd's token for token, `start_check.sh`;
-        F2 in the lobby or `mode:<id>`). Mods aren't set up in Lobster yet.
+        F2 in the lobby or `mode:<id>`). Mods too (`gen/mods.lobster`, after `src/mods.gd`: found, checked, merged in
+        load order, rules and maps overlaid, the signature in the race key): with `scifi_test` and the anything rules
+        `race_check.sh anything scifi_test` gives GDScript's 26 races. A pack baked with a mod (`AOW_MODS=... art_pack.gd
+        ... rules:<id>`) records its rules and mods; the game merges them (or `mods:` / `rules:`) and plays the
+        modded race with its shot looks (`17-...`). The mod's models still bake in Godot.
   - [x] 6b. Units drawn from baked parts in Lobster, 2026-10-26: `view/` (a scene graph, Godot's PCG, the part
         bakes and rigs, `src/unit_view.gd` ported). `view_check.lobster`: art_pack's states for 39 types x 8 facings,
         14946 of 14952 frames' draw lists identical to Godot's (six differ by Godot's float32 positions). The game
