@@ -18,5 +18,9 @@ id_load("../../data")
 if args.length and starts_with(args[0], "mods:"):
     mods_use(tokenize(substring(args[0], 5, args[0].length - 5), ",", " "))
     args = args.slice(1, -1)
+var reroll = 0
+if args.length and starts_with(args[0], "reroll:"):
+    reroll = string_to_int(substring(args[0], 7, args[0].length - 7))
+    args = args.slice(1, -1)
 let rules = load_rules(args[0])
-for(args.slice(1, -1)) p: print stringify(generate(p, rules, 0))
+for(args.slice(1, -1)) p: print stringify(generate(p, rules, reroll))
