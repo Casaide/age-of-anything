@@ -361,7 +361,7 @@ def bake_facing(part:[BakeTri], facing:int, hide:[BakeTri] = [], join:float3 = f
 // inner outline (edge pixels a darker shade of themselves, toward the ink). `seam` (one byte a raw pixel,
 // rows as `raw`'s): where another part of the unit lies against this one: any cover there is kept, grown a
 // pixel into it, and not outlined along it.
-def pixelize(raw:string, w:int, h:int, factor:int, seam:string = "") -> int, int, string:
+def pixelize(raw:string, w:int, h:int, factor:int, seam:string = "", outline:bool = true) -> int, int, string:
     let sw = max(1, w / factor)
     let sh = max(1, h / factor)
     let out = ensure_size("", sw * sh * 4, 0)   // (the write_ functions write into it in place)
@@ -410,7 +410,7 @@ def pixelize(raw:string, w:int, h:int, factor:int, seam:string = "") -> int, int
     for(sh) y:
         for(sw) x:
             let i = (y * sw + x) * 4
-            if out[i + 3] == 255:
+            if outline and out[i + 3] == 255:
                 var edge = x == 0 or y == 0 or x == sw - 1 or y == sh - 1
                 if not edge:
                     let p = y * sw + x

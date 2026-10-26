@@ -1,5 +1,5 @@
 // ------------------------------------------------------------------ trees (scenes/art_pixel/tree_models.gd)
-// Three species (broadleaf, pine, swamp), each in three looks (`style` 0-2), and `stage` 0-3 (standing, felled,
+// Three tree_kind (broadleaf, pine, swamp), each in three looks (`style` 0-2), and `stage` 0-3 (standing, felled,
 // half sawn, the stump), in world units, each function tree_models.gd's of the same name (`_card_crown` ->
 // tree_card_crown: its private helpers carry the file's name), line for line; its comments are there. Seeded with
 // Godot's RandomNumberGenerator, drawn in the same order.
@@ -9,9 +9,9 @@ let TREE_VIEW_UP = float3 { 0.25, 0.8, 0.45 }
 
 var tree_rng = grng(0)
 
-def tree_species_index(species:string) -> int:   // SPECIES.find
+def tree_species_index(tree_kind:string) -> int:   // SPECIES.find
     for(TREE_SPECIES) s, i:
-        if s == species: return i
+        if s == tree_kind: return i
     return -1
 
 class TreeLook:
@@ -25,8 +25,8 @@ class TreeLobe:
     c:float3
     r:float3
 
-def tree(seed_value:int, species:string, style:int = 0, stage:int = 0) -> MNode:
-    tree_rng = grng(seed_value * 31 + tree_species_index(species) * 7 + style)
+def tree(seed_value:int, tree_kind:string, style:int = 0, stage:int = 0) -> MNode:
+    tree_rng = grng(seed_value * 31 + tree_species_index(tree_kind) * 7 + style)
     let rng = tree_rng
     let size = randf_range(rng, 0.88, 1.12)
     let lx = randf_range(rng, -0.06, 0.06)
@@ -34,17 +34,17 @@ def tree(seed_value:int, species:string, style:int = 0, stage:int = 0) -> MNode:
     let lean = float3 { lx, 0.0, lz }
     let fall = randf(rng) * TAU
     let n = mnode()
-    let look = tree_look(species, style)
+    let look = tree_look(tree_kind, style)
     let h = look.height * size
     if stage == 0:
-        add_child(n, tree_standing(species, style, size, lean, look))
+        add_child(n, tree_standing(tree_kind, style, size, lean, look))
     else:
         add_child(n, tree_stump(look, size))
         if stage < 3: add_child(n, tree_felled(look, size, h, fall, stage))
     return n
 
-def tree_look(species:string, style:int) -> TreeLook:
-    switch species:
+def tree_look(tree_kind:string, style:int) -> TreeLook:
+    switch tree_kind:
         case "pine":
             return TreeLook { [2.3, 2.2, 2.6][style], 0.085, [float3 { 1.0, 1.0, 1.15 }, float3 { 0.9, 0.95, 1.1 }, float3 { 1.25, 1.0, 0.9 }][style],
                               float3 { 0.32, 0.46, 0.34 }, false }
@@ -57,13 +57,13 @@ def tree_look(species:string, style:int) -> TreeLook:
 
 def tree_bark(look:TreeLook) -> MMat: return if look.plain: plain(look.bark) else: surf("bark_plate", look.bark, 2.0)
 
-def tree_standing(species:string, style:int, size:float, lean:float3, look:TreeLook) -> MNode:
+def tree_standing(tree_kind:string, style:int, size:float, lean:float3, look:TreeLook) -> MNode:
     let rng = tree_rng
     let n = mnode()
     let h = look.height * size
     let bark = tree_bark(look)
     let r = look.trunk * size
-    switch species + "{style}":
+    switch tree_kind + "{style}":
         case "broadleaf0", "broadleaf1":
             let top = float3 { 0.0, h * 0.5, 0.0 } + lean * h
             tree_trunk(n, float3_0, top, r, bark)
