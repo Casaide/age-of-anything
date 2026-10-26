@@ -261,16 +261,14 @@ def jp_value() -> JV:
             jp_at++
         else: break
     let num = substring(jp_text, start, jp_at - start)
-    if is_float:
-        let o = JV { J_FLOAT }
-        o.f = string_to_float(num)
-        if o.f == floor(o.f) and abs(o.f) < 1000000000000.0:   // (Godot reads every number as a float; a whole one acts as an int)
-            o.kind = J_INT
-            o.i = int(o.f)
-        return o
-    let v, ok = string_to_int(num)
-    assert ok
-    return jint(v)
+    // (Godot reads every number as a float, and writes a whole one back as "40.0")
+    let o = JV { J_FLOAT }
+    if is_float: o.f = string_to_float(num)
+    else:
+        let v, ok = string_to_int(num)
+        assert ok
+        o.f = float(v)
+    return o
 
 def parse_json(text:string) -> JV:
     jp_text = text
@@ -299,12 +297,38 @@ def json_escape(s:string) -> string:
             start = n + 1
     return out + substring(s, start, s.length - start)
 
+// A float as Godot's JSON writes it: whole ones with ".0", others in their shortest form, no exponent.
+def godot_float(f:float) -> string:
+    if f == floor(f) and abs(f) < 1000000000000000.0: return string(int(f)) + ".0"
+    var s = number_to_string_f(f)
+    return s
+
+def number_to_string_f(f:float) -> string:
+    var digits = 1
+    while digits < 17:
+        let old = set_print_decimals(digits)
+        let s = string(f)
+        set_print_decimals(old)
+        if string_to_float(s) == f: return trim_zeros(s)
+        digits++
+    let old = set_print_decimals(17)
+    let s = string(f)
+    set_print_decimals(old)
+    return trim_zeros(s)
+
+def trim_zeros(s:string) -> string:
+    if find_string(s, ".") < 0: return s
+    var e = s.length
+    while e > 0 and s[e - 1] == '0': e--
+    if e > 0 and s[e - 1] == '.': e--
+    return substring(s, 0, e)
+
 def stringify(v:JV) -> string:
     switch v.kind:
         case J_NULL: return "null"
         case J_BOOL: return if v.i != 0: "true" else: "false"
         case J_INT: return string(v.i)
-        case J_FLOAT: return string(v.f)
+        case J_FLOAT: return godot_float(v.f)
         case J_STR: return "\"" + json_escape(v.s) + "\""
         case J_ARR:
             let parts = []::string
