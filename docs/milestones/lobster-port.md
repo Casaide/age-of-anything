@@ -83,6 +83,13 @@ SURRENDER, the bots' walls and abilities.
       loaded in 10 ms). F5 saves, F9 loads (`reload:<s>` in tests). `save_check.lobster`: a bot match saved at
       7.5 minutes and loaded plays the next 4,000 ticks hash for hash. Not yet: Godot's saves (JSON, its own
       layout) can't be read here, and a save from an older Lobster build won't load once a global changes type.
+- [x] Network play (2026-10-26): `net/lockstep.lobster`, lockstep over TCP (the Lobster build's `tcp.` sockets):
+      `host` waits for a player and sends the whole set-up match (the save record, about 1.5 MB); `join:<ip>`
+      skips the lobby and plays the second side. Turns as in `src/net/lockstep.gd` (commands run two turns on,
+      a hash every 40 ticks); no pausing, speed, loading or N in a network match. `net_check.sh`: two processes,
+      each side's bot only on its own machine, a 10-minute match with all 300 hash checks the same. Two game
+      windows played 100 seconds together (`13-...`). Not yet: the LAN beacon to find a host, a lobby page for
+      it, more than two players, the Mac against the Deck.
 - [ ] 6. Setup in Lobster (Dominic, 2026-10-26: "Let's do it! Primarily because ... it opens us up to generation at
       army creation time and during the game"). Three steps, each checked against GDScript:
   - [x] 6a. Races and the match from data, 2026-10-26: a JSON reader and Godot-compatible writer, SHA-256, DataLib,

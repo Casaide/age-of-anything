@@ -63,6 +63,7 @@ import .gen.reset
 import .gen.balance
 import .gen.swap
 import .gen.save
+import .net.lockstep
 import .game.audio
 import .game.pack
 import .game.ground
@@ -86,6 +87,8 @@ var swap_at = -1.0
 var map_arg = ""                // map:<id>: the lobby's map (tests and captures)
 var races_arg = ""             // races:<A>|<B>: the lobby's prompts, as if typed (then balanced, then played)
 var look_y = -1
+var hosting = false             // host: a network match, waiting for a player to join (net/lockstep.lobster)
+var join_ip = ""                // join:<ip>: play the second side of the match a host there sets up
 var reload_at = -1.0            // reload:<seconds>: save then, load 5 s later (tests and captures)
 var reload_tick = -1
 for(args) a, k:
@@ -100,6 +103,8 @@ for(args) a, k:
         if key == "races": races_arg = val
         if key == "map": map_arg = val
         if key == "reload": reload_at = string_to_float(val)
+        if a == "host": hosting = true
+        if key == "join": join_ip = val
         if key == "swap":
             let sp, sa = split_string(val, "@")
             swap_arg = sp
@@ -109,7 +114,8 @@ for(args) a, k:
             look_x = string_to_int(lx)
             look_y = string_to_int(ly)
 
-let ME = 0
+var ME = 0                      // the side you command (1 for the one who joins a network match)
+var in_net_match = false
 let TEAM_COLS = [float4 { 0.85, 0.22, 0.18, 1.0 }, float4 { 0.20, 0.42, 0.85, 1.0 }, float4 { 0.85, 0.75, 0.2, 1.0 },
                  float4 { 0.25, 0.7, 0.3, 1.0 }]
 let WHITE = float4 { 1.0, 1.0, 1.0, 1.0 }
@@ -1142,7 +1148,7 @@ def recall_group(n:int):
 
 def keys():
     if gl.button("m") == 1: sound_on = not sound_on
-    if gl.button("n") == 1 and composed and pack_library:   // a new race, mid-match
+    if gl.button("n") == 1 and composed and pack_library and not in_net_match:   // a new race, mid-match
         typing_race = true
         gl.start_text_input(int2 { 0, 0 }, int2 { 400, 40 })
         gl.set_text_input("")
@@ -1510,7 +1516,33 @@ id_load("../../data")
 composed = read_file(args[0] + "/rigs.json") != nil
 if composed: load_part_data(args[0])
 var lobby_report = []::string
-if args[1] == "-" or args[1] == "lobby":   // the races from their prompts and the match start, made here (gen/)
+
+// A line in the middle of an empty screen while the link is made (true: the window was closed).
+def net_wait_frame(msg:string) -> bool:
+    if not gl.frame() or gl.button("escape") == 1: return true
+    gl.clear(float4 { 0.05, 0.05, 0.05, 1.0 })
+    gl.blend(1)
+    let u = ui()
+    gl.set_font_size(int(22.0 * u))
+    lobby_text(float(gl.window_size()) * float2 { 0.5, 0.5 } - float2 { 260.0 * u, 0.0 }, msg, float4 { 0.95, 0.85, 0.6, 1.0 })
+    return false
+
+var link = Link {}
+var joined_bots = []::Bot
+if join_ip != "":
+    link = net_join(join_ip, NET_PORT)
+    var msg = "Joining {join_ip}..."
+    while not joined_bots.length:
+        if net_wait_frame(if link.error != "": "Could not join {join_ip}: {link.error}" else: msg): return
+        if link.error == "" and net_ready(link):
+            msg = "Joined {join_ip}: the host is sending the match..."
+            for(net_poll(link)) f:
+                if f[0] == "S": joined_bots = load_world_bytes(f[1])
+    ME = 1
+    map_name_now = gstr(su_map, "id", "reed_meadow")
+    load_species(map_name_now)
+    if pack_library: race_facts(su_races)
+elif args[1] == "-" or args[1] == "lobby":   // the races from their prompts and the match start, made here (gen/)
     let rules = load_rules(RULES_ID)
     set(rules, "animals", jbool(true))
     var prompts = if pack_prompts.length >= 2: pack_prompts else: ["sewer rats with cheese hammers", "angry swamp frogs with reed spears"]
@@ -1557,6 +1589,15 @@ else:
 note("world")
 events_on = true
 var bots = map(num_players) p: new_bot(p)
+if joined_bots.length: bots = joined_bots
+if hosting:
+    link = net_host(NET_PORT)
+    while not net_ready(link):
+        if net_wait_frame(if link.error != "": "Could not host: {link.error}" else: "Hosting on port {NET_PORT}: waiting for a player to join..."): return
+    net_send(link, 'S', world_bytes(bots))
+let net_on = hosting or join_ip != ""
+in_net_match = net_on
+let lockstep = new_lockstep(link, ME, if net_on: [0, 1] else: [ME])
 
 // Saving and loading (gen/save.lobster): F5 saves the match, F9 brings the save back (the whole world
 // and the bots); the view starts over from it: units redrawn, the ground, paths and town read again.
@@ -1628,9 +1669,9 @@ var step_time = 0.0
 note("loop")
 while gl.frame() and not (gl.button("escape") == 1 and placing < 0 and not build_menu and not typing_race):
     if gl.button("escape") == 1: build_menu = false
-    if gl.button("space") == 1: paused = not paused
-    if gl.button("=") == 1: speed = min(8.0, speed * 2.0)
-    if gl.button("-") == 1: speed = max(0.25, speed / 2.0)
+    if gl.button("space") == 1 and not net_on: paused = not paused
+    if gl.button("=") == 1 and not net_on: speed = min(8.0, speed * 2.0)
+    if gl.button("-") == 1 and not net_on: speed = max(0.25, speed / 2.0)
     let dt = gl.delta_time()
     frame_dt = dt
     fx_tick(dt)
@@ -1649,20 +1690,29 @@ while gl.frame() and not (gl.button("escape") == 1 and placing < 0 and not build
         print "loaded: tick {tick}, {u_id.length} units, {b_id.length} buildings, hash {state_hash()}"
         reload_tick = -1
     if not typing_race and gl.button("f5") == 1: quick_save()
-    if not typing_race and gl.button("f9") == 1: quick_load()
+    if not typing_race and not net_on and gl.button("f9") == 1: quick_load()
     if swap_arg != "" and clock_s >= swap_at:
         become(swap_arg)
         swap_arg = ""
     if not paused and winner < 0 and not typing_race: acc += dt * speed
     acc = min(acc, 0.5)
+    if net_on:
+        ls_receive(lockstep)
+        if lockstep.desync != "": banner = "Out of step with the other player: {lockstep.desync}"
+        elif link.closed: banner = "The other player has left"
+        if lockstep.desync != "" or link.closed: banner_t = gl.time()
     while acc >= 0.05:
+        if net_on and tick % TICKS_PER_TURN == 0 and not may_run(lockstep, tick / TICKS_PER_TURN):
+            acc = min(acc, 0.05)   // (waiting on the other player: don't save up time to rush through after)
+            break
         p_id = copy(u_id)
         p_x = copy(u_x)
         p_y = copy(u_y)
         let t0 = seconds_elapsed()
         for(bots) bot, p:
-            if p != ME or watch: full_bot_think(bot)
+            if (p != ME or watch) and not (net_on and p != ME and contains(lockstep.players, p)): full_bot_think(bot)   // (watch: your own bot plays your side)
         step()
+        if net_on: ls_after_step(lockstep)
         step_time += seconds_elapsed() - t0
         steps++
         clock_s += 0.05
