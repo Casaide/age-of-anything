@@ -69,14 +69,14 @@ SURRENDER, the bots' walls and abilities.
 - [ ] 4. Playing: selection, orders (shift-queued), building, training, research (Q W E R T Y I O P), age-up,
       the bot opponent, the win banner; a self-test drives the controls (`play.sh pack selftest`). Waiting on
       Dominic's first match.
-- [ ] 5. Feel: minimap, fog, sound and creature voices, hit flashes, shots, health bars, the top bar, a UI scaled to
+- [x] 5. Feel: minimap, fog, sound and creature voices, hit flashes, shots, health bars, the top bar, a UI scaled to
       the screen are in; the ground is Godot's terrain shader, ported (`game/ground.lobster`, 2026-10-26), with hills'
       relief, joined walls, the ground's doodads, the theme in stems, and each culture's paths (`game/paths.lobster`:
       A* from the town's door to its buildings, food and wood, merging into trunk roads), and the combat effects
       (`game/fx.lobster`: each weapon's shot on its arc, misses standing in the ground, sparks, dust, heal motes; the
       sim tells the view of misses, heals and stones landing), and the living town (`game/town.lobster`: piles at
       the drop-offs, chores, builders' dust, yards and gardens, critters). Control groups (Ctrl or Cmd + a number keeps the selection, the number brings it back, twice to look;
-      in the self-test). To come: a nicer panel;
+      in the self-test). The nicer panel came with the UI after Godot's (below);
       from town life, all in now: the stable's tethered mount too (`26-...`; `place:<building>` puts one down for
       captures). Cracks on damaged walls (sorted with their building; `25-...`)
       and the town's sound (the meadow loop, the town's quiet and busy loops by its size and the camera) are in. Chimney smoke, lit windows
@@ -104,8 +104,7 @@ SURRENDER, the bots' walls and abilities.
       for the mouse (left stick pans, right stick nudges), A taps to select, held a circle sweeps, on what's
       selected the wheel (train, research, age up; build); X smart order, Y attack-move, B back, RB soldiers on
       screen, LT / RT zoom, the d-pad an idle worker, the Town Center, groups 1 and 2. Last input wins.
-      `padtest`: a fake pad plays (7 checks). Not yet: the wheel's pages, LB (queue, cycling kinds), menus on
-      the pad, Steam Input's layout, a Deck build of the Lobster game.
+      `padtest`: a fake pad plays (7 checks). Since: the wheel's pages (LB turns them), menus by the pad's focus, a Deck build. Not yet: LB's queue and cycling kinds, Steam Input's layout.
 - [x] Control groups shown (Dominic, 2026-10-26: "visible somewhere, at least as a number on the units", then "only
       when you select the group"): the group's number by each selected unit, and each group with its size under the
       top bar (`14-...`).
@@ -113,7 +112,8 @@ SURRENDER, the bots' walls and abilities.
       buildings as columns, unit lines (a node where the unit changes) and research tracks packed into lanes, your
       race's names, what it lacks struck through, other races' own research left off; F1 in a match (`18-...`).
       The race panel too (its bonuses and where each comes from, its own research, what it lacks; `27-...`).
-      Not yet: research effects in words, heroes' nodes. (In this Lobster build `gl.rect`
+      Research effects in words (`gen/effect_words.lobster`, all 56 as Godot's: `effect_words_check.lobster`) and the
+      heroes' nodes since 2026-10-27 (`02-...`). (In this Lobster build `gl.rect`
       draws -size..size round its point: the page's boxes allow for it.)
 - [x] The Race Lab, in the lobby (2026-10-26): each typed race's whole roster drawn from the part library as you
       type, idling in its team colour, under its stats (`lab` with `races:A|B` captures it; `19-...`). Rerolls too: a
@@ -124,7 +124,7 @@ SURRENDER, the bots' walls and abilities.
       following (`skirmish`; `31-...`).
 - [x] The command panel (2026-10-26): `game/panel.lobster`: a unit card (a portrait from the unit's own parts, hp,
       stats) and clickable buttons with hotkeys, units' portraits and buildings' pictures on them, cost on hover
-      (`20-...`). Not yet: queue progress, research icons.
+      (`20-...`). Queue progress and research icons came with the UI after Godot's.
 - [x] The UI layer and the timber look (2026-10-26): `game/ui.lobster`: the look from data/ui.json (and a culture's
       `ui` block), wood and bronze painted by a shader, boxes raised / flat / sunk with bevels and studs, buttons
       (hover, pressed, focus, primary), text queued and drawn last, the pad's focus for menus. Every flat shape
@@ -135,7 +135,7 @@ SURRENDER, the bots' walls and abilities.
       `23-...`) and the tech tree page (`24-...`).
 - [x] A Steam Deck build of the Lobster game (2026-10-26): `tests/lobster_spike/deck/build.sh` builds Lobster for
       Linux x86-64 in a Podman container (Ubuntu 22.04; Dominic approved the downloads) and assembles the game folder
-      (185 MB: the language, the code, data, sounds, the part library); it ran headless in a Linux container (the same
+      (185 MB at first; 49 MB since the part library stays home and the game bakes its own art); it ran headless in a Linux container (the same
       races as on the Mac). Copied to the SMB share as `lobster_linux`, with `pull_lobster.sh` beside it for the Deck.
       Not yet played on the Deck itself.
 - [ ] 6. Setup in Lobster (Dominic, 2026-10-26: "Let's do it! Primarily because ... it opens us up to generation at
@@ -167,21 +167,21 @@ SURRENDER, the bots' walls and abilities.
         more than 10 points off the mean become 2 in six rounds. Two races before a match: about 5 s.
   - [x] A new race mid-match (N): the running world stashed (`gen/reset.lobster`), the newcomer balanced against
         the others by fights, then the player's lines, bonuses and buildings become it (`gen/swap.lobster`).
-  - [ ] 6c, stage 1 (2026-10-26): `view/baker.lobster` bakes a part's mesh as Godot's part baker does (its camera,
+  - [x] 6c, stage 1 (2026-10-26): `view/baker.lobster` bakes a part's mesh as Godot's part baker does (its camera,
         its warm key and cool fill over ambient, Lambert over pi, sRGB; 4x supersampled, then pixelized with the
         inner outline). `mesh_export.gd` writes Godot-built models as triangles (skinned .glb parts posed);
         `bake_check.lobster` lays each beside Godot's bake from the library (`32-...`: the rat's parts). Shapes,
         facing and light agree; textures too (UV and triplanar, `33-...`), and the size (the units' scale, 1.5 x 0.85:
-        every part within a pixel of Godot's). Not yet: shadows and ambient occlusion, the fur's tint, the head's turn, the cuts (a leg by its body,
-        armour on its wearer). Then the models themselves in Lobster.
+        every part within a pixel of Godot's). The rest (ambient occlusion, cuts, worn armour, the models themselves) came
+        in 6c, 6d and 6e below.
   - [x] 6c, the mesh library (2026-10-26): `mesh_export.gd library` writes every modelled part once (293 parts,
         binary vertices), each material tagged with the race channel its colour follows (skin, cloth, team...: a
         multiply and add) or fixed; the Lobster baker bakes any race's parts from it in that race's colours (the
         moonbears and the tiny vikings match Godot's bakes, `36-...`). So new races need no Godot; only new models do.
         In the game too (`game/bake_missing.lobster`, `meshes:<dir>`): at the match's start every part a unit type
         wears is looked up in the pack in eight facings and what's missing is baked from the mesh library (the
-        sci-fi mod's soldiers: 56 facings in 3.6 s, drawn in play, `37-...`). Not yet: ambient occlusion, the cuts
-        (legs, worn armour), smaller meshes, the models built in Lobster (new models still need Godot).
+        sci-fi mod's soldiers: 56 facings in 3.6 s, drawn in play, `37-...`). (Superseded by the part baker and the
+        models in Lobster, below.)
   - [x] 6c. The part baker in Lobster (2026-10-26): `view/part_bake.lobster` bakes a Lobster-built model in all eight
         facings as `part_baker.gd` does: the near-arm layer (`#front`), a leg or head cut by its body, armour worn on
         it, a neck run into its head without an outline (the creature kit's seams), and each facing's rig (sockets,
@@ -223,8 +223,8 @@ SURRENDER, the bots' walls and abilities.
         (left out before: the bots don't use them). The self-test garrisons and ungarrisons (9 checks).
   - [x] The UI after Godot's (2026-10-26, `39-...`, `40-...`): the top bar (`game/topbar.lobster`) and the command
         panel, unit card, portraits as busts, captioned button groups with costs and hover cards, the training
-        well, the minimap's diamond and frame; Godot's icons as PNGs (`icons.sh`). Not yet: the panel's iron and
-        leather materials (the UI shader paints wood, metal and lacquer), the pad's compact panel.
+        well, the minimap's diamond and frame; Godot's icons as PNGs (`icons.sh`). Every culture's painted materials
+        since (13, after `ui_materials.gd`). Not yet: the pad's compact panel.
   - [x] Checked at the end (2026-10-26): the parity suite (`all.sh`): all 18 scenarios, 26 runs, every tick's
         hash the same as Godot's (moves, fights to 2000 units, sieges, walls, economies, a person's orders, five whole
         bot matches, the bots in Lobster too). A whole match with no pack (`play.sh none lobby ... watch tillend`):
@@ -233,7 +233,29 @@ SURRENDER, the bots' walls and abilities.
   - [x] Selection rings on the ground (Dominic, 2026-10-26: "selection circles arent behind anything. They're on
         top"): drawn in the sorted world under everything standing (`41-...`). Test runs are silent (Dominic: "stop
         any future testing having sounds"): the game mutes with shot:, selftest, padtest, labtest, reload:, or `mute`.
+  - [x] A new army mid-match with no pack (2026-10-27): the creature kit's bodies completed in Lobster as
+        `CreatureKit.complete` (`kitparts_check.lobster`, 12 of 12), and a swapped-in race's parts and buildings baked
+        on the spot: rats became moonbears with axes at 1:00, balanced in 598 fights, played on to 5:00
+        (`2026-10-27/01-...`).
+- [x] 6. Setup in Lobster.
 - [ ] Archive
+
+## What Godot is still for (2026-10-27)
+
+The game: nothing. `play.sh none lobby` reads only `data/`, the sounds (`tools/audio/`, Python), the Blender models
+(`assets/models/*.glb`), the SVG icons and textures as PNGs (`icons.sh`, `textures.sh`: rsvg-convert) and the font.
+Every model, bake, map, rule, race, price, bot, save, network match and screen is Lobster.
+
+Godot is left in three places, none needed to play:
+- **The parity checks**: `export.gd`, `*_dump.gd`, `*_export.gd` write Godot's answers that the Lobster checks compare
+  against (all.sh, model_check, building_bake_check...). They go when the GDScript game is retired.
+- **Packs** (`art_pack.gd`, `make_pack.sh`): optional. A pack only skips the first start's baking.
+- **The GDScript game itself** (`src/`, `scenes/`, the Godot Deck build): still in the repo beside the port. Retiring
+  it is Dominic's call once he has played the Lobster one.
+
+Left in the port, against the Godot game: Godot's saves don't load in Lobster (each has its own); the pad's compact
+panel and Steam Input's layout; the Mac against the Deck over the network. The exit criterion (Dominic's own match)
+and the Deck play-test wait on Dominic.
 
 ## Results
 
