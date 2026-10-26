@@ -182,10 +182,33 @@ SURRENDER, the bots' walls and abilities.
         wears is looked up in the pack in eight facings and what's missing is baked from the mesh library (the
         sci-fi mod's soldiers: 56 facings in 3.6 s, drawn in play, `37-...`). Not yet: ambient occlusion, the cuts
         (legs, worn armour), smaller meshes, the models built in Lobster (new models still need Godot).
-  - [ ] 6c. The part baker in Lobster (the procedural 3D models, the Blender models converted, the pixel pass):
-        Godot no longer needed. With the library, this is now the art-quality step (higher resolution, more poses,
-        destruction, effects), not a blocker. The art-quality study (Dominic, 2026-10-26: "how far we can go with art
-        quality ... while maintaining nostalgia above all else") goes concept-first, after this.
+  - [x] 6c. The part baker in Lobster (2026-10-26): `view/part_bake.lobster` bakes a Lobster-built model in all eight
+        facings as `part_baker.gd` does: the near-arm layer (`#front`), a leg or head cut by its body, armour worn on
+        it, a neck run into its head without an outline (the creature kit's seams), and each facing's rig (sockets,
+        depth, hips, which way it faces, scales, the weapon's tip) and a leg's soles and span. The baker now has a depth
+        test (a framebuffer with depth, `gl.ortho(false, true)`), a mask pass for cuts, and two-sided faces lit from the
+        front. `part_bake_check.lobster`: a race's parts against the library's Godot bakes: the opaque boxes within a
+        couple of pixels, sockets within 0.1 of a unit, brightness within a few levels. Found on the way: Godot's part
+        baker frames a scaled model without its scale, so the larger junk engines are clipped in Godot's bakes; the
+        Lobster ones show all of the engine (`43-...`). The game bakes what the pack lacks from these models
+        (`bake_missing.lobster`); the mesh library is no longer needed for parts.
+  - [x] 6d. The models in Lobster (2026-10-26): `model/`: a kit of Godot's primitive meshes vertex for vertex
+        (`prim_check.lobster`), nodes and materials, a glTF reader for the Blender parts, Godot's random generator
+        and FastNoiseLite; then every model file ported line for line and checked triangle for triangle against
+        Godot's (`model_check.sh`, `prop_check.sh`, `building_check.sh`): the unit parts (frog, rat, spider, human,
+        ponies, horses, centaurs, capybaras, cats, birds, beasts, beetles, newts, weapons, shields, helmets, armour,
+        tools, loads, the culture kits, healers, the creature kit's bears in every pose and step), siege engines,
+        carts, the great sling, war beasts and shots, heroes' gear, bears' helmets (~440 part ids); the props,
+        trees, piles, yards, gardens and bridges (243 cases); every building, wall, gate and look (302 cases); the
+        buildings' materials with their noise textures made in Lobster (`mat_check.sh`, within 2/255). The world
+        baker (`view/world_bake.lobster`, Godot's building baker in pixel mode: sun, fill, rim, the sun's shadow,
+        a GGX highlight, filmic tone, ground shadows) bakes props within 2 px and a few levels of Godot's
+        (`world_bake_check.lobster`, `42-...`); the game bakes the props the pack lacks (`game/art_kit.lobster`;
+        `rebake` bakes all 193 in 2.5 s, `41-...`). Next: the buildings' looks (stages, layers, gate parts, wall
+        arms, chimney points) baked in Lobster, then a pack made without Godot.
+  - [x] Selection rings on the ground (Dominic, 2026-10-26: "selection circles arent behind anything. They're on
+        top"): drawn in the sorted world under everything standing (`41-...`). Test runs are silent (Dominic: "stop
+        any future testing having sounds"): the game mutes with shot:, selftest, padtest, labtest, reload:, or `mute`.
 - [ ] Archive
 
 ## Results
