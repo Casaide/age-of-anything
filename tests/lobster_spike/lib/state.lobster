@@ -148,6 +148,9 @@ var t_damage = []::int         // per unit type: its attack's class (0 melee, 1 
 let EV_HIT = 0                 // a: by, b: to, c: damage
 let EV_DIE = 1                 // a: id, b: 1 for a building
 let EV_SHOT = 2                // a: by, b: to
+let EV_MISS = 3                // a: by (a shot in the ground at x, y); the view's (the bots don't read these three)
+let EV_HEAL = 4                // a: by, b: to
+let EV_SPLASH = 5              // c: radius (a stone or a charge comes down at x, y)
 class Event:
     kind:int
     a:int
