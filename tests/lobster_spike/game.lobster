@@ -4,6 +4,7 @@
 // Run: lobster game.lobster -- <pack dir> <scenario file> [watch]
 //   left click / drag: select;  right click: move, attack, gather, build, rally;  shift: queue
 //   A + right click: attack-move;  S: stop;  B then 1-9: build;  1-9 on a building: train;  U: age up
+//   Q W E R T Y I O P on a building: research;  M: sound on / off;  the minimap (bottom right): click to look there
 //   arrows / screen edges: scroll;  wheel: zoom;  space: pause;  + / -: speed
 
 import std
@@ -45,6 +46,7 @@ import .lib.expand
 import .lib.bot
 import .lib.walls_ai
 import .lib.world
+import .game.audio
 import .game.pack
 
 let args = command_line_arguments()
@@ -78,7 +80,9 @@ let TEAM_COLS = [float4 { 0.85, 0.22, 0.18, 1.0 }, float4 { 0.20, 0.42, 0.85, 1.
 let WHITE = float4 { 1.0, 1.0, 1.0, 1.0 }
 let ANIMAL_COL = float4 { 0.54, 0.48, 0.35, 1.0 }   // ArtKit.ANIMAL_TEAM: nobody's
 
-def team_col(p:int) -> float4: return if p == gaia: ANIMAL_COL else: TEAM_COLS[p % TEAM_COLS.length]
+def team_col(p:int) -> float4:
+    if p == gaia: return ANIMAL_COL
+    return if p < team_rgb.length: team_rgb[p] else: TEAM_COLS[p % TEAM_COLS.length]
 
 // ------------------------------------------------------------------ iso (Iso.to_screen * 1.5: art px)
 
@@ -174,7 +178,51 @@ def dir_of(v:float2) -> int:
     let a = atan2(normalize(v))
     return (int(floor(a / 45.0 + 0.5)) % 8 + 8) % 8
 
+// Is this milli-tile spot on screen (with a margin)? Sounds only play for what you can see.
+def on_screen(x:int, y:int) -> bool:
+    let s = to_screen(iso(float(x), float(y)))
+    let ws = float(gl.window_size())
+    return s.x > -100.0 and s.y > -100.0 and s.x < ws.x + 100.0 and s.y < ws.y + 100.0
+
+var my_units = 0
+var my_age = 1
+var my_researched = 0
+var my_done = []::int        // ids of my finished buildings, last tick
+
+def sounds_after_step():
+    for(events) e:
+        if e.kind == EV_SHOT and on_screen(e.x, e.y) and fog[ME][cell_of(e.x, e.y)] == 2:
+            let i = index_of(e.a)
+            if i >= 0: play_sound(unit_shot.get(u_kind[i], "shoot_arrow"), -4.0)
+        elif e.kind == EV_HIT and on_screen(e.x, e.y) and fog[ME][cell_of(e.x, e.y)] == 2:
+            let i = index_of(e.a)
+            if i >= 0:
+                if t_ranged[u_kind[i]]: play_sound("arrow_land", -8.0)
+                else: play_sound(unit_blow.get(u_kind[i], "hit_pierce"), 0.0)
+        elif e.kind == EV_DIE and on_screen(e.x, e.y) and fog[ME][cell_of(e.x, e.y)] != 0:
+            if e.b == 1: play_sound("building_fall", -2.0)
+            else:
+                play_sound("fall", -3.0)
+                if last_owner.get(e.a, -1) == ME: say(ME, "die")
+    var n = 0
+    for(u_owner) p: n += if p == ME: 1 else: 0
+    if n > my_units and tick > 40: play_sound("trained", -6.0)
+    my_units = n
+    if ages[ME] > my_age: play_sound("age", 0.0)
+    my_age = ages[ME]
+    var r = 0
+    for(researched[ME]) v: r += v
+    if r > my_researched: play_sound("research", -4.0)
+    my_researched = r
+    let done = []::int
+    for(b_id.length) b:
+        if b_owner[b] == ME and b_done[b] == 1:
+            done.push(b_id[b])
+            if tick > 40 and not contains(my_done, b_id[b]): play_sound("built", -4.0)
+    my_done = done
+
 def after_step():
+    sounds_after_step()
     for(events) e:
         if e.kind == EV_SHOT: attack_t0.set(e.a, clock_s)
         elif e.kind == EV_HIT:
@@ -383,6 +431,7 @@ def click_select(m:float2):
     let i = unit_at_screen(m, true)
     if i >= 0 and u_owner[i] == ME:
         selected = [u_id[i]]
+        say(ME, "select")
         return
     selected = []::int
     let b = building_at(mouse_milli())
@@ -397,6 +446,7 @@ def box_select(a:float2, b:float2):
         if u_owner[i] == ME:
             let s = to_screen(iso(float(u_x[i]), float(u_y[i])))
             if s.x >= lo.x and s.x <= hi.x and s.y >= lo.y and s.y <= hi.y: selected.push(u_id[i])
+    if selected.length: say(ME, "select")
 
 def order(m:float2):
     let mm = mouse_milli()
@@ -409,6 +459,7 @@ def order(m:float2):
         return
     let ids = selected_units()
     if not ids.length: return
+    say(ME, "ack")
     let foe = unit_at_screen(m, false)
     if foe >= 0:
         issue_cmd(ME, CMD_ATTACK, ids, u_id[foe], 0, 0, 0, q)
@@ -445,6 +496,20 @@ def buildable() -> [int]:
 def trainable(b:int) -> [int]:
     return bm_trains[ME][b_kind[b]]
 
+let RESEARCH_KEYS = ["q", "w", "e", "r", "t", "y", "i", "o", "p"]
+
+// The research building b offers player 0 now (not done, not queued, open to its race, its age and
+// the one before it reached; affordable or not), in research order.
+def offered(b:int) -> [int]:
+    let out = []::int
+    for(research) item, r:
+        if item.building == b_kind[b] and researched[ME][r] == 0 and (item.after < 0 or researched[ME][item.after] != 0) and
+           item.line_has[ME] and (item.before[ME] < 0 or researched[ME][item.before[ME]] != 0) and ages[ME] >= item.age and
+           item.open[ME] and not tech_queued(ME, r): out.push(r)
+    return out
+
+def research_name(r:int) -> string: return research_names.get(r, research[r].id)
+
 def place_at() -> int, int:
     let mm = mouse_milli()
     let s = bt_size[placing]
@@ -464,6 +529,7 @@ def train_slot(n:int):
         if n < tr.length: issue_cmd(ME, CMD_TRAIN, []::int, sel_building, tr[n], 1, 0)
 
 def keys():
+    if gl.button("m") == 1: sound_on = not sound_on
     let digit = map(9) n: gl.button("{n + 1}") == 1
     if gl.button("b") == 1 and selected_workers().length: build_menu = not build_menu
     if build_menu:
@@ -478,6 +544,9 @@ def keys():
         for(digit) hit, n:
             if hit: train_slot(n)
         if gl.button("u") == 1: issue_cmd(ME, CMD_AGE_UP, []::int, sel_building, 0, 0, 0)
+        let offer = offered(b)
+        for(RESEARCH_KEYS) key, n:
+            if gl.button(key) == 1 and n < offer.length: issue_cmd(ME, CMD_RESEARCH, []::int, sel_building, offer[n], 0, 0)
         if gl.button("x") == 1 and b_queue[b].length: issue_cmd(ME, CMD_CANCEL, []::int, sel_building, b_queue[b].length - 1, 0, 0)
     if gl.button("s") == 1 and selected.length and gl.button("left shift") == 0: issue_cmd(ME, CMD_STOP, selected_units(), 0, 0, 0, 0)
 
@@ -486,6 +555,15 @@ def mouse():
     if placing >= 0:
         if gl.button("mouse1") == 1: place_here(gl.button("left shift") >= 1)
         if gl.button("mouse3") == 1 or gl.button("escape") == 1: placing = -1
+        return
+    if in_minimap(m):
+        if gl.button("mouse1") >= 1: cam = (m - mm_top()) / mm_scale()   // look there
+        if gl.button("mouse3") == 1:
+            let p = iso_inv((m - mm_top()) / mm_scale())
+            let ids = selected_units()
+            if ids.length:
+                say(ME, "ack")
+                issue_cmd(ME, if gl.button("a") >= 1: CMD_ATTACK_MOVE else: CMD_MOVE, ids, int(p.x), int(p.y), 0, 0, if gl.button("left shift") >= 1: 1 else: 0)
         return
     if gl.button("mouse1") == 1:
         drag_from = m
@@ -513,7 +591,7 @@ def scroll():
         if m.y >= ws.y - 4.0: d.y += 1.0
     cam += d * sp
     let wheel = gl.mousewheel_delta()
-    if wheel > 0: zoom = min(4.0, zoom + 1.0)
+    if wheel > 0: zoom = min(8.0, zoom + 1.0)
     if wheel < 0: zoom = max(1.0, zoom - 1.0)
 
 // ------------------------------------------------------------------ marks and the HUD
@@ -588,6 +666,51 @@ def draw_marks(alpha:float):
         gl.color(if ok: float4 { 0.3, 0.9, 0.3, 0.35 } else: float4 { 0.9, 0.2, 0.2, 0.35 }):
             gl.polygon(pts)
 
+// ------------------------------------------------------------------ the minimap
+// The ground mesh again, small, in the bottom bar's right end; your units and buildings and the
+// enemy's you see as dots; the camera's view outlined. A click there looks there.
+
+let MM_HALF = 110.0          // half its width, screen px (at a 1000 px high window)
+
+// The UI's size: its numbers are for a window 1000 px high (a retina screen has twice the pixels).
+def ui() -> float: return max(1.0, float(gl.window_size().y) / 1000.0)
+
+def mm_top() -> float2:
+    let ws = float(gl.window_size())
+    return float2 { ws.x - MM_HALF * ui() - 20.0 * ui(), ws.y - 118.0 * ui() }
+
+def mm_scale() -> float: return MM_HALF * ui() / (48.0 * float(max(W, H)))
+
+def mm_point(p:float2) -> float2: return mm_top() + p * mm_scale()
+
+def in_minimap(m:float2) -> bool:
+    let top = mm_top()
+    return m.x >= top.x - MM_HALF * ui() and m.x <= top.x + MM_HALF * ui() and m.y >= top.y and m.y <= top.y + MM_HALF * ui()
+
+def draw_minimap():
+    let gm = ground_mesh
+    if not gm: return
+    gl.translate(mm_top()):
+        gl.scale(mm_scale()):
+            gl.set_shader("color_attr")
+            gl.render_mesh(gm)
+    gl.set_shader("color")
+    for(b_id.length) b:
+        let cell = b_cy[b] * W + b_cx[b]
+        if teams[b_owner[b]] == teams[ME] or fog[ME][cell] != 0:
+            let p = mm_point(iso(float(b_cx[b] * 1000 + b_sx[b] * 500), float(b_cy[b] * 1000 + b_sy[b] * 500)))
+            gl.color(team_col(b_owner[b])):
+                gl.translate(p - float2 { 2.0, 2.0 }): gl.rect(float2 { 4.0, 4.0 })
+    for(u_x.length) i:
+        if teams[u_owner[i]] == teams[ME] or visible_to_me(cell_of(u_x[i], u_y[i])):
+            let p = mm_point(iso(float(u_x[i]), float(u_y[i])))
+            gl.color(team_col(u_owner[i])):
+                gl.translate(p - float2 { 1.0, 1.0 }): gl.rect(float2 { 2.0, 2.0 })
+    let ws = float(gl.window_size())
+    let corners = map([float2_0, float2 { ws.x, 0.0 }, float2 { ws.x, ws.y - 120.0 * ui() }, float2 { 0.0, ws.y - 120.0 * ui() }]) c: mm_point(from_screen(c))
+    gl.color(float4 { 0.95, 0.91, 0.79, 0.9 }):
+        for(4) k: gl.line(corners[k], corners[(k + 1) % 4], 1.0)
+
 def text_at(p:float2, s:string):
     gl.translate(p): gl.text(s)
 
@@ -597,30 +720,32 @@ def stock_text() -> string:
         s += "{r} {stock[k][ME]}   "
     return s + "pop {pop[ME]}/{pop_cap[ME]}   age {ages[ME]}"
 
-def unit_name(k:int) -> string: return t_slot[k]
+def unit_name(k:int) -> string: return unit_names.get(k, t_slot[k])
+def bname(k:int) -> string: return building_names.get(k, bt_name[k])
 
 def draw_hud(paused:bool, speed:float):
     gl.set_shader("color")
     let ws = float(gl.window_size())
-    gl.color(float4 { 0.08, 0.06, 0.04, 0.85 }): gl.rect(float2 { ws.x, 30.0 })
+    let u = ui()
+    gl.color(float4 { 0.08, 0.06, 0.04, 0.85 }): gl.rect(float2 { ws.x, 30.0 * u })
     gl.color(float4 { 0.08, 0.06, 0.04, 0.85 }):
-        gl.translate(float2 { 0.0, ws.y - 120.0 }): gl.rect(float2 { ws.x, 120.0 })
-    gl.set_font_size(18)
+        gl.translate(float2 { 0.0, ws.y - 120.0 * u }): gl.rect(float2 { ws.x, 120.0 * u })
+    gl.set_font_size(int(18.0 * u))
     gl.color(float4 { 0.95, 0.9, 0.75, 1.0 }):
-        text_at(float2 { 10.0, 5.0 }, stock_text())
+        text_at(float2 { 10.0 * u, 5.0 * u }, stock_text())
         let clock = tick / 20
-        text_at(float2 { ws.x - 260.0, 5.0 }, "{clock / 60}:{if clock % 60 < 10: "0" else: ""}{clock % 60}  x{speed}{if paused: "  paused" else: ""}")
-        var line = ws.y - 112.0
+        text_at(float2 { ws.x - 260.0 * u, 5.0 * u }, "{clock / 60}:{if clock % 60 < 10: "0" else: ""}{clock % 60}  x{speed}{if paused: "  paused" else: ""}")
+        var line = ws.y - 112.0 * u
         def say(s:string):
-            text_at(float2 { 12.0, line }, s)
-            line += 22.0
+            text_at(float2 { 12.0 * u, line }, s)
+            line += 22.0 * u
         if build_menu:
             var s = "Build: "
-            for(buildable()) k, n: s += "{n + 1} {bt_name[k]} ({bm_cost[ME][k]})  "
+            for(buildable()) k, n: s += "{n + 1} {bname(k)} ({bm_cost[ME][k]})  "
             say(s)
             say("Esc or B: close")
         elif placing >= 0:
-            say("Placing {bt_name[placing]}: left click to place (shift: more), right click to cancel")
+            say("Placing {bname(placing)}: left click to place (shift: more), right click to cancel")
         else:
             let ids = selected_units()
             let b = b_index_of(sel_building)
@@ -630,17 +755,22 @@ def draw_hud(paused:bool, speed:float):
                 if selected_workers().length: say("B: build   S: stop   right click: gather / build / move   A + right click: attack-move")
                 else: say("S: stop   right click: move / attack   A + right click: attack-move   shift: queue")
             elif b >= 0:
-                say("{bt_name[b_kind[b]]}  hp {b_hp[b]}/{bm_hp[ME][b_kind[b]]}{if b_done[b] == 0: "  (building)" else: ""}   queue {b_queue[b].length}")
+                say("{bname(b_kind[b])}  hp {b_hp[b]}/{bm_hp[ME][b_kind[b]]}{if b_done[b] == 0: "  (building)" else: ""}   queue {b_queue[b].length}")
                 var s = ""
                 for(trainable(b)) k, n: s += "{n + 1} {unit_name(k)} ({t_cost[k]})  "
                 if s.length: say("Train: " + s)
+                var rs = ""
+                for(offered(b)) r, n:
+                    if n < RESEARCH_KEYS.length: rs += "{RESEARCH_KEYS[n].uppercase()} {research_name(r)} ({research_cost(ME, r)})  "
+                if rs.length: say("Research: " + rs)
                 say("U: age up (at the Town Center)   X: cancel the last in the queue   right click: rally")
             else:
                 say("Left click or drag to select. Arrows or edges scroll, wheel zooms, space pauses, +/- speed.")
     if winner >= 0:
-        gl.set_font_size(48)
+        gl.set_font_size(int(48.0 * u))
         gl.color(float4 { 1.0, 0.85, 0.3, 1.0 }):
             text_at(ws / 2.0 - float2 { 160.0, 40.0 }, if winner == teams[ME]: "Victory!" else: "Defeat")
+    draw_minimap()
     if dragging:
         let m = float(gl.mouse_pos(0))
         let lo = float2 { min(m.x, drag_from.x), min(m.y, drag_from.y) }
@@ -730,6 +860,7 @@ if shot != "" or selftest: gl.set_target_delta_time(1.0 / 60.0)
 note("window")
 fatal(gl.load_materials(SPRITE_SHADERS, true))
 check(gl.set_font_name("data/fonts/Droid_Sans/DroidSans.ttf"), "no font")
+zoom = 2.0 * floor(ui() + 0.5)   // two screen points an art pixel, as the game's camera
 load_pack(args[0])
 note("pack")
 start_world(args[1])

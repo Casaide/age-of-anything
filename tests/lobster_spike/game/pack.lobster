@@ -29,6 +29,12 @@ var prop_of = dictionary<string, string>(64)  // terrain id -> prop kind
 var ground_a = []::float4                     // per terrain: its two colours
 var ground_b = []::float4
 var species = []::string                      // per cell: a tree's species, or "-"
+var team_rgb = []::float4                     // per player
+var unit_names = dictionary<int, string>(128)
+var unit_blow = dictionary<int, string>(128)  // per unit type: its melee blow's sound, its shot's
+var unit_shot = dictionary<int, string>(128)
+var building_names = dictionary<int, string>(64)
+var research_names = dictionary<int, string>(128)
 let pack_formats = texture_format_nearest_mag | texture_format_nearest_min | texture_format_nomipmap | texture_format_clamp
 
 def load_pack(dir:string):
@@ -57,9 +63,22 @@ def load_pack(dir:string):
                     ground_a.push(float4 { num(2) / 255.0, num(3) / 255.0, num(4) / 255.0, 1.0 })
                     ground_b.push(float4 { num(5) / 255.0, num(6) / 255.0, num(7) / 255.0, 1.0 })
                 case "species": species = t.slice(1, -1)
+                case "team": team_rgb.push(float4 { num(2) / 255.0, num(3) / 255.0, num(4) / 255.0, 1.0 })
+                case "voice": voice_of.push(t[2])
+                case "uname": unit_names.set(num(1), spaced(t[2]))
+                case "usound":
+                    unit_blow.set(num(1), t[2])
+                    unit_shot.set(num(1), t[3])
+                case "bname": building_names.set(num(1), spaced(t[2]))
+                case "rname": research_names.set(num(1), spaced(t[2]))
+                case "sound": sounds.set(t[1], Sound { num(2), num(3) / 1000.0, t[4] })
+                case "bus": buses.set(t[1], float(num(2)))
+                case "voicekind": voice_takes.set(t[1], num(2))
                 default: pass()
 
 def frame_index(name:string) -> int: return frame_at.get(name, -1)
+
+def spaced(s:string) -> string: return concat_string(tokenize(s, "_", ""), " ")
 
 // ArtKit.building_key: the newest age look at or below the age, else a variant (houses), else the base.
 def building_key(arch:string, type:string, age:int, pick:int) -> string:
