@@ -87,6 +87,7 @@ var swap_at = -1.0
 var map_arg = ""                // map:<id>: the lobby's map (tests and captures)
 var races_arg = ""             // races:<A>|<B>: the lobby's prompts, as if typed (then balanced, then played)
 var look_y = -1
+var padtest = false             // padtest: a fake pad plays a few seconds, then quit
 var hosting = false             // host: a network match, waiting for a player to join (net/lockstep.lobster)
 var join_ip = ""                // join:<ip>: play the second side of the match a host there sets up
 var reload_at = -1.0            // reload:<seconds>: save then, load 5 s later (tests and captures)
@@ -104,6 +105,7 @@ for(args) a, k:
         if key == "map": map_arg = val
         if key == "reload": reload_at = string_to_float(val)
         if a == "host": hosting = true
+        if a == "padtest": padtest = true
         if key == "join": join_ip = val
         if key == "swap":
             let sp, sa = split_string(val, "@")
@@ -1491,6 +1493,135 @@ def self_test() -> bool:
         return true
     return false
 
+import .game.pad   // (here: it plays through the controls above)
+
+// Control groups shown (Dominic, 2026-10-26: "visible somewhere, at least as a number on the units"):
+// a small number by each grouped unit's health bar (its lowest group), and under the top bar each
+// group's number and how many are in it. Screen space, after the world.
+// About the space a short label takes at this font size (gl.text_size doesn't match the drawn text at
+// every window scale).
+def label_size(s:string, fs:int) -> float2: return float2 { 0.6 * float(fs) * float(s.length), float(fs) }
+
+def outlined_text(p:float2, s:string, col:float4, u:float):
+    for([float2 { -1.0, 0.0 }, float2 { 1.0, 0.0 }, float2 { 0.0, -1.0 }, float2 { 0.0, 1.0 }, float2 { 1.0, 1.0 }]) d:
+        lobby_text(p + d * 1.5 * u, s, float4 { 0.05, 0.04, 0.02, 0.9 })
+    lobby_text(p, s, col)
+
+def draw_groups():
+    let keys = sorted_ints_g(groups.get_keys())
+    let live = map(keys) n: filter(groups.get(n, [])) id: index_of(id) >= 0
+    if not (filter(live) ids: ids.length > 0).length: return
+    gl.set_shader("color")
+    let u = ui()
+    let fs = int(13.0 * u)
+    gl.set_font_size(fs)
+    let first = dictionary<int, int>(64)
+    for(keys) n, k:
+        for(live[k]) id:
+            if first.get(id, -1) < 0: first.set(id, n)
+    let ws = float(gl.window_size())
+    for(first.get_keys()) id:
+        let i = index_of(id)
+        if fog[ME][cell_of(u_x[i], u_y[i])] != 0:
+            let at = to_screen(iso(float(u_x[i]), float(u_y[i])) + float2 { -16.0, -40.0 })
+            if at.x > 0.0 and at.y > 0.0 and at.x < ws.x and at.y < ws.y:
+                let label = string(first.get(id, 0) + 1)
+                outlined_text(at - label_size(label, fs) / 2.0, label, float4 { 1.0, 0.88, 0.5, 1.0 }, u)
+    var x = 16.0 * u
+    let y = 48.0 * u
+    let fs2 = int(15.0 * u)
+    gl.set_font_size(fs2)
+    for(keys) n, k:
+        if live[k].length:
+            let label = "{n + 1}: {live[k].length}"
+            let size = label_size(label, fs2)
+            let on = live[k].length == selected.length and (filter(live[k]) id: contains(selected, id)).length == live[k].length
+            outlined_text(float2 { x, y }, label, if on: float4 { 1.0, 0.8, 0.3, 1.0 } else: float4 { 0.95, 0.88, 0.65, 1.0 }, u)
+            x += size.x + 18.0 * u
+
+// padtest: a fake pad plays a few seconds (tests/pad_check.gd's idea): pan, the circle, the wheel, a house.
+var pad_step = 0
+var test_pause = false
+var pad_spot = float2_0
+var pad_houses = 0
+def pad_script() -> PadIn:
+    let t = clock_s
+    let none = PadIn { [0.0, 0.0, 0.0, 0.0, 0.0, 0.0], [] }
+    let tc = town_center(ME)
+    if pad_step == 0 and t >= 1.0:
+        pad_spot = cam
+        pad_step++
+    if pad_step == 1:
+        if t < 1.5: return PadIn { [1.0, 0.0, 0.0, 0.0, 0.0, 0.0], [] }
+        expect_ok(cam.x > pad_spot.x + 50.0, "the left stick pans (camera {pad_spot.x} -> {cam.x})")
+        let mine = filter(u_id.length) i: u_owner[i] == ME and t_animal[u_kind[i]] == 0
+        cam = iso(float(fold(mine, 0) acc, i: acc + u_x[i]) / float(mine.length), float(fold(mine, 0) acc, i: acc + u_y[i]) / float(mine.length))
+        pad_step++
+    if pad_step == 2:
+        if t < 3.5: return PadIn { none.axes, ["a"] }
+        pad_step++
+        return none
+    if pad_step == 3:
+        expect_ok(selected_units().length >= 3, "holding A grows a circle that takes {selected_units().length} units")
+        store_group(0)
+        selected = selected_workers()
+        store_group(1)
+        let i = index_of(selected[0])
+        cam = iso(float(u_x[i]), float(u_y[i]))
+        pad_off = float2_0
+        test_pause = true   // (the worker stays under the reticle)
+        pad_step++
+        return none
+    if pad_step == 4:
+        pad_step++
+        return PadIn { none.axes, ["a"] }
+    if pad_step == 5:
+        pad_step++
+        return none
+    if pad_step == 6:
+        expect_ok(pad_wheel.length > 0, "A on a selected worker opens its wheel ({pad_wheel.length} things to build)")
+        var house = 0
+        for(pad_wheel) w, n:
+            if w.act == 3 and bt_name[w.arg] == "house": house = n
+        let a = float(house) / float(max(1, pad_wheel.length)) * 360.0 - 90.0
+        pad_step++
+        return PadIn { [cos(a), sin(a), 0.0, 0.0, 0.0, 0.0], [] }
+    if pad_step == 7:
+        pad_step++
+        return PadIn { none.axes, ["a"] }
+    if pad_step == 8:
+        expect_ok(placing >= 0 and bt_name[placing] == "house", "pointing at the house and A starts placing one")
+        pad_houses = (filter(b_id.length) b: b_owner[b] == ME and bt_name[b_kind[b]] == "house").length
+        cam = iso(float(b_cx[tc] * 1000 - 3000), float(b_cy[tc] * 1000 + 3000))
+        test_pause = false
+        pad_step++
+        return none
+    if pad_step == 9:
+        pad_step++
+        return PadIn { none.axes, ["x"] }
+    if pad_step == 10 and t >= 9.0:
+        let houses = (filter(b_id.length) b: b_owner[b] == ME and bt_name[b_kind[b]] == "house").length
+        expect_ok(houses > pad_houses, "X lays the house down ({pad_houses} -> {houses})")
+        pad_step++
+        return PadIn { none.axes, ["b"] }
+    if pad_step == 11:
+        expect_ok(not selected.length, "B lets the selection go")
+        pad_step++
+        return PadIn { none.axes, ["dpleft"] }
+    if pad_step == 12:
+        pad_step++
+        return none
+    if pad_step == 13:
+        expect_ok(selected.length > 0 and selected.length == (filter(groups.get(0, [])) id: index_of(id) >= 0).length, "a tap on d-pad left brings group 1 back ({selected.length})")
+        let mine = filter(u_id.length) i: u_owner[i] == ME and t_animal[u_kind[i]] == 0
+        cam = iso(float(fold(mine, 0) acc, i: acc + u_x[i]) / float(mine.length), float(fold(mine, 0) acc, i: acc + u_y[i]) / float(mine.length))
+        pad_step++
+        return PadIn { none.axes, ["rightshoulder"] }
+    if pad_step == 14:
+        pad_step++
+        print test_log
+    return none
+
 // ------------------------------------------------------------------ main
 
 assert args.length >= 2
@@ -1501,8 +1632,8 @@ def note(s:string):
 
 note("start")
 // (a capture runs without vsync: with the display asleep, vsync never lets a frame through)
-fatal(gl.window("Age of Anything (Lobster)", 1600, 1000, if shot != "" or selftest: gl.window_init_no_vsync else: 0))
-if shot != "" or selftest: gl.set_target_delta_time(1.0 / 60.0)
+fatal(gl.window("Age of Anything (Lobster)", 1600, 1000, if shot != "" or selftest or padtest: gl.window_init_no_vsync else: 0))
+if shot != "" or selftest or padtest: gl.set_target_delta_time(1.0 / 60.0)
 note("window")
 fatal(gl.load_materials(SPRITE_SHADERS, true))
 fatal(gl.load_materials(TERRAIN_SHADERS, true))
@@ -1694,7 +1825,7 @@ while gl.frame() and not (gl.button("escape") == 1 and placing < 0 and not build
     if swap_arg != "" and clock_s >= swap_at:
         become(swap_arg)
         swap_arg = ""
-    if not paused and winner < 0 and not typing_race: acc += dt * speed
+    if not paused and not test_pause and winner < 0 and not typing_race: acc += dt * speed
     acc = min(acc, 0.5)
     if net_on:
         ls_receive(lockstep)
@@ -1735,19 +1866,25 @@ while gl.frame() and not (gl.button("escape") == 1 and placing < 0 and not build
                     nf++
         if nf > 0: cam = cam + (iso(float(fx / nf), float(fy / nf)) - cam) * 0.05
     if not typing_race:
-        scroll()
+        let padded = pad_tick(if padtest: pad_script() else: read_pad(), dt)
+        if not padded: scroll()
         keys()
-        mouse()
+        if not padded: mouse()
     gl.clear(float4 { 0.05, 0.05, 0.05, 1.0 })
     gl.blend(1)
     draw_world(acc / 0.05)
     draw_hud(paused, speed)
+    draw_groups()
+    pad_draw()
     draw_banner()
     if typing_race: typing_tick()
     if selftest and self_test():
         if shot != "": gl.screenshot(shot)
         return
-    if shot != "" and clock_s >= shot_at and not selftest:
+    if padtest and pad_step >= 15:
+        if shot != "": gl.screenshot(shot)
+        return
+    if shot != "" and clock_s >= shot_at and not selftest and not padtest:
         gl.screenshot(shot)
         print "shot {shot} at {clock_s} s, tick {tick}; sim {step_time * 1000.0 / max(1, steps)} ms a tick; cam {cam} zoom {zoom} ws {gl.window_size()} fb {gl.framebuffer_size()}"
         return
