@@ -17,6 +17,7 @@ const BakeClock := preload("res://src/view/art/bake/bake_clock.gd")
 
 var cam: Camera3D
 var holder: Node3D
+var pixel_size := PIXEL_SIZE   # pixel mode's frame (bigger for the art-quality study's finer bakes)
 var pixel_factor := 0      # > 0: pixel mode, shrink the render by this much and pixelize it
 var shadow_plane: MeshInstance3D
 var shadow_on := false
@@ -32,8 +33,9 @@ var env: Environment
 ## with ground shadows baked in (a shadow-catcher plane).
 func set_pixel_mode(art_scale: float, factor: int) -> void:
 	pixel_factor = factor
-	size = Vector2i(PIXEL_SIZE, PIXEL_SIZE)   # supersampled pixel bakes need more room
-	cam.size = PIXEL_SIZE / (PX_PER_UNIT * art_scale * factor)
+	pixel_size = PIXEL_SIZE * maxi(1, ceili(art_scale / 1.5 - 0.01))
+	size = Vector2i(pixel_size, pixel_size)   # supersampled pixel bakes need more room
+	cam.size = pixel_size / (PX_PER_UNIT * art_scale * factor)
 	var plane := PlaneMesh.new()
 	plane.size = Vector2(40, 40)
 	shadow_plane = MeshInstance3D.new()
@@ -210,7 +212,7 @@ func bake_many(models: Array, cols := 3) -> Array:
 	cam.position = Vector3(0, 0.6, 0) + cam.transform.basis.z * 30.0
 	await BakeClock.breathe()
 	var out := []
-	var cell := PIXEL_SIZE / cols
+	var cell := pixel_size / cols
 	var per := cols * cols
 	for first in range(0, models.size(), per):
 		var batch: Array = models.slice(first, first + per)

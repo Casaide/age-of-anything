@@ -33,6 +33,8 @@ static func folder() -> String:
 		var ctx := HashingContext.new()
 		ctx.start(HashingContext.HASH_MD5)
 		ctx.update(("%d|%s" % [FORMAT, Engine.get_version_info().string]).to_utf8_buffer())
+		if OS.has_environment("AOW_ART_SCALE"):   # the art-quality study's finer bakes keep apart
+			ctx.update(OS.get_environment("AOW_ART_SCALE").to_utf8_buffer())
 		for src in SOURCES:
 			for path in _files(src):
 				ctx.update((path + FileAccess.get_md5(path)).to_utf8_buffer())

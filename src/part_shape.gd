@@ -20,6 +20,8 @@ static var baked := {}
 ## The team colour every part is baked in, swapped for the real team at draw time.
 const TEAM_KEY := Color(1, 0, 1)
 const ATLAS_WIDTH := 4096   # (2048 made one match's atlas over 11000 px tall, near the GPU's limit)
+## The art-quality study's finer bakes (AOW_ART_SCALE) need a wider atlas: at 2x one match is 23000 px tall at 4096.
+static var atlas_width: int = 8192 if float(OS.get_environment("AOW_ART_SCALE")) > 2.5 else ATLAS_WIDTH
 const ATLAS_PAD := 2
 const ATLAS_MAX := 16384   # the tallest texture the GPU takes (the Deck's, a Mac's): taller uploads nothing, and every part draws white
 
@@ -93,7 +95,7 @@ static func pack_atlas(images: Dictionary) -> Dictionary:
 	var places := {}
 	for k in keys:
 		var sz: Vector2i = images[k].get_size() + Vector2i.ONE * ATLAS_PAD * 2
-		if x + sz.x > ATLAS_WIDTH:
+		if x + sz.x > atlas_width:
 			x = 0
 			y += row_h
 			row_h = 0
@@ -101,7 +103,9 @@ static func pack_atlas(images: Dictionary) -> Dictionary:
 		x += sz.x
 		row_h = maxi(row_h, sz.y)
 	assert(y + row_h <= ATLAS_MAX, "atlas %d px tall: more parts than one texture holds (ArtKit._keep_parts keeps a match to its own)" % (y + row_h))
-	var img := Image.create(ATLAS_WIDTH, y + row_h, false, Image.FORMAT_RGBA8)
+	if OS.has_environment("AOW_ART_SCALE"):
+		print("atlas %d x %d" % [atlas_width, y + row_h])
+	var img := Image.create(atlas_width, y + row_h, false, Image.FORMAT_RGBA8)
 	var at := {}
 	for k in keys:
 		var src: Image = images[k]
