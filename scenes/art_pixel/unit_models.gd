@@ -221,6 +221,10 @@ func arm_pose(sh: Vector3, elbow: Vector3, hand: Vector3, head: Vector3) -> Arra
 			return [sh + Vector3(3.5, -3.0, 1.3), to]
 		"raise":   # ...and wound up high behind the shoulder, the tool about to come down (out beside the head)
 			return [sh + Vector3(-1.0, 3.5, 2.2), sh + Vector3(-2.5, 8.0, 2.6)]
+		"follow":  # art-quality study (docs/concepts/art-quality/): the blow carried through, low and across the body; baked only with AOW_STUDY_HOLDS
+			var low := sh + Vector3(5.0, -7.5, -2.5)
+			low.y = maxf(low.y, REACH_FLOOR)
+			return [sh + Vector3(3.0, -3.5, -0.4), low]
 		"thrust":  # a spear driven straight forward at chest height (D-106; Dominic: rats "just tap")
 			return [sh + Vector3(4.0, -0.5, 1.4), sh + Vector3(9.0, -1.0, 0.9)]
 	return [elbow, hand]

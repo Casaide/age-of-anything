@@ -1099,6 +1099,8 @@ func die(tip: float) -> void:
 ## workers); a missing bake leaves the pose as it is, so nothing shows magenta.
 const WORK_HOLDS := ["reach", "raise"]
 const ATTACK_HOLDS := ["thrust"]   # baked for spear and lance carriers (art_kit.bake_units)
+## The art-quality study's follow-through hold (docs/concepts/art-quality/), baked only with AOW_STUDY_HOLDS set.
+static var STUDY_HOLDS: Array = ["follow"] if OS.has_environment("AOW_STUDY_HOLDS") else []
 var work_hold := "low"
 var _body_nodes: Array = []   # the body's PartShapes (its bake and its near-arm layer)
 var _hand_rest := Vector2.ZERO   # the hand in the body's own hold
