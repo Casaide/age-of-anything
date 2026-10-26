@@ -84,11 +84,14 @@ culture's paths. The paths were laid from the start but never showed: rebuilding
 bush is eaten) reset the path texture to empty. Rats lay cobbles. Then the combat effects: sparks, dust, shots stuck in the ground, heal motes. Capturing a fight showed long dark
 streaks running up off the top of the screen; they were there with the new effects switched off too: the old shot
 drawing. Shots now fly as the Godot game draws them, each weapon its own arc, length and colour. And the living town: baskets and reed bundles piling up at the Town Center as loads come home,
-idle workers sweeping, sitting and chatting, yards and gardens round older houses, birds pecking about.
+idle workers sweeping, sitting and chatting, yards and gardens round older houses, birds pecking about. Save and load followed (the reset's list of globals, written whole), then network play: the
+Lobster build turned out to have TCP sockets, the host sends its set-up match as a save, and only commands travel
+after. The first two-window match ran with neither side's bot doing anything: a guard meant for the other player's
+seat also stopped your own.
 
 ## Pictures
 
-`archive/images/2026-10-26/`: the first frame (01), a rat raid on the frog town (02), sheep penned (03), the UI scaled (04), the ground shader with composed rats (05), moonbears from the lobby and the library (06), rats become forest bears mid-match (07), hills and cliffs (08), joined walls (09), cobbled paths (10), a fight with shots on their arcs (11), the town's piles (12).
+`archive/images/2026-10-26/`: the first frame (01), a rat raid on the frog town (02), sheep penned (03), the UI scaled (04), the ground shader with composed rats (05), moonbears from the lobby and the library (06), rats become forest bears mid-match (07), hills and cliffs (08), joined walls (09), cobbled paths (10), a fight with shots on their arcs (11), the town's piles (12), a network match from the joiner's side (13).
 
 ## Ideas parked
 

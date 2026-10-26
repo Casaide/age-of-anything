@@ -1,0 +1,105 @@
+import std
+import dictionary
+import gen.json
+import gen.sha256
+import gen.rng
+import gen.datalib
+import gen.identity
+import gen.pricing
+import gen.heroes
+import gen.generator
+import lib.consts
+import lib.fixed
+import lib.tokens
+import lib.state
+import lib.flow
+import lib.spatial
+import lib.orders
+import lib.movement
+import lib.fog
+import lib.map
+import lib.economy
+import lib.tech
+import lib.combat
+import lib.siege
+import lib.eco_bot
+import lib.garrison
+import lib.heal
+import lib.heroes
+import lib.match
+import lib.trade
+import lib.animals
+import lib.bridges
+import lib.walls
+import lib.abilities
+import lib.trails
+import lib.commands
+import lib.ai_cfg
+import lib.scout
+import lib.land
+import lib.expand
+import lib.bot
+import lib.walls_ai
+import lib.world
+import gen.setup
+import gen.start
+import gen.scenario_out
+import gen.reset
+import gen.save
+import net.lockstep
+
+// A network match, headless (src/net, tests/net_check.gd): two processes on one machine linked over
+// TCP. The host sets the match up and sends it whole; then each runs the same world in lockstep,
+// with only its own side's bot playing (its commands travel to the other). Both print their last
+// hash; they must match, with no desync on the way.
+// Run from tests/lobster_spike:  sh net_check.sh [ticks]   (or by hand: -- host <ticks> / -- join <ticks>)
+let args = command_line_arguments()
+let role = args[0]
+let ticks = string_to_int(args[1])
+let me = if role == "host": 0 else: 1
+var bots = []::Bot
+let link = if role == "host": net_host(NET_PORT) else: net_join("127.0.0.1", NET_PORT)
+assert link.error == ""
+let t_wait = seconds_elapsed()
+while not net_ready(link):
+    assert link.error == ""
+    assert seconds_elapsed() - t_wait < 20.0
+    tcp.wait(link.listener, link.sock, true, 0.05)
+if role == "host":
+    lib_load("../../data")
+    id_load("../../data")
+    let rules = load_rules("default")
+    set(rules, "animals", jbool(true))
+    let races = map(["sewer rats with cheese hammers", "frogs with spears"]) p: generate(p, rules, 0)
+    setup_world(20261010, "reed_meadow", races, rules, [])
+    bots = map(num_players) p: new_bot(p)
+    let bytes = world_bytes(bots)
+    net_send(link, 'S', bytes)
+    print "host: sent the match ({bytes.length / 1024} KB)"
+else:
+    while not bots.length:
+        for(net_poll(link)) f:
+            if f[0] == "S": bots = load_world_bytes(f[1])
+        assert not link.closed
+        tcp.wait(nil, link.sock, false, 0.05)
+    print "join: got the match at tick {tick}, {u_id.length} units"
+events_on = true
+let ls = new_lockstep(link, me, [0, 1])
+let t0 = seconds_elapsed()
+var waits = 0
+while tick < ticks and ls.desync == "" and not link.closed:
+    ls_receive(ls)
+    if tick % TICKS_PER_TURN == 0 and not may_run(ls, tick / TICKS_PER_TURN):
+        waits++
+        tcp.wait(nil, link.sock, false, 0.002)
+    else:
+        full_bot_think(bots[me])
+        step()
+        ls_after_step(ls)
+// The last turns' hashes: keep the link up until the other side's are in.
+let t_end = seconds_elapsed()
+while ls.mine.get_keys().length and ls.desync == "" and not link.closed and seconds_elapsed() - t_end < 5.0:
+    ls_receive(ls)
+    tcp.wait(nil, link.sock, false, 0.01)
+let checked = (ticks / HASH_EVERY) - ls.mine.get_keys().length
+print "{role}: tick {tick}, {u_id.length} units, {b_id.length} buildings, last hash {state_hash()}, {checked} hashes checked, {waits} waits, {int((seconds_elapsed() - t0) * 1000.0)} ms{if ls.desync != "": ", DESYNC: " + ls.desync else: ""}"
