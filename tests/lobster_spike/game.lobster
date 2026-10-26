@@ -35,6 +35,8 @@ import .lib.trade
 import .lib.animals
 import .lib.bridges
 import .lib.walls
+import .lib.abilities
+import .lib.trails
 import .lib.commands
 import .lib.ai_cfg
 import .lib.scout

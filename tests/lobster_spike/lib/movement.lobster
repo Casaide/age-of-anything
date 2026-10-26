@@ -354,8 +354,13 @@ def move():
         let mci = u_mclass[i]
         let mc = lane_base[u_owner[i]] + mci
         let here = cell_of(x, y)
-        let pct = speed_pct[mci][here]
+        var pct = speed_pct[mci][here]
+        if pct < 100 and t_wade[u_kind[i]] > 0: pct = 100   // the swamp folk's bonus: no terrain slows them
+        if slow_ids.length:
+            let found, at = binary_search(slow_ids, u_id[i])
+            if found: pct = pct * slow_pcts[at] / 100   // in an enemy web, or hit by sticky silk
         if pct != 100: s = s * pct / 100
+        if tr_speed_pct != 0 and mci != 2: s = s * trail_pct(here) / 100   // quicker on a worn trail (a rule, off by default)
         if (tick + u_id[i]) % PROGRESS_EVERY == 0 and u_foe[i] == 0:
             let px, py = progress(i, x, y)
             if u_prog[i] >= 0 and px > u_prog[i] - py and u_group[i] > 0 and u_reach[i] == 0 and (queued(i, x, y) or passed(i, x, y)):

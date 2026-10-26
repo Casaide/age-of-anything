@@ -209,6 +209,7 @@ def run(c0:Cmd):
         case CMD_ROUTE: cmd_route(p, ids, c.a)
         case CMD_REPAIR: cmd_repair(p, own_units_cleared(p, ids), c.a)
         case CMD_PEN: cmd_pen(p, ids, c.a)
+        case CMD_ABILITY: cmd_ability(p, ids, c.a, c.b)
         case CMD_RELEASE: cmd_release(p, c.a)
         default: assert false
 

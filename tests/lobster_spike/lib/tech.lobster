@@ -93,7 +93,6 @@ var class_mounted = -2
 // Unit types' research and bonuses (Tech.retype).
 var t_heal_pct = []::int
 var t_kill_gold = []::int
-var t_wade = []::int
 var t_slow_on_hit = []::int
 var t_min_range = []::int
 var t_splash = []::int

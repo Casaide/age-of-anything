@@ -411,3 +411,19 @@ var rubble_from = []::int       // building types that leave rubble
 var rubble_repair_pct = 100
 var rubble = dictionary<int, [int]>(64)   // cell -> [terrain it was, owner, kind, cx, cy, along]
 var rubble_cells = []::int      // its keys, ascending
+
+// Slowing this tick (abilities.gd slow_now), read by the moves.
+var slow_ids = []::int         // this tick: unit id -> its speed pct (webs, sticky hits)
+var slow_pcts = []::int
+var t_wade = []::int           // per unit type: the swamp folk's bonus (no terrain slows it)
+
+// Worn trails (trails.gd), read by the moves.
+var wear = []::int
+var tr_every = 10
+var tr_add = 1
+var tr_max = 120
+var tr_decay_every = 100
+var tr_decay = 1
+var tr_trail = 30
+var tr_speed_pct = 0
+
