@@ -7,7 +7,6 @@
 def u4_pts(xy:[float]) -> [float2]: return map(xy.length / 2) i: float2 { xy[i * 2], xy[i * 2 + 1] }
 
 // Godot's Color.lerp.
-def u4_lerp(a:float3, b:float3, t:float) -> float3: return a + (b - a) * t
 
 // A box mesh node turned by radians (Godot's `rotation =`), as the GDScript's inline BoxMeshes.
 def u4_box_rad(size:float3, m:MMat, pos:float3, rot_rad:float3) -> MNode:
@@ -223,7 +222,7 @@ def weapon_musket(c:Colours) -> Spec:
 
 def tool_sack(c:Colours) -> Spec:
     let n = mnode()
-    let sack = surf("cloth", u4_lerp(col(c, "cloth2"), html("#c8b48a"), 0.55), 3.0)
+    let sack = surf("cloth", lerp3(col(c, "cloth2"), html("#c8b48a"), 0.55), 3.0)
     add_child(n, blob(float3 { 3.8, 4.6, 3.4 }, sack, float3 { 0.0, -2.6, 0.0 }))
     add_child(n, cone(0.9, 2.0, 1.8, sack, float3 { 0.0, 2.0, 0.0 }))
     add_child(n, ring(0.8, 1.3, surf("leather", float3_1, 2.0), float3 { 0.0, 2.2, 0.0 }))
