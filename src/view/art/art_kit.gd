@@ -24,9 +24,12 @@ const Corpse := preload("res://src/view/art/corpse.gd")
 const Ruin := preload("res://src/view/art/bake/ruin.gd")
 const Rng := preload("res://src/rng.gd")
 
-## Art pixels per canvas unit (a tile is 96 x 48 art pixels). AOW_ART_SCALE in the environment bakes
-## finer for the art-quality study (docs/concepts/art-quality/); unset, it's 1.5.
-static var ART_SCALE: float = float(OS.get_environment("AOW_ART_SCALE")) if OS.has_environment("AOW_ART_SCALE") else 1.5
+## Art pixels per canvas unit: 3.0 since D-173 (a tile is 192 x 96 art pixels; at play zoom one art pixel is one
+## screen pixel). AOW_ART_SCALE in the environment sets it (1.5 is the look before D-173).
+static var ART_SCALE: float = float(OS.get_environment("AOW_ART_SCALE")) if OS.has_environment("AOW_ART_SCALE") else 3.0
+## The art scale before D-173. Zooms are set in it (canvas zoom = BASE_SCALE x what used to be "screen pixels per
+## art pixel"), so the camera, the lobby and the Race Lab show everything at the size they always did.
+const BASE_SCALE := 1.5
 const UNIT_SCALE := 0.85   # units at about a third of a building's height
 ## Value bands in unit shading (Pixelize.run; the paint-over hybrid). AOW_UNIT_BANDS overrides it for the
 ## fidelity study (docs/concepts/fidelity/; 0: smooth shading); unset, it's 4.
@@ -647,7 +650,7 @@ func _paint_icons(list: Array) -> void:
 	vp.canvas_item_default_texture_filter = Viewport.DEFAULT_CANVAS_ITEM_TEXTURE_FILTER_NEAREST
 	vp.render_target_update_mode = SubViewport.UPDATE_DISABLED
 	add_child(vp)
-	var zoom := ART_SCALE * 2.0
+	var zoom := BASE_SCALE * 2.0
 	for k in list.size():
 		var u: Dictionary = list[k][1]
 		var view := UnitView.new()

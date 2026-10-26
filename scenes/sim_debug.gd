@@ -245,9 +245,9 @@ func _ready() -> void:
 	overlay.draw.connect(_draw_overlay)
 	add_child(overlay)
 	camera = RtsCamera.new()
-	# Zoom in whole art pixels (the art is baked at ArtKit.ART_SCALE per canvas unit).
-	camera.steps = [ArtKit.ART_SCALE * 0.5, ArtKit.ART_SCALE, ArtKit.ART_SCALE * 2.0, ArtKit.ART_SCALE * 3.0]
-	camera.zoom = Vector2.ONE * ArtKit.ART_SCALE * 2.0
+	# The zoom steps the game always had (set in ArtKit.BASE_SCALE: since D-173 the art is finer, the sizes the same).
+	camera.steps = [ArtKit.BASE_SCALE * 0.5, ArtKit.BASE_SCALE, ArtKit.BASE_SCALE * 2.0, ArtKit.BASE_SCALE * 3.0]
+	camera.zoom = Vector2.ONE * ArtKit.BASE_SCALE * 2.0
 	camera.zoomed.connect(_on_zoom)
 	add_child(camera)
 

@@ -30,12 +30,15 @@ const POSES := [["stand", false, 0.0], ["walk0", true, 0.0], ["walk1", true, 2.1
 const HOP_POSES := [["hop_crouch", true, 0.2 * TAU], ["hop_land", true, 0.82 * TAU]]
 
 ## Thresholds (art pixels). Tolerant of a pixel or two of outline, strict enough for a leg on a back.
-const MODEL_SLACK := 6         # pixels a leg or head may differ from the 3D model by (the outline, rounding)...
+## Pixel tolerances below were set at the art scale before D-173 (ArtKit.BASE_SCALE); they keep their size on screen
+## at a finer scale (at 2x a pixel is half as big, so the same slack is twice the pixels).
+static var PX_SCALE: float = ArtKit.ART_SCALE / ArtKit.BASE_SCALE
+static var MODEL_SLACK: int = roundi(6 * PX_SCALE)   # pixels a leg or head may differ from the 3D model by (the outline, rounding)...
 const MODEL_SHARE := 0.08      # ...or this share of the part's pixels
 const HIDDEN_MIN := 3          # a weapon or shield shows at least this many pixels in every facing
 const ARMOUR_SHARE := 0.8      # worn armour covers at most this share of its body (a whole copy of the body is 1)
 const FACE_TEAM_SHARE := 0.3   # team cloth over at most this share of a head facing the camera
-const FOOT_PX := 2             # a standing foot's lowest pixel within this of its ground point; the walk's planted foot within this of the standing line
+static var FOOT_PX: int = roundi(2 * PX_SCALE)   # a standing foot's lowest pixel within this of its ground point; the walk's planted foot within this of the standing line
 const RIDER_REACH := 0.8       # a person riding: its leg reaches at least this share of the way from the seat down to the girth...
 const CLING_REACH := 0.1       # ...a clinging or folded-legged rider's (legs hugging the flank: creatures.json rider_legs) at least onto the flank
 

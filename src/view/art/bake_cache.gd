@@ -22,7 +22,7 @@ const SOURCES := ["res://src/view/art/art_kit.gd", "res://src/view/art/bake/", "
 static var enabled := true    # tests switch it off to time a cold bake
 static var cold_parts := false   # tests: unit parts never load (they render, as for a race never seen); the rest still does
 static var _version := ""
-const STUDY_ENV := ["AOW_ART_SCALE", "AOW_UNIT_BANDS", "AOW_UNIT_OUTLINE", "AOW_UNIT_RIM", "AOW_HUMAN_LEGS", "AOW_HUMAN_HEAD", "AOW_HUMAN_TORSO"]
+const STUDY_ENV := ["AOW_ART_SCALE", "AOW_UNIT_BANDS", "AOW_UNIT_OUTLINE", "AOW_UNIT_RIM"]
 static var _mods := []        # the mods in use when _version was made (their files are in it too)
 const Mods := preload("res://src/mods.gd")
 
