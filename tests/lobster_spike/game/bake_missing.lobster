@@ -50,7 +50,8 @@ def bake_missing_parts() -> int:
             part_nodes(v.node, parts)
             for(parts) n:
                 let key = bake_key(n.part_id, n.pshapes, n.cols)
-                if not bakes.get(key) and bake_model_part(n.part_id, key, n.cols): continue
+                let cols = n.cols
+                if cols and not bakes.get(key) and bake_model_part(n.part_id, key, cols): continue
                 if mesh_dir != "" and not has_char(n.part_id, '~'):
                     for(8) f:
                         let full = key + facing_suffix(f)
