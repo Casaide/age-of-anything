@@ -49,7 +49,9 @@ SHADER bakelit
         UNIFORM float mapping
         UNIFORM vec4 emis
         UNIFORM vec4 mflags
+        UNIFORM vec3 view_dir
         vec3 n = normalize(inorm);
+        if (mflags.w > 0.5 && dot(n, view_dir) < 0.0) n = -n;   // a two-sided face seen from behind: lit from the front, as Godot's
         // The material's texture as Godot maps it: none, its UVs, or triplanar (the model's position
         // times the scale, each axis's plane weighted by the normal).
         vec4 t = vec4(1.0);
@@ -106,6 +108,7 @@ class BakeMat:
     scissor = false                 // alpha scissor (decals)
     unshaded = false
     emission = float3_0
+    two_sided = false               // (cull disabled: a face seen from behind turns its normal to the camera)
 
 var bake_mats = []::BakeMat
 
@@ -323,7 +326,8 @@ def bake_facing(part:[BakeTri], facing:int, hide:[BakeTri] = [], join:float3 = f
             gl.set_uniform("uvmap", float4 { bm.scale.x, bm.scale.y, bm.offset.x, bm.offset.y })
             let em = if mask: float3_0 else: bm.emission
             gl.set_uniform("emis", float4 { em.x, em.y, em.z, 0.0 })
-            gl.set_uniform("mflags", float4 { if bm.scissor: 1.0 else: 0.0, if bm.unshaded or mask: 1.0 else: 0.0, if mask: 1.0 else: 0.0, 0.0 })
+            gl.set_uniform("mflags", float4 { if bm.scissor: 1.0 else: 0.0, if bm.unshaded or mask: 1.0 else: 0.0, if mask: 1.0 else: 0.0, if bm.two_sided: 1.0 else: 0.0 })
+            gl.set_uniform("view_dir", cz)
             gl.set_uniform("mapping", if bake_shadow_debug: -1.0 elif not bt: 0.0 elif bm.triplanar: 2.0 else: 1.0)
             gl.set_uniform("lx", float4 { kx.x * lpx, kx.y * lpx, kx.z * lpx, -llo.x * lpx })
             gl.set_uniform("ly", float4 { -ky.x * lpx, -ky.y * lpx, -ky.z * lpx, -llo.y * lpx })
