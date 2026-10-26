@@ -87,6 +87,7 @@ var swap_at = -1.0
 var map_arg = ""                // map:<id>: the lobby's map (tests and captures)
 var races_arg = ""             // races:<A>|<B>: the lobby's prompts, as if typed (then balanced, then played)
 var look_y = -1
+var hurt_pct = -1                // hurt:<percent>: your buildings start at that much of their hit points (captures of fire)
 var padtest = false             // padtest: a fake pad plays a few seconds, then quit
 var hosting = false             // host: a network match, waiting for a player to join (net/lockstep.lobster)
 var join_ip = ""                // join:<ip>: play the second side of the match a host there sets up
@@ -106,6 +107,7 @@ for(args) a, k:
         if key == "reload": reload_at = string_to_float(val)
         if a == "host": hosting = true
         if a == "padtest": padtest = true
+        if key == "hurt": hurt_pct = string_to_int(val)
         if key == "join": join_ip = val
         if key == "swap":
             let sp, sa = split_string(val, "@")
@@ -1495,9 +1497,9 @@ def self_test() -> bool:
 
 import .game.pad   // (here: it plays through the controls above)
 
-// Control groups shown (Dominic, 2026-10-26: "visible somewhere, at least as a number on the units"):
-// a small number by each grouped unit's health bar (its lowest group), and under the top bar each
-// group's number and how many are in it. Screen space, after the world.
+// Control groups shown (Dominic, 2026-10-26: "visible somewhere, at least as a number on the units",
+// then "only when you select the group"): a small number by each selected unit that's in a group (its
+// lowest), and under the top bar each group's number and how many are in it. Screen space, after the world.
 // About the space a short label takes at this font size (gl.text_size doesn't match the drawn text at
 // every window scale).
 def label_size(s:string, fs:int) -> float2: return float2 { 0.6 * float(fs) * float(s.length), float(fs) }
@@ -1518,7 +1520,7 @@ def draw_groups():
     let first = dictionary<int, int>(64)
     for(keys) n, k:
         for(live[k]) id:
-            if first.get(id, -1) < 0: first.set(id, n)
+            if first.get(id, -1) < 0 and contains(selected, id): first.set(id, n)   // (only on what's selected: Dominic)
     let ws = float(gl.window_size())
     for(first.get_keys()) id:
         let i = index_of(id)
@@ -1727,6 +1729,9 @@ if hosting:
         if net_wait_frame(if link.error != "": "Could not host: {link.error}" else: "Hosting on port {NET_PORT}: waiting for a player to join..."): return
     net_send(link, 'S', world_bytes(bots))
 let net_on = hosting or join_ip != ""
+if hurt_pct >= 0:
+    for(b_id.length) b:
+        if b_owner[b] == ME: b_hp[b] = max(1, bm_hp[ME][b_kind[b]] * hurt_pct / 100)
 in_net_match = net_on
 let lockstep = new_lockstep(link, ME, if net_on: [0, 1] else: [ME])
 

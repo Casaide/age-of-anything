@@ -43,7 +43,32 @@ var pack_prompts = []::string
 var pack_library = false                      // the pack is the part library: every race's units, any race
 let pack_formats = texture_format_nearest_mag | texture_format_nearest_min | texture_format_nomipmap | texture_format_clamp
 
+// Where a building look's chimney smokes, its lantern and windows glow (canvas units from its anchor;
+// fx.txt, from building_fx.gd).
+class BFx:
+    smoke:float2
+    has_smoke:bool
+    lights:[float2]               // the lantern first, if it has one
+
+var bfx = dictionary<string, BFx>(256)
+
+def load_bfx(dir:string):
+    let text = read_file(dir + "/fx.txt")
+    if not text: return
+    for(tokenize(text, "\n", "")) line:
+        let t = filter(tokenize(line, " ", "")): _.length > 0
+        if t.length >= 6 and t[0] == "bfx":
+            def f(k:int) -> float: return string_to_float(t[k])
+            let lights = []::float2
+            if t[4] != "-": lights.push(float2 { f(4), f(5) })
+            var k = 6
+            while k + 1 < t.length:
+                lights.push(float2 { f(k), f(k + 1) })
+                k += 2
+            bfx.set(t[1], BFx { if t[2] != "-": float2 { f(2), f(3) } else: float2_0, t[2] != "-", lights })
+
 def load_pack(dir:string):
+    load_bfx(dir)
     let text = assert read_file(dir + "/index.txt")
     for(tokenize(text, "\n", "")) line:
         let t = filter(tokenize(line, " ", "")): _.length > 0
