@@ -220,8 +220,11 @@ var my_age = 1
 var my_researched = 0
 var my_done = []::int        // ids of my finished buildings, last tick
 
+var last_battle = -100.0          // when there was last fighting on screen (the theme's battle layer)
+
 def sounds_after_step():
     for(events) e:
+        if e.kind == EV_HIT and on_screen(e.x, e.y): last_battle = gl.time()
         if e.kind == EV_SHOT and on_screen(e.x, e.y) and fog[ME][cell_of(e.x, e.y)] == 2:
             let i = index_of(e.a)
             if i >= 0: play_sound(unit_shot.get(u_kind[i], "shoot_arrow"), -4.0)
@@ -529,6 +532,27 @@ def collect_corpses():
             let tc = team_col(c.owner)
             add(f, p.x, p.y, p.y - 2.0, float4 { tc.x, tc.y, tc.z, 0.35 + 0.65 * fade })
 
+// Models.LINKS: a wall tile's eight neighbours, in its arms' order.
+let LINKS = [int2 { 1, 0 }, int2 { 1, 1 }, int2 { 0, 1 }, int2 { -1, 1 }, int2 { -1, 0 }, int2 { -1, -1 }, int2 { 0, -1 }, int2 { 1, -1 }]
+
+def wall_like(b:int) -> bool:
+    let k = b_kind[b]
+    return bt_line[k] != 0 or bt_gate[k] != 0 or (k < su_btypes.length and gbool(su_btypes[k], "joins", false))
+
+// Which neighbours a finished wall tile's arms reach (BuildingArt.links_of): every finished wall,
+// gate or tower beside it, and corner to corner only where no wall beside both closes the corner.
+def wall_links(b:int) -> int:
+    def on(d:int2) -> bool:
+        let x = b_cx[b] + d.x
+        let y = b_cy[b] + d.y
+        if x < 0 or y < 0 or x >= W or y >= H: return false
+        let o = b_index_of(occupied[y * W + x])
+        return o >= 0 and o != b and b_done[o] == 1 and wall_like(o)
+    var out = 0
+    for(LINKS) d, k:
+        if on(d) and not (d.x != 0 and d.y != 0 and (on(int2 { d.x, 0 }) or on(int2 { 0, d.y }))): out |= 1 << k
+    return out
+
 def collect_buildings():
     for(b_id.length) b:
         let k = b_kind[b]
@@ -548,8 +572,21 @@ def collect_buildings():
                 let shade = if fog[ME][cell] == 2 or teams[p] == teams[ME]: 1.0 else: 0.6
                 let tc = team_col(p)
                 let flat = walk_over[cell] == 1
-                add(frame_index(name), at.x, at.y - up, if flat: -100000.0 + at.y else: at.y, float4 { tc.x, tc.y, tc.z, shade })
-                if look.front != "-": add(frame_index(look.front), at.x, at.y - up, at.y + 2.0, float4 { tc.x, tc.y, tc.z, shade })
+                let col = float4 { tc.x, tc.y, tc.z, shade }
+                if look.arms.length and b_done[b] == 1:   // a wall joined to its neighbours: arms going up the screen under its post, coming down over it
+                    let links = wall_links(b)
+                    for(2) pass:
+                        if pass == 1: add(frame_index(name), at.x, at.y - up, at.y, col)
+                        for(LINKS) d, n:
+                            if (links >> n) & 1 and (d.x + d.y <= 0) == (pass == 0) and look.arms[n] != "-":
+                                add(frame_index(look.arms[n]), at.x, at.y - up, at.y, col)
+                    if look.front != "-": add(frame_index(look.front), at.x, at.y - up, at.y + 2.0, col)
+                    for(LINKS) d, n:
+                        if (links >> n) & 1 and n < look.arms_front.length and look.arms_front[n] != "-":
+                            add(frame_index(look.arms_front[n]), at.x, at.y - up, at.y + 2.0, col)
+                else:
+                    add(frame_index(name), at.x, at.y - up, if flat: -100000.0 + at.y else: at.y, col)
+                    if look.front != "-": add(frame_index(look.front), at.x, at.y - up, at.y + 2.0, col)
 
 def collect_props():
     for(W * H) c:
@@ -667,6 +704,7 @@ def run_lobby(defaults:[string]) -> [string]:
     var shown = map(prompts) p: generate(p, rules, 0)
     var shown_for = copy(prompts)
     while gl.frame():
+        music_tick("lobby", false, gl.delta_time())
         if gl.button("escape") == 1: return []
         let text, editing, cursor, sel = gl.text_input_state()
         prompts[field] = text
@@ -1309,6 +1347,7 @@ check(gl.set_font_name("data/fonts/Droid_Sans/DroidSans.ttf"), "no font")
 zoom = 2.0 * floor(ui() + 0.5)   // two screen points an art pixel, as the game's camera
 load_pack(args[0])
 note("pack")
+music_start()
 lib_load("../../data")
 id_load("../../data")
 composed = read_file(args[0] + "/rigs.json") != nil
@@ -1336,7 +1375,27 @@ if args[1] == "-" or args[1] == "lobby":   // the races from their prompts and t
     load_species(map_id)
     if pack_library: race_facts(races)
     print "races in {(t_setup - t_gen) * 1000.0} ms, the start in {(seconds_elapsed() - t_setup) * 1000.0} ms"
-else: start_world(args[1])
+else:
+    if composed:   // a scenario has no recipes: set its races up (as export.gd did) for the composer, then load it over a clean world
+        let rules = load_rules(RULES_ID)
+        let races = map(if pack_prompts.length >= 2: pack_prompts else: ["sewer rats with cheese hammers", "angry swamp frogs with reed spears"]) pr: generate(pr, rules, 0)
+        setup_world(20261010, if pack_map != "": pack_map else: "flat_test", races, rules, [])
+        let keep_recipe = su_type_recipe
+        let keep_line = su_type_line
+        let keep_eval = su_type_eval
+        let keep_btypes = su_btypes
+        let keep_races = su_races
+        let keep_rules = su_rules
+        reset_world()
+        start_world(args[1])
+        su_type_recipe = keep_recipe
+        su_type_line = keep_line
+        su_type_eval = keep_eval
+        su_btypes = keep_btypes
+        su_races = keep_races
+        su_rules = keep_rules
+        if pack_library: race_facts(races)
+    else: start_world(args[1])
 note("world")
 events_on = true
 let bots = map(num_players) p: new_bot(p)
@@ -1358,6 +1417,7 @@ while gl.frame() and not (gl.button("escape") == 1 and placing < 0 and not build
     if gl.button("-") == 1: speed = max(0.25, speed / 2.0)
     let dt = gl.delta_time()
     frame_dt = dt
+    music_tick("age{clamp(ages[ME], 1, 4)}", gl.time() - last_battle < 6.0, dt)
     frame_no++
     if shot != "" and frame_no < 3: note("frame {frame_no} tc at {if tc0 >= 0: to_screen(iso(float(b_cx[tc0] * 1000 + 2000), float(b_cy[tc0] * 1000 + 2000))) else: float2_0} cam {cam} zoom {zoom} ws {gl.window_size()} fb {gl.framebuffer_size()} tc {tc0} draws {draws.length} W {W} H {H} first {iso(0.0, 0.0)} last {iso(float(W * 1000), float(H * 1000))}")
     if shot != "" and frame_no % 60 == 0: print "frame {frame_no}: {dt * 1000.0} ms, play {clock_s} s"

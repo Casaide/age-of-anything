@@ -251,6 +251,9 @@ func _buildings(w: World, races: Array, lines: PackedStringArray) -> void:
 			row.append(stages[s] if s < stages.size() and stages[s] != null and stages[s] != "" else "-")
 		row.append(b.get("front", "-") if b.get("front", "") != "" else "-")
 		lines.append(" ".join(row))
+		if b.has("arms"):   # a wall: its arm towards each neighbour (Models.LINKS), and their near merlons
+			lines.append("arms %s %s" % [key, " ".join(b.arms.map(func(x): return x if x != "" else "-"))])
+			lines.append("armsf %s %s" % [key, " ".join(b.get("arms_front", []).map(func(x): return x if x != "" else "-"))])
 	for kind in ArtKit.DOODADS:
 		lines.append("doodad %s %d" % [kind, ArtKit.DOODADS[kind]])
 	for terrain in ["bugbush", "reeds", "stone", "gold", "carcass", "field", "paddy", "tree"]:
