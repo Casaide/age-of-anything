@@ -13,20 +13,24 @@ check() {   # name map [animals] [prompts:A|B]
 	shift 2
 	timeout 300 "$GODOT" --headless --path ../.. --script res://tests/lobster_spike/export.gd -- match "$map" 0 8 "$OUT/$name.txt" "$@" > "$OUT/$name.log" 2>&1
 	animals=""
+	mode=""
 	a="sewer rats with cheese hammers"
 	b="angry swamp frogs with reed spears"
 	for x in "$@"; do
 		case "$x" in
 			animals) animals=animals ;;
+			mode:*) mode=$x ;;
 			prompts:*) p=${x#prompts:}; a=${p%%|*}; b=${p#*|} ;;
 		esac
 	done
 	echo "== $name ($map $*)"
 	timeout 120 "$LOBSTER" start_check.lobster -- roundtrip "$OUT/$name.txt" 2>&1 | grep -v warning 
-	timeout 120 "$LOBSTER" start_check.lobster -- setup "$OUT/$name.txt" "$map" $animals "$a" "$b" 2>&1 | grep -v warning 
+	timeout 120 "$LOBSTER" start_check.lobster -- setup "$OUT/$name.txt" "$map" $mode $animals "$a" "$b" 2>&1 | grep -v warning 
 }
 check flat flat_test
 check reed reed_meadow animals
 check delta river_delta animals "prompts:moonbears|sneaky spider archers"
 check vale siege_vale "prompts:centaur romans|tiny vikings"
+check fortress reed_meadow mode:fortress animals
+check siege siege_vale mode:siege "prompts:centaur romans|tiny vikings"
 echo "files in $OUT"

@@ -47,6 +47,7 @@ import lib.bot
 import lib.walls_ai
 import lib.world
 import gen.setup
+import gen.modes
 import gen.start
 import view.node
 import view.art
