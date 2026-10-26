@@ -110,7 +110,13 @@ SURRENDER, the bots' walls and abilities.
       Race Lab's two armies milling about and fighting, rerolls.
 - [x] The command panel (2026-10-26): `game/panel.lobster`: a unit card (a portrait from the unit's own parts, hp,
       stats) and clickable buttons with hotkeys, units' portraits and buildings' pictures on them, cost on hover
-      (`20-...`). Not yet: the timber look (data/ui.json), queue progress, research icons.
+      (`20-...`). Not yet: queue progress, research icons.
+- [x] The UI layer and the timber look (2026-10-26): `game/ui.lobster`: the look from data/ui.json (and a culture's
+      `ui` block), wood and bronze painted by a shader, boxes raised / flat / sunk with bevels and studs, buttons
+      (hover, pressed, focus, primary), text queued and drawn last, the pad's focus for menus. Every flat shape
+      now draws through screen-space meshes: in this Lobster build `gl.rect` draws -size..size round its point
+      and goes astray after a custom shader, and a raw mesh doesn't get gl.color. The command panel uses it
+      (`21-...`); the lobby, tech tree and menus are to follow.
 - [ ] 6. Setup in Lobster (Dominic, 2026-10-26: "Let's do it! Primarily because ... it opens us up to generation at
       army creation time and during the game"). Three steps, each checked against GDScript:
   - [x] 6a. Races and the match from data, 2026-10-26: a JSON reader and Godot-compatible writer, SHA-256, DataLib,

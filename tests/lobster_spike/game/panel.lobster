@@ -73,15 +73,8 @@ def btn_at(n:int) -> float2:
     let per_row = 9
     return float2 { 420.0 * u + float(n % per_row) * (BTN + 8.0) * u, panel_top() + 14.0 * u + float(n / per_row) * (BTN + 8.0) * u }
 
-// A click on the panel: true if it took it (the world doesn't get it).
-def panel_click(m:float2) -> bool:
-    if not in_panel(m): return false
-    if gl.button("mouse1") == 1:
-        let u = ui()
-        for(panel_buttons()) b, n:
-            let at = btn_at(n)
-            if m.x >= at.x and m.y >= at.y and m.x <= at.x + BTN * u and m.y <= at.y + BTN * u: press(b)
-    return true
+// A click on the panel: true if it took it (the world doesn't get it; its buttons act as they're drawn).
+def panel_click(m:float2) -> bool: return in_panel(m)
 
 // A unit's figure from its own parts, drawn at a screen point (feet there), z screen px a canvas unit.
 def draw_portrait(k:int, at:float2, z:float):
@@ -120,23 +113,21 @@ def draw_panel():
     let u = ui()
     let ws = float(gl.window_size())
     let top = panel_top()
-    box(float2 { 0.0, top }, float2 { ws.x, PANEL_H * u }, float4 { 0.1, 0.075, 0.05, 0.94 })
-    box(float2 { 0.0, top }, float2 { ws.x, 3.0 * u }, float4 { 0.45, 0.33, 0.18, 1.0 })
+    ui_frame(false)
+    ui_box(float2 { -8.0 * u, top }, float2 { ws.x + 16.0 * u, PANEL_H * u + 8.0 * u }, 1, ui_look.face, false)
     // The unit card: the first selected unit (or the building).
     let ids = selected_units()
     let bi = b_index_of(sel_building)
-    box(float2 { 12.0 * u, top + 12.0 * u }, float2 { 110.0 * u, PANEL_H * u - 24.0 * u }, float4 { 0.16, 0.12, 0.08, 1.0 })
+    ui_box(float2 { 12.0 * u, top + 12.0 * u }, float2 { 110.0 * u, PANEL_H * u - 24.0 * u }, -1, ui_look.face, false)
     let btns = panel_buttons()
     let m = float(gl.mouse_pos(0))
     var hover = -1
+    var pressed = -1
     for(btns) b, n:
         let at = btn_at(n)
-        let on = m.x >= at.x and m.y >= at.y and m.x <= at.x + BTN * u and m.y <= at.y + BTN * u
-        if on: hover = n
-        box(at, float2_1 * BTN * u, if on: float4 { 0.36, 0.27, 0.15, 1.0 } else: float4 { 0.22, 0.17, 0.11, 1.0 })
-        box(at, float2 { BTN * u, 2.0 * u }, float4 { 0.55, 0.42, 0.24, 1.0 })
-        if b.act == 1: box(at + float2 { 4.0 * u, 4.0 * u }, float2_1 * (BTN - 8.0) * u, float4 { 0.2, 0.28, 0.17, 1.0 })
-        if b.act == 2: box(at + float2 { 4.0 * u, 4.0 * u }, float2_1 * (BTN - 8.0) * u, float4 { 0.4, 0.3, 0.1, 1.0 })
+        if m.x >= at.x and m.y >= at.y and m.x <= at.x + BTN * u and m.y <= at.y + BTN * u: hover = n
+        if ui_button(at, float2_1 * BTN * u, "", b.act == 2): pressed = n
+    if pressed >= 0: press(btns[pressed])
     // Pictures (sprites) after the boxes, text last.
     b_sheet = -1
     if ids.length:
@@ -149,25 +140,25 @@ def draw_panel():
         if b.building >= 0: draw_building_icon(b.building, at + float2 { 4.0 * u, 4.0 * u }, (BTN - 8.0) * u)
     flush_sprites()
     let fs = int(13.0 * u)
-    let light = float4 { 0.95, 0.9, 0.75, 1.0 }
+    let light = ui_look.text
     if ids.length:
         let i = index_of(ids[0])
         let k = u_kind[i]
-        page_text(float2 { 132.0 * u, top + 14.0 * u }, (if ids.length > 1: string(ids.length) + " x " else: "") + unit_name(k), int(18.0 * u), light)
-        page_text(float2 { 132.0 * u, top + 42.0 * u }, "hp {u_hp[i]} / {t_hp[k]}", fs, light)
-        page_text(float2 { 132.0 * u, top + 62.0 * u }, "attack {fold(t_atk[k], 0) a, b: max(a, b)}   armour {fold(t_arm[k], 0) a, b: max(a, b)}", fs, light)
-        page_text(float2 { 132.0 * u, top + 82.0 * u }, "speed {t_speed[k]}   cost {cost_words(t_cost[k])}", fs, light)
+        ui_text(float2 { 132.0 * u, top + 14.0 * u }, (if ids.length > 1: string(ids.length) + " x " else: "") + unit_name(k), int(18.0 * u), light)
+        ui_text(float2 { 132.0 * u, top + 42.0 * u }, "hp {u_hp[i]} / {t_hp[k]}", fs, light)
+        ui_text(float2 { 132.0 * u, top + 62.0 * u }, "attack {fold(t_atk[k], 0) a, b: max(a, b)}   armour {fold(t_arm[k], 0) a, b: max(a, b)}", fs, light)
+        ui_text(float2 { 132.0 * u, top + 82.0 * u }, "speed {t_speed[k]}   cost {cost_words(t_cost[k])}", fs, light)
     elif bi >= 0:
-        page_text(float2 { 132.0 * u, top + 14.0 * u }, bname(b_kind[bi]), int(18.0 * u), light)
-        page_text(float2 { 132.0 * u, top + 42.0 * u }, "hp {b_hp[bi]} / {bm_hp[b_owner[bi]][b_kind[bi]]}" + (if b_done[bi] == 0: "   (building)" else: ""), fs, light)
-        page_text(float2 { 132.0 * u, top + 62.0 * u }, "queue {b_queue[bi].length}" + (if b_queue[bi].length: ": " + concat_string(map(b_queue[bi]) q: unit_name(q), ", ") else: ""), fs, light)
+        ui_text(float2 { 132.0 * u, top + 14.0 * u }, bname(b_kind[bi]), int(18.0 * u), light)
+        ui_text(float2 { 132.0 * u, top + 42.0 * u }, "hp {b_hp[bi]} / {bm_hp[b_owner[bi]][b_kind[bi]]}" + (if b_done[bi] == 0: "   (building)" else: ""), fs, light)
+        ui_text(float2 { 132.0 * u, top + 62.0 * u }, "queue {b_queue[bi].length}" + (if b_queue[bi].length: ": " + concat_string(map(b_queue[bi]) q: unit_name(q), ", ") else: ""), fs, light)
     else:
-        page_text(float2 { 132.0 * u, top + 14.0 * u }, "Left click or drag to select. Arrows or edges scroll, wheel zooms, space pauses, +/- speed. F1: tech tree.", fs, light)
+        ui_text(float2 { 132.0 * u, top + 14.0 * u }, "Left click or drag to select. Arrows or edges scroll, wheel zooms, space pauses, +/- speed. F1: tech tree.", fs, light)
     for(btns) b, n:
         let at = btn_at(n)
-        if b.hotkey != "": page_text(at + float2 { 4.0 * u, 2.0 * u }, b.hotkey, int(12.0 * u), float4 { 1.0, 0.85, 0.4, 1.0 })
-        if b.unit < 0 and b.building < 0: page_text(at + float2 { 6.0 * u, BTN * 0.4 * u }, if b.label.length > 9: b.label.substring(0, 8) + "." else: b.label, int(11.0 * u), light)
+        if b.hotkey != "": ui_text(at + float2 { 4.0 * u, 2.0 * u }, b.hotkey, int(12.0 * u), float4 { 1.0, 0.85, 0.4, 1.0 })
+        if b.unit < 0 and b.building < 0: ui_text(at + float2 { 6.0 * u, BTN * 0.4 * u }, if b.label.length > 9: b.label.substring(0, 8) + "." else: b.label, int(11.0 * u), light)
     if hover >= 0:
         let b = btns[hover]
-        page_text(float2 { 420.0 * u, top - 26.0 * u }, b.label + (if b.cost != "": "   " + b.cost else: ""), int(15.0 * u), float4 { 1.0, 0.92, 0.7, 1.0 })
-    page_flush()
+        ui_text(float2 { 420.0 * u, top - 26.0 * u }, b.label + (if b.cost != "": "   " + b.cost else: ""), int(15.0 * u), float4 { 1.0, 0.92, 0.7, 1.0 })
+    ui_flush()

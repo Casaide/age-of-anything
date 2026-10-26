@@ -212,6 +212,5 @@ def pad_draw():
             let size = gl.text_size(w.label)
             let col = if n == pad_pick: float4 { 1.0, 0.85, 0.4, 1.0 } else: float4 { 0.9, 0.86, 0.75, 1.0 }
             if n == pad_pick:
-                gl.color(float4 { 0.3, 0.2, 0.1, 0.9 }):
-                    gl.translate(at - float(size) / 2.0 - float2_1 * 6.0 * u): gl.rect(float(size) + float2_1 * 12.0 * u)
+                ui_fill(at - float(size) / 2.0 - float2_1 * 6.0 * u, float(size) + float2_1 * 12.0 * u, float4 { 0.3, 0.2, 0.1, 0.9 })
             lobby_text(at - float(size) / 2.0, w.label, col)
