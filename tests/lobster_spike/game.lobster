@@ -385,6 +385,8 @@ def add_view(v:UV, sort_y:float, tc:float4, shade:float):
     for(draw_list(v, ID_XF)) d:
         add_xf(frame_index("p:" + d.key), xf_mul(sx, d.xf), sort_y, float4 { tc.x, tc.y, tc.z, d.alpha * shade })
 
+import .game.town   // (here: it uses the views)
+
 def collect_views(alpha:float):
     let alive = dictionary<int, int>(1024)
     for(u_x.length) i:
@@ -404,9 +406,9 @@ def collect_views(alpha:float):
             v.walking = dx != 0 or dy != 0
             if t_unpack[k] > 0: set_packed(v, u_ready[i] < t_unpack[k])
             if on_screen(u_x[i], u_y[i]):
-                let job = job_of(i)
+                let job = town_job(i, job_of(i))
                 v.job = job
-                if t_worker[k]: set_tool(v, tool_of(i, k))
+                if t_worker[k]: set_tool(v, town_tool(i, tool_of(i, k)))
                 if job != "":
                     let w = work_point(i)
                     if w.x >= 0.0 and vlen(w - v.node.pos) > 2.0: face_vec(v, w - v.node.pos)
@@ -737,6 +739,7 @@ def draw_world(alpha:float):
                 draws = []::Drawable
                 collect_props()
                 collect_buildings()
+                collect_town()
                 if composed: collect_views(alpha)
                 else:
                     collect_units(alpha)
@@ -753,6 +756,7 @@ def draw_world(alpha:float):
                     else: sprite(d.f, d.x, d.ay, d.col)
                 flush_sprites()
                 gl.scale(1.5):
+                    draw_town()
                     draw_shots(alpha)
                     fx_draw() id:
                         let v = views.get(id)
@@ -1537,6 +1541,7 @@ while gl.frame() and not (gl.button("escape") == 1 and placing < 0 and not build
     let dt = gl.delta_time()
     frame_dt = dt
     fx_tick(dt)
+    town_tick(dt)
     music_tick("age{clamp(ages[ME], 1, 4)}", gl.time() - last_battle < 6.0, dt)
     frame_no++
     if shot != "" and frame_no < 3: note("frame {frame_no} tc at {if tc0 >= 0: to_screen(iso(float(b_cx[tc0] * 1000 + 2000), float(b_cy[tc0] * 1000 + 2000))) else: float2_0} cam {cam} zoom {zoom} ws {gl.window_size()} fb {gl.framebuffer_size()} tc {tc0} draws {draws.length} W {W} H {H} first {iso(0.0, 0.0)} last {iso(float(W * 1000), float(H * 1000))}")

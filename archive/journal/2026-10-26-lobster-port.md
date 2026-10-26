@@ -83,11 +83,12 @@ it), the doodads scattered from Godot's own random numbers seeded by the map's n
 culture's paths. The paths were laid from the start but never showed: rebuilding the water and rock masks (every time a
 bush is eaten) reset the path texture to empty. Rats lay cobbles. Then the combat effects: sparks, dust, shots stuck in the ground, heal motes. Capturing a fight showed long dark
 streaks running up off the top of the screen; they were there with the new effects switched off too: the old shot
-drawing. Shots now fly as the Godot game draws them, each weapon its own arc, length and colour.
+drawing. Shots now fly as the Godot game draws them, each weapon its own arc, length and colour. And the living town: baskets and reed bundles piling up at the Town Center as loads come home,
+idle workers sweeping, sitting and chatting, yards and gardens round older houses, birds pecking about.
 
 ## Pictures
 
-`archive/images/2026-10-26/`: the first frame (01), a rat raid on the frog town (02), sheep penned (03), the UI scaled (04), the ground shader with composed rats (05), moonbears from the lobby and the library (06), rats become forest bears mid-match (07), hills and cliffs (08), joined walls (09), cobbled paths (10), a fight with shots on their arcs (11).
+`archive/images/2026-10-26/`: the first frame (01), a rat raid on the frog town (02), sheep penned (03), the UI scaled (04), the ground shader with composed rats (05), moonbears from the lobby and the library (06), rats become forest bears mid-match (07), hills and cliffs (08), joined walls (09), cobbled paths (10), a fight with shots on their arcs (11), the town's piles (12).
 
 ## Ideas parked
 

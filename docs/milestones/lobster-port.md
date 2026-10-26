@@ -74,7 +74,9 @@ SURRENDER, the bots' walls and abilities.
       relief, joined walls, the ground's doodads, the theme in stems, and each culture's paths (`game/paths.lobster`:
       A* from the town's door to its buildings, food and wood, merging into trunk roads), and the combat effects
       (`game/fx.lobster`: each weapon's shot on its arc, misses standing in the ground, sparks, dust, heal motes; the
-      sim tells the view of misses, heals and stones landing). To come: control groups, a nicer panel.
+      sim tells the view of misses, heals and stones landing), and the living town (`game/town.lobster`: piles at
+      the drop-offs, chores, builders' dust, yards and gardens, critters). To come: control groups, a nicer panel;
+      from town life, chimney smoke, damaged buildings' cracks and fire, the stable's tethered mount, the town's sound.
 - [ ] 6. Setup in Lobster (Dominic, 2026-10-26: "Let's do it! Primarily because ... it opens us up to generation at
       army creation time and during the game"). Three steps, each checked against GDScript:
   - [x] 6a. Races and the match from data, 2026-10-26: a JSON reader and Godot-compatible writer, SHA-256, DataLib,
@@ -110,7 +112,7 @@ SURRENDER, the bots' walls and abilities.
 - 2026-10-26 (6b and on): the ground shader and composed rats (`archive/images/2026-10-26/05-...`), moonbears typed into
   the lobby and drawn from the library (`06-...`), rats becoming forest bears a minute into a match (`07-...`).
   Then hills and cliffs (`08-...`), joined walls (`09-...`), and the rats' cobbled roads from their town out to the
-  bushes and reeds (`10-...`). Shots on their arcs in a rat and frog fight (`11-...`).
+  bushes and reeds (`10-...`). Shots on their arcs in a rat and frog fight (`11-...`). The rats' town with its piles (`12-...`).
 
 - 2026-10-26 (6a): two races from prompts in about 3 ms and the match start in about 3 ms, in the game; frames from the
   Lobster-made start and from the GDScript scenario are byte-identical at tick 101.
