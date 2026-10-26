@@ -78,11 +78,14 @@ auto-balance, which first swung the Heavy Lancer from 96% to 3% (a 261% price), 
 The lobby, and N mid-match: the running world is set aside (every global moved, then moved back), the newcomer
 fights the others, and your people become it. The rats became forest bears a minute into a match.
 
-The ground: Godot's terrain shader in Lobster's shader format, the same masks.
+The ground: Godot's terrain shader in Lobster's shader format, the same masks. Then the rest of the ground: hills raised in levels with cliff faces (a hill hides what's behind
+it), the doodads scattered from Godot's own random numbers seeded by the map's name (so in the same places), and each
+culture's paths. The paths were laid from the start but never showed: rebuilding the water and rock masks (every time a
+bush is eaten) reset the path texture to empty. Rats lay cobbles.
 
 ## Pictures
 
-`archive/images/2026-10-26/`: the first frame (01), a rat raid on the frog town (02), sheep penned (03), the UI scaled (04), the ground shader with composed rats (05), moonbears from the lobby and the library (06), rats become forest bears mid-match (07).
+`archive/images/2026-10-26/`: the first frame (01), a rat raid on the frog town (02), sheep penned (03), the UI scaled (04), the ground shader with composed rats (05), moonbears from the lobby and the library (06), rats become forest bears mid-match (07), hills and cliffs (08), joined walls (09), cobbled paths (10).
 
 ## Ideas parked
 

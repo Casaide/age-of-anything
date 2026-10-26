@@ -66,6 +66,7 @@ import .game.audio
 import .game.pack
 import .game.ground
 import .game.doodads
+import .game.paths
 
 let args = command_line_arguments()
 // Options after the two paths: watch (the bot plays you too), speed:<x>, shot:<png> with at:<seconds>
@@ -610,6 +611,42 @@ def keep_clear(t:float2) -> bool:
         if sqrt(dx * dx + dy * dy) < 4.0: return true
     return false
 
+// Each side's paths (sim_debug._refresh_paths): from its biggest finished building's door to its other
+// finished buildings and the nearest food and wood; the hub and resource ends picked once. An
+// enemy's only run between the buildings you've seen. Re-planned when the finished count changes.
+def refresh_paths() -> bool:
+    var count = 0
+    let owners = []::PathOwner
+    for(su_races) race, p:
+        let mine = []::int
+        for(b_id.length) b:
+            if b_owner[b] == p and b_done[b] == 1 and not wall_like(b) and (teams[p] == teams[ME] or fog[ME][b_cy[b] * W + b_cx[b]] != 0):
+                mine.push(b)
+        count += mine.length
+        if mine.length:
+            insertion_sort(mine) a, b: b_sx[a] * b_sy[a] > b_sx[b] * b_sy[b] or (b_sx[a] * b_sy[a] == b_sx[b] * b_sy[b] and b_id[a] < b_id[b])
+            let st = gobj(family(rstr(race, "family")), "paths")
+            if path_anchor_hub.get(p, float2 { -9.0, -9.0 }).x < -8.0:
+                let at = door_of(mine[0])
+                let res = []::float2
+                for(["food", "wood"]) kind:
+                    let t = nearest_resource_edge(str_index(resource_names, kind) + 1, at)
+                    if t.x >= 0.0: res.push(t)
+                path_anchor_hub.set(p, at)
+                path_anchor_res.set(p, res)
+            let hub = path_anchor_hub.get(p, float2_0)
+            let targets = []::float2
+            for(mine) b:
+                if door_of(b) != hub: targets.push(door_of(b))
+            for(path_anchor_res.get(p, [])) t: targets.push(t)
+            let w = get(st, "width")
+            owners.push(PathOwner { gstr(st, "style", "trail"), if w: as_float(w) else: 0.36, hub, targets })
+    if count == path_count: return false
+    path_count = count
+    path_plan(owners)
+    paint_paths()
+    return true
+
 def collect_doodads():
     for(doodad_list) d:
         let c = clamp(int(d.t.y), 0, H - 1) * W + clamp(int(d.t.x), 0, W - 1)
@@ -657,9 +694,11 @@ def draw_world(alpha:float):
         if not relief_built:
             build_relief()
             relief_built = true
-            build_doodads(map_name_now, doodads) t: keep_clear(t)
+            refresh_paths()   // (doodads keep off the paths, so they must be there first)
+            build_doodads(map_name_now, doodads) t: keep_clear(t) or on_path(t)
         mask_version = map_version
         mask_tick = tick
+    if relief_built and tick % 20 == 0: refresh_paths()
     let ws = float(gl.window_size())
     gl.translate(ws / 2.0):
         gl.scale(zoom):
