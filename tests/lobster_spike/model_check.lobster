@@ -22,6 +22,7 @@ import .view.node
 import .view.art
 import .view.baker
 import .model.kit
+import .model.grng
 import .model.base
 import .model.flat
 import .model.glb
