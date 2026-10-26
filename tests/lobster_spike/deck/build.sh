@@ -26,7 +26,7 @@ mkdir -p "$out/lobster/bin"
 	cd /tmp/dev && rm -rf build-linux && mkdir build-linux && cd build-linux
 	cmake -DCMAKE_BUILD_TYPE=Release .. > /tmp/cmake.log 2>&1 || { tail -30 /tmp/cmake.log; exit 1; }
 	make -j"$(nproc)" lobster > /tmp/make.log 2>&1 || { tail -40 /tmp/make.log; exit 1; }
-	found=$(find /tmp/dev -name lobster -type f -perm -u+x -newer /tmp/cmake.log | head -1)
+	found=$(find /tmp/bin /tmp/dev -name lobster -type f -perm -u+x -newer /tmp/cmake.log 2>/dev/null | head -1)
 	[ -n "$found" ] || { echo "no lobster binary built"; exit 1; }
 	cp "$found" /out/lobster
 	strip /out/lobster
