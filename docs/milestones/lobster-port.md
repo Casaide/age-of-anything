@@ -100,6 +100,11 @@ SURRENDER, the bots' walls and abilities.
 - [x] Control groups shown (Dominic, 2026-10-26: "visible somewhere, at least as a number on the units", then "only
       when you select the group"): the group's number by each selected unit, and each group with its size under the
       top bar (`14-...`).
+- [x] The tech tree page (2026-10-26): `game/techtree.lobster`, after `src/view/tech_tree_model.gd`: ages as rows,
+      buildings as columns, unit lines (a node where the unit changes) and research tracks packed into lanes, your
+      race's names, what it lacks struck through, other races' own research left off; F1 in a match (`18-...`).
+      Not yet: the race panel (bonuses in words), effect texts, heroes' nodes. (In this Lobster build `gl.rect`
+      draws -size..size round its point: the page's boxes allow for it.)
 - [ ] 6. Setup in Lobster (Dominic, 2026-10-26: "Let's do it! Primarily because ... it opens us up to generation at
       army creation time and during the game"). Three steps, each checked against GDScript:
   - [x] 6a. Races and the match from data, 2026-10-26: a JSON reader and Godot-compatible writer, SHA-256, DataLib,
