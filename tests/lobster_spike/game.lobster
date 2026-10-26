@@ -61,6 +61,7 @@ import .view.art
 import .view.unit_view
 import .gen.reset
 import .gen.balance
+import .gen.swap
 import .game.audio
 import .game.pack
 import .game.ground
@@ -76,6 +77,8 @@ var shot = ""
 var shot_at = 0.0
 var start_speed = 1.0
 var look_x = -1
+var swap_arg = ""              // swap:<prompt>@<seconds>: become that race then (tests and captures)
+var swap_at = -1.0
 var races_arg = ""             // races:<A>|<B>: the lobby's prompts, as if typed (then balanced, then played)
 var look_y = -1
 for(args) a, k:
@@ -88,6 +91,10 @@ for(args) a, k:
         if a == "selftest": selftest = true
         if a == "follow": follow = true
         if key == "races": races_arg = val
+        if key == "swap":
+            let sp, sa = split_string(val, "@")
+            swap_arg = sp
+            swap_at = string_to_float(sa)
         if key == "look":
             let lx, ly = split_string(val, ",")
             look_x = string_to_int(lx)
@@ -348,7 +355,7 @@ def work_point(i:int) -> float2:
 def view_of(i:int) -> UV:
     let k = u_kind[i]
     let step = type_step(k)
-    let ver = (k * 16 + step) * 16 + u_owner[i]
+    let ver = ((type_gen * 1024 + k) * 16 + step) * 16 + u_owner[i]
     let have = views.get(u_id[i])
     if have and view_ver.get(u_id[i], -1) == ver: return have
     if have:
@@ -725,6 +732,71 @@ def race_facts(races:[JV]):
         let kind = shot_kind_of(tags)
         unit_shot.set(k, if kind == "boulder": "catapult_release" elif kind == "siege_bolt": "bolt_release" elif kind == "sling_stone": "sling_release" else: "shoot_" + kind)
 
+
+// ------------------------------------------------------------------ becoming another race mid-match (gen/swap.lobster)
+// N: type a race; Enter: it's balanced against the others by fights (the match waits), then your
+// people become it, line by line, units and all, and your buildings take its style.
+
+var typing_race = false
+var banner = ""
+var banner_t = -100.0
+
+def become(prompt:string):
+    let race = generate(prompt, su_rules, 0)
+    let others = []::JV
+    for(su_races) r, q:
+        if q != ME: others.push(r)
+    let t0 = seconds_elapsed()
+    var lines_ = []::string
+    balance_newcomer(race, others, 3) round, units, rates, mean, off:
+        lines_.push("round {round + 1}: {off} of {units.length} lines more than 10 points off ({rr_fights} fights)")
+        gl.frame()
+        gl.clear(float4 { 0.07, 0.06, 0.05, 1.0 })
+        gl.set_shader("color")
+        let u = ui()
+        gl.set_font_size(int(26.0 * u))
+        lobby_text(float2 { 40.0 * u, 40.0 * u }, "Your people become " + rstr(race, "name") + ": balancing them by fighting...", float4 { 0.95, 0.85, 0.6, 1.0 })
+        gl.set_font_size(int(16.0 * u))
+        for(lines_) line, n: lobby_text(float2 { 40.0 * u, 100.0 * u + float(n) * 24.0 * u }, line, float4 { 0.8, 0.78, 0.72, 1.0 })
+    let old = rstr(su_races[ME], "name")
+    swap_race(ME, race)
+    race_facts(su_races)
+    banner = old + " become " + rstr(race, "name") + " (" + rstr(race, "creature") + ", " + rstr(race, "family") + "): balanced in {rr_fights} fights, {int((seconds_elapsed() - t0) * 1000.0)} ms"
+    banner_t = seconds_elapsed()
+    print banner
+
+def typing_tick():
+    let text, editing, cursor, sel = gl.text_input_state()
+    if gl.button("escape") == 1:
+        typing_race = false
+        gl.end_text_input()
+        return
+    if gl.button("return") == 1:
+        typing_race = false
+        gl.end_text_input()
+        if text != "": become(text)
+        return
+    let u = ui()
+    let ws = float(gl.window_size())
+    gl.set_shader("color")
+    gl.color(float4 { 0.08, 0.06, 0.04, 0.92 }):
+        gl.translate(float2 { ws.x * 0.2, ws.y * 0.4 }): gl.rect(float2 { ws.x * 0.6, 110.0 * u })
+    gl.set_font_size(int(18.0 * u))
+    lobby_text(float2 { ws.x * 0.2 + 20.0 * u, ws.y * 0.4 + 14.0 * u }, "Your people become... (Enter: balance and change; Esc: never mind)", float4 { 0.8, 0.78, 0.7, 1.0 })
+    gl.set_font_size(int(26.0 * u))
+    let preview = if text != "": rstr(generate(text, su_rules, 0), "name") else: ""
+    lobby_text(float2 { ws.x * 0.2 + 20.0 * u, ws.y * 0.4 + 46.0 * u }, text + (if (int(seconds_elapsed() * 2.0) % 2) == 0: "|" else: "") + (if preview != "": "    -> " + preview else: ""), float4 { 1.0, 0.95, 0.85, 1.0 })
+
+def draw_banner():
+    if seconds_elapsed() - banner_t > 8.0: return
+    let u = ui()
+    let ws = float(gl.window_size())
+    gl.set_shader("color")
+    gl.color(float4 { 0.08, 0.06, 0.04, 0.85 }):
+        gl.translate(float2 { 20.0 * u, 50.0 * u }): gl.rect(float2 { ws.x - 40.0 * u, 40.0 * u })
+    gl.set_font_size(int(20.0 * u))
+    lobby_text(float2 { 34.0 * u, 58.0 * u }, banner, float4 { 0.95, 0.85, 0.6, 1.0 })
+
 // ------------------------------------------------------------------ selection and orders
 
 var selected = []::int          // unit ids
@@ -860,6 +932,11 @@ def train_slot(n:int):
 
 def keys():
     if gl.button("m") == 1: sound_on = not sound_on
+    if gl.button("n") == 1 and composed and pack_library:   // a new race, mid-match
+        typing_race = true
+        gl.start_text_input(int2 { 0, 0 }, int2 { 400, 40 })
+        gl.set_text_input("")
+        return
     let digit = map(9) n: gl.button("{n + 1}") == 1
     if gl.button("b") == 1 and selected_workers().length: build_menu = not build_menu
     if build_menu:
@@ -1233,7 +1310,7 @@ var steps = 0
 var frame_no = 0
 var step_time = 0.0
 note("loop")
-while gl.frame() and not (gl.button("escape") == 1 and placing < 0 and not build_menu):
+while gl.frame() and not (gl.button("escape") == 1 and placing < 0 and not build_menu and not typing_race):
     if gl.button("escape") == 1: build_menu = false
     if gl.button("space") == 1: paused = not paused
     if gl.button("=") == 1: speed = min(8.0, speed * 2.0)
@@ -1243,7 +1320,10 @@ while gl.frame() and not (gl.button("escape") == 1 and placing < 0 and not build
     frame_no++
     if shot != "" and frame_no < 3: note("frame {frame_no} tc at {if tc0 >= 0: to_screen(iso(float(b_cx[tc0] * 1000 + 2000), float(b_cy[tc0] * 1000 + 2000))) else: float2_0} cam {cam} zoom {zoom} ws {gl.window_size()} fb {gl.framebuffer_size()} tc {tc0} draws {draws.length} W {W} H {H} first {iso(0.0, 0.0)} last {iso(float(W * 1000), float(H * 1000))}")
     if shot != "" and frame_no % 60 == 0: print "frame {frame_no}: {dt * 1000.0} ms, play {clock_s} s"
-    if not paused and winner < 0: acc += dt * speed
+    if swap_arg != "" and clock_s >= swap_at:
+        become(swap_arg)
+        swap_arg = ""
+    if not paused and winner < 0 and not typing_race: acc += dt * speed
     acc = min(acc, 0.5)
     while acc >= 0.05:
         p_id = copy(u_id)
@@ -1268,13 +1348,16 @@ while gl.frame() and not (gl.button("escape") == 1 and placing < 0 and not build
                 fy += u_y[i]
                 nf++
         if nf > 0: cam = cam + (iso(float(fx / nf), float(fy / nf)) - cam) * 0.05
-    scroll()
-    keys()
-    mouse()
+    if not typing_race:
+        scroll()
+        keys()
+        mouse()
     gl.clear(float4 { 0.05, 0.05, 0.05, 1.0 })
     gl.blend(1)
     draw_world(acc / 0.05)
     draw_hud(paused, speed)
+    draw_banner()
+    if typing_race: typing_tick()
     if selftest and self_test():
         if shot != "": gl.screenshot(shot)
         return
