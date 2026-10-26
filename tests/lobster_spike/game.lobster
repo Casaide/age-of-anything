@@ -72,6 +72,7 @@ import .game.ground
 import .game.doodads
 import .game.paths
 import .game.fx
+import .game.ui
 
 let args = command_line_arguments()
 // Options after the two paths: watch (the bot plays you too), speed:<x>, shot:<png> with at:<seconds>
@@ -865,9 +866,12 @@ def draw_roster(vs:[UV], base:float2, z:float, p:int, dt:float):
             if f >= 0: sprite_xf(f, xf_mul(screen, d.xf), float4 { tc.x, tc.y, tc.z, d.alpha })
     flush_sprites()
 
-// The lobby's own frame loop: the prompts, or [] when the window closes.
+// The lobby's own frame loop, on the UI layer (game/ui.lobster): the prompts, or [] when the window closes.
+// Its buttons: the map and the mode (or up / down, F2), Play (or Enter), Host (play, and wait for a
+// player to join over the network), Join (the address in the third field). Tab moves between fields.
 def run_lobby(defaults:[string]) -> [string]:
     let prompts = copy(defaults)
+    var address = "127.0.0.1"
     var field = 0
     let rules = load_rules(rules_id())
     gl.start_text_input(int2 { 0, 0 }, int2 { 400, 40 })
@@ -876,24 +880,27 @@ def run_lobby(defaults:[string]) -> [string]:
     var shown_for = copy(prompts)
     var lab_frames = 0
     var armies = map(shown) r, k: if composed and pack_library: roster_views(r, k) else: []::UV
+    def step_map(by:int):
+        let maps = map_ids()
+        if maps.length:
+            var at = 0
+            for(maps) m, n:
+                if m == lobby_map: at = n
+            lobby_map = maps[(at + by + maps.length) % maps.length]
+    def focus(f:int):
+        field = f
+        gl.set_text_input(if f < 2: prompts[f] else: address)
     while gl.frame():
         music_tick("lobby", false, gl.delta_time())
         if gl.button("escape") == 1: return []
         let text, editing, cursor, sel = gl.text_input_state()
-        prompts[field] = text
-        if gl.button("tab") == 1:
-            field = (field + 1) % prompts.length
-            gl.set_text_input(prompts[field])
+        if field < 2: prompts[field] = text else: address = text
+        if gl.button("tab") == 1: focus((field + 1) % 3)
         if gl.button("return") == 1:
             gl.end_text_input()
             return prompts
-        let maps = map_ids()
-        if maps.length and (gl.button("up") == 1 or gl.button("down") == 1):
-            var at = 0
-            for(maps) m, n:
-                if m == lobby_map: at = n
-            at = (at + (if gl.button("down") == 1: 1 else: maps.length - 1)) % maps.length
-            lobby_map = maps[at]
+        if gl.button("up") == 1: step_map(-1)
+        if gl.button("down") == 1: step_map(1)
         if gl.button("f2") == 1: lobby_mode = MODE_IDS[(str_index(MODE_IDS, lobby_mode) + 1) % MODE_IDS.length]
         for(prompts) p, k:
             if p != shown_for[k]:
@@ -901,31 +908,52 @@ def run_lobby(defaults:[string]) -> [string]:
                 shown_for[k] = p
                 if composed and pack_library: armies[k] = roster_views(shown[k], k)
         gl.clear(float4 { 0.07, 0.06, 0.05, 1.0 })
-        gl.set_shader("color")
         let u = ui()
         let ws = float(gl.window_size())
-        for(prompts) p, k:   // (shapes and sprites before any text: see box)
-            let x = 40.0 * u + float(k) * ws.x / 2.0
-            box(float2 { x - 8.0 * u, 166.0 * u }, float2 { ws.x / 2.0 - 70.0 * u, 34.0 * u }, if k == field: float4 { 0.25, 0.2, 0.14, 1.0 } else: float4 { 0.15, 0.13, 0.1, 1.0 })
-            draw_roster(armies[k], float2 { x + 30.0 * u, ws.y * 0.8 }, 0.9 * u, k, gl.delta_time())
-        gl.set_font_size(int(40.0 * u))
-        lobby_text(float2 { 40.0 * u, 30.0 * u }, "Age of Anything", float4 { 0.95, 0.85, 0.6, 1.0 })
-        gl.set_font_size(int(18.0 * u))
-        lobby_text(float2 { 40.0 * u, 90.0 * u }, "Type your race and theirs. Tab: the other one. Up / down: the map. F2: the mode. Enter: balance them and play. Esc: quit.", float4 { 0.8, 0.78, 0.7, 1.0 })
-        lobby_text(float2 { ws.x * 0.6, 40.0 * u }, "Map: " + lobby_map + "    Mode: " + lobby_mode, float4 { 0.95, 0.85, 0.6, 1.0 })
+        ui_frame(true)
+        // Shapes first: the page, the two race columns with their fields, the buttons.
+        ui_mat(float2_0, ws, ui_look.face * float4 { 0.55, 0.55, 0.55, 1.0 }, 0)
+        let half = ws.x / 2.0
         for(prompts) p, k:
-            let x = 40.0 * u + float(k) * ws.x / 2.0
-            let y = 140.0 * u
-            lobby_text(float2 { x, y }, if k == 0: "Your race" else: "Their race", float4 { 0.7, 0.68, 0.6, 1.0 })
-            gl.set_font_size(int(22.0 * u))
-            lobby_text(float2 { x, y + 30.0 * u }, p + (if k == field and (int(seconds_elapsed() * 2.0) % 2) == 0: "|" else: ""), float4 { 1.0, 0.95, 0.85, 1.0 })
-            gl.set_font_size(int(16.0 * u))
+            let x = 24.0 * u + float(k) * half
+            ui_panel(float2 { x, 130.0 * u }, float2 { half - 48.0 * u, ws.y - 250.0 * u }, if k == 0: "Your race" else: "Their race")
+            ui_box(float2 { x + 20.0 * u, 176.0 * u }, float2 { half - 88.0 * u, 44.0 * u }, -1, ui_look.face, false)
+            if k == field: ui_outline(float2 { x + 20.0 * u, 176.0 * u }, float2 { half - 88.0 * u, 44.0 * u }, 2.0 * u, ui_look.accent)
+            let m = float(gl.mouse_pos(0))
+            if gl.button("mouse1") == 1 and m.x >= x + 20.0 * u and m.x <= x + half - 68.0 * u and m.y >= 176.0 * u and m.y <= 220.0 * u: focus(k)
+        let by = ws.y - 100.0 * u
+        if ui_button(float2 { 24.0 * u, by }, float2 { 52.0 * u, 60.0 * u }, "<", false): step_map(-1)
+        if ui_button(float2 { 300.0 * u, by }, float2 { 52.0 * u, 60.0 * u }, ">", false): step_map(1)
+        if ui_button(float2 { 370.0 * u, by }, float2 { 220.0 * u, 60.0 * u }, "Mode: " + lobby_mode, false):
+            lobby_mode = MODE_IDS[(str_index(MODE_IDS, lobby_mode) + 1) % MODE_IDS.length]
+        ui_box(float2 { ws.x - 760.0 * u, by }, float2 { 230.0 * u, 60.0 * u }, -1, ui_look.face, false)
+        if field == 2: ui_outline(float2 { ws.x - 760.0 * u, by }, float2 { 230.0 * u, 60.0 * u }, 2.0 * u, ui_look.accent)
+        var go = ""
+        if ui_button(float2 { ws.x - 520.0 * u, by }, float2 { 120.0 * u, 60.0 * u }, "Join", false): go = "join"
+        if ui_button(float2 { ws.x - 390.0 * u, by }, float2 { 140.0 * u, 60.0 * u }, "Host", false): go = "host"
+        if ui_button(float2 { ws.x - 240.0 * u, by }, float2 { 216.0 * u, 60.0 * u }, "Play", true): go = "play"
+        // The armies, then the text.
+        for(prompts) p, k:
+            draw_roster(armies[k], float2 { 24.0 * u + float(k) * half + 50.0 * u, ws.y - 190.0 * u }, 0.9 * u, k, gl.delta_time())
+        ui_text(float2 { 30.0 * u, 26.0 * u }, "Age of Anything", int(42.0 * u), ui_look.title)
+        ui_text(float2 { 30.0 * u, 84.0 * u }, "Type your race and theirs: anything you can describe. Tab: the next field. Enter: balance them by fighting, and play.", int(16.0 * u), ui_look.dim)
+        ui_text(float2 { 90.0 * u, by + 18.0 * u }, lobby_map, int(18.0 * u), ui_look.text)
+        ui_text(float2 { ws.x - 750.0 * u, by + 18.0 * u }, address + (if field == 2 and (int(seconds_elapsed() * 2.0) % 2) == 0: "|" else: ""), int(18.0 * u), ui_look.text)
+        for(prompts) p, k:
+            let x = 24.0 * u + float(k) * half
+            ui_text(float2 { x + 32.0 * u, 184.0 * u }, p + (if k == field and (int(seconds_elapsed() * 2.0) % 2) == 0: "|" else: ""), int(22.0 * u), ui_look.text)
             for(race_lines(shown[k])) line, n:
-                lobby_text(float2 { x, y + 80.0 * u + float(n) * 22.0 * u }, line, if n == 0: float4 { 0.95, 0.85, 0.6, 1.0 } else: float4 { 0.8, 0.78, 0.72, 1.0 })
+                ui_text(float2 { x + 32.0 * u, 236.0 * u + float(n) * 22.0 * u }, line, int(16.0 * u), if n == 0: ui_look.title else: ui_look.dim)
+        ui_flush()
         lab_frames++
         if lab_arg and lab_frames == 90:
             if shot != "": gl.screenshot(shot)
             return []
+        if go != "":
+            gl.end_text_input()
+            if go == "host": hosting = true
+            if go == "join": join_ip = address
+            return prompts
     return []
 
 // The races balanced by fights before the match: a few rounds of the round robin in age 2, each line
@@ -1514,7 +1542,6 @@ def self_test() -> bool:
     return false
 
 import .game.pad   // (here: it plays through the controls above)
-import .game.ui
 import .game.techtree
 import .game.panel
 
@@ -1686,6 +1713,14 @@ def net_wait_frame(msg:string) -> bool:
 
 var link = Link {}
 var joined_bots = []::Bot
+// The lobby first (its Join button turns this into joining someone else's match).
+var lobby_prompts = if pack_prompts.length >= 2: pack_prompts else: ["sewer rats with cheese hammers", "angry swamp frogs with reed spears"]
+if args[1] == "lobby" and join_ip == "":
+    if map_arg != "": lobby_map = map_arg
+    if mode_arg != "": lobby_mode = mode_arg
+    if races_arg != "" and not lab_arg: lobby_prompts = tokenize(races_arg, "|", " ")
+    else: lobby_prompts = run_lobby(if races_arg != "": tokenize(races_arg, "|", " ") else: lobby_prompts)
+    if not lobby_prompts.length and join_ip == "": return
 if join_ip != "":
     link = net_join(join_ip, NET_PORT)
     var msg = "Joining {join_ip}..."
@@ -1702,13 +1737,7 @@ if join_ip != "":
 elif args[1] == "-" or args[1] == "lobby":   // the races from their prompts and the match start, made here (gen/)
     let rules = load_rules(rules_id())
     set(rules, "animals", jbool(true))
-    var prompts = if pack_prompts.length >= 2: pack_prompts else: ["sewer rats with cheese hammers", "angry swamp frogs with reed spears"]
-    if args[1] == "lobby":
-        if map_arg != "": lobby_map = map_arg
-        if mode_arg != "": lobby_mode = mode_arg
-        if races_arg != "" and not lab_arg: prompts = tokenize(races_arg, "|", " ")
-        else: prompts = run_lobby(if races_arg != "": tokenize(races_arg, "|", " ") else: prompts)
-        if not prompts.length: return
+    let prompts = lobby_prompts
     let t_gen = seconds_elapsed()
     let races = map(prompts) pr: generate(pr, rules, 0)
     let t_setup = seconds_elapsed()

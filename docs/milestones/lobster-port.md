@@ -116,7 +116,8 @@ SURRENDER, the bots' walls and abilities.
       (hover, pressed, focus, primary), text queued and drawn last, the pad's focus for menus. Every flat shape
       now draws through screen-space meshes: in this Lobster build `gl.rect` draws -size..size round its point
       and goes astray after a custom shader, and a raw mesh doesn't get gl.color. The command panel uses it
-      (`21-...`); the lobby, tech tree and menus are to follow.
+      (`21-...`), and the lobby (`22-...`: the races in panels with their armies, the map and mode, Join with an
+      address, Host, Play). The tech tree page and a pause menu are to follow.
 - [ ] 6. Setup in Lobster (Dominic, 2026-10-26: "Let's do it! Primarily because ... it opens us up to generation at
       army creation time and during the game"). Three steps, each checked against GDScript:
   - [x] 6a. Races and the match from data, 2026-10-26: a JSON reader and Godot-compatible writer, SHA-256, DataLib,
