@@ -2,26 +2,40 @@
 // A part's 3D model rendered as the bake camera sees it (orthographic, 30 degrees up, turned to a
 // facing: azimuth 35 + 45 a facing), lit by the part baker's rig (a warm key from the camera's upper
 // left, a cool fill, ambient), supersampled 4x, then pixelized: shrunk, hard alpha, an inner
-// outline of darker edge pixels. Stage 1: the meshes come from Godot (mesh_export.gd); the models in
-// Lobster are the next stage. No shadows or ambient occlusion yet.
+// outline of darker edge pixels. The part shadows itself (a shadow map from the key light). Stage 1: the
+// meshes come from Godot (mesh_export.gd); the models in Lobster are the next stage. No ambient occlusion yet.
 
 let BAKE_SS = 4
 let BAKE_ART = 1.5 * 0.85           // art px a part unit (ArtKit: ART_SCALE x UNIT_SCALE: baked at the size drawn)
 let PX_PER_UNIT = 32.0 / 0.70710678 // the baker's screen px a world unit (Baker.PX_PER_UNIT)
 
 let BAKE_SHADERS = """
-SHADER bakelit
+SHADER bakedepth
     VERTEX
-        INPUTS apos:4 anormal:3 acolor:4 atc:2
+        INPUTS apos:4
         UNIFORMS mvp
         gl_Position = mvp * apos;
+        idepth = vec2(apos.z, 0.0);   // (no 1-float varyings in Lobster's shaders)
+    PIXEL
+        INPUTS idepth:2
+        frag_color = vec4(idepth.x * 0.5 + 0.5, 0.0, 0.0, 1.0);
+
+SHADER bakelit
+    VERTEX
+        INPUTS apos:4 anormal:3 atc:2 atc2:2
+        UNIFORMS mvp
+        gl_Position = mvp * vec4(apos.xy, 0.0, 1.0);
         inorm = anormal;
-        iobj = acolor;
-        iuv = atc;
+        iobj = vec4(atc2, apos.z, 1.0);   // the model-space position (x, y in the second texcoords, z in the position's z:
+        iuv = atc;                        // a mesh's colours are bytes, so it can't ride there)
     PIXEL
         INPUTS inorm:3 iobj:4 iuv:2
-        UNIFORMS tex0
+        UNIFORMS tex0 tex1
         UNIFORM vec3 key_dir
+        UNIFORM vec4 lx
+        UNIFORM vec4 ly
+        UNIFORM vec4 lz
+        UNIFORM vec2 lsize
         UNIFORM vec3 fill_dir
         UNIFORM vec4 albedo
         UNIFORM vec4 uvmap
@@ -43,13 +57,20 @@ SHADER bakelit
         // PartBaker's rig: a warm key from the camera's upper left, a cool fill from the other side,
         // ambient; linear tone (Godot's linear tonemap, sRGB out).
         vec3 light = vec3(0.784, 0.816, 0.878) * 0.28;
-        light += vec3(1.0, 0.957, 0.878) * 1.7 * max(0.0, dot(n, -key_dir));
+        // In the key light's shadow? Its depth map, seen from the light (lx, ly: map px; lz: depth -1..1).
+        vec3 lp = vec3(dot(iobj.xyz, lx.xyz) + lx.w, dot(iobj.xyz, ly.xyz) + ly.w, dot(iobj.xyz, lz.xyz) + lz.w);
+        float lit = 1.0;
+        float nearest = texture(tex1, vec2(lp.x / lsize.x, 1.0 - lp.y / lsize.y)).r * 2.0 - 1.0;   // (a framebuffer texture is bottom-up)
+        if (lp.z > nearest + 0.02) lit = 0.0;
+        light += vec3(1.0, 0.957, 0.878) * 1.7 * max(0.0, dot(n, -key_dir)) * lit;
         light += vec3(0.722, 0.784, 1.0) * 0.3 * max(0.0, dot(n, -fill_dir));
         vec3 lin = pow(icol.rgb, vec3(2.2)) * light;
         vec3 c = pow(clamp(lin, 0.0, 1.0), vec3(1.0 / 2.2));
         frag_color = vec4(c, 1.0);
+        if (mapping < -0.5) frag_color = vec4(nearest * 0.5 + 0.5, lp.z * 0.5 + 0.5, lp.x / lsize.x, 1.0);
 """
 
+var bake_shadow_debug = false
 var bake_debug = ""                 // a path stem: save each raw render there (checks)
 
 class BakeTri:
@@ -145,6 +166,45 @@ def bake_facing(tris:[BakeTri], facing:int) -> string, int, int, float2:
     let h = int(ceiling((hi.y - lo.y) * px))
     // The mesh in render px (x right, y down), its triangles drawn far to near (the painter's way: the
     // framebuffer here has no depth test in 2D).
+    // The shadow map: the part's depth as the key light sees it (orthographic along the light), in
+    // a float texture; the lit pass looks each point up in it.
+    let kx, ky, kz = looking_at(key, float3 { 0.0, 1.0, 0.0 })
+    var llo = float2 { 1000000000.0, 1000000000.0 }
+    var lhi = float2 { -1000000000.0, -1000000000.0 }
+    var zlo = 1000000000.0
+    var zhi = -1000000000.0
+    for(tris) t:
+        for(t.p) p:
+            let s = float2 { dot(p, kx), -dot(p, ky) }
+            llo = min(llo, s)
+            lhi = max(lhi, s)
+            zlo = min(zlo, dot(p, kz))
+            zhi = max(zhi, dot(p, kz))
+    llo -= float2_1
+    lhi += float2_1
+    let lpx = px
+    let lw = int(ceiling((lhi.x - llo.x) * lpx))
+    let lh = int(ceiling((lhi.y - llo.y) * lpx))
+    let zs = 1.8 / max(0.001, zhi - zlo)   // depth to -0.9..0.9: nearer the light (larger z, toward it) smaller
+    def light_z(p:float3) -> float: return 0.9 - (dot(p, kz) - zlo) * zs
+    let ws = float(gl.window_size())
+    // (drawn far from the light first, so the nearest depth is what's left: no depth test in 2D here,
+    // and gl.ortho's depth mode leaves the framebuffer empty in this build)
+    let lorder = map(tris.length) i: i
+    let ldepth = map(tris) t: dot(t.p[0] + t.p[1] + t.p[2], kz)
+    qsort_in_place(lorder) a, b: ldepth[a] < ldepth[b]
+    let all_pos = []::float3
+    for(lorder) ti:
+        for(tris[ti].p) p: all_pos.push(float3 { (dot(p, kx) - llo.x) * lpx, (-dot(p, ky) - llo.y) * lpx, light_z(p) })
+    let smesh = gl.new_mesh("P", all_pos, []::float4, []::float3, []::float2, []::float2, map(all_pos.length) i: i)
+    let smap = gl.create_blank_texture(int3 { lw, lh, 0 }, texture_format_nomipmap | texture_format_float | texture_format_clamp)
+    gl.switch_to_framebuffer(smap)
+    gl.clear(float4 { 1.0, 1.0, 1.0, 1.0 })
+    gl.scale(ws / float2 { float(lw), float(lh) }):
+        gl.set_shader("bakedepth")
+        gl.render_mesh(smesh)
+    if bake_debug != "": gl.save_texture(smap, bake_debug + "_shadow{facing}.png")
+    // The lit pass, far to near (the painter's way), in runs of one material and colour (a draw each).
     let order = map(tris.length) i: i
     let depth = map(tris) t: dot(t.p[0] + t.p[1] + t.p[2], cz)
     qsort_in_place(order) a, b: depth[a] < depth[b]
@@ -152,8 +212,6 @@ def bake_facing(tris:[BakeTri], facing:int) -> string, int, int, float2:
     gl.switch_to_framebuffer(tex)
     gl.clear(float4 { 0.0, 0.0, 0.0, 0.0 })
     // (the framebuffer keeps the window's 2D projection: scaled to the texture here)
-    let ws = float(gl.window_size())
-    // In runs of one material and colour, in the painter's order (a draw each).
     var at = 0
     while at < order.length:
         let first = tris[order[at]]
@@ -161,27 +219,32 @@ def bake_facing(tris:[BakeTri], facing:int) -> string, int, int, float2:
         while end < order.length and tris[order[end]].mat == first.mat and tris[order[end]].c[0] == first.c[0]: end++
         let pos = []::float3
         let nor = []::float3
-        let obj = []::float4
+        let obj = []::float2
         let uvs = []::float2
         for(end - at) n:
             let t = tris[order[at + n]]
             for(3) k:
                 let p = t.p[k]
-                pos.push(float3 { (dot(p, cx) - lo.x) * px, (-dot(p, cy) - lo.y) * px, 0.0 })
+                pos.push(float3 { (dot(p, cx) - lo.x) * px, (-dot(p, cy) - lo.y) * px, p.z })
                 nor.push(t.n[k])
-                obj.push(float4 { p.x, p.y, p.z, 1.0 })
+                obj.push(float2 { p.x, p.y })
                 uvs.push(t.uv[k])
-        let m = gl.new_mesh("PNCT", pos, obj, nor, uvs, []::float2, map(pos.length) i: i)
+        let m = gl.new_mesh("PNTT", pos, []::float4, nor, uvs, obj, map(pos.length) i: i)
         let bm = if first.mat >= 0: bake_mats[first.mat] else: BakeMat { nil, float2_1, float2_0, false }
         let bt = bm.tex
         if bt: gl.set_mesh_texture(m, 0, 0, bt)
+        gl.set_mesh_texture(m, 0, 1, smap)
         gl.scale(ws / float2 { float(w), float(h) }):
             gl.set_shader("bakelit")
             gl.set_uniform("key_dir", key)
             gl.set_uniform("fill_dir", normalize(float3 { -0.6, -0.3, 0.7 }))
             gl.set_uniform("albedo", float4 { first.c[0].x, first.c[0].y, first.c[0].z, 1.0 })
             gl.set_uniform("uvmap", float4 { bm.scale.x, bm.scale.y, bm.offset.x, bm.offset.y })
-            gl.set_uniform("mapping", if not bt: 0.0 elif bm.triplanar: 2.0 else: 1.0)
+            gl.set_uniform("mapping", if bake_shadow_debug: -1.0 elif not bt: 0.0 elif bm.triplanar: 2.0 else: 1.0)
+            gl.set_uniform("lx", float4 { kx.x * lpx, kx.y * lpx, kx.z * lpx, -llo.x * lpx })
+            gl.set_uniform("ly", float4 { -ky.x * lpx, -ky.y * lpx, -ky.z * lpx, -llo.y * lpx })
+            gl.set_uniform("lz", float4 { -kz.x * zs, -kz.y * zs, -kz.z * zs, 0.9 + zlo * zs })
+            gl.set_uniform("lsize", float2 { float(lw), float(lh) })
             gl.render_mesh(m)
         at = end
     gl.switch_to_framebuffer(nil)
