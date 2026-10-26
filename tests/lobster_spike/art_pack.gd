@@ -38,6 +38,8 @@ const JOBS := {"forage": "tool.basket", "chop": "tool.axe", "mine": "tool.pick",
 const LOADS := {"food": "tool.basket", "wood": "load.reeds", "stone": "load.stone", "gold": "load.gold"}
 
 var vp: SubViewport
+var dumping := false             # "dump": every view's draw list, frame by frame (dumps.txt), for the Lobster composer's check
+var dumps := PackedStringArray()
 var stage: Node2D
 var frames := []   # [name, Image, ox, oy]
 var lib
@@ -64,6 +66,7 @@ func _initialize() -> void:
 	kit = ArtKit.new()
 	kit.lib = lib
 	root.add_child(kit)
+	dumping = "dump" in args
 	var t0 := Time.get_ticks_msec()
 	await kit.prepare(races, teams)
 	print("baked in %d ms" % (Time.get_ticks_msec() - t0))
@@ -77,6 +80,7 @@ func _initialize() -> void:
 	stage = Node2D.new()
 	stage.scale = Vector2.ONE * ArtKit.ART_SCALE   # canvas units to art px
 	vp.add_child(stage)
+	stage.process_mode = Node.PROCESS_MODE_DISABLED   # (views step by DT by hand, engines' crews with them: the same every run)
 
 	var lines := PackedStringArray()
 	var jobs := []   # [type, dir]
@@ -95,10 +99,15 @@ func _initialize() -> void:
 	lines.append("match %s" % map_id)   # (the game makes the races and the start itself: gen/setup.lobster)
 	for k in prompts.size():
 		lines.append("prompt %d %s" % [k, String(prompts[k]).replace(" ", "_")])
+	_parts(lines, out)
 	_buildings(w, races, lines)
 	_names_and_sounds(w, races, lines)
 	_ground(w, lines)
 	_pack(out, lines)
+	if dumping:
+		var d := FileAccess.open(out.path_join("dumps.txt"), FileAccess.WRITE)
+		d.store_string("\n".join(dumps) + "\n")
+		d.close()
 	var f := FileAccess.open(out.path_join("index.txt"), FileAccess.WRITE)
 	f.store_string("\n".join(lines) + "\n")
 	f.close()
@@ -119,6 +128,7 @@ func _units(w: World, batch: Array, lines: PackedStringArray) -> void:
 		v.pose_steps = 8
 		v.art_px = ArtKit.ART_SCALE
 		v.set_process(false)
+		v.time = 0.0   # (each view's clock from 0: the Lobster composer starts there too)
 		v.position = _anchor(n) / ArtKit.ART_SCALE
 		stage.add_child(v)
 		var dir := Vector2.RIGHT.rotated(batch[n][1] * PI / 4.0)
@@ -181,10 +191,15 @@ func _state(batch: Array, views: Array, state: String, count: int, prep: Callabl
 				step = Vector2.RIGHT.rotated(batch[n][1] * PI / 4.0) * v.speed_px * DT
 				v.position += step
 			v._process(DT)
+			_crew_process(v)
 			if moves:
 				v.position -= step
 				if v._hop_last != Vector2.INF:
 					v._hop_last -= step
+		if dumping:
+			for n in views.size():
+				if on[n]:
+					_dump_view(views[n], "%d %s %d %d" % [batch[n][0], state, batch[n][1], f])
 		await RenderingServer.frame_post_draw
 		var img := vp.get_texture().get_image()
 		for n in views.size():
@@ -200,6 +215,13 @@ func _state(batch: Array, views: Array, state: String, count: int, prep: Callabl
 		views[n].visible = true
 		if on[n] and batch[n][1] == 0:
 			lines.append("anim %d %s %d" % [batch[n][0], state, count])
+
+
+## An engine's crew step with it (in the game the tree processes them, after their engine).
+func _crew_process(v: UnitView) -> void:
+	for c in v.crew:
+		c.view._process(DT)
+		_crew_process(c.view)
 
 
 func _anchor(n: int) -> Vector2:
@@ -315,3 +337,113 @@ func _pack(out: String, lines: PackedStringArray) -> void:
 	for n in sheets.size():
 		sheets[n].save_png(out.path_join("sheet%d.png" % n))
 	lines.insert(0, "sheets %d %d" % [sheets.size(), SHEET])
+
+
+## Every unit part bake (PartShape.baked) as a frame "p:<bake key>" and a line "bake <key> <origin x>
+## <origin y> <scale>" (texture px of the part's 0,0; texture px per part unit), legs' soles and spans
+## ("soles <key> x y ...", "span <key> x y x y": UnitView plants feet and folds knees by them), and the
+## rigs the bakes made (PartShape.rigs: sockets, hips, depth, facing directions) as rigs.json.
+func _parts(lines: PackedStringArray, out: String) -> void:
+	var keys: Array = PartShape.baked.keys()
+	keys.sort()
+	for key in keys:
+		var b: Dictionary = PartShape.baked[key]
+		var img: Image = b.img
+		if img == null or img.is_empty():
+			continue
+		frames.append(["p:" + key, img, int(round(b.origin.x)), int(round(b.origin.y))])
+		lines.append("bake %s %f %f %f" % [key, b.origin.x, b.origin.y, b.scale])
+		if String(key).begins_with("leg."):
+			var row := ["soles", key]
+			for p in PartShape.soles(b):
+				row.append("%f %f" % [p.x, p.y])
+			lines.append(" ".join(row))
+			var sp := _span_of(b)
+			if not sp.is_empty():
+				lines.append("span %s %f %f %f %f" % [key, sp[0].x, sp[0].y, sp[1].x, sp[1].y])
+	var check = UnitView.UnitModelsCheck
+	var kit_parts := {}
+	for id in lib.parts:
+		if check.has(id):
+			lines.append("modelled %s" % id)
+		var p: Dictionary = lib.parts[id]
+		if p.has("kit"):   # a creature-kit body as DataLib completed it, and the head and legs it made
+			kit_parts[id] = p
+			for made in [p.legs.part, p.legs.get("hind", ""), lib.creatures.values().filter(func(c): return c.body == id).map(func(c): return c.head)]:
+				for m in (made if made is Array else [made]):
+					if m != "" and lib.parts.has(m):
+						kit_parts[m] = lib.parts[m]
+	var kf := FileAccess.open(out.path_join("kit_parts.json"), FileAccess.WRITE)
+	kf.store_string(JSON.stringify(_plain(kit_parts), "", true))
+	kf.close()
+	var rigs := {}
+	for id in PartShape.rigs:
+		rigs[id] = _plain(PartShape.rigs[id])
+	var f := FileAccess.open(out.path_join("rigs.json"), FileAccess.WRITE)
+	f.store_string(JSON.stringify(rigs, "", true, true))
+	f.close()
+
+
+## UnitView._span: a bake's top and bottom opaque rows, each at its middle (part units from the origin).
+static func _span_of(b: Dictionary) -> Array:
+	var img: Image = b.img
+	var rows := []
+	for y in img.get_height():
+		var xs := 0.0
+		var count := 0
+		for x in img.get_width():
+			if img.get_pixel(x, y).a > 0.5:
+				xs += x + 0.5
+				count += 1
+		if count > 0:
+			rows.append((Vector2(xs / count, y + 0.5) - b.origin) / b.scale)
+	return [rows[0], rows[-1]] if not rows.is_empty() else []
+
+
+## A rig's values as JSON (vectors as [x, y]).
+static func _plain(v):
+	match typeof(v):
+		TYPE_VECTOR2:
+			return [v.x, v.y]
+		TYPE_VECTOR3:
+			return [v.x, v.y, v.z]
+		TYPE_DICTIONARY:
+			var o := {}
+			for k in v:
+				o[str(k)] = _plain(v[k])
+			return o
+		TYPE_ARRAY, TYPE_PACKED_VECTOR2_ARRAY, TYPE_PACKED_FLOAT32_ARRAY, TYPE_PACKED_INT32_ARRAY:
+			return Array(v).map(func(x): return _plain(x))
+	return v
+
+
+## A view's draw list as it stands: "d <type> <state> <dir> <frame> <n> <view x> <view y>", then a line a
+## part drawn, in draw order: its bake key and the transform from its texture px to the stage's
+## (art px: xx xy yx yy ox oy), and its alpha.
+func _dump_view(v: UnitView, head: String) -> void:
+	var rows := PackedStringArray()
+	_dump_walk(v, 1.0, rows)
+	var g := v.get_global_transform()
+	dumps.append("d %s %d %f %f" % [head, rows.size(), g.origin.x, g.origin.y])
+	dumps.append_array(rows)
+
+
+func _dump_walk(n: Node, alpha: float, rows: PackedStringArray) -> void:
+	if n is CanvasItem and not n.visible:
+		return
+	var a: float = alpha * (n.modulate.a if n is CanvasItem else 1.0)
+	if n is PartShape:
+		var ps: PartShape = n
+		var key := PartShape.bake_key(ps.part_id, ps.shapes, PartShape.team_neutral(ps.colours))
+		if ps.facing != 0 and PartShape.baked.has(key + PartShape.facing_suffix(ps.facing)):
+			key += PartShape.facing_suffix(ps.facing)
+		if ps.front:
+			key = PartShape.front_key(key)
+		var b = PartShape.baked.get(key)
+		if b != null:
+			var t: Transform2D = ps.get_global_transform() * Transform2D(0.0, Vector2.ONE / b.scale, 0.0, -b.origin / b.scale)
+			rows.append("%s %f %f %f %f %f %f %f" % [key, t.x.x, t.x.y, t.y.x, t.y.y, t.origin.x, t.origin.y, a * ps.self_modulate.a])
+		else:
+			rows.append("%s missing" % key)
+	for c in n.get_children():
+		_dump_walk(c, a, rows)
