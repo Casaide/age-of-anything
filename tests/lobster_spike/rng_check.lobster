@@ -3,6 +3,10 @@
 //   lobster rng_check.lobster -- /tmp/rng.txt
 
 import std
+import vec
+import dictionary
+import .gen.json
+import .view.node
 import .model.grng
 
 let text = read_file(command_line_arguments()[0])
