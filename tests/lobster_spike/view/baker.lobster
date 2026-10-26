@@ -12,16 +12,34 @@ let PX_PER_UNIT = 32.0 / 0.70710678 // the baker's screen px a world unit (Baker
 let BAKE_SHADERS = """
 SHADER bakelit
     VERTEX
-        INPUTS apos:4 anormal:3 acolor:4
+        INPUTS apos:4 anormal:3 acolor:4 atc:2
         UNIFORMS mvp
         gl_Position = mvp * apos;
         inorm = anormal;
-        icol = acolor;
+        iobj = acolor;
+        iuv = atc;
     PIXEL
-        INPUTS inorm:3 icol:4
+        INPUTS inorm:3 iobj:4 iuv:2
+        UNIFORMS tex0
         UNIFORM vec3 key_dir
         UNIFORM vec3 fill_dir
+        UNIFORM vec4 albedo
+        UNIFORM vec4 uvmap
+        UNIFORM float mapping
         vec3 n = normalize(inorm);
+        // The material's texture as Godot maps it: none, its UVs, or triplanar (the model's position
+        // times the scale, each axis's plane weighted by the normal).
+        vec4 t = vec4(1.0);
+        if (mapping > 1.5) {
+            vec3 p = iobj.xyz * uvmap.x + vec3(uvmap.z, uvmap.w, 0.0);
+            vec3 w = abs(n);
+            w /= (w.x + w.y + w.z);
+            p *= vec3(1.0, -1.0, 1.0);
+            t = texture(tex0, p.zy) * w.x + texture(tex0, p.xz) * w.y + texture(tex0, vec2(-p.x, p.y)) * w.z;
+        } else if (mapping > 0.5) {
+            t = texture(tex0, iuv * uvmap.xy + uvmap.zw);
+        }
+        vec4 icol = albedo * t;
         // PartBaker's rig: a warm key from the camera's upper left, a cool fill from the other side,
         // ambient; linear tone (Godot's linear tonemap, sRGB out).
         vec3 light = vec3(0.784, 0.816, 0.878) * 0.28;
@@ -39,20 +57,50 @@ class BakeTri:
     p:[float3]
     n:[float3]
     c:[float3]
+    uv:[float2]
+    mat:int
+
+// A material: its texture (or none) and how it's mapped (Godot's uv1 scale and offset, triplanar or not).
+class BakeMat:
+    tex:resource<texture>?
+    scale:float2
+    offset:float2
+    triplanar:bool
+
+var bake_mats = []::BakeMat
+
+let bake_tex_cache = dictionary<string, resource<texture>>(16)
 
 def load_mesh(path:string) -> [BakeTri]:
     let out = []::BakeTri
     let text = read_file(path)
     if not text: return out
+    let dir = substring(path, 0, find_string_reverse(path, "/"))
+    var mat = -1
     for(tokenize(text, "\n", "")) line:
-        if starts_with(line, "tri "):
+        if starts_with(line, "mat "):
+            let t = tokenize(line.substring(4, line.length - 4), " ", "")
+            var tex:resource<texture>? = nil
+            if t[0] != "-":
+                let file = dir + "/" + t[0]
+                tex = bake_tex_cache.get(file)
+                if not tex:
+                    let loaded = gl.load_texture(file, texture_format_nomipmap)
+                    if loaded: bake_tex_cache.set(file, loaded)
+                    tex = loaded
+            let f = map(t.slice(1, -1)) x: string_to_float(x)
+            bake_mats.push(if f.length >= 5: BakeMat { tex, float2 { f[0], f[1] }, float2 { f[2], f[3] }, f[4] > 0.5 } else: BakeMat { tex, float2_1, float2_0, false })
+            mat = bake_mats.length - 1
+        elif starts_with(line, "tri "):
             let v = map(tokenize(line.substring(4, line.length - 4), " ", "")) t: string_to_float(t)
-            let tri = BakeTri { [], [], [] }
+            let tri = BakeTri { [], [], [], [], mat }
+            let stride = v.length / 3
             for(3) k:
-                let o = k * 9
+                let o = k * stride
                 tri.p.push(float3 { v[o], v[o + 1], v[o + 2] })
                 tri.n.push(float3 { v[o + 3], v[o + 4], v[o + 5] })
                 tri.c.push(float3 { v[o + 6], v[o + 7], v[o + 8] })
+                tri.uv.push(if stride >= 11: float2 { v[o + 9], v[o + 10] } else: float2_0)
             out.push(tri)
     return out
 
@@ -101,27 +149,42 @@ def bake_facing(tris:[BakeTri], facing:int) -> string, int, int, float2:
     let order = map(tris.length) i: i
     let depth = map(tris) t: dot(t.p[0] + t.p[1] + t.p[2], cz)
     qsort_in_place(order) a, b: depth[a] < depth[b]
-    let pos = []::float3
-    let nor = []::float3
-    let col = []::float4
-    for(order) ti:
-        let t = tris[ti]
-        for(3) k:
-            let p = t.p[k]
-            pos.push(float3 { (dot(p, cx) - lo.x) * px, (-dot(p, cy) - lo.y) * px, 0.0 })
-            nor.push(t.n[k])
-            col.push(float4 { t.c[k].x, t.c[k].y, t.c[k].z, 1.0 })
-    let m = gl.new_mesh("PNC", pos, col, nor, []::float2, []::float2, map(pos.length) i: i)
     let tex = gl.create_blank_texture(int3 { w, h, 0 }, texture_format_nomipmap)
     gl.switch_to_framebuffer(tex)
     gl.clear(float4 { 0.0, 0.0, 0.0, 0.0 })
     // (the framebuffer keeps the window's 2D projection: scaled to the texture here)
     let ws = float(gl.window_size())
-    gl.scale(ws / float2 { float(w), float(h) }):
-        gl.set_shader("bakelit")
-        gl.set_uniform("key_dir", key)
-        gl.set_uniform("fill_dir", normalize(float3 { -0.6, -0.3, 0.7 }))
-        gl.render_mesh(m)
+    // In runs of one material and colour, in the painter's order (a draw each).
+    var at = 0
+    while at < order.length:
+        let first = tris[order[at]]
+        var end = at
+        while end < order.length and tris[order[end]].mat == first.mat and tris[order[end]].c[0] == first.c[0]: end++
+        let pos = []::float3
+        let nor = []::float3
+        let obj = []::float4
+        let uvs = []::float2
+        for(end - at) n:
+            let t = tris[order[at + n]]
+            for(3) k:
+                let p = t.p[k]
+                pos.push(float3 { (dot(p, cx) - lo.x) * px, (-dot(p, cy) - lo.y) * px, 0.0 })
+                nor.push(t.n[k])
+                obj.push(float4 { p.x, p.y, p.z, 1.0 })
+                uvs.push(t.uv[k])
+        let m = gl.new_mesh("PNCT", pos, obj, nor, uvs, []::float2, map(pos.length) i: i)
+        let bm = if first.mat >= 0: bake_mats[first.mat] else: BakeMat { nil, float2_1, float2_0, false }
+        let bt = bm.tex
+        if bt: gl.set_mesh_texture(m, 0, 0, bt)
+        gl.scale(ws / float2 { float(w), float(h) }):
+            gl.set_shader("bakelit")
+            gl.set_uniform("key_dir", key)
+            gl.set_uniform("fill_dir", normalize(float3 { -0.6, -0.3, 0.7 }))
+            gl.set_uniform("albedo", float4 { first.c[0].x, first.c[0].y, first.c[0].z, 1.0 })
+            gl.set_uniform("uvmap", float4 { bm.scale.x, bm.scale.y, bm.offset.x, bm.offset.y })
+            gl.set_uniform("mapping", if not bt: 0.0 elif bm.triplanar: 2.0 else: 1.0)
+            gl.render_mesh(m)
+        at = end
     gl.switch_to_framebuffer(nil)
     if bake_debug != "": gl.save_texture(tex, bake_debug + "_f{facing}.png")
     let raw = gl.read_texture(tex) or ""
