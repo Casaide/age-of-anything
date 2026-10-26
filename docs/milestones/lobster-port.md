@@ -108,6 +108,9 @@ SURRENDER, the bots' walls and abilities.
 - [x] The Race Lab, in the lobby (2026-10-26): each typed race's whole roster drawn from the part library as you
       type, idling in its team colour, under its stats (`lab` with `races:A|B` captures it; `19-...`). Not yet: the
       Race Lab's two armies milling about and fighting, rerolls.
+- [x] The command panel (2026-10-26): `game/panel.lobster`: a unit card (a portrait from the unit's own parts, hp,
+      stats) and clickable buttons with hotkeys, units' portraits and buildings' pictures on them, cost on hover
+      (`20-...`). Not yet: the timber look (data/ui.json), queue progress, research icons.
 - [ ] 6. Setup in Lobster (Dominic, 2026-10-26: "Let's do it! Primarily because ... it opens us up to generation at
       army creation time and during the game"). Three steps, each checked against GDScript:
   - [x] 6a. Races and the match from data, 2026-10-26: a JSON reader and Godot-compatible writer, SHA-256, DataLib,
