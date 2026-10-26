@@ -70,8 +70,10 @@ SURRENDER, the bots' walls and abilities.
       the bot opponent, the win banner; a self-test drives the controls (`play.sh pack selftest`). Waiting on
       Dominic's first match.
 - [ ] 5. Feel: minimap, fog, sound and creature voices, hit flashes, shots, health bars, the top bar, a UI scaled to
-      the screen are in; the ground is Godot's terrain shader, ported (`game/ground.lobster`, 2026-10-26). To come:
-      culture paths, hills' relief and the ground's doodads, music, control groups, a nicer panel.
+      the screen are in; the ground is Godot's terrain shader, ported (`game/ground.lobster`, 2026-10-26), with hills'
+      relief, joined walls, the ground's doodads, the theme in stems, and each culture's paths (`game/paths.lobster`:
+      A* from the town's door to its buildings, food and wood, merging into trunk roads). To come: combat effects,
+      control groups, a nicer panel.
 - [ ] 6. Setup in Lobster (Dominic, 2026-10-26: "Let's do it! Primarily because ... it opens us up to generation at
       army creation time and during the game"). Three steps, each checked against GDScript:
   - [x] 6a. Races and the match from data, 2026-10-26: a JSON reader and Godot-compatible writer, SHA-256, DataLib,
@@ -106,6 +108,8 @@ SURRENDER, the bots' walls and abilities.
 
 - 2026-10-26 (6b and on): the ground shader and composed rats (`archive/images/2026-10-26/05-...`), moonbears typed into
   the lobby and drawn from the library (`06-...`), rats becoming forest bears a minute into a match (`07-...`).
+  Then hills and cliffs (`08-...`), joined walls (`09-...`), and the rats' cobbled roads from their town out to the
+  bushes and reeds (`10-...`).
 
 - 2026-10-26 (6a): two races from prompts in about 3 ms and the match start in about 3 ms, in the game; frames from the
   Lobster-made start and from the GDScript scenario are byte-identical at tick 101.
