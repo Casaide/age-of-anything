@@ -94,6 +94,37 @@ def opaque_box(f:int) -> float2, float2:
                 hi = max(hi, float2 { float(x - fr.ox), float(y - fr.oy) })
     return lo, hi
 
+// The mean colour difference (0..255, per channel) over the pixels both frames cover, aligned at their
+// origins, and the mean brightness of each (to tell paler from different).
+def colour_diff(a:int, b:int) -> float, float, float:
+    let fa = frames[a]
+    let fb = frames[b]
+    opaque_box(a)   // (reads both sheets)
+    opaque_box(b)
+    let pa = sheet_px.get(fa.sheet, "")
+    let pb = sheet_px.get(fb.sheet, "")
+    let wa = int(sheet_dims[fa.sheet].x)
+    let wb = int(sheet_dims[fb.sheet].x)
+    var sum = 0.0
+    var la = 0.0
+    var lb = 0.0
+    var n = 0
+    for(fa.h) y:
+        for(fa.w) x:
+            let bx = x - fa.ox + fb.ox
+            let by = y - fa.oy + fb.oy
+            if bx >= 0 and by >= 0 and bx < fb.w and by < fb.h:
+                let ia = ((fa.y + y) * wa + fa.x + x) * 4
+                let ib = ((fb.y + by) * wb + fb.x + bx) * 4
+                if pa[ia + 3] > 127 and pb[ib + 3] > 127:
+                    for(3) c:
+                        sum += abs(float(pa[ia + c]) - float(pb[ib + c]))
+                        la += float(pa[ia + c])
+                        lb += float(pb[ib + c])
+                    n++
+    if n == 0: return 0.0, 0.0, 0.0
+    return sum / float(n * 3), la / float(n * 3), lb / float(n * 3)
+
 var failed = 0
 var frame_n = 0
 var shot_done = false
@@ -113,6 +144,9 @@ while gl.frame() and not shot_done:
             var worst_px = 0.0
             var worst_sock = 0.0
             var worst_tip = 0.0
+            var cdiff = 0.0
+            var lum_m = 0.0
+            var lum_g = 0.0
             var notes = ""
             for(8) k:
                 let t = theirs[i * 8 + k]
@@ -139,6 +173,10 @@ while gl.frame() and not shot_done:
                 let gt = get(t.rig, "tip")
                 if mt and gt: worst_tip = max(worst_tip, magnitude(v2(mt) - v2(gt)))
                 worst_px = max(worst_px, dbox)
+                let cd, lm, lg = colour_diff(mf, t.frame)
+                cdiff += cd / 8.0
+                lum_m += lm / 8.0
+                lum_g += lg / 8.0
             // (the tip only matters for what's held: a weapon couched by an armless body; within 2.5 units, a couple of px)
             let held = starts_with(id, "weapon.")
             if notes != "" and find_string(notes, "no Godot bake") >= 0 and worst_px == 0.0:
@@ -146,7 +184,7 @@ while gl.frame() and not shot_done:
                 continue
             let ok = notes == "" and worst_sock < 0.15 and (not held or worst_tip < 2.5)
             if not ok: failed++
-            print "{if ok: "PASS" else: "FAIL"} {id}: sizes/origins within {worst_px} px, sockets {worst_sock}, tip {worst_tip}{notes}"
+            print "{if ok: "PASS" else: "FAIL"} {id}: sizes/origins within {worst_px} px, sockets {worst_sock}, tip {worst_tip}, colour {int(cdiff)} (brightness {int(lum_m)} vs {int(lum_g)}){notes}"
         continue
     gl.clear(float4 { 0.36, 0.42, 0.3, 1.0 })
     gl.blend(1)
