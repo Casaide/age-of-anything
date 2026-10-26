@@ -163,8 +163,8 @@ SURRENDER, the bots' walls and abilities.
         its warm key and cool fill over ambient, Lambert over pi, sRGB; 4x supersampled, then pixelized with the
         inner outline). `mesh_export.gd` writes Godot-built models as triangles (skinned .glb parts posed);
         `bake_check.lobster` lays each beside Godot's bake from the library (`32-...`: the rat's parts). Shapes,
-        facing and light agree; not yet: textures (the fur, the wood, the metal come from texture maps), shadows
-        and ambient occlusion, the sprite's scale (about 1.2x large), the head's turn, the cuts (a leg by its body,
+        facing and light agree; textures too (UV and triplanar, `33-...`), and the size (the units' scale, 1.5 x 0.85:
+        every part within a pixel of Godot's). Not yet: shadows and ambient occlusion, the fur's tint, the head's turn, the cuts (a leg by its body,
         armour on its wearer). Then the models themselves in Lobster.
   - [ ] 6c. The part baker in Lobster (the procedural 3D models, the Blender models converted, the pixel pass):
         Godot no longer needed. With the library, this is now the art-quality step (higher resolution, more poses,

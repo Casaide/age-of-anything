@@ -6,7 +6,7 @@
 // Lobster are the next stage. No shadows or ambient occlusion yet.
 
 let BAKE_SS = 4
-let BAKE_ART = 1.5                  // art px a part unit
+let BAKE_ART = 1.5 * 0.85           // art px a part unit (ArtKit: ART_SCALE x UNIT_SCALE: baked at the size drawn)
 let PX_PER_UNIT = 32.0 / 0.70710678 // the baker's screen px a world unit (Baker.PX_PER_UNIT)
 
 let BAKE_SHADERS = """
