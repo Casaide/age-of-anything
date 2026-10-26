@@ -66,3 +66,14 @@ def bake_missing_parts() -> int:
             remove_child(view_stage, v.node)
             free_tree(v.node)
     return baked_here
+
+// The parts a view wears that the pack lacks, baked (the Race Lab's rosters with no pack). How many facings.
+def bake_view_parts(n:VNode) -> int:
+    let before = baked_here
+    let parts = []::VNode
+    part_nodes(n, parts)
+    for(parts) pn:
+        let key = bake_key(pn.part_id, pn.pshapes, pn.cols)
+        let cols = pn.cols
+        if cols and not bakes.get(key): bake_model_part(pn.part_id, key, cols)
+    return baked_here - before

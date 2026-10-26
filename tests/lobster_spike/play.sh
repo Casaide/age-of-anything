@@ -14,4 +14,12 @@ for a in "$@"; do
 		lobby) start=lobby ;;   # the lobby: type the races (or races:A|B), pick the map and mode
 	esac
 done
+# The mods asked for (mods:a,b or AOW_MODS) bring their Lobster models in before the game compiles (mods_gen.lobster).
+mods="$AOW_MODS"
+for a in "$@"; do
+	case "$a" in
+		mods:*) mods=${a#mods:} ;;
+	esac
+done
+"$LOBSTER" mods_gen.lobster -- $(echo "$mods" | tr ',' ' ') | grep -v warning
 exec "$LOBSTER" --mir game.lobster -- "$pack" "$start" "$@"
