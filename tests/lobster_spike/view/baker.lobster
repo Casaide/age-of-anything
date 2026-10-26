@@ -264,8 +264,6 @@ def bake_facing(part:[BakeTri], facing:int, hide:[BakeTri] = [], join:float3 = f
     def light_z(p:float3) -> float: return 0.9 - (dot(p, kz) - zlo) * zs
     // (a depth test keeps the nearest: the framebuffer has a depth buffer, gl.ortho turns the test on)
     let lorder = map(tris.length) i: i
-    let ldepth = map(tris) t: dot(t.p[0] + t.p[1] + t.p[2], kz)
-    qsort_in_place(lorder) a, b: ldepth[a] < ldepth[b]
     let all_pos = []::float3
     for(lorder) ti:
         // (a decal casts no shadow here: its quad would, where Godot's alpha scissor casts only its picture)
@@ -283,9 +281,17 @@ def bake_facing(part:[BakeTri], facing:int, hide:[BakeTri] = [], join:float3 = f
     // white and what hides it black, unlit.
     let vz = 1.8 / max(0.001, dhi - dlo)
     def view_z(p:float3) -> float: return 0.9 - (dot(p, cz) - dlo) * vz   // nearer the camera smaller
+    // (the depth test does the hiding, so the triangles go in runs of one material and colour: a draw each)
+    let group_of = dictionary<string, int>(64)
+    let gid = map(tris) t, i:
+        let k = "{t.mat}|{t.c[0]}|{i >= part.length}"
+        var g = group_of.get(k, -1)
+        if g < 0:
+            g = group_of.get_keys().length
+            group_of.set(k, g)
+        g
     let order = map(tris.length) i: i
-    let depth = map(tris) t: dot(t.p[0] + t.p[1] + t.p[2], cz)
-    qsort_in_place(order) a, b: depth[a] < depth[b]
+    qsort_in_place(order) a, b: gid[a] < gid[b] or (gid[a] == gid[b] and a < b)
     def render_pass(mask:bool) -> string:
         let tex = gl.create_blank_texture(int3 { w, h, 0 }, texture_format_nomipmap)
         gl.switch_to_framebuffer(tex, true)

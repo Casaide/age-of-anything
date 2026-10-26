@@ -4,6 +4,7 @@
 # start itself (gen/). scenario:<file> plays a scenario from export.gd instead.
 LOBSTER="${LOBSTER:-$HOME/Dev/lobster/bin/lobster}"
 cd "$(dirname "$0")"
+mkdir -p bake_cache   # (parts baked once are kept here: view/part_bake.lobster)
 pack="$1"
 shift
 start=-

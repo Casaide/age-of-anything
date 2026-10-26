@@ -4,3 +4,4 @@ library/
 *.sav
 pack_scifi/
 textures/bmat*_*.png
+bake_cache/
