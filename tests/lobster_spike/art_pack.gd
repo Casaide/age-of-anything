@@ -38,6 +38,8 @@ const JOBS := {"forage": "tool.basket", "chop": "tool.axe", "mine": "tool.pick",
 const LOADS := {"food": "tool.basket", "wood": "load.reeds", "stone": "load.stone", "gold": "load.gold"}
 
 var vp: SubViewport
+var library := false              # "library": every part in every colour any race can wear (no flipbooks)
+var lines_extra := PackedStringArray()
 var dumping := false             # "dump": every view's draw list, frame by frame (dumps.txt), for the Lobster composer's check
 var dumps := PackedStringArray()
 var stage: Node2D
@@ -56,10 +58,13 @@ func _initialize() -> void:
 	rules.animals = false
 	var gen = Generator.new(lib)
 	var races := []
-	var prompts: Array = [args[2], args[3]] if args.size() > 3 else Export.PROMPTS
+	library = args.size() > 2 and args[2] == "library"
+	var prompts: Array = [args[2], args[3]] if args.size() > 3 and not library else Export.PROMPTS
 	for p in prompts:
 		races.append(gen.generate(p, rules))
 	var w := World.new(Export.SEED, SimMap.load_id(map_id), races, rules)
+	if library:
+		lines_extra.append("library 1")
 	var teams := []
 	for k in races.size():
 		teams.append(Color(lib.palettes.teams[k]))
@@ -68,7 +73,10 @@ func _initialize() -> void:
 	root.add_child(kit)
 	dumping = "dump" in args
 	var t0 := Time.get_ticks_msec()
-	await kit.prepare(races, teams)
+	if library:
+		await _bake_library(gen, rules)
+	else:
+		await kit.prepare(races, teams)
 	print("baked in %d ms" % (Time.get_ticks_msec() - t0))
 
 	vp = SubViewport.new()
@@ -84,7 +92,7 @@ func _initialize() -> void:
 
 	var lines := PackedStringArray()
 	var jobs := []   # [type, dir]
-	for k in w.types.size():
+	for k in (0 if library else w.types.size()):   # (a library has no flipbooks: the game composes its units)
 		for d in 8:
 			jobs.append([k, d])
 	for at in range(0, jobs.size(), GRID * GRID):
@@ -100,6 +108,7 @@ func _initialize() -> void:
 	for k in prompts.size():
 		lines.append("prompt %d %s" % [k, String(prompts[k]).replace(" ", "_")])
 	_parts(lines, out)
+	lines.append_array(lines_extra)
 	_buildings(w, races, lines)
 	_names_and_sounds(w, races, lines)
 	_ground(w, lines)
@@ -447,3 +456,63 @@ func _dump_walk(n: Node, alpha: float, rows: PackedStringArray) -> void:
 			rows.append("%s missing" % key)
 	for c in n.get_children():
 		_dump_walk(c, a, rows)
+
+
+## The library: races covering the kit (every creature with every culture, then each copied into
+## every skin of its creature and of its mount), each distinct unit step probed once by the kit's own
+## job listing (holds, poses, cut legs, crews and haulers, workers' tools and loads, corpses), every
+## architecture's buildings and the props.
+func _bake_library(gen, rules: Dictionary) -> void:
+	var cw := {}
+	var fw := {}
+	for word in lib.lexicon:
+		var e: Dictionary = lib.lexicon[word]
+		if e.has("era"):
+			continue
+		if e.has("creature") and lib.creatures[e.creature].get("playable", false) and not cw.has(e.creature):
+			cw[e.creature] = word
+		if e.has("family") and not fw.has(e.family):
+			fw[e.family] = word
+	var base := []
+	for c in cw:
+		for f in fw:
+			base.append(gen.generate("%s %s" % [cw[c], fw[f]], rules))
+	var races := []
+	for r in base:
+		var text := JSON.stringify(r)
+		races.append(r)
+		var own: String = r.units[0].recipe.skin
+		for s in lib.creatures[r.creature].skins:   # the rider's skins
+			if s != own:
+				races.append(JSON.parse_string(text.replace('"skin":"%s"' % own, '"skin":"%s"' % s)))
+		var mounts := {}
+		for u in r.units:
+			if u.recipe.has("mount") and not u.recipe.mount.get("fused", false):
+				mounts[u.recipe.mount.creature] = u.recipe.mount.skin
+		for m in mounts:   # the mounts' skins
+			for s in lib.creatures[m].skins:
+				if s != mounts[m]:
+					races.append(JSON.parse_string(text.replace('"skin":"%s"' % mounts[m], '"skin":"%s"' % s)))
+	var seen := {}
+	var units := []
+	for r in races + [ArtKit.animal_race()]:
+		for u in r.units:
+			for l in u.get("line", [{"recipe": u.recipe, "eval": u.eval}]):
+				var key := JSON.stringify(l.recipe, "", true)
+				if not seen.has(key):
+					seen[key] = true
+					units.append(l)
+	var arch := {}
+	var by_arch := []
+	for r in base:
+		var a: String = lib.architecture(r)
+		if not arch.has(a):
+			arch[a] = true
+			by_arch.append(r)
+	print("library: %d races, %d distinct unit steps, %d architectures" % [races.size(), units.size(), by_arch.size()])
+	var unit_ids: Array = await kit._steps_jobs(units)
+	var rest_ids: Array = kit._props_jobs() + kit._building_jobs(by_arch)
+	print("library: %d part jobs, %d other jobs" % [unit_ids.size(), rest_ids.size()])
+	kit._ask(unit_ids + rest_ids, true)
+	await kit._await_jobs(unit_ids + rest_ids)
+	PartShape.bake_flat("unit_shadow", UnitView.SHADOW_SHAPES, UnitView.SHADOW_COLOURS, ArtKit.ART_SCALE * ArtKit.UNIT_SCALE)
