@@ -204,6 +204,9 @@ def uv_build(v:UV, r:JV, team:float3, speed:int) -> void:
     v.noise = pcg_seed(hash_text(stringify(r)))
     v.time = randf(v.noise) * 10.0
     v.unit_scale = float(as_int(at(r, "scale"))) / 100.0
+    if not has(r, "mount") and not has(r, "crew"):   // a creature drawn smaller than it's built, on foot (creatures.json draw_scale: the look only)
+        let cr = get(lib_creatures, gstr(r, "creature", ""))
+        if cr: v.unit_scale *= float(gint(cr, "draw_scale", 100)) / 100.0
     v.speed_px = float(speed) * 3.0
     v.perched = false
     v.ground_shadow = float2_0
