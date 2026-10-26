@@ -3,7 +3,7 @@
 // G swamp, B reed-bed ground, A rock) perturbed by noise: rolling light in dithered bands, grass
 // lush by water and dry in patches, clover, clumps and worn soil, bog and standing pools, rock
 // and scree, trails worn by walkers, water with a sandy bank, a wet edge, depth, the sky and
-// ripples. The fog is drawn over it, per tile. Paths (each culture's: paths.gd) are still to come.
+// ripples. The fog is drawn over it, per tile. Each culture's paths come from game/paths.lobster.
 
 let MASK_K = 4    // mask samples per tile
 let LEVEL_PX = 20.0               // canvas px a level (Iso.LEVEL_PX); art px: x 1.5
@@ -334,9 +334,10 @@ def build_masks():
     mask_bytes = map(w * h * 4) i: clamp(int(a[i] * 255.0 + 0.5), 0, 255)
     let rows = map(h) y: map(w) x: float4 { byte_of(a[(y * w + x) * 4]), byte_of(a[(y * w + x) * 4 + 1]), byte_of(a[(y * w + x) * 4 + 2]), byte_of(a[(y * w + x) * 4 + 3]) }
     mask_tex = gl.create_texture(rows, texture_format_clamp | texture_format_nomipmap)
-    let zero = map(4): map(4): float4_0
-    paths_tex = gl.create_texture(zero, texture_format_clamp | texture_format_nomipmap)
-    arc_tex = gl.create_texture(zero, texture_format_clamp | texture_format_nomipmap)
+    if not paths_tex:   // (until the paths are painted: game/paths.lobster)
+        let zero = map(4): map(4): float4_0
+        paths_tex = gl.create_texture(zero, texture_format_clamp | texture_format_nomipmap)
+        arc_tex = gl.create_texture(zero, texture_format_clamp | texture_format_nomipmap)
     let c0 = iso(0.0, 0.0)
     let c1 = iso(float(W * 1000), 0.0)
     let c2 = iso(float(W * 1000), float(H * 1000))
