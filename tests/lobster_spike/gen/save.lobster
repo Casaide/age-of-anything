@@ -452,7 +452,8 @@ class WorldSave:
     ray_par:dictionary<int, [int]>
     bots:[Bot]   // the bots (the game keeps them)
 
-def save_world(path:string, bots:[Bot]) -> bool:
+// The world and the bots as bytes (a save file, or the start of a network match).
+def world_bytes(bots:[Bot]) -> string:
     let w = WorldSave {
         ab_kind,
         ab_range,
@@ -904,12 +905,16 @@ def save_world(path:string, bots:[Bot]) -> bool:
         ray_offs,
         ray_par,
         bots }
-    return write_file(path, flexbuffers_value_to_binary(w, 1000))
+    return flexbuffers_value_to_binary(w, 1000)
 
-// The bots saved with it, or [] if the file is not a save.
+def save_world(path:string, bots:[Bot]) -> bool: return write_file(path, world_bytes(bots))
+
 def load_world(path:string) -> [Bot]:
     let data = read_file(path, true)
-    if not data: return []
+    return if data: load_world_bytes(data) else: []
+
+// The bots that came with it, or [] if these are not a saved world.
+def load_world_bytes(data:string) -> [Bot]:
     let w, err = flexbuffers_binary_to_value(typeof WorldSave, data)
     if err: return []
     let s = w
