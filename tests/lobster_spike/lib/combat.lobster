@@ -120,6 +120,15 @@ def gap(i:int, j:int) -> int:
     return isqrt(dist2(u_x[i], u_y[i], u_x[j], u_y[j])) - u_radius[i] - u_radius[j]
 
 def gap_b(i:int, b:int) -> int:
+    if b_diag[b] != 0:   // to the nearest cell of a diagonal gate (Buildings.gap)
+        var best = 1 << 30
+        for(b_sy[b]) k:
+            let gx0 = (b_cx[b] + (if b_diag[b] == 1: k else: b_sx[b] - 1 - k)) * TILE
+            let gy0 = (b_cy[b] + k) * TILE
+            let dx = max(max(gx0 - u_x[i], 0), u_x[i] - (gx0 + TILE))
+            let dy = max(max(gy0 - u_y[i], 0), u_y[i] - (gy0 + TILE))
+            best = min(best, isqrt(dx * dx + dy * dy))
+        return best - u_radius[i]
     let x0 = b_cx[b] * TILE
     let y0 = b_cy[b] * TILE
     let dx = max(max(x0 - u_x[i], 0), u_x[i] - (x0 + b_sx[b] * TILE))
@@ -520,6 +529,7 @@ def apply_hits(n:int):
                 clear_farm(b)
                 pen_gone(b)
                 spill(b)
+                breach(b)   // a wall piece leaves rubble
                 occupy(footprint(b), 0)
                 remove_building(b)
         b--

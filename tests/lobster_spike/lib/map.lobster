@@ -13,6 +13,9 @@ var cliff = []::int
 var ramp = []::int
 var deck = []::int
 var high = []::int            // 1 under a building flyers can't cross
+var gate = []::int            // a gate's team + 1 on its cells, else 0
+var lane_teams = [-2]         // per lane group: the team its gates open for (group 0: nobody's)
+let NUM_CLASSES = 3           // ground, amphibious, flying (SimMap.CLASSES)
 var resource_cells = []::int  // every cell that started with a resource, ascending (and farms' anchors)
 
 // Terrain tables, by terrain index.
@@ -75,11 +78,25 @@ def make_pool(cells:[int], k:int, total:int):
     if not found: resource_cells.insert(at, a)
 
 // Mark a building's footprint (id) or clear it (0).
-def occupy(cells:[int], building_id:int):
+// Mark a building's footprint (id) or clear it (0). A gate (gate_team >= 0) blocks like any building
+// but in that team's own lanes (made here the first time the team has a gate); blocks_flyers: stone walls.
+def occupy(cells:[int], building_id:int, gate_team:int = -1, blocks_flyers:bool = false):
+    if gate_team >= 0 and lane_group(gate_team) == 0:
+        lane_teams.push(gate_team)
+        for(NUM_CLASSES) k:
+            walks.push(copy(walks[k]))   // the shared grids as they stand; refresh opens the gates
+            add_room(walks.length - 1)
     for(cells) c:
         occupied[c] = building_id
-        high[c] = 0
+        gate[c] = if building_id != 0 and gate_team >= 0: gate_team + 1 else: 0
+        high[c] = if blocks_flyers and building_id != 0: 1 else: 0
         refresh(c)
+
+// The lane group a team walks in: its own if it has ever had a gate, else 0 (everyone's).
+def lane_group(team:int) -> int:
+    for(lane_teams) t, g:
+        if g >= 1 and t == team: return g
+    return 0
 
 // Can a building of this size go here (SimMap.can_build)?
 def can_build(cx:int, cy:int, size:int, mc:int, water_ok:bool, slope_ok:bool) -> bool:
@@ -140,9 +157,15 @@ def refresh(cell:int):
         opaque_chunks[(cell / W / CHUNK) * chunk_w + (cell % W) / CHUNK] += op - opaque[cell]
         opaque[cell] = op
         sight_cache_version++
-    for(walks.length) k:
+    for(NUM_CLASSES) k:
         walks[k][cell] = if (mask & (1 << k)) != 0 and ((k == FLYING and high[cell] == 0) or clear): 1 else: 0
     walks[0][cell] = if ground and clear: 1 else: 0
+    for(lane_teams) team, g:   // a team's own gates are open to it
+        if g >= 1:
+            let open = clear or (gate[cell] == team + 1 and cliff[cell] == 0)   // (never a way up a cliff)
+            for(NUM_CLASSES) k:
+                walks[g * NUM_CLASSES + k][cell] = if (mask & (1 << k)) != 0 and ((k == FLYING and high[cell] == 0) or open): 1 else: 0
+            walks[g * NUM_CLASSES][cell] = if ground and open: 1 else: 0
     for(roomy.length) k:
         if was[k] != walks[k][cell]: roomy_round(k, cell)
     map_version++

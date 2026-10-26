@@ -117,6 +117,7 @@ def state_hash() -> int:
     h = mix(h, winner)
     for(wonder_ids) id, k: h = mix(mix(h, id), wonder_since[k])
     for(market_price) v: h = mix(h, v)
+    h = rubble_hash(h)
     for(br_id) id, k:
         for([id, br_hp[k], br_up[k], br_work[k], br_payer[k]]) v: h = mix(h, v)
     h = mix(h, shots.length / SHOT_STRIDE)
@@ -180,7 +181,7 @@ def load(path:string):
     deck = read_ints(W * H)
     high = read_ints(W * H)
     opaque = read_ints(W * H)
-    for(read_ints(W * H)) g: assert g == 0   // (no gates)
+    gate = read_ints(W * H)
     resource_cells = read_ints(next_int())
     expect("TERRAIN")
     for(next_int()):
@@ -395,6 +396,35 @@ def load_extras():
     wonder_ids = wd.slice(0, nw)
     wonder_since = wd.slice(nw, nw)
     wonder_owners = wd.slice(nw * 2, nw)
+    let bw = extra("bt_walls")   // per building type: length stairs ladder walkway blocks_flyers, its replaces, its pour
+    var o2 = 0
+    while o2 < bw.length:
+        bt_length.push(bw[o2])
+        bt_stairs.push(bw[o2 + 1])
+        bt_ladder.push(bw[o2 + 2])
+        bt_walkway.push(bw[o2 + 3])
+        bt_blocks_flyers.push(bw[o2 + 4])
+        let nr = bw[o2 + 5]
+        bt_replaces.push(bw.slice(o2 + 6, nr))
+        o2 += 6 + nr
+        bt_pour.push(if bw[o2] >= 0: bw.slice(o2, 3) else: []::int)
+        o2 += 3
+    let wc = extra("walk_cfg")
+    walk_climb = wc[0]
+    walk_fall = wc[1]
+    walk_speed_pct = wc[2]
+    walk_push = wc[3]
+    rubble_terrain = wc[4]
+    rubble_repair_pct = wc[5]
+    walk_not = wc.slice(7, wc[6])
+    rubble_from = wc.slice(8 + wc[6], wc[7 + wc[6]])
+    lane_teams = extra("lanes")
+    let rb = extra("rubble")
+    var o3 = 0
+    while o3 < rb.length:
+        rubble.set(rb[o3], rb.slice(o3 + 1, 6))
+        rubble_cells.push(rb[o3])
+        o3 += 7
     let pens = extra("bt_pen")
     for(pens.length / 4) k:
         bt_pen_animals.push(pens[k * 4])
@@ -513,22 +543,26 @@ def zeros(n:int) -> [int]: return map(n): 0
 // Roomy and tight grids per lane (SimMap.roomy_grid), worked out at the start; refresh keeps them.
 def make_room():
     room_cw = (W + ROOM_CHUNK - 1) / ROOM_CHUNK
+    for(walks.length) k: add_room(k)
+
+// Lane k's roomy and tight grids, from its walk grid as it stands (a lane made later: a gate's).
+def add_room(k:int):
     let ch = (H + ROOM_CHUNK - 1) / ROOM_CHUNK
-    for(walks) g:
-        let room = zeros(W * H)
-        let tg = zeros(room_cw * ch)
-        for(W * H) c:
-            let cx = c % W
-            let cy = c / W
-            var ok = cx > 0 and cy > 0 and cx < W - 1 and cy < H - 1
-            if ok:
-                for(3) dy:
-                    for(3) dx:
-                        if g[(cy - 1 + dy) * W + cx - 1 + dx] == 0: ok = false
-            room[c] = if ok: 1 else: 0
-            if not ok: tg[(cy / ROOM_CHUNK) * room_cw + cx / ROOM_CHUNK]++
-        roomy.push(room)
-        tight.push(tg)
+    let g = walks[k]
+    let room = zeros(W * H)
+    let tg = zeros(room_cw * ch)
+    for(W * H) c:
+        let cx = c % W
+        let cy = c / W
+        var ok = cx > 0 and cy > 0 and cx < W - 1 and cy < H - 1
+        if ok:
+            for(3) dy:
+                for(3) dx:
+                    if g[(cy - 1 + dy) * W + cx - 1 + dx] == 0: ok = false
+        room[c] = if ok: 1 else: 0
+        if not ok: tg[(cy / ROOM_CHUNK) * room_cw + cx / ROOM_CHUNK]++
+    roomy.push(room)
+    tight.push(tg)
 
 
 // Load a scenario file and set up what the sim works out at the start.

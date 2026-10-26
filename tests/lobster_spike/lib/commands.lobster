@@ -101,7 +101,7 @@ def run(c0:Cmd):
         print s
     if c.code == CMD_BUILD and c.queue == 1:
         // Shift-placed: the foundation goes down now; building it joins each unit's queue.
-        let bid = lay_foundation(p, c.ids, build_type(p, c.a), c.b, c.c)
+        let bid = lay_foundation(p, c.ids, build_type(p, c.a), c.b, c.c, c.d)
         if bid == 0: return
         c = Cmd { c.run_tick, CMD_HELP_BUILD, p, bid, 0, 0, 0, c.ids, c.seq }
         c.queue = 1
@@ -129,7 +129,7 @@ def run(c0:Cmd):
         case CMD_ATTACK_MOVE: run_attack_move(p, ids, c.group, c.fx, c.fy, c.pace)
         case CMD_STANCE: run_stance(p, ids, c.a)
         case CMD_GATHER: cmd_gather(p, own_units_cleared(p, ids), c.a)
-        case CMD_BUILD: cmd_build(p, own_units_cleared(p, ids), build_type(p, c.a), c.b, c.c)
+        case CMD_BUILD: cmd_build(p, own_units_cleared(p, ids), build_type(p, c.a), c.b, c.c, c.d)
         case CMD_HELP_BUILD: cmd_help_build(p, own_units_cleared(p, ids), c.a)
         case CMD_TRAIN: cmd_train(p, c.a, c.b, c.c)
         case CMD_RALLY: cmd_rally(p, c.a, c.b, c.c)
