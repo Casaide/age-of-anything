@@ -288,15 +288,15 @@ def bmat_ramp_lut(offs:[float], hexes:[string]) -> [[int]]:
     return map(256) byte:
         let l = f32(float(byte) / 255.0)
         let p = f32(f32(f32(f32(0.2126) * l) + f32(f32(0.7152) * l)) + f32(f32(0.0722) * l))
-        var low = 0
-        var high = np - 1
+        var lo_i = 0
+        var hi_i = np - 1
         var middle = 0
         var c = float3_0
         var found = false
-        while low <= high and not found:
-            middle = (low + high) / 2
-            if o[middle] > p: high = middle - 1
-            elif o[middle] < p: low = middle + 1
+        while lo_i <= hi_i and not found:
+            middle = (lo_i + hi_i) / 2
+            if o[middle] > p: hi_i = middle - 1
+            elif o[middle] < p: lo_i = middle + 1
             else:
                 c = cs[middle]
                 found = true

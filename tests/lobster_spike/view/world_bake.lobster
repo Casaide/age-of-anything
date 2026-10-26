@@ -135,7 +135,7 @@ SHADER worldlit
         }
 """
 
-// ---- the model as draws: one per mesh, its MMat whole (the building materials carry more than BakeMat)
+// ---- the model as wdraws: one per mesh, its MMat whole (the building materials carry more than BakeMat)
 
 class WDraw:
     mat:MMat
@@ -177,12 +177,12 @@ def light_along(r:float3) -> float3: return -euler(r).z
 // One model baked: its pixel sprite (RGBA bytes), w, h, and where its anchor (the world origin) is on it.
 // shadow: paint its ground shadows; reach: room for them (trees cast long ones: 2).
 def world_bake(model:MNode, shadow:bool, reach:float = 1.0) -> string, int, int, float2:
-    let draws = []::WDraw
-    world_draws(model, XF_ID, draws)
-    let cam = euler(float3 { -30.0, 45.0, 0.0 })
-    let cx = cam.x
-    let cy = cam.y
-    let cz = cam.z
+    let wdraws = []::WDraw
+    world_draws(model, XF_ID, wdraws)
+    let wcam = euler(float3 { -30.0, 45.0, 0.0 })
+    let cx = wcam.x
+    let cy = wcam.y
+    let cz = wcam.z
     let sun = light_along(float3 { -48.0, -58.0, 0.0 })
     let px = WB_PX * float(WB_SS)
     // the box on screen: the model, and where its shadow falls on the ground
@@ -191,7 +191,7 @@ def world_bake(model:MNode, shadow:bool, reach:float = 1.0) -> string, int, int,
     var dlo = 1000000000.0
     var dhi = -1000000000.0
     var ylo = 1000000000.0
-    for(draws) d:
+    for(wdraws) d:
         for(d.p) p:
             let s = float2 { dot(p, cx), -dot(p, cy) }
             lo = min(lo, s)
@@ -216,7 +216,7 @@ def world_bake(model:MNode, shadow:bool, reach:float = 1.0) -> string, int, int,
     var lhi = float2_1 * -1000000000.0
     var zlo = 1000000000.0
     var zhi = -1000000000.0
-    for(draws) d:
+    for(wdraws) d:
         for(d.p) p:
             let s = float2 { dot(p, kx), -dot(p, ky) }
             llo = min(llo, s)
@@ -230,7 +230,7 @@ def world_bake(model:MNode, shadow:bool, reach:float = 1.0) -> string, int, int,
     let lh = int(ceiling((lhi.y - llo.y) * lpx))
     let zs = 1.8 / max(0.001, zhi - zlo)
     let spos = []::float3
-    for(draws) d:
+    for(wdraws) d:
         if not d.mat.scissor:
             for(d.p) p: spos.push(float3 { (dot(p, kx) - llo.x) * lpx, (-dot(p, ky) - llo.y) * lpx, 0.9 - (dot(p, kz) - zlo) * zs })
     let smap = gl.create_blank_texture(int3 { lw, lh, 0 }, texture_format_nomipmap | texture_format_float | texture_format_clamp)
@@ -259,7 +259,7 @@ def world_bake(model:MNode, shadow:bool, reach:float = 1.0) -> string, int, int,
         gl.set_uniform("lz", float4 { -kz.x * zs, -kz.y * zs, -kz.z * zs, 0.9 + zlo * zs })
         gl.set_uniform("lsize", float2 { float(lw), float(lh) })
     def draw_model(sun_only:bool):
-        for(draws) d:
+        for(wdraws) d:
             let m = d.mat
             let pos = map(d.p) p: to_px(p)
             let cols = map(d.c) c: float4 { c.x, c.y, c.z, 1.0 }
