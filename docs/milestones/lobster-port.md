@@ -53,14 +53,24 @@ SURRENDER, the bots' walls and abilities.
 
 ## Checklist
 
-- [ ] 1. Rest of the sim: done so far: shift-queued orders, STOP, CANCEL, DROP_OFF, SURRENDER, auto-reseed,
-      markets, trade carts, repair, the bots' trading (play and match scenarios match every tick, 2026-10-26)
-- [x] 2. Match pack (`art_pack.gd`, `make_pack.sh`: 39 unit types x 8 directions x every state, every bake, in sheets)
+- [x] 1. Rest of the sim, 2026-10-26, each piece hash-checked against GDScript (replayed, and with Lobster's own
+      bots where bots use it): shift-queued orders, STOP, CANCEL, DROP_OFF, SURRENDER, auto-reseed; markets, trade
+      carts, repair and the bots' trading; animals and pens and the bots' herding and hunting; map bridges; siege
+      weapons (minimum range, packing, splash, bolts, sappers' blasts) and the bots' engines; bounties; Wonders and
+      the Siege mode's win rules, the bots' Wonders; gates and per-team lanes, wall lines, diagonal gates, rubble;
+      walls you stand on (climbing, walkways, ladders, docked siege towers, falling, pours) and the bots manning and
+      storming them; race abilities (webs, sticky hits, wading) and the bots' webs; worn trails. Scenarios in
+      `all.sh`: siege (age-3 armies with engines), walls (a stone ring stormed), play (a seeded person's orders,
+      walls and gates included, on top of two bots), matches with animals, from age 3, in the Siege mode on Siege
+      Vale, spiders v frogs.
+- [x] 2. Match pack (`art_pack.gd`, `make_pack.sh [map] ["race A" "race B"]`: every unit type x 8 directions x every
+      state, every bake, in sheets; names, team colours, voices, sounds)
 - [x] 3. Game shell (`game.lobster`, `play.sh`)
-- [ ] 4. Playing: selection, orders, building, training, age-up, the bot opponent and the win banner are in; a
-      self-test drives the controls (`play.sh pack selftest`). Waiting on Dominic's first match. Research, a
-      minimap and sound to come
-- [ ] 5. Feel
+- [ ] 4. Playing: selection, orders (shift-queued), building, training, research (Q W E R T Y I O P), age-up,
+      the bot opponent, the win banner; a self-test drives the controls (`play.sh pack selftest`). Waiting on
+      Dominic's first match.
+- [ ] 5. Feel: minimap, fog, sound and creature voices, hit flashes, shots, health bars, the top bar, a UI scaled to
+      the screen are in. To come: the Godot terrain's look, music, control groups, a nicer panel.
 - [ ] 6. Setup in Lobster
 - [ ] Archive
 
