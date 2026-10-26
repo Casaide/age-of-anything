@@ -144,7 +144,7 @@ def hud_button(at:float2, size:float2, accent:bool, enabled:bool) -> bool:
     ui_bevel(at, size, max(1.0, 1.0 * s), 0.3, 0.45)
     let inner = at + float2_1 * fw
     let isz = size - float2_1 * fw * 2.0
-    ui_mat(inner, isz, ui_look.button * float4 { tint, tint, tint, 1.0 }, 0)
+    ui_mat(inner, isz, ui_look.button * float4 { tint, tint, tint, 1.0 }, 2)
     if down: for(3) k: ui_fill(inner, float2 { isz.x, 6.0 * s * float(3 - k) / 3.0 }, float4 { 0.0, 0.0, 0.0, 0.25 })
     else: ui_bevel(inner, isz, max(1.0, 2.0 * s), 0.2, 0.35)
     ui_outline(inner, isz, 1.0, float4 { 0.0, 0.0, 0.0, 0.6 })
