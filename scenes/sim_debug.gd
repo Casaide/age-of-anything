@@ -236,6 +236,7 @@ func _ready() -> void:
 	add_child(town)
 	fx = CombatFx.new()
 	fx.lib = lib   # (siege shots' baked sprites: data/siege_shots.json)
+	fx.art_px = ArtKit.ART_SCALE
 	add_child(fx)
 	fog_view = FogView.new()
 	add_child(fog_view)
@@ -2487,6 +2488,7 @@ func _sync_buildings() -> void:
 			(flat if not t.pen.is_empty() else layer).add_child(view)   # a pen lies low, under the sheep standing in it
 			bviews[id] = view
 			_clear_doodads(bs.cx[b], bs.cy[b], bs.sx[b], bs.sy[b])
+			fx.clear_ruins(Rect2i(bs.cx[b], bs.cy[b], bs.sx[b], bs.sy[b]))   # built over a ruin (D-172)
 		if bs.done[b] == 1 and not view.get_meta("done", false):
 			if view.has_meta("done") and bs.owner[b] == active:
 				audio.play("built", -4.0)   # finished while you watched (not the ones there from the start)

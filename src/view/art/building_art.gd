@@ -2,7 +2,9 @@ extends Node2D
 ## A building in the pixel-art style, from the art kit's bakes: the body in the team
 ## colour, chimney smoke, flickering lights, a waving banner and a turning vane.
 ## While it's being built it shows its construction stages (foundations, scaffold,
-## walls, roof) with a progress bar; the live parts start once it's done.
+## walls, roof) with a progress bar; the live parts start once it's done. Damaged, it shows its
+## broken-up stages (D-171: battered, breaking, collapsed) and burns; fallen, its ruin, a decoration
+## that fades (fall(), CombatFx.collapse; D-172).
 
 const Iso := preload("res://src/view/iso.gd")
 const Models := preload("res://src/view/art/bake/models.gd")
@@ -14,6 +16,8 @@ var live: Array = []      # nodes that only run once the building is done
 var glows: Array = []
 var vane: Node2D
 var stages: Array = []    # construction stage sprites, shown while it's being built
+var ruins: Array = []     # broken-up stage sprites (ArtKit, Ruin): battered, breaking, collapsed, the ruin
+var cells := Rect2i()     # its footprint (sim cells): building over its ruin clears it
 var team := Color.WHITE
 var progress := 1.0
 var done := true
@@ -42,7 +46,7 @@ var _kit
 var _name := ""
 var smoke: CPUParticles2D   # the chimney (null if it has none)
 var working := true       # smoke rises while it's at work (training, research); houses always
-var damage := 0.0         # 0 whole .. 1 nearly down: cracks from DAMAGE_CRACKS, fire from DAMAGE_FIRE
+var damage := 0.0         # 0 whole .. 1 nearly down: broken-up stages from RUIN_AT (cracks without them), fire from DAMAGE_FIRE
 var _wear: Node2D         # over the body: cracks drawn, fires and their smoke
 var _cracks: Array = []   # [PackedVector2Array] canvas units from the centre, worst first
 var _fires: Array = []    # [CPUParticles2D, CPUParticles2D] flame and smoke per fire
@@ -57,6 +61,7 @@ var _door_until := 0.0    # time it stays open to
 const DOOR_OPEN_S := 1.6  # a door stays open this long after someone passes
 const DAMAGE_CRACKS := 0.3   # milestone 17: cracks show once it has lost this much
 const DAMAGE_FIRE := 0.6     # ...and it burns past this
+const RUIN_AT := [0.3, 0.55, 0.8]   # damage at which it shows its battered, breaking and collapsed stages
 
 
 ## A building of sx x sy tiles (a gate is longer than deep) with its top-left on cell (cx, cy).
@@ -83,6 +88,14 @@ func setup(kit, name: String, cx: int, cy: int, sx: int, sy: int, p_team: Color)
 		open_body.self_modulate = body.self_modulate
 		open_body.visible = false
 		add_child(open_body)
+	cells = Rect2i(cx, cy, sx, sy)
+	for ruin_name in info.get("ruins", []):
+		var rs: Sprite2D = kit.sprite(ruin_name)
+		rs.position = at
+		rs.self_modulate = body.self_modulate
+		rs.visible = false
+		add_child(rs)
+		ruins.append(rs)
 	for stage_name in info.stages:
 		var st: Sprite2D = kit.sprite(stage_name)
 		st.position = at
@@ -181,7 +194,7 @@ func set_state(p_done: bool, p_progress: float) -> void:
 	done = p_done
 	progress = p_progress
 	var shown := -1 if done else mini(int(progress * stages.size()), stages.size() - 1)
-	body.visible = done and not (open and open_body != null)
+	body.visible = done and not (open and open_body != null) and _broken() < 0
 	if open_body:
 		open_body.visible = done and open
 	_show_front()
@@ -223,8 +236,8 @@ func set_working(on: bool) -> void:
 		smoke.emitting = on
 
 
-## Wear from damage (0 whole .. 1 nearly gone): dark cracks across the walls once it's been hit
-## hard, more as it gets worse, then fire and black smoke at a few places on it.
+## Wear from damage (0 whole .. 1 nearly gone): its broken-up stages as it's hit harder (a building baked
+## without them, dark cracks across the walls), then fire and black smoke at a few places on it.
 func set_damage(f: float) -> void:
 	f = clampf(f, 0.0, 1.0)
 	if absf(f - damage) < 0.02 or not done:
@@ -234,15 +247,53 @@ func set_damage(f: float) -> void:
 		_wear = Node2D.new()
 		_wear.draw.connect(_draw_wear)
 		add_child(_wear)
-		_cracks = _make_cracks(6)
-		for p in _spots(3, 0.1, 0.45):   # on the roof, where it catches
+		if ruins.is_empty():
+			_cracks = _make_cracks(6)
+		for p in _spots(3, 0.3, 0.6):   # in the walls, low enough to stay on it as the roof falls in
 			_fires.append([_flames(p), _black_smoke(p)])
+	var k := _broken()
+	for n in ruins.size():
+		ruins[n].visible = n == k
+	body.visible = k < 0 and not (open and open_body != null)
 	var burning := damage >= DAMAGE_FIRE
-	for k in _fires.size():
-		var on := burning and k < 1 + int((damage - DAMAGE_FIRE) / (1.0 - DAMAGE_FIRE) * 3.0)
-		_fires[k][0].emitting = on
-		_fires[k][1].emitting = on
+	for n in _fires.size():
+		var on := burning and n < 1 + int((damage - DAMAGE_FIRE) / (1.0 - DAMAGE_FIRE) * 3.0)
+		_fires[n][0].emitting = on
+		_fires[n][1].emitting = on
 	_wear.queue_redraw()
+
+
+## Which broken-up stage its damage shows (-1: none, whole or not baked).
+func _broken() -> int:
+	var k := -1
+	for n in RUIN_AT.size():
+		if damage >= RUIN_AT[n] and n < ruins.size():
+			k = n
+	return k
+
+
+## It has fallen: only its ruin is left (true), to burn out and fade (CombatFx.collapse); false if it
+## has no ruin baked (walls, gates), and goes as before.
+func fall() -> bool:
+	if ruins.size() < 4:
+		return false
+	for n in get_children():
+		if n is CanvasItem and n != _wear:
+			n.visible = false
+	ruins[3].visible = true
+	if front != null:
+		front.queue_free()
+	for p in parts:
+		p.node.queue_free()
+		p.front.queue_free()
+	return true
+
+
+## Its fires go out (a while after it falls).
+func douse() -> void:
+	for f in _fires:
+		f[0].emitting = false
+		f[1].emitting = false
 
 
 func _draw_wear() -> void:

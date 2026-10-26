@@ -7,7 +7,7 @@ extends SceneTree
 
 const ArtKit := preload("res://src/view/art/art_kit.gd")
 const PartShape := preload("res://src/part_shape.gd")
-const Ruin := preload("res://tests/art_quality/ruin.gd")
+const Ruin := preload("res://src/view/art/bake/ruin.gd")
 const Rng := preload("res://src/rng.gd")
 
 const BG := Color("#56782e")
