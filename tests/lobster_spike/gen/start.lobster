@@ -96,6 +96,8 @@ def setup_world(seed_value:int, map_id:string, races:[JV], rules:JV, team_ids:[i
         retype(p)
         tech_refresh(p)
     setup_starts()
+    mode_hold = -1
+    setup_mode()   // (gen/modes.lobster: Fortress, Siege)
     if gbool(rules, "animals", false): place_animals()
     let tc = btype_index("town_center")
     for(np) p:
@@ -326,11 +328,8 @@ def setup_rest():
             let ab = gobj(su_idents[t_player[k]], "ability")
             can = ab.keys.length > 0 and has(ab, "tag") and reaches_tags(ab, eval_tags(su_type_eval[k]))
         t_ability.push(if can: 1 else: 0)
-    let mode = gstr(su_rules, "mode", "")
-    assert mode == "" or mode == "standard"   // (game modes: not set up here yet)
     let wr = rules_part("wonder")
     wonder_hold = if gbool(wr, "victory", false): as_int(at(wr, "hold_seconds")) * 20 else: 0
-    mode_hold = -1
     let bc = load_json(lib_root + "/bridges.json")
     br_full_hp = as_int(at(bc, "hp"))
     br_ticks = as_int(at(at(bc, "rebuild"), "time")) * TICK_HZ

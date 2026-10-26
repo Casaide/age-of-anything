@@ -42,6 +42,7 @@ import lib.bot
 import lib.walls_ai
 import lib.world
 import gen.setup
+import gen.modes
 import gen.start
 import gen.scenario_out
 import gen.reset
