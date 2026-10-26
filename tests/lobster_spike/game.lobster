@@ -2339,7 +2339,11 @@ while gl.frame() and not quit_game:
     if padtest and pad_step >= 15 and pad_step < 60:
         if shot != "": gl.screenshot(shot)
         return
-    if shot != "" and clock_s >= shot_at and not selftest and not padtest and (not tree_arg or frame_no > 4) and (not has_s(args, "menu") or frame_no > 4):
+    if has_s(args, "tillend") and (winner >= 0 or (shot_at > 0.0 and clock_s >= shot_at)):   // a whole match to its end (tests: with watch)
+        if shot != "": gl.screenshot(shot)
+        print "match over: {if winner >= 0: "team {winner} won" else: "no winner yet"} at {int(clock_s) / 60}:{int(clock_s) % 60}, tick {tick}"
+        return
+    if shot != "" and clock_s >= shot_at and not selftest and not padtest and not has_s(args, "tillend") and (not tree_arg or frame_no > 4) and (not has_s(args, "menu") or frame_no > 4):
         gl.screenshot(shot)
         print "shot {shot} at {clock_s} s, tick {tick}; sim {step_time * 1000.0 / max(1, steps)} ms a tick; cam {cam} zoom {zoom} ws {gl.window_size()} fb {gl.framebuffer_size()}"
         return
