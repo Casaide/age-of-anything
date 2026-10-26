@@ -2,9 +2,9 @@ extends SceneTree
 ## The baker's port (step 6c), stage 1: a part's 3D model as Godot builds it (UnitModels, the creature kit,
 ## the .glb parts), written out as triangles, so the Lobster baker can render the same geometry and its
 ## bakes be compared with Godot's. Each part in a race's colours (the team key for the team channel).
-## Writes <out>/<part id>.mesh: "mat <texture png | -> [scale x y, offset x y, triplanar]" lines, each followed by
-## its "tri" lines of three vertices, "x y z nx ny nz r g b u v" in the model's space (Godot's: y up), the
-## albedo colour; the textures as tex<n>.png beside them.
+## Writes <out>/<part id>.mesh: "mat <texture png | -> [scale x y, offset x y, triplanar] @<albedo> #<triangles>"
+## lines, and <part id>.bin: their triangles' vertices in order, 11 little-endian floats each ("x y z nx ny nz r g b
+## u v" in the model's space, Godot's: y up; the albedo colour); the textures as tex<n>.png beside them.
 ##   godot --headless --path . --script res://tests/lobster_spike/mesh_export.gd -- <out dir> "<prompt>" [part id ...]
 ## Library mode (`library` for the prompt): every modelled part, with each material's colour as a channel of
 ## the race's colours ("ch skin m.r m.g m.b b.r b.g b.b": albedo = m x the channel's colour + b, per component)
@@ -51,6 +51,7 @@ func _albedo(mi: MeshInstance3D, s: int) -> Color:
 
 var _textures := {}   # texture -> its file name in the out dir
 var _albedos := []    # each material's albedo, in the order written (library mode: matched across builds)
+var _floats := PackedFloat32Array()   # the vertices, 11 floats each (written to <id>.bin)
 var _dir := ""
 
 
@@ -98,18 +99,16 @@ func _write(node: Node3D, out: PackedStringArray) -> void:
 			var mat = _material(mi, s)
 			var use_vc: bool = mat is StandardMaterial3D and mat.vertex_color_use_as_albedo   # (as Godot: vertex colours only when asked)
 			var uvs = arr[Mesh.ARRAY_TEX_UV]
-			out.append("mat " + _texture(mi, s) + " @%d" % (_albedos.size() - 1))
 			var order: Array = Array(idx) if idx != null and idx.size() > 0 else range(v.size())
-			for k in range(0, order.size() - 2, 3):
-				var line := "tri"
-				for j in 3:
-					var i: int = order[k + j]
-					var p: Vector3 = t * v[i]
-					var nn: Vector3 = (nb * (n[i] if n.size() > i else Vector3.UP)).normalized()
-					var cc: Color = c * (cols[i] if use_vc and cols != null and cols.size() > i else Color.WHITE)
-					var uv: Vector2 = uvs[i] if uvs != null and uvs.size() > i else Vector2.ZERO
-					line += " %.4f %.4f %.4f %.3f %.3f %.3f %.3f %.3f %.3f %.4f %.4f" % [p.x, p.y, p.z, nn.x, nn.y, nn.z, cc.r, cc.g, cc.b, uv.x, uv.y]
-				out.append(line)
+			var tris := order.size() / 3
+			out.append("mat " + _texture(mi, s) + " @%d" % (_albedos.size() - 1) + " #%d" % tris)
+			for k in range(0, tris * 3):
+				var i: int = order[k]
+				var p: Vector3 = t * v[i]
+				var nn: Vector3 = (nb * (n[i] if n.size() > i else Vector3.UP)).normalized()
+				var cc: Color = c * (cols[i] if use_vc and cols != null and cols.size() > i else Color.WHITE)
+				var uv: Vector2 = uvs[i] if uvs != null and uvs.size() > i else Vector2.ZERO
+				_floats.append_array([p.x, p.y, p.z, nn.x, nn.y, nn.z, cc.r, cc.g, cc.b, uv.x, uv.y])
 
 
 ## The race channels (what varies from race to race); the rest of the colours are the palette's fixed materials.
@@ -153,6 +152,11 @@ func _channel(alb: Array, sent: Array) -> String:
 	return best
 
 
+func _save_bin(dir: String, id: String) -> void:
+	var f := FileAccess.open(dir.path_join(id + ".bin"), FileAccess.WRITE)
+	f.store_buffer(_floats.to_byte_array())
+
+
 func _library(dir: String, lib) -> void:
 	var models := UnitModels.new()
 	var base := {}
@@ -173,7 +177,10 @@ func _library(dir: String, lib) -> void:
 			var spec: Dictionary = models.build(id, cols)
 			var out := PackedStringArray()
 			_albedos = []
+			_floats = PackedFloat32Array()
 			_write(spec.node, out)
+			if k == 0:
+				_save_bin(dir, id)
 			spec.node.free()
 			if spec.has("front") and spec.front != null:
 				spec.front.free()
@@ -185,8 +192,8 @@ func _library(dir: String, lib) -> void:
 		var lines: PackedStringArray = outs[0]
 		for i in lines.size():
 			if lines[i].begins_with("mat "):
-				var at := int(lines[i].get_slice("@", 1))
-				lines[i] = lines[i].get_slice(" @", 0) + " | " + _channel([albs[0][at], albs[1][at], albs[2][at]], sent)
+				var at := int(lines[i].get_slice("@", 1).get_slice(" ", 0))
+				lines[i] = lines[i].get_slice(" @", 0) + " #" + lines[i].get_slice("#", 1) + " | " + _channel([albs[0][at], albs[1][at], albs[2][at]], sent)
 		var f := FileAccess.open(dir.path_join(id + ".mesh"), FileAccess.WRITE)
 		f.store_string("\n".join(lines) + "\n")
 		n += 1
@@ -220,8 +227,9 @@ func _init() -> void:
 		var node: Node3D = spec.node
 		holder.add_child(node)
 		var out := PackedStringArray()
-		out.append("cam %.3f %.3f %.4f" % [35.0, 30.0, Baker.PX_PER_UNIT])
+		_floats = PackedFloat32Array()
 		_write(node, out)
+		_save_bin(dir, id)
 		var f := FileAccess.open(dir.path_join(id + ".mesh"), FileAccess.WRITE)
 		f.store_string("\n".join(out) + "\n")
 		print("%s: %d triangles" % [id, out.size() - 1])
