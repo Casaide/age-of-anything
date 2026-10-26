@@ -4,9 +4,9 @@
     blender -b --python tools/blender/human_armour.py -- assets/models/ bronze
     blender -b --python tools/blender/human_armour.py -- assets/models/ leather heroic   (and bronze)
 
-heroic (D-173): the genre's heroic build, about 5.5 heads tall: the hips at 18 instead of 11, the trunk
-0.95 as tall and 1.06 as broad (the arms and head are the game's: unit_models.gd). Run with "heroic" after the
-output for armour_<kind>_human_heroic.glb, the game uses; without it, the build before D-173.
+heroic (D-173): fitted to the heroic trunk (tools/blender/human_torso_heroic.py: the belt at 21.6, the shoulders
+at 30.3, a chest shallower front to back): writes armour_<kind>_human_heroic.glb, which the game uses; without it,
+the build before D-173.
 
 Writes armour_<kind>_human.glb. Part units, facing +X, up +Z, in the torso's own space (no
 fitting at bake time): a shell just outside the chest's profile, from the belt to the shoulders.
@@ -102,9 +102,9 @@ else:
     lathe("flare", TRIM, [(13.4, 5.2), (14.1, 4.95)])
 
 for ob in bpy.data.objects:
-    if heroic:   # fitted to the heroic torso (human_torso.py heroic): the same transform
+    if heroic:   # fitted to the heroic trunk (human_torso_heroic.py): belt 14.6 -> 21.6, shoulders 23.6 -> 30.3, a shallower chest
         for v in ob.data.vertices:
-            v.co = Vector((v.co.x * 1.06, v.co.y * 1.06, 18.0 + (v.co.z - 11.0) * 0.95))
+            v.co = Vector((v.co.x * 0.84, v.co.y * 0.88, 21.6 + (v.co.z - 14.6) * 0.967))
     for poly in ob.data.polygons:
         poly.use_smooth = True
     mod = ob.modifiers.new("smooth", "SUBSURF")

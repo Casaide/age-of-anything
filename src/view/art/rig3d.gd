@@ -253,8 +253,8 @@ func _gear(out: Dictionary, rig: Dictionary, slot: String, part_id: String, colo
 	if slot == "head_gear":
 		gxf = Transform3D(xf.basis * Basis.from_scale(Vector3.ONE * rig.gear_scale), rig.sockets[sock])
 		parent = r + ":head"
-	elif slot == "back" and "drape" in lib.part(part_id).tags:
-		gxf = Transform3D(xf.basis * Basis.from_scale(Vector3.ONE * rig.drape_scale), rig.sockets[sock])   # (UnitView._attach: a cape sized to its back)
+	elif slot == "back" and ("drape" in lib.part(part_id).tags or sock == part_id):
+		gxf = Transform3D(xf.basis * Basis.from_scale(Vector3.ONE * rig.drape_scale), rig.sockets[sock])   # (UnitView._attach: a cape sized to its back, or to the body's own place for it)
 	else:
 		gxf = Transform3D(xf.basis, rig.sockets[sock])
 	if slot == "hand_r":

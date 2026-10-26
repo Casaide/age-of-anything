@@ -63,3 +63,8 @@ of the humans feels cheap still. And the rats and frogs dont feel same quality".
 "this is good. conceptually we've gone from [one classic RTS] style to [another]" (the later, more realistic
 classics), and "rats etc should follow". Next: step 2b, the humans' clothes and gear to the concept figure's quality,
 then rats and frogs.
+
+**2026-10-27, step 2b (in progress).** Wool tunic and shaped arms (D-175), Blender galea and scutum, banners only when
+asked (D-174), the walled howdah (D-176). 3D placement before the last scutum change: 26195 checks, 2 failed; both
+fixed but one: **open: the "gear: spider infantry with shield.scutum" fixture, the board 42 voxels into the spider's
+back gear (34 allowed)**. Round F2 (rats and frogs) waits on Dominic's pick.

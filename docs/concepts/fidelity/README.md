@@ -1,4 +1,7 @@
-# Unit fidelity (round F1, 2026-10-26): waiting on Dominic
+# Unit fidelity (rounds F1 and F2, 2026-10-26/27)
+
+**F1 picked** (D-173): the heroic 5.5-head build at 2x, built in milestone 23. **F2 (rats and frogs) waiting on
+Dominic**: see the end.
 
 Dominic, 2026-10-26: "please focus on fidelity. I want to see if we can get our units looking much better
 and more realistic. They are simple and cartoony atm". Earlier the same day: "unit and building fidelity is a
@@ -95,3 +98,41 @@ AOW_ART_SCALE=3.0 AOW_UNIT_BANDS=0 AOW_UNIT_OUTLINE=0 AOW_UNIT_RIM=0.6 godot --p
 
 Flags (all off unless set; their bakes keep apart in the bake cache): `AOW_ART_SCALE`, `AOW_UNIT_BANDS`
 (0: smooth), `AOW_UNIT_OUTLINE=0`, `AOW_UNIT_RIM=<energy>`, `AOW_HUMAN_LEGS`, `AOW_HUMAN_HEAD`.
+
+
+---
+
+## Round F2 (2026-10-27): rats and frogs at the humans' quality
+
+Dominic, on the heroic humans in the game: "feel like we're almost there, but not 100%. The design (clothes etc) of
+the humans feels cheap still. And the rats and frogs dont feel same quality". On F1's figure: "this is good", and
+"rats etc should follow".
+
+The humans got clothes and gear at the concept's standard (milestone 23 step 2b): a wool tunic in an undyed tone of
+the culture's colour with folds, the team colour on a sash, the hem, shields and crests; shaped bare arms under a
+short sleeve; a Blender-modelled galea (ribs, hinged cheek guards, a flared neck guard) and scutum (curved, rimmed,
+a boss, wings and lightning). Banners only when a prompt asks for them. The elephant's riders stand in a walled
+howdah, seen from the hips up (Dominic: "the elephant with units standing makes no sense now").
+
+![the heroic legionary, clothes and gear](08-heroic-legionary-2b.png)
+![the walled howdah](07-howdah.png)
+
+For rats and frogs, two takes each, modelled by `tools/blender/concept_creatures.py` and baked beside today's:
+
+![rats and frogs, today and two takes each](06-f2-rats-frogs.png)
+
+- **Rat A, heroic:** upright, broad in the shoulder, a long snout and big ears, digitigrade legs on long hind feet,
+  a tail like a whip; a leather jerkin, a tin cap, a spear. Human-sized (D-116).
+- **Rat B, a rat as a rat is:** hunched forward, the head carried low, short arms; the same kit.
+- **Frog A, heroic:** upright on long folded legs, a broad chest, a wide flat head with the eyes on top; a bark
+  cuirass, a team sash, a spear.
+- **Frog B, a frog as a frog is:** squat on folded haunches, a forelimb planted.
+
+What they show: the realistic animal shape (a real rat's head and tail, a frog's flat head and webbed feet) does most
+of the work, as proportions did for the humans. They are quick models (an hour or so each); the colours are fixed
+concept ones (grey-brown rat, green frog), not the race palettes. Building one means its body, head and legs in
+Blender with the game's sockets and cut legs, its gear refitted, the frogs' hop and their 3D deaths redone, and the
+placement check.
+
+**Recommendation:** rat A and frog A, the heroic takes, to stand with the heroic humans; B's realism reads as
+vermin, not soldiers. Dominic picks.
