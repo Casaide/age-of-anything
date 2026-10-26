@@ -37,10 +37,14 @@ def species_from_map(map_id:string) -> [string]:
             if kind == "": kind = if fnl_noise2(seed, 0.09, float(cx), float(cy)) > 0.08: "tree_pine" else: "tree_broadleaf"
             kind
 
-// The tables the pack lacks, from data (after the map and the match's types are set up).
-def pack_from_data(map_id:string):
+// The team colours, if the pack gave none (the lobby draws in them before any match is set up).
+def pack_teams():
     if not team_rgb.length:
         for(glist(lib_palettes, "teams")) t: team_rgb.push(pd_rgb(as_str(t)))
+
+// The tables the pack lacks, from data (after the map and the match's types are set up).
+def pack_from_data(map_id:string):
+    pack_teams()
     let audio = load_json(lib_root + "/audio.json")
     if not sounds.get_keys().length:
         let snd = gobj(audio, "sounds")

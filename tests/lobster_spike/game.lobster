@@ -399,6 +399,7 @@ import .model.kit_bodies
 import .model.siege
 import .model.heroes
 import .model.bears
+import .model.mods_active
 import .model.models
 import .view.part_bake
 import .model.props
@@ -906,8 +907,11 @@ def box(at:float2, size:float2, col:float4): ui_fill(at, size, col)
 def roster_views(race:JV, p:int) -> [UV]:
     let tc = team_rgb[p % team_rgb.length]
     return map(glist(race, "units")) un:
-        let v = uv_new()
+        var v = uv_new()
         uv_build(v, at(un, "recipe"), float3 { tc.x, tc.y, tc.z }, 20)
+        if bake_view_parts(v.node) > 0:   // (parts the pack lacks: baked, then the view built again on their rigs)
+            v = uv_new()
+            uv_build(v, at(un, "recipe"), float3 { tc.x, tc.y, tc.z }, 20)
         v.node.scl = float2_1 * 0.85
         v.pose_steps = 8
         v.art_px = 1.5
@@ -1967,6 +1971,7 @@ note("pack")
 music_start()
 ambience_start()
 lib_load("../../data")
+pack_teams()
 ui_setup("")
 let mods_wanted = if mods_arg != "": tokenize(mods_arg, ",", " ") else: pack_mods
 if mods_wanted.length: print "mods: {mods_use(mods_wanted)}"
