@@ -388,12 +388,63 @@ def pick(bot:Bot, trains:[int], tags:[int], bonus:[int], reserve:[int]) -> int:
         let slot = t_slot[k]
         if ages[p] < t_age[k] or enough(p, slot, k) or t_trader[k] or bm_lacks_slot(p, slot): continue
         if reserve.length and not affords(p, t_cost[k], reserve): continue
-        assert not has_cfg("military.siege.max.{slot}")   // (siege engines: not in the spike)
-        let s = score(k, tags, bonus) + cfg_or("military.pick_bias.{slot}", 0)
+        let s = if has_cfg("military.siege.max.{slot}"): siege_score(p, slot, k) else: score(k, tags, bonus) + cfg_or("military.pick_bias.{slot}", 0)
         if s > best_score:
             best_score = s
             best = k
     return best
+
+// Engines go round instead of by the counter-pick (Bot._siege_score).
+def siege_score(p:int, slot:string, k:int) -> int:
+    var at = -1
+    for(cfg_list("military.siege.max_order")) s, n:
+        if s == slot: at = n
+    return 1000 - fielded(p, k) * 100 - at
+
+// Engines on the regroup beat, while attacking: rams for the nearest enemy gate, wall or tower they
+// can see (any building if none), catapults for a tower within a short walk; idle rams with nothing
+// in sight march on the army's target (Bot._siege).
+def bot_siege(bot:Bot, army:[int], hx:int, hy:int):
+    if not has_cfg("military.siege.towers_within") or not bot.assault or tick % (cfg("military.regroup_every") * 20) != bot_phase(bot): return
+    let targets = []::int
+    let groups = []::[int]
+    let march = []::int
+    for(army) i:
+        let k = u_kind[i]
+        let ram = t_buildings_only[k] != 0
+        let thrower = t_splash[k] > 0
+        if (ram or thrower) and not (u_foe[i] != 0 and b_index_of(u_foe[i]) >= 0):
+            var best = 0
+            let tw = cfg("military.siege.towers_within") * 1000
+            var best_d = if thrower: tw * tw else: 1 << 60
+            var best_rank = 2
+            for(b_id.length) b:
+                if is_enemy(bot.player, b_owner[b]) and fog_sees_area(bot.player, b):
+                    let bk = b_kind[b]
+                    let defence = bt_attacks[bk] != 0 or bt_gate[bk] != 0 or bt_wall[bk] != 0
+                    if not (thrower and bt_attacks[bk] == 0):
+                        let rank = if defence: 0 else: 1
+                        let d = dist2(u_x[i], u_y[i], b_cx[b] * 1000 + b_sx[b] * 500, b_cy[b] * 1000 + b_sy[b] * 500)
+                        if rank < best_rank or (rank == best_rank and d < best_d):
+                            best = b_id[b]
+                            best_d = d
+                            best_rank = rank
+            if best != 0:
+                var at = -1
+                for(targets) id, n:
+                    if id == best: at = n
+                if at < 0:
+                    targets.push(best)
+                    groups.push([u_id[i]])
+                else: groups[at].push(u_id[i])
+            elif ram and u_foe[i] == 0 and u_moving[i] == 0: march.push(u_id[i])
+    let order = map(targets.length) n: n
+    insertion_sort(order) a, b: targets[a] < targets[b]
+    for(order) n: issue_cmd(bot.player, CMD_ATTACK, groups[n], targets[n], 0, 0, 0)
+    var tx, ty = enemy_target(bot, hx, hy)
+    if march.length and tx >= 0:
+        tx, ty = reachable(bot, tx, ty)
+        issue_cmd(bot.player, CMD_ATTACK_MOVE, march, tx, ty, 0, 0)
 
 def bm_lacks_slot(p:int, slot:string) -> bool: return contains(slots_lacked[p], slot_index(slot))
 
@@ -1190,5 +1241,6 @@ def full_bot_think(bot:Bot):
     trade_carts(bot, carts, at_work)
     waves(bot, field, hx, hy)
     off_walls_army(bot, field, hx, hy)
-    // (_siege: no engines here; WallsAi.storm: no walls; AbilityAi: no abilities)
+    bot_siege(bot, field, hx, hy)
+    // (WallsAi.storm: no walls; AbilityAi: no abilities)
     escort_healers(bot, field, healers, hx, hy)

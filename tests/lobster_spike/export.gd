@@ -147,8 +147,7 @@ static func _args_ints(w: World, p: int, type: String, a: Dictionary) -> Array:
 		Commands.GATHER:
 			return [a.cell, 0, 0, 0]
 		Commands.BUILD:
-			assert(int(a.get("along", 0)) == 0)
-			return [Economy.btype_of(w, a.building), a.cx, a.cy, 0]
+			return [Economy.btype_of(w, a.building), a.cx, a.cy, int(a.get("along", 0))]
 		Commands.HELP_BUILD, Commands.ATTACK, Commands.REPAIR:
 			return [a.target, 0, 0, 0]
 		Commands.TRADE:
@@ -232,7 +231,7 @@ func _check(w: World) -> void:
 		var t: Dictionary = w.types[w.units.kind[i]]
 		assert(t.wade == 0 and int(t.slow_on_hit) == 0, "Wading and sticky hits aren't ported")
 	assert(w.field_order.is_empty() and w.field_queue.is_empty())
-	assert(w.webs.is_empty() and w.map.lane_teams.size() == 1)
+	assert(w.webs.is_empty())
 
 
 ## The k-th spawn point round a start: a square spiral, three tiles apart, on walkable ground.
@@ -334,7 +333,7 @@ func _fuzz(w: World, rng, give_up: bool) -> void:
 	for b in bs.count():
 		if bs.owner[b] == p:
 			own_b.append(b)
-	var r: int = rng.range_int(0, 12)
+	var r: int = rng.range_int(0, 14)
 	match r:
 		0:
 			var at := _walkable_point(w.map, rng)
@@ -387,6 +386,14 @@ func _fuzz(w: World, rng, give_up: bool) -> void:
 					mks.append(b)
 			if not mks.is_empty() and not some.is_empty():
 				w.issue(p, Commands.ROUTE, {"ids": some, "building": bs.id[mks[rng.range_int(0, mks.size() - 1)]]})
+		13, 14:
+			var s2: Array = w.map.starts[p]
+			var kinds := ["palisade", "palisade_gate"]   # (stone walls you stand on: once walls.gd is in)
+			var kind: String = kinds[rng.range_int(0, kinds.size() - 1)]
+			var cx2: int = int(s2[0]) / 1000 + rng.range_int(-9, 9)
+			var cy2: int = int(s2[1]) / 1000 + rng.range_int(-9, 9)
+			if not some_workers.is_empty() and Economy.btype_of(w, kind) >= 0:
+				w.issue(p, Commands.BUILD, {"ids": some_workers, "building": kind, "cx": cx2, "cy": cy2, "along": rng.range_int(0, 3), "queue": rng.range_int(0, 1)})
 		12:
 			var hurt := own_b.filter(func(b): return bs.done[b] == 1 and bs.hp[b] < w.bmods[p][bs.kind[b]].hp)
 			if not hurt.is_empty() and not some_workers.is_empty():
@@ -474,7 +481,7 @@ static func unit_fields(u, i: int) -> Array:
 ## The per-building fields both sims hash, in order (then its queue).
 static func building_fields(b, i: int) -> Array:
 	return [b.id[i], b.owner[i], b.kind[i], b.cx[i], b.cy[i], b.sx[i], b.sy[i], b.hp[i], b.progress[i], b.done[i],
-		b.train[i], b.rally_x[i], b.rally_y[i], b.cooldown[i]]
+		b.train[i], b.rally_x[i], b.rally_y[i], b.cooldown[i], b.diag[i]]
 
 
 ## The state the port has: the tick and counters, the cached and queued fields, every unit and
@@ -516,6 +523,12 @@ static func state_hash(w: World) -> int:
 		h = Fixed.mix(Fixed.mix(h, w.wonder_ids[k]), w.wonder_since[k])
 	for v in w.market_price:
 		h = Fixed.mix(h, v)
+	var rcells: Array = w.rubble.keys()
+	rcells.sort()
+	for c in rcells:
+		h = Fixed.mix(h, c)
+		for v in w.rubble[c]:
+			h = Fixed.mix(h, v)
 	for k in w.bridge_id.size():
 		for v in [w.bridge_id[k], w.bridge_hp[k], w.bridge_up[k], w.bridge_work[k], w.bridge_payer[k]]:
 			h = Fixed.mix(h, v)
@@ -710,6 +723,24 @@ static func _write_extra(w: World, lines: PackedStringArray) -> void:
 		var p: Dictionary = t.pen
 		pens.append_array([int(p.animals), int(p.food), int(p.food_ticks), int(p.breed_ticks)] if not p.is_empty() else [0, 0, 1, 1])
 	e.bt_pen = pens
+	var bw := []
+	for t in w.btypes:
+		var rep: Array = t.replaces.map(func(id): return Economy.btype_of(w, id))
+		var pour: Dictionary = t.get("pour", {})
+		bw.append_array([int(t.length), int(t.stairs), int(t.ladder), int(t.walkway), int(t.blocks_flyers), rep.size()] + rep)
+		bw.append_array([int(pour.get("reach", 0)), int(pour.get("reload", 0)), int(pour.get("damage", 0))] if not pour.is_empty() else [-1, 0, 0])
+	e.bt_walls = bw
+	var wc: Dictionary = w.walk_cfg
+	var nots: Array = wc.not.map(func(t): return _tag_or_none(w, t))
+	var froms: Array = wc.from.map(func(id): return Economy.btype_of(w, id))
+	e.walk_cfg = [int(wc.climb), int(wc.fall), int(wc.speed_pct), int(wc.push), int(wc.rubble), int(wc.repair_pct), nots.size()] + nots + [froms.size()] + froms
+	e.lanes = Array(w.map.lane_teams)
+	var rub := []
+	var rcells: Array = w.rubble.keys()
+	rcells.sort()
+	for c in rcells:
+		rub.append_array([c] + Array(w.rubble[c]))
+	e.rubble = rub
 	e.combat2 = [int(w.combat.get("splash_friend_pct", 100))]
 	var hold_m := int(w.mode_cfg.get("hold_minutes", 0))
 	e.match2 = [Match.hold_ticks(w), hold_m * 1200 if w.mode_cfg.has("defend") else -1]
@@ -885,6 +916,8 @@ static func _write_ai(lines: PackedStringArray) -> void:
 			TYPE_STRING:
 				strs.append("%s 1 %s" % [path, v])
 	walk.call(walk, bot.cfg, "")
+	var smax: Dictionary = bot.cfg.military.get("siege", {}).get("max", {})
+	strs.append("military.siege.max_order %d %s" % [smax.size(), " ".join(smax.keys())])   # (in the data's order: Bot._siege_score)
 	lines.append("AI %d %d" % [nums.size(), strs.size()])
 	lines.append_array(nums)
 	lines.append_array(strs)
