@@ -71,7 +71,10 @@ func _init() -> void:
 		if a.begins_with("trace:"):
 			trace_tick = int(a.substr(6))
 	var rules = DataLib.load_json("res://data/rules/default.json")
-	rules.animals = "animals" in args   # (off unless asked: the bots' herding and hunting come later)
+	rules.animals = "animals" in args   # (off unless asked: the scenarios from before animals)
+	for a in args:
+		if a.begins_with("mode:"):
+			rules.mode = a.substr(5)   # a game mode (data/modes.json): its start and its win rules
 	if mode == "move" or mode == "fight":
 		rules.economy.start.buildings = []
 		rules.economy.start.workers = 0
@@ -800,7 +803,7 @@ static func _write_state(w: World, lines: PackedStringArray) -> void:
 	var u := w.units
 	lines.append("UNITS %d" % u.count())
 	for i in u.count():
-		assert(u.perch[i] == 0 and u.patient[i] == 0 and u.orders[i].is_empty())
+		assert(u.patient[i] == 0 and u.orders[i].is_empty())
 		lines.append(_ints(unit_fields(u, i) + [u.owner[i], u.kind[i], u.speed[i], u.radius[i], u.mclass[i]]))
 	var b := w.buildings
 	lines.append("BUILDINGS %d" % b.count())

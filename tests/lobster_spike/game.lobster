@@ -41,6 +41,7 @@ import .lib.scout
 import .lib.land
 import .lib.expand
 import .lib.bot
+import .lib.walls_ai
 import .lib.world
 import .game.pack
 
