@@ -80,3 +80,27 @@ def music_tick(mix:string, battle:bool, dt:float):
             elif has(levels, stem): want = db_to_volume(as_float(at(levels, stem))) * master
         music_now[k] = move_toward(music_now[k], want, rate)
         music_volume(id, music_now[k])
+
+// ---- the ambience (Audio.ambience, town): the meadow loop under a match, the town's quiet and busy
+// loops on top by town_level (0: no town or the camera far away .. 1: a big town right below): the
+// quiet one comes in first, the busy one joins past the middle. Each a music track, looping, faded.
+
+var amb_ids = []::int              // meadow, town_quiet, town_busy
+var amb_now = [0.0, 0.0, 0.0]
+
+def ambience_start():
+    for(["sfx/meadow_1.wav", "sfx/town_quiet_1.wav", "sfx/town_busy_1.wav"]) f:
+        let id = play_music("{AUDIO_DIR}/{f}", -1)
+        if id > 0: music_volume(id, 0.0)
+        amb_ids.push(id)
+    print "ambience: {(filter(amb_ids) id: id > 0).length} loops playing"
+
+def ambience_tick(town_level:float, dt:float):
+    let master = db_to_volume(buses.get("Ambience", 0.0))
+    let want = [db_to_volume(-6.0),
+                if town_level * 2.5 > 0.01: db_to_volume(4.0) * clamp(town_level * 2.5, 0.0, 1.0) else: 0.0,
+                if town_level > 0.41: db_to_volume(4.0) * clamp((town_level - 0.4) / 0.6, 0.0, 1.0) else: 0.0]
+    for(amb_ids) id, k:
+        if id > 0:
+            amb_now[k] = move_toward(amb_now[k], (if sound_on: want[k] * master else: 0.0), dt * 0.5)
+            music_volume(id, amb_now[k])

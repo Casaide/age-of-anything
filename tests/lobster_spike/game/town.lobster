@@ -6,7 +6,8 @@
 // by junk towns, small birds elsewhere). Imported by game.lobster after its views (it uses them).
 // Buildings (BuildingArt): chimneys smoke while they work (houses always), windows and lanterns
 // glow and flicker, and a building badly hurt burns in a few places with black smoke.
-// Not yet: cracks on damaged walls, the stable's tethered mount, the town's ambience.
+// The town's sound follows your town: its size and how near the camera is (town_level).
+// Damaged buildings crack from 30% (drawn over the walls). Not yet: the stable's tethered mount.
 
 let LOAD_DECAY_S = 14.0
 let PILE_STAGE_AT = [0.5, 3.0, 7.0]
@@ -231,6 +232,52 @@ def mix4(a:float4, b:float4, f:float) -> float4: return a + (b - a) * f
 def ramp3(a:float4, b:float4, c:float4, mid:float, k:float) -> float4:
     return if k < mid: mix4(a, b, k / mid) else: mix4(b, c, (k - mid) / (1.0 - mid))
 
+let DAMAGE_CRACKS = 0.3
+
+// Cracks (BuildingArt._make_cracks): short jagged lines down the walls from points across the
+// body's middle band, the same ones always, in canvas units from its anchor.
+def crack_lines(b:int, look:string) -> [[float2]]:
+    let lk = looks.get(look)
+    if not lk: return []
+    let fi = frame_index(lk.body)
+    if fi < 0: return []
+    let fr = frames[fi]
+    var h = (b_id[b] * 2246822519 + 17) & 0x7fffffff
+    def next() -> float:
+        h = (h * 1103515245 + 12345) & 0x7fffffff
+        return float(h % 10000) / 10000.0
+    return map(6):
+        var p = float2 { (float(fr.w) * (0.25 + next() * 0.5) - float(fr.ox)) / 1.5, (float(fr.h) * (0.42 + next() * 0.2) - float(fr.oy)) / 1.5 }
+        let line = [p]
+        var dir = normalize(float2 { next() * 1.2 - 0.6, 1.0 })
+        for(3 + int(next() * 3.0)):
+            p += normalize(dir + float2 { next() * 1.8 - 0.9, 0.0 }) * (1.8 + next() * 1.5)
+            line.push(p)
+        line
+
+// The cracks of building b, if it's hurt enough (drawn in the world's sort, just after the building).
+def draw_cracks_of(b:int):
+    let full = bm_hp[b_owner[b]][b_kind[b]]
+    let damage = if full > 0: 1.0 - float(b_hp[b]) / float(full) else: 0.0
+    if damage < DAMAGE_CRACKS: return
+    let cracks = crack_lines(b, building_look(b))
+    let n = min(cracks.length, 1 + int((damage - DAMAGE_CRACKS) / (1.0 - DAMAGE_CRACKS) * float(cracks.length)))
+    let at = building_anchor(b)
+    for(n) k:
+        let l = cracks[k]
+        for(l.length - 1) i:
+            ui_line(at + l[i] + float2 { 0.7, 0.35 }, at + l[i + 1] + float2 { 0.7, 0.35 }, 0.7, float4 { 1.0, 0.95, 0.85, 0.25 })
+            ui_line(at + l[i], at + l[i + 1], 0.7, float4 { 0.16, 0.11, 0.07, 0.85 })
+
+// Into the draw list: each hurt building's cracks just after it.
+def collect_cracks():
+    for(b_id.length) b:
+        if b_done[b] == 1 and fog[ME][b_cy[b] * W + b_cx[b]] != 0 and b_owner[b] < arch_of.length:
+            let full = bm_hp[b_owner[b]][b_kind[b]]
+            if full > 0 and float(full - b_hp[b]) / float(full) >= DAMAGE_CRACKS:
+                let at = iso(float(b_cx[b] * 1000 + b_sx[b] * 500), float(b_cy[b] * 1000 + b_sy[b] * 500))
+                draws.push(Drawable { at.y + 0.5, draws.length, -3, float(b), 0.0, float4_1, [] })
+
 def draw_building_fx():
     gl.set_shader("color")
     for(town_parts) q:
@@ -339,8 +386,9 @@ def town_cell_free(m:float2) -> bool:   // milli-tiles
     let c = cy * W + cx
     return occupied[c] == 0 and amount[c] <= 0 and walks[0][c] != 0 and not on_path(m / 1000.0)
 
-// The piles, yards and gardens as sprites (in the draw list).
+// The piles, yards and gardens as sprites (in the draw list), and the cracks.
 def collect_town():
+    collect_cracks()
     for(b_id.length) b:
         let cell = b_cy[b] * W + b_cx[b]
         if teams[b_owner[b]] == teams[ME] or fog[ME][cell] != 0:
@@ -430,3 +478,23 @@ def draw_town():
                     let hx = if c.face > 0.0: 2.0 * px else: -2.0 * px
                     town_rect(b + float2 { hx, -px * (if peck: 1.0 else: 3.0) }, float2 { px, px }, head)
                     town_rect(b + float2 { if c.face > 0.0: -px else: px, 0.0 }, float2 { px, px * 0.5 }, float4 { 0.0, 0.0, 0.0, 0.25 })
+
+// The town's sound (TownLife._ambience): its size (finished buildings and workers) times how near
+// the camera is to your Town Center (half as loud a screen away, gone further out).
+def town_level() -> float:
+    var buildings = 0
+    var centre = float2 { -1.0, -1.0 }
+    for(b_id.length) b:
+        if b_owner[b] == ME and b_done[b] == 1:
+            buildings++
+            if centre.x < 0.0 and bt_name[b_kind[b]] == "town_center":
+                centre = iso(float((b_cx[b] * 2 + b_sx[b]) * 500), float((b_cy[b] * 2 + b_sy[b]) * 500))
+    var workers = 0
+    for(u_id.length) i:
+        if u_owner[i] == ME and t_worker[u_kind[i]]: workers++
+    let size = clamp(float(buildings - 1) / 14.0 * 0.6 + float(workers) / 40.0 * 0.4, 0.0, 1.0)
+    if centre.x < 0.0: return 0.0
+    let half = float(gl.window_size()) * 0.5 / zoom
+    let off = (centre - cam) / half
+    let near = clamp(1.6 - max(abs(off.x), abs(off.y)), 0.0, 1.0)
+    return size * near

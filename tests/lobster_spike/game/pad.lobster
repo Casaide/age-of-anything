@@ -194,8 +194,8 @@ def pad_draw():
     gl.color(rcol):
         gl.translate(c):
             gl.scale(float2 { 1.0, 0.5 }): gl.open_circle(12.0 * u, 24, 0.16)
-            gl.line(float2 { -18.0 * u, 0.0 }, float2 { -8.0 * u, 0.0 }, 2.0 * u)
-            gl.line(float2 { 8.0 * u, 0.0 }, float2 { 18.0 * u, 0.0 }, 2.0 * u)
+            ui_line(float2 { -18.0 * u, 0.0 }, float2 { -8.0 * u, 0.0 }, 2.0 * u, rcol)
+            ui_line(float2 { 8.0 * u, 0.0 }, float2 { 18.0 * u, 0.0 }, 2.0 * u, rcol)
     if pad_circle > 0.0:
         gl.color(float4 { rcol.x, rcol.y, rcol.z, 0.6 }):
             gl.translate(c):
