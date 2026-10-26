@@ -40,6 +40,8 @@ SHADER bakelit
         UNIFORM vec4 albedo
         UNIFORM vec4 uvmap
         UNIFORM float mapping
+        UNIFORM vec4 emis
+        UNIFORM vec2 mflags
         vec3 n = normalize(inorm);
         // The material's texture as Godot maps it: none, its UVs, or triplanar (the model's position
         // times the scale, each axis's plane weighted by the normal).
@@ -54,6 +56,7 @@ SHADER bakelit
             t = texture(tex0, iuv * uvmap.xy + uvmap.zw);
         }
         vec4 icol = albedo * t;
+        if (mflags.x > 0.5 && t.a < 0.5) discard;   // alpha scissor (decals)
         // PartBaker's rig: a warm key from the camera's upper left, a cool fill from the other side,
         // ambient; linear tone (Godot's linear tonemap, sRGB out).
         vec3 light = vec3(0.784, 0.816, 0.878) * 0.28;
@@ -65,6 +68,8 @@ SHADER bakelit
         light += vec3(1.0, 0.957, 0.878) * 1.7 * max(0.0, dot(n, -key_dir)) * lit;
         light += vec3(0.722, 0.784, 1.0) * 0.3 * max(0.0, dot(n, -fill_dir));
         vec3 lin = pow(icol.rgb, vec3(2.2)) * light;
+        if (mflags.y > 0.5) lin = pow(icol.rgb, vec3(2.2));   // unshaded
+        lin += pow(emis.rgb, vec3(2.2));
         vec3 c = pow(clamp(lin, 0.0, 1.0), vec3(1.0 / 2.2));
         frag_color = vec4(c, 1.0);
         if (mapping < -0.5) frag_color = vec4(nearest * 0.5 + 0.5, lp.z * 0.5 + 0.5, lp.x / lsize.x, 1.0);
@@ -90,6 +95,9 @@ class BakeMat:
     channel = "*"                   // "*": the colour is on each triangle (a mesh made for one race)
     m = float3_0
     b = float3_0
+    scissor = false                 // alpha scissor (decals)
+    unshaded = false
+    emission = float3_0
 
 var bake_mats = []::BakeMat
 
@@ -246,7 +254,9 @@ def bake_facing(tris:[BakeTri], facing:int) -> string, int, int, float2:
     qsort_in_place(lorder) a, b: ldepth[a] < ldepth[b]
     let all_pos = []::float3
     for(lorder) ti:
-        for(tris[ti].p) p: all_pos.push(float3 { (dot(p, kx) - llo.x) * lpx, (-dot(p, ky) - llo.y) * lpx, light_z(p) })
+        // (a decal casts no shadow here: its quad would, where Godot's alpha scissor casts only its picture)
+        if tris[ti].mat < 0 or not bake_mats[tris[ti].mat].scissor:
+            for(tris[ti].p) p: all_pos.push(float3 { (dot(p, kx) - llo.x) * lpx, (-dot(p, ky) - llo.y) * lpx, light_z(p) })
     let smesh = gl.new_mesh("P", all_pos, []::float4, []::float3, []::float2, []::float2, map(all_pos.length) i: i)
     let smap = gl.create_blank_texture(int3 { lw, lh, 0 }, texture_format_nomipmap | texture_format_float | texture_format_clamp)
     gl.switch_to_framebuffer(smap)
@@ -292,6 +302,8 @@ def bake_facing(tris:[BakeTri], facing:int) -> string, int, int, float2:
             let al = mat_albedo(first.mat, first.c[0])
             gl.set_uniform("albedo", float4 { al.x, al.y, al.z, 1.0 })
             gl.set_uniform("uvmap", float4 { bm.scale.x, bm.scale.y, bm.offset.x, bm.offset.y })
+            gl.set_uniform("emis", float4 { bm.emission.x, bm.emission.y, bm.emission.z, 0.0 })
+            gl.set_uniform("mflags", float2 { if bm.scissor: 1.0 else: 0.0, if bm.unshaded: 1.0 else: 0.0 })
             gl.set_uniform("mapping", if bake_shadow_debug: -1.0 elif not bt: 0.0 elif bm.triplanar: 2.0 else: 1.0)
             gl.set_uniform("lx", float4 { kx.x * lpx, kx.y * lpx, kx.z * lpx, -llo.x * lpx })
             gl.set_uniform("ly", float4 { -ky.x * lpx, -ky.y * lpx, -ky.z * lpx, -llo.y * lpx })
