@@ -1865,7 +1865,43 @@ var steps = 0
 var frame_no = 0
 var step_time = 0.0
 note("loop")
-while gl.frame() and not (gl.button("escape") == 1 and placing < 0 and not build_menu and not typing_race and not tree_open):
+var menu_open = false           // the pause menu (Esc)
+var quit_game = false
+
+// The pause menu (Esc, or Start on the pad): a panel of buttons over the dimmed match. In a network
+// match the world goes on (only you stop looking), and Load isn't offered.
+def pause_menu():
+    let u = ui()
+    let ws = float(gl.window_size())
+    ui_frame(true)
+    if gl.button("controller_b") == 1: menu_open = false
+    ui_fill(float2_0, ws, float4 { 0.0, 0.0, 0.0, 0.45 })
+    let size = float2 { 420.0 * u, 470.0 * u }
+    let at = ws / 2.0 - size / 2.0
+    ui_panel(at, size, if net_on: "Menu (the match goes on)" else: "Paused")
+    var y = at.y + 70.0 * u
+    def item(label:string, primary:bool) -> bool:
+        let hit = ui_button(float2 { at.x + 40.0 * u, y }, float2 { size.x - 80.0 * u, 58.0 * u }, label, primary)
+        y += 72.0 * u
+        return hit
+    if item("Resume", true): menu_open = false
+    if item("Save", false):
+        quick_save()
+        menu_open = false
+    if not net_on and item("Load", false):
+        quick_load()
+        menu_open = false
+    if item("Tech tree", false):
+        menu_open = false
+        tree_open = true
+        tree_page = build_tree(ME)
+    if item("Quit", false): quit_game = true
+    ui_flush()
+
+while gl.frame() and not quit_game:
+    if gl.button("escape") == 1 and placing < 0 and not build_menu and not typing_race and not tree_open and not pad_wheel.length: menu_open = not menu_open
+    if gl.button("controller_start") == 1 and not typing_race: menu_open = not menu_open
+    if has_s(args, "menu") and frame_no == 2: menu_open = true   // (captures)
     if gl.button("escape") == 1: build_menu = false
     if gl.button("space") == 1 and not net_on: paused = not paused
     if gl.button("=") == 1 and not net_on: speed = min(8.0, speed * 2.0)
@@ -1892,7 +1928,7 @@ while gl.frame() and not (gl.button("escape") == 1 and placing < 0 and not build
     if swap_arg != "" and clock_s >= swap_at:
         become(swap_arg)
         swap_arg = ""
-    if not paused and not test_pause and winner < 0 and not typing_race and (not tree_open or net_on): acc += dt * speed
+    if not paused and not test_pause and winner < 0 and not typing_race and ((not tree_open and not menu_open) or net_on): acc += dt * speed
     acc = min(acc, 0.5)
     if net_on:
         ls_receive(lockstep)
@@ -1932,7 +1968,7 @@ while gl.frame() and not (gl.button("escape") == 1 and placing < 0 and not build
                     fy += u_y[i]
                     nf++
         if nf > 0: cam = cam + (iso(float(fx / nf), float(fy / nf)) - cam) * 0.05
-    if not typing_race and not tree_open:
+    if not typing_race and not tree_open and not menu_open:
         let padded = pad_tick(if padtest: pad_script() else: read_pad(), dt)
         if not padded: scroll()
         keys()
@@ -1948,6 +1984,7 @@ while gl.frame() and not (gl.button("escape") == 1 and placing < 0 and not build
         tree_open = true
         tree_page = build_tree(ME)
     tree_tick()
+    if menu_open: pause_menu()
     draw_banner()
     if typing_race: typing_tick()
     if selftest and self_test():
@@ -1956,7 +1993,7 @@ while gl.frame() and not (gl.button("escape") == 1 and placing < 0 and not build
     if padtest and pad_step >= 15:
         if shot != "": gl.screenshot(shot)
         return
-    if shot != "" and clock_s >= shot_at and not selftest and not padtest and (not tree_arg or frame_no > 4):
+    if shot != "" and clock_s >= shot_at and not selftest and not padtest and (not tree_arg or frame_no > 4) and (not has_s(args, "menu") or frame_no > 4):
         gl.screenshot(shot)
         print "shot {shot} at {clock_s} s, tick {tick}; sim {step_time * 1000.0 / max(1, steps)} ms a tick; cam {cam} zoom {zoom} ws {gl.window_size()} fb {gl.framebuffer_size()}"
         return
