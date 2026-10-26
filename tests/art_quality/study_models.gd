@@ -18,5 +18,8 @@ func build(id: String, colours: Dictionary) -> Dictionary:
 		"skin": surf("skin", c.skin, 8.0), "hair": surf("mane", c.skin2.darkened(0.45), 3.0),
 		"cloth": surf("cloth", Color("#8a2a22"), 4.0), "team": surf("cloth", c.team, 4.0),
 		"iron": surf("iron", Color("#b8bcc4"), 6.0), "bronze": surf("bronze", Color.WHITE, 4.0),
-		"leather": surf("leather", Color("#7a5236"), 4.0), "wood": surf("wood_grain", Color("#8a6040"), 4.0)}
+		"leather": surf("leather", Color("#7a5236"), 4.0), "wood": surf("wood_grain", Color("#8a6040"), 4.0),
+		"fur": surf("rat_fur", Color("#8a8070"), 7.0), "pink": surf("frog_belly", Color("#d8a8a0"), 6.0),
+		"frogskin": surf("frog_skin", Color("#6a9a42"), 6.0), "belly": surf("frog_belly", Color("#e0d8a8"), 6.0),
+		"eye": plain(Color("#1a1210"))}
 	return {"node": glb_file(files[base], mats)}

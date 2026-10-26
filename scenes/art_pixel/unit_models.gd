@@ -956,19 +956,21 @@ func crest(n: Node3D, tint: Color, pos: Vector3, length: float, height: float) -
 ## scripts without "heroic" (torso_human.glb, leg_human.glb, kept).
 const HUMAN_LOOK := "_heroic"
 const HUMAN_HAND_L := Vector3(6.1, 27.3, -5.4)   # the shield hand, forearm up (at hip height a rider's shield went into its horse)
+const HUMAN_WOOL := Color("#a39478")   # undyed wool: the cloth the culture's colour is mixed into (the team's stays bright)
 const HUMAN_ARM := 1.15     # its arm against the one the holds were posed for (arm_pose)
 
 
 func _body_human(c: Dictionary) -> Dictionary:
 	var n := Node3D.new()
 	# The tunic is the team colour, as the genre does; the culture shows in sleeves and trim.
-	var tunic := surf("cloth", c.team, 6.0)
-	var cloth := surf("cloth", c.cloth, 6.0)
+	# Step 2b (Dominic: the clothes "feel cheap"): a wool tunic in the culture's colour with the team colour on a sash
+	# and the hem (tools/blender/human_torso_heroic.py), after the fidelity concept.
+	var team := surf("cloth", c.team, 4.0)
+	var cloth := surf("cloth", HUMAN_WOOL.lerp(c.cloth, 0.45), 4.0)   # the culture's colour in undyed wool: the team colour must win
 	var skin := surf("skin", c.skin, 8.0)
-	var belt := surf("leather", Color.WHITE, 3.0)
-	# A belted tunic: chest and shoulders, a flared skirt over the hips (tools/blender/human_torso.py).
-	n.add_child(glb("torso_human" + HUMAN_LOOK, {"team": tunic, "cloth": cloth, "leather": belt, "skin": skin}))
-	n.add_child(blob(Vector3(1.0, 1.0, 0.5), surf("bronze", Color.WHITE, 2.0), Vector3(4.95, 22.0, 0.6)))   # the buckle
+	var belt := surf("leather", Color("#8a6a4a"), 3.0)
+	n.add_child(glb("torso_human" + HUMAN_LOOK, {"team": team, "cloth": cloth, "leather": belt, "skin": skin}))
+	n.add_child(blob(Vector3(0.45, 0.55, 0.5), surf("bronze", Color.WHITE, 2.0), Vector3(3.15, 22.05, 0.0)))   # the buckle
 	var near_hand := Vector3.ZERO
 	var front := Node3D.new()
 	for side in [1, -1]:
@@ -983,13 +985,18 @@ func _body_human(c: Dictionary) -> Dictionary:
 			elbow = pose[0]
 			hand = pose[1]
 			near_hand = hand
-		into.add_child(blob(Vector3(2.4, 2.3, 2.2), cloth, sh))
-		into.add_child(rod(sh, elbow, 1.75, 1.55, cloth))
-		into.add_child(rod(elbow, hand, 1.45, 1.2, skin))
-		into.add_child(blob(Vector3(1.55, 1.65, 1.35), skin, hand))
+		# The arm: a short wool sleeve over the shoulder, then a bare arm shaped like one (a deltoid, the upper arm
+		# narrowing to the elbow, the forearm thick below it and narrow at the wrist), a hand.
+		into.add_child(blob(Vector3(1.95, 1.75, 1.75), cloth, sh + Vector3(0, -0.2, 0)))
+		into.add_child(rod(sh, sh.lerp(elbow, 0.45), 1.75, 1.55, cloth))
+		into.add_child(rod(sh.lerp(elbow, 0.2), elbow, 1.4, 1.05, skin))
+		into.add_child(rod(elbow, elbow.lerp(hand, 0.35), 1.15, 1.2, skin))
+		into.add_child(rod(elbow.lerp(hand, 0.3), hand, 1.2, 0.8, skin))
+		into.add_child(blob(Vector3(1.05, 1.25, 0.9), skin, hand))
 	return {"node": n, "front": front, "sockets": {
 		"head": Vector3(0.6, 31.6, 0), "hand_r": near_hand, "hand_l": HUMAN_HAND_L,
-		"torso": Vector3(0.0, 26.0, 0), "back": Vector3(-4.8, 29.7, 0)},   # the chest's middle; high between the shoulder blades (a quiver at 27.5 met the striding thigh: A3)
+		"torso": Vector3(0.0, 26.0, 0), "back": Vector3(-3.8, 27.2, 0),   # a banner or quiver on the back of the tunic (higher, a quiver met the galea's neck guard: A3)...
+		"cape.cloth": Vector3(-4.4, 29.2, 0), "cape.leaf": Vector3(-4.4, 29.2, 0)},   # ...a cape from behind the shoulders, sized to clear the stride (parts.json drape_scale)   # the chest's middle; high between the shoulder blades (a quiver at 27.5 met the striding thigh: A3)
 		"anchors": [[Vector3(-2.4, 18.0, -2.5), 0.0, -1], [Vector3(2.1, 18.0, 2.5), PI, 1]],
 		"torso_scale": Vector2(0.66, 0.82),
 		"torso_fit": Vector3(0.46, 0.70, 0.55),   # worn armour (built ~1.6x) just over the (Blender) chest, not an egg round it
@@ -2610,28 +2617,13 @@ func _shield_kite(c: Dictionary) -> Dictionary:
 
 
 func _shield_scutum(c: Dictionary) -> Dictionary:
+	# Modelled in Blender (tools/blender/gear_roman.py, milestone 23 step 2b): a curved board with rounded corners, the
+	# team colour on its face, a bronze rim, boss and spine, wings and lightning bolts.
 	var n := Node3D.new()
 	var h := facing(n, Vector3(3.0, 0.0, 1.5), SHIELD_FACE)
-	var bronze := surf("bronze", Color.WHITE, 3.0)
-	var team := plain(c.team)
-	var R := 6.0
-	for i in 5:   # curved: five strips round a vertical axis behind the shield
-		var a := deg_to_rad((i - 2) * 17.0)
-		var strip := MeshInstance3D.new()
-		var bm := BoxMesh.new()
-		bm.size = Vector3(1.85, 17, 0.6)
-		strip.mesh = bm
-		strip.material_override = team
-		strip.position = Vector3(sin(a) * R, 0, cos(a) * R - R)
-		strip.rotation.y = a
-		h.add_child(strip)
-	for y in [8.5, -8.5]:
-		for i in 5:
-			var a := deg_to_rad((i - 2) * 17.0)
-			h.add_child(rod(Vector3(sin(a - 0.15) * R, y, cos(a - 0.15) * R - R + 0.2), Vector3(sin(a + 0.15) * R, y, cos(a + 0.15) * R - R + 0.2), 0.35, 0.35, bronze))
-	h.add_child(blob(Vector3(1.7, 1.7, 1.1), bronze, Vector3(0, 0, 0.5)))
-	h.add_child(rod(Vector3(0, 7.8, 0.4), Vector3(0, 1.7, 0.4), 0.3, 0.3, bronze))
-	h.add_child(rod(Vector3(0, -1.7, 0.4), Vector3(0, -7.8, 0.4), 0.3, 0.3, bronze))
+	var board := glb("shield_scutum", {"team": plain(c.team), "bronze": surf("bronze", Color.WHITE, 3.0), "wood": surf("wood_grain", Color.WHITE, 4.0)})
+	board.position.z = 1.0   # (the modelled board is thicker than the old strips: out from the hand, off a wide body)
+	h.add_child(board)
 	return {"node": n}
 
 
@@ -2687,15 +2679,10 @@ func _helm_horned(c: Dictionary) -> Dictionary:
 
 
 func _helm_galea(c: Dictionary) -> Dictionary:
-	var n := Node3D.new()
-	var iron := surf("iron", Color.WHITE, 3.0)
-	var bronze := surf("bronze", Color.WHITE, 2.0)
-	n.add_child(dome(Vector3(5.0, 5.0, 4.8), iron, Vector3(0, -3.8, 0)))
-	n.add_child(ring(4.8, 5.4, bronze, Vector3(0.3, -2.8, 0)))   # brow band
-	n.add_child(blob(Vector3(3.0, 0.6, 5.0), iron, Vector3(-4.0, -4.2, 0), Vector3(0, 0, -25)))   # neck guard
-	for side in [1, -1]:
-		n.add_child(blob(Vector3(1.6, 2.6, 0.5), iron, Vector3(2.0, -5.6, 4.3 * side)))
-	crest(n, c.crimson, Vector3(-0.2, 1.0, 0), 9.0, 4.5)
+	# Modelled in Blender (tools/blender/gear_roman.py, milestone 23 step 2b): a ribbed iron bowl, a bronze brow band,
+	# hinged cheek guards, a flared neck guard; the crest here.
+	var n := glb("helm_galea", {"iron": surf("iron", Color.WHITE, 3.0), "bronze": surf("bronze", Color.WHITE, 2.0)})
+	crest(n, c.crimson, Vector3(-0.2, 1.5, 0), 9.0, 4.5)
 	return {"node": n}
 
 

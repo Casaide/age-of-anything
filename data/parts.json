@@ -210,6 +210,8 @@
  },
  {
   "id": "body.human",
+  "drape_scale": 85,
+  "_drape_doc": "capes (on its own cape.cloth and cape.leaf sockets) hang 85% long on the heroic build (D-173): full length, the stride went through them",
   "slot": "body",
   "noun": "Folk",
   "points": 3,
@@ -4869,6 +4871,8 @@
  },
  {
   "id": "banner.team",
+  "only_if": ["banner"],
+  "_only_if_doc": "only when the prompt asks for banners or flags (Dominic, 2026-10-27: \"remove the banners, unsure why we have them on so many units\"); a unique unit may still carry one (data/uniques.json)",
   "slot": "back",
   "tags": [
    "banner",
