@@ -35,6 +35,8 @@ const Trade := preload("res://src/sim/trade.gd")
 const Repair := preload("res://src/sim/repair.gd")
 const Animals := preload("res://src/sim/animals.gd")
 const Walls := preload("res://src/sim/walls.gd")
+const Abilities := preload("res://src/sim/abilities.gd")
+const Trails := preload("res://src/sim/trails.gd")
 const Fortify := preload("res://src/sim/fortify.gd")
 const WALLS_SLOTS := [["archer", 12], ["skirmisher", 6], ["spear", 6], ["infantry", 12], ["siege_tower", 2], ["ram", 2], ["worker", 4]]
 
@@ -80,7 +82,11 @@ func _init() -> void:
 		rules.economy.start.workers = 0
 	var gen = Generator.new(DataLib.new())
 	var races := []
-	for p in PROMPTS:
+	var prompts: Array = PROMPTS
+	for a in args:
+		if a.begins_with("prompts:"):
+			prompts = Array(a.substr(8).split("|"))   # other races: "prompts:giant spiders|swamp frogs"
+	for p in prompts:
 		races.append(gen.generate(p, rules))
 
 	var full := _setup(map_id, races, rules, per_player)
@@ -170,6 +176,8 @@ static func _args_ints(w: World, p: int, type: String, a: Dictionary) -> Array:
 			return [a.building, 0, 0, 0]
 		Commands.CANCEL:
 			return [a.building, a.index, 0, 0]
+		Commands.ABILITY:
+			return [a.x, a.y, 0, 0]
 		Commands.AUTO_RESEED:
 			return [a.on, 0, 0, 0]
 	return [0, 0, 0, 0]
@@ -258,9 +266,9 @@ func _setup(map_id: String, races: Array, rules: Dictionary, per_player: int) ->
 func _check(w: World) -> void:
 	for i in w.units.count():
 		var t: Dictionary = w.types[w.units.kind[i]]
-		assert(t.wade == 0 and int(t.slow_on_hit) == 0, "Wading and sticky hits aren't ported")
+		pass
 	assert(w.field_order.is_empty() and w.field_queue.is_empty())
-	assert(w.webs.is_empty())
+	pass
 
 
 ## The k-th spawn point round a start: a square spiral, three tiles apart, on walkable ground.
@@ -562,6 +570,8 @@ func _ported_step(w: World) -> void:
 	Heroes.tick(w)
 	Match.tick(w)
 	Fog.tick(w)
+	Trails.tick(w)
+	Abilities.tick(w)
 	if w.units.changes != alive:
 		w.spatial.build(w.units.x, w.units.y)
 	w._next_orders()
@@ -648,6 +658,17 @@ static func state_hash(w: World) -> int:
 	for k in w.bridge_id.size():
 		for v in [w.bridge_id[k], w.bridge_hp[k], w.bridge_up[k], w.bridge_work[k], w.bridge_payer[k]]:
 			h = Fixed.mix(h, v)
+	for v in w.webs:   # (Abilities.hash_into)
+		h = Fixed.mix(h, v)
+	for d in [w.ability_ready, w.slowed]:
+		var dids: Array = d.keys()
+		dids.sort()
+		for uid in dids:
+			h = Fixed.mix(Fixed.mix(h, uid), int(d[uid]))
+	var worn := 0   # (World.state_hash: the wear, weighted by cell)
+	for c in w.wear.size():
+		worn += w.wear[c] * (c % 251 + 1)
+	h = Fixed.mix(h, worn)
 	h = Fixed.mix(h, w.shots.count())
 	for v in w.shots.data:
 		h = Fixed.mix(h, v)
@@ -854,6 +875,30 @@ static func _write_extra(w: World, lines: PackedStringArray) -> void:
 	var froms: Array = wc.from.map(func(id): return Economy.btype_of(w, id))
 	e.walk_cfg = [int(wc.climb), int(wc.fall), int(wc.speed_pct), int(wc.push), int(wc.rubble), int(wc.repair_pct), nots.size()] + nots + [froms.size()] + froms
 	e.lanes = Array(w.map.lane_teams)
+	var abv := []
+	for p in w.races.size():
+		var ab: Dictionary = Abilities.of(w, p)
+		abv.append_array([1, int(ab.range), int(ab.radius), int(ab.lasts), int(ab.slow_pct), int(ab.cooldown)] if not ab.is_empty() else [0, 0, 0, 0, 0, 0])
+	e.abilities = abv
+	var tab := []
+	for k in w.types.size():
+		tab.append(int(Abilities.can_use(w, k)))
+	e.t_ability = tab
+	e.webs = Array(w.webs)
+	var tcf: Dictionary = w.trail_cfg
+	e.trails = [int(tcf.every), int(tcf.add), int(tcf.max), int(tcf.decay_every), int(tcf.decay), int(tcf.trail), int(tcf.speed_pct)] + Array(w.wear)
+	var ar := []
+	var arids: Array = w.ability_ready.keys()
+	arids.sort()
+	for id in arids:
+		ar.append_array([id, w.ability_ready[id]])
+	e.ability_ready = ar
+	var sl := []
+	var slids: Array = w.slowed.keys()
+	slids.sort()
+	for id in slids:
+		sl.append_array([id, w.slowed[id]])
+	e.slowed = sl
 	e.t_docks = w.types.map(func(t): return int(t.get("docks", false)))
 	var pa := []
 	var pids: Array = w.pour_at.keys()

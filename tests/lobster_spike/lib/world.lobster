@@ -62,6 +62,8 @@ def step():
     hero_tick()
     match_tick()
     fog_tick()
+    trails_tick()
+    abilities_tick()
     if unit_changes != alive: spatial_build()
     next_orders()
     trace("start")
@@ -119,6 +121,8 @@ def state_hash() -> int:
     for(wonder_ids) id, k: h = mix(mix(h, id), wonder_since[k])
     for(market_price) v: h = mix(h, v)
     h = walls_hash(h)
+    h = abilities_hash(h)
+    h = wear_hash(h)
     for(br_id) id, k:
         for([id, br_hp[k], br_up[k], br_work[k], br_payer[k]]) v: h = mix(h, v)
     h = mix(h, shots.length / SHOT_STRIDE)
@@ -434,6 +438,29 @@ def load_extras():
         pour_at.set(pa[o4], pa[o4 + 1])
         pour_ids.push(pa[o4])
         o4 += 2
+    let ab = extra("abilities")   // per player: kind range radius lasts slow_pct cooldown
+    for(num_players) p:
+        ab_kind.push(ab[p * 6])
+        ab_range.push(ab[p * 6 + 1])
+        ab_radius.push(ab[p * 6 + 2])
+        ab_lasts.push(ab[p * 6 + 3])
+        ab_slow.push(ab[p * 6 + 4])
+        ab_cooldown.push(ab[p * 6 + 5])
+    t_ability = extra("t_ability")
+    webs = extra("webs")
+    let ar = extra("ability_ready")
+    for(ar.length / 2) k: ids_set(ready_ids, ready_at, ar[k * 2], ar[k * 2 + 1])
+    let sl = extra("slowed")
+    for(sl.length / 2) k: ids_set(slowed_ids, slowed_until, sl[k * 2], sl[k * 2 + 1])
+    let tc = extra("trails")   // every add max decay_every decay trail speed_pct, then the wear per cell
+    tr_every = tc[0]
+    tr_add = tc[1]
+    tr_max = tc[2]
+    tr_decay_every = tc[3]
+    tr_decay = tc[4]
+    tr_trail = tc[5]
+    tr_speed_pct = tc[6]
+    wear = tc.slice(7, -1)
     let pens = extra("bt_pen")
     for(pens.length / 4) k:
         bt_pen_animals.push(pens[k * 4])

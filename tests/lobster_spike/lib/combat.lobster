@@ -517,6 +517,9 @@ def apply_hits(n:int):
     // its last blow killed this tick. (Sticky hits: abilities, not ported, asserted by the exporter.)
     let gold = resource_index("gold")
     for(n) jj:
+        if c_hurt[jj] > 0 and u_hp[jj] > 0:
+            let byi = index_of(c_hurt_by[jj])
+            if byi >= 0 and t_slow_on_hit[u_kind[byi]] > 0: stick(jj, t_slow_on_hit[u_kind[byi]])
         if c_hurt[jj] != 0 and u_hp[jj] <= 0 and t_animal[u_kind[jj]] == 0:
             let kk = index_of(c_hurt_by[jj])
             if kk >= 0 and t_kill_gold[u_kind[kk]] != 0 and is_foe(u_owner[kk], u_owner[jj]): stock[gold][u_owner[kk]] += t_kill_gold[u_kind[kk]]
