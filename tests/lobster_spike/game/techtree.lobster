@@ -235,8 +235,8 @@ def tree_tick() -> bool:
     tree_scroll -= float(gl.mousewheel_delta()) * 120.0 * u
     tree_scroll = clamp(tree_scroll, 0.0, max(0.0, width - ws.x))
     gl.set_shader("color")
-    page_rect(float2_0, ws, float4 { 0.07, 0.06, 0.05, 0.97 })
-    page_text(float2 { 30.0 * u, 24.0 * u }, "Tech tree: " + rstr(su_races[ME], "name"), int(26.0 * u), float4 { 0.95, 0.85, 0.6, 1.0 })
+    ui_mat(float2_0, ws, ui_look.face * float4 { 0.5, 0.5, 0.5, 1.0 }, 0)
+    page_text(float2 { 30.0 * u, 24.0 * u }, "Tech tree: " + rstr(su_races[ME], "name"), int(26.0 * u), ui_look.title)
     page_text(float2 { 30.0 * u, 64.0 * u }, "Crossed out: your race lacks it.  Gold: research only some races get.  F1 or Esc: close.  Arrows or the wheel: scroll.", int(14.0 * u), float4 { 0.75, 0.72, 0.64, 1.0 })
     for(t.ages) name, a:   // the ages, as bands
         let y = TREE_TOP * u + float(a) * TREE_ROW * u
@@ -251,18 +251,19 @@ def tree_tick() -> bool:
     for(t.nodes) n, k:
         let at = tree_node_at(t, n, u)
         if at.x > -TREE_LANE * u and at.x < ws.x:
-            let size = float2 { 132.0 * u, 30.0 * u }
-            let fill = if n.planned: float4 { 0.12, 0.11, 0.1, 1.0 } elif n.kind == "building": float4 { 0.3, 0.22, 0.13, 1.0 } elif n.kind == "unit": float4 { 0.17, 0.22, 0.3, 1.0 } else: float4 { 0.2, 0.26, 0.17, 1.0 }
-            page_rect(at, size, fill)
+            let size = float2 { 140.0 * u, 40.0 * u }
+            let fill = if n.kind == "building": ui_look.button elif n.kind == "unit": float4 { 0.24, 0.3, 0.4, 1.0 } else: float4 { 0.28, 0.34, 0.2, 1.0 }
+            if n.planned: ui_box(at, size, -1, fill, false)   // (planned: an empty frame)
+            else: ui_box(at, size, 1, fill, false)
             if n.race_only: page_rect(at, float2 { 4.0 * u, size.y }, float4 { 0.95, 0.78, 0.3, 1.0 })
             let col = if n.planned: float4 { 0.45, 0.43, 0.4, 1.0 } elif n.lacks: float4 { 0.55, 0.5, 0.45, 1.0 } else: float4 { 0.92, 0.88, 0.78, 1.0 }
-            page_text(at + float2 { 8.0 * u, 6.0 * u }, if n.name.length > 17: n.name.substring(0, 16) + "." else: n.name, int(14.0 * u), col)
+            page_text(at + float2 { 11.0 * u, 10.0 * u }, if n.name.length > 17: n.name.substring(0, 16) + "." else: n.name, int(14.0 * u), col)
             if n.lacks: page_rect(at + float2 { 0.0, size.y * 0.5 - 1.5 * u }, float2 { size.x, 3.0 * u }, float4 { 0.8, 0.25, 0.2, 0.9 })   // struck through
             if m.x >= at.x and m.y >= at.y and m.x <= at.x + size.x and m.y <= at.y + size.y: hover = k
     if hover >= 0:   // what it is, at the foot of the page
         let n = t.nodes[hover]
         page_rect(float2 { 0.0, ws.y - 90.0 * u }, float2 { ws.x, 90.0 * u }, float4 { 0.0, 0.0, 0.0, 0.85 })
-        page_text(float2 { 30.0 * u, ws.y - 80.0 * u }, n.name + (if n.cost != "": "   (" + n.cost + ")" else: "") + (if n.lacks: "   - your race lacks it" else: ""), int(18.0 * u), float4 { 0.95, 0.85, 0.6, 1.0 })
+        page_text(float2 { 30.0 * u, ws.y - 80.0 * u }, n.name + (if n.cost != "": "   (" + n.cost + ")" else: "") + (if n.lacks: "   - your race lacks it" else: ""), int(18.0 * u), ui_look.title)
         page_text(float2 { 30.0 * u, ws.y - 48.0 * u }, n.desc, int(14.0 * u), float4 { 0.8, 0.78, 0.7, 1.0 })
     page_flush()
     return true
