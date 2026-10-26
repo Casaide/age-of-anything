@@ -586,7 +586,7 @@ def defend(bot:Bot, army:[int], hx:int, hy:int):
     if intruder < 0: return
     let ids = []::int
     for(army) i:
-        if u_foe[i] == 0 and dist2(hx, hy, u_x[i], u_y[i]) < 4 * r * r and not is_climbing(bot.land, i): ids.push(u_id[i])
+        if u_foe[i] == 0 and dist2(hx, hy, u_x[i], u_y[i]) < 4 * r * r and not is_climbing(bot.land, i) and u_perch[i] == 0: ids.push(u_id[i])
     if ids.length:
         let tx, ty = reachable(bot, u_x[intruder], u_y[intruder])
         issue_cmd(bot.player, 1, ids, tx, ty, 0, 0)
@@ -709,7 +709,7 @@ def respond(bot:Bot, tc:int, army:[int], workers:[int], hx:int, hy:int):
     let keys = []::int
     let pops = dictionary<int, int>(127)
     for(army) i:
-        if not ((u_foe[i] != 0 and index_of(u_foe[i]) >= 0) or is_climbing(bot.land, i)):
+        if not ((u_foe[i] != 0 and index_of(u_foe[i]) >= 0) or is_climbing(bot.land, i) or u_perch[i] != 0):   // (up on our wall: it shoots from there)
             let d2 = dist2(u_x[i], u_y[i], fx, fy)
             if not (dist2(u_x[i], u_y[i], hx, hy) > home_r * home_r and d2 > RESPOND_TILES * RESPOND_TILES * 1000000):
                 keys.push(d2 * (1 << 20) + u_id[i])
@@ -1191,7 +1191,9 @@ def full_bot_think(bot:Bot):
     bot_think(bot.eco)
     if tick % BOT_THINK_EVERY != bot_phase(bot): return
     let tc = town_center(p)
-    assert tc >= 0   // (no town: the Siege mode's attackers; not in the spike)
+    if tc < 0:
+        besiege(bot)   // no town (the Siege mode's attackers): all on the attack
+        return
     let workers = []::int
     let army = []::int
     let healers = []::int
@@ -1234,6 +1236,7 @@ def full_bot_think(bot:Bot):
     land_think(bot.land, bot, at_work, field, hx, hy)
     expand_think(bot.expand, bot, at_work, field, hx, hy)
     defend(bot, field, hx, hy)
+    man_walls(bot, field, hx, hy)
     // (WallsAi.man: no walls you stand on here)
     respond(bot, tc, filter(army) i: u_id[i] != bot.scout.id and not contains(bot.resting, u_id[i]), at_work, hx, hy)
     tower_after_raid(bot, at_work)
@@ -1242,5 +1245,6 @@ def full_bot_think(bot:Bot):
     waves(bot, field, hx, hy)
     off_walls_army(bot, field, hx, hy)
     bot_siege(bot, field, hx, hy)
-    // (WallsAi.storm: no walls; AbilityAi: no abilities)
+    storm_walls(bot, field, bot.target_x, bot.target_y)
+    // (AbilityAi: no abilities)
     escort_healers(bot, field, healers, hx, hy)
