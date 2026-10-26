@@ -16,6 +16,8 @@ class Look:
     body:string
     stages:[string] // the four construction stages ("-": none)
     front:string
+    arms:[string] = []        // a wall's arm towards each neighbour (Models.LINKS order), "-": none
+    arms_front:[string] = []  // their near merlons
 
 var sheet_size = 4096
 var sheet_tex = []::resource<texture>
@@ -60,6 +62,12 @@ def load_pack(dir:string):
                 case "anim": anims.set(t[1] + "." + t[2], num(3))
                 case "arch": arch_of.push(t[2])
                 case "look": looks.set(t[1], Look { t[2], [t[3], t[4], t[5], t[6]], t[7] })
+                case "arms":
+                    let lk = looks.get(t[1])
+                    if lk: lk.arms = t.slice(2, -1)
+                case "armsf":
+                    let lk = looks.get(t[1])
+                    if lk: lk.arms_front = t.slice(2, -1)
                 case "doodad": doodads.set(t[1], num(2))
                 case "prop": prop_of.set(t[1], t[2])
                 case "ground":
