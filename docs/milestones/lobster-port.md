@@ -159,6 +159,13 @@ SURRENDER, the bots' walls and abilities.
         more than 10 points off the mean become 2 in six rounds. Two races before a match: about 5 s.
   - [x] A new race mid-match (N): the running world stashed (`gen/reset.lobster`), the newcomer balanced against
         the others by fights, then the player's lines, bonuses and buildings become it (`gen/swap.lobster`).
+  - [ ] 6c, stage 1 (2026-10-26): `view/baker.lobster` bakes a part's mesh as Godot's part baker does (its camera,
+        its warm key and cool fill over ambient, Lambert over pi, sRGB; 4x supersampled, then pixelized with the
+        inner outline). `mesh_export.gd` writes Godot-built models as triangles (skinned .glb parts posed);
+        `bake_check.lobster` lays each beside Godot's bake from the library (`32-...`: the rat's parts). Shapes,
+        facing and light agree; not yet: textures (the fur, the wood, the metal come from texture maps), shadows
+        and ambient occlusion, the sprite's scale (about 1.2x large), the head's turn, the cuts (a leg by its body,
+        armour on its wearer). Then the models themselves in Lobster.
   - [ ] 6c. The part baker in Lobster (the procedural 3D models, the Blender models converted, the pixel pass):
         Godot no longer needed. With the library, this is now the art-quality step (higher resolution, more poses,
         destruction, effects), not a blocker. The art-quality study (Dominic, 2026-10-26: "how far we can go with art
