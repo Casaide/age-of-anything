@@ -139,3 +139,4 @@ One line per moment worth remembering. Newest at the bottom.
 - **2026-10-20:** HF2b: the sprawl in its own baked footprint shadow, and lying on its belly for real (limp arms, a slumped body; it had been propped on one hand).
 - **2026-10-20:** D-165: the frogs die laid down in 3D (the sprawl, baked per recipe with its own shadow); placement rules D1/D2 for corpses; rig3d and geom moved into the game.
 - **2026-10-20:** D-166: the dead frog lies turned per facing (round HF3), so no view sees its sprawl end on from behind.
+- **2026-10-26:** Art-quality study AQ1 (concepts, not in the game): higher resolution (1.5x/2x behind `AOW_ART_SCALE`), buildings breaking up in baked stages with pixel dust, deaths laid down in 3D and a follow-through hold, sci-fi energy shots four ways; Dominic to pick (`docs/concepts/art-quality/`).

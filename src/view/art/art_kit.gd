@@ -22,7 +22,9 @@ const Heroes := preload("res://src/heroes.gd")
 const BakeClock := preload("res://src/view/art/bake/bake_clock.gd")
 const Corpse := preload("res://src/view/art/corpse.gd")
 
-const ART_SCALE := 1.5     # art pixels per canvas unit (a tile is 96 x 48 art pixels)
+## Art pixels per canvas unit (a tile is 96 x 48 art pixels). AOW_ART_SCALE in the environment bakes
+## finer for the art-quality study (docs/concepts/art-quality/); unset, it's 1.5.
+static var ART_SCALE: float = float(OS.get_environment("AOW_ART_SCALE")) if OS.has_environment("AOW_ART_SCALE") else 1.5
 const UNIT_SCALE := 0.85   # units at about a third of a building's height
 const UNIT_BANDS := 4      # value bands in unit shading (Pixelize.run; the paint-over hybrid)
 const SS := 4              # supersampling for the building and prop bakes
@@ -406,7 +408,7 @@ func _steps_jobs(units: Array) -> Array:
 		# swing their tools with them (D-105) and soldiers their weapons (D-106).
 		var rides: bool = u.recipe.has("mount") and not u.recipe.mount.get("fused", false)
 		if not rides and not u.recipe.has("crew") and PartShape.rigs.get(u.recipe.body, {}).get("carry", "") != "harness":   # (an engine's crew are the workers)
-			var holds: Array = UnitView.WORK_HOLDS.duplicate()
+			var holds: Array = UnitView.WORK_HOLDS + UnitView.STUDY_HOLDS
 			var hand: String = u.recipe.parts.get("hand_r", "")
 			if hand != "" and ("spear" in lib.part(hand).tags or "lance" in lib.part(hand).tags):
 				holds += UnitView.ATTACK_HOLDS   # spear carriers thrust (D-106)
