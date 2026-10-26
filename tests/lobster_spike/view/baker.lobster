@@ -100,11 +100,17 @@ def load_mesh(path:string) -> [BakeTri]:
     let text = read_file(path)
     if not text: return out
     let dir = substring(path, 0, find_string_reverse(path, "/"))
+    let bin = read_file(substring(path, 0, path.length - 5) + ".bin", true) or ""   // (the vertices: 11 floats each)
+    var at = 0
     var mat = -1
     for(tokenize(text, "\n", "")) line:
         if starts_with(line, "mat "):
             let halves = tokenize(line.substring(4, line.length - 4), "|", " ")
-            let t = tokenize(halves[0], " ", "")
+            let all = tokenize(halves[0], " ", "")
+            let t = filter(all) x: not starts_with(x, "@") and not starts_with(x, "#")
+            var tris = 0
+            for(all) x:
+                if starts_with(x, "#"): tris = string_to_int(x.substring(1, x.length - 1))
             var tex:resource<texture>? = nil
             if t[0] != "-":
                 let file = dir + "/" + t[0]
@@ -127,6 +133,18 @@ def load_mesh(path:string) -> [BakeTri]:
                     bm.b = float3 { num[3], num[4], num[5] }
             bake_mats.push(bm)
             mat = bake_mats.length - 1
+            for(tris):   // its triangles from the .bin
+                let tri = BakeTri { [], [], [], [], mat }
+                for(3):
+                    def f(k:int) -> float:
+                        let v, _n = read_float32_le(bin, at + k * 4)
+                        return v
+                    tri.p.push(float3 { f(0), f(1), f(2) })
+                    tri.n.push(float3 { f(3), f(4), f(5) })
+                    tri.c.push(float3 { f(6), f(7), f(8) })
+                    tri.uv.push(float2 { f(9), f(10) })
+                    at += 44
+                out.push(tri)
         elif starts_with(line, "tri "):
             let v = map(tokenize(line.substring(4, line.length - 4), " ", "")) t: string_to_float(t)
             let tri = BakeTri { [], [], [], [], mat }

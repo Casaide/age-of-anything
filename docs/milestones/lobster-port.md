@@ -130,6 +130,11 @@ SURRENDER, the bots' walls and abilities.
       (`21-...`), and the lobby (`22-...`: the races in panels with their armies, the map and mode, Join with an
       address, Host, Play). Then a pause menu (Esc or Start: Resume, Save, Load, Tech tree, Quit;
       `23-...`) and the tech tree page (`24-...`).
+- [x] A Steam Deck build of the Lobster game (2026-10-26): `tests/lobster_spike/deck/build.sh` builds Lobster for
+      Linux x86-64 in a Podman container (Ubuntu 22.04; Dominic approved the downloads) and assembles the game folder
+      (185 MB: the language, the code, data, sounds, the part library); it ran headless in a Linux container (the same
+      races as on the Mac). Copied to the SMB share as `lobster_linux`, with `pull_lobster.sh` beside it for the Deck.
+      Not yet played on the Deck itself.
 - [ ] 6. Setup in Lobster (Dominic, 2026-10-26: "Let's do it! Primarily because ... it opens us up to generation at
       army creation time and during the game"). Three steps, each checked against GDScript:
   - [x] 6a. Races and the match from data, 2026-10-26: a JSON reader and Godot-compatible writer, SHA-256, DataLib,
@@ -166,6 +171,11 @@ SURRENDER, the bots' walls and abilities.
         facing and light agree; textures too (UV and triplanar, `33-...`), and the size (the units' scale, 1.5 x 0.85:
         every part within a pixel of Godot's). Not yet: shadows and ambient occlusion, the fur's tint, the head's turn, the cuts (a leg by its body,
         armour on its wearer). Then the models themselves in Lobster.
+  - [x] 6c, the mesh library (2026-10-26): `mesh_export.gd library` writes every modelled part once (293 parts,
+        binary vertices), each material tagged with the race channel its colour follows (skin, cloth, team...: a
+        multiply and add) or fixed; the Lobster baker bakes any race's parts from it in that race's colours (the
+        moonbears and the tiny vikings match Godot's bakes, `36-...`). So new races need no Godot; only new models do.
+        Not yet: baking inside the game for parts the library lacks, ambient occlusion, the cuts, smaller meshes.
   - [ ] 6c. The part baker in Lobster (the procedural 3D models, the Blender models converted, the pixel pass):
         Godot no longer needed. With the library, this is now the art-quality step (higher resolution, more poses,
         destruction, effects), not a blocker. The art-quality study (Dominic, 2026-10-26: "how far we can go with art
