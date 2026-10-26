@@ -178,6 +178,50 @@ def has_int(xs:[int], v:int) -> bool:
         if x == v: return true
     return false
 
+// The race in words (TechTreeModel.identity_text): its bonuses and where each comes from, its own
+// research, what it lacks.
+class RaceWords:
+    bonuses:[string]
+    own:[string]
+    lacks:[string]
+
+def slot_word(slot:string) -> string:
+    for(glist(su_rules, "roster")) sd:
+        if gstr(sd, "slot", "") == slot: return gstr(sd, "name", slot)
+    return slot
+
+def race_words(p:int) -> RaceWords:
+    let ident = su_idents[p]
+    let race = su_races[p]
+    let tdata = load_json(lib_root + "/tech.json")
+    let blds = at(load_json(lib_root + "/buildings.json"), "buildings")
+    def research_of(id:string) -> JV?:
+        for(glist(tdata, "research")) r:
+            if gstr(r, "id", "") == id: return r
+        return nil
+    let bonuses = map(glist(ident, "bonuses")) b: "{gstr(b, "text", "")} ({gstr(b, "from", "")})"
+    let own = []::string
+    for(gstrs(ident, "research")) id:
+        let r = research_of(id)
+        if r: own.push("{gstr(r, "name", id)}: {gstr(r, "desc", "")}")
+    let lacks = []::string
+    if not gbool(su_rules, "full_tech_tree", false):
+        for(gstrs(ident, "lacks")) id:
+            let r = research_of(id)
+            if r: lacks.push(gstr(r, "name", id))
+            elif has(blds, id): lacks.push(gstr(at(blds, id), "name", id) + (if glist(at(blds, id), "trains").length: " (and what it trains)" else: ""))
+            elif id == "trade": lacks.push("Market trade (buying and selling)")
+            elif starts_with(id, "line."):
+                let parts = tokenize(id, ".", "")
+                lacks.push("{slot_word(parts[1])}\'s age-{parts[2]} step")
+            else: lacks.push(slot_word(id) + " line")
+    for(gstrs(race, "lacks")) slot:
+        let w = slot_word(slot) + " line"
+        if not has_s(lacks, w): lacks.push(w)
+    return RaceWords { bonuses, own, lacks }
+
+var tree_words:RaceWords? = nil
+
 var tree_open = false
 var tree_page:TTree? = nil
 var tree_scroll = 0.0
@@ -222,7 +266,9 @@ def tree_node_at(t:TTree, n:TNode, u:float) -> float2:
 def tree_tick() -> bool:
     if gl.button("f1") == 1:
         tree_open = not tree_open
-        if tree_open: tree_page = build_tree(ME)
+        if tree_open:
+            tree_page = build_tree(ME)
+            tree_words = race_words(ME)
     if tree_open and gl.button("escape") == 1: tree_open = false
     if not tree_open: return false
     let t = tree_page
@@ -260,6 +306,22 @@ def tree_tick() -> bool:
             page_text(at + float2 { 11.0 * u, 10.0 * u }, if n.name.length > 17: n.name.substring(0, 16) + "." else: n.name, int(14.0 * u), col)
             if n.lacks: page_rect(at + float2 { 0.0, size.y * 0.5 - 1.5 * u }, float2 { size.x, 3.0 * u }, float4 { 0.8, 0.25, 0.2, 0.9 })   // struck through
             if m.x >= at.x and m.y >= at.y and m.x <= at.x + size.x and m.y <= at.y + size.y: hover = k
+    let words = tree_words or race_words(ME)
+    tree_words = words
+    let py = TREE_TOP * u + float(t.ages.length) * TREE_ROW * u + 20.0 * u
+    ui_box(float2 { 20.0 * u, py }, float2 { ws.x - 40.0 * u, ws.y - py - 110.0 * u }, -1, ui_look.face, false)
+    let col_w = (ws.x - 80.0 * u) / 3.0
+    def column(k:int, title:string, items:[string]):
+        let x = 44.0 * u + float(k) * col_w
+        page_text(float2 { x, py + 16.0 * u }, title, int(18.0 * u), ui_look.title)
+        var line_y = py + 46.0 * u
+        for(items) w:
+            page_text(float2 { x, line_y }, if w.length > 70: w.substring(0, 68) + "..." else: w, int(13.0 * u), ui_look.text)
+            line_y += 20.0 * u
+        if not items.length: page_text(float2 { x, line_y }, "nothing", int(13.0 * u), ui_look.dim)
+    column(0, "Bonuses", words.bonuses)
+    column(1, "Its own research", words.own)
+    column(2, "It lacks", words.lacks)
     if hover >= 0:   // what it is, at the foot of the page
         let n = t.nodes[hover]
         page_rect(float2 { 0.0, ws.y - 90.0 * u }, float2 { ws.x, 90.0 * u }, float4 { 0.0, 0.0, 0.0, 0.85 })
