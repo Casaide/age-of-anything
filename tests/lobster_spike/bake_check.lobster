@@ -38,8 +38,11 @@ load_part_data("library")
 let race = generate(args[1], load_rules("default"), 0)
 let r0 = at(glist(race, "units")[1], "recipe")
 let cols = colours_for(rstr(r0, "skin"), rstr(race, "family"), float3 { 1.0, 0.0, 1.0 })
-let names, sizes = scan_folder(dir, true)
-let ids = sorted_strs(map(filter(names or []) n: ends_with(n, ".mesh")) n: n.substring(0, n.length - 5))
+bake_colours = cols
+// The race's spearman's parts (a library mesh dir holds every part: only these are baked).
+let r1 = at(glist(race, "units")[1], "recipe")
+let want = append([rstr(r1, "body"), rstr(r1, "head")], map(filter(gobj(r1, "parts").a) v: v.kind == J_STR) v: v.s)
+let ids = filter(want) id: read_file(dir + "/" + id + ".mesh") != nil
 
 class Pair:
     id:string

@@ -6,6 +6,10 @@ extends SceneTree
 ## its "tri" lines of three vertices, "x y z nx ny nz r g b u v" in the model's space (Godot's: y up), the
 ## albedo colour; the textures as tex<n>.png beside them.
 ##   godot --headless --path . --script res://tests/lobster_spike/mesh_export.gd -- <out dir> "<prompt>" [part id ...]
+## Library mode (`library` for the prompt): every modelled part, with each material's colour as a channel of
+## the race's colours ("ch skin m.r m.g m.b b.r b.g b.b": albedo = m x the channel's colour + b, per component)
+## or fixed ("ch - r g b"), found by building it three times with different colours in the race channels. So
+## the Lobster baker can bake any race's parts in its colours (`mat` lines then carry a `ch` part).
 
 const DataLib := preload("res://src/data_lib.gd")
 const Generator := preload("res://src/race_generator.gd")
@@ -46,6 +50,7 @@ func _albedo(mi: MeshInstance3D, s: int) -> Color:
 
 
 var _textures := {}   # texture -> its file name in the out dir
+var _albedos := []    # each material's albedo, in the order written (library mode: matched across builds)
 var _dir := ""
 
 
@@ -89,10 +94,11 @@ func _write(node: Node3D, out: PackedStringArray) -> void:
 			var cols = arr[Mesh.ARRAY_COLOR]
 			var idx = arr[Mesh.ARRAY_INDEX]
 			var c := _albedo(mi, s)
+			_albedos.append(c)
 			var mat = _material(mi, s)
 			var use_vc: bool = mat is StandardMaterial3D and mat.vertex_color_use_as_albedo   # (as Godot: vertex colours only when asked)
 			var uvs = arr[Mesh.ARRAY_TEX_UV]
-			out.append("mat " + _texture(mi, s))
+			out.append("mat " + _texture(mi, s) + " @%d" % (_albedos.size() - 1))
 			var order: Array = Array(idx) if idx != null and idx.size() > 0 else range(v.size())
 			for k in range(0, order.size() - 2, 3):
 				var line := "tri"
@@ -106,12 +112,97 @@ func _write(node: Node3D, out: PackedStringArray) -> void:
 				out.append(line)
 
 
+## The race channels (what varies from race to race); the rest of the colours are the palette's fixed materials.
+const CHANNELS := ["skin", "skin2", "skin3", "skin4", "cloth", "cloth2", "team"]
+
+
+func _sentinels(seed_value: int) -> Dictionary:
+	var r := RandomNumberGenerator.new()
+	r.seed = seed_value
+	var out := {}
+	for ch in CHANNELS:
+		out[ch] = Color(r.randf_range(0.15, 0.85), r.randf_range(0.15, 0.85), r.randf_range(0.15, 0.85))
+	return out
+
+
+## Which channel a material's albedo follows across three builds, and how (m, b per component); or fixed.
+func _channel(alb: Array, sent: Array) -> String:
+	if alb[0].is_equal_approx(alb[1]) and alb[1].is_equal_approx(alb[2]):
+		return "ch - %.4f %.4f %.4f" % [alb[0].r, alb[0].g, alb[0].b]
+	var best := ""
+	var best_err := 1e9
+	for ch in CHANNELS:
+		var m := []
+		var b := []
+		var err := 0.0
+		for k in 3:
+			var a0: float = alb[0][k]
+			var a1: float = alb[1][k]
+			var s0: float = sent[0][ch][k]
+			var s1: float = sent[1][ch][k]
+			var mk := (a0 - a1) / (s0 - s1) if absf(s0 - s1) > 1e-4 else 0.0
+			var bk := a0 - mk * s0
+			m.append(mk)
+			b.append(bk)
+			err += absf(mk * sent[2][ch][k] + bk - alb[2][k])
+		if err < best_err:
+			best_err = err
+			best = "ch %s %.4f %.4f %.4f %.4f %.4f %.4f" % [ch, m[0], m[1], m[2], b[0], b[1], b[2]]
+	if best_err > 0.03:
+		print("  (a material isn't linear in any channel: %.3f off; kept as its nearest)" % best_err)
+	return best
+
+
+func _library(dir: String, lib) -> void:
+	var models := UnitModels.new()
+	var base := {}
+	for k in lib.palettes.materials:
+		base[k] = Color(lib.palettes.materials[k])
+	var sent := [_sentinels(1), _sentinels(2), _sentinels(3)]
+	var ids: Array = lib.parts.keys()
+	ids.sort()
+	var n := 0
+	for id in ids:
+		if not models.has(id):
+			continue
+		var outs := []
+		var albs := []
+		for k in 3:
+			var cols := base.duplicate()
+			cols.merge(sent[k], true)
+			var spec: Dictionary = models.build(id, cols)
+			var out := PackedStringArray()
+			_albedos = []
+			_write(spec.node, out)
+			spec.node.free()
+			if spec.has("front") and spec.front != null:
+				spec.front.free()
+			outs.append(out)
+			albs.append(_albedos.duplicate())
+		if albs[0].size() != albs[1].size() or albs[0].size() != albs[2].size():
+			print("skip %s (its builds differ)" % id)
+			continue
+		var lines: PackedStringArray = outs[0]
+		for i in lines.size():
+			if lines[i].begins_with("mat "):
+				var at := int(lines[i].get_slice("@", 1))
+				lines[i] = lines[i].get_slice(" @", 0) + " | " + _channel([albs[0][at], albs[1][at], albs[2][at]], sent)
+		var f := FileAccess.open(dir.path_join(id + ".mesh"), FileAccess.WRITE)
+		f.store_string("\n".join(lines) + "\n")
+		n += 1
+	print("library: %d parts" % n)
+
+
 func _init() -> void:
 	var args := Array(OS.get_cmdline_user_args())
 	var dir: String = args[0]
 	_dir = dir
 	DirAccess.make_dir_recursive_absolute(dir)
 	var lib = DataLib.new()
+	if args[1] == "library":
+		_library(dir, lib)
+		quit()
+		return
 	var race: Dictionary = Generator.new(lib).generate(args[1], DataLib.load_rules("default"))
 	var colours := _colours(lib, race)
 	var ids: Array = args.slice(2)
