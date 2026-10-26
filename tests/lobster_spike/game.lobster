@@ -63,6 +63,7 @@ import .gen.reset
 import .gen.balance
 import .game.audio
 import .game.pack
+import .game.ground
 
 let args = command_line_arguments()
 // Options after the two paths: watch (the bot plays you too), speed:<x>, shot:<png> with at:<seconds>
@@ -123,6 +124,8 @@ def mouse_milli() -> float2: return iso_inv(from_screen(mouse_px()))
 
 var ground_mesh:resource<mesh>? = nil
 var ground_tick = -1000
+var mask_version = -1
+var mask_tick = -1000
 
 def cell_noise(c:int) -> float: return float((c * 2654435761) % 1000) / 1000.0
 
@@ -559,14 +562,19 @@ def collect_props():
 def draw_world(alpha:float):
     if tick - ground_tick >= 10 or not ground_mesh:
         build_ground()
+        build_fog(ME)
+        build_wear()
         ground_tick = tick
+    if not ground_quad or (map_version != mask_version and tick - mask_tick >= 50):
+        build_masks()
+        mask_version = map_version
+        mask_tick = tick
     let ws = float(gl.window_size())
     gl.translate(ws / 2.0):
         gl.scale(zoom):
             gl.translate(-float2 { floor(cam.x), floor(cam.y) }):
-                gl.set_shader("color_attr")
-                let gm = ground_mesh
-                if gm: gl.render_mesh(gm)
+                draw_ground(zoom)
+                draw_fog()
                 draws = []::Drawable
                 collect_props()
                 collect_buildings()
@@ -1181,6 +1189,7 @@ fatal(gl.window("Age of Anything (Lobster)", 1600, 1000, if shot != "" or selfte
 if shot != "" or selftest: gl.set_target_delta_time(1.0 / 60.0)
 note("window")
 fatal(gl.load_materials(SPRITE_SHADERS, true))
+fatal(gl.load_materials(TERRAIN_SHADERS, true))
 check(gl.set_font_name("data/fonts/Droid_Sans/DroidSans.ttf"), "no font")
 zoom = 2.0 * floor(ui() + 0.5)   // two screen points an art pixel, as the game's camera
 load_pack(args[0])
