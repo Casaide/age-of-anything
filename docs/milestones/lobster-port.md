@@ -175,7 +175,10 @@ SURRENDER, the bots' walls and abilities.
         binary vertices), each material tagged with the race channel its colour follows (skin, cloth, team...: a
         multiply and add) or fixed; the Lobster baker bakes any race's parts from it in that race's colours (the
         moonbears and the tiny vikings match Godot's bakes, `36-...`). So new races need no Godot; only new models do.
-        Not yet: baking inside the game for parts the library lacks, ambient occlusion, the cuts, smaller meshes.
+        In the game too (`game/bake_missing.lobster`, `meshes:<dir>`): at the match's start every part a unit type
+        wears is looked up in the pack in eight facings and what's missing is baked from the mesh library (the
+        sci-fi mod's soldiers: 56 facings in 3.6 s, drawn in play, `37-...`). Not yet: ambient occlusion, the cuts
+        (legs, worn armour), smaller meshes, the models built in Lobster (new models still need Godot).
   - [ ] 6c. The part baker in Lobster (the procedural 3D models, the Blender models converted, the pixel pass):
         Godot no longer needed. With the library, this is now the art-quality step (higher resolution, more poses,
         destruction, effects), not a blocker. The art-quality study (Dominic, 2026-10-26: "how far we can go with art
