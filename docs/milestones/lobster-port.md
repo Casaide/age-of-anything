@@ -78,6 +78,11 @@ SURRENDER, the bots' walls and abilities.
       the drop-offs, chores, builders' dust, yards and gardens, critters). Control groups (Ctrl or Cmd + a number keeps the selection, the number brings it back, twice to look;
       in the self-test). To come: a nicer panel;
       from town life, chimney smoke, damaged buildings' cracks and fire, the stable's tethered mount, the town's sound.
+- [x] Save and load (2026-10-26): `gen/save.lobster`, written by `gen_reset.py` from the same list of globals as
+      the reset: every sim and setup global plus the bots, one record as a flexbuffer (about 3 MB, saved in 15 ms,
+      loaded in 10 ms). F5 saves, F9 loads (`reload:<s>` in tests). `save_check.lobster`: a bot match saved at
+      7.5 minutes and loaded plays the next 4,000 ticks hash for hash. Not yet: Godot's saves (JSON, its own
+      layout) can't be read here, and a save from an older Lobster build won't load once a global changes type.
 - [ ] 6. Setup in Lobster (Dominic, 2026-10-26: "Let's do it! Primarily because ... it opens us up to generation at
       army creation time and during the game"). Three steps, each checked against GDScript:
   - [x] 6a. Races and the match from data, 2026-10-26: a JSON reader and Godot-compatible writer, SHA-256, DataLib,
