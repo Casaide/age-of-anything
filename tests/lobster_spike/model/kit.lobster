@@ -121,6 +121,18 @@ class MMat:
     emission = float3_0
     vertex_colours = false           // the mesh's own colours multiply the albedo
     two_sided = false
+    // the rest of StandardMaterial3D (Godot's defaults), for the buildings' materials (model/build_mats.lobster)
+    roughness = 1.0
+    metallic = 0.0
+    metallic_specular = 0.5
+    clearcoat_enabled = false
+    clearcoat = 1.0
+    normal_enabled = false
+    normal_tex = ""                  // its normal map (a path as tex is), "" for none
+    normal_scale = 1.0
+    world_triplanar = false          // triplanar in world space (uv1_world_triplanar)
+    triplanar_sharpness = 1.0
+    texture_filter = 3               // BaseMaterial3D.TextureFilter: 3 linear with mipmaps, 5 that and anisotropic
 
 // ------------------------------------------------------------------ meshes
 
