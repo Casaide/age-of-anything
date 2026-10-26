@@ -77,7 +77,8 @@ SURRENDER, the bots' walls and abilities.
       sim tells the view of misses, heals and stones landing), and the living town (`game/town.lobster`: piles at
       the drop-offs, chores, builders' dust, yards and gardens, critters). Control groups (Ctrl or Cmd + a number keeps the selection, the number brings it back, twice to look;
       in the self-test). To come: a nicer panel;
-      from town life, the stable's tethered mount. Cracks on damaged walls (sorted with their building; `25-...`)
+      from town life, all in now: the stable's tethered mount too (`26-...`; `place:<building>` puts one down for
+      captures). Cracks on damaged walls (sorted with their building; `25-...`)
       and the town's sound (the meadow loop, the town's quiet and busy loops by its size and the camera) are in. Chimney smoke, lit windows
       and fire on badly hurt buildings are in (`building_fx.gd` writes where each look's chimney and windows are; `15-...`).
 - [x] Save and load (2026-10-26): `gen/save.lobster`, written by `gen_reset.py` from the same list of globals as
