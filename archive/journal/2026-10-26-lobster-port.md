@@ -112,6 +112,27 @@ the race colour it follows, so the game bakes any race's parts itself (the sci-f
 way: Lobster mesh colours are bytes (a position put there came out clamped), gl.ortho's depth mode left the
 framebuffer empty, and Godot's lights here aren't divided by pi.
 
+The night: the models themselves came to Lobster. A kit of Godot's primitive meshes, vertex for vertex, nodes
+and materials, a glTF reader, Godot's random generator and FastNoiseLite; then every model file ported line for
+line by agents working side by side, each part held to Godot's triangles (about 440 unit parts, 243 props and
+trees, 302 buildings and walls, the materials' noise textures within 2/255). The part baker followed (cuts, worn
+armour, seams, rigs) and a world baker for buildings and props, both checked against the library's Godot bakes.
+Found on the way: Godot's part baker frames a scaled model without its scale, so the bigger junk siege engines
+are clipped in Godot's own bakes; the Lobster ones show the whole engine. The baker gained a depth test (a
+framebuffer with depth was all it needed) and draws a run per material: five times faster. The pack's tables
+came from data (tree species cell for cell as Godot's), so `play.sh none` plays with no Godot-made file at all,
+the parts cached on disk after the first start; the sci-fi mod's code parts were ported too (a mod's Lobster
+models come in before the game compiles). Dominic's notes through the night: selection circles were drawn on top
+of everything ("They're on top"; now on the ground, and as line segments: gl.open_circle goes astray after the
+sprite shader), test runs must make no sound (the game mutes itself for them), the top and bottom bars must
+match Godot's (done, `39-...`, `40-...`), ruins are decoration that fades (passed to the art study, its D-172).
+The controls caught up too: the whole smart right-click, attack-move and the race's ability, ungarrison, farms,
+pens, the market, surrender (hand garrisons were missing from the sim's port: the bots never used them).
+
+Pictures for the night: props and rings on the ground baked in Lobster (41), the world baker beside Godot's
+props (42), Godot clipping its own siege engines (43), a match with no Godot pack (44), the Race Lab with the
+sci-fi mod and no pack (45), the top and bottom bars (39, 40).
+
 ## Pictures
 
 `archive/images/2026-10-26/`: the first frame (01), a rat raid on the frog town (02), sheep penned (03), the UI scaled (04), the ground shader with composed rats (05), moonbears from the lobby and the library (06), rats become forest bears mid-match (07), hills and cliffs (08), joined walls (09), cobbled paths (10), a fight with shots on their arcs (11), the town's piles (12), a network match from the joiner's side (13), pad play and group numbers (14), a burning Town Center (15), the Siege mode (16), the sci-fi mod's soldiers (17), the tech tree (18, 24, 27), the Race Lab (19), the panel (20, 21), the timber lobby (22), the pause menu (23), cracks (25), a tethered horse (26), rerolls (28).

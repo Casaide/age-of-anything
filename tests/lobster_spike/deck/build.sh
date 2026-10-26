@@ -3,7 +3,7 @@
 # are in its own tree: SDL, SDL_mixer, freetype...), then the game's folder assembled beside it:
 #   <out>/lobster/{bin/lobster, data, modules}   the language and its own data (shaders, fonts)
 #   <out>/data, assets/audio, mods               the game's data and sounds
-#   <out>/tests/lobster_spike/...                the game's code and the part library (the art)
+#   <out>/tests/lobster_spike/...                the game's code (it bakes its own art: no pack)
 #   <out>/run.sh                                 runs the game (the lobby)
 # Usage: tests/lobster_spike/deck/build.sh [out dir]   (default build/lobster_linux; needs podman or docker)
 # The Deck pulls it with tools/deck/pull_lobster.sh.
@@ -37,14 +37,21 @@ echo "== The game"
 mkdir -p "$out/assets" "$out/tests/lobster_spike"
 rsync -a --delete --exclude '*.import' --exclude '*.uid' "$root/data/" "$out/data/"
 rsync -a --delete --exclude '*.import' "$root/assets/audio/" "$out/assets/audio/"
+rsync -a --delete --exclude '*.import' "$root/assets/models/" "$out/assets/models/"   # (the Blender parts: model/glb.lobster)
 rsync -a --delete --exclude '*.import' --exclude '*.uid' "$root/mods/" "$out/mods/"
-rsync -a --delete --exclude 'pack' --exclude 'pack6b' --exclude 'pack_scifi' --exclude '*.sav' --exclude 'memory_leaks.txt' \
+rsync -a --delete --exclude 'pack' --exclude 'pack6b' --exclude 'pack_scifi' --exclude 'library' --exclude 'bake_cache' \
+	--exclude 'model/mods' --exclude 'textures/bmat*' --exclude '*.sav' --exclude 'memory_leaks.txt' \
 	--exclude 'deck' "$here/" "$out/tests/lobster_spike/"
 cat > "$out/run.sh" <<'EOF'
 #!/bin/sh
-# Age of Anything (the Lobster port): the lobby. Extra words go to the game (watch, host, join:<ip>...).
+# Age of Anything (the Lobster port): the lobby, with no pack (every picture baked by the game itself, the parts
+# kept in bake_cache/ after the first start). Extra words go to the game (watch, host, join:<ip>, mods:<id>...).
 cd "$(dirname "$0")/tests/lobster_spike"
-exec ../../lobster/bin/lobster --mir game.lobster -- library lobby "$@"
+mkdir -p bake_cache
+mods=""
+for a in "$@"; do case "$a" in mods:*) mods=${a#mods:} ;; esac; done
+../../lobster/bin/lobster mods_gen.lobster -- $(echo "$mods" | tr ',' ' ')
+exec ../../lobster/bin/lobster --mir game.lobster -- none lobby "$@"
 EOF
 chmod +x "$out/run.sh" "$out/lobster/bin/lobster"
 echo "== $(du -sh "$out" | cut -f1) in $out"
