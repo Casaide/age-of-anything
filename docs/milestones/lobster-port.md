@@ -106,8 +106,9 @@ SURRENDER, the bots' walls and abilities.
         the generator, pricing, identity, heroes (`gen/`), and World setup (`gen/setup.lobster`, `gen/start.lobster`).
         Checked: `race_check.sh` (23 prompts x 3 rules: the same races, keys, notes, heroes) and `start_check.sh`
         (four matches: the Lobster start equals export.gd's scenario token for token). The game makes its races and
-        start from the pack's prompts (`play.sh pack`; `scenario:<file>` for an export). Game modes' starts (Siege,
-        Fortress) and mods aren't set up in Lobster yet.
+        start from the pack's prompts (`play.sh pack`; `scenario:<file>` for an export). Game modes' starts are in since
+        2026-10-26 (`gen/modes.lobster`: Fortress and Siege match export.gd's token for token, `start_check.sh`;
+        F2 in the lobby or `mode:<id>`). Mods aren't set up in Lobster yet.
   - [x] 6b. Units drawn from baked parts in Lobster, 2026-10-26: `view/` (a scene graph, Godot's PCG, the part
         bakes and rigs, `src/unit_view.gd` ported). `view_check.lobster`: art_pack's states for 39 types x 8 facings,
         14946 of 14952 frames' draw lists identical to Godot's (six differ by Godot's float32 positions). The game

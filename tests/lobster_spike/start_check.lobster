@@ -2,7 +2,7 @@
 // the same scenario, token by token (everything but the commands and hashes that follow it).
 // Run from tests/lobster_spike:
 //   lobster start_check.lobster -- roundtrip <scenario>     load a scenario and write it back (the writer's check)
-//   lobster start_check.lobster -- setup <scenario> <map> [animals] "prompt A" "prompt B"
+//   lobster start_check.lobster -- setup <scenario> <map> [mode:<id>] [animals] "prompt A" "prompt B"
 import std
 import dictionary
 import gen.json
@@ -47,6 +47,7 @@ import lib.bot
 import lib.walls_ai
 import lib.world
 import gen.setup
+import gen.modes
 import gen.start
 import gen.scenario_out
 
@@ -109,7 +110,10 @@ else:
     lib_load("../../data")
     id_load("../../data")
     let rules = load_rules("default")
-    let rest = args.slice(3, -1)
+    var rest = args.slice(3, -1)
+    for(rest) x:
+        if starts_with(x, "mode:"): set(rules, "mode", jstr(x.substring(5, x.length - 5)))
+    rest = filter(rest) x: not starts_with(x, "mode:")
     let animals = rest.length and rest[0] == "animals"
     set(rules, "animals", jbool(animals))
     let prompts = if animals: rest.slice(1, -1) else: rest
