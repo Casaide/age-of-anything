@@ -1,0 +1,91 @@
+{
+ "name": "fidelity_f1",
+ "title": "Fidelity F1 (2026-10-26): one option per run (the run's AOW_* flags set the look)",
+ "_doc": "docs/concepts/fidelity/: run once per option with its flags (README); rows and columns stay the same so options compare one to one.",
+ "zooms": [
+  4,
+  2
+ ],
+ "cell": [
+  66,
+  64
+ ],
+ "rows": [
+  {
+   "label": "roman legionary\n(romans infantry, age 2)",
+   "unit": {
+    "prompt": "romans",
+    "slot": "infantry",
+    "age": 2
+   }
+  },
+  {
+   "label": "greek archer\n(greeks archer, age 2)",
+   "unit": {
+    "prompt": "greeks",
+    "slot": "archer",
+    "age": 2
+   }
+  },
+  {
+   "label": "royal knight\n(royal humans large, age 3)",
+   "unit": {
+    "prompt": "royal humans",
+    "slot": "large",
+    "age": 3
+   },
+   "h": 1.5
+  },
+  {
+   "label": "cheesehammer rat\n(sewer rats infantry, age 2)",
+   "unit": {
+    "prompt": "sewer rats with cheese hammers",
+    "slot": "infantry",
+    "age": 2
+   }
+  },
+  {
+   "label": "frog spear\n(swamp frogs spear, age 2)",
+   "unit": {
+    "prompt": "swamp frogs",
+    "slot": "spear",
+    "age": 2
+   }
+  }
+ ],
+ "sheets": [
+  {
+   "name": "look",
+   "columns": [
+    {
+     "facing": 1,
+     "label": "f1"
+    },
+    {
+     "facing": 2,
+     "label": "f2 towards"
+    },
+    {
+     "facing": 0,
+     "label": "f0 right"
+    },
+    {
+     "facing": 6,
+     "label": "f6 away"
+    },
+    {
+     "facing": 1,
+     "pose": "walk",
+     "step": 2,
+     "label": "f1 walking"
+    },
+    {
+     "facing": 3,
+     "pose": "hold",
+     "hold": "raise",
+     "label": "f3 wound up"
+    }
+   ]
+  }
+ ]
+}

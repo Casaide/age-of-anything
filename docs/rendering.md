@@ -299,6 +299,15 @@ Head gear with `"face": "sealed"` (a closed helmet) is exempt from the eyes-in-s
   the camera sees), and `age_looks` (a building's
   model from an age on, e.g. the rats' oil-drum town hall at age 3).
   Live parts (banner, vane, smoke, lights) are drawn over the bake.
+  **Destruction** (D-171, D-172): every building look but walls and gates also bakes four broken-up stages
+  (`src/view/art/bake/ruin.gd`: the model broken in 3D before the bake: pieces off the top, others tilted and
+  scorched, walls cut to ragged stumps, rubble from its own materials, charred beams; four to a render when
+  they fit). `BuildingArt.set_damage` shows battered, breaking and collapsed as it loses hp (with today's fire
+  and smoke); when it falls, `CombatFx.collapse` leaves the ruin under a cloud of pixel dust (puffs drawn as
+  one cloud in three passes, shade, mid, light, on the art grid). The ruin is decoration only: it burns out,
+  fades after 45 s (a CanvasGroup, since the team shader reads alpha as shade), and goes when anything is laid
+  on its cells. About +8 s on a cold match start; `tests/art_quality/ruin_sheet.gd` draws every stage,
+  `tests/art_quality/ruin_game.gd` plays a fall in the game.
   Walls and gates are one tile each. A gate's model returns its closed `body` and an `open`
   one, both baked; it also bakes a quarter turn (`^z`) for wall lines running along sim y, and
   the view picks the turn from its neighbours and shows it open while a friendly unit is at it.

@@ -1,7 +1,8 @@
 extends RefCounted
-## Art-quality study (docs/concepts/art-quality/), direction 2: a building broken up in 3D before
-## it bakes, in stages, the way _hold_back in art_kit.gd holds parts back for construction.
-## Not in the game: tests/art_quality/ruin_sheet.gd draws it.
+## A building broken up in 3D before it bakes, in stages (D-171, D-172; study AQ1's direction 2), the way
+## _hold_back in art_kit.gd holds parts back for construction. ArtKit bakes stages 1-4 of every building
+## look; BuildingArt shows 1-3 as it's damaged and leaves 4 where it fell, a ruin that's only decoration
+## and fades (CombatFx.collapse). tests/art_quality/ruin_sheet.gd draws them all side by side.
 ##
 ## Stages (by damage taken): 0 whole, 1 battered (roof holed, a few pieces knocked askew, scorch),
 ## 2 breaking (the top half falling in, beams sagging, rubble spilling), 3 collapsed (stumps of

@@ -998,9 +998,11 @@ func _head_human(c: Dictionary) -> Dictionary:
 		var face := surf("skin", c.skin * 0.4, 6.0)
 		face.emission_enabled = true
 		face.emission = c.skin * 0.82
-		return {"node": glb("head_human", {"skin": face, "hair": surf("mane", c.skin2.darkened(0.45), 3.0),
-			"eye": plain(Color("#1a1210"))}), "sockets": {"top": Vector3(0.3, 10.3, 0)},
-			"gear_scale": 0.86}   # a narrower skull than the old egg: caps and helmets sit on it, not flat on top
+		var hs := float(OS.get_environment("AOW_HUMAN_HEAD")) if OS.has_environment("AOW_HUMAN_HEAD") else 1.0   # fidelity study: proportions
+		var head := glb("head_human", {"skin": face, "hair": surf("mane", c.skin2.darkened(0.45), 3.0), "eye": plain(Color("#1a1210"))})
+		head.scale *= hs
+		return {"node": head, "sockets": {"top": Vector3(0.3, 10.3, 0) * hs},
+			"gear_scale": 0.86 * hs}   # a narrower skull than the old egg: caps and helmets sit on it, not flat on top
 	return _head_human_primitive(c)
 
 
@@ -1030,6 +1032,8 @@ func _leg_human(c: Dictionary) -> Dictionary:
 	# Modelled in Blender (tools/blender/human_leg.py): a shaped thigh, knee and calf, a cuffed boot.
 	if FileAccess.file_exists("res://assets/models/leg_human.glb"):
 		n.add_child(glb("leg_human", {"cloth": cloth, "leather": boot}))
+		if OS.has_environment("AOW_HUMAN_LEGS"):   # fidelity study (docs/concepts/fidelity/): longer legs
+			n.scale = Vector3(1.0, float(OS.get_environment("AOW_HUMAN_LEGS")), 1.0)
 		return {"node": n}
 	n.add_child(rod(Vector3(0, 0, 0), Vector3(0.7, -5.4, 0), 2.0, 1.6, cloth))
 	n.add_child(rod(Vector3(0.7, -5.4, 0), Vector3(0.1, -9.4, 0), 1.5, 1.3, cloth))
