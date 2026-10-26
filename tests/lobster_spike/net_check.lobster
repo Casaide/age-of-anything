@@ -58,20 +58,28 @@ import net.lan
 let args = command_line_arguments()
 let role = args[0]
 let ticks = string_to_int(args[1])
-let me = if role == "host": 0 else: 1
+var people = 2                    // players:<n>: that many people (a 2v2 on four: teams 1 and 2)
+for(args) a:
+    if starts_with(a, "players:"): people = string_to_int(a.substring(8, a.length - 8))
+var me = 0
 var bots = []::Bot
 var link = Link {}
+let others = []::Link             // the host's other joiners
 let t_wait = seconds_elapsed()
 if role == "host":   // (through the door: a scan's '?' gets an answer, a 'J' becomes the match)
     lib_load("../../data")
     let door = door_open(NET_PORT, "net_check", "reed_meadow")
-    var got:Link? = nil
-    while not got:
+    let joined = []::Link
+    while joined.length < people - 1:
         assert door.error == ""
-        assert seconds_elapsed() - t_wait < 30.0
-        got = door_tick(door)
+        assert seconds_elapsed() - t_wait < 60.0
+        let got = door_tick(door)
+        if got:
+            net_send(got, 'W', string(joined.length + 1))   // (your seat)
+            joined.push(got)
         tcp.wait(door.listener, nil, false, 0.02)
-    link = got or link
+    link = joined[0]
+    for(joined.slice(1, -1)) l: others.push(l)
 else:
     lib_load("../../data")
     let found = if has_s(args, "noscan"): []::LanHost else: lan_scan(1.5)
@@ -89,21 +97,29 @@ if role == "host":
     id_load("../../data")
     let rules = load_rules("default")
     set(rules, "animals", jbool(true))
-    let races = map(["sewer rats with cheese hammers", "frogs with spears"]) p: generate(p, rules, 0)
-    setup_world(20261010, "reed_meadow", races, rules, [])
+    let prompts = ["sewer rats with cheese hammers", "frogs with spears", "moonbears", "tiny vikings"]
+    let races = map(people) k: generate(prompts[k % prompts.length], rules, 0)
+    setup_world(20261010, if people > 2: "reed_meadow_2v2" else: "reed_meadow", races, rules, if people > 2: map(people) k: k / 2 else: [])
     bots = map(num_players) p: new_bot(p)
     let bytes = world_bytes(bots)
     net_send(link, 'S', bytes)
+    for(others) l: net_send(l, 'S', bytes)
     print "host: sent the match ({bytes.length / 1024} KB)"
 else:
     while not bots.length:
+        let later = []::[string]
         for(net_poll(link)) f:
-            if f[0] == "S": bots = load_world_bytes(f[1])
+            if f[0] == "W": me = string_to_int(f[1])
+            elif f[0] == "S": bots = load_world_bytes(f[1])
+            elif bots.length: later.push(f)   // (a turn that came with the match: kept for the lockstep)
+        net_unread(link, later)
         assert not link.closed
         tcp.wait(nil, link.sock, false, 0.05)
     print "join: got the match at tick {tick}, {u_id.length} units"
 events_on = true
-let ls = new_lockstep(link, me, [0, 1])
+let ls = new_lockstep(link, me, map(people) k: k)
+ls.more = others
+ls.relay = role == "host"
 let t0 = seconds_elapsed()
 var waits = 0
 while tick < ticks and ls.desync == "" and not link.closed:

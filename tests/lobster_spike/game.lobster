@@ -103,6 +103,8 @@ var hurt_pct = -1                // hurt:<percent>: your buildings start at that
 var lab_arg = false             // lab: the lobby with races:A|B typed in, a picture (shot:) after a second, then quit
 var tree_arg = false            // tree: the tech tree page open from the start (captures)
 var padtest = false             // padtest: a fake pad plays a few seconds, then quit
+var net_people = 2              // people in a network match (host:<n>)
+var net_others = []::Link       // a host's joiners after the first
 var hosting = false             // host: a network match, waiting for a player to join (net/lockstep.lobster)
 var join_ip = ""                // join:<ip>: play the second side of the match a host there sets up
 var reload_at = -1.0            // reload:<seconds>: save then, load 5 s later (tests and captures)
@@ -125,6 +127,9 @@ for(args) a, k:
         if key == "mods": mods_arg = val
         if key == "reload": reload_at = string_to_float(val)
         if a == "host": hosting = true
+        if key == "host":   // host:<n>: n people (more than two: a 2v2 on the four-player map)
+            hosting = true
+            net_people = max(2, string_to_int(val))
         if a == "padtest": padtest = true
         if a == "skirmish": skirmish = true
         if a == "tree": tree_arg = true
@@ -1786,10 +1791,15 @@ if join_ip != "":
                 join_hello(link)
                 said = true
             msg = "Joined {join_ip}: the host is sending the match..."
+            let later = []::[string]
             for(net_poll(link)) f:
-                if f[0] == "S": joined_bots = load_world_bytes(f[1])
-                if f[0] == "X": link.error = f[1]
-    ME = 1
+                if f[0] == "W": ME = string_to_int(f[1])   // (our seat)
+                elif f[0] == "S": joined_bots = load_world_bytes(f[1])
+                elif f[0] == "X": link.error = f[1]
+                elif joined_bots.length: later.push(f)   // (a turn that came with the match: kept for the lockstep)
+            net_unread(link, later)
+    if ME == 0: ME = 1   // (a host that sends no seat: the second one)
+    net_people = num_players
     map_name_now = gstr(su_map, "id", "reed_meadow")
     load_species(map_name_now)
     if pack_library: race_facts(su_races)
@@ -1798,7 +1808,8 @@ elif args[1] == "-" or args[1] == "lobby":   // the races from their prompts and
     set(rules, "animals", jbool(true))
     let prompts = lobby_prompts
     let t_gen = seconds_elapsed()
-    let races = map(prompts) pr, k: generate(pr, rules, if k < lobby_rerolls.length: lobby_rerolls[k] else: 0)
+    // (more than two people: the other seats take the two prompts' further takes, a team each)
+    let races = map(max(prompts.length, if hosting: net_people else: 0)) k: generate(prompts[k % prompts.length], rules, if k < lobby_rerolls.length: lobby_rerolls[k] else: k / prompts.length)
     let t_setup = seconds_elapsed()
     if args[1] == "lobby":
         lobby_report = balance_for_match(races, rules, 4)
@@ -1807,8 +1818,9 @@ elif args[1] == "-" or args[1] == "lobby":   // the races from their prompts and
         reset_world()
     let map_id = if args[1] == "lobby": lobby_map elif pack_map != "": pack_map else: "reed_meadow"
     if args[1] == "lobby": set(rules, "mode", jstr(lobby_mode))   // (after the balance fights: they're plain fights)
-    setup_world(20261010, map_id, races, rules, [])
-    load_species(map_id)
+    let four = races.length > 2
+    setup_world(20261010, if four: "reed_meadow_2v2" else: map_id, races, rules, if four: map(races.length) k: k % 2 else: [])
+    load_species(if four: "reed_meadow_2v2" else: map_id)
     map_name_now = map_id
     if pack_library: race_facts(races)
     print "races in {(t_setup - t_gen) * 1000.0} ms, the start in {(seconds_elapsed() - t_setup) * 1000.0} ms"
@@ -1839,13 +1851,18 @@ var bots = map(num_players) p: new_bot(p)
 if joined_bots.length: bots = joined_bots
 if hosting:
     let door = door_open(NET_PORT, rstr(su_races[0], "name"), map_name_now)
-    var got:Link? = nil
+    let joined = []::Link
     let here = my_ipv4()
-    while not got:
-        if net_wait_frame(if door.error != "": "Could not host: {door.error}" else: "Hosting at {if here != "": here else: "this machine"}: waiting for a player to join..."): return
-        got = door_tick(door)
-    link = got or link
-    net_send(link, 'S', world_bytes(bots))
+    while joined.length < net_people - 1:
+        if net_wait_frame(if door.error != "": "Could not host: {door.error}" else: "Hosting at {if here != "": here else: "this machine"}: {joined.length} of {net_people - 1} joined, waiting..."): return
+        let got = door_tick(door)
+        if got:
+            net_send(got, 'W', string(joined.length + 1))
+            joined.push(got)
+    link = joined[0]
+    net_others = joined.slice(1, -1)
+    let bytes = world_bytes(bots)
+    for(joined) l: net_send(l, 'S', bytes)
 let net_on = hosting or join_ip != ""
 if place_arg != "":
     let k = btype_index(place_arg)
@@ -1887,7 +1904,9 @@ if hurt_pct >= 0:
     for(b_id.length) b:
         if b_owner[b] == ME: b_hp[b] = max(1, bm_hp[ME][b_kind[b]] * hurt_pct / 100)
 in_net_match = net_on
-let lockstep = new_lockstep(link, ME, if net_on: [0, 1] else: [ME])
+let lockstep = new_lockstep(link, ME, if net_on: map(net_people) k: k else: [ME])
+lockstep.more = net_others
+lockstep.relay = hosting
 
 // Saving and loading (gen/save.lobster): F5 saves the match, F9 brings the save back (the whole world
 // and the bots); the view starts over from it: units redrawn, the ground, paths and town read again.
