@@ -75,7 +75,7 @@ def ident_lacks(p:int, id:string) -> bool:
 // ---- the map (SimMap.load_id)
 
 def load_map(map_id:string):
-    let d = load_json(lib_root + "/maps/" + map_id + ".json")
+    let d = load_json(data_path("maps/" + map_id + ".json"))
     assert gstr(d, "schema", "") == "aow.map/2" and gstr(d, "id", "") == map_id
     su_map = d
     let types = at(load_json(lib_root + "/terrain.json"), "terrain")

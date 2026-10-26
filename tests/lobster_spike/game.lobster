@@ -51,6 +51,7 @@ import .gen.sha256
 import .gen.rng
 import .gen.datalib
 import .gen.identity
+import .gen.mods
 import .gen.pricing
 import .gen.heroes
 import .gen.generator
@@ -85,10 +86,13 @@ var start_speed = 1.0
 var look_x = -1
 var swap_arg = ""              // swap:<prompt>@<seconds>: become that race then (tests and captures)
 var swap_at = -1.0
+var rules_arg = ""               // rules:<id>: the host rules (else the pack's)
+var mods_arg = ""                // mods:a,b: mods to merge over the data (else the pack's)
 var mode_arg = ""               // mode:<id>: the lobby's game mode (data/modes.json)
 var map_arg = ""                // map:<id>: the lobby's map (tests and captures)
 var races_arg = ""             // races:<A>|<B>: the lobby's prompts, as if typed (then balanced, then played)
 var look_y = -1
+var army_n = 0                  // army:<n>: n of each of your soldier types by your Town Center at the start (captures)
 var hurt_pct = -1                // hurt:<percent>: your buildings start at that much of their hit points (captures of fire)
 var padtest = false             // padtest: a fake pad plays a few seconds, then quit
 var hosting = false             // host: a network match, waiting for a player to join (net/lockstep.lobster)
@@ -107,10 +111,13 @@ for(args) a, k:
         if key == "races": races_arg = val
         if key == "map": map_arg = val
         if key == "mode": mode_arg = val
+        if key == "rules": rules_arg = val
+        if key == "mods": mods_arg = val
         if key == "reload": reload_at = string_to_float(val)
         if a == "host": hosting = true
         if a == "padtest": padtest = true
         if key == "hurt": hurt_pct = string_to_int(val)
+        if key == "army": army_n = string_to_int(val)
         if key == "join": join_ip = val
         if key == "swap":
             let sp, sa = split_string(val, "@")
@@ -786,7 +793,7 @@ def draw_world(alpha:float):
 // them by fighting every line against every other (gen/balance.lobster) and starts the match with
 // the prices the fights set. The units are drawn from the part library (art_pack.gd library).
 
-let RULES_ID = "default"
+def rules_id() -> string: return if rules_arg != "": rules_arg else: pack_rules
 var lobby_map = "reed_meadow"
 let MODE_IDS = ["standard", "fortress", "siege"]   // data/modes.json (gen/modes.lobster)
 var lobby_mode = "standard"
@@ -830,7 +837,7 @@ def lobby_text(p:float2, s:string, col:float4):
 def run_lobby(defaults:[string]) -> [string]:
     let prompts = copy(defaults)
     var field = 0
-    let rules = load_rules(RULES_ID)
+    let rules = load_rules(rules_id())
     gl.start_text_input(int2 { 0, 0 }, int2 { 400, 40 })
     gl.set_text_input(prompts[field])
     var shown = map(prompts) p: generate(p, rules, 0)
@@ -919,6 +926,8 @@ def apply_prices(races:[JV]):
 
 // CombatFx.shot_kind: what a unit's shots are, by its weapon's tags.
 def shot_kind_of(tags:[string]) -> string:
+    for(sorted_strs(mod_shots.keys)) k:   // (a mod's look first, by its tag)
+        if has_s(tags, gstr(at(mod_shots, k), "tag", "")): return k
     if has_s(tags, "great_sling"): return "sling_stone"
     if has_s(tags, "catapult"): return "boulder"
     if has_s(tags, "bolt_thrower"): return "siege_bolt"
@@ -1274,6 +1283,8 @@ def draw_shots(alpha:float):
             let ahead = at(min(t + 0.03, 1.0))
             let dir = if magnitude(ahead - p) > 0.0001: normalize(ahead - p) else: normalize(b - a + float2 { 0.0001, 0.0 })
             let lift = h * 4.0 * t * (1.0 - t)
+            if st.glow.w > 0.0:   // a bolt of light: a soft halo under its core
+                gl.color(float4 { st.glow.x, st.glow.y, st.glow.z, 0.35 }): gl.line(p - dir * st.len * 0.6, p + dir * st.len * 0.6, st.w * 2.2)
             if st.len > 0.0: gl.color(st.col): gl.line(p - dir * st.len * 0.5, p + dir * st.len * 0.5, st.w)
             else: fx_circle(p, st.w, st.col)
             fx_circle(p + float2 { 0.0, lift + 1.0 }, 0.8, float4 { 0.0, 0.0, 0.0, 0.25 })
@@ -1651,6 +1662,8 @@ load_pack(args[0])
 note("pack")
 music_start()
 lib_load("../../data")
+let mods_wanted = if mods_arg != "": tokenize(mods_arg, ",", " ") else: pack_mods
+if mods_wanted.length: print "mods: {mods_use(mods_wanted)}"
 id_load("../../data")
 composed = read_file(args[0] + "/rigs.json") != nil
 if composed: load_part_data(args[0])
@@ -1682,7 +1695,7 @@ if join_ip != "":
     load_species(map_name_now)
     if pack_library: race_facts(su_races)
 elif args[1] == "-" or args[1] == "lobby":   // the races from their prompts and the match start, made here (gen/)
-    let rules = load_rules(RULES_ID)
+    let rules = load_rules(rules_id())
     set(rules, "animals", jbool(true))
     var prompts = if pack_prompts.length >= 2: pack_prompts else: ["sewer rats with cheese hammers", "angry swamp frogs with reed spears"]
     if args[1] == "lobby":
@@ -1708,7 +1721,7 @@ elif args[1] == "-" or args[1] == "lobby":   // the races from their prompts and
     print "races in {(t_setup - t_gen) * 1000.0} ms, the start in {(seconds_elapsed() - t_setup) * 1000.0} ms"
 else:
     if composed:   // a scenario has no recipes: set its races up (as export.gd did) for the composer, then load it over a clean world
-        let rules = load_rules(RULES_ID)
+        let rules = load_rules(rules_id())
         let races = map(if pack_prompts.length >= 2: pack_prompts else: ["sewer rats with cheese hammers", "angry swamp frogs with reed spears"]) pr: generate(pr, rules, 0)
         setup_world(20261010, if pack_map != "": pack_map else: "flat_test", races, rules, [])
         let keep_recipe = su_type_recipe
@@ -1737,6 +1750,13 @@ if hosting:
         if net_wait_frame(if link.error != "": "Could not host: {link.error}" else: "Hosting on port {NET_PORT}: waiting for a player to join..."): return
     net_send(link, 'S', world_bytes(bots))
 let net_on = hosting or join_ip != ""
+if army_n > 0:
+    let slots = []::string
+    for(t_slot.length) k:
+        if t_player[k] == ME and not t_worker[k] and t_animal[k] == 0: push_new(slots, t_slot[k])
+    for(slots) slot:
+        for(army_n): mode_put(ME, type_of_slot(ME, slot), start_x[ME] + 4000, start_y[ME] + 4000)
+    update_pop()
 if hurt_pct >= 0:
     for(b_id.length) b:
         if b_owner[b] == ME: b_hp[b] = max(1, bm_hp[ME][b_kind[b]] * hurt_pct / 100)
