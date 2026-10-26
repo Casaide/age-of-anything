@@ -94,6 +94,7 @@ var races_arg = ""             // races:<A>|<B>: the lobby's prompts, as if type
 var look_y = -1
 var army_n = 0                  // army:<n>: n of each of your soldier types by your Town Center at the start (captures)
 var hurt_pct = -1                // hurt:<percent>: your buildings start at that much of their hit points (captures of fire)
+var lab_arg = false             // lab: the lobby with races:A|B typed in, a picture (shot:) after a second, then quit
 var tree_arg = false            // tree: the tech tree page open from the start (captures)
 var padtest = false             // padtest: a fake pad plays a few seconds, then quit
 var hosting = false             // host: a network match, waiting for a player to join (net/lockstep.lobster)
@@ -118,6 +119,7 @@ for(args) a, k:
         if a == "host": hosting = true
         if a == "padtest": padtest = true
         if a == "tree": tree_arg = true
+        if a == "lab": lab_arg = true
         if key == "hurt": hurt_pct = string_to_int(val)
         if key == "army": army_n = string_to_int(val)
         if key == "join": join_ip = val
@@ -835,6 +837,36 @@ def lobby_text(p:float2, s:string, col:float4):
     gl.color(col):
         gl.translate(p): gl.text(s)
 
+// A filled box from its top-left corner (gl.rect draws -size..size round its point in this build).
+def box(at:float2, size:float2, col:float4):
+    gl.set_shader("color")
+    gl.color(col): gl.translate(at + size / 2.0): gl.rect(size / 2.0)
+
+// The Race Lab in the lobby (scenes/race_lab): a race's whole roster drawn as you type it, idling in
+// its team colour, from the part library.
+def roster_views(race:JV, p:int) -> [UV]:
+    let tc = team_rgb[p % team_rgb.length]
+    return map(glist(race, "units")) un:
+        let v = uv_new()
+        uv_build(v, at(un, "recipe"), float3 { tc.x, tc.y, tc.z }, 20)
+        v.node.scl = float2_1 * 0.85
+        v.pose_steps = 8
+        v.art_px = 1.5
+        face_vec(v, float2 { 1.0, 1.0 })
+        v
+
+def draw_roster(vs:[UV], base:float2, z:float, p:int, dt:float):
+    let tc = team_rgb[p % team_rgb.length]
+    b_sheet = -1
+    for(vs) v, n:
+        v.node.pos = float2 { float(n % 10) * 46.0 + float(n / 10) * 23.0, float(n / 10) * 40.0 }
+        uv_process(v, dt)
+        let screen = [1.5 * z, 0.0, 0.0, 1.5 * z, base.x, base.y]
+        for(draw_list(v, ID_XF)) d:
+            let f = frame_index("p:" + d.key)
+            if f >= 0: sprite_xf(f, xf_mul(screen, d.xf), float4 { tc.x, tc.y, tc.z, d.alpha })
+    flush_sprites()
+
 // The lobby's own frame loop: the prompts, or [] when the window closes.
 def run_lobby(defaults:[string]) -> [string]:
     let prompts = copy(defaults)
@@ -844,6 +876,8 @@ def run_lobby(defaults:[string]) -> [string]:
     gl.set_text_input(prompts[field])
     var shown = map(prompts) p: generate(p, rules, 0)
     var shown_for = copy(prompts)
+    var lab_frames = 0
+    var armies = map(shown) r, k: if composed and pack_library: roster_views(r, k) else: []::UV
     while gl.frame():
         music_tick("lobby", false, gl.delta_time())
         if gl.button("escape") == 1: return []
@@ -867,10 +901,15 @@ def run_lobby(defaults:[string]) -> [string]:
             if p != shown_for[k]:
                 shown[k] = generate(p, rules, 0)
                 shown_for[k] = p
+                if composed and pack_library: armies[k] = roster_views(shown[k], k)
         gl.clear(float4 { 0.07, 0.06, 0.05, 1.0 })
         gl.set_shader("color")
         let u = ui()
         let ws = float(gl.window_size())
+        for(prompts) p, k:   // (shapes and sprites before any text: see box)
+            let x = 40.0 * u + float(k) * ws.x / 2.0
+            box(float2 { x - 8.0 * u, 166.0 * u }, float2 { ws.x / 2.0 - 70.0 * u, 34.0 * u }, if k == field: float4 { 0.25, 0.2, 0.14, 1.0 } else: float4 { 0.15, 0.13, 0.1, 1.0 })
+            draw_roster(armies[k], float2 { x + 30.0 * u, ws.y * 0.8 }, 0.9 * u, k, gl.delta_time())
         gl.set_font_size(int(40.0 * u))
         lobby_text(float2 { 40.0 * u, 30.0 * u }, "Age of Anything", float4 { 0.95, 0.85, 0.6, 1.0 })
         gl.set_font_size(int(18.0 * u))
@@ -880,13 +919,15 @@ def run_lobby(defaults:[string]) -> [string]:
             let x = 40.0 * u + float(k) * ws.x / 2.0
             let y = 140.0 * u
             lobby_text(float2 { x, y }, if k == 0: "Your race" else: "Their race", float4 { 0.7, 0.68, 0.6, 1.0 })
-            gl.color(if k == field: float4 { 0.25, 0.2, 0.14, 1.0 } else: float4 { 0.15, 0.13, 0.1, 1.0 }):
-                gl.translate(float2 { x - 8.0 * u, y + 26.0 * u }): gl.rect(float2 { ws.x / 2.0 - 70.0 * u, 34.0 * u })
             gl.set_font_size(int(22.0 * u))
             lobby_text(float2 { x, y + 30.0 * u }, p + (if k == field and (int(seconds_elapsed() * 2.0) % 2) == 0: "|" else: ""), float4 { 1.0, 0.95, 0.85, 1.0 })
             gl.set_font_size(int(16.0 * u))
             for(race_lines(shown[k])) line, n:
                 lobby_text(float2 { x, y + 80.0 * u + float(n) * 22.0 * u }, line, if n == 0: float4 { 0.95, 0.85, 0.6, 1.0 } else: float4 { 0.8, 0.78, 0.72, 1.0 })
+        lab_frames++
+        if lab_arg and lab_frames == 90:
+            if shot != "": gl.screenshot(shot)
+            return []
     return []
 
 // The races balanced by fights before the match: a few rounds of the round robin in age 2, each line
@@ -1704,8 +1745,8 @@ elif args[1] == "-" or args[1] == "lobby":   // the races from their prompts and
     if args[1] == "lobby":
         if map_arg != "": lobby_map = map_arg
         if mode_arg != "": lobby_mode = mode_arg
-        if races_arg != "": prompts = tokenize(races_arg, "|", " ")
-        else: prompts = run_lobby(prompts)
+        if races_arg != "" and not lab_arg: prompts = tokenize(races_arg, "|", " ")
+        else: prompts = run_lobby(if races_arg != "": tokenize(races_arg, "|", " ") else: prompts)
         if not prompts.length: return
     let t_gen = seconds_elapsed()
     let races = map(prompts) pr: generate(pr, rules, 0)
