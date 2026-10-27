@@ -7,7 +7,7 @@ LOBSTER=${LOBSTER:-$HOME/Dev/lobster/bin/lobster}
 OUT=${TMPDIR:-/tmp}/rr_compare
 mkdir -p "$OUT"
 timeout 300 "$GODOT" --headless --path ../.. --script res://tests/lobster_spike/rr_hash.gd -- "$@" > "$OUT/gd.txt" 2>&1
-timeout 300 "$LOBSTER" --mir balance.lobster -- hash "$@" > "$OUT/lob.txt" 2>&1
+timeout 300 "$LOBSTER" $LOBSTER_FLAGS balance.lobster -- hash "$@" > "$OUT/lob.txt" 2>&1
 rm -f memory_leaks.txt
 grep "^h " "$OUT/gd.txt" > "$OUT/gd.h"
 grep "^h " "$OUT/lob.txt" > "$OUT/lob.h"

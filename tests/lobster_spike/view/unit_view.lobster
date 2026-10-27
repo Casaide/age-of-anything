@@ -283,20 +283,7 @@ def uv_build(v:UV, r:JV, team:float3, speed:int) -> void:
     if v.pose_body != "" and not v.flying:
         let pb = part(v.pose_body)
         let pl = get(pb, "legs")
-        if pl and has(pl, "gait"):
-            let g = at(pl, "gait")
-            let ng = Gait { v.gait.swing, v.gait.cadence, v.gait.bob, v.gait.rock, v.gait.rock_rate, v.gait.hops }
-            for(g.keys) k, n:
-                let x = g.a[n]
-                switch k:
-                    case "swing": ng.swing = as_float(x)
-                    case "cadence": ng.cadence = as_float(x)
-                    case "bob": ng.bob = as_float(x)
-                    case "rock": ng.rock = as_float(x)
-                    case "rock_rate": ng.rock_rate = as_float(x)
-                    case "hop": ng.hops = as_bool(x)
-                    default: pass()
-            v.gait = ng
+        if pl and has(pl, "gait"): v.gait = gait_with(v.gait, at(pl, "gait"))
         v.idle_poses = idle_poses_of(r, v.pose_body)
     if v.sit_after < 0.0 and v.idle_poses.length: v.sit_after = randf_range(v.noise, SIT_AFTER_LO, SIT_AFTER_HI)
     v.idle_wait = randf_range(v.noise, 1.0, 5.0)
@@ -405,6 +392,23 @@ def crew_recipe(r:JV) -> JV:
         if not has(cr, kv[0]): set(cr, kv[0], jstr(kv[1]))
     if not has(cr, "tier"): set(cr, "tier", jint(1))
     return cr
+
+// A war beast's own body walking (the engine's body with its legs and its head, nobody on it).
+def beast_recipe(r:JV) -> JV:
+    let o = jobj()
+    set(o, "slot", jstr("beast"))
+    set(o, "role", jstr("beast"))
+    set(o, "tier", jint(1))
+    set(o, "creature", jstr(""))
+    set(o, "family", at(r, "family"))
+    set(o, "skin", at(r, "skin"))
+    set(o, "body", at(r, "body"))
+    set(o, "head", at(gobj(part(rstr(r, "body")), "beast"), "head"))
+    set(o, "parts", jobj())
+    set(o, "scale", jint(100))
+    set(o, "name", jstr(""))
+    set(o, "idle", jint(0))
+    return o
 
 def haul_recipe(r:JV) -> JV:
     let h = at(r, "haul")
@@ -812,6 +816,21 @@ def leg_len(v:UV) -> float:
     var hip = 0.0
     for(v.legs) l: hip = max(hip, -l.rest.y)
     return hip
+
+// A gait with a body's own numbers over it (parts.json legs.gait).
+def gait_with(g0:Gait, g:JV) -> Gait:
+    let ng = Gait { g0.swing, g0.cadence, g0.bob, g0.rock, g0.rock_rate, g0.hops }
+    for(g.keys) k, n:
+        let x = g.a[n]
+        switch k:
+            case "swing": ng.swing = as_float(x)
+            case "cadence": ng.cadence = as_float(x)
+            case "bob": ng.bob = as_float(x)
+            case "rock": ng.rock = as_float(x)
+            case "rock_rate": ng.rock_rate = as_float(x)
+            case "hop": ng.hops = as_bool(x)
+            default: pass()
+    return ng
 
 def gait_for(n:int, flies:bool) -> Gait:
     if flies: return Gait { 0.12, 0.8, 0.0, 0.04, 1.0, false }

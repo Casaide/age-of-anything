@@ -1,5 +1,5 @@
 #!/bin/sh
-# Every spike scenario: exported from GDScript, played in Lobster (--mir), hashes compared per tick.
+# Every spike scenario: exported from GDScript, played in Lobster, hashes compared per tick.
 # Usage: tests/lobster_spike/all.sh <out dir>
 out="$1"
 run="tests/lobster_spike/run.sh"

@@ -9,7 +9,7 @@ import std
 import vec
 import dictionary
 
-let MPI = 3.14159265358979
+let MPI = 3.141592653589793   // (Godot's PI to the last digit: a walk step on a boundary falls the same way)
 def rad(r:float) -> float: return r * 180.0 / MPI   // radians (Godot's) to the degrees used here
 
 // ------------------------------------------------------------------ bases (3x3, by columns)
@@ -112,6 +112,7 @@ def xinverse(t:Xform) -> Xform:
 // assets/art/textures/<name>.svg by tex_png.gd) and how it's mapped, and what else it does to the light.
 class MMat:
     albedo:float3
+    rope = false                     // a rope (siege models: tied at both ends, the placement check's C3)
     tex = ""                         // texture name; "" for none
     triplanar = false
     uv_scale = float3_1
@@ -143,6 +144,16 @@ class MMesh:
     uv:[float2]
     idx:[int]
     c = []::float3                   // vertex colours, if any
+    prim = 0                         // PRIM_: the primitive it was made as (geom.lobster fills those exactly), with
+    pp = float4_0                    // its numbers: sphere (radius, height, hemisphere 0/1), cylinder (top,
+                                     // bottom, height), box (size), torus (inner, outer)
+
+let PRIM_NONE = 0
+let PRIM_SPHERE = 1
+let PRIM_CYLINDER = 2
+let PRIM_BOX = 3
+let PRIM_TORUS = 4
+let PRIM_FLAT = 5                    // a quad or plane: a picture on a surface, no volume
 
 def new_mesh() -> MMesh: return MMesh { [], [], [], [] }
 
@@ -154,6 +165,8 @@ def add_vertex(m:MMesh, p:float3, n:float3, uv:float2):
 // SphereMesh (radius, height, radial segments, rings; a hemisphere flattens its lower half onto y = 0).
 def sphere_mesh(radius:float, height:float, radial:int, rings:int, hemisphere:bool) -> MMesh:
     let m = new_mesh()
+    m.prim = PRIM_SPHERE
+    m.pp = float4 { radius, height, if hemisphere: 1.0 else: 0.0, 0.0 }
     let scale = height * (if hemisphere: 1.0 else: 0.5)
     var thisrow = 0
     var prevrow = 0
@@ -181,6 +194,8 @@ def sphere_mesh(radius:float, height:float, radial:int, rings:int, hemisphere:bo
 // CylinderMesh (top and bottom radii, height, radial segments, rings, caps).
 def cylinder_mesh(top:float, bottom:float, height:float, radial:int, rings:int, cap_top:bool, cap_bottom:bool) -> MMesh:
     let m = new_mesh()
+    m.prim = PRIM_CYLINDER
+    m.pp = float4 { top, bottom, height, 0.0 }
     var thisrow = 0
     var prevrow = 0
     var point = 0
@@ -228,6 +243,8 @@ def cylinder_mesh(top:float, bottom:float, height:float, radial:int, rings:int, 
 // TorusMesh (inner and outer radius, rings round it, segments round the tube).
 def torus_mesh(inner:float, outer:float, rings:int, segs:int) -> MMesh:
     let m = new_mesh()
+    m.prim = PRIM_TORUS
+    m.pp = float4 { inner, outer, 0.0, 0.0 }
     let lo = min(inner, outer)
     let hi = max(inner, outer)
     let radius = (hi - lo) * 0.5
@@ -250,6 +267,8 @@ def torus_mesh(inner:float, outer:float, rings:int, segs:int) -> MMesh:
 // BoxMesh (size, subdivisions across, up, deep): each pair of opposite sides built at once, as Godot does.
 def box_mesh(size:float3, sw:int, sh:int, sd:int) -> MMesh:
     let m = new_mesh()
+    m.prim = PRIM_BOX
+    m.pp = float4 { size.x, size.y, size.z, 0.0 }
     let st = size * -0.5
     let third = 1.0 / 3.0
     for(3) pair:   // front + back, right + left, top + bottom
@@ -290,6 +309,7 @@ let FACE_Y = 1
 let FACE_Z = 2
 def plane_mesh(size:float2, sw:int, sd:int, face:int, centre:float3) -> MMesh:
     let m = new_mesh()
+    m.prim = PRIM_FLAT
     let st = size * -0.5
     var thisrow = 0
     var prevrow = 0
@@ -387,6 +407,7 @@ class MNode:
     kids = []::MNode
     visible = true
     meta = ""                        // what it is, for checks (a decal's name)
+    vol = -1                         // a .glb mesh's surfaces share this (one volume: geom.lobster fills them together)
 
 def mnode() -> MNode: return MNode {}
 def mesh_node(m:MMesh, mat:MMat) -> MNode:

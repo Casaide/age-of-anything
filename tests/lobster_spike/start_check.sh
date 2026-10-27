@@ -4,6 +4,7 @@
 cd "$(dirname "$0")"
 GODOT=${GODOT:-/Applications/Godot.app/Contents/MacOS/Godot}
 LOBSTER=${LOBSTER:-$HOME/Dev/lobster/bin/lobster}
+LOBSTER_FLAGS="${LOBSTER_FLAGS-}"   # (as the game runs it, play.sh: no --mir, D-174)
 OUT=${TMPDIR:-/tmp}/start_check
 mkdir -p "$OUT"
 bad=0
@@ -24,8 +25,8 @@ check() {   # name map [animals] [prompts:A|B]
 		esac
 	done
 	echo "== $name ($map $*)"
-	timeout 120 "$LOBSTER" start_check.lobster -- roundtrip "$OUT/$name.txt" 2>&1 | grep -v warning 
-	timeout 120 "$LOBSTER" start_check.lobster -- setup "$OUT/$name.txt" "$map" $mode $animals "$a" "$b" 2>&1 | grep -v warning 
+	timeout 120 "$LOBSTER" $LOBSTER_FLAGS start_check.lobster -- roundtrip "$OUT/$name.txt" 2>&1 | grep -v warning 
+	timeout 120 "$LOBSTER" $LOBSTER_FLAGS start_check.lobster -- setup "$OUT/$name.txt" "$map" $mode $animals "$a" "$b" 2>&1 | grep -v warning 
 }
 check flat flat_test
 check reed reed_meadow animals

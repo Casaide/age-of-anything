@@ -68,6 +68,8 @@ def glb_material(doc:GlbDoc, k:int, mats:dictionary<string, MMat>) -> MMat:
     if e.length == 3: out.emission = float3 { lin_to_srgb(e[0]), lin_to_srgb(e[1]), lin_to_srgb(e[2]) }
     return out
 
+var glb_vols = 0                 // .glb meshes read so far (a mesh's surfaces are one volume: MNode.vol)
+
 def glb_node(doc:GlbDoc, k:int, mats:dictionary<string, MMat>) -> MNode:
     let jn = glist(doc.j, "nodes")[k]
     let n = mnode()
@@ -83,7 +85,9 @@ def glb_node(doc:GlbDoc, k:int, mats:dictionary<string, MMat>) -> MNode:
         if r.length == 4: set_basis(n, quat_basis(float4 { r[0], r[1], r[2], r[3] }))
         if s.length == 3: n.scl = float3 { s[0], s[1], s[2] }
     if has(jn, "mesh"):
-        for(glist(glist(doc.j, "meshes")[gint(jn, "mesh", 0)], "primitives")) pr:
+        let jm = glist(doc.j, "meshes")[gint(jn, "mesh", 0)]
+        glb_vols++
+        for(glist(jm, "primitives")) pr:
             let attrs = gobj(pr, "attributes")
             let mesh = new_mesh()
             let p = glb_accessor(doc, gint(attrs, "POSITION", 0))
@@ -94,7 +98,9 @@ def glb_node(doc:GlbDoc, k:int, mats:dictionary<string, MMat>) -> MNode:
                            if nr.length: float3 { nr[i * 3], nr[i * 3 + 1], nr[i * 3 + 2] } else: float3 { 0.0, 1.0, 0.0 },
                            if uv.length: float2 { uv[i * 2], uv[i * 2 + 1] } else: float2_0)
             mesh.idx = if has(pr, "indices"): map(glb_accessor(doc, gint(pr, "indices", 0))) v: int(v) else: map(mesh.p.length) i: i
-            add_child(n, mesh_node(mesh, glb_material(doc, gint(pr, "material", -1), mats)))
+            let mi = add_child(n, mesh_node(mesh, glb_material(doc, gint(pr, "material", -1), mats)))
+            mi.meta = gstr(jm, "name", "")   // (Godot's mesh resource_name: the placement check finds eyes and brows by it)
+            mi.vol = glb_vols
     for(glist(jn, "children")) ch: add_child(n, glb_node(doc, as_int(ch), mats))
     return n
 

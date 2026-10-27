@@ -22,4 +22,4 @@ for a in "$@"; do
 	esac
 done
 "$LOBSTER" mods_gen.lobster -- $(echo "$mods" | tr ',' ' ') | grep -v warning
-exec "$LOBSTER" --mir game.lobster -- "$pack" "$start" "$@"
+exec "$LOBSTER" $LOBSTER_FLAGS game.lobster -- "$pack" "$start" "$@"
