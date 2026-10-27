@@ -1229,3 +1229,8 @@ a rat is: hunched forward on its hind legs, a long body, short arms, the head ca
 tail (`tools/blender/concept_creatures.py` rat B is the concept), at the heroic humans' quality (milestone 23). The frogs'
 take (A or B) is still open. Not built yet. (On the Lobster branch rats and frogs are drawn a fifth smaller on foot,
 creatures.json draw_scale 80, Dominic's call there.)
+
+**D-178, 2026-10-27: The frogs are rebuilt as frogs (round F2's B).** Dominic: "and frog b". The frog becomes a frog as a
+frog is: squat on folded haunches, a forelimb planted, a wide flat head with the eyes on top, webbed feet
+(`tools/blender/concept_creatures.py` frog B is the concept), at the heroic humans' quality (milestone 23), like the rats
+(D-177). Not built yet; the animation option (study A2) is still open.
