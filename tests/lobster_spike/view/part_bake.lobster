@@ -72,7 +72,7 @@ def crop_sprite(sprite:string, w:int, h:int, origin:float2) -> string, int, int,
 // beast's legs in every walk step took most of a minute). BAKE_VERSION goes up when the models or the baker
 // change, so old bakes aren't reused.
 
-let BAKE_VERSION = 2   // (2: Godot's full PI in the models, 2026-10-27)
+let BAKE_VERSION = 4   // (2: Godot's full PI in the models; 3: engines' members in front or behind; 4: whole-pixel frames as Godot's, 2026-10-27)
 var bake_cache_dir = "bake_cache"   // (play.sh makes it; Lobster can't make a folder)
 var cache_lines = []::string        // the manifest of the part being baked
 var cache_stem = ""                 // its file names' stem ("" while not recording)
@@ -169,10 +169,76 @@ def bake_camera(k:int) -> float3, float3, float3:
     let cx, cy, _cz = looking_at(-view, float3 { 0.0, 1.0, 0.0 })
     return cx, cy, view
 
+// An engine's members beside it (crew, haulers; not those inside its frame or riding on top) are drawn over it or
+// under it by which is in front where they overlap on screen, not by the socket's depth alone (part_baker.gd
+// _members_front, placement C4): for each, true when it stands in front of most of the engine it overlaps. The engine
+// is sampled through its meshes' boxes on a 2-unit grid.
+let MEMBER_COLUMN = [3.0, 8.0, 13.0, 18.0]   // a member standing on its socket: points up its middle...
+let MEMBER_HALF = float2 { 4.0, 2.5 }       // ...each as wide and tall as this on screen (part units)
+
+def member_samples(n:MNode, parent:Xform, right:float3, up:float3, view:float3, out:[float3]) -> void:
+    let t = xmul(parent, node_xform(n))
+    let mesh = n.mesh
+    if n.visible and mesh and mesh.p.length:
+        var lo = mesh.p[0]
+        var hi = mesh.p[0]
+        for(mesh.p) p:
+            lo = min(lo, p)
+            hi = max(hi, p)
+        let size = hi - lo
+        let c = max(int3 { int(ceiling(size.x / 2.0)), int(ceiling(size.y / 2.0)), int(ceiling(size.z / 2.0)) }, int3_1)
+        for(c.x + 1) i:
+            for(c.y + 1) j:
+                for(c.z + 1) l:
+                    let q = xf(t, lo + size * float3 { float(i) / float(c.x), float(j) / float(c.y), float(l) / float(c.z) })
+                    out.push(float3 { dot(q, right), dot(q, up), dot(q, view) })
+    for(n.kids) kid: member_samples(kid, t, right, up, view, out)
+
+def members_front(model:MNode, sockets:dictionary<string, float3>, names:[string], view:float3) -> JV:
+    let right = normalize(cross(float3 { 0.0, 1.0, 0.0 }, view))
+    let up = cross(view, right)
+    let pts = []::float3
+    member_samples(model, XF_ID, right, up, view, pts)
+    let front = dictionary<string, int>(7)
+    let apart = []::string   // members the engine is neither in front of nor behind
+    for(names) name:
+        var nearer = 0
+        var farther = 0
+        let sock = sockets.get(name, float3_0)
+        for(MEMBER_COLUMN) h:
+            let c = sock + float3 { 0.0, h, 0.0 }
+            let sc = float2 { dot(c, right), dot(c, up) }
+            let dc = dot(c, view)
+            for(pts) q:
+                if abs(q.x - sc.x) < MEMBER_HALF.x and abs(q.y - sc.y) < MEMBER_HALF.y:
+                    if q.z > dc + 1.0: nearer++
+                    elif q.z < dc - 1.0: farther++
+        let is_front = if nearer + farther > 0: nearer <= farther else: dot(sock, float3 { view.x, 0.0, view.z }) > 0.0
+        front.set(name, if is_front: 1 else: 0)
+        if nearer + farther == 0: apart.push(name)
+    // A member nowhere in front of or behind the engine goes under it all the same when one nearer the camera than
+    // it does (the great sling's file of haulers); the same for one drawn over the engine where a member nearer the
+    // camera that's drawn under it covers it on screen.
+    let order = copy(names)   // nearest the camera first, so it carries on down a file
+    insertion_sort(order) a, b: dot(sockets.get(a, float3_0), view) > dot(sockets.get(b, float3_0), view)
+    for(order) name:
+        if front.get(name, 0) == 1:
+            let sn = sockets.get(name, float3_0)
+            let d = dot(sn, view)
+            let sc = float2 { dot(sn, right), dot(sn, up) }
+            for(names) other:
+                let so3 = sockets.get(other, float3_0)
+                let so = float2 { dot(so3, right), dot(so3, up) }
+                if front.get(other, 0) == 0 and dot(so3, view) > d and (has_s(apart, name) or (abs(so.x - sc.x) < MEMBER_HALF.x * 2.0 and abs(so.y - sc.y) < MEMBER_COLUMN[MEMBER_COLUMN.length - 1])):
+                    front.set(name, 0)
+    let out = jobj()
+    for(names) name: set(out, name, jbool(front.get(name, 0) == 1))
+    return out
+
 // A facing's rig (part_baker.gd _rig).
 def bake_rig(s:Spec, k:int) -> JV:
     let cx, cy, view = bake_camera(k)
-    def to2d(p:float3) -> float2: return float2 { dot(p, cx), -dot(p, cy) }
+    def to2d(p:float3) -> float2: return float2 { dot(p, cx), -dot(p, cy) } * bake_fit
     let flat = normalize(float3 { view.x, 0.0, view.z })
     let r = jobj()
     let socks = jobj()
@@ -183,6 +249,8 @@ def bake_rig(s:Spec, k:int) -> JV:
         set(depth, name, jnum(dot(p, flat)))
     set(r, "sockets", socks)
     set(r, "depth", depth)
+    let members = filter(sorted_strs(s.sockets.get_keys())) n: (starts_with(n, "crew") or starts_with(n, "haul")) and not ends_with(n, "_in") and not ends_with(n, "_top")
+    if members.length: set(r, "front", members_front(s.node, s.sockets, members, view))
     set(r, "dir", jv2(normalize(to2d(float3 { 20.0, 0.0, 0.0 }))))
     if s.anchors.length:
         let hips = []::JV
@@ -275,9 +343,10 @@ def bake_model_part_now(id:string, full:string, c:Colours) -> bool:
     let built = build_model(id, c)
     if not built: return false
     let s = built
-    if not has_mesh(s.node): return false   // (a model with nothing in it, a harness off its wearer: nothing to bake)
     var hide = []::BakeTri
     var model = s.node
+    var own = s.node                 // the part's own model (Godot's `model`, measured in its own frame)
+    var wearer:MNode? = nil          // the body that cuts or wears it
     var pivot = float3_0
     var join = float3_0              // a seam: where a neck runs into its head, and how far round it reaches
     var join_r = 0.0
@@ -292,6 +361,7 @@ def bake_model_part_now(id:string, full:string, c:Colours) -> bool:
         if not body: return false
         let b = body
         hide = model_tris(b.node)
+        wearer = b.node
         let wrap = mnode()
         add_child(wrap, model)
         if at == "head":
@@ -312,9 +382,11 @@ def bake_model_part_now(id:string, full:string, c:Colours) -> bool:
         if not body: return false
         let b = body
         hide = model_tris(b.node)
+        wearer = b.node
         let f = fitted(id.substring(0, tilde), after, c)
         if f:
             model = f.node
+            own = f.node
         else:
             let ts = b.nums.get("torso_scale", float3 { 1.0, 1.0, 0.0 })
             let wrap = mnode()
@@ -324,6 +396,7 @@ def bake_model_part_now(id:string, full:string, c:Colours) -> bool:
             wrap.rot = float3 { 0.0, 0.0, b.nums.get("torso_tilt", float3_0).x }
             model = wrap
         s.sockets = dictionary<string, float3>(3)
+    if not has_mesh(model): return false   // (a model with nothing in it, a harness off its wearer: nothing to bake)
     let seam_head = s.strs.get("seam_head")
     if seam_head and tilde < 0:
         // a body whose neck runs into its head: the head in place hides it, and they join without a line
@@ -348,12 +421,28 @@ def bake_model_part_now(id:string, full:string, c:Colours) -> bool:
         for(boxes) b:
             if b[0].x <= seat.x and b[1].x >= seat.x and b[0].z <= 0.0 and b[1].z >= 0.0: low = min(low, b[0].y)
         s.sockets.set("girth", float3 { seat.x, low, 0.0 })
+    // Rendered as Godot's bake viewport is: a whole number of pixels across a square round the model, its wearer and its
+    // near arm, so each part comes out a little larger than the art scale (by up to a pixel over its frame) and its rig
+    // with it (part_baker.gd: size = ceil(2 r px), cam.size = 2 r).
+    var blo = float3_1 * 1000000000.0
+    var bhi = float3_1 * -1000000000.0
+    let measured = [own]
+    let wn = wearer
+    if wn: measured.push(wn)
+    if front: measured.push(front)
+    for(measured) n:
+        let lo, hi = local_box(n)
+        blo = min(blo, lo)
+        bhi = max(bhi, hi)
+    let bpx = BAKE_ART * float(BAKE_SS)
+    let br = if bhi.x >= blo.x: magnitude(bhi - blo) * 0.5 + 2.0 else: 2.0
+    bake_fit = ceiling(2.0 * br * bpx) / (2.0 * br * bpx)
     for(BAKE_FACINGS) k:
         let suffix = facing_suffix(k)
         let sprite0, w0, h0, origin0 = bake_facing(tris, k, hide, join, join_r)
         // the origin is the pivot (a cut part's hip or neck) on the sprite
         let cx, cy, _view = bake_camera(k)
-        let o0 = origin0 + float2 { dot(pivot, cx), -dot(pivot, cy) } * BAKE_ART
+        let o0 = origin0 + float2 { dot(pivot, cx), -dot(pivot, cy) } * BAKE_ART * bake_fit
         let sprite, w, h, origin = crop_sprite(sprite0, w0, h0, o0)
         keep_sprite(full + suffix, sprite, w, h, origin)
         if starts_with(id, "leg."): keep_soles(full + suffix, sprite, w, h, origin)
@@ -368,4 +457,24 @@ def bake_model_part_now(id:string, full:string, c:Colours) -> bool:
         set(rigs, rig_id, r)
         cache_lines.push("rig {rig_id} " + stringify(r))
         baked_here++
+    bake_fit = 1.0
     return true
+
+// A model's meshes' box in its own frame (its own transform left out, as part_baker.gd _aabb).
+def local_box(n:MNode) -> float3, float3:
+    let boxes = []::[float3]
+    let mesh = n.mesh
+    if mesh and mesh.p.length:
+        var lo = mesh.p[0]
+        var hi = mesh.p[0]
+        for(mesh.p) p:
+            lo = min(lo, p)
+            hi = max(hi, p)
+        boxes.push([lo, hi])
+    for(n.kids) kid: mesh_boxes(kid, XF_ID, boxes)
+    var lo = float3_1 * 1000000000.0
+    var hi = float3_1 * -1000000000.0
+    for(boxes) b:
+        lo = min(lo, b[0])
+        hi = max(hi, b[1])
+    return lo, hi

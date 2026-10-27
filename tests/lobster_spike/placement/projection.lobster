@@ -79,6 +79,7 @@ def clear_pixel_caches():
 
 // ---- the composed parts
 
+
 let XF_ID2 = [1.0, 0.0, 0.0, 1.0, 0.0, 0.0]   // (the 2D transforms' identity)
 
 class P2:
@@ -516,14 +517,16 @@ def check_model(v:UV, parts:[P2], rg:string, body:int, label:string, view:string
                 let flat = float3 { cam[2].x, 0.0, cam[2].z }
                 let near = piece.hip.z * flat.z > 0.0 and dot(piece.joint, flat) > 0.0
                 // (in sight: the 3D truth shows this leg's own pixels at its foot)
-                var seen = false
+                var shown = 0
                 let at_ = int2 { int(round(sole.x * BAKE_ART)), int(round(sole.y * BAKE_ART)) }
                 if i < gt.feet.length:
                     for(2 * FOOT_PX + 1) dx:
                         for(2 * FOOT_PX + 2) dy:
-                            seen = seen or vhas(gt.feet[i], ckey(at_.x + dx - FOOT_PX, at_.y + dy - FOOT_PX - 1))
+                            if vhas(gt.feet[i], ckey(at_.x + dx - FOOT_PX, at_.y + dy - FOOT_PX - 1)): shown++
+                let seen = shown > 0
                 if near: note("B5 a near foot in sight", label, view, not seen, "{rg} {leg.node.part_id} foot hidden by its own body in 3D")
-                if near or seen:
+                // (a far leg's one-pixel sliver at the body's edge is where this CPU truth and Godot's GPU one round apart)
+                if near or shown > 1:
                     note("B5 standing feet on the ground", label, view, abs(got - want_px) > float(FOOT_PX),
                          "{rg} {leg.node.part_id} lowest pixel {int(got)}, its ground point {int(round(want_px))}")
     stand.set(rg, lows)

@@ -599,7 +599,7 @@ def check_corpse(label:string, r:JV):
 
 // A siege engine's crew sockets: on the ground (or on the deck for those riding on top), and the crew member put
 // there not cut through the engine; then the composite rules (placement/composite.lobster).
-def check_engine(label:string, r:JV):
+def check_engine(label:string, r:JV) -> void:
     let colours = colours_for(rstr(r, "skin"), rstr(r, "family"), float3 { 1.0, 0.0, 1.0 })
     let es = rig_spec(rstr(r, "body"), colours)
     if not es: return

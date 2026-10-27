@@ -269,6 +269,24 @@ the Lobster code moves out of `tests/lobster_spike/` to the repo root, and the b
 - the concept-sheet tool (`tests/sheet.gd` from a sheet spec) in Lobster, so new art stays concept-first;
 - the parity checks retired with Godot (their GDScript side goes), the docs and CLAUDE.md rewritten for Lobster.
 
+The sheet tool in Lobster (2026-10-27): `tests/lobster_spike/sheet.sh tests/sheets/<spec>.json <out dir>` (sheet.lobster)
+reads the same specs and writes the same sheets through the Lobster composer and bakes; cat_mount, bears_b1, heroes_h1 and
+line_lineup drawn beside Godot's with the same rows, columns and poses. Each row goes through the Lobster placement
+check (`sheet_row_check`: both halves, each distinct unit once, expected failures honoured; rat_push_home: 4 rows, the
+one expected to fail A3 does); corpse columns aren't drawn yet.
+
+The placement check in Lobster (2026-10-27): `lobster placement_check.lobster -- [filter] [3d|2d]` (placement/), with
+`parity` / `parity2d` against Godot's dumps. 3D: the 1316 cases the same as Godot's, its fixtures all caught. 2D on the
+rats (46 units, 722 rules): one rule differs from Godot's, the sitting cat mount's hind paw in facing 5 (3 px over its
+ground point; Godot's 2, at the limit). Found on the way and fixed in the game: the trade cart's draught harness never
+baked (an empty-model guard ran before the harness was fitted to its beast); engines' crews drawn on the wrong side of
+the engine (the bake never worked out which members stand in front: part_baker.gd `_members_front`, ported); parts baked
+at the exact art scale where Godot's whole-pixel viewport makes each a little larger, rigs with them (now as Godot's:
+the beetle's seat and girth to 1e-5). The check: crews drawn at the creature's draw_scale (rats and frogs a fifth
+smaller on foot, Lobster only); composing repeats until nothing new is baked (results no longer hang on unit order); a
+far foot's one-pixel sliver in the CPU truth no longer counts as in sight. bake_cache.sh empties the bake cache when
+BAKE_VERSION changes.
+
 ## Results
 
 - 2026-10-26 (6b and on): the ground shader and composed rats (`archive/images/2026-10-26/05-...`), moonbears typed into
