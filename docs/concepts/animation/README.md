@@ -97,3 +97,15 @@ crossbow up, riders and crew in a box keep their bodies still. Placement: every 
 
 Next: the head as its own posed part and A's timing in the composer (the head bobbing a beat late, anticipation and a
 contact hold in the blow), then the other creatures one by one.
+
+## The head and the blow's timing (2026-10-28)
+
+The head is its own part in the composer: walking, it (and what it wears) bobs a beat behind the body's stride
+(`UnitView.HEAD_NOD`, on whole pixels when stepped). A blow now takes 0.5 s (`BLOW_TIME`, was 0.35): the body sits back a
+little as the weapon winds up and holds there a moment, drives into the blow, holds at contact, then settles
+(`UnitView._blow_lunge`); the head dips into it a little after the body. A spear is drawn back, driven out, held at full
+stretch, then carried again. Every creature gets this timing (A's timing on top of B, D-179). Placement: rats, romans,
+frogs, bears, spiders, beetles and heroes in 2D, the rat sheet's rows.
+
+![the cheesehammer rat's blow, facing the camera](16-rat-b-blow-timing.gif)
+![the blow's frames: rest, wound up, driven, contact, contact, recovering](17-rat-b-blow-frames.png)
