@@ -3791,7 +3791,7 @@ func _test_formation(gen) -> void:
 ## them, healers at the back, and the riders on both flanks, outside the centre's width; it settles
 ## without overlaps and holds still.
 func _test_role_formation(gen) -> void:
-	var race: Dictionary = gen.generate(PROMPTS[0], rules_)
+	var race: Dictionary = gen.generate("romans", rules_)   # foot archers, a lancer on a pony (the swamp frogs' large is a giant since D-180's draws)
 	var w := _bare_world([race, race])
 	var spears := _spawn_n(w, "spear", 12, 12000, 14000)
 	var archers := _spawn_n(w, "archer", 8, 12000, 16000)
@@ -4161,7 +4161,7 @@ func _test_crossing(races: Array, map_id: String, engines := false) -> void:
 		var near := w.units.arrive[i] * World.SETTLE_FACTOR + 1000
 		if Fixed.dist2(w.units.x[i], w.units.y[i], w.units.tx[i], w.units.ty[i]) > near * near:
 			far += 1
-			print("  far: #%d at %d,%d target %d,%d arrive %d group %d stuck %d" % [w.units.id[i], w.units.x[i], w.units.y[i], w.units.tx[i], w.units.ty[i], w.units.arrive[i], w.units.group[i], w.units.stuck[i]])
+			print("  far: #%d %s at %d,%d target %d,%d arrive %d group %d stuck %d" % [w.units.id[i], w.types[w.units.kind[i]].slot, w.units.x[i], w.units.y[i], w.units.tx[i], w.units.ty[i], w.units.arrive[i], w.units.group[i], w.units.stuck[i]])
 	check(settled > 0, "%s: all %d units settle within %d ticks" % [map_id, ids.size(), CROSS_LIMIT])
 	check(gave_up == 0, "%s: nobody gives up stuck (%d did)" % [map_id, gave_up])
 	check(far == 0, "%s: everyone ends near their own target (%d far)" % [map_id, far])
