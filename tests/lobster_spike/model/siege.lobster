@@ -2067,6 +2067,7 @@ def build_siege(base:string, c:Colours) -> Spec?:
         if tokenize(base, ".", "").length != 3: return nil
         return siege_engine(base, c)
     switch base:
+        case "harness.draught": return spec_of(mnode())   // (no model off its wearer: always fitted on the beast, harness_fitted)
         case "leg.beast_elephant": return leg_beast_elephant()
         case "leg.beast_boar": return boar_leg_posed(true)
         case "leg.beast_boar_hind": return boar_leg_posed(false)

@@ -177,6 +177,15 @@ class UV:
     hop_bias_for = -1
     hop_bias_v = 0.0
 
+// Whether a part has a hand-built model (UnitModelsCheck.has): the pack's list says so; with no pack, the models do
+// (asked once a part).
+def is_modelled(id:string) -> bool:
+    let known = modelled.get(id, -1)
+    if known >= 0 or modelled_listed: return known == 1
+    let has = build_model(id, colours_for("rat_grey", "sewer", float3_1)) != nil
+    modelled.set(id, if has: 1 else: 0)
+    return has
+
 def ptags_of(id:string) -> [string]: return gstrs(part(id), "tags")
 def pshapes_of(id:string) -> [JV]: return glist(part(id), "shapes")
 def jstr_hash(s:string) -> int:   // Godot's String.hash (djb2 over the characters)
@@ -524,7 +533,7 @@ def attach(v:UV, rg:Rig, slot:string, part_id:string, colours:Colours) -> void:
     if not shas(rg.sockets, socket): return
     let sp = sget(rg.sockets, socket, float2_0)
     let node = uv_part(v, part_id + slung, glist(p, "shapes"), colours)
-    let worn = slot == "torso" and modelled.get(rg.body, 0) == 1 and modelled.get(part_id, 0) == 1
+    let worn = slot == "torso" and is_modelled(rg.body) and is_modelled(part_id)   // (the body's model, not its bake)
     if worn: node.part_id = part_id + "~" + rg.body
     node.pos = if worn: float2_0 else: sp
     if withers:

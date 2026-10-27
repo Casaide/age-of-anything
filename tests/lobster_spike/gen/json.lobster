@@ -63,6 +63,7 @@ def get(o:JV, k:string) -> JV?:
 
 def at(o:JV, k:string) -> JV:
     let n = key_at(o, k)
+    if n < 0: print "no key \"{k}\" in {o.keys}"   // (which, before the assertion stops it)
     assert n >= 0
     return o.a[n]
 

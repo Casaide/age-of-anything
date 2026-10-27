@@ -14,6 +14,7 @@ var bake_soles = dictionary<string, [float2]>(1023)
 var bake_spans = dictionary<string, [float2]>(1023)
 var rigs = jobj()
 var modelled = dictionary<string, int>(511)
+var modelled_listed = false        // (a pack's index lists every modelled part: then what it leaves out has none)
 let TEAM_KEY_HEX = "ff00ff"
 
 def ffloat(s:string) -> float:
@@ -28,7 +29,9 @@ def load_part_data(dir:string):
                 case "bake": bakes.set(t[1], Bake { ffloat(t[2]), ffloat(t[3]), ffloat(t[4]) })
                 case "soles": bake_soles.set(t[1], map((t.length - 2) / 2) n: float2 { ffloat(t[2 + n * 2]), ffloat(t[3 + n * 2]) })
                 case "span": bake_spans.set(t[1], [float2 { ffloat(t[2]), ffloat(t[3]) }, float2 { ffloat(t[4]), ffloat(t[5]) }])
-                case "modelled": modelled.set(t[1], 1)
+                case "modelled":
+                    modelled.set(t[1], 1)
+                    modelled_listed = true
                 default: pass()
     rigs = load_json(dir + "/rigs.json")
     let kit = read_file(dir + "/kit_parts.json")

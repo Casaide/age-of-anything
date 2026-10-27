@@ -44,6 +44,7 @@ import gen.sha256
 import gen.rng
 import gen.datalib
 import gen.identity
+import gen.mods
 import gen.pricing
 import gen.heroes
 import gen.generator

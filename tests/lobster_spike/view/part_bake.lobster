@@ -9,8 +9,11 @@
 
 // How a leg model sits at its hip (anchor [hip, phase, side, flip, hind, fan]): a far-side leg mirrored across
 // the body, a flipped rear leg mirrored fore and aft, turned out by its fan.
+var mirror_legs = true   // (the placement check's fixtures turn it off to show the newt as it was)
+
 def leg_basis(a:Anchor, cut:bool) -> Basis:
     let flip = a.more.length > 0 and int(a.more[0]) == 1
+    if not mirror_legs: return BASIS_ID
     if not cut: return if flip: bscaled(BASIS_ID, float3 { -1.0, 1.0, 1.0 }) else: BASIS_ID
     let side = if a.pos.z < 0.0: -1.0 else: 1.0
     let fan = if a.more.length > 2: axis_angle(float3 { 0.0, 1.0, 0.0 }, a.more[2] * -side) else: BASIS_ID
@@ -69,10 +72,11 @@ def crop_sprite(sprite:string, w:int, h:int, origin:float2) -> string, int, int,
 // beast's legs in every walk step took most of a minute). BAKE_VERSION goes up when the models or the baker
 // change, so old bakes aren't reused.
 
-let BAKE_VERSION = 1
+let BAKE_VERSION = 2   // (2: Godot's full PI in the models, 2026-10-27)
 var bake_cache_dir = "bake_cache"   // (play.sh makes it; Lobster can't make a folder)
 var cache_lines = []::string        // the manifest of the part being baked
 var cache_stem = ""                 // its file names' stem ("" while not recording)
+var sprite_formats = texture_format_clamp | texture_format_nomipmap   // (the sheet tool draws them nearest: crisp close-ups)
 
 def cache_stem_of(id:string, full:string) -> string:
     return bake_cache_dir + "/" + sha256_text("{BAKE_VERSION}|{id}|{full}").substring(0, 20)
@@ -84,7 +88,7 @@ def sprite_texture(name:string, sprite:string, w:int, h:int) -> resource<texture
         let file = "{cache_stem}_{cache_lines.length}.png"
         write_file(file, bmat_png(map(sprite.length) i: sprite[i], w, h))
         cache_lines.push("sprite {name} {file} {w} {h}")
-    return gl.create_texture(rows, texture_format_clamp | texture_format_nomipmap)
+    return gl.create_texture(rows, sprite_formats)
 
 def add_frame(full:string, tex:resource<texture>, w:int, h:int, origin:float2):
     sheet_tex.push(tex)
@@ -95,7 +99,10 @@ def add_frame(full:string, tex:resource<texture>, w:int, h:int, origin:float2):
 
 // One sprite into the pack: its own sheet, a frame, its bake (origin and scale for the composer).
 def keep_sprite(full:string, sprite:string, w:int, h:int, origin:float2):
-    if w == 0: return
+    if w == 0:   // (nothing of it shows from here, a cut leg behind its body: baked all the same, as Godot keeps it, drawn as nothing)
+        bakes.set(full, Bake { origin.x, origin.y, BAKE_ART })
+        if cache_stem != "": cache_lines.push("empty {full} {origin.x} {origin.y}")
+        return
     let tex = sprite_texture(full, sprite, w, h)
     if cache_stem != "": cache_lines[cache_lines.length - 1] += " {origin.x} {origin.y}"
     add_frame(full, tex, w, h, origin)
@@ -109,9 +116,10 @@ def load_cached(id:string, full:string) -> bool:
         if t.length:
             switch t[0]:
                 case "sprite":
-                    let tex = gl.load_texture(t[2], texture_format_clamp | texture_format_nomipmap)
+                    let tex = gl.load_texture(t[2], sprite_formats)
                     if not tex: return false
                     add_frame(t[1], tex, string_to_int(t[3]), string_to_int(t[4]), float2 { string_to_float(t[5]), string_to_float(t[6]) })
+                case "empty": bakes.set(t[1], Bake { string_to_float(t[2]), string_to_float(t[3]), BAKE_ART })
                 case "soles": bake_soles.set(t[1], map((t.length - 2) / 2) n: float2 { string_to_float(t[2 + n * 2]), string_to_float(t[3 + n * 2]) })
                 case "span": bake_spans.set(t[1], [float2 { string_to_float(t[2]), string_to_float(t[3]) }, float2 { string_to_float(t[4]), string_to_float(t[5]) }])
                 case "rig": set(rigs, t[1], parse_json(line.substring(5 + t[1].length, line.length - 5 - t[1].length)))
@@ -211,10 +219,13 @@ def bake_model_part(id:string, full:string, c:Colours) -> bool:
     cache_stem = ""
     return ok
 
+def has_mesh(n:MNode) -> bool: return n.mesh != nil or exists(n.kids) k: has_mesh(k)
+
 def bake_model_part_now(id:string, full:string, c:Colours) -> bool:
     let built = build_model(id, c)
     if not built: return false
     let s = built
+    if not has_mesh(s.node): return false   // (a model with nothing in it, a harness off its wearer: nothing to bake)
     var hide = []::BakeTri
     var model = s.node
     var pivot = float3_0
