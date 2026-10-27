@@ -961,7 +961,9 @@ def run_lobby(defaults:[string]) -> [string]:
     def focus(f:int):
         field = f
         gl.set_text_input(if f < 2: prompts[f] else: address)
+    bake_what = "the races\' units"
     while gl.frame():
+        if bake_quit: return []   // (closed while their parts baked)
         music_tick("lobby", false, gl.delta_time())
         if gl.button("escape") == 1: return []
         let text, editing, cursor, sel = gl.text_input_state()
@@ -1994,6 +1996,9 @@ fatal(gl.load_materials(TERRAIN_SHADERS, true))
 fatal(gl.load_materials(BAKE_SHADERS, true))
 fatal(gl.load_materials(WORLD_SHADERS, true))
 check(gl.set_font_name("data/fonts/Droid_Sans/DroidSans.ttf"), "no font")
+bake_live = shot == "" and not selftest and not padtest   // (the window kept alive while art bakes; captures and tests bake quietly)
+for(args) a:   // cache:<folder>: the parts kept there instead of bake_cache/ ("cache:" alone: baked afresh, kept nowhere)
+    if starts_with(a, "cache:"): bake_cache_dir = a.substring(6, a.length - 6)
 zoom = 2.0 * floor(ui() + 0.5)   // two screen points an art pixel, as the game's camera
 // A pack is optional (args[0] "none", or a folder without one): its tables come from data then
 // (game/pack_data.lobster), the units are composed from their parts, and every picture is baked at the start.
@@ -2266,7 +2271,7 @@ def pause_menu():
     if item("Quit", false): quit_game = true
     ui_flush()
 
-while gl.frame() and not quit_game:
+while gl.frame() and not quit_game and not bake_quit:
     if gl.button("escape") == 1 and placing < 0 and not build_menu and not typing_race and not tree_open and not pad_wheel.length and not arming_attack and not arming_ability: menu_open = not menu_open
     if gl.button("controller_start") == 1 and not typing_race: menu_open = not menu_open
     if has_s(args, "menu") and frame_no == 2: menu_open = true   // (captures)
@@ -2283,13 +2288,16 @@ while gl.frame() and not quit_game:
     frame_no++
     if frame_no == 1:   // (inside a frame: a bake outside one leaves the window drawing nothing)
         let t0 = seconds_elapsed()
+        bake_what = "the units"
         let n = bake_missing_parts()
         print "baked {n} part facings the pack lacked, in {int((seconds_elapsed() - t0) * 1000.0)} ms"
         let t1 = seconds_elapsed()
         ak_rebake = rebake_art
+        bake_what = "the props"
         let nd = bake_doodads()
         print "baked {nd} props{if rebake_art: "" else: " the pack lacked"}, in {int((seconds_elapsed() - t1) * 1000.0)} ms"
         let t2 = seconds_elapsed()
+        bake_what = "the buildings"
         let nb = bake_buildings_for(arch_of)
         print "baked {nb} building frames{if rebake_art: "" else: " the pack lacked"}, in {int((seconds_elapsed() - t2) * 1000.0)} ms"
     if shot != "" and frame_no < 3: note("frame {frame_no} tc at {if tc0 >= 0: to_screen(iso(float(b_cx[tc0] * 1000 + 2000), float(b_cy[tc0] * 1000 + 2000))) else: float2_0} cam {cam} zoom {zoom} ws {gl.window_size()} fb {gl.framebuffer_size()} tc {tc0} draws {draws.length} W {W} H {H} first {iso(0.0, 0.0)} last {iso(float(W * 1000), float(H * 1000))}")

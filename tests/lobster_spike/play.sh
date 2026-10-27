@@ -22,4 +22,8 @@ for a in "$@"; do
 	esac
 done
 "$LOBSTER" mods_gen.lobster -- $(echo "$mods" | tr ',' ' ') | grep -v warning
-exec "$LOBSTER" $LOBSTER_FLAGS game.lobster -- "$pack" "$start" "$@"
+# (Lobster's window never takes Ctrl-C, so the script does: it stops the game.)
+"$LOBSTER" $LOBSTER_FLAGS game.lobster -- "$pack" "$start" "$@" &
+game=$!
+trap 'kill -9 $game 2>/dev/null' INT TERM
+wait $game

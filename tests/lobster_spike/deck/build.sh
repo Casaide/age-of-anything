@@ -51,7 +51,10 @@ mkdir -p bake_cache
 mods=""
 for a in "$@"; do case "$a" in mods:*) mods=${a#mods:} ;; esac; done
 ../../lobster/bin/lobster mods_gen.lobster -- $(echo "$mods" | tr ',' ' ')
-exec ../../lobster/bin/lobster game.lobster -- none lobby "$@"
+../../lobster/bin/lobster game.lobster -- none lobby "$@" &
+game=$!
+trap 'kill -9 $game 2>/dev/null' INT TERM   # (Lobster's window never takes Ctrl-C: the script stops the game)
+wait $game
 EOF
 chmod +x "$out/run.sh" "$out/lobster/bin/lobster"
 echo "== $(du -sh "$out" | cut -f1) in $out"
