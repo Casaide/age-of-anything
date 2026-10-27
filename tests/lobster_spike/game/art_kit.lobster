@@ -40,7 +40,8 @@ def split_shadow(sprite:string, w:int, h:int) -> string, string:
     return art, shade
 
 def ak_bake(name:string, model:MNode, shadow:bool, reach:float = 1.0):
-    if not ak_rebake and frame_index(name) >= 0: return
+    if bake_quit or (not ak_rebake and frame_index(name) >= 0): return
+    bake_breath()
     let sprite, w, h, anchor = world_bake(model, shadow, reach)
     if reach > 1.0:
         let art, shade = split_shadow(sprite, w, h)
