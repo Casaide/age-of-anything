@@ -91,8 +91,17 @@ func fitted(armour_id: String, body_id: String, colours: Dictionary) -> Dictiona
 	var name := "armour_%s_%s" % [kind, body_id.trim_prefix("body.")] + (HUMAN_LOOK if body_id == "body.human" else "")
 	if not FileAccess.file_exists("res://assets/models/%s.glb" % name):
 		return {}
-	var main := surf(kind, Color.WHITE, 4.0) if kind != "leather" else surf("leather", Color.WHITE, 5.0)
-	return {"node": glb(name, {kind: main, "trim": surf("leather", Color("#5a3a20"), 3.0)})}
+	var mats := {}
+	for m in ARMOUR_MATS:
+		var e: Array = ARMOUR_MATS[m]
+		mats[m] = surf(e[0], Color(e[1]), e[2]) if e[0] != "" else plain(Color(e[1]))
+	return {"node": glb(name, mats)}
+
+
+## The materials a fitted armour's .glb names (tools/blender/human_armour.py, rat_armour.py): [texture, tint, size].
+const ARMOUR_MATS := {"leather": ["leather", "#ffffff", 5.0], "trim": ["leather", "#5a3a20", 3.0], "bronze": ["bronze", "#ffffff", 4.0],
+	"iron": ["iron", "#ffffff", 3.0], "tin": ["iron", "#f2f6ff", 2.0], "brass": ["bronze", "#fff0c8", 1.2],
+	"mail": ["mail", "#ffffff", 2.5], "bark": ["bark_plate", "#ffffff", 6.0], "label": ["", "#c8a040", 0.0]}
 
 
 ## How a leg model sits at its hip (anchor [hip, phase, side, flip, hind]). Legs are modelled for

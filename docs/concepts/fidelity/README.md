@@ -136,3 +136,20 @@ placement check.
 
 **Recommendation:** rat A and frog A, the heroic takes, to stand with the heroic humans; B's realism reads as
 vermin, not soldiers. Dominic picks.
+
+
+## Rat armour (round RA1, 2026-10-27)
+
+Dominic (via the Lobster game): a brown band round the middle of the age-1 rat swordsman. Only the human had armour
+fitted to its body (`armour_leather_human`, `armour_bronze_human`); every other body wore the human-sized piece scaled
+by `torso_scale`, which on the rat read as a barrel or a band. The rat as a rat is now has all seven armours it can wear
+modelled for its own trunk (`tools/blender/rat_armour.py` -> `armour_<kind>_rat.glb`, loaded by `UnitModels.fitted`,
+materials by name in `ARMOUR_MATS`): a laced leather jerkin, crimped bottle caps sewn in rows over leather, sardine-tin
+bands with a label and a rolled key, a bronze cuirass with a ridge and hanging leather strips, a mail shirt, bark plates
+lashed with crossed straps, and a lorica of iron bands with shoulder hoops. Each wraps the hunched trunk and leans with
+it. Placement: every rat case passes in 3D (2974 checks), and each row of the sheet passes in 3D and 2D.
+
+![every armour on the rat](09-rat-armour-ra1.png)
+
+Other bodies (frogs, beetles, spiders, bears, cats...) still wear the scaled human piece. Each gets its own fitted set
+when it is rebuilt, as the rat did: the frog next (frog B, D-178).
