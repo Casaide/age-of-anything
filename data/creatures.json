@@ -63,6 +63,8 @@
   "unique": "bullfrog"
  },
  "rat": {
+  "crew_back": 4,
+  "_crew_back_doc": "on an engine it stands this far back (part units) from its place, along the way it faces: hunched, its body is ahead of its hips, and a file of rats on the great sling's ropes went into each other (placement C4)",
   "war_beast": "boar",
   "voice": "rat",
   "push_home": {

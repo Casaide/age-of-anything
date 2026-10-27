@@ -437,6 +437,7 @@ func _check_model(v, parts: Array, rig: String, body: int, label: String, view: 
 	var cam := camera(k)
 	var a3: Dictionary = rig3d.unit(u.recipe, {"body_pose": v.body_pose})
 	var s: float = ArtKit.ART_SCALE * ArtKit.UNIT_SCALE * float(v.drawn_size()) / 100.0   # the legs' own grid (D-180)
+	var foot := roundi(FOOT_PX * float(v.drawn_size()) / 100.0)   # (its tolerance the same size on screen)
 	var lows := {}
 	var n := 0
 	for leg in v.legs:
@@ -473,13 +474,13 @@ func _check_model(v, parts: Array, rig: String, body: int, label: String, view: 
 		# In sight: the 3D truth shows this leg's own pixels at its foot (not some other part of it).
 		var seen := false
 		var at := Vector2i(roundi(sole.x * s), roundi(sole.y * s))
-		for dx in range(-FOOT_PX, FOOT_PX + 1):
-			for dy in range(-FOOT_PX - 1, FOOT_PX + 1):
+		for dx in range(-foot, foot + 1):
+			for dy in range(-foot - 1, foot + 1):
 				seen = seen or gt.feet.get(i, {}).has(at + Vector2i(dx, dy))
 		if near:
 			note("B5 a near foot in sight", label, view, not seen, "%s %s foot hidden by its own body in 3D" % [rig, leg.node.part_id])
 		if near or seen:
-			note("B5 standing feet on the ground", label, view, absf(got - want_px) > FOOT_PX,
+			note("B5 standing feet on the ground", label, view, absf(got - want_px) > foot,
 				"%s %s lowest pixel %d, its ground point %d" % [rig, leg.node.part_id, int(got), int(roundf(want_px))])
 	stand[rig] = lows
 
@@ -722,10 +723,7 @@ func _check_crew(v, label: String, view: String) -> void:
 		engine = engine.get_parent()
 	var rig: Dictionary = PartShape.rigs.get(v.recipe.body + PartShape.facing_suffix(v.facing_k), {})
 	for c in v.crew:
-		var name := ""
-		for s in rig.get("sockets", {}):
-			if (s.begins_with("crew") or s.begins_with("haul")) and rig.sockets[s].distance_to(c.view.position) < 0.01:
-				name = s   # (a hauling beast's too: a trade cart's pony, UnitView._build_engine)
+		var name: String = c.socket   # (a hauling beast's too: a trade cart's pony, UnitView._build_engine)
 		var over: bool = c.view.get_index() > engine.get_index()
 		var want: bool = rig.get("front", {}).get(name, float(rig.depth[name]) > 0.0)   # (which is in front where they overlap: part_baker._members_front)
 		if name.ends_with("_in"):
