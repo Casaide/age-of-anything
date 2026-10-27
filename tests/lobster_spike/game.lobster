@@ -1249,6 +1249,17 @@ def box_select(a:float2, b:float2):
 
 var arming_attack = false       // the Attack-move button (or R): the next left click is where
 var arming_ability = false      // the race's ability button: the next left click is where
+var pad_lb_held = false         // LB held on a pad (game/pad.lobster): orders queue, A adds to the selection
+
+// The armed order (attack-move or the race's ability) given at m.
+def give_armed(m:float2):
+    if arming_attack: order(m, true)
+    else:
+        let mm = mouse_milli()
+        issue_cmd(ME, CMD_ABILITY, selected_units(), int(mm.x), int(mm.y), 0, 0)
+        say(ME, "ack")
+    arming_attack = false
+    arming_ability = false
 
 // The map bridge whose deck covers cell c, or -1.
 def bridge_on(c:int) -> int:
@@ -1268,7 +1279,7 @@ def order(m:float2, attack_move:bool = false):
     let x = int(mm.x)
     let y = int(mm.y)
     if x < 0 or y < 0 or x >= W * TILE or y >= H * TILE: return
-    let q = if gl.button("left shift") >= 1 or gl.button("controller_leftshoulder") >= 1: 1 else: 0   // (shift, or LB held on a pad: queued)
+    let q = if gl.button("left shift") >= 1 or pad_lb_held: 1 else: 0   // (shift, or LB held on a pad: queued)
     if sel_building != 0 and not selected.length:
         issue_cmd(ME, CMD_RALLY, []::int, sel_building, x, y, 0)
         return
@@ -1438,13 +1449,7 @@ def mouse():
     let m = mouse_px()
     if arming_attack or arming_ability:   // the armed order goes where the next left click is
         if gl.button("mouse1") == 1:
-            if arming_attack: order(m, true)
-            else:
-                let mm = mouse_milli()
-                issue_cmd(ME, CMD_ABILITY, selected_units(), int(mm.x), int(mm.y), 0, 0)
-                say(ME, "ack")
-            arming_attack = false
-            arming_ability = false
+            give_armed(m)
             return
         if gl.button("mouse3") == 1 or gl.button("escape") == 1:
             arming_attack = false
@@ -1941,9 +1946,30 @@ def pad_script() -> PadIn:
         return none
     if pad_step == 13:
         expect_ok(selected.length > 0 and selected.length == (filter(groups.get(0, [])) id: index_of(id) >= 0).length, "a tap on d-pad left brings group 1 back ({selected.length})")
+        for(t_slot.length) k:   // (a soldier by the workers, so there's more than one kind to cycle)
+            if t_player[k] == ME and not t_worker[k] and t_animal[k] == 0 and t_trader[k] == 0 and t_healer[k] == 0 and pad_step == 13:
+                mode_put(ME, k, start_x[ME] + 4000, start_y[ME] + 4000)
+                pad_step = 69
+        selected = map(filter(u_id.length) i: u_owner[i] == ME and t_animal[u_kind[i]] == 0) i: u_id[i]
+        pad_step = 70
+        return PadIn { none.axes, ["leftshoulder"] }
+    if pad_step == 70:   // (LB let go: a tap)
+        pad_step++
+        return none
+    if pad_step == 71:
+        let kinds = []::int
+        for(selected_units()) id:
+            if not contains(kinds, u_kind[index_of(id)]): kinds.push(u_kind[index_of(id)])
+        expect_ok(kinds.length == 1 and selected.length < pad_cycle_all.length, "a tap on LB keeps one kind of the selection ({selected.length} of {pad_cycle_all.length})")
+        selected = filter(pad_cycle_all) id: index_of(id) >= 0
+        arming_attack = true
+        pad_step++
+        return PadIn { none.axes, ["a"] }
+    if pad_step == 72:
+        expect_ok(not arming_attack, "A gives the armed attack-move")
         let mine = filter(u_id.length) i: u_owner[i] == ME and t_animal[u_kind[i]] == 0
         cam = iso(float(fold(mine, 0) acc, i: acc + u_x[i]) / float(mine.length), float(fold(mine, 0) acc, i: acc + u_y[i]) / float(mine.length))
-        pad_step++
+        pad_step = 14
         return PadIn { none.axes, ["rightshoulder"] }
     if pad_step == 14:
         pad_step++
@@ -2355,3 +2381,4 @@ while gl.frame() and not quit_game:
         gl.screenshot(shot)
         print "shot {shot} at {clock_s} s, tick {tick}; sim {step_time * 1000.0 / max(1, steps)} ms a tick; cam {cam} zoom {zoom} ws {gl.window_size()} fb {gl.framebuffer_size()}"
         return
+

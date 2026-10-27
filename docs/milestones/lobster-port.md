@@ -104,7 +104,7 @@ SURRENDER, the bots' walls and abilities.
       for the mouse (left stick pans, right stick nudges), A taps to select, held a circle sweeps, on what's
       selected the wheel (train, research, age up; build); X smart order, Y attack-move, B back, RB soldiers on
       screen, LT / RT zoom, the d-pad an idle worker, the Town Center, groups 1 and 2. Last input wins.
-      `padtest`: a fake pad plays (7 checks). Since: the wheel's pages (LB turns them), menus by the pad's focus, a Deck build. Not yet: LB's queue and cycling kinds, Steam Input's layout.
+      `padtest`: a fake pad plays (10 checks). Since: the wheel's pages (LB turns them), menus by the pad's focus, a Deck build, and LB as Godot's pad has it (2026-10-27: held, X and Y queue and A adds to the selection; tapped, the next kind of what's selected), A or X giving an armed order. Not yet: Steam Input's layout.
 - [x] Control groups shown (Dominic, 2026-10-26: "visible somewhere, at least as a number on the units", then "only
       when you select the group"): the group's number by each selected unit, and each group with its size under the
       top bar (`14-...`).
