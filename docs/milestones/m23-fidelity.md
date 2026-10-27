@@ -83,3 +83,16 @@ under the engine together). The rats pass 2D: 705 checks on "sewer rats", 0 fail
 **Open, 2D C4 on crewed engines (there before this change, run 2026-10-27 with and without it):** the siege tower's
 reaching crew in f2/f7 (romans, swamp frogs, winged greeks, winged frogs), the moonbears' ram (f0, f7), the spiders'
 great sling (f2), and war beast riders ordered among themselves (the rats' boar f0/f3/f4, han and swamp humans' box f3).
+
+**2026-10-27, crewed engines (step 1 of "finish up the art").** 2D C4 down from 12 units to 4. Fixed: every siege tower
+(a member nowhere against the engine goes over it with the member it stands in front of, not under with it; frogs
+stand back by their lean, creatures.json `crew_back` 3), the rats' boar (crew_back only for crew on the ground, not
+riders on top or in a box). Open, each needing a look choice or a new design rather than a tweak:
+- **The howdah's two riders (han, swamp humans, f3):** a rider's long weapon crosses behind the other's body. Tried
+  spacing (0.13-0.30 of the length), the other diagonal and side by side: every layout leaves one race failing.
+  Options for Dominic: riders hold weapons upright in the howdah; one rider; or keep it.
+- **The moonbears at the ram (f0, f7) and the spiders at the great sling (f2):** the bake decides over or under per crew
+  socket with a person-sized sample; a broad bear or a sprawled spider doesn't fit it. The real fix: the bake keeps the
+  engine's nearest depth round each socket and the composer decides with the member's own silhouette.
+Tried and dropped: sampling the engine's mesh faces instead of its boxes, a depth buffer of its faces, and comparing
+against a member's front rather than its middle (each fixed one case and broke others).

@@ -204,7 +204,10 @@ func _members_front(model: Node3D, sockets: Dictionary, names: Array, view: Vect
 		var sc := Vector2(sockets[name].dot(right), sockets[name].dot(up))
 		for other in names:
 			var so := Vector2(sockets[other].dot(right), sockets[other].dot(up))
-			if not out[other] and sockets[other].dot(view) > d and (name in apart or (absf(so.x - sc.x) < MEMBER_HALF.x * 2.0 and absf(so.y - sc.y) < MEMBER_COLUMN[-1])):
+			if not out[other] and sockets[other].dot(view) > d and other in apart and not name in apart \
+					and absf(so.x - sc.x) < MEMBER_HALF.x * 2.0 and absf(so.y - sc.y) < MEMBER_COLUMN[-1]:
+				out[other] = true   # nowhere against the engine itself: over it with the member it stands in front of (a siege tower's pusher, f7)
+			elif not out[other] and sockets[other].dot(view) > d and (name in apart or (absf(so.x - sc.x) < MEMBER_HALF.x * 2.0 and absf(so.y - sc.y) < MEMBER_COLUMN[-1])):
 				out[name] = false
 			elif not out[other] and sockets[other].dot(view) > d and _samples_meet(seen[name], seen[other]):
 				# Hunched bodies reaching into each other (rats on the great sling's ropes, a diagonal view):
