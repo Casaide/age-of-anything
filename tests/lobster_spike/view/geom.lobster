@@ -43,6 +43,48 @@ def vadd(s:Vox, q:int):
 
 def vcount(s:Vox) -> int: return s.keys.length
 
+// A map from int to int on the same scheme (2D cells to what's there), `keys` in the order they came.
+class IMap:
+    slots:[int]
+    vals:[int]
+    keys:[int]
+
+def new_imap() -> IMap: return IMap { map(64): -1, map(64): 0, [] }
+
+def islot(m:IMap, q:int) -> int:
+    let mask = m.slots.length - 1
+    var h = (q * 0x9E3779B1) & mask
+    while m.slots[h] != -1 and m.slots[h] != q: h = (h + 1) & mask
+    return h
+
+def ihas(m:IMap, q:int) -> bool: return m.slots[islot(m, q)] == q
+def iget(m:IMap, q:int, d:int) -> int:
+    let h = islot(m, q)
+    return if m.slots[h] == q: m.vals[h] else: d
+
+def iset(m:IMap, q:int, v:int):
+    let h = islot(m, q)
+    if m.slots[h] == q:
+        m.vals[h] = v
+        return
+    m.slots[h] = q
+    m.vals[h] = v
+    m.keys.push(q)
+    if m.keys.length * 2 > m.slots.length:
+        let old_s = m.slots
+        let old_v = m.vals
+        m.slots = map(old_s.length * 2): -1
+        m.vals = map(old_s.length * 2): 0
+        for(old_s) k, i:
+            if k != -1:
+                let h2 = islot(m, k)
+                m.slots[h2] = k
+                m.vals[h2] = old_v[i]
+
+// A 2D cell (art pixels) as one int, and back.
+def ckey(x:int, y:int) -> int: return (x + 8192) * 16384 + (y + 8192)
+def cunkey(q:int) -> int2: return int2 { q / 16384 - 8192, q % 16384 - 8192 }
+
 // The meshes under n (visible, not decals) with their transforms relative to n's parent space, times t; a .glb
 // mesh's surfaces (nodes sharing a `vol`) together, as Godot holds them in one mesh.
 class GMesh:

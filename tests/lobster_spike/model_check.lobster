@@ -46,7 +46,7 @@ id_load("../../data")
 let race = generate(args[1], load_rules("default"), 0)
 let r1 = at(glist(race, "units")[1], "recipe")
 let cols = colours_for(rstr(r1, "skin"), rstr(race, "family"), float3 { 1.0, 0.0, 1.0 })
-let ids = if args.length > 2: args.slice(2, -1) else: append([rstr(r1, "body"), rstr(r1, "head")], map(filter(gobj(r1, "parts").a) v: v.kind == J_STR) v: v.s)
+let ids = if args.length > 2: filter(args.slice(2, -1)) a: not starts_with(a, "stage:") else: append([rstr(r1, "body"), rstr(r1, "head")], map(filter(gobj(r1, "parts").a) v: v.kind == J_STR) v: v.s)
 
 def area(t:BakeTri) -> float: return magnitude(cross(t.p[1] - t.p[0], t.p[2] - t.p[0])) * 0.5
 
