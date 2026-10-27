@@ -38,3 +38,12 @@ sprites like pendulums, everything else frozen (the rat glides, the legionary sc
 the better way); rat B keyed in 3D, an 8-frame walk and a 6-frame thrust with anticipation and follow-through, baked
 by the game's baker, as GIFs. Options: A composer polish, B keyed limbs baked per body (recommended), C whole units
 pre-rendered (about 3 minutes a new race: too slow). Pictures `archive/images/2026-10-27/04-` to `07-anim-*`.
+
+## Frog B picked; animation B; the rat built
+
+Dominic: "and frog b" (D-178); then animation option "B yes" (D-179). The rat went in first: `tools/blender/rat.py`
+(trunk, tail, head), legs in code baked in 8 knee-bent walk steps like the cat's. The placement check found what the
+hunch broke: shields and blows into the trunk, a rider's head and hands into its mount's neck (fixed by sitting it back
+on the saddle), hanging capes into its back (rats no longer wear capes or quivers; rat heroes leave theirs off), a
+cheese-wheel hero toppling over its toes. The first "walk" sheet in facing 1 looked like it stood still: that facing
+is nearly front-on; side-on the stride shows.

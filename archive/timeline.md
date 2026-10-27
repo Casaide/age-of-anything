@@ -147,3 +147,4 @@ One line per moment worth remembering. Newest at the bottom.
 - **2026-10-27:** Milestone 23 step 2b: wool tunics, team colour on sash/hem/shield (D-175), Blender galea and scutum, banners only when asked (D-174), the walled howdah (D-176); round F2 (rats and frogs) for Dominic to pick.
 - **2026-10-27:** Rat B picked (D-177); animation study A2: today's pendulum walks vs rat B keyed in 3D (walk, thrust); options A/B/C, B recommended.
 - **2026-10-27:** D-178: frog B picked (the frogs rebuilt as frogs).
+- **2026-10-27:** D-178 frog B, D-179 animation by keyed limbs; the rat as a rat is built (Blender trunk and head, legs baked in 8 knee-bent walk steps).
