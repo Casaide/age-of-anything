@@ -1234,3 +1234,10 @@ creatures.json draw_scale 80, Dominic's call there.)
 frog is: squat on folded haunches, a forelimb planted, a wide flat head with the eyes on top, webbed feet
 (`tools/blender/concept_creatures.py` frog B is the concept), at the heroic humans' quality (milestone 23), like the rats
 (D-177). Not built yet; the animation option (study A2) is still open.
+
+**D-179, 2026-10-27: Animation goes by keyed limbs baked per body (study A2's B), with A's timing on top.** Dominic: "B
+yes". Every creature's legs are cut at the hip and baked in 8 knee-bent walk steps (as the cat's are), its arms in more
+holds (walk swing, wind-up, contact, follow-through), its tail and head as parts of their own in a few poses; the
+composer plays them as keyed cycles, with anticipation, contact holds, lag and sway in its timing. Built body by body,
+the rat first (D-177), each through the placement check. Whole-unit pre-rendered frames (C) stay for heroes or war
+beasts if ever.
