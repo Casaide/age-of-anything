@@ -177,15 +177,15 @@ static func depth_order(pc, v, label: String, view: String, k: int, u: Dictionar
 			var key := "%d>%d" % [top[c], want]
 			over[key] = over.get(key, 0) + 1
 	if pc.debug:   # the truth (left) beside the drawn composite (right), a colour per member
-		var dbg := Image.create(400, 200, false, Image.FORMAT_RGBA8)
+		var dbg := Image.create(400, 300, false, Image.FORMAT_RGBA8)
 		dbg.fill(Color.BLACK)
 		for c in truth:
-			if absi(c.x) < 100 and c.y > -150 and c.y < 50:
-				dbg.set_pixel(c.x + 100, c.y + 150, IDS[truth[c]])
+			if absi(c.x) < 100 and c.y > -250 and c.y < 50:
+				dbg.set_pixel(c.x + 100, c.y + 250, IDS[truth[c]])
 		for c in top:
-			if absi(c.x) < 100 and c.y > -150 and c.y < 50:
-				dbg.set_pixel(c.x + 300, c.y + 150, IDS[top[c]])
-		dbg.resize(1200, 600, Image.INTERPOLATE_NEAREST)
+			if absi(c.x) < 100 and c.y > -250 and c.y < 50:
+				dbg.set_pixel(c.x + 300, c.y + 250, IDS[top[c]])
+		dbg.resize(1200, 900, Image.INTERPOLATE_NEAREST)
 		dbg.save_png("/tmp/placement_c4_%s_f%d.png" % [label.replace(" ", "_").replace(":", ""), k])
 	var names := ["the engine"] + ms.map(func(m): return m.name)
 	var bad := []

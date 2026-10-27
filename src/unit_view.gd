@@ -311,7 +311,7 @@ func _build_engine(r: Dictionary, lib, team: Color, colours: Dictionary, speed: 
 		v.build(hr if hauls else cr, lib, team, speed)
 		v.position = sockets[name]
 		var back := int(lib.creatures.get(v.recipe.get("creature", ""), {}).get("crew_back", 0))
-		if back > 0:   # a hunched body stands back from its place, so it's centred on it (creatures.json crew_back)
+		if back > 0 and not top:   # on the ground, a hunched body stands back from its place, so it's centred on it (creatures.json crew_back; riding on top, it sits where it's put)
 			var mr: Dictionary = PartShape.rigs.get(v.recipe.body + PartShape.facing_suffix(face), {})
 			v.position -= mr.get("ahead", Vector2.ZERO) * float(back) * v.unit_scale
 		v.set_meta("z", z + n * 0.01)   # the same layer: nearest the camera last
