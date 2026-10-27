@@ -54,6 +54,7 @@ const REPLAN_EVERY := 8        # ticks between waypoint re-plans (staggered by u
 const LOOKAHEAD := 6           # field cells to look down for the furthest clear waypoint
 const DIRECT_COST := 160       # field cost under which we try a straight line to the target
 const SETTLE_FACTOR := 4       # bumping a stopped groupmate within arrive * this counts as arrived
+const SLOT_STEPS := 8          # a formation slot that isn't open steps in towards the centre in this many steps
 const STUCK_LIMIT := 60        # ticks without progress before a unit gives up (3 s)
 const PROGRESS_EVERY := 40     # ticks between net-progress checks (staggered by unit id)
 const CORRECT_MAX := 150       # milli-tiles a tick a body is eased off blocked ground (no teleports)
@@ -923,19 +924,19 @@ func _form_space(part: Array) -> int:
 
 
 ## A formation slot unit i can stand in: (px, py) if it's open ground (moved off any wall by
-## the unit's body) and a straight walk from the group's centre reaches it; else half-way in;
-## else the centre itself.
+## the unit's body) and a straight walk from the group's centre reaches it; else the first such
+## point stepping in along the line to the centre; else the centre itself. (Falling straight back
+## to the centre gave two units one spot: one never got there and gave up, the hill crossing.)
 func _slot_ok(i: int, px: int, py: int, x: int, y: int) -> Vector2i:
 	var ln := lane(i)
 	var c := _snap(x, y, ln)
-	for k in 2:
-		var p := Vector2i(clampi(px, 0, map.width * SimMap.TILE - 1), clampi(py, 0, map.height * SimMap.TILE - 1))
+	for k in SLOT_STEPS:
+		var p := Vector2i(clampi(px + (c.x - px) * k / SLOT_STEPS, 0, map.width * SimMap.TILE - 1),
+			clampi(py + (c.y - py) * k / SLOT_STEPS, 0, map.height * SimMap.TILE - 1))
 		if map.walkable(p.x, p.y, ln):
 			p = _off_walls(p.x, p.y, units.radius[i], ln)
 			if Flow.clear_line(map, c.x, c.y, p.x, p.y, ln):
 				return p
-		px = (px + c.x) / 2
-		py = (py + c.y) / 2
 	return c
 
 
