@@ -68,3 +68,8 @@ then rats and frogs.
 asked (D-174), the walled howdah (D-176). 3D placement before the last scutum change: 26195 checks, 2 failed; both
 fixed but one: **open: the "gear: spider infantry with shield.scutum" fixture, the board 42 voxels into the spider's
 back gear (34 allowed)**. Round F2 (rats and frogs) waits on Dominic's pick.
+
+**2026-10-27, the rat (D-177, D-179).** Built with keyed legs (8 walk steps). 3D placement passes for every rat case.
+Open, 2D at 2x on the rats: 10 failures (C4 draw order on rat-crewed ram, siege tower and great sling in one facing each;
+a banner in front in facing 7; a scutum over the face in facing 0) and 4 fixtures no longer caught (hummingbird wings,
+frog's hidden sword, centaur kneel, TC1 rat and cat). Frog B (D-178) not started.
