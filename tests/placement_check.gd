@@ -23,6 +23,7 @@ const ProjectionCheck := preload("res://tests/placement/projection_check.gd")
 const Fixtures3D := preload("res://tests/placement/fixtures_3d.gd")
 const Fixtures2D := preload("res://tests/placement/fixtures_2d.gd")
 const GeometryRun := preload("res://tests/geometry_check.gd")
+const Par := preload("res://tests/par.gd")
 const ScriptErrors := preload("res://tests/placement/script_errors.gd")
 
 
@@ -31,7 +32,7 @@ func _initialize() -> void:
 	var args := OS.get_cmdline_user_args()
 	var filter := ""
 	for a in args:
-		if not a in ["3d", "2d", "metrics", "debug", "nofixtures"]:
+		if not a in ["3d", "2d", "metrics", "debug", "nofixtures"] and not a.begins_with("jobs="):
 			filter = a
 	var do3 := not "2d" in args
 	var do2 := not "3d" in args
@@ -43,7 +44,12 @@ func _initialize() -> void:
 	var t0 := Time.get_ticks_msec()
 	var errors = ScriptErrors.new()   # a script error inside a check is a failure, never a pass
 	OS.add_logger(errors)
-	if do3:
+	if do3 and filter == "":   # the whole roster: in shards side by side (geometry_check.gd), fixtures in the first
+		var res: Array = GeometryRun.sharded(Par.jobs_wanted(args), false)
+		checks += res[0]
+		failed += res[1]
+		fixtures_ok = fixtures_ok and res[2]
+	elif do3:
 		var g = GeometryCheck.new(lib)
 		g.metrics = true
 		var n: int = GeometryRun.run(g, cases)

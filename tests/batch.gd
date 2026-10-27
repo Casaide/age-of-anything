@@ -17,7 +17,7 @@ func _initialize() -> void:
 		_suite("run_tests", "res://tests/run_tests.gd", [], 5),
 		_suite("test_sim", "res://tests/test_sim.gd", ["jobs=%d" % mini(share, 5)], 60, mini(share, 5)),
 		_suite("test_ai quick", "res://tests/test_ai.gd", ["quick", "jobs=%d" % share], 40, share),
-		_suite("placement 3d", "res://tests/placement_check.gd", ["3d"], 45),
+		_suite("placement 3d", "res://tests/geometry_check.gd", ["jobs=%d" % share], 120, share),   # (in shards: one process took 11 minutes)
 		_suite("test_heroes", "res://tests/test_heroes.gd", [], 3),
 	]
 	if not quick:
