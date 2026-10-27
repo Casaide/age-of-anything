@@ -164,49 +164,13 @@
     "ch": "skin2"
    }
   ],
-  "sockets": {
-   "head": [
-    2,
-    -25
-   ],
-   "hand_r": [
-    7,
-    -16
-   ],
-   "hand_l": [
-    -4,
-    -17
-   ],
-   "torso": [
-    0,
-    -15
-   ],
-   "back": [
-    -6,
-    -19
-   ]
-  },
+  "sockets": {"head": [11, -23], "hand_r": [14, -16], "hand_l": [11, -18], "torso": [5, -16], "back": [3, -20]},
   "torso_scale": [
    1.0,
    1.3
   ],
-  "legs": {
-   "part": "leg.rat",
-   "anchors": [
-    [
-     -4,
-     -5,
-     0,
-     -1
-    ],
-    [
-     3,
-     -5,
-     3.14,
-     1
-    ]
-   ]
-  }
+  "legs": {"part": "leg.rat", "anchors": [[0, -11, 0, -1], [0, -11, 3.14, 1]], "poses": 8, "gait": {"swing": 0.0, "cadence": 1.0, "bob": 0.4, "rock": 0.0},
+   "_doc": "the rat as a rat is (D-177): its hips at 11, the legs baked in 8 knee-bent walk steps (D-179; leg.rat@w<i>_<n>, unit_models.gd rat_joints), not swung"}
  },
  {
   "id": "body.human",
@@ -2070,12 +2034,7 @@
  {
   "id": "head.rat",
   "slot": "head",
-  "sockets": {
-   "top": [
-    -1,
-    -9
-   ]
-  },
+  "sockets": {"top": [0, -4]},
   "shapes": [
    {
     "t": "circle",
@@ -4785,6 +4744,8 @@
  },
  {
   "id": "cape.leaf",
+  "not_worn_by": ["body.rat"],
+  "_not_worn_by_doc": "the rat as a rat is (D-177) leans 42 degrees: a hanging cape or quiver falls through its back and legs",
   "slot": "back",
   "tags": [
    "cape",
@@ -4832,7 +4793,7 @@
   "id": "cape.cloth",
   "not_ridden_on": ["pony", "beetle", "bear", "bear_black"],
   "_not_ridden_on_doc": "mounts whose riders don't wear it: a cloth cape hung through the pony's, the beetle's and the bear's back (the placement check, A3)",
-  "not_worn_by": ["body.frog", "body.beetle_rear"],
+  "not_worn_by": ["body.frog", "body.beetle_rear", "body.rat"],
   "_not_worn_by_doc": "bodies that don't wear it: it hung through a frog's haunches and a rearing beetle's wing cases (the placement check, A3, 2026-10-17); the leaf cape fits them",
   "slot": "back",
   "tags": [
@@ -4922,6 +4883,8 @@
  },
  {
   "id": "quiver",
+  "not_worn_by": ["body.rat"],
+  "_not_worn_by_doc": "the rat as a rat is (D-177) leans 42 degrees: a hanging cape or quiver falls through its back and legs",
   "slot": "back",
   "tags": [
    "quiver",
@@ -9977,6 +9940,8 @@
  },
  {
   "id": "body.cat",
+  "ridden_idle_poses": ["sit1"],
+  "_ridden_idle_poses_doc": "under a rider it only settles back a little (the rat as a rat is, D-177, leans over its shoulders: sitting further down, they rose into its hands)",
   "slot": "body",
   "noun": "Cat",
   "cut": ["legs", "head"],

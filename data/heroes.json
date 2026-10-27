@@ -362,6 +362,11 @@
       "add": 1
      }
     ]
+   },
+   "fit": {
+    "rat": {
+     "back": ""
+    }
    }
   },
   "unkillable": {
@@ -451,6 +456,9 @@
    "fit": {
     "spider": {
      "hand_r": ""
+    },
+    "rat": {
+     "back": ""
     }
    }
   },
@@ -550,6 +558,9 @@
    "fit": {
     "beetle": {
      "head_gear": "hero.helm_transverse_low"
+    },
+    "rat": {
+     "back": ""
     }
    }
   },
@@ -591,6 +602,9 @@
     },
     "spider": {
      "head_gear": "hero.lion_hood_low"
+    },
+    "rat": {
+     "back": ""
     }
    }
   },
@@ -628,6 +642,11 @@
       "add": 1
      }
     ]
+   },
+   "fit": {
+    "rat": {
+     "back": ""
+    }
    }
   },
   "wolfbrother": {
@@ -661,6 +680,9 @@
     ]
    },
    "fit": {
+    "rat": {
+     "head_gear": "hero.wolf_hat_low"
+    },
     "frog": {
      "head_gear": "hero.wolf_hat_low"
     },
@@ -1115,5 +1137,6 @@
     ]
    }
   }
- }
+ },
+ "_doc_fit_rat": "fit.rat.back '': a hanging cape, mantle or pelt (parts tagged drape) isn't worn by the rat as a rat is (D-177): it leans 42 degrees and a cape hanging straight falls into its back and legs (cloth capes: parts.json not_worn_by)"
 }

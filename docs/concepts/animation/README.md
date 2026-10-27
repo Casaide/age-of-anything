@@ -1,4 +1,4 @@
-# Animation (study A2, 2026-10-27): waiting on Dominic
+# Animation (study A2, 2026-10-27): B picked (D-179), the rat first
 
 Dominic, watching a rat bot match in the Lobster game: "we reeeally need to improve animations. watching that rat
 game was pretty lazy animations". The Lobster game composes units the way the Godot game does (its
@@ -58,3 +58,26 @@ anim`: two-bone legs placed by where each heel is, IK for the knee) and baked by
 **Recommendation: B, with A's timing.** It follows the cat's and the war beasts' baked steps, which already work in
 the game, keeps the parts kit (any creature, any gear), and costs per body type rather than per unit. C stays for
 heroes or war beasts, where one recipe is seen a lot. Rat B (D-177) would be the first body built this way.
+
+
+## Built: the rat (D-177, D-179)
+
+The rat as a rat is, in the game: the trunk, tail and head modelled in Blender (`tools/blender/rat.py`), the legs in
+code, digitigrade (thigh, shank, a long hind foot), baked in 8 walk steps with the knees bending (`UnitModels.rat_joints`,
+two-bone IK; parts.json `legs.poses: 8`, as the cat's). Placement check: every rat unit, gear, mount and hero case in 3D;
+the sheet's 2D and 3D checks on five rat rows (`tests/sheets/rat_b_play.json`).
+
+![the rats in play, 8 facings](11-rat-b-in-play-facings.png)
+![the keyed walk in play, side](12-rat-b-in-play-walk-side.gif) ![away](13-rat-b-in-play-walk-away.gif)
+
+**Not passing yet (2026-10-27):** 3D: every rat case passes (26085 checks, 1 failed: the older spider-holding-a-scutum
+fixture). 2D on the rats at 2x: 2119 checks, 10 failed: composite draw order (C4) on rat-crewed engines in one facing
+each (ram, siege tower, great sling), a banner drawn in front of the body in facing 7, a scutum over a rat's face in
+facing 0; and 4 regression fixtures no longer caught (a hummingbird's wings, the frog's hidden sword, the centaur's
+kneel, TC1's rat and cat), some from the 2x switch rather than the rat. To fix before this is shown as done.
+
+What the hunched build needed: the shield and sword hands out beside the trunk, a bow drawn higher, a rider sat back
+on its saddle (its `sit` socket: its chest over its mount's back, not its neck), a ridden cat that only half sits; no
+quiver, cloth or leaf cape (they hang straight and fall through a body leaning 42 degrees), and hero capes off rats
+(heroes.json `fit.rat.back`); a wolf-hat hero wears the low-slung hat. Next for animation: the arm holds (walk swing,
+anticipation, contact, follow-through) and the tail and head as moving parts, then A's timing in the composer.

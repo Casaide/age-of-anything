@@ -813,8 +813,9 @@ func _test_cat_poses(gen, rules: Dictionary) -> void:
 	view.walking = false
 	for f in 40:
 		view._process(0.25)
-	check(view.body_pose == "sit", "cat: sits after standing still (%s)" % view.body_pose)
-	check(view.legs.filter(func(l): return l.node.part_id.begins_with("leg.cat")).all(func(l): return l.node.part_id == l.node.part_id.get_slice("~", 0) + "~body.cat@sit^" + l.node.part_id.get_slice("^", 1) and l.node.part_id.get_slice("~", 0).ends_with("@sit")), "cat: its legs sit too (cut by the sitting body)")
+	# (ridden, it only settles back to its first sitting pose: parts.json ridden_idle_poses, D-177's rat leaning over it)
+	check(view.body_pose == "sit1", "cat: settles back after standing still, ridden (%s)" % view.body_pose)
+	check(view.legs.filter(func(l): return l.node.part_id.begins_with("leg.cat")).all(func(l): return l.node.part_id == l.node.part_id.get_slice("~", 0) + "~body.cat@sit1^" + l.node.part_id.get_slice("^", 1) and l.node.part_id.get_slice("~", 0).ends_with("@sit1")), "cat: its legs sit too (cut by the sitting body)")
 	view.walking = true
 	for f in 4:
 		view._process(0.1)

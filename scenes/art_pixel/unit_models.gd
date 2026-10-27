@@ -626,81 +626,127 @@ func slab(points: Array, thick: float, m: Material, pos := Vector3.ZERO) -> Mesh
 
 
 # ------------------------------------------------------------------ rat
+# The rat as a rat is (D-177, round F2's B; milestone 23): hunched forward on its hind legs, a long body, short arms,
+# the head carried low. The trunk, tail and head are modelled in Blender (tools/blender/rat.py); the arms here, posed
+# for what the near hand holds; the legs here too, digitigrade (thigh, shank, a long hind foot), baked in 8 walk steps
+# with the knees bending (D-179: keyed limbs, as the cat's). The rat before D-177 (a hunched blob with a fat foot) is in
+# git before 2026-10-27.
 
-static var rat_hunch := 15.0   # degrees the rat's body leans forward (the placement check's fixtures set -15: as it was)
-static var rat_torso_x := 0.8   # where worn armour sits on a rat (at 1.4 every armour sat 1.1 to 1.5 forward of the body's middle: forest rats' bark and bronze over the limit; a placement fixture puts it back)
-const RAT_BANNER_Y := 22.0
-const RAT_HAND_L := Vector3(8.3, 18.5, -4.6)   # the shield hand, up at the chest (lower, a riding rat's shield went into its mount)
+const RAT_LEAN := 42.0      # degrees the trunk leans forward from the hips (as modelled)
+static var rat_hunch := RAT_LEAN   # how far it leans as built (the placement check's fixtures set -15: leaning back, as it once did)
+static var rat_torso_x := 0.8   # where worn armour sits along it (a placement fixture sets 1.4: forward of the body, as it once sat)
+const RAT_HIP := Vector3(0.0, 11.0, 0.0)
+const RAT_HIP_Z := 2.7
+const RAT_BANNER_Y := 22.6
+const RAT_HAND_L := Vector3(11.6, 17.4, -7.6)   # the shield hand, up at the chest (lower, a riding rat's shield went into its mount)
+## The leg, from its hip: the knee forward and down, the heel up behind on the long foot, the toes forward on the ground.
+const RAT_THIGH := 5.9
+const RAT_SHANK := 6.66
+const RAT_HEEL := Vector2(-0.8, -8.4)   # (at -1.6 a rat holding a cheese wheel out front had its weight past its toes: A1)
+const RAT_FOOT := 6.2       # heel to toes
+const RAT_STRIDE := 9.0     # how far a heel travels along the ground in a step
+const RAT_STANCE := 0.55    # the share of a step a foot is down
 
 
 func _body_rat(c: Dictionary) -> Dictionary:
 	var n := Node3D.new()
-	var fur := surf("rat_fur", c.skin, 7.0)
-	var pink := surf("frog_belly", c.skin2, 6.0)
-	# Lean and hunched (Dominic: "less fat"): a narrow body tilted forward, the belly showing in front.
-	# (Forward is -15 about z: until 2026-10-13 it was +15, leaning back, so the head on its socket
-	# floated ahead of the shoulders with a gap at the neck and the body read as a lump behind it.)
-	n.add_child(blob(Vector3(5.4, 10.4, 5.0), fur, Vector3(0.2, 15, 0), Vector3(0, 0, -rat_hunch)))
-	n.add_child(blob(Vector3(3.4, 7.0, 3.6), pink, Vector3(2.6, 13.6, 0.4), Vector3(0, 0, -rat_hunch)))
-	# A long tail curling behind, thinning to a point.
-	var pts := [Vector3(-5, 7, 0), Vector3(-11, 4.5, 1.5), Vector3(-16.5, 5.5, 2.5), Vector3(-19.5, 9.5, 3.0), Vector3(-19, 14, 3.0), Vector3(-16.5, 16, 2.5)]
-	for k in range(1, pts.size()):
-		n.add_child(rod(pts[k - 1], pts[k], 1.25 - k * 0.17, 1.25 - (k + 1) * 0.17, pink))
+	var coat := {"fur": surf("rat_fur", c.skin, 7.0), "belly": surf("rat_fur", c.skin.lightened(0.25), 7.0),
+		"pink": surf("frog_belly", c.skin2, 6.0), "eye": plain(Color("#1a1210")), "tooth": plain(Color("#f4f0e0"))}
+	# The modelled trunk turns about the hips by however far rat_hunch is from how it was modelled (a fixture).
+	var lean := Node3D.new()
+	lean.position = RAT_HIP
+	lean.rotation.z = deg_to_rad(RAT_LEAN - rat_hunch)
+	n.add_child(lean)
+	var body := glb("body_rat", coat)
+	body.position = -RAT_HIP
+	lean.add_child(body)
+	var t := Transform3D(Basis(Vector3(0, 0, 1), deg_to_rad(RAT_LEAN - rat_hunch)), RAT_HIP) * Transform3D(Basis.IDENTITY, -RAT_HIP)
 	var near_hand := Vector3.ZERO
 	var front := Node3D.new()
 	for side in [1, -1]:
 		var into: Node3D = front if side == 1 else n
-		var sh := Vector3(5.6, 19.5, 4.4 * side)   # at the hunched chest's front (on the leaning-back body they sat at 3.6)
-		var elbow := Vector3(6.6, 16.5, 5.8 * side)
-		var hand := Vector3(8.6, 15.5, 4.6 * side) if side == 1 else RAT_HAND_L
+		var sh: Vector3 = t * Vector3(8.6, 19.9, 3.4 * side)
+		var elbow := Vector3(10.4, 15.7, 4.2) if side == 1 else Vector3(8.0, 15.5, -4.4)
+		var hand := Vector3(13.6, 14.8, 4.4) if side == 1 else RAT_HAND_L   # (higher, what it held met its head: A3)
 		if side == 1:
-			var pose := arm_pose(sh, elbow, hand, Vector3(4, 24.5, 0))
+			var pose := arm_pose(sh, elbow, hand, t * Vector3(11.2, 23.1, 0))
 			elbow = pose[0]
 			hand = pose[1]
+			if hold in ["raise", "reach", "follow"]:   # a blow swung out beside the hunched trunk, not across it (into worn armour: A3)
+				elbow += Vector3(1.0 if hold == "raise" else 0.0, 0, 1.2)
+				hand += Vector3(1.6 if hold == "raise" else 0.0, 0, 1.6)
+			elif hold == "draw":   # a bow drawn at the leaning shoulders' height, over a mount's forelegs (A3)
+				elbow.y += 2.0
+				hand.y += 4.0
 			near_hand = hand
-		into.add_child(rod(sh, elbow, 1.9, 1.7, fur))
-		into.add_child(rod(elbow, hand, 1.7, 1.5, fur))
-		into.add_child(blob(Vector3(1.7, 1.4, 1.7), pink, hand))
-	kerchief(front, c, Vector3(3.2, 22.2, 0), 3.0, 15)   # a small scarf at the neck (a big one read as a bib)
+		# A short arm: the upper arm from the shoulder, the forearm to a small pink hand.
+		into.add_child(rod(sh, elbow, 1.55, 1.3, coat.fur))
+		into.add_child(rod(elbow, hand, 1.3, 0.95, coat.fur))
+		into.add_child(blob(Vector3(0.95, 0.8, 0.8), coat.pink, hand))
 	return {"node": n, "front": front, "sockets": {
-		"head": Vector3(4, 24.5, 0), "hand_r": near_hand, "hand_l": RAT_HAND_L,
-		"torso": Vector3(rat_torso_x, 17.5, 0), "back": Vector3(-5.2, 19.5, 0),   # (the hunched back slopes out below: a cape at -3.6 hung into it)
-		"banner": Vector3(-4.0, RAT_BANNER_Y, 0)},   # a banner carried higher than a cape hangs (on the low back its flag flew through an acorn cap)
-		"anchors": [[Vector3(-0.5, 7.0, -3.2), 0.0, -1], [Vector3(-0.5, 7.0, 3.2), PI, 1]],   # (at 6 the hips hung under the belly, the feet a unit into the ground)
+		"head": t * Vector3(11.2, 23.1, 0), "hand_r": near_hand, "hand_l": RAT_HAND_L,
+		"torso": t * Vector3(4.1 + rat_torso_x, 16.4, 0), "back": t * Vector3(3.4, 20.1, 0),   # the middle of the hunched trunk; the top of its back
+		"banner": t * Vector3(2.8, RAT_BANNER_Y, 0),   # a banner carried higher than a cape hangs
+		"drape": t * Vector3(-0.4, 20.6, 0), "sit": RAT_HIP + Vector3(6.0, 0, 0)},   # a hero's cape from the shoulders; on a saddle it sits back, its hunched chest over its mount's back, not its neck (A3)
+		"anchors": [[RAT_HIP + Vector3(0, 0, -RAT_HIP_Z), 0.0, -1], [RAT_HIP + Vector3(0, 0, RAT_HIP_Z), PI, 1]],
 		"torso_scale": Vector2(0.58, 0.74), "torso_tilt": -rat_hunch,   # armour leans with the hunch
-		"torso_fit": Vector3(0.7, 0.76, 0.6)}   # armour (built ~1.6x) a little bigger than the body all round, so it wraps it
+		"torso_fit": Vector3(0.57, 0.57, 0.62)}   # armour (built ~1.6x) a little bigger than the trunk all round, so it wraps it
 
 
 func _head_rat(c: Dictionary) -> Dictionary:
-	var n := Node3D.new()
-	var fur := surf("rat_fur", c.skin, 6.0)
-	var pink := surf("frog_belly", c.skin2, 5.0)
-	var skull_c := Vector3(1, 4.5, 0)
-	var skull_r := Vector3(5.2, 4.8, 4.6)
-	n.add_child(blob(skull_r, fur, skull_c))
-	n.add_child(rod(Vector3(3, 4, 0), Vector3(11, 2.6, 0), 3.4, 1.1, fur))   # the snout
-	n.add_child(blob(Vector3(1.3, 1.1, 1.3), plain(Color("#e8909c")), Vector3(11.4, 2.7, 0)))
-	n.add_child(blob(Vector3(0.6, 1.0, 1.4), plain(Color("#f4f0e0")), Vector3(9.6, 0.9, 0)))   # buck teeth
-	for side in [1, -1]:
-		var look := Vector3(0.5, 0.35, 0.8 * side)
-		n.add_child(decal("rat_eye", 2.6, 2.6, on_surface(skull_c, skull_r, look, 0.1), look, false))
-		n.add_child(blob(Vector3(0.8, 4.0, 3.6), fur, Vector3(-1.2, 9.0, 3.4 * side), Vector3(0, 20 * side, -10)))
-		n.add_child(blob(Vector3(0.5, 3.0, 2.6), pink, Vector3(-0.7, 9.0, 3.6 * side), Vector3(0, 20 * side, -10)))
-		for w in 3:
-			n.add_child(rod(Vector3(9.5, 2.8, 1.2 * side), Vector3(12.5, 2.2 + w * 1.0, (3.5 + w * 0.4) * side), 0.12, 0.08, plain(Color("#3a3430")), false))
-	return {"node": n, "sockets": {"top": Vector3(0, 9.5, 0)}}
+	var coat := {"fur": surf("rat_fur", c.skin, 6.0), "belly": surf("rat_fur", c.skin.lightened(0.25), 6.0),
+		"pink": surf("frog_belly", c.skin2, 5.0), "eye": plain(Color("#1a1210")), "tooth": plain(Color("#f4f0e0"))}
+	return {"node": glb("head_rat", coat), "sockets": {"top": Vector3(0.4, 4.4, 0)}, "gear_scale": 0.63}
 
 
+## The leg in the pose `hold` names ("" standing, "w<i>_<n>" step i of an n-step walk), from the hip at the origin:
+## the heel placed (sliding back along the ground while the foot is down, lifted and swung forward the rest), the
+## knee by two-bone IK (bending forward), the foot from the heel to the toes, flat on the ground while it's down.
 func _leg_rat(c: Dictionary) -> Dictionary:
+	var j := rat_joints("" if hold == "low" else hold)
 	var n := Node3D.new()
 	var fur := surf("rat_fur", c.skin, 6.0)
 	var pink := surf("frog_belly", c.skin2, 5.0)
-	n.add_child(blob(Vector3(2.8, 3.4, 2.6), fur, Vector3(0.3, -1.8, 0)))
-	n.add_child(rod(Vector3(0.5, -3.5, 0), Vector3(0.2, -6.0, 0), 1.0, 0.8, pink))
-	n.add_child(blob(Vector3(3.0, 0.6, 1.3), pink, Vector3(2.4, -6.4, 0)))
-	for t in 3:
-		n.add_child(blob(Vector3(0.5, 0.4, 0.4), pink, Vector3(5.3, -6.5, (t - 1) * 0.8)))
+	var knee := Vector3(j.knee.x, j.knee.y, 0)
+	var heel := Vector3(j.heel.x, j.heel.y, 0)
+	var toe := Vector3(j.toe.x, j.toe.y, 0)
+	n.add_child(blob(Vector3(3.2, 3.6, 2.9), fur, Vector3(0.6, -1.4, 0)))   # the haunch
+	n.add_child(rod(Vector3(0.4, -1.0, 0), knee, 2.9, 1.9, fur))
+	n.add_child(rod(knee, heel, 1.8, 1.05, fur))
+	n.add_child(rod(heel, heel.lerp(toe, 0.7), 0.95, 0.7, pink))
+	for t in 3:   # three toes, splayed
+		n.add_child(rod(heel.lerp(toe, 0.65), toe + Vector3(0.3, 0, (t - 1) * 0.85), 0.42, 0.32, pink))
 	return {"node": n}
+
+
+## Where a rat's leg's joints are in a pose (2D, the hip at the origin, up +y; the ground at -RAT_HIP.y).
+static func rat_joints(pose: String) -> Dictionary:
+	var ground := -RAT_HIP.y
+	var heel := RAT_HEEL
+	var lift := 0.0
+	if pose.begins_with("w"):
+		var nums := pose.substr(1).split("_")
+		var p := float(nums[0]) / float(nums[1])
+		if p < RAT_STANCE:
+			heel.x += RAT_STRIDE * (0.5 - p / RAT_STANCE)
+		else:
+			var q := (p - RAT_STANCE) / (1.0 - RAT_STANCE)
+			heel.x += RAT_STRIDE * (smoothstep(0.0, 1.0, q) - 0.5)
+			lift = 3.2 * sin(q * PI)
+	heel.y += lift
+	var toe := Vector2(heel.x + RAT_FOOT, ground + 0.35 + lift * 0.45)   # a lifted foot hangs, toes down
+	if lift == 0.0:
+		toe.y = ground + 0.35
+	return {"knee": ik2(heel, RAT_THIGH, RAT_SHANK, true), "heel": heel, "toe": toe}
+
+
+## Two-bone IK in 2D from the origin to `end`: the middle joint, on the forward side (+x) or the back.
+static func ik2(end: Vector2, l1: float, l2: float, forward: bool) -> Vector2:
+	var d := minf(end.length(), l1 + l2 - 0.01)
+	var a := acos(clampf((l1 * l1 + d * d - l2 * l2) / (2.0 * l1 * d), -1.0, 1.0))
+	var one := Vector2.from_angle(end.angle() + a) * l1
+	var two := Vector2.from_angle(end.angle() - a) * l1
+	return (one if one.x > two.x else two) if forward else (two if one.x > two.x else one)
 
 
 func _tool_axe(c: Dictionary) -> Dictionary:
