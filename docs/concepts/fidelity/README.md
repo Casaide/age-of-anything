@@ -1,7 +1,7 @@
 # Unit fidelity (rounds F1 and F2, 2026-10-26/27)
 
-**F1 picked** (D-173): the heroic 5.5-head build at 2x, built in milestone 23. **F2 (rats and frogs) waiting on
-Dominic**: see the end.
+**F1 picked** (D-173): the heroic 5.5-head build at 2x, built in milestone 23. **F2: rat B picked** (D-177, Dominic:
+"rat b looks great"); the frogs' take still open.
 
 Dominic, 2026-10-26: "please focus on fidelity. I want to see if we can get our units looking much better
 and more realistic. They are simple and cartoony atm". Earlier the same day: "unit and building fidelity is a
