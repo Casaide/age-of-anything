@@ -47,7 +47,7 @@ cat > "$out/run.sh" <<'EOF'
 # Age of Anything (the Lobster port): the lobby, with no pack (every picture baked by the game itself, the parts
 # kept in bake_cache/ after the first start). Extra words go to the game (watch, host, join:<ip>, mods:<id>...).
 cd "$(dirname "$0")/tests/lobster_spike"
-mkdir -p bake_cache
+. ./bake_cache.sh
 mods=""
 for a in "$@"; do case "$a" in mods:*) mods=${a#mods:} ;; esac; done
 ../../lobster/bin/lobster mods_gen.lobster -- $(echo "$mods" | tr ',' ' ')
