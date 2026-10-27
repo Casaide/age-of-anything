@@ -655,6 +655,9 @@ const RAT_HEEL := Vector2(-0.8, -8.4)   # (at -1.6 a rat holding a cheese wheel 
 const RAT_FOOT := 6.2       # heel to toes
 const RAT_STRIDE := 9.0     # how far a heel travels along the ground in a step
 const RAT_STANCE := 0.55    # the share of a step a foot is down
+const RAT_SWING := 2.6      # how far the near hand swings forward and back walking (D-179)
+const RAT_SWING_FAR := 1.0  # the far (shield) hand
+const RAT_TAIL_SWEEP := 14.0   # degrees the tail sweeps to each side walking
 
 
 func _body_rat(c: Dictionary) -> Dictionary:
@@ -670,7 +673,17 @@ func _body_rat(c: Dictionary) -> Dictionary:
 	body.position = -RAT_HIP
 	lean.add_child(body)
 	var t := Transform3D(Basis(Vector3(0, 0, 1), deg_to_rad(RAT_LEAN - rat_hunch)), RAT_HIP) * Transform3D(Basis.IDENTITY, -RAT_HIP)
+	# Walking ("w<i>_<n>", D-179): the arms swing against the legs (the near one, with what it holds, the most; the
+	# far one with its shield a little), the tail sweeps from side to side a beat behind the hips.
+	var step := walk_step(hold)
+	var swing := cos(TAU * step) if step >= 0.0 else 0.0
+	if step >= 0.0:
+		var tail: Node3D = body.find_child("tail", true, false)
+		var root := Vector3(-2.6, 9.8, 0.0)   # where it leaves the haunch (tools/blender/rat.py)
+		var sweep := Basis(Vector3.UP, deg_to_rad(RAT_TAIL_SWEEP) * sin(TAU * (step - 0.2)))
+		tail.transform = Transform3D(sweep, root - sweep * root) * tail.transform
 	var near_hand := Vector3.ZERO
+	var far_hand := RAT_HAND_L + Vector3(-RAT_SWING_FAR * swing, 0.3 * swing * swing, 0.0)
 	var front := Node3D.new()
 	for side in [1, -1]:
 		var into: Node3D = front if side == 1 else n
@@ -687,13 +700,20 @@ func _body_rat(c: Dictionary) -> Dictionary:
 			elif hold == "draw":   # a bow drawn at the leaning shoulders' height, over a mount's forelegs (A3)
 				elbow.y += 2.0
 				hand.y += 4.0
+			# Forward, rising a little; back half as far, dipping (rising, a sword held low swung up into the head: A3).
+			var arc := Vector3(RAT_SWING * swing, 0.8 * swing * swing, 0.0) if swing >= 0.0 else Vector3(0.5 * RAT_SWING * swing, -1.2 * swing * swing, 0.0)
+			elbow += arc * 0.4
+			hand += arc
 			near_hand = hand
+		else:
+			hand = far_hand
+			elbow += Vector3(-0.4 * RAT_SWING_FAR * swing, 0.0, 0.0)
 		# A short arm: the upper arm from the shoulder, the forearm to a small pink hand.
 		into.add_child(rod(sh, elbow, 1.55, 1.3, coat.fur))
 		into.add_child(rod(elbow, hand, 1.3, 0.95, coat.fur))
 		into.add_child(blob(Vector3(0.95, 0.8, 0.8), coat.pink, hand))
 	return {"node": n, "front": front, "sockets": {
-		"head": t * Vector3(11.2, 23.1, 0), "hand_r": near_hand, "hand_l": RAT_HAND_L,
+		"head": t * Vector3(11.2, 23.1, 0), "hand_r": near_hand, "hand_l": far_hand,
 		"torso": t * Vector3(4.1 + rat_torso_x, 16.4, 0), "back": t * Vector3(3.4, 20.1, 0),   # the middle of the hunched trunk; the top of its back
 		"banner": t * Vector3(2.8, RAT_BANNER_Y, 0),   # a banner carried higher than a cape hangs
 		"drape": t * Vector3(-0.4, 20.6, 0), "sit": RAT_HIP + Vector3(6.0, 0, 0)},   # a hero's cape from the shoulders; on a saddle it sits back, its hunched chest over its mount's back, not its neck (A3)
@@ -733,9 +753,8 @@ static func rat_joints(pose: String) -> Dictionary:
 	var ground := -RAT_HIP.y
 	var heel := RAT_HEEL
 	var lift := 0.0
-	if pose.begins_with("w"):
-		var nums := pose.substr(1).split("_")
-		var p := float(nums[0]) / float(nums[1])
+	var p := walk_step(pose)
+	if p >= 0.0:
 		if p < RAT_STANCE:
 			heel.x += RAT_STRIDE * (0.5 - p / RAT_STANCE)
 		else:
@@ -747,6 +766,14 @@ static func rat_joints(pose: String) -> Dictionary:
 	if lift == 0.0:
 		toe.y = ground + 0.35
 	return {"knee": ik2(heel, RAT_THIGH, RAT_SHANK, true), "heel": heel, "toe": toe}
+
+
+## Where a walk pose ("w<i>_<n>": step i of n) is in its cycle (0..1); -1 when it isn't one.
+static func walk_step(pose: String) -> float:
+	if not pose.begins_with("w") or not "_" in pose:
+		return -1.0
+	var nums := pose.substr(1).split("_")
+	return float(nums[0]) / float(nums[1])
 
 
 ## Two-bone IK in 2D from the origin to `end`: the middle joint, on the forward side (+x) or the back.
