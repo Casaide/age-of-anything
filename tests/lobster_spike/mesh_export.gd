@@ -14,6 +14,7 @@ extends SceneTree
 const DataLib := preload("res://src/data_lib.gd")
 const Generator := preload("res://src/race_generator.gd")
 const UnitModels := preload("res://scenes/art_pixel/unit_models.gd")
+const CreatureKit := preload("res://scenes/art_pixel/creature_kit.gd")
 const PartShape := preload("res://src/part_shape.gd")
 const Baker := preload("res://src/view/art/bake/baker.gd")
 
@@ -212,7 +213,10 @@ func _init() -> void:
 		return
 	var race: Dictionary = Generator.new(lib).generate(args[1], DataLib.load_rules("default"))
 	var colours := _colours(lib, race)
-	var ids: Array = args.slice(2)
+	var ids: Array = args.slice(2).filter(func(a): return not a.begins_with("stage:"))
+	for a in args.slice(2):   # stage:<res path>: a staged data file first (the concept parts it brings: trade carts)
+		if a.begins_with("stage:"):
+			CreatureKit.stage(lib, a.trim_prefix("stage:"))
 	if ids.is_empty():   # the race's spearman's parts
 		var r: Dictionary = race.units[1].recipe
 		ids = [r.body, r.head] + r.parts.values().filter(func(x): return x is String)
