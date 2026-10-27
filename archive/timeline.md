@@ -145,3 +145,4 @@ One line per moment worth remembering. Newest at the bottom.
 - **2026-10-26:** Destruction built (D-171/D-172): buildings show broken-up baked stages as they lose hp, fall under pixel dust, and leave a ruin that fades or is built over.
 - **2026-10-26:** Fidelity round F1: rendering alone (smooth, 2x) does not make units less cartoony, the models do; a realistic legionary modelled in Blender (7 and 5.5 heads) baked beside today's; Dominic to pick.
 - **2026-10-27:** Milestone 23 step 2b: wool tunics, team colour on sash/hem/shield (D-175), Blender galea and scutum, banners only when asked (D-174), the walled howdah (D-176); round F2 (rats and frogs) for Dominic to pick.
+- **2026-10-27:** Rat B picked (D-177); animation study A2: today's pendulum walks vs rat B keyed in 3D (walk, thrust); options A/B/C, B recommended.

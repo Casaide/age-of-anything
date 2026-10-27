@@ -29,3 +29,12 @@ great, but the elephant with units standing makes no sense now", and "also remov
 ## Pictures
 
 `archive/images/2026-10-27/01-f2-rats-frogs.png`, `02-howdah-walled.png`, `03-heroic-legionary-clothes-gear.png`.
+
+## Rat B picked; the animation study (A2)
+
+Dominic: "rat b looks great" (D-177). And, from the Lobster game: "we reeeally need to improve animations. watching
+that rat game was pretty lazy animations". Study A2 (`docs/concepts/animation/`): today's walk swings stiff leg
+sprites like pendulums, everything else frozen (the rat glides, the legionary scissors, the cat's baked steps show
+the better way); rat B keyed in 3D, an 8-frame walk and a 6-frame thrust with anticipation and follow-through, baked
+by the game's baker, as GIFs. Options: A composer polish, B keyed limbs baked per body (recommended), C whole units
+pre-rendered (about 3 minutes a new race: too slow). Pictures `archive/images/2026-10-27/04-` to `07-anim-*`.
