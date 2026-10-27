@@ -556,7 +556,8 @@ def draw_panel():
     ui_frame(false)
     let ids = selected_units()
     let bi = b_index_of(sel_building)
-    let btns = if build_menu and not selected_workers().length: []::Btn else: panel_buttons()
+    // (on a pad the orders live on the wheel, so the panel keeps who and the queue: command_panel.gd's compact)
+    let btns = if pad_on or (build_menu and not selected_workers().length): []::Btn else: panel_buttons()
     // What's shown: title, hp, info lines, portrait, tray, queue.
     var title = rstr(su_races[ME], "name")
     var hp_now = -1
