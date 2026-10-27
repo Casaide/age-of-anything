@@ -259,6 +259,16 @@ the card and queue in the panel). Steam Input's layout isn't a port gap: the God
 (m20 step 9). The exit criterion (Dominic's own match), the Deck play-test and the Mac against the Deck over the
 network wait on Dominic.
 
+## After the port: Godot out, Lobster in (Dominic, 2026-10-27)
+
+Once the art study's work lands (rat B D-177, frog B D-178, limbs baked in keyed poses), the GDScript game is deleted,
+the Lobster code moves out of `tests/lobster_spike/` to the repo root, and the branch merges to main. Before that:
+- the art study's new bodies and poses ported to `model/` and held to Godot's triangles, as every model so far;
+- a placement check in Lobster (`placement_check.gd`'s checks: ground contact, attachment, interpenetration, layering
+  in every facing, the bug fixtures), since no unit change is shown until it passes;
+- the concept-sheet tool (`tests/sheet.gd` from a sheet spec) in Lobster, so new art stays concept-first;
+- the parity checks retired with Godot (their GDScript side goes), the docs and CLAUDE.md rewritten for Lobster.
+
 ## Results
 
 - 2026-10-26 (6b and on): the ground shader and composed rats (`archive/images/2026-10-26/05-...`), moonbears typed into
