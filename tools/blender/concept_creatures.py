@@ -3,6 +3,7 @@
 baked by tests/art_quality/fidelity_sheet.gd beside today's units. Not game parts.
 
     blender -b --python tools/blender/concept_creatures.py -- out_dir/
+    blender -b --python tools/blender/concept_creatures.py -- out_dir/ anim   (rat B keyed: rat_b_walk_<k>, rat_b_thrust_<k>)
 
 Writes rat_a.glb (a heroic rat soldier: upright, broad in the shoulder, a long snout and big ears, digitigrade
 legs, a tail like a whip; a leather jerkin, a tin cap, a spear), rat_b.glb (a rat as a rat is: hunched on its hind
@@ -139,13 +140,30 @@ def spear(M, hand, up=Vector((0.25, 0, 1.0)), length=40.0, low=11.0):
     tube("spear_head", M["iron"], [(tip, 0.55), (tip + d * 1.6, 0.85), (tip + d * 4.0, 0.05)], segs=4, flat=0.3)
 
 
-def rat(variant):
-    """A: heroic, upright. B: a rat as a rat is, hunched, the head low."""
+def ik2(hip, target, l1, l2, forward=1.0):
+    """The knee for a two-bone leg in the x-z plane (y kept): bends forward (forward=1) or back."""
+    d = target - hip
+    dist = min(d.length, l1 + l2 - 0.01)
+    a = math.acos(max(-1.0, min(1.0, (l1 * l1 + dist * dist - l2 * l2) / (2 * l1 * dist))))
+    base = math.atan2(d.z, d.x)
+    ang = base + a * forward
+    return hip + Vector((math.cos(ang) * l1, d.y * (l1 / max(d.length, 0.001)), math.sin(ang) * l1))
+
+
+REST = {"lean": 0.0, "bob": 0.0, "feet": None, "lift": (0.0, 0.0), "arms": (0.0, 0.0), "thrust": 0.0, "tail": 0.0, "head": 0.0}
+
+
+def rat(variant, pose=None, name=None):
+    """A: heroic, upright. B: a rat as a rat is, hunched, the head low. pose (B's animation study, concept_rat_anim):
+    lean (degrees more forward), bob (hips up/down), feet ({side: heel x along the ground}), lift ({side: heel lift}),
+    arms (swing of the near and far arm, degrees), thrust (0 rest .. 1 the spear out at full stretch, < 0 drawn back),
+    tail (its tip swung across), head (nod, degrees)."""
     reset()
     M = materials()
+    P = dict(REST, **(pose or {}))
     heroic = variant == "a"
-    lean = 18.0 if heroic else 42.0        # how far the trunk leans forward (degrees)
-    hip = Vector((0, 0, 15.5 if heroic else 11.0))
+    lean = (18.0 if heroic else 42.0) + P["lean"]   # how far the trunk leans forward (degrees)
+    hip = Vector((0, 0, (15.5 if heroic else 11.0) + P["bob"]))
     trunk_len = 15.0 if heroic else 15.5
     # Trunk: a pear lying forward from the hips, the chest broad (heroic) or narrow; belly paler in front.
     chest_r = 5.4 if heroic else 4.4
@@ -157,7 +175,8 @@ def rat(variant):
     top = hip + Vector((math.sin(math.radians(lean)) * trunk_len, 0, math.cos(math.radians(lean)) * trunk_len))
     sh = hip + Vector((math.sin(math.radians(lean)) * 12.0, 0, math.cos(math.radians(lean)) * 12.0))
     # Head: a long tapering snout, the skull behind it, big round ears, a black eye each side, whiskers.
-    fwd = Vector((math.cos(math.radians(25 if heroic else 5)), 0, -math.sin(math.radians(25 if heroic else 5))))
+    nod = (25 if heroic else 5) + P["head"]
+    fwd = Vector((math.cos(math.radians(nod)), 0, -math.sin(math.radians(nod))))
     neck = top + Vector((0.8, 0, 0.6))
     skull = neck + Vector((0.6, 0, 2.6 if heroic else 1.6))
     ball("skull", M["fur"], skull, (3.4, 3.0, 2.9), segs=20)
@@ -169,31 +188,42 @@ def rat(variant):
         for w in range(3):
             tube("whisker%d%d" % (side, w), M["eye"], [(skull + fwd * 6.0 + Vector((0, side * 0.6, -0.1)), 0.06),
                                                        (skull + fwd * 6.6 + Vector((-0.6, side * 3.8, -0.6 + w * 0.6)), 0.03)], segs=3)
-    # Legs: a heavy thigh folded forward, the long shank back, standing on long hind feet (digitigrade).
-    for side in (1, -1):
+    # Legs: a heavy thigh folded forward, the long shank back, standing on long hind feet (digitigrade). Posed by
+    # where the heel is (IK: the knee forward of the line from hip to heel).
+    for k, side in enumerate((1, -1)):
         y = side * (2.8 if heroic else 2.6)
-        knee = hip + Vector((3.8, y, -6.0 if heroic else -4.5))
-        heel = Vector((-1.6, y * 1.05, 3.4 if heroic else 2.6))
-        tube("thigh%d" % side, M["fur"], [(hip + Vector((0, y * 0.8, 0)), 3.3), (knee, 2.0)], segs=14)
+        rest_heel = Vector((-1.6, y * 1.05, 3.4 if heroic else 2.6))
+        hx = rest_heel.x + (P["feet"][k] if P["feet"] else 0.0)
+        heel = Vector((hx, rest_heel.y, rest_heel.z + P["lift"][k]))
+        h0 = hip + Vector((0, y * 0.8, 0))
+        knee = ik2(h0, heel, 6.6 if heroic else 5.9, 6.9 if heroic else 6.66)
+        toe_drop = P["lift"][k] * 0.6   # a lifted foot hangs, toes down
+        tube("thigh%d" % side, M["fur"], [(h0, 3.3), (knee, 2.0)], segs=14)
         tube("shank%d" % side, M["fur"], [(knee, 1.9), (heel, 1.1)], segs=12)
-        tube("foot%d" % side, M["pink"], [(heel, 1.0), (Vector((2.2, y * 1.05, 0.45)), 0.7), (Vector((4.6, y * 1.1, 0.35)), 0.45)], segs=10, flat=0.55)
-    # Tail: thick at the root, whipping out behind and up.
-    tail = [(hip + Vector((-3.0, 0, -1.0)), 1.3), (Vector((-9, 1.5, 4.5)), 0.95), (Vector((-15, 3.0, 2.2)), 0.7), (Vector((-20, 4.0, 4.5)), 0.45), (Vector((-23, 4.5, 9.0)), 0.18)]
+        tube("foot%d" % side, M["pink"], [(heel, 1.0), (heel + Vector((3.8, 0, -heel.z + 0.45 + toe_drop * 0.6)), 0.7), (heel + Vector((6.2, y * 0.05, -heel.z + 0.35 + toe_drop)), 0.45)], segs=10, flat=0.55)
+    # Tail: thick at the root, whipping out behind and up; its tip swings across with the walk (it follows the hips).
+    sw = P["tail"]
+    tail = [(hip + Vector((-3.0, 0, -1.0)), 1.3), (Vector((-9, 1.5 + sw * 0.3, 4.5)) + Vector((0, 0, P["bob"])), 0.95), (Vector((-15, 3.0 + sw * 0.7, 2.2)), 0.7),
+            (Vector((-20, 4.0 + sw, 4.5)), 0.45), (Vector((-23, 4.5 + sw * 1.3, 9.0)), 0.18)]
     tube("tail", M["pink"], tail, segs=10)
-    # Arms: shoulders out on the chest, the spear arm forward, the far arm down holding the jerkin's strap.
-    for side in (1, -1):
+    # Arms: shoulders out on the chest; the spear arm forward (thrust: drawn back, then out at full stretch), the far
+    # arm swinging against the legs.
+    for k, side in enumerate((1, -1)):
         s0 = sh + Vector((0.6, side * (4.4 if heroic else 3.4), 0))
+        swing = math.radians(P["arms"][k])
         if side < 0:
-            el = s0 + Vector((1.8, -0.8, -4.2))
-            hd = el + Vector((3.6, 0.2, 0.6))
+            t = P["thrust"]
+            el = s0 + Vector((1.8 + 2.4 * t, -0.8, -4.2 + 1.6 * max(0.0, t)))
+            hd = el + Vector((3.6 + 2.6 * t, 0.2, 0.6 + 0.8 * max(0.0, t)))
         else:
-            el = s0 + Vector((-0.6, 1.0, -4.4))
-            hd = el + Vector((2.4, 0.0, -3.0))
+            el = s0 + Vector((-0.6 + 4.4 * math.sin(swing), 1.0, -4.4 * math.cos(swing)))
+            hd = el + Vector((2.4 + 3.0 * math.sin(swing), 0.0, -3.0 * math.cos(swing)))
         tube("uarm%d" % side, M["fur"], [(s0, 1.9 if heroic else 1.5), (el, 1.4)], segs=12)
         tube("farm%d" % side, M["fur"], [(el, 1.35), (hd, 0.95)], segs=12)
         ball("hand%d" % side, M["pink"], hd, (0.9, 0.75, 0.75), segs=10)
         if side < 0:
-            spear(M, hd)
+            level = max(0.0, P["thrust"])   # the spear levels as it goes out
+            spear(M, hd, up=Vector((0.25 + 3.0 * level, 0, 1.0 - 0.8 * level)))
     # Kit: a leather jerkin over the chest (a shell just outside the trunk), a team scarf, a tin cap between the ears.
     jer = lathe("jerkin", M["leather"], [(2.5, 5.3), (6.0, 5.6), (9.5, chest_r + 0.4), (12.3, chest_r * 0.85 + 0.4), (13.6, 3.6)],
                 squash=lambda z, a: (0.82 + 0.1 * max(0.0, math.cos(a)) * smoothstep(5, 11, z), 1.04), tilt=lean)
@@ -210,7 +240,43 @@ def rat(variant):
     for ob in bpy.data.objects:   # human-sized (D-116): the heroic rat's ears at a heroic human's crown
         ob.scale = Vector((1.12, 1.12, 1.12)) if heroic else Vector((1.05, 1.05, 1.05))
         ob.location = ob.location * (1.12 if heroic else 1.05)
-    finish(out_dir + "rat_%s.glb" % variant, smooth=("trunk", "skull", "snout", "thigh", "shank", "jerkin", "cap"))
+    finish(out_dir + (name or "rat_%s" % variant) + ".glb", smooth=("trunk", "skull", "snout", "thigh", "shank", "jerkin", "cap"))
+
+
+def rat_anim():
+    """Rat B keyed in 3D (the animation study, docs/concepts/animation/): an 8-frame walk and a 6-frame spear thrust.
+    Walk: each heel planted and sliding back for half the cycle, lifted and swung forward for the other half; the hips
+    lowest as the feet pass, the trunk swaying, the far arm swinging against the legs, the tail following the hips a
+    beat late, the head bobbing behind the body. Thrust: anticipation (sit back, the spear drawn), the lunge, contact at
+    full stretch, follow-through past it, the recovery."""
+    for f in range(8):
+        p = 2 * math.pi * f / 8
+        feet, lift = [], []
+        for k in range(2):
+            q = p + math.pi * k
+            stance = math.cos(q) >= 0.0          # half the cycle planted
+            feet.append(5.5 * math.sin(q))      # the heel's way along the ground: back while planted, forward while lifted
+            lift.append(0.0 if stance else 4.2 * abs(math.cos(q)))
+        rat("b", {"feet": feet, "lift": lift, "bob": -1.2 * abs(math.cos(p)) + 0.5, "lean": 3.5 * math.sin(2 * p),
+                  "arms": (0.0, -35.0 * math.sin(p)), "tail": 4.0 * math.sin(p - 0.9), "head": 6.0 * math.sin(2 * p - 0.6)},
+            "rat_b_walk_%d" % f)
+    keys = [   # anticipation, wound back, lunge, contact, follow-through, recover
+        {"lean": -10.0, "thrust": -0.4, "bob": 0.4, "head": -6.0, "feet": (0.0, 0.0)},
+        {"lean": -14.0, "thrust": -0.7, "bob": 0.6, "head": -9.0, "feet": (0.0, -1.0), "tail": -1.5},
+        {"lean": 8.0, "thrust": 0.6, "bob": -0.5, "head": 4.0, "feet": (3.5, -1.5), "lift": (0.0, 0.0)},
+        {"lean": 16.0, "thrust": 1.0, "bob": -1.0, "head": 8.0, "feet": (5.0, -2.5), "tail": 1.5},
+        {"lean": 19.0, "thrust": 1.15, "bob": -1.2, "head": 11.0, "feet": (5.0, -2.5), "tail": 2.8},
+        {"lean": 6.0, "thrust": 0.3, "bob": -0.3, "head": 3.0, "feet": (2.0, -1.0), "tail": 0.8},
+    ]
+    for f, key in enumerate(keys):
+        key = dict(key)
+        key["feet"] = list(key["feet"])
+        rat("b", key, "rat_b_thrust_%d" % f)
+
+
+if "anim" in sys.argv[sys.argv.index("--") + 2:]:
+    rat_anim()
+    raise SystemExit
 
 
 def frog(variant):
