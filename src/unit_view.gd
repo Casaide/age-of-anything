@@ -310,6 +310,10 @@ func _build_engine(r: Dictionary, lib, team: Color, colours: Dictionary, speed: 
 		v.outer = unit_scale * outer
 		v.build(hr if hauls else cr, lib, team, speed)
 		v.position = sockets[name]
+		var back := int(lib.creatures.get(v.recipe.get("creature", ""), {}).get("crew_back", 0))
+		if back > 0:   # a hunched body stands back from its place, so it's centred on it (creatures.json crew_back)
+			var mr: Dictionary = PartShape.rigs.get(v.recipe.body + PartShape.facing_suffix(face), {})
+			v.position -= mr.get("ahead", Vector2.ZERO) * float(back) * v.unit_scale
 		v.set_meta("z", z + n * 0.01)   # the same layer: nearest the camera last
 		if not hauls:
 			v.rest_hold = hold
@@ -821,8 +825,11 @@ func _attach(lib, rig: Dictionary, slot: String, part_id: String, colours: Dicti
 	var z: float = 0.5 if withers else Z_FOR_SLOT[slot]
 	if facing_k != 0 and slot in ["hand_l", "hand_r", "back"] and rig.depth.has(socket):
 		# In the other facings what's on the camera's side draws over the body, the rest under:
-		# a cape shows when it walks away, the far hand's shield goes behind.
-		var near: bool = float(rig.depth[socket]) >= -0.5
+		# a cape shows when it walks away, the far hand's shield goes behind. Back gear goes by the
+		# back it hangs on, wherever on it its own socket is (a rat's banner pole beside its spine drew
+		# in front of it facing the camera: the placement check).
+		var by: String = "back" if slot == "back" and not withers and rig.depth.has("back") else socket
+		var near: bool = float(rig.depth[by]) >= -0.5
 		z = (1.6 if slot == "back" else absf(z)) if near else (-3.0 if slot == "back" else -absf(z))
 	if slung == "@slung_flat":
 		z = 1.6   # lying on top of a level back: seen from above in every facing, over the body

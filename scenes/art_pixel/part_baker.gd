@@ -133,6 +133,8 @@ func _bake_at(id: String, shapes: Array, colours: Dictionary, key: String) -> vo
 
 const MEMBER_COLUMN := [3.0, 8.0, 13.0, 18.0]   # a member standing on its socket: points up its middle...
 const MEMBER_HALF := Vector2(4.0, 2.5)           # ...each as wide and tall as this on screen (part units)
+const MEMBER_AHEAD := [[5.0, 10.0], [9.0, 12.0]]  # ...and ahead of it at chest height, [forward, up]: a body leaning into the
+                                                  # work (a hunched rat at the ram) is mostly in front of its hips (placement C4)
 
 
 ## For each member socket: true when the member stands in front of most of the engine it overlaps on
@@ -159,12 +161,24 @@ func _members_front(model: Node3D, sockets: Dictionary, names: Array, view: Vect
 					pts.append(Vector3(q.dot(right), q.dot(up), q.dot(view)))
 	var out := {}
 	var apart := []   # members the engine is neither in front of nor behind
+	var cover := {}   # how much of the engine is in front of each member
+	var seen := {}    # each member's sample points on screen
 	for name in names:
 		var nearer := 0
 		var farther := 0
-		for h in MEMBER_COLUMN:
-			var c: Vector3 = sockets[name] + Vector3(0, h, 0)
+		var turn := 0.0   # the member's facing on the engine ("crew2_f2_reach": two steps round from it)
+		for t in name.split("_"):
+			if t.begins_with("f") and t.length() == 2 and t[1].is_valid_int():
+				turn = deg_to_rad(FACING_STEP * int(t[1]))
+		var fwd := Vector3(cos(turn), 0.0, sin(turn))
+		var samples: Array = MEMBER_COLUMN.map(func(h): return Vector3(0, h, 0))
+		if "_reach" in name or "_raise" in name:   # (leaning into the work; a rider sits upright)
+			samples += MEMBER_AHEAD.map(func(a): return fwd * float(a[0]) + Vector3(0, float(a[1]), 0))
+		seen[name] = []
+		for o in samples:
+			var c: Vector3 = sockets[name] + o
 			var sc := Vector2(c.dot(right), c.dot(up))
+			seen[name].append(sc)
 			var dc := c.dot(view)
 			for q in pts:
 				if absf(q.x - sc.x) < MEMBER_HALF.x and absf(q.y - sc.y) < MEMBER_HALF.y:
@@ -173,6 +187,7 @@ func _members_front(model: Node3D, sockets: Dictionary, names: Array, view: Vect
 					elif q.z < dc - 1.0:
 						farther += 1
 		out[name] = nearer <= farther if nearer + farther > 0 else sockets[name].dot(Vector3(view.x, 0, view.z)) > 0.0
+		cover[name] = nearer
 		if nearer + farther == 0:
 			apart.append(name)
 	# A member nowhere in front of or behind the engine goes under it all the same when one nearer the
@@ -191,7 +206,23 @@ func _members_front(model: Node3D, sockets: Dictionary, names: Array, view: Vect
 			var so := Vector2(sockets[other].dot(right), sockets[other].dot(up))
 			if not out[other] and sockets[other].dot(view) > d and (name in apart or (absf(so.x - sc.x) < MEMBER_HALF.x * 2.0 and absf(so.y - sc.y) < MEMBER_COLUMN[-1])):
 				out[name] = false
+			elif not out[other] and sockets[other].dot(view) > d and _samples_meet(seen[name], seen[other]):
+				# Hunched bodies reaching into each other (rats on the great sling's ropes, a diagonal view):
+				# both over the engine or both under it, by which the engine hides less of.
+				if cover[other] < cover[name]:
+					out[other] = true
+				else:
+					out[name] = false
 	return out
+
+
+## Two members' sample points close enough on screen that their bodies overlap.
+static func _samples_meet(a: Array, b: Array) -> bool:
+	for p in a:
+		for q in b:
+			if absf(p.x - q.x) < MEMBER_HALF.x * 2.0 and absf(p.y - q.y) < MEMBER_HALF.y * 2.0:
+				return true
+	return false
 
 
 ## A hand-built model in all its facings; its sockets come along, projected into 2D part units.
@@ -393,6 +424,7 @@ func _rig(spec: Dictionary, model: Node3D, view: Vector3, k: int, px: float) -> 
 		rig["front"] = _members_front(model, spec.sockets, members, view)
 	# Which way the model's front (+x) points on screen in this facing, to pick facings by.
 	rig.dir = (cam.unproject_position(Vector3(20, 0, 0)) - zero).normalized()
+	rig.ahead = to2d.call(Vector3(1, 0, 0))   # one unit forward on screen (part units): a crew member standing back from its place
 	if spec.has("anchors"):   # a leg on the camera's side of the body is the near leg
 		rig.anchors = spec.anchors.map(func(a): var v: Vector2 = to2d.call(a[0]); return [v.x, v.y, a[1],
 			a[2] if k == 0 else (1 if a[0].dot(flat) > 0.0 else -1), a[3] if a.size() > 3 else 0, a[4] if a.size() > 4 else false,

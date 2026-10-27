@@ -73,3 +73,13 @@ back gear (34 allowed)**. Round F2 (rats and frogs) waits on Dominic's pick.
 Open, 2D at 2x on the rats: 10 failures (C4 draw order on rat-crewed ram, siege tower and great sling in one facing each;
 a banner in front in facing 7; a scutum over the face in facing 0) and 4 fixtures no longer caught (hummingbird wings,
 frog's hidden sword, centaur kneel, TC1 rat and cat). Frog B (D-178) not started.
+
+**2026-10-27, the rat's open 2D failures.** Fixed: the rat heroes' feet (the 2D check's foot tolerance now scales with a
+unit's drawn size, D-180), the banner in front facing the camera (back gear now goes by the back's depth, whatever its own
+socket), the scutum over the face (the rat's shield hand up and out: RAT_HAND_L), the rats at the ram and siege tower
+(crew rats stand back by their hunch, creatures.json `crew_back`; the bake's in-front test samples ahead of a member
+leaning into work, part_baker MEMBER_AHEAD), the great sling's file of rats (two members whose bodies meet go over or
+under the engine together). The rats pass 2D: 705 checks on "sewer rats", 0 failed; 3D every rat case.
+**Open, 2D C4 on crewed engines (there before this change, run 2026-10-27 with and without it):** the siege tower's
+reaching crew in f2/f7 (romans, swamp frogs, winged greeks, winged frogs), the moonbears' ram (f0, f7), the spiders'
+great sling (f2), and war beast riders ordered among themselves (the rats' boar f0/f3/f4, han and swamp humans' box f3).
