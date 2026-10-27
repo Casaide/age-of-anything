@@ -148,3 +148,4 @@ One line per moment worth remembering. Newest at the bottom.
 - **2026-10-27:** Rat B picked (D-177); animation study A2: today's pendulum walks vs rat B keyed in 3D (walk, thrust); options A/B/C, B recommended.
 - **2026-10-27:** D-178: frog B picked (the frogs rebuilt as frogs).
 - **2026-10-27:** D-178 frog B, D-179 animation by keyed limbs; the rat as a rat is built (Blender trunk and head, legs baked in 8 knee-bent walk steps).
+- **2026-10-27:** Rat armour RA1: all seven armours modelled for the rat's own trunk (no more scaled human jerkin as a band round its middle).
