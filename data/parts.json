@@ -170,7 +170,9 @@
    1.3
   ],
   "legs": {"part": "leg.rat", "anchors": [[0, -11, 0, -1], [0, -11, 3.14, 1]], "poses": 8, "gait": {"swing": 0.0, "cadence": 1.0, "bob": 0.4, "rock": 0.0},
-   "_doc": "the rat as a rat is (D-177): its hips at 11, the legs baked in 8 knee-bent walk steps (D-179; leg.rat@w<i>_<n>, unit_models.gd rat_joints), not swung"}
+   "_doc": "the rat as a rat is (D-177): its hips at 11, the legs baked in 8 knee-bent walk steps (D-179; leg.rat@w<i>_<n>, unit_models.gd rat_joints), not swung"},
+  "body_steps": 8,
+  "_body_steps_doc": "walking with what it holds low, the body is baked in this many steps too (body.rat@w<i>_<n>, in time with the legs: the arms swinging against them, the tail sweeping; D-179); gear follows the hands"
  },
  {
   "id": "body.human",

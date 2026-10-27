@@ -81,3 +81,19 @@ on its saddle (its `sit` socket: its chest over its mount's back, not its neck),
 quiver, cloth or leaf cape (they hang straight and fall through a body leaning 42 degrees), and hero capes off rats
 (heroes.json `fit.rat.back`); a wolf-hat hero wears the low-slung hat. Next for animation: the arm holds (walk swing,
 anticipation, contact, follow-through) and the tail and head as moving parts, then A's timing in the composer.
+
+## The rat's arms and tail walk too (2026-10-27)
+
+Walking with what it holds low, the rat's body is baked in the same 8 steps as its legs (parts.json `body_steps`,
+`body.rat@w<i>_<n>`): the near arm swings forward against the legs (rising a little) and back half as far (dipping:
+rising, a held sword went up into the head, which the 3D check caught), the far shield arm a little the other way, and
+the tail sweeps from side to side a beat behind the hips. The composer (`UnitView._walk_body`) switches the body's
+sprite in time with the legs, and the weapon and shield follow the hands of that step. Archers holding a bow or
+crossbow up, riders and crew in a box keep their bodies still. Placement: every rat case in 3D at every walk step
+(2988 checks, 0 failed); the sheet's five rows in 2D.
+
+![the cheesehammer rat walking](14-rat-b-arms-tail-walk.gif)
+![the walk steps](15-rat-b-walk-steps.png)
+
+Next: the head as its own posed part and A's timing in the composer (the head bobbing a beat late, anticipation and a
+contact hold in the blow), then the other creatures one by one.

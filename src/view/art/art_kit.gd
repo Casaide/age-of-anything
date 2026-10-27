@@ -423,6 +423,9 @@ func _steps_jobs(units: Array) -> Array:
 				holds += UnitView.ATTACK_HOLDS   # spear carriers thrust (D-106)
 			for h in holds:
 				ids.append(_part_job(u.recipe.body + "@" + h, lib.part(u.recipe.body).shapes, colours, at))
+		var body_n: int = UnitView.body_steps(lib, u.recipe)
+		for i in body_n:   # the body's own walk steps (D-179: arms swinging, a tail sweeping)
+			ids.append(_part_job("%s@w%d_%d" % [u.recipe.body, i, body_n], lib.part(u.recipe.body).shapes, colours, at))
 	var seen := {}
 	var out := []
 	for id in ids:

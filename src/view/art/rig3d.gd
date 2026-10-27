@@ -152,6 +152,9 @@ func _rig(out: Dictionary, rig: String, body_id: String, head_id: String, hold: 
 	var model_id := body_id + ("" if hold == "low" or hold == "" else "@" + hold)
 	if body_pose != "":
 		model_id = body_id + "@" + body_pose   # a resting pose is the whole body baked in it
+	var body_n := int(lib.part(body_id).get("body_steps", 0))
+	if body_pose == "" and walk >= 0.0 and body_n > 0 and (hold == "low" or hold == ""):   # the walk step UnitView draws (UnitView.body_steps)
+		model_id = "%s@w%d_%d" % [body_id, int(fposmod(walk / TAU, 1.0) * body_n) % body_n, body_n]
 	if not models.has(body_id):
 		return {"sockets": {}, "xf": xf, "body": body_id, "modelled": false}
 	var bs := spec(model_id, colours)

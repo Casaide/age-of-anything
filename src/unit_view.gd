@@ -112,6 +112,7 @@ func build(r: Dictionary, lib, team: Color, speed := 10) -> void:
 	noise.seed = Rng.hash_string(JSON.stringify(r, "", true))
 	time = noise.randf() * 10.0
 	unit_scale = float(r.scale) / 100.0
+	_body_steps = body_steps(lib, r)
 	speed_px = float(speed) * 3.0
 
 	_perched = false   # (a new shadow at its ground size: set_perched shrinks it again if it's up on a wall)
@@ -855,8 +856,32 @@ func _attach(lib, rig: Dictionary, slot: String, part_id: String, colours: Dicti
 		weapon_rot = node.rotation
 		harnessed = rig.carry == "harness"
 		_thrusts = "spear" in p.tags or "lance" in p.tags
+	if slot == "hand_l" and slung == "" and rig.carry != "harness":
+		shield = node
+		_shield_rest = node.position
 	if slot == "back":
 		back_node = node
+
+
+## The body's walk steps baked for this unit (parts.json body_steps), or 0: on foot, holding what it holds low.
+static func body_steps(lib, r: Dictionary) -> int:
+	if r.has("mount") or r.has("crew") or (r.parts.has("hand_r") and hold_for(lib.part(r.parts.hand_r).tags) != "low"):
+		return 0
+	return int(lib.part(r.body).get("body_steps", 0))
+
+
+## The body in walk step `id` (or its natural self, ""): its sprite, and the hands' gear where that step's hands are.
+func _walk_body(id: String) -> void:
+	var to: String = recipe.body if id == "" else id
+	for ps in _body_nodes:
+		ps.part_id = to
+		ps.queue_redraw()
+	var rig: Dictionary = PartShape.rigs.get(to + PartShape.facing_suffix(facing_k), PartShape.rigs.get(to, {}))
+	var socks: Dictionary = rig.get("sockets", {})
+	if weapon != null and not harnessed:
+		weapon_rest = socks.get("hand_r", _hand_rest) if id != "" else _hand_rest
+	if shield != null:
+		shield.position = socks.get("hand_l", _shield_rest) if id != "" else _shield_rest
 
 
 ## How an off-hand shield is carried on this body: "" in the hand, else its sling ("@slung" upright
@@ -916,6 +941,7 @@ func _rebuild() -> void:
 	breathing = []
 	crew = []
 	weapon = null
+	shield = null
 	head_node = null
 	back_node = null
 	seat_node = null
@@ -1117,6 +1143,9 @@ const ATTACK_HOLDS := ["thrust"]   # baked for spear and lance carriers (art_kit
 static var STUDY_HOLDS: Array = ["follow"] if OS.has_environment("AOW_STUDY_HOLDS") else []
 var work_hold := "low"
 var _body_nodes: Array = []   # the body's PartShapes (its bake and its near-arm layer)
+var _body_steps := 0          # > 0: walking, the body's own baked steps (parts.json body_steps: arms swing, a tail sweeps)
+var shield: Node2D = null     # what the off hand holds (it follows the hand in a walk step)
+var _shield_rest := Vector2.ZERO
 var _hand_rest := Vector2.ZERO   # the hand in the body's own hold
 
 
@@ -1135,6 +1164,8 @@ func set_hold(hold: String) -> void:
 		ps.part_id = id
 		ps.setup(ps.shapes, ps.colours)
 	work_hold = hold
+	if shield != null:
+		shield.position = _shield_rest   # (out of a walk step: the shield back in the hand at rest)
 	if weapon != null:
 		weapon.position = rig.sockets.hand_r if hold != "low" and rig.has("sockets") and rig.sockets.has("hand_r") else _hand_rest
 		weapon_rest = weapon.position
@@ -1226,6 +1257,12 @@ func _process(delta: float) -> void:
 				if id != leg.node.part_id:
 					leg.node.part_id = id
 					leg.node.queue_redraw()
+		if _body_steps > 0 and work_hold == "low" and not _body_nodes.is_empty():
+			var bid := ""
+			if walking:
+				bid = "%s@w%d_%d" % [recipe.body, int(fposmod(phase / TAU, 1.0) * _body_steps) % _body_steps, _body_steps]
+			if (recipe.body if bid == "" else bid) != _body_nodes[0].part_id:
+				_walk_body(bid)
 		var hover := 0.0
 		if flying:
 			hover = -9.0 + sin(t * 3.0) * 2.0
