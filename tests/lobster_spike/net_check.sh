@@ -5,13 +5,13 @@ LOBSTER="${LOBSTER:-$HOME/Dev/lobster/bin/lobster}"
 cd "$(dirname "$0")"
 ticks="${1:-4000}"
 people="${3:-2}"
-"$LOBSTER" --mir net_check.lobster -- host "$ticks" "players:$people" 2>&1 | grep -v warning &
+"$LOBSTER" $LOBSTER_FLAGS net_check.lobster -- host "$ticks" "players:$people" 2>&1 | grep -v warning &
 sleep 1
 n=1
 while [ $n -lt $((people - 1)) ]; do
-	"$LOBSTER" --mir net_check.lobster -- join "$ticks" noscan "players:$people" 2>&1 | grep -v warning &
+	"$LOBSTER" $LOBSTER_FLAGS net_check.lobster -- join "$ticks" noscan "players:$people" 2>&1 | grep -v warning &
 	sleep 1
 	n=$((n + 1))
 done
-"$LOBSTER" --mir net_check.lobster -- join "$ticks" $2 "players:$people" 2>&1 | grep -v warning
+"$LOBSTER" $LOBSTER_FLAGS net_check.lobster -- join "$ticks" $2 "players:$people" 2>&1 | grep -v warning
 wait

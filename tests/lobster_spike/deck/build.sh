@@ -51,7 +51,7 @@ mkdir -p bake_cache
 mods=""
 for a in "$@"; do case "$a" in mods:*) mods=${a#mods:} ;; esac; done
 ../../lobster/bin/lobster mods_gen.lobster -- $(echo "$mods" | tr ',' ' ')
-exec ../../lobster/bin/lobster --mir game.lobster -- none lobby "$@"
+exec ../../lobster/bin/lobster game.lobster -- none lobby "$@"
 EOF
 chmod +x "$out/run.sh" "$out/lobster/bin/lobster"
 echo "== $(du -sh "$out" | cut -f1) in $out"

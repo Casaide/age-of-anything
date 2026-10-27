@@ -5,6 +5,7 @@ out="$1"
 here="$(cd "$(dirname "$0")" && pwd)"
 GODOT="${GODOT:-/Applications/Godot.app/Contents/MacOS/Godot}"
 LOBSTER="${LOBSTER:-$HOME/Dev/lobster/bin/lobster}"
+LOBSTER_FLAGS="${LOBSTER_FLAGS-}"   # (as the game runs it, play.sh: no --mir, D-174)
 rm -rf "$out"
 (cd "$here/../.." && timeout 300 "$GODOT" --headless --path . --script res://tests/lobster_spike/mat_dump.gd -- "$out" 2>&1 | grep -i "error\|materials" | head -20)
-cd "$here" && timeout 300 "$LOBSTER" mat_check.lobster -- "$out" 2>&1 | grep -v "^warning" | tail -80
+cd "$here" && timeout 300 "$LOBSTER" $LOBSTER_FLAGS mat_check.lobster -- "$out" 2>&1 | grep -v "^warning" | tail -80

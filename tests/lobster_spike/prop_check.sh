@@ -5,6 +5,7 @@ out="$1"; shift
 here="$(cd "$(dirname "$0")" && pwd)"
 GODOT="${GODOT:-/Applications/Godot.app/Contents/MacOS/Godot}"
 LOBSTER="${LOBSTER:-$HOME/Dev/lobster/bin/lobster}"
+LOBSTER_FLAGS="${LOBSTER_FLAGS-}"   # (as the game runs it, play.sh: no --mir, D-174)
 if [ $# -eq 0 ]; then
     set --
     for s in 0 7 12345; do
@@ -34,4 +35,4 @@ if [ $# -eq 0 ]; then
 fi
 rm -rf "$out"
 (cd "$here/../.." && timeout 600 "$GODOT" --headless --path . --script res://tests/lobster_spike/prop_export.gd -- "$out" "$@" 2>&1 | grep -i "skip\|error" | head -20)
-cd "$here" && timeout 600 "$LOBSTER" prop_check.lobster -- "$out" "$@" 2>&1 | grep -v "warning" | tail -400
+cd "$here" && timeout 600 "$LOBSTER" $LOBSTER_FLAGS prop_check.lobster -- "$out" "$@" 2>&1 | grep -v "warning" | tail -400
