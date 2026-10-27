@@ -10,6 +10,8 @@ var colours: Dictionary = {}
 var part_id := ""
 var facing := 0         # which of the 8 baked facings to draw (0: the classic three-quarter view)
 var front := false      # draw the part's front layer (a body's near arm)
+var size := 100         # the percent its unit is drawn at (recipe scale): baked at that size, so a big sheep's or a
+                        # tiny viking's pixels are the art's own, not stretched ones (D-180)
 var shade := 1.0:       # extra darkening (the far leg sits in shadow)
 	set(v):
 		shade = v
@@ -133,14 +135,24 @@ static func facing_suffix(k: int) -> String:
 	return "" if k == 0 else "#f%d" % k
 
 
-## Identifies a part as drawn in particular colours (team, skin and cloth are baked in).
-static func bake_key(id: String, shape_list: Array, colour_map: Dictionary) -> String:
+## Identifies a part as drawn in particular colours (team, skin and cloth are baked in), at a size (percent of
+## the art scale: its unit's recipe scale, D-180).
+static func bake_key(id: String, shape_list: Array, colour_map: Dictionary, at := 100) -> String:
 	var chans := {}
 	for s in shape_list:
 		chans[s.ch] = true
 	var names := chans.keys()
 	names.sort()
-	return id + ":" + ",".join(names.map(func(c): return "%s=%s" % [c, colour_map.get(c, Color.MAGENTA).to_html(false)]))
+	return id + ":" + ",".join(names.map(func(c): return "%s=%s" % [c, colour_map.get(c, Color.MAGENTA).to_html(false)])) \
+		+ ("" if at == 100 else "%%%d" % at)
+
+
+## The bake this part draws: its id's (another id's: `id`) at its size, in its facing, its front layer.
+func key_of(id := "") -> String:
+	var key := bake_key(part_id if id == "" else id, shapes, team_neutral(colours), size)
+	if facing != 0 and baked.has(key + facing_suffix(facing)):
+		key += facing_suffix(facing)   # parts without facings (flat shapes) keep their one view
+	return front_key(key) if front else key
 
 
 func setup(shape_list: Array, colour_map: Dictionary) -> void:
@@ -166,10 +178,7 @@ static func points(list: Array) -> PackedVector2Array:
 
 ## This part's bake in its facing as it would draw (another id's: `id`), or null.
 func bake_of(id := "") -> Variant:
-	var key := bake_key(part_id if id == "" else id, shapes, team_neutral(colours))
-	if facing != 0 and baked.has(key + facing_suffix(facing)):
-		key += facing_suffix(facing)
-	return baked.get(front_key(key) if front else key)
+	return baked.get(key_of(id))
 
 
 ## The bottom of a bake's opaque pixels, column by column, in part units from its origin (where a
@@ -188,10 +197,8 @@ static func soles(b: Dictionary) -> PackedVector2Array:
 
 
 func _draw() -> void:
-	var key := bake_key(part_id, shapes, team_neutral(colours))
-	if facing != 0 and baked.has(key + facing_suffix(facing)):
-		key += facing_suffix(facing)   # parts without facings (flat shapes) keep their one view
-	var b = baked.get(front_key(key) if front else key)
+	var key := key_of()
+	var b = baked.get(key)
 	if b == null:
 		_draw_missing(key)
 		return

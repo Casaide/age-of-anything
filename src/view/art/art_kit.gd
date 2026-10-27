@@ -390,7 +390,8 @@ func _steps_jobs(units: Array) -> Array:
 		probe.build(u.recipe, lib, ANIMAL_TEAM, u.eval.speed)   # parts bake in the team key: any team will do
 		for ps in probe.find_children("*", "Node2D", true, false):
 			if ps is PartShape and ps.part_id != "" and ps.part_id != "unit_shadow":   # (the shadow is drawn flat: bake_flat)
-				ids.append(_part_job(ps.part_id, ps.shapes, ps.colours))
+				ids.append(_part_job(ps.part_id, ps.shapes, ps.colours, ps.size))
+		var at: int = probe.drawn_size()   # each part at the size the unit is drawn (D-180)
 		probe.free()
 		if u.recipe.has("mount") and not u.recipe.mount.get("fused", false):
 			# A rider shows the leg on the flank facing the camera: the probe (facing 0) shows one
@@ -398,12 +399,12 @@ func _steps_jobs(units: Array) -> Array:
 			# flank's went unbaked: the placement check, "every part drawn is baked").
 			var rider_colours := UnitView.colours_for(lib, u.recipe.skin, u.recipe.family, ANIMAL_TEAM)
 			for id in UnitView.leg_parts(lib, u.recipe.body):
-				ids.append(_part_job(id, lib.part(id.get_slice("~", 0)).shapes, rider_colours))
+				ids.append(_part_job(id, lib.part(id.get_slice("~", 0)).shapes, rider_colours, at))
 		if not UnitView.pose_parts(lib, u.recipe).is_empty():   # a body's idle poses and posed walk (a cat)
 			var mount_skin: String = u.recipe.mount.skin if u.recipe.has("mount") else u.recipe.skin
 			var pose_colours := UnitView.colours_for(lib, mount_skin, u.recipe.family, ANIMAL_TEAM)
 			for pp in UnitView.pose_parts(lib, u.recipe):
-				ids.append(_part_job(pp[0], pp[1], pose_colours))
+				ids.append(_part_job(pp[0], pp[1], pose_colours, at))
 		var pose := UnitView.corpse_pose(lib, u.recipe)
 		if not pose.is_empty():   # how it lies dead, laid down in 3D (D-165: the frog)
 			ids.append(_corpse_job(u.recipe, pose))
@@ -411,7 +412,7 @@ func _steps_jobs(units: Array) -> Array:
 		if u.recipe.slot == "worker":
 			# Workers change tools for the job and carry their load home in their hands.
 			for id in JOB_PARTS:
-				ids.append(_part_job(id, lib.part(id).shapes, colours))
+				ids.append(_part_job(id, lib.part(id).shapes, colours, at))
 		# Every body with arms is baked in the work holds too (raised, reaching): workers
 		# swing their tools with them (D-105) and soldiers their weapons (D-106).
 		var rides: bool = u.recipe.has("mount") and not u.recipe.mount.get("fused", false)
@@ -421,7 +422,7 @@ func _steps_jobs(units: Array) -> Array:
 			if hand != "" and ("spear" in lib.part(hand).tags or "lance" in lib.part(hand).tags):
 				holds += UnitView.ATTACK_HOLDS   # spear carriers thrust (D-106)
 			for h in holds:
-				ids.append(_part_job(u.recipe.body + "@" + h, lib.part(u.recipe.body).shapes, colours))
+				ids.append(_part_job(u.recipe.body + "@" + h, lib.part(u.recipe.body).shapes, colours, at))
 	var seen := {}
 	var out := []
 	for id in ids:
@@ -431,11 +432,11 @@ func _steps_jobs(units: Array) -> Array:
 	return out
 
 
-func _part_job(id: String, shapes: Array, colours: Dictionary) -> String:
-	var key := PartShape.bake_key(id, shapes, PartShape.team_neutral(colours))
+func _part_job(id: String, shapes: Array, colours: Dictionary, at := 100) -> String:
+	var key := PartShape.bake_key(id, shapes, PartShape.team_neutral(colours), at)
 	var modelled: bool = _unit_models.has(id)
 	var make := func(pb) -> Dictionary:
-		await pb.bake(id, shapes, colours)
+		await pb.bake(id, shapes, colours, at)
 		return _part_entry(id, key, modelled)
 	var apply := func(e: Dictionary) -> void:
 		for k in e.baked:
@@ -453,9 +454,9 @@ func _corpse_job(r: Dictionary, pose: Dictionary) -> String:
 	for f in frames:
 		var id := UnitView.corpse_id(r, pose, int(f))
 		for k in 8:
-			keys.append(PartShape.bake_key(id, [], {}) + PartShape.facing_suffix(k))
+			keys.append(PartShape.bake_key(id, [], {}, int(r.scale)) + PartShape.facing_suffix(k))
 			if int(f) == int(frames[-1]):
-				keys.append(PartShape.bake_key(id + "~shadow", [], {}) + PartShape.facing_suffix(k))
+				keys.append(PartShape.bake_key(id + "~shadow", [], {}, int(r.scale)) + PartShape.facing_suffix(k))
 	var make := func(pb) -> Dictionary:
 		var rig := Corpse.Rig3D.new(lib)
 		for f in frames:

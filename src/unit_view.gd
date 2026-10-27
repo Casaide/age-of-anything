@@ -72,6 +72,8 @@ var idle_left := 0.0
 var idle_wait := 2.0
 var flying := false
 var unit_scale := 1.0
+static var FLAT_SIZE := OS.get_environment("AOW_FLAT_SIZE") == "1"   # (a study flag: every part baked at 100 and stretched, as before D-180)
+var outer := 1.0          # the scale of the unit this one is drawn inside (an engine's crew): its parts bake at both (D-180)
 var pose_steps := 0       # > 0: stepped pixel-art animation with this many poses per walk cycle
 var art_px := 0.0         # stepped mode: art pixels per global unit, for snapping to whole pixels
 const STEP_FPS := 8.0
@@ -304,6 +306,7 @@ func _build_engine(r: Dictionary, lib, team: Color, colours: Dictionary, speed: 
 				top = true
 		var v = get_script().new()
 		v.facing_k = face
+		v.outer = unit_scale * outer
 		v.build(hr if hauls else cr, lib, team, speed)
 		v.position = sockets[name]
 		v.set_meta("z", z + n * 0.01)   # the same layer: nearest the camera last
@@ -632,7 +635,14 @@ func _sort_layers(n: Node) -> void:
 
 
 func _shape() -> PartShape:
-	return PartShape.new()
+	var ps := PartShape.new()
+	ps.size = drawn_size()   # baked at the size it's drawn: a big sheep keeps the art's pixels (D-180)
+	return ps
+
+
+## The percent of the art scale this unit is drawn at: its recipe scale, inside whatever it's drawn in.
+func drawn_size() -> int:
+	return 100 if FLAT_SIZE else roundi(unit_scale * outer * 100.0)
 
 
 static func colours_for(lib, skin: String, family: String, team: Color) -> Dictionary:
@@ -1032,7 +1042,7 @@ func set_tool(lib, part_id: String) -> void:
 	if weapon == null or harnessed or weapon.part_id == part_id:
 		return
 	var p: Dictionary = lib.part(part_id)
-	var key := PartShape.bake_key(part_id, p.shapes, PartShape.team_neutral(weapon.colours))
+	var key := PartShape.bake_key(part_id, p.shapes, PartShape.team_neutral(weapon.colours), weapon.size)
 	if not PartShape.baked.has(key):
 		return
 	weapon.part_id = part_id
@@ -1119,7 +1129,7 @@ func set_hold(hold: String) -> void:
 	var id: String = natural if hold == "low" else recipe.body + "@" + hold
 	var rig: Dictionary = PartShape.rigs.get(id + PartShape.facing_suffix(facing_k), PartShape.rigs.get(id, {}))
 	if hold != "low":
-		if rig.is_empty() or not PartShape.baked.has(PartShape.bake_key(id, _body_nodes[0].shapes, PartShape.team_neutral(_body_nodes[0].colours)) + PartShape.facing_suffix(facing_k)):
+		if rig.is_empty() or not PartShape.baked.has(PartShape.bake_key(id, _body_nodes[0].shapes, PartShape.team_neutral(_body_nodes[0].colours), _body_nodes[0].size) + PartShape.facing_suffix(facing_k)):
 			return
 	for ps in _body_nodes:
 		ps.part_id = id
@@ -1423,6 +1433,7 @@ func _corpse_fall(t: float) -> void:
 		c.visible = c == _corpse
 	if shown == frames.size() - 1:   # down: in its own shadow (the posed body pressed onto the ground)
 		_shadow.part_id = id + "~shadow"
+		_shadow.size = _corpse.size
 		_shadow.facing = facing_k
 		_shadow.setup([], {})
 		_shadow.scale = Vector2(unit_scale * facing, unit_scale)
