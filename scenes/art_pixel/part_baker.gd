@@ -88,13 +88,22 @@ func _init() -> void:
 	add_child(holder)
 
 
-## Bake one part in one colour set (skipped if it's already baked).
-func bake(id: String, shapes: Array, colours: Dictionary) -> void:
+## Bake one part in one colour set (skipped if it's already baked), at a size: `at` percent of the art scale, its
+## unit's recipe scale, so a unit drawn bigger or smaller keeps the art's pixels (D-180; its rigs are in part units,
+## the same at any size).
+func bake(id: String, shapes: Array, colours: Dictionary, at := 100) -> void:
 	colours = PartShape.team_neutral(colours)   # bake in the team key; the shader recolours per team
-	var key := PartShape.bake_key(id, shapes, colours)
+	var key := PartShape.bake_key(id, shapes, colours, at)
 	if PartShape.baked.has(key):
 		return
 	await BakeClock.breathe()   # building a model is main-thread work: not in a frame that's spent its budget
+	var base := art_scale
+	art_scale = base * float(at) / 100.0
+	await _bake_at(id, shapes, colours, key)
+	art_scale = base
+
+
+func _bake_at(id: String, shapes: Array, colours: Dictionary, key: String) -> void:
 	if models.has(id):
 		await _bake_model(id, colours, key)
 		return

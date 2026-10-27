@@ -263,7 +263,7 @@ func _units_baked() -> bool:
 			var probe := UnitView.new()
 			probe.build(u.recipe, lib, Color.WHITE, u.eval.speed)
 			for ps in probe.find_children("*", "Node2D", true, false):
-				if ps is PartShape and ps.part_id != "" and not PartShape.baked.has(PartShape.bake_key(ps.part_id, ps.shapes, PartShape.team_neutral(ps.colours))):
+				if ps is PartShape and ps.part_id != "" and not PartShape.baked.has(PartShape.bake_key(ps.part_id, ps.shapes, PartShape.team_neutral(ps.colours), ps.size)):
 					probe.free()
 					return false
 			probe.free()

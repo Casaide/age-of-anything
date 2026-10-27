@@ -185,12 +185,7 @@ func _part(v, ps: PartShape, t: Transform2D) -> Dictionary:
 
 
 func _key(ps: PartShape) -> String:
-	var key := PartShape.bake_key(ps.part_id, ps.shapes, PartShape.team_neutral(ps.colours))
-	if ps.facing != 0 and PartShape.baked.has(key + PartShape.facing_suffix(ps.facing)):
-		key += PartShape.facing_suffix(ps.facing)
-	if ps.front:
-		key = PartShape.front_key(key)
-	return key
+	return ps.key_of()
 
 
 ## A bake's opaque pixels as points in part units (pixel centres), and which are team colour.
@@ -441,7 +436,7 @@ func _check_model(v, parts: Array, rig: String, body: int, label: String, view: 
 		return
 	var cam := camera(k)
 	var a3: Dictionary = rig3d.unit(u.recipe, {"body_pose": v.body_pose})
-	var s: float = ArtKit.ART_SCALE * ArtKit.UNIT_SCALE
+	var s: float = ArtKit.ART_SCALE * ArtKit.UNIT_SCALE * float(v.drawn_size()) / 100.0   # the legs' own grid (D-180)
 	var lows := {}
 	var n := 0
 	for leg in v.legs:
@@ -625,7 +620,7 @@ func _truth(body: PartShape, v, rig: String, heads: Array, k: int) -> Dictionary
 	var bdata: Dictionary = lib.part(body_id)
 	var cut: bool = "legs" in bdata.get("cut", [])
 	var head: PartShape = heads[0] if not heads.is_empty() else null
-	var key := "%s|%s|%d|%s" % [PartShape.bake_key(body.part_id, body.shapes, PartShape.team_neutral(body.colours)), head.part_id if head else "", k, str(old_truth)]
+	var key := "%s|%s|%d|%s" % [body.key_of(), head.part_id if head else "", k, str(old_truth)]
 	if _gt_cache.has(key):
 		return _gt_cache[key]
 	if _gt_baker == null:
@@ -671,7 +666,7 @@ func _truth(body: PartShape, v, rig: String, heads: Array, k: int) -> Dictionary
 	pb.holder.add_child(model)
 	var box: AABB = pb._aabb(model)
 	var r := box.size.length() * 0.5 + 2.0
-	var s: float = ArtKit.ART_SCALE * ArtKit.UNIT_SCALE
+	var s: float = ArtKit.ART_SCALE * ArtKit.UNIT_SCALE * float(body.size) / 100.0   # on the parts' own grid: baked at the unit's size (D-180)
 	pb.size = Vector2i.ONE * ceili(2.0 * r * s)
 	pb.cam.keep_aspect = Camera3D.KEEP_HEIGHT
 	pb.cam.size = 2.0 * r

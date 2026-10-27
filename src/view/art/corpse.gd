@@ -178,7 +178,10 @@ static func _corners(n: Node3D, xf: Transform3D) -> PackedVector3Array:
 ## shadow too, under that id + "~shadow".
 static func bake(baker, lib, rig, r: Dictionary, p: Dictionary, f: float, shadow: bool) -> void:
 	var id := UnitView.corpse_id(r, p, roundi(f * 100.0))
-	var key := PartShape.bake_key(id, [], {})
+	var at := int(r.get("scale", 100))   # at the size its unit is drawn (D-180)
+	var key := PartShape.bake_key(id, [], {}, at)
+	var art: float = baker.art_scale
+	baker.art_scale = art * float(at) / 100.0
 	var m := model(lib, rig, r, p, f)
 	baker.holder.add_child(m)
 	var box: AABB = baker._aabb(m)
@@ -233,8 +236,9 @@ static func bake(baker, lib, rig, r: Dictionary, p: Dictionary, f: float, shadow
 		baker._keep(made[0][k], key + PartShape.facing_suffix(k), id + PartShape.facing_suffix(k))
 		if shadow:
 			var sh: Image = made[1][k]
-			PartShape.baked[PartShape.bake_key(id + "~shadow", [], {}) + PartShape.facing_suffix(k)] = {"img": sh,
+			PartShape.baked[PartShape.bake_key(id + "~shadow", [], {}, at) + PartShape.facing_suffix(k)] = {"img": sh,
 				"tex": ImageTexture.create_from_image(sh), "origin": shots[k].origin / float(ss), "scale": baker.art_scale}
+	baker.art_scale = art
 
 
 ## The footprint render down to art pixels, grown by one and nudged away from the light (down and

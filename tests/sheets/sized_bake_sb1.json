@@ -1,0 +1,15 @@
+{
+ "name": "sized_bake_sb1",
+ "title": "Sized bakes SB1 (2026-10-27): units drawn bigger or smaller baked at that size (D-180)",
+ "_doc": "Dominic: \"sheep look pixelated\". A unit whose recipe scale isn't 100 (sheep 135, boar 115, giants 150, tiny 80) was drawn by stretching sprites baked at 100. Now each part bakes at the size it's drawn. Run with AOW_FLAT_SIZE=1 for the old stretched look beside it.",
+ "zooms": [4, 1],
+ "cell": [64, 60],
+ "size": [{"prompt": "romans", "slot": "spear", "age": 2}],
+ "rows": [
+  {"label": "sheep 135", "unit": {"creature": "pony", "set": {"slot": "sheep", "creature": "sheep", "family": "forest", "body": "body.sheep", "head": "head.sheep", "skin": "sheep", "scale": 135, "name": "Sheep"}}},
+  {"label": "boar 115", "unit": {"creature": "pony", "set": {"slot": "boar", "creature": "boar", "family": "forest", "body": "body.boar", "head": "head.boar", "skin": "boar", "scale": 115, "name": "Boar"}}},
+  {"label": "giant frog 150", "unit": {"prompt": "giant frogs", "slot": "large", "age": 2}},
+  {"label": "tiny viking 80", "unit": {"prompt": "tiny vikings", "slot": "spear", "age": 2}}
+ ],
+ "sheets": [{"name": "facings", "columns": "facings"}]
+}
