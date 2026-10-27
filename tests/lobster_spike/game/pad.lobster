@@ -5,7 +5,9 @@
 // sweeps up your units; tapped on what's already selected it opens the selection's wheel (train,
 // research, age up for a building; build for workers), where a stick points and A chooses. X is the
 // smart order, Y attack-move, B backs out, RB your soldiers on screen, LT / RT zoom, the d-pad an idle
-// worker (down), the Town Center (up), groups 1 and 2 (left, right; held: kept). Last input wins:
+// worker (down), the Town Center (up), groups 1 and 2 (left, right; held: kept). LB held queues X and Y
+// and makes A add to the selection; tapped, it keeps only the next kind among what's selected (then all
+// again). After an armed order (attack-move, the race's ability) A or X gives it. Last input wins:
 // the mouse moving hands play back to it. Imported by game.lobster after its controls.
 
 let PAD_PAN = 1300.0
@@ -48,6 +50,27 @@ var pad_last_mouse = float2 { -1.0, -1.0 }
 var pad_lt = false
 var pad_kept = []::string         // d-pad buttons held long enough to keep a group (once a hold)
 var pad_rt = false
+var pad_lb_used = false           // LB was held as a modifier this press (so its release isn't a tap)
+var pad_cycle_all = []::int       // the selection before LB started cycling its kinds
+var pad_cycle_k = -1
+
+// LB tapped: only the next kind among what's selected (spears, then archers...), then all again (pad_play._cycle_kinds).
+def cycle_kinds():
+    let mine = selected_units()
+    if not mine.length: return
+    if not contains(pad_cycle_all, mine[0]) or (filter(mine) id: not contains(pad_cycle_all, id)).length:
+        pad_cycle_all = copy(mine)
+        pad_cycle_k = -1
+    let kinds = []::int
+    for(pad_cycle_all) id:
+        let i = index_of(id)
+        if i >= 0 and not contains(kinds, u_kind[i]): kinds.push(u_kind[i])
+    insertion_sort(kinds) a, b: a < b
+    if kinds.length < 2: return
+    pad_cycle_k = (pad_cycle_k + 1) % (kinds.length + 1)
+    selected = filter(pad_cycle_all) id: index_of(id) >= 0 and (pad_cycle_k == kinds.length or u_kind[index_of(id)] == kinds[pad_cycle_k])
+    sel_building = 0
+    play_sound("ui_hover", -6.0)
 
 def read_pad() -> PadIn:
     return PadIn { map(6) i: gl.controller_axis(i), filter(PAD_BUTTONS) b: gl.button("controller_" + b) >= 1 }
@@ -134,11 +157,22 @@ def pad_tick(pin:PadIn, dt:float) -> bool:
     pad_off = float2 { clamp(pad_off.x + right.x * PAD_NUDGE * dt, -lim.x, lim.x), clamp(pad_off.y + right.y * PAD_NUDGE * dt, -lim.y, lim.y) }
     if pressed("rightstick"): pad_off = float2_0
     fake_mouse = reticle()
+    let add = has_s(pin.down, "leftshoulder")
+    pad_lb_held = add
+    if pressed("leftshoulder"): pad_lb_used = false
+    if add and (pressed("a") or pressed("x") or pressed("y")): pad_lb_used = true
+    if arming_attack or arming_ability:   // the armed order: A or X gives it, B drops it
+        if pressed("a") or pressed("x"): give_armed(reticle())
+        if pressed("b"):
+            arming_attack = false
+            arming_ability = false
+        pad_prev = pin.down
+        return true
     // A: tap selects (or opens the wheel on what's selected, or lays what's being placed); held, the circle sweeps.
     if has_s(pin.down, "a") and pad_held_t.get("a", 0.0) >= PAD_TAP and placing < 0:
         if pad_circle == 0.0:
             pad_circle = PAD_CIRCLE_START
-            selected = []
+            if not add: selected = []
             sel_building = 0
         pad_circle = min(pad_circle + PAD_CIRCLE_GROW * dt, min(ws.x, ws.y) * PAD_CIRCLE_MAX)
         let c = reticle()
@@ -153,19 +187,26 @@ def pad_tick(pin:PadIn, dt:float) -> bool:
             pad_wheel = wheel_items()
             pad_pick = 0
             pad_page = 0
+        elif add:   // (LB held: what's under the reticle joins the selection)
+            let before = selected_units()
+            click_select(reticle())
+            if selected.length:
+                for(before) id:
+                    if not contains(selected, id): selected.push(id)
+            else: selected = before
         else: click_select(reticle())
     if pressed("x"):
         if placing >= 0: place_here(false)
         else: order(reticle())
-    if pressed("y") and selected_units().length:
-        let mm = mouse_milli()
-        issue_cmd(ME, CMD_ATTACK_MOVE, selected_units(), int(mm.x), int(mm.y), 0, 0, 0)
+    if pressed("y") and (filter(selected_units()) id: not t_worker[u_kind[index_of(id)]] and t_animal[u_kind[index_of(id)]] == 0).length:
+        order(reticle(), true)   // (attack-move: queued with LB held)
     if pressed("b"):
         if placing >= 0: placing = -1
         elif build_menu: build_menu = false
         else:
             selected = []
             sel_building = 0
+    if released("leftshoulder") and not pad_lb_used and pad_held_t.get("leftshoulder", 0.0) < 0.4 and placing < 0: cycle_kinds()
     if pressed("rightshoulder"):
         selected = soldiers_on_screen()
         sel_building = 0
