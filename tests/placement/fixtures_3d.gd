@@ -30,7 +30,7 @@ static func run(lib) -> Array:
 			func(_g): UnitModels.mirror_legs = false, func(_g): UnitModels.mirror_legs = true, {}],
 		["the rat's head floating ahead of its body with a gap at the neck (its body leaning back: Dominic's crossbowman)",
 			"sewer rats archer", ["A2 head joint on its body's surface"],
-			func(_g): UnitModels.rat_hunch = -15.0, func(_g): UnitModels.rat_hunch = UnitModels.RAT_LEAN, {}],
+			func(_g): UnitModels.rat_hunch = -15.0; UnitModels.rat_head_follows = false, func(_g): UnitModels.rat_hunch = UnitModels.RAT_LEAN; UnitModels.rat_head_follows = true, {}],
 		["the rat's head on its armour, both in front of the body (the body leaning back out of its bottle-cap armour)",
 			"sewer rats spear age 2", ["A2 worn armour centred on the torso", "A2 worn armour on its body"],
 			_rat_leaning_out, _rat_as_now, {}],

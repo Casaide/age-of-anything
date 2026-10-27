@@ -644,6 +644,7 @@ func slab(points: Array, thick: float, m: Material, pos := Vector3.ZERO) -> Mesh
 const RAT_LEAN := 42.0      # degrees the trunk leans forward from the hips (as modelled)
 static var rat_hunch := RAT_LEAN   # how far it leans as built (the placement check's fixtures set -15: leaning back, as it once did)
 static var rat_torso_x := 0.8   # where worn armour sits along it (a placement fixture sets 1.4: forward of the body, as it once sat)
+static var rat_head_follows := true   # the head on the leaning trunk's neck (a placement fixture sets false: where it once floated)
 const RAT_HIP := Vector3(0.0, 11.0, 0.0)
 const RAT_HIP_Z := 2.7
 const RAT_BANNER_Y := 22.6
@@ -713,7 +714,7 @@ func _body_rat(c: Dictionary) -> Dictionary:
 		into.add_child(rod(elbow, hand, 1.3, 0.95, coat.fur))
 		into.add_child(blob(Vector3(0.95, 0.8, 0.8), coat.pink, hand))
 	return {"node": n, "front": front, "sockets": {
-		"head": t * Vector3(11.2, 23.1, 0), "hand_r": near_hand, "hand_l": far_hand,
+		"head": (t if rat_head_follows else Transform3D.IDENTITY) * Vector3(11.2, 23.1, 0), "hand_r": near_hand, "hand_l": far_hand,
 		"torso": t * Vector3(4.1 + rat_torso_x, 16.4, 0), "back": t * Vector3(3.4, 20.1, 0),   # the middle of the hunched trunk; the top of its back
 		"banner": t * Vector3(2.8, RAT_BANNER_Y, 0),   # a banner carried higher than a cape hangs
 		"drape": t * Vector3(-0.4, 20.6, 0), "sit": RAT_HIP + Vector3(6.0, 0, 0)},   # a hero's cape from the shoulders; on a saddle it sits back, its hunched chest over its mount's back, not its neck (A3)
