@@ -132,6 +132,7 @@ SHADER bakelit
 """
 
 var bake_shadow_debug = false
+var bake_fit = 1.0                  // render px over the art scale's (a part bakes as Godot's whole-pixel viewport: part_bake.lobster)
 var bake_debug = ""                 // a path stem: save each raw render there (checks)
 
 class BakeTri:
@@ -282,7 +283,7 @@ def bake_facing(part:[BakeTri], facing:int, hide:[BakeTri] = [], join:float3 = f
             dhi = max(dhi, dot(p, cz))
     lo -= float2_1 * 2.0
     hi += float2_1 * 2.0
-    let px = BAKE_ART * float(BAKE_SS)   // render px a part unit
+    let px = BAKE_ART * float(BAKE_SS) * bake_fit   // render px a part unit
     let w = int(ceiling((hi.x - lo.x) * px))
     let h = int(ceiling((hi.y - lo.y) * px))
     // The mesh in render px (x right, y down), its triangles drawn far to near (the painter's way: the
@@ -433,7 +434,7 @@ def bake_facing(part:[BakeTri], facing:int, hide:[BakeTri] = [], join:float3 = f
                     if magnitude(at - jc) <= reach: write_int8_le(seam, pix, 255)
             i += 4
     let sw, sh, sprite = pixelize(raw, w, h, BAKE_SS, seam)
-    return sprite, sw, sh, (float2_0 - lo) * BAKE_ART
+    return sprite, sw, sh, (float2_0 - lo) * px / float(BAKE_SS)
 
 // Pixelize.run: shrink by `factor` (a box filter over premultiplied colour), hard alpha, then an
 // inner outline (edge pixels a darker shade of themselves, toward the ink). `seam` (one byte a raw pixel,

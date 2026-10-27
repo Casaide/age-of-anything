@@ -32,11 +32,12 @@ def compose(r:JV, k:int, pose:Pose2) -> UV:
     step2("compose f{k} {pose.name}")
     var v = compose_once(r, k, pose)
     step2("  composed")
-    if bake_view(v.node):
+    var tries = 0
+    while bake_view(v.node) and tries < 4:   // (a part baked can bring others: its rig sets what the composer picks)
         step2("  baked")
         free_tree(v.node)
         v = compose_once(r, k, pose)
-        bake_view(v.node)
+        tries++
     return v
 
 def compose_once(r:JV, k:int, pose:Pose2) -> UV:
@@ -112,6 +113,7 @@ def check_engine_view(v:UV, label:string, k:int, r:JV, stands:dictionary<string,
         m.phase = pose.phase
         uv_process(m, 0.0)
         m.walking = false
+    bake_view(v.node)   // (the members' walk steps: legs the standing compose didn't wear)
     for(v.crew) m:
         let key = "member " + m.crew_socket
         var st = stands.get(key)
@@ -182,7 +184,11 @@ def depth_order(v:UV, label:string, view:string, k:int, r:JV):
     for(ms) m, i:
         let rp = RigPose {}
         rp.hold = m.hold
-        for(rig_unit(m.recipe, rp).pieces) p: pieces.push(TPiece { p.node, xmul(m.t, p.xf), i + 1 })
+        // (a creature drawn smaller than it's built, on foot: creatures.json draw_scale, the look only)
+        let cr = get(lib_creatures, gstr(m.recipe, "creature", ""))
+        let ds = if cr and not has(m.recipe, "mount"): float(gint(cr, "draw_scale", 100)) / 100.0 else: 1.0
+        let mt = Xform { bscaled_global(m.t.b, float3_1 * ds), m.t.o }
+        for(rig_unit(m.recipe, rp).pieces) p: pieces.push(TPiece { p.node, xmul(mt, p.xf), i + 1 })
     rig_clear()
     let truth, size = truth_render(pieces, k)
     let sizes = map(ms.length + 1): 0
@@ -192,6 +198,7 @@ def depth_order(v:UV, label:string, view:string, k:int, r:JV):
     for(ms) m, i: index.set(m.name, i + 1)
     let top = new_imap()
     draw_cells(v, v.node, XF_ID2, 0, index, top)
+    if debug2d: dump_owners(truth, top, "/tmp/aoa_c4_f{k}.ppm")
     let over = dictionary<string, int>(31)
     let over_keys = []::string
     for(truth.keys) c:
@@ -328,3 +335,27 @@ def cells_gap(a:IMap, b:IMap) -> float:
 // Fixtures' tweaks (placement/fixtures2d.lobster).
 def tweak2(which:int, v:UV, pose:string) -> void:
     fixture2_tweak(which, v, pose)
+
+// (debug: the 3D truth's owners left, the drawn owners right, as a picture)
+def dump_owners(truth:IMap, top:IMap, file:string):
+    var lo = int2 { 1000000, 1000000 }
+    var hi = int2 { -1000000, -1000000 }
+    for(append(truth.keys, top.keys)) c:
+        let u = cunkey(c)
+        lo = min(lo, u)
+        hi = max(hi, u)
+    let w = hi.x - lo.x + 1
+    let h = hi.y - lo.y + 1
+    let pal = [[40, 40, 40], [230, 60, 60], [60, 200, 60], [60, 90, 230], [230, 200, 40], [200, 60, 200], [60, 200, 200], [255, 255, 255]]
+    var out = "P3\n{w * 2 + 4} {h}\n255\n"
+    for(h) y:
+        for(w * 2 + 4) x:
+            let side = if x < w: truth elif x >= w + 4: top else: nil
+            if side:
+                let c = ckey(lo.x + (if x < w: x else: x - w - 4), lo.y + y)
+                let o = iget(side, c, -1)
+                let col = if o < 0: [0, 0, 0] else: pal[min(o + 1, 7)]
+                out += "{col[0]} {col[1]} {col[2]} "
+            else: out += "128 128 128 "
+        out += "\n"
+    write_file(file, out, 0, 1)
