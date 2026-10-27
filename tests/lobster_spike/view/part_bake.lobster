@@ -209,7 +209,57 @@ def find_s(xs:[string], x:string) -> int:
 
 // Every facing of one part: its sprites, front layers, rigs, a leg's soles. `full` is its bake key (without the
 // facing). Returns false when there is no model for it.
+// While the art bakes (a first start with no cache: minutes), the window stays alive: a few times a second a frame
+// says how far it is, and the window's events are read, so closing it (or Ctrl-C, which SDL makes a quit) stops the
+// baking (bake_quit; the game then quits). The game turns it on; checks bake without it.
+var bake_live = false
+var bake_quit = false
+var bake_done = 0                    // things baked since the game began
+var bake_what = ""                   // what's baking (the game says: "the units", "the buildings")
+var bake_said = 0.0
+
+def bake_breath():
+    bake_done++
+    if not bake_live or bake_quit or seconds_elapsed() - bake_said < 0.25: return
+    bake_said = seconds_elapsed()
+    gl.switch_to_framebuffer(nil)
+    gl.ortho()
+    gl.clear(float4 { 0.07, 0.06, 0.05, 1.0 })
+    gl.set_shader("color")
+    let ws = float(gl.window_size())
+    gl.set_font_size(int(max(16.0, ws.y / 36.0)))
+    gl.color(float4 { 0.92, 0.86, 0.7, 1.0 }):
+        gl.translate(float2 { ws.x * 0.08, ws.y * 0.45 }):
+            gl.text("Baking {bake_what}: {bake_done} done")
+    gl.color(float4 { 0.6, 0.56, 0.48, 1.0 }):
+        gl.translate(float2 { ws.x * 0.08, ws.y * 0.45 + ws.y / 22.0 }):
+            gl.text("The first start bakes every picture; later starts take them from bake_cache. Close the window to stop.")
+    if not gl.frame(): bake_quit = true
+
+// The unit's shadow (PartShape.bake_flat: UnitView.SHADOW_SHAPES, an ellipse in the buildings' shadow colour, at the
+// size units are drawn): no model, a flat shape, baked here as Godot bakes it when it builds its atlas.
+let SHADOW_CENTRE = float2 { 3.0, 1.0 }
+let SHADOW_RADII = float2 { 15.0, 4.5 }
+let SHADOW_RGBA = [15, 13, 8, 107]   // (Color(0.06, 0.05, 0.03, 0.42) in bytes)
+
+def bake_flat_shadow(full:string):
+    let r = SHADOW_RADII * BAKE_ART
+    let w = int(ceiling(r.x * 2.0)) + 2
+    let h = int(ceiling(r.y * 2.0)) + 2
+    let sprite = ensure_size("", w * h * 4, 0)   // (the write_ functions write into it in place)
+    for(h) y:
+        for(w) x:
+            let q = (float2 { float(x), float(y) } + float2_1 * 0.5 - float2_1 - r) / r
+            if dot(q, q) <= 1.0:
+                for(4) i: write_int8_le(sprite, (y * w + x) * 4 + i, SHADOW_RGBA[i])
+    keep_sprite(full, sprite, w, h, float2_1 + r - SHADOW_CENTRE * BAKE_ART)
+
 def bake_model_part(id:string, full:string, c:Colours) -> bool:
+    if bake_quit: return false
+    if id == "unit_shadow":
+        bake_flat_shadow(full)
+        return true
+    bake_breath()
     if bake_cache_dir == "": return bake_model_part_now(id, full, c)   // (checks bake afresh)
     if load_cached(id, full): return true
     cache_stem = cache_stem_of(id, full)

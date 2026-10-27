@@ -331,7 +331,8 @@ def bake_buildings_for(archs:[string]) -> int:
         for(akb_types()) type:
             for(akb_looks_of(arch, type)) ml:
                 let name = "{arch}:{type}{ml[1]}"
-                if ak_rebake or not looks.get(name) or frame_index(name) < 0:
+                if not bake_quit and (ak_rebake or not looks.get(name) or frame_index(name) < 0):
+                    bake_breath()
                     akb_bake_look(arch, type, ml[0], ml[1])
     return akb_baked
 
