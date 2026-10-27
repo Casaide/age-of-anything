@@ -153,3 +153,17 @@ it. Placement: every rat case passes in 3D (2974 checks), and each row of the sh
 
 Other bodies (frogs, beetles, spiders, bears, cats...) still wear the scaled human piece. Each gets its own fitted set
 when it is rebuilt, as the rat did: the frog next (frog B, D-178).
+
+
+## Units baked at the size they're drawn (D-180, 2026-10-27)
+
+Dominic: "sheep look pixelated". A unit with a recipe scale other than 100 (sheep 135, boar 115, giants 150, tiny races
+80) was drawn by stretching parts baked at 100: blocky when bigger, smeared when smaller. Now each part bakes at its
+unit's size (`PartShape.size`, carried in the bake key; `PartBaker.bake(..., at)`), so every unit has the art's own
+pixels. Sheet: `tests/sheets/sized_bake_sb1.json` (`AOW_FLAT_SIZE=1` draws the old stretched look); every row passes
+in 3D and 2D.
+
+![before and after](10-sized-bake.png)
+
+Capes go the way of banners in the same decision: only when a prompt asks for capes or cloaks (and the royal culture's
+cloth cape, its signature).

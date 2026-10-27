@@ -4744,6 +4744,8 @@
  },
  {
   "id": "cape.leaf",
+  "only_if": ["cape"],
+  "_only_if_doc": "only when the prompt asks for capes or cloaks (Dominic, 2026-10-27: \"still unsure why our units have capes. looks out of place as a standard thing\", D-180); a unique unit may still wear one (data/uniques.json)",
   "not_worn_by": ["body.rat"],
   "_not_worn_by_doc": "the rat as a rat is (D-177) leans 42 degrees: a hanging cape or quiver falls through its back and legs",
   "slot": "back",
@@ -4791,6 +4793,8 @@
  },
  {
   "id": "cape.cloth",
+  "only_if": ["cape", "royal"],
+  "_only_if_doc": "only when the prompt asks for capes or cloaks, or the royal culture (its signature) (Dominic, 2026-10-27: \"still unsure why our units have capes. looks out of place as a standard thing\", D-180); a unique unit may still wear one (data/uniques.json)",
   "not_ridden_on": ["pony", "beetle", "bear", "bear_black"],
   "_not_ridden_on_doc": "mounts whose riders don't wear it: a cloth cape hung through the pony's, the beetle's and the bear's back (the placement check, A3)",
   "not_worn_by": ["body.frog", "body.beetle_rear", "body.rat"],

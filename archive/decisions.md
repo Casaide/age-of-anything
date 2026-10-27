@@ -1241,3 +1241,13 @@ holds (walk swing, wind-up, contact, follow-through), its tail and head as parts
 composer plays them as keyed cycles, with anticipation, contact holds, lag and sway in its timing. Built body by body,
 the rat first (D-177), each through the placement check. Whole-unit pre-rendered frames (C) stay for heroes or war
 beasts if ever.
+
+**D-180, 2026-10-27: Capes only when asked; every unit baked at the size it's drawn.** Dominic, playing the Lobster
+game: "still unsure why our units have capes. looks out of place as a standard thing", and "sheep look pixelated".
+Capes go the way of banners (D-174): the cloth cape only when a prompt asks for capes or cloaks, or for the royal
+culture (its signature); the leaf cape only when asked (parts.json `only_if`). A unique unit's signature kit keeps its
+cape (sworn knights, bog lurkers, moss wardens), and heroes keep theirs. This changes race keys and prices (a cape was
+a point). Units drawn at a scale other than 100 (sheep 135, boar 115, giants 150, tiny races 80) were sprites baked at
+100 and stretched; now each part bakes at its unit's size (the bake key carries it, `PartShape.size`, `PartBaker.bake(..., at)`),
+so a big sheep or a tiny viking keeps the art's own pixels. The composer still scales the unit's node (sockets, legs and
+offsets stay in part units); a sized sprite draws at 1/size, so the two cancel. Claude's design.
