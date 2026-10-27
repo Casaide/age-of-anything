@@ -224,7 +224,7 @@ SURRENDER, the bots' walls and abilities.
   - [x] The UI after Godot's (2026-10-26, `39-...`, `40-...`): the top bar (`game/topbar.lobster`) and the command
         panel, unit card, portraits as busts, captioned button groups with costs and hover cards, the training
         well, the minimap's diamond and frame; Godot's icons as PNGs (`icons.sh`). Every culture's painted materials
-        since (13, after `ui_materials.gd`). Not yet: the pad's compact panel.
+        since (13, after `ui_materials.gd`), and the pad's compact panel (2026-10-27).
   - [x] Checked at the end (2026-10-26): the parity suite (`all.sh`): all 18 scenarios, 26 runs, every tick's
         hash the same as Godot's (moves, fights to 2000 units, sieges, walls, economies, a person's orders, five whole
         bot matches, the bots in Lobster too). A whole match with no pack (`play.sh none lobby ... watch tillend`):
@@ -253,9 +253,11 @@ Godot is left in three places, none needed to play:
 - **The GDScript game itself** (`src/`, `scenes/`, the Godot Deck build): still in the repo beside the port. Retiring
   it is Dominic's call once he has played the Lobster one.
 
-Left in the port, against the Godot game: Godot's saves don't load in Lobster (each has its own); the pad's compact
-panel and Steam Input's layout; the Mac against the Deck over the network. The exit criterion (Dominic's own match)
-and the Deck play-test wait on Dominic.
+Left in the port, against the Godot game: Godot's saves don't load in Lobster (each game has its own; moved to the
+backlog with a way to do it, 2026-10-27). The pad's compact panel is in since 2026-10-27 (the orders on the wheel,
+the card and queue in the panel). Steam Input's layout isn't a port gap: the Godot game hasn't one yet either
+(m20 step 9). The exit criterion (Dominic's own match), the Deck play-test and the Mac against the Deck over the
+network wait on Dominic.
 
 ## Results
 

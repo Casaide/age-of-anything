@@ -42,6 +42,14 @@ the rubble, the siege tower and ladder, the trade cart, the unique units' themes
   buildings, tech, audio and creature-kit creatures moddable; model scripts sandboxed or `.glb`-only for shared mods;
   installed from a zip on a second machine with the same race key and a match played; Steam Workshop.
 
+### Godot's saves in the Lobster game (Claude, 2026-10-27, from the Lobster port)
+
+Saves made by the GDScript game don't load in the Lobster one (each has its own format). Godot's are zstd-compressed
+`store_var` data; Lobster has no zstd. A way to do it: every Godot save also keeps its match as a replay (races as
+prompt + rules + reroll, map, seed, teams, every command a person gave), and the Lobster sim and bots match Godot's
+tick for tick, so Lobster could replay the save to its tick and check the save's hash. Needs a zstd reader and a
+Godot Variant reader in Lobster. Only worth it if old saves need to carry over.
+
 ## 1. Networking (next after the demo)
 
 1. **Two-sim test:** two sim instances in one process, fed the same commands with artificial
