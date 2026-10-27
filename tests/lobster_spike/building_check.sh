@@ -6,6 +6,7 @@ out="$1"; shift
 here="$(cd "$(dirname "$0")" && pwd)"
 GODOT="${GODOT:-/Applications/Godot.app/Contents/MacOS/Godot}"
 LOBSTER="${LOBSTER:-$HOME/Dev/lobster/bin/lobster}"
+LOBSTER_FLAGS="${LOBSTER_FLAGS-}"   # (as the game runs it, play.sh: no --mir, D-174)
 if [ $# -eq 0 ]; then
     set --
     for m in town_center stilt_house junk_town_center junk_town_center_small junk_town_center_pride tin_can_house \
@@ -32,4 +33,4 @@ if [ $# -eq 0 ]; then
 fi
 rm -rf "$out"
 (cd "$here/../.." && timeout 900 "$GODOT" --headless --path . --script res://tests/lobster_spike/building_export.gd -- "$out" "$@" 2>&1 | grep -i "error" | head -20)
-cd "$here" && timeout 900 "$LOBSTER" building_check.lobster -- "$out" "$@" 2>&1 | grep -v "warning" | tail -500
+cd "$here" && timeout 900 "$LOBSTER" $LOBSTER_FLAGS building_check.lobster -- "$out" "$@" 2>&1 | grep -v "warning" | tail -500

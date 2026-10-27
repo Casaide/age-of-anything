@@ -109,6 +109,8 @@ def siege_style(fam:string, c:Colours) -> SStyle:
             s.roof = s.plate
             s.ammo = surf("cheese", float3_1, 4.0)
         default: assert false
+    s.rope.rope = true   // (ropes are tied at both ends: the placement check, C3, finds them by it)
+    if s.lash != SIEGE_NOMAT: s.lash.rope = true
     return s
 
 // ------------------------------------------------------------------ helpers

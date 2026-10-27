@@ -14,7 +14,7 @@ set -- "sewer rats with cheese hammers" "angry swamp frogs with reed spears" "ce
   "future soldiers" "space marines" "sewer rats from the future"
 GODOT=/Applications/Godot.app/Contents/MacOS/Godot
 AOW_MODS="$MODS" AOW_REROLL="$REROLL" timeout 120 "$GODOT" --headless --path ../.. --script res://tests/lobster_spike/race_dump.gd -- "$OUT/gd.txt" "$RULES" "$@" > "$OUT/gd.log" 2>&1
-timeout 120 ~/Dev/lobster/bin/lobster races.lobster -- ${MODS:+mods:$MODS} reroll:$REROLL "$RULES" "$@" 2>&1 | grep -v warning > "$OUT/lob.txt"
+timeout 120 ~/Dev/lobster/bin/lobster ${LOBSTER_FLAGS-} races.lobster -- ${MODS:+mods:$MODS} reroll:$REROLL "$RULES" "$@" 2>&1 | grep -v warning > "$OUT/lob.txt"
 n=0
 bad=0
 while [ $n -lt $# ]; do

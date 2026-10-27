@@ -1208,3 +1208,12 @@ runs with no pack (`play.sh none`), the parts kept in `bake_cache/` after the fi
 are written in Lobster too (`lobster_models` in mod.json, beside its GDScript ones while both games exist).
 (Numbered 173: the art study's branch has D-171 and D-172.) Claude, for Dominic's goal: "port the whole game over to
 lobster".
+
+**D-179, 2026-10-27: The Lobster game runs on Lobster's default JIT, not `--mir`.** The voxel check for the
+placement port caught `--mir` miscompiling model and rig code (the timber ram's hides tilted 128 degrees instead of
+48, levelled spears turned 90 degrees the wrong way, trees' leaves and wood piles' logs misplaced), depending on
+the program around them, so a check could pass in one program and the same model come out wrong in the game. The
+checks had run on the default JIT while the game ran `--mir`. Without it everything matches Godot (races, starts,
+models, props, buildings, the 26 parity runs), and a 10-minute bot match ran faster (66 s against 93 s: `--mir`
+compiles longer than it saves). `LOBSTER_FLAGS=--mir` still tries it. (Numbered 179: the art study's branch has up
+to D-178.) Claude.
