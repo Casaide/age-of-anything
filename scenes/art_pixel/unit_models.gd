@@ -647,7 +647,7 @@ static var rat_torso_x := 0.8   # where worn armour sits along it (a placement f
 const RAT_HIP := Vector3(0.0, 11.0, 0.0)
 const RAT_HIP_Z := 2.7
 const RAT_BANNER_Y := 22.6
-const RAT_HAND_L := Vector3(11.6, 17.4, -7.6)   # the shield hand, up at the chest (lower, a riding rat's shield went into its mount)
+const RAT_HAND_L := Vector3(12.6, 17.8, -8.6)   # the shield hand, up and out at the chest (lower or forward, a riding rat's shield went into its mount; further back or in, a scutum covered its face in facing 0)
 ## The leg, from its hip: the knee forward and down, the heel up behind on the long foot, the toes forward on the ground.
 const RAT_THIGH := 5.9
 const RAT_SHANK := 6.66
