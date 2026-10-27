@@ -1223,3 +1223,9 @@ red team's. Supersedes D-055's team-coloured tunic for humans.
 humans standing on an open platform: "the elephant with units standing makes no sense now". Crew on a howdah's "_box"
 sockets aren't drawn below the hips (their legs hidden; the 3D check leaves them out too), set down so the tunic's hem
 meets the walls' top (12 over the floor).
+
+**D-177, 2026-10-27: The rats are rebuilt as rats (round F2's B).** Dominic: "rat b looks great". The rat becomes a rat as
+a rat is: hunched forward on its hind legs, a long body, short arms, the head carried low, a real rat's snout, ears and
+tail (`tools/blender/concept_creatures.py` rat B is the concept), at the heroic humans' quality (milestone 23). The frogs'
+take (A or B) is still open. Not built yet. (On the Lobster branch rats and frogs are drawn a fifth smaller on foot,
+creatures.json draw_scale 80, Dominic's call there.)
