@@ -30,9 +30,11 @@ def old_cap() -> Spec:
 def fixture_set(f:Fixture, r:JV, on:bool):
     switch f.which:
         case 0: mirror_legs = not on
-        case 1: rat_hunch = if on: -15.0 else: 15.0
+        case 1:
+            rat_hunch = if on: -15.0 else: RAT_LEAN
+            rat_head_follows = not on
         case 2:
-            rat_hunch = if on: -15.0 else: 15.0
+            rat_hunch = if on: -15.0 else: RAT_LEAN
             rat_torso_x = if on: 1.4 else: 0.8
         case 3: rig_old_bob = on
         case 4: rig_old_seat = on

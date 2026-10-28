@@ -19,14 +19,23 @@ def leg_basis(a:Anchor, cut:bool) -> Basis:
     let fan = if a.more.length > 2: axis_angle(float3 { 0.0, 1.0, 0.0 }, a.more[2] * -side) else: BASIS_ID
     return bmul(fan, bscaled(BASIS_ID, float3 { if flip: -1.0 else: 1.0, 1.0, side }))
 
-// Armour modelled for this body (assets/models/armour_<kind>_<creature>.glb), or nil to fit the generic one.
+// Armour modelled for this body (assets/models/armour_<kind>_<creature>.glb; the heroic human's armour_<kind>_human_heroic),
+// or nil to fit the generic one.
+// The materials a fitted armour's .glb names (tools/blender/human_armour.py, creature_armour.py): [texture, tint, size];
+// no texture: plain.
+let ARMOUR_MAT_NAMES = ["leather", "trim", "bronze", "iron", "tin", "brass", "mail", "bark", "label"]
+let ARMOUR_MAT_TEX = ["leather", "leather", "bronze", "iron", "iron", "bronze", "mail", "bark_plate", ""]
+let ARMOUR_MAT_TINT = ["#ffffff", "#5a3a20", "#ffffff", "#ffffff", "#f2f6ff", "#fff0c8", "#ffffff", "#ffffff", "#c8a040"]
+let ARMOUR_MAT_SIZE = [5.0, 3.0, 4.0, 3.0, 2.0, 1.2, 2.5, 6.0, 0.0]
+
 def fitted(armour_id:string, body_id:string, c:Colours) -> Spec?:
     if starts_with(armour_id, "harness."): return harness_fitted(armour_id, body_id, c)   // a draught harness, on its beast (model/siege.lobster)
     let kind = armour_id.substring(7, armour_id.length - 7)
-    let name = "armour_{kind}_{body_id.substring(5, body_id.length - 5)}"
+    let name = "armour_{kind}_{body_id.substring(5, body_id.length - 5)}" + (if body_id == "body.human": HUMAN_LOOK else: "")
     if not read_file(models_dir + "/" + name + ".glb", true): return nil
-    let main = if kind != "leather": surf(kind, float3_1, 4.0) else: surf("leather", float3_1, 5.0)
-    return spec_of(glb(name, mats_of([main, surf("leather", html("#5a3a20"), 3.0)], [kind, "trim"])))
+    let mats = map(ARMOUR_MAT_NAMES.length) i:
+        if ARMOUR_MAT_TEX[i] != "": surf(ARMOUR_MAT_TEX[i], html(ARMOUR_MAT_TINT[i]), ARMOUR_MAT_SIZE[i]) else: plain(html(ARMOUR_MAT_TINT[i]))
+    return spec_of(glb(name, mats_of(mats, ARMOUR_MAT_NAMES)))
 
 // ---- JSON for the rigs
 

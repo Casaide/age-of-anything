@@ -380,9 +380,10 @@ def head_deer(c:Colours) -> Spec:
 def leg_deer(c:Colours) -> Spec:
     let n = mnode()
     let coat = surf("hide", col(c, "skin"), 4.0)
-    add_child(n, rod(float3_0, float3 { 0.3, -7.0, 0.0 }, 1.2, 0.6, coat))
-    add_child(n, rod(float3 { 0.3, -7.0, 0.0 }, float3 { 0.6, -13.0, 0.0 }, 0.55, 0.45, coat))
-    add_child(n, blob(float3 { 0.7, 0.6, 0.6 }, plain(col(c, "skin2")), float3 { 0.8, -13.3, 0.0 }))
+    let knee, foot = stepped(float3 { 0.3, -7.0, 0.0 }, float3 { 0.6, -13.0, 0.0 }, if hold == "low": "" else: hold, 9.0)   // (D-179: baked per walk step)
+    add_child(n, rod(float3_0, knee, 1.2, 0.6, coat))
+    add_child(n, rod(knee, foot, 0.55, 0.45, coat))
+    add_child(n, blob(float3 { 0.7, 0.6, 0.6 }, plain(col(c, "skin2")), foot + float3 { 0.2, -0.3, 0.0 }))
     return spec_of(n)
 
 def body_boar(c:Colours) -> Spec:
@@ -417,8 +418,11 @@ def head_boar(c:Colours) -> Spec:
 
 def leg_boar(c:Colours) -> Spec:
     let n = mnode()
-    add_child(n, rod(float3_0, float3 { 0.3, -6.6, 0.0 }, 1.6, 0.9, surf("hide", col(c, "skin"), 4.0)))
-    add_child(n, blob(float3 { 0.9, 0.6, 0.8 }, plain(col(c, "skin2")), float3 { 0.5, -7.0, 0.0 }))
+    let knee, foot = stepped(float3 { 0.35, -3.3, 0.0 }, float3 { 0.3, -6.6, 0.0 }, if hold == "low": "" else: hold, 5.0)   // (D-179: baked per walk step)
+    let hide = surf("hide", col(c, "skin"), 4.0)
+    add_child(n, rod(float3_0, knee, 1.6, 1.25, hide))
+    add_child(n, rod(knee, foot, 1.25, 0.9, hide))
+    add_child(n, blob(float3 { 0.9, 0.6, 0.8 }, plain(col(c, "skin2")), foot + float3 { 0.2, -0.4, 0.0 }))
     return spec_of(n)
 
 def body_sheep(c:Colours) -> Spec:
@@ -455,8 +459,11 @@ def head_sheep(c:Colours) -> Spec:
 
 def leg_sheep(c:Colours) -> Spec:
     let n = mnode()
-    add_child(n, rod(float3_0, float3 { 0.2, -6.6, 0.0 }, 0.8, 0.6, surf("hide", col(c, "skin2"), 4.0)))
-    add_child(n, blob(float3 { 0.7, 0.45, 0.6 }, plain(darkened(col(c, "skin2"), 0.3)), float3 { 0.4, -6.8, 0.0 }))
+    let knee, foot = stepped(float3 { 0.3, -3.3, 0.0 }, float3 { 0.2, -6.6, 0.0 }, if hold == "low": "" else: hold, 4.5)   // (D-179: baked per walk step)
+    let shank = surf("hide", col(c, "skin2"), 4.0)
+    add_child(n, rod(float3_0, knee, 0.8, 0.7, shank))
+    add_child(n, rod(knee, foot, 0.7, 0.6, shank))
+    add_child(n, blob(float3 { 0.7, 0.45, 0.6 }, plain(darkened(col(c, "skin2"), 0.3)), foot + float3 { 0.2, -0.2, 0.0 }))
     return spec_of(n)
 
 // ------------------------------------------------------------------ beetle soldier (rearing, BG1)
@@ -538,8 +545,7 @@ def head_beetle(c:Colours) -> Spec:
 def leg_insect(c:Colours) -> Spec:
     let n = mnode()
     let shell = surf("chitin", darkened(col(c, "skin"), 0.45), 3.0)
-    let knee = float3 { 4.0, -1.8, 2.0 }
-    let foot = float3 { 6.2, -8.2, 3.0 }
+    let knee, foot = stepped(float3 { 4.0, -1.8, 2.0 }, float3 { 6.2, -8.2, 3.0 }, if hold == "low": "" else: hold, 5.5)   // (D-179: baked per walk step)
     add_child(n, rod(float3_0, knee, 1.3, 1.0, shell))
     add_child(n, rod(knee, foot, 0.9, 0.6, shell))
     add_child(n, rod(foot, foot + float3 { 1.8, -0.4, 0.3 }, 0.45, 0.3, shell))
@@ -662,8 +668,7 @@ def newt_head(c:Colours) -> Spec:
 def newt_leg(c:Colours) -> Spec:
     let n = mnode()
     let m = newt_mats(c)
-    let elbow = float3 { 1.8, 1.4, 6.0 }
-    let wrist = float3 { 3.4, -5.6, 8.0 }
+    let elbow, wrist = stepped(float3 { 1.8, 1.4, 6.0 }, float3 { 3.4, -5.6, 8.0 }, if hold == "low": "" else: hold, 7.0)   // (D-179: baked per walk step)
     add_child(n, rod(float3_0, elbow, 3.0, 2.4, m.skin))
     add_child(n, rod(elbow, wrist, 2.3, 1.7, m.skin))
     for(4) t:

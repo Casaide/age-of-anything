@@ -334,3 +334,67 @@ def ik(a:float2, b:float2, l1:float, l2:float, side:float) -> float2:
     let along = (l1 * l1 - l2 * l2 + l * l) / (2.0 * l)
     let hh = sqrt(max(0.0, l1 * l1 - along * along))
     return a + u * along + float2 { -u.y, u.x } * hh * side
+
+// ---- keyed limbs (D-179; unit_models.gd walk_step, stepped, ik2). Godot's radians are degrees here.
+
+// Where a walk pose ("w<i>_<n>": step i of n) is in its cycle (0..1); -1 when it isn't one.
+def walk_step(pose:string) -> float:
+    if not starts_with(pose, "w") or find_string(pose, "_") < 0: return -1.0
+    let nums = tokenize(pose.substring(1, pose.length - 1), "_", "")
+    let a, _a = string_to_int(nums[0])
+    let b, _b = string_to_int(nums[1])
+    return float(a) / float(b)
+
+def rot2d(v:float2, deg:float) -> float2:   // Vector2.rotated (degrees)
+    let cs = cos(deg)
+    let sn = sin(deg)
+    return float2 { v.x * cs - v.y * sn, v.x * sn + v.y * cs }
+
+def v3of(p:float2) -> float3: return float3 { p.x, p.y, 0.0 }
+
+let RAD_DEG = 180.0 / 3.14159265358979323846
+
+// Two-bone IK in 2D from the origin to `end`: the middle joint, on the forward side (+x) or the back.
+def ik2(end:float2, l1:float, l2:float, forward:bool) -> float2:
+    let d = min(magnitude(end), l1 + l2 - 0.01)
+    let a = acos(clamp((l1 * l1 + d * d - l2 * l2) / (2.0 * l1 * d), -1.0, 1.0))
+    let ang = atan2(end)
+    let one = float2 { cos(ang + a), sin(ang + a) } * l1
+    let two = float2 { cos(ang - a), sin(ang - a) } * l1
+    return if forward: (if one.x > two.x: one else: two) else: (if one.x > two.x: two else: one)
+
+// A leg's knee and foot in a walk step, for legs modelled as hip, knee and foot (the hip at the origin): as modelled
+// standing; walking, the foot slides back while down (`stance` of the step) and swings forward lifted, the knee by
+// two-bone IK on the side the modelled knee bends to (over it by `bend`).
+def stepped(knee0:float3, foot0:float3, pose:string, stride:float, stance:float = 0.6, lift:float = -1.0, bend:float3 = float3_0) -> float3, float3:
+    let p = walk_step(pose)
+    if p < 0.0: return knee0, foot0
+    var foot = foot0
+    if p < stance:
+        foot = foot + float3 { stride * (0.5 - p / stance), 0.0, 0.0 }
+    else:
+        let q = (p - stance) / (1.0 - stance)
+        foot = foot + float3 { stride * (smoothstep(0.0, 1.0, q) - 0.5), (if lift < 0.0: stride * 0.35 else: lift) * sin(q * 180.0), 0.0 }
+    let l1 = magnitude(knee0)
+    let l2 = magnitude(foot0 - knee0)
+    let u = normalize(foot)
+    let d = clamp(magnitude(foot), abs(l1 - l2) + 0.01, l1 + l2 - 0.01)
+    foot = u * d
+    let a = (l1 * l1 - l2 * l2 + d * d) / (2.0 * d)
+    let pole = knee0 + bend
+    let v = normalize(pole - u * dot(pole, u))
+    return u * a + v * sqrt(max(l1 * l1 - a * a, 0.0)), foot
+
+// The glTF node named `name` in a .glb's tree (Godot's find_child: here by its mesh's name, which the game's .glb
+// files give their nodes too).
+def glb_named(n:MNode, name:string) -> MNode?:
+    for(n.kids) k:
+        if k.kids.length and k.kids[0].meta == name and k.kids[0].mesh != nil: return k
+        let deeper = glb_named(k, name)
+        if deeper: return deeper
+    return nil
+
+def coat_mat(d:dictionary<string, MMat>, k:string) -> MMat:   // a coat's material by name (it must have it)
+    let m = d.get(k)
+    assert m
+    return m
