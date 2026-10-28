@@ -6,3 +6,5 @@ pack_scifi/
 textures/bmat*_*.png
 bake_cache/
 model/mods/
+saves/
+races/

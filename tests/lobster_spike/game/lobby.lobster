@@ -968,7 +968,7 @@ def fe_lab_page(dt:float) -> string:
             s.reroll++
             fe_regen(k)
         if ui_button(float2 { x + half - bw - 10.0 * fe_k, top.y }, float2 { bw, 46.0 * fe_k }, "Save", false):
-            launch_subprocess(["mkdir", "-p", "races"])
+            launch_subprocess(["/bin/mkdir", "-p", "races"])
             let path = "races/" + substring(rstr(s.race, "key"), 0, 12) + ".json"
             fe_note = if write_file(path, stringify(s.race)): "Saved " + path else: "Could not save " + path
     if ui_button(float2 { 138.0 * fe_k + half + 10.0 * fe_k, top.y }, float2 { mid_w - 20.0 * fe_k, 46.0 * fe_k }, rules_name, false):
@@ -1176,6 +1176,9 @@ def run_front(page0:string, typed:[string]) -> string:
             tree_tick()
             ui_flush()
             fe_frames++
+            if shot != "" and fe_frames == shot_frame + 5:   // (captures: lobbytree)
+                gl.screenshot(shot)
+                return ""
             continue
         ui_frame(true)
         fe_backdrop()
@@ -1193,12 +1196,21 @@ def run_front(page0:string, typed:[string]) -> string:
         fe_draw_tip()
         ui_flush()
         fe_frames++
+        // (captures: lobbytree opens the AI's tech tree; loadfirst plays on from the newest save)
+        if has_s(args, "lobbytree") and fe_page == "setup" and shot_frame > 0 and fe_frames == shot_frame - 1:
+            fe_open_tree(1)
+            shot_frame = fe_frames
+            fe_frames++
+            continue
+        if has_s(args, "loadfirst") and fe_page == "saves" and fe_frames == 10:
+            let paths, rows_ = fe_saves()
+            if paths.length: go = "load:" + paths[0]
         // (tests: lobbyloop starts a battle from the setup, a map further on each time round)
         if has_s(args, "lobbyloop") and fe_page == "setup" and fe_frames == 20:
             if loop_round > 0: fe_set_map(fe_map_k + 1)
             go = "start"
         // captures: the page once its armies stand
-        if shot != "" and not has_s(args, "lobbyloop") and (fe_sides.length == 0 or (filter(fe_sides) s: s.views_gen != s.gen).length == 0 or fe_page == "lab") and shot_frame < 0: shot_frame = fe_frames + (if fe_page == "lab": 90 else: 20)
+        if shot != "" and not has_s(args, "lobbyloop") and not has_s(args, "loadfirst") and (fe_sides.length == 0 or (filter(fe_sides) s: s.views_gen != s.gen).length == 0 or fe_page == "lab") and shot_frame < 0: shot_frame = fe_frames + (if fe_page == "lab": 90 else: 20)
         if shot != "" and fe_frames == shot_frame:
             gl.screenshot(shot)
             if fe_page == "setup" and has_s(args, "loadershot"):
@@ -1206,6 +1218,12 @@ def run_front(page0:string, typed:[string]) -> string:
                 gl.frame()
                 fe_loader("Balancing the armies by fighting them: round 1 of 4", 0.35)
                 gl.screenshot(shot + ".loader.png")
+                bake_backdrop = loader_picture()   // (the picture the bake shows: as bake_breath draws it)
+                gl.frame()
+                gl.clear(float4 { 0.07, 0.06, 0.05, 1.0 })
+                bake_draw_backdrop()
+                gl.screenshot(shot + ".bake.png")
+                bake_backdrop = nil
             return ""
         if go == "": pass()
         elif go == "quit": return ""
