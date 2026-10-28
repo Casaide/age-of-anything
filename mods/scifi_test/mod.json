@@ -3,14 +3,26 @@
  "name": "Future soldiers (test)",
  "version": "0.1.0",
  "game_version": "0.21",
- "authors": ["Claude (for Dominic)"],
+ "authors": [
+  "Claude (for Dominic)"
+ ],
  "description": "The first test of modded art: an armoured future soldier with a sealed visor helmet, plated armour, a power pack, a pulse rifle that fires bolts of light and an arc blade. Original art. Its parts only appear when the prompt asks for the future (future, space, sci-fi...) and the host's rules allow the scifi era.",
  "license": "Same as the game",
  "load_order": 100,
  "depends": [],
- "eras": ["scifi"],
+ "eras": [
+  "scifi"
+ ],
  "data": "data",
- "models": ["models/scifi_parts.gd"],
- "lobster_models": ["models/scifi_parts.lobster"],
- "check": {"rules": "anything", "prompts": ["future soldiers", "space marines", "sewer rats from the future"]}
+ "models": [
+  "models/scifi_parts.lobster"
+ ],
+ "check": {
+  "rules": "anything",
+  "prompts": [
+   "future soldiers",
+   "space marines",
+   "sewer rats from the future"
+  ]
+ }
 }

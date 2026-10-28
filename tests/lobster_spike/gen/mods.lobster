@@ -84,6 +84,16 @@ def mod_read(rec:ModRec) -> string:
 
 // What's wrong with a mod's data against the data before it (the base and earlier mods), or "".
 // (The models' own check, that each new part has a model, is the bake's: Godot's for now.)
+// A mod's model files (mod.json "models": Lobster, joined to the game by mods_gen.lobster), as one text: the parts it
+// builds are the cases of its build_mod_<id>.
+def mod_models_text(rec:ModRec) -> string:
+    var out = ""
+    for(gstrs(rec.manifest, "models")) rel: out += read_file(rec.dir + "/" + rel) or ""
+    return out
+
+// The mods a race was made with that aren't in use here ([]: it can be played; Mods.missing).
+def mods_missing(race:JV) -> [string]: return filter(gstrs(race, "mods")) s: not has_s(lib_mods, s)
+
 def mod_check_data(rec:ModRec, eras:[string]) -> string:
     let d = rec.data
     let slots = []::string
@@ -106,6 +116,11 @@ def mod_check_data(rec:ModRec, eras:[string]) -> string:
         if tier < 1 or tier > 3: return at_ + "tier must be 1-3"
         let slot = gstr(p, "slot", "")
         if (slot == "body" or slot == "head") and not has(p, "sockets"): return at_ + "a {slot} needs its sockets"
+        let glb = gstr(p, "glb", "")
+        if glb != "":
+            if not read_file(rec.dir + "/" + glb, true): return at_ + "its model {glb} isn\'t in the mod"
+        elif find_string(mod_models_text(rec), "case " + "\"" + id + "\"") < 0:
+            return at_ + "no model: add a case for it to a model file in the manifest\'s \'models\' (its build_mod), or a \'glb\'"
         new_parts.push(id)
     def has_part(id:string) -> bool: return has(lib_parts, id) or has_s(new_parts, id)
     let creatures = gobj(d, "creatures.json")
