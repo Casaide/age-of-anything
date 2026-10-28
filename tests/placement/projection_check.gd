@@ -30,12 +30,15 @@ const POSES := [["stand", false, 0.0], ["walk0", true, 0.0], ["walk1", true, 2.1
 const HOP_POSES := [["hop_crouch", true, 0.2 * TAU], ["hop_land", true, 0.82 * TAU]]
 
 ## Thresholds (art pixels). Tolerant of a pixel or two of outline, strict enough for a leg on a back.
-const MODEL_SLACK := 6         # pixels a leg or head may differ from the 3D model by (the outline, rounding)...
+## Pixel tolerances below were set at the art scale before D-173 (ArtKit.BASE_SCALE); they keep their size on screen
+## at a finer scale (at 2x a pixel is half as big, so the same slack is twice the pixels).
+static var PX_SCALE: float = ArtKit.ART_SCALE / ArtKit.BASE_SCALE
+static var MODEL_SLACK: int = roundi(6 * PX_SCALE)   # pixels a leg or head may differ from the 3D model by (the outline, rounding)...
 const MODEL_SHARE := 0.08      # ...or this share of the part's pixels
 const HIDDEN_MIN := 3          # a weapon or shield shows at least this many pixels in every facing
 const ARMOUR_SHARE := 0.8      # worn armour covers at most this share of its body (a whole copy of the body is 1)
 const FACE_TEAM_SHARE := 0.3   # team cloth over at most this share of a head facing the camera
-const FOOT_PX := 2             # a standing foot's lowest pixel within this of its ground point; the walk's planted foot within this of the standing line
+static var FOOT_PX: int = roundi(2 * PX_SCALE)   # a standing foot's lowest pixel within this of its ground point; the walk's planted foot within this of the standing line
 const RIDER_REACH := 0.8       # a person riding: its leg reaches at least this share of the way from the seat down to the girth...
 const CLING_REACH := 0.1       # ...a clinging or folded-legged rider's (legs hugging the flank: creatures.json rider_legs) at least onto the flank
 
@@ -182,12 +185,7 @@ func _part(v, ps: PartShape, t: Transform2D) -> Dictionary:
 
 
 func _key(ps: PartShape) -> String:
-	var key := PartShape.bake_key(ps.part_id, ps.shapes, PartShape.team_neutral(ps.colours))
-	if ps.facing != 0 and PartShape.baked.has(key + PartShape.facing_suffix(ps.facing)):
-		key += PartShape.facing_suffix(ps.facing)
-	if ps.front:
-		key = PartShape.front_key(key)
-	return key
+	return ps.key_of()
 
 
 ## A bake's opaque pixels as points in part units (pixel centres), and which are team colour.
@@ -438,7 +436,8 @@ func _check_model(v, parts: Array, rig: String, body: int, label: String, view: 
 		return
 	var cam := camera(k)
 	var a3: Dictionary = rig3d.unit(u.recipe, {"body_pose": v.body_pose})
-	var s: float = ArtKit.ART_SCALE * ArtKit.UNIT_SCALE
+	var s: float = ArtKit.ART_SCALE * ArtKit.UNIT_SCALE * float(v.drawn_size()) / 100.0   # the legs' own grid (D-180)
+	var foot := roundi(FOOT_PX * float(v.drawn_size()) / 100.0)   # (its tolerance the same size on screen)
 	var lows := {}
 	var n := 0
 	for leg in v.legs:
@@ -475,13 +474,13 @@ func _check_model(v, parts: Array, rig: String, body: int, label: String, view: 
 		# In sight: the 3D truth shows this leg's own pixels at its foot (not some other part of it).
 		var seen := false
 		var at := Vector2i(roundi(sole.x * s), roundi(sole.y * s))
-		for dx in range(-FOOT_PX, FOOT_PX + 1):
-			for dy in range(-FOOT_PX - 1, FOOT_PX + 1):
+		for dx in range(-foot, foot + 1):
+			for dy in range(-foot - 1, foot + 1):
 				seen = seen or gt.feet.get(i, {}).has(at + Vector2i(dx, dy))
 		if near:
 			note("B5 a near foot in sight", label, view, not seen, "%s %s foot hidden by its own body in 3D" % [rig, leg.node.part_id])
 		if near or seen:
-			note("B5 standing feet on the ground", label, view, absf(got - want_px) > FOOT_PX,
+			note("B5 standing feet on the ground", label, view, absf(got - want_px) > foot,
 				"%s %s lowest pixel %d, its ground point %d" % [rig, leg.node.part_id, int(got), int(roundf(want_px))])
 	stand[rig] = lows
 
@@ -622,7 +621,7 @@ func _truth(body: PartShape, v, rig: String, heads: Array, k: int) -> Dictionary
 	var bdata: Dictionary = lib.part(body_id)
 	var cut: bool = "legs" in bdata.get("cut", [])
 	var head: PartShape = heads[0] if not heads.is_empty() else null
-	var key := "%s|%s|%d|%s" % [PartShape.bake_key(body.part_id, body.shapes, PartShape.team_neutral(body.colours)), head.part_id if head else "", k, str(old_truth)]
+	var key := "%s|%s|%d|%s" % [body.key_of(), head.part_id if head else "", k, str(old_truth)]
 	if _gt_cache.has(key):
 		return _gt_cache[key]
 	if _gt_baker == null:
@@ -668,7 +667,7 @@ func _truth(body: PartShape, v, rig: String, heads: Array, k: int) -> Dictionary
 	pb.holder.add_child(model)
 	var box: AABB = pb._aabb(model)
 	var r := box.size.length() * 0.5 + 2.0
-	var s: float = ArtKit.ART_SCALE * ArtKit.UNIT_SCALE
+	var s: float = ArtKit.ART_SCALE * ArtKit.UNIT_SCALE * float(body.size) / 100.0   # on the parts' own grid: baked at the unit's size (D-180)
 	pb.size = Vector2i.ONE * ceili(2.0 * r * s)
 	pb.cam.keep_aspect = Camera3D.KEEP_HEIGHT
 	pb.cam.size = 2.0 * r
@@ -717,21 +716,18 @@ func _paint(n: Node, colour: Color) -> void:
 		(mi as MeshInstance3D).cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
 
 
-## Siege crews by socket: "_in" behind the engine, "_top" over it, the rest by the socket's depth.
+## Siege crews by socket: "_in" behind the engine, "_top" and "_box" over it, the rest by the socket's depth.
 func _check_crew(v, label: String, view: String) -> void:
 	var engine: Node = v._body_nodes[0]   # (the engine's sprite, or a war beast's rig: its body, legs; its head is ordered with the crew)
 	while engine.get_parent() != v.bob:
 		engine = engine.get_parent()
 	var rig: Dictionary = PartShape.rigs.get(v.recipe.body + PartShape.facing_suffix(v.facing_k), {})
 	for c in v.crew:
-		var name := ""
-		for s in rig.get("sockets", {}):
-			if (s.begins_with("crew") or s.begins_with("haul")) and rig.sockets[s].distance_to(c.view.position) < 0.01:
-				name = s   # (a hauling beast's too: a trade cart's pony, UnitView._build_engine)
+		var name: String = c.socket   # (a hauling beast's too: a trade cart's pony, UnitView._build_engine)
 		var over: bool = c.view.get_index() > engine.get_index()
 		var want: bool = rig.get("front", {}).get(name, float(rig.depth[name]) > 0.0)   # (which is in front where they overlap: part_baker._members_front)
 		if name.ends_with("_in"):
 			want = false
-		elif name.ends_with("_top"):
+		elif name.ends_with("_top") or name.ends_with("_box"):
 			want = true
 		note("siege crew by socket", label, view, over != want, name)

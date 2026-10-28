@@ -147,3 +147,16 @@ One line per moment worth remembering. Newest at the bottom.
 - **2026-10-26:** The Lobster game grows the rest of the game around the port: paths, combat effects, the living town, save and load, network play over TCP, pad play, game modes, mods, the tech tree, the Race Lab with rerolls, and a UI layer in the timber look for the lobby, the panel and the menus.
 - **2026-10-26:** The Lobster game no longer needs Godot to play: every model built and baked in Lobster (each held to Godot's triangles), the pack's tables from data, the UI and controls after Godot's, mods' code parts in Lobster too.
 - **2026-10-27:** The Lobster game reads nothing Godot made (textures by rsvg-convert, maps from data); a new army mid-match works with no pack (bears completed as Godot does); the tech tree says what research does; LB on the pad as in Godot.
+- **2026-10-26:** Art-quality study AQ1 (concepts, not in the game): higher resolution (1.5x/2x behind `AOW_ART_SCALE`), buildings breaking up in baked stages with pixel dust, deaths laid down in 3D and a follow-through hold, sci-fi energy shots four ways; Dominic to pick (`docs/concepts/art-quality/`).
+- **2026-10-26:** Dominic on AQ1: fidelity of units and buildings is a key goal; "Destruction looks great" (D-171, building waits on his go-ahead); the study's energy shots now leave the rifle's muzzle (the game still launches every shot from the body).
+- **2026-10-26:** D-172: go-ahead on destruction; a ruin is decoration only, can be built over and fades away (Dominic: "Destruction is for looking cool not game mechanic").
+- **2026-10-26:** Destruction built (D-171/D-172): buildings show broken-up baked stages as they lose hp, fall under pixel dust, and leave a ruin that fades or is built over.
+- **2026-10-26:** Fidelity round F1: rendering alone (smooth, 2x) does not make units less cartoony, the models do; a realistic legionary modelled in Blender (7 and 5.5 heads) baked beside today's; Dominic to pick.
+- **2026-10-27:** Milestone 23 step 2b: wool tunics, team colour on sash/hem/shield (D-175), Blender galea and scutum, banners only when asked (D-174), the walled howdah (D-176); round F2 (rats and frogs) for Dominic to pick.
+- **2026-10-27:** Rat B picked (D-177); animation study A2: today's pendulum walks vs rat B keyed in 3D (walk, thrust); options A/B/C, B recommended.
+- **2026-10-27:** D-178: frog B picked (the frogs rebuilt as frogs).
+- **2026-10-27:** D-178 frog B, D-179 animation by keyed limbs; the rat as a rat is built (Blender trunk and head, legs baked in 8 knee-bent walk steps).
+- **2026-10-27:** Rat armour RA1: all seven armours modelled for the rat's own trunk (no more scaled human jerkin as a band round its middle).
+- **2026-10-27:** D-180: capes only when asked (or the royal culture's); units baked at the size they're drawn (no more blocky sheep and giants).
+- **2026-10-28:** Frog B built: Blender trunk and head, legs keyed in 8 hop phases, fitted armour; the rat's head nods and blows wind up and hold (D-179, D-181).
+- **2026-10-28:** The heroic humans walk on keyed legs, bent at knee and ankle; three placement fixtures that no longer caught their bugs fixed (D-179).

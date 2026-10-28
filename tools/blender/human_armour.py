@@ -2,6 +2,11 @@
 
     blender -b --python tools/blender/human_armour.py -- assets/models/ leather
     blender -b --python tools/blender/human_armour.py -- assets/models/ bronze
+    blender -b --python tools/blender/human_armour.py -- assets/models/ leather heroic   (and bronze)
+
+heroic (D-173): fitted to the heroic trunk (tools/blender/human_torso_heroic.py: the belt at 21.6, the shoulders
+at 30.3, a chest shallower front to back): writes armour_<kind>_human_heroic.glb, which the game uses; without it,
+the build before D-173.
 
 Writes armour_<kind>_human.glb. Part units, facing +X, up +Z, in the torso's own space (no
 fitting at bake time): a shell just outside the chest's profile, from the belt to the shoulders.
@@ -14,6 +19,7 @@ from mathutils import Vector
 
 args = sys.argv[sys.argv.index("--") + 1:]
 out_dir, kind = args[0], args[1]
+heroic = "heroic" in args[2:]
 bpy.ops.wm.read_factory_settings(use_empty=True)
 
 
@@ -96,9 +102,12 @@ else:
     lathe("flare", TRIM, [(13.4, 5.2), (14.1, 4.95)])
 
 for ob in bpy.data.objects:
+    if heroic:   # fitted to the heroic trunk (human_torso_heroic.py): belt 14.6 -> 21.6, shoulders 23.6 -> 30.3, a shallower chest
+        for v in ob.data.vertices:
+            v.co = Vector((v.co.x * 0.84, v.co.y * 0.88, 21.6 + (v.co.z - 14.6) * 0.967))
     for poly in ob.data.polygons:
         poly.use_smooth = True
     mod = ob.modifiers.new("smooth", "SUBSURF")
     mod.levels = 1
     mod.render_levels = 1
-bpy.ops.export_scene.gltf(filepath=out_dir + "armour_%s_human.glb" % kind, export_format="GLB", export_apply=True, export_materials="EXPORT")
+bpy.ops.export_scene.gltf(filepath=out_dir + "armour_%s_human%s.glb" % (kind, "_heroic" if heroic else ""), export_format="GLB", export_apply=True, export_materials="EXPORT")

@@ -236,6 +236,7 @@ func _ready() -> void:
 	add_child(town)
 	fx = CombatFx.new()
 	fx.lib = lib   # (siege shots' baked sprites: data/siege_shots.json)
+	fx.art_px = ArtKit.ART_SCALE
 	add_child(fx)
 	fog_view = FogView.new()
 	add_child(fog_view)
@@ -244,9 +245,9 @@ func _ready() -> void:
 	overlay.draw.connect(_draw_overlay)
 	add_child(overlay)
 	camera = RtsCamera.new()
-	# Zoom in whole art pixels (the art is baked at ArtKit.ART_SCALE per canvas unit).
-	camera.steps = [ArtKit.ART_SCALE * 0.5, ArtKit.ART_SCALE, ArtKit.ART_SCALE * 2.0, ArtKit.ART_SCALE * 3.0]
-	camera.zoom = Vector2.ONE * ArtKit.ART_SCALE * 2.0
+	# The zoom steps the game always had (set in ArtKit.BASE_SCALE: since D-173 the art is finer, the sizes the same).
+	camera.steps = [ArtKit.BASE_SCALE * 0.5, ArtKit.BASE_SCALE, ArtKit.BASE_SCALE * 2.0, ArtKit.BASE_SCALE * 3.0]
+	camera.zoom = Vector2.ONE * ArtKit.BASE_SCALE * 2.0
 	camera.zoomed.connect(_on_zoom)
 	add_child(camera)
 
@@ -2487,6 +2488,7 @@ func _sync_buildings() -> void:
 			(flat if not t.pen.is_empty() else layer).add_child(view)   # a pen lies low, under the sheep standing in it
 			bviews[id] = view
 			_clear_doodads(bs.cx[b], bs.cy[b], bs.sx[b], bs.sy[b])
+			fx.clear_ruins(Rect2i(bs.cx[b], bs.cy[b], bs.sx[b], bs.sy[b]))   # built over a ruin (D-172)
 		if bs.done[b] == 1 and not view.get_meta("done", false):
 			if view.has_meta("done") and bs.owner[b] == active:
 				audio.play("built", -4.0)   # finished while you watched (not the ones there from the start)

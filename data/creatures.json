@@ -2,6 +2,8 @@
  "frog": {
   "draw_scale": 80,
   "_draw_scale_doc": "drawn this much smaller than built (per cent), on foot: the look only; the sim, stats and prices take the recipe's scale (Dominic, 2026-10-26: rats and frogs better smaller)",
+  "crew_back": 7,
+  "_crew_back_doc": "squat and leaning into the work like the rat (its crew_back): its head poked round a siege tower's corner (placement C4)",
   "war_beast": "heron",
   "voice": "frog",
   "noun": "Frog",
@@ -67,6 +69,8 @@
  "rat": {
   "draw_scale": 80,
   "_draw_scale_doc": "drawn this much smaller than built (per cent), on foot: the look only; the sim, stats and prices take the recipe's scale (Dominic, 2026-10-26: rats and frogs better smaller)",
+  "crew_back": 4,
+  "_crew_back_doc": "on an engine it stands this far back (part units) from its place, along the way it faces: hunched, its body is ahead of its hips, and a file of rats on the great sling's ropes went into each other (placement C4)",
   "war_beast": "boar",
   "voice": "rat",
   "push_home": {

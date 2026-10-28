@@ -64,7 +64,7 @@ static func all(lib, lines := true) -> Array:
 	for p in RIDERS:
 		var spear: Dictionary = slot(gen.generate(p, rules), "spear")
 		for m in MOUNTS:
-			cases.append(["%s on %s" % [spear.recipe.creature, m], ride(spear, m, lib.creatures[m].skins[0], {})])
+			cases.append(["%s on %s" % [spear.recipe.creature, m], ride(spear, m, lib.creatures[m].skins[0], lib.creatures[m].get("parts", {}).duplicate())])   # (with what the mount always has: a hummingbird's wings)
 	var human: Dictionary = slot(gen.generate("romans", rules), "spear")
 	for m in ["pony", "beetle", "spider"]:   # winged mounts (a "pegasus": the mount's wings at its withers)
 		cases.append(["human on winged %s" % m, ride(human, m, lib.creatures[m].skins[0], {"back": "wings.feather"})])
@@ -301,7 +301,7 @@ static func kit_cases(lib) -> Array:
 	var cases := []
 	var rat: Dictionary = slot(gen.generate("sewer rats", rules), "spear")
 	for m in ["kitcat", "kitcat_built"]:
-		cases.append(["kit: rat on %s" % m, ride(rat, m, lib.creatures[m].skins[0], {})])
+		cases.append(["kit: rat on %s" % m, ride(rat, m, lib.creatures[m].skins[0], lib.creatures[m].get("parts", {}).duplicate())])
 	for b in BEAR_CASES:
 		var race: Dictionary = gen.generate(b[1], rules)
 		var u: Dictionary = slot(race, b[2]).duplicate(true)

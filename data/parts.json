@@ -1,14 +1,14 @@
 [
  {
   "id": "body.frog",
-  "shield": "slung",
-  "_shield_doc": "a shield goes slung on the back (its model's sling socket; slung: upright behind, slung_flat: flat on top): held in the off hand it cut this body's head, armour or the ground (2026-10-17, Dominic)",
+  "shield": "slung_lean",
+  "_shield_doc": "a shield goes slung on the back (its model's sling socket; slung: upright behind, slung_flat: flat on top, slung_lean: along a back sloping 55 degrees, the frog's): held in the off hand it cut this body's head, armour or the ground (2026-10-17, Dominic)",
   "drape_scale": 70,
-  "corpse": {"frames": [40, 70, 100], "pivot": [0, 9, 0], "pitch": -40, "roll": 0, "body": "limp", "legs": "limp", "leg_turn": [0, 44, 42], "head": -12, "helm": false, "turn": [0, -45, -30, 0, 0, 30, -30, 0],
+  "corpse": {"frames": [40, 70, 100], "pivot": [0, 9, 0], "pitch": -40, "roll": 0, "body": "limp", "legs": "limp", "leg_turn": [0, 40, 42], "spots": {"hand_l": [[-12, -26], -0.5]}, "head": -12, "helm": false, "turn": [0, -45, -30, 0, 0, 30, -30, 0],
    "_doc": "how it lies dead (D-165, src/view/art/corpse.gd): face down, flat on its belly, the arms flung forward, the hind legs stretched out behind and wide, the chin on the ground; HF2b, Dominic: 'probably the most realistic'; turned per facing so none is seen end on from behind (HF3)"},
   "slot": "body",
   "noun": "Frog",
-  "cut": ["legs"],
+  "cut": ["legs", "head"],
   "points": 3,
   "cost_mix": {"food": 100},
   "tags": [
@@ -49,49 +49,15 @@
     "ch": "skin2"
    }
   ],
-  "sockets": {
-   "head": [
-    6,
-    -22
-   ],
-   "hand_r": [
-    10,
-    -14
-   ],
-   "hand_l": [
-    -3,
-    -16
-   ],
-   "torso": [
-    0,
-    -14
-   ],
-   "back": [
-    -9,
-    -18
-   ]
-  },
+  "sockets": {"head": [12, -17], "hand_r": [18, -13], "hand_l": [16, -1], "torso": [5, -12], "back": [3, -18]},
   "torso_scale": [
    1.4,
    1.2
   ],
   "legs": {
    "stance": {"support": 4.5, "inside": 0.6, "_doc": "a crouched leaper: its haunches inside its flanks, leaning forward over its feet"},
-   "part": "leg.frog",
-   "anchors": [
-    [
-     -7,
-     -6,
-     0,
-     -1
-    ],
-    [
-     5,
-     -6,
-     3.14,
-     1
-    ]
-   ]
+   "part": "leg.frog", "anchors": [[0, -8.6, 0, -1], [0, -8.6, 3.14, 1]], "poses": 8,
+   "_poses_doc": "the frog as a frog is (D-178): its hips at 8.6, the legs baked in 8 phases of the hop (D-179; leg.frog@w<i>_<n>, unit_models.gd frog_joints: crouch, push, tuck, reach, land)"
   }
  },
  {
@@ -164,52 +130,20 @@
     "ch": "skin2"
    }
   ],
-  "sockets": {
-   "head": [
-    2,
-    -25
-   ],
-   "hand_r": [
-    7,
-    -16
-   ],
-   "hand_l": [
-    -4,
-    -17
-   ],
-   "torso": [
-    0,
-    -15
-   ],
-   "back": [
-    -6,
-    -19
-   ]
-  },
+  "sockets": {"head": [11, -23], "hand_r": [14, -16], "hand_l": [11, -18], "torso": [5, -16], "back": [3, -20]},
   "torso_scale": [
    1.0,
    1.3
   ],
-  "legs": {
-   "part": "leg.rat",
-   "anchors": [
-    [
-     -4,
-     -5,
-     0,
-     -1
-    ],
-    [
-     3,
-     -5,
-     3.14,
-     1
-    ]
-   ]
-  }
+  "legs": {"part": "leg.rat", "anchors": [[0, -11, 0, -1], [0, -11, 3.14, 1]], "poses": 8, "gait": {"swing": 0.0, "cadence": 1.0, "bob": 0.4, "rock": 0.0},
+   "_doc": "the rat as a rat is (D-177): its hips at 11, the legs baked in 8 knee-bent walk steps (D-179; leg.rat@w<i>_<n>, unit_models.gd rat_joints), not swung"},
+  "body_steps": 8,
+  "_body_steps_doc": "walking with what it holds low, the body is baked in this many steps too (body.rat@w<i>_<n>, in time with the legs: the arms swinging against them, the tail sweeping; D-179); gear follows the hands"
  },
  {
   "id": "body.human",
+  "drape_scale": 85,
+  "_drape_doc": "capes (on its own cape.cloth and cape.leaf sockets) hang 85% long on the heroic build (D-173): full length, the stride went through them",
   "slot": "body",
   "noun": "Folk",
   "points": 3,
@@ -276,7 +210,8 @@
    1.25
   ],
   "legs": {
-   "part": "leg.human",
+   "part": "leg.human", "poses": 8, "gait": {"swing": 0.0, "cadence": 1.0, "bob": 0.4, "rock": 0.0},
+   "_poses_doc": "the heroic leg bent at the knee and ankle, baked in 8 walk steps (D-179; leg.human@w<i>_<n>, unit_models.gd human_joints): the knee bending, the foot rolling through, the body riding on the planted foot",
    "anchors": [
     [
      -3,
@@ -388,7 +323,7 @@
    1.4,
    1.1
   ],
-  "legs": {
+  "legs": {"poses": 8, "gait": {"swing": 0.0, "cadence": 1.6, "bob": 0.3, "rock": 0.015, "rock_rate": 2.0}, "_poses_doc": "D-179: each leg bent at its knee, baked in 8 walk steps (unit_models.gd stepped)",
    "stance": {"sprawl": [0, 16], "inside": 0.55, "_doc": "legs fanned out round the body, hinged in under it"},
    "part": "leg.spider",
    "anchors": [[1, -9, 0.0, 1, 0], [1, -9, 3.14, -1, 0], [-2, -9, 1.0, 1, 1], [-2, -9, 4.14, -1, 1], [-6, -9, 2.0, 1, 1], [-6, -9, 5.14, -1, 1]]
@@ -484,7 +419,7 @@
     -20
    ]
   },
-  "legs": {
+  "legs": {"poses": 8, "gait": {"swing": 0.0, "cadence": 1.0, "bob": 0.9, "rock": 0.035, "rock_rate": 1.0}, "_poses_doc": "D-179: each leg bent at its knee, baked in 8 walk steps (unit_models.gd stepped)",
    "stance": {"inside": 0.6, "_doc": "insect legs hinge deep under the shell"},
    "part": "leg.insect",
    "anchors": [
@@ -619,7 +554,7 @@
    2.0,
    1.2
   ],
-  "legs": {
+  "legs": {"poses": 8, "gait": {"swing": 0.0, "cadence": 1.6, "bob": 0.3, "rock": 0.015, "rock_rate": 2.0}, "_poses_doc": "D-179: each leg bent at its knee, baked in 8 walk steps (unit_models.gd stepped)",
    "stance": {"inside": 0.6, "_doc": "insect legs hinge deep under the shell"},
    "part": "leg.insect",
    "anchors": [
@@ -793,7 +728,7 @@
    1.8,
    1.0
   ],
-  "legs": {
+  "legs": {"poses": 8, "gait": {"swing": 0.0, "cadence": 1.0, "bob": 0.9, "rock": 0.035, "rock_rate": 1.0}, "_poses_doc": "D-179: each leg bent at its knee, baked in 8 walk steps (unit_models.gd stepped)",
    "part": "leg.capybara",
    "anchors": [
     [
@@ -1280,37 +1215,8 @@
    1.0
   ],
   "legs": {
-   "part": "leg.hoof",
-   "anchors": [
-    [
-     9,
-     -13,
-     0,
-     1,
-     0
-    ],
-    [
-     -9,
-     -13,
-     3.14,
-     1,
-     0
-    ],
-    [
-     7,
-     -13,
-     3.14,
-     -1,
-     0
-    ],
-    [
-     -11,
-     -13,
-     0,
-     -1,
-     0
-    ]
-   ]
+   "part": "leg.hoof", "hind": "leg.hoof_hind", "anchors": [[9, -13, 0, 1, 0, false], [-9, -13, 3.14, 1, 0, true], [7, -13, 3.14, -1, 0, false], [-11, -13, 0, -1, 0, true]], "poses": 8, "gait": {"swing": 0.0, "cadence": 1.0, "bob": 0.9, "rock": 0.035},
+   "_poses_doc": "D-179: each leg bent at the knee or hock, baked in 8 walk steps (leg.hoof@w<i>_<n>, its hind leg.hoof_hind; unit_models.gd hoof_joints), the body riding on the planted hooves"
   }
  },
  {
@@ -1404,37 +1310,8 @@
    1.0
   ],
   "legs": {
-   "part": "leg.hoof",
-   "anchors": [
-    [
-     9,
-     -13,
-     0,
-     1,
-     0
-    ],
-    [
-     -9,
-     -13,
-     3.14,
-     1,
-     0
-    ],
-    [
-     7,
-     -13,
-     3.14,
-     -1,
-     0
-    ],
-    [
-     -11,
-     -13,
-     0,
-     -1,
-     0
-    ]
-   ]
+   "part": "leg.hoof", "hind": "leg.hoof_hind", "anchors": [[9, -13, 0, 1, 0, false], [-9, -13, 3.14, 1, 0, true], [7, -13, 3.14, -1, 0, false], [-11, -13, 0, -1, 0, true]], "poses": 8, "gait": {"swing": 0.0, "cadence": 1.0, "bob": 0.9, "rock": 0.035},
+   "_poses_doc": "D-179: each leg bent at the knee or hock, baked in 8 walk steps (leg.hoof@w<i>_<n>, its hind leg.hoof_hind; unit_models.gd hoof_joints), the body riding on the planted hooves"
   }
  },
  {
@@ -1759,7 +1636,7 @@
    2.0,
    1.2
   ],
-  "legs": {
+  "legs": {"poses": 8, "gait": {"swing": 0.0, "cadence": 1.0, "bob": 0.9, "rock": 0.035, "rock_rate": 1.0}, "_poses_doc": "D-179: each leg bent at its knee, baked in 8 walk steps (unit_models.gd stepped)",
    "stance": {"sprawl": [6, 14], "drop": 0.45, "_doc": "a sprawl: elbows out, the foot well out to the side"},
    "part": "leg.newt",
    "anchors": [
@@ -1988,6 +1865,60 @@
   "points": 0
  },
  {
+  "id": "leg.hoof_hind",
+  "_doc": "a horse's hind leg: the hock bends back (D-179, unit_models.gd _hoof_leg)",
+  "slot": "leg",
+  "shapes": [
+   {
+    "t": "poly",
+    "p": [
+     [
+      -1.5,
+      0
+     ],
+     [
+      1.5,
+      0
+     ],
+     [
+      1.5,
+      11
+     ],
+     [
+      -1.5,
+      11
+     ]
+    ],
+    "ch": "skin"
+   },
+   {
+    "t": "poly",
+    "p": [
+     [
+      -2,
+      11
+     ],
+     [
+      2,
+      11
+     ],
+     [
+      2,
+      13
+     ],
+     [
+      -2,
+      13
+     ]
+    ],
+    "ch": "eye"
+   }
+  ],
+  "tags": [],
+  "stats": {},
+  "points": 0
+ },
+ {
   "id": "head.frog",
   "slot": "head",
   "sockets": {
@@ -2068,12 +1999,7 @@
  {
   "id": "head.rat",
   "slot": "head",
-  "sockets": {
-   "top": [
-    -1,
-    -9
-   ]
-  },
+  "sockets": {"top": [0, -4]},
   "shapes": [
    {
     "t": "circle",
@@ -4783,6 +4709,10 @@
  },
  {
   "id": "cape.leaf",
+  "only_if": ["cape"],
+  "_only_if_doc": "only when the prompt asks for capes or cloaks (Dominic, 2026-10-27: \"still unsure why our units have capes. looks out of place as a standard thing\", D-180); a unique unit may still wear one (data/uniques.json)",
+  "not_worn_by": ["body.rat"],
+  "_not_worn_by_doc": "the rat as a rat is (D-177) leans 42 degrees: a hanging cape or quiver falls through its back and legs",
   "slot": "back",
   "tags": [
    "cape",
@@ -4828,9 +4758,11 @@
  },
  {
   "id": "cape.cloth",
+  "only_if": ["cape", "royal"],
+  "_only_if_doc": "only when the prompt asks for capes or cloaks, or the royal culture (its signature) (Dominic, 2026-10-27: \"still unsure why our units have capes. looks out of place as a standard thing\", D-180); a unique unit may still wear one (data/uniques.json)",
   "not_ridden_on": ["pony", "beetle", "bear", "bear_black"],
   "_not_ridden_on_doc": "mounts whose riders don't wear it: a cloth cape hung through the pony's, the beetle's and the bear's back (the placement check, A3)",
-  "not_worn_by": ["body.frog", "body.beetle_rear"],
+  "not_worn_by": ["body.frog", "body.beetle_rear", "body.rat"],
   "_not_worn_by_doc": "bodies that don't wear it: it hung through a frog's haunches and a rearing beetle's wing cases (the placement check, A3, 2026-10-17); the leaf cape fits them",
   "slot": "back",
   "tags": [
@@ -4869,6 +4801,8 @@
  },
  {
   "id": "banner.team",
+  "only_if": ["banner"],
+  "_only_if_doc": "only when the prompt asks for banners or flags (Dominic, 2026-10-27: \"remove the banners, unsure why we have them on so many units\"); a unique unit may still carry one (data/uniques.json)",
   "slot": "back",
   "tags": [
    "banner",
@@ -4918,6 +4852,8 @@
  },
  {
   "id": "quiver",
+  "not_worn_by": ["body.rat", "body.frog"],
+  "_not_worn_by_doc": "the rat as a rat is (D-177) leans 42 degrees, the frog as a frog is (D-178) 55: a hanging cape or quiver falls through the back and legs, or stands off it like a post",
   "slot": "back",
   "tags": [
    "quiver",
@@ -5663,6 +5599,8 @@
  },
  {
   "id": "body.deer",
+  "cut": ["legs"],
+  "_cut_doc": "its legs baked cut by its body at each hip (whole, the near legs drew over its flank: the placement check)",
   "slot": "body",
   "noun": "Deer",
   "points": 0,
@@ -5773,7 +5711,7 @@
    1.8,
    1.0
   ],
-  "legs": {
+  "legs": {"poses": 8, "gait": {"swing": 0.0, "cadence": 1.0, "bob": 0.9, "rock": 0.035, "rock_rate": 1.0}, "_poses_doc": "D-179: each leg bent at its knee, baked in 8 walk steps (unit_models.gd stepped)",
    "part": "leg.deer",
    "anchors": [
     [
@@ -6028,7 +5966,7 @@
    1.8,
    1.0
   ],
-  "legs": {
+  "legs": {"poses": 8, "gait": {"swing": 0.0, "cadence": 1.0, "bob": 0.9, "rock": 0.035, "rock_rate": 1.0}, "_poses_doc": "D-179: each leg bent at its knee, baked in 8 walk steps (unit_models.gd stepped)",
    "part": "leg.boar",
    "anchors": [
     [
@@ -6283,7 +6221,7 @@
    1.8,
    1.0
   ],
-  "legs": {
+  "legs": {"poses": 8, "gait": {"swing": 0.0, "cadence": 1.0, "bob": 0.9, "rock": 0.035, "rock_rate": 1.0}, "_poses_doc": "D-179: each leg bent at its knee, baked in 8 walk steps (unit_models.gd stepped)",
    "part": "leg.sheep",
    "anchors": [
     [
@@ -9973,6 +9911,8 @@
  },
  {
   "id": "body.cat",
+  "ridden_idle_poses": ["sit1"],
+  "_ridden_idle_poses_doc": "under a rider it only settles back a little (the rat as a rat is, D-177, leans over its shoulders: sitting further down, they rose into its hands)",
   "slot": "body",
   "noun": "Cat",
   "cut": ["legs", "head"],

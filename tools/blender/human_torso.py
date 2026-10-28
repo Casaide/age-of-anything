@@ -1,6 +1,11 @@
 """A human torso in a belted tunic, for the unit bakes (Blender 5, headless):
 
     blender -b --python tools/blender/human_torso.py -- assets/models/torso_human.glb
+    blender -b --python tools/blender/human_torso.py -- assets/models/torso_human_heroic.glb heroic
+
+heroic (D-173): the genre's heroic build, about 5.5 heads tall: the hips at 18 instead of 11, the trunk
+0.95 as tall and 1.06 as broad (the arms and head are the game's: unit_models.gd). Run with "heroic" after the
+output for the *_heroic.glb the game uses; without it, the build before D-173.
 
 Part units, facing +X, up +Z. A chest broader than the waist with shoulders that round over,
 a tunic falling from the belt in folds, the neck. Arms are not here: the game poses them for the
@@ -12,6 +17,7 @@ import bpy, bmesh
 from mathutils import Vector
 
 out = sys.argv[sys.argv.index("--") + 1]
+heroic = "heroic" in sys.argv[sys.argv.index("--") + 2:]
 bpy.ops.wm.read_factory_settings(use_empty=True)
 
 
@@ -73,6 +79,9 @@ belt = lathe("belt", LEATHER, [(14.6, 4.25), (14.8, 4.35), (15.6, 4.3), (15.8, 4
 neck = lathe("neck", SKIN, [(23.2, 2.2), (24.6, 2.1), (26.4, 2.0), (27.6, 1.9)], segs=20)   # up into the head: no gap under the jaw
 
 for ob in bpy.data.objects:
+    if heroic:   # the trunk on longer legs: hips 11 -> 18, a little shorter and broader (the module doc)
+        for v in ob.data.vertices:
+            v.co = Vector((v.co.x * 1.06, v.co.y * 1.06, 18.0 + (v.co.z - 11.0) * 0.95))
     ob.location = (0.3, 0, 0)
     for poly in ob.data.polygons:
         poly.use_smooth = True

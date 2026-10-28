@@ -182,7 +182,7 @@ func _hero_helm_plume(c: Dictionary) -> Dictionary:
 	for k in 5:
 		var a := (k - 2) * 0.32
 		n.add_child(decal("plume", 7.0, 15.0, Vector3(-2.0 - absf(k - 2) * 1.0, 11.0 - absf(k - 2) * 1.4, sin(a) * 4.0), Vector3(sin(a) * 0.4, 0, cos(a)), true, Vector3(-0.5, 1, sin(a)).normalized(), cols[k]))
-	_lift(n, 0.5)   # its rim clear of the brow (placement check, A2)
+	_lift(n, 0.8)   # its rim clear of the brow (placement check, A2; 0.5 before the heroic head, D-173, was smaller)
 	return {"node": n}
 
 

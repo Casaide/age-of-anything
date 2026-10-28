@@ -304,13 +304,13 @@ func _concept_galea_heavy(c: Dictionary) -> Dictionary:
 
 
 func _concept_frog_a_body(c: Dictionary) -> Dictionary:
-	return _body_frog(c)
+	return _body_frog_crouched(c)
 
 func _concept_frog_a_leg(c: Dictionary) -> Dictionary:
-	return _leg_frog(c)
+	return _leg_frog_crouched(c)
 
 func _concept_frog_a_head(c: Dictionary) -> Dictionary:
-	return _head_frog(c)
+	return _head_frog_crouched(c)
 
 func _concept_frog_b_body(c: Dictionary) -> Dictionary:
 	var n := Node3D.new()

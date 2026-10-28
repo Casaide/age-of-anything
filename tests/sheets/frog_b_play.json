@@ -1,0 +1,21 @@
+{
+ "name": "frog_b_play",
+ "title": "The frog as a frog is (D-178) in play: the hop keyed in 8 phases (D-179), fitted armour, its units in every facing",
+ "zooms": [4],
+ "cell": [62, 56],
+ "size": [{"prompt": "romans", "slot": "spear", "age": 2}],
+ "rows": [
+  {"label": "frog spear, age 2", "unit": {"prompt": "angry swamp frogs with reed spears", "slot": "spear", "age": 2}},
+  {"label": "frog infantry, age 3", "unit": {"prompt": "swamp frogs", "slot": "infantry", "age": 3}},
+  {"label": "frog archer, age 2", "unit": {"prompt": "swamp frogs", "slot": "archer", "age": 2}},
+  {"label": "frog blowgunner", "unit": {"prompt": "swamp frogs", "slot": "skirmisher", "age": 2}},
+  {"label": "frog worker", "unit": {"prompt": "swamp frogs", "slot": "worker", "age": 1}},
+  {"label": "frog on a newt\n(large, age 2)", "h": 1.3, "unit": {"prompt": "frogs riding newts", "slot": "large", "age": 2}}
+ ],
+ "sheets": [
+  {"name": "facings", "title": "standing, 8 facings", "columns": "facings"},
+  {"name": "hop", "title": "the keyed hop, 8 phases, facing 0", "columns": "cycle:0"},
+  {"name": "hop6", "title": "the keyed hop, 8 phases, facing 6 (away)", "columns": "cycle:6"},
+  {"name": "strike", "title": "the blow, facing 1", "columns": "strike:1"}
+ ]
+}

@@ -2,7 +2,9 @@ extends Node2D
 ## Combat effects for the game view, played from the sim's events: projectiles
 ## (flying as long as the sim's shots do; shots that miss stick in the ground), impact sparks, a white hit flash, and units dying
 ## (the body topples over about its feet, darkens where it lies, then goes in a puff
-## of dust; the ground shadow stays flat and fades). Buildings that fall leave a dust cloud. A
+## of dust; the ground shadow stays flat and fades). A building that falls leaves its ruin under a cloud of
+## pixel dust; the ruin is only decoration (D-172): it burns out, fades after a while, and goes at once when
+## something is built over it. A
 ## healed unit warms for a moment and a few pale motes drift up off it. View side only; nothing
 ## here feeds back into the sim.
 
@@ -42,6 +44,16 @@ const STUCK_TIME := 3.0
 var sparks: Array = []   # {pos, t, col}
 var ghosts: Array = []   # {node, t, tip}
 var dusts: Array = []    # {pos, t, size}
+var puffs: Array = []    # a fallen building's pixel dust: {pos, t, r (canvas px), rise, drift}
+var ruins: Array = []    # fallen buildings' ruins: {group (a CanvasGroup, so it can fade), node (BuildingArt), t, out}
+var art_px := 1.5        # art pixels per canvas unit (ArtKit.ART_SCALE, set by the view): the dust's grid
+const RUIN_BURN := 8.0   # a ruin's fires burn this long after it falls
+const RUIN_STAYS := 45.0 # then it lies there this long...
+const RUIN_FADE := 5.0   # ...and fades away
+const PUFF_TIME := 2.6
+const PUFF_SIZES := [3, 4, 5, 7, 9, 12, 15, 19, 24]   # art pixels: a puff grows through these
+const DUST := [Color("#e2d6bc"), Color("#b9a98a"), Color("#857761")]   # lit, mid, shade
+static var _puff_tex := {}
 var flashes: Array = []  # {node, t} (t < 0: the shot is still flying)
 var heals: Array = []    # {node, t, motes: [[Vector2 offset, rise speed, delay]]}
 const HEAL_TIME := 1.0
@@ -225,11 +237,67 @@ func kill(view: Node2D) -> void:
 	ghosts.append({"node": view, "t": 0.0, "puffed": false})
 
 
-## A building has fallen.
+## A building has fallen: its ruin is left where it stood (BuildingArt.fall; one without, walls and gates,
+## just goes) under a cloud of pixel dust over its footprint (size: its side in tiles).
 func collapse(node: Node2D, at: Vector2, size: int) -> void:
-	node.queue_free()
-	for k in 6 + size * 3:
-		dusts.append({"pos": at + Vector2(randf_range(-20, 20), randf_range(-10, 10)) * size * 0.6, "t": -randf() * 0.4, "size": randf_range(8, 16) * size * 0.5})
+	if node.has_method("fall") and node.fall():
+		var g := CanvasGroup.new()   # (the baked art reads modulate alpha as shade: a group fades it)
+		node.get_parent().add_child(g)
+		g.position = node.position
+		node.reparent(g, false)
+		node.position = Vector2.ZERO
+		ruins.append({"group": g, "node": node, "t": 0.0, "out": false})
+	else:
+		node.queue_free()
+	for k in 14 + size * 10:
+		var off := Vector2(randf_range(-1.0, 1.0) * 24.0, randf_range(-1.0, 1.0) * 12.0 - 8.0) * size
+		puffs.append({"pos": at + off, "t": -randf() * 0.5, "r": randf_range(4.0, 8.0) * (1.0 + size * 0.3),
+			"rise": randf_range(6.0, 18.0), "drift": randf_range(-6.0, 6.0)})
+
+
+## Something is being built on these cells: a ruin there goes at once.
+func clear_ruins(cells: Rect2i) -> void:
+	for r in ruins:
+		if r.node.cells.intersects(cells):
+			r.group.queue_free()
+	ruins = ruins.filter(func(r): return is_instance_valid(r.group) and not r.group.is_queued_for_deletion())
+
+
+## A puff's shape `r` art pixels across: a disc, its edge ragged and dithered, in white (drawn tinted).
+static func _puff(r: int) -> ImageTexture:
+	if not _puff_tex.has(r):
+		var img := Image.create(2 * r + 1, 2 * r + 1, false, Image.FORMAT_RGBA8)
+		for y in 2 * r + 1:
+			for x in 2 * r + 1:
+				var f := Vector2(x - r, y - r).length() / float(r)
+				var noise := float(((x * 73856093) ^ (y * 19349663) ^ (r * 83492791)) & 1023) / 1023.0
+				if f > 1.0 or f + noise * 0.2 > 1.05 or (f > 0.8 and (x + y) % 2 == 0):
+					continue
+				img.set_pixel(x, y, Color.WHITE)
+		_puff_tex[r] = ImageTexture.create_from_image(img)
+	return _puff_tex[r]
+
+
+## The fallen buildings' dust as one cloud: every puff in shade, then every puff in the mid tone up and
+## to the left of it, then a smaller highlight further up-left (the light from the upper left), so the
+## puffs merge into billows lit as one instead of reading as separate balls. On the art grid.
+func _draw_puffs() -> void:
+	for band in 3:
+		for p in puffs:
+			if p.t < 0.0:
+				continue
+			var k: float = p.t / PUFF_TIME
+			var want: float = p.r * art_px * (0.6 + 0.8 * k) * [1.0, 0.92, 0.55][band]
+			var r: int = PUFF_SIZES[0]
+			for n in PUFF_SIZES:
+				if n <= want:
+					r = n
+			var at: Vector2 = p.pos + Vector2(p.drift * k, -p.rise * k) - Vector2(1.0, 1.0) * p.r * [0.0, 0.18, 0.4][band]
+			at = (at * art_px).floor() / art_px
+			var half := Vector2(r, r) / art_px
+			var col: Color = DUST[2 - band]
+			col.a = 1.0 - k * k * k
+			draw_texture_rect(_puff(r), Rect2(at - half, half * 2.0 + Vector2.ONE / art_px), false, col)
 
 
 ## Drop everything (a new match).
@@ -245,6 +313,10 @@ func clear() -> void:
 	heals.clear()
 	sparks.clear()
 	dusts.clear()
+	puffs.clear()
+	for r in ruins:
+		r.group.queue_free()
+	ruins.clear()
 
 
 func _process(delta: float) -> void:
@@ -292,6 +364,18 @@ func _process(delta: float) -> void:
 	for d in dusts:
 		d.t += delta
 	dusts = dusts.filter(func(d): return d.t < 1.6)
+	for p in puffs:
+		p.t += delta
+	puffs = puffs.filter(func(p): return p.t < PUFF_TIME)
+	for r in ruins:   # burns out, lies there, fades
+		r.t += delta
+		if r.t > RUIN_BURN and not r.out:
+			r.node.douse()
+			r.out = true
+		r.group.self_modulate.a = 1.0 - clampf((r.t - RUIN_STAYS) / RUIN_FADE, 0.0, 1.0)
+		if r.t >= RUIN_STAYS + RUIN_FADE:
+			r.group.queue_free()
+	ruins = ruins.filter(func(r): return r.t < RUIN_STAYS + RUIN_FADE and is_instance_valid(r.group))
 	for g in ghosts:
 		g.t += delta
 		var n: Node2D = g.node
@@ -395,6 +479,7 @@ func _draw() -> void:
 		for a in 4:
 			var d := Vector2.from_angle(a * PI * 0.5 + 0.4)
 			draw_line(s.pos, s.pos + d * r, Color(1.0, 0.92, 0.7, f), 1.0)
+	_draw_puffs()
 	for d in dusts:
 		if d.t < 0.0:
 			continue

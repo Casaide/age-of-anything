@@ -1181,6 +1181,82 @@ on its spot per facing before it bakes, its shadow with it. The frog's is [0, -4
 round HF3 (`tests/sheets/frog_fall_hf3.json`: the sprawl turned -60 to +60 in every facing); no facing now sees it end
 on from behind.
 
+**D-171, 2026-10-26: Destruction goes the way of study AQ1's direction 2: buildings break up in baked stages.** Dominic on
+the art-quality study (`docs/concepts/art-quality/`): "Destruction looks great". The pick: a building broken up in 3D
+before it bakes (pieces fall from the top, others tilt and scorch, rubble heaps from its own materials, walls become
+ragged stumps with breaches), five stages from whole to ruin, the fall with pixel dust, and a ruin that stays; it would
+replace the drawn cracks, keeping today's fire and smoke. Not built yet: Claude asks Dominic to go ahead, with the
+ruin's sim questions (does it block, can it be built on, how long it stays). (Numbered D-171: the Lobster port's
+branch uses D-167 to D-170.) In the same note Dominic set unit and building fidelity as a key goal ("units being more
+detailed and higher quality"): direction 1's "not a global 2x" no longer stands as the recommendation; a fidelity round
+comes next.
+
+**D-172, 2026-10-26: Go-ahead on destruction (D-171); a ruin is decoration only, can be built over, and fades.** Dominic,
+asked whether a ruin blocks, can be built on, and how long it stays: "Destroyed buildings should probably able to be
+built over? Same as [a classic RTS]. Destruction is for looking cool not game mechanic. Destruction staying until built
+over is cool but can get frustrating and ugly. I think wrong game for that". So destruction is view-side only: the sim
+frees the footprint when a building falls, as today; the ruin is drawn there with no effect on movement, placement or
+sight; building over it clears it; otherwise it fades away after a while. Supersedes the "ruin that stays" in study
+AQ1's direction 2.
+
+**D-173, 2026-10-26: Unit fidelity goes heroic: humans 5.5 heads tall, everything baked at 2x.** Dominic picked from
+round F1 (`docs/concepts/fidelity/`): "go with heroic 5.5 heads at 2x". Supersedes the toy proportions (~3.4 heads)
+of today's human and the 1.5 art pixels per canvas unit of D-042's bake: the art scale becomes 3.0 (a tile 192 art
+pixels across, one art pixel a screen pixel at play zoom), units and buildings alike; the painted value bands and
+the dark outline stay (they are what keeps it a classic RTS). The human body is rebuilt at the genre's heroic
+build (about 5.5 heads, broad shoulders), its gear refitted; rats, frogs and the other creatures follow in their own
+concept rounds. Team colour moves toward a smaller region over natural colours as the pieces are remade. Milestone 23
+(`docs/milestones/m23-fidelity.md`).
+
+**D-174, 2026-10-27: Banners only when a prompt asks for them.** Dominic: "remove the banners, unsure why we have them
+on so many units". `banner.team` (+1 attack, a back part any unit with a free back took) is `only_if: ["banner"]` now:
+a race gets it when its prompt says banner(s) or flag(s) (lexicon). Two unique units keep one by design (the Big Cheese,
+the Aztec obsidian guard: data/uniques.json). Races generated from the same prompt change (their keys too).
+
+**D-175, 2026-10-27: The human tunic is wool in the culture's colour; the team colour moves to a sash, the hem, shields and
+crests.** Claude's call (milestone 23 step 2b, after Dominic: the clothes "feel cheap still", and his liking for the
+F1 figure: a red tunic, the team on the shield and crest); open to Dominic. The culture's cloth colour is mixed into
+undyed wool (45%) so the team colour stays the brightest thing on a unit: in a battle the Roman red tunic read as the
+red team's. Supersedes D-055's team-coloured tunic for humans.
+
+**D-176, 2026-10-27: War elephants carry their riders in a walled howdah, from the hips up.** Dominic, on two heroic
+humans standing on an open platform: "the elephant with units standing makes no sense now". Crew on a howdah's "_box"
+sockets aren't drawn below the hips (their legs hidden; the 3D check leaves them out too), set down so the tunic's hem
+meets the walls' top (12 over the floor).
+
+**D-177, 2026-10-27: The rats are rebuilt as rats (round F2's B).** Dominic: "rat b looks great". The rat becomes a rat as
+a rat is: hunched forward on its hind legs, a long body, short arms, the head carried low, a real rat's snout, ears and
+tail (`tools/blender/concept_creatures.py` rat B is the concept), at the heroic humans' quality (milestone 23). The frogs'
+take (A or B) is still open. Not built yet. (On the Lobster branch rats and frogs are drawn a fifth smaller on foot,
+creatures.json draw_scale 80, Dominic's call there.)
+
+**D-178, 2026-10-27: The frogs are rebuilt as frogs (round F2's B).** Dominic: "and frog b". The frog becomes a frog as a
+frog is: squat on folded haunches, a forelimb planted, a wide flat head with the eyes on top, webbed feet
+(`tools/blender/concept_creatures.py` frog B is the concept), at the heroic humans' quality (milestone 23), like the rats
+(D-177). Not built yet; the animation option (study A2) is still open.
+
+**D-179, 2026-10-27: Animation goes by keyed limbs baked per body (study A2's B), with A's timing on top.** Dominic: "B
+yes". Every creature's legs are cut at the hip and baked in 8 knee-bent walk steps (as the cat's are), its arms in more
+holds (walk swing, wind-up, contact, follow-through), its tail and head as parts of their own in a few poses; the
+composer plays them as keyed cycles, with anticipation, contact holds, lag and sway in its timing. Built body by body,
+the rat first (D-177), each through the placement check. Whole-unit pre-rendered frames (C) stay for heroes or war
+beasts if ever.
+
+**D-180, 2026-10-27: Capes only when asked; every unit baked at the size it's drawn.** Dominic, playing the Lobster
+game: "still unsure why our units have capes. looks out of place as a standard thing", and "sheep look pixelated".
+Capes go the way of banners (D-174): the cloth cape only when a prompt asks for capes or cloaks, or for the royal
+culture (its signature); the leaf cape only when asked (parts.json `only_if`). A unique unit's signature kit keeps its
+cape (sworn knights, bog lurkers, moss wardens), and heroes keep theirs. This changes race keys and prices (a cape was
+a point). Units drawn at a scale other than 100 (sheep 135, boar 115, giants 150, tiny races 80) were sprites baked at
+100 and stretched; now each part bakes at its unit's size (the bake key carries it, `PartShape.size`, `PartBaker.bake(..., at)`),
+so a big sheep or a tiny viking keeps the art's own pixels. The composer still scales the unit's node (sockets, legs and
+offsets stay in part units); a sized sprite draws at 1/size, so the two cancel. Claude's design.
+
+**D-181, 2026-10-28: The frog as built (D-178, D-179).** Claude, building frog B: no quiver on frogs (it stood off the
+sloping back like a post, as on the rat: parts.json `not_worn_by`, which changes race keys and prices); its heel just off
+the ground (the concept held it up, and seen from behind no foot showed on the ground); its head baked cut by its body;
+slung shields lie along the back (`slung_lean`); frog crews stand 7 back from their place at an engine (`crew_back`), the
+squat body being well ahead of its hips; crew at work on a platform stand back too, riders don't.
 **D-168, 2026-10-26: Races and the match start are made in Lobster; Godot only bakes the art.** Dominic, on the
 Lobster port: "Let's do it! Primarily because ... it opens us up to generation at army creation time and during the
 game." Supersedes the port's first call (generation stays in Godot). The generator, pricing, identity and heroes
@@ -1209,11 +1285,11 @@ are written in Lobster too (`lobster_models` in mod.json, beside its GDScript on
 (Numbered 173: the art study's branch has D-171 and D-172.) Claude, for Dominic's goal: "port the whole game over to
 lobster".
 
-**D-179, 2026-10-27: The Lobster game runs on Lobster's default JIT, not `--mir`.** The voxel check for the
+**D-182, 2026-10-27: The Lobster game runs on Lobster's default JIT, not `--mir`.** The voxel check for the
 placement port caught `--mir` miscompiling model and rig code (the timber ram's hides tilted 128 degrees instead of
 48, levelled spears turned 90 degrees the wrong way, trees' leaves and wood piles' logs misplaced), depending on
 the program around them, so a check could pass in one program and the same model come out wrong in the game. The
 checks had run on the default JIT while the game ran `--mir`. Without it everything matches Godot (races, starts,
 models, props, buildings, the 26 parity runs), and a 10-minute bot match ran faster (66 s against 93 s: `--mir`
-compiles longer than it saves). `LOBSTER_FLAGS=--mir` still tries it. (Numbered 179: the art study's branch has up
-to D-178.) Claude.
+compiles longer than it saves). `LOBSTER_FLAGS=--mir` still tries it. (Numbered 182: the art study's branch has up
+to D-181.) Claude.
