@@ -2975,13 +2975,503 @@ def test_drop_off():
         if new_i < 0 and o == 0 and t_worker[u_kind[i]] != 0 and u_id[i] > uid and u_task[i] == GATHER: new_i = i
     check(new_i >= 0 and u_carry_kind[new_i] == food, "rally: a worker trained to a bush rally gathers food")
 
+// ------------------------------------------------------------------ animals, pens, garrisons, towers
+
+def animal_rules() -> JV:
+    let r = deep_copy(rules0)
+    set(r, "animals", jbool(true))
+    return r
+
+def animal_name(i:int) -> string: return su_type_animal[u_kind[i]]
+
+// Animals: placed by each start and in the wild, nobody's at first; sheep go to the player who comes
+// near; a killed animal leaves food the hunters gather; a rival's unguarded sheep is stolen.
+def test_animals():
+    let ar = animal_rules()
+    new_world("flat_test", races0, ar, [])
+    var sheep_n = 0
+    var boar_n = 0
+    var deer_n = 0
+    for(u_owner) o, i:
+        if o == gaia:
+            let a = animal_name(i)
+            if a == "sheep": sheep_n++
+            if a == "boar": boar_n++
+            if a == "deer": deer_n++
+    check(sheep_n == 8 and boar_n == 2 and deer_n >= 6, "animals: 4 sheep and a boar per start, deer herds out in the wild ({sheep_n} sheep, {boar_n} boar, {deer_n} deer)")
+    let h1 = state_hash()
+    new_world("flat_test", races0, ar, [])
+    check(state_hash() == h1, "animals: the same seed puts them in the same places")
+    // A worker walks to a sheep: it becomes ours.
+    var sheep = -1
+    var worker = -1
+    for(u_owner) o, i:
+        if sheep < 0 and o == gaia and animal_name(i) == "sheep": sheep = u_id[i]
+        if worker < 0 and o == 0 and t_worker[u_kind[i]] != 0: worker = u_id[i]
+    var x, y = pos_of(sheep)
+    issue_cmd(0, CMD_MOVE, [worker], x, y, 0, 0)
+    steps(600)
+    var si = index_of(sheep)
+    check(si >= 0 and u_owner[si] == 0, "animals: a sheep goes to the player who reaches it")
+    // Slaughter it: its food lies on the ground and the worker gathers it.
+    issue_cmd(0, CMD_ATTACK, [worker], sheep, 0, 0, 0)
+    for(1200):
+        tick_on()
+        if index_of(sheep) < 0: break
+    var carcass = -1
+    for(resource_cells) c:
+        if terrain_name(c) == "carcass" and amount[c] > 0: carcass = c
+    let wi = index_of(worker)
+    check(index_of(sheep) < 0 and carcass >= 0, "animals: a slaughtered sheep leaves its carcass")
+    check(wi >= 0 and u_task[wi] == GATHER, "animals: the worker gathers the carcass")
+    // Idle soldiers don't hunt on their own.
+    var deer = -1
+    for(u_owner) o, i:
+        if deer < 0 and o == gaia and animal_name(i) == "deer": deer = i
+    check(not is_foe(0, u_owner[deer]) and is_enemy(0, u_owner[deer]), "animals: hunted by choice, not fought by idle soldiers")
+    // A rival's sheep, unguarded, is stolen by walking up to it (not killed).
+    new_world("flat_test", races0, ar, [])
+    var s3 = -1
+    var wk3 = -1
+    for(u_owner) o, i:
+        if s3 < 0 and o == gaia and animal_name(i) == "sheep": s3 = u_id[i]
+        if wk3 < 0 and o == 0 and t_worker[u_kind[i]] != 0: wk3 = u_id[i]
+    u_owner[index_of(s3)] = 1
+    x, y = pos_of(s3)
+    issue_cmd(0, CMD_MOVE, [wk3], x, y, 0, 0)
+    steps(600)
+    si = index_of(s3)
+    check(si >= 0 and u_owner[si] == 0, "animals: an unguarded rival sheep is stolen by walking up to it")
+
+def home_sheep(p:int) -> [int]:   // gaia's sheep by p's start
+    let out = []::int
+    for(u_owner) o, i:
+        if o == gaia and animal_name(i) == "sheep" and abs(u_x[i] - start_x[p]) + abs(u_y[i] - start_y[p]) < 15000: out.push(u_id[i])
+    return out
+
+def first_worker(p:int) -> int:
+    for(u_owner) o, i:
+        if o == p and t_worker[u_kind[i]] != 0: return u_id[i]
+    return -1
+
+// Claimed sheep: each walks to one spot by its owner's Town Center and stops there for good,
+// forgetting what its old owner told it; a sheep takes no fighting orders; a worker slaughters one in
+// a few blows, a deer still takes a few more and a boar gets no such help.
+def test_sheep_spot():
+    new_world("flat_test", races0, animal_rules(), [])
+    let sheep = home_sheep(0)
+    let worker = first_worker(0)
+    var first = index_of(sheep[0])
+    u_orders[first] = [Cmd { 0, CMD_MOVE, gaia, 1000, 1000, 0, 0, [sheep[0]], 0 }]   // an order left over from before
+    for(sheep) id:
+        let x, y = pos_of(id)
+        issue_cmd(0, CMD_MOVE, [worker], x, y, 0, 0, 1)
+    steps(2400)
+    var tc = -1
+    for(b_owner) o, b:
+        if tc < 0 and o == 0 and bt_name[b_kind[b]] == "town_center": tc = b
+    let pen = herd_spots.get(b_id[tc]) or []::int
+    var penned = 0
+    var still = 0
+    var forgot = true
+    for(sheep) id:
+        let si = index_of(id)
+        if si >= 0 and u_owner[si] == 0 and pen.length and dist2(u_x[si], u_y[si], pen[0], pen[1]) <= 1800 * 1800: penned++
+        if si >= 0 and u_moving[si] == 0: still++
+        if si >= 0 and u_orders[si].length: forgot = false
+    check(sheep.length == 4 and penned == 4, "sheep: with no pen, every claimed sheep gathers at one spot by the Town Center ({penned} of {sheep.length})")
+    check(still == 4 and forgot, "sheep: ... and stands there, its old owner\'s orders forgotten")
+    let bx = b_cx[tc] * 1000 + 1500
+    let by = b_cy[tc] * 1000 + 1500
+    check(pen.length and max(abs(pen[0] - bx), abs(pen[1] - by)) >= 3000, "sheep: the pen is beside the Town Center, not inside it")
+    first = index_of(sheep[0])
+    let x0 = u_x[first]
+    let y0 = u_y[first]
+    steps(1200)
+    first = index_of(sheep[0])
+    check(u_x[first] == x0 and u_y[first] == y0, "sheep: ... for good (no wandering a minute later)")
+    // No fighting orders for a sheep: an attack and a stance do nothing, an attack-move only walks it.
+    let foe = ids_of(1)[0]
+    issue_cmd(0, CMD_ATTACK, [sheep[0]], foe, 0, 0, 0)
+    stance(0, [sheep[0]], "passive")
+    steps(20)
+    first = index_of(sheep[0])
+    check(u_foe[first] == 0 and u_posture[first] == AGGRESSIVE, "sheep: no attack orders, no stances")
+    issue_cmd(0, CMD_ATTACK_MOVE, [sheep[0]], x0 + 3000, y0, 0, 0)
+    steps(20)
+    first = index_of(sheep[0])
+    check(u_stance[first] == NONE and u_moving[first] == 1, "sheep: an attack-move just walks it")
+    // One worker slaughters a sheep in a few blows.
+    var blows = 0
+    issue_cmd(0, CMD_ATTACK, [worker], sheep[1], 0, 0, 0)
+    for(1200):
+        tick_on()
+        for(events) e:
+            if e.kind == EV_HIT and e.b == sheep[1]: blows++
+        if index_of(sheep[1]) < 0: break
+    check(index_of(sheep[1]) < 0 and blows <= 3, "sheep: a worker slaughters one in a few blows ({blows})")
+    // A deer takes more (it's harmless too, but bigger); a boar fights at full armour.
+    let dk = animal_type("deer")
+    let bk = animal_type("boar")
+    let wk = u_kind[index_of(worker)]
+    let to_deer = damage(t_atk[wk], t_arm[dk], t_cls[dk], max(r_min_damage, t_min_damage[dk]))
+    check(t_hp[dk] / to_deer >= 5, "sheep: a deer still takes a worker {t_hp[dk] / to_deer} blows")
+    check(t_min_damage[bk] == 0 and t_harmless[bk] == 0, "sheep: a boar gets no slaughter rule and fights back")
+
+// Somewhere a pen may go near Town Center building tc: the first open spot west of it, then further out.
+def pen_spot(tc:int) -> int2:
+    let cx = b_cx[tc]
+    let cy = b_cy[tc]
+    for(7) r0:
+        let r = r0 + 5
+        var dy = -r
+        while dy <= r:
+            if can_build(cx - r - 1, cy + dy - 1, 5, 0, false, false): return int2 { cx - r, cy + dy }
+            dy++
+    assert false
+    return int2 { -1, -1 }
+
+def put_pen(tc:int) -> int:
+    let k = btype_index("pen")
+    let spot = pen_spot(tc)
+    let pb = place(0, k, spot.x, spot.y, 0)
+    b_done[pb] = 1
+    b_hp[pb] = bm_hp[0][k]
+    pen_opened(pb)
+    return b_id[pb]
+
+def sheep_of(p:int) -> int:
+    var n = 0
+    for(u_owner) o, i:
+        if o == p and animal_name(i) == "sheep": n++
+    return n
+
+// Pens: claimed sheep go into their owner's pen; penned ones add food with no worker (exactly the
+// pen's food per animal every food_ticks, up to the cap), two or more breed up to the cap, a rival
+// outside the pen can't steal them but takes them once it's torn down, and Release walks them out.
+def test_pen():
+    let ar = animal_rules()
+    new_world("flat_test", races0, ar, [])
+    var tc = -1
+    for(b_owner) o, b:
+        if tc < 0 and o == 0: tc = b
+    let k = btype_index("pen")
+    let pen_id = put_pen(tc)
+    let sheep = home_sheep(0)
+    let worker = first_worker(0)
+    for(sheep) id:
+        let x, y = pos_of(id)
+        issue_cmd(0, CMD_MOVE, [worker], x, y, 0, 0, 1)
+    steps(2400)
+    var pb = b_index_of(pen_id)
+    let penned = pen_animals(pb, true).length
+    check(penned == 4, "pen: claimed sheep walk into their owner\'s pen ({penned} of 4)")
+    // The trickle: exactly food per animal every food_ticks, with nobody gathering.
+    let food = res_of("food")
+    let food_ticks = bt_pen_food_ticks[k]
+    var t0 = tick
+    var before = stock[food][0]
+    steps(1200)
+    let want = 4 * bt_pen_food[k] * ((tick - 1) / food_ticks - (t0 - 1) / food_ticks)
+    check(stock[food][0] - before == want, "pen: 4 penned sheep bring in {want} food a minute ({stock[food][0] - before})")
+    // Breeding: by the next breeding beat there's a lamb.
+    while tick % bt_pen_breed_ticks[k] != 1: tick_on()
+    pb = b_index_of(pen_id)
+    check(pen_animals(pb, false).length == 5, "pen: two or more breed ({pen_animals(pb, false).length} now)")
+    // The cap: more than it holds are there, but only the cap is paid for, and none are born.
+    for(6):   // (Pens._born: a newborn by the pen's centre, to its place)
+        let parent = pen_animals(pb, false)[0]
+        let cx, cy = b_centre(pb)
+        let s = add_unit(u_owner[parent], u_kind[parent], cx, cy)
+        u_posture[s] = 0
+        let px, py = herd_slot(cx, cy, s)
+        order_move(s, px, py, 200, 0, -1, -1, 0)
+    grow_scratch()
+    steps(600)
+    pb = b_index_of(pen_id)
+    let inside = pen_animals(pb, true).length
+    t0 = tick
+    before = stock[food][0]
+    steps(food_ticks)
+    check(inside > bt_pen_animals[k] and stock[food][0] - before == bt_pen_animals[k] * bt_pen_food[k] and not pen_room(pb),
+        "pen: it pays for its cap ({bt_pen_animals[k]}) and no more ({inside} inside, +{stock[food][0] - before} food)")
+    // A rival next to the pen, outside it, steals nothing while it stands...
+    for(u_owner) o, i:
+        if o == 0 and t_animal[u_kind[i]] == 0:
+            u_x[i] = 2000
+            u_y[i] = 2000
+            u_moving[i] = 0
+            u_task[i] = T_NONE
+    let cx, cy = b_centre(pb)
+    spawn_cmd(1, "spear", 4, cx, cy - 2600)
+    steps(200)
+    check(sheep_of(1) == 0, "pen: a rival outside the pen steals nothing")
+    // ...but tear it down and the sheep spill out to them.
+    let spears = filter(ids_of(1)) uid: t_slot[u_kind[index_of(uid)]] == "spear"
+    issue_cmd(1, CMD_ATTACK, spears, pen_id, 0, 0, 0)
+    for(3000):
+        tick_on()
+        if b_index_of(pen_id) < 0 and sheep_of(1) > 0: break
+    check(b_index_of(pen_id) < 0 and sheep_of(1) > 0, "pen: torn down, its sheep are stolen ({sheep_of(1)})")
+    check(walk_over[cell_of(cx, cy)] == 0, "pen: torn down, its ground is plain again")
+    // Release on a fresh world: a pen, a sheep in it, then Release: it walks out.
+    new_world("flat_test", races0, ar, [])
+    var tc2 = -1
+    for(b_owner) o, b:
+        if tc2 < 0 and o == 0: tc2 = b
+    let pen2 = put_pen(tc2)
+    var one = -1
+    for(u_owner) o, i:
+        if one < 0 and o == gaia and animal_name(i) == "sheep":
+            one = u_id[i]
+            u_owner[i] = 0
+    issue_cmd(0, CMD_PEN, [one], pen2, 0, 0, 0)
+    steps(1600)
+    let in_before = pen_animals(b_index_of(pen2), true).length
+    issue_cmd(0, CMD_RELEASE, [], pen2, 0, 0, 0)
+    steps(600)
+    let pb2 = b_index_of(pen2)
+    check(in_before == 1 and pen_animals(pb2, true).length == 0 and pen_at(index_of(one)) < 0,
+        "pen: Release walks its animals out ({in_before} in, then {pen_animals(pb2, true).length})")
+
+// The economy bot herds and hunts: it claims its sheep and pens them (a pen it builds; it keeps
+// penned sheep rather than slaughter them), hunts a deer that's near home and takes on a boar once
+// it has workers to spare; the hunters gather the meat.
+def test_bot_hunts():
+    new_world("flat_test", races0, animal_rules(), [])
+    var tc = -1
+    for(b_owner) o, b:
+        if tc < 0 and o == 0: tc = b
+    let hx = b_cx[tc] * 1000 + 1500
+    let hy = b_cy[tc] * 1000 + 1500
+    for(u_kind) k, i:   // this map's deer graze mid-map, far from home: bring one closer
+        if su_type_animal[k] == "deer":
+            u_x[i] = hx + 8000
+            u_y[i] = hy + 2000
+            break
+    spawn_cmd(0, "spear", 2, hx - 3000, hy - 3000)   // a guard to lead the boar hunt
+    let bot = EcoBot { 0 }
+    let killed = [0, 0, 0]   // sheep, deer, boar
+    let names = ["sheep", "deer", "boar"]
+    var meat = 0
+    while tick < 20 * 60 * 7:
+        let animals_now = dictionary<int, int>(64)   // id -> its animal, of player 0's or gaia's
+        for(u_kind) k, i:
+            if t_animal[k] != 0 and (u_owner[i] == 0 or u_owner[i] == gaia): animals_now.set(u_id[i], find_index(names, su_type_animal[k]))
+        bot_think(bot)
+        tick_on()
+        for(events) e:
+            if e.kind == EV_DIE and e.b == 0:
+                let n = animals_now.get(e.a, -1)
+                if n >= 0: killed[n]++
+        for(u_owner) o, i:
+            let h = u_home[i]
+            if o == 0 and h >= 0 and terrain_name(h) == "carcass" and u_carry[i] > 0: meat = 1
+    var penned = 0
+    for(b_owner) o, b:
+        if o == 0 and is_pen(b) and b_done[b] == 1: penned += pen_animals(b, true).length
+    print "  bot hunting, first 7 minutes: {killed[0]} sheep, {killed[1]} deer, {killed[2]} boar killed; {penned} sheep penned"
+    check(penned >= 2 and killed[0] >= 1, "bot hunts: it slaughters its first sheep, then builds a pen and pens the rest ({killed[0]} slaughtered, {penned} penned)")
+    check(killed[1] >= 1, "bot hunts: ... a deer near home ({killed[1]})")
+    check(killed[2] >= 1, "bot hunts: ... and its boar, with a big party ({killed[2]})")
+    check(lost[0] <= 3, "bot hunts: ... losing no more than a few hunters to it ({lost[0]} lost)")
+    check(meat > 0, "bot hunts: its workers gather the carcasses")
+
+def inside_n(b:int) -> int: return b_inside[b].length / REC_SIZE
+
+def inside_ids(b:int) -> [int]: return map(inside_n(b)) n: b_inside[b][n * REC_SIZE + REC_ID]
+
+// The open spot for a building of type k nearest (x, y) (rings outwards), for test setups.
+def free_spot(k:int, x:int, y:int) -> int2:
+    for(12) r:
+        var dy = -r
+        while dy <= r:
+            var dx = -r
+            while dx <= r:
+                if max(abs(dx), abs(dy)) == r and can_place(0, k, x + dx, y + dy): return int2 { x + dx, y + dy }
+                dx++
+            dy++
+    assert false
+    return int2 { x, y }
+
+// Garrisons: workers go into their Town Center, out of the units arrays (pop still counts them),
+// heal, and each adds an arrow (the Town Center shoots only with people inside); ungarrison brings
+// them back with their ids and health; the call to arms and back to work; a building that falls
+// spills its people out; the same commands give the same hashes.
+def garrison_run(checks_on:bool) -> int:
+    new_world("flat_test", races0, rules0, [])
+    let tc_id = b_id[0]
+    let tc = b_index_of(tc_id)
+    let sx = start_x[0]
+    let sy = start_y[0]
+    let workers = own_workers_of(0)
+    def c(ok:bool, what:string):
+        if checks_on: check(ok, what)
+    def volleys(n:int) -> [int]:   // hits by the Town Center per volley, over some ticks
+        let out = []::int
+        for(n):
+            tick_on()
+            var k = 0
+            for(events) e:
+                if e.kind == EV_SHOT and e.a == tc_id: k++
+            if k > 0: out.push(k)
+        return out
+    // An enemy spearman beside the Town Center, told never to fight.
+    let foe = spawn_at(1, "spear", sx + 2600, sy)
+    stance(1, [foe], "passive")
+    c(volleys(120).length == 0, "garrison: an empty Town Center doesn\'t shoot")
+    let pop0 = pop[0]
+    let three = workers.slice(0, 3)
+    issue_cmd(0, CMD_GARRISON, three, tc_id, 0, 0, 0)
+    for(300):
+        tick_on()
+        if inside_n(tc) == 3: break
+    c(inside_n(tc) == 3, "garrison: three workers go into the Town Center ({inside_n(tc)})")
+    c(not exists(three) id: index_of(id) >= 0, "garrison: those inside are out of the units (no sight, no target)")
+    tick_on()
+    c(pop[0] == pop0, "garrison: pop still counts them ({pop[0]}, was {pop0})")
+    let vs = volleys(200)
+    c(vs.length and not exists(vs) n: n != 3, "garrison: three inside, three arrows a volley ({vs})")
+    // Healing inside: 1 hp every heal_every ticks.
+    b_inside[tc][REC_HP] = 5
+    steps(200)
+    let healed = b_inside[tc][REC_HP]
+    c(healed >= 5 + 200 / r_garrison_heal_every - 1, "garrison: those inside heal slowly (5 -> {healed})")
+    // Ungarrison: out again, the same ids and health, beside the Town Center.
+    let hurt_id = b_inside[tc][REC_ID]
+    issue_cmd(0, CMD_UNGARRISON, [], tc_id, 0, 0, 0)
+    steps(12)
+    c(inside_n(tc) == 0 and not exists(three) id: index_of(id) < 0, "garrison: ungarrison brings everyone out under their own ids")
+    let hi = index_of(hurt_id)
+    c(hi >= 0 and abs(u_hp[hi] - healed) <= 1, "garrison: ... with the health they had inside ({if hi >= 0: u_hp[hi] else: -1})")
+    let x0, y0, x1, y1 = building_rect(tc)
+    let g = if hi >= 0: max(max(x0 - u_x[hi], u_x[hi] - x1), max(y0 - u_y[hi], u_y[hi] - y1)) else: 9999
+    c(g < 1500, "garrison: ... standing beside it ({g} from its wall)")
+    // Call to arms: every worker near the Town Center goes in (gathering first, so back to work has a job).
+    let bush = nearest_res(sx, sy, "food")
+    let kind = kind_of("food")
+    issue_cmd(0, CMD_GATHER, workers, bush, 0, 0, 0)
+    steps(300)
+    issue_cmd(0, CMD_CALL_TO_ARMS, [], tc_id, 0, 0, 0)
+    for(600):
+        tick_on()
+        if inside_n(tc) == workers.length: break
+    c(inside_n(tc) == workers.length, "garrison: the call to arms sends every worker nearby inside ({inside_n(tc)} of {workers.length})")
+    issue_cmd(0, CMD_BACK_TO_WORK, [], 0, 0, 0, 0)
+    steps(12)
+    let back = filter(workers) id: index_of(id) >= 0 and (u_task[index_of(id)] == GATHER or u_task[index_of(id)] == T_RETURN) and u_carry_kind[index_of(id)] == kind
+    c(back.length == workers.length, "garrison: back to work: every worker out and gathering again ({back.length} of {workers.length})")
+    // A tower that falls spills its people out (and holds no more than it takes).
+    let more = spawn_at(0, "worker", sx + 3000, sy - 3000)
+    let all = copy(workers)
+    for(3): all.push(spawn_at(0, "worker", sx + 3000, sy - 3000))
+    all.push(more)
+    let ts = free_spot(btype_index("watchtower"), sx / 1000 + 5, sy / 1000 - 5)
+    let tower = put(0, "watchtower", ts.x, ts.y, 0)
+    issue_cmd(0, CMD_GARRISON, all.slice(0, 2), tower, 0, 0, 0)
+    for(400):
+        tick_on()
+        if inside_n(b_index_of(tower)) == 2: break
+    var tb = b_index_of(tower)
+    c(inside_n(tb) == 2, "garrison: two workers go into a watchtower ({inside_n(tb)})")
+    issue_cmd(0, CMD_GARRISON, all.slice(2, all.length - 2), tower, 0, 0, 0)
+    steps(400)
+    tb = b_index_of(tower)
+    let cap = bt_garrison[b_kind[tb]]
+    c(inside_n(tb) == cap, "garrison: a watchtower holds {cap}, no more ({inside_n(tb)})")
+    let held = inside_ids(tb)
+    b_hp[tb] = 1
+    spawn_cmd(1, "spear", 6, (ts.x + 3) * 1000, ts.y * 1000 + 500)
+    steps(12)
+    let killers = filter(ids_of(1)) id: t_slot[u_kind[index_of(id)]] == "spear"
+    issue_cmd(1, CMD_ATTACK, killers, tower, 0, 0, 0)
+    for(400):
+        tick_on()
+        if b_index_of(tower) < 0: break
+    c(b_index_of(tower) < 0, "garrison: the enemy knocks the tower down")
+    c(not exists(held) id: index_of(id) < 0, "garrison: ... and its people spill out alive")
+    return state_hash()
+
+def test_garrison():
+    let a = garrison_run(true)
+    let b = garrison_run(false)
+    check(a == b, "garrison: the same commands give the same state hash")
+
+def visible_cells(p:int) -> int: return (filter(fog[p]) v: v == VISIBLE).length
+
+def research_named(id:string) -> int:
+    for(research) r, k:
+        if r.id == id: return k
+    return -1
+
+// A research given to p (researched, its effects applied), as test_sim.gd's _give for one in the data.
+def give(p:int, id:string):
+    let r = research_named(id)
+    assert r >= 0
+    researched[p][r] = 1
+    retype(p)
+    tech_refresh(p)
+
+// Towers: the Outpost sees further than a house and doesn't shoot; the Bastion research turns every
+// Watchtower into a Bastion in place, keeping its share of health and its people; after it a
+// Watchtower ordered is a Bastion; a second Town Center from age 3.
+def test_towers():
+    bare_world(races0)
+    put(0, "house", 10, 10, 0)
+    tick_on()
+    let seen_house = visible_cells(0)
+    bare_world(races0)
+    put(0, "outpost", 10, 10, 0)
+    tick_on()
+    check(visible_cells(0) > seen_house * 5 / 2, "towers: an outpost sees far ({visible_cells(0)} cells, a house {seen_house}; swamp frogs\' buildings see 2 further)")
+    let ok = btype_index("outpost")
+    check(bt_attacks[ok] == 0 and bt_garrison[ok] == 0, "towers: an outpost doesn\'t shoot, and nobody goes in")
+    new_world("flat_test", races0, rules0, [])
+    for(num_resources) r: stock[r][0] = 5000
+    let sx = start_x[0]
+    let sy = start_y[0]
+    let wt = btype_index("watchtower")
+    let bk = btype_index("bastion")
+    let t1 = put(0, "watchtower", sx / 1000 + 5, sy / 1000 - 5, 0)
+    let t2 = put(1, "watchtower", sx / 1000 + 7, sy / 1000 - 5, 0)   // the rival's stays a watchtower
+    var b1 = b_index_of(t1)
+    b_hp[b1] = bm_hp[0][wt] / 2
+    for([999999, type_of_slot(0, "worker"), 10, 0, 0, 0, -1]) v: b_inside[b1].push(v)
+    give(0, "bastion")
+    b1 = b_index_of(t1)
+    check(b_kind[b1] == bk, "towers: the Bastion research makes the watchtower a bastion where it stands")
+    check(abs(b_hp[b1] - bm_hp[0][bk] / 2) <= 1, "towers: ... keeping its share of health ({b_hp[b1]} of {bm_hp[0][bk]})")
+    check(inside_n(b1) == 1, "towers: ... and the people inside")
+    check(b_kind[b_index_of(t2)] == wt, "towers: a rival\'s watchtower stays one")
+    check(bt_hp_base[bk] > bt_hp_base[wt] and bt_atk[bk] > bt_atk[wt] and bt_range[bk] > bt_range[wt], "towers: a bastion has more health, attack and range")
+    b_inside[b1] = []::int
+    ages[0] = 3
+    let worker = first_worker(0)
+    let spot = free_spot(bk, sx / 1000 - 5, sy / 1000 + 5)
+    issue_cmd(0, CMD_BUILD, [worker], wt, spot.x, spot.y, 0)
+    steps(12)
+    let nb = b_index_of(occupied[spot.y * W + spot.x])
+    check(nb >= 0 and b_kind[nb] == bk, "towers: after the research a watchtower ordered is a bastion")
+    // More Town Centers: not in age 1 while one stands; from age 3, for wood and stone.
+    let tck = btype_index("town_center")
+    ages[0] = 1
+    check(build_barred(0, tck), "towers: no second Town Center in age 1")
+    ages[0] = 3
+    check(not build_barred(0, tck), "towers: a second Town Center from age 3")
+    check(bt_cost[tck][res_of("stone")] > 0 and bt_cost[tck][res_of("wood")] > 0, "towers: it costs wood and stone")
+    let stone = stock[res_of("stone")][0]
+    let tspot = free_spot(tck, sx / 1000 + 6, sy / 1000 + 4)
+    issue_cmd(0, CMD_BUILD, [worker], tck, tspot.x, tspot.y, 0)
+    steps(12)
+    check(stock[res_of("stone")][0] < stone, "towers: ... and one is laid down, paid in stone")
+
 // ------------------------------------------------------------------ the parts
 
 let PARTS = ["fixed", "command_order", "source_lint", "flow", "crossing_flat", "crossing_choke", "crossing_engines",
              "opening", "combat", "shots", "engines", "trade", "sapper_sling", "gates", "diagonal_wall", "diagonal_gates",
              "walls", "siege_ways", "modes", "movement_classes", "land", "hills", "flow_patch", "flow_patch_mixed",
              "farms", "fog_memory", "age_timing", "builder_moves_on", "builder_back_to_work", "no_dark_picks", "wood_spots",
-             "build_queue", "drop_off", "match", "match_b", "match_flipped"]
+             "build_queue", "drop_off", "animals", "sheep_spot", "pen", "bot_hunts", "garrison", "towers", "match", "match_b", "match_flipped"]
 
 def run_part(name:string):
     if name == "fixed": test_fixed()
@@ -3018,6 +3508,12 @@ def run_part(name:string):
     elif name == "wood_spots": test_wood_spots()
     elif name == "build_queue": test_build_queue()
     elif name == "drop_off": test_drop_off()
+    elif name == "animals": test_animals()
+    elif name == "sheep_spot": test_sheep_spot()
+    elif name == "pen": test_pen()
+    elif name == "bot_hunts": test_bot_hunts()
+    elif name == "garrison": test_garrison()
+    elif name == "towers": test_towers()
     elif name == "match": test_match()
     elif name == "match_b": test_match_b()
     elif name == "match_flipped": test_match_flipped()
