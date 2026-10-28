@@ -8,9 +8,9 @@
 // Prints "N passed, M failed" and exits 1 on a failure.
 //
 // Differences from test_sim.gd:
-// - The Lobster sim has no SPAWN command: spawn() puts units down at once, jittered by the world's rng
-//   as World's SPAWN does. So the scripted match's hashes are this port's own, not GDScript's (they're
-//   compared run against run, as before).
+// - The Lobster sim has no SPAWN command: spawn_cmd() queues one and tick_on() runs it at the start of
+//   its turn + 2, jittered by the world's rng, as World's SPAWN does; so a part plays tick for tick as
+//   in GDScript (the counter fights end the same, unit for unit).
 // - The tick-time check takes the best of up to three plays of the match and fails only past the budget
 //   (a busy machine slows one play, rarely all three).
 // - Dropped: the float-leak checks (a Lobster Cmd holds typed ints: a float can't get in) and the JSON
@@ -84,6 +84,17 @@ let POSTURE_NAMES = ["aggressive", "defensive", "stand", "passive"]
 
 // ------------------------------------------------------------------ checks
 
+class SpawnOrder:
+    run_tick:int
+    player:int
+    slot:string
+    count:int
+    x:int
+    y:int
+
+var due = []::SpawnOrder      // SPAWNs issued, waiting for their turn
+
+
 var checks = 0
 var failures = 0
 
@@ -113,10 +124,12 @@ let bare0 = bare_of(rules0)
 // A fresh world (World.new): the old one's globals reset first.
 def new_world(map_id:string, races:[JV], rules:JV, team_ids:[int]):
     reset_world()
+    due = []
     setup_world(SEED, map_id, races, rules, team_ids)
+    events_on = true   // (the checks read them; they aren't state)
 
-// World's SPAWN, now: `count` of p's `slot` round (x, y), jittered by the world's rng, onto open ground.
-def spawn(p:int, slot:string, count:int, x:int, y:int) -> [int]:
+// World's SPAWN as it runs: `count` of p's `slot` round (x, y), jittered by the world's rng, onto open ground.
+def spawn_now(p:int, slot:string, count:int, x:int, y:int) -> [int]:
     let k = type_of_slot(p, slot)
     assert k >= 0
     let out = []::int
@@ -132,8 +145,28 @@ def spawn(p:int, slot:string, count:int, x:int, y:int) -> [int]:
     grow_scratch()
     return out
 
+// Issue a SPAWN (the Lobster sim has no SPAWN command): it runs at the start of turn + 2, as World's does.
+def spawn_cmd(p:int, slot:string, count:int, x:int, y:int):
+    due.push(SpawnOrder { (tick / TICKS_PER_TURN + CMD_DELAY) * TICKS_PER_TURN, p, slot, count, x, y })
+
+// A tick: the SPAWNs due now (by player, then as issued), then the world's step.
+def tick_on():
+    if due.length and tick % TICKS_PER_TURN == 0:
+        for(num_players) p:
+            for(due) s:
+                if s.run_tick == tick and s.player == p: spawn_now(p, s.slot, s.count, s.x, s.y)
+        due = filter(due): _.run_tick != tick
+    step()
+
+// A SPAWN issued and played until it has run (test_sim.gd's _spawn_n): the new units' ids.
+def spawn(p:int, slot:string, count:int, x:int, y:int) -> [int]:
+    let before = next_id
+    spawn_cmd(p, slot, count, x, y)
+    while next_id == before: tick_on()
+    return map(next_id - before) n: before + n
+
 def steps(n:int):
-    for(n): step()
+    for(n): tick_on()
 
 def ids_of(p:int) -> [int]:
     let out = []::int
@@ -259,14 +292,14 @@ def test_crossing(map_id:string, engines:bool):
     let dy = start_y[1]
     for(glist(races0[0], "units")) u:   // the foot and horse lines, or (engines) the siege engines on their own
         if has_crew(u) == engines:
-            spawn(0, rstr(at(u, "recipe"), "slot"), if engines: CROSS_ENGINES else: CROSS_UNITS, sx, sy)
-    step()
+            spawn_cmd(0, rstr(at(u, "recipe"), "slot"), if engines: CROSS_ENGINES else: CROSS_UNITS, sx, sy)
+    while u_id.length == 0: tick_on()
     let ids = copy(u_id)
     let groups = (ids.length + CROSS_UNITS - 1) / CROSS_UNITS
     for(groups) g:
         issue_cmd(0, CMD_MOVE, ids.slice(g * CROSS_UNITS, min(CROSS_UNITS, ids.length - g * CROSS_UNITS)),
             dx + (g - groups / 2) * 1500, dy + ((g % 2) * 2 - 1) * 1000, 0, 0)
-    step()
+    tick_on()
     var settled = -1
     var worst = 0.0
     let t0 = seconds_elapsed()
@@ -274,7 +307,7 @@ def test_crossing(map_id:string, engines:bool):
     let t_first = tick
     while tick < t_first + CROSS_LIMIT and settled < 0:
         let s = seconds_elapsed()
-        step()
+        tick_on()
         n++
         worst = max(worst, seconds_elapsed() - s)
         if tick % 20 == 0 and tick > t_first + 40 and not any1(u_moving): settled = tick - t_first
@@ -296,14 +329,6 @@ def test_crossing(map_id:string, engines:bool):
     print "{map_id} crossing{if engines: " (engines)" else: ""}: {ids.length} units settled at tick {settled} ({settled / 20} s), avg tick {fmt_ms(avg)} ms, worst {fmt_ms(worst * 1000.0)} ms"
 
 // ------------------------------------------------------------------ the scripted match
-
-class SpawnOrder:
-    run_tick:int
-    player:int
-    slot:string
-    count:int
-    x:int
-    y:int
 
 class Script:
     orders:[Cmd]          // in run order: (run tick, player, seq)
@@ -434,10 +459,10 @@ def play_match(races:[JV], cs:[Cmd], spawns:[SpawnOrder]) -> Played:
     for(TICKS):
         while next_spawn < spawns.length and spawns[next_spawn].run_tick == tick:
             let s = spawns[next_spawn]
-            spawn(s.player, s.slot, s.count, s.x, s.y)
+            spawn_now(s.player, s.slot, s.count, s.x, s.y)
             next_spawn++
         let t0 = seconds_elapsed()
-        step()
+        tick_on()
         ms.push((seconds_elapsed() - t0) * 1000.0)
         if tick % HASH_EVERY == 0:
             hashes.push(tick)
@@ -604,7 +629,7 @@ def test_opening():
     while tick < OPENING_TICKS:
         for(bots) bot: bot_think(bot)
         let s = seconds_elapsed()
-        step()
+        tick_on()
         worst = max(worst, seconds_elapsed() - s)
         for(2) p:
             if pop[p] > pop_cap[p]: over_cap++
@@ -632,10 +657,586 @@ def test_opening():
     check(pop_cap[1] - 5 == 6 * count_houses(1), "opening: rat houses give 6 pop")
     print "opening: avg tick {fmt_ms((seconds_elapsed() - t0) * 1000.0 / OPENING_TICKS)} ms, worst {fmt_ms(worst * 1000.0)} ms"
 
+// ------------------------------------------------------------------ combat
+
+let FIGHT_BUDGET = 600          // food + wood per side
+let FIGHT_LIMIT = 3000          // ticks (2.5 minutes)
+let FIGHT_FROM_X = [11000, 21000]   // open ground on flat_test, 10 tiles apart
+let FIGHT_FROM_Y = [20500, 20500]
+// Counter fights: [counter, countered, the tag the countered unit needs for this to be the counter].
+let COUNTERS = [["spear", "large", "large"], ["large", "archer", "ranged"], ["archer", "spear", "infantry"], ["skirmisher", "archer", "archer"],
+    ["infantry", "spear", "spear"], ["archer", "infantry", "infantry"]]
+let COUNTER_PROMPTS = ["angry swamp frogs with reed spears", "sewer rats with cheese hammers", "centaur romans",
+    "greek hoplites", "royal knights", "viking beetle riders"]
+
+def gen_race(prompt:string) -> JV: return generate(prompt, rules0, 0)
+
+def bare_world(races:[JV]): new_world("flat_test", races, bare0, [])
+
+def posture_of(name:string) -> int: return find_index(POSTURE_NAMES, name)
+
+def stance(p:int, ids:[int], name:string): issue_cmd(p, CMD_STANCE, ids, posture_of(name), 0, 0, 0)
+
+// One unit of `slot` for p at (x, y) with a stance, settled in (test_sim.gd's _lone).
+def lone(p:int, slot:string, x:int, y:int, name:string) -> int:
+    let uid = spawn(p, slot, 1, x, y)[0]
+    stance(p, [uid], name)
+    steps(TICKS_PER_TURN * (CMD_DELAY + 1))
+    return uid
+
+def spawn_at(p:int, slot:string, x:int, y:int) -> int: return spawn(p, slot, 1, x, y)[0]
+
+class Watch:
+    far:int
+    hits:[int]
+
+// Steps the world, tracking how far unit `id` strays from (x, y) and the hits each side lands.
+def watch_from(n:int, uid:int, x:int, y:int) -> Watch:
+    let r = Watch { 0, [0, 0] }
+    for(n):
+        tick_on()
+        let i = index_of(uid)
+        if i >= 0: r.far = max(r.far, isqrt(dist2(u_x[i], u_y[i], x, y)))
+        for(events) e:
+            if e.kind == EV_HIT:
+                let by = index_of(e.a)
+                if by >= 0 and u_owner[by] < 2: r.hits[u_owner[by]]++
+    return r
+
+def watch(n:int, uid:int) -> Watch:
+    let x, y = pos_of(uid)
+    return watch_from(n, uid, x, y)
+
+def unit_of(race:JV, slot:string) -> JV:
+    for(glist(race, "units")) u:
+        if rstr(at(u, "recipe"), "slot") == slot: return u
+    assert false
+    return jobj()
+
+def eval_has_tag(e:JV, tag:string) -> bool: return has_str(glist(e, "tags"), tag)
+
+def type_has_tag(k:int, tag:string) -> bool: return eval_has_tag(su_type_eval[k], tag)
+
+// Healers: one heals a wounded friend in range to full, walks to one further off, never heals an
+// enemy, and never fights, not even when told to or when struck.
+def test_heal():
+    let race = gen_race("romans")
+    bare_world([race, race])
+    let healer = spawn_at(0, "healer", 15000, 20500)
+    let near = spawn_at(0, "spear", 17000, 20500)
+    let far = spawn_at(0, "spear", 15000, 25500)   // 5 tiles off: within sight, out of range
+    let foe = spawn_at(1, "spear", 13500, 21500)
+    stance(0, [near, far], "passive")
+    stance(1, [foe], "passive")
+    let hi = index_of(healer)
+    check(u_posture[hi] == PASSIVE, "heal: a healer spawns with the no-attack stance")
+    check(as_int(at(su_type_eval[u_kind[hi]], "attack")) == 0, "heal: a healer has no attack")
+    issue_cmd(0, CMD_ATTACK, [healer], foe, 0, 0, 0)
+    steps(8)
+    let full = t_hp[u_kind[index_of(near)]]
+    for([near, far, foe]) uid: u_hp[index_of(uid)] = 4
+    var heals = 0
+    let healed = []::int
+    var healer_hits = 0
+    var fought = false
+    var near_full_at = -1
+    for(2400) t:
+        tick_on()
+        for(events) e:
+            if e.kind == EV_HEAL:
+                heals++
+                healed.push(e.b)
+            elif e.kind == EV_HIT and e.a == healer: healer_hits++
+        fought = fought or u_foe[index_of(healer)] != 0
+        if near_full_at < 0 and u_hp[index_of(near)] == full: near_full_at = t
+    check(near_full_at > 0, "heal: the wounded friend in range is healed to full (tick {near_full_at}, {heals} heals)")
+    check(u_hp[index_of(far)] == full, "heal: a wounded friend 5 tiles off is walked to and healed ({u_hp[index_of(far)]}/{full} hp)")
+    check(u_hp[index_of(foe)] == 4 and not contains(healed, foe), "heal: never an enemy ({u_hp[index_of(foe)]} hp)")
+    check(not contains(healed, healer), "heal: not itself")
+    check(healer_hits == 0 and not fought, "heal: told to attack, it doesn\'t ({healer_hits} hits)")
+    let per_heal = r_heal_amount
+    check(heals <= (full - 4) * 2 / per_heal + 2, "heal: {per_heal} hp a heal, no more heals than the wounds need ({heals})")
+    // Struck by an aggressive enemy, it doesn't strike back (and heals nobody who isn't hurt).
+    bare_world([race, race])
+    let h2 = spawn_at(0, "healer", 15000, 20500)
+    stance(0, [h2], "aggressive")
+    let attacker = spawn_at(1, "spear", 16500, 20500)
+    var hits_back = 0
+    var heals2 = 0
+    for(600):
+        tick_on()
+        for(events) e:
+            if e.kind == EV_HIT and e.a == h2: hits_back++
+            elif e.kind == EV_HEAL: heals2++
+    check(index_of(h2) < 0, "heal: an enemy spearman kills a lone healer")
+    check(hits_back == 0 and heals2 == 0, "heal: even on aggressive it never fights back ({hits_back} hits), and heals no one unhurt or itself ({heals2})")
+    let ai = index_of(attacker)
+    check(ai >= 0 and u_hp[ai] == t_hp[u_kind[ai]], "heal: the attacker is untouched and unhealed")
+
+// The formula: base type, bonuses only against targets with the tag, class armour, the minimum.
+def test_damage():
+    // classes: melee, pierce, building, large
+    let atk = [5, 0, 0, 7]    // a spear: 5 melee, +7 vs large
+    let arm = [2, 4, 0, 0]
+    let plain = [1, 1, 0, 0]
+    let large = [1, 1, 0, 1]
+    check(damage(atk, arm, plain, 1) == 3, "melee 5 - armour 2 = 3")
+    check(damage(atk, arm, large, 1) == 10, "the large bonus only lands on large targets (3 + 7)")
+    check(damage(atk, [2, 4, 0, 3], large, 1) == 7, "class armour blunts a bonus (3 + 7 - 3)")
+    check(damage([0, 4, 0, 0], [0, 9, 0, 0], plain, 1) == 1, "never less than the minimum")
+    check(damage([0, 6, 0, 0], [9, 0, 0, 0], plain, 1) == 6, "pierce ignores melee armour")
+
+// Idle soldiers near enemies fight without being told to.
+def test_idle_fight():
+    let race = gen_race(PROMPTS[0])
+    bare_world([race, race])
+    spawn_cmd(0, "spear", 5, 15000, 20500)
+    spawn_cmd(1, "spear", 5, 18000, 20500)
+    steps(1200)
+    check(lost[0] + lost[1] > 0, "idle spearmen 3 tiles apart fight on their own ({lost[0] + lost[1]} lost)")
+
+// Attack-move spreads out: 10 spearmen against 10 make many duels, not a pile-on.
+def test_spread():
+    let race = gen_race(PROMPTS[0])
+    bare_world([race, race])
+    for(2) p: spawn_cmd(p, "spear", 10, FIGHT_FROM_X[p], FIGHT_FROM_Y[p])
+    while u_id.length < 20: tick_on()
+    for(2) p: issue_cmd(p, CMD_ATTACK_MOVE, ids_of(p), FIGHT_FROM_X[1 - p], FIGHT_FROM_Y[1 - p], 0, 0)
+    var most = 0
+    for(600):
+        tick_on()
+        let foes = []::int
+        for(u_id.length) i:
+            if u_owner[i] == 0 and u_foe[i] != 0 and not contains(foes, u_foe[i]): foes.push(u_foe[i])
+        most = max(most, foes.length)
+    check(most >= 7, "attack-move spreads: up to {most} different foes fought at once by 10 spearmen")
+
+// Two teams of two: allies stand side by side in peace; the teams fight each other.
+def test_teams():
+    let race = gen_race(PROMPTS[0])
+    new_world("flat_test", [race, race, race, race], bare0, [0, 0, 1, 1])
+    check(not is_enemy(0, 1) and is_enemy(1, 2) and not is_enemy(2, 3), "teams: 0+1 vs 2+3")
+    spawn_cmd(0, "spear", 4, 14000, 20500)
+    spawn_cmd(1, "spear", 4, 14500, 21000)
+    steps(600)
+    check(lost[0] + lost[1] == 0, "teams: allies side by side never fight")
+    spawn_cmd(2, "spear", 4, 17500, 20500)
+    spawn_cmd(3, "spear", 4, 18000, 21000)
+    steps(1500)
+    check(lost[0] + lost[1] + lost[2] + lost[3] > 0, "teams: the two teams fight ({lost} lost)")
+
+// A dozen large units knock down a Town Center; its footprint is free again.
+def test_siege_tc():
+    let race = gen_race(PROMPTS[0])
+    new_world("flat_test", [race, race], rules0, [])
+    let tc = b_id[1]
+    let cells = footprint(1)
+    spawn_cmd(0, "large", 12, start_x[1] - 4000, start_y[1])
+    while u_id.length < 2 * as_int(at(at(at(rules0, "economy"), "start"), "workers")) + 12: tick_on()
+    let mine = filter(ids_of(0)) uid: t_worker[u_kind[index_of(uid)]] == 0
+    issue_cmd(0, CMD_ATTACK, mine, tc, 0, 0, 0)
+    var hits = 0
+    while tick < 6000 and b_index_of(tc) >= 0:
+        tick_on()
+        for(events) e:
+            if e.kind == EV_HIT and e.b == tc: hits++
+    check(b_index_of(tc) < 0, "a dozen large units knock down a Town Center ({hits} hits by tick {tick})")
+    check(cells.length > 0 and not exists(cells) c: occupied[c] != 0, "its footprint is free again")
+
+// Twenty melee units on a Town Center: they spread round its walls, most of them strike within
+// half a minute, from every side, and nobody hitting it is shoved about.
+def test_surround():
+    let race = gen_race(PROMPTS[0])
+    let r = deep_copy(rules0)
+    set(at(at(r, "economy"), "start"), "workers", jint(0))
+    new_world("flat_test", [race, race], r, [])
+    let b = 1
+    let tc = b_id[b]
+    let ids = spawn(0, "spear", 20, b_cx[b] * 1000 - 5000, b_cy[b] * 1000 - 5000)
+    issue_cmd(0, CMD_ATTACK, ids, tc, 0, 0, 0)
+    let struck = []::int
+    var shoved = 0
+    let sides = []::int
+    let mx = b_cx[b] * 1000 + b_sx[b] * 500
+    let my = b_cy[b] * 1000 + b_sy[b] * 500
+    let t_start = tick
+    while tick < t_start + 600 and b_index_of(tc) >= 0:
+        let held = []::int   // id, x, y
+        let bi = b_index_of(tc)
+        for(u_id.length) i:
+            if u_foe[i] == tc and u_moving[i] == 0 and gap_b(i, bi) <= r_melee_reach:
+                held.push(u_id[i])
+                held.push(u_x[i])
+                held.push(u_y[i])
+        tick_on()
+        var k = 0
+        while k < held.length:
+            let i = index_of(held[k])
+            if i >= 0: shoved = max(shoved, abs(u_x[i] - held[k + 1]) + abs(u_y[i] - held[k + 2]))
+            k += 3
+        for(events) e:
+            if e.kind == EV_HIT and e.b == tc and not contains(struck, e.a):
+                struck.push(e.a)
+                let i = index_of(e.a)
+                let dx = u_x[i] - mx
+                let dy = u_y[i] - my
+                let side = if abs(dx) > abs(dy): (if dx > 0: 0 else: 1) else: (if dy > 0: 2 else: 3)
+                if not contains(sides, side): sides.push(side)
+    check(struck.length >= 15, "surround: {struck.length} of 20 melee units strike a Town Center within 30 s")
+    check(sides.length == 4, "surround: they hit it from all sides ({sides.length})")
+    check(shoved <= 10, "surround: a unit hitting the wall isn\'t shoved (most in a tick {shoved} milli-tiles)")
+
+def overlapping_pairs() -> int:
+    var n = 0
+    for(u_id.length) i:
+        var j = i + 1
+        while j < u_id.length:
+            let rr = u_radius[i] + u_radius[j]
+            if dist2(u_x[i], u_y[i], u_x[j], u_y[j]) < rr * rr * 81 / 100: n++
+            j++
+    return n
+
+def no_orders() -> bool: return not exists(u_orders) o: o.length > 0
+
+// A group move ends in a formation: every unit in a slot of its own, nobody overlaps, the archers
+// behind the spearmen, arrivals not shoved about, and it holds still. Attack-move and a shift-queued move too.
+def test_formation():
+    let race = gen_race(PROMPTS[0])
+    for(["move", "attack_move", "queued"]) kind:
+        bare_world([race, race])
+        let spears = spawn(0, "spear", 20, 12000, 14000)
+        let archers = spawn(0, "archer", 10, 12000, 16000)
+        let ids = spears.append(archers)
+        if kind == "queued":
+            issue_cmd(0, CMD_MOVE, ids, 30000, 22000, 0, 0)
+            issue_cmd(0, CMD_MOVE, ids, 40000, 40000, 0, 0, 1)
+        else:
+            issue_cmd(0, if kind == "move": CMD_MOVE else: CMD_ATTACK_MOVE, ids, 40000, 40000, 0, 0)
+        var shoved = 0
+        var settled = -1
+        while tick < 4000 and settled < 0:
+            let qx = copy(u_x)
+            let qy = copy(u_y)
+            let qm = copy(u_moving)
+            tick_on()
+            for(u_id.length) i:
+                if qm[i] == 0 and u_moving[i] == 0 and tick > 60: shoved += abs(u_x[i] - qx[i]) + abs(u_y[i] - qy[i])
+            if tick % 20 == 0 and tick > 200 and not any1(u_moving) and no_orders(): settled = tick
+        let what = "formation ({kind})"
+        check(settled > 0, "{what}: settles (tick {settled})")
+        let x0 = copy(u_x)
+        let y0 = copy(u_y)
+        steps(200)
+        var still = true
+        var off_slot = 0
+        let slots = []::int
+        var front = 1 << 30
+        var back = -(1 << 30)
+        for(u_id.length) i:
+            still = still and u_x[i] == x0[i] and u_y[i] == y0[i]
+            let key = u_tx[i] * 1000000 + u_ty[i]
+            if not contains(slots, key): slots.push(key)
+            if dist2(u_x[i], u_y[i], u_tx[i], u_ty[i]) > 400 * 400: off_slot++
+            let ahead = u_x[i] + u_y[i]   // along the way they went: down and right
+            if contains(archers, u_id[i]): back = max(back, ahead)
+            else: front = min(front, ahead)
+        let overlaps = overlapping_pairs()
+        check(slots.length == ids.length, "{what}: {slots.length} slots for {ids.length} units")
+        check(off_slot <= 2, "{what}: everyone stands in its slot ({off_slot} off)")
+        check(overlaps == 0, "{what}: no one overlaps ({overlaps} pairs)")
+        check(back < front, "{what}: the archers stand behind the spearmen")
+        check(shoved < 2000, "{what}: arrivals aren\'t shoved about ({shoved} milli-tiles in all)")
+        check(still, "{what}: it holds still afterwards")
+
+def ahead_of(uid:int) -> int:
+    let i = index_of(uid)
+    return u_tx[i] + u_ty[i]
+
+def across_of(uid:int) -> int:
+    let i = index_of(uid)
+    return u_tx[i] - u_ty[i]
+
+def lo_ahead(ids:[int]) -> int:
+    var v = 1 << 40
+    for(ids) uid: v = min(v, ahead_of(uid))
+    return v
+
+def hi_ahead(ids:[int]) -> int:
+    var v = -(1 << 40)
+    for(ids) uid: v = max(v, ahead_of(uid))
+    return v
+
+def lo_across(ids:[int]) -> int:
+    var v = 1 << 40
+    for(ids) uid: v = min(v, across_of(uid))
+    return v
+
+def hi_across(ids:[int]) -> int:
+    var v = -(1 << 40)
+    for(ids) uid: v = max(v, across_of(uid))
+    return v
+
+// A mixed group's formation goes by role: foot in front, shooters behind, healers at the back,
+// riders on both flanks; it settles without overlaps and holds still.
+def test_role_formation():
+    let race = gen_race("romans")
+    bare_world([race, race])
+    let spears = spawn(0, "spear", 12, 12000, 14000)
+    let archers = spawn(0, "archer", 8, 12000, 16000)
+    let riders = spawn(0, "large", 6, 14000, 15000)
+    let healers = spawn(0, "healer", 2, 11000, 15000)
+    check(not exists(riders) uid: not type_has_tag(u_kind[index_of(uid)], "mounted"), "role formation: the large slot rides")
+    let ids = spears.append(archers).append(riders).append(healers)
+    issue_cmd(0, CMD_MOVE, ids, 40000, 40000, 0, 0)
+    var settled = -1
+    while tick < 4000 and settled < 0:
+        tick_on()
+        if tick % 20 == 0 and tick > 200 and not any1(u_moving): settled = tick
+    check(settled > 0, "role formation: settles (tick {settled})")
+    let x0 = copy(u_x)
+    let y0 = copy(u_y)
+    steps(200)
+    check(lo_ahead(spears) > hi_ahead(archers), "role formation: the spearmen stand ahead of the archers")
+    check(lo_ahead(archers) > hi_ahead(healers), "role formation: the healers stand behind the archers")
+    let foot = spears.append(archers).append(healers)
+    let flo = lo_across(foot)
+    let fhi = hi_across(foot)
+    var left = 0
+    var right = 0
+    for(riders) uid:
+        let a = across_of(uid)
+        if a < flo: left++
+        elif a > fhi: right++
+    check(left + right == riders.length and left > 0 and right > 0, "role formation: the riders stand on both flanks ({left} left, {right} right of {riders.length}; centre {(flo + fhi) / 2})")
+    var still = true
+    for(u_id.length) i: still = still and u_x[i] == x0[i] and u_y[i] == y0[i]
+    let overlaps = overlapping_pairs()
+    check(overlaps == 0, "role formation: no one overlaps ({overlaps} pairs)")
+    check(still, "role formation: it holds still afterwards")
+
+// Counter-aware targeting: a spearman with a footman and a rider ahead, the rider a little further,
+// goes for the rider; with counter_pull 0 it goes for the nearest, the footman.
+def test_counter_pick():
+    let race = gen_race(PROMPTS[0])
+    for([-1, 0]) pull:
+        bare_world([race, race])
+        if pull == 0: r_counter_pull = 0
+        let foot = lone(1, "infantry", 17000, 20500, "passive")
+        let rider = lone(1, "large", 18000, 20500, "passive")
+        let me = lone(0, "spear", 15000, 20500, "passive")
+        let i = index_of(me)
+        let fx, fy = pos_of(foot)
+        let rx, ry = pos_of(rider)
+        let d_foot = isqrt(dist2(u_x[i], u_y[i], fx, fy))
+        let d_rider = isqrt(dist2(u_x[i], u_y[i], rx, ry))
+        check(d_foot < d_rider and d_rider - d_foot < as_int(at(at(rules0, "combat"), "counter_pull")), "counter pick: the rider is a little further than the footman ({d_rider} v {d_foot})")
+        stance(0, [me], "aggressive")
+        steps(60)
+        let want = if pull == 0: foot else: rider
+        check(u_foe[index_of(me)] == want, "counter pick (pull {if pull < 0: "rules" else: "0"}): the spearman goes for the {if pull == 0: "footman" else: "rider"} (foe {u_foe[index_of(me)]}; footman {foot}, rider {rider})")
+
+// The Norse shield wall: Norse shield infantry march shoulder to shoulder (form_gap), their riders
+// don't, and the frogs keep the usual gap.
+def test_shield_wall():
+    let gaps = []::int
+    for(["vikings", PROMPTS[0]]) prompt:
+        let race = gen_race(prompt)
+        bare_world([race, race])
+        let spears = spawn(0, "spear", 12, 12000, 14000)
+        let i = index_of(spears[0])
+        let k = u_kind[i]
+        if prompt == "vikings": check(type_has_tag(k, "shield"), "shield wall: Norse spearmen carry shields")
+        issue_cmd(0, CMD_MOVE, spears, 40000, 40000, 0, 0)
+        tick_on()
+        while tick < 4000 and (tick < 200 or any1(u_moving)): tick_on()
+        var best = 1 << 30
+        for(spears) a:
+            for(spears) b:
+                if a < b:
+                    let ia = index_of(a)
+                    let ib = index_of(b)
+                    best = min(best, isqrt(dist2(u_x[ia], u_y[ia], u_x[ib], u_y[ib])))
+        gaps.push(best - 2 * u_radius[i])
+        if prompt == "vikings":
+            let riders = spawn(0, "large", 1, 12000, 16000)
+            let rk = u_kind[index_of(riders[0])]
+            check(t_gap[k] < 0 and (not type_has_tag(rk, "mounted") or t_gap[rk] == 0), "shield wall: the Norse foot close up (form_gap {t_gap[k]}), their riders don\'t ({t_gap[rk]})")
+    check(abs(gaps[0]) <= SLOT_ARRIVE and gaps[1] >= FORM_GAP - SLOT_ARRIVE, "shield wall: Norse spearmen stand {gaps[0]} milli-tiles apart (body to body), frogs {gaps[1]}")
+
+// The four stances. Foes that should not fight back are passive, so each check sees one side's choice.
+def test_stances():
+    let race = gen_race(PROMPTS[0])
+    let y = 20500
+    // Aggressive (the default): chases a foe across most of its sight; the passive foe never hits back.
+    bare_world([race, race])
+    var me = lone(0, "spear", 15000, y, "aggressive")
+    lone(1, "spear", 20000, y, "passive")
+    var r = watch(600, me)
+    check(r.far > 1500 and r.hits[0] > 0, "aggressive: chases a foe 5 tiles off and hits it (went {r.far}, {r.hits[0]} hits)")
+    check(r.hits[1] == 0, "passive: never hits back, even while being hit ({r.hits[1]} hits)")
+    // Defensive: ignores a foe 5 tiles off; goes for one that comes near, chases it no further than
+    // the leash, then walks back to where it stood.
+    bare_world([race, race])
+    me = lone(0, "spear", 15000, y, "defensive")
+    let far = lone(1, "spear", 20000, y, "passive")
+    let sx, sy = pos_of(me)
+    r = watch(200, me)
+    check(r.far < 300 and r.hits[0] == 0, "defensive: ignores a foe 5 tiles off (went {r.far})")
+    issue_cmd(1, CMD_MOVE, [far], 16500, y, 0, 0)
+    r = watch(100, me)
+    check(r.hits[0] > 0, "defensive: goes for a foe that comes near ({r.hits[0]} hits)")
+    issue_cmd(1, CMD_MOVE, [far], 40000, y, 0, 0)
+    r = watch_from(600, me, sx, sy)
+    let i = index_of(me)
+    let home = isqrt(dist2(u_x[i], u_y[i], sx, sy))
+    check(r.far > 2000 and r.far < r_leash + 1500, "defensive: chases a fleeing foe to the leash (went {r.far}, leash {r_leash})")
+    check(home < 700 and u_foe[i] == 0 and u_moving[i] == 0, "defensive: then walks back to where it stood ({home} off)")
+    // Stand ground, melee: never walks to a foe 2 tiles off, but fights one that comes to it.
+    bare_world([race, race])
+    me = lone(0, "spear", 15000, y, "stand")
+    lone(1, "spear", 17000, y, "passive")
+    r = watch(300, me)
+    check(r.far < 300 and r.hits[0] == 0, "stand ground: doesn\'t walk to a foe 2 tiles off (went {r.far}, {r.hits[0]} hits)")
+    lone(1, "spear", 16000, y, "aggressive")
+    r = watch(400, me)
+    check(r.hits[0] > 0 and r.far < 700, "stand ground: fights a foe that comes to it, where it stands (went {r.far}, {r.hits[0]} hits)")
+    // Stand ground, ranged: shoots what is in reach, never steps closer to what isn't.
+    bare_world([race, race])
+    let reach = t_reach[type_of_slot(0, "archer")]
+    me = lone(0, "archer", 15000, y, "stand")
+    lone(1, "spear", 15000 + reach + 2500, y, "passive")
+    r = watch(300, me)
+    check(r.far < 300 and r.hits[0] == 0, "stand ground: an archer doesn\'t step towards a foe out of reach (went {r.far})")
+    lone(1, "spear", 15000 + reach - 500, y, "passive")
+    r = watch(300, me)
+    check(r.far < 300 and r.hits[0] > 0, "stand ground: an archer shoots a foe in reach without moving ({r.hits[0]} hits)")
+    // Passive: takes blows without answering; an explicit attack order still works.
+    bare_world([race, race])
+    me = lone(0, "spear", 15000, y, "passive")
+    var foe = lone(1, "spear", 15800, y, "aggressive")
+    r = watch(80, me)
+    check(r.hits[1] > 0 and r.hits[0] == 0, "passive: takes {r.hits[1]} hits and answers none")
+    issue_cmd(0, CMD_ATTACK, [me], foe, 0, 0, 0)
+    r = watch(100, me)
+    check(r.hits[0] > 0, "passive: an ordered attack still fights ({r.hits[0]} hits)")
+    // Stand ground with an ordered target walks to it: orders beat stances.
+    bare_world([race, race])
+    me = lone(0, "spear", 15000, y, "stand")
+    foe = lone(1, "spear", 19000, y, "passive")
+    issue_cmd(0, CMD_ATTACK, [me], foe, 0, 0, 0)
+    r = watch(400, me)
+    check(r.far > 1500 and r.hits[0] > 0, "stand ground: an ordered attack walks to the target (went {r.far}, {r.hits[0]} hits)")
+
+// Shooters stand still while their target is in reach; one out of reach walks just into reach and stops.
+def test_ranged_holds():
+    let race = gen_race("sewer rats with crossbows")
+    let y = 20500
+    bare_world([race, race])
+    let k = type_of_slot(0, "archer")
+    let reach = t_reach[k]
+    let n_shots = 20 * t_reload[k]
+    // Ordered, in reach: 20 shots without a step.
+    var me = lone(0, "archer", 15000, y, "aggressive")
+    var foe = lone(1, "large", 15000 + reach - 1000, y, "passive")
+    u_hp[index_of(foe)] = 1 << 24
+    issue_cmd(0, CMD_ATTACK, [me], foe, 0, 0, 0)
+    var r = watch(n_shots, me)
+    check(r.far == 0 and r.hits[0] >= 19, "an archer in reach doesn\'t move over 20 shots (went {r.far}, {r.hits[0]} hits)")
+    // Ordered, out of reach: walks just into reach, then stands.
+    bare_world([race, race])
+    me = lone(0, "archer", 15000, y, "aggressive")
+    foe = lone(1, "large", 15000 + reach + 3000, y, "passive")
+    u_hp[index_of(foe)] = 1 << 24
+    issue_cmd(0, CMD_ATTACK, [me], foe, 0, 0, 0)
+    watch(200, me)
+    let i = index_of(me)
+    let g = gap(i, index_of(foe))
+    r = watch(n_shots, me)
+    check(g <= reach and g > reach - 2 * u_speed[i] and r.far == 0 and r.hits[0] >= 19, "an archer out of reach walks just into it and stands (gap {g} of reach {reach}, then went {r.far}, {r.hits[0]} hits)")
+    // Attack-move, a line of shooters: the walk-back to the move's end no longer drags them on.
+    bare_world([race, race])
+    foe = lone(1, "large", 24000, y, "passive")
+    u_hp[index_of(foe)] = 1 << 24
+    spawn_cmd(0, "archer", 8, 14000, y)
+    while u_id.length < 9: tick_on()
+    let mine = ids_of(0)
+    issue_cmd(0, CMD_ATTACK_MOVE, mine, 40000, y, 0, 0)
+    steps(400)
+    let was_x = map(mine) uid: u_x[index_of(uid)]
+    let was_y = map(mine) uid: u_y[index_of(uid)]
+    var hits = 0
+    for(n_shots):
+        tick_on()
+        for(events) e:
+            if e.kind == EV_HIT and contains(mine, e.a): hits++
+    var crept = 0
+    for(mine) uid, n:
+        let x, yy = pos_of(uid)
+        crept = max(crept, isqrt(dist2(x, yy, was_x[n], was_y[n])))
+    check(crept < 100 and hits >= 8 * 19, "8 attack-moving archers hold their line over 20 shots (most moved {crept}, {hits} hits)")
+
+def eval_cost(e:JV) -> int:
+    let c = at(e, "cost")
+    return gint(c, "food", 0) + gint(c, "wood", 0)
+
+// An equal-cost fight between two of a race's roster slots; `flip` swaps the sides. Both attack-move
+// at each other; the side with more value left wins.
+def counter_fight(race:JV, a_slot:string, b_slot:string, flip:int) -> bool, string:
+    bare_world([race, race])
+    let slots = [a_slot, b_slot]
+    let value = [0, 0]
+    for(2) side:
+        let p = side ^ flip
+        let cost = eval_cost(at(unit_of(race, slots[side]), "eval"))
+        value[side] = cost
+        spawn_cmd(p, slots[side], max(1, (FIGHT_BUDGET + cost / 2) / cost), FIGHT_FROM_X[p], FIGHT_FROM_Y[p])
+    while u_id.length == 0: tick_on()
+    for(2) p: issue_cmd(p, CMD_ATTACK_MOVE, ids_of(p), FIGHT_FROM_X[1 - p], FIGHT_FROM_Y[1 - p], 0, 0)
+    var left = [0, 0]
+    while tick < FIGHT_LIMIT:
+        tick_on()
+        left = [0, 0]
+        for(u_owner) o: left[o]++
+        if left[0] == 0 or left[1] == 0: break
+    let a_left = left[flip] * value[0]
+    let b_left = left[1 - flip] * value[1]
+    return a_left > b_left, "{left[flip]} {a_slot} worth {a_left} left vs {left[1 - flip]} {b_slot} worth {b_left}, tick {tick}"
+
+def test_combat():
+    test_heal()
+    test_damage()
+    test_idle_fight()
+    test_spread()
+    test_teams()
+    test_siege_tc()
+    test_surround()
+    test_formation()
+    test_role_formation()
+    test_counter_pick()
+    test_shield_wall()
+    test_stances()
+    test_ranged_holds()
+    var wins = 0
+    var fights = 0
+    let t0 = seconds_elapsed()
+    for(COUNTER_PROMPTS) prompt:
+        let race = gen_race(prompt)
+        for(COUNTERS) pair:
+            if not eval_has_tag(at(unit_of(race, pair[1]), "eval"), pair[2]):
+                print "  n/a: {rstr(race, "name")} {pair[0]} vs {pair[1]} (the {pair[1]} isn\'t {pair[2]})"
+                continue
+            for(2) flip:
+                let won, note = counter_fight(race, pair[0], pair[1], flip)
+                fights++
+                if won: wins++
+                else: print "  counter lost: {rstr(race, "name")} {pair[0]} vs {pair[1]} (side {flip}): {note}"
+    print "counters: {wins} of {fights} equal-cost fights won by the counter ({wins * 100 / fights}%), {ms_since(t0)} ms"
+    check(wins * 100 >= fights * 75, "counters win at least 75% of equal-cost fights ({wins}/{fights})")
+
 // ------------------------------------------------------------------ the parts
 
 let PARTS = ["fixed", "command_order", "source_lint", "flow", "crossing_flat", "crossing_choke", "crossing_engines",
-             "opening", "match", "match_b", "match_flipped"]
+             "opening", "combat", "match", "match_b", "match_flipped"]
 
 def run_part(name:string):
     if name == "fixed": test_fixed()
@@ -647,6 +1248,7 @@ def run_part(name:string):
     elif name == "crossing_engines":
         for(["flat_test", "choke_test", "hill_test"]) m: test_crossing(m, true)
     elif name == "opening": test_opening()
+    elif name == "combat": test_combat()
     elif name == "match": test_match()
     elif name == "match_b": test_match_b()
     elif name == "match_flipped": test_match_flipped()
