@@ -1,0 +1,56 @@
+sharp_sticks: Melee units +1 attack
+frog_leap: Amphibious units +2 speed
+fletching: Bow units +1 range
+hardened_tips: Ranged units +1 attack
+stone_axes: Wood gathered 15% faster
+saws: Wood gathered 15% faster
+baskets: Food gathered 15% faster
+ploughs: Food gathered 15% faster
+picks: Stone gathered 15% faster, Gold gathered 15% faster
+thick_skins: Workers +15 HP, +1 melee armour
+big_pockets: Workers +10% speed, carry +3
+pack_frames: Workers +10% speed, carry +5
+lookouts: Buildings +3 sight
+night_lanterns: Buildings +3 sight
+fallow_fields: Farms hold 50% more food
+ore_carts: Stone gathered 15% faster, Gold gathered 15% faster
+bronze_edges: Melee units +1 attack
+barbed_heads: Ranged units +1 attack
+long_shafts: Bow units +1 range
+padded_coats: Foot melee units +1 melee armour, +1 pierce armour
+ring_mail: Foot melee units +1 melee armour, +1 pierce armour
+quilted_vests: Ranged units +1 melee armour, +1 pierce armour
+leather_jacks: Ranged units +1 melee armour, +1 pierce armour
+saddle_blankets: Mounted units +1 melee armour, +1 pierce armour
+scale_barding: Mounted units +1 melee armour, +1 pierce armour
+marching_drums: Foot melee units +10% speed
+quick_draw: Ranged units reload 15% faster
+hoof_wraps: Mounted units +10% speed
+good_hay: Mounted units +20 HP
+haggling: Markets trade fee 10 points lower (selling pays more)
+pack_animals: Trade units +25% speed
+stonecutting: Buildings +10% HP, +1 melee armour, +1 pierce armour
+lifting_frames: Workers build 20% faster
+bastion: Watchtowers become Bastions
+slit_windows: Watchtowers, Bastions, Castles and Town Centers +1 range
+thick_walls: Palisades, Palisade Gates, Walls and Stone Gates +100% HP
+siege_wrights: Siege units (not ram, docks) +1 range
+gnawing_teeth: Every unit (not worker, heal, siege) +2 bonus.building
+clever_hands: Workers build 25% faster
+winter_coat: Every unit (not worker, siege) +1 melee armour, +1 pierce armour
+sticky_silk: Ranged units (not siege) +60 slow on hit
+shell_polish: Every unit (not siege) +1 melee armour
+gallop: Mounted units (not worker) +15% speed
+shield_wall: Infantry units (not worker, heal) +2 pierce armour
+long_spears: Spear units +350 reach
+saddle_bows: Ranged units (not siege) +1 range
+flood_plains: 
+repeating_bows: Ranged units (not siege) reload 15% faster
+jaguar_pelts: Infantry units (not worker, heal) +10% speed
+berserkergang: Infantry units (not worker, heal) +2 attack
+bog_poultice: Heal units +30% heal
+rust_spikes: Melee units +1 bonus.building, +1 bonus.siege
+woodsmen: Workers carry +2
+chivalry: Mounted units (not worker, heal) +20 HP
+creeping_dread: 
+war_drums: Every unit (not worker, heal) train 30% faster
