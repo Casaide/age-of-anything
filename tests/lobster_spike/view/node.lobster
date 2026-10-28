@@ -126,6 +126,7 @@ class VNode:
     cols:Colours? = nil
     facing = 0
     front = false
+    size = 100               // the percent of the art scale its unit is drawn at: baked at that size (D-180)
     shade = 1.0              // self_modulate.a (the far leg in shadow)
     // metas
     rest = 0.0               // a back part's resting turn and scale (wings)

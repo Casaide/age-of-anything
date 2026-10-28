@@ -261,6 +261,41 @@ def mat_albedo(mat:int, tri_c:float3) -> float3:
     if bm.channel == "": return bm.b
     return bm.m * channel_colour(bake_colours, bm.channel) + bm.b
 
+// The triangles in runs of one material and colour, the part's before what hides it (a draw each): by group, then
+// index. The same in every facing, so worked out once a part (the last one's kept; integer keys, as a string per
+// triangle was half the bake).
+var order_part:[BakeTri]? = nil
+var order_hide:[BakeTri]? = nil
+var order_kept:[int] = []
+let no_groups = []::int
+def draw_order(tris:[BakeTri], part:[BakeTri], hide:[BakeTri]) -> [int]:
+    let n_part = part.length
+    if order_part and order_part == part and order_hide == hide and order_kept.length == tris.length: return order_kept
+    let by = dictionary<int, [int]>(64)   // material and side -> its groups
+    let colours = []::float3
+    let buckets = []::[int]
+    for(tris) t, i:
+        let mk = (t.mat + 1) * 2 + (if i >= n_part: 1 else: 0)
+        var gs = by.get(mk, no_groups)
+        if gs == no_groups:
+            gs = []::int
+            by.set(mk, gs)
+        var g = -1
+        for(gs) k:
+            if g < 0 and colours[k] == t.c[0]: g = k
+        if g < 0:
+            g = buckets.length
+            colours.push(t.c[0])
+            buckets.push([])
+            gs.push(g)
+        buckets[g].push(i)
+    let order = []::int
+    for(buckets) b: append_into(order, b)
+    order_part = part
+    order_hide = hide
+    order_kept = order
+    return order
+
 // `hide`: what hides the part (the body a leg is cut by, the wearer of armour): framed, lit and shadowing
 // with it, then cut away (a mask pass, the part white and `hide` black, unlit: only the white is kept).
 // `join_r` > 0: where `hide` covers the part within join_r of `join` is a seam (a neck running into its
@@ -341,19 +376,7 @@ def bake_facing(part:[BakeTri], facing:int, hide:[BakeTri] = [], join:float3 = f
     let vz = 1.8 / max(0.001, dhi - dlo)
     def view_z(p:float3) -> float: return 0.9 - (dot(p, cz) - dlo) * vz   // nearer the camera smaller
     // (the depth test does the hiding, so the triangles go in runs of one material and colour: a draw each)
-    let group_of = dictionary<string, int>(64)
-    let gid = map(tris) t, i:
-        let k = "{t.mat}|{t.c[0]}|{i >= part.length}"
-        var g = group_of.get(k, -1)
-        if g < 0:
-            g = group_of.get_keys().length
-            group_of.set(k, g)
-        g
-    // (by group, then index: a bucket per group, as a quicksort on a near-sorted 100k triangles recursed off the stack)
-    let buckets = map(group_of.get_keys().length): []::int
-    for(gid) g, i: buckets[g].push(i)
-    let order = []::int
-    for(buckets) b: append_into(order, b)
+    let order = draw_order(tris, part, hide)
     // Ambient occlusion: the view's depth (the part and what hides it), then the AO map over it (PartBaker's SSAO:
     // radius 1.2, intensity 2.5, power 1.4).
     let vpos = []::float3

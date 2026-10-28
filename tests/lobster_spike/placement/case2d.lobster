@@ -16,7 +16,7 @@ def bake_view(n:VNode) -> bool:
     let parts = []::VNode
     part_nodes2(n, parts)
     for(parts) pn:
-        let key = bake_key(pn.part_id, pn.pshapes, pn.cols)
+        let key = bake_key(pn.part_id, pn.pshapes, pn.cols, pn.size)
         let cols = pn.cols
         if cols and not bakes.get(key):
             step2("  bake {pn.part_id}")

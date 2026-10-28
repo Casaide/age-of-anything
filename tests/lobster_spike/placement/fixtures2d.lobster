@@ -17,7 +17,7 @@ def fixture2_list() -> [Fixture2]:
                    "human on pony", ["B6 a rider\'s leg on the flank facing the camera"], "", 1 },
         Fixture2 { "a mount\'s wings over its body in every facing (a hummingbird\'s blur read as a grey plate: Dominic)",
                    "human on hummingbird", ["a mount\'s wings over its back, behind it turned away", "back parts behind the body facing the camera"], "", 2 },
-        Fixture2 { "legs drawn over the body (the far legs on top)", "animal body.deer", ["far legs behind the body"], "", 3 },
+        Fixture2 { "legs drawn over the body (the far legs on top)", "romans spear", ["far legs behind the body"], "", 3 },
         Fixture2 { "the frog\'s sword hidden behind its body facing forward", "swamp frogs infantry age 2", ["weapons and shields show"], "", 4 },
         Fixture2 { "worn armour carrying a whole copy of its body (the body not cut out of the armour\'s bake)",
                    "sewer rats spear age 2", ["worn armour holds no body"], "", 5 },
@@ -31,8 +31,8 @@ def fixture2_list() -> [Fixture2]:
                    "frog on newt_fire", ["B5 a near foot in sight", "B5 standing feet on the ground"], "unturned", -1 },
         Fixture2 { "a centaur\'s kneel to forage picked by screen x and bent as if side-on (from behind: a flank\'s legs folded sideways, the hind end sunk: Dominic, 2026-10-17)",
                    "centaur romans worker", ["K1 a kneel folds the fore legs", "K2 a folded shin lies back along the ground", "K4 kneeling, the hind hooves stay planted"], "", 7 },
-        Fixture2 { "the rat leading TC1 A\'s cat drawn under the cat (the hauler layered over every crew member on its side)",
-                   "composite: sewer rats tc1_a_junk hauled by a cat", ["C4 composite members drawn in depth order"], "", 8 },
+        Fixture2 { "a hand leading TC1 A\'s beast drawn under it (the hauler layered over every crew member on its side; first the rats\' cat: since rats stand back by their hunch they no longer overlap it, so the forest beetles\' cart carries it)",
+                   "composite: forest beetles tc1_a_forest hauled by a beetle", ["C4 composite members drawn in depth order"], "", 8 },
         Fixture2 { "the hauling cat\'s near hind leg gone in its walk (a member\'s walk steps were never checked, nor baked)",
                    "composite: sewer rats tc1_a_junk hauled by a cat", ["B6 every hip\'s leg in every walk step"], "", 9 },
     ]
@@ -116,7 +116,7 @@ def fixture2_tweak(which:int, v:UV, pose:string) -> void:
             let seat = v.seat_node
             if seat and has(ss, "seat"): seat.pos = v2(at(ss, "seat")) + float2 { 0.0, 6.0 }
             for(v.legs) leg:
-                if leg.cling: leg.node.scl = float2 { leg.node.scl.x, 1.0 }
+                if leg.cling: leg.node.scl = float2 { leg.node.scl.x, 0.6 }   // (the leg before D-173: 11 long, the heroic one 18)
         case 1:   // the rider's leg the old way: the hip nearer the camera by depth, not by side
             let rg = rig(rstr(v.recipe, "body") + v.hold_suffix + facing_suffix(v.facing_k))
             for(v.legs) leg:
