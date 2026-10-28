@@ -143,7 +143,7 @@ vermin, not soldiers. Dominic picks.
 Dominic (via the Lobster game): a brown band round the middle of the age-1 rat swordsman. Only the human had armour
 fitted to its body (`armour_leather_human`, `armour_bronze_human`); every other body wore the human-sized piece scaled
 by `torso_scale`, which on the rat read as a barrel or a band. The rat as a rat is now has all seven armours it can wear
-modelled for its own trunk (`tools/blender/rat_armour.py` -> `armour_<kind>_rat.glb`, loaded by `UnitModels.fitted`,
+modelled for its own trunk (`tools/blender/creature_armour.py` -> `armour_<kind>_rat.glb`, loaded by `UnitModels.fitted`,
 materials by name in `ARMOUR_MATS`): a laced leather jerkin, crimped bottle caps sewn in rows over leather, sardine-tin
 bands with a label and a rolled key, a bronze cuirass with a ridge and hanging leather strips, a mail shirt, bark plates
 lashed with crossed straps, and a lorica of iron bands with shoulder hoops. Each wraps the hunched trunk and leans with
