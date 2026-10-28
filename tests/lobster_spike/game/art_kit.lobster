@@ -27,7 +27,7 @@ def keep_frame(name:string, sprite:string, w:int, h:int, anchor:float2):
     sheet_tex.push(gl.create_texture(rows, pack_formats))
     sheet_dims.push(float2 { float(w), float(h) })
     frame_at.set(name, frames.length)
-    frames.push(Frame { sheet_tex.length - 1, 0, 0, w, h, int(anchor.x + 0.5), int(anchor.y + 0.5) })
+    frames.push(Frame { sheet_tex.length - 1, 0, 0, w, h, int(anchor.x + 0.5), int(anchor.y + 0.5), 1.0 / ART_K })
 
 // ArtKit._split_shadow: the opaque art, and the see-through ground shadow, as two sprites the same size.
 def split_shadow(sprite:string, w:int, h:int) -> string, string:

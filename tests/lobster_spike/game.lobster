@@ -403,7 +403,7 @@ def make_view(k:int, p:int, step:int) -> UV:
     uv_build(v, r, float3 { tc.x, tc.y, tc.z }, t_speed[k] / 5)
     v.node.scl = float2_1 * 0.85
     v.pose_steps = 8
-    v.art_px = 1.5
+    v.art_px = ART_SCALE
     return v
 
 def canvas(x:float, y:float) -> float2: return iso(x, y) / 1.5
@@ -838,7 +838,7 @@ def collect_doodads():
                 if d.scale == 1.0: add(f, at.x, ay, at.y, float4 { 1.0, 1.0, 1.0, shade })
                 else:
                     let fr = frames[f]
-                    add_xf(f, [d.scale, 0.0, 0.0, d.scale, at.x - d.scale * float(fr.ox), ay - d.scale * float(fr.oy)], at.y, float4 { 1.0, 1.0, 1.0, shade })
+                    add_xf(f, [d.scale * fr.k, 0.0, 0.0, d.scale * fr.k, at.x - d.scale * fr.k * float(fr.ox), ay - d.scale * fr.k * float(fr.oy)], at.y, float4 { 1.0, 1.0, 1.0, shade })
 
 def collect_props():
     collect_doodads()
@@ -882,8 +882,8 @@ def draw_world(alpha:float):
     gl.translate(ws / 2.0):
         gl.scale(zoom):
             gl.translate(-float2 { floor(cam.x), floor(cam.y) }):
-                draw_ground(zoom)
-                draw_relief(zoom)
+                draw_ground(zoom / ART_K)
+                draw_relief(zoom / ART_K)   // (screen px an art px: finer art, D-173)
                 draw_fog()
                 draws = []::Drawable
                 collect_props()
@@ -900,7 +900,7 @@ def draw_world(alpha:float):
                 for(draws) d:
                     if d.f == -2:
                         flush_sprites()
-                        draw_occluder(occluders[int(d.x)], zoom)
+                        draw_occluder(occluders[int(d.x)], zoom / ART_K)
                         b_sheet = -1
                     elif d.f == -4:
                         flush_sprites()
@@ -985,7 +985,7 @@ def roster_views(race:JV, p:int) -> [UV]:
             uv_build(v, at(un, "recipe"), float3 { tc.x, tc.y, tc.z }, 20)
         v.node.scl = float2_1 * 0.85
         v.pose_steps = 8
-        v.art_px = 1.5
+        v.art_px = ART_SCALE
         face_vec(v, float2 { 1.0, 1.0 })
         v
 

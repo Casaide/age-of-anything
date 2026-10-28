@@ -346,7 +346,7 @@ def draw_figure(key:int, recipe:JV, owner:int, at:float2, z:float):
         uv_build(made, recipe, float3 { tc.x, tc.y, tc.z }, 20)
         made.node.scl = float2_1 * 0.85
         made.pose_steps = 8
-        made.art_px = 1.5
+        made.art_px = ART_SCALE
         face_vec(made, float2 { 1.0, 1.0 })
         portraits.set(key, made)
         v = made

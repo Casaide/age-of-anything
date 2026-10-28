@@ -9,6 +9,12 @@ class Bake:
     oy:float
     scale:float
 
+// The art scale (D-173, "heroic at 2x"): art pixels a canvas unit. The world stays in the art pixels it had before
+// (ART_BASE: a tile is 96 x 48), so sprites baked at ART_SCALE draw at 1 / ART_K of their texture's size.
+let ART_SCALE = 3.0
+let ART_BASE = 1.5
+let ART_K = ART_SCALE / ART_BASE
+
 var bakes = dictionary<string, Bake>(8191)
 var bake_soles = dictionary<string, [float2]>(1023)
 var bake_spans = dictionary<string, [float2]>(1023)

@@ -7,7 +7,7 @@
 // (the sun shadow), and a contact band under the model (the occlusion where it meets the ground).
 
 let WB_SS = 4                                   // ArtKit.SS
-let WB_ART = 1.5                                // ArtKit.ART_SCALE: art px a canvas unit
+let WB_ART = ART_SCALE                          // ArtKit.ART_SCALE: art px a canvas unit
 let WB_PX = 32.0 / 0.70710678 * WB_ART          // art px a world unit (Baker.PX_PER_UNIT x the art scale)
 let WB_AO_RADIUS = 0.35                         // Baker's environment: ssao_radius (world units), ssao_intensity
 let WB_AO_INTENSITY = 0.88                      // (2.2 in Godot's terms, scaled as view/baker.lobster's)
