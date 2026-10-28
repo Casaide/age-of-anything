@@ -36,11 +36,15 @@ to read at play size. Dominic picked the heroic 5.5-head build at 2x.
 
 - [x] 1. 2x art, zooms unchanged on screen
 - [x] 2. Heroic human body (proportions; the clothes and gear look cheap still: step 2b)
-- [ ] 3. Gear refitted
-- [ ] 4. Riders and centaurs
-- [ ] 5. Placement check and batch
-- [ ] 6. Pictures, Deck build
-- [ ] 7. Archive
+- [x] 3. Gear refitted (human armour, galea and scutum; rat and frog armour fitted to their own trunks: creature_armour.py)
+- [x] 4. Riders and centaurs (seats, the walled howdah, rider legs; crewed engines' draw order)
+- [x] 5. Placement check and batch (3D in shards, clean; 2D clean but for the open items below)
+- [ ] 6. Pictures (done: docs/concepts/fidelity/, animation/), Deck build (not done: needs Dominic's OK to copy it over)
+- [x] 7. Archive
+- [x] 8. Rat B and frog B (D-177, D-178), fitted armour (RA1)
+- [x] 9. Option B animation (D-179): keyed legs per walk step for every legged body (rat, frog hop, humans, horses and
+  centaurs, spider, beetles, capybara, newt, deer, boar, sheep; the cat, war beasts and bears were already keyed); the
+  rat's arms and tail and the head's late nod; blows wind up, hold and follow through
 
 ## Results
 
@@ -96,3 +100,16 @@ riders on top or in a box). Open, each needing a look choice or a new design rat
   engine's nearest depth round each socket and the composer decides with the member's own silhouette.
 Tried and dropped: sampling the engine's mesh faces instead of its boxes, a depth buffer of its faces, and comparing
 against a member's front rather than its middle (each fixed one case and broke others).
+
+
+**2026-10-28, close-out of the art study (Dominic: "finish up the art").** Built: crewed engines' draw order (12 failing
+units down to 4), the full 3D check in shards (25650 checks, 0 failed, every fixture caught), the rat's head nod and the
+blow's timing, frog B with its hop keyed in 8 phases and fitted armour (D-181), humans on keyed legs bent at knee and
+ankle, horses and centaurs, and every other legged body on one shared keyed leg (`UnitModels.stepped`). Three fixtures
+that had stopped catching their bugs catch them again (the hummingbird case now has its wings, the centaur kneels about
+its hooves, the TC1 hauler fixture moved to a cart whose crew still overlap their beast).
+**Open:** the howdah's two riders' weapons crossing (han, swamp humans, f3: Dominic to pick an option); the moonbears at
+the ram and the spiders at the great sling (C4: the bake decides per socket with a person-sized sample; the fix is the
+engine's depth round each socket and the member's own silhouette at compose time); the eight_eyes human hero at 160%
+(its thigh through the tunic hem in 3D, 15 px over the allowance in 2D); humans have no arm swing walking (the rat
+does); the Deck build.
