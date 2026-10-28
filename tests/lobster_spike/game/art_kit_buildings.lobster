@@ -219,10 +219,53 @@ def akb_not_part(node:MNode, part:int, side:int, out:[MNode]) -> void:
 // ---- baking
 
 // One model baked into the pack as frame `name`, anchored on `pivot` (a model point; the origin by default).
+// The building bake cache (as the parts', view/part_bake.lobster: bake_cache/, emptied when BAKE_VERSION changes):
+// each look's frames as PNGs, and one record of its frames, its Look and its BFx. A match start bakes what's new.
+class AkbFrame:
+    name:string
+    file:string
+    w:int
+    h:int
+    ax:int
+    ay:int
+
+class AkbCached:
+    frames:[AkbFrame]
+    look:Look
+    fx:BFx
+
+var akb_cache_frames = []::AkbFrame
+var akb_cache_stem = ""                       // the look being baked ("" while not recording)
+
+def akb_stem(name:string) -> string: return bake_cache_dir + "/b" + sha256_text("{BAKE_VERSION}|building|{name}").substring(0, 20)
+
+// A look from the cache, if it's there (its frames, Look and BFx in place): whether it was.
+def akb_load_cached(name:string) -> bool:
+    if bake_cache_dir == "": return false
+    let data = read_file(akb_stem(name) + ".bin", true)
+    if not data: return false
+    let rec, err = flexbuffers_binary_to_value(typeof AkbCached, data)
+    let c = rec
+    if err or not c: return false
+    for(c.frames) f:
+        let tex = gl.load_texture(f.file, pack_formats)
+        if not tex: return false
+        sheet_tex.push(tex)
+        sheet_dims.push(float2 { float(f.w), float(f.h) })
+        frame_at.set(f.name, frames.length)
+        frames.push(Frame { sheet_tex.length - 1, 0, 0, f.w, f.h, f.ax, f.ay, 1.0 / ART_K })
+    looks.set(c.look.body, c.look)
+    bfx.set(c.look.body, c.fx)
+    return true
+
 def akb_keep(name:string, model:MNode, shadow:bool, pivot:float3 = float3_0, shadow_only:[MNode] = []):
     let sprite, w, h, anchor = if shadow_only.length: akb_world_bake(model, shadow, shadow_only) else: world_bake(model, shadow)
     let at = anchor + akb_project(pivot) * WB_ART
     keep_frame(name, sprite, w, h, at)
+    if akb_cache_stem != "" and w > 0 and h > 0:
+        let file = "{akb_cache_stem}_{akb_cache_frames.length}.png"
+        write_file(file, bmat_png(map(sprite.length) i: sprite[i], w, h))
+        akb_cache_frames.push(AkbFrame { name, file, w, h, int(at.x + 0.5), int(at.y + 0.5) })
     if akb_wall_piece or akb_keep_all:
         akb_px.set(name, sprite)
         akb_size.set(name, int2 { w, h })
@@ -233,6 +276,9 @@ def akb_keep(name:string, model:MNode, shadow:bool, pivot:float3 = float3_0, sha
 // One look of a building, with its stages and extra parts, into the pack; its Look and BFx.
 def akb_bake_look(arch:string, type:string, model:string, suffix:string):
     let name = "{arch}:{type}{suffix}"
+    if not ak_rebake and akb_load_cached(name): return
+    akb_cache_stem = if bake_cache_dir != "": akb_stem(name) else: ""
+    akb_cache_frames = []
     let spec = akb_placed(arch, type, model, suffix)
     akb_wall_piece = spec.arms.length > 0
     // where the chimney smokes, the lantern and windows glow (building_fx.gd)
@@ -304,6 +350,10 @@ def akb_bake_look(arch:string, type:string, model:string, suffix:string):
             akb_keep("{name}:ruin{k + 1}", p.body, true)
         lk.ruins = map(RUIN_STAGES.length - 1) k: "{name}:ruin{k + 1}"
     looks.set(name, lk)
+    if akb_cache_stem != "":
+        let fx = bfx.get(name)
+        if fx: write_file(akb_cache_stem + ".bin", flexbuffers_value_to_binary(AkbCached { akb_cache_frames, lk, fx }, 1000))
+        akb_cache_stem = ""
 
 // The building types in ArtKit's order: town centre and houses first, the menus, then the rest (not planned).
 def akb_types() -> [string]:

@@ -39,16 +39,58 @@ def split_shadow(sprite:string, w:int, h:int) -> string, string:
         for(4) k: write_int8_le(into, o + k, sprite[o + k])
     return art, shade
 
+// The props' bake cache (as the parts', view/part_bake.lobster: bake_cache/, emptied when BAKE_VERSION changes): a
+// prop's frames (its art, and a tree's see-through shadow) as PNGs and one record of their sizes and anchors.
+class AkFrame:
+    name:string
+    file:string
+    w:int
+    h:int
+    ax:int
+    ay:int
+
+def ak_stem(name:string) -> string: return bake_cache_dir + "/d" + sha256_text("{BAKE_VERSION}|prop|{name}").substring(0, 20)
+
+// Frames from the cache (a prop's, a building look's), on sheets of their own: whether they were all there.
+def ak_load_frames(fs:[AkFrame]) -> bool:
+    for(fs) f:
+        let tex = gl.load_texture(f.file, pack_formats)
+        if not tex: return false
+        sheet_tex.push(tex)
+        sheet_dims.push(float2 { float(f.w), float(f.h) })
+        frame_at.set(f.name, frames.length)
+        frames.push(Frame { sheet_tex.length - 1, 0, 0, f.w, f.h, f.ax, f.ay, 1.0 / ART_K })
+    return true
+
+// A frame kept for the cache: its PNG beside the stem.
+def ak_cache_frame(stem:string, n:int, name:string, sprite:string, w:int, h:int, anchor:float2) -> AkFrame:
+    let file = "{stem}_{n}.png"
+    write_file(file, bmat_png(map(sprite.length) i: sprite[i], w, h))
+    return AkFrame { name, file, w, h, int(anchor.x + 0.5), int(anchor.y + 0.5) }
+
 def ak_bake(name:string, model:MNode, shadow:bool, reach:float = 1.0):
     if bake_quit or (not ak_rebake and frame_index(name) >= 0): return
+    let stem = if bake_cache_dir != "": ak_stem(name) else: ""
+    if stem != "" and not ak_rebake:
+        let data = read_file(stem + ".bin", true)
+        if data:
+            let rec, err = flexbuffers_binary_to_value(typeof [AkFrame], data)
+            let fs = rec
+            if not err and fs and ak_load_frames(fs): return
     bake_breath()
     let sprite, w, h, anchor = world_bake(model, shadow, reach)
+    let kept = []::AkFrame
     if reach > 1.0:
         let art, shade = split_shadow(sprite, w, h)
         keep_frame(name, art, w, h, anchor)
         keep_frame(name + "~shadow", shade, w, h, anchor)
+        if stem != "" and w > 0 and h > 0:
+            kept.push(ak_cache_frame(stem, 0, name, art, w, h, anchor))
+            kept.push(ak_cache_frame(stem, 1, name + "~shadow", shade, w, h, anchor))
     else:
         keep_frame(name, sprite, w, h, anchor)
+        if stem != "" and w > 0 and h > 0: kept.push(ak_cache_frame(stem, 0, name, sprite, w, h, anchor))
+    if stem != "" and kept.length: write_file(stem + ".bin", flexbuffers_value_to_binary(kept, 1000))
     ak_baked++
 
 // Every doodad and town prop the pack lacks. Returns how many were baked.
