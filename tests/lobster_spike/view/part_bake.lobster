@@ -328,6 +328,7 @@ def find_s(xs:[string], x:string) -> int:
 var bake_live = false
 var bake_quit = false
 var bake_done = 0                    // things baked since the game began
+var bake_backdrop:resource<texture>? = nil   // a picture under the progress (the game's match loader), or none
 var bake_what = ""                   // what's baking (the game says: "the units", "the buildings")
 var bake_said = 0.0
 
@@ -340,6 +341,20 @@ def bake_breath():
     gl.clear(float4 { 0.07, 0.06, 0.05, 1.0 })
     gl.set_shader("color")
     let ws = float(gl.window_size())
+    let under = bake_backdrop
+    if under:   // the game's match loader under the progress, the line at its foot
+        let m = gl.new_mesh("PT", [float3_0, float3 { ws.x, 0.0, 0.0 }, float3 { ws.x, ws.y, 0.0 }, float3 { 0.0, ws.y, 0.0 }], []::float4, []::float3,
+                            [float2 { 0.0, 1.0 }, float2 { 1.0, 1.0 }, float2 { 1.0, 0.0 }, float2 { 0.0, 0.0 }], []::float2, [0, 2, 1, 0, 3, 2])
+        gl.set_mesh_texture(m, 0, 0, under)
+        gl.set_shader("textured")
+        gl.color(float4_1): gl.render_mesh(m)
+        gl.set_shader("color")
+        gl.set_font_size(int(max(16.0, ws.y / 50.0)))
+        gl.color(float4 { 0.95, 0.9, 0.78, 1.0 }):
+            gl.translate(float2 { ws.x * 0.05, ws.y * 0.955 }):
+                gl.text("Making {bake_what}: {bake_done} done")
+        if not gl.frame(): bake_quit = true
+        return
     gl.set_font_size(int(max(16.0, ws.y / 36.0)))
     gl.color(float4 { 0.92, 0.86, 0.7, 1.0 }):
         gl.translate(float2 { ws.x * 0.08, ws.y * 0.45 }):

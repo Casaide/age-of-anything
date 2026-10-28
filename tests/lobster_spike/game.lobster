@@ -75,6 +75,7 @@ import .game.doodads
 import .game.paths
 import .game.fx
 import .game.ui
+import .game.levels
 
 let args = command_line_arguments()
 // Options after the two paths: watch (the bot plays you too), speed:<x>, shot:<png> with at:<seconds>
@@ -103,6 +104,7 @@ var skirmish = false            // the lobby's Skirmish: both armies on the map 
 var army_n = 0                  // army:<n>: n of each of your soldier types by your Town Center at the start (captures)
 var hurt_pct = -1                // hurt:<percent>: your buildings start at that much of their hit points (captures of fire)
 var raze_at = -1.0               // raze:<seconds>: your buildings but the Town Center and walls fall then (captures of ruins)
+var page_arg = ""               // page:<name>: the lobby opened on that page (title, setup, lab, saves, net), captures with shot:
 var lab_arg = false             // lab: the lobby with races:A|B typed in, a picture (shot:) after a second, then quit
 var tree_arg = false            // tree: the tech tree page open from the start (captures)
 var tree_hover_arg = ""         // treehover:<node key>: that node hovered on it (captures: "r:fletching", "u:hero.<id>@3")
@@ -142,6 +144,7 @@ for(args) a, k:
             tree_arg = true
             tree_hover_arg = val
         if a == "lab": lab_arg = true
+        if key == "page": page_arg = val
         if key == "hurt": hurt_pct = string_to_int(val)
         if key == "raze": raze_at = string_to_float(val)
         if key == "army": army_n = string_to_int(val)
@@ -938,6 +941,10 @@ def rules_id() -> string: return if rules_arg != "": rules_arg else: pack_rules
 var lobby_map = "reed_meadow"
 let MODE_IDS = ["standard", "fortress", "siege"]   // data/modes.json (gen/modes.lobster)
 var lobby_mode = "standard"
+var lobby_prompts = []::string  // each side's words (the lobby's, or races:A|B)
+var lobby_teams = []::int       // each side's team (a team game from the lobby)
+var lobby_levels = []::string   // each side's AI level ("" for a person)
+var front_shown = false         // the lobby's pages were up (the match loader shows their armies)
 
 // The maps a match can be on (data/maps).
 def map_ids() -> [string]:
@@ -955,186 +962,12 @@ def load_species(map_id:string):
     species = species_from_map(map_id)
     pack_from_data(map_id)
 
-class LobbyRace:
-    prompt:string
-    race:JV
-
-def race_lines(r:JV) -> [string]:
-    let out = []::string
-    out.push(rstr(r, "name") + "  (" + rstr(r, "creature") + ", " + rstr(r, "family") + ")")
-    for(glist(r, "notes")) n: out.push("  " + as_str(n))
-    for(glist(r, "units")) u:
-        let rec = at(u, "recipe")
-        let e = at(u, "eval")
-        let c = at(e, "cost")
-        var cost = 0
-        for(c.a) v: cost += as_int(v)
-        out.push("  " + rstr(rec, "name") + "   hp " + string(as_int(at(e, "hp"))) + "  atk " + string(as_int(at(e, "attack"))) + "  cost " + string(cost))
-    return out
-
 def lobby_text(p:float2, s:string, col:float4):
     gl.color(col):
         gl.translate(p): gl.text(s)
 
 // A filled box from its top-left corner (gl.rect draws -size..size round its point in this build).
 def box(at:float2, size:float2, col:float4): ui_fill(at, size, col)
-
-// The Race Lab in the lobby (scenes/race_lab): a race's whole roster drawn as you type it, idling in
-// its team colour, from the part library.
-def roster_views(race:JV, p:int) -> [UV]:
-    let tc = team_rgb[p % team_rgb.length]
-    return map(glist(race, "units")) un:
-        var v = uv_new()
-        uv_build(v, at(un, "recipe"), float3 { tc.x, tc.y, tc.z }, 20)
-        if bake_view_parts(v.node) > 0:   // (parts the pack lacks: baked, then the view built again on their rigs)
-            v = uv_new()
-            uv_build(v, at(un, "recipe"), float3 { tc.x, tc.y, tc.z }, 20)
-        v.node.scl = float2_1 * 0.85
-        v.pose_steps = 8
-        v.art_px = ART_SCALE
-        face_vec(v, float2 { 1.0, 1.0 })
-        v
-
-def draw_roster(vs:[UV], base:float2, z:float, p:int, dt:float):
-    let tc = team_rgb[p % team_rgb.length]
-    b_sheet = -1
-    for(vs) v, n:
-        v.node.pos = float2 { float(n % 10) * 46.0 + float(n / 10) * 23.0, float(n / 10) * 40.0 }
-        uv_process(v, dt)
-        let screen = [1.5 * z, 0.0, 0.0, 1.5 * z, base.x, base.y]
-        for(draw_list(v, ID_XF)) d:
-            let f = frame_index("p:" + d.key)
-            if f >= 0: sprite_xf(f, xf_mul(screen, d.xf), float4 { tc.x, tc.y, tc.z, d.alpha })
-    flush_sprites()
-
-// The lobby's own frame loop, on the UI layer (game/ui.lobster): the prompts, or [] when the window closes.
-// Its buttons: the map and the mode (or up / down, F2), Play (or Enter), Host (play, and wait for a
-// player to join over the network), Join (the address in the third field). Tab moves between fields.
-def run_lobby(defaults:[string]) -> [string]:
-    let prompts = copy(defaults)
-    var address = "127.0.0.1"
-    var field = 0
-    let rules = load_rules(rules_id())
-    gl.start_text_input(int2 { 0, 0 }, int2 { 400, 40 })
-    gl.set_text_input(prompts[field])
-    var shown = map(prompts) p, k: generate(p, rules, lobby_rerolls[k])
-    var shown_for = copy(prompts)
-    var lab_frames = 0
-    var test_lines = []::string      // the last Test: how the fights went
-    var find_note = ""
-    var armies = map(shown) r, k: if composed and pack_library: roster_views(r, k) else: []::UV
-    def step_map(by:int):
-        let maps = map_ids()
-        if maps.length:
-            var at = 0
-            for(maps) m, n:
-                if m == lobby_map: at = n
-            lobby_map = maps[(at + by + maps.length) % maps.length]
-    def focus(f:int):
-        field = f
-        gl.set_text_input(if f < 2: prompts[f] else: address)
-    bake_what = "the races\' units"
-    while gl.frame():
-        if bake_quit: return []   // (closed while their parts baked)
-        music_tick("lobby", false, gl.delta_time())
-        if gl.button("escape") == 1: return []
-        let text, editing, cursor, sel = gl.text_input_state()
-        if field < 2: prompts[field] = text else: address = text
-        if gl.button("tab") == 1: focus((field + 1) % 3)
-        if gl.button("return") == 1:
-            gl.end_text_input()
-            return prompts
-        if gl.button("up") == 1: step_map(-1)
-        if gl.button("down") == 1: step_map(1)
-        if gl.button("f2") == 1: lobby_mode = MODE_IDS[(str_index(MODE_IDS, lobby_mode) + 1) % MODE_IDS.length]
-        for(prompts) p, k:
-            if p != shown_for[k]:
-                if shown_for[k] != "": lobby_rerolls[k] = 0   // (a new prompt starts from its first take)
-                shown[k] = generate(p, rules, lobby_rerolls[k])
-                shown_for[k] = p
-                if composed and pack_library: armies[k] = roster_views(shown[k], k)
-        gl.clear(float4 { 0.07, 0.06, 0.05, 1.0 })
-        let u = ui()
-        let ws = float(gl.window_size())
-        ui_frame(true)
-        // Shapes first: the page, the two race columns with their fields, the buttons.
-        ui_mat(float2_0, ws, ui_look.face * float4 { 0.55, 0.55, 0.55, 1.0 }, 0)
-        let half = ws.x / 2.0
-        for(prompts) p, k:
-            let x = 24.0 * u + float(k) * half
-            ui_panel(float2 { x, 130.0 * u }, float2 { half - 48.0 * u, ws.y - 250.0 * u }, if k == 0: "Your race" else: "Their race")
-            ui_box(float2 { x + 20.0 * u, 176.0 * u }, float2 { half - 88.0 * u, 44.0 * u }, -1, ui_look.face, false)
-            if k == field: ui_outline(float2 { x + 20.0 * u, 176.0 * u }, float2 { half - 88.0 * u, 44.0 * u }, 2.0 * u, ui_look.accent)
-            if ui_button(float2 { x + half - 190.0 * u, 136.0 * u }, float2 { 120.0 * u, 34.0 * u }, "Reroll", false):
-                lobby_rerolls[k]++
-                shown[k] = generate(p, rules, lobby_rerolls[k])
-                if composed and pack_library: armies[k] = roster_views(shown[k], k)
-            let m = float(gl.mouse_pos(0))
-            if gl.button("mouse1") == 1 and m.x >= x + 20.0 * u and m.x <= x + half - 68.0 * u and m.y >= 176.0 * u and m.y <= 220.0 * u: focus(k)
-        let by = ws.y - 100.0 * u
-        // The bottom row, left to right, in shares of the window: map < name >, mode, test | address, join, host, play.
-        let g = 12.0 * u
-        var go = ""
-        let unit_w = (ws.x - 48.0 * u - g * 10.0) / 17.6
-        var bx = 24.0 * u
-        def slot(n:float) -> float2:
-            let at = float2 { bx, by }
-            bx += unit_w * n + g
-            return at
-        if ui_button(slot(0.6), float2 { unit_w * 0.6, 60.0 * u }, "<", false): step_map(-1)
-        let name_at = slot(2.0)
-        if ui_button(slot(0.6), float2 { unit_w * 0.6, 60.0 * u }, ">", false): step_map(1)
-        if ui_button(slot(2.4), float2 { unit_w * 2.4, 60.0 * u }, "Mode: " + lobby_mode, false):
-            lobby_mode = MODE_IDS[(str_index(MODE_IDS, lobby_mode) + 1) % MODE_IDS.length]
-        if ui_button(slot(1.4), float2 { unit_w * 1.4, 60.0 * u }, "Fight", false):
-            skirmish = true
-            go = "play"
-        if ui_button(slot(1.4), float2 { unit_w * 1.4, 60.0 * u }, "Test", false) or (has_s(args, "labtest") and lab_frames == 5):
-            // Fight every line against every other at equal cost, now (the balancer's first round, its
-            // prices not kept): how even the two races are as typed.
-            let report = balance_for_match(shown, rules, 1)
-            test_lines = report
-            reset_world()
-            rr_price_pct = dictionary<string, int>(64)
-        let addr_at = slot(2.6)
-        ui_box(addr_at, float2 { unit_w * 2.6, 60.0 * u }, -1, ui_look.face, false)
-        if field == 2: ui_outline(addr_at, float2 { unit_w * 2.6, 60.0 * u }, 2.0 * u, ui_look.accent)
-        if ui_button(slot(1.4), float2 { unit_w * 1.4, 60.0 * u }, "Find", false):
-            // Who's hosting nearby: the first host found fills the address.
-            let hosts = lan_scan(1.5)
-            if hosts.length:
-                address = hosts[0].ip
-                find_note = "Found {hosts.length}: {hosts[0].name} at {hosts[0].ip} ({hosts[0].map})" + (if hosts[0].version != net_version(): ", another build" else: "")
-            else: find_note = "No one is hosting nearby"
-            if field == 2: gl.set_text_input(address)
-        if ui_button(slot(1.4), float2 { unit_w * 1.4, 60.0 * u }, "Join", false): go = "join"
-        if ui_button(slot(1.4), float2 { unit_w * 1.4, 60.0 * u }, "Host", false): go = "host"
-        if ui_button(slot(2.6), float2 { unit_w * 2.6, 60.0 * u }, "Play", true): go = "play"
-        // The armies, then the text.
-        for(prompts) p, k:
-            draw_roster(armies[k], float2 { 24.0 * u + float(k) * half + 50.0 * u, ws.y - 190.0 * u }, 0.9 * u, k, gl.delta_time())
-        ui_text(float2 { 30.0 * u, 26.0 * u }, "Age of Anything", int(42.0 * u), ui_look.title)
-        ui_text(float2 { 30.0 * u, 84.0 * u }, "Type your race and theirs: anything you can describe. Tab: the next field. Enter: balance them by fighting, and play.", int(16.0 * u), ui_look.dim)
-        ui_text(name_at + float2 { 10.0 * u, 18.0 * u }, lobby_map, int(18.0 * u), ui_look.text)
-        if find_note != "": ui_text(float2 { ws.x * 0.55, ws.y - 32.0 * u }, find_note, int(15.0 * u), ui_look.accent)
-        if test_lines.length: ui_text(float2 { 30.0 * u, ws.y - 32.0 * u }, "Test: " + test_lines[test_lines.length - 1], int(15.0 * u), ui_look.accent)
-        ui_text(addr_at + float2 { 12.0 * u, 18.0 * u }, address + (if field == 2 and (int(seconds_elapsed() * 2.0) % 2) == 0: "|" else: ""), int(18.0 * u), ui_look.text)
-        for(prompts) p, k:
-            let x = 24.0 * u + float(k) * half
-            ui_text(float2 { x + 32.0 * u, 184.0 * u }, p + (if k == field and (int(seconds_elapsed() * 2.0) % 2) == 0: "|" else: ""), int(22.0 * u), ui_look.text)
-            for(race_lines(shown[k])) line, n:
-                ui_text(float2 { x + 32.0 * u, 236.0 * u + float(n) * 22.0 * u }, line, int(16.0 * u), if n == 0: ui_look.title else: ui_look.dim)
-        ui_flush()
-        lab_frames++
-        if lab_arg and lab_frames == (if has_s(args, "labtest"): 20 else: 90):
-            if shot != "": gl.screenshot(shot)
-            return []
-        if go != "":
-            gl.end_text_input()
-            if go == "host": hosting = true
-            if go == "join": join_ip = address
-            return prompts
-    return []
 
 // The races balanced by fights before the match: a few rounds of the round robin in age 2, each line
 // priced by its win rate (gen/balance.lobster), shown as it goes. Returns the prices' report.
@@ -1145,17 +978,20 @@ def balance_for_match(races:[JV], rules:JV, rounds:int) -> [string]:
     auto_balance(races, rules, 2, rounds, 10) round, units, rates, mean, off:
         report.push("round {round + 1}: {off} of {units.length} lines more than 10 points off the mean ({rr_fights} fights, {seconds_elapsed() - t0} s)")
         gl.frame()
-        gl.clear(float4 { 0.07, 0.06, 0.05, 1.0 })
-        gl.set_shader("color")
-        let u = ui()
-        gl.set_font_size(int(26.0 * u))
-        lobby_text(float2 { 40.0 * u, 40.0 * u }, "Balancing the armies by fighting them...", float4 { 0.95, 0.85, 0.6, 1.0 })
-        gl.set_font_size(int(16.0 * u))
-        for(report) line, n: lobby_text(float2 { 40.0 * u, 100.0 * u + float(n) * 24.0 * u }, line, float4 { 0.8, 0.78, 0.72, 1.0 })
-        for(units) un, k:
-            let pct = rr_price_pct.get(price_key(races, un), 100)
-            lobby_text(float2 { 40.0 * u + float(k / 18) * 560.0 * u, 260.0 * u + float(k % 18) * 22.0 * u },
-                "{rates[k]}%  {un.label}" + (if pct != 100: "  price {pct}%" else: ""), float4 { 0.75, 0.72, 0.66, 1.0 })
+        if front_shown:   // (from the lobby's pages: the match loader, game/lobby.lobster)
+            fe_loader("Balancing the armies by fighting them: round {round + 1} of {rounds}", float(round + 1) / float(rounds + 2))
+        else:
+            gl.clear(float4 { 0.07, 0.06, 0.05, 1.0 })
+            gl.set_shader("color")
+            let u = ui()
+            gl.set_font_size(int(26.0 * u))
+            lobby_text(float2 { 40.0 * u, 40.0 * u }, "Balancing the armies by fighting them...", float4 { 0.95, 0.85, 0.6, 1.0 })
+            gl.set_font_size(int(16.0 * u))
+            for(report) line, n: lobby_text(float2 { 40.0 * u, 100.0 * u + float(n) * 24.0 * u }, line, float4 { 0.8, 0.78, 0.72, 1.0 })
+            for(units) un, k:
+                let pct = rr_price_pct.get(price_key(races, un), 100)
+                lobby_text(float2 { 40.0 * u + float(k / 18) * 560.0 * u, 260.0 * u + float(k % 18) * 22.0 * u },
+                    "{rates[k]}%  {un.label}" + (if pct != 100: "  price {pct}%" else: ""), float4 { 0.75, 0.72, 0.66, 1.0 })
     return report
 
 // The fights' prices on the races: every step of a priced line costs its percent.
@@ -1884,6 +1720,7 @@ import .game.pad   // (here: it plays through the controls above)
 import .game.techtree
 import .game.panel
 import .game.topbar
+import .game.lobby
 
 // Control groups shown (Dominic, 2026-10-26: "visible somewhere, at least as a number on the units",
 // then "only when you select the group"): a small number by each selected unit that's in a group (its
@@ -2103,159 +1940,186 @@ def net_wait_frame(msg:string) -> bool:
 
 var link = Link {}
 var joined_bots = []::Bot
-// The lobby first (its Join button turns this into joining someone else's match).
-var lobby_prompts = if pack_prompts.length >= 2: pack_prompts else: ["sewer rats with cheese hammers", "angry swamp frogs with reed spears"]
-if args[1] == "lobby" and join_ip == "":
-    if map_arg != "": lobby_map = map_arg
-    if mode_arg != "": lobby_mode = mode_arg
-    if races_arg != "" and not lab_arg: lobby_prompts = tokenize(races_arg, "|", " ")
-    else: lobby_prompts = run_lobby(if races_arg != "": tokenize(races_arg, "|", " ") else: lobby_prompts)
-    if not lobby_prompts.length and join_ip == "": return
-if join_ip != "":
-    link = net_join(join_ip, NET_PORT)
-    var msg = "Joining {join_ip}..."
-    var said = false
-    while not joined_bots.length:
-        if net_wait_frame(if link.error != "": "Could not join {join_ip}: {link.error}" else: msg): return
-        if link.error == "" and net_ready(link):
-            if not said:
-                join_hello(link)
-                said = true
-            msg = "Joined {join_ip}: the host is sending the match..."
-            let later = []::[string]
-            for(net_poll(link)) f:
-                if f[0] == "W": ME = string_to_int(f[1])   // (our seat)
-                elif f[0] == "S": joined_bots = load_world_bytes(f[1])
-                elif f[0] == "X": link.error = f[1]
-                elif joined_bots.length: later.push(f)   // (a turn that came with the match: kept for the lockstep)
-            net_unread(link, later)
-    if ME == 0: ME = 1   // (a host that sends no seat: the second one)
-    net_people = num_players
+var bots = []::Bot
+var net_on = false
+var lockstep = Lockstep { Link {}, 0, [0], [] }
+var back_to_lobby = false       // the pause menu's Back to the menu (or the match won or lost from the lobby)
+var quit_app = false
+var next_choice = ""            // the next match without the lobby (the pause menu's Load game)
+var front_choice = ""           // what the lobby chose (game/lobby.lobster: play, host, join, fight, load:<path>)
+
+// A saved match from the lobby's Load game: its world and bots, as a joiner takes the host's.
+def load_saved(path:string) -> bool:
+    let loaded = load_world(path)
+    if not loaded.length: return false
+    joined_bots = loaded
     map_name_now = gstr(su_map, "id", "reed_meadow")
     load_species(map_name_now)
     if pack_library: race_facts(su_races)
-elif args[1] == "-" or args[1] == "lobby":   // the races from their prompts and the match start, made here (gen/)
-    let rules = load_rules(rules_id())
-    set(rules, "animals", jbool(true))
-    let prompts = lobby_prompts
-    let t_gen = seconds_elapsed()
-    // (more than two people: the other seats take the two prompts' further takes, a team each)
-    let races = map(max(prompts.length, if hosting: net_people else: 0)) k: generate(prompts[k % prompts.length], rules, if k < lobby_rerolls.length: lobby_rerolls[k] else: k / prompts.length)
-    let t_setup = seconds_elapsed()
-    if args[1] == "lobby":
-        lobby_report = balance_for_match(races, rules, 4)
-        for(lobby_report) l: print l
-        apply_prices(races)
-        reset_world()
-    let map_id = if args[1] == "lobby": lobby_map elif pack_map != "": pack_map else: "reed_meadow"
-    if args[1] == "lobby": set(rules, "mode", jstr(lobby_mode))   // (after the balance fights: they're plain fights)
-    let four = races.length > 2
-    setup_world(20261010, if four: "reed_meadow_2v2" else: map_id, races, rules, if four: map(races.length) k: k % 2 else: [])
-    load_species(if four: "reed_meadow_2v2" else: map_id)
-    map_name_now = map_id
-    if pack_library: race_facts(races)
-    print "races in {(t_setup - t_gen) * 1000.0} ms, the start in {(seconds_elapsed() - t_setup) * 1000.0} ms"
-else:
-    if composed:   // a scenario has no recipes: set its races up (as export.gd did) for the composer, then load it over a clean world
+    return true
+
+// The match: joined, loaded, or made here from the lobby's prompts (or the pack's scenario); the bots, the
+// network, the captures' extras, the lockstep. False when the window was closed meanwhile.
+def make_match() -> bool:
+    joined_bots = []
+    ai_levels = []
+    if starts_with(front_choice, "load:"):
+        if not load_saved(front_choice.substring(5, front_choice.length - 5)): return false
+    if join_ip != "" and not joined_bots.length:
+        link = net_join(join_ip, NET_PORT)
+        var msg = "Joining {join_ip}..."
+        var said = false
+        while not joined_bots.length:
+            if net_wait_frame(if link.error != "": "Could not join {join_ip}: {link.error}" else: msg): return false
+            if link.error == "" and net_ready(link):
+                if not said:
+                    join_hello(link)
+                    said = true
+                msg = "Joined {join_ip}: the host is sending the match..."
+                let later = []::[string]
+                for(net_poll(link)) f:
+                    if f[0] == "W": ME = string_to_int(f[1])   // (our seat)
+                    elif f[0] == "S": joined_bots = load_world_bytes(f[1])
+                    elif f[0] == "X": link.error = f[1]
+                    elif joined_bots.length: later.push(f)   // (a turn that came with the match: kept for the lockstep)
+                net_unread(link, later)
+        if ME == 0: ME = 1   // (a host that sends no seat: the second one)
+        net_people = num_players
+        map_name_now = gstr(su_map, "id", "reed_meadow")
+        load_species(map_name_now)
+        if pack_library: race_facts(su_races)
+    elif joined_bots.length: pass()
+    elif args[1] == "-" or args[1] == "lobby":   // the races from their prompts and the match start, made here (gen/)
         let rules = load_rules(rules_id())
-        let races = map(if pack_prompts.length >= 2: pack_prompts else: ["sewer rats with cheese hammers", "angry swamp frogs with reed spears"]) pr: generate(pr, rules, 0)
-        setup_world(20261010, if pack_map != "": pack_map else: "flat_test", races, rules, [])
-        let keep_recipe = su_type_recipe
-        let keep_line = su_type_line
-        let keep_eval = su_type_eval
-        let keep_btypes = su_btypes
-        let keep_races = su_races
-        let keep_rules = su_rules
-        reset_world()
-        start_world(args[1])
-        su_type_recipe = keep_recipe
-        su_type_line = keep_line
-        su_type_eval = keep_eval
-        su_btypes = keep_btypes
-        su_races = keep_races
-        su_rules = keep_rules
+        set(rules, "animals", jbool(true))
+        let prompts = lobby_prompts
+        let t_gen = seconds_elapsed()
+        // (more than two people: the other seats take the two prompts' further takes, a team each)
+        let races = map(max(prompts.length, if hosting: net_people else: 0)) k: generate(prompts[k % prompts.length], rules, if k < lobby_rerolls.length: lobby_rerolls[k] else: k / prompts.length)
+        let t_setup = seconds_elapsed()
+        if args[1] == "lobby":
+            lobby_report = balance_for_match(races, rules, 4)
+            for(lobby_report) l: print l
+            apply_prices(races)
+            reset_world()
+        let map_id = if args[1] == "lobby": lobby_map elif pack_map != "": pack_map else: "reed_meadow"
+        if args[1] == "lobby": set(rules, "mode", jstr(lobby_mode))   // (after the balance fights: they're plain fights)
+        let picked = args[1] == "lobby" and lobby_teams.length == races.length and races.length > 2   // (a team game picked in the lobby: its map and teams)
+        let four = races.length > 2 and not picked   // (host:<n> with more people: the 2v2 map)
+        let real_map = if four: "reed_meadow_2v2" else: map_id
+        setup_world(20261010, real_map, races, rules, if picked: lobby_teams elif four: map(races.length) k: k % 2 else: [])
+        load_species(real_map)
+        map_name_now = real_map
         if pack_library: race_facts(races)
-    else: start_world(args[1])
-note("world")
-events_on = true
-var bots = map(num_players) p: new_bot(p)
-if joined_bots.length: bots = joined_bots
-if hosting:
-    let door = door_open(NET_PORT, rstr(su_races[0], "name"), map_name_now)
-    let joined = []::Link
-    let here = my_ipv4()
-    while joined.length < net_people - 1:
-        if net_wait_frame(if door.error != "": "Could not host: {door.error}" else: "Hosting at {if here != "": here else: "this machine"}: {joined.length} of {net_people - 1} joined, waiting..."): return
-        let got = door_tick(door)
-        if got:
-            net_send(got, 'W', string(joined.length + 1))
-            joined.push(got)
-    link = joined[0]
-    net_others = joined.slice(1, -1)
-    let bytes = world_bytes(bots)
-    for(joined) l: net_send(l, 'S', bytes)
-let net_on = hosting or join_ip != ""
-if place_arg != "":
-    let k = btype_index(place_arg)
-    let tc = town_center(ME)
-    if k >= 0 and tc >= 0:
-        var done = false
-        for(12) r:
-            for(8) a:
-                if not done:
-                    let x = b_cx[tc] + int(cos(float(a) * 45.0) * float(4 + r))
-                    let y = b_cy[tc] + int(sin(float(a) * 45.0) * float(4 + r))
-                    if can_place(ME, k, x, y):
-                        fort_put(ME, k, x, y, 0)
-                        update_pop()
-                        cam = iso(float(x * 1000 + 1500), float(y * 1000 + 1500))
-                        done = true
-if skirmish: army_n = max(army_n, 3)
-if army_n > 0:   // (a skirmish: both sides, marching on each other)
-    for(num_players) p:
-        if p == ME or skirmish:
-            let slots = []::string
-            for(t_slot.length) k:
-                if t_player[k] == p and not t_worker[k] and t_animal[k] == 0 and t_trader[k] == 0 and t_healer[k] == 0: push_new(slots, t_slot[k])
-            let ids = []::int
-            for(slots) slot:
-                for(army_n):
-                    let i = mode_put(p, type_of_slot(p, slot), start_x[p] + 4000, start_y[p] + 4000)
-                    ids.push(u_id[i])
-            if skirmish:
-                let foe = (p + 1) % num_players
-                issue_cmd(p, CMD_ATTACK_MOVE, ids, start_x[foe], start_y[foe], 0, 0)
-    update_pop()
-    if skirmish:
-        let mid_x = (start_x[0] + start_x[1]) / 2
-        let mid_y = (start_y[0] + start_y[1]) / 2
-        cam = iso(float(mid_x), float(mid_y))
-        follow = true   // (the camera goes where they fight)
-if hurt_pct >= 0:
-    for(b_id.length) b:
-        if b_owner[b] == ME: b_hp[b] = max(1, bm_hp[ME][b_kind[b]] * hurt_pct / 100)
-in_net_match = net_on
-let lockstep = new_lockstep(link, ME, if net_on: map(net_people) k: k else: [ME])
-lockstep.more = net_others
-lockstep.relay = hosting
+        print "races in {(t_setup - t_gen) * 1000.0} ms, the start in {(seconds_elapsed() - t_setup) * 1000.0} ms"
+    else:
+        if composed:   // a scenario has no recipes: set its races up (as export.gd did) for the composer, then load it over a clean world
+            let rules = load_rules(rules_id())
+            let races = map(if pack_prompts.length >= 2: pack_prompts else: ["sewer rats with cheese hammers", "angry swamp frogs with reed spears"]) pr: generate(pr, rules, 0)
+            setup_world(20261010, if pack_map != "": pack_map else: "flat_test", races, rules, [])
+            let keep_recipe = su_type_recipe
+            let keep_line = su_type_line
+            let keep_eval = su_type_eval
+            let keep_btypes = su_btypes
+            let keep_races = su_races
+            let keep_rules = su_rules
+            reset_world()
+            start_world(args[1])
+            su_type_recipe = keep_recipe
+            su_type_line = keep_line
+            su_type_eval = keep_eval
+            su_btypes = keep_btypes
+            su_races = keep_races
+            su_rules = keep_rules
+            if pack_library: race_facts(races)
+        else: start_world(args[1])
+    note("world")
+    events_on = true
+    if args[1] == "lobby" and lobby_levels.length == num_players and not joined_bots.length: ai_levels_set(lobby_levels)   // (each AI at its level)
+    bots = map(num_players) p: new_bot(p)
+    if joined_bots.length: bots = joined_bots
+    if hosting:
+        let door = door_open(NET_PORT, rstr(su_races[0], "name"), map_name_now)
+        let joined = []::Link
+        let here = my_ipv4()
+        while joined.length < net_people - 1:
+            if net_wait_frame(if door.error != "": "Could not host: {door.error}" else: "Hosting at {if here != "": here else: "this machine"}: {joined.length} of {net_people - 1} joined, waiting..."): return false
+            let got = door_tick(door)
+            if got:
+                net_send(got, 'W', string(joined.length + 1))
+                joined.push(got)
+        link = joined[0]
+        net_others = joined.slice(1, -1)
+        let bytes = world_bytes(bots)
+        for(joined) l: net_send(l, 'S', bytes)
+    net_on = hosting or join_ip != ""
+    if place_arg != "":
+        let k = btype_index(place_arg)
+        let tc = town_center(ME)
+        if k >= 0 and tc >= 0:
+            var done = false
+            for(12) r:
+                for(8) a:
+                    if not done:
+                        let x = b_cx[tc] + int(cos(float(a) * 45.0) * float(4 + r))
+                        let y = b_cy[tc] + int(sin(float(a) * 45.0) * float(4 + r))
+                        if can_place(ME, k, x, y):
+                            fort_put(ME, k, x, y, 0)
+                            update_pop()
+                            cam = iso(float(x * 1000 + 1500), float(y * 1000 + 1500))
+                            done = true
+    if skirmish: army_n = max(army_n, 3)
+    if army_n > 0:   // (a skirmish: both sides, marching on each other)
+        for(num_players) p:
+            if p == ME or skirmish:
+                let slots = []::string
+                for(t_slot.length) k:
+                    if t_player[k] == p and not t_worker[k] and t_animal[k] == 0 and t_trader[k] == 0 and t_healer[k] == 0: push_new(slots, t_slot[k])
+                let ids = []::int
+                for(slots) slot:
+                    for(army_n):
+                        let i = mode_put(p, type_of_slot(p, slot), start_x[p] + 4000, start_y[p] + 4000)
+                        ids.push(u_id[i])
+                if skirmish:
+                    let foe = (p + 1) % num_players
+                    issue_cmd(p, CMD_ATTACK_MOVE, ids, start_x[foe], start_y[foe], 0, 0)
+        update_pop()
+        if skirmish:
+            let mid_x = (start_x[0] + start_x[1]) / 2
+            let mid_y = (start_y[0] + start_y[1]) / 2
+            cam = iso(float(mid_x), float(mid_y))
+            follow = true   // (the camera goes where they fight)
+    if hurt_pct >= 0:
+        for(b_id.length) b:
+            if b_owner[b] == ME: b_hp[b] = max(1, bm_hp[ME][b_kind[b]] * hurt_pct / 100)
+    in_net_match = net_on
+    lockstep = new_lockstep(link, ME, if net_on: map(net_people) k: k else: [ME])
+    lockstep.more = net_others
+    lockstep.relay = hosting
+    return true
 
 // Saving and loading (gen/save.lobster): F5 saves the match, F9 brings the save back (the whole world
 // and the bots); the view starts over from it: units redrawn, the ground, paths and town read again.
 let SAVE_PATH = "quick.sav"
-def quick_save():
+def quick_save(): save_to(SAVE_PATH)
+
+// The pause menu's Save game: a new file in saves/ each time, with a line about it beside it (the lobby's Load game lists them).
+def save_game():
+    launch_subprocess(["mkdir", "-p", "saves"])
+    let stamp = date_time_string_format("%Y-%m-%d_%H-%M-%S")
+    let names = concat_string(map(su_races) r: rstr(r, "name"), " vs ")
+    let secs = tick / 20
+    write_file("saves/{stamp}.txt", "{names}  -  {capitalize(map_name_now)}  -  {secs / 60}:{if secs % 60 < 10: "0" else: ""}{secs % 60}  -  {date_time_string_format("%d %b %H:%M")}\n")
+    save_to("saves/{stamp}.sav")
+
+def save_to(path:string):
     let t0 = seconds_elapsed()
-    let ok = save_world(SAVE_PATH, bots)
+    let ok = save_world(path, bots)
     banner = if ok: "Saved ({int((seconds_elapsed() - t0) * 1000.0)} ms)" else: "Could not save"
     banner_t = gl.time()
 
-def quick_load():
-    let t0 = seconds_elapsed()
-    let loaded = load_world(SAVE_PATH)
-    if not loaded.length:
-        banner = "No save to load"
-        banner_t = gl.time()
-        return
-    bots = loaded
+// What the view keeps about a match, let go (a save loaded over it, or a new match).
+def view_reset():
     for(views.get_values()) v:
         remove_child(view_stage, v.node)
         free_tree(v.node)
@@ -2282,7 +2146,6 @@ def quick_load():
     path_anchor_hub.clear()
     path_anchor_res.clear()
     path_count = -1
-    refresh_paths()
     ground_tick = -1000
     mask_version = -1
     mask_tick = -1000
@@ -2290,25 +2153,36 @@ def quick_load():
     sel_building = 0
     groups.clear()
     placing = -1
+
+def quick_load(): load_from(SAVE_PATH)
+
+def load_from(path:string):
+    let t0 = seconds_elapsed()
+    let loaded = load_world(path)
+    if not loaded.length:
+        banner = "No save to load"
+        banner_t = gl.time()
+        return
+    bots = loaded
+    view_reset()
+    refresh_paths()
     clock_s = float(tick) / 20.0
     p_id = copy(u_id)
     p_x = copy(u_x)
     p_y = copy(u_y)
     banner = "Loaded ({int((seconds_elapsed() - t0) * 1000.0)} ms)"
     banner_t = gl.time()
-note("bots")
-let tc0 = town_center(ME)
-if tc0 >= 0: cam = iso(float(b_cx[tc0] * 1000 + 1500), float(b_cy[tc0] * 1000 + 1500))
-if look_x >= 0: cam = iso(float(look_x * 1000 + 500), float(look_y * 1000 + 500))
+var tc0 = -1
 var acc = 0.0
 var paused = false
 var speed = start_speed
 var steps = 0
 var frame_no = 0
 var step_time = 0.0
-note("loop")
 var menu_open = false           // the pause menu (Esc)
+var menu_saves = false          // ...showing the saved games (Load game)
 var quit_game = false
+var told_end = false            // the match's end was shown (the menu opens once)
 
 // The pause menu (Esc, or Start on the pad): a panel of buttons over the dimmed match. In a network
 // match the world goes on (only you stop looking), and Load isn't offered.
@@ -2316,149 +2190,272 @@ def pause_menu():
     let u = ui()
     let ws = float(gl.window_size())
     ui_frame(true)
+    if menu_saves:   // Load game: the saves (game/lobby.lobster)
+        fe_fit()
+        let picked = fe_saves_card("")
+        if picked == "back": menu_saves = false
+        elif picked != "":   // (a new match from the save: its map may be another)
+            next_choice = "load:" + picked
+            back_to_lobby = true
+            quit_game = true
+        fe_draw_tip()
+        ui_flush()
+        return
     if gl.button("controller_b") == 1: menu_open = false
     ui_fill(float2_0, ws, float4 { 0.0, 0.0, 0.0, 0.45 })
-    let size = float2 { 420.0 * u, 542.0 * u }
+    let from_lobby = args[1] == "lobby"
+    let size = float2 { 420.0 * u, (if from_lobby: 686.0 else: 614.0) * u }
     let at = ws / 2.0 - size / 2.0
-    ui_panel(at, size, if net_on: "Menu (the match goes on)" else: "Paused")
+    let title = if winner >= 0: (if winner == teams[ME]: "Victory!" else: "Defeat") elif net_on: "Menu (the match goes on)" else: "Paused"
+    ui_panel(at, size, title)
     var y = at.y + 70.0 * u
     def item(label:string, primary:bool) -> bool:
         let hit = ui_button(float2 { at.x + 40.0 * u, y }, float2 { size.x - 80.0 * u, 58.0 * u }, label, primary)
         y += 72.0 * u
         return hit
     if item("Resume", true): menu_open = false
-    if item("Save", false):
-        quick_save()
+    if item("Save game", false):
+        save_game()
         menu_open = false
-    if not net_on and item("Load", false):
-        quick_load()
-        menu_open = false
+    if not net_on and item("Load game", false): menu_saves = true
     if item("Tech tree", false):
         menu_open = false
-        tree_open = true
-        tree_page = build_tree(ME)
+        open_tree(ME)
     if winner < 0 and defeated[ME] == 0 and item("Surrender", false):   // (the match ends as a defeat for your side)
         issue_cmd(ME, CMD_SURRENDER, []::int, 0, 0, 0, 0)
         menu_open = false
+    if from_lobby and item("Back to the menu", false):
+        back_to_lobby = true
+        quit_game = true
     if item("Quit", false): quit_game = true
     ui_flush()
 
-while gl.frame() and not quit_game and not bake_quit:
-    if gl.button("escape") == 1 and placing < 0 and not build_menu and not typing_race and not tree_open and not pad_wheel.length and not arming_attack and not arming_ability: menu_open = not menu_open
-    if gl.button("controller_start") == 1 and not typing_race: menu_open = not menu_open
-    if has_s(args, "menu") and frame_no == 2: menu_open = true   // (captures)
-    if gl.button("escape") == 1: build_menu = false
-    if gl.button("space") == 1 and not net_on: paused = not paused
-    if gl.button("=") == 1 and not net_on: speed = min(8.0, speed * 2.0)
-    if gl.button("-") == 1 and not net_on: speed = max(0.25, speed / 2.0)
-    let dt = gl.delta_time()
-    frame_dt = dt
-    fx_tick(dt)
-    town_tick(dt)
-    music_tick("age{clamp(ages[ME], 1, 4)}", gl.time() - last_battle < 6.0, dt)
-    ambience_tick(town_level(), dt)
-    frame_no++
-    if frame_no == 1:   // (inside a frame: a bake outside one leaves the window drawing nothing)
-        let t0 = seconds_elapsed()
-        bake_what = "the units"
-        let n = bake_missing_parts()
-        print "baked {n} part facings the pack lacked, in {int((seconds_elapsed() - t0) * 1000.0)} ms"
-        let t1 = seconds_elapsed()
-        ak_rebake = rebake_art
-        bake_what = "the props"
-        let nd = bake_doodads()
-        print "baked {nd} props{if rebake_art: "" else: " the pack lacked"}, in {int((seconds_elapsed() - t1) * 1000.0)} ms"
-        let t2 = seconds_elapsed()
-        bake_what = "the buildings"
-        let nb = bake_buildings_for(arch_of)
-        print "baked {nb} building frames{if rebake_art: "" else: " the pack lacked"}, in {int((seconds_elapsed() - t2) * 1000.0)} ms"
-    if shot != "" and frame_no < 3: note("frame {frame_no} tc at {if tc0 >= 0: to_screen(iso(float(b_cx[tc0] * 1000 + 2000), float(b_cy[tc0] * 1000 + 2000))) else: float2_0} cam {cam} zoom {zoom} ws {gl.window_size()} fb {gl.framebuffer_size()} tc {tc0} draws {draws.length} W {W} H {H} first {iso(0.0, 0.0)} last {iso(float(W * 1000), float(H * 1000))}")
-    if shot != "" and frame_no % 60 == 0: print "frame {frame_no}: {dt * 1000.0} ms, play {clock_s} s"
-    if reload_at >= 0.0 and clock_s >= reload_at:
-        quick_save()
-        reload_tick = tick
-        print "saved at tick {tick}: {u_id.length} units, {b_id.length} buildings, hash {state_hash()}"
-        reload_at = -1.0
-    if reload_tick >= 0 and tick >= reload_tick + 100:
-        quick_load()
-        print "loaded: tick {tick}, {u_id.length} units, {b_id.length} buildings, hash {state_hash()}"
-        reload_tick = -1
-    if not typing_race and gl.button("f5") == 1: quick_save()
-    if not typing_race and not net_on and gl.button("f9") == 1: quick_load()
-    if swap_arg != "" and clock_s >= swap_at:
-        become(swap_arg)
-        swap_arg = ""
-    if not paused and not test_pause and winner < 0 and not typing_race and ((not tree_open and not menu_open) or net_on): acc += dt * speed
-    acc = min(acc, 0.5)
-    if net_on:
-        ls_receive(lockstep)
-        if lockstep.desync != "": banner = "Out of step with the other player: {lockstep.desync}"
-        elif link.closed: banner = "The other player has left"
-        if lockstep.desync != "" or link.closed: banner_t = gl.time()
-    while acc >= 0.05:
-        if net_on and tick % TICKS_PER_TURN == 0 and not may_run(lockstep, tick / TICKS_PER_TURN):
-            acc = min(acc, 0.05)   // (waiting on the other player: don't save up time to rush through after)
-            break
-        p_id = copy(u_id)
-        p_x = copy(u_x)
-        p_y = copy(u_y)
-        let t0 = seconds_elapsed()
-        for(bots) bot, p:
-            if (p != ME or watch) and not (net_on and p != ME and contains(lockstep.players, p)): full_bot_think(bot)   // (watch: your own bot plays your side)
-        step()
-        if net_on: ls_after_step(lockstep)
-        step_time += seconds_elapsed() - t0
-        steps++
-        clock_s += 0.05
-        after_step()
-        acc -= 0.05
-    if follow:
-        var fx = 0
-        var fy = 0
-        var nf = 0
-        for(u_x.length) i:
-            if u_foe[i] != 0:
-                fx += u_x[i]
-                fy += u_y[i]
-                nf++
-        if nf == 0:   // (no fighting yet: the armies)
+// The match loader as a picture (bake_breath shows it under the bake's progress, view/part_bake.lobster).
+def loader_picture() -> resource<texture>?:
+    let fb = gl.framebuffer_size()
+    let tex = gl.create_blank_texture(int3 { fb.x, fb.y, 0 }, texture_format_nomipmap)
+    gl.switch_to_framebuffer(tex, false)
+    fe_loader("Making the art", 0.9)
+    gl.switch_to_framebuffer(nil)
+    gl.ortho()
+    return tex
+
+// A match from its start: the camera on your Town Center, the clock at 0, played until it's quit (or a capture's done).
+def play_match():
+    tc0 = town_center(ME)
+    if tc0 >= 0: cam = iso(float(b_cx[tc0] * 1000 + 1500), float(b_cy[tc0] * 1000 + 1500))
+    if look_x >= 0: cam = iso(float(look_x * 1000 + 500), float(look_y * 1000 + 500))
+    acc = 0.0
+    paused = false
+    speed = start_speed
+    steps = 0
+    frame_no = 0
+    step_time = 0.0
+    menu_open = false
+    menu_saves = false
+    quit_game = false
+    told_end = false
+    note("loop")
+    while gl.frame() and not quit_game and not bake_quit:
+        if gl.button("escape") == 1 and placing < 0 and not build_menu and not typing_race and not tree_open and not pad_wheel.length and not arming_attack and not arming_ability: menu_open = not menu_open
+        if gl.button("controller_start") == 1 and not typing_race: menu_open = not menu_open
+        if has_s(args, "menu") and frame_no == 2: menu_open = true   // (captures)
+        if gl.button("escape") == 1: build_menu = false
+        if gl.button("space") == 1 and not net_on: paused = not paused
+        if gl.button("=") == 1 and not net_on: speed = min(8.0, speed * 2.0)
+        if gl.button("-") == 1 and not net_on: speed = max(0.25, speed / 2.0)
+        let dt = gl.delta_time()
+        frame_dt = dt
+        fx_tick(dt)
+        town_tick(dt)
+        music_tick("age{clamp(ages[ME], 1, 4)}", gl.time() - last_battle < 6.0, dt)
+        ambience_tick(town_level(), dt)
+        frame_no++
+        if frame_no == 1:   // (inside a frame: a bake outside one leaves the window drawing nothing)
+            let t0 = seconds_elapsed()
+            if bake_live and fe_sides.length == num_players and front_choice != "": bake_backdrop = loader_picture()   // (the match loader under the bake's progress)
+            bake_what = "the units"
+            let n = bake_missing_parts()
+            print "baked {n} part facings the pack lacked, in {int((seconds_elapsed() - t0) * 1000.0)} ms"
+            let t1 = seconds_elapsed()
+            ak_rebake = rebake_art
+            bake_what = "the props"
+            let nd = bake_doodads()
+            print "baked {nd} props{if rebake_art: "" else: " the pack lacked"}, in {int((seconds_elapsed() - t1) * 1000.0)} ms"
+            let t2 = seconds_elapsed()
+            bake_what = "the buildings"
+            let nb = bake_buildings_for(arch_of)
+            print "baked {nb} building frames{if rebake_art: "" else: " the pack lacked"}, in {int((seconds_elapsed() - t2) * 1000.0)} ms"
+            bake_backdrop = nil
+        if shot != "" and frame_no < 3: note("frame {frame_no} tc at {if tc0 >= 0: to_screen(iso(float(b_cx[tc0] * 1000 + 2000), float(b_cy[tc0] * 1000 + 2000))) else: float2_0} cam {cam} zoom {zoom} ws {gl.window_size()} fb {gl.framebuffer_size()} tc {tc0} draws {draws.length} W {W} H {H} first {iso(0.0, 0.0)} last {iso(float(W * 1000), float(H * 1000))}")
+        if shot != "" and frame_no % 60 == 0: print "frame {frame_no}: {dt * 1000.0} ms, play {clock_s} s"
+        if reload_at >= 0.0 and clock_s >= reload_at:
+            quick_save()
+            reload_tick = tick
+            print "saved at tick {tick}: {u_id.length} units, {b_id.length} buildings, hash {state_hash()}"
+            reload_at = -1.0
+        if reload_tick >= 0 and tick >= reload_tick + 100:
+            quick_load()
+            print "loaded: tick {tick}, {u_id.length} units, {b_id.length} buildings, hash {state_hash()}"
+            reload_tick = -1
+        if not typing_race and gl.button("f5") == 1: quick_save()
+        if not typing_race and not net_on and gl.button("f9") == 1: quick_load()
+        if swap_arg != "" and clock_s >= swap_at:
+            become(swap_arg)
+            swap_arg = ""
+        if not paused and not test_pause and winner < 0 and not typing_race and ((not tree_open and not menu_open) or net_on): acc += dt * speed
+        acc = min(acc, 0.5)
+        if net_on:
+            ls_receive(lockstep)
+            if lockstep.desync != "": banner = "Out of step with the other player: {lockstep.desync}"
+            elif link.closed: banner = "The other player has left"
+            if lockstep.desync != "" or link.closed: banner_t = gl.time()
+        while acc >= 0.05:
+            if net_on and tick % TICKS_PER_TURN == 0 and not may_run(lockstep, tick / TICKS_PER_TURN):
+                acc = min(acc, 0.05)   // (waiting on the other player: don't save up time to rush through after)
+                break
+            p_id = copy(u_id)
+            p_x = copy(u_x)
+            p_y = copy(u_y)
+            let t0 = seconds_elapsed()
+            for(bots) bot, p:
+                if (p != ME or watch) and not (net_on and p != ME and contains(lockstep.players, p)):
+                    ai_level_for(p)
+                    full_bot_think(bot)   // (watch: your own bot plays your side)
+            step()
+            if net_on: ls_after_step(lockstep)
+            step_time += seconds_elapsed() - t0
+            steps++
+            clock_s += 0.05
+            after_step()
+            acc -= 0.05
+        if follow:
+            var fx = 0
+            var fy = 0
+            var nf = 0
             for(u_x.length) i:
-                if t_worker[u_kind[i]] == 0 and t_animal[u_kind[i]] == 0:
+                if u_foe[i] != 0:
                     fx += u_x[i]
                     fy += u_y[i]
                     nf++
-        if nf > 0: cam = cam + (iso(float(fx / nf), float(fy / nf)) - cam) * 0.05
-    if not typing_race and not tree_open and not menu_open:
-        let padded = pad_tick(if padtest: pad_script() else: read_pad(), dt)
-        if not padded: scroll()
-        keys()
-        if not padded and not panel_click(mouse_px()): mouse()
-    gl.clear(float4 { 0.05, 0.05, 0.05, 1.0 })
-    gl.blend(1)
-    draw_world(acc / 0.05)
-    draw_panel()
-    draw_hud(paused, speed)
-    draw_groups()
-    pad_draw()
-    if tree_arg and frame_no == 2:
-        tree_open = true
-        tree_page = build_tree(ME)
-    tree_tick()
-    if menu_open: pause_menu()
-    draw_banner()
-    if typing_race: typing_tick()
-    if selftest and self_test():
-        if shot != "": gl.screenshot(shot)
-        return
-    if padtest and pad_step >= 15 and pad_step < 60:
-        if shot != "": gl.screenshot(shot)
-        return
-    if has_s(args, "tillend") and (winner >= 0 or (shot_at > 0.0 and clock_s >= shot_at)):   // a whole match to its end (tests: with watch)
-        if shot != "": gl.screenshot(shot)
-        print "match over: {if winner >= 0: "team {winner} won" else: "no winner yet"} at {int(clock_s) / 60}:{int(clock_s) % 60}, tick {tick}"
-        return
-    if shot != "" and clock_s >= shot_at and not selftest and not padtest and not has_s(args, "tillend") and (not tree_arg or frame_no > 4) and (not has_s(args, "menu") or frame_no > 4):
-        gl.screenshot(shot)
-        print "shot {shot} at {clock_s} s, tick {tick}; sim {step_time * 1000.0 / max(1, steps)} ms a tick; cam {cam} zoom {zoom} ws {gl.window_size()} fb {gl.framebuffer_size()}"
-        return
+            if nf == 0:   // (no fighting yet: the armies)
+                for(u_x.length) i:
+                    if t_worker[u_kind[i]] == 0 and t_animal[u_kind[i]] == 0:
+                        fx += u_x[i]
+                        fy += u_y[i]
+                        nf++
+            if nf > 0: cam = cam + (iso(float(fx / nf), float(fy / nf)) - cam) * 0.05
+        if not typing_race and not tree_open and not menu_open:
+            let padded = pad_tick(if padtest: pad_script() else: read_pad(), dt)
+            if not padded: scroll()
+            keys()
+            if not padded and not panel_click(mouse_px()): mouse()
+        gl.clear(float4 { 0.05, 0.05, 0.05, 1.0 })
+        gl.blend(1)
+        draw_world(acc / 0.05)
+        draw_panel()
+        draw_hud(paused, speed)
+        draw_groups()
+        pad_draw()
+        if tree_arg and frame_no == 2:
+            open_tree(ME)
+        tree_tick()
+        if menu_open: pause_menu()
+        draw_banner()
+        if typing_race: typing_tick()
+        if has_s(args, "lobbyloop") and loop_round == 0 and clock_s >= 2.0:   // (tests: back to the lobby, then a second match)
+            loop_round++
+            back_to_lobby = true
+            quit_game = true
+        if selftest and self_test():
+            if shot != "": gl.screenshot(shot)
+            quit_app = true
+            return
+        if padtest and pad_step >= 15 and pad_step < 60:
+            if shot != "": gl.screenshot(shot)
+            quit_app = true
+            return
+        if has_s(args, "tillend") and (winner >= 0 or (shot_at > 0.0 and clock_s >= shot_at)):   // a whole match to its end (tests: with watch)
+            if shot != "": gl.screenshot(shot)
+            print "match over: {if winner >= 0: "team {winner} won" else: "no winner yet"} at {int(clock_s) / 60}:{int(clock_s) % 60}, tick {tick}"
+            quit_app = true
+            return
+        if shot != "" and clock_s >= shot_at and not selftest and not padtest and not has_s(args, "tillend") and (not tree_arg or frame_no > 4) and (not has_s(args, "menu") or frame_no > 4):
+            gl.screenshot(shot)
+            print "shot {shot} at {clock_s} s, tick {tick}; sim {step_time * 1000.0 / max(1, steps)} ms a tick; cam {cam} zoom {zoom} ws {gl.window_size()} fb {gl.framebuffer_size()}"
+            quit_app = true
+            return
 
+// Everything the last match left, let go: the world, the view, the network, the captures' extras.
+def new_match_reset():
+    view_reset()
+    reset_world()
+    ground_mesh = nil
+    ground_quad = nil
+    relief_built = false
+    relief = []
+    relief_faces = []
+    relief_tops = []
+    relief_rims = []
+    occluders = []
+    mask_version = -1
+    doodad_list = []
+    bld_seen.clear()
+    portraits.clear()
+    busts.clear()
+    hud_culture = "?"
+    unit_dir.clear()
+    last_kind.clear()
+    last_owner.clear()
+    critters = []
+    critter_towns.clear()
+    town_tick_seen = -1
+    town_parts = []
+    town_emit.clear()
+    town_builders = []
+    tethered.clear()
+    path_bytes = []
+    typing_race = false
+    tree_open = false
+    build_menu = false
+    arming_attack = false
+    arming_ability = false
+    pad_wheel = []
+    clock_s = 0.0
+    p_id = []
+    p_x = []
+    p_y = []
+    if in_net_match: link.closed = true
+    hosting = false
+    join_ip = ""
+    in_net_match = false
+    net_on = false
+    ME = 0
+    skirmish = false
+    army_n = 0
+    follow = false
+    ai_levels = []
+    back_to_lobby = false
+    ui_setup("")
+
+// ------------------------------------------------------------------ the game: the lobby, a match, back to the lobby
+// "lobby" opens the front end (game/lobby.lobster) on its title, or page:<name> (title, setup, lab, saves, net) with
+// races:A|B... typed; "lobby races:A|B" (no page) goes straight to the match. After a match from the lobby, back to it.
+if args[1] == "lobby":
+    if map_arg != "": lobby_map = map_arg
+    if mode_arg != "": lobby_mode = mode_arg
+    lobby_prompts = if pack_prompts.length >= 2: pack_prompts else: ["sewer rats with cheese hammers", "angry swamp frogs with reed spears"]
+    if races_arg != "": lobby_prompts = tokenize(races_arg, "|", " ")
+var front_first = args[1] == "lobby" and join_ip == "" and not hosting and (races_arg == "" or lab_arg or page_arg != "")
+while not quit_app and not bake_quit:
+    if next_choice != "":
+        front_choice = next_choice
+        next_choice = ""
+    elif front_first:
+        front_choice = run_front(if lab_arg: "lab" elif page_arg != "": page_arg else: "title", if races_arg != "": lobby_prompts else: [])
+        if front_choice == "": break
+    if not make_match(): break
+    play_match()
+    if quit_app or bake_quit or not back_to_lobby: break
+    new_match_reset()
+    front_first = true

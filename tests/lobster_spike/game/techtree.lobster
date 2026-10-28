@@ -55,10 +55,10 @@ def line_step(unit:JV?, age:int) -> JV?:
         if gint(l, "age", 0) == age: return l
     return nil
 
-def build_tree(p:int) -> TTree:
-    let race = su_races[p]
-    let ident = su_idents[p]
-    let rules = su_rules
+def build_tree(p:int) -> TTree: return build_tree_of(su_races[p], su_idents[p], su_rules)
+
+// Any race's tree (the lobby's banners open it before there's a match).
+def build_tree_of(race:JV, ident:JV, rules:JV) -> TTree:
     let full = gbool(rules, "full_tech_tree", false)
     let bdata = load_json(lib_root + "/buildings.json")
     let tdata = load_json(lib_root + "/tech.json")
@@ -202,9 +202,9 @@ def slot_word(slot:string) -> string:
         if gstr(sd, "slot", "") == slot: return gstr(sd, "name", slot)
     return slot
 
-def race_words(p:int) -> RaceWords:
-    let ident = su_idents[p]
-    let race = su_races[p]
+def race_words(p:int) -> RaceWords: return race_words_of(su_races[p], su_idents[p], su_rules)
+
+def race_words_of(race:JV, ident:JV, rules:JV) -> RaceWords:
     let tdata = load_json(lib_root + "/tech.json")
     let blds = at(load_json(lib_root + "/buildings.json"), "buildings")
     def research_of(id:string) -> JV?:
@@ -217,7 +217,7 @@ def race_words(p:int) -> RaceWords:
         let r = research_of(id)
         if r: own.push("{gstr(r, "name", id)}: {gstr(r, "desc", "")}")
     let lacks = []::string
-    if not gbool(su_rules, "full_tech_tree", false):
+    if not gbool(rules, "full_tech_tree", false):
         for(gstrs(ident, "lacks")) id:
             let r = research_of(id)
             if r: lacks.push(gstr(r, "name", id))
@@ -235,6 +235,8 @@ def race_words(p:int) -> RaceWords:
 var tree_words:RaceWords? = nil
 
 var tree_open = false
+var tree_lobby = false          // opened from the lobby: no F1, its race named in tree_title
+var tree_title = ""
 var tree_page:TTree? = nil
 var tree_scroll = 0.0
 
@@ -274,14 +276,23 @@ def tree_node_at(t:TTree, n:TNode, u:float) -> float2:
     let y = TREE_TOP * u + float(n.age - 1) * TREE_ROW * u + (if n.kind == "building": 0.0 else: 42.0 * u)
     return float2 { x, y }
 
+// The page for a player's race in the match.
+def open_tree(p:int):
+    tree_open = true
+    tree_lobby = false
+    tree_page = build_tree(p)
+    tree_words = race_words(p)
+    tree_title = rstr(su_races[p], "name")
+
 // The page over everything; true while it's up.
 def tree_tick() -> bool:
-    if gl.button("f1") == 1:
+    if gl.button("f1") == 1 and not tree_lobby:
         tree_open = not tree_open
         if tree_open:
             tree_page = build_tree(ME)
             tree_words = race_words(ME)
-    if tree_open and gl.button("escape") == 1: tree_open = false
+            tree_title = rstr(su_races[ME], "name")
+    if tree_open and (gl.button("escape") == 1 or gl.button("controller_b") == 1): tree_open = false
     if not tree_open: return false
     let t = tree_page
     if not t: return false
@@ -294,7 +305,7 @@ def tree_tick() -> bool:
     tree_scroll = clamp(tree_scroll, 0.0, max(0.0, width - ws.x))
     gl.set_shader("color")
     ui_mat(float2_0, ws, ui_look.face * float4 { 0.5, 0.5, 0.5, 1.0 }, 0)
-    page_text(float2 { 30.0 * u, 24.0 * u }, "Tech tree: " + rstr(su_races[ME], "name"), int(26.0 * u), ui_look.title)
+    page_text(float2 { 30.0 * u, 24.0 * u }, "Tech tree: " + tree_title, int(26.0 * u), ui_look.title)
     page_text(float2 { 30.0 * u, 64.0 * u }, "Crossed out: your race lacks it.  Gold: research only some races get.  F1 or Esc: close.  Arrows or the wheel: scroll.", int(14.0 * u), float4 { 0.75, 0.72, 0.64, 1.0 })
     for(t.ages) name, a:   // the ages, as bands
         let y = TREE_TOP * u + float(a) * TREE_ROW * u
