@@ -306,7 +306,7 @@ def tree_tick() -> bool:
     gl.set_shader("color")
     ui_mat(float2_0, ws, ui_look.face * float4 { 0.5, 0.5, 0.5, 1.0 }, 0)
     page_text(float2 { 30.0 * u, 24.0 * u }, "Tech tree: " + tree_title, int(26.0 * u), ui_look.title)
-    page_text(float2 { 30.0 * u, 64.0 * u }, "Crossed out: your race lacks it.  Gold: research only some races get.  F1 or Esc: close.  Arrows or the wheel: scroll.", int(14.0 * u), float4 { 0.75, 0.72, 0.64, 1.0 })
+    page_text(float2 { 30.0 * u, 64.0 * u }, "Crossed out: your race lacks it.  Gold: research only some races get.  " + (if tree_lobby: "Esc or B" else: "F1 or Esc") + ": close.  Arrows or the wheel: scroll.", int(14.0 * u), float4 { 0.75, 0.72, 0.64, 1.0 })
     for(t.ages) name, a:   // the ages, as bands
         let y = TREE_TOP * u + float(a) * TREE_ROW * u
         page_rect(float2 { 0.0, y - 10.0 * u }, float2 { ws.x, TREE_ROW * u }, if a % 2 == 0: float4 { 0.11, 0.09, 0.07, 1.0 } else: float4 { 0.09, 0.08, 0.06, 1.0 })
