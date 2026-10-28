@@ -337,8 +337,11 @@ def bake_facing(part:[BakeTri], facing:int, hide:[BakeTri] = [], join:float3 = f
             g = group_of.get_keys().length
             group_of.set(k, g)
         g
-    let order = map(tris.length) i: i
-    qsort_in_place(order) a, b: gid[a] < gid[b] or (gid[a] == gid[b] and a < b)
+    // (by group, then index: a bucket per group, as a quicksort on a near-sorted 100k triangles recursed off the stack)
+    let buckets = map(group_of.get_keys().length): []::int
+    for(gid) g, i: buckets[g].push(i)
+    let order = []::int
+    for(buckets) b: append_into(order, b)
     // Ambient occlusion: the view's depth (the part and what hides it), then the AO map over it (PartBaker's SSAO:
     // radius 1.2, intensity 2.5, power 1.4).
     let vpos = []::float3
