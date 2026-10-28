@@ -13,9 +13,21 @@
 //   in GDScript (the counter fights end the same, unit for unit).
 // - The tick-time check takes the best of up to three plays of the match and fails only past the budget
 //   (a busy machine slows one play, rarely all three).
-// - Dropped: the float-leak checks (a Lobster Cmd holds typed ints: a float can't get in) and the JSON
-//   round trip of a replay (a replay here is the list of Cmds, played again: that check stays).
+// - Events the GDScript checks read that Lobster's sim doesn't send (wonder, won, farm_done, trade,
+//   research, age, climb, fall, pour, blast) are read from the state instead (the Wonders' list and
+//   the winner, the ground, the stock, researched, ages, perches, hits from a building).
+// - Tech.why_not's messages become tech_barred / build_barred (barred or not; the reason isn't kept).
 // - source_lint reads lib/*.lobster (the sim and the bots) for randomness, floats and clocks.
+// Dropped, and why:
+// - the float-leak checks: a Lobster Cmd holds typed ints, a float can't get in;
+// - a replay's JSON round trip: a replay here is the list of Cmds, played again (that check stays);
+// - the gate's look (BuildingArt.gate_open): view code, not the sim's;
+// - saves from other builds (migrated stats, padded fields, a refused table, an older save's walls
+//   marked for flyers by after_load): Lobster's saves are a flexbuffer of this build's globals;
+// - the remembered ground and crops under the fog (fog_ground, fog_left): Lobster keeps only the
+//   remembered buildings (fog_seen), which are checked;
+// - the sapper: parked (D-128), as in GDScript (a check says so, to bring it back with the unit);
+// - the save test's bot plays at the normal level (the hard level isn't ported).
 
 import std
 import dictionary
@@ -4065,14 +4077,148 @@ def test_queue_after_build(kind:string):
     let d = isqrt(dist2(u_x[i], u_y[i], tx, ty))
     check(built > 0 and d < 1500 and u_task[i] == T_NONE, "queue: build a {kind}, then shift-move: built it (tick {built}), then walked to the point ({d} milli-tiles off, task {u_task[i]})")
 
+// ------------------------------------------------------------------ Wonders, saves
+
+// Two players on flat_test with their Town Centers and no workers to wander about.
+def wonder_world(r:JV):
+    let rr = deep_copy(r)
+    set(at(at(rr, "economy"), "start"), "workers", jint(0))
+    new_world("flat_test", [races0[0], races0[1]], rr, [])
+
+// A finished Wonder for player p, a few tiles beside their Town Center; its id.
+def put_wonder(p:int) -> int:
+    let k = btype_index("wonder")
+    let x = start_x[p] / 1000 + 4
+    var y = start_y[p] / 1000 - 2
+    while not can_build(x, y, 5, 0, false, false): y++
+    let b = place(p, k, x, y)
+    b_done[b] = 1
+    b_hp[b] = bm_hp[p][k]
+    return b_id[b]
+
+def wonder_ticks_left() -> int: return if wonder_ids.length: wonder_hold - (tick - wonder_since[0]) else: -1
+
+// Wonder victory: a finished Wonder that stands for the hold time wins for its owner's team; one
+// knocked down stops its countdown (and another starts from the top); with the host switch off it's
+// just a building. (The GDScript checks also read the "wonder" and "won" events, which Lobster's sim
+// has no need of: the Wonders' list and the winner say the same.)
+def test_wonder():
+    let hold = 30   // seconds, so the test is quick
+    let r = deep_copy(rules0)
+    set(at(r, "wonder"), "hold_seconds", jint(hold))
+    // 1. It stands: the countdown wins, not a second early.
+    wonder_world(r)
+    let wid = put_wonder(0)
+    var seen = false
+    while tick < (hold + 3) * 20 and winner < 0:
+        tick_on()
+        seen = seen or (wonder_ids.length == 1 and wonder_ids[0] == wid)
+        if tick == (hold - 2) * 20:
+            check(winner < 0 and wonder_ids.length == 1 and wonder_ticks_left() > 0, "wonder: no win while the countdown runs ({wonder_ticks_left()} ticks left)")
+    check(seen, "wonder: its countdown starts once it\'s finished")
+    check(winner == teams[0] and wonder_ids.length == 1 and wonder_ids[0] == wid, "wonder: standing {hold} s wins for its team (winner {winner} at tick {tick})")
+    check(tick <= (hold + 2) * 20, "wonder: it wins on time (tick {tick})")
+    let end_tick = tick
+    let end_hash = state_hash()
+    let end_winner = winner
+    wonder_world(r)
+    put_wonder(0)
+    while tick < end_tick: tick_on()
+    check(state_hash() == end_hash and winner == end_winner, "wonder: the same match twice, the same hash and winner")
+    // 2. It falls: the countdown stops, and a new one starts from the top.
+    wonder_world(r)
+    let wid2 = put_wonder(0)
+    steps(10 * 20)
+    let b = b_index_of(wid2)
+    b_hp[b] = 40   // nearly down: spearmen finish it
+    spawn_cmd(1, "spear", 6, b_cx[b] * 1000 - 1500, b_cy[b] * 1000 + 2500)
+    var spawned = false
+    var fell = false
+    while tick < (hold + 10) * 20 and not fell:
+        tick_on()
+        if not spawned:
+            let mine = filter(ids_of(1)) id: t_worker[u_kind[index_of(id)]] == 0
+            if mine.length == 6:
+                issue_cmd(1, CMD_ATTACK, mine, wid2, 0, 0, 0)
+                spawned = true
+        fell = b_index_of(wid2) < 0
+    steps(CHECK_EVERY)   // (the Wonders' list is kept once a second)
+    check(fell and b_index_of(wid2) < 0 and wonder_ids.length == 0, "wonder: knocked down, its countdown stops (tick {tick})")
+    let second = put_wonder(0)
+    let started = tick
+    while tick < started + (hold + 3) * 20 and winner < 0:
+        tick_on()
+        if tick == (hold + 12) * 20: check(winner < 0, "wonder: the fallen one\'s time doesn\'t count for the next")
+    check(winner == teams[0] and tick - started >= hold * 20, "wonder: a new one counts from the top (won {(tick - started) / 20} s after it went up)")
+    check(second != wid2, "wonder: (a different building)")
+    // 3. The switch off: no countdown, no win.
+    let off = deep_copy(r)
+    set(at(off, "wonder"), "victory", jbool(false))
+    wonder_world(off)
+    put_wonder(0)
+    steps((hold + 5) * 20)
+    check(winner < 0 and wonder_ids.length == 0 and wonder_hold == 0, "wonder: with Wonder victory off it never wins")
+
+// A match against a bot, saved at 4 minutes (a person's order still waiting to run), loaded and played
+// on to 7 minutes: the same hashes as the match never stopped, so the bot came back as it was (D-140).
+// (Lobster's saves are a flexbuffer of the sim's globals and the bots, for this build only: the
+// GDScript checks of saves from other builds, migrated or refused, have nothing to check here. The
+// bot plays at the normal level: the hard level isn't ported.)
+def test_save_load():
+    let at_t = 4800
+    let to_t = 8400
+    let rules = load_rules("default")
+    let races = map(PROMPTS) p: generate(p, rules, 0)
+    new_world("reed_meadow", races, rules, [])
+    let you = EcoBot { 0 }   // "you": what it orders is like a person's clicks
+    let bot = new_bot(1)
+    while tick < at_t:
+        bot_think(you)
+        full_bot_think(bot)
+        tick_on()
+    issue_cmd(0, CMD_RALLY, [], b_id[0], 9000, 9000, 0)   // issued, not run yet
+    let t0 = seconds_elapsed()
+    let saved = world_bytes([bot])
+    let save_ms = ms_since(t0)
+    let save_hash = state_hash()
+    let hashes = []::int
+    let you_after = EcoBot { 0 }   // after the save "you" plays on the same way in both matches
+    while tick < to_t:
+        bot_think(you_after)
+        full_bot_think(bot)
+        tick_on()
+        hashes.push(state_hash())
+    let units_then = u_id.length
+    reset_world()
+    let t1 = seconds_elapsed()
+    let loaded = load_world_bytes(saved)
+    let load_ms = ms_since(t1)
+    check(loaded.length == 1 and tick == at_t and state_hash() == save_hash, "the save loads as it was (tick {tick})")
+    let you_b = EcoBot { 0 }
+    var same = 0
+    var n = 0
+    while tick < to_t:
+        bot_think(you_b)
+        full_bot_think(loaded[0])
+        tick_on()
+        if hashes[n] == state_hash(): same++
+        n++
+    check(same == hashes.length, "played on from the save, the match matches one never stopped ({same} of {hashes.length} ticks)")
+    check(hashes.length and state_hash() == hashes[hashes.length - 1], "and ends at the same state")
+    reset_world()
+    load_world_bytes(saved)
+    check(state_hash() == save_hash, "playing on from a save leaves the save as it was")
+    check(units_then > 40, "it was a real match ({units_then} units)")
+    print "save/load: {saved.length / 1024} KB; save {save_ms} ms, load {load_ms} ms"
+
 // ------------------------------------------------------------------ the parts
 
 let PARTS = ["fixed", "command_order", "source_lint", "flow", "crossing_flat", "crossing_choke", "crossing_engines",
-             "opening", "combat", "shots", "engines", "trade", "sapper_sling", "gates", "diagonal_wall", "diagonal_gates",
+             "combat", "opening", "shots", "engines", "trade", "sapper_sling", "gates", "diagonal_wall", "diagonal_gates",
              "walls", "siege_ways", "modes", "movement_classes", "land", "hills", "flow_patch", "flow_patch_mixed",
              "farms", "fog_memory", "age_timing", "builder_moves_on", "builder_back_to_work", "no_dark_picks", "wood_spots",
              "build_queue", "drop_off", "animals", "sheep_spot", "pen", "bot_hunts", "garrison", "towers",
-             "camp_gather", "market", "effects", "university_castle", "research_queue", "tech", "queue", "match", "match_b", "match_flipped"]
+             "camp_gather", "market", "effects", "university_castle", "research_queue", "tech", "queue", "wonder", "save_load", "match", "match_b", "match_flipped"]
 
 def run_part(name:string):
     if name == "fixed": test_fixed()
@@ -4122,6 +4268,8 @@ def run_part(name:string):
     elif name == "research_queue": test_research_queue()
     elif name == "tech": test_tech()
     elif name == "queue": test_queue()
+    elif name == "wonder": test_wonder()
+    elif name == "save_load": test_save_load()
     elif name == "match": test_match()
     elif name == "match_b": test_match_b()
     elif name == "match_flipped": test_match_flipped()
