@@ -1345,8 +1345,8 @@ func harness(n: Node3D, centre: Vector3, ry: float, rz: float, hand_r: Vector3, 
 func _pony_anchors() -> Array:
 	var y := 14.0 + PONY_LIFT
 	# (Hips a little in from the flanks: at z 4 they hung a unit under the chest and rump.)
-	return [[Vector3(8.5, y, 3.4), 0.0, 1, 0], [Vector3(-9.5, y, 3.4), PI, 1, 0],
-		[Vector3(7.0, y, -3.4), PI, -1, 0], [Vector3(-10.0, y, -3.4), 0.0, -1, 0]]
+	return [[Vector3(8.5, y, 3.4), 0.0, 1, 0, false], [Vector3(-9.5, y, 3.4), PI, 1, 0, true],
+		[Vector3(7.0, y, -3.4), PI, -1, 0, false], [Vector3(-10.0, y, -3.4), 0.0, -1, 0, true]]   # [hip, phase, side, flip, hind]
 
 
 ## The pony's look (2026-10-13, Dominic: "horses heads need a real re-work"; tests/sheets/horse_h1.json
@@ -1551,14 +1551,69 @@ func _body_pony_h2(c: Dictionary) -> Dictionary:
 
 
 func _leg_hoof(c: Dictionary) -> Dictionary:
+	return _hoof_leg(c, false)
+
+
+func _leg_hoof_hind(c: Dictionary) -> Dictionary:
+	return _hoof_leg(c, true)
+
+
+## A horse's leg in the pose `hold` names ("" standing, "w<i>_<n>" a walk step; D-179): the thigh up inside the barrel,
+## the upper leg to the knee (or hock), the cannon bone to the fetlock, the pastern and hoof. Walking, the fetlock
+## follows the stride and the knee bends by two-bone IK: forward on a foreleg (the hoof curling back as it lifts),
+## back on a hind leg (the hock).
+func _hoof_leg(c: Dictionary, hind: bool) -> Dictionary:
+	var j := hoof_joints(hind, "" if hold == "low" else hold)
 	var n := Node3D.new()
 	var hide := surf("hide", c.skin, 5.0)
+	var knee := _v3(j.knee)
+	var fet := _v3(j.fetlock)
+	var curl: float = j.curl
+	var past := fet + _v3((HOOF_PASTERN - HOOF_FETLOCK).rotated(curl))
+	var hoof := fet + _v3((HOOF_HOOF - HOOF_FETLOCK).rotated(curl))
 	n.add_child(blob(Vector3(3.0, 5.8, 2.6), hide, Vector3(0, -1.6, 0)))   # the thigh, starting up inside the barrel (not an egg under it)
-	n.add_child(rod(Vector3(0, -6.0, 0), Vector3(0.2, -13.6, 0), 1.3, 0.95, hide))
-	n.add_child(blob(Vector3(1.3, 1.2, 1.2), hide, Vector3(0.3, -13.8, 0)))
-	n.add_child(rod(Vector3(0.3, -13.8, 0), Vector3(0.8, -14.8, 0), 1.0, 1.0, hide))
-	n.add_child(cone(1.1, 1.6, 1.4, plain(Color("#2a2420")), Vector3(1.0, -15.4, 0)))
+	n.add_child(rod(Vector3(0, -3.0, 0), knee, 1.9, 1.35, hide))
+	n.add_child(blob(Vector3(1.4, 1.3, 1.3), hide, knee))
+	n.add_child(rod(knee, fet, 1.3, 0.95, hide))
+	n.add_child(blob(Vector3(1.3, 1.2, 1.2), hide, fet))
+	n.add_child(rod(fet, past, 1.0, 1.0, hide))
+	var h := cone(1.1, 1.6, 1.4, plain(Color("#2a2420")), hoof)
+	h.rotation.z = curl
+	n.add_child(h)
 	return {"node": n}
+
+
+const HOOF_KNEE := Vector2(0.0, -6.0)
+const HOOF_FETLOCK := Vector2(0.3, -13.8)
+const HOOF_PASTERN := Vector2(0.8, -14.8)
+const HOOF_HOOF := Vector2(1.0, -15.4)
+const HOOF_STRIDE := 10.0
+const HOOF_STANCE := 0.6
+const HOOF_LIFT := 3.0
+
+
+## Where a horse leg's knee and fetlock are in a walk step (2D, the hip at the origin), and how far the pastern and hoof
+## curl back from the fetlock (radians).
+static func hoof_joints(hind: bool, pose: String) -> Dictionary:
+	var upper := HOOF_KNEE.length()
+	var lower := (HOOF_FETLOCK - HOOF_KNEE).length()
+	var reach := 0.999 * (upper + lower)
+	var p := walk_step(pose)
+	if p < 0.0:   # standing: as modelled
+		return {"knee": HOOF_KNEE, "fetlock": HOOF_FETLOCK, "curl": 0.0}
+	var x := HOOF_FETLOCK.x
+	var lift := 0.0
+	var curl := 0.0
+	if p >= 0.0:
+		if p < HOOF_STANCE:
+			x += HOOF_STRIDE * (0.5 - p / HOOF_STANCE)
+		else:
+			var q := (p - HOOF_STANCE) / (1.0 - HOOF_STANCE)
+			x += HOOF_STRIDE * (smoothstep(0.0, 1.0, q) - 0.5)
+			lift = HOOF_LIFT * sin(q * PI)
+			curl = (0.9 if not hind else 0.5) * sin(q * PI)   # (the hoof flicks back under it, more so in front)
+	var fet := Vector2(x, maxf(HOOF_FETLOCK.y, -sqrt(maxf(reach * reach - x * x, 1.0))) + lift)
+	return {"knee": ik2(fet, upper, lower, not hind), "fetlock": fet, "curl": curl}
 
 
 # ------------------------------------------------------------------ capybara (the rats' mount, RB1)
