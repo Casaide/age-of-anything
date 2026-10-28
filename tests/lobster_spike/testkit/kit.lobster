@@ -25,6 +25,17 @@ def clock(t:int) -> string:
     let s = t / 20 % 60
     return "{t / 1200}:" + (if s < 10: "0" else: "") + string(s)
 
+// A float with `places` decimals.
+def fixed_str(f:float, places:int) -> string:
+    var scale = 1
+    for(places): scale *= 10
+    let v = int(f * float(scale) + (if f < 0.0: -0.5 else: 0.5))
+    let whole = string(abs(v) / scale)
+    if places == 0: return (if v < 0: "-" else: "") + whole
+    var frac = string(abs(v) % scale)
+    while frac.length < places: frac = "0" + frac
+    return (if v < 0: "-" else: "") + whole + "." + frac
+
 def pad_right(s:string, n:int) -> string:
     var out = s
     while out.length < n: out += " "
