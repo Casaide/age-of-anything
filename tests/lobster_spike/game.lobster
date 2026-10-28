@@ -426,6 +426,9 @@ import .model.bears
 import .model.mods_active
 import .model.models
 import .view.part_bake
+import .view.geom      // (the dead laid down in 3D and baked: view/corpse.lobster)
+import .view.rig3d
+import .view.corpse
 import .model.props
 import .model.trees
 import .model.town_props
