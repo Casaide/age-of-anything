@@ -38,6 +38,7 @@ import .model.buildings
 import .model.buildings2
 import .view.world_bake
 import .game.art_kit
+import .game.ruin
 import .game.art_kit_buildings
 
 let args = command_line_arguments()

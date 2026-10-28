@@ -1,7 +1,9 @@
 // ------------------------------------------------------------------ combat effects (src/view/combat_fx.gd)
 // Played from the sim's events, view side only: sparks where a blow lands, dust (a death's puff, a
-// fallen building, a stone or a charge coming down), shots that miss standing in the ground a
-// while, and pale motes rising off a healed unit. Canvas units (Godot's), drawn under a 1.5 scale.
+// stone or a charge coming down), shots that miss standing in the ground a while, and pale motes
+// rising off a healed unit. A building that falls leaves its ruin under a cloud of pixel dust; the
+// ruin is only decoration (D-172): it burns out, fades after a while, and goes at once when something
+// is built over it (drawn in game/town.lobster). Canvas units (Godot's), drawn under a 1.5 scale.
 // Cosmetic, so Lobster's own random numbers.
 
 class ShotStyle:
@@ -91,9 +93,88 @@ def fx_heal(id:int):
         if h.id == id and h.t < HEAL_TIME * 0.5: return
     fx_heals.push(Heal { id, 0.0, map(3): float4 { rnd_range(-4.0, 4.0), rnd_range(-14.0, -6.0), rnd_range(9.0, 14.0), rnd_range(0.0, 0.25) } })
 
+// A fallen building's ruin (BuildingArt.fall): its last broken-up stage where it stood, burning a while.
+class RuinFx:
+    frame:string      // the ruin's bake
+    body:string       // the building's bake (where its fires are)
+    id:int            // the building's (its fires' spots)
+    at:float2         // its anchor, art px (lifted)
+    sort_y:float
+    flat:bool         // (a pen: lies low)
+    owner:int
+    cells:int4        // its footprint: x, y, w, h (sim cells)
+    fires:int         // how many of its fires burn
+    t0:float          // when it fell (seconds of play shown, as the dead's)
+
+// A puff of a fallen building's dust: canvas units.
+class Puff3:
+    pos:float2
+    t:float
+    r:float
+    rise:float
+    drift:float
+
+let RUIN_BURN = 8.0    // a ruin's fires burn this long after it falls
+let RUIN_STAYS = 45.0  // then it lies there this long...
+let RUIN_FADE = 5.0    // ...and fades away
+let PUFF_TIME = 2.6
+let PUFF_SIZES = [3, 4, 5, 7, 9, 12, 15, 19, 24]   // art pixels: a puff grows through these
+let PUFF_DUST = [float4 { 0.886, 0.839, 0.737, 1.0 }, float4 { 0.725, 0.663, 0.541, 1.0 }, float4 { 0.522, 0.467, 0.380, 1.0 }]   // lit, mid, shade
+let FX_ART_PX = 1.5    // art px a canvas unit: the dust's grid
+var fx_ruins = []::RuinFx
+var fx_puffs = []::Puff3
+let fx_puff_tex = dictionary<int, resource<texture>>(16)
+
+// A fallen building (size: its side in tiles): a cloud of pixel dust over its footprint (its ruin, if it has one,
+// is left by the game: fx_ruins).
 def fx_collapse(at:float2, size:int):
-    for(6 + size * 3):
-        fx_dusts.push(Dust { at + float2 { rnd_range(-20.0, 20.0), rnd_range(-10.0, 10.0) } * float(size) * 0.6, -rnd_float() * 0.4, rnd_range(8.0, 16.0) * float(size) * 0.5 })
+    for(14 + size * 10):
+        let off = float2 { rnd_range(-1.0, 1.0) * 24.0, rnd_range(-1.0, 1.0) * 12.0 - 8.0 } * float(size)
+        fx_puffs.push(Puff3 { at + off, -rnd_float() * 0.5, rnd_range(4.0, 8.0) * (1.0 + float(size) * 0.3), rnd_range(6.0, 18.0), rnd_range(-6.0, 6.0) })
+
+// Something stands on these cells (x, y, w, h): a ruin there goes at once.
+def fx_clear_ruins(cells:int4):
+    def apart(r:RuinFx) -> bool: return r.cells.x >= cells.x + cells.z or cells.x >= r.cells.x + r.cells.z or r.cells.y >= cells.y + cells.w or cells.y >= r.cells.y + r.cells.w
+    let near = exists(fx_ruins) r: not apart(r)
+    if near: fx_ruins = filter(fx_ruins) r: apart(r)
+
+// A ruin's fade at `now` (1 whole .. 0 gone).
+def ruin_fade(r:RuinFx, now:float) -> float: return 1.0 - clamp((now - r.t0 - RUIN_STAYS) / RUIN_FADE, 0.0, 1.0)
+
+// A puff's shape `r` art pixels across: a disc, its edge ragged and dithered, in white (drawn tinted).
+def puff_tex(r:int) -> resource<texture>:
+    let have = fx_puff_tex.get(r)
+    if have: return have
+    let rows = map(2 * r + 1) y: map(2 * r + 1) x:
+        let f = sqrt(float((x - r) * (x - r) + (y - r) * (y - r))) / float(r)
+        let noise = float(((x * 73856093) ^ (y * 19349663) ^ (r * 83492791)) & 1023) / 1023.0
+        if f > 1.0 or f + noise * 0.2 > 1.05 or (f > 0.8 and (x + y) % 2 == 0): float4_0 else: float4_1
+    let made = gl.create_texture(rows, texture_format_nearest_mag | texture_format_nearest_min | texture_format_nomipmap | texture_format_clamp)
+    fx_puff_tex.set(r, made)
+    return made
+
+// The fallen buildings' dust as one cloud: every puff in shade, then every puff in the mid tone up and to the left
+// of it, then a smaller highlight further up-left (the light from the upper left), so the puffs merge into billows
+// lit as one instead of reading as separate balls. On the art grid.
+def draw_puffs():
+    if not fx_puffs.length: return
+    gl.set_shader("textured")
+    for(3) band:
+        for(fx_puffs) p:
+            if p.t >= 0.0:
+                let k = p.t / PUFF_TIME
+                let want = p.r * FX_ART_PX * (0.6 + 0.8 * k) * [1.0, 0.92, 0.55][band]
+                var r = PUFF_SIZES[0]
+                for(PUFF_SIZES) n:
+                    if float(n) <= want: r = n
+                var at = p.pos + float2 { p.drift * k, -p.rise * k } - float2_1 * p.r * [0.0, 0.18, 0.4][band]
+                at = float(floor(at * FX_ART_PX)) / FX_ART_PX
+                let half = float2_1 * float(r) / FX_ART_PX
+                let c = PUFF_DUST[2 - band]
+                gl.set_primitive_texture(0, puff_tex(r))
+                gl.color(float4 { c.x, c.y, c.z, 1.0 - k * k * k }):
+                    gl.translate(at - half): gl.rect(half * 2.0 + float2_1 / FX_ART_PX)
+    gl.set_shader("color")
 
 def fx_puff(at:float2, tip:float):
     for(4): fx_dusts.push(Dust { at + float2 { tip * 8.0 + rnd_range(-5.0, 5.0), rnd_range(-3.0, 2.0) }, 0.0, rnd_range(3.0, 5.0) })
@@ -103,6 +184,8 @@ def fx_clear():
     fx_dusts = []
     fx_stuck = []
     fx_heals = []
+    fx_puffs = []
+    fx_ruins = []
 
 def fx_tick(dt:float):
     for(fx_sparks) s: s.t += dt
@@ -113,6 +196,8 @@ def fx_tick(dt:float):
     fx_stuck = filter(fx_stuck) s: s.t < STUCK_TIME
     for(fx_heals) h: h.t += dt
     fx_heals = filter(fx_heals) h: h.t < HEAL_TIME
+    for(fx_puffs) p: p.t += dt
+    fx_puffs = filter(fx_puffs) p: p.t < PUFF_TIME
 
 def fx_circle(at:float2, r:float, col:float4):
     gl.color(col):
@@ -154,6 +239,7 @@ def fx_draw(ground_of):
             for(4) k:
                 let a = float(k) * 90.0 + 22.9
                 ui_line(s.pos, s.pos + float2 { cos(a), sin(a) } * r, 1.0, float4 { 1.0, 0.92, 0.7, f })
+    draw_puffs()
     for(fx_dusts) d:
         if d.t >= 0.0:
             let f = d.t / 1.6

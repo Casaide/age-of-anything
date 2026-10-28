@@ -263,6 +263,8 @@ func _buildings(w: World, races: Array, lines: PackedStringArray) -> void:
 		if b.has("arms"):   # a wall: its arm towards each neighbour (Models.LINKS), and their near merlons
 			lines.append("arms %s %s" % [key, " ".join(b.arms.map(func(x): return x if x != "" else "-"))])
 			lines.append("armsf %s %s" % [key, " ".join(b.get("arms_front", []).map(func(x): return x if x != "" else "-"))])
+		if not b.get("ruins", []).is_empty():   # broken up (D-171): battered, breaking, collapsed, the ruin
+			lines.append("ruins %s %s" % [key, " ".join(b.ruins)])
 	for kind in ArtKit.DOODADS:
 		lines.append("doodad %s %d" % [kind, ArtKit.DOODADS[kind]])
 	for terrain in ["bugbush", "reeds", "stone", "gold", "carcass", "field", "paddy", "tree"]:

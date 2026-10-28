@@ -102,6 +102,7 @@ var place_arg = ""              // place:<building>: one finished by your Town C
 var skirmish = false            // the lobby's Skirmish: both armies on the map at once, marching on each other
 var army_n = 0                  // army:<n>: n of each of your soldier types by your Town Center at the start (captures)
 var hurt_pct = -1                // hurt:<percent>: your buildings start at that much of their hit points (captures of fire)
+var raze_at = -1.0               // raze:<seconds>: your buildings but the Town Center and walls fall then (captures of ruins)
 var lab_arg = false             // lab: the lobby with races:A|B typed in, a picture (shot:) after a second, then quit
 var tree_arg = false            // tree: the tech tree page open from the start (captures)
 var tree_hover_arg = ""         // treehover:<node key>: that node hovered on it (captures: "r:fletching", "u:hero.<id>@3")
@@ -142,6 +143,7 @@ for(args) a, k:
             tree_hover_arg = val
         if a == "lab": lab_arg = true
         if key == "hurt": hurt_pct = string_to_int(val)
+        if key == "raze": raze_at = string_to_float(val)
         if key == "army": army_n = string_to_int(val)
         if key == "place": place_arg = val
         if key == "join": join_ip = val
@@ -311,7 +313,24 @@ def sounds_after_step():
             if tick > 40 and not contains(my_done, b_id[b]): play_sound("built", -4.0)
     my_done = done
 
+// raze: (captures) your buildings but the Town Center and walls fall, as Combat's fallen buildings do.
+def raze_mine():
+    var b = b_id.length - 1
+    while b >= 0:
+        if b_owner[b] == ME and b_done[b] == 1 and bt_name[b_kind[b]] != "town_center" and not wall_like(b):
+            events.push(Event { EV_DIE, b_id[b], 1, b_sx[b], b_cx[b] * TILE + b_sx[b] * TILE / 2, b_cy[b] * TILE + b_sy[b] * TILE / 2 })
+            clear_farm(b)
+            pen_gone(b)
+            spill(b)
+            breach(b)
+            occupy(footprint(b), 0)
+            remove_building(b)
+        b--
+
 def after_step():
+    if raze_at >= 0.0 and clock_s >= raze_at:
+        raze_at = -1.0
+        raze_mine()
     sounds_after_step()
     if composed: view_events()
     for(events) e:
@@ -416,6 +435,7 @@ import .view.world_bake
 import .model.buildings
 import .model.buildings2
 import .game.art_kit
+import .game.ruin
 import .game.art_kit_buildings
 import .game.pack_data
 import .game.bake_missing   // (here: it makes views to see what parts they wear)
@@ -559,7 +579,7 @@ def view_events():
         elif e.kind == EV_SPLASH:
             if seen_at(e.x, e.y): fx_splash(ground_at(e.x, e.y), float(e.c) * RADIUS_PX)
         elif e.kind == EV_DIE and e.b == 1:
-            if fog[ME][cell_of(e.x, e.y)] != 0: fx_collapse(ground_at(e.x, e.y), max(1, e.c))
+            if fog[ME][cell_of(e.x, e.y)] != 0: building_fell(e)
         elif e.kind == EV_DIE and e.b == 0:
             let v = views.get(e.a)
             if v:
@@ -669,11 +689,40 @@ def wall_links(b:int) -> int:
         if on(d) and not (d.x != 0 and d.y != 0 and (on(int2 { d.x, 0 }) or on(int2 { 0, d.y }))): out |= 1 << k
     return out
 
+// Each building as last drawn, by id: what it leaves when it falls (its ruin, game/fx.lobster), as BuildingArt
+// still has it when the sim's building is gone.
+class BldSeen:
+    look:Look
+    at:float2
+    sort_y:float
+    flat:bool
+    owner:int
+    cells:int4
+    damage:float
+
+var bld_seen = dictionary<int, BldSeen>(256)
+let RUIN_AT = [0.3, 0.55, 0.8]   // damage at which a building shows its battered, breaking and collapsed stages (D-171)
+
+// A finished building's damage (0 whole .. 1 nearly down).
+def damage_of(b:int) -> float:
+    let full = bm_hp[b_owner[b]][b_kind[b]]
+    return if full > 0: 1.0 - float(b_hp[b]) / float(full) else: 0.0
+
+// A fallen building: its ruin where it stood, if it has one baked (walls and gates just go), and its dust.
+def building_fell(e:Event):
+    let s = bld_seen.get(e.a)
+    if s and s.look.ruins.length >= 4:
+        let burning = if s.damage >= DAMAGE_FIRE: min(3, 1 + int((s.damage - DAMAGE_FIRE) / (1.0 - DAMAGE_FIRE) * 3.0)) else: 0
+        fx_ruins.push(RuinFx { s.look.ruins[3], s.look.body, e.a, s.at, s.sort_y, s.flat, s.owner, s.cells, burning, clock_s })
+    fx_collapse(ground_at(e.x, e.y), max(1, e.c))
+
 def collect_buildings():
+    let seen = dictionary<int, BldSeen>(256)
     for(b_id.length) b:
         let k = b_kind[b]
         let p = b_owner[b]
         let cell = b_cy[b] * W + b_cx[b]
+        if fx_ruins.length: fx_clear_ruins(int4 { b_cx[b], b_cy[b], b_sx[b], b_sy[b] })   // built over a ruin (D-172)
         if teams[p] == teams[ME] or fog[ME][cell] != 0:
             let pick = (b_id[b] * 7 + b_cx[b] * 3 + b_cy[b]) % 4
             let key = building_key(arch_of[p], bt_name[k], ages[p], pick)
@@ -683,11 +732,16 @@ def collect_buildings():
                 if b_done[b] == 0:
                     let st = clamp(b_progress[b] * 4 / max(1, bt_build_ticks[k]), 0, 3)
                     if look.stages[st] != "-": name = look.stages[st]
+                else:   // broken up as it's damaged (BuildingArt._broken)
+                    let damage = damage_of(b)
+                    for(RUIN_AT) at_least, n:
+                        if damage >= at_least and n < look.ruins.length: name = look.ruins[n]
                 let at = iso(float(b_cx[b] * 1000 + b_sx[b] * 500), float(b_cy[b] * 1000 + b_sy[b] * 500))
                 let up = lift_at(float(b_cx[b] * 1000 + b_sx[b] * 500), float(b_cy[b] * 1000 + b_sy[b] * 500)) * 1.5
                 let shade = if fog[ME][cell] == 2 or teams[p] == teams[ME]: 1.0 else: 0.6
                 let tc = team_col(p)
                 let flat = walk_over[cell] == 1
+                if b_done[b] == 1: seen.set(b_id[b], BldSeen { look, float2 { at.x, at.y - up }, at.y, flat, p, int4 { b_cx[b], b_cy[b], b_sx[b], b_sy[b] }, damage_of(b) })
                 let col = float4 { tc.x, tc.y, tc.z, shade }
                 if look.arms.length and b_done[b] == 1:   // a wall joined to its neighbours: arms going up the screen under its post, coming down over it
                     let links = wall_links(b)
@@ -703,6 +757,17 @@ def collect_buildings():
                 else:
                     add(frame_index(name), at.x, at.y - up, if flat: -100000.0 + at.y else: at.y, col)
                     if look.front != "-": add(frame_index(look.front), at.x, at.y - up, at.y + 2.0, col)
+    bld_seen = seen
+    fx_ruins = filter(fx_ruins) r: clock_s - r.t0 < RUIN_STAYS + RUIN_FADE   // (they burn out, lie there, fade)
+    for(fx_ruins) r:   // the fallen buildings' ruins, fading at the end
+        let f = frame_index(r.frame)
+        let shade = if fog[ME][r.cells.y * W + r.cells.x] == 2 or teams[r.owner] == teams[ME]: 1.0 else: 0.6
+        let tc = team_col(r.owner)
+        let col = float4 { tc.x, tc.y, tc.z, shade }
+        let sort_y = if r.flat: -100000.0 + r.sort_y else: r.sort_y
+        let fade = ruin_fade(r, clock_s)
+        if fade >= 1.0: add(f, r.at.x, r.at.y, sort_y, col)
+        elif f >= 0: draws.push(Drawable { sort_y, draws.length, -5, r.at.x, r.at.y, col, [fade, float(f)] })   // (fading: drawn alone)
 
 var map_name_now = "reed_meadow"
 
@@ -845,6 +910,7 @@ def draw_world(alpha:float):
                         flush_sprites()
                         gl.scale(1.5): draw_cracks_of(int(d.x))
                         b_sheet = -1
+                    elif d.f == -5: sprite_faded(int(d.xf[1]), d.x, d.ay, d.col, d.xf[0])   // a ruin fading out
                     elif d.xf.length: sprite_xf(d.f, d.xf, d.col)
                     else: sprite(d.f, d.x, d.ay, d.col)
                 flush_sprites()

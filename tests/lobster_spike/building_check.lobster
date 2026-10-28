@@ -28,6 +28,7 @@ import .model.props
 import .model.build_mats
 import .model.buildings
 import .model.buildings2
+import .game.ruin
 
 let args = command_line_arguments()
 let TEAM = float3 { 0.85, 0.2, 0.6 }
@@ -53,7 +54,8 @@ def walk(n:MNode, parent:Xform, part:string, out:[Rec]) -> void:
     let t = xmul(parent, node_xform(n))
     let mesh = n.mesh
     let mat = n.mat
-    if mesh and mat:
+    if mesh and mat and not n.visible: pass()   // (broken off a ruin: Godot's export leaves it out too)
+    elif mesh and mat:
         let nb = btransposed(binverse(t.b))
         let name = bm_name(mat)
         let r = Rec { part, "m", mesh.idx.length / 3, if name == "": "-" else: name, mat.albedo, mat.emission, n.meta, [], [] }
@@ -70,9 +72,11 @@ def mine(cs:string, out:[Rec], pts:[string]) -> bool:
     brng = grng(0)
     gate_span = 3.0
     wall_rescale = 1.0
+    var ruin_at = -1
     let first = if a[0] == "look": 4 else: 3
     for(if a.length > first: a.slice(first, -1) else: []) o:
         if o == "diag": gate_span = 3.0 * sqrt(2.0)
+        elif starts_with(o, "ruin"): ruin_at = string_to_int(o.substring(4, o.length - 4))
         elif starts_with(o, "r"): wall_rescale = string_to_float(o.substring(1, o.length - 1))
     var sp:BSpec? = nil
     switch a[0]:
@@ -87,6 +91,7 @@ def mine(cs:string, out:[Rec], pts:[string]) -> bool:
         default: return false
     let s = sp
     if not s: return false
+    if ruin_at >= 0: ruin_apply(s.body, ruin_at, hash_text("{a[2]}:{a[1]}"))
     walk(s.body, XF_ID, "body", out)
     let b = s.banner
     if b: walk(b, XF_ID, "banner", out)

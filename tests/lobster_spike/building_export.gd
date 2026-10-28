@@ -4,12 +4,15 @@ extends SceneTree
 ##   model:<name>[:<seed>]           models.call(name, team) (flowers takes the seed)
 ##   building:<type>:<arch>[:<opt>]  models.building(type, arch, team)
 ##   look:<type>:<arch>:<name>[:<opt>]  models.look(type, arch, name, team)
-## options: "diag" (gate_span 3 x sqrt 2), "r<k>" (wall_rescale k). The models' generator starts at seed 0.
+## options: "diag" (gate_span 3 x sqrt 2), "r<k>" (wall_rescale k), "ruin<s>" (a building broken up to stage s by
+## ruin.gd, seeded by "<arch>:<type>"; hidden meshes are left out). The models' generator starts at seed 0.
 ## Writes <out>/<case, ":" as "_">.txt (each part's meshes: triangles, material name or flat colour, emission,
 ## metadata; non-mesh nodes' metadata; the spec's points) and .bin (corner and normal, 6 floats a vertex).
 ##   godot --headless --path . --script res://tests/lobster_spike/building_export.gd -- <out dir> <case>...
 
 const Models := preload("res://src/view/art/bake/models.gd")
+const Ruin := preload("res://src/view/art/bake/ruin.gd")
+const Rng := preload("res://src/rng.gd")
 const TEAM := Color(0.85, 0.2, 0.6)
 
 var models
@@ -48,6 +51,8 @@ func _write(node: Node3D, out: PackedStringArray) -> void:
 				out.append("n" + m)
 			continue
 		var mi: MeshInstance3D = n
+		if not mi.visible:
+			continue
 		var t := Transform3D()
 		var up: Node = mi
 		while up != null and up != node.get_parent():
@@ -82,8 +87,16 @@ func _build(case: String) -> Variant:
 	for o in a.slice(4 if a[0] == "look" else 3):
 		if o == "diag":
 			models.gate_span = 3.0 * sqrt(2.0)
-		elif o.begins_with("r"):
+		elif o.begins_with("r") and not o.begins_with("ruin"):
 			models.wall_rescale = float(o.substr(1))
+	var ruin := -1
+	for o in a.slice(4 if a[0] == "look" else 3):
+		if o.begins_with("ruin"):
+			ruin = int(o.substr(4))
+	if ruin >= 0 and a[0] == "building":
+		var spec: Dictionary = models.building(a[1], a[2], TEAM)
+		Ruin.apply(spec.body, ruin, Rng.hash_string("%s:%s" % [a[2], a[1]]), models)
+		return spec
 	match a[0]:
 		"model":
 			if a[1] == "flowers":
