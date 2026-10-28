@@ -37,6 +37,9 @@ def fitted(armour_id:string, body_id:string, c:Colours) -> Spec?:
         if ARMOUR_MAT_TEX[i] != "": surf(ARMOUR_MAT_TEX[i], html(ARMOUR_MAT_TINT[i]), ARMOUR_MAT_SIZE[i]) else: plain(html(ARMOUR_MAT_TINT[i]))
     return spec_of(glb(name, mats_of(mats, ARMOUR_MAT_NAMES)))
 
+// The art px a part unit this bake is at: the art scale at the part's size (D-180: bake_art_k, its unit's draw size / 100).
+def bake_art() -> float: return BAKE_ART * bake_art_k
+
 // ---- JSON for the rigs
 
 def jnum(f:float) -> JV:
@@ -104,12 +107,12 @@ def add_frame(full:string, tex:resource<texture>, w:int, h:int, origin:float2):
     sheet_dims.push(float2 { float(w), float(h) })
     frame_at.set("p:" + full, frames.length)
     frames.push(Frame { sheet_tex.length - 1, 0, 0, w, h, int(origin.x + 0.5), int(origin.y + 0.5) })
-    bakes.set(full, Bake { origin.x, origin.y, BAKE_ART })
+    bakes.set(full, Bake { origin.x, origin.y, bake_art() })
 
 // One sprite into the pack: its own sheet, a frame, its bake (origin and scale for the composer).
 def keep_sprite(full:string, sprite:string, w:int, h:int, origin:float2):
     if w == 0:   // (nothing of it shows from here, a cut leg behind its body: baked all the same, as Godot keeps it, drawn as nothing)
-        bakes.set(full, Bake { origin.x, origin.y, BAKE_ART })
+        bakes.set(full, Bake { origin.x, origin.y, bake_art() })
         if cache_stem != "": cache_lines.push("empty {full} {origin.x} {origin.y}")
         return
     let tex = sprite_texture(full, sprite, w, h)
@@ -128,7 +131,7 @@ def load_cached(id:string, full:string) -> bool:
                     let tex = gl.load_texture(t[2], sprite_formats)
                     if not tex: return false
                     add_frame(t[1], tex, string_to_int(t[3]), string_to_int(t[4]), float2 { string_to_float(t[5]), string_to_float(t[6]) })
-                case "empty": bakes.set(t[1], Bake { string_to_float(t[2]), string_to_float(t[3]), BAKE_ART })
+                case "empty": bakes.set(t[1], Bake { string_to_float(t[2]), string_to_float(t[3]), bake_art() })
                 case "soles": bake_soles.set(t[1], map((t.length - 2) / 2) n: float2 { string_to_float(t[2 + n * 2]), string_to_float(t[3 + n * 2]) })
                 case "span": bake_spans.set(t[1], [float2 { string_to_float(t[2]), string_to_float(t[3]) }, float2 { string_to_float(t[4]), string_to_float(t[5]) }])
                 case "rig": set(rigs, t[1], parse_json(line.substring(5 + t[1].length, line.length - 5 - t[1].length)))
@@ -142,7 +145,7 @@ def keep_soles(full:string, sprite:string, w:int, h:int, origin:float2):
         var y = h - 1
         while y >= 0:
             if sprite[(y * w + x) * 4 + 3] > 127:
-                soles.push((float2 { float(x) + 0.5, float(y) + 1.0 } - origin) / BAKE_ART)
+                soles.push((float2 { float(x) + 0.5, float(y) + 1.0 } - origin) / bake_art())
                 break
             y--
     bake_soles.set(full, soles)
@@ -155,7 +158,7 @@ def keep_soles(full:string, sprite:string, w:int, h:int, origin:float2):
             if sprite[(y * w + x) * 4 + 3] > 127:
                 xs += float(x) + 0.5
                 count++
-        if count > 0: rows.push((float2 { xs / float(count), float(y) + 0.5 } - origin) / BAKE_ART)
+        if count > 0: rows.push((float2 { xs / float(count), float(y) + 0.5 } - origin) / bake_art())
     if rows.length:
         bake_spans.set(full, [rows[0], rows[rows.length - 1]])
         if cache_stem != "": cache_lines.push("span {full} {rows[0].x} {rows[0].y} {rows[rows.length - 1].x} {rows[rows.length - 1].y}")
@@ -203,31 +206,56 @@ def member_samples(n:MNode, parent:Xform, right:float3, up:float3, view:float3, 
                     out.push(float3 { dot(q, right), dot(q, up), dot(q, view) })
     for(n.kids) kid: member_samples(kid, t, right, up, view, out)
 
+let MEMBER_AHEAD = [float2 { 5.0, 10.0 }, float2 { 9.0, 12.0 }]   // ...and ahead of it at chest height, [forward, up]: a body
+                                                                  // leaning into the work is mostly in front of its hips (C4)
+
+// Two members' sample points close enough on screen that their bodies overlap.
+def samples_meet(a:[float2], b:[float2]) -> bool:
+    for(a) p:
+        for(b) q:
+            if abs(p.x - q.x) < MEMBER_HALF.x * 2.0 and abs(p.y - q.y) < MEMBER_HALF.y * 2.0: return true
+    return false
+
 def members_front(model:MNode, sockets:dictionary<string, float3>, names:[string], view:float3) -> JV:
     let right = normalize(cross(float3 { 0.0, 1.0, 0.0 }, view))
     let up = cross(view, right)
     let pts = []::float3
     member_samples(model, XF_ID, right, up, view, pts)
     let front = dictionary<string, int>(7)
+    let cover = dictionary<string, int>(7)   // how much of the engine is in front of each member
+    let seen = dictionary<string, [float2]>(7)   // each member's sample points on screen
     let apart = []::string   // members the engine is neither in front of nor behind
     for(names) name:
         var nearer = 0
         var farther = 0
         let sock = sockets.get(name, float3_0)
-        for(MEMBER_COLUMN) h:
-            let c = sock + float3 { 0.0, h, 0.0 }
+        var turn = 0.0   // the member's facing on the engine ("crew2_f2_reach": two steps round from it)
+        for(tokenize(name, "_", "")) t:
+            if t.length == 2 and t[0] == 'f' and t[1] >= '0' and t[1] <= '9': turn = 45.0 * float(t[1] - '0')
+        let fwd = float3 { cos(turn), 0.0, sin(turn) }
+        let samples = map(MEMBER_COLUMN) h: float3 { 0.0, h, 0.0 }
+        if find_string(name, "_reach") >= 0 or find_string(name, "_raise") >= 0:   // (leaning into the work; a rider sits upright)
+            for(MEMBER_AHEAD) a: samples.push(fwd * a.x + float3 { 0.0, a.y, 0.0 })
+        let mine = []::float2
+        for(samples) o:
+            let c = sock + o
             let sc = float2 { dot(c, right), dot(c, up) }
+            mine.push(sc)
             let dc = dot(c, view)
             for(pts) q:
                 if abs(q.x - sc.x) < MEMBER_HALF.x and abs(q.y - sc.y) < MEMBER_HALF.y:
                     if q.z > dc + 1.0: nearer++
                     elif q.z < dc - 1.0: farther++
+        seen.set(name, mine)
         let is_front = if nearer + farther > 0: nearer <= farther else: dot(sock, float3 { view.x, 0.0, view.z }) > 0.0
         front.set(name, if is_front: 1 else: 0)
+        cover.set(name, nearer)
         if nearer + farther == 0: apart.push(name)
     // A member nowhere in front of or behind the engine goes under it all the same when one nearer the camera than
     // it does (the great sling's file of haulers); the same for one drawn over the engine where a member nearer the
-    // camera that's drawn under it covers it on screen.
+    // camera that's drawn under it covers it on screen; one nowhere against the engine goes over it with the member
+    // it stands in front of (a siege tower's pusher); hunched bodies reaching into each other go both over or both
+    // under, by which the engine hides less of (part_baker.gd _members_front).
     let order = copy(names)   // nearest the camera first, so it carries on down a file
     insertion_sort(order) a, b: dot(sockets.get(a, float3_0), view) > dot(sockets.get(b, float3_0), view)
     for(order) name:
@@ -238,8 +266,15 @@ def members_front(model:MNode, sockets:dictionary<string, float3>, names:[string
             for(names) other:
                 let so3 = sockets.get(other, float3_0)
                 let so = float2 { dot(so3, right), dot(so3, up) }
-                if front.get(other, 0) == 0 and dot(so3, view) > d and (has_s(apart, name) or (abs(so.x - sc.x) < MEMBER_HALF.x * 2.0 and abs(so.y - sc.y) < MEMBER_COLUMN[MEMBER_COLUMN.length - 1])):
+                let behind_under = front.get(other, 0) == 0 and dot(so3, view) > d
+                let close = abs(so.x - sc.x) < MEMBER_HALF.x * 2.0 and abs(so.y - sc.y) < MEMBER_COLUMN[MEMBER_COLUMN.length - 1]
+                if behind_under and has_s(apart, other) and not has_s(apart, name) and close:
+                    front.set(other, 1)
+                elif behind_under and (has_s(apart, name) or close):
                     front.set(name, 0)
+                elif behind_under and samples_meet(seen.get(name, []::float2), seen.get(other, []::float2)):
+                    if cover.get(other, 0) < cover.get(name, 0): front.set(other, 1)
+                    else: front.set(name, 0)
     let out = jobj()
     for(names) name: set(out, name, jbool(front.get(name, 0) == 1))
     return out
@@ -261,6 +296,7 @@ def bake_rig(s:Spec, k:int) -> JV:
     let members = filter(sorted_strs(s.sockets.get_keys())) n: (starts_with(n, "crew") or starts_with(n, "haul")) and not ends_with(n, "_in") and not ends_with(n, "_top")
     if members.length: set(r, "front", members_front(s.node, s.sockets, members, view))
     set(r, "dir", jv2(normalize(to2d(float3 { 20.0, 0.0, 0.0 }))))
+    set(r, "ahead", jv2(to2d(float3 { 1.0, 0.0, 0.0 })))   // one unit forward on screen (part units): a crew member standing back from its place
     if s.anchors.length:
         let hips = []::JV
         for(s.anchors) a:
@@ -320,7 +356,7 @@ let SHADOW_RADII = float2 { 15.0, 4.5 }
 let SHADOW_RGBA = [15, 13, 8, 107]   // (Color(0.06, 0.05, 0.03, 0.42) in bytes)
 
 def bake_flat_shadow(full:string):
-    let r = SHADOW_RADII * BAKE_ART
+    let r = SHADOW_RADII * bake_art()
     let w = int(ceiling(r.x * 2.0)) + 2
     let h = int(ceiling(r.y * 2.0)) + 2
     let sprite = ensure_size("", w * h * 4, 0)   // (the write_ functions write into it in place)
@@ -329,7 +365,16 @@ def bake_flat_shadow(full:string):
             let q = (float2 { float(x), float(y) } + float2_1 * 0.5 - float2_1 - r) / r
             if dot(q, q) <= 1.0:
                 for(4) i: write_int8_le(sprite, (y * w + x) * 4 + i, SHADOW_RGBA[i])
-    keep_sprite(full, sprite, w, h, float2_1 + r - SHADOW_CENTRE * BAKE_ART)
+    keep_sprite(full, sprite, w, h, float2_1 + r - SHADOW_CENTRE * bake_art())
+
+// A part baked at a size (D-180): `size` percent of the art scale, its unit's recipe scale, so a unit drawn bigger
+// or smaller keeps the art's own pixels; `full` is its bake key with the size in it ("%<size>", PartShape.bake_key).
+// Its rigs, soles and spans stay in part units; its bakes' scale is the sized art scale.
+def bake_model_part_at(id:string, full:string, c:Colours, size:int) -> bool:
+    bake_art_k = float(size) / 100.0
+    let ok = bake_model_part(id, full, c)
+    bake_art_k = 1.0
+    return ok
 
 def bake_model_part(id:string, full:string, c:Colours) -> bool:
     if bake_quit: return false
@@ -443,7 +488,7 @@ def bake_model_part_now(id:string, full:string, c:Colours) -> bool:
         let lo, hi = local_box(n)
         blo = min(blo, lo)
         bhi = max(bhi, hi)
-    let bpx = BAKE_ART * float(BAKE_SS)
+    let bpx = bake_art() * float(BAKE_SS)
     let br = if bhi.x >= blo.x: magnitude(bhi - blo) * 0.5 + 2.0 else: 2.0
     bake_fit = ceiling(2.0 * br * bpx) / (2.0 * br * bpx)
     bake_frame_r = br
@@ -453,7 +498,7 @@ def bake_model_part_now(id:string, full:string, c:Colours) -> bool:
         let sprite0, w0, h0, origin0 = bake_facing(tris, k, hide, join, join_r)
         // the origin is the pivot (a cut part's hip or neck) on the sprite
         let cx, cy, _view = bake_camera(k)
-        let o0 = origin0 + float2 { dot(pivot, cx), -dot(pivot, cy) } * BAKE_ART * bake_fit
+        let o0 = origin0 + float2 { dot(pivot, cx), -dot(pivot, cy) } * bake_art() * bake_fit
         let sprite, w, h, origin = crop_sprite(sprite0, w0, h0, o0)
         keep_sprite(full + suffix, sprite, w, h, origin)
         if starts_with(id, "leg."): keep_soles(full + suffix, sprite, w, h, origin)
@@ -464,7 +509,7 @@ def bake_model_part_now(id:string, full:string, c:Colours) -> bool:
             let fs, fw, fh, fo = crop_sprite(fs0, fw0, fh0, fo0)
             keep_sprite(full + suffix + "#front", fs, fw, fh, fo)
             set(r, "front", jbool(true))
-        set(r, "tip", jv2(sprite_tip(sprite, w, h, origin) / BAKE_ART))
+        set(r, "tip", jv2(sprite_tip(sprite, w, h, origin) / bake_art()))
         set(rigs, rig_id, r)
         cache_lines.push("rig {rig_id} " + stringify(r))
         baked_here++

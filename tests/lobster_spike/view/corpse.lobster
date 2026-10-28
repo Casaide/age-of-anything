@@ -7,7 +7,8 @@
 // The pose (parts.json body.<x>.corpse): frames (percent of the way down), pivot [x, y, z] (what the body turns
 // about), pitch (about its side axis, degrees), roll (then about its long axis), body / legs ("limp": the limp
 // models, from 30% down), leg_turn [out, about its side axis, spread] degrees, head (turned at the neck), helm (the
-// helmet comes off and lies upturned), turn (per facing, for the bake). What it held leaves it from 60% down.
+// helmet comes off and lies upturned), spots ({kind: [[x, z], turn]}: where what it held lands, over corpse_spot),
+// turn (per facing, for the bake). What it held leaves it from 60% down.
 
 let LET_GO = 0.6     // from this far down its hands are empty
 let LIMP_FROM = 0.3  // ...and from this far its body and legs are the limp models
@@ -83,7 +84,11 @@ def corpse_model(r:JV, p:JV, f:float) -> MNode:
     // the banner behind it, a helmet upturned by its head.
     for(dropped) q, i:
         let w = dropped_w[i]
-        let s = corpse_spot(q.kind)
+        var s = corpse_spot(q.kind)
+        let spots = gobj(p, "spots")   // the body's own (a wide one's: the frog's shield lay in its flank)
+        if has(spots, q.kind):
+            let own = at(spots, q.kind).a
+            s = float3 { as_float(own[0].a[0]), as_float(own[0].a[1]), as_float(own[1]) }
         set_xform(w, Xform { bmul(bmul(corpse_flat(w.kids[0], s.z, q.kind == "head_gear"), binverse(borthonormalized(q.xf.b))), q.xf.b), float3_0 })
         let wrap = add_child(root, mnode())
         wrap.meta = "dropped:" + q.kind

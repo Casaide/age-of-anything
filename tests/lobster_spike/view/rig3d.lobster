@@ -198,7 +198,7 @@ def rig_gait(body_id:string, flies:bool) -> Gait:
 // How high the body rides at this walk phase (the old bob, before the planted foot: fixtures only).
 def rig_bob(g:Gait, walk:float) -> float:
     if walk < 0.0 or g.hops or not rig_old_bob: return 0.0
-    return abs(sin(rad(walk))) * g.bob / RIG_SCREEN_Y
+    return abs(sin(rad(walk))) * max(g.bob, gait_for(2, false).bob) / RIG_SCREEN_Y   // (the bob a stiff-legged walker had: a keyed walk's own is small)
 
 // A leg's turn at a walk phase (UnitView: sin(phase + leg phase) * swing, screen clockwise; phases in radians), as a
 // turn about the body's lateral axis (+z), in degrees.
@@ -209,6 +209,9 @@ def rig_swing(g:Gait?, walk:float, leg_phase:float) -> float:
 def rig_side(out:Rigged, rig:string, body_id:string, head_id:string, held:string, colours:Colours, t:Xform, with_legs:bool, walk:float, g:Gait?, body_pose:string) -> RigSide:
     var model_id = body_id + (if held == "low" or held == "": "" else: "@" + held)
     if body_pose != "": model_id = body_id + "@" + body_pose   // (a resting pose is the whole body baked in it)
+    let body_n = gint(part(body_id), "body_steps", 0)
+    if body_pose == "" and walk >= 0.0 and body_n > 0 and (held == "low" or held == ""):   // the walk step the composer draws (UnitView.body_steps)
+        model_id = "{body_id}@w{int(fposmod(walk / (2.0 * MPI), 1.0) * float(body_n)) % body_n}_{body_n}"
     let bs = rig_spec(model_id, colours)
     if not rig_has(body_id, colours) or not bs: return RigSide { dictionary<string, float3>(3), t, body_id, false }
     let body = part(body_id)
@@ -322,8 +325,8 @@ def rig_gear(out:Rigged, rg:RigSide, slot:string, part_id0:string, colours:Colou
     if slot == "head_gear":
         gxf = Xform { bscaled(t.b, float3_1 * rg.gear_scale), at_ }
         parent = r + ":head"
-    elif slot == "back" and has_s(tags, "drape"):
-        gxf = Xform { bscaled(t.b, float3_1 * rg.drape_scale), at_ }   // (a cape sized to its back)
+    elif slot == "back" and (has_s(tags, "drape") or sock == part_id):
+        gxf = Xform { bscaled(t.b, float3_1 * rg.drape_scale), at_ }   // (a cape sized to its back, or to the body's own place for it)
     if slot == "hand_r":
         // What the near hand holds turns with the swing (UnitView's attack and work), or lies levelled forward (a
         // spear's thrust; couched on a harness, a tool leant at 0.25).

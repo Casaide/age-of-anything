@@ -619,7 +619,7 @@ def check_engine(label:string, r:JV) -> void:
     for(engine_sockets(r, sj)) name:
         if starts_with(name, "crew"):
             let at_ = es.sockets.get(name, float3_0)
-            if ends_with(name, "_top"):
+            if ends_with(name, "_top") or ends_with(name, "_box"):   // (_box: in a walled howdah, its legs not drawn, set into the floor)
                 // (something to stand on just under the feet: a deck, a saddle, a basket's floor; not floating over it)
                 let c = vunkey(vcell(at_))
                 var gap = 1000000.0
@@ -637,7 +637,9 @@ def check_engine(label:string, r:JV) -> void:
             let rp = RigPose {}
             rp.hold = held
             let a = rig_unit(cr, rp)
-            let t = Xform { bscaled_global(axis_angle(float3 { 0.0, 1.0, 0.0 }, -45.0 * float(engine_turn(name))), float3_1 * s), at_ }
+            var t = Xform { bscaled_global(axis_angle(float3 { 0.0, 1.0, 0.0 }, -45.0 * float(engine_turn(name))), float3_1 * s), at_ }
+            if not (ends_with(name, "_top") or ends_with(name, "_box")):   // (standing back by its lean, as UnitView._build_engine puts it)
+                t = Xform { t.b, t.o - bxf(t.b, float3 { float(gint(gobj(lib_creatures, gstr(cr, "creature", "")), "crew_back", 0)), 0.0, 0.0 }) }
             let crew_vox = new_vox()
             for(a.pieces) p: voxels_into(p.node, xmul(t, p.xf), crew_vox)
             let share = float(vshared(crew_vox, ev)) / float(max(vcount(crew_vox), 1))
