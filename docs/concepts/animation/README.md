@@ -140,3 +140,14 @@ the sheet's rows (`tests/sheets/human_walk.json`).
 
 ![the legionary walking](21-human-walk-keyed.gif)
 ![the walk steps](22-human-walk-steps.png)
+
+## Horses and centaurs on keyed legs (D-179; 2026-10-28)
+
+The pony's legs (the mount every culture rides, and the centaur's horse half) are bent per walk step
+(`UnitModels.hoof_joints`): the fetlock follows the stride, the knee bends forward on a foreleg (the hoof curling back
+under it as it lifts) and the hock back on a hind leg (`leg.hoof_hind`, parts.json `legs.hind`), the body riding on the
+planted hooves in its diagonal walk. Standing, the leg is as modelled. Placement: every pony and centaur case in 3D and
+2D, the sheet (`tests/sheets/pony_walk.json`).
+
+![the lancer's pony walking](23-pony-walk-keyed.gif)
+![pony and centaur walk steps](24-pony-centaur-walk-steps.png)
