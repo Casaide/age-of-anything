@@ -376,8 +376,15 @@ def bake_model_part_at(id:string, full:string, c:Colours, size:int) -> bool:
     bake_art_k = 1.0
     return ok
 
+// The size a bake key asks for (its "%<size>": the percent of the art scale its unit is drawn at, D-180), or 100.
+def key_size(full:string) -> int:
+    let t = tokenize(full, "%", "")
+    return if t.length > 1: string_to_int(t[t.length - 1]) else: 100
+
 def bake_model_part(id:string, full:string, c:Colours) -> bool:
     if bake_quit: return false
+    let sz = key_size(full)
+    if sz != 100 and bake_art_k == 1.0: return bake_model_part_at(id, full, c, sz)   // (a sized key bakes at its size)
     if id == "unit_shadow":
         bake_flat_shadow(full)
         return true
