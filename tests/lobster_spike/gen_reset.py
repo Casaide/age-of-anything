@@ -70,5 +70,5 @@ save += ['    return flexbuffers_value_to_binary(w, 1000)', '',
 save += ['    %s = s.%s' % (v, v) for v, t in fields]
 save += ['    %s.clear()' % v for v, t in lets]
 save += ['    s.%s.forkv() k, v: %s.set(k, v)' % (v, v) for v, t in lets]
-save += ['    return s.bots']
+save += ['    pad_saved_columns()   // (a save from an older build: its missing per-unit and per-building columns, D-141)', '    return s.bots']
 open(os.path.join(here, 'gen', 'save.lobster'), 'w').write('\n'.join(save) + '\n')

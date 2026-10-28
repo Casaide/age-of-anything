@@ -4203,6 +4203,12 @@ def test_save_load():
     let loaded = load_world_bytes(saved)
     let load_ms = ms_since(t1)
     check(loaded.length == 1 and tick == at_t and state_hash() == save_hash, "the save loads as it was (tick {tick})")
+    // a save from an older build has no column for a per-unit variable added since (D-141): it's padded with 0
+    let carry_was = u_carry_kind
+    u_carry_kind = []
+    pad_saved_columns()
+    check(u_carry_kind.length == u_id.length and not exists(u_carry_kind) k: k != 0, "a per-unit column a save lacks comes back padded with 0 ({u_carry_kind.length} units)")
+    u_carry_kind = carry_was
     let you_b = EcoBot { 0 }
     var same = 0
     var n = 0

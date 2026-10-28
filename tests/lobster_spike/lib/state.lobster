@@ -201,6 +201,15 @@ var b_diag = []::int           // 0: the whole rect; 1 or 2: a diagonal gate, th
 var b_queue = []::[int]        // unit type indexes, head first
 var b_inside = []::[int]       // units sheltering inside (garrison.gd): REC_SIZE ints each, by id
 
+// Saves outlive builds (D-141): a per-unit or per-building variable added since a save was made comes back from it
+// empty (flexbuffers give a missing field its empty value), so it's padded here with 0 for every unit and building.
+// Anything else whose empty value is wrong mid-match needs its own fix after loading.
+def pad_saved_columns():
+    for(unit_columns()) col:
+        while col.length < u_id.length: col.push(0)
+    for(building_columns()) col:
+        while col.length < b_id.length: col.push(0)
+
 def building_columns() -> [[int]]:
     return [b_id, b_owner, b_kind, b_cx, b_cy, b_sx, b_sy, b_hp, b_progress, b_done, b_train, b_rally_x, b_rally_y, b_cooldown, b_diag]
 
