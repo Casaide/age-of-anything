@@ -65,6 +65,7 @@ import gen.modes
 import gen.start
 import gen.reset
 import gen.save
+import gen.effect_words
 
 let SEED = 20261010
 let PROMPTS = ["angry swamp frogs with reed spears", "sewer rats with cheese hammers"]
@@ -3465,13 +3466,613 @@ def test_towers():
     steps(12)
     check(stock[res_of("stone")][0] < stone, "towers: ... and one is laid down, paid in stone")
 
+// ------------------------------------------------------------------ camps, the market, research and ages, order queues
+
+// The builder of a lumber camp goes to gather wood.
+def test_camp_gather():
+    new_world("flat_test", races0, rules0, [])
+    var wi = index_of(own_workers_of(0)[0])
+    let uid = u_id[wi]
+    let wood = kind_of("wood")
+    let c = nearest_resource(u_x[wi], u_y[wi], wood, -1, false, false, false)
+    let k = btype_index("lumber_camp")
+    var spot = -1
+    for(4) r0:
+        let r = r0 + 2
+        var dy = -r
+        while dy <= r:
+            var dx = -r
+            while dx <= r:
+                let x = c % W + dx
+                let y = c / W + dy
+                if spot < 0 and can_build(x, y, bt_size[k], builder_class(0), bt_water[k] != 0, false): spot = y * W + x
+                dx++
+            dy++
+    issue_cmd(0, CMD_BUILD, [uid], k, spot % W, spot / W, 0)
+    steps(1500)
+    wi = index_of(uid)
+    check(u_task[wi] == GATHER or u_task[wi] == T_RETURN, "camps: the builder of a lumber camp goes to gather (task {u_task[wi]})")
+    check(u_carry_kind[wi] == wood or (u_task[wi] == GATHER and resource_kind_at(u_target[wi]) == "wood"), "camps: ... wood, what the camp takes in")
+
+// The market: buying costs gold and raises the price, selling pays less and lowers it, and nobody
+// trades without a finished market of their own.
+def test_market():
+    new_world("flat_test", races0, rules0, [])
+    let g = res_of("gold")
+    let f = res_of("food")
+    stock[g][0] = 1000
+    let m = place(0, btype_index("market"), start_x[0] / 1000 + 4, start_y[0] / 1000 + 3)
+    let mid = b_id[m]
+    issue_cmd(0, CMD_TRADE, [], mid, f, 1, 0)
+    steps(20)
+    check(stock[g][0] == 1000, "market: no trade at an unfinished market")
+    b_done[m] = 1
+    let food = stock[f][0]
+    let price = market_price[f]
+    issue_cmd(0, CMD_TRADE, [], mid, f, 1, 0)
+    steps(20)
+    check(stock[f][0] == food + 100 and stock[g][0] == 1000 - price, "market: buying 100 food costs {price} gold")
+    check(market_price[f] > price, "market: buying raises the price ({price} -> {market_price[f]})")
+    let gold = stock[g][0]
+    let pay = market_price[f] * 75 / 100
+    issue_cmd(0, CMD_TRADE, [], mid, f, 0, 0)
+    steps(20)
+    check(stock[g][0] == gold + pay and market_price[f] == price, "market: selling pays {pay} and brings the price back")
+    issue_cmd(1, CMD_TRADE, [], mid, f, 1, 0)
+    let g1 = stock[g][1]
+    steps(20)
+    check(stock[g][1] == g1, "market: nobody trades at someone else\'s market")
+
+// A made-up research with these effects (data, as in tech.json), done for p as if just finished
+// (test_sim.gd's _give with effects: effect kinds no built research uses yet get tested too).
+def give_fx(p:int, id:string, fxs:[JV]):
+    let r = research_named(id)
+    if r < 0:
+        research.push(Research { id, btype_index("town_center"), 20, 1, -1, 0, map(num_resources): 0,
+            map(num_players): 1, map(num_players): 1, map(num_players): -1, map(fxs) fx: encode_effect(fx) })
+        for(researched) row: row.push(0)
+    researched[p][research_named(id)] = 1
+    retype(p)
+    tech_refresh(p)
+
+def fx_of(text:string) -> JV: return parse_json(text)
+
+// Building pct effects of a stat that reach type k for p (Tech.bpct).
+def bpct(p:int, k:int, stat:int) -> int:
+    var n = 0
+    for(effects_of(p)) fx:
+        if fx.kind == 6 and fx.stat == stat and covers(fx, k): n += fx.value
+    return n
+
+// Every research effect kind, one check or two each: it lands on the units or buildings it names, on
+// those already out and those made later, and nowhere else.
+def test_effects():
+    new_world("flat_test", races0, rules0, [])
+    for(num_resources) r: stock[r][0] = 5000
+    let wk = type_of_slot(0, "worker")
+    let sp = type_of_slot(0, "spear")
+    let melee = class_index("melee")
+    // {tag, stat, add}, armour inside a stat: Thick Skins, researched at the Town Center in age 1.
+    let hp0 = t_hp[wk]
+    let arm0 = t_arm[wk][melee]
+    let ts = research_named("thick_skins")
+    issue_cmd(0, CMD_RESEARCH, [], b_id[0], ts, 0, 0)
+    while tick < 1000 and researched[0][ts] == 0: tick_on()
+    check(t_hp[wk] == hp0 + 15 and t_arm[wk][melee] == arm0 + 1, "effects: Thick Skins gives workers +15 hp, +1 melee armour ({hp0} -> {t_hp[wk]}, {arm0} -> {t_arm[wk][melee]})")
+    var full = true
+    for(u_kind) k, i:
+        if k == wk: full = full and u_hp[i] == t_hp[wk]
+    check(full, "effects: workers already out are at their new full health")
+    check(t_hp[sp] == as_int(at(su_type_eval[sp], "hp")) and t_hp[sp] == lines[sp][0].hp, "effects: Thick Skins leaves spears alone")
+    // A track's next step needs the one before.
+    ages[0] = 3
+    let ak = btype_index("armoury")
+    let arm_b = b_index_of(put(0, "armoury", start_x[0] / 1000 + 4, start_y[0] / 1000 + 3, 0))
+    let be = research_named("bronze_edges")
+    check(tech_barred(0, arm_b, be), "effects: Bronze Edges needs Sharp Sticks first")
+    give(0, "sharp_sticks")
+    check(not tech_barred(0, arm_b, be), "effects: after Sharp Sticks, Bronze Edges can be researched")
+    check(ak >= 0, "effects: the armoury is built")
+    // speed pct and carry add: Big Pockets.
+    let speed0 = t_speed[wk]
+    give(0, "big_pockets")
+    var wi = -1
+    for(u_kind) k, i:
+        if wi < 0 and u_owner[i] == 0 and k == wk: wi = i
+    check(t_speed[wk] == speed0 * 110 / 100 and u_speed[wi] == t_speed[wk], "effects: Big Pockets makes workers 10% faster, those out too ({speed0} -> {t_speed[wk]})")
+    check(t_carry_add[wk] == 3, "effects: Big Pockets adds 3 to what a worker carries")
+    let carry_max = r_carry + t_carry_add[wk]
+    let wid = u_id[wi]
+    issue_cmd(0, CMD_GATHER, [wid], nearest_res(start_x[0], start_y[0], "wood"), 0, 0, 0)
+    var most = 0
+    for(1500):
+        tick_on()
+        most = max(most, u_carry[index_of(wid)])
+    check(most == carry_max, "effects: a worker now carries {carry_max} before going back ({most})")
+    // speed pct with `not`: Marching Drums, foot melee only.
+    var foot = -1
+    var mounted = -1
+    for(t_slot.length) k:
+        if t_player[k] == 0 and t_worker[k] == 0:
+            if type_has_tag(k, "melee") and not type_has_tag(k, "mounted") and foot < 0: foot = k
+            if type_has_tag(k, "mounted") and mounted < 0: mounted = k
+    let fs = t_speed[foot]
+    let ms = if mounted >= 0: t_speed[mounted] else: 0
+    give(0, "marching_drums")
+    check(t_speed[foot] == fs * 110 / 100, "effects: Marching Drums makes foot melee 10% faster ({fs} -> {t_speed[foot]})")
+    check(mounted < 0 or t_speed[mounted] == ms, "effects: ...but not mounted units")
+    // reload pct: Quick Draw.
+    var rk = -1
+    for(t_slot.length) k:
+        if rk < 0 and t_player[k] == 0 and t_ranged[k] != 0: rk = k
+    let reload0 = t_reload[rk]
+    give(0, "quick_draw")
+    check(t_reload[rk] == reload0 * 85 / 100 and t_reload[rk] < reload0, "effects: Quick Draw reloads 15% sooner ({reload0} -> {t_reload[rk]} ticks)")
+    check(t_reload[sp] == r_melee_reload, "effects: ...and leaves melee units alone")
+    // cost pct and train_time pct (no research uses them yet: race bonuses, War Drums).
+    let cost0 = copy(t_cost[sp])
+    let train0 = t_train_ticks[sp]
+    let wtrain0 = t_train_ticks[wk]
+    give_fx(0, "test.cheaper", [fx_of("\{\"tag\": \"all\", \"stat\": \"cost\", \"pct\": -10\}"), fx_of("\{\"tag\": \"all\", \"not\": [\"worker\"], \"stat\": \"train_time\", \"pct\": -30\}")])
+    var cheaper = true
+    for(cost0) v, c: cheaper = cheaper and t_cost[sp][c] == v * 90 / 100
+    check(cheaper, "effects: cost -10% makes spears 10% cheaper ({cost0} -> {t_cost[sp]})")
+    check(t_train_ticks[sp] == train0 * 70 / 100 and t_train_ticks[wk] == wtrain0, "effects: train_time -30% trains spears faster, workers as before ({train0} -> {t_train_ticks[sp]})")
+    // Farm food pct: Fallow Fields.
+    let fk = btype_index("farm")
+    let food0 = bt_food_base[fk]
+    check(bm_food[1][fk] == food0, "effects: farms hold {food0} food without Fallow Fields")
+    let race_pct = bpct(0, fk, 1)   // (player 0's race may have a farm bonus of its own: swamp frogs' rich mud)
+    give(0, "fallow_fields")
+    check(bm_food[0][fk] == food0 * (150 + race_pct) / 100, "effects: Fallow Fields: farms hold 50% more ({bm_food[0][fk]})")
+    // Trade fee: Haggling, selling pays more for the player who has it.
+    let f = res_of("food")
+    let sell0 = quote(0, f, false)   // (a race may have a fee bonus of its own: sewer rats' black market)
+    give(0, "haggling")
+    check(quote(0, f, false) == sell0 + market_price[f] * 10 / 100, "effects: Haggling cuts the fee by 10 points (sells for {quote(0, f, false)}, not {sell0})")
+    check(quote(0, f, true) == quote(1, f, true), "effects: ...buying costs the same")
+    // Every built research's effects say something in words.
+    for(su_research) r:
+        if not has(r, "line"):
+            let words = effect_text(glist(r, "effects"))
+            check(words != "", "effects: {rstr(r, "id")} says what it does ({words})")
+    // Unit sight: a lone spear sees further.
+    bare_world(races0)
+    spawn_at(0, "spear", 16500, 22500)
+    steps(8)
+    var seen0 = visible_cells(0)
+    give_fx(0, "test.sight", [fx_of("\{\"tag\": \"all\", \"stat\": \"sight\", \"add\": 3\}")])
+    steps(8)
+    check(visible_cells(0) > seen0, "effects: unit sight +3 shows more of the map ({seen0} -> {visible_cells(0)} cells)")
+    // Building sight: Lookouts, on a lone house.
+    bare_world(races0)
+    let house = put(0, "house", 16, 22, 0)
+    steps(8)
+    seen0 = visible_cells(0)
+    give(0, "lookouts")
+    steps(8)
+    check(visible_cells(0) > seen0, "effects: Lookouts give buildings +3 sight ({seen0} -> {visible_cells(0)} cells)")
+    // Building hp pct and armour: a standing house keeps its share of health; hits do less.
+    let hb = b_index_of(house)
+    let hk = b_kind[hb]
+    let hp_full = bt_hp_base[hk]
+    b_hp[hb] = hp_full / 2
+    let atk = map(num_classes): 0
+    atk[melee] = 10
+    let d0 = damage(atk, bm_arm[0][hk], building_cls(), 1)
+    give_fx(0, "test.stone", [fx_of("\{\"building\": \"all\", \"stat\": \"hp\", \"pct\": 10\}"), fx_of("\{\"building\": \"all\", \"stat\": \"armour.melee\", \"add\": 2\}")])
+    check(bm_hp[0][hk] == hp_full * 110 / 100 and b_hp[hb] == hp_full / 2 * bm_hp[0][hk] / hp_full, "effects: buildings +10% hp, a half-hurt house stays half ({b_hp[hb]} of {bm_hp[0][hk]})")
+    let d1 = damage(atk, bm_arm[0][hk], building_cls(), 1)
+    check(d1 == d0 - 2, "effects: buildings +2 melee armour take 2 less from a blow ({d0} -> {d1})")
+    check(bm_hp[1][hk] == hp_full, "effects: ...only the researching player\'s buildings")
+    // Build speed: a worker who builds 100% faster finishes a house in about half the time.
+    let times = []::int
+    var house_ticks = 0
+    for([0, 100]) pct:
+        new_world("flat_test", races0, rules0, [])
+        stock[1][0] = 1000
+        house_ticks = bt_build_ticks[btype_index("house")]
+        if pct > 0: give_fx(0, "test.frames", [fx_of("\{\"tag\": \"worker\", \"stat\": \"build_speed\", \"pct\": {pct}\}")])
+        let builder = ids_of(0)[0]
+        issue_cmd(0, CMD_BUILD, [builder], btype_index("house"), start_x[0] / 1000 + 4, start_y[0] / 1000 + 3, 0)
+        var started = -1
+        var done = -1
+        while tick < 3000 and done < 0:
+            tick_on()
+            for(b_owner) o, k:
+                if o == 0 and bt_name[b_kind[k]] == "house":
+                    if started < 0 and b_progress[k] > 0: started = tick
+                    if b_done[k] == 1: done = tick
+        times.push(done - started)
+    check(times[1] > 0 and abs(times[1] - house_ticks / 2) <= 3 and abs(times[0] - house_ticks) <= 3, "effects: build_speed +100% builds a house in half the time ({times} ticks, alone {house_ticks})")
+    // Research time: a building whose research goes 50% faster.
+    new_world("flat_test", races0, rules0, [])
+    for(num_resources) r: stock[r][0] = 5000
+    give_fx(0, "test.scholars", [fx_of("\{\"building\": \"town_center\", \"stat\": \"research_time\", \"pct\": -50\}")])
+    let ts2 = research_named("thick_skins")
+    issue_cmd(0, CMD_RESEARCH, [], b_id[0], ts2, 0, 0)
+    steps(12)
+    let base_ticks = research[ts2].ticks
+    check(head_ticks(0) == base_ticks / 2, "effects: research_time -50% halves a research\'s time ({head_ticks(0)} of {base_ticks} ticks)")
+    let t0 = tick
+    while tick < 2000 and researched[0][ts2] == 0: tick_on()
+    check(tick - t0 <= base_ticks / 2, "effects: ...and it\'s done in that time ({tick - t0} ticks)")
+    // Fallow Fields on a farm, sown and reseeded.
+    new_world("flat_test", races0, rules0, [])
+    stock[1][0] = 1000
+    give(0, "fallow_fields")
+    auto_reseed[0] = 0   // reseeded by hand below
+    let farmer = ids_of(0)[0]
+    let fcx = start_x[0] / 1000 + 3
+    let fcy = start_y[0] / 1000 + 2
+    issue_cmd(0, CMD_BUILD, [farmer], fk, fcx, fcy, 0)
+    let cell = fcy * W + fcx
+    while tick < 1600 and pool[cell] < 0: tick_on()
+    let want = food0 * (150 + race_pct) / 100
+    check(left_at(cell) >= want - 5, "effects: a farm sown after Fallow Fields holds {want} ({left_at(cell)})")
+    amount[pool[cell]] = 1
+    while tick < 3000 and left_at(cell) > 0: tick_on()
+    issue_cmd(0, CMD_RESEED, [farmer], occupied[cell], 0, 0, 0)
+    steps(12)
+    check(left_at(cell) >= want - 5, "effects: ...and so does a reseeded one ({left_at(cell)})")
+
+// The University's research and the Castle: each effect lands where it says and nowhere else, and the
+// Castle looses a volley of arrows, one at each of the nearest foes in turn.
+def test_university_castle():
+    new_world("flat_test", races0, rules0, [])
+    for(num_resources) r: stock[r][0] = 9000
+    let uk = btype_index("university")
+    let ck = btype_index("castle")
+    check(uk >= 0 and ck >= 0, "university/castle: both are built types (not planned)")
+    check(bt_age[uk] == 3 and bt_age[ck] == 3 and bt_size[ck] == 4, "university/castle: age 3; the castle is 4 x 4")
+    let castle = at(at(load_json(lib_root + "/buildings.json"), "buildings"), "castle")
+    check(gint(castle, "garrison", 0) > 0 and gint(at(castle, "attack"), "arrows", 1) > 1, "castle: a garrison and several arrows in data")
+    check(gint(at(castle, "cost"), "stone", 0) > gint(at(castle, "cost"), "wood", 0), "castle: stone-heavy")
+    // Research at the University: needs age 3, then it's bought and done there.
+    let sx = start_x[0]
+    let sy = start_y[0]
+    let ub = b_index_of(put(0, "university", sx / 1000 + 4, sy / 1000 + 3, 0))
+    ages[0] = 2
+    check(tech_barred(0, ub, research_named("stonecutting")), "university: research needs age 3")
+    ages[0] = 3
+    for(["stonecutting", "lifting_frames", "slit_windows", "thick_walls", "siege_wrights"]) id:
+        check(not tech_barred(0, ub, research_named(id)), "university: {id} can be researched there")
+    let hk = btype_index("house")
+    let hp_house = bm_hp[0][hk]
+    let arm_house = copy(bm_arm[0][hk])
+    let sc = research_named("stonecutting")
+    issue_cmd(0, CMD_RESEARCH, [], b_id[ub], sc, 0, 0)
+    while tick < 2000 and researched[0][sc] == 0: tick_on()
+    let melee = class_index("melee")
+    let pierce = class_index("pierce")
+    check(researched[0][sc] == 1, "stonecutting: researched at the University")
+    check(bm_hp[0][hk] == hp_house * 110 / 100 and bm_arm[0][hk][melee] == arm_house[melee] + 1 and bm_arm[0][hk][pierce] == arm_house[pierce] + 1,
+        "stonecutting: buildings +10% HP, +1/+1 armour (house {hp_house} -> {bm_hp[0][hk]} hp)")
+    check(bm_hp[1][hk] == hp_house, "stonecutting: ...only the researcher\'s")
+    // Lifting Frames: workers build 20% faster.
+    let wk = type_of_slot(0, "worker")
+    give(0, "lifting_frames")
+    check(t_build_pct[wk] == 20, "lifting frames: workers build 20% faster ({t_build_pct[wk]})")
+    // Thick Walls: walls and gates double, houses don't.
+    let wall_ids = ["palisade", "palisade_gate", "wall", "stone_gate"]
+    let house_before = bm_hp[0][hk]
+    give(0, "thick_walls")
+    for(wall_ids) id:
+        let k = btype_index(id)
+        check(bm_hp[0][k] == bt_hp_base[k] * 210 / 100, "thick walls (after Stonecutting): {id} +100% HP ({bm_hp[0][k]})")
+    check(bm_hp[0][hk] == house_before, "thick walls: ...houses as they were")
+    // Siege Wrights: +1 range for siege (none yet: a ranged line stands in, tagged siege).
+    var rk = -1
+    for(t_slot.length) k:
+        if rk < 0 and t_player[k] == 0 and t_ranged[k] != 0: rk = k
+    let sp = type_of_slot(0, "spear")
+    let range0 = t_reach[rk]
+    let sp_range0 = t_reach[sp]
+    let siege_c = class_index("siege")
+    for(lines[rk]) l: l.tags = l.tags.append([siege_c])
+    give(0, "siege_wrights")
+    check(t_reach[rk] == range0 + TILE, "siege wrights: siege +1 range ({range0 / TILE} -> {t_reach[rk] / TILE})")
+    check(t_reach[sp] == sp_range0, "siege wrights: ...spears as they were")
+    // The Castle's research: War Drums and the race's own.
+    let cb = b_index_of(put(0, "castle", sx / 1000 - 2, sy / 1000 + 8, 0))
+    for(["war_drums", "bog_poultice"]) id:   // (player 0 is swamp frogs: the swamp's own research is at the Castle)
+        check(not tech_barred(0, cb, research_named(id)), "castle: {id} can be researched there")
+    check(tech_barred(0, cb, research_named("gnawing_teeth")), "castle: ...not another race\'s own (the rats\' Gnawing Teeth)")
+    let hl = type_of_slot(0, "healer")
+    let train_sp = t_train_ticks[sp]
+    let train_wk = t_train_ticks[wk]
+    let train_hl = if hl >= 0: t_train_ticks[hl] else: 0
+    give(0, "war_drums")
+    check(t_train_ticks[sp] == train_sp * 70 / 100, "war drums: soldiers train 30% faster ({train_sp} -> {t_train_ticks[sp]} ticks)")
+    check(t_train_ticks[wk] == train_wk and (hl < 0 or t_train_ticks[hl] == train_hl), "war drums: ...workers and healers as before")
+    give(0, "bog_poultice")
+    check(hl < 0 or t_heal_pct[hl] == 30, "own research: Bog Poultice, healers heal 30% more ({if hl >= 0: t_heal_pct[hl] else: 0})")
+    // The Castle's arrows: a volley of `arrows`, one at each of the nearest foes in turn.
+    let arrows = gint(at(castle, "attack"), "arrows", 1)
+    for([1, arrows + 2]) n:
+        bare_world(races0)
+        let gid = put(1, "castle", 14, 14, 0)   // centre (16, 16)
+        spawn_cmd(0, "spear", n, 20500, 16000)
+        let first = []::int
+        for(40):
+            tick_on()
+            for(events) e:
+                if e.kind == EV_SHOT and e.a == gid: first.push(e.b)
+            if first.length: break
+        let distinct = []::int
+        for(first) id:
+            if not contains(distinct, id): distinct.push(id)
+        check(first.length == arrows, "castle: a volley is {arrows} arrows ({first.length}, {n} foes)")
+        check(distinct.length == min(n, arrows), "castle: the arrows go to {min(n, arrows)} different foes ({n} foes in reach: {distinct.length} hit)")
+    // Slit Windows: +1 tile of reach for the Castle (and towers, Town Centers).
+    let reach = []::int
+    for([false, true]) slit:
+        bare_world(races0)
+        let gid = put(1, "castle", 14, 14, 0)
+        if slit: give(1, "slit_windows")
+        spawn_cmd(0, "spear", 1, 16000 + 10500, 16000)   // just past 8 tiles (+ half the castle)
+        var shot = 0
+        for(60):
+            tick_on()
+            for(events) e:
+                if e.kind == EV_HIT and e.a == gid: shot++
+        reach.push(shot)
+    check(reach[0] == 0 and reach[1] > 0, "slit windows: a foe just out of the castle\'s reach is shot once it has them ({reach})")
+    new_world("flat_test", races0, rules0, [])
+    give(0, "slit_windows")
+    for(["watchtower", "castle", "town_center"]) id: check(bm_range[0][btype_index(id)] == 1, "slit windows: {id} +1 range")
+    check(bm_range[0][btype_index("house")] == 0, "slit windows: ...houses nothing")
+
+def put_done(p:int, id:string, cx:int, cy:int) -> int:   // place + done + full hp: its slot
+    let k = btype_index(id)
+    let b = place(p, k, cx, cy)
+    b_done[b] = 1
+    b_hp[b] = bm_hp[p][k]
+    return b
+
+// Research and the age-up queue with units, the genre's way: in the order clicked, paid when queued,
+// refunded on cancel, never queued twice.
+def test_research_queue():
+    new_world("flat_test", races0, rules0, [])
+    for(num_resources) r: stock[r][0] = 5000
+    ages[0] = 2   // player 0 is frogs: Strong Legs is theirs
+    let sx = start_x[0]
+    let sy = start_y[0]
+    var b = put_done(0, "barracks", sx / 1000 + 4, sy / 1000 - 6)
+    put_done(0, "stable", sx / 1000 - 7, sy / 1000 - 6)   // what the age-3 age-up asks for
+    let bid = b_id[b]
+    let up = research_named("line.spear.2")
+    let leap = research_named("frog_leap")
+    let k = type_of_slot(0, "spear")
+    let food = stock[0][0]
+    issue_cmd(0, CMD_RESEARCH, [], bid, up, 0, 0)
+    issue_cmd(0, CMD_RESEARCH, [], bid, leap, 0, 0)
+    issue_cmd(0, CMD_TRAIN, [], bid, k, 1, 0)
+    issue_cmd(0, CMD_RESEARCH, [], bid, leap, 0, 0)   // a second click: refused
+    steps(12)
+    b = b_index_of(bid)
+    check(equal(b_queue[b], [entry_of(up), entry_of(leap), k]), "research queue: two research then a spear, in the order clicked ({b_queue[b]})")
+    let paid = research[up].cost[0] + research[leap].cost[0] + t_cost[k][0]
+    check(stock[0][0] == food - paid, "research queue: each paid when queued (food {food} -> {stock[0][0]}, {paid})")
+    check(tech_barred(0, b, leap) and tech_queued(0, leap), "research queue: a queued research can\'t be queued again")
+    // The age-up queues too; a second one is refused; cancelling refunds it.
+    let tc = b_id[0]
+    let before = map(stock) row: row[0]
+    issue_cmd(0, CMD_AGE_UP, [], tc, 0, 0, 0)
+    issue_cmd(0, CMD_AGE_UP, [], tc, 0, 0, 0)
+    steps(12)
+    check((filter(b_queue[0]) e: e == AGE_UP_ENTRY).length == 1 and tech_barred(0, 0, -1), "research queue: one age-up queued, the second refused")
+    let at_up = find(b_queue[0]) e: e == AGE_UP_ENTRY
+    issue_cmd(0, CMD_CANCEL, [], tc, at_up, 0, 0)
+    steps(12)
+    let after = map(stock) row: row[0]
+    check(equal(after, before) and not tech_queued(0, AGE_UP_ENTRY), "research queue: cancelling the age-up refunds it")
+    issue_cmd(0, CMD_CANCEL, [], bid, 1, 0, 0)   // frog_leap, and then queue it again
+    steps(12)
+    check(stock[0][0] == food - paid + research[leap].cost[0] and equal(b_queue[b_index_of(bid)], [entry_of(up), k]), "research queue: cancelling a queued research refunds it")
+    issue_cmd(0, CMD_RESEARCH, [], bid, leap, 0, 0)
+    steps(12)
+    // Run it: the spear line's upgrade, then the spear, then Strong Legs (queued last now).
+    def spears() -> int: return (filter(u_kind) x: x == k).length
+    let n0 = spears()
+    var t_up = -1
+    var t_spear = -1
+    var t_leap = -1
+    while tick < 4000 and (t_up < 0 or t_spear < 0 or t_leap < 0):
+        tick_on()
+        if t_up < 0 and researched[0][up] == 1: t_up = tick
+        if t_leap < 0 and researched[0][leap] == 1: t_leap = tick
+        if t_spear < 0 and spears() > n0: t_spear = tick
+    check(t_up > 0 and t_spear > t_up and t_leap > t_spear, "research queue: they finish in queue order (upgrade {t_up}, spear {t_spear}, Strong Legs {t_leap})")
+    check(t_spear - t_up >= t_train_ticks[k], "research queue: the spear waited for the research ahead of it")
+
+def b_named(p:int, id:string) -> int:
+    for(b_owner) o, b:
+        if o == p and bt_name[b_kind[b]] == id: return b
+    return -1
+
+// Ageing up moves a player's units along their lines; research adds to stats by tag.
+def test_tech():
+    new_world("flat_test", races0, rules0, [])
+    for(num_resources) r: stock[r][0] = 5000
+    let tc = b_id[0]
+    let sx = start_x[0]
+    let sy = start_y[0]
+    spawn_cmd(0, "spear", 2, sx + 3000, sy)
+    let k = type_of_slot(0, "spear")
+    let hp1 = t_hp[k]
+    let atk1 = t_eval_attack[k]
+    let off_ids = ["barracks", "stable", "armoury", "house"]
+    let off_x = [4, -7, 4, -6]
+    let off_y = [-6, -6, 3, 3]
+    for(off_ids) id, n:   // what each age-up asks for, the armoury, and room for the worker, already standing
+        put_done(0, id, sx / 1000 + off_x[n], sy / 1000 + off_y[n])
+    let food = stock[0][0]
+    issue_cmd(0, CMD_AGE_UP, [], tc, 0, 0, 0)
+    issue_cmd(0, CMD_TRAIN, [], tc, type_of_slot(0, "worker"), 1, 0)
+    steps(40)
+    check(stock[0][0] < food, "tech: ageing up is paid for")
+    check(head_tech(0) == AGE_UP_ENTRY, "tech: the Town Center is ageing up")
+    let units_then = u_id.length
+    var aged = -1
+    while tick < 2000:
+        tick_on()
+        if ages[0] >= 2:
+            aged = tick
+            break
+    check(aged > 0 and ages[0] == 2, "tech: player 0 reaches age 2 (tick {aged})")
+    check(u_id.length == units_then, "tech: no worker trained while the Town Center was ageing up")
+    steps(t_train_ticks[type_of_slot(0, "worker")] + 8)
+    check(u_id.length == units_then + 1, "tech: the worker queued behind the age-up trains once it\'s done")
+    let line = lines[k]
+    check(t_hp[k] == hp1 and t_eval_attack[k] == atk1, "tech: the age-up alone doesn\'t change the spears (D-100)")
+    let barracks = b_named(0, "barracks")
+    let up2 = research_named("line.spear.2")
+    issue_cmd(0, CMD_RESEARCH, [], b_id[barracks], up2, 0, 0)
+    while tick < 3500 and researched[0][up2] == 0: tick_on()
+    check(t_hp[k] - hp1 == line[1].hp - line[0].hp and t_eval_attack[k] - atk1 == line[1].attack - line[0].attack and
+          (line[1].hp != line[0].hp or line[1].attack != line[0].attack or not equal(line[1].tags, line[0].tags)),
+        "tech: the spear line\'s upgrade moves spears to their age-2 step ({hp1} -> {t_hp[k]} hp, attack {atk1} -> {t_eval_attack[k]})")
+    var full = true
+    for(u_kind) kk, i:
+        if kk == k: full = full and u_hp[i] == t_hp[k]
+    check(full, "tech: existing spearmen take the new kit at full health ({t_hp[k]} hp)")
+    let atk = t_eval_attack[k]
+    let armoury = b_named(0, "armoury")   // Sharp Sticks is researched at the Armoury
+    let ss = research_named("sharp_sticks")
+    issue_cmd(0, CMD_RESEARCH, [], b_id[armoury], ss, 0, 0)
+    while tick < 4000 and researched[0][ss] == 0: tick_on()
+    check(t_eval_attack[k] == atk + 1, "tech: Sharp Sticks gives spears +1 attack ({atk} -> {t_eval_attack[k]})")
+    issue_cmd(0, CMD_AGE_UP, [], tc, 0, 0, 0)
+    while tick < 7000 and ages[0] < 3: tick_on()
+    let up3 = research_named("line.spear.3")
+    researched[0][up2] = 0   // a line's age-3 upgrade waits for its age-2 one (Dominic, 2026-10-13)
+    check(tech_barred(0, barracks, up3), "tech: the spears\' age-3 upgrade waits for the age-2 one")
+    researched[0][up2] = 1
+    check(not tech_barred(0, barracks, up3), "tech: ...and is there once it\'s done")
+    issue_cmd(0, CMD_RESEARCH, [], b_id[barracks], up3, 0, 0)
+    while tick < 9000 and researched[0][up3] == 0: tick_on()
+    check(ages[0] == 3 and t_eval_attack[k] == line[2].attack + 1, "tech: research still counts after the next age-up")
+    // Tech-tree layer: Strong Legs is frogs only (player 0 here is frogs, player 1 rats).
+    let rb = put_done(1, "barracks", start_x[1] / 1000 + 4, start_y[1] / 1000 - 6)
+    ages[1] = 2
+    for(num_resources) r: stock[r][1] = 5000
+    let leap = research_named("frog_leap")
+    check(tech_barred(1, rb, leap) and research[leap].open[1] == 0, "tech tree: rats can\'t research the frogs\' Strong Legs")
+    let full_rules = deep_copy(rules0)
+    set(full_rules, "full_tech_tree", jbool(true))
+    new_world("flat_test", races0, full_rules, [])
+    let rb2 = put_done(1, "barracks", start_x[1] / 1000 + 4, start_y[1] / 1000 - 6)
+    ages[1] = 2
+    for(num_resources) r: stock[r][1] = 5000
+    check(not tech_barred(1, rb2, leap), "tech tree: the host\'s full tech tree lifts it")
+    // Age gates and towers, on a fresh world.
+    new_world("flat_test", races0, rules0, [])
+    for(num_resources) r: stock[r][1] = 5000
+    let gx = start_x[1]
+    let gy = start_y[1]
+    let w1 = ids_of(1)[ids_of(1).length - 1]
+    let nb = b_id.length
+    issue_cmd(1, CMD_BUILD, [w1], btype_index("stable"), gx / 1000 - 6, gy / 1000 - 6, 0)
+    steps(12)
+    check(b_id.length == nb, "gates: no Stable before age 2")
+    let ti = put_done(1, "watchtower", gx / 1000 - 4, gy / 1000)
+    let tid = b_id[ti]
+    // A lone enemy spear five tiles off (in range, not attacking anything): the tower hurts it.
+    let ids_before = copy(u_id)
+    spawn_cmd(0, "spear", 1, gx - 8500, gy + 500)
+    steps(16)
+    var foe = 0
+    for(u_id) id:
+        if not contains(ids_before, id): foe = id
+    check(foe != 0, "towers: the target spawned")
+    let hp0 = u_hp[index_of(foe)]
+    var n_shots = 0
+    var dealt = 0
+    for(120):
+        tick_on()
+        for(events) e:
+            if e.kind == EV_HIT and e.a == tid and e.b == foe:
+                n_shots++
+                dealt += e.c
+    let fi = index_of(foe)
+    let hp1b = if fi >= 0: u_hp[fi] else: 0
+    check(n_shots >= 2 and dealt > 0 and hp1b <= hp0 - dealt, "towers: a finished watchtower damages an enemy unit in range ({n_shots} shots, {dealt} damage, hp {hp0} -> {hp1b})")
+
+// Shift-queuing: a worker builds a house, then goes foraging, from one queued order.
+def test_queue():
+    new_world("flat_test", races0, rules0, [])
+    let worker = ids_of(0)[0]
+    let sx = start_x[0]
+    let sy = start_y[0]
+    let food_cell = nearest_res(sx, sy, "food")
+    issue_cmd(0, CMD_BUILD, [worker], btype_index("house"), sx / 1000 + 3, sy / 1000 - 1, 0)
+    issue_cmd(0, CMD_GATHER, [worker], food_cell, 0, 0, 0, 1)
+    steps(12)   // orders run two turns (8 ticks) after they're issued
+    var i = index_of(worker)
+    check(u_task[i] == BUILD and u_orders[i].length == 1, "queue: the worker builds first, the gather order waits")
+    var house_done = -1
+    while tick < 2400:
+        tick_on()
+        i = index_of(worker)
+        if house_done < 0:
+            for(b_owner) o, b:
+                if o == 0 and b_done[b] == 1 and b_sx[b] == 2: house_done = tick
+        elif u_task[i] == GATHER or u_task[i] == T_RETURN: break
+    check(house_done > 0, "queue: the house got built (tick {house_done})")
+    check((u_task[i] == GATHER or u_task[i] == T_RETURN) and u_orders[i].length == 0, "queue: then the worker went foraging, queue empty")
+    issue_cmd(0, CMD_MOVE, [worker], sx, sy, 0, 0)
+    issue_cmd(0, CMD_GATHER, [worker], food_cell, 0, 0, 0, 1)
+    issue_cmd(0, CMD_MOVE, [worker], sx + 2000, sy, 0, 0)
+    steps(12)
+    i = index_of(worker)
+    check(u_orders[i].length == 0, "queue: a plain order empties the queue")
+    test_queue_after_build("house")
+    test_queue_after_build("farm")
+
+// Build, then shift-told to go somewhere else: the builder finishes the building, then walks to the
+// queued point: not on to another foundation nearby, and a farm's builder doesn't stay to work it.
+def test_queue_after_build(kind:string):
+    new_world("flat_test", races0, rules0, [])
+    stock[res_of("wood")][0] = 1000
+    let ws = own_workers_of(0)
+    let sx = start_x[0]
+    let sy = start_y[0]
+    let bk = btype_index(kind)
+    let hk = btype_index("house")
+    let spots = []::int2   // where it goes, and a house foundation nearby that nobody builds
+    for(13) dy0:
+        for(6) dx0:
+            let c = int2 { sx / 1000 + dx0 + 3, sy / 1000 + dy0 - 6 }
+            if not spots.length and can_place(0, bk, c.x, c.y): spots.push(c)
+            elif spots.length == 1 and abs(spots[0].y - c.y) >= 4 and can_place(0, hk, c.x, c.y): spots.push(c)
+    assert spots.length == 2
+    issue_cmd(0, CMD_BUILD, [ws[0]], bk, spots[0].x, spots[0].y, 0)
+    issue_cmd(0, CMD_BUILD, [ws[1]], hk, spots[1].x, spots[1].y, 0)
+    let tx = sx - 5000
+    let ty = sy + 3000
+    issue_cmd(0, CMD_MOVE, [ws[0]], tx, ty, 0, 0, 1)
+    steps(16)
+    issue_cmd(0, CMD_STOP, [ws[1]], 0, 0, 0, 0)   // the second house stays a foundation
+    var built = -1
+    var i = -1
+    while tick < 4000:
+        tick_on()
+        i = index_of(ws[0])
+        let b = occupied[spots[0].y * W + spots[0].x]
+        if built < 0 and b != 0 and b_done[b_index_of(b)] == 1: built = tick
+        if built >= 0 and u_moving[i] == 0 and u_task[i] == T_NONE: break
+    let d = isqrt(dist2(u_x[i], u_y[i], tx, ty))
+    check(built > 0 and d < 1500 and u_task[i] == T_NONE, "queue: build a {kind}, then shift-move: built it (tick {built}), then walked to the point ({d} milli-tiles off, task {u_task[i]})")
+
 // ------------------------------------------------------------------ the parts
 
 let PARTS = ["fixed", "command_order", "source_lint", "flow", "crossing_flat", "crossing_choke", "crossing_engines",
              "opening", "combat", "shots", "engines", "trade", "sapper_sling", "gates", "diagonal_wall", "diagonal_gates",
              "walls", "siege_ways", "modes", "movement_classes", "land", "hills", "flow_patch", "flow_patch_mixed",
              "farms", "fog_memory", "age_timing", "builder_moves_on", "builder_back_to_work", "no_dark_picks", "wood_spots",
-             "build_queue", "drop_off", "animals", "sheep_spot", "pen", "bot_hunts", "garrison", "towers", "match", "match_b", "match_flipped"]
+             "build_queue", "drop_off", "animals", "sheep_spot", "pen", "bot_hunts", "garrison", "towers",
+             "camp_gather", "market", "effects", "university_castle", "research_queue", "tech", "queue", "match", "match_b", "match_flipped"]
 
 def run_part(name:string):
     if name == "fixed": test_fixed()
@@ -3514,6 +4115,13 @@ def run_part(name:string):
     elif name == "bot_hunts": test_bot_hunts()
     elif name == "garrison": test_garrison()
     elif name == "towers": test_towers()
+    elif name == "camp_gather": test_camp_gather()
+    elif name == "market": test_market()
+    elif name == "effects": test_effects()
+    elif name == "university_castle": test_university_castle()
+    elif name == "research_queue": test_research_queue()
+    elif name == "tech": test_tech()
+    elif name == "queue": test_queue()
     elif name == "match": test_match()
     elif name == "match_b": test_match_b()
     elif name == "match_flipped": test_match_flipped()
