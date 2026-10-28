@@ -23,12 +23,15 @@ let HOP_POSES = [Pose2 { "hop_crouch", true, 0.2 * 2.0 * 3.141592653589793 }, Po
 let WORK_POSES = [Pose2 { "forage", false, 0.0 }]   // drawn for every worker (placement/work2d.lobster)
 
 // Thresholds (art pixels). Tolerant of a pixel or two of outline, strict enough for a leg on a back.
-let MODEL_SLACK = 6            // pixels a leg or head may differ from the 3D model by (the outline, rounding)...
+// Pixel tolerances were set at the art scale before D-173 (1.5); they keep their size on screen at a finer scale (at 2x a
+// pixel is half as big, so the same slack is twice the pixels).
+let PX_SCALE = BAKE_ART / (1.5 * 0.85)
+let MODEL_SLACK = int(round(6.0 * PX_SCALE))   // pixels a leg or head may differ from the 3D model by (the outline, rounding)...
 let MODEL_SHARE = 0.08         // ...or this share of the part's pixels
 let HIDDEN_MIN = 3             // a weapon or shield shows at least this many pixels in every facing
 let ARMOUR_SHARE = 0.8         // worn armour covers at most this share of its body (a whole copy of the body is 1)
 let FACE_TEAM_SHARE = 0.3      // team cloth over at most this share of a head facing the camera
-let FOOT_PX = 2                // a standing foot's lowest pixel within this of its ground point; walking, of the standing line
+let FOOT_PX = int(round(2.0 * PX_SCALE))   // a standing foot's lowest pixel within this of its ground point; walking, of the standing line
 let RIDER_REACH = 0.8          // a person riding: its leg reaches at least this share of the way from the seat to the girth...
 let CLING_REACH = 0.1          // ...a clinging or folded-legged rider's at least onto the flank
 
@@ -287,7 +290,7 @@ class TPiece:
 
 // Draws the pieces in flat ids from facing k's camera, one pixel an art pixel times the render's size rounding, as
 // the bake's orthographic camera does: its box round them all, 2 units more, the camera at its middle.
-def truth_render(pieces:[TPiece], k:int) -> IMap, int2:
+def truth_render(pieces:[TPiece], k:int, at:float = 1.0) -> IMap, int2:   // (at: the size the parts are baked at, D-180)
     let cam = camera(k)
     var lo = float3_1 * 1000000.0
     var hi = float3_1 * -1000000.0
@@ -300,7 +303,7 @@ def truth_render(pieces:[TPiece], k:int) -> IMap, int2:
         lo = min(lo, blo)
         hi = max(hi, bhi)
     let r = magnitude(hi - lo) * 0.5 + 2.0
-    let size = int(ceiling(2.0 * r * BAKE_ART))
+    let size = int(ceiling(2.0 * r * BAKE_ART * at))
     let ppu = float(size) / (2.0 * r)
     let mid = (lo + hi) * 0.5
     let sx0 = float(size) * 0.5 - dot(mid, cam[0]) * ppu
@@ -377,7 +380,7 @@ def truth_of(body:VNode, v:UV, heads:[VNode], k:int) -> Truth:
     let bdata = part(body_id)
     let cut = has_s(gstrs(bdata, "cut"), "legs")
     let head = if heads.length: heads[0] else: nil
-    let key = bake_key(body.part_id, body.pshapes, body.cols) + "|" + (if head: head.part_id else: "") + "|{k}|{old_truth}"
+    let key = bake_key(body.part_id, body.pshapes, body.cols, body.size) + "|" + (if head: head.part_id else: "") + "|{k}|{old_truth}"
     let have = truth_cache.get(key)
     if have: return have
     let cols = body.cols or colours_for("frog_green", "swamp", float3 { 1.0, 0.0, 1.0 })
@@ -404,7 +407,7 @@ def truth_of(body:VNode, v:UV, heads:[VNode], k:int) -> Truth:
     if head:
         let hs = rig_spec(tokenize(head.part_id, "~", "")[0], cols)
         if hs: pieces.push(TPiece { hs.node, Xform { BASIS_ID, spec.sockets.get("head", float3_0) - hs.node.pos }, 1 })   // (its position the socket: Godot sets it)
-    let cells, size = truth_render(pieces, k)
+    let cells, size = truth_render(pieces, k, float(body.size) / 100.0)   // (on the parts' own grid: baked at the unit's size)
     tr.cells = cells
     tr.feet = map(spec.anchors.length): new_vox()
     for(cells.keys) c:
@@ -512,22 +515,24 @@ def check_model(v:UV, parts:[P2], rg:string, body:int, label:string, view:string
                         sole = project(q, cam)
                 let got = lowest_y(cells_in_rig(leg.node))
                 iset(lows, i, int(got))
-                let want_px = want * BAKE_ART
+                let sz = float(drawn_size(v)) / 100.0   // (the legs' own grid: baked at the unit's size, D-180)
+                let foot = int(round(float(FOOT_PX) * sz))   // (its tolerance the same size on screen)
+                let want_px = want * BAKE_ART * sz
                 // (near: on the flank that faces the camera and on the camera's side of the middle)
                 let flat = float3 { cam[2].x, 0.0, cam[2].z }
                 let near = piece.hip.z * flat.z > 0.0 and dot(piece.joint, flat) > 0.0
                 // (in sight: the 3D truth shows this leg's own pixels at its foot)
                 var shown = 0
-                let at_ = int2 { int(round(sole.x * BAKE_ART)), int(round(sole.y * BAKE_ART)) }
+                let at_ = int2 { int(round(sole.x * BAKE_ART * sz)), int(round(sole.y * BAKE_ART * sz)) }
                 if i < gt.feet.length:
-                    for(2 * FOOT_PX + 1) dx:
-                        for(2 * FOOT_PX + 2) dy:
-                            if vhas(gt.feet[i], ckey(at_.x + dx - FOOT_PX, at_.y + dy - FOOT_PX - 1)): shown++
+                    for(2 * foot + 1) dx:
+                        for(2 * foot + 2) dy:
+                            if vhas(gt.feet[i], ckey(at_.x + dx - foot, at_.y + dy - foot - 1)): shown++
                 let seen = shown > 0
                 if near: note("B5 a near foot in sight", label, view, not seen, "{rg} {leg.node.part_id} foot hidden by its own body in 3D")
                 // (a far leg's one-pixel sliver at the body's edge is where this CPU truth and Godot's GPU one round apart)
                 if near or shown > 1:
-                    note("B5 standing feet on the ground", label, view, abs(got - want_px) > float(FOOT_PX),
+                    note("B5 standing feet on the ground", label, view, abs(got - want_px) > float(foot),
                          "{rg} {leg.node.part_id} lowest pixel {int(got)}, its ground point {int(round(want_px))}")
     stand.set(rg, lows)
 
@@ -628,5 +633,5 @@ def check_crew(v:UV, label:string, view:string):
         let over = index_in(c.node) > index_in(engine)
         var want = if has(front, name): as_bool(at(front, name)) else: jf(depth, name, 0.0) > 0.0
         if ends_with(name, "_in"): want = false
-        elif ends_with(name, "_top"): want = true
+        elif ends_with(name, "_top") or ends_with(name, "_box"): want = true
         note("siege crew by socket", label, view, over != want, name)

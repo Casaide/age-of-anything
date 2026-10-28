@@ -391,7 +391,7 @@ def bake_parts(n:VNode) -> int:
     var baked = 0
     if n.part and n.part_id != "" and n.part_id != "unit_shadow":
         let cols = n.cols
-        let key = bake_key(n.part_id, n.pshapes, cols)
+        let key = bake_key(n.part_id, n.pshapes, cols, n.size)
         if cols and not bakes.get(key) and not no_model.get(key, 0):
             let before = baked_here
             if bake_model_part(n.part_id, key, cols): baked += baked_here - before + 1
@@ -472,7 +472,7 @@ def pose_view(u:SUnit, col:SCol, at_:float2) -> UV:
         let b0 = v.body_nodes[0]
         let id = rstr(u.recipe, "body") + "@" + col.hold
         let cols = b0.cols
-        if cols and not bakes.get(bake_key(id, b0.pshapes, cols)): bake_model_part(id, bake_key(id, b0.pshapes, cols), cols)
+        if cols and not bakes.get(bake_key(id, b0.pshapes, cols, b0.size)): bake_model_part(id, bake_key(id, b0.pshapes, cols, b0.size), cols)
         set_hold(v, col.hold)
     if pose == "strike" or pose == "fall":   // played through the composer's own path, in 60ths of a second
         if pose == "strike": flourish(v) else: die(v, u.tip)

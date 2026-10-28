@@ -84,7 +84,8 @@ let SHADOW_COLOURS = Colours { dictionary<string, string>(3), float3_1 }
 
 // ---- bake keys and lookups (PartShape)
 
-def bake_key(id:string, shapes:[JV], cols:Colours?) -> string:
+// (at: the percent of the art scale it's baked at, its unit's drawn size; "%<at>" on the key when not 100, D-180)
+def bake_key(id:string, shapes:[JV], cols:Colours?, at:int = 100) -> string:
     let chans = []::string
     for(shapes) s:
         let ch = gstr(s, "ch", "")
@@ -97,17 +98,17 @@ def bake_key(id:string, shapes:[JV], cols:Colours?) -> string:
         if c == "team": hex = TEAM_KEY_HEX
         elif cols: hex = cols.hex.get(c, "ff00ff")
         out += c + "=" + hex
-    return out
+    return if at == 100: out else: out + "%" + string(at)
 
 // The key a part node draws (its facing's bake when there is one; its front layer).
 def draw_key(n:VNode) -> string:
-    var key = bake_key(n.part_id, n.pshapes, n.cols)
+    var key = bake_key(n.part_id, n.pshapes, n.cols, n.size)
     if n.facing != 0 and bakes.get(key + facing_suffix(n.facing)): key += facing_suffix(n.facing)
     return if n.front: key + "#front" else: key
 
 // PartShape.bake_of: this node's bake (another id's: `id`), or nil.
 def bake_key_of(n:VNode, id:string) -> string:
-    var key = bake_key(if id == "": n.part_id else: id, n.pshapes, n.cols)
+    var key = bake_key(if id == "": n.part_id else: id, n.pshapes, n.cols, n.size)
     if n.facing != 0 and bakes.get(key + facing_suffix(n.facing)): key += facing_suffix(n.facing)
     return if n.front: key + "#front" else: key
 

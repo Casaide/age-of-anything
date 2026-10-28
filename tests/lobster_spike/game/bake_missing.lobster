@@ -49,7 +49,7 @@ def bake_missing_parts() -> int:
             let parts = []::VNode
             part_nodes(v.node, parts)
             for(parts) n:
-                let key = bake_key(n.part_id, n.pshapes, n.cols)
+                let key = bake_key(n.part_id, n.pshapes, n.cols, n.size)
                 let cols = n.cols
                 if cols and not bakes.get(key) and bake_model_part(n.part_id, key, cols): continue
                 if mesh_dir != "" and not has_char(n.part_id, '~'):
@@ -73,7 +73,7 @@ def bake_view_parts(n:VNode) -> int:
     let parts = []::VNode
     part_nodes(n, parts)
     for(parts) pn:
-        let key = bake_key(pn.part_id, pn.pshapes, pn.cols)
+        let key = bake_key(pn.part_id, pn.pshapes, pn.cols, pn.size)
         let cols = pn.cols
         if cols and not bakes.get(key): bake_model_part(pn.part_id, key, cols)
     return baked_here - before
