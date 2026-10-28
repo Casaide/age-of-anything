@@ -151,3 +151,49 @@ def corpse_corners(n:MNode, t0:Xform) -> [float3]:
         for(8) c: out.push(xf(t, lo + size * float3 { float(c & 1), float((c >> 1) & 1), float((c >> 2) & 1) }))
     for(n.kids) c: append_into(out, corpse_corners(c, t))
     return out
+
+// The dead laid down, baked (corpse.gd bake, D-165): frame f of the pose in 8 facings, the body turned in each by the
+// pose's `turn` so every view reads, at the size its unit is drawn (D-180); the last frame also its shadow, the posed
+// body pressed flat onto the ground, grown a pixel and nudged away from the light, in the shadow colour. UnitView's
+// corpse_fall plays them. Needs the part baker (view/part_bake.lobster).
+def bake_corpse(r:JV, p:JV, f:float, shadow:bool) -> void:
+    let id = corpse_id(r, p, int(round(f * 100.0)))
+    // (at the size its unit is drawn: its scale, and a creature drawn smaller than built: creatures.json draw_scale)
+    let cr = get(lib_creatures, gstr(r, "creature", ""))
+    let at = int(round(float(gint(r, "scale", 100)) * (if cr: float(gint(cr, "draw_scale", 100)) / 100.0 else: 1.0)))
+    let key = bake_key(id, [], nil, at)
+    if bakes.get(key): return
+    bake_art_k = float(at) / 100.0
+    let m = corpse_model(r, p, f)
+    let turns = map(glist(p, "turn")) t: as_float(t)
+    bake_colours = colours_for(rstr(r, "skin"), rstr(r, "family"), float3 { 1.0, 0.0, 1.0 })
+    for(8) k:
+        m.rot = float3 { 0.0, if k < turns.length: turns[k] else: 0.0, 0.0 }
+        let sprite0, w0, h0, o0 = bake_facing(model_tris(m), k)
+        let sprite, w, h, origin = crop_sprite(sprite0, w0, h0, o0)
+        keep_sprite(key + facing_suffix(k), sprite, w, h, origin)
+        if shadow:
+            // the footprint: the posed body flattened onto the ground, its silhouette at the sprite's pixels
+            let flat = mnode()
+            flat.kids.push(m)   // (held, not parented: m stays the model)
+            flat.scl = float3 { 1.0, 0.01, 1.0 }
+            let fs, fw, fh, fo = bake_facing(model_tris(flat), k)
+            let out = ensure_size("", fw * fh * 4, 0)
+            for(fh) y:
+                for(fw) x:
+                    if fs[(y * fw + x) * 4 + 3] >= 128:
+                        for([int2 { 0, 0 }, int2 { 1, 0 }, int2 { -1, 0 }, int2 { 0, 1 }, int2 { 0, -1 }, int2 { 1, 1 }, int2 { 2, 1 }]) d:
+                            let qx = x + d.x
+                            let qy = y + d.y
+                            if qx >= 0 and qy >= 0 and qx < fw and qy < fh:
+                                for(4) i: write_int8_le(out, (qy * fw + qx) * 4 + i, SHADOW_RGBA[i])
+            keep_sprite(bake_key(id + "~shadow", [], nil, at) + facing_suffix(k), out, fw, fh, fo)
+    bake_art_k = 1.0
+
+// Every frame of a unit's fall, if its body lies down in 3D (UnitView.corpse_pose): the last with its shadow.
+def bake_corpse_frames(r:JV) -> void:
+    let pose = corpse_pose_of(r)
+    if not pose: return
+    let p = pose
+    let steps = glist(p, "frames")
+    for(steps) f, i: bake_corpse(r, p, as_float(f) / 100.0, i == steps.length - 1)
