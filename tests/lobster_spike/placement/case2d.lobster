@@ -66,6 +66,7 @@ def step2(s:string):
         write_file("/tmp/aoa_placement_trail.txt", trail2, 0, 1)
 
 def check_case2d(label:string, r:JV) -> void:
+    write_file("/tmp/aoa_placement_at.txt", label + "\n", 0, 1)   // (the unit being checked: where a crash was)
     let poses = copy(POSES2)
     if not has(r, "crew") and not has(r, "mount") and gstr(get(lib_creatures, gstr(r, "creature", "")) or jobj(), "gait", "") == "hop":
         append_into(poses, HOP_POSES)   // (a hopper on the ground: crouched to leap, squashed landing)
