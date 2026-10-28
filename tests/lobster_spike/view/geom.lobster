@@ -296,11 +296,13 @@ def vdepth(cells:Vox, p:float3, reach:float = 8.0) -> float:
         while i <= r:
             var j = -r
             while j <= r:
+                // (only the shell at distance r: inside it, k is just -r and r)
+                let edge = abs(i) == r or abs(j) == r
                 var k = -r
                 while k <= r:
-                    if max(abs(i), max(abs(j), abs(k))) == r and vhas(cells, vkey(c.x + i, c.y + j, c.z + k)) != inside:
+                    if vhas(cells, vkey(c.x + i, c.y + j, c.z + k)) != inside:
                         best = min(best, sqrt(float(i * i + j * j + k * k)) * GEOM_RES)
-                    k++
+                    k += if edge or k == r: 1 else: 2 * r
                 j++
             i++
         r++
