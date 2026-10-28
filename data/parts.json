@@ -210,7 +210,8 @@
    1.25
   ],
   "legs": {
-   "part": "leg.human",
+   "part": "leg.human", "poses": 8, "gait": {"swing": 0.0, "cadence": 1.0, "bob": 0.4, "rock": 0.0},
+   "_poses_doc": "the heroic leg bent at the knee and ankle, baked in 8 walk steps (D-179; leg.human@w<i>_<n>, unit_models.gd human_joints): the knee bending, the foot rolling through, the body riding on the planted foot",
    "anchors": [
     [
      -3,

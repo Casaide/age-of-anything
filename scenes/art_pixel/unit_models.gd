@@ -1253,15 +1253,63 @@ func _leg_human(c: Dictionary) -> Dictionary:
 	var n := Node3D.new()
 	var cloth := surf("cloth", c.cloth2, 5.0)
 	var boot := surf("leather", Color("#6a4a30"), 3.0)
-	# Modelled in Blender (tools/blender/human_leg.py): a shaped thigh, knee and calf, a cuffed boot.
+	# Modelled in Blender (tools/blender/human_leg.py): a shaped thigh, knee and calf, a cuffed boot; the heroic one in
+	# pieces bent at the knee and ankle for the pose (D-179: "w<i>_<n>", a walk step; "" as modelled).
 	if FileAccess.file_exists("res://assets/models/leg_human.glb"):
-		n.add_child(glb("leg_human" + HUMAN_LOOK, {"cloth": cloth, "leather": boot}))
+		var leg := glb("leg_human" + HUMAN_LOOK, {"cloth": cloth, "leather": boot})
+		if HUMAN_LOOK != "" and hold != "low" and hold != "":
+			var j := human_joints(hold)
+			var at := func(pivot: Vector2, to: Vector2, turn: float) -> Transform3D:
+				return Transform3D(Basis(Vector3(0, 0, 1), turn), Vector3(to.x, to.y, 0)) * Transform3D(Basis.IDENTITY, -Vector3(pivot.x, pivot.y, 0))
+			var thigh: Transform3D = at.call(Vector2.ZERO, Vector2.ZERO, j.knee.angle() - HUMAN_KNEE.angle())
+			var shin: Transform3D = at.call(HUMAN_KNEE, j.knee, (j.ankle - j.knee).angle() - (HUMAN_ANKLE - HUMAN_KNEE).angle())
+			var foot: Transform3D = at.call(HUMAN_ANKLE, j.ankle, j.foot)
+			for piece in leg.find_children("*", "Node3D", true, false):
+				var name := String(piece.name)
+				if name.begins_with("thigh"):
+					piece.transform = thigh * piece.transform
+				elif name.begins_with("shin"):
+					piece.transform = shin * piece.transform
+				elif name.begins_with("foot"):
+					piece.transform = foot * piece.transform
+		n.add_child(leg)
 		return {"node": n}
 	n.add_child(rod(Vector3(0, 0, 0), Vector3(0.7, -5.4, 0), 2.0, 1.6, cloth))
 	n.add_child(rod(Vector3(0.7, -5.4, 0), Vector3(0.1, -9.4, 0), 1.5, 1.3, cloth))
 	n.add_child(cone(1.35, 1.5, 1.8, boot, Vector3(0.2, -9.4, 0)))
 	n.add_child(blob(Vector3(2.4, 1.1, 1.5), boot, Vector3(1.1, -10.3, 0)))
 	return {"node": n}
+
+
+## The heroic leg's joints as modelled (tools/blender/human_leg.py, in the game's units) and its walk (D-179).
+const HUMAN_KNEE := Vector2(0.784, -9.0)
+const HUMAN_ANKLE := Vector2(0.112, -15.667)
+const HUMAN_STRIDE := 10.0   # how far an ankle travels along the ground in a step
+const HUMAN_STANCE := 0.6    # the share of a step a foot is down
+const HUMAN_LIFT := 3.2      # how high a foot swings through
+
+
+## Where a heroic leg's knee and ankle are in a walk step (2D, the hip at the origin), and the foot's turn at the ankle.
+## Down, the ankle slides back as far down as the leg reaches (the body dips at the ends of the stride, riding on its
+## planted foot); swinging through, it lifts, the knee bending, the toes down a little.
+static func human_joints(pose: String) -> Dictionary:
+	var thigh := HUMAN_KNEE.length()
+	var shin := (HUMAN_ANKLE - HUMAN_KNEE).length()
+	var reach := 0.985 * (thigh + shin)
+	var p := walk_step(pose)
+	var x := HUMAN_ANKLE.x
+	var lift := 0.0
+	var turn := 0.0
+	if p >= 0.0:
+		if p < HUMAN_STANCE:
+			x += HUMAN_STRIDE * (0.5 - p / HUMAN_STANCE)
+		else:
+			var q := (p - HUMAN_STANCE) / (1.0 - HUMAN_STANCE)
+			x += HUMAN_STRIDE * (smoothstep(0.0, 1.0, q) - 0.5)
+			lift = HUMAN_LIFT * sin(q * PI)
+			turn = -0.35 * sin(q * PI)
+	var ankle := Vector2(x, maxf(HUMAN_ANKLE.y, -sqrt(maxf(reach * reach - x * x, 1.0))) + lift)
+	return {"knee": ik2(ankle, thigh, shin, true), "ankle": ankle, "foot": turn}
 
 
 # ------------------------------------------------------------------ pony (a mount; centaurs use the fused body)

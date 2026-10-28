@@ -57,7 +57,7 @@ static func members(lib, r: Dictionary, sockets: Dictionary) -> Array:
 		var recipe := UnitView.haul_recipe(lib, r) if hauls else UnitView.crew_recipe(r)
 		var s := float(recipe.get("scale", 100)) / 100.0   # (a tiny race's crew are drawn tiny)
 		var xf := Transform3D(Basis(Vector3.UP, deg_to_rad(-45.0 * turn)).scaled(Vector3.ONE * s), sockets[name])
-		if not top or "_reach" in name:
+		if not top:
 			xf.origin -= xf.basis * Vector3(float(lib.creatures.get(recipe.get("creature", ""), {}).get("crew_back", 0)), 0, 0)   # (UnitView._build_engine)
 		out.append({"name": name, "recipe": recipe, "xf": xf,
 			"hold": "" if hauls else hold, "top": top, "hauls": hauls, "box": name.ends_with("_box")})   # (box: in a walled howdah, legs not drawn)
