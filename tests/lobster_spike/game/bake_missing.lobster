@@ -35,7 +35,7 @@ def add_baked(full:string, tris:[BakeTri], facing:int, cols:Colours):
     sheet_tex.push(gl.create_texture(rows, texture_format_clamp | texture_format_nomipmap))
     sheet_dims.push(float2 { float(w), float(h) })
     frame_at.set("p:" + full, frames.length)
-    frames.push(Frame { sheet_tex.length - 1, 0, 0, w, h, int(origin.x + 0.5), int(origin.y + 0.5) })
+    frames.push(Frame { sheet_tex.length - 1, 0, 0, w, h, int(origin.x + 0.5), int(origin.y + 0.5), 1.0 })
     bakes.set(full, Bake { origin.x, origin.y, BAKE_ART })
     baked_here++
 

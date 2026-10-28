@@ -9,7 +9,7 @@ let BAKE_SS = 4
 let BAKE_AO_RADIUS = 1.2            // PartBaker's environment: ssao_radius, ssao_intensity, ssao_power
 let BAKE_AO_INTENSITY = 1.0           // (Godot's 2.5 in this formula: the bodies' brightness then within a level of Godot's bakes)
 let BAKE_AO_POWER = 1.4
-let BAKE_ART = 1.5 * 0.85           // art px a part unit (ArtKit: ART_SCALE x UNIT_SCALE: baked at the size drawn)
+let BAKE_ART = ART_SCALE * 0.85     // art px a part unit (ArtKit: ART_SCALE x UNIT_SCALE: baked at the size drawn)
 let PX_PER_UNIT = 32.0 / 0.70710678 // the baker's screen px a world unit (Baker.PX_PER_UNIT)
 
 let BAKE_SHADERS = """

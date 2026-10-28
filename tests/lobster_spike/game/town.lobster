@@ -199,7 +199,7 @@ def fire_spots_on(id:int, body:string) -> [float2]:
         return float(h % 10000) / 10000.0
     // (the middle of the bake: its top is often a mast or a spire with sky round it; Godot checks the
     // bake's pixels, which the pack doesn't keep)
-    return map(3): float2 { (float(fr.w) * (0.3 + next() * 0.4) - float(fr.ox)) / 1.5, (float(fr.h) * (0.48 + next() * 0.2) - float(fr.oy)) / 1.5 }
+    return map(3): float2 { (float(fr.w) * (0.3 + next() * 0.4) - float(fr.ox)) * fr.k / 1.5, (float(fr.h) * (0.48 + next() * 0.2) - float(fr.oy)) * fr.k / 1.5 }
 
 def emit(key:string, rate:float, dt:float, make):
     var owed = town_emit.get(key, 0.0) + rate * dt
@@ -261,7 +261,7 @@ def crack_lines(b:int, look:string) -> [[float2]]:
         h = (h * 1103515245 + 12345) & 0x7fffffff
         return float(h % 10000) / 10000.0
     return map(6):
-        var p = float2 { (float(fr.w) * (0.25 + next() * 0.5) - float(fr.ox)) / 1.5, (float(fr.h) * (0.42 + next() * 0.2) - float(fr.oy)) / 1.5 }
+        var p = float2 { (float(fr.w) * (0.25 + next() * 0.5) - float(fr.ox)) * fr.k / 1.5, (float(fr.h) * (0.42 + next() * 0.2) - float(fr.oy)) * fr.k / 1.5 }
         let line = [p]
         var dir = normalize(float2 { next() * 1.2 - 0.6, 1.0 })
         for(3 + int(next() * 3.0)):
@@ -558,7 +558,7 @@ def collect_tethers():
                     uv_build(made, r, float3 { tc.x, tc.y, tc.z }, 20)
                     made.node.scl = float2_1 * 0.85
                     made.pose_steps = 4
-                    made.art_px = 1.5
+                    made.art_px = ART_SCALE
                     made.node.pos = canvas(t.x + 300.0, t.y + 250.0)
                     made.lift = lift_at(t.x + 300.0, t.y + 250.0)
                     face_vec(made, canvas(t.x, t.y) - made.node.pos)

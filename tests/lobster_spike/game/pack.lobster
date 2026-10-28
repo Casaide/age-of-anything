@@ -11,6 +11,7 @@ class Frame:
     h:int
     ox:int          // the anchor inside the frame
     oy:int
+    k:float         // world art px a texture px (world art baked at ART_SCALE: 1 / ART_K)
 
 class Look:
     body:string
@@ -89,7 +90,7 @@ def load_pack(dir:string):
                         sheet_dims.push(float2_1 * float(sheet_size))
                 case "frame":
                     frame_at.set(t[1], frames.length)
-                    frames.push(Frame { num(2), num(3), num(4), num(5), num(6), num(7), num(8) })
+                    frames.push(Frame { num(2), num(3), num(4), num(5), num(6), num(7), num(8), 1.0 })
                 case "anim": anims.set(t[1] + "." + t[2], num(3))
                 case "arch": arch_of.push(t[2])
                 case "look": looks.set(t[1], Look { t[2], [t[3], t[4], t[5], t[6]], t[7] })
@@ -200,10 +201,10 @@ def sprite(f:int, x:float, y:float, col:float4):
     if fr.sheet != b_sheet:
         flush_sprites()
         b_sheet = fr.sheet
-    let x0 = floor(x) - fr.ox
-    let y0 = floor(y) - fr.oy
-    let x1 = x0 + fr.w
-    let y1 = y0 + fr.h
+    let x0 = floor(x) - float(fr.ox) * fr.k
+    let y0 = floor(y) - float(fr.oy) * fr.k
+    let x1 = x0 + float(fr.w) * fr.k
+    let y1 = y0 + float(fr.h) * fr.k
     let s = sheet_dims[fr.sheet]
     let u0 = fr.x / s.x
     let v0 = fr.y / s.y
