@@ -133,6 +133,8 @@ SHADER bakelit
 
 var bake_shadow_debug = false
 var bake_fit = 1.0                  // render px over the art scale's (a part bakes as Godot's whole-pixel viewport: part_bake.lobster)
+var bake_frame_r = 0.0              // > 0: that viewport, 2r across round bake_frame_c (else framed on the model)
+var bake_frame_c = float3_0
 var bake_debug = ""                 // a path stem: save each raw render there (checks)
 
 class BakeTri:
@@ -283,9 +285,18 @@ def bake_facing(part:[BakeTri], facing:int, hide:[BakeTri] = [], join:float3 = f
             dhi = max(dhi, dot(p, cz))
     lo -= float2_1 * 2.0
     hi += float2_1 * 2.0
-    let px = BAKE_ART * float(BAKE_SS) * bake_fit   // render px a part unit
-    let w = int(ceiling((hi.x - lo.x) * px))
-    let h = int(ceiling((hi.y - lo.y) * px))
+    var px = BAKE_ART * float(BAKE_SS)   // render px a part unit
+    if bake_frame_r > 0.0:
+        // Godot's bake viewport (part_baker.gd): a square of whole pixels, 2r across, centred on the model's box: the
+        // pixel grid, and the resize's sample points on it, fall on the model as there
+        let n = int(ceiling(2.0 * bake_frame_r * px))
+        px = float(n) / (2.0 * bake_frame_r)
+        let c2 = float2 { dot(bake_frame_c, cx), -dot(bake_frame_c, cy) }
+        lo = c2 - float2_1 * bake_frame_r
+        hi = c2 + float2_1 * bake_frame_r
+    else: px *= bake_fit
+    let w = int(ceiling((hi.x - lo.x) * px - 0.0001))
+    let h = int(ceiling((hi.y - lo.y) * px - 0.0001))
     // The mesh in render px (x right, y down), its triangles drawn far to near (the painter's way: the
     // framebuffer here has no depth test in 2D).
     // The shadow map: the part's depth as the key light sees it (orthographic along the light), in
@@ -439,39 +450,59 @@ def bake_facing(part:[BakeTri], facing:int, hide:[BakeTri] = [], join:float3 = f
     let sw, sh, sprite = pixelize(raw, w, h, BAKE_SS, seam)
     return sprite, sw, sh, (float2_0 - lo) * px / float(BAKE_SS)
 
-// Pixelize.run: shrink by `factor` (a box filter over premultiplied colour), hard alpha, then an
-// inner outline (edge pixels a darker shade of themselves, toward the ink). `seam` (one byte a raw pixel,
-// rows as `raw`'s): where another part of the unit lies against this one: any cover there is kept, grown a
-// pixel into it, and not outlined along it.
+// Pixelize.run: shrink by `factor` (Godot's Image.resize with INTERPOLATE_CUBIC over premultiplied bytes: a bicubic
+// sample near each block's corner, so a thin leg keeps its pixels as there), hard alpha, then an inner outline (edge
+// pixels a darker shade of themselves, toward the ink). `seam` (one byte a raw pixel, rows as `raw`'s): where another
+// part of the unit lies against this one: any cover there is kept, grown a pixel into it, and not outlined along it.
+
+// Godot's _bicubic_interp_kernel (Keys, a = -0.5).
+def cubic_kernel(t:float) -> float:
+    let x = abs(t)
+    if x <= 1.0: return (1.5 * x - 2.5) * x * x + 1.0
+    if x < 2.0: return ((-0.5 * x + 2.5) * x - 4.0) * x + 2.0
+    return 0.0
+
 def pixelize(raw:string, w:int, h:int, factor:int, seam:string = "", outline:bool = true) -> int, int, string:
     let sw = max(1, w / factor)
     let sh = max(1, h / factor)
     let out = ensure_size("", sw * sh * 4, 0)   // (the write_ functions write into it in place)
     let joined = ensure_size("", sw * sh, 0)
+    // premultiplied, top row first (Image.premultiply_alpha: (c a + 255) >> 8; a framebuffer reads back bottom row first)
+    let pm = map(w * h * 4) i:
+        let p = i / 4
+        let src = ((h - 1 - p / w) * w + p % w) * 4
+        let c = i % 4
+        if c == 3: raw[src + 3] else: (raw[src + c] * raw[src + 3] + 255) >> 8
+    let xfac = float(w) / float(sw)
+    let yfac = float(h) / float(sh)
     let n = float(factor * factor)
     for(sh) y:
+        let oy = float(y) * yfac - 0.5
+        let oy1 = int(oy)   // (truncated toward zero, as Godot's (int))
+        let dy = oy - float(oy1)
         for(sw) x:
-            var r = 0.0
-            var g = 0.0
-            var b = 0.0
-            var a = 0.0
-            var j = 0.0
-            for(factor) dy:
-                for(factor) dx:
-                    let p = (h - 1 - (y * factor + dy)) * w + x * factor + dx   // (a framebuffer reads back bottom row first)
-                    let i = p * 4
-                    let pa = float(raw[i + 3]) / 255.0
-                    r += float(raw[i]) * pa
-                    g += float(raw[i + 1]) * pa
-                    b += float(raw[i + 2]) * pa
-                    a += pa
-                    if seam.length: j += float(seam[p])
+            let ox = float(x) * xfac - 0.5
+            let ox1 = int(ox)
+            let dx = ox - float(ox1)
+            var col = [0.0, 0.0, 0.0, 0.0]
+            for(4) nn:
+                let k1 = cubic_kernel(dy - float(nn - 1))
+                let oy2 = clamp(oy1 + nn - 1, 0, h - 1)
+                for(4) m:
+                    let k2 = k1 * cubic_kernel(float(m - 1) - dx)
+                    let ox2 = clamp(ox1 + m - 1, 0, w - 1)
+                    let q = (oy2 * w + ox2) * 4
+                    for(4) c: col[c] += float(pm[q + c]) * k2
+            let px = map(4) c: clamp(int(round(col[c])), 0, 255)
+            if seam.length:
+                var j = 0.0
+                for(factor) sy:
+                    for(factor) sx: j += float(seam[(h - 1 - (y * factor + sy)) * w + x * factor + sx])
+                write_int8_le(joined, y * sw + x, int(j / n))
+            let a = px[3]
             let o = (y * sw + x) * 4
-            if seam.length: write_int8_le(joined, y * sw + x, int(j / n))
-            if a / n >= 0.6 or (seam.length and a / n >= 0.03 and j / n >= 64.0):
-                write_int8_le(out, o, int(min(255.0, r / a)))
-                write_int8_le(out, o + 1, int(min(255.0, g / a)))
-                write_int8_le(out, o + 2, int(min(255.0, b / a)))
+            if a >= 153 or (seam.length and a >= 8 and joined[y * sw + x] >= 64):   // (0.6; along a seam, any cover)
+                for(3) c: write_int8_le(out, o + c, min(255, px[c] * 255 / a))
                 write_int8_le(out, o + 3, 255)
     if seam.length:   // grow a pixel into the seam (the two parts' bakes sit on slightly different grids)
         let grown = ensure_size("", sw * sh * 4, 0)
