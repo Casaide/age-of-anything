@@ -1,6 +1,6 @@
 {
  "name": "rat_armour_ra1",
- "title": "Rat armour RA1 (2026-10-27): every armour fitted to the rat as a rat is (tools/blender/rat_armour.py)",
+ "title": "Rat armour RA1 (2026-10-27): every armour fitted to the rat as a rat is (tools/blender/creature_armour.py)",
  "_doc": "Dominic, via the Lobster session: a brown band round the age-1 rat's middle (the human jerkin scaled onto it). Each row one armour, fitted.",
  "zooms": [
   4

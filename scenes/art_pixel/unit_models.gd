@@ -98,7 +98,7 @@ func fitted(armour_id: String, body_id: String, colours: Dictionary) -> Dictiona
 	return {"node": glb(name, mats)}
 
 
-## The materials a fitted armour's .glb names (tools/blender/human_armour.py, rat_armour.py): [texture, tint, size].
+## The materials a fitted armour's .glb names (tools/blender/human_armour.py, creature_armour.py): [texture, tint, size].
 const ARMOUR_MATS := {"leather": ["leather", "#ffffff", 5.0], "trim": ["leather", "#5a3a20", 3.0], "bronze": ["bronze", "#ffffff", 4.0],
 	"iron": ["iron", "#ffffff", 3.0], "tin": ["iron", "#f2f6ff", 2.0], "brass": ["bronze", "#fff0c8", 1.2],
 	"mail": ["mail", "#ffffff", 2.5], "bark": ["bark_plate", "#ffffff", 6.0], "label": ["", "#c8a040", 0.0]}
@@ -177,7 +177,8 @@ func build(id: String, colours: Dictionary) -> Dictionary:
 ## at SHIELD_AT from the grip) is turned that way, its middle on the body's "sling" socket.
 const SLUNG := "@slung"
 const SHIELD_AT := Vector3(3.0, 0.4, 1.5)
-const SLINGS := {"@slung": [Vector3(-1.0, 0.2, 0.0), Vector3.UP], "@slung_flat": [Vector3(-0.45, 1.0, 0.0), Vector3(-1.0, -0.45, 0.0)]}   # [face, up]
+const SLINGS := {"@slung": [Vector3(-1.0, 0.2, 0.0), Vector3.UP], "@slung_flat": [Vector3(-0.45, 1.0, 0.0), Vector3(-1.0, -0.45, 0.0)],
+	"@slung_lean": [Vector3(-0.574, 0.819, 0.0), Vector3(0.819, 0.574, 0.0)]}   # [face, up]; lean: on a back sloping 55 degrees forward (the frog, D-178)
 
 
 static func sling_of(id: String) -> String:
@@ -434,11 +435,11 @@ func _frog_eyes(n: Node3D, at: Vector3, spread: float, r: float, skin: Material)
 		n.add_child(decal("frog_eye", r * 1.45, r * 1.45, on_surface(dome, Vector3(r, r * 1.05, r), look, 0.1), look, false))
 
 
-# --- A: the crouched leaper. Back sloping up from the rump to the head, front arms braced on the
-# ground, hind legs folded high beside the body, ready to spring.
+# --- The crouched leaper (2026-10-11 to 2026-10-28; the frog before D-178, kept for the old concept sheets: _crouched).
+# Back sloping up from the rump to the head, front arms braced on the ground, hind legs folded high beside the body.
 
 
-func _body_frog(c: Dictionary) -> Dictionary:
+func _body_frog_crouched(c: Dictionary) -> Dictionary:
 	return _scaled(_body_frog_built(c), FROG_SCALE)
 
 
@@ -483,7 +484,7 @@ func _body_frog_built(c: Dictionary) -> Dictionary:
 
 ## A long hind leg folded up beside the body: thigh forward and up, shin back down, a long foot.
 
-func _head_frog(c: Dictionary) -> Dictionary:
+func _head_frog_crouched(c: Dictionary) -> Dictionary:
 	return _scaled(_head_frog_built(c), FROG_SCALE)
 
 
@@ -501,7 +502,7 @@ func _head_frog_built(c: Dictionary) -> Dictionary:
 
 # --- B: the slim tree frog. Upright but lean, long limbs, big toe pads, eyes bulging at the sides.
 
-func _leg_frog(c: Dictionary) -> Dictionary:
+func _leg_frog_crouched(c: Dictionary) -> Dictionary:
 	return _scaled(_leg_frog_built(c), FROG_SCALE)
 
 
@@ -632,6 +633,132 @@ func slab(points: Array, thick: float, m: Material, pos := Vector3.ZERO) -> Mesh
 	m.cull_mode = BaseMaterial3D.CULL_DISABLED
 	mi.position = pos
 	return mi
+
+
+# ------------------------------------------------------------------ the frog as a frog is (D-178)
+# Round F2's B (milestone 23): squat, the trunk leaning 55 degrees forward from the hips, a wide flat head with the eyes
+# on top, one forelimb planted on the ground, the other holding what it carries; the hind legs folded in a Z beside it,
+# baked per phase of the hop (D-179: crouch, push, tuck, reach, land). The trunk and head are modelled in Blender
+# (tools/blender/frog.py, at 1.15 the concept: as tall as the frog before); arms and legs here.
+
+const FROG_LEAN := 55.0
+const FROG_HIP := Vector3(0.0, 8.625, 0.0)
+const FROG_HIP_Z := 4.35
+const FROG_NECK := Vector3(12.246, 17.2, 0.0)     # the trunk's top (tools/blender/frog.py NECK)
+const FROG_SHOULDER := Vector3(11.15, 15.2, 6.0)  # the near shoulder (z mirrored for the far)
+const FROG_HAND_L := Vector3(16.3, 5.5, -8.0)     # the far hand, low by the ground (planted on it, a healer's satchel went under it)
+## The leg from its hip (2D, the hip at the origin, the ground at -FROG_HIP.y): thigh and shank, the knee forward and out,
+## the ankle back by the haunch, a long webbed foot forward along the ground.
+const FROG_KNEE := Vector2(8.625, -3.68)
+const FROG_ANKLE := Vector2(-2.3, -7.4)   # (the heel nearly down: held up at -6.8, seen from behind no foot showed on the ground)
+const FROG_TOE := Vector2(7.6, -8.15)
+const FROG_THIGH := 9.38
+const FROG_SHANK := 11.36
+const FROG_KNEE_OUT := 4.2    # (sideways: the knees wide)
+const FROG_ANKLE_OUT := 3.1
+## A hop's keys, shared with UnitView (p, how far the legs are squashed, how far they're flung back (-) or forward):
+## a crouch, the push (flung back), a tuck in the air, the reach forward to land, the landing squash.
+const HOP_KEYS := [[0.0, 1.0, 0.0], [0.15, 0.7, 0.0], [0.25, 0.7, 0.0], [0.36, 1.15, -0.7], [0.52, 0.75, -0.25],
+	[0.66, 0.9, 0.3], [0.75, 1.0, 0.0], [0.82, 0.72, 0.0], [1.0, 1.0, 0.0]]
+
+
+static func hop_key(p: float) -> Vector2:
+	for i in range(1, HOP_KEYS.size()):
+		if p <= HOP_KEYS[i][0]:
+			var a: Array = HOP_KEYS[i - 1]
+			var b: Array = HOP_KEYS[i]
+			var w := smoothstep(a[0], b[0], p)
+			return Vector2(lerpf(a[1], b[1], w), lerpf(a[2], b[2], w))
+	return Vector2(1.0, 0.0)
+
+
+func _frog_coat(c: Dictionary) -> Dictionary:
+	var m := _frog_mats(c)
+	return {"skin": m[0], "belly": m[1], "eye": plain(INK), "eyeball": plain(Color("#f0e6b0"))}
+
+
+func _body_frog(c: Dictionary) -> Dictionary:
+	var n := Node3D.new()
+	var coat := _frog_coat(c)
+	n.add_child(glb("body_frog", coat))
+	var front := Node3D.new()
+	var near_hand := Vector3.ZERO
+	var limp := hold == "limp"   # dead (D-165, src/view/art/corpse.gd): the arms flung forward and out, to lie on the ground
+	for side in [1, -1]:
+		var into: Node3D = front if side == 1 else n
+		var sh := Vector3(FROG_SHOULDER.x, FROG_SHOULDER.y, FROG_SHOULDER.z * side)
+		var elbow := Vector3(14.0, 11.2, 7.6) if side == 1 else Vector3(13.45, 10.0, -8.0)
+		var hand := Vector3(17.7, 12.9, 8.3) if side == 1 else FROG_HAND_L
+		if limp:
+			elbow = sh + Vector3(3.5, 1.0, 3.0 * side)
+			hand = sh + Vector3(7.5, 1.6, 5.0 * side)
+		elif side == 1:
+			var pose := arm_pose(sh, elbow, hand, FROG_NECK + Vector3(2.5, 0.8, 0))   # (a blowgun at the wide mouth's front)
+			elbow = pose[0]
+			hand = pose[1]
+			if hold == "reach":   # (the squat frog's shoulders are low: a hero's long weapon went into the ground)
+				elbow.y += 1.2
+				hand.y += 2.5
+			elif hold == "raise":   # (wound up out beside its back gear, not into it)
+				elbow += Vector3(0.8, 0, 0.8)
+				hand += Vector3(1.5, 0, 1.2)
+		if side == 1:
+			near_hand = hand
+		into.add_child(rod(sh, elbow, 1.55, 1.3, coat.skin))
+		into.add_child(rod(elbow, hand, 1.3, 1.0, coat.skin))
+		_frog_hand(into, hand, Vector3(1, -0.2, 0) if side == -1 and not limp else Vector3(0.8, 0.4, 0), coat.skin, coat.belly)
+	var lean := Vector2(sin(deg_to_rad(FROG_LEAN)), cos(deg_to_rad(FROG_LEAN)))   # up the trunk
+	var out := Vector2(-lean.y, lean.x)                                          # off its back
+	var on := func(along: float, off: float) -> Vector3:
+		var q := Vector2(FROG_HIP.x, FROG_HIP.y) + lean * along + out * off
+		return Vector3(q.x, q.y, 0.0)
+	kerchief(front, c, on.call(11.8, 0.0), 4.3, -FROG_LEAN)   # the team kerchief round the top of the trunk
+	return {"node": n, "front": front, "sockets": {
+		"head": FROG_NECK, "hand_r": near_hand, "hand_l": FROG_HAND_L,
+		"torso": on.call(6.5, 0.0), "back": on.call(8.0, 6.0), "sling": on.call(6.5, 7.4), "drape": on.call(9.5, 5.5),
+		"banner": on.call(8.0, 7.0), "sit": Vector3(3.4, 3.7, 0)},   # (sit: the belly's bottom, under the hips: on a saddle it sits on it)
+		"anchors": [[FROG_HIP + Vector3(0, 0, -FROG_HIP_Z), 0.0, -1], [FROG_HIP + Vector3(0, 0, FROG_HIP_Z), PI, 1]],
+		"torso_scale": Vector2(0.75, 0.6), "torso_tilt": -FROG_LEAN, "torso_fit": Vector3(0.62, 0.62, 0.66)}
+
+
+func _head_frog(c: Dictionary) -> Dictionary:
+	return {"node": glb("head_frog", _frog_coat(c)), "sockets": {"top": Vector3(1.4, 5.6, 0)}, "gear_scale": 0.62}   # (the top behind the eyes: gear never covers them)
+
+
+## The leg in the pose `hold` names ("" standing, "w<i>_<n>" step i of a hop in n, "limp" dead), from the hip at the
+## origin: the ankle placed (the hop's squash and fling), the knee by two-bone IK, the long foot from the ankle.
+func _leg_frog(c: Dictionary) -> Dictionary:
+	var j := frog_joints("" if hold == "low" else hold)
+	var n := Node3D.new()
+	var coat := _frog_coat(c)
+	var knee := Vector3(j.knee.x, j.knee.y, FROG_KNEE_OUT)
+	var ankle := Vector3(j.ankle.x, j.ankle.y, FROG_ANKLE_OUT)
+	var toe := Vector3(j.toe.x, j.toe.y, FROG_ANKLE_OUT)
+	n.add_child(blob(Vector3(3.6, 3.4, 3.2), coat.skin, Vector3(0.8, -0.6, 0.8)))   # the haunch
+	n.add_child(rod(Vector3(0.6, -0.4, 0.6), knee, 3.0, 2.0, coat.skin))
+	n.add_child(rod(knee, ankle, 2.0, 1.15, coat.skin))
+	for t in 3:   # three long webbed toes, splayed, pale pads at the tips
+		var tip := toe + Vector3(0, 0, (t - 1) * 2.0)
+		n.add_child(rod(ankle, ankle.lerp(tip, 0.55) + Vector3(0, 0, (t - 1) * 0.8), 0.85, 0.6, coat.skin, false))
+		n.add_child(rod(ankle.lerp(tip, 0.55) + Vector3(0, 0, (t - 1) * 0.8), tip, 0.6, 0.42, coat.skin, false))
+		n.add_child(blob(Vector3(0.65, 0.42, 0.65), coat.belly, tip))
+	return {"node": n}
+
+
+## Where a frog leg's joints are in a pose (2D, the hip at the origin, up +y).
+static func frog_joints(pose: String) -> Dictionary:
+	if pose == "limp":   # stretched out long behind, flat on the ground (the body lies pitched nose down: corpse.gd)
+		var lk := Vector2(-FROG_THIGH * 0.98, -1.6)
+		var la := lk + Vector2(-FROG_SHANK * 0.99, -0.8)
+		return {"knee": lk, "ankle": la, "toe": la + Vector2(-8.5, -0.4)}
+	var k := Vector2(1.0, 0.0)
+	var p := walk_step(pose)
+	if p >= 0.0:
+		k = hop_key(p)
+	var ankle := Vector2(FROG_ANKLE.x + 11.0 * k.y, FROG_ANKLE.y * k.x - 3.5 * maxf(-k.y, 0.0))
+	var turn := -2.0 * maxf(-k.y, 0.0) + 0.4 * maxf(k.y, 0.0)   # flung back the foot points down and back; reaching, toes up
+	var toe := ankle + (FROG_TOE - FROG_ANKLE).rotated(turn)
+	return {"knee": ik2(ankle, FROG_THIGH, FROG_SHANK, true), "ankle": ankle, "toe": toe}
 
 
 # ------------------------------------------------------------------ rat

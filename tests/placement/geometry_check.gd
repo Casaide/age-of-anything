@@ -680,6 +680,8 @@ func _check_engine(label: String, r: Dictionary) -> void:
 		var s := float(cr.get("scale", 100)) / 100.0
 		var a: Dictionary = rig.unit(cr, {"hold": hold})
 		var xf := Transform3D(Basis(Vector3.UP, deg_to_rad(-45.0 * turn)).scaled(Vector3.ONE * s), at)
+		if not (name.ends_with("_top") or name.ends_with("_box")) or "_reach" in name:   # (standing back by its lean, as UnitView._build_engine puts it)
+			xf.origin -= xf.basis * Vector3(float(lib.creatures.get(cr.get("creature", ""), {}).get("crew_back", 0)), 0, 0)
 		var crew_vox := {}
 		for p in a.pieces:
 			for q in Geom.voxels(p.node, xf * p.xf):

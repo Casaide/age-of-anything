@@ -1,14 +1,14 @@
 [
  {
   "id": "body.frog",
-  "shield": "slung",
-  "_shield_doc": "a shield goes slung on the back (its model's sling socket; slung: upright behind, slung_flat: flat on top): held in the off hand it cut this body's head, armour or the ground (2026-10-17, Dominic)",
+  "shield": "slung_lean",
+  "_shield_doc": "a shield goes slung on the back (its model's sling socket; slung: upright behind, slung_flat: flat on top, slung_lean: along a back sloping 55 degrees, the frog's): held in the off hand it cut this body's head, armour or the ground (2026-10-17, Dominic)",
   "drape_scale": 70,
-  "corpse": {"frames": [40, 70, 100], "pivot": [0, 9, 0], "pitch": -40, "roll": 0, "body": "limp", "legs": "limp", "leg_turn": [0, 44, 42], "head": -12, "helm": false, "turn": [0, -45, -30, 0, 0, 30, -30, 0],
+  "corpse": {"frames": [40, 70, 100], "pivot": [0, 9, 0], "pitch": -40, "roll": 0, "body": "limp", "legs": "limp", "leg_turn": [0, 40, 42], "spots": {"hand_l": [[-12, -26], -0.5]}, "head": -12, "helm": false, "turn": [0, -45, -30, 0, 0, 30, -30, 0],
    "_doc": "how it lies dead (D-165, src/view/art/corpse.gd): face down, flat on its belly, the arms flung forward, the hind legs stretched out behind and wide, the chin on the ground; HF2b, Dominic: 'probably the most realistic'; turned per facing so none is seen end on from behind (HF3)"},
   "slot": "body",
   "noun": "Frog",
-  "cut": ["legs"],
+  "cut": ["legs", "head"],
   "points": 3,
   "cost_mix": {"food": 100},
   "tags": [
@@ -49,49 +49,15 @@
     "ch": "skin2"
    }
   ],
-  "sockets": {
-   "head": [
-    6,
-    -22
-   ],
-   "hand_r": [
-    10,
-    -14
-   ],
-   "hand_l": [
-    -3,
-    -16
-   ],
-   "torso": [
-    0,
-    -14
-   ],
-   "back": [
-    -9,
-    -18
-   ]
-  },
+  "sockets": {"head": [12, -17], "hand_r": [18, -13], "hand_l": [16, -1], "torso": [5, -12], "back": [3, -18]},
   "torso_scale": [
    1.4,
    1.2
   ],
   "legs": {
    "stance": {"support": 4.5, "inside": 0.6, "_doc": "a crouched leaper: its haunches inside its flanks, leaning forward over its feet"},
-   "part": "leg.frog",
-   "anchors": [
-    [
-     -7,
-     -6,
-     0,
-     -1
-    ],
-    [
-     5,
-     -6,
-     3.14,
-     1
-    ]
-   ]
+   "part": "leg.frog", "anchors": [[0, -8.6, 0, -1], [0, -8.6, 3.14, 1]], "poses": 8,
+   "_poses_doc": "the frog as a frog is (D-178): its hips at 8.6, the legs baked in 8 phases of the hop (D-179; leg.frog@w<i>_<n>, unit_models.gd frog_joints: crouch, push, tuck, reach, land)"
   }
  },
  {
@@ -4889,8 +4855,8 @@
  },
  {
   "id": "quiver",
-  "not_worn_by": ["body.rat"],
-  "_not_worn_by_doc": "the rat as a rat is (D-177) leans 42 degrees: a hanging cape or quiver falls through its back and legs",
+  "not_worn_by": ["body.rat", "body.frog"],
+  "_not_worn_by_doc": "the rat as a rat is (D-177) leans 42 degrees, the frog as a frog is (D-178) 55: a hanging cape or quiver falls through the back and legs, or stands off it like a post",
   "slot": "back",
   "tags": [
    "quiver",

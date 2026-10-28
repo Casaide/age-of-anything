@@ -1,24 +1,43 @@
-"""Worn armour fitted to the rat as a rat is (D-177; tools/blender/rat.py's trunk), for the unit bakes (Blender 5, headless):
+"""Worn armour fitted to a creature's own trunk (the rat as a rat is, D-177, tools/blender/rat.py; the frog as a frog
+is, D-178, tools/blender/frog.py), for the unit bakes (Blender 5, headless):
 
-    blender -b --python tools/blender/rat_armour.py -- assets/models/
+    blender -b --python tools/blender/creature_armour.py -- assets/models/ rat|frog
 
-Writes armour_<kind>_rat.glb for every armour a rat can wear: leather, bottlecap, sardine, bronze, mail, bark, lorica.
-Made in the trunk's own space (+X forward, +Z up, the trunk leaning 42 degrees forward from the hips at (0, 0, 11)),
-so the game puts it on as modelled (UnitModels.fitted): a shell just outside the trunk's profile, cut to the piece,
-with its own detail. (Before, a rat wore the human-sized piece scaled by torso_scale: a barrel or a band round its
-middle, Dominic.) Materials are named for the game's (UnitModels.ARMOUR_MATS): leather, trim, iron, tin, brass,
-bronze, mail, bark, label.
+Writes armour_<kind>_<body>.glb for every armour it can wear: leather, bottlecap, sardine, bronze, mail, bark, lorica.
+Made in the trunk's own space (+X forward, +Z up, the trunk leaning forward from the hips: BODIES), so the game puts
+it on as modelled (UnitModels.fitted): a shell just outside the trunk's profile, cut to the piece, with its own
+detail. (Before, these bodies wore the human-sized piece scaled by torso_scale: a barrel or a band round the middle,
+Dominic.) Materials are named for the game's (UnitModels.ARMOUR_MATS): leather, trim, iron, tin, brass, bronze,
+mail, bark, label.
 """
 import sys, math
 import bpy, bmesh
 from mathutils import Vector
 
 out_dir = sys.argv[sys.argv.index("--") + 1]
+BODY = sys.argv[sys.argv.index("--") + 2]
 
-LEAN = 42.0
-HIP = Vector((0.0, 0.0, 11.0))
-# The trunk's profile (rat.py): (z along the trunk from the hips, radius), its front-back squash.
-PROFILE = [(-0.6, 2.6), (0.0, 3.7), (2.5, 4.9), (6.0, 5.2), (9.5, 4.4), (12.5, 3.75), (14.5, 3.0), (15.5, 2.2)]
+
+def smoothstep(a, b, x):
+    t = max(0.0, min(1.0, (x - a) / (b - a)))
+    return t * t * (3 - 2 * t)
+
+
+FS = 1.15   # frog.py's S
+# Each trunk as its model makes it: lean, hips, profile ((along the trunk from the hips, radius)), front-back squash, and
+# where its armour ends (top: below the shoulders and neck; bottom: above the legs).
+BODIES = {
+    "rat": {"lean": 42.0, "hip": (0.0, 0.0, 11.0),
+            "profile": [(-0.6, 2.6), (0.0, 3.7), (2.5, 4.9), (6.0, 5.2), (9.5, 4.4), (12.5, 3.75), (14.5, 3.0), (15.5, 2.2)],
+            "squash": lambda z, a: (0.78 + 0.1 * max(0.0, math.cos(a)) * smoothstep(5, 11, z), 1.0), "top": 12.9, "bottom": 2.4},
+    "frog": {"lean": 55.0, "hip": (0.0, 0.0, 7.5 * FS),
+             "profile": [(z * FS, r * FS) for z, r in [(0.0, 5.2), (3.0, 6.4), (7.0, 6.6), (11.0, 5.8), (13.0, 4.7)]],
+             "squash": lambda z, a: (0.8 + 0.12 * max(0.0, math.cos(a)), 1.08), "top": 11.4, "bottom": 3.4},
+}
+B = BODIES[BODY]
+LEAN = B["lean"]
+HIP = Vector(B["hip"])
+PROFILE = B["profile"]
 
 
 def smoothstep(a, b, x):
@@ -35,7 +54,7 @@ def radius(z):
 
 
 def squash(z, a):
-    return (0.78 + 0.1 * max(0.0, math.cos(a)) * smoothstep(5, 11, z), 1.0)
+    return B["squash"](z, a)
 
 
 def lean(p):
@@ -147,13 +166,13 @@ def finish(kind):
     for ob in bpy.data.objects:
         for poly in ob.data.polygons:
             poly.use_smooth = True
-    path = out_dir + "armour_%s_rat.glb" % kind
+    path = out_dir + "armour_%s_%s.glb" % (kind, BODY)
     bpy.ops.export_scene.gltf(filepath=path, export_format="GLB", export_apply=True, export_materials="EXPORT")
     print("wrote", path)
 
 
 # The pieces end at the shoulders (z 13.2: the arms and neck go on above) and the belly (z 2.4: the legs below).
-TOP, BOT = 12.9, 2.4
+TOP, BOT = B["top"], B["bottom"]
 
 # Leather: a jerkin laced up the front, a belt low round the belly, edged at the neck.
 reset()
