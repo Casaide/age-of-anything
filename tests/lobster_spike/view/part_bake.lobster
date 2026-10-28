@@ -72,7 +72,7 @@ def crop_sprite(sprite:string, w:int, h:int, origin:float2) -> string, int, int,
 // beast's legs in every walk step took most of a minute). BAKE_VERSION goes up when the models or the baker
 // change, so old bakes aren't reused.
 
-let BAKE_VERSION = 4   // (2: Godot's full PI in the models; 3: engines' members in front or behind; 4: whole-pixel frames as Godot's, 2026-10-27)
+let BAKE_VERSION = 7   // (2: Godot's full PI in the models; 3: engines' members in front or behind; 4: whole-pixel frames as Godot's, 2026-10-27; 7: Godot's bicubic shrink in pixelize, in Godot's square frame, 2026-10-28)
 var bake_cache_dir = "bake_cache"   // (play.sh makes it; Lobster can't make a folder)
 var cache_lines = []::string        // the manifest of the part being baked
 var cache_stem = ""                 // its file names' stem ("" while not recording)
@@ -437,6 +437,8 @@ def bake_model_part_now(id:string, full:string, c:Colours) -> bool:
     let bpx = BAKE_ART * float(BAKE_SS)
     let br = if bhi.x >= blo.x: magnitude(bhi - blo) * 0.5 + 2.0 else: 2.0
     bake_fit = ceiling(2.0 * br * bpx) / (2.0 * br * bpx)
+    bake_frame_r = br
+    bake_frame_c = (blo + bhi) * 0.5
     for(BAKE_FACINGS) k:
         let suffix = facing_suffix(k)
         let sprite0, w0, h0, origin0 = bake_facing(tris, k, hide, join, join_r)
@@ -458,6 +460,7 @@ def bake_model_part_now(id:string, full:string, c:Colours) -> bool:
         cache_lines.push("rig {rig_id} " + stringify(r))
         baked_here++
     bake_fit = 1.0
+    bake_frame_r = 0.0
     return true
 
 // A model's meshes' box in its own frame (its own transform left out, as part_baker.gd _aabb).
