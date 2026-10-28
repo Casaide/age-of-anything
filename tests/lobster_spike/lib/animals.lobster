@@ -21,7 +21,7 @@ def set_walk_over(cells:[int], on:bool):
         refresh(c)
 
 def set_terrain(cell:int, k:int):
-    terrain[cell] = k
+    set_cell_terrain(cell, k)
     amount[cell] = tr_amount[k]
     if amount[cell] > 0:
         let found, at = binary_search(resource_cells, cell)

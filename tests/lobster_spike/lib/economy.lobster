@@ -452,7 +452,7 @@ def clear_farm(b:int):
         pool[c] = -1
         amount[c] = 0
         walk_over[c] = 0
-        terrain[c] = to
+        set_cell_terrain(c, to)
         refresh(c)
 
 // A finished farm turns its ground into crops; the builder who finished it starts the harvest.
