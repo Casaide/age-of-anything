@@ -77,7 +77,7 @@ assets/audio/
   music/theme_<stem>.ogg       stereo loops, 160 kb/s
 data/audio.json                buses, every sound's takes / bus / gap / voices, the music mixes
 data/creatures.json            each creature's `voice` (the voice file set it uses)
-src/view/audio.gd              the one audio node: play(), play_in(), say(), music(), battle(), ambience()
+src/game/audio.lobster         the game's sound: play_sound(), say(), music_start()/music_tick(), ambience_start()/ambience_tick()
 ```
 
 Rendering:
@@ -93,13 +93,13 @@ Spectrograms to look at a sound (ffmpeg's `showspectrumpic`): see the pictures i
 `archive/images/2026-10-11/100-*` for how the sheets were made.
 
 The test suite checks that every sound in `data/audio.json` has its takes on disk and loads,
-every creature's voice has its files, and every stem loads (`tests/run_tests.gd`,
-`_test_audio`). Files load with `load_from_file`, so headless runs need no editor import.
+every creature's voice has its files, and every stem is there (`src/run_tests.lobster`, the audio group: lengths read
+from the WAV and OGG headers).
 
 ## In the game
 
-`src/view/audio.gd` is one node under the tree's root (`Audio.of(get_tree())`), so the theme
-carries on from the lobby into the match. The match view (`scenes/sim_debug.gd`) plays:
+`src/game/audio.lobster` keeps the music going from the lobby into the match. The game (`src/game.lobster`, from the
+sim's events) plays:
 
 - blows by the attacker's weapon tag (`blade`, `blunt`, else pierce), shots by the projectile
   kind (`CombatFx.shot_kind`), the arrow landing when the view's shot lands;
@@ -119,7 +119,7 @@ carries on from the lobby into the match. The match view (`scenes/sim_debug.gd`)
   the meadow ambience under the match;
 - the town's own sound on top (milestone 17): two 24-second loops, `town_quiet` and `town_busy`
   (far-off talk that never makes words, a mallet on a frame, a log split, a broom, a bucket set
-  down, a door), faded by `audio.town(level)`. `src/view/town_life.gd` sets the level from your
+  down, a door), faded by `ambience_tick(town_level)`. `src/game/town.lobster` sets the level from your
   town's size (finished buildings and workers) and how close the camera is to your Town Center:
   the quiet loop comes in first, the busy one joins past the middle.
 

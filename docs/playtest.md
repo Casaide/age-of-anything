@@ -5,12 +5,11 @@ match against the AI, a short chat.
 
 ## Running it
 ```sh
-godot --path .        # opens the match setup screen
+./play.sh             # the title screen: Battle the AI opens the battle setup
 ```
-Pick a race for yourself and one for the AI (type anything, or press a preset), pick a map, Play.
-Controls are listed at the top of the game view. F10 surrenders. Each finished match appends a
-line to `matches.jsonl` in the Godot user folder (the path is printed at the end of a match):
-races, winner, length, and when each side reached each age.
+Type a race for yourself and one for the AI (or roll the dice), pick a map, the mode and how hard the AI plays, Start
+Battle. Esc opens the menu (Surrender, Save, Load). Each finished match appends a line to `src/matches.jsonl`: races,
+prompts, winner, length, and when each side reached each age.
 
 ## What to watch (don't prompt; note what happens)
 - Do they reach age 2 without being told? When? (target: 80% do, median 4-6 minutes)
@@ -27,6 +26,6 @@ races, winner, length, and when each side reached each age.
 5. "Anything that looked broken?"
 
 ## Before testers (waiting on Dominic)
-- Export templates for Godot 4.7.2 aren't installed on this Mac; an itch.io build needs them (a
-  download from Godot's site, then an export preset). Uploading to itch is Dominic's call.
+- A build for testers: the Deck build (`src/deck/build.sh`) is a Linux one; a Mac or Windows build of the Lobster
+  game isn't made yet (the backlog). Uploading to itch is Dominic's call.
 - Dominic's own runs first: the counter quiz, a match against the AI, the art sign-off.

@@ -9,7 +9,7 @@ into active work, move it into `mvp-plan.md` (or a new plan) with an exit criter
   second half; the AI already beats a passive player in `tests/test_ai.gd`). First try, 2026-10-11:
   the AI beat Dominic.
 - **Testers:** 5-10 testers with `playtest.md`; the metrics in `mvp-plan.md` §4.
-- **Export build:** needs the Godot export templates (about 1 GB) and an itch account.
+- **Export build:** a Mac and a Windows build of the Lobster game (the Deck's Linux one exists: `src/deck/build.sh`), and an itch account.
 - **Determinism across macOS and Linux:** run `tests/test_sim.gd` in a Linux container and compare hashes.
 - **Cost sanity:** 8 of 20 units still more than 20% off the mean at equal cost; big bodies are worth
   more with spears than with bows. Needs per-unit price-by-simulation (see "Later" in CLAUDE.md).
@@ -41,6 +41,25 @@ the rubble, the siege tower and ladder, the trade cart, the unique units' themes
 - **Mods, the rest** (milestone 21): the lobby's mod list (enable, disable, refusals, missing mods for a shared race);
   buildings, tech, audio and creature-kit creatures moddable; model scripts sandboxed or `.glb`-only for shared mods;
   installed from a zip on a second machine with the same race key and a match played; Steam Workshop.
+
+### Left from the Lobster port when Godot was retired (Claude, 2026-10-28)
+
+The Lobster game has everything the Godot one did that a player meets, but for these:
+- **The shared network lobby:** in Godot a joiner saw the host's setup and took a side; Lobster's lockstep sends a
+  finished world, so the host's setup decides every race. Hosting a saved game isn't ported either, and finding hosts
+  is a 1.5 s scan when the page opens (Godot listened all the time).
+- **Lobby polish:** the Race Lab's wandering extra copies, the dice tumbling, the forge veil while an army is made (a
+  dimmed stage and "Forging the army..." now), Cmd +/- for the UI's size, tooltips in the side's culture look.
+- **AI levels aren't saved:** a loaded save plays at the bots' config it was saved with.
+- **The wall and gate join check** (wall_join_check.gd: composed wall sprites against one 3D bake per join) has no
+  Lobster port; walls' models are held by the golden files.
+- **AOW_ART_SCALE** (the art at another scale for a study) has no Lobster counterpart: `ART_SCALE` in
+  `src/view/art.lobster` is a constant.
+- **2D placement against Godot's:** at the end 60 of 19668 results differed, all pixel-edge cases where Godot's GPU
+  and Lobster's renderer round apart (the sitting cat's hind paw, the bear mount's foreleg in facing 0, the great
+  sling's file of crew), and the heroic humans' "legs not hidden" counts at the threshold; the composer's draw lists
+  were the same as Godot's but for intended differences. Worth a look when those units change.
+- **The example mod's future rat on a spider** fails A3 (its weapon hand into its visor: `src/mod_check.sh scifi_test`).
 
 ### Godot's saves in the Lobster game (Claude, 2026-10-27, from the Lobster port)
 

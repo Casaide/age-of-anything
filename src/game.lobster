@@ -1960,7 +1960,38 @@ def load_saved(path:string) -> bool:
 
 // The match: joined, loaded, or made here from the lobby's prompts (or the pack's scenario); the bots, the
 // network, the captures' extras, the lockstep. False when the window was closed meanwhile.
+// ---- the playtest log (milestone 10): one JSON line per finished match in matches.jsonl: the races, who won, how long
+// it ran, when each side reached each age (docs/playtest.md)
+var log_races = []::string
+var log_prompts = []::string
+var log_ages = []::int
+var log_age_ups = []::JV
+var log_done = false
+
+def log_tick():
+    if log_ages.length != ages.length: log_ages = copy(ages)
+    for(ages) a, p:
+        if a > log_ages[p]:
+            log_age_ups.push(jarr([jint(p), jint(a), jint(tick / 20)]))
+            log_ages[p] = a
+    if winner >= 0 and not log_done:
+        log_done = true
+        let o = jobj()
+        set(o, "map", jstr(map_name_now))
+        set(o, "races", jstrs(log_races))
+        set(o, "prompts", jstrs(log_prompts))
+        set(o, "winner_team", jint(winner))
+        set(o, "you", jint(ME))
+        set(o, "seconds", jint(tick / 20))
+        set(o, "ages", jarr(map(ages) a: jint(a)))
+        set(o, "age_ups", jarr(log_age_ups))
+        write_file("matches.jsonl", (read_file("matches.jsonl") or "") + stringify(o) + "\n")
+        print "match logged: src/matches.jsonl"
+
 def make_match() -> bool:
+    log_done = false
+    log_ages = []
+    log_age_ups = []
     joined_bots = []
     ai_levels = []
     if starts_with(front_choice, "load:"):
@@ -1996,6 +2027,8 @@ def make_match() -> bool:
         let t_gen = seconds_elapsed()
         // (more than two people: the other seats take the two prompts' further takes, a team each)
         let races = map(max(prompts.length, if hosting: net_people else: 0)) k: generate(prompts[k % prompts.length], rules, if k < lobby_rerolls.length: lobby_rerolls[k] else: k / prompts.length)
+        log_races = map(races) r: rstr(r, "name")
+        log_prompts = map(races.length) k: prompts[k % prompts.length]
         let t_setup = seconds_elapsed()
         if args[1] == "lobby":
             lobby_report = balance_for_match(races, rules, 4)
@@ -2379,6 +2412,7 @@ def play_match():
             if shot != "": gl.screenshot(shot)
             quit_app = true
             return
+        if not net_on or ME == 0: log_tick()
         if has_s(args, "tillend") and (winner >= 0 or (shot_at > 0.0 and clock_s >= shot_at)):   // a whole match to its end (tests: with watch)
             if shot != "": gl.screenshot(shot)
             print "match over: {if winner >= 0: "team {winner} won" else: "no winner yet"} at {int(clock_s) / 60}:{int(clock_s) % 60}, tick {tick}"
