@@ -94,6 +94,10 @@ move it to `docs/backlog.md` rather than deleting it.
 - **Built (bears, 2026-10-17):** brown, black ("moonbears") and polar bear races from the creature
   kit (kit bodies completed by DataLib from `data/creature_kit.json`), the bear mount for others ("romans riding bears"),
   a bear voice; every piece of gear checked on every bear (D-161 to D-163). Dominic to look and listen. See `docs/concepts/bears/`.
+- **In progress (milestone 23): fidelity** (D-173): art baked at 2x (`ArtKit.ART_SCALE` 3.0, zooms in `BASE_SCALE`), heroic
+  5.5-head humans; destruction in baked stages with pixel dust and fading ruins (D-171, D-172); rat B and frog B
+  (D-177, D-178, D-181); every legged body walks on keyed legs baked per step, blows wind up and hold (D-179); units
+  baked at their drawn size, capes only when asked (D-180). Open: the Deck build, the items in `docs/milestones/m23-fidelity.md`.
 - **In progress (milestone 22): battle feel.** Built (D-155): formations by role (riders on the flanks), counter-aware
   targeting (`counter_pull`), attack lines for the selection, the Norse shield wall; next race_matches and Dominic's
   match. See `docs/milestones/m22-battle-feel.md`.
@@ -170,7 +174,7 @@ Godot on this Mac: `/Applications/Godot.app/Contents/MacOS/Godot` (alias it as `
 
 ```sh
 tests/batch.sh                                                     # the whole batch side by side, a table, exit 1 on a failure (~3 min)
-tests/batch.sh --quick                                             # the fast subset: run_tests, test_sim, test_ai quick, placement 3d (~1 min)
+tests/batch.sh --quick                                             # the fast subset: run_tests, test_sim, test_ai quick, placement 3d in shards (~4 min)
 godot --headless --path . --script res://tests/run_tests.gd        # must print "0 failed" (~5 s; "-- placement" adds the 3D placement check)
 godot --headless --path . --script res://tests/print_races.gd -- "centaur romans" "flying greeks with wings"
 godot --path . --script res://tests/screenshot.gd -- /tmp/lab.png "prompt A" "prompt B"
@@ -201,7 +205,7 @@ godot --path . --script res://tests/art_bench.gd                    # draw calls
 godot --path . --script res://tests/unit_lineup.gd -- /tmp/units.png ["prompt A" "prompt B"]   # both rosters as pixel art, 4x
 godot --path . --audio-driver Dummy --always-on-top --script res://tests/sheet.gd -- tests/sheets/bears_b1.json /tmp/out [sheet,...] [zoom,...]   # any concept or lineup sheet from a spec, placement PASS/FAIL per row
 godot --path . --audio-driver Dummy --always-on-top --script res://tests/placement_check.gd -- [filter] [3d|2d]   # placement + layering on every unit, pose, facing, and the bug fixtures (~2 min); must pass before a unit change is shown
-godot --headless --path . --script res://tests/geometry_check.gd -- [filter]   # its 3D half alone, headless (~35 s; also run_tests -- placement)
+godot --headless --path . --script res://tests/geometry_check.gd -- [filter] [jobs=N]   # its 3D half alone, headless; the whole roster in shards side by side (~2-4 min; one process took 11)
 godot --path . --audio-driver Dummy --always-on-top --script res://tests/placement_shot.gd -- /tmp/p.png 5 "frog on newt_fire"   # a placement case in 8 facings
 godot --path . --script res://tests/healer_lineup.gd -- /tmp/healers.png [zoom] [family,...]   # every culture's healer in 8 facings
 godot --path . --script res://tests/siege_lineup.gd -- /tmp/siege.png [zoom] ["prompt" ...]     # each race's crewed siege engines, four facings

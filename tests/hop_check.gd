@@ -19,7 +19,7 @@ const PartShape := preload("res://src/part_shape.gd")
 const Iso := preload("res://src/view/iso.gd")
 
 const DT := 1.0 / 60.0
-const PX := 1.0 / ArtKit.ART_SCALE   # an art pixel in canvas units
+static var PX := 1.0 / ArtKit.ART_SCALE   # an art pixel in canvas units
 
 var lib
 var team: Color

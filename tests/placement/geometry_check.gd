@@ -656,7 +656,7 @@ func _check_engine(label: String, r: Dictionary) -> void:
 		if not name.begins_with("crew"):
 			continue
 		var at: Vector3 = es.sockets[name]
-		if name.ends_with("_top"):
+		if name.ends_with("_top") or name.ends_with("_box"):   # (_box: in a walled howdah, its legs not drawn, set into the floor)
 			# Something to stand on just under the feet (a deck, a saddle, a basket's floor); not
 			# floating over it (how deep a crew member stands in a basket is the next check's business).
 			var c := Geom.unkey(Geom.cell(at))
@@ -680,6 +680,8 @@ func _check_engine(label: String, r: Dictionary) -> void:
 		var s := float(cr.get("scale", 100)) / 100.0
 		var a: Dictionary = rig.unit(cr, {"hold": hold})
 		var xf := Transform3D(Basis(Vector3.UP, deg_to_rad(-45.0 * turn)).scaled(Vector3.ONE * s), at)
+		if not (name.ends_with("_top") or name.ends_with("_box")):   # (standing back by its lean, as UnitView._build_engine puts it)
+			xf.origin -= xf.basis * Vector3(float(lib.creatures.get(cr.get("creature", ""), {}).get("crew_back", 0)), 0, 0)
 		var crew_vox := {}
 		for p in a.pieces:
 			for q in Geom.voxels(p.node, xf * p.xf):

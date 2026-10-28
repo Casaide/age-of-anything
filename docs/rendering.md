@@ -1,7 +1,10 @@
 # How the art is made (rendering pipeline)
 
 Everything you see in a match is a 3D model baked to a pixel sprite once, when the match loads,
-packed into one atlas and drawn as 2D sprites. The sim never sees any of it. This page is the
+packed into one atlas and drawn as 2D sprites. Since D-173 (milestone 23) the art scale is 3.0 art pixels per
+canvas unit (`ArtKit.ART_SCALE`; a tile is 192 x 96 art pixels, and at play zoom an art pixel is a screen pixel);
+zooms are set in `ArtKit.BASE_SCALE` (1.5, the scale before), so everything shows at the size it always did.
+`AOW_ART_SCALE=1.5` in the environment bakes the old, coarser look. The sim never sees any of it. This page is the
 map; the code says the details.
 
 ## Units
@@ -12,7 +15,9 @@ map; the code says the details.
    - Some are **modelled in Blender by script**: `tools/blender/*.py` (run headless, see below)
      export `.glb` files to `assets/models/`, which `unit_models.glb(name, materials)` loads at
      bake time. Their materials are named (`skin`, `hair`, `team`, `cloth`...) and swapped for
-     ours, so skin palettes and team colours still work. Today: the human head, torso and leg, and
+     ours, so skin palettes and team colours still work. The human is the heroic build (D-173: about 5.5 heads,
+     hips at 18 on long legs, a head 0.68 the old size; the scripts with "heroic" write `*_heroic.glb`, and
+     without it the build before, kept). Today: the human head, torso and leg, and
      body armour fitted to the human torso (`armour_<kind>_<body>.glb`: `unit_models.fitted()` hands
      it to the worn-armour bake, which then skips `torso_fit`).
    - A model returns its node plus, for bodies, `sockets` (3D points where the head, hands,
@@ -102,7 +107,7 @@ it, a rider's hips on its mount's seat) in every pose the game draws: standing, 
 through (a worker's tool wound up and landing, a melee blow, a spear's thrust levelled and driven
 forward; ranged units only loose), and the walk at 8 phases. Meshes are read in world space and
 voxelized on a 0.5-unit grid (`src/view/art/geom.gd`: primitives filled exactly, modelled meshes
-by ray parity; decals left out). One part unit is 1.275 art pixels at game size.
+by ray parity; decals left out). One part unit is 2.55 art pixels at game size (1.275 before D-173).
 
 - **A1 ground**: standing, every foot within 1 unit of the ground; nothing below -1; the centre of
   mass within 3 units of the feet's support polygon (`legs.stance.support`). Walking (the body rides
@@ -299,6 +304,15 @@ Head gear with `"face": "sealed"` (a closed helmet) is exempt from the eyes-in-s
   the camera sees), and `age_looks` (a building's
   model from an age on, e.g. the rats' oil-drum town hall at age 3).
   Live parts (banner, vane, smoke, lights) are drawn over the bake.
+  **Destruction** (D-171, D-172): every building look but walls and gates also bakes four broken-up stages
+  (`src/view/art/bake/ruin.gd`: the model broken in 3D before the bake: pieces off the top, others tilted and
+  scorched, walls cut to ragged stumps, rubble from its own materials, charred beams; four to a render when
+  they fit). `BuildingArt.set_damage` shows battered, breaking and collapsed as it loses hp (with today's fire
+  and smoke); when it falls, `CombatFx.collapse` leaves the ruin under a cloud of pixel dust (puffs drawn as
+  one cloud in three passes, shade, mid, light, on the art grid). The ruin is decoration only: it burns out,
+  fades after 45 s (a CanvasGroup, since the team shader reads alpha as shade), and goes when anything is laid
+  on its cells. About +8 s on a cold match start; `tests/art_quality/ruin_sheet.gd` draws every stage,
+  `tests/art_quality/ruin_game.gd` plays a fall in the game.
   Walls and gates are one tile each. A gate's model returns its closed `body` and an `open`
   one, both baked; it also bakes a quarter turn (`^z`) for wall lines running along sim y, and
   the view picks the turn from its neighbours and shows it open while a friendly unit is at it.

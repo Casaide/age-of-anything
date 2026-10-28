@@ -149,7 +149,7 @@ func _initialize() -> void:
 			continue
 		for z in zooms:
 			var path := out_dir.path_join("%s_%s_%sx.png" % [spec.get("name", spec_path.get_file().get_basename()), sh.name, str(z).trim_suffix(".0")])
-			await _sheet(sh, rows, size_units, float(z) * ArtKit.ART_SCALE, verdicts, path, expected)
+			await _sheet(sh, rows, size_units, float(z) * ArtKit.BASE_SCALE, verdicts, path, expected)
 	print("sheet: %d rows, %d failed placement" % [rows.size(), bad])
 	quit(1 if bad > 0 else 0)
 
