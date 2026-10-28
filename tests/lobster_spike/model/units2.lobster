@@ -18,8 +18,8 @@ def pony_barrel(n:MNode, c:Colours):
 
 def pony_anchors() -> [Anchor]:
     let y = 14.0 + PONY_LIFT
-    return [anchor(float3 { 8.5, y, 3.4 }, 0.0, 1, [0.0]), anchor(float3 { -9.5, y, 3.4 }, MPI, 1, [0.0]),
-        anchor(float3 { 7.0, y, -3.4 }, MPI, -1, [0.0]), anchor(float3 { -10.0, y, -3.4 }, 0.0, -1, [0.0])]
+    return [anchor(float3 { 8.5, y, 3.4 }, 0.0, 1, [0.0, 0.0]), anchor(float3 { -9.5, y, 3.4 }, MPI, 1, [0.0, 1.0]),
+        anchor(float3 { 7.0, y, -3.4 }, MPI, -1, [0.0, 0.0]), anchor(float3 { -10.0, y, -3.4 }, 0.0, -1, [0.0, 1.0])]   // [flip, hind]
 
 let PONY_LOOKS = ["classic", "h1", "h2"]
 var pony_look = "h2"
@@ -208,15 +208,59 @@ def head_pony_h2(c:Colours) -> Spec:
 def body_pony_h1(c:Colours) -> Spec: return horse_body(c, "head.pony_h1")
 def body_pony_h2(c:Colours) -> Spec: return horse_body(c, "head.pony_h2")
 
-def leg_hoof(c:Colours) -> Spec:
+let HOOF_KNEE = float2 { 0.0, -6.0 }
+let HOOF_FETLOCK = float2 { 0.3, -13.8 }
+let HOOF_PASTERN = float2 { 0.8, -14.8 }
+let HOOF_HOOF = float2 { 1.0, -15.4 }
+let HOOF_STRIDE = 10.0
+let HOOF_STANCE = 0.6
+let HOOF_LIFT = 3.0
+
+def leg_hoof(c:Colours) -> Spec: return hoof_leg(c, false)
+def leg_hoof_hind(c:Colours) -> Spec: return hoof_leg(c, true)
+
+// A horse's leg in the pose `hold` names ("" standing, "w<i>_<n>" a walk step; D-179): the thigh up inside the barrel,
+// the upper leg to the knee (or hock), the cannon bone to the fetlock, the pastern and hoof; walking, the knee bends by
+// two-bone IK, forward on a foreleg (the hoof curling back as it lifts), back on a hind leg.
+def hoof_leg(c:Colours, hind:bool) -> Spec:
+    let jk, jf, curl = hoof_joints(hind, if hold == "low": "" else: hold)
     let n = mnode()
     let hide = surf("hide", col(c, "skin"), 5.0)
+    let knee = v3of(jk)
+    let fet = v3of(jf)
+    let past = fet + v3of(rot2d(HOOF_PASTERN - HOOF_FETLOCK, curl))
+    let hoof = fet + v3of(rot2d(HOOF_HOOF - HOOF_FETLOCK, curl))
     add_child(n, blob(float3 { 3.0, 5.8, 2.6 }, hide, float3 { 0.0, -1.6, 0.0 }))
-    add_child(n, rod(float3 { 0.0, -6.0, 0.0 }, float3 { 0.2, -13.6, 0.0 }, 1.3, 0.95, hide))
-    add_child(n, blob(float3 { 1.3, 1.2, 1.2 }, hide, float3 { 0.3, -13.8, 0.0 }))
-    add_child(n, rod(float3 { 0.3, -13.8, 0.0 }, float3 { 0.8, -14.8, 0.0 }, 1.0, 1.0, hide))
-    add_child(n, cone(1.1, 1.6, 1.4, plain(html("#2a2420")), float3 { 1.0, -15.4, 0.0 }))
+    add_child(n, rod(float3 { 0.0, -3.0, 0.0 }, knee, 1.9, 1.35, hide))
+    add_child(n, blob(float3 { 1.4, 1.3, 1.3 }, hide, knee))
+    add_child(n, rod(knee, fet, 1.3, 0.95, hide))
+    add_child(n, blob(float3 { 1.3, 1.2, 1.2 }, hide, fet))
+    add_child(n, rod(fet, past, 1.0, 1.0, hide))
+    let h = add_child(n, cone(1.1, 1.6, 1.4, plain(html("#2a2420")), hoof))
+    h.rot = float3 { h.rot.x, h.rot.y, curl }
     return spec_of(n)
+
+
+// Where a horse leg's knee and fetlock are in a walk step (2D, the hip at the origin), and how far the pastern and
+// hoof curl back from the fetlock (degrees).
+def hoof_joints(hind:bool, pose:string) -> float2, float2, float:
+    let upper = magnitude(HOOF_KNEE)
+    let lower = magnitude(HOOF_FETLOCK - HOOF_KNEE)
+    let reach = 0.999 * (upper + lower)
+    let p = walk_step(pose)
+    if p < 0.0: return HOOF_KNEE, HOOF_FETLOCK, 0.0   // standing: as modelled
+    var x = HOOF_FETLOCK.x
+    var lift = 0.0
+    var curl = 0.0
+    if p < HOOF_STANCE:
+        x += HOOF_STRIDE * (0.5 - p / HOOF_STANCE)
+    else:
+        let q = (p - HOOF_STANCE) / (1.0 - HOOF_STANCE)
+        x += HOOF_STRIDE * (smoothstep(0.0, 1.0, q) - 0.5)
+        lift = HOOF_LIFT * sin(q * 180.0)
+        curl = (if not hind: 0.9 else: 0.5) * RAD_DEG * sin(q * 180.0)   // (the hoof flicks back under it, more so in front)
+    let fet = float2 { x, max(HOOF_FETLOCK.y, -sqrt(max(reach * reach - x * x, 1.0))) + lift }
+    return ik2(fet, upper, lower, not hind), fet, curl
 
 // ------------------------------------------------------------------ capybara
 
@@ -409,11 +453,14 @@ def leg_capybara_long(c:Colours) -> Spec:
     let n = mnode()
     let fur = surf("rat_fur", col(c, "skin"), 5.0)
     let dark = surf("rat_fur", darkened(col(c, "skin"), 0.5), 3.0)
+    let knee, ankle = stepped(float3 { 0.2, -3.0, 0.0 }, float3 { 0.5, -5.6, 0.0 }, if hold == "low": "" else: hold, 4.5)   // (D-179: baked per walk step)
+    let at = ankle - float3 { 0.5, -5.6, 0.0 }   // the foot goes where the ankle goes
     add_child(n, blob(float3 { 3.2, 3.8, 2.9 }, fur, float3 { 0.0, -0.4, 0.0 }))
-    add_child(n, rod(float3 { 0.2, -3.0, 0.0 }, float3 { 0.5, -5.6, 0.0 }, 2.1, 1.8, fur))
-    add_child(n, blob(float3 { 2.6, 0.8, 2.2 }, dark, float3 { 1.3, -6.0, 0.0 }))
+    add_child(n, rod(float3 { 0.0, -1.0, 0.0 }, knee, 2.3, 2.1, fur))
+    add_child(n, rod(knee, ankle, 2.1, 1.8, fur))
+    add_child(n, blob(float3 { 2.6, 0.8, 2.2 }, dark, float3 { 1.3, -6.0, 0.0 } + at))
     for([-1.0, 0.0, 1.0]) k:
-        add_child(n, blob(float3 { 0.9, 0.55, 0.5 }, dark, float3 { 3.3, -6.2, 0.9 * k }, float3 { 0.0, 20.0 * k, 0.0 }))
+        add_child(n, blob(float3 { 0.9, 0.55, 0.5 }, dark, float3 { 3.3, -6.2, 0.9 * k } + at, float3 { 0.0, 20.0 * k, 0.0 }))
     return spec_of(n)
 
 def leg_capybara_long_tan(c:Colours) -> Spec: return leg_capybara_long(c)
@@ -431,6 +478,7 @@ def build_units2(base:string, c:Colours) -> Spec?:
         case "head.pony_h2": return head_pony_h2(c)
         case "body.pony_fused": return body_pony_fused(c)
         case "leg.hoof": return leg_hoof(c)
+        case "leg.hoof_hind": return leg_hoof_hind(c)
         case "body.capybara": return body_capybara(c)
         case "head.capybara": return head_capybara(c)
         case "leg.capybara": return leg_capybara(c)
