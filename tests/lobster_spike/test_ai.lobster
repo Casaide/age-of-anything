@@ -9,7 +9,7 @@
 // Modes: none (every piece), quick, slow, piece:<name>[,<name>...], or a group (age3, levels, rams, walls,
 // pick, hills, land, reach); combine <log>... reads shards' logs and makes the checks across pieces.
 // shard:<i>/<n>: every n-th piece of the mode from the i-th (0-based), for n processes side by side
-// (test_ai.sh does that). Prints "N passed, M failed" and exits 1 on a failure. flat_test by default.
+// (test_ai.sh, or shards.sh test_ai.lobster, does that). Prints "N passed, M failed" and exits 1 on a failure. flat_test by default.
 //
 // Differences from test_ai.gd:
 // - SPAWN is the kit's (testkit/kit.lobster): the same units at the same turn, but run before the turn's
@@ -1271,8 +1271,9 @@ def read_logs(paths:[string]):
 
 let args0 = command_line_arguments()
 let args = plain_args(args0)
-if args.length and args[0] == "combine":
-    read_logs(args.slice(1, -1))
+let combine_at = find_index(args, "combine")
+if combine_at >= 0:
+    read_logs(args.slice(combine_at + 1, -1))
     combine()
 else:
     var rest = args
