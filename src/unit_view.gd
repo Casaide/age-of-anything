@@ -50,8 +50,7 @@ const HOP_DOWN := 0.75
 ## The legs through a hop: [cycle point, leg squash (1: standing), foot shift along the facing (in leg
 ## lengths; < 0: back)]: crouch, hold, push (legs flung back, long), tuck, reach for the ground, touch
 ## down, squash, stand. The feet move only in the air; the body rides on its lowest foot.
-const HOP_KEYS := [[0.0, 1.0, 0.0], [0.15, 0.7, 0.0], [HOP_UP, 0.7, 0.0], [0.36, 1.15, -0.7], [0.52, 0.75, -0.25],
-	[0.66, 0.9, 0.3], [HOP_DOWN, 1.0, 0.0], [0.82, 0.72, 0.0], [1.0, 1.0, 0.0]]
+const HOP_KEYS := UnitModels.HOP_KEYS   # (shared: a frog's legs are baked in these phases, D-179)
 var _hop_off := Vector2.ZERO    # node units: where the hopper is drawn, from its node
 var _hop_aim := Vector2.ZERO    # a whole hop the way it last moved, on screen (node units)
 var _hop_last := Vector2.INF    # its node's position last frame
@@ -72,6 +71,8 @@ var idle_left := 0.0
 var idle_wait := 2.0
 var flying := false
 var unit_scale := 1.0
+static var FLAT_SIZE := OS.get_environment("AOW_FLAT_SIZE") == "1"   # (a study flag: every part baked at 100 and stretched, as before D-180)
+var outer := 1.0          # the scale of the unit this one is drawn inside (an engine's crew): its parts bake at both (D-180)
 var pose_steps := 0       # > 0: stepped pixel-art animation with this many poses per walk cycle
 var art_px := 0.0         # stepped mode: art pixels per global unit, for snapping to whole pixels
 const STEP_FPS := 8.0
@@ -110,6 +111,7 @@ func build(r: Dictionary, lib, team: Color, speed := 10) -> void:
 	noise.seed = Rng.hash_string(JSON.stringify(r, "", true))
 	time = noise.randf() * 10.0
 	unit_scale = float(r.scale) / 100.0
+	_body_steps = body_steps(lib, r)
 	speed_px = float(speed) * 3.0
 
 	_perched = false   # (a new shadow at its ground size: set_perched shrinks it again if it's up on a wall)
@@ -238,9 +240,10 @@ func sit_point(r: Dictionary, lib) -> Variant:
 ## A siege engine (milestone 13, D-118/D-119): the engine is one baked part in its facings (the
 ## recipe's body), and its crew are the race's own workers (the recipe's `crew`), each a UnitView of
 ## its own on the engine's crew sockets for this facing. A socket's name says how its crew member
-## stands: "crew<n>_f<k>[_reach|_raise][_in|_top]": turned k facings from the engine, the arm hold
-## it keeps, drawn behind the engine ("in": inside its frame) or over it ("top": riding); else by
-## how near the camera the socket is. Crew walk while the engine moves (not those riding on top).
+## stands: "crew<n>_f<k>[_reach|_raise][_in|_top|_box]": turned k facings from the engine, the arm hold
+## it keeps, drawn behind the engine ("in": inside its frame) or over it ("top": riding; "box": riding in a
+## walled howdah, seen from the hips up: its legs not drawn, Dominic on the heroic humans standing on an open
+## platform); else by how near the camera the socket is. Crew walk while the engine moves (not those riding).
 var crew: Array = []      # [{view, top}]
 var rest_hold := "low"    # the hold a unit goes back to between blows and jobs (a crew member's own)
 ## Up on a wall's walkway (or down from it): the shadow shrinks to the walk, so it doesn't stick out
@@ -298,19 +301,27 @@ func _build_engine(r: Dictionary, lib, team: Color, colours: Dictionary, speed: 
 				hold = t
 			elif t == "in":
 				z = -1.0
-			elif t == "top":
+			elif t == "top" or t == "box":
 				z = 1.0
 				top = true
 		var v = get_script().new()
 		v.facing_k = face
+		v.outer = unit_scale * outer
 		v.build(hr if hauls else cr, lib, team, speed)
 		v.position = sockets[name]
+		var back := int(lib.creatures.get(v.recipe.get("creature", ""), {}).get("crew_back", 0))
+		if back > 0 and not top:   # on the ground, a hunched body stands back from its place, so it's centred on it (creatures.json crew_back; riding on top, it sits where it's put)
+			var mr: Dictionary = PartShape.rigs.get(v.recipe.body + PartShape.facing_suffix(face), {})
+			v.position -= mr.get("ahead", Vector2.ZERO) * float(back) * v.unit_scale
 		v.set_meta("z", z + n * 0.01)   # the same layer: nearest the camera last
 		if not hauls:
 			v.rest_hold = hold
 			v.set_hold(hold)
 		v.phase = 0.4 if hauls else 0.7 * n
 		bob.add_child(v)
+		if name.ends_with("_box"):
+			for leg in v.legs:
+				leg.node.visible = false
 		crew.append({"view": v, "top": top, "socket": name})
 	if head_node:
 		# A beast's head among its riders by depth: over those behind it (a heron's neck in front of its
@@ -342,7 +353,7 @@ static func engine_sockets(r: Dictionary, sockets: Dictionary) -> Array:
 	# A "_wide" socket stands in for its namesake ("crew0_f0_reach_in", "crew2_f0_reach"; a war beast's rider
 	# "crew0_f0_top", D-129) for such a crew.
 	# A "_narrow" one is only for a crew that fits a tight file (the great sling's haulers): such a crew leaves it out.
-	var out: Array = sockets.keys().filter(func(s): return s.begins_with("crew") and not (wide and s.ends_with("_narrow")) and (s.ends_with("_wide") == wide or (wide and not sockets.has(s.trim_suffix("_in").trim_suffix("_top") + "_wide") and not s.ends_with("_in"))))
+	var out: Array = sockets.keys().filter(func(s): return s.begins_with("crew") and not (wide and s.ends_with("_narrow")) and (s.ends_with("_wide") == wide or (wide and not sockets.has(s.trim_suffix("_in").trim_suffix("_top").trim_suffix("_box") + "_wide") and not s.ends_with("_in"))))
 	if r.has("haul"):
 		out += sockets.keys().filter(func(s): return s.begins_with("haul"))
 	return out
@@ -410,6 +421,10 @@ func _engine_process(delta: float) -> void:
 const BEAST_STRIKE := 0.6   # seconds a beast's blow takes: wound up, the strike lands at BEAST_HIT, recovering
 const BEAST_HIT := 0.35
 var _beast_head_rest := Vector2.ZERO
+var _head_parts: Array = []   # [node, rest position]: the head and what it wears, nodding together (D-179)
+var _attack_len := 0.35       # how long this attack plays (a blow is longer: its wind-up and holds)
+const BLOW_TIME := 0.5        # a blow: wind up, hold at the top, drive, hold at contact, recover (D-179, study A2's timing)
+const HEAD_NOD := 0.45        # how far the head bobs walking, a beat behind the body (part units)
 
 
 func _beast(delta: float) -> void:
@@ -628,7 +643,14 @@ func _sort_layers(n: Node) -> void:
 
 
 func _shape() -> PartShape:
-	return PartShape.new()
+	var ps := PartShape.new()
+	ps.size = drawn_size()   # baked at the size it's drawn: a big sheep keeps the art's pixels (D-180)
+	return ps
+
+
+## The percent of the art scale this unit is drawn at: its recipe scale, inside whatever it's drawn in.
+func drawn_size() -> int:
+	return 100 if FLAT_SIZE else roundi(unit_scale * outer * 100.0)
 
 
 static func colours_for(lib, skin: String, family: String, team: Color) -> Dictionary:
@@ -726,7 +748,7 @@ func _make_rig(lib, body_id: String, head_id: String, colours: Dictionary, paren
 				if low > 0.0:
 					reach = clampf(_girth_drop / (low * cos(CLING_TURN)), 1.0, 2.6)
 			legs.append({"node": leg, "phase": float(a[2]), "cling": _clinging, "reach": reach, "rest": leg.position,
-				"fore": float(body.legs.anchors[i][0]) > fore_mid, "base": leg_id + pose, "walk_id": leg_id, "cut": "~%s^%d" % [body_id, i] if cut else "", "steps": int(body.legs.get("poses", 0)) if pose == "" else 0})
+				"fore": float(body.legs.anchors[i][0]) > fore_mid, "base": leg_id + pose, "walk_id": leg_id, "cut": "~%s^%d" % [body_id, i] if cut else "", "steps": int(body.legs.get("poses", 0)) if pose == "" and not _clinging else 0})   # (a rider clinging to its mount doesn't step)
 
 	var body_node := _shape()
 	body_node.part_id = body_id + _hold_suffix + pose
@@ -760,6 +782,8 @@ func _make_rig(lib, body_id: String, head_id: String, colours: Dictionary, paren
 		head_node.set_meta("z", 2)
 		root.add_child(head_node)
 		self.head_node = head_node
+		if body_id == recipe.body and not recipe.has("crew"):
+			_head_parts.append([head_node, head_node.position])
 		var head_rig: Dictionary = PartShape.rigs.get(head_node.part_id + PartShape.facing_suffix(facing_k), PartShape.rigs.get(head_node.part_id, {}))
 		sockets["top"] = sockets.head + (head_rig.sockets.top if head_rig.has("sockets") else PartShape.v2(head.sockets.top))
 		gear_scale = float(head_rig.get("gear_scale", 1.0))
@@ -806,8 +830,11 @@ func _attach(lib, rig: Dictionary, slot: String, part_id: String, colours: Dicti
 	var z: float = 0.5 if withers else Z_FOR_SLOT[slot]
 	if facing_k != 0 and slot in ["hand_l", "hand_r", "back"] and rig.depth.has(socket):
 		# In the other facings what's on the camera's side draws over the body, the rest under:
-		# a cape shows when it walks away, the far hand's shield goes behind.
-		var near: bool = float(rig.depth[socket]) >= -0.5
+		# a cape shows when it walks away, the far hand's shield goes behind. Back gear goes by the
+		# back it hangs on, wherever on it its own socket is (a rat's banner pole beside its spine drew
+		# in front of it facing the camera: the placement check).
+		var by: String = "back" if slot == "back" and not withers and rig.depth.has("back") else socket
+		var near: bool = float(rig.depth[by]) >= -0.5
 		z = (1.6 if slot == "back" else absf(z)) if near else (-3.0 if slot == "back" else -absf(z))
 	if slung == "@slung_flat":
 		z = 1.6   # lying on top of a level back: seen from above in every facing, over the body
@@ -825,9 +852,11 @@ func _attach(lib, rig: Dictionary, slot: String, part_id: String, colours: Dicti
 		node.scale = rig.torso_scale
 	elif slot == "head_gear":
 		node.scale = Vector2.ONE * rig.gear_scale   # head gear sized to the head that wears it
-	elif slot == "back" and "drape" in p.tags:
+	elif slot == "back" and ("drape" in p.tags or rig.sockets.has(part_id)):   # (or hung from the body's own place for it: sized to it too)
 		node.scale = Vector2.ONE * rig.drape_scale   # a hanging cape or pelt sized to the back it hangs from (parts.json drape_scale)
 	rig.root.add_child(node)
+	if slot == "head_gear" and not _head_parts.is_empty():
+		_head_parts.append([node, node.position])   # (nods with the head)
 	if rig.carry == "harness" and slot == "hand_r":
 		# No arms: the weapon lies couched in its holder, pointing forward (a tool just leans).
 		var tip: Vector2 = PartShape.rigs.get(part_id, {}).get("tip", Vector2.ZERO)
@@ -841,8 +870,32 @@ func _attach(lib, rig: Dictionary, slot: String, part_id: String, colours: Dicti
 		weapon_rot = node.rotation
 		harnessed = rig.carry == "harness"
 		_thrusts = "spear" in p.tags or "lance" in p.tags
+	if slot == "hand_l" and slung == "" and rig.carry != "harness":
+		shield = node
+		_shield_rest = node.position
 	if slot == "back":
 		back_node = node
+
+
+## The body's walk steps baked for this unit (parts.json body_steps), or 0: on foot, holding what it holds low.
+static func body_steps(lib, r: Dictionary) -> int:
+	if r.has("mount") or r.has("crew") or (r.parts.has("hand_r") and hold_for(lib.part(r.parts.hand_r).tags) != "low"):
+		return 0
+	return int(lib.part(r.body).get("body_steps", 0))
+
+
+## The body in walk step `id` (or its natural self, ""): its sprite, and the hands' gear where that step's hands are.
+func _walk_body(id: String) -> void:
+	var to: String = recipe.body if id == "" else id
+	for ps in _body_nodes:
+		ps.part_id = to
+		ps.queue_redraw()
+	var rig: Dictionary = PartShape.rigs.get(to + PartShape.facing_suffix(facing_k), PartShape.rigs.get(to, {}))
+	var socks: Dictionary = rig.get("sockets", {})
+	if weapon != null and not harnessed:
+		weapon_rest = socks.get("hand_r", _hand_rest) if id != "" else _hand_rest
+	if shield != null:
+		shield.position = socks.get("hand_l", _shield_rest) if id != "" else _shield_rest
 
 
 ## How an off-hand shield is carried on this body: "" in the hand, else its sling ("@slung" upright
@@ -902,10 +955,12 @@ func _rebuild() -> void:
 	breathing = []
 	crew = []
 	weapon = null
+	shield = null
 	head_node = null
 	back_node = null
 	seat_node = null
 	_body_nodes = []
+	_head_parts = []
 	work_hold = "low"
 	flying = false
 	facing = 1.0
@@ -1028,7 +1083,7 @@ func set_tool(lib, part_id: String) -> void:
 	if weapon == null or harnessed or weapon.part_id == part_id:
 		return
 	var p: Dictionary = lib.part(part_id)
-	var key := PartShape.bake_key(part_id, p.shapes, PartShape.team_neutral(weapon.colours))
+	var key := PartShape.bake_key(part_id, p.shapes, PartShape.team_neutral(weapon.colours), weapon.size)
 	if not PartShape.baked.has(key):
 		return
 	weapon.part_id = part_id
@@ -1048,7 +1103,8 @@ func set_tool(lib, part_id: String) -> void:
 
 ## A melee blow lands: the lunge (T1, D-106).
 func flourish() -> void:
-	attack_t = BEAST_STRIKE if recipe.has("crew") and not legs.is_empty() else 0.35
+	attack_t = BEAST_STRIKE if recipe.has("crew") and not legs.is_empty() else BLOW_TIME
+	_attack_len = attack_t
 	_attack_kind = "blow"
 	for c in crew:
 		c.view.flourish()   # the crew heave with it
@@ -1059,6 +1115,7 @@ func loose() -> void:
 	if _built.size() > 0 and _built[0].has("crew"):
 		_throw()
 	attack_t = 0.35
+	_attack_len = attack_t
 	_attack_kind = "loose"
 	for c in crew:
 		c.view.loose()
@@ -1099,8 +1156,13 @@ func die(tip: float) -> void:
 ## workers); a missing bake leaves the pose as it is, so nothing shows magenta.
 const WORK_HOLDS := ["reach", "raise"]
 const ATTACK_HOLDS := ["thrust"]   # baked for spear and lance carriers (art_kit.bake_units)
+## The art-quality study's follow-through hold (docs/concepts/art-quality/), baked only with AOW_STUDY_HOLDS set.
+static var STUDY_HOLDS: Array = ["follow"] if OS.has_environment("AOW_STUDY_HOLDS") else []
 var work_hold := "low"
 var _body_nodes: Array = []   # the body's PartShapes (its bake and its near-arm layer)
+var _body_steps := 0          # > 0: walking, the body's own baked steps (parts.json body_steps: arms swing, a tail sweeps)
+var shield: Node2D = null     # what the off hand holds (it follows the hand in a walk step)
+var _shield_rest := Vector2.ZERO
 var _hand_rest := Vector2.ZERO   # the hand in the body's own hold
 
 
@@ -1113,12 +1175,14 @@ func set_hold(hold: String) -> void:
 	var id: String = natural if hold == "low" else recipe.body + "@" + hold
 	var rig: Dictionary = PartShape.rigs.get(id + PartShape.facing_suffix(facing_k), PartShape.rigs.get(id, {}))
 	if hold != "low":
-		if rig.is_empty() or not PartShape.baked.has(PartShape.bake_key(id, _body_nodes[0].shapes, PartShape.team_neutral(_body_nodes[0].colours)) + PartShape.facing_suffix(facing_k)):
+		if rig.is_empty() or not PartShape.baked.has(PartShape.bake_key(id, _body_nodes[0].shapes, PartShape.team_neutral(_body_nodes[0].colours), _body_nodes[0].size) + PartShape.facing_suffix(facing_k)):
 			return
 	for ps in _body_nodes:
 		ps.part_id = id
 		ps.setup(ps.shapes, ps.colours)
 	work_hold = hold
+	if shield != null:
+		shield.position = _shield_rest   # (out of a walk step: the shield back in the hand at rest)
 	if weapon != null:
 		weapon.position = rig.sockets.hand_r if hold != "low" and rig.has("sockets") and rig.sockets.has("hand_r") else _hand_rest
 		weapon_rest = weapon.position
@@ -1210,6 +1274,12 @@ func _process(delta: float) -> void:
 				if id != leg.node.part_id:
 					leg.node.part_id = id
 					leg.node.queue_redraw()
+		if _body_steps > 0 and work_hold == "low" and not _body_nodes.is_empty():
+			var bid := ""
+			if walking:
+				bid = "%s@w%d_%d" % [recipe.body, int(fposmod(phase / TAU, 1.0) * _body_steps) % _body_steps, _body_steps]
+			if (recipe.body if bid == "" else bid) != _body_nodes[0].part_id:
+				_walk_body(bid)
 		var hover := 0.0
 		if flying:
 			hover = -9.0 + sin(t * 3.0) * 2.0
@@ -1218,6 +1288,12 @@ func _process(delta: float) -> void:
 		bob.rotation = sin(ph * gait.rock_rate) * gait.rock * stride
 	if head_node:
 		head_node.rotation = 0.0
+	# The head (and what it wears) bobs a beat behind the body's stride (D-179), on whole pixels when stepped.
+	var nod := HEAD_NOD * sin(2.0 * ph - 1.2) * stride if not hops and not flying else 0.0
+	if stepped and art_px > 0.0:
+		nod = roundf(nod * art_px) / art_px
+	for hp in _head_parts:
+		hp[0].position = hp[1] + Vector2(0.0, nod)
 	if back_node and flying:
 		# Flap: quick down-strokes, the wings' tips sweeping through a few pixels.
 		var f := sin(t * (11.0 if walking else 7.0))
@@ -1245,9 +1321,9 @@ func _process(delta: float) -> void:
 		_die_pose()
 	elif attack_t > 0.0:
 		attack_t -= delta
-		var a := 1.0 - maxf(attack_t, 0.0) / 0.35
+		var a := 1.0 - maxf(attack_t, 0.0) / _attack_len
 		if stepped:
-			a = floorf(a * 5.0) / 5.0
+			a = floorf(a * 8.0) / 8.0
 		_attack(a)
 	elif job != "" and not walking:
 		_work(t, stepped)
@@ -1307,8 +1383,12 @@ func _attack(a: float) -> void:
 			weapon.rotation = weapon_rot + 0.2 * (1.0 - a)
 			weapon.position = weapon_rest + fwd * 2.0 * (1.0 - a)
 		return
+	# The body: sits back a little winding up, drives into the blow, holds at contact, settles (D-179).
+	k = _blow_lunge(a)
 	bob.position += fwd * 6.0 * k
 	bob.rotation += 0.14 * k * signf(fwd.x if fwd.x != 0.0 else 1.0)
+	for hp in _head_parts:   # the head dips into the blow a little after the body
+		hp[0].position = hp[1] + fwd * 0.8 * maxf(_blow_lunge(a - 0.08), 0.0)
 	if legs.size() == 2:
 		legs[0].node.rotation += -0.5 * k
 		legs[1].node.rotation += 0.3 * k
@@ -1322,24 +1402,44 @@ func _attack(a: float) -> void:
 	if weapon == null:
 		return
 	if _thrusts:
-		# A spear: the arm straight out (the thrust hold), the spear levelled at the target and
-		# driven forward, then back to the carry.
-		var out: float = clampf((a - 0.2) / 0.25, 0.0, 1.0) * (1.0 - clampf((a - 0.75) / 0.25, 0.0, 1.0))
+		# A spear: levelled and drawn back, driven forward, held at full stretch, back to the carry.
+		var level_by: float = clampf(a / 0.25, 0.0, 1.0) * (1.0 - clampf((a - 0.8) / 0.2, 0.0, 1.0))
+		var out := 0.0
+		if a < 0.3:
+			out = -0.35 * smoothstep(0.0, 0.3, a)   # drawn back
+		elif a < 0.42:
+			out = lerpf(-0.35, 1.0, smoothstep(0.3, 0.42, a))   # driven
+		elif a < 0.65:
+			out = 1.0   # at full stretch
+		else:
+			out = lerpf(1.0, 0.0, smoothstep(0.65, 1.0, a))
 		set_hold("thrust" if out > 0.0 else "low")
 		var tip: Vector2 = PartShape.rigs.get(weapon.part_id + PartShape.facing_suffix(facing_k), PartShape.rigs.get(weapon.part_id, {})).get("tip", Vector2.ZERO)
 		var level := weapon_rot if tip == Vector2.ZERO else fwd.angle() - tip.angle()
-		weapon.rotation = lerp_angle(weapon_rot, level, out)
+		weapon.rotation = lerp_angle(weapon_rot, level, level_by)
 		weapon.position = weapon_rest + fwd * 9.0 * out
 		return
-	if a < 0.35:
+	if a < 0.4:   # wound up, then held there a moment
 		set_hold("raise")
-		weapon.rotation = weapon_rot - 1.1 * (a / 0.35)
-	elif a < 0.8:
+		weapon.rotation = weapon_rot - 1.1 * smoothstep(0.0, 0.3, a)
+	elif a < 0.75:   # driven through, held at contact
 		set_hold("reach")
-		weapon.rotation = weapon_rot + lerpf(-0.4, 0.9, (a - 0.35) / 0.45)
+		weapon.rotation = weapon_rot + lerpf(-0.4, 0.9, smoothstep(0.4, 0.5, a))
 	else:
 		set_hold("low")
-		weapon.rotation = weapon_rot + lerpf(0.9, 0.0, (a - 0.8) / 0.2)
+		weapon.rotation = weapon_rot + lerpf(0.9, 0.0, smoothstep(0.75, 1.0, a))
+
+
+## How far a blow's body is into its lunge at a (0..1): back a little winding up, driven forward, held at
+## contact, settled (D-179).
+static func _blow_lunge(a: float) -> float:
+	if a < 0.3:
+		return -0.3 * smoothstep(0.0, 0.3, a)
+	if a < 0.45:
+		return lerpf(-0.3, 1.0, smoothstep(0.3, 0.45, a))
+	if a < 0.7:
+		return 1.0
+	return lerpf(1.0, 0.0, smoothstep(0.7, 1.0, a))
 
 
 ## The fall, by body shape (D3): a body laid down in 3D (parts.json corpse: the frog) plays its baked
@@ -1417,6 +1517,7 @@ func _corpse_fall(t: float) -> void:
 		c.visible = c == _corpse
 	if shown == frames.size() - 1:   # down: in its own shadow (the posed body pressed onto the ground)
 		_shadow.part_id = id + "~shadow"
+		_shadow.size = _corpse.size
 		_shadow.facing = facing_k
 		_shadow.setup([], {})
 		_shadow.scale = Vector2(unit_scale * facing, unit_scale)
@@ -1444,17 +1545,26 @@ func _hip_height() -> float:
 ## move along the facing's screen direction (sideways by turning, up or down the screen by length).
 func _hop(ph: float, stride: float) -> void:
 	var p := fposmod(ph / TAU, 1.0) if stride > 0.0 else 0.0
-	var s := 1.0
-	var d := 0.0
-	for i in range(1, HOP_KEYS.size()):
-		if p <= HOP_KEYS[i][0]:
-			var a: Array = HOP_KEYS[i - 1]
-			var b: Array = HOP_KEYS[i]
-			var w := smoothstep(a[0], b[0], p)
-			s = lerpf(a[1], b[1], w)
-			d = lerpf(a[2], b[2], w)
-			break
+	var key := UnitModels.hop_key(p)
+	var s := key.x
+	var d := key.y
 	var fwd := _forward()
+	# Legs baked in the hop's phases (parts.json legs.poses: the frog, D-179): the phase's own pose, both legs together.
+	var keyed := false
+	for leg in legs:
+		if leg.steps > 0 and not leg.cling:
+			keyed = true
+			var id: String = leg.base + leg.cut
+			if stride > 0.0:
+				id = "%s@w%d_%d%s" % [leg.walk_id, int(p * leg.steps) % leg.steps, leg.steps, leg.cut]
+			if id != leg.node.part_id:
+				leg.node.part_id = id
+				leg.node.queue_redraw()
+			leg.node.rotation = 0.0
+			leg.node.scale.y = leg.reach
+	if keyed:
+		_hop_lift(p, fwd)
+		return
 	# Every foot comes up by the same amount as the legs bend (the body rides down by it, so none
 	# lifts off nor sinks): a leg reaching further below its hip squashes less.
 	var depth := 0.0
@@ -1472,6 +1582,11 @@ func _hop(ph: float, stride: float) -> void:
 		var k := maxf(1.0 - (1.0 - s) * depth / h, 0.2) if h > 0.0 else s
 		leg.node.rotation = -asin(clampf(d * fwd.x, -0.9, 0.9))
 		leg.node.scale.y = leg.reach * (k + d * fwd.y)
+	_hop_lift(p, fwd)
+
+
+## The body in the air between HOP_UP and HOP_DOWN (nose up going up, down coming in), on its planted feet otherwise.
+func _hop_lift(p: float, fwd: Vector2) -> void:
 	var lift := 0.0
 	var tilt := 0.0
 	if p > HOP_UP and p < HOP_DOWN:
@@ -1796,10 +1911,12 @@ func _kneel(_delta: float) -> void:
 	# (`ahead`: a part unit along the ground, foreshortened) says where back along the ground is.
 	var ahead := ahead_on_screen(facing_k)
 	var side := side_on(facing_k)
-	var hind_x := []
+	var hind := []   # the hind hooves where they stand (each leg's lowest pixel, from its hip)
 	for leg in legs:
 		if not leg.fore:
-			hind_x.append(leg.rest.x)
+			if not leg.has("span"):
+				leg.span = _span(leg.node)
+			hind.append(leg.rest + leg.span[1] * leg.node.scale)
 			continue
 		# A front leg bends at the knee (Dominic: "the knees aren't bent"): the upper leg, the
 		# leg's own sprite, shortens to the knee; a second copy of it, the shin, folds back
@@ -1840,7 +1957,7 @@ func _kneel(_delta: float) -> void:
 	# planted), and the human half leans back over the hindquarters to keep its balance. Side-on
 	# that's a turn of the whole sprite; towards or away from the camera the chest just drops.
 	var a := 0.17 * kneel * side
-	var pivot := Vector2(0.0 if hind_x.is_empty() else hind_x.reduce(func(m, x): return m + x, 0.0) / hind_x.size(), 0.0)
+	var pivot: Vector2 = Vector2.ZERO if hind.is_empty() else hind.reduce(func(m, h): return m + h, Vector2.ZERO) / hind.size()   # (about the hooves themselves: about a point under the hips, one slid 4 px seen end-on)
 	bob.rotation += a
 	bob.position += pivot - pivot.rotated(a)
 	if seat_node != null:

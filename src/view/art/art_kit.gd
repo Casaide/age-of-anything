@@ -21,10 +21,19 @@ const BakeCache := preload("res://src/view/art/bake_cache.gd")
 const Heroes := preload("res://src/heroes.gd")
 const BakeClock := preload("res://src/view/art/bake/bake_clock.gd")
 const Corpse := preload("res://src/view/art/corpse.gd")
+const Ruin := preload("res://src/view/art/bake/ruin.gd")
+const Rng := preload("res://src/rng.gd")
 
-const ART_SCALE := 1.5     # art pixels per canvas unit (a tile is 96 x 48 art pixels)
+## Art pixels per canvas unit: 3.0 since D-173 (a tile is 192 x 96 art pixels; at play zoom one art pixel is one
+## screen pixel). AOW_ART_SCALE in the environment sets it (1.5 is the look before D-173).
+static var ART_SCALE: float = float(OS.get_environment("AOW_ART_SCALE")) if OS.has_environment("AOW_ART_SCALE") else 3.0
+## The art scale before D-173. Zooms are set in it (canvas zoom = BASE_SCALE x what used to be "screen pixels per
+## art pixel"), so the camera, the lobby and the Race Lab show everything at the size they always did.
+const BASE_SCALE := 1.5
 const UNIT_SCALE := 0.85   # units at about a third of a building's height
-const UNIT_BANDS := 4      # value bands in unit shading (Pixelize.run; the paint-over hybrid)
+## Value bands in unit shading (Pixelize.run; the paint-over hybrid). AOW_UNIT_BANDS overrides it for the
+## fidelity study (docs/concepts/fidelity/; 0: smooth shading); unset, it's 4.
+static var UNIT_BANDS: int = int(OS.get_environment("AOW_UNIT_BANDS")) if OS.has_environment("AOW_UNIT_BANDS") else 4
 const SS := 4              # supersampling for the building and prop bakes
 const HOUSE_SCALE := 1.1   # houses read smaller than the halls (Fable; Dominic: rat house too big)
 const ALONG_Z := "^z"       # bake-name suffix of a gate turned a quarter, for a wall line running along sim y
@@ -302,6 +311,7 @@ func _work(kind: String) -> void:
 		baker = PartBaker.new()
 		baker.art_scale = ART_SCALE * UNIT_SCALE   # baked at the size they're drawn: crisp pixels
 		baker.bands = UNIT_BANDS   # the paint-over look: painted value bands, not plastic gradients
+		baker.outlined = OS.get_environment("AOW_UNIT_OUTLINE") != "0"   # (the fidelity study can bake without the dark edge)
 		add_child(baker)
 	elif kind == "hifi":
 		baker = await _hifi_baker()
@@ -380,7 +390,8 @@ func _steps_jobs(units: Array) -> Array:
 		probe.build(u.recipe, lib, ANIMAL_TEAM, u.eval.speed)   # parts bake in the team key: any team will do
 		for ps in probe.find_children("*", "Node2D", true, false):
 			if ps is PartShape and ps.part_id != "" and ps.part_id != "unit_shadow":   # (the shadow is drawn flat: bake_flat)
-				ids.append(_part_job(ps.part_id, ps.shapes, ps.colours))
+				ids.append(_part_job(ps.part_id, ps.shapes, ps.colours, ps.size))
+		var at: int = probe.drawn_size()   # each part at the size the unit is drawn (D-180)
 		probe.free()
 		if u.recipe.has("mount") and not u.recipe.mount.get("fused", false):
 			# A rider shows the leg on the flank facing the camera: the probe (facing 0) shows one
@@ -388,12 +399,12 @@ func _steps_jobs(units: Array) -> Array:
 			# flank's went unbaked: the placement check, "every part drawn is baked").
 			var rider_colours := UnitView.colours_for(lib, u.recipe.skin, u.recipe.family, ANIMAL_TEAM)
 			for id in UnitView.leg_parts(lib, u.recipe.body):
-				ids.append(_part_job(id, lib.part(id.get_slice("~", 0)).shapes, rider_colours))
+				ids.append(_part_job(id, lib.part(id.get_slice("~", 0)).shapes, rider_colours, at))
 		if not UnitView.pose_parts(lib, u.recipe).is_empty():   # a body's idle poses and posed walk (a cat)
 			var mount_skin: String = u.recipe.mount.skin if u.recipe.has("mount") else u.recipe.skin
 			var pose_colours := UnitView.colours_for(lib, mount_skin, u.recipe.family, ANIMAL_TEAM)
 			for pp in UnitView.pose_parts(lib, u.recipe):
-				ids.append(_part_job(pp[0], pp[1], pose_colours))
+				ids.append(_part_job(pp[0], pp[1], pose_colours, at))
 		var pose := UnitView.corpse_pose(lib, u.recipe)
 		if not pose.is_empty():   # how it lies dead, laid down in 3D (D-165: the frog)
 			ids.append(_corpse_job(u.recipe, pose))
@@ -401,17 +412,20 @@ func _steps_jobs(units: Array) -> Array:
 		if u.recipe.slot == "worker":
 			# Workers change tools for the job and carry their load home in their hands.
 			for id in JOB_PARTS:
-				ids.append(_part_job(id, lib.part(id).shapes, colours))
+				ids.append(_part_job(id, lib.part(id).shapes, colours, at))
 		# Every body with arms is baked in the work holds too (raised, reaching): workers
 		# swing their tools with them (D-105) and soldiers their weapons (D-106).
 		var rides: bool = u.recipe.has("mount") and not u.recipe.mount.get("fused", false)
 		if not rides and not u.recipe.has("crew") and PartShape.rigs.get(u.recipe.body, {}).get("carry", "") != "harness":   # (an engine's crew are the workers)
-			var holds: Array = UnitView.WORK_HOLDS.duplicate()
+			var holds: Array = UnitView.WORK_HOLDS + UnitView.STUDY_HOLDS
 			var hand: String = u.recipe.parts.get("hand_r", "")
 			if hand != "" and ("spear" in lib.part(hand).tags or "lance" in lib.part(hand).tags):
 				holds += UnitView.ATTACK_HOLDS   # spear carriers thrust (D-106)
 			for h in holds:
-				ids.append(_part_job(u.recipe.body + "@" + h, lib.part(u.recipe.body).shapes, colours))
+				ids.append(_part_job(u.recipe.body + "@" + h, lib.part(u.recipe.body).shapes, colours, at))
+		var body_n: int = UnitView.body_steps(lib, u.recipe)
+		for i in body_n:   # the body's own walk steps (D-179: arms swinging, a tail sweeping)
+			ids.append(_part_job("%s@w%d_%d" % [u.recipe.body, i, body_n], lib.part(u.recipe.body).shapes, colours, at))
 	var seen := {}
 	var out := []
 	for id in ids:
@@ -421,11 +435,11 @@ func _steps_jobs(units: Array) -> Array:
 	return out
 
 
-func _part_job(id: String, shapes: Array, colours: Dictionary) -> String:
-	var key := PartShape.bake_key(id, shapes, PartShape.team_neutral(colours))
+func _part_job(id: String, shapes: Array, colours: Dictionary, at := 100) -> String:
+	var key := PartShape.bake_key(id, shapes, PartShape.team_neutral(colours), at)
 	var modelled: bool = _unit_models.has(id)
 	var make := func(pb) -> Dictionary:
-		await pb.bake(id, shapes, colours)
+		await pb.bake(id, shapes, colours, at)
 		return _part_entry(id, key, modelled)
 	var apply := func(e: Dictionary) -> void:
 		for k in e.baked:
@@ -443,9 +457,9 @@ func _corpse_job(r: Dictionary, pose: Dictionary) -> String:
 	for f in frames:
 		var id := UnitView.corpse_id(r, pose, int(f))
 		for k in 8:
-			keys.append(PartShape.bake_key(id, [], {}) + PartShape.facing_suffix(k))
+			keys.append(PartShape.bake_key(id, [], {}, int(r.scale)) + PartShape.facing_suffix(k))
 			if int(f) == int(frames[-1]):
-				keys.append(PartShape.bake_key(id + "~shadow", [], {}) + PartShape.facing_suffix(k))
+				keys.append(PartShape.bake_key(id + "~shadow", [], {}, int(r.scale)) + PartShape.facing_suffix(k))
 	var make := func(pb) -> Dictionary:
 		var rig := Corpse.Rig3D.new(lib)
 		for f in frames:
@@ -556,7 +570,7 @@ func _building_job(d: Dictionary, arch: String, type: String, model := "", suffi
 			info.banner = {"tex": ImageTexture.create_from_image(BakeCache.unpack(info.banner.img)), "origin": info.banner.origin}
 		buildings[name] = info
 	var label: String = d.buildings[type].get("name", type.capitalize())
-	return _job("bld|%s|%s" % [name, model], "hifi", 22, "Raising the %s" % label.to_lower(), buildings.has(name), make, apply)
+	return _job("bld|%s|%s" % [name, model], "hifi", 26, "Raising the %s" % label.to_lower(), buildings.has(name), make, apply)
 
 
 func _pack_bakes(made: Dictionary) -> Dictionary:
@@ -640,7 +654,7 @@ func _paint_icons(list: Array) -> void:
 	vp.canvas_item_default_texture_filter = Viewport.DEFAULT_CANVAS_ITEM_TEXTURE_FILTER_NEAREST
 	vp.render_target_update_mode = SubViewport.UPDATE_DISABLED
 	add_child(vp)
-	var zoom := ART_SCALE * 2.0
+	var zoom := BASE_SCALE * 2.0
 	for k in list.size():
 		var u: Dictionary = list[k][1]
 		var view := UnitView.new()
@@ -1446,6 +1460,34 @@ func _bake_building(baker, models, arch: String, type: String, model := "", suff
 		var sname := "%s:stage%d" % [name, st]
 		made[sname] = {"img": sb.img, "origin": sb.points[0]}
 		info.stages.append(sname)
+	# Broken up (D-171): battered, breaking, collapsed, and the ruin it leaves; not for walls and gates.
+	info.ruins = []
+	if not spec.has("arms") and not spec.has("open") and not info.has("front"):
+		var broken := []
+		for st in range(1, Ruin.STAGES.size()):
+			var part: Dictionary = await BakeClock.build(func():
+				var p := _placed(models, arch, type, model, suffix)
+				for live in ["banner", "vane", "icon"]:
+					if p.has(live) and p[live] is Node:
+						p[live].free()
+				Ruin.apply(p.body, st, Rng.hash_string(name), models)
+				return p)
+			broken.append(part.body)
+		# Four to a render when the building fits a quarter of the frame with room for its rubble (a render
+		# is most of a bake), one at a time when it doesn't (bake_many asserts it fits).
+		var cell := float(baker.pixel_size) / 2.0 / SS
+		var sz := Vector2(body.img.get_size())
+		var o: Vector2 = body.points[0]
+		var fits := maxf(o.x, sz.x - o.x) < cell * 0.38 and o.y < cell * 0.55 and sz.y - o.y < cell * 0.25
+		var outs: Array = []
+		if fits:
+			outs = await baker.bake_many(broken, 2)
+		else:
+			for b in broken:
+				outs.append(await baker.bake(b, [Vector3.ZERO]))
+		for k in outs.size():
+			made["%s:ruin%d" % [name, k + 1]] = {"img": outs[k].img, "origin": outs[k].points[0]}
+			info.ruins.append("%s:ruin%d" % [name, k + 1])
 	baker.set_ground_shadow(false)
 	return {"bakes": made, "info": info}
 

@@ -22,6 +22,7 @@ const SOURCES := ["res://src/view/art/art_kit.gd", "res://src/view/art/bake/", "
 static var enabled := true    # tests switch it off to time a cold bake
 static var cold_parts := false   # tests: unit parts never load (they render, as for a race never seen); the rest still does
 static var _version := ""
+const STUDY_ENV := ["AOW_ART_SCALE", "AOW_UNIT_BANDS", "AOW_UNIT_OUTLINE", "AOW_UNIT_RIM"]
 static var _mods := []        # the mods in use when _version was made (their files are in it too)
 const Mods := preload("res://src/mods.gd")
 
@@ -33,6 +34,9 @@ static func folder() -> String:
 		var ctx := HashingContext.new()
 		ctx.start(HashingContext.HASH_MD5)
 		ctx.update(("%d|%s" % [FORMAT, Engine.get_version_info().string]).to_utf8_buffer())
+		for env in STUDY_ENV:   # the art studies' bakes (docs/concepts/art-quality/, fidelity/) keep apart
+			if OS.has_environment(env):
+				ctx.update((env + "=" + OS.get_environment(env)).to_utf8_buffer())
 		for src in SOURCES:
 			for path in _files(src):
 				ctx.update((path + FileAccess.get_md5(path)).to_utf8_buffer())

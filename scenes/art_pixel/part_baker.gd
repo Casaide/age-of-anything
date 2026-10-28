@@ -65,6 +65,12 @@ func _init() -> void:
 	fill.light_energy = 0.3
 	fill.light_color = Color("#b8c8ff")
 	add_child(fill)
+	if OS.has_environment("AOW_UNIT_RIM"):   # fidelity study (docs/concepts/fidelity/): a cool light from behind rims the silhouette
+		var rim := DirectionalLight3D.new()
+		rim.basis = Basis.looking_at(Vector3(-0.3, -0.35, 1.0).normalized(), Vector3.UP)
+		rim.light_energy = float(OS.get_environment("AOW_UNIT_RIM"))
+		rim.light_color = Color("#dfe8ff")
+		add_child(rim)
 	var env := Environment.new()
 	env.background_mode = Environment.BG_CLEAR_COLOR
 	env.ambient_light_source = Environment.AMBIENT_SOURCE_COLOR
@@ -82,13 +88,22 @@ func _init() -> void:
 	add_child(holder)
 
 
-## Bake one part in one colour set (skipped if it's already baked).
-func bake(id: String, shapes: Array, colours: Dictionary) -> void:
+## Bake one part in one colour set (skipped if it's already baked), at a size: `at` percent of the art scale, its
+## unit's recipe scale, so a unit drawn bigger or smaller keeps the art's pixels (D-180; its rigs are in part units,
+## the same at any size).
+func bake(id: String, shapes: Array, colours: Dictionary, at := 100) -> void:
 	colours = PartShape.team_neutral(colours)   # bake in the team key; the shader recolours per team
-	var key := PartShape.bake_key(id, shapes, colours)
+	var key := PartShape.bake_key(id, shapes, colours, at)
 	if PartShape.baked.has(key):
 		return
 	await BakeClock.breathe()   # building a model is main-thread work: not in a frame that's spent its budget
+	var base := art_scale
+	art_scale = base * float(at) / 100.0
+	await _bake_at(id, shapes, colours, key)
+	art_scale = base
+
+
+func _bake_at(id: String, shapes: Array, colours: Dictionary, key: String) -> void:
 	if models.has(id):
 		await _bake_model(id, colours, key)
 		return
@@ -118,6 +133,8 @@ func bake(id: String, shapes: Array, colours: Dictionary) -> void:
 
 const MEMBER_COLUMN := [3.0, 8.0, 13.0, 18.0]   # a member standing on its socket: points up its middle...
 const MEMBER_HALF := Vector2(4.0, 2.5)           # ...each as wide and tall as this on screen (part units)
+const MEMBER_AHEAD := [[5.0, 10.0], [9.0, 12.0]]  # ...and ahead of it at chest height, [forward, up]: a body leaning into the
+                                                  # work (a hunched rat at the ram) is mostly in front of its hips (placement C4)
 
 
 ## For each member socket: true when the member stands in front of most of the engine it overlaps on
@@ -144,12 +161,24 @@ func _members_front(model: Node3D, sockets: Dictionary, names: Array, view: Vect
 					pts.append(Vector3(q.dot(right), q.dot(up), q.dot(view)))
 	var out := {}
 	var apart := []   # members the engine is neither in front of nor behind
+	var cover := {}   # how much of the engine is in front of each member
+	var seen := {}    # each member's sample points on screen
 	for name in names:
 		var nearer := 0
 		var farther := 0
-		for h in MEMBER_COLUMN:
-			var c: Vector3 = sockets[name] + Vector3(0, h, 0)
+		var turn := 0.0   # the member's facing on the engine ("crew2_f2_reach": two steps round from it)
+		for t in name.split("_"):
+			if t.begins_with("f") and t.length() == 2 and t[1].is_valid_int():
+				turn = deg_to_rad(FACING_STEP * int(t[1]))
+		var fwd := Vector3(cos(turn), 0.0, sin(turn))
+		var samples: Array = MEMBER_COLUMN.map(func(h): return Vector3(0, h, 0))
+		if "_reach" in name or "_raise" in name:   # (leaning into the work; a rider sits upright)
+			samples += MEMBER_AHEAD.map(func(a): return fwd * float(a[0]) + Vector3(0, float(a[1]), 0))
+		seen[name] = []
+		for o in samples:
+			var c: Vector3 = sockets[name] + o
 			var sc := Vector2(c.dot(right), c.dot(up))
+			seen[name].append(sc)
 			var dc := c.dot(view)
 			for q in pts:
 				if absf(q.x - sc.x) < MEMBER_HALF.x and absf(q.y - sc.y) < MEMBER_HALF.y:
@@ -158,6 +187,7 @@ func _members_front(model: Node3D, sockets: Dictionary, names: Array, view: Vect
 					elif q.z < dc - 1.0:
 						farther += 1
 		out[name] = nearer <= farther if nearer + farther > 0 else sockets[name].dot(Vector3(view.x, 0, view.z)) > 0.0
+		cover[name] = nearer
 		if nearer + farther == 0:
 			apart.append(name)
 	# A member nowhere in front of or behind the engine goes under it all the same when one nearer the
@@ -174,9 +204,28 @@ func _members_front(model: Node3D, sockets: Dictionary, names: Array, view: Vect
 		var sc := Vector2(sockets[name].dot(right), sockets[name].dot(up))
 		for other in names:
 			var so := Vector2(sockets[other].dot(right), sockets[other].dot(up))
-			if not out[other] and sockets[other].dot(view) > d and (name in apart or (absf(so.x - sc.x) < MEMBER_HALF.x * 2.0 and absf(so.y - sc.y) < MEMBER_COLUMN[-1])):
+			if not out[other] and sockets[other].dot(view) > d and other in apart and not name in apart \
+					and absf(so.x - sc.x) < MEMBER_HALF.x * 2.0 and absf(so.y - sc.y) < MEMBER_COLUMN[-1]:
+				out[other] = true   # nowhere against the engine itself: over it with the member it stands in front of (a siege tower's pusher, f7)
+			elif not out[other] and sockets[other].dot(view) > d and (name in apart or (absf(so.x - sc.x) < MEMBER_HALF.x * 2.0 and absf(so.y - sc.y) < MEMBER_COLUMN[-1])):
 				out[name] = false
+			elif not out[other] and sockets[other].dot(view) > d and _samples_meet(seen[name], seen[other]):
+				# Hunched bodies reaching into each other (rats on the great sling's ropes, a diagonal view):
+				# both over the engine or both under it, by which the engine hides less of.
+				if cover[other] < cover[name]:
+					out[other] = true
+				else:
+					out[name] = false
 	return out
+
+
+## Two members' sample points close enough on screen that their bodies overlap.
+static func _samples_meet(a: Array, b: Array) -> bool:
+	for p in a:
+		for q in b:
+			if absf(p.x - q.x) < MEMBER_HALF.x * 2.0 and absf(p.y - q.y) < MEMBER_HALF.y * 2.0:
+				return true
+	return false
 
 
 ## A hand-built model in all its facings; its sockets come along, projected into 2D part units.
@@ -378,6 +427,7 @@ func _rig(spec: Dictionary, model: Node3D, view: Vector3, k: int, px: float) -> 
 		rig["front"] = _members_front(model, spec.sockets, members, view)
 	# Which way the model's front (+x) points on screen in this facing, to pick facings by.
 	rig.dir = (cam.unproject_position(Vector3(20, 0, 0)) - zero).normalized()
+	rig.ahead = to2d.call(Vector3(1, 0, 0))   # one unit forward on screen (part units): a crew member standing back from its place
 	if spec.has("anchors"):   # a leg on the camera's side of the body is the near leg
 		rig.anchors = spec.anchors.map(func(a): var v: Vector2 = to2d.call(a[0]); return [v.x, v.y, a[1],
 			a[2] if k == 0 else (1 if a[0].dot(flat) > 0.0 else -1), a[3] if a.size() > 3 else 0, a[4] if a.size() > 4 else false,
