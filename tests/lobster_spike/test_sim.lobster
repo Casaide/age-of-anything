@@ -2493,11 +2493,495 @@ def test_flow_patch_mixed():
             elif a > 0 and a <= cut and f.next[c] >= 0 and f.dist[f.next[c]] >= a: bad++
     check(bad == 0, "flow patch: fields patched through 180 closings and openings on the 2v2 map match fresh solves ({bad} cells off; {work} cells of work)")
 
+// ------------------------------------------------------------------ economy: farms, builders, drop-offs
+
+def own_workers_of(p:int) -> [int]: return filter(ids_of(p)) uid: t_worker[u_kind[index_of(uid)]] != 0
+
+// A unit of type k put down beside building b (Economy.spawn_at).
+def spawn_by(b:int, k:int) -> int:
+    let c = spawn_cell(b, k)
+    let i = add_unit(b_owner[b], k, (c % W) * TILE + 500, (c / W) * TILE + 500)
+    grow_scratch()
+    return u_id[i]
+
+def kind_of(name:string) -> int: return res_of(name) + 1
+
+// Is unit `uid` working farm `farm` (its pool's first cell)?
+def farming(uid:int, farm:int) -> bool:
+    let i = index_of(uid)
+    let h = u_home[i]
+    return (u_task[i] == GATHER or u_task[i] == T_RETURN) and h >= 0 and pool[h] == farm
+
+def builder_class(p:int) -> int: return t_mclass[worker_type(p)]
+
+def bt_reseed_wood(k:int) -> int: return bt_reseed[k][res_of("wood")]
+
+// A second farm beside farm cell a (3-5 tiles over, wherever there's room), or -1.
+def farm_beside(a:int) -> int:
+    let fk = btype_index("farm")
+    for([3, 4, 5, -3, -4, -5]) d:
+        for([a + d, a + d * W]) c:
+            if can_place(0, fk, c % W, c / W): return c
+    return -1
+
+// One farmer per farm: a second worker sent to a worked farm takes a free farm nearby (else other
+// food, else waits by it); a farm its farmer leaves is picked up again.
+def test_one_farmer():
+    new_world("flat_test", races0, rules0, [])
+    stock[1][0] = 1000
+    let sx = start_x[0]
+    let sy = start_y[0]
+    var tc = -1
+    for(b_owner) o, b:
+        if o == 0: tc = b
+    for(3): spawn_by(tc, type_of_slot(0, "worker"))
+    let ids = ids_of(0)
+    let field = terrain_index("field")
+    let a = (sy / 1000 + 2) * W + sx / 1000 + 3
+    let fk = btype_index("farm")
+    let b2 = farm_beside(a)
+    check(b2 >= 0 and can_place(0, fk, a % W, a / W), "one farmer: room for two farms")
+    issue_cmd(0, CMD_BUILD, [ids[0]], fk, a % W, a / W, 0)
+    while tick < 1600 and terrain[a] != field: tick_on()
+    issue_cmd(0, CMD_BUILD, [ids[1]], fk, b2 % W, b2 / W, 0)
+    while tick < 3200 and terrain[b2] != field: tick_on()
+    check(terrain[a] == field and terrain[b2] == field, "one farmer: both farms are sown")
+    check(farming(ids[0], a) and farming(ids[1], b2), "one farmer: each farm\'s builder farms it")
+    var rival = -1
+    for(u_owner) o, i:
+        if rival < 0 and o == 1 and t_worker[u_kind[i]] != 0: rival = i
+    check(taken(a, rival), "farms: a rival\'s worker can\'t work your farm")
+    check(taken(a, -1) and taken(a + 1, -1), "one farmer: a worked farm is taken (any of its tiles)")
+    // A third worker sent to the first farm doesn't join its farmer.
+    issue_cmd(0, CMD_GATHER, [ids[2]], a + 1, 0, 0, 0)
+    steps(20)
+    let i2 = index_of(ids[2])
+    check(not farming(ids[2], a) and not farming(ids[2], b2) and u_task[i2] == GATHER, "one farmer: a second worker sent to a worked farm goes elsewhere (home {u_home[i2]})")
+    // The second farmer walks off: the next worker sent to the first farm takes the freed one.
+    issue_cmd(0, CMD_MOVE, [ids[1]], sx - 3000, sy, 0, 0)
+    issue_cmd(0, CMD_GATHER, [ids[3]], a, 0, 0, 0)
+    steps(20)
+    check(farming(ids[3], b2), "one farmer: a farm its farmer left is picked up by the next worker sent near it")
+    check(farming(ids[0], a), "one farmer: the first farm keeps its farmer")
+    // With no free farm and no other food about, a worker waits by a full farm and takes it once its farmer goes.
+    let food = kind_of("food")
+    for(resource_cells) c:
+        if pool[c] < 0 and tr_res[terrain[c]] == food: amount[c] = 0
+    let i4 = index_of(ids[4])
+    u_task[i4] = GATHER
+    u_carry_kind[i4] = food
+    u_target[i4] = a
+    u_home[i4] = -1
+    steps(40)
+    check(not farming(ids[4], a), "one farmer: a worker waiting by a worked farm doesn\'t join its farmer")
+    issue_cmd(0, CMD_MOVE, [ids[0]], sx - 3000, sy + 2000, 0, 0)
+    steps(40)
+    check(farming(ids[4], a), "one farmer: a worker waiting by a farm takes it when its farmer leaves")
+
+// Step until farm cell a, nearly worked out (1 food left), is done: worked out (fallow) or sown
+// again. (The GDScript checks read a farm_done event; Lobster's sim has none, so the ground tells.)
+def drain(a:int) -> bool:
+    amount[pool[a]] = 1
+    let t0 = tick
+    while tick < t0 + 600:
+        tick_on()
+        if left_at(a) != 1: return true
+    return false
+
+// Auto-reseed: on by default, a worked-out farm is sown again at once (for its reseed cost) and its
+// farmer farms on; without the wood the farmer waits by it and it reseeds when the wood comes in;
+// with it off, the farmer moves to a free farm nearby. Never off to other work.
+def test_auto_reseed():
+    new_world("flat_test", races0, rules0, [])
+    stock[1][0] = 1000
+    let sx = start_x[0]
+    let sy = start_y[0]
+    let ids = ids_of(0)
+    let field = terrain_index("field")
+    let fallow_t = terrain_index("fallow")
+    let a = (sy / 1000 + 2) * W + sx / 1000 + 3
+    let fk = btype_index("farm")
+    let b2 = farm_beside(a)
+    issue_cmd(0, CMD_BUILD, [ids[0]], fk, a % W, a / W, 0)
+    while tick < 1600 and terrain[a] != field: tick_on()
+    check(auto_reseed[0] == 1, "auto-reseed: on by default")
+    var wood = stock[1][0]
+    check(drain(a), "auto-reseed: a farm is worked out")
+    check(terrain[a] == field and left_at(a) > 1, "auto-reseed: the farm is sown again at once ({left_at(a)} food)")
+    check(wood - stock[1][0] == bt_reseed_wood(fk), "auto-reseed: it costs the reseed ({wood - stock[1][0]} wood)")
+    steps(100)
+    check(farming(ids[0], a), "auto-reseed: the farmer farms on")
+    // No wood: it lies fallow and the farmer waits by it, then the wood comes in.
+    stock[1][0] = 0
+    check(drain(a) and terrain[a] == fallow_t, "auto-reseed: without the wood it lies fallow")
+    steps(300)
+    let i0 = index_of(ids[0])
+    let near_farm = abs(u_x[i0] / 1000 - a % W) <= 3 and abs(u_y[i0] / 1000 - a / W) <= 3
+    check(farming(ids[0], a) and u_carry[i0] == 0 and near_farm, "auto-reseed: its farmer waits by it, not off to other work (at {u_x[i0] / 1000},{u_y[i0] / 1000})")
+    stock[1][0] = 100
+    steps(WAIT_TICKS + 2)
+    check(terrain[a] == field and stock[1][0] == 100 - bt_reseed_wood(fk), "auto-reseed: with the wood in, it\'s sown again")
+    let food = stock[0][0]
+    steps(600)
+    check(farming(ids[0], a) and stock[0][0] > food, "auto-reseed: ...and farmed ({food} -> {stock[0][0]} food)")
+    // Off, with a free farm nearby: the farmer moves over to it.
+    issue_cmd(0, CMD_BUILD, [ids[1]], fk, b2 % W, b2 / W, 0)
+    while tick < 6000 and terrain[b2] != field: tick_on()
+    issue_cmd(0, CMD_MOVE, [ids[1]], sx - 4000, sy, 0, 0)
+    issue_cmd(0, CMD_AUTO_RESEED, [], 0, 0, 0, 0)
+    steps(12)
+    check(auto_reseed[0] == 0, "auto-reseed: the player turns it off")
+    check(drain(a) and terrain[a] == fallow_t, "auto-reseed: off, the farm lies fallow")
+    steps(200)
+    check(farming(ids[0], b2), "auto-reseed: off, its farmer takes the free farm nearby")
+
+// A farm becomes a crop field its builder harvests; amphibians may farm the shallows (a rice paddy);
+// other races can't build on water. Stone is mined.
+def test_farms():
+    new_world("flat_test", races0, rules0, [])
+    stock[1][0] = 1000
+    stock[1][1] = 1000
+    let sx = start_x[0]
+    let sy = start_y[0]
+    let worker = ids_of(0)[0]
+    let cx = sx / 1000 + 3
+    let cy = sy / 1000 + 2
+    let fk = btype_index("farm")
+    issue_cmd(0, CMD_BUILD, [worker], fk, cx, cy, 0)
+    let field = terrain_index("field")
+    while tick < 1600 and terrain[cy * W + cx] != field: tick_on()
+    check(terrain[cy * W + cx] == field, "farm: the frogs\' farm became a field")
+    let food_before = stock[0][0]
+    steps(1200)
+    let i = index_of(worker)
+    check(u_carry_kind[i] == 1 and (u_task[i] == GATHER or u_task[i] == T_RETURN), "farm: its builder farms it")
+    check(stock[0][0] > food_before, "farm: food comes in from the field ({food_before} -> {stock[0][0]})")
+    // One farm, one pool: its four tiles share one amount, units walk across it, and worked out it
+    // lies fallow until a worker reseeds it (for wood).
+    let cells = [cy * W + cx, cy * W + cx + 1, (cy + 1) * W + cx, (cy + 1) * W + cx + 1]
+    check(not exists(cells) c: left_at(c) != left_at(cells[0]), "farm: its tiles share one pool of food ({left_at(cells[0])})")
+    check(not exists(cells) c: walks[0][c] != 1, "farm: units can walk across it")
+    let farm_id = occupied[cells[0]]
+    check(farm_id != 0, "farm: the farm stays standing after it\'s sown")
+    issue_cmd(0, CMD_AUTO_RESEED, [], 0, 0, 0, 0)   // by hand here; auto-reseed has its own test
+    steps(12)
+    amount[cells[0]] = 1   // nearly worked out
+    while tick < 6000 and left_at(cells[0]) > 0: tick_on()
+    let fallow_t = terrain_index("fallow")
+    check(terrain[cells[0]] == fallow_t and occupied[cells[0]] == farm_id, "farm: worked out, it lies fallow (and is still a farm)")
+    let wood_before = stock[1][0]
+    issue_cmd(0, CMD_RESEED, [worker], farm_id, 0, 0, 0)
+    steps(12)
+    check(terrain[cells[0]] == field and left_at(cells[0]) > 0, "farm: reseeding brings the crops back")
+    check(stock[1][0] < wood_before, "farm: reseeding costs wood ({wood_before} -> {stock[1][0]})")
+    // Water: a 2x2 of shallows.
+    let sh = terrain_index("shallows")
+    var spot_x = -1
+    var spot_y = -1
+    for(H - 1) y:
+        for(W - 1) x:
+            if spot_x < 0 and terrain[y * W + x] == sh and terrain[y * W + x + 1] == sh and terrain[(y + 1) * W + x] == sh and terrain[(y + 1) * W + x + 1] == sh:
+                spot_x = x
+                spot_y = y
+    check(spot_x >= 0, "farm: the test map has a 2x2 of shallows")
+    check(can_build(spot_x, spot_y, 2, builder_class(0), true, false), "farm: frogs (amphibious) may farm the shallows")
+    check(not can_build(spot_x, spot_y, 2, builder_class(1), true, false), "farm: rats may not build on water")
+    check(not can_build(spot_x, spot_y, 2, builder_class(0), false, false), "farm: a building that doesn\'t allow water can\'t go there")
+    // Stone: a worker mines the deposit by the start and carries it home.
+    let stone_cell = nearest_res(sx, sy, "stone")
+    let miner = (filter(ids_of(0)) uid: uid != worker)[0]
+    let stone_before = stock[2][0]
+    issue_cmd(0, CMD_GATHER, [miner], stone_cell, 0, 0, 0)
+    steps(1200)
+    check(stock[2][0] > stone_before, "stone: a worker mines the deposit ({stone_before} -> {stock[2][0]})")
+    test_one_farmer()
+    test_auto_reseed()
+
+def seen_by(p:int, bid:int) -> bool: return exists(fog_seen[p]) s: s[0] == bid
+
+// Fog memory: an enemy farm sown in the dark isn't known to you; once seen it is, and when you look
+// away it stays as you last saw it (torn down) until you look again. (Lobster keeps the remembered
+// buildings, fog_seen, but not the remembered ground and crops, fog_ground and fog_left: those
+// checks are left out.)
+def test_fog_memory():
+    new_world("flat_test", races0, rules0, [])
+    stock[1][1] = 1000
+    let sx = start_x[1]
+    let sy = start_y[1]
+    let worker = ids_of(1)[0]
+    let scout = ids_of(0)[0]
+    let cx = sx / 1000 - 5
+    let cy = sy / 1000 + 2
+    let c = cy * W + cx
+    issue_cmd(1, CMD_BUILD, [worker], btype_index("farm"), cx, cy, 0)
+    let field = terrain_index("field")
+    while tick < 1600 and terrain[c] != field: tick_on()
+    steps(5)
+    let farm_id = occupied[c]
+    check(terrain[c] == field, "fog memory: player 1\'s farm became a field")
+    check(fog[0][c] == UNSEEN, "fog memory: player 0 hasn\'t seen it")
+    check(not seen_by(0, farm_id), "fog memory: nor does player 0 know the farm")
+    let hx, hy = pos_of(scout)
+    place_at(scout, cx * 1000 - 2000, cy * 1000)   // player 0's worker looks in
+    steps(8)
+    check(seen_by(0, farm_id), "fog memory: seen, player 0 knows the farm")
+    place_at(scout, hx, hy)   // and goes home
+    u_moving[index_of(scout)] = 0
+    steps(8)
+    check(fog[0][c] == EXPLORED, "fog memory: away again, the farm is under explored fog")
+    let b = b_index_of(farm_id)   // torn down out of sight
+    clear_farm(b)
+    occupy(footprint(b), 0)
+    remove_building(b)
+    steps(8)
+    check(seen_by(0, farm_id), "fog memory: gone out of sight, player 0 still remembers the farm")
+    place_at(scout, cx * 1000 - 2000, cy * 1000)
+    steps(8)
+    check(not seen_by(0, farm_id), "fog memory: seen again, it\'s gone")
+
+// Milestone 7's exit criterion: with the economy bot playing, the age-up lands at minutes 4-7.
+def test_age_timing():
+    new_world("flat_test", races0, rules0, [])
+    let bots = map(2) p: EcoBot { p }
+    let at_t = [-1, -1]
+    while tick < 9600 and (at_t[0] < 0 or at_t[1] < 0):
+        for(bots) bot: bot_think(bot)
+        tick_on()
+        for(2) p:
+            if at_t[p] < 0 and ages[p] >= 2: at_t[p] = tick
+    for(2) p:
+        print "  age 2: {race_name(p)} at {at_t[p] / 1200}:{(at_t[p] % 1200 / 20)} (tick {at_t[p]})"
+        check(at_t[p] >= 4800 and at_t[p] <= 8400, "age-up at minutes 4-7: {race_name(p)} at tick {at_t[p]}")
+
+def house_done(x:int, y:int) -> bool:
+    for(b_owner) o, b:
+        if o == 0 and b_cx[b] == x and b_cy[b] == y: return b_done[b] == 1
+    return false
+
+// Done with one house, the builder goes on to finish a foundation nearby.
+def test_builder_moves_on():
+    new_world("flat_test", races0, rules0, [])
+    stock[res_of("wood")][0] = 1000
+    let ws = own_workers_of(0)
+    let cx = start_x[0] / 1000
+    let cy = start_y[0] / 1000
+    let hk = btype_index("house")
+    let spots = []::int2   // two free spots near the start, 3 tiles apart
+    for(13) dy0:
+        for(5) dx0:
+            let dx = dx0 + 3
+            let dy = dy0 - 6
+            if spots.length < 2 and can_place(0, hk, cx + dx, cy + dy) and (not spots.length or abs(spots[0].y - (cy + dy)) >= 3):
+                spots.push(int2 { cx + dx, cy + dy })
+    assert spots.length == 2
+    issue_cmd(0, CMD_BUILD, [ws[0]], hk, spots[0].x, spots[0].y, 0)
+    issue_cmd(0, CMD_BUILD, [ws[1]], hk, spots[1].x, spots[1].y, 0)
+    steps(16)
+    issue_cmd(0, CMD_MOVE, [ws[1]], start_x[0] - 6000, start_y[0], 0, 0)   // walks off: the second house is left a foundation
+    var houses = []::int
+    for(3000):
+        tick_on()
+        houses = []
+        for(b_owner) o, b:
+            if o == 0 and bt_name[b_kind[b]] == "house": houses.push(b_done[b])
+        if houses.length == 2 and houses[0] == 1 and houses[1] == 1: break
+    check(houses.length == 2 and houses[0] == 1 and houses[1] == 1, "builders: done with one house, the builder goes on to finish the foundation nearby ({houses})")
+
+// Builders never wander off: a gatherer sent to build goes back to what it gathered when done, not to
+// a foundation across the map; a builder with nothing to go back to stays by its building.
+def test_builder_back_to_work():
+    new_world("flat_test", races0, rules0, [])
+    stock[res_of("wood")][0] = 1000
+    let ws = own_workers_of(0)
+    let wood = kind_of("wood")
+    var a = index_of(ws[0])
+    let tree = nearest_resource(u_x[a], u_y[a], wood, a, false, false, false)
+    issue_cmd(0, CMD_GATHER, [ws[0]], tree, 0, 0, 0)
+    steps(200)
+    a = index_of(ws[0])
+    let home = u_home[a]
+    check(home >= 0 and (u_task[a] == GATHER or u_task[a] == T_RETURN), "builders: a woodcutter at work before building (task {u_task[a]})")
+    let hk = btype_index("house")
+    var near = int2 { -1, -1 }   // a house near the woodcutter's tree
+    let tx = home % W
+    let ty = home / W
+    for(5) r0:
+        let r = r0 + 2
+        var dy = -r
+        while dy <= r:
+            var dx = -r
+            while dx <= r:
+                if near.x < 0 and can_place(0, hk, tx + dx, ty + dy): near = int2 { tx + dx, ty + dy }
+                dx++
+            dy++
+    var far = int2 { -1, -1 }    // and one beyond NEXT_BUILD_TILES of it
+    for(6) r0:
+        let r = r0 + NEXT_BUILD_TILES + 3
+        for([-r, r]) dx:
+            if far.x < 0 and can_place(0, hk, near.x + dx, near.y): far = int2 { near.x + dx, near.y }
+    check(near.x >= 0 and far.x >= 0, "builders: room for the test\'s houses")
+    issue_cmd(0, CMD_BUILD, [ws[0]], hk, near.x, near.y, 0)
+    issue_cmd(0, CMD_BUILD, [ws[1]], hk, far.x, far.y, 0)
+    steps(16)
+    issue_cmd(0, CMD_MOVE, [ws[1]], start_x[0], start_y[0], 0, 0)   // walks off: the far house stays a foundation
+    var done = false
+    for(2000):
+        tick_on()
+        done = house_done(near.x, near.y)
+        if done: break
+    steps(40)
+    a = index_of(ws[0])
+    check(done, "builders: the house near the woodcutter goes up")
+    check((u_task[a] == GATHER or u_task[a] == T_RETURN) and u_carry_kind[a] == wood, "builders: done, the woodcutter goes back to its wood (task {u_task[a]}), not to the foundation {abs(far.x - near.x)} tiles off")
+    // A builder with nothing gathered before, done far from any foundation: it stays by the building.
+    issue_cmd(0, CMD_STOP, [ws[2]], 0, 0, 0, 0)
+    steps(12)
+    var spot2 = int2 { -1, -1 }
+    let scx = start_x[0] / 1000
+    let scy = start_y[0] / 1000
+    for(17) dy0:
+        for(17) dx0:
+            let dx = dx0 - 8
+            let dy = dy0 - 8
+            if spot2.x < 0 and abs(dx) + abs(dy) >= 4 and abs(scx + dx - far.x) > NEXT_BUILD_TILES + 2 and can_place(0, hk, scx + dx, scy + dy):
+                spot2 = int2 { scx + dx, scy + dy }
+    issue_cmd(0, CMD_BUILD, [ws[2]], hk, spot2.x, spot2.y, 0)
+    var finished = -1
+    for(2500):
+        tick_on()
+        if finished < 0 and house_done(spot2.x, spot2.y): finished = tick
+        elif finished >= 0 and tick > finished + 200: break
+    let c = index_of(ws[2])
+    let d = isqrt(dist2(u_x[c], u_y[c], spot2.x * 1000 + 1000, spot2.y * 1000 + 1000))
+    check(finished >= 0 and u_task[c] == T_NONE and d < 3000, "builders: with nothing to go back to and no foundation near, it stays by the building (task {u_task[c]}, {d} milli-tiles off)")
+
+// A worker's own picks are only ever tiles its owner has seen.
+def test_no_dark_picks():
+    new_world("flat_test", races0, rules0, [])
+    let wi = index_of(own_workers_of(0)[0])
+    let wood = kind_of("wood")
+    let x = u_x[wi]
+    let y = u_y[wi]
+    let seen = nearest_resource(x, y, wood, wi, false, false, true)
+    check(seen >= 0 and fog[0][seen] != 0, "dark picks: the nearest wood a worker picks is on explored ground")
+    let anywhere = nearest_resource(x, y, wood, -1, false, false, false)
+    for(W * H) c: fog[0][c] = 0   // forget everything
+    let got = nearest_resource(x, y, wood, wi, false, false, true)
+    check(got == -1, "dark picks: with nothing explored, no wood is picked ({got})")
+    check(anywhere >= 0 and nearest_resource(x, y, wood, wi, false, false, false) == anywhere, "dark picks: ... while a pick near where it was sent may still be there (the player sent it)")
+
+// Woodcutters stand at the forest edge, a tree and a side spot each: sent together to one tree, they
+// spread along the edge, each beside its own tree on open ground, never at a tree with no open side.
+def test_wood_spots():
+    new_world("old_forest", races0, rules0, [])
+    let worker = type_of_slot(0, "worker")
+    while own_workers_of(0).length < 7: spawn_by(0, worker)
+    let ids = own_workers_of(0)
+    let tree = 13 * W + 29   // the west edge of the wood east of the start
+    check(resource_kind_at(tree) == "wood", "wood spots: the test\'s tree is a tree ({resource_kind_at(tree)})")
+    issue_cmd(0, CMD_GATHER, ids, tree, 0, 0, 0)
+    var bad = 0
+    var shared = 0
+    var at_work = 0
+    for(1200) t:
+        tick_on()
+        if t >= 300 and t % 20 == 0:
+            let held = []::int
+            for(ids) uid:
+                let i = index_of(uid)
+                let h = u_home[i]
+                if h >= 0 and u_task[i] == GATHER:
+                    var open = false
+                    for([[0, -1], [1, 0], [0, 1], [-1, 0]]) k: open = open or cell_walkable(h % W + k[0], h / W + k[1], lane(i))
+                    if not open or u_gspot[i] % 2 == 1: bad++   // a tree with no open side, or a corner spot
+                    let key = h * 8 + u_gspot[i]
+                    if u_gspot[i] >= 0 and contains(held, key): shared++
+                    held.push(key)
+                    if u_moving[i] == 0: at_work++
+    let got = gathered[res_of("wood")][0]
+    check(bad == 0, "wood spots: woodcutters only work trees with an open side, from a side ({bad} bad samples)")
+    check(shared == 0, "wood spots: no two woodcutters hold the same spot ({shared})")
+    check(at_work > 0 and got >= 60, "wood spots: they get to work ({at_work} samples) and wood comes in ({got})")
+
+// A long shift-queue of builds (a dragged wall) all goes up.
+def test_build_queue():
+    new_world("flat_test", races0, rules0, [])
+    stock[res_of("stone")][0] = 500
+    ages[0] = 2
+    let ids = ids_of(0)
+    let pk = btype_index("palisade")
+    for(7) k: issue_cmd(0, CMD_BUILD, ids, pk, start_x[0] / 1000 + 3, start_y[0] / 1000 - 3 + k, 0, if k > 0: 1 else: 0)
+    steps(16)   // past the command delay: every queued foundation is down already
+    var laid = 0
+    for(b_kind) k:
+        if k == pk: laid++
+    check(laid == 7, "shift-queued builds: all 7 foundations are laid at once ({laid})")
+    steps(3000)
+    var done = 0
+    for(b_kind) k, b:
+        if k == pk: done += b_done[b]
+    check(done == 7, "shift-queued builds: all 7 walls of a line go up ({done})")
+
+// Right-clicking your Town Center with a worker half-loaded: it takes the load in and goes back to
+// the same patch. A rally point set on a resource sits in the middle of its tile, and a worker
+// trained to it gathers there.
+def test_drop_off():
+    new_world("flat_test", races0, rules0, [])
+    var wi = index_of(own_workers_of(0)[0])
+    var tc = -1
+    for(b_owner) o, b:
+        if tc < 0 and o == 0: tc = b
+    let wood = kind_of("wood")
+    let uid = u_id[wi]
+    let cell = nearest_resource(u_x[wi], u_y[wi], wood, -1, false, false, false)
+    issue_cmd(0, CMD_GATHER, [uid], cell, 0, 0, 0)
+    for(2000):
+        tick_on()
+        wi = index_of(uid)
+        if u_carry[wi] >= 2 and u_task[wi] == GATHER: break
+    let home = u_home[wi]
+    let load = u_carry[wi]
+    let before = stock[wood - 1][0]
+    issue_cmd(0, CMD_DROP_OFF, [uid], b_id[tc], 0, 0, 0)
+    steps(12)
+    wi = index_of(uid)
+    check(u_task[wi] == T_RETURN and u_target[wi] == b_id[tc], "drop off: right-clicking the Town Center sends a loaded worker there")
+    for(600):
+        tick_on()
+        if stock[wood - 1][0] > before: break
+    wi = index_of(uid)
+    check(load >= 2 and stock[wood - 1][0] >= before + load, "drop off: the load ({load}) is taken in ({before} -> {stock[wood - 1][0]})")
+    check(u_task[wi] == GATHER and u_home[wi] == home, "drop off: ... and the worker goes back to its patch")
+    // Rally on a resource: the middle of its tile; a worker trained there gathers it.
+    let food = kind_of("food")
+    let bush = nearest_resource(u_x[wi], u_y[wi], food, -1, false, false, false)
+    let bx = (bush % W) * TILE
+    let by = (bush / W) * TILE
+    let tcid = b_id[tc]
+    issue_cmd(0, CMD_RALLY, [], tcid, bx + 120, by + 860, 0)
+    issue_cmd(0, CMD_TRAIN, [], tcid, type_of_slot(0, "worker"), 1, 0)
+    let n = u_id.length
+    steps(12)
+    check(b_rally_x[tc] == bx + 500 and b_rally_y[tc] == by + 500, "rally: set on a bush, it sits in the middle of the bush\'s tile")
+    issue_cmd(0, CMD_RALLY, [], tcid, 20120, 20860, 0)   // open ground stays where clicked
+    steps(12)
+    check(resource_kind_at(cell_of(20120, 20860)) != "" or (b_rally_x[tc] == 20120 and b_rally_y[tc] == 20860), "rally: on open ground it stays where you clicked")
+    issue_cmd(0, CMD_RALLY, [], tcid, bx + 120, by + 860, 0)
+    for(1200):
+        tick_on()
+        if u_id.length > n: break
+    var new_i = -1
+    for(u_owner) o, i:
+        if new_i < 0 and o == 0 and t_worker[u_kind[i]] != 0 and u_id[i] > uid and u_task[i] == GATHER: new_i = i
+    check(new_i >= 0 and u_carry_kind[new_i] == food, "rally: a worker trained to a bush rally gathers food")
+
 // ------------------------------------------------------------------ the parts
 
 let PARTS = ["fixed", "command_order", "source_lint", "flow", "crossing_flat", "crossing_choke", "crossing_engines",
              "opening", "combat", "shots", "engines", "trade", "sapper_sling", "gates", "diagonal_wall", "diagonal_gates",
-             "walls", "siege_ways", "modes", "movement_classes", "land", "hills", "flow_patch", "flow_patch_mixed", "match", "match_b", "match_flipped"]
+             "walls", "siege_ways", "modes", "movement_classes", "land", "hills", "flow_patch", "flow_patch_mixed",
+             "farms", "fog_memory", "age_timing", "builder_moves_on", "builder_back_to_work", "no_dark_picks", "wood_spots",
+             "build_queue", "drop_off", "match", "match_b", "match_flipped"]
 
 def run_part(name:string):
     if name == "fixed": test_fixed()
@@ -2525,6 +3009,15 @@ def run_part(name:string):
     elif name == "hills": test_hills()
     elif name == "flow_patch": test_flow_patch()
     elif name == "flow_patch_mixed": test_flow_patch_mixed()
+    elif name == "farms": test_farms()
+    elif name == "fog_memory": test_fog_memory()
+    elif name == "age_timing": test_age_timing()
+    elif name == "builder_moves_on": test_builder_moves_on()
+    elif name == "builder_back_to_work": test_builder_back_to_work()
+    elif name == "no_dark_picks": test_no_dark_picks()
+    elif name == "wood_spots": test_wood_spots()
+    elif name == "build_queue": test_build_queue()
+    elif name == "drop_off": test_drop_off()
     elif name == "match": test_match()
     elif name == "match_b": test_match_b()
     elif name == "match_flipped": test_match_flipped()
