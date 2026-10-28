@@ -24,7 +24,7 @@ static func run(pc, holder: Node2D, lib, kit) -> Array:
 		["a mount's wings over its body in every facing (a hummingbird's blur read as a grey plate: Dominic)",
 			"human on hummingbird", ["a mount's wings over its back, behind it turned away", "back parts behind the body facing the camera"], "", func(v, _pose): _wings_over(v)],
 		["legs drawn over the body (the far legs on top)",
-			"animal body.deer", ["far legs behind the body"], "", func(v, _pose): _far_legs_over(v)],
+			"romans spear", ["far legs behind the body"], "", func(v, _pose): _far_legs_over(v)],   # (first the deer's; its legs are cut by its body now, D-179)
 		["the frog's sword hidden behind its body facing forward",
 			"swamp frogs infantry age 2", ["weapons and shields show"], "", func(v, pose): _weapon_under(v, pose)],
 		["worn armour carrying a whole copy of its body (the body not cut out of the armour's bake)",
@@ -244,8 +244,8 @@ static func _old_kneel(v, pose: String) -> void:
 ## member on that side, so the rat leading the cat drew under the cat and stood inside it.
 static func composite_fixtures() -> Array:
 	return [
-		["a hand leading TC1 A's beast drawn under it (the hauler layered over every crew member on its side; first seen as the rats' cat: since the rats stand back by their hunch, crew_back, they no longer overlap it, so the Romans' pony carries the fixture)",
-			"composite: romans tc1_a_timber hauled by a pony", ["C4 composite members drawn in depth order"], "", func(v, _pose): _hauler_over_crew(v)],
+		["a hand leading TC1 A's beast drawn under it (the hauler layered over every crew member on its side; first seen as the rats' cat: since the rats stand back by their hunch, crew_back, they no longer overlap it, so the forest beetles' cart carries the fixture)",
+			"composite: forest beetles tc1_a_forest hauled by a beetle", ["C4 composite members drawn in depth order"], "", func(v, _pose): _hauler_over_crew(v)],
 		["the hauling cat's near hind leg gone in its walk (a member's walk steps were never checked, nor baked)",
 			"composite: sewer rats tc1_a_junk hauled by a cat", ["B6 every hip's leg in every walk step"], "", func(v, pose): _hauler_hind_leg_gone(v, pose)],
 	]
