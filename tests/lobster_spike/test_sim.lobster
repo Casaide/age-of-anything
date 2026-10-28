@@ -2087,11 +2087,417 @@ def test_modes_lift_lacks():
     new_world("siege_vale", both, rules0, [])
     check(bm_lacks[0][wk] != 0, "modes: a mode\'s lift doesn\'t reach a later normal match\'s centaurs")
 
+// ------------------------------------------------------------------ movement classes, the land, hills, flow patches
+
+def terrain_index(name:string) -> int: return str_index(tr_names, name)
+
+// A bare map (SimMap.load_id): the terrain and its walk grids, nothing set up on it (no bridge decks).
+def bare_map(map_id:string):
+    reset_world()
+    due = []
+    load_map(map_id)
+
+// Flyers cross the lake straight; walkers go round; amphibians wade the shallows.
+def test_movement_classes():
+    let flyers = gen_race("flying greeks with wings")
+    let rats = gen_race(PROMPTS[1])
+    let frogs = gen_race(PROMPTS[0])
+    new_world("flat_test", [flyers, rats, frogs], bare0, [0, 0, 0])
+    let fx = 25500
+    let fy = 32500
+    let tx = 39500
+    let ty = 32500
+    spawn_cmd(0, "spear", 1, fx, fy)
+    spawn_cmd(1, "spear", 1, fx, fy + 600)
+    while u_id.length < 2: tick_on()
+    check(u_mclass[0] == 2 and u_mclass[1] == 0, "winged hoplites fly, rats walk ({u_mclass[0]}, {u_mclass[1]})")
+    issue_cmd(0, CMD_MOVE, [u_id[0]], tx, ty, 0, 0)
+    issue_cmd(1, CMD_MOVE, [u_id[1]], tx, ty + 600, 0, 0)
+    let arrived = [-1, -1]
+    let walked = [0, 0]
+    let lx = [u_x[0], u_x[1]]
+    let ly = [u_y[0], u_y[1]]
+    var over_water = false
+    let water = terrain_index("water")
+    let t0 = tick
+    while tick < t0 + 2400 and (arrived[0] < 0 or arrived[1] < 0):
+        tick_on()
+        for(2) i:
+            walked[i] += isqrt(dist2(u_x[i], u_y[i], lx[i], ly[i]))
+            lx[i] = u_x[i]
+            ly[i] = u_y[i]
+            if arrived[i] < 0 and u_moving[i] == 0 and tick > t0 + 20: arrived[i] = tick - t0
+        if terrain[cell_of(u_x[0], u_y[0])] == water: over_water = true
+    check(over_water, "the flyer crossed over open water")
+    let straight = tx - fx
+    check(arrived[0] > 0 and walked[0] < straight * 11 / 10, "the flyer goes straight over the lake ({walked[0]} for {straight})")
+    check(arrived[1] > 0 and walked[1] > straight * 115 / 100, "the walker goes round it ({walked[1]} for {straight})")
+    // Amphibians wade the shallows; walkers stop at the edge.
+    let shallows = terrain_index("shallows")
+    var cell = -1
+    for(W * H) c:
+        if cell < 0 and terrain[c] == shallows: cell = c
+    let ax, ay = centre(cell)
+    spawn_cmd(2, "spear", 1, fx, fy)
+    while u_id.length < 3: tick_on()
+    let frog = u_id[2]
+    let rat = u_id[1]
+    check(u_mclass[2] == 1, "frogs are amphibious")
+    issue_cmd(2, CMD_MOVE, [frog], ax, ay, 0, 0)
+    issue_cmd(1, CMD_MOVE, [rat], ax, ay, 0, 0)
+    steps(1600)
+    let fi = index_of(frog)
+    let ri = index_of(rat)
+    check(terrain[cell_of(u_x[fi], u_y[fi])] == shallows, "the frog wades into the shallows")
+    check(terrain[cell_of(u_x[ri], u_y[ri])] != shallows, "the rat stops at the water\'s edge")
+    test_deep_river()
+    test_flyers_and_walls(flyers, rats)
+
+// Stone walls stop flyers; palisades don't (D-158). A wall line across the whole of flat_test keeps a
+// flyer on its side; a palisade line it flies over. (The GDScript check of a save from before D-158,
+// its walls marked on load, is left out: Lobster's saves are its own.)
+def test_flyers_and_walls(flyers:JV, rats:JV):
+    for(["wall", "palisade"]) kind:
+        new_world("flat_test", [flyers, rats], bare0, [0, 1])
+        ages[1] = 3
+        let k = btype_index(kind)
+        let y = 20
+        for(W) x: place(1, k, x, y)
+        var closed = 0
+        for(W) x:
+            if walks[FLYING][y * W + x] == 0: closed++
+        if kind == "wall": check(closed == W, "flyers and walls: a stone wall is closed to flyers ({closed} of {W} cells)")
+        else: check(closed == 0, "flyers and walls: a palisade is open to flyers ({closed} of {W} closed)")
+        spawn_cmd(0, "spear", 1, 30500, 15500)
+        while u_id.length < 1: tick_on()
+        issue_cmd(0, CMD_MOVE, [u_id[0]], 30500, 26500, 0, 0)
+        steps(600)
+        let past = u_y[0] > (y + 1) * 1000
+        check(past == (kind == "palisade"), "flyers and walls: the flyer {if past: "crosses" else: "stays behind"} the {kind} (y {u_y[0]})")
+
+// Flood fill over a class's walk grid (8-way, no corner cutting), not into terrain `skip`.
+def flood(mc:int, from_cell:int, skip:int) -> [int]:
+    let seen = map(W * H): 0
+    def ok(x:int, y:int) -> bool:
+        if x < 0 or y < 0 or x >= W or y >= H: return false
+        let c = y * W + x
+        return walks[mc][c] == 1 and terrain[c] != skip
+    seen[from_cell] = 1
+    let todo = [from_cell]
+    while todo.length:
+        let c = todo.pop()
+        let x = c % W
+        let y = c / W
+        for(N8) d:
+            let n = (y + d.y) * W + x + d.x
+            if ok(x + d.x, y + d.y) and seen[n] == 0 and not (d.x != 0 and d.y != 0 and not (ok(x + d.x, y) and ok(x, y + d.y))):
+                seen[n] = 1
+                todo.push(n)
+    return seen
+
+// Reed Meadow's rivers have a deep middle: no class gets across but at a ford or a bridge, and no
+// flyer crosses a tree (bridge decks aren't laid on a bare map).
+def test_deep_river():
+    for(["reed_meadow", "reed_meadow_2v2"]) id:
+        bare_map(id)
+        let ford = terrain_index("ford")
+        let tree = terrain_index("tree")
+        let deep = terrain_index("deep_river")
+        check(tr_move[tree] == 0 and tr_move[deep] == 0, "{id}: nobody crosses trees or the deep river")
+        let a = cell_of(start_x[0], start_y[0])
+        let b = cell_of(start_x[1], start_y[1])
+        for(NUM_CLASSES) mc:
+            let cut = flood(mc, a, ford)
+            let joined = flood(mc, a, -1)
+            check(cut[b] == 0 and joined[b] == 1, "{id}: {CLASS_NAMES[mc]} units cross the river only at a ford (cut {cut[b]}, with fords {joined[b]})")
+
+// On river_test: trees block sight and movement until felled, then leave a walkable stump; walkers
+// cross the river only at the ford or the bridge, a frog swims it anywhere; a bridge broken by attack
+// is gone for walkers until workers rebuild it (paying wood).
+def test_land():
+    let rats = gen_race(PROMPTS[1])
+    let frogs = gen_race(PROMPTS[0])
+    new_world("river_test", [rats, frogs], bare0, [0, 0])   // allies: nobody fights
+    let tree = terrain_index("tree")
+    let river = terrain_index("river")
+    let ford = terrain_index("ford")
+    check(opaque[10 * W + 8] == 1, "land: a tree blocks sight")
+    // Sight: a rat west of the forest sees the first tree, not past the forest.
+    spawn_cmd(0, "spear", 1, 5500, 11500)
+    while u_id.length < 1: tick_on()
+    let rat = u_id[0]
+    place_at(rat, 5500, 11500)
+    steps(8)
+    check(fog[0][11 * W + 8] == VISIBLE, "land: the first tree of the forest is seen")
+    check(fog[0][11 * W + 12] != VISIBLE, "land: the ground behind the forest isn\'t")
+    check(fog[0][8 * W + 5] == VISIBLE, "land: open ground round it is")
+    // Crossing: every river cell the rat stands on is the ford or the bridge's deck.
+    var cheat = false
+    issue_cmd(0, CMD_MOVE, [rat], 30500, 11500, 0, 0)
+    var t0 = tick
+    while tick < t0 + 1600:
+        tick_on()
+        let ri = index_of(rat)
+        let c = cell_of(u_x[ri], u_y[ri])
+        if terrain[c] == river and deck[c] == 0: cheat = true
+        if u_moving[ri] == 0 and tick > t0 + 20: break
+    check(not cheat, "land: the rat never stands in the river")
+    check(u_x[index_of(rat)] > 26000, "land: the rat got across (x {u_x[index_of(rat)]})")
+    // A frog swims straight over.
+    spawn_cmd(1, "spear", 1, 15500, 11500)
+    while u_id.length < 2: tick_on()
+    let frog = u_id[1]
+    issue_cmd(1, CMD_MOVE, [frog], 25500, 11500, 0, 0)
+    var swam = false
+    t0 = tick
+    while tick < t0 + 600:
+        tick_on()
+        let fi = index_of(frog)
+        if terrain[cell_of(u_x[fi], u_y[fi])] == river: swam = true
+    check(swam, "land: the frog swims the river")
+    check(u_x[index_of(frog)] > 24000, "land: and gets across")
+    // Break the bridge: rats attack it till it falls; then walkers can't use it.
+    let bridge = br_id[0]
+    spawn_cmd(0, "spear", 6, 24500, 16500)
+    while u_id.length < 8: tick_on()
+    issue_cmd(0, CMD_ATTACK, ids_of(0), bridge, 0, 0, 0)
+    t0 = tick
+    while tick < t0 + 6000 and br_up[0] == 1: tick_on()
+    check(br_up[0] == 0, "land: the bridge falls (after {tick - t0} ticks)")
+    let deck_cell = 16 * W + 20
+    check(walks[0][deck_cell] == 0, "land: its deck is gone for walkers")
+    check(walks[1][deck_cell] == 1, "land: amphibians still swim there")
+    // Rebuild: workers pay and build; the deck is back.
+    spawn_cmd(0, "worker", 2, 24500, 15500)
+    while u_id.length < 10: tick_on()
+    let builders = filter(ids_of(0)) uid: t_worker[u_kind[index_of(uid)]] != 0
+    let wood = res_of("wood")
+    stock[wood][0] = 200
+    issue_cmd(0, CMD_HELP_BUILD, builders, bridge, 0, 0, 0)
+    t0 = tick
+    while tick < t0 + 3000 and br_up[0] == 0: tick_on()
+    check(stock[wood][0] == 50, "land: the rebuild cost 150 wood ({stock[wood][0]} left)")
+    check(br_up[0] == 1 and walks[0][deck_cell] == 1, "land: the workers rebuilt the bridge (in {tick - t0} ticks)")
+    // Felling: a worker cuts the forest's first tree: wood, a stump, sight and a way through.
+    let tc = 11 * W + 8
+    amount[tc] = 3
+    issue_cmd(0, CMD_GATHER, [builders[0]], tc, 0, 0, 0)
+    t0 = tick
+    while tick < t0 + 2000 and terrain[tc] == tree: tick_on()
+    check(terrain_name(tc) == "stump" and walks[0][tc] == 1 and opaque[tc] == 0, "land: the felled tree is a walkable stump that doesn\'t block sight")
+    check(terrain[5 * W + 20] == ford, "land: the map has its ford")
+
+class Shot:
+    hit:bool
+    far:int
+    dmg:int
+
+// An archer of side 0 at (ax, ay) and a passive spear of side 1 `gap` milli-tiles (edge to edge) off
+// along x; until the first shot lands: did it, how far the archer walked first, how hard.
+def shoot(ax:int, g:int, ay:int) -> Shot:
+    new_world("hill_test", races0, bare0, [])
+    let a = lone(0, "archer", ax, ay, "aggressive")
+    let t = lone(1, "spear", ax, ay + 4000, "passive")
+    let ai = index_of(a)
+    let ti = index_of(t)
+    let r = u_radius[ai] + u_radius[ti]
+    u_x[ai] = ax
+    u_y[ai] = ay
+    u_x[ti] = if g < 0: ax - (abs(g) + r) else: ax + g + r
+    u_y[ti] = ay
+    issue_cmd(0, CMD_ATTACK, [a], t, 0, 0, 0)
+    let out = Shot { false, 0, 0 }
+    for(400):
+        tick_on()
+        let i = index_of(a)
+        out.far = max(out.far, abs(u_x[i] - ax) + abs(u_y[i] - ay))
+        for(events) e:
+            if e.kind == EV_HIT and e.a == a:
+                out.hit = true
+                out.dmg = e.c
+        if out.hit: break
+    return out
+
+// Two small armies fight over the hill's ramp (attack-moves both ways): the hashes every 30 ticks.
+def hill_match() -> [int]:
+    new_world("hill_test", races0, bare0, [])
+    spawn_cmd(0, "archer", 4, 6500, 12500)
+    spawn_cmd(0, "spear", 4, 6500, 13500)
+    spawn_cmd(1, "archer", 4, 16500, 12500)
+    spawn_cmd(1, "spear", 4, 16500, 13500)
+    steps(20)
+    issue_cmd(0, CMD_ATTACK_MOVE, ids_of(0), 18500, 12500, 0, 0)
+    issue_cmd(1, CMD_ATTACK_MOVE, ids_of(1), 5500, 12500, 0, 0)
+    let hashes = []::int
+    for(1200):
+        tick_on()
+        if tick % HASH_EVERY == 0:
+            hashes.push(tick)
+            hashes.push(state_hash())
+    return hashes
+
+// On hill_test (high ground): cliffs block walkers but not flyers and can't be built on; walkers climb
+// only by the ramp; shooters reach a level further down a hill and a level less far up it (and hit
+// for less); from below you see a hill's rim, not its top; from on top you see further; the same
+// fight twice gives the same hashes.
+def test_hills():
+    bare_map("hill_test")
+    def cat(x:int, y:int) -> int: return y * W + x
+    check(has_heights != 0 and level[cat(15, 9)] == 1 and level[cat(19, 8)] == 2, "hills: levels load")
+    check(cliff[cat(13, 9)] == 1 and walks[0][cat(13, 9)] == 0, "hills: the foot of the west face is a cliff, closed to walkers")
+    check(walks[2][cat(13, 9)] == 1, "hills: flyers cross the cliff")
+    check(ramp[cat(13, 12)] == 1 and walks[0][cat(13, 12)] == 1 and cliff[cat(13, 12)] == 0, "hills: the ramp is open")
+    check(cliff[cat(17, 7)] == 1 and cliff[cat(17, 8)] == 0, "hills: the knoll\'s face is a cliff, its ramp isn\'t")
+    check(not can_build(12, 8, 2, 0, false, false) and not can_build(13, 11, 1, 0, false, false), "hills: nothing built on a cliff or a ramp")
+    check(can_build(15, 12, 2, 0, false, false) and not can_build(16, 9, 3, 0, false, false), "hills: buildings stand on one level")
+    let lv = copy(level)
+    let cl = copy(cliff)
+    bare_map("hill_test")
+    check(equal(lv, level) and equal(cl, cliff), "hills: the map loads the same twice")
+    // Climbing: a walker below the west face goes onto the plateau by the ramp, never on a cliff.
+    new_world("hill_test", races0, bare0, [])
+    let u = lone(0, "spear", 9500, 6500, "passive")
+    issue_cmd(0, CMD_MOVE, [u], 16500, 6500, 0, 0)
+    var on_cliff = false
+    var by_ramp = false
+    let t0 = tick
+    while tick < t0 + 1200:
+        tick_on()
+        let i = index_of(u)
+        let c = cell_of(u_x[i], u_y[i])
+        on_cliff = on_cliff or cliff[c] == 1
+        by_ramp = by_ramp or ramp[c] == 1
+        if u_moving[i] == 0 and tick > t0 + 20: break
+    let px, py = pos_of(u)
+    check(not on_cliff, "hills: the walker never stands on a cliff")
+    check(by_ramp, "hills: it went up by the ramp")
+    check(level[cell_of(px, py)] == 1 and abs(px - 16500) < 1200, "hills: it got onto the plateau ({px},{py})")
+    // Sight: from below at (11, 9) the rim (14, 9) is seen, the plateau beyond (16, 9) isn't; from on
+    // top at (16, 9) the low ground 7 tiles off is (sight 6 + 1 for the level).
+    place_at(u, 11500, 9500)
+    steps(8)
+    check(fog[0][cat(14, 9)] == VISIBLE, "hills: from below, the rim is seen")
+    check(fog[0][cat(16, 9)] != VISIBLE, "hills: from below, the top beyond the rim isn\'t")
+    check(fog[0][cat(11, 15)] == VISIBLE, "hills: open low ground round it is")
+    place_at(u, 16500, 9500)
+    steps(8)
+    check(fog[0][cat(9, 9)] == VISIBLE, "hills: from on top you see further (7 tiles)")
+    // Range: an archer reaches a level further down, a level less far up; uphill hits are weaker.
+    let reach = t_reach[type_of_slot(0, "archer")]
+    let down = shoot(14800, -(reach + 600), 6500)   // archer on top, target below, beyond its flat reach
+    let up = shoot(12600, reach - 400, 6500)        // archer below, target on top, inside its flat reach
+    let flat = shoot(9500, reach + 600, 16500)      // on the low ground, beyond reach
+    check(down.hit and down.far < 200, "hills: shooting down, it hits from 600 beyond its reach without moving (moved {down.far})")
+    check(up.hit and up.far > 300, "hills: shooting up, it must close in first (moved {up.far})")
+    check(flat.hit and flat.far > 300, "hills: on the flat, the same gap needs closing (moved {flat.far})")
+    check(up.dmg < flat.dmg, "hills: an uphill shot hits for less ({up.dmg} vs {flat.dmg})")
+    check(uphill(8) == 6 and uphill(1) == 1, "hills: uphill damage is 75%, at least 1")
+    // Determinism: the walkers' crossing onto the plateau, and the fight twice.
+    test_crossing("hill_test", false)
+    let a = hill_match()
+    let b = hill_match()
+    same_hashes(a, b, "hill_test fight")
+
+// The cells a map change opened and closed in lane 0 since the last clear_fresh (then cleared).
+def fresh_changes() -> [int], [int]:
+    let opened = []::int
+    let closed = []::int
+    for(fresh) c, n:
+        let was = fresh_was[n][0]
+        if walks[0][c] != was:
+            if walks[0][c] == 1: opened.push(c) else: closed.push(c)
+    clear_fresh()
+    return opened, closed
+
+// A field patched for opened cells (trees felled, one by one and side by side) has the same costs as
+// one solved from scratch on the changed map.
+def test_flow_patch():
+    new_world("river_test", races0, bare0, [])
+    let target = 12 * W + 4
+    let full = solve([target], INF, 0)
+    let near = solve([target], NEAR_CUTOFF, 0)
+    for([11 * W + 8, 11 * W + 9, 12 * W + 9, 10 * W + 10, 11 * W + 10]) c:
+        clear_fresh()
+        while amount[c] > 0: take(c)
+        let opened, closed = fresh_changes()
+        if opened.length:
+            patch_opened(full, opened, 0, INF)
+            patch_opened(near, opened, 0, INF)
+        assert closed.length == 0
+    let fresh_full = solve([target], INF, 0)
+    let fresh_near = solve([target], NEAR_CUTOFF, 0)
+    var same = 0
+    var same_near = 0
+    for(W * H) c:
+        if full.dist[c] == fresh_full.dist[c]: same++
+        if (near.dist[c] <= NEAR_CUTOFF) == (fresh_near.dist[c] <= NEAR_CUTOFF) and (near.dist[c] > NEAR_CUTOFF or near.dist[c] == fresh_near.dist[c]): same_near++
+    check(same == W * H, "flow patch: a patched field matches a fresh solve ({same} of {W * H} cells)")
+    check(same_near == W * H, "flow patch: a patched near field matches within its cutoff ({same_near} of {W * H})")
+    var uphill_at = -1
+    for(W * H) c:   // every step leads downhill to the target
+        if uphill_at < 0 and full.dist[c] > 0 and full.dist[c] < INF and full.dist[full.next[c]] >= full.dist[c]: uphill_at = c
+    check(uphill_at < 0, "flow patch: every step leads downhill (next of cell {uphill_at} goes uphill)")
+
+// Fields patched for cells closing and opening together (buildings put up and pulled down, trees
+// felled, over a big map) keep a fresh solve's costs, and every step still leads downhill.
+def test_flow_patch_mixed():
+    new_world("reed_meadow_2v2", [races0[0], races0[1], races0[0], races0[1]], bare0, [])
+    let targets = [40 * W + 44, 10 * W + 12, 70 * W + 20]
+    let fs = []::Flow
+    let cuts = []::int
+    for(targets) t:
+        fs.push(solve([t], INF, 0))
+        cuts.push(INF)
+        fs.push(solve([t], NEAR_CUTOFF, 0))
+        cuts.push(NEAR_CUTOFF)
+    let r = new_rng(77)
+    let standing = []::[int]   // footprints up
+    var bad = 0
+    var work = 0
+    for(60) sn:
+        let before = copy(walks[0])
+        for(3):
+            let roll = range_int(r, 0, 3 - 1)
+            if roll == 0 or not standing.length:
+                let cx = 2 + range_int(r, 0, W - 6 - 1)
+                let cy = 2 + range_int(r, 0, H - 6 - 1)
+                let cells = []::int
+                for(3) dy:
+                    for(3) dx:
+                        let c = (cy + dy) * W + cx + dx
+                        if not contains(targets, c) and occupied[c] == 0: cells.push(c)
+                occupy(cells, 900 + sn)
+                standing.push(cells)
+            elif roll == 1:
+                occupy(standing[0], 0)
+                standing.remove(0)
+            else:
+                let c = resource_cells[range_int(r, 0, resource_cells.length - 1)]
+                while amount[c] > 0: take(c)
+        clear_fresh()
+        let opened = []::int
+        let closed = []::int
+        for(W * H) c:
+            if before[c] != walks[0][c]:
+                if walks[0][c] == 1: opened.push(c) else: closed.push(c)
+        for(fs) f:
+            if closed.length: work += patch_closed(f, closed, 0, INF)
+            if opened.length: work += patch_opened(f, opened, 0, INF)
+    for(fs) f, k:
+        let cut = cuts[k]
+        let fresh_f = solve([targets[k / 2]], cut, 0)
+        for(W * H) c:
+            let a = f.dist[c]
+            let b = fresh_f.dist[c]
+            if (a <= cut or b <= cut) and a != b: bad++
+            elif a > 0 and a <= cut and f.next[c] >= 0 and f.dist[f.next[c]] >= a: bad++
+    check(bad == 0, "flow patch: fields patched through 180 closings and openings on the 2v2 map match fresh solves ({bad} cells off; {work} cells of work)")
+
 // ------------------------------------------------------------------ the parts
 
 let PARTS = ["fixed", "command_order", "source_lint", "flow", "crossing_flat", "crossing_choke", "crossing_engines",
              "opening", "combat", "shots", "engines", "trade", "sapper_sling", "gates", "diagonal_wall", "diagonal_gates",
-             "walls", "siege_ways", "modes", "match", "match_b", "match_flipped"]
+             "walls", "siege_ways", "modes", "movement_classes", "land", "hills", "flow_patch", "flow_patch_mixed", "match", "match_b", "match_flipped"]
 
 def run_part(name:string):
     if name == "fixed": test_fixed()
@@ -2114,6 +2520,11 @@ def run_part(name:string):
     elif name == "walls": test_walls()
     elif name == "siege_ways": test_siege_ways()
     elif name == "modes": test_modes()
+    elif name == "movement_classes": test_movement_classes()
+    elif name == "land": test_land()
+    elif name == "hills": test_hills()
+    elif name == "flow_patch": test_flow_patch()
+    elif name == "flow_patch_mixed": test_flow_patch_mixed()
     elif name == "match": test_match()
     elif name == "match_b": test_match_b()
     elif name == "match_flipped": test_match_flipped()
