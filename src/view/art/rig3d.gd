@@ -137,7 +137,7 @@ func _gait(body_id: String, flies: bool) -> Dictionary:
 func _bob(g: Dictionary, walk: float) -> float:
 	if walk < 0.0 or g.get("hop", false) or not old_bob:
 		return 0.0
-	return absf(sin(walk)) * float(g.bob) / SCREEN_Y
+	return absf(sin(walk)) * maxf(float(g.bob), float(UnitView._gait(2, false).bob)) / SCREEN_Y   # (the bob a stiff-legged walker had: a keyed walk's own is small)
 
 
 ## A leg's rotation at a walk phase (UnitView: sin(phase + leg phase) * swing, screen clockwise),

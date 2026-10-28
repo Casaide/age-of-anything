@@ -310,7 +310,7 @@ func _build_engine(r: Dictionary, lib, team: Color, colours: Dictionary, speed: 
 		v.build(hr if hauls else cr, lib, team, speed)
 		v.position = sockets[name]
 		var back := int(lib.creatures.get(v.recipe.get("creature", ""), {}).get("crew_back", 0))
-		if back > 0 and (not top or "_reach" in name):   # (crew at work on a platform lean into it too; riders sit)   # on the ground, a hunched body stands back from its place, so it's centred on it (creatures.json crew_back; riding on top, it sits where it's put)
+		if back > 0 and not top:   # on the ground, a hunched body stands back from its place, so it's centred on it (creatures.json crew_back; riding on top, it sits where it's put)
 			var mr: Dictionary = PartShape.rigs.get(v.recipe.body + PartShape.facing_suffix(face), {})
 			v.position -= mr.get("ahead", Vector2.ZERO) * float(back) * v.unit_scale
 		v.set_meta("z", z + n * 0.01)   # the same layer: nearest the camera last
@@ -1911,10 +1911,12 @@ func _kneel(_delta: float) -> void:
 	# (`ahead`: a part unit along the ground, foreshortened) says where back along the ground is.
 	var ahead := ahead_on_screen(facing_k)
 	var side := side_on(facing_k)
-	var hind_x := []
+	var hind := []   # the hind hooves where they stand (each leg's lowest pixel, from its hip)
 	for leg in legs:
 		if not leg.fore:
-			hind_x.append(leg.rest.x)
+			if not leg.has("span"):
+				leg.span = _span(leg.node)
+			hind.append(leg.rest + leg.span[1] * leg.node.scale)
 			continue
 		# A front leg bends at the knee (Dominic: "the knees aren't bent"): the upper leg, the
 		# leg's own sprite, shortens to the knee; a second copy of it, the shin, folds back
@@ -1955,7 +1957,7 @@ func _kneel(_delta: float) -> void:
 	# planted), and the human half leans back over the hindquarters to keep its balance. Side-on
 	# that's a turn of the whole sprite; towards or away from the camera the chest just drops.
 	var a := 0.17 * kneel * side
-	var pivot := Vector2(0.0 if hind_x.is_empty() else hind_x.reduce(func(m, x): return m + x, 0.0) / hind_x.size(), 0.0)
+	var pivot: Vector2 = Vector2.ZERO if hind.is_empty() else hind.reduce(func(m, h): return m + h, Vector2.ZERO) / hind.size()   # (about the hooves themselves: about a point under the hips, one slid 4 px seen end-on)
 	bob.rotation += a
 	bob.position += pivot - pivot.rotated(a)
 	if seat_node != null:

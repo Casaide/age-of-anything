@@ -128,3 +128,15 @@ shield further out: `spots`). Placement: every frog unit, gear, hero, mount and 
 ![the frog spearman's hop](18-frog-b-hop.gif)
 ![the hop's 8 phases, every frog unit](19-frog-b-hop-phases.png)
 ![the frogs in 8 facings](20-frog-b-facings.png)
+
+## The humans walk on keyed legs (D-179; 2026-10-28)
+
+The heroic leg (`tools/blender/human_leg.py`) is modelled in three pieces overlapping at the joints (thigh, shin with
+the boot's shaft, foot), and the game bends it at the knee and ankle for each of 8 walk steps
+(`UnitModels.human_joints`: the ankle slides back as far down as the leg reaches, so the body dips at the ends of the
+stride riding on its planted foot; swinging through, the foot lifts, the knee bends, the toes drop a little). parts.json
+`body.human` legs `poses: 8`, the stiff swing off. Placement: every unit in 3D (25654 checks), the human races in 2D,
+the sheet's rows (`tests/sheets/human_walk.json`).
+
+![the legionary walking](21-human-walk-keyed.gif)
+![the walk steps](22-human-walk-steps.png)

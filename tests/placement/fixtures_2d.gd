@@ -244,8 +244,8 @@ static func _old_kneel(v, pose: String) -> void:
 ## member on that side, so the rat leading the cat drew under the cat and stood inside it.
 static func composite_fixtures() -> Array:
 	return [
-		["the rat leading TC1 A's cat drawn under the cat (the hauler layered over every crew member on its side)",
-			"composite: sewer rats tc1_a_junk hauled by a cat", ["C4 composite members drawn in depth order"], "", func(v, _pose): _hauler_over_crew(v)],
+		["a hand leading TC1 A's beast drawn under it (the hauler layered over every crew member on its side; first seen as the rats' cat: since the rats stand back by their hunch, crew_back, they no longer overlap it, so the Romans' pony carries the fixture)",
+			"composite: romans tc1_a_timber hauled by a pony", ["C4 composite members drawn in depth order"], "", func(v, _pose): _hauler_over_crew(v)],
 		["the hauling cat's near hind leg gone in its walk (a member's walk steps were never checked, nor baked)",
 			"composite: sewer rats tc1_a_junk hauled by a cat", ["B6 every hip's leg in every walk step"], "", func(v, pose): _hauler_hind_leg_gone(v, pose)],
 	]

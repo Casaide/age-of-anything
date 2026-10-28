@@ -1537,7 +1537,8 @@ func _bolt_beast(s: Dictionary, c: Dictionary) -> Dictionary:
 	var top := 33.0
 	n.add_child(_box(Vector3(20.0, 0.8, 24.0), s.team, Vector3(-4.0, top - 1.0, 0), Vector3(0, 0, 10)))
 	post_bolt(n, s, top, -2.0)
-	return {"node": n, "sockets": {"crew0_f0_reach_top": Vector3(-20.0, 25.2, 0), "crew1_f0_reach": Vector3(-6.0, 0, -30.0)}}   # (at 27 the rider stood 1.8 over the toad's back)
+	n.add_child(_box(Vector3(10.0, 1.4, 12.0), s.team, Vector3(-21.5, 24.5, 0)))   # a pad on its rump for the gunner (the frog as a frog is sank its wide knees into the round back)
+	return {"node": n, "sockets": {"crew0_f0_reach_top": Vector3(-21.5, 25.3, 0), "crew1_f0_reach": Vector3(-6.0, 0, -30.0)}}   # (at 27 the rider stood 1.8 over the toad's back)
 
 
 ## A reed-bow bolt thrower on a short post standing on a pad at height `top`, the post at x0.
