@@ -142,7 +142,7 @@ def hero_helm_plume(c:Colours) -> Spec:
         let a = float(k - 2) * 0.32
         let off = abs(float(k - 2))
         add_child(n, decal("plume", 7.0, 15.0, float3 { -2.0 - off * 1.0, 11.0 - off * 1.4, hero_sin(a) * 4.0 }, float3 { hero_sin(a) * 0.4, 0.0, hero_cos(a) }, true, normalize(float3 { -0.5, 1.0, hero_sin(a) }), cols[k]))
-    lift_kids(n, 0.5)
+    lift_kids(n, 0.8)   // (0.5 before the heroic head, D-173)
     return spec_of(n)
 
 def hero_wolf_hat(c:Colours) -> Spec:

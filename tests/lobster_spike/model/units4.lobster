@@ -260,23 +260,13 @@ def shield_kite(c:Colours) -> Spec:
     return spec_of(n)
 
 def shield_scutum(c:Colours) -> Spec:
+    // Modelled in Blender (tools/blender/gear_roman.py, milestone 23 step 2b): a curved board with rounded corners, the
+    // team colour on its face, a bronze rim, boss and spine, wings and lightning bolts.
     let n = mnode()
     let h = facing(n, float3 { 3.0, 0.0, 1.5 }, SHIELD_FACE)
-    let bronze = surf("bronze", float3_1, 3.0)
-    let team = plain(c.team)
-    let R = 6.0
-    for(5) i:
-        let a = float(i - 2) * 17.0
-        add_child(h, box(float3 { 1.85, 17.0, 0.6 }, team, float3 { sin(a) * R, 0.0, cos(a) * R - R }, float3 { 0.0, a, 0.0 }))
-    for([8.5, -8.5]) y:
-        for(5) i:
-            let a = float(i - 2) * 17.0
-            let lo = a - rad(0.15)
-            let hi = a + rad(0.15)
-            add_child(h, rod(float3 { sin(lo) * R, y, cos(lo) * R - R + 0.2 }, float3 { sin(hi) * R, y, cos(hi) * R - R + 0.2 }, 0.35, 0.35, bronze))
-    add_child(h, blob(float3 { 1.7, 1.7, 1.1 }, bronze, float3 { 0.0, 0.0, 0.5 }))
-    add_child(h, rod(float3 { 0.0, 7.8, 0.4 }, float3 { 0.0, 1.7, 0.4 }, 0.3, 0.3, bronze))
-    add_child(h, rod(float3 { 0.0, -1.7, 0.4 }, float3 { 0.0, -7.8, 0.4 }, 0.3, 0.3, bronze))
+    let board = glb("shield_scutum", mats_of([plain(c.team), surf("bronze", float3_1, 3.0), surf("wood_grain", float3_1, 4.0)], ["team", "bronze", "wood"]))
+    board.pos = float3 { board.pos.x, board.pos.y, 1.0 }   // (out from the hand, off a wide body)
+    add_child(h, board)
     return spec_of(n)
 
 def shield_hoplon(c:Colours) -> Spec:
@@ -329,15 +319,10 @@ def helm_horned(c:Colours) -> Spec:
     return spec_of(n)
 
 def helm_galea(c:Colours) -> Spec:
-    let n = mnode()
-    let iron = surf("iron", float3_1, 3.0)
-    let bronze = surf("bronze", float3_1, 2.0)
-    add_child(n, dome(float3 { 5.0, 5.0, 4.8 }, iron, float3 { 0.0, -3.8, 0.0 }))
-    add_child(n, ring(4.8, 5.4, bronze, float3 { 0.3, -2.8, 0.0 }))
-    add_child(n, blob(float3 { 3.0, 0.6, 5.0 }, iron, float3 { -4.0, -4.2, 0.0 }, float3 { 0.0, 0.0, -25.0 }))
-    for([1.0, -1.0]) side:
-        add_child(n, blob(float3 { 1.6, 2.6, 0.5 }, iron, float3 { 2.0, -5.6, 4.3 * side }))
-    crest(n, col(c, "crimson"), float3 { -0.2, 1.0, 0.0 }, 9.0, 4.5)
+    // Modelled in Blender (tools/blender/gear_roman.py): a ribbed iron bowl, a bronze brow band, hinged cheek guards, a
+    // flared neck guard; the crest here.
+    let n = glb("helm_galea", mats_of([surf("iron", float3_1, 3.0), surf("bronze", float3_1, 2.0)], ["iron", "bronze"]))
+    crest(n, col(c, "crimson"), float3 { -0.2, 1.5, 0.0 }, 9.0, 4.5)
     return spec_of(n)
 
 def helm_corinthian(c:Colours) -> Spec:
