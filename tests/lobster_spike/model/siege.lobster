@@ -371,8 +371,8 @@ def ram_c(s:SStyle) -> Spec:
     let spec = if s.fam == "junk": ram_c_junk(s) elif s.fam == "timber" and TIMBER_RAM_ROOF != "": ram_covered(s, TIMBER_RAM_ROOF) else: ram_b(s)
     let L = 42.0
     spec.sockets = dictionary<string, float3>(11)
-    sock(spec, "crew0_f0_reach_in", float3 { -L * 0.3, 0.0, -2.5 })
-    sock(spec, "crew1_f0_reach_in", float3 { L * 0.1, 0.0, -2.5 })
+    sock(spec, "crew0_f0_reach_in", float3 { -L * 0.3, 0.0, -3.2 })   // (at 2.5 the heroic humans' shoulders were in the frame: C1, D-173)
+    sock(spec, "crew1_f0_reach_in", float3 { L * 0.1, 0.0, -3.2 })
     sock(spec, "crew2_f0_reach", float3 { -L * 0.5 - 5.0, 0.0, 5.0 })
     sock(spec, "crew2_f0_reach_wide", float3 { -L * 0.5 - 12.0, 0.0, 5.0 })
     if s.fam == "timber" and TIMBER_RAM_ROOF != "":
@@ -389,8 +389,8 @@ def ram_covered(s:SStyle, roof:string) -> Spec:
     let wd = 12.0
     let wr = 4.2
     let base = wr + 1.0
-    let eave = 23.0
-    let ridge = 30.5
+    let eave = 27.0   // (23 before the heroic humans' longer legs, D-173)
+    let ridge = 34.5
     let px = L * 0.36
     siege_undercarriage(n, s, L, wd, wr)
     for([1.0, -1.0]) side:
@@ -407,7 +407,7 @@ def ram_covered(s:SStyle, roof:string) -> Spec:
             add_child(n, rod(float3 { x, eave - 0.6, (wd * 0.5 + 1.6) * side }, float3 { x, ridge, 0.0 }, 0.55, 0.5, s.wood, false))
     let rx = px + 3.5
     add_child(n, siege_beam(float3 { -rx, ridge, 0.0 }, float3 { rx, ridge, 0.0 }, 1.3, 1.3, s.dark))
-    let y = 17.0
+    let y = 21.0   // the log at the crew's chests (17 went through the heroic humans' skirts, D-173)
     for([-L * 0.25, L * 0.25]) x:
         add_child(n, rod(float3 { x, ridge, 0.0 }, float3 { x, y + 2.0, 0.0 }, 0.35, 0.35, s.rope, false))
     ram_log(n, s, -L * 0.55, L * 0.5 + 8.0, y, 3.0)
@@ -791,8 +791,9 @@ def bolt_beast(s:SStyle) -> Spec:
     let top = 33.0
     add_child(n, box(float3 { 20.0, 0.8, 24.0 }, s.team, float3 { -4.0, top - 1.0, 0.0 }, float3 { 0.0, 0.0, 10.0 }))
     post_bolt(n, s, top, -2.0)
+    add_child(n, box(float3 { 10.0, 1.4, 12.0 }, s.team, float3 { -21.5, 24.5, 0.0 }))   // a pad on its rump for the gunner
     let sp = spec_of(n)
-    sock(sp, "crew0_f0_reach_top", float3 { -20.0, 25.2, 0.0 })
+    sock(sp, "crew0_f0_reach_top", float3 { -21.5, 25.3, 0.0 })
     sock(sp, "crew1_f0_reach", float3 { -6.0, 0.0, -30.0 })
     return sp
 
@@ -1184,23 +1185,30 @@ def gold_load(n:MNode, s:SStyle, at:float3):
 
 // ------------------------------------------------------------------ war beasts (D-129)
 
-// howdah: its riders' sockets go on `sp`.
+// howdah: a walled box at `at` (its floor's middle), team cloths down both sides; the riders stand in it, seen from
+// the hips up (D-176). Its riders' sockets ("_box": legs not drawn) go on `sp`.
+let HOWDAH_WALL = 12.0   // its walls' height over the floor: up to a heroic human's thighs (hips at 18)
+
 def howdah(sp:Spec, n:MNode, s:SStyle, at:float3, L:float, wd:float, riders:int = 2):
     add_child(n, box(float3 { L, 1.4, wd }, s.dark, at))
+    let top = HOWDAH_WALL
     for([-L * 0.5 + 0.6, L * 0.5 - 0.6]) x:
         for([1.0, -1.0]) side:
-            add_child(n, rod(at + float3 { x, 0.0, wd * 0.5 * side }, at + float3 { x, 5.0, wd * 0.5 * side }, 0.45, 0.45, s.dark))
-    for([1.0, -1.0]) side:
-        add_child(n, rod(at + float3 { -L * 0.5, 5.0, wd * 0.5 * side }, at + float3 { L * 0.5, 5.0, wd * 0.5 * side }, 0.4, 0.4, s.dark))
+            add_child(n, rod(at + float3 { x, 0.0, wd * 0.5 * side }, at + float3 { x, top + 1.2, wd * 0.5 * side }, 0.55, 0.5, s.dark))   // corner posts
+    for([1.0, -1.0]) side:   // the walls: planks along each side and across each end, a team band along their tops
+        add_child(n, box(float3 { L - 1.0, top, 0.6 }, s.wood, at + float3 { 0.0, top * 0.5 + 0.7, wd * 0.5 * side }))
+        add_child(n, box(float3 { 0.6, top, wd - 1.0 }, s.wood, at + float3 { L * 0.5 * side, top * 0.5 + 0.7, 0.0 }))
+        add_child(n, box(float3 { L, 1.2, 0.8 }, s.team, at + float3 { 0.0, top + 0.3, wd * 0.5 * side }))
+        add_child(n, box(float3 { 0.8, 1.2, wd }, s.team, at + float3 { L * 0.5 * side, top + 0.3, 0.0 }))
         add_child(n, box(float3 { L * 0.8, 8.0, 0.4 }, s.team, at + float3 { 0.0, -4.0, (wd * 0.5 + 0.3) * side }, float3 { 10.0 * side, 0.0, 0.0 }))
-    for([-L * 0.5, L * 0.5]) x:
-        add_child(n, rod(at + float3 { x, 5.0, -wd * 0.5 }, at + float3 { x, 5.0, wd * 0.5 }, 0.4, 0.4, s.dark))
+    // set down so a heroic human's hem (15.3 over its feet) meets the walls' top
+    let down = 0.7 + HOWDAH_WALL - 15.3
     sp.sockets = dictionary<string, float3>(11)
     if riders == 1:
-        sock(sp, "crew0_f0_top", at + float3 { 0.0, 0.7, 0.0 })
+        sock(sp, "crew0_f0_box", at + float3 { 0.0, down, 0.0 })
     else:
-        sock(sp, "crew0_f0_top", at + float3 { L * 0.05, 0.7, wd * 0.3 })
-        sock(sp, "crew1_f0_top", at + float3 { -L * 0.05, 0.7, -wd * 0.3 })
+        sock(sp, "crew0_f0_box", at + float3 { L * 0.13, down, wd * 0.32 })
+        sock(sp, "crew1_f0_box", at + float3 { -L * 0.13, down, -wd * 0.32 })
 
 class EleMats:
     hide:MMat
@@ -1717,7 +1725,7 @@ def beside(spec:Spec, kind:string) -> Spec:
     let names = spec.sockets.get_keys()
     insertion_sort(names) x, y: x < y
     for(names) name:
-        if ends_with(name, "_top"):
+        if ends_with(name, "_top") or ends_with(name, "_box"):
             let at = spec.sockets.get(name, float3_0)
             let side = if abs(at.z) > 0.5: siege_sign(at.z) else: (if k % 2 == 0: 1.0 else: -1.0)
             spec.sockets.set(name.substring(0, name.length - 4) + "_wide", float3 { at.x, 0.0, side * (zmax + BESIDE_GAP) })

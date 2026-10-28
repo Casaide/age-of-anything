@@ -107,7 +107,7 @@ def all_cases(with_lines:bool) -> [Case]:
     for(RIDERS) p:
         let spear = slot_unit(race_for(p, "default"), "spear")
         for(MOUNTS) m:
-            cases.push(Case { "{rstr(at(spear, "recipe"), "creature")} on {m}", ride(spear, m, as_str(glist(creature(m), "skins")[0]), jobj()) })
+            cases.push(Case { "{rstr(at(spear, "recipe"), "creature")} on {m}", ride(spear, m, as_str(glist(creature(m), "skins")[0]), shallow_copy(gobj(creature(m), "parts"))) })   // (with what the mount always has: a hummingbird's wings)
     let human = slot_unit(race_for("romans", "default"), "spear")
     for(["pony", "beetle", "spider"]) m:   // (winged mounts, a "pegasus": the mount's wings at its withers)
         let wp = jobj()
@@ -225,7 +225,7 @@ def kit_cases() -> [Case]:
     stage_file("res://data/creature_kit.json")
     let cases = []::Case
     let rat = slot_unit(race_for("sewer rats", "default"), "spear")
-    for(["kitcat", "kitcat_built"]) m: cases.push(Case { "kit: rat on {m}", ride(rat, m, as_str(glist(creature(m), "skins")[0]), jobj()) })
+    for(["kitcat", "kitcat_built"]) m: cases.push(Case { "kit: rat on {m}", ride(rat, m, as_str(glist(creature(m), "skins")[0]), shallow_copy(gobj(creature(m), "parts"))) })
     for(BEAR_CASES) b:
         let r = deep_copy(at(slot_unit(race_for(b[1], "default"), b[2]), "recipe"))
         let over = parse_json(b[3])
