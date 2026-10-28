@@ -304,8 +304,7 @@ def draw_topbar(speed:float, paused:bool):
     x += idle_w + sep
     // The tech tree page.
     if hud_button(float2 { x, by }, float2 { tree_w, bh }, false, true):
-        tree_open = true
-        tree_page = build_tree(ME)
+        open_tree(ME)
     icon("research", float2 { x + 12.0 * s, by + (bh - 22.0 * s) / 2.0 }, 22.0 * s, 1.0)
     tb_text(float2 { x + 40.0 * s, by + (bh - 17.0 * s) / 2.0 - 2.0 * s }, "Tech tree", int(17.0 * s), light, 0)
     if tb_over(float2 { x, by }, float2 { tree_w, bh }): tb_tip = "Your race\'s tech tree and bonuses (F1)"
