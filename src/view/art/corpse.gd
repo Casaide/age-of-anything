@@ -22,6 +22,7 @@ extends RefCounted
 ##             leg's foot out to its own side; < 0 across under the body)], degrees
 ##   head      the head (and its helmet) turned at the neck, degrees (- nose down)
 ##   helm      true: the helmet comes off and lies upturned by the head
+##   spots     {kind: [[x, z], turn]}: where what it held lands, over SPOTS (a body wider than most)
 ##   turn      [8 degrees]: in each facing the body lies turned this much about its spot (+ anticlockwise
 ##             seen from above), so every view shows it from a side it reads from (Dominic: "slightly
 ##             different views from different sides so it always looks good is fine"); seen end on
@@ -97,6 +98,8 @@ static func model(lib, rig, r: Dictionary, p: Dictionary, f: float) -> Node3D:
 		var q: Dictionary = d[0]
 		var w: Node3D = d[1]
 		var s: Array = SPOTS[q.kind]
+		if p.get("spots", {}).has(q.kind):   # the body's own (a wide one's: the frog's shield lay in its flank)
+			s = [Vector2(p.spots[q.kind][0][0], p.spots[q.kind][0][1]), float(p.spots[q.kind][1])]
 		w.transform = Transform3D(_flat(w.get_child(0), float(s[1]), q.kind == "head_gear") * q.xf.basis.orthonormalized().inverse() * q.xf.basis, Vector3.ZERO)
 		var wrap := Node3D.new()
 		wrap.name = "dropped:" + q.kind

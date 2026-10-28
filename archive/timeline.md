@@ -150,3 +150,4 @@ One line per moment worth remembering. Newest at the bottom.
 - **2026-10-27:** D-178 frog B, D-179 animation by keyed limbs; the rat as a rat is built (Blender trunk and head, legs baked in 8 knee-bent walk steps).
 - **2026-10-27:** Rat armour RA1: all seven armours modelled for the rat's own trunk (no more scaled human jerkin as a band round its middle).
 - **2026-10-27:** D-180: capes only when asked (or the royal culture's); units baked at the size they're drawn (no more blocky sheep and giants).
+- **2026-10-28:** Frog B built: Blender trunk and head, legs keyed in 8 hop phases, fitted armour; the rat's head nods and blows wind up and hold (D-179, D-181).

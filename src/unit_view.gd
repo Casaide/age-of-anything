@@ -50,8 +50,7 @@ const HOP_DOWN := 0.75
 ## The legs through a hop: [cycle point, leg squash (1: standing), foot shift along the facing (in leg
 ## lengths; < 0: back)]: crouch, hold, push (legs flung back, long), tuck, reach for the ground, touch
 ## down, squash, stand. The feet move only in the air; the body rides on its lowest foot.
-const HOP_KEYS := [[0.0, 1.0, 0.0], [0.15, 0.7, 0.0], [HOP_UP, 0.7, 0.0], [0.36, 1.15, -0.7], [0.52, 0.75, -0.25],
-	[0.66, 0.9, 0.3], [HOP_DOWN, 1.0, 0.0], [0.82, 0.72, 0.0], [1.0, 1.0, 0.0]]
+const HOP_KEYS := UnitModels.HOP_KEYS   # (shared: a frog's legs are baked in these phases, D-179)
 var _hop_off := Vector2.ZERO    # node units: where the hopper is drawn, from its node
 var _hop_aim := Vector2.ZERO    # a whole hop the way it last moved, on screen (node units)
 var _hop_last := Vector2.INF    # its node's position last frame
@@ -311,7 +310,7 @@ func _build_engine(r: Dictionary, lib, team: Color, colours: Dictionary, speed: 
 		v.build(hr if hauls else cr, lib, team, speed)
 		v.position = sockets[name]
 		var back := int(lib.creatures.get(v.recipe.get("creature", ""), {}).get("crew_back", 0))
-		if back > 0 and not top:   # on the ground, a hunched body stands back from its place, so it's centred on it (creatures.json crew_back; riding on top, it sits where it's put)
+		if back > 0 and (not top or "_reach" in name):   # (crew at work on a platform lean into it too; riders sit)   # on the ground, a hunched body stands back from its place, so it's centred on it (creatures.json crew_back; riding on top, it sits where it's put)
 			var mr: Dictionary = PartShape.rigs.get(v.recipe.body + PartShape.facing_suffix(face), {})
 			v.position -= mr.get("ahead", Vector2.ZERO) * float(back) * v.unit_scale
 		v.set_meta("z", z + n * 0.01)   # the same layer: nearest the camera last
@@ -1546,17 +1545,26 @@ func _hip_height() -> float:
 ## move along the facing's screen direction (sideways by turning, up or down the screen by length).
 func _hop(ph: float, stride: float) -> void:
 	var p := fposmod(ph / TAU, 1.0) if stride > 0.0 else 0.0
-	var s := 1.0
-	var d := 0.0
-	for i in range(1, HOP_KEYS.size()):
-		if p <= HOP_KEYS[i][0]:
-			var a: Array = HOP_KEYS[i - 1]
-			var b: Array = HOP_KEYS[i]
-			var w := smoothstep(a[0], b[0], p)
-			s = lerpf(a[1], b[1], w)
-			d = lerpf(a[2], b[2], w)
-			break
+	var key := UnitModels.hop_key(p)
+	var s := key.x
+	var d := key.y
 	var fwd := _forward()
+	# Legs baked in the hop's phases (parts.json legs.poses: the frog, D-179): the phase's own pose, both legs together.
+	var keyed := false
+	for leg in legs:
+		if leg.steps > 0 and not leg.cling:
+			keyed = true
+			var id: String = leg.base + leg.cut
+			if stride > 0.0:
+				id = "%s@w%d_%d%s" % [leg.walk_id, int(p * leg.steps) % leg.steps, leg.steps, leg.cut]
+			if id != leg.node.part_id:
+				leg.node.part_id = id
+				leg.node.queue_redraw()
+			leg.node.rotation = 0.0
+			leg.node.scale.y = leg.reach
+	if keyed:
+		_hop_lift(p, fwd)
+		return
 	# Every foot comes up by the same amount as the legs bend (the body rides down by it, so none
 	# lifts off nor sinks): a leg reaching further below its hip squashes less.
 	var depth := 0.0
@@ -1574,6 +1582,11 @@ func _hop(ph: float, stride: float) -> void:
 		var k := maxf(1.0 - (1.0 - s) * depth / h, 0.2) if h > 0.0 else s
 		leg.node.rotation = -asin(clampf(d * fwd.x, -0.9, 0.9))
 		leg.node.scale.y = leg.reach * (k + d * fwd.y)
+	_hop_lift(p, fwd)
+
+
+## The body in the air between HOP_UP and HOP_DOWN (nose up going up, down coming in), on its planted feet otherwise.
+func _hop_lift(p: float, fwd: Vector2) -> void:
 	var lift := 0.0
 	var tilt := 0.0
 	if p > HOP_UP and p < HOP_DOWN:

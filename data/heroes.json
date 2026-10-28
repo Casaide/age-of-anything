@@ -459,6 +459,9 @@
     },
     "rat": {
      "back": ""
+    },
+    "frog": {
+     "back": ""
     }
    }
   },
@@ -561,6 +564,9 @@
     },
     "rat": {
      "back": ""
+    },
+    "frog": {
+     "back": ""
     }
    }
   },
@@ -595,7 +601,8 @@
    },
    "fit": {
     "frog": {
-     "head_gear": "hero.lion_hood_low"
+     "head_gear": "hero.lion_hood_low",
+     "back": ""
     },
     "beetle": {
      "head_gear": "hero.lion_hood_low"
@@ -645,6 +652,9 @@
    },
    "fit": {
     "rat": {
+     "back": ""
+    },
+    "frog": {
      "back": ""
     }
    }

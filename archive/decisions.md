@@ -1251,3 +1251,9 @@ a point). Units drawn at a scale other than 100 (sheep 135, boar 115, giants 150
 100 and stretched; now each part bakes at its unit's size (the bake key carries it, `PartShape.size`, `PartBaker.bake(..., at)`),
 so a big sheep or a tiny viking keeps the art's own pixels. The composer still scales the unit's node (sockets, legs and
 offsets stay in part units); a sized sprite draws at 1/size, so the two cancel. Claude's design.
+
+**D-181, 2026-10-28: The frog as built (D-178, D-179).** Claude, building frog B: no quiver on frogs (it stood off the
+sloping back like a post, as on the rat: parts.json `not_worn_by`, which changes race keys and prices); its heel just off
+the ground (the concept held it up, and seen from behind no foot showed on the ground); its head baked cut by its body;
+slung shields lie along the back (`slung_lean`); frog crews stand 7 back from their place at an engine (`crew_back`), the
+squat body being well ahead of its hips; crew at work on a platform stand back too, riders don't.

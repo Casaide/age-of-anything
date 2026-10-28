@@ -109,3 +109,22 @@ frogs, bears, spiders, beetles and heroes in 2D, the rat sheet's rows.
 
 ![the cheesehammer rat's blow, facing the camera](16-rat-b-blow-timing.gif)
 ![the blow's frames: rest, wound up, driven, contact, contact, recovering](17-rat-b-blow-frames.png)
+
+## The frog as a frog is, hopping in keyed phases (D-178, D-179; 2026-10-28)
+
+The frog rebuilt as round F2's B: the trunk and head modelled in Blender (`tools/blender/frog.py`, at 1.15 the
+concept, as tall as the frog before), squat, the trunk leaning 55 degrees from the hips, a wide flat head with the eyes
+on top (baked cut by its body, so its trunk hides its chin seen from behind), the team kerchief round the top of the
+trunk, one forelimb low by the ground and the other holding what it carries. Its hind legs, in code, fold in a Z (the
+knees wide, the heel just off the ground, a long webbed foot) and are baked in 8 phases of the hop
+(`UnitModels.frog_joints`, keyed by `HOP_KEYS`, now shared with the composer): crouched, the push with the legs flung
+back, tucked in the air, reaching forward to land, the landing squash; the composer plays them with both legs together
+(`UnitView._hop`) and the body rides on the planted feet. Its armour is fitted to its own trunk
+(`tools/blender/creature_armour.py`, the rat's script made general), a slung shield lies along its sloping back
+(`@slung_lean`), and its 3D death lies flat with the legs turned down less (the corpse pose's `leg_turn`, its dropped
+shield further out: `spots`). Placement: every frog unit, gear, hero, mount and crew case in 3D (2397 checks) and 2D
+(1711 checks), the sheet's six rows (`tests/sheets/frog_b_play.json`).
+
+![the frog spearman's hop](18-frog-b-hop.gif)
+![the hop's 8 phases, every frog unit](19-frog-b-hop-phases.png)
+![the frogs in 8 facings](20-frog-b-facings.png)
