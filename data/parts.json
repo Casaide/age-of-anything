@@ -323,7 +323,7 @@
    1.4,
    1.1
   ],
-  "legs": {
+  "legs": {"poses": 8, "gait": {"swing": 0.0, "cadence": 1.6, "bob": 0.3, "rock": 0.015, "rock_rate": 2.0}, "_poses_doc": "D-179: each leg bent at its knee, baked in 8 walk steps (unit_models.gd stepped)",
    "stance": {"sprawl": [0, 16], "inside": 0.55, "_doc": "legs fanned out round the body, hinged in under it"},
    "part": "leg.spider",
    "anchors": [[1, -9, 0.0, 1, 0], [1, -9, 3.14, -1, 0], [-2, -9, 1.0, 1, 1], [-2, -9, 4.14, -1, 1], [-6, -9, 2.0, 1, 1], [-6, -9, 5.14, -1, 1]]
@@ -419,7 +419,7 @@
     -20
    ]
   },
-  "legs": {
+  "legs": {"poses": 8, "gait": {"swing": 0.0, "cadence": 1.0, "bob": 0.9, "rock": 0.035, "rock_rate": 1.0}, "_poses_doc": "D-179: each leg bent at its knee, baked in 8 walk steps (unit_models.gd stepped)",
    "stance": {"inside": 0.6, "_doc": "insect legs hinge deep under the shell"},
    "part": "leg.insect",
    "anchors": [
@@ -554,7 +554,7 @@
    2.0,
    1.2
   ],
-  "legs": {
+  "legs": {"poses": 8, "gait": {"swing": 0.0, "cadence": 1.6, "bob": 0.3, "rock": 0.015, "rock_rate": 2.0}, "_poses_doc": "D-179: each leg bent at its knee, baked in 8 walk steps (unit_models.gd stepped)",
    "stance": {"inside": 0.6, "_doc": "insect legs hinge deep under the shell"},
    "part": "leg.insect",
    "anchors": [
@@ -728,7 +728,7 @@
    1.8,
    1.0
   ],
-  "legs": {
+  "legs": {"poses": 8, "gait": {"swing": 0.0, "cadence": 1.0, "bob": 0.9, "rock": 0.035, "rock_rate": 1.0}, "_poses_doc": "D-179: each leg bent at its knee, baked in 8 walk steps (unit_models.gd stepped)",
    "part": "leg.capybara",
    "anchors": [
     [
@@ -1636,7 +1636,7 @@
    2.0,
    1.2
   ],
-  "legs": {
+  "legs": {"poses": 8, "gait": {"swing": 0.0, "cadence": 1.0, "bob": 0.9, "rock": 0.035, "rock_rate": 1.0}, "_poses_doc": "D-179: each leg bent at its knee, baked in 8 walk steps (unit_models.gd stepped)",
    "stance": {"sprawl": [6, 14], "drop": 0.45, "_doc": "a sprawl: elbows out, the foot well out to the side"},
    "part": "leg.newt",
    "anchors": [
@@ -5599,6 +5599,8 @@
  },
  {
   "id": "body.deer",
+  "cut": ["legs"],
+  "_cut_doc": "its legs baked cut by its body at each hip (whole, the near legs drew over its flank: the placement check)",
   "slot": "body",
   "noun": "Deer",
   "points": 0,
@@ -5709,7 +5711,7 @@
    1.8,
    1.0
   ],
-  "legs": {
+  "legs": {"poses": 8, "gait": {"swing": 0.0, "cadence": 1.0, "bob": 0.9, "rock": 0.035, "rock_rate": 1.0}, "_poses_doc": "D-179: each leg bent at its knee, baked in 8 walk steps (unit_models.gd stepped)",
    "part": "leg.deer",
    "anchors": [
     [
@@ -5964,7 +5966,7 @@
    1.8,
    1.0
   ],
-  "legs": {
+  "legs": {"poses": 8, "gait": {"swing": 0.0, "cadence": 1.0, "bob": 0.9, "rock": 0.035, "rock_rate": 1.0}, "_poses_doc": "D-179: each leg bent at its knee, baked in 8 walk steps (unit_models.gd stepped)",
    "part": "leg.boar",
    "anchors": [
     [
@@ -6219,7 +6221,7 @@
    1.8,
    1.0
   ],
-  "legs": {
+  "legs": {"poses": 8, "gait": {"swing": 0.0, "cadence": 1.0, "bob": 0.9, "rock": 0.035, "rock_rate": 1.0}, "_poses_doc": "D-179: each leg bent at its knee, baked in 8 walk steps (unit_models.gd stepped)",
    "part": "leg.sheep",
    "anchors": [
     [

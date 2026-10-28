@@ -904,6 +904,32 @@ static func walk_step(pose: String) -> float:
 	return float(nums[0]) / float(nums[1])
 
 
+## A leg's knee and foot in a walk step (D-179), for legs modelled as hip, knee and foot (the hip at the origin): as
+## modelled standing; walking, the foot slides back along the ground while it's down (`stance` of the step) and swings
+## forward lifted, the knee placed by two-bone IK on the side the modelled knee bends to (a spider's high, a deer's
+## forward). Out of reach, the foot comes up towards the hip.
+static func stepped(knee0: Vector3, foot0: Vector3, pose: String, stride: float, stance := 0.6, lift := -1.0, bend := Vector3.ZERO) -> Array:
+	var p := walk_step(pose)
+	if p < 0.0:
+		return [knee0, foot0]
+	var foot := foot0
+	if p < stance:
+		foot.x += stride * (0.5 - p / stance)
+	else:
+		var q := (p - stance) / (1.0 - stance)
+		foot.x += stride * (smoothstep(0.0, 1.0, q) - 0.5)
+		foot.y += (stride * 0.35 if lift < 0.0 else lift) * sin(q * PI)
+	var l1 := knee0.length()
+	var l2 := (foot0 - knee0).length()
+	var u := foot.normalized()
+	var d := clampf(foot.length(), absf(l1 - l2) + 0.01, l1 + l2 - 0.01)
+	foot = u * d
+	var a := (l1 * l1 - l2 * l2 + d * d) / (2.0 * d)
+	var pole := knee0 + bend   # (bend: which way the knee goes as it folds, over the modelled knee's: a spider's out, not up into its gear)
+	var v := (pole - u * pole.dot(u)).normalized()
+	return [u * a + v * sqrt(maxf(l1 * l1 - a * a, 0.0)), foot]
+
+
 ## Two-bone IK in 2D from the origin to `end`: the middle joint, on the forward side (+x) or the back.
 static func ik2(end: Vector2, l1: float, l2: float, forward: bool) -> Vector2:
 	var d := minf(end.length(), l1 + l2 - 0.01)
@@ -1003,7 +1029,7 @@ func _body_spider(c: Dictionary) -> Dictionary:
 		hips.append([Vector3(xs[k], 10.5, -3.5), k * 1.0 + PI, -1, 1 if k >= 1 else 0, false, SPIDER_FAN[k]])
 	return {"node": n, "sockets": {"head": Vector3(3.5, 20.0, 0), "hand_r": hand_r, "hand_l": hand_l,
 		"torso": Vector3(1.5, 14.5, 0), "back": Vector3(-14.5, 14.5, 0), "seat": Vector3(-8.0, 16.5, 0), "wings": Vector3(-1.0, 17.0, 0),   # (back at the rump's end: at (-7, 14) a cape hung down through the abdomen)
-		"sit": Vector3(-4.0, 4.5, 0), "sling": Vector3(-7.6, 17.9, 0)},   # (a shield slung flat on the abdomen)
+		"sit": Vector3(-4.0, 4.5, 0), "sling": Vector3(-7.6, 18.3, 0)},   # (a shield slung flat on the abdomen; at 17.9 a hoplon met the rear legs mid-step)
 		"anchors": hips, "torso_scale": Vector2(0.5, 0.6)}
 
 
@@ -1027,8 +1053,9 @@ func _head_spider(c: Dictionary) -> Dictionary:
 func _leg_spider(c: Dictionary) -> Dictionary:
 	var n := Node3D.new()
 	var hair := surf("rat_fur", c.skin, 4.0)
-	var knee := Vector3(6, 7, 1.5)
-	var tip := Vector3(11, -10, 2.5)
+	var kf := stepped(Vector3(6, 7, 1.5), Vector3(11, -10, 2.5), "" if hold == "low" else hold, 4.0, 0.6, 0.7)   # (D-179: baked per walk step; a short, low step: lifted higher or knees folded out, they met its gear or each other)
+	var knee: Vector3 = kf[0]
+	var tip: Vector3 = kf[1]
 	n.add_child(rod(Vector3.ZERO, knee, 1.4, 1.2, hair))
 	n.add_child(rod(knee, knee.lerp(tip, 0.6), 1.2, 0.9, hair))
 	n.add_child(rod(knee.lerp(tip, 0.6), tip, 0.9, 0.5, plain(c.skin.darkened(0.5))))
@@ -1840,11 +1867,16 @@ func _leg_capybara_long(c: Dictionary) -> Dictionary:
 	var n := Node3D.new()
 	var fur := surf("rat_fur", c.skin, 5.0)
 	var dark := surf("rat_fur", c.skin.darkened(0.5), 3.0)
+	var kf := stepped(Vector3(0.2, -3.0, 0), Vector3(0.5, -5.6, 0), "" if hold == "low" else hold, 4.5)   # (D-179: baked per walk step)
+	var knee: Vector3 = kf[0]
+	var ankle: Vector3 = kf[1]
+	var at := ankle - Vector3(0.5, -5.6, 0)   # the foot goes where the ankle goes
 	n.add_child(blob(Vector3(3.2, 3.8, 2.9), fur, Vector3(0, -0.4, 0)))
-	n.add_child(rod(Vector3(0.2, -3.0, 0), Vector3(0.5, -5.6, 0), 2.1, 1.8, fur))
-	n.add_child(blob(Vector3(2.6, 0.8, 2.2), dark, Vector3(1.3, -6.0, 0)))   # the webbed foot, broad and flat
+	n.add_child(rod(Vector3(0.0, -1.0, 0), knee, 2.3, 2.1, fur))
+	n.add_child(rod(knee, ankle, 2.1, 1.8, fur))
+	n.add_child(blob(Vector3(2.6, 0.8, 2.2), dark, Vector3(1.3, -6.0, 0) + at))   # the webbed foot, broad and flat
 	for k in [-1, 0, 1]:
-		n.add_child(blob(Vector3(0.9, 0.55, 0.5), dark, Vector3(3.3, -6.2, 0.9 * k), Vector3(0, 20 * k, 0)))   # splayed toes
+		n.add_child(blob(Vector3(0.9, 0.55, 0.5), dark, Vector3(3.3, -6.2, 0.9 * k) + at, Vector3(0, 20 * k, 0)))   # splayed toes
 	return {"node": n}
 
 
@@ -2260,9 +2292,10 @@ func _head_deer(c: Dictionary) -> Dictionary:
 func _leg_deer(c: Dictionary) -> Dictionary:
 	var n := Node3D.new()
 	var coat := surf("hide", c.skin, 4.0)
-	n.add_child(rod(Vector3.ZERO, Vector3(0.3, -7.0, 0), 1.2, 0.6, coat))
-	n.add_child(rod(Vector3(0.3, -7.0, 0), Vector3(0.6, -13.0, 0), 0.55, 0.45, coat))
-	n.add_child(blob(Vector3(0.7, 0.6, 0.6), plain(c.skin2), Vector3(0.8, -13.3, 0)))
+	var kf := stepped(Vector3(0.3, -7.0, 0), Vector3(0.6, -13.0, 0), "" if hold == "low" else hold, 9.0)   # (D-179: baked per walk step)
+	n.add_child(rod(Vector3.ZERO, kf[0], 1.2, 0.6, coat))
+	n.add_child(rod(kf[0], kf[1], 0.55, 0.45, coat))
+	n.add_child(blob(Vector3(0.7, 0.6, 0.6), plain(c.skin2), kf[1] + Vector3(0.2, -0.3, 0)))
 	return {"node": n}
 
 
@@ -2296,8 +2329,11 @@ func _head_boar(c: Dictionary) -> Dictionary:
 
 func _leg_boar(c: Dictionary) -> Dictionary:
 	var n := Node3D.new()
-	n.add_child(rod(Vector3.ZERO, Vector3(0.3, -6.6, 0), 1.6, 0.9, surf("hide", c.skin, 4.0)))
-	n.add_child(blob(Vector3(0.9, 0.6, 0.8), plain(c.skin2), Vector3(0.5, -7.0, 0)))
+	var kf := stepped(Vector3(0.35, -3.3, 0), Vector3(0.3, -6.6, 0), "" if hold == "low" else hold, 5.0)   # (D-179: baked per walk step)
+	var hide := surf("hide", c.skin, 4.0)
+	n.add_child(rod(Vector3.ZERO, kf[0], 1.6, 1.25, hide))
+	n.add_child(rod(kf[0], kf[1], 1.25, 0.9, hide))
+	n.add_child(blob(Vector3(0.9, 0.6, 0.8), plain(c.skin2), kf[1] + Vector3(0.2, -0.4, 0)))
 	return {"node": n}
 
 
@@ -2337,8 +2373,11 @@ func _head_sheep(c: Dictionary) -> Dictionary:
 
 func _leg_sheep(c: Dictionary) -> Dictionary:
 	var n := Node3D.new()
-	n.add_child(rod(Vector3.ZERO, Vector3(0.2, -6.6, 0), 0.8, 0.6, surf("hide", c.skin2, 4.0)))
-	n.add_child(blob(Vector3(0.7, 0.45, 0.6), plain(c.skin2.darkened(0.3)), Vector3(0.4, -6.8, 0)))   # a hoof
+	var kf := stepped(Vector3(0.3, -3.3, 0), Vector3(0.2, -6.6, 0), "" if hold == "low" else hold, 4.5)   # (D-179: baked per walk step)
+	var shank := surf("hide", c.skin2, 4.0)
+	n.add_child(rod(Vector3.ZERO, kf[0], 0.8, 0.7, shank))
+	n.add_child(rod(kf[0], kf[1], 0.7, 0.6, shank))
+	n.add_child(blob(Vector3(0.7, 0.45, 0.6), plain(c.skin2.darkened(0.3)), kf[1] + Vector3(0.2, -0.2, 0)))   # a hoof
 	return {"node": n}
 
 
@@ -2416,8 +2455,9 @@ func _head_beetle(c: Dictionary) -> Dictionary:
 func _leg_insect(c: Dictionary) -> Dictionary:
 	var n := Node3D.new()
 	var shell := surf("chitin", c.skin.darkened(0.45), 3.0)
-	var knee := Vector3(4, -1.8, 2.0)
-	var foot := Vector3(6.2, -8.2, 3.0)
+	var kf := stepped(Vector3(4, -1.8, 2.0), Vector3(6.2, -8.2, 3.0), "" if hold == "low" else hold, 5.5)   # (D-179: baked per walk step)
+	var knee: Vector3 = kf[0]
+	var foot: Vector3 = kf[1]
 	n.add_child(rod(Vector3.ZERO, knee, 1.3, 1.0, shell))
 	n.add_child(rod(knee, foot, 0.9, 0.6, shell))
 	n.add_child(rod(foot, foot + Vector3(1.8, -0.4, 0.3), 0.45, 0.3, shell))
@@ -2550,8 +2590,9 @@ func _newt_head(c: Dictionary) -> Dictionary:
 func _newt_leg(c: Dictionary) -> Dictionary:
 	var n := Node3D.new()
 	var m := _newt_mats(c)
-	var elbow := Vector3(1.8, 1.4, 6.0)
-	var wrist := Vector3(3.4, -5.6, 8.0)
+	var kf := stepped(Vector3(1.8, 1.4, 6.0), Vector3(3.4, -5.6, 8.0), "" if hold == "low" else hold, 7.0)   # (D-179: baked per walk step)
+	var elbow: Vector3 = kf[0]
+	var wrist: Vector3 = kf[1]
 	n.add_child(rod(Vector3.ZERO, elbow, 3.0, 2.4, m.skin))
 	n.add_child(rod(elbow, wrist, 2.3, 1.7, m.skin))
 	for t in 4:

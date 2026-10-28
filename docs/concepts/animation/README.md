@@ -151,3 +151,16 @@ planted hooves in its diagonal walk. Standing, the leg is as modelled. Placement
 
 ![the lancer's pony walking](23-pony-walk-keyed.gif)
 ![pony and centaur walk steps](24-pony-centaur-walk-steps.png)
+
+## Spiders, beetles, capybara, newt and the animals on keyed legs (D-179; 2026-10-28)
+
+The rest of the legged bodies whose legs are a hip, a knee and a foot in code (spider, the beetle mount and rearing
+beetle soldier, capybara, newt, deer, boar, sheep) are baked in 8 walk steps by one shared poser
+(`UnitModels.stepped`): standing, the leg as modelled; walking, the foot slides back along the ground while it's down
+and swings forward lifted, the knee placed by IK on the side its modelled knee bends to. The spider takes a short,
+low step (lifted higher, its high knees met its slung gear). The deer's legs are now cut by its body at each hip (whole,
+the near ones drew over its flank). Placement: every unit in 3D (25650 checks); spiders, beetles, capybara, newt and
+the animals in 2D; the sheet (`tests/sheets/creature_walk.json`). The bears (creature kit) are next.
+
+![the beetles and a deer walking](25-creatures-walk-keyed.gif)
+![every creature's walk steps](26-creatures-walk-steps.png)
