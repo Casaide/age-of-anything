@@ -346,6 +346,9 @@ def insert_unit(uid:int, owner:int, k:int, x:int, y:int, speed:int, radius:int, 
 var t_hero = []::int           // per unit type: 1 for a hero
 var t_heal = []::int           // per unit type: its eval's heal (0: not a healer's)
 var fog_seen = []::[[int]]     // per player: enemy buildings remembered as last seen (fog.lobster remember)
+var fog_ground = []::[int]     // per player: the terrain per cell as they last saw it (Fog's fog_ground: the view draws it)
+var fog_left = []::[int]       // per player: what was left per cell as they last saw it
+var fog_watch = []::int        // 1 where a cell held a resource at the start or has changed since: only those can differ
 var t_eval_attack = []::int     // per unit type: its eval attack with research (the counter-pick)
 var t_bonus = []::[int]         // per unit type: its eval bonus vector with research
 var t_slot = []::string         // per unit type: its roster slot

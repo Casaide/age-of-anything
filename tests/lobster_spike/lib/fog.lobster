@@ -77,6 +77,8 @@ def fog_update_team(team:[int]):
         fog[team[k]] = copy(g)
         fog_lit[team[k]] = lit
         fog_seen[team[k]] = map(fog_seen[p]) s: copy(s)
+        fog_ground[team[k]] = copy(fog_ground[p])
+        fog_left[team[k]] = copy(fog_left[p])
         k++
 
 // What a player remembers of enemy buildings it has seen (fog_seen): per player, in the order first
@@ -95,6 +97,7 @@ def sees_rect(p:int, cx:int, cy:int, sx:int, sy:int) -> bool:
     return false
 
 def remember(p:int):
+    remember_ground(p)
     let seen = fog_seen[p]
     for(b_id.length) b:
         if teams[b_owner[b]] != teams[p] and sees_rect(p, b_cx[b], b_cy[b], b_sx[b], b_sy[b]):

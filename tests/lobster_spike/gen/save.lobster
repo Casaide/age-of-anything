@@ -307,6 +307,9 @@ class WorldSave:
     t_hero:[int]
     t_heal:[int]
     fog_seen:[[[int]]]
+    fog_ground:[[int]]
+    fog_left:[[int]]
+    fog_watch:[int]
     t_eval_attack:[int]
     t_bonus:[[int]]
     t_slot:[string]
@@ -762,6 +765,9 @@ def world_bytes(bots:[Bot]) -> string:
         t_hero,
         t_heal,
         fog_seen,
+        fog_ground,
+        fog_left,
+        fog_watch,
         t_eval_attack,
         t_bonus,
         t_slot,
@@ -1227,6 +1233,9 @@ def load_world_bytes(data:string) -> [Bot]:
     t_hero = s.t_hero
     t_heal = s.t_heal
     fog_seen = s.fog_seen
+    fog_ground = s.fog_ground
+    fog_left = s.fog_left
+    fog_watch = s.fog_watch
     t_eval_attack = s.t_eval_attack
     t_bonus = s.t_bonus
     t_slot = s.t_slot

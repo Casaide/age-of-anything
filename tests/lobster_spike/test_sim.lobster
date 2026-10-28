@@ -2726,31 +2726,40 @@ def test_fog_memory():
     let cx = sx / 1000 - 5
     let cy = sy / 1000 + 2
     let c = cy * W + cx
+    let grass = terrain[c]
     issue_cmd(1, CMD_BUILD, [worker], btype_index("farm"), cx, cy, 0)
     let field = terrain_index("field")
     while tick < 1600 and terrain[c] != field: tick_on()
     steps(5)
     let farm_id = occupied[c]
     check(terrain[c] == field, "fog memory: player 1\'s farm became a field")
-    check(fog[0][c] == UNSEEN, "fog memory: player 0 hasn\'t seen it")
+    check(fog[0][c] == UNSEEN and fog_ground[0][c] == grass, "fog memory: player 0 hasn\'t seen it, so it\'s grass to them")
     check(not seen_by(0, farm_id), "fog memory: nor does player 0 know the farm")
+    check(fog_ground[1][c] == field and fog_left[1][c] > 0, "fog memory: its owner sees its crops")
     let hx, hy = pos_of(scout)
     place_at(scout, cx * 1000 - 2000, cy * 1000)   // player 0's worker looks in
     steps(8)
+    check(fog_ground[0][c] == field and fog_left[0][c] == left_at(c), "fog memory: seen, it\'s a field with its crops")
     check(seen_by(0, farm_id), "fog memory: seen, player 0 knows the farm")
     place_at(scout, hx, hy)   // and goes home
     u_moving[index_of(scout)] = 0
     steps(8)
     check(fog[0][c] == EXPLORED, "fog memory: away again, the farm is under explored fog")
+    let seen_left = fog_left[0][c]
+    auto_reseed[1] = 0   // left fallow (auto-reseed would sow it again at once)
+    amount[c] = 1   // nearly worked out
+    while tick < 6000 and left_at(c) > 0: tick_on()
+    check(terrain[c] == terrain_index("fallow"), "fog memory: the farm is worked out")
+    check(fog_ground[0][c] == field and fog_left[0][c] == seen_left, "fog memory: player 0 still remembers it full of crops")
     let b = b_index_of(farm_id)   // torn down out of sight
     clear_farm(b)
     occupy(footprint(b), 0)
     remove_building(b)
     steps(8)
-    check(seen_by(0, farm_id), "fog memory: gone out of sight, player 0 still remembers the farm")
+    check(seen_by(0, farm_id) and fog_ground[0][c] == field, "fog memory: gone out of sight, player 0 still remembers the farm")
     place_at(scout, cx * 1000 - 2000, cy * 1000)
     steps(8)
-    check(not seen_by(0, farm_id), "fog memory: seen again, it\'s gone")
+    check(not seen_by(0, farm_id) and fog_ground[0][c] == grass, "fog memory: seen again, it\'s gone and the ground is grass")
 
 // Milestone 7's exit criterion: with the economy bot playing, the age-up lands at minutes 4-7.
 def test_age_timing():
