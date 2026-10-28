@@ -26,6 +26,7 @@ class Member:
     hold:string
     top:bool
     hauls:bool
+    box:bool                         // in a walled howdah: its legs not drawn (D-176)
 
 def engine_turn(name:string) -> int:
     var turn = 0
@@ -45,11 +46,13 @@ def members(r:JV, sockets:dictionary<string, float3>) -> [Member]:
         var top = false
         for(tokenize(name, "_", "")) w:
             if has_s(WORK_HOLDS, w): held = w
-            elif w == "top": top = true
+            elif w == "top" or w == "box": top = true
         let recipe = if hauls: haul_recipe(r) else: crew_recipe(r)
         let s = float(gint(recipe, "scale", 100)) / 100.0   // (a tiny race's crew are drawn tiny)
-        let t = Xform { bscaled_global(axis_angle(float3 { 0.0, 1.0, 0.0 }, -45.0 * float(engine_turn(name))), float3_1 * s), sockets.get(name, float3_0) }
-        out.push(Member { name, recipe, t, if hauls: "" else: held, top, hauls })
+        var t = Xform { bscaled_global(axis_angle(float3 { 0.0, 1.0, 0.0 }, -45.0 * float(engine_turn(name))), float3_1 * s), sockets.get(name, float3_0) }
+        if not top:   // (standing back by its lean, UnitView._build_engine: a frog crew, creatures.json crew_back)
+            t = Xform { t.b, t.o - bxf(t.b, float3 { float(gint(gobj(lib_creatures, gstr(recipe, "creature", "")), "crew_back", 0)), 0.0, 0.0 }) }
+        out.push(Member { name, recipe, t, if hauls: "" else: held, top, hauls, ends_with(name, "_box") })
     return out
 
 // The engine's voxels, standing: a war beast's with its legs at its hips and its head on its neck (baked apart).
@@ -62,7 +65,8 @@ def engine_whole(r:JV, es:Spec) -> Vox:
 
 def member_vox(m:Member, a:Rigged) -> Vox:
     let v = new_vox()
-    for(a.pieces) p: voxels_into(p.node, xmul(m.t, p.xf), v)
+    for(a.pieces) p:
+        if not (m.box and p.kind == "leg"): voxels_into(p.node, xmul(m.t, p.xf), v)
     return v
 
 // Runs the composite rules on an engine recipe.
