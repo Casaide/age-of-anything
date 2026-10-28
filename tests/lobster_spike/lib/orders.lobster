@@ -28,19 +28,19 @@ def off_walls(ax:int, ay:int, r:int, ln:int) -> int, int:
         y = (cy + 1) * TILE - min(r, TILE / 2)
     return x, y
 
+let SLOT_STEPS = 8   // a formation slot that isn't open steps in towards the centre in this many steps
+
 def slot_ok(i:int, apx:int, apy:int, x:int, y:int) -> int, int:
     let ln = lane(i)
     let cx, cy = snap(x, y, ln)
-    var px = apx
-    var py = apy
-    for(2):
-        var qx = clamp(px, 0, W * TILE - 1)
-        var qy = clamp(py, 0, H * TILE - 1)
+    // (the first open point stepping in along the line to the centre: falling straight back to the centre gave two
+    // units one spot, and one gave up, the hill crossing)
+    for(SLOT_STEPS) k:
+        var qx = clamp(apx + (cx - apx) * k / SLOT_STEPS, 0, W * TILE - 1)
+        var qy = clamp(apy + (cy - apy) * k / SLOT_STEPS, 0, H * TILE - 1)
         if walkable(qx, qy, ln):
             qx, qy = off_walls(qx, qy, u_radius[i], ln)
             if clear_line(cx, cy, qx, qy, ln): return qx, qy
-        px = (px + cx) / 2
-        py = (py + cy) / 2
     return cx, cy
 
 // Sorts ints ascending (bottom-up merge sort; the keys are unique, so any sort gives this order).
