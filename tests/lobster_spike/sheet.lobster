@@ -68,7 +68,6 @@ let BG = float4 { 0.337, 0.471, 0.180, 1.0 }    // #56782e
 let STRIKE_MS = [0, 120, 210, 280, 340, 450]     // frames of a blow (UnitView.flourish)
 let FALL_MS = [0, 200, 400, 600, 850, 1200]      // frames of a death (UnitView.die)
 let FACING_NAMES = ["f0 right", "f1", "f2 towards", "f3", "f4 left", "f5", "f6 away", "f7"]
-let ART_SCALE = 1.5
 let UNIT_SCALE = 0.85
 let TEXT_SCALE = 1.25                            // (Godot's labels look this much bigger at the same font size)
 let TEXT = float4 { 0.957, 0.945, 0.910, 1.0 }   // #f4f1e8
@@ -718,8 +717,8 @@ while gl.frame() and frame_n < 1:   // (bakes and framebuffers inside a frame)
         for(zooms) z:
             let zs = if z == floor(z): string(int(z)) else: string(z)
             let path = out_dir + "/" + spec_name() + "_" + rstr(sh, "name") + "_" + zs + "x.png"
-            sheet(sh, rows, size_units, z * ART_SCALE, verdicts, path, expected, true)
-            sheet(sh, rows, size_units, z * ART_SCALE, verdicts, path, expected, false)
+            sheet(sh, rows, size_units, z * ART_BASE, verdicts, path, expected, true)
+            sheet(sh, rows, size_units, z * ART_BASE, verdicts, path, expected, false)
 print "sheet: {rows.length} rows, {bad} failed placement"
 if not_yet.length:
     print "not yet ({not_yet.length}):"

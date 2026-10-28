@@ -2,59 +2,9 @@
 // for every unit type in 8 directions, each frame's draw list (bake, transform, alpha) compared with
 // the one Godot dumped (art_pack.gd ... dump). Run from tests/lobster_spike:
 //   lobster view_check.lobster -- <pack dir>
-import std
-import vec
-import dictionary
-import gen.json
-import gen.sha256
-import gen.rng
-import gen.datalib
-import gen.identity
-import gen.pricing
-import gen.heroes
-import gen.generator
-import lib.consts
-import lib.fixed
-import lib.tokens
-import lib.state
-import lib.flow
-import lib.spatial
-import lib.orders
-import lib.movement
-import lib.fog
-import lib.map
-import lib.economy
-import lib.tech
-import lib.combat
-import lib.siege
-import lib.eco_bot
-import lib.garrison
-import lib.heal
-import lib.heroes
-import lib.match
-import lib.trade
-import lib.animals
-import lib.bridges
-import lib.walls
-import lib.abilities
-import lib.trails
-import lib.commands
-import lib.ai_cfg
-import lib.scout
-import lib.land
-import lib.expand
-import lib.bot
-import lib.walls_ai
-import lib.world
-import gen.setup
-import gen.modes
-import gen.start
-import view.node
-import view.art
-import view.unit_view
+import placement.deps
 
 let DT = 1.0 / 8.0
-let ART_SCALE = 1.5
 let UNIT_SCALE = 0.85
 let KEY = float3 { 1.0, 0.0, 1.0 }
 let JOBS = [["forage", "tool.basket"], ["chop", "tool.axe"], ["mine", "tool.pick"], ["build", "tool.hammer"]]
@@ -131,7 +81,7 @@ def compare(head:string, v:UV):
         frames_diff++
         let st = tokenize(head, " ", "")[1]
         diff_kinds.set(st, diff_kinds.get(st, 0) + 1)
-        if shown < 25:
+        if shown < 200000:
             shown++
             print "DIFF {head}: {why}"
 
