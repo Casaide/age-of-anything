@@ -84,7 +84,7 @@ def crop_sprite(sprite:string, w:int, h:int, origin:float2) -> string, int, int,
 // beast's legs in every walk step took most of a minute). BAKE_VERSION goes up when the models or the baker
 // change, so old bakes aren't reused.
 
-let BAKE_VERSION = 7   // (2: Godot's full PI in the models; 3: engines' members in front or behind; 4: whole-pixel frames as Godot's, 2026-10-27; 7: Godot's bicubic shrink in pixelize, in Godot's square frame, 2026-10-28)
+let BAKE_VERSION = 8   // (2: Godot's full PI in the models; 3: engines' members in front or behind; 4: whole-pixel frames as Godot's, 2026-10-27; 7: Godot's bicubic shrink in pixelize, in Godot's square frame; 8: the art at 2x (D-173), 2026-10-28)
 var bake_cache_dir = "bake_cache"   // (play.sh makes it; Lobster can't make a folder)
 var cache_lines = []::string        // the manifest of the part being baked
 var cache_stem = ""                 // its file names' stem ("" while not recording)
@@ -106,7 +106,7 @@ def add_frame(full:string, tex:resource<texture>, w:int, h:int, origin:float2):
     sheet_tex.push(tex)
     sheet_dims.push(float2 { float(w), float(h) })
     frame_at.set("p:" + full, frames.length)
-    frames.push(Frame { sheet_tex.length - 1, 0, 0, w, h, int(origin.x + 0.5), int(origin.y + 0.5) })
+    frames.push(Frame { sheet_tex.length - 1, 0, 0, w, h, int(origin.x + 0.5), int(origin.y + 0.5), 1.0 })
     bakes.set(full, Bake { origin.x, origin.y, bake_art() })
 
 // One sprite into the pack: its own sheet, a frame, its bake (origin and scale for the composer).
