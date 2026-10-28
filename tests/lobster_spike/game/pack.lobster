@@ -18,6 +18,7 @@ class Look:
     front:string
     arms:[string] = []        // a wall's arm towards each neighbour (Models.LINKS order), "-": none
     arms_front:[string] = []  // their near merlons
+    ruins:[string] = []       // broken up (game/ruin.lobster): battered, breaking, collapsed, the ruin it leaves
 
 var sheet_size = 4096
 var sheet_tex = []::resource<texture>
@@ -98,6 +99,9 @@ def load_pack(dir:string):
                 case "armsf":
                     let lk = looks.get(t[1])
                     if lk: lk.arms_front = t.slice(2, -1)
+                case "ruins":
+                    let lk = looks.get(t[1])
+                    if lk: lk.ruins = t.slice(2, -1)
                 case "rules": pack_rules = t[1]
                 case "mods": pack_mods = tokenize(t[1], ",", " ")
                 case "doodad": doodads.set(t[1], num(2))
@@ -152,7 +156,7 @@ def resource_stage(kind:string, left:int, full:int) -> int:
 
 // ------------------------------------------------------------------ drawing sprites
 // Quads gathered into one mesh a sheet change; the sprite shader recolours the team key with the
-// vertex colour's rgb and darkens by its alpha.
+// vertex colour's rgb and darkens by its alpha (sprite_faded: one fading out).
 
 let SPRITE_SHADERS = """
 SHADER sprite
@@ -165,11 +169,12 @@ SHADER sprite
     PIXEL
         INPUTS itc:2 icolor:4
         UNIFORMS tex0
+        UNIFORM float gone
         vec4 t = texture(tex0, itc);
         if (t.a < 0.02) discard;
         vec3 rgb = t.rgb;
         if (min(t.r, t.b) - t.g > 0.22 && abs(t.r - t.b) < 0.3) rgb = icolor.rgb * max(t.r, t.b) * 1.08;
-        frag_color = vec4(rgb * icolor.a, t.a);
+        frag_color = vec4(rgb * icolor.a, t.a * (1.0 - gone));
 """
 
 var b_pos = []::float3
@@ -220,6 +225,19 @@ def sprite(f:int, x:float, y:float, col:float4):
     b_idx.push(n)
     b_idx.push(n + 3)
     b_idx.push(n + 2)
+
+// One sprite fading out (a ruin): drawn alone, how far it's gone a uniform (0 by default: the vertex colour is bytes,
+// it can't carry it). fade: 1 whole .. 0 gone.
+def sprite_faded(f:int, x:float, y:float, col:float4, fade:float):
+    flush_sprites()
+    gl.set_shader("sprite")
+    gl.set_uniform("gone", 1.0 - fade)
+    b_sheet = frames[f].sheet
+    sprite(f, x, y, col)
+    flush_sprites()
+    gl.set_shader("sprite")
+    gl.set_uniform("gone", 0.0)
+    b_sheet = -1
 
 // Frame f drawn through an affine transform from its texture px to art px ([xx, xy, yx, yy, ox, oy]:
 // a composed unit's part, turned and scaled as its rig says).
