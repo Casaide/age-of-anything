@@ -846,14 +846,17 @@ def collect_doodads():
 def collect_props():
     collect_doodads()
     for(W * H) c:
-        if fog[ME][c] != 0 and (tr_res[terrain[c]] != 0 or species[c] != "-"):
-            let tname = tr_names[terrain[c]]
+        // (under the fog, the ground as you last saw it: a farm sown in the dark stays grass until you look, Fog's memory)
+        let now = fog[ME][c] == 2 or fog_ground.length <= ME
+        let tt = if now: terrain[c] else: fog_ground[ME][c]
+        if fog[ME][c] != 0 and (tr_res[tt] != 0 or species[c] != "-"):
+            let tname = tr_names[tt]
             var kind = prop_of.get(tname, "")
             if kind == "tree": kind = species[c]
             elif tname == "stump" and species[c] != "-": kind = species[c]
             if kind != "" and kind != "-" and doodads.get(kind, 0) > 0:
-                let left = amount[anchor(c)]
-                let full = max(left, tr_amount[terrain[c]])
+                let left = if now: amount[anchor(c)] else: fog_left[ME][c]
+                let full = max(left, tr_amount[tt])
                 let pick = c * 7 + c / W
                 let stage = if tname == "stump": 3 else: resource_stage(kind, left, full)
                 let name = staged(kind, pick % doodads.get(kind, 1), stage)
