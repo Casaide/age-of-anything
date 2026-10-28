@@ -1277,12 +1277,12 @@ Lobster), prices each line by its win rate and bisects, a few rounds (about 5 s 
 (N) is balanced the same way against the others while the match waits, the running world set aside and brought
 back. Dominic, 2026-10-26: "the match load time is all balance testing etc - or we do it before the match starts".
 
-**D-173, 2026-10-26: The Lobster game bakes its own art; Godot is no longer needed to play.** Every 3D model
+**D-183, 2026-10-26: The Lobster game bakes its own art; Godot is no longer needed to play.** Every 3D model
 (unit parts, siege engines, props, trees, buildings, their materials) is built in Lobster, checked triangle for
 triangle against Godot's, and baked by Lobster's part and world bakers; the pack's tables come from data. A match
 runs with no pack (`play.sh none`), the parts kept in `bake_cache/` after the first start. A mod's code-built parts
 are written in Lobster too (`lobster_models` in mod.json, beside its GDScript ones while both games exist).
-(Numbered 173: the art study's branch has D-171 and D-172.) Claude, for Dominic's goal: "port the whole game over to
+(Numbered 183: the art study's branch has D-171 to D-181; first written as D-173, which the art study's "heroic at 2x" also took.) Claude, for Dominic's goal: "port the whole game over to
 lobster".
 
 **D-182, 2026-10-27: The Lobster game runs on Lobster's default JIT, not `--mir`.** The voxel check for the
