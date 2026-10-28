@@ -2105,7 +2105,7 @@ def quick_save(): save_to(SAVE_PATH)
 
 // The pause menu's Save game: a new file in saves/ each time, with a line about it beside it (the lobby's Load game lists them).
 def save_game():
-    launch_subprocess(["mkdir", "-p", "saves"])
+    launch_subprocess(["/bin/mkdir", "-p", "saves"])
     let stamp = date_time_string_format("%Y-%m-%d_%H-%M-%S")
     let names = concat_string(map(su_races) r: rstr(r, "name"), " vs ")
     let secs = tick / 20
@@ -2363,6 +2363,10 @@ def play_match():
         if menu_open: pause_menu()
         draw_banner()
         if typing_race: typing_tick()
+        if has_s(args, "savegame") and clock_s >= 3.0:   // (tests: the pause menu's Save game, then quit)
+            save_game()
+            quit_app = true
+            return
         if has_s(args, "lobbyloop") and loop_round == 0 and clock_s >= 2.0:   // (tests: back to the lobby, then a second match)
             loop_round++
             back_to_lobby = true
