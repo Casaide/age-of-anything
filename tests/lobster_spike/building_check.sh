@@ -22,6 +22,7 @@ if [ $# -eq 0 ]; then
                  outpost_pole outpost_deck outpost_beacon bastion; do
             set -- "$@" building:$t:$a
         done
+        set -- "$@" building:barracks:$a:ruin2 building:market:$a:ruin4 building:watchtower:$a:ruin3   # broken up (game/ruin.lobster)
         set -- "$@" building:palisade_gate:$a:diag building:stone_gate:$a:diag building:wall:$a:r0.8 building:stone_gate:$a:r0.9
         for l in curtain motte great_tower; do set -- "$@" look:castle:$a:$l; done
         for l in observatory cloister builders; do set -- "$@" look:university:$a:$l; done

@@ -7,7 +7,8 @@
 // Buildings (BuildingArt): chimneys smoke while they work (houses always), windows and lanterns
 // glow and flicker, and a building badly hurt burns in a few places with black smoke.
 // The town's sound follows your town: its size and how near the camera is (town_level).
-// Damaged buildings crack from 30% (drawn over the walls). A stable keeps one of its race's mounts
+// Damaged buildings show their broken-up stages from 30% (D-171; one baked without them cracks, drawn over the
+// walls), and a fallen one's ruin burns on a while (game/fx.lobster). A stable keeps one of its race's mounts
 // tethered by the door, idling and grazing.
 
 let LOAD_DECAY_S = 14.0
@@ -181,20 +182,24 @@ def building_anchor(b:int) -> float2:
 
 def building_look(b:int) -> string: return building_key(arch_of[b_owner[b]], bt_name[b_kind[b]], ages[b_owner[b]], (b_id[b] * 7 + b_cx[b] * 3 + b_cy[b]) % 4)
 
-// A few points on a building's roof, where it catches (the same ones always).
+// A few points on a building's walls, where it catches, low enough to stay on it as the roof falls in (the same
+// ones always).
 def fire_spots(b:int, look:string) -> [float2]:
     let lk = looks.get(look)
     if not lk: return []
-    let fi = frame_index(lk.body)
+    return fire_spots_on(b_id[b], lk.body)
+
+def fire_spots_on(id:int, body:string) -> [float2]:
+    let fi = frame_index(body)
     if fi < 0: return []
     let fr = frames[fi]
-    var h = (b_id[b] * 2654435761) & 0xffffffff
+    var h = (id * 2654435761) & 0xffffffff
     def next() -> float:
         h = (h * 1103515245 + 12345) & 0x7fffffff
         return float(h % 10000) / 10000.0
     // (the middle of the bake: its top is often a mast or a spire with sky round it; Godot checks the
     // bake's pixels, which the pack doesn't keep)
-    return map(3): float2 { (float(fr.w) * (0.3 + next() * 0.4) - float(fr.ox)) / 1.5, (float(fr.h) * (0.38 + next() * 0.2) - float(fr.oy)) / 1.5 }
+    return map(3): float2 { (float(fr.w) * (0.3 + next() * 0.4) - float(fr.ox)) / 1.5, (float(fr.h) * (0.48 + next() * 0.2) - float(fr.oy)) / 1.5 }
 
 def emit(key:string, rate:float, dt:float, make):
     var owed = town_emit.get(key, 0.0) + rate * dt
@@ -221,6 +226,14 @@ def building_fx_tick(dt:float):
                     let sp = at + spots[k]
                     emit("{b_id[b]}:f{k}", 20.0, dt) (): Puff2 { sp + float2 { rnd_range(-3.0, 3.0), rnd_range(-2.0, 2.0) }, rnd_dir(float2 { 0.0, -1.0 }, 14.0, 7.0, 13.0), 0.0, 0.8, 1, rnd_range(0.14, 0.24) * 16.0 }
                     emit("{b_id[b]}:b{k}", 4.0, dt) (): Puff2 { sp + float2 { 0.0, -5.0 }, rnd_dir(float2 { 0.15, -1.0 }, 14.0, 6.0, 10.0), 0.0, 3.5, 2, rnd_range(0.16, 0.26) * 16.0 }
+    for(fx_ruins) r:   // a fallen building burns on a while in its ruin
+        if clock_s - r.t0 < RUIN_BURN:
+            let at = r.at / 1.5
+            let spots = fire_spots_on(r.id, r.body)
+            for(min(r.fires, spots.length)) k:
+                let sp = at + spots[k]
+                emit("r{r.id}:f{k}", 20.0, dt) (): Puff2 { sp + float2 { rnd_range(-3.0, 3.0), rnd_range(-2.0, 2.0) }, rnd_dir(float2 { 0.0, -1.0 }, 14.0, 7.0, 13.0), 0.0, 0.8, 1, rnd_range(0.14, 0.24) * 16.0 }
+                emit("r{r.id}:b{k}", 4.0, dt) (): Puff2 { sp + float2 { 0.0, -5.0 }, rnd_dir(float2 { 0.15, -1.0 }, 14.0, 6.0, 10.0), 0.0, 3.5, 2, rnd_range(0.16, 0.26) * 16.0 }
     for(town_parts) q:
         q.t += dt
         let g = if q.kind == 0: float2 { 2.0, -1.0 } elif q.kind == 1: float2 { 0.0, -8.0 } else: float2 { 2.5, -1.5 }
@@ -275,7 +288,8 @@ def collect_cracks():
     for(b_id.length) b:
         if b_done[b] == 1 and fog[ME][b_cy[b] * W + b_cx[b]] != 0 and b_owner[b] < arch_of.length:
             let full = bm_hp[b_owner[b]][b_kind[b]]
-            if full > 0 and float(full - b_hp[b]) / float(full) >= DAMAGE_CRACKS:
+            let lk = looks.get(building_look(b))
+            if full > 0 and float(full - b_hp[b]) / float(full) >= DAMAGE_CRACKS and lk and not lk.ruins.length:   // (cracks: a look baked without its broken-up stages)
                 let at = iso(float(b_cx[b] * 1000 + b_sx[b] * 500), float(b_cy[b] * 1000 + b_sy[b] * 500))
                 draws.push(Drawable { at.y + 0.5, draws.length, -3, float(b), 0.0, float4_1, [] })
 

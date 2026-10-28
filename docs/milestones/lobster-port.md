@@ -287,6 +287,15 @@ smaller on foot, Lobster only); composing repeats until nothing new is baked (re
 far foot's one-pixel sliver in the CPU truth no longer counts as in sight. bake_cache.sh empties the bake cache when
 BAKE_VERSION changes.
 
+Destruction in Lobster (2026-10-28, the art study's D-171 and D-172): `game/ruin.lobster` breaks a building up in 3D
+as ruin.gd does (the same random numbers in the same order: `building_check.sh` holds `building:<type>:<arch>:ruin<s>`
+to Godot's, triangle for triangle); the art kit bakes ":ruin1".. ":ruin4" for every look but walls, gates and what has
+a near layer. In the game a building shows its battered, breaking and collapsed stages at 30, 55 and 80% damage (cracks
+only for a look baked without them), its fires sit lower in the walls, and when it falls it leaves its ruin under
+pixel dust (game/fx.lobster: draw_puffs). The ruin burns 8 s, lies 45 s, fades over 5 s (a sprite-shader uniform: the
+vertex colour is bytes) and goes at once when something is built on its cells. `raze:<s>` (captures) makes your
+buildings but the Town Center fall then. Pictures: `archive/images/2026-10-28/06-...` to `09-...`.
+
 ## Results
 
 - 2026-10-26 (6b and on): the ground shader and composed rats (`archive/images/2026-10-26/05-...`), moonbears typed into

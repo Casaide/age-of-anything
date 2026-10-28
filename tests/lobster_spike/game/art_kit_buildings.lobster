@@ -2,7 +2,7 @@
 // Every look of every building of a culture, as ArtKit names it, baked by the world baker (view/world_bake.lobster)
 // from the Lobster models (model/buildings, buildings2) in the team key (magenta) into the pack: the body
 // ("arch:type<suffix>"), its four construction stages (":stage0".. ":stage3"), a walkway's near merlons (":front"),
-// a gate's open look (":open", ":open:front") and its flanking towers that stand down the screen (":tower<side>",
+// its broken-up stages (":ruin1".. ":ruin4", game/ruin.lobster), a gate's open look (":open", ":open:front") and its flanking towers that stand down the screen (":tower<side>",
 // ":tower<side>:front"), a wall's eight arms (":arm<k>", ":arm<k>:front", Models.LINKS order) and its picture
 // (":icon"), a vane (":vane", anchored on its pivot). Suffixes: "@<age>" an age look, "#<v>" a house variant
 // turned or mirrored, "^z" "^d" "^a" a gate along sim y and the two diagonals. Fills `looks` and `bfx` (the
@@ -10,7 +10,7 @@
 // _building_job, _bake_building, _placed, _variant_look, front_split, _bake_front, _bake_gate_parts, _hold_back,
 // wall_look, _compose (art_kit.gd).
 // Needs (imported by the game before this file): game/pack, game/art_kit (keep_frame, ak_rebake), model/buildings,
-// model/buildings2, model/build_mats, view/world_bake, gen/datalib.
+// model/buildings2, model/build_mats, view/world_bake, gen/datalib, game/ruin.
 
 let AKB_HOUSE_SCALE = 1.1
 let AKB_BUILD_STAGES = [0.15, 0.4, 0.45, 0.72]
@@ -295,6 +295,14 @@ def akb_bake_look(arch:string, type:string, model:string, suffix:string):
         let p = akb_placed(arch, type, model, suffix)
         akb_hold_back(p.body, st)
         akb_keep("{name}:stage{st}", p.body, true)
+    // Broken up (D-171): battered, breaking, collapsed, and the ruin it leaves (game/ruin.lobster); not for walls
+    // and gates, nor what has a near layer.
+    if not spec.arms.length and not op and fronts == 0:
+        for(RUIN_STAGES.length - 1) k:
+            let p = akb_placed(arch, type, model, suffix)
+            ruin_apply(p.body, k + 1, hash_text(name))
+            akb_keep("{name}:ruin{k + 1}", p.body, true)
+        lk.ruins = map(RUIN_STAGES.length - 1) k: "{name}:ruin{k + 1}"
     looks.set(name, lk)
 
 // The building types in ArtKit's order: town centre and houses first, the menus, then the rest (not planned).
@@ -322,6 +330,10 @@ def akb_looks_of(arch:string, type:string) -> [[string]]:
         for(AKB_ALONG.slice(1, -1)) sfx: out.push(["", sfx])
     return out
 
+// Whether a building look has broken-up stages: not walls and gates, nor what has a near layer.
+def akb_breaks(type:string, lk:Look) -> bool:
+    return not lk.arms.length and (lk.front == "-" or lk.front == "") and not gbool(at(gobj(akb_bdata(), "buildings"), type), "gate", false)
+
 // Bake every look of every building of these architectures the pack lacks (all with ak_rebake). Frames baked.
 def bake_buildings_for(archs:[string]) -> int:
     akb_baked = 0
@@ -331,7 +343,9 @@ def bake_buildings_for(archs:[string]) -> int:
         for(akb_types()) type:
             for(akb_looks_of(arch, type)) ml:
                 let name = "{arch}:{type}{ml[1]}"
-                if not bake_quit and (ak_rebake or not looks.get(name) or frame_index(name) < 0):
+                let lk = looks.get(name)
+                let unbroken = lk and akb_breaks(type, lk) and frame_index(name + ":ruin1") < 0   // (a pack made before D-171)
+                if not bake_quit and (ak_rebake or not lk or frame_index(name) < 0 or unbroken):
                     bake_breath()
                     akb_bake_look(arch, type, ml[0], ml[1])
     return akb_baked
