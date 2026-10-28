@@ -133,6 +133,7 @@ SHADER bakelit
 
 var bake_shadow_debug = false
 var bake_fit = 1.0                  // render px over the art scale's (a part bakes as Godot's whole-pixel viewport: part_bake.lobster)
+var bake_art_k = 1.0                // the size a part bakes at over the art scale (D-180: its unit's draw size / 100; part_bake.lobster)
 var bake_frame_r = 0.0              // > 0: that viewport, 2r across round bake_frame_c (else framed on the model)
 var bake_frame_c = float3_0
 var bake_debug = ""                 // a path stem: save each raw render there (checks)
@@ -285,7 +286,7 @@ def bake_facing(part:[BakeTri], facing:int, hide:[BakeTri] = [], join:float3 = f
             dhi = max(dhi, dot(p, cz))
     lo -= float2_1 * 2.0
     hi += float2_1 * 2.0
-    var px = BAKE_ART * float(BAKE_SS)   // render px a part unit
+    var px = BAKE_ART * bake_art_k * float(BAKE_SS)   // render px a part unit (at the part's size, D-180)
     if bake_frame_r > 0.0:
         // Godot's bake viewport (part_baker.gd): a square of whole pixels, 2r across, centred on the model's box: the
         // pixel grid, and the resize's sample points on it, fall on the model as there
