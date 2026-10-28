@@ -89,6 +89,7 @@ class WorldSave:
     tight:[[int]]
     room_cw:int
     speed_pct:[[int]]
+    speed_row:[[int]]
     opaque:[int]
     level:[int]
     num_players:int
@@ -543,6 +544,7 @@ def world_bytes(bots:[Bot]) -> string:
         tight,
         room_cw,
         speed_pct,
+        speed_row,
         opaque,
         level,
         num_players,
@@ -1007,6 +1009,7 @@ def load_world_bytes(data:string) -> [Bot]:
     tight = s.tight
     room_cw = s.room_cw
     speed_pct = s.speed_pct
+    speed_row = s.speed_row
     opaque = s.opaque
     level = s.level
     num_players = s.num_players
