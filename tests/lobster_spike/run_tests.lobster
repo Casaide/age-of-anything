@@ -838,7 +838,7 @@ def g_mods():
     expect(has_s(tags, gstr(shot, "tag", "-")), "mods: the pulse rifle\'s tags call the mod\'s shot (pulse: {gstr(shot, "tag", "none")})")
     let roots = mod_roots
     mod_roots = append(roots, ["../mods"])
-    let bad = ["bad_era", "needs_other", "future_game", "bad_file", "clash"]   // (no_model: the bake's check, see the header)
+    let bad = ["no_model", "bad_era", "needs_other", "future_game", "bad_file", "clash"]
     fresh_lib()
     expect(strs_eq(mods_use(append(bad, ["scifi_test"])), ["scifi_test"]), "mods: broken mods refused, a good one beside them still loads")
     for(bad) id: expect(mods_refused.get(id, "") != "", "mods: {id} refused ({mods_refused.get(id, "not refused")})")
