@@ -61,14 +61,14 @@ def take(cell:int):
     let cells = if pool[cell] < 0: [cell] else: pool_cells(a)
     for(cells) c:
         let dep = tr_depleted[terrain[c]]
-        if dep >= 0: terrain[c] = dep
+        if dep >= 0: set_cell_terrain(c, dep)
         refresh(c)
 
 // Pool some cells into one resource (a farm), held on the first cell.
 def make_pool(cells:[int], k:int, total:int):
     let a = cells[0]
     for(cells) c:
-        terrain[c] = k
+        set_cell_terrain(c, k)
         amount[c] = 0
         pool[c] = a
         walk_over[c] = 1
@@ -235,3 +235,9 @@ def sync_map():
     field_keys = reverse_list(keep_keys)
     field_vals = reverse_list(keep_vals)
     clear_fresh()
+
+// A cell's terrain changed: its speed for each movement class follows (GDScript looks it up from the terrain each time;
+// a carcass left in a swamp no longer kept the swamp's speed).
+def set_cell_terrain(cell:int, k:int):
+    terrain[cell] = k
+    for(speed_pct) row, c: row[cell] = speed_row[c][k]

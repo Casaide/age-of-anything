@@ -88,6 +88,7 @@ var stashed_roomy = []::[int]
 var stashed_tight = []::[int]
 var stashed_room_cw = 0
 var stashed_speed_pct = []::[int]
+var stashed_speed_row = []::[int]
 var stashed_opaque = []::int
 var stashed_level = []::int
 var stashed_num_players = 0
@@ -551,6 +552,7 @@ def reset_world():
     tight = []::[int]
     room_cw = 0
     speed_pct = []::[int]
+    speed_row = []::[int]
     opaque = []::int
     level = []::int
     num_players = 0
@@ -1003,6 +1005,7 @@ def stash_world():
     stashed_tight = tight
     stashed_room_cw = room_cw
     stashed_speed_pct = speed_pct
+    stashed_speed_row = speed_row
     stashed_opaque = opaque
     stashed_level = level
     stashed_num_players = num_players
@@ -1449,6 +1452,7 @@ def unstash_world():
     tight = stashed_tight
     room_cw = stashed_room_cw
     speed_pct = stashed_speed_pct
+    speed_row = stashed_speed_row
     opaque = stashed_opaque
     level = stashed_level
     num_players = stashed_num_players

@@ -33,6 +33,7 @@ var roomy = []::[int]          // per lane: 1 where the cell and its 8 neighbour
 var tight = []::[int]          // per lane: cells not roomy per ROOM_CHUNK block
 var room_cw = 0
 var speed_pct = []::[int]
+var speed_row = []::[int]      // per movement class: its speed (per cent) on each terrain (rules movement.terrain_speed)
 var opaque = []::int           // 1 where a cell blocks sight (trees)
 var level = []::int            // ground level per cell
 var num_players = 0
@@ -429,4 +430,5 @@ var tr_decay_every = 100
 var tr_decay = 1
 var tr_trail = 30
 var tr_speed_pct = 0
+
 

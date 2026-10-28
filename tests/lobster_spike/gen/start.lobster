@@ -67,6 +67,7 @@ def setup_world(seed_value:int, map_id:string, races:[JV], rules:JV, team_ids:[i
     let ts = gobj(rules_part("movement"), "terrain_speed")
     for(CLASS_NAMES) cn:
         let row = map(tr_names) t: gint(gobj(ts, cn), t, 100)
+        speed_row.push(row)
         speed_pct.push(map(W * H) cell: row[terrain[cell]])
     load_btypes()
     load_tech_data()
