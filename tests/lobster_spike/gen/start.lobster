@@ -112,6 +112,7 @@ def setup_world(seed_value:int, map_id:string, races:[JV], rules:JV, team_ids:[i
         fog.push(zeros(cells))
         fog_lit.push([]::int)
         fog_seen.push([]::[int])
+    fog_memory_setup()
     for(fog_teams()) team: fog_update_team(team)
     for(fresh) cell: fresh_at[cell] = 0
     fresh = []
@@ -497,7 +498,7 @@ def ai_ints(v:JV) -> JV:
         return o
     return v
 
-def load_ai_config():
+def load_ai_config(lvl:string = "normal"):   // (the lobby's AI levels: easy, normal, hard)
     let cfg = ai_ints(load_json(lib_root + "/ai.json"))
     var lv_ratio = 0
     var lv_wave = 100
@@ -510,8 +511,8 @@ def load_ai_config():
     var lv_raids_ = 0
     var lv_from = 0
     let levels = gobj(cfg, "levels")
-    if has(levels, "normal"):
-        let l = at(levels, "normal")
+    if has(levels, lvl):
+        let l = at(levels, lvl)
         for(glist(at(cfg, "military"), "waves")) w:
             set(w, "at", jint(as_int(at(w, "at")) + gint(l, "delay", 0)))
             set(w, "min_army", jint(max(1, as_int(at(w, "min_army")) * gint(l, "army_pct", 100) / 100)))

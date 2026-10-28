@@ -333,6 +333,7 @@ def load(path:string):
         fog.push(read_ints(W * H))
         fog_lit.push(read_ints(next_int()))
         fog_seen.push(map(next_int()): read_ints(11))
+    fog_memory_setup()
     expect("EXTRA")
     for(next_int()):
         let name = next_tok()

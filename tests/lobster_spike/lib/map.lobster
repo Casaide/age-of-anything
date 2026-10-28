@@ -240,4 +240,23 @@ def sync_map():
 // a carcass left in a swamp no longer kept the swamp's speed).
 def set_cell_terrain(cell:int, k:int):
     terrain[cell] = k
+    if fog_watch.length: fog_watch[cell] = 1   // (watched by the fog's memory from now on)
     for(speed_pct) row, c: row[cell] = speed_row[c][k]
+
+// The map as each player remembers it (Fog's fog_ground and fog_left): the map as made, following the truth only where
+// they see now, so a farm sown in the dark stays grass to them until they look. Only cells that held a resource or ever
+// changed (fog_watch) are compared. Nothing in the sim reads it; the view draws it.
+def fog_memory_setup():
+    fog_watch = map(W * H) c: if amount[c] > 0 or pool[c] >= 0: 1 else: 0
+    fog_ground = map(fog.length): copy(terrain)
+    fog_left = map(fog.length): map(W * H) c: left_at(c)
+
+// What player p sees now overwrites the ground it remembers (Fog._remember).
+def remember_ground(p:int):
+    if fog_ground.length <= p: return
+    let ground = fog_ground[p]
+    let left = fog_left[p]
+    for(fog_lit[p]) c:
+        if fog_watch[c] != 0:
+            ground[c] = terrain[c]
+            left[c] = left_at(c)
