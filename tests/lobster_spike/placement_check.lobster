@@ -34,14 +34,24 @@ let parity2 = args.length > 1 and args[0] == "parity2d"
 let want = if parity or parity2: load_json(args[1]) else: jobj()
 var only = ""
 for(args) a, i:
-    if not ((parity or parity2) and i < 2) and not has_s(["all", "nofixtures", "fixtures", "3d", "2d", "debug2d"], a): only = a
+    if not ((parity or parity2) and i < 2) and not has_s(["all", "nofixtures", "fixtures", "3d", "2d", "debug2d"], a) and not starts_with(a, "shard:"): only = a
 let fixtures_only = has_s(args, "fixtures")
 let do3 = not has_s(args, "2d") and not parity2
 debug2d = has_s(args, "debug2d")
 let do2 = not has_s(args, "3d") and not parity
 
 let t0 = seconds_elapsed()
-let cases = filter(all_cases(true)) c: only == "" or find_string(c.label, only) >= 0
+let every_case = filter(all_cases(true)) c: only == "" or find_string(c.label, only) >= 0
+// shard:i/n: every n-th case from the i-th (a batch runs the n side by side); the fixtures run in shard 0
+var shard_i = 0
+var shard_n = 1
+for(args) a:
+    if starts_with(a, "shard:"):
+        let t = tokenize(a.substring(6, a.length - 6), "/", "")
+        shard_i = string_to_int(t[0])
+        shard_n = string_to_int(t[1])
+let shard_ks = filter(every_case.length) k: k % shard_n == shard_i
+let cases = map(shard_ks) k: every_case[k]
 var failed = 0
 
 if parity:
@@ -104,8 +114,8 @@ failed += f3
 print "3D: {check_order.length} checks, {f3} failed ({cases.length} units, {seen.length} distinct, {seconds_elapsed() - t0} s)"
 // The regression fixtures (every placement bug Dominic caught, put back: each must still fail its rule).
 var fixtures_ok = true
-if do3 and only == "" and not has_s(args, "nofixtures"):
-    let fx_ok, fx_lines = fixtures_3d(cases)
+if do3 and only == "" and shard_i == 0 and not has_s(args, "nofixtures"):
+    let fx_ok, fx_lines = fixtures_3d(every_case)
     fixtures_ok = fx_ok
     for(fx_lines) l: print l
 // 2D: each recipe once, its parts baked as it's composed.
@@ -153,8 +163,8 @@ if do2:
                 if d2 <= 30: print "PARITY {key}: not checked here"
         print "parity 2D: {d2} rules differ from Godot\'s"
         failed += d2
-    if only == "" and not has_s(args, "nofixtures"):
-        let fx_ok, fx_lines = fixtures_2d(cases)
+    if only == "" and shard_i == 0 and not has_s(args, "nofixtures"):
+        let fx_ok, fx_lines = fixtures_2d(every_case)
         fixtures_ok = fixtures_ok and fx_ok
         for(fx_lines) l: print l
 print "placement: {failed} failed, fixtures " + (if fixtures_ok: "all caught" else: "BROKEN")

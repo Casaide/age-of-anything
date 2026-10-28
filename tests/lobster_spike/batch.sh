@@ -1,0 +1,72 @@
+#!/bin/sh
+# The game's tests side by side, a table of them, exit 1 on any failure. Slow suites are split into shards (each its own
+# process, its own seeded worlds, so the results are a serial run's).
+#   ./batch.sh [--quick] [jobs=N] [only=name,name]
+# --quick: the checks to run after a change (unit tests, the sim, the AI's quick checks, 3D placement); the whole batch
+# adds every AI piece, the 2v2 match, 2D placement, the golden files, saves and network play.
+# jobs: processes at once (AOA_JOBS; default 4, so a run doesn't take every core: Dominic's fans).
+cd "$(dirname "$0")"
+LOBSTER="${LOBSTER:-$HOME/Dev/lobster/bin/lobster}"
+quick=0
+jobs="${AOA_JOBS:-4}"
+only=""
+for a in "$@"; do
+	case "$a" in
+		--quick) quick=1 ;;
+		jobs=*) jobs="${a#jobs=}" ;;
+		only=*) only="${a#only=}" ;;
+	esac
+done
+logs="${TMPDIR:-/tmp}/aoa_batch"
+rm -rf "$logs"
+mkdir -p "$logs"
+list="$logs/jobs.txt"
+: > "$list"
+add() {   # add <name> <command...>
+	name="$1"
+	shift
+	if [ -n "$only" ] && ! echo ",$only," | grep -q ",${name%%.*},"; then return; fi
+	echo "$name|$*" >> "$list"
+}
+L="$LOBSTER"
+add run_tests "$L" run_tests.lobster
+add test_heroes "$L" test_heroes.lobster
+add race_identity "$L" test_race_identity.lobster
+for i in 0 1 2 3; do add test_sim.$i "$L" test_sim.lobster -- shard:$i/4; done
+if [ $quick = 1 ]; then
+	add test_ai "$L" test_ai.lobster -- quick
+else
+	for i in 0 1 2 3; do add test_ai.$i "$L" test_ai.lobster -- shard:$i/4; done
+	add test_2v2 "$L" test_2v2.lobster
+	for i in 0 1 2 3; do add placement2d.$i "$L" placement_check.lobster -- 2d shard:$i/4; done
+	add golden ./golden.sh
+	add saves "$L" save_check.lobster
+	add network ./net_check.sh 2000
+fi
+for i in 0 1 2 3; do add placement3d.$i "$L" placement_check.lobster -- 3d shard:$i/4; done
+
+# Run them, at most $jobs at once (xargs keeps the pool full); each line of jobs.txt: name|command. The slow suites go
+# first so the quick ones fill in round them.
+t0=$(date +%s)
+{ grep '^placement\|^test_ai\.\|^test_2v2\|^golden' "$list"; grep -v '^placement\|^test_ai\.\|^test_2v2\|^golden' "$list"; } | tr '\n' '\0' |
+	xargs -0 -P "$jobs" -n 1 sh -c 'line="$0"; name="${line%%|*}"; cmd="${line#*|}"; start=$(date +%s); sh -c "$cmd" > "'"$logs"'/$name.log" 2>&1; echo "$name $? $(( $(date +%s) - start ))" > "'"$logs"'/$name.result"'
+
+# The table: each suite (its shards together), its time, and the last line it printed.
+fail=0
+printf '%-16s %-6s %6s  %s\n' suite result secs summary
+for name in $(cut -d'|' -f1 "$list" | sed 's/\.[0-9]*$//' | uniq); do
+	code=0
+	secs=0
+	for r in "$logs/$name".result "$logs/$name".[0-9]*.result; do
+		[ -f "$r" ] || continue
+		set -- $(cat "$r")
+		[ "$2" != 0 ] && code=$2
+		[ "$3" -gt "$secs" ] && secs=$3
+	done
+	summary=$(cat "$logs/$name".log "$logs/$name".[0-9]*.log 2>/dev/null | grep -v -i "warning\|extra references\|leaks\|^  \|^$" | tail -1 | cut -c1-70)
+	if [ "$code" = 0 ]; then result=ok; else result=FAIL; fail=1; fi
+	printf '%-16s %-6s %6s  %s\n' "$name" "$result" "$secs" "$summary"
+done
+echo "all in $(( $(date +%s) - t0 )) s, $jobs at once; logs in $logs"
+rm -f memory_leaks.txt
+exit $fail

@@ -72,6 +72,7 @@ def fixture_rules(f:Fixture, r:JV, on:bool) -> dictionary<string, string>:
     check_results.clear()
     while check_order.length: check_order.pop()
     vox_cache.clear()
+    attach_cache.clear()
     vox_cached = 0
     rig_clear()
     if on: fixture_set(f, r, true)
@@ -79,6 +80,7 @@ def fixture_rules(f:Fixture, r:JV, on:bool) -> dictionary<string, string>:
     if on: fixture_set(f, r, false)
     rig_clear()
     vox_cache.clear()
+    attach_cache.clear()
     let out = dictionary<string, string>(63)
     for(check_order) key:
         let fails = check_results.get(key) or []::string

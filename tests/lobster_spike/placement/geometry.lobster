@@ -55,8 +55,21 @@ def note(rule:string, label:string, view:string, bad:bool, detail:string):
 let vox_cache = dictionary<string, Vox>(1023)
 var vox_cached = 0
 
+def pvox_key(p:Piece) -> string: return "{p.geo}|{p.xf.o}|{p.xf.b.x}|{p.xf.b.y}|{p.xf.b.z}"
+
+// A leg's or head's attachment to its body, kept per placement of both (a unit's holds and swings leave its legs and
+// head where they were: worked out once).
+class Attach:
+    d:float
+    touches:bool
+    hem_gap:float
+    share:float
+    stray:int
+    pieces:int
+let attach_cache = dictionary<string, Attach>(1023)
+
 def pvox(p:Piece) -> Vox:
-    let k = "{p.geo}|{p.xf.o}|{p.xf.b.x}|{p.xf.b.y}|{p.xf.b.z}"
+    let k = pvox_key(p)
     let have = vox_cache.get(k)
     if have: return have
     let v = voxels(p.node, p.xf)
@@ -163,6 +176,7 @@ def check_unit(label:string, r:JV) -> void:
     rig_clear()
     if vox_cached > 600:   // (kept across units: a mount's body and legs voxelize once for all its riders)
         vox_cache.clear()
+        attach_cache.clear()
         vox_cached = 0
 
 // Ground contact while standing, attachment, interpenetration, stance.
@@ -372,33 +386,44 @@ def check_attachment(label:string, view:string, a:Rigged, st:JV):
                     // Attached: it touches its body (a thigh may rise above its hip into the body), and its joint is
                     // neither off the body nor buried deep in it.
                     let mine = pvox(p)
-                    let d = vdepth(pv, p.joint, 8.0)
-                    let bury = if p.kind == "leg": num_or(st, "bury", BURY) else: BURY
-                    let touches = vshared(mine, pv) > 0
-                    note("A2 {p.kind} joint on its body\'s surface", label, view, (d > ATTACH_GAP and not touches) or d > ATTACH_GAP + 2.0 or d < -bury,
-                         "{p.name} joint {f1(d)} " + (if d > 0.0: "outside" else: "inside") + " the body" + (if touches: "" else: ", not touching it"))
-                    let outside = new_vox()
-                    for(mine.keys) q:
-                        if not vhas(pv, q): vadd(outside, q)
-                    if p.kind == "leg" and parent.legs_under:
-                        // (under a skirt: the leg shows below the body's hem)
+                    let ak = pvox_key(p) + "|" + pvox_key(parent) + "|" + (if pv == pvox(parent): "" else: "arm") + "|{p.joint}"
+                    var at_ = attach_cache.get(ak)
+                    if not at_:
+                        // Attached: it touches its body (a thigh may rise above its hip into the body), and its joint is
+                        // neither off the body nor buried deep in it.
+                        let fresh_d = vdepth(pv, p.joint, 8.0)
+                        let outside = new_vox()
+                        for(mine.keys) q:
+                            if not vhas(pv, q): vadd(outside, q)
                         var hem = 1000000.0
-                        for(pv.keys) q: hem = min(hem, vcentre(q).y)
                         var foot = 1000000.0
-                        for(mine.keys) q: foot = min(foot, vcentre(q).y)
-                        note("A2 a leg shows under its skirt", label, view, hem - foot < 3.0, "{p.name} {f1(hem - foot)} below the hem")
-                    else:
-                        let share = float(vcount(outside)) / float(max(vcount(mine), 1))
-                        let want = 1.0 - num_or(st, if p.kind == "leg": "inside" else: "head_inside", 1.0 - OUTSIDE)
-                        note("A2 a {p.kind} mostly outside its body", label, view, share < want, "{p.name} {f2(share)} outside, {f2(want)} wanted")
-                    // A3: what's outside comes out of the body in one piece (a leg through the body and out of its back
-                    // is two pieces).
-                    let parts = vcomponents(outside)
-                    var stray = 0
-                    for(parts) sz, i:
-                        if i > 0: stray += sz
-                    note("A3 a {p.kind} comes out of its body in one piece", label, view, stray > PEN_VOX + int(PEN_SHARE * float(vcount(mine))),
-                         "{p.name} {stray} voxels in {parts.length - 1} other pieces")
+                        if p.kind == "leg" and parent.legs_under:   // (under a skirt: the leg shows below the body's hem)
+                            for(pv.keys) q: hem = min(hem, vcentre(q).y)
+                            for(mine.keys) q: foot = min(foot, vcentre(q).y)
+                        // A3: what's outside comes out of the body in one piece (a leg through the body and out of its
+                        // back is two pieces).
+                        let comps = vcomponents(outside)
+                        var stray_n = 0
+                        for(comps) sz, i:
+                            if i > 0: stray_n += sz
+                        let made = Attach { fresh_d, vshared(mine, pv) > 0, hem - foot, float(vcount(outside)) / float(max(vcount(mine), 1)),
+                                            stray_n, comps.length }
+                        attach_cache.set(ak, made)
+                        at_ = made
+                    let at2 = at_
+                    if at2:
+                        let d = at2.d
+                        let touches = at2.touches
+                        let bury = if p.kind == "leg": num_or(st, "bury", BURY) else: BURY
+                        note("A2 {p.kind} joint on its body\'s surface", label, view, (d > ATTACH_GAP and not touches) or d > ATTACH_GAP + 2.0 or d < -bury,
+                             "{p.name} joint {f1(d)} " + (if d > 0.0: "outside" else: "inside") + " the body" + (if touches: "" else: ", not touching it"))
+                        if p.kind == "leg" and parent.legs_under:
+                            note("A2 a leg shows under its skirt", label, view, at2.hem_gap < 3.0, "{p.name} {f1(at2.hem_gap)} below the hem")
+                        else:
+                            let want = 1.0 - num_or(st, if p.kind == "leg": "inside" else: "head_inside", 1.0 - OUTSIDE)
+                            note("A2 a {p.kind} mostly outside its body", label, view, at2.share < want, "{p.name} {f2(at2.share)} outside, {f2(want)} wanted")
+                        note("A3 a {p.kind} comes out of its body in one piece", label, view, at2.stray > PEN_VOX + int(PEN_SHARE * float(vcount(mine))),
+                             "{p.name} {at2.stray} voxels in {at2.pieces - 1} other pieces")
                 case "hand_r", "hand_l":
                     if not p.harness:
                         if p.slung:   // (a shield slung across the back: on the back, as back gear)
