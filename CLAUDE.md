@@ -4,17 +4,19 @@ A classic-style 2D RTS where your civ is whatever you can describe. Type "centau
 "sewer rats with cheese hammers" and the game builds a race from a parts kit, prices every unit fairly,
 and you play a normal classic RTS match with it. Silly is fine; broken is not. Cost is the balancer.
 
-Godot 4.7 (GDScript), 2D. Solo dev, macOS.
+Written in [Lobster](https://github.com/aardappel/lobster) (it was Godot/GDScript until 2026-10-28, D-184), 2D. Solo dev,
+macOS and the Steam Deck.
 
 | Doc | Read it for |
 |---|---|
 | `docs/design.md` | What the game is and why: races, generation, modes, balance, multiplayer, art |
 | `docs/mvp-plan.md` | The 10-minute demo: scope, cut list, architecture, milestone overview, metrics, risks |
 | `docs/milestones/` | One file per milestone: plan, checklist, results, changes. Status lives here |
-| `docs/research.md` | Technical reference and sources (lockstep, Godot 2D, pathing, Holepunch bridge) |
+| `docs/research.md` | Technical reference and sources (lockstep, pathing, Holepunch bridge) |
 | `docs/backlog.md` | Everything postponed, in rough priority order |
 | `docs/roster-template.md` | Full building, age and unit-line plan, with MVP/Next/Later status |
-| `docs/rendering.md` | How the art is made: models (code and Blender), 8-facing bakes, worn armour, buildings, checking tools |
+| `docs/rendering.md` | How the art is made: models (code and Blender), 8-facing bakes, worn armour, buildings, checking tools
+| `docs/milestones/lobster-port.md` | The move from Godot to Lobster: what was ported, how it was checked, what's left |
 | `docs/audio.md` | How the sound is made: the offline synth (`tools/audio/`), effects, creature voices, the theme in stems by age |
 
 Before starting a milestone, read `docs/milestones/<its file>.md` (and the related parts of
@@ -23,233 +25,130 @@ move it to `docs/backlog.md` rather than deleting it.
 
 ## Status
 
-- **Done (milestone 0): race generation.** Prompt -> race -> composed, animated units in the Race Lab
-  (`scenes/race_lab.tscn`). The 2D shapes in `data/parts.json` are the data contract
-  and socket reference; game scenes draw only the baked pixel art.
-- **Done (milestone 1): sim core.** `src/sim/`: integer-only 20 Hz sim driven by a command queue,
-  replays, state hashes, straight-line MOVE + separation. Debug view `scenes/sim_debug.tscn`.
-  `tests/test_sim.gd` plays a 10-minute 200-unit match; tick is ~0.9 ms avg (budget 3 ms).
-- **Done (milestone 2): map + movement.** Flow fields, move groups, isometric debug view, RTS
-  camera, click/box/double-click selection. 50 units cross open and chokepoint maps, none stuck.
-- **Done (milestone 3): economy.** Food from bug bushes, wood from reeds (cut reeds become
-  ground), Town Center + Houses, training, construction, pop cap, rat economy from data, an
-  economy bot (`src/ai/eco_bot.gd`), the command panel. Dominic watched an opening: "all looks
-  good". See `docs/milestones/m3-economy.md`.
-- **Done (milestone 4): combat.** Armour classes, attack-move that spreads into duels,
-  projectiles, deaths, hit flash, the unit card, the two-part counter quiz
-  (`scenes/counter_quiz.tscn`); Dominic called the stats fine. See `docs/milestones/m4-combat.md`.
-- **Closed (milestone 5): art rework.** Realistic props and buildings in six architectures (reed
-  for frogs and mound for bugs come from the creature), textured units, posed gear, portraits and
-  cursors. Closed 2026-10-17. See `docs/milestones/m5-art-rework.md`.
-- **Done (milestone 6): foundations**: resources from data (stone), movement classes (ground,
-  amphibious, flying), placement rules, teams, farms, shift-queued orders, unit lines through the
-  ages, ages and research as data (`data/tech.json`, `src/sim/tech.gd`). See `docs/milestones/m6-foundations.md`.
-- **Done (milestone 7): progression**: Barracks, Stable, Watchtower per culture, age gates,
-  age-ups needing a building, the bot ageing up at 4-6 minutes.
-- **Closed (milestone 8): AI and match flow.** `src/ai/bot.gd` (data in `data/ai.json`): build
-  order, counter-picked soldiers, defence, attack waves; `src/sim/match.gd`: defeat, surrender,
-  winner. The match setup screen (`scenes/match_setup.tscn`) is the main scene. Dominic closed it
-  "for now"; his playtest moved to the backlog.
-- **Art direction under research:** unit art goes concept-first; the proposal is in `docs/concepts/direction.md`. Nothing new
-  gets built for units until Dominic approves a direction.
-- **Done (milestone 9): fog and juice.** Fog of war (`src/sim/fog.gd`, `src/view/fog_view.gd`),
-  minimap, synthesised placeholder sounds. Bot matches ran ~11 minutes; ~14 since workers' costs
-  vary again (D-078). Pacing is a tester metric (D-077).
-- **Closed (milestone 10): playtest and balance.** `tests/balance.gd` (equal-cost round robin),
-  balance pass 1, `docs/playtest.md`, a match log. Testers, the export build, the Linux check and
-  price-by-simulation moved to the backlog.
-- **Built (audio, 2026-10-11): sound from the ground up.** Our own offline synth (`tools/audio/`, Python) renders
-  every effect, creature voice and the theme's stems into `assets/audio/`; `src/view/audio.gd` plays them on
-  buses, with takes, creature voices on select/ack/die, and the theme growing by age plus a battle layer.
-  Nobody has listened yet: Dominic to listen. See `docs/audio.md`.
-- **Done (milestone 11): cleanup.** UI, UX and art polish from Dominic's list, the lobby (`scenes/match_setup.tscn`),
-  animals, gold and new buildings, 8 facings, Blender-modelled humans, reared spiders, the Nile/Han/Aztec kits; the
-  Fable review met the exit criterion. See `docs/milestones/m11-cleanup.md`.
-- **Closed for now (milestones 12 and 15): the land tech tree and maps.** Three ages, walls, gates, towers, castle,
-  research as data, the tech tree page; big maps, high ground, bridges, fords (Dominic, 2026-10-13).
-- **Done (milestone 17): living towns** ("living town is good"). **Closed (milestone 19, UI):** the timber look
-  approved, loaders built (the bake keeps them moving: `src/view/art/bake/bake_clock.gd`, D-143), unit portraits are
-  busts with a role glyph and a line upgrade shows the unit it gives (D-145).
-- **In progress (milestone 20): Steam Deck and controllers.** The pad controls are built (D-132): `src/view/pad_mode.gd`
-  (last input wins, menu focus), `pad_play.gd` (reticle, selection circle, orders), `pad_wheel.gd` (tap A on what you command: the
-  panel's buttons on a ring; D-133). Deck builds played; Dominic's Deck fixes going in (white boxes, the bake freeze,
-  a quit crash, the wheel's pages); next: steps 7-9 (fit, speed, Steam Input). See `docs/milestones/m20-steam-deck.md`.
-- **Built (save and load, D-140 to D-142):** `src/save_game.gd` (a snapshot of the World and bots; saves from older builds
-  load too, on the new stats while the data tables line up), Save/Load in the pause menu and lobby (`src/view/ui/saves_page.gd`). See `docs/milestones/save-load.md`.
-- **Closed (milestone 13): unit lines.** Crewed engines per family (D-116 to D-119); shots fly and can miss
-  (`src/sim/shots.gd`); healers, trade carts, the great sling, war beasts with jointed legs; a unit's parts set its cost
-  and its line what it's paid in (D-150). See `docs/milestones/m13-unit-lines.md`.
-- **Closed (milestone 14): race identity and heroes.** Bonuses, own research, lacks (`src/identity.gd`), the web
-  ability, heroes (one a race, named in the prompt or picked by its key, D-159). See `docs/milestones/m14-race-identity.md`.
-- **Closed (milestone 16): sieges.** Walkable walls, gatehouses, rams, ladders, siege towers, Fortress and Siege
-  modes, tall walls (D-130). See `docs/milestones/m16-sieges.md`.
-- **Closed (milestone 21): modability.** The mod loader, an example mod, agent tooling (`docs/modding.md`).
-- **Milestones 5, 13, 14, 16, 19 and 21 closed 2026-10-17** (Dominic: what waited on his checks closes, the rest
-  moves forward): what's left is in `docs/backlog.md` §0b.
-- **In progress (networking): multiplayer.** Phase 1 built: lockstep over ENet on the home network (`src/net/`), Play
-  on the network in the lobby (Host, Join by LAN beacon), D-147; next the Mac vs Deck match, then a HyperDHT
-  sidecar. See `docs/milestones/networking.md`.
-- **Built (bears, 2026-10-17):** brown, black ("moonbears") and polar bear races from the creature
-  kit (kit bodies completed by DataLib from `data/creature_kit.json`), the bear mount for others ("romans riding bears"),
-  a bear voice; every piece of gear checked on every bear (D-161 to D-163). Dominic to look and listen. See `docs/concepts/bears/`.
-- **In progress (milestone 23): fidelity** (D-173): art baked at 2x (`ArtKit.ART_SCALE` 3.0, zooms in `BASE_SCALE`), heroic
-  5.5-head humans; destruction in baked stages with pixel dust and fading ruins (D-171, D-172); rat B and frog B
-  (D-177, D-178, D-181); every legged body walks on keyed legs baked per step, blows wind up and hold (D-179); units
-  baked at their drawn size, capes only when asked (D-180). Open: the Deck build, the items in `docs/milestones/m23-fidelity.md`.
-- **In progress (milestone 22): battle feel.** Built (D-155): formations by role (riders on the flanks), counter-aware
-  targeting (`counter_pull`), attack lines for the selection, the Norse shield wall; next race_matches and Dominic's
-  match. See `docs/milestones/m22-battle-feel.md`.
+- **The game is Lobster (2026-10-28, D-184).** The Godot game was ported whole (sim, bots, generator, models, bakers,
+  composer, UI, lobby, network, saves, pad) and held to it tick for tick, triangle for triangle and draw list for draw
+  list, then retired: `src/` is the game, `./play.sh` plays it. The golden files (`src/golden.sh`) keep what the
+  parity checks proved. See `docs/milestones/lobster-port.md`; what's left of it is in `docs/backlog.md`.
+- **In progress (milestone 23): fidelity** (D-173): art baked at 2x (`ART_SCALE` 3.0 in `src/view/art.lobster`, the world
+  in the old art pixels, `ART_BASE` 1.5), heroic 5.5-head humans; destruction in baked stages with pixel dust and
+  fading ruins (D-171, D-172); rat B and frog B (D-177, D-178, D-181); every legged body walks on keyed legs baked per
+  step, blows wind up and hold (D-179); units baked at their drawn size, capes only when asked (D-180); howdah riders
+  hold their weapons upright (Dominic, 2026-10-28). Open: the items in `docs/milestones/m23-fidelity.md`.
+- **In progress (milestone 20): Steam Deck and controllers.** Pad play (last input wins, the reticle, the wheel of
+  orders: D-132, D-133); Deck builds by `src/deck/build.sh`. Next: steps 7-9 (fit, speed, Steam Input). See
+  `docs/milestones/m20-steam-deck.md`.
+- **In progress (networking): multiplayer.** Lockstep over TCP on the home network (`src/net/`), Play on the network in
+  the lobby (Host, Join by LAN beacon); next the Mac vs Deck match, then a HyperDHT sidecar. See
+  `docs/milestones/networking.md`.
+- **In progress (milestone 22): battle feel.** Formations by role, counter-aware targeting, attack lines, the Norse
+  shield wall (D-155); next race_matches and Dominic's match. See `docs/milestones/m22-battle-feel.md`.
+- **Waiting on Dominic:** his first match in the Lobster game, the Deck play-test, the Mac vs Deck match, a listen to
+  the sound (`docs/audio.md`), a look at the bears (`docs/concepts/bears/`).
+- **Done or closed (history: each milestone's file in `docs/milestones/`):** race generation (m0), the sim core (m1),
+  map and movement (m2), economy (m3), combat (m4), the art rework (m5), foundations (m6), progression (m7), AI and
+  match flow (m8), fog and juice (m9), playtest and balance (m10), cleanup (m11), the land tech tree and maps (m12,
+  m15), unit lines (m13), race identity and heroes (m14), sieges (m16), living towns (m17), the UI (m19), modability
+  (m21), save and load (D-140 to D-142), sound (`tools/audio/`, 2026-10-11), bears (D-161 to D-163).
 
 ## Layout
 
 ```
 archive/         development history: journal, decisions, timeline, screenshots
 data/            the data contract; mods are just more of this
-  parts.json       every part: slot, shapes, sockets, stats, tags, points, era, cost_mix
-  creatures.json   creature -> body + head + skins + favoured families (+ fused_mount for centaurs)
-  families.json    cultures/styles: cloth colours, mounts, name parts
+  parts.json       every part: slot, shapes, sockets, stats, tags, points, era, cost_mix, legs (poses), body_steps
+  creatures.json   creature -> body + head + skins + favoured families (+ fused_mount, draw_scale, crew_back)
+  families.json    cultures/styles: cloth colours, mounts, name parts, the UI's look
   palettes.json    skin palettes, fixed material colours, team colours
   lexicon.json     word -> creature/mount/family/tags/size; out-of-era words + playful notes
   rules/*.json     host rules: era bounds, point budgets, roster template, cost/train curves, economy
-  cost_curves.json fixed-point cost curves (per-mille by points), written by tests/gen_cost_curve.gd
-  creature_kit.json creature-kit skeletons (scenes/art_pixel/creature_kit.gd: the bears); data/later/ holds staged, unplayed data
+  cost_curves.json fixed-point cost curves (per-mille by points)
+  creature_kit.json creature-kit skeletons (the bears); data/later/ holds staged, unplayed data
   terrain.json     terrain types: walkable, colours, resource + amount + what it turns into when used up
   audio.json       buses, every sound's takes / bus / gap / voices, the music mixes by age
-  ui.json          the UI's directions (materials, colours, crest, banner cut) and which one is in use
+  ui.json          the UI's directions (materials, colours, crest, banner cut)
   buildings.json   building types: footprint, hp, cost, build time, pop, drop-off, what it trains
-  maps/*.json      maps: ASCII rows + legend into terrain.json, start tiles; the view builds tiles from them
-src/
-  rng.gd           xorshift32 + FNV-1a. The only randomness allowed in generation/sim
-  data_lib.gd      loads data/, era filtering, stable candidate lists
-  race_generator.gd  prompt -> brief -> race (recipes) ; race_key()
-  pricing.gd       recipe -> stats, tags, cost, train time, pop
-  identity.gd      a race's bonuses, own research, lacks and ability, from group + creature + culture (m14)
-  unit_view.gd     composer + procedural animation (recipe -> Node2D on sockets)
-  part_shape.gd    draws one part's baked sprite from the atlas (a missing bake shows magenta)
-  team_mask.gdshader  recolours the baked team key per unit (team colour arrives in self_modulate)
-  sim_clock.gd     the only Node in the sim path: steps a World at 20 Hz from _process
-  sim/             the simulation: RefCounted, integers only, no Nodes (lint-checked by test_sim)
-    fixed.gd         isqrt, sin/cos table, hash mixing
-    world.gd         tick loop: commands -> move -> separate -> hash every 30 ticks
-    units.gd         units as parallel packed int arrays, sorted by id
-    spatial.gd       per-tile buckets for neighbour queries
-    commands.gd      CommandQueue {turn, player, seq, type, args}; 4-tick turns, run at turn + 2
-    sim_map.gd       terrain, walkable grid, resources left, building occupancy (the map changes)
-    flow.gd          flow fields (multi-source integer Dijkstra, optional cutoff), line of sight
-    buildings.gd     buildings as parallel arrays sorted by id (ids shared with units)
-    economy.gd       setup, worker jobs (gather/carry/drop off/build), training, pop, economy commands
-    abilities.gd     race abilities (a kind + data: the spiders' web), the ABILITY command, slowing
-  ai/              players that issue commands like a person (deterministic, lint-checked)
-    eco_bot.gd       plays an opening: trains workers, 60/40 food/wood, houses, idle workers
-    replay.gd        record / JSON / rebuild / verify
-scenes/race_lab.*  prompt UI, race cards, two armies milling about in the baked art (bakes per generate)
-  view/            view side (Nodes allowed): iso.gd projection, rts_camera.gd, command_panel.gd,
-                   audio.gd (the one audio node: effects, creature voices, the theme's stems)
-    ui/              the UI's look: theme.gd (every screen's Theme, type, button weight; looks from data/ui.json
-                     + each culture's `ui` block), painted materials, lit frames, cloth banners
-    art/             the pixel-art views: art_kit.gd (bakes units, buildings, props into one atlas),
-                     terrain_view.gd (shader ground + paths + doodads from a SimMap), building_art.gd
-      bake/            the 3D bake pipeline for buildings and props: baker.gd, models.gd, materials.gd
-scenes/art_pixel.* + art_pixel/          the pixel-art candidate: baked parts, palette, shader terrain,
-                   unit_models.gd (hand-built parts), part_baker.gd, paths.gd (culture paths), pixelize.gd
-assets/art/textures/  texture art authored by Claude (SVG), mapped onto unit models
-assets/audio/    every sound and music stem, rendered by tools/audio/render.py (see docs/audio.md)
-scenes/sim_debug.* the playable debug match: select, smart right-click, panel (Q/H/C), Tab side, F6 autoplay,
-                   F3 flow, F5/F9 replays, G regen army
-mods/            mods (milestone 21, docs/modding.md): folders of more data/ + models; scifi_test is the example.
-                 Loaded only when asked (AOW_MODS=id). mods_private/ is gitignored: fan pieces, never committed
-src/mods.gd      finds, checks and merges mods (load order); DataLib.load_rules(id) gives rules with mods
-tools/mods/      new_mod.py (scaffold a mod), pack.py (zip it)
-tests/           headless checks and dev tools (see Commands)
-tools/blender/   bpy scripts that model parts (blender -b --python ...); output .glb in assets/models/
-tools/ui/        crests.py: writes the culture crests (assets/art/ui/crest_*.svg)
-tools/audio/     the sound synth (pure Python): synth, instruments, sfx and voice recipes, the theme; render.py
+  tech.json, ai.json   ages, research, line upgrades; the bots (levels easy, normal, hard)
+  maps/*.json      maps: ASCII rows + legend into terrain.json, start tiles
+src/             the game, in Lobster; run everything from here (paths are ../data, ../assets)
+  game.lobster     the game: the window, the match, the view, input; game/ its pieces (lobby: title, battle setup,
+                   Race Lab, saves, network, the loader; panel, topbar, tech tree, pad, town life, fx, ground, art kit)
+  lib/             the simulation: integers only, a fixed 20 Hz tick, driven only by commands (no randomness but its
+                   rng, no floats, no clocks: test_sim lints it); fog, flow fields, combat, economy, sieges, walls,
+                   the bots (bot, eco_bot, land, expand, scout)
+  gen/             races from prompts (generator, pricing, identity, heroes, datalib, rng), the match start (setup,
+                   start, modes), saves (save, reset: written by gen_reset.py), balance by fights, mods
+  view/            the composer (unit_view: recipe -> parts on sockets, animated), the bakers (baker, part_bake,
+                   world_bake), the 3D rig and voxels (rig3d, geom), corpses laid down, art.lobster (ART_SCALE)
+  model/           every 3D model in code: unit parts, bodies, gear, siege, buildings, props, glb loading
+  placement/       the placement check's rules (3D: geometry; 2D: projection, case2d, composite; the bug fixtures)
+  net/             lockstep over TCP, the LAN beacon
+  deck/build.sh    the Steam Deck build (Lobster built for Linux in a container)
+  golden/          the golden files: races, starts, every model and building, research text
+  bake_cache/      baked parts, buildings and props (not committed; emptied when BAKE_VERSION changes)
+assets/          models (.glb from Blender), SVG icons and textures, audio (rendered), fonts
+tests/           batch.sh (the tests side by side), sheets/*.json (concept sheet specs), mods/ (bad-mod fixtures)
+mods/            mods (docs/modding.md): data + Lobster models; scifi_test is the example. mods_private/ is gitignored
+tools/           audio/ (the synth), blender/ (bpy model scripts -> assets/models), maps/, mods/ (new_mod.py,
+                 pack.py), ui/ (crests), art/ (texture and pixel-kit scripts), deck/pull_lobster.sh
 ```
 
 ## Commands
 
-Godot on this Mac: `/Applications/Godot.app/Contents/MacOS/Godot` (alias it as `godot`).
+Lobster on this Mac: `~/Dev/lobster/bin/lobster` (alias it as `lobster`). Run programs from `src/`.
 
 ```sh
-tests/batch.sh                                                     # the whole batch side by side, a table, exit 1 on a failure (~3 min)
-tests/batch.sh --quick                                             # the fast subset: run_tests, test_sim, test_ai quick, placement 3d in shards (~4 min)
-godot --headless --path . --script res://tests/run_tests.gd        # must print "0 failed" (~5 s; "-- placement" adds the 3D placement check)
-godot --headless --path . --script res://tests/print_races.gd -- "centaur romans" "flying greeks with wings"
-godot --path . --script res://tests/screenshot.gd -- /tmp/lab.png "prompt A" "prompt B"
-godot --headless --path . --script res://tests/test_sim.gd         # sim determinism + tick time, its parts side by side (~1 min; "-- serial" in one process)
-godot --headless --path . --script res://tests/test_ai.gd -- [map] [quick|slow|piece:<name>|walls|...]   # the AI: scenario checks (quick, ~30 s) and whole bot matches (slow), side by side
-godot --headless --path . --script res://tests/test_2v2.gd         # four bots, one 2v2 match (~2.5 min: one process, the batch's longest piece)
-godot --headless --path . --script res://tests/balance.gd -- 2     # equal-cost round robin in age 2: win rates, outliers
-godot --headless --path . --script res://tests/test_race_identity.gd   # race bonuses, own research, lacks, the web ability in the sim
-godot --headless --path . --script res://tests/race_matches.gd -- reed_meadow   # bot-vs-bot round robin of races: win rates (~10 min) (fights side by side)
-godot --headless --path . --script res://tests/mass_battle.gd -- 2 # 30 v 30 mixed armies at equal cost (each match side by side)
-godot --headless --path . --script res://tests/resource_audit.gd -- reed_meadow   # resources per start, 40-minute bot economies (~3 min)
-python3 tools/maps/reed_meadow.py                                  # rebuild the Reed Meadow maps (64 and 88) from one layout
-godot --headless --path . --script res://tests/path_audit.gd -- 8  # pathing diagnostic: give-ups, snaps, jitter, treading, with examples
-godot --path . res://scenes/match_setup.tscn                       # pick races and play vs the AI (the main scene)
-godot --path . --script res://tests/sim_screenshot.gd -- /tmp/sim.png [map_id] [armies|opening:<tick>] ["prompt A" "prompt B"]
-godot --headless --path . --script res://tests/net_check.gd -- [loop|enet] [ticks]   # lockstep: two worlds over a loopback, two processes over ENet; same hashes
-godot --path . --audio-driver Dummy --always-on-top --script res://tests/net_game_check.gd -- /tmp/net [ticks]   # a network match in two game windows through the lobby page
-godot --path . --audio-driver Dummy --always-on-top --script res://tests/pad_check.gd -- /tmp/pad   # a match played by a fake pad: 25 checks + pictures (exit 1 on a failure)
-godot --path . --audio-driver Dummy --always-on-top --script res://tests/save_check.gd -- /tmp/save   # save and load through the menus, mouse, pad and lobby (exit 1 on a failure)
-godot --path . res://scenes/sim_debug.tscn                         # run the sim debug view
-godot --path . res://scenes/counter_quiz.tscn                      # blind counter quiz (milestone 4 exit check)
-godot --headless --path . --script res://tests/gen_cost_curve.gd   # regenerate data/cost_curves.json
-godot --path . res://scenes/art_pixel.tscn                         # pixel-art candidate (Z zoom, P palette)
-godot --path . --script res://tests/art_screenshot.gd -- /tmp/art  # capture it at 1x/2x/3x
-godot --path . --script res://tests/art_crop.gd -- /tmp/c.png 6.5 9 ["prompt A" "prompt B"]   # 3x close-up at a tile
-godot --path . --script res://tests/wall_join_check.gd -- [filter]   # walls: composed sprites vs one 3D bake per join fixture (exit 1 on overlaps, gaps, sunk units)
-godot --path . --script res://tests/art_bench.gd                    # draw calls + frame time, 200+ units
-godot --path . --script res://tests/unit_lineup.gd -- /tmp/units.png ["prompt A" "prompt B"]   # both rosters as pixel art, 4x
-godot --path . --audio-driver Dummy --always-on-top --script res://tests/sheet.gd -- tests/sheets/bears_b1.json /tmp/out [sheet,...] [zoom,...]   # any concept or lineup sheet from a spec, placement PASS/FAIL per row
-godot --path . --audio-driver Dummy --always-on-top --script res://tests/placement_check.gd -- [filter] [3d|2d]   # placement + layering on every unit, pose, facing, and the bug fixtures (~2 min); must pass before a unit change is shown
-godot --headless --path . --script res://tests/geometry_check.gd -- [filter] [jobs=N]   # its 3D half alone, headless; the whole roster in shards side by side (~2-4 min; one process took 11)
-godot --path . --audio-driver Dummy --always-on-top --script res://tests/placement_shot.gd -- /tmp/p.png 5 "frog on newt_fire"   # a placement case in 8 facings
-godot --path . --script res://tests/healer_lineup.gd -- /tmp/healers.png [zoom] [family,...]   # every culture's healer in 8 facings
-godot --path . --script res://tests/siege_lineup.gd -- /tmp/siege.png [zoom] ["prompt" ...]     # each race's crewed siege engines, four facings
-godot --headless --path . --script res://tests/siege_bench.gd -- 200 3   # the siege tick budget: a walled town stormed, 400 units, per-system times (m16)
-godot --path . --audio-driver Dummy --always-on-top --script res://tests/siege_tower_sheet.gd -- /tmp/out 3   # siege tower concepts (T1)
-python3 tools/maps/siege_vale.py                                   # rebuild Siege Vale, the siege showcase map
-python3 tools/audio/render.py [sfx|voices|music|<name>...]       # re-render the sounds into assets/audio (~15 s)
-python3 tools/audio/check.py assets/audio/sfx/chop_*.wav          # length, peak, RMS, pitch guess; afplay to listen
-godot --headless --path . --script res://tests/mod_check.gd -- scifi_test   # load a mod (or say why not) + 3D placement on its units
+./play.sh                                                          # the game: the title screen (Battle the AI, network, saves, Race Lab)
+./play.sh lobby "races:sewer rats|romans" watch mute               # straight into a match, the bot playing you too, silent
+./play.sh lobby page:setup mute shot:/tmp/s.png at:2               # a capture (page:title|setup|lab|saves|net; shot: after at: seconds)
+./tests/batch.sh --quick                                           # unit tests, the sim, the AI's quick checks, 3D placement (~2 min)
+./tests/batch.sh                                                   # the whole batch side by side (adds every AI piece, 2v2, 2D placement, golden, saves, network)
+lobster run_tests.lobster                                          # the unit tests (~3 s; part:i/n)
+lobster test_sim.lobster -- [part:a,b] [shard:i/n]                 # the sim: determinism, tick time, every system (~30 s serial)
+lobster test_ai.lobster -- [map] [quick|piece:<name>|levels] [shard:i/n]   # the AI: scenario checks and whole bot matches
+lobster test_2v2.lobster                                           # four bots, a 2v2 match
+lobster test_heroes.lobster; lobster test_race_identity.lobster
+lobster placement_check.lobster -- [filter] [3d|2d] [shard:i/n] [nofixtures]   # placement + layering on every unit; must pass before a unit change is shown
+./golden.sh [update] [section]                                     # races, starts, models, buildings, effects held to golden/ ("update" after a meant change, then read the diff)
+lobster save_check.lobster -- [map]; ./net_check.sh [ticks]        # saving and loading; two processes in lockstep
+lobster races.lobster -- default "centaur romans" "flying greeks with wings"   # races as JSON
+lobster balance.lobster -- rr 2                                    # equal-cost round robin in age 2 (auto: prices from fights)
+lobster race_matches.lobster -- reed_meadow; lobster mass_battle.lobster -- 2; lobster resource_audit.lobster -- reed_meadow; lobster path_audit.lobster
+./sheet.sh ../tests/sheets/bears_b1.json /tmp/out [sheet,...] [zoom,...]   # any concept or lineup sheet from a spec, placement PASS/FAIL per row
+./shards.sh <tool.lobster> [args] [jobs=N]                         # any sharded tool side by side
+python3 gen_reset.py                                               # after adding a sim global: reset and save code
+./textures.sh; ./icons.sh                                          # SVG textures and icons as PNGs (rsvg-convert), after one changes
+src/deck/build.sh                                                  # the Deck build (podman machine `aoa-build` running)
+python3 tools/audio/render.py [sfx|voices|music|<name>...]         # re-render the sounds into assets/audio (from the repo root)
+python3 tools/maps/reed_meadow.py; python3 tools/maps/siege_vale.py   # rebuild maps from their layouts
 python3 tools/mods/new_mod.py <id> [--era <tag>] [--private]       # scaffold a mod (docs/modding.md); tools/mods/pack.py <id> zips it
-godot --path .                                                     # run the game (match setup; Race Lab from there)
 ```
 
-A GDScript parse error in a `--script` run leaves Godot hanging instead of exiting; put a
-timeout on headless runs.
+Never pass `--mir`: it miscompiles model and rig code (D-182). Lobster's window never takes Ctrl-C; `play.sh` stops the
+game for it. A Lobster leak report at exit (`memory_leaks.txt`) is noise.
 
-Windowed test and capture runs (screenshots, sheets, benches) play the game's sound: add
-`--audio-driver Dummy` so they're silent (Dominic), and `--always-on-top` so a covered window
-doesn't crawl.
-
-**Testing rhythm** (Dominic: iteration must stay fast). While working, the quick checks: `run_tests`
-after every change to `data/` or `src/`, the piece you're touching (`test_ai.gd -- piece:<name>`,
-`test_sim.gd -- part:<name>`, `placement_check.gd -- <filter>`), or `tests/batch.sh --quick`.
-After a set of changes, the whole batch once, in the background (`tests/batch.sh`), not the slow
-suites over and over. The test scripts run their independent pieces in parallel Godot processes
-(`tests/par.gd`; `jobs=N` or `AOA_JOBS` to change how many, performance cores - 1 by default);
-each piece is its own seeded sim, so results match a serial run. Logs: the path the batch prints.
-The tick-time check in test_sim measures wall time: on a machine busy with other runs it can fail.
-Look at a screenshot after visual changes. After a change to `tools/audio/`,
-re-render and commit the files in `assets/audio/` with it (the game plays files, not recipes).
+**Testing rhythm** (Dominic: iteration must stay fast, and the machine quiet). While working: `run_tests` after every
+change to `data/` or `src/`, the piece you're touching (`test_sim -- part:<name>`, `test_ai -- piece:<name>`,
+`placement_check -- <filter>`), or `./tests/batch.sh --quick`. After a set of changes, the whole batch once, in the
+background. The batch runs 4 processes at once by default (`jobs=N` or `AOA_JOBS`), not every core: one heavy run at a
+time. Each shard is its own seeded world, so results match a serial run. The tick-time check measures wall time:
+on a busy machine it can fail. Raise `BAKE_VERSION` (`view/part_bake.lobster`) once for a batch of bake changes, not
+per tweak: every raise rebakes everything. Tests are silent (`mute`, and every capture option mutes). Look at a
+screenshot after visual changes. After a change to `tools/audio/`, re-render and commit `assets/audio/` with it.
 
 ## Rules that matter
 
 **Determinism is the backbone** (lockstep multiplayer and shareable races depend on it):
 - Same prompt + rules + reroll must give the same race key on every machine. Tests enforce this.
-- Never use `randi()`/`randf()`/`RandomNumberGenerator` in generation or the sim. Use `src/rng.gd`.
-  The only exception is cosmetic animation in `unit_view.gd`.
+- Never use `randi()`/`randf()`/`RandomNumberGenerator` in generation or the sim. Use `gen/rng.lobster` (and the
+  sim's own rng). The only exception is cosmetic animation in `view/unit_view.lobster`.
 - Iterate anything that affects output in a stable order (sorted ids or arrays), never raw
   Dictionary order from untrusted sources.
 - Recipes hold only strings and ints. The race key hashes names + recipes, not derived stats.
-- Saves outlive builds (D-141): a new sim or AI variable must make sense in a match loaded from an older save. Per-unit
-  arrays are padded with 0; anything else whose fresh value is wrong mid-match gets an `after_load(missing)` (see
-  `docs/milestones/save-load.md`).
-- The coming sim: integer/fixed-point maths, fixed 20 Hz tick, driven only by a command stream,
-  no physics nodes or NavigationAgent avoidance inside it. The AI issues commands like a player.
-  Views read sim state; the sim never touches Nodes.
+- Saves outlive builds (D-141): a new sim or AI variable must make sense in a match loaded from an older save. A field a save
+  lacks loads empty, per-unit and per-building columns are padded with 0 (`pad_saved_columns`); anything else whose
+  empty value is wrong mid-match needs its own fix after `load_world`. Run `python3 gen_reset.py` after adding a global.
+- The sim (`src/lib/`): integer maths, a fixed 20 Hz tick, driven only by the command stream. The AI issues commands
+  like a player. Views read sim state; the sim never draws.
 
 **Data first.** New creatures, gear, cultures and words go in `data/`, not code. If you need code
 for a content case, the data contract is probably missing a field; add the field.
@@ -276,17 +175,17 @@ units beatable. Don't special-case silly units.
 Target the look of a **classic 2D isometric RTS**: small units, 3/4 view, painterly sprites, readable
 silhouettes, team colour on a consistent region. It should feel like the game you know, gone mad.
 Units are 3D parts (built in code, or scripted in Blender: `tools/blender/`, `.glb` in
-`assets/models/`) baked to pixel sprites in **8 facings** in one atlas, recoloured by a team-mask
+`assets/models/`) baked to pixel sprites in **8 facings** (at 2x, D-173), recoloured by a team-mask
 shader; worn armour bakes on its wearer; props and buildings are realistic bakes. The full pipeline
 is in `docs/rendering.md`. New art goes concept-first (options, Dominic picks, then build; D-080),
 and every change gets looked at close up before it's shown.
-New rounds write a sheet spec (`tests/sheets/*.json`, drawn by `tests/sheet.gd`), not a new script;
-new creatures start in the creature kit (`scenes/art_pixel/creature_kit.gd`, kits in `data/creature_kit.json`,
+New rounds write a sheet spec (`tests/sheets/*.json`, drawn by `src/sheet.sh`), not a new script;
+new creatures start in the creature kit (`src/model/kit_bodies.lobster`, kits in `data/creature_kit.json`,
 unplayed ones staged in `data/later/`). Both are in `docs/rendering.md`. **No unit, mount, gear or pose change is
-shown until `tests/placement_check.gd` passes** (Dominic, 2026-10-13): numeric checks of ground
+shown until `src/placement_check.lobster` passes** (Dominic, 2026-10-13): numeric checks of ground
 contact, attachment, interpenetration, stance, feet, visibility and layering in 3D and in every facing,
 plus a fixture for every placement bug he caught (`docs/rendering.md`, "Placement rules"). A new body,
-mount or gear goes into a race in `tests/placement/cases.gd`; a body's anchors in parts.json are its
+mount or gear goes into a race in `src/placement/cases.lobster`; a body's anchors in parts.json are its
 model's hips; legs that aren't the same on both sides bake at each hip (`"cut": ["legs"]`).
 
 ## The archive (keep it up to date)
@@ -302,7 +201,8 @@ That includes:
 - every memorable bug (bug shots are the best part; save the buggy capture before fixing it)
 - the final state of a milestone
 
-Capture tools: `tests/screenshot.gd` (Race Lab) and `tests/sim_screenshot.gd` (sim view, any map).
+Capture tools: `./play.sh ... shot:<png> at:<seconds>` (a match, `look:<x>,<y>` for the camera; `page:<name>` for the
+lobby's pages) and `src/sheet.sh` (units on a sheet).
 Look at every capture before keeping it. As a rough guide, aim for at least 2-3 pictures per
 milestone.
 
@@ -340,10 +240,13 @@ game; everything expressive is ours. In code, data, docs, the archive and commit
 
 ## House style
 
-- Small single-purpose scripts, no defensive programming: assert on broken data, don't paper over it.
-- Use `preload` constants rather than `class_name`, so headless `--script` runs work without an editor import.
-- Avoid dictionary keys that clash with Dictionary methods (`size`, `keys`, `values`, `hash`); use brackets for those.
-- Keep tests headless and fast.
+- Small single-purpose files, no defensive programming: assert on broken data, don't paper over it.
+- Lobster: globals declared before use; no identifier shadowing; a recursive function needs an explicit return type;
+  no multi-line `def` signatures; braces in strings as `\{ \}`; `write_file` to an absolute path needs `(path, data, 0, 1)`;
+  `dictionary.get` on a class value can't return nil (use a sentinel); `qsort_in_place` recurses (not on big near-sorted
+  arrays). Imports live in the main programs (`game.lobster`, `placement/deps.lobster`), in an order where each file's
+  globals come before their users.
+- Keep tests headless where they can be, silent, and fast.
 
 ## Later (not now)
 
