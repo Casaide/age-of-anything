@@ -1,0 +1,18 @@
+{
+ "name": "human_walk",
+ "title": "Heroic humans walking on keyed legs (D-179): the knee bending, the foot rolling through, 8 steps",
+ "zooms": [4],
+ "cell": [58, 60],
+ "rows": [
+  {"label": "legionary\n(infantry, age 2)", "unit": {"prompt": "romans", "slot": "infantry", "age": 2}},
+  {"label": "spearman, age 2", "unit": {"prompt": "romans", "slot": "spear", "age": 2}},
+  {"label": "archer, age 2", "unit": {"prompt": "greeks", "slot": "archer", "age": 2}},
+  {"label": "worker", "unit": {"prompt": "vikings", "slot": "worker", "age": 1}},
+  {"label": "hero", "unit": {"prompt": "romans", "slot": "hero", "age": 2}}
+ ],
+ "sheets": [
+  {"name": "walk", "title": "the keyed walk, facing 0", "columns": "cycle:0"},
+  {"name": "walk2", "title": "the keyed walk, facing 2 (towards)", "columns": "cycle:2"},
+  {"name": "facings", "title": "standing, 8 facings", "columns": "facings"}
+ ]
+}
