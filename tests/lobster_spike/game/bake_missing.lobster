@@ -63,6 +63,7 @@ def bake_missing_parts() -> int:
                                 tris = loaded
                             let tt = tris
                             if tt and tt.length: add_baked(full, tt, f, key_colours(key))
+            bake_corpse_frames(v.recipe)   // (a body that lies down in 3D when it dies: its fall's frames)
             remove_child(view_stage, v.node)
             free_tree(v.node)
     return baked_here
