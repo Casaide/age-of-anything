@@ -1215,37 +1215,8 @@
    1.0
   ],
   "legs": {
-   "part": "leg.hoof",
-   "anchors": [
-    [
-     9,
-     -13,
-     0,
-     1,
-     0
-    ],
-    [
-     -9,
-     -13,
-     3.14,
-     1,
-     0
-    ],
-    [
-     7,
-     -13,
-     3.14,
-     -1,
-     0
-    ],
-    [
-     -11,
-     -13,
-     0,
-     -1,
-     0
-    ]
-   ]
+   "part": "leg.hoof", "hind": "leg.hoof_hind", "anchors": [[9, -13, 0, 1, 0, false], [-9, -13, 3.14, 1, 0, true], [7, -13, 3.14, -1, 0, false], [-11, -13, 0, -1, 0, true]], "poses": 8, "gait": {"swing": 0.0, "cadence": 1.0, "bob": 0.9, "rock": 0.035},
+   "_poses_doc": "D-179: each leg bent at the knee or hock, baked in 8 walk steps (leg.hoof@w<i>_<n>, its hind leg.hoof_hind; unit_models.gd hoof_joints), the body riding on the planted hooves"
   }
  },
  {
@@ -1339,37 +1310,8 @@
    1.0
   ],
   "legs": {
-   "part": "leg.hoof",
-   "anchors": [
-    [
-     9,
-     -13,
-     0,
-     1,
-     0
-    ],
-    [
-     -9,
-     -13,
-     3.14,
-     1,
-     0
-    ],
-    [
-     7,
-     -13,
-     3.14,
-     -1,
-     0
-    ],
-    [
-     -11,
-     -13,
-     0,
-     -1,
-     0
-    ]
-   ]
+   "part": "leg.hoof", "hind": "leg.hoof_hind", "anchors": [[9, -13, 0, 1, 0, false], [-9, -13, 3.14, 1, 0, true], [7, -13, 3.14, -1, 0, false], [-11, -13, 0, -1, 0, true]], "poses": 8, "gait": {"swing": 0.0, "cadence": 1.0, "bob": 0.9, "rock": 0.035},
+   "_poses_doc": "D-179: each leg bent at the knee or hock, baked in 8 walk steps (leg.hoof@w<i>_<n>, its hind leg.hoof_hind; unit_models.gd hoof_joints), the body riding on the planted hooves"
   }
  },
  {
@@ -1871,6 +1813,60 @@
  },
  {
   "id": "leg.hoof",
+  "slot": "leg",
+  "shapes": [
+   {
+    "t": "poly",
+    "p": [
+     [
+      -1.5,
+      0
+     ],
+     [
+      1.5,
+      0
+     ],
+     [
+      1.5,
+      11
+     ],
+     [
+      -1.5,
+      11
+     ]
+    ],
+    "ch": "skin"
+   },
+   {
+    "t": "poly",
+    "p": [
+     [
+      -2,
+      11
+     ],
+     [
+      2,
+      11
+     ],
+     [
+      2,
+      13
+     ],
+     [
+      -2,
+      13
+     ]
+    ],
+    "ch": "eye"
+   }
+  ],
+  "tags": [],
+  "stats": {},
+  "points": 0
+ },
+ {
+  "id": "leg.hoof_hind",
+  "_doc": "a horse's hind leg: the hock bends back (D-179, unit_models.gd _hoof_leg)",
   "slot": "leg",
   "shapes": [
    {
