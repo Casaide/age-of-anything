@@ -1293,3 +1293,13 @@ checks had run on the default JIT while the game ran `--mir`. Without it everyth
 models, props, buildings, the 26 parity runs), and a 10-minute bot match ran faster (66 s against 93 s: `--mir`
 compiles longer than it saves). `LOBSTER_FLAGS=--mir` still tries it. (Numbered 182: the art study's branch has up
 to D-181.) Claude.
+
+**D-184, 2026-10-28: Godot retired; the game is Lobster.** Dominic's goal: "actually complete the migration to lobster.
+Godot should be gone, performance for all tests should be optimised." The art study's work (rat B, frog B, heroic humans,
+keyed limbs, sized bakes, 2x art, destruction) was ported and held to Godot's (models triangle for triangle, 3D
+placement identical, the composer's draw lists the same), then the GDScript game, its tests and the parity tools were
+deleted and the Lobster code moved to `src/`. What the parity checks proved is kept in golden files (`src/golden.sh`:
+races, starts, every model and building, research text); the Godot test suites live on in Lobster (run_tests, test_sim,
+test_ai, test_2v2, heroes, race identity, the balance and audit tools); `./tests/batch.sh` runs them side by side, 4 at
+once by default (Dominic's fans). Supersedes D-168's "Godot only bakes the art" and D-183's "Godot left for parity".
+Left over: `docs/backlog.md`, "Left from the Lobster port". Claude, for Dominic.

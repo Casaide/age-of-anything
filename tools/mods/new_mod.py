@@ -38,7 +38,7 @@ def main(argv):
         "id": mod_id, "name": name, "version": "0.1.0", "game_version": GAME_VERSION,
         "authors": [], "description": "", "license": "",
         "load_order": 100, "depends": [], "eras": [era] if era else [],
-        "data": "data", "models": ["models/%s_parts.gd" % mod_id],
+        "data": "data", "models": ["models/%s_parts.lobster" % mod_id],
         "check": {"rules": "anything", "prompts": ["%s soldiers" % tag]},
     }
     if private:
@@ -58,8 +58,8 @@ def main(argv):
         word = {"era": era, "tags": {tag: 5}, "substitute": {"helmet": 1}, "note": "Not in this era. (Write a playful note.)"}
         write(root, "data/rules/anything.json", {"_doc": "Anything goes allows this mod's era.", "+era": [era]})
     write(root, "data/lexicon.json", {"words": {tag: word}})
-    with open(os.path.join(root, "models", "%s_parts.gd" % mod_id), "w") as f:
-        f.write(MODEL.format(mod_id=mod_id, fn="_" + part_id.replace(".", "_")))
+    with open(os.path.join(root, "models", "%s_parts.lobster" % mod_id), "w") as f:
+        f.write(MODEL.format(mod_id=mod_id, part_id=part_id, fn=part_id.replace(".", "_")))
     write(root, "sheets/%s.json" % mod_id, {
         "name": mod_id, "title": "Mod %s" % mod_id, "mods": [mod_id], "rules": "anything", "zooms": [3, 1],
         "cell": [70, 60], "size": [{"prompt": "romans", "slot": "spear"}],
@@ -70,7 +70,7 @@ def main(argv):
     with open(os.path.join(root, "README.md"), "w") as f:
         f.write(README.format(name=name, mod_id=mod_id, root=root,
                               private=PRIVATE if private else ""))
-    print("made %s: fill in data/parts.json and models/%s_parts.gd, then see docs/modding.md" % (root, mod_id))
+    print("made %s: fill in data/parts.json and models/%s_parts.lobster, then see docs/modding.md" % (root, mod_id))
 
 
 def write(root, rel, data):
@@ -79,27 +79,25 @@ def write(root, rel, data):
         f.write("\n")
 
 
-MODEL = '''extends "res://scenes/art_pixel/unit_models.gd"
-## The {mod_id} mod's parts (data/parts.json), built from the game's model helpers (blob, rod, slab,
-## dome, ring, cone, disc, _box; surf(texture, tint, units), plain(colour), glow(colour)) in
-## scenes/art_pixel/unit_models.gd. A part's builder is "_" + its id with dots as underscores.
-## Frames: x the way the unit faces, y up, z towards the viewer's side; head gear round the head's top
-## socket (the crown at y 0, about 5 across), held items round the grip, worn armour frog-sized.
-## c holds the unit's colours: c.team, c.skin, c.skin2, c.cloth, c.cloth2.
+MODEL = '''// The {mod_id} mod's parts (data/parts.json), built from the game's model kit (src/model/base.lobster: blob, rod,
+// slab, dome, ring, cone, box; surf(texture, tint, units), plain(colour), glow(colour)). build_mod_{mod_id} returns a
+// part's model by its id (nil for the rest): mod.json's "models" names this file, and the game joins it in when the
+// mod is on (src/mods_gen.lobster). Frames: x the way the unit faces, y up, z towards the viewer's side; head gear
+// round the head's top socket (the crown at y 0, about 5 across), held items round the grip, worn armour frog-sized.
+// c holds the unit's colours: col(c, "team"), col(c, "skin"), col(c, "cloth")...
 
+def {fn}(c:Colours) -> Spec:
+    let n = mnode()
+    let iron = surf("iron", float3_1, 3.0)
+    add_child(n, dome(float3 {{ 5.2, 5.0, 5.0 }}, iron, float3 {{ 0.0, -3.8, 0.0 }}))
+    add_child(n, ring(4.9, 5.5, plain(col(c, "team")), float3 {{ 0.0, -3.6, 0.0 }}))
+    lift_kids(n, 1.05)   // its rim clear of the brow (the placement check, A2)
+    return spec_of(n)
 
-## A texture of this mod (textures/<name>.svg), for surf().
-func mod_tex(name: String) -> String:
-	return get_script().resource_path.get_base_dir().get_base_dir() + "/textures/" + name
-
-
-func {fn}(c: Dictionary) -> Dictionary:
-	var n := Node3D.new()
-	var iron := surf("iron", Color.WHITE, 3.0)
-	n.add_child(dome(Vector3(5.2, 5.0, 5.0), iron, Vector3(0, -3.8, 0)))
-	n.add_child(ring(4.9, 5.5, plain(c.team), Vector3(0, -3.6, 0)))
-	_lift(n, 1.05)   # its rim clear of the brow (the placement check, A2)
-	return {{"node": n}}
+def build_mod_{mod_id}(base:string, c:Colours) -> Spec?:
+    switch base:
+        case "{part_id}": return {fn}(c)
+        default: return nil
 '''
 
 README = '''# {name} (`{mod_id}`)
@@ -108,8 +106,8 @@ A mod for the game: more data (`data/`), models for its parts (`models/`), textu
 a sheet spec (`sheets/`). How to make it: `docs/modding.md`.
 
 ```sh
-godot --headless --path . --script res://tests/mod_check.gd -- {mod_id}
-godot --path . --audio-driver Dummy --always-on-top --script res://tests/sheet.gd -- {root}/sheets/{mod_id}.json /tmp/{mod_id}
+src/mod_check.sh {mod_id}
+src/sheet.sh {root}/sheets/{mod_id}.json /tmp/{mod_id}
 python3 tools/mods/pack.py {mod_id}
 ```
 '''

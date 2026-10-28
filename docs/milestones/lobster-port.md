@@ -309,3 +309,28 @@ buildings but the Town Center fall then. Pictures: `archive/images/2026-10-28/06
 - 2026-10-26: the first match in a Lobster window (rats v frogs on flat_test, the bot on both sides when watching):
   `archive/images/2026-10-26/01-lobster-game-first-frame.png`, `02-lobster-game-rat-raid.png`. The sim and both
   bots take 0.35 ms a tick in the game; frames hold 60 fps with the whole match drawn.
+
+## Godot retired (2026-10-28, D-184)
+
+Dominic: "actually complete the migration to lobster. Godot should be gone, performance for all tests should be
+optimised." Done in this order, each step checked against Godot while it still existed:
+- **The art study ported** (merge of `claude/upbeat-cray-f3dce8`): every model it changed (rat B, frog B with its hop,
+  heroic humans, horse legs, keyed legs for every legged body, creature-fitted armour, the walled howdah) held to Godot's
+  triangle for triangle (253 of 253 parts), the 3D placement check identical (1312 cases, 25650 checks); the composer's
+  walk steps, head nod, blow timing, sized bakes (D-180) and draw lists the same as Godot's but for intended differences
+  (rats drawn at 80%, the howdah's upright weapons: Dominic). The art at 2x (D-173) with the world kept in the old art
+  pixels. Destruction (ruins in four stages, dust, fading), the dead laid down in 3D baked, the fog's memory of the
+  ground, the sim's formation and terrain-speed fixes (the latter a Lobster bug the AI tests found).
+- **The front end ported** (`game/lobby.lobster`): the title, the battle setup in each culture's look with AI levels and
+  team games, the Race Lab, saves, the network page, the match loader, back to the lobby after a match; the playtest
+  log (`src/matches.jsonl`).
+- **The tests ported**: run_tests (38,814 checks), test_heroes, test_race_identity, test_sim (51 parts), test_ai,
+  test_2v2, race_matches, mass_battle, balance, resource_audit, path_audit; the placement check and the sheet tool;
+  mod_check; the golden files for what the parity checks proved.
+- **Faster:** `./tests/batch.sh` (4 processes at once, shards, slow suites first: the quick batch in about 100 s);
+  the bake twice as fast (triangles grouped once a part), Godot's bicubic shrink; building and prop bakes cached
+  (a match start's 134 s of buildings now 0.13 s); the 3D placement check's attachments cached; the forest ram's
+  crash (a recursive sort on 100k triangles) fixed.
+- **Removed**: the GDScript game, its tests, the parity tools; the code moved to `src/`; CLAUDE.md, README, rendering,
+  modding, audio and playtest docs, the make-mod skill and new_mod.py rewritten for Lobster.
+Left over: `docs/backlog.md`, "Left from the Lobster port".
