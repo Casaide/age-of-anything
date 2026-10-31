@@ -208,10 +208,9 @@ var b_sheet = -1
 
 def flush_sprites():
     if b_pos.length:
-        let m = gl.new_mesh("PCT", b_pos, b_col, []::float3, b_tc, []::float2, b_idx)
-        gl.set_mesh_texture(m, 0, 0, sheet_texture(b_sheet))
         gl.set_shader("sprite")
-        gl.render_mesh(m)
+        gl.set_primitive_texture(0, sheet_texture(b_sheet))
+        gl.draw_mesh("PCT", b_pos, b_col, []::float3, b_tc, []::float2, b_idx)
     b_pos = []::float3
     b_col = []::float4
     b_tc = []::float2
