@@ -2312,7 +2312,11 @@
      "bob": 0.9,
      "rock": 0.035
     },
-    "_poses_doc": "D-179: each leg bent at the knee or hock, baked in 8 walk steps (leg.hoof@w<i>_<n>, its hind leg.hoof_hind; unit_models.gd hoof_joints), the body riding on the planted hooves"
+    "_poses_doc": "D-179: each leg bent at the knee or hock, baked in 8 walk steps (leg.hoof@w<i>_<n>, its hind leg.hoof_hind; unit_models.gd hoof_joints), the body riding on the planted hooves",
+    "stance": {
+     "inside": 0.7,
+     "_inside_doc": "h's upper legs start high on the flank (the thigh's and the shoulder's mass, Dominic: 'we cant see the hips ... just body and sticks'), so most of each leg lies in the body: a leg needs 0.3 of itself outside, not 0.5"
+    }
    }
   }
  ],

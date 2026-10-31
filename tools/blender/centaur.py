@@ -31,6 +31,9 @@ out_dir, look = args[0], args[1]
 K = {"f": 1.0, "g": 1.15, "h": 1.0}[look]
 SHORT = 0.88 if look == "h" else 1.0   # h: concept C1 option B (docs/concepts/centaur): the back half drawn in nearer the shoulder,
 DEEP = 2.5 if look == "h" else 0.0    # the belly lower (a deep body)
+LOBES = look == "h"
+KNEE = 8.4 if look == "h" else 6.0     # the knee and hock this deep under the hip (units2.lobster centaur_knee)
+UP = 1.45 if look == "h" else 1.0       # the forearm's and the gaskin's top this much thicker (out of the lobes)
 LEGK = 0.85 if look == "h" else 1.0   # on legs this much as long (units2.lobster centaur_legk; the hips 2.4 lower)
 
 
@@ -75,6 +78,11 @@ def body_shape(q, x, u, side):
     # The spine's line down the back; the man's back hollowing as it rises out of the withers.
     q = q - V(0, 0.2, 0) * bump(q, V(sx(-2.0), 25.1, 0.0), (8.0, 1.0, 0.8))
     q = q - V(0.35, 0, 0) * bump(q, V(9.0, 26.8, 0.0), (1.5, 2.0, 2.0))
+    if LOBES:   # h: the shoulder's and the thigh's mass hanging below the belly into each leg's top (the elbow, the stifle),
+        # so the hips and shoulders show as the body's own surface (Dominic: "we cant see the hips ... just body and sticks")
+        for hx, depth, r in ((8.0, 3.0, 3.6), (sx(-8.2), 3.4, 4.2)):
+            q = q + V(0, -depth, 0) * bump(q, V(hx, 10.0, 3.4 * s), (r, 4.0, 2.4))
+            q = q + out * 0.9 * bump(q, V(hx, 14.0, 5.0 * s * W), (r + 1.0, 5.0, 2.5))
     return q
 
 
@@ -92,16 +100,17 @@ def leg(hind):
     reset()
     M = mats()
     pt = [M[POINTS]]
+    kn = KNEE / 6.0   # (the knee's or hock's depth over the pony's; h: a long forearm and gaskin, a short cannon)
     if hind:   # the gaskin, broad behind, down to the hock, its point standing out behind
-        limb("upper", M, [V(0.6, 1.0), V(-0.3, -1.0), V(-0.3, -4.0), V(0.0, -6.4)], [1.6 * T, 1.75 * T, 1.15 * T, 0.95 * T],
-             segs=16, steps=8, squash=(0.7, 1.0))
-        ball("upper_hock", M, V(-0.9, -5.7), (0.8 * T, 0.9 * T, 0.6 * T), segs=12)
+        limb("upper", M, [V(0.6, 1.0), V(-0.3, -1.0 * kn), V(-0.3, -4.0 * kn), V(0.0, -6.4 * kn)],
+             [1.6 * T * UP, 1.6 * T * UP, 1.15 * T * (1.0 + 0.5 * (UP - 1.0)), 0.95 * T], segs=16, steps=8, squash=(0.7, 1.0))
+        ball("upper_hock", M, V(-0.9, -5.7 * kn), (0.8 * T, 0.9 * T, 0.6 * T), segs=12)
     else:      # the forearm, muscled at the top, slim to the knee; the knee a flat knob
-        limb("upper", M, [V(0.0, 1.0), V(0.4, -1.2), V(0.1, -4.6), V(0.0, -6.2)], [1.5 * T, 1.6 * T, 1.0 * T, 0.92 * T],
-             segs=16, steps=8, squash=(0.75, 1.0))
-        ball("upper_knee", M, V(0.2, -6.0), (1.0 * T, 1.1 * T, 0.85 * T), segs=12)
+        limb("upper", M, [V(0.0, 1.0), V(0.4, -1.2 * kn), V(0.1, -4.6 * kn), V(0.0, -6.2 * kn)],
+             [1.5 * T * UP, 1.5 * T * UP, 1.0 * T * (1.0 + 0.5 * (UP - 1.0)), 0.92 * T], segs=16, steps=8, squash=(0.75, 1.0))
+        ball("upper_knee", M, V(0.2, -6.0 * kn), (1.0 * T, 1.1 * T, 0.85 * T), segs=12)
     # The cannon: flat and slim, darker, to the fetlock's knob.
-    limb("cannon", pt, [V(0.0, -6.4), V(0.15, -10.0), V(0.3, -13.6)], [0.8 * T, 0.7 * T, 0.76 * T], segs=12, steps=6, squash=(0.75, 1.0))
+    limb("cannon", pt, [V(0.0, -6.4 * kn), V(0.15, (-6.4 * kn - 13.6) / 2), V(0.3, -13.6)], [0.8 * T, 0.7 * T, 0.76 * T], segs=12, steps=6, squash=(0.75, 1.0))
     ball("cannon_fetlock", pt, V(0.35, -13.7), (0.9 * T, 0.85 * T, 0.75 * T), segs=12)
     # The pastern sloping forward to the hoof; the hoof's wall flaring to its sole.
     limb("hoof", pt, [V(0.3, -13.8), V(0.9, -14.9)], [0.72 * T, 0.68 * T], segs=12, steps=3)

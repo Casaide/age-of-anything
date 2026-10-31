@@ -65,3 +65,8 @@ together ... we need to improve".
 - Dominic: "B looks good". B modelled as look h: BA3's f shorter behind the shoulder, deeper, on legs 0.85 as long.
   Matched to the drawing's numbers exactly (legs 0.75, the belly 4 lower) it read as a sheep from the game's camera,
   so it stops short. Placement passes. Pictures 14 (the drawing beside the bakes) and 15.
+- Dominic: "we cant see the hips. There's no upper part to the legs. Just body and sticks". The first try put the
+  muscle high on the leg's own top, up on the flank. It showed as a lighter patch, because the leg bakes apart from
+  the body and is shaded differently. What worked was lowering the knees and hocks (`hoof_joints` takes a knee now;
+  h's 8.4 under the hip), so a long thick forearm and gaskin taper to a short cannon. Picture 16. Still open: a
+  dotted row of dark pixels where each leg's top meets the belly.
