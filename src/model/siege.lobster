@@ -1260,10 +1260,15 @@ def elephant(s:SStyle, with_howdah:bool, play:bool = false, look:string = "") ->
     if play:
         sock(out, "head", ELEPHANT_NECK)
         out.anchors = beast_hips(hips)
+        if look != "":   // the sculpted legs and head grow out of the body, joined without a line
+            spec_num(out, "seam_legs", float3 { 10.0, 0.0, 0.0 })
+            spec_str(out, "seam_head", "head.beast_elephant_" + look)
+            spec_num(out, "seam_r", float3 { 9.0, 0.0, 0.0 })
+            sock(out, "join", ELEPHANT_NECK)
     return out
 
 def elephant_glb_mats(m:EleMats) -> dictionary<string, MMat>:
-    return mats_of([m.hide, m.dark, m.ivory, plain(html("#1a1412"))], ["hide", "dark", "ivory", "eye"])
+    return mats_of([m.hide, m.dark, m.ivory, plain(html("#1a1412")), plain(html("#8a8478"))], ["hide", "dark", "ivory", "eye", "nail"])
 
 def elephant_leg(n:MNode, hip:float3, side:float, m:EleMats):
     add_child(n, rod(hip, hip + float3 { 0.0, -25.0, 0.5 * side }, 5.6, 5.0, m.hide))

@@ -287,11 +287,14 @@ def horse_mats(c:Colours, mane_dark:float = 0.35) -> dictionary<string, MMat>:
 
 // Round BA2 (tools/blender/centaur.py looks c, d, e): the man standing up out of the breast, over the forelegs; the
 // horse half's frame at look c's size, each look scaled by centaur_k.
-let CENTAUR_SEAT = float3 { 12.5, 10.5, 0.0 }
+// round BA2 (c, d, e) and BA3 (f, g; tools/blender/centaur.py: a level back, the man growing out of the chest)
+def centaur_seat(look:string) -> float3: return if look < "f": float3 { 12.5, 10.5, 0.0 } else: float3 { 11.7, 11.2, 0.0 }
 let CENTAUR_WAIST = 19.1   // the waist's top over the seat (his hem 15.3 over it, 3.8 under the top)
-let CENTAUR_HIPS = [float3 { 10.0, 14.0, 2.9 }, float3 { -11.0, 14.0, 2.9 }, float3 { 8.5, 14.0, -2.9 }, float3 { -11.5, 14.0, -2.9 }]
+def centaur_hips(look:string) -> [float3]:
+    if look < "f": return [float3 { 10.0, 14.0, 2.9 }, float3 { -11.0, 14.0, 2.9 }, float3 { 8.5, 14.0, -2.9 }, float3 { -11.5, 14.0, -2.9 }]
+    return [float3 { 8.5, 14.0, 2.9 }, float3 { -9.0, 14.0, 2.9 }, float3 { 7.0, 14.0, -2.9 }, float3 { -9.5, 14.0, -2.9 }]
 
-def centaur_k(look:string) -> float: return if look == "d": 1.2 elif look == "e": 1.1 else: 1.0
+def centaur_k(look:string) -> float: return if look == "d": 1.2 elif look == "e": 1.1 elif look == "g": 1.15 else: 1.0
 
 def body_centaur2(c:Colours, look:string) -> Spec:
     let k = centaur_k(look)
@@ -302,14 +305,17 @@ def body_centaur2(c:Colours, look:string) -> Spec:
     add_child(lift, glb("body_centaur_" + look, horse_mats(c, 0.1)))
     let s = spec_of(n)
     let up = float3 { 0.0, PONY_LIFT, 0.0 }
-    sock(s, "head", (float3 { 16.0, 31.5, 0.0 } + up) * k)
-    sock(s, "hand_r", (float3 { 12.0, 18.0, 3.6 } + up) * k)
-    sock(s, "hand_l", (float3 { 10.0, 18.0, -3.6 } + up) * k)
+    let seat = centaur_seat(look)
+    let moved = seat - centaur_seat("c")
+    sock(s, "head", (float3 { 16.0, 31.5, 0.0 } + moved + up) * k)
+    sock(s, "hand_r", (float3 { 12.0, 18.0, 3.6 } + moved + up) * k)
+    sock(s, "hand_l", (float3 { 10.0, 18.0, -3.6 } + moved + up) * k)
     sock(s, "torso", (float3 { 0.0, 19.0, 0.0 } + up) * k)
     sock(s, "back", (float3 { -8.0, 24.0, 0.0 } + up) * k)
     // the man stays his size: his seat goes up with the waist, less the waist's top to his seat at look c's size
-    sock(s, "seat", (CENTAUR_SEAT + up) * k + float3 { 0.0, CENTAUR_WAIST * (k - 1.0), 0.0 })
-    s.anchors = map(CENTAUR_HIPS) h: anchor((h + up) * k, if (h.x > 0.0) == (h.z > 0.0): 0.0 else: MPI, if h.z > 0.0: 1 else: -1, [0.0, if h.x < 0.0: 1.0 else: 0.0])
+    sock(s, "seat", (seat + up) * k + float3 { 0.0, CENTAUR_WAIST * (k - 1.0), 0.0 })
+    s.anchors = map(centaur_hips(look)) h: anchor((h + up) * k, if (h.x > 0.0) == (h.z > 0.0): 0.0 else: MPI, if h.z > 0.0: 1 else: -1, [0.0, if h.x < 0.0: 1.0 else: 0.0])
+    spec_num(s, "seam_legs", float3 { 7.0 * k, 0.0, 0.0 })
     return spec_num(s, "torso_scale", float3 { 1.3, 1.0, 0.0 })
 
 // A pieced leg's pieces turned about their joints: a piece whose name starts with prefixes[i] turns turns[i] degrees
@@ -568,6 +574,12 @@ def build_units2(base:string, c:Colours) -> Spec?:
         case "leg.hoof_hind_d": return hoof_leg_sculpted(c, true, "d")
         case "leg.hoof_e": return hoof_leg_sculpted(c, false, "e")
         case "leg.hoof_hind_e": return hoof_leg_sculpted(c, true, "e")
+        case "body.pony_fused_f": return body_centaur2(c, "f")
+        case "body.pony_fused_g": return body_centaur2(c, "g")
+        case "leg.hoof_f": return hoof_leg_sculpted(c, false, "f")
+        case "leg.hoof_hind_f": return hoof_leg_sculpted(c, true, "f")
+        case "leg.hoof_g": return hoof_leg_sculpted(c, false, "g")
+        case "leg.hoof_hind_g": return hoof_leg_sculpted(c, true, "g")
         case "body.capybara": return body_capybara(c)
         case "head.capybara": return head_capybara(c)
         case "leg.capybara": return leg_capybara(c)
