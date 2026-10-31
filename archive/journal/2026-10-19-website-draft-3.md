@@ -112,3 +112,18 @@ typing (a "#" opens the channel picker and eats words, Escape closes the whole d
 away and lost an unsaved AutoMod rule). Then the stickers and emoji went in: eight emoji (:frogcrest: :vikingfrog: :ratbear: :bear: :spider: :centaur:
 :quill: :oddhelm:) and the five free sticker slots (Viking frog, Rat on a bear, Odd helm, Spider, Frog crest), each with
 a short description for screen readers.
+
+## A test site, and the battle again
+Dominic asked for a test deploy with search engines kept out: the site got a test build (`npm run deploy:test`:
+every page noindex, robots.txt disallows all, an X-Robots-Tag header, checked before it deploys) on its own worker,
+age-of-anything-test on workers.dev. Looking at it, he called the battle picture terrible: "frogs look upside down,
+too messy". The frogs were dying ones: a hopper's fall turns its whole sprite over ("lands on its back"), which on a
+flat sprite reads as upside down; the shot was deep in the melee, mostly the fallen and spent arrows. The showcase
+scene got a start gap, a smaller army and "across" (the armies come in from the left and right, both seen
+three-quarter); the new picture is the moment the lines meet, arrows in the air, the war heron leading the frogs, the
+elephant behind the centaurs, nobody down yet (29). He also found the text too narrow on a 14-inch Mac: the page went
+from 1180 to 1320 px and the text columns from about 350 to 500-560 px, one column below 980 px.
+Then the army box: "if user hasn't clicked, this should auto cycle". It now steps through its six prompts on its
+own, about every five seconds, until a visitor picks one; it holds still while hovered, focused or off screen, never
+moves with reduced motion, has a small Pause button (content that moves on its own for more than five seconds needs
+one), and only announces the race to screen readers when the visitor chose it.

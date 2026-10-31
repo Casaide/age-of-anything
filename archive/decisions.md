@@ -1303,3 +1303,31 @@ races, starts, every model and building, research text); the Godot test suites l
 test_ai, test_2v2, heroes, race identity, the balance and audit tools); `./tests/batch.sh` runs them side by side, 4 at
 once by default (Dominic's fans). Supersedes D-168's "Godot only bakes the art" and D-183's "Godot left for parity".
 Left over: `docs/backlog.md`, "Left from the Lobster port". Claude, for Dominic.
+
+**D-185, 2026-10-29: Buildings and props ship baked; a unit part bakes on the GPU.** Dominic, on a 480 MB match start
+for one 2v2's buildings: "Saving masses of pngs to disk at game start seems nuts"; "work smarter not harder". The
+game is generative in its races, not its buildings: a culture's buildings and the props are the same for every prompt,
+so they're baked once on the build machine (`src/prebake.sh` -> `src/baked/`, compressed, 152 MB for all six
+architectures) and shipped; a match start bakes none of them (134 s -> 3 ms on the Android emulator) and loads a sheet
+the first time it's drawn. A race's own parts still bake where it's played, but faster: meshes made once a part in
+model space, projected in the shaders, and the shrink to pixels on the GPU (two races 67 s -> 9 s on the Mac, a match
+start 9 s on the emulator), the same pixels as before. Claude, for Dominic.
+
+**D-186, 2026-10-29: A match start bakes only the age it starts in; one loader.** Dominic, on the phone: "Android unit
+generation is just too slow, few mins. Are we generating things we don't immediately need? Also we should only have
+one loader." We were: of the 487 parts two races' units wear, 322 (two thirds) are their Age 2 and 3 line steps. The
+start now bakes the steps each player can field in the age it starts in (Mac, cold cache: 28.8 s -> 4.8 s); the rest
+queue for play to bake a facing a frame, the next age's first (a part's bake is now a job of eight facings,
+`BakeJob`), done in about 20 s of play on the Mac, well before anyone ages up. The bake drives the match loader's own
+bar and line ("Making the armies"), instead of a frozen picture of it with a second line underneath; the title and
+setup pages lose their own "Making the armies" bar, and a unit there shows once all its parts are baked (not a spear
+floating on its own). Claude, for Dominic.
+
+**D-187, 2026-10-30: The game's icon is the parts kit; the boot screen shows it in gold.** Dominic picked the Discord
+icon (a frog, a horned helm, a shield and a sword on a model-kit sprue, ink on yellow: `docs/concepts/icon/chosen/`)
+as the game's icon. Its source is now `assets/art/ui/game_icon.svg`: Android's launcher icon (an adaptive icon, the
+yellow behind and the ink inside the safe zone; the splash shows it on the dark brown), the Mac's Dock icon through a
+new `gl.window_icon` in Dominic's Lobster fork (SDL_SetWindowIcon), the Deck build's `icon.png` and a desktop
+launcher. The boot screen (before the title) was only text; of three concepts (`docs/concepts/boot/`: the yellow tile
+on the wood, a yellow card, the ink as gold inlay on the wood) Dominic picked C, the gold inlay, of a piece with the
+title's gold crest, with a bar over the start's steps. Claude, for Dominic.
