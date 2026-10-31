@@ -24,3 +24,11 @@ saw "parts of the UI zoomed in super huge" for a few seconds.
 - The balance fights at load stay (D-170): the first round still finds half the lines or more over 10 points off.
   Offered Dominic: keep prices by race key, and fight while the setup page is open.
 - The tunic is a look change: concepts first, not done yet.
+
+## Evening: the axe still left the hand in play (rats and humans)
+Dominic: "rats have the same issue with chopping animation ... the axe rotates and comes out of their hand". The sheet
+looked right, the game didn't: a worker takes its raise, thrust or reach pose only once that pose is baked, and
+nothing in a match ever asked for it (the sheet tool bakes the poses itself). So in play the arm hung at the side
+while the axe swung round the hand. Now the workers' work poses are queued first at the match start (in use within two
+seconds with races nobody had baked), and a pose missing when a worker needs it is asked for. Same lesson as the
+port: the check passed on a path the game doesn't take.
