@@ -1,6 +1,6 @@
 {
  "schema": "aow.later/1",
- "_doc": "Beast anatomy, concept round BA1 (2026-10-30; Dominic, on centaur romans' war elephant in play: 'quality here is bad, they are clearly a bunch of spheres put together ... we need to improve'). The war elephant and the centaur's horse half sculpted in Blender, two looks each, for tests/sheets/beast_anatomy_ba1.json (nothing in the game loads this file). Elephant a (eastern: arched back, twin-domed forehead, small ears, short tusks), b (bush: high shoulder, sloping forehead, fan ears, long tusks): tools/blender/elephant.py, src/model/siege.lobster elephant(look). Centaur a (a riding horse's half), b (a heavy horse's, feathered fetlocks): tools/blender/centaur.py, src/model/units2.lobster body_centaur, hoof_leg_sculpted. Round BA2 (2026-10-30; Dominic on BA1: 'the elephant looks better mostly, weird ears. But the centaurs looks mad'): centaur c (a riding horse's half in a horse's proportions, the man standing up out of the breast), d (the same a size up), e (a heavy horse, feathered); the elephants' ears rebuilt hanging from the head (tools/blender/centaur.py; BA1's centaurs: centaur_ba1.py). Round BA3 (2026-10-31, after 'a banana with the human part perched on top'): body.pony_fused_f/_g, leg.hoof[_hind]_f/_g, creatures pony_ba3_f/_g (tools/blender/centaur.py; BA2 kept as centaur_ba2.py).",
+ "_doc": "Beast anatomy, concept round BA1 (2026-10-30; Dominic, on centaur romans' war elephant in play: 'quality here is bad, they are clearly a bunch of spheres put together ... we need to improve'). The war elephant and the centaur's horse half sculpted in Blender, two looks each, for tests/sheets/beast_anatomy_ba1.json (nothing in the game loads this file). Elephant a (eastern: arched back, twin-domed forehead, small ears, short tusks), b (bush: high shoulder, sloping forehead, fan ears, long tusks): tools/blender/elephant.py, src/model/siege.lobster elephant(look). Centaur a (a riding horse's half), b (a heavy horse's, feathered fetlocks): tools/blender/centaur.py, src/model/units2.lobster body_centaur, hoof_leg_sculpted. Round BA2 (2026-10-30; Dominic on BA1: 'the elephant looks better mostly, weird ears. But the centaurs looks mad'): centaur c (a riding horse's half in a horse's proportions, the man standing up out of the breast), d (the same a size up), e (a heavy horse, feathered); the elephants' ears rebuilt hanging from the head (tools/blender/centaur.py; BA1's centaurs: centaur_ba1.py). Round BA3 (2026-10-31, after 'a banana with the human part perched on top'): body.pony_fused_f/_g, leg.hoof[_hind]_f/_g, creatures pony_ba3_f/_g (tools/blender/centaur.py; BA2 kept as centaur_ba2.py). Concept C1 (2026-10-31, docs/concepts/centaur): Dominic picked option B; modelled as body.pony_fused_h, leg.hoof[_hind]_h, creature pony_c1_h (f shorter behind the shoulder).",
  "parts": [
   {
    "id": "siege.beast.elephant_a",
@@ -2066,6 +2066,254 @@
     },
     "_poses_doc": "D-179: each leg bent at the knee or hock, baked in 8 walk steps (leg.hoof@w<i>_<n>, its hind leg.hoof_hind; unit_models.gd hoof_joints), the body riding on the planted hooves"
    }
+  },
+  {
+   "id": "leg.hoof_h",
+   "slot": "leg",
+   "shapes": [
+    {
+     "t": "poly",
+     "p": [
+      [
+       -1.5,
+       0
+      ],
+      [
+       1.5,
+       0
+      ],
+      [
+       1.5,
+       11
+      ],
+      [
+       -1.5,
+       11
+      ]
+     ],
+     "ch": "skin"
+    },
+    {
+     "t": "poly",
+     "p": [
+      [
+       -2,
+       11
+      ],
+      [
+       2,
+       11
+      ],
+      [
+       2,
+       13
+      ],
+      [
+       -2,
+       13
+      ]
+     ],
+     "ch": "eye"
+    }
+   ],
+   "tags": [],
+   "stats": {},
+   "points": 0
+  },
+  {
+   "id": "leg.hoof_hind_h",
+   "_doc": "a horse's hind leg: the hock bends back (D-179, unit_models.gd _hoof_leg)",
+   "slot": "leg",
+   "shapes": [
+    {
+     "t": "poly",
+     "p": [
+      [
+       -1.5,
+       0
+      ],
+      [
+       1.5,
+       0
+      ],
+      [
+       1.5,
+       11
+      ],
+      [
+       -1.5,
+       11
+      ]
+     ],
+     "ch": "skin"
+    },
+    {
+     "t": "poly",
+     "p": [
+      [
+       -2,
+       11
+      ],
+      [
+       2,
+       11
+      ],
+      [
+       2,
+       13
+      ],
+      [
+       -2,
+       13
+      ]
+     ],
+     "ch": "eye"
+    }
+   ],
+   "tags": [],
+   "stats": {},
+   "points": 0
+  },
+  {
+   "id": "body.pony_fused_h",
+   "slot": "body",
+   "noun": "Pony",
+   "cut": [
+    "legs"
+   ],
+   "points": 9,
+   "price_points": 11,
+   "cost_mix": {
+    "food": 100
+   },
+   "large": false,
+   "large_note": "a centaur is one body, not a rider on a big beast: mounted (cavalry, quick), but not large (one place in a house, and spears' bonus against large beasts doesn't reach it)",
+   "cost_mix_note": "a centaur's horse half is its own body, priced like a body (half food, half wood), not a ridden mount that eats (70/30)",
+   "rider_loses": [
+    "infantry"
+   ],
+   "tags": [
+    "beast",
+    "mount",
+    "fast"
+   ],
+   "stats": {
+    "hp": 45,
+    "speed": 16,
+    "armour": {
+     "melee": 0,
+     "pierce": 3
+    },
+    "bonus": {
+     "ranged": 3,
+     "siege": 4
+    }
+   },
+   "shapes": [
+    {
+     "t": "line",
+     "p": [
+      [
+       -13,
+       -20
+      ],
+      [
+       -18,
+       -12
+      ]
+     ],
+     "w": 3,
+     "ch": "skin2"
+    },
+    {
+     "t": "ellipse",
+     "c": [
+      0,
+      -19
+     ],
+     "r": [
+      14,
+      7
+     ],
+     "ch": "skin"
+    }
+   ],
+   "sockets": {
+    "head": [
+     16,
+     -32
+    ],
+    "hand_r": [
+     10,
+     -18
+    ],
+    "hand_l": [
+     8,
+     -18
+    ],
+    "torso": [
+     0,
+     -19
+    ],
+    "back": [
+     -8,
+     -22
+    ],
+    "seat": [
+     12,
+     -11
+    ]
+   },
+   "torso_scale": [
+    1.8,
+    1.0
+   ],
+   "legs": {
+    "part": "leg.hoof_h",
+    "hind": "leg.hoof_hind_h",
+    "anchors": [
+     [
+      8,
+      -11,
+      0,
+      1,
+      0,
+      false
+     ],
+     [
+      -7,
+      -11,
+      3.14,
+      1,
+      0,
+      true
+     ],
+     [
+      7,
+      -11,
+      3.14,
+      -1,
+      0,
+      false
+     ],
+     [
+      -7,
+      -11,
+      0,
+      -1,
+      0,
+      true
+     ]
+    ],
+    "poses": 8,
+    "gait": {
+     "swing": 0.0,
+     "cadence": 1.0,
+     "bob": 0.9,
+     "rock": 0.035
+    },
+    "_poses_doc": "D-179: each leg bent at the knee or hock, baked in 8 walk steps (leg.hoof@w<i>_<n>, its hind leg.hoof_hind; unit_models.gd hoof_joints), the body riding on the planted hooves"
+   }
   }
  ],
  "creatures": {
@@ -2244,6 +2492,33 @@
    "plural": "Ponies",
    "body": "body.pony",
    "fused_body": "body.pony_fused_g",
+   "head": "head.pony",
+   "playable": false,
+   "mount": true,
+   "skins": [
+    "pony_bay",
+    "pony_grey",
+    "pony_dun",
+    "pony_white"
+   ],
+   "families": [
+    "steppe",
+    "royal"
+   ]
+  },
+  "pony_c1_h": {
+   "not_ridden_by": [
+    "beetle",
+    "bear",
+    "bear_black",
+    "bear_polar"
+   ],
+   "_not_ridden_by_doc": "beetles don't ride horses (Dominic, 2026-10-13): they ride beetles, or spiders and newts by culture",
+   "voice": "pony",
+   "noun": "Pony",
+   "plural": "Ponies",
+   "body": "body.pony",
+   "fused_body": "body.pony_fused_h",
    "head": "head.pony",
    "playable": false,
    "mount": true,

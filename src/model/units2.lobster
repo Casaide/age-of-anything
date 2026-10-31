@@ -287,14 +287,17 @@ def horse_mats(c:Colours, mane_dark:float = 0.35) -> dictionary<string, MMat>:
 
 // Round BA2 (tools/blender/centaur.py looks c, d, e): the man standing up out of the breast, over the forelegs; the
 // horse half's frame at look c's size, each look scaled by centaur_k.
-// round BA2 (c, d, e) and BA3 (f, g; tools/blender/centaur.py: a level back, the man growing out of the chest)
+// round BA2 (c, d, e) and BA3 (f, g; tools/blender/centaur.py: a level back, the man growing out of the chest); h is
+// concept C1's option B (docs/concepts/centaur): f shorter behind the shoulder
 def centaur_seat(look:string) -> float3: return if look < "f": float3 { 12.5, 10.5, 0.0 } else: float3 { 11.7, 11.2, 0.0 }
 let CENTAUR_WAIST = 19.1   // the waist's top over the seat (his hem 15.3 over it, 3.8 under the top)
 def centaur_hips(look:string) -> [float3]:
     if look < "f": return [float3 { 10.0, 14.0, 2.9 }, float3 { -11.0, 14.0, 2.9 }, float3 { 8.5, 14.0, -2.9 }, float3 { -11.5, 14.0, -2.9 }]
+    if look == "h": return [float3 { 8.5, 11.6, 2.9 }, float3 { -7.0, 11.6, 2.9 }, float3 { 7.0, 11.6, -2.9 }, float3 { -7.4, 11.6, -2.9 }]
     return [float3 { 8.5, 14.0, 2.9 }, float3 { -9.0, 14.0, 2.9 }, float3 { 7.0, 14.0, -2.9 }, float3 { -9.5, 14.0, -2.9 }]
 
 def centaur_k(look:string) -> float: return if look == "d": 1.2 elif look == "e": 1.1 elif look == "g": 1.15 else: 1.0
+def centaur_legk(look:string) -> float: return if look == "h": 0.85 else: 1.0   // h: short legs, its hips 2.4 lower
 
 def body_centaur2(c:Colours, look:string) -> Spec:
     let k = centaur_k(look)
@@ -331,7 +334,7 @@ def turn_pieces(leg:MNode, prefixes:[string], pivots:[float2], tos:[float2], tur
 // The sculpted horse leg (centaur.py leg_horse[_hind]_<look>.glb) in a walk step: the upper leg about the hip, the
 // cannon about the knee or hock, the pastern and hoof about the fetlock, by hoof_joints.
 def hoof_leg_sculpted(c:Colours, hind:bool, look:string) -> Spec:
-    let k = centaur_k(look)
+    let k = centaur_k(look) * centaur_legk(look)
     let jk0, jf0, curl = hoof_joints(hind, if hold == "low": "" else: hold)
     let jk = jk0 * k
     let jf = jf0 * k
@@ -580,6 +583,9 @@ def build_units2(base:string, c:Colours) -> Spec?:
         case "leg.hoof_hind_f": return hoof_leg_sculpted(c, true, "f")
         case "leg.hoof_g": return hoof_leg_sculpted(c, false, "g")
         case "leg.hoof_hind_g": return hoof_leg_sculpted(c, true, "g")
+        case "body.pony_fused_h": return body_centaur2(c, "h")
+        case "leg.hoof_h": return hoof_leg_sculpted(c, false, "h")
+        case "leg.hoof_hind_h": return hoof_leg_sculpted(c, true, "h")
         case "body.capybara": return body_capybara(c)
         case "head.capybara": return head_capybara(c)
         case "leg.capybara": return leg_capybara(c)

@@ -62,3 +62,6 @@ together ... we need to improve".
   modelling stops here. Round C1 is drawn: `docs/concepts/centaur/` (`tools/art/centaur_concept.py`), three
   proportions (A classic, B compact hero, C long and low), each also at play size. Picture
   `archive/images/2026-10-31/11-centaur-concept-c1.png`.
+- Dominic: "B looks good". B modelled as look h: BA3's f shorter behind the shoulder, deeper, on legs 0.85 as long.
+  Matched to the drawing's numbers exactly (legs 0.75, the belly 4 lower) it read as a sheep from the game's camera,
+  so it stops short. Placement passes. Pictures 12 (the drawing beside the bakes) and 13.
