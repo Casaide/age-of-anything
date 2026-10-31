@@ -1934,7 +1934,7 @@ def note(s:string):
 note("start")
 // (a capture runs without vsync: with the display asleep, vsync never lets a frame through)
 fatal(gl.window("Age of Anything (Lobster)", 1600, 1000, if shot != "" or selftest or padtest: gl.window_init_no_vsync else: 0))
-if shot != "" or selftest or padtest: gl.set_target_delta_time(1.0 / 60.0)
+gl.set_target_delta_time(1.0 / 60.0)   // (a 120 Hz display would draw twice as often for nothing: the laptop runs hot)
 gl.window_icon("icons/game_icon.png")   // (the Dock's icon on the Mac)
 note("window")
 fatal(gl.load_materials(SPRITE_SHADERS, true))
