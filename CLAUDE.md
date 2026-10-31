@@ -104,6 +104,7 @@ Lobster on this Mac: `~/Dev/lobster/bin/lobster` (alias it as `lobster`). Run pr
 ./play.sh lobby page:setup mute shot:/tmp/s.png at:2               # a capture (page:title|setup|lab|saves|net|boot; shot: after at: seconds)
 ./tests/batch.sh --quick                                           # unit tests, the sim, the AI's quick checks, 3D placement (~2 min)
 ./tests/batch.sh                                                   # the whole batch side by side (adds every AI piece, 2v2, 2D placement, golden, saves, network)
+./play.sh lobby "races:sewer rats|romans" watch mute perf:20        # the drawing's cost in the real window (vsync on), fails over budget (game/perf.lobster; in the batch, alone)
 lobster run_tests.lobster                                          # the unit tests (~3 s; part:i/n)
 lobster test_sim.lobster -- [part:a,b] [shard:i/n]                 # the sim: determinism, tick time, every system (~30 s serial)
 lobster test_ai.lobster -- [map] [quick|piece:<name>|levels] [shard:i/n]   # the AI: scenario checks and whole bot matches
@@ -251,6 +252,8 @@ game; everything expressive is ours. In code, data, docs, the archive and commit
   arrays). Imports live in the main programs (`game.lobster`, `placement/deps.lobster`), in an order where each file's
   globals come before their users.
 - Keep tests headless where they can be, silent, and fast.
+- Shapes drawn every frame go through `gl.draw_mesh` (pooled buffers), never `gl.new_mesh` + `gl.render_mesh`: each
+  new mesh is two GPU buffers, and freeing them makes macOS wait for the GPU (D-188; `perf:` catches it).
 
 ## Later (not now)
 
