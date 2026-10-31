@@ -1,0 +1,16 @@
+{
+ "name": "rat_work_w1",
+ "title": "Rats chopping (Dominic, 2026-10-31: the same issue as the humans' chop)",
+ "zooms": [4],
+ "cell": [58, 60],
+ "rows": [
+  {"label": "woodcutter\n(sewer rats)", "unit": {"prompt": "sewer rats", "slot": "worker", "age": 1}},
+  {"label": "woodcutter\n(rats)", "unit": {"prompt": "rats", "slot": "worker", "age": 1}},
+  {"label": "woodcutter\n(vikings)", "unit": {"prompt": "vikings", "slot": "worker", "age": 1}}
+ ],
+ "sheets": [
+  {"name": "chop1", "title": "chopping, facing 1", "columns": "work:chop,1"},
+  {"name": "chop2", "title": "chopping, facing 2 (towards)", "columns": "work:chop,2"},
+  {"name": "chop5", "title": "chopping, facing 5", "columns": "work:chop,5"}
+ ]
+}
