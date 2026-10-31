@@ -1340,3 +1340,11 @@ frames a second, or when a frame creates GPU buffers (`gl.buffers_made`, new in 
 3.3 ms, 4.6 ms, 60 a second, none. It runs in the full batch, alone. Shapes drawn every frame use `gl.draw_mesh`
 (new in Lobster: a mesh's arguments drawn from pooled buffers), never `gl.new_mesh` + `gl.render_mesh`: the UI made
 about 1,500 buffers a frame that way, 13.7 ms of a frame's work. Claude, for Dominic.
+
+**D-189, 2026-10-31: The bears' bodies are one lofted mass (B4 option A).** Dominic, on bears "made of spheres" with
+"a weird bit out the back of their neck", picked A of round B4: a biped bear's torso, neck and shoulders are one mesh
+lofted through the kit's volumes (`body.loft` in `data/creature_kit.json`, `kit_loft` in `src/model/kit_bodies.lobster`),
+round in section and smoothed, so the hump is a swell of the back and the neck widens into the shoulders. Worn
+armour is fitted to the loft. The lump itself was a bug: the neck ended where the head would be if the bear stood
+straight. The mount bear (four legs) keeps its volumes for now. B (carved planes) and C (tapered limbs) stay in the
+sheet `tests/sheets/bears_b4.json`. Dominic picked, Claude built.
