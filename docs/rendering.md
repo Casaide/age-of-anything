@@ -388,6 +388,18 @@ Parts, buildings and props are baked by Lobster code (there is no engine viewpor
 - **One job per thing.** A unit part in all its facings (`bake_model_part`, `part_bake.lobster`), one look of one
   building with its stages and extra parts (`akb_bake_look`, `art_kit_buildings.lobster`), a prop with its stages
   (`ak_bake`, `art_kit.lobster`; `bake_doodads`).
+- **Shipped, not baked at the start (D-185).** Buildings and props don't depend on the prompt, only on the culture's
+  architecture, so they're baked once on the build machine: `src/prebake.sh` runs the game with `prebake`, which bakes
+  every prop and every architecture's buildings into `src/baked/` (not committed; remade when `BAKE_VERSION` changes)
+  and compresses the PNGs (`tools/art/squeeze_png.py`: the game's own PNG writer stores pixels raw, ~7x larger). The
+  game reads `baked/` before `bake_cache/` (`bake_shipped_dir`); the Deck and Android builds run the prebake and ship
+  the folder (152 MB for all six architectures). Sheets from disk load when first drawn (`add_sheet_later`,
+  `sheet_texture` in `game/pack.lobster`), so a match holds only the art it shows.
+- **A unit part's bake on the GPU (D-185).** Each part's meshes are made once in model space for all its facings and
+  passes (`bake_meshes`); the facing's projection goes to the shaders as three rows. The shrink to pixels
+  (`gpu_pixelize`: `bakeshrink`, `bakejoin`) runs on the GPU and only the small picture is read back; the alpha cut,
+  seam and outline (`pixelize_finish`) stay on the CPU on that small picture. Output matches the CPU path
+  (`pixelize`, still used by the building and prop bakes) to within a colour step. Two races' parts: 67 s -> 9 s.
 - **On disk.** `src/bake_cache/` holds every bake with a record of its frame sizes, anchors, look and lights (parts:
   `cache_stem_of`; buildings `akb_stem`; props `ak_stem`). Each name hashes `BAKE_VERSION` (in `part_bake.lobster`)
   with the part. Change the models, the bakers or the art data, raise `BAKE_VERSION`, and `src/bake_cache.sh`

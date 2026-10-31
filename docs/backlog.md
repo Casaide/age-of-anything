@@ -42,6 +42,17 @@ the rubble, the siege tower and ladder, the trade cart, the unique units' themes
   buildings, tech, audio and creature-kit creatures moddable; model scripts sandboxed or `.glb`-only for shared mods;
   installed from a zip on a second machine with the same race key and a match played; Steam Workshop.
 
+### Android and the bake rework (Claude, 2026-10-29, D-185)
+
+- **Touch, after Dominic's first go** (built 2026-10-29: `game/touch.lobster`, tap/hold/drag/pinch through the pad's
+  controls): a way to deselect without the back button, attack-move, groups, the idle-worker and Town Center jumps,
+  and whether the bottom panel should give way to the wheel on a small screen.
+- **Android: layout** on a wide phone (2400x1080): the setup page's lowest line is cut off.
+- **The building and prop bakes on the GPU path too** (they still shrink on the CPU: the prebake takes ~7 minutes).
+- **pixelize_finish on the GPU** (the alpha cut and outline: 2.3 s of the 9 s for two races).
+- **Texture memory:** all six architectures' sheets are 1.4 GB as textures; only what's drawn loads now, but nothing
+  unloads, and phones may want compressed textures (ETC2).
+
 ### Left from the Lobster port when Godot was retired (Claude, 2026-10-28)
 
 The Lobster game has everything the Godot one did that a player meets, but for these:

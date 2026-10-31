@@ -4,3 +4,6 @@ build/
 
 # Private, unofficial mod tests (milestone 21): never committed, never exported. See docs/modding.md.
 mods_private/
+# video footage and old-build worktrees (docs/video/ holds the plans)
+/video/
+.godot/
