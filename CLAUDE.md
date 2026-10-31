@@ -85,6 +85,8 @@ src/             the game, in Lobster; run everything from here (paths are ../da
   placement/       the placement check's rules (3D: geometry; 2D: projection, case2d, composite; the bug fixtures)
   net/             lockstep over TCP, the LAN beacon
   deck/build.sh    the Steam Deck build (Lobster built for Linux in a container)
+  android/         the Android build: build.sh, the activity, SDL's Java side, Lobster's engine patched for GLES and touch
+  baked/           the buildings and props, baked once by prebake.sh and shipped (not committed; read before bake_cache/)
   golden/          the golden files: races, starts, every model and building, research text
   bake_cache/      baked parts, buildings and props (not committed; emptied when BAKE_VERSION changes)
 assets/          models (.glb from Blender), SVG icons and textures, audio (rendered), fonts
@@ -101,7 +103,7 @@ Lobster on this Mac: `~/Dev/lobster/bin/lobster` (alias it as `lobster`). Run pr
 ```sh
 ./play.sh                                                          # the game: the title screen (Battle the AI, network, saves, Race Lab)
 ./play.sh lobby "races:sewer rats|romans" watch mute               # straight into a match, the bot playing you too, silent
-./play.sh lobby page:setup mute shot:/tmp/s.png at:2               # a capture (page:title|setup|lab|saves|net; shot: after at: seconds)
+./play.sh lobby page:setup mute shot:/tmp/s.png at:2               # a capture (page:title|setup|lab|saves|net|boot; shot: after at: seconds)
 ./tests/batch.sh --quick                                           # unit tests, the sim, the AI's quick checks, 3D placement (~2 min)
 ./tests/batch.sh                                                   # the whole batch side by side (adds every AI piece, 2v2, 2D placement, golden, saves, network)
 lobster run_tests.lobster                                          # the unit tests (~3 s; part:i/n)
@@ -120,6 +122,8 @@ lobster race_matches.lobster -- reed_meadow; lobster mass_battle.lobster -- 2; l
 python3 gen_reset.py                                               # after adding a sim global: reset and save code
 ./textures.sh; ./icons.sh                                          # SVG textures and icons as PNGs (rsvg-convert), after one changes
 src/deck/build.sh                                                  # the Deck build (podman machine `aoa-build` running)
+src/android/build.sh                                               # the Android APK (build/android/age-of-anything.apk; adb install -r it)
+src/prebake.sh                                                     # every building and prop baked once into src/baked/ (the builds ship it, D-185)
 python3 tools/audio/render.py [sfx|voices|music|<name>...]         # re-render the sounds into assets/audio (from the repo root)
 python3 tools/maps/reed_meadow.py; python3 tools/maps/siege_vale.py   # rebuild maps from their layouts
 python3 tools/mods/new_mod.py <id> [--era <tag>] [--private]       # scaffold a mod (docs/modding.md); tools/mods/pack.py <id> zips it
