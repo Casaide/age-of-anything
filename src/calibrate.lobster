@@ -1,0 +1,484 @@
+// Prices calibrated offline (D-186): what a part is worth, from fights, once, not per match. Run from src:
+//   ./shards.sh calibrate.lobster lines <age> <races> [jobs=4]
+//       <races> races from the lexicon's words (training prompts, the lobby's dice made deterministic); each of
+//       their lines in <age> is fought against a fixed panel (every line of PANEL's races) at equal cost, its
+//       price moved until it wins half: its fair price. The combine writes the samples to ../build/calibrate/.
+//   lobster calibrate.lobster -- fit [lambda:<n>] [write]
+//       each sample's fair price -> its target points (the cost curve's inverse), then every part's
+//       price_points by regularized least squares (a unit's points are the sum of its parts'); prints what
+//       moved, and with write puts them in ../build/calibrate/prices.json for tools/balance/write_prices.py.
+//   ./shards.sh calibrate.lobster measure [pool] [check:<n>] [oracle] [jobs=4]
+//       held-out races and the setup's defaults in groups, each group's round robin at the prices as they are
+//       (no fights at load): how many lines are more than 10 points off the mean of their group. check:<n> fails
+//       (exit 1) when more than n percent of all lines are (tests/batch.sh: a new part can't slip in unpriced).
+//       pool: every held-out line in one round robin (some 140 fights a line, not 13: far less noise).
+//       oracle: each line at its own fair price against the panel instead (./shards.sh calibrate.lobster oracle
+//       first): the best pricing by panel can do, fit or no fit.
+import std
+import vec
+import dictionary
+import gen.json
+import gen.sha256
+import gen.rng
+import gen.datalib
+import gen.identity
+import gen.pricing
+import gen.heroes
+import gen.generator
+import lib.consts
+import lib.fixed
+import lib.tokens
+import lib.state
+import lib.flow
+import lib.spatial
+import lib.orders
+import lib.movement
+import lib.fog
+import lib.map
+import lib.economy
+import lib.tech
+import lib.combat
+import lib.siege
+import lib.eco_bot
+import lib.garrison
+import lib.heal
+import lib.heroes
+import lib.match
+import lib.trade
+import lib.animals
+import lib.bridges
+import lib.walls
+import lib.abilities
+import lib.trails
+import lib.commands
+import lib.ai_cfg
+import lib.scout
+import lib.land
+import lib.expand
+import lib.bot
+import lib.walls_ai
+import lib.world
+import gen.setup
+import gen.modes
+import gen.start
+import gen.reset
+import gen.balance
+
+let PANEL = ["greek hoplites", "sewer rats with cheese hammers"]
+let PRICE_LO = 40     // percent of the generator's price: the search's bracket
+let PRICE_HI = 250
+let STEPS = 5         // halvings of the bracket (in ratio): about 3% at the end
+let TOLERANCE = 10    // win-rate points off the group's mean
+let OUT_DIR = "../build/calibrate"
+
+let args0 = command_line_arguments()
+def shard_arg(xs:[string]) -> int, int:
+    for(xs) a:
+        if starts_with(a, "shard:"):
+            let i, n = split_string(a.substring(6, a.length - 6), "/")
+            return string_to_int(i), string_to_int(n)
+    return 0, 1
+def combine_index(xs:[string]) -> int:
+    for(xs) a, n:
+        if a == "combine": return n
+    return -1
+def opt(xs:[string], name:string, fallback:string) -> string:
+    for(xs) a:
+        if starts_with(a, name + ":"): return a.substring(name.length + 1, a.length - name.length - 1)
+    return fallback
+let shard, shards = shard_arg(args0)
+let combine_at = combine_index(args0)
+let logs = if combine_at >= 0: args0.slice(combine_at + 1, -1) else: []::string
+let args = filter(if combine_at >= 0: args0.slice(0, combine_at) else: args0) a: not starts_with(a, "shard:")
+lib_load("../data")
+id_load("../data")
+let rules = load_rules("default")
+let bare = bare_rules(rules)
+
+// ---- prompts: the lobby's dice (fe_random_words), from a seed
+
+def lexicon_words() -> [string], [string], [string], [string]:
+    let creatures = []::string
+    let cultures = []::string
+    let kit = []::string
+    let sizes = []::string
+    for(lib_lexicon.keys) w, n:
+        let e = lib_lexicon.a[n]
+        if has(e, "creature") and ends_with(w, "s") and gbool(gobj(lib_creatures, gstr(e, "creature", "")), "playable", false): creatures.push(w)
+        elif has(e, "family") and not has(e, "creature"): cultures.push(w)
+        elif e.keys.length == 1 and has(e, "tags"): kit.push(w)
+        elif e.keys.length == 1 and has(e, "size"): sizes.push(w)
+    return sorted_strs(creatures), sorted_strs(cultures), sorted_strs(kit), sorted_strs(sizes)
+
+def random_prompts(seed:string, count:int) -> [string]:
+    let cr, cu, ki, si = lexicon_words()
+    let r = new_rng(hash_text(seed))
+    return map(count):
+        let words = []::string
+        if chance(r, 25): words.push(rpick(r, si))
+        if chance(r, 70): words.push(rpick(r, cu))
+        words.push(rpick(r, cr))
+        if chance(r, 65):
+            words.push("with " + rpick(r, ki))
+            if chance(r, 35): words.push("and " + rpick(r, ki))
+        concat_string(words, " ")
+
+// ---- a line's parts (as evaluate adds them up) and the rest of its points
+
+def line_parts(recipe:JV) -> [string]:
+    let out = [as_str(at(recipe, "body"))]
+    if gstr(recipe, "head", "") != "": out.push(as_str(at(recipe, "head")))
+    for(at(recipe, "parts").a) v: out.push(as_str(v))
+    for(gobj(recipe, "kit").a) v: out.push(as_str(v))
+    let mount = get(recipe, "mount")
+    if mount:
+        let mc = creature(as_str(at(mount, "creature")))
+        out.push(if gbool(mount, "fused", false): gstr(mc, "fused_body", as_str(at(mc, "body"))) else: gstr(mc, "mount_body", as_str(at(mc, "body"))))
+        for(at(mount, "parts").a) v: out.push(as_str(v))
+    return out
+
+def step_at(u:JV, age:int) -> JV:
+    var step = glist(u, "line")[0]
+    for(glist(u, "line")) l:
+        if as_int(at(l, "age")) <= age: step = l
+    return step
+
+def step_of(race:JV, slot:string, age:int) -> JV:
+    for(glist(race, "units")) u:
+        if rstr(at(u, "recipe"), "slot") == slot: return step_at(u, age)
+    assert false
+    return jobj()
+
+def spaced(s:string) -> string: return concat_string(tokenize(s, "_", ""), " ")
+def unspaced(s:string) -> string: return concat_string(tokenize(s, " ", ""), "_")
+
+// ---- lines: fair prices against the panel
+
+// Percent of the panel's fights it wins (a draw half), its line at pct of its price.
+def panel_score(races:[JV], age:int, unit:RRUnit, panel:[RRUnit], pct:int) -> int:
+    rr_price_pct.set(price_key(races, unit), pct)
+    var score = 0
+    for(panel) p:
+        let r = rr_fight(races, bare, age, unit, p)
+        score += if r > 0: 2 elif r == 0: 1 else: 0
+    rr_price_pct.set(price_key(races, unit), 100)
+    return score * 50 / panel.length
+
+def fair_pct(races:[JV], age:int, unit:RRUnit, panel:[RRUnit]) -> int:
+    var lo = PRICE_LO
+    var hi = PRICE_HI
+    for(STEPS):
+        let mid = isqrt(lo * hi)
+        if panel_score(races, age, unit, panel, mid) > 50: lo = mid else: hi = mid
+    return isqrt(lo * hi)
+
+def run_lines(age:int, count:int):
+    let panel_races = map(PANEL) p: generate(p, rules, 0)
+    let panel = rr_units(panel_races, age)
+    let prompts = random_prompts("train", count)
+    var k = 0
+    for(prompts) prompt, n:
+        let races = copy(panel_races)
+        races.push(generate(prompt, rules, n % 4))
+        for(rr_units(races, age)) u:
+            if u.race == races.length - 1:
+                if k % shards == shard:
+                    let pct = fair_pct(races, age, u, panel)
+                    let e = at(step_of(races[u.race], u.slot, age), "eval")
+                    let recipe = at(step_of(races[u.race], u.slot, age), "recipe")
+                    let parts = line_parts(recipe)
+                    var sum = 0
+                    for(parts) id: sum += price_of(part(id))
+                    let points = as_int(at(e, "points"))
+                    print "@@ {age} {u.slot} {pct} {points} {points - sum} {concat_string(parts, ",")} {unspaced(u.label)}"
+                k++
+
+// ---- fit: price points from the samples
+
+class Sample:
+    age:int
+    slot:string
+    pct:int
+    points:int
+    fixed:int
+    parts:[string]
+    label:string
+
+def read_samples(paths:[string]) -> [Sample]:
+    let out = []::Sample
+    for(paths) path:
+        for(tokenize(read_file(path) or "", "\n", "")) line:
+            let w = tokenize(line, " ", "")
+            if w.length == 8 and w[0] == "@@":
+                out.push(Sample { string_to_int(w[1]), w[2], string_to_int(w[3]), string_to_int(w[4]), string_to_int(w[5]), tokenize(w[6], ",", ""), spaced(w[7]) })
+    return out
+
+// The points (real) whose curve value is c: the cost curve's inverse, between its steps.
+def curve_inverse(id:string, c:float) -> float:
+    let t = lib_curves.get(id)
+    assert t
+    for(t.length - 1) i:
+        if float(t[i + 1]) >= c: return float(i) + (c - float(t[i])) / float(t[i + 1] - t[i])
+    return float(t.length - 1)
+
+// A sample's target points: its fair price over its age's typical one (the geometric mean, so the panel's own
+// price level doesn't move every price), through the curve's inverse.
+def targets(samples:[Sample]) -> [float]:
+    let cid = as_str(at(at(rules, "cost"), "curve"))
+    let mean_log = map(5): 0.0
+    let n_age = map(5): 0
+    for(samples) s:
+        mean_log[s.age] += log(float(s.pct))
+        n_age[s.age]++
+    for(5) a:
+        if n_age[a] > 0: mean_log[a] /= float(n_age[a])
+    return map(samples) s:
+        let m = float(s.pct) / pow(2.718281828, mean_log[s.age])
+        curve_inverse(cid, float(curve(cid, s.points)) * m)
+
+def writable_parts() -> [string]:
+    return sorted_strs(map(load_json("../data/parts.json").a) p: as_str(at(p, "id")))
+
+// A line's own price points (the rules' roster: what its slot's stats add), fitted with the parts as "slot:<slot>".
+def roster_points(slot:string) -> int:
+    for(glist(rules, "roster")) sd:
+        if as_str(at(sd, "slot")) == slot: return gint(sd, "price_points", 0)
+    return 0
+
+def run_fit(lambda:float, write:bool):
+    let samples = read_samples([OUT_DIR + "/age2.txt", OUT_DIR + "/age3.txt"])
+    assert samples.length
+    let t = targets(samples)
+    let ids = writable_parts()
+    for(RR_SLOTS) slot: ids.push("slot:" + slot)
+    for(RR_SLOTS_AGE3) slot: ids.push("slot:" + slot)
+    let index = dictionary<string, int>(ids.length * 2)
+    for(ids) id, n: index.set(id, n)
+    let x0 = map(ids) id: float(if starts_with(id, "slot:"): roster_points(id.substring(5, id.length - 5)) else: price_of(part(id)))
+    let rows = map(samples) s:
+        let r = filter(map(s.parts) id: index.get(id, -1)) n: n >= 0
+        r.push(index.get("slot:" + s.slot, -1))
+        r
+    // what the samples want of the parts and lines: target - fixed points - the parts it holds that aren't fitted
+    let want = map(samples) s, k:
+        var rest = float(s.fixed - roster_points(s.slot))
+        for(s.parts) id:
+            if index.get(id, -1) < 0: rest += float(price_of(part(id)))
+        t[k] - rest
+    // each line's misses weighed by what a point does to its price (a point is a quarter of a cheap line's price,
+    // a twentieth of a dear one's): the curve's slope over its value, squared, scaled to 1 at 12 points
+    let cid = as_str(at(at(rules, "cost"), "curve"))
+    def rel_slope(p:float) -> float:
+        let i = clamp(int(p), 1, 90)
+        return float(curve(cid, i + 1) - curve(cid, i - 1)) / 2.0 / float(curve(cid, i))
+    let ref = rel_slope(12.0)
+    let weight = map(t) p: (rel_slope(p) / ref) * (rel_slope(p) / ref)
+    // Gauss-Seidel on (lambda I + X'X) x = lambda x0 + X'y; the parts no sample holds stay as they are
+    let uses = map(ids): []::int
+    for(rows) r, k:
+        for(r) n: uses[n].push(k)
+    let x = copy(x0)
+    let pred = map(rows) r:
+        var s = 0.0
+        for(r) n: s += x[n]
+        s
+    def objective(xs:[float]) -> float:
+        var e = 0.0
+        for(rows) r, k:
+            var s = 0.0
+            for(r) n: s += xs[n]
+            e += weight[k] * (want[k] - s) * (want[k] - s)
+        for(xs) v, n: e += lambda * (v - x0[n]) * (v - x0[n])
+        return e
+    for(300):
+        for(ids.length) n:
+            if uses[n].length:
+                var num = lambda * x0[n]
+                var den = lambda
+                for(uses[n]) k:
+                    num += weight[k] * (want[k] - (pred[k] - x[n]))
+                    den += weight[k]
+                let v = if starts_with(ids[n], "slot:"): num / den else: max(0.0, num / den)
+                for(uses[n]) k: pred[k] += v - x[n]
+                x[n] = v
+    // to whole points, then one point at a time while it helps
+    let xi = map(x) v: float(floor(v + 0.5))
+    for(4):
+        for(ids.length) n:
+            if uses[n].length:
+                let here = objective(xi)
+                xi[n] += 1.0
+                if objective(xi) >= here:
+                    xi[n] -= 2.0
+                    if (xi[n] < 0.0 and not starts_with(ids[n], "slot:")) or objective(xi) >= here: xi[n] += 1.0
+    // the report: how far the lines' points are from their targets, before and after
+    def misses(xs:[float]) -> float, int:
+        var e = 0.0
+        var far = 0
+        for(rows) r, k:
+            var s = 0.0
+            for(r) n: s += xs[n]
+            let pct = abs(want[k] - s) * rel_slope(t[k]) * 100.0
+            e += pct
+            if pct > 15.0: far++
+        return e / float(rows.length), far
+    let m0, f0 = misses(x0)
+    let m1, f1 = misses(xi)
+    let mr, fr = misses(x)
+    print "unrounded: {mr}%, {fr} more than 15% off"
+    print "{samples.length} samples; mean miss {m0}% -> {m1}% of the price; more than 15% off: {f0} -> {f1}"
+    // what's left by line and by tag: where adding up parts still misses
+    let groups = dictionary<string, [float]>(64)
+    for(rows) r, k:
+        var s = 0.0
+        for(r) n: s += xi[n]
+        let keys = [samples[k].slot]
+        for(samples[k].parts) id:
+            for(gstrs(part(id), "tags")) tg: keys.push("tag " + tg)
+        for(keys) g:
+            let acc = groups.get(g, [0.0, 0.0])
+            groups.set(g, [acc[0] + want[k] - s, acc[1] + 1.0])
+    for(sorted_strs(groups.get_keys())) g:
+        let acc = groups.get(g, [0.0, 0.0])
+        if acc[1] >= 10.0 and abs(acc[0] / acc[1]) > 0.5: print "  left on {g}: {acc[0] / acc[1]} points ({int(acc[1])} lines)"
+    let prices = jobj()
+    var moved = 0
+    for(ids) id, n:
+        if xi[n] != x0[n]:
+            moved++
+            print "  {id}: {int(x0[n])} -> {int(xi[n])} ({uses[n].length} samples, fit {x[n]})"
+        if uses[n].length: set(prices, id, jint(int(xi[n])))
+    print "{moved} parts moved"
+    if write:
+        write_file(OUT_DIR + "/prices.json", stringify(prices))
+        print "wrote " + OUT_DIR + "/prices.json"
+
+// ---- measure: round robins of held-out groups at the prices as they are
+
+def measure_groups() -> [[string]]:
+    let held = random_prompts("held", 16)
+    let groups = [["sewer rats with cheese hammers", "angry swamp frogs with reed spears"],
+        ["angry swamp frogs with reed spears", "sewer rats with cheese hammers", "centaur romans", "greek hoplites", "spooky beetle knights"]]
+    for(4) g: groups.push([held[g * 2], held[g * 2 + 1]])
+    for(2) g: groups.push([held[8 + g * 4], held[9 + g * 4], held[10 + g * 4], held[11 + g * 4]])
+    return groups
+
+// The method's best: every held-out line at its own fair price against the panel (no fit), for measure oracle.
+def run_oracle():
+    let panel_races = map(PANEL) p: generate(p, rules, 0)
+    let panel = rr_units(panel_races, 2)
+    var k = 0
+    for(measure_groups()) g:
+        for(g) prompt:
+            let races = copy(panel_races)
+            races.push(generate(prompt, rules, 0))
+            for(rr_units(races, 2)) u:
+                if u.race == races.length - 1:
+                    if k % shards == shard: print "@@ {price_key(races, u)} {fair_pct(races, 2, u, panel)}"
+                    k++
+
+// Every held-out race in one group: some 140 fights a line, so its win rate is good to a few points (a group of
+// 2 races gives a line 13 fights: one fight is 8 points, and coin flips alone put half the lines 10 off).
+def pool_group() -> [[string]]:
+    let out = []::string
+    for(measure_groups()) g:
+        for(g) p:
+            if find_index(out, p) < 0: out.push(p)
+    return [out]
+
+def run_measure(check:int, oracle:bool, one_pool:bool):
+    let groups = if one_pool: pool_group() else: measure_groups()
+    let group_races = map(groups) g: map(g) p: generate(p, rules, 0)
+    let group_units = map(group_races) rs: rr_units(rs, 2)
+    if oracle:
+        for(tokenize(read_file(OUT_DIR + "/oracle.txt") or "", "\n", "")) line:
+            let w = tokenize(line, " ", "")
+            if w.length == 3: rr_price_pct.set(w[1], string_to_int(w[2]))
+    let results = map(groups) g, n: map(group_units[n].length * group_units[n].length): 0
+    if combine_at >= 0:
+        for(logs) path:
+            for(tokenize(read_file(path) or "", "\n", "")) line:
+                let w = tokenize(line, " ", "")
+                if w.length == 5 and w[0] == "@@":
+                    let g = string_to_int(w[1])
+                    results[g][string_to_int(w[2]) * group_units[g].length + string_to_int(w[3])] = string_to_int(w[4])
+    else:
+        var k = 0
+        for(groups) g, n:
+            let units = group_units[n]
+            for(units.length) i:
+                var j = i + 1
+                while j < units.length:
+                    if k % shards == shard:
+                        let r = rr_fight(group_races[n], bare, 2, units[i], units[j])
+                        results[n][i * units.length + j] = r
+                        print "@@ {n} {i} {j} {r}"
+                    k++
+                    j++
+        if shards > 1: return
+    var off_all = 0
+    var lines_all = 0
+    for(groups) g, n:
+        let units = group_units[n]
+        let wins = map(units.length): 0
+        let played = map(units.length): 0
+        for(units.length) i:
+            var j = i + 1
+            while j < units.length:
+                let r = results[n][i * units.length + j]
+                if r != 0:
+                    played[i]++
+                    played[j]++
+                    if r > 0: wins[i]++ else: wins[j]++
+                j++
+        let rates = map(units.length) i: wins[i] * 100 / max(1, played[i])
+        var total = 0
+        for(rates) r: total += r
+        let mean = total / max(1, units.length)
+        var off = 0
+        for(rates) r:
+            if abs(r - mean) > TOLERANCE: off++
+        print "\n{off} of {units.length} lines more than {TOLERANCE} points off the mean ({mean}%): " + (if one_pool: "the pool" else: concat_string(g, " | "))
+        let order = map(units.length) i: i
+        insertion_sort(order) a, b: abs(rates[a] - mean) > abs(rates[b] - mean)
+        for(order) i:
+            let e = at(step_of(group_races[n][units[i].race], units[i].slot, 2), "eval")
+            var cost = 0
+            for(at(e, "cost").a) v: cost += as_int(v)
+            print "  {rates[i]}%  {units[i].label}  cost {cost}" + (if abs(rates[i] - mean) > TOLERANCE: "  OFF" else: "")
+        off_all += off
+        lines_all += units.length
+    print "\nIn all: {off_all} of {lines_all} lines more than {TOLERANCE} points off the mean of their group ({off_all * 100 / max(1, lines_all)}%)"
+    if check >= 0 and off_all * 100 > check * lines_all:
+        print "FAIL: more than {check}% of the lines are off (a part priced wrong? ./shards.sh calibrate.lobster lines ...)"
+        set_exit_code(1)
+
+let mode = args[0]
+if mode == "lines":
+    let age = string_to_int(args[1])
+    if combine_at >= 0:
+        let text = []::string
+        for(logs) path:
+            for(tokenize(read_file(path) or "", "\n", "")) line:
+                if starts_with(line, "@@ "): text.push(line)
+        write_file(OUT_DIR + "/age{age}.txt", concat_string(text, "\n") + "\n")
+        print "{text.length} samples in {OUT_DIR}/age{age}.txt"
+    else:
+        run_lines(age, string_to_int(args[2]))
+elif mode == "fit":
+    run_fit(string_to_float(opt(args, "lambda", "1")), find_index(args, "write") >= 0)
+elif mode == "measure":
+    run_measure(string_to_int(opt(args, "check", "-1")), find_index(args, "oracle") >= 0, find_index(args, "pool") >= 0)
+elif mode == "oracle":
+    if combine_at >= 0:
+        let text = []::string
+        for(logs) path:
+            for(tokenize(read_file(path) or "", "\n", "")) line:
+                if starts_with(line, "@@ "): text.push(line)
+        write_file(OUT_DIR + "/oracle.txt", concat_string(text, "\n") + "\n")
+        print "{text.length} fair prices in {OUT_DIR}/oracle.txt"
+    else:
+        run_oracle()
+else:
+    print "calibrate.lobster: lines <age> <races> | fit [lambda:<n>] [write] | measure [check:<n>] [oracle] | oracle"
+    assert false
