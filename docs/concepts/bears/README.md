@@ -1,5 +1,8 @@
 # Bears (concept rounds B1, B2 and B3, 2026-10-13; in play 2026-10-17; round B4, 2026-10-31)
 
+**B4 picked (2026-10-31, D-189):** Dominic chose **A**, the smooth loft; it's in play for the brown, black and polar
+bears (`body.loft` in `data/creature_kit.json`). "Lump is gone on A." The mount bear keeps its volumes.
+
 **In play (2026-10-17, D-161 to D-163).** The data moved out of `data/later/bears.json` into the game's
 data (kits in `data/creature_kit.json`, parts in `data/parts.json`, creatures, skins and words), the
 helmets into `scenes/art_pixel/bear_models.gd`. `tests/sheets/bears_play.json` draws the generated races;

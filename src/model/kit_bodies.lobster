@@ -169,8 +169,9 @@ def torso_fit(k:JV) -> float3:
     var rx = r.x
     var rz = r.z
     let lo = kget(at(k, "body"), "loft")
-    if lo:   // a lofted torso: armour fitted to the loft round the chest, out to its corners (a squarer section's)
-        let ys, fr, bk, hz = loft_profile(k)
+    if lo:   // a lofted torso: armour fitted to the loft round the chest (the shoulders left out: the arms move there),
+             // out to its corners (a squarer section's)
+        let ys, fr, bk, hz = loft_profile(k, false)
         let cy = kn(at(chest, "at"), 1)
         let corner = pow(0.5, 1.0 / kf(lo, "n", 2.0)) / pow(0.5, 0.5) + (if gbool(lo, "flat", false): 0.08 else: 0.0)
         for(ys) y, i:
@@ -439,7 +440,7 @@ def loft_shoulders(k:JV) -> bool:
     let lo = kget(at(k, "body"), "loft")
     return lo != nil and gbool(lo, "shoulders", true)
 
-def loft_balls(k:JV) -> [KitBall]:
+def loft_balls(k:JV, shoulders:bool) -> [KitBall]:
     let out = map(kit_volumes(k)) v: KitBall { v.at, v.r }
     let nk = at(k, "neck")
     let a = kv3(at(nk, "from"))
@@ -447,9 +448,9 @@ def loft_balls(k:JV) -> [KitBall]:
     for(7) i:
         let t = float(i) / 6.0
         out.push(KitBall { lerp3(a, b, t), float3_1 * u3_lerpf(kn(at(nk, "r"), 0), kn(at(nk, "r"), 1), t) })
-    if loft_shoulders(k):
+    if shoulders and loft_shoulders(k):
         let arm = at(k, "arm")
-        for([1.0, -1.0]) side: out.push(KitBall { kv3(at(arm, "shoulder")) * float3 { 1.0, 1.0, side }, float3_1 * kpair(at(arm, "r"), 0, 0) * 1.05 })
+        for([1.0, -1.0]) side: out.push(KitBall { kv3(at(arm, "shoulder")) * float3 { 1.0, 1.0, side }, float3_1 * kpair(at(arm, "r"), 0, 0) * 0.9 })   // (a little inside the arm's top: a hand held at ease clears it)
     return out
 
 def kit_spow(x:float, e:float) -> float: return if x < 0.0: -pow(-x, e) else: pow(x, e)
@@ -459,10 +460,10 @@ def loft_smooth(xs:[float]) -> [float]: return map(xs) x, i: if i == 0 or i == x
 def loft_centre(row:[float3]) -> float3: return (row[0] + row[row.length / 2]) * 0.5
 
 // The loft's levels, top down, and each one's front, back and half width (the body's frame, upright).
-def loft_profile(k:JV) -> [float], [float], [float], [float]:
+def loft_profile(k:JV, shoulders:bool) -> [float], [float], [float], [float]:
     let lo = at(at(k, "body"), "loft")
     let rings = gint(lo, "rings", 28)
-    let balls = loft_balls(k)
+    let balls = loft_balls(k, shoulders)
     var y0 = KIT_INF
     var y1 = -KIT_INF
     for(balls) b:
@@ -500,7 +501,7 @@ def kit_loft(k:JV, mat:MMat) -> MNode:
     let rings = gint(lo, "rings", 28)
     let sides = gint(lo, "sides", 24)
     let e = 2.0 / kf(lo, "n", 2.0)
-    let ys, fr, bk, hz = loft_profile(k)
+    let ys, fr, bk, hz = loft_profile(k, true)
     let y0 = ys[rings - 1] - (ys[0] - ys[1]) * 0.5   // (the ends: half a level past the last)
     let y1 = ys[0] + (ys[0] - ys[1]) * 0.5
     let m = new_mesh()
