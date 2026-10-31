@@ -42,6 +42,15 @@ the rubble, the siege tower and ladder, the trade cart, the unique units' themes
   buildings, tech, audio and creature-kit creatures moddable; model scripts sandboxed or `.glb`-only for shared mods;
   installed from a zip on a second machine with the same race key and a match played; Steam Workshop.
 
+### A placement rule for a body showing through its armour (Claude, 2026-10-31, bears B4)
+
+Dominic caught the B4 bear's body through its cuirass in patches ("overlap"); the check lets armour and its body
+share volume, so nothing caught it. A first try (patches of body inside the armour's outline, seen from each bake
+camera, with arms, head and gear in front counted) caught it at 7 patches, but rats in leather and bears in sardine
+or mail already reach 5 to 7 (collar openings, gaps between strips). Either look at those units to see whether they
+really show through, or find a measure that tells them apart (patch size against the armour's area, depth under the
+armour's surface), then add the rule with a fixture (B4 B with its armour fitted to the old chest ball).
+
 ### Android and the bake rework (Claude, 2026-10-29, D-185)
 
 - **Touch, after Dominic's first go** (built 2026-10-29: `game/touch.lobster`, tap/hold/drag/pinch through the pad's
