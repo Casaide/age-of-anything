@@ -619,7 +619,8 @@ def draw_panel():
     let title_h = 30.0 * s
     let hp_h = if hp_now >= 0: 20.0 * s else: 0.0
     let tray_rows = (tray_k.length + 6) / 7
-    let who_h = title_h + 5.0 * s + hp_h + (if hp_now >= 0: 5.0 * s else: 0.0) + float(info_lines.length) * 20.0 * s + (if tray_k.length: 5.0 * s + float(tray_rows) * 43.0 * s else: 0.0)
+    let line_n = info_lines.length + (if has_queue and not b_queue[bi].length: 1 else: 0)   // (room for "Training ..." before it starts)
+    let who_h = title_h + 5.0 * s + hp_h + (if hp_now >= 0: 5.0 * s else: 0.0) + float(line_n) * 20.0 * s + (if tray_k.length: 5.0 * s + float(tray_rows) * 43.0 * s else: 0.0)
     let show_pic = portrait >= 0 or b_pic >= 0
     // Button grps, in the order their captions first appear.
     let grps = []::string
@@ -635,7 +636,7 @@ def draw_panel():
     var acts_w = 0.0
     for(group_w) w, n: acts_w += w + (if n > 0: 10.0 * s + 10.0 * s + 10.0 * s else: 0.0)
     let queue = if has_queue: b_queue[bi] else: []::int
-    let q_rest = max(0, queue.length - 1)
+    let q_rest = max(0, r_queue_max - 1)   // (the well sized for a full queue, so training doesn't grow the panel)
     let q_rows = (q_rest + P_QCOLS - 1) / P_QCOLS
     let q_inner_w = P_QFIRST * s + (if q_rest > 0: 6.0 * s + float(min(q_rest, P_QCOLS)) * (P_QSLOT + 3.0) * s - 3.0 * s else: 0.0)
     let q_w = 20.0 * s + max(q_inner_w, 70.0 * s)
@@ -709,7 +710,7 @@ def draw_panel():
         let fy = y + 8.0 * s + 16.0 * s + 5.0 * s
         if queue.length: q_items.push(PItem { qlook[0], float2 { fx, fy }, P_QFIRST * s })
         else: hud_well(float2 { fx, fy }, float2_1 * P_QFIRST * s)
-        for(q_rest) n: q_items.push(PItem { qlook[n + 1], float2 { fx + (P_QFIRST + 6.0) * s + float(n % P_QCOLS) * (P_QSLOT + 3.0) * s, fy + float(n / P_QCOLS) * (P_QSLOT + 3.0) * s }, P_QSLOT * s })
+        for(max(0, queue.length - 1)) n: q_items.push(PItem { qlook[n + 1], float2 { fx + (P_QFIRST + 6.0) * s + float(n % P_QCOLS) * (P_QSLOT + 3.0) * s, fy + float(n / P_QCOLS) * (P_QSLOT + 3.0) * s }, P_QSLOT * s })
         var cancel = -1
         for(q_items) it, n:
             if hud_button(it.at, float2_1 * it.side, n == 0, true): cancel = n
