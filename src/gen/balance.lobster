@@ -20,8 +20,6 @@ class RRUnit:
 
 var rr_price_pct = dictionary<string, int>(64)   // "race|slot" -> its price, percent of the generator's
 var rr_fights = 0
-var rr_trace = false              // print the state hash every tick (rr_hash.gd's check)
-var rr_dump_at = -1
 var rr_ticks = 0
 
 def rr_units(races:[JV], age:int) -> [RRUnit]:
@@ -56,8 +54,9 @@ def rr_left() -> int, int:
             elif o == 1: b++
     return a, b
 
-// +1 if a wins, -1 if b wins, 0 for a draw (by value left standing).
-def rr_fight(races:[JV], rules:JV, age:int, a:RRUnit, b:RRUnit) -> int:
+// +1 if a wins, -1 if b wins, 0 for a draw (by value left standing). trace prints the state hash every tick
+// (rr_hash.gd's check), and the whole state at tick dumpat.
+def rr_fight(races:[JV], rules:JV, age:int, a:RRUnit, b:RRUnit, trace = false, dumpat = -1) -> int:
     reset_world()
     setup_world(1, "flat_test", [races[a.race], races[b.race]], rules, [])
     for(2) p: rr_in_age(p, age)
@@ -76,7 +75,7 @@ def rr_fight(races:[JV], rules:JV, age:int, a:RRUnit, b:RRUnit) -> int:
         counts.push(max(1, (RR_BUDGET + cost / 2) / cost))
     while tick < 8:   // (the spawn ran at the start of turn 2: World.issue's delay)
         step()
-        if rr_trace: print "h {tick} {state_hash()}"
+        if trace: print "h {tick} {state_hash()}"
     for(2) p:
         let k = kinds[p]
         for(counts[p]):
@@ -86,7 +85,7 @@ def rr_fight(races:[JV], rules:JV, age:int, a:RRUnit, b:RRUnit) -> int:
             add_unit(p, k, x, y)
     grow_scratch()
     step()
-    if rr_trace: print "h {tick} {state_hash()}"
+    if trace: print "h {tick} {state_hash()}"
     for(2) p:
         let ids = []::int
         for(u_owner) o, i:
@@ -96,8 +95,8 @@ def rr_fight(races:[JV], rules:JV, age:int, a:RRUnit, b:RRUnit) -> int:
     var lb = 1
     while tick < RR_LIMIT:
         step()
-        if rr_trace: print "h {tick} {state_hash()}"
-        if tick == rr_dump_at: print dump_state()
+        if trace: print "h {tick} {state_hash()}"
+        if tick == dumpat: print dump_state()
         la, lb = rr_left()
         if la == 0 or lb == 0: break
     rr_fights++
@@ -147,7 +146,7 @@ def auto_balance(races:[JV], rules:JV, age:int, rounds:int, tolerance:int, repor
         let r, mean = round_robin(races, bare, age, units)
         rates = r
         var off = 0
-        for(units) u, k:
+        for(units.length) k:
             if abs(rates[k] - mean) > tolerance: off++
         report(round, units, rates, mean, off)
         if off == 0 or round == rounds - 1: return rates

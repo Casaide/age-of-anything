@@ -347,9 +347,6 @@ def cape_leaf(c:Colours) -> Spec:
 // the near hand holds; the legs here too, digitigrade, baked in 8 walk steps with the knees bending (D-179).
 
 let RAT_LEAN = 42.0      // degrees the trunk leans forward from the hips (as modelled)
-var rat_hunch = RAT_LEAN // how far it leans as built (the placement check's fixtures set -15: leaning back, as it once did)
-var rat_torso_x = 0.8    // where worn armour sits along it (a placement fixture sets 1.4)
-var rat_head_follows = true   // the head on the leaning trunk's neck (a placement fixture sets false)
 let RAT_HIP = float3 { 0.0, 11.0, 0.0 }
 let RAT_HIP_Z = 2.7
 let RAT_BANNER_Y = 22.6
@@ -374,15 +371,16 @@ def body_rat(c:Colours) -> Spec:
     let coat = rat_coat(c, 7.0)
     let fur = coat_mat(coat, "fur")
     let pink = coat_mat(coat, "pink")
-    // The modelled trunk turns about the hips by however far rat_hunch is from how it was modelled (a fixture).
+    // The modelled trunk turns about the hips by however far it leans from how it was modelled (an old bug).
+    let hunch = if old_bugs.rat_leans_back: -15.0 else: RAT_LEAN
     let lean = mnode()
     lean.pos = RAT_HIP
-    lean.rot = float3 { 0.0, 0.0, RAT_LEAN - rat_hunch }
+    lean.rot = float3 { 0.0, 0.0, RAT_LEAN - hunch }
     add_child(n, lean)
     let body = glb("body_rat", coat)
     body.pos = -RAT_HIP
     add_child(lean, body)
-    let t = xmul(Xform { axis_angle(float3 { 0.0, 0.0, 1.0 }, RAT_LEAN - rat_hunch), RAT_HIP }, Xform { BASIS_ID, -RAT_HIP })
+    let t = xmul(Xform { axis_angle(float3 { 0.0, 0.0, 1.0 }, RAT_LEAN - hunch), RAT_HIP }, Xform { BASIS_ID, -RAT_HIP })
     // Walking ("w<i>_<n>", D-179): the arms swing against the legs, the tail sweeps a beat behind the hips.
     let step = walk_step(hold)
     let swing = if step >= 0.0: cos(360.0 * step) else: 0.0
@@ -423,17 +421,17 @@ def body_rat(c:Colours) -> Spec:
         add_child(into, blob(float3 { 0.95, 0.8, 0.8 }, pink, hand))
     let s = spec_of(n)
     s.front = front
-    sock(s, "head", if rat_head_follows: xf(t, float3 { 11.2, 23.1, 0.0 }) else: float3 { 11.2, 23.1, 0.0 })
+    sock(s, "head", if old_bugs.rat_head_stays: float3 { 11.2, 23.1, 0.0 } else: xf(t, float3 { 11.2, 23.1, 0.0 }))
     sock(s, "hand_r", near_hand)
     sock(s, "hand_l", far_hand)
-    sock(s, "torso", xf(t, float3 { 4.1 + rat_torso_x, 16.4, 0.0 }))
+    sock(s, "torso", xf(t, float3 { 4.1 + (if old_bugs.rat_armour_off: 1.4 else: 0.8), 16.4, 0.0 }))
     sock(s, "back", xf(t, float3 { 3.4, 20.1, 0.0 }))
     sock(s, "banner", xf(t, float3 { 2.8, RAT_BANNER_Y, 0.0 }))
     sock(s, "drape", xf(t, float3 { -0.4, 20.6, 0.0 }))
     sock(s, "sit", RAT_HIP + float3 { 6.0, 0.0, 0.0 })
     s.anchors = [anchor(RAT_HIP + float3 { 0.0, 0.0, -RAT_HIP_Z }, 0.0, -1), anchor(RAT_HIP + float3 { 0.0, 0.0, RAT_HIP_Z }, MPI, 1)]
     spec_num(s, "torso_scale", float3 { 0.58, 0.74, 0.0 })
-    spec_num(s, "torso_tilt", -rat_hunch)
+    spec_num(s, "torso_tilt", -hunch)
     return spec_num(s, "torso_fit", float3 { 0.57, 0.57, 0.62 })
 
 def head_rat(c:Colours) -> Spec:

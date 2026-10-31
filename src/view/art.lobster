@@ -15,11 +15,11 @@ let ART_SCALE = 3.0
 let ART_BASE = 1.5
 let ART_K = ART_SCALE / ART_BASE
 
-var bakes = dictionary<string, Bake>(8191)
-var bake_soles = dictionary<string, [float2]>(1023)
-var bake_spans = dictionary<string, [float2]>(1023)
+let bakes = dictionary<string, Bake>(8191)
+let bake_soles = dictionary<string, [float2]>(1023)
+let bake_spans = dictionary<string, [float2]>(1023)
 var rigs = jobj()
-var modelled = dictionary<string, int>(511)
+let modelled = dictionary<string, int>(511)
 var modelled_listed = false        // (a pack's index lists every modelled part: then what it leaves out has none)
 let TEAM_KEY_HEX = "ff00ff"
 
@@ -65,9 +65,9 @@ def hex_of(html:string) -> string:   // "#RRGGBB(AA)" -> "rrggbb", as Color.to_h
     return lowercase(substring(h, 0, 6))
 
 def rgb_of(hex:string) -> float3:
-    let r, ok1 = string_to_int(substring(hex, 0, 2), 16)
-    let g, ok2 = string_to_int(substring(hex, 2, 2), 16)
-    let b, ok3 = string_to_int(substring(hex, 4, 2), 16)
+    let r, _ok1 = string_to_int(substring(hex, 0, 2), 16)
+    let g, _ok2 = string_to_int(substring(hex, 2, 2), 16)
+    let b, _ok3 = string_to_int(substring(hex, 4, 2), 16)
     return float3 { r / 255.0, g / 255.0, b / 255.0 }
 
 def colours_for(skin:string, fam:string, team:float3) -> Colours:
@@ -111,6 +111,36 @@ def draw_key(n:VNode) -> string:
     var key = bake_key(n.part_id, n.pshapes, n.cols, n.size)
     if n.facing != 0 and bakes.get(key + facing_suffix(n.facing)): key += facing_suffix(n.facing)
     return if n.front: key + "#front" else: key
+
+// Parts drawn before they're baked (a walk step, a pose, a race just typed) are wanted: baked a part at a time
+// between frames (bake_wanted_tick, game/bake_missing.lobster), the part's plain form standing in meanwhile.
+class Wanted:
+    id:string
+    key:string
+    cols:Colours
+
+let bake_wanted = []::Wanted
+let bake_wanted_set = dictionary<string, bool>(256)
+var bake_gen = 0   // goes up when the wanted parts are all baked (views made before are made again, on the new rigs)
+
+def want_bake(n:VNode):
+    let cols = n.cols
+    if not cols: return
+    let key = bake_key(n.part_id, n.pshapes, cols, n.size)
+    if bake_wanted_set.get(key, false): return
+    bake_wanted_set.set(key, true)
+    bake_wanted.push(Wanted { n.part_id, key, cols })
+
+// A part without its walk step or pose ("leg.bear@w3_8~body.bear^1" -> "leg.bear~body.bear^1").
+def plain_id(id:string) -> string:
+    var s = id
+    var at = find_string(s, "@")
+    while at >= 0:
+        var end = at + 1
+        while end < s.length and s[end] != '~' and s[end] != '^' and s[end] != ':' and s[end] != '@': end++
+        s = s.substring(0, at) + s.substring(end, s.length - end)
+        at = find_string(s, "@")
+    return s
 
 // PartShape.bake_of: this node's bake (another id's: `id`), or nil.
 def bake_key_of(n:VNode, id:string) -> string:

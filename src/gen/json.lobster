@@ -50,7 +50,7 @@ def key_at(o:JV, k:string) -> int:
             for(o.keys) key, n: ix.set(key, n)
             o.index = ix
         let ix = o.index
-        if ix: return ix.get(k, -1)
+        return ix.get(k, -1)
     for(o.keys) key, n:
         if key == k: return n
     return -1
@@ -301,7 +301,7 @@ def json_escape(s:string) -> string:
 // A float as Godot's JSON writes it: whole ones with ".0", others in their shortest form, no exponent.
 def godot_float(f:float) -> string:
     if f == floor(f) and abs(f) < 1000000000000000.0: return string(int(f)) + ".0"
-    var s = number_to_string_f(f)
+    let s = number_to_string_f(f)
     return s
 
 def number_to_string_f(f:float) -> string:

@@ -179,7 +179,7 @@ def land_crossings(l:Land) -> int:
             l.crossings_bridge.push(-1)
             l.crossings_centre.push(cells_centre(cells))
             l.crossings_cells.push(cells)
-    for(br_id) id, k:
+    for(br_id.length) k:
         l.crossings_kind.push(1)
         l.crossings_bridge.push(k)
         l.crossings_centre.push(cells_centre(br_cells[k]))
@@ -509,7 +509,7 @@ def land_study(l:Land, bot:Bot, workers:[int], army:[int], hx:int, hy:int):
         key_from(l, route_path(s, g))
         return
     // Bridges: one what-if each (a standing one gone, for them; a broken one back, for us).
-    for(br_id) id, k:
+    for(br_id.length) k:
         let name = "bridge{k}"
         if due(l, name, cfg("land.bridge_every")):
             if br_up[k] == 1:

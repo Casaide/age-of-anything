@@ -24,8 +24,7 @@ def keep_frame(name:string, sprite:string, w:int, h:int, anchor:float2):
     if w == 0 or h == 0: return
     let rows = map(h) y: map(w) x: float4 { float(sprite[(y * w + x) * 4]) / 255.0, float(sprite[(y * w + x) * 4 + 1]) / 255.0,
                                             float(sprite[(y * w + x) * 4 + 2]) / 255.0, float(sprite[(y * w + x) * 4 + 3]) / 255.0 }
-    sheet_tex.push(gl.create_texture(rows, pack_formats))
-    sheet_dims.push(float2 { float(w), float(h) })
+    add_sheet(gl.create_texture(rows, pack_formats), float2 { float(w), float(h) })
     frame_at.set(name, frames.length)
     frames.push(Frame { sheet_tex.length - 1, 0, 0, w, h, int(anchor.x + 0.5), int(anchor.y + 0.5), 1.0 / ART_K })
 
@@ -49,15 +48,13 @@ class AkFrame:
     ax:int
     ay:int
 
-def ak_stem(name:string) -> string: return bake_cache_dir + "/d" + sha256_text("{BAKE_VERSION}|prop|{name}").substring(0, 20)
+def ak_stem_in(dir:string, name:string) -> string: return dir + "/d" + sha256_text("{BAKE_VERSION}|prop|{name}").substring(0, 20)
+def ak_stem(name:string) -> string: return ak_stem_in(bake_cache_dir, name)
 
 // Frames from the cache (a prop's, a building look's), on sheets of their own: whether they were all there.
 def ak_load_frames(fs:[AkFrame]) -> bool:
     for(fs) f:
-        let tex = gl.load_texture(f.file, pack_formats)
-        if not tex: return false
-        sheet_tex.push(tex)
-        sheet_dims.push(float2 { float(f.w), float(f.h) })
+        add_sheet_later(f.file, float2 { float(f.w), float(f.h) }, pack_formats)
         frame_at.set(f.name, frames.length)
         frames.push(Frame { sheet_tex.length - 1, 0, 0, f.w, f.h, f.ax, f.ay, 1.0 / ART_K })
     return true
@@ -72,7 +69,8 @@ def ak_bake(name:string, model:MNode, shadow:bool, reach:float = 1.0):
     if bake_quit or (not ak_rebake and frame_index(name) >= 0): return
     let stem = if bake_cache_dir != "": ak_stem(name) else: ""
     if stem != "" and not ak_rebake:
-        let data = read_file(stem + ".bin", true)
+        let shipped = if bake_shipped_dir != "": read_file(ak_stem_in(bake_shipped_dir, name) + ".bin", true) else: nil
+        let data = shipped or read_file(stem + ".bin", true)
         if data:
             let rec, err = flexbuffers_binary_to_value(typeof [AkFrame], data)
             let fs = rec

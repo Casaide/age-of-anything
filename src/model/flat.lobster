@@ -4,7 +4,7 @@
 // when the material asks), its material one of the baker's (one per distinct look, its texture from
 // textures/<name>.png: tex_png.gd).
 
-var model_tex_dir = "textures"
+let model_tex_dir = "textures"
 let model_mat_at = dictionary<string, int>(64)
 
 def mat_index(m:MMat) -> int:

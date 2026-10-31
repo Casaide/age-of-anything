@@ -112,7 +112,7 @@ def glb_file(path:string, mats:dictionary<string, MMat>) -> MNode:
     for(glist(scene, "nodes")) k: add_child(root, glb_node(doc, as_int(k), mats))
     return root
 
-var models_dir = "../assets/models"
+let models_dir = "../assets/models"
 def glb(name:string, mats:dictionary<string, MMat>) -> MNode: return glb_file(models_dir + "/" + name + ".glb", mats)
 
 // A material map from name, material pairs.

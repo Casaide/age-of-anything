@@ -9,7 +9,7 @@ let TOWN_GROWTH = ["yard", "garden"]
 let TOWN_STAGES = 3
 
 var town_rng = grng(0)
-var town_wood_mat:MMat? = nil        // the building materials' wood (town_props.gd `models`, set by the baker's owner); nil: plain
+let town_wood_mat:MMat? = nil        // the building materials' wood (town_props.gd `models`, set by the baker's owner); nil: plain
 
 def town_wood() -> MMat:
     let w = town_wood_mat

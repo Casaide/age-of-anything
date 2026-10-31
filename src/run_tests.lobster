@@ -151,7 +151,6 @@ def without_slots(rules:JV, slots:[string]) -> JV:
 def fresh_lib():
     lib_load(DATA)
     id_load(DATA)
-    lib_mods = []
 
 // A world to read the sim's loaders from (World.new): one match set up on flat_test.
 def fresh_world(races:[JV], rules:JV):
@@ -836,13 +835,12 @@ def g_mods():
     let tags = gstrs(at(sk, "eval"), "tags")
     let shot = gobj(mod_shots, "pulse")
     expect(has_s(tags, gstr(shot, "tag", "-")), "mods: the pulse rifle\'s tags call the mod\'s shot (pulse: {gstr(shot, "tag", "none")})")
-    let roots = mod_roots
-    mod_roots = append(roots, ["../mods"])
     let bad = ["no_model", "bad_era", "needs_other", "future_game", "bad_file", "clash"]
     fresh_lib()
-    expect(strs_eq(mods_use(append(bad, ["scifi_test"])), ["scifi_test"]), "mods: broken mods refused, a good one beside them still loads")
-    for(bad) id: expect(mods_refused.get(id, "") != "", "mods: {id} refused ({mods_refused.get(id, "not refused")})")
-    mod_roots = roots
+    expect(strs_eq(mods_use(append(bad, ["scifi_test"]), append(mod_roots, ["../tests/mods"])), ["scifi_test"]), "mods: broken mods refused, a good one beside them still loads")
+    for(bad) id:
+        let why = mods_refused.get(id, "")
+        expect(why != "" and not starts_with(why, "not found"), "mods: {id} refused for what\'s wrong with it ({why})")
     fresh_lib()
     mods_use([])
     expect(rstr(generate("future soldiers", load_rules("anything"), 0), "key") == plain_key, "mods: off again, the race is as before")

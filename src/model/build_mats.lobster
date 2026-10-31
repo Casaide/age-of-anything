@@ -8,7 +8,7 @@
 // Needs model/kit (MMat), model/props (FastNoiseLite's hash, gradients, OpenSimplex2S), view/node (f32).
 
 var bmat_matte = false            // pixel-art bakes: no gloss, no clearcoat (art_kit.gd sets it)
-var bmat_dir = "textures"         // where the noise textures are written (relative, as model_tex_dir)
+let bmat_dir = "textures"         // where the noise textures are written (relative, as model_tex_dir)
 let BMAT_VERSION = 1              // in the file names: bump it when the textures change
 let bmat_cache = dictionary<string, MMat>(32)
 

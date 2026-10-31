@@ -3,8 +3,10 @@
 # are in its own tree: SDL, SDL_mixer, freetype...), then the game's folder assembled beside it:
 #   <out>/lobster/{bin/lobster, data, modules}   the language and its own data (shaders, fonts)
 #   <out>/data, assets/audio, mods               the game's data and sounds
-#   <out>/src/...                                the game's code (it bakes its own art: no pack)
+#   <out>/src/...                                the game's code, and baked/ (its buildings and props, from prebake.sh;
+#                                                a race's own parts it bakes itself)
 #   <out>/run.sh                                 runs the game (the lobby)
+#   <out>/icon.png                               the game's icon (pull_lobster.sh makes a launcher with it)
 # Usage: src/deck/build.sh [out dir]   (default build/lobster_linux; needs podman or docker)
 # The Deck pulls it with tools/deck/pull_lobster.sh.
 set -e
@@ -33,6 +35,9 @@ mkdir -p "$out/lobster/bin"
 '
 cp -R "$LOBSTER_SRC/data" "$LOBSTER_SRC/modules" "$out/lobster/"
 
+echo "== The buildings and props, baked once here and shipped (src/prebake.sh)"
+"$here/prebake.sh"
+
 echo "== The game"
 mkdir -p "$out/assets" "$out/src"
 rsync -a --delete --exclude '*.import' --exclude '*.uid' "$root/data/" "$out/data/"
@@ -42,6 +47,7 @@ rsync -a --delete --exclude '*.import' --exclude '*.uid' "$root/mods/" "$out/mod
 rsync -a --delete --delete-excluded --exclude 'pack' --exclude 'pack6b' --exclude 'pack_scifi' --exclude 'library' --exclude 'bake_cache' \
 	--exclude 'model/mods' --exclude 'textures/bmat*' --exclude '*.sav' --exclude 'memory_leaks.txt' \
 	--exclude 'deck' "$here/" "$out/src/"
+rsvg-convert -w 512 -h 512 "$root/assets/art/ui/game_icon.svg" -o "$out/icon.png"
 cat > "$out/run.sh" <<'EOF'
 #!/bin/sh
 # Age of Anything (the Lobster port): the lobby, with no pack (every picture baked by the game itself, the parts

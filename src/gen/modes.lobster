@@ -162,7 +162,7 @@ def fortify_ring(p:int, cx:int, cy:int, r:int, spec:JV):
             x++
         y++
     let done = []::int
-    for(gate_at) c, n:
+    for(gate_at.length) n:
         let g = gate_of[n]
         let key = g.y * W + g.x
         if not contains(done, key):

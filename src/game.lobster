@@ -3,9 +3,9 @@
 // rest ("watch": the bot plays you too).
 // Run: lobster game.lobster -- <pack dir> <scenario file, or - to make the start from the pack\'s races> [watch]
 //   left click / drag: select;  right click: move, attack, gather, build, rally;  shift: queue
-//   A + right click: attack-move;  S: stop;  B then 1-9: build;  1-9 on a building: train;  U: age up
-//   Q W E R T Y I O P on a building: research;  M: sound on / off;  the minimap (bottom right): click to look there
-//   arrows / screen edges: scroll;  wheel: zoom;  space: pause;  + / -: speed
+//   Ctrl + right click: attack-move;  X: stop;  B then 1-9: build;  1-9 on a building: train;  U: age up
+//   Q E R T Y F G H J on a building: research;  M: sound on / off;  the minimap (bottom right): click to look there
+//   WASD / arrows / screen edges: scroll;  wheel: zoom;  space: pause;  + / -: speed;  Ctrl/Cmd + / -: the HUD's size
 
 import std
 import vec
@@ -104,7 +104,7 @@ var skirmish = false            // the lobby's Skirmish: both armies on the map 
 var army_n = 0                  // army:<n>: n of each of your soldier types by your Town Center at the start (captures)
 var hurt_pct = -1                // hurt:<percent>: your buildings start at that much of their hit points (captures of fire)
 var raze_at = -1.0               // raze:<seconds>: your buildings but the Town Center and walls fall then (captures of ruins)
-var page_arg = ""               // page:<name>: the lobby opened on that page (title, setup, lab, saves, net), captures with shot:
+var page_arg = ""               // page:<name>: the lobby opened on that page (title, setup, lab, saves, net; boot: the boot screen), captures with shot:
 var lab_arg = false             // lab: the lobby with races:A|B typed in, a picture (shot:) after a second, then quit
 var tree_arg = false            // tree: the tech tree page open from the start (captures)
 var tree_hover_arg = ""         // treehover:<node key>: that node hovered on it (captures: "r:fletching", "u:hero.<id>@3")
@@ -115,9 +115,11 @@ var hosting = false             // host: a network match, waiting for a player t
 var join_ip = ""                // join:<ip>: play the second side of the match a host there sets up
 var reload_at = -1.0            // reload:<seconds>: save then, load 5 s later (tests and captures)
 var reload_tick = -1
+var touch_play = false          // touch: play by touch, through the pad's controls (game/touch.lobster; the Android build)
 for(args) a, k:
     if k >= 2:
         if a == "watch": watch = true
+        if a == "touch": touch_play = true
         let key, val = split_string(a, ":")
         if key == "shot": shot = val
         if key == "at": shot_at = string_to_float(val)
@@ -253,13 +255,13 @@ var clock_s = 0.0                       // seconds of play shown
 var p_id = []::int                  // the last tick's positions, for drawing between ticks
 var p_x = []::int
 var p_y = []::int
-var unit_dir = dictionary<int, int>(1024)
-var attack_t0 = dictionary<int, float>(1024)
+let unit_dir = dictionary<int, int>(1024)
+let attack_t0 = dictionary<int, float>(1024)
 var corpses = []::Corpse
-var hit_t0 = dictionary<int, float>(1024)      // when a unit was last hit (the flash)
+let hit_t0 = dictionary<int, float>(1024)      // when a unit was last hit (the flash)
 var shot_from = dictionary<int, int>(1024)     // a shot (its by * 65536 + landing tick) -> the tick it was first seen
-var last_kind = dictionary<int, int>(1024)
-var last_owner = dictionary<int, int>(1024)
+let last_kind = dictionary<int, int>(1024)
+let last_owner = dictionary<int, int>(1024)
 
 def prev_pos(i:int) -> int, int:
     let found, at = binary_search(p_id, u_id[i])
@@ -417,6 +419,7 @@ import .model.grng
 import .model.base
 import .model.flat
 import .model.glb
+import .model.old_bugs
 import .model.units
 import .model.units2
 import .model.units3
@@ -475,7 +478,7 @@ def work_point(i:int) -> float2:
 def view_of(i:int) -> UV:
     let k = u_kind[i]
     let step = type_step(k)
-    let ver = ((type_gen * 1024 + k) * 16 + step) * 16 + u_owner[i]
+    let ver = (((bake_gen * 64 + type_gen) * 1024 + k) * 16 + step) * 16 + u_owner[i]
     let have = views.get(u_id[i])
     if have and view_ver.get(u_id[i], -1) == ver: return have
     if have:
@@ -757,7 +760,7 @@ def collect_buildings():
                             if (links >> n) & 1 and (d.x + d.y <= 0) == (pass == 0) and look.arms[n] != "-":
                                 add(frame_index(look.arms[n]), at.x, at.y - up, at.y, col)
                     if look.front != "-": add(frame_index(look.front), at.x, at.y - up, at.y + 2.0, col)
-                    for(LINKS) d, n:
+                    for(LINKS.length) n:
                         if (links >> n) & 1 and n < look.arms_front.length and look.arms_front[n] != "-":
                             add(frame_index(look.arms_front[n]), at.x, at.y - up, at.y + 2.0, col)
                 else:
@@ -914,6 +917,7 @@ def draw_world(alpha:float):
                     elif d.f == -4:
                         flush_sprites()
                         draw_rings(alpha)
+                        draw_orders(alpha)
                         b_sheet = -1
                     elif d.f == -3:   // a damaged building's cracks, sorted with it (game/town.lobster)
                         flush_sprites()
@@ -948,7 +952,7 @@ var front_shown = false         // the lobby's pages were up (the match loader s
 
 // The maps a match can be on (data/maps).
 def map_ids() -> [string]:
-    let names, sizes, times = scan_folder("../data/maps", false)
+    let names = scan_folder("../data/maps", false)
     let out = []::string
     if names:
         for(names) n:
@@ -974,12 +978,12 @@ def box(at:float2, size:float2, col:float4): ui_fill(at, size, col)
 def balance_for_match(races:[JV], rules:JV, rounds:int) -> [string]:
     let report = []::string
     let t0 = seconds_elapsed()
-    var stop = false
+    let stop = false
     auto_balance(races, rules, 2, rounds, 10) round, units, rates, mean, off:
         report.push("round {round + 1}: {off} of {units.length} lines more than 10 points off the mean ({rr_fights} fights, {seconds_elapsed() - t0} s)")
         gl.frame()
         if front_shown:   // (from the lobby's pages: the match loader, game/lobby.lobster)
-            fe_loader("Balancing the armies by fighting them: round {round + 1} of {rounds}", float(round + 1) / float(rounds + 2))
+            fe_loader("Balancing the armies by fighting them: round {round + 1} of {rounds}", 0.05 + 0.45 * float(round + 1) / float(rounds))
         else:
             gl.clear(float4 { 0.07, 0.06, 0.05, 1.0 })
             gl.set_shader("color")
@@ -1051,7 +1055,7 @@ def become(prompt:string):
     for(su_races) r, q:
         if q != ME: others.push(r)
     let t0 = seconds_elapsed()
-    var lines_ = []::string
+    let lines_ = []::string
     balance_newcomer(race, others, 3) round, units, rates, mean, off:
         lines_.push("round {round + 1}: {off} of {units.length} lines more than 10 points off ({rr_fights} fights)")
         gl.frame()
@@ -1072,7 +1076,7 @@ def become(prompt:string):
     print banner
 
 def typing_tick():
-    let text, editing, cursor, sel = gl.text_input_state()
+    let text = gl.text_input_state()
     if gl.button("escape") == 1:
         typing_race = false
         gl.end_text_input()
@@ -1104,7 +1108,7 @@ def draw_banner():
 // ------------------------------------------------------------------ selection and orders
 
 var selected = []::int          // unit ids
-var groups = dictionary<int, [int]>(10)   // control group (0 for key 1) -> unit ids
+let groups = dictionary<int, [int]>(10)   // control group (0 for key 1) -> unit ids
 var last_group = -1
 var last_group_at = -10.0
 var sel_building = 0            // building id
@@ -1112,6 +1116,7 @@ var drag_from = float2_0
 var dragging = false
 var build_menu = false
 var placing = -1                // building type being placed
+var wall_from = int2 { -1, -1 }  // where a wall's drag began (a cell), while placing walls or gates (bt_line)
 
 def selected_units() -> [int]: return filter(selected) id: index_of(id) >= 0
 def selected_workers() -> [int]: return filter(selected_units()) id: t_worker[u_kind[index_of(id)]] != 0
@@ -1209,7 +1214,7 @@ def order(m:float2, attack_move:bool = false):
     if not ids.length: return
     let others = filter(ids) id: not contains(workers, id)
     let bridge = bridge_on(c)
-    let am = attack_move or gl.button("a") >= 1
+    let am = attack_move or gl.button("left ctrl") >= 1 or gl.button("right ctrl") >= 1   // (Ctrl: attack-move; A is the camera's)
     if am and bridge >= 0 and br_up[bridge] == 1 and foe < 0:
         issue_cmd(ME, CMD_ATTACK, ids, br_id[bridge], 0, 0, 0, q)   // attack-click a bridge: break it
     elif am:
@@ -1257,7 +1262,7 @@ def buildable() -> [int]:
 def trainable(b:int) -> [int]:
     return bm_trains[ME][b_kind[b]]
 
-let RESEARCH_KEYS = ["q", "w", "e", "r", "t", "y", "i", "o", "p"]
+let RESEARCH_KEYS = ["q", "e", "r", "t", "y", "f", "g", "h", "j"]   // (not W A S D: the camera's)
 
 // The research building b offers player 0 now (not done, not queued, open to its race, its age and
 // the one before it reached; affordable or not), in research order.
@@ -1276,11 +1281,32 @@ def place_at() -> int, int:
     let s = bt_size[placing]
     return int(mm.x) / TILE - (s - 1) / 2, int(mm.y) / TILE - (s - 1) / 2
 
+def place_cell() -> int2:
+    let cx, cy = place_at()
+    return int2 { cx, cy }
+
 // Lay the foundation being placed at the mouse with the selected workers (shift: keep placing).
 def place_here(more:bool):
     let cx, cy = place_at()
     let ws = selected_workers()
     if ws.length: issue_cmd(ME, CMD_BUILD, ws, placing, cx, cy, 0, if more: 1 else: 0)
+    if not more: placing = -1
+
+// The cells of a line from a to b (straight or diagonal: the cells a line through them crosses).
+def wall_cells(a:int2, b:int2) -> [int2]:
+    let out = []::int2
+    let n = max(abs(b.x - a.x), abs(b.y - a.y))
+    for(n + 1) k:
+        let c = int2 { a.x + int(round(float((b.x - a.x) * k) / float(max(n, 1)))), a.y + int(round(float((b.y - a.y) * k) / float(max(n, 1)))) }
+        if not out.length or out[out.length - 1] != c: out.push(c)
+    return out
+
+// A wall or gate dragged from a to b: a foundation a cell, built in order by the selected workers (more: keep placing).
+def place_wall(a:int2, b:int2, more:bool):
+    let ws = selected_workers()
+    if ws.length:
+        for(wall_cells(a, b)) c, k: issue_cmd(ME, CMD_BUILD, ws, placing, c.x, c.y, 0, if more or k > 0: 1 else: 0)
+    wall_from = int2 { -1, -1 }
     if not more: placing = -1
 
 def train_slot(n:int):
@@ -1337,7 +1363,7 @@ def keys():
         for(RESEARCH_KEYS) key, n:
             if gl.button(key) == 1 and n < offer.length: issue_cmd(ME, CMD_RESEARCH, []::int, sel_building, offer[n], 0, 0)
         if gl.button("x") == 1 and b_queue[b].length: issue_cmd(ME, CMD_CANCEL, []::int, sel_building, b_queue[b].length - 1, 0, 0)
-    if gl.button("s") == 1 and selected.length and gl.button("left shift") == 0: issue_cmd(ME, CMD_STOP, selected_units(), 0, 0, 0, 0)
+    if gl.button("x") == 1 and b < 0 and selected.length: issue_cmd(ME, CMD_STOP, selected_units(), 0, 0, 0, 0)
     if b < 0 and selected_soldiers().length:
         if gl.button("r") == 1: arming_attack = true   // R then click: attack-move there
         let hk = ability_hotkey()
@@ -1365,8 +1391,13 @@ def mouse():
             arming_attack = false
             arming_ability = false
             return
+    if placing < 0: wall_from = int2 { -1, -1 }
     if placing >= 0:
-        if gl.button("mouse1") == 1: place_here(gl.button("left shift") >= 1)
+        if touch_play: return   // (touch places for itself: game/touch.lobster)
+        if bt_line[placing] != 0:   // walls and gates are dragged: press at one end, release at the other
+            if gl.button("mouse1") == 1: wall_from = place_cell()
+            elif gl.button("mouse1") == 0 and wall_from.x >= 0: place_wall(wall_from, place_cell(), gl.button("left shift") >= 1)
+        elif gl.button("mouse1") == 1: place_here(gl.button("left shift") >= 1)
         if gl.button("mouse3") == 1 or gl.button("escape") == 1: placing = -1
         return
     if in_minimap(m):
@@ -1376,9 +1407,9 @@ def mouse():
             let ids = selected_units()
             if ids.length:
                 say(ME, "ack")
-                issue_cmd(ME, if gl.button("a") >= 1: CMD_ATTACK_MOVE else: CMD_MOVE, ids, int(p.x), int(p.y), 0, 0, if gl.button("left shift") >= 1: 1 else: 0)
+                issue_cmd(ME, if gl.button("left ctrl") >= 1 or gl.button("right ctrl") >= 1: CMD_ATTACK_MOVE else: CMD_MOVE, ids, int(p.x), int(p.y), 0, 0, if gl.button("left shift") >= 1: 1 else: 0)
         return
-    if gl.button("mouse1") == 1:
+    if gl.button("mouse1") == 1 and not touch_play:   // (touch selects for itself; a touch here is on the HUD)
         drag_from = m
         dragging = true
     if dragging and gl.button("mouse1") == 0:
@@ -1390,12 +1421,12 @@ def mouse():
 def scroll():
     let ws = float(gl.window_size())
     let m = float(gl.mouse_pos(0))
-    let sp = 900.0 * gl.delta_time() / zoom
+    let sp = 1400.0 * gl.delta_time() / zoom
     var d = float2_0
-    if gl.button("left") >= 1: d.x -= 1.0
-    if gl.button("right") >= 1: d.x += 1.0
-    if gl.button("up") >= 1: d.y -= 1.0
-    if gl.button("down") >= 1: d.y += 1.0
+    if gl.button("left") >= 1 or gl.button("a") >= 1: d.x -= 1.0   // (the arrows or WASD)
+    if gl.button("right") >= 1 or gl.button("d") >= 1: d.x += 1.0
+    if gl.button("up") >= 1 or gl.button("w") >= 1: d.y -= 1.0
+    if gl.button("down") >= 1 or gl.button("s") >= 1: d.y += 1.0
     let inside = m.x > 0.0 and m.y > 0.0 and m.x < ws.x and m.y < ws.y   // (outside the window the mouse reads 0, 0)
     if inside and shot == "":
         if m.x <= 3.0: d.x -= 1.0
@@ -1489,12 +1520,13 @@ def draw_marks(alpha:float):
         ui_fill(p + float2 { -9.0, -38.0 }, float2 { 18.0, 3.0 }, float4 { 0.0, 0.0, 0.0, 0.6 })
         ui_fill(p + float2 { -9.0, -38.0 }, float2 { 18.0 * hpk, 3.0 }, float4 { 1.0 - hpk, 0.3 + 0.6 * hpk, 0.15, 1.0 })
     if placing >= 0:
-        let cx, cy = place_at()
-        let ok = can_place(ME, placing, cx, cy)
+        let here = place_cell()
         let s = bt_size[placing]
-        let pts = map([int2 { 0, 0 }, int2 { s, 0 }, int2 { s, s }, int2 { 0, s }]) d: iso(float((cx + d.x) * 1000), float((cy + d.y) * 1000))
-        gl.color(if ok: float4 { 0.3, 0.9, 0.3, 0.35 } else: float4 { 0.9, 0.2, 0.2, 0.35 }):
-            gl.polygon(pts)
+        for(if bt_line[placing] != 0 and wall_from.x >= 0: wall_cells(wall_from, here) else: [here]) g:
+            let ok = can_place(ME, placing, g.x, g.y)
+            let pts = map([int2 { 0, 0 }, int2 { s, 0 }, int2 { s, s }, int2 { 0, s }]) d: iso(float((g.x + d.x) * 1000), float((g.y + d.y) * 1000))
+            gl.color(if ok: float4 { 0.3, 0.9, 0.3, 0.35 } else: float4 { 0.9, 0.2, 0.2, 0.35 }):
+                gl.polygon(pts)
 
 // ------------------------------------------------------------------ the minimap (src/view/minimap.gd)
 // The map as a diamond at the bottom right (MM_SIZE UI px wide, half as tall, times hud_s()): the ground
@@ -1720,7 +1752,10 @@ import .game.pad   // (here: it plays through the controls above)
 import .game.techtree
 import .game.panel
 import .game.topbar
+import .game.order_marks
+import .game.touch   // (here: it plays through the pad, and leaves the panel, top bar and minimap to the mouse)
 import .game.lobby
+import .game.boot
 
 // Control groups shown (Dominic, 2026-10-26: "visible somewhere, at least as a number on the units",
 // then "only when you select the group"): a small number by each selected unit that's in a group (its
@@ -1820,6 +1855,7 @@ def pad_script() -> PadIn:
     if pad_step == 62:
         pad_step = 6
         return none
+    if pad_step == 6 and has_s(args, "wheelshot") and shot != "": gl.screenshot(shot + ".wheel.png")   // (captures: the wheel as it opened)
     if pad_step == 6 and pad_page == 0:
         expect_ok(pad_wheel.length > 0, "A on a selected worker opens its wheel ({pad_wheel.length} things to build)")
         var house = 0
@@ -1899,6 +1935,7 @@ note("start")
 // (a capture runs without vsync: with the display asleep, vsync never lets a frame through)
 fatal(gl.window("Age of Anything (Lobster)", 1600, 1000, if shot != "" or selftest or padtest: gl.window_init_no_vsync else: 0))
 if shot != "" or selftest or padtest: gl.set_target_delta_time(1.0 / 60.0)
+gl.window_icon("icons/game_icon.png")   // (the Dock's icon on the Mac)
 note("window")
 fatal(gl.load_materials(SPRITE_SHADERS, true))
 fatal(gl.load_materials(TERRAIN_SHADERS, true))
@@ -1906,6 +1943,24 @@ fatal(gl.load_materials(BAKE_SHADERS, true))
 fatal(gl.load_materials(WORLD_SHADERS, true))
 check(gl.set_font_name("data/fonts/Droid_Sans/DroidSans.ttf"), "no font")
 bake_live = shot == "" and not selftest and not padtest   // (the window kept alive while art bakes; captures and tests bake quietly)
+
+// Something on the screen from the first moment (not a black window): the boot screen (game/boot), until the title.
+def startup_frame(what:string, done:float):
+    if not bake_live: return
+    boot_draw(what, done)
+    gl.frame()
+
+fatal(gl.load_materials(UI_SHADERS, true))   // (the boot screen paints the UI's wood)
+ui_ready = true
+// page:boot shot:<png>: a picture of the boot screen, then quit
+if page_arg == "boot":
+    for(3):
+        boot_draw("Loading the sounds...", 0.35)
+        gl.frame()
+    boot_draw("Loading the sounds...", 0.35)
+    if shot != "": gl.screenshot(shot)
+    return from program
+startup_frame("Loading...", 0.05)
 for(args) a:   // cache:<folder>: the parts kept there instead of bake_cache/ ("cache:" alone: baked afresh, kept nowhere)
     if starts_with(a, "cache:"): bake_cache_dir = a.substring(6, a.length - 6)
 zoom = 2.0 * floor(ui() + 0.5)   // two screen points an art pixel, as the game's camera
@@ -1915,17 +1970,32 @@ let have_pack = read_file(args[0] + "/index.txt") != nil
 if have_pack: load_pack(args[0])
 else: pack_library = true
 note("pack")
+startup_frame("Loading the sounds...", 0.2)
+volume_load()
 music_start()
 ambience_start()
+startup_frame("Loading the data...", 0.5)
 lib_load("../data")
 pack_teams()
 ui_setup("")
 let mods_wanted = if mods_arg != "": tokenize(mods_arg, ",", " ") else: pack_mods
 if mods_wanted.length: print "mods: {mods_use(mods_wanted)}"
+startup_frame("Loading the parts...", 0.8)
 id_load("../data")
 complete_kit_parts()   // (the creature kit's bodies: with no pack, made here; a pack's kit_parts.json fills them in first)
 composed = not have_pack or read_file(args[0] + "/rigs.json") != nil
 if composed and have_pack: load_part_data(args[0])
+// prebake: every prop and every architecture's buildings baked into the shipped folder (src/prebake.sh), then quit.
+if has_s(args, "prebake"):
+    bake_cache_dir = bake_shipped_dir
+    bake_shipped_dir = ""
+    bake_live = false   // (no progress drawn: the window's frames aren't needed, and a hidden one can stop the bake)
+    let t0 = seconds_elapsed()
+    print "prebake: {bake_doodads()} prop frames in {int(seconds_elapsed() - t0)} s"
+    let archs = all_architectures()
+    let t1 = seconds_elapsed()
+    print "prebake: {bake_buildings_for(archs)} building frames ({concat_string(archs, ", ")}) in {int(seconds_elapsed() - t1)} s"
+    bake_quit = true
 var lobby_report = []::string
 
 // A line in the middle of an empty screen while the link is made (true: the window was closed).
@@ -2237,7 +2307,7 @@ def pause_menu():
     if gl.button("controller_b") == 1: menu_open = false
     ui_fill(float2_0, ws, float4 { 0.0, 0.0, 0.0, 0.45 })
     let from_lobby = args[1] == "lobby"
-    let size = float2 { 420.0 * u, (if from_lobby: 686.0 else: 614.0) * u }
+    let size = float2 { 420.0 * u, (if from_lobby: 686.0 else: 614.0) * u + 112.0 * u }
     let at = ws / 2.0 - size / 2.0
     let title = if winner >= 0: (if winner == teams[ME]: "Victory!" else: "Defeat") elif net_on: "Menu (the match goes on)" else: "Paused"
     ui_panel(at, size, title)
@@ -2261,17 +2331,8 @@ def pause_menu():
         back_to_lobby = true
         quit_game = true
     if item("Quit", false): quit_game = true
+    volume_rows(float2 { at.x + 40.0 * u, y }, size.x - 80.0 * u, 48.0 * u, 10.0 * u)
     ui_flush()
-
-// The match loader as a picture (bake_breath shows it under the bake's progress, view/part_bake.lobster).
-def loader_picture() -> resource<texture>?:
-    let fb = gl.framebuffer_size()
-    let tex = gl.create_blank_texture(int3 { fb.x, fb.y, 0 }, texture_format_nomipmap)
-    gl.switch_to_framebuffer(tex, false)
-    fe_loader("Making the art", 0.9)
-    gl.switch_to_framebuffer(nil)
-    gl.ortho()
-    return tex
 
 // A match from its start: the camera on your Town Center, the clock at 0, played until it's quit (or a capture's done).
 def play_match():
@@ -2293,33 +2354,52 @@ def play_match():
         if gl.button("escape") == 1 and placing < 0 and not build_menu and not typing_race and not tree_open and not pad_wheel.length and not arming_attack and not arming_ability: menu_open = not menu_open
         if gl.button("controller_start") == 1 and not typing_race: menu_open = not menu_open
         if has_s(args, "menu") and frame_no == 2: menu_open = true   // (captures)
+        if has_s(args, "orders") and frame_no == 30:   // (captures: your units sent off, and the Town Center's rally set)
+            selected = filter(u_id) id: u_owner[index_of(id)] == ME
+            let tc = town_center(ME)
+            if tc >= 0 and selected.length:
+                let gx = b_cx[tc] * TILE + 6000
+                let gy = b_cy[tc] * TILE - 4000
+                issue_cmd(ME, CMD_MOVE, selected_units(), gx, gy, 0, 0, 0)
+                issue_cmd(ME, CMD_MOVE, selected_units(), gx + 3000, gy + 3000, 0, 0, 1)
+                issue_cmd(ME, CMD_RALLY, []::int, b_id[tc], gx - 3000, gy + 6000, 0)
         if gl.button("escape") == 1: build_menu = false
         if gl.button("space") == 1 and not net_on: paused = not paused
-        if gl.button("=") == 1 and not net_on: speed = min(8.0, speed * 2.0)
-        if gl.button("-") == 1 and not net_on: speed = max(0.25, speed / 2.0)
+        let ctrl = gl.button("left ctrl") >= 1 or gl.button("right ctrl") >= 1 or gl.button("left gui") >= 1 or gl.button("right gui") >= 1
+        if ctrl and (gl.button("=") == 1 or gl.button("-") == 1):   // Ctrl/Cmd + and -: the HUD's size (saved)
+            hud_size = clamp(hud_size + (if gl.button("=") == 1: 10 else: -10), 70, 200)
+            volume_save()
+        elif gl.button("=") == 1 and not net_on: speed = min(8.0, speed * 2.0)
+        elif gl.button("-") == 1 and not net_on: speed = max(0.25, speed / 2.0)
         let dt = gl.delta_time()
         frame_dt = dt
         fx_tick(dt)
+        bake_wanted_tick(0.008)   // (a part drawn before it was baked: a pose, a step the start didn't see)
         town_tick(dt)
         music_tick("age{clamp(ages[ME], 1, 4)}", gl.time() - last_battle < 6.0, dt)
         ambience_tick(town_level(), dt)
         frame_no++
         if frame_no == 1:   // (inside a frame: a bake outside one leaves the window drawing nothing)
             let t0 = seconds_elapsed()
-            if bake_live and fe_sides.length == num_players and front_choice != "": bake_backdrop = loader_picture()   // (the match loader under the bake's progress)
-            bake_what = "the units"
+            if bake_live and fe_sides.length == num_players and front_choice != "":   // (the match loader shows the bake's progress)
+                bake_progress = fn(st, f): fe_loader(st, f)
+                bake_progress_on = true
+            bake_progress_from = 0.5
+            bake_progress_to = 0.95
+            bake_what = "the armies"
             let n = bake_missing_parts()
             print "baked {n} part facings the pack lacked, in {int((seconds_elapsed() - t0) * 1000.0)} ms"
             let t1 = seconds_elapsed()
             ak_rebake = rebake_art
-            bake_what = "the props"
+            bake_progress_from = 0.95
+            bake_progress_to = 1.0
+            bake_what = "the town"
             let nd = bake_doodads()
             print "baked {nd} props{if rebake_art: "" else: " the pack lacked"}, in {int((seconds_elapsed() - t1) * 1000.0)} ms"
             let t2 = seconds_elapsed()
-            bake_what = "the buildings"
             let nb = bake_buildings_for(arch_of)
             print "baked {nb} building frames{if rebake_art: "" else: " the pack lacked"}, in {int((seconds_elapsed() - t2) * 1000.0)} ms"
-            bake_backdrop = nil
+            bake_progress_on = false
         if shot != "" and frame_no < 3: note("frame {frame_no} tc at {if tc0 >= 0: to_screen(iso(float(b_cx[tc0] * 1000 + 2000), float(b_cy[tc0] * 1000 + 2000))) else: float2_0} cam {cam} zoom {zoom} ws {gl.window_size()} fb {gl.framebuffer_size()} tc {tc0} draws {draws.length} W {W} H {H} first {iso(0.0, 0.0)} last {iso(float(W * 1000), float(H * 1000))}")
         if shot != "" and frame_no % 60 == 0: print "frame {frame_no}: {dt * 1000.0} ms, play {clock_s} s"
         if reload_at >= 0.0 and clock_s >= reload_at:
@@ -2379,8 +2459,11 @@ def play_match():
                         nf++
             if nf > 0: cam = cam + (iso(float(fx / nf), float(fy / nf)) - cam) * 0.05
         if not typing_race and not tree_open and not menu_open:
-            let padded = pad_tick(if padtest: pad_script() else: read_pad(), dt)
-            if not padded: scroll()
+            let padded = (touch_play and touch_tick(dt)) or pad_tick(if padtest: pad_script() else: read_pad(), dt)
+            if touch_wants_menu:
+                menu_open = true
+                touch_wants_menu = false
+            if not padded and not touch_play and not typing_race: scroll()
             keys()
             if not padded and not panel_click(mouse_px()): mouse()
         gl.clear(float4 { 0.05, 0.05, 0.05, 1.0 })
@@ -2390,6 +2473,7 @@ def play_match():
         draw_hud(paused, speed)
         draw_groups()
         pad_draw()
+        if touch_play: build_button()
         if tree_arg and frame_no == 2:
             open_tree(ME)
         tree_tick()
@@ -2439,7 +2523,7 @@ def new_match_reset():
     mask_version = -1
     doodad_list = []
     bld_seen.clear()
-    portraits.clear()
+    uv_free_dict(portraits)
     busts.clear()
     hud_culture = "?"
     unit_dir.clear()
@@ -2451,7 +2535,7 @@ def new_match_reset():
     town_parts = []
     town_emit.clear()
     town_builders = []
-    tethered.clear()
+    uv_free_dict(tethered)
     path_bytes = []
     typing_race = false
     tree_open = false
@@ -2497,3 +2581,8 @@ while not quit_app and not bake_quit:
     if quit_app or bake_quit or not back_to_lobby: break
     new_match_reset()
     front_first = true
+view_reset()   // (every view let go: their trees are cycles)
+uv_free_dict(portraits)
+uv_free_dict(tethered)
+fe_free_views()
+free_tree(view_stage)

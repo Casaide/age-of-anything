@@ -10,3 +10,5 @@ saves/
 races/
 memory_leaks.txt
 matches.jsonl
+baked/
+fresh_cache/

@@ -519,7 +519,7 @@ def load_ai_config(lvl:string = "normal"):   // (the lobby's AI levels: easy, no
         let mil = at(cfg, "military")
         let rm = at(mil, "repeat_min_army")
         if rm.kind == J_OBJ:
-            for(rm.keys) a, n: rm.a[n] = jint(max(1, as_int(rm.a[n]) * gint(l, "army_pct", 100) / 100))
+            for(rm.keys.length) n: rm.a[n] = jint(max(1, as_int(rm.a[n]) * gint(l, "army_pct", 100) / 100))
         else: set(mil, "repeat_min_army", jint(max(1, as_int(rm) * gint(l, "army_pct", 100) / 100)))
         if has(l, "max_workers"): set(at(cfg, "economy"), "max_workers", at(l, "max_workers"))
         lv_ratio = gint(l, "army_ratio", 0)
@@ -537,7 +537,7 @@ def load_ai_config(lvl:string = "normal"):   // (the lobby's AI levels: easy, no
     ai_walk(cfg, "", nums, strs)
     let smax = gobj(gobj(at(cfg, "military"), "siege"), "max")
     strs.push("military.siege.max_order " + string(smax.keys.length) + (if smax.keys.length: " " + concat_string(smax.keys, " ") else: " "))
-    var toks = ["AI", string(nums.length), string(strs.length)]
+    let toks = ["AI", string(nums.length), string(strs.length)]
     for(nums) x: for(prompt_words(x)) t: toks.push(t)
     for(strs) x: for(prompt_words(x)) t: toks.push(t)
     let order = glist(cfg, "build_order")

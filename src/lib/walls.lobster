@@ -553,7 +553,7 @@ def breach(b:int):
     for(footprint(b)) c:
         if not rubble.get(c):
             rubble.set(c, [terrain[c], b_owner[b], k, b_cx[b], b_cy[b], along])
-            let found, at = binary_search(rubble_cells, c)
+            let _found, at = binary_search(rubble_cells, c)
             rubble_cells.insert(at, c)
             set_terrain(c, rubble_terrain)
 
@@ -594,7 +594,7 @@ def pour():
                         if events_on: events.push(Event { EV_HIT, b_id[b], u_id[j], d, u_x[j], u_y[j] })
                 if hit:
                     if pour_at.get(b_id[b], -1) < 0:
-                        let found, at = binary_search(pour_ids, b_id[b])
+                        let _found, at = binary_search(pour_ids, b_id[b])
                         pour_ids.insert(at, b_id[b])
                     pour_at.set(b_id[b], tick + bt_pour[k][1])
 

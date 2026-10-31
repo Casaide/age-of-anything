@@ -109,10 +109,9 @@ def table(units:[RRUnit], rates:[int], mean:int):
 
 let t0 = seconds_elapsed()
 if mode == "hash":   // one fight's state hash every tick: hash <age> <a> <b> [dump tick]
-    rr_trace = true
-    if args.length > 4: rr_dump_at = string_to_int(args[4])
     let units = rr_units(races, age)
-    rr_fight(races, bare_rules(rules), age, units[string_to_int(args[2])], units[string_to_int(args[3])])
+    let dumpat = if args.length > 4: string_to_int(args[4]) else: -1
+    rr_fight(races, bare_rules(rules), age, units[string_to_int(args[2])], units[string_to_int(args[3])], true, dumpat)
 elif mode == "pairs":   // every fight's result, one line a pair (rr_dump.gd's format)
     let units = rr_units(races, age)
     let bare = bare_rules(rules)
