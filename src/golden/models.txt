@@ -6,7 +6,7 @@ armour.lorica cfe0d7f762cc5f11
 armour.mail b4729b504a933da3
 armour.sardine ca86832e9d0be629
 banner.team 2fe4bb5cc383ad48
-body.bear e734c6484a455462
+body.bear bf04beae78d0bdca
 leg.bear@w0_8 0a90f4a9049823eb
 leg.bear@w1_8 0e93c80641b98a1f
 leg.bear@w2_8 19a0935c91958b6d
@@ -15,7 +15,7 @@ leg.bear@w4_8 fa090ccc1b124d26
 leg.bear@w5_8 3a6955accbda99d8
 leg.bear@w6_8 7efdad5f2b5b6e4a
 leg.bear@w7_8 4a36627a165d356a
-body.bear_black 80b017c1a5736522
+body.bear_black 4b1a433c83e001b2
 leg.bear_black@w0_8 2cd7d96e31b45544
 leg.bear_black@w1_8 ba1e620bfd73ca2c
 leg.bear_black@w2_8 fc4087e836f193f6
@@ -41,7 +41,7 @@ leg.bear_mount_hind@w4_8 a2eddccff2fcdd7a
 leg.bear_mount_hind@w5_8 18895394f965a8d1
 leg.bear_mount_hind@w6_8 4ad0938bdf0da33e
 leg.bear_mount_hind@w7_8 e01832d33e648559
-body.bear_polar 6ff6222cb00e98ae
+body.bear_polar 8dcba80dbae5eb8f
 leg.bear_polar@w0_8 61d39638a04bf7dd
 leg.bear_polar@w1_8 6d3b1adde1159fc2
 leg.bear_polar@w2_8 e3ba29b5f204276c
