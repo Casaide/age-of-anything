@@ -17,6 +17,8 @@ class Occluder:
     sort_y:float                  // art px: the row's top corner, as units are keyed on the base plane
     tops:resource<mesh>
     rims:resource<mesh>?
+    cells:[int]                   // its tops' cells, and the fog over them (drawn after them: build_fog)
+    fog:resource<mesh>? = nil
 var occluders = []::Occluder
 let TERRAIN_SHADERS = """
 PIXELFUNCTIONS
@@ -313,13 +315,13 @@ def mask_weight(name:string) -> float:
 def build_masks():
     let w = W * MASK_K
     let h = H * MASK_K
-    var a = map(w * h * 4): 0.0
+    let a = map(w * h * 4): 0.0
     for(h) y:
         for(w) x:
             let name = tr_names[terrain[(y / MASK_K) * W + x / MASK_K]]
             let ch = mask_channel(name)
             if ch >= 0: a[(y * w + x) * 4 + ch] = mask_weight(name)
-    var b = map(w * h * 4): 0.0
+    let b = map(w * h * 4): 0.0
     for(5):
         for(h) y:
             for(w) x:
@@ -352,7 +354,9 @@ def build_wear():
     wear_tex = gl.create_texture(map(H) y: map(W) x: float4 { float(if y * W + x < wear.length: wear[y * W + x] else: 0) / 255.0, 0.0, 0.0, 0.0 },
                                  texture_format_clamp | texture_format_nomipmap)
 
-// The fog over the ground, per tile (explored: dimmed; never seen: dark), corners blended.
+// The fog over the ground, per tile (explored: dimmed; never seen: dark), corners blended; over the cliff faces
+// that show (a tile's edge above its neighbour's), and over each hill's near-edge tops, which are drawn again after
+// the fog (game.lobster: what's behind a hill hides).
 def build_fog(me:int):
     let fg = fog[me]
     let dark = map(W * H) c: if fg[c] == 0: 0.88 elif fg[c] == 1: 0.45 else: 0.0
@@ -372,18 +376,49 @@ def build_fog(me:int):
     let col = []::float4
     let idx = []::int
     for(W * H) c:
-        let cx = c % W
-        let cy = c / W
-        let n = pos.length
-        let m = iso(float(cx * 1000 + 500), float(cy * 1000 + 500)) - float2 { 0.0, lift_at(float(cx * 1000 + 500), float(cy * 1000 + 500)) * 1.5 }
-        pos.push(float3 { m.x, m.y, 0.0 })
-        col.push(float4 { 0.0, 0.0, 0.0, dark[c] })
-        for([int2 { 0, 0 }, int2 { 1, 0 }, int2 { 1, 1 }, int2 { 0, 1 }]) d:
-            let p = iso(float((cx + d.x) * 1000), float((cy + d.y) * 1000)) - float2 { 0.0, (if relief.length: relief[c * 4 + (if d.y == 0: d.x else: 3 - d.x)] else: 0.0) * LEVEL_PX * 1.5 }
-            pos.push(float3 { p.x, p.y, 0.0 })
-            col.push(float4 { 0.0, 0.0, 0.0, corner[(cy + d.y) * (W + 1) + cx + d.x] })
-        for([0, 2, 1, 0, 3, 2, 0, 4, 3, 0, 1, 4]) v: idx.push(n + v)
+        fog_cell(pos, col, idx, c, dark, corner)
+        if relief.length:
+            let cx = c % W
+            let cy = c / W
+            if cx + 1 < W: fog_face(pos, col, idx, corner, c, c + 1, int2 { cx + 1, cy }, int2 { cx + 1, cy + 1 }, 1, 2, 0, 3)
+            if cy + 1 < H: fog_face(pos, col, idx, corner, c, c + W, int2 { cx, cy + 1 }, int2 { cx + 1, cy + 1 }, 3, 2, 0, 1)
     fog_mesh = gl.new_mesh("PC", pos, col, []::float3, []::float2, []::float2, idx)
+    for(occluders) o:
+        let op = []::float3
+        let oc = []::float4
+        let oi = []::int
+        for(o.cells) c: fog_cell(op, oc, oi, c, dark, corner)
+        o.fog = gl.new_mesh("PC", op, oc, []::float3, []::float2, []::float2, oi)
+
+// One tile's fog: a fan from its middle (its own darkness) to its corners (blended), at its height.
+def fog_cell(pos:[float3], col:[float4], idx:[int], c:int, dark:[float], corner:[float]):
+    let cx = c % W
+    let cy = c / W
+    let n = pos.length
+    let m = iso(float(cx * 1000 + 500), float(cy * 1000 + 500)) - float2 { 0.0, lift_at(float(cx * 1000 + 500), float(cy * 1000 + 500)) * 1.5 }
+    pos.push(float3 { m.x, m.y, 0.0 })
+    col.push(float4 { 0.0, 0.0, 0.0, dark[c] })
+    for([int2 { 0, 0 }, int2 { 1, 0 }, int2 { 1, 1 }, int2 { 0, 1 }]) d:
+        let p = iso(float((cx + d.x) * 1000), float((cy + d.y) * 1000)) - float2 { 0.0, (if relief.length: relief[c * 4 + (if d.y == 0: d.x else: 3 - d.x)] else: 0.0) * LEVEL_PX * 1.5 }
+        pos.push(float3 { p.x, p.y, 0.0 })
+        col.push(float4 { 0.0, 0.0, 0.0, corner[(cy + d.y) * (W + 1) + cx + d.x] })
+    for([0, 2, 1, 0, 3, 2, 0, 4, 3, 0, 1, 4]) v: idx.push(n + v)
+
+// The fog down a cliff face: the edge a-b shared by tile c (its corners ca, cb) and its near neighbour n (na, nb),
+// when c stands above n there (a face that shows; one facing away lies under n's top, fogged already).
+def fog_face(pos:[float3], col:[float4], idx:[int], corner:[float], c:int, n:int, a:int2, b:int2, ca:int, cb:int, na:int, nb:int):
+    let hca = relief[c * 4 + ca]
+    let hcb = relief[c * 4 + cb]
+    let hna = relief[n * 4 + na]
+    let hnb = relief[n * 4 + nb]
+    if hca < hna or hcb < hnb or hca + hcb <= hna + hnb: return
+    let k = pos.length
+    for([a, b, b, a]) v, i:
+        let h = [hca, hcb, hnb, hna][i]
+        let p = iso(float(v.x * 1000), float(v.y * 1000)) - float2 { 0.0, h * LEVEL_PX * 1.5 }
+        pos.push(float3 { p.x, p.y, 0.0 })
+        col.push(float4 { 0.0, 0.0, 0.0, corner[v.y * (W + 1) + v.x] })
+    for([0, 1, 2, 0, 2, 3]) v: idx.push(k + v)
 
 // ---- high ground (Iso.corner_heights, TerrainView.build_relief): raised tops, cliff faces, rims
 
@@ -527,6 +562,7 @@ def build_relief():
     let rims = map(4): MeshParts {}
     let rows = dictionary<int, MeshParts>(256)
     let row_rims = dictionary<int, MeshParts>(256)
+    let row_cells = dictionary<int, [int]>(256)
     for(H) y:
         for(W) x:
             let c = y * W + x
@@ -548,6 +584,9 @@ def build_relief():
                     let rm = rows.get(d)
                     let rr = row_rims.get(d)
                     if rm: top_quad(rm, x, y, c)
+                    let cs = row_cells.get(d)
+                    if cs: cs.push(c)
+                    else: row_cells.set(d, [c])
                     if rr: rims_of(rr, x, y, c)
     var g = 1
     while g < 4:
@@ -561,7 +600,8 @@ def build_relief():
             let tm = parts_mesh(rm)
             if tm:
                 let rr = row_rims.get(d)
-                occluders.push(Occluder { (float(d) * 16.0 - OCCLUDE_SORT) * 1.5, tm, if rr: parts_mesh(rr) else: nil })
+                occluders.push(Occluder { sort_y: (float(d) * 16.0 - OCCLUDE_SORT) * 1.5, tops: tm, rims: if rr: parts_mesh(rr) else: nil,
+                                          cells: row_cells.get(d) or [] })
 
 def sorted_ints_g(xs:[int]) -> [int]:
     let out = copy(xs)
@@ -605,10 +645,11 @@ def draw_terrain_mesh(m:resource<mesh>, art_px:float):
 
 def draw_occluder(o:Occluder, art_px:float):
     draw_terrain_mesh(o.tops, art_px)
+    gl.set_shader("color_attr")
     let r = o.rims
-    if r:
-        gl.set_shader("color_attr")
-        gl.render_mesh(r)
+    if r: gl.render_mesh(r)
+    let f = o.fog
+    if f: gl.render_mesh(f)
 
 def draw_ground(art_px:float):
     let gq = ground_quad

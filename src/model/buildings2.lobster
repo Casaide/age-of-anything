@@ -468,7 +468,7 @@ def walk_h(type:string) -> float:
     switch type:
         case "wall_tower": return 2.32
         default: return 1.36   // wall, stone_gate
-var wall_rescale = 1.0
+let wall_rescale = 1.0
 let BLD_NONE = float3 { -999.0, -999.0, -999.0 }   // no `about` point
 let WALL_D = 0.72        // the curtain's thickness
 let TOWER_W = 1.0        // a wall tower fills its tile

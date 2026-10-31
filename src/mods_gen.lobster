@@ -9,7 +9,7 @@ import .gen.json
 
 let ids = command_line_arguments()
 var imports = ""
-var chain = []::string
+let chain = []::string
 for(ids) id:
     let manifest = read_file("../mods/{id}/mod.json")
     if not manifest:

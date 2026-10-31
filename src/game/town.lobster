@@ -42,14 +42,14 @@ class Critter:
     face:float
     flying:bool = false
 
-var town_last = dictionary<int, Was>(256)
-var town_idle_since = dictionary<int, float>(256)
+let town_last = dictionary<int, Was>(256)
+let town_idle_since = dictionary<int, float>(256)
 var chores = dictionary<int, string>(64)
-var piles = dictionary<string, float>(64)       // "bid:resource index" -> loads
-var house_born = dictionary<int, float>(64)
+let piles = dictionary<string, float>(64)       // "bid:resource index" -> loads
+let house_born = dictionary<int, float>(64)
 var town_puffs = []::Puff
 var critters = []::Critter
-var critter_towns = dictionary<int, int>(8)
+let critter_towns = dictionary<int, int>(8)
 var town_tick_seen = -1
 
 // Smoke, flames and black smoke (BuildingArt's particles): canvas units.
@@ -62,7 +62,7 @@ class Puff2:
     size:float
 
 var town_parts = []::Puff2
-var town_emit = dictionary<string, float>(128)   // "<building id>:<what>" -> particles owed
+let town_emit = dictionary<string, float>(128)   // "<building id>:<what>" -> particles owed
 var town_builders = []::int
 
 def is_house(k:int) -> bool: return k < su_btypes.length and gbool(su_btypes[k], "house", false)
@@ -263,7 +263,7 @@ def crack_lines(b:int, look:string) -> [[float2]]:
     return map(6):
         var p = float2 { (float(fr.w) * (0.25 + next() * 0.5) - float(fr.ox)) * fr.k / 1.5, (float(fr.h) * (0.42 + next() * 0.2) - float(fr.oy)) * fr.k / 1.5 }
         let line = [p]
-        var dir = normalize(float2 { next() * 1.2 - 0.6, 1.0 })
+        let dir = normalize(float2 { next() * 1.2 - 0.6, 1.0 })
         for(3 + int(next() * 3.0)):
             p += normalize(dir + float2 { next() * 1.8 - 0.9, 0.0 }) * (1.8 + next() * 1.5)
             line.push(p)
@@ -517,7 +517,7 @@ def town_level() -> float:
 
 // ---- the stable's tethered mount (TownLife._sync_tethers)
 
-var tethered = dictionary<int, UV>(8)
+let tethered = dictionary<int, UV>(8)
 
 // The mount a race's large unit rides, as a recipe of its own (no rider), or nil (giants, Heavy elites,
 // centaurs: no separate mount).
@@ -565,13 +565,15 @@ def collect_tethers():
                     tethered.set(b_id[b], made)
                     v = made
                 let mv = v
-                if mv:
-                    mv.job = if int(gl.time() / 7.0 + float(b_id[b])) % 3 == 0: "graze" else: ""
-                    uv_process(mv, gl.delta_time())
-                    let at = iso(t.x + 300.0, t.y + 250.0)
-                    add_view(mv, at.y, team_col(b_owner[b]), if fog[ME][cell] == 2 or teams[b_owner[b]] == teams[ME]: 1.0 else: 0.6)
-                    let post = frame_index("tether_post")
-                    let pa = iso(t.x, t.y)
-                    if post >= 0: add(post, pa.x, pa.y - lift_at(t.x, t.y) * 1.5, pa.y, float4 { 1.0, 1.0, 1.0, 1.0 })
+                mv.job = if int(gl.time() / 7.0 + float(b_id[b])) % 3 == 0: "graze" else: ""
+                uv_process(mv, gl.delta_time())
+                let at = iso(t.x + 300.0, t.y + 250.0)
+                add_view(mv, at.y, team_col(b_owner[b]), if fog[ME][cell] == 2 or teams[b_owner[b]] == teams[ME]: 1.0 else: 0.6)
+                let post = frame_index("tether_post")
+                let pa = iso(t.x, t.y)
+                if post >= 0: add(post, pa.x, pa.y - lift_at(t.x, t.y) * 1.5, pa.y, float4 { 1.0, 1.0, 1.0, 1.0 })
     for(tethered.get_keys()) id:
-        if not keep.get(id, 0): tethered.del(id)
+        if not keep.get(id, 0):
+            let v = tethered.get(id)
+            if v: uv_free(v)
+            tethered.del(id)

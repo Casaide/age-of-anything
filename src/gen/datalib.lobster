@@ -13,7 +13,7 @@ var lib_palettes = jobj()
 var lib_lexicon = jobj()
 var lib_stopwords:[string] = []          // sorted
 var lib_resources:[string] = []
-var lib_curves = dictionary<string, [int]>(17)
+let lib_curves = dictionary<string, [int]>(17)
 var lib_cands = dictionary<string, [JV]>(31)   // slot|eras -> candidates
 var lib_mods:[string] = []
 var lib_mod_data = []::JV               // the mods in use, in load order: their data (path -> parsed)
@@ -136,10 +136,8 @@ def family(id:string) -> JV: return at(lib_families, id)
 def curve(id:string, points:int) -> int:
     let table = lib_curves.get(id)
     assert table
-    if table:
-        assert points >= 0 and points < table.length
-        return table[points]
-    return 0
+    assert points >= 0 and points < table.length
+    return table[points]
 
 def era_ok(p:JV, eras:[string]) -> bool:
     if not has(p, "era"): return true
@@ -168,3 +166,12 @@ def architecture(race:JV) -> string:
     let c = creature(as_str(at(race, "creature")))
     let f = family(as_str(at(race, "family")))
     return gstr(c, "architecture", gstr(f, "architecture", "thatch"))
+
+// Every architecture a race can have (the creatures' and cultures', and the default), sorted.
+def all_architectures() -> [string]:
+    let out = ["thatch"]
+    for([lib_creatures, lib_families]) table:
+        for(table.keys) k:
+            let a = gstr(at(table, k), "architecture", "")
+            if a != "" and not has_s(out, a): out.push(a)
+    return sorted_strs(out)

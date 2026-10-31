@@ -116,7 +116,7 @@ def state_hash() -> int:
         for(b_queue[b]) k: h = mix(h, k)
         h = mix(h, b_inside[b].length / REC_SIZE)
         for(b_inside[b]) v: h = mix(h, v)
-    for(hero_types) hk, hn: h = mix(mix(h, hero_id[hn]), hero_fell[hn])
+    for(hero_types.length) hn: h = mix(mix(h, hero_id[hn]), hero_fell[hn])
     h = mix(h, winner)
     for(wonder_ids) id, k: h = mix(mix(h, id), wonder_since[k])
     for(market_price) v: h = mix(h, v)
@@ -152,7 +152,7 @@ def dump_state() -> string:
         for(building_columns()) col: s += " {col[b]}"
         s += " q {b_queue[b]}\n"
     for(t_hp.length) k:
-        var v = [t_hp[k], t_speed[k], t_reach[k], t_reload[k], t_pop[k], t_train_ticks[k], t_carry_add[k], t_build_pct[k], t_shot_speed[k],
+        let v = [t_hp[k], t_speed[k], t_reach[k], t_reload[k], t_pop[k], t_train_ticks[k], t_carry_add[k], t_build_pct[k], t_shot_speed[k],
                  t_ranged[k], t_sight_add[k]]
         for([t_cost[k], t_atk[k], t_arm[k]]) xs:
             for(xs) x: v.push(x)

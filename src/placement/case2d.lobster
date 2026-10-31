@@ -109,12 +109,15 @@ def check_case2d(label:string, r:JV) -> void:
 // as units, then the depth order.
 def check_engine_view(v:UV, label:string, k:int, r:JV, stands:dictionary<string, dictionary<string, IMap>>, pose:Pose2):
     let view = "f{k} {pose.name}"
-    for(v.crew) m:
-        m.walking = pose.walking and not m.crew_top
-        m.phase = pose.phase
-        uv_process(m, 0.0)
-        m.walking = false
+    def pose_members():
+        for(v.crew) m:
+            m.walking = pose.walking and not m.crew_top
+            m.phase = pose.phase
+            uv_process(m, 0.0)
+            m.walking = false
+    pose_members()
     bake_view(v.node)   // (the members' walk steps: legs the standing compose didn't wear)
+    pose_members()      // (again, riding on their planted feet now that the steps are baked)
     for(v.crew) m:
         let key = "member " + m.crew_socket
         var st = stands.get(key)
@@ -123,7 +126,7 @@ def check_engine_view(v:UV, label:string, k:int, r:JV, stands:dictionary<string,
             stands.set(key, first)
             st = first
         let mst = st
-        if mst: check_view(m, label, "f{k} {m.crew_socket} {pose.name}", m.facing_k, m.recipe, mst)
+        check_view(m, label, "f{k} {m.crew_socket} {pose.name}", m.facing_k, m.recipe, mst)
         if pose.walking and not m.crew_top: walk_legs(m, label, "f{k} {m.crew_socket} {pose.name}", m.recipe, pose.phase)
     if not pose.walking: depth_order(v, label, view, k, r)
     coverage(v, label, view)
@@ -170,7 +173,7 @@ def coverage_walk(v:UV, n:VNode, members:[VNode], stray:[string]) -> void:
             coverage_walk(v, c, members, stray)
 
 // C4: who is in front, against the composite's 3D truth (one flat id per member).
-let C4_SLACK = 6
+let C4_SLACK = int(round(6.0 * PX_SCALE))
 let C4_SHARE = 0.08
 
 def depth_order(v:UV, label:string, view:string, k:int, r:JV):
@@ -191,7 +194,7 @@ def depth_order(v:UV, label:string, view:string, k:int, r:JV):
         let mt = Xform { bscaled_global(m.t.b, float3_1 * ds), m.t.o }
         for(rig_unit(m.recipe, rp).pieces) p: pieces.push(TPiece { p.node, xmul(mt, p.xf), i + 1 })
     rig_clear()
-    let truth, size = truth_render(pieces, k)
+    let truth, _size = truth_render(pieces, k)
     let sizes = map(ms.length + 1): 0
     for(truth.keys) c: sizes[iget(truth, c, 0)]++
     // The drawn composite: each cell's topmost member (draw order is tree order), shadows left out.
@@ -205,11 +208,8 @@ def depth_order(v:UV, label:string, view:string, k:int, r:JV):
     for(truth.keys) c:
         let want = iget(truth, c, -1)
         if ihas(top, c) and iget(top, c, -1) != want:
-            let u = cunkey(c)
-            var inner = true
-            for([int2 { 1, 0 }, int2 { -1, 0 }, int2 { 0, 1 }, int2 { 0, -1 }, int2 { 2, 0 }, int2 { -2, 0 }, int2 { 0, 2 }, int2 { 0, -2 }]) d:
-                inner = inner and iget(truth, ckey(u.x + d.x, u.y + d.y), -1) == want
-            if inner:
+            let inside = interior(truth, c) w: w == want
+            if inside:
                 let key = "{iget(top, c, -1)}>{want}"
                 if over.get(key, -1) < 0: over_keys.push(key)
                 over.set(key, over.get(key, 0) + 1)
@@ -236,9 +236,10 @@ def draw_cells(v:UV, n:VNode, t:[float], owner:int, index:dictionary<string, int
                 let key = draw_key(c)
                 let b = bakes.get(key)
                 if b:
+                    let g = b.scale * 100.0 / float(c.size)   // (the truth's grid: a part is baked at its drawn size, D-180)
                     for(pixels_of(key).pts) q:
                         let p = xf_apply(ct, q)
-                        iset(top, ckey(int(floor(p.x * b.scale)), int(floor(p.y * b.scale))), o)
+                        iset(top, ckey(int(floor(p.x * g)), int(floor(p.y * g))), o)
             draw_cells(v, c, ct, o, index, top)
 
 // ---- at work: a fused mount's kneel (work_2d.gd)

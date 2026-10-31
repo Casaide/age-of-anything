@@ -28,6 +28,7 @@ let WORK_POSES = [Pose2 { "forage", false, 0.0 }]   // drawn for every worker (p
 let PX_SCALE = BAKE_ART / (1.5 * 0.85)
 let MODEL_SLACK = int(round(6.0 * PX_SCALE))   // pixels a leg or head may differ from the 3D model by (the outline, rounding)...
 let MODEL_SHARE = 0.08         // ...or this share of the part's pixels
+let EDGE_PX = int(round(2.0 * PX_SCALE))   // a truth region's edge left out of the count (the bake's outline and rounding)
 let HIDDEN_MIN = 3             // a weapon or shield shows at least this many pixels in every facing
 let ARMOUR_SHARE = 0.8         // worn armour covers at most this share of its body (a whole copy of the body is 1)
 let FACE_TEAM_SHARE = 0.3      // team cloth over at most this share of a head facing the camera
@@ -57,7 +58,7 @@ def pixels_of(key:string) -> Pixels:
         let fr = frames[fi]
         var bytes = sheet_bytes.get(fr.sheet, "")
         if bytes == "":
-            bytes = gl.read_texture(sheet_tex[fr.sheet]) or ""
+            bytes = gl.read_texture(sheet_texture(fr.sheet)) or ""
             sheet_bytes.set(fr.sheet, bytes)
         let sw = int(sheet_dims[fr.sheet].x)
         if (fr.y + fr.h - 1) * sw * 4 + (fr.x + fr.w) * 4 > bytes.length:
@@ -407,7 +408,7 @@ def truth_of(body:VNode, v:UV, heads:[VNode], k:int) -> Truth:
     if head:
         let hs = rig_spec(tokenize(head.part_id, "~", "")[0], cols)
         if hs: pieces.push(TPiece { hs.node, Xform { BASIS_ID, spec.sockets.get("head", float3_0) - hs.node.pos }, 1 })   // (its position the socket: Godot sets it)
-    let cells, size = truth_render(pieces, k, float(body.size) / 100.0)   // (on the parts' own grid: baked at the unit's size)
+    let cells, _size = truth_render(pieces, k, float(body.size) / 100.0)   // (on the parts' own grid: baked at the unit's size)
     tr.cells = cells
     tr.feet = map(spec.anchors.length): new_vox()
     for(cells.keys) c:
@@ -435,12 +436,13 @@ def lowest_y(cells:IMap) -> float:
     for(cells.keys) c: got = max(got, float(cunkey(c).y + 1))
     return got
 
-// A truth pixel two pixels inside its region (the bake's outline and rounding stay out of the count).
-def interior(cells:IMap, c:int, want:int) -> bool:
+// A truth pixel EDGE_PX inside its region (the bake's outline and rounding stay out of the count): its
+// neighbours that far each way all fit.
+def interior(cells:IMap, c:int, fits) -> bool:
     let u = cunkey(c)
-    for([int2 { 1, 0 }, int2 { -1, 0 }, int2 { 0, 1 }, int2 { 0, -1 }, int2 { 2, 0 }, int2 { -2, 0 }, int2 { 0, 2 }, int2 { 0, -2 }]) d:
-        let w = iget(cells, ckey(u.x + d.x, u.y + d.y), -1)
-        if (if want >= 2: w < 2 else: w != want): return false
+    for(EDGE_PX) n:
+        for([int2 { 1, 0 }, int2 { -1, 0 }, int2 { 0, 1 }, int2 { 0, -1 }]) d:
+            if not fits(iget(cells, ckey(u.x + d.x * (n + 1), u.y + d.y * (n + 1)), -1)): return false
     return true
 
 // B6 and the layering rule 2: legs and head against the 3D truth. B5: feet on their ground points.
@@ -474,7 +476,9 @@ def check_model(v:UV, parts:[P2], rg:string, body:int, label:string, view:string
     let under = map(parts.length): 0   // pixels of it the body covers where the model shows them
     for(gt.cells.keys) c:
         let want = iget(gt.cells, c, -1)
-        if interior(gt.cells, c, want) and ihas(top, c):
+        guard ihas(top, c)
+        let inside = interior(gt.cells, c) w: if want >= 2: w >= 2 else: w == want
+        if inside:
             let got = iget(top, c, -1)
             if want == 0 and got != body: over[got]++
             elif want != 0 and got == body:
@@ -545,16 +549,21 @@ def hop_grounded(v:UV) -> bool:
     let p = f - floor(f)
     return hop_f(v, p) <= 0.0 or hop_f(v, p) >= 1.0
 
-// B5 walking: the lowest foot stays on the standing ground line, and no foot goes below it.
+// B5 walking: some foot on its own standing ground line (the near foot stands lower on screen than the far one),
+// and no foot below its own.
 def check_walk2(v:UV, parts:[P2], rg:string, label:string, view:string, lows:IMap):
     if v.flying or (v.gait.hops and not hop_grounded(v)) or not lows.keys.length: return
-    var ref = -1000000.0
-    for(lows.keys) i: ref = max(ref, float(iget(lows, i, 0)))
     let leg_nodes = map(find2(parts, rg, "leg")) i: parts[i].node
-    var low = -1000000.0
+    var lift = 1000000.0
+    var n = 0
     for(v.legs) leg:
-        if not leg.cling and has_node(leg_nodes, leg.node): low = max(low, lowest_y(cells_now(leg.node, v)))
-    note("B5 walking, the lowest foot on the ground line", label, view, abs(low - ref) > float(FOOT_PX), "lowest foot at {int(low)}, ground line {int(ref)}")
+        if not leg.cling and has_node(leg_nodes, leg.node):
+            let rest = float(iget(lows, n, 0))
+            let now = lowest_y(cells_now(leg.node, v))
+            if rest > -1000000.0 and now > -1000000.0: lift = min(lift, rest - now)   // (a leg out of sight: no foot to stand on)
+            n++
+    if lift == 1000000.0: return
+    note("B5 walking, the planted foot on its ground line", label, view, abs(lift) > float(FOOT_PX), "the planted foot {int(-lift)} px off its standing line")
 
 // A part's opaque cells in its rig's space with the walk's bob: its own transform and the bob's.
 def cells_now(n:VNode, v:UV) -> IMap:
@@ -617,9 +626,8 @@ def check_crew(v:UV, label:string, view:string):
     var engine = v.body_nodes[0]   // (the engine's sprite, or a war beast's rig)
     while engine.parent and engine.parent != v.bob:
         let up = engine.parent
-        if up: engine = up
+        engine = up
     let rg = rig(rstr(v.recipe, "body") + facing_suffix(v.facing_k))
-    let socks = gobj(rg, "sockets")
     let depth = gobj(rg, "depth")
     let front = gobj(rg, "front")
     def index_in(n:VNode) -> int:
@@ -627,9 +635,7 @@ def check_crew(v:UV, label:string, view:string):
             if c == n: return i
         return -1
     for(v.crew) c:
-        var name = ""
-        for(socks.keys) s, n:
-            if (starts_with(s, "crew") or starts_with(s, "haul")) and magnitude(v2(socks.a[n]) - c.node.pos) < 0.01: name = s
+        let name = c.crew_socket
         let over = index_in(c.node) > index_in(engine)
         var want = if has(front, name): as_bool(at(front, name)) else: jf(depth, name, 0.0) > 0.0
         if ends_with(name, "_in"): want = false

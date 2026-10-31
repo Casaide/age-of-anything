@@ -1221,7 +1221,8 @@ let ELEPHANT_NECK = float3 { 28.5, 42.0, 0.0 }
 def elephant_mats() -> EleMats:
     return EleMats { surf("hide", float3 { 0.62, 0.6, 0.58 }, 6.0), surf("hide", float3 { 0.45, 0.43, 0.42 }, 6.0), plain(html("#ece2c8")), surf("bronze", float3_1, 3.0) }
 
-def elephant(s:SStyle, with_howdah:bool, play:bool = false) -> Spec:
+// look "" the elephant of joined shapes; "a", "b" sculpted (round BA1; tools/blender/elephant.py).
+def elephant(s:SStyle, with_howdah:bool, play:bool = false, look:string = "") -> Spec:
     let n = mnode()
     let m = elephant_mats()
     let hips = []::float3
@@ -1230,12 +1231,21 @@ def elephant(s:SStyle, with_howdah:bool, play:bool = false) -> Spec:
             let x = lx + (if side > 0.0: 2.0 else: -1.0)
             let hip = float3 { x, 30.0, 8.5 * side }
             if play: hips.push(hip)
+            elif look != "":
+                let leg = add_child(n, leg_beast_elephant(look).node)
+                leg.pos = hip
             else: elephant_leg(n, hip, side, m)
-    add_child(n, blob(float3 { 26.0, 16.0, 14.5 }, m.hide, float3 { 0.0, 36.0, 0.0 }))
-    add_child(n, blob(float3 { 12.0, 13.0, 12.0 }, m.hide, float3 { 18.0, 40.0, 0.0 }))
-    if not play:
-        elephant_head(n, ELEPHANT_NECK, m)
-    add_child(n, rod(float3 { -25.0, 38.0, 0.0 }, float3 { -29.0, 22.0, 0.0 }, 1.0, 0.6, m.hide))
+    if look != "":
+        add_child(n, glb("body_elephant_" + look, elephant_glb_mats(m)))
+        if not play:
+            let head = add_child(n, head_beast_elephant(look).node)
+            head.pos = ELEPHANT_NECK
+    else:
+        add_child(n, blob(float3 { 26.0, 16.0, 14.5 }, m.hide, float3 { 0.0, 36.0, 0.0 }))
+        add_child(n, blob(float3 { 12.0, 13.0, 12.0 }, m.hide, float3 { 18.0, 40.0, 0.0 }))
+        if not play:
+            elephant_head(n, ELEPHANT_NECK, m)
+        add_child(n, rod(float3 { -25.0, 38.0, 0.0 }, float3 { -29.0, 22.0, 0.0 }, 1.0, 0.6, m.hide))
     let out = spec_of(n)
     if with_howdah:
         howdah(out, n, s, float3 { -3.0, 52.5, 0.0 }, 22.0, 18.0)
@@ -1251,6 +1261,9 @@ def elephant(s:SStyle, with_howdah:bool, play:bool = false) -> Spec:
         sock(out, "head", ELEPHANT_NECK)
         out.anchors = beast_hips(hips)
     return out
+
+def elephant_glb_mats(m:EleMats) -> dictionary<string, MMat>:
+    return mats_of([m.hide, m.dark, m.ivory, plain(html("#1a1412"))], ["hide", "dark", "ivory", "eye"])
 
 def elephant_leg(n:MNode, hip:float3, side:float, m:EleMats):
     add_child(n, rod(hip, hip + float3 { 0.0, -25.0, 0.5 * side }, 5.6, 5.0, m.hide))
@@ -1581,10 +1594,21 @@ def mantis_fore(n:MNode, at:float3, green:MMat, dark:MMat):
 
 // ------------------------------------------------------------------ war beasts' heads and legs in play (posed per walk step: `hold`)
 
-def head_beast_elephant() -> Spec:
+def head_beast_elephant(look:string = "") -> Spec:
     let n = mnode()
-    elephant_head(n, float3_0, elephant_mats())
-    return sock(spec_of(n), "top", float3 { 6.0, 9.0, 0.0 })
+    let m = elephant_mats()
+    if look == "":
+        elephant_head(n, float3_0, m)
+        return sock(spec_of(n), "top", float3 { 6.0, 9.0, 0.0 })
+    add_child(n, glb("head_elephant_" + look, elephant_glb_mats(m)))
+    // the bronze caps on the tusks' tips (elephant.py TUSK: its last two points)
+    let tip = if look == "a": float3 { 12.2, -11.4, 5.2 } else: float3 { 19.6, -9.8, 6.8 }
+    let back = if look == "a": float3 { 8.6, -10.6, 4.4 } else: float3 { 15.6, -13.2, 5.8 }
+    for([1.0, -1.0]) side:
+        let t = tip * float3 { 1.0, 1.0, side }
+        let d = normalize(t - back * float3 { 1.0, 1.0, side })
+        add_child(n, rod(t - d * 1.6, t + d * 0.5, 0.75, 0.45, m.bronze))
+    return sock(spec_of(n), "top", float3 { 6.0, 11.0, 0.0 })
 
 def head_beast_boar() -> Spec:
     let n = mnode()
@@ -1627,7 +1651,25 @@ def ik3(a:float3, b:float3, l1:float, l2:float, bend:float3) -> float3, float3:
     let nrm = normalize(bend - u * dot(bend, u))
     return a + u * along + nrm * h, a + u * l
 
-def leg_beast_elephant() -> Spec:
+// The sculpted leg (elephant.py leg_elephant_<look>.glb) in a walk step: the upper leg about the hip, the lower about
+// the knee; the foot goes where the ankle goes and stays flat.
+let ELEPHANT_KNEE = float2 { 0.0, -13.8 }
+let ELEPHANT_ANKLE = float2 { 0.0, -27.6 }
+
+def leg_beast_elephant_sculpted(look:string) -> Spec:
+    let st = beast_step(13.0, 4.5)
+    let k3, a3 = ik3(float3_0, float3 { st.x, ELEPHANT_ANKLE.y + st.y, 0.0 }, 13.8, 13.8, SIEGE_RIGHT)
+    let knee = float2 { k3.x, k3.y }
+    let ankle = float2 { a3.x, a3.y }
+    let leg = glb("leg_elephant_" + look, elephant_glb_mats(elephant_mats()))
+    turn_pieces(leg, ["upper", "lower", "foot"], [float2_0, ELEPHANT_KNEE, ELEPHANT_ANKLE], [float2_0, knee, ankle],
+        [atan2(knee) - atan2(ELEPHANT_KNEE), atan2(ankle - knee) - atan2(ELEPHANT_ANKLE - ELEPHANT_KNEE), 0.0])
+    let n = mnode()
+    add_child(n, leg)
+    return spec_of(n)
+
+def leg_beast_elephant(look:string = "") -> Spec:
+    if look != "": return leg_beast_elephant_sculpted(look)
     let n = mnode()
     let m = elephant_mats()
     let st = beast_step(13.0, 4.5)
@@ -1696,6 +1738,8 @@ def leg_beast_mantis() -> Spec:
 def leg_beast(kind:string, hind:bool) -> Spec?:
     switch kind:
         case "elephant": return leg_beast_elephant()
+        case "elephant_a": return leg_beast_elephant("a")
+        case "elephant_b": return leg_beast_elephant("b")
         case "boar": return boar_leg_posed(not hind)
         case "tarantula": return leg_beast_tarantula()
         case "heron": return leg_beast_heron()
@@ -1735,6 +1779,8 @@ def beside(spec:Spec, kind:string) -> Spec:
 def war_beast(kind:string, c:Colours) -> Spec?:
     switch kind:
         case "elephant": return beside(elephant(siege_style("timber", c), true, true), kind)
+        case "elephant_a": return beside(elephant(siege_style("timber", c), true, true, "a"), kind)
+        case "elephant_b": return beside(elephant(siege_style("timber", c), true, true, "b"), kind)
         case "boar": return beside(war_boar(siege_style("junk", c), true, true), kind)
         case "tarantula": return beside(tarantula(siege_style("spooky", c), false, true, true), kind)
         case "heron": return beside(heron(siege_style("frog", c), true), kind)
@@ -2077,12 +2123,16 @@ def build_siege(base:string, c:Colours) -> Spec?:
     switch base:
         case "harness.draught": return spec_of(mnode())   // (no model off its wearer: always fitted on the beast, harness_fitted)
         case "leg.beast_elephant": return leg_beast_elephant()
+        case "leg.beast_elephant_a": return leg_beast_elephant("a")
+        case "leg.beast_elephant_b": return leg_beast_elephant("b")
         case "leg.beast_boar": return boar_leg_posed(true)
         case "leg.beast_boar_hind": return boar_leg_posed(false)
         case "leg.beast_tarantula": return leg_beast_tarantula()
         case "leg.beast_heron": return leg_beast_heron()
         case "leg.beast_mantis": return leg_beast_mantis()
         case "head.beast_elephant": return head_beast_elephant()
+        case "head.beast_elephant_a": return head_beast_elephant("a")
+        case "head.beast_elephant_b": return head_beast_elephant("b")
         case "head.beast_boar": return head_beast_boar()
         case "head.beast_tarantula": return head_beast_tarantula()
         case "head.beast_heron": return head_beast_heron()

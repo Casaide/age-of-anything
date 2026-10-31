@@ -56,7 +56,7 @@ let BLOW_TIME = 0.5        // a blow: wind up, hold at the top, drive, hold at c
 let HEAD_NOD = 0.45        // how far the head bobs walking, a beat behind the body (part units)
 let THROW_TIME = 0.9
 let LOAD_Z = 1.2
-let WORK_HOLDS = ["reach", "raise"]
+let WORK_HOLDS = ["reach", "raise", "thrust"]
 let CORPSE_AT = [0.12, 0.24, 0.36]
 let KNEEL_DIP = 3.0
 let SIT_AFTER_LO = 3.0
@@ -217,8 +217,7 @@ def pshapes_of(id:string) -> [JV]: return glist(part(id), "shapes")
 def jstr_hash(s:string) -> int:   // Godot's String.hash (djb2 over the characters)
     var h = 5381
     let cs = string_to_unicode(s)
-    if cs:
-        for(cs) c: h = ((h << 5) + h + c) & 0xFFFFFFFF
+    for(cs) c: h = ((h << 5) + h + c) & 0xFFFFFFFF
     return h
 
 def uv_part(v:UV, id:string, shapes:[JV], cols:Colours) -> VNode:
@@ -234,6 +233,20 @@ def drawn_size(v:UV) -> int: return int(round(v.unit_scale * v.outer * 100.0))
 // ---- building
 
 def uv_new() -> UV: return UV {}
+
+// Let a view go: off whatever it hangs from, its tree's parent links cut (cycles to Lobster's reference counting:
+// a view dropped without this is never freed).
+def uv_free(v:UV):
+    let p = v.node.parent
+    if p: remove_child(p, v.node)
+    free_tree(v.node)
+
+def uv_free_all(vs:[UV]):
+    for(vs) v: uv_free(v)
+
+def uv_free_dict(d:dictionary<int, UV>):
+    for(d.get_values()) v: uv_free(v)
+    d.clear()
 
 def uv_build(v:UV, r:JV, team:float3, speed:int) -> void:
     v.built = true
@@ -366,7 +379,6 @@ def build_engine(v:UV, r:JV, colours:Colours) -> void:
     let depth = gobj(rg, "depth")
     let names = engine_sockets(r, sockets)
     insertion_sort(names) a, b: as_float(at(depth, a)) < as_float(at(depth, b)) or (as_float(at(depth, a)) == as_float(at(depth, b)) and a < b)
-    let cr = crew_recipe(r)
     let hr = if has(r, "haul"): haul_recipe(r) else: jobj()
     let front = get(rg, "front")
     for(names) name, n:
@@ -387,7 +399,7 @@ def build_engine(v:UV, r:JV, colours:Colours) -> void:
         let c = uv_new()
         c.facing_k = face
         c.outer = v.unit_scale * v.outer
-        uv_build(c, if hauls: hr else: cr, v.team, v.speed)
+        uv_build(c, if hauls: hr else: crew_recipe(r, hold), v.team, v.speed)
         c.node.pos = v2(at(sockets, name))
         let back = gint(get(lib_creatures, gstr(c.recipe, "creature", "")) or jobj(), "crew_back", 0)
         if back > 0 and not top:   // on the ground, a hunched body stands back from its place, so it's centred on it (creatures.json crew_back)
@@ -435,8 +447,10 @@ def engine_sockets(r:JV, sockets:JV) -> [string]:
 
 def trim_suffix(s:string, suf:string) -> string: return if ends_with(s, suf): substring(s, 0, s.length - suf.length) else: s
 
-def crew_recipe(r:JV) -> JV:
+// A crew member's recipe; one hauling on a rope (raise) puts its tool down.
+def crew_recipe(r:JV, hold:string) -> JV:
     let cr = deep_copy(at(r, "crew"))
+    if hold == "raise": erase(at(cr, "parts"), "hand_r")
     for([["creature", rstr(r, "creature")], ["family", rstr(r, "family")], ["slot", "worker"], ["role", "worker"], ["name", ""]]) kv:
         if not has(cr, kv[0]): set(cr, kv[0], jstr(kv[1]))
     if not has(cr, "tier"): set(cr, "tier", jint(1))
@@ -1211,9 +1225,10 @@ def beast_fall(v:UV, kind:string, t:float):
 
 // How far to move the body so its lowest foot stays where it stands (the walk rides on its planted
 // foot); false before the legs are baked.
+// How far the body moves down to stand on its planted foot: each foot measured against its own standing
+// line (in 3/4 view the near foot stands lower on screen than the far one), the one that lifts the body most.
 def planted(v:UV, full_length:bool) -> float, bool:
-    var rest_low = -1000000000.0
-    var now_low = -1000000000.0
+    var lift = 1000000000.0
     for(v.legs) l:
         if not l.cling:
             let n = l.node
@@ -1226,10 +1241,13 @@ def planted(v:UV, full_length:bool) -> float, bool:
             n0.pos = n.pos
             n0.scl = if full_length: float2 { n.scl.x, l.reach } else: n.scl
             let t0 = xf_local(n0)
+            var now_low = -1000000000.0
+            var rest_low = -1000000000.0
             for(now) p: now_low = max(now_low, xf_apply(t, p).y)
             for(rest) p: rest_low = max(rest_low, xf_apply(t0, p).y)
-    if now_low == -1000000000.0: return 0.0, false
-    return rest_low - now_low, true
+            if now.length and rest.length: lift = min(lift, rest_low - now_low)
+    if lift == 1000000000.0: return 0.0, false
+    return lift, true
 
 def attack(v:UV, a:float):
     var k = rsin(a * PI)
@@ -1327,7 +1345,7 @@ def corpse_fall(v:UV, t:float):
     if not cp or not c: return
     let frames = glist(cp, "frames")
     var shown = -1
-    for(frames) f, i:
+    for(frames.length) i:
         if i < CORPSE_AT.length and t >= CORPSE_AT[i]: shown = i
     if shown < 0: return
     let id = corpse_id(v.recipe, cp, as_int(frames[shown]))
@@ -1441,19 +1459,23 @@ def hop_bias(v:UV) -> float:
         v.hop_bias_v = sum / 1000.0
     return v.hop_bias_v
 
+// How long one swing of a job takes, in seconds.
+def work_period(job:string) -> float:
+    return switch job:
+        case "forage": 1.1
+        case "chop": 0.6
+        case "mine": 0.7
+        case "build": 0.5
+        default: 1.3
+
 def work(v:UV, t:float, stepped:bool):
     if has_s(CHORES, v.job):
         chore(v, t, stepped)
         return
-    let period = switch v.job:
-        case "forage": 1.1
-        case "chop": 0.9
-        case "mine": 1.0
-        case "build": 0.5
-        default: 1.3
+    let period = work_period(v.job)
     var p = fmodf(t / period + float(v.noise.seed % 7) * 0.13, 1.0)
-    if stepped: p = floor(p * 6.0) / 6.0
-    let land = if v.job == "forage": 0.5 else: 0.72
+    if stepped: p = floor(p * 8.0) / 8.0
+    let land = if v.job == "forage": 0.5 elif v.job == "build": 0.72 else: 0.55
     v.struck = (v.work_p < land and p >= land) or (p < v.work_p and (v.work_p < land or p >= land))
     v.work_p = p
     var swing = 0.0
@@ -1472,8 +1494,10 @@ def work(v:UV, t:float, stepped:bool):
         if w and v.work_hold == "low": w.pos = v.weapon_rest + float2 { 3.0, 4.0 } * k
     else:
         let up = if v.job == "build": 0.9 elif v.job == "till": 0.7 else: 1.2
-        let wind = if v.job != "build": 0.6 else: 0.5
-        let hit = if v.job != "build": 0.75 else: 0.65
+        // up quickly, down through the arm held out (the tool stays in the hand), held at the blow, settle
+        let build = v.job == "build"
+        let wind = if build: 0.5 else: 0.35
+        let hit = if build: 0.65 else: 0.55
         if p < wind:
             hold = "raise"
             let q = p / wind
@@ -1483,15 +1507,15 @@ def work(v:UV, t:float, stepped:bool):
             crouch = if v.harnessed: -1.0 * q else: 0.0
         elif p < hit:
             let q = (p - wind) / (hit - wind)
-            hold = if p < land: "low" else: "reach"
-            swing = lerpf(-up * 0.4, if v.job != "build": 0.9 else: 0.5, q)
+            hold = if build or q >= 0.5: "reach" else: "thrust"
+            swing = lerpf(-up * 0.4, if build: 0.5 else: 0.6, q)
             lean = lerpf(0.02, 0.14, q)
             head = lerpf(0.3, 0.8, q)
             crouch = lerpf(0.5, 1.5, q)
         else:
             let q = (p - hit) / (1.0 - hit)
-            hold = if p < 0.9: "reach" else: "low"
-            swing = lerpf(if v.job != "build": 0.9 else: 0.5, 0.0, q)
+            hold = if q < 0.6: "reach" else: "low"
+            swing = if q < 0.6: (if build: 0.5 else: 0.6) else: lerpf(0.6, 0.0, (q - 0.6) / 0.4)
             lean = lerpf(0.14, 0.0, q)
             head = lerpf(0.8, 0.0, q)
             crouch = lerpf(1.5, 0.0, q)
@@ -1507,7 +1531,7 @@ def work(v:UV, t:float, stepped:bool):
         set_hold(v, hold)
         crouch *= 0.5
     let w3 = v.weapon
-    if w3: w3.rot = v.weapon_rot + swing
+    if w3: w3.rot = v.weapon_rot + swing * abs(side_on(v.facing_k))   // (towards or away the swing is in depth: turned flat, the tool leaves the hand)
     if has(v.recipe, "mount") and gbool(at(v.recipe, "mount"), "fused", false) and v.job == "forage": return
     v.bob.rot += lean * side_on(v.facing_k)
     v.bob.pos += float2 { 0.0, crouch }
@@ -1605,24 +1629,23 @@ def kneel_tick(v:UV, dt:float):
                 add_sibling(l.node, s)
                 l.shin = s
                 shin = s
-            if shin:
-                shin.visible = v.kneel > 0.03
-                if not l.span: l.span = span_of(l.node)
-                let sp = l.span or []::float2
-                let top = sp[0]
-                let low = sp[1]
-                let sx = l.node.scl.x
-                let knee = l.node.pos + rot2(float2 { low.x * sx, low.y * upper }, l.node.rot)
-                let fold = -ahead * 0.5 + float2 { 0.0, 0.06 }
-                shin.rot = lerp_angle(0.0, ratan2(-fold.x, fold.y), v.kneel)
-                shin.scl = float2 { sx, vlen(fold) * low.y / max(low.y - top.y, 1.0) }
-                shin.pos = knee - rot2(float2 { top.x * sx, top.y * shin.scl.y }, shin.rot)
-                let z = l.node.z
-                let want_z = if ahead.y > 0.2: -2.5 else: z
-                if shin.z != want_z:
-                    shin.z = want_z
-                    let sp2 = shin.parent
-                    if sp2: sort_layers(sp2)
+            shin.visible = v.kneel > 0.03
+            if not l.span: l.span = span_of(l.node)
+            let sp = l.span or []::float2
+            let top = sp[0]
+            let low = sp[1]
+            let sx = l.node.scl.x
+            let knee = l.node.pos + rot2(float2 { low.x * sx, low.y * upper }, l.node.rot)
+            let fold = -ahead * 0.5 + float2 { 0.0, 0.06 }
+            shin.rot = lerp_angle(0.0, ratan2(-fold.x, fold.y), v.kneel)
+            shin.scl = float2 { sx, vlen(fold) * low.y / max(low.y - top.y, 1.0) }
+            shin.pos = knee - rot2(float2 { top.x * sx, top.y * shin.scl.y }, shin.rot)
+            let z = l.node.z
+            let want_z = if ahead.y > 0.2: -2.5 else: z
+            if shin.z != want_z:
+                shin.z = want_z
+                let sp2 = shin.parent
+                if sp2: sort_layers(sp2)
     let a = 0.17 * v.kneel * side
     var px = 0.0
     if hind_x.length:
@@ -1699,5 +1722,13 @@ def draw_walk(n:VNode, g:[float], alpha:float, out:[Draw]) -> void:
         if b:
             let s = 1.0 / b.scale
             out.push(Draw { key, xf_mul(g, [s, 0.0, 0.0, s, -b.ox * s, -b.oy * s]), a * n.shade })
-        else: out.push(Draw { key + " missing", g, a })
+        else:   // (not baked yet: wanted, its plain form drawn meanwhile, if that's baked)
+            want_bake(n)
+            let plain = plain_id(n.part_id)
+            let pk = if plain != n.part_id: bake_key_of(n, plain) + (if n.front: "#front" else: "") else: ""
+            let pb = if pk != "": bakes.get(pk) else: nil
+            if pb:
+                let s = 1.0 / pb.scale
+                out.push(Draw { pk, xf_mul(g, [s, 0.0, 0.0, s, -pb.ox * s, -pb.oy * s]), a * n.shade })
+            else: out.push(Draw { key + " missing", g, a })
     for(n.kids) c: draw_walk(c, xf_mul(g, xf_local(c)), a, out)

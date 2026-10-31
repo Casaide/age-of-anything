@@ -275,8 +275,7 @@ def world_bake(model:MNode, shadow:bool, reach:float = 1.0) -> string, int, int,
             if t0: gl.set_mesh_texture(mesh, 0, 0, t0)
             gl.set_mesh_texture(mesh, 0, 1, smap)
             if t2: gl.set_mesh_texture(mesh, 0, 2, t2)
-            let aot = wb_ao_tex
-            if aot: gl.set_mesh_texture(mesh, 0, 3, aot)
+            gl.set_mesh_texture(mesh, 0, 3, wb_ao_tex)
             gl.set_shader("worldlit")
             set_common()
             gl.set_uniform("aosize", float2 { float(w), float(h) })

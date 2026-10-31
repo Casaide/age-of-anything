@@ -127,7 +127,7 @@ def formation(player:int, ids:[int], ax:int, ay:int) -> int, int, int, int:
     if d > 0:
         ux = dx * ONE / d
         uy = dy * ONE / d
-    var bands = [[]::int, []::int, []::int]
+    let bands = [[]::int, []::int, []::int]
     var flank = []::int
     for(idx) i:
         let role = t_role[u_kind[i]]

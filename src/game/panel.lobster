@@ -13,28 +13,6 @@
 // Imported by game.lobster after its controls and the tech tree page; the look's boxes, the icons and the
 // text with its fonts are game/topbar.lobster's (hud_box, hud_button, tb_icon, tb_text).
 
-class Btn:
-    label:string
-    hotkey:string
-    act:int                       // 0 train slot, 1 research, 2 age up, 3 build, 4 stop, 5 cancel the last in the queue,
-                                  // 6 a build page (arg 0 civilian, 1 military, -1 back), 7 stance (arg), 8 call to arms, 9 back to work,
-                                  // 10 arm attack-move, 11 arm the race's ability, 12 ungarrison, 13 reseed, 14 auto-reseed,
-                                  // 15 release the pen's animals, 16 trade (arg: resource x 2 + 1 to buy), 17 slaughter
-    arg:int
-    unit = -1                     // a unit type to draw on it
-    building = -1                 // or a building type
-    cost = ""
-    costv = []::int               // the cost per resource (the row along its foot)
-    icon = ""                     // or an icon (icons/<name>.png)
-    glyph = ""                    // a small badge top right (icons/glyph/<name>.png): what a building is for
-    accent = false                // a gold rim: the age-up, a line upgrade, the stance in use
-    enabled = true
-    group = ""                    // its caption
-    note = ""                     // under the picture instead of a cost ("ON", a page's name)
-    tip = ""                      // the hover card's line under the title
-    line_key = -1                 // a line upgrade: the step it gives, drawn from line_recipe (its portrait key)
-    line_recipe:JV? = nil
-
 let P_PORTRAIT = 96.0
 let P_BUTTON = 80.0
 let P_QFIRST = 60.0
@@ -258,7 +236,7 @@ def panel_buttons() -> [Btn]:
             b.group = "Orders"
             b.tip = "{gstr(ab, "desc", "")} Then click where (within {gint(ab, "range", 0) / 1000} tiles)."
             out.push(b)
-        let st = Btn { "Stop", "S", 4, 0 }
+        let st = Btn { "Stop", "X", 4, 0 }
         st.icon = "stop"
         st.group = "Orders"
         st.tip = "Drop every order: they stand where they are."
@@ -332,7 +310,7 @@ def panel_click(m:float2) -> bool: return in_panel(m) or in_topbar(m)
 
 // ---- figures and portraits
 
-var portraits = dictionary<int, UV>(64)
+let portraits = dictionary<int, UV>(64)
 
 // A unit's figure from its own parts, drawn at a screen point (feet there), z screen px a canvas unit.
 def draw_portrait(k:int, at:float2, z:float): draw_figure(k, su_type_recipe[k], t_player[k], at, z)
@@ -369,7 +347,7 @@ class Portrait:
     glyph:string
 
 let PT_CELL = 240
-var busts = dictionary<int, Portrait>(64)
+let busts = dictionary<int, Portrait>(64)
 
 // A unit's role glyph (art_kit.gd's role_glyph): by its weapon's tags; a rider with a lance or a blade, the horse.
 def role_glyph(recipe:JV) -> string:
@@ -548,6 +526,18 @@ class PItem:                      // a button's place this frame
     at:float2
     side:float
 
+// A button's picture: a unit's bust (a line upgrade's step), an icon, the gold rim of an upgrade.
+def btn_picture(it:PItem, inset:float, foot:float):
+    let b = it.b
+    let side = it.side - inset * 2.0
+    let pic_side = side - foot
+    let pat = it.at + float2 { inset + foot * 0.5, inset }
+    let r = b.line_recipe
+    if b.line_key >= 0 and r: draw_bust(b.line_key, r, ME, pat, pic_side)
+    elif b.unit >= 0: draw_type_bust(b.unit, pat, pic_side)
+    if b.icon != "": tb_icon(b.icon, pat, pic_side, if b.enabled: 1.0 else: 0.35)
+    if b.line_key >= 0 or (b.unit >= 0 and b.accent): ui_outline(pat, float2_1 * pic_side, max(1.5, pic_side / 20.0), float4 { 0.91, 0.72, 0.29, 1.0 })
+
 def draw_panel():
     hud_look()
     let s = hud_s()
@@ -680,7 +670,7 @@ def draw_panel():
         wy += hp_h + 5.0 * s
     let info_y = wy
     let tray_y = info_y + float(info_lines.length) * 20.0 * s + 5.0 * s
-    for(tray_k) kk, n: hud_well(float2 { who_x + float(n % 7) * 43.0 * s, tray_y + float(n / 7) * 43.0 * s }, float2_1 * 40.0 * s)
+    for(tray_k.length) n: hud_well(float2 { who_x + float(n % 7) * 43.0 * s, tray_y + float(n / 7) * 43.0 * s }, float2_1 * 40.0 * s)
     x += who_w
     let bottom = py + ph - pad_b
     if acts or has_queue:
@@ -740,21 +730,11 @@ def draw_panel():
     // (busts render into their own textures the first time: after the sprites above are out)
     if portrait >= 0: draw_type_bust(portrait, pic_at + float2_1 * 2.0 * s, (P_PORTRAIT - 4.0) * s)
     for(tray_k) kk, n: draw_type_bust(kk, float2 { who_x + float(n % 7) * 43.0 * s, tray_y + float(n / 7) * 43.0 * s } + float2_1 * 2.0 * s, 36.0 * s)
-    def picture(it:PItem, inset:float, foot:float):
-        let b = it.b
-        let side = it.side - inset * 2.0
-        let pic_side = side - foot
-        let pat = it.at + float2 { inset + foot * 0.5, inset }
-        let r = b.line_recipe
-        if b.line_key >= 0 and r: draw_bust(b.line_key, r, ME, pat, pic_side)
-        elif b.unit >= 0: draw_type_bust(b.unit, pat, pic_side)
-        if b.icon != "": tb_icon(b.icon, pat, pic_side, if b.enabled: 1.0 else: 0.35)
-        if b.line_key >= 0 or (b.unit >= 0 and b.accent): ui_outline(pat, float2_1 * pic_side, max(1.5, pic_side / 20.0), float4 { 0.91, 0.72, 0.29, 1.0 })
     for(items) it:
-        picture(it, 5.0 * s, if it.b.costv.length or it.b.note != "": 12.0 * s else: 0.0)
+        btn_picture(it, 5.0 * s, if it.b.costv.length or it.b.note != "": 12.0 * s else: 0.0)
         if not it.b.enabled: ui_fill(it.at + float2_1 * 3.0 * s, float2_1 * (it.side - 6.0 * s), float4 { 0.0, 0.0, 0.0, 0.35 })
         if it.b.glyph != "": tb_icon("glyph/" + it.b.glyph, it.at + float2 { it.side - 29.0 * s, 3.0 * s }, 26.0 * s, if it.b.enabled: 1.0 else: 0.5)
-    for(q_items) it, n: picture(it, 3.0 * s, 0.0)
+    for(q_items) it: btn_picture(it, 3.0 * s, 0.0)
     // The crest (a texture: after the sprites).
     tb_icon_wide("crest_" + hud_crest, float2 { x0 + pw * 0.5, cy }, crest_h)
     // Text.
@@ -763,7 +743,7 @@ def draw_panel():
         let ht = "{hp_now} / {hp_max}"
         tb_text(float2 { who_x + who_w - tb_text_w(ht, int(14.0 * s), 0), y + title_h + 5.0 * s }, ht, int(14.0 * s), ui_look.dim, 0)
     for(info_lines) l, n: tb_text(float2 { who_x, info_y + float(n) * 20.0 * s }, l, int(15.0 * s), ui_look.dim, 0)
-    for(tray_k) kk, n:
+    for(tray_k.length) n:
         if tray_n[n] > 1:
             let ct = string(tray_n[n])
             edged_text(float2 { who_x + float(n % 7) * 43.0 * s + 38.0 * s - tb_text_w(ct, int(13.0 * s), 1), tray_y + float(n / 7) * 43.0 * s + 22.0 * s }, ct, int(13.0 * s), float4_1, 1)
@@ -810,6 +790,164 @@ def cost_row(c:[int], at:float2, w:float):
         x += tw + fs * 1.15 + 2.0 * s
 
 // A tooltip card (theme.gd's tip_card): the name in bold, the cost, a line; above the mouse.
+// ---- the pad's wheel (D-133; also touch's): the panel's own buttons, bigger, in a ring round the screen's middle
+// (a page a group when there are many), over the battle dimmed; the one pointed at lifted, its card beside the ring.
+let WHEEL_BIG = 1.35
+let WHEEL_PAGE_MAX = 10
+let WHEEL_GAP = 34.0
+
+def wheel_items() -> [Btn]:   // (workers: their orders, then the civilian and the military buildings, a page each)
+    if not selected_workers().length: return panel_buttons()
+    let was_page = build_page
+    let was_menu = build_menu
+    build_menu = false
+    build_page = -1
+    let out = filter(panel_buttons()) b: b.act != 6
+    for(2) page:
+        build_page = page
+        for(panel_buttons()) b:
+            if b.act == 3: out.push(b)
+    build_page = was_page
+    build_menu = was_menu
+    return out
+
+def wheel_open():   // (a worker's wheel opens on its civilian buildings)
+    pad_wheel = wheel_items()
+    pad_pick = 0
+    pad_page = max(0, find_s(wheel_groups(), "Civilian"))
+
+def wheel_groups() -> [string]:   // the pages' captions ("": one page)
+    let builds = (filter(pad_wheel) b: b.group == "Civilian").length > 0
+    if pad_wheel.length <= WHEEL_PAGE_MAX and not builds: return [""]
+    let out = []::string
+    for(pad_wheel) b:
+        if not has_s(out, b.group): out.push(b.group)
+    return out
+
+def wheel_pages() -> int: return wheel_groups().length
+
+def wheel_page_items() -> [Btn]:
+    let gs = wheel_groups()
+    if gs.length == 1: return pad_wheel
+    let g = gs[clamp(pad_page, 0, gs.length - 1)]
+    return filter(pad_wheel) b: b.group == g
+
+def wheel_choose(b:Btn):
+    if not b.enabled: return
+    press(b)
+    pad_wheel = if placing >= 0: []::Btn else: wheel_items()   // (a building to place: the wheel gives way to it)
+
+// The ring's buttons this frame, and its radius.
+def wheel_layout() -> [PItem], float:
+    let items = wheel_page_items()
+    let bw = P_BUTTON * hud_s() * WHEEL_BIG
+    let n = max(1, items.length)
+    let r = max(150.0 * hud_s(), float(n) * (bw + WHEEL_GAP * hud_s()) / TAU)
+    let mid = float(gl.window_size()) / 2.0
+    let out = map(items) b, k:
+        let a = -90.0 + 360.0 * float(k) / float(n)
+        PItem { b, mid + float2 { cos(a), sin(a) } * r - float2_1 * bw / 2.0, bw }
+    return out, r
+
+def wheel_draw():
+    pad_wheel = wheel_items()   // (costs and what can be afforded, as they change)
+    if not pad_wheel.length: return
+    pad_page = clamp(pad_page, 0, wheel_pages() - 1)
+    hud_look()
+    let s = hud_s()
+    let ws = float(gl.window_size())
+    let mid = ws / 2.0
+    let mpos = mouse_px()
+    ui_frame(false)
+    ui_fill(float2_0, ws, float4 { 0.0, 0.0, 0.0, 0.28 })
+    let items, r = wheel_layout()
+    var hot = -1
+    for(items) it, n:
+        if mpos.x >= it.at.x and mpos.y >= it.at.y and mpos.x <= it.at.x + it.side and mpos.y <= it.at.y + it.side: hot = n
+    if hot < 0 and not touch_play and pad_pick < items.length: hot = pad_pick
+    if hot >= 0:   // (lifted)
+        let it = items[hot]
+        items[hot] = PItem { it.b, it.at - float2_1 * it.side * 0.09, it.side * 1.18 }
+    var pressed = -1
+    for(items) it, n:
+        if hud_button(it.at, float2_1 * it.side, it.b.accent or n == hot, it.b.enabled): pressed = n
+    b_sheet = -1
+    for(items) it:
+        if it.b.building >= 0: draw_building_icon(it.b.building, it.at + float2 { 6.0 * s, 5.0 * s }, it.side - 22.0 * s)
+    flush_sprites()
+    for(items) it:
+        btn_picture(it, 5.0 * s, if it.b.costv.length or it.b.note != "": 12.0 * s else: 0.0)
+        if not it.b.enabled: ui_fill(it.at + float2_1 * 3.0 * s, float2_1 * (it.side - 6.0 * s), float4 { 0.0, 0.0, 0.0, 0.35 })
+        if it.b.glyph != "": tb_icon("glyph/" + it.b.glyph, it.at + float2 { it.side - 29.0 * s, 3.0 * s }, 26.0 * s, if it.b.enabled: 1.0 else: 0.5)
+    for(items) it:
+        if it.b.costv.length: cost_row(it.b.costv, it.at + float2 { 0.0, it.side - 19.0 * s }, it.side)
+        elif it.b.note != "":
+            let fsz = int(13.0 * s)
+            edged_text(it.at + float2 { (it.side - tb_text_w(it.b.note, fsz, 1)) * 0.5, it.side - 19.0 * s }, it.b.note, fsz, float4_1, 1)
+    let bw = P_BUTTON * s * WHEEL_BIG
+    let gs = wheel_groups()
+    if gs.length > 1:   // the pages, over the ring (LB or a tap in the middle turns them)
+        let fsz = int(16.0 * s)
+        let caps = map(gs) g: if g.length: g.uppercase() else: "MORE"
+        var w = 0.0
+        for(caps) c: w += tb_text_w(c, fsz, 2) + 18.0 * s
+        var x = mid.x - w / 2.0
+        let ty = mid.y - r - bw * 0.5 - 44.0 * s
+        hud_box(float2 { x - 12.0 * s, ty - 6.0 * s }, float2 { w + 6.0 * s, float(fsz) + 14.0 * s }, 2.0, ui_look.face, false, 3.0)
+        for(caps) c, k:
+            edged_text(float2 { x, ty }, c, fsz, if k == pad_page: PANEL_GOLD else: float4 { 0.8, 0.76, 0.66, 0.7 }, 2)
+            x += tb_text_w(c, fsz, 2) + 18.0 * s
+    let card_at = mid + float2 { r + bw * 0.5 + 36.0 * s, 40.0 * s }
+    if hot >= 0: tip_card(card_at, items[hot].b.label, items[hot].b.cost, items[hot].b.tip, items[hot].b.enabled)
+    else:
+        let hint = if touch_play: "Tap to choose, tap elsewhere to close" else: "Point, A to choose, B to close"
+        tb_text(float2 { mid.x - tb_text_w(hint, int(15.0 * s), 0) / 2.0, mid.y + r + bw * 0.5 + 18.0 * s }, hint, int(15.0 * s), ui_look.dim, 0)
+    tb_flush()
+    ui_flush()
+    if pressed >= 0: wheel_choose(items[pressed].b)
+
+// ---- touch's Build button (over the minimap): your workers' build wheel in one tap; with none selected, an idle
+// worker's (else the one nearest the middle of the screen).
+def build_button_rect() -> float4:
+    let s = hud_s()
+    let side = P_BUTTON * 1.1 * s
+    let at = float2 { float(gl.window_size().x) - side - 24.0 * s, mm_box().y - side - 30.0 * s }
+    return float4 { at.x, at.y, side, side }
+
+def in_build_button(m:float2) -> bool:
+    let r = build_button_rect()
+    return m.x >= r.x and m.y >= r.y and m.x <= r.x + r.z and m.y <= r.y + r.w
+
+def build_button():
+    if placing >= 0 or pad_wheel.length: return
+    hud_look()
+    let s = hud_s()
+    let r = build_button_rect()
+    let at = float2 { r.x, r.y }
+    ui_frame(false)
+    let pressed = hud_button(at, float2_1 * r.z, true, true)
+    b_sheet = -1
+    let house = btype_named("house")
+    if house >= 0: draw_building_icon(house, at + float2 { 6.0 * s, 4.0 * s }, r.z - 24.0 * s)
+    flush_sprites()
+    let fsz = int(14.0 * s)
+    edged_text(at + float2 { (r.z - tb_text_w("BUILD", fsz, 2)) * 0.5, r.z - 20.0 * s }, "BUILD", fsz, PANEL_GOLD, 2)
+    tb_flush()
+    ui_flush()
+    if pressed:
+        if not selected_workers().length:
+            let mine = filter(u_id.length) i: u_owner[i] == ME and t_worker[u_kind[i]] != 0
+            let idle = filter(mine) i: u_task[i] == T_NONE and u_moving[i] == 0
+            let pick = if idle.length: idle else: mine
+            if not pick.length: return
+            let mid = float(gl.window_size()) / 2.0
+            var best = pick[0]
+            for(pick) i:
+                if magnitude(to_screen(iso(float(u_x[i]), float(u_y[i]))) - mid) < magnitude(to_screen(iso(float(u_x[best]), float(u_y[best]))) - mid): best = i
+            selected = [u_id[best]]
+            sel_building = 0
+        wheel_open()
+
 def tip_card(m:float2, name:string, cost:string, line:string, ok:bool):
     let s = hud_s()
     let tlines = filter([cost, line]) l: l != ""

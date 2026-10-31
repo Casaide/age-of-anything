@@ -50,7 +50,7 @@ def wonders() -> bool:
     wonder_ids = ids
     wonder_since = since
     var best = -1
-    for(ids) id, k:
+    for(ids.length) k:
         if tick - since[k] >= wonder_hold and (best < 0 or since[k] < since[best]): best = k
     if best < 0: return false
     winner = teams[wonder_owners[best]]

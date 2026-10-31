@@ -27,5 +27,15 @@ smbclient "//$HOST/$SHARE" -U "$SMB_USER" -c "recurse ON; prompt OFF; lcd $TMP; 
 [[ -x "$TMP/lobster_linux/run.sh" ]] || chmod +x "$TMP/lobster_linux/run.sh" "$TMP/lobster_linux/lobster/bin/lobster"
 rm -rf "$DIR"
 mv "$TMP/lobster_linux" "$DIR"
+# A launcher with the game's icon (Desktop mode's menu; "Add to Steam" from there takes the icon with it).
+mkdir -p "$HOME/.local/share/applications"
+cat > "$HOME/.local/share/applications/age-of-anything.desktop" <<EOF
+[Desktop Entry]
+Type=Application
+Name=Age of Anything
+Exec=$DIR/run.sh
+Icon=$DIR/icon.png
+Categories=Game;StrategyGame;
+EOF
 echo "Ready: $DIR/run.sh"
 if [[ $RUN -eq 1 ]]; then exec "$DIR/run.sh"; fi

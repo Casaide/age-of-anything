@@ -23,10 +23,10 @@ class PathLaid:
     points:[float2]
 
 var path_used = []::int
-var path_done = dictionary<string, int>(64)
+let path_done = dictionary<string, int>(64)
 var path_out = []::PathLaid
-var path_anchor_hub = dictionary<int, float2>(8)
-var path_anchor_res = dictionary<int, [float2]>(8)
+let path_anchor_hub = dictionary<int, float2>(8)
+let path_anchor_res = dictionary<int, [float2]>(8)
 var path_count = -1                 // finished buildings when last planned
 var path_bytes = []::int            // the path mask (RGBA, MASK_K a tile), for the scatter's on_path
 
@@ -164,7 +164,7 @@ def closest_on_segment(q:float2, a:float2, b:float2) -> float2:
 def paint_paths():
     let w = W * MASK_K
     let h = H * MASK_K
-    var a = map(w * h * 4): 0.0
+    let a = map(w * h * 4): 0.0
     let fw = W * PATH_FINE
     let fh = H * PATH_FINE
     let best = map(fw * fh): 1000000.0
@@ -203,7 +203,7 @@ def paint_paths():
                 y++
             along += vlen(pb - pa)
             i++
-    var b = map(w * h * 4): 0.0
+    let b = map(w * h * 4): 0.0
     for(2):
         for(h) y:
             for(w) x:

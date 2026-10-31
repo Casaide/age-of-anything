@@ -64,6 +64,7 @@ import model.flat
 import model.glb
 import model.props
 import model.build_mats
+import model.old_bugs
 import model.units
 import model.units2
 import model.units3

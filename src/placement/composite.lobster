@@ -47,7 +47,7 @@ def members(r:JV, sockets:dictionary<string, float3>) -> [Member]:
         for(tokenize(name, "_", "")) w:
             if has_s(WORK_HOLDS, w): held = w
             elif w == "top" or w == "box": top = true
-        let recipe = if hauls: haul_recipe(r) else: crew_recipe(r)
+        let recipe = if hauls: haul_recipe(r) else: crew_recipe(r, held)
         let s = float(gint(recipe, "scale", 100)) / 100.0   // (a tiny race's crew are drawn tiny)
         var t = Xform { bscaled_global(axis_angle(float3 { 0.0, 1.0, 0.0 }, -45.0 * float(engine_turn(name))), float3_1 * s), sockets.get(name, float3_0) }
         if not top:   // (standing back by its lean, UnitView._build_engine: a frog crew, creatures.json crew_back)

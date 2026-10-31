@@ -10,3 +10,4 @@ for f in assets/art/icons/*.svg assets/art/icons/glyph/*.svg; do
 	rsvg-convert -z 2 "$f" -o "${o%.svg}.png"
 done
 python3 src/icons_crests.py
+python3 src/icons_game.py

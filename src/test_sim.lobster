@@ -2618,7 +2618,7 @@ def test_auto_reseed():
     issue_cmd(0, CMD_BUILD, [ids[0]], fk, a % W, a / W, 0)
     while tick < 1600 and terrain[a] != field: tick_on()
     check(auto_reseed[0] == 1, "auto-reseed: on by default")
-    var wood = stock[1][0]
+    let wood = stock[1][0]
     check(drain(a), "auto-reseed: a farm is worked out")
     check(terrain[a] == field and left_at(a) > 1, "auto-reseed: the farm is sown again at once ({left_at(a)} food)")
     check(wood - stock[1][0] == bt_reseed_wood(fk), "auto-reseed: it costs the reseed ({wood - stock[1][0]} wood)")

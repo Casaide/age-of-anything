@@ -22,7 +22,7 @@ def pony_anchors() -> [Anchor]:
         anchor(float3 { 7.0, y, -3.4 }, MPI, -1, [0.0, 0.0]), anchor(float3 { -10.0, y, -3.4 }, 0.0, -1, [0.0, 1.0])]   // [flip, hind]
 
 let PONY_LOOKS = ["classic", "h1", "h2"]
-var pony_look = "h2"
+let pony_look = "h2"
 
 def body_pony(c:Colours) -> Spec: return if pony_look == "classic": body_pony_classic(c) else: horse_body(c, "head.pony")
 
@@ -262,10 +262,84 @@ def hoof_joints(hind:bool, pose:string) -> float2, float2, float:
     let fet = float2 { x, max(HOOF_FETLOCK.y, -sqrt(max(reach * reach - x * x, 1.0))) + lift }
     return ik2(fet, upper, lower, not hind), fet, curl
 
+// The centaur's horse half sculpted (round BA1; tools/blender/centaur.py, body_centaur_<look>.glb): one surface from
+// croup to breast, the man's waist rising out of the withers; its sockets the fused pony's.
+def body_centaur(c:Colours, look:string) -> Spec:
+    let n = mnode()
+    let lift = mnode()
+    lift.pos = float3 { 0.0, PONY_LIFT, 0.0 }
+    add_child(n, lift)
+    add_child(lift, glb("body_centaur_" + look, horse_mats(c)))
+    let s = spec_of(n)
+    sock(s, "head", float3 { 14.6, 31.5, 0.0 })
+    sock(s, "hand_r", float3 { 10.0, 18.0, 4.0 })
+    sock(s, "hand_l", float3 { 8.0, 18.0, -4.0 })
+    sock(s, "torso", float3 { 0.0, 19.0, 0.0 })
+    sock(s, "back", float3 { -8.0, 24.0, 0.0 })
+    sock(s, "seat", float3 { 10.0, 16.5, 0.0 })
+    lifted(s)
+    s.anchors = pony_anchors()
+    return spec_num(s, "torso_scale", float3 { 1.3, 1.0, 0.0 })
+
+def horse_mats(c:Colours, mane_dark:float = 0.35) -> dictionary<string, MMat>:
+    return mats_of([surf("hide", col(c, "skin"), 6.0), surf("hide", darkened(col(c, "skin"), 0.3), 5.0), surf("mane", darkened(col(c, "skin2"), mane_dark), 3.0),
+        plain(html("#2a2420"))], ["hide", "points", "mane", "horn"])
+
+// Round BA2 (tools/blender/centaur.py looks c, d, e): the man standing up out of the breast, over the forelegs; the
+// horse half's frame at look c's size, each look scaled by centaur_k.
+let CENTAUR_SEAT = float3 { 12.5, 10.5, 0.0 }
+let CENTAUR_WAIST = 19.1   // the waist's top over the seat (his hem 15.3 over it, 3.8 under the top)
+let CENTAUR_HIPS = [float3 { 10.0, 14.0, 2.9 }, float3 { -11.0, 14.0, 2.9 }, float3 { 8.5, 14.0, -2.9 }, float3 { -11.5, 14.0, -2.9 }]
+
+def centaur_k(look:string) -> float: return if look == "d": 1.2 elif look == "e": 1.1 else: 1.0
+
+def body_centaur2(c:Colours, look:string) -> Spec:
+    let k = centaur_k(look)
+    let n = mnode()
+    let lift = mnode()
+    lift.pos = float3 { 0.0, PONY_LIFT * k, 0.0 }
+    add_child(n, lift)
+    add_child(lift, glb("body_centaur_" + look, horse_mats(c, 0.1)))
+    let s = spec_of(n)
+    let up = float3 { 0.0, PONY_LIFT, 0.0 }
+    sock(s, "head", (float3 { 16.0, 31.5, 0.0 } + up) * k)
+    sock(s, "hand_r", (float3 { 12.0, 18.0, 3.6 } + up) * k)
+    sock(s, "hand_l", (float3 { 10.0, 18.0, -3.6 } + up) * k)
+    sock(s, "torso", (float3 { 0.0, 19.0, 0.0 } + up) * k)
+    sock(s, "back", (float3 { -8.0, 24.0, 0.0 } + up) * k)
+    // the man stays his size: his seat goes up with the waist, less the waist's top to his seat at look c's size
+    sock(s, "seat", (CENTAUR_SEAT + up) * k + float3 { 0.0, CENTAUR_WAIST * (k - 1.0), 0.0 })
+    s.anchors = map(CENTAUR_HIPS) h: anchor((h + up) * k, if (h.x > 0.0) == (h.z > 0.0): 0.0 else: MPI, if h.z > 0.0: 1 else: -1, [0.0, if h.x < 0.0: 1.0 else: 0.0])
+    return spec_num(s, "torso_scale", float3 { 1.3, 1.0, 0.0 })
+
+// A pieced leg's pieces turned about their joints: a piece whose name starts with prefixes[i] turns turns[i] degrees
+// about pivots[i] and moves on to tos[i] (2D, in the leg's own plane; no prefix starts another).
+def turn_pieces(leg:MNode, prefixes:[string], pivots:[float2], tos:[float2], turns:[float]):
+    for(leg.kids) piece:
+        let name = if piece.kids.length: piece.kids[0].meta else: ""
+        for(prefixes) pre, i:
+            if starts_with(name, pre):
+                let t = xmul(Xform { axis_angle(float3 { 0.0, 0.0, 1.0 }, turns[i]), v3of(tos[i]) }, Xform { BASIS_ID, -v3of(pivots[i]) })
+                set_xform(piece, xmul(t, node_xform(piece)))
+
+// The sculpted horse leg (centaur.py leg_horse[_hind]_<look>.glb) in a walk step: the upper leg about the hip, the
+// cannon about the knee or hock, the pastern and hoof about the fetlock, by hoof_joints.
+def hoof_leg_sculpted(c:Colours, hind:bool, look:string) -> Spec:
+    let k = centaur_k(look)
+    let jk0, jf0, curl = hoof_joints(hind, if hold == "low": "" else: hold)
+    let jk = jk0 * k
+    let jf = jf0 * k
+    let leg = glb("leg_horse" + (if hind: "_hind_" else: "_") + look, horse_mats(c, if look < "c": 0.35 else: 0.1))
+    turn_pieces(leg, ["upper", "cannon", "hoof"], [float2_0, HOOF_KNEE * k, HOOF_FETLOCK * k], [float2_0, jk, jf],
+        [atan2(jk) - atan2(HOOF_KNEE), atan2(jf - jk) - atan2(HOOF_FETLOCK - HOOF_KNEE), curl])
+    let n = mnode()
+    add_child(n, leg)
+    return spec_of(n)
+
 // ------------------------------------------------------------------ capybara
 
 let CAPYBARA_LOOKS = ["box", "soft", "sculpt", "full", "long", "long_tan"]
-var capybara_look = "long"
+let capybara_look = "long"
 let CAPYBARA_LONG_HEAD = 1.35
 let CAPYBARA_NECK_FROM = float3 { 4.0, 14.5, 0.0 }
 let CAPYBARA_NECK_END = float3 { -2.0, 1.4, 0.0 }
@@ -479,6 +553,21 @@ def build_units2(base:string, c:Colours) -> Spec?:
         case "body.pony_fused": return body_pony_fused(c)
         case "leg.hoof": return leg_hoof(c)
         case "leg.hoof_hind": return leg_hoof_hind(c)
+        case "body.pony_fused_a": return body_centaur(c, "a")
+        case "body.pony_fused_b": return body_centaur(c, "b")
+        case "leg.hoof_a": return hoof_leg_sculpted(c, false, "a")
+        case "leg.hoof_hind_a": return hoof_leg_sculpted(c, true, "a")
+        case "leg.hoof_b": return hoof_leg_sculpted(c, false, "b")
+        case "leg.hoof_hind_b": return hoof_leg_sculpted(c, true, "b")
+        case "body.pony_fused_c": return body_centaur2(c, "c")
+        case "body.pony_fused_d": return body_centaur2(c, "d")
+        case "body.pony_fused_e": return body_centaur2(c, "e")
+        case "leg.hoof_c": return hoof_leg_sculpted(c, false, "c")
+        case "leg.hoof_hind_c": return hoof_leg_sculpted(c, true, "c")
+        case "leg.hoof_d": return hoof_leg_sculpted(c, false, "d")
+        case "leg.hoof_hind_d": return hoof_leg_sculpted(c, true, "d")
+        case "leg.hoof_e": return hoof_leg_sculpted(c, false, "e")
+        case "leg.hoof_hind_e": return hoof_leg_sculpted(c, true, "e")
         case "body.capybara": return body_capybara(c)
         case "head.capybara": return head_capybara(c)
         case "leg.capybara": return leg_capybara(c)
