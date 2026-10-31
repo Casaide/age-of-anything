@@ -417,13 +417,13 @@ def draw_bust(key:int, recipe:JV, owner:int, at:float2, side:float):
     let p = bust(key, recipe, owner)
     if not p: return
     let w = float4_1
-    let m = gl.new_mesh("PCT", [float3 { at.x, at.y, 0.0 }, float3 { at.x + side, at.y, 0.0 }, float3 { at.x + side, at.y + side, 0.0 }, float3 { at.x, at.y + side, 0.0 }],
-                        [w, w, w, w], []::float3,
-                        [float2 { p.uv0.x, 1.0 - p.uv0.y }, float2 { p.uv1.x, 1.0 - p.uv0.y }, float2 { p.uv1.x, 1.0 - p.uv1.y }, float2 { p.uv0.x, 1.0 - p.uv1.y }],
-                        []::float2, [0, 2, 1, 0, 3, 2])
-    gl.set_mesh_texture(m, 0, 0, p.tex)
     gl.set_shader("textured_color")
-    gl.color(float4_1): gl.render_mesh(m)
+    gl.set_primitive_texture(0, p.tex)
+    gl.color(float4_1):
+        gl.draw_mesh("PCT", [float3 { at.x, at.y, 0.0 }, float3 { at.x + side, at.y, 0.0 }, float3 { at.x + side, at.y + side, 0.0 }, float3 { at.x, at.y + side, 0.0 }],
+                     [w, w, w, w], []::float3,
+                     [float2 { p.uv0.x, 1.0 - p.uv0.y }, float2 { p.uv1.x, 1.0 - p.uv0.y }, float2 { p.uv1.x, 1.0 - p.uv1.y }, float2 { p.uv0.x, 1.0 - p.uv1.y }],
+                     []::float2, [0, 2, 1, 0, 3, 2])
     gl.set_shader("color")
     if p.glyph != "":
         let g = side * 0.375
@@ -462,8 +462,8 @@ def groove(x:float, top:float, bottom:float, major:bool):
         let d = 4.0 * s
         gl.set_shader("color_attr")
         let c = float4 { 0.63, 0.53, 0.35, 1.0 }
-        gl.render_mesh(gl.new_mesh("PC", [float3 { m.x, m.y - d, 0.0 }, float3 { m.x + d, m.y, 0.0 }, float3 { m.x, m.y + d, 0.0 }, float3 { m.x - d, m.y, 0.0 }],
-                                   [c, c, c, c], []::float3, []::float2, []::float2, [0, 1, 2, 0, 2, 3]))
+        gl.draw_mesh("PC", [float3 { m.x, m.y - d, 0.0 }, float3 { m.x + d, m.y, 0.0 }, float3 { m.x, m.y + d, 0.0 }, float3 { m.x - d, m.y, 0.0 }],
+                     [c, c, c, c], []::float3, []::float2, []::float2, [0, 1, 2, 0, 2, 3])
         gl.set_shader("color")
 
 // A slim bar (theme.gd's bar_back and bar_fill): a dark sunk track, the fill raised.

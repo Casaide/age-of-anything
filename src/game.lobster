@@ -1571,8 +1571,8 @@ def in_minimap(m:float2) -> bool:
 
 def mm_poly(pts:[float2], cols:[float4]):
     gl.set_shader("color_attr")
-    gl.render_mesh(gl.new_mesh("PC", map(pts) p: float3 { p.x, p.y, 0.0 }, cols, []::float3, []::float2, []::float2,
-                               if pts.length == 4: [0, 1, 2, 0, 2, 3] else: [0, 1, 2]))
+    gl.draw_mesh("PC", map(pts) p: float3 { p.x, p.y, 0.0 }, cols, []::float3, []::float2, []::float2,
+                 if pts.length == 4: [0, 1, 2, 0, 2, 3] else: [0, 1, 2])
     gl.set_shader("color")
 
 // The diamond's frame (minimap.gd's _draw_frame).
@@ -1591,7 +1591,7 @@ def mm_frame():
     gl.set_uniform("kind", 1.0)
     gl.set_uniform("win_h", float(gl.window_size().y))
     gl.set_uniform("px", max(1.0, ui()))
-    gl.render_mesh(gl.new_mesh("P", map(o) p: float3 { p.x, p.y, 0.0 }, []::float4, []::float3, []::float2, []::float2, [0, 1, 2, 0, 2, 3]))
+    gl.draw_mesh("P", map(o) p: float3 { p.x, p.y, 0.0 }, []::float4, []::float3, []::float2, []::float2, [0, 1, 2, 0, 2, 3])
     gl.set_shader("color")
     let light = [float4 { 1.0, 0.95, 0.85, 0.3 }, float4 { 0.0, 0.0, 0.0, 0.35 }, float4 { 0.0, 0.0, 0.0, 0.5 }, float4 { 1.0, 0.95, 0.85, 0.15 }]
     for(4) k:

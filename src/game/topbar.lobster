@@ -45,11 +45,11 @@ def tb_icon(name:string, at:float2, side:float, alpha:float):
     let w = sz * s
     let o = at + (float2_1 * side - w) / 2.0
     let c = float4 { 1.0, 1.0, 1.0, alpha }
-    let m = gl.new_mesh("PCT", [float3 { o.x, o.y, 0.0 }, float3 { o.x + w.x, o.y, 0.0 }, float3 { o.x + w.x, o.y + w.y, 0.0 }, float3 { o.x, o.y + w.y, 0.0 }],
-                        [c, c, c, c], []::float3, [float2 { 0.0, 0.0 }, float2 { 1.0, 0.0 }, float2 { 1.0, 1.0 }, float2 { 0.0, 1.0 }], []::float2, [0, 2, 1, 0, 3, 2])
-    gl.set_mesh_texture(m, 0, 0, t)
     gl.set_shader("textured_color")
-    gl.color(float4_1): gl.render_mesh(m)
+    gl.set_primitive_texture(0, t)
+    gl.color(float4_1):
+        gl.draw_mesh("PCT", [float3 { o.x, o.y, 0.0 }, float3 { o.x + w.x, o.y, 0.0 }, float3 { o.x + w.x, o.y + w.y, 0.0 }, float3 { o.x, o.y + w.y, 0.0 }],
+                     [c, c, c, c], []::float3, [float2 { 0.0, 0.0 }, float2 { 1.0, 0.0 }, float2 { 1.0, 1.0 }, float2 { 0.0, 1.0 }], []::float2, [0, 2, 1, 0, 3, 2])
     gl.set_shader("color")
 
 // An icon of any shape, h high, centred on c (the culture's crest).
