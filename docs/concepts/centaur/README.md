@@ -25,4 +25,4 @@ Modelled as look h (`tools/blender/centaur.py`, staged as `pony_c1_h` in `data/l
 a boxier section, and legs 0.85 as long (`centaur_legk`, the hips 2.4 lower). Measured against the man, drawing B's legs
 are shorter still (the belly 0.46 of his height off the ground); taken that far (0.75 legs, the belly 4 lower) the
 model read as a sheep in the game's 3/4 view, so it stops short of it. Pictures
-`archive/images/2026-10-31/12-centaur-b-drawn-and-modelled.png` (drawing, bay worker, legionary) and `13-centaur-h-close.png`.
+`archive/images/2026-10-31/14-centaur-b-drawn-and-modelled.png` (drawing, bay worker, legionary) and `15-centaur-h-close.png`.

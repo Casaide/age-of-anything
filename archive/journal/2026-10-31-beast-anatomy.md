@@ -64,4 +64,4 @@ together ... we need to improve".
   `archive/images/2026-10-31/11-centaur-concept-c1.png`.
 - Dominic: "B looks good". B modelled as look h: BA3's f shorter behind the shoulder, deeper, on legs 0.85 as long.
   Matched to the drawing's numbers exactly (legs 0.75, the belly 4 lower) it read as a sheep from the game's camera,
-  so it stops short. Placement passes. Pictures 12 (the drawing beside the bakes) and 13.
+  so it stops short. Placement passes. Pictures 14 (the drawing beside the bakes) and 15.
