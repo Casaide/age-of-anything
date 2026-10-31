@@ -52,3 +52,13 @@ together ... we need to improve".
 
 - The hind gaskin could slope back to the hock, as a real horse's does (today's `hoof_joints` hang it straight).
 - The bake cache could hash the .glb files a part loads, so a rebuilt model never bakes stale.
+
+## Later the same day: the rump again, and drawing first
+
+- Dominic: "from the pic above the backside is still pointy and weird". The rump's outline came down from the croup
+  and up from the thigh over its last few units, a wedge. Now it stays tall to the back and ends in a round
+  (`centaur.py` TOP/BOT at -16.8), seen in Blender; not re-baked.
+- Dominic: "feel like we should start creating 2D concept art first, and iterating, before making the model". The
+  modelling stops here. Round C1 is drawn: `docs/concepts/centaur/` (`tools/art/centaur_concept.py`), three
+  proportions (A classic, B compact hero, C long and low), each also at play size. Picture
+  `archive/images/2026-10-31/11-centaur-concept-c1.png`.
