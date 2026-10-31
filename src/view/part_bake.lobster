@@ -474,6 +474,10 @@ def bake_job(id:string, full:string, c:Colours) -> BakeJob?:
             let a = b.anchors[string_to_int(at)]
             pivot = a.pos
             set_basis(wrap, leg_basis(a, true))
+            let seam_r = b.nums.get("seam_legs", float3_0).x
+            if seam_r > 0.0:   // a leg growing out of its body: no outline where the body hides it, near the hip
+                join = a.pos
+                join_r = seam_r
         wrap.pos = pivot
         model = wrap
     elif after != "":
