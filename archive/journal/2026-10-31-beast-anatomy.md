@@ -70,3 +70,8 @@ together ... we need to improve".
   the body and is shaded differently. What worked was lowering the knees and hocks (`hoof_joints` takes a knee now;
   h's 8.4 under the hip), so a long thick forearm and gaskin taper to a short cannon. Picture 16. Still open: a
   dotted row of dark pixels where each leg's top meets the belly.
+- **Paused.** Dominic: the centaurs still look wrong ("there's no hind legs"), and shaping models by hand from spheres
+  and lofts looks cheap. He asked for research into AI-generated 3D art and an automated pipeline instead; that will
+  decide how these models get made. No more rounds until then. Where it stands: concept C1 option B was picked and
+  modelled as look h; the elephant pick (A or B) is open. All of it is staged in `data/later/beast_anatomy.json`, and
+  nothing in play changed.
