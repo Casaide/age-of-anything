@@ -163,9 +163,21 @@ def kit_lean(k:JV, p:float3) -> float3:
     return hip + bxf(axis_angle(U3_ZUP, -kf(k, "lean", 0.0)), p - hip)
 
 def torso_fit(k:JV) -> float3:
-    let r = at(at(at(k, "body"), "chest"), "r")
+    let chest = at(at(k, "body"), "chest")
+    let r = kv3(at(chest, "r"))
     let pad = kf(k, "armour_pad", 0.6)
-    return float3 { (kn(r, 0) + pad) / 8.8, (kn(r, 1) + pad) / 8.2, (kn(r, 2) + pad) / 10.4 }
+    var rx = r.x
+    var rz = r.z
+    let lo = kget(at(k, "body"), "loft")
+    if lo:   // a lofted torso: armour fitted to the loft round the chest, out to its corners (a squarer section's)
+        let ys, fr, bk, hz = loft_profile(k)
+        let cy = kn(at(chest, "at"), 1)
+        let corner = pow(0.5, 1.0 / kf(lo, "n", 2.0)) / pow(0.5, 0.5) + (if gbool(lo, "flat", false): 0.08 else: 0.0)
+        for(ys) y, i:
+            if abs(y - cy) <= r.y:
+                rx = max(rx, (fr[i] - bk[i]) * 0.5 * corner)
+                rz = max(rz, hz[i] * corner)
+    return float3 { (rx + pad) / 8.8, (r.y + pad) / 8.2, (rz + pad) / 10.4 }
 
 class KitVol:
     at:float3
@@ -391,16 +403,19 @@ def kit_torso(k:JV, mats:dictionary<string, MMat>, into:MNode, leaning:bool, lif
         add_child(low, glb(as_str(mesh), mats))
         add_child(into, low)
         return
-    for(kit_volumes(k)) v:
+    if kget(body, "loft"):
+        add_child(into, kit_loft(k, u3_mat(mats, "fur")))
+    else: for(kit_volumes(k)) v:
         let p = if leaning: kit_lean(k, v.at) else: v.at
         add_child(into, blob(v.r, u3_mat(mats, v.mat), p, float3 { 0.0, 0.0, v.rot - kf(k, "lean", 0.0) * (if kit_quad(k): 0.0 else: 1.0) }))
     for(glist(body, "patches")) patch:
         let pa = kv3(at(patch, "at"))
         add_child(into, blob(kv3(at(patch, "r")), u3_mat(mats, gstr(patch, "mat", "pale")), if leaning: kit_lean(k, pa) else: pa, float3 { 0.0, 0.0, kf(patch, "rot", 0.0) }))
     let nk = kget(k, "neck")
-    if nk:
+    if nk and not kget(body, "loft"):
         let fr = kv3(at(nk, "from"))
-        add_child(into, rod(if leaning: kit_lean(k, fr) else: fr, neck_end(k, lift, pose_basis), kn(at(nk, "r"), 0), kn(at(nk, "r"), 1), u3_mat(mats, "fur")))
+        let to = neck_end(k, lift, pose_basis)   // a biped's neck ends under its head, which leans with the torso
+        add_child(into, rod(if leaning: kit_lean(k, fr) else: fr, if leaning: kit_lean(k, to) else: to, kn(at(nk, "r"), 0), kn(at(nk, "r"), 1), u3_mat(mats, "fur")))
 
 def neck_end(k:JV, lift:float3, pose_basis:Basis) -> float3:
     let nk = at(k, "neck")
@@ -410,6 +425,120 @@ def neck_end(k:JV, lift:float3, pose_basis:Basis) -> float3:
     let h = kobj(k, "head")
     let local = bxf(axis_angle(U3_ZUP, kf(h, "tilt", 0.0)), kv3(into) * kf(h, "k", 1.0))
     return p + bxf(binverse(pose_basis), local)
+
+// ---- a lofted torso (B4, body.loft): the volumes, the neck and the shoulders taken as one mass. Sliced level by
+// level up the torso, each level's front, back and half width are the widest of the volumes there, smoothed up and
+// down so they blend, and a ring laid through them: a superellipse, n 2 round, more for flatter sides; `flat` shades
+// each face on its own (planes). A biped's, leaned.
+
+class KitBall:
+    at:float3
+    r:float3
+
+def loft_shoulders(k:JV) -> bool:
+    let lo = kget(at(k, "body"), "loft")
+    return lo != nil and gbool(lo, "shoulders", true)
+
+def loft_balls(k:JV) -> [KitBall]:
+    let out = map(kit_volumes(k)) v: KitBall { v.at, v.r }
+    let nk = at(k, "neck")
+    let a = kv3(at(nk, "from"))
+    let b = neck_end(k, float3_0, BASIS_ID)
+    for(7) i:
+        let t = float(i) / 6.0
+        out.push(KitBall { lerp3(a, b, t), float3_1 * u3_lerpf(kn(at(nk, "r"), 0), kn(at(nk, "r"), 1), t) })
+    if loft_shoulders(k):
+        let arm = at(k, "arm")
+        for([1.0, -1.0]) side: out.push(KitBall { kv3(at(arm, "shoulder")) * float3 { 1.0, 1.0, side }, float3_1 * kpair(at(arm, "r"), 0, 0) * 1.05 })
+    return out
+
+def kit_spow(x:float, e:float) -> float: return if x < 0.0: -pow(-x, e) else: pow(x, e)
+def kit_cross(a:float3, b:float3) -> float3: return float3 { a.y * b.z - a.z * b.y, a.z * b.x - a.x * b.z, a.x * b.y - a.y * b.x }
+
+def loft_smooth(xs:[float]) -> [float]: return map(xs) x, i: if i == 0 or i == xs.length - 1: x else: (xs[i - 1] + x * 2.0 + xs[i + 1]) * 0.25
+def loft_centre(row:[float3]) -> float3: return (row[0] + row[row.length / 2]) * 0.5
+
+// The loft's levels, top down, and each one's front, back and half width (the body's frame, upright).
+def loft_profile(k:JV) -> [float], [float], [float], [float]:
+    let lo = at(at(k, "body"), "loft")
+    let rings = gint(lo, "rings", 28)
+    let balls = loft_balls(k)
+    var y0 = KIT_INF
+    var y1 = -KIT_INF
+    for(balls) b:
+        y0 = min(y0, b.at.y - b.r.y)
+        y1 = max(y1, b.at.y + b.r.y)
+    // the levels, top down (as a sphere's rows), each one's front, back and half width
+    let ys = map(rings) i: u3_lerpf(y1, y0, (float(i) + 0.5) / float(rings))
+    var fr = map(ys) y:
+        var f = -KIT_INF
+        for(balls) b:
+            let u = (y - b.at.y) / b.r.y
+            if abs(u) < 1.0: f = max(f, b.at.x + b.r.x * sqrt(1.0 - u * u))
+        f
+    var bk = map(ys) y:
+        var f = KIT_INF
+        for(balls) b:
+            let u = (y - b.at.y) / b.r.y
+            if abs(u) < 1.0: f = min(f, b.at.x - b.r.x * sqrt(1.0 - u * u))
+        f
+    var hz = map(ys) y:
+        var f = 0.0
+        for(balls) b:
+            let u = (y - b.at.y) / b.r.y
+            if abs(u) < 1.0: f = max(f, abs(b.at.z) + b.r.z * sqrt(1.0 - u * u))
+        f
+    for(rings) i: assert fr[i] > bk[i]   // the volumes overlap all the way up
+    for(gint(lo, "smooth", 3)):
+        fr = loft_smooth(fr)
+        bk = loft_smooth(bk)
+        hz = loft_smooth(hz)
+    return ys, fr, bk, hz
+
+def kit_loft(k:JV, mat:MMat) -> MNode:
+    let lo = at(at(k, "body"), "loft")
+    let rings = gint(lo, "rings", 28)
+    let sides = gint(lo, "sides", 24)
+    let e = 2.0 / kf(lo, "n", 2.0)
+    let ys, fr, bk, hz = loft_profile(k)
+    let y0 = ys[rings - 1] - (ys[0] - ys[1]) * 0.5   // (the ends: half a level past the last)
+    let y1 = ys[0] + (ys[0] - ys[1]) * 0.5
+    let m = new_mesh()
+    let rows = []::[float3]
+    rows.push(map(sides + 1) _: kit_lean(k, float3 { (fr[0] + bk[0]) * 0.5, y1, 0.0 }))
+    for(rings) j:
+        let cx = (fr[j] + bk[j]) * 0.5
+        let ax = (fr[j] - bk[j]) * 0.5
+        rows.push(map(sides + 1) i: kit_lean(k, float3 { cx + ax * kit_spow(sin(float(i) / float(sides) * 360.0), e), ys[j],
+                                                         hz[j] * kit_spow(cos(float(i) / float(sides) * 360.0), e) }))
+    rows.push(map(sides + 1) _: kit_lean(k, float3 { (fr[rings - 1] + bk[rings - 1]) * 0.5, y0, 0.0 }))
+    for(rows) row, j:
+        for(row) p, i:
+            let up = rows[max(j - 1, 0)][i] - rows[min(j + 1, rows.length - 1)][i]
+            let round = row[(i + 1) % sides] - row[(i + sides - 1) % sides]
+            var nrm = kit_cross(round, up)
+            if j == 0 or j == rows.length - 1: nrm = p - loft_centre(rows[if j == 0: 1 else: rows.length - 2])
+            nrm = normalize(nrm)
+            if dot(nrm, p - loft_centre(row)) < 0.0 and j > 0 and j < rows.length - 1: nrm = -nrm
+            add_vertex(m, p, nrm, float2 { float(i) / float(sides), float(j) / float(rows.length - 1) })
+    for(rows.length - 1) j:
+        let a = j * (sides + 1)
+        let b = a + sides + 1
+        for(sides) i: append_into(m.idx, [a + i, a + i + 1, b + i, a + i + 1, b + i + 1, b + i])
+    if not gbool(lo, "flat", false): return mesh_node(m, mat)
+    let f = new_mesh()   // each face its own normal
+    var t = 0
+    while t < m.idx.length:
+        let a = m.p[m.idx[t]]
+        let b = m.p[m.idx[t + 1]]
+        let c = m.p[m.idx[t + 2]]
+        if magnitude(kit_cross(b - a, c - a)) > 0.000001:
+            var nrm = normalize(kit_cross(b - a, c - a))
+            if dot(nrm, m.n[m.idx[t]] + m.n[m.idx[t + 1]] + m.n[m.idx[t + 2]]) < 0.0: nrm = -nrm
+            for([a, b, c]) v: add_vertex(f, v, nrm, float2_0)
+        t += 3
+    f.idx = map(f.p.length) i: i
+    return mesh_node(f, mat)
 
 def kit_tail(k:JV, mats:dictionary<string, MMat>, into:MNode, t:Xform, pose:string):
     let tl = kget(k, "tail")
@@ -492,7 +621,7 @@ def biped_body(k:JV, c:Colours, pose:string) -> Spec:
             elbow = e
             hand = h
             near_hand = hand
-        add_child(into, blob(float3_1 * kpair(ar, 0, 0) * 1.05, u3_mat(mats, "fur"), sh))
+        if not loft_shoulders(k): add_child(into, blob(float3_1 * kpair(ar, 0, 0) * 1.05, u3_mat(mats, "fur"), sh))
         add_child(into, rod(sh, elbow, kpair(ar, 0, 0), kpair(ar, 0, 1), u3_mat(mats, "fur")))
         add_child(into, rod(elbow, hand, kpair(ar, 1, 0), kpair(ar, 1, 1), u3_mat(mats, "fur")))
         add_child(into, blob(kv3(at(a, "paw")), u3_mat(mats, if gbool(a, "dark_paws", true): "dark" else: "fur"), hand))

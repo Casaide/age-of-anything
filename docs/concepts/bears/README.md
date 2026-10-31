@@ -1,4 +1,4 @@
-# Bears (concept rounds B1, B2 and B3, 2026-10-13; in play 2026-10-17)
+# Bears (concept rounds B1, B2 and B3, 2026-10-13; in play 2026-10-17; round B4, 2026-10-31)
 
 **In play (2026-10-17, D-161 to D-163).** The data moved out of `data/later/bears.json` into the game's
 data (kits in `data/creature_kit.json`, parts in `data/parts.json`, creatures, skins and words), the
@@ -31,6 +31,62 @@ Each B1 sheet puts a Roman worker, a rat worker and a frog worker at the left fo
 
 Re-render with:
 `godot --path . --audio-driver Dummy --always-on-top --script res://tests/sheet.gd -- tests/sheets/bears_b1.json out_dir`
+
+## Round B4 (2026-10-31): one shaped mass, not spheres; the lump behind the neck
+
+Dominic: "the bears also look too much like made of spheres and have a weird bit out the back of
+their neck". Drawn from `tests/sheets/bears_b4.json` (from `src/`: `./sheet.sh ../tests/sheets/bears_b4.json <out>`).
+Each block is one unit, today's bear above options A, B and C: the brown worker (age 1), spearman (age 2),
+giant (age 3) and the polar swordsman (age 3). Every row passes the placement check.
+
+| Picture | |
+|---|---|
+| `bears_b4_closeup_3x.png` | the close-up: four facings (f1, f3, f5, f6) of the worker, the giant and the polar, today above A, B, C |
+| `bears_b4_facings_3x.png`, `bears_b4_facings_1x.png` | every row in 8 facings, close up and at game scale |
+| `bears_b4_giants_1x.png` | the giants at game scale |
+| `bears_b4_walk_3x.png`, `bears_b4_walk_1x.png` | four walk steps in three facings |
+
+**The lump (fixed, a bug).** A biped bear's neck is a rod from the withers up to its head. The head
+socket leans forward with the torso (`lean`, 8 to 11 degrees), but the neck's top end was left where it
+would be standing straight, about 2 units behind the head (Godot's kit did the same). Its rounded end stuck out
+behind the head, plainest from the back and three-quarter back (f4 to f6) and on the big ones. The
+neck's end now leans with the torso (`kit_torso` in `src/model/kit_bodies.lobster`). The black bear's banner had hung on that stray end:
+its socket moved in 1.4 units to sit on the back. The rest of the
+bump there is the brown bear's shoulder hump, a separate ball sitting behind the neck. In today's rows it is
+still there, and every option below folds it into the back's line.
+
+**The options.** All three use the same skeleton, head, arms and legs. Only the torso is built a new way: the
+kit's `body.loft`, in place of a ball for each of pelvis, belly, chest and hump.
+The torso is sliced level by level from the hips to the neck. At each level, its front, back and width are the
+widest of the old volumes, the neck and the shoulders there, smoothed up and down so they blend, and a ring
+goes through them. One mesh results, from hips to head: the hump becomes a swell of the back, the neck
+widens into the shoulders, and the shoulder balls go (the arms start inside the mass).
+- **A, smooth loft:** round sections, 28 rings of 24 sides. A soft, furry trunk.
+- **B, carved planes:** squarer sections (a superellipse, n 3), 12 rings of 10 sides, each face
+  shaded flat. It reads as a carved figure, with planes catching the light.
+- **C, loft and tapered limbs:** A, a little squarer (n 2.4), with arms and thighs thick at the root
+  and thin at the wrist and ankle, so the limbs grow out of the body instead of hanging off it as tubes.
+
+**Worn armour.** The loft is fuller than the balls were, so a cuirass fitted to the old chest ball sank into it.
+On B the body showed through in patches (Dominic: "overlap", picture
+`archive/images/2026-10-31/06-bear-b-carved-body-through-cuirass.png`). A lofted bear's armour is now fitted to
+the loft itself: its width and depth over the cuirass's height, out to a squarer section's corners (`torso_fit`).
+A, B and C all wear it whole now; B's cuirass still has a slightly uneven top rim against the facets.
+The placement check has no rule for a body showing through its armour (A3 lets armour and its body share volume).
+A first try counted patches of body inside the armour's outline from each bake camera. It caught B (7 patches),
+but some units already in play reached 5 to 7 too (rats in leather, bears in sardine armour), so it went to the
+backlog instead of the check.
+
+**Recommendation (Claude):** C. A and C fix the "spheres" read in every facing. C's limbs carry the same
+idea out to the paws, which matters most on the giant. B is the boldest look, but it sits apart from
+the rest of the cast (the humans, the rats, the mount bear are all smooth), and its armour fits it least well.
+The mount bear (on four legs) is still blobs. If the pick reads well, the same loft can go along its spine next.
+
+### Questions for Dominic (B4)
+
+1. A, B or C (or none)?
+2. Should the mount bear get the same treatment?
+3. Is the neck lump gone for you in the back facings? It is fixed in today's rows too.
 
 ## Round B3 (2026-10-13): the mount's neck runs into its head; helmets by rank
 
