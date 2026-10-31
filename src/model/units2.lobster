@@ -242,13 +242,13 @@ def hoof_leg(c:Colours, hind:bool) -> Spec:
 
 
 // Where a horse leg's knee and fetlock are in a walk step (2D, the hip at the origin), and how far the pastern and
-// hoof curl back from the fetlock (degrees).
-def hoof_joints(hind:bool, pose:string) -> float2, float2, float:
-    let upper = magnitude(HOOF_KNEE)
-    let lower = magnitude(HOOF_FETLOCK - HOOF_KNEE)
+// hoof curl back from the fetlock (degrees). `knee`: where the knee (or hock) is standing (a sculpted leg may set its own).
+def hoof_joints(hind:bool, pose:string, knee:float2 = HOOF_KNEE) -> float2, float2, float:
+    let upper = magnitude(knee)
+    let lower = magnitude(HOOF_FETLOCK - knee)
     let reach = 0.999 * (upper + lower)
     let p = walk_step(pose)
-    if p < 0.0: return HOOF_KNEE, HOOF_FETLOCK, 0.0   // standing: as modelled
+    if p < 0.0: return knee, HOOF_FETLOCK, 0.0   // standing: as modelled
     var x = HOOF_FETLOCK.x
     var lift = 0.0
     var curl = 0.0
@@ -298,6 +298,7 @@ def centaur_hips(look:string) -> [float3]:
 
 def centaur_k(look:string) -> float: return if look == "d": 1.2 elif look == "e": 1.1 elif look == "g": 1.15 else: 1.0
 def centaur_legk(look:string) -> float: return if look == "h": 0.85 else: 1.0   // h: short legs, its hips 2.4 lower
+def centaur_knee(look:string) -> float2: return if look == "h": float2 { 0.0, -8.4 } else: HOOF_KNEE   // h: a long forearm, a short cannon
 
 def body_centaur2(c:Colours, look:string) -> Spec:
     let k = centaur_k(look)
@@ -318,7 +319,7 @@ def body_centaur2(c:Colours, look:string) -> Spec:
     // the man stays his size: his seat goes up with the waist, less the waist's top to his seat at look c's size
     sock(s, "seat", (seat + up) * k + float3 { 0.0, CENTAUR_WAIST * (k - 1.0), 0.0 })
     s.anchors = map(centaur_hips(look)) h: anchor((h + up) * k, if (h.x > 0.0) == (h.z > 0.0): 0.0 else: MPI, if h.z > 0.0: 1 else: -1, [0.0, if h.x < 0.0: 1.0 else: 0.0])
-    spec_num(s, "seam_legs", float3 { 7.0 * k, 0.0, 0.0 })
+    spec_num(s, "seam_legs", float3 { (if look == "h": 11.0 else: 7.0) * k, 0.0, 0.0 })   // (h: the upper legs reach high on the flank)
     return spec_num(s, "torso_scale", float3 { 1.3, 1.0, 0.0 })
 
 // A pieced leg's pieces turned about their joints: a piece whose name starts with prefixes[i] turns turns[i] degrees
@@ -335,12 +336,13 @@ def turn_pieces(leg:MNode, prefixes:[string], pivots:[float2], tos:[float2], tur
 // cannon about the knee or hock, the pastern and hoof about the fetlock, by hoof_joints.
 def hoof_leg_sculpted(c:Colours, hind:bool, look:string) -> Spec:
     let k = centaur_k(look) * centaur_legk(look)
-    let jk0, jf0, curl = hoof_joints(hind, if hold == "low": "" else: hold)
+    let knee = centaur_knee(look)
+    let jk0, jf0, curl = hoof_joints(hind, if hold == "low": "" else: hold, knee)
     let jk = jk0 * k
     let jf = jf0 * k
     let leg = glb("leg_horse" + (if hind: "_hind_" else: "_") + look, horse_mats(c, if look < "c": 0.35 else: 0.1))
-    turn_pieces(leg, ["upper", "cannon", "hoof"], [float2_0, HOOF_KNEE * k, HOOF_FETLOCK * k], [float2_0, jk, jf],
-        [atan2(jk) - atan2(HOOF_KNEE), atan2(jf - jk) - atan2(HOOF_FETLOCK - HOOF_KNEE), curl])
+    turn_pieces(leg, ["upper", "cannon", "hoof"], [float2_0, knee * k, HOOF_FETLOCK * k], [float2_0, jk, jf],
+        [atan2(jk) - atan2(knee), atan2(jf - jk) - atan2(HOOF_FETLOCK - knee), curl])
     let n = mnode()
     add_child(n, leg)
     return spec_of(n)
