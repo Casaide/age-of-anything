@@ -266,14 +266,14 @@ def ui_flush():
 // point in this build, and goes astray once a custom shader has been used).
 // A quad in the current transform's coordinates, coloured per vertex (a raw mesh render doesn't pass
 // gl.color's colour to the colour shader, so fills use color_attr).
-def ui_quad(at:float2, size:float2, col:float4 = float4_1) -> resource<mesh>:
-    return gl.new_mesh("PC", [float3 { at.x, at.y, 0.0 }, float3 { at.x + size.x, at.y, 0.0 }, float3 { at.x + size.x, at.y + size.y, 0.0 }, float3 { at.x, at.y + size.y, 0.0 }],
-                       [col, col, col, col], []::float3, []::float2, []::float2, [0, 2, 1, 0, 3, 2])
+def ui_quad(at:float2, size:float2, col:float4 = float4_1):
+    gl.draw_mesh("PC", [float3 { at.x, at.y, 0.0 }, float3 { at.x + size.x, at.y, 0.0 }, float3 { at.x + size.x, at.y + size.y, 0.0 }, float3 { at.x, at.y + size.y, 0.0 }],
+                 [col, col, col, col], []::float3, []::float2, []::float2, [0, 2, 1, 0, 3, 2])
 
 def ui_fill(at:float2, size:float2, col:float4):
     if size.x <= 0.0 or size.y <= 0.0: return
     gl.set_shader("color_attr")
-    gl.render_mesh(ui_quad(at, size, col))
+    ui_quad(at, size, col)
     gl.set_shader("color")   // (what the callers' own shapes expect next)
 
 // A line as a quad (gl.line draws nothing once a custom shader has been used, in this build).
@@ -283,8 +283,8 @@ def ui_line(a:float2, b:float2, w:float, col:float4):
     if l <= 0.0001: return
     let n = float2 { -d.y, d.x } / l * (w * 0.5)
     gl.set_shader("color_attr")
-    gl.render_mesh(gl.new_mesh("PC", [float3 { a.x + n.x, a.y + n.y, 0.0 }, float3 { b.x + n.x, b.y + n.y, 0.0 }, float3 { b.x - n.x, b.y - n.y, 0.0 }, float3 { a.x - n.x, a.y - n.y, 0.0 }],
-                               [col, col, col, col], []::float3, []::float2, []::float2, [0, 2, 1, 0, 3, 2]))
+    gl.draw_mesh("PC", [float3 { a.x + n.x, a.y + n.y, 0.0 }, float3 { b.x + n.x, b.y + n.y, 0.0 }, float3 { b.x - n.x, b.y - n.y, 0.0 }, float3 { a.x - n.x, a.y - n.y, 0.0 }],
+                 [col, col, col, col], []::float3, []::float2, []::float2, [0, 2, 1, 0, 3, 2])
     gl.set_shader("color")
 
 // A painted rect; `role` picks the look's material: 0 a panel's face, 1 a frame, 2 a button.
@@ -297,8 +297,8 @@ def ui_mat(at:float2, size:float2, col:float4, role:int):
         print "ui: a uniform did not set"
         ui_warned = true
     // (a mesh in screen coordinates: gl.rect with this shader doesn't land where asked)
-    gl.render_mesh(gl.new_mesh("P", [float3 { at.x, at.y, 0.0 }, float3 { at.x + size.x, at.y, 0.0 }, float3 { at.x + size.x, at.y + size.y, 0.0 }, float3 { at.x, at.y + size.y, 0.0 }],
-                               []::float4, []::float3, []::float2, []::float2, [0, 2, 1, 0, 3, 2]))
+    gl.draw_mesh("P", [float3 { at.x, at.y, 0.0 }, float3 { at.x + size.x, at.y, 0.0 }, float3 { at.x + size.x, at.y + size.y, 0.0 }, float3 { at.x, at.y + size.y, 0.0 }],
+                 []::float4, []::float3, []::float2, []::float2, [0, 2, 1, 0, 3, 2])
     gl.set_shader("color")
 
 // A rect painted in a material by name (felt turf, a lacquered medallion...), whatever the look's roles are.
@@ -311,7 +311,7 @@ def ui_paint_poly(pts:[float2], cols:[float4], idx:[int], kind:int):
     gl.set_uniform("kind", float(kind))
     gl.set_uniform("win_h", float(gl.window_size().y))
     gl.set_uniform("px", max(1.0, ui()))
-    gl.render_mesh(gl.new_mesh("PC", map(pts) p: float3 { p.x, p.y, 0.0 }, cols, []::float3, []::float2, []::float2, idx))
+    gl.draw_mesh("PC", map(pts) p: float3 { p.x, p.y, 0.0 }, cols, []::float3, []::float2, []::float2, idx)
     gl.set_shader("color")
 
 // A rect shaded by a grid of colours: f(u, v) gives the colour at each point (0..1 across and down).
@@ -330,7 +330,7 @@ def ui_shade(at:float2, size:float2, nx:int, ny:int, f) -> void:
             let a = j * (nx + 1) + i
             for([a, a + nx + 2, a + 1, a, a + nx + 1, a + nx + 2]) q: idx.push(q)
     gl.set_shader("color_attr")
-    gl.render_mesh(gl.new_mesh("PC", pos, cols, []::float3, []::float2, []::float2, idx))
+    gl.draw_mesh("PC", pos, cols, []::float3, []::float2, []::float2, idx)
     gl.set_shader("color")
 
 // A radial gradient over a rect (a vignette, a pool of light): c0 at `centre` (0..1), c1 at `reach` and beyond.
