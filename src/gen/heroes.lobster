@@ -46,7 +46,7 @@ def hero_pick(key:string, cid:string, fid:string, sid:string) -> JV:
     var hpool = gstrs(cn, "names")
     for(gstrs(fn_, "names")) x: hpool.push(x)
     let taken = []::string
-    var free = filter(hpool) x: not has_s(taken, x)
+    let free = filter(hpool) x: not has_s(taken, x)
     if not free.length:
         for(gstrs(at(s, "who"), "family")) f:
             for(gstrs(gobj(gobj(n, "families"), f), "names")) x:

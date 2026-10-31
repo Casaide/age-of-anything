@@ -430,7 +430,6 @@ def ui_frame(pad:bool):
                         best_d = score
                         best = k
             if best >= 0: ui_focus = best
-    let m = float(gl.mouse_pos(0))
     if gl.button("mouse1") == 1 or magnitude(float(gl.mouse_delta(0))) > 2.0:
         if not (magnitude(dir) > 0.0): ui_focus = -1
 

@@ -596,7 +596,7 @@ def hunt(bot:EcoBot, tc:int, workers:[int]):
     if target < 0: return
     let want = t_behave[u_kind[target]]
     let party = if want == B_HERD: 3 elif want == B_FLEE: 3 else: 8
-    var ids = if want == B_FIGHT: slice(guards, 0, min(BOAR_SOLDIERS, guards.length)) else: []::int
+    let ids = if want == B_FIGHT: slice(guards, 0, min(BOAR_SOLDIERS, guards.length)) else: []::int
     for(nearest_food_workers(bot, workers, u_x[target], u_y[target], party - ids.length)) id: ids.push(id)
     if ids.length:
         issue_cmd(p, CMD_ATTACK, ids, u_id[target], 0, 0, 0)

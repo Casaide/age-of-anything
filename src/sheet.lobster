@@ -40,6 +40,7 @@ import .model.flat
 import .model.glb
 import .model.props
 import .model.build_mats
+import .model.old_bugs
 import .model.units
 import .model.units2
 import .model.units3
@@ -369,6 +370,9 @@ def columns(sh:JV) -> [SCol]:
             for(if head == "strike": STRIKE_MS else: FALL_MS) ms:
                 let secs = number_to_string(ms / 1000, 10, 1) + "." + number_to_string((ms % 1000) / 10, 10, 2)
                 out.push(SCol { string_to_int(tail), head, ms, 1000, "", false, "{head} {secs} s" })
+        case "work":   // work:<job>,<facing>: a job's swing in 8 steps
+            let jf = tokenize(tail, ",", " ")
+            for(8) st: out.push(SCol { string_to_int(jf[1]), "work", st, 8, jf[0], false, "{jf[0]} {st}/8" })
         case "corpse":
             for(8) k: out.push(SCol { k, "corpse", 100, 100, "", false, FACING_NAMES[k] + " down" })
         case "corpse_fall":
@@ -413,7 +417,7 @@ def bake_shadow():
         let q = (float2 { float(x), float(y) } + float2_1 * 0.5 - float2_1 - r) / r
         if dot(q, q) <= 1.0: float4 { 0.06, 0.05, 0.03, 0.42 } else: float4_0
     let o = float2_1 + r - c * BAKE_ART
-    add_frame(key, gl.create_texture(rows, sprite_formats), w, h, o)
+    add_frame(key, gl.create_texture(rows, bake_opts.sprite_formats), w, h, o)
 
 def tick_tree(v:UV, dt:float) -> void:
     uv_process(v, dt)
@@ -467,15 +471,21 @@ def pose_view(u:SUnit, col:SCol, at_:float2) -> UV:
     v.walking = pose == "walk"
     v.phase = if pose == "walk": TAU * float(col.step) / float(col.steps) else: 0.0
     tick_tree(v, 0.0)
-    if pose == "hold" and col.hold != "" and v.body_nodes.length:
+    let holds = if pose == "hold" and col.hold != "": [ col.hold ] elif pose == "work": WORK_HOLDS else: []
+    if holds.length and v.body_nodes.length:
         let b0 = v.body_nodes[0]
-        let id = rstr(u.recipe, "body") + "@" + col.hold
         let cols = b0.cols
-        if cols and not bakes.get(bake_key(id, b0.pshapes, cols, b0.size)): bake_model_part(id, bake_key(id, b0.pshapes, cols, b0.size), cols)
-        set_hold(v, col.hold)
+        for(holds) h:
+            let id = rstr(u.recipe, "body") + "@" + h
+            if cols and not bakes.get(bake_key(id, b0.pshapes, cols, b0.size)): bake_model_part(id, bake_key(id, b0.pshapes, cols, b0.size), cols)
+    if pose == "hold" and col.hold != "": set_hold(v, col.hold)
     if pose == "strike" or pose == "fall":   // played through the composer's own path, in 60ths of a second
         if pose == "strike": flourish(v) else: die(v, u.tip)
         for(int(float(col.step) * 0.06 + 0.5)): tick_tree(v, 1.0 / 60.0)
+    if pose == "work":
+        v.job = col.hold
+        v.time = work_period(col.hold) * float(col.step) / float(col.steps)
+        tick_tree(v, 0.0)
     if pose == "loose":
         loose(v)
         uv_process(v, 0.06)
@@ -687,7 +697,7 @@ var bad = 0
 var frame_n = 0
 while gl.frame() and frame_n < 1:   // (bakes and framebuffers inside a frame)
     frame_n++
-    sprite_formats = texture_format_clamp | texture_format_nomipmap | texture_format_nearest_mag | texture_format_nearest_min
+    bake_opts.sprite_formats = texture_format_clamp | texture_format_nomipmap | texture_format_nearest_mag | texture_format_nearest_min
     bake_shadow()
     // Placement per row; a row may expect to fail named rules: it passes when it fails those and nothing else.
     for(rows) r:

@@ -22,7 +22,7 @@ let AKB_WALK_PX = 32.0 / 0.70710678 * 0.8660254      // ArtKit.WALK_PX_PER_UNIT
 var akb_data:JV? = nil
 var akb_baked = 0
 var akb_wall_piece = false
-var akb_keep_all = false   // keep every bake's pixels (checks)
+let akb_keep_all = false   // keep every bake's pixels (checks)
 let akb_px = dictionary<string, string>(256)        // a wall piece's pixels (for wall_look), by frame name
 let akb_size = dictionary<string, int2>(256)
 let akb_origin = dictionary<string, int2>(256)
@@ -237,21 +237,20 @@ class AkbCached:
 var akb_cache_frames = []::AkbFrame
 var akb_cache_stem = ""                       // the look being baked ("" while not recording)
 
-def akb_stem(name:string) -> string: return bake_cache_dir + "/b" + sha256_text("{BAKE_VERSION}|building|{name}").substring(0, 20)
+def akb_stem_in(dir:string, name:string) -> string: return dir + "/b" + sha256_text("{BAKE_VERSION}|building|{name}").substring(0, 20)
+def akb_stem(name:string) -> string: return akb_stem_in(bake_cache_dir, name)
 
-// A look from the cache, if it's there (its frames, Look and BFx in place): whether it was.
+// A look from the shipped bakes or the cache, if it's there (its frames, Look and BFx in place): whether it was.
 def akb_load_cached(name:string) -> bool:
     if bake_cache_dir == "": return false
-    let data = read_file(akb_stem(name) + ".bin", true)
+    let shipped = if bake_shipped_dir != "": read_file(akb_stem_in(bake_shipped_dir, name) + ".bin", true) else: nil
+    let data = shipped or read_file(akb_stem(name) + ".bin", true)
     if not data: return false
     let rec, err = flexbuffers_binary_to_value(typeof AkbCached, data)
     let c = rec
     if err or not c: return false
     for(c.frames) f:
-        let tex = gl.load_texture(f.file, pack_formats)
-        if not tex: return false
-        sheet_tex.push(tex)
-        sheet_dims.push(float2 { float(f.w), float(f.h) })
+        add_sheet_later(f.file, float2 { float(f.w), float(f.h) }, pack_formats)
         frame_at.set(f.name, frames.length)
         frames.push(Frame { sheet_tex.length - 1, 0, 0, f.w, f.h, f.ax, f.ay, 1.0 / ART_K })
     looks.set(c.look.body, c.look)
@@ -412,7 +411,7 @@ def akb_frame_px(name:string) -> string, int2, int2:
     let fr = frames[f]
     var px = akb_sheet_px.get(fr.sheet, "")
     if px == "":
-        px = gl.read_texture(sheet_tex[fr.sheet]) or ""
+        px = gl.read_texture(sheet_texture(fr.sheet)) or ""
         akb_sheet_px.set(fr.sheet, px)
     let sw = int(sheet_dims[fr.sheet].x)
     let out = ensure_size("", fr.w * fr.h * 4, 0)
@@ -439,7 +438,7 @@ def akb_compose(name:string, pieces:[string]) -> int:
     let h = hi.y - lo.y
     let out = ensure_size("", w * h * 4, 0)
     for([false, true]) pass_art:
-        for(pieces) _p, pi:
+        for(pieces.length) pi:
             let src = pxs[pi]
             let sz = szs[pi]
             let o = os[pi]

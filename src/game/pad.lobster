@@ -26,26 +26,38 @@ class PadIn:
     axes:[float]
     down:[string]
 
-class WheelItem:
+// A command button: the panel's and the wheel's (game/panel.lobster makes and draws them).
+class Btn:
     label:string
-    act:int                       // 0 train (arg: slot), 1 research (arg: research), 2 age up, 3 build (arg: building type)
+    hotkey:string
+    act:int                       // 0 train slot, 1 research, 2 age up, 3 build, 4 stop, 5 cancel the last in the queue,
+                                  // 6 a build page (arg 0 civilian, 1 military, -1 back), 7 stance (arg), 8 call to arms, 9 back to work,
+                                  // 10 arm attack-move, 11 arm the race's ability, 12 ungarrison, 13 reseed, 14 auto-reseed,
+                                  // 15 release the pen's animals, 16 trade (arg: resource x 2 + 1 to buy), 17 slaughter
     arg:int
+    unit = -1                     // a unit type to draw on it
+    building = -1                 // or a building type
+    cost = ""
+    costv = []::int               // the cost per resource (the row along its foot)
+    icon = ""                     // or an icon (icons/<name>.png)
+    glyph = ""                    // a small badge top right (icons/glyph/<name>.png): what a building is for
+    accent = false                // a gold rim: the age-up, a line upgrade, the stance in use
+    enabled = true
+    group = ""                    // its caption
+    note = ""                     // under the picture instead of a cost ("ON", a page's name)
+    tip = ""                      // the hover card's line under the title
+    line_key = -1                 // a line upgrade: the step it gives, drawn from line_recipe (its portrait key)
+    line_recipe:JV? = nil
 
 var pad_on = false
+var pad_reticle_shown = true      // (touch shows it only while a finger is down: game/touch.lobster)
 var pad_off = float2_0            // the reticle off the screen's middle, screen px
 var pad_prev = []::string
-var pad_held_t = dictionary<string, float>(16)
+let pad_held_t = dictionary<string, float>(16)
 var pad_circle = 0.0
-var pad_wheel = []::WheelItem
+var pad_wheel = []::Btn
 var pad_pick = 0                  // on the wheel's page
 var pad_page = 0                  // the wheel's page (8 a page; LB turns them)
-let WHEEL_PAGE = 8
-
-def wheel_page_items() -> [WheelItem]:
-    let first = pad_page * WHEEL_PAGE
-    return pad_wheel.slice(first, min(WHEEL_PAGE, pad_wheel.length - first))
-
-def wheel_pages() -> int: return (pad_wheel.length + WHEEL_PAGE - 1) / WHEEL_PAGE
 var pad_last_mouse = float2 { -1.0, -1.0 }
 var pad_lt = false
 var pad_kept = []::string         // d-pad buttons held long enough to keep a group (once a hold)
@@ -76,26 +88,6 @@ def read_pad() -> PadIn:
     return PadIn { map(6) i: gl.controller_axis(i), filter(PAD_BUTTONS) b: gl.button("controller_" + b) >= 1 }
 
 def reticle() -> float2: return float(gl.window_size()) / 2.0 + pad_off
-
-def wheel_items() -> [WheelItem]:
-    let out = []::WheelItem
-    let b = b_index_of(sel_building)
-    if b >= 0 and b_owner[b] == ME and not selected.length:
-        for(trainable(b)) k, n: out.push(WheelItem { "Train " + unit_names.get(k, t_slot[k]), 0, n })
-        if bt_name[b_kind[b]] == "town_center": out.push(WheelItem { "Age up", 2, 0 })
-        for(offered(b)) r: out.push(WheelItem { research_name(r), 1, r })
-    elif selected_workers().length:
-        for(buildable()) k: out.push(WheelItem { "Build " + replace_string(bt_name[k], "_", " "), 3, k })
-    return out
-
-def wheel_choose(w:WheelItem):
-    switch w.act:
-        case 0: train_slot(w.arg)
-        case 1: issue_cmd(ME, CMD_RESEARCH, []::int, sel_building, w.arg, 0, 0)
-        case 2: issue_cmd(ME, CMD_AGE_UP, []::int, sel_building, 0, 0, 0)
-        default:
-            placing = w.arg
-            pad_wheel = []
 
 def is_selected_here(m:float2) -> bool:
     let i = unit_at_screen(m, true)
@@ -183,10 +175,7 @@ def pad_tick(pin:PadIn, dt:float) -> bool:
     if released("a"):
         if pad_circle > 0.0: pad_circle = 0.0
         elif placing >= 0: place_here(false)
-        elif is_selected_here(reticle()):
-            pad_wheel = wheel_items()
-            pad_pick = 0
-            pad_page = 0
+        elif is_selected_here(reticle()): wheel_open()
         elif add:   // (LB held: what's under the reticle joins the selection)
             let before = selected_units()
             click_select(reticle())
@@ -245,28 +234,14 @@ def pad_draw():
     let u = ui()
     let c = reticle()
     let rcol = float4 { 0.949, 0.914, 0.788, 0.9 }
-    gl.color(rcol):
-        gl.translate(c):
-            gl.scale(float2 { 1.0, 0.5 }): gl.open_circle(12.0 * u, 24, 0.16)
-            ui_line(float2 { -18.0 * u, 0.0 }, float2 { -8.0 * u, 0.0 }, 2.0 * u, rcol)
-            ui_line(float2 { 8.0 * u, 0.0 }, float2 { 18.0 * u, 0.0 }, 2.0 * u, rcol)
+    if pad_reticle_shown:
+        gl.color(rcol):
+            gl.translate(c):
+                gl.scale(float2 { 1.0, 0.5 }): gl.open_circle(12.0 * u, 24, 0.16)
+                ui_line(float2 { -18.0 * u, 0.0 }, float2 { -8.0 * u, 0.0 }, 2.0 * u, rcol)
+                ui_line(float2 { 8.0 * u, 0.0 }, float2 { 18.0 * u, 0.0 }, 2.0 * u, rcol)
     if pad_circle > 0.0:
         gl.color(float4 { rcol.x, rcol.y, rcol.z, 0.6 }):
             gl.translate(c):
                 gl.scale(float2 { 1.0, 0.5 }): gl.open_circle(pad_circle, 48, 2.0 * u / pad_circle)
-    if pad_wheel.length:
-        let r = 150.0 * u
-        let mid = float(gl.window_size()) / 2.0
-        gl.color(float4 { 0.0, 0.0, 0.0, 0.45 }):
-            gl.translate(mid): gl.circle(r + 70.0 * u, 48)
-        gl.set_font_size(int(18.0 * u))
-        let items = wheel_page_items()
-        if wheel_pages() > 1: lobby_text(mid + float2 { -60.0 * u, r + 40.0 * u }, "page {pad_page + 1} / {wheel_pages()}  (LB)", float4 { 0.8, 0.78, 0.7, 1.0 })
-        for(items) w, n:
-            let a = float(n) / float(items.length) * 360.0 - 90.0
-            let at = mid + float2 { cos(a), sin(a) } * r
-            let size = gl.text_size(w.label)
-            let col = if n == pad_pick: float4 { 1.0, 0.85, 0.4, 1.0 } else: float4 { 0.9, 0.86, 0.75, 1.0 }
-            if n == pad_pick:
-                ui_fill(at - float(size) / 2.0 - float2_1 * 6.0 * u, float(size) + float2_1 * 12.0 * u, float4 { 0.3, 0.2, 0.1, 0.9 })
-            lobby_text(at - float(size) / 2.0, w.label, col)
+    if pad_wheel.length: wheel_draw()   // (game/panel.lobster)

@@ -22,7 +22,7 @@ def fixture2_list() -> [Fixture2]:
         Fixture2 { "worn armour carrying a whole copy of its body (the body not cut out of the armour\'s bake)",
                    "sewer rats spear age 2", ["worn armour holds no body"], "", 5 },
         Fixture2 { "a walk whose body rose as its legs spread (the feet off the ground mid-stride)",
-                   "romans spear", ["B5 walking, the lowest foot on the ground line"], "", 6 },
+                   "romans spear", ["B5 walking, the planted foot on its ground line"], "", 6 },
         Fixture2 { "a 3D truth with the first leg\'s part at every hip, unturned (a cat\'s hind legs as forelegs)",
                    "frog on newt_fire", ["B6 the 3D truth has the unit\'s legs, one for one"], "old_truth", -1 },
         Fixture2 { "newt legs drawn whole over its body (the legs on its back: Dominic)",
@@ -46,7 +46,7 @@ def fixture2_rules(f:Fixture2, r:JV, on:bool) -> dictionary<string, string>:
             case "old_truth": old_truth = true
             case "uncut": set(part("body.newt"), "cut", jstrs(filter(gstrs(part("body.newt"), "cut")) c: c != "legs"))
             case "unturned":
-                mirror_legs = false
+                old_bugs.legs_unmirrored = true
                 forget_bakes("leg.newt~")
             default: pass()
         case_tweak = f.tweak
@@ -60,7 +60,7 @@ def fixture2_rules(f:Fixture2, r:JV, on:bool) -> dictionary<string, string>:
                 cut.push("legs")
                 set(part("body.newt"), "cut", jstrs(cut))
             case "unturned":
-                mirror_legs = true
+                old_bugs.legs_unmirrored = false
                 forget_bakes("leg.newt~")
             default: pass()
     truth_cache.clear()
@@ -213,12 +213,11 @@ def old_kneel(v:UV, pose:string):
                 leg.shin = made
                 shin = made
             let s = shin
-            if s:
-                s.visible = true
-                let off = float2 { 0.0, -leg.rest.y * upper }
-                s.pos = leg.node.pos + float2 { off.x * rcos(leg.node.rot) - off.y * rsin(leg.node.rot), off.x * rsin(leg.node.rot) + off.y * rcos(leg.node.rot) }
-                s.rot = leg.node.rot + 1.45 * kneel
-                s.scl = float2 { leg.node.scl.x, 0.5 }
+            s.visible = true
+            let off = float2 { 0.0, -leg.rest.y * upper }
+            s.pos = leg.node.pos + float2 { off.x * rcos(leg.node.rot) - off.y * rsin(leg.node.rot), off.x * rsin(leg.node.rot) + off.y * rcos(leg.node.rot) }
+            s.rot = leg.node.rot + 1.45 * kneel
+            s.scl = float2 { leg.node.scl.x, 0.5 }
     let a = 0.17 * kneel
     let pivot = float2 { (xs[0] + xs[1]) * 0.5, 0.0 }
     v.bob.rot += a

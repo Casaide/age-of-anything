@@ -635,7 +635,7 @@ def respond(bot:Bot, tc:int, army:[int], workers:[int], hx:int, hy:int):
     sort_ints(ids)
     let live = []::int
     for(ids) id:
-        let wx, wy = where_is(id)
+        let wx, _wy = where_is(id)
         if tick - threat_tick(bot, id) > THREAT_TICKS or wx < 0:
             for(bot.threat_ids) x, n:
                 if x == id:
@@ -1046,7 +1046,7 @@ def waves(bot:Bot, army:[int], hx:int, hy:int):
         return
     if not bot.assault or tick % (cfg("military.regroup_every") * 20) != bot_phase(bot): return
     let home_r = cfg("military.defend_tiles") * 1000
-    var ids = []::int
+    let ids = []::int
     let home = filter(army) i: u_foe[i] == 0 and u_moving[i] == 0 and dist2(hx, hy, u_x[i], u_y[i]) <= 4 * home_r * home_r
     if home.length >= max(REINFORCE, need / 2) and lv_wave_pct >= 100:
         for(home) i: ids.push(u_id[i])

@@ -411,19 +411,18 @@ def check_attachment(label:string, view:string, a:Rigged, st:JV):
                         attach_cache.set(ak, made)
                         at_ = made
                     let at2 = at_
-                    if at2:
-                        let d = at2.d
-                        let touches = at2.touches
-                        let bury = if p.kind == "leg": num_or(st, "bury", BURY) else: BURY
-                        note("A2 {p.kind} joint on its body\'s surface", label, view, (d > ATTACH_GAP and not touches) or d > ATTACH_GAP + 2.0 or d < -bury,
-                             "{p.name} joint {f1(d)} " + (if d > 0.0: "outside" else: "inside") + " the body" + (if touches: "" else: ", not touching it"))
-                        if p.kind == "leg" and parent.legs_under:
-                            note("A2 a leg shows under its skirt", label, view, at2.hem_gap < 3.0, "{p.name} {f1(at2.hem_gap)} below the hem")
-                        else:
-                            let want = 1.0 - num_or(st, if p.kind == "leg": "inside" else: "head_inside", 1.0 - OUTSIDE)
-                            note("A2 a {p.kind} mostly outside its body", label, view, at2.share < want, "{p.name} {f2(at2.share)} outside, {f2(want)} wanted")
-                        note("A3 a {p.kind} comes out of its body in one piece", label, view, at2.stray > PEN_VOX + int(PEN_SHARE * float(vcount(mine))),
-                             "{p.name} {at2.stray} voxels in {at2.pieces - 1} other pieces")
+                    let d = at2.d
+                    let touches = at2.touches
+                    let bury = if p.kind == "leg": num_or(st, "bury", BURY) else: BURY
+                    note("A2 {p.kind} joint on its body\'s surface", label, view, (d > ATTACH_GAP and not touches) or d > ATTACH_GAP + 2.0 or d < -bury,
+                         "{p.name} joint {f1(d)} " + (if d > 0.0: "outside" else: "inside") + " the body" + (if touches: "" else: ", not touching it"))
+                    if p.kind == "leg" and parent.legs_under:
+                        note("A2 a leg shows under its skirt", label, view, at2.hem_gap < 3.0, "{p.name} {f1(at2.hem_gap)} below the hem")
+                    else:
+                        let want = 1.0 - num_or(st, if p.kind == "leg": "inside" else: "head_inside", 1.0 - OUTSIDE)
+                        note("A2 a {p.kind} mostly outside its body", label, view, at2.share < want, "{p.name} {f2(at2.share)} outside, {f2(want)} wanted")
+                    note("A3 a {p.kind} comes out of its body in one piece", label, view, at2.stray > PEN_VOX + int(PEN_SHARE * float(vcount(mine))),
+                         "{p.name} {at2.stray} voxels in {at2.pieces - 1} other pieces")
                 case "hand_r", "hand_l":
                     if not p.harness:
                         if p.slung:   // (a shield slung across the back: on the back, as back gear)

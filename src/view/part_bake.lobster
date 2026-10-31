@@ -9,11 +9,9 @@
 
 // How a leg model sits at its hip (anchor [hip, phase, side, flip, hind, fan]): a far-side leg mirrored across
 // the body, a flipped rear leg mirrored fore and aft, turned out by its fan.
-var mirror_legs = true   // (the placement check's fixtures turn it off to show the newt as it was)
-
 def leg_basis(a:Anchor, cut:bool) -> Basis:
     let flip = a.more.length > 0 and int(a.more[0]) == 1
-    if not mirror_legs: return BASIS_ID
+    if old_bugs.legs_unmirrored: return BASIS_ID
     if not cut: return if flip: bscaled(BASIS_ID, float3 { -1.0, 1.0, 1.0 }) else: BASIS_ID
     let side = if a.pos.z < 0.0: -1.0 else: 1.0
     let fan = if a.more.length > 2: axis_angle(float3 { 0.0, 1.0, 0.0 }, a.more[2] * -side) else: BASIS_ID
@@ -86,9 +84,15 @@ def crop_sprite(sprite:string, w:int, h:int, origin:float2) -> string, int, int,
 
 let BAKE_VERSION = 8   // (2: Godot's full PI in the models; 3: engines' members in front or behind; 4: whole-pixel frames as Godot's, 2026-10-27; 7: Godot's bicubic shrink in pixelize, in Godot's square frame; 8: the art at 2x (D-173), 2026-10-28)
 var bake_cache_dir = "bake_cache"   // (play.sh makes it; Lobster can't make a folder)
+var bake_shipped_dir = "baked"      // the buildings and props a build ships, baked by prebake.sh (read before bake_cache/)
 var cache_lines = []::string        // the manifest of the part being baked
 var cache_stem = ""                 // its file names' stem ("" while not recording)
-var sprite_formats = texture_format_clamp | texture_format_nomipmap   // (the sheet tool draws them nearest: crisp close-ups)
+var bake_job_done = false            // bake_job made no job: true when the part was in the cache, false with no model
+
+class BakeOpts:
+    sprite_formats = texture_format_clamp | texture_format_nomipmap   // (the sheet tool draws them nearest: crisp close-ups)
+
+let bake_opts = BakeOpts {}
 
 def cache_stem_of(id:string, full:string) -> string:
     return bake_cache_dir + "/" + sha256_text("{BAKE_VERSION}|{id}|{full}").substring(0, 20)
@@ -100,11 +104,13 @@ def sprite_texture(name:string, sprite:string, w:int, h:int) -> resource<texture
         let file = "{cache_stem}_{cache_lines.length}.png"
         write_file(file, bmat_png(map(sprite.length) i: sprite[i], w, h))
         cache_lines.push("sprite {name} {file} {w} {h}")
-    return gl.create_texture(rows, sprite_formats)
+    return gl.create_texture(rows, bake_opts.sprite_formats)
 
 def add_frame(full:string, tex:resource<texture>, w:int, h:int, origin:float2):
-    sheet_tex.push(tex)
-    sheet_dims.push(float2 { float(w), float(h) })
+    add_sheet(tex, float2 { float(w), float(h) })
+    add_part_frame(full, w, h, origin)
+
+def add_part_frame(full:string, w:int, h:int, origin:float2):
     frame_at.set("p:" + full, frames.length)
     frames.push(Frame { sheet_tex.length - 1, 0, 0, w, h, int(origin.x + 0.5), int(origin.y + 0.5), 1.0 })
     bakes.set(full, Bake { origin.x, origin.y, bake_art() })
@@ -127,10 +133,9 @@ def load_cached(id:string, full:string) -> bool:
         let t = tokenize(line, " ", "")
         if t.length:
             switch t[0]:
-                case "sprite":
-                    let tex = gl.load_texture(t[2], sprite_formats)
-                    if not tex: return false
-                    add_frame(t[1], tex, string_to_int(t[3]), string_to_int(t[4]), float2 { string_to_float(t[5]), string_to_float(t[6]) })
+                case "sprite":   // (its PNG loaded when it's first drawn)
+                    add_sheet_later(t[2], float2 { string_to_float(t[3]), string_to_float(t[4]) }, bake_opts.sprite_formats)
+                    add_part_frame(t[1], string_to_int(t[3]), string_to_int(t[4]), float2 { string_to_float(t[5]), string_to_float(t[6]) })
                 case "empty": bakes.set(t[1], Bake { string_to_float(t[2]), string_to_float(t[3]), bake_art() })
                 case "soles": bake_soles.set(t[1], map((t.length - 2) / 2) n: float2 { string_to_float(t[2 + n * 2]), string_to_float(t[3 + n * 2]) })
                 case "span": bake_spans.set(t[1], [float2 { string_to_float(t[2]), string_to_float(t[3]) }, float2 { string_to_float(t[4]), string_to_float(t[5]) }])
@@ -328,21 +333,17 @@ def find_s(xs:[string], x:string) -> int:
 var bake_live = false
 var bake_quit = false
 var bake_done = 0                    // things baked since the game began
-var bake_backdrop:resource<texture>? = nil   // a picture under the progress (the game's match loader), or none
-var bake_what = ""                   // what's baking (the game says: "the units", "the buildings")
+// The progress drawn by the game's match loader while it's up (game.lobster sets it to fe_loader, game/lobby.lobster):
+// its bar runs from bake_progress_from to bake_progress_to over this bake.
+def bake_progress_fn(status:string, frac:float) -> void
+var bake_progress:bake_progress_fn = fn(s, f): pass()
+var bake_progress_on = false
+var bake_progress_from = 0.0
+var bake_progress_to = 1.0
+var bake_what = ""                   // what's baking (the game says: "the armies", "the town")
+var bake_total = 0                   // how many things this bake has to make (0: not counted), and how many it has
+var bake_count = 0
 var bake_said = 0.0
-
-// The backdrop over the window (a texture drawn into is upside down).
-def bake_draw_backdrop():
-    let under = bake_backdrop
-    if not under: return
-    let ws = float(gl.window_size())
-    let m = gl.new_mesh("PT", [float3_0, float3 { ws.x, 0.0, 0.0 }, float3 { ws.x, ws.y, 0.0 }, float3 { 0.0, ws.y, 0.0 }], []::float4, []::float3,
-                        [float2 { 0.0, 1.0 }, float2 { 1.0, 1.0 }, float2 { 1.0, 0.0 }, float2 { 0.0, 0.0 }], []::float2, [0, 2, 1, 0, 3, 2])
-    gl.set_mesh_texture(m, 0, 0, under)
-    gl.set_shader("textured")
-    gl.color(float4_1): gl.render_mesh(m)
-    gl.set_shader("color")
 
 def bake_breath():
     bake_done++
@@ -353,18 +354,15 @@ def bake_breath():
     gl.clear(float4 { 0.07, 0.06, 0.05, 1.0 })
     gl.set_shader("color")
     let ws = float(gl.window_size())
-    if bake_backdrop:   // the game's match loader under the progress, the line at its foot
-        bake_draw_backdrop()
-        gl.set_font_size(int(max(16.0, ws.y / 50.0)))
-        gl.color(float4 { 0.95, 0.9, 0.78, 1.0 }):
-            gl.translate(float2 { ws.x * 0.05, ws.y * 0.955 }):
-                gl.text("Making {bake_what}: {bake_done} done")
+    if bake_progress_on:   // the game's match loader, its bar this bake's share
+        let done = if bake_total > 0: float(bake_count) / float(bake_total) else: 0.0
+        bake_progress("Making {bake_what}", bake_progress_from + (bake_progress_to - bake_progress_from) * done)
         if not gl.frame(): bake_quit = true
         return
     gl.set_font_size(int(max(16.0, ws.y / 36.0)))
     gl.color(float4 { 0.92, 0.86, 0.7, 1.0 }):
         gl.translate(float2 { ws.x * 0.08, ws.y * 0.45 }):
-            gl.text("Baking {bake_what}: {bake_done} done")
+            gl.text(if bake_total > 0: "Making {bake_what}: {bake_count} of {bake_total}" else: "Making {bake_what}: {bake_done} done")
     gl.color(float4 { 0.6, 0.56, 0.48, 1.0 }):
         gl.translate(float2 { ws.x * 0.08, ws.y * 0.45 + ws.y / 22.0 }):
             gl.text("The first start bakes every picture; later starts take them from bake_cache. Close the window to stop.")
@@ -410,20 +408,41 @@ def bake_model_part(id:string, full:string, c:Colours) -> bool:
         bake_flat_shadow(full)
         return true
     bake_breath()
-    if bake_cache_dir == "": return bake_model_part_now(id, full, c)   // (checks bake afresh)
-    if load_cached(id, full): return true
-    cache_stem = cache_stem_of(id, full)
-    cache_lines = []
-    let ok = bake_model_part_now(id, full, c)
-    if ok: write_file(cache_stem + ".txt", concat_string(cache_lines, "\n") + "\n")
-    cache_stem = ""
-    return ok
+    let j = bake_job(id, full, c)
+    if not j: return bake_job_done
+    while bake_job_step(j): pass()
+    return true
 
 def has_mesh(n:MNode) -> bool: return n.mesh != nil or exists(n.kids) k: has_mesh(k)
 
-def bake_model_part_now(id:string, full:string, c:Colours) -> bool:
+// A part's bake as a job: its model built and framed once, then one facing a step, so play can bake a part a facing
+// a frame (game/bake_missing.lobster: the later ages' parts) without a stall. Its manifest goes to the cache when its
+// last facing is done.
+class BakeJob:
+    id:string
+    full:string
+    s:Spec
+    tris:[BakeTri]
+    ftris:[BakeTri]
+    hide:[BakeTri]
+    join:float3
+    join_r:float
+    pivot:float3
+    fit:float
+    frame_r:float
+    frame_c:float3
+    art_k:float
+    stem:string
+    lines:[string]
+    k:int                            // the next facing
+
+
+// The job for a part (nil: loaded from the cache, or nothing to bake: bake_job_done says which).
+def bake_job(id:string, full:string, c:Colours) -> BakeJob?:
+    bake_job_done = bake_cache_dir != "" and load_cached(id, full)
+    if bake_job_done: return nil
     let built = build_model(id, c)
-    if not built: return false
+    if not built: return nil
     let s = built
     var hide = []::BakeTri
     var model = s.node
@@ -440,7 +459,7 @@ def bake_model_part_now(id:string, full:string, c:Colours) -> bool:
         let body_id = after.substring(0, caret)
         let at = after.substring(caret + 1, after.length - caret - 1)
         let body = build_model(body_id, c)
-        if not body: return false
+        if not body: return nil
         let b = body
         hide = model_tris(b.node)
         wearer = b.node
@@ -461,7 +480,7 @@ def bake_model_part_now(id:string, full:string, c:Colours) -> bool:
         // body armour worn on its wearer: fitted to it (its own model for this body, or the generic one put on
         // at the torso, scaled and tilted to it); the body hides what it hides
         let body = build_model(after, c)
-        if not body: return false
+        if not body: return nil
         let b = body
         hide = model_tris(b.node)
         wearer = b.node
@@ -478,7 +497,7 @@ def bake_model_part_now(id:string, full:string, c:Colours) -> bool:
             wrap.rot = float3 { 0.0, 0.0, b.nums.get("torso_tilt", float3_0).x }
             model = wrap
         s.sockets = dictionary<string, float3>(3)
-    if not has_mesh(model): return false   // (a model with nothing in it, a harness off its wearer: nothing to bake)
+    if not has_mesh(model): return nil   // (a model with nothing in it, a harness off its wearer: nothing to bake)
     let seam_head = s.strs.get("seam_head")
     if seam_head and tilde < 0:
         // a body whose neck runs into its head: the head in place hides it, and they join without a line
@@ -518,32 +537,59 @@ def bake_model_part_now(id:string, full:string, c:Colours) -> bool:
         bhi = max(bhi, hi)
     let bpx = bake_art() * float(BAKE_SS)
     let br = if bhi.x >= blo.x: magnitude(bhi - blo) * 0.5 + 2.0 else: 2.0
-    bake_fit = ceiling(2.0 * br * bpx) / (2.0 * br * bpx)
-    bake_frame_r = br
-    bake_frame_c = (blo + bhi) * 0.5
-    for(BAKE_FACINGS) k:
-        let suffix = facing_suffix(k)
-        let sprite0, w0, h0, origin0 = bake_facing(tris, k, hide, join, join_r)
-        // the origin is the pivot (a cut part's hip or neck) on the sprite
-        let cx, cy, _view = bake_camera(k)
-        let o0 = origin0 + float2 { dot(pivot, cx), -dot(pivot, cy) } * bake_art() * bake_fit
-        let sprite, w, h, origin = crop_sprite(sprite0, w0, h0, o0)
-        keep_sprite(full + suffix, sprite, w, h, origin)
-        if starts_with(id, "leg."): keep_soles(full + suffix, sprite, w, h, origin)
-        let rig_id = id + suffix
-        let r = if s.sockets.get_keys().length: bake_rig(s, k) else: jobj()   // (a leg, worn armour: no rig but the tip)
-        if ftris.length:
-            let fs0, fw0, fh0, fo0 = bake_facing(ftris, k)
-            let fs, fw, fh, fo = crop_sprite(fs0, fw0, fh0, fo0)
-            keep_sprite(full + suffix + "#front", fs, fw, fh, fo)
-            set(r, "front", jbool(true))
-        set(r, "tip", jv2(sprite_tip(sprite, w, h, origin) / bake_art()))
-        set(rigs, rig_id, r)
-        cache_lines.push("rig {rig_id} " + stringify(r))
-        baked_here++
+    let fit = ceiling(2.0 * br * bpx) / (2.0 * br * bpx)
+    return BakeJob { id, full, s, tris, ftris, hide, join, join_r, pivot, fit, br, (blo + bhi) * 0.5, bake_art_k,
+                     if bake_cache_dir != "": cache_stem_of(id, full) else: "", [], 0 }
+
+// A part's job at its key's size (nil: cached, a shadow made at once, or no model).
+def bake_part_job(id:string, full:string, c:Colours) -> BakeJob?:
+    let was = bake_art_k
+    bake_art_k = float(key_size(full)) / 100.0
+    var j:BakeJob? = nil
+    if id == "unit_shadow": bake_flat_shadow(full)
+    else: j = bake_job(id, full, c)
+    bake_art_k = was
+    return j
+
+// One facing of a job (the baker's framing and the cache's manifest set from it, and put back after). True while
+// facings are left.
+def bake_job_step(j:BakeJob) -> bool:
+    let was_k = bake_art_k
+    bake_art_k = j.art_k
+    bake_fit = j.fit
+    bake_frame_r = j.frame_r
+    bake_frame_c = j.frame_c
+    cache_stem = j.stem
+    cache_lines = j.lines
+    let k = j.k
+    let s = j.s
+    let suffix = facing_suffix(k)
+    let sprite0, w0, h0, origin0 = bake_facing(j.tris, k, j.hide, j.join, j.join_r)
+    // the origin is the pivot (a cut part's hip or neck) on the sprite
+    let cx, cy, _view = bake_camera(k)
+    let o0 = origin0 + float2 { dot(j.pivot, cx), -dot(j.pivot, cy) } * bake_art() * bake_fit
+    let sprite, w, h, origin = crop_sprite(sprite0, w0, h0, o0)
+    keep_sprite(j.full + suffix, sprite, w, h, origin)
+    if starts_with(j.id, "leg."): keep_soles(j.full + suffix, sprite, w, h, origin)
+    let rig_id = j.id + suffix
+    let r = if s.sockets.get_keys().length: bake_rig(s, k) else: jobj()   // (a leg, worn armour: no rig but the tip)
+    if j.ftris.length:
+        let fs0, fw0, fh0, fo0 = bake_facing(j.ftris, k)
+        let fs, fw, fh, fo = crop_sprite(fs0, fw0, fh0, fo0)
+        keep_sprite(j.full + suffix + "#front", fs, fw, fh, fo)
+        set(r, "front", jbool(true))
+    set(r, "tip", jv2(sprite_tip(sprite, w, h, origin) / bake_art()))
+    set(rigs, rig_id, r)
+    cache_lines.push("rig {rig_id} " + stringify(r))
+    baked_here++
+    j.k++
+    if j.k == BAKE_FACINGS and j.stem != "": write_file(j.stem + ".txt", concat_string(j.lines, "\n") + "\n")
+    cache_stem = ""
+    cache_lines = []
     bake_fit = 1.0
     bake_frame_r = 0.0
-    return true
+    bake_art_k = was_k
+    return j.k < BAKE_FACINGS
 
 // A model's meshes' box in its own frame (its own transform left out, as part_baker.gd _aabb).
 def local_box(n:MNode) -> float3, float3:

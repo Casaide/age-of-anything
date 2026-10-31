@@ -22,29 +22,52 @@ class Look:
     ruins:[string] = []       // broken up (game/ruin.lobster): battered, breaking, collapsed, the ruin it leaves
 
 var sheet_size = 4096
-var sheet_tex = []::resource<texture>
-var sheet_dims = []::float2        // each sheet's size in px (the pack's are all sheet_size; a part baked in the game is its own)
-var frames = []::Frame
-var frame_at = dictionary<string, int>(32768)
-var anims = dictionary<string, int>(1024)     // "<type>.<state>" -> frames
-var looks = dictionary<string, Look>(512)
+let sheet_tex = []::resource<texture>
+let sheet_dims = []::float2        // each sheet's size in px (the pack's are all sheet_size; a part baked in the game is its own)
+let sheet_file = []::string        // a sheet not loaded yet: its PNG, loaded when it's first drawn ("": loaded)
+let sheet_formats = []::int        // and the texture formats to load it with
+let sheet_none = []::resource<texture>   // (the one stand-in texture for sheets not loaded yet)
+
+// A sheet: its texture now, or its PNG (shipped or cached art) to load when it's first drawn.
+def add_sheet(tex:resource<texture>, dims:float2):
+    sheet_tex.push(tex)
+    sheet_dims.push(dims)
+    sheet_file.push("")
+    sheet_formats.push(0)
+
+def add_sheet_later(file:string, dims:float2, formats:int):
+    if not sheet_none.length: sheet_none.push(gl.create_texture([[float4_0]], texture_format_nomipmap))
+    sheet_tex.push(sheet_none[0])
+    sheet_dims.push(dims)
+    sheet_file.push(file)
+    sheet_formats.push(formats)
+
+def sheet_texture(i:int) -> resource<texture>:
+    if sheet_file[i] != "":
+        sheet_tex[i] = assert gl.load_texture(sheet_file[i], sheet_formats[i])
+        sheet_file[i] = ""
+    return sheet_tex[i]
+let frames = []::Frame
+let frame_at = dictionary<string, int>(32768)
+let anims = dictionary<string, int>(1024)     // "<type>.<state>" -> frames
+let looks = dictionary<string, Look>(512)
 var arch_of = []::string                      // per player
-var doodads = dictionary<string, int>(64)
+let doodads = dictionary<string, int>(64)
 var pack_rules = "default"                   // the host rules the pack's races were made with
 var pack_mods = []::string                   // the mods they were made with
-var prop_of = dictionary<string, string>(64)  // terrain id -> prop kind
-var ground_a = []::float4                     // per terrain: its two colours
-var ground_b = []::float4
+let prop_of = dictionary<string, string>(64)  // terrain id -> prop kind
+let ground_a = []::float4                     // per terrain: its two colours
+let ground_b = []::float4
 var species = []::string                      // per cell: a tree's species, or "-"
-var team_rgb = []::float4                     // per player
-var unit_names = dictionary<int, string>(128)
-var unit_blow = dictionary<int, string>(128)  // per unit type: its melee blow's sound, its shot's
-var unit_shot = dictionary<int, string>(128)
-var unit_shotk = dictionary<int, string>(128)   // the shot each unit type looses (combat_fx.shot_kind)
-var building_names = dictionary<int, string>(64)
-var research_names = dictionary<int, string>(128)
+let team_rgb = []::float4                     // per player
+let unit_names = dictionary<int, string>(128)
+let unit_blow = dictionary<int, string>(128)  // per unit type: its melee blow's sound, its shot's
+let unit_shot = dictionary<int, string>(128)
+let unit_shotk = dictionary<int, string>(128)   // the shot each unit type looses (combat_fx.shot_kind)
+let building_names = dictionary<int, string>(64)
+let research_names = dictionary<int, string>(128)
 var pack_map = ""                             // the match the art was baked for: its map and races' prompts
-var pack_prompts = []::string
+let pack_prompts = []::string
 var pack_library = false                      // the pack is the part library: every race's units, any race
 let pack_formats = texture_format_nearest_mag | texture_format_nearest_min | texture_format_nomipmap | texture_format_clamp
 
@@ -55,7 +78,7 @@ class BFx:
     has_smoke:bool
     lights:[float2]               // the lantern first, if it has one
 
-var bfx = dictionary<string, BFx>(256)
+let bfx = dictionary<string, BFx>(256)
 
 def load_bfx(dir:string):
     let text = read_file(dir + "/fx.txt")
@@ -86,8 +109,7 @@ def load_pack(dir:string):
                 case "sheets":
                     sheet_size = num(2)
                     for(num(1)) s:
-                        sheet_tex.push(assert gl.load_texture(dir + "/sheet{s}.png", pack_formats))
-                        sheet_dims.push(float2_1 * float(sheet_size))
+                        add_sheet(assert gl.load_texture(dir + "/sheet{s}.png", pack_formats), float2_1 * float(sheet_size))
                 case "frame":
                     frame_at.set(t[1], frames.length)
                     frames.push(Frame { num(2), num(3), num(4), num(5), num(6), num(7), num(8), 1.0 })
@@ -187,7 +209,7 @@ var b_sheet = -1
 def flush_sprites():
     if b_pos.length:
         let m = gl.new_mesh("PCT", b_pos, b_col, []::float3, b_tc, []::float2, b_idx)
-        gl.set_mesh_texture(m, 0, 0, sheet_tex[b_sheet])
+        gl.set_mesh_texture(m, 0, 0, sheet_texture(b_sheet))
         gl.set_shader("sprite")
         gl.render_mesh(m)
     b_pos = []::float3

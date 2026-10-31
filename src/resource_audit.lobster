@@ -183,7 +183,7 @@ def play(races:[JV], full:[bool], peace:bool, title:string):
             looks++
             let left = left_now()
             for(players) p:
-                let n, idle, far = workers_of(p)
+                let _n, idle, far = workers_of(p)
                 idle_sum[p] += idle
                 far_sum[p] += far
                 for(num_resources) r:

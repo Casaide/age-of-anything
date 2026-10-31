@@ -7,7 +7,7 @@
 // key), as in GDScript. The models are the bake's (Godot's, until step 6c).
 
 let MOD_GAME_VERSION = "0.21"
-var mod_roots = ["../mods", "../mods_private"]   // (a later folder's copy of a mod wins)
+let mod_roots = ["../mods", "../mods_private"]   // (a later folder's copy of a mod wins)
 let MOD_DATA_FILES = ["parts.json", "creatures.json", "families.json", "palettes.json", "lexicon.json", "shots.json"]
 let MOD_DATA_DIRS = ["rules", "maps"]
 let MOD_BASE_ERAS = ["bronze", "medieval", "gunpowder"]
@@ -40,9 +40,9 @@ def mod_files(dir:string, rel:string) -> [string]:
         for(mod_files(dir, if rel == "": d else: rel + "/" + d)) f: out.push(f)
     return out
 
-def mods_discover() -> dictionary<string, ModRec>:
+def mods_discover(roots:[string]) -> dictionary<string, ModRec>:
     let out = dictionary<string, ModRec>(8)
-    for(mod_roots) root:
+    for(roots) root:
         let names, sizes = scan_folder(root, true)
         if names and sizes:
             let dirs = []::string
@@ -192,17 +192,18 @@ def mod_apply(rec:ModRec):
 
 // Use exactly these mods (after lib_load): checked against the data before them, in load order.
 // Returns the ids in use; mods_refused says why the others weren't.
-def mods_use(ids:[string]) -> [string]:
+def mods_use(ids:[string], roots = mod_roots) -> [string]:
     mods_active = []
+    lib_mods = []
     lib_mod_data = []
     lib_mod_dirs = []
     mods_refused = dictionary<string, string>(8)
     mod_shots = jobj()
-    let found = mods_discover()
+    let found = mods_discover(roots)
     let picked = []::ModRec
     for(ids) id:
         let rec = found.get(id)
-        if not rec: mods_refused.set(id, "not found in {concat_string(mod_roots, ", ")}")
+        if not rec: mods_refused.set(id, "not found in {concat_string(roots, ", ")}")
         else:
             let why = mod_check_manifest(id, rec.manifest)
             if why != "": mods_refused.set(id, why)

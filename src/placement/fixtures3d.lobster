@@ -29,15 +29,15 @@ def old_cap() -> Spec:
 // Puts a fixture's old configuration back (on) or today's (off).
 def fixture_set(f:Fixture, r:JV, on:bool):
     switch f.which:
-        case 0: mirror_legs = not on
+        case 0: old_bugs.legs_unmirrored = on
         case 1:
-            rat_hunch = if on: -15.0 else: RAT_LEAN
-            rat_head_follows = not on
+            old_bugs.rat_leans_back = on
+            old_bugs.rat_head_stays = on
         case 2:
-            rat_hunch = if on: -15.0 else: RAT_LEAN
-            rat_torso_x = if on: 1.4 else: 0.8
-        case 3: rig_old_bob = on
-        case 4: rig_old_seat = on
+            old_bugs.rat_leans_back = on
+            old_bugs.rat_armour_off = on
+        case 3: old_bugs.bob_before_foot = on
+        case 4: old_bugs.seat_dropped = on
         case 5:
             let b = part("body.beetle")
             let cut = filter(gstrs(b, "cut")) c: c != "legs"

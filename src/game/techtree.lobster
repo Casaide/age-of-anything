@@ -145,25 +145,24 @@ def build_tree_of(race:JV, ident:JV, rules:JV) -> TTree:
             let rid = gstr(r, "id", "")
             if not has_s(done, rid) and not has_s(here_ids, gstr(r, "after", "")):
                 let group = []::TNode
-                var cur:JV? = r
-                while cur:
-                    let c = cur
-                    if c:
-                        let cid = gstr(c, "id", "")
-                        done.push(cid)
-                        let only = if has(c, "only"): gstrs(c, "only") else: owners.get(cid) or []::string
-                        var lacks = only.length > 0 and not full and not (has_s(only, rstr(race, "creature")) or has_s(only, rstr(race, "family")))
-                        lacks = lacks or race_lacks(ident, cid)
-                        let n = TNode { "r:" + cid, "research", gstr(c, "name", cid), gstr(c, "desc", ""), gint(c, "age", 1), gstr(c, "status", "built") == "planned", col }
-                        n.lacks = lacks
-                        n.race_only = only.length > 0 and not lacks
-                        n.cost = cost_text(gobj(c, "cost"))
-                        n.effect = if has(c, "effect"): gstr(c, "effect", "") else: effect_text(glist(c, "effects"))
-                        group.push(n)
-                        var nxt:JV? = nil
-                        for(here) r2:
-                            if gstr(r2, "after", "") == cid: nxt = r2
-                        cur = nxt
+                var c = r
+                while true:
+                    let cid = gstr(c, "id", "")
+                    done.push(cid)
+                    let only = if has(c, "only"): gstrs(c, "only") else: owners.get(cid) or []::string
+                    var lacks = only.length > 0 and not full and not (has_s(only, rstr(race, "creature")) or has_s(only, rstr(race, "family")))
+                    lacks = lacks or race_lacks(ident, cid)
+                    let n = TNode { "r:" + cid, "research", gstr(c, "name", cid), gstr(c, "desc", ""), gint(c, "age", 1), gstr(c, "status", "built") == "planned", col }
+                    n.lacks = lacks
+                    n.race_only = only.length > 0 and not lacks
+                    n.cost = cost_text(gobj(c, "cost"))
+                    n.effect = if has(c, "effect"): gstr(c, "effect", "") else: effect_text(glist(c, "effects"))
+                    group.push(n)
+                    var nxt:JV? = nil
+                    for(here) r2:
+                        if gstr(r2, "after", "") == cid: nxt = r2
+                    if not nxt: break
+                    c = nxt
                 lanes_g.push(group)
         // Pack: each group in the first lane free at all its ages (lines and tracks first, then singles).
         let ordered = append(filter(lanes_g) g: g.length > 1 or g[0].kind == "unit", filter(lanes_g) g: not (g.length > 1 or g[0].kind == "unit"))

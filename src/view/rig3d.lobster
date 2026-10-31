@@ -56,8 +56,6 @@ let rig_specs = dictionary<string, Spec>(511)
 let rig_keys = dictionary<string, string>(511)
 let rig_none = dictionary<string, int>(127)
 let rig_overrides = dictionary<string, Spec>(15)   // fixtures: a part id's old model, used in its place
-var rig_old_seat = false                     // fixtures: riders dropped a fixed amount below the seat
-var rig_old_bob = false                      // fixtures: the walk's bob before the planted foot
 
 let RIG_NONE = float3 { -1000000000.0, 0.0, 0.0 }   // (a socket or number a spec hasn't: a dictionary can't answer nil for a float3)
 def shas(d:dictionary<string, float3>, k:string) -> bool: return d.get(k, RIG_NONE).x != RIG_NONE.x
@@ -142,7 +140,7 @@ def rig_unit(r:JV, pose:RigPose) -> Rigged:
         s *= float(gint(gobj(mc, "rider_scale"), rstr(r, "creature"), 100)) / 100.0
         // (UnitView.seat_offset: the rider's hips on the seat; a fused rider grows out of its mount)
         var at_ = if fused or not rs: seat else: seat - spec_hips(rs) * s
-        if rig_old_seat and not fused:
+        if old_bugs.seat_dropped and not fused:
             let drop = if clinging: float2 { -1.0, 9.0 } else: float2 { 0.0, 6.0 }
             at_ = seat + float3 { drop.x, -drop.y / RIG_SCREEN_Y, 0.0 }
         let rrig = rig_side(out, "rider", rstr(r, "body"), rstr(r, "head"), rig_hold(r, pose), colours,
@@ -164,7 +162,7 @@ def rig_unit(r:JV, pose:RigPose) -> Rigged:
         for(rp.keys) slot, n: rig_gear(out, rg, slot, as_str(rp.a[n]), colours, pose)
         out.walker = "main"
     let og = out.gait
-    if walk >= 0.0 and not rig_old_bob and not (og and og.hops) and not out.flying:
+    if walk >= 0.0 and not old_bugs.bob_before_foot and not (og and og.hops) and not out.flying:
         // (UnitView keeps the lowest foot where it stands: the body rides on its planted foot)
         let sp = RigPose {}
         sp.hold = pose.hold
@@ -197,7 +195,7 @@ def rig_gait(body_id:string, flies:bool) -> Gait:
 
 // How high the body rides at this walk phase (the old bob, before the planted foot: fixtures only).
 def rig_bob(g:Gait, walk:float) -> float:
-    if walk < 0.0 or g.hops or not rig_old_bob: return 0.0
+    if walk < 0.0 or g.hops or not old_bugs.bob_before_foot: return 0.0
     return abs(sin(rad(walk))) * max(g.bob, gait_for(2, false).bob) / RIG_SCREEN_Y   // (the bob a stiff-legged walker had: a keyed walk's own is small)
 
 // A leg's turn at a walk phase (UnitView: sin(phase + leg phase) * swing, screen clockwise; phases in radians), as a

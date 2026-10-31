@@ -9,11 +9,11 @@
 // Sizes are Godot's (UI px) times hud_s(), its HUD scale (ui_scale.gd), the same for the command panel and the minimap.
 // Imported by game.lobster after the panel (the tech tree page, go_to, team_col).
 
-// The HUD's scale (UiScale.factor at the default UI size): one UI px a pixel, smaller only where the HUD wouldn't fit
-// the window (HUD_NEEDS: 1480 x 760). (A screen's density times the size setting stays under 1 at the default 40%.)
+// The HUD's scale: the player's size (hud_size, game/audio.lobster: Ctrl/Cmd + and - in a match), smaller only where
+// the HUD wouldn't fit the window (HUD_NEEDS: 1480 x 760).
 def hud_s() -> float:
     let ws = float(gl.window_size())
-    return min(1.0, min(ws.x / 1480.0, ws.y / 760.0))
+    return min(float(hud_size) / 100.0, min(ws.x / 1480.0, ws.y / 760.0))   // (the player's size, as far as the window fits it)
 let TB_FULL = float4 { 1.0, 0.54, 0.44, 1.0 }       // #ff8a70: the pop at its cap
 let TB_WORK = float4 { 0.85, 0.78, 0.63, 1.0 }      // #d8c8a0: the worker counts
 let TB_IDLE = float4 { 1.0, 0.69, 0.44, 1.0 }       // #ffb070: idle workers waiting
@@ -22,7 +22,7 @@ let TB_DISPLAY = "../assets/fonts/display.ttf"   // the display font (headings),
 let TB_BOLD = "data/fonts/Droid_Sans/DroidSans-Bold.ttf"
 let TB_TEXT = "data/fonts/Droid_Sans/DroidSans.ttf" // (game.lobster's font, put back after)
 
-var tb_icons = dictionary<string, resource<texture>>(64)
+let tb_icons = dictionary<string, resource<texture>>(64)
 var tb_rect = float4_0                               // where the bar is (x, y, w, h): clicks there aren't the world's
 var tb_tip = ""
 
@@ -338,7 +338,7 @@ def draw_wonder_clock(top:float):
     if wonder_hold <= 0 or winner >= 0: return
     let s = hud_s()
     let fs = int(24.0 * s)
-    for(wonder_ids) id, k:
+    for(wonder_ids.length) k:
         let left = (max(0, wonder_hold - (tick - wonder_since[k])) + 19) / 20
         let owner = wonder_owners[k]
         let name = rstr(su_races[owner], "name")
