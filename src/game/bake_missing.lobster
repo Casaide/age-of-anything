@@ -48,6 +48,7 @@ def bake_missing_parts() -> int:
     baked_here = 0
     let todo = []::Wanted
     let later = []::[Wanted]   // by age
+    let holds = []::Wanted     // the workers' work poses (raise, thrust, reach): baked first in play
     let seen = dictionary<string, bool>(1024)
     for(t_slot.length) k:
         let line = su_type_line[k]
@@ -69,6 +70,16 @@ def bake_missing_parts() -> int:
                     if cols and not bakes.get(key) and not seen.get(key, false):
                         seen.set(key, true)
                         (if ahead > 0: later[ahead - 1] else: todo).push(Wanted { n.part_id, key, cols })
+            if t_worker[k] != 0 and v.body_nodes.length:
+                let b0 = v.body_nodes[0]
+                let cols = b0.cols
+                if cols:
+                    for(WORK_HOLDS) h:
+                        let id = rstr(v.recipe, "body") + "@" + h
+                        let key = bake_key(id, b0.pshapes, cols, b0.size)
+                        if not bakes.get(key + facing_suffix(1)) and not seen.get(key, false):
+                            seen.set(key, true)
+                            holds.push(Wanted { id, key, cols })
             bake_corpse_frames(v.recipe)   // (a body that lies down in 3D when it dies: its fall's frames)
             remove_child(view_stage, v.node)
             free_tree(v.node)
@@ -93,6 +104,10 @@ def bake_missing_parts() -> int:
             if not bake_wanted_set.get(w.key, false):
                 bake_wanted_set.set(w.key, true)
                 bake_wanted.push(w)
+    for(holds) w:
+        if not bake_wanted_set.get(w.key, false):
+            bake_wanted_set.set(w.key, true)
+            bake_wanted.push(w)
     return baked_here
 
 // The wanted parts (drawn before they were baked, view/art.lobster; the later ages'), baked a facing at a time for up

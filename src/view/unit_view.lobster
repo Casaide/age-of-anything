@@ -883,7 +883,13 @@ def set_hold(v:UV, hold:string) -> void:
     if hold != "low":
         if not rg.keys.length or not v.body_nodes.length: return
         let b0 = v.body_nodes[0]
-        if not bakes.get(bake_key(id, b0.pshapes, b0.cols, b0.size) + facing_suffix(v.facing_k)): return
+        let key = bake_key(id, b0.pshapes, b0.cols, b0.size)
+        if not bakes.get(key + facing_suffix(v.facing_k)):
+            let cols = b0.cols
+            if cols and not bake_wanted_set.get(key, false):   // (asked for here: nothing else draws a pose before it's baked)
+                bake_wanted_set.set(key, true)
+                bake_wanted.push(Wanted { id, key, cols })
+            return
     for(v.body_nodes) ps: ps.part_id = id
     v.work_hold = hold
     let sh = v.shield
