@@ -171,3 +171,4 @@ One line per moment worth remembering. Newest at the bottom.
 - **2026-10-29 (evening):** Match starts bake only the starting age (D-186) behind one loader; hills under the fog; walls dragged in lines again; touch places with a tap; the Android fixes offered to Lobster as one PR.
 - **2026-10-30:** The game's icon is the parts kit (D-187): on Android, the Mac's Dock (`gl.window_icon` in the Lobster fork) and the Deck; the boot screen shows it in gold on the wood.
 - **2026-10-31:** The walk no longer skips (each foot on its own line), the chop quicker with the axe in the hand, the match start no longer drawn at a bake's scale
+- **2026-10-31 (night):** A performance check in the real window (D-188): it found the HUD making 1,500 GPU buffers a frame; `gl.draw_mesh` draws from pooled buffers, and a frame takes 3.3 ms of work instead of 13.7.

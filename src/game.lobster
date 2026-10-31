@@ -76,6 +76,7 @@ import .game.paths
 import .game.fx
 import .game.ui
 import .game.levels
+import .game.perf
 
 let args = command_line_arguments()
 // Options after the two paths: watch (the bot plays you too), speed:<x>, shot:<png> with at:<seconds>
@@ -123,6 +124,7 @@ for(args) a, k:
         let key, val = split_string(a, ":")
         if key == "shot": shot = val
         if key == "at": shot_at = string_to_float(val)
+        if key == "perf": perf_for = string_to_float(val)   // (game/perf.lobster: the drawing's cost in the window)
         if key == "speed": start_speed = string_to_float(val)
         if a == "selftest": selftest = true
         if a == "follow": follow = true
@@ -162,7 +164,7 @@ for(args) a, k:
             look_y = string_to_int(ly)
 
 // Tests and captures are silent (Dominic: no sound from testing); `mute` silences a game too.
-if has_s(args, "mute") or shot != "" or selftest or padtest or has_s(args, "labtest") or reload_at >= 0.0: sound_on = false
+if has_s(args, "mute") or shot != "" or selftest or padtest or has_s(args, "labtest") or reload_at >= 0.0 or perf_for > 0.0: sound_on = false
 
 var ME = 0                      // the side you command (1 for the one who joins a network match)
 var in_net_match = false
@@ -2360,6 +2362,9 @@ def play_match():
     told_end = false
     note("loop")
     while gl.frame() and not quit_game and not bake_quit:
+        if perf_for > 0.0:   // (the Town Center selected: its panel and queue drawn, the HUD full)
+            perf_begin()
+            if tc0 >= 0 and tc0 < b_id.length: sel_building = b_id[tc0]
         if gl.button("escape") == 1 and placing < 0 and not build_menu and not typing_race and not tree_open and not pad_wheel.length and not arming_attack and not arming_ability: menu_open = not menu_open
         if gl.button("controller_start") == 1 and not typing_race: menu_open = not menu_open
         if has_s(args, "menu") and frame_no == 2: menu_open = true   // (captures)
@@ -2514,6 +2519,9 @@ def play_match():
         if shot != "" and clock_s >= shot_at and not selftest and not padtest and not has_s(args, "tillend") and (not tree_arg or frame_no > 4) and (not has_s(args, "menu") or frame_no > 4):
             gl.screenshot(shot)
             print "shot {shot} at {clock_s} s, tick {tick}; sim {step_time * 1000.0 / max(1, steps)} ms a tick; cam {cam} zoom {zoom} ws {gl.window_size()} fb {gl.framebuffer_size()}"
+            quit_app = true
+            return
+        if perf_for > 0.0 and perf_end(clock_s):
             quit_app = true
             return
 

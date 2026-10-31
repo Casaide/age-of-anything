@@ -1331,3 +1331,12 @@ new `gl.window_icon` in Dominic's Lobster fork (SDL_SetWindowIcon), the Deck bui
 launcher. The boot screen (before the title) was only text; of three concepts (`docs/concepts/boot/`: the yellow tile
 on the wood, a yellow card, the ink as gold inlay on the wood) Dominic picked C, the gold inlay, of a piece with the
 title's gold crest, with a bar over the start's steps. Claude, for Dominic.
+
+**D-188, 2026-10-31: The drawing's cost is checked in the real window; frames make no GPU buffers.** The laptop ran
+hot and no test saw it: every speed check ran headless. `perf:<seconds>` (`src/game/perf.lobster`) plays a watched
+match in the window with vsync on and the frame cap, the Town Center selected, and fails when a frame's work (outside
+the swap's wait and the cap's sleep) is over 6 ms median or 9 ms at the 95th percentile, when it draws more than 66
+frames a second, or when a frame creates GPU buffers (`gl.buffers_made`, new in Lobster). Measured on the MacBook:
+3.3 ms, 4.6 ms, 60 a second, none. It runs in the full batch, alone. Shapes drawn every frame use `gl.draw_mesh`
+(new in Lobster: a mesh's arguments drawn from pooled buffers), never `gl.new_mesh` + `gl.render_mesh`: the UI made
+about 1,500 buffers a frame that way, 13.7 ms of a frame's work. Claude, for Dominic.

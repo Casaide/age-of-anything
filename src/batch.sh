@@ -42,14 +42,23 @@ else
 	add golden ./golden.sh
 	add saves "$L" save_check.lobster
 	add network ./net_check.sh 2000
+	# The drawing's cost in the real window, vsync on (game/perf.lobster): wall time, so it runs alone after the rest.
+	add perf timeout 240 ../play.sh lobby "\"races:sewer rats|romans\"" watch mute perf:20
 fi
 for i in 0 1 2 3; do add placement3d.$i "$L" placement_check.lobster -- 3d shard:$i/4; done
 
 # Run them, at most $jobs at once (xargs keeps the pool full); each line of jobs.txt: name|command. The slow suites go
 # first so the quick ones fill in round them.
 t0=$(date +%s)
-{ grep '^placement\|^test_ai\.\|^test_2v2\|^golden' "$list"; grep -v '^placement\|^test_ai\.\|^test_2v2\|^golden' "$list"; } | tr '\n' '\0' |
+{ grep '^placement\|^test_ai\.\|^test_2v2\|^golden' "$list"; grep -v '^placement\|^test_ai\.\|^test_2v2\|^golden\|^perf' "$list"; } | tr '\n' '\0' |
 	xargs -0 -P "$jobs" -n 1 sh -c 'line="$0"; name="${line%%|*}"; cmd="${line#*|}"; start=$(date +%s); sh -c "$cmd" > "'"$logs"'/$name.log" 2>&1; echo "$name $? $(( $(date +%s) - start ))" > "'"$logs"'/$name.result"'
+
+# The ones that measure wall time, alone once the pool is done.
+grep '^perf' "$list" | while IFS='|' read -r name cmd; do
+	start=$(date +%s)
+	sh -c "$cmd" > "$logs/$name.log" 2>&1
+	echo "$name $? $(( $(date +%s) - start ))" > "$logs/$name.result"
+done
 
 # The table: each suite (its shards together), its time, and the last line it printed.
 fail=0
