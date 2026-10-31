@@ -1140,13 +1140,18 @@ def building_at(mm:float2) -> int:
     let bid = occupied[cell_of(x, y)]
     return if bid != 0: b_index_of(bid) else: -1
 
+// Select what's under the mouse (shift: add a unit to the selection, or take it out).
 def click_select(m:float2):
+    let add = shift_held() and sel_building == 0
     sel_building = 0
     let i = unit_at_screen(m, true)
     if i >= 0 and u_owner[i] == ME:
-        selected = [u_id[i]]
+        if not add: selected = [ u_id[i] ]
+        elif contains(selected, u_id[i]): selected = filter(selected) id: id != u_id[i]
+        else: selected.push(u_id[i])
         say(ME, "select")
         return
+    if add: return
     selected = []::int
     let b = building_at(mouse_milli())
     if b >= 0 and b_owner[b] == ME: sel_building = b_id[b]
@@ -1154,12 +1159,12 @@ def click_select(m:float2):
 def box_select(a:float2, b:float2):
     let lo = float2 { min(a.x, b.x), min(a.y, b.y) }
     let hi = float2 { max(a.x, b.x), max(a.y, b.y) }
-    selected = []::int
+    if not shift_held() or sel_building != 0: selected = []::int   // (shift adds to the selection)
     sel_building = 0
     for(u_x.length) i:
         if u_owner[i] == ME:
             let s = to_screen(iso(float(u_x[i]), float(u_y[i])))
-            if s.x >= lo.x and s.x <= hi.x and s.y >= lo.y and s.y <= hi.y: selected.push(u_id[i])
+            if s.x >= lo.x and s.x <= hi.x and s.y >= lo.y and s.y <= hi.y and not contains(selected, u_id[i]): selected.push(u_id[i])
     if selected.length: say(ME, "select")
 
 var arming_attack = false       // the Attack-move button (or R): the next left click is where
@@ -1309,11 +1314,15 @@ def place_wall(a:int2, b:int2, more:bool):
     wall_from = int2 { -1, -1 }
     if not more: placing = -1
 
+def shift_held(): return gl.button("left shift") >= 1 or gl.button("right shift") >= 1
+
+// Train the building's nth unit (shift: five, as far as the money and the queue go).
 def train_slot(n:int):
     let b = b_index_of(sel_building)
     if b >= 0 and b_owner[b] == ME:
         let tr = trainable(b)
-        if n < tr.length: issue_cmd(ME, CMD_TRAIN, []::int, sel_building, tr[n], 1, 0)
+        if n < tr.length:
+            for(if shift_held(): 5 else: 1): issue_cmd(ME, CMD_TRAIN, []::int, sel_building, tr[n], 1, 0)
 
 def store_group(n:int): groups.set(n, selected_units())
 
