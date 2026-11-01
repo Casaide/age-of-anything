@@ -1,0 +1,14 @@
+{
+ "name": "voxel_v2_composed",
+ "title": "Voxels round 2 (2026-11-01): the composed units, the bar to beat",
+ "zooms": [1, 3],
+ "cell": [58, 56],
+ "rows": [
+  {"label": "rat worker", "unit": {"prompt": "sewer rats", "slot": "worker", "age": 2}},
+  {"label": "rat spear", "unit": {"prompt": "sewer rats", "slot": "spear", "age": 2}},
+  {"label": "rat on a cat", "h": 1.3, "unit": {"prompt": "sewer rats", "slot": "scout", "age": 2}},
+  {"label": "frog spear", "unit": {"prompt": "swamp frogs", "slot": "spear", "age": 2}},
+  {"label": "roman legionary", "unit": {"prompt": "romans", "slot": "infantry", "age": 2}}
+ ],
+ "sheets": [{"name": "facings", "title": "the composed units, 8 facings", "columns": "facings"}]
+}

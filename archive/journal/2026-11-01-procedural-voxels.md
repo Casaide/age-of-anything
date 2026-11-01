@@ -76,3 +76,40 @@ and a cat to ride (black, white chest and paws, yellow eyes, a tail curled up) i
 The rats read better up close (ears, snout, eye; picture 17), but in the match (15, 16) the composed rats still have
 far more character than the voxel ones, the cat came out with odd blue and green pixels, and the bake took 287 s for
 36 types (38 s at one voxel a pixel).
+
+## Round 2: slimmer, with signatures (a fresh start on the builder)
+Dominic on round 1: "Focusing on fidelity and keeping the key parts of each creature easy to see. Feel like we're going
+too big with the voxels. Rat just becomes a big bulky block with massive muscles." The composed rats were the bar.
+
+What made the bulk: every part melted into its neighbours over 2.2 body units (fat joints, "muscles"), a whole tunic in
+team colour over everything (a red block), and one generic biped bent into every creature. `src/view/voxel.lobster` is
+rewritten (Claude): each creature has its own builder with its signature parts made big, and the melt is 0.8.
+- Rats: small and hunched, pear-shaped (narrow shoulders, round belly, big haunches), thin shins on pink feet, a long
+  pointed snout with a pink nose, big round ears pink inside, a beady eye, a long bare tail trailing in an S. No tunic:
+  the team is a scarf (and the shield face); a short vest in team colour is drawn as the other option (picture 22).
+- Frogs: squat and wide, knees folded up past the body, long webbed toes, a wide flat head with a mouth seam, big gold
+  eyes bulging off the top.
+- The cat: 1.45x bigger than the rat-sized rider, its head held low and well out in front, so the face shows facing down.
+- Fur flecked by a hash of each voxel (it turns with the unit, like a texture); a softer line where a limb crosses the body.
+- Arms by two-bone reach to where the kit puts the hands, so a spear, shield, bow or axe sits in the hand in any pose.
+
+Speed: round 1 drew each facing by walking a ray per pixel (0.34 s of the 0.42 s a pose). Now each part is listed in
+the 4-voxel blocks it touches (a voxel measures only its neighbours), normals come from the stored distances, the
+surface is listed once, and each facing splats the surface voxels with a depth test: 21 poses, 56 cells in 0.5 s. In
+the match, cells are cropped to what's drawn and packed into shared atlases, and types that look alike (most age
+upgrades) bake once: 36 types (24 looks) in 8 s, against 287 s at this resolution in round 1. Still too slow for a
+match start; next.
+
+Bugs: round 1's stray blue and green pixels on the cat were colours shaded past 1.0, which wrap round when the game
+makes its texture (a bright pink came out cyan); the sheet tool clamped, so they only showed in game. Clamped now. The
+facings were a step off the composed ones (the composed f1 faces the camera); the game now maps them by (d + 3) % 8.
+
+Shadows (Dominic: "those rats are looking quite good, if we have some shadows on the model, and on the ground... we
+might be close"). Claude's answer: bake them, they cost nothing at run time. On the body, each surface voxel looks a
+few steps towards the light through the grid (an arm or the rider shades what's behind it), plus occlusion from 14
+neighbour taps (creases darker). On the ground, the silhouette projected along the world's sun (upper left, as the
+props' and buildings'), baked as its own frame and drawn in the ground layer under every unit, so it matches the town
+and never darkens another unit (picture 20 off and on, 23 in the match). The bake went to 11.7 s with them.
+
+Pictures: 18 (composed against voxel, game size), 19 (close), 20 (shadows off and on), 21 (walk, thrust, chop),
+22 (the team as a vest), 23 (in the match, with shadows).
