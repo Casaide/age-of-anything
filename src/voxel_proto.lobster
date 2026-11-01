@@ -9,11 +9,11 @@ let CELL = int2 { 48, 66 }   // a sprite cell at game scale
 let BLEND = 2.2              // how far shapes melt into each other, voxels
 
 enum mat_kind:
-    mat_skin, mat_tunic, mat_trousers, mat_leather, mat_hair, mat_wood, mat_metal, mat_coat, mat_mane
+    mat_skin, mat_tunic, mat_trousers, mat_leather, mat_hair, mat_wood, mat_metal, mat_coat, mat_mane, mat_team
 
 let MAT_COLS = [
     float3 { 0.86, 0.66, 0.50 },   // skin
-    float3 { 0.78, 0.16, 0.13 },   // tunic (team)
+    float3 { 0.60, 0.55, 0.42 },   // tunic (undyed)
     float3 { 0.36, 0.30, 0.24 },   // trousers
     float3 { 0.45, 0.30, 0.17 },   // leather
     float3 { 0.42, 0.25, 0.12 },   // hair
@@ -21,7 +21,15 @@ let MAT_COLS = [
     float3 { 0.70, 0.72, 0.76 },   // metal
     float3 { 0.50, 0.32, 0.19 },   // a horse's coat
     float3 { 0.20, 0.14, 0.10 },   // mane and tail
+    float3 { 0.80, 0.16, 0.13 },   // team colour
 ]
+
+enum team_look:
+    team_tunic, team_trim, team_sash
+
+var team_style = team_trim
+
+def cloth() -> int: return if team_style == team_tunic: mat_team else: mat_tunic
 
 class prim:
     a:float3
@@ -57,7 +65,7 @@ def leg(out:[prim], hip:float3, swing:float, bend:float, thigh:float, shin:float
 def arm(out:[prim], shoulder:float3, side:float, swing:float, bend:float, r:float) -> float3:
     let elbow = shoulder + down(swing) * 7.5 + float3 { side * 0.6, 0.0, 0.0 }
     let wrist = elbow + down(swing + bend) * 7.0
-    out.push(prim { shoulder, elbow, r, r * 0.85, mat_tunic, false })
+    out.push(prim { shoulder, elbow, r, r * 0.85, cloth(), false })
     out.push(prim { elbow, wrist, r * 0.85, r * 0.7, mat_skin, false })
     out.push(prim { wrist, wrist + down(swing + bend) * 1.2, 1.3, 1.1, mat_skin, false })
     return wrist + down(swing + bend) * 0.8
@@ -65,7 +73,11 @@ def arm(out:[prim], shoulder:float3, side:float, swing:float, bend:float, r:floa
 // A heroic human from the hips up, its pelvis at p (the centaur's torso too).
 def torso(out:[prim], p:float3, ph:float, lean:float) -> float3:
     let chest = p + float3 { 0.0, sin(lean) * 11.0, cos(lean) * 11.0 }
-    out.push(prim { p, chest, 4.6, 5.8, mat_tunic, false })
+    out.push(prim { p, chest, 4.0, 4.7, cloth(), false })
+    let yoke = if team_style == team_trim: mat_team else: cloth()
+    out.push(prim { chest + float3 { -5.4, 0.0, -0.6 }, chest + float3 { 5.4, 0.0, -0.6 }, 2.1, 2.1, yoke, false })
+    if team_style == team_sash:
+        out.push(prim { chest + float3 { -3.6, 0.0, 0.2 }, p + float3 { 3.4, 0.0, -0.4 }, 4.75, 4.15, mat_team, true })
     let neck = chest + float3 { 0.0, 0.3, 2.6 }
     out.push(prim { chest, neck + float3 { 0.0, 0.0, 1.0 }, 2.0, 1.8, mat_skin, false })
     let head = neck + float3 { 0.0, 0.4, 4.6 }
@@ -73,8 +85,8 @@ def torso(out:[prim], p:float3, ph:float, lean:float) -> float3:
     out.push(prim { head + float3 { 0.0, 2.9, -0.6 }, head + float3 { 0.0, 3.5, -0.9 }, 0.8, 0.6, mat_skin, false })   // nose
     out.push(prim { head + float3 { 0.0, -0.8, 1.2 }, head + float3 { 0.0, -1.6, -0.6 }, 3.3, 3.0, mat_hair, true })
     let sw = 22.0 * sin(ph)
-    arm(out, chest + float3 { -6.0, 0.0, -0.8 }, -1.0, -sw, 15.0, 1.9)
-    return arm(out, chest + float3 { 6.0, 0.0, -0.8 }, 1.0, sw, 25.0, 1.9)
+    arm(out, chest + float3 { -5.6, 0.0, -0.8 }, -1.0, -sw, 15.0, 1.8)
+    return arm(out, chest + float3 { 5.6, 0.0, -0.8 }, 1.0, sw, 25.0, 1.8)
 
 def axe(out:[prim], hand:float3, tilt:float):
     let d = float3 { 0.0, sin(tilt), cos(tilt) }
@@ -90,7 +102,7 @@ def human(ph:float) -> [prim]:
     let hip = float3 { 0.0, 0.0, 21.0 + 0.6 * abs(sin(ph * 2.0)) }
     leg(out, hip + float3 { -2.9, 0.0, 0.0 }, s, bend, 10.5, 10.0, 2.6, mat_trousers, mat_leather)
     leg(out, hip + float3 { 2.9, 0.0, 0.0 }, -s, bend2, 10.5, 10.0, 2.6, mat_trousers, mat_leather)
-    out.push(prim { hip + float3 { 0.0, 0.0, -1.0 }, hip + float3 { 0.0, 0.0, 2.0 }, 4.4, 4.6, mat_leather, false })   // belt
+    out.push(prim { hip + float3 { 0.0, 0.0, -1.0 }, hip + float3 { 0.0, 0.0, 2.0 }, 4.3, 4.4, if team_style == team_trim: mat_team else: mat_leather, false })   // belt
     let hand = torso(out, hip + float3 { 0.0, 0.0, 1.0 }, ph, 4.0)
     axe(out, hand, 60.0 + 20.0 * sin(ph))
     return out
@@ -200,16 +212,25 @@ def draw(g:[int], facing:int, img:[float3], iw:int, cx:int, cy:int):
 // ---- the sheet: per unit a row of 8 facings standing, a row of the walk in facing 1
 
 let out_path = if command_line_arguments().length: command_line_arguments()[0] else: "voxel_proto.ppm"
-let units = [ "human", "centaur" ]
+class row:
+    body:string
+    look:team_look
+    walk:bool
+
+let rows = [ row { "human", team_trim, false }, row { "human", team_trim, true }, row { "human", team_sash, false },
+             row { "human", team_tunic, false }, row { "centaur", team_trim, false }, row { "centaur", team_trim, true } ]
 let iw = CELL.x * 8
-let ih = CELL.y * 2 * units.length
+let ih = CELL.y * rows.length
 let img = map(iw * ih): float3 { 0.33, 0.47, 0.18 }
-for(units) name, r:
+for(rows) rw, r:
+    let name = rw.body
+    team_style = rw.look
     let make = fn(ph:float) -> [prim]: if name == "human": human(ph) else: centaur(ph)
-    let stand = fill(make(0.0))
-    for(8) f: draw(stand, f, img, iw, f * CELL.x, r * 2 * CELL.y)
-    for(8) k: draw(fill(make(float(k) * 45.0)), 1, img, iw, k * CELL.x, (r * 2 + 1) * CELL.y)
-    print "{name}: drawn"
+    if not rw.walk:
+        let stand = fill(make(0.0))
+        for(8) f: draw(stand, f, img, iw, f * CELL.x, r * CELL.y)
+    else:
+        for(8) k: draw(fill(make(float(k) * 45.0)), 1, img, iw, k * CELL.x, r * CELL.y)
 let ppm = "P6\n{iw} {ih}\n255\n"
 let bytes = []::int
 for(img) c: for(3) ch: bytes.push(clamp(int(c[ch] * 255.0), 0, 255))
