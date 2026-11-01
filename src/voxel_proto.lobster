@@ -12,17 +12,22 @@ class row:
     shade:bool    // shadows (on the body and the ground)
 
 let units = [
-    vx_unit_def { "rat worker", vx_RAT, "axe", "", true, false, "", "", "" },
-    vx_unit_def { "rat spear", vx_RAT, "spear", "shield", true, false, "", "", "" },
-    vx_unit_def { "rat on a cat", vx_RAT, "spear", "shield", true, false, "cat", "", "" },
-    vx_unit_def { "frog spear", vx_FROG, "spear", "shield", true, false, "", "", "" },
-    vx_unit_def { "roman legionary (age 3)", vx_ROMAN, "gladius", "scutum", true, true, "", "galea", "lorica" },
-    vx_unit_def { "roman legionary (age 2)", vx_ROMAN, "gladius", "scutum", true, true, "", "galea", "bronze" },
+    vx_unit_def { "rat worker", vx_RAT, "axe", "", true, false, "", "", "", "", float3_0 },
+    vx_unit_def { "rat spear", vx_RAT, "spear", "shield", true, false, "", "", "", "", float3_0 },
+    vx_unit_def { "rat on a cat", vx_RAT, "spear", "shield", true, false, "cat", "", "", "", float3_0 },
+    vx_unit_def { "frog spear", vx_FROG, "spear", "shield", true, false, "", "", "", "", float3_0 },
+    vx_unit_def { "roman legionary (age 3)", vx_ROMAN, "gladius", "scutum", true, true, "", "galea", "lorica", "", float3_0 },
+    vx_unit_def { "roman spearbearer (age 1)", vx_ROMAN, "spear", "", false, true, "", "", "leather", "", float3_0 },
+    vx_unit_def { "roman clubber (age 1)", vx_ROMAN, "club", "", true, true, "", "", "leather", "", float3_0 },
+    vx_unit_def { "roman archer (age 2)", vx_ROMAN, "", "bow", true, true, "", "galea", "leather", "quiver", float3_0 },
+    vx_unit_def { "roman pilum-thrower (age 2)", vx_ROMAN, "pilum", "scutum", true, true, "", "galea", "leather", "", float3_0 },
+    vx_unit_def { "roman lancer on a pony (age 2)", vx_ROMAN, "spear", "scutum", true, true, "horse", "galea", "bronze", "", float3 { 0.66, 0.66, 0.63 } },
+    vx_unit_def { "roman healer", vx_ROMAN, "staff", "", false, false, "", "", "", "", float3_0 },
+    vx_unit_def { "roman scavenger", vx_ROMAN, "axe", "", false, false, "", "", "", "", float3_0 },
+    vx_unit_def { "roman legionary (age 2)", vx_ROMAN, "gladius", "scutum", true, true, "", "galea", "bronze", "", float3_0 },
 ]
 let rows = []::row
-for(units) u:
-    rows.push(row { u, "stand", "scarf", false })
-    rows.push(row { u, "stand", "scarf", true })
+for(units) u: rows.push(row { u, "stand", "scarf", true })
 rows.push(row { units[1], "stand", "vest", true })
 rows.push(row { units[1], "walk", "scarf", true })
 rows.push(row { units[1], "attack", "scarf", true })
