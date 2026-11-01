@@ -83,6 +83,7 @@ let args = command_line_arguments()
 // (a screenshot after that much play, then quit), look:<x>,<y> (the camera on that tile).
 var watch = false
 var composed = false            // the pack has part bakes: units are composed (view/), not flipbooks
+var voxel_units = false         // `voxels`: every unit a procedural voxel body (game/voxel_units.lobster), a trial
 var follow = false              // the camera follows the fighting (captures)
 var selftest = false            // play a few orders through the controls, check the sim took them, quit
 var shot = ""
@@ -450,6 +451,8 @@ import .game.ruin
 import .game.art_kit_buildings
 import .game.pack_data
 import .game.bake_missing   // (here: it makes views to see what parts they wear)
+import .view.voxel
+import .game.voxel_units
 
 def job_of(i:int) -> string:
     if u_moving[i] != 0: return ""
@@ -601,6 +604,7 @@ def view_events():
 def unit_state(i:int, moving:bool) -> string, int:
     let k = u_kind[i]
     let t0 = attack_t0.get(u_id[i], -10.0)
+    if voxel_units and clock_s - t0 < 0.5: return "attack", int((clock_s - t0) * 16.0)
     let na = anims.get("{k}.attack", 0)
     if clock_s - t0 < na / 8.0 and clock_s - t0 < 0.5: return "attack", int((clock_s - t0) * 8.0)
     let res = if u_carry_kind[i] > 0: resource_names[u_carry_kind[i] - 1] else: ""
@@ -660,8 +664,8 @@ def collect_units(alpha:float):
             last_kind.set(u_id[i], u_kind[i])
             last_owner.set(u_id[i], u_owner[i])
             let state, n = unit_state(i, moving)
-            var f = frame_index("u{u_kind[i]}.{state}.{d}.{n}")
-            if f < 0: f = frame_index("u{u_kind[i]}.idle.{d}.0")
+            var f = if voxel_units: vx_frame_for(u_kind[i], state, d, n) else: frame_index("u{u_kind[i]}.{state}.{d}.{n}")
+            if f < 0 and not voxel_units: f = frame_index("u{u_kind[i]}.idle.{d}.0")
             let p = iso(x, y)
             let tc = team_col(u_owner[i])
             let since = clock_s - hit_t0.get(u_id[i], -10.0)
@@ -903,7 +907,7 @@ def draw_world(alpha:float):
                 collect_props()
                 collect_buildings()
                 collect_town()
-                if composed: collect_views(alpha)
+                if composed and not voxel_units: collect_views(alpha)
                 else:
                     collect_units(alpha)
                     collect_corpses()
@@ -2401,6 +2405,8 @@ def play_match():
             bake_progress_from = 0.5
             bake_progress_to = 0.95
             bake_what = "the armies"
+            voxel_units = has_s(args, "voxels")
+            if voxel_units: vx_bake_types()
             let n = bake_missing_parts()
             print "baked {n} part facings the pack lacked, in {int((seconds_elapsed() - t0) * 1000.0)} ms"
             let t1 = seconds_elapsed()
