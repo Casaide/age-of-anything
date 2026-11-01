@@ -671,6 +671,9 @@ def collect_units(alpha:float):
             let since = clock_s - hit_t0.get(u_id[i], -10.0)
             let flash = if since < 0.12: 1.0 + 1.8 * (1.0 - since / 0.12) else: 1.0
             add(f, p.x, p.y, p.y, float4 { tc.x, tc.y, tc.z, flash })
+            if voxel_units and f >= 0:   // its shadow on the ground, under every unit (as the props' are)
+                let sf = vx_shadow_for(f)
+                if sf >= 0: add(sf, p.x, p.y, -200000.0 + p.y, float4 { 1.0, 1.0, 1.0, 1.0 })
 
 def collect_corpses():
     corpses = filter(corpses) c: clock_s - c.t0 < 4.0
