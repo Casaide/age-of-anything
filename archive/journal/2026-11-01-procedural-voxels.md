@@ -52,3 +52,18 @@ head (fur ears now).
   rats have a long snout and a big pink nose; frogs crouch on folded legs (knees up and out, long webbed feet), lean
   forward, and lost the belt that read as a shell.
 - "Humans look like they're balding": the hair is a crown down to just above the eyes and down the back (picture 08).
+
+## In a real match: the `voxels` option
+Dominic: "get some pictures of a real game and battle so we can decide on voxels or not". The voxel builder moved to
+`src/view/voxel.lobster` (names `vx_`), and `src/game/voxel_units.lobster` reads each unit type's race and kit from its
+recipe (body: rat, frog, bear, else human; the right hand's spear, sword, bow or anything else as an axe; a shield, a
+helmet, armour; a mount as a horse, a centaur body), bakes an atlas per type at the match start (8 facings standing,
+walking, attacking, and chopping for workers), and draws them as whole-unit frames, the team key in magenta for the
+sprite shader. `./play.sh none lobby "races:sewer rats|romans" watch voxels` plays one.
+
+First try drew them at one voxel per baked pixel: half the composed units' size. Drawn 2.2x with nearest filtering
+(chunky pixels) they match. The same match, same moment, composed and voxel: pictures 10 (battle, close), 11 and 12
+(the battle), 13 and 14 (the town at 1:30).
+
+Gaps in the trial: every mount is a horse (the rats' cat too), the Romans' look comes from the generic kit (red tunic,
+helmet), no wild animals or dead bodies yet, and baking 36 types took 38 s.
