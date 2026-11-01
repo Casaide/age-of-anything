@@ -145,3 +145,14 @@ The rest is just how many poses there are, so the looks are now cached as the co
 an atlas of its own, kept in bake_cache/ as a PNG and a manifest, keyed by the look and a hash of view/voxel.lobster
 (any change to the builder bakes again; no version number to remember). The first start with a race bakes (17.5 s,
 writing the PNGs included); every start after loads in 5 ms. A composed match takes about 15 s to start either way.
+
+## The same match moments, composed and voxel (round 2)
+The battle at 13:00 (`at:780 speed:8 follow`) and the town at 1:30 (`at:90 speed:4`), "sewer rats|romans": pictures 29
+and 30 (the battle, whole and close), 31 and 32 (the town, whole and close). The cat with its rider, the rats with their
+ground shadows, Roman spearmen and clubbers.
+- Bug caught in the paired crops: the voxel rats faced another way than the composed ones at the same moment. The
+  composed units in the match face the way they move on screen (or their work point), which `dir_of` bins; the voxel
+  facing 2 faces screen right, so the game wants (d + 2) % 8, as round 1 had. The (d + 3) of round 2 matched the
+  concept sheet's columns (the composed rigs' facings), not the game. Back to + 2; the sheet keeps its own order.
+- Still missing in the voxel trial: the dead (a composed unit falls and lies; a voxel one just goes), wild animals, and
+  the early Romans' look is mostly team red (a whole tunic) where the composed ones show bare skin and a dark kilt.

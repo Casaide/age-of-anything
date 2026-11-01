@@ -153,7 +153,7 @@ def vx_bake_types():
 
 // The frame for a unit's state (unit_state's names) facing d (dir_of's).
 def vx_frame_for(k:int, state:string, d:int, n:int) -> int:
-    let f = (d + 3) % 8
+    let f = (d + 2) % 8   // (d: the screen direction it moves in, dir_of; facing 2 faces screen right)
     let mode = if state == "attack": "attack" elif state == "walk" or find_string(state, "carry") == 0: "walk" elif find_string(state, "work") == 0: "work" else: "idle"
     let st = if mode == "idle": 0 elif mode == "attack": min(n, 7) else: n % 8
     let fr = vx_frames.get("{k}.{mode}.{f}.{st}", -1)
