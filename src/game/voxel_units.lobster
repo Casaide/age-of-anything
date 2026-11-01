@@ -95,7 +95,7 @@ def vx_pack_cell(cell:[float4], box:int4, cw:int, anchor:int2) -> int:
     return frames.length - 1
 
 // The look's frames for type k from the cache, if they're there.
-def vx_load_look(k:int, stem:string) -> bool:
+def vx_load_look(k:int, v:int, stem:string) -> bool:
     let text = read_file(stem + ".txt")
     if not text: return false
     let rows = tokenize(text, "\n", "")
@@ -108,28 +108,38 @@ def vx_load_look(k:int, stem:string) -> bool:
             frames.push(Frame { sheet_tex.length - 1, string_to_int(t[1]), string_to_int(t[2]), string_to_int(t[3]), string_to_int(t[4]),
                                 string_to_int(t[5]), string_to_int(t[6]), VX_DRAW_K })
         if t.length and t[0] == "m":
-            vx_frames.set("{k}.{t[1]}", f0 + string_to_int(t[2]))
+            vx_frames.set("{k}.{v}.{t[1]}", f0 + string_to_int(t[2]))
             vx_shadow_of.set(f0 + string_to_int(t[2]), f0 + string_to_int(t[3]))
     return true
 
-// One type's frames: steps per mode and facing. Returns whether it baked (false: it took a look's frames).
-def vx_bake_type(k:int) -> bool:
+let vx_nlooks = dictionary<int, int>(256)   // type -> how many looks it has (humans 3, the rest 1)
+
+// One type's frames, in each of its looks: steps per mode and facing. Returns how many looks it baked (a type that
+// looks like one baked before takes its frames; a look in the cache is loaded).
+def vx_bake_type(k:int) -> int:
     let u = vx_def_of(k)
     vx_cycle.set(k, 4.0 * vx_reach(u) * 1000.0 / 62.0)
+    let looks = if u.rc.kind == "human": vx_LOOKS else: 1
+    vx_nlooks.set(k, looks)
     let key = "{u.rc.kind} {u.rc.skin} {u.right} {u.left} {u.helm} {u.armour} {u.mount} {u.helm_kind} {u.armour_kind} {u.back} {u.coat} {t_worker[k]}"
     let same = vx_looks.get(key, -1)
     if same >= 0:
-        for(VX_MODES) mode: for(8) f: for(8) st:
-            let fr = vx_frames.get("{same}.{mode}.{f}.{st}", -1)
-            if fr >= 0: vx_frames.set("{k}.{mode}.{f}.{st}", fr)
-        return false
+        for(looks) v: for(VX_MODES) mode: for(8) f: for(8) st:
+            let fr = vx_frames.get("{same}.{v}.{mode}.{f}.{st}", -1)
+            if fr >= 0: vx_frames.set("{k}.{v}.{mode}.{f}.{st}", fr)
+        return 0
     vx_looks.set(key, k)
-    let stem = bake_cache_dir + "/vx_" + sha256_text("{vx_source}|{key}").substring(0, 20)
-    if vx_load_look(k, stem): return false
+    var baked = 0
+    for(looks) v:
+        let stem = bake_cache_dir + "/vx_" + sha256_text("{vx_source}|{key}|look {v}").substring(0, 20)
+        if not vx_load_look(k, v, stem):
+            vx_bake_look(k, u, v, stem)
+            baked++
+    return baked
+
+def vx_bake_look(k:int, u:vx_unit_def, v:int, stem:string):
     let worker = vx_unit_def { u.label, u.rc, "axe", "", u.helm, u.armour, u.mount, u.helm_kind, u.armour_kind, u.back, u.coat }   // (work: chopping)
-    vx_mat_cols[vx_mat_skin] = vx_skin_of(u.rc)
-    vx_mat_cols[vx_mat_pale] = u.rc.pale
-    vx_fur = u.rc.fur
+    vx_set_look(u.rc, v)
     vx_rows = []::[float4]
     vx_at = int2_0
     vx_row_h = 0
@@ -144,10 +154,11 @@ def vx_bake_type(k:int) -> bool:
                 for(8) f:
                     let fr = vx_pack_cell(vx_cell(g, f), vx_box, vx_CELL.x, vx_ANCHOR)
                     let sf = vx_pack_cell(vx_ground_shadow(g, f), vx_sbox, vx_SCELL.x, vx_SANCHOR)
-                    vx_frames.set("{k}.{mode}.{f}.{st}", fr)
+                    vx_frames.set("{k}.{v}.{mode}.{f}.{st}", fr)
                     vx_shadow_of.set(fr, sf)
                     maps.push("m {mode}.{f}.{st} {fr - vx_frame0} {sf - vx_frame0}")
     vx_act = ""
+    vx_variant = 0
     let h = vx_rows.length
     assert h <= 4096
     add_sheet(gl.create_texture(vx_rows, VX_FORMATS), float2 { float(VX_ATLAS), float(h) })
@@ -157,7 +168,6 @@ def vx_bake_type(k:int) -> bool:
         write_file(stem + ".png", bmat_png(rgba, VX_ATLAS, h))
         write_file(stem + ".txt", "{VX_ATLAS} {h}\n" + concat_string(vx_lines, "\n") + "\n" + concat_string(maps, "\n") + "\n")
     vx_rows = []::[float4]
-    return true
 
 def vx_bake_types():
     let t0 = seconds_elapsed()
@@ -167,7 +177,7 @@ def vx_bake_types():
     vx_mat_cols[vx_mat_team] = float3 { 0.85, 0.12, 0.85 }   // (the sprite shader's team key)
     for(t_slot.length) k:
         if t_animal[k] == 0:
-            if vx_bake_type(k): baked++
+            baked += vx_bake_type(k)
             n++
     print "voxel units: {n} types, {baked} looks baked (the rest shared or from the cache) in {int((seconds_elapsed() - t0) * 1000.0)} ms"
 
@@ -179,13 +189,14 @@ def vx_walk_step(id:int, k:int, x:float, y:float) -> int:
     vx_walked.set(id, walked)
     return int(walked / vx_cycle.get(k, 350.0) * 8.0) % 8
 
-// The frame for a unit's state (unit_state's names) facing d (dir_of's).
-def vx_frame_for(k:int, state:string, d:int, n:int) -> int:
+// The frame for unit id's state (unit_state's names) facing d (dir_of's), in its look (from its id: view only).
+def vx_frame_for(id:int, k:int, state:string, d:int, n:int) -> int:
+    let v = ((id * 2654435761) >> 13 & 1023) % vx_nlooks.get(k, 1)
     let f = (d + 2) % 8   // (d: the screen direction it moves in, dir_of; facing 2 faces screen right)
     let mode = if state == "attack": "attack" elif state == "walk" or find_string(state, "carry") == 0: "walk" elif find_string(state, "work") == 0: "work" else: "idle"
     let st = if mode == "idle": 0 elif mode == "attack": min(n, 7) else: n % 8
-    let fr = vx_frames.get("{k}.{mode}.{f}.{st}", -1)
-    return if fr >= 0: fr else: vx_frames.get("{k}.idle.{f}.0", -1)
+    let fr = vx_frames.get("{k}.{v}.{mode}.{f}.{st}", -1)
+    return if fr >= 0: fr else: vx_frames.get("{k}.{v}.idle.{f}.0", -1)
 
 // A voxel unit's frame's shadow on the ground (drawn under every unit), or -1.
 def vx_shadow_for(f:int) -> int: return vx_shadow_of.get(f, -1)

@@ -113,6 +113,21 @@ let vx_FROG = vx_race { "frog", float3 { 0.38, 0.56, 0.22 }, float3 { 0.86, 0.84
 // skin reads apart from a dark kilt and hair).
 def vx_skin_of(rc:vx_race) -> float3: return if rc.kind == "human": min(rc.skin * 1.3, float3_1) else: rc.skin
 
+// A human's look, one of three per unit type, picked per unit from its id (the view only: the sim never sees it):
+// a skin shade within the race's palette, a hair colour, and a style (short; longer down the nape; short with a beard).
+var vx_variant = 0
+let vx_LOOKS = 3
+let vx_LOOK_SKIN = [ 1.0, 0.78, 1.22 ]
+let vx_LOOK_HAIR = [ float3 { 0.12, 0.09, 0.08 }, float3 { 0.55, 0.53, 0.50 }, float3 { 0.42, 0.17, 0.09 } ]   // black, grey, auburn
+
+// The materials for race rc in look v.
+def vx_set_look(rc:vx_race, v:int):
+    vx_variant = v
+    vx_mat_cols[vx_mat_skin] = if rc.kind == "human": min(vx_skin_of(rc) * vx_LOOK_SKIN[v], float3_1) else: vx_skin_of(rc)
+    vx_mat_cols[vx_mat_hair] = if rc.kind == "human": vx_LOOK_HAIR[v] else: vx_MAT_BASE[vx_mat_hair]
+    vx_mat_cols[vx_mat_pale] = rc.pale
+    vx_fur = rc.fur
+
 class vx_unit_def:
     label:string
     rc:vx_race
@@ -372,6 +387,11 @@ def vx_human(out:[vx_prim], u:vx_unit_def, ph:float) -> vx_frame:
     elif not u.helm:   // hair: a crown down to just above the eyes, and down the back of the head
         out.push(vx_bead(h + float3 { 0.0, -0.25, 1.3 } * hs, 2.3 * hs, vx_mat_hair))   // short, close to the skull
         out.push(vx_bead(h + float3 { 0.0, -0.6, 0.2 } * hs, 2.35 * hs, vx_mat_hair))
+    if vx_variant == 1:   // longer: down the nape (under a helmet too)
+        out.push(vx_bead(h + float3 { 0.0, -1.3, -1.1 } * hs, 1.55 * hs, vx_mat_hair))
+    if vx_variant == 2:   // a short beard along the jaw
+        out.push(vx_hard(h + float3 { -1.5, 1.0, -1.0 } * hs, h + float3 { 1.5, 1.0, -1.0 } * hs, 0.9 * hs, 0.9 * hs, vx_mat_hair))
+        out.push(vx_bead(h + float3 { 0.0, 1.85, -1.55 } * hs, 1.15 * hs, vx_mat_hair))
     return vx_frame { chest + float3 { 4.3 * bs, 0.0, -0.4 }, chest + float3 { -4.3 * bs, 0.0, -0.4 }, (chest.z - hip.z) * 0.52, 1.35 * bs, vx_mat_skin, vx_mat_skin,
                       h + float3 { 0.0, -0.25, 1.35 } * hs, 2.1 * hs }
 

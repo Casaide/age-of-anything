@@ -10,6 +10,7 @@ class row:
     mode:string   // stand (8 facings), walk or attack (8 steps in profile, facing right)
     wear:string   // the team on a creature: scarf or vest
     shade:bool    // shadows (on the body and the ground)
+    look:int      // a human's look (vx_set_look)
 
 let units = [
     vx_unit_def { "rat worker", vx_RAT, "axe", "", true, false, "", "", "", "", float3_0 },
@@ -27,18 +28,22 @@ let units = [
     vx_unit_def { "roman legionary (age 2)", vx_ROMAN, "gladius", "scutum", true, true, "", "galea", "bronze", "", float3_0 },
 ]
 let rows = []::row
-for(units) u: rows.push(row { u, "stand", "scarf", true })
-rows.push(row { units[1], "stand", "vest", true })
-rows.push(row { units[1], "walk", "scarf", true })
-rows.push(row { units[1], "attack", "scarf", true })
-rows.push(row { units[0], "attack", "scarf", true })
+for(units) u: rows.push(row { u, "stand", "scarf", true, 0 })
+rows.push(row { units[1], "stand", "vest", true, 0 })
+rows.push(row { units[1], "walk", "scarf", true, 0 })
+rows.push(row { units[1], "attack", "scarf", true, 0 })
+rows.push(row { units[0], "attack", "scarf", true, 0 })
 
 let args = command_line_arguments()
 let out_path = if args.length: args[0] else: "voxel_proto.ppm"
 // `romans`: instead, the early Romans and the legionary (against the composed ones)
 if args.length > 1 and args[1] == "romans":
     while rows.length: rows.pop()
-    for([ units[5], units[6], units[11], units[12] ]) u: rows.push(row { u, "stand", "scarf", true })
+    for([ units[5], units[6], units[11], units[12] ]) u: rows.push(row { u, "stand", "scarf", true, 0 })
+// `looks`: the early Romans and the legionary in each of the three looks
+if args.length > 1 and args[1] == "looks":
+    while rows.length: rows.pop()
+    for([ units[5], units[6], units[11], units[12] ]) u: for(vx_LOOKS) v: rows.push(row { u, "stand", "scarf", true, v })
 let step = vx_CELL.x * 3 / 2   // a column (room for the shadows)
 let iw = step * 8
 let ih = vx_CELL.y * rows.length
@@ -47,9 +52,7 @@ let t0 = seconds_elapsed()
 var fills = 0.0
 for(rows) rw, r:
     let u = rw.u
-    vx_mat_cols[vx_mat_skin] = vx_skin_of(u.rc)
-    vx_mat_cols[vx_mat_pale] = u.rc.pale
-    vx_fur = u.rc.fur
+    vx_set_look(u.rc, rw.look)
     vx_team_wear = rw.wear
     vx_shadows = rw.shade
     vx_act = if rw.mode == "attack": "attack" else: ""

@@ -666,7 +666,7 @@ def collect_units(alpha:float):
             let state, n0 = unit_state(i, moving)
             // (voxel units step by the ground they cover, so the planted foot doesn't slide)
             let n = if voxel_units and (state == "walk" or find_string(state, "carry") == 0): vx_walk_step(u_id[i], u_kind[i], x, y) else: n0
-            var f = if voxel_units: vx_frame_for(u_kind[i], state, d, n) else: frame_index("u{u_kind[i]}.{state}.{d}.{n}")
+            var f = if voxel_units: vx_frame_for(u_id[i], u_kind[i], state, d, n) else: frame_index("u{u_kind[i]}.{state}.{d}.{n}")
             if f < 0 and not voxel_units: f = frame_index("u{u_kind[i]}.idle.{d}.0")
             var p = iso(x, y)
             let tc = team_col(u_owner[i])
