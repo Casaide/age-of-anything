@@ -5,8 +5,13 @@
 LOBSTER="${LOBSTER:-$HOME/Dev/lobster/bin/lobster}"
 cd "$(dirname "$0")"
 . ./bake_cache.sh   # (parts baked once are kept in bake_cache/: emptied when the bake version changes)
-pack="$1"
-shift
+# the pack dir first ("none": no pack); a first word that isn't a folder (lobby, races:...) means none
+if [ $# -gt 0 ] && { [ "$1" = none ] || [ -d "$1" ]; }; then
+	pack="$1"
+	shift
+else
+	pack=none
+fi
 start=-
 for a in "$@"; do
 	case "$a" in
