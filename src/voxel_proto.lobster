@@ -86,7 +86,7 @@ let HUMAN = race { float3 { 0.86, 0.66, 0.50 }, float3 { 0.92, 0.75, 0.60 }, "hu
 let RAT = race { float3 { 0.47, 0.40, 0.36 }, float3 { 0.74, 0.68, 0.62 }, "rat", 0.85,
                  15.0, 7.5, 7.5, 3.6, 2.4, 2.6, 10.0, 4.2, 4.6, 22.0, 6.2, "rat", true }
 let FROG = race { float3 { 0.40, 0.58, 0.24 }, float3 { 0.82, 0.80, 0.50 }, "frog", 0.85,
-                  12.0, 6.5, 6.0, 4.0, 2.8, 3.6, 8.5, 5.4, 5.2, 8.0, 6.0, "", false }
+                  9.0, 6.5, 6.0, 4.0, 2.8, 3.6, 8.0, 5.6, 5.0, 30.0, 6.0, "", false }
 let BEAR = race { float3 { 0.42, 0.28, 0.17 }, float3 { 0.62, 0.48, 0.34 }, "bear", 1.12,
                   19.0, 9.5, 9.0, 3.2, 3.4, 3.6, 12.0, 6.0, 6.6, 6.0, 7.0, "bear", true }
 
@@ -108,6 +108,16 @@ def leg(out:[prim], rc:race, hip:float3, swing:float, bend:float, m:int, boot:in
     out.push(prim { knee, ankle, rc.limb * 0.8, rc.limb * 0.6, boot, false, false })
     out.push(prim { ankle, ankle + float3 { 0.0, rc.foot, -0.6 }, rc.limb * 0.65, rc.limb * 0.55, boot, false, false })
 
+// A frog's leg folded under it: the knee up and out, the shin back down to a long webbed foot on the ground.
+def frog_leg(out:[prim], rc:race, hip:float3, side:float, step:float):
+    let h = hip + float3 { side * rc.stance, 0.0, 0.0 }
+    let knee = h + float3 { side * 3.4, 3.0 + step * 2.0, 0.8 }
+    let ankle = float3 { h.x + side * 2.6, h.y - 1.5 + step * 2.0, 1.4 }
+    out.push(prim { h, knee, rc.limb, rc.limb * 0.85, mat_skin, false, false })
+    out.push(prim { knee, ankle, rc.limb * 0.8, rc.limb * 0.55, mat_skin, false, false })
+    for([ -0.5, 0.5 ]) toe:
+        out.push(prim { ankle, ankle + float3 { side * 0.6 + toe * 1.8, 4.2, -0.6 }, 1.1, 0.8, mat_skin, false, false })
+
 def arm(out:[prim], rc:race, shoulder:float3, side:float, swing:float, bend:float) -> float3:
     let elbow = shoulder + down(swing) * rc.arm + float3 { side * 0.6, 0.0, 0.0 }
     let wrist = elbow + down(swing + bend) * rc.arm * 0.95
@@ -122,11 +132,13 @@ def head(out:[prim], rc:race, at:float3, helm:bool):
             out.push(prim { at + float3 { 0.0, 0.5, -1.2 }, at + float3 { 0.0, 0.0, 0.8 }, 2.7, 3.1, mat_skin, false, false })
             out.push(prim { at + float3 { 0.0, 3.0, -0.3 }, at + float3 { 0.0, 3.3, -0.7 }, 0.6, 0.5, mat_skin, false, false })
             for([ -1.0, 1.0 ]) side: out.push(ball(at + float3 { side * 1.15, 2.75, 0.35 }, 0.45, mat_eye, true))
-            if not helm: out.push(ball(at + float3 { 0.0, -0.8, 0.65 }, 3.35, mat_hair, true))
+            if not helm:   // hair: a crown down to just above the eyes, and down the back of the head
+                out.push(ball(at + float3 { 0.0, -0.2, 1.8 }, 3.2, mat_hair, true))
+                out.push(ball(at + float3 { 0.0, -0.9, 0.2 }, 3.25, mat_hair, true))
         case "rat":
             out.push(prim { at + float3 { 0.0, -0.6, 0.2 }, at + float3 { 0.0, 0.8, 0.0 }, 2.5, 2.4, mat_skin, false, false })
-            out.push(prim { at + float3 { 0.0, 1.5, -0.4 }, at + float3 { 0.0, 5.4, -1.5 }, 2.0, 0.7, mat_skin, false, false })
-            out.push(ball(at + float3 { 0.0, 5.5, -1.6 }, 0.7, mat_pink, true))
+            out.push(prim { at + float3 { 0.0, 1.2, -0.3 }, at + float3 { 0.0, 6.6, -1.5 }, 2.3, 0.95, mat_skin, false, false })   // a long snout
+            out.push(ball(at + float3 { 0.0, 6.9, -1.4 }, 1.05, mat_pink, true))
             for([ -1.0, 1.0 ]) side:
                 out.push(ball(at + float3 { side * 1.4, 2.0, 0.8 }, 0.5, mat_eye, true))
                 if not helm: out.push(prim { at + float3 { side * 2.2, -0.5, 2.0 }, at + float3 { side * 2.6, -0.2, 2.9 }, 1.5, 1.4, mat_skin, true, false })
@@ -216,9 +228,13 @@ def biped(u:unit_def, ph:float) -> [prim]:
     let out = []::prim
     let s = 26.0 * sin(ph)
     let hip = float3 { 0.0, 0.0, rc.hip + 0.6 * abs(sin(ph * 2.0)) }
-    leg(out, rc, hip + float3 { -rc.stance, 0.0, 0.0 }, s, 40.0 * max(0.0, sin(ph + 90.0)), mat_trousers, mat_leather)
-    leg(out, rc, hip + float3 { rc.stance, 0.0, 0.0 }, -s, 40.0 * max(0.0, sin(ph - 90.0)), mat_trousers, mat_leather)
-    out.push(prim { hip + float3 { 0.0, 0.0, -1.0 }, hip + float3 { 0.0, 0.0, 2.0 }, rc.waist + 0.3, rc.waist + 0.4, mat_leather, false, false })
+    if rc.head == "frog":
+        frog_leg(out, rc, hip, -1.0, sin(ph))
+        frog_leg(out, rc, hip, 1.0, -sin(ph))
+    else:
+        leg(out, rc, hip + float3 { -rc.stance, 0.0, 0.0 }, s, 40.0 * max(0.0, sin(ph + 90.0)), mat_trousers, mat_leather)
+        leg(out, rc, hip + float3 { rc.stance, 0.0, 0.0 }, -s, 40.0 * max(0.0, sin(ph - 90.0)), mat_trousers, mat_leather)
+    if rc.head != "frog": out.push(prim { hip + float3 { 0.0, 0.0, -1.0 }, hip + float3 { 0.0, 0.0, 2.0 }, rc.waist + 0.3, rc.waist + 0.4, mat_leather, false, false })
     if rc.tail == "rat":
         var last = hip + float3 { 0.0, -3.0, 0.0 }
         for(5) k:
