@@ -266,10 +266,10 @@ def vx_arms(out:[vx_prim], u:vx_unit_def, fr:vx_frame, swing:float, t:float):
     vx_gear_right(out, u.right, hr, normalize(dr))
     vx_gear_left(out, u.left, hl, hr, drawn)
 
-// A helmet: a cap over the top of the head.
+// A helmet: a cap over the top of the skull, head sized, no brim (Dominic: "Helmets should just be head sized").
+// The frame's head_top is the cap's centre, head_r its radius: the skull's, a little more.
 def vx_helm(out:[vx_prim], fr:vx_frame):
-    out.push(vx_hard(fr.head_top, fr.head_top + float3 { 0.0, -0.2, 0.3 }, fr.head_r, fr.head_r * 0.9, vx_mat_metal))
-    out.push(vx_disc(fr.head_top + float3 { 0.0, 0.0, -fr.head_r * 0.3 }, float3 { 0.0, 0.15, 1.0 }, fr.head_r + 0.15, 0.22, vx_mat_metal))
+    out.push(vx_hard(fr.head_top, fr.head_top + float3 { 0.0, -0.15, 0.15 }, fr.head_r, fr.head_r, vx_mat_metal))
 
 // A scarf at the neck in team colour: the team on creatures that wear no tunic.
 def vx_scarf(out:[vx_prim], c:float3, r:float, tilt:float):
@@ -351,18 +351,17 @@ def vx_human(out:[vx_prim], u:vx_unit_def, ph:float) -> vx_frame:
         // sit close, the crest is narrow; Dominic: "from behind always look too large")
         out.push(vx_hard(h + float3 { 0.0, -0.3, 0.8 }, h + float3 { 0.0, -0.35, 0.95 }, 2.15, 2.15, vx_mat_metal))   // the bowl, the face open
         out.push(vx_hard(h + float3 { -1.75, 1.45, 1.25 }, h + float3 { 1.75, 1.45, 1.25 }, 0.3, 0.3, vx_mat_metal))   // the brow
-        out.push(vx_disc(h + float3 { 0.0, -1.95, -0.5 }, float3 { 0.0, -0.8, 1.0 }, 1.35, 0.2, vx_mat_metal))   // the neck guard
+        out.push(vx_hard(h + float3 { 0.0, -1.7, -0.2 }, h + float3 { 0.0, -1.85, -0.9 }, 0.9, 0.8, vx_mat_metal))   // the neck guard, close
         for([ -1.0, 1.0 ]) side:   // cheek guards, down the sides of the face
-            out.push(vx_hard(h + float3 { side * 1.95, 0.7, 0.3 }, h + float3 { side * 1.8, 1.0, -1.3 }, 0.45, 0.35, vx_mat_metal))
-        out.push(vx_hard(h + float3 { 0.0, -0.35, 2.6 }, h + float3 { 0.0, -0.35, 3.1 }, 0.25, 0.25, vx_mat_metal))   // the crest's holder
-        for(7) k:   // the crest, front to back over the top
-            let a = float(k) * 25.0 - 75.0
-            out.push(vx_bead(h + float3 { 0.0, sin(a) * 2.0 - 0.35, 3.1 + cos(a) * 0.7 }, 0.6, vx_mat_team))
+            out.push(vx_hard(h + float3 { side * 1.9, 0.7, 0.3 }, h + float3 { side * 1.75, 1.0, -1.2 }, 0.4, 0.3, vx_mat_metal))
+        for(5) k:   // a small crest, front to back over the top
+            let a = float(k) * 30.0 - 60.0
+            out.push(vx_bead(h + float3 { 0.0, sin(a) * 1.7 - 0.35, 2.8 + cos(a) * 0.55 }, 0.5, vx_mat_team))
     elif not u.helm:   // hair: a crown down to just above the eyes, and down the back of the head
         out.push(vx_bead(h + float3 { 0.0, -0.3, 1.6 }, 2.5, vx_mat_hair))
         out.push(vx_bead(h + float3 { 0.0, -0.8, 0.1 }, 2.55, vx_mat_hair))
     return vx_frame { chest + float3 { 3.4, 0.0, -0.4 }, chest + float3 { -3.4, 0.0, -0.4 }, 5.9, 1.3, vx_mat_skin, vx_mat_skin,
-                      h + float3 { 0.0, -0.2, 0.75 }, 2.2 }
+                      h + float3 { 0.0, -0.25, 1.35 }, 2.1 }
 
 // A rat: a small hunched body, pear-shaped (narrow shoulders over a round belly and big haunches), thin shins on
 // pink feet, a long pointed snout with a pink nose, big round ears pink inside, a beady eye, and a long bare tail
@@ -410,7 +409,7 @@ def vx_rat(out:[vx_prim], u:vx_unit_def, ph:float) -> vx_frame:
     else: vx_scarf(out, chest + float3 { 0.0, 0.6, 0.6 }, 2.1, 0.5)
     if u.armour: out.push(vx_hard(pelvis + float3 { 0.0, 1.0, 2.2 }, chest + float3 { 0.0, 0.2, -1.4 }, 3.5, 2.6, vx_mat_metal))
     return vx_frame { chest + float3 { 2.2, 0.2, -0.6 }, chest + float3 { -2.2, 0.2, -0.6 }, 3.8, 0.9, vx_mat_skin, vx_mat_pink,
-                      h + float3 { 0.0, 0.3, 1.9 }, 1.6 }
+                      h + float3 { 0.0, 0.2, 1.0 }, 2.0 }
 
 // A frog: a squat round body tipped up at the front, on folded hind legs (knees out, long webbed feet) and thin
 // front legs, a wide flat head with a mouth seam and two big gold eyes on top. Smooth skin; a pale throat.
@@ -443,7 +442,7 @@ def vx_frog(out:[vx_prim], u:vx_unit_def, ph:float) -> vx_frame:
     vx_scarf(out, front + float3 { 0.0, 1.6, 0.2 }, 3.2, 0.8)
     if u.armour: out.push(vx_hard(rump + float3 { 0.0, 0.0, 1.0 }, front + float3 { 0.0, -0.6, 0.8 }, 4.0, 3.5, vx_mat_metal))
     return vx_frame { front + float3 { 3.3, 1.2, -0.4 }, front + float3 { -3.3, 1.2, -0.4 }, 4.2, 1.0, vx_mat_skin, vx_mat_skin,
-                      h + float3 { 0.0, -1.0, 2.4 }, 1.9 }
+                      h + float3 { 0.0, -1.0, 1.9 }, 1.7 }
 
 // A horse to ride; returns where its rider sits.
 def vx_horse(out:[vx_prim], ph:float) -> float3:

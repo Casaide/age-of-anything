@@ -168,3 +168,11 @@ one brown). Team colour now sits on the hem, the crest and the shield (picture 3
 The same moments again: 34 and 35 (the battle; the spearmen and the bone clubber now read as the composed ones do),
 36 and 37 (the town at 1:30, the rats' side). The first start after the change rebaked 27 looks in 19.6 s; the next
 start loaded them in 7 ms.
+
+## Helmets head sized
+Dominic, on the battle pictures: "Picture is always weird because their helmets from behind always look too large",
+then "Helmets should just be head sized." Seen from behind (picture 38, before and after) the galea's bowl, neck guard
+and cheek guards together were nearly as wide as the shoulders, and the plain cap with its brim was a ball bigger than
+the head. Now (Claude): the plain cap, on every creature, is a cap over the crown at the skull's size and no brim (the
+frame's head_top and head_r are its centre and radius); the galea's bowl hugs the skull, the neck guard is a small
+plate close to the nape, the cheek guards sit close, the crest is five small beads.
