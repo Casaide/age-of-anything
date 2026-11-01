@@ -269,7 +269,7 @@ def vx_arms(out:[vx_prim], u:vx_unit_def, fr:vx_frame, swing:float, t:float):
 // A helmet: a cap over the top of the head.
 def vx_helm(out:[vx_prim], fr:vx_frame):
     out.push(vx_hard(fr.head_top, fr.head_top + float3 { 0.0, -0.2, 0.3 }, fr.head_r, fr.head_r * 0.9, vx_mat_metal))
-    out.push(vx_disc(fr.head_top + float3 { 0.0, 0.0, -fr.head_r * 0.3 }, float3 { 0.0, 0.15, 1.0 }, fr.head_r + 0.3, 0.25, vx_mat_metal))
+    out.push(vx_disc(fr.head_top + float3 { 0.0, 0.0, -fr.head_r * 0.3 }, float3 { 0.0, 0.15, 1.0 }, fr.head_r + 0.15, 0.22, vx_mat_metal))
 
 // A scarf at the neck in team colour: the team on creatures that wear no tunic.
 def vx_scarf(out:[vx_prim], c:float3, r:float, tilt:float):
@@ -347,20 +347,22 @@ def vx_human(out:[vx_prim], u:vx_unit_def, ph:float) -> vx_frame:
         out.push(vx_bead(h + float3 { side * 0.95, 2.15, 0.3 }, 0.4, vx_mat_eye))
         if u.helm_kind != "galea": out.push(vx_ball(h + float3 { side * 2.35, -0.1, -0.2 }, 0.6, vx_mat_skin))   // ears
     if u.helm_kind == "galea":
-        out.push(vx_hard(h + float3 { 0.0, -0.6, 1.0 }, h + float3 { 0.0, -0.7, 1.2 }, 2.15, 2.15, vx_mat_metal))   // the bowl, the face open
-        out.push(vx_hard(h + float3 { -1.9, 1.3, 1.45 }, h + float3 { 1.9, 1.3, 1.45 }, 0.35, 0.35, vx_mat_metal))   // the brow
-        out.push(vx_disc(h + float3 { 0.0, -2.3, -0.5 }, float3 { 0.0, -0.7, 1.0 }, 1.9, 0.25, vx_mat_metal))   // the neck guard
+        // (sized against the head as seen from behind: the bowl hugs the skull, the neck guard and cheek guards
+        // sit close, the crest is narrow; Dominic: "from behind always look too large")
+        out.push(vx_hard(h + float3 { 0.0, -0.3, 0.8 }, h + float3 { 0.0, -0.35, 0.95 }, 2.15, 2.15, vx_mat_metal))   // the bowl, the face open
+        out.push(vx_hard(h + float3 { -1.75, 1.45, 1.25 }, h + float3 { 1.75, 1.45, 1.25 }, 0.3, 0.3, vx_mat_metal))   // the brow
+        out.push(vx_disc(h + float3 { 0.0, -1.95, -0.5 }, float3 { 0.0, -0.8, 1.0 }, 1.35, 0.2, vx_mat_metal))   // the neck guard
         for([ -1.0, 1.0 ]) side:   // cheek guards, down the sides of the face
-            out.push(vx_hard(h + float3 { side * 2.15, 0.5, 0.5 }, h + float3 { side * 1.95, 0.9, -1.5 }, 0.6, 0.45, vx_mat_metal))
-        out.push(vx_hard(h + float3 { 0.0, -0.6, 2.8 }, h + float3 { 0.0, -0.6, 3.5 }, 0.3, 0.3, vx_mat_metal))   // the crest's holder
+            out.push(vx_hard(h + float3 { side * 1.95, 0.7, 0.3 }, h + float3 { side * 1.8, 1.0, -1.3 }, 0.45, 0.35, vx_mat_metal))
+        out.push(vx_hard(h + float3 { 0.0, -0.35, 2.6 }, h + float3 { 0.0, -0.35, 3.1 }, 0.25, 0.25, vx_mat_metal))   // the crest's holder
         for(7) k:   // the crest, front to back over the top
             let a = float(k) * 25.0 - 75.0
-            out.push(vx_bead(h + float3 { 0.0, sin(a) * 2.5 - 0.6, 3.5 + cos(a) * 0.9 }, 0.8, vx_mat_team))
+            out.push(vx_bead(h + float3 { 0.0, sin(a) * 2.0 - 0.35, 3.1 + cos(a) * 0.7 }, 0.6, vx_mat_team))
     elif not u.helm:   // hair: a crown down to just above the eyes, and down the back of the head
         out.push(vx_bead(h + float3 { 0.0, -0.3, 1.6 }, 2.5, vx_mat_hair))
         out.push(vx_bead(h + float3 { 0.0, -0.8, 0.1 }, 2.55, vx_mat_hair))
     return vx_frame { chest + float3 { 3.4, 0.0, -0.4 }, chest + float3 { -3.4, 0.0, -0.4 }, 5.9, 1.3, vx_mat_skin, vx_mat_skin,
-                      h + float3 { 0.0, -0.25, 0.8 }, 2.6 }
+                      h + float3 { 0.0, -0.2, 0.75 }, 2.2 }
 
 // A rat: a small hunched body, pear-shaped (narrow shoulders over a round belly and big haunches), thin shins on
 // pink feet, a long pointed snout with a pink nose, big round ears pink inside, a beady eye, and a long bare tail
