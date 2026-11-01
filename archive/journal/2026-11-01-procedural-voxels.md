@@ -211,3 +211,8 @@ measured) and 4.5 heads.
   now (the composed measurements otherwise; the other counts dropped from the sheet, `voxel_proto -- out.ppm romans`
   draws the early Romans and the legionary). The eyes are a dark pixel at game size, no whites; the brows went too
   (on a turned face they merged with the eye into a dark bar). Pictures 45 (game size), 46 (close), 47 (faces).
+- Dominic on a close crop of the legionary's face: "or whatever is around the eyes" (big dark goggles in a white
+  frame) and "silver sticking out the sides of the head?". The galea's brow band and cheek guards framed the eyes and
+  stuck out past the head's outline; at this size they can't read without that, so they're gone: the bowl hugs the
+  skull, a small neck guard, the crest. Pictures 48 (before) and 49 (every helmeted Roman in all 8 facings after:
+  skin round small dark eyes, no silver past the head).
