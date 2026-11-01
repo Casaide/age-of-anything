@@ -663,17 +663,20 @@ def collect_units(alpha:float):
             unit_dir.set(u_id[i], d)
             last_kind.set(u_id[i], u_kind[i])
             last_owner.set(u_id[i], u_owner[i])
-            let state, n = unit_state(i, moving)
+            let state, n0 = unit_state(i, moving)
+            // (voxel units step by the ground they cover, so the planted foot doesn't slide)
+            let n = if voxel_units and (state == "walk" or find_string(state, "carry") == 0): vx_walk_step(u_id[i], u_kind[i], x, y) else: n0
             var f = if voxel_units: vx_frame_for(u_kind[i], state, d, n) else: frame_index("u{u_kind[i]}.{state}.{d}.{n}")
             if f < 0 and not voxel_units: f = frame_index("u{u_kind[i]}.idle.{d}.0")
-            let p = iso(x, y)
+            var p = iso(x, y)
             let tc = team_col(u_owner[i])
             let since = clock_s - hit_t0.get(u_id[i], -10.0)
             let flash = if since < 0.12: 1.0 + 1.8 * (1.0 - since / 0.12) else: 1.0
-            add(f, p.x, p.y, p.y, float4 { tc.x, tc.y, tc.z, flash })
+            let up = if voxel_units: lift_at(x, y) * 1.5 else: 0.0   // standing on the hill (canvas px; iso is 1.5x), as the views do
+            add(f, p.x, p.y - up, p.y, float4 { tc.x, tc.y, tc.z, flash })
             if voxel_units and f >= 0:   // its shadow on the ground, under every unit (as the props' are)
                 let sf = vx_shadow_for(f)
-                if sf >= 0: add(sf, p.x, p.y, -200000.0 + p.y, float4 { 1.0, 1.0, 1.0, 1.0 })
+                if sf >= 0: add(sf, p.x, p.y - up, -200000.0 + p.y, float4 { 1.0, 1.0, 1.0, 1.0 })
 
 def collect_corpses():
     corpses = filter(corpses) c: clock_s - c.t0 < 4.0

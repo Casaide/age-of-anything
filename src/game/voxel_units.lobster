@@ -48,6 +48,18 @@ def vx_def_of(k:int) -> vx_unit_def:
                          if vx_has(vx_part(r, "head_gear"), [ "galea" ]): "galea" else: "", armour,
                          if vx_has(vx_part(r, "back"), [ "quiver" ]): "quiver" else: "", coat }
 
+// The walk steps by the ground covered: a cycle of 8 steps is a stride (the body moves its foot's reach twice each
+// half cycle, the planted foot fixed), so its length is four times that reach. A body unit is about 1/62 of a tile
+// along the ground (a tile is 96 x 48 iso px; a body unit 1.1 px).
+let vx_cycle = dictionary<int, float>(256)    // type -> milli-tiles a walk cycle
+let vx_walked = dictionary<int, float>(1024)  // unit id -> milli-tiles walked
+let vx_last = dictionary<int, float2>(1024)   // unit id -> where it was last drawn
+
+def vx_reach(u:vx_unit_def) -> float:   // how far a foot swings out from under the hip, body units (as the builders step)
+    if u.mount == "cat": return 3.4 * vx_CAT_SIZE
+    if u.mount == "horse": return 4.0
+    return (if u.rc.kind == "rat": 5.5 elif u.rc.kind == "frog": 2.0 else: 4.6) * u.rc.size
+
 // A look (the same race, kit and mount: most age upgrades share one) is baked into an atlas of its own, its cells
 // cropped to what's drawn and packed in rows VX_ATLAS wide, and kept in the bake cache (a PNG and a manifest, as the
 // composed parts are), keyed by the look and the voxel builder's source: the next start loads it, and any change to
@@ -103,6 +115,7 @@ def vx_load_look(k:int, stem:string) -> bool:
 // One type's frames: steps per mode and facing. Returns whether it baked (false: it took a look's frames).
 def vx_bake_type(k:int) -> bool:
     let u = vx_def_of(k)
+    vx_cycle.set(k, 4.0 * vx_reach(u) * 1000.0 / 62.0)
     let key = "{u.rc.kind} {u.rc.skin} {u.right} {u.left} {u.helm} {u.armour} {u.mount} {u.helm_kind} {u.armour_kind} {u.back} {u.coat} {t_worker[k]}"
     let same = vx_looks.get(key, -1)
     if same >= 0:
@@ -157,6 +170,14 @@ def vx_bake_types():
             if vx_bake_type(k): baked++
             n++
     print "voxel units: {n} types, {baked} looks baked (the rest shared or from the cache) in {int((seconds_elapsed() - t0) * 1000.0)} ms"
+
+def vx_walk_step(id:int, k:int, x:float, y:float) -> int:
+    let at = float2 { x, y }
+    let was = vx_last.get(id, at)
+    vx_last.set(id, at)
+    let walked = vx_walked.get(id, 0.0) + magnitude(at - was)
+    vx_walked.set(id, walked)
+    return int(walked / vx_cycle.get(k, 350.0) * 8.0) % 8
 
 // The frame for a unit's state (unit_state's names) facing d (dir_of's).
 def vx_frame_for(k:int, state:string, d:int, n:int) -> int:

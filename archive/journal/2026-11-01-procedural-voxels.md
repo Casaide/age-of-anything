@@ -177,3 +177,19 @@ the head. Now (Claude): the plain cap, on every creature, is a cap over the crow
 frame's head_top and head_r are its centre and radius); the galea's bowl hugs the skull, the neck guard is a small
 plate close to the nape, the cheek guards sit close, the crest is five small beads.
 The same battle crop, composed, voxel with the old helmets, voxel head sized: picture 39.
+
+## Drifting feet, sinking on slopes, and the humans' proportions as options
+Dominic played a voxel battle: "Humans by far look the worst. Early age ones. Too tall, strange in every way really.
+Uncanny valley." "All units look a little like they're drifting." "On hills the rats were passing through the ground or
+floating at some points."
+- Sinking: the voxel frames were drawn at iso(x, y) with no lift; the composed views stand at lift_at(x, y) (canvas
+  px, 1.5x in iso). The voxel unit and its ground shadow are lifted the same now (picture 40: composed, voxel before,
+  voxel after, the same battle moment on the ridge).
+- Drifting: the walk stepped at 8 frames a second whatever the unit's speed. Now the voxel walk steps by the ground
+  covered: 8 steps a stride, a stride four times the creature's foot reach (the planted foot moves back by the reach
+  each way while the body passes over it), a body unit about 1/62 of a tile. Idle units have a single frame.
+- Humans: they measure the same height as the composed ones (about 49 world px to the crest), but at about 7.5 heads
+  tall where the composed heroic humans are 5.5: a small head on long legs. The human builder now takes a head count
+  (vx_heads; the head, leg length, limb and body thickness follow it, the height fixed). Options for Dominic to pick:
+  7.5 (now), 6.5, 5.5 (as the composed), 4.5, on the early Romans and the legionary against the composed ones
+  (pictures 41 at game size, 42 close; `lobster voxel_proto.lobster -- out.ppm heads:7.5,6.5,5.5,4.5`).
