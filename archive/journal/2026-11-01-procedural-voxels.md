@@ -156,3 +156,15 @@ ground shadows, Roman spearmen and clubbers.
   concept sheet's columns (the composed rigs' facings), not the game. Back to + 2; the sheet keeps its own order.
 - Still missing in the voxel trial: the dead (a composed unit falls and lies; a voxel one just goes), wild animals, and
   the early Romans' look is mostly team red (a whole tunic) where the composed ones show bare skin and a dark kilt.
+
+## Every Roman line, and less red
+Dominic (relayed): "Looking really good. But yeh roman in that battle scene isn't latest round?" The 13:00 battle's
+Romans were spearmen and clubbers in the generic kit; only the legionary had the Roman treatment. Now every line reads
+its own look from its recipe (Claude): a club or bone club, a pilum (a long iron shank), a pike, a healer's laurel
+staff, an archer's quiver, ponies in their palette coats; the galea, lorica or bronze, the scutum as before. Less red,
+as Claude suggested and Dominic asked: an undyed tunic, bare arms, a dark kilt with its hem in team colour (out past
+the leather strips), leather armour as tanned hide (lighter than the dark skin and the kilt; at first all three were
+one brown). Team colour now sits on the hem, the crest and the shield (picture 33, every Roman line).
+The same moments again: 34 and 35 (the battle; the spearmen and the bone clubber now read as the composed ones do),
+36 and 37 (the town at 1:30, the rats' side). The first start after the change rebaked 27 looks in 19.6 s; the next
+start loaded them in 7 ms.
