@@ -134,3 +134,14 @@ Dominic: "much better direction".
 - Dominic: "humans still very bulky". Slimmed (Claude): limbs about a fifth thinner (thighs 1.75, shins 1.4 to 0.95,
   upper arms 1.3), waist 2.2 and chest 2.75, shoulders 3.0 out, the hips closer, the skirt, belt, strips, armour,
   neck and helmet pulled in to match. Now about the composed legionary's width (picture 28).
+
+## The bake at the match start
+Measured per look (a Roman, 17 poses): the fill 0.89 s, the 8 facings drawn 0.18 s, the ground shadows 0.06 s; the
+occlusion pass and function calls cost next to nothing. The fill measured every part listed in a block's loose
+bounding-box bin at every voxel; now each block's centre test also keeps only the parts close enough to matter in
+it: 0.47 s, the picture identical (about 55,000 voxel measurements a pose at 7 parts each). The match start went from
+17.6 s to 13 s for 26 looks.
+The rest is just how many poses there are, so the looks are now cached as the composed parts are: each look baked into
+an atlas of its own, kept in bake_cache/ as a PNG and a manifest, keyed by the look and a hash of view/voxel.lobster
+(any change to the builder bakes again; no version number to remember). The first start with a race bakes (17.5 s,
+writing the PNGs included); every start after loads in 5 ms. A composed match takes about 15 s to start either way.
