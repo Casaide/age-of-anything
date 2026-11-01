@@ -207,3 +207,7 @@ kilt, hair near black and close to the skull (it puffed out bigger than the head
 its palette (the composed humans light faces from within), leather armour a lighter tan, and a face that reads: eye
 whites round dark pupils, brows. Pictures 43 (game size) and 44 (close): composed against voxel at 7.5, 6.5, 5.5 (as
 measured) and 4.5 heads.
+- Dominic picked from picture 44: "voxel 4.5 is looking much better size, just eyes too big." The humans are 4.5 heads
+  now (the composed measurements otherwise; the other counts dropped from the sheet, `voxel_proto -- out.ppm romans`
+  draws the early Romans and the legionary). The eyes are a dark pixel at game size, no whites; the brows went too
+  (on a turned face they merged with the eye into a dark bar). Pictures 45 (game size), 46 (close), 47 (faces).
