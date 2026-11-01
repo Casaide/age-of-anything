@@ -360,13 +360,12 @@ def vx_human(out:[vx_prim], u:vx_unit_def, ph:float) -> vx_frame:
         out.push(vx_bead(h + float3 { side * 0.85, 2.15, 0.3 } * hs, 0.35, vx_mat_eye))   // an eye: a dark pixel at game size, no white
         if u.helm_kind != "galea": out.push(vx_ball(h + float3 { side * 2.35, -0.1, -0.2 } * hs, 0.6 * hs, vx_mat_skin))   // ears
     if u.helm_kind == "galea":
-        // (sized against the head as seen from behind: the bowl hugs the skull, the neck guard and cheek guards
-        // sit close, the crest is narrow; Dominic: "from behind always look too large")
+        // (head sized, seen from any side: the bowl hugs the skull, the neck guard sits close, the crest is narrow;
+        // Dominic: "from behind always look too large", "helmets should just be head sized")
         out.push(vx_hard(h + float3 { 0.0, -0.3, 0.8 } * hs, h + float3 { 0.0, -0.35, 0.95 } * hs, 2.15 * hs, 2.15 * hs, vx_mat_metal))   // the bowl, the face open
-        out.push(vx_hard(h + float3 { -1.75, 1.45, 1.25 } * hs, h + float3 { 1.75, 1.45, 1.25 } * hs, 0.3 * hs, 0.3 * hs, vx_mat_metal))   // the brow
         out.push(vx_hard(h + float3 { 0.0, -1.7, -0.2 } * hs, h + float3 { 0.0, -1.85, -0.9 } * hs, 0.9 * hs, 0.8 * hs, vx_mat_metal))   // the neck guard, close
-        for([ -1.0, 1.0 ]) side:   // cheek guards, down the sides of the face
-            out.push(vx_hard(h + float3 { side * 1.9, 0.7, 0.3 } * hs, h + float3 { side * 1.75, 1.0, -1.2 } * hs, 0.4 * hs, 0.3 * hs, vx_mat_metal))
+        // (no brow band or cheek guards: at this size they framed the eyes like goggles and stuck out past the
+        // head; Dominic: "silver sticking out the sides of the head?")
         for(5) k:   // a small crest, front to back over the top
             let a = float(k) * 30.0 - 60.0
             out.push(vx_bead(h + float3 { 0.0, sin(a) * 1.7 - 0.35, 2.8 + cos(a) * 0.55 } * hs, 0.5 * hs, vx_mat_team))
