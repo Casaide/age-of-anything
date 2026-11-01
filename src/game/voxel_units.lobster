@@ -5,7 +5,7 @@
 
 let VX_MODES = [ "idle", "walk", "attack", "work" ]
 let vx_frames = dictionary<string, int>(4096)   // "kind.mode.facing.step" -> frame
-let VX_DRAW_K = 2.2 / ART_K   // world art px a voxel (2.2: the composed units' size, chunky pixels)
+let VX_DRAW_K = 2.2 / (ART_K * vx_RES)   // world art px a voxel (2.2 body units: the composed units' size)
 
 def vx_has(id:string, words:[string]) -> bool:
     for(words) w: if find_string(id, w) >= 0: return true
@@ -28,7 +28,7 @@ def vx_def_of(k:int) -> vx_unit_def:
     elif vx_has(hr, [ "sword", "blade", "gladius", "sabre", "dagger" ]): right = "sword"
     elif hr != "": right = "axe"
     if left == "" and vx_has(vx_part(r, "hand_l"), [ "shield" ]): left = "shield"
-    let mount = if find_string(body, "centaur") >= 0: "centaur" elif has(r, "mount"): "horse" else: ""
+    let mount = if find_string(body, "centaur") >= 0: "centaur" elif not has(r, "mount"): "" elif rstr(at(r, "mount"), "creature") == "cat": "cat" else: "horse"
     return vx_unit_def { rstr(r, "name"), rc, right, left, vx_part(r, "head_gear") != "", vx_part(r, "torso") != "", mount }
 
 // One type's atlas: a row of steps per mode and facing.

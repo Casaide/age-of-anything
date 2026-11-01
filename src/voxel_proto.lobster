@@ -19,6 +19,7 @@ let units = [
     vx_unit_def { "centaur", vx_HUMAN, "spear", "shield", false, false, "centaur" },
     vx_unit_def { "rat worker", vx_RAT, "axe", "", false, false, "" },
     vx_unit_def { "rat spearman", vx_RAT, "spear", "shield", false, false, "" },
+    vx_unit_def { "rat on a cat", vx_RAT, "spear", "shield", true, false, "cat" },
     vx_unit_def { "frog spearman", vx_FROG, "spear", "shield", false, false, "" },
     vx_unit_def { "frog archer", vx_FROG, "", "bow", false, false, "" },
     vx_unit_def { "bear warrior", vx_BEAR, "axe", "shield", true, true, "" },
@@ -27,8 +28,8 @@ let units = [
 let rows = []::row
 for(units) u, k:
     rows.push(row { u, "stand" })
-    if k == 4 or k == 7 or k == 10: rows.push(row { u, "walk" })
-    if k == 0 or k == 1 or k == 2 or k == 3 or k == 7 or k == 8 or k == 10: rows.push(row { u, "attack" })
+    if k == 4 or k == 8 or k == 11: rows.push(row { u, "walk" })
+    if k == 0 or k == 1 or k == 7: rows.push(row { u, "attack" })
 
 let out_path = if command_line_arguments().length: command_line_arguments()[0] else: "voxel_proto.ppm"
 let iw = vx_CELL.x * 8
