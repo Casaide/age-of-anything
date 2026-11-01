@@ -216,3 +216,15 @@ measured) and 4.5 heads.
   stuck out past the head's outline; at this size they can't read without that, so they're gone: the bowl hugs the
   skull, a small neck guard, the crest. Pictures 48 (before) and 49 (every helmeted Roman in all 8 facings after:
   skin round small dark eyes, no silver past the head).
+
+## Three looks per human
+Dominic asked whether skin colour is randomised (neither art path does: one palette a race) and said yes to variety.
+Each voxel human unit type now bakes three looks (Claude): a skin shade within the race's palette (x1.0, 0.78, 1.22),
+black, grey or auburn hair, and short hair, hair down the nape (showing under a helmet) or a short beard. A unit's look
+comes from a hash of its id, in the view only (the sim and lockstep never see it); each look is its own bake and cache
+entry. The first tries were too alike (brown hair on brown skin read as bald). Pictures 50 (the looks on the sheet), 51
+(a column of spearmen in the battle, mixed). The first start bakes 61 looks in 47 s; later starts load in about 10 ms.
+Bug on the way: a local named `looks` shadowed a game global and the game didn't build, though run_tests passed (it
+doesn't compile game.lobster): every change to the voxel path is now started in the game once before it's committed.
+Rats and frogs would gain from it too: a fur shade (lighter, darker, greyer), a pale patch or a torn ear for rats;
+spots or a stripe and a shade for frogs; the cat's coat (black, ginger, tabby) for the riders.
