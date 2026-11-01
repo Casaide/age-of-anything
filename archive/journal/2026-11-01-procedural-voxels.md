@@ -20,3 +20,8 @@ is one melted shape, and the axe is a hard part at the hand.
 ## Next
 Concepts for Dominic: the shading's contrast and light, outline or not, faces and detail at this size; then a check in
 voxel space (pieces, feet on the ground, legs counted) and how voxel units would plug into the composer.
+
+## Round 2: a slimmer chest, team colour as trim, sash or tunic
+Dominic: "Those are great! The chest is maybe a bit too thick." On team colour: the game already recolours one region
+(the fidelity round said to shrink it over natural colours), and the genre mostly colours part of the clothes. So the
+tunic is undyed now and three looks are drawn: trim (shoulders and belt), a sash, and the whole tunic (picture 03).
