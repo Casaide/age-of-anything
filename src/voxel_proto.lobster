@@ -79,15 +79,16 @@ class race:
     lean:float      // the torso leaned forward, degrees
     arm:float       // arm segments' length
     tail:string
+    sleeves:bool    // the tunic's sleeves (a frog's arms stay bare)
 
 let HUMAN = race { float3 { 0.86, 0.66, 0.50 }, float3 { 0.92, 0.75, 0.60 }, "human", 1.0,
-                   21.0, 10.5, 10.0, 2.6, 2.6, 2.9, 11.0, 4.0, 4.7, 4.0, 7.2, "" }
+                   21.0, 10.5, 10.0, 2.6, 2.6, 2.9, 11.0, 4.0, 4.7, 4.0, 7.2, "", true }
 let RAT = race { float3 { 0.47, 0.40, 0.36 }, float3 { 0.74, 0.68, 0.62 }, "rat", 0.85,
-                 15.0, 7.5, 7.5, 3.6, 2.4, 2.6, 10.0, 4.2, 4.6, 22.0, 6.2, "rat" }
+                 15.0, 7.5, 7.5, 3.6, 2.4, 2.6, 10.0, 4.2, 4.6, 22.0, 6.2, "rat", true }
 let FROG = race { float3 { 0.40, 0.58, 0.24 }, float3 { 0.82, 0.80, 0.50 }, "frog", 0.85,
-                  12.0, 6.5, 6.0, 4.0, 2.8, 3.6, 8.5, 5.4, 5.2, 8.0, 6.0, "" }
+                  12.0, 6.5, 6.0, 4.0, 2.8, 3.6, 8.5, 5.4, 5.2, 8.0, 6.0, "", false }
 let BEAR = race { float3 { 0.42, 0.28, 0.17 }, float3 { 0.62, 0.48, 0.34 }, "bear", 1.12,
-                  19.0, 9.5, 9.0, 3.2, 3.4, 3.6, 12.0, 6.0, 6.6, 6.0, 7.0, "bear" }
+                  19.0, 9.5, 9.0, 3.2, 3.4, 3.6, 12.0, 6.0, 6.6, 6.0, 7.0, "bear", true }
 
 class unit_def:
     label:string
@@ -110,7 +111,7 @@ def leg(out:[prim], rc:race, hip:float3, swing:float, bend:float, m:int, boot:in
 def arm(out:[prim], rc:race, shoulder:float3, side:float, swing:float, bend:float) -> float3:
     let elbow = shoulder + down(swing) * rc.arm + float3 { side * 0.6, 0.0, 0.0 }
     let wrist = elbow + down(swing + bend) * rc.arm * 0.95
-    out.push(prim { shoulder, elbow, 1.8, 1.55, mat_team, false, false })
+    out.push(prim { shoulder, elbow, 1.8, 1.55, if rc.sleeves: mat_team else: mat_skin, false, false })
     out.push(prim { elbow, wrist, 1.55, 1.25, mat_skin, false, false })
     out.push(ball(wrist + down(swing + bend) * 0.9, 1.3, mat_skin, false))
     return wrist + down(swing + bend) * 0.9
@@ -123,12 +124,12 @@ def head(out:[prim], rc:race, at:float3, helm:bool):
             for([ -1.0, 1.0 ]) side: out.push(ball(at + float3 { side * 1.15, 2.75, 0.35 }, 0.45, mat_eye, true))
             if not helm: out.push(ball(at + float3 { 0.0, -0.8, 0.65 }, 3.35, mat_hair, true))
         case "rat":
-            out.push(ball(at, 2.8, mat_skin, false))
-            out.push(prim { at + float3 { 0.0, 1.5, -0.4 }, at + float3 { 0.0, 5.2, -1.6 }, 2.2, 0.8, mat_skin, false, false })
+            out.push(prim { at + float3 { 0.0, -0.6, 0.2 }, at + float3 { 0.0, 0.8, 0.0 }, 2.5, 2.4, mat_skin, false, false })
+            out.push(prim { at + float3 { 0.0, 1.5, -0.4 }, at + float3 { 0.0, 5.4, -1.5 }, 2.0, 0.7, mat_skin, false, false })
             out.push(ball(at + float3 { 0.0, 5.5, -1.6 }, 0.7, mat_pink, true))
             for([ -1.0, 1.0 ]) side:
                 out.push(ball(at + float3 { side * 1.4, 2.0, 0.8 }, 0.5, mat_eye, true))
-                if not helm: out.push(prim { at + float3 { side * 2.0, -0.4, 2.0 }, at + float3 { side * 2.1, 0.0, 2.4 }, 1.25, 1.1, mat_skin, false, false })
+                if not helm: out.push(prim { at + float3 { side * 2.2, -0.5, 2.0 }, at + float3 { side * 2.6, -0.2, 2.9 }, 1.5, 1.4, mat_skin, true, false })
         case "frog":
             out.push(prim { at + float3 { -1.6, 1.0, 0.0 }, at + float3 { 1.6, 1.0, 0.0 }, 2.9, 2.9, mat_skin, false, false })
             out.push(prim { at + float3 { 0.0, 2.6, -1.2 }, at + float3 { 0.0, 2.6, -1.2 }, 2.6, 2.6, mat_pale, false, false })
@@ -149,7 +150,7 @@ def head(out:[prim], rc:race, at:float3, helm:bool):
 def torso(out:[prim], rc:race, p:float3, ph:float, rs:float, rb:float, ls:float, lb:float, armour:bool, helm:bool) -> float3, float3:
     let chest = p + float3 { 0.0, sin(rc.lean), cos(rc.lean) } * rc.spine
     out.push(prim { p, chest, rc.waist, rc.chest, mat_team, false, false })
-    out.push(prim { chest + float3 { -rc.chest - 0.7, 0.0, -0.6 }, chest + float3 { rc.chest + 0.7, 0.0, -0.6 }, 2.1, 2.1, mat_team, false, false })
+    out.push(prim { chest + float3 { -rc.chest - 0.7, 0.0, -0.6 }, chest + float3 { rc.chest + 0.7, 0.0, -0.6 }, 2.1, 2.1, if rc.sleeves: mat_team else: mat_skin, false, false })
     if armour:
         out.push(prim { p + float3 { 0.0, 0.0, 3.5 }, chest + float3 { 0.0, 0.0, -1.2 }, rc.waist + 0.4, rc.chest + 0.3, mat_metal, true, false })
     let neck = chest + float3 { 0.0, 0.3 + sin(rc.lean) * 2.0, rc.chest * 0.5 }   // (a bigger chest, a longer neck: the head sits on it)
@@ -239,13 +240,13 @@ def horse(out:[prim], ph:float, with_head:bool) -> float3:
     out.push(prim { back, front, 6.2, 6.6, mat_coat, false, false })
     out.push(prim { back + float3 { 0.0, -1.5, 1.5 }, back + float3 { 0.0, -6.0, -5.0 }, 1.4, 0.9, mat_mane, true, false })
     let s = 24.0 * sin(ph)
-    let legs = race { float3_0, float3_0, "", 1.0, 0.0, 9.0, 9.5, 2.2, 2.4, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, "" }
+    let legs = race { float3_0, float3_0, "", 1.0, 0.0, 9.0, 9.5, 2.2, 2.4, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, "", false }
     for([ -1.0, 1.0 ]) side:
         let lift = 30.0 * max(0.0, sin(ph + 90.0 * side))
         leg(out, legs, front + float3 { side * 3.2, 1.0, -2.0 }, s * side, lift, mat_coat, mat_mane)
         leg(out, legs, back + float3 { side * 3.4, -1.0, -2.0 }, -s * side, lift * 0.8, mat_coat, mat_mane)
     if with_head:
-        let top = front + float3 { 0.0, 5.0, 10.0 }
+        let top = front + float3 { 0.0, 8.0, 9.0 }   // (forward enough to show past a rider)
         out.push(prim { front + float3 { 0.0, 1.0, 2.0 }, top, 3.6, 2.2, mat_coat, false, false })
         out.push(prim { top + float3 { 0.0, -1.2, 0.8 }, front + float3 { 0.0, 0.5, 6.0 }, 1.0, 1.0, mat_mane, true, false })   // mane
         out.push(prim { top, top + float3 { 0.0, 4.6, -3.2 }, 2.2, 1.5, mat_coat, false, false })
@@ -284,7 +285,7 @@ let GRID = int3 { 44, 48, 72 }
 let ORIGIN = float3 { -22.0, -24.0, -1.0 }
 
 // The whole shape's distance at p, and the material of the part nearest it.
-def field(ps:[prim], p:float3) -> float, int:
+def field(ps:[prim], p:float3, thick:float) -> float, int:
     var body = 1000.0
     var gear = 1000.0
     var near = 1000.0
@@ -296,27 +297,40 @@ def field(ps:[prim], p:float3) -> float, int:
         if d < near:
             near = d
             m = s.mat
-    return min(body, gear), m
+    return min(body, gear - thick), m   // (gear thickened: a shaft thinner than a voxel would fill in pieces)
 
 var normals = []::float3   // per filled voxel: the shape's smooth normal (the grid's stairs would speckle the shading)
 
+// The shape filled into the grid. Blocks of 4 voxels a side are tested at their centre first: one clearly outside
+// is skipped, one clearly inside filled whole (its voxels can't be seen); only blocks the surface crosses are tested
+// voxel by voxel. Most of the grid is air, so this is most of the speed.
 def fill(ps:[prim], size:float) -> [int]:
     let g = map(GRID.x * GRID.y * GRID.z): -1
     normals = map(GRID.x * GRID.y * GRID.z): float3_0
     var low = 1000.0
     for(ps) s: low = min(low, min(s.a.z - s.ra, s.b.z - s.rb))
-    for(GRID.z) z: for(GRID.y) y: for(GRID.x) x:
-        let p = (ORIGIN + float(int3 { x, y, z }) + float3_1 * 0.5) / size + float3 { 0.0, 0.0, low }
-        let d, m = field(ps, p)
-        if d <= 0.0:
-            let i = (z * GRID.y + y) * GRID.x + x
-            g[i] = m
-            if d > -1.8:
-                let e = 0.5
-                let dx, mx = field(ps, p + float3 { e, 0.0, 0.0 })
-                let dy, my = field(ps, p + float3 { 0.0, e, 0.0 })
-                let dz, mz = field(ps, p + float3 { 0.0, 0.0, e })
-                normals[i] = normalize(float3 { dx - d, dy - d, dz - d })
+    let thick = 0.5 / size
+    let shape = fn(v:float3) -> float3: (ORIGIN + v) / size + float3 { 0.0, 0.0, low }
+    let reach = 3.5 / size   // a block's half diagonal, in shape units
+    for(GRID.z / 4) bz: for(GRID.y / 4) by: for(GRID.x / 4) bx:
+        let b0 = int3 { bx, by, bz } * 4
+        let dc, mc = field(ps, shape(float(b0) + float3_1 * 2.0), thick)
+        if dc < reach:
+            for(4) z: for(4) y: for(4) x:
+                let v = b0 + int3 { x, y, z }
+                let i = (v.z * GRID.y + v.y) * GRID.x + v.x
+                if dc < -reach: g[i] = mc
+                else:
+                    let p = shape(float(v) + float3_1 * 0.5)
+                    let d, m = field(ps, p, thick)
+                    if d <= 0.0:
+                        g[i] = m
+                        if d > -1.8:
+                            let e = 0.5
+                            let dx, mx = field(ps, p + float3 { e, 0.0, 0.0 }, thick)
+                            let dy, my = field(ps, p + float3 { 0.0, e, 0.0 }, thick)
+                            let dz, mz = field(ps, p + float3 { 0.0, 0.0, e }, thick)
+                            normals[i] = normalize(float3 { dx - d, dy - d, dz - d })
     return g
 
 def at(g:[int], v:int3) -> int:
@@ -337,19 +351,42 @@ def draw(g:[int], facing:int, img:[float3], iw:int, cx:int, cy:int):
     for(CELL.y) py: for(CELL.x) px:
         let u = float(px - CELL.x / 2)
         let v = float(CELL.y / 2 - py) - 2.0
-        var o = centre + rot(float3 { u, 0.0, 0.0 } + upv * v - fwd * 70.0)
-        let d = rot(fwd) * 0.25
-        for(600):
-            let c = int3 { int(floor(o.x)), int(floor(o.y)), int(floor(o.z)) }
-            let m = at(g, c)
-            if m >= 0:
-                let n = normals[(c.z * GRID.y + c.y) * GRID.x + c.x]
-                let k = dot(n, rot(light)) * 0.5 + 0.5
-                let band = if k > 0.8: 1.15 elif k > 0.58: 0.95 elif k > 0.36: 0.75 else: 0.56
-                cols[py * CELL.x + px] = mat_cols[m] * band
-                shade[py * CELL.x + px] = m
-                break
-            o += d
+        // the ray walked voxel by voxel (each voxel it crosses, once), from where it enters the grid
+        let d = rot(fwd)
+        var o = centre + rot(float3 { u, 0.0, 0.0 } + upv * v)
+        var t0 = -1000.0
+        var t1 = 1000.0
+        for(3) ax:
+            let lo = (0.0 - o[ax]) / d[ax]
+            let hi = (float(GRID[ax]) - o[ax]) / d[ax]
+            t0 = max(t0, min(lo, hi))
+            t1 = min(t1, max(lo, hi))
+        if t0 < t1:
+            o += d * (t0 + 0.001)
+            var c = int3 { int(floor(o.x)), int(floor(o.y)), int(floor(o.z)) }
+            let st = int3 { if d.x > 0.0: 1 else: -1, if d.y > 0.0: 1 else: -1, if d.z > 0.0: 1 else: -1 }
+            let dt = float3 { abs(1.0 / d.x), abs(1.0 / d.y), abs(1.0 / d.z) }
+            var tm = float3 { (if d.x > 0.0: float(c.x) + 1.0 - o.x else: o.x - float(c.x)) * dt.x,
+                              (if d.y > 0.0: float(c.y) + 1.0 - o.y else: o.y - float(c.y)) * dt.y,
+                              (if d.z > 0.0: float(c.z) + 1.0 - o.z else: o.z - float(c.z)) * dt.z }
+            while all(c >= int3_0) and all(c < GRID):
+                let m = g[(c.z * GRID.y + c.y) * GRID.x + c.x]
+                if m >= 0:
+                    let n = normals[(c.z * GRID.y + c.y) * GRID.x + c.x]
+                    let k = dot(n, rot(light)) * 0.5 + 0.5
+                    let band = if k > 0.8: 1.15 elif k > 0.58: 0.95 elif k > 0.36: 0.75 else: 0.56
+                    cols[py * CELL.x + px] = mat_cols[m] * band
+                    shade[py * CELL.x + px] = m
+                    break
+                if tm.x < tm.y and tm.x < tm.z:
+                    c.x += st.x
+                    tm.x += dt.x
+                elif tm.y < tm.z:
+                    c.y += st.y
+                    tm.y += dt.y
+                else:
+                    c.z += st.z
+                    tm.z += dt.z
     for(CELL.y) py: for(CELL.x) px:
         let i = py * CELL.x + px
         var col = img[(cy + py) * iw + cx + px]
