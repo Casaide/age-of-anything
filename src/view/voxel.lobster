@@ -127,7 +127,7 @@ class vx_unit_def:
     coat:float3         // the mount's coat (zero: its own)
 
 var vx_seated = false   // a rider being built: no legs or tail of its own
-var vx_heads = 5.5           // a human's height in heads: 5.5 is the composed heroic human's build (other counts: options)
+let vx_heads = 4.5           // a human's height in heads (Dominic picked 4.5 from 7.5, 6.5, 5.5 as the composed, 4.5)
 var vx_team_wear = "scarf"   // where a creature without a tunic wears the team: scarf or vest (a concept option)
 var vx_act = ""      // the pose being drawn: "" (standing or walking) or "attack", at a step through it
 
@@ -302,9 +302,9 @@ def vx_leg(out:[vx_prim], hip:float3, foot:float3, l1:float, l2:float, r:float, 
 // over the skirt, bare shins in short boots, a head in proportion. A galea: a bowl with a brow, cheek guards, a neck
 // guard and a crest in team colour.
 def vx_human(out:[vx_prim], u:vx_unit_def, ph:float) -> vx_frame:
-    // the composed heroic human's measurements (model/units.lobster, D-173) at vx_heads 5.5: the top of the head at
-    // 38.8, hips at 18 (the knee 9 under them, the ankle 2.3 over the sole), shoulders at 29.3 and 4.7 out, the neck
-    // at 31.6; other head counts keep the height and scale the head, the legs and the build from it
+    // the composed heroic human's measurements (model/units.lobster, D-173), 5.5 heads: the top of the head at 38.8,
+    // hips at 18 (the knee 9 under them, the ankle 2.3 over the sole), shoulders at 29.3 and 4.7 out, the neck at
+    // 31.6; at vx_heads' count the height is kept and the head, the legs and the build scale from it
     let hh = 38.8 / vx_heads   // the head's height
     let hs = hh / 4.9 * 0.9    // the head's scale against the build these head sizes were first drawn at
     let bs = 0.85 + 0.15 * hs  // the limbs' and body's
@@ -357,9 +357,7 @@ def vx_human(out:[vx_prim], u:vx_unit_def, ph:float) -> vx_frame:
     out.push(vx_cap(h + float3 { 0.0, 0.5, -1.0 } * hs, h + float3 { 0.0, -0.1, 0.5 } * hs, 2.0 * hs, 2.3 * hs, vx_mat_skin))
     out.push(vx_cap(h + float3 { 0.0, 2.3, -0.1 } * hs, h + float3 { 0.0, 2.65, -0.7 } * hs, 0.55 * hs, 0.5 * hs, vx_mat_skin))   // the nose
     for([ -1.0, 1.0 ]) side:
-        out.push(vx_bead(h + float3 { side * 0.95, 2.0, 0.3 } * hs, 0.5 * hs, vx_mat_white))   // the eye, white round a dark pupil
-        out.push(vx_bead(h + float3 { side * 0.95, 2.3, 0.3 } * hs, 0.32 * hs, vx_mat_eye))
-        out.push(vx_hard(h + float3 { side * 0.45, 2.15, 0.95 } * hs, h + float3 { side * 1.45, 2.0, 0.85 } * hs, 0.22 * hs, 0.2 * hs, vx_mat_hair))   // a brow
+        out.push(vx_bead(h + float3 { side * 0.85, 2.15, 0.3 } * hs, 0.35, vx_mat_eye))   // an eye: a dark pixel at game size, no white
         if u.helm_kind != "galea": out.push(vx_ball(h + float3 { side * 2.35, -0.1, -0.2 } * hs, 0.6 * hs, vx_mat_skin))   // ears
     if u.helm_kind == "galea":
         // (sized against the head as seen from behind: the bowl hugs the skull, the neck guard and cheek guards

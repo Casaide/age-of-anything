@@ -10,7 +10,6 @@ class row:
     mode:string   // stand (8 facings), walk or attack (8 steps in profile, facing right)
     wear:string   // the team on a creature: scarf or vest
     shade:bool    // shadows (on the body and the ground)
-    heads:float   // a human's height in heads
 
 let units = [
     vx_unit_def { "rat worker", vx_RAT, "axe", "", true, false, "", "", "", "", float3_0 },
@@ -28,20 +27,18 @@ let units = [
     vx_unit_def { "roman legionary (age 2)", vx_ROMAN, "gladius", "scutum", true, true, "", "galea", "bronze", "", float3_0 },
 ]
 let rows = []::row
-for(units) u: rows.push(row { u, "stand", "scarf", true, 5.5 })
-rows.push(row { units[1], "stand", "vest", true, 5.5 })
-rows.push(row { units[1], "walk", "scarf", true, 5.5 })
-rows.push(row { units[1], "attack", "scarf", true, 5.5 })
-rows.push(row { units[0], "attack", "scarf", true, 5.5 })
+for(units) u: rows.push(row { u, "stand", "scarf", true })
+rows.push(row { units[1], "stand", "vest", true })
+rows.push(row { units[1], "walk", "scarf", true })
+rows.push(row { units[1], "attack", "scarf", true })
+rows.push(row { units[0], "attack", "scarf", true })
 
 let args = command_line_arguments()
 let out_path = if args.length: args[0] else: "voxel_proto.ppm"
-// `heads:7.5,5.5,...`: instead, the early Romans at each head count (the humans' concept round)
-if args.length > 1 and find_string(args[1], "heads:") == 0:
+// `romans`: instead, the early Romans and the legionary (against the composed ones)
+if args.length > 1 and args[1] == "romans":
     while rows.length: rows.pop()
-    let picks = [ units[5], units[6], units[11], units[12] ]
-    for(tokenize(args[1].substring(6, args[1].length - 6), ",", " ")) hc:
-        for(picks) u: rows.push(row { u, "stand", "scarf", true, string_to_float(hc) })
+    for([ units[5], units[6], units[11], units[12] ]) u: rows.push(row { u, "stand", "scarf", true })
 let step = vx_CELL.x * 3 / 2   // a column (room for the shadows)
 let iw = step * 8
 let ih = vx_CELL.y * rows.length
@@ -55,7 +52,6 @@ for(rows) rw, r:
     vx_fur = u.rc.fur
     vx_team_wear = rw.wear
     vx_shadows = rw.shade
-    vx_heads = rw.heads
     vx_act = if rw.mode == "attack": "attack" else: ""
     if rw.mode == "stand":
         let t = seconds_elapsed()
