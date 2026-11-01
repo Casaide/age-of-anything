@@ -12,11 +12,12 @@ class row:
     shade:bool    // shadows (on the body and the ground)
 
 let units = [
-    vx_unit_def { "rat worker", vx_RAT, "axe", "", true, false, "" },
-    vx_unit_def { "rat spear", vx_RAT, "spear", "shield", true, false, "" },
-    vx_unit_def { "rat on a cat", vx_RAT, "spear", "shield", true, false, "cat" },
-    vx_unit_def { "frog spear", vx_FROG, "spear", "shield", true, false, "" },
-    vx_unit_def { "human legionary", vx_HUMAN, "sword", "shield", true, true, "" },
+    vx_unit_def { "rat worker", vx_RAT, "axe", "", true, false, "", "", "" },
+    vx_unit_def { "rat spear", vx_RAT, "spear", "shield", true, false, "", "", "" },
+    vx_unit_def { "rat on a cat", vx_RAT, "spear", "shield", true, false, "cat", "", "" },
+    vx_unit_def { "frog spear", vx_FROG, "spear", "shield", true, false, "", "", "" },
+    vx_unit_def { "roman legionary (age 3)", vx_ROMAN, "gladius", "scutum", true, true, "", "galea", "lorica" },
+    vx_unit_def { "roman legionary (age 2)", vx_ROMAN, "gladius", "scutum", true, true, "", "galea", "bronze" },
 ]
 let rows = []::row
 for(units) u:
@@ -28,7 +29,8 @@ rows.push(row { units[1], "attack", "scarf", true })
 rows.push(row { units[0], "attack", "scarf", true })
 
 let out_path = if command_line_arguments().length: command_line_arguments()[0] else: "voxel_proto.ppm"
-let iw = vx_CELL.x * 8
+let step = vx_CELL.x * 3 / 2   // a column (room for the shadows)
+let iw = step * 8
 let ih = vx_CELL.y * rows.length
 let img = map(iw * ih): float3 { 86.0, 120.0, 46.0 } / 255.0
 let t0 = seconds_elapsed()
@@ -45,9 +47,9 @@ for(rows) rw, r:
         let t = seconds_elapsed()
         let stand = vx_fill(vx_unit_prims(u, 0.0), u.rc.size)
         fills += seconds_elapsed() - t
-        for(8) c: vx_draw(stand, (c + 3) % 8, img, iw, c * vx_CELL.x, r * vx_CELL.y)   // (columns as the composed sheet's)
+        for(8) c: vx_draw(stand, (c + 3) % 8, img, iw, c * step, r * vx_CELL.y)   // (columns as the composed sheet's)
     else:
-        for(8) k: vx_draw(vx_fill(vx_unit_prims(u, float(k) * 45.0), u.rc.size), 2, img, iw, k * vx_CELL.x, r * vx_CELL.y)
+        for(8) k: vx_draw(vx_fill(vx_unit_prims(u, float(k) * 45.0), u.rc.size), 2, img, iw, k * step, r * vx_CELL.y)
     print "{u.label} ({rw.mode}): drawn"
 print "{rows.length} rows in {seconds_elapsed() - t0} s ({fills} s filling the standing ones)"
 let ppm = "P6\n{iw} {ih}\n255\n"

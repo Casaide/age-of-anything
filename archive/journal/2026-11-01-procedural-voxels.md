@@ -113,3 +113,21 @@ and never darkens another unit (picture 20 off and on, 23 in the match). The bak
 
 Pictures: 18 (composed against voxel, game size), 19 (close), 20 (shadows off and on), 21 (walk, thrust, chop),
 22 (the team as a vest), 23 (in the match, with shadows).
+
+## Round 2b: a proper Roman, darker shade, straighter cat legs
+Dominic on round 2: "humans are the worst part. But generally really good! The cat's front legs look weird, bent in the
+middle. And rats' eyes are too big." Then: "shadows look good, just can we get some shadows on their bodies? They look
+like bright light on them", and on the human: "part of the problem: you're comparing with a Roman. Our guy has tiny tiny
+sword, tiny shield, really long limbs. Start by trying to make a perfect Roman."
+- The Roman (Claude): a soldier's build (sturdier limbs, hip at 19.4 of about 41), a tunic in team colour showing as
+  sleeves and a hem under eleven leather strips, a galea (a bowl that leaves the face open, a brow, cheek and neck guards,
+  a crest in team colour), lorica bands over dark leather at age 3 or a bronze cuirass at age 2, a big curved scutum
+  (three panels: a box shape was added to the builder), a gladius bigger than life with a bronze guard and pommel. The
+  game reads galea, lorica/bronze/leather, scutum, gladius and pilum from the recipe's parts (picture 26).
+- The body's light moved up and to the sun's side, the bands spread wider: the far side and undersides go dark, and the
+  self-shadows (a rider on a cat, an arm on a chest) show.
+- The cat's front legs bend at the elbow backwards and nearly straight, as a cat's do (the horse's too); rats' eyes smaller.
+- The concept sheet's columns are wider so the ground shadows aren't cut off.
+Pictures 24 (all, close), 25 (game size), 26 (the Roman against the composed one), 27 (a battle in the match: the cat,
+a rat, Roman spearmen). The bake is 17.6 s for 36 types now (26 looks; the Roman kit has more parts): too slow, next.
+Dominic: "much better direction".
