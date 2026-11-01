@@ -9,7 +9,7 @@ let CELL = int2 { 48, 66 }   // a sprite cell at game scale
 let BLEND = 2.2              // how far shapes melt into each other, voxels
 
 enum mat_kind:
-    mat_skin, mat_tunic, mat_trousers, mat_leather, mat_hair, mat_wood, mat_metal, mat_coat, mat_mane, mat_team
+    mat_skin, mat_tunic, mat_trousers, mat_leather, mat_hair, mat_wood, mat_metal, mat_coat, mat_mane, mat_team, mat_eye
 
 let MAT_COLS = [
     float3 { 0.86, 0.66, 0.50 },   // skin
@@ -22,12 +22,13 @@ let MAT_COLS = [
     float3 { 0.50, 0.32, 0.19 },   // a horse's coat
     float3 { 0.20, 0.14, 0.10 },   // mane and tail
     float3 { 0.80, 0.16, 0.13 },   // team colour
+    float3 { 0.12, 0.08, 0.06 },   // eyes
 ]
 
 enum team_look:
     team_tunic, team_trim, team_sash
 
-var team_style = team_trim
+var team_style = team_tunic   // (Dominic, 2026-11-01: the whole tunic)
 
 def cloth() -> int: return if team_style == team_tunic: mat_team else: mat_tunic
 
@@ -78,12 +79,14 @@ def torso(out:[prim], p:float3, ph:float, lean:float) -> float3:
     out.push(prim { chest + float3 { -5.4, 0.0, -0.6 }, chest + float3 { 5.4, 0.0, -0.6 }, 2.1, 2.1, yoke, false })
     if team_style == team_sash:
         out.push(prim { chest + float3 { -3.6, 0.0, 0.2 }, p + float3 { 3.4, 0.0, -0.4 }, 4.75, 4.15, mat_team, true })
-    let neck = chest + float3 { 0.0, 0.3, 2.6 }
-    out.push(prim { chest, neck + float3 { 0.0, 0.0, 1.0 }, 2.0, 1.8, mat_skin, false })
-    let head = neck + float3 { 0.0, 0.4, 4.6 }
-    out.push(prim { head, head + float3 { 0.0, 0.3, 0.6 }, 3.4, 3.3, mat_skin, false })
-    out.push(prim { head + float3 { 0.0, 2.9, -0.6 }, head + float3 { 0.0, 3.5, -0.9 }, 0.8, 0.6, mat_skin, false })   // nose
-    out.push(prim { head + float3 { 0.0, -0.8, 1.2 }, head + float3 { 0.0, -1.6, -0.6 }, 3.3, 3.0, mat_hair, true })
+    let neck = chest + float3 { 0.0, 0.3, 2.2 }
+    out.push(prim { chest, neck + float3 { 0.0, 0.0, 0.8 }, 1.9, 1.7, mat_skin, false })
+    let head = neck + float3 { 0.0, 0.5, 3.6 }   // the head's centre: a little taller than wide, the jaw forward
+    out.push(prim { head + float3 { 0.0, 0.5, -1.2 }, head + float3 { 0.0, 0.0, 0.8 }, 2.7, 3.1, mat_skin, false })
+    out.push(prim { head + float3 { 0.0, 3.0, -0.3 }, head + float3 { 0.0, 3.3, -0.7 }, 0.6, 0.5, mat_skin, false })   // nose
+    for([ -1.0, 1.0 ]) side:   // eyes, a pixel each
+        out.push(prim { head + float3 { side * 1.15, 2.75, 0.35 }, head + float3 { side * 1.15, 2.75, 0.35 }, 0.45, 0.45, mat_eye, true })
+    out.push(prim { head + float3 { 0.0, -0.7, 0.9 }, head + float3 { 0.0, -0.9, 0.4 }, 3.35, 3.35, mat_hair, true })   // hair: a cap on the top and back
     let sw = 22.0 * sin(ph)
     arm(out, chest + float3 { -5.6, 0.0, -0.8 }, -1.0, -sw, 15.0, 1.8)
     return arm(out, chest + float3 { 5.6, 0.0, -0.8 }, 1.0, sw, 25.0, 1.8)
@@ -217,8 +220,8 @@ class row:
     look:team_look
     walk:bool
 
-let rows = [ row { "human", team_trim, false }, row { "human", team_trim, true }, row { "human", team_sash, false },
-             row { "human", team_tunic, false }, row { "centaur", team_trim, false }, row { "centaur", team_trim, true } ]
+let rows = [ row { "human", team_tunic, false }, row { "human", team_tunic, true }, row { "centaur", team_tunic, false },
+             row { "centaur", team_tunic, true } ]
 let iw = CELL.x * 8
 let ih = CELL.y * rows.length
 let img = map(iw * ih): float3 { 0.33, 0.47, 0.18 }

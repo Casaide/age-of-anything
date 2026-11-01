@@ -25,3 +25,9 @@ voxel space (pieces, feet on the ground, legs counted) and how voxel units would
 Dominic: "Those are great! The chest is maybe a bit too thick." On team colour: the game already recolours one region
 (the fidelity round said to shrink it over natural colours), and the genre mostly colours part of the clothes. So the
 tunic is undyed now and three looks are drawn: trim (shoulders and belt), a sash, and the whole tunic (picture 03).
+
+## Round 3: the whole tunic, and the head rebuilt
+Dominic picked the whole tunic in team colour. On the head ("Head is weird and some angles", his close-up of facing
+3): the hair was a capsule pushed back and up, so it peaked like a crest, and the face had nothing on it. Now the head
+is a little taller than wide with the jaw forward, the hair a cap round the top and back, a small nose, a pixel for
+each eye, and a shorter neck (pictures 04, 05).
