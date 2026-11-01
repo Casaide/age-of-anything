@@ -176,3 +176,4 @@ and cheek guards together were nearly as wide as the shoulders, and the plain ca
 the head. Now (Claude): the plain cap, on every creature, is a cap over the crown at the skull's size and no brim (the
 frame's head_top and head_r are its centre and radius); the galea's bowl hugs the skull, the neck guard is a small
 plate close to the nape, the cheek guards sit close, the crest is five small beads.
+The same battle crop, composed, voxel with the old helmets, voxel head sized: picture 39.
