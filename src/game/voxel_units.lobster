@@ -127,7 +127,7 @@ def vx_bake_type(k:int) -> bool:
     let stem = bake_cache_dir + "/vx_" + sha256_text("{vx_source}|{key}").substring(0, 20)
     if vx_load_look(k, stem): return false
     let worker = vx_unit_def { u.label, u.rc, "axe", "", u.helm, u.armour, u.mount, u.helm_kind, u.armour_kind, u.back, u.coat }   // (work: chopping)
-    vx_mat_cols[vx_mat_skin] = u.rc.skin
+    vx_mat_cols[vx_mat_skin] = vx_skin_of(u.rc)
     vx_mat_cols[vx_mat_pale] = u.rc.pale
     vx_fur = u.rc.fur
     vx_rows = []::[float4]

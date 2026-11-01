@@ -14,14 +14,14 @@ let vx_BLEND = 0.8              // how far body parts melt into each other, body
 enum vx_mat_kind:
     vx_mat_skin, vx_mat_pale, vx_mat_cloth, vx_mat_leather, vx_mat_hair, vx_mat_wood, vx_mat_metal, vx_mat_coat,
     vx_mat_mane, vx_mat_team, vx_mat_eye, vx_mat_white, vx_mat_pink, vx_mat_cat, vx_mat_gold, vx_mat_mouth,
-    vx_mat_tail, vx_mat_bronze, vx_mat_kilt, vx_mat_laurel, vx_mat_hide
+    vx_mat_tail, vx_mat_bronze, vx_mat_kilt, vx_mat_laurel, vx_mat_hide, vx_mat_trousers
 
 let vx_MAT_BASE = [
     float3 { 0.86, 0.66, 0.50 },   // skin or fur (the race's)
     float3 { 0.92, 0.82, 0.68 },   // pale: a muzzle, a belly (the race's)
     float3 { 0.52, 0.45, 0.34 },   // undyed cloth: trousers, a frog's vest
     float3 { 0.42, 0.28, 0.16 },   // leather
-    float3 { 0.36, 0.22, 0.11 },   // hair
+    float3 { 0.12, 0.09, 0.08 },   // hair, darker than any skin
     float3 { 0.55, 0.38, 0.20 },   // wood
     float3 { 0.70, 0.72, 0.76 },   // metal
     float3 { 0.50, 0.32, 0.19 },   // a horse's coat
@@ -35,12 +35,13 @@ let vx_MAT_BASE = [
     float3 { 0.30, 0.10, 0.10 },   // a mouth
     float3 { 0.86, 0.70, 0.66 },   // a rat's bare tail
     float3 { 0.74, 0.56, 0.30 },   // bronze: a human's armour
-    float3 { 0.30, 0.21, 0.17 },   // a dark kilt
+    float3 { 0.21, 0.13, 0.12 },   // a dark kilt
     float3 { 0.33, 0.52, 0.22 },   // laurel
-    float3 { 0.70, 0.50, 0.28 },   // tanned hide: leather armour (lighter than skin and kilt, to read apart)
+    float3 { 0.80, 0.62, 0.36 },   // tanned hide: leather armour (lighter than skin and kilt, to read apart)
+    float3 { 0.27, 0.18, 0.16 },   // dark trousers
 ]
 let vx_mat_cols = copy(vx_MAT_BASE)
-let vx_MAT_FUR = [ 1, 1, 0, 0, 1, 0, 0, 1, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0 ]   // per material: flecked like fur
+let vx_MAT_FUR = [ 1, 1, 0, 0, 1, 0, 0, 1, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0 ]   // per material: flecked like fur
 var vx_fur = 0.07               // how strongly fur is flecked (the race's: frogs are smooth)
 
 class vx_prim:
@@ -108,6 +109,10 @@ let vx_ROMAN = vx_race { "human", float3 { 0.48, 0.29, 0.16 }, float3 { 0.35, 0.
 let vx_RAT = vx_race { "rat", float3 { 0.48, 0.35, 0.25 }, float3 { 0.78, 0.66, 0.58 }, 1.0, 0.09 }   // (rat_brown)
 let vx_FROG = vx_race { "frog", float3 { 0.38, 0.56, 0.22 }, float3 { 0.86, 0.84, 0.56 }, 1.15, 0.03 }
 
+// A race's skin as drawn: a human's lighter than its palette (the composed humans light the face from within, so the
+// skin reads apart from a dark kilt and hair).
+def vx_skin_of(rc:vx_race) -> float3: return if rc.kind == "human": min(rc.skin * 1.3, float3_1) else: rc.skin
+
 class vx_unit_def:
     label:string
     rc:vx_race
@@ -122,7 +127,7 @@ class vx_unit_def:
     coat:float3         // the mount's coat (zero: its own)
 
 var vx_seated = false   // a rider being built: no legs or tail of its own
-var vx_heads = 7.5           // a human's height in heads (a concept option: the composed heroic humans are 5.5)
+var vx_heads = 5.5           // a human's height in heads: 5.5 is the composed heroic human's build (other counts: options)
 var vx_team_wear = "scarf"   // where a creature without a tunic wears the team: scarf or vest (a concept option)
 var vx_act = ""      // the pose being drawn: "" (standing or walking) or "attack", at a step through it
 
@@ -297,30 +302,31 @@ def vx_leg(out:[vx_prim], hip:float3, foot:float3, l1:float, l2:float, r:float, 
 // over the skirt, bare shins in short boots, a head in proportion. A galea: a bowl with a brow, cheek guards, a neck
 // guard and a crest in team colour.
 def vx_human(out:[vx_prim], u:vx_unit_def, ph:float) -> vx_frame:
-    // proportions from the head count, the top of the skull at 37 (the composed heroic human's height): a bigger
-    // head, shorter legs, a stouter build as the count falls (vx_heads: a concept option)
-    let hh = 37.0 / vx_heads   // the head's height
-    let hs = hh / 4.9          // the head's scale against the 7.5-head build these sizes were drawn at
+    // the composed heroic human's measurements (model/units.lobster, D-173) at vx_heads 5.5: the top of the head at
+    // 38.8, hips at 18 (the knee 9 under them, the ankle 2.3 over the sole), shoulders at 29.3 and 4.7 out, the neck
+    // at 31.6; other head counts keep the height and scale the head, the legs and the build from it
+    let hh = 38.8 / vx_heads   // the head's height
+    let hs = hh / 4.9 * 0.9    // the head's scale against the build these head sizes were first drawn at
     let bs = 0.85 + 0.15 * hs  // the limbs' and body's
-    let leg = (hh * (3.93 - (7.5 - vx_heads) * 0.615) - 1.0) * 0.515
+    let hipz = hh * (3.93 - (7.5 - vx_heads) * 0.69)
     let s = sin(ph)
-    let hip = float3 { 0.0, 0.0, hh * (3.93 - (7.5 - vx_heads) * 0.615) + 0.5 * abs(sin(ph * 2.0)) }
+    let hip = float3 { 0.0, 0.0, hipz + 0.5 * abs(sin(ph * 2.0)) }
     if not vx_seated:
         for([ -1.0, 1.0 ]) side:
             let st = s * side * 4.6
             let lift = max(0.0, cos(ph) * side) * 2.2
             let h = hip + float3 { side * 1.6 * bs, 0.0, 0.0 }
-            let knee, ankle = vx_ik(h, float3 { side * 1.8 * bs, st, 1.0 + lift }, leg, leg * 0.97, float3 { 0.0, 1.0, 0.0 })
-            out.push(vx_cap(h, knee, 1.75 * bs, 1.4 * bs, vx_mat_skin))
-            out.push(vx_cap(knee, ankle, 1.4 * bs, 0.95 * bs, vx_mat_skin))
-            out.push(vx_hard(ankle + float3 { 0.0, 0.0, 2.4 }, ankle, 1.1 * bs, 1.05 * bs, vx_mat_leather))   // a short boot
-            out.push(vx_hard(ankle, ankle + float3 { 0.0, 2.2 * bs, -0.4 }, 1.0 * bs, 0.9 * bs, vx_mat_leather))
-    let chest = float3 { 0.0, 0.5, 37.0 - hh * 1.35 + 0.5 * abs(sin(ph * 2.0)) }
+            let knee, ankle = vx_ik(h, float3 { side * 1.8 * bs, st, 2.3 + lift }, (hipz - 2.3) * 0.5 + 0.06, (hipz - 2.3) * 0.5 + 0.06, float3 { 0.0, 1.0, 0.0 })
+            out.push(vx_cap(h, knee, 1.75 * bs, 1.4 * bs, vx_mat_trousers))   // dark trousers, as the composed humans wear
+            out.push(vx_cap(knee, ankle, 1.4 * bs, 0.95 * bs, vx_mat_trousers))
+            out.push(vx_hard(ankle + float3 { 0.0, 0.0, 1.8 }, ankle - float3 { 0.0, 0.0, 1.0 }, 1.1 * bs, 1.05 * bs, vx_mat_leather))   // a short boot
+            out.push(vx_hard(ankle - float3 { 0.0, 0.0, 1.2 }, ankle + float3 { 0.0, 2.4 * bs, -1.5 }, 1.0 * bs, 0.9 * bs, vx_mat_leather))
+    let chest = float3 { 0.0, 0.5, 38.8 - hh * 1.35 + 0.5 * abs(sin(ph * 2.0)) }
     // an undyed tunic, bare arms, a dark kilt with its hem in team colour (Dominic, 2026-11-01: less red)
     out.push(vx_disc(hip + float3 { 0.0, 0.2, -0.7 }, float3 { 0.0, 0.08, 1.0 }, 2.6 * bs, 2.6, vx_mat_kilt))
     out.push(vx_disc(hip + float3 { 0.0, 0.42, -3.0 }, float3 { 0.0, 0.08, 1.0 }, 3.05 * bs, 0.65, vx_mat_team))   // the hem, out past the strips
     out.push(vx_cap(hip + float3 { 0.0, 0.0, 1.0 }, chest, 2.2 * bs, 2.75 * bs, vx_mat_cloth))
-    out.push(vx_cap(chest + float3 { -3.0 * bs, 0.0, -0.1 }, chest + float3 { 3.0 * bs, 0.0, -0.1 }, 1.45 * bs, 1.45 * bs, vx_mat_cloth))   // the shoulders
+    out.push(vx_cap(chest + float3 { -3.5 * bs, 0.0, -0.1 }, chest + float3 { 3.5 * bs, 0.0, -0.1 }, 1.6 * bs, 1.6 * bs, vx_mat_cloth))   // the shoulders
     if u.back == "quiver":   // across the back, arrows' feathers out of the top
         let qt = chest + float3 { 1.6, -2.7, 1.8 }
         let qb = chest + float3 { -1.2, -2.5, -6.0 }
@@ -345,13 +351,15 @@ def vx_human(out:[vx_prim], u:vx_unit_def, ph:float) -> vx_frame:
                 for([ -1.0, 1.0 ]) side: out.push(vx_hard(chest + float3 { side * 3.0 * bs, 0.0, 0.0 }, chest + float3 { side * 3.5 * bs, 0.0, -1.3 }, 1.4 * bs, 1.25 * bs, vx_mat_leather))
             default:   // leather (or plain plate)
                 out.push(vx_hard(hip + float3 { 0.0, 0.2, 2.8 }, chest + float3 { 0.0, 0.0, -0.3 }, 2.45 * bs, 2.95 * bs, if u.armour_kind == "leather": vx_mat_hide else: vx_mat_metal))
-    let h = float3 { 0.0, 1.2, 37.0 - 2.8 * hs }   // the head's centre
+    let h = float3 { 0.0, 1.2, 38.8 - 2.8 * hs }   // the head's centre
     let neck = h - float3 { 0.0, 0.4, 2.4 } * hs
     out.push(vx_cap(chest, neck, 1.3 * bs, 1.2 * bs, vx_mat_skin))
     out.push(vx_cap(h + float3 { 0.0, 0.5, -1.0 } * hs, h + float3 { 0.0, -0.1, 0.5 } * hs, 2.0 * hs, 2.3 * hs, vx_mat_skin))
     out.push(vx_cap(h + float3 { 0.0, 2.3, -0.1 } * hs, h + float3 { 0.0, 2.65, -0.7 } * hs, 0.55 * hs, 0.5 * hs, vx_mat_skin))   // the nose
     for([ -1.0, 1.0 ]) side:
-        out.push(vx_bead(h + float3 { side * 0.95, 2.15, 0.3 } * hs, 0.4 * hs, vx_mat_eye))
+        out.push(vx_bead(h + float3 { side * 0.95, 2.0, 0.3 } * hs, 0.5 * hs, vx_mat_white))   // the eye, white round a dark pupil
+        out.push(vx_bead(h + float3 { side * 0.95, 2.3, 0.3 } * hs, 0.32 * hs, vx_mat_eye))
+        out.push(vx_hard(h + float3 { side * 0.45, 2.15, 0.95 } * hs, h + float3 { side * 1.45, 2.0, 0.85 } * hs, 0.22 * hs, 0.2 * hs, vx_mat_hair))   // a brow
         if u.helm_kind != "galea": out.push(vx_ball(h + float3 { side * 2.35, -0.1, -0.2 } * hs, 0.6 * hs, vx_mat_skin))   // ears
     if u.helm_kind == "galea":
         // (sized against the head as seen from behind: the bowl hugs the skull, the neck guard and cheek guards
@@ -365,9 +373,9 @@ def vx_human(out:[vx_prim], u:vx_unit_def, ph:float) -> vx_frame:
             let a = float(k) * 30.0 - 60.0
             out.push(vx_bead(h + float3 { 0.0, sin(a) * 1.7 - 0.35, 2.8 + cos(a) * 0.55 } * hs, 0.5 * hs, vx_mat_team))
     elif not u.helm:   // hair: a crown down to just above the eyes, and down the back of the head
-        out.push(vx_bead(h + float3 { 0.0, -0.3, 1.6 } * hs, 2.5 * hs, vx_mat_hair))
-        out.push(vx_bead(h + float3 { 0.0, -0.8, 0.1 } * hs, 2.55 * hs, vx_mat_hair))
-    return vx_frame { chest + float3 { 3.4 * bs, 0.0, -0.4 }, chest + float3 { -3.4 * bs, 0.0, -0.4 }, (chest.z - hip.z) * 0.56, 1.3 * bs, vx_mat_skin, vx_mat_skin,
+        out.push(vx_bead(h + float3 { 0.0, -0.25, 1.3 } * hs, 2.3 * hs, vx_mat_hair))   // short, close to the skull
+        out.push(vx_bead(h + float3 { 0.0, -0.6, 0.2 } * hs, 2.35 * hs, vx_mat_hair))
+    return vx_frame { chest + float3 { 4.3 * bs, 0.0, -0.4 }, chest + float3 { -4.3 * bs, 0.0, -0.4 }, (chest.z - hip.z) * 0.52, 1.35 * bs, vx_mat_skin, vx_mat_skin,
                       h + float3 { 0.0, -0.25, 1.35 } * hs, 2.1 * hs }
 
 // A rat: a small hunched body, pear-shaped (narrow shoulders over a round belly and big haunches), thin shins on
