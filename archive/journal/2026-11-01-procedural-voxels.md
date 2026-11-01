@@ -31,3 +31,13 @@ Dominic picked the whole tunic in team colour. On the head ("Head is weird and s
 3): the hair was a capsule pushed back and up, so it peaked like a crest, and the face had nothing on it. Now the head
 is a little taller than wide with the jaw forward, the hair a cap round the top and back, a small nose, a pixel for
 each eye, and a shorter neck (pictures 04, 05).
+
+## Round 4: more units and other races
+Dominic: "let's try more units before we commit, and other races". The prototype now makes a race from a handful of
+numbers (hip height, leg lengths, waist and chest, lean, arm length, size, colours, a head: human, rat, frog or bear;
+a tail) and a unit from a race and a kit (axe, spear, sword, bow, shield, helmet, armour; on foot, on a horse or as a
+centaur). Twelve units, three of them walking, in 10.6 s (picture 06 at 3x, 07 at game size).
+
+Caught on the way: the bear's helmet and armour melted into one white bullet over a head sunk in its chest (the neck
+now grows with the chest, the armour stops under the shoulders), and the rat's pink ears read as a pink blob on its
+head (fur ears now).
