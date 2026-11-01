@@ -67,3 +67,12 @@ First try drew them at one voxel per baked pixel: half the composed units' size.
 
 Gaps in the trial: every mount is a horse (the rats' cat too), the Romans' look comes from the generic kit (red tunic,
 helmet), no wild animals or dead bodies yet, and baking 36 types took 38 s.
+
+## Double resolution, and a cat
+Dominic on the first in-game pictures: "that's looking pretty bad so far. The rat on a cat is 100% unclear when
+facing down. I think we need smaller voxels to get some more detail? The rats were looking really really great before
+this." So: two voxels a body unit (a voxel a baked pixel, drawn at the composed units' size without chunky pixels),
+and a cat to ride (black, white chest and paws, yellow eyes, a tail curled up) instead of every mount being a horse.
+The rats read better up close (ears, snout, eye; picture 17), but in the match (15, 16) the composed rats still have
+far more character than the voxel ones, the cat came out with odd blue and green pixels, and the bake took 287 s for
+36 types (38 s at one voxel a pixel).
