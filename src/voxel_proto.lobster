@@ -133,7 +133,7 @@ def head(out:[prim], rc:race, at:float3, helm:bool):
             out.push(prim { at + float3 { 0.0, 3.0, -0.3 }, at + float3 { 0.0, 3.3, -0.7 }, 0.6, 0.5, mat_skin, false, false })
             for([ -1.0, 1.0 ]) side: out.push(ball(at + float3 { side * 1.15, 2.75, 0.35 }, 0.45, mat_eye, true))
             if not helm:   // hair: a crown down to just above the eyes, and down the back of the head
-                out.push(ball(at + float3 { 0.0, -0.2, 1.8 }, 3.2, mat_hair, true))
+                out.push(ball(at + float3 { 0.0, -0.3, 2.1 }, 3.15, mat_hair, true))
                 out.push(ball(at + float3 { 0.0, -0.9, 0.2 }, 3.25, mat_hair, true))
         case "rat":
             out.push(prim { at + float3 { 0.0, -0.6, 0.2 }, at + float3 { 0.0, 0.8, 0.0 }, 2.5, 2.4, mat_skin, false, false })
@@ -161,7 +161,10 @@ def head(out:[prim], rc:race, at:float3, helm:bool):
 // The upper body from the pelvis p: returns the right and left hands.
 def torso(out:[prim], rc:race, p:float3, ph:float, rs:float, rb:float, ls:float, lb:float, armour:bool, helm:bool) -> float3, float3:
     let chest = p + float3 { 0.0, sin(rc.lean), cos(rc.lean) } * rc.spine
-    out.push(prim { p, chest, rc.waist, rc.chest, mat_team, false, false })
+    if rc.sleeves: out.push(prim { p, chest, rc.waist, rc.chest, mat_team, false, false })
+    else:   // a short vest over a bare body (frogs)
+        out.push(prim { p, chest, rc.waist, rc.chest, mat_skin, false, false })
+        out.push(prim { p + (chest - p) * 0.5, chest, rc.waist + 0.35, rc.chest + 0.35, mat_team, true, false })
     out.push(prim { chest + float3 { -rc.chest - 0.7, 0.0, -0.6 }, chest + float3 { rc.chest + 0.7, 0.0, -0.6 }, 2.1, 2.1, if rc.sleeves: mat_team else: mat_skin, false, false })
     if armour:
         out.push(prim { p + float3 { 0.0, 0.0, 3.5 }, chest + float3 { 0.0, 0.0, -1.2 }, rc.waist + 0.4, rc.chest + 0.3, mat_metal, true, false })
@@ -176,19 +179,18 @@ def torso(out:[prim], rc:race, p:float3, ph:float, rs:float, rb:float, ls:float,
 
 // ---- gear
 
-def gear_right(out:[prim], kind:string, hand:float3):
+// What's in the right hand, its shaft tilted forward by `tilt` degrees from straight up.
+def gear_right(out:[prim], kind:string, hand:float3, tilt:float):
+    let d = float3 { 0.0, sin(tilt), cos(tilt) }
     switch kind:
         case "axe":
-            let d = float3 { 0.0, sin(60.0), cos(60.0) }
             let top = hand + d * 9.0
             out.push(prim { hand - d * 2.5, top, 0.55, 0.55, mat_wood, true, false })
             out.push(prim { top - d * 1.0 + float3 { 0.0, 0.6, 0.0 }, top + float3 { 0.0, 3.2, -0.6 }, 1.1, 1.8, mat_metal, true, false })
         case "spear":
-            let d = normalize(float3 { 0.0, 0.12, 1.0 })
             out.push(prim { hand - d * 9.0, hand + d * 19.0, 0.55, 0.55, mat_wood, true, false })
             out.push(prim { hand + d * 19.0, hand + d * 23.0, 0.9, 0.15, mat_metal, true, false })
         case "sword":
-            let d = normalize(float3 { 0.0, 0.9, 0.6 })
             out.push(prim { hand + float3 { -1.6, 0.0, 0.0 } + d * 0.8, hand + float3 { 1.6, 0.0, 0.0 } + d * 0.8, 0.5, 0.5, mat_metal, true, false })
             out.push(prim { hand + d * 0.8, hand + d * 9.5, 0.65, 0.3, mat_metal, true, false })
         case "": return
@@ -213,6 +215,15 @@ def gear_left(out:[prim], kind:string, hand:float3):
 
 // ---- whole units
 
+// A weapon's tilt at rest, degrees forward from straight up.
+def rest_tilt(kind:string) -> float:
+    return switch kind:
+        case "axe": 60.0
+        case "sword": 56.0
+        default: 7.0
+
+def lerpd(a:float, b:float, k:float) -> float: return a + (b - a) * k
+
 // How an arm holds what's in its hand: the upper arm's swing forward and the elbow's bend, degrees.
 def arm_pose(kind:string) -> float, float:
     switch kind:
@@ -223,9 +234,17 @@ def arm_pose(kind:string) -> float, float:
         default: return 10.0, 25.0
 
 
-def biped(u:unit_def, ph:float) -> [prim]:
+var act = ""      // the pose being drawn: "" (standing or walking) or "attack", at act_t (0 to 1) through it
+
+// How far into its blow an attack is at t: a wind-up, a fast strike, a hold, back.
+def blow(t:float) -> float:
+    return if t < 0.45: 0.0 elif t < 0.6: (t - 0.45) / 0.15 elif t < 0.75: 1.0 else: 1.0 - (t - 0.75) / 0.25
+
+def biped(u:unit_def, ph0:float) -> [prim]:
     let rc = u.rc
     let out = []::prim
+    let ph = if act == "": ph0 else: 0.0
+    let t = ph0 / 360.0
     let s = 26.0 * sin(ph)
     let hip = float3 { 0.0, 0.0, rc.hip + 0.6 * abs(sin(ph * 2.0)) }
     if rc.head == "frog":
@@ -242,10 +261,22 @@ def biped(u:unit_def, ph:float) -> [prim]:
             out.push(prim { last, p, 0.9 - float(k) * 0.12, 0.8 - float(k) * 0.12, mat_pink, false, false })
             last = p
     if rc.tail == "bear": out.push(ball(hip + float3 { 0.0, -rc.waist, 0.5 }, 1.4, mat_skin, false))
-    let rs, rb = arm_pose(u.right)
-    let ls, lb = arm_pose(u.left)
+    var rs, rb = arm_pose(u.right)
+    var ls, lb = arm_pose(u.left)
+    var tilt = rest_tilt(u.right)
+    if act == "attack":
+        let k = blow(t)
+        let up = if t < 0.45: t / 0.45 elif t < 0.75: 1.0 else: 1.0 - (t - 0.75) / 0.25   // (raised through the wind-up)
+        switch u.right:
+            case "spear":   // drawn back, then thrust level
+                rs, rb, tilt = lerpd(20.0 - 25.0 * up, 75.0, k), lerpd(70.0 + 20.0 * up, 15.0, k), lerpd(7.0, 85.0, k)
+            case "axe", "sword":   // up over the head, then down through the arm held out
+                rs, rb, tilt = lerpd(rs + (160.0 - rs) * up, 55.0, k), lerpd(rb, 10.0, k), lerpd(tilt + (-40.0 - tilt) * up, 115.0, k)
+            default:   // a bow: raised and drawn, loosed
+                ls, lb = lerpd(25.0, 85.0, up), lerpd(45.0, 5.0, up)
+                rs, rb = lerpd(10.0, 80.0, up), lerpd(25.0, 125.0, up * (1.0 - k))
     let right, left = torso(out, rc, hip + float3 { 0.0, 0.0, 1.0 }, ph, rs, rb, ls, lb, u.armour, u.helm)
-    gear_right(out, u.right, right)
+    gear_right(out, u.right, right, tilt)
     gear_left(out, u.left, left)
     return out
 
@@ -279,7 +310,7 @@ def unit_prims(u:unit_def, ph:float) -> [prim]:
         let front = horse(out, ph, false)
         out.push(prim { front + float3 { 0.0, 1.0, 1.0 }, front + float3 { 0.0, 1.8, 7.0 }, 5.2, 4.4, mat_coat, false, false })
         let right, left = torso(out, rc, front + float3 { 0.0, 2.0, 7.0 }, ph, 20.0, 70.0, 25.0, 45.0, u.armour, u.helm)
-        gear_right(out, u.right, right)
+        gear_right(out, u.right, right, rest_tilt(u.right))
         gear_left(out, u.left, left)
         return out
     horse(out, ph, true)
@@ -291,7 +322,7 @@ def unit_prims(u:unit_def, ph:float) -> [prim]:
         out.push(prim { knee, ankle, 2.0, 1.5, mat_leather, false, false })
         out.push(prim { ankle, ankle + float3 { 0.0, 2.2, -0.4 }, 1.6, 1.4, mat_leather, false, false })
     let right, left = torso(out, rc, seat + float3 { 0.0, 0.0, 1.0 }, 0.0, 20.0, 70.0, 25.0, 45.0, u.armour, u.helm)
-    gear_right(out, u.right, right)
+    gear_right(out, u.right, right, rest_tilt(u.right))
     gear_left(out, u.left, left)
     return out
 
@@ -418,7 +449,7 @@ def draw(g:[int], facing:int, img:[float3], iw:int, cx:int, cy:int):
 
 class row:
     u:unit_def
-    walk:bool
+    mode:string   // stand (8 facings), walk or attack (8 steps in facing 1)
 
 let units = [
     unit_def { "human worker", HUMAN, "axe", "", false, false, "" },
@@ -436,8 +467,9 @@ let units = [
 ]
 let rows = []::row
 for(units) u, k:
-    rows.push(row { u, false })
-    if k == 4 or k == 7 or k == 10: rows.push(row { u, true })
+    rows.push(row { u, "stand" })
+    if k == 4 or k == 7 or k == 10: rows.push(row { u, "walk" })
+    if k == 0 or k == 1 or k == 2 or k == 3 or k == 7 or k == 8 or k == 10: rows.push(row { u, "attack" })
 
 let out_path = if command_line_arguments().length: command_line_arguments()[0] else: "voxel_proto.ppm"
 let iw = CELL.x * 8
@@ -447,12 +479,13 @@ for(rows) rw, r:
     let u = rw.u
     mat_cols[mat_skin] = u.rc.skin
     mat_cols[mat_pale] = u.rc.pale
-    if not rw.walk:
+    act = if rw.mode == "attack": "attack" else: ""
+    if rw.mode == "stand":
         let stand = fill(unit_prims(u, 0.0), u.rc.size)
         for(8) f: draw(stand, f, img, iw, f * CELL.x, r * CELL.y)
     else:
         for(8) k: draw(fill(unit_prims(u, float(k) * 45.0), u.rc.size), 1, img, iw, k * CELL.x, r * CELL.y)
-    print "{u.label}{if rw.walk: " (walking)" else: ""}: drawn"
+    print "{u.label} ({rw.mode}): drawn"
 let ppm = "P6\n{iw} {ih}\n255\n"
 let bytes = []::int
 for(img) c: for(3) ch: bytes.push(clamp(int(c[ch] * 255.0), 0, 255))
