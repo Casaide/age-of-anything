@@ -41,24 +41,20 @@ def vx_def_of(k:int) -> vx_unit_def:
     return vx_unit_def { rstr(r, "name"), rc, right, left, vx_part(r, "head_gear") != "", torso != "", mount,
                          if vx_has(vx_part(r, "head_gear"), [ "galea" ]): "galea" else: "", armour }
 
-// Baked cells are cropped to what's drawn and packed in rows into shared atlases (VX_ATLAS wide); a type that looks
-// like one already baked (the same race, kit and mount: most age upgrades) takes its frames.
+// A look (the same race, kit and mount: most age upgrades share one) is baked into an atlas of its own, its cells
+// cropped to what's drawn and packed in rows VX_ATLAS wide, and kept in the bake cache (a PNG and a manifest, as the
+// composed parts are), keyed by the look and the voxel builder's source: the next start loads it, and any change to
+// the builder bakes it again.
 let VX_ATLAS = 2048
-var vx_pix = []::float4      // the atlas being packed, VX_ATLAS wide
+let VX_FORMATS = texture_format_clamp | texture_format_nomipmap | texture_format_nearest_mag | texture_format_nearest_min
+var vx_rows = []::[float4]   // the atlas being packed: its rows, VX_ATLAS wide
 var vx_at = int2_0           // where the next cell goes
 var vx_row_h = 0             // the tallest cell in the row
+var vx_lines = []::string    // the look's manifest
+var vx_frame0 = 0            // the look's first frame
 let vx_looks = dictionary<string, int>(256)   // a look's key -> the type that baked it
-
-def vx_flush_atlas():
-    if vx_pix.length:
-        let h = vx_pix.length / VX_ATLAS
-        let rows = map(h) y: map(VX_ATLAS) x: vx_pix[y * VX_ATLAS + x]
-        add_sheet(gl.create_texture(rows, texture_format_clamp | texture_format_nomipmap | texture_format_nearest_mag | texture_format_nearest_min), float2 { float(VX_ATLAS), float(h) })
-    vx_pix = []::float4
-    vx_at = int2_0
-    vx_row_h = 0
-
 let vx_shadow_of = dictionary<int, int>(4096)   // a unit's frame -> its ground shadow's frame
+var vx_source = ""           // the builder's source's hash (the cache key's part that changes with the code)
 
 // A cell just drawn (its box in a cell cw wide, the ground at anchor), packed: its frame.
 def vx_pack_cell(cell:[float4], box:int4, cw:int, anchor:int2) -> int:
@@ -67,13 +63,35 @@ def vx_pack_cell(cell:[float4], box:int4, cw:int, anchor:int2) -> int:
     if vx_at.x + w > VX_ATLAS:
         vx_at = int2 { 0, vx_at.y + vx_row_h }
         vx_row_h = 0
-    if vx_at.y + h > 4096: vx_flush_atlas()
-    while vx_pix.length < (vx_at.y + h) * VX_ATLAS: vx_pix.push(float4_0)
-    for(h) y: for(w) x: vx_pix[(vx_at.y + y) * VX_ATLAS + vx_at.x + x] = cell[(box.y + y) * cw + box.x + x]
-    frames.push(Frame { sheet_tex.length, vx_at.x, vx_at.y, w, h, anchor.x - box.x, anchor.y - box.y, VX_DRAW_K })
+    while vx_rows.length < vx_at.y + h: vx_rows.push(map(VX_ATLAS): float4_0)
+    for(h) y:
+        let row = vx_rows[vx_at.y + y]
+        let at = (box.y + y) * cw + box.x
+        for(w) x: row[vx_at.x + x] = cell[at + x]
+    let fr = Frame { sheet_tex.length, vx_at.x, vx_at.y, w, h, anchor.x - box.x, anchor.y - box.y, VX_DRAW_K }
+    frames.push(fr)
+    vx_lines.push("f {fr.x} {fr.y} {w} {h} {fr.ox} {fr.oy}")
     vx_at.x += w
     vx_row_h = max(vx_row_h, h)
     return frames.length - 1
+
+// The look's frames for type k from the cache, if they're there.
+def vx_load_look(k:int, stem:string) -> bool:
+    let text = read_file(stem + ".txt")
+    if not text: return false
+    let rows = tokenize(text, "\n", "")
+    let dims = tokenize(rows[0], " ", "")
+    add_sheet_later(stem + ".png", float2 { string_to_float(dims[0]), string_to_float(dims[1]) }, VX_FORMATS)
+    let f0 = frames.length
+    for(rows) row:
+        let t = tokenize(row, " ", "")
+        if t.length and t[0] == "f":
+            frames.push(Frame { sheet_tex.length - 1, string_to_int(t[1]), string_to_int(t[2]), string_to_int(t[3]), string_to_int(t[4]),
+                                string_to_int(t[5]), string_to_int(t[6]), VX_DRAW_K })
+        if t.length and t[0] == "m":
+            vx_frames.set("{k}.{t[1]}", f0 + string_to_int(t[2]))
+            vx_shadow_of.set(f0 + string_to_int(t[2]), f0 + string_to_int(t[3]))
+    return true
 
 // One type's frames: steps per mode and facing. Returns whether it baked (false: it took a look's frames).
 def vx_bake_type(k:int) -> bool:
@@ -86,10 +104,18 @@ def vx_bake_type(k:int) -> bool:
             if fr >= 0: vx_frames.set("{k}.{mode}.{f}.{st}", fr)
         return false
     vx_looks.set(key, k)
+    let stem = bake_cache_dir + "/vx_" + sha256_text("{vx_source}|{key}").substring(0, 20)
+    if vx_load_look(k, stem): return false
     let worker = vx_unit_def { u.label, u.rc, "axe", "", u.helm, u.armour, u.mount, u.helm_kind, u.armour_kind }   // (work: chopping)
     vx_mat_cols[vx_mat_skin] = u.rc.skin
     vx_mat_cols[vx_mat_pale] = u.rc.pale
     vx_fur = u.rc.fur
+    vx_rows = []::[float4]
+    vx_at = int2_0
+    vx_row_h = 0
+    vx_lines = []::string
+    vx_frame0 = frames.length
+    let maps = []::string
     for(VX_MODES) mode:
         if mode != "work" or t_worker[k] != 0:
             vx_act = if mode == "attack" or mode == "work": "attack" else: ""
@@ -97,22 +123,33 @@ def vx_bake_type(k:int) -> bool:
                 let g = vx_fill(vx_unit_prims(if mode == "work": worker else: u, float(st) * 45.0), u.rc.size)
                 for(8) f:
                     let fr = vx_pack_cell(vx_cell(g, f), vx_box, vx_CELL.x, vx_ANCHOR)
+                    let sf = vx_pack_cell(vx_ground_shadow(g, f), vx_sbox, vx_SCELL.x, vx_SANCHOR)
                     vx_frames.set("{k}.{mode}.{f}.{st}", fr)
-                    vx_shadow_of.set(fr, vx_pack_cell(vx_ground_shadow(g, f), vx_sbox, vx_SCELL.x, vx_SANCHOR))
+                    vx_shadow_of.set(fr, sf)
+                    maps.push("m {mode}.{f}.{st} {fr - vx_frame0} {sf - vx_frame0}")
     vx_act = ""
+    let h = vx_rows.length
+    assert h <= 4096
+    add_sheet(gl.create_texture(vx_rows, VX_FORMATS), float2 { float(VX_ATLAS), float(h) })
+    if bake_cache_dir != "":   // (kept for the next start)
+        let rgba = []::int
+        for(vx_rows) row: for(row) c: for(4) ch: rgba.push(clamp(int(c[ch] * 255.0 + 0.5), 0, 255))
+        write_file(stem + ".png", bmat_png(rgba, VX_ATLAS, h))
+        write_file(stem + ".txt", "{VX_ATLAS} {h}\n" + concat_string(vx_lines, "\n") + "\n" + concat_string(maps, "\n") + "\n")
+    vx_rows = []::[float4]
     return true
 
 def vx_bake_types():
     let t0 = seconds_elapsed()
     var n = 0
     var baked = 0
+    vx_source = sha256_text(read_file("view/voxel.lobster") or "")
     vx_mat_cols[vx_mat_team] = float3 { 0.85, 0.12, 0.85 }   // (the sprite shader's team key)
     for(t_slot.length) k:
         if t_animal[k] == 0:
             if vx_bake_type(k): baked++
             n++
-    vx_flush_atlas()
-    print "voxel units: {n} types ({baked} looks) baked in {int((seconds_elapsed() - t0) * 1000.0)} ms"
+    print "voxel units: {n} types, {baked} looks baked (the rest shared or from the cache) in {int((seconds_elapsed() - t0) * 1000.0)} ms"
 
 // The frame for a unit's state (unit_state's names) facing d (dir_of's).
 def vx_frame_for(k:int, state:string, d:int, n:int) -> int:

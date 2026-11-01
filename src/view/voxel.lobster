@@ -540,7 +540,8 @@ def vx_bounds(p:vx_prim) -> float3, float3:
     let r = max(p.ra, p.rb) + (if p.disc: p.ra else: 0.0) + magnitude(p.box)
     return min(p.a, p.b) - float3_1 * r, max(p.a, p.b) + float3_1 * r
 
-// The shape's distance at p from the parts in `near`, and the material of the part nearest it.
+// The shape's distance at p from the parts in `near`, and the material of the part nearest it. (Capsules, most of
+// the parts, measured inline: this is the bake's hot loop.)
 def vx_field(ps:[vx_prim], near:[int], p:float3, k:float) -> float, int:
     var body = 1000.0
     var gear = 1000.0
@@ -548,9 +549,18 @@ def vx_field(ps:[vx_prim], near:[int], p:float3, k:float) -> float, int:
     var m = -1
     for(near) i:
         let s = ps[i]
-        let d = vx_dist(p, s)
+        var d = 0.0
+        if s.disc or s.box.x > 0.0: d = vx_dist(p, s)
+        else:
+            let ba = s.b - s.a
+            let pa = p - s.a
+            let l2 = dot(ba, ba)
+            let h = if l2 > 0.0: clamp(dot(pa, ba) / l2, 0.0, 1.0) else: 0.0
+            d = magnitude(pa - ba * h) - (s.ra + (s.rb - s.ra) * h)
         if s.hard: gear = min(gear, d)
-        else: body = vx_smin(body, d, k)
+        else:
+            let e = max(k - abs(body - d), 0.0) / k
+            body = min(body, d) - e * e * k * 0.25
         if d < best:
             best = d
             m = s.mat
@@ -604,7 +614,23 @@ def vx_fill(parts:[vx_prim], unit_size:float) -> vx_shape:
         let near = blocks[(bz * nb.y + by) * nb.x + bx]
         if near.length:
             let b0 = int3 { bx, by, bz } * 4
-            let dc, mc = vx_field(ps, near, base + float(b0) + float3_1 * 1.5, k)
+            let pc = base + float(b0) + float3_1 * 1.5
+            // the block's centre, and the parts close enough to matter anywhere in it (the bins are loose boxes)
+            let close = []::int
+            var body = 1000.0
+            var gear = 1000.0
+            var best = 1000.0
+            var mc = -1
+            for(near) j:
+                let pj = ps[j]
+                let d = vx_dist(pc, pj)
+                if pj.hard: gear = min(gear, d)
+                else: body = vx_smin(body, d, k)
+                if d < best:
+                    best = d
+                    mc = pj.mat
+                if d < reach + k + 3.0: close.push(j)
+            let dc = min(body, gear - 0.5)
             if dc < reach:
                 for(4) z: for(4) y: for(4) x:
                     let v = b0 + int3 { x, y, z }
@@ -613,7 +639,7 @@ def vx_fill(parts:[vx_prim], unit_size:float) -> vx_shape:
                         mats[i] = mc
                         field[i] = -1.0
                     else:
-                        let d, m = vx_field(ps, near, base + float(v), k)
+                        let d, m = vx_field(ps, close, base + float(v), k)
                         field[i] = d
                         if d <= 0.0: mats[i] = m
     // the surface, each voxel's normal from the distances around it
