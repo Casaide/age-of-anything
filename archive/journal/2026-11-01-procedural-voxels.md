@@ -41,3 +41,14 @@ centaur). Twelve units, three of them walking, in 10.6 s (picture 06 at 3x, 07 a
 Caught on the way: the bear's helmet and armour melted into one white bullet over a head sunk in its chest (the neck
 now grows with the chest, the armour stops under the shoulders), and the rat's pink ears read as a pink blob on its
 head (fur ears now).
+
+## Round 5: faster, crouched frogs, rat snouts, hair
+- "12s seems quite slow": the grid is now tested in blocks of 4 voxels first (air skipped, solid filled whole) and
+  each ray walks voxel by voxel instead of creeping in quarter steps: twelve units in 1.7 s, the picture the same.
+- "Frogs' spears also parts missing": a shaft thinner than a voxel filled in pieces; gear is now at least a voxel thick.
+- "Should we just support smaller voxels?" Claude's answer: no; one voxel per art pixel is what makes it read as pixel
+  art, and anything thinner than a pixel can't show at game size anyway. Thin gear is thickened instead.
+- "Rats and frogs missing some signature ... nose too small for rat. Frog we've now gone bipedal which isn't as good":
+  rats have a long snout and a big pink nose; frogs crouch on folded legs (knees up and out, long webbed feet), lean
+  forward, and lost the belt that read as a shell.
+- "Humans look like they're balding": the hair is a crown down to just above the eyes and down the back (picture 08).
