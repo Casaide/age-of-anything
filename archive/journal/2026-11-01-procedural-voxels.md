@@ -131,3 +131,6 @@ sword, tiny shield, really long limbs. Start by trying to make a perfect Roman."
 Pictures 24 (all, close), 25 (game size), 26 (the Roman against the composed one), 27 (a battle in the match: the cat,
 a rat, Roman spearmen). The bake is 17.6 s for 36 types now (26 looks; the Roman kit has more parts): too slow, next.
 Dominic: "much better direction".
+- Dominic: "humans still very bulky". Slimmed (Claude): limbs about a fifth thinner (thighs 1.75, shins 1.4 to 0.95,
+  upper arms 1.3), waist 2.2 and chest 2.75, shoulders 3.0 out, the hips closer, the skirt, belt, strips, armour,
+  neck and helmet pulled in to match. Now about the composed legionary's width (picture 28).
