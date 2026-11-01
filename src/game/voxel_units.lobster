@@ -30,12 +30,16 @@ def vx_def_of(k:int) -> vx_unit_def:
     var right = ""
     var left = ""
     if vx_has(hr, [ "bow", "sling" ]): left = "bow"
-    elif vx_has(hr, [ "spear", "pike", "lance", "javelin", "trident" ]): right = "spear"
-    elif vx_has(hr, [ "sword", "blade", "gladius", "sabre", "dagger" ]): right = "sword"
+    elif vx_has(hr, [ "spear", "pike", "lance", "javelin", "trident", "pilum" ]): right = "spear"
+    elif vx_has(hr, [ "gladius" ]): right = "gladius"
+    elif vx_has(hr, [ "sword", "blade", "sabre", "dagger" ]): right = "sword"
     elif hr != "": right = "axe"
-    if left == "" and vx_has(vx_part(r, "hand_l"), [ "shield" ]): left = "shield"
+    if left == "" and vx_has(vx_part(r, "hand_l"), [ "shield" ]): left = if vx_has(vx_part(r, "hand_l"), [ "scutum" ]): "scutum" else: "shield"
+    let torso = vx_part(r, "torso")
+    let armour = if vx_has(torso, [ "lorica" ]): "lorica" elif vx_has(torso, [ "bronze" ]): "bronze" elif vx_has(torso, [ "leather" ]): "leather" else: ""
     let mount = if find_string(body, "centaur") >= 0: "horse" elif not has(r, "mount"): "" elif rstr(at(r, "mount"), "creature") == "cat": "cat" else: "horse"
-    return vx_unit_def { rstr(r, "name"), rc, right, left, vx_part(r, "head_gear") != "", vx_part(r, "torso") != "", mount }
+    return vx_unit_def { rstr(r, "name"), rc, right, left, vx_part(r, "head_gear") != "", torso != "", mount,
+                         if vx_has(vx_part(r, "head_gear"), [ "galea" ]): "galea" else: "", armour }
 
 // Baked cells are cropped to what's drawn and packed in rows into shared atlases (VX_ATLAS wide); a type that looks
 // like one already baked (the same race, kit and mount: most age upgrades) takes its frames.
@@ -74,7 +78,7 @@ def vx_pack_cell(cell:[float4], box:int4, cw:int, anchor:int2) -> int:
 // One type's frames: steps per mode and facing. Returns whether it baked (false: it took a look's frames).
 def vx_bake_type(k:int) -> bool:
     let u = vx_def_of(k)
-    let key = "{u.rc.kind} {u.rc.skin} {u.right} {u.left} {u.helm} {u.armour} {u.mount} {t_worker[k]}"
+    let key = "{u.rc.kind} {u.rc.skin} {u.right} {u.left} {u.helm} {u.armour} {u.mount} {u.helm_kind} {u.armour_kind} {t_worker[k]}"
     let same = vx_looks.get(key, -1)
     if same >= 0:
         for(VX_MODES) mode: for(8) f: for(8) st:
@@ -82,7 +86,7 @@ def vx_bake_type(k:int) -> bool:
             if fr >= 0: vx_frames.set("{k}.{mode}.{f}.{st}", fr)
         return false
     vx_looks.set(key, k)
-    let worker = vx_unit_def { u.label, u.rc, "axe", "", u.helm, u.armour, u.mount }   // (work: chopping)
+    let worker = vx_unit_def { u.label, u.rc, "axe", "", u.helm, u.armour, u.mount, u.helm_kind, u.armour_kind }   // (work: chopping)
     vx_mat_cols[vx_mat_skin] = u.rc.skin
     vx_mat_cols[vx_mat_pale] = u.rc.pale
     vx_fur = u.rc.fur
