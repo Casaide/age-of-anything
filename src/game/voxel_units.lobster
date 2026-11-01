@@ -119,18 +119,18 @@ let vx_nlooks = dictionary<int, int>(256)   // type -> how many looks it has (hu
 def vx_bake_type(k:int) -> int:
     let u = vx_def_of(k)
     vx_cycle.set(k, 4.0 * vx_reach(u) * 1000.0 / 62.0)
-    let looks = if u.rc.kind == "human": vx_LOOKS else: 1
-    vx_nlooks.set(k, looks)
+    let nlooks = if u.rc.kind == "human": vx_LOOKS else: 1
+    vx_nlooks.set(k, nlooks)
     let key = "{u.rc.kind} {u.rc.skin} {u.right} {u.left} {u.helm} {u.armour} {u.mount} {u.helm_kind} {u.armour_kind} {u.back} {u.coat} {t_worker[k]}"
     let same = vx_looks.get(key, -1)
     if same >= 0:
-        for(looks) v: for(VX_MODES) mode: for(8) f: for(8) st:
+        for(nlooks) v: for(VX_MODES) mode: for(8) f: for(8) st:
             let fr = vx_frames.get("{same}.{v}.{mode}.{f}.{st}", -1)
             if fr >= 0: vx_frames.set("{k}.{v}.{mode}.{f}.{st}", fr)
         return 0
     vx_looks.set(key, k)
     var baked = 0
-    for(looks) v:
+    for(nlooks) v:
         let stem = bake_cache_dir + "/vx_" + sha256_text("{vx_source}|{key}|look {v}").substring(0, 20)
         if not vx_load_look(k, v, stem):
             vx_bake_look(k, u, v, stem)
