@@ -28,11 +28,11 @@ let units = [
     vx_unit_def { "roman legionary (age 2)", vx_ROMAN, "gladius", "scutum", true, true, "", "galea", "bronze", "", float3_0 },
 ]
 let rows = []::row
-for(units) u: rows.push(row { u, "stand", "scarf", true, 7.5 })
-rows.push(row { units[1], "stand", "vest", true, 7.5 })
-rows.push(row { units[1], "walk", "scarf", true, 7.5 })
-rows.push(row { units[1], "attack", "scarf", true, 7.5 })
-rows.push(row { units[0], "attack", "scarf", true, 7.5 })
+for(units) u: rows.push(row { u, "stand", "scarf", true, 5.5 })
+rows.push(row { units[1], "stand", "vest", true, 5.5 })
+rows.push(row { units[1], "walk", "scarf", true, 5.5 })
+rows.push(row { units[1], "attack", "scarf", true, 5.5 })
+rows.push(row { units[0], "attack", "scarf", true, 5.5 })
 
 let args = command_line_arguments()
 let out_path = if args.length: args[0] else: "voxel_proto.ppm"
@@ -50,7 +50,7 @@ let t0 = seconds_elapsed()
 var fills = 0.0
 for(rows) rw, r:
     let u = rw.u
-    vx_mat_cols[vx_mat_skin] = u.rc.skin
+    vx_mat_cols[vx_mat_skin] = vx_skin_of(u.rc)
     vx_mat_cols[vx_mat_pale] = u.rc.pale
     vx_fur = u.rc.fur
     vx_team_wear = rw.wear

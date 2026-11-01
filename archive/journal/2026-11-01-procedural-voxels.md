@@ -193,3 +193,17 @@ floating at some points."
   (vx_heads; the head, leg length, limb and body thickness follow it, the height fixed). Options for Dominic to pick:
   7.5 (now), 6.5, 5.5 (as the composed), 4.5, on the early Romans and the legionary against the composed ones
   (pictures 41 at game size, 42 close; `lobster voxel_proto.lobster -- out.ppm heads:7.5,6.5,5.5,4.5`).
+
+## The humans rebuilt on the composed human's measurements
+Dominic: "That height I think is coming partially from the original humans we had with more cartoony size." Checked
+(Claude): the voxel human wasn't tuned on the old toy humans; it was drawn freehand at about 7.5 heads (hips 19.4,
+shoulders about 30.3, the skull's top at 37, a 2.3 skull) where the composed heroic human (model/units.lobster, D-173)
+measures the top of the head at 38.8, hips at 18 (the knee 9 under them, the ankle 2.3 over the sole), shoulders at
+29.3 and 4.7 out, the neck at 31.6: 5.5 heads, broad shoulders. The voxel human is now built on those numbers
+(vx_heads 5.5; other counts keep the height and scale from it), its legs straight (the bones were longer than hip to
+ankle, so the knees bent).
+Colours apart, as asked: dark trousers as the composed humans wear (a light top over a dark lower body), a darker
+kilt, hair near black and close to the skull (it puffed out bigger than the head), skin drawn a little lighter than
+its palette (the composed humans light faces from within), leather armour a lighter tan, and a face that reads: eye
+whites round dark pupils, brows. Pictures 43 (game size) and 44 (close): composed against voxel at 7.5, 6.5, 5.5 (as
+measured) and 4.5 heads.
