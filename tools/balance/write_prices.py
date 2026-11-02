@@ -6,7 +6,8 @@ Usage (from the repo root): python3 tools/balance/write_prices.py [build/calibra
 prices.json is {part id or "slot:<slot>": price points}, from `lobster calibrate.lobster -- fit write`
 (src/calibrate.lobster). A part's go in data/parts.json: one whose price is its points and has no price_points
 is left alone; otherwise its price_points is set (replaced in place, or added right after its points, with the
-same spacing). A slot's go on that line of the roster in every data/rules/*.json (added after its "slot").
+same spacing). A slot's go on that line of the roster in every data/rules/*.json (added after its "slot"),
+"size:giant" and "size:tiny" in their cost as giant_price_points and tiny_price_points (what a tiny one takes off).
 """
 import glob
 import json
@@ -123,7 +124,24 @@ def main():
             if want is None or ("price_points" not in sd and want == 0):
                 return None
             return want
-        apply(path, text, price_edits(text, spans(text, text.index("[", at)), slot_want, "slot"))
+        edits = price_edits(text, spans(text, text.index("[", at)), slot_want, "slot")
+        cost = text.index("{", text.index('"cost"'))
+        keys = top_keys(text[cost:])
+        for size, key, sign in [("giant", "giant_price_points", 1), ("tiny", "tiny_price_points", -1)]:
+            if "size:" + size not in prices:
+                continue
+            want = sign * prices["size:" + size]
+            if key in keys:
+                _, v, ve = keys[key]
+                if int(text[cost + v:cost + ve]) != want:
+                    edits.append((cost + v, cost + ve, str(want)))
+            else:
+                k, _, be = keys["base"]
+                gap = k
+                while text[cost + gap - 1] in " \t\n":
+                    gap -= 1
+                edits.append((cost + be, cost + be, "," + text[cost + gap:cost + k] + '"' + key + '": ' + str(want)))
+        apply(path, text, edits)
 
 
 main()

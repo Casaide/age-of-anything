@@ -130,13 +130,13 @@ def evaluate(recipe:JV, rules:JV, age:int) -> JV:
         attack += 3
         iadd(armour, "pierce", 3)
         speed -= 2
-        points += GIANT_POINTS
+        points += gint(at(rules, "cost"), "giant_price_points", GIANT_POINTS)   // (calibrated: the generator spends GIANT_POINTS)
         tag_add(tags, "large")
         tag_add(tags, "giant")
     elif scale <= 85:
         hp = hp * 8 / 10
         speed += 1
-        points = max(1, points - 1)
+        points = max(1, points - gint(at(rules, "cost"), "tiny_price_points", 1))
         tag_add(tags, "tiny")
     var cost_pct = 0
     var train_pct = 0
