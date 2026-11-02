@@ -5,11 +5,11 @@
 
 let PI = 3.14159265358979323846
 let TAU = 6.28318530717958647692
-let RAD = 57.29577951308232   // degrees a radian (Lobster's trig takes degrees)
+let RAD = 57.29577951308232  // degrees a radian (Lobster's trig takes degrees)
 
 def rsin(a:float) -> float: return sin(a * RAD)
 def rcos(a:float) -> float: return cos(a * RAD)
-def rasin(x:float) -> float: return asin(x) / RAD     // (Lobster: degrees out)
+def rasin(x:float) -> float: return asin(x) / RAD  // (Lobster: degrees out)
 def ratan2(y:float, x:float) -> float: return atan2(float2 { x, y }) / RAD
 def rot2(v:float2, a:float) -> float2:
     let c = rcos(a)
@@ -31,7 +31,7 @@ def fposmod(x:float, y:float) -> float:
     var v = x - y * floor(x / y)
     if v < 0.0: v += y
     return v
-def fmodf(x:float, y:float) -> float:   // C's fmod: the sign of x
+def fmodf(x:float, y:float) -> float:  // C's fmod: the sign of x
     let q = x / y
     let t = if q < 0.0: ceiling(q) else: floor(q)
     return x - t * y
@@ -83,7 +83,7 @@ def clz32(x:int) -> int:
         b--
     return n
 
-def f32_of(m:int) -> float:   // an int in [2^31, 2^32) rounded to a float32's 24 bits (to nearest, ties even)
+def f32_of(m:int) -> float:  // an int in [2^31, 2^32) rounded to a float32's 24 bits (to nearest, ties even)
     let low = m & 255
     var top = m >> 8
     if low > 128 or (low == 128 and (top & 1) == 1): top++
@@ -95,7 +95,7 @@ def randf(r:Pcg) -> float:
     return f32_of(pcg_next(r) | 0x80000001) * pow(2.0, float(-32 - clz32(e)))
 
 let f32_buf = ensure_size("", 4, 0)
-def f32(x:float) -> float:   // rounded to a 32-bit float (Godot's real_t)
+def f32(x:float) -> float:  // rounded to a 32-bit float (Godot's real_t)
     write_float32_le(f32_buf, 0, x)
     let v, _n = read_float32_le(f32_buf, 0)
     return v
@@ -116,22 +116,22 @@ class VNode:
     scl = float2_1
     z = 0.0
     visible = true
-    alpha = 1.0              // modulate.a (children inherit it)
+    alpha = 1.0  // modulate.a (children inherit it)
     kids:[VNode] = []
     parent:VNode? = nil
     // a part (PartShape)
     part = false
     part_id = ""
-    pshapes:[JV] = []        // its shapes (they name the colour channels its bake key holds)
+    pshapes:[JV] = []  // its shapes (they name the colour channels its bake key holds)
     cols:Colours? = nil
     facing = 0
     front = false
-    size = 100               // the percent of the art scale its unit is drawn at: baked at that size (D-180)
-    shade = 1.0              // self_modulate.a (the far leg in shadow)
+    size = 100   // the percent of the art scale its unit is drawn at: baked at that size (D-180)
+    shade = 1.0  // self_modulate.a (the far leg in shadow)
     // metas
-    rest = 0.0               // a back part's resting turn and scale (wings)
+    rest = 0.0  // a back part's resting turn and scale (wings)
     rest_scale = 1.0
-    buzz = false             // a wing blur
+    buzz = false  // a wing blur
     has_tool_z = false
     tool_z = 0.0
     has_seat_rest = false
@@ -156,7 +156,7 @@ def remove_child(p:VNode, c:VNode):
             return
         n++
 
-def add_sibling(n:VNode, c:VNode):   // right after n
+def add_sibling(n:VNode, c:VNode):  // right after n
     let p = n.parent
     if p:
         var i = 0
@@ -179,12 +179,12 @@ def sort_layers(n:VNode) -> void:
 def xf_local(n:VNode) -> [float]:
     let c = rcos(n.rot)
     let s = rsin(n.rot)
-    return [c * n.scl.x, s * n.scl.x, -s * n.scl.y, c * n.scl.y, n.pos.x, n.pos.y]
+    return [ c * n.scl.x, s * n.scl.x, -s * n.scl.y, c * n.scl.y, n.pos.x, n.pos.y ]
 
 def xf_mul(a:[float], b:[float]) -> [float]:
-    return [a[0] * b[0] + a[2] * b[1], a[1] * b[0] + a[3] * b[1],
-            a[0] * b[2] + a[2] * b[3], a[1] * b[2] + a[3] * b[3],
-            a[0] * b[4] + a[2] * b[5] + a[4], a[1] * b[4] + a[3] * b[5] + a[5]]
+    return [ a[0] * b[0] + a[2] * b[1], a[1] * b[0] + a[3] * b[1],
+             a[0] * b[2] + a[2] * b[3], a[1] * b[2] + a[3] * b[3],
+             a[0] * b[4] + a[2] * b[5] + a[4], a[1] * b[4] + a[3] * b[5] + a[5] ]
 
 def xf_apply(a:[float], p:float2) -> float2: return float2 { a[0] * p.x + a[2] * p.y + a[4], a[1] * p.x + a[3] * p.y + a[5] }
 

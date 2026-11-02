@@ -18,7 +18,7 @@ let PAD_CIRCLE_START = 34.0
 let PAD_CIRCLE_GROW = 300.0
 let PAD_CIRCLE_MAX = 0.42
 let PAD_GROUP_HOLD = 0.5
-let PAD_BUTTONS = ["a", "b", "x", "y", "leftshoulder", "rightshoulder", "dpup", "dpdown", "dpleft", "dpright", "start", "back", "leftstick", "rightstick"]
+let PAD_BUTTONS = [ "a", "b", "x", "y", "leftshoulder", "rightshoulder", "dpup", "dpdown", "dpleft", "dpright", "start", "back", "leftstick", "rightstick" ]
 
 // One frame of the pad: the sticks and triggers (SDL's order: left x, y, right x, y, LT, RT) and the
 // buttons held. Read from the pad, or made up by a test.
@@ -30,40 +30,40 @@ class PadIn:
 class Btn:
     label:string
     hotkey:string
-    act:int                       // 0 train slot, 1 research, 2 age up, 3 build, 4 stop, 5 cancel the last in the queue,
-                                  // 6 a build page (arg 0 civilian, 1 military, -1 back), 7 stance (arg), 8 call to arms, 9 back to work,
-                                  // 10 arm attack-move, 11 arm the race's ability, 12 ungarrison, 13 reseed, 14 auto-reseed,
-                                  // 15 release the pen's animals, 16 trade (arg: resource x 2 + 1 to buy), 17 slaughter
+    act:int  // 0 train slot, 1 research, 2 age up, 3 build, 4 stop, 5 cancel the last in the queue,
+    // 6 a build page (arg 0 civilian, 1 military, -1 back), 7 stance (arg), 8 call to arms, 9 back to work,
+    // 10 arm attack-move, 11 arm the race's ability, 12 ungarrison, 13 reseed, 14 auto-reseed,
+    // 15 release the pen's animals, 16 trade (arg: resource x 2 + 1 to buy), 17 slaughter
     arg:int
-    unit = -1                     // a unit type to draw on it
-    building = -1                 // or a building type
+    unit = -1      // a unit type to draw on it
+    building = -1  // or a building type
     cost = ""
-    costv = []::int               // the cost per resource (the row along its foot)
-    icon = ""                     // or an icon (icons/<name>.png)
-    glyph = ""                    // a small badge top right (icons/glyph/<name>.png): what a building is for
-    accent = false                // a gold rim: the age-up, a line upgrade, the stance in use
+    costv = []::int  // the cost per resource (the row along its foot)
+    icon = ""        // or an icon (icons/<name>.png)
+    glyph = ""       // a small badge top right (icons/glyph/<name>.png): what a building is for
+    accent = false   // a gold rim: the age-up, a line upgrade, the stance in use
     enabled = true
-    group = ""                    // its caption
-    note = ""                     // under the picture instead of a cost ("ON", a page's name)
-    tip = ""                      // the hover card's line under the title
-    line_key = -1                 // a line upgrade: the step it gives, drawn from line_recipe (its portrait key)
+    group = ""     // its caption
+    note = ""      // under the picture instead of a cost ("ON", a page's name)
+    tip = ""       // the hover card's line under the title
+    line_key = -1  // a line upgrade: the step it gives, drawn from line_recipe (its portrait key)
     line_recipe:JV? = nil
 
 var pad_on = false
-var pad_reticle_shown = true      // (touch shows it only while a finger is down: game/touch.lobster)
-var pad_off = float2_0            // the reticle off the screen's middle, screen px
+var pad_reticle_shown = true  // (touch shows it only while a finger is down: game/touch.lobster)
+var pad_off = float2_0        // the reticle off the screen's middle, screen px
 var pad_prev = []::string
 let pad_held_t = dictionary<string, float>(16)
 var pad_circle = 0.0
 var pad_wheel = []::Btn
-var pad_pick = 0                  // on the wheel's page
-var pad_page = 0                  // the wheel's page (8 a page; LB turns them)
+var pad_pick = 0  // on the wheel's page
+var pad_page = 0  // the wheel's page (8 a page; LB turns them)
 var pad_last_mouse = float2 { -1.0, -1.0 }
 var pad_lt = false
-var pad_kept = []::string         // d-pad buttons held long enough to keep a group (once a hold)
+var pad_kept = []::string  // d-pad buttons held long enough to keep a group (once a hold)
 var pad_rt = false
-var pad_lb_used = false           // LB was held as a modifier this press (so its release isn't a tap)
-var pad_cycle_all = []::int       // the selection before LB started cycling its kinds
+var pad_lb_used = false      // LB was held as a modifier this press (so its release isn't a tap)
+var pad_cycle_all = []::int  // the selection before LB started cycling its kinds
 var pad_cycle_k = -1
 
 // LB tapped: only the next kind among what's selected (spears, then archers...), then all again (pad_play._cycle_kinds).
@@ -96,7 +96,7 @@ def is_selected_here(m:float2) -> bool:
     return b >= 0 and sel_building != 0 and b_id[b] == sel_building
 
 def go_to(i:int):
-    selected = [u_id[i]]
+    selected = [ u_id[i] ]
     sel_building = 0
     cam = iso(float(u_x[i]), float(u_y[i]))
 
@@ -115,7 +115,7 @@ def pad_tick(pin:PadIn, dt:float) -> bool:
     let moved = pad_last_mouse.x >= 0.0 and magnitude(m - pad_last_mouse) > 2.0
     pad_last_mouse = m
     let any_pad = pin.down.length > 0 or (filter(pin.axes) x: abs(x) > 0.2).length > 0
-    if moved and not any_pad and pad_on:   // last input wins: the mouse takes over
+    if moved and not any_pad and pad_on:  // last input wins: the mouse takes over
         pad_on = false
         fake_mouse = float2 { -1.0, -1.0 }
         pad_wheel = []
@@ -131,7 +131,7 @@ def pad_tick(pin:PadIn, dt:float) -> bool:
     let ws = float(gl.window_size())
     let left = float2 { pin.axes[0], pin.axes[1] }
     let right = float2 { pin.axes[2], pin.axes[3] }
-    if pad_wheel.length:   // the wheel: either stick points, A chooses (it stays up), B closes
+    if pad_wheel.length:  // the wheel: either stick points, A chooses (it stays up), B closes
         if pressed("leftshoulder") and wheel_pages() > 1:
             pad_page = (pad_page + 1) % wheel_pages()
             pad_pick = 0
@@ -153,7 +153,7 @@ def pad_tick(pin:PadIn, dt:float) -> bool:
     pad_lb_held = add
     if pressed("leftshoulder"): pad_lb_used = false
     if add and (pressed("a") or pressed("x") or pressed("y")): pad_lb_used = true
-    if arming_attack or arming_ability:   // the armed order: A or X gives it, B drops it
+    if arming_attack or arming_ability:  // the armed order: A or X gives it, B drops it
         if pressed("a") or pressed("x"): give_armed(reticle())
         if pressed("b"):
             arming_attack = false
@@ -176,7 +176,7 @@ def pad_tick(pin:PadIn, dt:float) -> bool:
         if pad_circle > 0.0: pad_circle = 0.0
         elif placing >= 0: place_here(false)
         elif is_selected_here(reticle()): wheel_open()
-        elif add:   // (LB held: what's under the reticle joins the selection)
+        elif add:  // (LB held: what's under the reticle joins the selection)
             let before = selected_units()
             click_select(reticle())
             if selected.length:
@@ -188,7 +188,7 @@ def pad_tick(pin:PadIn, dt:float) -> bool:
         if placing >= 0: place_here(false)
         else: order(reticle())
     if pressed("y") and (filter(selected_units()) id: not t_worker[u_kind[index_of(id)]] and t_animal[u_kind[index_of(id)]] == 0).length:
-        order(reticle(), true)   // (attack-move: queued with LB held)
+        order(reticle(), true)  // (attack-move: queued with LB held)
     if pressed("b"):
         if placing >= 0: placing = -1
         elif build_menu: build_menu = false
@@ -205,7 +205,7 @@ def pad_tick(pin:PadIn, dt:float) -> bool:
     if rt and not pad_rt: zoom = min(8.0, zoom + 1.0)
     pad_lt = lt
     pad_rt = rt
-    if pressed("dpdown"):   // the next idle worker
+    if pressed("dpdown"):  // the next idle worker
         let idle = filter(u_id.length) i: u_owner[i] == ME and t_worker[u_kind[i]] and u_task[i] == T_NONE and u_moving[i] == 0
         if idle.length:
             let after = if selected.length: (filter(idle) i: u_id[i] > selected[0]) else: []
@@ -216,7 +216,7 @@ def pad_tick(pin:PadIn, dt:float) -> bool:
             selected = []
             sel_building = b_id[tc]
             cam = iso(float(b_cx[tc] * 1000 + b_sx[tc] * 500), float(b_cy[tc] * 1000 + b_sy[tc] * 500))
-    for(["dpleft", "dpright"]) b, n:
+    for([ "dpleft", "dpright" ]) b, n:
         if has_s(pin.down, b) and pad_held_t.get(b, 0.0) >= PAD_GROUP_HOLD and not has_s(pad_kept, b):
             store_group(n)
             banner = "Group {n + 1} kept"
@@ -244,4 +244,4 @@ def pad_draw():
         gl.color(float4 { rcol.x, rcol.y, rcol.z, 0.6 }):
             gl.translate(c):
                 gl.scale(float2 { 1.0, 0.5 }): gl.open_circle(pad_circle, 48, 2.0 * u / pad_circle)
-    if pad_wheel.length: wheel_draw()   // (game/panel.lobster)
+    if pad_wheel.length: wheel_draw()  // (game/panel.lobster)

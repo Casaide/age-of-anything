@@ -11,23 +11,23 @@ class ShotStyle:
     len:float
     w:float
     col:float4
-    glow = float4_0               // a soft halo round it (a mod's bolt of light); alpha 0: none
-    sticks = true                 // a miss stands in the ground (false: a bolt of light)
+    glow = float4_0  // a soft halo round it (a mod's bolt of light); alpha 0: none
+    sticks = true    // a miss stands in the ground (false: a bolt of light)
 
 def hex_col(h:string) -> float4:
     def byte(i:int) -> float: return float(string_to_int(h.substring(i, 2), 16)) / 255.0
     return float4 { byte(0), byte(2), byte(4), 1.0 }
 
 let SHOT_STYLES = dictionary<string, ShotStyle>(16)
-for([["arrow", "0.22", "7.0", "1.0", "e8dcc0"], ["bolt", "0.08", "6.0", "1.4", "c8c0a8"], ["javelin", "0.3", "11.0", "1.3", "b08a5a"],
-     ["stone", "0.18", "0.0", "2.4", "8a8a80"], ["dart", "0.04", "4.0", "0.8", "2a2a20"], ["ball", "0.02", "0.0", "1.8", "303030"],
-     ["boulder", "0.42", "0.0", "4.2", "8f8a7c"], ["siege_bolt", "0.1", "13.0", "1.9", "a89a7c"], ["sling_stone", "0.5", "0.0", "5.0", "8f8a7c"]]) s:
+for([ [ "arrow", "0.22", "7.0", "1.0", "e8dcc0" ], [ "bolt", "0.08", "6.0", "1.4", "c8c0a8" ], [ "javelin", "0.3", "11.0", "1.3", "b08a5a" ],
+      [ "stone", "0.18", "0.0", "2.4", "8a8a80" ], [ "dart", "0.04", "4.0", "0.8", "2a2a20" ], [ "ball", "0.02", "0.0", "1.8", "303030" ],
+      [ "boulder", "0.42", "0.0", "4.2", "8f8a7c" ], [ "siege_bolt", "0.1", "13.0", "1.9", "a89a7c" ], [ "sling_stone", "0.5", "0.0", "5.0", "8f8a7c" ] ]) s:
     SHOT_STYLES.set(s[0], ShotStyle { string_to_float(s[1]), string_to_float(s[2]), string_to_float(s[3]), hex_col(s[4]) })
 
 def shot_style(kind:string) -> ShotStyle:
     let s = SHOT_STYLES.get(kind)
     if s: return s
-    let m = get(mod_shots, kind)   // a mod's look (its shots.json: colours as "#rrggbb")
+    let m = get(mod_shots, kind)  // a mod's look (its shots.json: colours as "#rrggbb")
     if m:
         def num(k:string, f:float) -> float: return if has(m, k): as_float(at(m, k)) else: f
         let made = ShotStyle { num("arc", 0.0), num("len", 0.0), num("w", 1.0), hex_col(substring(gstr(m, "col", "#ffffff"), 1, 6)) }
@@ -39,7 +39,7 @@ def shot_style(kind:string) -> ShotStyle:
     assert a
     return a
 
-let RADIUS_PX = 64.0 * 0.5 * 1.41421356 / 1000.0   // canvas px a milli-tile of radius
+let RADIUS_PX = 64.0 * 0.5 * 1.41421356 / 1000.0  // canvas px a milli-tile of radius
 let STUCK_TIME = 3.0
 let HEAL_TIME = 1.0
 let HEAL_MOTE = float4 { 0.894, 0.957, 0.753, 1.0 }
@@ -63,7 +63,7 @@ class Stuck:
 class Heal:
     id:int
     t:float
-    motes:[float4]    // offset x, y, rise speed, delay
+    motes:[float4]  // offset x, y, rise speed, delay
 
 var fx_sparks = []::Spark
 var fx_dusts = []::Dust
@@ -89,22 +89,22 @@ def fx_stick(at:float2, kind:string):
         fx_stuck.push(Stuck { at + float2 { rnd_range(-1.5, 1.5), rnd_range(-1.0, 1.0) }, 0.0, kind, rnd_range(-0.6, 0.6) })
 
 def fx_heal(id:int):
-    for(fx_heals) h:   // one glow at a time
+    for(fx_heals) h:  // one glow at a time
         if h.id == id and h.t < HEAL_TIME * 0.5: return
     fx_heals.push(Heal { id, 0.0, map(3): float4 { rnd_range(-4.0, 4.0), rnd_range(-14.0, -6.0), rnd_range(9.0, 14.0), rnd_range(0.0, 0.25) } })
 
 // A fallen building's ruin (BuildingArt.fall): its last broken-up stage where it stood, burning a while.
 class RuinFx:
-    frame:string      // the ruin's bake
-    body:string       // the building's bake (where its fires are)
-    id:int            // the building's (its fires' spots)
-    at:float2         // its anchor, art px (lifted)
+    frame:string  // the ruin's bake
+    body:string   // the building's bake (where its fires are)
+    id:int        // the building's (its fires' spots)
+    at:float2     // its anchor, art px (lifted)
     sort_y:float
-    flat:bool         // (a pen: lies low)
+    flat:bool  // (a pen: lies low)
     owner:int
-    cells:int4        // its footprint: x, y, w, h (sim cells)
-    fires:int         // how many of its fires burn
-    t0:float          // when it fell (seconds of play shown, as the dead's)
+    cells:int4  // its footprint: x, y, w, h (sim cells)
+    fires:int   // how many of its fires burn
+    t0:float    // when it fell (seconds of play shown, as the dead's)
 
 // A puff of a fallen building's dust: canvas units.
 class Puff3:
@@ -118,9 +118,9 @@ let RUIN_BURN = 8.0    // a ruin's fires burn this long after it falls
 let RUIN_STAYS = 45.0  // then it lies there this long...
 let RUIN_FADE = 5.0    // ...and fades away
 let PUFF_TIME = 2.6
-let PUFF_SIZES = [3, 4, 5, 7, 9, 12, 15, 19, 24]   // art pixels: a puff grows through these
-let PUFF_DUST = [float4 { 0.886, 0.839, 0.737, 1.0 }, float4 { 0.725, 0.663, 0.541, 1.0 }, float4 { 0.522, 0.467, 0.380, 1.0 }]   // lit, mid, shade
-let FX_ART_PX = ART_SCALE   // art px a canvas unit: the dust's grid
+let PUFF_SIZES = [ 3, 4, 5, 7, 9, 12, 15, 19, 24 ]                                                                                 // art pixels: a puff grows through these
+let PUFF_DUST = [ float4 { 0.886, 0.839, 0.737, 1.0 }, float4 { 0.725, 0.663, 0.541, 1.0 }, float4 { 0.522, 0.467, 0.380, 1.0 } ]  // lit, mid, shade
+let FX_ART_PX = ART_SCALE                                                                                                          // art px a canvas unit: the dust's grid
 var fx_ruins = []::RuinFx
 var fx_puffs = []::Puff3
 let fx_puff_tex = dictionary<int, resource<texture>>(16)
@@ -163,11 +163,11 @@ def draw_puffs():
         for(fx_puffs) p:
             if p.t >= 0.0:
                 let k = p.t / PUFF_TIME
-                let want = p.r * FX_ART_PX * (0.6 + 0.8 * k) * [1.0, 0.92, 0.55][band]
+                let want = p.r * FX_ART_PX * (0.6 + 0.8 * k) * [ 1.0, 0.92, 0.55 ][band]
                 var r = PUFF_SIZES[0]
                 for(PUFF_SIZES) n:
                     if float(n) <= want: r = n
-                var at = p.pos + float2 { p.drift * k, -p.rise * k } - float2_1 * p.r * [0.0, 0.18, 0.4][band]
+                var at = p.pos + float2 { p.drift * k, -p.rise * k } - float2_1 * p.r * [ 0.0, 0.18, 0.4 ][band]
                 at = float(floor(at * FX_ART_PX)) / FX_ART_PX
                 let half = float2_1 * float(r) / FX_ART_PX
                 let c = PUFF_DUST[2 - band]
@@ -212,7 +212,7 @@ def heal_glow(id:int) -> float:
 // ground_of(id): a live unit's feet on the canvas, or float2 { -1000000000.0, 0 } when it's gone or unseen.
 def fx_draw(ground_of):
     gl.set_shader("color")
-    for(fx_stuck) s:   // half buried, leaning, fading at the end
+    for(fx_stuck) s:  // half buried, leaning, fading at the end
         let st = shot_style(s.kind)
         let a = clamp((STUCK_TIME - s.t) / 0.6, 0.0, 1.0)
         let up = float2 { sin(s.tilt * 57.29578), -cos(s.tilt * 57.29578) } * st.len * 0.9

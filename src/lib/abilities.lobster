@@ -5,20 +5,20 @@
 // enemy web, or hit by a sticky shot (slow_on_hit ticks, at SLOW_PCT), moves slower.
 
 let SLOW_PCT = 60
-let WEB = 6                    // webs, flat: owner, x, y, radius, ends (tick), slow_pct
+let WEB = 6  // webs, flat: owner, x, y, radius, ends (tick), slow_pct
 let AB_WEB = 1
 
-var ab_kind = []::int          // per player: 0 none, AB_WEB
+var ab_kind = []::int  // per player: 0 none, AB_WEB
 var ab_range = []::int
 var ab_radius = []::int
 var ab_lasts = []::int
 var ab_slow = []::int
 var ab_cooldown = []::int
-var t_ability = []::int        // per unit type: may use its race's ability
+var t_ability = []::int  // per unit type: may use its race's ability
 var webs = []::int
-var ready_ids = []::int        // ability cooldowns: unit id -> the tick it may act again (ids ascending)
+var ready_ids = []::int  // ability cooldowns: unit id -> the tick it may act again (ids ascending)
 var ready_at = []::int
-var slowed_ids = []::int       // sticky hits: unit id -> the tick it wears off
+var slowed_ids = []::int  // sticky hits: unit id -> the tick it wears off
 var slowed_until = []::int
 
 def ids_get(ids:[int], vals:[int], id:int, fallback:int) -> int:
@@ -45,7 +45,7 @@ def cmd_ability(p:int, ids0:[int], x:int, y:int):
             let dy = y - u_y[i]
             if dx * dx + dy * dy <= ab_range[p] * ab_range[p]:
                 if ab_kind[p] == AB_WEB:
-                    for([p, x, y, ab_radius[p], tick + ab_lasts[p], ab_slow[p]]) v: webs.push(v)
+                    for([ p, x, y, ab_radius[p], tick + ab_lasts[p], ab_slow[p] ]) v: webs.push(v)
                 ids_set(ready_ids, ready_at, uid, tick + ab_cooldown[p])
                 return
 
@@ -78,7 +78,7 @@ def abilities_tick():
         else:
             ids_set(slow_ids, slow_pcts, slowed_ids[k], min(ids_get(slow_ids, slow_pcts, slowed_ids[k], 100), SLOW_PCT))
             k++
-    if tick % 200 == 0:   // forget the cooldowns of the dead now and then
+    if tick % 200 == 0:  // forget the cooldowns of the dead now and then
         var q = 0
         while q < ready_ids.length:
             if index_of(ready_ids[q]) < 0 or ready_at[q] <= tick:
@@ -118,4 +118,4 @@ def ability_think(p:int, army:[int]):
                             best_score = score
                             best = j
                             by = i
-    if best >= 0: issue_cmd(p, CMD_ABILITY, [u_id[by]], u_x[best], u_y[best], 0, 0)
+    if best >= 0: issue_cmd(p, CMD_ABILITY, [ u_id[by] ], u_x[best], u_y[best], 0, 0)

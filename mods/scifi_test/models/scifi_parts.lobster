@@ -3,8 +3,8 @@
 // model file defines build_mod_<mod id>(base, colours) -> Spec? for its parts (nil for the rest); mod.json's
 // "lobster_models" names it, and play.sh includes it when the mod is on. Same frames as the game's own parts.
 
-let SCIFI_ENERGY = html("#7fe6ff")    // the light of the emitters and the visor
-let SCIFI_SUIT = html("#2c3138")      // the dark undersuit and gun body
+let SCIFI_ENERGY = html("#7fe6ff")  // the light of the emitters and the visor
+let SCIFI_SUIT = html("#2c3138")    // the dark undersuit and gun body
 let SCIFI_PLATE = float3 { 0.72, 0.76, 0.8 }
 
 def scifi_plate(units:float = 3.0) -> MMat: return surf("textures/scifi_test/plate", SCIFI_PLATE, units)
@@ -22,8 +22,8 @@ def weapon_pulse_rifle(c:Colours) -> Spec:
     let line = normalize(float3 { 14.0, 3.6, 0.0 })
     let frame = add_child(n, mnode())
     frame.rot = float3 { 0.0, 0.0, atan2(float2 { line.x, line.y }) }
-    add_child(frame, slab(scifi_pts([-6.0, -1.8, -6.0, 1.2, -1.0, 1.6, 9.0, 1.8, 10.0, 0.6, 10.0, -1.0,
-        2.0, -1.2, 1.0, -3.2, -0.6, -3.2, -0.8, -1.2, -3.5, -1.0]), 1.8, body))
+    add_child(frame, slab(scifi_pts([ -6.0, -1.8, -6.0, 1.2, -1.0, 1.6, 9.0, 1.8, 10.0, 0.6, 10.0, -1.0,
+                                      2.0, -1.2, 1.0, -3.2, -0.6, -3.2, -0.8, -1.2, -3.5, -1.0 ]), 1.8, body))
     add_child(frame, box(float3 { 9.0, 1.6, 2.2 }, plate, float3 { 5.5, 1.4, 0.0 }))
     add_child(frame, box(float3 { 7.0, 0.5, 0.9 }, body, float3 { 5.0, 2.45, 0.0 }))
     add_child(frame, box(float3 { 1.0, 1.0, 1.0 }, plate, float3 { 2.5, 3.0, 0.0 }))
@@ -53,8 +53,8 @@ def weapon_arc_blade(c:Colours) -> Spec:
     let n = mnode()
     let d = normalize(float3 { 3.0, 14.0, 0.0 })
     let ang = atan2(float2 { d.x, d.y })
-    add_child(n, blade(scifi_pts([1.5, -0.8, 13.0, -0.7, 14.8, 0.0, 13.0, 0.7, 1.5, 0.8]), 0.7, glow(SCIFI_ENERGY), float3_0, ang))
-    add_child(n, blade(scifi_pts([2.0, -0.35, 13.0, -0.3, 14.0, 0.0, 13.0, 0.3, 2.0, 0.35]), 0.9, glow(float3_1), float3_0, ang))
+    add_child(n, blade(scifi_pts([ 1.5, -0.8, 13.0, -0.7, 14.8, 0.0, 13.0, 0.7, 1.5, 0.8 ]), 0.7, glow(SCIFI_ENERGY), float3_0, ang))
+    add_child(n, blade(scifi_pts([ 2.0, -0.35, 13.0, -0.3, 14.0, 0.0, 13.0, 0.3, 2.0, 0.35 ]), 0.9, glow(float3_1), float3_0, ang))
     let dark = scifi_gunmetal()
     let across = float3 { -d.y, d.x, 0.0 }
     add_child(n, rod(-across * 2.2 + d * 1.2, across * 2.2 + d * 1.2, 0.6, 0.6, dark))

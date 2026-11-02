@@ -15,7 +15,7 @@ def footprint(b:int) -> [int]: return cells_of(b_cx[b], b_cy[b], b_sx[b], b_sy[b
 
 def add_building(bid:int, owner:int, k:int, cx:int, cy:int, sx:int, sy:int, diag:int) -> int:
     for(building_columns()) col, n:
-        col.push([bid, owner, k, cx, cy, sx, sy, 1, 0, 0, 0, -1, -1, 0, diag][n])
+        col.push([ bid, owner, k, cx, cy, sx, sy, 1, 0, 0, 0, -1, -1, 0, diag ][n])
     b_queue.push([]::int)
     b_inside.push([]::int)
     return b_id.length - 1
@@ -44,10 +44,10 @@ def place(player:int, k:int, cx:int, cy:int, along:int = 0) -> int:
     let sx, sy = dims(k, along)
     let b = add_building(next_id, player, k, cx, cy, sx, sy, diag_of(along))
     next_id++
-    clear_rubble(footprint(b))   // built over a breach: the rubble goes
+    clear_rubble(footprint(b))  // built over a breach: the rubble goes
     occupy(footprint(b), b_id[b], if bt_gate[k]: teams[player] else: -1, bt_blocks_flyers[k] != 0)
-    if bt_ladder[k]: set_walk_over(footprint(b), true)   // walked over at the wall's foot
-    if bt_gate[k]: refresh_lanes()   // the team's first gate gives it lanes of its own
+    if bt_ladder[k]: set_walk_over(footprint(b), true)  // walked over at the wall's foot
+    if bt_gate[k]: refresh_lanes()                      // the team's first gate gives it lanes of its own
     return b
 
 // Each player's (and gaia's) first lane: its team's own group once it has a gate (World.refresh_lanes).
@@ -74,7 +74,7 @@ def replaceable(player:int, k:int, c:int) -> bool:
 
 // Is cell c beside (N E S W) a finished walkway cell of an enemy of `player` (a ladder's place)?
 def against_enemy_wall(player:int, c:int) -> bool:
-    for([int2 { 0, -1 }, int2 { 1, 0 }, int2 { 0, 1 }, int2 { -1, 0 }]) n:
+    for([ int2 { 0, -1 }, int2 { 1, 0 }, int2 { 0, 1 }, int2 { -1, 0 } ]) n:
         let x = c % W + n.x
         let y = c / W + n.y
         if x >= 0 and y >= 0 and x < W and y < H:
@@ -101,11 +101,11 @@ def repair_cost(player:int, k:int, cells:[int]) -> [int]:
 
 def add_unit(owner:int, k:int, x:int, y:int) -> int:
     // units.gd _put's defaults, in unit_columns order
-    let v = [next_id, x, y, x, y, 0, 0, x, y, 0, 0, -1, -1, 0,
-             t_hp[k], 0, 0, 0, t_posture[k], x, y, 0, 0, -1,
-             T_NONE, -1, -1, -1, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-             0, 0, 0, 0, 0, 0, 0,
-             owner, k, t_speed[k], t_radius[k], t_mclass[k]]
+    let v = [ next_id, x, y, x, y, 0, 0, x, y, 0, 0, -1, -1, 0,
+              t_hp[k], 0, 0, 0, t_posture[k], x, y, 0, 0, -1,
+              T_NONE, -1, -1, -1, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+              0, 0, 0, 0, 0, 0, 0,
+              owner, k, t_speed[k], t_radius[k], t_mclass[k] ]
     unit_changes++
     for(unit_columns()) col, n: col.push(v[n])
     u_orders.push([])
@@ -410,7 +410,7 @@ def farm_at(cell:int, player:int) -> int:
 
 // Reseed finished farm b if it's worked out and its owner can pay: crops again. Whether it was.
 def reseed(b:int) -> bool:
-    if b < 0: return false   // (GDScript: farm_at's -1 reads the last building; never in a scenario where it matters)
+    if b < 0: return false  // (GDScript: farm_at's -1 reads the last building; never in a scenario where it matters)
     let p = b_owner[b]
     let k = b_kind[b]
     let cells = footprint(b)
@@ -461,8 +461,8 @@ def become_ground(b:int, i:int):
     let cells = footprint(b)
     let land = tr_walk[terrain[cells[0]]]
     make_pool(cells, if land: bt_land[k] else: bt_wet[k], bm_food[b_owner[b]][k])
-    if not u_orders[i].length: start_gather(i, cells[0], 1)   // (food: resource index 0)
-    else: clear_task(i)   // told what to do after (shift): that comes first, not farming forever
+    if not u_orders[i].length: start_gather(i, cells[0], 1)  // (food: resource index 0)
+    else: clear_task(i)                                      // told what to do after (shift): that comes first, not farming forever
 
 // ---- a tick of jobs
 
@@ -636,7 +636,7 @@ def build_job(i:int):
             b_done[b] = 1
             b_hp[b] = max_hp
             if bt_farm[k]: become_ground(b, i)
-            elif bt_pen_animals[k] > 0: pen_opened(b)   // a pen: walked into
+            elif bt_pen_animals[k] > 0: pen_opened(b)  // a pen: walked into
             else: gather_after_camp(b)
     elif u_moving[i] == 0:
         if u_stuck[i] >= GIVE_UP: clear_task(i)
@@ -658,7 +658,7 @@ def update_pop():
         pop_cap[p] = 0
     for(u_x.length) i:
         if u_owner[i] != gaia: pop[u_owner[i]] += t_pop[u_kind[i]]
-    for(b_id.length) b:   // those sheltering inside still count
+    for(b_id.length) b:  // those sheltering inside still count
         var o = 0
         while o < b_inside[b].length:
             pop[b_owner[b]] += t_pop[b_inside[b][o + REC_KIND]]
@@ -757,7 +757,7 @@ def can_place(player:int, k:int, cx:int, cy:int, along:int = 0) -> bool:
     for(cells_of(cx, cy, sx, sy, diag_of(along))) c:
         if not can_build(c % W, c / W, 1, mc, bt_water[k] != 0, bt_line[k] != 0) and not replaceable(player, k, c): return false
         if bt_gate[k] and cliff[c] == 1: return false
-    if bt_ladder[k] and not against_enemy_wall(player, cy * W + cx): return false   // a ladder only leans on an enemy walkway
+    if bt_ladder[k] and not against_enemy_wall(player, cy * W + cx): return false  // a ladder only leans on an enemy walkway
     return true
 
 // Pay for and place a BUILD's foundation; its id, or 0 when it can't be built there.
@@ -772,7 +772,7 @@ def lay_foundation(player:int, ids:[int], k:int, cx:int, cy:int, along0:int = 0)
     if not can_afford(player, cost): return 0
     pay(player, cost)
     for(cells) c:
-        if replaceable(player, k, c): demolish(b_index_of(occupied[c]))   // a gate dropped into a wall takes its place
+        if replaceable(player, k, c): demolish(b_index_of(occupied[c]))  // a gate dropped into a wall takes its place
     return b_id[place(player, k, cx, cy, along)]
 
 def cmd_build(player:int, ids:[int], k:int, cx:int, cy:int, along:int = 0):
@@ -781,7 +781,7 @@ def cmd_build(player:int, ids:[int], k:int, cx:int, cy:int, along:int = 0):
     for(own_workers(player, ids)) i: start_build(i, bid)
 
 def cmd_help_build(player:int, ids:[int], target:int):
-    if bridge_help(player, target, own_workers(player, ids)): return   // a map bridge: rebuilt by anyone
+    if bridge_help(player, target, own_workers(player, ids)): return  // a map bridge: rebuilt by anyone
     let b = b_index_of(target)
     if b < 0 or b_owner[b] != player or b_done[b] == 1: return
     for(own_workers(player, ids)) i: start_build(i, target)
@@ -792,7 +792,7 @@ def cmd_train(player:int, bid:int, k:int, ok:int):
     if b < 0 or b_owner[b] != player or b_done[b] == 0: return
     if not contains(bm_trains[player][b_kind[b]], k): return
     if k < 0 or b_queue[b].length >= r_queue_max or not ok: return
-    let cost = unit_cost(k)   // (a revived hero's share of its price)
+    let cost = unit_cost(k)  // (a revived hero's share of its price)
     if not can_afford(player, cost) or ages[player] < t_age[k]: return
     if t_hero[k] and hero_barred(player, k): return
     pay(player, cost)

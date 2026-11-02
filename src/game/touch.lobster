@@ -8,28 +8,28 @@
 // A touch that starts on the panel, the top bar or the minimap is theirs (the mouse's way). Imported by game.lobster
 // after the pad, the panel and the top bar; on when the game is given "touch" (the Android build).
 
-let TOUCH_SLOP = 14.0            // screen points a finger may wander and still tap or hold
-let TOUCH_HOLD = 0.3             // seconds still before a hold grows the circle
-let TOUCH_PINCH_STEP = 1.3       // how far fingers spread (or close) for one zoom step
+let TOUCH_SLOP = 14.0       // screen points a finger may wander and still tap or hold
+let TOUCH_HOLD = 0.3        // seconds still before a hold grows the circle
+let TOUCH_PINCH_STEP = 1.3  // how far fingers spread (or close) for one zoom step
 
-var touch_down = false           // a finger is on the world now
-var touch_hud = false            // this touch began on the panel, top bar or minimap
-var touch_at = float2_0          // where it went down
+var touch_down = false   // a finger is on the world now
+var touch_hud = false    // this touch began on the panel, top bar or minimap
+var touch_at = float2_0  // where it went down
 var touch_last = float2_0
-var touch_t = 0.0                // how long it's been down
+var touch_t = 0.0  // how long it's been down
 var touch_panned = false
-var touch_pinch = 0.0            // the two fingers' distance at the last zoom step (0: one finger)
+var touch_pinch = 0.0  // the two fingers' distance at the last zoom step (0: one finger)
 var touch_mid = float2_0
 var touch_wants_menu = false
-var touch_placing = -1           // the building type being placed when last seen (a new one starts mid-screen)
+var touch_placing = -1  // the building type being placed when last seen (a new one starts mid-screen)
 
 // A tap on the world: selects what's there (your units or a building, a foe or a sheep to look at, nothing: the
 // selection let go); on what's already selected it opens the wheel. A second tap in the same spot soon after is the
 // right click: the selection from before the first tap gets an order there (move, gather, attack, build, garrison).
-let TOUCH_DOUBLE = 0.35          // seconds between the two taps of a double tap
+let TOUCH_DOUBLE = 0.35  // seconds between the two taps of a double tap
 var touch_tap_t = -100.0
 var touch_tap_at = float2_0
-var touch_before = []::int       // the selection before the first tap of a pair
+var touch_before = []::int  // the selection before the first tap of a pair
 var touch_before_b = 0
 
 def touch_tap(m:float2):
@@ -73,12 +73,12 @@ def touch_back():
     elif selected.length or sel_building != 0:
         selected = []
         sel_building = 0
-    else: touch_wants_menu = true   // (game.lobster opens the pause menu)
+    else: touch_wants_menu = true  // (game.lobster opens the pause menu)
 
 // One frame of touch. True: it took the input (the mouse's way is skipped); false: a touch on the panel, top bar or
 // minimap, left to the mouse.
 def touch_tick(dt:float) -> bool:
-    pad_on = true   // (the pad's drawing: the circle, the wheel)
+    pad_on = true  // (the pad's drawing: the circle, the wheel)
     if gl.button("ac back") == 1: touch_back()
     let one = gl.button("mouse1")
     let two = gl.button("mouse11")
@@ -86,8 +86,8 @@ def touch_tick(dt:float) -> bool:
     if placing != touch_placing:
         touch_placing = placing
         if placing >= 0 and one < 1: fake_mouse = float(gl.window_size()) / 2.0
-    let line = placing >= 0 and bt_line[placing] != 0   // (a wall or gate: the finger drags its line, not the view)
-    if one == 1 and two < 1:   // a finger went down
+    let line = placing >= 0 and bt_line[placing] != 0  // (a wall or gate: the finger drags its line, not the view)
+    if one == 1 and two < 1:                           // a finger went down
         touch_hud = in_panel(m) or in_topbar(m) or in_minimap(m) or (in_build_button(m) and placing < 0 and not pad_wheel.length)
         touch_down = not touch_hud
         touch_at = m
@@ -102,10 +102,10 @@ def touch_tick(dt:float) -> bool:
     pad_reticle_shown = touch_down
     if not touch_down: return true
     let ws = float(gl.window_size())
-    pad_off = m - ws / 2.0   // (the reticle under the finger)
+    pad_off = m - ws / 2.0  // (the reticle under the finger)
     fake_mouse = m
     if one == 1 and line: wall_from = place_cell()
-    if two >= 1:   // two fingers: pinch to zoom, both to pan
+    if two >= 1:  // two fingers: pinch to zoom, both to pan
         let m2 = float(gl.mouse_pos(1))
         let d = magnitude(m2 - m)
         let mid = (m + m2) / 2.0
@@ -121,11 +121,11 @@ def touch_tick(dt:float) -> bool:
             elif d < touch_pinch / TOUCH_PINCH_STEP and zoom > 1.0:
                 zoom -= 1.0
                 touch_pinch = d
-        touch_panned = true   // (no tap or hold from this touch)
+        touch_panned = true  // (no tap or hold from this touch)
         pad_circle = 0.0
         touch_last = m
         return true
-    if one >= 1:   // held: wander off to pan (or drag what's being placed), keep still to grow the circle
+    if one >= 1:  // held: wander off to pan (or drag what's being placed), keep still to grow the circle
         touch_t += dt
         if magnitude(m - touch_at) > TOUCH_SLOP * ui() and pad_circle == 0.0 and not line: touch_panned = true
         if touch_panned and touch_pinch == 0.0: cam -= (m - touch_last) / zoom
@@ -145,11 +145,11 @@ def touch_tick(dt:float) -> bool:
     touch_down = false
     pad_reticle_shown = false
     if pad_circle > 0.0: pad_circle = 0.0
-    elif line and wall_from.x >= 0: place_wall(wall_from, place_cell(), false)   // (the wall from where the finger went down)
+    elif line and wall_from.x >= 0: place_wall(wall_from, place_cell(), false)  // (the wall from where the finger went down)
     elif placing >= 0:
-        if not touch_panned and touch_pinch == 0.0: place_here(false)   // (a tap: there)
+        if not touch_panned and touch_pinch == 0.0: place_here(false)  // (a tap: there)
     elif not touch_panned and touch_pinch == 0.0:
-        let second = gl.time() - touch_tap_t < TOUCH_DOUBLE   // (a double tap: even when the first opened the wheel)
+        let second = gl.time() - touch_tap_t < TOUCH_DOUBLE  // (a double tap: even when the first opened the wheel)
         if pad_wheel.length and not second: touch_wheel_tap(touch_last)
         else: touch_tap(touch_last)
     return true

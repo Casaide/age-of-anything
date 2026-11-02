@@ -27,7 +27,7 @@ def lan_files(dir:string) -> [string]:
 def net_version() -> string:
     if net_version_cache != "": return net_version_cache
     var all = "aow-net-{NET_PROTOCOL}"
-    for([lib_root + "/", lib_root + "/rules/", lib_root + "/maps/"]) dir:
+    for([ lib_root + "/", lib_root + "/rules/", lib_root + "/maps/" ]) dir:
         for(lan_files(dir)) f:
             all += dir + f
             all += read_file(dir + f) or ""
@@ -36,7 +36,7 @@ def net_version() -> string:
 
 // This machine's address on the home network (macOS, then Linux / the Deck), or "" if none.
 def my_ipv4() -> string:
-    for([["ipconfig", "getifaddr", "en0"], ["ipconfig", "getifaddr", "en1"], ["hostname", "-I"]]) cmd:
+    for([ [ "ipconfig", "getifaddr", "en0" ], [ "ipconfig", "getifaddr", "en1" ], [ "hostname", "-I" ] ]) cmd:
         let code, out = launch_subprocess(cmd)
         if code == 0 and out:
             let first = filter(tokenize(out, " \n\t", "")) t: t.length > 0
@@ -46,7 +46,7 @@ def my_ipv4() -> string:
 // Ask every address nearby; the hosts that answered within `seconds`. (Blocks: a lobby button.)
 def lan_scan(seconds:float) -> [LanHost]:
     let me = my_ipv4()
-    let ips = ["127.0.0.1"]
+    let ips = [ "127.0.0.1" ]
     if me != "":
         let parts = tokenize(me, ".", "")
         for(254) n:
@@ -74,7 +74,7 @@ def lan_scan(seconds:float) -> [LanHost]:
                             if p.length >= 3: found.push(LanHost { these[k], p[0], p[1], p[2] })
                             l.closed = true
             tcp.wait(nil, nil, false, 0.01)
-        for(links) l: l.sock = nil   // (closed now, not when they're collected)
+        for(links) l: l.sock = nil  // (closed now, not when they're collected)
         links = []
         at += batch
     return found

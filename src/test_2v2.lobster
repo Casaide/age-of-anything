@@ -58,13 +58,13 @@ import gen.reset
 import testkit.kit
 
 let SEED = 2026
-let PROMPTS = ["angry swamp frogs with reed spears", "sewer rats with cheese hammers", "centaur romans", "greek hoplites"]
+let PROMPTS = [ "angry swamp frogs with reed spears", "sewer rats with cheese hammers", "centaur romans", "greek hoplites" ]
 
 // The team of a unit or building id (-1 for animals, bridges or the gone).
 def team_of(id:int) -> int:
     let i = index_of(id)
     if i >= 0:
-        if u_owner[i] >= 4 or t_animal[u_kind[i]] != 0: return -1   // wild, or a herd animal
+        if u_owner[i] >= 4 or t_animal[u_kind[i]] != 0: return -1  // wild, or a herd animal
         return teams[u_owner[i]]
     let b = b_index_of(id)
     return if b >= 0: teams[b_owner[b]] else: -1
@@ -77,13 +77,13 @@ id_load("../data")
 let rules = load_rules("default")
 let races = map(PROMPTS) p: generate(p, rules, 0)
 let map_teams = map(glist(load_json("../data/maps/" + map_id + ".json"), "teams")) v: as_int(v)
-check(map_teams.length == 4 and equal(map_teams, [0, 1, 0, 1]), "{map_id} has four starts in two teams ({map_teams})")
+check(map_teams.length == 4 and equal(map_teams, [ 0, 1, 0, 1 ]), "{map_id} has four starts in two teams ({map_teams})")
 new_world(SEED, map_id, races, rules, map_teams)
 let sides = map(4) p: full_side(p)
 var friendly = 0
 var splashed = 0
 var across = 0
-let kills = [0, 0]      // units each team killed
+let kills = [ 0, 0 ]  // units each team killed
 var spent = 0.0
 var worst = 0.0
 print "2v2 on {map_id}: " + concat_string(map(4) p: "P{p} " + rstr(races[p], "name") + " (team {teams[p]})", ", ")
@@ -101,7 +101,7 @@ while tick < minutes * 1200 and winner < 0:
             let a = team_of(e.a)
             let b = team_of(e.b)
             if a >= 0 and b >= 0:
-                if a == b and e.a == splash_by: splashed++   // a catapult's stone hurts its own side too (rules splash_friend_pct)
+                if a == b and e.a == splash_by: splashed++  // a catapult's stone hurts its own side too (rules splash_friend_pct)
                 elif a == b: friendly++
                 else: across++
         else:
@@ -121,7 +121,7 @@ while tick < minutes * 1200 and winner < 0:
         print line
 let avg_ms = spent * 1000.0 / max(1, tick)
 print "ended at {clock(tick)}, winner team {winner}; units killed by team 0: {kills[0]}, by team 1: {kills[1]}; hits across teams {across}, between teammates {friendly}; tick " +
-      fixed_str(avg_ms, 2) + " ms avg, " + fixed_str(worst * 1000.0, 1) + " worst"
+    fixed_str(avg_ms, 2) + " ms avg, " + fixed_str(worst * 1000.0, 1) + " worst"
 check(friendly == 0, "teammates never strike each other, splash aside ({friendly} blows; {splashed} splashed)")
 check(across > 0 and kills[0] > 0 and kills[1] > 0, "the teams fight each other ({across} hits)")
 check(winner >= 0, "the 2v2 ends with a winner (team {winner} at {clock(tick)})")

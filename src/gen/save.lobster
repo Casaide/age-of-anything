@@ -454,7 +454,7 @@ class WorldSave:
     sight_cache:dictionary<int, [int]>
     ray_offs:dictionary<int, [int]>
     ray_par:dictionary<int, [int]>
-    bots:[Bot]   // the bots (the game keeps them)
+    bots:[Bot]  // the bots (the game keeps them)
 
 // The world and the bots as bytes (a save file, or the start of a network match).
 def world_bytes(bots:[Bot]) -> string:
@@ -1385,5 +1385,5 @@ def load_world_bytes(data:string) -> [Bot]:
     s.sight_cache.forkv() k, v: sight_cache.set(k, v)
     s.ray_offs.forkv() k, v: ray_offs.set(k, v)
     s.ray_par.forkv() k, v: ray_par.set(k, v)
-    pad_saved_columns()   // (a save from an older build: its missing per-unit and per-building columns, D-141)
+    pad_saved_columns()  // (a save from an older build: its missing per-unit and per-building columns, D-141)
     return s.bots

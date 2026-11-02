@@ -25,7 +25,7 @@ for(ids) id:
     chain.push("build_mod_{id}(base, c)")
 let body = if chain.length: concat_string(chain, " or ") else: "nil"
 let out = "// The active mods\' Lobster models (written by mods_gen.lobster from each mod.json\'s \"models\"; play.sh\n" +
-          "// runs it with the mods asked for). " + (if ids.length: "Mods: " + concat_string(ids, ", ") + "." else: "This is the file with none.") + "\n\n" +
-          imports + (if imports != "": "\n" else: "") +
-          "def build_mods(base:string, c:Colours) -> Spec?: return " + body + "\n"
+    "// runs it with the mods asked for). " + (if ids.length: "Mods: " + concat_string(ids, ", ") + "." else: "This is the file with none.") + "\n\n" +
+    imports + (if imports != "": "\n" else: "") +
+    "def build_mods(base:string, c:Colours) -> Spec?: return " + body + "\n"
 assert write_file("model/mods_active.lobster", out)

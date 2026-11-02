@@ -4,7 +4,7 @@
 // PCG), seeded by the map's name as Godot seeds them: the same places as in the Godot game.
 
 class Doodad:
-    t:float2          // tiles
+    t:float2  // tiles
     name:string
     scale:float
 
@@ -33,7 +33,7 @@ def build_doodads(map_id:string, counts:dictionary<string, int>, keep_clear) -> 
             let x = c % W
             let y = c / W
             var inner = 0
-            for([int2 { 1, 0 }, int2 { -1, 0 }, int2 { 0, 1 }, int2 { 0, -1 }]) d:
+            for([ int2 { 1, 0 }, int2 { -1, 0 }, int2 { 0, 1 }, int2 { 0, -1 } ]) d:
                 let nx = x + d.x
                 let ny = y + d.y
                 if nx >= 0 and ny >= 0 and nx < W and ny < H and terrain[ny * W + nx] == rock: inner++
@@ -42,7 +42,7 @@ def build_doodads(map_id:string, counts:dictionary<string, int>, keep_clear) -> 
             let ay = float(y) + 0.5 + randf_range(rng, -0.22, 0.22)
             doodad_list.push(Doodad { float2 { ax, ay }, doodad_name("rock", randi(rng), counts), size })
     let area = W * H
-    for([["stones", "40"], ["flowers", "22"], ["tuft", "12"]]) kw:
+    for([ [ "stones", "40" ], [ "flowers", "22" ], [ "tuft", "12" ] ]) kw:
         let kind = kw[0]
         let want = area / string_to_int(kw[1])
         var placed = 0

@@ -4,12 +4,12 @@
 // tree_card_crown: its private helpers carry the file's name), line for line; its comments are there. Seeded with
 // Godot's RandomNumberGenerator, drawn in the same order.
 
-let TREE_SPECIES = ["broadleaf", "pine", "swamp"]
+let TREE_SPECIES = [ "broadleaf", "pine", "swamp" ]
 let TREE_VIEW_UP = float3 { 0.25, 0.8, 0.45 }
 
 var tree_rng = grng(0)
 
-def tree_species_index(tree_kind:string) -> int:   // SPECIES.find
+def tree_species_index(tree_kind:string) -> int:  // SPECIES.find
     for(TREE_SPECIES) s, i:
         if s == tree_kind: return i
     return -1
@@ -46,14 +46,14 @@ def tree(seed_value:int, tree_kind:string, style:int = 0, stage:int = 0) -> MNod
 def tree_look(tree_kind:string, style:int) -> TreeLook:
     switch tree_kind:
         case "pine":
-            return TreeLook { [2.3, 2.2, 2.6][style], 0.085, [float3 { 1.0, 1.0, 1.15 }, float3 { 0.9, 0.95, 1.1 }, float3 { 1.25, 1.0, 0.9 }][style],
+            return TreeLook { [ 2.3, 2.2, 2.6 ][style], 0.085, [ float3 { 1.0, 1.0, 1.15 }, float3 { 0.9, 0.95, 1.1 }, float3 { 1.25, 1.0, 0.9 } ][style],
                               float3 { 0.32, 0.46, 0.34 }, false }
         case "swamp":
-            return TreeLook { [2.4, 1.9, 2.0][style], [0.11, 0.1, 0.09][style], [float3 { 1.2, 1.15, 1.25 }, float3 { 1.0, 1.05, 1.2 }, float3 { 1.35, 1.4, 1.5 }][style],
-                              [float3 { 0.7, 0.72, 0.4 }, float3 { 0.6, 0.72, 0.4 }, float3 { 0.45, 0.56, 0.36 }][style], false }
+            return TreeLook { [ 2.4, 1.9, 2.0 ][style], [ 0.11, 0.1, 0.09 ][style], [ float3 { 1.2, 1.15, 1.25 }, float3 { 1.0, 1.05, 1.2 }, float3 { 1.35, 1.4, 1.5 } ][style],
+                              [ float3 { 0.7, 0.72, 0.4 }, float3 { 0.6, 0.72, 0.4 }, float3 { 0.45, 0.56, 0.36 } ][style], false }
         default:
-            return TreeLook { [2.1, 2.1, 2.3][style], [0.1, 0.1, 0.06][style], [float3 { 1.05, 1.1, 1.3 }, float3 { 1.05, 1.1, 1.3 }, html("#e8e2d4")][style],
-                              [float3 { 0.5, 0.6, 0.38 }, float3 { 0.5, 0.6, 0.38 }, float3 { 0.66, 0.74, 0.4 }][style], style == 2 }
+            return TreeLook { [ 2.1, 2.1, 2.3 ][style], [ 0.1, 0.1, 0.06 ][style], [ float3 { 1.05, 1.1, 1.3 }, float3 { 1.05, 1.1, 1.3 }, html("#e8e2d4") ][style],
+                              [ float3 { 0.5, 0.6, 0.38 }, float3 { 0.5, 0.6, 0.38 }, float3 { 0.66, 0.74, 0.4 } ][style], style == 2 }
 
 def tree_bark(look:TreeLook) -> MMat: return if look.plain: plain(look.bark) else: surf("bark_plate", look.bark, 2.0)
 
@@ -263,7 +263,7 @@ def tree_felled(look:TreeLook, size:float, h:float, fall:float, stage:int) -> MN
     let face = add_child(n, cone(r * 0.95, r * 0.95, 0.01, plain(html("#d8b880")), a - dir * 0.005))
     set_basis(face, arc(float3 { 0.0, 1.0, 0.0 }, dir))
     if stage == 1:
-        let lobes = [TreeLobe { b + float3 { 0.0, 0.1, 0.0 }, float3 { 0.18, 0.1, 0.18 } * size }, TreeLobe { b + dir * 0.14 + float3 { 0.0, 0.08, 0.0 }, float3 { 0.14, 0.08, 0.14 } * size }]
+        let lobes = [ TreeLobe { b + float3 { 0.0, 0.1, 0.0 }, float3 { 0.18, 0.1, 0.18 } * size }, TreeLobe { b + dir * 0.14 + float3 { 0.0, 0.08, 0.0 }, float3 { 0.14, 0.08, 0.14 } * size } ]
         tree_card_crown(n, lobes, "leaf", 0.09 * size, 90, look.leaf * float3 { 1.1, 0.95, 0.75 })
     return n
 

@@ -59,7 +59,7 @@ import gen.start
 import gen.reset
 
 let SEED = 20261014
-let SPAWN_JITTER = 400   // World.SPAWN_JITTER
+let SPAWN_JITTER = 400  // World.SPAWN_JITTER
 
 var n_checks = 0
 var n_failed = 0
@@ -138,7 +138,7 @@ def spawn(p:int, slot:string, x0:int, y0:int, n:int, sid:string) -> [int]:
             y = cy
         let i = add_unit(p, k, x, y)
         ids.push(u_id[i])
-        if t_hero[k] and out_id(k) == 0: hero_spawned(i)   // (a spawned hero is that hero, if it isn't out already)
+        if t_hero[k] and out_id(k) == 0: hero_spawned(i)  // (a spawned hero is that hero, if it isn't out already)
     grow_scratch()
     step()
     return ids
@@ -147,7 +147,7 @@ def order_train(p:int, bid:int, k:int): issue_cmd(p, CMD_TRAIN, [], bid, k, 1, 0
 
 // The hero once, at the Town Center, from age 2, for its price.
 def g_train():
-    new_world(["romans", "sewer rats"], base_rules)
+    new_world([ "romans", "sewer rats" ], base_rules)
     let ks = hero_types_of(0)
     expect(ks.length == 1 and t_hero[ks[0]] and hero_fx[hero_slot(ks[0])].length > 0, "romans have one hero, with an aura ({ks.length})")
     let ks1 = hero_types_of(1)
@@ -159,12 +159,12 @@ def g_train():
     let tc1 = tc_of(1)
     let food = res("food")
     for(num_resources) r: stock[r][1] = 5000
-    order_train(1, tc1, ks1[0])   // age 1: not yet
+    order_train(1, tc1, ks1[0])  // age 1: not yet
     rich(0, 2)
     let f0 = stock[food][0]
     order_train(0, tc0, k)
-    order_train(0, tc0, k)   // the same one again: refused
-    order_train(0, tc0, k)   // (GDScript's third, naming no hero, is this same order here)
+    order_train(0, tc0, k)  // the same one again: refused
+    order_train(0, tc0, k)  // (GDScript's third, naming no hero, is this same order here)
     steps(16)
     let b0 = b_index_of(tc0)
     let q = b_queue[b0]
@@ -187,35 +187,35 @@ def g_train():
 // The aura: friends within its reach, of the kind it names; not foes, not far friends, not itself; in
 // the damage. Two heroes' auras of one stat don't add up.
 def g_aura():
-    new_world(["swamp frogs drowned", "sewer rats"], bare())   // the Drowned: +1 attack
+    new_world([ "swamp frogs drowned", "sewer rats" ], bare())  // the Drowned: +1 attack
     let hk = hero_type_named(0, "drowned")
     expect(hk >= 0 and hero_types_of(0).length == 1, "\'swamp frogs drowned\' have the Drowned, and only it")
     let h = spawn(0, "hero", 20000, 20000, 1, "drowned")[0]
     let near = spawn(0, "spear", 22000, 20000, 1, "")[0]
     let far = spawn(0, "spear", 40000, 20000, 1, "")[0]
     let foe = spawn(1, "spear", 20000, 22500, 1, "")[0]
-    issue_cmd(0, CMD_STANCE, [h, near, far], PASSIVE, 0, 0, 0)
-    issue_cmd(1, CMD_STANCE, [foe], PASSIVE, 0, 0, 0)
+    issue_cmd(0, CMD_STANCE, [ h, near, far ], PASSIVE, 0, 0, 0)
+    issue_cmd(1, CMD_STANCE, [ foe ], PASSIVE, 0, 0, 0)
     steps(16)
     expect(out_id(hk) == h, "a spawned hero is that hero")
     let fx = hero_fx[hero_slot(hk)][0]
-    let stat = if fx.kind == 0: 0 elif fx.stat == 0: 1 else: 2   // attack, melee armour, pierce armour
+    let stat = if fx.kind == 0: 0 elif fx.stat == 0: 1 else: 2  // attack, melee armour, pierce armour
     def aura(uid:int) -> int: return if c_aura.length: c_aura[index_of(uid) * AURA + stat] else: 0
     expect(aura(near) == fx.value, "a friend nearby gets the aura (+{fx.value}: {aura(near)})")
     expect(aura(far) == 0 and aura(foe) == 0 and aura(h) == 0, "not far friends, foes or the hero itself")
     let kept = c_aura
-    c_aura = [1, 0, 0, 0, 1, 2]   // slot 0: +1 attack; slot 1: +1 melee, +2 pierce armour
+    c_aura = [ 1, 0, 0, 0, 1, 2 ]  // slot 0: +1 attack; slot 1: +1 melee, +2 pierce armour
     expect(boost(0, 1, 0, 5, 1) == 5 and boost(0, 1, 1, 5, 1) == 4 and boost(0, -1, 0, 5, 1) == 6 and boost(-1, 1, 1, 2, 1) == 1,
            "in the damage: attack adds, armour takes off, never under the floor")
     c_aura = kept
     // Walk away: the aura goes with the heroes.
-    issue_cmd(0, CMD_MOVE, [h], 40000, 22000, 0, 0)
+    issue_cmd(0, CMD_MOVE, [ h ], 40000, 22000, 0, 0)
     steps(700)
     expect(aura(near) == 0 and aura(far) == fx.value, "the aura goes with the hero")
 
 // When it falls: known as fallen, a wait, then revived at the Town Center for a share of its price.
 def g_revive():
-    new_world(["spooky spiders", "imperial humans"], base_rules)
+    new_world([ "spooky spiders", "imperial humans" ], base_rules)
     rich(0, 2)
     rich(1, 2)
     let k = hero_types_of(0)[0]
@@ -231,7 +231,7 @@ def g_revive():
             step()
             fell = hero_fell[n] > 0
     expect(fell and hero_id[n] == 0 and hero_fell[n] > 0, "the hero fell, and the sim knows ({hero_fell[n]})")
-    for(foes) id:   // (out of the way of what comes next)
+    for(foes) id:  // (out of the way of what comes next)
         let j = index_of(id)
         if j >= 0: u_x[j] = 60000
     let tc = tc_of(0)
@@ -257,7 +257,7 @@ def g_revive():
 def g_determinism():
     let runs = []::[int]
     for(2):
-        new_world(["romans", "sewer rats"], base_rules)
+        new_world([ "romans", "sewer rats" ], base_rules)
         rich(0, 2)
         rich(1, 2)
         for(2):
@@ -275,7 +275,7 @@ def g_determinism():
         if same and v != runs[1][i]: same = false
     expect(same, "heroes: same commands, same hashes")
 
-let GROUPS = ["train", "aura", "revive", "determinism"]
+let GROUPS = [ "train", "aura", "revive", "determinism" ]
 
 def run_group(name:string):
     switch name:

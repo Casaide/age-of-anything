@@ -10,34 +10,34 @@ let TICK_HZ = 20
 let SPEED_SCALE = 5
 let MOUNTED_RADIUS = 420
 let MAX_RADIUS = 500
-let CLASS_NAMES = ["ground", "amphibious", "flying"]
-let BASE_CLASSES = ["melee", "pierce", "building"]
-let UNIT_EXTRA = ["sight", "carry", "kill_gold", "wade", "reach", "slow_on_hit", "form_gap"]
-let UNIT_PCT = ["speed", "reload", "cost", "train_time", "build_speed", "carry", "heal"]
-let BUILDING_ADD = ["sight", "armour.melee", "armour.pierce", "trade_fee", "range", "pop"]
-let BUILDING_PCT = ["hp", "food", "research_time", "cost", "research_cost", "age_time"]
-let EVAL_ADD = ["attack", "hp", "range", "speed"]
+let CLASS_NAMES = [ "ground", "amphibious", "flying" ]
+let BASE_CLASSES = [ "melee", "pierce", "building" ]
+let UNIT_EXTRA = [ "sight", "carry", "kill_gold", "wade", "reach", "slow_on_hit", "form_gap" ]
+let UNIT_PCT = [ "speed", "reload", "cost", "train_time", "build_speed", "carry", "heal" ]
+let BUILDING_ADD = [ "sight", "armour.melee", "armour.pierce", "trade_fee", "range", "pop" ]
+let BUILDING_PCT = [ "hp", "food", "research_time", "cost", "research_cost", "age_time" ]
+let EVAL_ADD = [ "attack", "hp", "range", "speed" ]
 
 // What the setup keeps that the sim's arrays don't (the views and the lobby read some of it).
 var su_races = []::JV
 var su_rules = jobj()
-var su_idents = []::JV         // per player: Identity.of, its lacks lifted by a mode
+var su_idents = []::JV  // per player: Identity.of, its lacks lifted by a mode
 var su_classes = []::string
-var su_btypes = []::JV         // buildings.json entries, sorted by id (planned left out)
+var su_btypes = []::JV  // buildings.json entries, sorted by id (planned left out)
 var su_btype_ids = []::string
-var su_research = []::JV       // tech.json research + line upgrades, as Tech.load_tech
+var su_research = []::JV  // tech.json research + line upgrades, as Tech.load_tech
 var su_ages = []::JV
-var su_type_eval = []::JV      // per unit type: its eval (the first step's)
-var su_type_line = []::[JV]    // per unit type: its line [{age, recipe, eval}]
+var su_type_eval = []::JV    // per unit type: its eval (the first step's)
+var su_type_line = []::[JV]  // per unit type: its line [{age, recipe, eval}]
 var su_type_recipe = []::JV
 var su_type_animal = []::string
 var su_map = jobj()
 var su_bridge_rects = []::[int]
 var su_rng = new_rng(1)
-var su_fx = []::[JV]           // per player: the race\'s sim effects (start ones included)
+var su_fx = []::[JV]  // per player: the race\'s sim effects (start ones included)
 var ai_tokens = []::string
 
-def class_index(tag:string) -> int:   // export.gd _class: unknown tags index the last class
+def class_index(tag:string) -> int:  // export.gd _class: unknown tags index the last class
     for(su_classes) c, k:
         if c == tag: return k
     return su_classes.length - 1
@@ -86,7 +86,7 @@ def load_map(map_id:string):
         let td = at(types, t)
         let walkable = as_bool(at(td, "walkable"))
         tr_walk.push(if walkable: 1 else: 0)
-        let move = if has(td, "move"): gstrs(td, "move") elif walkable: CLASS_NAMES else: ["flying"]
+        let move = if has(td, "move"): gstrs(td, "move") elif walkable: CLASS_NAMES else: [ "flying" ]
         var mask = 0
         for(move) c: mask |= 1 << str_index(CLASS_NAMES, c)
         tr_move.push(mask)
@@ -268,17 +268,17 @@ def add_animal_types(d:JV):
         set(e, "range", jint(1))
         set(e, "speed", jint(as_int(at(a, "speed"))))
         set(e, "bonus", jobj())
-        set(e, "tags", jstrs(["animal", id]))
+        set(e, "tags", jstrs([ "animal", id ]))
         set(e, "points", jint(0))
         set(e, "cost", jobj())
         set(e, "train_time", jint(1))
         set(e, "pop", jint(0))
         let r = at(a, "recipe")
-        let k = add_type(gaia, r, e, [line_step(as_int(at(r, "tier")), r, e)])
+        let k = add_type(gaia, r, e, [ line_step(as_int(at(r, "tier")), r, e) ])
         su_type_animal[k] = id
         t_animal[k] = 1
         t_food[k] = as_int(at(a, "food"))
-        t_behave[k] = str_index(["", "flee", "fight", "herd"], rstr(a, "behaviour"))
+        t_behave[k] = str_index([ "", "flee", "fight", "herd" ], rstr(a, "behaviour"))
         t_flee[k] = gint(a, "flee_tiles", 0) * TILE
         t_harmless[k] = if as_int(at(a, "attack")) == 0: 1 else: 0
         t_min_damage[k] = gint(a, "slaughter_damage", 0)
@@ -297,7 +297,7 @@ def load_tech_data():
     su_ages = filter(glist(d, "ages")) a: built(a)
     // a creature's or culture's own research: only theirs (Identity.owners)
     let owners = jobj()
-    for([lib_creatures, lib_families]) src:
+    for([ lib_creatures, lib_families ]) src:
         for(sorted_strs(src.keys)) id:
             for(gstrs(at(src, id), "research")) r:
                 if not has(owners, r): set(owners, r, jarr([]))
@@ -314,7 +314,7 @@ def load_tech_data():
     for(su_btypes) bt, k:
         for(gstrs(bt, "trains")) slot:
             if slot != "worker":
-                for([2, 3]) age:
+                for([ 2, 3 ]) age:
                     let up = gobj(ups, string(age))
                     if up.keys.length:
                         let o = jobj()
@@ -329,7 +329,7 @@ def load_tech_data():
                         set(o, "line", jstr(slot))
                         set(o, "line_age", jint(age))
                         su_research.push(o)
-    for(su_research) r:   // a line upgrade's earlier ones, latest first
+    for(su_research) r:  // a line upgrade's earlier ones, latest first
         if has(r, "line"):
             let earlier = jarr([])
             var age = as_int(at(r, "line_age")) - 1
@@ -382,8 +382,8 @@ def encode_effect(fx:JV) -> Effect:
     var blds = []::int
     if has(fx, "building"):
         let b = at(fx, "building")
-        let ids = if b.kind == J_ARR: map(b.a) v: as_str(v) else: [as_str(b)]
-        blds = if has_s(ids, "all"): [-1] else: map(ids) id: btype_index(id)
+        let ids = if b.kind == J_ARR: map(b.a) v: as_str(v) else: [ as_str(b) ]
+        blds = if has_s(ids, "all"): [ -1 ] else: map(ids) id: btype_index(id)
     return Effect { kind, stat, value, if has(fx, "tag"): tag_or_none(rstr(fx, "tag")) else: -2, ands, nots, blds }
 
 // A line step's eval as the sim's LineStep (export.gd _write_tech).

@@ -9,8 +9,8 @@ import std
 import vec
 import dictionary
 
-let MPI = 3.141592653589793   // (Godot's PI to the last digit: a walk step on a boundary falls the same way)
-def rad(r:float) -> float: return r * 180.0 / MPI   // radians (Godot's) to the degrees used here
+let MPI = 3.141592653589793                        // (Godot's PI to the last digit: a walk step on a boundary falls the same way)
+def rad(r:float) -> float: return r * 180.0 / MPI  // radians (Godot's) to the degrees used here
 
 // ------------------------------------------------------------------ bases (3x3, by columns)
 
@@ -24,7 +24,7 @@ let BASIS_ID = Basis { float3 { 1.0, 0.0, 0.0 }, float3 { 0.0, 1.0, 0.0 }, float
 def bxf(b:Basis, v:float3) -> float3: return b.x * v.x + b.y * v.y + b.z * v.z
 def bmul(a:Basis, b:Basis) -> Basis: return Basis { bxf(a, b.x), bxf(a, b.y), bxf(a, b.z) }
 def bscaled(b:Basis, s:float3) -> Basis: return Basis { b.x * s.x, b.y * s.y, b.z * s.z }   // b x diag(s) (Godot's scaled_local)
-def bscaled_global(b:Basis, s:float3) -> Basis: return Basis { b.x * s, b.y * s, b.z * s }   // Godot's Basis.scaled: diag(s) x b
+def bscaled_global(b:Basis, s:float3) -> Basis: return Basis { b.x * s, b.y * s, b.z * s }  // Godot's Basis.scaled: diag(s) x b
 def btransposed(b:Basis) -> Basis:
     return Basis { float3 { b.x.x, b.y.x, b.z.x }, float3 { b.x.y, b.y.y, b.z.y }, float3 { b.x.z, b.y.z, b.z.z } }
 def bdet(b:Basis) -> float: return dot(b.x, cross(b.y, b.z))
@@ -112,15 +112,15 @@ def xinverse(t:Xform) -> Xform:
 // assets/art/textures/<name>.svg by tex_png.gd) and how it's mapped, and what else it does to the light.
 class MMat:
     albedo:float3
-    rope = false                     // a rope (siege models: tied at both ends, the placement check's C3)
-    tex = ""                         // texture name; "" for none
+    rope = false  // a rope (siege models: tied at both ends, the placement check's C3)
+    tex = ""      // texture name; "" for none
     triplanar = false
     uv_scale = float3_1
     uv_offset = float3_0
-    scissor = false                  // alpha scissor at 0.5 (decals)
+    scissor = false  // alpha scissor at 0.5 (decals)
     unshaded = false
     emission = float3_0
-    vertex_colours = false           // the mesh's own colours multiply the albedo
+    vertex_colours = false  // the mesh's own colours multiply the albedo
     two_sided = false
     // the rest of StandardMaterial3D (Godot's defaults), for the buildings' materials (model/build_mats.lobster)
     roughness = 1.0
@@ -129,11 +129,11 @@ class MMat:
     clearcoat_enabled = false
     clearcoat = 1.0
     normal_enabled = false
-    normal_tex = ""                  // its normal map (a path as tex is), "" for none
+    normal_tex = ""  // its normal map (a path as tex is), "" for none
     normal_scale = 1.0
-    world_triplanar = false          // triplanar in world space (uv1_world_triplanar)
+    world_triplanar = false  // triplanar in world space (uv1_world_triplanar)
     triplanar_sharpness = 1.0
-    texture_filter = 3               // BaseMaterial3D.TextureFilter: 3 linear with mipmaps, 5 that and anisotropic
+    texture_filter = 3  // BaseMaterial3D.TextureFilter: 3 linear with mipmaps, 5 that and anisotropic
 
 // ------------------------------------------------------------------ meshes
 
@@ -143,17 +143,17 @@ class MMesh:
     n:[float3]
     uv:[float2]
     idx:[int]
-    c = []::float3                   // vertex colours, if any
-    prim = 0                         // PRIM_: the primitive it was made as (geom.lobster fills those exactly), with
-    pp = float4_0                    // its numbers: sphere (radius, height, hemisphere 0/1), cylinder (top,
-                                     // bottom, height), box (size), torus (inner, outer)
+    c = []::float3  // vertex colours, if any
+    prim = 0        // PRIM_: the primitive it was made as (geom.lobster fills those exactly), with
+    pp = float4_0   // its numbers: sphere (radius, height, hemisphere 0/1), cylinder (top,
+    // bottom, height), box (size), torus (inner, outer)
 
 let PRIM_NONE = 0
 let PRIM_SPHERE = 1
 let PRIM_CYLINDER = 2
 let PRIM_BOX = 3
 let PRIM_TORUS = 4
-let PRIM_FLAT = 5                    // a quad or plane: a picture on a surface, no volume
+let PRIM_FLAT = 5  // a quad or plane: a picture on a surface, no volume
 
 def new_mesh() -> MMesh: return MMesh { [], [], [], [] }
 
@@ -186,7 +186,7 @@ def sphere_mesh(radius:float, height:float, radial:int, rings:int, hemisphere:bo
                            normalize(float3 { x * w * scale, radius * (y / scale), z * w * scale }), float2 { u, v })
             point++
             if i > 0 and j > 0:
-                append_into(m.idx, [prevrow + i - 1, prevrow + i, thisrow + i - 1, prevrow + i, thisrow + i, thisrow + i - 1])
+                append_into(m.idx, [ prevrow + i - 1, prevrow + i, thisrow + i - 1, prevrow + i, thisrow + i, thisrow + i - 1 ])
         prevrow = thisrow
         thisrow = point
     return m
@@ -211,7 +211,7 @@ def cylinder_mesh(top:float, bottom:float, height:float, radial:int, rings:int, 
             add_vertex(m, float3 { x * r, y, z * r }, normalize(float3 { x, side_y, z }), float2 { u, v * 0.5 })
             point++
             if i > 0 and j > 0:
-                append_into(m.idx, [prevrow + i - 1, prevrow + i, thisrow + i - 1, prevrow + i, thisrow + i, thisrow + i - 1])
+                append_into(m.idx, [ prevrow + i - 1, prevrow + i, thisrow + i - 1, prevrow + i, thisrow + i, thisrow + i - 1 ])
         prevrow = thisrow
         thisrow = point
     if cap_top and top > 0.0:
@@ -225,7 +225,7 @@ def cylinder_mesh(top:float, bottom:float, height:float, radial:int, rings:int, 
             let z = cos(r * 360.0)
             add_vertex(m, float3 { x * top, y, z * top }, float3 { 0.0, 1.0, 0.0 }, float2 { (x + 1.0) * 0.25, 0.5 + (z + 1.0) * 0.25 })
             point++
-            if i > 0: append_into(m.idx, [thisrow, point - 1, point - 2])
+            if i > 0: append_into(m.idx, [ thisrow, point - 1, point - 2 ])
     if cap_bottom and bottom > 0.0:
         let y = height * -0.5
         thisrow = point
@@ -237,7 +237,7 @@ def cylinder_mesh(top:float, bottom:float, height:float, radial:int, rings:int, 
             let z = cos(r * 360.0)
             add_vertex(m, float3 { x * bottom, y, z * bottom }, float3 { 0.0, -1.0, 0.0 }, float2 { 0.5 + (x + 1.0) * 0.25, 1.0 - (z + 1.0) * 0.25 })
             point++
-            if i > 0: append_into(m.idx, [thisrow, point - 2, point - 1])
+            if i > 0: append_into(m.idx, [ thisrow, point - 2, point - 1 ])
     return m
 
 // TorusMesh (inner and outer radius, rings round it, segments round the tube).
@@ -261,7 +261,7 @@ def torus_mesh(inner:float, outer:float, rings:int, segs:int) -> MMesh:
             let nk = nj * radius + float2 { lo + radius, 0.0 }
             add_vertex(m, float3 { ni.x * nk.x, nk.y, ni.y * nk.x }, float3 { ni.x * nj.x, nj.y, ni.y * nj.x }, float2 { inci, incj })
             if i > 0 and j > 0:
-                append_into(m.idx, [thisrow + j - 1, prevrow + j, prevrow + j - 1, thisrow + j - 1, thisrow + j, prevrow + j])
+                append_into(m.idx, [ thisrow + j - 1, prevrow + j, prevrow + j - 1, thisrow + j - 1, thisrow + j, prevrow + j ])
     return m
 
 // BoxMesh (size, subdivisions across, up, deep): each pair of opposite sides built at once, as Godot does.
@@ -271,7 +271,7 @@ def box_mesh(size:float3, sw:int, sh:int, sd:int) -> MMesh:
     m.pp = float4 { size.x, size.y, size.z, 0.0 }
     let st = size * -0.5
     let third = 1.0 / 3.0
-    for(3) pair:   // front + back, right + left, top + bottom
+    for(3) pair:  // front + back, right + left, top + bottom
         let cols = if pair == 1: sd + 1 else: sw + 1
         let rows = if pair == 2: sd + 1 else: sh + 1
         var thisrow = m.p.length
@@ -297,8 +297,8 @@ def box_mesh(size:float3, sw:int, sh:int, sd:int) -> MMesh:
                     add_vertex(m, float3 { x, st.y, -z }, float3 { 0.0, -1.0, 0.0 }, float2 { 2.0 * third + u, 0.5 + v })
                 if i > 0 and j > 0:
                     let i2 = i * 2
-                    append_into(m.idx, [prevrow + i2 - 2, prevrow + i2, thisrow + i2 - 2, prevrow + i2, thisrow + i2, thisrow + i2 - 2,
-                                        prevrow + i2 - 1, prevrow + i2 + 1, thisrow + i2 - 1, prevrow + i2 + 1, thisrow + i2 + 1, thisrow + i2 - 1])
+                    append_into(m.idx, [ prevrow + i2 - 2, prevrow + i2, thisrow + i2 - 2, prevrow + i2, thisrow + i2, thisrow + i2 - 2,
+                                         prevrow + i2 - 1, prevrow + i2 + 1, thisrow + i2 - 1, prevrow + i2 + 1, thisrow + i2 + 1, thisrow + i2 - 1 ])
             prevrow = thisrow
             thisrow = m.p.length
     return m
@@ -325,7 +325,7 @@ def plane_mesh(size:float2, sw:int, sd:int, face:int, centre:float3) -> MMesh:
             add_vertex(m, p + centre, n, float2 { 1.0 - u, 1.0 - v })
             point++
             if i > 0 and j > 0:
-                append_into(m.idx, [prevrow + i - 1, prevrow + i, thisrow + i - 1, prevrow + i, thisrow + i, thisrow + i - 1])
+                append_into(m.idx, [ prevrow + i - 1, prevrow + i, thisrow + i - 1, prevrow + i, thisrow + i, thisrow + i - 1 ])
             x += size.x / float(sw + 1)
         z += size.y / float(sd + 1)
         prevrow = thisrow
@@ -384,7 +384,7 @@ def triangulate(c:[float2]) -> [int]:
         var w = v + 1
         if nv <= w: w = 0
         if snip(c, u, v, w, nv, vv, relaxed):
-            append_into(out, [vv[u], vv[v], vv[w]])
+            append_into(out, [ vv[u], vv[v], vv[w] ])
             var s = v
             while s + 1 < nv:
                 vv[s] = vv[s + 1]
@@ -399,15 +399,15 @@ def triangulate(c:[float2]) -> [int]:
 // degrees and a scale, or a basis set outright), its mesh and material, its children.
 class MNode:
     pos = float3_0
-    rot = float3_0                   // Godot's rotation_degrees (YXZ)
+    rot = float3_0  // Godot's rotation_degrees (YXZ)
     scl = float3_1
-    bas:Basis? = nil                 // a basis set outright (Godot's `basis =`): used in place of rot
+    bas:Basis? = nil  // a basis set outright (Godot's `basis =`): used in place of rot
     mesh:MMesh? = nil
     mat:MMat? = nil
     kids = []::MNode
     visible = true
-    meta = ""                        // what it is, for checks (a decal's name)
-    vol = -1                         // a .glb mesh's surfaces share this (one volume: geom.lobster fills them together)
+    meta = ""  // what it is, for checks (a decal's name)
+    vol = -1   // a .glb mesh's surfaces share this (one volume: geom.lobster fills them together)
 
 def mnode() -> MNode: return MNode {}
 def mesh_node(m:MMesh, mat:MMat) -> MNode:
@@ -432,10 +432,10 @@ def set_basis(n:MNode, b:Basis):
     n.bas = b
     n.scl = float3_1
 
-def set_rot(n:MNode, r:float3):      // rotation_degrees =
+def set_rot(n:MNode, r:float3):  // rotation_degrees =
     n.bas = nil
     n.rot = r
 
-def set_xform(n:MNode, t:Xform):     // transform =
+def set_xform(n:MNode, t:Xform):  // transform =
     set_basis(n, t.b)
     n.pos = t.o

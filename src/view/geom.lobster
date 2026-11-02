@@ -5,9 +5,9 @@
 // along y, column by column (an open mesh marks only its crossings). Decals (quads, planes) are left out: they
 // are pictures on a surface, not volume.
 
-let GEOM_RES = 0.5                   // part units per voxel edge
+let GEOM_RES = 0.5  // part units per voxel edge
 let GEOM_BIAS = 2048
-let GEOM_EDGE = 0.000001             // a voxel centre on a surface (to rounding) is inside, as Godot's 32-bit floats mostly have it
+let GEOM_EDGE = 0.000001  // a voxel centre on a surface (to rounding) is inside, as Godot's 32-bit floats mostly have it
 
 def vkey(i:int, j:int, k:int) -> int: return (i + GEOM_BIAS) | ((j + GEOM_BIAS) << 12) | ((k + GEOM_BIAS) << 24)
 def vunkey(q:int) -> int3: return int3 { (q & 4095) - GEOM_BIAS, ((q >> 12) & 4095) - GEOM_BIAS, ((q >> 24) & 4095) - GEOM_BIAS }
@@ -101,7 +101,7 @@ def geom_walk(n:MNode, t:Xform, out:[GMesh]) -> void:
     let m = n.mesh
     if m and n.visible and m.prim != PRIM_FLAT:
         if n.vol >= 0 and out.length and out[out.length - 1].vol == n.vol: out[out.length - 1].ms.push(m)
-        else: out.push(GMesh { [m], t, n.vol })
+        else: out.push(GMesh { [ m ], t, n.vol })
     for(n.kids) c: geom_walk(c, xmul(t, node_xform(c)), out)
 
 // A mesh's box (its vertices' bounds, as a primitive's AABB is), lowest corner and size.
@@ -154,7 +154,7 @@ def geom_fill(ms:[MMesh], t:Xform, out:Vox):
         var c = alo + asize * 0.5
         var r = asize * 0.5
         var base = -100000000.0
-        if m.pp.z > 0.5:   // a hemisphere
+        if m.pp.z > 0.5:  // a hemisphere
             c = float3 { c.x, alo.y, c.z }
             r = float3 { r.x, asize.y, r.z }
             base = alo.y
@@ -195,7 +195,7 @@ def geom_scan(lo:int3, hi:int3, inv:Xform, out:Vox, inside):
 // a mesh's surfaces count together: a modelled object painted in several materials (a cat's tabby coat) comes as
 // one surface per material, none of them closed on its own.
 def geom_parity(ms:[MMesh], t:Xform, out:Vox):
-    let cks = []::int                // each crossing: its column and height (voxel units)
+    let cks = []::int  // each crossing: its column and height (voxel units)
     let ys = []::float
     for(ms) m:
         let w = map(m.p) v: xf(t, v) / GEOM_RES
@@ -221,7 +221,7 @@ def geom_parity(ms:[MMesh], t:Xform, out:Vox):
                         let w2 = geom_edge(a, b, px, pz, area)
                         // (half-open edges so a column through a shared edge counts once)
                         if w0 >= 0.0 and w1 >= 0.0 and w2 >= 0.0 and
-                           not ((w0 == 0.0 and not geom_top_left(b, c, area)) or (w1 == 0.0 and not geom_top_left(c, a, area)) or (w2 == 0.0 and not geom_top_left(a, b, area))):
+                                not ((w0 == 0.0 and not geom_top_left(b, c, area)) or (w1 == 0.0 and not geom_top_left(c, a, area)) or (w2 == 0.0 and not geom_top_left(a, b, area))):
                             let y = (w0 * a.y + w1 * b.y + w2 * c.y) / abs(area)
                             cks.push(vkey(i, 0, k))
                             ys.push(y)
@@ -230,7 +230,7 @@ def geom_parity(ms:[MMesh], t:Xform, out:Vox):
     let order = map(cks.length) n: n
     qsort_in_place(order) x, y: cks[x] < cks[y] or (cks[x] == cks[y] and ys[x] < ys[y])
     var g = 0
-    while g < order.length:   // each column's crossings, low to high
+    while g < order.length:  // each column's crossings, low to high
         var e = g
         while e < order.length and cks[order[e]] == cks[order[g]]: e++
         let col = map(e - g) n: ys[order[g + n]]
@@ -312,11 +312,11 @@ def vdepth(cells:Vox, p:float3, reach:float = 8.0) -> float:
 def vcomponents(cells:Vox) -> [int]:
     let seen = new_vox()
     let sizes = []::int
-    let steps = [1, -1, 1 << 12, -(1 << 12), 1 << 24, -(1 << 24)]
+    let steps = [ 1, -1, 1 << 12, -(1 << 12), 1 << 24, -(1 << 24) ]
     for(cells.keys) start:
         if not vhas(seen, start):
             var n = 0
-            let todo = [start]
+            let todo = [ start ]
             vadd(seen, start)
             while todo.length:
                 let q = todo.pop()
@@ -340,7 +340,7 @@ def features(n:MNode, word:string, t:Xform) -> [[float3]]:
 def features_walk(n:MNode, t:Xform, word:string, out:[[float3]]) -> void:
     let m = n.mesh
     if m and find_string(n.meta, word) >= 0:
-        let lo, size = mesh_box([m])
+        let lo, size = mesh_box([ m ])
         let a, s = xf_box(t, lo, size)
-        out.push([a, s])
+        out.push([ a, s ])
     for(n.kids) c: features_walk(c, xmul(t, node_xform(c)), word, out)

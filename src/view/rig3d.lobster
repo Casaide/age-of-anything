@@ -6,40 +6,40 @@
 // 2D-only touches (a rider's near leg stretched down the flank, a pegasus's wings at the withers, a harness's
 // couched weapon) are left to the projection checks.
 
-let RIG_SCREEN_Y = 0.8660254         // one 3D unit straight up is this many screen units (elevation 30)
+let RIG_SCREEN_Y = 0.8660254  // one 3D unit straight up is this many screen units (elevation 30)
 
 class Piece:
     name:string
-    kind:string                      // body, arm, leg, head, armour, or the slot of the gear
-    rig:string                       // main, mount or rider
-    id:string                        // the model built (a hold or pose after "@")
+    kind:string  // body, arm, leg, head, armour, or the slot of the gear
+    rig:string   // main, mount or rider
+    id:string    // the model built (a hold or pose after "@")
     node:MNode
-    geo:string                       // its model's cache key (voxels are kept per key and transform)
+    geo:string  // its model's cache key (voxels are kept per key and transform)
     xf:Xform
-    joint:float3                     // where it hangs from, in the unit's space
-    parent:string                    // the piece it hangs from ("" for a body)
-    side = 0                         // a leg: +1 near, -1 far
-    anchor = -1                      // a leg's hip in the body's anchors
+    joint:float3   // where it hangs from, in the unit's space
+    parent:string  // the piece it hangs from ("" for a body)
+    side = 0       // a leg: +1 near, -1 far
+    anchor = -1    // a leg's hip in the body's anchors
     hip = float3_0
     flip = false
-    legs_under = false               // a body whose legs show under a skirt
-    cut = []::string                 // the body's parts.json cut (["legs"]: its legs baked at each hip)
-    sockets = dictionary<string, float3>(5)   // fitted armour's own sockets (a harness's traces)
+    legs_under = false                       // a body whose legs show under a skirt
+    cut = []::string                         // the body's parts.json cut (["legs"]: its legs baked at each hip)
+    sockets = dictionary<string, float3>(5)  // fitted armour's own sockets (a harness's traces)
     harness = false
     slung = false
-    mouth = false                    // held in the mouth (the body's hold is "mouth")
+    mouth = false  // held in the mouth (the body's hold is "mouth")
 
 class Rigged:
     pieces = []::Piece
     flying = false
     body_pose = ""
-    walker = "main"                  // the rig that stands on the ground
+    walker = "main"  // the rig that stands on the ground
     gait:Gait? = nil
     seat = float3_0
     has_seat = false
     fused = false
 
-class RigSide:                       // what _rig hands the gear: the body's sockets in the unit's space and more
+class RigSide:  // what _rig hands the gear: the body's sockets in the unit's space and more
     sockets:dictionary<string, float3>
     xf:Xform
     body:string
@@ -55,9 +55,9 @@ class RigSide:                       // what _rig hands the gear: the body's soc
 let rig_specs = dictionary<string, Spec>(511)
 let rig_keys = dictionary<string, string>(511)
 let rig_none = dictionary<string, int>(127)
-let rig_overrides = dictionary<string, Spec>(15)   // fixtures: a part id's old model, used in its place
+let rig_overrides = dictionary<string, Spec>(15)  // fixtures: a part id's old model, used in its place
 
-let RIG_NONE = float3 { -1000000000.0, 0.0, 0.0 }   // (a socket or number a spec hasn't: a dictionary can't answer nil for a float3)
+let RIG_NONE = float3 { -1000000000.0, 0.0, 0.0 }  // (a socket or number a spec hasn't: a dictionary can't answer nil for a float3)
 def shas(d:dictionary<string, float3>, k:string) -> bool: return d.get(k, RIG_NONE).x != RIG_NONE.x
 
 def num_or(o:JV, k:string, d:float) -> float: return if has(o, k): as_float(at(o, k)) else: d
@@ -131,7 +131,7 @@ def rig_unit(r:JV, pose:RigPose) -> Rigged:
                             Xform { BASIS_ID, float3 { 0.0, lift, 0.0 } }, true, walk, g, out.body_pose)
         let mp = at(m, "parts")
         for(mp.keys) slot, n:
-            if slot == "back" and has_s(ptags_of(as_str(mp.a[n])), "flying"): out.flying = true   // (a pegasus's wings sit at the withers in 2D only)
+            if slot == "back" and has_s(ptags_of(as_str(mp.a[n])), "flying"): out.flying = true  // (a pegasus's wings sit at the withers in 2D only)
             else: rig_gear(out, mrig, slot, as_str(mp.a[n]), mcol, RigPose {})
         let seat = mrig.sockets.get("seat", float3 { 0.0, 20.0, 0.0 })
         let rs = rig_spec(rstr(r, "body"), colours)
@@ -196,7 +196,7 @@ def rig_gait(body_id:string, flies:bool) -> Gait:
 // How high the body rides at this walk phase (the old bob, before the planted foot: fixtures only).
 def rig_bob(g:Gait, walk:float) -> float:
     if walk < 0.0 or g.hops or not old_bugs.bob_before_foot: return 0.0
-    return abs(sin(rad(walk))) * max(g.bob, gait_for(2, false).bob) / RIG_SCREEN_Y   // (the bob a stiff-legged walker had: a keyed walk's own is small)
+    return abs(sin(rad(walk))) * max(g.bob, gait_for(2, false).bob) / RIG_SCREEN_Y  // (the bob a stiff-legged walker had: a keyed walk's own is small)
 
 // A leg's turn at a walk phase (UnitView: sin(phase + leg phase) * swing, screen clockwise; phases in radians), as a
 // turn about the body's lateral axis (+z), in degrees.
@@ -206,9 +206,9 @@ def rig_swing(g:Gait?, walk:float, leg_phase:float) -> float:
 
 def rig_side(out:Rigged, rig:string, body_id:string, head_id:string, held:string, colours:Colours, t:Xform, with_legs:bool, walk:float, g:Gait?, body_pose:string) -> RigSide:
     var model_id = body_id + (if held == "low" or held == "": "" else: "@" + held)
-    if body_pose != "": model_id = body_id + "@" + body_pose   // (a resting pose is the whole body baked in it)
+    if body_pose != "": model_id = body_id + "@" + body_pose  // (a resting pose is the whole body baked in it)
     let body_n = gint(part(body_id), "body_steps", 0)
-    if body_pose == "" and walk >= 0.0 and body_n > 0 and (held == "low" or held == ""):   // the walk step the composer draws (UnitView.body_steps)
+    if body_pose == "" and walk >= 0.0 and body_n > 0 and (held == "low" or held == ""):  // the walk step the composer draws (UnitView.body_steps)
         model_id = "{body_id}@w{int(fposmod(walk / (2.0 * MPI), 1.0) * float(body_n)) % body_n}_{body_n}"
     let bs = rig_spec(model_id, colours)
     if not rig_has(body_id, colours) or not bs: return RigSide { dictionary<string, float3>(3), t, body_id, false }
@@ -282,12 +282,12 @@ def rig_gear(out:Rigged, rg:RigSide, slot:string, part_id0:string, colours:Colou
     var part_id = part_id0
     var sock = socket_for(slot)
     let tags = ptags_of(part_id)
-    if slot == "back" and shas(rg.sockets, part_id): sock = part_id   // (the body's own place for this piece, a bear's "cape.cloth")
+    if slot == "back" and shas(rg.sockets, part_id): sock = part_id  // (the body's own place for this piece, a bear's "cape.cloth")
     elif slot == "back" and has_s(tags, "drape") and shas(rg.sockets, "drape"): sock = "drape"
     if slot == "back" and has_s(tags, "banner") and not has_s(tags, "hero") and shas(rg.sockets, "banner"): sock = "banner"
     let sl = slung_on(rg.body, slot, part_id)
     if sl != "":
-        sock = "sling"   // (a shield slung on the back, baked "<shield>@slung")
+        sock = "sling"  // (a shield slung on the back, baked "<shield>@slung")
         part_id += sl
     let r = rg.rig
     let t = rg.xf
@@ -311,7 +311,7 @@ def rig_gear(out:Rigged, rg:RigSide, slot:string, part_id0:string, colours:Colou
             axf = xmul(t, Xform { b, bs.sockets.get("torso", float3_0) })
         let ap = Piece { r + ":armour", "armour", r, part_id, node, geo, axf, xf(t, bs.sockets.get("torso", float3_0)), r + ":body" }
         if fitted_s: ap.sockets = fitted_s.sockets
-        ap.harness = has_s(tags, "harness")   // (a draught harness: its trace ends)
+        ap.harness = has_s(tags, "harness")  // (a draught harness: its trace ends)
         out.pieces.push(ap)
         return
     if not shas(rg.sockets, sock) or not rig_has(part_id, colours): return
@@ -324,7 +324,7 @@ def rig_gear(out:Rigged, rg:RigSide, slot:string, part_id0:string, colours:Colou
         gxf = Xform { bscaled(t.b, float3_1 * rg.gear_scale), at_ }
         parent = r + ":head"
     elif slot == "back" and (has_s(tags, "drape") or sock == part_id):
-        gxf = Xform { bscaled(t.b, float3_1 * rg.drape_scale), at_ }   // (a cape sized to its back, or to the body's own place for it)
+        gxf = Xform { bscaled(t.b, float3_1 * rg.drape_scale), at_ }  // (a cape sized to its back, or to the body's own place for it)
     if slot == "hand_r":
         // What the near hand holds turns with the swing (UnitView's attack and work), or lies levelled forward (a
         // spear's thrust; couched on a harness, a tool leant at 0.25).

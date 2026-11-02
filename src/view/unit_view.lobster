@@ -6,7 +6,7 @@
 // them, war beasts. Cosmetic: nothing here feeds the sim. Ported line by line; its draw list is
 // checked against Godot's (view_check.lobster). Left out: wandering (the Race Lab) and concept poses.
 
-let SOCKET_FOR_SLOT = ["hand_r", "hand_r", "hand_l", "hand_l", "head_gear", "top", "torso", "torso", "back", "back"]
+let SOCKET_FOR_SLOT = [ "hand_r", "hand_r", "hand_l", "hand_l", "head_gear", "top", "torso", "torso", "back", "back" ]
 def socket_for(slot:string) -> string:
     var k = 0
     while k < SOCKET_FOR_SLOT.length:
@@ -27,8 +27,8 @@ let HOP_HEIGHT = 9.0
 let HOP_LENGTH = 40.0
 let HOP_UP = 0.25
 let HOP_DOWN = 0.75
-let HOP_KEYS = [[0.0, 1.0, 0.0], [0.15, 0.7, 0.0], [0.25, 0.7, 0.0], [0.36, 1.15, -0.7], [0.52, 0.75, -0.25],
-                [0.66, 0.9, 0.3], [0.75, 1.0, 0.0], [0.82, 0.72, 0.0], [1.0, 1.0, 0.0]]
+let HOP_KEYS = [ [ 0.0, 1.0, 0.0 ], [ 0.15, 0.7, 0.0 ], [ 0.25, 0.7, 0.0 ], [ 0.36, 1.15, -0.7 ], [ 0.52, 0.75, -0.25 ],
+                 [ 0.66, 0.9, 0.3 ], [ 0.75, 1.0, 0.0 ], [ 0.82, 0.72, 0.0 ], [ 1.0, 1.0, 0.0 ] ]
 let HOP_SETTLE = 25.0
 
 // The hop at cycle point p: [leg squash, foot shift] between its keys (UnitModels.hop_key: the frog's legs are baked in
@@ -52,18 +52,18 @@ let FACING_HOLD = 0.12
 let ENGINE_SHADOW = 210.0
 let BEAST_STRIKE = 0.6
 let BEAST_HIT = 0.35
-let BLOW_TIME = 0.5        // a blow: wind up, hold at the top, drive, hold at contact, recover (D-179, study A2's timing)
-let HEAD_NOD = 0.45        // how far the head bobs walking, a beat behind the body (part units)
+let BLOW_TIME = 0.5  // a blow: wind up, hold at the top, drive, hold at contact, recover (D-179, study A2's timing)
+let HEAD_NOD = 0.45  // how far the head bobs walking, a beat behind the body (part units)
 let THROW_TIME = 0.9
 let LOAD_Z = 1.2
-let WORK_HOLDS = ["reach", "raise", "thrust"]
-let CORPSE_AT = [0.12, 0.24, 0.36]
+let WORK_HOLDS = [ "reach", "raise", "thrust" ]
+let CORPSE_AT = [ 0.12, 0.24, 0.36 ]
 let KNEEL_DIP = 3.0
 let SIT_AFTER_LO = 3.0
 let SIT_AFTER_HI = 6.0
 let POSE_DOWN = 0.22
 let POSE_UP = 0.08
-let CHORES = ["sweep", "sit", "chat", "graze"]
+let CHORES = [ "sweep", "sit", "chat", "graze" ]
 // part_baker.gd's bake camera
 let BAKE_AZIMUTH = 35.0
 let BAKE_FACING_STEP = 45.0
@@ -109,7 +109,7 @@ class HeadPart:
     rest:float2
 
 class UV:
-    node = VNode {}             // the UnitView itself
+    node = VNode {}  // the UnitView itself
     recipe = jobj()
     visual = VNode {}
     bob = VNode {}
@@ -165,10 +165,10 @@ class UV:
     die_tip = 1.0
     die_offset = float2_0
     speed_px = 30.0
-    crew:[UV] = []             // an engine's crew and the beasts hauling it, each a view of its own
-    crew_top = false            // (as one of them: riding on top)
+    crew:[UV] = []    // an engine's crew and the beasts hauling it, each a view of its own
+    crew_top = false  // (as one of them: riding on top)
     crew_socket = ""
-    thrown = false              // (thrown off a fallen war beast, from here)
+    thrown = false  // (thrown off a fallen war beast, from here)
     thrown_at = float2_0
     rest_hold = "low"
     beast_head_rest = float2_0
@@ -201,7 +201,7 @@ class UV:
     body_steps = 0              // > 0: walking, the body's own baked steps (parts.json body_steps: arms swing, a tail sweeps)
     shield:VNode? = nil         // what the off hand holds (it follows the hand in a walk step)
     shield_rest = float2_0
-    upright = false             // riding in a howdah: its weapon held upright, not swung (Dominic, 2026-10-28)
+    upright = false  // riding in a howdah: its weapon held upright, not swung (Dominic, 2026-10-28)
 
 // Whether a part has a hand-built model (UnitModelsCheck.has): the pack's list says so; with no pack, the models do
 // (asked once a part).
@@ -214,7 +214,7 @@ def is_modelled(id:string) -> bool:
 
 def ptags_of(id:string) -> [string]: return gstrs(part(id), "tags")
 def pshapes_of(id:string) -> [JV]: return glist(part(id), "shapes")
-def jstr_hash(s:string) -> int:   // Godot's String.hash (djb2 over the characters)
+def jstr_hash(s:string) -> int:  // Godot's String.hash (djb2 over the characters)
     var h = 5381
     let cs = string_to_unicode(s)
     for(cs) c: h = ((h << 5) + h + c) & 0xFFFFFFFF
@@ -223,7 +223,7 @@ def jstr_hash(s:string) -> int:   // Godot's String.hash (djb2 over the characte
 def uv_part(v:UV, id:string, shapes:[JV], cols:Colours) -> VNode:
     let n = new_part(id)
     n.facing = v.facing_k
-    n.size = drawn_size(v)   // baked at the size it's drawn: a big sheep keeps the art's pixels (D-180)
+    n.size = drawn_size(v)  // baked at the size it's drawn: a big sheep keeps the art's pixels (D-180)
     part_setup(n, shapes, cols)
     return n
 
@@ -256,7 +256,7 @@ def uv_build(v:UV, r:JV, team:float3, speed:int) -> void:
     v.noise = pcg_seed(hash_text(stringify(r)))
     v.time = randf(v.noise) * 10.0
     v.unit_scale = float(as_int(at(r, "scale"))) / 100.0
-    if not has(r, "mount") and not has(r, "crew"):   // a creature drawn smaller than it's built, on foot (creatures.json draw_scale: the look only)
+    if not has(r, "mount") and not has(r, "crew"):  // a creature drawn smaller than it's built, on foot (creatures.json draw_scale: the look only)
         let cr = get(lib_creatures, gstr(r, "creature", ""))
         if cr: v.unit_scale *= float(gint(cr, "draw_scale", 100)) / 100.0
     v.body_steps = body_steps_of(r)
@@ -266,7 +266,7 @@ def uv_build(v:UV, r:JV, team:float3, speed:int) -> void:
     let shadow = new_part("unit_shadow")
     let sc = Colours { dictionary<string, string>(3), float3_1 }
     sc.hex.set("shadow", "0f0d08")
-    part_setup(shadow, [shadow_shape], sc)
+    part_setup(shadow, [ shadow_shape ], sc)
     add_child(v.node, shadow)
     v.shadow = shadow
     v.visual = VNode {}
@@ -343,7 +343,6 @@ def uv_build(v:UV, r:JV, team:float3, speed:int) -> void:
     sort_layers(v.node)
     face_dir(v, v.facing)
 
-
 def sit_point(v:UV, r:JV) -> float2, bool:
     let rp = at(r, "parts")
     let hold = if has(rp, "hand_r"): hold_for(ptags_of(rstr(rp, "hand_r"))) else: "low"
@@ -393,7 +392,7 @@ def build_engine(v:UV, r:JV, colours:Colours) -> void:
             if starts_with(t, "f") and t.length == 2: face = (v.facing_k + string_to_int(substring(t, 1, 1))) % FACINGS
             elif has_s(WORK_HOLDS, t): hold = t
             elif t == "in": z = -1.0
-            elif t == "top" or t == "box":   // (box: riding in a walled howdah, seen from the hips up)
+            elif t == "top" or t == "box":  // (box: riding in a walled howdah, seen from the hips up)
                 z = 1.0
                 top = true
         let c = uv_new()
@@ -402,7 +401,7 @@ def build_engine(v:UV, r:JV, colours:Colours) -> void:
         uv_build(c, if hauls: hr else: crew_recipe(r, hold), v.team, v.speed)
         c.node.pos = v2(at(sockets, name))
         let back = gint(get(lib_creatures, gstr(c.recipe, "creature", "")) or jobj(), "crew_back", 0)
-        if back > 0 and not top:   // on the ground, a hunched body stands back from its place, so it's centred on it (creatures.json crew_back)
+        if back > 0 and not top:  // on the ground, a hunched body stands back from its place, so it's centred on it (creatures.json crew_back)
             let mr = rig(rstr(c.recipe, "body") + facing_suffix(face))
             let ahead = if has(mr, "ahead"): v2(at(mr, "ahead")) else: float2_0
             c.node.pos -= ahead * float(back) * c.unit_scale
@@ -451,7 +450,7 @@ def trim_suffix(s:string, suf:string) -> string: return if ends_with(s, suf): su
 def crew_recipe(r:JV, hold:string) -> JV:
     let cr = deep_copy(at(r, "crew"))
     if hold == "raise": erase(at(cr, "parts"), "hand_r")
-    for([["creature", rstr(r, "creature")], ["family", rstr(r, "family")], ["slot", "worker"], ["role", "worker"], ["name", ""]]) kv:
+    for([ [ "creature", rstr(r, "creature") ], [ "family", rstr(r, "family") ], [ "slot", "worker" ], [ "role", "worker" ], [ "name", "" ] ]) kv:
         if not has(cr, kv[0]): set(cr, kv[0], jstr(kv[1]))
     if not has(cr, "tier"): set(cr, "tier", jint(1))
     return cr
@@ -545,7 +544,7 @@ def make_rig_rest(v:UV, body_id:string, head_id:string, body:JV, colours:Colours
                     if low > 0.0: reach = clampf(v.girth_drop / (low * rcos(CLING_TURN)), 1.0, 2.6)
                 v.legs.push(Leg { leg, as_float(a.a[2]), v.clinging, reach, leg.pos, as_float(data_anchors[i].a[0]) > fore_mid,
                                   leg_id + pose, leg_id, if cut: "~" + body_id + "^" + string(i) else: "",
-                                  if pose == "" and not v.clinging: gint(bl, "poses", 0) else: 0 })   // (a rider clinging to its mount doesn't step)
+                                  if pose == "" and not v.clinging: gint(bl, "poses", 0) else: 0 })  // (a rider clinging to its mount doesn't step)
     let body_node = uv_part(v, body_id + v.hold_suffix + pose, glist(body, "shapes"), colours)
     add_child(root, body_node)
     v.breathing.push(body_node)
@@ -588,7 +587,7 @@ def attach(v:UV, rg:Rig, slot:string, part_id:string, colours:Colours) -> void:
     if not shas(rg.sockets, socket): return
     let sp = sget(rg.sockets, socket, float2_0)
     let node = uv_part(v, part_id + slung, glist(p, "shapes"), colours)
-    let worn = slot == "torso" and is_modelled(rg.body) and is_modelled(part_id)   // (the body's model, not its bake)
+    let worn = slot == "torso" and is_modelled(rg.body) and is_modelled(part_id)  // (the body's model, not its bake)
     if worn: node.part_id = part_id + "~" + rg.body
     node.pos = if worn: float2_0 else: sp
     if withers:
@@ -615,7 +614,7 @@ def attach(v:UV, rg:Rig, slot:string, part_id:string, colours:Colours) -> void:
     elif slot == "head_gear": node.scl = float2_1 * rg.gear_scale
     elif slot == "back" and (has_s(tags, "drape") or shas(rg.sockets, part_id)): node.scl = float2_1 * rg.drape_scale
     add_child(rg.root, node)
-    if slot == "head_gear" and v.head_parts.length: v.head_parts.push(HeadPart { node, node.pos })   // (nods with the head)
+    if slot == "head_gear" and v.head_parts.length: v.head_parts.push(HeadPart { node, node.pos })  // (nods with the head)
     if rg.carry == "harness" and slot == "hand_r":
         let tr = rig(part_id)
         let tip = if has(tr, "tip"): v2(at(tr, "tip")) else: float2_0
@@ -851,7 +850,7 @@ def die(v:UV, tip:float) -> void:
     v.job = ""
     v.attack_t = 0.0
     var pose = corpse_pose_of(v.recipe)
-    if pose:   // (a library may not hold this recipe's fall: it falls the usual way then)
+    if pose:  // (a library may not hold this recipe's fall: it falls the usual way then)
         let f0 = as_int(glist(pose, "frames")[0])
         if not bakes.get(bake_key(corpse_id(v.recipe, pose, f0), [], nil, drawn_size(v)) + facing_suffix(v.facing_k)): pose = nil
     if pose:
@@ -886,14 +885,14 @@ def set_hold(v:UV, hold:string) -> void:
         let key = bake_key(id, b0.pshapes, b0.cols, b0.size)
         if not bakes.get(key + facing_suffix(v.facing_k)):
             let cols = b0.cols
-            if cols and not bake_wanted_set.get(key, false):   // (asked for here: nothing else draws a pose before it's baked)
+            if cols and not bake_wanted_set.get(key, false):  // (asked for here: nothing else draws a pose before it's baked)
                 bake_wanted_set.set(key, true)
                 bake_wanted.push(Wanted { id, key, cols })
             return
     for(v.body_nodes) ps: ps.part_id = id
     v.work_hold = hold
     let sh = v.shield
-    if sh: sh.pos = v.shield_rest   // (out of a walk step: the shield back in the hand at rest)
+    if sh: sh.pos = v.shield_rest  // (out of a walk step: the shield back in the hand at rest)
     let w = v.weapon
     if w:
         let rs = gobj(rg, "sockets")
@@ -954,7 +953,7 @@ def gait_for(n:int, flies:bool) -> Gait:
 
 def ahead_on_screen(k:int) -> float2:
     let az = BAKE_AZIMUTH + BAKE_FACING_STEP * float(k)
-    return float2 { cos(az), sin(BAKE_ELEVATION) * sin(az) }   // (degrees: Lobster's trig)
+    return float2 { cos(az), sin(BAKE_ELEVATION) * sin(az) }  // (degrees: Lobster's trig)
 
 def side_on(k:int) -> float: return clampf(ahead_on_screen(k).x / ahead_on_screen(0).x, -1.0, 1.0)
 
@@ -1021,7 +1020,7 @@ def uv_process(v:UV, dt:float) -> void:
     let bn = v.back_node
     if bn and v.flying:
         var f = rsin(t * (if v.walking: 11.0 else: 7.0))
-        if bn.buzz: f = [0.0, 1.0, -0.6][int(v.time * 24.0) % 3]
+        if bn.buzz: f = [ 0.0, 1.0, -0.6 ][int(v.time * 24.0) % 3]
         bn.rot = bn.rest - 0.12 * f
         let rs = bn.rest_scale
         bn.scl = float2 { rs, rs * (1.0 + 0.1 * f) }
@@ -1270,7 +1269,7 @@ def attack(v:UV, a:float):
     k = blow_lunge(a)
     v.bob.pos += fwd * 6.0 * k
     v.bob.rot += 0.14 * k * signf(if fwd.x != 0.0: fwd.x else: 1.0)
-    for(v.head_parts) hp: hp.node.pos = hp.rest + fwd * 0.8 * max(blow_lunge(a - 0.08), 0.0)   // (the head dips in a little after the body)
+    for(v.head_parts) hp: hp.node.pos = hp.rest + fwd * 0.8 * max(blow_lunge(a - 0.08), 0.0)  // (the head dips in a little after the body)
     if v.legs.length == 2:
         v.legs[0].node.rot += -0.5 * k
         v.legs[1].node.rot += 0.3 * k
@@ -1285,9 +1284,9 @@ def attack(v:UV, a:float):
         // A spear: levelled and drawn back, driven forward, held at full stretch, back to the carry.
         let level_by = clampf(a / 0.25, 0.0, 1.0) * (1.0 - clampf((a - 0.8) / 0.2, 0.0, 1.0))
         var out = 0.0
-        if a < 0.3: out = -0.35 * smoothstep(0.0, 0.3, a)   // drawn back
-        elif a < 0.42: out = lerpf(-0.35, 1.0, smoothstep(0.3, 0.42, a))   // driven
-        elif a < 0.65: out = 1.0   // at full stretch
+        if a < 0.3: out = -0.35 * smoothstep(0.0, 0.3, a)                 // drawn back
+        elif a < 0.42: out = lerpf(-0.35, 1.0, smoothstep(0.3, 0.42, a))  // driven
+        elif a < 0.65: out = 1.0                                          // at full stretch
         else: out = lerpf(1.0, 0.0, smoothstep(0.65, 1.0, a))
         set_hold(v, if out > 0.0: "thrust" else: "low")
         let w2 = v.weapon
@@ -1298,10 +1297,10 @@ def attack(v:UV, a:float):
         w2.rot = lerp_angle(v.weapon_rot, lvl, level_by)
         w2.pos = v.weapon_rest + fwd * 9.0 * out
         return
-    if a < 0.4:   // wound up, then held there a moment
+    if a < 0.4:  // wound up, then held there a moment
         set_hold(v, "raise")
         w.rot = v.weapon_rot - 1.1 * smoothstep(0.0, 0.3, a)
-    elif a < 0.75:   // driven through, held at contact
+    elif a < 0.75:  // driven through, held at contact
         set_hold(v, "reach")
         w.rot = v.weapon_rot + lerpf(-0.4, 0.9, smoothstep(0.4, 0.5, a))
     else:
@@ -1537,7 +1536,7 @@ def work(v:UV, t:float, stepped:bool):
         set_hold(v, hold)
         crouch *= 0.5
     let w3 = v.weapon
-    if w3: w3.rot = v.weapon_rot + swing * abs(side_on(v.facing_k))   // (towards or away the swing is in depth: turned flat, the tool leaves the hand)
+    if w3: w3.rot = v.weapon_rot + swing * abs(side_on(v.facing_k))  // (towards or away the swing is in depth: turned flat, the tool leaves the hand)
     if has(v.recipe, "mount") and gbool(at(v.recipe, "mount"), "fused", false) and v.job == "forage": return
     v.bob.rot += lean * side_on(v.facing_k)
     v.bob.pos += float2 { 0.0, crouch }
@@ -1590,7 +1589,7 @@ def chore(v:UV, t:float, stepped:bool):
 def span_of(n:VNode) -> [float2]:
     let s = bake_spans.get(bake_key_of(n, ""))
     if s: return s
-    return [float2_0, float2 { 0.0, -n.pos.y }]
+    return [ float2_0, float2 { 0.0, -n.pos.y } ]
 
 def kneel_tick(v:UV, dt:float):
     let want = if v.job == "forage" and not v.walking and has(v.recipe, "mount") and gbool(at(v.recipe, "mount"), "fused", false): 1.0 else: 0.0
@@ -1668,7 +1667,7 @@ def pose_tick(v:UV, dt:float):
     if not v.idle_poses.length: return
     let busy = v.walking or v.attack_t > 0.0 or v.dying or v.job != ""
     v.still = if busy: 0.0 else: v.still + dt
-    let steps = [""]
+    let steps = [ "" ]
     for(v.idle_poses) p: steps.push(p)
     var now = 0
     for(steps) s, i:
@@ -1703,7 +1702,7 @@ def idle(v:UV, dt:float):
         return
     v.idle_wait -= dt
     if v.idle_wait <= 0.0:
-        v.idle_kind = ["shift", "look", "lift", "settle"][randi(v.noise) % 4]
+        v.idle_kind = [ "shift", "look", "lift", "settle" ][randi(v.noise) % 4]
         v.idle_left = randf_range(v.noise, 0.5, 1.2)
         v.idle_wait = randf_range(v.noise, 2.5, 7.0)
 
@@ -1727,14 +1726,14 @@ def draw_walk(n:VNode, g:[float], alpha:float, out:[Draw]) -> void:
         let b = bakes.get(key)
         if b:
             let s = 1.0 / b.scale
-            out.push(Draw { key, xf_mul(g, [s, 0.0, 0.0, s, -b.ox * s, -b.oy * s]), a * n.shade })
-        else:   // (not baked yet: wanted, its plain form drawn meanwhile, if that's baked)
+            out.push(Draw { key, xf_mul(g, [ s, 0.0, 0.0, s, -b.ox * s, -b.oy * s ]), a * n.shade })
+        else:  // (not baked yet: wanted, its plain form drawn meanwhile, if that's baked)
             want_bake(n)
             let plain = plain_id(n.part_id)
             let pk = if plain != n.part_id: bake_key_of(n, plain) + (if n.front: "#front" else: "") else: ""
             let pb = if pk != "": bakes.get(pk) else: nil
             if pb:
                 let s = 1.0 / pb.scale
-                out.push(Draw { pk, xf_mul(g, [s, 0.0, 0.0, s, -pb.ox * s, -pb.oy * s]), a * n.shade })
+                out.push(Draw { pk, xf_mul(g, [ s, 0.0, 0.0, s, -pb.ox * s, -pb.oy * s ]), a * n.shade })
             else: out.push(Draw { key + " missing", g, a })
     for(n.kids) c: draw_walk(c, xf_mul(g, xf_local(c)), a, out)

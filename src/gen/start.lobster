@@ -74,7 +74,7 @@ def setup_world(seed_value:int, map_id:string, races:[JV], rules:JV, team_ids:[i
     for(races) race, p:
         for(glist(race, "units")) u:
             let r = at(u, "recipe")
-            add_type(p, r, at(u, "eval"), if has(u, "line"): glist(u, "line") else: [line_step(as_int(at(r, "tier")), r, at(u, "eval"))])
+            add_type(p, r, at(u, "eval"), if has(u, "line"): glist(u, "line") else: [ line_step(as_int(at(r, "tier")), r, at(u, "eval")) ])
     add_animal_types(load_json(lib_root + "/animals.json"))
     setup_classes()
     num_classes = su_classes.length
@@ -98,7 +98,7 @@ def setup_world(seed_value:int, map_id:string, races:[JV], rules:JV, team_ids:[i
         tech_refresh(p)
     setup_starts()
     mode_hold = -1
-    setup_mode()   // (gen/modes.lobster: Fortress, Siege)
+    setup_mode()  // (gen/modes.lobster: Fortress, Siege)
     if gbool(rules, "animals", false): place_animals()
     let tc = btype_index("town_center")
     for(np) p:
@@ -170,7 +170,7 @@ def setup_btypes():
         bt_garrison.push(gint(b, "garrison", 0))
         bt_gate.push(if gate_: 1 else: 0)
         bt_wall.push(if gbool(b, "line", false): 1 else: 0)
-        bt_over_trees.push(0)   // (load_btypes keeps no sees_over_trees)
+        bt_over_trees.push(0)  // (load_btypes keeps no sees_over_trees)
         bt_cost.push(cost_vec(at(b, "cost")))
         let drop_off = gstrs(b, "drop_off")
         bt_drop.push(map(resource_names) r: if has_s(drop_off, r): 1 else: 0)
@@ -185,7 +185,7 @@ def setup_btypes():
         bt_blocks_flyers.push(if bflyers: 1 else: 0)
         bt_replaces.push(map(gstrs(b, "replaces")) id: btype_index(id))
         let pour = gobj(b, "pour")
-        bt_pour.push(if pour.keys.length: [gint(pour, "reach", 0), gint(pour, "reload", 0), gint(pour, "damage", 0)] else: []::int)
+        bt_pour.push(if pour.keys.length: [ gint(pour, "reach", 0), gint(pour, "reload", 0), gint(pour, "damage", 0) ] else: []::int)
         let pen = gobj(b, "pen")
         bt_pen_animals.push(if pen.keys.length: as_int(at(pen, "animals")) else: 0)
         bt_pen_food.push(if pen.keys.length: as_int(at(pen, "food")) else: 0)
@@ -239,7 +239,7 @@ def setup_tech():
             let race = su_races[p]
             let only = gstrs(item, "only")
             let o = (not only.length or gbool(su_rules, "full_tech_tree", false) or has_s(only, rstr(race, "creature")) or has_s(only, rstr(race, "family"))) and
-                    not ident_lacks(p, rstr(item, "id"))
+                not ident_lacks(p, rstr(item, "id"))
             open.push(if o: 1 else: 0)
             let lh = if has(item, "line"): line_has_kit(p, rstr(item, "line"), as_int(at(item, "line_age"))) else: true
             line_has.push(if lh: 1 else: 0)
@@ -254,14 +254,14 @@ def setup_tech():
         gather_ticks.push(zeros(num_resources))
     let nb = bt_size.length
     for(np) p:
-        for([bm_hp, bm_pop, bm_sight, bm_food, bm_lacks, bm_research_time, bm_age_time, bm_research_cost, bm_range, bm_cost_pct, bm_trade_fee]) col: col.push(zeros(nb))
+        for([ bm_hp, bm_pop, bm_sight, bm_food, bm_lacks, bm_research_time, bm_age_time, bm_research_cost, bm_range, bm_cost_pct, bm_trade_fee ]) col: col.push(zeros(nb))
         bm_cost.push(map(nb) k: copy(bt_cost[k]))
         bm_arm.push(map(nb): []::int)
         bm_trains.push(map(su_btypes) b: filter(map(gstrs(b, "trains")) slot: type_of_slot(p, slot)) tk: tk >= 0)
         for(su_btype_ids) id, k: bm_lacks[p][k] = if ident_lacks(p, id): 1 else: 0
     let nt = t_slot.length
-    for([t_heal_pct, t_kill_gold, t_wade, t_slow_on_hit, t_min_range, t_splash, t_pass_len, t_buildings_only, t_unpack, t_pack,
-         t_blast, t_blast_line, t_eval_sight, t_sight_add, t_machine, t_mounted, t_damage, t_heal]) col:
+    for([ t_heal_pct, t_kill_gold, t_wade, t_slow_on_hit, t_min_range, t_splash, t_pass_len, t_buildings_only, t_unpack, t_pack,
+          t_blast, t_blast_line, t_eval_sight, t_sight_add, t_machine, t_mounted, t_damage, t_heal ]) col:
         for(nt): col.push(0)
     for(nt):
         t_tags.push([]::int)
@@ -395,7 +395,7 @@ def free_cell(cx:int, cy:int, lo:int, hi:int, taken:[int]) -> int:
 
 def add_animal(k:int, c:int):
     let i = add_unit(gaia, k, (c % W) * TILE + 500, (c / W) * TILE + 500)
-    u_posture[i] = 0   // (Units.add's default: animals keep it)
+    u_posture[i] = 0  // (Units.add's default: animals keep it)
 
 def place_animals():
     var spawn = at(load_json(lib_root + "/animals.json"), "spawn")
@@ -409,7 +409,7 @@ def place_animals():
         let k = animal_type(rstr(entry, "kind"))
         for(glist(entry, "cells")) xy:
             let c = as_int(xy.a[1]) * W + as_int(xy.a[0])
-            for(if symmetry == "rotate": [c, W * H - 1 - c] else: [c]) at_:
+            for(if symmetry == "rotate": [ c, W * H - 1 - c ] else: [ c ]) at_:
                 if animal_open(at_, taken):
                     taken[at_] = 1
                     add_animal(k, at_)
@@ -498,7 +498,7 @@ def ai_ints(v:JV) -> JV:
         return o
     return v
 
-def load_ai_config(lvl:string = "normal"):   // (the lobby's AI levels: easy, normal, hard)
+def load_ai_config(lvl:string = "normal"):  // (the lobby's AI levels: easy, normal, hard)
     let cfg = ai_ints(load_json(lib_root + "/ai.json"))
     var lv_ratio = 0
     var lv_wave = 100
@@ -537,7 +537,7 @@ def load_ai_config(lvl:string = "normal"):   // (the lobby's AI levels: easy, no
     ai_walk(cfg, "", nums, strs)
     let smax = gobj(gobj(at(cfg, "military"), "siege"), "max")
     strs.push("military.siege.max_order " + string(smax.keys.length) + (if smax.keys.length: " " + concat_string(smax.keys, " ") else: " "))
-    let toks = ["AI", string(nums.length), string(strs.length)]
+    let toks = [ "AI", string(nums.length), string(strs.length) ]
     for(nums) x: for(prompt_words(x)) t: toks.push(t)
     for(strs) x: for(prompt_words(x)) t: toks.push(t)
     let order = glist(cfg, "build_order")
@@ -546,8 +546,8 @@ def load_ai_config(lvl:string = "normal"):   // (the lobby's AI levels: easy, no
     for(order) s:
         toks.push(rstr(s, "building"))
         toks.push(gstr(s, "near", "-"))
-        for([gint(s, "age", 1), as_int(at(s, "workers")), gint(s, "count", -1), gint(s, "builders", 2), gint(s, "away", 0),
-             gint(s, "own_side", 0), gint(s, "guard", 0), gint(s, "save", 0), gint(s, "push", -1), gint(s, "expand_workers", -1)]) v: toks.push(string(v))
+        for([ gint(s, "age", 1), as_int(at(s, "workers")), gint(s, "count", -1), gint(s, "builders", 2), gint(s, "away", 0),
+              gint(s, "own_side", 0), gint(s, "guard", 0), gint(s, "save", 0), gint(s, "push", -1), gint(s, "expand_workers", -1) ]) v: toks.push(string(v))
     let waves = glist(at(cfg, "military"), "waves")
     toks.push("WAVES")
     toks.push(string(waves.length))
@@ -555,13 +555,13 @@ def load_ai_config(lvl:string = "normal"):   // (the lobby's AI levels: easy, no
         toks.push(string(as_int(at(w, "at"))))
         toks.push(string(as_int(at(w, "min_army"))))
     toks.push("LEVEL")
-    for([lv_ratio, lv_wave, lv_up, lv_age3, lv_tow, lv_all, lv_shelter, lv_guard, lv_raids_, lv_from]) v: toks.push(string(v))
+    for([ lv_ratio, lv_wave, lv_up, lv_age3, lv_tow, lv_all, lv_shelter, lv_guard, lv_raids_, lv_from ]) v: toks.push(string(v))
     ai_tokens = toks
     tokens = toks
     tp = 0
     load_ai()
 
-def jv_plain(v:JV) -> string:   // str() of a value in a list (export.gd: " ".join(v.map(str)))
+def jv_plain(v:JV) -> string:  // str() of a value in a list (export.gd: " ".join(v.map(str)))
     if v.kind == J_STR: return v.s
     if v.kind == J_BOOL: return if v.i != 0: "true" else: "false"
     return stringify(v)

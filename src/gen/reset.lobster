@@ -61,7 +61,7 @@ var stashed_ramp = []::int
 var stashed_deck = []::int
 var stashed_high = []::int
 var stashed_gate = []::int
-var stashed_lane_teams = [-2]
+var stashed_lane_teams = [ -2 ]
 var stashed_resource_cells = []::int
 var stashed_tr_walk = []::int
 var stashed_tr_move = []::int
@@ -525,7 +525,7 @@ def reset_world():
     deck = []::int
     high = []::int
     gate = []::int
-    lane_teams = [-2]
+    lane_teams = [ -2 ]
     resource_cells = []::int
     tr_walk = []::int
     tr_move = []::int

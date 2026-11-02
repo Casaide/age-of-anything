@@ -75,11 +75,11 @@ import gen.start
 import gen.reset
 
 let DATA = "../data"
-let PROMPTS = ["angry swamp frogs with reed spears", "sewer rats with cheese hammers", "centaur romans", "flying greeks with wings",
-               "ww2 americans riding mongolian ponies", "giant spiders", "tiny vikings", "spooky beetle knights",
-               "pegasus riding spartans", "", "blorp zang wibble"]
-let RULE_IDS = ["default", "bronze", "anything"]
-let SKIN_TEAM_GAP = 30   // CIE76 distance between a skin's main colour and every team colour
+let PROMPTS = [ "angry swamp frogs with reed spears", "sewer rats with cheese hammers", "centaur romans", "flying greeks with wings",
+                "ww2 americans riding mongolian ponies", "giant spiders", "tiny vikings", "spooky beetle knights",
+                "pegasus riding spartans", "", "blorp zang wibble" ]
+let RULE_IDS = [ "default", "bronze", "anything" ]
+let SKIN_TEAM_GAP = 30  // CIE76 distance between a skin's main colour and every team colour
 
 var n_checks = 0
 var n_failed = 0
@@ -117,7 +117,7 @@ def parts_of(r:JV) -> JV: return at(r, "parts")
 def part_ids(r:JV) -> [string]: return map(parts_of(r).a) v: as_str(v)
 def part_at(r:JV, slot:string) -> string: return gstr(parts_of(r), slot, "")
 def tags_of(id:string) -> [string]: return gstrs(part(id), "tags")
-def ival(o:JV, path:string) -> int:   // an int down a dotted path ("eval.armour.pierce" style keys)
+def ival(o:JV, path:string) -> int:  // an int down a dotted path ("eval.armour.pierce" style keys)
     var v = o
     for(tokenize(path, ".", "")) k: v = at(v, k)
     return as_int(v)
@@ -174,7 +174,7 @@ def lab(rgb:[float]) -> [float]:
     let x = (0.4124 * l[0] + 0.3576 * l[1] + 0.1805 * l[2]) / 0.95047
     let y = 0.2126 * l[0] + 0.7152 * l[1] + 0.0722 * l[2]
     let z = (0.0193 * l[0] + 0.1192 * l[1] + 0.9505 * l[2]) / 1.08883
-    return [116.0 * lab_f(y) - 16.0, 500.0 * (lab_f(x) - lab_f(y)), 200.0 * (lab_f(y) - lab_f(z))]
+    return [ 116.0 * lab_f(y) - 16.0, 500.0 * (lab_f(x) - lab_f(y)), 200.0 * (lab_f(y) - lab_f(z)) ]
 
 def lab_distance(a:string, b:string) -> float:
     let la = lab(hex_colour(a))
@@ -218,11 +218,11 @@ def ogg_seconds(path:string) -> float:
 // ------------------------------------------------------------------ the checks
 
 def g_data():
-    for(load_json(DATA + "/parts.json").a) p:   // (a creature-kit body gets its shapes from the kit: CreatureKit.complete, the view's)
+    for(load_json(DATA + "/parts.json").a) p:  // (a creature-kit body gets its shapes from the kit: CreatureKit.complete, the view's)
         expect(has(p, "slot") and (has(p, "shapes") or has(p, "kit")), "part {gstr(p, "id", "?")} has slot and shapes")
     for(lib_part_ids) id:
         let p = at(lib_parts, id)
-        expect(has(p, "slot"), "part {id} has a slot")   // (kit parts made by DataLib: the view's shapes are Godot's)
+        expect(has(p, "slot"), "part {id} has a slot")  // (kit parts made by DataLib: the view's shapes are Godot's)
         if gstr(p, "slot", "") == "body" and has(p, "legs"): expect(has(lib_parts, rstr(at(p, "legs"), "part")), "body {id} leg part exists")
     let skins = at(lib_palettes, "skins")
     let team_cols = gstrs(lib_palettes, "teams")
@@ -231,7 +231,7 @@ def g_data():
         expect(has(lib_parts, rstr(c, "body")) and has(lib_parts, rstr(c, "head")), "creature {id} body/head exist")
         for(gstrs(c, "skins")) s: expect(has(skins, s), "creature {id} skin {s} exists")
         for(gstrs(c, "families")) f: expect(has(lib_families, f), "creature {id} family {f} exists")
-        for(gstrs(c, "skins")) s:   // a skin never reads as a team colour (a red frog on the blue side looked like the enemy: Dominic)
+        for(gstrs(c, "skins")) s:  // a skin never reads as a team colour (a red frog on the blue side looked like the enemy: Dominic)
             if has(skins, s):
                 for(team_cols) t:
                     let d = lab_distance(as_str(at(skins, s).a[0]), t)
@@ -242,8 +242,8 @@ def g_data():
         if has(e, "family"): expect(has(lib_families, rstr(e, "family")), "lexicon {w} family exists")
         if has(e, "mount_wings"): expect(has(lib_parts, rstr(e, "mount_wings")), "lexicon {w} wings part exists")
     // The UI's looks: every culture wears one; its materials, crest and cut exist.
-    let mats = ["wood", "bronze", "gold", "iron", "marble", "stone", "sandstone", "parchment", "felt", "leather", "reed", "lacquer", "bone"]
-    let cuts = ["square", "fringe", "swallowtail", "pointed", "notched", "tongues", "ragged", "scalloped"]
+    let mats = [ "wood", "bronze", "gold", "iron", "marble", "stone", "sandstone", "parchment", "felt", "leather", "reed", "lacquer", "bone" ]
+    let cuts = [ "square", "fringe", "swallowtail", "pointed", "notched", "tongues", "ragged", "scalloped" ]
     let ui_d = load_json(DATA + "/ui.json")
     let dirs = at(ui_d, "directions")
     let look_names = []::string
@@ -256,7 +256,7 @@ def g_data():
         look_names.push("family " + f)
         looks.push(gobj(at(lib_families, f), "ui"))
     for(looks) l, n:
-        for(["frame", "panel", "button", "primary"]) k:
+        for([ "frame", "panel", "button", "primary" ]) k:
             if has(l, k): expect(has_s(mats, rstr(l, k)), "{look_names[n]}: {k} material {rstr(l, k)} is known")
         if has(l, "banner"): expect(has_s(cuts, rstr(l, "banner")), "{look_names[n]}: banner cut {rstr(l, "banner")} is known")
         if has(l, "ornament"): expect(read_file("../assets/art/ui/crest_{rstr(l, "ornament")}.svg") != nil, "{look_names[n]}: crest {rstr(l, "ornament")} exists")
@@ -278,11 +278,11 @@ def g_bounds():
     for(RULE_IDS) rid:
         let r = load_rules(rid)
         let eras = gstrs(r, "era")
-        let in_play = (filter(glist(r, "roster")) sd: not has_s(["planned", "parked"], gstr(sd, "status", ""))).length
+        let in_play = (filter(glist(r, "roster")) sd: not has_s([ "planned", "parked" ], gstr(sd, "status", ""))).length
         for(PROMPTS) prompt:
             for(6) reroll:
                 let race = generate(prompt, r, reroll)
-                let kept = filter(units_of(race)) u: slot_of(u) != "hero"   // (the heroes: g_heroes)
+                let kept = filter(units_of(race)) u: slot_of(u) != "hero"  // (the heroes: g_heroes)
                 let has_hero = if kept.length < units_of(race).length: 1 else: 0
                 expect(kept.length + has_hero + lacks_of(race).length == in_play, "roster size {rid}/{prompt}")
                 for(units_of(race)) u:
@@ -294,9 +294,9 @@ def g_bounds():
                         expect(era_ok(p, eras), "{name}: {rstr(p, "id")} allowed in {rid}")
                         expect(rstr(p, "slot") == slot, "{rstr(p, "id")} in matching slot")
                     let role = rstr(rec, "role")
-                    if role == "trader":   // an unarmed engine line (rules `armed`: false): no weapon at all
+                    if role == "trader":  // an unarmed engine line (rules `armed`: false): no weapon at all
                         expect(ps.keys.length == 0 and has(rec, "crew"), "{name}: a trade cart carries no weapon, its crew pushes")
-                    elif role != "hero":   // (its look over its swordsman's kit: g_heroes)
+                    elif role != "hero":  // (its look over its swordsman's kit: g_heroes)
                         let need = role_needs(if has(rec, "unique"): rstr(at(lib_uniques, rstr(rec, "unique")), "role") else: role)
                         expect(has_s(tags_of(part_at(rec, "hand_r")), need), "{name} primary has {need}")
                         expect(total_cost(at(at(u, "eval"), "cost")) > 0, "{name} has a cost")
@@ -306,7 +306,7 @@ def g_prompts():
     let d = load_rules("default")
     let last_age = as_int(at(d, "ages"))
     // Unit lines: a unit starts in its age's kit and upgrades within its kind and culture.
-    for(["centaur romans", "angry swamp frogs", "royal knights", "sewer rats"]) prompt:
+    for([ "centaur romans", "angry swamp frogs", "royal knights", "sewer rats" ]) prompt:
         for(units_of(generate(prompt, d, 0))) u:
             let ages_ = map(line_of(u)) l: as_int(at(l, "age"))
             let tier = ival(recipe_of(u), "tier")
@@ -317,10 +317,10 @@ def g_prompts():
                     expect(gint(part(id), "tier", 1) <= age, "{prompt}: {slot_of(u)} at age {age} holds no later kit ({id})")
             expect(jequal(at(line_of(u)[0], "recipe"), recipe_of(u)), "{prompt}: the line starts with the unit\'s recipe")
     // An upgrade never reads "X -> X": new kit gets a new name, no new kit keeps it (and isn't sold).
-    for(["centaur romans", "centaur greeks", "angry swamp frogs", "royal knights", "sewer rats with cheese hammers", "aztec warriors", "han archers", "nile spiders"]) prompt:
+    for([ "centaur romans", "centaur greeks", "angry swamp frogs", "royal knights", "sewer rats with cheese hammers", "aztec warriors", "han archers", "nile spiders" ]) prompt:
         for(4) reroll:
             for(units_of(generate(prompt, d, reroll))) u:
-                if not has_s(["worker", "hero"], role_of(u)):   // (a hero keeps its name through the ages)
+                if not has_s([ "worker", "hero" ], role_of(u)):  // (a hero keeps its name through the ages)
                     let line = line_of(u)
                     let names = map(line) l: rstr(at(l, "recipe"), "name")
                     var s = 1
@@ -329,9 +329,9 @@ def g_prompts():
                         expect(same_kit == has_s(names.slice(0, s), names[s]), "{prompt} (reroll {reroll}): {slot_of(u)} line step {s} has its own name only when its kit is new ({names})")
                         s++
     // Another culture's signature kit never turns up uninvited, and a culture keeps its own.
-    let fprompts = ["centaur romans", "winged romans", "flying greeks with wings", "greek hoplites", "royal knights"]
-    let fbad = [["knight", "woodland", "bat", "greek", "viking", "cheese"], ["knight", "woodland", "bat", "greek"], ["knight", "woodland", "bat", "roman"],
-                ["knight", "woodland", "roman"], ["woodland", "roman", "greek", "bat"]]
+    let fprompts = [ "centaur romans", "winged romans", "flying greeks with wings", "greek hoplites", "royal knights" ]
+    let fbad = [ [ "knight", "woodland", "bat", "greek", "viking", "cheese" ], [ "knight", "woodland", "bat", "greek" ], [ "knight", "woodland", "bat", "roman" ],
+                 [ "knight", "woodland", "roman" ], [ "woodland", "roman", "greek", "bat" ] ]
     for(fprompts) prompt, n:
         for(6) reroll:
             for(units_of(generate(prompt, d, reroll))) u:
@@ -350,7 +350,7 @@ def g_prompts():
     expect(rstr(centaurs, "creature") == "centaur" and rstr(centaurs, "family") == "imperial", "centaur romans")
     for(units_of(centaurs)) u:
         let who = gobj(recipe_of(u), "crew")
-        let w = if who.keys.length: who else: recipe_of(u)   // an engine's centaurs are its crew
+        let w = if who.keys.length: who else: recipe_of(u)  // an engine's centaurs are its crew
         expect(has(w, "mount") and gbool(at(w, "mount"), "fused", false), "every centaur is fused to a pony")
     let greeks = generate("flying greeks with wings", d, 0)
     expect(rstr(greeks, "family") == "hellenic", "greeks are hellenic")
@@ -367,8 +367,8 @@ def g_prompts():
     expect(has(recipe_of(unit_of(ww2, "large")), "mount"), "mongolian large unit is mounted")
     expect(has(recipe_of(unit_of(ww2, "archer")), "mount"), "mongolian archers are horse archers")
     for(20) reroll:
-        for(["romans", "centaur romans", "flying greeks"]) prompt:
-            for(["default", "bronze"]) rid:
+        for([ "romans", "centaur romans", "flying greeks" ]) prompt:
+            for([ "default", "bronze" ]) rid:
                 for(units_of(generate(prompt, load_rules(rid), reroll))) u:
                     expect(part_at(recipe_of(u), "hand_r") != "weapon.cheese_hammer", "no cheese hammers for {prompt} unless asked")
                     expect(ival(recipe_of(u), "scale") < GIANT_SCALE, "no giant {prompt} unless asked")
@@ -379,7 +379,7 @@ def g_prompts():
         for(units_of(generate("centaur romans", open, reroll))) u:
             for(line_of(u)) l:
                 for(part_ids(at(l, "recipe"))) id:
-                    foreign_ok = foreign_ok or exists(tags_of(id)) t: has_s(["woodland", "knight", "junk", "bat"], t)
+                    foreign_ok = foreign_ok or exists(tags_of(id)) t: has_s([ "woodland", "knight", "junk", "bat" ], t)
     expect(foreign_ok, "no_restrictions lets other cultures\' kit through")
     expect(notes_of(generate("blorp zang wibble", d, 0)).length >= 2, "gibberish gets volunteer + ignored notes")
     let guns = part_at(at(last_step(unit_of(generate("rats with guns", load_rules("anything"), 0), "skirmisher")), "recipe"), "hand_r")
@@ -417,17 +417,17 @@ def g_healers():
     expect(part_at(recipe_of(unit_of(generate("sewer rats", d, 0), "healer")), "hand_r") == "tool.staff.cheese", "rat healers carry a cheese staff")
     expect(part_at(recipe_of(unit_of(generate("swamp frogs", d, 0), "healer")), "hand_r") == "tool.staff.lily", "frog healers carry a lily staff")
     // Every culture its own staff, from data (only_if + favour), and the bag to match where it has one.
-    let kp = ["romans", "greeks", "royal humans", "mongols", "spooky spiders", "forest beetles", "egyptians", "han", "aztecs"]
-    let kits = [["tool.staff.laurel", "tool.satchel"], ["tool.staff.olive", "tool.satchel.flask"], ["tool.staff.lantern", "tool.satchel"],
-                ["tool.staff.horsehair", "tool.satchel.felt"], ["tool.staff.candle", "tool.satchel.bottle"], ["tool.staff.branch", "tool.satchel.leaf"],
-                ["tool.staff.papyrus", "tool.satchel.linen"], ["tool.staff.gourd", "tool.satchel.lacquer"], ["tool.staff.feather", "tool.satchel.woven"]]
+    let kp = [ "romans", "greeks", "royal humans", "mongols", "spooky spiders", "forest beetles", "egyptians", "han", "aztecs" ]
+    let kits = [ [ "tool.staff.laurel", "tool.satchel" ], [ "tool.staff.olive", "tool.satchel.flask" ], [ "tool.staff.lantern", "tool.satchel" ],
+                 [ "tool.staff.horsehair", "tool.satchel.felt" ], [ "tool.staff.candle", "tool.satchel.bottle" ], [ "tool.staff.branch", "tool.satchel.leaf" ],
+                 [ "tool.staff.papyrus", "tool.satchel.linen" ], [ "tool.staff.gourd", "tool.satchel.lacquer" ], [ "tool.staff.feather", "tool.satchel.woven" ] ]
     for(kp) prompt, n:
         let rec = recipe_of(unit_of(generate(prompt, d, 0), "healer"))
         expect(part_at(rec, "hand_r") == kits[n][0] and part_at(rec, "hand_l") == kits[n][1], "{prompt} healers carry their culture\'s kit ({part_at(rec, "hand_r")}, {part_at(rec, "hand_l")})")
     // own_seed: the healer draws from its own stream, so every other line is as it was without it.
-    let without = without_slots(d, ["healer"])
+    let without = without_slots(d, [ "healer" ])
     for(PROMPTS) prompt:
-        let a = lines_json(generate(prompt, d, 0)) u: not has_s(["healer", "hero"], role_of(u))   // (the hero comes from the race key)
+        let a = lines_json(generate(prompt, d, 0)) u: not has_s([ "healer", "hero" ], role_of(u))  // (the hero comes from the race key)
         let b = lines_json(generate(prompt, without, 0)) u: role_of(u) != "hero"
         expect(a == b, "\'{prompt}\': adding the healer leaves the other lines\' recipes as they were")
 
@@ -436,13 +436,13 @@ def g_healers():
 def g_siege():
     let d = load_rules("default")
     for(lib_families.keys) f:
-        for(["ram", "catapult", "bolt"]) e:
+        for([ "ram", "catapult", "bolt" ]) e:
             expect(has(lib_parts, "siege.{e}.{rstr(at(lib_families, f), "siege")}"), "family {f}\'s take builds a {e}")
-    let tpr = ["romans", "sewer rats", "forest beetles", "spooky spiders", "swamp frogs", "forest frogs", "swamp beetles", "mongols"]
-    let takes = ["timber", "junk", "forest", "spooky", "frog", "frog", "timber", "timber"]
+    let tpr = [ "romans", "sewer rats", "forest beetles", "spooky spiders", "swamp frogs", "forest frogs", "swamp beetles", "mongols" ]
+    let takes = [ "timber", "junk", "forest", "spooky", "frog", "frog", "timber", "timber" ]
     for(tpr) prompt, n:
         let race = generate(prompt, d, 0)
-        for(["ram", "catapult", "bolt_thrower"]) role:
+        for([ "ram", "catapult", "bolt_thrower" ]) role:
             let u = unit_of(race, role)
             let r = recipe_of(u)
             expect(ends_with(rstr(r, "body"), "." + takes[n]) and rstr(at(r, "crew"), "body") == rstr(recipe_of(units_of(race)[0]), "body"),
@@ -470,9 +470,9 @@ def g_swordsmen():
                            "{prompt}: {rstr(lr, "name")} beats spears, skirmishers and buildings")
     let d = load_rules("default")
     let b = load_rules("bronze")
-    let wp = ["sewer rats", "romans", "egyptians", "aztecs", "greeks", "royal humans", "mongols", "han", "swamp frogs", "forest beetles", "spooky spiders"]
-    let weapons = ["weapon.cheese_hammer", "weapon.gladius", "weapon.khopesh", "weapon.macuahuitl", "weapon.sword.xiphos", "weapon.sword.iron",
-                   "weapon.sword.flared_sabre", "weapon.sword.dao", "weapon.mace.river_stone", "weapon.sword.chitin", "weapon.sword.hook"]
+    let wp = [ "sewer rats", "romans", "egyptians", "aztecs", "greeks", "royal humans", "mongols", "han", "swamp frogs", "forest beetles", "spooky spiders" ]
+    let weapons = [ "weapon.cheese_hammer", "weapon.gladius", "weapon.khopesh", "weapon.macuahuitl", "weapon.sword.xiphos", "weapon.sword.iron",
+                    "weapon.sword.flared_sabre", "weapon.sword.dao", "weapon.mace.river_stone", "weapon.sword.chitin", "weapon.sword.hook" ]
     for(wp) prompt, n:
         let got = part_at(at(last_step(unit_of(generate(prompt, d, 0), "infantry")), "recipe"), "hand_r")
         expect(got == weapons[n], "{prompt} swordsmen end with {weapons[n]} ({got})")
@@ -481,19 +481,19 @@ def g_swordsmen():
     expect(last_part("greeks", d, "head_gear") == "helm.attic", "greek swordsmen wear the Attic helmet in age 3")
     expect(last_part("mongols", d, "head_gear") == "helm.steppe_spike", "steppe swordsmen wear the spiked helmet in age 3")
     expect(last_part("royal humans", b, "hand_r") == "weapon.sword.iron_plain", "royal humans under the bronze rules fall back on the plain iron sword")
-    for(["egyptians", "aztecs", "romans"]) prompt: expect(last_part(prompt, b, "hand_r") != "weapon.sword.iron_plain", "{prompt} keep their own blade in age 3")
+    for([ "egyptians", "aztecs", "romans" ]) prompt: expect(last_part(prompt, b, "hand_r") != "weapon.sword.iron_plain", "{prompt} keep their own blade in age 3")
     expect(part_at(recipe_of(unit_of(generate("greeks", d, 0), "infantry")), "hand_r") == "weapon.club.bone", "age 1 swordsmen start with a club")
-    let without = without_slots(d, ["infantry"])
+    let without = without_slots(d, [ "infantry" ])
     for(PROMPTS) prompt:
         let a = generate(prompt, d, 0)
         let c = generate(prompt, without, 0)
-        let la = lines_json(a) u: not has_s(["infantry", "hero"], slot_of(u))
-        let lc = lines_json(c) u: not has_s(["infantry", "hero"], slot_of(u))
+        let la = lines_json(a) u: not has_s([ "infantry", "hero" ], slot_of(u))
+        let lc = lines_json(c) u: not has_s([ "infantry", "hero" ], slot_of(u))
         expect(la == lc and rstr(a, "name") == rstr(c, "name"), "\'{prompt}\': adding the swordsman leaves the other lines\' recipes as they were")
 
 // The scout, the mounted archer and the unique unit (milestone 13).
 def g_new_lines():
-    let prompts = append(PROMPTS, ["romans", "aztecs", "spooky spiders", "mongols", "swamp frogs", "sewer rats", "egyptians", "han", "forest beetles"])
+    let prompts = append(PROMPTS, [ "romans", "aztecs", "spooky spiders", "mongols", "swamp frogs", "sewer rats", "egyptians", "han", "forest beetles" ])
     for(RULE_IDS) rid:
         let r = load_rules(rid)
         for(prompts) prompt:
@@ -506,7 +506,7 @@ def g_new_lines():
                     let lr = at(l, "recipe")
                     let name = rstr(lr, "name")
                     let w = tags_of(part_at(lr, "hand_r"))
-                    expect(has_s(w, "melee") and not exists(w) t: has_s(["spear", "lance", "heavy"], t), "{prompt}: {name} holds a light weapon ({part_at(lr, "hand_r")})")
+                    expect(has_s(w, "melee") and not exists(w) t: has_s([ "spear", "lance", "heavy" ], t), "{prompt}: {name} holds a light weapon ({part_at(lr, "hand_r")})")
                     let ps = parts_of(lr)
                     for(ps.keys) slot, n:
                         let p = part(as_str(ps.a[n]))
@@ -538,10 +538,10 @@ def g_new_lines():
     let az = generate("aztecs", d, 0)
     expect(has_s(lacks_of(az), "mounted_archer") and not has(recipe_of(unit_of(az, "scout")), "mount"), "aztecs: no mounted archers, scouts on foot")
     expect(rstr(at(recipe_of(unit_of(generate("greeks", d, 0), "mounted_archer")), "mount"), "creature") == "pony", "greeks\' mounted archers ride ponies")
-    let tpr = ["romans", "roman frogs", "sewer rats", "sewer rats with cheese hammers", "greeks", "aztecs", "swamp frogs", "mongols", "royal knights",
-              "spooky beetle knights", "egyptians", "han", "tiny vikings", "horned vikings", "forest beetles", "spooky spiders"]
-    let themes = ["testudo", "testudo", "gutter_raider", "big_cheese", "phalanx", "obsidian", "bullfrog", "steppe_raider", "sworn_knight",
-                  "sworn_knight", "nile_bowguard", "repeater", "berserker", "horned_raider", "stag_colossus", "web_lurker"]
+    let tpr = [ "romans", "roman frogs", "sewer rats", "sewer rats with cheese hammers", "greeks", "aztecs", "swamp frogs", "mongols", "royal knights",
+                "spooky beetle knights", "egyptians", "han", "tiny vikings", "horned vikings", "forest beetles", "spooky spiders" ]
+    let themes = [ "testudo", "testudo", "gutter_raider", "big_cheese", "phalanx", "obsidian", "bullfrog", "steppe_raider", "sworn_knight",
+                   "sworn_knight", "nile_bowguard", "repeater", "berserker", "horned_raider", "stag_colossus", "web_lurker" ]
     for(tpr) prompt, n:
         let got = rstr(recipe_of(unit_of(generate(prompt, d, 0), "unique")), "unique")
         expect(got == themes[n], "{prompt}: unique theme {themes[n]} ({got})")
@@ -549,10 +549,10 @@ def g_new_lines():
     expect(has(recipe_of(unit_of(generate("mongols", d, 0), "unique")), "mount"), "the Steppe Raider rides")
     let testudo = unit_of(generate("romans", d, 0), "unique")
     expect(part_at(recipe_of(testudo), "hand_l") == "shield.scutum" and ival(at(testudo, "eval"), "armour.pierce") >= 7, "the Testudo Guard locks its scutum")
-    let new_slots = ["scout", "mounted_archer", "unique", "hero"]
+    let new_slots = [ "scout", "mounted_archer", "unique", "hero" ]
     for(RULE_IDS) rid:
         let r = load_rules(rid)
-        let without = without_slots(r, ["scout", "mounted_archer", "unique"])
+        let without = without_slots(r, [ "scout", "mounted_archer", "unique" ])
         for(prompts) prompt:
             for(2) reroll:
                 let a = generate(prompt, r, reroll)
@@ -614,7 +614,7 @@ def g_tech_tree():
         for(glist(load_rules(rid), "roster")) sd:
             let b = gstr(sd, "building", "")
             expect(has(blds, b), "roster {rstr(sd, "slot")} names a building ({rid})")
-            if has(blds, b) and not has_s(["planned", "parked"], gstr(sd, "status", "")):
+            if has(blds, b) and not has_s([ "planned", "parked" ], gstr(sd, "status", "")):
                 expect(has_s(gstrs(at(blds, b), "trains"), rstr(sd, "slot")), "roster {rstr(sd, "slot")}: its building trains it ({rid})")
     // Planned items are in the plan (by name), and nothing in the game loads them.
     let planned = []::string
@@ -629,7 +629,7 @@ def g_tech_tree():
     for(planned) name: expect(contains_text(plan, name), "planned item {name} is in docs/milestones/m12-tech-tree.md")
     let d = load_rules("default")
     let race = generate("centaur romans", d, 0)
-    fresh_world([race, race], d)
+    fresh_world([ race, race ], d)
     expect(all_of(su_btypes) b: gstr(b, "status", "") != "planned", "the sim\'s building types skip planned ones")
     expect(su_btypes.length == (filter(blds.keys) id: gstr(at(blds, id), "status", "") != "planned").length, "the sim loads every built building")
     expect(su_ages.length == 3 and all_of(su_ages) a: as_int(at(a, "age")) <= 3, "the sim\'s ages skip the planned fourth")
@@ -654,7 +654,7 @@ def g_identity():
     let slots = map(glist(d, "roster")) sd: rstr(sd, "slot")
     let fams = sorted_strs(lib_families.keys)
     let any_race = generate("romans", d, 0)
-    fresh_world([any_race, any_race], d)   // (the sim's tables, for encode_effect: the effects' shape check)
+    fresh_world([ any_race, any_race ], d)  // (the sim's tables, for encode_effect: the effects' shape check)
     for(creature_ids("playable")) cid:
         for(fams) fid:
             let ident = identity_of(cid, fid)
@@ -663,11 +663,11 @@ def g_identity():
             let kinds = []::string
             for(bonuses) b:
                 push_new(kinds, kind_of(b))
-                for(glist(b, "effects")) fx: encode_effect(fx)   // (asserts on a bad shape)
-                let paid = exists(glist(b, "effects")) fx: priced(fx) and not has_s(["cost", "train_time"], gstr(fx, "stat", ""))
+                for(glist(b, "effects")) fx: encode_effect(fx)  // (asserts on a bad shape)
+                let paid = exists(glist(b, "effects")) fx: priced(fx) and not has_s([ "cost", "train_time" ], gstr(fx, "stat", ""))
                 expect(paid == (gint(b, "price_points", 0) > 0), "identity {cid}/{fid}: \"{rstr(b, "text")}\" is paid for if it adds to unit stats")
             expect(kinds.length == bonuses.length, "identity {cid}/{fid}: no kind of bonus twice")
-    for([lib_creatures, lib_families]) src, layer_n:
+    for([ lib_creatures, lib_families ]) src, layer_n:
         let layer = if layer_n == 0: "creature" else: "culture"
         for(src.keys) id:
             for(gstrs(at(src, id), "research")) r:
@@ -687,7 +687,7 @@ def g_identity():
     // Hellenic spears: +1 melee armour, paid for (a point on the price).
     let spear = (filter(units_of(a)) u: slot_of(u) == "spear")[0]
     let forest = deep_copy(recipe_of(spear))
-    set(forest, "family", jstr("forest"))   // (forest: no spear bonus)
+    set(forest, "family", jstr("forest"))  // (forest: no spear bonus)
     let plain = evaluate(forest, d, 0)
     let se = at(spear, "eval")
     expect(ival(se, "armour.pierce") == ival(plain, "armour.pierce") and ival(se, "armour.melee") == ival(plain, "armour.melee") + 1,
@@ -702,7 +702,7 @@ def g_heroes():
     let fams = sorted_strs(lib_families.keys)
     let titles = []::string
     let hn = at(hs, "hero_names")
-    for([at(hn, "creatures"), at(hn, "families"), sigs_all]) src:
+    for([ at(hn, "creatures"), at(hn, "families"), sigs_all ]) src:
         for(src.a) v:
             for(gstrs(v, "titles")) t: titles.push(t)
     let min_heroes = as_int(at(at(hs, "rules"), "min_heroes"))
@@ -748,9 +748,9 @@ def g_heroes():
         if has(e, "hero"): expect(has(sigs_all, rstr(e, "hero")), "heroes: the word \'{word}\' names a hero")
     // One hero a race (D-159): the first the prompt names from its pool, the same on every reroll; else one
     // of its pool by the key. A second named, or one not in its pool, gets a note.
-    let cprompts = ["spooky spider widow", "sewer rats with a crown", "proud centaur romans", "swamp frog mossback and the loud", "roman widow"]
-    let cwant = ["widow", "regnal", "proud", "mossback", ""]
-    let cnote = [false, false, false, true, true]
+    let cprompts = [ "spooky spider widow", "sewer rats with a crown", "proud centaur romans", "swamp frog mossback and the loud", "roman widow" ]
+    let cwant = [ "widow", "regnal", "proud", "mossback", "" ]
+    let cnote = [ false, false, false, true, true ]
     for(cprompts) prompt, n:
         let race = generate(prompt, d, 0)
         let got = map(filter(units_of(race)) u: slot_of(u) == "hero") u: rstr(recipe_of(u), "hero")
@@ -758,13 +758,13 @@ def g_heroes():
         expect(got.length == 1 and (if cwant[n] != "": got[0] == cwant[n] else: has_s(hpool, got[0])), "heroes: \'{prompt}\' gets one hero, {cwant[n]} ({got})")
         if cwant[n] != "":
             let again = map(glist(generate(prompt, d, 1), "heroes")) h: rstr(h, "signature")
-            expect(strs_eq(again, [cwant[n]]), "heroes: \'{prompt}\': the same hero on a reroll")
+            expect(strs_eq(again, [ cwant[n] ]), "heroes: \'{prompt}\': the same hero on a reroll")
         expect(race_key(race) == rstr(race, "key") and has(race, "hero_asked") == (cwant[n] != ""), "heroes: \'{prompt}\': the key holds the hero asked for")
         expect(cnote[n] == exists(notes_of(race)) x: contains_text(x, "leads"), "heroes: \'{prompt}\': a note only for a hero that didn\'t come ({notes_of(race)})")
     let picks = []::string
     for(8) reroll: push_new(picks, rstr(glist(generate("spooky spiders", d, reroll), "heroes")[0], "signature"))
     expect(picks.length >= 2, "heroes: rerolls bring different heroes from the pool ({picks})")
-    for(["sewer rats with cheese hammers", "romans", "spooky spiders", "centaur romans", "egyptians", "swamp frogs", "forest beetles", "swamp humans", "sewer humans"]) prompt:
+    for([ "sewer rats with cheese hammers", "romans", "spooky spiders", "centaur romans", "egyptians", "swamp frogs", "forest beetles", "swamp humans", "sewer humans" ]) prompt:
         for(2) reroll:
             let race = generate(prompt, d, reroll)
             let all_units = units_of(race)
@@ -781,7 +781,7 @@ def g_heroes():
             for(infos) h:
                 let name = rstr(h, "name")
                 push_new(names, name)
-                let words = tokenize(name, " ", "")   // (the given name: past a title, "General" or "Sir", that two may share)
+                let words = tokenize(name, " ", "")  // (the given name: past a title, "General" or "Sir", that two may share)
                 push_new(firsts, if words.length > 1 and has_s(titles, words[0]): words[1] else: words[0])
             let all_names = map(infos) h: rstr(h, "name")
             expect(names.length == infos.length, "heroes: \'{prompt}\': each its own name ({all_names})")
@@ -818,14 +818,14 @@ def g_mods():
     let base_default = load_rules("default")
     let plain_key = rstr(generate("future soldiers", base_anything, 0), "key")
     expect(not has(lib_parts, "weapon.pulse_rifle") or mods_active.length > 0, "mods: none used unless asked for")
-    let used = mods_use(["scifi_test"])
-    expect(strs_eq(used, ["scifi_test"]), "mods: the example mod loads ({mods_refused.get_keys()})")
+    let used = mods_use([ "scifi_test" ])
+    expect(strs_eq(used, [ "scifi_test" ]), "mods: the example mod loads ({mods_refused.get_keys()})")
     let anything = load_rules("anything")
     expect(has_s(gstrs(anything, "era"), "scifi") and not has_s(gstrs(load_rules("bronze"), "era"), "scifi"), "mods: the rules overlay opens the scifi era where it says")
     let race = generate("future soldiers", anything, 0)
     let sk = (filter(units_of(race)) u: slot_of(u) == "skirmisher")[0]
     expect(part_at(recipe_of(sk), "hand_r") == "weapon.pulse_rifle", "mods: future soldiers carry the pulse rifle ({part_at(recipe_of(sk), "hand_r")})")
-    expect(has_s(["", "helm.visor_sealed"], part_at(at(last_step(sk), "recipe"), "head_gear")), "mods: an era pack\'s helmet only gives way to its own (upgrade_within)")
+    expect(has_s([ "", "helm.visor_sealed" ], part_at(at(last_step(sk), "recipe"), "head_gear")), "mods: an era pack\'s helmet only gives way to its own (upgrade_within)")
     expect(strs_eq(gstrs(race, "mods"), lib_mods) and rstr(race, "key") != plain_key, "mods: the race key holds the mod set")
     expect(rstr(generate("future soldiers", anything, 0), "key") == rstr(race, "key"), "mods: the same prompt gives the same key with the mod")
     let romans = generate("romans", base_default, 0)
@@ -835,9 +835,9 @@ def g_mods():
     let tags = gstrs(at(sk, "eval"), "tags")
     let shot = gobj(mod_shots, "pulse")
     expect(has_s(tags, gstr(shot, "tag", "-")), "mods: the pulse rifle\'s tags call the mod\'s shot (pulse: {gstr(shot, "tag", "none")})")
-    let bad = ["no_model", "bad_era", "needs_other", "future_game", "bad_file", "clash"]
+    let bad = [ "no_model", "bad_era", "needs_other", "future_game", "bad_file", "clash" ]
     fresh_lib()
-    expect(strs_eq(mods_use(append(bad, ["scifi_test"]), append(mod_roots, ["../tests/mods"])), ["scifi_test"]), "mods: broken mods refused, a good one beside them still loads")
+    expect(strs_eq(mods_use(append(bad, [ "scifi_test" ]), append(mod_roots, [ "../tests/mods" ])), [ "scifi_test" ]), "mods: broken mods refused, a good one beside them still loads")
     for(bad) id:
         let why = mods_refused.get(id, "")
         expect(why != "" and not starts_with(why, "not found"), "mods: {id} refused for what\'s wrong with it ({why})")
@@ -847,7 +847,7 @@ def g_mods():
 
 // ------------------------------------------------------------------ the run
 
-let GROUPS = ["data", "determinism", "bounds", "prompts", "healers", "siege", "swordsmen", "new_lines", "cat", "audio", "tech_tree", "identity", "heroes", "mods"]
+let GROUPS = [ "data", "determinism", "bounds", "prompts", "healers", "siege", "swordsmen", "new_lines", "cat", "audio", "tech_tree", "identity", "heroes", "mods" ]
 
 def run_group(name:string):
     switch name:

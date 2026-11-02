@@ -42,4 +42,3 @@ def dist2(ax:int, ay:int, bx:int, by:int) -> int:
 def mix(h:int, v:int) -> int:
     let a = ((h ^ (v & MASK)) * FNV_PRIME) & MASK
     return ((a ^ ((v >> 32) & MASK)) * FNV_PRIME) & MASK
-

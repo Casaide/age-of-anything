@@ -4,7 +4,7 @@
 // home. The enemy soldiers it sees are remembered for `memory` seconds: the counter-pick reads them.
 
 class Scout:
-    id = 0                       // the scout out now (unit id), 0: none
+    id = 0  // the scout out now (unit id), 0: none
     worker = false
     route_x:[int] = []
     route_y:[int] = []
@@ -13,7 +13,7 @@ class Scout:
     hp = 0
     tours = 0
     next_tour = 0
-    seen_ids:[int] = []          // enemy soldiers seen, by id: kind, tick, where
+    seen_ids:[int] = []  // enemy soldiers seen, by id: kind, tick, where
     seen_kind:[int] = []
     seen_tick:[int] = []
     seen_x:[int] = []
@@ -100,7 +100,7 @@ def tour(s:Scout, bot:Bot, i:int, hx:int, hy:int):
             let d = max(1, isqrt(dist2(ex, ey, hx, hy)))
             let ux = (hx - ex) * 1000 / d
             let uy = (hy - ey) * 1000 / d
-            for([[1000, 0], [500, 866], [500, -866]]) turn:
+            for([ [ 1000, 0 ], [ 500, 866 ], [ 500, -866 ] ]) turn:
                 let vx = (ux * turn[0] - uy * turn[1]) / 1000
                 let vy = (ux * turn[1] + uy * turn[0]) / 1000
                 tx.push(ex + vx * er / 1000)
@@ -117,7 +117,7 @@ def tour(s:Scout, bot:Bot, i:int, hx:int, hy:int):
     s.route_y = []::int
     var atx = u_x[i]
     var aty = u_y[i]
-    for([[tx, ty], [rx, ry]]) pts:
+    for([ [ tx, ty ], [ rx, ry ] ]) pts:
         let px = []::int
         let py = []::int
         on_ground(r, ln, area, pts[0], pts[1], px, py)
@@ -149,7 +149,7 @@ def scout_start(s:Scout, bot:Bot, i:int, is_worker:bool, hx:int, hy:int):
     s.until = tick + (if is_worker: cfg("scout.worker_seconds") else: cfg("scout.soldier_seconds")) * 20
     s.tours++
     if s.worker: hold_until(bot.eco, s.id, s.until)
-    issue_cmd(bot.player, 0, [s.id], s.route_x[0], s.route_y[0], 0, 0)
+    issue_cmd(bot.player, 0, [ s.id ], s.route_x[0], s.route_y[0], 0, 0)
 
 def scout_end(s:Scout, bot:Bot, back:bool):
     if s.worker and back: unhold(bot.eco, s.id)
@@ -164,7 +164,7 @@ def drive(s:Scout, bot:Bot, hx:int, hy:int):
     let hurt = u_hp[i] < s.hp
     if (hurt or tick >= s.until) and s.leg < s.route_x.length - 1:
         s.leg = s.route_x.length - 1
-        issue_cmd(bot.player, 0, [s.id], hx, hy, 0, 0)
+        issue_cmd(bot.player, 0, [ s.id ], hx, hy, 0, 0)
         if s.worker: hold_until(bot.eco, s.id, tick + 400)
         return
     if u_moving[i] != 0: return
@@ -172,7 +172,7 @@ def drive(s:Scout, bot:Bot, hx:int, hy:int):
     if s.leg >= s.route_x.length:
         scout_end(s, bot, true)
         return
-    issue_cmd(bot.player, 0, [s.id], s.route_x[s.leg], s.route_y[s.leg], 0, 0)
+    issue_cmd(bot.player, 0, [ s.id ], s.route_x[s.leg], s.route_y[s.leg], 0, 0)
 
 def scout_think(s:Scout, bot:Bot, workers:[int], army:[int], hx:int, hy:int):
     if s.id != 0:

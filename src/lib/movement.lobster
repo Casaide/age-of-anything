@@ -18,13 +18,13 @@ def plan(i:int, x:int, y:int, stuck:int) -> int, int:
         if kind == FIELD_CELL_NEAR or kind == FIELD_BUILDING_NEAR: return -2, -2
         return -1, -1
     if u_reach[i] == 1:
-        if cost <= 2 * DIAGONAL:   // within two cells: make for a free spot before meeting the crowd
+        if cost <= 2 * DIAGONAL:  // within two cells: make for a free spot before meeting the crowd
             if u_task[i] == T_RETURN and u_gspot[i] >= 0: return drop_spot(i, x, y)
             return spot(i, x, y)
     elif cost == 0 or (cost <= DIRECT_COST and stuck < STUCK_LIMIT / 2 and clear_path(x, y, tx, ty, u_radius[i], lane(i))):
         return tx, ty
     elif u_reach[i] == 2 and cost <= 4 * STRAIGHT:
-        let cx, cy = round_corner(i, x, y, tx, ty)   // its place is round the far side of the building
+        let cx, cy = round_corner(i, x, y, tx, ty)  // its place is round the far side of the building
         if cx >= 0: return cx, cy
     var best = ahead(f, cell, x, y, if stuck >= STUCK_LIMIT / 2: 1 else: LOOKAHEAD, u_radius[i], lane(i))
     if best < 0:
@@ -166,8 +166,8 @@ def round_corner(i:int, x:int, y:int, tx:int, ty:int) -> int, int:
     var bx = -1
     var by = -1
     var best_d = 1 << 62
-    let cxs = [u_rx0[i] - e, u_rx1[i] + e, u_rx1[i] + e, u_rx0[i] - e]
-    let cys = [u_ry0[i] - e, u_ry0[i] - e, u_ry1[i] + e, u_ry1[i] + e]
+    let cxs = [ u_rx0[i] - e, u_rx1[i] + e, u_rx1[i] + e, u_rx0[i] - e ]
+    let cys = [ u_ry0[i] - e, u_ry0[i] - e, u_ry1[i] + e, u_ry1[i] + e ]
     for(4) k:
         let cx = cxs[k]
         let cy = cys[k]
@@ -355,12 +355,12 @@ def move():
         let mc = lane_base[u_owner[i]] + mci
         let here = cell_of(x, y)
         var pct = speed_pct[mci][here]
-        if pct < 100 and t_wade[u_kind[i]] > 0: pct = 100   // the swamp folk's bonus: no terrain slows them
+        if pct < 100 and t_wade[u_kind[i]] > 0: pct = 100  // the swamp folk's bonus: no terrain slows them
         if slow_ids.length:
             let found, at = binary_search(slow_ids, u_id[i])
-            if found: pct = pct * slow_pcts[at] / 100   // in an enemy web, or hit by sticky silk
+            if found: pct = pct * slow_pcts[at] / 100  // in an enemy web, or hit by sticky silk
         if pct != 100: s = s * pct / 100
-        if tr_speed_pct != 0 and mci != 2: s = s * trail_pct(here) / 100   // quicker on a worn trail (a rule, off by default)
+        if tr_speed_pct != 0 and mci != 2: s = s * trail_pct(here) / 100  // quicker on a worn trail (a rule, off by default)
         if (tick + u_id[i]) % PROGRESS_EVERY == 0 and u_foe[i] == 0:
             let px, py = progress(i, x, y)
             if u_prog[i] >= 0 and px > u_prog[i] - py and u_group[i] > 0 and u_reach[i] == 0 and (queued(i, x, y) or passed(i, x, y)):
@@ -500,101 +500,99 @@ def separate():
             let b = b_index_of(u_foe[i])
             if b >= 0 and gap_b(i, b) <= t_reach[u_kind[i]] + HOLD: s_planted[i] = 1
     for(n) u:
-      if u_perch[u] == 0:   // units on walls stand apart from the crowd below
-          let cx = sp_cell[u] % w
-          let cy = sp_cell[u] / w
-          let xu = xs[u]
-          let yu = ys[u]
-          let ru = rs[u]
-          for(5) q:
-              let nx = cx + SEP_DX[q]
-              let ny = cy + SEP_DY[q]
-              if nx < 0 or nx >= w or ny >= h: continue
-              let c = ny * w + nx
-              var k = sp_start[c]
-              let e = sp_end[c]
-              while k < e:
-                  let v = sp_items[k]
-                  k++
-                  if (q == 0 and v <= u) or u_perch[v] != 0: continue
-                  let rr = ru + rs[v]
-                  var dx = xs[v] - xu
-                  var dy = ys[v] - yu
-                  if dx >= rr or dx <= -rr or dy >= rr or dy <= -rr: continue
-                  let d2 = dx * dx + dy * dy
-                  if d2 >= rr * rr: continue
-                  var i = u
-                  var j = v
-                  if v < u:
-                      i = v
-                      j = u
-                      dx = -dx
-                      dy = -dy
-                  if grp[i] == grp[j] and grp[i] > 0 and mv[i] != mv[j]:
-                      let m = if mv[i] == 1: i else: j
-                      let near = ar[m] * (if ar[m] == SLOT_ARRIVE: 2 else: ARRIVE_SETTLE)
-                      if dist2(xs[m], ys[m], txs[m], tys[m]) <= near * near: s_settle[m] = 1
-                  let d = isqrt(d2)
-                  var ux = 0
-                  var uy = 0
-                  if d == 0:
-                      let ang = (ids[i] * 31 + ids[j] * 17) & 255
-                      ux = cos_a(ang)
-                      uy = sin_a(ang)
-                  else:
-                      ux = dx * ONE / d
-                      uy = dy * ONE / d
-                  if grp[i] == grp[j] and ((s_stood[i] == 1 and mv[j] == 1) or (s_stood[j] == 1 and mv[i] == 1)): continue
-                  if s_stood[i] == 1 and s_stood[j] == 1: continue
-                  if owners[i] == owners[j] and grp[i] != grp[j] and ((s_stood[i] == 1 and s_yields[j] == 1 and mv[j] == 1) or (s_stood[j] == 1 and s_yields[i] == 1 and mv[i] == 1)): continue
-                  let hi = s_planted[i] == 1 or (s_role[i] >= 2 and s_role[j] == 1) or
-                           (s_yields[j] == 1 and mv[i] == 1 and grp[i] > 0 and grp[i] != grp[j] and owners[i] == owners[j])
-                  let hj = s_planted[j] == 1 or (s_role[j] >= 2 and s_role[i] == 1) or
-                           (s_yields[i] == 1 and mv[j] == 1 and grp[j] > 0 and grp[j] != grp[i] and owners[i] == owners[j])
-                  if hi and hj: continue
-                  // One of the side's own at work and a gatherer making for its spot: the walker slips past.
-                  if owners[i] == owners[j] and ((s_planted[i] == 1 and s_role[j] == 3) or (s_planted[j] == 1 and s_role[i] == 3)): continue
-                  let push = (rr - d) / SEPARATION_DIV + 1
-                  let px = ux * push / ONE
-                  let py = uy * push / ONE
-                  if not hi:
-                      s_pushx[i] -= px * (if hj: 2 else: 1)
-                      s_pushy[i] -= py * (if hj: 2 else: 1)
-                  if not hj:
-                      s_pushx[j] += px * (if hi: 2 else: 1)
-                      s_pushy[j] += py * (if hi: 2 else: 1)
+        if u_perch[u] == 0:  // units on walls stand apart from the crowd below
+            let cx = sp_cell[u] % w
+            let cy = sp_cell[u] / w
+            let xu = xs[u]
+            let yu = ys[u]
+            let ru = rs[u]
+            for(5) q:
+                let nx = cx + SEP_DX[q]
+                let ny = cy + SEP_DY[q]
+                if nx < 0 or nx >= w or ny >= h: continue
+                let c = ny * w + nx
+                var k = sp_start[c]
+                let e = sp_end[c]
+                while k < e:
+                    let v = sp_items[k]
+                    k++
+                    if (q == 0 and v <= u) or u_perch[v] != 0: continue
+                    let rr = ru + rs[v]
+                    var dx = xs[v] - xu
+                    var dy = ys[v] - yu
+                    if dx >= rr or dx <= -rr or dy >= rr or dy <= -rr: continue
+                    let d2 = dx * dx + dy * dy
+                    if d2 >= rr * rr: continue
+                    var i = u
+                    var j = v
+                    if v < u:
+                        i = v
+                        j = u
+                        dx = -dx
+                        dy = -dy
+                    if grp[i] == grp[j] and grp[i] > 0 and mv[i] != mv[j]:
+                        let m = if mv[i] == 1: i else: j
+                        let near = ar[m] * (if ar[m] == SLOT_ARRIVE: 2 else: ARRIVE_SETTLE)
+                        if dist2(xs[m], ys[m], txs[m], tys[m]) <= near * near: s_settle[m] = 1
+                    let d = isqrt(d2)
+                    var ux = 0
+                    var uy = 0
+                    if d == 0:
+                        let ang = (ids[i] * 31 + ids[j] * 17) & 255
+                        ux = cos_a(ang)
+                        uy = sin_a(ang)
+                    else:
+                        ux = dx * ONE / d
+                        uy = dy * ONE / d
+                    if grp[i] == grp[j] and ((s_stood[i] == 1 and mv[j] == 1) or (s_stood[j] == 1 and mv[i] == 1)): continue
+                    if s_stood[i] == 1 and s_stood[j] == 1: continue
+                    if owners[i] == owners[j] and grp[i] != grp[j] and ((s_stood[i] == 1 and s_yields[j] == 1 and mv[j] == 1) or (s_stood[j] == 1 and s_yields[i] == 1 and mv[i] == 1)): continue
+                    let hi = s_planted[i] == 1 or (s_role[i] >= 2 and s_role[j] == 1) or
+                        (s_yields[j] == 1 and mv[i] == 1 and grp[i] > 0 and grp[i] != grp[j] and owners[i] == owners[j])
+                    let hj = s_planted[j] == 1 or (s_role[j] >= 2 and s_role[i] == 1) or
+                        (s_yields[i] == 1 and mv[j] == 1 and grp[j] > 0 and grp[j] != grp[i] and owners[i] == owners[j])
+                    if hi and hj: continue
+                    // One of the side's own at work and a gatherer making for its spot: the walker slips past.
+                    if owners[i] == owners[j] and ((s_planted[i] == 1 and s_role[j] == 3) or (s_planted[j] == 1 and s_role[i] == 3)): continue
+                    let push = (rr - d) / SEPARATION_DIV + 1
+                    let px = ux * push / ONE
+                    let py = uy * push / ONE
+                    if not hi:
+                        s_pushx[i] -= px * (if hj: 2 else: 1)
+                        s_pushy[i] -= py * (if hj: 2 else: 1)
+                    if not hj:
+                        s_pushx[j] += px * (if hi: 2 else: 1)
+                        s_pushy[j] += py * (if hi: 2 else: 1)
     let t = TILE
     let mw = W
     let mh = H
     for(n) i:
-      if s_settle[i] == 1: mv[i] = 0
-      if u_perch[i] == 0:   // (up on a wall: the walkway places it)
-          let mc = lane_base[owners[i]] + u_mclass[i]
-          let wk = walks[mc]
-          let x0 = xs[i]
-          let y0 = ys[i]
-          if x0 < 0 or y0 < 0 or x0 / t >= mw or y0 / t >= mh or wk[y0 / t * mw + x0 / t] == 0:
-              let px, py = step_out(xs[i], ys[i], mc)
-              xs[i] = px
-              ys[i] = py
-              continue
-          if s_pushx[i] != 0:
-              let nx = x0 + s_pushx[i]
-              if nx >= 0 and nx / t < mw and wk[y0 / t * mw + nx / t] == 1: xs[i] = nx
-          if s_pushy[i] != 0:
-              let ny = y0 + s_pushy[i]
-              if ny >= 0 and ny / t < mh and wk[ny / t * mw + xs[i] / t] == 1: ys[i] = ny
-          let cx = xs[i] / t
-          let cy = ys[i] / t
-          let r = rs[i]
-          let c = cy * mw + cx
-          if xs[i] - cx * t < r and (cx == 0 or wk[c - 1] == 0):
-              xs[i] = min(cx * t + r, xs[i] + CORRECT_MAX)
-          elif (cx + 1) * t - xs[i] < r and (cx + 1 >= mw or wk[c + 1] == 0):
-              xs[i] = max((cx + 1) * t - r, xs[i] - CORRECT_MAX)
-          if ys[i] - cy * t < r and (cy == 0 or wk[c - mw] == 0):
-              ys[i] = min(cy * t + r, ys[i] + CORRECT_MAX)
-          elif (cy + 1) * t - ys[i] < r and (cy + 1 >= mh or wk[c + mw] == 0):
-              ys[i] = max((cy + 1) * t - r, ys[i] - CORRECT_MAX)
-
-
+        if s_settle[i] == 1: mv[i] = 0
+        if u_perch[i] == 0:  // (up on a wall: the walkway places it)
+            let mc = lane_base[owners[i]] + u_mclass[i]
+            let wk = walks[mc]
+            let x0 = xs[i]
+            let y0 = ys[i]
+            if x0 < 0 or y0 < 0 or x0 / t >= mw or y0 / t >= mh or wk[y0 / t * mw + x0 / t] == 0:
+                let px, py = step_out(xs[i], ys[i], mc)
+                xs[i] = px
+                ys[i] = py
+                continue
+            if s_pushx[i] != 0:
+                let nx = x0 + s_pushx[i]
+                if nx >= 0 and nx / t < mw and wk[y0 / t * mw + nx / t] == 1: xs[i] = nx
+            if s_pushy[i] != 0:
+                let ny = y0 + s_pushy[i]
+                if ny >= 0 and ny / t < mh and wk[ny / t * mw + xs[i] / t] == 1: ys[i] = ny
+            let cx = xs[i] / t
+            let cy = ys[i] / t
+            let r = rs[i]
+            let c = cy * mw + cx
+            if xs[i] - cx * t < r and (cx == 0 or wk[c - 1] == 0):
+                xs[i] = min(cx * t + r, xs[i] + CORRECT_MAX)
+            elif (cx + 1) * t - xs[i] < r and (cx + 1 >= mw or wk[c + 1] == 0):
+                xs[i] = max((cx + 1) * t - r, xs[i] - CORRECT_MAX)
+            if ys[i] - cy * t < r and (cy == 0 or wk[c - mw] == 0):
+                ys[i] = min(cy * t + r, ys[i] + CORRECT_MAX)
+            elif (cy + 1) * t - ys[i] < r and (cy + 1 >= mh or wk[c + mw] == 0):
+                ys[i] = max((cy + 1) * t - r, ys[i] - CORRECT_MAX)

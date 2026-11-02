@@ -9,7 +9,6 @@ let CLAIM_EVERY = 10
 let PEN_GAP = 850
 let HERD_PEN = 3
 
-
 def is_animal(i:int) -> bool: return t_animal[u_kind[i]] != 0
 def is_herd(i:int) -> bool: return t_behave[u_kind[i]] == B_HERD
 
@@ -126,7 +125,7 @@ def pens_tick():
                     let parent = herd[0]
                     let cx, cy = b_centre(b)
                     let s = add_unit(u_owner[parent], u_kind[parent], cx, cy)
-                    u_posture[s] = 0   // (Units.add: a newborn's posture is the arrays' default)
+                    u_posture[s] = 0  // (Units.add: a newborn's posture is the arrays' default)
                     let px, py = herd_slot(cx, cy, s)
                     order_move(s, px, py, 200, 0, -1, -1, 0)
 
@@ -144,7 +143,7 @@ def nearest_town_center(i:int) -> int:
                 best = b
     return best
 
-let HERD_DIRS = [int2 { 1, 1 }, int2 { 1, 0 }, int2 { 0, 1 }, int2 { -1, 1 }, int2 { 1, -1 }, int2 { -1, 0 }, int2 { 0, -1 }, int2 { -1, -1 }]
+let HERD_DIRS = [ int2 { 1, 1 }, int2 { 1, 0 }, int2 { 0, 1 }, int2 { -1, 1 }, int2 { 1, -1 }, int2 { -1, 0 }, int2 { 0, -1 }, int2 { -1, -1 } ]
 
 def herd_spot(b:int) -> [int]:
     let id = b_id[b]
@@ -172,7 +171,7 @@ def herd_spot(b:int) -> [int]:
         let score = open * 10000 + away
         if score > best_score:
             best_score = score
-            best = [px * TILE + TILE / 2, py * TILE + TILE / 2]
+            best = [ px * TILE + TILE / 2, py * TILE + TILE / 2 ]
     herd_spots.set(id, best)
     return best
 

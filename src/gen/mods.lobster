@@ -7,21 +7,21 @@
 // key), as in GDScript. The models are the bake's (Godot's, until step 6c).
 
 let MOD_GAME_VERSION = "0.21"
-let mod_roots = ["../mods", "../mods_private"]   // (a later folder's copy of a mod wins)
-let MOD_DATA_FILES = ["parts.json", "creatures.json", "families.json", "palettes.json", "lexicon.json", "shots.json"]
-let MOD_DATA_DIRS = ["rules", "maps"]
-let MOD_BASE_ERAS = ["bronze", "medieval", "gunpowder"]
+let mod_roots = [ "../mods", "../mods_private" ]  // (a later folder's copy of a mod wins)
+let MOD_DATA_FILES = [ "parts.json", "creatures.json", "families.json", "palettes.json", "lexicon.json", "shots.json" ]
+let MOD_DATA_DIRS = [ "rules", "maps" ]
+let MOD_BASE_ERAS = [ "bronze", "medieval", "gunpowder" ]
 
 class ModRec:
     id:string
     dir:string
     manifest:JV
-    data:JV                      // relative path (parts.json, rules/<id>.json, maps/<id>.json) -> parsed
+    data:JV  // relative path (parts.json, rules/<id>.json, maps/<id>.json) -> parsed
     sig = ""
 
 var mods_active = []::ModRec
 var mods_refused = dictionary<string, string>(8)
-var mod_shots = jobj()           // shot looks the mods add (kind -> {tag, speed, arc, len, w, col, glow?})
+var mod_shots = jobj()  // shot looks the mods add (kind -> {tag, speed, arc, len, w, col, glow?})
 
 // Every file under dir, relative, sorted (the bake's leftovers left out).
 def mod_files(dir:string, rel:string) -> [string]:
@@ -59,7 +59,7 @@ def mods_discover(roots:[string]) -> dictionary<string, ModRec>:
 
 def mod_check_manifest(id:string, m:JV) -> string:
     if m.kind != J_OBJ: return "mod.json isn\'t a JSON object"
-    for(["id", "name", "version", "game_version"]) key:
+    for([ "id", "name", "version", "game_version" ]) key:
         if not has(m, key): return "mod.json has no \'{key}\'"
     if gstr(m, "id", "") != id: return "mod.json\'s id \'{gstr(m, "id", "")}\' isn\'t the folder\'s"
     let gv = at(m, "game_version")
@@ -131,7 +131,7 @@ def mod_check_data(rec:ModRec, eras:[string]) -> string:
             if has(c, "extends"):
                 if not has(lib_creatures, gstr(c, "extends", "")): return "creatures.json {id}: extends unknown creature \'{gstr(c, "extends", "")}\'"
                 c = mod_merge(at(lib_creatures, gstr(c, "extends", "")), c)
-            for(["body", "head"]) key:
+            for([ "body", "head" ]) key:
                 if not has_part(gstr(c, key, "")): return "creatures.json {id}: its {key} \'{gstr(c, key, "")}\' isn\'t a part"
             for(gstrs(c, "families")) f:
                 if not has(lib_families, f) and not has(families, f): return "creatures.json {id}: unknown culture \'{f}\'"
@@ -158,7 +158,7 @@ def mod_check_data(rec:ModRec, eras:[string]) -> string:
     let mshots = gobj(d, "shots.json")
     for(mshots.keys) k:
         if not starts_with(k, "_"):
-            for(["tag", "speed", "col"]) key:
+            for([ "tag", "speed", "col" ]) key:
                 if not has(at(mshots, k), key): return "shots.json {k}: needs \'{key}\'"
     return ""
 
@@ -209,7 +209,7 @@ def mods_use(ids:[string], roots = mod_roots) -> [string]:
             if why != "": mods_refused.set(id, why)
             else: picked.push(rec)
     insertion_sort(picked) a, b: gint(a.manifest, "load_order", 100) < gint(b.manifest, "load_order", 100) or
-                                 (gint(a.manifest, "load_order", 100) == gint(b.manifest, "load_order", 100) and a.id < b.id)
+        (gint(a.manifest, "load_order", 100) == gint(b.manifest, "load_order", 100) and a.id < b.id)
     var eras = copy(MOD_BASE_ERAS)
     for(picked) rec:
         var why = ""
@@ -227,4 +227,3 @@ def mods_use(ids:[string], roots = mod_roots) -> [string]:
             lib_mod_dirs.push(rec.dir + "/" + gstr(rec.manifest, "data", "data"))
     for(mods_refused.get_keys()) id: print "Mod \'{id}\' refused: {mods_refused.get(id, "")}"
     return map(mods_active) a: a.id
-

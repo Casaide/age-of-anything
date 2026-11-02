@@ -47,7 +47,7 @@ def effect_text(effects:[JV]) -> string:
         elif has(e, "start"):
             out.push(signed(gint(e, "add", 0)) + " " + gstr(e, "start", "") + " at the start")
             last = ""
-        elif has(e, "becomes"):   // tower_upgrade
+        elif has(e, "becomes"):  // tower_upgrade
             out.push(capitalize(gstr(e, "building", "")) + "s become " + capitalize(gstr(e, "becomes", "")) + "s")
             last = ""
         else:
@@ -61,4 +61,3 @@ def effect_text(effects:[JV]) -> string:
     for(out) o:
         if find_string(o, ",") >= 0: commas = true
     return concat_string(out, if commas: "; " else: ", ")
-

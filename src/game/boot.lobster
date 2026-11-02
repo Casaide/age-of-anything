@@ -7,8 +7,8 @@ def boot_icon(c:float2, side:float, col:float4):
     let t = tb_icon_tex("game_icon_ink")
     if not t: return
     let o = c - float2_1 * side / 2.0
-    let m = gl.new_mesh("PCT", [float3 { o.x, o.y, 0.0 }, float3 { o.x + side, o.y, 0.0 }, float3 { o.x + side, o.y + side, 0.0 }, float3 { o.x, o.y + side, 0.0 }],
-                        [col, col, col, col], []::float3, [float2 { 0.0, 0.0 }, float2 { 1.0, 0.0 }, float2 { 1.0, 1.0 }, float2 { 0.0, 1.0 }], []::float2, [0, 2, 1, 0, 3, 2])
+    let m = gl.new_mesh("PCT", [ float3 { o.x, o.y, 0.0 }, float3 { o.x + side, o.y, 0.0 }, float3 { o.x + side, o.y + side, 0.0 }, float3 { o.x, o.y + side, 0.0 } ],
+                        [ col, col, col, col ], []::float3, [ float2 { 0.0, 0.0 }, float2 { 1.0, 0.0 }, float2 { 1.0, 1.0 }, float2 { 0.0, 1.0 } ], []::float2, [ 0, 2, 1, 0, 3, 2 ])
     gl.set_mesh_texture(m, 0, 0, t)
     gl.set_shader("textured_color")
     gl.color(float4_1): gl.render_mesh(m)

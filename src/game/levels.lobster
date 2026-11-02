@@ -7,10 +7,10 @@ class AiLevel:
     wave_at:[int]
     wave_min:[int]
     lv:[int]
-    keys:[string]          // the config numbers a level changes (repeat_min_army..., max_workers...)
+    keys:[string]  // the config numbers a level changes (repeat_min_army..., max_workers...)
     vals:[int]
 
-var ai_levels = []::AiLevel     // per player (empty: every bot at the config as loaded)
+var ai_levels = []::AiLevel  // per player (empty: every bot at the config as loaded)
 
 def ai_level_now() -> AiLevel:
     let keys = []::string
@@ -20,8 +20,8 @@ def ai_level_now() -> AiLevel:
             keys.push(key)
             vals.push(cfg(key))
     return AiLevel { copy(wave_at), copy(wave_min),
-        [lv_army_ratio, lv_wave_pct, lv_build_up, lv_age3_workers, lv_towers, lv_all_in, lv_shelter_pop, lv_guard_crossing, lv_raids, lv_raid_from],
-        keys, vals }
+                     [ lv_army_ratio, lv_wave_pct, lv_build_up, lv_age3_workers, lv_towers, lv_all_in, lv_shelter_pop, lv_guard_crossing, lv_raids, lv_raid_from ],
+                     keys, vals }
 
 def ai_level_put(l:AiLevel):
     wave_at = l.wave_at

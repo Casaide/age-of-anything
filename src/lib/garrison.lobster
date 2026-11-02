@@ -5,7 +5,7 @@
 // arms sends the workers near it into the nearest building with room; back to work brings them out.
 // GARRISON sends units in by hand, UNGARRISON brings everyone out (toward the rally point).
 
-let T_GARRISON = 4             // economy.gd NONE, GATHER, RETURN, BUILD, GARRISON
+let T_GARRISON = 4  // economy.gd NONE, GATHER, RETURN, BUILD, GARRISON
 
 def capacity(b:int) -> int:
     return if b_done[b] == 1: bt_garrison[b_kind[b]] else: 0
@@ -110,7 +110,7 @@ def come_out(b:int, k:int) -> int:
 
 // Unit i goes inside building b: out of the arrays, onto the building's records (by id).
 def enter(i:int, b:int):
-    let rec = [u_id[i], u_kind[i], u_hp[i], u_posture[i], u_carry_kind[i], u_carry[i], u_home[i]]
+    let rec = [ u_id[i], u_kind[i], u_hp[i], u_posture[i], u_carry_kind[i], u_carry[i], u_home[i] ]
     let recs = b_inside[b]
     var at = 0
     while at < recs.length and recs[at + REC_ID] < rec[REC_ID]: at += REC_SIZE

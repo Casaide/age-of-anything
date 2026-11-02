@@ -10,29 +10,29 @@ let AGE_UP_ENTRY = -2
 let RESEARCH_ENTRY = -3
 
 class Effect:
-    kind:int        // 0 eval add (attack hp range speed), 1 armour add, 2 bonus add, 3 extra add (UNIT_EXTRA),
-                    // 4 unit pct (UNIT_PCT), 5 building add (BUILDING_ADD), 6 building pct (BUILDING_PCT),
-                    // 7 gather pct, 8 becomes (stat: from, value: to), 9 start (applied at setup)
+    kind:int  // 0 eval add (attack hp range speed), 1 armour add, 2 bonus add, 3 extra add (UNIT_EXTRA),
+    // 4 unit pct (UNIT_PCT), 5 building add (BUILDING_ADD), 6 building pct (BUILDING_PCT),
+    // 7 gather pct, 8 becomes (stat: from, value: to), 9 start (applied at setup)
     stat:int
     value:int
-    tag:int         // class index, -1 all, -2 none
+    tag:int  // class index, -1 all, -2 none
     ands:[int]
     nots:[int]
-    blds:[int]      // building types, [-1]: all
+    blds:[int]  // building types, [-1]: all
 
 class LineStep:
     age:int
-    up:int          // its line upgrade, a research index, or -1
+    up:int  // its line upgrade, a research index, or -1
     speed:int
     hp:int
     pop:int
     train_time:int
     cost:[int]
-    damage:int      // the attack's class
+    damage:int  // the attack's class
     attack:int
     bonus:[int]
     armour:[int]
-    tags:[int]      // class indexes, in the eval's order
+    tags:[int]  // class indexes, in the eval's order
     range:int
     reload:int
     min_range:int
@@ -54,9 +54,9 @@ class Research:
     after:int
     line_age:int
     cost:[int]
-    open:[int]       // per player: open to its race (not another's own, not lacked)
-    line_has:[int]   // per player: a line upgrade with new kit that age
-    before:[int]     // per player: the line upgrade that must come first, or -1
+    open:[int]      // per player: open to its race (not another's own, not lacked)
+    line_has:[int]  // per player: a line upgrade with new kit that age
+    before:[int]    // per player: the line upgrade that must come first, or -1
     effects:[Effect]
 
 class Age:
@@ -64,31 +64,31 @@ class Age:
     building:int
     ticks:int
     cost:[int]
-    needs:[[int]]    // per player
+    needs:[[int]]  // per player
 
 var ages_list = []::Age
 var research = []::Research
-var race_fx = []::[Effect]     // per player
-var researched = []::[int]     // per player, per research
-var lines = []::[LineStep]     // per unit type
+var race_fx = []::[Effect]  // per player
+var researched = []::[int]  // per player, per research
+var lines = []::[LineStep]  // per unit type
 
 var r_melee_reach = 0
 var r_melee_reload = 0
 var r_ranged_reload = 0
 var r_shot_speed = 0
-var shot_speeds = []::int      // per class: a weapon tag's own shot speed, or 0
+var shot_speeds = []::int  // per class: a weapon tag's own shot speed, or 0
 var base_gather_ticks = []::int
 var bt_hp_base = []::int
 var bt_food_base = []::int
 var bt_arm = []::[int]
-var bm_arm = []::[[int]]       // [player][type]: armour with research
+var bm_arm = []::[[int]]  // [player][type]: armour with research
 var bm_research_time = []::[int]
 var bm_age_time = []::[int]
 var bm_research_cost = []::[int]
 var bm_range = []::[int]
 var bm_cost_pct = []::[int]
-var bm_trade_fee = []::[int]   // [player][type]: points off the market's fee
-var class_machine = -2         // the classes "machine" and "mounted" (formation bands), or -2
+var bm_trade_fee = []::[int]  // [player][type]: points off the market's fee
+var class_machine = -2        // the classes "machine" and "mounted" (formation bands), or -2
 var class_mounted = -2
 // Unit types' research and bonuses (Tech.retype).
 var t_heal_pct = []::int
@@ -136,8 +136,8 @@ def set_type_from(k:int, l:LineStep, fxs:[Effect]):
     var speed = l.speed
     let bonus = copy(l.bonus)
     let armour = copy(l.armour)
-    let add = map(7): 0      // UNIT_EXTRA: sight carry kill_gold wade reach slow_on_hit form_gap
-    let pct = map(7): 0      // UNIT_PCT: speed reload cost train_time build_speed carry heal
+    let add = map(7): 0  // UNIT_EXTRA: sight carry kill_gold wade reach slow_on_hit form_gap
+    let pct = map(7): 0  // UNIT_PCT: speed reload cost train_time build_speed carry heal
     for(fxs) fx:
         if fx.kind <= 4 and reaches(fx, l.tags):
             switch fx.kind:
@@ -174,7 +174,7 @@ def set_type_from(k:int, l:LineStep, fxs:[Effect]):
     t_reload[k] = if ranged: r_ranged_reload else: r_melee_reload
     t_shot_speed[k] = r_shot_speed
     var found = false
-    for(l.tags) c:   // the weapon's own pace: the first tag that has one
+    for(l.tags) c:  // the weapon's own pace: the first tag that has one
         if not found and shot_speeds[c] > 0:
             t_shot_speed[k] = shot_speeds[c]
             found = true
@@ -193,7 +193,7 @@ def set_type_from(k:int, l:LineStep, fxs:[Effect]):
     t_tags[k] = l.tags
     t_damage[k] = l.damage
     t_heal[k] = l.heal
-    t_eval_attack[k] = attack   // (the bots' counter-pick reads the eval with research in it)
+    t_eval_attack[k] = attack  // (the bots' counter-pick reads the eval with research in it)
     t_bonus[k] = bonus
     // Tech.retype's percents and extras
     t_speed[k] = max(1, t_speed[k] * (100 + pct[0]) / 100)
@@ -239,8 +239,8 @@ def tech_refresh(p:int):
         gather_ticks[p][r] = max(1, base_gather_ticks[r] * (100 - pct) / 100)
     let old_hp = copy(bm_hp[p])
     for(bt_size.length) k:
-        let add = map(6): 0   // BUILDING_ADD: sight armour.melee armour.pierce trade_fee range pop
-        let pct = map(6): 0   // BUILDING_PCT: hp food research_time cost research_cost age_time
+        let add = map(6): 0  // BUILDING_ADD: sight armour.melee armour.pierce trade_fee range pop
+        let pct = map(6): 0  // BUILDING_PCT: hp food research_time cost research_cost age_time
         for(fxs) fx:
             if fx.kind == 5 and covers(fx, k): add[fx.stat] += fx.value
             if fx.kind == 6 and covers(fx, k): pct[fx.stat] += fx.value
@@ -262,7 +262,7 @@ def tech_refresh(p:int):
     for(b_id.length) b:
         if b_owner[b] == p and old_hp[b_kind[b]] != bm_hp[p][b_kind[b]]:
             b_hp[b] = max(1, b_hp[b] * bm_hp[p][b_kind[b]] / old_hp[b_kind[b]])
-    for(fxs) fx:   // tower upgrades: buildings of the first type become the second where they stand
+    for(fxs) fx:  // tower upgrades: buildings of the first type become the second where they stand
         if fx.kind == 8:
             for(b_id.length) b:
                 if b_owner[b] == p and b_kind[b] == fx.stat:
@@ -289,7 +289,7 @@ def head_tech(b:int) -> int:
     let q = b_queue[b]
     return if not q.length: -1 else: tech_of(q[0])
 
-def next_age(p:int) -> int:   // index into ages_list, or -1 at the last age
+def next_age(p:int) -> int:  // index into ages_list, or -1 at the last age
     for(ages_list) a, k:
         if a.age == ages[p] + 1: return k
     return -1

@@ -6,8 +6,8 @@
 
 import dictionary
 
-var opaque_chunks = []::int    // sight-blocking cells per CHUNK x CHUNK block
-var level_chunks = []::int     // the highest level per block
+var opaque_chunks = []::int  // sight-blocking cells per CHUNK x CHUNK block
+var level_chunks = []::int   // the highest level per block
 var chunk_w = 0
 
 def make_chunks():
@@ -49,21 +49,21 @@ def fog_update_team(team:[int]):
     let g = fog[p]
     for(fog_lit[p]) c: g[c] = EXPLORED
     let lit = []::int
-    let stamped = dictionary<int, int>(1009)   // units standing together see the same circle once
+    let stamped = dictionary<int, int>(1009)  // units standing together see the same circle once
     let team_p = teams[p]
     for(u_x.length) i:
         if teams[u_owner[i]] == team_p:
             let k = u_kind[i]
             var r = (if t_worker[k]: r_fog_worker else: r_fog_unit) + t_sight[k]
-            if has_heights: r += level[cell_of(u_x[i], u_y[i])] * r_high_sight_unit   // high ground sees further
-            if u_perch[i] != 0: r += r_high_sight_unit   // so does a unit up on a wall
+            if has_heights: r += level[cell_of(u_x[i], u_y[i])] * r_high_sight_unit  // high ground sees further
+            if u_perch[i] != 0: r += r_high_sight_unit                               // so does a unit up on a wall
             let high = t_mclass[k] == 2
             let key = ((u_y[i] / 1000 * W + u_x[i] / 1000) * 64 + r) * 2 + (if high: 1 else: 0)
             if stamped.get(key, 0): continue
             stamped.set(key, 1)
             stamp(g, lit, u_x[i] / 1000, u_y[i] / 1000, r, high)
     for(b_id.length) b:
-        if teams[b_owner[b]] == team_p and b_done[b] == 1:   // a foundation sees nothing
+        if teams[b_owner[b]] == team_p and b_done[b] == 1:  // a foundation sees nothing
             let k = b_kind[b]
             // the data's own sight, else a tower's (it shoots) or a building's
             var r = (if bt_sight[k] > 0: bt_sight[k] elif bt_attacks[k] and bt_arrows[k] > 0: r_fog_tower else: r_fog_building) + bm_sight[b_owner[b]][k]
@@ -101,7 +101,7 @@ def remember(p:int):
     let seen = fog_seen[p]
     for(b_id.length) b:
         if teams[b_owner[b]] != teams[p] and sees_rect(p, b_cx[b], b_cy[b], b_sx[b], b_sy[b]):
-            let rec = [b_id[b], b_kind[b], b_owner[b], b_cx[b], b_cy[b], b_sx[b], b_done[b], b_progress[b], ages[b_owner[b]], b_sy[b], 0]
+            let rec = [ b_id[b], b_kind[b], b_owner[b], b_cx[b], b_cy[b], b_sx[b], b_done[b], b_progress[b], ages[b_owner[b]], b_sy[b], 0 ]
             var at = -1
             for(seen) s, n:
                 if s[0] == b_id[b]: at = n
@@ -111,7 +111,7 @@ def remember(p:int):
 
 // Sight circles with trees in them, per centre, radius and over_trees, until a tree is felled.
 let sight_cache = dictionary<int, [int]>(4001)
-var sight_cache_version = 0    // bumped when a cell starts or stops blocking sight (map.lobster refresh)
+var sight_cache_version = 0  // bumped when a cell starts or stops blocking sight (map.lobster refresh)
 var sight_cache_for = 0
 
 def stamp(g:[int], lit:[int], cx:int, cy:int, r:int, over_trees:bool):

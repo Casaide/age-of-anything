@@ -58,7 +58,7 @@ import gen.reset
 import testkit.kit
 
 let SEED = 7
-let MIN = 1200   // ticks in a minute
+let MIN = 1200  // ticks in a minute
 
 let args = plain_args(command_line_arguments())
 let map_id = if args.length > 0: args[0] else: "flat_test"
@@ -111,7 +111,7 @@ def tally_str(names:[string]) -> string:
     return "\{" + concat_string(map(order) k: keys[k] + " " + string(counts[k]), ", ") + "\}"
 
 def count_map():
-    new_world(SEED, map_id, [frogs, rats], rules, [])
+    new_world(SEED, map_id, [ frogs, rats ], rules, [])
     print "== {map_id}: {W} x {H}, {start_x.length} starts, home radius {radius} tiles"
     let left = left_now()
     let regions = start_x.length + 1
@@ -160,7 +160,7 @@ def play(races:[JV], full:[bool], peace:bool, title:string):
     let start_left = left_now()
     let ran_out = map(players): map(num_resources): -1
     let last = map(players) p: gathered_of(p)
-    let aged = map(players): [-1, -1]
+    let aged = map(players): [ -1, -1 ]
     let idle_sum = map(players): 0
     let far_sum = map(players): 0
     var looks = 0
@@ -179,7 +179,7 @@ def play(races:[JV], full:[bool], peace:bool, title:string):
         for(players) p:
             for(2) a:
                 if aged[p][a] < 0 and ages[p] >= a + 2: aged[p][a] = tick
-        if tick % 200 == 0:   // every 10 s: idle and far workers, and what's run out
+        if tick % 200 == 0:  // every 10 s: idle and far workers, and what's run out
             looks++
             let left = left_now()
             for(players) p:
@@ -200,15 +200,15 @@ def play(races:[JV], full:[bool], peace:bool, title:string):
             line += "  | mid " + slash(left[players])
             print line
     print "  ended {clock(tick)}, winner {winner}; sim tick avg " + fixed_str(step_s * 1000.0 / max(1, tick), 2) + " ms (worst " + fixed_str(worst * 1000.0, 1) +
-          " ms), bots " + fixed_str(bot_s * 1000.0 / max(1, tick), 2) + " ms a tick"
+        " ms), bots " + fixed_str(bot_s * 1000.0 / max(1, tick), 2) + " ms a tick"
     for(players) p:
         let outs = map(num_resources) r: resource_names[r] + " " + (if ran_out[p][r] >= 0: clock(ran_out[p][r]) elif start_left[p][r] > 0: "never" else: "none there")
         print "  P{p}: age 2 at {clock(aged[p][0])}, age 3 at {clock(aged[p][1])}; gathered {slash(gathered_of(p))}; units lost {lost[p]}; avg idle " +
-              fixed_str(float(idle_sum[p]) / max(1, looks), 1) + ", avg far " + fixed_str(float(far_sum[p]) / max(1, looks), 1) + "; ran out near home: " + concat_string(outs, ", ")
+            fixed_str(float(idle_sum[p]) / max(1, looks), 1) + ", avg far " + fixed_str(float(far_sum[p]) / max(1, looks), 1) + "; ran out near home: " + concat_string(outs, ", ")
 
 let t_all = seconds_elapsed()
 count_map()
-if find_index(runs, "bots") >= 0: play([frogs, rats], [true, true], false, "bot vs bot")
-if find_index(runs, "passive") >= 0: play([rats, frogs], [true, false], false, "bot vs passive")
-if find_index(runs, "peace") >= 0: play([frogs, rats], [true, true], true, "peace (bots that never attack)")
+if find_index(runs, "bots") >= 0: play([ frogs, rats ], [ true, true ], false, "bot vs bot")
+if find_index(runs, "passive") >= 0: play([ rats, frogs ], [ true, false ], false, "bot vs passive")
+if find_index(runs, "peace") >= 0: play([ frogs, rats ], [ true, true ], true, "peace (bots that never attack)")
 print "({int(seconds_elapsed() - t_all)} s)"

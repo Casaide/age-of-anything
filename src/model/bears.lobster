@@ -11,7 +11,7 @@ def helm_bear_crest(c:Colours) -> Spec:
     add_child(n, dome(float3 { 4.9, 4.5, 4.8 }, bronze, float3 { 0.0, -3.5, 0.0 }))
     add_child(n, ring(4.7, 5.3, bright, float3 { 0.0, -3.4, 0.0 }))
     add_child(n, blob(float3 { 1.8, 0.5, 4.0 }, bronze, float3 { 4.6, -2.8, 0.0 }, float3 { 0.0, 0.0, -14.0 }))
-    for([1.0, -1.0]) side:
+    for([ 1.0, -1.0 ]) side:
         add_child(n, blob(float3 { 1.3, 1.6, 1.0 }, bright, float3 { -0.8, 0.0, 3.5 * side }, float3 { 18.0 * side, 0.0, 0.0 }))
         add_child(n, blob(float3 { 1.8, 2.8, 0.6 }, bronze, float3 { 0.2, -5.8, 4.7 * side }, float3 { 0.0, 0.0, 10.0 }))
     add_child(n, blob(float3 { 3.0, 2.8, 4.6 }, bronze, float3 { -3.4, -5.4, 0.0 }))
@@ -28,7 +28,7 @@ def helm_bear_open(c:Colours) -> Spec:
     let ear_in = plain(html("#3a2a24"))
     add_child(n, dome(float3 { 4.8, 4.2, 4.7 }, bronze, float3 { -0.4, -3.2, 0.0 }))
     add_child(n, ring(4.6, 5.1, bright, float3 { -0.4, -3.1, 0.0 }))
-    for([1.0, -1.0]) side:
+    for([ 1.0, -1.0 ]) side:
         let at = float3 { -0.9, 1.0, 3.5 * side }
         add_child(n, blob(float3 { 1.6, 0.5, 1.5 }, bright, at + float3 { 0.0, -1.2, 0.0 }, float3 { 22.0 * side, 0.0, 0.0 }))
         add_child(n, blob(float3 { 1.3, 2.0, 1.7 }, fur, at, float3 { 22.0 * side, 0.0, -10.0 }))

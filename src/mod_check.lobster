@@ -10,9 +10,9 @@ import placement.cases
 
 let args = command_line_arguments()
 let id = args[0]
-fatal(gl.window("mod check", 64, 64, gl.window_init_no_vsync))   // (models load their textures)
+fatal(gl.window("mod check", 64, 64, gl.window_init_no_vsync))  // (models load their textures)
 placement_load()
-let used = mods_use([id])
+let used = mods_use([ id ])
 let refused = mods_refused.get(id, "")
 if refused != "" or not has_s(map(used) u: tokenize(u, "@", "")[0], id):
     print "mod {id}: refused: " + (if refused != "": refused else: "not found")
@@ -23,7 +23,7 @@ else:
     let check = gobj(manifest, "check")
     let rules_id = gstr(check, "rules", "default")
     let rules = load_rules(rules_id)
-    let own = []::string   // the mod's own part ids
+    let own = []::string  // the mod's own part ids
     let mod_parts = load_json("../mods/{id}/data/parts.json")
     if mod_parts.kind == J_ARR:
         for(mod_parts.a) p: own.push(rstr(p, "id"))

@@ -9,8 +9,8 @@
 let ROUTE_INF = 1 << 30
 let ROUTE_STEP = 10
 let ROUTE_RING = 1024
-let RDX = [0, 1, 0, -1, 1, 1, -1, -1]   // N, E, S, W, then the diagonals
-let RDY = [-1, 0, 1, 0, -1, 1, 1, -1]
+let RDX = [ 0, 1, 0, -1, 1, 1, -1, -1 ]  // N, E, S, W, then the diagonals
+let RDY = [ -1, 0, 1, 0, -1, 1, 1, -1 ]
 
 // The price per cell for lane ln (0: can't): open ground STEP, slower ground dearer, and with
 // `tree` > 0, trees standing on it at that price (felled, they'd open: a road).
@@ -45,7 +45,7 @@ def new_search(price:[int], open:[int], src:int) -> Search:
 // Settle up to `budget` cells; true once the search is done (Routes.Search.step).
 def search_step(s:Search, budget0:int) -> bool:
     var budget = budget0
-    let steps = [-W, 1, W, -1, -W + 1, W + 1, W - 1, -W - 1]
+    let steps = [ -W, 1, W, -1, -W + 1, W + 1, W - 1, -W - 1 ]
     let dist = s.dist
     let open = s.open
     let price = s.price
@@ -63,11 +63,11 @@ def search_step(s:Search, budget0:int) -> bool:
                 let down = cy < H - 1
                 let left = cx > 0
                 let right = cx < W - 1
-                let ok = [up, right, down, left,
-                          up and right and open[c - W] == 1 and open[c + 1] == 1,
-                          down and right and open[c + W] == 1 and open[c + 1] == 1,
-                          down and left and open[c + W] == 1 and open[c - 1] == 1,
-                          up and left and open[c - W] == 1 and open[c - 1] == 1]
+                let ok = [ up, right, down, left,
+                           up and right and open[c - W] == 1 and open[c + 1] == 1,
+                           down and right and open[c + W] == 1 and open[c + 1] == 1,
+                           down and left and open[c + W] == 1 and open[c - 1] == 1,
+                           up and left and open[c - W] == 1 and open[c - 1] == 1 ]
                 for(8) d:
                     if ok[d]:
                         let nc = c + steps[d]
@@ -117,20 +117,20 @@ def terrain_named(id:string) -> int:
     return -1
 
 class Land:
-    crossings_kind:[int] = []        // 0 ford, 1 bridge
-    crossings_bridge:[int] = []      // a bridge's slot, or -1
-    mend:[int] = []                  // bridge slots worth rebuilding (studied)
-    cut:[int] = []                   // bridge slots worth breaking (studied)
-    broke:[int] = []                 // bridge slots we broke on purpose (never mended for a shortcut)
-    breakers:[int] = []              // soldier ids sent at a bridge
+    crossings_kind:[int] = []    // 0 ford, 1 bridge
+    crossings_bridge:[int] = []  // a bridge's slot, or -1
+    mend:[int] = []              // bridge slots worth rebuilding (studied)
+    cut:[int] = []               // bridge slots worth breaking (studied)
+    broke:[int] = []             // bridge slots we broke on purpose (never mended for a shortcut)
+    breakers:[int] = []          // soldier ids sent at a bridge
     bridge_next = 0
     crossings_centre:[int] = []
     crossings_cells:[[int]] = []
     made = false
-    done_names:[string] = []         // study -> the tick it was last made
+    done_names:[string] = []  // study -> the tick it was last made
     done_ticks:[int] = []
     next_study = 0
-    target_x = -1                    // what our army goes for: routes lead there
+    target_x = -1  // what our army goes for: routes lead there
     target_y = -1
     our_cost = 1 << 30
     our_path:[int] = []
@@ -145,9 +145,9 @@ class Land:
     road:[int] = []
     roads = 0
     fellers:[int] = []
-    hill_ids:[int] = []              // unit id -> no hill order before this tick
+    hill_ids:[int] = []  // unit id -> no hill order before this tick
     hill_until:[int] = []
-    climbing_ids:[int] = []          // unit id -> on its way up a hill till then
+    climbing_ids:[int] = []  // unit id -> on its way up a hill till then
     climbing_until:[int] = []
     want:[int] = []
     camp_laid = false
@@ -163,7 +163,7 @@ def land_crossings(l:Land) -> int:
     let seen = map(W * H): 0
     for(W * H) c:
         if ford >= 0 and terrain[c] == ford and seen[c] == 0:
-            let cells = [c]
+            let cells = [ c ]
             seen[c] = 1
             var head = 0
             while head < cells.length:
@@ -241,7 +241,7 @@ def open_near(ln:int, cell:int) -> int:
                 if max(abs(dx), abs(dy)) == r:
                     let x = cx + dx
                     let y = cy + dy
-                    let at = y * W + x   // (in a local: the --mir JIT misreads W in this and-chain, see area_at)
+                    let at = y * W + x  // (in a local: the --mir JIT misreads W in this and-chain, see area_at)
                     if x >= 0 and y >= 0 and x < W and y < H and walk[at] == 1: return at
                 dx++
             dy++
@@ -314,7 +314,7 @@ def land_bridges(l:Land, bot:Bot, workers:[int], army:[int], hx:int, hy:int):
         let ax = br_x0[k] + (br_x1[k] - br_x0[k]) / 2
         let ay = br_y0[k] + (br_y1[k] - br_y0[k]) / 2
         if br_up[k] == 0 and contains(l.mend, k) and (br_payer[k] < 0 or br_payer[k] == p) and not enemies_near(p, ax, ay, 8000) and
-           (br_payer[k] == p or can_afford(p, br_cost)):
+                (br_payer[k] == p or can_afford(p, br_cost)):
             var on = 0
             for(workers) i:
                 if u_task[i] == BUILD and u_target[i] == id: on++
@@ -533,11 +533,11 @@ def land_study(l:Land, bot:Bot, workers:[int], army:[int], hx:int, hy:int):
             else:
                 let esx, esy = enemy_start(bot.player, hx, hy)
                 if (contains(l.broke, k) and l.our_start_cost < ROUTE_INF) or esx < 0:
-                    l.mend = filter(l.mend) v: v != k   // (we broke it to cut their way: it stays down while we can get round)
+                    l.mend = filter(l.mend) v: v != k  // (we broke it to cut their way: it stays down while we can get round)
                     mark_done(l, name)
                 else:
                     let price = route_prices(ln, 0)
-                    for(br_cells[k]) c: price[c] = ROUTE_STEP   // (as if it stood again)
+                    for(br_cells[k]) c: price[c] = ROUTE_STEP  // (as if it stood again)
                     let s = land_search(l, name, walks[ln], src, price)
                     if not s: return
                     mark_done(l, name)
@@ -600,7 +600,7 @@ def fell(l:Land, bot:Bot, workers:[int]):
             if d2 < best_d2 and not (contains(taken_cells, c) and l.road.length > 1) and reaches_cell(bot.eco.reach, bot.eco.wln, area, c):
                 best_d2 = d2
                 best = c
-        if best >= 0: issue_cmd(bot.player, 3, [id], best, 0, 0, 0)
+        if best >= 0: issue_cmd(bot.player, 3, [ id ], best, 0, 0, 0)
 
 def road_camp(l:Land, bot:Bot):
     if l.camp_laid or not l.fellers.length or not l.road.length: return
@@ -623,7 +623,7 @@ def road_camp(l:Land, bot:Bot):
         l.camp_laid = true
         l.want = []::int
         return
-    issue_cmd(bot.player, 4, [l.fellers[0]], k, sx, sy, 0)
+    issue_cmd(bot.player, 4, [ l.fellers[0] ], k, sx, sy, 0)
 
 def is_climbing(l:Land, i:int) -> bool:
     for(l.climbing_ids) id, n:
@@ -638,7 +638,7 @@ def climb_cell(walk:[int], src:int, here:int, top:int, r:int) -> int:
     let y1 = min(H - 1, src / W + r + 2)
     let steps = dictionary<int, int>(251)
     steps.set(src, 0)
-    let queue = [src]
+    let queue = [ src ]
     var head = 0
     while head < queue.length:
         let c = queue[head]
@@ -693,7 +693,7 @@ def hills(l:Land, bot:Bot, army:[int]):
                         if c == best: at = q
                     if at < 0:
                         cells.push(best)
-                        ids.push([u_id[i]])
+                        ids.push([ u_id[i] ])
                     else:
                         ids[at].push(u_id[i])
     let order = map(cells) c, q: c * (1 << 20) + q

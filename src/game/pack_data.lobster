@@ -5,9 +5,9 @@
 // near wet ground, else pine or broadleaf by the map's noise: LandView.species_at, map_species.gd). Each table
 // is filled only where the pack left it empty.
 
-let PD_WET = ["swamp", "shallows", "water", "river", "deep_river", "ford", "paddy", "fallow_paddy"]
-let PD_PROPS = [["bugbush", "bush"], ["reeds", "reeds"], ["stone", "quarry"], ["gold", "gold"], ["carcass", "carcass"],
-                ["field", "crops"], ["paddy", "paddy"], ["tree", "tree"]]
+let PD_WET = [ "swamp", "shallows", "water", "river", "deep_river", "ford", "paddy", "fallow_paddy" ]
+let PD_PROPS = [ [ "bugbush", "bush" ], [ "reeds", "reeds" ], [ "stone", "quarry" ], [ "gold", "gold" ], [ "carcass", "carcass" ],
+                 [ "field", "crops" ], [ "paddy", "paddy" ], [ "tree", "tree" ] ]
 
 // Godot's String.hash (djb2 over the characters, 32 bits), as a FastNoiseLite seed takes it (a signed int).
 def godot_hash(s:string) -> int:

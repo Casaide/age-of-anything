@@ -18,7 +18,7 @@ let FARM_BELOW = 400
 let PLENTY = 1000
 let AGE_WORKERS = 16
 let SEAL_MARGIN = 5
-let MIX_AGE1 = [60, 40, 0, 0]   // food, wood, stone, gold (EcoBot.MIX for age 1)
+let MIX_AGE1 = [ 60, 40, 0, 0 ]  // food, wood, stone, gold (EcoBot.MIX for age 1)
 let REACH_REFRESH = 100
 let REACH_SEARCH = 3
 let HUNT_RADIUS = 16
@@ -31,7 +31,7 @@ let BOAR_LEAD = 2
 // ---- reach.gd: where a bot's units can get to (walkable areas by 4-neighbour steps, per lane)
 
 class Reach:
-    labels:[[int]] = []    // per lane, per cell: area label, 0 where blocked ([] until first asked)
+    labels:[[int]] = []  // per lane, per cell: area label, 0 where blocked ([] until first asked)
     at_tick:[int] = []
     at_version:[int] = []
 
@@ -94,7 +94,7 @@ def area_at(r:Reach, ln:int, x:int, y:int) -> int:
                 if max(abs(dx), abs(dy)) == rr:
                     let xx = cx + dx
                     let yy = cy + dy
-                    let at = yy * W + xx   // (in a local: Lobster's --mir JIT misreads the global W inside this and-chain, scratchpad repro)
+                    let at = yy * W + xx  // (in a local: Lobster's --mir JIT misreads the global W inside this and-chain, scratchpad repro)
                     if xx >= 0 and yy >= 0 and xx < W and yy < H and lab[at] != 0: return lab[at]
                 dx++
             dy++
@@ -146,18 +146,18 @@ class EcoBot:
     reach:Reach = Reach {}
     wln = 0
     home = 0
-    ordered:[int] = []     // unit ids given an order this think
+    ordered:[int] = []  // unit ids given an order this think
     // What the full bot sets (EcoBot's defaults otherwise):
-    mix_ages:[int] = [1]   // ages with a mix, ascending, and their mixes (shares per resource)
-    mixes:[[int]] = [[60, 40, 0, 0]]
+    mix_ages:[int] = [ 1 ]  // ages with a mix, ascending, and their mixes (shares per resource)
+    mixes:[[int]] = [ [ 60, 40, 0, 0 ] ]
     max_workers = 30
     age_workers = 16
-    rebalance = 0          // ticks between moving a gatherer (0: never)
+    rebalance = 0  // ticks between moving a gatherer (0: never)
     plenty = 1000
-    hold = false           // the army is under its floor: no new workers
-    goal:[int] = []        // what we save for (the next age, a building); empty: nothing
-    push = 100             // how hard the shares lean to it
-    held_ids:[int] = []    // workers kept out of the way until a tick (alongside held_until)
+    hold = false         // the army is under its floor: no new workers
+    goal:[int] = []      // what we save for (the next age, a building); empty: nothing
+    push = 100           // how hard the shares lean to it
+    held_ids:[int] = []  // workers kept out of the way until a tick (alongside held_until)
     held_until:[int] = []
     next_rebalance = 0
     next_claim = 0
@@ -252,7 +252,7 @@ def bot_nearest_resource(bot:EcoBot, x:int, y:int, kind:int, free:bool, area0:in
 
 // The resource (kind) furthest below its share that has some left on the map, or 0.
 def short_of(bot:EcoBot, n:[int], x:int, y:int, area:int) -> int:
-    for([shares(bot), mix_of(bot)]) mix:
+    for([ shares(bot), mix_of(bot) ]) mix:
         let sum = sum_of(mix)
         var total = 1
         for(n) v: total += v
@@ -300,7 +300,7 @@ def rebalance_workers(bot:EcoBot, workers:[int], n:[int]):
     for(n) v: total += v
     var over = -1
     var most = 0
-    let unders = []::int   // -(how far under) * 64 + r: most under first, then the lower resource
+    let unders = []::int  // -(how far under) * 64 + r: most under first, then the lower resource
     for(num_resources) r:
         let gap = n[r] * sum - mix[r] * total
         if gap >= sum and gap > most:
@@ -331,7 +331,7 @@ def rebalance_workers(bot:EcoBot, workers:[int], n:[int]):
     if best < 0: return
     let cell = bot_nearest_resource(bot, u_x[best], u_y[best], under + 1, true, area_of_unit(bot.reach, best), false)
     if cell >= 0:
-        issue_cmd(bot.player, 3, [u_id[best]], cell, 0, 0, 0)
+        issue_cmd(bot.player, 3, [ u_id[best] ], cell, 0, 0, 0)
         bot.ordered.push(u_id[best])
 
 def farm_underway(p:int, fk:int) -> bool:
@@ -371,14 +371,14 @@ def seals(bot:EcoBot, cx:int, cy:int, size:int) -> bool:
         var x = cx - 1
         while x < cx + size + 1:
             if not (x < 0 or y < 0 or x >= W or y >= H or inside(x, y)) and
-               not ((x == cx - 1 or x == cx + size) and (y == cy - 1 or y == cy + size)) and walk[y * W + x] == 1:
+                    not ((x == cx - 1 or x == cx + size) and (y == cy - 1 or y == cy + size)) and walk[y * W + x] == 1:
                 edge.push(y * W + x)
             x++
         y++
     if not edge.length: return true
     let seen = dictionary<int, int>(251)
     seen.set(edge[0], 1)
-    let queue = [edge[0]]
+    let queue = [ edge[0] ]
     var out = false
     var head = 0
     while head < queue.length:
@@ -387,8 +387,8 @@ def seals(bot:EcoBot, cx:int, cy:int, size:int) -> bool:
         let x = c % W
         let yy = c / W
         if x == x0 or yy == y0 or x == x1 or yy == y1: out = true
-        for([1, -1, 0, 0]) ddx, k:
-            let ddy = [0, 0, 1, -1][k]
+        for([ 1, -1, 0, 0 ]) ddx, k:
+            let ddy = [ 0, 0, 1, -1 ][k]
             let nx = x + ddx
             let ny = yy + ddy
             if not (nx < x0 or ny < y0 or nx > x1 or ny > y1 or inside(nx, ny)):
@@ -403,7 +403,7 @@ def seals(bot:EcoBot, cx:int, cy:int, size:int) -> bool:
 
 // A free size x size spot with a tile of space round it, spiralling out from (cx, cy).
 def house_spot(bot:EcoBot, cx:int, cy:int, size:int) -> int, int:
-    for([true, false]) strict:
+    for([ true, false ]) strict:
         var r = 3
         while r < (if strict: 14 else: 22):
             var dy = -r
@@ -413,7 +413,7 @@ def house_spot(bot:EcoBot, cx:int, cy:int, size:int) -> int, int:
                     if max(abs(dx), abs(dy)) == r:
                         let ok = if strict: can_build(cx + dx - 1, cy + dy - 1, size + 2, 0, false, false) else: can_build(cx + dx, cy + dy, size, 0, false, false)
                         if ok and (not strict or not blocks_resource(cx + dx - 1, cy + dy - 1, size + 2)) and
-                           touches_area(bot.reach, bot.wln, bot.home, cx + dx, cy + dy, size, size) and not seals(bot, cx + dx, cy + dy, size):
+                                touches_area(bot.reach, bot.wln, bot.home, cx + dx, cy + dy, size, size) and not seals(bot, cx + dx, cy + dy, size):
                             return cx + dx, cy + dy
                     dx++
                 dy++
@@ -435,13 +435,13 @@ def finish_foundations(bot:EcoBot, workers:[int]):
                 var best_d2 = 1 << 62
                 for(workers) i:
                     if not is_ordered(bot, u_id[i]) and u_foe[i] == 0 and u_task[i] != BUILD and
-                       reaches_building(bot.reach, bot.wln, area_of_unit(bot.reach, i), b):
+                            reaches_building(bot.reach, bot.wln, area_of_unit(bot.reach, i), b):
                         let d2 = dist2(x, y, u_x[i], u_y[i])
                         if d2 < best_d2:
                             best_d2 = d2
                             best = i
                 if best >= 0:
-                    issue_cmd(bot.player, 5, [u_id[best]], bid, 0, 0, 0)
+                    issue_cmd(bot.player, 5, [ u_id[best] ], bid, 0, 0, 0)
                     bot.ordered.push(u_id[best])
 
 // Farms: as the wild food near home runs out, a farm for each food worker it no longer feeds.
@@ -460,9 +460,9 @@ def farms(bot:EcoBot, tc:int, workers:[int], n:[int]):
     var wild = 0
     for(resource_cells) c:
         if pool[c] < 0 and amount[c] > 0 and tr_res[terrain[c]] == food and
-           dist2(hx, hy, (c % W) * 1000 + 500, (c / W) * 1000 + 500) <= FARM_RADIUS * FARM_RADIUS * 1000000:
+                dist2(hx, hy, (c % W) * 1000 + 500, (c / W) * 1000 + 500) <= FARM_RADIUS * FARM_RADIUS * 1000000:
             wild += amount[c]
-    for(u_x.length) i:   // and the meat still walking about near home: our sheep, wild deer and boar
+    for(u_x.length) i:  // and the meat still walking about near home: our sheep, wild deer and boar
         let k = u_kind[i]
         if t_animal[k] != 0 and (u_owner[i] == p or u_owner[i] == gaia) and dist2(hx, hy, u_x[i], u_y[i]) <= HUNT_RADIUS * HUNT_RADIUS * 1000000:
             wild += t_food[k]
@@ -476,7 +476,7 @@ def farms(bot:EcoBot, tc:int, workers:[int], n:[int]):
         if builder < 0 and u_task[i] == GATHER and u_home[i] < 0 and u_carry_kind[i] == food and not is_ordered(bot, u_id[i]): builder = i
     if builder < 0: builder = pick_builder(bot, workers)
     let sx, sy = house_spot(bot, b_cx[tc] + 1, b_cy[tc] + 1, bt_size[fk])
-    if builder >= 0 and sx >= 0: issue_cmd(p, 4, [u_id[builder]], fk, sx, sy, 0)
+    if builder >= 0 and sx >= 0: issue_cmd(p, 4, [ u_id[builder] ], fk, sx, sy, 0)
 
 // Up to `count` ids of food gatherers (or idle workers) nearest a point; ties go to the lower id.
 def nearest_food_workers(bot:EcoBot, workers:[int], x:int, y:int, count:int) -> [int]:
@@ -530,7 +530,7 @@ def bot_pen(bot:EcoBot, tc:int, workers:[int]):
             let builder = pick_builder(bot, workers)
             let sx, sy = house_spot(bot, b_cx[tc] + 1, b_cy[tc] + 1, bt_size[k])
             if builder >= 0 and sx >= 0:
-                issue_cmd(p, CMD_BUILD, [u_id[builder]], k, sx, sy, 0)
+                issue_cmd(p, CMD_BUILD, [ u_id[builder] ], k, sx, sy, 0)
                 bot.ordered.push(u_id[builder])
         return
     if b_done[pen] == 0: return
@@ -553,14 +553,14 @@ def hunt(bot:EcoBot, tc:int, workers:[int]):
     for(u_x.length) i:
         if u_owner[i] == p and u_foe[i] != 0:
             let j = index_of(u_foe[i])
-            if j >= 0 and t_animal[u_kind[j]] != 0: return   // a hunt is on
+            if j >= 0 and t_animal[u_kind[j]] != 0: return  // a hunt is on
     let hx = b_cx[tc] * 1000 + 1500
     let hy = b_cy[tc] * 1000 + 1500
     let near = FARM_RADIUS * FARM_RADIUS * 1000000
     let carcass = tr_index("carcass")
     for(resource_cells) c:
         if terrain[c] == carcass and amount[c] > MEAT_LEFT and dist2(hx, hy, (c % W) * 1000 + 500, (c / W) * 1000 + 500) <= near and
-           reaches_cell(bot.reach, bot.wln, bot.home, c):
+                reaches_cell(bot.reach, bot.wln, bot.home, c):
             var busy = false
             for(workers) i:
                 if u_home[i] == c and (u_task[i] == GATHER or u_task[i] == T_RETURN): busy = true
@@ -573,15 +573,15 @@ def hunt(bot:EcoBot, tc:int, workers:[int]):
     for(workers) i:
         let h = u_home[i]
         if (u_task[i] == GATHER or u_task[i] == T_RETURN) and h >= 0 and terrain[h] == carcass and amount[h] > MEAT_LEFT and
-           dist2(hx, hy, (h % W) * 1000 + 500, (h / W) * 1000 + 500) <= near: return
+            dist2(hx, hy, (h % W) * 1000 + 500, (h / W) * 1000 + 500) <= near: return
     let guards = []::int
     for(u_x.length) i:
         let k = u_kind[i]
         if u_owner[i] == p and not t_worker[k] and t_animal[k] == 0 and not t_healer[k] and not t_trader[k] and u_foe[i] == 0 and
-           u_moving[i] == 0 and dist2(hx, hy, u_x[i], u_y[i]) <= near: guards.push(u_id[i])
+            u_moving[i] == 0 and dist2(hx, hy, u_x[i], u_y[i]) <= near: guards.push(u_id[i])
     var target = -1
     let penning = has_pen(p)
-    for([B_HERD, B_FLEE, B_FIGHT]) want:
+    for([ B_HERD, B_FLEE, B_FIGHT ]) want:
         let need = if want == B_HERD: 0 elif want == B_FLEE: 8 else: 12
         if target < 0 and workers.length >= need and not (want == B_HERD and penning) and not (want == B_FIGHT and guards.length < BOAR_LEAD):
             var best_d2 = HUNT_RADIUS * HUNT_RADIUS * 1000000
@@ -619,15 +619,15 @@ def bot_think(bot:EcoBot):
             if task == GATHER or task == T_RETURN:
                 if u_carry_kind[i] > 0: n[u_carry_kind[i] - 1]++
             elif task == T_NONE:
-                if u_foe[i] != 0: n[0]++   // hunting: food on the hoof
+                if u_foe[i] != 0: n[0]++  // hunting: food on the hoof
                 elif u_moving[i] == 0 and held(bot, u_id[i]) <= tick: idle.push(i)
-    let count = workers.length + sheltered(p)   // (workers sheltering from a raid still count)
+    let count = workers.length + sheltered(p)  // (workers sheltering from a raid still count)
     // Idle hands: back to work on whatever we're shortest of, that they can get to.
     for(idle) i:
         let area = area_of_unit(bot.reach, i)
         let kind = short_of(bot, n, u_x[i], u_y[i], area)
         if kind > 0:
-            issue_cmd(p, 3, [u_id[i]], bot_nearest_resource(bot, u_x[i], u_y[i], kind, true, area, false), 0, 0, 0)
+            issue_cmd(p, 3, [ u_id[i] ], bot_nearest_resource(bot, u_x[i], u_y[i], kind, true, area, false), 0, 0, 0)
             n[kind - 1]++
     // New workers go where we're short.
     let rally_kind = short_of(bot, n, b_cx[tc] * 1000 + 1500, b_cy[tc] * 1000 + 1500, -1)
@@ -636,7 +636,7 @@ def bot_think(bot:EcoBot):
         issue_cmd(p, 7, []::int, b_id[tc], (rally % W) * 1000 + 500, (rally / W) * 1000 + 500, 0)
     bot.ordered.remove_range(0, bot.ordered.length)
     for(workers) i:
-        if held(bot, u_id[i]) > tick: bot.ordered.push(u_id[i])   // pulled from a fight: not a builder or a hunter for now
+        if held(bot, u_id[i]) > tick: bot.ordered.push(u_id[i])  // pulled from a fight: not a builder or a hunter for now
     herd(bot, tc, workers)
     bot_pen(bot, tc, workers)
     hunt(bot, tc, workers)
@@ -659,7 +659,7 @@ def bot_think(bot:EcoBot):
     let wk = worker_type(p)
     let q = b_queue[tc]
     if not saving and not bot.hold and tick >= bot.next_train and q.length < 2 and count + q.length < bot.max_workers and can_afford(p, t_cost[wk]):
-        issue_cmd(p, 6, []::int, b_id[tc], wk, 1, 0)   // (no race lacks workers)
+        issue_cmd(p, 6, []::int, b_id[tc], wk, 1, 0)  // (no race lacks workers)
         bot.next_train = tick + TRAIN_COOLDOWN
     // A house before we're stuck.
     let hk = btype_named("house")
@@ -668,10 +668,10 @@ def bot_think(bot:EcoBot):
         if e >= 0: queued_units++
     let queued_pop = queued_units * t_pop[wk]
     if tick >= bot.next_house and pop_cap[p] < r_pop_max and pop[p] + queued_pop + HOUSE_HEADROOM >= pop_cap[p] and
-       can_afford(p, bm_cost[p][hk]) and not building_underway(bot):
+            can_afford(p, bm_cost[p][hk]) and not building_underway(bot):
         let builder = pick_builder(bot, workers)
         let sx, sy = house_spot(bot, b_cx[tc] + 1, b_cy[tc] + 1, bt_size[hk])
         if builder >= 0 and sx >= 0:
-            issue_cmd(p, 4, [u_id[builder]], hk, sx, sy, 0)
+            issue_cmd(p, 4, [ u_id[builder] ], hk, sx, sy, 0)
             bot.next_house = tick + HOUSE_COOLDOWN
     farms(bot, tc, workers, n)

@@ -5,25 +5,25 @@
 // gates in the spike), no bridges' decks changing, no walls.
 
 var terrain = []::int
-var amount = []::int          // resource left (a pooled cell's is on its anchor)
-var pool = []::int            // a farm's cells: the anchor cell holding the shared amount, or -1
-var occupied = []::int        // building id standing on the cell, or 0
-var walk_over = []::int       // 1 where a building may be walked across (farms)
+var amount = []::int     // resource left (a pooled cell's is on its anchor)
+var pool = []::int       // a farm's cells: the anchor cell holding the shared amount, or -1
+var occupied = []::int   // building id standing on the cell, or 0
+var walk_over = []::int  // 1 where a building may be walked across (farms)
 var cliff = []::int
 var ramp = []::int
 var deck = []::int
 var high = []::int            // 1 under a building flyers can't cross
 var gate = []::int            // a gate's team + 1 on its cells, else 0
-var lane_teams = [-2]         // per lane group: the team its gates open for (group 0: nobody's)
+var lane_teams = [ -2 ]       // per lane group: the team its gates open for (group 0: nobody's)
 let NUM_CLASSES = 3           // ground, amphibious, flying (SimMap.CLASSES)
 var resource_cells = []::int  // every cell that started with a resource, ascending (and farms' anchors)
 
 // Terrain tables, by terrain index.
 var tr_walk = []::int
-var tr_move = []::int         // bitmask of the movement classes that cross it
-var tr_res = []::int          // resource kind (index + 1), or 0
+var tr_move = []::int  // bitmask of the movement classes that cross it
+var tr_res = []::int   // resource kind (index + 1), or 0
 var tr_amount = []::int
-var tr_depleted = []::int     // what it turns into when used up, or -1
+var tr_depleted = []::int  // what it turns into when used up, or -1
 var tr_reseed = []::int
 var tr_cleared = []::int
 var tr_opaque = []::int
@@ -31,7 +31,7 @@ var tr_opaque = []::int
 // Cells changed this tick, each with its walk value per lane before the tick's first change.
 var fresh = []::int
 var fresh_was = []::[int]
-var fresh_at = []::int        // per cell: its index in fresh + 1, or 0
+var fresh_at = []::int  // per cell: its index in fresh + 1, or 0
 
 let FLYING = 2
 let PATCH_BUDGET = 3000
@@ -58,7 +58,7 @@ def take(cell:int):
     assert amount[a] > 0
     amount[a]--
     if amount[a] > 0: return
-    let cells = if pool[cell] < 0: [cell] else: pool_cells(a)
+    let cells = if pool[cell] < 0: [ cell ] else: pool_cells(a)
     for(cells) c:
         let dep = tr_depleted[terrain[c]]
         if dep >= 0: set_cell_terrain(c, dep)
@@ -84,7 +84,7 @@ def occupy(cells:[int], building_id:int, gate_team:int = -1, blocks_flyers:bool 
     if gate_team >= 0 and lane_group(gate_team) == 0:
         lane_teams.push(gate_team)
         for(NUM_CLASSES) k:
-            walks.push(copy(walks[k]))   // the shared grids as they stand; refresh opens the gates
+            walks.push(copy(walks[k]))  // the shared grids as they stand; refresh opens the gates
             add_room(walks.length - 1)
     for(cells) c:
         occupied[c] = building_id
@@ -160,9 +160,9 @@ def refresh(cell:int):
     for(NUM_CLASSES) k:
         walks[k][cell] = if (mask & (1 << k)) != 0 and ((k == FLYING and high[cell] == 0) or clear): 1 else: 0
     walks[0][cell] = if ground and clear: 1 else: 0
-    for(lane_teams) team, g:   // a team's own gates are open to it
+    for(lane_teams) team, g:  // a team's own gates are open to it
         if g >= 1:
-            let open = clear or (gate[cell] == team + 1 and cliff[cell] == 0)   // (never a way up a cliff)
+            let open = clear or (gate[cell] == team + 1 and cliff[cell] == 0)  // (never a way up a cliff)
             for(NUM_CLASSES) k:
                 walks[g * NUM_CLASSES + k][cell] = if (mask & (1 << k)) != 0 and ((k == FLYING and high[cell] == 0) or open): 1 else: 0
             walks[g * NUM_CLASSES][cell] = if ground and open: 1 else: 0
@@ -181,7 +181,7 @@ def clear_fresh():
 def sync_map():
     if not fresh.length: return
     let order = []::int
-    for(fresh) c, n: order.push(c * (1 << 20) + n)   // the cells ascending (with where their old values are)
+    for(fresh) c, n: order.push(c * (1 << 20) + n)  // the cells ascending (with where their old values are)
     sort_ints(order)
     let lanes = walks.length
     let opened = map(lanes): []::int
@@ -240,7 +240,7 @@ def sync_map():
 // a carcass left in a swamp no longer kept the swamp's speed).
 def set_cell_terrain(cell:int, k:int):
     terrain[cell] = k
-    if fog_watch.length: fog_watch[cell] = 1   // (watched by the fog's memory from now on)
+    if fog_watch.length: fog_watch[cell] = 1  // (watched by the fog's memory from now on)
     for(speed_pct) row, c: row[cell] = speed_row[c][k]
 
 // The map as each player remembers it (Fog's fog_ground and fog_left): the map as made, following the truth only where

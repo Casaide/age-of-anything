@@ -7,7 +7,7 @@ var r_heal_amount = 0
 var r_heal_reload = 0
 var r_heal_range = 0
 var r_heal_sight = 0
-var heal_not = []::int        // classes nobody heals (machines)
+var heal_not = []::int  // classes nobody heals (machines)
 var h_heals = []::int
 var h_tending = []::int
 

@@ -80,20 +80,20 @@ import gen.save
 import gen.effect_words
 
 let SEED = 20261010
-let PROMPTS = ["angry swamp frogs with reed spears", "sewer rats with cheese hammers"]
-let TICKS = 12000               // 10 minutes at 20 Hz
-let PER_PLAYER = 99             // soldiers a side, shared over its roster slots
-let ORDERS_EVERY = 10           // turns between each player's orders (2 s)
+let PROMPTS = [ "angry swamp frogs with reed spears", "sewer rats with cheese hammers" ]
+let TICKS = 12000      // 10 minutes at 20 Hz
+let PER_PLAYER = 99    // soldiers a side, shared over its roster slots
+let ORDERS_EVERY = 10  // turns between each player's orders (2 s)
 let TICK_BUDGET_MS = 3.0
 let HASH_EVERY = 30
 let CMD_DELAY = 2
-let CROSS_UNITS = 10            // per roster slot: 60 units, in 6 groups of 10
-let CROSS_ENGINES = 3           // siege engines cross on their own
-let CROSS_LIMIT = 2400          // ticks (2 minutes) to get everyone across
-let OPENING_TICKS = 3600        // the 3-minute opening
-let STALL_TICKS = 100           // a worker idle this long (5 s) has stalled
+let CROSS_UNITS = 10      // per roster slot: 60 units, in 6 groups of 10
+let CROSS_ENGINES = 3     // siege engines cross on their own
+let CROSS_LIMIT = 2400    // ticks (2 minutes) to get everyone across
+let OPENING_TICKS = 3600  // the 3-minute opening
+let STALL_TICKS = 100     // a worker idle this long (5 s) has stalled
 let SPAWN_JITTER = 400
-let POSTURE_NAMES = ["aggressive", "defensive", "stand", "passive"]
+let POSTURE_NAMES = [ "aggressive", "defensive", "stand", "passive" ]
 
 // ------------------------------------------------------------------ checks
 
@@ -105,8 +105,7 @@ class SpawnOrder:
     x:int
     y:int
 
-var due = []::SpawnOrder      // SPAWNs issued, waiting for their turn
-
+var due = []::SpawnOrder  // SPAWNs issued, waiting for their turn
 
 var checks = 0
 var failures = 0
@@ -122,10 +121,10 @@ def check(ok:bool, what:string):
 lib_load("../data")
 id_load("../data")
 let rules0 = load_rules("default")
-set(rules0, "animals", jbool(false))   // these tests count and move every unit; animals have their own test
+set(rules0, "animals", jbool(false))  // these tests count and move every unit; animals have their own test
 let races0 = map(PROMPTS) p: generate(p, rules0, 0)
 
-def bare_of(r:JV) -> JV:   // movement only: no town centres or starting workers
+def bare_of(r:JV) -> JV:  // movement only: no town centres or starting workers
     let b = deep_copy(r)
     let st = at(at(b, "economy"), "start")
     set(st, "buildings", jarr([]))
@@ -139,7 +138,7 @@ def new_world(map_id:string, races:[JV], rules:JV, team_ids:[int]):
     reset_world()
     due = []
     setup_world(SEED, map_id, races, rules, team_ids)
-    events_on = true   // (the checks read them; they aren't state)
+    events_on = true  // (the checks read them; they aren't state)
 
 // World's SPAWN as it runs: `count` of p's `slot` round (x, y), jittered by the world's rng, onto open ground.
 def spawn_now(p:int, slot:string, count:int, x:int, y:int) -> [int]:
@@ -197,7 +196,7 @@ def any1(xs:[int]) -> bool: return exists(xs) v: v == 1
 
 def ms_since(t0:float) -> int: return int((seconds_elapsed() - t0) * 1000.0)
 
-def fmt_ms(f:float) -> string:   // three decimals
+def fmt_ms(f:float) -> string:  // three decimals
     let us = int(f * 1000.0 + 0.5)
     let frac = string(us % 1000)
     return string(us / 1000) + "." + "000".substring(0, 3 - frac.length) + frac
@@ -209,7 +208,7 @@ def test_fixed():
     for(70000) n:
         let r = isqrt(n)
         if r * r > n or (r + 1) * (r + 1) <= n: ok = false
-    for([1 << 31, (1 << 40) + 12345, 4000000000, 999999999999]) n:
+    for([ 1 << 31, (1 << 40) + 12345, 4000000000, 999999999999 ]) n:
         let r = isqrt(n)
         ok = ok and r * r <= n and (r + 1) * (r + 1) > n
     check(ok, "isqrt is the exact floor square root")
@@ -223,19 +222,19 @@ def test_fixed():
 def test_command_order():
     new_world("flat_test", races0, bare0, [])
     let all = []::Cmd
-    for([2, 0, 1]) player:
+    for([ 2, 0, 1 ]) player:
         for(4) sq:
-            all.push(Cmd { tick, CMD_MOVE, player, 0, 0, 0, 0, [1], sq })
+            all.push(Cmd { tick, CMD_MOVE, player, 0, 0, 0, 0, [ 1 ], sq })
     pending = shuffled(new_rng(5), all)
     let order = map(take_pending()) c: c.player * 10 + c.seq
-    check(equal(order, [0, 1, 2, 3, 10, 11, 12, 13, 20, 21, 22, 23]), "commands run in (player, seq) order: {order}")
+    check(equal(order, [ 0, 1, 2, 3, 10, 11, 12, 13, 20, 21, 22, 23 ]), "commands run in (player, seq) order: {order}")
     check(take_pending().length == 0, "commands run once")
 
 // Banned in lib/ (the sim and the bots): randomness but the sim's rng, floats, clocks.
-let BANNED = ["rnd(", "rnd_float", "rnd_gaussian", "rnd_seed", "rndm", "float", "seconds_elapsed", "time_",
-              "sqrt(", "sin(", "cos(", "atan2(", "pow(", "lerp", "gl."]
+let BANNED = [ "rnd(", "rnd_float", "rnd_gaussian", "rnd_seed", "rndm", "float", "seconds_elapsed", "time_",
+               "sqrt(", "sin(", "cos(", "atan2(", "pow(", "lerp", "gl." ]
 
-def has_decimal(code:string) -> bool:   // a float literal: digits '.' digits
+def has_decimal(code:string) -> bool:  // a float literal: digits '.' digits
     for(code.length) n:
         if n > 0 and n + 1 < code.length and code[n] == '.' and code[n - 1] >= '0' and code[n - 1] <= '9' and code[n + 1] >= '0' and code[n + 1] <= '9':
             return true
@@ -243,7 +242,7 @@ def has_decimal(code:string) -> bool:   // a float literal: digits '.' digits
 
 def ident_char(c:int) -> bool: return c == '_' or (c >= 'a' and c <= 'z') or (c >= 'A' and c <= 'Z') or (c >= '0' and c <= '9')
 
-def has_word(code:string, w:string) -> bool:   // w in code, not inside a longer name (isqrt isn't sqrt)
+def has_word(code:string, w:string) -> bool:  // w in code, not inside a longer name (isqrt isn't sqrt)
     var at_n = 0
     while true:
         let n = find_string(code, w, at_n)
@@ -273,10 +272,10 @@ def test_flow():
     new_world("flat_test", races0, bare0, [])
     let target = start_y[1] / TILE * W + start_x[1] / TILE
     var t0 = seconds_elapsed()
-    let a = solve([target], INF, 0)
+    let a = solve([ target ], INF, 0)
     let full_ms = (seconds_elapsed() - t0) * 1000.0
-    solve([5 * W + 5], INF, 0)
-    let b = solve([target], INF, 0)
+    solve([ 5 * W + 5 ], INF, 0)
+    let b = solve([ target ], INF, 0)
     check(equal(a.dist, b.dist) and equal(a.next, b.next), "a flow field doesn\'t depend on what was solved before")
     var bad = 0
     for(a.dist) d, c:
@@ -285,7 +284,7 @@ def test_flow():
         elif reachable and c != target and a.dist[a.next[c]] >= d: bad++
     check(bad == 0, "every walkable cell reaches the target downhill on flat_test ({bad} bad)")
     t0 = seconds_elapsed()
-    let near = solve([target], 160, 0)
+    let near = solve([ target ], 160, 0)
     let near_ms = (seconds_elapsed() - t0) * 1000.0
     var far = 0
     for(near.dist) d, c:
@@ -303,7 +302,7 @@ def test_crossing(map_id:string, engines:bool):
     let sy = start_y[0]
     let dx = start_x[1]
     let dy = start_y[1]
-    for(glist(races0[0], "units")) u:   // the foot and horse lines, or (engines) the siege engines on their own
+    for(glist(races0[0], "units")) u:  // the foot and horse lines, or (engines) the siege engines on their own
         if has_crew(u) == engines:
             spawn_cmd(0, rstr(at(u, "recipe"), "slot"), if engines: CROSS_ENGINES else: CROSS_UNITS, sx, sy)
     while u_id.length == 0: tick_on()
@@ -311,7 +310,7 @@ def test_crossing(map_id:string, engines:bool):
     let groups = (ids.length + CROSS_UNITS - 1) / CROSS_UNITS
     for(groups) g:
         issue_cmd(0, CMD_MOVE, ids.slice(g * CROSS_UNITS, min(CROSS_UNITS, ids.length - g * CROSS_UNITS)),
-            dx + (g - groups / 2) * 1500, dy + ((g % 2) * 2 - 1) * 1000, 0, 0)
+                  dx + (g - groups / 2) * 1500, dy + ((g % 2) * 2 - 1) * 1000, 0, 0)
     tick_on()
     var settled = -1
     var worst = 0.0
@@ -344,7 +343,7 @@ def test_crossing(map_id:string, engines:bool):
 // ------------------------------------------------------------------ the scripted match
 
 class Script:
-    orders:[Cmd]          // in run order: (run tick, player, seq)
+    orders:[Cmd]  // in run order: (run tick, player, seq)
     spawns:[SpawnOrder]
 
 def resource_kind_at(c:int) -> string:
@@ -393,7 +392,7 @@ def make_script(races:[JV]) -> Script:
     let r = new_rng(SEED ^ 0x5C51)
     let out = []::Cmd
     let spawns = []::SpawnOrder
-    let sq = [0, 0]
+    let sq = [ 0, 0 ]
     let start = at(at(rules0, "economy"), "start")
     let setup_ids = glist(start, "buildings").length + as_int(at(start, "workers"))
     let nslots = glist(races[0], "units").length
@@ -404,23 +403,23 @@ def make_script(races:[JV]) -> Script:
         out.push(Cmd { (turn + CMD_DELAY) * TICKS_PER_TURN, code, p, a, b, c, d, ids, sq[p] })
         sq[p]++
     let house = btype_index("house")
-    for(races.length) p:   // the economy: two workers on food, one on wood, two more trained, a house
+    for(races.length) p:  // the economy: two workers on food, one on wood, two more trained, a house
         let tc = 1 + p * setup_ids
         let food_cell = nearest_res(start_x[p], start_y[p], "food")
         let wood_cell = nearest_res(start_x[p], start_y[p], "wood")
-        cmd(0, p, CMD_GATHER, [tc + 1, tc + 2], food_cell, 0, 0, 0)
-        cmd(0, p, CMD_GATHER, [tc + 3], wood_cell, 0, 0, 0)
+        cmd(0, p, CMD_GATHER, [ tc + 1, tc + 2 ], food_cell, 0, 0, 0)
+        cmd(0, p, CMD_GATHER, [ tc + 3 ], wood_cell, 0, 0, 0)
         cmd(0, p, CMD_RALLY, [], tc, (food_cell % W) * 1000 + 500, (food_cell / W) * 1000 + 500, 0)
         let wk = type_of_slot(p, "worker")
         cmd(0, p, CMD_TRAIN, [], tc, wk, 1, 0)
         cmd(0, p, CMD_TRAIN, [], tc, wk, 1, 0)
         let hx, hy = house_spot(start_x[p], start_y[p])
-        cmd(60, p, CMD_BUILD, [tc + 3], house, hx, hy, 0)
-    for(races.length) p:   // the armies arrive at 30 s, then march about
+        cmd(60, p, CMD_BUILD, [ tc + 3 ], house, hx, hy, 0)
+    for(races.length) p:  // the armies arrive at 30 s, then march about
         for(glist(races[p], "units")) u:
             spawns.push(SpawnOrder { (150 + CMD_DELAY) * TICKS_PER_TURN, p, rstr(at(u, "recipe"), "slot"), per_slot, start_x[p], start_y[p] })
             sq[p]++
-    for(races.length) p:   // a quarter of each army on each stance, so replays and hashes cover them
+    for(races.length) p:  // a quarter of each army on each stance, so replays and hashes cover them
         let first = army_first + p * per_player
         for(3) k0:
             let k = k0 + 1
@@ -457,8 +456,8 @@ def run_order(cs:[Cmd]) -> [Cmd]:
     return out
 
 class Played:
-    hashes:[int]          // tick, hash pairs, flattened, every HASH_EVERY ticks
-    ms:[float]            // per tick
+    hashes:[int]  // tick, hash pairs, flattened, every HASH_EVERY ticks
+    ms:[float]    // per tick
     units:int
 
 // Play the script on a fresh world (`cs`: its orders as queued, maybe shuffled).
@@ -524,7 +523,7 @@ def timing_line(pl:Played) -> float:
     print "tick time, {pl.units} units over {s.length} ticks: avg {fmt_ms(avg)} ms, p50 {fmt_ms(s[s.length / 2])}, p99 {fmt_ms(s[s.length * 99 / 100])}, max {fmt_ms(s[s.length - 1])}"
     return avg
 
-def insertion_sort_f(s:[float]):   // (qsort recursion overflows on 12,000 near-equal times)
+def insertion_sort_f(s:[float]):  // (qsort recursion overflows on 12,000 near-equal times)
     // a counting pass would do; times are small, so a shell sort is plenty
     var gap = s.length / 2
     while gap > 0:
@@ -539,7 +538,7 @@ def insertion_sort_f(s:[float]):   // (qsort recursion overflows on 12,000 near-
             i++
         gap /= 2
 
-var match_hashes = []::int    // the first play's, for match_b and match_flipped run in the same process
+var match_hashes = []::int  // the first play's, for match_b and match_flipped run in the same process
 
 def first_match() -> [int]:
     if not match_hashes.length:
@@ -672,15 +671,15 @@ def test_opening():
 
 // ------------------------------------------------------------------ combat
 
-let FIGHT_BUDGET = 600          // food + wood per side
-let FIGHT_LIMIT = 3000          // ticks (2.5 minutes)
-let FIGHT_FROM_X = [11000, 21000]   // open ground on flat_test, 10 tiles apart
-let FIGHT_FROM_Y = [20500, 20500]
+let FIGHT_BUDGET = 600               // food + wood per side
+let FIGHT_LIMIT = 3000               // ticks (2.5 minutes)
+let FIGHT_FROM_X = [ 11000, 21000 ]  // open ground on flat_test, 10 tiles apart
+let FIGHT_FROM_Y = [ 20500, 20500 ]
 // Counter fights: [counter, countered, the tag the countered unit needs for this to be the counter].
-let COUNTERS = [["spear", "large", "large"], ["large", "archer", "ranged"], ["archer", "spear", "infantry"], ["skirmisher", "archer", "archer"],
-    ["infantry", "spear", "spear"], ["archer", "infantry", "infantry"]]
-let COUNTER_PROMPTS = ["angry swamp frogs with reed spears", "sewer rats with cheese hammers", "centaur romans",
-    "greek hoplites", "royal knights", "viking beetle riders"]
+let COUNTERS = [ [ "spear", "large", "large" ], [ "large", "archer", "ranged" ], [ "archer", "spear", "infantry" ], [ "skirmisher", "archer", "archer" ],
+                 [ "infantry", "spear", "spear" ], [ "archer", "infantry", "infantry" ] ]
+let COUNTER_PROMPTS = [ "angry swamp frogs with reed spears", "sewer rats with cheese hammers", "centaur romans",
+                        "greek hoplites", "royal knights", "viking beetle riders" ]
 
 def gen_race(prompt:string) -> JV: return generate(prompt, rules0, 0)
 
@@ -693,7 +692,7 @@ def stance(p:int, ids:[int], name:string): issue_cmd(p, CMD_STANCE, ids, posture
 // One unit of `slot` for p at (x, y) with a stance, settled in (test_sim.gd's _lone).
 def lone(p:int, slot:string, x:int, y:int, name:string) -> int:
     let uid = spawn(p, slot, 1, x, y)[0]
-    stance(p, [uid], name)
+    stance(p, [ uid ], name)
     steps(TICKS_PER_TURN * (CMD_DELAY + 1))
     return uid
 
@@ -705,7 +704,7 @@ class Watch:
 
 // Steps the world, tracking how far unit `id` strays from (x, y) and the hits each side lands.
 def watch_from(n:int, uid:int, x:int, y:int) -> Watch:
-    let r = Watch { 0, [0, 0] }
+    let r = Watch { 0, [ 0, 0 ] }
     for(n):
         tick_on()
         let i = index_of(uid)
@@ -734,20 +733,20 @@ def type_has_tag(k:int, tag:string) -> bool: return eval_has_tag(su_type_eval[k]
 // enemy, and never fights, not even when told to or when struck.
 def test_heal():
     let race = gen_race("romans")
-    bare_world([race, race])
+    bare_world([ race, race ])
     let healer = spawn_at(0, "healer", 15000, 20500)
     let near = spawn_at(0, "spear", 17000, 20500)
-    let far = spawn_at(0, "spear", 15000, 25500)   // 5 tiles off: within sight, out of range
+    let far = spawn_at(0, "spear", 15000, 25500)  // 5 tiles off: within sight, out of range
     let foe = spawn_at(1, "spear", 13500, 21500)
-    stance(0, [near, far], "passive")
-    stance(1, [foe], "passive")
+    stance(0, [ near, far ], "passive")
+    stance(1, [ foe ], "passive")
     let hi = index_of(healer)
     check(u_posture[hi] == PASSIVE, "heal: a healer spawns with the no-attack stance")
     check(as_int(at(su_type_eval[u_kind[hi]], "attack")) == 0, "heal: a healer has no attack")
-    issue_cmd(0, CMD_ATTACK, [healer], foe, 0, 0, 0)
+    issue_cmd(0, CMD_ATTACK, [ healer ], foe, 0, 0, 0)
     steps(8)
     let full = t_hp[u_kind[index_of(near)]]
-    for([near, far, foe]) uid: u_hp[index_of(uid)] = 4
+    for([ near, far, foe ]) uid: u_hp[index_of(uid)] = 4
     var heals = 0
     let healed = []::int
     var healer_hits = 0
@@ -770,9 +769,9 @@ def test_heal():
     let per_heal = r_heal_amount
     check(heals <= (full - 4) * 2 / per_heal + 2, "heal: {per_heal} hp a heal, no more heals than the wounds need ({heals})")
     // Struck by an aggressive enemy, it doesn't strike back (and heals nobody who isn't hurt).
-    bare_world([race, race])
+    bare_world([ race, race ])
     let h2 = spawn_at(0, "healer", 15000, 20500)
-    stance(0, [h2], "aggressive")
+    stance(0, [ h2 ], "aggressive")
     let attacker = spawn_at(1, "spear", 16500, 20500)
     var hits_back = 0
     var heals2 = 0
@@ -789,20 +788,20 @@ def test_heal():
 // The formula: base type, bonuses only against targets with the tag, class armour, the minimum.
 def test_damage():
     // classes: melee, pierce, building, large
-    let atk = [5, 0, 0, 7]    // a spear: 5 melee, +7 vs large
-    let arm = [2, 4, 0, 0]
-    let plain = [1, 1, 0, 0]
-    let large = [1, 1, 0, 1]
+    let atk = [ 5, 0, 0, 7 ]  // a spear: 5 melee, +7 vs large
+    let arm = [ 2, 4, 0, 0 ]
+    let plain = [ 1, 1, 0, 0 ]
+    let large = [ 1, 1, 0, 1 ]
     check(damage(atk, arm, plain, 1) == 3, "melee 5 - armour 2 = 3")
     check(damage(atk, arm, large, 1) == 10, "the large bonus only lands on large targets (3 + 7)")
-    check(damage(atk, [2, 4, 0, 3], large, 1) == 7, "class armour blunts a bonus (3 + 7 - 3)")
-    check(damage([0, 4, 0, 0], [0, 9, 0, 0], plain, 1) == 1, "never less than the minimum")
-    check(damage([0, 6, 0, 0], [9, 0, 0, 0], plain, 1) == 6, "pierce ignores melee armour")
+    check(damage(atk, [ 2, 4, 0, 3 ], large, 1) == 7, "class armour blunts a bonus (3 + 7 - 3)")
+    check(damage([ 0, 4, 0, 0 ], [ 0, 9, 0, 0 ], plain, 1) == 1, "never less than the minimum")
+    check(damage([ 0, 6, 0, 0 ], [ 9, 0, 0, 0 ], plain, 1) == 6, "pierce ignores melee armour")
 
 // Idle soldiers near enemies fight without being told to.
 def test_idle_fight():
     let race = gen_race(PROMPTS[0])
-    bare_world([race, race])
+    bare_world([ race, race ])
     spawn_cmd(0, "spear", 5, 15000, 20500)
     spawn_cmd(1, "spear", 5, 18000, 20500)
     steps(1200)
@@ -811,7 +810,7 @@ def test_idle_fight():
 // Attack-move spreads out: 10 spearmen against 10 make many duels, not a pile-on.
 def test_spread():
     let race = gen_race(PROMPTS[0])
-    bare_world([race, race])
+    bare_world([ race, race ])
     for(2) p: spawn_cmd(p, "spear", 10, FIGHT_FROM_X[p], FIGHT_FROM_Y[p])
     while u_id.length < 20: tick_on()
     for(2) p: issue_cmd(p, CMD_ATTACK_MOVE, ids_of(p), FIGHT_FROM_X[1 - p], FIGHT_FROM_Y[1 - p], 0, 0)
@@ -827,7 +826,7 @@ def test_spread():
 // Two teams of two: allies stand side by side in peace; the teams fight each other.
 def test_teams():
     let race = gen_race(PROMPTS[0])
-    new_world("flat_test", [race, race, race, race], bare0, [0, 0, 1, 1])
+    new_world("flat_test", [ race, race, race, race ], bare0, [ 0, 0, 1, 1 ])
     check(not is_enemy(0, 1) and is_enemy(1, 2) and not is_enemy(2, 3), "teams: 0+1 vs 2+3")
     spawn_cmd(0, "spear", 4, 14000, 20500)
     spawn_cmd(1, "spear", 4, 14500, 21000)
@@ -841,7 +840,7 @@ def test_teams():
 // A dozen large units knock down a Town Center; its footprint is free again.
 def test_siege_tc():
     let race = gen_race(PROMPTS[0])
-    new_world("flat_test", [race, race], rules0, [])
+    new_world("flat_test", [ race, race ], rules0, [])
     let tc = b_id[1]
     let cells = footprint(1)
     spawn_cmd(0, "large", 12, start_x[1] - 4000, start_y[1])
@@ -862,7 +861,7 @@ def test_surround():
     let race = gen_race(PROMPTS[0])
     let r = deep_copy(rules0)
     set(at(at(r, "economy"), "start"), "workers", jint(0))
-    new_world("flat_test", [race, race], r, [])
+    new_world("flat_test", [ race, race ], r, [])
     let b = 1
     let tc = b_id[b]
     let ids = spawn(0, "spear", 20, b_cx[b] * 1000 - 5000, b_cy[b] * 1000 - 5000)
@@ -874,7 +873,7 @@ def test_surround():
     let my = b_cy[b] * 1000 + b_sy[b] * 500
     let t_start = tick
     while tick < t_start + 600 and b_index_of(tc) >= 0:
-        let held = []::int   // id, x, y
+        let held = []::int  // id, x, y
         let bi = b_index_of(tc)
         for(u_id.length) i:
             if u_foe[i] == tc and u_moving[i] == 0 and gap_b(i, bi) <= r_melee_reach:
@@ -915,8 +914,8 @@ def no_orders() -> bool: return not exists(u_orders) o: o.length > 0
 // behind the spearmen, arrivals not shoved about, and it holds still. Attack-move and a shift-queued move too.
 def test_formation():
     let race = gen_race(PROMPTS[0])
-    for(["move", "attack_move", "queued"]) kind:
-        bare_world([race, race])
+    for([ "move", "attack_move", "queued" ]) kind:
+        bare_world([ race, race ])
         let spears = spawn(0, "spear", 20, 12000, 14000)
         let archers = spawn(0, "archer", 10, 12000, 16000)
         let ids = spears.append(archers)
@@ -950,7 +949,7 @@ def test_formation():
             let key = u_tx[i] * 1000000 + u_ty[i]
             if not contains(slots, key): slots.push(key)
             if dist2(u_x[i], u_y[i], u_tx[i], u_ty[i]) > 400 * 400: off_slot++
-            let ahead = u_x[i] + u_y[i]   // along the way they went: down and right
+            let ahead = u_x[i] + u_y[i]  // along the way they went: down and right
             if contains(archers, u_id[i]): back = max(back, ahead)
             else: front = min(front, ahead)
         let overlaps = overlapping_pairs()
@@ -993,7 +992,7 @@ def hi_across(ids:[int]) -> int:
 // riders on both flanks; it settles without overlaps and holds still.
 def test_role_formation():
     let race = gen_race("romans")
-    bare_world([race, race])
+    bare_world([ race, race ])
     let spears = spawn(0, "spear", 12, 12000, 14000)
     let archers = spawn(0, "archer", 8, 12000, 16000)
     let riders = spawn(0, "large", 6, 14000, 15000)
@@ -1031,8 +1030,8 @@ def test_role_formation():
 // goes for the rider; with counter_pull 0 it goes for the nearest, the footman.
 def test_counter_pick():
     let race = gen_race(PROMPTS[0])
-    for([-1, 0]) pull:
-        bare_world([race, race])
+    for([ -1, 0 ]) pull:
+        bare_world([ race, race ])
         if pull == 0: r_counter_pull = 0
         let foot = lone(1, "infantry", 17000, 20500, "passive")
         let rider = lone(1, "large", 18000, 20500, "passive")
@@ -1043,7 +1042,7 @@ def test_counter_pick():
         let d_foot = isqrt(dist2(u_x[i], u_y[i], fx, fy))
         let d_rider = isqrt(dist2(u_x[i], u_y[i], rx, ry))
         check(d_foot < d_rider and d_rider - d_foot < as_int(at(at(rules0, "combat"), "counter_pull")), "counter pick: the rider is a little further than the footman ({d_rider} v {d_foot})")
-        stance(0, [me], "aggressive")
+        stance(0, [ me ], "aggressive")
         steps(60)
         let want = if pull == 0: foot else: rider
         check(u_foe[index_of(me)] == want, "counter pick (pull {if pull < 0: "rules" else: "0"}): the spearman goes for the {if pull == 0: "footman" else: "rider"} (foe {u_foe[index_of(me)]}; footman {foot}, rider {rider})")
@@ -1052,9 +1051,9 @@ def test_counter_pick():
 // don't, and the frogs keep the usual gap.
 def test_shield_wall():
     let gaps = []::int
-    for(["vikings", PROMPTS[0]]) prompt:
+    for([ "vikings", PROMPTS[0] ]) prompt:
         let race = gen_race(prompt)
-        bare_world([race, race])
+        bare_world([ race, race ])
         let spears = spawn(0, "spear", 12, 12000, 14000)
         let i = index_of(spears[0])
         let k = u_kind[i]
@@ -1081,7 +1080,7 @@ def test_stances():
     let race = gen_race(PROMPTS[0])
     let y = 20500
     // Aggressive (the default): chases a foe across most of its sight; the passive foe never hits back.
-    bare_world([race, race])
+    bare_world([ race, race ])
     var me = lone(0, "spear", 15000, y, "aggressive")
     lone(1, "spear", 20000, y, "passive")
     var r = watch(600, me)
@@ -1089,23 +1088,23 @@ def test_stances():
     check(r.hits[1] == 0, "passive: never hits back, even while being hit ({r.hits[1]} hits)")
     // Defensive: ignores a foe 5 tiles off; goes for one that comes near, chases it no further than
     // the leash, then walks back to where it stood.
-    bare_world([race, race])
+    bare_world([ race, race ])
     me = lone(0, "spear", 15000, y, "defensive")
     let far = lone(1, "spear", 20000, y, "passive")
     let sx, sy = pos_of(me)
     r = watch(200, me)
     check(r.far < 300 and r.hits[0] == 0, "defensive: ignores a foe 5 tiles off (went {r.far})")
-    issue_cmd(1, CMD_MOVE, [far], 16500, y, 0, 0)
+    issue_cmd(1, CMD_MOVE, [ far ], 16500, y, 0, 0)
     r = watch(100, me)
     check(r.hits[0] > 0, "defensive: goes for a foe that comes near ({r.hits[0]} hits)")
-    issue_cmd(1, CMD_MOVE, [far], 40000, y, 0, 0)
+    issue_cmd(1, CMD_MOVE, [ far ], 40000, y, 0, 0)
     r = watch_from(600, me, sx, sy)
     let i = index_of(me)
     let home = isqrt(dist2(u_x[i], u_y[i], sx, sy))
     check(r.far > 2000 and r.far < r_leash + 1500, "defensive: chases a fleeing foe to the leash (went {r.far}, leash {r_leash})")
     check(home < 700 and u_foe[i] == 0 and u_moving[i] == 0, "defensive: then walks back to where it stood ({home} off)")
     // Stand ground, melee: never walks to a foe 2 tiles off, but fights one that comes to it.
-    bare_world([race, race])
+    bare_world([ race, race ])
     me = lone(0, "spear", 15000, y, "stand")
     lone(1, "spear", 17000, y, "passive")
     r = watch(300, me)
@@ -1114,7 +1113,7 @@ def test_stances():
     r = watch(400, me)
     check(r.hits[0] > 0 and r.far < 700, "stand ground: fights a foe that comes to it, where it stands (went {r.far}, {r.hits[0]} hits)")
     // Stand ground, ranged: shoots what is in reach, never steps closer to what isn't.
-    bare_world([race, race])
+    bare_world([ race, race ])
     let reach = t_reach[type_of_slot(0, "archer")]
     me = lone(0, "archer", 15000, y, "stand")
     lone(1, "spear", 15000 + reach + 2500, y, "passive")
@@ -1124,19 +1123,19 @@ def test_stances():
     r = watch(300, me)
     check(r.far < 300 and r.hits[0] > 0, "stand ground: an archer shoots a foe in reach without moving ({r.hits[0]} hits)")
     // Passive: takes blows without answering; an explicit attack order still works.
-    bare_world([race, race])
+    bare_world([ race, race ])
     me = lone(0, "spear", 15000, y, "passive")
     var foe = lone(1, "spear", 15800, y, "aggressive")
     r = watch(80, me)
     check(r.hits[1] > 0 and r.hits[0] == 0, "passive: takes {r.hits[1]} hits and answers none")
-    issue_cmd(0, CMD_ATTACK, [me], foe, 0, 0, 0)
+    issue_cmd(0, CMD_ATTACK, [ me ], foe, 0, 0, 0)
     r = watch(100, me)
     check(r.hits[0] > 0, "passive: an ordered attack still fights ({r.hits[0]} hits)")
     // Stand ground with an ordered target walks to it: orders beat stances.
-    bare_world([race, race])
+    bare_world([ race, race ])
     me = lone(0, "spear", 15000, y, "stand")
     foe = lone(1, "spear", 19000, y, "passive")
-    issue_cmd(0, CMD_ATTACK, [me], foe, 0, 0, 0)
+    issue_cmd(0, CMD_ATTACK, [ me ], foe, 0, 0, 0)
     r = watch(400, me)
     check(r.far > 1500 and r.hits[0] > 0, "stand ground: an ordered attack walks to the target (went {r.far}, {r.hits[0]} hits)")
 
@@ -1144,7 +1143,7 @@ def test_stances():
 def test_ranged_holds():
     let race = gen_race("sewer rats with crossbows")
     let y = 20500
-    bare_world([race, race])
+    bare_world([ race, race ])
     let k = type_of_slot(0, "archer")
     let reach = t_reach[k]
     let n_shots = 20 * t_reload[k]
@@ -1152,22 +1151,22 @@ def test_ranged_holds():
     var me = lone(0, "archer", 15000, y, "aggressive")
     var foe = lone(1, "large", 15000 + reach - 1000, y, "passive")
     u_hp[index_of(foe)] = 1 << 24
-    issue_cmd(0, CMD_ATTACK, [me], foe, 0, 0, 0)
+    issue_cmd(0, CMD_ATTACK, [ me ], foe, 0, 0, 0)
     var r = watch(n_shots, me)
     check(r.far == 0 and r.hits[0] >= 19, "an archer in reach doesn\'t move over 20 shots (went {r.far}, {r.hits[0]} hits)")
     // Ordered, out of reach: walks just into reach, then stands.
-    bare_world([race, race])
+    bare_world([ race, race ])
     me = lone(0, "archer", 15000, y, "aggressive")
     foe = lone(1, "large", 15000 + reach + 3000, y, "passive")
     u_hp[index_of(foe)] = 1 << 24
-    issue_cmd(0, CMD_ATTACK, [me], foe, 0, 0, 0)
+    issue_cmd(0, CMD_ATTACK, [ me ], foe, 0, 0, 0)
     watch(200, me)
     let i = index_of(me)
     let g = gap(i, index_of(foe))
     r = watch(n_shots, me)
     check(g <= reach and g > reach - 2 * u_speed[i] and r.far == 0 and r.hits[0] >= 19, "an archer out of reach walks just into it and stands (gap {g} of reach {reach}, then went {r.far}, {r.hits[0]} hits)")
     // Attack-move, a line of shooters: the walk-back to the move's end no longer drags them on.
-    bare_world([race, race])
+    bare_world([ race, race ])
     foe = lone(1, "large", 24000, y, "passive")
     u_hp[index_of(foe)] = 1 << 24
     spawn_cmd(0, "archer", 8, 14000, y)
@@ -1195,9 +1194,9 @@ def eval_cost(e:JV) -> int:
 // An equal-cost fight between two of a race's roster slots; `flip` swaps the sides. Both attack-move
 // at each other; the side with more value left wins.
 def counter_fight(race:JV, a_slot:string, b_slot:string, flip:int) -> bool, string:
-    bare_world([race, race])
-    let slots = [a_slot, b_slot]
-    let value = [0, 0]
+    bare_world([ race, race ])
+    let slots = [ a_slot, b_slot ]
+    let value = [ 0, 0 ]
     for(2) side:
         let p = side ^ flip
         let cost = eval_cost(at(unit_of(race, slots[side]), "eval"))
@@ -1205,10 +1204,10 @@ def counter_fight(race:JV, a_slot:string, b_slot:string, flip:int) -> bool, stri
         spawn_cmd(p, slots[side], max(1, (FIGHT_BUDGET + cost / 2) / cost), FIGHT_FROM_X[p], FIGHT_FROM_Y[p])
     while u_id.length == 0: tick_on()
     for(2) p: issue_cmd(p, CMD_ATTACK_MOVE, ids_of(p), FIGHT_FROM_X[1 - p], FIGHT_FROM_Y[1 - p], 0, 0)
-    var left = [0, 0]
+    var left = [ 0, 0 ]
     while tick < FIGHT_LIMIT:
         tick_on()
-        left = [0, 0]
+        left = [ 0, 0 ]
         for(u_owner) o: left[o]++
         if left[0] == 0 or left[1] == 0: break
     let a_left = left[flip] * value[0]
@@ -1265,7 +1264,7 @@ def test_shots():
     bare_world(races0)
     let a = lone(0, "archer", 15000, 20500, "stand")
     let t = lone(1, "spear", 19000, 20500, "passive")
-    issue_cmd(0, CMD_ATTACK, [a], t, 0, 0, 0)
+    issue_cmd(0, CMD_ATTACK, [ a ], t, 0, 0, 0)
     var shot_to = -1
     var shot_ticks = 0
     var fired = -1
@@ -1274,9 +1273,9 @@ def test_shots():
         for(events) e:
             if e.kind == EV_SHOT and e.a == a:
                 shot_to = e.b
-                shot_ticks = shots[SHOT_LAND] - (tick - 1)   // (the one shot in the air)
+                shot_ticks = shots[SHOT_LAND] - (tick - 1)  // (the one shot in the air)
         if shot_to >= 0:
-            fired = tick - 1   // the tick it was loosed in
+            fired = tick - 1  // the tick it was loosed in
             break
     check(shot_to == t and shot_ticks > 1, "shots: an archer looses a shot that takes a while to land (to {shot_to}, {shot_ticks} ticks)")
     check(shots.length / SHOT_STRIDE == 1, "shots: one in the air ({shots.length / SHOT_STRIDE})")
@@ -1319,7 +1318,7 @@ def test_shots():
     let house = put(1, "house", 18, 20, 0)
     let bhp = b_hp[b_index_of(house)]
     let s2 = lone(0, "archer", 15000, 20500, "stand")
-    issue_cmd(0, CMD_ATTACK, [s2], house, 0, 0, 0)
+    issue_cmd(0, CMD_ATTACK, [ s2 ], house, 0, 0, 0)
     var n_shots = 0
     var hits = 0
     for(300):
@@ -1340,12 +1339,12 @@ def place_at(uid:int, x:int, y:int):
 def test_engines():
     bare_world(races0)
     let cat = lone(0, "catapult", 9000, 20500, "stand")
-    let offs = [[0, 0], [700, 0], [0, 700], [0, -700]]
+    let offs = [ [ 0, 0 ], [ 700, 0 ], [ 0, 700 ], [ 0, -700 ] ]
     let foes = map(offs) o: lone(1, "spear", 17000 + o[0], 20500 + o[1], "passive")
     let friend = lone(0, "spear", 16400, 20500, "passive")
     for(foes) f, k: place_at(f, 17000 + offs[k][0], 20500 + offs[k][1])
     place_at(friend, 16400, 20500)
-    issue_cmd(0, CMD_ATTACK, [cat], foes[0], 0, 0, 0)
+    issue_cmd(0, CMD_ATTACK, [ cat ], foes[0], 0, 0, 0)
     var splashed = false
     let hit_ids = []::int
     let hit_dmg = []::int
@@ -1370,7 +1369,7 @@ def test_engines():
     let c2 = lone(0, "catapult", 12000, 20500, "aggressive")
     let near = lone(1, "spear", 13900, 20500, "passive")
     place_at(near, 13900, 20500)
-    issue_cmd(0, CMD_ATTACK, [c2], near, 0, 0, 0)
+    issue_cmd(0, CMD_ATTACK, [ c2 ], near, 0, 0, 0)
     var close_shot = false
     var shot_at = -1
     for(600):
@@ -1387,7 +1386,7 @@ def test_engines():
     let house = put(1, "house", 18, 20, 0)
     let ram = lone(0, "ram", 15500, 22500, "aggressive")
     let sentry = lone(1, "spear", 15500, 24000, "passive")
-    issue_cmd(0, CMD_ATTACK, [ram], sentry, 0, 0, 0)
+    issue_cmd(0, CMD_ATTACK, [ ram ], sentry, 0, 0, 0)
     var blow = 0
     var on_guard = 0
     for(400):
@@ -1399,7 +1398,7 @@ def test_engines():
         if blow > 0: break
     check(on_guard == 0 and blow >= 30, "ram: never hits soldiers, hits a house hard ({blow} a blow)")
     let archer = lone(1, "archer", 14000, 24500, "stand")
-    issue_cmd(1, CMD_ATTACK, [archer], ram, 0, 0, 0)
+    issue_cmd(1, CMD_ATTACK, [ archer ], ram, 0, 0, 0)
     var arrow = 0
     for(300):
         tick_on()
@@ -1416,11 +1415,11 @@ def test_engines():
     bare_world(races0)
     let bolt = lone(0, "bolt_thrower", 8000, 20500, "stand")
     let line = []::int
-    for([14500, 15500, 16500]) x:
+    for([ 14500, 15500, 16500 ]) x:
         let uid = lone(1, "spear", x, 20500, "passive")
         place_at(uid, x, 20500)
         line.push(uid)
-    issue_cmd(0, CMD_ATTACK, [bolt], line[2], 0, 0, 0)
+    issue_cmd(0, CMD_ATTACK, [ bolt ], line[2], 0, 0, 0)
     let struck = []::int
     for(400):
         tick_on()
@@ -1449,7 +1448,7 @@ def test_trade():
     let k = type_of_slot(0, "trader")
     check(t_trader[k] != 0 and t_harmless[k] != 0 and t_posture[k] == PASSIVE, "trade: carts are traders, harmless and passive")
     var gold = stock[g][0]
-    issue_cmd(0, CMD_ROUTE, [cart], far, 0, 0, 0)
+    issue_cmd(0, CMD_ROUTE, [ cart ], far, 0, 0, 0)
     var loaded = -1
     var paid = -1
     for(3000):
@@ -1471,7 +1470,7 @@ def test_trade():
     gold = stock[g][0]
     u_hp[ci] = 1
     let foe = spawn_at(1, "spear", u_x[ci], u_y[ci])
-    issue_cmd(1, CMD_ATTACK, [foe], cart, 0, 0, 0)
+    issue_cmd(1, CMD_ATTACK, [ foe ], cart, 0, 0, 0)
     for(400):
         tick_on()
         if index_of(cart) < 0: break
@@ -1481,14 +1480,14 @@ def test_trade():
     put(0, "market", 12, 30, 0)
     let ef = put(1, "market", 42, 30, 0)
     let c2 = spawn_at(0, "trader", 15500, 31500)
-    issue_cmd(0, CMD_ROUTE, [c2], ef, 0, 0, 0)
+    issue_cmd(0, CMD_ROUTE, [ c2 ], ef, 0, 0, 0)
     steps(40)
     check(u_task[index_of(c2)] == T_NONE, "trade: no route to an enemy\'s market")
-    new_world("flat_test", races0, bare0, [0, 0])
+    new_world("flat_test", races0, bare0, [ 0, 0 ])
     put(0, "market", 12, 30, 0)
     let af = put(1, "market", 42, 30, 0)
     let c3 = spawn_at(0, "trader", 15500, 31500)
-    issue_cmd(0, CMD_ROUTE, [c3], af, 0, 0, 0)
+    issue_cmd(0, CMD_ROUTE, [ c3 ], af, 0, 0, 0)
     steps(40)
     check(u_task[index_of(c3)] == T_TRADE, "trade: an ally\'s market is traded with")
     let cart_eval = su_type_eval[k]
@@ -1504,7 +1503,7 @@ def test_sapper_sling():
     let house = put(1, "house", 30, 20, 0)
     let sl = lone(0, "great_sling", 15000, 21000, "aggressive")
     let sentry = lone(1, "spear", 26000, 21000, "passive")
-    issue_cmd(0, CMD_ATTACK, [sl], house, 0, 0, 0)
+    issue_cmd(0, CMD_ATTACK, [ sl ], house, 0, 0, 0)
     var stopped = -1
     var thrown = -1
     var at_guard = false
@@ -1522,7 +1521,7 @@ def test_sapper_sling():
     check(thrown > 0 and stopped > 0 and thrown - stopped >= t_unpack[k] - 1, "great sling: it stops, unpacks ({t_unpack[k]} ticks) and throws (stopped {stopped}, threw {thrown})")
     check(reach > 8000 and not at_guard, "great sling: throws at the house from {reach} milli-tiles, never at the soldier")
     let x0 = u_x[ti]
-    issue_cmd(0, CMD_MOVE, [sl], 8000, 21000, 0, 0)
+    issue_cmd(0, CMD_MOVE, [ sl ], 8000, 21000, 0, 0)
     var left = -1
     for(200) t:
         tick_on()
@@ -1538,7 +1537,7 @@ def gate_world(races:[JV], team_ids:[int]) -> int:
     new_world("flat_test", races, bare0, team_ids)
     for(9) n:
         let k = n + 12
-        for([int2 { k, 18 }, int2 { k, 26 }, int2 { 12, k + 6 }, int2 { 20, k + 6 }]) c:
+        for([ int2 { k, 18 }, int2 { k, 26 }, int2 { 12, k + 6 }, int2 { 20, k + 6 } ]) c:
             if occupied[c.y * W + c.x] == 0 and not (c.x == 20 and c.y >= 21 and c.y <= 23): put(0, "palisade", c.x, c.y, 0)
     check(walks.length == 3, "gates: without a gate the map keeps one walk grid per movement class ({walks.length})")
     let g = put(0, "palisade_gate", 20, 21, 1)
@@ -1561,28 +1560,28 @@ def test_gates():
     check(walks[lane_base[0]][gc] == 1 and walks[lane_base[1]][gc] == 0, "gates: open to its owner, shut to the enemy")
     let mine = spawn_in(0, "worker")
     let theirs = spawn_in(1, "worker")
-    for([mine, theirs]) uid: issue_cmd(u_owner[index_of(uid)], CMD_MOVE, [uid], 25500, 22500, 0, 0)
+    for([ mine, theirs ]) uid: issue_cmd(u_owner[index_of(uid)], CMD_MOVE, [ uid ], 25500, 22500, 0, 0)
     steps(600)
     var i = index_of(mine)
     check(dist2(u_x[i], u_y[i], 25500, 22500) < 1000 * 1000, "gates: a friendly unit walks out through its gate ({u_x[i]}, {u_y[i]})")
     check(inside_square(theirs), "gates: an enemy shut in the square stays in")
-    issue_cmd(0, CMD_MOVE, [mine], 16500, 21500, 0, 0)
+    issue_cmd(0, CMD_MOVE, [ mine ], 16500, 21500, 0, 0)
     steps(600)
     check(inside_square(mine), "gates: ... and back in again")
     // Allies share the gate; the enemy knocks it down, and then the way is open to it.
-    gate_id = gate_world([races0[0], races0[1], races0[0]], [0, 0, 1])
+    gate_id = gate_world([ races0[0], races0[1], races0[0] ], [ 0, 0, 1 ])
     let ally = spawn_in(1, "worker")
-    issue_cmd(1, CMD_MOVE, [ally], 25500, 22500, 0, 0)
+    issue_cmd(1, CMD_MOVE, [ ally ], 25500, 22500, 0, 0)
     let foe = spawn_in(2, "spear")
-    issue_cmd(2, CMD_MOVE, [foe], 25500, 22500, 0, 0)
+    issue_cmd(2, CMD_MOVE, [ foe ], 25500, 22500, 0, 0)
     steps(600)
     check(not inside_square(ally), "gates: an ally walks through too")
     check(inside_square(foe), "gates: the enemy spearman can\'t")
-    issue_cmd(2, CMD_ATTACK, [foe], gate_id, 0, 0, 0)
+    issue_cmd(2, CMD_ATTACK, [ foe ], gate_id, 0, 0, 0)
     while tick < 8000 and b_index_of(gate_id) >= 0: tick_on()
     check(b_index_of(gate_id) < 0, "gates: the enemy knocks the gate down (tick {tick})")
     check(walks[lane_base[2]][gc] == 1, "gates: its tile is open to everyone again")
-    issue_cmd(2, CMD_MOVE, [foe], 25500, 22500, 0, 0)
+    issue_cmd(2, CMD_MOVE, [ foe ], 25500, 22500, 0, 0)
     steps(600)
     i = index_of(foe)
     check(i >= 0 and dist2(u_x[i], u_y[i], 25500, 22500) < 1000 * 1000, "gates: ... and walks out where it stood")
@@ -1594,19 +1593,19 @@ def test_gates():
     let k = btype_index("palisade_gate")
     check(can_place(0, k, 15, 18) and not can_place(1, k, 15, 18), "gates: a gate goes on your own wall, not on a rival\'s")
     check(not can_place(0, btype_index("stone_gate"), 15, 18), "gates: a stone gate doesn\'t go on a palisade")
-    issue_cmd(0, CMD_BUILD, [builder], k, 15, 18, 0)
+    issue_cmd(0, CMD_BUILD, [ builder ], k, 15, 18, 0)
     steps(900)
     let nb = occupied[18 * W + 16]
     let b = b_index_of(nb)
     let gone = not exists(wall_ids) id: b_index_of(id) >= 0
     check(gone and b >= 0 and bt_name[b_kind[b]] == "palisade_gate" and b_done[b] == 1 and occupied[18 * W + 15] == nb and occupied[18 * W + 17] == nb,
-        "gates: dropped on a palisade line, a gate takes the place of the three tiles under it and is built")
+          "gates: dropped on a palisade line, a gate takes the place of the three tiles under it and is built")
 
 // A diamond of side 1's palisade round (16, 24), every tile corner to corner with the next.
 def diamond():
     for(24) k:
         let q = k % 6
-        let c = [int2 { 16 + q, 18 + q }, int2 { 22 - q, 24 + q }, int2 { 16 - q, 30 - q }, int2 { 10 + q, 24 - q }][k / 6]
+        let c = [ int2 { 16 + q, 18 + q }, int2 { 22 - q, 24 + q }, int2 { 16 - q, 30 - q }, int2 { 10 + q, 24 - q } ][k / 6]
         put(1, "palisade", c.x, c.y, 0)
 
 def in_diamond(uid:int) -> bool:
@@ -1618,17 +1617,17 @@ def in_diamond(uid:int) -> bool:
 def test_diagonal_wall():
     new_world("flat_test", races0, bare0, [])
     diamond()
-    let f = solve([24 * W + 16], INF, 0)
+    let f = solve([ 24 * W + 16 ], INF, 0)
     check(f.dist[24 * W + 26] >= INF, "diagonal wall: no flow field reaches out of the diamond")
-    let ids = map(12) n: spawn_at(0, ["spear", "worker", "large"][n % 3], 15000 + (n % 4) * 700, 23000 + (n / 4) * 700)
-    for([int2 { 16500, 15500 }, int2 { 25500, 24500 }, int2 { 16500, 33500 }, int2 { 6500, 24500 }]) corner:
+    let ids = map(12) n: spawn_at(0, [ "spear", "worker", "large" ][n % 3], 15000 + (n % 4) * 700, 23000 + (n / 4) * 700)
+    for([ int2 { 16500, 15500 }, int2 { 25500, 24500 }, int2 { 16500, 33500 }, int2 { 6500, 24500 } ]) corner:
         issue_cmd(0, CMD_MOVE, ids, corner.x, corner.y, 0, 0)
         steps(400)
     let out = (filter(ids) uid: not in_diamond(uid)).length
     check(out == 0, "diagonal wall: a crowd pushed at every side of a corner-to-corner wall stays in ({out} got out)")
     // The movement rule on its own: a unit right at the corner between two wall tiles, stepping
     // diagonally through the gap point, is stopped (no field to help it).
-    place_at(ids[0], 21960, 24040)   // in tile (21, 24), inside, by the point where (21, 23) and (22, 24) touch
+    place_at(ids[0], 21960, 24040)  // in tile (21, 24), inside, by the point where (21, 23) and (22, 24) touch
     order_direct(index_of(ids[0]), 22600, 23400)
     steps(40)
     check(in_diamond(ids[0]), "diagonal wall: a unit steered straight at the corner gap doesn\'t slip through")
@@ -1654,8 +1653,8 @@ def test_diagonal_gates():
     let builder = spawn_at(1, "worker", 16500, 24500)
     stock[res_of("wood")][1] = 500
     let walls = map(3) q: occupied[(19 + q) * W + 17 + q]
-    issue_cmd(1, CMD_BUILD, [builder], k, 17, 19, 2)
-    issue_cmd(1, CMD_BUILD, [builder], k, 19, 25, 3, 1)
+    issue_cmd(1, CMD_BUILD, [ builder ], k, 17, 19, 2)
+    issue_cmd(1, CMD_BUILD, [ builder ], k, 19, 25, 3, 1)
     for(3000):
         tick_on()
         let a = b_index_of(occupied[20 * W + 18])
@@ -1669,17 +1668,17 @@ def test_diagonal_gates():
     check(b2 >= 0 and bt_gate[b_kind[b2]] != 0 and b_done[b2] == 1 and b_diag[b2] == 2, "diagonal gates: ... and across it (along 3)")
     check(not exists(walls) id: b_index_of(id) >= 0, "diagonal gates: the three wall tiles under it are gone")
     check(occupied[19 * W + 17] == g1 and occupied[21 * W + 19] == g1 and occupied[25 * W + 21] == g2 and occupied[27 * W + 19] == g2,
-        "diagonal gates: each holds the three cells of its diagonal")
-    let open = [int2 { 18, 19 }, int2 { 19, 19 }, int2 { 17, 20 }, int2 { 17, 21 }, int2 { 20, 25 }, int2 { 19, 26 }, int2 { 21, 26 }]
+          "diagonal gates: each holds the three cells of its diagonal")
+    let open = [ int2 { 18, 19 }, int2 { 19, 19 }, int2 { 17, 20 }, int2 { 17, 21 }, int2 { 20, 25 }, int2 { 19, 26 }, int2 { 21, 26 } ]
     check(not exists(open) c: occupied[c.y * W + c.x] != 0 or walks[0][c.y * W + c.x] != 1, "diagonal gates: the rest of its square is open ground")
     // Fields: none out of the diamond for side 0; out for side 1, through the gates.
-    let f0 = solve([24 * W + 16], INF, lane_base[0])
+    let f0 = solve([ 24 * W + 16 ], INF, lane_base[0])
     check(f0.dist[24 * W + 26] >= INF, "diagonal gates: no field leads the enemy out (no corner slipped at the gates\' ends)")
-    let f1 = solve([24 * W + 16], INF, lane_base[1])
+    let f1 = solve([ 24 * W + 16 ], INF, lane_base[1])
     check(f1.dist[18 * W + 21] < INF and f1.dist[29 * W + 22] < INF, "diagonal gates: the owner\'s field goes out through both")
     // Side 1 walks out through each gate and back in; side 0's crowd pushed at them stays in.
-    let friends = map(3) n: spawn_at(1, ["spear", "worker", "large"][n], 15500 + n * 700, 23500)
-    for([int2 { 21000, 18000 }, int2 { 23000, 29000 }]) dest:
+    let friends = map(3) n: spawn_at(1, [ "spear", "worker", "large" ][n], 15500 + n * 700, 23500)
+    for([ int2 { 21000, 18000 }, int2 { 23000, 29000 } ]) dest:
         issue_cmd(1, CMD_MOVE, friends, dest.x, dest.y, 0, 0)
         steps(700)
         let out = (filter(friends) uid: index_of(uid) >= 0 and dist2(u_x[index_of(uid)], u_y[index_of(uid)], dest.x, dest.y) < 2000 * 2000).length
@@ -1687,10 +1686,10 @@ def test_diagonal_gates():
         issue_cmd(1, CMD_MOVE, friends, 16500, 24500, 0, 0)
         steps(700)
         check(not exists(friends) uid: not in_diamond(uid), "diagonal gates: ... and back in")
-    for(friends.append([builder])) uid:   // (side 0 would fight them)
+    for(friends.append([ builder ])) uid:  // (side 0 would fight them)
         if index_of(uid) >= 0: remove_unit(index_of(uid))
-    let crowd = map(9) n: spawn_at(0, ["spear", "worker", "large"][n % 3], 15000 + (n % 3) * 700, 25000 + (n / 3) * 700)
-    for([int2 { 21000, 18000 }, int2 { 23000, 29000 }]) dest:
+    let crowd = map(9) n: spawn_at(0, [ "spear", "worker", "large" ][n % 3], 15000 + (n % 3) * 700, 25000 + (n / 3) * 700)
+    for([ int2 { 21000, 18000 }, int2 { 23000, 29000 } ]) dest:
         issue_cmd(0, CMD_MOVE, crowd, dest.x, dest.y, 0, 0)
         steps(700)
     let esc = (filter(crowd) uid: not in_diamond(uid)).length
@@ -1703,7 +1702,7 @@ def test_diagonal_gates():
     for(crowd) uid: remove_unit(index_of(uid))
     // The enemy knocks it down from outside, and the way is open.
     let foe = spawn_at(0, "spear", 21000, 18000)
-    issue_cmd(0, CMD_ATTACK, [foe], g1, 0, 0, 0)
+    issue_cmd(0, CMD_ATTACK, [ foe ], g1, 0, 0, 0)
     let t0 = tick
     while tick < t0 + 12000 and b_index_of(g1) >= 0: tick_on()
     check(b_index_of(g1) < 0, "diagonal gates: an enemy spearman knocks one down ({tick - t0} ticks)")
@@ -1733,7 +1732,7 @@ def ring_spec(tower:string) -> JV:
     set(spec, "gate", jstr("stone_gate"))
     set(spec, "tower", jstr(tower))
     set(spec, "tower_every", jint(4))
-    set(spec, "gates", jstrs(["n", "s"]))
+    set(spec, "gates", jstrs([ "n", "s" ]))
     return spec
 
 def in_age3():
@@ -1749,7 +1748,7 @@ def count_up(ids:[int]) -> int:
         if i >= 0 and u_perch[i] != 0: n++
     return n
 
-def all_down(ids:[int]) -> bool:   // each gone, or off the wall and standing
+def all_down(ids:[int]) -> bool:  // each gone, or off the wall and standing
     for(ids) uid:
         let i = index_of(uid)
         if i >= 0 and (u_perch[i] != 0 or u_moving[i] != 0): return false
@@ -1828,7 +1827,7 @@ def walls_run(races:[JV], checks_on:bool) -> int:
             if e.kind == EV_HIT and contains(archers, e.b) and contains(spears, e.a): melee_hits++
     c(melee_hits == 0, "walls: spears below can\'t reach those on the wall ({melee_hits} hits)")
     for(spears) uid:
-        if index_of(uid) >= 0: issue_cmd(1, CMD_STOP, [uid], 0, 0, 0, 0)
+        if index_of(uid) >= 0: issue_cmd(1, CMD_STOP, [ uid ], 0, 0, 0, 0)
     // Down into the town.
     let stay = archers[5]
     let five = archers.slice(0, 5)
@@ -1852,7 +1851,7 @@ def walls_run(races:[JV], checks_on:bool) -> int:
     stock[stone_r][0] = 100
     var stone = stock[stone_r][0]
     let wk = btype_index("wall")
-    issue_cmd(0, CMD_BUILD, [worker], wk, cell % W, cell / W, 0)
+    issue_cmd(0, CMD_BUILD, [ worker ], wk, cell % W, cell / W, 0)
     for(600):
         tick_on()
         let nb = b_index_of(occupied[cell])
@@ -1868,7 +1867,7 @@ def walls_run(races:[JV], checks_on:bool) -> int:
     b_hp[wb] = full_hp / 2
     stone = stock[stone_r][0]
     let wb_id = b_id[wb]
-    issue_cmd(0, CMD_REPAIR, [worker], wb_id, 0, 0, 0)
+    issue_cmd(0, CMD_REPAIR, [ worker ], wb_id, 0, 0, 0)
     for(2400):
         tick_on()
         if b_hp[b_index_of(wb_id)] >= full_hp: break
@@ -1883,7 +1882,7 @@ def walls_run(races:[JV], checks_on:bool) -> int:
     u_hp[index_of(ram)] = 40
     stock[res_of("wood")][0] = 500
     stock[res_of("gold")][0] = 500
-    issue_cmd(0, CMD_REPAIR, [worker], ram, 0, 0, 0)
+    issue_cmd(0, CMD_REPAIR, [ worker ], ram, 0, 0, 0)
     steps(600)
     c(u_hp[index_of(ram)] > 60, "walls: a worker mends a machine ram (40 -> {u_hp[index_of(ram)]} hp)")
     return state_hash()
@@ -1892,11 +1891,11 @@ def walls_run(races:[JV], checks_on:bool) -> int:
 // hill can go down, cliffs and ramps included; a gate never stands on a cliff, but still goes over a
 // wall on flat ground.
 def test_wall_over_hill():
-    new_world("reed_meadow_2v2", [races0[1], races0[0], races0[1], races0[0]], bare0, [0, 1, 0, 1])
+    new_world("reed_meadow_2v2", [ races0[1], races0[0], races0[1], races0[0] ], bare0, [ 0, 1, 0, 1 ])
     ages[0] = 3
     let y = 18
     var slopes = 0
-    for(["wall", "palisade"]) kind:
+    for([ "wall", "palisade" ]) kind:
         let k = btype_index(kind)
         let refused = []::int
         for(19) n:
@@ -1915,7 +1914,7 @@ def test_wall_over_hill():
     check(can_place(0, gk, 25, y, 0), "wall over a hill: a gate still goes over the wall on flat ground")
 
 def test_walls():
-    let rats_first = [races0[1], races0[0]]   // (the frogs build no stone walls of their own)
+    let rats_first = [ races0[1], races0[0] ]  // (the frogs build no stone walls of their own)
     let a = walls_run(rats_first, true)
     let b = walls_run(rats_first, false)
     check(a == b, "walls: the same commands give the same state hash")
@@ -1934,11 +1933,11 @@ def ways_run(checks_on:bool) -> int:
         stock[res_of("gold")][p] = 2000
     def c(ok:bool, what:string):
         if checks_on: check(ok, what)
-    fortify_ring(0, 12, 12, 6, ring_spec(""))   // (no wall towers: they would shoot the rats)
+    fortify_ring(0, 12, 12, 6, ring_spec(""))  // (no wall towers: they would shoot the rats)
     let lk = btype_index("ladder")
     c(can_place(1, lk, 19, 9) and not can_place(0, lk, 19, 9) and not can_place(1, lk, 21, 9), "siege ways: a ladder goes only against an enemy wall")
     let rat = lone(1, "worker", 22500, 9500, "passive")
-    issue_cmd(1, CMD_BUILD, [rat], lk, 19, 9, 0)
+    issue_cmd(1, CMD_BUILD, [ rat ], lk, 19, 9, 0)
     var ladder = 0
     for(600):
         tick_on()
@@ -1960,7 +1959,7 @@ def ways_run(checks_on:bool) -> int:
         if count_up(spears) == 0: break
     c(count_up(spears) == 0, "siege ways: they climb down their ladder")
     let archer = lone(0, "archer", 15500, 9500, "stand")
-    issue_cmd(0, CMD_MOVE, [archer], 18500, 9500, 0, 0)
+    issue_cmd(0, CMD_MOVE, [ archer ], 18500, 9500, 0, 0)
     var pushed = false
     for(600):
         tick_on()
@@ -1970,7 +1969,7 @@ def ways_run(checks_on:bool) -> int:
     c(pushed and walks[0][9 * W + 19] == 1 and walk_over[9 * W + 19] == 0, "siege ways: a defender at its top pushes the ladder off")
     // A siege tower up to the south wall; swordsmen go up through it and down into the town.
     let tower = lone(1, "siege_tower", 15500, 23500, "passive")
-    issue_cmd(1, CMD_MOVE, [tower], 15500, 18500, 0, 0)
+    issue_cmd(1, CMD_MOVE, [ tower ], 15500, 18500, 0, 0)
     var docked = false
     for(600):
         tick_on()
@@ -1992,16 +1991,16 @@ def ways_run(checks_on:bool) -> int:
     c(inside == swords.length, "siege ways: sent into the town, they come down the frogs\' stairs inside ({inside} of {swords.length})")
     // The defenders' tools: a frog on the north gatehouse pours on a rat ram at the gate.
     let sentry = lone(0, "spear", 12500, 9500, "stand")
-    issue_cmd(0, CMD_MOVE, [sentry], 12500, 6500, 0, 0)
+    issue_cmd(0, CMD_MOVE, [ sentry ], 12500, 6500, 0, 0)
     let ram = lone(1, "ram", 12500, 3000, "passive")
-    issue_cmd(1, CMD_ATTACK, [ram], occupied[6 * W + 12], 0, 0, 0)
+    issue_cmd(1, CMD_ATTACK, [ ram ], occupied[6 * W + 12], 0, 0, 0)
     var pours = 0
     var scalded = 0
     for(600):
         tick_on()
         var poured = false
         for(events) e:
-            if e.kind == EV_HIT and b_index_of(e.a) >= 0:   // a hit from a building: a pour (towers shoot shots)
+            if e.kind == EV_HIT and b_index_of(e.a) >= 0:  // a hit from a building: a pour (towers shoot shots)
                 poured = true
                 if e.b == ram: scalded += e.c
         if poured: pours++
@@ -2051,7 +2050,7 @@ def test_modes():
     check(started_with_town[0] == 1 and started_with_town[1] == 0 and walled(0) >= 50 and walled(1) == 0, "modes: Siege walls the defenders in, the attackers have no town")
     var engines = 0
     for(u_owner) o, i:
-        if o == 1 and has_s(["ram", "catapult", "siege_tower"], t_slot[u_kind[i]]): engines++
+        if o == 1 and has_s([ "ram", "catapult", "siege_tower" ], t_slot[u_kind[i]]): engines++
     check(engines >= 5 and ages[1] == 3, "modes: the attackers bring engines ({engines})")
     steps(60)
     check(winner < 0 and defeated[1] == 0, "modes: an attacker with an army is in the game")
@@ -2071,18 +2070,18 @@ def test_modes():
 // match; in Siege and Fortress every side can, defenders and attackers alike, and rebuild a breach.
 def test_modes_lift_lacks():
     let centaurs = gen_race("centaur romans")
-    let both = [centaurs, centaurs]
+    let both = [ centaurs, centaurs ]
     new_world("siege_vale", both, rules0, [])
-    let ids = ["wall", "stone_gate", "wall_tower", "palisade"]
+    let ids = [ "wall", "stone_gate", "wall_tower", "palisade" ]
     let wk = btype_index("wall")
     check(bm_lacks[0][wk] != 0, "modes: the centaurs lack stone walls in a normal match (the case this tests)")
-    for(["wall", "stone_gate", "palisade"]) id:
+    for([ "wall", "stone_gate", "palisade" ]) id:
         check(bm_lacks[0][btype_index(id)] != 0 and build_barred(0, btype_index(id)), "modes: no {id} for centaurs in a normal match")
-    fort_put(0, wk, 5, 5, 0)   // (one handed to them all the same)
+    fort_put(0, wk, 5, 5, 0)  // (one handed to them all the same)
     let nb = b_id[b_id.length - 1]
     b_hp[b_index_of(nb)] -= 100
     check(not can_mend(0, nb), "modes: centaurs can\'t mend a stone wall in a normal match")
-    for(["siege", "fortress"]) mode:
+    for([ "siege", "fortress" ]) mode:
         new_world("siege_vale", both, mode_rules(mode), [])
         for(2) p:
             for(ids) id: check(not build_barred(p, btype_index(id)), "modes: {mode} side {p} (centaurs) may build a {id}")
@@ -2115,7 +2114,7 @@ def test_movement_classes():
     let flyers = gen_race("flying greeks with wings")
     let rats = gen_race(PROMPTS[1])
     let frogs = gen_race(PROMPTS[0])
-    new_world("flat_test", [flyers, rats, frogs], bare0, [0, 0, 0])
+    new_world("flat_test", [ flyers, rats, frogs ], bare0, [ 0, 0, 0 ])
     let fx = 25500
     let fy = 32500
     let tx = 39500
@@ -2124,12 +2123,12 @@ def test_movement_classes():
     spawn_cmd(1, "spear", 1, fx, fy + 600)
     while u_id.length < 2: tick_on()
     check(u_mclass[0] == 2 and u_mclass[1] == 0, "winged hoplites fly, rats walk ({u_mclass[0]}, {u_mclass[1]})")
-    issue_cmd(0, CMD_MOVE, [u_id[0]], tx, ty, 0, 0)
-    issue_cmd(1, CMD_MOVE, [u_id[1]], tx, ty + 600, 0, 0)
-    let arrived = [-1, -1]
-    let walked = [0, 0]
-    let lx = [u_x[0], u_x[1]]
-    let ly = [u_y[0], u_y[1]]
+    issue_cmd(0, CMD_MOVE, [ u_id[0] ], tx, ty, 0, 0)
+    issue_cmd(1, CMD_MOVE, [ u_id[1] ], tx, ty + 600, 0, 0)
+    let arrived = [ -1, -1 ]
+    let walked = [ 0, 0 ]
+    let lx = [ u_x[0], u_x[1] ]
+    let ly = [ u_y[0], u_y[1] ]
     var over_water = false
     let water = terrain_index("water")
     let t0 = tick
@@ -2156,8 +2155,8 @@ def test_movement_classes():
     let frog = u_id[2]
     let rat = u_id[1]
     check(u_mclass[2] == 1, "frogs are amphibious")
-    issue_cmd(2, CMD_MOVE, [frog], ax, ay, 0, 0)
-    issue_cmd(1, CMD_MOVE, [rat], ax, ay, 0, 0)
+    issue_cmd(2, CMD_MOVE, [ frog ], ax, ay, 0, 0)
+    issue_cmd(1, CMD_MOVE, [ rat ], ax, ay, 0, 0)
     steps(1600)
     let fi = index_of(frog)
     let ri = index_of(rat)
@@ -2170,8 +2169,8 @@ def test_movement_classes():
 // flyer on its side; a palisade line it flies over. (The GDScript check of a save from before D-158,
 // its walls marked on load, is left out: Lobster's saves are its own.)
 def test_flyers_and_walls(flyers:JV, rats:JV):
-    for(["wall", "palisade"]) kind:
-        new_world("flat_test", [flyers, rats], bare0, [0, 1])
+    for([ "wall", "palisade" ]) kind:
+        new_world("flat_test", [ flyers, rats ], bare0, [ 0, 1 ])
         ages[1] = 3
         let k = btype_index(kind)
         let y = 20
@@ -2183,7 +2182,7 @@ def test_flyers_and_walls(flyers:JV, rats:JV):
         else: check(closed == 0, "flyers and walls: a palisade is open to flyers ({closed} of {W} closed)")
         spawn_cmd(0, "spear", 1, 30500, 15500)
         while u_id.length < 1: tick_on()
-        issue_cmd(0, CMD_MOVE, [u_id[0]], 30500, 26500, 0, 0)
+        issue_cmd(0, CMD_MOVE, [ u_id[0] ], 30500, 26500, 0, 0)
         steps(600)
         let past = u_y[0] > (y + 1) * 1000
         check(past == (kind == "palisade"), "flyers and walls: the flyer {if past: "crosses" else: "stays behind"} the {kind} (y {u_y[0]})")
@@ -2196,7 +2195,7 @@ def flood(mc:int, from_cell:int, skip:int) -> [int]:
         let c = y * W + x
         return walks[mc][c] == 1 and terrain[c] != skip
     seen[from_cell] = 1
-    let todo = [from_cell]
+    let todo = [ from_cell ]
     while todo.length:
         let c = todo.pop()
         let x = c % W
@@ -2211,7 +2210,7 @@ def flood(mc:int, from_cell:int, skip:int) -> [int]:
 // Reed Meadow's rivers have a deep middle: no class gets across but at a ford or a bridge, and no
 // flyer crosses a tree (bridge decks aren't laid on a bare map).
 def test_deep_river():
-    for(["reed_meadow", "reed_meadow_2v2"]) id:
+    for([ "reed_meadow", "reed_meadow_2v2" ]) id:
         bare_map(id)
         let ford = terrain_index("ford")
         let tree = terrain_index("tree")
@@ -2230,7 +2229,7 @@ def test_deep_river():
 def test_land():
     let rats = gen_race(PROMPTS[1])
     let frogs = gen_race(PROMPTS[0])
-    new_world("river_test", [rats, frogs], bare0, [0, 0])   // allies: nobody fights
+    new_world("river_test", [ rats, frogs ], bare0, [ 0, 0 ])  // allies: nobody fights
     let tree = terrain_index("tree")
     let river = terrain_index("river")
     let ford = terrain_index("ford")
@@ -2246,7 +2245,7 @@ def test_land():
     check(fog[0][8 * W + 5] == VISIBLE, "land: open ground round it is")
     // Crossing: every river cell the rat stands on is the ford or the bridge's deck.
     var cheat = false
-    issue_cmd(0, CMD_MOVE, [rat], 30500, 11500, 0, 0)
+    issue_cmd(0, CMD_MOVE, [ rat ], 30500, 11500, 0, 0)
     var t0 = tick
     while tick < t0 + 1600:
         tick_on()
@@ -2260,7 +2259,7 @@ def test_land():
     spawn_cmd(1, "spear", 1, 15500, 11500)
     while u_id.length < 2: tick_on()
     let frog = u_id[1]
-    issue_cmd(1, CMD_MOVE, [frog], 25500, 11500, 0, 0)
+    issue_cmd(1, CMD_MOVE, [ frog ], 25500, 11500, 0, 0)
     var swam = false
     t0 = tick
     while tick < t0 + 600:
@@ -2294,7 +2293,7 @@ def test_land():
     // Felling: a worker cuts the forest's first tree: wood, a stump, sight and a way through.
     let tc = 11 * W + 8
     amount[tc] = 3
-    issue_cmd(0, CMD_GATHER, [builders[0]], tc, 0, 0, 0)
+    issue_cmd(0, CMD_GATHER, [ builders[0] ], tc, 0, 0, 0)
     t0 = tick
     while tick < t0 + 2000 and terrain[tc] == tree: tick_on()
     check(terrain_name(tc) == "stump" and walks[0][tc] == 1 and opaque[tc] == 0, "land: the felled tree is a walkable stump that doesn\'t block sight")
@@ -2318,7 +2317,7 @@ def shoot(ax:int, g:int, ay:int) -> Shot:
     u_y[ai] = ay
     u_x[ti] = if g < 0: ax - (abs(g) + r) else: ax + g + r
     u_y[ti] = ay
-    issue_cmd(0, CMD_ATTACK, [a], t, 0, 0, 0)
+    issue_cmd(0, CMD_ATTACK, [ a ], t, 0, 0, 0)
     let out = Shot { false, 0, 0 }
     for(400):
         tick_on()
@@ -2370,7 +2369,7 @@ def test_hills():
     // Climbing: a walker below the west face goes onto the plateau by the ramp, never on a cliff.
     new_world("hill_test", races0, bare0, [])
     let u = lone(0, "spear", 9500, 6500, "passive")
-    issue_cmd(0, CMD_MOVE, [u], 16500, 6500, 0, 0)
+    issue_cmd(0, CMD_MOVE, [ u ], 16500, 6500, 0, 0)
     var on_cliff = false
     var by_ramp = false
     let t0 = tick
@@ -2397,9 +2396,9 @@ def test_hills():
     check(fog[0][cat(9, 9)] == VISIBLE, "hills: from on top you see further (7 tiles)")
     // Range: an archer reaches a level further down, a level less far up; uphill hits are weaker.
     let reach = t_reach[type_of_slot(0, "archer")]
-    let down = shoot(14800, -(reach + 600), 6500)   // archer on top, target below, beyond its flat reach
-    let up = shoot(12600, reach - 400, 6500)        // archer below, target on top, inside its flat reach
-    let flat = shoot(9500, reach + 600, 16500)      // on the low ground, beyond reach
+    let down = shoot(14800, -(reach + 600), 6500)  // archer on top, target below, beyond its flat reach
+    let up = shoot(12600, reach - 400, 6500)       // archer below, target on top, inside its flat reach
+    let flat = shoot(9500, reach + 600, 16500)     // on the low ground, beyond reach
     check(down.hit and down.far < 200, "hills: shooting down, it hits from 600 beyond its reach without moving (moved {down.far})")
     check(up.hit and up.far > 300, "hills: shooting up, it must close in first (moved {up.far})")
     check(flat.hit and flat.far > 300, "hills: on the flat, the same gap needs closing (moved {flat.far})")
@@ -2427,9 +2426,9 @@ def fresh_changes() -> [int], [int]:
 def test_flow_patch():
     new_world("river_test", races0, bare0, [])
     let target = 12 * W + 4
-    let full = solve([target], INF, 0)
-    let near = solve([target], NEAR_CUTOFF, 0)
-    for([11 * W + 8, 11 * W + 9, 12 * W + 9, 10 * W + 10, 11 * W + 10]) c:
+    let full = solve([ target ], INF, 0)
+    let near = solve([ target ], NEAR_CUTOFF, 0)
+    for([ 11 * W + 8, 11 * W + 9, 12 * W + 9, 10 * W + 10, 11 * W + 10 ]) c:
         clear_fresh()
         while amount[c] > 0: take(c)
         let opened, closed = fresh_changes()
@@ -2437,8 +2436,8 @@ def test_flow_patch():
             patch_opened(full, opened, 0, INF)
             patch_opened(near, opened, 0, INF)
         assert closed.length == 0
-    let fresh_full = solve([target], INF, 0)
-    let fresh_near = solve([target], NEAR_CUTOFF, 0)
+    let fresh_full = solve([ target ], INF, 0)
+    let fresh_near = solve([ target ], NEAR_CUTOFF, 0)
     var same = 0
     var same_near = 0
     for(W * H) c:
@@ -2447,24 +2446,24 @@ def test_flow_patch():
     check(same == W * H, "flow patch: a patched field matches a fresh solve ({same} of {W * H} cells)")
     check(same_near == W * H, "flow patch: a patched near field matches within its cutoff ({same_near} of {W * H})")
     var uphill_at = -1
-    for(W * H) c:   // every step leads downhill to the target
+    for(W * H) c:  // every step leads downhill to the target
         if uphill_at < 0 and full.dist[c] > 0 and full.dist[c] < INF and full.dist[full.next[c]] >= full.dist[c]: uphill_at = c
     check(uphill_at < 0, "flow patch: every step leads downhill (next of cell {uphill_at} goes uphill)")
 
 // Fields patched for cells closing and opening together (buildings put up and pulled down, trees
 // felled, over a big map) keep a fresh solve's costs, and every step still leads downhill.
 def test_flow_patch_mixed():
-    new_world("reed_meadow_2v2", [races0[0], races0[1], races0[0], races0[1]], bare0, [])
-    let targets = [40 * W + 44, 10 * W + 12, 70 * W + 20]
+    new_world("reed_meadow_2v2", [ races0[0], races0[1], races0[0], races0[1] ], bare0, [])
+    let targets = [ 40 * W + 44, 10 * W + 12, 70 * W + 20 ]
     let fs = []::Flow
     let cuts = []::int
     for(targets) t:
-        fs.push(solve([t], INF, 0))
+        fs.push(solve([ t ], INF, 0))
         cuts.push(INF)
-        fs.push(solve([t], NEAR_CUTOFF, 0))
+        fs.push(solve([ t ], NEAR_CUTOFF, 0))
         cuts.push(NEAR_CUTOFF)
     let r = new_rng(77)
-    let standing = []::[int]   // footprints up
+    let standing = []::[int]  // footprints up
     var bad = 0
     var work = 0
     for(60) sn:
@@ -2498,7 +2497,7 @@ def test_flow_patch_mixed():
             if opened.length: work += patch_opened(f, opened, 0, INF)
     for(fs) f, k:
         let cut = cuts[k]
-        let fresh_f = solve([targets[k / 2]], cut, 0)
+        let fresh_f = solve([ targets[k / 2] ], cut, 0)
         for(W * H) c:
             let a = f.dist[c]
             let b = fresh_f.dist[c]
@@ -2532,8 +2531,8 @@ def bt_reseed_wood(k:int) -> int: return bt_reseed[k][res_of("wood")]
 // A second farm beside farm cell a (3-5 tiles over, wherever there's room), or -1.
 def farm_beside(a:int) -> int:
     let fk = btype_index("farm")
-    for([3, 4, 5, -3, -4, -5]) d:
-        for([a + d, a + d * W]) c:
+    for([ 3, 4, 5, -3, -4, -5 ]) d:
+        for([ a + d, a + d * W ]) c:
             if can_place(0, fk, c % W, c / W): return c
     return -1
 
@@ -2554,9 +2553,9 @@ def test_one_farmer():
     let fk = btype_index("farm")
     let b2 = farm_beside(a)
     check(b2 >= 0 and can_place(0, fk, a % W, a / W), "one farmer: room for two farms")
-    issue_cmd(0, CMD_BUILD, [ids[0]], fk, a % W, a / W, 0)
+    issue_cmd(0, CMD_BUILD, [ ids[0] ], fk, a % W, a / W, 0)
     while tick < 1600 and terrain[a] != field: tick_on()
-    issue_cmd(0, CMD_BUILD, [ids[1]], fk, b2 % W, b2 / W, 0)
+    issue_cmd(0, CMD_BUILD, [ ids[1] ], fk, b2 % W, b2 / W, 0)
     while tick < 3200 and terrain[b2] != field: tick_on()
     check(terrain[a] == field and terrain[b2] == field, "one farmer: both farms are sown")
     check(farming(ids[0], a) and farming(ids[1], b2), "one farmer: each farm\'s builder farms it")
@@ -2566,13 +2565,13 @@ def test_one_farmer():
     check(taken(a, rival), "farms: a rival\'s worker can\'t work your farm")
     check(taken(a, -1) and taken(a + 1, -1), "one farmer: a worked farm is taken (any of its tiles)")
     // A third worker sent to the first farm doesn't join its farmer.
-    issue_cmd(0, CMD_GATHER, [ids[2]], a + 1, 0, 0, 0)
+    issue_cmd(0, CMD_GATHER, [ ids[2] ], a + 1, 0, 0, 0)
     steps(20)
     let i2 = index_of(ids[2])
     check(not farming(ids[2], a) and not farming(ids[2], b2) and u_task[i2] == GATHER, "one farmer: a second worker sent to a worked farm goes elsewhere (home {u_home[i2]})")
     // The second farmer walks off: the next worker sent to the first farm takes the freed one.
-    issue_cmd(0, CMD_MOVE, [ids[1]], sx - 3000, sy, 0, 0)
-    issue_cmd(0, CMD_GATHER, [ids[3]], a, 0, 0, 0)
+    issue_cmd(0, CMD_MOVE, [ ids[1] ], sx - 3000, sy, 0, 0)
+    issue_cmd(0, CMD_GATHER, [ ids[3] ], a, 0, 0, 0)
     steps(20)
     check(farming(ids[3], b2), "one farmer: a farm its farmer left is picked up by the next worker sent near it")
     check(farming(ids[0], a), "one farmer: the first farm keeps its farmer")
@@ -2587,7 +2586,7 @@ def test_one_farmer():
     u_home[i4] = -1
     steps(40)
     check(not farming(ids[4], a), "one farmer: a worker waiting by a worked farm doesn\'t join its farmer")
-    issue_cmd(0, CMD_MOVE, [ids[0]], sx - 3000, sy + 2000, 0, 0)
+    issue_cmd(0, CMD_MOVE, [ ids[0] ], sx - 3000, sy + 2000, 0, 0)
     steps(40)
     check(farming(ids[4], a), "one farmer: a worker waiting by a farm takes it when its farmer leaves")
 
@@ -2615,7 +2614,7 @@ def test_auto_reseed():
     let a = (sy / 1000 + 2) * W + sx / 1000 + 3
     let fk = btype_index("farm")
     let b2 = farm_beside(a)
-    issue_cmd(0, CMD_BUILD, [ids[0]], fk, a % W, a / W, 0)
+    issue_cmd(0, CMD_BUILD, [ ids[0] ], fk, a % W, a / W, 0)
     while tick < 1600 and terrain[a] != field: tick_on()
     check(auto_reseed[0] == 1, "auto-reseed: on by default")
     let wood = stock[1][0]
@@ -2638,9 +2637,9 @@ def test_auto_reseed():
     steps(600)
     check(farming(ids[0], a) and stock[0][0] > food, "auto-reseed: ...and farmed ({food} -> {stock[0][0]} food)")
     // Off, with a free farm nearby: the farmer moves over to it.
-    issue_cmd(0, CMD_BUILD, [ids[1]], fk, b2 % W, b2 / W, 0)
+    issue_cmd(0, CMD_BUILD, [ ids[1] ], fk, b2 % W, b2 / W, 0)
     while tick < 6000 and terrain[b2] != field: tick_on()
-    issue_cmd(0, CMD_MOVE, [ids[1]], sx - 4000, sy, 0, 0)
+    issue_cmd(0, CMD_MOVE, [ ids[1] ], sx - 4000, sy, 0, 0)
     issue_cmd(0, CMD_AUTO_RESEED, [], 0, 0, 0, 0)
     steps(12)
     check(auto_reseed[0] == 0, "auto-reseed: the player turns it off")
@@ -2660,7 +2659,7 @@ def test_farms():
     let cx = sx / 1000 + 3
     let cy = sy / 1000 + 2
     let fk = btype_index("farm")
-    issue_cmd(0, CMD_BUILD, [worker], fk, cx, cy, 0)
+    issue_cmd(0, CMD_BUILD, [ worker ], fk, cx, cy, 0)
     let field = terrain_index("field")
     while tick < 1600 and terrain[cy * W + cx] != field: tick_on()
     check(terrain[cy * W + cx] == field, "farm: the frogs\' farm became a field")
@@ -2671,19 +2670,19 @@ def test_farms():
     check(stock[0][0] > food_before, "farm: food comes in from the field ({food_before} -> {stock[0][0]})")
     // One farm, one pool: its four tiles share one amount, units walk across it, and worked out it
     // lies fallow until a worker reseeds it (for wood).
-    let cells = [cy * W + cx, cy * W + cx + 1, (cy + 1) * W + cx, (cy + 1) * W + cx + 1]
+    let cells = [ cy * W + cx, cy * W + cx + 1, (cy + 1) * W + cx, (cy + 1) * W + cx + 1 ]
     check(not exists(cells) c: left_at(c) != left_at(cells[0]), "farm: its tiles share one pool of food ({left_at(cells[0])})")
     check(not exists(cells) c: walks[0][c] != 1, "farm: units can walk across it")
     let farm_id = occupied[cells[0]]
     check(farm_id != 0, "farm: the farm stays standing after it\'s sown")
-    issue_cmd(0, CMD_AUTO_RESEED, [], 0, 0, 0, 0)   // by hand here; auto-reseed has its own test
+    issue_cmd(0, CMD_AUTO_RESEED, [], 0, 0, 0, 0)  // by hand here; auto-reseed has its own test
     steps(12)
-    amount[cells[0]] = 1   // nearly worked out
+    amount[cells[0]] = 1  // nearly worked out
     while tick < 6000 and left_at(cells[0]) > 0: tick_on()
     let fallow_t = terrain_index("fallow")
     check(terrain[cells[0]] == fallow_t and occupied[cells[0]] == farm_id, "farm: worked out, it lies fallow (and is still a farm)")
     let wood_before = stock[1][0]
-    issue_cmd(0, CMD_RESEED, [worker], farm_id, 0, 0, 0)
+    issue_cmd(0, CMD_RESEED, [ worker ], farm_id, 0, 0, 0)
     steps(12)
     check(terrain[cells[0]] == field and left_at(cells[0]) > 0, "farm: reseeding brings the crops back")
     check(stock[1][0] < wood_before, "farm: reseeding costs wood ({wood_before} -> {stock[1][0]})")
@@ -2704,7 +2703,7 @@ def test_farms():
     let stone_cell = nearest_res(sx, sy, "stone")
     let miner = (filter(ids_of(0)) uid: uid != worker)[0]
     let stone_before = stock[2][0]
-    issue_cmd(0, CMD_GATHER, [miner], stone_cell, 0, 0, 0)
+    issue_cmd(0, CMD_GATHER, [ miner ], stone_cell, 0, 0, 0)
     steps(1200)
     check(stock[2][0] > stone_before, "stone: a worker mines the deposit ({stone_before} -> {stock[2][0]})")
     test_one_farmer()
@@ -2727,7 +2726,7 @@ def test_fog_memory():
     let cy = sy / 1000 + 2
     let c = cy * W + cx
     let grass = terrain[c]
-    issue_cmd(1, CMD_BUILD, [worker], btype_index("farm"), cx, cy, 0)
+    issue_cmd(1, CMD_BUILD, [ worker ], btype_index("farm"), cx, cy, 0)
     let field = terrain_index("field")
     while tick < 1600 and terrain[c] != field: tick_on()
     steps(5)
@@ -2737,21 +2736,21 @@ def test_fog_memory():
     check(not seen_by(0, farm_id), "fog memory: nor does player 0 know the farm")
     check(fog_ground[1][c] == field and fog_left[1][c] > 0, "fog memory: its owner sees its crops")
     let hx, hy = pos_of(scout)
-    place_at(scout, cx * 1000 - 2000, cy * 1000)   // player 0's worker looks in
+    place_at(scout, cx * 1000 - 2000, cy * 1000)  // player 0's worker looks in
     steps(8)
     check(fog_ground[0][c] == field and fog_left[0][c] == left_at(c), "fog memory: seen, it\'s a field with its crops")
     check(seen_by(0, farm_id), "fog memory: seen, player 0 knows the farm")
-    place_at(scout, hx, hy)   // and goes home
+    place_at(scout, hx, hy)  // and goes home
     u_moving[index_of(scout)] = 0
     steps(8)
     check(fog[0][c] == EXPLORED, "fog memory: away again, the farm is under explored fog")
     let seen_left = fog_left[0][c]
-    auto_reseed[1] = 0   // left fallow (auto-reseed would sow it again at once)
-    amount[c] = 1   // nearly worked out
+    auto_reseed[1] = 0  // left fallow (auto-reseed would sow it again at once)
+    amount[c] = 1       // nearly worked out
     while tick < 6000 and left_at(c) > 0: tick_on()
     check(terrain[c] == terrain_index("fallow"), "fog memory: the farm is worked out")
     check(fog_ground[0][c] == field and fog_left[0][c] == seen_left, "fog memory: player 0 still remembers it full of crops")
-    let b = b_index_of(farm_id)   // torn down out of sight
+    let b = b_index_of(farm_id)  // torn down out of sight
     clear_farm(b)
     occupy(footprint(b), 0)
     remove_building(b)
@@ -2765,7 +2764,7 @@ def test_fog_memory():
 def test_age_timing():
     new_world("flat_test", races0, rules0, [])
     let bots = map(2) p: EcoBot { p }
-    let at_t = [-1, -1]
+    let at_t = [ -1, -1 ]
     while tick < 9600 and (at_t[0] < 0 or at_t[1] < 0):
         for(bots) bot: bot_think(bot)
         tick_on()
@@ -2788,7 +2787,7 @@ def test_builder_moves_on():
     let cx = start_x[0] / 1000
     let cy = start_y[0] / 1000
     let hk = btype_index("house")
-    let spots = []::int2   // two free spots near the start, 3 tiles apart
+    let spots = []::int2  // two free spots near the start, 3 tiles apart
     for(13) dy0:
         for(5) dx0:
             let dx = dx0 + 3
@@ -2796,10 +2795,10 @@ def test_builder_moves_on():
             if spots.length < 2 and can_place(0, hk, cx + dx, cy + dy) and (not spots.length or abs(spots[0].y - (cy + dy)) >= 3):
                 spots.push(int2 { cx + dx, cy + dy })
     assert spots.length == 2
-    issue_cmd(0, CMD_BUILD, [ws[0]], hk, spots[0].x, spots[0].y, 0)
-    issue_cmd(0, CMD_BUILD, [ws[1]], hk, spots[1].x, spots[1].y, 0)
+    issue_cmd(0, CMD_BUILD, [ ws[0] ], hk, spots[0].x, spots[0].y, 0)
+    issue_cmd(0, CMD_BUILD, [ ws[1] ], hk, spots[1].x, spots[1].y, 0)
     steps(16)
-    issue_cmd(0, CMD_MOVE, [ws[1]], start_x[0] - 6000, start_y[0], 0, 0)   // walks off: the second house is left a foundation
+    issue_cmd(0, CMD_MOVE, [ ws[1] ], start_x[0] - 6000, start_y[0], 0, 0)  // walks off: the second house is left a foundation
     var houses = []::int
     for(3000):
         tick_on()
@@ -2818,13 +2817,13 @@ def test_builder_back_to_work():
     let wood = kind_of("wood")
     var a = index_of(ws[0])
     let tree = nearest_resource(u_x[a], u_y[a], wood, a, false, false, false)
-    issue_cmd(0, CMD_GATHER, [ws[0]], tree, 0, 0, 0)
+    issue_cmd(0, CMD_GATHER, [ ws[0] ], tree, 0, 0, 0)
     steps(200)
     a = index_of(ws[0])
     let home = u_home[a]
     check(home >= 0 and (u_task[a] == GATHER or u_task[a] == T_RETURN), "builders: a woodcutter at work before building (task {u_task[a]})")
     let hk = btype_index("house")
-    var near = int2 { -1, -1 }   // a house near the woodcutter's tree
+    var near = int2 { -1, -1 }  // a house near the woodcutter's tree
     let tx = home % W
     let ty = home / W
     for(5) r0:
@@ -2836,16 +2835,16 @@ def test_builder_back_to_work():
                 if near.x < 0 and can_place(0, hk, tx + dx, ty + dy): near = int2 { tx + dx, ty + dy }
                 dx++
             dy++
-    var far = int2 { -1, -1 }    // and one beyond NEXT_BUILD_TILES of it
+    var far = int2 { -1, -1 }  // and one beyond NEXT_BUILD_TILES of it
     for(6) r0:
         let r = r0 + NEXT_BUILD_TILES + 3
-        for([-r, r]) dx:
+        for([ -r, r ]) dx:
             if far.x < 0 and can_place(0, hk, near.x + dx, near.y): far = int2 { near.x + dx, near.y }
     check(near.x >= 0 and far.x >= 0, "builders: room for the test\'s houses")
-    issue_cmd(0, CMD_BUILD, [ws[0]], hk, near.x, near.y, 0)
-    issue_cmd(0, CMD_BUILD, [ws[1]], hk, far.x, far.y, 0)
+    issue_cmd(0, CMD_BUILD, [ ws[0] ], hk, near.x, near.y, 0)
+    issue_cmd(0, CMD_BUILD, [ ws[1] ], hk, far.x, far.y, 0)
     steps(16)
-    issue_cmd(0, CMD_MOVE, [ws[1]], start_x[0], start_y[0], 0, 0)   // walks off: the far house stays a foundation
+    issue_cmd(0, CMD_MOVE, [ ws[1] ], start_x[0], start_y[0], 0, 0)  // walks off: the far house stays a foundation
     var done = false
     for(2000):
         tick_on()
@@ -2856,7 +2855,7 @@ def test_builder_back_to_work():
     check(done, "builders: the house near the woodcutter goes up")
     check((u_task[a] == GATHER or u_task[a] == T_RETURN) and u_carry_kind[a] == wood, "builders: done, the woodcutter goes back to its wood (task {u_task[a]}), not to the foundation {abs(far.x - near.x)} tiles off")
     // A builder with nothing gathered before, done far from any foundation: it stays by the building.
-    issue_cmd(0, CMD_STOP, [ws[2]], 0, 0, 0, 0)
+    issue_cmd(0, CMD_STOP, [ ws[2] ], 0, 0, 0, 0)
     steps(12)
     var spot2 = int2 { -1, -1 }
     let scx = start_x[0] / 1000
@@ -2867,7 +2866,7 @@ def test_builder_back_to_work():
             let dy = dy0 - 8
             if spot2.x < 0 and abs(dx) + abs(dy) >= 4 and abs(scx + dx - far.x) > NEXT_BUILD_TILES + 2 and can_place(0, hk, scx + dx, scy + dy):
                 spot2 = int2 { scx + dx, scy + dy }
-    issue_cmd(0, CMD_BUILD, [ws[2]], hk, spot2.x, spot2.y, 0)
+    issue_cmd(0, CMD_BUILD, [ ws[2] ], hk, spot2.x, spot2.y, 0)
     var finished = -1
     for(2500):
         tick_on()
@@ -2887,7 +2886,7 @@ def test_no_dark_picks():
     let seen = nearest_resource(x, y, wood, wi, false, false, true)
     check(seen >= 0 and fog[0][seen] != 0, "dark picks: the nearest wood a worker picks is on explored ground")
     let anywhere = nearest_resource(x, y, wood, -1, false, false, false)
-    for(W * H) c: fog[0][c] = 0   // forget everything
+    for(W * H) c: fog[0][c] = 0  // forget everything
     let got = nearest_resource(x, y, wood, wi, false, false, true)
     check(got == -1, "dark picks: with nothing explored, no wood is picked ({got})")
     check(anywhere >= 0 and nearest_resource(x, y, wood, wi, false, false, false) == anywhere, "dark picks: ... while a pick near where it was sent may still be there (the player sent it)")
@@ -2899,7 +2898,7 @@ def test_wood_spots():
     let worker = type_of_slot(0, "worker")
     while own_workers_of(0).length < 7: spawn_by(0, worker)
     let ids = own_workers_of(0)
-    let tree = 13 * W + 29   // the west edge of the wood east of the start
+    let tree = 13 * W + 29  // the west edge of the wood east of the start
     check(resource_kind_at(tree) == "wood", "wood spots: the test\'s tree is a tree ({resource_kind_at(tree)})")
     issue_cmd(0, CMD_GATHER, ids, tree, 0, 0, 0)
     var bad = 0
@@ -2914,8 +2913,8 @@ def test_wood_spots():
                 let h = u_home[i]
                 if h >= 0 and u_task[i] == GATHER:
                     var open = false
-                    for([[0, -1], [1, 0], [0, 1], [-1, 0]]) k: open = open or cell_walkable(h % W + k[0], h / W + k[1], lane(i))
-                    if not open or u_gspot[i] % 2 == 1: bad++   // a tree with no open side, or a corner spot
+                    for([ [ 0, -1 ], [ 1, 0 ], [ 0, 1 ], [ -1, 0 ] ]) k: open = open or cell_walkable(h % W + k[0], h / W + k[1], lane(i))
+                    if not open or u_gspot[i] % 2 == 1: bad++  // a tree with no open side, or a corner spot
                     let key = h * 8 + u_gspot[i]
                     if u_gspot[i] >= 0 and contains(held, key): shared++
                     held.push(key)
@@ -2933,7 +2932,7 @@ def test_build_queue():
     let ids = ids_of(0)
     let pk = btype_index("palisade")
     for(7) k: issue_cmd(0, CMD_BUILD, ids, pk, start_x[0] / 1000 + 3, start_y[0] / 1000 - 3 + k, 0, if k > 0: 1 else: 0)
-    steps(16)   // past the command delay: every queued foundation is down already
+    steps(16)  // past the command delay: every queued foundation is down already
     var laid = 0
     for(b_kind) k:
         if k == pk: laid++
@@ -2956,7 +2955,7 @@ def test_drop_off():
     let wood = kind_of("wood")
     let uid = u_id[wi]
     let cell = nearest_resource(u_x[wi], u_y[wi], wood, -1, false, false, false)
-    issue_cmd(0, CMD_GATHER, [uid], cell, 0, 0, 0)
+    issue_cmd(0, CMD_GATHER, [ uid ], cell, 0, 0, 0)
     for(2000):
         tick_on()
         wi = index_of(uid)
@@ -2964,7 +2963,7 @@ def test_drop_off():
     let home = u_home[wi]
     let load = u_carry[wi]
     let before = stock[wood - 1][0]
-    issue_cmd(0, CMD_DROP_OFF, [uid], b_id[tc], 0, 0, 0)
+    issue_cmd(0, CMD_DROP_OFF, [ uid ], b_id[tc], 0, 0, 0)
     steps(12)
     wi = index_of(uid)
     check(u_task[wi] == T_RETURN and u_target[wi] == b_id[tc], "drop off: right-clicking the Town Center sends a loaded worker there")
@@ -2985,7 +2984,7 @@ def test_drop_off():
     let n = u_id.length
     steps(12)
     check(b_rally_x[tc] == bx + 500 and b_rally_y[tc] == by + 500, "rally: set on a bush, it sits in the middle of the bush\'s tile")
-    issue_cmd(0, CMD_RALLY, [], tcid, 20120, 20860, 0)   // open ground stays where clicked
+    issue_cmd(0, CMD_RALLY, [], tcid, 20120, 20860, 0)  // open ground stays where clicked
     steps(12)
     check(resource_kind_at(cell_of(20120, 20860)) != "" or (b_rally_x[tc] == 20120 and b_rally_y[tc] == 20860), "rally: on open ground it stays where you clicked")
     issue_cmd(0, CMD_RALLY, [], tcid, bx + 120, by + 860, 0)
@@ -3031,12 +3030,12 @@ def test_animals():
         if sheep < 0 and o == gaia and animal_name(i) == "sheep": sheep = u_id[i]
         if worker < 0 and o == 0 and t_worker[u_kind[i]] != 0: worker = u_id[i]
     var x, y = pos_of(sheep)
-    issue_cmd(0, CMD_MOVE, [worker], x, y, 0, 0)
+    issue_cmd(0, CMD_MOVE, [ worker ], x, y, 0, 0)
     steps(600)
     var si = index_of(sheep)
     check(si >= 0 and u_owner[si] == 0, "animals: a sheep goes to the player who reaches it")
     // Slaughter it: its food lies on the ground and the worker gathers it.
-    issue_cmd(0, CMD_ATTACK, [worker], sheep, 0, 0, 0)
+    issue_cmd(0, CMD_ATTACK, [ worker ], sheep, 0, 0, 0)
     for(1200):
         tick_on()
         if index_of(sheep) < 0: break
@@ -3060,12 +3059,12 @@ def test_animals():
         if wk3 < 0 and o == 0 and t_worker[u_kind[i]] != 0: wk3 = u_id[i]
     u_owner[index_of(s3)] = 1
     x, y = pos_of(s3)
-    issue_cmd(0, CMD_MOVE, [wk3], x, y, 0, 0)
+    issue_cmd(0, CMD_MOVE, [ wk3 ], x, y, 0, 0)
     steps(600)
     si = index_of(s3)
     check(si >= 0 and u_owner[si] == 0, "animals: an unguarded rival sheep is stolen by walking up to it")
 
-def home_sheep(p:int) -> [int]:   // gaia's sheep by p's start
+def home_sheep(p:int) -> [int]:  // gaia's sheep by p's start
     let out = []::int
     for(u_owner) o, i:
         if o == gaia and animal_name(i) == "sheep" and abs(u_x[i] - start_x[p]) + abs(u_y[i] - start_y[p]) < 15000: out.push(u_id[i])
@@ -3084,10 +3083,10 @@ def test_sheep_spot():
     let sheep = home_sheep(0)
     let worker = first_worker(0)
     var first = index_of(sheep[0])
-    u_orders[first] = [Cmd { 0, CMD_MOVE, gaia, 1000, 1000, 0, 0, [sheep[0]], 0 }]   // an order left over from before
+    u_orders[first] = [ Cmd { 0, CMD_MOVE, gaia, 1000, 1000, 0, 0, [ sheep[0] ], 0 } ]  // an order left over from before
     for(sheep) id:
         let x, y = pos_of(id)
-        issue_cmd(0, CMD_MOVE, [worker], x, y, 0, 0, 1)
+        issue_cmd(0, CMD_MOVE, [ worker ], x, y, 0, 0, 1)
     steps(2400)
     var tc = -1
     for(b_owner) o, b:
@@ -3114,18 +3113,18 @@ def test_sheep_spot():
     check(u_x[first] == x0 and u_y[first] == y0, "sheep: ... for good (no wandering a minute later)")
     // No fighting orders for a sheep: an attack and a stance do nothing, an attack-move only walks it.
     let foe = ids_of(1)[0]
-    issue_cmd(0, CMD_ATTACK, [sheep[0]], foe, 0, 0, 0)
-    stance(0, [sheep[0]], "passive")
+    issue_cmd(0, CMD_ATTACK, [ sheep[0] ], foe, 0, 0, 0)
+    stance(0, [ sheep[0] ], "passive")
     steps(20)
     first = index_of(sheep[0])
     check(u_foe[first] == 0 and u_posture[first] == AGGRESSIVE, "sheep: no attack orders, no stances")
-    issue_cmd(0, CMD_ATTACK_MOVE, [sheep[0]], x0 + 3000, y0, 0, 0)
+    issue_cmd(0, CMD_ATTACK_MOVE, [ sheep[0] ], x0 + 3000, y0, 0, 0)
     steps(20)
     first = index_of(sheep[0])
     check(u_stance[first] == NONE and u_moving[first] == 1, "sheep: an attack-move just walks it")
     // One worker slaughters a sheep in a few blows.
     var blows = 0
-    issue_cmd(0, CMD_ATTACK, [worker], sheep[1], 0, 0, 0)
+    issue_cmd(0, CMD_ATTACK, [ worker ], sheep[1], 0, 0, 0)
     for(1200):
         tick_on()
         for(events) e:
@@ -3183,7 +3182,7 @@ def test_pen():
     let worker = first_worker(0)
     for(sheep) id:
         let x, y = pos_of(id)
-        issue_cmd(0, CMD_MOVE, [worker], x, y, 0, 0, 1)
+        issue_cmd(0, CMD_MOVE, [ worker ], x, y, 0, 0, 1)
     steps(2400)
     var pb = b_index_of(pen_id)
     let penned = pen_animals(pb, true).length
@@ -3201,7 +3200,7 @@ def test_pen():
     pb = b_index_of(pen_id)
     check(pen_animals(pb, false).length == 5, "pen: two or more breed ({pen_animals(pb, false).length} now)")
     // The cap: more than it holds are there, but only the cap is paid for, and none are born.
-    for(6):   // (Pens._born: a newborn by the pen's centre, to its place)
+    for(6):  // (Pens._born: a newborn by the pen's centre, to its place)
         let parent = pen_animals(pb, false)[0]
         let cx, cy = b_centre(pb)
         let s = add_unit(u_owner[parent], u_kind[parent], cx, cy)
@@ -3216,7 +3215,7 @@ def test_pen():
     before = stock[food][0]
     steps(food_ticks)
     check(inside > bt_pen_animals[k] and stock[food][0] - before == bt_pen_animals[k] * bt_pen_food[k] and not pen_room(pb),
-        "pen: it pays for its cap ({bt_pen_animals[k]}) and no more ({inside} inside, +{stock[food][0] - before} food)")
+          "pen: it pays for its cap ({bt_pen_animals[k]}) and no more ({inside} inside, +{stock[food][0] - before} food)")
     // A rival next to the pen, outside it, steals nothing while it stands...
     for(u_owner) o, i:
         if o == 0 and t_animal[u_kind[i]] == 0:
@@ -3247,14 +3246,14 @@ def test_pen():
         if one < 0 and o == gaia and animal_name(i) == "sheep":
             one = u_id[i]
             u_owner[i] = 0
-    issue_cmd(0, CMD_PEN, [one], pen2, 0, 0, 0)
+    issue_cmd(0, CMD_PEN, [ one ], pen2, 0, 0, 0)
     steps(1600)
     let in_before = pen_animals(b_index_of(pen2), true).length
     issue_cmd(0, CMD_RELEASE, [], pen2, 0, 0, 0)
     steps(600)
     let pb2 = b_index_of(pen2)
     check(in_before == 1 and pen_animals(pb2, true).length == 0 and pen_at(index_of(one)) < 0,
-        "pen: Release walks its animals out ({in_before} in, then {pen_animals(pb2, true).length})")
+          "pen: Release walks its animals out ({in_before} in, then {pen_animals(pb2, true).length})")
 
 // The economy bot herds and hunts: it claims its sheep and pens them (a pen it builds; it keeps
 // penned sheep rather than slaughter them), hunts a deer that's near home and takes on a boar once
@@ -3266,18 +3265,18 @@ def test_bot_hunts():
         if tc < 0 and o == 0: tc = b
     let hx = b_cx[tc] * 1000 + 1500
     let hy = b_cy[tc] * 1000 + 1500
-    for(u_kind) k, i:   // this map's deer graze mid-map, far from home: bring one closer
+    for(u_kind) k, i:  // this map's deer graze mid-map, far from home: bring one closer
         if su_type_animal[k] == "deer":
             u_x[i] = hx + 8000
             u_y[i] = hy + 2000
             break
-    spawn_cmd(0, "spear", 2, hx - 3000, hy - 3000)   // a guard to lead the boar hunt
+    spawn_cmd(0, "spear", 2, hx - 3000, hy - 3000)  // a guard to lead the boar hunt
     let bot = EcoBot { 0 }
-    let killed = [0, 0, 0]   // sheep, deer, boar
-    let names = ["sheep", "deer", "boar"]
+    let killed = [ 0, 0, 0 ]  // sheep, deer, boar
+    let names = [ "sheep", "deer", "boar" ]
     var meat = 0
     while tick < 20 * 60 * 7:
-        let animals_now = dictionary<int, int>(64)   // id -> its animal, of player 0's or gaia's
+        let animals_now = dictionary<int, int>(64)  // id -> its animal, of player 0's or gaia's
         for(u_kind) k, i:
             if t_animal[k] != 0 and (u_owner[i] == 0 or u_owner[i] == gaia): animals_now.set(u_id[i], find_index(names, su_type_animal[k]))
         bot_think(bot)
@@ -3329,7 +3328,7 @@ def garrison_run(checks_on:bool) -> int:
     let workers = own_workers_of(0)
     def c(ok:bool, what:string):
         if checks_on: check(ok, what)
-    def volleys(n:int) -> [int]:   // hits by the Town Center per volley, over some ticks
+    def volleys(n:int) -> [int]:  // hits by the Town Center per volley, over some ticks
         let out = []::int
         for(n):
             tick_on()
@@ -3340,7 +3339,7 @@ def garrison_run(checks_on:bool) -> int:
         return out
     // An enemy spearman beside the Town Center, told never to fight.
     let foe = spawn_at(1, "spear", sx + 2600, sy)
-    stance(1, [foe], "passive")
+    stance(1, [ foe ], "passive")
     c(volleys(120).length == 0, "garrison: an empty Town Center doesn\'t shoot")
     let pop0 = pop[0]
     let three = workers.slice(0, 3)
@@ -3455,10 +3454,10 @@ def test_towers():
     let wt = btype_index("watchtower")
     let bk = btype_index("bastion")
     let t1 = put(0, "watchtower", sx / 1000 + 5, sy / 1000 - 5, 0)
-    let t2 = put(1, "watchtower", sx / 1000 + 7, sy / 1000 - 5, 0)   // the rival's stays a watchtower
+    let t2 = put(1, "watchtower", sx / 1000 + 7, sy / 1000 - 5, 0)  // the rival's stays a watchtower
     var b1 = b_index_of(t1)
     b_hp[b1] = bm_hp[0][wt] / 2
-    for([999999, type_of_slot(0, "worker"), 10, 0, 0, 0, -1]) v: b_inside[b1].push(v)
+    for([ 999999, type_of_slot(0, "worker"), 10, 0, 0, 0, -1 ]) v: b_inside[b1].push(v)
     give(0, "bastion")
     b1 = b_index_of(t1)
     check(b_kind[b1] == bk, "towers: the Bastion research makes the watchtower a bastion where it stands")
@@ -3470,7 +3469,7 @@ def test_towers():
     ages[0] = 3
     let worker = first_worker(0)
     let spot = free_spot(bk, sx / 1000 - 5, sy / 1000 + 5)
-    issue_cmd(0, CMD_BUILD, [worker], wt, spot.x, spot.y, 0)
+    issue_cmd(0, CMD_BUILD, [ worker ], wt, spot.x, spot.y, 0)
     steps(12)
     let nb = b_index_of(occupied[spot.y * W + spot.x])
     check(nb >= 0 and b_kind[nb] == bk, "towers: after the research a watchtower ordered is a bastion")
@@ -3483,7 +3482,7 @@ def test_towers():
     check(bt_cost[tck][res_of("stone")] > 0 and bt_cost[tck][res_of("wood")] > 0, "towers: it costs wood and stone")
     let stone = stock[res_of("stone")][0]
     let tspot = free_spot(tck, sx / 1000 + 6, sy / 1000 + 4)
-    issue_cmd(0, CMD_BUILD, [worker], tck, tspot.x, tspot.y, 0)
+    issue_cmd(0, CMD_BUILD, [ worker ], tck, tspot.x, tspot.y, 0)
     steps(12)
     check(stock[res_of("stone")][0] < stone, "towers: ... and one is laid down, paid in stone")
 
@@ -3509,7 +3508,7 @@ def test_camp_gather():
                 if spot < 0 and can_build(x, y, bt_size[k], builder_class(0), bt_water[k] != 0, false): spot = y * W + x
                 dx++
             dy++
-    issue_cmd(0, CMD_BUILD, [uid], k, spot % W, spot / W, 0)
+    issue_cmd(0, CMD_BUILD, [ uid ], k, spot % W, spot / W, 0)
     steps(1500)
     wi = index_of(uid)
     check(u_task[wi] == GATHER or u_task[wi] == T_RETURN, "camps: the builder of a lumber camp goes to gather (task {u_task[wi]})")
@@ -3550,7 +3549,7 @@ def give_fx(p:int, id:string, fxs:[JV]):
     let r = research_named(id)
     if r < 0:
         research.push(Research { id, btype_index("town_center"), 20, 1, -1, 0, map(num_resources): 0,
-            map(num_players): 1, map(num_players): 1, map(num_players): -1, map(fxs) fx: encode_effect(fx) })
+                                 map(num_players): 1, map(num_players): 1, map(num_players): -1, map(fxs) fx: encode_effect(fx) })
         for(researched) row: row.push(0)
     researched[p][research_named(id)] = 1
     retype(p)
@@ -3604,7 +3603,7 @@ def test_effects():
     check(t_carry_add[wk] == 3, "effects: Big Pockets adds 3 to what a worker carries")
     let carry_max = r_carry + t_carry_add[wk]
     let wid = u_id[wi]
-    issue_cmd(0, CMD_GATHER, [wid], nearest_res(start_x[0], start_y[0], "wood"), 0, 0, 0)
+    issue_cmd(0, CMD_GATHER, [ wid ], nearest_res(start_x[0], start_y[0], "wood"), 0, 0, 0)
     var most = 0
     for(1500):
         tick_on()
@@ -3634,7 +3633,7 @@ def test_effects():
     let cost0 = copy(t_cost[sp])
     let train0 = t_train_ticks[sp]
     let wtrain0 = t_train_ticks[wk]
-    give_fx(0, "test.cheaper", [fx_of("\{\"tag\": \"all\", \"stat\": \"cost\", \"pct\": -10\}"), fx_of("\{\"tag\": \"all\", \"not\": [\"worker\"], \"stat\": \"train_time\", \"pct\": -30\}")])
+    give_fx(0, "test.cheaper", [ fx_of("\{\"tag\": \"all\", \"stat\": \"cost\", \"pct\": -10\}"), fx_of("\{\"tag\": \"all\", \"not\": [\"worker\"], \"stat\": \"train_time\", \"pct\": -30\}") ])
     var cheaper = true
     for(cost0) v, c: cheaper = cheaper and t_cost[sp][c] == v * 90 / 100
     check(cheaper, "effects: cost -10% makes spears 10% cheaper ({cost0} -> {t_cost[sp]})")
@@ -3643,12 +3642,12 @@ def test_effects():
     let fk = btype_index("farm")
     let food0 = bt_food_base[fk]
     check(bm_food[1][fk] == food0, "effects: farms hold {food0} food without Fallow Fields")
-    let race_pct = bpct(0, fk, 1)   // (player 0's race may have a farm bonus of its own: swamp frogs' rich mud)
+    let race_pct = bpct(0, fk, 1)  // (player 0's race may have a farm bonus of its own: swamp frogs' rich mud)
     give(0, "fallow_fields")
     check(bm_food[0][fk] == food0 * (150 + race_pct) / 100, "effects: Fallow Fields: farms hold 50% more ({bm_food[0][fk]})")
     // Trade fee: Haggling, selling pays more for the player who has it.
     let f = res_of("food")
-    let sell0 = quote(0, f, false)   // (a race may have a fee bonus of its own: sewer rats' black market)
+    let sell0 = quote(0, f, false)  // (a race may have a fee bonus of its own: sewer rats' black market)
     give(0, "haggling")
     check(quote(0, f, false) == sell0 + market_price[f] * 10 / 100, "effects: Haggling cuts the fee by 10 points (sells for {quote(0, f, false)}, not {sell0})")
     check(quote(0, f, true) == quote(1, f, true), "effects: ...buying costs the same")
@@ -3662,7 +3661,7 @@ def test_effects():
     spawn_at(0, "spear", 16500, 22500)
     steps(8)
     var seen0 = visible_cells(0)
-    give_fx(0, "test.sight", [fx_of("\{\"tag\": \"all\", \"stat\": \"sight\", \"add\": 3\}")])
+    give_fx(0, "test.sight", [ fx_of("\{\"tag\": \"all\", \"stat\": \"sight\", \"add\": 3\}") ])
     steps(8)
     check(visible_cells(0) > seen0, "effects: unit sight +3 shows more of the map ({seen0} -> {visible_cells(0)} cells)")
     // Building sight: Lookouts, on a lone house.
@@ -3681,7 +3680,7 @@ def test_effects():
     let atk = map(num_classes): 0
     atk[melee] = 10
     let d0 = damage(atk, bm_arm[0][hk], building_cls(), 1)
-    give_fx(0, "test.stone", [fx_of("\{\"building\": \"all\", \"stat\": \"hp\", \"pct\": 10\}"), fx_of("\{\"building\": \"all\", \"stat\": \"armour.melee\", \"add\": 2\}")])
+    give_fx(0, "test.stone", [ fx_of("\{\"building\": \"all\", \"stat\": \"hp\", \"pct\": 10\}"), fx_of("\{\"building\": \"all\", \"stat\": \"armour.melee\", \"add\": 2\}") ])
     check(bm_hp[0][hk] == hp_full * 110 / 100 and b_hp[hb] == hp_full / 2 * bm_hp[0][hk] / hp_full, "effects: buildings +10% hp, a half-hurt house stays half ({b_hp[hb]} of {bm_hp[0][hk]})")
     let d1 = damage(atk, bm_arm[0][hk], building_cls(), 1)
     check(d1 == d0 - 2, "effects: buildings +2 melee armour take 2 less from a blow ({d0} -> {d1})")
@@ -3689,13 +3688,13 @@ def test_effects():
     // Build speed: a worker who builds 100% faster finishes a house in about half the time.
     let times = []::int
     var house_ticks = 0
-    for([0, 100]) pct:
+    for([ 0, 100 ]) pct:
         new_world("flat_test", races0, rules0, [])
         stock[1][0] = 1000
         house_ticks = bt_build_ticks[btype_index("house")]
-        if pct > 0: give_fx(0, "test.frames", [fx_of("\{\"tag\": \"worker\", \"stat\": \"build_speed\", \"pct\": {pct}\}")])
+        if pct > 0: give_fx(0, "test.frames", [ fx_of("\{\"tag\": \"worker\", \"stat\": \"build_speed\", \"pct\": {pct}\}") ])
         let builder = ids_of(0)[0]
-        issue_cmd(0, CMD_BUILD, [builder], btype_index("house"), start_x[0] / 1000 + 4, start_y[0] / 1000 + 3, 0)
+        issue_cmd(0, CMD_BUILD, [ builder ], btype_index("house"), start_x[0] / 1000 + 4, start_y[0] / 1000 + 3, 0)
         var started = -1
         var done = -1
         while tick < 3000 and done < 0:
@@ -3709,7 +3708,7 @@ def test_effects():
     // Research time: a building whose research goes 50% faster.
     new_world("flat_test", races0, rules0, [])
     for(num_resources) r: stock[r][0] = 5000
-    give_fx(0, "test.scholars", [fx_of("\{\"building\": \"town_center\", \"stat\": \"research_time\", \"pct\": -50\}")])
+    give_fx(0, "test.scholars", [ fx_of("\{\"building\": \"town_center\", \"stat\": \"research_time\", \"pct\": -50\}") ])
     let ts2 = research_named("thick_skins")
     issue_cmd(0, CMD_RESEARCH, [], b_id[0], ts2, 0, 0)
     steps(12)
@@ -3722,18 +3721,18 @@ def test_effects():
     new_world("flat_test", races0, rules0, [])
     stock[1][0] = 1000
     give(0, "fallow_fields")
-    auto_reseed[0] = 0   // reseeded by hand below
+    auto_reseed[0] = 0  // reseeded by hand below
     let farmer = ids_of(0)[0]
     let fcx = start_x[0] / 1000 + 3
     let fcy = start_y[0] / 1000 + 2
-    issue_cmd(0, CMD_BUILD, [farmer], fk, fcx, fcy, 0)
+    issue_cmd(0, CMD_BUILD, [ farmer ], fk, fcx, fcy, 0)
     let cell = fcy * W + fcx
     while tick < 1600 and pool[cell] < 0: tick_on()
     let want = food0 * (150 + race_pct) / 100
     check(left_at(cell) >= want - 5, "effects: a farm sown after Fallow Fields holds {want} ({left_at(cell)})")
     amount[pool[cell]] = 1
     while tick < 3000 and left_at(cell) > 0: tick_on()
-    issue_cmd(0, CMD_RESEED, [farmer], occupied[cell], 0, 0, 0)
+    issue_cmd(0, CMD_RESEED, [ farmer ], occupied[cell], 0, 0, 0)
     steps(12)
     check(left_at(cell) >= want - 5, "effects: ...and so does a reseeded one ({left_at(cell)})")
 
@@ -3756,7 +3755,7 @@ def test_university_castle():
     ages[0] = 2
     check(tech_barred(0, ub, research_named("stonecutting")), "university: research needs age 3")
     ages[0] = 3
-    for(["stonecutting", "lifting_frames", "slit_windows", "thick_walls", "siege_wrights"]) id:
+    for([ "stonecutting", "lifting_frames", "slit_windows", "thick_walls", "siege_wrights" ]) id:
         check(not tech_barred(0, ub, research_named(id)), "university: {id} can be researched there")
     let hk = btype_index("house")
     let hp_house = bm_hp[0][hk]
@@ -3768,14 +3767,14 @@ def test_university_castle():
     let pierce = class_index("pierce")
     check(researched[0][sc] == 1, "stonecutting: researched at the University")
     check(bm_hp[0][hk] == hp_house * 110 / 100 and bm_arm[0][hk][melee] == arm_house[melee] + 1 and bm_arm[0][hk][pierce] == arm_house[pierce] + 1,
-        "stonecutting: buildings +10% HP, +1/+1 armour (house {hp_house} -> {bm_hp[0][hk]} hp)")
+          "stonecutting: buildings +10% HP, +1/+1 armour (house {hp_house} -> {bm_hp[0][hk]} hp)")
     check(bm_hp[1][hk] == hp_house, "stonecutting: ...only the researcher\'s")
     // Lifting Frames: workers build 20% faster.
     let wk = type_of_slot(0, "worker")
     give(0, "lifting_frames")
     check(t_build_pct[wk] == 20, "lifting frames: workers build 20% faster ({t_build_pct[wk]})")
     // Thick Walls: walls and gates double, houses don't.
-    let wall_ids = ["palisade", "palisade_gate", "wall", "stone_gate"]
+    let wall_ids = [ "palisade", "palisade_gate", "wall", "stone_gate" ]
     let house_before = bm_hp[0][hk]
     give(0, "thick_walls")
     for(wall_ids) id:
@@ -3790,13 +3789,13 @@ def test_university_castle():
     let range0 = t_reach[rk]
     let sp_range0 = t_reach[sp]
     let siege_c = class_index("siege")
-    for(lines[rk]) l: l.tags = l.tags.append([siege_c])
+    for(lines[rk]) l: l.tags = l.tags.append([ siege_c ])
     give(0, "siege_wrights")
     check(t_reach[rk] == range0 + TILE, "siege wrights: siege +1 range ({range0 / TILE} -> {t_reach[rk] / TILE})")
     check(t_reach[sp] == sp_range0, "siege wrights: ...spears as they were")
     // The Castle's research: War Drums and the race's own.
     let cb = b_index_of(put(0, "castle", sx / 1000 - 2, sy / 1000 + 8, 0))
-    for(["war_drums", "bog_poultice"]) id:   // (player 0 is swamp frogs: the swamp's own research is at the Castle)
+    for([ "war_drums", "bog_poultice" ]) id:  // (player 0 is swamp frogs: the swamp's own research is at the Castle)
         check(not tech_barred(0, cb, research_named(id)), "castle: {id} can be researched there")
     check(tech_barred(0, cb, research_named("gnawing_teeth")), "castle: ...not another race\'s own (the rats\' Gnawing Teeth)")
     let hl = type_of_slot(0, "healer")
@@ -3810,9 +3809,9 @@ def test_university_castle():
     check(hl < 0 or t_heal_pct[hl] == 30, "own research: Bog Poultice, healers heal 30% more ({if hl >= 0: t_heal_pct[hl] else: 0})")
     // The Castle's arrows: a volley of `arrows`, one at each of the nearest foes in turn.
     let arrows = gint(at(castle, "attack"), "arrows", 1)
-    for([1, arrows + 2]) n:
+    for([ 1, arrows + 2 ]) n:
         bare_world(races0)
-        let gid = put(1, "castle", 14, 14, 0)   // centre (16, 16)
+        let gid = put(1, "castle", 14, 14, 0)  // centre (16, 16)
         spawn_cmd(0, "spear", n, 20500, 16000)
         let first = []::int
         for(40):
@@ -3827,11 +3826,11 @@ def test_university_castle():
         check(distinct.length == min(n, arrows), "castle: the arrows go to {min(n, arrows)} different foes ({n} foes in reach: {distinct.length} hit)")
     // Slit Windows: +1 tile of reach for the Castle (and towers, Town Centers).
     let reach = []::int
-    for([false, true]) slit:
+    for([ false, true ]) slit:
         bare_world(races0)
         let gid = put(1, "castle", 14, 14, 0)
         if slit: give(1, "slit_windows")
-        spawn_cmd(0, "spear", 1, 16000 + 10500, 16000)   // just past 8 tiles (+ half the castle)
+        spawn_cmd(0, "spear", 1, 16000 + 10500, 16000)  // just past 8 tiles (+ half the castle)
         var shot = 0
         for(60):
             tick_on()
@@ -3841,10 +3840,10 @@ def test_university_castle():
     check(reach[0] == 0 and reach[1] > 0, "slit windows: a foe just out of the castle\'s reach is shot once it has them ({reach})")
     new_world("flat_test", races0, rules0, [])
     give(0, "slit_windows")
-    for(["watchtower", "castle", "town_center"]) id: check(bm_range[0][btype_index(id)] == 1, "slit windows: {id} +1 range")
+    for([ "watchtower", "castle", "town_center" ]) id: check(bm_range[0][btype_index(id)] == 1, "slit windows: {id} +1 range")
     check(bm_range[0][btype_index("house")] == 0, "slit windows: ...houses nothing")
 
-def put_done(p:int, id:string, cx:int, cy:int) -> int:   // place + done + full hp: its slot
+def put_done(p:int, id:string, cx:int, cy:int) -> int:  // place + done + full hp: its slot
     let k = btype_index(id)
     let b = place(p, k, cx, cy)
     b_done[b] = 1
@@ -3856,11 +3855,11 @@ def put_done(p:int, id:string, cx:int, cy:int) -> int:   // place + done + full 
 def test_research_queue():
     new_world("flat_test", races0, rules0, [])
     for(num_resources) r: stock[r][0] = 5000
-    ages[0] = 2   // player 0 is frogs: Strong Legs is theirs
+    ages[0] = 2  // player 0 is frogs: Strong Legs is theirs
     let sx = start_x[0]
     let sy = start_y[0]
     var b = put_done(0, "barracks", sx / 1000 + 4, sy / 1000 - 6)
-    put_done(0, "stable", sx / 1000 - 7, sy / 1000 - 6)   // what the age-3 age-up asks for
+    put_done(0, "stable", sx / 1000 - 7, sy / 1000 - 6)  // what the age-3 age-up asks for
     let bid = b_id[b]
     let up = research_named("line.spear.2")
     let leap = research_named("frog_leap")
@@ -3869,10 +3868,10 @@ def test_research_queue():
     issue_cmd(0, CMD_RESEARCH, [], bid, up, 0, 0)
     issue_cmd(0, CMD_RESEARCH, [], bid, leap, 0, 0)
     issue_cmd(0, CMD_TRAIN, [], bid, k, 1, 0)
-    issue_cmd(0, CMD_RESEARCH, [], bid, leap, 0, 0)   // a second click: refused
+    issue_cmd(0, CMD_RESEARCH, [], bid, leap, 0, 0)  // a second click: refused
     steps(12)
     b = b_index_of(bid)
-    check(equal(b_queue[b], [entry_of(up), entry_of(leap), k]), "research queue: two research then a spear, in the order clicked ({b_queue[b]})")
+    check(equal(b_queue[b], [ entry_of(up), entry_of(leap), k ]), "research queue: two research then a spear, in the order clicked ({b_queue[b]})")
     let paid = research[up].cost[0] + research[leap].cost[0] + t_cost[k][0]
     check(stock[0][0] == food - paid, "research queue: each paid when queued (food {food} -> {stock[0][0]}, {paid})")
     check(tech_barred(0, b, leap) and tech_queued(0, leap), "research queue: a queued research can\'t be queued again")
@@ -3888,9 +3887,9 @@ def test_research_queue():
     steps(12)
     let after = map(stock) row: row[0]
     check(equal(after, before) and not tech_queued(0, AGE_UP_ENTRY), "research queue: cancelling the age-up refunds it")
-    issue_cmd(0, CMD_CANCEL, [], bid, 1, 0, 0)   // frog_leap, and then queue it again
+    issue_cmd(0, CMD_CANCEL, [], bid, 1, 0, 0)  // frog_leap, and then queue it again
     steps(12)
-    check(stock[0][0] == food - paid + research[leap].cost[0] and equal(b_queue[b_index_of(bid)], [entry_of(up), k]), "research queue: cancelling a queued research refunds it")
+    check(stock[0][0] == food - paid + research[leap].cost[0] and equal(b_queue[b_index_of(bid)], [ entry_of(up), k ]), "research queue: cancelling a queued research refunds it")
     issue_cmd(0, CMD_RESEARCH, [], bid, leap, 0, 0)
     steps(12)
     // Run it: the spear line's upgrade, then the spear, then Strong Legs (queued last now).
@@ -3923,10 +3922,10 @@ def test_tech():
     let k = type_of_slot(0, "spear")
     let hp1 = t_hp[k]
     let atk1 = t_eval_attack[k]
-    let off_ids = ["barracks", "stable", "armoury", "house"]
-    let off_x = [4, -7, 4, -6]
-    let off_y = [-6, -6, 3, 3]
-    for(off_ids) id, n:   // what each age-up asks for, the armoury, and room for the worker, already standing
+    let off_ids = [ "barracks", "stable", "armoury", "house" ]
+    let off_x = [ 4, -7, 4, -6 ]
+    let off_y = [ -6, -6, 3, 3 ]
+    for(off_ids) id, n:  // what each age-up asks for, the armoury, and room for the worker, already standing
         put_done(0, id, sx / 1000 + off_x[n], sy / 1000 + off_y[n])
     let food = stock[0][0]
     issue_cmd(0, CMD_AGE_UP, [], tc, 0, 0, 0)
@@ -3953,13 +3952,13 @@ def test_tech():
     while tick < 3500 and researched[0][up2] == 0: tick_on()
     check(t_hp[k] - hp1 == line[1].hp - line[0].hp and t_eval_attack[k] - atk1 == line[1].attack - line[0].attack and
           (line[1].hp != line[0].hp or line[1].attack != line[0].attack or not equal(line[1].tags, line[0].tags)),
-        "tech: the spear line\'s upgrade moves spears to their age-2 step ({hp1} -> {t_hp[k]} hp, attack {atk1} -> {t_eval_attack[k]})")
+          "tech: the spear line\'s upgrade moves spears to their age-2 step ({hp1} -> {t_hp[k]} hp, attack {atk1} -> {t_eval_attack[k]})")
     var full = true
     for(u_kind) kk, i:
         if kk == k: full = full and u_hp[i] == t_hp[k]
     check(full, "tech: existing spearmen take the new kit at full health ({t_hp[k]} hp)")
     let atk = t_eval_attack[k]
-    let armoury = b_named(0, "armoury")   // Sharp Sticks is researched at the Armoury
+    let armoury = b_named(0, "armoury")  // Sharp Sticks is researched at the Armoury
     let ss = research_named("sharp_sticks")
     issue_cmd(0, CMD_RESEARCH, [], b_id[armoury], ss, 0, 0)
     while tick < 4000 and researched[0][ss] == 0: tick_on()
@@ -3967,7 +3966,7 @@ def test_tech():
     issue_cmd(0, CMD_AGE_UP, [], tc, 0, 0, 0)
     while tick < 7000 and ages[0] < 3: tick_on()
     let up3 = research_named("line.spear.3")
-    researched[0][up2] = 0   // a line's age-3 upgrade waits for its age-2 one (Dominic, 2026-10-13)
+    researched[0][up2] = 0  // a line's age-3 upgrade waits for its age-2 one (Dominic, 2026-10-13)
     check(tech_barred(0, barracks, up3), "tech: the spears\' age-3 upgrade waits for the age-2 one")
     researched[0][up2] = 1
     check(not tech_barred(0, barracks, up3), "tech: ...and is there once it\'s done")
@@ -3994,7 +3993,7 @@ def test_tech():
     let gy = start_y[1]
     let w1 = ids_of(1)[ids_of(1).length - 1]
     let nb = b_id.length
-    issue_cmd(1, CMD_BUILD, [w1], btype_index("stable"), gx / 1000 - 6, gy / 1000 - 6, 0)
+    issue_cmd(1, CMD_BUILD, [ w1 ], btype_index("stable"), gx / 1000 - 6, gy / 1000 - 6, 0)
     steps(12)
     check(b_id.length == nb, "gates: no Stable before age 2")
     let ti = put_done(1, "watchtower", gx / 1000 - 4, gy / 1000)
@@ -4027,9 +4026,9 @@ def test_queue():
     let sx = start_x[0]
     let sy = start_y[0]
     let food_cell = nearest_res(sx, sy, "food")
-    issue_cmd(0, CMD_BUILD, [worker], btype_index("house"), sx / 1000 + 3, sy / 1000 - 1, 0)
-    issue_cmd(0, CMD_GATHER, [worker], food_cell, 0, 0, 0, 1)
-    steps(12)   // orders run two turns (8 ticks) after they're issued
+    issue_cmd(0, CMD_BUILD, [ worker ], btype_index("house"), sx / 1000 + 3, sy / 1000 - 1, 0)
+    issue_cmd(0, CMD_GATHER, [ worker ], food_cell, 0, 0, 0, 1)
+    steps(12)  // orders run two turns (8 ticks) after they're issued
     var i = index_of(worker)
     check(u_task[i] == BUILD and u_orders[i].length == 1, "queue: the worker builds first, the gather order waits")
     var house_done = -1
@@ -4042,9 +4041,9 @@ def test_queue():
         elif u_task[i] == GATHER or u_task[i] == T_RETURN: break
     check(house_done > 0, "queue: the house got built (tick {house_done})")
     check((u_task[i] == GATHER or u_task[i] == T_RETURN) and u_orders[i].length == 0, "queue: then the worker went foraging, queue empty")
-    issue_cmd(0, CMD_MOVE, [worker], sx, sy, 0, 0)
-    issue_cmd(0, CMD_GATHER, [worker], food_cell, 0, 0, 0, 1)
-    issue_cmd(0, CMD_MOVE, [worker], sx + 2000, sy, 0, 0)
+    issue_cmd(0, CMD_MOVE, [ worker ], sx, sy, 0, 0)
+    issue_cmd(0, CMD_GATHER, [ worker ], food_cell, 0, 0, 0, 1)
+    issue_cmd(0, CMD_MOVE, [ worker ], sx + 2000, sy, 0, 0)
     steps(12)
     i = index_of(worker)
     check(u_orders[i].length == 0, "queue: a plain order empties the queue")
@@ -4061,20 +4060,20 @@ def test_queue_after_build(kind:string):
     let sy = start_y[0]
     let bk = btype_index(kind)
     let hk = btype_index("house")
-    let spots = []::int2   // where it goes, and a house foundation nearby that nobody builds
+    let spots = []::int2  // where it goes, and a house foundation nearby that nobody builds
     for(13) dy0:
         for(6) dx0:
             let c = int2 { sx / 1000 + dx0 + 3, sy / 1000 + dy0 - 6 }
             if not spots.length and can_place(0, bk, c.x, c.y): spots.push(c)
             elif spots.length == 1 and abs(spots[0].y - c.y) >= 4 and can_place(0, hk, c.x, c.y): spots.push(c)
     assert spots.length == 2
-    issue_cmd(0, CMD_BUILD, [ws[0]], bk, spots[0].x, spots[0].y, 0)
-    issue_cmd(0, CMD_BUILD, [ws[1]], hk, spots[1].x, spots[1].y, 0)
+    issue_cmd(0, CMD_BUILD, [ ws[0] ], bk, spots[0].x, spots[0].y, 0)
+    issue_cmd(0, CMD_BUILD, [ ws[1] ], hk, spots[1].x, spots[1].y, 0)
     let tx = sx - 5000
     let ty = sy + 3000
-    issue_cmd(0, CMD_MOVE, [ws[0]], tx, ty, 0, 0, 1)
+    issue_cmd(0, CMD_MOVE, [ ws[0] ], tx, ty, 0, 0, 1)
     steps(16)
-    issue_cmd(0, CMD_STOP, [ws[1]], 0, 0, 0, 0)   // the second house stays a foundation
+    issue_cmd(0, CMD_STOP, [ ws[1] ], 0, 0, 0, 0)  // the second house stays a foundation
     var built = -1
     var i = -1
     while tick < 4000:
@@ -4092,7 +4091,7 @@ def test_queue_after_build(kind:string):
 def wonder_world(r:JV):
     let rr = deep_copy(r)
     set(at(at(rr, "economy"), "start"), "workers", jint(0))
-    new_world("flat_test", [races0[0], races0[1]], rr, [])
+    new_world("flat_test", [ races0[0], races0[1] ], rr, [])
 
 // A finished Wonder for player p, a few tiles beside their Town Center; its id.
 def put_wonder(p:int) -> int:
@@ -4112,7 +4111,7 @@ def wonder_ticks_left() -> int: return if wonder_ids.length: wonder_hold - (tick
 // just a building. (The GDScript checks also read the "wonder" and "won" events, which Lobster's sim
 // has no need of: the Wonders' list and the winner say the same.)
 def test_wonder():
-    let hold = 30   // seconds, so the test is quick
+    let hold = 30  // seconds, so the test is quick
     let r = deep_copy(rules0)
     set(at(r, "wonder"), "hold_seconds", jint(hold))
     // 1. It stands: the countdown wins, not a second early.
@@ -4139,7 +4138,7 @@ def test_wonder():
     let wid2 = put_wonder(0)
     steps(10 * 20)
     let b = b_index_of(wid2)
-    b_hp[b] = 40   // nearly down: spearmen finish it
+    b_hp[b] = 40  // nearly down: spearmen finish it
     spawn_cmd(1, "spear", 6, b_cx[b] * 1000 - 1500, b_cy[b] * 1000 + 2500)
     var spawned = false
     var fell = false
@@ -4151,7 +4150,7 @@ def test_wonder():
                 issue_cmd(1, CMD_ATTACK, mine, wid2, 0, 0, 0)
                 spawned = true
         fell = b_index_of(wid2) < 0
-    steps(CHECK_EVERY)   // (the Wonders' list is kept once a second)
+    steps(CHECK_EVERY)  // (the Wonders' list is kept once a second)
     check(fell and b_index_of(wid2) < 0 and wonder_ids.length == 0, "wonder: knocked down, its countdown stops (tick {tick})")
     let second = put_wonder(0)
     let started = tick
@@ -4179,19 +4178,19 @@ def test_save_load():
     let rules = load_rules("default")
     let races = map(PROMPTS) p: generate(p, rules, 0)
     new_world("reed_meadow", races, rules, [])
-    let you = EcoBot { 0 }   // "you": what it orders is like a person's clicks
+    let you = EcoBot { 0 }  // "you": what it orders is like a person's clicks
     let bot = new_bot(1)
     while tick < at_t:
         bot_think(you)
         full_bot_think(bot)
         tick_on()
-    issue_cmd(0, CMD_RALLY, [], b_id[0], 9000, 9000, 0)   // issued, not run yet
+    issue_cmd(0, CMD_RALLY, [], b_id[0], 9000, 9000, 0)  // issued, not run yet
     let t0 = seconds_elapsed()
-    let saved = world_bytes([bot])
+    let saved = world_bytes([ bot ])
     let save_ms = ms_since(t0)
     let save_hash = state_hash()
     let hashes = []::int
-    let you_after = EcoBot { 0 }   // after the save "you" plays on the same way in both matches
+    let you_after = EcoBot { 0 }  // after the save "you" plays on the same way in both matches
     while tick < to_t:
         bot_think(you_after)
         full_bot_think(bot)
@@ -4228,12 +4227,12 @@ def test_save_load():
 
 // ------------------------------------------------------------------ the parts
 
-let PARTS = ["fixed", "command_order", "source_lint", "flow", "crossing_flat", "crossing_choke", "crossing_engines",
-             "combat", "opening", "shots", "engines", "trade", "sapper_sling", "gates", "diagonal_wall", "diagonal_gates",
-             "walls", "siege_ways", "modes", "movement_classes", "land", "hills", "flow_patch", "flow_patch_mixed",
-             "farms", "fog_memory", "age_timing", "builder_moves_on", "builder_back_to_work", "no_dark_picks", "wood_spots",
-             "build_queue", "drop_off", "animals", "sheep_spot", "pen", "bot_hunts", "garrison", "towers",
-             "camp_gather", "market", "effects", "university_castle", "research_queue", "tech", "queue", "wonder", "save_load", "match", "match_b", "match_flipped"]
+let PARTS = [ "fixed", "command_order", "source_lint", "flow", "crossing_flat", "crossing_choke", "crossing_engines",
+              "combat", "opening", "shots", "engines", "trade", "sapper_sling", "gates", "diagonal_wall", "diagonal_gates",
+              "walls", "siege_ways", "modes", "movement_classes", "land", "hills", "flow_patch", "flow_patch_mixed",
+              "farms", "fog_memory", "age_timing", "builder_moves_on", "builder_back_to_work", "no_dark_picks", "wood_spots",
+              "build_queue", "drop_off", "animals", "sheep_spot", "pen", "bot_hunts", "garrison", "towers",
+              "camp_gather", "market", "effects", "university_castle", "research_queue", "tech", "queue", "wonder", "save_load", "match", "match_b", "match_flipped" ]
 
 def run_part(name:string):
     if name == "fixed": test_fixed()
@@ -4243,7 +4242,7 @@ def run_part(name:string):
     elif name == "crossing_flat": test_crossing("flat_test", false)
     elif name == "crossing_choke": test_crossing("choke_test", false)
     elif name == "crossing_engines":
-        for(["flat_test", "choke_test", "hill_test"]) m: test_crossing(m, true)
+        for([ "flat_test", "choke_test", "hill_test" ]) m: test_crossing(m, true)
     elif name == "opening": test_opening()
     elif name == "combat": test_combat()
     elif name == "shots": test_shots()

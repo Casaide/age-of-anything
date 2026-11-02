@@ -82,7 +82,7 @@ def storm_walls(bot:Bot, army:[int], tx:int, ty:int):
                         if d < best_d:
                             best_d = d
                             best = cell
-                    if best >= 0: issue_cmd(bot.player, CMD_MOVE, [u_id[j]], (best % W) * 1000 + 500, (best / W) * 1000 + 500, 0, 0)
+                    if best >= 0: issue_cmd(bot.player, CMD_MOVE, [ u_id[j] ], (best % W) * 1000 + 500, (best / W) * 1000 + 500, 0, 0)
             else:
                 let ids = []::int
                 for(army) i:
@@ -90,10 +90,10 @@ def storm_walls(bot:Bot, army:[int], tx:int, ty:int):
                     if not t_ranged[k] and can_climb(i) and u_perch[i] == 0 and u_task[i] != T_CLIMB:
                         let ln = lane(i)
                         if area_at(bot.eco.reach, ln, u_x[i], u_y[i]) != area_at(bot.eco.reach, ln, tx, ty) and
-                           dist2(u_x[i], u_y[i], u_x[j], u_y[j]) <= near * near: ids.push(u_id[i])
+                            dist2(u_x[i], u_y[i], u_x[j], u_y[j]) <= near * near: ids.push(u_id[i])
                 if ids.length:
                     issue_cmd(bot.player, CMD_MOVE, ids, (top % W) * 1000 + 500, (top / W) * 1000 + 500, 0, 0)
-                    issue_cmd(bot.player, CMD_ATTACK_MOVE, ids, tx, ty, 0, 0, 1)   // once up: down their stairs and on
+                    issue_cmd(bot.player, CMD_ATTACK_MOVE, ids, tx, ty, 0, 0, 1)  // once up: down their stairs and on
 
 def besiege(bot:Bot):
     if not has_cfg("military.walls.every") or tick % (cfg("military.walls.every") * 20) != bot_phase(bot): return

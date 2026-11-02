@@ -4,7 +4,7 @@
 // hero. A hurt hero heals a hit point every regen ticks; one that falls may be revived at the Town
 // Center after revive ticks, for revive_pct of its price.
 
-var hero_fx = []::[Effect]     // per hero type (alongside hero_types): its aura's effects
+var hero_fx = []::[Effect]  // per hero type (alongside hero_types): its aura's effects
 
 def hero_slot(k:int) -> int:
     for(hero_types) h, n:

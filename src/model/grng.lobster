@@ -3,7 +3,7 @@
 // has src/rng.gd's). view/node.lobster has the generator (Pcg: pcg_seed, randf, randf_range, randi); these are
 // the rest of it, number for number (rng_check.lobster holds them to rng_dump.gd's).
 
-def grng(seed:int) -> Pcg: return pcg_seed(seed)   // RandomNumberGenerator.new() with .seed = seed
+def grng(seed:int) -> Pcg: return pcg_seed(seed)  // RandomNumberGenerator.new() with .seed = seed
 
 def randi_range(r:Pcg, lo:int, hi:int) -> int:
     if lo == hi: return lo

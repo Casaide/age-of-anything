@@ -10,18 +10,18 @@ def pony_barrel(n:MNode, c:Colours):
     add_child(n, blob(float3 { 10.5, 6.6, 6.0 }, hide, float3 { 0.0, 19.0, 0.0 }))
     add_child(n, blob(float3 { 5.6, 6.6, 5.6 }, hide, float3 { 8.0, 19.6, 0.0 }))
     add_child(n, blob(float3 { 6.4, 7.0, 6.0 }, hide, float3 { -8.5, 20.2, 0.0 }))
-    let tail = [float3 { -14.0, 23.0, 0.0 }, float3 { -17.0, 19.5, 0.5 }, float3 { -18.6, 14.0, 1.0 }, float3 { -18.2, 9.0, 1.2 }]
-    let r = [2.2, 2.1, 1.7, 1.0]
+    let tail = [ float3 { -14.0, 23.0, 0.0 }, float3 { -17.0, 19.5, 0.5 }, float3 { -18.6, 14.0, 1.0 }, float3 { -18.2, 9.0, 1.2 } ]
+    let r = [ 2.2, 2.1, 1.7, 1.0 ]
     for(tail.length - 1) j:
         let k = j + 1
         add_child(n, rod(tail[k - 1], tail[k], r[k - 1], r[k], mane))
 
 def pony_anchors() -> [Anchor]:
     let y = 14.0 + PONY_LIFT
-    return [anchor(float3 { 8.5, y, 3.4 }, 0.0, 1, [0.0, 0.0]), anchor(float3 { -9.5, y, 3.4 }, MPI, 1, [0.0, 1.0]),
-        anchor(float3 { 7.0, y, -3.4 }, MPI, -1, [0.0, 0.0]), anchor(float3 { -10.0, y, -3.4 }, 0.0, -1, [0.0, 1.0])]   // [flip, hind]
+    return [ anchor(float3 { 8.5, y, 3.4 }, 0.0, 1, [ 0.0, 0.0 ]), anchor(float3 { -9.5, y, 3.4 }, MPI, 1, [ 0.0, 1.0 ]),
+             anchor(float3 { 7.0, y, -3.4 }, MPI, -1, [ 0.0, 0.0 ]), anchor(float3 { -10.0, y, -3.4 }, 0.0, -1, [ 0.0, 1.0 ]) ]  // [flip, hind]
 
-let PONY_LOOKS = ["classic", "h1", "h2"]
+let PONY_LOOKS = [ "classic", "h1", "h2" ]
 let pony_look = "h2"
 
 def body_pony(c:Colours) -> Spec: return if pony_look == "classic": body_pony_classic(c) else: horse_body(c, "head.pony")
@@ -91,7 +91,7 @@ def head_pony_classic(c:Colours) -> Spec:
     add_child(n, rod(a, b, 3.3, 2.6, hide))
     add_child(n, blob(float3 { 3.6, 3.4, 2.8 }, hide, float3 { 1.6, -0.6, 0.0 }))
     add_child(n, blob(float3 { 2.6, 2.3, 2.2 }, surf("hide", darkened(col(c, "skin"), 0.15), 4.0), float3 { 6.8, -4.1, 0.0 }))
-    for([1.0, -1.0]) side:
+    for([ 1.0, -1.0 ]) side:
         add_child(n, blob(float3 { 0.5, 0.45, 0.4 }, plain(html("#1a1210")), float3 { 8.6, -3.8, 1.1 * side }))
         add_child(n, decal("rat_eye", 1.7, 1.7, float3 { 2.3, 0.9, 2.45 * side }, float3 { 0.3, 0.3, side }, false))
         add_child(n, cone(0.0, 0.85, 2.8, hide, float3 { -0.2, 2.8, 1.2 * side }, float3 { -12.0 * side, 0.0, 8.0 }))
@@ -101,8 +101,8 @@ def head_pony_classic(c:Colours) -> Spec:
     add_child(n, ring(2.5, 3.0, plain(col(c, "team")), float3 { 1.4, 0.4, 0.0 }, float3 { 0.0, 0.0, ang }))
     return sock(spec_of(root), "top", float3 { 0.5, 2.6, 0.0 } * 1.25)
 
-let HORSE_TOP = [float3 { 5.6, 25.4, 0.0 }, float3 { 9.8, 33.4, 0.0 }, float3 { 15.0, 35.6, 0.0 }]
-let HORSE_THROAT = [float3 { 12.4, 17.0, 0.0 }, float3 { 15.6, 24.0, 0.0 }, float3 { 17.0, 30.6, 0.0 }]
+let HORSE_TOP = [ float3 { 5.6, 25.4, 0.0 }, float3 { 9.8, 33.4, 0.0 }, float3 { 15.0, 35.6, 0.0 } ]
+let HORSE_THROAT = [ float3 { 12.4, 17.0, 0.0 }, float3 { 15.6, 24.0, 0.0 }, float3 { 17.0, 30.6, 0.0 } ]
 let HORSE_HEAD = float3 { 16.2, 33.0, 0.0 }
 let HORSE_TILT = -52.0
 let HORSE_HEAD_K = 1.2
@@ -166,12 +166,12 @@ def head_pony_h1(c:Colours) -> Spec:
     let ink = plain(html("#1a1210"))
     add_child(n, blob(float3 { 2.4, 2.1, 2.2 }, hide, float3 { 1.0, 0.9, 0.0 }))
     add_child(n, blob(float3 { 2.7, 2.4, 2.15 }, hide, float3 { 1.3, -1.0, 0.0 }))
-    for([[4.4, 2.2, 1.95, 1.75], [6.6, 2.0, 1.7, 1.5], [8.6, 1.7, 1.5, 1.35]]) f:
+    for([ [ 4.4, 2.2, 1.95, 1.75 ], [ 6.6, 2.0, 1.7, 1.5 ], [ 8.6, 1.7, 1.5, 1.35 ] ]) f:
         add_child(n, blob(float3 { f[1], f[2], f[3] }, hide, float3 { f[0], horse_top(f[0]) - f[2], 0.0 }))
     add_child(n, blob(float3 { 1.55, 1.55, 1.45 }, muzzle, float3 { 10.0, horse_top(10.0) - 1.5, 0.0 }))
     add_child(n, blob(float3 { 1.2, 0.7, 1.0 }, muzzle, float3 { 9.5, horse_top(9.5) - 3.0, 0.0 }))
     add_child(n, rod(float3 { 1.4, -3.0, 0.0 }, float3 { 8.6, horse_top(8.6) - 3.0, 0.0 }, 1.0, 0.75, hide))
-    for([1.0, -1.0]) side:
+    for([ 1.0, -1.0 ]) side:
         add_child(n, blob(float3 { 0.32, 0.5, 0.28 }, ink, float3 { 11.3, horse_top(11.3) - 1.2, 0.85 * side }))
         let eye = blob(float3 { 0.5, 0.45, 0.4 }, ink, float3 { 3.1, 1.6, 1.95 * side })
         eye.meta = "eye"
@@ -186,7 +186,7 @@ def head_pony_h1(c:Colours) -> Spec:
 def horse_ears(n:MNode, c:Colours):
     let hide = surf("hide", col(c, "skin"), 5.0)
     let leather = surf("leather", float3_1, 3.0)
-    for([1.0, -1.0]) side:
+    for([ 1.0, -1.0 ]) side:
         add_child(n, cone(0.0, 0.7, 2.5, hide, float3 { 0.0, 3.4, 1.05 * side }, float3 { -10.0 * side, 0.0, -HORSE_TILT - 8.0 }))
         add_child(n, cone(0.0, 0.4, 1.8, plain(darkened(col(c, "skin"), 0.45)), float3 { 0.12, 3.35, 1.15 * side }, float3 { -10.0 * side, 0.0, -HORSE_TILT - 8.0 }))
         add_child(n, rod(float3 { 1.0, 0.6, 2.25 * side }, float3 { 7.4, horse_top(7.4) - 1.8, 1.75 * side }, 0.2, 0.2, leather))
@@ -201,7 +201,7 @@ def head_pony_h2(c:Colours) -> Spec:
     n.scl = float3_1 * HORSE_HEAD_K
     add_child(root, n)
     let ink = plain(html("#1a1210"))
-    add_child(n, glb("head_horse", mats_of([surf("hide", col(c, "skin"), 5.0), surf("hide", darkened(col(c, "skin"), 0.25), 4.0), ink, ink], ["hide", "muzzle", "nostril", "eye"])))
+    add_child(n, glb("head_horse", mats_of([ surf("hide", col(c, "skin"), 5.0), surf("hide", darkened(col(c, "skin"), 0.25), 4.0), ink, ink ], [ "hide", "muzzle", "nostril", "eye" ])))
     horse_ears(n, c)
     return sock(spec_of(root), "top", horse_head_top())
 
@@ -240,7 +240,6 @@ def hoof_leg(c:Colours, hind:bool) -> Spec:
     h.rot = float3 { h.rot.x, h.rot.y, curl }
     return spec_of(n)
 
-
 // Where a horse leg's knee and fetlock are in a walk step (2D, the hip at the origin), and how far the pastern and
 // hoof curl back from the fetlock (degrees). `knee`: where the knee (or hock) is standing (a sculpted leg may set its own).
 def hoof_joints(hind:bool, pose:string, knee:float2 = HOOF_KNEE) -> float2, float2, float:
@@ -248,7 +247,7 @@ def hoof_joints(hind:bool, pose:string, knee:float2 = HOOF_KNEE) -> float2, floa
     let lower = magnitude(HOOF_FETLOCK - knee)
     let reach = 0.999 * (upper + lower)
     let p = walk_step(pose)
-    if p < 0.0: return knee, HOOF_FETLOCK, 0.0   // standing: as modelled
+    if p < 0.0: return knee, HOOF_FETLOCK, 0.0  // standing: as modelled
     var x = HOOF_FETLOCK.x
     var lift = 0.0
     var curl = 0.0
@@ -258,7 +257,7 @@ def hoof_joints(hind:bool, pose:string, knee:float2 = HOOF_KNEE) -> float2, floa
         let q = (p - HOOF_STANCE) / (1.0 - HOOF_STANCE)
         x += HOOF_STRIDE * (smoothstep(0.0, 1.0, q) - 0.5)
         lift = HOOF_LIFT * sin(q * 180.0)
-        curl = (if not hind: 0.9 else: 0.5) * RAD_DEG * sin(q * 180.0)   // (the hoof flicks back under it, more so in front)
+        curl = (if not hind: 0.9 else: 0.5) * RAD_DEG * sin(q * 180.0)  // (the hoof flicks back under it, more so in front)
     let fet = float2 { x, max(HOOF_FETLOCK.y, -sqrt(max(reach * reach - x * x, 1.0))) + lift }
     return ik2(fet, upper, lower, not hind), fet, curl
 
@@ -282,23 +281,23 @@ def body_centaur(c:Colours, look:string) -> Spec:
     return spec_num(s, "torso_scale", float3 { 1.3, 1.0, 0.0 })
 
 def horse_mats(c:Colours, mane_dark:float = 0.35) -> dictionary<string, MMat>:
-    return mats_of([surf("hide", col(c, "skin"), 6.0), surf("hide", darkened(col(c, "skin"), 0.3), 5.0), surf("mane", darkened(col(c, "skin2"), mane_dark), 3.0),
-        plain(html("#2a2420"))], ["hide", "points", "mane", "horn"])
+    return mats_of([ surf("hide", col(c, "skin"), 6.0), surf("hide", darkened(col(c, "skin"), 0.3), 5.0), surf("mane", darkened(col(c, "skin2"), mane_dark), 3.0),
+                     plain(html("#2a2420")) ], [ "hide", "points", "mane", "horn" ])
 
 // Round BA2 (tools/blender/centaur.py looks c, d, e): the man standing up out of the breast, over the forelegs; the
 // horse half's frame at look c's size, each look scaled by centaur_k.
 // round BA2 (c, d, e) and BA3 (f, g; tools/blender/centaur.py: a level back, the man growing out of the chest); h is
 // concept C1's option B (docs/concepts/centaur): f shorter behind the shoulder
 def centaur_seat(look:string) -> float3: return if look < "f": float3 { 12.5, 10.5, 0.0 } else: float3 { 11.7, 11.2, 0.0 }
-let CENTAUR_WAIST = 19.1   // the waist's top over the seat (his hem 15.3 over it, 3.8 under the top)
+let CENTAUR_WAIST = 19.1  // the waist's top over the seat (his hem 15.3 over it, 3.8 under the top)
 def centaur_hips(look:string) -> [float3]:
-    if look < "f": return [float3 { 10.0, 14.0, 2.9 }, float3 { -11.0, 14.0, 2.9 }, float3 { 8.5, 14.0, -2.9 }, float3 { -11.5, 14.0, -2.9 }]
-    if look == "h": return [float3 { 8.5, 11.6, 2.9 }, float3 { -7.0, 11.6, 2.9 }, float3 { 7.0, 11.6, -2.9 }, float3 { -7.4, 11.6, -2.9 }]
-    return [float3 { 8.5, 14.0, 2.9 }, float3 { -9.0, 14.0, 2.9 }, float3 { 7.0, 14.0, -2.9 }, float3 { -9.5, 14.0, -2.9 }]
+    if look < "f": return [ float3 { 10.0, 14.0, 2.9 }, float3 { -11.0, 14.0, 2.9 }, float3 { 8.5, 14.0, -2.9 }, float3 { -11.5, 14.0, -2.9 } ]
+    if look == "h": return [ float3 { 8.5, 11.6, 2.9 }, float3 { -7.0, 11.6, 2.9 }, float3 { 7.0, 11.6, -2.9 }, float3 { -7.4, 11.6, -2.9 } ]
+    return [ float3 { 8.5, 14.0, 2.9 }, float3 { -9.0, 14.0, 2.9 }, float3 { 7.0, 14.0, -2.9 }, float3 { -9.5, 14.0, -2.9 } ]
 
 def centaur_k(look:string) -> float: return if look == "d": 1.2 elif look == "e": 1.1 elif look == "g": 1.15 else: 1.0
-def centaur_legk(look:string) -> float: return if look == "h": 0.85 else: 1.0   // h: short legs, its hips 2.4 lower
-def centaur_knee(look:string) -> float2: return if look == "h": float2 { 0.0, -8.4 } else: HOOF_KNEE   // h: a long forearm, a short cannon
+def centaur_legk(look:string) -> float: return if look == "h": 0.85 else: 1.0                         // h: short legs, its hips 2.4 lower
+def centaur_knee(look:string) -> float2: return if look == "h": float2 { 0.0, -8.4 } else: HOOF_KNEE  // h: a long forearm, a short cannon
 
 def body_centaur2(c:Colours, look:string) -> Spec:
     let k = centaur_k(look)
@@ -318,8 +317,8 @@ def body_centaur2(c:Colours, look:string) -> Spec:
     sock(s, "back", (float3 { -8.0, 24.0, 0.0 } + up) * k)
     // the man stays his size: his seat goes up with the waist, less the waist's top to his seat at look c's size
     sock(s, "seat", (seat + up) * k + float3 { 0.0, CENTAUR_WAIST * (k - 1.0), 0.0 })
-    s.anchors = map(centaur_hips(look)) h: anchor((h + up) * k, if (h.x > 0.0) == (h.z > 0.0): 0.0 else: MPI, if h.z > 0.0: 1 else: -1, [0.0, if h.x < 0.0: 1.0 else: 0.0])
-    spec_num(s, "seam_legs", float3 { (if look == "h": 11.0 else: 7.0) * k, 0.0, 0.0 })   // (h: the upper legs reach high on the flank)
+    s.anchors = map(centaur_hips(look)) h: anchor((h + up) * k, if (h.x > 0.0) == (h.z > 0.0): 0.0 else: MPI, if h.z > 0.0: 1 else: -1, [ 0.0, if h.x < 0.0: 1.0 else: 0.0 ])
+    spec_num(s, "seam_legs", float3 { (if look == "h": 11.0 else: 7.0) * k, 0.0, 0.0 })  // (h: the upper legs reach high on the flank)
     return spec_num(s, "torso_scale", float3 { 1.3, 1.0, 0.0 })
 
 // A pieced leg's pieces turned about their joints: a piece whose name starts with prefixes[i] turns turns[i] degrees
@@ -341,20 +340,20 @@ def hoof_leg_sculpted(c:Colours, hind:bool, look:string) -> Spec:
     let jk = jk0 * k
     let jf = jf0 * k
     let leg = glb("leg_horse" + (if hind: "_hind_" else: "_") + look, horse_mats(c, if look < "c": 0.35 else: 0.1))
-    turn_pieces(leg, ["upper", "cannon", "hoof"], [float2_0, knee * k, HOOF_FETLOCK * k], [float2_0, jk, jf],
-        [atan2(jk) - atan2(knee), atan2(jf - jk) - atan2(HOOF_FETLOCK - knee), curl])
+    turn_pieces(leg, [ "upper", "cannon", "hoof" ], [ float2_0, knee * k, HOOF_FETLOCK * k ], [ float2_0, jk, jf ],
+                [ atan2(jk) - atan2(knee), atan2(jf - jk) - atan2(HOOF_FETLOCK - knee), curl ])
     let n = mnode()
     add_child(n, leg)
     return spec_of(n)
 
 // ------------------------------------------------------------------ capybara
 
-let CAPYBARA_LOOKS = ["box", "soft", "sculpt", "full", "long", "long_tan"]
+let CAPYBARA_LOOKS = [ "box", "soft", "sculpt", "full", "long", "long_tan" ]
 let capybara_look = "long"
 let CAPYBARA_LONG_HEAD = 1.35
 let CAPYBARA_NECK_FROM = float3 { 4.0, 14.5, 0.0 }
 let CAPYBARA_NECK_END = float3 { -2.0, 1.4, 0.0 }
-let CAPYBARA_NECK_R = [3.5, 3.0]
+let CAPYBARA_NECK_R = [ 3.5, 3.0 ]
 let CAPYBARA_HEAD = 1.25
 
 def body_capybara(c:Colours) -> Spec:
@@ -392,7 +391,7 @@ def body_capybara_box(c:Colours) -> Spec:
     add_child(n, blob(float3 { 4.6, 5.0, 4.8 }, fur, float3 { -11.0, 13.5, 0.0 }))
     add_child(n, box(float3 { 9.0, 0.9, 13.0 }, plain(html("#e8e0d0")), float3 { -1.0, 20.9, 0.0 }))
     add_child(n, box(float3 { 9.2, 1.0, 2.4 }, plain(col(c, "team")), float3 { -1.0, 21.0, 0.0 }))
-    for([1.0, -1.0]) side:
+    for([ 1.0, -1.0 ]) side:
         add_child(n, box(float3 { 9.0, 4.0, 0.5 }, plain(html("#e8e0d0")), float3 { -1.0, 18.6, 6.6 * side }, float3 { 10.0 * side, 0.0, 0.0 }))
     let s = spec_of(n)
     sock(s, "head", float3 { 12.5, 17.5, 0.0 })
@@ -402,8 +401,8 @@ def body_capybara_box(c:Colours) -> Spec:
     sock(s, "back", float3 { -8.0, 20.0, 0.0 })
     sock(s, "seat", float3 { -1.0, 22.5, 0.0 })
     sock(s, "wings", float3 { 6.0, 20.0, 0.0 })
-    s.anchors = [anchor(float3 { 8.0, 7.5, 5.0 }, 0.0, 1, [0.0]), anchor(float3 { -8.0, 7.5, 5.2 }, MPI, 1, [0.0]),
-        anchor(float3 { 7.0, 7.5, -5.0 }, MPI, -1, [0.0]), anchor(float3 { -9.0, 7.5, -5.2 }, 0.0, -1, [0.0])]
+    s.anchors = [ anchor(float3 { 8.0, 7.5, 5.0 }, 0.0, 1, [ 0.0 ]), anchor(float3 { -8.0, 7.5, 5.2 }, MPI, 1, [ 0.0 ]),
+                  anchor(float3 { 7.0, 7.5, -5.0 }, MPI, -1, [ 0.0 ]), anchor(float3 { -9.0, 7.5, -5.2 }, 0.0, -1, [ 0.0 ]) ]
     spec_num(s, "torso_scale", float3 { 1.4, 0.9, 0.0 })
     return spec_str(s, "carry", "harness")
 
@@ -412,7 +411,7 @@ def head_capybara_box(c:Colours) -> Spec:
     let fur = surf("rat_fur", col(c, "skin"), 5.0)
     add_child(n, box(float3 { 8.5, 6.0, 6.0 }, fur, float3 { 3.5, 0.0, 0.0 }, float3 { 0.0, 0.0, -14.0 }))
     add_child(n, box(float3 { 2.0, 3.6, 5.0 }, surf("rat_fur", darkened(col(c, "skin"), 0.4), 4.0), float3 { 7.6, -1.4, 0.0 }, float3 { 0.0, 0.0, -14.0 }))
-    for([1.0, -1.0]) side:
+    for([ 1.0, -1.0 ]) side:
         add_child(n, blob(float3 { 0.9, 1.0, 0.7 }, fur, float3 { -0.4, 3.4, 2.5 * side }))
         add_child(n, blob(float3 { 0.5, 0.5, 0.45 }, plain(INK), float3 { 3.4, 1.8, 3.0 * side }))
     return sock(spec_of(n), "top", float3 { 1.0, 3.2, 0.0 })
@@ -428,7 +427,7 @@ def capybara_towel(n:MNode, c:Colours, y:float, half:float):
     let towel = plain(html("#e8e0d0"))
     add_child(n, box(float3 { 9.0, 0.9, half * 1.6 }, towel, float3 { -1.0, y, 0.0 }))
     add_child(n, box(float3 { 9.2, 1.0, 2.4 }, plain(col(c, "team")), float3 { -1.0, y + 0.1, 0.0 }))
-    for([1.0, -1.0]) side:
+    for([ 1.0, -1.0 ]) side:
         add_child(n, box(float3 { 9.0, 4.0, 0.5 }, towel, float3 { -1.0, y - 2.4, (half * 0.8 - 0.2) * side }, float3 { 12.0 * side, 0.0, 0.0 }))
 
 def capybara_rig(n:MNode, head:float3, seat_y:float) -> Spec:
@@ -440,8 +439,8 @@ def capybara_rig(n:MNode, head:float3, seat_y:float) -> Spec:
     sock(s, "back", float3 { -8.0, seat_y - 2.5, 0.0 })
     sock(s, "seat", float3 { -1.0, seat_y, 0.0 })
     sock(s, "wings", float3 { 6.0, seat_y - 2.5, 0.0 })
-    s.anchors = [anchor(float3 { 8.0, 6.5, 4.6 }, 0.0, 1, [0.0]), anchor(float3 { -8.5, 7.0, 5.0 }, MPI, 1, [0.0]),
-        anchor(float3 { 7.0, 6.5, -4.6 }, MPI, -1, [0.0]), anchor(float3 { -9.5, 7.0, -5.0 }, 0.0, -1, [0.0])]
+    s.anchors = [ anchor(float3 { 8.0, 6.5, 4.6 }, 0.0, 1, [ 0.0 ]), anchor(float3 { -8.5, 7.0, 5.0 }, MPI, 1, [ 0.0 ]),
+                  anchor(float3 { 7.0, 6.5, -4.6 }, MPI, -1, [ 0.0 ]), anchor(float3 { -9.5, 7.0, -5.0 }, 0.0, -1, [ 0.0 ]) ]
     spec_num(s, "torso_scale", float3 { 1.4, 0.9, 0.0 })
     return spec_str(s, "carry", "harness")
 
@@ -457,7 +456,7 @@ def body_capybara_soft(c:Colours) -> Spec:
 
 def body_capybara_full(c:Colours) -> Spec:
     let n = mnode()
-    add_child(n, glb("body_capybara", mats_of([surf("rat_fur", col(c, "skin"), 5.0)], ["fur"])))
+    add_child(n, glb("body_capybara", mats_of([ surf("rat_fur", col(c, "skin"), 5.0) ], [ "fur" ])))
     capybara_towel(n, c, 19.8, 8.4)
     return capybara_rig(n, float3 { 12.0, 14.6, 0.0 }, 21.2)
 
@@ -476,7 +475,7 @@ def head_capybara_soft(c:Colours) -> Spec:
     add_child(n, blob(float3 { 2.3, 2.8, 1.9 }, fur, float3 { 6.4, -0.5, 0.0 }))
     let dark = surf("rat_fur", darkened(col(c, "skin"), 0.5), 3.0)
     add_child(n, blob(float3 { 0.9, 0.8, 1.4 }, dark, float3 { 8.0, 1.0, 0.0 }))
-    for([1.0, -1.0]) side:
+    for([ 1.0, -1.0 ]) side:
         add_child(n, blob(float3 { 0.3, 0.2, 0.22 }, plain(INK), float3 { 8.4, 1.6, 0.6 * side }))
         add_child(n, blob(float3 { 0.48, 0.42, 0.3 }, plain(INK), float3 { 2.9, 1.6, 2.05 * side }))
         add_child(n, blob(float3 { 0.55, 0.6, 0.3 }, surf("rat_fur", darkened(col(c, "skin"), 0.3), 3.0), float3 { -0.3, 2.7, 1.5 * side }, float3 { 20.0 * side, 0.0, 0.0 }))
@@ -484,8 +483,8 @@ def head_capybara_soft(c:Colours) -> Spec:
 
 def head_capybara_sculpt(c:Colours) -> Spec:
     let root = mnode()
-    let n = glb("head_capybara", mats_of([surf("rat_fur", col(c, "skin"), 5.0), surf("rat_fur", darkened(col(c, "skin"), 0.55), 3.0),
-        plain(INK), surf("rat_fur", darkened(col(c, "skin"), 0.3), 3.0)], ["fur", "nose", "eye", "ear"]))
+    let n = glb("head_capybara", mats_of([ surf("rat_fur", col(c, "skin"), 5.0), surf("rat_fur", darkened(col(c, "skin"), 0.55), 3.0),
+                                           plain(INK), surf("rat_fur", darkened(col(c, "skin"), 0.3), 3.0) ], [ "fur", "nose", "eye", "ear" ]))
     n.rot = float3 { 0.0, 0.0, -10.0 }
     n.scl = float3_1 * CAPYBARA_HEAD
     add_child(root, n)
@@ -507,8 +506,8 @@ def leg_capybara_full(c:Colours) -> Spec: return leg_capybara_soft(c)
 def capybara_long_mats(c:Colours) -> dictionary<string, MMat>:
     let skin = col(c, "skin")
     let tan = html("#d8b888")
-    return mats_of([surf("rat_fur", skin, 5.0), surf("rat_fur", html("#3a2a22"), 3.0), plain(INK), surf("rat_fur", darkened(skin, 0.5), 3.0),
-        surf("rat_fur", skin + (tan - skin) * 0.6, 4.0)], ["fur", "nose", "eye", "ear", "face"])
+    return mats_of([ surf("rat_fur", skin, 5.0), surf("rat_fur", html("#3a2a22"), 3.0), plain(INK), surf("rat_fur", darkened(skin, 0.5), 3.0),
+                     surf("rat_fur", skin + (tan - skin) * 0.6, 4.0) ], [ "fur", "nose", "eye", "ear", "face" ])
 
 def capybara_long_body(kind:string, c:Colours, head:float3, seat_y:float) -> Spec:
     let n = mnode()
@@ -538,13 +537,13 @@ def leg_capybara_long(c:Colours) -> Spec:
     let n = mnode()
     let fur = surf("rat_fur", col(c, "skin"), 5.0)
     let dark = surf("rat_fur", darkened(col(c, "skin"), 0.5), 3.0)
-    let knee, ankle = stepped(float3 { 0.2, -3.0, 0.0 }, float3 { 0.5, -5.6, 0.0 }, if hold == "low": "" else: hold, 4.5)   // (D-179: baked per walk step)
-    let at = ankle - float3 { 0.5, -5.6, 0.0 }   // the foot goes where the ankle goes
+    let knee, ankle = stepped(float3 { 0.2, -3.0, 0.0 }, float3 { 0.5, -5.6, 0.0 }, if hold == "low": "" else: hold, 4.5)  // (D-179: baked per walk step)
+    let at = ankle - float3 { 0.5, -5.6, 0.0 }                                                                             // the foot goes where the ankle goes
     add_child(n, blob(float3 { 3.2, 3.8, 2.9 }, fur, float3 { 0.0, -0.4, 0.0 }))
     add_child(n, rod(float3 { 0.0, -1.0, 0.0 }, knee, 2.3, 2.1, fur))
     add_child(n, rod(knee, ankle, 2.1, 1.8, fur))
     add_child(n, blob(float3 { 2.6, 0.8, 2.2 }, dark, float3 { 1.3, -6.0, 0.0 } + at))
-    for([-1.0, 0.0, 1.0]) k:
+    for([ -1.0, 0.0, 1.0 ]) k:
         add_child(n, blob(float3 { 0.9, 0.55, 0.5 }, dark, float3 { 3.3, -6.2, 0.9 * k } + at, float3 { 0.0, 20.0 * k, 0.0 }))
     return spec_of(n)
 

@@ -5,44 +5,44 @@
 // voxel, a dark outline and a softer line where a limb crosses the body.
 // The game draws them with the `voxels` option (game/voxel_units.lobster); voxel_proto.lobster draws a sheet.
 
-let vx_ELEV = 30.0              // the camera's elevation, degrees
-let vx_RES = 2.0                // voxels a body unit (a body unit is about a world pixel; a voxel a baked pixel)
-let vx_CELL = int2 { int(52.0 * vx_RES), int(74.0 * vx_RES) }   // a sprite cell
-let vx_ANCHOR = int2 { vx_CELL.x / 2, vx_CELL.y - int(14.0 * vx_RES) }   // the ground under the unit, in its cell
-let vx_BLEND = 0.8              // how far body parts melt into each other, body units (round 1's 2.2 made muscles)
+let vx_ELEV = 30.0                                                      // the camera's elevation, degrees
+let vx_RES = 2.0                                                        // voxels a body unit (a body unit is about a world pixel; a voxel a baked pixel)
+let vx_CELL = int2 { int(52.0 * vx_RES), int(74.0 * vx_RES) }           // a sprite cell
+let vx_ANCHOR = int2 { vx_CELL.x / 2, vx_CELL.y - int(14.0 * vx_RES) }  // the ground under the unit, in its cell
+let vx_BLEND = 0.8                                                      // how far body parts melt into each other, body units (round 1's 2.2 made muscles)
 
 enum vx_mat_kind:
     vx_mat_skin, vx_mat_pale, vx_mat_cloth, vx_mat_leather, vx_mat_hair, vx_mat_wood, vx_mat_metal, vx_mat_coat,
-    vx_mat_mane, vx_mat_team, vx_mat_eye, vx_mat_white, vx_mat_pink, vx_mat_cat, vx_mat_gold, vx_mat_mouth,
-    vx_mat_tail, vx_mat_bronze, vx_mat_kilt, vx_mat_laurel, vx_mat_hide, vx_mat_trousers
+        vx_mat_mane, vx_mat_team, vx_mat_eye, vx_mat_white, vx_mat_pink, vx_mat_cat, vx_mat_gold, vx_mat_mouth,
+        vx_mat_tail, vx_mat_bronze, vx_mat_kilt, vx_mat_laurel, vx_mat_hide, vx_mat_trousers
 
 let vx_MAT_BASE = [
-    float3 { 0.86, 0.66, 0.50 },   // skin or fur (the race's)
-    float3 { 0.92, 0.82, 0.68 },   // pale: a muzzle, a belly (the race's)
-    float3 { 0.52, 0.45, 0.34 },   // undyed cloth: trousers, a frog's vest
-    float3 { 0.42, 0.28, 0.16 },   // leather
-    float3 { 0.12, 0.09, 0.08 },   // hair, darker than any skin
-    float3 { 0.55, 0.38, 0.20 },   // wood
-    float3 { 0.70, 0.72, 0.76 },   // metal
-    float3 { 0.50, 0.32, 0.19 },   // a horse's coat
-    float3 { 0.20, 0.14, 0.10 },   // mane and hooves
-    float3 { 0.80, 0.16, 0.13 },   // team colour
-    float3 { 0.07, 0.05, 0.04 },   // eyes
-    float3 { 0.94, 0.92, 0.88 },   // white: eye whites, a cat's chest and paws, a bowstring
-    float3 { 0.90, 0.58, 0.60 },   // pink: a rat's nose, ears' insides, hands and feet
-    float3 { 0.14, 0.13, 0.15 },   // a black cat
-    float3 { 0.92, 0.74, 0.20 },   // gold: a frog's or a cat's eyes
-    float3 { 0.30, 0.10, 0.10 },   // a mouth
-    float3 { 0.86, 0.70, 0.66 },   // a rat's bare tail
-    float3 { 0.74, 0.56, 0.30 },   // bronze: a human's armour
-    float3 { 0.21, 0.13, 0.12 },   // a dark kilt
-    float3 { 0.33, 0.52, 0.22 },   // laurel
-    float3 { 0.80, 0.62, 0.36 },   // tanned hide: leather armour (lighter than skin and kilt, to read apart)
-    float3 { 0.27, 0.18, 0.16 },   // dark trousers
+    float3 { 0.86, 0.66, 0.50 },  // skin or fur (the race's)
+    float3 { 0.92, 0.82, 0.68 },  // pale: a muzzle, a belly (the race's)
+    float3 { 0.52, 0.45, 0.34 },  // undyed cloth: trousers, a frog's vest
+    float3 { 0.42, 0.28, 0.16 },  // leather
+    float3 { 0.12, 0.09, 0.08 },  // hair, darker than any skin
+    float3 { 0.55, 0.38, 0.20 },  // wood
+    float3 { 0.70, 0.72, 0.76 },  // metal
+    float3 { 0.50, 0.32, 0.19 },  // a horse's coat
+    float3 { 0.20, 0.14, 0.10 },  // mane and hooves
+    float3 { 0.80, 0.16, 0.13 },  // team colour
+    float3 { 0.07, 0.05, 0.04 },  // eyes
+    float3 { 0.94, 0.92, 0.88 },  // white: eye whites, a cat's chest and paws, a bowstring
+    float3 { 0.90, 0.58, 0.60 },  // pink: a rat's nose, ears' insides, hands and feet
+    float3 { 0.14, 0.13, 0.15 },  // a black cat
+    float3 { 0.92, 0.74, 0.20 },  // gold: a frog's or a cat's eyes
+    float3 { 0.30, 0.10, 0.10 },  // a mouth
+    float3 { 0.86, 0.70, 0.66 },  // a rat's bare tail
+    float3 { 0.74, 0.56, 0.30 },  // bronze: a human's armour
+    float3 { 0.21, 0.13, 0.12 },  // a dark kilt
+    float3 { 0.33, 0.52, 0.22 },  // laurel
+    float3 { 0.80, 0.62, 0.36 },  // tanned hide: leather armour (lighter than skin and kilt, to read apart)
+    float3 { 0.27, 0.18, 0.16 },  // dark trousers
 ]
 let vx_mat_cols = copy(vx_MAT_BASE)
-let vx_MAT_FUR = [ 1, 1, 0, 0, 1, 0, 0, 1, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0 ]   // per material: flecked like fur
-var vx_fur = 0.07               // how strongly fur is flecked (the race's: frogs are smooth)
+let vx_MAT_FUR = [ 1, 1, 0, 0, 1, 0, 0, 1, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0 ]  // per material: flecked like fur
+var vx_fur = 0.07                                                                      // how strongly fur is flecked (the race's: frogs are smooth)
 
 class vx_prim:
     a:float3
@@ -98,15 +98,15 @@ def vx_ik(a:float3, t:float3, l1:float, l2:float, pole:float3) -> float3, float3
 // ---- races and units
 
 class vx_race:
-    kind:string     // human, rat, frog
+    kind:string  // human, rat, frog
     skin:float3
     pale:float3
-    size:float      // the whole body scaled
-    fur:float       // flecks
+    size:float  // the whole body scaled
+    fur:float   // flecks
 
 let vx_HUMAN = vx_race { "human", float3 { 0.86, 0.66, 0.50 }, float3 { 0.92, 0.75, 0.60 }, 1.15, 0.0 }
-let vx_ROMAN = vx_race { "human", float3 { 0.48, 0.29, 0.16 }, float3 { 0.35, 0.20, 0.13 }, 1.15, 0.0 }   // (human_dark, as the romans)
-let vx_RAT = vx_race { "rat", float3 { 0.48, 0.35, 0.25 }, float3 { 0.78, 0.66, 0.58 }, 1.0, 0.09 }   // (rat_brown)
+let vx_ROMAN = vx_race { "human", float3 { 0.48, 0.29, 0.16 }, float3 { 0.35, 0.20, 0.13 }, 1.15, 0.0 }  // (human_dark, as the romans)
+let vx_RAT = vx_race { "rat", float3 { 0.48, 0.35, 0.25 }, float3 { 0.78, 0.66, 0.58 }, 1.0, 0.09 }      // (rat_brown)
 let vx_FROG = vx_race { "frog", float3 { 0.38, 0.56, 0.22 }, float3 { 0.86, 0.84, 0.56 }, 1.15, 0.03 }
 
 // A race's skin as drawn: a human's lighter than its palette (the composed humans light the face from within, so the
@@ -118,7 +118,7 @@ def vx_skin_of(rc:vx_race) -> float3: return if rc.kind == "human": min(rc.skin 
 var vx_variant = 0
 let vx_LOOKS = 3
 let vx_LOOK_SKIN = [ 1.0, 0.78, 1.22 ]
-let vx_LOOK_HAIR = [ float3 { 0.12, 0.09, 0.08 }, float3 { 0.55, 0.53, 0.50 }, float3 { 0.42, 0.17, 0.09 } ]   // black, grey, auburn
+let vx_LOOK_HAIR = [ float3 { 0.12, 0.09, 0.08 }, float3 { 0.55, 0.53, 0.50 }, float3 { 0.42, 0.17, 0.09 } ]  // black, grey, auburn
 
 // The materials for race rc in look v.
 def vx_set_look(rc:vx_race, v:int):
@@ -131,39 +131,39 @@ def vx_set_look(rc:vx_race, v:int):
 class vx_unit_def:
     label:string
     rc:vx_race
-    right:string    // in the right hand: axe, spear, sword or ""
-    left:string     // in the left: shield, bow or ""
+    right:string  // in the right hand: axe, spear, sword or ""
+    left:string   // in the left: shield, bow or ""
     helm:bool
     armour:bool
-    mount:string    // "", horse or cat
+    mount:string        // "", horse or cat
     helm_kind:string    // galea, or "": a plain cap
     armour_kind:string  // lorica, bronze, leather, or "": plain plate
     back:string         // quiver or ""
     coat:float3         // the mount's coat (zero: its own)
 
-var vx_seated = false   // a rider being built: no legs or tail of its own
-let vx_heads = 4.5           // a human's height in heads (Dominic picked 4.5 from 7.5, 6.5, 5.5 as the composed, 4.5)
-var vx_team_wear = "scarf"   // where a creature without a tunic wears the team: scarf or vest (a concept option)
-var vx_act = ""      // the pose being drawn: "" (standing or walking) or "attack", at a step through it
+var vx_seated = false       // a rider being built: no legs or tail of its own
+let vx_heads = 4.5          // a human's height in heads (Dominic picked 4.5 from 7.5, 6.5, 5.5 as the composed, 4.5)
+var vx_team_wear = "scarf"  // where a creature without a tunic wears the team: scarf or vest (a concept option)
+var vx_act = ""             // the pose being drawn: "" (standing or walking) or "attack", at a step through it
 
 // How far into its blow an attack is at t: a wind-up, a fast strike, a hold, back.
 def vx_blow(t:float) -> float:
     return if t < 0.45: 0.0 elif t < 0.6: (t - 0.45) / 0.15 elif t < 0.75: 1.0 else: 1.0 - (t - 0.75) / 0.25
 
-def vx_raise(t:float) -> float:   // raised through the wind-up, held, lowered
+def vx_raise(t:float) -> float:  // raised through the wind-up, held, lowered
     return if t < 0.45: t / 0.45 elif t < 0.75: 1.0 else: 1.0 - (t - 0.75) / 0.25
 
 def vx_mix(a:float3, b:float3, k:float) -> float3: return a + (b - a) * k
 
 // What a creature's upper body gives the arms and gear.
 class vx_frame:
-    sh_r:float3     // shoulders
+    sh_r:float3  // shoulders
     sh_l:float3
-    arm:float       // each arm bone's length
-    thick:float     // the upper arm's radius
-    sleeve:int      // the upper arm's material
-    hand:int        // the forearm's and hand's
-    head_top:float3 // where a helmet sits
+    arm:float        // each arm bone's length
+    thick:float      // the upper arm's radius
+    sleeve:int       // the upper arm's material
+    hand:int         // the forearm's and hand's
+    head_top:float3  // where a helmet sits
     head_r:float
 
 // ---- gear
@@ -173,7 +173,7 @@ def vx_gear_right(out:[vx_prim], kind:string, hand:float3, d:float3):
         case "axe":
             let top = hand + d * 9.0
             out.push(vx_hard(hand - d * 2.0, top, 0.5, 0.5, vx_mat_wood))
-            let fwd = normalize(cross(d, float3 { 1.0, 0.0, 0.0 })) * -1.0   // the blade: flat, out the front of the shaft
+            let fwd = normalize(cross(d, float3 { 1.0, 0.0, 0.0 })) * -1.0  // the blade: flat, out the front of the shaft
             out.push(vx_hard(top - d * 0.8, top + fwd * 1.2 - d * 0.8, 0.6, 0.6, vx_mat_metal))
             out.push(vx_disc(top + fwd * 2.0 - d * 0.9, float3 { 1.0, 0.0, 0.0 }, 2.2, 0.3, vx_mat_metal))
         case "spear":
@@ -182,17 +182,17 @@ def vx_gear_right(out:[vx_prim], kind:string, hand:float3, d:float3):
         case "pike":
             out.push(vx_hard(hand - d * 11.0, hand + d * 25.0, 0.5, 0.5, vx_mat_wood))
             out.push(vx_hard(hand + d * 25.0, hand + d * 29.0, 0.9, 0.1, vx_mat_metal))
-        case "pilum":   // a heavy javelin: a wooden shaft, a long thin iron shank, a small point
+        case "pilum":  // a heavy javelin: a wooden shaft, a long thin iron shank, a small point
             out.push(vx_hard(hand - d * 6.0, hand + d * 11.0, 0.55, 0.5, vx_mat_wood))
             out.push(vx_bead(hand + d * 11.0, 0.8, vx_mat_metal))
             out.push(vx_hard(hand + d * 11.0, hand + d * 18.5, 0.25, 0.25, vx_mat_metal))
             out.push(vx_hard(hand + d * 18.5, hand + d * 20.0, 0.6, 0.1, vx_mat_metal))
-        case "club", "bone_club":   // thickening to the end
+        case "club", "bone_club":  // thickening to the end
             out.push(vx_hard(hand - d * 1.5, hand + d * 8.0, 0.5, 1.3, if kind == "club": vx_mat_wood else: vx_mat_white))
-        case "staff":   // a tall staff with a laurel at the top
+        case "staff":  // a tall staff with a laurel at the top
             out.push(vx_hard(hand - d * 9.0, hand + d * 13.0, 0.5, 0.45, vx_mat_wood))
             for([ -1.0, 1.0 ]) side: out.push(vx_ball(hand + d * 13.0 + float3 { side * 0.9, 0.0, 0.3 }, 1.0, vx_mat_laurel))
-        case "gladius":   // a short broad blade, made bigger than life to read: a bronze guard, a round pommel
+        case "gladius":  // a short broad blade, made bigger than life to read: a bronze guard, a round pommel
             out.push(vx_bead(hand - d * 1.5, 0.75, vx_mat_bronze))
             out.push(vx_hard(hand - d * 1.2, hand + d * 0.9, 0.45, 0.45, vx_mat_leather))
             out.push(vx_box(hand + d * 1.1, d, float3 { 1.3, 0.35, 0.3 }, 0.1, vx_mat_bronze))
@@ -207,13 +207,13 @@ def vx_gear_right(out:[vx_prim], kind:string, hand:float3, d:float3):
 
 def vx_gear_left(out:[vx_prim], kind:string, hand:float3, string_hand:float3, drawn:bool):
     switch kind:
-        case "shield":   // a round shield, its face in team colour, a wooden rim, a boss
+        case "shield":  // a round shield, its face in team colour, a wooden rim, a boss
             let n = normalize(float3 { -0.35, 1.0, 0.0 })
             let face = hand + n * 0.8
             out.push(vx_disc(face, n, 4.6, 0.4, vx_mat_wood))
             out.push(vx_disc(face + n * 0.35, n, 3.7, 0.2, vx_mat_team))
             out.push(vx_bead(face + n * 0.7, 1.0, vx_mat_metal))
-        case "scutum":   // a tall curved shield: three panels in team colour on a wooden back, a boss, a gold bar
+        case "scutum":  // a tall curved shield: three panels in team colour on a wooden back, a boss, a gold bar
             let n = normalize(float3 { -0.3, 1.0, 0.0 })
             let x = normalize(cross(n, float3 { 0.0, 0.0, 1.0 }))
             let c = hand + n * 1.0 + float3 { 0.0, 0.0, 1.8 }
@@ -221,7 +221,7 @@ def vx_gear_left(out:[vx_prim], kind:string, hand:float3, string_hand:float3, dr
             out.push(vx_box(c - n * 0.25, n, half + float3 { 0.2, 0.0, 0.3 }, 0.15, vx_mat_wood))
             out.push(vx_box(c, n, half, 0.1, vx_mat_team))
             for([ -1.0, 1.0 ]) side:
-                let ns = normalize(n * 0.87 - x * side * 0.5)   // the sides curved back
+                let ns = normalize(n * 0.87 - x * side * 0.5)  // the sides curved back
                 let cs = c + x * side * 4.1 - n * 0.75
                 out.push(vx_box(cs - ns * 0.25, ns, float3 { 1.5, 0.3, 9.1 }, 0.15, vx_mat_wood))
                 out.push(vx_box(cs, ns, float3 { 1.4, 0.3, 8.8 }, 0.1, vx_mat_team))
@@ -249,7 +249,7 @@ def vx_arms(out:[vx_prim], u:vx_unit_def, fr:vx_frame, swing:float, t:float):
     let k = vx_blow(t)
     let up = vx_raise(t)
     let attack = vx_act == "attack"
-    var hr = fr.sh_r + float3 { 0.15, 0.1 + swing * 0.18, -0.92 } * L   // hanging, swung
+    var hr = fr.sh_r + float3 { 0.15, 0.1 + swing * 0.18, -0.92 } * L  // hanging, swung
     var dr = float3 { 0.0, 0.12, 1.0 }
     var hl = fr.sh_l + float3 { -0.15, 0.1 - swing * 0.18, -0.92 } * L
     var drawn = false
@@ -257,13 +257,13 @@ def vx_arms(out:[vx_prim], u:vx_unit_def, fr:vx_frame, swing:float, t:float):
         case "spear", "pike", "pilum", "staff":
             hr = fr.sh_r + float3 { 0.25, 0.45, -0.55 } * L
             dr = float3 { 0.0, 0.12, 1.0 }
-            if attack:   // drawn back, then thrust level
+            if attack:  // drawn back, then thrust level
                 hr = vx_mix(vx_mix(hr, fr.sh_r + float3 { 0.3, -0.25, -0.35 } * L, up), fr.sh_r + float3 { 0.15, 0.95, -0.1 } * L, k)
                 dr = vx_mix(vx_mix(dr, float3 { 0.0, 0.5, 1.0 }, up), float3 { 0.0, 1.0, 0.06 }, k)
         case "axe", "sword", "gladius", "club", "bone_club":
             hr = fr.sh_r + float3 { 0.25, 0.5, -0.6 } * L
             dr = if u.right == "gladius": float3 { 0.0, 0.8, 0.35 } else: float3 { 0.0, 0.85, 0.6 }
-            if attack:   // up over the head, then down through the arm held out
+            if attack:  // up over the head, then down through the arm held out
                 hr = vx_mix(vx_mix(hr, fr.sh_r + float3 { 0.15, -0.1, 0.85 } * L, up), fr.sh_r + float3 { 0.15, 0.85, -0.35 } * L, k)
                 dr = vx_mix(vx_mix(dr, float3 { 0.0, -0.7, 0.7 }, up), float3 { 0.0, 0.6, -0.8 }, k)
     switch u.left:
@@ -271,7 +271,7 @@ def vx_arms(out:[vx_prim], u:vx_unit_def, fr:vx_frame, swing:float, t:float):
         case "scutum": hl = fr.sh_l + float3 { -0.05, 0.5, -0.62 } * L
         case "bow":
             hl = fr.sh_l + float3 { -0.3, 0.5, -0.55 } * L
-            if attack:   // raised and drawn, loosed
+            if attack:  // raised and drawn, loosed
                 hl = vx_mix(hl, fr.sh_l + float3 { 0.25, 0.95, 0.05 } * L, up)
                 hr = vx_mix(hr, fr.sh_r + float3 { -0.15, 0.1, 0.0 } * L, up * (1.0 - k))
                 drawn = up * (1.0 - k) > 0.5
@@ -300,7 +300,7 @@ def vx_scarf(out:[vx_prim], c:float3, r:float, tilt:float):
         let p = c + float3 { sin(a) * r, cos(a) * r, -cos(a) * tilt }
         if k > 0: out.push(vx_hard(last, p, 0.9, 0.9, vx_mat_team))
         last = p
-    out.push(vx_hard(c + float3 { 0.6, r, -tilt }, c + float3 { 1.0, r + 0.6, -tilt - 2.6 }, 0.9, 0.6, vx_mat_team))   // its knot
+    out.push(vx_hard(c + float3 { 0.6, r, -tilt }, c + float3 { 1.0, r + 0.6, -tilt - 2.6 }, 0.9, 0.6, vx_mat_team))  // its knot
 
 // ---- creatures (z up, y forward, x right; body units, the ground at z 0)
 
@@ -332,64 +332,64 @@ def vx_human(out:[vx_prim], u:vx_unit_def, ph:float) -> vx_frame:
             let lift = max(0.0, cos(ph) * side) * 2.2
             let h = hip + float3 { side * 1.6 * bs, 0.0, 0.0 }
             let knee, ankle = vx_ik(h, float3 { side * 1.8 * bs, st, 2.3 + lift }, (hipz - 2.3) * 0.5 + 0.06, (hipz - 2.3) * 0.5 + 0.06, float3 { 0.0, 1.0, 0.0 })
-            out.push(vx_cap(h, knee, 1.75 * bs, 1.4 * bs, vx_mat_trousers))   // dark trousers, as the composed humans wear
+            out.push(vx_cap(h, knee, 1.75 * bs, 1.4 * bs, vx_mat_trousers))  // dark trousers, as the composed humans wear
             out.push(vx_cap(knee, ankle, 1.4 * bs, 0.95 * bs, vx_mat_trousers))
-            out.push(vx_hard(ankle + float3 { 0.0, 0.0, 1.8 }, ankle - float3 { 0.0, 0.0, 1.0 }, 1.1 * bs, 1.05 * bs, vx_mat_leather))   // a short boot
+            out.push(vx_hard(ankle + float3 { 0.0, 0.0, 1.8 }, ankle - float3 { 0.0, 0.0, 1.0 }, 1.1 * bs, 1.05 * bs, vx_mat_leather))  // a short boot
             out.push(vx_hard(ankle - float3 { 0.0, 0.0, 1.2 }, ankle + float3 { 0.0, 2.4 * bs, -1.5 }, 1.0 * bs, 0.9 * bs, vx_mat_leather))
     let chest = float3 { 0.0, 0.5, 38.8 - hh * 1.35 + 0.5 * abs(sin(ph * 2.0)) }
     // an undyed tunic, bare arms, a dark kilt with its hem in team colour (Dominic, 2026-11-01: less red)
     out.push(vx_disc(hip + float3 { 0.0, 0.2, -0.7 }, float3 { 0.0, 0.08, 1.0 }, 2.6 * bs, 2.6, vx_mat_kilt))
-    out.push(vx_disc(hip + float3 { 0.0, 0.42, -3.0 }, float3 { 0.0, 0.08, 1.0 }, 3.05 * bs, 0.65, vx_mat_team))   // the hem, out past the strips
+    out.push(vx_disc(hip + float3 { 0.0, 0.42, -3.0 }, float3 { 0.0, 0.08, 1.0 }, 3.05 * bs, 0.65, vx_mat_team))  // the hem, out past the strips
     out.push(vx_cap(hip + float3 { 0.0, 0.0, 1.0 }, chest, 2.2 * bs, 2.75 * bs, vx_mat_cloth))
-    out.push(vx_cap(chest + float3 { -3.5 * bs, 0.0, -0.1 }, chest + float3 { 3.5 * bs, 0.0, -0.1 }, 1.6 * bs, 1.6 * bs, vx_mat_cloth))   // the shoulders
-    if u.back == "quiver":   // across the back, arrows' feathers out of the top
+    out.push(vx_cap(chest + float3 { -3.5 * bs, 0.0, -0.1 }, chest + float3 { 3.5 * bs, 0.0, -0.1 }, 1.6 * bs, 1.6 * bs, vx_mat_cloth))  // the shoulders
+    if u.back == "quiver":                                                                                                               // across the back, arrows' feathers out of the top
         let qt = chest + float3 { 1.6, -2.7, 1.8 }
         let qb = chest + float3 { -1.2, -2.5, -6.0 }
         out.push(vx_hard(qt, qb, 1.1, 0.95, vx_mat_leather))
         for([ -0.5, 0.5 ]) dx: out.push(vx_bead(qt + float3 { dx, 0.0, 1.0 }, 0.55, vx_mat_white))
-    out.push(vx_disc(hip + float3 { 0.0, 0.1, 1.9 }, float3 { 0.0, 0.0, 1.0 }, 2.5 * bs, 0.45, vx_mat_leather))   // a belt
+    out.push(vx_disc(hip + float3 { 0.0, 0.1, 1.9 }, float3 { 0.0, 0.0, 1.0 }, 2.5 * bs, 0.45, vx_mat_leather))  // a belt
     if u.armour:
-        for(11) k:   // leather strips over the skirt, the hem showing under them
+        for(11) k:  // leather strips over the skirt, the hem showing under them
             let a = float(k) * 32.7 - 163.5
             out.push(vx_hard(hip + float3 { sin(a) * 2.3 * bs, cos(a) * 2.3 * bs, 1.4 }, hip + float3 { sin(a) * 2.7 * bs, cos(a) * 2.7 * bs, -1.9 }, 0.5, 0.5, vx_mat_leather))
         switch u.armour_kind:
-            case "lorica":   // bands of iron round the body over dark leather, curved plates over the shoulders
+            case "lorica":  // bands of iron round the body over dark leather, curved plates over the shoulders
                 out.push(vx_hard(hip + float3 { 0.0, 0.2, 2.8 }, chest + float3 { 0.0, 0.0, -0.3 }, 2.35 * bs, 2.85 * bs, vx_mat_mouth))
                 for(6) k:
                     let t = (float(k) + 0.5) / 6.0
                     let c = hip + float3 { 0.0, 0.2, 2.8 } + (chest + float3 { 0.0, 0.0, -1.4 } - hip - float3 { 0.0, 0.2, 2.8 }) * t
                     out.push(vx_disc(c, float3 { 0.0, 0.06, 1.0 }, (2.35 + 0.5 * t) * bs + 0.12, 0.42, vx_mat_metal))
-                for([ -1.0, 1.0 ]) side:   // a plate curved over each shoulder
+                for([ -1.0, 1.0 ]) side:  // a plate curved over each shoulder
                     out.push(vx_hard(chest + float3 { side * 2.9 * bs, 1.1, 0.3 }, chest + float3 { side * 2.9 * bs, -1.1, 0.3 }, 1.15 * bs, 1.15 * bs, vx_mat_metal))
-            case "bronze":   // a bronze cuirass, leather shoulder guards
+            case "bronze":  // a bronze cuirass, leather shoulder guards
                 out.push(vx_hard(hip + float3 { 0.0, 0.2, 2.8 }, chest + float3 { 0.0, 0.0, -0.3 }, 2.45 * bs, 2.95 * bs, vx_mat_bronze))
                 for([ -1.0, 1.0 ]) side: out.push(vx_hard(chest + float3 { side * 3.0 * bs, 0.0, 0.0 }, chest + float3 { side * 3.5 * bs, 0.0, -1.3 }, 1.4 * bs, 1.25 * bs, vx_mat_leather))
-            default:   // leather (or plain plate)
+            default:  // leather (or plain plate)
                 out.push(vx_hard(hip + float3 { 0.0, 0.2, 2.8 }, chest + float3 { 0.0, 0.0, -0.3 }, 2.45 * bs, 2.95 * bs, if u.armour_kind == "leather": vx_mat_hide else: vx_mat_metal))
-    let h = float3 { 0.0, 1.2, 38.8 - 2.8 * hs }   // the head's centre
+    let h = float3 { 0.0, 1.2, 38.8 - 2.8 * hs }  // the head's centre
     let neck = h - float3 { 0.0, 0.4, 2.4 } * hs
     out.push(vx_cap(chest, neck, 1.3 * bs, 1.2 * bs, vx_mat_skin))
     out.push(vx_cap(h + float3 { 0.0, 0.5, -1.0 } * hs, h + float3 { 0.0, -0.1, 0.5 } * hs, 2.0 * hs, 2.3 * hs, vx_mat_skin))
-    out.push(vx_cap(h + float3 { 0.0, 2.3, -0.1 } * hs, h + float3 { 0.0, 2.65, -0.7 } * hs, 0.55 * hs, 0.5 * hs, vx_mat_skin))   // the nose
+    out.push(vx_cap(h + float3 { 0.0, 2.3, -0.1 } * hs, h + float3 { 0.0, 2.65, -0.7 } * hs, 0.55 * hs, 0.5 * hs, vx_mat_skin))  // the nose
     for([ -1.0, 1.0 ]) side:
-        out.push(vx_bead(h + float3 { side * 0.85, 2.15, 0.3 } * hs, 0.35, vx_mat_eye))   // an eye: a dark pixel at game size, no white
-        if u.helm_kind != "galea": out.push(vx_ball(h + float3 { side * 2.35, -0.1, -0.2 } * hs, 0.6 * hs, vx_mat_skin))   // ears
+        out.push(vx_bead(h + float3 { side * 0.85, 2.15, 0.3 } * hs, 0.35, vx_mat_eye))                                   // an eye: a dark pixel at game size, no white
+        if u.helm_kind != "galea": out.push(vx_ball(h + float3 { side * 2.35, -0.1, -0.2 } * hs, 0.6 * hs, vx_mat_skin))  // ears
     if u.helm_kind == "galea":
         // (head sized, seen from any side: the bowl hugs the skull, the neck guard sits close, the crest is narrow;
         // Dominic: "from behind always look too large", "helmets should just be head sized")
-        out.push(vx_hard(h + float3 { 0.0, -0.3, 0.8 } * hs, h + float3 { 0.0, -0.35, 0.95 } * hs, 2.15 * hs, 2.15 * hs, vx_mat_metal))   // the bowl, the face open
+        out.push(vx_hard(h + float3 { 0.0, -0.3, 0.8 } * hs, h + float3 { 0.0, -0.35, 0.95 } * hs, 2.15 * hs, 2.15 * hs, vx_mat_metal))  // the bowl, the face open
         out.push(vx_hard(h + float3 { 0.0, -1.7, -0.2 } * hs, h + float3 { 0.0, -1.85, -0.9 } * hs, 0.9 * hs, 0.8 * hs, vx_mat_metal))   // the neck guard, close
         // (no brow band or cheek guards: at this size they framed the eyes like goggles and stuck out past the
         // head; Dominic: "silver sticking out the sides of the head?")
-        for(5) k:   // a small crest, front to back over the top
+        for(5) k:  // a small crest, front to back over the top
             let a = float(k) * 30.0 - 60.0
             out.push(vx_bead(h + float3 { 0.0, sin(a) * 1.7 - 0.35, 2.8 + cos(a) * 0.55 } * hs, 0.5 * hs, vx_mat_team))
-    elif not u.helm:   // hair: a crown down to just above the eyes, and down the back of the head
-        out.push(vx_bead(h + float3 { 0.0, -0.25, 1.3 } * hs, 2.3 * hs, vx_mat_hair))   // short, close to the skull
+    elif not u.helm:                                                                   // hair: a crown down to just above the eyes, and down the back of the head
+        out.push(vx_bead(h + float3 { 0.0, -0.25, 1.3 } * hs, 2.3 * hs, vx_mat_hair))  // short, close to the skull
         out.push(vx_bead(h + float3 { 0.0, -0.6, 0.2 } * hs, 2.35 * hs, vx_mat_hair))
-    if vx_variant == 1:   // longer: down the nape (under a helmet too)
+    if vx_variant == 1:  // longer: down the nape (under a helmet too)
         out.push(vx_bead(h + float3 { 0.0, -1.3, -1.1 } * hs, 1.55 * hs, vx_mat_hair))
-    if vx_variant == 2:   // a short beard along the jaw
+    if vx_variant == 2:  // a short beard along the jaw
         out.push(vx_hard(h + float3 { -1.5, 1.0, -1.0 } * hs, h + float3 { 1.5, 1.0, -1.0 } * hs, 0.9 * hs, 0.9 * hs, vx_mat_hair))
         out.push(vx_bead(h + float3 { 0.0, 1.85, -1.55 } * hs, 1.15 * hs, vx_mat_hair))
     return vx_frame { chest + float3 { 4.3 * bs, 0.0, -0.4 }, chest + float3 { -4.3 * bs, 0.0, -0.4 }, (chest.z - hip.z) * 0.52, 1.35 * bs, vx_mat_skin, vx_mat_skin,
@@ -405,20 +405,20 @@ def vx_rat(out:[vx_prim], u:vx_unit_def, ph:float) -> vx_frame:
     if not vx_seated: for([ -1.0, 1.0 ]) side:
         let hip = pelvis + float3 { side * 2.3, 0.0, -0.5 }
         let st = s * side * 5.5
-        let lift = max(0.0, cos(ph) * side) * 2.4   // (lifted while it swings forward)
-        let knee = hip + float3 { side * 0.6, 4.0 + st * 0.5, -3.4 + lift * 0.5 }   // the haunch forward to the knee
-        let ankle = float3 { side * 2.6, -1.6 + st, 1.6 + lift }                     // the shin back down
+        let lift = max(0.0, cos(ph) * side) * 2.4                                  // (lifted while it swings forward)
+        let knee = hip + float3 { side * 0.6, 4.0 + st * 0.5, -3.4 + lift * 0.5 }  // the haunch forward to the knee
+        let ankle = float3 { side * 2.6, -1.6 + st, 1.6 + lift }                   // the shin back down
         out.push(vx_cap(hip, knee, 3.0, 1.5, vx_mat_skin))
         out.push(vx_cap(knee, ankle, 1.0, 0.7, vx_mat_skin))
         out.push(vx_cap(ankle, ankle + float3 { side * 0.2, 3.4, -1.0 }, 0.7, 0.6, vx_mat_pink))
-    let chest = float3 { 0.0, 4.6, 14.6 + bob }   // hunched: the shoulders well forward of the hips
+    let chest = float3 { 0.0, 4.6, 14.6 + bob }  // hunched: the shoulders well forward of the hips
     out.push(vx_cap(pelvis, chest, 4.0, 2.4, vx_mat_skin))
-    out.push(vx_cap(pelvis + float3 { 0.0, 1.8, 0.6 }, chest + float3 { 0.0, 0.6, -2.2 }, 3.0, 1.8, vx_mat_pale))   // the belly
+    out.push(vx_cap(pelvis + float3 { 0.0, 1.8, 0.6 }, chest + float3 { 0.0, 0.6, -2.2 }, 3.0, 1.8, vx_mat_pale))  // the belly
     // the tail: out from the rump, down to the ground and trailing back in a long S
     var last = pelvis + float3 { 0.0, -3.2, -0.6 }
     var r = 1.0
     if not vx_seated: for([ float3 { 0.0, -3.5, -2.6 }, float3 { 0.5, -6.5, -5.2 }, float3 { 2.0, -9.5, -7.4 }, float3 { 3.8, -12.5, -8.1 },
-          float3 { 4.4, -16.0, -8.25 }, float3 { 3.4, -19.5, -8.3 }, float3 { 1.6, -22.5, -8.3 } ]) d, k:   // (lying on the ground)
+                            float3 { 4.4, -16.0, -8.25 }, float3 { 3.4, -19.5, -8.3 }, float3 { 1.6, -22.5, -8.3 } ]) d, k:  // (lying on the ground)
         let p = pelvis + d
         out.push(vx_cap(last, p, r, r - 0.1, if k == 0: vx_mat_skin else: vx_mat_tail))
         last = p
@@ -428,7 +428,7 @@ def vx_rat(out:[vx_prim], u:vx_unit_def, ph:float) -> vx_frame:
     out.push(vx_cap(chest + float3 { 0.0, 0.2, 0.4 }, h, 2.0, 1.9, vx_mat_skin))
     out.push(vx_cap(h + float3 { 0.0, -0.4, 0.2 }, h + float3 { 0.0, 0.9, 0.0 }, 2.3, 2.1, vx_mat_skin))
     out.push(vx_cap(h + float3 { 0.0, 1.2, -0.3 }, h + float3 { 0.0, 6.4, -1.6 }, 1.75, 0.55, vx_mat_skin))
-    out.push(vx_cap(h + float3 { 0.0, 1.4, -1.4 }, h + float3 { 0.0, 5.0, -2.2 }, 1.1, 0.45, vx_mat_pale))   // the chin
+    out.push(vx_cap(h + float3 { 0.0, 1.4, -1.4 }, h + float3 { 0.0, 5.0, -2.2 }, 1.1, 0.45, vx_mat_pale))  // the chin
     out.push(vx_bead(h + float3 { 0.0, 6.7, -1.65 }, 0.85, vx_mat_pink))
     for([ -1.0, 1.0 ]) side:
         out.push(vx_bead(h + float3 { side * 1.4, 2.4, 0.65 }, 0.42, vx_mat_eye))
@@ -451,12 +451,12 @@ def vx_frog(out:[vx_prim], u:vx_unit_def, ph:float) -> vx_frame:
     let rump = float3 { 0.0, -3.0, 5.4 + bob }
     let front = float3 { 0.0, 1.8, 7.6 + bob }
     out.push(vx_cap(rump, front, 4.4, 3.9, vx_mat_skin))
-    out.push(vx_cap(rump + float3 { -1.8, 2.0, 0.6 }, rump + float3 { 1.8, 2.0, 0.6 }, 4.4, 4.4, vx_mat_skin))   // wide
-    out.push(vx_cap(rump + float3 { 0.0, 2.0, -1.2 }, front + float3 { 0.0, 0.9, -1.6 }, 3.4, 2.9, vx_mat_pale))   // the belly
+    out.push(vx_cap(rump + float3 { -1.8, 2.0, 0.6 }, rump + float3 { 1.8, 2.0, 0.6 }, 4.4, 4.4, vx_mat_skin))    // wide
+    out.push(vx_cap(rump + float3 { 0.0, 2.0, -1.2 }, front + float3 { 0.0, 0.9, -1.6 }, 3.4, 2.9, vx_mat_pale))  // the belly
     if not vx_seated: for([ -1.0, 1.0 ]) side:
         let st = s * side * 2.0
         let hip = rump + float3 { side * 3.2, 0.0, -1.0 }
-        let knee = float3 { side * 7.6, 1.4 + st, 5.0 + max(0.0, st) * 0.6 }   // folded: knees up and out past the body
+        let knee = float3 { side * 7.6, 1.4 + st, 5.0 + max(0.0, st) * 0.6 }  // folded: knees up and out past the body
         let ankle = float3 { side * 5.6, -3.4 + st, 1.2 }
         out.push(vx_cap(hip, knee, 2.5, 1.8, vx_mat_skin))
         out.push(vx_cap(knee, ankle, 1.6, 1.0, vx_mat_skin))
@@ -464,10 +464,10 @@ def vx_frog(out:[vx_prim], u:vx_unit_def, ph:float) -> vx_frame:
             out.push(vx_cap(ankle, ankle + float3 { side * 0.8 + toe * 1.6, 4.4, -0.5 }, 0.6, 0.5, vx_mat_skin))
     let h = front + float3 { 0.0, 3.2, 1.4 }
     out.push(vx_cap(h + float3 { -2.0, 0.0, 0.0 }, h + float3 { 2.0, 0.0, 0.0 }, 3.0, 3.0, vx_mat_skin))
-    out.push(vx_cap(h + float3 { -1.6, 0.4, -1.4 }, h + float3 { 1.6, 0.4, -1.4 }, 2.3, 2.3, vx_mat_pale))   // the throat
+    out.push(vx_cap(h + float3 { -1.6, 0.4, -1.4 }, h + float3 { 1.6, 0.4, -1.4 }, 2.3, 2.3, vx_mat_pale))    // the throat
     out.push(vx_hard(h + float3 { -3.4, 1.9, -0.9 }, h + float3 { 3.4, 1.9, -0.9 }, 0.3, 0.3, vx_mat_mouth))  // the mouth
     for([ -1.0, 1.0 ]) side:
-        let e = h + float3 { side * 2.5, 0.6, 3.2 }   // big eyes, bulging up off the top of the head
+        let e = h + float3 { side * 2.5, 0.6, 3.2 }  // big eyes, bulging up off the top of the head
         out.push(vx_ball(e, 2.1, vx_mat_skin))
         out.push(vx_bead(e + float3 { side * 0.2, 0.9, 0.5 }, 1.65, vx_mat_gold))
         out.push(vx_hard(e + float3 { side * 0.0, 2.3, 0.6 }, e + float3 { side * 0.7, 2.3, 0.6 }, 0.6, 0.6, vx_mat_eye))
@@ -504,7 +504,7 @@ def vx_cat(out:[vx_prim], ph:float) -> float3:
     let front = float3 { 0.0, 5.0, 13.5 }
     let back = float3 { 0.0, -7.0, 14.0 }
     out.push(vx_cap(back, front, 4.4, 4.6, vx_mat_cat))
-    out.push(vx_ball(front + float3 { 0.0, 2.2, -2.0 }, 3.2, vx_mat_white))   // the chest
+    out.push(vx_ball(front + float3 { 0.0, 2.2, -2.0 }, 3.2, vx_mat_white))  // the chest
     let s = sin(ph)
     for([ -1.0, 1.0 ]) side:
         for([ front + float3 { side * 2.6, 1.0, -2.5 }, back + float3 { side * 2.8, -1.0, -2.5 } ]) hip, k:
@@ -523,7 +523,7 @@ def vx_cat(out:[vx_prim], ph:float) -> float3:
     let head = front + float3 { 0.0, 7.6, 1.6 }
     out.push(vx_cap(front + float3 { 0.0, 1.5, 1.2 }, head + float3 { 0.0, -1.2, -0.4 }, 3.2, 2.8, vx_mat_cat))
     out.push(vx_ball(head, 4.0, vx_mat_cat))
-    out.push(vx_ball(head + float3 { 0.0, 3.0, -1.5 }, 2.2, vx_mat_white))   // the muzzle
+    out.push(vx_ball(head + float3 { 0.0, 3.0, -1.5 }, 2.2, vx_mat_white))  // the muzzle
     out.push(vx_bead(head + float3 { 0.0, 5.0, -0.8 }, 0.8, vx_mat_pink))
     for([ -1.0, 1.0 ]) side:
         out.push(vx_bead(head + float3 { side * 1.7, 3.2, 0.8 }, 1.05, vx_mat_gold))
@@ -555,7 +555,7 @@ def vx_unit_prims(u:vx_unit_def, ph0:float) -> [vx_prim]:
     vx_mat_cols[vx_mat_coat] = if u.coat != float3_0: u.coat else: vx_MAT_BASE[vx_mat_coat]
     vx_mat_cols[vx_mat_mane] = if u.coat != float3_0: u.coat * 0.45 else: vx_MAT_BASE[vx_mat_mane]
     var seat = float3_0
-    if u.mount == "cat":   // a big cat, its rider rat-sized
+    if u.mount == "cat":  // a big cat, its rider rat-sized
         let cat = []::vx_prim
         seat = vx_cat(cat, ph) * vx_CAT_SIZE
         for(cat) p: out.push(vx_prim { p.a * vx_CAT_SIZE, p.b * vx_CAT_SIZE, p.ra * vx_CAT_SIZE, p.rb * vx_CAT_SIZE, p.mat, p.hard, p.disc, p.box * vx_CAT_SIZE })
@@ -566,7 +566,7 @@ def vx_unit_prims(u:vx_unit_def, ph0:float) -> [vx_prim]:
     vx_seated = false
     let wide = if u.mount == "cat": 4.6 * vx_CAT_SIZE else: 5.4
     let lift = seat - float3 { 0.0, 0.0, if u.rc.kind == "rat": 9.0 elif u.rc.kind == "frog": 5.8 else: 20.5 }
-    for(rider) p: out.push(vx_prim { p.a + lift, p.b + lift, p.ra, p.rb, p.mat, p.hard, p.disc, p.box })   // raised onto the seat
+    for(rider) p: out.push(vx_prim { p.a + lift, p.b + lift, p.ra, p.rb, p.mat, p.hard, p.disc, p.box })  // raised onto the seat
     let lm = if u.rc.kind == "human": vx_mat_cloth else: vx_mat_skin
     let foot = if u.rc.kind == "human": vx_mat_leather else: vx_mat_pink
     for([ -1.0, 1.0 ]) side:
@@ -583,12 +583,12 @@ def vx_unit_prims(u:vx_unit_def, ph0:float) -> [vx_prim]:
 
 // ---- the voxel grid
 
-class vx_shape:     // a filled grid's surface: the voxels with air beside them (none of the rest can show)
-    pos:[int3]      // voxels from the unit's ground point
+class vx_shape:  // a filled grid's surface: the voxels with air beside them (none of the rest can show)
+    pos:[int3]   // voxels from the unit's ground point
     mats:[int]
-    normals:[float3]   // the shape's smooth normal (the grid's stairs would speckle the shading)
-    occl:[float]    // how hemmed in (0 open to 1 deep in a crease): ambient occlusion
-    lo:int3         // the grid (for shadows): its corner, size, and per voxel a material or -1
+    normals:[float3]  // the shape's smooth normal (the grid's stairs would speckle the shading)
+    occl:[float]      // how hemmed in (0 open to 1 deep in a crease): ambient occlusion
+    lo:int3           // the grid (for shadows): its corner, size, and per voxel a material or -1
     dims:int3
     grid:[int]
 
@@ -624,7 +624,7 @@ def vx_field(ps:[vx_prim], near:[int], p:float3, k:float) -> float, int:
         if d < best:
             best = d
             m = s.mat
-    return min(body, gear - 0.5), m   // (gear thickened half a voxel: a shaft thinner than a voxel would break up)
+    return min(body, gear - 0.5), m  // (gear thickened half a voxel: a shaft thinner than a voxel would break up)
 
 let vx_AO_TAPS = [ int3 { 2, 0, 0 }, int3 { -2, 0, 0 }, int3 { 0, 2, 0 }, int3 { 0, -2, 0 }, int3 { 0, 0, 2 }, int3 { 0, 0, -2 },
                    int3 { 2, 2, 2 }, int3 { -2, 2, 2 }, int3 { 2, -2, 2 }, int3 { -2, -2, 2 },
@@ -632,7 +632,7 @@ let vx_AO_TAPS = [ int3 { 2, 0, 0 }, int3 { -2, 0, 0 }, int3 { 0, 2, 0 }, int3 {
 
 def vx_solid_at(grid:[int], lo:int3, dims:int3, v:int3) -> bool:
     let q = v - lo
-    if q.z < 0: return true   // (the ground)
+    if q.z < 0: return true  // (the ground)
     if q.x < 0 or q.y < 0 or q.x >= dims.x or q.y >= dims.y or q.z >= dims.z: return false
     return grid[(q.z * dims.y + q.y) * dims.x + q.x] >= 0
 
@@ -642,8 +642,8 @@ def vx_solid_at(grid:[int], lo:int3, dims:int3, v:int3) -> bool:
 // only blocks the surface crosses are measured voxel by voxel.
 def vx_fill(parts:[vx_prim], unit_size:float) -> vx_shape:
     let s = unit_size * vx_RES
-    var low = 1000.0   // the ground: under the body's lowest point (gear reaching lower, a spear's butt, is cut off
-    for(parts) p:      // by it: a frog's spear set it on the ground and lifted the frog off it)
+    var low = 1000.0  // the ground: under the body's lowest point (gear reaching lower, a spear's butt, is cut off
+    for(parts) p:     // by it: a frog's spear set it on the ground and lifted the frog off it)
         if not p.hard:
             let a, b = vx_bounds(p)
             low = min(low, a.z)
@@ -668,9 +668,9 @@ def vx_fill(parts:[vx_prim], unit_size:float) -> vx_shape:
             blocks[((qa.z + z) * nb.y + qa.y + y) * nb.x + qa.x + x].push(i)
     let n = dims.x * dims.y * dims.z
     let mats = map(n): -1
-    let field = map(n): 1.0   // the distance where it was measured (air elsewhere, -1 deep inside), for normals
+    let field = map(n): 1.0  // the distance where it was measured (air elsewhere, -1 deep inside), for normals
     let base = float(lo) + float3_1 * 0.5
-    let reach = 3.5   // a block's half diagonal, voxels
+    let reach = 3.5  // a block's half diagonal, voxels
     for(nb.z) bz: for(nb.y) by: for(nb.x) bx:
         let near = blocks[(bz * nb.y + by) * nb.x + bx]
         if near.length:
@@ -724,7 +724,6 @@ def vx_fill(parts:[vx_prim], unit_size:float) -> vx_shape:
         clamp((float(hit) / 14.0 - 0.45) / 0.35, 0.0, 1.0)
     return vx_shape { pos, smat, nrm, occl, lo, dims, mats }
 
-
 // ---- drawing: each surface voxel splatted into the cell over the pixels its cube covers, the nearest kept
 
 def vx_hash(v:int3) -> int:
@@ -732,14 +731,14 @@ def vx_hash(v:int3) -> int:
     h = (h ^ (h >> 13)) * 1274126177
     return (h ^ (h >> 16)) & 1023
 
-let vx_LIGHT = normalize(float3 { -0.65, 0.1, 0.75 })   // the body's key light, as the camera sees it: high on the sun's side
-var vx_shadows = true       // shadows on the body (its own, and occlusion in creases), and on the ground
-let vx_SUN = normalize(float3 { -0.55, 0.45, 1.0 })   // towards the sun, as the camera sees it: upper left (the world's)
-var vx_depth = []::float   // the cell being drawn (reused: only the last one's box is cleared)
+let vx_LIGHT = normalize(float3 { -0.65, 0.1, 0.75 })  // the body's key light, as the camera sees it: high on the sun's side
+var vx_shadows = true                                  // shadows on the body (its own, and occlusion in creases), and on the ground
+let vx_SUN = normalize(float3 { -0.55, 0.45, 1.0 })    // towards the sun, as the camera sees it: upper left (the world's)
+var vx_depth = []::float                               // the cell being drawn (reused: only the last one's box is cleared)
 var vx_cols = []::float3
 var vx_mat = []::int
 var vx_out = []::float4
-var vx_box = int4_0          // the last cell's box, outline included: x0, y0, x1, y1
+var vx_box = int4_0  // the last cell's box, outline included: x0, y0, x1, y1
 
 // One facing of a shape as a sprite cell (alpha 0 around it; drawn in vx_box): the cell is reused by the next call,
 // so copy what's wanted first. The team colour's key (magenta) survives the shading, so the game's sprite shader can
@@ -751,7 +750,7 @@ def vx_cell(sh:vx_shape, facing:int) -> [float4]:
     let rv = rot(float3 { 0.0, sin(vx_ELEV), cos(vx_ELEV) })
     let rd = rot(float3 { 0.0, cos(vx_ELEV), -sin(vx_ELEV) })
     let light = rot(vx_LIGHT)
-    let hx = 0.5 * (abs(ru.x) + abs(ru.y) + abs(ru.z))   // the cube's half extent on screen
+    let hx = 0.5 * (abs(ru.x) + abs(ru.y) + abs(ru.z))  // the cube's half extent on screen
     let hy = 0.5 * (abs(rv.x) + abs(rv.y) + abs(rv.z))
     let cw = vx_CELL.x
     let ch = vx_CELL.y
@@ -760,7 +759,7 @@ def vx_cell(sh:vx_shape, facing:int) -> [float4]:
         vx_cols = map(cw * ch): float3_0
         vx_mat = map(cw * ch): -1
         vx_out = map(cw * ch): float4_0
-    else:   // the last cell's box cleared
+    else:  // the last cell's box cleared
         for(vx_box.w - vx_box.y + 1) yy: for(vx_box.z - vx_box.x + 1) xx:
             let j = (vx_box.y + yy) * cw + vx_box.x + xx
             vx_depth[j] = 1000000.0
@@ -784,7 +783,7 @@ def vx_cell(sh:vx_shape, facing:int) -> [float4]:
             k -= sh.occl[i] * 0.3
         var c = vx_mat_cols[m] * (if k > 0.8: 1.08 elif k > 0.62: 0.94 elif k > 0.45: 0.76 elif k > 0.28: 0.6 else: 0.47)
         if vx_MAT_FUR[m] != 0: c *= 1.0 + vx_fur * (float(vx_hash(v)) / 511.5 - 1.0)
-        c = min(c, float3_1)   // (over 1 wraps round in the game's texture: a bright pink came out cyan)
+        c = min(c, float3_1)  // (over 1 wraps round in the game's texture: a bright pink came out cyan)
         let x0 = max(1, int(-floor(-(float(vx_ANCHOR.x) + u - hx - 0.5))))
         let x1 = min(cw - 2, int(floor(float(vx_ANCHOR.x) + u + hx - 0.5)))
         let y0 = max(1, int(-floor(-(float(vx_ANCHOR.y) - w - hy - 0.5))))
@@ -796,7 +795,7 @@ def vx_cell(sh:vx_shape, facing:int) -> [float4]:
                 vx_depth[j] = d
                 vx_cols[j] = c
                 vx_mat[j] = m
-    vx_box = int4 { box.x - 1, box.y - 1, box.z + 1, box.w + 1 }   // (the outline round it)
+    vx_box = int4 { box.x - 1, box.y - 1, box.z + 1, box.w + 1 }  // (the outline round it)
     for(vx_box.w - vx_box.y + 1) yy: for(vx_box.z - vx_box.x + 1) xx:
         let px = vx_box.x + xx
         let py = vx_box.y + yy
@@ -838,7 +837,7 @@ def vx_ground_shadow(sh:vx_shape, facing:int) -> [float4]:
     var box = int4 { cw, ch, -1, -1 }
     for(sh.pos) v:
         let p = float(v) + float3_1 * 0.5
-        if p.z < 3.0:   // a contact shadow under what touches the ground, a few px thick: the game draws a baked px
+        if p.z < 3.0:  // a contact shadow under what touches the ground, a few px thick: the game draws a baked px
             // at 0.55 world px, nearest sampled, so a sliver under the soles vanished and units read as floating
             let u0 = dot(float3 { p.x, p.y, 0.0 }, ru)
             let w0 = dot(float3 { p.x, p.y, 0.0 }, rv)
@@ -869,7 +868,7 @@ def vx_ground_shadow(sh:vx_shape, facing:int) -> [float4]:
 // foot planted): at least half its soles (its pixels with nothing under them in its lowest 2 rows) have shadow showing
 // straight under them. Walking (a foot may swing free): some sole in its lowest 6 rows does.
 def vx_stands(cell:[float4], sc:[float4], k:float, ph:float, standing:bool) -> bool:
-    let n = 70   // world px round the anchor each way
+    let n = 70  // world px round the anchor each way
     let um = map(n * 2 * n * 2): false
     let sm = map(n * 2 * n * 2): false
     for(n * 2) j: for(n * 2) i:

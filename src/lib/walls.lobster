@@ -9,16 +9,16 @@
 let T_CLIMB = 6
 let DOCK = 1600
 let AWAY = 40000
-let N9 = [int2 { 0, 0 }, int2 { 1, 0 }, int2 { 0, 1 }, int2 { -1, 0 }, int2 { 0, -1 }, int2 { 1, 1 }, int2 { -1, 1 }, int2 { -1, -1 }, int2 { 1, -1 }]
-let N8 = [int2 { 1, 0 }, int2 { 0, 1 }, int2 { -1, 0 }, int2 { 0, -1 }, int2 { 1, 1 }, int2 { -1, 1 }, int2 { -1, -1 }, int2 { 1, -1 }]
+let N9 = [ int2 { 0, 0 }, int2 { 1, 0 }, int2 { 0, 1 }, int2 { -1, 0 }, int2 { 0, -1 }, int2 { 1, 1 }, int2 { -1, 1 }, int2 { -1, -1 }, int2 { 1, -1 } ]
+let N8 = [ int2 { 1, 0 }, int2 { 0, 1 }, int2 { -1, 0 }, int2 { 0, -1 }, int2 { 1, 1 }, int2 { -1, 1 }, int2 { -1, -1 }, int2 { 1, -1 } ]
 
-var pour_at = dictionary<int, int>(16)   // a pouring building's id -> the tick it may pour again
-var pour_ids = []::int                     // its keys, ascending
-var t_docks = []::int                      // per unit type: a siege tower
+var pour_at = dictionary<int, int>(16)  // a pouring building's id -> the tick it may pour again
+var pour_ids = []::int                  // its keys, ascending
+var t_docks = []::int                   // per unit type: a siege tower
 
 class WallNet:
-    cells:[int]                  // breadth first from the start cell
-    steps:dictionary<int, int>   // cell -> steps from it
+    cells:[int]                 // breadth first from the start cell
+    steps:dictionary<int, int>  // cell -> steps from it
 
 var net_cache = dictionary<int, WallNet>(64)
 var net_cache_tick = -1
@@ -124,7 +124,7 @@ def top_of(acc:int, team:int, x:int, y:int, down:bool) -> int:
 def ladder_top(c:int) -> int:
     let x = c % W
     let y = c / W
-    for([int2 { 0, -1 }, int2 { 1, 0 }, int2 { 0, 1 }, int2 { -1, 0 }]) n:
+    for([ int2 { 0, -1 }, int2 { 1, 0 }, int2 { 0, 1 }, int2 { -1, 0 } ]) n:
         let nx = x + n.x
         let ny = y + n.y
         if nx >= 0 and ny >= 0 and nx < W and ny < H and places(ny * W + nx) > 0: return ny * W + nx
@@ -397,7 +397,7 @@ def walls_tick():
                 let p = places(c)
                 let k = settled.get(c, 0)
                 var moved = false
-                if k >= p:   // no room here: the nearest cell with room
+                if k >= p:  // no room here: the nearest cell with room
                     if not held_made:
                         held = wall_held([]::int)
                         held_made = true
@@ -552,7 +552,7 @@ def breach(b:int):
     elif b_sy[b] > b_sx[b]: along = 1
     for(footprint(b)) c:
         if not rubble.get(c):
-            rubble.set(c, [terrain[c], b_owner[b], k, b_cx[b], b_cy[b], along])
+            rubble.set(c, [ terrain[c], b_owner[b], k, b_cx[b], b_cy[b], along ])
             let _found, at = binary_search(rubble_cells, c)
             rubble_cells.insert(at, c)
             set_terrain(c, rubble_terrain)
@@ -603,7 +603,7 @@ def walls_hash(h0:int) -> int:
     var h = h0
     for(u_x.length) i:
         if u_perch[i] != 0 or u_wgoal[i] != 0:
-            for([u_id[i], u_perch[i], u_wgoal[i], u_wnext[i], u_wexit[i], u_wtime[i]]) v: h = mix(h, v)
+            for([ u_id[i], u_perch[i], u_wgoal[i], u_wnext[i], u_wexit[i], u_wtime[i] ]) v: h = mix(h, v)
     for(pour_ids) id: h = mix(mix(h, id), pour_at.get(id, 0))
     for(rubble_cells) c:
         h = mix(h, c)

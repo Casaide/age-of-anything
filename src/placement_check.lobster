@@ -27,14 +27,14 @@ import placement.fixtures2d
 
 let args = command_line_arguments()
 fatal(gl.window("placement check", 64, 64, gl.window_init_no_vsync))
-fatal(gl.load_materials(BAKE_SHADERS, true))   // (parts not in the bake cache are baked as they're composed)
+fatal(gl.load_materials(BAKE_SHADERS, true))  // (parts not in the bake cache are baked as they're composed)
 placement_load()
 let parity = args.length > 1 and args[0] == "parity"
 let parity2 = args.length > 1 and args[0] == "parity2d"
 let want = if parity or parity2: load_json(args[1]) else: jobj()
 var only = ""
 for(args) a, i:
-    if not ((parity or parity2) and i < 2) and not has_s(["all", "nofixtures", "fixtures", "3d", "2d", "debug2d"], a) and not starts_with(a, "shard:"): only = a
+    if not ((parity or parity2) and i < 2) and not has_s([ "all", "nofixtures", "fixtures", "3d", "2d", "debug2d" ], a) and not starts_with(a, "shard:"): only = a
 let fixtures_only = has_s(args, "fixtures")
 let do3 = not has_s(args, "2d") and not parity2
 debug2d = has_s(args, "debug2d")
@@ -76,8 +76,8 @@ if parity:
 let seen = []::string
 for(if fixtures_only or not do3: []::Case else: cases) c:
     let r = c.recipe
-    let sig = stringify(jarr([at(r, "body"), get(r, "head") or jstr(""), at(r, "parts"), get(r, "mount") or jobj(), get(r, "crew") or jobj(),
-                              get(r, "haul") or jobj(), get(r, "slot") or jstr(""), at(r, "skin")]))
+    let sig = stringify(jarr([ at(r, "body"), get(r, "head") or jstr(""), at(r, "parts"), get(r, "mount") or jobj(), get(r, "crew") or jobj(),
+                               get(r, "haul") or jobj(), get(r, "slot") or jstr(""), at(r, "skin") ]))
     if not has_s(seen, sig):
         seen.push(sig)
         check_unit(c.label, r)
@@ -105,7 +105,7 @@ for(check_order) key:
 if parity:
     let gres = at(want, "results")
     for(gres.keys) key:
-        if not check_results.get(key):   // (a rule Godot checks and this doesn't, failing or not)
+        if not check_results.get(key):  // (a rule Godot checks and this doesn't, failing or not)
             differ++
             if differ <= 20: print "PARITY {key}: not checked here; Godot fails {gres.a[find(gres.keys) k: k == key].a.length} views"
     print "parity: {differ} rules differ from Godot\'s"
@@ -143,7 +143,7 @@ if do2:
         k2++
     failed += f2
     print "2D: {check_order.length - mark} checks, {f2} failed ({done.length} units; {seconds_elapsed() - t1} s)"
-    if parity2:   // the same rules checked, failing in the same views, as Godot's
+    if parity2:  // the same rules checked, failing in the same views, as Godot's
         let gres = at(want, "results")
         var d2 = 0
         var k3 = mark

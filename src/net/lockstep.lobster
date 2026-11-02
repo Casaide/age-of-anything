@@ -8,13 +8,13 @@
 // Messages are framed: a kind letter, a 4-byte length (little-endian), a flexbuffer.
 
 let NET_PORT = 47816
-let HASH_EVERY = 40              // ticks between the hashes sent
+let HASH_EVERY = 40  // ticks between the hashes sent
 
 class TurnMsg:
     player:int
     turn:int
     cmds:[Cmd]
-    hashes:[int]                 // tick, hash, tick, hash...
+    hashes:[int]  // tick, hash, tick, hash...
 
 class Link:
     sock:resource<tcpsocket>? = nil
@@ -28,15 +28,15 @@ class Link:
 class Lockstep:
     link:Link
     me:int
-    players:[int]                // seats that send commands (people; a bot seat needs none, it's deterministic)
-    done:[int]                   // per player: the last turn whose commands are all in
+    players:[int]  // seats that send commands (people; a bot seat needs none, it's deterministic)
+    done:[int]     // per player: the last turn whose commands are all in
     hashes_out = []::int
     theirs = dictionary<int, int>(64)
     mine = dictionary<int, int>(64)
     desync = ""
-    first_seq = 0                // our first command this link carries
-    more = []::Link              // a host's other players' links (more than two people: a star round the host)
-    relay = false                // the host: every turn that comes in goes on to the others
+    first_seq = 0    // our first command this link carries
+    more = []::Link  // a host's other players' links (more than two people: a star round the host)
+    relay = false    // the host: every turn that comes in goes on to the others
 
 def net_host(port:int) -> Link:
     let l, err = tcp.listen("0.0.0.0", port)
@@ -71,7 +71,7 @@ def net_ready(link:Link) -> bool:
     return link.connected
 
 def net_send(link:Link, kind:int, payload:string):
-    let head = ensure_size(unicode_to_string([kind]), 5, 0)   // (the kind's an ASCII letter: one byte)
+    let head = ensure_size(unicode_to_string([ kind ]), 5, 0)  // (the kind's an ASCII letter: one byte)
     let h, _ = write_int32_le(head, 1, payload.length)
     link.out += h + payload
     net_flush(link)
@@ -110,14 +110,14 @@ def net_poll(link:Link) -> [[string]]:
             link.error = err
             break
         if not data: break
-        if data == "":   // (an empty read: the other end has closed)
+        if data == "":  // (an empty read: the other end has closed)
             link.closed = true
             break
         link.inb += data
     while link.inb.length >= 5:
         let len, _ = read_int32_le(link.inb, 1)
         if link.inb.length < 5 + len: break
-        frames.push([unicode_to_string([link.inb[0]]), link.inb.substring(5, len)])
+        frames.push([ unicode_to_string([ link.inb[0] ]), link.inb.substring(5, len) ])
         link.inb = link.inb.substring(5 + len, link.inb.length - 5 - len)
     return frames
 
@@ -136,14 +136,14 @@ def check_hashes(ls:Lockstep):
 
 // Take what came: the others' commands into the queue, their hashes checked. Other frames
 // (not turns) are returned for the caller.
-def ls_links(ls:Lockstep) -> [Link]: return append([ls.link], ls.more)
+def ls_links(ls:Lockstep) -> [Link]: return append([ ls.link ], ls.more)
 
 def ls_receive(ls:Lockstep) -> [[string]]:
     let rest = []::[string]
     let links = ls_links(ls)
     for(links) src, li:
         for(net_poll(src)) f:
-            if f[0] == "T" and ls.relay:   // (the host passes each player's turn on to the others)
+            if f[0] == "T" and ls.relay:  // (the host passes each player's turn on to the others)
                 for(links) to, lj:
                     if lj != li: net_send(to, 'T', f[1])
             if f[0] == "T":
