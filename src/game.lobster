@@ -674,9 +674,9 @@ def collect_units(alpha:float):
             let flash = if since < 0.12: 1.0 + 1.8 * (1.0 - since / 0.12) else: 1.0
             let up = if voxel_units: lift_at(x, y) * 1.5 else: 0.0   // standing on the hill (canvas px; iso is 1.5x), as the views do
             add(f, p.x, p.y - up, p.y, float4 { tc.x, tc.y, tc.z, flash })
-            if voxel_units and f >= 0:   // its shadow on the ground, under every unit (as the props' are)
-                let sf = vx_shadow_for(f)
-                if sf >= 0: add(sf, p.x, p.y - up, -200000.0 + p.y, float4 { 1.0, 1.0, 1.0, 1.0 })
+            if voxel_units and f >= 0:   // its shadow on the ground, sorted just under it: in the ground layer a hill's
+                let sf = vx_shadow_for(f)   // near edge (draw_occluder) was painted over it under the feet, and it floated
+                if sf >= 0: add(sf, p.x, p.y - up, p.y - 0.5, float4 { 1.0, 1.0, 1.0, 1.0 })
 
 def collect_corpses():
     corpses = filter(corpses) c: clock_s - c.t0 < 4.0

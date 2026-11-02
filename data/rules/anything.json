@@ -22,6 +22,7 @@
   },
   {
    "slot": "spear",
+   "price_points": -2,
    "role": "spear",
    "tier": 1,
    "name": "Spear",
@@ -30,6 +31,7 @@
   },
   {
    "slot": "skirmisher",
+   "price_points": 0,
    "role": "skirmisher",
    "tier": 2,
    "name": "Skirmisher",
@@ -41,6 +43,7 @@
   },
   {
    "slot": "archer",
+   "price_points": -2,
    "role": "archer",
    "tier": 2,
    "name": "Archer",
@@ -49,6 +52,7 @@
   },
   {
    "slot": "large",
+   "price_points": 4,
    "role": "large",
    "tier": 2,
    "name": "Heavy",
@@ -79,7 +83,7 @@
     "skirmish": 3,
     "building": 3
    },
-   "price_points": 3
+   "price_points": 4
   },
   {
    "slot": "mounted_archer",
@@ -96,7 +100,7 @@
    "bonus": {
     "infantry": 2
    },
-   "price_points": -3
+   "price_points": -1
   },
   {
    "slot": "scout",
@@ -120,7 +124,7 @@
     "worker": 3,
     "heal": 4
    },
-   "price_points": -2,
+   "price_points": -1,
    "noun": "Scout"
   },
   {

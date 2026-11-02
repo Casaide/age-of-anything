@@ -29,7 +29,7 @@ import .view.art
 import .view.unit_view
 import .game.audio
 import .game.pack
-def ui() -> float: return 1.0   // (the UI's scale, which game/ui.lobster asks the game for)
+def ui() -> float: return 1.0  // (the UI's scale, which game/ui.lobster asks the game for)
 import .game.ui
 import .game.fx
 import .view.baker
@@ -66,12 +66,12 @@ import .placement.case2d
 import .placement.fixtures2d
 
 let BG = float4 { 0.337, 0.471, 0.180, 1.0 }    // #56782e
-let STRIKE_MS = [0, 120, 210, 280, 340, 450]     // frames of a blow (UnitView.flourish)
-let FALL_MS = [0, 200, 400, 600, 850, 1200]      // frames of a death (UnitView.die)
-let FACING_NAMES = ["f0 right", "f1", "f2 towards", "f3", "f4 left", "f5", "f6 away", "f7"]
+let STRIKE_MS = [ 0, 120, 210, 280, 340, 450 ]  // frames of a blow (UnitView.flourish)
+let FALL_MS = [ 0, 200, 400, 600, 850, 1200 ]   // frames of a death (UnitView.die)
+let FACING_NAMES = [ "f0 right", "f1", "f2 towards", "f3", "f4 left", "f5", "f6 away", "f7" ]
 let UNIT_SCALE = 0.85
-let TEXT_SCALE = 1.25                            // (Godot's labels look this much bigger at the same font size)
-let TEXT = float4 { 0.957, 0.945, 0.910, 1.0 }   // #f4f1e8
+let TEXT_SCALE = 1.25                           // (Godot's labels look this much bigger at the same font size)
+let TEXT = float4 { 0.957, 0.945, 0.910, 1.0 }  // #f4f1e8
 
 // A unit on the sheet: a recipe and its eval, or one lone part with its colours.
 class SUnit:
@@ -107,9 +107,9 @@ let out_dir = args[1]
 let only = if args.length > 2 and args[2] != "all" and args[2] != "nocheck" and find_string(args[2], ":") < 0: tokenize(args[2], ",", " ") else: []::string
 let zoom_arg = if args.length > 3 and args[3] != "all" and args[3] != "nocheck" and find_string(args[3], ":") < 0: tokenize(args[3], ",", " ") else: []::string
 let check_rows = not has_s(args, "nocheck")
-for(args) a:   // cache:<dir>: keep the bakes there (a folder under src that exists) instead of bake_cache
+for(args) a:  // cache:<dir>: keep the bakes there (a folder under src that exists) instead of bake_cache
     if starts_with(a, "cache:"): bake_cache_dir = a.substring(6, a.length - 6)
-let not_yet = []::string             // what the Lobster side can't draw yet, said once each
+let not_yet = []::string  // what the Lobster side can't draw yet, said once each
 
 def say_not_yet(s:string):
     if not has_s(not_yet, s):
@@ -166,7 +166,7 @@ def has_slot(ref:JV) -> bool:
 // (new part ids), its body part completed from it, a creature copy wearing it.
 let variants = dictionary<string, string>(15)
 def variant(ref:JV) -> string:
-    let sig = stringify(jarr([at(ref, "kit"), at(ref, "params"), jstr(gstr(ref, "creature", ""))]))
+    let sig = stringify(jarr([ at(ref, "kit"), at(ref, "params"), jstr(gstr(ref, "creature", "")) ]))
     let have = variants.get(sig)
     if have: return have
     let tag = "_v" + sha256_text(sig).substring(0, 6)
@@ -195,14 +195,14 @@ def variant(ref:JV) -> string:
 // Which of a recipe's parts have a 3D model (UnitModelsCheck.has: body armour is worn on a modelled body);
 // with no pack to say so, asked of the models here.
 def mark_modelled(r:JV):
-    let ids = [gstr(r, "body", "")]
+    let ids = [ gstr(r, "body", "") ]
     let rp = gobj(r, "parts")
     for(rp.a) v: if v.kind == J_STR: ids.push(v.s)
     for(ids) id:
         if id != "" and not modelled.get(id, 0) and build_model(id, colours_for("human_tan", "hellenic", team)): modelled.set(id, 1)
     if has(r, "mount"):
         let mc = creature(rstr(at(r, "mount"), "creature"))
-        for([gstr(mc, "mount_body", rstr(mc, "body")), gstr(mc, "fused_body", "")]) id:
+        for([ gstr(mc, "mount_body", rstr(mc, "body")), gstr(mc, "fused_body", "") ]) id:
             if id != "" and not modelled.get(id, 0) and build_model(id, colours_for("human_tan", "hellenic", team)): modelled.set(id, 1)
 
 // A unit ref -> a unit (sheet.gd _unit).
@@ -243,7 +243,7 @@ def unit_of(ref:JV) -> SUnit:
     let sets = gobj(ref, "set")
     for(sets.keys) k, n: set(recipe, k, deep_copy(sets.a[n]))
     if has(ref, "push"): recipe = push_recipe(recipe, rstr(ref, "push"))
-    if has(ref, "prompt") and has(ref, "kit"):   // the race's unit on a kit variant of its creature
+    if has(ref, "prompt") and has(ref, "kit"):  // the race's unit on a kit variant of its creature
         let vc = variant(ref)
         set(recipe, "creature", jstr(vc))
         set(recipe, "body", at(creature(vc), "body"))
@@ -284,7 +284,7 @@ def spec_rows() -> [SRow]:
             let each = at(r, "each")
             for(gstrs(each, "prompt")) p:
                 let slots = []::string
-                for(gstrs(each, "slot")) s:   // "heroes": each of the race's heroes, one row each
+                for(gstrs(each, "slot")) s:  // "heroes": each of the race's heroes, one row each
                     if s == "heroes":
                         for(heroes_info(race_of(p, rules_id))) h: slots.push("hero." + rstr(h, "signature"))
                     else: slots.push(s)
@@ -298,7 +298,7 @@ def spec_rows() -> [SRow]:
                         print "  (no {s} line for {p})"
                         continue
                     let u = unit_of(ref)
-                    let label = fill(gstr(r, "label", "\{prompt\}\n\{name\}"), ["\{prompt\}", "\{slot\}", "\{name\}"], [p, s, gstr(u.recipe, "name", "")])
+                    let label = fill(gstr(r, "label", "\{prompt\}\n\{name\}"), [ "\{prompt\}", "\{slot\}", "\{name\}" ], [ p, s, gstr(u.recipe, "name", "") ])
                     out.push(SRow { label, u, nil, if has(r, "h"): as_float(at(r, "h")) else: 1.0, [] })
             continue
         let other = if has(r, "other"): unit_of(at(r, "other")) else: nil
@@ -310,7 +310,7 @@ def spec_rows() -> [SRow]:
 // The placement check's verdict on a row's units (placement/: the 3D and the 2D halves, each distinct unit once): the
 // rules they fail, "<rule> (<n> views: <the first two>)" (empty: a pass). No silent passes: a unit neither half ran a
 // rule on fails its row.
-let row_checked = dictionary<string, [string]>(63)   // recipe -> what it failed
+let row_checked = dictionary<string, [string]>(63)  // recipe -> what it failed
 
 def sheet_row_check(label:string, recipes:[JV]) -> [string]:
     check_team = rgb_of(hex_of(as_str(glist(lib_palettes, "teams")[0])))
@@ -370,18 +370,18 @@ def columns(sh:JV) -> [SCol]:
             for(if head == "strike": STRIKE_MS else: FALL_MS) ms:
                 let secs = number_to_string(ms / 1000, 10, 1) + "." + number_to_string((ms % 1000) / 10, 10, 2)
                 out.push(SCol { string_to_int(tail), head, ms, 1000, "", false, "{head} {secs} s" })
-        case "work":   // work:<job>,<facing>: a job's swing in 8 steps
+        case "work":  // work:<job>,<facing>: a job's swing in 8 steps
             let jf = tokenize(tail, ",", " ")
             for(8) st: out.push(SCol { string_to_int(jf[1]), "work", st, 8, jf[0], false, "{jf[0]} {st}/8" })
         case "corpse":
             for(8) k: out.push(SCol { k, "corpse", 100, 100, "", false, FACING_NAMES[k] + " down" })
         case "corpse_fall":
-            for([0, 25, 50, 75, 100]) f: out.push(SCol { string_to_int(tail), "corpse", f, 100, "", false, "f{tail} {f}%" })
+            for([ 0, 25, 50, 75, 100 ]) f: out.push(SCol { string_to_int(tail), "corpse", f, 100, "", false, "f{tail} {f}%" })
         case "shots":
             for(8) k: out.push(SCol { k, "loose", 0, 8, "", false, FACING_NAMES[k] + " firing" })
         case "holds":
             for(tokenize(tail, ",", " ")) h:
-                for([0, 1]) k: out.push(SCol { k, "hold", 0, 8, h, false, "f{k} {h}" })
+                for([ 0, 1 ]) k: out.push(SCol { k, "hold", 0, 8, h, false, "f{k} {h}" })
         default: say_not_yet("the column kind \"{head}\"")
     return out
 
@@ -408,7 +408,7 @@ def bake_parts(n:VNode) -> int:
 def bake_shadow():
     let sc = Colours { dictionary<string, string>(3), float3_1 }
     sc.hex.set("shadow", "0f0d08")
-    let key = bake_key("unit_shadow", [shadow_shape], sc)
+    let key = bake_key("unit_shadow", [ shadow_shape ], sc)
     let r = float2 { 15.0, 4.5 } * BAKE_ART
     let c = float2 { 3.0, 1.0 }
     let w = int(ceiling(r.x * 2.0)) + 2
@@ -467,7 +467,7 @@ def pose_view(u:SUnit, col:SCol, at_:float2) -> UV:
     uv_build(v, u.recipe, team, gint(u.eval, "speed", 10))
     v.node.scl = float2_1 * UNIT_SCALE
     v.node.pos = at_
-    v.idle_wait = 1000.0   // (not stepped, no pixel snapping: as sheet.gd draws them)
+    v.idle_wait = 1000.0  // (not stepped, no pixel snapping: as sheet.gd draws them)
     v.walking = pose == "walk"
     v.phase = if pose == "walk": TAU * float(col.step) / float(col.steps) else: 0.0
     tick_tree(v, 0.0)
@@ -479,7 +479,7 @@ def pose_view(u:SUnit, col:SCol, at_:float2) -> UV:
             let id = rstr(u.recipe, "body") + "@" + h
             if cols and not bakes.get(bake_key(id, b0.pshapes, cols, b0.size)): bake_model_part(id, bake_key(id, b0.pshapes, cols, b0.size), cols)
     if pose == "hold" and col.hold != "": set_hold(v, col.hold)
-    if pose == "strike" or pose == "fall":   // played through the composer's own path, in 60ths of a second
+    if pose == "strike" or pose == "fall":  // played through the composer's own path, in 60ths of a second
         if pose == "strike": flourish(v) else: die(v, u.tip)
         for(int(float(col.step) * 0.06 + 0.5)): tick_tree(v, 1.0 / 60.0)
     if pose == "work":
@@ -519,8 +519,8 @@ def sheet_shot_kind(tags:[string]) -> string:
 def fill_rect(at_:float2, size:float2, col:float4):
     if size.x <= 0.0 or size.y <= 0.0: return
     gl.set_shader("color_attr")
-    gl.render_mesh(gl.new_mesh("PC", [float3 { at_.x, at_.y, 0.0 }, float3 { at_.x + size.x, at_.y, 0.0 }, float3 { at_.x + size.x, at_.y + size.y, 0.0 },
-                                      float3 { at_.x, at_.y + size.y, 0.0 }], [col, col, col, col], []::float3, []::float2, []::float2, [0, 2, 1, 0, 3, 2]))
+    gl.render_mesh(gl.new_mesh("PC", [ float3 { at_.x, at_.y, 0.0 }, float3 { at_.x + size.x, at_.y, 0.0 }, float3 { at_.x + size.x, at_.y + size.y, 0.0 },
+                                       float3 { at_.x, at_.y + size.y, 0.0 } ], [ col, col, col, col ], []::float3, []::float2, []::float2, [ 0, 2, 1, 0, 3, 2 ]))
 
 def line_quad(a:float2, b:float2, w:float, col:float4):
     let d = b - a
@@ -528,11 +528,11 @@ def line_quad(a:float2, b:float2, w:float, col:float4):
     if l <= 0.0001: return
     let n = float2 { -d.y, d.x } / l * (w * 0.5)
     gl.set_shader("color_attr")
-    gl.render_mesh(gl.new_mesh("PC", [float3 { a.x + n.x, a.y + n.y, 0.0 }, float3 { b.x + n.x, b.y + n.y, 0.0 }, float3 { b.x - n.x, b.y - n.y, 0.0 },
-                                      float3 { a.x - n.x, a.y - n.y, 0.0 }], [col, col, col, col], []::float3, []::float2, []::float2, [0, 2, 1, 0, 3, 2]))
+    gl.render_mesh(gl.new_mesh("PC", [ float3 { a.x + n.x, a.y + n.y, 0.0 }, float3 { b.x + n.x, b.y + n.y, 0.0 }, float3 { b.x - n.x, b.y - n.y, 0.0 },
+                                       float3 { a.x - n.x, a.y - n.y, 0.0 } ], [ col, col, col, col ], []::float3, []::float2, []::float2, [ 0, 2, 1, 0, 3, 2 ]))
 
 def dot_at(c:float2, r:float, col:float4):
-    let pts = [float3 { c.x, c.y, 0.0 }]
+    let pts = [ float3 { c.x, c.y, 0.0 } ]
     for(12) i: pts.push(float3 { c.x + cos(float(i) * 30.0) * r, c.y + sin(float(i) * 30.0) * r, 0.0 })
     let idx = []::int
     for(12) i:
@@ -559,7 +559,7 @@ def flush_texts():
         gl.set_font_size(px)
         for(tokenize(t.s, "\n", "")) line, n:
             let p = t.at + float2 { 0.0, float(n) * float(px) * 1.2 }
-            for([float2 { -1.0, 0.0 }, float2 { 1.0, 0.0 }, float2 { 0.0, -1.0 }, float2 { 0.0, 1.0 }]) d:
+            for([ float2 { -1.0, 0.0 }, float2 { 1.0, 0.0 }, float2 { 0.0, -1.0 }, float2 { 0.0, 1.0 } ]) d:
                 gl.color(float4 { 0.0, 0.0, 0.0, 0.7 }): gl.translate(p + d): gl.text(line)
             gl.color(t.col): gl.translate(p): gl.text(line)
     texts = []
@@ -601,7 +601,7 @@ def draw_unit(world:[float], u:SUnit, at_:float2, col:SCol):
         def scr(q:float2) -> float2: return xf_apply(world, q)
         if st.len > 0.0: line_quad(scr(p - d * st.len * 0.5), scr(p + d * st.len * 0.5), st.w * s, st.col)
         else: dot_at(scr(p), st.w * s, st.col)
-        dot_at(scr(p + float2 { 0.0, h * 4.0 * 0.2 * 0.8 + 1.0 }), 0.8 * s, float4 { 0.0, 0.0, 0.0, 0.25 })   // its speck of shadow
+        dot_at(scr(p + float2 { 0.0, h * 4.0 * 0.2 * 0.8 + 1.0 }), 0.8 * s, float4 { 0.0, 0.0, 0.0, 0.25 })  // its speck of shadow
     remove_shots_view(v)
 
 def remove_shots_view(v:UV): free_tree(v.node)
@@ -641,12 +641,12 @@ def sheet(sh:JV, rows:[SRow], size_units:[SUnit], zoom:float, verdicts:dictionar
     label(title, float2 { 8.0, 6.0 }, fs + 2, TEXT)
     let x0 = label_w + size_w * zoom
     for(cols) c, i: label(c.label, float2 { x0 + float(i) * cell.x * zoom + 4.0, head_h - float(fs) - 8.0 }, if big: fs - 2 else: fs - 1, TEXT)
-    let world = [zoom, 0.0, 0.0, zoom, label_w, 0.0]
+    let world = [ zoom, 0.0, 0.0, zoom, label_w, 0.0 ]
     var y = head_h
     for(rows) row, r:
         let h = heights[r]
         let fails = verdicts.get(row.label) or []::string
-        if fails.length:   // a red frame round a failing row
+        if fails.length:  // a red frame round a failing row
             let red = float4 { 1.0, 0.19, 0.19, 1.0 }
             let a = float2 { 2.0, y + 2.0 }
             let s = float2 { float(size.x) - 4.0, h - 4.0 }
@@ -678,7 +678,7 @@ def sheet(sh:JV, rows:[SRow], size_units:[SUnit], zoom:float, verdicts:dictionar
         return
     flush_sprites()
     flush_texts()
-    gl.blend(blend_add_alpha)   // (opaque: what was blended in left the sheet's alpha below 1)
+    gl.blend(blend_add_alpha)  // (opaque: what was blended in left the sheet's alpha below 1)
     fill_rect(float2_0, float(size), float4 { 0.0, 0.0, 0.0, 1.0 })
     gl.blend(blend_alpha)
     gl.switch_to_framebuffer(nil)
@@ -690,19 +690,19 @@ def sheet(sh:JV, rows:[SRow], size_units:[SUnit], zoom:float, verdicts:dictionar
 
 let rows = spec_rows()
 let size_units = map(glist(spec, "size")) r: unit_of(r)
-let zooms = if zoom_arg.length: map(zoom_arg) z: string_to_float(z) else: map(if has(spec, "zooms"): glist(spec, "zooms") else: [jint(3), jint(1)]) z: as_float(z)
+let zooms = if zoom_arg.length: map(zoom_arg) z: string_to_float(z) else: map(if has(spec, "zooms"): glist(spec, "zooms") else: [ jint(3), jint(1) ]) z: as_float(z)
 let verdicts = dictionary<string, [string]>(63)
 let expected = dictionary<string, [string]>(15)
 var bad = 0
 var frame_n = 0
-while gl.frame() and frame_n < 1:   // (bakes and framebuffers inside a frame)
+while gl.frame() and frame_n < 1:  // (bakes and framebuffers inside a frame)
     frame_n++
     bake_opts.sprite_formats = texture_format_clamp | texture_format_nomipmap | texture_format_nearest_mag | texture_format_nearest_min
     bake_shadow()
     // Placement per row; a row may expect to fail named rules: it passes when it fails those and nothing else.
     for(rows) r:
         if check_rows and r.unit.part == "":
-            let recipes = [r.unit.recipe]
+            let recipes = [ r.unit.recipe ]
             let o = r.other
             if o: recipes.push(o.recipe)
             var v = sheet_row_check(r.label, recipes)

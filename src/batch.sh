@@ -32,6 +32,7 @@ L="$LOBSTER"
 add run_tests "$L" run_tests.lobster
 add test_heroes "$L" test_heroes.lobster
 add race_identity "$L" test_race_identity.lobster
+add voxel_contact "$L" voxel_proto.lobster -- - check   # the voxel units stand in their shadows as drawn (the voxels option)
 for i in 0 1 2 3; do add test_sim.$i "$L" test_sim.lobster -- shard:$i/4; done
 if [ $quick = 1 ]; then
 	add test_ai "$L" test_ai.lobster -- quick

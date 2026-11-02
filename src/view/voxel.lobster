@@ -417,8 +417,8 @@ def vx_rat(out:[vx_prim], u:vx_unit_def, ph:float) -> vx_frame:
     // the tail: out from the rump, down to the ground and trailing back in a long S
     var last = pelvis + float3 { 0.0, -3.2, -0.6 }
     var r = 1.0
-    if not vx_seated: for([ float3 { 0.0, -3.5, -2.6 }, float3 { 0.5, -6.5, -4.6 }, float3 { 2.0, -9.5, -5.5 }, float3 { 3.8, -12.5, -5.8 },
-          float3 { 4.4, -16.0, -5.8 }, float3 { 3.4, -19.5, -5.6 }, float3 { 1.6, -22.5, -5.0 } ]) d, k:
+    if not vx_seated: for([ float3 { 0.0, -3.5, -2.6 }, float3 { 0.5, -6.5, -5.2 }, float3 { 2.0, -9.5, -7.4 }, float3 { 3.8, -12.5, -8.1 },
+          float3 { 4.4, -16.0, -8.25 }, float3 { 3.4, -19.5, -8.3 }, float3 { 1.6, -22.5, -8.3 } ]) d, k:   // (lying on the ground)
         let p = pelvis + d
         out.push(vx_cap(last, p, r, r - 0.1, if k == 0: vx_mat_skin else: vx_mat_tail))
         last = p
@@ -642,10 +642,11 @@ def vx_solid_at(grid:[int], lo:int3, dims:int3, v:int3) -> bool:
 // only blocks the surface crosses are measured voxel by voxel.
 def vx_fill(parts:[vx_prim], unit_size:float) -> vx_shape:
     let s = unit_size * vx_RES
-    var low = 1000.0
-    for(parts) p:
-        let a, b = vx_bounds(p)
-        low = min(low, a.z)
+    var low = 1000.0   // the ground: under the body's lowest point (gear reaching lower, a spear's butt, is cut off
+    for(parts) p:      // by it: a frog's spear set it on the ground and lifted the frog off it)
+        if not p.hard:
+            let a, b = vx_bounds(p)
+            low = min(low, a.z)
     let ps = map(parts) p: vx_scaled(p, s, -low)
     let k = vx_BLEND * s
     var a = float3_1 * 1000.0
@@ -837,6 +838,19 @@ def vx_ground_shadow(sh:vx_shape, facing:int) -> [float4]:
     var box = int4 { cw, ch, -1, -1 }
     for(sh.pos) v:
         let p = float(v) + float3_1 * 0.5
+        if p.z < 3.0:   // a contact shadow under what touches the ground, a few px thick: the game draws a baked px
+            // at 0.55 world px, nearest sampled, so a sliver under the soles vanished and units read as floating
+            let u0 = dot(float3 { p.x, p.y, 0.0 }, ru)
+            let w0 = dot(float3 { p.x, p.y, 0.0 }, rv)
+            for(7) yy: for(13) xx:
+                let dx = float(xx - 6)
+                let dy = float(yy - 2)
+                if dx * dx / 36.0 + (dy - 1.0) * (dy - 1.0) / 9.0 <= 1.0:
+                    let x = int(floor(float(vx_SANCHOR.x) + u0 + dx))
+                    let y = int(floor(float(vx_SANCHOR.y) - w0 + dy))
+                    if x >= 0 and y >= 0 and x < cw and y < ch:
+                        vx_sout[y * cw + x] = vx_SHADOW
+                        box = int4 { min(box.x, x), min(box.y, y), max(box.z, x), max(box.w, y) }
         let g = p - sun * (p.z / sun.z)
         let u = dot(g, ru)
         let w = dot(g, rv)
@@ -850,6 +864,32 @@ def vx_ground_shadow(sh:vx_shape, facing:int) -> [float4]:
     return vx_sout
 
 // A facing drawn into an image at (cx, cy), its ground shadow under it when shadows are on.
+// Does the unit stand in its shadow, as the game draws it (a baked px at k world px, nearest sampled, the anchor at a
+// sub-pixel offset ph)? A unit over a gap reads as floating (Dominic, 2026-11-01: "they're floating"). Standing (every
+// foot planted): at least half its soles (its pixels with nothing under them in its lowest 2 rows) have shadow showing
+// straight under them. Walking (a foot may swing free): some sole in its lowest 6 rows does.
+def vx_stands(cell:[float4], sc:[float4], k:float, ph:float, standing:bool) -> bool:
+    let n = 70   // world px round the anchor each way
+    let um = map(n * 2 * n * 2): false
+    let sm = map(n * 2 * n * 2): false
+    for(n * 2) j: for(n * 2) i:
+        let bx = int(floor(float(vx_ANCHOR.x) + (float(i - n) + 0.5 - ph) / k))
+        let by = int(floor(float(vx_ANCHOR.y) + (float(j - n) + 0.5 - ph) / k))
+        if bx >= 0 and by >= 0 and bx < vx_CELL.x and by < vx_CELL.y: um[j * n * 2 + i] = cell[by * vx_CELL.x + bx].w > 0.0
+        let sx = bx - vx_ANCHOR.x + vx_SANCHOR.x
+        let sy = by - vx_ANCHOR.y + vx_SANCHOR.y
+        if sx >= 0 and sy >= 0 and sx < vx_SCELL.x and sy < vx_SCELL.y: sm[j * n * 2 + i] = sc[sy * vx_SCELL.x + sx].w > 0.0
+    var low = -1
+    for(n * 2) j: for(n * 2) i: if um[j * n * 2 + i]: low = max(low, j)
+    var soles = 0
+    var shaded = 0
+    for(if standing: 2 else: 6) r: for(n * 2) i:
+        let j = low - r
+        if j >= 0 and j + 2 < n * 2 and um[j * n * 2 + i] and not um[(j + 1) * n * 2 + i]:
+            soles++
+            if sm[(j + 1) * n * 2 + i] or (sm[(j + 2) * n * 2 + i] and not um[(j + 2) * n * 2 + i]): shaded++
+    return if standing: soles > 0 and shaded * 2 >= soles else: shaded > 0
+
 def vx_draw(sh:vx_shape, facing:int, img:[float3], iw:int, cx:int, cy:int):
     if vx_shadows:
         let sc = vx_ground_shadow(sh, facing)
